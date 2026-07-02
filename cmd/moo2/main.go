@@ -85,6 +85,8 @@ func main() {
 	helpIndex := flag.Int("help-index", 1, "百科條目 index(HELP.LBX asset0)")
 	helpTitle := flag.String("help-title", "", "依英文標題選百科條目(優先於 -help-index)")
 	helpList := flag.Bool("help-list", false, "列出所有百科條目(headless,不開視窗)")
+	infoMode := flag.Bool("info-viewer", false, "科技總覽畫面模式(示範單畫面多 TSV 來源)")
+	infoTech := flag.String("info-tech", "Achilles Targeting Unit", "科技總覽右欄範例科技(英文標題)")
 	tsvPath := flag.String("tsv", "", "譯表 TSV(留空用該畫面預設)")
 	lang := flag.String("lang", "zh", "語言:zh(繁中)或 en(英文)")
 	flag.Parse()
@@ -146,6 +148,27 @@ func main() {
 			return
 		}
 		if err := runHelp(dirs, "help.lbx", *helpIndex, *helpTitle, langID, fnt, reg, *shot, *frames); err != nil {
+			fatal(err)
+		}
+		return
+	}
+
+	// 科技總覽模式:示範單畫面多 TSV 來源(misc 標題/分組 + tech 名 + help 本文)。
+	if *infoMode {
+		if *dataDirs == "" {
+			fmt.Fprintln(os.Stderr, "需指定 -data <遊戲資料夾>")
+			os.Exit(2)
+		}
+		fnt, err := loadFont(*fontPath)
+		if err != nil {
+			fatal(fmt.Errorf("載入字型: %w", err))
+		}
+		reg := i18n.NewRegistry(langID)
+		if _, err := reg.LoadFS(os.DirFS("assets/i18n"), "."); err != nil {
+			fatal(fmt.Errorf("載入譯表: %w", err))
+		}
+		dirs := strings.Split(*dataDirs, ",")
+		if err := runInfoReview(dirs, "help.lbx", langID, fnt, reg, *infoTech, *shot, *frames); err != nil {
 			fatal(err)
 		}
 		return
