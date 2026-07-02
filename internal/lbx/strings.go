@@ -53,6 +53,19 @@ func ParseCStrings(data []byte, offset int) []string {
 	return out
 }
 
+// ParseFileEntry 解析 loadFile 格式的單一資產:u16 count(應為 1)+ u16 size + C-string。
+// 用於 EVENTMSE/DIPLOMSE/COUNCMSG/ANTARMSG/MAINTEXT 等「每資產一則訊息」的封裝。
+func ParseFileEntry(data []byte) (string, error) {
+	if len(data) < 4 {
+		return "", fmt.Errorf("lbx strings: loadFile 資產太短")
+	}
+	if binary.LittleEndian.Uint16(data[0:2]) != 1 {
+		return "", fmt.Errorf("lbx strings: 非單則 loadFile 資產")
+	}
+	// data[2:4] 為字串長度,忽略。
+	return cutNul(data[4:]), nil
+}
+
 func cutNul(b []byte) string {
 	if idx := indexByte(b, 0); idx >= 0 {
 		b = b[:idx]

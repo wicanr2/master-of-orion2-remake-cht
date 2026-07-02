@@ -14,6 +14,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/lbx"
 )
@@ -21,6 +22,8 @@ import (
 func main() {
 	asset := flag.Int("asset", -1, "只 dump 指定資產(預設全部)")
 	cstr := flag.Bool("cstr", false, "用 C-string 格式解析")
+	loadfile := flag.Bool("loadfile", false, "用 loadFile 格式(每資產一則訊息)")
+	groups := flag.Int("groups", 1, "loadFile 語言群組數(英文取前 count/groups 個資產)")
 	tsv := flag.Bool("tsv", false, "輸出 TSV 骨架供翻譯")
 	flag.Parse()
 	if flag.NArg() < 1 {
@@ -34,6 +37,27 @@ func main() {
 	arch, err := lbx.Open(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
 		fatal(err)
+	}
+
+	// loadFile 模式:每資產一則訊息,英文取前 count/groups 個。
+	if *loadfile {
+		end := arch.Count() / *groups
+		for i := 0; i < end; i++ {
+			raw, err := arch.Asset(i)
+			if err != nil {
+				continue
+			}
+			s, err := lbx.ParseFileEntry(raw)
+			if err != nil || s == "" {
+				continue
+			}
+			if *tsv {
+				fmt.Printf("%s\t\t\n", strings.ReplaceAll(s, "\n", "\\n"))
+			} else {
+				fmt.Printf("=== 訊息 %d ===\n%s\n", i, s)
+			}
+		}
+		return
 	}
 
 	for i := 0; i < arch.Count(); i++ {
