@@ -1,0 +1,83 @@
+# 科技/裝置短描述 blurb 譯表(TECHDESC.LBX,設計/科技畫面用)。英文原文即 key(含原版 typo)。完整翻譯。
+# 名稱變體
+Bio Terminator	生化終結者	名稱
+ECM Jammer	電子干擾器	名稱
+Gyroscopic Destablizer	陀螺失穩器	名稱
+Hyperdyne Capacitors	超動力電容	名稱
+Multi Phased Shields	多相護盾	名稱
+Multi-Wave ECM Jammer	多波電子干擾器	名稱
+Troop Pod	部隊艙	名稱
+# 效果描述
++100% beam defense, no turning costs	+100% 光束防禦,無轉向消耗	描述
++100% missile evasion	+100% 飛彈迴避	描述
+10% chance of killing colonists	10% 機率殺死殖民者	描述
++10% vs monsters, adds research	對怪獸 +10%,並增加研究	描述
++130% missile evasion, +70% rest of fleet	+130% 飛彈迴避,艦隊其餘 +70%	描述
+20% chance of killing colonists	20% 機率殺死殖民者	描述
++20% to marine defense	+20% 陸戰隊防禦	描述
+2 beam shots once until recharge	充能前可發射 2 次光束	描述
+2 shot launcher with 1 turn wait	雙發發射器,需等待 1 回合	描述
+2x range damage penalties	2 倍射程傷害懲罰	描述
+2x range damage penalties. Always hits	2 倍射程傷害懲罰。必定命中	描述
+2x range damage penalties. Enveloping	2 倍射程傷害懲罰。包覆	描述
+30% chance for each weapon to miss	每件武器 30% 機率失手	描述
+4 bombers carry best bomb	4 架轟炸機攜帶最佳炸彈	描述
+4 Hvy Fighters. 2x bomb + 2x best PD weap.	4 架重型戰機。2 倍炸彈 + 2 倍最佳點防武器	描述
+4 interceptors carry best PD weapon	4 架攔截機攜帶最佳點防武器	描述
+4 shuttles. Carry 4 marines.	4 架突擊梭。搭載 4 名陸戰隊。	描述
++50% beam defense, half turning costs	+50% 光束防禦,轉向消耗減半	描述
+50% chance to destroy missiles/fighters	50% 機率摧毀飛彈/戰機	描述
++50% damage for beam weapons	光束武器 +50% 傷害	描述
++50% ship range	艦船射程 +50%	描述
++50% to hit with beam weapons	光束武器命中 +50%	描述
++70 %missile evasion	+70% 飛彈迴避	描述
++70% shield recharge rate	護盾充能率 +70%	描述
++80% defense, Invisible on main screen	+80% 防禦,主畫面隱形	描述
+Basic ground attack weapon	基本地面攻擊武器	描述
+Basic missile	基本飛彈	描述
+Basic ship weapon	基本艦船武器	描述
+Damage not reduced by range	傷害不隨射程衰減	描述
+Damage reduced by range	傷害隨射程衰減	描述
+Damages everything in 2 square radius	傷害 2 格半徑內所有目標	描述
+Damages everything in 6 square radius	傷害 6 格半徑內所有目標	描述
+Destroys missiles	摧毀飛彈	描述
+Direct fire torpedo.	直射魚雷。	描述
+Doubles any damage that penetrates shield	使穿透護盾的傷害加倍	描述
+Doubles marines on board	使艦上陸戰隊加倍	描述
+Enveloping, Always hits, No range penalties	包覆,必定命中,無射程懲罰	描述
+Enveloping, Persistent	包覆,持續	描述
+Extra structure damage	額外結構傷害	描述
+Fire every other turn	每隔一回合發射	描述
+Ignores armor and structure	無視裝甲與結構	描述
+Ignores shields	無視護盾	描述
+Immobilizes target, Implodes it in 3 turns	使目標無法動彈,3 回合後內爆	描述
+Improved ground attack weapon	改良地面攻擊武器	描述
+Improved missile	改良飛彈	描述
+Increases available space 50%	可用空間增加 50%	描述
+Increases combat speed by 5	戰鬥速度增加 5	描述
+Increases shield strength 50%	護盾強度增加 50%	描述
+Invisible in combat and on main screen	戰鬥與主畫面皆隱形	描述
+Invisible on Main Screen	主畫面隱形	描述
+Kills marines	殺死陸戰隊	描述
+Marines can board enemy ships at 12 squares	陸戰隊可於 12 格外登上敵艦	描述
+Moves ship up to 20 squares in combat	戰鬥中可移動艦船達 20 格	描述
+Negates armor. More 3x chance to hit.	抵消裝甲。命中機率提高 3 倍。	描述
+Prohibits enemy ships from retreating	禁止敵艦撤退	描述
+Reduces all damage by 3	所有傷害減少 3	描述
+Reduces damage a ship takes by 3/4	使艦船受到的傷害減少 3/4	描述
+Reduces damage by 1/4. Fires absorbed energy	傷害減少 1/4。發射吸收的能量	描述
+Reduces range to hit penalties by 1/3	射程命中懲罰減少 1/3	描述
+Reduces target speed	降低目標速度	描述
+Reflects beam attacks	反射光束攻擊	描述
+Repairs damage each combat turn	每戰鬥回合修復損傷	描述
+Ships move and attack twice per turn	艦船每回合移動與攻擊兩次	描述
+Spins enemy ship, damages structure	使敵艦旋轉,損傷結構	描述
+Superior ground attack wwepon	高等地面攻擊武器	描述
+Superior missile	高等飛彈	描述
+Teleports any ship up to 18 squares	使任意艦船瞬移達 18 格	描述
+Triple destruction explosion	三重毀滅爆炸	描述
+Triples armor points of a ship	使艦船裝甲值三倍	描述
+Triples structure points of a ship	使艦船結構值三倍	描述
+Ultimate ground attack weapon	終極地面攻擊武器	描述
+Ultimate missile	終極飛彈	描述
+Entraps ship until released	困住艦船直到釋放	描述
