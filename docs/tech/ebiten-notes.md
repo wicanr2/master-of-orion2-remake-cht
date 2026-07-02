@@ -29,8 +29,15 @@ assets.Resolver.OpenLBX → lbx.DecodeImage → Frame.ToRGBA(palette,keycolor)
 - openorion2 `Screen` 抽象介面 → 之後以 ebiten backend 實作(目前 `cmd/moo2` 是直接繪製的骨架,尚未抽介面)。
 - 事件:openorion2 只有滑鼠;ebiten 走 `Update/Draw`,鍵盤另補。
 
-## 5. 待續
+## 5. 資料驅動星圖(M2 里程碑,已達成)
+
+`cmd/moo2 -save <SAVE10.GAM>`(`galaxy.go`)載入存檔 → `save.Load` → 繪製星圖:
+- 星座標線性映射到繪圖區(`plotX0..plotX1` 對應 `0..galaxy.Width`);光譜類 → 顏色、StarSize → 半徑(Large=5..Tiny=2)。
+- 星名以 `ebitenutil.DebugPrintAt`(英文,CJK 待 Phase 3)、星雲以 `vector.DrawFilledCircle`。
+- 驗證:SAVE10.GAM 的 36 星(Orion/Altair/Sssla…)位置/顏色正確、星雲數=2 與存檔一致 → 存檔解析 × 繪製全鏈路成立。
+
+## 6. 待續
 
 - [ ] 把 openorion2 `Screen` 介面以 ebiten 實作(registerTexture/drawTexture/fillRect/clip)。
-- [ ] 載入存檔 → 繪製星系圖(M2 完整里程碑;目前已能顯示背景圖)。
+- [ ] 星圖換真實 sprite(GALAXY.LBX asset 148,依 spectralClass×zoom×size)+ STARBG 星空背景。
 - [ ] 資產快取(避免每幀 NewImageFromImage)。

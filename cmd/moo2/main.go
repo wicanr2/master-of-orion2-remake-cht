@@ -74,7 +74,16 @@ func main() {
 	assetID := flag.Int("asset", 21, "背景資產 index")
 	shot := flag.String("shot", "", "headless 截圖輸出路徑(設定則跑 N 幀後結束)")
 	frames := flag.Int("frames", 3, "截圖前先跑幾幀")
+	savePath := flag.String("save", "", "存檔路徑;設定則以星圖模式繪製該存檔")
 	flag.Parse()
+
+	// 星圖模式:載入存檔並繪製(資料驅動畫面)。
+	if *savePath != "" {
+		if err := runGalaxy(*savePath, *shot, *frames); err != nil {
+			fatal(err)
+		}
+		return
+	}
 
 	if *dataDirs == "" {
 		fmt.Fprintln(os.Stderr, "需指定 -data <遊戲資料夾>")

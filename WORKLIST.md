@@ -41,7 +41,8 @@
 - [ ] 實作 `Screen` 對應:registerTexture/drawTexture/fillRect/setClipRegion(抽介面,目前為直繪骨架)
 - [ ] 滑鼠事件(cursor + 按鍵),補鍵盤
 - [ ] 資產快取(避免每幀 NewImageFromImage)
-- [ ] 里程碑:載存檔 → 顯示星系圖(目前已能開視窗 + 讀 .lbx + 顯示背景)
+- [x] ★ 里程碑 M2:載存檔 → 繪製星系圖(cmd/moo2 -save;SAVE10.GAM 的 36 星依座標/光譜/大小 + 星名 + 星雲,資料驅動)
+- [ ] 星圖換真實星球 sprite(GALAXY.LBX asset 148,依 spectralClass×size)+ 星空背景(STARBG.LBX)
 
 ## Phase 3 — UI 框架 + 文字系統 + 主選單(做法見 `08` playbook)
 - [ ] gui widget 樹翻譯(Toggle/Choice/ScrollBar/Label/Composite + ViewStack)
