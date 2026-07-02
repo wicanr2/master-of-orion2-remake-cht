@@ -22,6 +22,7 @@ import (
 func main() {
 	asset := flag.Int("asset", -1, "只 dump 指定資產(預設全部)")
 	cstr := flag.Bool("cstr", false, "用 C-string 格式解析")
+	offset := flag.Int("offset", 0, "C-string 解析起始 offset(rstring=4, estrings/hstrings=6)")
 	loadfile := flag.Bool("loadfile", false, "用 loadFile 格式(每資產一則訊息)")
 	groups := flag.Int("groups", 1, "loadFile 語言群組數(英文取前 count/groups 個資產)")
 	tsv := flag.Bool("tsv", false, "輸出 TSV 骨架供翻譯")
@@ -70,7 +71,7 @@ func main() {
 		}
 		var strs []string
 		if *cstr {
-			strs = lbx.ParseCStrings(raw, 0)
+			strs = lbx.ParseCStrings(raw, *offset)
 		} else {
 			strs, err = lbx.ParseFixedStrings(raw)
 			if err != nil {
@@ -83,7 +84,7 @@ func main() {
 		if *tsv {
 			for _, s := range strs {
 				if s != "" {
-					fmt.Printf("%s\t\t\n", s)
+					fmt.Printf("%s\t\t\n", escapeForTSV(s))
 				}
 			}
 		} else {
