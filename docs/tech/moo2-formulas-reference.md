@@ -2,7 +2,7 @@
 
 ## 前言
 
-本專案(`master-of-orion2-remake-cht`)是目前已知**世界首個**以 Go/ebiten 重寫的 *Master of Orion II* remake,目標是在保留原版規則的前提下完整重建遊戲邏輯,並提供完整繁體中文化。這份文件把目前已移植進 `internal/gamedata/` 的規則公式集中彙整、附上來源出處與驗證方式,作為後續開發與外部查證的知識庫,也是本專案在規則考據上的產出之一。
+本專案(`master-of-orion2-remake-cht`)是目前已知**世界首個**以 Go/ebiten 重寫的 *Master of Orion II* remake,目標是在保留原版規則的前提下完整重建遊戲邏輯,並提供完整繁體中文化。這份文件把目前已移植進 `internal/gamedata/` 的規則公式集中彙整、附上來源出處與驗證方式,作為後續開發與外部查證的知識庫,也是本專案在規則考據上的產出之一。目前涵蓋 12 個系統。
 
 ### 公式的兩個來源
 
@@ -11,7 +11,7 @@
 因此本專案的公式移植分兩路:
 
 1. **openorion2 唯讀表**:艦艇電腦/引擎 HP、戰速、光束攻防、軍官經驗/技能/雇用費、研究樹拓撲(`research_choices[83]`)——這些是 openorion2 `gamestate.cpp`/`tech.cpp` 裡真正在跑、且已被 UI 使用的公式,直接逐字轉寫進 Go。
-2. **官方手冊權威公式**:openorion2 沒有實作的系統(殖民地成長、生產/污染、光束命中、飛彈防禦、間諜),改以 `moo2_patch1.5/MANUAL_150.html`(1.50 patch 說明書,含 "Notes on Population Growth"、"Notes on Spying"、"Notes on Missile Defenses"、"Notes on Anti-Missile Rockets" 等附錄段落,俗稱「The Algorithm」)與 `moo2_patch1.5/GAME_MANUAL.pdf`(隨 1.50 patch 附的完整遊戲手冊)逐條抽取常數與公式移植。
+2. **官方手冊權威公式**:openorion2 沒有實作的系統(殖民地成長、生產/污染、士氣、國庫收入、光束命中、光束傷害解算、飛彈防禦、地面戰、間諜),改以 `moo2_patch1.5/MANUAL_150.html`(1.50 patch 說明書,含 "Notes on Population Growth"、"Notes on Spying"、"Notes on Missile Defenses"、"Notes on Anti-Missile Rockets"、"Notes on Beam Weapon Mechanics"、"Notes on Orbital Assault" 等附錄段落,俗稱「The Algorithm」)與 `moo2_patch1.5/GAME_MANUAL.pdf`(隨 1.50 patch 附的完整遊戲手冊)逐條抽取常數與公式移植。
 
 ### 驗證方法
 
@@ -28,14 +28,18 @@
 
 1. [殖民地人口成長](#1-殖民地人口成長-colonygo)
 2. [生產與污染](#2-生產與污染-productiongo)
-3. [研究樹](#3-研究樹-techtreego)
-4. [軍官](#4-軍官-officergo)
-5. [艦艇衍生值](#5-艦艇衍生值-formulasgo)
-6. [光束武器命中](#6-光束武器命中-combatgo)
-7. [飛彈防禦與反飛彈火箭](#7-飛彈防禦與反飛彈火箭-missilego)
-8. [間諜](#8-間諜-spygo)
-9. [手冊自相矛盾記錄](#9-手冊自相矛盾記錄)
-10. [尚未移植/待查證](#10-尚未移植待查證)
+3. [士氣](#3-士氣-moralego)
+4. [國庫收入](#4-國庫收入-incomego)
+5. [研究樹](#5-研究樹-techtreego)
+6. [軍官](#6-軍官-officergo)
+7. [艦艇衍生值](#7-艦艇衍生值-formulasgo)
+8. [光束武器命中](#8-光束武器命中-combatgo)
+9. [光束傷害解算](#9-光束傷害解算-damagego)
+10. [飛彈防禦與反飛彈火箭](#10-飛彈防禦與反飛彈火箭-missilego)
+11. [地面戰](#11-地面戰-groundgo)
+12. [間諜](#12-間諜-spygo)
+13. [手冊自相矛盾記錄](#13-手冊自相矛盾記錄)
+14. [尚未移植/待查證](#14-尚未移植待查證)
 
 ---
 
@@ -100,7 +104,7 @@ b = (100 + g + r + i + t + l + e + h) / 100
 
 ## 2. 生產與污染(`production.go`)
 
-**來源**:`GAME_MANUAL.pdf`(patch 1.5 隨附完整手冊)「System Overview / Yield / Population」章節(約 p.64-67)與各建築說明章節(約 p.78-90)。`MANUAL_150.html`(1.50 patch 說明書)本身只在 UI bugfix 段落提過一次 pollution,無數值公式;openorion2 只有 `Planet::baseProduction()` 單一查表(見第 5 節),未實作生產分配與污染公式,故本節數值全部來自 `GAME_MANUAL.pdf`。
+**來源**:`GAME_MANUAL.pdf`(patch 1.5 隨附完整手冊)「System Overview / Yield / Population」章節(約 p.64-67)與各建築說明章節(約 p.78-90)。`MANUAL_150.html`(1.50 patch 說明書)本身只在 UI bugfix 段落提過一次 pollution,無數值公式;openorion2 只有 `Planet::baseProduction()` 單一查表(見第 7 節),未實作生產分配與污染公式,故本節數值全部來自 `GAME_MANUAL.pdf`。
 
 ### 生產常數
 
@@ -157,7 +161,127 @@ cleanup = excess > 0 ? excess / 2 : 0   (tolerantRace 一律 0)
 
 ---
 
-## 3. 研究樹(`techtree.go`)
+## 3. 士氣(`morale.go`)
+
+**來源**:GAME_MANUAL.pdf p.65-66「Morale is in the top box」與 p.169-170「Morale」章節(兩處原文一致);政府基礎值、首都淪陷懲罰見 p.165-167 Imperial Policy > Government 段與各政府段落 p.21-22。openorion2 未實作 morale 邏輯(`gamestate.cpp` 無對應計算),故以手冊原文數字為唯一權威來源。手冊沒有給精確數字的項目(Spiritual Leader 的 morale 加成、Tactics 技能)不移植,列於本節末 TODO。
+
+### 核心公式
+
+手冊原文:「Each smile represents a 10% bonus to all production (food, industry, research, and income); each frown denotes a 10% penalty to all production.」(p.65-66、p.169-170 一致)
+
+```
+最終產出 = 基礎產出 *(100 + moralePercent)/ 100
+```
+
+`moralePercent` 為下列各來源加總後的百分點(政府基礎值、首都淪陷懲罰、建築/成就加成、多種族懲罰…);手冊沒有列出互斥反例,故各來源之間視為直接加總。
+
+`MoraleProductionOutput(base, moralePercent int) int`(`morale.go:50`):`base*(100+moralePercent)/100`。
+
+### 政府基礎士氣
+
+| 政府 | 無 Barracks | 有 Barracks | 首都淪陷懲罰 |
+|---|---|---|---|
+| Feudalism / Confederation | -20% | 0% | -50% |
+| Dictatorship | -20% | 0% | -35% |
+| Imperium | 0%(-20%+20%帝國加成) | +20%(20%帝國加成) | -35% |
+| Democracy / Federation | 0% | 0% | -20% |
+| Unification / Galactic Unification | 不適用本公式(見下) | 不適用 | 0%(手冊:「Capture of the capital has no effect」) |
+
+`MoraleGovernmentBase(gov MoraleGovernmentType, hasBarracks bool) int`(`morale.go:85`):Imperium 固定 +20%(手冊:「All colonies have a 20% Morale bonus.」),無 Barracks 時再疊加各政府表列的懲罰;Imperium 的「-20% 無 Barracks 懲罰」與「+20% 帝國加成」是兩個獨立疊加項,故 Imperium 有 Barracks 時淨 +20%、無 Barracks 時淨 0%。
+
+`MoraleCapitalCapturedPenalty(gov MoraleGovernmentType) int`(`morale.go:119`):查 `moraleCapitalCapturedTable`,對照上表右欄。
+
+### 建築/成就加成(固定值)
+
+| 常數 | 值 | 手冊出處 |
+|---|---|---|
+| `MoraleHoloSimulatorBonus` | +20% | p.95-96「increases a planet's morale by 20%」 |
+| `MoralePleasureDomeBonus` | +30% | p.97-98「increases colony morale by 30%」 |
+| `MoraleVirtualRealityNetworkBonus` | +20%(全帝國) | p.97-98「increases morale by 20% in every colony throughout the entire empire」 |
+| `MoralePsionicsBonus` | +10%(限定政府) | p.100-101,見下 |
+
+`MoralePsionicsGovernmentBonus(gov MoraleGovernmentType) int`(`morale.go:137`):Psionics 成就僅在 Dictatorship/Imperium/Feudalism/Confederation 生效 +10%,Democracy/Federation/Unification 系不適用回 0(手冊:「morale is raised by 10% throughout the empire if your government is a Dictatorship, Imperium, Feudalism, or Confederation.」)。
+
+`MoraleMultiRacialPenalty(hasAlienManagementCenter bool) int`(`morale.go:127`):多種族殖民地無 Alien Management Center 時 -20%,有則 0%(手冊 p.66-67、p.92-93 兩處一致)。
+
+### Unification 特例
+
+手冊:「Things that boost or lower Morale have no effect. The Morale of the race's populations cannot be modified in any way.」Unification 系政府不套用一般士氣公式,改為固定的 **food+industry**(不含 research/income)產出加成:
+
+```
+Unification:          +50%
+Galactic Unification: +100%
+```
+
+`MoraleUnificationProductionBonus(gov MoraleGovernmentType) int`(`morale.go:155`)。**呼叫端不可混用**:一般政府用 `MoraleProductionOutput` + `MoraleGovernmentBase`(四項產出皆適用),Unification 系改用本函式(僅 food/industry)。
+
+### 驗證範例(`morale_test.go`)
+
+- `MoraleProductionOutput(100,20)=120`(2 個笑臉)、`MoraleProductionOutput(100,-35)=65`(Dictatorship 首都淪陷)。
+- `MoraleGovernmentBase(Imperium,false)=0`、`MoraleGovernmentBase(Imperium,true)=20`。
+- `MoraleUnificationProductionBonus(Unification)=50`、`(GalacticUnification)=100`。
+
+---
+
+## 4. 國庫收入(`income.go`)
+
+**來源**:GAME_MANUAL.pdf p.37(Treasury indicator,稅率範圍/級距/1:1 轉換)、p.168(Taxes 章節,50% 例子與 Trade Goods 2:1 對照)、p.70(Trade Goods 轉換與 Fantastic Trader)、p.25(Fantastic Trader 剩餘糧食換算)、p.169(指揮評等超支費用、運輸艦維護費)、p.170(士氣對產出的影響,與 morale.go 同一手冊段落但套用在收入上)。MANUAL_150.html「Modding with Config → Additional Settings」補充 Democracy/Federation 政府對「money」的加成(換算公式「value*5=百分比」)。
+
+### 稅率
+
+`TaxRateMinPercent=0`、`TaxRateMaxPercent=50`、`TaxRateStepPercent=10`(p.37:「values range from 0% to 50% with increments of 10%」)。`IncomeTaxRateIsValid(taxRatePercent int) bool`(`income.go:103`)檢查是否為合法級距值。
+
+稅收轉換 1:1(p.37:「converted into money 1:1」;p.168 再確認「Taxes also have a better conversion rate (1:1) than Trade Goods (2:1)」):
+
+```
+IncomeTaxRevenue(totalIndustry, taxRatePercent)     = totalIndustry * taxRatePercent / 100   (`income.go:114`,無條件捨去)
+IncomeTaxRemainingIndustry(totalIndustry, taxRate)  = totalIndustry - IncomeTaxRevenue(...)   (`income.go:121`)
+```
+
+手冊 p.168 例子:50% 稅率 →「fully half your production potential goes toward taxes. Only the remaining half is available for building.」
+
+### 貿易財(Trade Goods)
+
+一般種族 2 產能換 1 BC,Fantastic Trader 1 產能換 1 BC(p.70:「Every 2 industry converts to 1 BC... unless you are a Fantastic Trader in which case every 1 industry converts to 1 BC」)。`TradeGoodsIncome(industryAllocated int, fantasticTrader bool) int`(`income.go:128`),無條件捨去。
+
+### 糧食剩餘
+
+一般種族每單位剩餘糧食換 0.5 BC,Fantastic Trader 每單位換 1 BC(p.25:「1 BC (instead of the usual half) for every surplus unit of food generated」)。`IncomeFoodSurplusRevenue(surplusFoodUnits int, fantasticTrader bool) int`(`income.go:139`),無條件捨去。
+
+### 指揮評等超支與運輸艦維護
+
+| 項目 | 費用 | 手冊出處 |
+|---|---|---|
+| 指揮評等(Command Rating)每點未覆蓋需求 | 每回合 -10 BC | p.169「For each rating point required by a ship that is not covered, 10 BCs come out of your income every turn」 |
+| 每艘使用中運輸艦(Freighter) | 每回合 -0.5 BC(無條件捨去) | p.169「each freighter that is in use costs 1/2 BC per turn for maintenance」;未使用中的運輸艦不計費 |
+
+`IncomeCommandOverflowCost(uncoveredCommandPoints int) int`(`income.go:148`)、`IncomeFreighterMaintenanceCost(activeFreighters int) int`(`income.go:157`)。
+
+### 士氣對收入的影響
+
+與 morale.go 同一手冊段落(p.170):「Every morale icon on the Colony screen represents a change of 10% in the total production output of the colony... adding to the food, industry, science, and income of a world.」`IncomeMoraleAdjustedProduction(baseProduction, netMoraleIcons int) int`(`income.go:167`):`baseProduction*(100+netMoraleIcons*10)/100`。與 `morale.go` 的 `MoraleProductionOutput` 是同一條手冊規則的兩個獨立實作(收入與殖民地產出分別呼叫,避免跨檔案耦合),數值邏輯必須保持一致,修改其一時應同步檢查另一邊。
+
+### 政府對 BC 收入的加成
+
+MANUAL_150.html:「value * 5 is the percent bonus for the item, for example democracy has a 10 * 5 = 50% bonus to research.」該節列出 `democracy_money=10`、`federation_money=15`,故:
+
+```
+Democracy:  10*5 = 50%
+Federation: 15*5 = 75%
+```
+
+`IncomeGovtBonusDemocracyMoneyPercent=50`、`IncomeGovtBonusFederationMoneyPercent=75`;`IncomeApplyGovernmentMoneyBonus(baseBC, bonusPercent int) int`(`income.go:175`)。手冊只列出這兩種政府對「money」的加成,其餘政府的 `govt_bonus` 只列 science/food/production,不套用本函式。
+
+### 驗證範例(`income_test.go`)
+
+- `IncomeTaxRevenue(100,50)=50`(p.168 例子)、`IncomeTaxRevenue(33,10)=3`(33*10/100=3.3 捨去)。
+- `TradeGoodsIncome(11,false)=5`(11/2=5.5 捨去)、`TradeGoodsIncome(7,true)=7`。
+- `IncomeFreighterMaintenanceCost(5)=2`(5*0.5=2.5 捨去)、`IncomeFreighterMaintenanceCost(1)=0`。
+- `IncomeApplyGovernmentMoneyBonus(100,50)=150`、`(100,75)=175`。
+
+---
+
+## 5. 研究樹(`techtree.go`)
 
 **來源**:逐字轉寫自 openorion2 `tech.cpp:69-167`(`techtree[8][14]`,8 個研究領域各含哪些主題)與 `tech.cpp:169-305`(`research_choices[83]`,每個主題的花費與可選科技)。常數定義:`gamestate.h:62-65`(`MAX_RESEARCH_AREAS=8`)、`tech.h:27`(`MAX_RESEARCH_CHOICES=4`)、`tech.cpp:40`(`MAX_AREA_TOPICS=14`)。
 
@@ -193,7 +317,7 @@ cleanup = excess > 0 ? excess / 2 : 0   (tolerantRace 一律 0)
 
 ---
 
-## 4. 軍官(`officer.go`)
+## 6. 軍官(`officer.go`)
 
 **來源**:openorion2 `gamestate.cpp:607-701`(`Leader::expLevel/hasSkill/skillBonus/hireCost`),SA1 盤點標記為「唯讀公式,品質最好、可直接複用」的系統。技能 id 編碼定義於 `gamestate.h`:bit4-5 = 技能類型(0 common / 1 captain / 2 admin),bit0-3 = 技能碼。
 
@@ -255,7 +379,7 @@ hireCost = max(0, 10 * skillValue * (expLevel + 1) + modifier)
 
 ---
 
-## 5. 艦艇衍生值(`formulas.go`)
+## 7. 艦艇衍生值(`formulas.go`)
 
 **來源**:openorion2 `gamestate.cpp`,`ShipDesign` 類別的六個唯讀屬性公式(`computerHP`/`driveHP`/`combatSpeed`/`beamOffense`/`beamDefense`,`gamestate.cpp:841-930`)與艦員加成表(`gamestate.cpp:162-167`)。這些公式驅動艦隊清單畫面的戰力顯示,不是戰鬥解算本身,但戰鬥解算需要這些衍生值當輸入。
 
@@ -285,7 +409,7 @@ hireCost = max(0, 10 * skillValue * (expLevel + 1) + modifier)
 | `BeamDefense(combatSpeed int, inertialNullifier, inertialStabilizer bool) int` | `gamestate.cpp:918-930` | `combatSpeed·5`;`SPEC_INERTIAL_NULLIFIER` +100;`SPEC_INERTIAL_STABILIZER` +50 |
 | `ShipCrewOffenseBonus(crewLevel int) int` | `gamestate.cpp:1697` | `shipCrewOffenseBonuses[crewLevel]` |
 | `ShipCrewDefenseBonus(crewLevel int) int` | `gamestate.cpp:1710` | `shipCrewDefenseBonuses[crewLevel]` |
-| `LeaderHireCost(...)` | `gamestate.cpp:700-701` | 見第 4 節 |
+| `LeaderHireCost(...)` | `gamestate.cpp:700-701` | 見第 6 節 |
 
 **戰鬥移動力**(`CombatSpeed`,`gamestate.cpp:871-901`)是本組公式中最複雜的一條——引擎損傷 >33%(以 HP 換算,非直接百分比)會使艦艇在戰鬥中完全失去動力:
 
@@ -310,7 +434,7 @@ if transDimensional { ret += 4 }
 
 ---
 
-## 6. 光束武器命中(`combat.go`)
+## 8. 光束武器命中(`combat.go`)
 
 **來源**:MOO2 patch 1.5 官方手冊「Notes on Beam Weapon Mechanics」章節(`MANUAL_150.html`)。openorion2 全 repo 對 `combat`/`Combat` 字串的命中全部是艦隊列表 UI 的分類篩選(`ships.cpp:375,853`),且全 repo 零 RNG 來源,沒有任何命中率或傷害解算函式可對照,故本節數值全部來自手冊,已用手冊原文逐句核對。
 
@@ -388,7 +512,97 @@ BeamDefense = 5*Speed + RacialShipDefenseBonus + FighterPilotBonus + HelmsmanBon
 
 ---
 
-## 7. 飛彈防禦與反飛彈火箭(`missile.go`)
+## 9. 光束傷害解算(`damage.go`)
+
+**來源**:MANUAL_150.html「Notes on Beam Weapon Mechanics > Damage Potential」(距離衰減表、Hv/PD/HEF 加成公式)與同章節「Different Min-Max Damage」(命中後傷害內插公式);GAME_MANUAL.pdf 的 Shield/Armor/Weapon Mods 附錄(護盾容量、Hard Shields、Armor Piercing)。openorion2 全 repo 無傷害解算邏輯,本節數值全部來自手冊。本節處理「命中後的傷害量」,命中率(to-hit)已在第 8 節(`combat.go`)移植,兩者輸入輸出銜接但不重複定義。
+
+### 距離衰減表(與 to-hit 的 Range Penalty 表是兩張不同的表)
+
+`damage.go` 的距離衰減表對應手冊 Damage Potential 表的「Penalty」列,依 range level 0-8:
+
+| Range Level | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|---|
+| Penalty | 0 | 0 | 10 | 20 | 30 | 40 | 50 | 60 | 65 |
+| 傷害% | 100% | 100% | 90% | 80% | 70% | 60% | 50% | 40% | 35% |
+
+**注意(容易混淆,務必區分)**:這張表與第 8 節 `combat.go` 的 to-hit「Range Penalty 表」(`0,0,10,20,30,40,55,70,85`)是**兩張不同的表**。level 0-5 數值恰好相同,level 6-8 明顯不同(50/60/65 vs 55/70/85),純屬巧合、不可互相取代。前者(本節)決定「命中後傷害打幾折」,後者(第 8 節)決定「命不命中」。呼叫端須各自用對應的查表函式(`DamageDissipationPenalty` vs `CombatRangeLevelPenalty`);`DamageForHit` 需要同時吃這兩張表的輸出(見下)。
+
+`DamageDissipationPenalty(level int) int`(`damage.go:35`):`damageDissipationPenaltyTable[level]`,超出 0-8 夾限至端點。Range level 沿用第 8 節 `CombatRangeLevel`/`CombatRangeLevelPointDefense`/`CombatRangeLevelHeavy` 算出的同一個 level,兩節共用距離換算,各自查自己的懲罰表。
+
+### Hv / PD / HEF mount 加成(百分點相加,非乘法)
+
+手冊原文:「These bonuses are percentages of damage of a regular mount beam. ... Their interaction is not multiplicative but additive and they work the same way as dissipation range penalty」。
+
+| 常數 | 值 | 手冊出處 |
+|---|---|---|
+| `DamageMountBonusHeavy` | +50 | Heavy Mount「cause 150% of the normal amount of damage」 |
+| `DamageMountPenaltyPointDefense` | -50 | Point Defense「inflict only half the damage of a full-size beam」 |
+| `DamageMountBonusHEF` | +50 | High Energy Focus(System)「increasing the damage ... by 50%」 |
+
+```
+DamageMountAdjustedValue(base, hvBonus, hefBonus, pdPenalty, rangePenaltyPoints) =
+    round( base * (100 + hvBonus + hefBonus - pdPenalty - rangePenaltyPoints) / 100 )
+    夾限最小值為 1(手冊:「the minimum damage potential is always 1」)
+```
+
+`damage.go:93`,`round` 用 `damageRoundDiv100`(手冊:「Round to nearest applies」)。已用手冊「a 50-100 beam with dissipation Range_penalty of 30」的 5 組共 10 個數字逐一核對(`damage_test.go`)。
+
+`DamageApplyDissipation(minDmg, maxDmg, level int) (int, int)`(`damage.go:114`):只套用距離衰減(呼叫 `DamageMountAdjustedValue` 時 Hv/HEF/PD 全填 0),對應 Phasor/Mauler/Death Ray 三組手冊 worked example,已逐 level(0-8)全數核對。
+
+`NR`(Not Reduced by Range,如 Mass Driver/Gauss/Disrupter)武器手冊明文「no dissipation penalty applies」,呼叫端不應呼叫此函式,直接用基礎傷害。
+
+### 命中後傷害量(`DamageForHit`)
+
+手冊「Different Min-Max Damage」公式:
+
+```
+UNCAPPED DAMAGE = min_dmg + (max_dmg-min_dmg+1) * A / B
+A = roll_plus_attack - hit_threshold
+B = 100 - hit_threshold
+roll_plus_attack = min(random(100) + BA+CO-AF-BD, 100)
+CAPPED DAMAGE = 上式結果夾限於 max_dmg
+```
+
+`DamageForHit(minDmg, maxDmg, roll, netAttack, hitThreshold int) int`(`damage.go:143`)。與第 8 節 `CombatClassicToHit` 的必中分支([1] `random(100)>95`、[2] `netAttack>=99`)共用,兩者皆直接回傳 `maxDmg`。`hitThreshold` 用第 8 節 `CombatHitThreshold` 算好傳入(已夾限 ≤95,故 `B` 恆 >5,不會除以 0)。已用手冊 Death Ray 兩組 worked example(range 23 sq / 11 sq,roll=85、netAttack=10)逐步驗算核對。
+
+### 護盾(Shield)
+
+Class I/III/V/VII/X 護盾(遊戲只有這 5 級,無 II/IV/VI/VIII/IX),每次攻擊減傷 = 等級數字,單一 facing 總容量 = `5 * 等級數字 * 船體 size`:
+
+| 護盾等級 | 每次攻擊減傷 | 單一 facing 總容量(size 倍率) |
+|---|---|---|
+| Class I | 1 | 5x size |
+| Class III | 3 | 15x size |
+| Class V | 5 | 25x size |
+| Class VII | 7 | 35x size |
+| Class X | 10 | 50x size |
+
+`DamageShieldCapacity(shieldReduction, shipSize int) int`(`damage.go:193`)、`DamageAfterShield(dmg, shieldReduction int, hardShield, shieldPiercing bool) int`(`damage.go:210`)。Hard Shields 額外 -3(`DamageHardShieldBonus`)且使 Shield Piercing 失效(手冊:「provide immunity to shield-piercing weapons」);Shield Piercing 對行星護盾不適用(僅限艦對艦,呼叫端另行判斷)。
+
+### 裝甲穿透(Armor Piercing)
+
+手冊:「AP: Armor Piercing beam weapons penetrate any type of armor except Xentronium and Heavy Armor. All of the damage done passes through as if there were no armor at all.」目標裝有 Heavy Armor 或 Xentronium Armor 時 AP 失效,退回一般裝甲/結構分配規則。`DamageApplyArmor(dmg, armorHP int, armorPiercing, apNegated bool) (dmgToArmor, dmgToStructure, remainingArmorHP int)`(`damage.go:238`)。
+
+### 球形武器(僅移植手冊講清楚數字的片段)
+
+- `DamageSphericalRoll(damageMin, roll, ordnancePercent int) int`(`damage.go:260`):`D=(min+roll)*ordnance%`。
+- `DamageSphericalShipRollCount(sizeClass CombatShipClass) int`(`damage.go:271`):骰數 = size class + 1(手冊:「a frigate gets one roll, a destroyer two rolls」)。
+- `DamageSphericalFlyerDestroyed(aggD, hitPoints, roll int) bool`(`damage.go:277`):`aggD*25/hitPoints >= roll` 則摧毀。
+- `DamageEngineExplosionPotential(maxEngineHP int, quantumDetonator bool) int`(`damage.go:289`):`5*maxEngineHP`,Quantum Detonator 使其 x3。
+
+重骰機制(「re-rolled if the outcome is not 1」)與引擎爆炸的逐格衰減率手冊描述不足,不移植,見第 14 節。
+
+### 驗證範例(`damage_test.go`)
+
+- `DamageMountAdjustedValue(50,50,0,0,30)=60`(Hv,base 50,range penalty 30)。
+- `DamageApplyDissipation(50,100,4)=(35,70)`(Death Ray,level4)。
+- `DamageForHit(...)` 兩組 Death Ray worked example:range 23 sq → 18(=min_dmg);range 11 sq → 65。
+- `DamageShieldCapacity(DamageShieldReductionClassVII,4)=140`(35x4)。
+- `DamageApplyArmor(30,20,true,false)=(0,30,20)`(AP 全部繞過裝甲)。
+
+---
+
+## 10. 飛彈防禦與反飛彈火箭(`missile.go`)
 
 **來源**:手冊「Notes on Missile Defenses」(Weapons / Special Defensive Systems / Missile Evasion)與「Notes on Anti-Missile Rockets」(Range & Chance to Hit)。openorion2 未實作此段戰鬥判定(只有 tech 名稱字串),本檔是手冊到程式碼的首次移植。
 
@@ -439,7 +653,7 @@ MissileAMRRangeIndex(sq) = ceil((sq+1)/3) = (sq+3)/3   (整數除法)
 |---|---|---|---|---|---|---|
 | Range | 1 | 2 | 3 | 4 | 5 | 6 |
 
-**AMR 命中率**(`MissileAMRChanceToHit`,見第 9 節手冊矛盾記錄取得的裁決公式):
+**AMR 命中率**(`MissileAMRChanceToHit`,見第 13 節手冊矛盾記錄取得的裁決公式):
 
 ```
 MissileAMRChanceToHit(range) = 71 - (range+2)*10/3   (整數除法)
@@ -453,7 +667,7 @@ MissileAMRChanceToHit(range) = 71 - (range+2)*10/3   (整數除法)
 
 ### 飛彈 Beam Defense
 
-`MissileSpeed`/`MissileBeamDefense`(見第 9 節手冊矛盾記錄):
+`MissileSpeed`/`MissileBeamDefense`(見第 13 節手冊矛盾記錄):
 
 ```
 Speed = 12 + 2*(FTLlevel-1) + 4
@@ -469,7 +683,104 @@ BeamDefense = 5*Speed + MissileBonus(彈頭型別)
 
 ---
 
-## 8. 間諜(`spy.go`)
+## 11. 地面戰(`ground.go`)
+
+**來源**:GAME_MANUAL.pdf p.15-16(種族 Ground Combat 加成:Bulrathi/Gnolam)、p.21(Combat Modifiers 定義)、p.24(Low-G/High-G/Subterranean)、p.27(Warlord,barracks 容量加倍)、p.77(Marine Barracks)、p.79(Troop Pods/Armor Barracks)、p.80-81(Powered Armor/Battleoids)、p.85(Transport Ship)、p.90-92(Tritanium/Zortrium/Neutronium/Adamantium Armor 對地面戰力加成)、p.108-109(Anti-Grav Harness/Personal Shield)、p.114(Xentronium Armor)、p.162-164(Invading a Colony 流程敘述,無額外數字公式);MANUAL_150.html p.129「Notes on Orbital Assault > Orbital Bombardment」(Estimated Bomb Hits / Planet Hits 表)。openorion2 未實作地面戰鬥判定邏輯(只有存檔欄位與科技/建築名稱),本節為手冊到程式碼的首次移植。沒有精確數字的項目(Commando Leader 基準加成、AI Ground Troops Bonus、Stored Production 命中曲線)一律不臆測,列於本節末 TODO。
+
+### Barracks 建造與人口上限
+
+| 建築 | 初始單位 | 之後速度 | 人口上限 | Warlord 加倍 |
+|---|---|---|---|---|
+| Marine Barracks | 4(p.77) | 每 5 回合 +1 | `min(現有人口/2, 星球人口上限/2)`(p.77) | x2(p.27) |
+| Armor Barracks | 2(p.79) | 每 5 回合 +1 | `min(現有人口/4, 星球人口上限/4)`(p.79) | x2(p.27) |
+
+```
+GroundMarineBarracksCap(currentPop, planetMaxPop, warlord) = min(currentPop/2, planetMaxPop/2) [*2 若 warlord]   (`ground.go:64`)
+GroundArmorBarracksCap(currentPop, planetMaxPop, warlord)  = min(currentPop/4, planetMaxPop/4) [*2 若 warlord]   (`ground.go:81`)
+GroundMarineBarracksUnits(turnsSinceBuilt, ...) = min(4 + turnsSinceBuilt/5, cap)   (`ground.go:97`)
+GroundArmorBarracksUnits(turnsSinceBuilt, ...)  = min(2 + turnsSinceBuilt/5, cap)   (`ground.go:111`)
+```
+
+Transport Ship 建成時配 4 個 Marine 單位(`GroundTransportShipMarineCapacity=4`,p.85);Troop Pods 使艦上 Marine 數翻倍(`GroundTroopPodsMultiplier=2`,p.79)。
+
+### 單位血量(Hits to Kill)
+
+手冊 p.129 Planet Hits 表基礎值,加上 p.24/p.80/p.81 的修飾條件:
+
+| 單位 | 基礎 hits | High-G(+1) | Powered Armor(+1,僅 Marine) |
+|---|---|---|---|
+| Marine | 1 | 適用 | 適用 |
+| Tank | 2 | 適用 | 不適用(手冊 Tank 列未列 Powered Armor) |
+| Battleoid(取代 Tank) | 3(固定,p.81) | 不適用 | 不適用 |
+
+`GroundMarineHitsToKill(highGRace, poweredArmor bool) int`(`ground.go:148`)、`GroundTankHitsToKill(highGRace bool) int`(`ground.go:163`,無 poweredArmor 參數)、`GroundBattleoidHitsToKill=3`(固定值,取代 Tank 後不再套用 `GroundTankHitsToKill`)。
+
+### 地面部隊戰力加成表
+
+裝甲科技(擇一套用「目前已知最佳」一項,不與較低階疊加,手冊逐條各自獨立描述最佳裝甲的加成):
+
+| 科技 | 加成 | 手冊出處 |
+|---|---|---|
+| Tritanium Armor | +10 | p.90 |
+| Zortrium Armor | +15 | p.91 |
+| Neutronium Armor | +20 | p.91 |
+| Adamantium Armor | +25 | p.92 |
+| Xentronium Armor | +30 | p.114 |
+
+`GroundArmorTechBonus(tech Technology) int`(`ground.go:189`)。基礎 Titanium Armor 手冊未提供地面戰力加成,回 0。
+
+裝備科技(可與裝甲加成疊加):
+
+| 科技 | 加成 | 手冊出處 |
+|---|---|---|
+| Powered Armor | +10(戰鬥評等) | p.80 |
+| Anti-Grav Harness | +10(地面戰鬥評等) | p.108 |
+| Personal Shield | +20(Marine/Armor 戰鬥評等) | p.109 |
+
+`GroundEquipmentTechBonus(tech Technology) int`(`ground.go:215`)。Battleoids 的 +10(相對 Tank,`GroundBattleoidCombatBonus`)是獨立常數,不走此表。
+
+種族與地形加成:
+
+| 來源 | 加成 | 手冊出處 |
+|---|---|---|
+| Bulrathi(種族) | +10 | p.15 |
+| Gnolam(種族) | -10 | p.16 |
+| Low-G(地形,任何 Low-G 種族通用,獨立於種族固定值) | -10%(乘算) | p.24 |
+| Subterranean(僅防守己方殖民地) | +10 | p.24 |
+
+`GroundRaceCombatBonus(race GroundRace) int`(`ground.go:244`)、`GroundApplyLowGPenalty(strength int) int`(`ground.go:263`,`strength - strength*10/100`)、`GroundSubterraneanBonus(defending bool) int`(`ground.go:273`)。
+
+### 轟炸(Orbital Bombardment,MANUAL_150.html p.129)
+
+```
+GroundBombHitsFromDamage(totalDamage) = min(totalDamage / 100, 320)   (`ground.go:311`)
+```
+
+手冊:「All remaining ships fire all weapons 10 times... total damage is calculated from it. This damage is divided by 100 to get the displayed number... The maximum number of bomb hits for the fleet in orbit is 320.」`totalDamage`(含光束/魚雷減半、電腦加成等)由呼叫端算好傳入,本函式只做除以 100 與夾限。行星飛彈規避率固定 7%(`GroundPlanetMissileEvasionPercent`,手冊:「The planet has 7% missile evasion」)。
+
+Planet Hits 表(每項對地面設施/人口需要的「hit 數」):
+
+| 項目 | hits |
+|---|---|
+| 每棟建築 | 1 |
+| 有儲存生產(>0) | 1(手冊未給「越多儲存生產、機率越高」的精確曲線,只保留觸發條件) |
+| 每整數人口 | 1 |
+| 每人口零頭(100k) | 1 |
+| Marine / Tank | 見上方 hits-to-kill |
+
+`GroundPlanetTotalHits(buildings int, storedProductionPositive bool, fullPop, popFraction, marines, marineHitsEach, tanks, tankHitsEach int) int`(`ground.go:327`)。
+
+### 驗證範例(`ground_test.go`)
+
+- `GroundMarineBarracksCap(10,20,false)=5`、`(10,20,true)=10`(Warlord x2)。
+- `GroundMarineBarracksUnits(30,20,20,false)=10`(4+30/5=10,已達上限 min(10,10))。
+- `GroundMarineHitsToKill(true,true)=3`(基礎1+HighG1+PoweredArmor1)。
+- `GroundBombHitsFromDamage(32000)=320`(剛好達上限)、`(40000)=320`(超過夾住)。
+- `GroundPlanetTotalHits(5,true,3,1,4,1,2,2)=18`(5建築+1儲存+3人口+1零頭+4 Marine+4 Tank hits)。
+
+---
+
+## 12. 間諜(`spy.go`)
 
 **來源**:手冊「Notes on Spying」(p113,含 Spy Bonuses / Assassins / Roll Chance / Spy vs Spy 四小節)。openorion2 未實作間諜邏輯(`spies[]` 除讀檔外從未被賦值,無 `SpyView` 類別),本檔無原始碼可對照,一律以手冊原文數字為準。
 
@@ -516,7 +827,7 @@ E > 99     : p = 0.01
 
 ---
 
-## 9. 手冊自相矛盾記錄
+## 13. 手冊自相矛盾記錄
 
 MOO2 patch 1.5 官方手冊在兩處數值與其自身附表不一致,已在程式碼註解記錄推導過程與裁決依據,標記待實機動態驗證。
 
@@ -536,7 +847,7 @@ AMR Chance-to-Hit = 70 - rounddown((Range + 2) * 10 / 3) - 1
 70 - (rounddown((Range+2)*10/3) - 1) = 71 - rounddown((Range+2)*10/3)
 ```
 
-已用 Range 0-6 逐項代入驗證,71 減法版本與附表完全一致(見第 7 節命中率表)。`internal/gamedata/missile.go` 採用此裁決版本,`missile_test.go` 對兩張表都有測試斷言。
+已用 Range 0-6 逐項代入驗證,71 減法版本與附表完全一致(見第 10 節命中率表)。`internal/gamedata/missile.go` 採用此裁決版本,`missile_test.go` 對兩張表都有測試斷言。
 
 ### 飛彈速度:公式比表格多 4
 
@@ -546,16 +857,31 @@ AMR Chance-to-Hit = 70 - rounddown((Range + 2) * 10 / 3) - 1
 
 **裁決**:`internal/gamedata/missile.go` 以「明列公式」為準(手冊寫 "calculated as follows",語意上是主要規則),推測附表 Speed 欄記錄的是「驅動本身速度」這個不同的量(用於星圖移動,非戰鬥 Beam Defense 計算)。此落差尚未有第二個獨立來源可交叉驗證,標記待日後對實機行為做動態驗證確認。FTLlevel 對映表(None=0 … Interphased=6)與 MissileBonus 表(依彈頭型別)本身無爭議。
 
+### Fantastic Trader 貿易財加成:「1:1 轉換」vs「+50%」兩種敘述
+
+GAME_MANUAL.pdf 對 Fantastic Trader 種族特質的貿易財加成,在兩處給了數字上一致但敘述方式互相矛盾的說法:
+
+- p.70(Trade Goods 一般說明,與其他種族並列):「Every 2 industry converts to 1 BC... unless you are a Fantastic Trader in which case every 1 industry converts to 1 BC」——直接給轉換比,換算下來是一般種族的 **2 倍**(2:1 → 1:1)。
+- p.25(種族特質「Fantastic Traders」專屬說明):「on top of that, traders get a **50% bonus** to all income derived from producing trade goods」——字面讀法是一般種族的 **1.5 倍**,而非 2 倍。
+
+兩處的「倍率」讀法不一致(2 倍 vs 1.5 倍),但無法判斷是否為同一件事的兩種模糊敘述,或是疊加關係(1:1 轉換之上再疊加 50%,變 3 倍)。**裁決**:`internal/gamedata/income.go` 的 `TradeGoodsIncome` 採用 p.70 這句「與一般種族轉換比並列、直接給數字」的敘述(1:1),因為它與貿易財換算規則本身描述方式一致、格式對稱,判讀歧異度較低;p.25 的「+50%」說法**未在此另外實作**,標記待查證原版程式行為(TODO,見 `income.go` 常數區塊註解)。與第 13 節前兩則(AMR 命中率、飛彈速度)的差異:那兩則手冊的公式與附表可互相代入驗證出「哪個是筆誤」,這一則的兩種讀法都是完整敘述句、缺乏第三個數字可佐證,不確定性高於前兩則。
+
+### Laser Cannon 距離衰減範例表:單一儲存格與公式算出值不同
+
+MANUAL_150.html「Reduced by Range」表用 Phasor(base 5-20)、Mauler(base 100-100)、Death Ray(base 50-100)三組共 30+ 個數字逐格核對 `DamageApplyDissipation` 公式(`base * dmg% ,四捨五入`),全數吻合。但同一張表的 Laser Cannon(base 1-4)範例列,在 range level 7(19-21 sq,傷害% 40%)欄印的是「**1-1**」(max=1),而套用相同公式算出 `round(4*40/100)=round(1.6)=2`(max=2),對不上。
+
+**裁決**:判定 Laser Cannon 那一格是手冊排版/校對誤差,不因單一儲存格回頭修改已被其餘三組武器、Hv/PD/HEF 加成公式(`DamageMountAdjustedValue`)共同驗證過的通用公式。`internal/gamedata/damage.go` 的 `DamageApplyDissipation` 保留公式版本(max=2),`damage_test.go` 的 `TestDamageApplyDissipationLaserKnownMismatch` 明文記錄這個已知落差,避免日後誤以為沒注意到、或誤把公式改成遷就這一格。
+
 ---
 
-## 10. 尚未移植/待查證
+## 14. 尚未移植/待查證
 
 依 `docs/tech/rules-implementation-audit.md` 與 `docs/tech/game-logic-port.md` 的盤點,以下系統 openorion2 完全沒有可複用的邏輯(連 UI 殼常常都沒有),需要完全依手冊從零設計:
 
 | 系統 | 狀態 | 備註 |
 |---|---|---|
-| 傷害解算細節 | 待補 | 本文件涵蓋「命中判定」,尚未涵蓋傷害量計算、球形武器(Pulsar/Plasma Flux/Spatial Compressor)範圍傷害、护盾削減等 |
-| 地面戰(登陸/轟炸) | 未見 | 手冊「Notes on Orbital Assault」(轟炸模擬 10 回合射擊、建築/人口/儲存產能各自命中判定)與「Ground Defenses & Troops」全無 openorion2 對應程式碼 |
+| 傷害解算細節 | 部分完成(第 9 節 `damage.go`) | 距離衰減、Hv/PD/HEF mount 加成、命中後傷害內插、護盾減傷、裝甲穿透已移植;球形武器(Pulsar/Plasma Flux/Spatial Compressor)的重骰終止條件、引擎爆炸逐格衰減率手冊描述不足,仍待查證 |
+| 地面戰(登陸/轟炸) | 部分完成(第 11 節 `ground.go`) | Barracks 建造/人口上限、單位血量、裝甲/裝備/種族/地形戰力加成、轟炸命中換算已移植;Commando Leader 基準加成、AI Ground Troops Bonus 依難度分級數字、Stored Production 命中曲線手冊未給精確數字,仍待查證 |
 | 外交 | 未見 | 連 `DiplomacyView` 畫面殼都不存在;AI 六種目標性格判定、Diplomatic Blunder/Marriage 事件全無邏輯可抄 |
 | AI 決策 | 未見 | 全 repo 零 RNG 來源,任何 AI 判斷邏輯都要重新設計 |
 | 回合編排(把上述公式串成回合) | 待補 | `researchProgress`/`experience` 等欄位全 repo 除建構子外從未被賦值,無回合結算函式存在 |
@@ -574,8 +900,8 @@ AMR Chance-to-Hit = 70 - rounddown((Range + 2) * 10 / 3) - 1
 | 來源 | 路徑 | 用途 |
 |---|---|---|
 | openorion2 原始碼(GPL v2) | `openorion2/src/gamestate.cpp`、`tech.cpp` | 唯讀衍生公式、研究樹拓撲、艦艇/軍官查表 |
-| MOO2 patch 1.5 說明書(HTML) | `moo2_patch1.5/MANUAL_150.html` | 殖民地成長、光束命中、飛彈防禦、間諜的官方公式附錄 |
-| MOO2 patch 1.5 完整手冊(PDF) | `moo2_patch1.5/GAME_MANUAL.pdf` | 生產/污染的系統說明章節 |
+| MOO2 patch 1.5 說明書(HTML) | `moo2_patch1.5/MANUAL_150.html` | 殖民地成長、光束命中/傷害解算、飛彈防禦、地面戰(轟炸)、間諜、政府 BC 收入加成的官方公式附錄 |
+| MOO2 patch 1.5 完整手冊(PDF) | `moo2_patch1.5/GAME_MANUAL.pdf` | 生產/污染、士氣、國庫收入、地面戰(Barracks/裝甲/裝備)、護盾/裝甲穿透的系統說明章節 |
 | SA1 盤點 | `docs/tech/rules-implementation-audit.md` | openorion2 逐系統實作程度盤點 |
 | 移植進度 | `docs/tech/game-logic-port.md` | 各公式移植狀態與優先序 |
 | 既有唯讀公式速查 | `docs/tech/formulas.md` | 艦艇/殖民地/軍官公式的精簡版(本文件的完整可查證版本) |
