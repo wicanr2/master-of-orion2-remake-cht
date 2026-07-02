@@ -12,10 +12,10 @@
 | STARNAME | loadAsset | 0 | 13 | 母星名 | — | ⏳ 專有名詞,保留原文 |
 | STARNAME | loadAsset | 1 | 829 | 星名池(隨機) | — | ⏳ 專有名詞池,低優先 |
 | SHIPNAME | loadAsset | 0 | 672 | 艦名池(隨機) | — | ⏳ 專有名詞池,低優先 |
-| RACESTUF | loadStrings | 8 | ~ | 種族背景資訊 | — | ⏳ 待(敘述) |
+| RACESTUF | loadStrings | 8 | 32 | 種族資訊面板 | raceinfo.tsv | ✅ 完成 |
 | SKILDESC | loadAsset | 1 | 27 | 技能描述 | skilldesc.tsv | ✅ 完成 |
 | TECHDESC | loadAsset | 0..7 | ~849 | 科技描述 | — | ⏳ 待(大宗敘述) |
-| MAINTEXT | loadFile | 群組 | 主 UI 文字 | — | ⏳ 待(UI 大宗) |
+| MAINTEXT | loadFile | 群組 | 14 | 探索特殊事件 | maintext.tsv | ✅ 完成 |
 | EVENTMSE | loadFile | 群組 | 99 | GNN 事件新聞 | event.tsv | ✅ 完成 |
 | DIPLOMSE | 特殊 | 180 | 770 | 外交對白 | diplo.tsv | ✅ 完成 |
 | COUNCMSG | loadFile | 群組 | 14 | 議會勝選訊息 | council.tsv | ✅ 完成 |
