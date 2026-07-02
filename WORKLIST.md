@@ -65,7 +65,11 @@
 - [ ] 戰術戰鬥
 - [ ] 外交
 - [ ] 隨機事件 / 安塔蘭人
-- [ ] AI 對手
+- [ ] AI 對手(策略見 `docs/kickoff/07-ai-strategy.md`:先參考 1oom `game_ai_classic.c` + GameFAQs 文獻,有必要才逆向)
+  - [ ] 精讀 1oom `game_ai_classic.c`,抽「AI 決策流程」語言無關筆記
+  - [ ] 精讀 GameFAQs MOO2 AI FAQ + 策略指南,補 MOO2 特有行為
+  - [ ] 設計可插拔 AI 介面 + 難度加成係數
+  - [ ] 標示「必須逆向才能確定」的項目(若有)
 - [ ] 開新遊戲流程(取代 STUB)
 - [ ] 以手冊逐系統對照驗證規則正確性
 
@@ -96,5 +100,5 @@
 - [ ] 取得 `~/master-of-magic` 參考後回填 ebiten 實戰心得
 
 ## 待澄清(等使用者)
-- [ ] `~/master-of-magic`(go/ebiten 參考)正確路徑
+- [x] go/ebiten 參考路徑 → 實際為 `~/master-of-maigc/repo`(魔法大帝繁中化,已完成的 ebiten CJK 中文化,patch 疊 kazzmir/master-of-magic 引擎)
 - [ ] 是否啟用多代理 workflow(ultracode)加速後續輪次
