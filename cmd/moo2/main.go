@@ -78,7 +78,25 @@ func main() {
 	frames := flag.Int("frames", 3, "截圖前先跑幾幀")
 	savePath := flag.String("save", "", "存檔路徑;設定則以星圖模式繪製該存檔")
 	fontPath := flag.String("font", "", "CJK 字型檔(.ttf/.otf/.ttc);設定則用它渲染中文")
+	menuMode := flag.Bool("menu", false, "中文化主選單模式(擦底疊字)")
+	tsvPath := flag.String("tsv", "assets/i18n/menu.tsv", "主選單譯表 TSV")
 	flag.Parse()
+
+	// 中文化主選單模式。
+	if *menuMode {
+		if *dataDirs == "" {
+			fmt.Fprintln(os.Stderr, "需指定 -data <遊戲資料夾>")
+			os.Exit(2)
+		}
+		fnt, err := loadFont(*fontPath)
+		if err != nil {
+			fatal(fmt.Errorf("載入字型: %w", err))
+		}
+		if err := runMenu(strings.Split(*dataDirs, ","), fnt, *tsvPath, *shot, *frames); err != nil {
+			fatal(err)
+		}
+		return
+	}
 
 	// 星圖模式:載入存檔並繪製(資料驅動畫面)。
 	if *savePath != "" {

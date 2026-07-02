@@ -53,9 +53,10 @@
 - [x] 字型:NotoSansCJK-Regular.ttc 經 Go opentype.ParseCollection 驗證可解析+量測中文(★ [HARD] 相容檢查通過);galaxy 標題已渲染繁中
 - [ ] 繪字描邊/陰影版 + 逐字斷行(目前基本 Draw/Measure;進階待用到時補)
 - [ ] 字型子集 pyftsubset(docker)+ go:embed 內嵌(待譯文集齊;目前用完整 .ttc runtime 掛載)
+- [x] 主選單中文化 + 截圖校對(cmd/moo2 -menu:擦底疊字六按鈕繼續/載入遊戲/…;before/after 見 docs/reference-screens.md)
 - [ ] 主選單:語言 中/英 runtime 切換(mom 無此,我們要做)
 - [ ] 主選單:版本 1.3/1.5 選擇框架
-- [ ] 主選單中文化 + 截圖校對
+- [ ] 按鈕垂直置中微調(目前略偏上)+ hover 狀態中文
 
 ## Phase 4 — 畫面重建 + 完整中文化(做法見 `08` playbook)
 - [x] 原版畫面對照組(`docs/reference-screens.md`:主選單/行星列表/建造,英文原貌 + 翻譯清單)

@@ -2,9 +2,15 @@
 
 以 [OpenOrion2](https://github.com/next-ghost/openorion2) 為參考基底,用 Go + [Ebitengine](https://ebitengine.org/) 重新打造《Master of Orion II: Battle at Antares》(1996),提供完整**繁體中文**在地化與英文原文切換,並支援 **1.3 / 1.5** 兩個版本的規則與資料。
 
-![主選單(本專案 ebiten renderer 讀取玩家正版 .lbx 即時渲染)](docs/images/main-menu-ebiten.png)
+![繁體中文化主選單(本專案 ebiten renderer 實際輸出)](docs/images/main-menu-cht.png)
 
-> 上圖是**本專案的 go/ebiten renderer 實際輸出** —— 於 headless Docker 環境讀取玩家正版 `MAINMENU.LBX`,經自製的 LBX 解碼 → 調色盤 → RLE → ebiten 繪製全鏈路產生,像素與顏色皆對齊原版。
+> 上圖是**本專案的 go/ebiten renderer 實際輸出** —— 於 headless Docker 讀取玩家正版 `MAINMENU.LBX`,經自製的 LBX 解碼 → 調色盤 → RLE → ebiten 繪製全鏈路產生;六個按鈕的英文以「擦底疊字」抹除後疊上繁體中文(繼續 / 載入遊戲 / 新遊戲 / 多人對戰 / 名人堂 / 結束遊戲)。
+
+**中文化前後對照**(原版英文 → 本專案繁中):
+
+| 原版 | 繁中化 |
+|---|---|
+| ![](docs/images/reference/en-main-menu.png) | ![](docs/images/reference/cht-main-menu.png) |
 
 ---
 

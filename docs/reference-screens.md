@@ -6,10 +6,15 @@
 
 ## 已收錄
 
-### 主選單(MAINMENU.LBX 資產 21)
-![](images/reference/en-main-menu.png)
+### 主選單(MAINMENU.LBX 資產 21)✅ 已中文化
+
+| 原版英文 | 繁中化(擦底疊字) |
+|---|---|
+| ![](images/reference/en-main-menu.png) | ![](images/reference/cht-main-menu.png) |
 
 英文 UI(對應 `assets/i18n/menu.tsv`,已翻):Continue、Load Game、New Game、Multi Player、Hall of Fame、Quit Game。
+手法:六按鈕英文烘在背景圖(New Game 只有 hover sprite、idle 靠背景證實),故用擦底疊字 —— 採樣按鈕底色蓋掉英文 + 疊置中中文(座標取自 openorion2 mainmenu.cpp:415,y=172/195/217/240/262/285)。
+重現:`moo2 -menu -data <遊戲夾> -font <CJK字型> -shot out.png`。
 
 ### 行星列表(PLNTSUM.LBX 資產 0)
 ![](images/reference/en-planets-list.png)
