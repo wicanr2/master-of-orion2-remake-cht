@@ -14,7 +14,7 @@
 | SHIPNAME | loadAsset | 0 | 672 | 艦名池(隨機) | — | ⏳ 專有名詞池,低優先 |
 | RACESTUF | loadStrings | 8 | 32 | 種族資訊面板 | raceinfo.tsv | ✅ 完成 |
 | SKILDESC | loadAsset | 1 | 27 | 技能描述 | skilldesc.tsv | ✅ 完成 |
-| TECHDESC | loadAsset | 0..7 | ~849 | 科技描述 | — | ⏳ 待(大宗敘述) |
+| TECHDESC | loadAsset | 0..3 | 151(唯一) | 元件名+短描述 | techdesc.tsv | ✅ 完成(名稱由 tech.tsv 覆蓋,80 描述另翻;實測全庫 0 缺口) |
 | MAINTEXT | loadFile | 群組 | 14 | 探索特殊事件 | maintext.tsv | ✅ 完成 |
 | EVENTMSE | loadFile | 群組 | 99 | GNN 事件新聞 | event.tsv | ✅ 完成 |
 | DIPLOMSE | 特殊 | 180 | 770 | 外交對白 | diplo.tsv | ✅ 完成 |
@@ -23,7 +23,7 @@
 | RSTRING0 | loadStrings | 0 (off 4) | 177 | 殖民摘要+回合報告 | rstring.tsv | ✅ 完成 |
 | ESTRINGS | loadStrings | 0 (off 6) | 811 | 介面/事件(除錯碎片 fallback 英文) | estrings.tsv | ✅ 玩家訊息完成(576) |
 | HESTRNGS | loadStrings | 0 (off 6) | 395 | help/提示訊息 | hestrings.tsv | ✅ 完成 |
-| HELP | 特殊 | 多 | 大量 | 百科全文 | — | ⏳ 待(最大宗敘述) |
+| HELP | 特殊 | 0 | 707→704 | 百科全文 | help.tsv | ✅ 完成 |
 | CREDITS | loadAsset | 0 | ~ | 製作名單 | — | ⏳ 待 |
 | HERODATA | — | — | ~ | 軍官資料 | — | ⏳ 待 |
 | billtext/jimtext/kentext… | loadFile | 群組 | misc 敘述 | — | ⏳ 待 |
