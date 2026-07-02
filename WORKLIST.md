@@ -105,6 +105,7 @@
 - [ ] 技術知識庫:選單擴展
 - [ ] 取得 `~/master-of-magic` 參考後回填 ebiten 實戰心得
 
-## 待澄清(等使用者)
-- [x] go/ebiten 參考路徑 → 實際為 `~/master-of-maigc/repo`(魔法大帝繁中化,已完成的 ebiten CJK 中文化,patch 疊 kazzmir/master-of-magic 引擎)
-- [ ] 是否啟用多代理 workflow(ultracode)加速後續輪次
+## 工作方式(使用者定案)
+- go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)
+- **不用多代理 workflow**;翻譯一組一組慢慢做(單代理逐項,使用者可隨時審閱)
+- 每輪更新 GitHub(遠端 `main`,已設 upstream)
