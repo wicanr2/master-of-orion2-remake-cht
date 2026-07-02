@@ -17,12 +17,12 @@
 | TECHDESC | loadAsset | 0..7 | ~849 | 科技描述 | — | ⏳ 待(大宗敘述) |
 | MAINTEXT | loadFile | 群組 | 主 UI 文字 | — | ⏳ 待(UI 大宗) |
 | EVENTMSE | loadFile | 群組 | 99 | GNN 事件新聞 | event.tsv | ✅ 完成 |
-| DIPLOMSE | loadFile | 群組 | ~180 | 外交對白 | — | ⏳ 待(敘述) |
+| DIPLOMSE | 特殊 | 180 | 770 | 外交對白 | diplo.tsv | ✅ 完成 |
 | COUNCMSG | loadFile | 群組 | 14 | 議會勝選訊息 | council.tsv | ✅ 完成 |
 | ANTARMSG | loadFile | 群組 | 8 | 安塔蘭威嚇 | antaran.tsv | ✅ 完成 |
 | RSTRING0 | loadStrings | 0 (off 4) | 177 | 殖民摘要+回合報告 | rstring.tsv | ✅ 完成 |
 | ESTRINGS | loadStrings | 0 (off 6) | 811 | 介面/事件(含大量除錯碎片) | estrings.tsv | 🔶 玩家訊息批次進行中(59+) |
-| HESTRNGS | loadStrings | 0 (off 6) | ~398 | help 短字串 | — | ⏳ 待 |
+| HESTRNGS | loadStrings | 0 (off 6) | 395 | help/提示訊息 | hestrings.tsv | ✅ 完成 |
 | HELP | 特殊 | 多 | 大量 | 百科全文 | — | ⏳ 待(最大宗敘述) |
 | CREDITS | loadAsset | 0 | ~ | 製作名單 | — | ⏳ 待 |
 | HERODATA | — | — | ~ | 軍官資料 | — | ⏳ 待 |
