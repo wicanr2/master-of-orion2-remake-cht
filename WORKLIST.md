@@ -99,19 +99,14 @@
 - [ ] 主選單版本切換生效(規則 + 資產一起換)
 
 ## Phase 8 — 文件 / 考究 / 文化 / 研究
-- [x] 技術知識庫:LBX 資產格式(`docs/tech/lbx-format.md`)
-- [x] 技術知識庫:存檔格式(`docs/tech/savegame-format.md`)
-- [ ] GitHub 致謝(openorion2/1oom 社群/字型作者/社群考據)
-- [ ] 中文討論資訊考究章節(角色:遊戲歷史考究專家)
-- [ ] 華人圈文化現象(角色:文案作家)
+- [x] 遊戲歷史與當年評價考究(`docs/history/moo2-history-and-reception.md`,角色:歷史考究專家,14 來源)
+- [x] GitHub 致謝(README:openorion2/1oom/mom/字型/社群/Simtex)
+- [x] 技術知識庫:LBX 資產格式 / 存檔格式 / 枚舉 / 公式 / ebiten 移植筆記(`docs/tech/`)
+- [ ] 華人圈中文討論資訊考究章節(CLAUDE.md 專項,角色:遊戲歷史考究專家)
+- [ ] 華人圈文化現象(CLAUDE.md 專項,角色:文案作家)
 - [ ] sprite/tile 畫質優化可行性 markdown
 - [ ] UI 界面調整可行性 markdown
-- [ ] 技術知識庫:ebiten porting 心得
-- [ ] 技術知識庫:音樂整合
-- [ ] 技術知識庫:鍵盤/滑鼠整合
-- [ ] 技術知識庫:patch 處理
-- [ ] 技術知識庫:選單擴展
-- [ ] 取得 `~/master-of-magic` 參考後回填 ebiten 實戰心得
+- [ ] 技術知識庫:音樂整合 / 鍵盤滑鼠整合 / patch 處理 / 選單擴展(後續各 Phase 完成時補)
 
 ## 工作方式(使用者定案)
 - go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)
