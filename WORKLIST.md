@@ -96,6 +96,8 @@
 - [ ] 主選單版本切換生效(規則 + 資產一起換)
 
 ## Phase 8 — 文件 / 考究 / 文化 / 研究
+- [x] 技術知識庫:LBX 資產格式(`docs/tech/lbx-format.md`)
+- [x] 技術知識庫:存檔格式(`docs/tech/savegame-format.md`)
 - [ ] GitHub 致謝(openorion2/1oom 社群/字型作者/社群考據)
 - [ ] 中文討論資訊考究章節(角色:遊戲歷史考究專家)
 - [ ] 華人圈文化現象(角色:文案作家)
