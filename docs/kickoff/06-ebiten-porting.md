@@ -32,14 +32,25 @@
 - palette 上色:openorion2 解出 `uint32 xRGB` buffer → `image.RGBA` → `ebiten.NewImageFromImage`。
 - 效能:每幀重建 draw-list 沒問題,但避免每幀 `NewImageFromImage`(貴)——資產解一次快取成 `*ebiten.Image`。
 
-## 4. 開發/驗證環境(對齊本機授權)
+## 4. 開發/驗證環境(對齊本機授權 + mom 實戰,見 `08` §6)
 
-- **編譯一律 docker**(CLAUDE.md 授權;ebiten 需 GL/X 依賴,容器要備妥)。
-- **測試在背景 docker + xvfb**;截圖用 `import -window root` 後 Read 圖逐屏校對(承襲 moo1 §5 驗證紀律)。
+- **編譯一律 docker**(CLAUDE.md 授權;ebiten 需 GL/X 依賴,容器要備妥 X11/ALSA/xvfb/imagemagick)。
+- **[HARD] headless 逐畫面截圖驗證**:`xvfb-run` 跑 → `xdotool` 導航點選單 → `import -window root` 抓圖 → Read 圖校對。**「CI 編譯全綠 ≠ 畫面對」**(mom 血淚),每批改動都截圖。
 - 純資料層用 `go test` 直接驗,不需畫面。
+- **headless gotcha**(mom 已驗):音效要 null PCM 或關音樂(否則 oto ALSA panic);`LIBGL_ALWAYS_SOFTWARE=1`;headless dump/跑要帶 `--frames N`/`timeout`(否則空轉燒 CPU);`CGO_ENABLED=0` 測 font 會 GLFW 未初始化 → 測畫面相關都要 xvfb。
+- **打包**(mom 三平台範本):Linux AppImage(CGO)、Windows `CGO_ENABLED=0`(免外部 DLL)、macOS arm64 需 CGo/Metal → GitHub Actions macos runner(不能從 Linux 交叉編)。
 
-## 5. 待辦 / 待驗證
+## 5. ebiten/CJK 特有 gotcha(mom 已踩,先防)
+
+- **CJK 字級沒對齊呼叫端字高 → 行距重疊破版**(真跑畫面才抓到)。
+- **CJK 無空白 → 原版 splitText 回傳空 → 整段中文被丟**:自寫逐字斷行,無斷點至少切一 rune。
+- **繪字三路徑(印字/描邊陰影/量寬)都要支援 CJK**,漏一條 → 該路徑中文消失或排版錯。
+- **go:embed 新檔名增量不重嵌** → 加全新 TSV 後仍用舊表:清 GOCACHE 或 touch 引用檔。
+- **別 gofmt 上游既有檔**(對我們:自訂 gofmt 紀律,避免無謂 diff)。
+
+## 6. 待辦 / 待驗證
 
 - [ ] 建最小 ebiten 專案:docker build + xvfb 跑起來、開視窗、畫一張從 .lbx 解出的圖(打通資料層→畫面)。
 - [ ] 確認 ebiten 在 headless docker + xvfb 的截圖流程(GL 後端 or `EBITENGINE_GRAPHICS_LIBRARY`)。
-- [ ] 取得 `~/master-of-magic` go/ebiten 參考後,回填其在 CJK/字型/打包上的實戰心得。
+- [x] 取得 go/ebiten 參考(`~/master-of-maigc/repo`)並萃取實戰心得 → `08-mom-ebiten-cht-playbook.md`。
+- [ ] 直接研讀 mom 的 `docs/localization-methodology.md`、`lib/font/override.go`、`lib/font/cjk.go`,實作時對照。

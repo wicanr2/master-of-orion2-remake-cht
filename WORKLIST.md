@@ -37,23 +37,29 @@
 - [ ] docker + xvfb 截圖流程打通
 - [ ] 里程碑:開視窗 → 讀 .lbx → 載存檔 → 顯示星系圖
 
-## Phase 3 — UI 框架 + 文字系統 + 主選單
+## Phase 3 — UI 框架 + 文字系統 + 主選單(做法見 `08` playbook)
 - [ ] gui widget 樹翻譯(Toggle/Choice/ScrollBar/Label/Composite + ViewStack)
 - [ ] callback → Go closure/interface
-- [ ] 文字系統:ebiten text/v2 + TTF
-- [ ] i18n 模組 `lang.Get(key)`,en/zh
-- [ ] 字型定案(Cubic 11/Fusion Pixel + Noto 保底)+ 缺字掃描
-- [ ] 主選單:語言 中/英 切換
+- [ ] CJK 渲染:supersample 4× glyph + `(rune,字高)` 快取 + 對齊呼叫端字高(基線 0.82)
+- [ ] 繪字三路徑都支援 CJK(印字/描邊陰影/量寬 MeasureTextWidth)
+- [ ] 逐字斷行(CJK 無空白;無斷點至少切一 rune)
+- [ ] 顯示層覆蓋 i18n:TSV(英文原文即 key)+ 查無 fallback 英文 + `TranslateFormat` 模板
+- [ ] [HARD] 只翻顯示層,不動資料層(避免破壞把英文當 key 的邏輯)
+- [ ] 字型:先用 Noto Sans TC 打通;驗證候選字型 Go opentype 解析可行性(CFF/.ttc 有風險)
+- [ ] 字型子集 pyftsubset(docker)+ go:embed 內嵌;加字重生子集
+- [ ] 主選單:語言 中/英 runtime 切換(mom 無此,我們要做)
 - [ ] 主選單:版本 1.3/1.5 選擇框架
 - [ ] 主選單中文化 + 截圖校對
 
-## Phase 4 — 畫面重建 + 完整中文化
+## Phase 4 — 畫面重建 + 完整中文化(做法見 `08` playbook)
+- [ ] **[HARD] 開工先做:窮舉所有文字源(LBX 各類 + Go hardcode),各寫 dumper,用引擎自己 reader dump 精確 key**
 - [ ] 逐畫面重建:主選單/載存檔/星系圖/行星清單/殖民地/科技研究/艦隊/軍官/種族資訊/對話框
-- [ ] 盤點各畫面「烘進 gfx 的按鈕/標籤」清單
-- [ ] 按鈕中文化(拆背景+標籤兩層,依 `03`)
-- [ ] LBX 字串譯文表:科技名/描述、種族、事件、外交、艦名、星名、help
-- [ ] 專有名詞術語表(統一譯名,對齊 moo1 經驗)
-- [ ] 每畫面 xvfb 截圖校對(破版/溢出/缺字/置中)
+- [ ] IMGLOG 探查模式:記錄 `(lbx,index)` 對照畫面 UI(盤點烘字按鈕/標籤用)
+- [ ] 烘進 gfx 的英文:擦底疊字(cht_label 模式)or 整圖替換(image_override 模式)
+- [ ] LBX 字串譯文表:科技名/描述、種族、事件、外交、艦名、星名、help(逐源分檔 TSV)
+- [ ] 組合字串走 `TranslateFormat` 翻模板字面(佔位符數/序中英一致)
+- [ ] 專有名詞術語表 + 「中文(英文)」小字控制碼(統一譯名,對齊 moo1/mom 經驗)
+- [ ] 每畫面 xvfb + xdotool 導航 + import 截圖校對(破版/溢出/缺字/置中)
 
 ## Phase 5 — Gameplay 引擎重建
 - [ ] 回合結算主迴圈

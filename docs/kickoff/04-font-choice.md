@@ -20,18 +20,22 @@
 | **Noto Sans CJK TC / 思源黑體** | 向量 | OFL | ✅ 完整 | 涵蓋最全、最清楚;非像素風,檔案大(可 subset) |
 | **GNU Unifont** | 16px 點陣 | GPL+font-exc | ✅ | 涵蓋全但美觀差,當保底 fallback |
 
-## 3. 初步建議(待截圖驗證)
+## 3. 建議(依 mom 實戰修正)
 
-- **主字型:Cubic 11 或 Fusion Pixel**(像素風,對齊 MOO2 美術)。
-- **保底 fallback:Noto Sans TC subset**(遇像素字缺字時補,避免中文消失)。
-- **英文**:可續用原版 .lbx 點陣英文字(維持原味),或用同一像素字型英數字統一風格 —— 兩者截圖比較後定。
+> ⚠️ 先前初稿把像素字型(Cubic 11/Fusion Pixel)列為主字型。經 `08-mom-ebiten-cht-playbook.md` §4 的實戰教訓修正如下。
 
-> 為什麼要 fallback:單一像素字型難保 100% 涵蓋所有遊戲術語(尤其罕用字)。缺字靜默消失是 MOO1 踩過的雷,
-> 用「主字型 + 完整向量字 fallback」雙層可根治(對齊 CLAUDE.md 完整性優先)。
+- **主字型:Noto Sans CJK TC**(OFL,可散布)—— mom 專案**已驗證可行**的選擇。涵蓋最全,`golang.org/x/image/sfnt` 解析穩定。
+- **[HARD] 定案前先驗 Go 能否解析**:mom 原想用 AR PL UMing(點陣風),但其 `.ttc` 是 **CFF/舊式,Go sfnt 解析失敗**。→ 任何字型(含下面的像素字型)在定案前,必須先確認 `opentype.Parse` / `ParseCollection` 在 Go 讀得動(glyf 輪廓 TTF 較穩,CFF/.ttc 有風險)。
+- **像素風仍是選項,但要先驗**:Cubic 11 / Fusion Pixel 若以 glyf TTF 散布且 Go 解析得動,可作為對齊 MOO2 美術的美術選項;但需注意兩點:①小 logical 字級下筆劃多的繁體字在點陣字可能不可讀;② 我們用 supersample(見 `08` §2),點陣字放大會保留方塊感(retro 可接受,但要截圖確認)。**先做 Noto 打通流程,像素字型當 A/B 比較。**
+- **英文**:可續用原版 .lbx 點陣英文字(維持原味),或統一用主字型英數字 —— 截圖比較後定。
+
+> 缺字防護:主字型 Noto TC 涵蓋近全;若之後採像素主字型,務必保留 Noto 向量 fallback(缺字靜默消失是 MOO1 踩過的雷,對齊 CLAUDE.md 完整性優先)。
 
 ## 4. 待辦
 
-- [ ] 取得 Cubic 11 / Fusion Pixel / Noto Sans TC,在 ebiten 下渲染同一段遊戲文字(科技名 + 描述 + 按鈕),截圖並排比較。
-- [ ] 決定合成層縮放比與字級門檻(對應 `02-cjk-strategy.md` 尺度換算)。
-- [ ] 確認遊戲全文字集(從 LBX 字串 + 我們的 UI 字串),對候選字型做缺字掃描。
-- [ ] 定案後把字型檔與授權放入 repo 的 `assets/fonts/` 並在 README 致謝標明授權。
+- [ ] 先用 Noto Sans CJK TC 在 ebiten(supersample 4×)打通渲染流程(對齊 `08` §2)。
+- [ ] 驗證候選字型 Go `opentype` 解析可行性(Noto 已知可、像素字型需驗;CFF/.ttc 有風險)。
+- [ ] 取得 Cubic 11 / Fusion Pixel(若解析可行),與 Noto 渲染同段遊戲文字(科技名 + 描述 + 按鈕)截圖 A/B 比較。
+- [ ] 決定 supersample 倍率與字級門檻(依呼叫端字高,對應 `08` §2 基線 0.82)。
+- [ ] 窮舉遊戲全文字集(LBX 字串 + hardcode + UI 字串)做缺字掃描,`pyftsubset`(docker)產子集。
+- [ ] 定案後字型子集 go:embed 內嵌 + README 標明授權。

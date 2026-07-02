@@ -36,8 +36,9 @@
 
 - **[OpenOrion2](https://github.com/next-ghost/openorion2)**(next_ghost,GPL v2)—— 提供 LBX 資產解碼器與完整的 MOO2 存檔資料模型逆向,是本專案的參考基底。
 - **[1oom](https://gitlab.com/1oom-fork/1oom) 社群** —— 前作《銀河霸主 1》繁中化的引擎與經驗來源;其 CJK 渲染與按鈕烘字踩雷經驗直接指引了本專案的中文化策略。
+- **魔法大帝繁中化(master-of-magic-cht)+ [kazzmir/master-of-magic](https://github.com/kazzmir/master-of-magic) 引擎** —— 提供了經三平台實戰驗證的 Go/Ebiten 老遊戲繁中化 playbook(顯示層覆蓋、supersample CJK 渲染、字型子集、截圖驗證紀律),是本專案中文化技術路線的直接藍本。
 - **MOO2 1.5 社群 patch 團隊** —— 持續維護的非官方 patch(至 2026 仍在更新),為 1.5 版規則與資料的權威來源。
-- **像素中文字型作者** —— Cubic 11(方舟像素字體)、Fusion Pixel 等開源字型,讓繁中能以契合原版美術的像素風呈現(最終選用見 `docs/kickoff/04-font-choice.md`,授權於定案時標明)。
+- **開源中文字型作者** —— 目前以 **Noto Sans CJK TC**(SIL OFL)為已驗證可行的主字型;像素風字型(Cubic 11、Fusion Pixel 等)列為美術選項待驗(最終選用見 `docs/kickoff/04-font-choice.md`,授權於定案時標明)。
 - **華人玩家社群** —— 數十年來的攻略、考據與討論,是文化考究章節的基礎。
 - 原作 **Simtex / MicroProse** —— 創造了這款不朽的經典。
 

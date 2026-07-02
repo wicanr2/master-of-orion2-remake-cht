@@ -31,17 +31,19 @@
 - docker + xvfb 截圖流程打通。
 
 ### Phase 3 — UI 框架 + 文字系統 + 主選單(版本/語言選擇)
+> 中文化技術路線採 mom 已驗證 playbook,見 `08-mom-ebiten-cht-playbook.md`。
 - 依賴:Phase 2。
 - `gui.cpp` widget 樹翻譯成 Go(callback → closure)。
-- 全新文字系統:ebiten `text/v2` + CJK TTF + i18n `lang.Get`(中/英切換)。
-- 字型定案(Cubic 11 / Fusion Pixel + Noto 保底,見 `04`)。
+- 全新文字系統:supersample 4× CJK glyph + 顯示層覆蓋 i18n(英文原文即 key,中/英 runtime 切換)。
+- 字型:先 Noto Sans TC 打通,像素字型待驗 Go 解析後 A/B(見 `04`)。
 - 主選單加「版本 1.3/1.5」「語言 中/英」選擇框架。
 
 ### Phase 4 — 畫面重建 + 完整中文化(含按鈕)
 - 依賴:Phase 3。
+- **開工先窮舉所有文字源(LBX 各類 + Go hardcode)並各寫 dumper**(漏一源 = 整類英文,見 `08` §7)。
 - 逐畫面重建(主選單 → 星系圖 → 殖民地 → 科技 → 艦隊 → 軍官 → 種族…),參考 openorion2 佈局。
-- 按鈕中文化依 `03`(拆背景+標籤兩層,避免 moo1 覆轍)。
-- LBX 字串譯文表建立(科技/種族/事件/外交…),分批翻譯。
+- 按鈕/烘字中文化依 `03`(擦底疊字 or 整圖替換 + IMGLOG 探查)。
+- LBX 字串譯文表(逐源分檔 TSV,組合字串走 `TranslateFormat`),分批翻譯。
 - 每畫面 xvfb 截圖校對破版/溢出/缺字。
 
 ### Phase 5 — Gameplay 引擎重建(最大工作量)
