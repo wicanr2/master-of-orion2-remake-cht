@@ -1,47 +1,99 @@
 # 銀河霸主 2:安塔瑞斯之戰 — go/ebiten 重製 + 繁體中文化
 
-以 [OpenOrion2](https://github.com/next-ghost/openorion2) 為參考基底,用 Go + [Ebitengine](https://ebitengine.org/) 重新打造《Master of Orion II: Battle at Antares》(1996),並提供完整**繁體中文**在地化與英文原文切換,支援 **1.3 / 1.5** 兩個版本的規則與資料。
+以 [OpenOrion2](https://github.com/next-ghost/openorion2) 為參考基底,用 Go + [Ebitengine](https://ebitengine.org/) 重新打造《Master of Orion II: Battle at Antares》(1996),提供完整**繁體中文**在地化與英文原文切換,並支援 **1.3 / 1.5** 兩個版本的規則與資料。
 
-> 目前狀態:**Phase 0 — 可行性研究與 kick-off 完成**。詳見 `docs/kickoff/` 與 `PLAN.md`。
+![主選單(本專案 ebiten renderer 讀取玩家正版 .lbx 即時渲染)](docs/images/main-menu-ebiten.png)
 
-## 這是什麼
+> 上圖是**本專案的 go/ebiten renderer 實際輸出** —— 於 headless Docker 環境讀取玩家正版 `MAINMENU.LBX`,經自製的 LBX 解碼 → 調色盤 → RLE → ebiten 繪製全鏈路產生,像素與顏色皆對齊原版。
 
-《銀河霸主 2》是 4X 太空策略遊戲的經典。本專案的目標:
+---
 
-- 基於 OpenOrion2 的資產解碼與存檔資料模型,移植到跨平台的 go/ebiten。
-- 完整中文化**所有訊息,包含按鈕**;主選單可切換 中文 / 英文。
-- 主選單可選 **1.3** 或 **1.5** 版本(對應各自的資料與規則)。
-- 重新檢視並依原版手冊重建遊戲規則(OpenOrion2 本身尚未實作 gameplay)。
-- 收錄華人圈的中文討論考據與文化現象整理。
+## 目前進度
 
-誠實揭露工作量:OpenOrion2 自述為「partial savegame viewer, no gameplay」,經查證屬實。因此本專案分兩軌 —— **移植現成的檢視器/資產層**,以及**從手冊從零重建整個回合制遊戲引擎**。後者是絕大部分工作量。詳見 `docs/kickoff/00-feasibility.md`。
+專案分階段推進(詳見 [`PLAN.md`](PLAN.md) / [`WORKLIST.md`](WORKLIST.md))。已完成:
 
-## 遊戲資料(玩家自備正版)
+### ✅ Phase 0 — 可行性研究與知識庫
+盤點 openorion2 完成度、中文化策略、字型、按鈕、LBX/patch、AI 策略,並吸收前作(魔法大帝 ebiten 繁中化)的實戰 playbook。見 [`docs/kickoff/`](docs/kickoff/)。
 
-本 repo **不含**任何原版遊戲檔、手冊或官方 patch(版權所有)。你需要自備正版《Master of Orion II》,並將遊戲的 `*.lbx` 資料指給程式讀取。取得正版途徑如 GOG。
+一個關鍵結論:openorion2 自述「partial savegame viewer, no gameplay」屬實 —— 它送給我們的是**資產解碼器 + 完整存檔資料模型**,而整個回合制引擎需依原版手冊從零重建。
+
+### ✅ Phase 1 — 資料層移植(純 Go,全數以真實遊戲檔驗證)
+
+| 模組 | 內容 | 驗證 |
+|---|---|---|
+| `internal/lbx` | LBX 容器 + 影像(scan-line RLE)+ 調色盤(6-bit→8-bit)解碼 | BEAMS 153/153、GAME 32/32 資產無誤解碼 |
+| `internal/save` | 完整存檔 schema(Config/Galaxy/Colony/Planet/Star/Leader/Player/Ship) | `SAVE10.GAM` 解出真實種族(Trilarian/Alkari/…)、首星 Orion、計數自洽 |
+| `internal/gamedata` | 28 個資料枚舉(技術 212/建築 49/…,自動生成)+ 唯讀衍生公式 | 項數吻合原始常數 + 已知值單元測試 |
+| `internal/assets` | 檔案覆蓋載入(基礎 → 1.31 patch,搜尋路徑) | 覆蓋序 / 大小寫測試 |
+
+### ✅ Phase 2 — ebiten backend(最小可跑,已 headless 驗證)
+ebiten 於 Docker + xvfb headless 跑通,完整鏈路:
+
+```
+assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
+  → ToRGBA → ebiten.NewImageFromImage → DrawImage → 截圖(ReadPixels)
+```
+
+上方主選單截圖即此管線的實際輸出。過程中確認 MOO2 畫面為 **640×480**。
+
+### ⏭ 進行中 / 下一步
+載入存檔 → 繪製星系圖(M2 完整里程碑);`Screen` 介面抽象、滑鼠/鍵盤事件;文字系統(CJK)與主選單版本/語言切換。
+
+---
+
+## 專案結構
+
+```
+internal/lbx/       LBX 容器 + 影像/RLE/palette 解碼
+internal/save/      原版存檔完整解析(資料模型)
+internal/gamedata/  枚舉字典(自動生成)+ 唯讀衍生公式
+internal/assets/    資料檔搜尋路徑(base → patch 覆蓋)
+cmd/moo2/           ebiten 遊戲主程式(骨架)
+cmd/lbxdump/        .lbx 影像 → PNG 檢視工具
+docs/kickoff/       可行性 + 策略 + AI + ebiten 繁中化 playbook
+docs/tech/          逆向數值工程文件(LBX/存檔/枚舉/公式/ebiten)
+docs/history/       遊戲歷史與評價考究
+scripts/            docker build / test / 截圖 腳本
+```
 
 ## 建置與執行
 
-編譯與測試一律在 Docker 進行(細節見 `docs/kickoff/06-ebiten-porting.md`)。Phase 1/2 完成後補上具體指令。
+編譯與測試一律在 Docker 進行(不污染系統環境)。
+
+```bash
+# 純 Go 資料層測試
+./scripts/test.sh
+
+# headless 渲染截圖(需玩家自備的遊戲資料夾)
+./scripts/screenshot.sh /path/to/mastori2 out.png -- -lbx mainmenu.lbx -asset 21
+
+# 把某個 .lbx 內的影像全部輸出成 PNG 檢視
+go run ./cmd/lbxdump path/to/FILE.LBX outdir/
+```
+
+## 遊戲資料(玩家自備正版)
+
+本 repo **不含**任何原版遊戲檔、手冊或官方 patch(版權所有),也不含上游 openorion2 原始碼。
+你需要自備正版《Master of Orion II》(如 GOG),把遊戲的 `*.lbx` 資料夾指給程式讀取。
+README 的展示截圖僅為呈現 renderer 成果之用。
 
 ## 文件
 
-- `PLAN.md` — 分階段計畫與里程碑
-- `WORKLIST.md` — 可勾選工作清單
-- `docs/kickoff/` — 可行性研究與 kick-off 知識庫(openorion2 盤點、中文化/按鈕/字型策略、LBX/patch、ebiten 移植)
+- [`PLAN.md`](PLAN.md) — 分階段計畫與里程碑
+- [`WORKLIST.md`](WORKLIST.md) — 可勾選工作清單
+- [`docs/kickoff/`](docs/kickoff/) — 可行性研究與策略知識庫
+- [`docs/tech/`](docs/tech/) — 逆向格式與數值工程文件
+- [`docs/history/`](docs/history/) — 遊戲歷史與當年評價考究
 
 ## 致謝
 
-這個專案站在許多人的肩膀上:
-
-- **[OpenOrion2](https://github.com/next-ghost/openorion2)**(next_ghost,GPL v2)—— 提供 LBX 資產解碼器與完整的 MOO2 存檔資料模型逆向,是本專案的參考基底。
-- **[1oom](https://gitlab.com/1oom-fork/1oom) 社群** —— 前作《銀河霸主 1》繁中化的引擎與經驗來源;其 CJK 渲染與按鈕烘字踩雷經驗直接指引了本專案的中文化策略。
-- **魔法大帝繁中化(master-of-magic-cht)+ [kazzmir/master-of-magic](https://github.com/kazzmir/master-of-magic) 引擎** —— 提供了經三平台實戰驗證的 Go/Ebiten 老遊戲繁中化 playbook(顯示層覆蓋、supersample CJK 渲染、字型子集、截圖驗證紀律),是本專案中文化技術路線的直接藍本。
-- **MOO2 1.5 社群 patch 團隊** —— 持續維護的非官方 patch(至 2026 仍在更新),為 1.5 版規則與資料的權威來源。
-- **開源中文字型作者** —— 目前以 **Noto Sans CJK TC**(SIL OFL)為已驗證可行的主字型;像素風字型(Cubic 11、Fusion Pixel 等)列為美術選項待驗(最終選用見 `docs/kickoff/04-font-choice.md`,授權於定案時標明)。
-- **華人玩家社群** —— 數十年來的攻略、考據與討論,是文化考究章節的基礎。
+- **[OpenOrion2](https://github.com/next-ghost/openorion2)**(next_ghost,GPL v2)—— LBX 資產解碼器與完整 MOO2 存檔資料模型逆向,本專案的參考基底。
+- **[1oom](https://gitlab.com/1oom-fork/1oom) 社群** —— 前作《銀河霸主 1》繁中化的引擎與 CJK 經驗來源;其 AI(`game_ai_classic.c`)是本專案對手 AI 的架構參考。
+- **魔法大帝繁中化 + [kazzmir/master-of-magic](https://github.com/kazzmir/master-of-magic) 引擎** —— 提供經三平台實戰驗證的 Go/Ebiten 老遊戲繁中化 playbook(顯示層覆蓋、supersample CJK、字型子集、截圖驗證紀律)。
+- **MOO2 1.5 社群 patch 團隊** —— 持續維護的非官方 patch(至 2026 仍在更新),1.5 版規則與資料的權威來源。
+- **開源中文字型作者** —— Noto Sans CJK TC(SIL OFL)為已驗證主字型;像素風字型列為美術選項待驗。
 - 原作 **Simtex / MicroProse** —— 創造了這款不朽的經典。
 
 ## 授權
 
-本專案的原始碼衍生自 GPL v2 的 OpenOrion2,故以 **GPL v2** 釋出。原版遊戲資產與字型各依其授權,不包含於本 repo。
+原始碼衍生自 GPL v2 的 OpenOrion2,故以 **GPL v2** 釋出。原版遊戲資產與字型各依其授權,不包含於本 repo。
