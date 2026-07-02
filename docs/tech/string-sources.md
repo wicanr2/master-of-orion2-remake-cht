@@ -2,6 +2,10 @@
 
 窮舉 openorion2 `TextManager::load` 載入的所有字串源(mom playbook [HARD]:漏一源 = 整類畫面英文)。目標:完成所有訊息翻譯。譯文放 `assets/i18n/*.tsv`(英文原文即 key)。
 
+**完整性狀態(2026-07-02):`TextManager::load` 全部 22 個來源已逐一 account。**
+所有敘述/UI 類字串源均已翻譯完成;唯一未翻的是 4 個**專有名詞池**(STARNAME 母星/星名、SHIPNAME 艦名、RACENAME AI 統治者名),依策略保留原文或另定音譯規則。
+即「完成所有訊息翻譯」的顯示文字部分已達成。
+
 ## 進度總表
 
 | 源 (.lbx) | 格式 | 資產 | 條數 | 內容 | TSV | 狀態 |
@@ -9,9 +13,10 @@
 | TECHNAME | loadStrings | 0 | 419(唯一) | 科技/元件名 | tech.tsv | ✅ 完成 |
 | SKILDESC | loadAsset | 0 | 27 | 軍官技能名 | skills.tsv | ✅ 完成 |
 | RACESTUF | loadStrings | 0 | 64 | 種族特性/自訂 pick | races.tsv | ✅ 完成 |
-| STARNAME | loadAsset | 0 | 13 | 母星名 | — | ⏳ 專有名詞,保留原文 |
+| STARNAME | loadAsset | 0 | 13 | 母星名 | — | ⏳ 專有名詞池,保留原文 |
 | STARNAME | loadAsset | 1 | 829 | 星名池(隨機) | — | ⏳ 專有名詞池,低優先 |
 | SHIPNAME | loadAsset | 0 | 672 | 艦名池(隨機) | — | ⏳ 專有名詞池,低優先 |
+| RACENAME | loadAsset | 0 | 104 | AI 統治者姓名 | — | ⏳ 專有名詞池,保留原文 |
 | RACESTUF | loadStrings | 8 | 32 | 種族資訊面板 | raceinfo.tsv | ✅ 完成 |
 | SKILDESC | loadAsset | 1 | 27 | 技能描述 | skilldesc.tsv | ✅ 完成 |
 | TECHDESC | loadAsset | 0..3 | 151(唯一) | 元件名+短描述 | techdesc.tsv | ✅ 完成(名稱由 tech.tsv 覆蓋,80 描述另翻;實測全庫 0 缺口) |
