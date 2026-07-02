@@ -1,0 +1,8 @@
+# 主選單譯表(第 1 組)。格式:英文原文<TAB>繁體中文<TAB>備註
+# 英文原文即 key(顯示層覆蓋)。對應主選單六個按鈕(MAINMENU.LBX 烘進圖的英文)。
+Continue	繼續	主選單:接續上次遊戲
+Load Game	載入遊戲	主選單
+New Game	新遊戲	主選單
+Multi Player	多人對戰	主選單
+Hall of Fame	名人堂	主選單:歷代高分榜
+Quit Game	結束遊戲	主選單

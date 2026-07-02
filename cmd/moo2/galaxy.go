@@ -9,12 +9,14 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/save"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
 
 // galaxyGame 從解析後的存檔繪製星圖(Phase 2 資料驅動畫面驗證)。
 // 目前用向量色點 + 英文標籤呈現真實星系資料;真實 sprite 美術與 CJK 字型為後續 Phase。
 type galaxyGame struct {
 	gs       *save.GameState
+	font     *uifont.Font // CJK 字型(nil 則標題退回英文 debug 字)
 	shotPath string
 	frames   int
 	tick     int
@@ -93,10 +95,16 @@ func (g *galaxyGame) Draw(screen *ebiten.Image) {
 		}
 	}
 
-	// 標題列。
-	title := fmt.Sprintf("MASTER OF ORION II  —  Galaxy %dx%d   stars:%d  colonies:%d  players:%d   [%s]",
-		g.gs.Galaxy.Width, g.gs.Galaxy.Height, g.gs.StarCount, g.gs.ColonyCount, g.gs.PlayerCount, g.gs.Config.SaveGameName)
-	ebitenutil.DebugPrintAt(screen, title, 6, 6)
+	// 標題列:有 CJK 字型則畫繁體中文,否則退回英文 debug 字。
+	if g.font != nil {
+		title := fmt.Sprintf("銀河霸主 II — 星系圖    星數:%d   殖民地:%d   玩家:%d   [%s]",
+			g.gs.StarCount, g.gs.ColonyCount, g.gs.PlayerCount, g.gs.Config.SaveGameName)
+		g.font.Draw(screen, title, 8, 6, 16, color.RGBA{180, 220, 140, 255})
+	} else {
+		title := fmt.Sprintf("MASTER OF ORION II  —  Galaxy %dx%d   stars:%d  colonies:%d  players:%d   [%s]",
+			g.gs.Galaxy.Width, g.gs.Galaxy.Height, g.gs.StarCount, g.gs.ColonyCount, g.gs.PlayerCount, g.gs.Config.SaveGameName)
+		ebitenutil.DebugPrintAt(screen, title, 6, 6)
+	}
 
 	if g.shotPath != "" && !g.saved && g.tick >= g.frames {
 		if err := saveScreenshot(screen, g.shotPath); err != nil {
@@ -108,8 +116,8 @@ func (g *galaxyGame) Draw(screen *ebiten.Image) {
 
 func (g *galaxyGame) Layout(int, int) (int, int) { return galViewW, galViewH }
 
-// runGalaxy 載入存檔並以星圖模式執行。
-func runGalaxy(savePath, shot string, frames int) error {
+// runGalaxy 載入存檔並以星圖模式執行。fnt 為 nil 時標題退回英文。
+func runGalaxy(savePath string, fnt *uifont.Font, shot string, frames int) error {
 	data, err := os.ReadFile(savePath)
 	if err != nil {
 		return err
@@ -118,7 +126,7 @@ func runGalaxy(savePath, shot string, frames int) error {
 	if err != nil {
 		return fmt.Errorf("解析存檔: %w", err)
 	}
-	g := &galaxyGame{gs: gs, shotPath: shot, frames: frames}
+	g := &galaxyGame{gs: gs, font: fnt, shotPath: shot, frames: frames}
 	ebiten.SetWindowSize(galViewW, galViewH)
 	ebiten.SetWindowTitle("Master of Orion II — Galaxy (cht)")
 	return ebiten.RunGame(g)

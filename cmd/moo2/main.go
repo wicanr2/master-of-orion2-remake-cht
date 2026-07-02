@@ -14,11 +14,13 @@ import (
 	"image"
 	"image/png"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/assets"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/lbx"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
 
 // MOO2 的畫面為 640×480(openorion2 screen.h 亦以此為邏輯座標)。
@@ -75,11 +77,16 @@ func main() {
 	shot := flag.String("shot", "", "headless 截圖輸出路徑(設定則跑 N 幀後結束)")
 	frames := flag.Int("frames", 3, "截圖前先跑幾幀")
 	savePath := flag.String("save", "", "存檔路徑;設定則以星圖模式繪製該存檔")
+	fontPath := flag.String("font", "", "CJK 字型檔(.ttf/.otf/.ttc);設定則用它渲染中文")
 	flag.Parse()
 
 	// 星圖模式:載入存檔並繪製(資料驅動畫面)。
 	if *savePath != "" {
-		if err := runGalaxy(*savePath, *shot, *frames); err != nil {
+		fnt, err := loadFont(*fontPath)
+		if err != nil {
+			fatal(fmt.Errorf("載入字型: %w", err))
+		}
+		if err := runGalaxy(*savePath, fnt, *shot, *frames); err != nil {
 			fatal(err)
 		}
 		return
@@ -125,6 +132,21 @@ func main() {
 	if err := ebiten.RunGame(g); err != nil {
 		fatal(err)
 	}
+}
+
+// loadFont 依副檔名載入 CJK 字型(.ttc 走集合解析取第 0 個)。path 為空回 nil(不畫中文)。
+func loadFont(path string) (*uifont.Font, error) {
+	if path == "" {
+		return nil, nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	if strings.EqualFold(filepath.Ext(path), ".ttc") {
+		return uifont.LoadCollection(data, 0)
+	}
+	return uifont.Load(data)
 }
 
 func fatal(err error) {

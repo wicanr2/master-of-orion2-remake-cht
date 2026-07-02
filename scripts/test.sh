@@ -15,11 +15,11 @@ if [[ -n "${MOO2_LBX_TEST:-}" ]]; then
   ENV_ARGS+=(-e "MOO2_LBX_TEST=/testdata/real.lbx")
 fi
 
-# 預設只測純 Go 套件(CGO=0);cmd/moo2(ebiten/CGO)由 scripts/screenshot.sh
-# 以 moo2-ebiten image 另行編譯驗證。可傳參覆蓋預設目標。
+# 預設只測純 Go 套件(CGO=0);依賴 ebiten 的套件(internal/uifont、cmd/moo2)
+# 需 CGO/GL,由 scripts/test-ebiten.sh 以 moo2-ebiten image 另行驗證。可傳參覆蓋。
 TARGETS=("$@")
 if [[ ${#TARGETS[@]} -eq 0 ]]; then
-  TARGETS=(./internal/... ./cmd/lbxdump)
+  TARGETS=(./internal/lbx ./internal/save ./internal/gamedata ./internal/assets ./internal/i18n ./cmd/lbxdump)
 fi
 
 exec docker run --rm \

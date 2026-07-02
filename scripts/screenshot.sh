@@ -32,8 +32,10 @@ docker run --rm \
   -v "${DATA_DIR}:/data:ro" \
   -v "${OUT_DIR}:/out" \
   -w /src "$IMAGE" \
-  bash -c "go build -buildvcs=false -o /tmp/moo2 ./cmd/moo2 && \
-    xvfb-run -a -s '-screen 0 800x600x24' \
+  bash -c "set -e
+    go build -buildvcs=false -o /tmp/moo2 ./cmd/moo2
+    Xvfb :99 -screen 0 800x600x24 >/dev/null 2>&1 &
+    sleep 2; export DISPLAY=:99
     /tmp/moo2 -data /data -shot /out/${OUT_BASE} ${EXTRA[*]:-}"
 
 echo "截圖輸出:${OUT}"
