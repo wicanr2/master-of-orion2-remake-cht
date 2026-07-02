@@ -1,0 +1,699 @@
+# 資料枚舉對照(自 openorion2 gamestate.h 生成)
+
+> 由生成器自動抽出,英文名即 gameplay 邏輯 key,也是中文化術語表的基礎。
+
+## MultiplayerType(3 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `Single` |  |
+| 1 | `Hotseat` |  |
+| 2 | `Network` |  |
+
+## PlanetType(3 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 1 | `ASTEROIDS` |  |
+| 2 | `GAS_GIANT` |  |
+| 3 | `HABITABLE` |  |
+
+## PlanetSize(5 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `TINY_PLANET` |  |
+| 1 | `SMALL_PLANET` |  |
+| 2 | `MEDIUM_PLANET` |  |
+| 3 | `LARGE_PLANET` |  |
+| 4 | `HUGE_PLANET` |  |
+
+## PlanetGravity(3 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `LOW_G` |  |
+| 1 | `NORMAL_G` |  |
+| 2 | `HEAVY_G` |  |
+
+## PlanetClimate(10 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `TOXIC` |  |
+| 1 | `RADIATED` |  |
+| 2 | `BARREN` |  |
+| 3 | `DESERT` |  |
+| 4 | `TUNDRA` |  |
+| 5 | `OCEAN` |  |
+| 6 | `SWAMP` |  |
+| 7 | `ARID` |  |
+| 8 | `TERRAN` |  |
+| 9 | `GAIA` |  |
+
+## PlanetMinerals(5 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `ULTRA_POOR` |  |
+| 1 | `POOR` |  |
+| 2 | `ABUNDANT` |  |
+| 3 | `RICH` |  |
+| 4 | `ULTRA_RICH` |  |
+
+## ColonistRace(2 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 8 | `ANDROID` |  |
+| 9 | `NATIVE` |  |
+
+## ColonistFlags(2 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 1 | `WORKING` |  |
+| 2 | `PRISONER` |  |
+
+## ColonistJob(3 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `FARMER` |  |
+| 1 | `WORKER` |  |
+| 2 | `SCIENTIST` |  |
+
+## StarSize(4 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `Large` |  |
+| 1 | `Medium` |  |
+| 2 | `Small` |  |
+| 3 | `Tiny` |  |
+
+## SpectralClass(7 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `Blue` |  |
+| 1 | `White` |  |
+| 2 | `Yellow` |  |
+| 3 | `Orange` |  |
+| 4 | `Red` |  |
+| 5 | `Brown` |  |
+| 6 | `BlackHole` |  |
+
+## StarKnowledge(4 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `STAR_UNEXPLORED` |  |
+| 1 | `STAR_NAME_ONLY` |  |
+| 2 | `STAR_CHARTED` |  |
+| 3 | `STAR_VISITED` |  |
+
+## SpecialType(12 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `NO_SPECIAL` |  |
+| 1 | `BAD_SPECIAL1` |  |
+| 2 | `SPACE_DEBRIS` |  |
+| 3 | `PIRATE_CACHE` |  |
+| 4 | `GOLD_DEPOSITS` |  |
+| 5 | `GEM_DEPOSITS` |  |
+| 6 | `NATIVES` |  |
+| 7 | `SPLINTER_COLONY` |  |
+| 8 | `LOST_HERO` |  |
+| 9 | `BAD_SPECIAL2` |  |
+| 10 | `ANCIENT_ARTIFACTS` |  |
+| 11 | `ORION_SPECIAL` |  |
+
+## ResearchStatus(4 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `RSTATE_DISABLED` |  |
+| 1 | `RSTATE_RESEARCHABLE` |  |
+| 2 | `RSTATE_READY` |  |
+| 3 | `RSTATE_KNOWN` |  |
+
+## ResearchArea(8 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `RESEARCH_BIOLOGY` |  |
+| 1 | `RESEARCH_POWER` |  |
+| 2 | `RESEARCH_PHYSICS` |  |
+| 3 | `RESEARCH_CONSTRUCTION` |  |
+| 4 | `RESEARCH_FIELDS` |  |
+| 5 | `RESEARCH_CHEMISTRY` |  |
+| 6 | `RESEARCH_COMPUTERS` |  |
+| 7 | `RESEARCH_SOCIOLOGY` |  |
+
+## ResearchTopic(83 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `TOPIC_STARTING_TECH` |  |
+| 1 | `TOPIC_ADVANCED_BIOLOGY` |  |
+| 2 | `TOPIC_ADVANCED_CHEMISTRY` |  |
+| 3 | `TOPIC_ADVANCED_CONSTRUCTION` |  |
+| 4 | `TOPIC_ADVANCED_ENGINEERING` |  |
+| 5 | `TOPIC_ADVANCED_FUSION` |  |
+| 6 | `TOPIC_ADVANCED_GOVERNMENTS` |  |
+| 7 | `TOPIC_ADVANCED_MAGNETISM` |  |
+| 8 | `TOPIC_ADVANCED_MANUFACTURING` |  |
+| 9 | `TOPIC_ADVANCED_METALLURGY` |  |
+| 10 | `TOPIC_MILITARY_TACTICS` |  |
+| 11 | `TOPIC_ADVANCED_ROBOTICS` |  |
+| 12 | `TOPIC_TEACHING_METHODS` |  |
+| 13 | `TOPIC_ANTIMATTER_FISSION` |  |
+| 14 | `TOPIC_ARTIFICIAL_CONSCIOUSNESS` |  |
+| 15 | `TOPIC_ARTIFICIAL_INTELLIGENCE` |  |
+| 16 | `TOPIC_ARTIFICIAL_GRAVITY` |  |
+| 17 | `TOPIC_ARTIFICIAL_LIFE` |  |
+| 18 | `TOPIC_ASTRO_BIOLOGY` |  |
+| 19 | `TOPIC_ASTRO_CONSTRUCTION` |  |
+| 20 | `TOPIC_ASTRO_ENGINEERING` |  |
+| 21 | `TOPIC_CAPSULE_CONSTRUCTION` |  |
+| 22 | `TOPIC_CHEMISTRY` |  |
+| 23 | `TOPIC_COLD_FUSION` |  |
+| 24 | `TOPIC_CYBERTECHNICS` |  |
+| 25 | `TOPIC_CYBERTRONICS` |  |
+| 26 | `TOPIC_DISTORTION_FIELDS` |  |
+| 27 | `TOPIC_ELECTROMAGNETIC_REFRACTION` |  |
+| 28 | `TOPIC_ELECTRONICS` |  |
+| 29 | `TOPIC_ENGINEERING` |  |
+| 30 | `TOPIC_EVOLUTIONARY_GENETICS` |  |
+| 31 | `TOPIC_FUSION_PHYSICS` |  |
+| 32 | `TOPIC_GALACTIC_ECONOMICS` |  |
+| 33 | `TOPIC_GALACTIC_NETWORKING` |  |
+| 34 | `TOPIC_GENETIC_ENGINEERING` |  |
+| 35 | `TOPIC_GENETIC_MUTATIONS` |  |
+| 36 | `TOPIC_GRAVITIC_FIELDS` |  |
+| 37 | `TOPIC_HIGH_ENERGY_DISTRIBUTION` |  |
+| 38 | `TOPIC_HYPER_DIMENSIONAL_FISSION` |  |
+| 39 | `TOPIC_HYPER_DIMENSIONAL_PHYSICS` |  |
+| 40 | `TOPIC_INTERPHASED_FISSION` |  |
+| 41 | `TOPIC_ION_FISSION` |  |
+| 42 | `TOPIC_SUPERSCALAR_CONSTRUCTION` |  |
+| 43 | `TOPIC_MACRO_ECONOMICS` |  |
+| 44 | `TOPIC_MACRO_GENETICS` |  |
+| 45 | `TOPIC_MAGNETO_GRAVITICS` |  |
+| 46 | `TOPIC_MATTER_ENERGY_CONVERSION` |  |
+| 47 | `TOPIC_MOLECULAR_COMPRESSION` |  |
+| 48 | `TOPIC_MOLECULAR_CONTROL` |  |
+| 49 | `TOPIC_MOLECULATRONICS` |  |
+| 50 | `TOPIC_MOLECULAR_MANIPULATION` |  |
+| 51 | `TOPIC_MULTIDIMENSIONAL_PHYSICS` |  |
+| 52 | `TOPIC_MULTIPHASED_PHYSICS` |  |
+| 53 | `TOPIC_NANO_TECHNOLOGY` |  |
+| 54 | `TOPIC_NEUTRINO_PHYSICS` |  |
+| 55 | `TOPIC_NUCLEAR_FISSION` |  |
+| 56 | `TOPIC_OPTRONICS` |  |
+| 57 | `TOPIC_PHYSICS` |  |
+| 58 | `TOPIC_PLANETOID_CONSTRUCTION` |  |
+| 59 | `TOPIC_PLASMA_PHYSICS` |  |
+| 60 | `TOPIC_POSITRONICS` |  |
+| 61 | `TOPIC_QUANTUM_FIELDS` |  |
+| 62 | `TOPIC_ROBOTICS` |  |
+| 63 | `TOPIC_SERVO_MECHANICS` |  |
+| 64 | `TOPIC_SUBSPACE_FIELDS` |  |
+| 65 | `TOPIC_SUBSPACE_PHYSICS` |  |
+| 66 | `TOPIC_TACHYON_PHYSICS` |  |
+| 67 | `TOPIC_TECTONIC_ENGINEERING` |  |
+| 68 | `TOPIC_TEMPORAL_FIELDS` |  |
+| 69 | `TOPIC_TEMPORAL_PHYSICS` |  |
+| 70 | `TOPIC_TRANS_GENETICS` |  |
+| 71 | `TOPIC_TRANSWARP_FIELDS` |  |
+| 72 | `TOPIC_WARP_FIELDS` |  |
+| 73 | `TOPIC_XENO_RELATIONS` |  |
+| 74 | `TOPIC_XENON_TECHNOLOGY` |  |
+| 75 | `TOPIC_HYPER_BIOLOGY` |  |
+| 76 | `TOPIC_HYPER_POWER` |  |
+| 77 | `TOPIC_HYPER_PHYSICS` |  |
+| 78 | `TOPIC_HYPER_CONSTRUCTION` |  |
+| 79 | `TOPIC_HYPER_FIELDS` |  |
+| 80 | `TOPIC_HYPER_CHEMISTRY` |  |
+| 81 | `TOPIC_HYPER_COMPUTERS` |  |
+| 82 | `TOPIC_HYPER_SOCIOLOGY` |  |
+
+## Technology(212 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `TECH_NONE` |  |
+| 1 | `TECH_ACHILLES_TARGETING_UNIT` |  |
+| 2 | `TECH_ADAMANTIUM_ARMOR` |  |
+| 3 | `TECH_ADVANCED_CITY_PLANNING` |  |
+| 4 | `TECH_ADVANCED_DAMAGE_CONTROL` |  |
+| 5 | `TECH_ALIEN_MANAGEMENT_CENTER` |  |
+| 6 | `TECH_ANDROID_FARMERS` |  |
+| 7 | `TECH_ANDROID_SCIENTISTS` |  |
+| 8 | `TECH_ANDROID_WORKERS` |  |
+| 9 | `TECH_ANTIGRAV_HARNESS` |  |
+| 10 | `TECH_ANTIMATTER_BOMB` |  |
+| 11 | `TECH_ANTIMATTER_DRIVE` |  |
+| 12 | `TECH_ANTIMATTER_TORPEDOES` |  |
+| 13 | `TECH_ANTIMISSILE_ROCKETS` |  |
+| 14 | `TECH_ARMOR_BARRACKS` |  |
+| 15 | `TECH_ARTEMIS_SYSTEM_NET` |  |
+| 16 | `TECH_PLANET_CONSTRUCTION` |  |
+| 17 | `TECH_ASSAULT_SHUTTLES` |  |
+| 18 | `TECH_ASTRO_UNIVERSITY` |  |
+| 19 | `TECH_ATMOSPHERIC_RENEWER` |  |
+| 20 | `TECH_AUGMENTED_ENGINES` |  |
+| 21 | `TECH_AUTOLAB` |  |
+| 22 | `TECH_AUTOMATED_FACTORIES` |  |
+| 23 | `TECH_AUTOMATED_REPAIR_UNIT` |  |
+| 24 | `TECH_BATTLEOIDS` |  |
+| 25 | `TECH_BATTLE_PODS` |  |
+| 26 | `TECH_BATTLE_SCANNER` |  |
+| 27 | `TECH_BATTLESTATION` |  |
+| 28 | `TECH_BIOTERMINATOR` |  |
+| 29 | `TECH_BIOMORPHIC_FUNGI` |  |
+| 30 | `TECH_BLACK_HOLE_GENERATOR` |  |
+| 31 | `TECH_BOMBER_BAYS` |  |
+| 32 | `TECH_CAPITOL` |  |
+| 33 | `TECH_CLASS_I_SHIELD` |  |
+| 34 | `TECH_CLASS_III_SHIELD` |  |
+| 35 | `TECH_CLASS_V_SHIELD` |  |
+| 36 | `TECH_CLASS_VII_SHIELD` |  |
+| 37 | `TECH_CLASS_X_SHIELD` |  |
+| 38 | `TECH_CLOAKING_DEVICE` |  |
+| 39 | `TECH_CLONING_CENTER` |  |
+| 40 | `TECH_COLONY_BASE` |  |
+| 41 | `TECH_COLONY_SHIP` |  |
+| 42 | `TECH_CONFEDERATION` |  |
+| 43 | `TECH_CYBERSECURITY_LINK` |  |
+| 44 | `TECH_CYBERTRONIC_COMPUTER` |  |
+| 45 | `TECH_DAMPER_FIELD` |  |
+| 46 | `TECH_DAUNTLESS_GUIDANCE_SYSTEM` |  |
+| 47 | `TECH_DEATH_RAY` |  |
+| 48 | `TECH_DEATH_SPORES` |  |
+| 49 | `TECH_DEEP_CORE_MINING` |  |
+| 50 | `TECH_CORE_WASTE_DUMPS` |  |
+| 51 | `TECH_DEUTERIUM_FUEL_CELLS` |  |
+| 52 | `TECH_DIMENSIONAL_PORTAL` |  |
+| 53 | `TECH_DISPLACEMENT_DEVICE` |  |
+| 54 | `TECH_DISRUPTER_CANNON` |  |
+| 55 | `TECH_DOOM_STAR_CONSTRUCTION` |  |
+| 56 | `TECH_REINFORCED_HULL` |  |
+| 57 | `TECH_ECM_JAMMER` |  |
+| 58 | `TECH_ELECTRONIC_COMPUTER` |  |
+| 59 | `TECH_EMISSIONS_GUIDANCE_SYSTEM` |  |
+| 60 | `TECH_ENERGY_ABSORBER` |  |
+| 61 | `TECH_BIOSPHERES` |  |
+| 62 | `TECH_EVOLUTIONARY_MUTATION` |  |
+| 63 | `TECH_EXTENDED_FUEL_TANKS` |  |
+| 64 | `TECH_FAST_MISSILE_RACKS` |  |
+| 65 | `TECH_FEDERATION` |  |
+| 66 | `TECH_FIGHTER_BAYS` |  |
+| 67 | `TECH_FIGHTER_GARRISON` |  |
+| 68 | `TECH_FOOD_REPLICATORS` |  |
+| 69 | `TECH_FREIGHTERS` |  |
+| 70 | `TECH_FUSION_BEAM` |  |
+| 71 | `TECH_FUSION_BOMB` |  |
+| 72 | `TECH_FUSION_DRIVE` |  |
+| 73 | `TECH_FUSION_RIFLE` |  |
+| 74 | `TECH_GAIA_TRANSFORMATION` |  |
+| 75 | `TECH_GALACTIC_CURRENCY_EXCHANGE` |  |
+| 76 | `TECH_GALACTIC_CYBERNET` |  |
+| 77 | `TECH_GALACTIC_UNIFICATION` |  |
+| 78 | `TECH_GAUSS_CANNON` |  |
+| 79 | `TECH_GRAVITON_BEAM` |  |
+| 80 | `TECH_GYRO_DESTABILIZER` |  |
+| 81 | `TECH_HARD_SHIELDS` |  |
+| 82 | `TECH_HEAVY_ARMOR` |  |
+| 83 | `TECH_HEAVY_FIGHTER_BAYS` |  |
+| 84 | `TECH_HEIGHTENED_INTELLIGENCE` |  |
+| 85 | `TECH_HIGH_ENERGY_FOCUS` |  |
+| 86 | `TECH_HOLO_SIMULATOR` |  |
+| 87 | `TECH_HYDROPONIC_FARM` |  |
+| 88 | `TECH_HYPER_DRIVE` |  |
+| 89 | `TECH_MEGAFLUXERS` |  |
+| 90 | `TECH_HYPERX_CAPACITORS` |  |
+| 91 | `TECH_HYPERSPACE_COMMUNICATIONS` |  |
+| 92 | `TECH_IMPERIUM` |  |
+| 93 | `TECH_INERTIAL_NULLIFIER` |  |
+| 94 | `TECH_INERTIAL_STABILIZER` |  |
+| 95 | `TECH_INTERPHASED_DRIVE` |  |
+| 96 | `TECH_ION_DRIVE` |  |
+| 97 | `TECH_ION_PULSE_CANNON` |  |
+| 98 | `TECH_IRIDIUM_FUEL_CELLS` |  |
+| 99 | `TECH_JUMP_GATE` |  |
+| 100 | `TECH_LASER_CANNON` |  |
+| 101 | `TECH_LASER_RIFLE` |  |
+| 102 | `TECH_LIGHTNING_FIELD` |  |
+| 103 | `TECH_MARINE_BARRACKS` |  |
+| 104 | `TECH_MASS_DRIVER` |  |
+| 105 | `TECH_MAULER_DEVICE` |  |
+| 106 | `TECH_MERCULITE_MISSILE` |  |
+| 107 | `TECH_MICROBIOTICS` |  |
+| 108 | `TECH_MICROLITE_CONSTRUCTION` |  |
+| 109 | `TECH_OUTPOST_SHIP` |  |
+| 110 | `TECH_MOLECULARTRONIC_COMPUTER` |  |
+| 111 | `TECH_MULTIWAVE_ECM_JAMMER` |  |
+| 112 | `TECH_MULTIPHASED_SHIELDS` |  |
+| 113 | `TECH_NANO_DISASSEMBLERS` |  |
+| 114 | `TECH_NEURAL_SCANNER` |  |
+| 115 | `TECH_NEUTRON_BLASTER` |  |
+| 116 | `TECH_NEUTRON_SCANNER` |  |
+| 117 | `TECH_NEUTRONIUM_ARMOR` |  |
+| 118 | `TECH_NEUTRONIUM_BOMB` |  |
+| 119 | `TECH_NUCLEAR_BOMB` |  |
+| 120 | `TECH_NUCLEAR_DRIVE` |  |
+| 121 | `TECH_NUCLEAR_MISSILE` |  |
+| 122 | `TECH_OPTRONIC_COMPUTER` |  |
+| 123 | `TECH_PARTICLE_BEAM` |  |
+| 124 | `TECH_PERSONAL_SHIELD` |  |
+| 125 | `TECH_PHASE_SHIFTER` |  |
+| 126 | `TECH_PHASING_CLOAK` |  |
+| 127 | `TECH_PHASOR` |  |
+| 128 | `TECH_PHASOR_RIFLE` |  |
+| 129 | `TECH_PLANETARY_BARRIER_SHIELD` |  |
+| 130 | `TECH_PLANETARY_FLUX_SHIELD` |  |
+| 131 | `TECH_PLANETARY_GRAVITY_GENERATOR` |  |
+| 132 | `TECH_PLANETARY_MISSILE_BASE` |  |
+| 133 | `TECH_GROUND_BATTERIES` |  |
+| 134 | `TECH_PLANETARY_RADIATION_SHIELD` |  |
+| 135 | `TECH_PLANETARY_STOCK_EXCHANGE` |  |
+| 136 | `TECH_PLANETARY_SUPERCOMPUTER` |  |
+| 137 | `TECH_PLASMA_CANNON` |  |
+| 138 | `TECH_PLASMA_RIFLE` |  |
+| 139 | `TECH_PLASMA_TORPEDOES` |  |
+| 140 | `TECH_PLASMA_WEB` |  |
+| 141 | `TECH_PLEASURE_DOME` |  |
+| 142 | `TECH_POLLUTION_PROCESSOR` |  |
+| 143 | `TECH_POSITRONIC_COMPUTER` |  |
+| 144 | `TECH_POWERED_ARMOR` |  |
+| 145 | `TECH_PULSE_RIFLE` |  |
+| 146 | `TECH_PROTON_TORPEDOES` |  |
+| 147 | `TECH_PSIONICS` |  |
+| 148 | `TECH_PULSAR` |  |
+| 149 | `TECH_PULSON_MISSILE` |  |
+| 150 | `TECH_QUANTUM_DETONATOR` |  |
+| 151 | `TECH_RANGEMASTER_UNIT` |  |
+| 152 | `TECH_RECYCLOTRON` |  |
+| 153 | `TECH_REFLECTION_FIELD` |  |
+| 154 | `TECH_ROBOTIC_FACTORY` |  |
+| 155 | `TECH_RESEARCH_LABORATORY` |  |
+| 156 | `TECH_ROBOMINERS` |  |
+| 157 | `TECH_SPACE_SCANNER` |  |
+| 158 | `TECH_SCOUT_LAB` |  |
+| 159 | `TECH_SECURITY_STATIONS` |  |
+| 160 | `TECH_SENSORS` |  |
+| 161 | `TECH_SHIELD_CAPACITORS` |  |
+| 162 | `TECH_SOIL_ENRICHMENT` |  |
+| 163 | `TECH_SPACE_ACADEMY` |  |
+| 164 | `TECH_SPACEPORT` |  |
+| 165 | `TECH_SPATIAL_COMPRESSOR` |  |
+| 166 | `TECH_SPY_NETWORK` |  |
+| 167 | `TECH_STANDARD_FUEL_CELLS` |  |
+| 168 | `TECH_STAR_BASE` |  |
+| 169 | `TECH_STAR_FORTRESS` |  |
+| 170 | `TECH_STAR_GATE` |  |
+| 171 | `TECH_STASIS_FIELD` |  |
+| 172 | `TECH_STEALTH_FIELD` |  |
+| 173 | `TECH_STEALTH_SUIT` |  |
+| 174 | `TECH_STELLAR_CONVERTER` |  |
+| 175 | `TECH_STRUCTURAL_ANALYZER` |  |
+| 176 | `TECH_SUBSPACE_COMMUNICATIONS` |  |
+| 177 | `TECH_SUBSPACE_TELEPORTER` |  |
+| 178 | `TECH_SUBTERRANEAN_FARMS` |  |
+| 179 | `TECH_SURVIVAL_PODS` |  |
+| 180 | `TECH_TACHYON_COMMUNICATIONS` |  |
+| 181 | `TECH_TACHYON_SCANNER` |  |
+| 182 | `TECH_TELEPATHIC_TRAINING` |  |
+| 183 | `TECH_TERRAFORMING` |  |
+| 184 | `TECH_THORIUM_FUEL_CELLS` |  |
+| 185 | `TECH_TIME_WARP_FACILITATOR` |  |
+| 186 | `TECH_TITAN_CONSTRUCTION` |  |
+| 187 | `TECH_TITANIUM_ARMOR` |  |
+| 188 | `TECH_TRACTOR_BEAM` |  |
+| 189 | `TECH_TRANSPORT` |  |
+| 190 | `TECH_TRANSPORTERS` |  |
+| 191 | `TECH_TRITANIUM_ARMOR` |  |
+| 192 | `TECH_TROOP_PODS` |  |
+| 193 | `TECH_UNIVERSAL_ANTIDOTE` |  |
+| 194 | `TECH_URRIDIUM_FUEL_CELLS` |  |
+| 195 | `TECH_VIRTUAL_REALITY_NETWORK` |  |
+| 196 | `TECH_WARP_DISSIPATER` |  |
+| 197 | `TECH_WARP_INTERDICTOR` |  |
+| 198 | `TECH_WEATHER_CONTROL_SYSTEM` |  |
+| 199 | `TECH_WIDE_AREA_JAMMER` |  |
+| 200 | `TECH_XENO_PSYCHOLOGY` |  |
+| 201 | `TECH_XENTRONIUM_ARMOR` |  |
+| 202 | `TECH_ZEON_MISSILE` |  |
+| 203 | `TECH_ZORTRIUM_ARMOR` |  |
+| 204 | `TECH_HYPER_BIOLOGY` |  |
+| 205 | `TECH_HYPER_POWER` |  |
+| 206 | `TECH_HYPER_PHYSICS` |  |
+| 207 | `TECH_HYPER_CONSTRUCTION` |  |
+| 208 | `TECH_HYPER_FIELDS` |  |
+| 209 | `TECH_HYPER_CHEMISTRY` |  |
+| 210 | `TECH_HYPER_COMPUTERS` |  |
+| 211 | `TECH_HYPER_SOCIOLOGY` |  |
+
+## ColonyBuilding(49 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `BUILDING_NONE` |  |
+| 1 | `BUILDING_ALIEN_CONTROL_CENTER` |  |
+| 2 | `BUILDING_ARMOR_BARRACKS` |  |
+| 3 | `BUILDING_ARTEMIS_SYSTEM_NET` |  |
+| 4 | `BUILDING_ASTRO_UNIVERSITY` |  |
+| 5 | `BUILDING_ATMOSPHERE_RENEWER` |  |
+| 6 | `BUILDING_AUTOLAB` |  |
+| 7 | `BUILDING_AUTOMATED_FACTORY` |  |
+| 8 | `BUILDING_BATTLESTATION` |  |
+| 9 | `BUILDING_CAPITOL` |  |
+| 10 | `BUILDING_CLONING_CENTER` |  |
+| 11 | `BUILDING_COLONY_BASE` |  |
+| 12 | `BUILDING_DEEP_CORE_MINE` |  |
+| 13 | `BUILDING_CORE_WASTE_DUMP` |  |
+| 14 | `BUILDING_DIMENSIONAL_PORTAL` |  |
+| 15 | `BUILDING_BIOSPHERES` |  |
+| 16 | `BUILDING_FOOD_REPLICATORS` |  |
+| 17 | `BUILDING_GAIA_TRANSFORMATION` |  |
+| 18 | `BUILDING_CURRENCY_EXCHANGE` |  |
+| 19 | `BUILDING_GALACTIC_CYBERNET` |  |
+| 20 | `BUILDING_HOLO_SIMULATOR` |  |
+| 21 | `BUILDING_HYDROPONIC_FARM` |  |
+| 22 | `BUILDING_MARINE_BARRACKS` |  |
+| 23 | `BUILDING_BARRIER_SHIELD` |  |
+| 24 | `BUILDING_FLUX_SHIELD` |  |
+| 25 | `BUILDING_GRAVITY_GENERATOR` |  |
+| 26 | `BUILDING_MISSILE_BASE` |  |
+| 27 | `BUILDING_GROUND_BATTERIES` |  |
+| 28 | `BUILDING_RADIATION_SHIELD` |  |
+| 29 | `BUILDING_STOCK_EXCHANGE` |  |
+| 30 | `BUILDING_SUPERCOMPUTER` |  |
+| 31 | `BUILDING_PLEASURE_DOME` |  |
+| 32 | `BUILDING_POLLUTION_PROCESSOR` |  |
+| 33 | `BUILDING_RECYCLOTRON` |  |
+| 34 | `BUILDING_ROBOTIC_FACTORY` |  |
+| 35 | `BUILDING_RESEARCH_LAB` |  |
+| 36 | `BUILDING_ROBO_MINER_PLANT` |  |
+| 37 | `BUILDING_SOIL_ENRICHMENT` |  |
+| 38 | `BUILDING_SPACE_ACADEMY` |  |
+| 39 | `BUILDING_SPACEPORT` |  |
+| 40 | `BUILDING_STAR_BASE` |  |
+| 41 | `BUILDING_STAR_FORTRESS` |  |
+| 42 | `BUILDING_STELLAR_CONVERTER` |  |
+| 43 | `BUILDING_SUBTERRANEAN_FARMS` |  |
+| 44 | `BUILDING_TERRAFORMING` |  |
+| 45 | `BUILDING_WARP_INTERDICTOR` |  |
+| 46 | `BUILDING_WEATHER_CONTROLLER` |  |
+| 47 | `BUILDING_FIGHTER_GARRISON` |  |
+| 48 | `BUILDING_ARTIFICIAL_PLANET` |  |
+
+## ForeignPolicy(6 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `DIPLO_NONE` |  |
+| 1 | `DIPLO_NON_AGGRESSION` |  |
+| 2 | `DIPLO_ALLIANCE` |  |
+| 3 | `DIPLO_PEACE` |  |
+| 4 | `DIPLO_LIMITED_WAR` |  |
+| 5 | `DIPLO_WAR` |  |
+
+## LeaderSkills(27 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `SKILL_ASSASSIN` |  |
+| 1 | `SKILL_COMMANDO` |  |
+| 2 | `SKILL_DIPLOMAT` |  |
+| 3 | `SKILL_FAMOUS` |  |
+| 4 | `SKILL_MEGAWEALTH` |  |
+| 5 | `SKILL_OPERATIONS` |  |
+| 6 | `SKILL_RESEARCHER` |  |
+| 7 | `SKILL_SPYMASTER` |  |
+| 8 | `SKILL_TELEPATH` |  |
+| 9 | `SKILL_TRADER` |  |
+| 16 | `SKILL_ENGINEER` |  |
+| 17 | `SKILL_FIGHTER_PILOT` |  |
+| 18 | `SKILL_GALACTIC_LORE` |  |
+| 19 | `SKILL_HELMSMAN` |  |
+| 20 | `SKILL_NAVIGATOR` |  |
+| 21 | `SKILL_ORDNANCE` |  |
+| 22 | `SKILL_SECURITY` |  |
+| 23 | `SKILL_WEAPONRY` |  |
+| 32 | `SKILL_ENVIRONMENTALIST` |  |
+| 33 | `SKILL_FARMING_LEADER` |  |
+| 34 | `SKILL_FINANCIAL_LEADER` |  |
+| 35 | `SKILL_INSTRUCTOR` |  |
+| 36 | `SKILL_LABOR_LEADER` |  |
+| 37 | `SKILL_MEDICINE` |  |
+| 38 | `SKILL_SCIENCE_LEADER` |  |
+| 39 | `SKILL_SPIRITUAL_LEADER` |  |
+| 40 | `SKILL_TACTICS` |  |
+
+## LeaderState(6 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| -2 | `Dead` |  |
+| -1 | `Unavailable` |  |
+| 0 | `Idle` |  |
+| 1 | `Working` |  |
+| 2 | `Unassigned` |  |
+| 4 | `ForHire` |  |
+
+## ShipState(7 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `InOrbit` |  |
+| 1 | `InTransit` |  |
+| 2 | `LeavingOrbit` |  |
+| 3 | `Unknown` |  |
+| 4 | `InRefit` |  |
+| 5 | `Destroyed` |  |
+| 6 | `UnderConstruction` |  |
+
+## ShipType(5 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `COMBAT_SHIP` |  |
+| 1 | `COLONY_SHIP` |  |
+| 2 | `TRANSPORT_SHIP` |  |
+| 3 | `BAD_SHIP_TYPE` |  |
+| 4 | `OUTPOST_SHIP` |  |
+
+## CombatShipClass(6 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `SHIP_FRIGATE` |  |
+| 1 | `SHIP_DESTROYER` |  |
+| 2 | `SHIP_CRUISER` |  |
+| 3 | `SHIP_BATTLESHIP` |  |
+| 4 | `SHIP_TITAN` |  |
+| 5 | `SHIP_DOOMSTAR` |  |
+
+## WeaponArc(6 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 1 | `ARC_FWD` |  |
+| 2 | `ARC_FWD_EXT` |  |
+| 4 | `ARC_BACK_EXT` |  |
+| 8 | `ARC_BACK` |  |
+| 15 | `ARC_MONSTER_360` |  |
+| 16 | `ARC_360` |  |
+
+## SpecialDevices(39 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 1 | `SPEC_ACHILLES_TARGETING_UNIT` |  |
+| 2 | `SPEC_AUGMENTED_ENGINES` |  |
+| 3 | `SPEC_AUTOMATED_REPAIR_UNIT` |  |
+| 4 | `SPEC_BATTLE_PODS` |  |
+| 5 | `SPEC_BATTLE_SCANNER` |  |
+| 6 | `SPEC_CLOAKING_DEVICE` |  |
+| 7 | `SPEC_DAMPER_FIELD` |  |
+| 8 | `SPEC_DISPLACEMENT_DEVICE` |  |
+| 9 | `SPEC_ECM_JAMMER` |  |
+| 10 | `SPEC_ENERGY_ABSORBER` |  |
+| 11 | `SPEC_EXTENDED_FUEL_TANKS` |  |
+| 12 | `SPEC_FAST_MISSILE_RACKS` |  |
+| 13 | `SPEC_HARD_SHIELDS` |  |
+| 14 | `SPEC_HEAVY_ARMOR` |  |
+| 15 | `SPEC_HIGH_ENERGY_FOCUS` |  |
+| 16 | `SPEC_HYPERX_CAPACITORS` |  |
+| 17 | `SPEC_INERTIAL_NULLIFIER` |  |
+| 18 | `SPEC_INERTIAL_STABILIZER` |  |
+| 19 | `SPEC_LIGHTNING_FIELD` |  |
+| 20 | `SPEC_MULTIPHASED_SHIELDS` |  |
+| 21 | `SPEC_MULTIWAVE_ECM_JAMMER` |  |
+| 22 | `SPEC_PHASE_SHIFTER` |  |
+| 23 | `SPEC_PHASING_CLOAK` |  |
+| 24 | `SPEC_QUANTUM_DETONATOR` |  |
+| 25 | `SPEC_RANGEMASTER_UNIT` |  |
+| 26 | `SPEC_REFLECTION_FIELD` |  |
+| 27 | `SPEC_REINFORCED_HULL` |  |
+| 28 | `SPEC_SCOUT_LAB` |  |
+| 29 | `SPEC_SECURITY_STATIONS` |  |
+| 30 | `SPEC_SHIELD_CAPACITOR` |  |
+| 31 | `SPEC_STEALTH_FIELD` |  |
+| 32 | `SPEC_STRUCTURAL_ANALYZER` |  |
+| 33 | `SPEC_SUB_SPACE_TELEPORTER` |  |
+| 34 | `SPEC_TIME_WARP_FACILITATOR` |  |
+| 35 | `SPEC_TRANSPORTERS` |  |
+| 36 | `SPEC_TROOP_PODS` |  |
+| 37 | `SPEC_WARP_DISSIPATOR` |  |
+| 38 | `SPEC_WIDE_AREA_JAMMER` |  |
+| 39 | `SPEC_REGENERATION` |  |
+
+## RaceTrait(32 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `TRAIT_GOVERNMENT` |  |
+| 1 | `TRAIT_POPULATION` |  |
+| 2 | `TRAIT_FARMING` |  |
+| 3 | `TRAIT_INDUSTRY` |  |
+| 4 | `TRAIT_SCIENCE` |  |
+| 5 | `TRAIT_MONEY` |  |
+| 6 | `TRAIT_SHIP_DEFENSE` |  |
+| 7 | `TRAIT_SHIP_ATTACK` |  |
+| 8 | `TRAIT_GROUND_COMBAT` |  |
+| 9 | `TRAIT_SPYING` |  |
+| 10 | `TRAIT_LOW_G` |  |
+| 11 | `TRAIT_HIGH_G` |  |
+| 12 | `TRAIT_AQUATIC` |  |
+| 13 | `TRAIT_SUBTERRANEAN` |  |
+| 14 | `TRAIT_LARGE_HOMEWORLD` |  |
+| 15 | `TRAIT_RICH_HOMEWORLD` |  |
+| 16 | `TRAIT_ARTIFACTS_HOMEWORLD` |  |
+| 17 | `TRAIT_CYBERNETIC` |  |
+| 18 | `TRAIT_LITHOVORE` |  |
+| 19 | `TRAIT_REPULSIVE` |  |
+| 20 | `TRAIT_CHARISMATIC` |  |
+| 21 | `TRAIT_UNCREATIVE` |  |
+| 22 | `TRAIT_CREATIVE` |  |
+| 23 | `TRAIT_TOLERANT` |  |
+| 24 | `TRAIT_FANTASTIC_TRADERS` |  |
+| 25 | `TRAIT_TELEPATHIC` |  |
+| 26 | `TRAIT_LUCKY` |  |
+| 27 | `TRAIT_OMNISCIENCE` |  |
+| 28 | `TRAIT_STEALTHY_SHIPS` |  |
+| 29 | `TRAIT_TRANS_DIMENSIONAL` |  |
+| 30 | `TRAIT_WARLORD` |  |
+| 31 | `TRAIT_POOR_HOMEWORLD` |  |
+
+## SelectionFilter(3 項)
+
+| 值 | 名稱(英) | 中文 |
+|---|---|---|
+| 0 | `SELFILTER_NONE` |  |
+| 1 | `SELFILTER_OWNED` |  |
+| 2 | `SELFILTER_ANY` |  |
