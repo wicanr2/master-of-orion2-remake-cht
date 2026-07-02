@@ -41,6 +41,7 @@ type ColonyState struct {
 type PlayerState struct {
 	BC               int                    // 國庫(Billion Credits)
 	TaxRate          int                    // 稅率(百分比)
+	Maintenance      int                    // 每回合總維護費(建築/艦隊/間諜/軍官…),BC 結算時扣除
 	ResearchTopic    gamedata.ResearchTopic // 目前研究中的主題
 	ResearchProgress int                    // 目前主題已累積的研究點(RP)
 	// CompletedTopics 記錄已完成的研究主題(避免重複)。

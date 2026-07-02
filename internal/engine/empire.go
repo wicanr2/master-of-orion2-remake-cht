@@ -1,12 +1,16 @@
 package engine
 
+import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+
 // EmpireOutput 是一個帝國(玩家)一回合的結算結果:各殖民地經濟 + 帝國層級聚合 + 研究推進。
 type EmpireOutput struct {
 	Colonies         []ColonyOutput // 對應輸入 colonies 順序
 	TotalFood        int            // 各殖民地食物盈餘總和
 	TotalNetIndustry int            // 各殖民地淨工業總和
 	TotalResearch    int            // 各殖民地研究總和(投入研究進度)
-	Player           PlayerState    // 研究推進後的玩家狀態
+	TaxRevenue       int            // 各殖民地稅收 BC 總和
+	NetBC            int            // 本回合國庫淨變化(TaxRevenue - Maintenance)
+	Player           PlayerState    // 研究推進 + BC 結算後的玩家狀態
 	ResearchDone     bool           // 本回合是否有研究主題完成
 }
 
@@ -26,7 +30,12 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		out.TotalFood += co.FoodSurplus
 		out.TotalNetIndustry += co.NetIndustry
 		out.TotalResearch += co.Research
+		// 稅收:對各殖民地淨工業依帝國稅率抽稅(gamedata.IncomeTaxRevenue,1:1 換 BC)。
+		out.TaxRevenue += gamedata.IncomeTaxRevenue(co.NetIndustry, ps.TaxRate)
 	}
 	out.Player, out.ResearchDone = RunResearchPhase(ps, out.TotalResearch)
+	// 國庫結算:稅收 - 維護費。
+	out.NetBC = out.TaxRevenue - ps.Maintenance
+	out.Player.BC += out.NetBC
 	return out
 }

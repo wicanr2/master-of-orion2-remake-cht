@@ -82,3 +82,24 @@ func TestRunEmpireTurnMultiTurnProgression(t *testing.T) {
 		t.Errorf("完成後溢出進度 = %d,預期 50", ps.ResearchProgress)
 	}
 }
+
+func TestRunEmpireTurnBC(t *testing.T) {
+	// Tolerant 種族免污染清理:淨工業=毛工業。Workers 2*10=20,稅率 50% → 稅收 10。
+	colonies := []ColonyState{
+		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
+			PlanetSize: gamedata.TINY_PLANET, TolerantRace: true},
+	}
+	ps := PlayerState{BC: 100, TaxRate: 50, Maintenance: 3,
+		ResearchTopic: gamedata.ResearchTopic(1)}
+	out := RunEmpireTurn(ps, colonies)
+
+	if out.TaxRevenue != 10 { // 20*50/100
+		t.Errorf("稅收 = %d,預期 10", out.TaxRevenue)
+	}
+	if out.NetBC != 7 { // 10 - 3 維護
+		t.Errorf("淨 BC = %d,預期 7", out.NetBC)
+	}
+	if out.Player.BC != 107 { // 100 + 7
+		t.Errorf("國庫 = %d,預期 107", out.Player.BC)
+	}
+}

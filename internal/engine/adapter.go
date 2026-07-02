@@ -51,6 +51,7 @@ func PlayerStateFromSave(p *save.Player) PlayerState {
 	return PlayerState{
 		BC:               int(p.BC),
 		TaxRate:          int(p.TaxRate),
+		Maintenance:      int(p.TotalMaintenance),
 		ResearchTopic:    gamedata.ResearchTopic(p.ResearchTopic),
 		ResearchProgress: int(p.ResearchProgress),
 	}
