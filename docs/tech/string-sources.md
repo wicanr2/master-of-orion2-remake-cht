@@ -13,7 +13,7 @@
 | TECHNAME | loadStrings | 0 | 419(唯一) | 科技/元件名 | tech.tsv | ✅ 完成 |
 | SKILDESC | loadAsset | 0 | 27 | 軍官技能名 | skills.tsv | ✅ 完成 |
 | RACESTUF | loadStrings | 0 | 64 | 種族特性/自訂 pick | races.tsv | ✅ 完成 |
-| STARNAME | loadAsset | 0 | 13 | 母星名 | — | ⏳ 專有名詞池,保留原文 |
+| STARNAME | loadAsset | 0 | 13 | 母星名 | starname.tsv | ✅ 完成(實星名用中文天文名,虛構音譯) |
 | STARNAME | loadAsset | 1 | 829 | 星名池(隨機) | — | ⏳ 專有名詞池,低優先 |
 | SHIPNAME | loadAsset | 0 | 672 | 艦名池(隨機) | — | ⏳ 專有名詞池,低優先 |
 | RACENAME | loadAsset | 0 | 104 | AI 統治者姓名 | — | ⏳ 專有名詞池,保留原文 |

@@ -1,0 +1,16 @@
+# 母星名譯表(STARNAME.LBX asset0,13 個種族本星)。英文原文即 key。
+# 策略見 docs/tech/proper-noun-strategy.md:實星名用中文天文名,虛構音譯。
+# asset1 隨機星名池(829)與 SHIPNAME 艦名池暫緩。
+Altair	牛郎星	母星
+Ursa	大熊座	母星
+Nazin	納辛	母星
+Draconis	天龍座	母星
+Gnol	諾爾	母星
+Sol	太陽	母星
+Kholdan	科爾丹	母星
+Meklon	麥克隆	母星
+Fieras	菲拉斯	母星
+Mentar	門塔爾	母星
+Sssla	斯斯拉	母星
+Cryslon	克萊斯隆	母星
+Trilar	特里拉	母星
