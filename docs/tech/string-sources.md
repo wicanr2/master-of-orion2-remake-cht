@@ -9,11 +9,11 @@
 | TECHNAME | loadStrings | 0 | 419(唯一) | 科技/元件名 | tech.tsv | ✅ 完成 |
 | SKILDESC | loadAsset | 0 | 27 | 軍官技能名 | skills.tsv | ✅ 完成 |
 | RACESTUF | loadStrings | 0 | 64 | 種族特性/自訂 pick | races.tsv | ✅ 完成 |
-| STARNAME | loadAsset | 0 | 13 | 母星名 | — | ⏳ 待(專有名詞) |
+| STARNAME | loadAsset | 0 | 13 | 母星名 | — | ⏳ 專有名詞,保留原文 |
 | STARNAME | loadAsset | 1 | 829 | 星名池(隨機) | — | ⏳ 專有名詞池,低優先 |
 | SHIPNAME | loadAsset | 0 | 672 | 艦名池(隨機) | — | ⏳ 專有名詞池,低優先 |
 | RACESTUF | loadStrings | 8 | ~ | 種族背景資訊 | — | ⏳ 待(敘述) |
-| SKILDESC | loadAsset | 1 | ~27 | 技能描述 | — | ⏳ 待(敘述) |
+| SKILDESC | loadAsset | 1 | 27 | 技能描述 | skilldesc.tsv | ✅ 完成 |
 | TECHDESC | loadAsset | 0..7 | ~849 | 科技描述 | — | ⏳ 待(大宗敘述) |
 | MAINTEXT | loadFile | 群組 | 主 UI 文字 | — | ⏳ 待(UI 大宗) |
 | EVENTMSE | loadFile | 群組 | ~152 | 隨機事件訊息 | — | ⏳ 待(敘述) |
