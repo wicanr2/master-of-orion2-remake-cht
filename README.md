@@ -36,8 +36,14 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
 
 上方主選單截圖即此管線的實際輸出。過程中確認 MOO2 畫面為 **640×480**。
 
+**資料驅動星圖(M2 里程碑)**:載入原版存檔 `SAVE10.GAM`,解析出星系並即時繪製 —— 每顆星依真實座標定位、依光譜類上色、依大小定尺寸,標出真實星名,星雲數與存檔一致。
+
+![星圖(由真實存檔資料驅動繪製)](docs/images/galaxy-view.png)
+
+> 圖中 36 顆星的名稱(Orion、Altair、Sssla…)、位置、顏色與兩團星雲,全部來自本專案解析 `SAVE10.GAM` 的結果。目前用向量色點呈現;真實星球 sprite 與繁中字型為後續 Phase。
+
 ### ⏭ 進行中 / 下一步
-載入存檔 → 繪製星系圖(M2 完整里程碑);`Screen` 介面抽象、滑鼠/鍵盤事件;文字系統(CJK)與主選單版本/語言切換。
+`Screen` 介面抽象、滑鼠/鍵盤事件、資產快取;文字系統(CJK supersample)與主選單版本/語言切換;星圖換上真實 sprite 美術。
 
 ---
 
@@ -83,7 +89,8 @@ README 的展示截圖僅為呈現 renderer 成果之用。
 - [`WORKLIST.md`](WORKLIST.md) — 可勾選工作清單
 - [`docs/kickoff/`](docs/kickoff/) — 可行性研究與策略知識庫
 - [`docs/tech/`](docs/tech/) — 逆向格式與數值工程文件
-- [`docs/history/`](docs/history/) — 遊戲歷史與當年評價考究
+- [`docs/history/`](docs/history/) — 遊戲歷史、當年評價、華人圈接受考據
+- [`docs/culture/`](docs/culture/) — 華人圈文化現象散文
 
 ## 致謝
 

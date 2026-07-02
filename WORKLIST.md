@@ -103,8 +103,8 @@
 - [x] 遊戲歷史與當年評價考究(`docs/history/moo2-history-and-reception.md`,角色:歷史考究專家,14 來源)
 - [x] GitHub 致謝(README:openorion2/1oom/mom/字型/社群/Simtex)
 - [x] 技術知識庫:LBX 資產格式 / 存檔格式 / 枚舉 / 公式 / ebiten 移植筆記(`docs/tech/`)
-- [ ] 華人圈中文討論資訊考究章節(CLAUDE.md 專項,角色:遊戲歷史考究專家)
-- [ ] 華人圈文化現象(CLAUDE.md 專項,角色:文案作家)
+- [x] 華人圈中文討論資訊考究章節(`docs/history/moo2-chinese-community.md`,歷史考究專家,31 來源+誠實揭露侷限)
+- [x] 華人圈文化現象(`docs/culture/moo2-chinese-cultural-phenomenon.md`,文案作家,事實有本、無 AI 味)
 - [ ] sprite/tile 畫質優化可行性 markdown
 - [ ] UI 界面調整可行性 markdown
 - [ ] 技術知識庫:音樂整合 / 鍵盤滑鼠整合 / patch 處理 / 選單擴展(後續各 Phase 完成時補)
