@@ -56,8 +56,8 @@ func (c *Catalog) LoadTSV(r io.Reader) (int, error) {
 		if len(cols) < 2 {
 			continue
 		}
-		key := strings.TrimSpace(cols[0])
-		val := strings.TrimSpace(cols[1])
+		key := decodeEscapes(strings.TrimSpace(cols[0]))
+		val := decodeEscapes(strings.TrimSpace(cols[1]))
 		if key == "" || val == "" {
 			continue // 空中文 → 選擇性覆蓋,略過
 		}
@@ -68,6 +68,64 @@ func (c *Catalog) LoadTSV(r io.Reader) (int, error) {
 		added++
 	}
 	return added, sc.Err()
+}
+
+// decodeEscapes 把 TSV 中的跳脫序列還原成實際位元組:`\xNN`(MOO2 變數插入控制碼,
+// 如 \x8f 帝國名、\x80 行星名)、`\n`、`\t`、`\\`。讓含控制碼的事件/外交訊息能以文字 TSV 表示。
+func decodeEscapes(s string) string {
+	if !strings.Contains(s, "\\") {
+		return s
+	}
+	var b strings.Builder
+	for i := 0; i < len(s); i++ {
+		if s[i] != '\\' || i+1 >= len(s) {
+			b.WriteByte(s[i])
+			continue
+		}
+		switch s[i+1] {
+		case 'n':
+			b.WriteByte('\n')
+			i++
+		case 't':
+			b.WriteByte('\t')
+			i++
+		case '\\':
+			b.WriteByte('\\')
+			i++
+		case 'x':
+			if i+3 < len(s) {
+				if v, ok := hex2(s[i+2], s[i+3]); ok {
+					b.WriteByte(v)
+					i += 3
+					continue
+				}
+			}
+			b.WriteByte(s[i])
+		default:
+			b.WriteByte(s[i])
+		}
+	}
+	return b.String()
+}
+
+func hex2(a, b byte) (byte, bool) {
+	h := func(c byte) (byte, bool) {
+		switch {
+		case c >= '0' && c <= '9':
+			return c - '0', true
+		case c >= 'a' && c <= 'f':
+			return c - 'a' + 10, true
+		case c >= 'A' && c <= 'F':
+			return c - 'A' + 10, true
+		}
+		return 0, false
+	}
+	hi, ok1 := h(a)
+	lo, ok2 := h(b)
+	if !ok1 || !ok2 {
+		return 0, false
+	}
+	return hi<<4 | lo, true
 }
 
 // Translate 回傳字串的當前語言版本。英文模式或查無 → 回原字串(TrimSpace 後查找,

@@ -52,7 +52,7 @@ func main() {
 				continue
 			}
 			if *tsv {
-				fmt.Printf("%s\t\t\n", strings.ReplaceAll(s, "\n", "\\n"))
+				fmt.Printf("%s\t\t\n", escapeForTSV(s))
 			} else {
 				fmt.Printf("=== 訊息 %d ===\n%s\n", i, s)
 			}
@@ -93,6 +93,27 @@ func main() {
 			}
 		}
 	}
+}
+
+// escapeForTSV 把控制碼/非可印位元組轉成 \xNN,\n→\n,\t→\t,方便寫進 TSV。
+func escapeForTSV(s string) string {
+	var b strings.Builder
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		switch {
+		case c == '\n':
+			b.WriteString("\\n")
+		case c == '\t':
+			b.WriteString("\\t")
+		case c == '\\':
+			b.WriteString("\\\\")
+		case c < 32 || c > 126:
+			fmt.Fprintf(&b, "\\x%02x", c)
+		default:
+			b.WriteByte(c)
+		}
+	}
+	return b.String()
 }
 
 func fatal(err error) {
