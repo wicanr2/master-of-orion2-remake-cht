@@ -36,3 +36,49 @@ func TestRunEmpireTurn(t *testing.T) {
 		t.Errorf("總食物盈餘 = %d,預期 3", out.TotalFood)
 	}
 }
+
+func TestRunEmpireTurnResearchNotComplete(t *testing.T) {
+	// 研究總點不足成本 → 累積但不完成。
+	colonies := []ColonyState{
+		{Population: 5, PopMax: 20, Scientists: 1, ResearchPerScientist: 50,
+			PlanetSize: gamedata.SMALL_PLANET},
+	}
+	ps := PlayerState{ResearchTopic: gamedata.ResearchTopic(1)} // cost 400
+	out := RunEmpireTurn(ps, colonies)
+	if out.ResearchDone {
+		t.Error("研究不應完成(50 < 400)")
+	}
+	if out.Player.ResearchProgress != 50 {
+		t.Errorf("研究進度 = %d,預期 50", out.Player.ResearchProgress)
+	}
+}
+
+func TestRunEmpireTurnMultiTurnProgression(t *testing.T) {
+	// 多回合推進:同一組殖民地連跑數回合,把 output.Player 回饋為下回合輸入,
+	// 驗證研究進度跨回合累積,並在累積達成本(400)的那回合完成。
+	colonies := []ColonyState{
+		{Population: 6, PopMax: 20, Scientists: 3, ResearchPerScientist: 50,
+			PlanetSize: gamedata.MEDIUM_PLANET}, // 每回合研究 150
+	}
+	ps := PlayerState{ResearchTopic: gamedata.ResearchTopic(1)} // cost 400
+
+	var completedTurn int
+	for turn := 1; turn <= 3; turn++ {
+		out := RunEmpireTurn(ps, colonies)
+		ps = out.Player // 狀態帶到下回合
+		if out.ResearchDone {
+			completedTurn = turn
+			break
+		}
+	}
+	// 回合1:150、回合2:300、回合3:450≥400 → 第 3 回合完成,溢出保留 50
+	if completedTurn != 3 {
+		t.Errorf("研究應於第 3 回合完成,實際第 %d 回合", completedTurn)
+	}
+	if !ps.CompletedTopics[gamedata.ResearchTopic(1)] {
+		t.Error("完成後 topic 1 應標記")
+	}
+	if ps.ResearchProgress != 50 { // 450-400 溢出
+		t.Errorf("完成後溢出進度 = %d,預期 50", ps.ResearchProgress)
+	}
+}
