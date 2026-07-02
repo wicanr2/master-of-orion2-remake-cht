@@ -34,6 +34,33 @@ func ParseFixedStrings(data []byte) ([]string, error) {
 	return out, nil
 }
 
+// diploBufSize 是 DIPLOMSE 每則字串的固定寬度(DIPLOMSG_BUFSIZE)。
+const diploBufSize = 200
+
+// ParseDiploStrings 解析 DIPLOMSE 單一資產:u16(=1)+ u16 + u8(variant)+ u8 count
+// + count 個 diploBufSize 固定寬字串。對照 openorion2 TextManager::load 的 diplomsg 區塊。
+func ParseDiploStrings(data []byte) ([]string, error) {
+	if len(data) < 6 {
+		return nil, fmt.Errorf("lbx diplo: 資產太短")
+	}
+	if binary.LittleEndian.Uint16(data[0:2]) != 1 {
+		return nil, fmt.Errorf("lbx diplo: 非 diplomsg 資產")
+	}
+	// data[2:4] 忽略;data[4] variant;data[5] count。
+	count := int(data[5])
+	if count == 0 {
+		return nil, nil
+	}
+	if 6+count*diploBufSize > len(data) {
+		return nil, fmt.Errorf("lbx diplo: 資料不足")
+	}
+	out := make([]string, count)
+	for i := 0; i < count; i++ {
+		out[i] = cutNul(data[6+i*diploBufSize : 6+(i+1)*diploBufSize])
+	}
+	return out, nil
+}
+
 // ParseCStrings 自 offset 起讀連續 NUL 結尾字串,直到資料尾。
 func ParseCStrings(data []byte, offset int) []string {
 	var out []string

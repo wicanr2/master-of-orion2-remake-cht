@@ -24,6 +24,7 @@ func main() {
 	cstr := flag.Bool("cstr", false, "用 C-string 格式解析")
 	offset := flag.Int("offset", 0, "C-string 解析起始 offset(rstring=4, estrings/hstrings=6)")
 	loadfile := flag.Bool("loadfile", false, "用 loadFile 格式(每資產一則訊息)")
+	diplo := flag.Bool("diplo", false, "用 DIPLOMSE 格式(每資產 header + N 個固定寬字串)")
 	groups := flag.Int("groups", 1, "loadFile 語言群組數(英文取前 count/groups 個資產)")
 	tsv := flag.Bool("tsv", false, "輸出 TSV 骨架供翻譯")
 	flag.Parse()
@@ -70,7 +71,12 @@ func main() {
 			continue
 		}
 		var strs []string
-		if *cstr {
+		if *diplo {
+			strs, err = lbx.ParseDiploStrings(raw)
+			if err != nil {
+				continue
+			}
+		} else if *cstr {
 			strs = lbx.ParseCStrings(raw, *offset)
 		} else {
 			strs, err = lbx.ParseFixedStrings(raw)
