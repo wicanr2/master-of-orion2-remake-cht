@@ -28,3 +28,6 @@ vendor/
 *.log
 *.tmp
 scratch/
+
+# docker build 快取
+.docker-cache/
