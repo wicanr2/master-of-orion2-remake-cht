@@ -1,0 +1,54 @@
+# 種族特性 / 自訂種族 pick 譯表(RACESTUF.LBX asset 0,64 條)。英文原文即 key。完整翻譯。
+# 純數值修飾(+50/-20 等)不列,i18n 自動 fallback 原樣顯示。
+Population	人口	類別
+-50% Growth	-50% 成長	特性
++50% Growth	+50% 成長	特性
++100% Growth	+100% 成長	特性
+Farming	農業	類別
+-1/2 Food	-1/2 食物	特性
++1 Food	+1 食物	特性
++2 Food	+2 食物	特性
+Industry	工業	類別
+-1 Production	-1 生產	特性
++1 Production	+1 生產	特性
++2 Production	+2 生產	特性
+Science	科學	類別
+-1 Research	-1 研究	特性
++1 Research	+1 研究	特性
++2 Research	+2 研究	特性
+Money	金錢	類別
+-0.5 BC	-0.5 星幣	特性
++0.5 BC	+0.5 星幣	特性
++1.0 BC	+1.0 星幣	特性
+Ship Defense	艦船防禦	類別
+Ship Attack	艦船攻擊	類別
+Ground Combat	地面戰鬥	類別
+Spying	間諜	類別
+Governments	政體	類別
+Feudal	封建	政體
+Dictatorship	獨裁	政體
+Democracy	民主	政體
+Unification	統一	政體
+Special Abilities	特殊能力	類別
+Low-G World	低重力世界	特性
+High-G World	高重力世界	特性
+Aquatic	水棲	特性
+Subterranean	地底棲	特性
+Large Home World	大型母星	特性
+Rich Home World	富礦母星	特性
+Poor Home World	貧礦母星	特性
+Artifacts World	遺物世界	特性
+Cybernetic	生化改造	特性
+Lithovore	食岩	特性
+Repulsive	惹人厭	特性
+Charismatic	有魅力	特性
+Uncreative	缺乏創造力	特性
+Creative	有創造力	特性
+Tolerant	耐受	特性
+Fantastic Traders	卓越貿易者	特性
+Telepathic	心靈感應	特性
+Lucky	幸運	特性
+Omniscient	全知	特性
+Stealthy Ships	匿蹤艦船	特性
+Trans Dimensional	跨次元	特性
+Warlord	軍閥	特性
