@@ -1,5 +1,5 @@
-# 科技/研究名譯表(來源 TECHNAME.LBX asset 0,共 560 條)。英文原文即 key。
-# 第 1 批:研究主題名(index 0–44)。其餘逐批補;未翻者 i18n 自動 fallback 英文。
+# 科技/元件名譯表(來源 TECHNAME.LBX asset 0,419 條唯一)。英文原文即 key。完整翻譯。
+# ── 研究主題 ──
 Starting Tech	起始科技	研究主題
 Advanced Biology	進階生物學	研究主題
 Advanced Chemistry	進階化學	研究主題
@@ -45,3 +45,388 @@ Ion Fission	離子分裂	研究主題
 Superscalar Construction	超純量建構	研究主題
 Macro Economics	總體經濟學	研究主題
 Macro Genetics	巨觀遺傳學	研究主題
+Magneto Gravitics	磁重力學	研究主題
+Matter Energy Conversion	物質能量轉換	研究主題
+Molecular Compression	分子壓縮	研究主題
+Molecular Control	分子控制	研究主題
+Moleculatronics	分子電子學	研究主題
+Molecular Manipulation	分子操控	研究主題
+Multi-Dimensional Physics	多維物理	研究主題
+Multi-Phased Physics	多相物理	研究主題
+Nano Technology	奈米科技	研究主題
+Neutrino Physics	微中子物理	研究主題
+Nuclear Fission	核分裂	研究主題
+Optronics	光電子學	研究主題
+Physics	物理學	研究主題
+Planetoid Construction	小行星建造	研究主題
+Plasma Physics	電漿物理	研究主題
+Positronics	正電子學	研究主題
+Quantum Fields	量子場	研究主題
+Robotics	機器人學	研究主題
+Servo Mechanics	伺服機械	研究主題
+Subspace Fields	次空間場	研究主題
+Subspace Physics	次空間物理	研究主題
+Tachyon Physics	快子物理	研究主題
+Tectonic Engineering	地殼工程	研究主題
+Temporal Fields	時間場	研究主題
+Temporal Physics	時間物理	研究主題
+Trans Genetics	超遺傳學	研究主題
+Transwarp Fields	超曲速場	研究主題
+Warp Fields	曲速場	研究主題
+Xeno Relations	異星關係	研究主題
+Xenon Technology	氙科技	研究主題
+# ── 研究領域 ──
+Biology	生物學	研究領域
+Power	動力	研究領域
+Construction	建設	研究領域
+Fields	力場	研究領域
+Computers	電腦	研究領域
+Sociology	社會學	研究領域
+No Tech	無科技	佔位
+# ── 應用科技 / 元件 ──
+Achilles Targeting Unit	阿基里斯瞄準系統	元件
+Adamantium Armor	精金裝甲	裝甲
+Advanced City Planning	先進都市規劃	建築
+Advanced Damage Control	先進損管	元件
+Alien Management Center	異族管理中心	建築
+Android Farmers	機器人農民	建築
+Android Scientists	機器人科學家	建築
+Android Workers	機器人工人	建築
+Anti-Grav Harness	反重力裝具	元件
+Anti-Matter Bomb	反物質炸彈	武器
+Anti-Matter Drive	反物質引擎	引擎
+Anti-Matter Torpedoes	反物質魚雷	武器
+Anti-Missile Rockets	反飛彈火箭	武器
+Armor Barracks	裝甲兵營	建築
+Artemis System Net	阿提米斯星系網	建築
+Planet Construction	行星建設	科技
+Assault Shuttles	突擊梭	武器
+Astro University	太空大學	建築
+Atmospheric Renewer	大氣再生器	建築
+Augmented Engines	強化引擎	元件
+Autolab	自動實驗室	建築
+Automated Factories	自動化工廠	建築
+Automated Repair Unit	自動修復裝置	元件
+Battleoids	戰鬥機械人	元件
+Battle Pods	戰鬥艙	元件
+Battle Scanner	戰鬥掃描器	元件
+Battlestation	戰鬥站	艦種
+Bio-Terminator	生化終結者	武器
+Biomorphic Fungi	生物形態真菌	建築
+Black Hole Generator	黑洞產生器	武器
+Bomber Bays	轟炸機庫	元件
+Capitol	首都	建築
+Class I Shield	第一級護盾	護盾
+Class III Shield	第三級護盾	護盾
+Class V Shield	第五級護盾	護盾
+Class VII Shield	第七級護盾	護盾
+Class X Shield	第十級護盾	護盾
+Cloaking Device	隱形裝置	元件
+Cloning Center	複製中心	建築
+Colony Base	殖民基地	元件
+Colony Ship	殖民船	艦種
+Confederation	邦聯	政體
+Cyber-Security Link	網路安全連結	建築
+Cybertronic Computer	生化電子電腦	電腦
+Damper Field	阻尼場	元件
+Dauntless Guidance System	無畏導引系統	元件
+Death Ray	死光	武器
+Death Spores	死亡孢子	武器
+Deep Core Mining	深核採礦	建築
+Core Waste Dumps	核廢料傾倒場	建築
+Deuterium Fuel Cells	氘燃料電池	燃料
+Dimensional Portal	次元傳送門	建築
+Displacement Device	位移裝置	元件
+Disrupter Cannon	崩解砲	武器
+Doom Star Construction	末日之星建造	科技
+Reinforced Hull	強化船殼	元件
+Ecm Jammer	電子干擾器	元件
+Electronic Computer	電子電腦	電腦
+Emissions Guidance System	輻射導引系統	元件
+Energy Absorber	能量吸收器	元件
+Biospheres	生物圈	建築
+Evolutionary Mutation	演化突變	科技
+Extended Fuel Tanks	延伸燃料槽	元件
+Fast Missile Racks	快速飛彈架	元件
+Federation	聯邦	政體
+Fighter Bays	戰機庫	元件
+Fighter Garrison	戰機駐防	建築
+Food Replicators	食物複製機	建築
+Freighters	貨船	元件
+Fusion Beam	核融合光束	武器
+Fusion Bomb	核融合炸彈	武器
+Fusion Drive	核融合引擎	引擎
+Fusion Rifle	核融合步槍	陸戰
+Gaia Transformation	蓋亞改造	建築
+Galactic Currency Exchange	銀河貨幣交易所	建築
+Galactic Cybernet	銀河電子網	建築
+Galactic Unification	銀河統一	政體
+Gauss Cannon	高斯砲	武器
+Graviton Beam	重力子光束	武器
+Gyro Destabilizer	陀螺失穩器	武器
+Hard Shields	硬化護盾	元件
+Heavy Armor	重型裝甲	元件
+Heavy Fighter Bays	重型戰機庫	元件
+Heightened Intelligence	智力增強	科技
+High Energy Focus	高能聚焦	元件
+Holo Simulator	全像模擬器	建築
+Hydroponic Farm	水耕農場	建築
+Hyper Drive	超空間引擎	引擎
+Megafluxers	百萬通量器	元件
+Hyper-X Capacitors	超X電容	元件
+Hyperspace Communications	超空間通訊	建築
+Imperium	帝國	政體
+Inertial Nullifier	慣性抵消器	元件
+Inertial Stabilizer	慣性穩定器	元件
+Interphased Drive	交相引擎	引擎
+Ion Drive	離子引擎	引擎
+Ion Pulse Cannon	離子脈衝砲	武器
+Iridium Fuel Cells	銥燃料電池	燃料
+Jump Gate	躍遷門	建築
+Laser Cannon	雷射砲	武器
+Laser Rifle	雷射步槍	陸戰
+Lightning Field	閃電場	元件
+Marine Barracks	陸戰隊兵營	建築
+Mass Driver	質量投射器	武器
+Mauler Device	重擊裝置	武器
+Merculite Missile	麥克萊特飛彈	武器
+Microbiotics	微生物技術	建築
+Microlite Construction	微石建造	科技
+Outpost Ship	前哨船	艦種
+Moleculartronic Computer	分子電子電腦	電腦
+Multi-Wave Ecm Jammer	多波電子干擾器	元件
+Multi-Phased Shields	多相護盾	元件
+Nano Disassemblers	奈米分解器	元件
+Neural Scanner	神經掃描器	建築
+Neutron Blaster	中子爆破槍	武器
+Neutron Scanner	中子掃描器	元件
+Neutronium Armor	中子素裝甲	裝甲
+Neutronium Bomb	中子素炸彈	武器
+Nuclear Bomb	核彈	武器
+Nuclear Drive	核子引擎	引擎
+Nuclear Missile	核飛彈	武器
+Optronic Computer	光電子電腦	電腦
+Particle Beam	粒子光束	武器
+Personal Shield	個人護盾	陸戰
+Phase Shifter	相位轉換器	元件
+Phasing Cloak	相位隱形	元件
+Phasor	相位砲	武器
+Phasor Rifle	相位步槍	陸戰
+Planetary Barrier Shield	行星屏障護盾	建築
+Planetary Flux Shield	行星通量護盾	建築
+Planetary Gravity Generator	行星重力產生器	建築
+Planetary Missile Base	行星飛彈基地	建築
+Ground Batteries	地面砲台	建築
+Planetary Radiation Shield	行星輻射護盾	建築
+Planetary Stock Exchange	行星證券交易所	建築
+Planetary Supercomputer	行星超級電腦	建築
+Plasma Cannon	電漿砲	武器
+Plasma Rifle	電漿步槍	陸戰
+Plasma Torpedoes	電漿魚雷	武器
+Plasma Web	電漿網	武器
+Pleasure Dome	享樂圓頂	建築
+Pollution Processor	污染處理器	建築
+Positronic Computer	正電子電腦	電腦
+Powered Armor	動力裝甲	陸戰
+Pulse Rifle	脈衝步槍	陸戰
+Proton Torpedoes	質子魚雷	武器
+Psionics	靈能學	科技
+Pulsar	脈衝星	武器
+Pulson Missile	脈子飛彈	武器
+Quantum Detonator	量子引爆器	元件
+Rangemaster Unit	射程控制器	元件
+Recyclotron	回收機	建築
+Reflection Field	反射場	元件
+Robotic Factory	機器人工廠	建築
+Research Laboratory	研究實驗室	建築
+Robo-Miners	機器人礦工	建築
+Space Scanner	太空掃描器	元件
+Scout Lab	偵察實驗室	元件
+Security Stations	保全站	元件
+Sensors	感測器	元件
+Shield Capacitors	護盾電容	元件
+Soil Enrichment	土壤強化	建築
+Space Academy	太空學院	建築
+Spaceport	太空港	建築
+Spatial Compressor	空間壓縮器	武器
+Spy Network	間諜網	建築
+Standard Fuel Cells	標準燃料電池	燃料
+Star Base	星際基地	艦種
+Star Fortress	星際要塞	艦種
+Star Gate	星際之門	建築
+Stasis Field	停滯場	武器
+Stealth Field	匿蹤場	元件
+Stealth Suit	匿蹤衣	陸戰
+Stellar Converter	恆星轉換器	武器
+Structural Analyzer	結構分析器	元件
+Sub-Space Communications	次空間通訊	建築
+Sub-Space Teleporter	次空間傳送器	元件
+Subterranean Farms	地底農場	建築
+Survival Pods	求生艙	元件
+Tachyon Communications	快子通訊	建築
+Tachyon Scanner	快子掃描器	元件
+Telepathic Training	心靈感應訓練	建築
+Terraforming	地形改造	建築
+Thorium Fuel Cells	釷燃料電池	燃料
+Time Warp Facilitator	時間扭曲促進器	元件
+Titan Construction	泰坦建造	科技
+Titanium Armor	鈦裝甲	裝甲
+Tractor Beam	牽引光束	武器
+Transport	運輸艦	艦種
+Transporters	傳送器	元件
+Tritanium Armor	三鈦裝甲	裝甲
+Troop Pods	部隊艙	元件
+Universal Antidote	萬用解毒劑	建築
+Urridium Fuel Cells	鈾銥燃料電池	燃料
+Virtual Reality Network	虛擬實境網路	建築
+Warp Dissipater	曲速消散器	元件
+Warp Interdictor	曲速攔阻器	建築
+Weather Control System	天氣控制系統	建築
+Wide Area Jammer	廣域干擾器	元件
+Xeno Psychology	異星心理學	科技
+Xentronium Armor	氙素裝甲	裝甲
+Zeon Missile	澤昂飛彈	武器
+Zortrium Armor	佐特裝甲	裝甲
+# ── 建築(簡稱)──
+No Building	無建築	佔位
+Alien Control Center	異族控制中心	建築
+Atmosphere Renewer	大氣再生器	建築
+Automated Factory	自動化工廠	建築
+Deep Core Mine	深核礦場	建築
+Core Waste Dump	核廢料場	建築
+Currency Exchange	貨幣交易所	建築
+Barrier Shield	屏障護盾	建築
+Flux Shield	通量護盾	建築
+Gravity Generator	重力產生器	建築
+Missile Base	飛彈基地	建築
+Radiation Shield	輻射護盾	建築
+Stock Exchange	證券交易所	建築
+Supercomputer	超級電腦	建築
+Research Lab	研究實驗室	建築
+Robo Miner Plant	機器人礦場	建築
+Weather Controller	天氣控制器	建築
+Artificial Planet	人造行星	建築
+# ── 特殊裝置 ──
+No Special	無特殊	佔位
+Shield Capacitor	護盾電容	特殊
+Sub Space Teleporter	次空間傳送器	特殊
+Warp Dissipator	曲速消散器	特殊
+Regeneration	再生	特殊
+# ── 無 X 佔位 ──
+No Armor	無裝甲	佔位
+No Shield	無護盾	佔位
+No Weapons	無武器	佔位
+# ── 武器(簡稱 / 戰鬥用)──
+Disrupter	崩解砲	武器
+Anti-Matter Torp	反物質魚雷	武器
+Proton Torpedo	質子魚雷	武器
+Plasma Torpedo	電漿魚雷	武器
+Death Spore	死亡孢子	武器
+Assault Shuttle	突擊梭	戰機
+Heavy Fighter	重型戰機	戰機
+Bomber	轟炸機	戰機
+Interceptor	攔截機	戰機
+Anti-Missile Rocket	反飛彈火箭	武器
+Dragon Breath	龍息	怪獸武器
+Phasor Eye	相位眼	怪獸武器
+Crystal Ray	水晶射線	怪獸武器
+Plasma Breath	電漿吐息	怪獸武器
+Plasma Flux	電漿通量	怪獸武器
+Caustic Slime	腐蝕黏液	怪獸武器
+# ── 電腦 / 引擎 / 單位 ──
+No Computer	無電腦	佔位
+No Drive	無引擎	佔位
+No Unit	無單位	佔位
+Marines	陸戰隊	單位
+Armor	裝甲車	單位
+Spy	間諜	單位
+No Fuel Cells	無燃料電池	佔位
+Uridium Fuel Cells	鈾銥燃料電池	燃料
+# ── 武器改造 ──
+No Mods	無改造	佔位
+Heavy Mount	重型砲座	改造
+Point Defense	點防禦	改造
+Armor Piercing	穿甲	改造
+Continuous	連續	改造
+No Range Dissipation	無射程衰減	改造
+Shield Piercing	穿盾	改造
+Auto Fire	自動射擊	改造
+Enveloping	包覆	改造
+Mirv	多彈頭	改造
+ECCM	反反制	改造
+Heavily Armored	重裝甲	改造
+Fast	快速	改造
+Emmisions Guidance	輻射導引	改造
+Overloaded	超載	改造
+None	無	佔位
+# ── 武器改造(縮寫,清單用)──
+Hv	重	改造縮寫
+Pd	點防	改造縮寫
+AP	穿甲	改造縮寫
+CO	連續	改造縮寫
+NR	無衰	改造縮寫
+SP	穿盾	改造縮寫
+AF	自動	改造縮寫
+ENV	包覆	改造縮寫
+MV	多彈	改造縮寫
+ARM	重裝	改造縮寫
+FST	快速	改造縮寫
+EMG	輻導	改造縮寫
+OVR	超載	改造縮寫
+# ── 武器(複數,同單數譯)──
+Mass Drivers	質量投射器	武器
+Gauss Cannons	高斯砲	武器
+Laser Cannons	雷射砲	武器
+Particle Beams	粒子光束	武器
+Fusion Beams	核融合光束	武器
+Ion Pulse Cannons	離子脈衝砲	武器
+Graviton Beams	重力子光束	武器
+Neutron Blasters	中子爆破槍	武器
+Phasors	相位砲	武器
+Disrupters	崩解砲	武器
+Death Rays	死光	武器
+Plasma Cannons	電漿砲	武器
+Spatial Compressors	空間壓縮器	武器
+Nuclear Missiles	核飛彈	武器
+Merculite Missiles	麥克萊特飛彈	武器
+Pulson Missiles	脈子飛彈	武器
+Zeon Missiles	澤昂飛彈	武器
+Anti-Matter Torps	反物質魚雷	武器
+Nuclear Bombs	核彈	武器
+Fusion Bombs	核融合炸彈	武器
+Anti-Matter Bombs	反物質炸彈	武器
+Neutronium Bombs	中子素炸彈	武器
+Bio-Terminators	生化終結者	武器
+Mauler Devices	重擊裝置	武器
+Heavy Fighters	重型戰機	戰機
+Bombers	轟炸機	戰機
+Interceptors	攔截機	戰機
+Stasis Fields	停滯場	武器
+Gyro Destabilizers	陀螺失穩器	武器
+Plasma Webs	電漿網	武器
+Pulsars	脈衝星	武器
+Black Hole Generators	黑洞產生器	武器
+Stellar Converters	恆星轉換器	武器
+Tractor Beams	牽引光束	武器
+Dragon Breaths	龍息	怪獸武器
+Phasor Eyes	相位眼	怪獸武器
+Crystal Rays	水晶射線	怪獸武器
+Plasma Breaths	電漿吐息	怪獸武器
+Plasma Fluxs	電漿通量	怪獸武器
+Caustic Slimes	腐蝕黏液	怪獸武器
+# ── 艦種 ──
+Frigate	巡防艦	艦種
+Destroyer	驅逐艦	艦種
+Cruiser	巡洋艦	艦種
+Battleship	戰艦	艦種
+Titan	泰坦	艦種
+Doom Star	末日之星	艦種
+Frigates	巡防艦	艦種
+Destroyers	驅逐艦	艦種
+Cruisers	巡洋艦	艦種
+Battleships	戰艦	艦種
+Titans	泰坦	艦種
+Doom Stars	末日之星	艦種
+Star Bases	星際基地	艦種
+Battle Stations	戰鬥站	艦種
+Star Fortresses	星際要塞	艦種
