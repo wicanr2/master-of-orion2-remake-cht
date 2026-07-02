@@ -11,7 +11,27 @@ var (
 	computerBonusTable = [6]int{0, 25, 50, 75, 100, 125}
 	// 礦產豐度(PlanetMinerals 0-4)對應的基礎工業產出。
 	mineralProductionTable = [5]int{1, 2, 3, 5, 8}
+	// 艦員等級(0 新兵..4 超級精銳)的攻/防加成(gamestate.cpp:162-167)。
+	shipCrewOffenseBonuses = [5]int{0, 15, 30, 50, 75}
+	shipCrewDefenseBonuses = [5]int{0, 15, 30, 50, 75}
 )
+
+// ShipCrewOffenseBonus 艦員等級提供的命中加成(Ship::beamOffense 末項)。
+// crewLevel 0=新兵/1=正規/2=老兵/3=精銳/4=超級精銳;超出範圍回 0。
+func ShipCrewOffenseBonus(crewLevel int) int {
+	if crewLevel < 0 || crewLevel >= len(shipCrewOffenseBonuses) {
+		return 0
+	}
+	return shipCrewOffenseBonuses[crewLevel]
+}
+
+// ShipCrewDefenseBonus 艦員等級提供的閃避加成(Ship::beamDefense 末項)。
+func ShipCrewDefenseBonus(crewLevel int) int {
+	if crewLevel < 0 || crewLevel >= len(shipCrewDefenseBonuses) {
+		return 0
+	}
+	return shipCrewDefenseBonuses[crewLevel]
+}
 
 // PlanetBaseProduction 回傳礦產豐度對應的基礎產出(Planet::baseProduction)。
 func PlanetBaseProduction(minerals int) int {

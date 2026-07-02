@@ -68,3 +68,20 @@ func TestFormulas(t *testing.T) {
 		t.Errorf("LeaderHireCost 下限 = %d,預期 0", got)
 	}
 }
+
+func TestShipCrewBonuses(t *testing.T) {
+	// gamestate.cpp:162-167:{0,15,30,50,75}(新兵→超級精銳)
+	want := []int{0, 15, 30, 50, 75}
+	for lvl, w := range want {
+		if got := ShipCrewOffenseBonus(lvl); got != w {
+			t.Errorf("ShipCrewOffenseBonus(%d) = %d,預期 %d", lvl, got, w)
+		}
+		if got := ShipCrewDefenseBonus(lvl); got != w {
+			t.Errorf("ShipCrewDefenseBonus(%d) = %d,預期 %d", lvl, got, w)
+		}
+	}
+	// 越界回 0
+	if ShipCrewOffenseBonus(-1) != 0 || ShipCrewOffenseBonus(5) != 0 {
+		t.Error("越界 crewLevel 應回 0")
+	}
+}
