@@ -24,9 +24,11 @@
 | ESTRINGS | loadStrings | 0 (off 6) | 811 | 介面/事件(除錯碎片 fallback 英文) | estrings.tsv | ✅ 玩家訊息完成(576) |
 | HESTRNGS | loadStrings | 0 (off 6) | 395 | help/提示訊息 | hestrings.tsv | ✅ 完成 |
 | HELP | 特殊 | 0 | 707→704 | 百科全文 | help.tsv | ✅ 完成 |
-| CREDITS | loadAsset | 0 | ~ | 製作名單 | — | ⏳ 待 |
-| HERODATA | — | — | ~ | 軍官資料 | — | ⏳ 待 |
-| billtext/jimtext/kentext… | loadFile | 群組 | misc 敘述 | — | ⏳ 待 |
+| CREDITS | loadAsset | 0 | 57→13 | 製作名單 | credits.tsv | ✅ 職務標籤完成(人名保留) |
+| HERODATA | loadAsset | 0 | 65 | 軍官職稱 | officer.tsv | ✅ 完成(姓名為專有名詞保留) |
+| BILLTEXT/BILLTEX2 | loadFile(step6) | 0 | 62 | 資訊/研究/科技分組 UI | misc.tsv | ✅ 引擎引用索引完成 |
+| KENTEXT/JIMTEXT2 | loadFile(step6) | 0 | (含上) | 艦員等級/冠詞 | misc.tsv | ✅ 引擎引用索引完成 |
+| JIMTEXT/KENTEXT1 等其餘 misc | loadFile(step6) | 0 | 未接線 | 未實作畫面文字 | — | ⏳ 待對應畫面移植(openorion2 未引用) |
 
 ## 翻譯策略
 
@@ -36,3 +38,13 @@
 - 每組完成後 TSV 守護測試(載入 + 佔位符一致)把關。
 
 > 「完成所有訊息翻譯」= 上表所有敘述/UI 源翻完;專有名詞池另定策略。
+
+## misc 檔的語言交錯(重要技術細節)
+
+`billtext/jimtext/kentext` 系列用 `loadFile(archive, offset=lang_id, step=LANG_GROUPS=6, group_id=0, groups=1)` 載入:
+**同一邏輯字串的 6 種語言(En/De/Fr/Es/It/En)存在 6 個連續 asset**,英文(lang_id=0)取 `asset = str_id × 6`。
+逆向 dump 時若直接用 raw asset index 會混到德/法文 → 錯 key。務必用 `str_id × 6` 還原英文。
+(對比:`antarmsg/councmsg` 用 `offset=0, step=1, group_id=lang_id, groups=6`,是「每語言一整塊」的另一種交錯,English 取前 1/6 連續段。)
+
+openorion2 僅接線少數 misc str_id(資訊畫面標題、收入分類、研究領域、科技分組、艦員等級);
+其餘為未實作畫面的文字,列「待對應畫面移植」,不投機翻譯(靜態溯源:不翻引擎不顯示的死字串)。
