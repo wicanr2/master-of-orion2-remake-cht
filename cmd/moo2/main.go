@@ -83,6 +83,8 @@ func main() {
 	planetsMode := flag.Bool("planets", false, "行星列表畫面模式")
 	helpMode := flag.Bool("help-viewer", false, "百科檢視器模式")
 	helpIndex := flag.Int("help-index", 1, "百科條目 index(HELP.LBX asset0)")
+	helpTitle := flag.String("help-title", "", "依英文標題選百科條目(優先於 -help-index)")
+	helpList := flag.Bool("help-list", false, "列出所有百科條目(headless,不開視窗)")
 	tsvPath := flag.String("tsv", "", "譯表 TSV(留空用該畫面預設)")
 	lang := flag.String("lang", "zh", "語言:zh(繁中)或 en(英文)")
 	flag.Parse()
@@ -137,7 +139,13 @@ func main() {
 			fatal(fmt.Errorf("載入譯表: %w", err))
 		}
 		dirs := strings.Split(*dataDirs, ",")
-		if err := runHelp(dirs, "help.lbx", *helpIndex, langID, fnt, reg, *shot, *frames); err != nil {
+		if *helpList {
+			if err := runHelpList(dirs, "help.lbx", reg); err != nil {
+				fatal(err)
+			}
+			return
+		}
+		if err := runHelp(dirs, "help.lbx", *helpIndex, *helpTitle, langID, fnt, reg, *shot, *frames); err != nil {
 			fatal(err)
 		}
 		return

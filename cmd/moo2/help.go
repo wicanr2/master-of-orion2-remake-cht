@@ -95,28 +95,73 @@ func sanitizeHelpText(s string) string {
 	return b.String()
 }
 
-// runHelp 載入 HELP.LBX,取第 index 則條目,翻譯後以自繪面板渲染(中/英皆需 -font)。
-func runHelp(dirs []string, lbxName string, index int, lang i18n.Lang, fnt *uifont.Font,
+// loadHelpEntries 開 HELP.LBX 取 asset 0 解析為條目清單。
+func loadHelpEntries(dirs []string, lbxName string) ([]lbx.HelpEntry, error) {
+	res, err := assets.NewResolver(dirs...)
+	if err != nil {
+		return nil, err
+	}
+	arch, err := res.OpenLBX(lbxName)
+	if err != nil {
+		return nil, err
+	}
+	raw, err := arch.Asset(0)
+	if err != nil {
+		return nil, err
+	}
+	return lbx.ParseHelp(raw)
+}
+
+// runHelpList 列出所有百科條目(index、英文標題、是否有中文譯文),headless、不開視窗。
+// 供瀏覽/驗證 704 條譯文覆蓋。
+func runHelpList(dirs []string, lbxName string, reg *i18n.Registry) error {
+	entries, err := loadHelpEntries(dirs, lbxName)
+	if err != nil {
+		return err
+	}
+	help := reg.Source("help")
+	nTrans := 0
+	for i, e := range entries {
+		mark := "  "
+		if e.Text != "" && help.Has(e.Text) {
+			mark = "✓ "
+			nTrans++
+		} else if e.Text == "" {
+			mark = "· " // 空本文(佔位條目)
+		}
+		fmt.Printf("%s%3d  %s\n", mark, i, e.Title)
+	}
+	fmt.Printf("\n共 %d 則,有中文本文譯 %d 則\n", len(entries), nTrans)
+	return nil
+}
+
+// findHelpIndex 依英文標題(不分大小寫)找條目 index,找不到回 -1。
+func findHelpIndex(entries []lbx.HelpEntry, title string) int {
+	for i, e := range entries {
+		if strings.EqualFold(strings.TrimSpace(e.Title), strings.TrimSpace(title)) {
+			return i
+		}
+	}
+	return -1
+}
+
+// runHelp 載入 HELP.LBX,取指定條目(index 或 title),翻譯後以自繪面板渲染(中/英皆需 -font)。
+func runHelp(dirs []string, lbxName string, index int, title string, lang i18n.Lang, fnt *uifont.Font,
 	reg *i18n.Registry, shot string, frames int) error {
 
 	if fnt == nil {
 		return fmt.Errorf("百科檢視器需以 -font 指定字型(自繪文字,中英皆需)")
 	}
-	res, err := assets.NewResolver(dirs...)
+	entries, err := loadHelpEntries(dirs, lbxName)
 	if err != nil {
 		return err
 	}
-	arch, err := res.OpenLBX(lbxName)
-	if err != nil {
-		return err
-	}
-	raw, err := arch.Asset(0)
-	if err != nil {
-		return err
-	}
-	entries, err := lbx.ParseHelp(raw)
-	if err != nil {
-		return err
+	if title != "" {
+		if idx := findHelpIndex(entries, title); idx >= 0 {
+			index = idx
+		} else {
+			return fmt.Errorf("找不到標題為 %q 的百科條目", title)
+		}
 	}
 	if index < 0 || index >= len(entries) {
 		return fmt.Errorf("help index %d 超出範圍(共 %d 則)", index, len(entries))

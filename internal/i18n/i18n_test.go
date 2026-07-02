@@ -70,3 +70,25 @@ func TestFirstWins(t *testing.T) {
 		t.Errorf("先載入者優先,得 %q,預期 能量", got)
 	}
 }
+
+// TestLoadTSVTrimsDecodedKey 回歸:含尾端/開頭跳脫換行的 key 須能被(TrimSpace 後的)查詢命中。
+// 修正前 key 在 decode 前 TrimSpace,殘留真實 \n,而 Translate 查詢端 TrimSpace 會削掉 → 永久 miss。
+func TestLoadTSVTrimsDecodedKey(t *testing.T) {
+	tsv := "Reduced to reduced intensity.\\n\tzh尾端換行\n" +
+		"\\n\\nThis colony does not allow farming.\tzh開頭換行\n"
+	c := New(Traditional)
+	if _, err := c.LoadTSV(strings.NewReader(tsv)); err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct{ query, want string }{
+		{"Reduced to reduced intensity.\n", "zh尾端換行"}, // 遊戲原字串帶尾端 \n
+		{"Reduced to reduced intensity.", "zh尾端換行"},   // trim 後
+		{"\n\nThis colony does not allow farming.", "zh開頭換行"},
+		{"This colony does not allow farming.", "zh開頭換行"},
+	}
+	for _, tc := range cases {
+		if got := c.Translate(tc.query); got != tc.want {
+			t.Errorf("Translate(%q) = %q,預期 %q", tc.query, got, tc.want)
+		}
+	}
+}

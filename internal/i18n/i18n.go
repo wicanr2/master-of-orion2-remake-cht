@@ -56,7 +56,12 @@ func (c *Catalog) LoadTSV(r io.Reader) (int, error) {
 		if len(cols) < 2 {
 			continue
 		}
-		key := decodeEscapes(strings.TrimSpace(cols[0]))
+		// 先 decode 再 TrimSpace:key 須與 Translate 查詢端的 TrimSpace(s) 一致。
+		// 若先 TrimSpace 再 decode,尾端/開頭的跳脫換行(\n\n…)會殘留在 key 中,
+		// 而查詢端 TrimSpace 會削掉真實換行 → 這類 key 永遠對不上(如 HELP 尾端 \n、
+		// ESTRINGS 開頭 \n\n 的訊息)。value 保留原樣(僅去編碼字串兩端空白),
+		// 以維持顯示用的前導/尾隨空白語意。
+		key := strings.TrimSpace(decodeEscapes(cols[0]))
 		val := decodeEscapes(strings.TrimSpace(cols[1]))
 		if key == "" || val == "" {
 			continue // 空中文 → 選擇性覆蓋,略過
