@@ -1,0 +1,68 @@
+# 介面/事件字串(ESTRINGS.LBX,loadStrings offset 6,共 811 條,含大量除錯/格式碎片)。
+# 翻譯玩家可見訊息;純除錯/檔名/格式碎片非「訊息」,fallback 英文無害,不列。批次逐步補。
+# ── 太空怪獸 ──
+A Space Amoeba	一隻太空變形蟲	怪獸
+A Space Crystal	一顆太空水晶	怪獸
+A Space Dragon	一頭太空巨龍	怪獸
+A Space Eel	一隻太空巨鰻	怪獸
+A Space Hydra	一頭太空九頭蛇	怪獸
+A Space Monster	一頭太空怪獸	怪獸
+a Space Monster	一頭太空怪獸	怪獸
+Space Monster	太空怪獸	怪獸
+# ── 殖民/建造 ──
+Android Farmer	機器人農民	單位
+Android Scientist	機器人科學家	單位
+Android Worker	機器人工人	單位
+Colony Ship	殖民船	單位
+Doom Star	末日之星	單位
+Custom Design	自訂設計	介面
+Ancient Derelict	古代廢船	事件
+Colony built on %s	已在 %s 建立殖民地	報告
+Build List for %s	%s 的建造清單	介面
+Build Time: %d	建造時間:%d	介面
+Cost Here: %d	此處花費:%d	介面
+Cost to build	建造花費	介面
+Cost to maintain	維護花費	介面
+Climate Change	氣候變遷	事件
+Computer Virus	電腦病毒	事件
+Diplomatic Blunder	外交失誤	事件
+Diplomatic Marriage	外交聯姻	事件
+\n\nThis colony does not allow farming.	\n\n此殖民地不允許農耕。	報告
+This is not a Valid Colony!	這不是有效的殖民地!	報告
+Colinization failed for unspecified reason...	殖民因不明原因失敗……	報告
+# ── 確認/詢問對話 ──
+Annihilate the Conquered occupants of this colony at 1 per turn?	以每回合 1 名的速度殲滅此殖民地被征服的居民?	確認
+Do you want to spend %d BC to buy %d production?	你想花 %d 星幣購買 %d 生產嗎?	確認
+Destroy %s for a return of %dBC?	摧毀 %s 以換取 %d 星幣?	確認
+Build colony on %s with\n\n	在 %s 建立殖民地,配備\n\n	介面
+# ── 勝利條件 ──
+Defeat Antarans	擊敗安塔蘭人	勝利
+Galactic Unification	銀河統一	勝利
+Achievements	成就	介面
+# ── 戰鬥/轟炸 ──
+Attack Summary	攻擊摘要	戰鬥
+Defense Summary	防禦摘要	戰鬥
+Enemy ships Bomb %s	敵艦轟炸 %s	報告
+%d bomb strikes	%d 次炸彈命中	戰鬥
+%d est. bomb hits	預估 %d 次炸彈命中	戰鬥
+%d hit	%d 次命中	戰鬥
+%d hits	%d 次命中	戰鬥
+%d million people killed	%d 百萬人喪生	戰鬥
+%d million people killed by biological weapons	%d 百萬人死於生化武器	戰鬥
+%d units of armor killed	%d 單位裝甲被殲滅	戰鬥
+%d units of infantry killed	%d 單位步兵被殲滅	戰鬥
+armored infantry	裝甲步兵	單位
+# ── 移民/運輸 ──
+Sending %d million %s from %s to %s, ETA - %d turns.	正將 %d 百萬 %s 自 %s 送往 %s,預計 %d 回合抵達。	報告
+Declined because the planet is at its population limit.	因該行星已達人口上限而拒絕。	報告
+Declined by user due to %d turn delay.	因 %d 回合延遲,已由使用者拒絕。	報告
+You cannot send the dragon to the same star.	你無法將巨龍送往同一顆恆星。	報告
+You may not attack a place which has no colony	你無法攻擊沒有殖民地的地方	報告
+# ── 計數/單位 ──
+%d Buildings	%d 座建築	介面
+%d Colonists	%d 名殖民者	介面
+%d Max Population	最大人口 %d	介面
+%d Total Population	總人口 %d	介面
+%d turn(s)	%d 回合	介面
+5 Players	5 名玩家	介面
+(AI Bonus)	(AI 加成)	介面
