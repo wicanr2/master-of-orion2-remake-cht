@@ -20,7 +20,7 @@
 | DIPLOMSE | loadFile | 群組 | ~180 | 外交對白 | — | ⏳ 待(敘述) |
 | COUNCMSG | loadFile | 群組 | 14 | 議會勝選訊息 | council.tsv | ✅ 完成 |
 | ANTARMSG | loadFile | 群組 | 8 | 安塔蘭威嚇 | antaran.tsv | ✅ 完成 |
-| RSTRING0 | loadStrings | 0 (off 4) | ~178 | 種族相關字串 | — | ⏳ 待 |
+| RSTRING0 | loadStrings | 0 (off 4) | 177 | 殖民摘要+回合報告 | rstring.tsv | ✅ 完成 |
 | ESTRINGS | loadStrings | 0 (off 6) | ~813 | 事件/介面字串 | — | ⏳ 待(大宗) |
 | HESTRNGS | loadStrings | 0 (off 6) | ~398 | help 短字串 | — | ⏳ 待 |
 | HELP | 特殊 | 多 | 大量 | 百科全文 | — | ⏳ 待(最大宗敘述) |
