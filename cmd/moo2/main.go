@@ -80,7 +80,8 @@ func main() {
 	savePath := flag.String("save", "", "存檔路徑;設定則以星圖模式繪製該存檔")
 	fontPath := flag.String("font", "", "CJK 字型檔(.ttf/.otf/.ttc);設定則用它渲染中文")
 	menuMode := flag.Bool("menu", false, "主選單模式")
-	tsvPath := flag.String("tsv", "assets/i18n/menu.tsv", "主選單譯表 TSV")
+	planetsMode := flag.Bool("planets", false, "行星列表畫面模式")
+	tsvPath := flag.String("tsv", "", "譯表 TSV(留空用該畫面預設)")
 	lang := flag.String("lang", "zh", "語言:zh(繁中)或 en(英文)")
 	flag.Parse()
 
@@ -89,8 +90,8 @@ func main() {
 		langID = i18n.English
 	}
 
-	// 主選單模式(中/英)。
-	if *menuMode {
+	// 畫面覆蓋(擦底疊字)模式:主選單 / 行星列表。
+	if *menuMode || *planetsMode {
 		if *dataDirs == "" {
 			fmt.Fprintln(os.Stderr, "需指定 -data <遊戲資料夾>")
 			os.Exit(2)
@@ -99,7 +100,21 @@ func main() {
 		if err != nil {
 			fatal(fmt.Errorf("載入字型: %w", err))
 		}
-		if err := runMenu(strings.Split(*dataDirs, ","), langID, fnt, *tsvPath, *shot, *frames); err != nil {
+		dirs := strings.Split(*dataDirs, ",")
+		if *menuMode {
+			tsv := *tsvPath
+			if tsv == "" {
+				tsv = "assets/i18n/menu.tsv"
+			}
+			err = runMenu(dirs, langID, fnt, tsv, *shot, *frames)
+		} else {
+			tsv := *tsvPath
+			if tsv == "" {
+				tsv = "assets/i18n/planets.tsv"
+			}
+			err = runPlanets(dirs, langID, fnt, tsv, *shot, *frames)
+		}
+		if err != nil {
 			fatal(err)
 		}
 		return

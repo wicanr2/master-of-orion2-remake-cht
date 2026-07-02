@@ -16,14 +16,16 @@
 手法:六按鈕英文烘在背景圖(New Game 只有 hover sprite、idle 靠背景證實),故用擦底疊字 —— 採樣按鈕底色蓋掉英文 + 疊置中中文(座標取自 openorion2 mainmenu.cpp:415,y=172/195/217/240/262/285)。
 重現:`moo2 -menu -data <遊戲夾> -font <CJK字型> -shot out.png`。
 
-### 行星列表(PLNTSUM.LBX 資產 0)
-![](images/reference/en-planets-list.png)
+### 行星列表(PLNTSUM.LBX 資產 0)✅ 已中文化
 
-英文 UI(待翻,建議 `assets/i18n/planets.tsv`):
-- 欄位:Planet、Climate、Gravity、Minerals、Size
-- Sort Priority(排序優先)、Display Restrictions(顯示篩選)
-- No Enemy Presence、Normal Gravity、Non-Hostile Environment、Mineral Abundance、Planets In Range
-- Send Colony Ship、Send Outpost Ship、Return
+| 原版英文 | 繁中化 |
+|---|---|
+| ![](images/reference/en-planets-list.png) | ![](images/reference/cht-planets-list.png) |
+
+18 個標籤覆蓋(`assets/i18n/planets.tsv`,座標多取自 openorion2 `PlanetsListView::initWidgets`):
+欄位(行星/氣候/重力/礦產/大小)、排序優先 + 排序鈕、顯示篩選 + 5 個篩選(無敵蹤/正常重力/適居環境/礦產豐富/射程內)、派殖民船/派前哨船/返回。
+重現:`moo2 -planets -data <遊戲夾> -font <字型> -shot out.png`。
+> 已知小瑕疵:「顯示篩選」下方原本又寬又粗的 DISPLAY RESTRICTIONS 以單一採樣色擦不乾淨,邊緣微透 —— 待改用「從空白處採樣底色」精修。
 
 ### 殖民地建造(COLBLDG.LBX 資產 0)
 ![](images/reference/en-colony-build.png)

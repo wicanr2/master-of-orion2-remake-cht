@@ -60,6 +60,9 @@
 
 ## Phase 4 — 畫面重建 + 完整中文化(做法見 `08` playbook)
 - [x] 原版畫面對照組(`docs/reference-screens.md`:主選單/行星列表/建造,英文原貌 + 翻譯清單)
+- [x] 通用畫面覆蓋渲染器(`cmd/moo2/overlay.go`:資料驅動擦底疊字,選單+行星列表共用)
+- [x] 主選單中文化(6 按鈕)+ 行星列表中文化(18 標籤,before/after)
+- [ ] 精修「顯示篩選」寬粗英文擦除(改從空白處採樣底色)
 - [ ] 補齊需全域調色盤鏈的畫面(COLONY/DESIGN/COUNCIL/DIPLOMAT…)到對照組
 - [ ] **[HARD] 開工先做:窮舉所有文字源(LBX 各類 + Go hardcode),各寫 dumper,用引擎自己 reader dump 精確 key**
 - [ ] 逐畫面重建:主選單/載存檔/星系圖/行星清單/殖民地/科技研究/艦隊/軍官/種族資訊/對話框
