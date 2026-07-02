@@ -22,7 +22,7 @@
 - [x] scan-line RLE 影像解碼 — internal/lbx/image.go
 - [x] palette 解析(6-bit → 8-bit)— 解碼與上色解耦(Frame.ToRGBA)
 - [x] 影像多幀(frame offset 表)+ 多 palette variant(ToRGBA 套不同 palette)
-- [ ] Bitmap(8-bit indexed)+ dirty block(gfx.cpp:588-765;image.go 已含 NOCOMPRESS/RLE,Bitmap sparse block 待補)
+- [x] Bitmap(8-bit indexed):像素編碼與 Image 相同(image.go 已涵蓋);dirty-block 為 SDL 局部 blit 優化,ebiten 全繪不需,刻意不移植(見 docs/tech/lbx-format.md §2.7)
 - [x] 存檔 schema(對照 gamestate.cpp,全部完成並驗證):
   - [x] reader + GameConfig(59B)+ Galaxy/Nebula(32B)
   - [x] Colony×250 / Planet×360 / Star×72 / Leader×67 / Player×8(內嵌 ShipDesign/Weapon/Settler)/ Ship×500
@@ -30,7 +30,7 @@
 - [x] 資料枚舉/常數字典(技術/建築/種族特性/氣候/礦產/特殊裝備)— internal/gamedata/enums.go(28 枚舉,自 gamestate.h 生成)+ docs/tech/enums.md + 抽查測試
 - [x] 唯讀衍生公式移植(艦艇戰力/HP/戰速、行星產出、雇用費)— internal/gamedata/formulas.go + docs/tech/formulas.md + 測試(researchCost 待 LBX 資料表)
 - [x] 檔案覆蓋順序載入(基礎 → 1.31)— internal/assets/resolver.go(有序搜尋路徑、大小寫不敏感、OpenLBX)+ 測試
-- [ ] 單元測試:以 1.31 .lbx + 存檔為測資(進行中:lbx/save 皆有合成 + 真實檔測試)
+- [x] 單元測試:lbx/save/gamedata/assets 皆有合成測試;lbx/save 另有 env-gated 真實檔測試(MOO2_LBX_TEST / MOO2_SAVE_TEST)
 
 ## Phase 2 — ebiten backend + 最小可跑 ⭐
 - [ ] ebiten 專案骨架(Update/Draw/Layout)

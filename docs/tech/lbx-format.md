@@ -86,4 +86,11 @@ Go 實作(`internal/lbx/image.go`)把「解碼」與「上色」分離,**優於*
 - 好處:同一幀可套不同 palette variant(原版功能),且解碼結果可 byte-精確斷言,不需真實調色盤即可測。
 
 驗證數據:BEAMS.LBX 153/153、COLREFIT.LBX 5/5、GAME.LBX 32/32 個資產皆無誤解碼、幀尺寸一致。
-> 尚未做:像素**顏色**的視覺正確性(需 Phase 2 能 render + 截圖比對);Bitmap sparse dirty-block(`gfx.cpp:588-765`)。
+
+### 2.7 Bitmap 與 dirty-block:格式相同,優化刻意不移植
+
+openorion2 另有 `Bitmap`(`gfx.cpp:671-765`)。經核對,其像素編碼**與 Image 完全相同**(同 NOCOMPRESS、同 scan-line RLE、首列標記 size=1、奇數補位)。唯一差別是額外維護 **dirty-block 矩形清單**(`blocks`/`oldBlocks`),計算相鄰幀間變動的矩形。
+
+這是 **SDL 局部 blit 的效能優化**(只重繪變動區)。本專案用 ebiten **每幀全繪**,不需要增量矩形 → 這道「柵欄」的前提在我們的架構下不存在,**刻意不移植**(非因投報跳過)。像素本身:`Bitmap` 存 8-bit 索引到 buffer,正是 `Frame.Index` 已提供的,故現有 `DecodeImage` 已涵蓋 Bitmap 的解碼需求。
+
+> 尚未做:像素**顏色**的視覺正確性(需 Phase 2 能 render + 截圖比對)。
