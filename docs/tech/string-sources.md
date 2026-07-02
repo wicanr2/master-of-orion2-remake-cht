@@ -34,7 +34,7 @@
 | BILLTEXT/BILLTEX2 | loadFile(step6) | 0 | 62 | 資訊/研究/科技分組 UI | misc.tsv | ✅ 引擎引用索引完成 |
 | KENTEXT/JIMTEXT2 | loadFile(step6) | 0 | (含上) | 艦員等級/冠詞 | misc.tsv | ✅ 引擎引用索引完成 |
 | JIMTEXT/KENTEXT1 等其餘 misc | loadFile(step6) | 0 | 未接線 | 未實作畫面文字 | — | ⏳ 待對應畫面移植(openorion2 未引用) |
-| BILLTEXT str_id 10-13,26-60 | loadFile(step6) | 0 | ~35 | 參考資料/回合摘要/**17 級外交關係形容詞**/間諜/條約 | — | ⏳ 下輪翻譯候選(原始遊戲有,openorion2 未接線;SA2 已定位) |
+| BILLTEXT str_id 10-13,26-60 | loadFile(step6) | 0 | 38 | 參考資料/回合摘要/**17 級外交關係形容詞**/間諜/條約 | misc.tsv | ✅ 完成(預先翻好待畫面接線) |
 
 ## 翻譯策略
 
