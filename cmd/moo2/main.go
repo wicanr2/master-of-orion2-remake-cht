@@ -28,13 +28,13 @@ import (
 // 實際邏輯尺寸依載入的背景圖 bounds 決定。
 
 type game struct {
-	bg           *ebiten.Image
-	logicalW     int
-	logicalH     int
-	shotPath     string
-	frames       int
-	tick         int
-	saved        bool
+	bg       *ebiten.Image
+	logicalW int
+	logicalH int
+	shotPath string
+	frames   int
+	tick     int
+	saved    bool
 }
 
 func (g *game) Update() error {
@@ -81,6 +81,8 @@ func main() {
 	fontPath := flag.String("font", "", "CJK 字型檔(.ttf/.otf/.ttc);設定則用它渲染中文")
 	menuMode := flag.Bool("menu", false, "主選單模式")
 	planetsMode := flag.Bool("planets", false, "行星列表畫面模式")
+	helpMode := flag.Bool("help-viewer", false, "百科檢視器模式")
+	helpIndex := flag.Int("help-index", 1, "百科條目 index(HELP.LBX asset0)")
 	tsvPath := flag.String("tsv", "", "譯表 TSV(留空用該畫面預設)")
 	lang := flag.String("lang", "zh", "語言:zh(繁中)或 en(英文)")
 	flag.Parse()
@@ -115,6 +117,27 @@ func main() {
 			err = runPlanets(dirs, langID, fnt, tsv, *shot, *frames)
 		}
 		if err != nil {
+			fatal(err)
+		}
+		return
+	}
+
+	// 百科檢視器模式:HELP.LBX + help.tsv,自繪面板顯示一則條目。
+	if *helpMode {
+		if *dataDirs == "" {
+			fmt.Fprintln(os.Stderr, "需指定 -data <遊戲資料夾>")
+			os.Exit(2)
+		}
+		fnt, err := loadFont(*fontPath)
+		if err != nil {
+			fatal(fmt.Errorf("載入字型: %w", err))
+		}
+		reg := i18n.NewRegistry(langID)
+		if _, err := reg.LoadFS(os.DirFS("assets/i18n"), "."); err != nil {
+			fatal(fmt.Errorf("載入譯表: %w", err))
+		}
+		dirs := strings.Split(*dataDirs, ",")
+		if err := runHelp(dirs, "help.lbx", *helpIndex, langID, fnt, reg, *shot, *frames); err != nil {
 			fatal(err)
 		}
 		return
