@@ -1,0 +1,30 @@
+# ── 版權素材:一律不進 repo(玩家自備正版)──────────────
+# 原版遊戲檔與手冊(含 .lbx 資產)
+original_game/
+# 官方 patch 壓縮檔(版權)
+moo2_patch1.31/
+moo2_patch1.5/
+
+# ── 上游參考原始碼:openorion2(GPL,有自己的 repo)──────
+# 本機當參考基底,不重新散布;取得方式見 docs/kickoff/01-openorion2-assessment.md
+openorion2/
+
+# ── 執行期解出的遊戲資料 ────────────────────────────────
+# 玩家把正版 *.lbx 放這裡,程式讀取;不得入庫
+game_data/
+*.lbx
+*.LBX
+
+# ── Go / ebiten build 產物 ──────────────────────────────
+/bin/
+/build/
+*.exe
+*.test
+*.out
+vendor/
+
+# ── 一般雜項 ────────────────────────────────────────────
+.DS_Store
+*.log
+*.tmp
+scratch/
