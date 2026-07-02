@@ -8,6 +8,7 @@
 - [savegame-format.md](savegame-format.md) — `save?.gam` 存檔:版本 `0xe0`、關鍵 offset(colonyCount `0x25b`、galaxy `0x31be4`)、各實體結構大小與欄位佈局、真實檔驗證數據。
 - [enums.md](enums.md) — 28 個資料枚舉對照(技術 212/研究主題 83/建築 49/種族特性 32/特殊裝備…),英文名即 gameplay 邏輯 key,中文欄待填(中文化術語表基礎)。**自動生成**(`scripts/gen-enums.py` 讀 openorion2 gamestate.h),對應 Go:`internal/gamedata/enums.go`。
 - [formulas.md](formulas.md) — 唯讀衍生公式與查表(艦艇戰力/HP/戰速、行星產出、雇用費),對應 Go:`internal/gamedata/formulas.go`。
+- [ebiten-notes.md](ebiten-notes.md) — Phase 2 移植筆記:MOO2=640×480、資料層→ebiten 全鏈路、docker headless(CGO/xvfb/buildvcs)、ReadPixels 截圖。對應:`cmd/moo2`、`docker/Dockerfile.ebiten`、`scripts/screenshot.sh`。
 
 ## 待補(後續輪次)
 

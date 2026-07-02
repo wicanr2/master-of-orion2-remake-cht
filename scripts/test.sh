@@ -15,6 +15,13 @@ if [[ -n "${MOO2_LBX_TEST:-}" ]]; then
   ENV_ARGS+=(-e "MOO2_LBX_TEST=/testdata/real.lbx")
 fi
 
+# 預設只測純 Go 套件(CGO=0);cmd/moo2(ebiten/CGO)由 scripts/screenshot.sh
+# 以 moo2-ebiten image 另行編譯驗證。可傳參覆蓋預設目標。
+TARGETS=("$@")
+if [[ ${#TARGETS[@]} -eq 0 ]]; then
+  TARGETS=(./internal/... ./cmd/lbxdump)
+fi
+
 exec docker run --rm \
   -v "${REPO_ROOT}:/src" \
   -v "${REPO_ROOT}/.docker-cache/go:/go" \
@@ -23,4 +30,4 @@ exec docker run --rm \
   "${ENV_ARGS[@]}" \
   "${MOUNT_ARGS[@]}" \
   "${IMAGE}" \
-  go test -buildvcs=false "${@:-./...}"
+  go test -buildvcs=false "${TARGETS[@]}"

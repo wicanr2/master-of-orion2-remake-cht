@@ -33,12 +33,15 @@
 - [x] 單元測試:lbx/save/gamedata/assets 皆有合成測試;lbx/save 另有 env-gated 真實檔測試(MOO2_LBX_TEST / MOO2_SAVE_TEST)
 
 ## Phase 2 — ebiten backend + 最小可跑 ⭐
-- [ ] ebiten 專案骨架(Update/Draw/Layout)
-- [ ] 實作 `Screen` 對應:registerTexture/drawTexture/fillRect/setClipRegion
+- [x] ebiten 專案骨架(Update/Draw/Layout)— cmd/moo2 + ebiten v2.9.9
+- [x] palette 上色 → `ebiten.Image`(Frame.ToRGBA → NewImageFromImage → DrawImage)
+- [x] docker + xvfb 截圖流程打通 — docker/Dockerfile.ebiten(CGO+X11+GL+xvfb)+ scripts/screenshot.sh(ReadPixels 存 PNG,不依賴 WM)
+- [x] ★ 顏色視覺驗證:MAINMENU 資產 21 於 ebiten 渲染出完整正確主選單(640×480)
+- [x] 確認 MOO2 為 640×480(非 320×200);修正 kickoff 假設
+- [ ] 實作 `Screen` 對應:registerTexture/drawTexture/fillRect/setClipRegion(抽介面,目前為直繪骨架)
 - [ ] 滑鼠事件(cursor + 按鍵),補鍵盤
-- [ ] palette 上色 → `ebiten.Image` + 資產快取
-- [ ] docker + xvfb 截圖流程打通
-- [ ] 里程碑:開視窗 → 讀 .lbx → 載存檔 → 顯示星系圖
+- [ ] 資產快取(避免每幀 NewImageFromImage)
+- [ ] 里程碑:載存檔 → 顯示星系圖(目前已能開視窗 + 讀 .lbx + 顯示背景)
 
 ## Phase 3 — UI 框架 + 文字系統 + 主選單(做法見 `08` playbook)
 - [ ] gui widget 樹翻譯(Toggle/Choice/ScrollBar/Label/Composite + ViewStack)
