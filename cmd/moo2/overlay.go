@@ -53,13 +53,21 @@ func (g *overlayGame) sampleAt(x, y int) color.RGBA {
 	return color.RGBA{g.rgba.Pix[i], g.rgba.Pix[i+1], g.rgba.Pix[i+2], 255}
 }
 
+// samplePlate 取標籤底色:採按鈕左內緣中線一點(置中英文不在此,底板色較乾淨)。
+func (g *overlayGame) samplePlate(b labelRect) color.RGBA {
+	return g.sampleAt(b.x+6, b.y+b.h/2)
+}
+
 func (g *overlayGame) Draw(screen *ebiten.Image) {
 	screen.DrawImage(g.bg, nil)
 	if g.cat.Lang() == i18n.Traditional {
 		for _, b := range g.overlays {
-			plate := g.sampleAt(b.x+6, b.y+b.h/2)
-			vector.DrawFilledRect(screen, float32(b.x+3), float32(b.y+3),
-				float32(b.w-6), float32(b.h-6), plate, false)
+			// 採樣標籤上內緣的底色(置中文字不在此,較不會採到字色)。
+			plate := g.samplePlate(b)
+			// 擦掉烘進圖的英文:蓋一塊底色。垂直多留一點以完全蓋住較高的英文,
+			// 水平保留 3px 邊避免壓到按鈕凹凸邊框。
+			vector.DrawFilledRect(screen, float32(b.x+3), float32(b.y+2),
+				float32(b.w-6), float32(b.h-4), plate, false)
 			size := b.size
 			if size == 0 {
 				size = g.defSize

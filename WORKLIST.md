@@ -62,7 +62,11 @@
 - [x] 原版畫面對照組(`docs/reference-screens.md`:主選單/行星列表/建造,英文原貌 + 翻譯清單)
 - [x] 通用畫面覆蓋渲染器(`cmd/moo2/overlay.go`:資料驅動擦底疊字,選單+行星列表共用)
 - [x] 主選單中文化(6 按鈕)+ 行星列表中文化(18 標籤,before/after)
-- [ ] 精修「顯示篩選」寬粗英文擦除(改從空白處採樣底色)
+- [x] LBX 字串資源解析 + dumper(`internal/lbx/strings.go` + `cmd/lbxstrings`);TECHNAME 560 條科技名 dump 成功
+- [x] 科技名譯表第 1 批(`assets/i18n/tech.tsv`:研究主題 45 條);其餘 ~515 逐批補
+- [x] i18n TSV 守護測試(載入所有 assets/i18n/*.tsv + 佔位符一致性)
+- [~] 擦底疊字改善(fill 加高;darkest 採樣反而過暗已還原)。「顯示篩選」寬粗英文仍微透,需整圖替換或更寬擦除(降級 todo)
+- [ ] 科技名其餘批次 + 建築/種族類型/事件/外交等字串源逐一 dump + 翻
 - [ ] 補齊需全域調色盤鏈的畫面(COLONY/DESIGN/COUNCIL/DIPLOMAT…)到對照組
 - [ ] **[HARD] 開工先做:窮舉所有文字源(LBX 各類 + Go hardcode),各寫 dumper,用引擎自己 reader dump 精確 key**
 - [ ] 逐畫面重建:主選單/載存檔/星系圖/行星清單/殖民地/科技研究/艦隊/軍官/種族資訊/對話框

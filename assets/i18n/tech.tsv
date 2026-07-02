@@ -1,0 +1,47 @@
+# 科技/研究名譯表(來源 TECHNAME.LBX asset 0,共 560 條)。英文原文即 key。
+# 第 1 批:研究主題名(index 0–44)。其餘逐批補;未翻者 i18n 自動 fallback 英文。
+Starting Tech	起始科技	研究主題
+Advanced Biology	進階生物學	研究主題
+Advanced Chemistry	進階化學	研究主題
+Advanced Construction	進階建設	研究主題
+Advanced Engineering	進階工程學	研究主題
+Advanced Fusion	進階核融合	研究主題
+Advanced Governments	進階政體	研究主題
+Advanced Magnetism	進階磁學	研究主題
+Advanced Manufacturing	進階製造	研究主題
+Advanced Metallurgy	進階冶金學	研究主題
+Military Tactics	軍事戰術	研究主題
+Advanced Robotics	進階機器人學	研究主題
+Teaching Methods	教學方法	研究主題
+Anti-Matter Fission	反物質分裂	研究主題
+Artificial Consciousness	人工意識	研究主題
+Artificial Intelligence	人工智慧	研究主題
+Artificial Gravity	人造重力	研究主題
+Artificial Life	人造生命	研究主題
+Astro Biology	太空生物學	研究主題
+Astro Construction	太空建設	研究主題
+Astro Engineering	太空工程學	研究主題
+Capsule Construction	太空艙建造	研究主題
+Chemistry	化學	研究主題
+Cold Fusion	冷核融合	研究主題
+Cybertechnics	生化電子學	研究主題
+Cybertronics	生化電子工程	研究主題
+Distortion Fields	扭曲力場	研究主題
+Electromagnetic Refraction	電磁折射	研究主題
+Electronics	電子學	研究主題
+Engineering	工程學	研究主題
+Evolutionary Genetics	演化遺傳學	研究主題
+Fusion Physics	核融合物理	研究主題
+Galactic Economics	銀河經濟學	研究主題
+Galactic Networking	銀河網路	研究主題
+Genetic Engineering	基因工程	研究主題
+Genetic Mutations	基因突變	研究主題
+Gravitic Fields	重力場	研究主題
+High Energy Distribution	高能分配	研究主題
+Hyper Dimensional Fission	超維分裂	研究主題
+Hyper Dimensional Physics	超維物理	研究主題
+Interphased Fission	交相分裂	研究主題
+Ion Fission	離子分裂	研究主題
+Superscalar Construction	超純量建構	研究主題
+Macro Economics	總體經濟學	研究主題
+Macro Genetics	巨觀遺傳學	研究主題
