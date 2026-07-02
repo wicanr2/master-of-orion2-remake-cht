@@ -98,25 +98,34 @@ func (g *Galaxy) load(r *reader) error {
 	return nil
 }
 
-// GameState 是解析後的存檔。目前已實作:GameConfig、Galaxy、各區段計數。
-// 各實體陣列(colonies/planets/stars/leaders/players/ships)的完整欄位解析為後續工作,
-// 尚未填入(見 WORKLIST Phase 1)。
+// GameState 是完整解析後的存檔。對照 openorion2 GameState::load(gamestate.cpp:1844)。
+// 各實體陣列固定為 MAX_* 長度(存檔一律含滿),Count 欄為存檔標示的有效數。
 type GameState struct {
 	Config GameConfig
 	Galaxy Galaxy
 
 	ColonyCount int
-	// 以下計數需完成對應實體結構解析後才可靠取得,目前為 -1(未解析)。
+	Colonies    []Colony // len maxColonies
 	PlanetCount int
+	Planets     []Planet // len maxPlanets
 	StarCount   int
+	Stars       []Star // len maxStars
+	Leaders     []Leader // len leaderCount(無獨立計數)
 	PlayerCount int
+	Players     []Player // len maxPlayers
 	ShipCount   int
+	Ships       []Ship // len maxShips
+
+	// SeqEnd 是順序資料區(colonies…ships)解析後的結尾 offset,供驗證用。
+	SeqEnd int
 }
 
-// Load 解析一份存檔位元組。
+// Load 解析一份存檔位元組。讀取序列對照 GameState::load:config → galaxy(檔尾)→
+// colonyCount → colonies → planetCount → planets → starCount → stars → leaders →
+// playerCount → players → shipCount → ships。
 func Load(data []byte) (*GameState, error) {
 	r := newReader(data)
-	gs := &GameState{PlanetCount: -1, StarCount: -1, PlayerCount: -1, ShipCount: -1}
+	gs := &GameState{}
 
 	if err := gs.Config.load(r); err != nil {
 		return nil, err
@@ -130,12 +139,72 @@ func Load(data []byte) (*GameState, error) {
 	if err := r.seek(colonyCountOffset); err != nil {
 		return nil, fmt.Errorf("save: 定位 colonyCount 失敗: %w", err)
 	}
-	if err := r.need(2); err != nil {
+
+	// 順序區從 colonyCountOffset 起。每讀一個計數前先確保還有位元組。
+	readCount := func(name string, max int) (int, error) {
+		if err := r.need(2); err != nil {
+			return 0, fmt.Errorf("save: 讀取 %s 失敗: %w", name, err)
+		}
+		n := int(r.u16())
+		if n > max {
+			return 0, fmt.Errorf("save: %s=%d 超過上限 %d(schema 可能對不齊)", name, n, max)
+		}
+		return n, nil
+	}
+
+	var err error
+	if gs.ColonyCount, err = readCount("colonyCount", maxColonies); err != nil {
 		return nil, err
 	}
-	gs.ColonyCount = int(r.u16())
-	if gs.ColonyCount > maxColonies {
-		return nil, fmt.Errorf("save: colonyCount %d 超過上限 %d", gs.ColonyCount, maxColonies)
+	gs.Colonies = make([]Colony, maxColonies)
+	for i := range gs.Colonies {
+		if err := r.need(1); err != nil {
+			return nil, fmt.Errorf("save: colony %d: %w", i, err)
+		}
+		gs.Colonies[i].load(r)
 	}
+
+	if gs.PlanetCount, err = readCount("planetCount", maxPlanets); err != nil {
+		return nil, err
+	}
+	gs.Planets = make([]Planet, maxPlanets)
+	for i := range gs.Planets {
+		gs.Planets[i].load(r)
+	}
+
+	if gs.StarCount, err = readCount("starCount", maxStars); err != nil {
+		return nil, err
+	}
+	gs.Stars = make([]Star, maxStars)
+	for i := range gs.Stars {
+		gs.Stars[i].load(r)
+	}
+
+	// leaders 無獨立計數,固定 LEADER_COUNT 個。
+	gs.Leaders = make([]Leader, leaderCount)
+	for i := range gs.Leaders {
+		gs.Leaders[i].load(r)
+	}
+
+	if gs.PlayerCount, err = readCount("playerCount", maxPlayers); err != nil {
+		return nil, err
+	}
+	gs.Players = make([]Player, maxPlayers)
+	for i := range gs.Players {
+		gs.Players[i].load(r)
+	}
+
+	if gs.ShipCount, err = readCount("shipCount", maxShips); err != nil {
+		return nil, err
+	}
+	gs.Ships = make([]Ship, maxShips)
+	for i := range gs.Ships {
+		gs.Ships[i].load(r)
+	}
+
+	if r.at() > len(data) {
+		return nil, fmt.Errorf("save: 順序區讀取越界(pos=%d len=%d)", r.at(), len(data))
+	}
+	gs.SeqEnd = r.at()
 	return gs, nil
 }

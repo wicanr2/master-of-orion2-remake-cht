@@ -53,7 +53,12 @@ func (r *reader) u32() uint32 {
 	return v
 }
 
+func (r *reader) i8() int8   { return int8(r.u8()) }
 func (r *reader) i16() int16 { return int16(r.u16()) }
+func (r *reader) i32() int32 { return int32(r.u32()) }
+
+// pos 回傳目前游標位置。
+func (r *reader) at() int { return r.pos }
 
 // bytesN 讀 n 個位元組(複製一份)。
 func (r *reader) bytesN(n int) []byte {
