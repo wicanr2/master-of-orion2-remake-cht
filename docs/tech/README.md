@@ -7,7 +7,8 @@
 - [lbx-format.md](lbx-format.md) — `.lbx` 資產封存檔:容器(magic `0xfead`)、影像 header/flags、frame offset 表、內嵌調色盤(6-bit→8-bit)、scan-line RLE 解碼。
 - [savegame-format.md](savegame-format.md) — `save?.gam` 存檔:版本 `0xe0`、關鍵 offset(colonyCount `0x25b`、galaxy `0x31be4`)、各實體結構大小與欄位佈局、真實檔驗證數據。
 - [enums.md](enums.md) — 28 個資料枚舉對照(技術 212/研究主題 83/建築 49/種族特性 32/特殊裝備…),英文名即 gameplay 邏輯 key,中文欄待填(中文化術語表基礎)。**自動生成**(`scripts/gen-enums.py` 讀 openorion2 gamestate.h),對應 Go:`internal/gamedata/enums.go`。
-- [formulas.md](formulas.md) — 唯讀衍生公式與查表(艦艇戰力/HP/戰速、行星產出、雇用費),對應 Go:`internal/gamedata/formulas.go`。
+- [formulas.md](formulas.md) — 唯讀衍生公式與查表精簡版(艦艇戰力/HP/戰速、行星產出、雇用費),對應 Go:`internal/gamedata/formulas.go`。
+- [moo2-formulas-reference.md](moo2-formulas-reference.md) — **遊戲公式參考(完整版)**:殖民地成長、生產/污染、研究樹、軍官、艦艇衍生值、光束命中、飛彈防禦、間諜共 8 個系統,逐條附 openorion2 行號/手冊頁碼出處與驗證範例,含手冊自相矛盾記錄(AMR 命中率、飛彈速度)。對應 `internal/gamedata/*.go` 全部檔案。
 - [ebiten-notes.md](ebiten-notes.md) — Phase 2 移植筆記:MOO2=640×480、資料層→ebiten 全鏈路、docker headless(CGO/xvfb/buildvcs)、ReadPixels 截圖。對應:`cmd/moo2`、`docker/Dockerfile.ebiten`、`scripts/screenshot.sh`。
 
 ## 待補(後續輪次)
