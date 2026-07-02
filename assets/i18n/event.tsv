@@ -1,0 +1,98 @@
+# GNN 事件新聞訊息(EVENTMSE.LBX,loadFile,99 條)。英文原文即 key,\xNN 為變數插入控制碼
+# (\x8f\x90 帝國名/\x90 種族/\x91\x92 敵帝國/\x80 行星/\x8b 星系/\x81 數字/\x82 百分比/\x83\x84 複數/\x85 艦隊/\x86 科技/\x89 軍官/\x8c 礦級/\x8d\x8e 科技),中文保留並重新定位。完整翻譯。
+You are tuned to GNN, your source for all the news you need to know.	您正收看 GNN,提供您所需一切新聞的來源。	GNN
+Galactic News Network, the galaxy's most watched information source.	銀河新聞網,銀河收視最高的資訊來源。	GNN
+GNN. Where the news comes first.	GNN,新聞搶先報。	GNN
+This is GNN, bringing you today's headlines from across the galaxy.	這裡是 GNN,為您帶來今日來自銀河各地的頭條。	GNN
+And elsewhere in the galaxy,	而在銀河的其他角落,	GNN
+Also making headlines today,	今日另一則頭條,	GNN
+And now, in a GNN exclusive story,	現在,GNN 獨家報導,	GNN
+GNN was also first on the scene to bring you this important headline:	GNN 也第一時間到場,為您帶來這則重要頭條:	GNN
+Today marked a major scientific breakthrough for \x8f\x90 Empire, when archeologists uncovered the secret of \x8d in the wreckage of an ancient, mysterious ship.	\x8f\x90 帝國今日取得重大科學突破,考古學家在一艘古老神祕船艦的殘骸中,揭開了 \x8d 的祕密。	事件
+Scientists in \x8f\x90 Empire have salvaged the key to \x8d and \x8e from the remains of an ancient alien ship.	\x8f\x90 帝國的科學家從一艘古老異族船艦的殘骸中,搶救出 \x8d 與 \x8e 的關鍵。	事件
+Farmers in \x8f\x90 Empire rejoiced when a sudden shift of the \x80 colony's planetary axis resulted in an improvement of its environment to terran norms.	\x8f\x90 帝國的農民歡欣鼓舞,\x80 殖民地的行星軸突然偏移,使其環境改善至類地水準。	事件
+Astronomers predict that a comet will collide with the \x80 colony within \x81 year\x83. Unless \x8f\x90 Empire military can destroy it, the colony will be destroyed.	天文學家預測一顆彗星將在 \x81 年\x83 內撞上 \x80 殖民地。除非 \x8f\x90 帝國軍隊能摧毀它,否則該殖民地將被毀滅。	事件
+\x82 percent of the comet due to strike the colony on \x80 in \x81 year\x83 has been destroyed by \x8f\x90 military.	即將在 \x81 年\x83 內撞擊 \x80 殖民地的彗星,已有百分之 \x82 被 \x8f\x90 軍隊摧毀。	事件
+The people of \x80 colony celebrated today when \x8f\x90 star fleet destroyed the comet that threatened their planet.	\x80 殖民地的人民今日歡慶,\x8f\x90 星際艦隊摧毀了威脅其行星的彗星。	事件
+Millions of \x90 citizens died today when a huge comet struck the \x80 colony.	一顆巨大彗星今日撞上 \x80 殖民地,數百萬 \x90 公民喪生。	事件
+Scientists in \x8f\x90 Empire were shocked to discover a virus in the \x86 research center's computers. All systems were infected, totaling a loss of \x81 research point\x83.	\x8f\x90 帝國的科學家震驚地發現 \x86 研究中心的電腦感染病毒。所有系統遭感染,共損失 \x81 點研究\x83。	事件
+A diplomat in \x91\x92 Empire was caught planning an assassination attempt on a top official in \x8f\x90 Empire. Diplomatic relations between the two empires has weakened.	\x91\x92 帝國的一名外交官被發現正密謀暗殺 \x8f\x90 帝國的一名高官。兩國的外交關係因此惡化。	事件
+A diplomatic marriage between \x8f\x90 ambassador and a top member of \x91\x92 military occurred today. The diplomatic relations between the empires has been greatly improved.	\x8f\x90 帝國大使與 \x91\x92 帝國軍方要員今日聯姻。兩國的外交關係因此大幅改善。	事件
+A wealthy merchant has contributed \x81 BC to \x8f\x90 Empire.	一名富商向 \x8f\x90 帝國捐獻了 \x81 星幣。	事件
+A violent earthquake hit the colony of \x80, killing \x81 million colonists in \x8f\x90 Empire, and destroying \x82 building\x84.	一場劇烈地震襲擊 \x80 殖民地,使 \x8f\x90 帝國的 \x81 百萬殖民者喪生,並摧毀了 \x82 座建築\x84。	事件
+An earthquake hit the colony of \x80, destroying \x81 building\x83. Luckily, \x8f\x90 Empire suffered no fatalities.	一場地震襲擊 \x80 殖民地,摧毀了 \x81 座建築\x83。所幸 \x8f\x90 帝國無人喪生。	事件
+A military \x85 ship mysteriously exploded. An investigation into the cause is underway.	一艘軍用 \x85 船艦神祕爆炸。起因調查正在進行中。	事件
+A ship in the \x85 fleet inexplicably exploded, killing legendary officer \x89.	\x85 艦隊中一艘船艦莫名爆炸,傳奇軍官 \x89 因此殉職。	事件
+The galaxy has sighed in collective relief as the hyperspace flux that sealed entry into hyperspace ended as mysteriously as it began.	封閉超空間入口的超空間亂流,如其出現般神祕地結束,整個銀河鬆了一口氣。	事件
+Devastating news for the entire galaxy today, as a hyperspace flux has shut off passage into hyperspace, preventing all ships from moving.	今日整個銀河傳來毀滅性消息,一股超空間亂流封閉了超空間通道,使所有船艦無法移動。	事件
+A major industrial accident on \x8b has irradiated the entire planet. The intense radiation levels threaten to kill millions of civilians in \x8f\x90 Empire.	\x8b 上一起重大工業事故使整顆行星遭輻射污染。強烈的輻射量恐使 \x8f\x90 帝國數百萬平民喪生。	事件
+The radiation from the industrial accident on \x80 colony has been cleaned up, but it will take years for \x8f\x90 Empire to rebuild what was lost there.	\x80 殖民地工業事故的輻射已清理完畢,但 \x8f\x90 帝國需要數年才能重建當地失去的一切。	事件
+Due to overworking by \x90 miners, the mineral classification of \x8b colony was lowered to \x8c.	由於 \x90 礦工的過度開採,\x8b 殖民地的礦產等級降至 \x8c。	事件
+Workers in \x8f\x90 Empire discovered a previously unknown deposit of minerals on \x8b that improved the mineral classification of that planet to \x8c.	\x8f\x90 帝國的工人在 \x8b 上發現一處先前未知的礦藏,使該行星的礦產等級提升至 \x8c。	事件
+A ship in \x8f\x90 Empire mutinied, joining \x91\x92 military.	\x8f\x90 帝國一艘船艦嘩變,加入了 \x91\x92 帝國軍隊。	事件
+Pirates operating in the \x8b star system have begun to target freighters. Citizens call for more ships to be placed in the area to stop the thievery.	在 \x8b 星系活動的海盜開始鎖定貨船。民眾呼籲在該區域部署更多船艦以遏止竊盜。	事件
+Pirate activity in the \x8b system has reduced annual trade revenues. Merchants are demanding more ships to patrol the area.	\x8b 星系的海盜活動使年度貿易收入減少。商人要求派更多船艦巡邏該區。	事件
+The people of the \x8b star system are celebrating the elimination of the pirates that had been plaguing their freighters.	\x8b 星系的人民正歡慶那些長期騷擾其貨船的海盜終於被剿滅。	事件
+A pirate raid in the \x8b star system resulted in the theft of \x81 BC from \x8f\x90 treasury.	\x8b 星系的一場海盜突襲,自 \x8f\x90 國庫竊走了 \x81 星幣。	事件
+A plague has broken out on \x80 colony. The disease has the potential to kill millions of \x90 citizens, and a quarantine is in place. All scientists in that colony will concentrate their efforts on finding a cure.	\x80 殖民地爆發瘟疫。此疾病恐使數百萬 \x90 公民喪生,已實施隔離。該殖民地所有科學家將全力尋找解藥。	事件
+The plague continues on \x80. Millions of colonists died last year. Scientists in \x8f\x90 Empire believe that they are \x81 research point\x83 away from perfecting a cure.	\x80 的瘟疫持續蔓延。去年已有數百萬殖民者喪生。\x8f\x90 帝國的科學家相信,再 \x81 點研究\x83 便能完成解藥。	事件
+Scientists in \x8f\x90 Empire have found the cure for the plague on \x80. The pestilence will end, and not a moment too soon.	\x8f\x90 帝國的科學家已找到 \x80 瘟疫的解藥。這場疫病終將結束,來得正是時候。	事件
+There are hundreds of new citizens in \x8f\x90 Empire, as a sudden population boom has doubled the population growth rate of \x80 colony.	\x8f\x90 帝國新增數百名公民,一波突如其來的人口爆炸使 \x80 殖民地的人口成長率翻倍。	事件
+The population boom on \x80 has ended. Breakthroughs in birth control technology in \x8f\x90 Empire has been blamed for the decline.	\x80 的人口爆炸已結束。\x8f\x90 帝國節育技術的突破被認為是成長趨緩的原因。	事件
+While carrying out secret high level experiments, \x90 scientists stumbled upon the secret of \x86.	在進行機密的高階實驗時,\x90 科學家意外發現了 \x86 的祕密。	事件
+A state of emergency was declared when long range scanners began tracking a huge, toxic amoebic life form traveling at warp speed towards the galaxy.	遠程掃描器開始追蹤一個以曲速朝銀河而來的巨大有毒變形蟲生命體,當局宣布進入緊急狀態。	事件
+The alien Space Amoeba was destroyed by \x8f\x90 glorious military.	異形太空變形蟲已被 \x8f\x90 光榮的軍隊摧毀。	事件
+For some inexplicable reason the Space Amoeba has left our galaxy. Let us pray that next time, we are better prepared for such an emergency.	基於某種無法解釋的原因,太空變形蟲已離開我們的銀河。願我們下次面對此類緊急狀況時能有更好的準備。	事件
+The Space Amoeba engulfed the system of \x8b. Although the Amoeba was destroyed, the system will forever have a toxic environment.	太空變形蟲吞沒了 \x8b 星系。儘管變形蟲已被摧毀,該星系將永遠處於有毒環境中。	事件
+Galactic scanners have picked up a crystal life form traveling at warp speed into our galaxy. It is not known where it will attack first.	銀河掃描器偵測到一個以曲速進入我們銀河的水晶生命體。目前尚不清楚它會先攻擊何處。	事件
+Ships in \x8f\x90 star fleet have destroyed the Space Crystal that was threatening the entire galaxy.	\x8f\x90 星際艦隊的船艦已摧毀了威脅整個銀河的太空水晶。	事件
+The hideous Space Crystal has left our galaxy. Why did it come? Why did it leave? The galaxy may never know.	醜惡的太空水晶已離開我們的銀河。它為何而來?又為何離去?銀河或許永遠不會知道。	事件
+The Space Crystal has killed millions of colonists in \x8b. The colony's structures remained intact, as lifeless monuments to the dead.	太空水晶已使 \x8b 的數百萬殖民者喪生。殖民地的建築完好無損,宛如悼念亡者的無生命紀念碑。	事件
+A giant Space Dragon has invaded the galaxy. Experts speculate that it is searching for treasure.	一頭巨大的太空巨龍入侵了銀河。專家推測它正在尋找寶藏。	事件
+Ships under \x90 command have suceeded in destroying the monstrous Space Dragon.	\x90 指揮下的船艦已成功摧毀了那頭巨大的太空巨龍。	事件
+The Space Dragon that threatened the galaxy has mysteriously disappeared.	威脅銀河的太空巨龍已神祕消失。	事件
+Citizens in \x8f\x90 Empire mourn for family killed by the Space Dragon attack on \x8b.	\x8f\x90 帝國的公民為在 \x8b 遭太空巨龍攻擊而喪生的家人哀悼。	事件
+Long range scanners are monitoring the approach of a space monster that scientists have described as a giant eel-like creature. It appears to be searching for a spawning ground.	遠程掃描器正監控一頭太空怪獸的逼近,科學家形容它是一隻巨大的鰻狀生物。它似乎正在尋找產卵地。	事件
+The galaxy was saved from the ravages of a Space Eel by the quick actions of \x8f\x90 fleet. We are all thankful that they were capable of destroying the beast.	\x8f\x90 艦隊的迅速行動使銀河免於太空巨鰻的蹂躪。我們都感激他們有能力消滅這頭巨獸。	事件
+Scanners that have been tracking the progress of a Space Eel now show that the creature has disappeared from our galaxy.	一直追蹤太空巨鰻動向的掃描器,現在顯示這隻生物已從我們的銀河消失。	事件
+The \x8b system has been blockaded by a dreadful Space Eel. The system's entire population cowers in fear.	\x8b 星系已被一頭可怕的太空巨鰻封鎖。整個星系的人口都在恐懼中瑟縮。	事件
+A giant Space Hydra is being tracked entering the galaxy. It is unknown at this time which system it will target, but the results will be devastating if it is not stopped.	一頭巨大的太空九頭蛇正被追蹤進入銀河。目前尚不清楚它會鎖定哪個星系,但若不加以阻止,後果將不堪設想。	事件
+The Space Hydra that was threatening the galaxy was exterminated in an attack by \x8f\x90 star fleet.	威脅銀河的太空九頭蛇在 \x8f\x90 星際艦隊的攻擊中被殲滅。	事件
+The Space Hydra has drifted out of our galaxy, departing for parts unknown.	太空九頭蛇已飄離我們的銀河,前往未知之地。	事件
+A violent attack on \x8b by the giant Space Hydra has left millions of \x90 citizens dead.	巨大的太空九頭蛇對 \x8b 的猛烈攻擊,使數百萬 \x90 公民喪生。	事件
+Scientists predict that the star in the \x8b system will go super nova within \x81 year\x83. If a research solution cannot be found, colonies in the system will be destroyed.	科學家預測 \x8b 星系的恆星將在 \x81 年\x83 內發生超新星爆發。若無法找到研究解方,該星系的殖民地將被摧毀。	事件
+Scientists have only \x81 year\x83 to prevent the \x8b star from going  super nova. \x82 more research point\x84 should bring a solution.	科學家只剩 \x81 年\x83 來阻止 \x8b 恆星發生超新星爆發。再 \x82 點研究\x84 應可帶來解方。	事件
+Scientists in the \x8b system have developed a solar rejuvenator that has ended the threat of their star going super nova.	\x8b 星系的科學家已研發出太陽回春裝置,解除了其恆星超新星爆發的威脅。	事件
+The \x8b star has gone super nova, destroying most of the system and killing millions.	\x8b 恆星已發生超新星爆發,摧毀了大部分星系並造成數百萬人喪生。	事件
+The time-space anomaly that held the \x8b star system frozen in time has ended. Contact has been reestablished, and colony production has returned to normal.	使 \x8b 星系凍結於時間中的時空異常已結束。聯繫已重新建立,殖民地生產恢復正常。	事件
+A time space anomaly has occurred in the \x8b star system. All colonies in that system are unable to build, and ships are unable to make contact for either trade or combat purposes.	\x8b 星系發生時空異常。該星系所有殖民地無法建造,船艦也無法進行貿易或戰鬥的接觸。	事件
+The threat of the Hyperspace beast has ended. All space fleets may travel in hyperspace without fear once again.	超空間巨獸的威脅已結束。所有太空艦隊再次可無所畏懼地在超空間中航行。	事件
+A beast that exists partially in hyperspace has appeared. It is feared that it will randomly destroy ships in hyperspace for an indefinite period of time.	一頭部分存在於超空間的巨獸出現了。人們擔憂它將在不確定的期間內,隨機摧毀超空間中的船艦。	事件
+The fleet trapped in the hyperspace Warp funnel has worked its way out. All of \x8f\x90 ships appear undamaged, and all crew members survived the ordeal.	困於超空間曲速漏斗中的艦隊已設法脫困。\x8f\x90 的所有船艦看來毫髮無傷,全體船員也熬過了這場磨難。	事件
+The phenomena known as a Warp Funnel trapped a fleet in \x8f\x90 Empire in its powerful grip. Will it be able to break free? Stay tuned to GNN to find out!	被稱為曲速漏斗的現象,將 \x8f\x90 帝國的一支艦隊牢牢困住。它能否掙脫?請鎖定 GNN 一探究竟!	事件
+An unstable wormhole appeared suddenly in the path of \x81 ship\x83 belonging to \x8f\x90 Empire. Travelers were propelled to \x8b in a single turn before the wormhole dissolved.	一個不穩定的蟲洞突然出現在 \x8f\x90 帝國 \x81 艘船艦\x83 的航道上。旅者在蟲洞消散前,於單一回合內被拋送至 \x8b。	事件
+\x8f\x90 Empire has been completely destroyed.	\x8f\x90 帝國已被徹底摧毀。	事件
+\x8f\x90 Empire has fallen, and will no longer wield power in the galaxy.	\x8f\x90 帝國已然殞落,將不再於銀河中掌握權力。	事件
+\x8f\x90 flag waves no more. No colonies or fleets remain in the \x85 Empire.	\x8f\x90 的旗幟不再飄揚。\x85 帝國已無殖民地或艦隊留存。	事件
+\x8f\x90 Empire will live on only in the history books, as the last vestige of \x85 power has been annihilated.	\x8f\x90 帝國將只存於史冊,因為 \x85 勢力的最後殘跡已被殲滅。	事件
+\x8f\x90 Empire has grown in strength. It now controls \x81 star systems, and shows no signs of weakening.	\x8f\x90 帝國實力日增。它如今控制 \x81 個星系,毫無衰退跡象。	事件
+\x8f\x90 Empire now spans \x81 star systems, outnumbering all the other Empires.	\x8f\x90 帝國如今橫跨 \x81 個星系,數量超越所有其他帝國。	事件
+\x8f\x90 Empire now numbers \x81 star systems, more than any other Empire.	\x8f\x90 帝國如今擁有 \x81 個星系,多於任何其他帝國。	事件
+\x8f\x90 Empire controls a majority of the galaxy.	\x8f\x90 帝國已控制銀河的大部分。	事件
+Current rankings of empire production:	各帝國生產力目前排名:	排名
+The census rankings of empire populations:	各帝國人口普查排名:	排名
+Current leaders of advanced technology:	先進科技目前領先者:	排名
+Current ranking of space fleet strengths:	太空艦隊實力目前排名:	排名
+Ships in \x8f\x90 Empire have recently visited the legendary Orion star system.	\x8f\x90 帝國的船艦近日造訪了傳說中的獵戶座星系。	事件
+\x8f\x90 Empire has defeated the Antarans in a final, glorious battle.	\x8f\x90 帝國在一場最終的光榮戰役中擊敗了安塔蘭人。	事件
+\x8f\x90 military has done what was once thought impossible: the Antarans have been completely eliminated.	\x8f\x90 軍隊完成了曾被認為不可能的壯舉:安塔蘭人已被徹底消滅。	事件
+Once thought to be unbeatable, the Antarans were utterly crushed today by \x8f\x90 star fleet.	曾被認為無法擊敗的安塔蘭人,今日被 \x8f\x90 星際艦隊徹底粉碎。	事件
+In a bold offensive attack, \x8f\x90 Empire was able to completely destroy the Antaran Empire.	在一次大膽的攻勢中,\x8f\x90 帝國徹底摧毀了安塔蘭帝國。	事件
+\x8f\x90 Empire surrenders to \x91\x92 Empire.	\x8f\x90 帝國向 \x91\x92 帝國投降。	事件
+Millions reacted with shock today when \x8f\x90 Empire surrendered to \x91\x92 Empire.	\x8f\x90 帝國今日向 \x91\x92 帝國投降,數百萬人震驚不已。	事件
+And now our top story: \x8f\x90 Empire, once a major galactic power, surrendered today to \x91\x92 Empire.	現在是我們的頭條:曾為銀河強權的 \x8f\x90 帝國,今日向 \x91\x92 帝國投降。	事件
+\x8f\x90 Empire finally announced its long-awaited surrender to \x91\x92 Empire.	\x8f\x90 帝國終於宣布了眾所期待的向 \x91\x92 帝國投降。	事件
+rebel assimilation1	叛軍同化1	內部
+rebel assimilation2	叛軍同化2	內部
+rebel assimilation3	叛軍同化3	內部
+rebel assimilation4	叛軍同化4	內部

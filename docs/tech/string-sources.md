@@ -16,10 +16,10 @@
 | SKILDESC | loadAsset | 1 | 27 | 技能描述 | skilldesc.tsv | ✅ 完成 |
 | TECHDESC | loadAsset | 0..7 | ~849 | 科技描述 | — | ⏳ 待(大宗敘述) |
 | MAINTEXT | loadFile | 群組 | 主 UI 文字 | — | ⏳ 待(UI 大宗) |
-| EVENTMSE | loadFile | 群組 | ~152 | 隨機事件訊息 | — | ⏳ 待(敘述) |
+| EVENTMSE | loadFile | 群組 | 99 | GNN 事件新聞 | event.tsv | ✅ 完成 |
 | DIPLOMSE | loadFile | 群組 | ~180 | 外交對白 | — | ⏳ 待(敘述) |
-| COUNCMSG | loadFile | 群組 | ~84 | 議會訊息 | — | ⏳ 待 |
-| ANTARMSG | loadFile | 群組 | ~48 | 安塔蘭訊息 | — | ⏳ 待 |
+| COUNCMSG | loadFile | 群組 | 14 | 議會勝選訊息 | council.tsv | ✅ 完成 |
+| ANTARMSG | loadFile | 群組 | 8 | 安塔蘭威嚇 | antaran.tsv | ✅ 完成 |
 | RSTRING0 | loadStrings | 0 (off 4) | ~178 | 種族相關字串 | — | ⏳ 待 |
 | ESTRINGS | loadStrings | 0 (off 6) | ~813 | 事件/介面字串 | — | ⏳ 待(大宗) |
 | HESTRNGS | loadStrings | 0 (off 6) | ~398 | help 短字串 | — | ⏳ 待 |
