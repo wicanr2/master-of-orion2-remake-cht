@@ -21,7 +21,7 @@
 | COUNCMSG | loadFile | 群組 | 14 | 議會勝選訊息 | council.tsv | ✅ 完成 |
 | ANTARMSG | loadFile | 群組 | 8 | 安塔蘭威嚇 | antaran.tsv | ✅ 完成 |
 | RSTRING0 | loadStrings | 0 (off 4) | 177 | 殖民摘要+回合報告 | rstring.tsv | ✅ 完成 |
-| ESTRINGS | loadStrings | 0 (off 6) | 811 | 介面/事件(含大量除錯碎片) | estrings.tsv | 🔶 玩家訊息批次進行中(59+) |
+| ESTRINGS | loadStrings | 0 (off 6) | 811 | 介面/事件(除錯碎片 fallback 英文) | estrings.tsv | ✅ 玩家訊息完成(576) |
 | HESTRNGS | loadStrings | 0 (off 6) | 395 | help/提示訊息 | hestrings.tsv | ✅ 完成 |
 | HELP | 特殊 | 多 | 大量 | 百科全文 | — | ⏳ 待(最大宗敘述) |
 | CREDITS | loadAsset | 0 | ~ | 製作名單 | — | ⏳ 待 |

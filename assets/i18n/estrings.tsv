@@ -66,3 +66,520 @@ You may not attack a place which has no colony	你無法攻擊沒有殖民地的
 %d turn(s)	%d 回合	介面
 5 Players	5 名玩家	介面
 (AI Bonus)	(AI 加成)	介面
+ %s gains a level	 %s 升級了	軍官
+ %s offers to join you for %d BC now and %dBC a turn,%s do you accept?	 %s 提出願意加入你,現在給 %d BC、之後每回合 %dBC,%s你接受嗎?	外交
+ %s select a target to Attack	 %s 請選擇攻擊目標	戰鬥
+ %s will goto the officer pool and thanks you for the %d BC	 %s 將回到軍官預備隊,並感謝你給的 %d BC	軍官
+ %s will wait a while to see if you can raise the %d.	 %s 會再等一陣子,看你能否湊到 %d。	軍官
+ %s will wait to see if you will pay %d BC later.	 %s 會再等等,看你之後是否會支付 %d BC。	軍官
+%d armor killed\x0d	%d 個裝甲被摧毀\x0d	戰鬥
+%d infantry killed\x0d	%d 名步兵陣亡\x0d	戰鬥
+%d million people killed by biological weapons\x0d	%d 百萬人死於生物武器\x0d	戰鬥
+%d million people killed\x0d	%d 百萬人死亡\x0d	戰鬥
+%d percent scale	%d 百分比縮放	介面
+%s - %s colony	%s - %s殖民地	殖民
+%s at %s	%s 在 %s	戰鬥
+%s attacked by the %s	%s 被 %s 攻擊	戰鬥
+%s attacks %s at colony of %s	%s 攻擊 %s,地點在 %s 的殖民地	戰鬥
+%s attacks %s at the %s system	%s 攻擊 %s,地點在 %s 星系	戰鬥
+%s bombed by the %s	%s 被 %s 轟炸	戰鬥
+%s bombed by the %s\x0d	%s 被 %s 轟炸\x0d	戰鬥
+%s dark	%s 已陷入黑暗	場景
+%s departing for %s	%s 正前往 %s	艦隊
+%s destroyed	%s 已被摧毀	戰鬥
+%s destroyed\x0d	%s 已被摧毀\x0d	戰鬥
+%s enroute to %s	%s 正前往 %s 途中	艦隊
+%s finished building %s, place your orders for future production.	%s 已完成建造 %s,請下達後續生產指令。	殖民
+%s fleet	%s 艦隊	艦隊
+%s is above a product. Do you want to delete %s before exiting?	%s 位於某項產品之上。要在離開前刪除 %s 嗎?	介面
+%s is succesfully defended from the %s	%s 成功抵禦了 %s 的攻擊	戰鬥
+%s is successfully defended from the %s troops	%s 成功抵禦了 %s 部隊的攻擊	戰鬥
+%s is taken by the %s troops.	%s 已被 %s 部隊攻佔。	戰鬥
+%s is taken by the %s	%s 已被 %s 攻佔	戰鬥
+%s just colonized, place your orders for future production.	%s 剛完成殖民,請下達後續生產指令。	殖民
+%s just conquered, place your orders for future production.	%s 剛被征服,請下達後續生產指令。	殖民
+%s just liberated, place your orders for future production.	%s 剛被解放,請下達後續生產指令。	殖民
+%s select combat at %s	%s 請在 %s 選擇戰鬥	戰鬥
+%s%s - %s colony\n	%s%s - %s殖民地\n	殖民
+%s%s %s \n%sravity\nMineral %s\nPopulation (%d/%d)\n%s%+dk %s	%s%s %s \n%sravity\n礦物 %s\n人口 (%d/%d)\n%s%+dk %s	殖民
+%sArmor type: %s%s\n	%s裝甲類型:%s%s\n	艦船
+%sAutobuilding%s\n%s - %dt	%s自動建造%s\n%s - %dt	殖民
+%sAutobuilding%s\n%s	%s自動建造%s\n%s	殖民
+%sBase food per%s%d\n	%s基礎食物/人%s%d\n	殖民
+%sBase industry per%s%d\n	%s基礎工業/人%s%d\n	殖民
+%sBase research per%s%d\n\n	%s基礎研究/人%s%d\n\n	殖民
+%sColony of %s	%s%s的殖民地	殖民
+%sComputer type: %s%s\n	%s電腦類型:%s%s\n	艦船
+%sCost to build: %s%d\n	%s建造花費:%s%d\n	殖民
+%sFood per farmer        %s%d.%d\n	%s每位農夫食物產量        %s%d.%d\n	殖民
+%sFood per farmer        %s%d\n	%s每位農夫食物產量        %s%d\n	殖民
+%sFood: %s%+d	%s食物:%s%+d	殖民
+%sFreighters: %s%d	%s貨船:%s%d	殖民
+%sFtl type: %s%s\n	%s超光速引擎類型:%s%s\n	艦船
+%sIncome: %s%+d	%s收入:%s%+d	殖民
+%sIncome: %s%s%+d	%s收入:%s%s%+d	殖民
+%sIndustry per worker    %s%d\n	%s每位工人工業產量    %s%d\n	殖民
+%sMaintenance penalty %s%+d%%\n	%s維護懲罰 %s%+d%%\n	殖民
+%sMax Population%s%d	%s最大人口%s%d	殖民
+%sMax Population%s%d\n	%s最大人口%s%d\n	殖民
+%sMineral %s\n	%s礦物 %s\n	殖民
+%sMorale %s%+d%%\n\n	%s士氣 %s%+d%%\n\n	殖民
+%sPopulation %s%d/%d \n\n	%s人口 %s%d/%d \n\n	殖民
+%sPopulation: %s%d	%s人口:%s%d	殖民
+%sResearch per scientist %s%d\n	%s每位科學家研究量 %s%d\n	殖民
+%sResearch per scientist %s%d\n\n	%s每位科學家研究量 %s%d\n\n	殖民
+%sResearch: %s%d	%s研究:%s%d	殖民
+%sReserve: %s%d	%s儲備:%s%d	殖民
+%sShield type: %s%s\n	%s護盾類型:%s%s\n	艦船
+%sWorker penalty      %s%+d%%\n	%s工人懲罰      %s%+d%%\n	殖民
+%sWorker penalty      %s%+d%%\n\n	%s工人懲罰      %s%+d%%\n\n	殖民
+\n%d settlers already enroute. \n	\n%d 位移民者已在途中。\n	殖民
+\n%sSpecials: \n	\n%s特殊項目:\n	艦船
+\n%sWeapons:\n	\n%s武器:\n	艦船
+\n\nColonist have been shuffled to new jobs.	\n\n殖民者已被重新分配至新的工作。	殖民
+\n\nPlease be aware that the destination colony is blockaded. If settlers arrive at at blockaded colony, they die!	\n\n請注意,目的地殖民地正遭到封鎖。若移民者抵達遭封鎖的殖民地,將會死亡!	殖民
+\n-Blockaded	\n-遭封鎖	殖民
+^ Repeat ^	^ 重複 ^	介面
+2 Players	2 位玩家	設定
+3 Players	3 位玩家	設定
+4 Players	4 位玩家	設定
+6 Players	6 位玩家	設定
+7 Players	7 位玩家	設定
+8 Players	8 位玩家	設定
+Accident	意外事故	事件
+Advanced	進階	設定
+Amoeba	阿米巴	怪獸
+Android	機器人	種族
+Annihilating %s	殲滅 %s 中	戰鬥
+Anomaly	異常現象	場景
+Arid	乾旱	氣候
+Asteroids	小行星帶	場景
+Autobuilding	自動建造	殖民
+Average	中等	設定
+Barrn	貧瘠	氣候
+Beast	野獸	怪獸
+Begin Bombing Button	開始轟炸	按鈕
+Blockaded	遭封鎖	狀態
+Bombard Colony Button	轟炸殖民地	按鈕
+Boom	激增	事件
+bringing the knowledge of %s.	帶來了 %s 的知識。	外交
+bringing the knowledge of the following:	帶來了以下的知識:	外交
+CAPTURED	已擄獲	狀態
+Cease Fire Button	停火	按鈕
+Climate	氣候	殖民
+Comet	彗星	場景
+CRUNCH	喀啦一聲!	感嘆詞
+Crystal	水晶	礦產
+Declined because the planet is at its population limit. The settlers would die upon arrival in %d turns.	已拒絕,因為該行星已達人口上限。移民者將在 %d 回合後抵達並死亡。	殖民
+delete %s	刪除 %s	介面
+Depletion	枯竭	礦產
+Deposit	礦藏	礦產
+Derelict	廢棄船	場景
+Description	描述	介面
+Desrt	沙漠	氣候
+Destroy Colony Button	摧毀殖民地	按鈕
+Difficulty	難度	設定
+Donation	捐贈	事件
+Dragon	巨龍	怪獸
+Drop All Button	全部卸下	按鈕
+Earthquake	地震	事件
+Easy	簡單	設定
+Eel	太空鰻	怪獸
+ETA:%d t	預計到達時間:%d 回合	艦隊
+expert	專家	設定
+farmer	農夫	殖民
+Flux	亂流	場景
+Freak Accident	離奇意外	事件
+Freighter Fleet	貨船艦隊	艦隊
+Funnel	漏斗	場景
+Gaia	蓋亞	氣候
+Galaxy Age	銀河年齡	設定
+Galaxy Size	銀河大小	設定
+Gas Giant - uninhabitable	氣態巨行星 - 不可居住	氣候
+Gas Giant - uninhabitable\n	氣態巨行星 - 不可居住\n	氣候
+General Status	整體狀態	介面
+Gravity Here: %s	此地重力:%s	殖民
+ha!	哈!	感嘆詞
+Hard	困難	設定
+Heavy G Bonus	高重力加成	殖民
+Hire Button	雇用	按鈕
+Housing	住房	殖民
+Huge	巨大	設定
+Hydra	九頭蛇	怪獸
+Hyperspace Flux	超空間亂流	場景
+Impossible	不可能	設定
+Industrial Accident	工業意外	事件
+infantry	步兵	戰鬥
+Infrn	煉獄	氣候
+intelligent	聰穎	種族
+Invade Colony Button	入侵殖民地	按鈕
+Invading %s	正在入侵 %s	戰鬥
+kill %d infantry	消滅 %d 名步兵	戰鬥
+kill %d tanks	消滅 %d 輛坦克	戰鬥
+Large	大型	設定
+LOKNAR	洛克納	場景
+Low G Penalty	低重力懲罰	殖民
+Maint. Cost: %d	維護費用:%d	介面
+Marriage	聯姻	事件
+Max %d farms, %d food each	最多 %d 座農場,每座產出 %d 食物	殖民
+Medium	中等	設定
+militia	民兵	戰鬥
+Mind Control Colony Button	精神控制殖民地	按鈕
+Mineral %s	礦物 %s	殖民
+Mineral Depletion	礦藏枯竭	礦產
+Mineral Deposit	礦藏	礦產
+Mineral Rich	礦產豐富	礦產
+More destroyed...\x0d	更多被摧毀...\x0d	戰鬥
+Mutiny	叛變	事件
+Natives cannot be moved to another job or planet!	原住民無法被調往其他工作或行星!	殖民
+No Combat Button	無戰鬥	按鈕
+No Farming	無法耕作	殖民
+No freighters left in your pool.\n	貨船預備隊已無存量。\n	殖民
+No Random Events	無隨機事件	設定
+No Rebels	無叛亂	設定
+No room for another colonist in this job field	此職位已無空缺容納更多殖民者	殖民
+No room in queue, ship not refitted	佇列已滿,船艦未能改裝	艦船
+NO STAR BASE	無星際基地	狀態
+No Xenon Attacks	無異形攻擊	設定
+NOOOO!.\n	不~~~!\n	感嘆詞
+Nova	新星	場景
+Ocean	海洋	氣候
+Officers	軍官	軍官
+Organic Rich	有機物豐富	礦產
+Orion Discovered	發現奧利安	事件
+Outpost Ship	前哨站船	艦船
+Pirate Activity	海盜活動	事件
+Pirate Raid	海盜突襲	事件
+Pirates	海盜	種族
+Plague	瘟疫	事件
+Planet already colonized	該行星已被殖民	殖民
+Planet Warning	行星警告	介面
+Plasma Flux Damage.\n	電漿亂流損傷。\n	戰鬥
+Players	玩家	設定
+Poor	貧瘠	礦產
+Pop %d,%03d k (%+dk)	人口 %d,%03d千 (%+d千)	殖民
+Pop %d,%03d k (%s%+dk%s)	人口 %d,%03d千 (%s%+d千%s)	殖民
+Pop. Boom	人口激增	事件
+Population Boom	人口激增	事件
+power suits	動力裝甲	戰鬥
+Pre Warp	曲速前	科技
+Pulsar Damage Ship.\n	脈衝星傷害擊中星艦。\n	戰鬥訊息
+Pulsar Damage.\n	脈衝星傷害。\n	戰鬥訊息
+Purchasing failed unexpectedly... Please tell Eric.	購買時發生非預期的失敗……請通知 Eric。	錯誤訊息
+Race Bonus	種族加成	UI標籤
+Race Elimination	種族滅絕	遊戲設定
+Random Events	隨機事件	遊戲設定
+Rebellion	叛亂	事件
+Refit Ship	改裝星艦	按鈕
+Reject Button	拒絕按鈕	按鈕名稱
+Rich	富饒	行星礦產
+Rubble	瓦礫	行星特殊
+Scouts arrive at the %s system	偵察兵抵達 %s 星系	事件訊息
+Select Combat at %s	選擇在 %s 進行戰鬥方式	UI提示
+Select planet for an outpost in the %s system	選擇要在 %s 星系設立前哨站的行星	UI提示
+Select planet for artificial planet construction in the %s system	選擇要在 %s 星系建造人造行星的位置	UI提示
+Select planet for Colony Base in %s system	選擇 %s 星系中殖民基地的目標行星	UI提示
+Select planet for Colony Ship in %s system	選擇 %s 星系中殖民船的目標行星	UI提示
+Select planet for troops in the %s system	選擇要在 %s 星系派駐部隊的行星	UI提示
+Select star for me to attack cowardly %s!	選一顆星讓我攻擊吧,你這膽小的 %s!	外交對白
+Serendipity	意外之喜	事件
+Settlers Depart	移民出發	訊息
+Settlers Failed.	移民失敗。	訊息
+Ships in refit will be scrapped. Continue?	改裝中的星艦將被報廢,確定要繼續嗎?	確認對話
+Small	小型	行星大小
+Space Amoeba	太空變形蟲	太空怪獸
+Space Crystal	太空水晶	太空怪獸
+Space Dragon	太空巨龍	太空怪獸
+Space Eel	太空鰻魚	太空怪獸
+Space Hydra	太空九頭蛇	太空怪獸
+Spatial Compressor Damage ship.\n	空間壓縮器傷害擊中星艦。\n	戰鬥訊息
+Spatial Compressor Damage.\n	空間壓縮器傷害。\n	戰鬥訊息
+Special	特殊	行星特殊分類
+Spy	間諜	特工職業
+Strategic Combat	戰略戰鬥	選單選項
+Subterranean Bonus	地底加成	科技/建築
+Summary	總覽	UI標籤
+Super Nova	超新星	事件
+Surrender	投降	外交選項
+Swamp	沼澤	行星氣候
+Tactical Combat	戰術戰鬥	選單選項
+Tech Level	科技等級	UI標籤
+Tells %s %s you are interested in hiring, and sends him to the pool, hiring the hero if you have the %dBC, and to wait 20 turns if you do not.	告訴 %s %s 你有意雇用,並將其送入人才庫;若你擁有 %d BC 便直接雇用該英雄,否則需等待 20 回合。	UI說明
+Tells %s %s you are not interested in hiring for %dBC right now, and sends the hero to the pool for 20 turns.	告訴 %s %s 你目前不打算以 %d BC 雇用他,並將該英雄送回人才庫等待 20 回合。	UI說明
+Terra	泰拉	地名/專有名詞
+That is an outpost. You cannot send settlers to an outpost.\n	那是一座前哨站,無法向前哨站派遣移民。\n	錯誤訊息
+That planet may not be attacked.	該行星無法被攻擊。	錯誤訊息
+The Antaran fleet	安塔蘭艦隊	單位名稱
+The Defending Player has a telepathic officer here who thwarts your attempt to seize the colony.	防守方在此駐有一名心靈感應軍官,挫敗了你奪取殖民地的企圖。	戰鬥訊息
+The Defending Player is a telepathic race as well, and psychicly thumbs their collective noses at your attempt to seize the colony.	防守方本身也是心靈感應種族,以精神力嘲弄你奪取殖民地的企圖。	戰鬥訊息
+The Guardian	守護者	單位名稱
+The planet is at its population limit after sending %d, If this is not remedied the %d remaining settlers will die upon arrival. Continue?	派出 %d 名移民後,該行星人口將達上限。若不處理,剩餘 %d 名移民抵達後將會死亡,確定要繼續嗎?	確認對話
+The planet is at its population limit after sending %d, If this is not remedied the remaining %d settlers will die upon arrival in %d turns Continue?	派出 %d 名移民後,該行星人口將達上限。若不處理,剩餘 %d 名移民將在 %d 回合後抵達時死亡,確定要繼續嗎?	確認對話
+The planet is at its population limit, If this is not remedied the settlers will die upon arrival. Continue?	該行星人口已達上限。若不處理,移民抵達後將會死亡,確定要繼續嗎?	確認對話
+The planet is at its population limit, If this is not remedied the settlers will die upon arrival in %d turns Continue?	該行星人口已達上限。若不處理,移民將在 %d 回合後抵達時死亡,確定要繼續嗎?	確認對話
+The source colony is blockaded, and cannot send settlers.\n	來源殖民地遭到封鎖,無法派遣移民。\n	錯誤訊息
+There may not be room for this unit here when it is built. Continue?	建造完成時此處可能沒有足夠空間容納該單位,確定要繼續嗎?	確認對話
+These colonists will be unavailable for %d turns, while in transit, are you sure?	這些殖民者在運送途中將有 %d 回合無法使用,確定嗎?	確認對話
+This colonist is a native, natives can only farm or mine.	這名殖民者是原住民,原住民只能從事農耕或採礦。	錯誤訊息
+This colonist is a Rebel, Rebels will not move to another job	這名殖民者是叛亂份子,叛亂份子不會轉換其他工作。	錯誤訊息
+This colonist is an android, and cannot be reconfigured for another job.	這名殖民者是機械人,無法重新指派其他工作。	錯誤訊息
+This colonist is an expert, it will lose this status if transfered, Continue?	這名殖民者是專家,轉調後將失去專家身分,確定要繼續嗎?	確認對話
+This colonist is conquered, conquered people cannot be resettled.\n	這名殖民者是被征服者,被征服的人民無法再次遷移。\n	錯誤訊息
+This colony does not allow farming.\n	這座殖民地不允許從事農耕。\n	錯誤訊息
+This is not your planet.\n	這不是你的行星。\n	錯誤訊息
+This ship has a leader, Send %s to the officer pool first?	這艘星艦上有領袖,要先將 %s 送回軍官人才庫嗎?	確認對話
+This ship is being refitted, removing it from the queue will delete it forever, losing all of the original value of the ship. Delete the ship?	這艘星艦正在改裝中,將其自佇列移除會永久刪除,原本投入的造艦價值也將全數損失。確定要刪除這艘星艦嗎?	確認對話
+This ship is too large to be built here.	這艘星艦體型過大,無法在此建造。	錯誤訊息
+Time-space Anomaly	時空異象	事件
+To	至	UI標籤
+Too many ships already built	已建造的星艦數量過多	錯誤訊息
+Toxic	有毒	行星氣候
+Trade Goods	貿易商品	生產類別
+Transport Ship	運輸船	艦種
+Turn(s) Left: %d	剩餘回合數:%d	UI標籤
+Tutor	教學	UI選項
+U-Poor	極貧瘠	行星礦產
+U-Rich	極富饒	行星礦產
+Virus	病毒	事件
+Warp Beast	曲速獸	太空怪獸
+Warp Funnel	曲速漩渦	太空特徵
+Who	何人	UI標籤
+Will you pay me %dbc to feast elsewhere %s, if you refuse, I shall pillage your puny subjects in the %s system!	你願意付我 %d BC 讓我到別處大快朵頤嗎,%s?若你拒絕,我就去 %s 星系蹂躪你那些渺小的子民!	太空怪獸對白
+Wormhole	蟲洞	太空特徵
+Xenon Attacks	齊農人來襲	事件
+You already have enough colony bases for every planet in system	此星系內每顆行星都已有足夠的殖民基地	錯誤訊息
+You aren't even telepathic!	你根本不具備心靈感應能力!	錯誤訊息
+You cannot afford this increase in production. You are short by %d BC.	你無法負擔這筆生產力提升費用,還差 %d BC。	錯誤訊息
+You Cannot build an artificial planet on anything but an asteroid belt or a gas giant	人造行星只能建造在小行星帶或氣態巨行星上	錯誤訊息
+You cannot build there.	你無法在此建造。	錯誤訊息
+You Cannot build this ship here, perhaps you do not have a starbase, battlestation, etc ?	你無法在此建造這艘星艦,也許你尚未擁有星際基地、戰鬥站等設施?	錯誤訊息
+You cannot buy Housing or Trade Goods, as they are settings, not specific items.	你無法購買住房或貿易商品,因為它們屬於整體設定,而非個別項目。	錯誤訊息
+You cannot buy while this star is blockaded.	此星系遭到封鎖時無法購買。	錯誤訊息
+You cannot change this once you have bought it	一旦購買後便無法更改	錯誤訊息
+You cannot drop troops there.	你無法在此空投部隊。	錯誤訊息
+You cannot mind control this colony	你無法對這座殖民地進行精神控制	錯誤訊息
+You cannot refit captured ships.	你無法改裝擄獲的星艦。	錯誤訊息
+You cannot refit cruiser or larger ships at a star with no star base (or better).	沒有星際基地(或更高等級設施)的星系無法改裝巡洋艦以上的星艦。	錯誤訊息
+You cannot refit Loknar's ship.	你無法改裝洛克納爾的座艦。	錯誤訊息
+You cannot send the last unit of population from a colony.\n	你無法將殖民地最後一名人口遷出。\n	錯誤訊息
+You cannot spend BC's to get this faster than in a single turn.	你無法花費 BC 讓此項目在一回合內完成得更快。	錯誤訊息
+You can't destroy more than one thing a turn.	每回合最多只能摧毀一項目標。	錯誤訊息
+You do not have sufficient technology to build ships	你尚未擁有足夠的科技來建造星艦	錯誤訊息
+You do not have the tech to build doomstars	你尚未擁有建造末日星的科技	錯誤訊息
+You do not have the tech to build titans	你尚未擁有建造泰坦艦的科技	錯誤訊息
+You don't have %dbc %s, for your insolence i shall devour the %s system!	你付不出 %d BC,%s,你這無禮之徒,我要把 %s 星系吞了!	太空怪獸對白
+You find %s, who joins you out of gratitude for being rescued.	你發現了 %s,他出於獲救的感激而加入了你。	事件訊息
+You find %s, who would join you out of gratitude for being rescued, but you have no room	你發現了 %s,他原本願意因獲救而加入,但你已沒有空間容納他	事件訊息
+You have already bought this product.	你已經購買過此產品。	錯誤訊息
+You have no product selected to buy.	你尚未選擇要購買的產品。	錯誤訊息
+You have no cruisers, which are required to seize the colony.	你沒有巡洋艦,而奪取殖民地需要巡洋艦。	錯誤訊息
+You have reached the maximum number of settlers which can be enroute at any given time.\n	你派出的移民數量已達同時在途的上限。\n	錯誤訊息
+You may not attack a fleet in space if the player has a colony in this system. You must attack the fleet at the colony.	若對方在此星系擁有殖民地,你不能在太空中攻擊其艦隊,必須在殖民地處進行攻擊。	錯誤訊息
+You may not attack a planet which has no colony	你不能攻擊沒有殖民地的行星	錯誤訊息
+You may not attack you own colony	你不能攻擊自己的殖民地	錯誤訊息
+You may not attack your own colony	你不能攻擊自己的殖民地	錯誤訊息
+You may not attack your own fleet. Hit the Close button if you want no combat at the star	你不能攻擊自己的艦隊。若不想在此星系開戰,請點選關閉按鈕	錯誤訊息
+Native	原住民	人口類型
+Conquered	被征服者	人口類型
+Conq.	征服	人口類型縮寫
+Agricultural	農業	種族專精
+Industrial	工業	種族專精
+Research	研究	種族專精
+HG	特大型	尺寸縮寫
+S	小型	尺寸縮寫
+M	中型	尺寸縮寫
+L	大型	尺寸縮寫
+H	巨型	尺寸縮寫
+Allows you to choose not to begin combat at this time.	讓你選擇此時不開始戰鬥。	UI說明
+Allows you to begin dropping troops in an effort to conquer the colony.	讓你開始空投部隊,試圖征服該殖民地。	UI說明
+Allows you to begin the bombardment phase of your attack.	讓你開始進行攻擊的轟炸階段。	UI說明
+Use your stellar converter like God intended, to repeatedly pummel the planet until only an asteroid field remains to mark the dead.	如神所願地使用你的恆星轉換器,反覆轟擊這顆行星,直到只剩一片小行星帶為死者留下印記。	UI說明
+Prove your superiority over the inferior race below by psychically overwhelming the colony's defences.	以精神力壓制殖民地的防禦,向下方的劣等種族證明你的優越。	UI說明
+Drop all your bombs in one final attack.\n\n 'Nuke 'em from orbit, it's the only way to be sure..'	在最後一擊中投下你所有的炸彈。\n\n「從軌道上把他們炸了,這才是唯一保險的辦法……」	UI說明
+Allows you to pause bombing at any time you choose, either to begin again, or to go on to another phase of combat.	讓你可以隨時暫停轟炸,之後再繼續轟炸,或進入戰鬥的其他階段。	UI說明
+Begin dropping bombs one at a time now, Allowing for a cease fire at any time.	現在開始逐一投下炸彈,並可隨時停火。	UI說明
+Xenophobic	排外	種族特質
+Ruthless	冷酷無情	種族特質
+Aggressive	好戰	種族特質
+Erratic	反覆無常	種族特質
+Honorable	重信譽	種族特質
+Pacifistic	和平主義	種族特質
+Dishonored	失信	外交狀態
+Diplomat	外交官	領袖職業
+Militarist	軍國主義者	種族傾向
+Expansionist	擴張主義者	種族傾向
+Technologist	科技主義者	種族傾向
+Industrialist	工業主義者	種族傾向
+Ecologist	生態主義者	種族傾向
+No Treaty	無條約	外交狀態
+Non-Aggression Pact	互不侵犯條約	外交狀態
+Alliance	同盟	外交狀態
+Peace Treaty	和平條約	外交狀態
+Limited War	有限戰爭	外交狀態
+War	戰爭	外交狀態
+Jihad	聖戰	外交狀態
+Feudal	封建制	政府體制
+Confederation	邦聯制	政府體制
+Dictatorship	獨裁制	政府體制
+Imperium	帝制	政府體制
+Democracy	民主制	政府體制
+Federation	聯邦制	政府體制
+Unification	統一制	政府體制
+Hyper-advanced...	超進化……	政府體制
+Alkari	阿爾卡利人	種族名稱
+Bulrathi	布拉希人	種族名稱
+Darlok	達洛克人	種族名稱
+Elerian	埃勒利安人	種族名稱
+Gnolam	諾拉姆人	種族名稱
+Human	人類	種族名稱
+Klackon	克拉肯人	種族名稱
+Meklar	梅克拉人	種族名稱
+Mrrshan	姆爾商人	種族名稱
+Psilon	賽龍人	種族名稱
+Sakkra	薩克拉人	種族名稱
+Silicoid	矽晶人	種族名稱
+Trilarian	崔拉利安人	種族名稱
+Antarans	安塔蘭人	種族名稱
+Guardian	守護者	單位名稱
+Governmental	政府	科技分類
+Planetary Systems	行星系統	科技分類
+Space Systems	太空系統	科技分類
+Ship Systems/Crew	星艦系統/船員	科技分類
+Ship Drives	星艦引擎	科技分類
+Ship Defenses	星艦防禦	科技分類
+Ship Weapons	星艦武器	科技分類
+Missiles/Bombs	飛彈/炸彈	科技分類
+Ground Combat	地面戰鬥	科技分類
+Population	人口	科技分類
+Production	生產	科技分類
+Ecology	生態	科技分類
+Security	安全	科技分類
+B Class	B級	恆星分類
+F Class	F級	恆星分類
+G Class	G級	恆星分類
+K Class	K級	恆星分類
+M Class	M級	恆星分類
+Dwarf Class	矮星級	恆星分類
+Black Hole	黑洞	恆星分類
+Tiny	微型	行星大小
+Ultra Poor	極度貧瘠	行星礦產
+Abundant	豐富	行星礦產
+Ultra Rich	極度富饒	行星礦產
+Low G	低重力	行星重力
+Normal G	標準重力	行星重力
+Heavy G	高重力	行星重力
+No	否	UI標籤
+Minimal	稀少	行星環境
+Breathable	可呼吸	行星環境
+Bombarded	遭轟炸	行星狀態
+Hostile	惡劣	行星環境
+Life Supporting	適居	行星環境
+Lifeless	無生命	行星環境
+No Special	無特殊	行星特殊分類
+Stable Wormhole	穩定蟲洞	太空特徵
+Space Debris	太空殘骸	太空特徵
+Pirate Cache	海盜藏寶	太空特徵
+Gold Deposits	黃金礦藏	太空特徵
+Gem Deposits	寶石礦藏	太空特徵
+Natives	原住民	太空特徵
+Splinter Colony	分裂殖民地	太空特徵
+Marooned Hero	遇難英雄	太空特徵
+Ancient Artifacts	遠古遺物	太空特徵
+Orion Special	歐利安特殊資源	太空特徵
+Sun	恆星	天體
+Asteroid	小行星帶	天體
+Gas Giant	氣態巨行星	天體
+Planet	行星	天體
+Radiated	輻射地	行星氣候
+Barren	貧瘠地	行星氣候
+Desert	沙漠	行星氣候
+Tundra	凍原	行星氣候
+Terran	陸地型	行星氣候
+Assassin	刺客	領袖技能
+Assassin*	刺客*	領袖技能
+Commando	突擊隊員	領袖技能
+Commando*	突擊隊員*	領袖技能
+Diplomat*	外交官*	領袖技能
+Engineer	工程師	領袖技能
+Engineer*	工程師*	領袖技能
+Environmentalist	環境學家	領袖技能
+Environmentalist*	環境學家*	領袖技能
+Famous	知名	領袖技能
+Famous*	知名*	領袖技能
+Farming Leader	農業專家	領袖技能
+Farming Leader*	農業專家*	領袖技能
+Fighter Pilot	戰鬥機飛行員	領袖技能
+Fighter Pilot*	戰鬥機飛行員*	領袖技能
+Financial Leader	財政專家	領袖技能
+Financial Leader*	財政專家*	領袖技能
+Galactic Lore	銀河傳說	領袖技能
+Galactic Lore*	銀河傳說*	領袖技能
+Helmsman	舵手	領袖技能
+Helmsman*	舵手*	領袖技能
+Instructor	教官	領袖技能
+Instructor*	教官*	領袖技能
+Labor Leader	勞工專家	領袖技能
+Labor Leader*	勞工專家*	領袖技能
+Medicine	醫術	領袖技能
+Medicine*	醫術*	領袖技能
+Megawealth	鉅富	領袖技能
+Megawealth*	鉅富*	領袖技能
+Navigator	領航員	領袖技能
+Navigator*	領航員*	領袖技能
+Operations	作戰專才	領袖技能
+Operations*	作戰專才*	領袖技能
+Ordnance	軍械專才	領袖技能
+Ordnance*	軍械專才*	領袖技能
+Researcher	研究員	領袖技能
+Researcher*	研究員*	領袖技能
+Science Leader	科學專家	領袖技能
+Science Leader*	科學專家*	領袖技能
+Security*	安全*	領袖技能
+Spiritual Leader	心靈導師	領袖技能
+Spiritual Leader*	心靈導師*	領袖技能
+Spy Master	間諜頭子	領袖技能
+Spy Master*	間諜頭子*	領袖技能
+Tactics	戰術	領袖技能
+Tactics*	戰術*	領袖技能
+Telepath	心靈感應者	領袖技能
+Telepath*	心靈感應者*	領袖技能
+Trader	商人	領袖技能
+Trader*	商人*	領袖技能
+Weaponry	武器專才	領袖技能
+Weaponry*	武器專才*	領袖技能
+Commander	指揮官	軍階
+Captain	上尉	軍階
+Commodore	准將	軍階
+Rear Admiral	少將	軍階
+Admiral	上將	軍階
+Lord Admiral	大元帥	軍階
+Administrator	行政官	文官職稱
+Director	主任	文官職稱
+Magistrate	執政官	文官職稱
+Commissioner	專員	文官職稱
+Governor	總督	文官職稱
+Lord	領主	文官職稱
+SAVE%d.GAM is invalid! Try another save slot or start a NEW game	SAVE%d.GAM 檔案無效!請嘗試其他存檔欄位,或開始新遊戲	錯誤訊息
+loading a game	讀取遊戲中	狀態文字
+Error saving game.\n	存檔失敗。\n	錯誤訊息
+(Auto Save)	(自動存檔)	UI標籤
+^^ no description ^^	^^ 無說明 ^^	UI提示
+^^ empty slot ^^	^^ 空白欄位 ^^	UI提示
+%s is invalid!	%s 無效!	錯誤訊息
+Single Player	單人遊戲	選單選項
+%d Human, Hot Seat	%d 人,輪流對戰	選單選項
+%d Human, Network	%d 人,網路連線	選單選項
+Modem	數據機	選單選項
+%s Auto Save	%s 自動存檔	UI標籤
+Goto design screen	前往設計畫面	UI說明
+Pick Design For %s	為 %s 選擇設計圖	UI標題
+Custom refit this ship on the design screen	在設計畫面中自訂改裝這艘星艦	UI說明
+This design is not the same size as the ship you are refitting	此設計圖的尺寸與你正在改裝的星艦不同	錯誤訊息
+Clicking here refits the %s ship with the %s design	點選這裡會將 %s 依 %s 設計圖進行改裝	UI說明
+Ship Designs	星艦設計	UI標題
+Goto Design Screen Button	前往設計畫面按鈕	按鈕名稱
+Clicking here sends you to the design screen to cutsom refit this ship.	點選這裡會前往設計畫面,自訂改裝這艘星艦。	UI說明
+Quick Refit Popup	快速改裝彈出視窗	UI標題
+This popup allows you to quickly refit ships by upgrading them into an existing design as opposed to designing them by hand each time	此彈出視窗讓你能將星艦快速升級為現有設計圖,而不必每次手動設計	UI說明
+Cancel Button	取消按鈕	按鈕名稱
+Allows you to cancel and not refit the ship	讓你取消操作,不進行改裝	UI說明
