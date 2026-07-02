@@ -18,16 +18,24 @@
 
 ## Phase 1 — 資料層移植(純 Go)
 - [ ] Go module 初始化 + docker build 環境
-- [ ] LBX 容器解析(magic 0xfead、offset 表)
-- [ ] scan-line RLE 影像解碼
-- [ ] palette 解析(6-bit → 8-bit)
-- [ ] 影像多幀 + 多 palette variant
-- [ ] Bitmap(8-bit indexed)+ dirty block
-- [ ] 存檔 schema:GameConfig/Galaxy/Colony×250/Planet×360/Star×72/Leader×67/Player×8/Ship×500
+- [x] LBX 容器解析(magic 0xfead、offset 表)— internal/lbx,真實檔驗證
+- [x] scan-line RLE 影像解碼 — internal/lbx/image.go
+- [x] palette 解析(6-bit → 8-bit)— 解碼與上色解耦(Frame.ToRGBA)
+- [x] 影像多幀(frame offset 表)+ 多 palette variant(ToRGBA 套不同 palette)
+- [ ] Bitmap(8-bit indexed)+ dirty block(gfx.cpp:588-765;image.go 已含 NOCOMPRESS/RLE,Bitmap sparse block 待補)
+- 存檔 schema(對照 gamestate.cpp):
+  - [x] reader(游標/LE/seek)+ GameConfig(59B)+ Galaxy/Nebula(32B)+ colonyCount → SAVE10.GAM 驗證(名稱「(Auto Save)」/759×600/colonyCount 5)
+  - [ ] Colony×250(89 行)
+  - [ ] Planet×360(18 行)
+  - [ ] Star×72(67 行)
+  - [ ] Leader×67(25 行)
+  - [ ] Player×8(143 行)
+  - [ ] Ship×500(22 行,內嵌 ShipDesign)
+  - [ ] 全區段解析後驗證 offset 收斂到檔尾
 - [ ] 資料枚舉/常數字典(技術/建築/種族特性/氣候/礦產/特殊裝備)
 - [ ] 唯讀衍生公式移植(艦艇戰力/研究成本/行星產出/雇用費)
 - [ ] 檔案覆蓋順序載入(基礎 → 1.31)
-- [ ] 單元測試:以 1.31 .lbx + 存檔為測資
+- [ ] 單元測試:以 1.31 .lbx + 存檔為測資(進行中:lbx/save 皆有合成 + 真實檔測試)
 
 ## Phase 2 — ebiten backend + 最小可跑 ⭐
 - [ ] ebiten 專案骨架(Update/Draw/Layout)
