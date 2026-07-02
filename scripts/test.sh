@@ -23,4 +23,4 @@ exec docker run --rm \
   "${ENV_ARGS[@]}" \
   "${MOUNT_ARGS[@]}" \
   "${IMAGE}" \
-  go test "${@:-./...}"
+  go test -buildvcs=false "${@:-./...}"

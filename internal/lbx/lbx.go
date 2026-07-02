@@ -62,8 +62,11 @@ func Open(r io.ReaderAt, size int64) (*Archive, error) {
 	cur := firstOffset
 	for i := 0; i < int(assetCount); i++ {
 		next := binary.LittleEndian.Uint32(tableBytes[4*i : 4*i+4])
-		if next <= cur {
-			return nil, fmt.Errorf("lbx: 資產 %d 的 offset 非遞增(%d <= %d)", i, next, cur)
+		// 允許 next == cur(空資產槽,size 0);只有嚴格遞減才是損毀。
+		// 刻意偏離 openorion2(lbx.cpp:194 用 `offset <= _index[i].offset` 過嚴):
+		// 真實檔如 COLONY.LBX 的資產 0 即為空槽,offset 相等,須接受。
+		if next < cur {
+			return nil, fmt.Errorf("lbx: 資產 %d 的 offset 遞減(%d < %d)", i, next, cur)
 		}
 		index[i] = Entry{Offset: cur, Size: next - cur}
 		cur = next

@@ -58,6 +58,24 @@ func TestOpenSynthetic(t *testing.T) {
 	}
 }
 
+func TestOpenAllowsEmptyAsset(t *testing.T) {
+	// 真實檔(如 COLONY.LBX)有空資產槽:相鄰 offset 相等(size 0)。應接受。
+	assets := [][]byte{
+		[]byte("data"),
+		{}, // 空資產
+		[]byte("more"),
+	}
+	raw := buildSyntheticLBX(assets)
+	a, err := Open(bytes.NewReader(raw), int64(len(raw)))
+	if err != nil {
+		t.Fatalf("含空資產應可解析,卻失敗: %v", err)
+	}
+	got, err := a.Asset(1)
+	if err != nil || len(got) != 0 {
+		t.Errorf("空資產應回傳 0 長度,得 %v (err=%v)", got, err)
+	}
+}
+
 func TestOpenRejectsBadMagic(t *testing.T) {
 	raw := buildSyntheticLBX([][]byte{[]byte("x")})
 	raw[2] = 0x00 // 破壞 magic

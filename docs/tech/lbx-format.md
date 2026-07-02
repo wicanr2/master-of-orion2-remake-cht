@@ -19,6 +19,7 @@
 
 - 資產內容為原始位元組;型別(影像/調色盤/字串/字型)由**使用端**決定,容器不標記。
 - Go 實作:`internal/lbx/lbx.go`(`Open` / `Asset`),以 `io.ReaderAt` 惰性讀取,不整包載入。
+- **空資產槽**:相鄰 offset 可相等(size 0),真實檔如 COLONY.LBX 資產 0 即為空。損毀判準是 offset **嚴格遞減**(`next < cur`)。刻意偏離 openorion2 `lbx.cpp:194` 的 `<=`(過嚴,會拒絕含空槽的真實檔)。
 
 驗證數據:TECHNAME.LBX=6 資產、RACES.LBX=64、GAME.LBX=32、PATCH13.LBX=2。
 
@@ -48,6 +49,13 @@
 ### 2.3 Frame offset 表
 
 Header 之後接 **`frameCount + 1`** 個 u32,為**資產內絕對 offset**;最後一個須等於資產長度。第 i 幀資料 = `[offset[i], offset[i+1])`。
+
+### 2.3.1 調色盤來源(重要)
+
+多數 UI 小圖/sprite **無內嵌調色盤**(flags 無 FLAG_PALETTE),共用畫面的全域調色盤。openorion2 的模式:
+**全螢幕背景圖內嵌調色盤**,同畫面其他 sprite 沿用該背景的 palette(`_background->palette()` / `_bg->palette()`)。
+例:主選單背景 = `MAINMENU.LBX` 資產 21(`ASSET_MENU_BACKGROUND`),內嵌 palette;選單按鈕等 sprite 用它上色。
+→ 移植時每個畫面先載其背景圖取得 palette,再餵給該畫面其他資產。
 
 ### 2.4 內嵌調色盤(僅 FLAG_PALETTE)
 

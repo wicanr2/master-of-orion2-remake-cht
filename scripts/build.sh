@@ -12,4 +12,4 @@ exec docker run --rm \
   -w /src \
   -e CGO_ENABLED=0 \
   "${IMAGE}" \
-  go build "${@:-./...}"
+  go build -buildvcs=false "${@:-./...}"
