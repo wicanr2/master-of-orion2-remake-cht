@@ -73,6 +73,20 @@ func (f *Font) Draw(dst *ebiten.Image, s string, x, y, size float64, c color.Col
 	text.Draw(dst, s, face, op)
 }
 
+// DrawCentered 以 (cx,cy) 為中心水平+垂直置中畫一段文字(用 text/v2 對齊,免手算)。
+func (f *Font) DrawCentered(dst *ebiten.Image, s string, cx, cy, size float64, c color.Color) {
+	face := f.Face(size)
+	if face == nil {
+		return
+	}
+	op := &text.DrawOptions{}
+	op.GeoM.Translate(cx, cy)
+	op.LayoutOptions.PrimaryAlign = text.AlignCenter
+	op.LayoutOptions.SecondaryAlign = text.AlignCenter
+	op.ColorScale.ScaleWithColor(c)
+	text.Draw(dst, s, face, op)
+}
+
 // Measure 回傳字串在指定尺寸下的寬高(供置中/換行計算,對應 mom「量寬也要支援 CJK」)。
 func (f *Font) Measure(s string, size float64) (w, h float64) {
 	face := f.Face(size)

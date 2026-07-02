@@ -19,6 +19,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/assets"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/lbx"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
@@ -78,11 +79,17 @@ func main() {
 	frames := flag.Int("frames", 3, "截圖前先跑幾幀")
 	savePath := flag.String("save", "", "存檔路徑;設定則以星圖模式繪製該存檔")
 	fontPath := flag.String("font", "", "CJK 字型檔(.ttf/.otf/.ttc);設定則用它渲染中文")
-	menuMode := flag.Bool("menu", false, "中文化主選單模式(擦底疊字)")
+	menuMode := flag.Bool("menu", false, "主選單模式")
 	tsvPath := flag.String("tsv", "assets/i18n/menu.tsv", "主選單譯表 TSV")
+	lang := flag.String("lang", "zh", "語言:zh(繁中)或 en(英文)")
 	flag.Parse()
 
-	// 中文化主選單模式。
+	langID := i18n.Traditional
+	if *lang == "en" {
+		langID = i18n.English
+	}
+
+	// 主選單模式(中/英)。
 	if *menuMode {
 		if *dataDirs == "" {
 			fmt.Fprintln(os.Stderr, "需指定 -data <遊戲資料夾>")
@@ -92,7 +99,7 @@ func main() {
 		if err != nil {
 			fatal(fmt.Errorf("載入字型: %w", err))
 		}
-		if err := runMenu(strings.Split(*dataDirs, ","), fnt, *tsvPath, *shot, *frames); err != nil {
+		if err := runMenu(strings.Split(*dataDirs, ","), langID, fnt, *tsvPath, *shot, *frames); err != nil {
 			fatal(err)
 		}
 		return

@@ -60,6 +60,12 @@ func (g *menuGame) sampleAt(x, y int) color.RGBA {
 func (g *menuGame) Draw(screen *ebiten.Image) {
 	screen.DrawImage(g.bg, nil)
 
+	// 英文模式:直接顯示原版背景(按鈕英文已烘在圖上),不疊字。
+	if g.cat.Lang() != i18n.Traditional {
+		g.maybeShot(screen)
+		return
+	}
+
 	labelColor := color.RGBA{104, 224, 96, 255} // 選單亮綠(近似原版按鈕字色)
 	for _, b := range menuButtons {
 		// 採樣按鈕左內緣的底色(避開置中文字),當擦底色。
@@ -67,14 +73,15 @@ func (g *menuGame) Draw(screen *ebiten.Image) {
 		// 擦掉烘進圖的英文:蓋一塊底色(內縮保留邊框凹凸)。
 		vector.DrawFilledRect(screen, float32(b.x+4), float32(b.y+3),
 			float32(b.w-8), float32(b.h-6), plate, false)
-		// 疊置中中文。
+		// 疊置中中文(以按鈕中心對齊)。
 		zh := g.cat.Translate(b.enKey)
-		tw, th := g.font.Measure(zh, 15)
-		tx := float64(b.x) + (float64(b.w)-tw)/2
-		ty := float64(b.y) + (float64(b.h)-th)/2
-		g.font.Draw(screen, zh, tx, ty, 15, labelColor)
+		g.font.DrawCentered(screen, zh, float64(b.x)+float64(b.w)/2, float64(b.y)+float64(b.h)/2, 15, labelColor)
 	}
 
+	g.maybeShot(screen)
+}
+
+func (g *menuGame) maybeShot(screen *ebiten.Image) {
 	if g.shotPath != "" && !g.saved && g.tick >= g.frames {
 		if err := saveScreenshot(screen, g.shotPath); err != nil {
 			fmt.Println("截圖失敗:", err)
@@ -85,9 +92,9 @@ func (g *menuGame) Draw(screen *ebiten.Image) {
 
 func (g *menuGame) Layout(int, int) (int, int) { return g.bg.Bounds().Dx(), g.bg.Bounds().Dy() }
 
-// runMenu 渲染中文化主選單。
-func runMenu(dirs []string, fnt *uifont.Font, tsvPath, shot string, frames int) error {
-	if fnt == nil {
+// runMenu 渲染主選單。lang 決定顯示語言(中文則擦底疊字,英文則原版)。
+func runMenu(dirs []string, lang i18n.Lang, fnt *uifont.Font, tsvPath, shot string, frames int) error {
+	if lang == i18n.Traditional && fnt == nil {
 		return fmt.Errorf("中文選單需以 -font 指定 CJK 字型")
 	}
 	res, err := assets.NewResolver(dirs...)
@@ -111,14 +118,14 @@ func runMenu(dirs []string, fnt *uifont.Font, tsvPath, shot string, frames int) 
 	}
 	rgba := im.Frames[0].ToRGBA(im.Embedded, im.KeyColor())
 
-	cat := i18n.New(i18n.Traditional)
-	f, err := os.Open(tsvPath)
-	if err != nil {
+	cat := i18n.New(lang)
+	if f, err := os.Open(tsvPath); err == nil {
+		defer f.Close()
+		if _, err := cat.LoadTSV(f); err != nil {
+			return err
+		}
+	} else if lang == i18n.Traditional {
 		return fmt.Errorf("開啟譯表 %s: %w", tsvPath, err)
-	}
-	defer f.Close()
-	if _, err := cat.LoadTSV(f); err != nil {
-		return err
 	}
 
 	g := &menuGame{
