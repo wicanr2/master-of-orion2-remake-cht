@@ -537,9 +537,26 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 		{482, 436, 62, 18, "Combat", 0},
 		{543, 436, 82, 18, "RETURN", 0},
 	}
-	return loadOverlayScreen(b.res, "fleet.lbx", 0, b.lang, b.fnt, "assets/i18n/menu.tsv",
+	s, err := loadOverlayScreen(b.res, "fleet.lbx", 0, b.lang, b.fnt, "assets/i18n/menu.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"buffer0.lbx", 0}, {"fleet.lbx", 111}})
+	if err != nil {
+		return nil, err
+	}
+	// 艦隊名冊填進左下暗面板(艦名 + 艦體等級)。
+	if b.session != nil {
+		gold := color.RGBA{240, 220, 120, 255}
+		body := color.RGBA{206, 214, 232, 255}
+		y := 312.0
+		for _, sh := range b.session.Ships {
+			s.extras = append(s.extras,
+				extraText{x: 28, y: y, size: 13, text: sh.Name, col: gold},
+				extraText{x: 130, y: y, size: 12, text: sh.Class, col: body},
+			)
+			y += 28
+		}
+	}
+	return s, nil
 }
 
 // officer 建原版軍官列表畫面(OFFICER.LBX 資產 0)。座標經 PIL 量測

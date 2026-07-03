@@ -24,6 +24,22 @@ type Star struct {
 	Owner    int // 0=無主 1=玩家 2=AI
 }
 
+// Ship 是一艘艦艇(供艦隊畫面)。
+type Ship struct {
+	Name  string
+	Class string // 艦體等級(護衛艦/驅逐艦/巡洋艦/戰艦…)
+}
+
+// demoShips 是示範艦隊(固定;正式版由存檔/建造填)。
+func demoShips() []Ship {
+	return []Ship{
+		{"探索號", "偵察艦"},
+		{"復仇號", "護衛艦"},
+		{"雷霆號", "驅逐艦"},
+		{"守護號", "巡洋艦"},
+	}
+}
+
 // Leader 是一名可雇用的軍官/領袖(供軍官列表)。
 type Leader struct {
 	Name  string
@@ -103,6 +119,7 @@ type GameSession struct {
 	Stars            []Star              // 星系圖
 	Planets          []Planet            // 行星列表
 	Leaders          []Leader            // 軍官/領袖名單
+	Ships            []Ship              // 艦隊
 }
 
 // EndTurn 推進一回合:先結算玩家帝國,再讓各 AI 對手自行決策並結算,回合數 +1。
@@ -142,5 +159,6 @@ func NewDemoSession() *GameSession {
 		Stars:   demoStars(),
 		Planets: genPlanets(demoStars()),
 		Leaders: demoLeaders(),
+		Ships:   demoShips(),
 	}
 }
