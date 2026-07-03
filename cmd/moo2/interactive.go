@@ -635,8 +635,22 @@ func (b *sceneBuilder) council() (*overlayScreen, error) {
 		return nil, err
 	}
 	if b.fnt != nil {
+		gold := color.RGBA{240, 220, 120, 255}
 		s.extras = []extraText{
-			{x: moo2ScreenW / 2, y: 30, size: 22, text: "銀河議會", col: color.RGBA{240, 220, 120, 255}, align: 1},
+			{x: moo2ScreenW / 2, y: 30, size: 22, text: "銀河議會", col: gold, align: 1},
+		}
+		if b.session != nil {
+			v := b.session.CouncilVote()
+			win := color.RGBA{120, 220, 140, 255}
+			lose := color.RGBA{235, 120, 110, 255}
+			outcome, oc := "賽隆人當選銀河領袖", lose
+			if v.PlayerWon {
+				outcome, oc = "★ 你當選銀河領袖!", win
+			}
+			s.extras = append(s.extras,
+				extraText{x: moo2ScreenW / 2, y: 418, size: 15, text: fmt.Sprintf("本屆投票  我方 %d 票 ／ 賽隆人 %d 票", v.PlayerVotes, v.EnemyVotes), col: color.RGBA{214, 220, 235, 255}, align: 1},
+				extraText{x: moo2ScreenW / 2, y: 444, size: 17, text: outcome, col: oc, align: 1},
+			)
 		}
 	}
 	return s, nil

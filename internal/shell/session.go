@@ -155,6 +155,27 @@ func (s *GameSession) ShiftColonyJob(idx int, from, to string) {
 	}
 }
 
+// VoteResult 是一屆銀河議會投票結果(票數依人口)。
+type VoteResult struct {
+	PlayerVotes, EnemyVotes int
+	PlayerWon               bool
+}
+
+// CouncilVote 解算一屆銀河議會投票:雙方票數 = 各自帝國總人口,較高者當選領袖。
+func (s *GameSession) CouncilVote() VoteResult {
+	pv := 0
+	for _, c := range s.PlayerColonies {
+		pv += c.Population
+	}
+	ev := 0
+	for _, a := range s.AIPlayers {
+		for _, c := range a.Colonies {
+			ev += c.Population
+		}
+	}
+	return VoteResult{PlayerVotes: pv, EnemyVotes: ev, PlayerWon: pv >= ev}
+}
+
 // ColonyBuild 是某殖民地目前的建造項目。
 type ColonyBuild struct {
 	Name     string
