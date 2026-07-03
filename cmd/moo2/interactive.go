@@ -564,12 +564,20 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 	hits := []hitRegion{
 		{340, 418, 96, 20, "audience"},
 		{340, 438, 96, 20, "declarewar"},
+		{438, 418, 90, 20, "report"},
 		{0, 0, moo2ScreenW, moo2ScreenH, "back"},
 	}
 	onAction := func(a string) *origTransition {
 		switch a {
 		case "audience":
 			return b.goTo(b.council, "銀河議會")
+		case "report":
+			sc, err := b.diplomacy() // 外交對談
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "外交:", err)
+				return nil
+			}
+			return &origTransition{next: sc}
 		case "declarewar":
 			sc, err := b.tacticalCombat() // 進格子戰術戰鬥
 			if err != nil {
@@ -592,6 +600,80 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 	}
 	return loadOverlayScreen(b.res, "races.lbx", 0, b.lang, b.fnt, "assets/i18n/diplo.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction, nil)
+}
+
+// --- 外交對談畫面(自繪 origScreen;原版 DIPLOMAT#29 LBX 解碼損壞,改自繪功能面板)---
+
+type diplomacyScreen struct {
+	b        *sceneBuilder
+	fnt      *uifont.Font
+	enemy    string
+	response string
+	opts     []struct {
+		label, action string
+	}
+	backRect [4]int
+}
+
+func newDiplomacyScreen(b *sceneBuilder) *diplomacyScreen {
+	return &diplomacyScreen{b: b, fnt: b.fnt, enemy: "賽隆人",
+		response: "賽隆人使節:人類,你有何提議?",
+		opts: []struct{ label, action string }{
+			{"提議和平", "peace"}, {"提議貿易", "trade"}, {"威脅恫嚇", "threat"},
+		},
+		backRect: [4]int{250, 420, 140, 34}}
+}
+
+func (d *diplomacyScreen) optRect(i int) (x, y, w, h int) { return 190, 150 + i*54, 260, 40 }
+
+func (d *diplomacyScreen) update(in shell.InputState) *origTransition {
+	if !in.ClickReleased {
+		return nil
+	}
+	for i, o := range d.opts {
+		x, y, w, h := d.optRect(i)
+		if in.MouseX >= x && in.MouseX < x+w && in.MouseY >= y && in.MouseY < y+h {
+			d.response = d.b.session.DiplomacyResponse(o.action, d.enemy)
+			return nil
+		}
+	}
+	bx, by, bw, bh := d.backRect[0], d.backRect[1], d.backRect[2], d.backRect[3]
+	if in.MouseX >= bx && in.MouseX < bx+bw && in.MouseY >= by && in.MouseY < by+bh {
+		return d.b.goTo(d.b.races, "種族關係")
+	}
+	return nil
+}
+
+func (d *diplomacyScreen) draw(dst *ebiten.Image) {
+	dst.Fill(color.RGBA{12, 10, 22, 255})
+	vector.DrawFilledRect(dst, 40, 40, 560, 400, color.RGBA{22, 18, 34, 255}, false)
+	vector.StrokeRect(dst, 40, 40, 560, 400, 2, color.RGBA{120, 90, 160, 255}, false)
+	gold := color.RGBA{240, 220, 120, 255}
+	body := color.RGBA{220, 215, 235, 255}
+	if d.fnt == nil {
+		return
+	}
+	d.fnt.DrawCentered(dst, "外交對談", 320, 62, 20, gold)
+	d.fnt.DrawCentered(dst, d.enemy+" 使節", 320, 96, 14, color.RGBA{235, 150, 140, 255})
+	d.fnt.DrawCentered(dst, d.response, 320, 124, 14, body)
+	for i, o := range d.opts {
+		x, y, w, h := d.optRect(i)
+		vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{34, 30, 54, 255}, false)
+		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, color.RGBA{110, 90, 160, 255}, false)
+		d.fnt.DrawCentered(dst, o.label, float64(x+w/2), float64(y+h/2), 15, body)
+	}
+	bx, by, bw, bh := d.backRect[0], d.backRect[1], d.backRect[2], d.backRect[3]
+	vector.DrawFilledRect(dst, float32(bx), float32(by), float32(bw), float32(bh), color.RGBA{40, 34, 30, 255}, false)
+	vector.StrokeRect(dst, float32(bx), float32(by), float32(bw), float32(bh), 1.5, color.RGBA{160, 140, 100, 255}, false)
+	d.fnt.DrawCentered(dst, "結束對談", float64(bx+bw/2), float64(by+bh/2), 15, body)
+}
+
+// diplomacy 進入外交對談畫面。
+func (b *sceneBuilder) diplomacy() (origScreen, error) {
+	if b.session == nil {
+		return nil, fmt.Errorf("無對局")
+	}
+	return newDiplomacyScreen(b), nil
 }
 
 // --- 格子戰術戰鬥畫面(自繪 origScreen:星空底 + 格線 + 雙方艦艇 token + HP 條)---

@@ -159,6 +159,38 @@ func (s *GameSession) ResolveBattle(enemy string) BattleResult {
 	return res
 }
 
+// DiplomacyResponse 依雙方相對實力回應一個外交提議(和平/貿易/威脅)。
+func (s *GameSession) DiplomacyResponse(action, enemy string) string {
+	pPop, ePop := 0, 0
+	for _, c := range s.PlayerColonies {
+		pPop += c.Population
+	}
+	for _, a := range s.AIPlayers {
+		for _, c := range a.Colonies {
+			ePop += c.Population
+		}
+	}
+	pFleet := 0
+	for _, sh := range s.Ships {
+		pFleet += shipStrength(sh.Class)
+	}
+	switch action {
+	case "peace":
+		if pPop >= ePop {
+			return enemy + ":你們的實力我們敬佩,和平協議成立。"
+		}
+		return enemy + ":哼,弱者不配談和。"
+	case "trade":
+		return enemy + ":貿易協定成立,願雙方繁榮昌盛。"
+	case "threat":
+		if pFleet >= 10 {
+			return enemy + ":……我們會記住這份侮辱。(關係惡化)"
+		}
+		return enemy + ":就憑你們這點艦隊?可笑!"
+	}
+	return ""
+}
+
 // CombatShip 是格子戰術戰鬥中的一艘艦(有 HP)。
 type CombatShip struct {
 	Name      string
