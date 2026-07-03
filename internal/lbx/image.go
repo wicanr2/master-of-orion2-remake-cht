@@ -219,3 +219,26 @@ func (fr *Frame) ToRGBA(pal *Palette, keyColor bool) *image.RGBA {
 	}
 	return img
 }
+
+// AccumulatedRGBA 把多幀動畫依 openorion2 語意累積成單張圖:各幀的已寫入像素依序疊到
+// 同一 index buffer(未 FILLBG 時 buffer 不重置=delta 動畫),未被任何幀寫入的像素填
+// palette[0](非透明)。適合把「最終畫格」當靜態背景(如外交議事廳 DIPLOMAT#29,38 幀)。
+func (im *Image) AccumulatedRGBA(pal *Palette) *image.RGBA {
+	w, h := im.Width, im.Height
+	buf := make([]uint8, w*h)
+	for _, fr := range im.Frames {
+		for i, wr := range fr.Written {
+			if wr {
+				buf[i] = fr.Index[i]
+			}
+		}
+	}
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	for i, idx := range buf {
+		img.Pix[4*i+0] = pal[idx].R
+		img.Pix[4*i+1] = pal[idx].G
+		img.Pix[4*i+2] = pal[idx].B
+		img.Pix[4*i+3] = 0xff
+	}
+	return img
+}

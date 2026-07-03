@@ -609,14 +609,28 @@ type diplomacyScreen struct {
 	fnt      *uifont.Font
 	enemy    string
 	response string
+	room     *ebiten.Image // 原版 DIPLOMAT 議事廳(多幀累積解碼)
 	opts     []struct {
 		label, action string
 	}
 	backRect [4]int
 }
 
+// loadDiplomatRoom 用「多幀累積 + diplomat#0 調色盤」解出原版外交議事廳當背景。
+func loadDiplomatRoom(res *assets.Resolver) *ebiten.Image {
+	room, err := decodeAsset(res, "diplomat.lbx", 29)
+	if err != nil {
+		return nil
+	}
+	prov, err := decodeAsset(res, "diplomat.lbx", 0)
+	if err != nil || prov.Embedded == nil {
+		return nil
+	}
+	return ebiten.NewImageFromImage(room.AccumulatedRGBA(prov.Embedded))
+}
+
 func newDiplomacyScreen(b *sceneBuilder) *diplomacyScreen {
-	return &diplomacyScreen{b: b, fnt: b.fnt, enemy: "賽隆人",
+	return &diplomacyScreen{b: b, fnt: b.fnt, enemy: "賽隆人", room: loadDiplomatRoom(b.res),
 		response: "賽隆人使節:人類,你有何提議?",
 		opts: []struct{ label, action string }{
 			{"提議和平", "peace"}, {"提議貿易", "trade"}, {"威脅恫嚇", "threat"},
@@ -646,13 +660,16 @@ func (d *diplomacyScreen) update(in shell.InputState) *origTransition {
 
 func (d *diplomacyScreen) draw(dst *ebiten.Image) {
 	dst.Fill(color.RGBA{12, 10, 22, 255})
-	vector.DrawFilledRect(dst, 40, 40, 560, 400, color.RGBA{22, 18, 34, 255}, false)
-	vector.StrokeRect(dst, 40, 40, 560, 400, 2, color.RGBA{120, 90, 160, 255}, false)
+	if d.room != nil { // 原版議事廳背景
+		dst.DrawImage(d.room, nil)
+	}
 	gold := color.RGBA{240, 220, 120, 255}
-	body := color.RGBA{220, 215, 235, 255}
+	body := color.RGBA{235, 232, 245, 255}
 	if d.fnt == nil {
 		return
 	}
+	// 上方標題 + 使節台詞(疊半透明深色條增可讀性)。
+	vector.DrawFilledRect(dst, 0, 44, moo2ScreenW, 92, color.RGBA{8, 6, 14, 180}, false)
 	d.fnt.DrawCentered(dst, "外交對談", 320, 62, 20, gold)
 	d.fnt.DrawCentered(dst, d.enemy+" 使節", 320, 96, 14, color.RGBA{235, 150, 140, 255})
 	d.fnt.DrawCentered(dst, d.response, 320, 124, 14, body)
