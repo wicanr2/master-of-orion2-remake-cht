@@ -195,8 +195,7 @@ func main() {
 		dirs := strings.Split(*dataDirs, ",")
 		var script []shell.InputState
 		if *shot != "" {
-			// headless 驗證:新遊戲(491,228)→ 星系主畫面 → 點 FLEETS(165,430,67,44 中心 198,452)
-			// → 艦隊列表(驗證樞紐導覽 + 三段調色盤鏈)→ 截圖。
+			// headless 驗證:新遊戲(491,228)→ 星系主畫面 → 截圖。
 			script = []shell.InputState{
 				{MouseX: 491, MouseY: 228, ClickReleased: true},
 			}

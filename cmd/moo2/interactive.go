@@ -63,7 +63,8 @@ type overlayScreen struct {
 	hits             []hitRegion
 	onAction         func(action string) *origTransition
 	hover            string
-	offsetX, offsetY int // 背景圖在 640×480 畫布上的置中偏移(小於全螢幕的視窗畫面用)
+	offsetX, offsetY int         // 背景圖在 640×480 畫布上的置中偏移(小於全螢幕的視窗畫面用)
+	eraseColor       *color.RGBA // 非 nil 時強制用此色擦底(背景均勻的畫面用,勝過採樣猜測)
 }
 
 func (s *overlayScreen) update(in shell.InputState) *origTransition {
@@ -97,6 +98,9 @@ func (s *overlayScreen) draw(dst *ebiten.Image) {
 	if s.cat.Lang() == i18n.Traditional {
 		for _, b := range s.overlays {
 			plate := samplePlate(s.rgba, b)
+			if s.eraseColor != nil {
+				plate = *s.eraseColor
+			}
 			// 擦掉烘進圖的英文(蓋底色),再疊中文(同 overlay.go)。
 			vector.DrawFilledRect(dst, float32(float64(b.x+3)+ox), float32(float64(b.y+2)+oy),
 				float32(b.w-6), float32(b.h-4), plate, false)
@@ -120,29 +124,36 @@ func (s *overlayScreen) draw(dst *ebiten.Image) {
 }
 
 // samplePlate 取標籤底板色(用來擦掉烘進圖的英文)。
-// 策略:在標籤左內緣一條窄直帶(置中文字通常不及此)採樣多點,取「眾數色」——比單點採樣穩健,
-// 不會因單點剛好落在字上而取到字色(較寬的按鈕標籤單點易誤取)。與極性無關(不假設字比底亮或暗)。
+// 策略:合併兩組採樣取「眾數色」——(1) 標籤左內緣窄直帶(置中文字通常不及此),
+// (2) 標籤上緣/下緣橫向帶(避開文字所在的垂直中段)。單靠(1)在按鈕左緣恰是光澤高光帶
+// 時會誤取亮色;疊(2)後真正占多數的底板色勝出。
+// 註:對「背景均勻但文字靠左/寬粗填滿」的畫面(採樣仍可能誤判),改用 overlayScreen.eraseColor
+// 強制指定底色(如 info 面板)。與字底極性無關。
 func samplePlate(rgba *image.RGBA, b labelRect) color.RGBA {
 	W, H := rgba.Bounds().Dx(), rgba.Bounds().Dy()
 	counts := map[color.RGBA]int{}
 	best := color.RGBA{0, 0, 0, 255}
 	bestN := 0
-	for _, dx := range []int{3, 5, 7, 9} {
-		x := b.x + dx
-		if x < 0 || x >= W {
-			continue
+	add := func(x, y int) {
+		if x < 0 || x >= W || y < 0 || y >= H {
+			return
 		}
+		i := rgba.PixOffset(x, y)
+		c := color.RGBA{rgba.Pix[i], rgba.Pix[i+1], rgba.Pix[i+2], 255}
+		counts[c]++
+		if counts[c] > bestN {
+			bestN = counts[c]
+			best = c
+		}
+	}
+	for _, dx := range []int{3, 5, 7, 9} {
 		for y := b.y + 1; y < b.y+b.h-1; y++ {
-			if y < 0 || y >= H {
-				continue
-			}
-			i := rgba.PixOffset(x, y)
-			c := color.RGBA{rgba.Pix[i], rgba.Pix[i+1], rgba.Pix[i+2], 255}
-			counts[c]++
-			if counts[c] > bestN {
-				bestN = counts[c]
-				best = c
-			}
+			add(b.x+dx, y)
+		}
+	}
+	for _, y := range []int{b.y + 1, b.y + b.h - 2} {
+		for x := b.x + 4; x < b.x+b.w-4; x += 2 {
+			add(x, y)
 		}
 	}
 	return best
@@ -336,28 +347,67 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		overlays, color.RGBA{210, 216, 230, 255}, 12, hits, onAction, nil)
 }
 
-// fleet 建原版艦隊列表畫面(FLEET.LBX 資產 0,三段調色盤鏈)。
+// fleet 建原版艦隊列表畫面(FLEET.LBX 資產 0,三段調色盤鏈)。座標經 PIL 量測
+// (screens-scan/fleetlist.png):標題列 y=27,兩排按鈕列 y=394/443。
 func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 	hits, onAction := b.backHit(b.galaxy, "星系主畫面")
+	overlays := []labelRect{
+		{190, 17, 260, 20, "FLEET OPERATIONS", 0},
+		{346, 384, 70, 18, "ALL", 0},
+		{440, 384, 93, 18, "RELOCATE", 0},
+		{552, 384, 64, 18, "SCRAP", 0},
+		{342, 436, 76, 18, "LEADERS", 0},
+		{425, 436, 60, 18, "Support", 0},
+		{482, 436, 62, 18, "Combat", 0},
+		{543, 436, 82, 18, "RETURN", 0},
+	}
 	return loadOverlayScreen(b.res, "fleet.lbx", 0, b.lang, b.fnt, "assets/i18n/menu.tsv",
-		nil, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
+		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"buffer0.lbx", 0}, {"fleet.lbx", 111}})
 }
 
-// officer 建原版軍官列表畫面(OFFICER.LBX 資產 0)。
+// officer 建原版軍官列表畫面(OFFICER.LBX 資產 0)。座標經 PIL 量測
+// (screens-scan/officer_leaderlist.png):頁籤列 y=12-32,按鈕列 y=440-462。
 func (b *sceneBuilder) officer() (*overlayScreen, error) {
 	hits, onAction := b.backHit(b.galaxy, "星系主畫面")
+	overlays := []labelRect{
+		{20, 11, 133, 20, "Colony Leaders", 0},
+		{166, 11, 124, 20, "Ship Officers", 0},
+		{310, 440, 68, 20, "HIRE", 0},
+		{388, 440, 69, 20, "POOL", 0},
+		{462, 440, 74, 20, "DISMISS", 0},
+		{540, 440, 80, 20, "RETURN", 0},
+	}
 	return loadOverlayScreen(b.res, "officer.lbx", 0, b.lang, b.fnt, "assets/i18n/officer.tsv",
-		nil, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
+		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"buffer0.lbx", 0}})
 }
 
-// info 建原版科技總覽畫面(INFO.LBX 資產 0,基底 INFO.LBX 資產 1)。
+// info 建原版科技總覽畫面(INFO.LBX 資產 0,基底 INFO.LBX 資產 1)。座標經 PIL 量測
+// (screens-scan/info_overview.png):左側選單五列 y=57/79/105/134/154,標題 y=16,RETURN y=436。
 func (b *sceneBuilder) info() (*overlayScreen, error) {
 	hits, onAction := b.backHit(b.galaxy, "星系主畫面")
-	return loadOverlayScreen(b.res, "info.lbx", 0, b.lang, b.fnt, "assets/i18n/misc.tsv",
-		nil, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
+	// 選單項原版為靠左文字疊在近黑面板背景上(無實心板);擦底取黑=黑疊黑(正確),
+	// rect 寬取足以蓋住最長英文、中文置中於偏左位置貼近原版。y 中心經 PIL 量測:64/88/114/142/162。
+	overlays := []labelRect{
+		{15, 20, 200, 26, "STAR DATE", 0},
+		{15, 56, 182, 18, "History Graph", 0},
+		{15, 80, 182, 18, "Tech Review", 0},
+		{15, 106, 182, 18, "Race Statistics", 0},
+		{15, 134, 182, 18, "Turn Summary", 0},
+		{15, 154, 182, 18, "Reference", 0},
+		{538, 436, 84, 22, "RETURN", 0},
+	}
+	s, err := loadOverlayScreen(b.res, "info.lbx", 0, b.lang, b.fnt, "assets/i18n/misc.tsv",
+		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"info.lbx", 1}})
+	if err != nil {
+		return nil, err
+	}
+	// info 選單/標題都疊在均勻的近黑面板背景上,強制用該背景色擦底(採樣會因長英文誤取字色)。
+	black := color.RGBA{0, 8, 24, 255}
+	s.eraseColor = &black
+	return s, nil
 }
 
 // research 建原版研究選擇畫面(TECHSEL.LBX 資產 0,無內嵌調色盤 → 走調色盤鏈,
