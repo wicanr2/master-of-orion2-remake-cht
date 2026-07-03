@@ -526,7 +526,17 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 // fleet 建原版艦隊列表畫面(FLEET.LBX 資產 0,三段調色盤鏈)。座標經 PIL 量測
 // (screens-scan/fleetlist.png):標題列 y=27,兩排按鈕列 y=394/443。
 func (b *sceneBuilder) fleet() (*overlayScreen, error) {
-	hits, onAction := b.backHit(b.galaxy, "星系主畫面")
+	// 點右側艦艇格 → 艦艇設計;右下 RETURN → 星系主畫面(精確熱區)。
+	hits := []hitRegion{
+		{338, 50, 288, 300, "design"},
+		{543, 432, 84, 28, "return"},
+	}
+	onAction := func(a string) *origTransition {
+		if a == "design" {
+			return b.goTo(b.shipDesign, "艦艇設計")
+		}
+		return b.goTo(b.galaxy, "星系主畫面")
+	}
 	overlays := []labelRect{
 		{190, 17, 260, 20, "FLEET OPERATIONS", 0},
 		{346, 384, 70, 18, "ALL", 0},
@@ -557,6 +567,26 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 		}
 	}
 	return s, nil
+}
+
+// shipDesign 建原版艦艇設計畫面(DESIGN.LBX 資產 0,調色盤鏈 buffer0#0)。點畫面返回艦隊。
+func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
+	hits, onAction := b.backHit(b.fleet, "艦隊列表")
+	overlays := []labelRect{
+		{255, 12, 320, 24, "Ship Design", 0},
+		{130, 52, 105, 16, "Frigate", 12},
+		{130, 69, 105, 16, "Destroyer", 12},
+		{130, 86, 105, 16, "Cruiser", 12},
+		{130, 103, 105, 16, "Battleship", 12},
+		{130, 120, 105, 16, "Titan", 12},
+		{130, 137, 105, 16, "Doom Star", 12},
+		{380, 440, 80, 20, "Clear", 0},
+		{470, 440, 80, 20, "Cancel", 0},
+		{558, 440, 72, 20, "Build", 0},
+	}
+	return loadOverlayScreen(b.res, "design.lbx", 0, b.lang, b.fnt, "assets/i18n/tech.tsv",
+		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
+		paletteChain{{"buffer0.lbx", 0}})
 }
 
 // officer 建原版軍官列表畫面(OFFICER.LBX 資產 0)。座標經 PIL 量測
