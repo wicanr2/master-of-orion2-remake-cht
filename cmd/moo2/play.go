@@ -69,6 +69,7 @@ type gameScreen struct {
 
 func newGameScreen(s *shell.GameSession) *gameScreen {
 	return &gameScreen{session: s, buttons: []shell.Button{
+		{X: 360, Y: 150, W: 150, H: 30, ID: "research", Label: "選擇研究 ▸"},
 		{X: 430, Y: 420, W: 130, H: 36, ID: "endturn", Label: "結束回合"},
 		{X: 240, Y: 420, W: 150, H: 36, ID: "colony", Label: "管理殖民地"},
 		{X: 20, Y: 420, W: 130, H: 36, ID: "menu", Label: "返回主選單"},
@@ -79,7 +80,13 @@ func (g *gameScreen) update(in shell.InputState) *transition {
 	switch shell.ClickedButton(g.buttons, in) {
 	case "endturn":
 		g.session.EndTurn()
-		g.msg = fmt.Sprintf("第 %d 回合結算完成", g.session.Turn-1)
+		if g.session.LastPlayerOutput.ResearchDone {
+			g.msg = fmt.Sprintf("第 %d 回合結算完成 — ★ 研究突破!", g.session.Turn-1)
+		} else {
+			g.msg = fmt.Sprintf("第 %d 回合結算完成", g.session.Turn-1)
+		}
+	case "research":
+		return &transition{next: newResearchScreen(g.session)}
 	case "colony":
 		return &transition{next: newColonyManageScreen(g.session, 0)}
 	case "menu":
@@ -99,10 +106,12 @@ func (g *gameScreen) draw(dst *ebiten.Image, font *uifont.Font) {
 	// 玩家帝國
 	out := s.LastPlayerOutput
 	font.Draw(dst, "【我方帝國】", 32, 70, 16, gold)
+	topicName := shell.ResearchTopicName(s.Player.ResearchTopic)
+	topicCost := shell.ResearchCost(s.Player.ResearchTopic)
 	rows := []string{
 		fmt.Sprintf("殖民地:%d 座", len(s.PlayerColonies)),
 		fmt.Sprintf("國庫:%d BC", s.Player.BC),
-		fmt.Sprintf("研究進度:%d", s.Player.ResearchProgress),
+		fmt.Sprintf("研究中:%s(進度 %d / %d RP)", topicName, s.Player.ResearchProgress, topicCost),
 		fmt.Sprintf("上回合淨工業:%d ／ 研究:%d ／ 食物盈餘:%d",
 			out.TotalNetIndustry, out.TotalResearch, out.TotalFood),
 		fmt.Sprintf("上回合稅收:%d BC", out.TaxRevenue),
@@ -359,6 +368,8 @@ func recordPlaythrough() []shell.InputState {
 	}
 	hold(3)            // 停在主選單
 	click(320, 218, 3) // 新遊戲 → 帝國概況
+	click(435, 165, 2) // 選擇研究 ▸ → 研究選單
+	click(320, 167, 3) // 選「軍事戰術」→ 自動回帝國(研究列更新)
 	click(315, 438, 2) // 管理殖民地
 	click(365, 185, 2) // 工人 ▲
 	click(365, 185, 2) // 工人 ▲
@@ -371,4 +382,65 @@ func recordPlaythrough() []shell.InputState {
 	click(315, 438, 3) // 再次管理殖民地
 	hold(3)
 	return s
+}
+
+// --- 研究選擇畫面(挑選當前研究主題)---
+
+type researchScreen struct {
+	session *shell.GameSession
+	options []shell.ResearchOption
+	buttons []shell.Button
+}
+
+func newResearchScreen(s *shell.GameSession) *researchScreen {
+	opts := shell.StarterResearchTopics()
+	btns := make([]shell.Button, 0, len(opts)+1)
+	for i, o := range opts {
+		btns = append(btns, shell.Button{
+			X: 40, Y: 80 + i*36, W: 560, H: 30,
+			ID: fmt.Sprintf("t%d", int(o.Topic)), Label: o.Name,
+		})
+	}
+	btns = append(btns, shell.Button{X: 20, Y: 430, W: 130, H: 36, ID: "back", Label: "返回帝國"})
+	return &researchScreen{session: s, options: opts, buttons: btns}
+}
+
+func (r *researchScreen) update(in shell.InputState) *transition {
+	id := shell.ClickedButton(r.buttons, in)
+	if id == "back" {
+		return &transition{next: newGameScreen(r.session)}
+	}
+	for _, o := range r.options {
+		if id == fmt.Sprintf("t%d", int(o.Topic)) {
+			r.session.SetResearchTopic(o.Topic)
+			return &transition{next: newGameScreen(r.session)}
+		}
+	}
+	return nil
+}
+
+func (r *researchScreen) draw(dst *ebiten.Image, font *uifont.Font) {
+	gold := color.RGBA{240, 220, 120, 255}
+	font.DrawCentered(dst, "選擇研究方向", playW/2, 40, 20, gold)
+	vector.StrokeLine(dst, 16, 58, playW-16, 58, 1, color.RGBA{80, 110, 180, 255}, false)
+	cur := r.session.Player.ResearchTopic
+	for i, o := range r.options {
+		b := r.buttons[i]
+		selected := o.Topic == cur
+		bg := color.RGBA{28, 36, 64, 255}
+		if selected {
+			bg = color.RGBA{40, 70, 40, 255} // 目前研究:綠底
+		}
+		vector.DrawFilledRect(dst, float32(b.X), float32(b.Y), float32(b.W), float32(b.H), bg, false)
+		vector.StrokeRect(dst, float32(b.X), float32(b.Y), float32(b.W), float32(b.H), 2,
+			color.RGBA{90, 130, 200, 255}, false)
+		label := fmt.Sprintf("%s — %d RP", o.Name, o.Cost)
+		if selected {
+			label = "● " + label + "(研究中)"
+		}
+		font.Draw(dst, label, float64(b.X)+14, float64(b.Y)+float64(b.H)/2, 15,
+			color.RGBA{230, 235, 245, 255})
+	}
+	// 返回按鈕
+	drawButtons(dst, font, r.buttons[len(r.buttons)-1:])
 }
