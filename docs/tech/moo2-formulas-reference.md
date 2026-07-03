@@ -2,7 +2,7 @@
 
 ## 前言
 
-本專案(`master-of-orion2-remake-cht`)是目前已知**世界首個**以 Go/ebiten 重寫的 *Master of Orion II* remake,目標是在保留原版規則的前提下完整重建遊戲邏輯,並提供完整繁體中文化。這份文件把目前已移植進 `internal/gamedata/` 的規則公式集中彙整、附上來源出處與驗證方式,作為後續開發與外部查證的知識庫,也是本專案在規則考據上的產出之一。目前涵蓋 12 個系統。
+本專案(`master-of-orion2-remake-cht`)是目前已知**世界首個**以 Go/ebiten 重寫的 *Master of Orion II* remake,目標是在保留原版規則的前提下完整重建遊戲邏輯,並提供完整繁體中文化。這份文件把目前已移植進 `internal/gamedata/`(規則常數與公式本身)與 `internal/engine/`(把公式組裝、餵進戰鬥引擎的橋接層)的規則公式集中彙整、附上來源出處與驗證方式,作為後續開發與外部查證的知識庫,也是本專案在規則考據上的產出之一。目前涵蓋 14 個系統。
 
 ### 公式的兩個來源
 
@@ -30,16 +30,18 @@
 2. [生產與污染](#2-生產與污染-productiongo)
 3. [士氣](#3-士氣-moralego)
 4. [國庫收入](#4-國庫收入-incomego)
-5. [研究樹](#5-研究樹-techtreego)
-6. [軍官](#6-軍官-officergo)
-7. [艦艇衍生值](#7-艦艇衍生值-formulasgo)
-8. [光束武器命中](#8-光束武器命中-combatgo)
-9. [光束傷害解算](#9-光束傷害解算-damagego)
-10. [飛彈防禦與反飛彈火箭](#10-飛彈防禦與反飛彈火箭-missilego)
-11. [地面戰](#11-地面戰-groundgo)
-12. [間諜](#12-間諜-spygo)
-13. [手冊自相矛盾記錄](#13-手冊自相矛盾記錄)
-14. [尚未移植/待查證](#14-尚未移植待查證)
+5. [地形改造/蓋亞轉化](#5-地形改造蓋亞轉化-terraformgo)
+6. [研究樹](#6-研究樹-techtreego)
+7. [軍官](#7-軍官-officergo)
+8. [艦艇衍生值](#8-艦艇衍生值-formulasgo)
+9. [艦艇戰鬥屬性推導](#9-艦艇戰鬥屬性推導-shipgo)
+10. [光束武器命中](#10-光束武器命中-combatgo)
+11. [光束傷害解算](#11-光束傷害解算-damagego)
+12. [飛彈防禦與反飛彈火箭](#12-飛彈防禦與反飛彈火箭-missilego)
+13. [地面戰](#13-地面戰-groundgo)
+14. [間諜](#14-間諜-spygo)
+15. [手冊自相矛盾記錄](#15-手冊自相矛盾記錄)
+16. [尚未移植/待查證](#16-尚未移植待查證)
 
 ---
 
@@ -104,7 +106,7 @@ b = (100 + g + r + i + t + l + e + h) / 100
 
 ## 2. 生產與污染(`production.go`)
 
-**來源**:`GAME_MANUAL.pdf`(patch 1.5 隨附完整手冊)「System Overview / Yield / Population」章節(約 p.64-67)與各建築說明章節(約 p.78-90)。`MANUAL_150.html`(1.50 patch 說明書)本身只在 UI bugfix 段落提過一次 pollution,無數值公式;openorion2 只有 `Planet::baseProduction()` 單一查表(見第 7 節),未實作生產分配與污染公式,故本節數值全部來自 `GAME_MANUAL.pdf`。
+**來源**:`GAME_MANUAL.pdf`(patch 1.5 隨附完整手冊)「System Overview / Yield / Population」章節(約 p.64-67)與各建築說明章節(約 p.78-90)。`MANUAL_150.html`(1.50 patch 說明書)本身只在 UI bugfix 段落提過一次 pollution,無數值公式;openorion2 只有 `Planet::baseProduction()` 單一查表(見第 8 節),未實作生產分配與污染公式,故本節數值全部來自 `GAME_MANUAL.pdf`。
 
 ### 生產常數
 
@@ -281,7 +283,58 @@ Federation: 15*5 = 75%
 
 ---
 
-## 5. 研究樹(`techtree.go`)
+## 5. 地形改造/蓋亞轉化(`terraform.go`)
+
+**來源**:`GAME_MANUAL.pdf`(patch 1.5 隨附完整手冊)「Genetic Mutations」章節下的 Terraforming 與 Gaia Transformation 小節(約 p.99-101)、「Macro Genetics」章節前的 Soil Enrichment 小節(約 p.99)。`MANUAL_150.html`(1.50 patch 說明書)補充兩處:「Toxic Planet Terraforming」(1.50i 用 Recyclotron 把 Toxic 星球轉成 Barren)與 Modding 附錄的 `pop_climate` 參數(氣候對人口容量的係數)。openorion2 未實作此邏輯(只有存檔欄位與科技/建築名稱,無轉換函式),本節為手冊到程式碼的首次移植。
+
+### 土壤改良(Soil Enrichment)
+
+`TerraformSoilEnrichmentFoodBonusPerFarmer = 1`:每個農業人口單位 +1 食物產出(`GAME_MANUAL.pdf`:「This 'fertilization' process increases the food output of each farming unit of population by 1.」)。在 Barren、Radiated、Toxic 三種氣候無效(`GAME_MANUAL.pdf`:「Soil Enrichment does not work in hostile climates. Barren worlds have no topsoil to work on, while ongoing chemical processes in the soils of Radiated and Toxic planets undo the fertilization as fast as it is done.」)。`TerraformSoilEnrichmentWorks(climate PlanetClimate) bool`(`terraform.go:50`)查 `terraformSoilEnrichmentBlockedClimates` 表回傳是否有效。
+
+### 地形改造氣候鏈(Terraforming)
+
+手冊原文:「Terraforming will only work on planets that have hospitable environments already. Barren worlds become Desert or Tundra, Desert environments become Arid, Tundra planets become Swamp worlds, and Ocean, Arid, and Swamp become Terran. You can terraform a planet several times, but each application has an increased production cost.」
+
+| 起始氣候 | 地形改造後 |
+|---|---|
+| Barren | Desert 或 Tundra(手冊給兩個選項,未說明選擇條件) |
+| Desert | Arid |
+| Tundra | Swamp |
+| Ocean / Arid / Swamp | Terran |
+
+`TerraformNextClimateOptions(climate PlanetClimate) []PlanetClimate`(`terraform.go:75`)查 `terraformNextClimate` 表回傳候選清單;Terran、Gaia、Toxic、Radiated 手冊未列入這條轉換鏈(Terran 之後屬於 Gaia Transformation 的範圍,見下),故回傳空 slice。
+
+**1.50i 特例**:Toxic 星球透過建造 Recyclotron(再生反應爐)可轉換成 Barren(`MANUAL_150.html`:「In 150i, Toxic worlds can be transformed to Barren climates by building a Recyclotron.」Modding 附錄並註明「Specifying Terraforming or Gaia Transformation will not work for this parameter, since both cannot be built on Toxic planets.」)。`TerraformToxicNextClimate = BARREN`(`terraform.go:86`)獨立於 `terraformNextClimate` 表,因為這條轉換走 `BUILDING_RECYCLOTRON`,不是一般的 Terraforming/Gaia Transformation 特殊建設。
+
+### 蓋亞轉化(Gaia Transformation)
+
+只能套用在 Terran 星球上,完成後升級為 Gaia 級(`GAME_MANUAL.pdf`:「The transformation can only be applied to Terran environments.」「Afterward, the planet becomes a Gaia class world.」)。`GaiaTransformationCanApply(climate PlanetClimate) bool`(`terraform.go:98`)只在 `climate == GaiaTransformationSourceClimate(TERRAN)` 回 true。
+
+### 氣候對人口容量的係數
+
+`MANUAL_150.html` Modding 附錄「Population Capacities」給出 `pop_climate = 25 25 25 25 25 25 40 60 80 100` 這組原始陣列,但手冊文字本身未標註各欄位對應哪個氣候(對照表只存在讀不到的 Excel 手冊截圖裡)。`terraform.go` 依專案既有 `enums.go` 的 `PlanetClimate` 0-based 順序排列,並用 openorion2 `gamestate.cpp` 的 `climatePopFactors` 陣列(逐項附氣候名稱註解、數值與順序跟手冊完全一致)交叉驗證後排定:
+
+| 氣候 | Toxic | Radiated | Barren | Desert | Tundra | Ocean | Swamp | Arid | Terran | Gaia |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 人口容量係數(%) | 25 | 25 | 25 | 25 | 25 | 25 | 40 | 60 | 80 | 100 |
+
+`TerraformClimatePopFactorPercent(climate PlanetClimate) int`(`terraform.go:121`)查 `terraformClimatePopFactor[10]` 回傳係數,超出範圍回 0。這張表量化了地形改造沿氣候鏈推進到 Terran、再靠蓋亞轉化推進到 Gaia 時,人口容量同步提升多少——是玩家投入地形改造成本的主要經濟回報,與第 1 節 `ColonyBaseGrowth`(POPMAX 的使用端)銜接。
+
+### 建造成本(TODO,手冊無數字)
+
+`GAME_MANUAL.pdf` 原文只說 Terraforming「each application has an increased production cost」(每次套用成本會提高),未給任何公式、係數或起始值;`MANUAL_150.html` 的 Buildings 小節只舉 Armor Barracks(150 PP)當 modding 範例,未提到 Terraforming/Gaia Transformation/Soil Enrichment 這三個「Special」類型建設的建造成本。因此 `terraform.go` 不移植、也不猜測任何建造成本公式或遞增係數——TODO 待查證,需要從遊戲資料檔(非手冊文字)取得,交叉引用 `community-mechanics-findings.md` §5(建築成本表,結論同樣是找不到完整表格)。
+
+### 驗證範例(`terraform_test.go`)
+
+- `TerraformSoilEnrichmentWorks(TOXIC)=false`、`(BARREN)=false`、`(RADIATED)=false`、`(DESERT)=true`。
+- `TerraformNextClimateOptions(BARREN)=[DESERT,TUNDRA]`、`(TERRAN)=[]`(空,不在鏈中)。
+- `TerraformToxicNextClimate=BARREN`。
+- `GaiaTransformationCanApply(TERRAN)=true`、`(BARREN)=false`。
+- `TerraformClimatePopFactorPercent(SWAMP)=40`、`(GAIA)=100`。
+
+---
+
+## 6. 研究樹(`techtree.go`)
 
 **來源**:逐字轉寫自 openorion2 `tech.cpp:69-167`(`techtree[8][14]`,8 個研究領域各含哪些主題)與 `tech.cpp:169-305`(`research_choices[83]`,每個主題的花費與可選科技)。常數定義:`gamestate.h:62-65`(`MAX_RESEARCH_AREAS=8`)、`tech.h:27`(`MAX_RESEARCH_CHOICES=4`)、`tech.cpp:40`(`MAX_AREA_TOPICS=14`)。
 
@@ -317,7 +370,7 @@ Federation: 15*5 = 75%
 
 ---
 
-## 6. 軍官(`officer.go`)
+## 7. 軍官(`officer.go`)
 
 **來源**:openorion2 `gamestate.cpp:607-701`(`Leader::expLevel/hasSkill/skillBonus/hireCost`),SA1 盤點標記為「唯讀公式,品質最好、可直接複用」的系統。技能 id 編碼定義於 `gamestate.h`:bit4-5 = 技能類型(0 common / 1 captain / 2 admin),bit0-3 = 技能碼。
 
@@ -379,7 +432,7 @@ hireCost = max(0, 10 * skillValue * (expLevel + 1) + modifier)
 
 ---
 
-## 7. 艦艇衍生值(`formulas.go`)
+## 8. 艦艇衍生值(`formulas.go`)
 
 **來源**:openorion2 `gamestate.cpp`,`ShipDesign` 類別的六個唯讀屬性公式(`computerHP`/`driveHP`/`combatSpeed`/`beamOffense`/`beamDefense`,`gamestate.cpp:841-930`)與艦員加成表(`gamestate.cpp:162-167`)。這些公式驅動艦隊清單畫面的戰力顯示,不是戰鬥解算本身,但戰鬥解算需要這些衍生值當輸入。
 
@@ -409,7 +462,7 @@ hireCost = max(0, 10 * skillValue * (expLevel + 1) + modifier)
 | `BeamDefense(combatSpeed int, inertialNullifier, inertialStabilizer bool) int` | `gamestate.cpp:918-930` | `combatSpeed·5`;`SPEC_INERTIAL_NULLIFIER` +100;`SPEC_INERTIAL_STABILIZER` +50 |
 | `ShipCrewOffenseBonus(crewLevel int) int` | `gamestate.cpp:1697` | `shipCrewOffenseBonuses[crewLevel]` |
 | `ShipCrewDefenseBonus(crewLevel int) int` | `gamestate.cpp:1710` | `shipCrewDefenseBonuses[crewLevel]` |
-| `LeaderHireCost(...)` | `gamestate.cpp:700-701` | 見第 6 節 |
+| `LeaderHireCost(...)` | `gamestate.cpp:700-701` | 見第 7 節 |
 
 **戰鬥移動力**(`CombatSpeed`,`gamestate.cpp:871-901`)是本組公式中最複雜的一條——引擎損傷 >33%(以 HP 換算,非直接百分比)會使艦艇在戰鬥中完全失去動力:
 
@@ -434,7 +487,63 @@ if transDimensional { ret += 4 }
 
 ---
 
-## 8. 光束武器命中(`combat.go`)
+## 9. 艦艇戰鬥屬性推導(`ship.go`)
+
+**來源**:openorion2 `gamestate.cpp`(`ShipDesign::beamOffense`/`beamDefense`,`gamestate.cpp:903-916,918-932`;`Ship::beamOffense`/`beamDefense`,`gamestate.cpp:1688-1698,1700-1710`;`getBeamAttack`/`getBeamDefense`,`gamestate.cpp:2360-2368,2388-2398`)與 `gamestate.h:685-724` 的 `enum SpecialDevices`(特殊裝置點陣圖定義)。本節與第 8 節的關係:第 8 節(`internal/gamedata/formulas.go`)是 openorion2 唯讀公式本身(`ComputerHP`/`DriveHP`/`CombatSpeed`/`BeamOffense`/`BeamDefense` 等純函式);本節(`internal/engine/ship.go`)是把這些公式**組裝**起來、餵進戰鬥引擎的橋接層——對照 `adapter.go` 的 `ColonyStateFromSave`/`PlayerStateFromSave` 模式,只呼叫 `gamedata` 現成公式,不重新設計規則。
+
+### Specials 位元定義(bitfield)
+
+`gamestate.h:685-724` 的 `enum SpecialDevices` 共 39 個特殊裝置,從 1 起算(bit 0 未使用),逐字轉寫進 `ship.go` 的 `Spec*` 常數(`SpecAchillesTargetingUnit=1` … `SpecRegeneration=39`)。位元檢測邏輯對照 openorion2 `utils.cpp:402-404` 的 `checkBitfield`(LSB-first,`bitfield[bit/8] & (1<<(bit%8))`):
+
+```go
+checkSpecBit(bitfield []uint8, bit int) bool   // bitfield=nil 一律回 false,對照原碼「空指標視為未設」
+ShipHasSpecial(d *save.ShipDesign, id int) bool                              // 設計是否裝了該特殊系統
+ShipHasWorkingSpecial(d *save.ShipDesign, id int, specDamage []uint8) bool   // 裝了且未被打壞
+```
+
+`specDamage` 對照 `save.Ship.DamagedSpecials`;傳 `nil` 代表不追蹤戰損(如尚未建造的設計藍圖階段),視為全部正常運作。
+
+### BeamAttack 推導(`ShipBeamAttackFromDesign`)
+
+```
+computerWorking = compDamage < gamedata.MaxComputerHP(size)
+battleScanner   = ShipHasWorkingSpecial(d, SpecBattleScanner, specDamage)
+BA = gamedata.BeamOffense(computerType, computerWorking, battleScanner)
+   + gamedata.ShipCrewOffenseBonus(crewLevel)
+   + raceShipAttack
+```
+
+`compDamage`(電腦 HP 損傷)、`specDamage`(特殊裝置戰損點陣圖)是艦體的可變戰損狀態,不屬於 `ShipDesign`(設計藍圖)本身,由呼叫端傳入;`raceShipAttack` 對照 openorion2 `Player.traits[TRAIT_SHIP_ATTACK]`,屬玩家層級資料,同樣由呼叫端傳入(無此加成傳 0)。
+
+### BeamDefense 推導(`ShipBeamDefenseFromDesign`)
+
+```
+reinforcedHull    = ShipHasWorkingSpecial(d, SpecReinforcedHull, specDamage)
+augmentedEngines  = ShipHasWorkingSpecial(d, SpecAugmentedEngines, specDamage)
+speed = gamedata.CombatSpeed(baseCombatSpeed, size, driveDamage, augmentedEngines, reinforcedHull, transDimensional)
+
+inertialNullifier  = ShipHasWorkingSpecial(d, SpecInertialNullifier, specDamage)
+inertialStabilizer = ShipHasWorkingSpecial(d, SpecInertialStabilizer, specDamage)
+BD = gamedata.BeamDefense(speed, inertialNullifier, inertialStabilizer)
+   + gamedata.ShipCrewDefenseBonus(crewLevel)
+```
+
+`driveDamage`(引擎損傷百分比,0-100)對照 `save.Ship.DriveDamage`,設計藍圖階段傳 0;`transDimensional` 對照 `Player.traits[TRAIT_TRANS_DIMENSIONAL]`,屬玩家層級資料,由呼叫端傳入。BeamDefense 的核心是先算出第 8 節的 `CombatSpeed`(含引擎 HP >2/3 門檻失去戰鬥動力的判定),再套用 `BeamDefense = speed*5` 加上慣性裝置加成——兩段推導串接,`ship.go` 不重複第 8 節已有的邏輯,只負責從 `ShipDesign`/戰損欄位算出正確的輸入參數。
+
+### 尚未移植的部分:ArmorHP/StructureHP/ShieldReduction
+
+`ShipCombatStateFromDesign` 組出完整的 `ShipCombatState`,但只有 `BeamDefense` 是從 `d` 推導,`ArmorHP`/`StructureHP`/`ShieldReduction`/`HardShield` 四個欄位必須由呼叫端顯式傳入參數。原因:openorion2 沒有實作「裝甲/護盾型別 → HP/減傷數值」的查表(armor/shield 只有科技名稱字串,無對應的血量常數),為避免臆造數字,`gamedata` 尚未補上這張表,`ship.go` 保留參數化介面等待後續補齊(見 `ship.go` 的 TODO 註解)。第 11 節(`damage.go`)雖然已移植了「護盾等級 → 每次減傷/總容量」的公式(`DamageShieldCapacity` 等),但那是護盾**等級**已知之後的換算,不是「船體裝了哪種護盾/裝甲科技 → 對應等級」這一段查表——這段查表本身才是缺口。社群整理的裝甲強度係數、武器基礎傷害表見第 16 節與 `community-mechanics-findings.md` §4.1/§4.4(可信度中/低,未採用為程式碼常數)。
+
+### 驗證範例(`ship_test.go`)
+
+- `TestShipBeamAttackFromDesign_FullBonus`:Size=2(`MaxComputerHP=5`)、Computer=3(`computerBonusTable[3]=75`)、BattleScanner 未損毀(+50)、crewLevel=2(`shipCrewOffenseBonuses[2]=30`)、raceShipAttack=10 → `BA=75+50+30+10=165`。
+- `TestShipBeamAttackFromDesign_ComputerAndScannerDamaged`:compDamage=5≥`MaxComputerHP(5)` → 電腦已壞,不加 computer bonus;BattleScanner 對應戰損位元也設 → 視為損毀,不加 50 → `BA=0`。
+- `TestShipBeamDefenseFromDesign_AugmentedAndNullifier`:BaseCombatSpeed=10、Size=2(`driveHPTable[2]=10`)、AugmentedEngines 未損毀(+5)、driveDamage=0、InertialNullifier 未損毀 → `combatSpeed=15`,`BD=15*5+100(nullifier)+50(crewLevel=3)=225`。
+- `TestShipBeamDefenseFromDesign_EngineDisabledByDamage`:driveDamage=40 使 `hp(9) < minHP(10)`(未過 2/3 門檻)→ `combatSpeed` 判定引擎失能歸零,再加 TransDimensional(+4)→ `combatSpeed=4`,`BD=4*5=20`。
+
+---
+
+## 10. 光束武器命中(`combat.go`)
 
 **來源**:MOO2 patch 1.5 官方手冊「Notes on Beam Weapon Mechanics」章節(`MANUAL_150.html`)。openorion2 全 repo 對 `combat`/`Combat` 字串的命中全部是艦隊列表 UI 的分類篩選(`ships.cpp:375,853`),且全 repo 零 RNG 來源,沒有任何命中率或傷害解算函式可對照,故本節數值全部來自手冊,已用手冊原文逐句核對。
 
@@ -512,9 +621,9 @@ BeamDefense = 5*Speed + RacialShipDefenseBonus + FighterPilotBonus + HelmsmanBon
 
 ---
 
-## 9. 光束傷害解算(`damage.go`)
+## 11. 光束傷害解算(`damage.go`)
 
-**來源**:MANUAL_150.html「Notes on Beam Weapon Mechanics > Damage Potential」(距離衰減表、Hv/PD/HEF 加成公式)與同章節「Different Min-Max Damage」(命中後傷害內插公式);GAME_MANUAL.pdf 的 Shield/Armor/Weapon Mods 附錄(護盾容量、Hard Shields、Armor Piercing)。openorion2 全 repo 無傷害解算邏輯,本節數值全部來自手冊。本節處理「命中後的傷害量」,命中率(to-hit)已在第 8 節(`combat.go`)移植,兩者輸入輸出銜接但不重複定義。
+**來源**:MANUAL_150.html「Notes on Beam Weapon Mechanics > Damage Potential」(距離衰減表、Hv/PD/HEF 加成公式)與同章節「Different Min-Max Damage」(命中後傷害內插公式);GAME_MANUAL.pdf 的 Shield/Armor/Weapon Mods 附錄(護盾容量、Hard Shields、Armor Piercing)。openorion2 全 repo 無傷害解算邏輯,本節數值全部來自手冊。本節處理「命中後的傷害量」,命中率(to-hit)已在第 10 節(`combat.go`)移植,兩者輸入輸出銜接但不重複定義。
 
 ### 距離衰減表(與 to-hit 的 Range Penalty 表是兩張不同的表)
 
@@ -525,9 +634,9 @@ BeamDefense = 5*Speed + RacialShipDefenseBonus + FighterPilotBonus + HelmsmanBon
 | Penalty | 0 | 0 | 10 | 20 | 30 | 40 | 50 | 60 | 65 |
 | 傷害% | 100% | 100% | 90% | 80% | 70% | 60% | 50% | 40% | 35% |
 
-**注意(容易混淆,務必區分)**:這張表與第 8 節 `combat.go` 的 to-hit「Range Penalty 表」(`0,0,10,20,30,40,55,70,85`)是**兩張不同的表**。level 0-5 數值恰好相同,level 6-8 明顯不同(50/60/65 vs 55/70/85),純屬巧合、不可互相取代。前者(本節)決定「命中後傷害打幾折」,後者(第 8 節)決定「命不命中」。呼叫端須各自用對應的查表函式(`DamageDissipationPenalty` vs `CombatRangeLevelPenalty`);`DamageForHit` 需要同時吃這兩張表的輸出(見下)。
+**注意(容易混淆,務必區分)**:這張表與第 10 節 `combat.go` 的 to-hit「Range Penalty 表」(`0,0,10,20,30,40,55,70,85`)是**兩張不同的表**。level 0-5 數值恰好相同,level 6-8 明顯不同(50/60/65 vs 55/70/85),純屬巧合、不可互相取代。前者(本節)決定「命中後傷害打幾折」,後者(第 10 節)決定「命不命中」。呼叫端須各自用對應的查表函式(`DamageDissipationPenalty` vs `CombatRangeLevelPenalty`);`DamageForHit` 需要同時吃這兩張表的輸出(見下)。
 
-`DamageDissipationPenalty(level int) int`(`damage.go:35`):`damageDissipationPenaltyTable[level]`,超出 0-8 夾限至端點。Range level 沿用第 8 節 `CombatRangeLevel`/`CombatRangeLevelPointDefense`/`CombatRangeLevelHeavy` 算出的同一個 level,兩節共用距離換算,各自查自己的懲罰表。
+`DamageDissipationPenalty(level int) int`(`damage.go:35`):`damageDissipationPenaltyTable[level]`,超出 0-8 夾限至端點。Range level 沿用第 10 節 `CombatRangeLevel`/`CombatRangeLevelPointDefense`/`CombatRangeLevelHeavy` 算出的同一個 level,兩節共用距離換算,各自查自己的懲罰表。
 
 ### Hv / PD / HEF mount 加成(百分點相加,非乘法)
 
@@ -563,7 +672,7 @@ roll_plus_attack = min(random(100) + BA+CO-AF-BD, 100)
 CAPPED DAMAGE = 上式結果夾限於 max_dmg
 ```
 
-`DamageForHit(minDmg, maxDmg, roll, netAttack, hitThreshold int) int`(`damage.go:143`)。與第 8 節 `CombatClassicToHit` 的必中分支([1] `random(100)>95`、[2] `netAttack>=99`)共用,兩者皆直接回傳 `maxDmg`。`hitThreshold` 用第 8 節 `CombatHitThreshold` 算好傳入(已夾限 ≤95,故 `B` 恆 >5,不會除以 0)。已用手冊 Death Ray 兩組 worked example(range 23 sq / 11 sq,roll=85、netAttack=10)逐步驗算核對。
+`DamageForHit(minDmg, maxDmg, roll, netAttack, hitThreshold int) int`(`damage.go:143`)。與第 10 節 `CombatClassicToHit` 的必中分支([1] `random(100)>95`、[2] `netAttack>=99`)共用,兩者皆直接回傳 `maxDmg`。`hitThreshold` 用第 10 節 `CombatHitThreshold` 算好傳入(已夾限 ≤95,故 `B` 恆 >5,不會除以 0)。已用手冊 Death Ray 兩組 worked example(range 23 sq / 11 sq,roll=85、netAttack=10)逐步驗算核對。
 
 ### 護盾(Shield)
 
@@ -590,7 +699,7 @@ Class I/III/V/VII/X 護盾(遊戲只有這 5 級,無 II/IV/VI/VIII/IX),每次攻
 - `DamageSphericalFlyerDestroyed(aggD, hitPoints, roll int) bool`(`damage.go:277`):`aggD*25/hitPoints >= roll` 則摧毀。
 - `DamageEngineExplosionPotential(maxEngineHP int, quantumDetonator bool) int`(`damage.go:289`):`5*maxEngineHP`,Quantum Detonator 使其 x3。
 
-重骰機制(「re-rolled if the outcome is not 1」)與引擎爆炸的逐格衰減率手冊描述不足,不移植,見第 14 節。
+重骰機制(「re-rolled if the outcome is not 1」)與引擎爆炸的逐格衰減率手冊描述不足,不移植,見第 16 節。
 
 ### 驗證範例(`damage_test.go`)
 
@@ -602,7 +711,7 @@ Class I/III/V/VII/X 護盾(遊戲只有這 5 級,無 II/IV/VI/VIII/IX),每次攻
 
 ---
 
-## 10. 飛彈防禦與反飛彈火箭(`missile.go`)
+## 12. 飛彈防禦與反飛彈火箭(`missile.go`)
 
 **來源**:手冊「Notes on Missile Defenses」(Weapons / Special Defensive Systems / Missile Evasion)與「Notes on Anti-Missile Rockets」(Range & Chance to Hit)。openorion2 未實作此段戰鬥判定(只有 tech 名稱字串),本檔是手冊到程式碼的首次移植。
 
@@ -653,7 +762,7 @@ MissileAMRRangeIndex(sq) = ceil((sq+1)/3) = (sq+3)/3   (整數除法)
 |---|---|---|---|---|---|---|
 | Range | 1 | 2 | 3 | 4 | 5 | 6 |
 
-**AMR 命中率**(`MissileAMRChanceToHit`,見第 13 節手冊矛盾記錄取得的裁決公式):
+**AMR 命中率**(`MissileAMRChanceToHit`,見第 15 節手冊矛盾記錄取得的裁決公式):
 
 ```
 MissileAMRChanceToHit(range) = 71 - (range+2)*10/3   (整數除法)
@@ -667,7 +776,7 @@ MissileAMRChanceToHit(range) = 71 - (range+2)*10/3   (整數除法)
 
 ### 飛彈 Beam Defense
 
-`MissileSpeed`/`MissileBeamDefense`(見第 13 節手冊矛盾記錄):
+`MissileSpeed`/`MissileBeamDefense`(見第 15 節手冊矛盾記錄):
 
 ```
 Speed = 12 + 2*(FTLlevel-1) + 4
@@ -683,7 +792,7 @@ BeamDefense = 5*Speed + MissileBonus(彈頭型別)
 
 ---
 
-## 11. 地面戰(`ground.go`)
+## 13. 地面戰(`ground.go`)
 
 **來源**:GAME_MANUAL.pdf p.15-16(種族 Ground Combat 加成:Bulrathi/Gnolam)、p.21(Combat Modifiers 定義)、p.24(Low-G/High-G/Subterranean)、p.27(Warlord,barracks 容量加倍)、p.77(Marine Barracks)、p.79(Troop Pods/Armor Barracks)、p.80-81(Powered Armor/Battleoids)、p.85(Transport Ship)、p.90-92(Tritanium/Zortrium/Neutronium/Adamantium Armor 對地面戰力加成)、p.108-109(Anti-Grav Harness/Personal Shield)、p.114(Xentronium Armor)、p.162-164(Invading a Colony 流程敘述,無額外數字公式);MANUAL_150.html p.129「Notes on Orbital Assault > Orbital Bombardment」(Estimated Bomb Hits / Planet Hits 表)。openorion2 未實作地面戰鬥判定邏輯(只有存檔欄位與科技/建築名稱),本節為手冊到程式碼的首次移植。沒有精確數字的項目(Commando Leader 基準加成、AI Ground Troops Bonus、Stored Production 命中曲線)一律不臆測,列於本節末 TODO。
 
@@ -780,7 +889,7 @@ Planet Hits 表(每項對地面設施/人口需要的「hit 數」):
 
 ---
 
-## 12. 間諜(`spy.go`)
+## 14. 間諜(`spy.go`)
 
 **來源**:手冊「Notes on Spying」(p113,含 Spy Bonuses / Assassins / Roll Chance / Spy vs Spy 四小節)。openorion2 未實作間諜邏輯(`spies[]` 除讀檔外從未被賦值,無 `SpyView` 類別),本檔無原始碼可對照,一律以手冊原文數字為準。
 
@@ -823,11 +932,11 @@ E > 99     : p = 0.01
 
 ### Spy vs Spy
 
-防禦方 +20 固定加成(`SpyVsSpyDefenderBonus`);攻擊方選擇 HIDE 指令時 +20(`SpyVsSpyAttackerBonus`)。判定門檻:防禦方在 +80 被殺,攻擊方在 −80 被殺(`SpyVsSpyDefenderKillThreshold`/`SpyVsSpyAttackerKillThreshold`);雙方都可能因幸運骰同時折損間諜。**待查證**:手冊未給這節判定用的 action threshold(T)基準值,也未明列 ±80 門檻與 `SpyEffectiveThreshold`/`SpyRollChance` 的精確對應公式。
+防禦方 +20 固定加成(`SpyVsSpyDefenderBonus`);攻擊方選擇 HIDE 指令時 +20(`SpyVsSpyAttackerBonus`)。判定門檻:防禦方在 +80 被殺,攻擊方在 −80 被殺(`SpyVsSpyDefenderKillThreshold`/`SpyVsSpyAttackerKillThreshold`);雙方都可能因幸運骰同時折損間諜。**待查證**:手冊未給這節判定用的 action threshold(T)基準值,也未明列 ±80 門檻與 `SpyEffectiveThreshold`/`SpyRollChance` 的精確對應公式。已確認 MOO2 英語社群本身也未破解此公式(`community-mechanics-findings.md` §9,公認無解,兩個獨立論壇討論串均自陳「不知道確切演算法」),故不再投入時間搜尋社群資料,維持現有的範圍常數與 TODO 標記。
 
 ---
 
-## 13. 手冊自相矛盾記錄
+## 15. 手冊自相矛盾記錄
 
 MOO2 patch 1.5 官方手冊在兩處數值與其自身附表不一致,已在程式碼註解記錄推導過程與裁決依據,標記待實機動態驗證。
 
@@ -847,7 +956,7 @@ AMR Chance-to-Hit = 70 - rounddown((Range + 2) * 10 / 3) - 1
 70 - (rounddown((Range+2)*10/3) - 1) = 71 - rounddown((Range+2)*10/3)
 ```
 
-已用 Range 0-6 逐項代入驗證,71 減法版本與附表完全一致(見第 10 節命中率表)。`internal/gamedata/missile.go` 採用此裁決版本,`missile_test.go` 對兩張表都有測試斷言。
+已用 Range 0-6 逐項代入驗證,71 減法版本與附表完全一致(見第 12 節命中率表)。`internal/gamedata/missile.go` 採用此裁決版本,`missile_test.go` 對兩張表都有測試斷言。
 
 ### 飛彈速度:公式比表格多 4
 
@@ -864,7 +973,7 @@ GAME_MANUAL.pdf 對 Fantastic Trader 種族特質的貿易財加成,在兩處給
 - p.70(Trade Goods 一般說明,與其他種族並列):「Every 2 industry converts to 1 BC... unless you are a Fantastic Trader in which case every 1 industry converts to 1 BC」——直接給轉換比,換算下來是一般種族的 **2 倍**(2:1 → 1:1)。
 - p.25(種族特質「Fantastic Traders」專屬說明):「on top of that, traders get a **50% bonus** to all income derived from producing trade goods」——字面讀法是一般種族的 **1.5 倍**,而非 2 倍。
 
-兩處的「倍率」讀法不一致(2 倍 vs 1.5 倍),但無法判斷是否為同一件事的兩種模糊敘述,或是疊加關係(1:1 轉換之上再疊加 50%,變 3 倍)。**裁決**:`internal/gamedata/income.go` 的 `TradeGoodsIncome` 採用 p.70 這句「與一般種族轉換比並列、直接給數字」的敘述(1:1),因為它與貿易財換算規則本身描述方式一致、格式對稱,判讀歧異度較低;p.25 的「+50%」說法**未在此另外實作**,標記待查證原版程式行為(TODO,見 `income.go` 常數區塊註解)。與第 13 節前兩則(AMR 命中率、飛彈速度)的差異:那兩則手冊的公式與附表可互相代入驗證出「哪個是筆誤」,這一則的兩種讀法都是完整敘述句、缺乏第三個數字可佐證,不確定性高於前兩則。
+兩處的「倍率」讀法不一致(2 倍 vs 1.5 倍),但無法判斷是否為同一件事的兩種模糊敘述,或是疊加關係(1:1 轉換之上再疊加 50%,變 3 倍)。**裁決**:`internal/gamedata/income.go` 的 `TradeGoodsIncome` 採用 p.70 這句「與一般種族轉換比並列、直接給數字」的敘述(1:1),因為它與貿易財換算規則本身描述方式一致、格式對稱,判讀歧異度較低;p.25 的「+50%」說法**未在此另外實作**,標記待查證原版程式行為(TODO,見 `income.go` 常數區塊註解)。與第 15 節前兩則(AMR 命中率、飛彈速度)的差異:那兩則手冊的公式與附表可互相代入驗證出「哪個是筆誤」,這一則的兩種讀法都是完整敘述句、缺乏第三個數字可佐證,不確定性高於前兩則。
 
 ### Laser Cannon 距離衰減範例表:單一儲存格與公式算出值不同
 
@@ -874,16 +983,18 @@ MANUAL_150.html「Reduced by Range」表用 Phasor(base 5-20)、Mauler(base 100-
 
 ---
 
-## 14. 尚未移植/待查證
+## 16. 尚未移植/待查證
 
 依 `docs/tech/rules-implementation-audit.md` 與 `docs/tech/game-logic-port.md` 的盤點,以下系統 openorion2 完全沒有可複用的邏輯(連 UI 殼常常都沒有),需要完全依手冊從零設計:
 
 | 系統 | 狀態 | 備註 |
 |---|---|---|
-| 傷害解算細節 | 部分完成(第 9 節 `damage.go`) | 距離衰減、Hv/PD/HEF mount 加成、命中後傷害內插、護盾減傷、裝甲穿透已移植;球形武器(Pulsar/Plasma Flux/Spatial Compressor)的重骰終止條件、引擎爆炸逐格衰減率手冊描述不足,仍待查證 |
-| 地面戰(登陸/轟炸) | 部分完成(第 11 節 `ground.go`) | Barracks 建造/人口上限、單位血量、裝甲/裝備/種族/地形戰力加成、轟炸命中換算已移植;Commando Leader 基準加成、AI Ground Troops Bonus 依難度分級數字、Stored Production 命中曲線手冊未給精確數字,仍待查證 |
-| 外交 | 未見 | 連 `DiplomacyView` 畫面殼都不存在;AI 六種目標性格判定、Diplomatic Blunder/Marriage 事件全無邏輯可抄 |
-| AI 決策 | 未見 | 全 repo 零 RNG 來源,任何 AI 判斷邏輯都要重新設計 |
+| 傷害解算細節 | 部分完成(第 11 節 `damage.go`) | 距離衰減、Hv/PD/HEF mount 加成、命中後傷害內插、護盾減傷、裝甲穿透已移植;球形武器(Pulsar/Plasma Flux/Spatial Compressor)的重骰終止條件、引擎爆炸逐格衰減率手冊描述不足,仍待查證 |
+| 地面戰(登陸/轟炸) | 部分完成(第 13 節 `ground.go`) | Barracks 建造/人口上限、單位血量、裝甲/裝備/種族/地形戰力加成、轟炸命中換算已移植;Commando Leader 基準加成、AI Ground Troops Bonus 依難度分級數字、Stored Production 命中曲線手冊未給精確數字,仍待查證 |
+| 地形改造建造成本 | 部分完成(第 5 節 `terraform.go`) | 氣候轉換鏈、人口容量係數已移植;逐次遞增的產能建造成本公式手冊未給數字,仍待查證(需遊戲資料檔而非手冊文字) |
+| 艦艇武裝/裝甲/護盾數值表 | 未見 | `internal/engine/ship.go` 的 `ShipCombatStateFromDesign` 已可組出 BeamDefense,但 ArmorHP/StructureHP/ShieldReduction 仍需呼叫端顯式傳入,因為 openorion2 沒有 armor/shield 型別 → HP/減傷的查表可抄;社群整理的武器基礎傷害表、飛彈傷害/HP/ECM 加成表、護盾 HP 係數、裝甲強度係數見 `community-mechanics-findings.md` §4.1(武器傷害,可信度中)、§4.3(飛彈 stats,可信度高)、§4.2/§4.4(護盾/裝甲,可信度中/低)——中高可信但仍需人工核實後才可採用為程式碼常數 |
+| 外交 | 未見 | 連 `DiplomacyView` 畫面殼都不存在;AI 六種目標性格判定、Diplomatic Blunder/Marriage 事件全無邏輯可抄。社群同樣未破解每回合關係升降公式與 17 級門檻表(`community-mechanics-findings.md` §2,公認無解),移植時需改走「手冊定性描述+自訂參數+DOSBox 黑箱校準」 |
+| AI 決策 | 未見 | 全 repo 零 RNG 來源,任何 AI 判斷邏輯都要重新設計。社群同樣未逆向出難度加成精確數值(`community-mechanics-findings.md` §1,公認無解;WebSearch 曾生出假數字已排除) |
 | 回合編排(把上述公式串成回合) | 待補 | `researchProgress`/`experience` 等欄位全 repo 除建構子外從未被賦值,無回合結算函式存在 |
 | RNG(命中/間諜/閃避擲骰) | 待補 | 各公式已給出「決定性機率/門檻」,但實際擲骰與可重現的 RNG(含 seed 管理、存檔是否存 RNG 狀態)尚未設計 |
 | 星系/星圖生成 | 未見 | 星系形狀/星星分布/行星屬性/特殊天體的隨機生成演算法要整個重寫 |
