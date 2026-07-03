@@ -40,6 +40,76 @@ func demoShips() []Ship {
 	}
 }
 
+// shipStrength 依艦體等級給戰力點(供最小戰鬥解算;正式版由艦艇設計的武器/裝甲算)。
+func shipStrength(class string) int {
+	switch class {
+	case "偵察艦":
+		return 1
+	case "巡防艦", "護衛艦":
+		return 2
+	case "驅逐艦":
+		return 4
+	case "巡洋艦":
+		return 8
+	case "戰艦":
+		return 16
+	case "泰坦":
+		return 32
+	case "末日之星":
+		return 64
+	}
+	return 1
+}
+
+// BattleResult 是一場戰鬥的結果。
+type BattleResult struct {
+	Enemy                         string
+	PlayerStrength, EnemyStrength int
+	PlayerWon                     bool
+	PlayerLosses, EnemyLosses     int
+}
+
+// removeWeakestShip 移除戰力最弱的一艘艦。
+func (s *GameSession) removeWeakestShip() {
+	if len(s.Ships) == 0 {
+		return
+	}
+	wi := 0
+	for i, sh := range s.Ships {
+		if shipStrength(sh.Class) < shipStrength(s.Ships[wi].Class) {
+			wi = i
+		}
+		_ = i
+	}
+	s.Ships = append(s.Ships[:wi], s.Ships[wi+1:]...)
+}
+
+// ResolveBattle 解算與某敵方的一場戰鬥:比較雙方艦隊總戰力,套用損失,回傳結果。
+// 敵方戰力隨回合數增強(示範規則;正式版由敵方實際艦隊算)。
+func (s *GameSession) ResolveBattle(enemy string) BattleResult {
+	ps := 0
+	for _, sh := range s.Ships {
+		ps += shipStrength(sh.Class)
+	}
+	es := 8 + s.Turn*3
+	res := BattleResult{Enemy: enemy, PlayerStrength: ps, EnemyStrength: es}
+	if ps >= es {
+		res.PlayerWon = true
+		res.EnemyLosses = es
+		if ps < es*3/2 && len(s.Ships) > 0 { // 慘勝小損
+			s.removeWeakestShip()
+			res.PlayerLosses = 1
+		}
+	} else {
+		for len(s.Ships) > 0 && res.PlayerLosses < 2 {
+			s.removeWeakestShip()
+			res.PlayerLosses++
+		}
+	}
+	s.LastBattle = &res
+	return res
+}
+
 // shipNamePool 供新造艦命名(依序循環)。
 var shipNamePool = []string{"先鋒號", "勝利號", "無畏號", "蒼穹號", "星辰號", "破曉號", "遠征號", "不朽號", "疾風號", "曙光號"}
 
@@ -129,6 +199,7 @@ type GameSession struct {
 	Planets          []Planet            // 行星列表
 	Leaders          []Leader            // 軍官/領袖名單
 	Ships            []Ship              // 艦隊
+	LastBattle       *BattleResult       // 上一場戰鬥結果(供戰鬥結果畫面)
 }
 
 // EndTurn 推進一回合:先結算玩家帝國,再讓各 AI 對手自行決策並結算,回合數 +1。

@@ -479,14 +479,21 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 
 // races 建原版種族關係畫面(RACES.LBX 資產 0,自帶完整調色盤)。RACES 按鈕目標。
 func (b *sceneBuilder) races() (*overlayScreen, error) {
-	// 「會晤/AUDIENCE」→ 銀河議會;他處 → 星系主畫面。
+	// 「會晤」→ 銀河議會;「宣戰」→ 解算戰鬥;他處 → 星系主畫面。
 	hits := []hitRegion{
-		{340, 420, 96, 24, "audience"},
+		{340, 418, 96, 20, "audience"},
+		{340, 438, 96, 20, "declarewar"},
 		{0, 0, moo2ScreenW, moo2ScreenH, "back"},
 	}
 	onAction := func(a string) *origTransition {
-		if a == "audience" {
+		switch a {
+		case "audience":
 			return b.goTo(b.council, "銀河議會")
+		case "declarewar":
+			if b.session != nil {
+				b.session.ResolveBattle("賽隆人")
+			}
+			return b.goTo(b.battleResult, "戰鬥結果")
 		}
 		return b.goTo(b.galaxy, "星系主畫面")
 	}
@@ -502,6 +509,40 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 	}
 	return loadOverlayScreen(b.res, "races.lbx", 0, b.lang, b.fnt, "assets/i18n/diplo.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction, nil)
+}
+
+// battleResult 顯示上一場戰鬥結果(重用 TURNSUM.LBX#0 視窗當通用面板)。點畫面返回種族關係。
+func (b *sceneBuilder) battleResult() (*overlayScreen, error) {
+	hits, onAction := b.backHit(b.races, "種族關係")
+	// 標題以中文直接當 enKey(misc.tsv 查無 → fallback 回傳自身),擦底覆蓋烘進的 TURN SUMMARY。
+	overlays := []labelRect{
+		{88, 14, 204, 22, "戰鬥結果", 0},
+		{158, 324, 64, 18, "CLOSE", 0},
+	}
+	s, err := loadOverlayScreen(b.res, "turnsum.lbx", 0, b.lang, b.fnt, "assets/i18n/misc.tsv",
+		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
+		paletteChain{{"buffer0.lbx", 0}})
+	if err != nil {
+		return nil, err
+	}
+	if b.session != nil && b.session.LastBattle != nil {
+		bt := b.session.LastBattle
+		gold := color.RGBA{240, 220, 120, 255}
+		body := color.RGBA{214, 220, 235, 255}
+		win := color.RGBA{120, 220, 140, 255}
+		lose := color.RGBA{235, 120, 110, 255}
+		outcome, oc := "✗ 敗北", lose
+		if bt.PlayerWon {
+			outcome, oc = "★ 勝利!", win
+		}
+		s.extras = []extraText{
+			{x: 40, y: 60, size: 15, text: fmt.Sprintf("對「%s」開戰", bt.Enemy), col: gold},
+			{x: 40, y: 92, size: 16, text: outcome, col: oc},
+			{x: 40, y: 122, size: 13, text: fmt.Sprintf("我方戰力 %d ／ 敵方戰力 %d", bt.PlayerStrength, bt.EnemyStrength), col: body},
+			{x: 40, y: 146, size: 13, text: fmt.Sprintf("損失:我方 %d 艘", bt.PlayerLosses), col: body},
+		}
+	}
+	return s, nil
 }
 
 // council 建原版銀河議會畫面(COUNCIL.LBX 資產 1,調色盤鏈 COUNCIL#0)。3D 議事廳,
