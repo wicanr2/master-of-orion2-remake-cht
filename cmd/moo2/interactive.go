@@ -479,7 +479,17 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 
 // races 建原版種族關係畫面(RACES.LBX 資產 0,自帶完整調色盤)。RACES 按鈕目標。
 func (b *sceneBuilder) races() (*overlayScreen, error) {
-	hits, onAction := b.backHit(b.galaxy, "星系主畫面")
+	// 「會晤/AUDIENCE」→ 銀河議會;他處 → 星系主畫面。
+	hits := []hitRegion{
+		{340, 420, 96, 24, "audience"},
+		{0, 0, moo2ScreenW, moo2ScreenH, "back"},
+	}
+	onAction := func(a string) *origTransition {
+		if a == "audience" {
+			return b.goTo(b.council, "銀河議會")
+		}
+		return b.goTo(b.galaxy, "星系主畫面")
+	}
 	// 座標經 PIL 量測(remain-scan/races_a0_f00.png)。
 	overlays := []labelRect{
 		{200, 14, 240, 22, "RACE RELATIONS", 0},
@@ -492,6 +502,24 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 	}
 	return loadOverlayScreen(b.res, "races.lbx", 0, b.lang, b.fnt, "assets/i18n/diplo.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction, nil)
+}
+
+// council 建原版銀河議會畫面(COUNCIL.LBX 資產 1,調色盤鏈 COUNCIL#0)。3D 議事廳,
+// 無烘字,疊「銀河議會」標題;點畫面返回種族關係。
+func (b *sceneBuilder) council() (*overlayScreen, error) {
+	hits, onAction := b.backHit(b.races, "種族關係")
+	s, err := loadOverlayScreen(b.res, "council.lbx", 1, b.lang, b.fnt, "assets/i18n/misc.tsv",
+		nil, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
+		paletteChain{{"council.lbx", 0}})
+	if err != nil {
+		return nil, err
+	}
+	if b.fnt != nil {
+		s.extras = []extraText{
+			{x: moo2ScreenW / 2, y: 30, size: 22, text: "銀河議會", col: color.RGBA{240, 220, 120, 255}, align: 1},
+		}
+	}
+	return s, nil
 }
 
 // newGameSetup 建原版新遊戲設定畫面(NEWGAME.LBX 資產 28,調色盤鏈 RACEOPT#4→NEWGAME#1)。
