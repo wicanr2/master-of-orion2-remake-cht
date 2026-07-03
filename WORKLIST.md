@@ -122,7 +122,7 @@
 - [~] 元件係數對齊:武器 Value 改真「最大傷害」,錨定 patch 1.5 官方確認值(中子爆破槍12/高斯砲18/電漿砲20);其餘標注單調估計。provenance + 阻塞點(完整表僅存於掃描版手冊,需 OCR;且係數版本相依)記於 docs/tech/component-values.md
 - [ ] 精確全表:OCR 掃描版手冊附錄 或 逆向私有 gamedata 武器表;建版本專屬 profile(1.3/1.5 數值分版)
 - [x] **研究自動推進 → 動態解鎖迴圈**:目前主題完成後自動推進到下一個未完成元件主題(researchQueue 依成本遞增),玩數回合便逐步解鎖進階元件。測試 TestResearchUnlockLoopOverTurns 驗證 40 回合解鎖 7→15、完成 6 主題
-- [ ] 真正的「新遊戲」流程(種族選擇/星系生成)取代目前的示範跳轉
+- [x] 新遊戲種族選擇:NEW GAME 設定畫面加種族選擇框(13 經典種族循環選,顯示名+特性),ACCEPT 套 ApplyRace 起始加成(工業/研究/食物/成長/國庫/戰鬥百分點,對齊各族招牌特性)。測試 TestApplyRaceBonuses/SakkraGrowthFaster/MrrshanCombatBonus
 - [ ] hover highlight 與原版一致(目前為細框提示)
 - [ ] 淘汰自製簡約殼(`-play`):方向不符「與原版一模一樣」,改以原版 overlay 畫面 + 既有回合引擎(internal/engine)重建可玩迴圈
 - [ ] 補齊需全域調色盤鏈的畫面(COLONY/DESIGN/COUNCIL/DIPLOMAT…)到對照組
@@ -151,7 +151,7 @@
   - [ ] 精讀 GameFAQs MOO2 AI FAQ + 策略指南,補 MOO2 特有行為
   - [ ] 設計可插拔 AI 介面 + 難度加成係數
   - [ ] 標示「必須逆向才能確定」的項目(若有)
-- [ ] 開新遊戲流程(取代 STUB)
+- [x] 開新遊戲流程:種族選擇 + 星系大小/難度 → ApplyRace/RegenGalaxy(見 Phase 4b)
 - [ ] 以手冊逐系統對照驗證規則正確性
 
 ## Phase 6 — 音樂 / 音效

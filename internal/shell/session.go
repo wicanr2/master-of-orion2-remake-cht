@@ -215,6 +215,7 @@ func (s *GameSession) ResolveBattle(enemy string) BattleResult {
 		for _, v := range pFleet {
 			pPower += v
 		}
+		pPower += pPower * s.RaceCombatPct / 100 // 種族戰鬥加成(姆瑞森+25、布拉西/阿爾卡里+15…)
 		for _, v := range eFleet {
 			ePower += v
 		}
@@ -552,6 +553,56 @@ var starNamePool = []string{
 	"井宿", "鬼宿", "柳宿", "星宿", "張宿", "翼宿", "軫宿", "亢宿",
 }
 
+// Race 是可選種族(名稱 + 起始加成)。加成對齊 MOO2 各族招牌特性(remake 調校值,非自訂點數精算):
+// 工業/研究/食物為每單位產出加成、GrowthPct 為人口成長百分點、StartBC 為額外起始國庫、
+// CombatPct 為戰鬥戰力百分點。Desc 為特性摘要(供顯示)。
+type Race struct {
+	Name      string // 中文名
+	EnName    string // 英文名(對應 ai/original.go 種族性格)
+	IndBonus  int
+	ResBonus  int
+	FoodBonus int
+	GrowthPct int
+	StartBC   int
+	CombatPct int
+	Desc      string
+}
+
+// Races 是 MOO2 十三經典種族,各帶招牌起始加成(remake 調校)。索引 0 為人類(預設)。
+var Races = []Race{
+	{"人類", "Humans", 0, 0, 0, 0, 60, 0, "外交貿易見長,起始國庫充裕"},
+	{"席隆", "Psilons", 0, 4, 0, 0, 0, 0, "創造性研究,科學家產出高"},
+	{"薩克拉", "Sakkra", 0, 0, 1, 30, 0, 0, "繁殖迅速,人口成長加成"},
+	{"克拉肯", "Klackons", 2, 0, 0, 0, 0, 0, "團結勤奮,工業產出高"},
+	{"姆瑞森", "Mrrshan", 0, 0, 0, 0, 0, 25, "好戰善攻,艦艇攻擊加成"},
+	{"布拉西", "Bulrathi", 0, 0, 0, 0, 0, 15, "體格強悍,地面與戰鬥加成"},
+	{"阿爾卡里", "Alkari", 0, 0, 0, 0, 0, 15, "飛行天賦,艦艇迴避加成"},
+	{"梅克拉", "Meklars", 1, 1, 0, 0, 0, 0, "半機械,工業與研究兼具"},
+	{"達洛克", "Darloks", 0, 0, 0, 0, 30, 0, "潛伏間諜,擅長滲透"},
+	{"崔拉里安", "Trilarians", 0, 0, 1, 10, 0, 0, "水棲民族,食物與成長加成"},
+	{"埃雷里安", "Elerians", 0, 1, 0, 0, 0, 15, "心靈感應,研究與戰鬥"},
+	{"諾蘭姆", "Gnolams", 0, 0, 0, 0, 120, 0, "幸運富商,起始國庫豐厚"},
+	{"矽基", "Silicoids", 1, 0, 0, -20, 0, 0, "岩石生命,耐任何環境但成長慢"},
+}
+
+// ApplyRace 把 Races[idx] 的起始加成套到玩家帝國:各殖民地每單位產出加成、額外起始國庫、
+// 記錄成長/戰鬥百分點(供 advancePopulation/戰鬥使用)。只在新遊戲開局套一次。
+func (s *GameSession) ApplyRace(idx int) {
+	if idx < 0 || idx >= len(Races) {
+		return
+	}
+	r := Races[idx]
+	s.RaceIndex = idx
+	s.raceGrowthPct = r.GrowthPct
+	s.RaceCombatPct = r.CombatPct
+	for i := range s.PlayerColonies {
+		s.PlayerColonies[i].IndustryPerWorker += r.IndBonus
+		s.PlayerColonies[i].ResearchPerScientist += r.ResBonus
+		s.PlayerColonies[i].FoodPerFarmer += r.FoodBonus
+	}
+	s.Player.BC += r.StartBC
+}
+
 // GalaxySizes 是星系大小選項(名稱 + 星數),對應 NEW GAME 的 GALAXY SIZE。
 var GalaxySizes = []struct {
 	Name  string
@@ -625,6 +676,9 @@ type GameSession struct {
 	eventRand        *rand.Rand          // 事件亂數源(由 EventSeed 惰性建立)
 	AntaresRaids     int                 // 已發生的安塔蘭突襲次數(逐次升級強度)
 	LastAntares      string              // 本回合安塔蘭突襲描述(空=無;供回合摘要)
+	RaceIndex        int                 // 玩家選定的種族(shell.Races 索引)
+	RaceCombatPct    int                 // 種族戰鬥戰力百分點加成(供戰鬥使用)
+	raceGrowthPct    int                 // 種族人口成長百分點加成(供 advancePopulation)
 }
 
 // 安塔蘭人入侵參數:MOO2 的週期性終局威脅。前期寬限,之後每隔數回合一次突襲,強度隨次數升級。
@@ -821,7 +875,9 @@ func (s *GameSession) advancePopulation() {
 		if i >= len(s.LastPlayerOutput.Colonies) || i >= len(s.popAccum) {
 			break
 		}
-		s.popAccum[i] += s.LastPlayerOutput.Colonies[i].PopGrowth
+		grow := s.LastPlayerOutput.Colonies[i].PopGrowth
+		grow += grow * s.raceGrowthPct / 100 // 種族成長加成(薩克拉+30、矽基-20…)
+		s.popAccum[i] += grow
 		for s.popAccum[i] >= popGrowthThreshold && s.PlayerColonies[i].Population < s.PlayerColonies[i].PopMax {
 			s.popAccum[i] -= popGrowthThreshold
 			s.PlayerColonies[i].Population++

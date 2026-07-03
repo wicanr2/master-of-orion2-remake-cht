@@ -293,6 +293,7 @@ type sceneBuilder struct {
 	session       *shell.GameSession // 活的對局狀態(TURN 推進、畫面顯示即時資料)
 	newGameSize   int                // NEW GAME 選的星系大小索引(shell.GalaxySizes)
 	newGameDiff   int                // NEW GAME 選的難度索引(shell.Difficulties)
+	newGameRace   int                // NEW GAME 選的種族索引(shell.Races)
 	newGameSeed   int                // 每次新遊戲遞增,讓星系種子變化
 	designWeapon  int                // 艦艇設計選的武器元件索引(shell.WeaponOptions)
 	designArmor   int                // 裝甲元件索引(shell.ArmorOptions)
@@ -1004,6 +1005,7 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 	hits := []hitRegion{
 		{86, 100, 130, 108, "diff"},  // 難度選擇框
 		{232, 100, 150, 108, "size"}, // 星系大小選擇框
+		{86, 244, 130, 108, "race"},  // 種族選擇框(PLAYERS 位置)
 		{92, 392, 108, 30, "cancel"},
 		{432, 392, 108, 30, "accept"},
 	}
@@ -1015,11 +1017,15 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 		case "size":
 			b.newGameSize = (b.newGameSize + 1) % len(shell.GalaxySizes)
 			return b.goTo(b.newGameSetup, "新遊戲設定")
+		case "race":
+			b.newGameRace = (b.newGameRace + 1) % len(shell.Races)
+			return b.goTo(b.newGameSetup, "新遊戲設定")
 		case "accept":
 			if b.session != nil {
 				b.session.Difficulty = b.newGameDiff
 				b.newGameSeed++
 				b.session.RegenGalaxy(shell.GalaxySizes[b.newGameSize].Stars, int64(b.newGameSeed*7919+42)) // 每次新遊戲不同種子
+				b.session.ApplyRace(b.newGameRace)                                                          // 套用種族起始加成
 			}
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
@@ -1030,7 +1036,7 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 		{86, 78, 130, 22, "DIFFICULTY", 0},
 		{232, 78, 150, 22, "GALAXY SIZE", 0},
 		{398, 78, 150, 22, "GALAXY AGE", 0},
-		{86, 222, 130, 22, "PLAYERS", 0},
+		{86, 222, 130, 22, "RACE", 0},
 		{232, 222, 150, 22, "TECH LEVEL", 0},
 		{422, 266, 138, 18, "TACTICAL COMBAT", 11},
 		{422, 301, 138, 18, "RANDOM EVENTS", 11},
@@ -1049,9 +1055,13 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 		gs := shell.GalaxySizes[b.newGameSize]
 		df := shell.Difficulties[b.newGameDiff]
 		gold := color.RGBA{240, 220, 120, 255}
+		body := color.RGBA{210, 216, 230, 255}
+		rc := shell.Races[b.newGameRace]
 		s.extras = []extraText{
 			{x: 151, y: 150, size: 16, text: df.Name, col: gold, align: 1},
 			{x: 307, y: 150, size: 16, text: fmt.Sprintf("%s (%d 星)", gs.Name, gs.Stars), col: gold, align: 1},
+			{x: 151, y: 286, size: 16, text: rc.Name, col: gold, align: 1},
+			{x: 151, y: 312, size: 10, text: rc.Desc, col: body, align: 1},
 		}
 	}
 	return s, nil
