@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"os"
+	"sort"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -108,13 +109,15 @@ func (s *overlayScreen) draw(dst *ebiten.Image) {
 	ox, oy := float64(s.offsetX), float64(s.offsetY)
 	if s.cat.Lang() == i18n.Traditional {
 		for _, b := range s.overlays {
+			// 擦掉烘進圖的英文:填單色底(eraseColor 指定則用之,否則取標籤帶的「中位數色」——
+			// 代表性中間調,避免誤取過暗陰影形成黑框;單色填充不複製紋理,故不會有錯位歪斜)。
 			plate := samplePlate(s.rgba, b)
 			if s.eraseColor != nil {
 				plate = *s.eraseColor
 			}
-			// 擦掉烘進圖的英文(蓋底色),再疊中文(同 overlay.go)。
 			vector.DrawFilledRect(dst, float32(float64(b.x+3)+ox), float32(float64(b.y+2)+oy),
 				float32(b.w-6), float32(b.h-4), plate, false)
+			// 疊中文(同 overlay.go)。
 			size := b.size
 			if size == 0 {
 				size = s.defSize
@@ -146,39 +149,37 @@ func (s *overlayScreen) draw(dst *ebiten.Image) {
 }
 
 // samplePlate 取標籤底板色(用來擦掉烘進圖的英文)。
-// 策略:合併兩組採樣取「眾數色」——(1) 標籤左內緣窄直帶(置中文字通常不及此),
-// (2) 標籤上緣/下緣橫向帶(避開文字所在的垂直中段)。單靠(1)在按鈕左緣恰是光澤高光帶
-// 時會誤取亮色;疊(2)後真正占多數的底板色勝出。
-// 註:對「背景均勻但文字靠左/寬粗填滿」的畫面(採樣仍可能誤判),改用 overlayScreen.eraseColor
-// 強制指定底色(如 info 面板)。與字底極性無關。
+// 策略:在「文字帶的上下緣margin」(置中文字不及此的乾淨底)+ 左內緣採樣一組像素,取
+// 「中位數亮度色」——中位數為代表性中間調,對少數的亮字/暗陰影都穩健,不會像眾數那樣
+// 誤取到反覆出現的過暗陰影而形成黑框。
+// 註:背景均勻但文字靠左/寬粗填滿的畫面(如 info),改用 overlayScreen.eraseColor 強制底色。
 func samplePlate(rgba *image.RGBA, b labelRect) color.RGBA {
 	W, H := rgba.Bounds().Dx(), rgba.Bounds().Dy()
-	counts := map[color.RGBA]int{}
-	best := color.RGBA{0, 0, 0, 255}
-	bestN := 0
+	var cols []color.RGBA
 	add := func(x, y int) {
 		if x < 0 || x >= W || y < 0 || y >= H {
 			return
 		}
 		i := rgba.PixOffset(x, y)
-		c := color.RGBA{rgba.Pix[i], rgba.Pix[i+1], rgba.Pix[i+2], 255}
-		counts[c]++
-		if counts[c] > bestN {
-			bestN = counts[c]
-			best = c
-		}
+		cols = append(cols, color.RGBA{rgba.Pix[i], rgba.Pix[i+1], rgba.Pix[i+2], 255})
 	}
-	for _, dx := range []int{3, 5, 7, 9} {
-		for y := b.y + 1; y < b.y+b.h-1; y++ {
-			add(b.x+dx, y)
-		}
-	}
-	for _, y := range []int{b.y + 1, b.y + b.h - 2} {
-		for x := b.x + 4; x < b.x+b.w-4; x += 2 {
+	// 上下緣各兩列(文字上下的乾淨底)橫跨全寬 + 左內緣窄帶。
+	for _, y := range []int{b.y + 1, b.y + 2, b.y + b.h - 3, b.y + b.h - 2} {
+		for x := b.x + 3; x < b.x+b.w-3; x += 2 {
 			add(x, y)
 		}
 	}
-	return best
+	for _, dx := range []int{3, 5, 7} {
+		for y := b.y + 3; y < b.y+b.h-3; y++ {
+			add(b.x+dx, y)
+		}
+	}
+	if len(cols) == 0 {
+		return color.RGBA{0, 0, 0, 255}
+	}
+	lum := func(c color.RGBA) int { return 30*int(c.R) + 59*int(c.G) + 11*int(c.B) }
+	sort.Slice(cols, func(i, j int) bool { return lum(cols[i]) < lum(cols[j]) })
+	return cols[len(cols)/2]
 }
 
 // assetRef 指向某 LBX 內一張影像。
@@ -506,15 +507,14 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 	}
 	// 座標經 PIL 量測(remain-scan/newgame_a28_f00.png);開關標籤移到核取框右側(x430)避免採到藍框。
 	overlays := []labelRect{
-		{244, 44, 166, 24, "New Game", 0},
 		{86, 78, 130, 22, "DIFFICULTY", 0},
 		{232, 78, 150, 22, "GALAXY SIZE", 0},
 		{398, 78, 150, 22, "GALAXY AGE", 0},
 		{86, 222, 130, 22, "PLAYERS", 0},
 		{232, 222, 150, 22, "TECH LEVEL", 0},
-		{426, 266, 134, 18, "TACTICAL COMBAT", 11},
-		{426, 301, 134, 18, "RANDOM EVENTS", 11},
-		{426, 334, 134, 18, "ANTARANS ATTACK", 11},
+		{422, 266, 138, 18, "TACTICAL COMBAT", 11},
+		{422, 301, 138, 18, "RANDOM EVENTS", 11},
+		{422, 334, 138, 18, "ANTARANS ATTACK", 11},
 		{100, 388, 96, 24, "CANCEL", 0},
 		{440, 388, 96, 24, "ACCEPT", 0},
 	}
