@@ -318,6 +318,21 @@ var starNamePool = []string{
 	"井宿", "鬼宿", "柳宿", "星宿", "張宿", "翼宿", "軫宿", "亢宿",
 }
 
+// GalaxySizes 是星系大小選項(名稱 + 星數),對應 NEW GAME 的 GALAXY SIZE。
+var GalaxySizes = []struct {
+	Name  string
+	Stars int
+}{
+	{"小型", 12}, {"中型", 24}, {"大型", 36}, {"巨型", 48},
+}
+
+// RegenGalaxy 依指定星數重生星系(+ 對應行星);供 NEW GAME 依星系大小生成。
+func (s *GameSession) RegenGalaxy(n int, seed int64) {
+	s.Stars = genGalaxy(n, seed)
+	s.Planets = genPlanets(s.Stars)
+	s.SelectedStar = -1
+}
+
 // genGalaxy 程序化生成星系:以種子亂數在抖動網格上佈星,隨機光譜/大小/星名;
 // 第 0 星為玩家母星、約中段一星為 AI 母星。n=星數(對應星系大小)。
 func genGalaxy(n int, seed int64) []Star {

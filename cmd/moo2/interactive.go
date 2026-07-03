@@ -286,10 +286,11 @@ func loadOverlayScreen(res *assets.Resolver, lbxName string, assetID int, lang i
 // --- sceneBuilder:依需求建構各原版畫面(共用 resolver/字型/語言)---
 
 type sceneBuilder struct {
-	res     *assets.Resolver
-	fnt     *uifont.Font
-	lang    i18n.Lang
-	session *shell.GameSession // 活的對局狀態(TURN 推進、畫面顯示即時資料)
+	res         *assets.Resolver
+	fnt         *uifont.Font
+	lang        i18n.Lang
+	session     *shell.GameSession // 活的對局狀態(TURN 推進、畫面顯示即時資料)
+	newGameSize int                // NEW GAME 選的星系大小索引(shell.GalaxySizes)
 }
 
 // menu 建原版主選單畫面。按鈕熱區用 menuOverlays 的座標(按鈕即標籤)。
@@ -666,11 +667,19 @@ func (b *sceneBuilder) council() (*overlayScreen, error) {
 // ACCEPT 進星系主畫面;CANCEL 回主選單。
 func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 	hits := []hitRegion{
+		{232, 100, 150, 108, "size"}, // 星系大小選擇框(點擊循環)
 		{92, 392, 108, 30, "cancel"},
 		{432, 392, 108, 30, "accept"},
 	}
 	onAction := func(a string) *origTransition {
-		if a == "accept" {
+		switch a {
+		case "size":
+			b.newGameSize = (b.newGameSize + 1) % len(shell.GalaxySizes)
+			return b.goTo(b.newGameSetup, "新遊戲設定")
+		case "accept":
+			if b.session != nil {
+				b.session.RegenGalaxy(shell.GalaxySizes[b.newGameSize].Stars, 42) // 依選定大小生成星系
+			}
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
 		return b.goTo(b.menu, "主選單")
@@ -688,9 +697,19 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 		{100, 388, 96, 24, "CANCEL", 0},
 		{440, 388, 96, 24, "ACCEPT", 0},
 	}
-	return loadOverlayScreen(b.res, "newgame.lbx", 28, b.lang, b.fnt, "assets/i18n/menu.tsv",
+	s, err := loadOverlayScreen(b.res, "newgame.lbx", 28, b.lang, b.fnt, "assets/i18n/menu.tsv",
 		overlays, color.RGBA{210, 216, 230, 255}, 13, hits, onAction,
 		paletteChain{{"raceopt.lbx", 4}, {"newgame.lbx", 1}})
+	if err != nil {
+		return nil, err
+	}
+	// 選定的星系大小顯示在選擇框內。
+	if b.fnt != nil {
+		gs := shell.GalaxySizes[b.newGameSize]
+		s.extras = []extraText{{x: 307, y: 150, size: 16,
+			text: fmt.Sprintf("%s (%d 星)", gs.Name, gs.Stars), col: color.RGBA{240, 220, 120, 255}, align: 1}}
+	}
+	return s, nil
 }
 
 // fleet 建原版艦隊列表畫面(FLEET.LBX 資產 0,三段調色盤鏈)。座標經 PIL 量測
@@ -1034,7 +1053,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt *uifont.Font,
 	if err != nil {
 		return err
 	}
-	b := &sceneBuilder{res: res, fnt: fnt, lang: lang, session: shell.NewDemoSession()}
+	b := &sceneBuilder{res: res, fnt: fnt, lang: lang, session: shell.NewDemoSession(), newGameSize: 1}
 	menu, err := b.menu()
 	if err != nil {
 		return err
