@@ -195,7 +195,7 @@ func main() {
 		dirs := strings.Split(*dataDirs, ",")
 		var script []shell.InputState
 		if *shot != "" {
-			// headless 驗證:新遊戲(491,228)→ 星系主畫面 → 截圖。
+			// headless 驗證:新遊戲(491,228)→ NEW GAME 設定畫面 → 截圖。
 			script = []shell.InputState{
 				{MouseX: 491, MouseY: 228, ClickReleased: true},
 			}

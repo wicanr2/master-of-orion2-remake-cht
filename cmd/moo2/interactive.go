@@ -361,6 +361,8 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			sx, sy := starScreenPos(st)
 			hits = append(hits, hitRegion{sx - 11, sy - 11, 22, 22, fmt.Sprintf("star%d", i)})
 		}
+		// 派遣艦隊按鈕(選中星資訊面板內;僅選中非現址星且艦隊靜止時有效)。
+		hits = append(hits, hitRegion{38, 398, 190, 22, "dispatch"})
 	}
 	onAction := func(a string) *origTransition {
 		if len(a) > 4 && a[:4] == "star" && b.session != nil {
@@ -368,6 +370,10 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				b.session.SelectedStar = idx
 				return b.goTo(b.galaxy, "星系主畫面") // 重繪顯示選中星資訊
 			}
+		}
+		if a == "dispatch" && b.session != nil {
+			b.session.SendFleet(b.session.SelectedStar) // 派遣艦隊至選中星(航行由 EndTurn 推進)
+			return b.goTo(b.galaxy, "星系主畫面")
 		}
 		switch a {
 		case "colonies":
@@ -415,14 +421,34 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				fnt.Draw(dst, fmt.Sprintf("星曆 %d", year), 30, 40, 16, color.RGBA{240, 220, 120, 255})
 				fnt.Draw(dst, fmt.Sprintf("國庫 %d BC", sess.Player.BC), 30, 62, 13, color.RGBA{210, 216, 230, 255})
 				fnt.Draw(dst, fmt.Sprintf("研究:%s", shell.ResearchTopicName(sess.Player.ResearchTopic)), 30, 82, 13, color.RGBA{160, 210, 240, 255})
-				// 選中星:顯示該星系行星資訊(左下角面板)。
+				// 艦隊位置標記(青色三角)+ 航行目的連線。
+				if sess.FleetAtStar >= 0 && sess.FleetAtStar < len(sess.Stars) {
+					fx, fy := starScreenPos(sess.Stars[sess.FleetAtStar])
+					if sess.FleetDestStar >= 0 && sess.FleetDestStar < len(sess.Stars) {
+						dx, dy := starScreenPos(sess.Stars[sess.FleetDestStar])
+						vector.StrokeLine(dst, float32(fx), float32(fy), float32(dx), float32(dy), 1, color.RGBA{80, 220, 220, 180}, false)
+					}
+					vector.DrawFilledRect(dst, float32(fx-4), float32(fy-4), 8, 8, color.RGBA{80, 240, 240, 255}, false)
+				}
+				// 選中星:顯示該星系行星資訊 + 派遣艦隊按鈕(左下角面板)。
 				if sess.SelectedStar >= 0 && sess.SelectedStar < len(sess.Planets) {
 					p := sess.Planets[sess.SelectedStar]
-					vector.DrawFilledRect(dst, 28, 330, 210, 82, color.RGBA{10, 14, 30, 230}, false)
-					vector.StrokeRect(dst, 28, 330, 210, 82, 1, color.RGBA{90, 130, 200, 255}, false)
-					fnt.Draw(dst, p.Name, 38, 352, 15, color.RGBA{240, 220, 120, 255})
-					fnt.Draw(dst, fmt.Sprintf("氣候 %s ／ 大小 %s", p.Climate, p.Size), 38, 376, 12, color.RGBA{210, 216, 230, 255})
-					fnt.Draw(dst, fmt.Sprintf("重力 %s ／ 礦產 %s", p.Gravity, p.Mineral), 38, 398, 12, color.RGBA{210, 216, 230, 255})
+					vector.DrawFilledRect(dst, 28, 326, 210, 110, color.RGBA{10, 14, 30, 235}, false)
+					vector.StrokeRect(dst, 28, 326, 210, 110, 1, color.RGBA{90, 130, 200, 255}, false)
+					fnt.Draw(dst, p.Name, 38, 346, 15, color.RGBA{240, 220, 120, 255})
+					fnt.Draw(dst, fmt.Sprintf("氣候 %s ／ 大小 %s", p.Climate, p.Size), 38, 368, 12, color.RGBA{210, 216, 230, 255})
+					fnt.Draw(dst, fmt.Sprintf("重力 %s ／ 礦產 %s", p.Gravity, p.Mineral), 38, 386, 12, color.RGBA{210, 216, 230, 255})
+					// 派遣艦隊按鈕/狀態。
+					switch {
+					case sess.FleetETA > 0:
+						fnt.Draw(dst, fmt.Sprintf("艦隊航行中…剩 %d 回合", sess.FleetETA), 38, 410, 12, color.RGBA{120, 200, 240, 255})
+					case sess.SelectedStar == sess.FleetAtStar:
+						fnt.Draw(dst, "艦隊已在此星", 38, 410, 12, color.RGBA{140, 200, 140, 255})
+					default:
+						vector.DrawFilledRect(dst, 38, 398, 190, 22, color.RGBA{40, 70, 120, 255}, false)
+						vector.StrokeRect(dst, 38, 398, 190, 22, 1, color.RGBA{110, 160, 230, 255}, false)
+						fnt.Draw(dst, "▶ 派遣艦隊至此星", 46, 413, 13, color.RGBA{230, 235, 245, 255})
+					}
 				}
 			}
 		}

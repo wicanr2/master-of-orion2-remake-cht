@@ -27,7 +27,8 @@ type Star struct {
 	Spectral int     // 0=藍 1=白 2=黃 3=橙 4=紅 5=棕 6=黑洞
 	Size     int     // 0=大 .. 3=小
 	Name     string
-	Owner    int // 0=無主 1=玩家 2=AI
+	Owner    int  // 0=無主 1=玩家 2=AI
+	Explored bool // 艦隊是否曾抵達(已探索)
 }
 
 // Ship 是一艘艦艇(供艦隊畫面);Weapon/Armor/Shield/Special 為掛載的元件。
@@ -581,6 +582,41 @@ type GameSession struct {
 	Difficulty       int                 // 難度索引(shell.Difficulties)
 	Builds           []ColonyBuild       // 各殖民地建造項目(對應 PlayerColonies)
 	LastBuilt        []string            // 上回合完成的建造(供回合摘要)
+	FleetAtStar      int                 // 玩家艦隊所在星索引(初始=母星 0)
+	FleetDestStar    int                 // 艦隊目的星索引(-1=無航行任務)
+	FleetETA         int                 // 抵達目的星尚需回合數(0=已抵達/靜止)
+}
+
+// SendFleet 派遣玩家艦隊前往 dest 星:依兩星歐氏距離換算航行回合數(ETA),每回合 EndTurn
+// 遞減。dest 無效、與現址相同、或艦隊正航行中則忽略。回傳是否成功下令。
+func (s *GameSession) SendFleet(dest int) bool {
+	if dest < 0 || dest >= len(s.Stars) || dest == s.FleetAtStar || s.FleetETA > 0 {
+		return false
+	}
+	a, b := s.Stars[s.FleetAtStar], s.Stars[dest]
+	dist := math.Hypot(a.X-b.X, a.Y-b.Y)
+	eta := int(math.Ceil(dist * 8)) // 8 = 星系跨度→回合的換算(全跨約 8-11 回合)
+	if eta < 1 {
+		eta = 1
+	}
+	s.FleetDestStar = dest
+	s.FleetETA = eta
+	return true
+}
+
+// advanceFleet 推進艦隊航行:ETA 遞減,歸零則抵達(FleetAtStar=目的),並將該星標記為已探索。
+func (s *GameSession) advanceFleet() {
+	if s.FleetETA <= 0 || s.FleetDestStar < 0 {
+		return
+	}
+	s.FleetETA--
+	if s.FleetETA == 0 {
+		s.FleetAtStar = s.FleetDestStar
+		s.FleetDestStar = -1
+		if s.FleetAtStar < len(s.Stars) {
+			s.Stars[s.FleetAtStar].Explored = true
+		}
+	}
 }
 
 // EndTurn 推進一回合:先結算玩家帝國,再讓各 AI 對手自行決策並結算,回合數 +1。
@@ -593,6 +629,7 @@ func (s *GameSession) EndTurn() {
 	}
 	s.advanceBuilds()    // 以本回合淨工業推進各殖民地建造
 	s.advanceResearch()  // 目前研究主題完成則自動推進到下一個未完成的元件解鎖主題
+	s.advanceFleet()     // 推進艦隊星間航行(ETA 遞減,抵達則標記探索)
 	s.Turn++
 }
 
@@ -644,6 +681,7 @@ func NewDemoSession() *GameSession {
 		}
 	}
 	galaxy := genGalaxy(24, 42) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
+	galaxy[0].Explored = true   // 母星初始已探索
 	return &GameSession{
 		Turn:           1,
 		Player:         engine.PlayerState{BC: 100, TaxRate: 40, Maintenance: 5, ResearchTopic: gamedata.TOPIC_ADVANCED_CONSTRUCTION},
@@ -658,7 +696,9 @@ func NewDemoSession() *GameSession {
 		Planets:      genPlanets(galaxy),
 		Leaders:      demoLeaders(),
 		Ships:        demoShips(),
-		Builds:       make([]ColonyBuild, 2),
-		SelectedStar: -1,
+		Builds:        make([]ColonyBuild, 2),
+		SelectedStar:  -1,
+		FleetAtStar:   0,  // 母星
+		FleetDestStar: -1, // 無航行任務
 	}
 }
