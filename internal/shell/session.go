@@ -591,8 +591,43 @@ func (s *GameSession) EndTurn() {
 		out := engine.RunAIEmpireTurn(s.AIPlayers[i].Player, s.AIPlayers[i].Colonies, s.AIPlayers[i].Decider)
 		s.AIPlayers[i].Player = out.Player
 	}
-	s.advanceBuilds() // 以本回合淨工業推進各殖民地建造
+	s.advanceBuilds()    // 以本回合淨工業推進各殖民地建造
+	s.advanceResearch()  // 目前研究主題完成則自動推進到下一個未完成的元件解鎖主題
 	s.Turn++
+}
+
+// researchQueue 回傳「所有元件解鎖主題」依研究成本遞增去重排序的序列。作為研究自動推進的
+// 順序:玩數回合累積研究點,便會由低階到高階逐步完成主題、逐步解鎖艦艇設計的進階元件。
+func researchQueue() []gamedata.ResearchTopic {
+	seen := map[gamedata.ResearchTopic]bool{}
+	var q []gamedata.ResearchTopic
+	for _, opts := range [][]Component{WeaponOptions, ArmorOptions, ShieldOptions, SpecialOptions} {
+		for _, c := range opts {
+			if c.Tech != gamedata.TOPIC_STARTING_TECH && !seen[c.Tech] {
+				seen[c.Tech] = true
+				q = append(q, c.Tech)
+			}
+		}
+	}
+	sort.Slice(q, func(i, j int) bool {
+		return gamedata.ResearchChoiceFor(q[i]).Cost < gamedata.ResearchChoiceFor(q[j]).Cost
+	})
+	return q
+}
+
+// advanceResearch 在玩家目前研究主題完成後,把 ResearchTopic 推進到 researchQueue 中下一個
+// 尚未完成的主題(全部完成則維持不變)。這讓「研究→解鎖元件→造艦」的迴圈跨回合持續流動,
+// 而非卡在單一主題。玩家仍可透過研究選擇畫面(SetResearchTopic)手動改變當前主題。
+func (s *GameSession) advanceResearch() {
+	if s.Player.CompletedTopics == nil || !s.Player.CompletedTopics[s.Player.ResearchTopic] {
+		return // 目前主題尚未完成,繼續累積
+	}
+	for _, t := range researchQueue() {
+		if !s.Player.CompletedTopics[t] {
+			s.Player.ResearchTopic = t
+			return
+		}
+	}
 }
 
 // NewDemoSession 建一個最小可玩對局:玩家 2 殖民地 + 1 個科學傾向 AI 對手。
@@ -611,7 +646,7 @@ func NewDemoSession() *GameSession {
 	galaxy := genGalaxy(24, 42) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
 	return &GameSession{
 		Turn:           1,
-		Player:         engine.PlayerState{BC: 100, TaxRate: 40, Maintenance: 5, ResearchTopic: 1},
+		Player:         engine.PlayerState{BC: 100, TaxRate: 40, Maintenance: 5, ResearchTopic: gamedata.TOPIC_ADVANCED_CONSTRUCTION},
 		PlayerColonies: mkColonies(),
 		AIPlayers: []AIOpponent{{
 			Name:     "AI (賽隆人)",
