@@ -190,7 +190,7 @@ type Decider interface {
 
 **`internal/ai` 目前提供的 remake AI 不是、也不試圖精確重現原版 MOO2 的 AI 行為。**
 
-- MOO2 的 AI 決策邏輯與難度加成,官方手冊未公開規則,英語社群多年逆向也公認未破解(詳見 `docs/tech/community-mechanics-findings.md`)。因此本層**沒有任何權威來源可移植**,不同於 `internal/gamedata` 的公式層(可逐條對照手冊與 `openorion2` 原始碼驗證,見 `docs/tech/moo2-formulas-reference.md`)。
+- MOO2 的高階 **AI 決策邏輯**(選目標、戰略取捨)官方未公開、社群也公認未完全破解。但**部分原版 AI 資料實為權威可移植**:官方手冊有「Generic AI bonuses」難度加成表、AIRACES.CFG 有 classic 種族性格分布(見 `docs/tech/original-ai-re.md`)。故 original AI 模式可對難度縮放與性格分布做**忠實還原**,只有高階決策啟發式仍須近似。本 remake 層的決策邏輯(工作/研究/生產/外交啟發式)仍為【設計性重建,非原版】。
 - `docs/tech/design-reconstruction.md` 是這一層的界線總覽文件:明確列出「原版權威資料」與「本專案設計」的分野,並要求每個設計性重建的檔頭與函式註解都標註【設計性重建,非原版】——本文件第 2、4 節的表格即依此原始碼註解整理。
 - **original 模式待 RE**:`ModeOriginal` 目前只是型別上的保留位,`NewDecider` 對它 fallback 回 remake 邏輯並回傳 `ok=false`。要讓 original 模式名副其實,需要先完成原版 AI 的逆向工程研究(目前 `docs/tech/` 尚無對應的 `original-ai-re.md`,屬於待建立的後續工作),再新增 `OriginalDecider` 實作並接上 `NewDecider` 的 `ModeOriginal` 分支。
 - 設計值可調:未來若實機逆向出原版真值(如 AI 性格分布、關係事件的真實調整量),可直接替換 `internal/ai` / `internal/diplomacy` 內的設計值,不影響已驗證的公式層與其餘架構。
