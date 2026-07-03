@@ -292,6 +292,7 @@ type sceneBuilder struct {
 	session     *shell.GameSession // 活的對局狀態(TURN 推進、畫面顯示即時資料)
 	newGameSize int                // NEW GAME 選的星系大小索引(shell.GalaxySizes)
 	newGameDiff int                // NEW GAME 選的難度索引(shell.Difficulties)
+	newGameSeed int                // 每次新遊戲遞增,讓星系種子變化
 }
 
 // menu 建原版主選單畫面。按鈕熱區用 menuOverlays 的座標(按鈕即標籤)。
@@ -695,10 +696,19 @@ func (b *sceneBuilder) diplomacy() (origScreen, error) {
 
 // --- 格子戰術戰鬥畫面(自繪 origScreen:星空底 + 格線 + 雙方艦艇 token + HP 條)---
 
+// 戰場格子:8 欄 × 6 列。
+const (
+	gcX0, gcY0     = 40, 70
+	gcCols, gcRows = 8, 6
+	gcCW, gcCH     = 70, 55
+	fireRange      = 4 // 曼哈頓射程
+)
+
 type tacticalScreen struct {
 	b              *sceneBuilder
 	fnt            *uifont.Font
 	player, enemy  []shell.CombatShip
+	sel            int // 選中的我方艦索引(-1=無)
 	round          int
 	log            string
 	over, won      bool
@@ -707,12 +717,34 @@ type tacticalScreen struct {
 
 func newTacticalScreen(b *sceneBuilder) *tacticalScreen {
 	p, e := b.session.StartCombat("賽隆人")
-	return &tacticalScreen{b: b, fnt: b.fnt, player: p, enemy: e,
-		log: "點擊敵艦 → 我方艦隊聚焦開火", pStart: len(p), eStart: len(e)}
+	return &tacticalScreen{b: b, fnt: b.fnt, player: p, enemy: e, sel: -1,
+		log: "點我方艦選取→點空格移動;點敵艦→射程內我艦開火", pStart: len(p), eStart: len(e)}
 }
 
-func (t *tacticalScreen) enemyRect(i int) (x, y, w, h int)  { return 430, 74 + i*48, 160, 40 }
-func (t *tacticalScreen) playerRect(i int) (x, y, w, h int) { return 48, 74 + i*48, 160, 40 }
+func cellRect(col, row int) (x, y, w, h int) { return gcX0 + col*gcCW, gcY0 + row*gcCH, gcCW, gcCH }
+
+func cellAt(mx, my int) (col, row int, ok bool) {
+	if mx < gcX0 || my < gcY0 || mx >= gcX0+gcCols*gcCW || my >= gcY0+gcRows*gcCH {
+		return 0, 0, false
+	}
+	return (mx - gcX0) / gcCW, (my - gcY0) / gcCH, true
+}
+
+func shipAt(list []shell.CombatShip, col, row int) int {
+	for i, s := range list {
+		if s.Col == col && s.Row == row {
+			return i
+		}
+	}
+	return -1
+}
+
+func abs(n int) int {
+	if n < 0 {
+		return -n
+	}
+	return n
+}
 
 func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 	if !in.ClickReleased {
@@ -726,23 +758,40 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 		t.b.session.ApplyCombatOutcome("賽隆人", t.pStart, t.eStart, survivors, t.won)
 		return t.b.goTo(t.b.battleResult, "戰鬥結果")
 	}
-	for i := range t.enemy { // 點到敵艦 → 開火一回合
-		x, y, w, h := t.enemyRect(i)
-		if in.MouseX >= x && in.MouseX < x+w && in.MouseY >= y && in.MouseY < y+h {
-			t.fireRound(i)
-			break
-		}
+	col, row, ok := cellAt(in.MouseX, in.MouseY)
+	if !ok {
+		return nil
+	}
+	if pi := shipAt(t.player, col, row); pi >= 0 { // 點我方艦 → 選取
+		t.sel = pi
+		return nil
+	}
+	if ei := shipAt(t.enemy, col, row); ei >= 0 { // 點敵艦 → 射程內我艦開火
+		t.fireRound(ei)
+		return nil
+	}
+	if t.sel >= 0 && t.sel < len(t.player) { // 點空格 → 移動選中艦
+		t.player[t.sel].Col, t.player[t.sel].Row = col, row
+		t.log = fmt.Sprintf("%s 移動到 (%d,%d)", t.player[t.sel].Name, col, row)
 	}
 	return nil
 }
 
 func (t *tacticalScreen) fireRound(target int) {
-	t.round++
-	pAtk := 0
-	for _, s := range t.player {
-		pAtk += s.Attack
+	tc, tr := t.enemy[target].Col, t.enemy[target].Row
+	pAtk, firing := 0, 0
+	for _, s := range t.player { // 只有射程內的我艦開火
+		if abs(s.Col-tc)+abs(s.Row-tr) <= fireRange {
+			pAtk += s.Attack
+			firing++
+		}
 	}
-	t.enemy[target].HP -= pAtk // 我方聚焦目標
+	if firing == 0 {
+		t.log = "目標超出射程,移動艦艇靠近再開火"
+		return
+	}
+	t.round++
+	t.enemy[target].HP -= pAtk
 	alive := t.enemy[:0]
 	for _, s := range t.enemy {
 		if s.HP > 0 {
@@ -770,7 +819,10 @@ func (t *tacticalScreen) fireRound(target int) {
 		}
 	}
 	t.player = palive
-	t.log = fmt.Sprintf("第 %d 回合:我方齊射 %d ／ 敵方還擊 %d", t.round, pAtk, eAtk)
+	if t.sel >= len(t.player) {
+		t.sel = -1
+	}
+	t.log = fmt.Sprintf("第 %d 回合:%d 艦齊射 %d ／ 敵方還擊 %d", t.round, firing, pAtk, eAtk)
 	if len(t.enemy) == 0 {
 		t.over, t.won, t.log = true, true, "★ 敵艦隊全滅,勝利!點擊繼續"
 	} else if len(t.player) == 0 {
@@ -778,48 +830,50 @@ func (t *tacticalScreen) fireRound(target int) {
 	}
 }
 
-func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, x, y, w, h int, base color.RGBA) {
+func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base color.RGBA, selected bool) {
+	x, y, w, h := cellRect(s.Col, s.Row)
+	x, y, w, h = x+4, y+6, w-8, h-12
 	vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{base.R / 3, base.G / 3, base.B / 3, 255}, false)
-	vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, base, false)
-	if t.fnt != nil {
-		t.fnt.Draw(dst, s.Name, float64(x)+6, float64(y)+14, 12, color.RGBA{230, 235, 245, 255})
+	sw := float32(1.5)
+	sc := base
+	if selected {
+		sw, sc = 3, color.RGBA{255, 240, 120, 255}
 	}
-	// HP 條
+	vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), sw, sc, false)
+	if t.fnt != nil {
+		t.fnt.Draw(dst, s.Name, float64(x)+5, float64(y)+13, 11, color.RGBA{230, 235, 245, 255})
+	}
 	frac := float32(s.HP) / float32(s.MaxHP)
 	if frac < 0 {
 		frac = 0
 	}
-	vector.DrawFilledRect(dst, float32(x)+6, float32(y)+float32(h)-10, float32(w-12), 5, color.RGBA{40, 40, 40, 255}, false)
-	vector.DrawFilledRect(dst, float32(x)+6, float32(y)+float32(h)-10, (float32(w-12))*frac, 5, base, false)
+	vector.DrawFilledRect(dst, float32(x)+5, float32(y)+float32(h)-8, float32(w-10), 4, color.RGBA{40, 40, 40, 255}, false)
+	vector.DrawFilledRect(dst, float32(x)+5, float32(y)+float32(h)-8, (float32(w-10))*frac, 4, base, false)
 }
 
 func (t *tacticalScreen) draw(dst *ebiten.Image) {
 	dst.Fill(color.RGBA{6, 6, 16, 255})
 	grid := color.RGBA{28, 38, 66, 255}
-	for gx := 0; gx <= 8; gx++ {
-		x := float32(40 + gx*70)
-		vector.StrokeLine(dst, x, 66, x, 408, 1, grid, false)
+	for gx := 0; gx <= gcCols; gx++ {
+		x := float32(gcX0 + gx*gcCW)
+		vector.StrokeLine(dst, x, gcY0, x, float32(gcY0+gcRows*gcCH), 1, grid, false)
 	}
-	for gy := 0; gy <= 6; gy++ {
-		y := float32(66 + gy*57)
-		vector.StrokeLine(dst, 40, y, 600, y, 1, grid, false)
+	for gy := 0; gy <= gcRows; gy++ {
+		y := float32(gcY0 + gy*gcCH)
+		vector.StrokeLine(dst, gcX0, y, float32(gcX0+gcCols*gcCW), y, 1, grid, false)
 	}
 	gold := color.RGBA{240, 220, 120, 255}
 	if t.fnt != nil {
 		t.fnt.DrawCentered(dst, "戰術戰鬥", 320, 34, 20, gold)
-		t.fnt.DrawCentered(dst, "我方", 128, 60, 13, color.RGBA{120, 220, 180, 255})
-		t.fnt.DrawCentered(dst, "賽隆人", 510, 60, 13, color.RGBA{235, 110, 100, 255})
 	}
 	for i, s := range t.player {
-		x, y, w, h := t.playerRect(i)
-		t.drawShip(dst, s, x, y, w, h, color.RGBA{90, 220, 170, 255})
+		t.drawShip(dst, s, color.RGBA{90, 220, 170, 255}, i == t.sel)
 	}
-	for i, s := range t.enemy {
-		x, y, w, h := t.enemyRect(i)
-		t.drawShip(dst, s, x, y, w, h, color.RGBA{235, 110, 100, 255})
+	for _, s := range t.enemy {
+		t.drawShip(dst, s, color.RGBA{235, 110, 100, 255}, false)
 	}
 	if t.fnt != nil {
-		t.fnt.DrawCentered(dst, t.log, 320, 440, 15, color.RGBA{214, 220, 235, 255})
+		t.fnt.DrawCentered(dst, t.log, 320, 452, 14, color.RGBA{214, 220, 235, 255})
 	}
 }
 
@@ -923,7 +977,8 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 		case "accept":
 			if b.session != nil {
 				b.session.Difficulty = b.newGameDiff
-				b.session.RegenGalaxy(shell.GalaxySizes[b.newGameSize].Stars, 42) // 依選定大小生成星系
+				b.newGameSeed++
+				b.session.RegenGalaxy(shell.GalaxySizes[b.newGameSize].Stars, int64(b.newGameSeed*7919+42)) // 每次新遊戲不同種子
 			}
 			return b.goTo(b.galaxy, "星系主畫面")
 		}

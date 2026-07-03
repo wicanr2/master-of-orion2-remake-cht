@@ -191,25 +191,27 @@ func (s *GameSession) DiplomacyResponse(action, enemy string) string {
 	return ""
 }
 
-// CombatShip 是格子戰術戰鬥中的一艘艦(有 HP)。
+// CombatShip 是格子戰術戰鬥中的一艘艦(有 HP + 格位)。
 type CombatShip struct {
 	Name      string
 	HP, MaxHP int
 	Attack    int
+	Col, Row  int // 格位(8 欄 × 6 列)
 }
 
-// StartCombat 依玩家艦隊 + 難度生成敵方,建立格子戰鬥雙方艦艇(HP=戰力×3、攻擊=戰力)。
+// StartCombat 依玩家艦隊 + 難度生成敵方,建立格子戰鬥雙方艦艇(HP=戰力×3、攻擊=戰力);
+// 玩家艦置左欄、敵方置右欄,依序排列。
 func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip) {
-	for _, sh := range s.Ships {
+	for i, sh := range s.Ships {
 		st := shipStrength(sh.Class)
-		player = append(player, CombatShip{Name: sh.Name, HP: st * 3, MaxHP: st * 3, Attack: st})
+		player = append(player, CombatShip{Name: sh.Name, HP: st * 3, MaxHP: st * 3, Attack: st, Col: 1, Row: i})
 	}
 	mult := 1.0
 	if s.Difficulty >= 0 && s.Difficulty < len(Difficulties) {
 		mult = Difficulties[s.Difficulty].Mult
 	}
 	for i, st := range genEnemyFleet(s.Turn, mult) {
-		enemyShips = append(enemyShips, CombatShip{Name: fmt.Sprintf("%s艦%d", enemy, i+1), HP: st * 3, MaxHP: st * 3, Attack: st})
+		enemyShips = append(enemyShips, CombatShip{Name: fmt.Sprintf("%s艦%d", enemy, i+1), HP: st * 3, MaxHP: st * 3, Attack: st, Col: 6, Row: i})
 	}
 	return
 }
