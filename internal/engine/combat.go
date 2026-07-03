@@ -57,3 +57,56 @@ func ResolveBeamShot(atk BeamAttacker, tgt BeamTarget, toHitRoll, dmgRoll int) B
 		DamageToStructure: toStructure,
 	}
 }
+
+// ShipCombatState 是戰鬥中一艘艦的可變狀態(裝甲/結構會被逐發削減)。
+type ShipCombatState struct {
+	StructureHP     int  // 結構點(歸零即摧毀)
+	ArmorHP         int  // 裝甲點(先於結構被消耗)
+	ShieldReduction int  // 護盾每次攻擊減傷(級別評等;本模型不衰減容量,採每擊固定減傷)
+	HardShield      bool // Hard Shields
+	BeamDefense     int  // 閃避(BD)
+	Destroyed       bool
+}
+
+// ApplyBeamShot 對 ship 施加一發光束攻擊:呼叫 ResolveBeamShot 取傷害分配,削減 ship 的
+// 裝甲/結構,結構歸零則標記 Destroyed。回傳該發解算結果。已摧毀的艦不再受擊(回 Hit=false)。
+func ApplyBeamShot(atk BeamAttacker, ship *ShipCombatState, toHitRoll, dmgRoll int) BeamShotResult {
+	if ship.Destroyed {
+		return BeamShotResult{Hit: false}
+	}
+	tgt := BeamTarget{
+		BeamDefense:     ship.BeamDefense,
+		ShieldReduction: ship.ShieldReduction,
+		HardShield:      ship.HardShield,
+		ArmorHP:         ship.ArmorHP,
+	}
+	res := ResolveBeamShot(atk, tgt, toHitRoll, dmgRoll)
+	if res.Hit {
+		ship.ArmorHP -= res.DamageToArmor
+		if ship.ArmorHP < 0 {
+			ship.ArmorHP = 0
+		}
+		ship.StructureHP -= res.DamageToStructure
+		if ship.StructureHP <= 0 {
+			ship.StructureHP = 0
+			ship.Destroyed = true
+		}
+	}
+	return res
+}
+
+// ResolveVolley 讓開火方對同一目標連發 len(rolls) 發(每發一組 toHit/dmg 擲骰),
+// 逐發套用並累積削減。回傳實際命中發數與是否擊毀目標。
+// rolls 每列 [2]int{toHitRoll, dmgRoll};以外部注入 RNG 保持可重現。
+func ResolveVolley(atk BeamAttacker, ship *ShipCombatState, rolls [][2]int) (hits int, destroyed bool) {
+	for _, r := range rolls {
+		res := ApplyBeamShot(atk, ship, r[0], r[1])
+		if res.Hit {
+			hits++
+		}
+		if ship.Destroyed {
+			break // 已摧毀,停止
+		}
+	}
+	return hits, ship.Destroyed
+}
