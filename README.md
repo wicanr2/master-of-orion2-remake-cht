@@ -14,6 +14,19 @@
 
 ---
 
+## 這個專案做到了什麼
+
+1996 年的 4X 太空策略經典，用 Go 重寫、做到考據等級的繁體中文化。**不是套翻譯外掛，是從資料層到遊戲邏輯逐塊重建。**
+
+- **完整繁體中文化**：逆向原版 **707 條百科全文**、**770 條外交對白**，總共 **3604 條訊息** 全數中文化，涵蓋 22 個字串來源、零漏源。
+- **遊戲公式考據還原**：對照官方手冊與 openorion2，逐條移植殖民成長、光束命中與傷害、飛彈、間諜、地面戰、士氣、收入等公式，**每條都有手算對照的單元測試**（191 個測試全綠）。過程中還抓到手冊自己的筆誤（AMR 命中率、飛彈速度）並擋掉搜尋引擎生成的假數字。
+- **自製回合引擎 + AI**：殖民經濟／研究／國庫的回合結算、單發戰鬥解算；AI 兩種模式並存架構 —— **remake**（設計性重建）與 **original**（連原版沒公開的 AI 難度加成表都從官方 patch 手冊挖出來移植）。
+- **忠實與誠實並重**：原版素材（圖／音樂／音效）一律不打包，玩家自備正版；沒有權威來源的機制明確標「設計性重建，非原版」，絕不臆造冒充原版行為。
+
+> **下載（alpha）**：[Releases](https://github.com/wicanr2/master-of-orion2-remake-cht/releases) 有 Linux（AppImage）與 Windows 版。目前是**畫面檢視器 + 引擎 + 完整中文化**可跑的階段，完整可玩（主迴圈／滑鼠鍵盤／音訊）仍在開發。需以 `-data` 指向你合法持有的 MOO2 遊戲資料。
+
+---
+
 ## 目前進度
 
 專案分階段推進(詳見 [`PLAN.md`](PLAN.md) / [`WORKLIST.md`](WORKLIST.md))。已完成:
@@ -52,8 +65,16 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
 
 原版各畫面的英文原貌已收錄為對照基準(見 [`docs/reference-screens.md`](docs/reference-screens.md)),供中文化 before/after 展示;各畫面的英文 UI 也是翻譯清單來源。
 
-### ⏭ 進行中 / 下一步
-`Screen` 介面抽象、滑鼠/鍵盤事件、資產快取;文字系統(CJK supersample)與主選單版本/語言切換;星圖換上真實 sprite 美術。
+### ✅ Phase 3+ — 中文化、遊戲邏輯、回合引擎、AI
+
+- **完整中文化**:3604 條訊息、21 份 TSV 譯表(英文原文為 key 的顯示層覆蓋,不動資料層);6 個中文畫面檢視器(百科／科技總覽／種族統計／殖民地摘要／外交關係)。
+- **遊戲邏輯層** `internal/gamedata`(14 模組):殖民成長、生產污染、研究樹(83 主題×8 領域)、軍官、艦艇衍生值、光束命中＋傷害、飛彈防禦、間諜、地面戰、士氣、收入、地形改造 —— 全對權威來源逐條驗證(見 [`docs/tech/moo2-formulas-reference.md`](docs/tech/moo2-formulas-reference.md))。
+- **回合引擎** `internal/engine`:殖民經濟→研究→國庫的帝國回合、頂層 `RunGameTurn`、單發戰鬥解算、勝利條件、save↔engine adapter;headless 回合模擬器 `cmd/moo2sim`。
+- **AI／外交(設計性重建 + 原版資料)** `internal/ai`、`internal/diplomacy`:AI 經濟／研究／生產／外交決策、17 級外交關係狀態機;`Decider` 介面支援 remake／original 兩模式(見 [`docs/tech/design-reconstruction.md`](docs/tech/design-reconstruction.md)、[`docs/tech/original-ai-re.md`](docs/tech/original-ai-re.md))。
+- **打包**:Linux AppImage／Windows(純 Go)本機 docker 腳本 + macOS/Linux/Windows 的 GitHub Actions workflow(見 [`docs/tech/packaging.md`](docs/tech/packaging.md))。
+
+### ⏭ 下一步
+完整可玩的遊戲殼:滑鼠/鍵盤輸入、主迴圈、主選單版本/語言/AI 模式選擇、真實遊戲畫面疊字;音訊播放(音樂已確認為 `STREAM.LBX` 的 PCM,見 [`docs/tech/music-integration.md`](docs/tech/music-integration.md));基礎數值表(武器/裝甲,在 `Orion2.exe`,待逆向)。
 
 ---
 
