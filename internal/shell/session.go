@@ -9,16 +9,21 @@ import (
 	"sort"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/diplomacy"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
 // AIOpponent 是一個由 AI 操控的對手帝國。
 type AIOpponent struct {
-	Name     string
-	Player   engine.PlayerState
-	Colonies []engine.ColonyState
-	Decider  ai.Decider
+	Name          string
+	Player        engine.PlayerState
+	Colonies      []engine.ColonyState
+	Decider       ai.Decider
+	FleetStrength int    // 累積軍力(每回合由淨工業投資,好戰性格投更多)
+	Relation      int    // 對玩家的外交關係分數(驅動 17 級 RelationLevel 與態勢)
+	StanceName    string // 目前對玩家態勢(中文;由 ai.DecideStance 推得)
+	OwnedStars    int    // 已擴張佔領的星數(含母星)
 }
 
 // Star 是星系圖上的一顆星(供星圖渲染;正規化座標 0..1)。
@@ -848,14 +853,15 @@ func (s *GameSession) EndTurn() {
 	for i := range s.AIPlayers {
 		out := engine.RunAIEmpireTurn(s.AIPlayers[i].Player, s.AIPlayers[i].Colonies, s.AIPlayers[i].Decider)
 		s.AIPlayers[i].Player = out.Player
+		s.advanceAI(i, out) // AI 主動行為:造艦 / 擴張 / 外交態勢
 	}
-	s.advanceBuilds()      // 以本回合淨工業推進各殖民地建造
-	s.advanceResearch()    // 目前研究主題完成則自動推進到下一個未完成的元件解鎖主題
-	s.advanceFleet()       // 推進艦隊星間航行(ETA 遞減,抵達則標記探索)
-	s.advancePopulation()  // 累積各殖民地成長,達門檻則 +1 人口(回寫 Population)
-	s.advanceEvents()      // 觸發 MOO2 風格隨機事件(繁榮/瘟疫/海盜…),記於 LastEvent
+	s.advanceBuilds()     // 以本回合淨工業推進各殖民地建造
+	s.advanceResearch()   // 目前研究主題完成則自動推進到下一個未完成的元件解鎖主題
+	s.advanceFleet()      // 推進艦隊星間航行(ETA 遞減,抵達則標記探索)
+	s.advancePopulation() // 累積各殖民地成長,達門檻則 +1 人口(回寫 Population)
+	s.advanceEvents()     // 觸發 MOO2 風格隨機事件(繁榮/瘟疫/海盜…),記於 LastEvent
 	s.Turn++
-	s.advanceAntares()     // 安塔蘭人週期性入侵(依 Turn 排程升級),記於 LastAntares
+	s.advanceAntares() // 安塔蘭人週期性入侵(依 Turn 排程升級),記於 LastAntares
 }
 
 // popGrowthThreshold 是「成長累加值 → +1 人口單位」的門檻。MOO2 手冊(MANUAL_150.html p111
@@ -882,6 +888,84 @@ func (s *GameSession) advancePopulation() {
 			s.popAccum[i] -= popGrowthThreshold
 			s.PlayerColonies[i].Population++
 			s.PlayerColonies[i].Workers++ // 新人口預設分配為工人
+		}
+	}
+}
+
+// aiProfile 取出 AI 對手的性格(從 RemakeDecider);非該型別則回平衡型。
+func aiProfile(a AIOpponent) ai.Profile {
+	if rd, ok := a.Decider.(*ai.RemakeDecider); ok {
+		return rd.Profile
+	}
+	return ai.ProfileBalanced
+}
+
+// playerMilitary 回傳玩家目前艦隊總戰力(供 AI 態勢比較)。
+func (s *GameSession) playerMilitary() int {
+	m := 0
+	for _, sh := range s.Ships {
+		m += shipStrength(sh.Class)
+	}
+	return m
+}
+
+// advanceAI 推進第 i 個 AI 對手的主動行為(每回合,經濟結算後):
+//  1. 造艦:把部分淨工業投入軍力(好戰性格投更多),FleetStrength 累積。
+//  2. 擴張:每隔數回合佔領一顆無主星(Owner=2,OwnedStars++)。
+//  3. 外交態勢:依「AI 軍力 vs 玩家軍力 + 難度」漂移對玩家關係分數,經 ai.DecideStance
+//     推得態勢(戰爭/敵視/中立/提議貿易/提議結盟),存中文 StanceName。
+func (s *GameSession) advanceAI(i int, out engine.EmpireOutput) {
+	a := &s.AIPlayers[i]
+	prof := aiProfile(*a)
+
+	// 1) 造艦:好戰(工業權重高)投資比例較高。
+	invest := 4 // 分母越小投資越多
+	if prof.IndustryWeight > prof.ResearchWeight {
+		invest = 2
+	}
+	if out.TotalNetIndustry > 0 {
+		a.FleetStrength += out.TotalNetIndustry / invest
+	}
+
+	// 2) 擴張:每 5 回合佔一顆最靠近既有版圖的無主星。
+	if s.Turn%5 == 0 {
+		s.aiExpand(i)
+	}
+
+	// 3) 外交態勢:AI 越強、難度越高,對玩家越敵對。
+	diff := 1.0
+	if s.Difficulty >= 0 && s.Difficulty < len(Difficulties) {
+		diff = Difficulties[s.Difficulty].Mult
+	}
+	pm := s.playerMilitary()
+	strengthGap := a.FleetStrength - pm // AI 領先越多越敢敵對
+	a.Relation -= int(float64(strengthGap)/20*diff) + 0
+	if a.Relation > 40 {
+		a.Relation = 40
+	}
+	if a.Relation < -40 {
+		a.Relation = -40
+	}
+	stance := ai.DecideStance(diplomacy.RelationLevelForScore(a.Relation), prof)
+	a.StanceName = stanceNames[stance]
+}
+
+// stanceNames 是 ai.Stance 的中文顯示。
+var stanceNames = map[ai.Stance]string{
+	ai.StanceWar:             "宣戰",
+	ai.StanceHostile:         "敵視",
+	ai.StanceNeutral:         "中立",
+	ai.StanceProposeTrade:    "提議貿易",
+	ai.StanceProposeAlliance: "提議結盟",
+}
+
+// aiExpand 讓第 i 個 AI 佔領一顆無主星(標 Owner=2),OwnedStars++。找不到無主星則不動作。
+func (s *GameSession) aiExpand(i int) {
+	for idx := range s.Stars {
+		if s.Stars[idx].Owner == 0 {
+			s.Stars[idx].Owner = 2
+			s.AIPlayers[i].OwnedStars++
+			return
 		}
 	}
 }
@@ -945,10 +1029,10 @@ func NewDemoSession() *GameSession {
 			Colonies: mkColonies(),
 			Decider:  ai.NewRemakeDecider(ai.ProfileScientific),
 		}},
-		Stars:        galaxy,
-		Planets:      genPlanets(galaxy),
-		Leaders:      demoLeaders(),
-		Ships:        demoShips(),
+		Stars:         galaxy,
+		Planets:       genPlanets(galaxy),
+		Leaders:       demoLeaders(),
+		Ships:         demoShips(),
 		Builds:        make([]ColonyBuild, 2),
 		SelectedStar:  -1,
 		FleetAtStar:   0,  // 母星

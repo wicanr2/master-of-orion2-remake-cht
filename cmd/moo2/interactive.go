@@ -679,8 +679,25 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 		{438, 442, 90, 18, "IGNORE", 11},
 		{536, 432, 82, 22, "RETURN", 0},
 	}
-	return loadOverlayScreen(b.res, "races.lbx", 0, b.lang, b.fnt, "assets/i18n/diplo.tsv",
+	s, err := loadOverlayScreen(b.res, "races.lbx", 0, b.lang, b.fnt, "assets/i18n/diplo.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction, nil)
+	if err != nil {
+		return nil, err
+	}
+	// AI 對手即時狀態(名/態勢/軍力/佔星),讓 AI 主動行為可見。
+	if b.session != nil && b.fnt != nil {
+		gold := color.RGBA{240, 220, 120, 255}
+		body := color.RGBA{210, 216, 230, 255}
+		y := 70.0
+		for _, a := range b.session.AIPlayers {
+			s.extras = append(s.extras,
+				extraText{x: 40, y: y, size: 15, text: a.Name, col: gold},
+				extraText{x: 40, y: y + 22, size: 12, text: fmt.Sprintf("態勢:%s ／ 軍力 %d ／ 佔領 %d 星", a.StanceName, a.FleetStrength, a.OwnedStars), col: body},
+			)
+			y += 56
+		}
+	}
+	return s, nil
 }
 
 // --- 外交對談畫面(自繪 origScreen;原版 DIPLOMAT#29 LBX 解碼損壞,改自繪功能面板)---
