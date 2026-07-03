@@ -571,9 +571,25 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 	return s, nil
 }
 
-// shipDesign 建原版艦艇設計畫面(DESIGN.LBX 資產 0,調色盤鏈 buffer0#0)。點畫面返回艦隊。
+// shipDesign 建原版艦艇設計畫面(DESIGN.LBX 資產 0,調色盤鏈 buffer0#0)。
+// 點艦體等級 → 建造該艦加入艦隊 → 回艦隊;點他處 → 返回艦隊。
 func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
-	hits, onAction := b.backHit(b.fleet, "艦隊列表")
+	hullZH := map[string]string{
+		"Frigate": "巡防艦", "Destroyer": "驅逐艦", "Cruiser": "巡洋艦",
+		"Battleship": "戰艦", "Titan": "泰坦", "Doom Star": "末日之星",
+	}
+	hits := []hitRegion{
+		{125, 50, 118, 16, "Frigate"}, {125, 67, 118, 16, "Destroyer"},
+		{125, 84, 118, 16, "Cruiser"}, {125, 101, 118, 16, "Battleship"},
+		{125, 118, 118, 16, "Titan"}, {125, 135, 118, 16, "Doom Star"},
+		{0, 0, moo2ScreenW, moo2ScreenH, "back"},
+	}
+	onAction := func(a string) *origTransition {
+		if zh, ok := hullZH[a]; ok && b.session != nil {
+			b.session.BuildShip(zh) // 造艦加入艦隊
+		}
+		return b.goTo(b.fleet, "艦隊列表")
+	}
 	overlays := []labelRect{
 		{255, 12, 320, 24, "Ship Design", 0},
 		{130, 52, 105, 16, "Frigate", 12},

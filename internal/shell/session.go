@@ -40,6 +40,15 @@ func demoShips() []Ship {
 	}
 }
 
+// shipNamePool 供新造艦命名(依序循環)。
+var shipNamePool = []string{"先鋒號", "勝利號", "無畏號", "蒼穹號", "星辰號", "破曉號", "遠征號", "不朽號", "疾風號", "曙光號"}
+
+// BuildShip 造一艘指定艦體等級的艦(名稱依序取自名稱池),加入艦隊。
+func (s *GameSession) BuildShip(class string) {
+	name := shipNamePool[len(s.Ships)%len(shipNamePool)]
+	s.Ships = append(s.Ships, Ship{Name: name, Class: class})
+}
+
 // Leader 是一名可雇用的軍官/領袖(供軍官列表)。
 type Leader struct {
 	Name  string
