@@ -49,16 +49,19 @@ type Component struct {
 // 元件清單(名稱取自 MOO2 真實科技譯名 tech.tsv;成本/效果依 MOO2 遞進,各標解鎖科技)。
 // 涵蓋完整武器/裝甲/護盾/特殊進程,進階元件需先研究對應主題。
 var (
+	// Value = 單裝武器最大傷害。標 ✓ 者取自 patch 1.5 官方文件(MANUAL_150.html)確認值:
+	// 中子爆破槍 12、高斯砲 18、電漿砲 20(1.50;1.31 為 30,版本相依)。其餘為依科技階遞增
+	// 的單調估計,精確值待掃描版手冊武器附錄 OCR 交叉核對。詳見 docs/tech/component-values.md。
 	WeaponOptions = []Component{
-		{"無武裝", 0, 0, 0}, {"雷射", 20, 2, 0}, {"核飛彈", 30, 3, 0},
-		{"質量投射器", 40, 4, gamedata.TOPIC_ADVANCED_MAGNETISM},
-		{"中子爆破槍", 60, 5, gamedata.TOPIC_ADVANCED_CHEMISTRY},
-		{"核融合光束", 80, 6, gamedata.TOPIC_ADVANCED_FUSION},
-		{"麥克萊特飛彈", 90, 7, gamedata.TOPIC_ADVANCED_CHEMISTRY},
-		{"高斯砲", 120, 8, gamedata.TOPIC_ADVANCED_MANUFACTURING},
-		{"相位砲", 160, 10, gamedata.TOPIC_ANTIMATTER_FISSION},
-		{"電漿砲", 200, 12, gamedata.TOPIC_ARTIFICIAL_GRAVITY},
-		{"死光", 300, 16, gamedata.TOPIC_ARTIFICIAL_LIFE},
+		{"無武裝", 0, 0, 0}, {"雷射", 20, 4, 0}, {"核飛彈", 30, 6, 0},
+		{"質量投射器", 40, 8, gamedata.TOPIC_ADVANCED_MAGNETISM},
+		{"中子爆破槍", 60, 12, gamedata.TOPIC_ADVANCED_CHEMISTRY}, // ✓
+		{"核融合光束", 80, 16, gamedata.TOPIC_ADVANCED_FUSION},
+		{"麥克萊特飛彈", 90, 17, gamedata.TOPIC_ADVANCED_CHEMISTRY},
+		{"高斯砲", 120, 18, gamedata.TOPIC_ADVANCED_MANUFACTURING}, // ✓ 戰鬥最大
+		{"相位砲", 160, 19, gamedata.TOPIC_ANTIMATTER_FISSION},
+		{"電漿砲", 200, 20, gamedata.TOPIC_ARTIFICIAL_GRAVITY}, // ✓ 1.50(1.31=30)
+		{"死光", 300, 25, gamedata.TOPIC_ARTIFICIAL_LIFE},
 	}
 	ArmorOptions = []Component{
 		{"無裝甲", 0, 0, 0}, {"鈦裝甲", 30, 10, 0},
