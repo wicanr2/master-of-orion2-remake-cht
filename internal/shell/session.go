@@ -46,22 +46,43 @@ type Component struct {
 	Tech  gamedata.ResearchTopic // 解鎖所需研究主題(0=起始科技,一開始就有)
 }
 
-// 元件清單(對齊 MOO2:武器/裝甲/護盾/特殊,各含成本、效果、解鎖科技)。進階元件需先研究對應科技。
+// 元件清單(名稱取自 MOO2 真實科技譯名 tech.tsv;成本/效果依 MOO2 遞進,各標解鎖科技)。
+// 涵蓋完整武器/裝甲/護盾/特殊進程,進階元件需先研究對應主題。
 var (
-	WeaponOptions = []Component{{"無武裝", 0, 0, 0}, {"雷射", 20, 2, 0},
-		{"質量投射器", 40, 4, gamedata.TOPIC_ADVANCED_MAGNETISM}, {"核飛彈", 60, 6, 0},
-		{"離子砲", 100, 8, gamedata.TOPIC_ADVANCED_FUSION}}
-	ArmorOptions = []Component{{"無裝甲", 0, 0, 0}, {"鈦裝甲", 30, 10, 0},
-		{"三鈦裝甲", 60, 25, gamedata.TOPIC_ADVANCED_METALLURGY},
-		{"天龍鱗甲", 120, 50, gamedata.TOPIC_ADVANCED_CONSTRUCTION}}
-	ShieldOptions = []Component{{"無護盾", 0, 0, 0},
-		{"I 級護盾", 40, 15, gamedata.TOPIC_ADVANCED_MAGNETISM},
-		{"II 級護盾", 80, 35, gamedata.TOPIC_ARTIFICIAL_GRAVITY},
-		{"III 級護盾", 150, 60, gamedata.TOPIC_ADVANCED_MANUFACTURING}}
-	SpecialOptions = []Component{{"無", 0, 0, 0},
+	WeaponOptions = []Component{
+		{"無武裝", 0, 0, 0}, {"雷射", 20, 2, 0}, {"核飛彈", 30, 3, 0},
+		{"質量投射器", 40, 4, gamedata.TOPIC_ADVANCED_MAGNETISM},
+		{"中子爆破槍", 60, 5, gamedata.TOPIC_ADVANCED_CHEMISTRY},
+		{"核融合光束", 80, 6, gamedata.TOPIC_ADVANCED_FUSION},
+		{"麥克萊特飛彈", 90, 7, gamedata.TOPIC_ADVANCED_CHEMISTRY},
+		{"高斯砲", 120, 8, gamedata.TOPIC_ADVANCED_MANUFACTURING},
+		{"相位砲", 160, 10, gamedata.TOPIC_ANTIMATTER_FISSION},
+		{"電漿砲", 200, 12, gamedata.TOPIC_ARTIFICIAL_GRAVITY},
+		{"死光", 300, 16, gamedata.TOPIC_ARTIFICIAL_LIFE},
+	}
+	ArmorOptions = []Component{
+		{"無裝甲", 0, 0, 0}, {"鈦裝甲", 30, 10, 0},
+		{"三鈦裝甲", 60, 20, gamedata.TOPIC_ADVANCED_METALLURGY},
+		{"佐特裝甲", 100, 35, gamedata.TOPIC_ADVANCED_CONSTRUCTION},
+		{"中子素裝甲", 160, 55, gamedata.TOPIC_ANTIMATTER_FISSION},
+		{"精金裝甲", 240, 80, gamedata.TOPIC_ARTIFICIAL_GRAVITY},
+		{"氙素裝甲", 350, 120, gamedata.TOPIC_ARTIFICIAL_LIFE},
+	}
+	ShieldOptions = []Component{
+		{"無護盾", 0, 0, 0},
+		{"第一級護盾", 40, 15, gamedata.TOPIC_ADVANCED_MAGNETISM},
+		{"第三級護盾", 90, 35, gamedata.TOPIC_ARTIFICIAL_GRAVITY},
+		{"第五級護盾", 150, 60, gamedata.TOPIC_ADVANCED_MANUFACTURING},
+		{"第七級護盾", 230, 90, gamedata.TOPIC_ANTIMATTER_FISSION},
+		{"第十級護盾", 350, 140, gamedata.TOPIC_ARTIFICIAL_LIFE},
+	}
+	SpecialOptions = []Component{
+		{"無", 0, 0, 0},
 		{"戰鬥電腦", 80, 3, gamedata.TOPIC_ARTIFICIAL_INTELLIGENCE},
 		{"自動修復", 60, 0, gamedata.TOPIC_ADVANCED_ROBOTICS},
-		{"隱形裝置", 100, 0, gamedata.TOPIC_ARTIFICIAL_CONSCIOUSNESS}}
+		{"隱形裝置", 100, 0, gamedata.TOPIC_ARTIFICIAL_CONSCIOUSNESS},
+		{"重生程序", 150, 0, gamedata.TOPIC_ARTIFICIAL_LIFE},
+	}
 )
 
 // ComponentUnlocked 回傳某元件是否已解鎖(起始科技一律解鎖,否則需已完成對應研究)。
