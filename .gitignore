@@ -23,6 +23,9 @@ game_data/
 *.out
 vendor/
 
+# 打包產物(AppImage/zip/dmg 等,見 scripts/package-*.sh + docs/tech/packaging.md)
+/dist/
+
 # ── 一般雜項 ────────────────────────────────────────────
 .DS_Store
 *.log

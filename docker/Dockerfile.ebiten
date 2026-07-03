@@ -1,4 +1,5 @@
 # ebiten build/run 環境:CGO + X11/OpenGL dev libs + xvfb + 軟體 mesa(headless 截圖用)。
+# 另含 file/desktop-file-utils(AppImage 打包用,見 scripts/package-appimage.sh)。
 # 建置:docker build -t moo2-ebiten -f docker/Dockerfile.ebiten .
 FROM golang:1.25-bookworm
 
@@ -6,6 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc pkg-config \
     libgl1-mesa-dev libxrandr-dev libxcursor-dev libxinerama-dev libxi-dev libxxf86vm-dev \
     xvfb xauth libgl1-mesa-dri mesa-utils \
+    file desktop-file-utils ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
 ENV CGO_ENABLED=1 \
