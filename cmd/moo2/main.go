@@ -89,6 +89,7 @@ func main() {
 	infoTech := flag.String("info-tech", "Achilles Targeting Unit", "科技總覽右欄範例科技(英文標題)")
 	raceMode := flag.Bool("race-viewer", false, "種族統計畫面模式")
 	colonyMode := flag.Bool("colony-viewer", false, "殖民地摘要畫面模式")
+	diploMode := flag.Bool("diplo-viewer", false, "外交關係畫面模式")
 	tsvPath := flag.String("tsv", "", "譯表 TSV(留空用該畫面預設)")
 	lang := flag.String("lang", "zh", "語言:zh(繁中)或 en(英文)")
 	flag.Parse()
@@ -203,6 +204,22 @@ func main() {
 			fatal(fmt.Errorf("載入譯表: %w", err))
 		}
 		if err := runColonyView(langID, fnt, reg, *shot, *frames); err != nil {
+			fatal(err)
+		}
+		return
+	}
+
+	// 外交關係模式:多來源(estrings 種族名 + misc 關係等級/條約狀態),不需遊戲資料。
+	if *diploMode {
+		fnt, err := loadFont(*fontPath)
+		if err != nil {
+			fatal(fmt.Errorf("載入字型: %w", err))
+		}
+		reg := i18n.NewRegistry(langID)
+		if _, err := reg.LoadFS(os.DirFS("assets/i18n"), "."); err != nil {
+			fatal(fmt.Errorf("載入譯表: %w", err))
+		}
+		if err := runDiploView(langID, fnt, reg, *shot, *frames); err != nil {
 			fatal(err)
 		}
 		return
