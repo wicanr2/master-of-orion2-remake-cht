@@ -571,10 +571,12 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 		case "audience":
 			return b.goTo(b.council, "銀河議會")
 		case "declarewar":
-			if b.session != nil {
-				b.session.ResolveBattle("賽隆人")
+			sc, err := b.tacticalCombat() // 進格子戰術戰鬥
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "進入戰鬥:", err)
+				return nil
 			}
-			return b.goTo(b.battleResult, "戰鬥結果")
+			return &origTransition{next: sc}
 		}
 		return b.goTo(b.galaxy, "星系主畫面")
 	}
@@ -590,6 +592,144 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 	}
 	return loadOverlayScreen(b.res, "races.lbx", 0, b.lang, b.fnt, "assets/i18n/diplo.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction, nil)
+}
+
+// --- 格子戰術戰鬥畫面(自繪 origScreen:星空底 + 格線 + 雙方艦艇 token + HP 條)---
+
+type tacticalScreen struct {
+	b              *sceneBuilder
+	fnt            *uifont.Font
+	player, enemy  []shell.CombatShip
+	round          int
+	log            string
+	over, won      bool
+	pStart, eStart int
+}
+
+func newTacticalScreen(b *sceneBuilder) *tacticalScreen {
+	p, e := b.session.StartCombat("賽隆人")
+	return &tacticalScreen{b: b, fnt: b.fnt, player: p, enemy: e,
+		log: "點擊敵艦 → 我方艦隊聚焦開火", pStart: len(p), eStart: len(e)}
+}
+
+func (t *tacticalScreen) enemyRect(i int) (x, y, w, h int)  { return 430, 74 + i*48, 160, 40 }
+func (t *tacticalScreen) playerRect(i int) (x, y, w, h int) { return 48, 74 + i*48, 160, 40 }
+
+func (t *tacticalScreen) update(in shell.InputState) *origTransition {
+	if !in.ClickReleased {
+		return nil
+	}
+	if t.over { // 戰後點擊 → 套用結果 → 戰鬥結果畫面
+		survivors := map[string]bool{}
+		for _, s := range t.player {
+			survivors[s.Name] = true
+		}
+		t.b.session.ApplyCombatOutcome("賽隆人", t.pStart, t.eStart, survivors, t.won)
+		return t.b.goTo(t.b.battleResult, "戰鬥結果")
+	}
+	for i := range t.enemy { // 點到敵艦 → 開火一回合
+		x, y, w, h := t.enemyRect(i)
+		if in.MouseX >= x && in.MouseX < x+w && in.MouseY >= y && in.MouseY < y+h {
+			t.fireRound(i)
+			break
+		}
+	}
+	return nil
+}
+
+func (t *tacticalScreen) fireRound(target int) {
+	t.round++
+	pAtk := 0
+	for _, s := range t.player {
+		pAtk += s.Attack
+	}
+	t.enemy[target].HP -= pAtk // 我方聚焦目標
+	alive := t.enemy[:0]
+	for _, s := range t.enemy {
+		if s.HP > 0 {
+			alive = append(alive, s)
+		}
+	}
+	t.enemy = alive
+	eAtk := 0
+	for _, s := range t.enemy {
+		eAtk += s.Attack
+	}
+	if len(t.player) > 0 && eAtk > 0 { // 敵方還擊我方最脆弱艦
+		wi := 0
+		for i := range t.player {
+			if t.player[i].HP < t.player[wi].HP {
+				wi = i
+			}
+		}
+		t.player[wi].HP -= eAtk
+	}
+	palive := t.player[:0]
+	for _, s := range t.player {
+		if s.HP > 0 {
+			palive = append(palive, s)
+		}
+	}
+	t.player = palive
+	t.log = fmt.Sprintf("第 %d 回合:我方齊射 %d ／ 敵方還擊 %d", t.round, pAtk, eAtk)
+	if len(t.enemy) == 0 {
+		t.over, t.won, t.log = true, true, "★ 敵艦隊全滅,勝利!點擊繼續"
+	} else if len(t.player) == 0 {
+		t.over, t.won, t.log = true, false, "✗ 我方艦隊全滅,敗北。點擊繼續"
+	}
+}
+
+func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, x, y, w, h int, base color.RGBA) {
+	vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{base.R / 3, base.G / 3, base.B / 3, 255}, false)
+	vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, base, false)
+	if t.fnt != nil {
+		t.fnt.Draw(dst, s.Name, float64(x)+6, float64(y)+14, 12, color.RGBA{230, 235, 245, 255})
+	}
+	// HP 條
+	frac := float32(s.HP) / float32(s.MaxHP)
+	if frac < 0 {
+		frac = 0
+	}
+	vector.DrawFilledRect(dst, float32(x)+6, float32(y)+float32(h)-10, float32(w-12), 5, color.RGBA{40, 40, 40, 255}, false)
+	vector.DrawFilledRect(dst, float32(x)+6, float32(y)+float32(h)-10, (float32(w-12))*frac, 5, base, false)
+}
+
+func (t *tacticalScreen) draw(dst *ebiten.Image) {
+	dst.Fill(color.RGBA{6, 6, 16, 255})
+	grid := color.RGBA{28, 38, 66, 255}
+	for gx := 0; gx <= 8; gx++ {
+		x := float32(40 + gx*70)
+		vector.StrokeLine(dst, x, 66, x, 408, 1, grid, false)
+	}
+	for gy := 0; gy <= 6; gy++ {
+		y := float32(66 + gy*57)
+		vector.StrokeLine(dst, 40, y, 600, y, 1, grid, false)
+	}
+	gold := color.RGBA{240, 220, 120, 255}
+	if t.fnt != nil {
+		t.fnt.DrawCentered(dst, "戰術戰鬥", 320, 34, 20, gold)
+		t.fnt.DrawCentered(dst, "我方", 128, 60, 13, color.RGBA{120, 220, 180, 255})
+		t.fnt.DrawCentered(dst, "賽隆人", 510, 60, 13, color.RGBA{235, 110, 100, 255})
+	}
+	for i, s := range t.player {
+		x, y, w, h := t.playerRect(i)
+		t.drawShip(dst, s, x, y, w, h, color.RGBA{90, 220, 170, 255})
+	}
+	for i, s := range t.enemy {
+		x, y, w, h := t.enemyRect(i)
+		t.drawShip(dst, s, x, y, w, h, color.RGBA{235, 110, 100, 255})
+	}
+	if t.fnt != nil {
+		t.fnt.DrawCentered(dst, t.log, 320, 440, 15, color.RGBA{214, 220, 235, 255})
+	}
+}
+
+// tacticalCombat 進入格子戰術戰鬥畫面。
+func (b *sceneBuilder) tacticalCombat() (origScreen, error) {
+	if b.session == nil {
+		return nil, fmt.Errorf("無對局")
+	}
+	return newTacticalScreen(b), nil
 }
 
 // battleResult 顯示上一場戰鬥結果(重用 TURNSUM.LBX#0 視窗當通用面板)。點畫面返回種族關係。

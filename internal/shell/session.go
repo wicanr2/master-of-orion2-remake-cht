@@ -159,6 +159,44 @@ func (s *GameSession) ResolveBattle(enemy string) BattleResult {
 	return res
 }
 
+// CombatShip 是格子戰術戰鬥中的一艘艦(有 HP)。
+type CombatShip struct {
+	Name      string
+	HP, MaxHP int
+	Attack    int
+}
+
+// StartCombat 依玩家艦隊 + 難度生成敵方,建立格子戰鬥雙方艦艇(HP=戰力×3、攻擊=戰力)。
+func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip) {
+	for _, sh := range s.Ships {
+		st := shipStrength(sh.Class)
+		player = append(player, CombatShip{Name: sh.Name, HP: st * 3, MaxHP: st * 3, Attack: st})
+	}
+	mult := 1.0
+	if s.Difficulty >= 0 && s.Difficulty < len(Difficulties) {
+		mult = Difficulties[s.Difficulty].Mult
+	}
+	for i, st := range genEnemyFleet(s.Turn, mult) {
+		enemyShips = append(enemyShips, CombatShip{Name: fmt.Sprintf("%s艦%d", enemy, i+1), HP: st * 3, MaxHP: st * 3, Attack: st})
+	}
+	return
+}
+
+// ApplyCombatOutcome 依格子戰鬥後存活的玩家艦名,更新艦隊(移除陣亡艦)+ 記錄結果供結果畫面。
+func (s *GameSession) ApplyCombatOutcome(enemy string, playerStart, enemyStart int, survivors map[string]bool, won bool) {
+	kept := s.Ships[:0]
+	for _, sh := range s.Ships {
+		if survivors[sh.Name] {
+			kept = append(kept, sh)
+		}
+	}
+	s.Ships = kept
+	s.LastBattle = &BattleResult{
+		Enemy: enemy, PlayerStart: playerStart, EnemyStart: enemyStart, PlayerWon: won,
+		PlayerLosses: playerStart - len(kept), EnemyLosses: enemyStart,
+	}
+}
+
 // shipNamePool 供新造艦命名(依序循環)。
 var shipNamePool = []string{"先鋒號", "勝利號", "無畏號", "蒼穹號", "星辰號", "破曉號", "遠征號", "不朽號", "疾風號", "曙光號"}
 
