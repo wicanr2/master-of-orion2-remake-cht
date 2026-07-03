@@ -321,6 +321,8 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 	}
 	onAction := func(a string) *origTransition {
 		switch a {
+		case "colonies":
+			return b.goTo(b.colonySummary, "殖民地總覽")
 		case "planets":
 			return b.goTo(b.planets, "行星列表")
 		case "fleets":
@@ -330,7 +332,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		case "info":
 			return b.goTo(b.info, "科技總覽")
 		}
-		// colonies / races / turn:尚未接入,暫不動作。
+		// races / turn:尚未接入,暫不動作。
 		return nil
 	}
 	// 工具列標籤擦底疊字(x 為按鈕中心對齊,y 中心經 PIL 量測:一般列 450、TURN 455)。
@@ -345,6 +347,31 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 	}
 	return loadOverlayScreen(b.res, "buffer0.lbx", 0, b.lang, b.fnt, "assets/i18n/menu.tsv",
 		overlays, color.RGBA{210, 216, 230, 255}, 12, hits, onAction, nil)
+}
+
+// colonySummary 建原版殖民地總覽畫面(COLSUM.LBX 資產 0,自帶完整調色盤)。
+// openorion2 未實作此 view,背景資產由本專案自 LBX 探測定位。
+func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
+	hits, onAction := b.backHit(b.galaxy, "星系主畫面")
+	// 欄位標題(上)+ 排序列(下)擦底疊字。座標經 PIL 量測。
+	overlays := []labelRect{
+		{18, 10, 78, 20, "NAME", 0},
+		{104, 10, 118, 20, "FARMERS", 0},
+		{236, 10, 128, 20, "WORKERS", 0},
+		{376, 10, 128, 20, "SCIENTISTS", 0},
+		{512, 10, 118, 20, "BUILDING", 0},
+		{8, 452, 62, 20, "SORT", 0},
+		{78, 452, 66, 18, "Name", 0},
+		{150, 452, 92, 18, "Population", 0},
+		{248, 452, 54, 18, "Food", 0},
+		{306, 452, 74, 18, "Industry", 0},
+		{384, 452, 74, 18, "Science", 0},
+		{462, 452, 88, 18, "Producing", 0},
+		{550, 452, 28, 18, "BC", 0},
+		{582, 452, 52, 20, "RETURN", 0},
+	}
+	return loadOverlayScreen(b.res, "colsum.lbx", 0, b.lang, b.fnt, "assets/i18n/colony.tsv",
+		overlays, color.RGBA{210, 216, 230, 255}, 13, hits, onAction, nil)
 }
 
 // fleet 建原版艦隊列表畫面(FLEET.LBX 資產 0,三段調色盤鏈)。座標經 PIL 量測
