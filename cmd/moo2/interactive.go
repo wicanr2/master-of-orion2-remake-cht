@@ -1489,6 +1489,39 @@ type interactiveApp struct {
 	frames   int
 	tick     int
 	saved    bool
+	scale    int // 目前視窗放大倍率(1~4)
+}
+
+// handleWindowKeys 處理縮放/全螢幕快捷鍵:+/- 調整放大倍率(1~4)、F11 或 F 切換全螢幕。
+func (a *interactiveApp) handleWindowKeys() {
+	if inpututil.IsKeyJustPressed(ebiten.KeyF11) || inpututil.IsKeyJustPressed(ebiten.KeyF) {
+		ebiten.SetFullscreen(!ebiten.IsFullscreen())
+		return
+	}
+	if ebiten.IsFullscreen() {
+		return // 全螢幕時 +/- 不改視窗大小
+	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyEqual) || inpututil.IsKeyJustPressed(ebiten.KeyKPAdd) {
+		a.setScale(a.scale + 1)
+	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyMinus) || inpututil.IsKeyJustPressed(ebiten.KeyKPSubtract) {
+		a.setScale(a.scale - 1)
+	}
+}
+
+// setScale 設定視窗放大倍率(夾在 1~4),依邏輯 640×480 等比放大。
+func (a *interactiveApp) setScale(s int) {
+	if s < 1 {
+		s = 1
+	}
+	if s > 4 {
+		s = 4
+	}
+	if s == a.scale {
+		return
+	}
+	a.scale = s
+	ebiten.SetWindowSize(moo2ScreenW*s, moo2ScreenH*s)
 }
 
 func (a *interactiveApp) pollInput() shell.InputState {
@@ -1507,6 +1540,9 @@ func (a *interactiveApp) pollInput() shell.InputState {
 
 func (a *interactiveApp) Update() error {
 	a.tick++
+	if a.script == nil { // 互動模式才處理視窗快捷鍵(headless 略過)
+		a.handleWindowKeys()
+	}
 	if t := a.cur.update(a.pollInput()); t != nil {
 		if t.quit {
 			return ebiten.Termination
@@ -1549,8 +1585,14 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt *uifont.Font,
 	if err != nil {
 		return err
 	}
-	app := &interactiveApp{cur: menu, script: script, shotPath: shot, frames: frames}
-	ebiten.SetWindowSize(moo2ScreenW, moo2ScreenH)
-	ebiten.SetWindowTitle("Master of Orion II — 繁體中文化 (remake)")
+	// 預設放大 2 倍(headless 驗證維持 1 倍);視窗可自由拉伸,內容等比縮放置中。
+	scale := 2
+	if shot != "" {
+		scale = 1
+	}
+	app := &interactiveApp{cur: menu, script: script, shotPath: shot, frames: frames, scale: scale}
+	ebiten.SetWindowSize(moo2ScreenW*scale, moo2ScreenH*scale)
+	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled) // 允許拖曳邊框縮放
+	ebiten.SetWindowTitle("Master of Orion II — 繁體中文化 (remake)｜+/- 縮放  F11 全螢幕")
 	return ebiten.RunGame(app)
 }
