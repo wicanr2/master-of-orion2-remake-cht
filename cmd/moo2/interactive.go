@@ -411,8 +411,30 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 		{550, 452, 28, 18, "BC", 0},
 		{582, 452, 52, 20, "RETURN", 0},
 	}
-	return loadOverlayScreen(b.res, "colsum.lbx", 0, b.lang, b.fnt, "assets/i18n/colony.tsv",
+	s, err := loadOverlayScreen(b.res, "colsum.lbx", 0, b.lang, b.fnt, "assets/i18n/colony.tsv",
 		overlays, color.RGBA{210, 216, 230, 255}, 13, hits, onAction, nil)
+	if err != nil {
+		return nil, err
+	}
+	// 即時殖民地資料填進表格列(欄位中心 x 對齊標題;列中心 y 經 PIL 量測,每列約 31px)。
+	if b.session != nil {
+		body := color.RGBA{214, 220, 235, 255}
+		rowY := []float64{47, 78, 109, 140, 171, 202, 233, 264, 295}
+		colX := struct{ name, far, wrk, sci float64 }{57, 163, 300, 440}
+		for i, c := range b.session.PlayerColonies {
+			if i >= len(rowY) {
+				break
+			}
+			y := rowY[i]
+			s.extras = append(s.extras,
+				extraText{x: colX.name, y: y, size: 13, text: fmt.Sprintf("殖民地 %d", i+1), col: body, align: 1},
+				extraText{x: colX.far, y: y, size: 13, text: fmt.Sprintf("%d", c.Farmers), col: body, align: 1},
+				extraText{x: colX.wrk, y: y, size: 13, text: fmt.Sprintf("%d", c.Workers), col: body, align: 1},
+				extraText{x: colX.sci, y: y, size: 13, text: fmt.Sprintf("%d", c.Scientists), col: body, align: 1},
+			)
+		}
+	}
+	return s, nil
 }
 
 // races 建原版種族關係畫面(RACES.LBX 資產 0,自帶完整調色盤)。RACES 按鈕目標。
