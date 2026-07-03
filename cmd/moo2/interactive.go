@@ -1324,6 +1324,11 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 14, text: "◆ " + b.session.LastEvent, col: color.RGBA{240, 190, 110, 255}})
 			yy += 24
 		}
+		// 安塔蘭人入侵警報(紅色醒目)。
+		if b.session.LastAntares != "" {
+			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 14, text: b.session.LastAntares, col: color.RGBA{240, 110, 90, 255}})
+			yy += 24
+		}
 	}
 	return s, nil
 }

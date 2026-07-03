@@ -623,6 +623,70 @@ type GameSession struct {
 	LastEvent        string              // 本回合觸發的隨機事件描述(空=無事件;供回合摘要)
 	DisableEvents    bool                // 關閉隨機事件(供確定性經濟測試隔離)
 	eventRand        *rand.Rand          // 事件亂數源(由 EventSeed 惰性建立)
+	AntaresRaids     int                 // 已發生的安塔蘭突襲次數(逐次升級強度)
+	LastAntares      string              // 本回合安塔蘭突襲描述(空=無;供回合摘要)
+}
+
+// 安塔蘭人入侵參數:MOO2 的週期性終局威脅。前期寬限,之後每隔數回合一次突襲,強度隨次數升級。
+const (
+	antaresStartTurn = 20 // 前 20 回合寬限,不觸發
+	antaresInterval  = 15 // 之後每 15 回合一次突襲
+)
+
+// advanceAntares 處理安塔蘭人週期性入侵:達排程回合觸發一次突襲,強度隨突襲次數升級,
+// 對一殖民地造成人口損失 + 國庫掠奪(效果有界:人口不低於1、BC 不為負)。若玩家艦隊在母星
+// 且有戰力,視為部分防禦、減半損失。結果記於 LastAntares(供回合摘要)。可用 DisableEvents 關閉。
+func (s *GameSession) advanceAntares() {
+	s.LastAntares = ""
+	if s.DisableEvents {
+		return
+	}
+	if s.Turn < antaresStartTurn || (s.Turn-antaresStartTurn)%antaresInterval != 0 {
+		return
+	}
+	s.AntaresRaids++
+	sev := s.AntaresRaids // 升級係數
+	popLoss := 1 + sev/2
+	bcLoss := 30 * sev
+
+	// 母星防禦:艦隊在母星且有戰力則減半損失。
+	defended := false
+	if s.FleetAtStar == 0 {
+		for _, sh := range s.Ships {
+			if shipStrength(sh.Class) > 0 {
+				defended = true
+				break
+			}
+		}
+	}
+	if defended {
+		popLoss = (popLoss + 1) / 2
+		bcLoss /= 2
+	}
+
+	if bcLoss > s.Player.BC {
+		bcLoss = s.Player.BC
+	}
+	s.Player.BC -= bcLoss
+	if len(s.PlayerColonies) > 0 {
+		c := &s.PlayerColonies[0] // 攻擊母星殖民地
+		for ; popLoss > 0 && c.Population > 1; popLoss-- {
+			c.Population--
+			switch {
+			case c.Workers > 0:
+				c.Workers--
+			case c.Farmers > 0:
+				c.Farmers--
+			case c.Scientists > 0:
+				c.Scientists--
+			}
+		}
+	}
+	tag := ""
+	if defended {
+		tag = "(母星艦隊部分擊退)"
+	}
+	s.LastAntares = fmt.Sprintf("⚠ 安塔蘭人第 %d 次入侵%s:損失 %d BC + 母星人口", sev, tag, bcLoss)
 }
 
 // advanceEvents 每回合以固定機率觸發一個 MOO2 風格隨機事件並套用效果,結果記於 LastEvent
@@ -737,6 +801,7 @@ func (s *GameSession) EndTurn() {
 	s.advancePopulation()  // 累積各殖民地成長,達門檻則 +1 人口(回寫 Population)
 	s.advanceEvents()      // 觸發 MOO2 風格隨機事件(繁榮/瘟疫/海盜…),記於 LastEvent
 	s.Turn++
+	s.advanceAntares()     // 安塔蘭人週期性入侵(依 Turn 排程升級),記於 LastAntares
 }
 
 // popGrowthThreshold 是「成長累加值 → +1 人口單位」的門檻。MOO2 手冊(MANUAL_150.html p111
