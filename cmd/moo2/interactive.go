@@ -291,6 +291,7 @@ type sceneBuilder struct {
 	lang        i18n.Lang
 	session     *shell.GameSession // 活的對局狀態(TURN 推進、畫面顯示即時資料)
 	newGameSize int                // NEW GAME 選的星系大小索引(shell.GalaxySizes)
+	newGameDiff int                // NEW GAME 選的難度索引(shell.Difficulties)
 }
 
 // menu 建原版主選單畫面。按鈕熱區用 menuOverlays 的座標(按鈕即標籤)。
@@ -667,17 +668,22 @@ func (b *sceneBuilder) council() (*overlayScreen, error) {
 // ACCEPT 進星系主畫面;CANCEL 回主選單。
 func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 	hits := []hitRegion{
-		{232, 100, 150, 108, "size"}, // 星系大小選擇框(點擊循環)
+		{86, 100, 130, 108, "diff"},  // 難度選擇框
+		{232, 100, 150, 108, "size"}, // 星系大小選擇框
 		{92, 392, 108, 30, "cancel"},
 		{432, 392, 108, 30, "accept"},
 	}
 	onAction := func(a string) *origTransition {
 		switch a {
+		case "diff":
+			b.newGameDiff = (b.newGameDiff + 1) % len(shell.Difficulties)
+			return b.goTo(b.newGameSetup, "新遊戲設定")
 		case "size":
 			b.newGameSize = (b.newGameSize + 1) % len(shell.GalaxySizes)
 			return b.goTo(b.newGameSetup, "新遊戲設定")
 		case "accept":
 			if b.session != nil {
+				b.session.Difficulty = b.newGameDiff
 				b.session.RegenGalaxy(shell.GalaxySizes[b.newGameSize].Stars, 42) // 依選定大小生成星系
 			}
 			return b.goTo(b.galaxy, "星系主畫面")
@@ -703,11 +709,15 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 選定的星系大小顯示在選擇框內。
+	// 選定的難度 + 星系大小顯示在各自選擇框內。
 	if b.fnt != nil {
 		gs := shell.GalaxySizes[b.newGameSize]
-		s.extras = []extraText{{x: 307, y: 150, size: 16,
-			text: fmt.Sprintf("%s (%d 星)", gs.Name, gs.Stars), col: color.RGBA{240, 220, 120, 255}, align: 1}}
+		df := shell.Difficulties[b.newGameDiff]
+		gold := color.RGBA{240, 220, 120, 255}
+		s.extras = []extraText{
+			{x: 151, y: 150, size: 16, text: df.Name, col: gold, align: 1},
+			{x: 307, y: 150, size: 16, text: fmt.Sprintf("%s (%d 星)", gs.Name, gs.Stars), col: gold, align: 1},
+		}
 	}
 	return s, nil
 }
@@ -1053,7 +1063,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt *uifont.Font,
 	if err != nil {
 		return err
 	}
-	b := &sceneBuilder{res: res, fnt: fnt, lang: lang, session: shell.NewDemoSession(), newGameSize: 1}
+	b := &sceneBuilder{res: res, fnt: fnt, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: 1}
 	menu, err := b.menu()
 	if err != nil {
 		return err

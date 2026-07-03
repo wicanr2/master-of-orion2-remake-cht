@@ -101,13 +101,25 @@ func applyDamage(fleet *[]int, dmg int) int {
 	return destroyed
 }
 
-// genEnemyFleet 依回合數生成敵方艦隊(戰力清單;越後期越強)。
-func genEnemyFleet(turn int) []int {
+// Difficulties 是難度選項(名稱 + 敵方戰力倍率),對應 NEW GAME 的 DIFFICULTY。
+var Difficulties = []struct {
+	Name string
+	Mult float64
+}{
+	{"簡單", 0.6}, {"普通", 1.0}, {"困難", 1.5}, {"不可能", 2.2},
+}
+
+// genEnemyFleet 依回合數 + 難度倍率生成敵方艦隊(戰力清單;越後期/越難越強)。
+func genEnemyFleet(turn int, mult float64) []int {
 	n := 2 + turn/3
 	sizes := []int{2, 4, 8, 16}
 	f := make([]int, 0, n)
 	for i := 0; i < n; i++ {
-		f = append(f, sizes[i%len(sizes)])
+		v := int(float64(sizes[i%len(sizes)]) * mult)
+		if v < 1 {
+			v = 1
+		}
+		f = append(f, v)
 	}
 	return f
 }
@@ -119,7 +131,11 @@ func (s *GameSession) ResolveBattle(enemy string) BattleResult {
 	for _, sh := range s.Ships {
 		pFleet = append(pFleet, shipStrength(sh.Class))
 	}
-	eFleet := genEnemyFleet(s.Turn)
+	mult := 1.0
+	if s.Difficulty >= 0 && s.Difficulty < len(Difficulties) {
+		mult = Difficulties[s.Difficulty].Mult
+	}
+	eFleet := genEnemyFleet(s.Turn, mult)
 	res := BattleResult{Enemy: enemy, PlayerStart: len(pFleet), EnemyStart: len(eFleet)}
 	for round := 1; round <= 6 && len(pFleet) > 0 && len(eFleet) > 0; round++ {
 		pPower, ePower := 0, 0
@@ -377,6 +393,7 @@ type GameSession struct {
 	Ships            []Ship              // 艦隊
 	LastBattle       *BattleResult       // 上一場戰鬥結果(供戰鬥結果畫面)
 	SelectedStar     int                 // 星圖選中的星索引(-1=未選)
+	Difficulty       int                 // 難度索引(shell.Difficulties)
 	Builds           []ColonyBuild       // 各殖民地建造項目(對應 PlayerColonies)
 	LastBuilt        []string            // 上回合完成的建造(供回合摘要)
 }
