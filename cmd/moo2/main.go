@@ -89,6 +89,7 @@ func main() {
 	infoMode := flag.Bool("info-viewer", false, "科技總覽畫面模式(示範單畫面多 TSV 來源)")
 	infoTech := flag.String("info-tech", "Achilles Targeting Unit", "科技總覽右欄範例科技(英文標題)")
 	raceMode := flag.Bool("race-viewer", false, "種族統計畫面模式")
+	gameMode := flag.Bool("game", false, "還原原版互動遊戲(原版主選單→導覽各原版畫面,全繁中;有 -shot 則腳本驗證)")
 	playMode := flag.Bool("play", false, "可玩遊戲殼(互動;有 -shot 則跑腳本驗證並截圖)")
 	playRecord := flag.String("play-record", "", "錄製模式:scripted playthrough 逐幀存圖到此目錄(供 gameplay footage)")
 	colonyMode := flag.Bool("colony-viewer", false, "殖民地摘要畫面模式")
@@ -175,6 +176,29 @@ func main() {
 		}
 		dirs := strings.Split(*dataDirs, ",")
 		if err := runInfoReview(dirs, "help.lbx", langID, fnt, reg, *infoTech, *shot, *frames); err != nil {
+			fatal(err)
+		}
+		return
+	}
+
+	// 還原原版互動遊戲:原版主選單(真 LBX 美術)→ 點選單導覽到各原版畫面,全繁中。
+	// 這是專案主目標「用 go/ebiten 還原原版 MOO2 + 中文化」的骨幹。headless(-shot)時腳本驗證導覽。
+	if *gameMode {
+		if *dataDirs == "" {
+			fmt.Fprintln(os.Stderr, "需指定 -data <遊戲資料夾>")
+			os.Exit(2)
+		}
+		fnt, err := loadFont(*fontPath)
+		if err != nil {
+			fatal(fmt.Errorf("載入字型: %w", err))
+		}
+		dirs := strings.Split(*dataDirs, ",")
+		var script []shell.InputState
+		if *shot != "" {
+			// headless 驗證:點「新遊戲」(415,217,153,23 中心 491,228)→ 導覽到行星列表 → 截圖。
+			script = []shell.InputState{{MouseX: 491, MouseY: 228, ClickReleased: true}}
+		}
+		if err := runInteractive(dirs, langID, fnt, script, *shot, *frames); err != nil {
 			fatal(err)
 		}
 		return
