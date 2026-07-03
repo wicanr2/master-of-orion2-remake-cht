@@ -85,8 +85,9 @@ func runAI(turns int, name string) {
 	fmt.Printf("=== MOO2 AI 帝國模擬(%d 回合)===\n", turns)
 	fmt.Printf("AI 性格:%s(工業權重=%d 研究權重=%d)\n\n", profile.Name, profile.IndustryWeight, profile.ResearchWeight)
 	fmt.Printf("%-4s %-8s %-8s %-8s %-10s %-8s %-6s\n", "回合", "食物", "淨工業", "研究", "研究進度", "國庫BC", "稅率%")
+	decider := ai.NewRemakeDecider(profile)
 	for t := 1; t <= turns; t++ {
-		decidedPS, decidedColonies := engine.ApplyAIEconomy(ps, colonies, profile)
+		decidedPS, decidedColonies := engine.ApplyAIEconomy(ps, colonies, decider)
 		out := engine.RunEmpireTurn(decidedPS, decidedColonies)
 		ps = out.Player
 		done := ""
