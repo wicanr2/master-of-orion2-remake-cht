@@ -286,14 +286,17 @@ func loadOverlayScreen(res *assets.Resolver, lbxName string, assetID int, lang i
 // --- sceneBuilder:依需求建構各原版畫面(共用 resolver/字型/語言)---
 
 type sceneBuilder struct {
-	res          *assets.Resolver
-	fnt          *uifont.Font
-	lang         i18n.Lang
-	session      *shell.GameSession // 活的對局狀態(TURN 推進、畫面顯示即時資料)
-	newGameSize  int                // NEW GAME 選的星系大小索引(shell.GalaxySizes)
-	newGameDiff  int                // NEW GAME 選的難度索引(shell.Difficulties)
-	newGameSeed  int                // 每次新遊戲遞增,讓星系種子變化
-	designWeapon int                // 艦艇設計選的武器元件索引(shell.WeaponOptions)
+	res           *assets.Resolver
+	fnt           *uifont.Font
+	lang          i18n.Lang
+	session       *shell.GameSession // 活的對局狀態(TURN 推進、畫面顯示即時資料)
+	newGameSize   int                // NEW GAME 選的星系大小索引(shell.GalaxySizes)
+	newGameDiff   int                // NEW GAME 選的難度索引(shell.Difficulties)
+	newGameSeed   int                // 每次新遊戲遞增,讓星系種子變化
+	designWeapon  int                // 艦艇設計選的武器元件索引(shell.WeaponOptions)
+	designArmor   int                // 裝甲元件索引(shell.ArmorOptions)
+	designShield  int                // 護盾元件索引(shell.ShieldOptions)
+	designSpecial int                // 特殊元件索引(shell.SpecialOptions)
 }
 
 // menu 建原版主選單畫面。按鈕熱區用 menuOverlays 的座標(按鈕即標籤)。
@@ -1074,16 +1077,29 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		{125, 50, 118, 16, "Frigate"}, {125, 67, 118, 16, "Destroyer"},
 		{125, 84, 118, 16, "Cruiser"}, {125, 101, 118, 16, "Battleship"},
 		{125, 118, 118, 16, "Titan"}, {125, 135, 118, 16, "Doom Star"},
-		{300, 60, 250, 40, "weapon"}, // 武器元件選擇(點擊循環)
+		{300, 58, 300, 22, "weapon"}, // 元件選擇(點擊各列循環)
+		{300, 82, 300, 22, "armor"},
+		{300, 106, 300, 22, "shield"},
+		{300, 130, 300, 22, "special"},
 		{0, 0, moo2ScreenW, moo2ScreenH, "back"},
 	}
 	onAction := func(a string) *origTransition {
-		if a == "weapon" {
+		switch a {
+		case "weapon":
 			b.designWeapon = (b.designWeapon + 1) % len(shell.WeaponOptions)
+			return b.goTo(b.shipDesign, "艦艇設計")
+		case "armor":
+			b.designArmor = (b.designArmor + 1) % len(shell.ArmorOptions)
+			return b.goTo(b.shipDesign, "艦艇設計")
+		case "shield":
+			b.designShield = (b.designShield + 1) % len(shell.ShieldOptions)
+			return b.goTo(b.shipDesign, "艦艇設計")
+		case "special":
+			b.designSpecial = (b.designSpecial + 1) % len(shell.SpecialOptions)
 			return b.goTo(b.shipDesign, "艦艇設計")
 		}
 		if zh, ok := hullZH[a]; ok && b.session != nil {
-			b.session.BuildShip(zh, b.designWeapon) // 造帶武器的艦
+			b.session.BuildShip(zh, b.designWeapon, b.designArmor, b.designShield, b.designSpecial)
 		}
 		return b.goTo(b.fleet, "艦隊列表")
 	}
@@ -1113,12 +1129,31 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			s.extras = append(s.extras, extraText{x: 250, y: float64(60 + i*17), size: 11,
 				text: fmt.Sprintf("%d BC", shell.ShipCost(cl)), col: body, align: 0})
 		}
-		// 選中的武器元件(名稱 + 成本 + 攻擊加成),顯示在右上區。
+		// 四類元件(點擊各列循環選擇),顯示名稱 + 效果 + 成本。
 		w := shell.WeaponOptions[b.designWeapon]
+		ar := shell.ArmorOptions[b.designArmor]
+		sd := shell.ShieldOptions[b.designShield]
+		sp := shell.SpecialOptions[b.designSpecial]
 		gold := color.RGBA{240, 220, 120, 255}
+		rows := []struct {
+			label string
+			c     shell.Component
+			eff   string
+		}{
+			{"武器", w, fmt.Sprintf("+%d攻", w.Value)},
+			{"裝甲", ar, fmt.Sprintf("+%dHP", ar.Value)},
+			{"護盾", sd, fmt.Sprintf("+%dHP", sd.Value)},
+			{"特殊", sp, ""},
+		}
+		for i, r := range rows {
+			y := float64(69 + i*24)
+			s.extras = append(s.extras,
+				extraText{x: 305, y: y, size: 12, text: r.label + " ▸ " + r.c.Name, col: gold},
+				extraText{x: 470, y: y, size: 11, text: fmt.Sprintf("%s %dBC", r.eff, r.c.Cost), col: color.RGBA{200, 208, 225, 255}})
+		}
+		total := shell.DesignCost("巡洋艦", b.designWeapon, b.designArmor, b.designShield, b.designSpecial)
 		s.extras = append(s.extras,
-			extraText{x: 305, y: 70, size: 13, text: "主武器 ▸", col: color.RGBA{170, 200, 240, 255}},
-			extraText{x: 305, y: 90, size: 14, text: fmt.Sprintf("%s(+%d 攻擊 / %d BC)", w.Name, w.Attack, w.Cost), col: gold},
+			extraText{x: 305, y: 168, size: 12, text: fmt.Sprintf("巡洋艦總價 %d BC", total), col: color.RGBA{170, 220, 180, 255}},
 			extraText{x: 12, y: 460, size: 12, text: fmt.Sprintf("國庫 %d BC", b.session.Player.BC), col: gold})
 	}
 	return s, nil
