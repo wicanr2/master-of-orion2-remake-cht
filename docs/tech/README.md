@@ -10,11 +10,12 @@
 - [formulas.md](formulas.md) — 唯讀衍生公式與查表精簡版(艦艇戰力/HP/戰速、行星產出、雇用費),對應 Go:`internal/gamedata/formulas.go`。
 - [moo2-formulas-reference.md](moo2-formulas-reference.md) — **遊戲公式參考(完整版)**:殖民地成長、生產/污染、研究樹、軍官、艦艇衍生值、光束命中、飛彈防禦、間諜共 8 個系統,逐條附 openorion2 行號/手冊頁碼出處與驗證範例,含手冊自相矛盾記錄(AMR 命中率、飛彈速度)。對應 `internal/gamedata/*.go` 全部檔案。
 - [ebiten-notes.md](ebiten-notes.md) — Phase 2 移植筆記:MOO2=640×480、資料層→ebiten 全鏈路、docker headless(CGO/xvfb/buildvcs)、ReadPixels 截圖。對應:`cmd/moo2`、`docker/Dockerfile.ebiten`、`scripts/screenshot.sh`。
+- [music-integration.md](music-integration.md) — 音樂/音效整合可行性:原版音訊架構(Miles AIL/XMIDI)+ **關鍵發現:配樂實為預渲染 PCM WAV**(STREAM/STREAMHD.LBX,22050Hz/8-bit/立體聲,實測)非即時合成 → 直接抽 WAV 餵 ebiten,不需 XMI→SoundFont/OPL。含音效資產(SOUND/CMBTSFX/SPHERSFX)、ebiten 音訊限制、整合路線與版權鐵則。
 
 ## 待補(後續輪次)
 
 - 枚舉 enums.md 的中文譯名欄(中文化階段填)。
 - `Player::researchCost`(依 LBX research_choices 資料表)。
-- ebiten porting 心得、音樂/音效格式、patch 1.3/1.5 差異、選單擴展。
+- ebiten porting 心得、patch 1.3/1.5 差異、選單擴展。
 
 > kick-off 階段的策略/可行性文件在 `../kickoff/`。
