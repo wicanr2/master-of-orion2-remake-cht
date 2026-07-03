@@ -650,8 +650,31 @@ func (b *sceneBuilder) planets() (*overlayScreen, error) {
 		}
 		return nil
 	}
-	return loadOverlayScreen(b.res, "plntsum.lbx", 0, b.lang, b.fnt, "assets/i18n/planets.tsv",
+	s, err := loadOverlayScreen(b.res, "plntsum.lbx", 0, b.lang, b.fnt, "assets/i18n/planets.tsv",
 		planetsOverlays, color.RGBA{206, 218, 240, 255}, 14, hits, onAction, nil)
+	if err != nil {
+		return nil, err
+	}
+	// 即時行星資料填進表格列(欄位中心 x 對齊標題;列中心 y 經量測估計)。
+	if b.session != nil {
+		body := color.RGBA{206, 218, 240, 255}
+		rowY := []float64{61, 116, 170, 225, 280, 335, 390} // 格中心,PIL 量測(格線 34/89/143/198/253/308/363/418)
+		cx := struct{ name, cli, grv, min, siz float64 }{57, 136, 218, 303, 382}
+		for i, p := range b.session.Planets {
+			if i >= len(rowY) {
+				break
+			}
+			y := rowY[i]
+			s.extras = append(s.extras,
+				extraText{x: cx.name, y: y, size: 12, text: p.Name, col: body, align: 1},
+				extraText{x: cx.cli, y: y, size: 12, text: p.Climate, col: body, align: 1},
+				extraText{x: cx.grv, y: y, size: 12, text: p.Gravity, col: body, align: 1},
+				extraText{x: cx.min, y: y, size: 12, text: p.Mineral, col: body, align: 1},
+				extraText{x: cx.siz, y: y, size: 12, text: p.Size, col: body, align: 1},
+			)
+		}
+	}
+	return s, nil
 }
 
 // --- interactiveApp(ebiten.Game;支援 headless 腳本驗證)---

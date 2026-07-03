@@ -24,6 +24,43 @@ type Star struct {
 	Owner    int // 0=無主 1=玩家 2=AI
 }
 
+// Planet 是一顆行星的顯示資料(供行星列表;正式版由存檔/星系生成填真值)。
+type Planet struct {
+	Name    string // 星名 + 羅馬數字
+	Climate string
+	Gravity string
+	Mineral string
+	Size    string
+}
+
+// genPlanets 依星系生成每星一顆行星(氣候由光譜、大小由星體衍生;固定規則,不用亂數)。
+func genPlanets(stars []Star) []Planet {
+	climates := []string{"放射", "貧瘠", "海洋", "沙漠", "凍原", "有毒", "地獄"}
+	sizes := []string{"巨大", "大型", "中型", "小型"}
+	minerals := []string{"貧瘠", "一般", "豐富", "富饒"}
+	gravs := []string{"低", "常態", "高"}
+	roman := []string{"I", "II", "III"}
+	out := make([]Planet, 0, len(stars))
+	for i, s := range stars {
+		cl := "地獄"
+		if s.Spectral >= 0 && s.Spectral < len(climates) {
+			cl = climates[s.Spectral]
+		}
+		sz := "中型"
+		if s.Size >= 0 && s.Size < len(sizes) {
+			sz = sizes[s.Size]
+		}
+		out = append(out, Planet{
+			Name:    s.Name + " " + roman[i%len(roman)],
+			Climate: cl,
+			Gravity: gravs[i%len(gravs)],
+			Mineral: minerals[i%len(minerals)],
+			Size:    sz,
+		})
+	}
+	return out
+}
+
 // demoStars 是最小示範星系(固定佈局,供星圖視窗渲染;待接真星系生成 + STARNAME.LBX 真星名)。
 func demoStars() []Star {
 	return []Star{
@@ -46,6 +83,7 @@ type GameSession struct {
 	AIPlayers        []AIOpponent
 	LastPlayerOutput engine.EmpireOutput // 上一回合玩家結算(供畫面顯示)
 	Stars            []Star              // 星系圖
+	Planets          []Planet            // 行星列表
 }
 
 // EndTurn 推進一回合:先結算玩家帝國,再讓各 AI 對手自行決策並結算,回合數 +1。
@@ -82,6 +120,7 @@ func NewDemoSession() *GameSession {
 			Colonies: mkColonies(),
 			Decider:  ai.NewRemakeDecider(ai.ProfileScientific),
 		}},
-		Stars: demoStars(),
+		Stars:   demoStars(),
+		Planets: genPlanets(demoStars()),
 	}
 }
