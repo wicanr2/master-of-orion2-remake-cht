@@ -87,6 +87,7 @@ func main() {
 	helpList := flag.Bool("help-list", false, "列出所有百科條目(headless,不開視窗)")
 	infoMode := flag.Bool("info-viewer", false, "科技總覽畫面模式(示範單畫面多 TSV 來源)")
 	infoTech := flag.String("info-tech", "Achilles Targeting Unit", "科技總覽右欄範例科技(英文標題)")
+	raceMode := flag.Bool("race-viewer", false, "種族統計畫面模式")
 	tsvPath := flag.String("tsv", "", "譯表 TSV(留空用該畫面預設)")
 	lang := flag.String("lang", "zh", "語言:zh(繁中)或 en(英文)")
 	flag.Parse()
@@ -169,6 +170,22 @@ func main() {
 		}
 		dirs := strings.Split(*dataDirs, ",")
 		if err := runInfoReview(dirs, "help.lbx", langID, fnt, reg, *infoTech, *shot, *frames); err != nil {
+			fatal(err)
+		}
+		return
+	}
+
+	// 種族統計模式:多來源(misc 標題 + raceinfo 標籤 + estrings 政體),不需遊戲資料。
+	if *raceMode {
+		fnt, err := loadFont(*fontPath)
+		if err != nil {
+			fatal(fmt.Errorf("載入字型: %w", err))
+		}
+		reg := i18n.NewRegistry(langID)
+		if _, err := reg.LoadFS(os.DirFS("assets/i18n"), "."); err != nil {
+			fatal(fmt.Errorf("載入譯表: %w", err))
+		}
+		if err := runRaceInfo(langID, fnt, reg, *shot, *frames); err != nil {
 			fatal(err)
 		}
 		return
