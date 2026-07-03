@@ -11,6 +11,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/assets"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/lbx"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
@@ -392,6 +393,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				year := 3500 + (sess.Turn - 1)
 				fnt.Draw(dst, fmt.Sprintf("星曆 %d", year), 30, 40, 16, color.RGBA{240, 220, 120, 255})
 				fnt.Draw(dst, fmt.Sprintf("國庫 %d BC", sess.Player.BC), 30, 62, 13, color.RGBA{210, 216, 230, 255})
+				fnt.Draw(dst, fmt.Sprintf("研究:%s", shell.ResearchTopicName(sess.Player.ResearchTopic)), 30, 82, 13, color.RGBA{160, 210, 240, 255})
 			}
 		}
 	}
@@ -629,7 +631,17 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 // info 建原版科技總覽畫面(INFO.LBX 資產 0,基底 INFO.LBX 資產 1)。座標經 PIL 量測
 // (screens-scan/info_overview.png):左側選單五列 y=57/79/105/134/154,標題 y=16,RETURN y=436。
 func (b *sceneBuilder) info() (*overlayScreen, error) {
-	hits, onAction := b.backHit(b.galaxy, "星系主畫面")
+	// 「科技總覽」列 → 研究選擇畫面;RETURN 或他處 → 星系主畫面。
+	hits := []hitRegion{
+		{15, 78, 197, 22, "tech"},
+		{0, 0, moo2ScreenW, moo2ScreenH, "back"},
+	}
+	onAction := func(a string) *origTransition {
+		if a == "tech" {
+			return b.goTo(b.research, "研究選擇")
+		}
+		return b.goTo(b.galaxy, "星系主畫面")
+	}
 	// 選單項原版為靠左文字疊在近黑面板背景上(無實心板);擦底取黑=黑疊黑(正確),
 	// rect 寬取足以蓋住最長英文、中文置中於偏左位置貼近原版。y 中心經 PIL 量測:64/88/114/142/162。
 	overlays := []labelRect{
@@ -689,7 +701,29 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 // research 建原版研究選擇畫面(TECHSEL.LBX 資產 0,無內嵌調色盤 → 走調色盤鏈,
 // 基底取自 SCIENCE.LBX 資產 0)。點畫面任一處返回主選單。
 func (b *sceneBuilder) research() (*overlayScreen, error) {
-	hits, onAction := b.backHit(b.menu, "主選單")
+	// 8 個研究領域為點擊熱區(bg 局部座標;涵蓋整塊面板)→ 設定該領域代表研究主題 → 回星系。
+	areaTopic := map[string]gamedata.ResearchTopic{
+		"Construction": gamedata.TOPIC_ADVANCED_CONSTRUCTION,
+		"Power":        gamedata.TOPIC_ADVANCED_FUSION,
+		"Chemistry":    gamedata.TOPIC_ADVANCED_CHEMISTRY,
+		"Sociology":    gamedata.TOPIC_ADVANCED_GOVERNMENTS,
+		"Computers":    gamedata.TOPIC_ARTIFICIAL_INTELLIGENCE,
+		"Biology":      gamedata.TOPIC_ADVANCED_BIOLOGY,
+		"Physics":      gamedata.TOPIC_ADVANCED_MAGNETISM,
+		"Force Fields": gamedata.TOPIC_ADVANCED_ENGINEERING,
+	}
+	hits := []hitRegion{
+		{16, 32, 208, 98, "Construction"}, {242, 32, 214, 98, "Power"},
+		{16, 137, 208, 98, "Chemistry"}, {242, 137, 214, 98, "Sociology"},
+		{16, 243, 208, 98, "Computers"}, {242, 243, 214, 98, "Biology"},
+		{16, 348, 208, 98, "Physics"}, {242, 348, 214, 98, "Force Fields"},
+	}
+	onAction := func(a string) *origTransition {
+		if t, ok := areaTopic[a]; ok && b.session != nil {
+			b.session.SetResearchTopic(t) // 實際設定研究主題,結束回合朝此累積
+		}
+		return b.goTo(b.galaxy, "星系主畫面")
+	}
 	// 研究領域標籤擦底疊字(座標為 bg 局部座標,472×480;draw 時自動加置中偏移)。
 	// 座標經 PIL 量測原版標籤中心(左右欄列中心 y=36/140/246/352,標題 18);h=18,y=中心−9。
 	overlays := []labelRect{
