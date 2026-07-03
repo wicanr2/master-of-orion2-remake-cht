@@ -65,6 +65,16 @@ type overlayScreen struct {
 	hover            string
 	offsetX, offsetY int         // 背景圖在 640×480 畫布上的置中偏移(小於全螢幕的視窗畫面用)
 	eraseColor       *color.RGBA // 非 nil 時強制用此色擦底(背景均勻的畫面用,勝過採樣猜測)
+	extras           []extraText // 即時動態文字(星曆、國庫…),疊在背景+overlay 之上
+}
+
+// extraText 是一段即時繪製的動態文字(非來自譯表的固定標籤)。
+type extraText struct {
+	x, y  float64
+	size  float64
+	text  string
+	col   color.RGBA
+	align int // 0=靠左,1=置中
 }
 
 func (s *overlayScreen) update(in shell.InputState) *origTransition {
@@ -119,6 +129,14 @@ func (s *overlayScreen) draw(dst *ebiten.Image) {
 				vector.StrokeRect(dst, float32(float64(h.x)+ox), float32(float64(h.y)+oy),
 					float32(h.w), float32(h.h), 1, color.RGBA{255, 240, 120, 200}, false)
 			}
+		}
+	}
+	// 即時動態文字(星曆、國庫…)。
+	for _, e := range s.extras {
+		if e.align == 1 {
+			s.font.DrawCentered(dst, e.text, e.x+ox, e.y+oy, e.size, e.col)
+		} else {
+			s.font.Draw(dst, e.text, e.x+ox, e.y+oy, e.size, e.col)
 		}
 	}
 }
@@ -261,9 +279,10 @@ func loadOverlayScreen(res *assets.Resolver, lbxName string, assetID int, lang i
 // --- sceneBuilder:依需求建構各原版畫面(共用 resolver/字型/語言)---
 
 type sceneBuilder struct {
-	res  *assets.Resolver
-	fnt  *uifont.Font
-	lang i18n.Lang
+	res     *assets.Resolver
+	fnt     *uifont.Font
+	lang    i18n.Lang
+	session *shell.GameSession // 活的對局狀態(TURN 推進、畫面顯示即時資料)
 }
 
 // menu 建原版主選單畫面。按鈕熱區用 menuOverlays 的座標(按鈕即標籤)。
@@ -336,8 +355,11 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			return b.goTo(b.info, "科技總覽")
 		case "races":
 			return b.goTo(b.races, "種族關係")
+		case "turn":
+			// 核心迴圈:結算一回合(玩家帝國 + 各 AI 對手決策),再重建星系畫面顯示新星曆。
+			b.session.EndTurn()
+			return b.goTo(b.galaxy, "星系主畫面")
 		}
-		// turn:尚未接入,暫不動作。
 		return nil
 	}
 	// 工具列標籤擦底疊字(x 為按鈕中心對齊,y 中心經 PIL 量測:一般列 450、TURN 455)。
@@ -350,8 +372,22 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		{458, 443, 74, 14, "Info", 12},
 		{544, 448, 90, 15, "Turn", 12},
 	}
-	return loadOverlayScreen(b.res, "buffer0.lbx", 0, b.lang, b.fnt, "assets/i18n/menu.tsv",
+	s, err := loadOverlayScreen(b.res, "buffer0.lbx", 0, b.lang, b.fnt, "assets/i18n/menu.tsv",
 		overlays, color.RGBA{210, 216, 230, 255}, 12, hits, onAction, nil)
+	if err != nil {
+		return nil, err
+	}
+	// 即時狀態:星曆(原版起始年 3500,每回合 +1 年)+ 國庫,疊在星圖視窗左上。
+	if b.session != nil {
+		year := 3500 + (b.session.Turn - 1)
+		gold := color.RGBA{240, 220, 120, 255}
+		body := color.RGBA{210, 216, 230, 255}
+		s.extras = []extraText{
+			{x: 30, y: 40, size: 16, text: fmt.Sprintf("星曆 %d", year), col: gold},
+			{x: 30, y: 62, size: 13, text: fmt.Sprintf("國庫 %d BC", b.session.Player.BC), col: body},
+		}
+	}
+	return s, nil
 }
 
 // colonySummary 建原版殖民地總覽畫面(COLSUM.LBX 資產 0,自帶完整調色盤)。
@@ -592,7 +628,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt *uifont.Font,
 	if err != nil {
 		return err
 	}
-	b := &sceneBuilder{res: res, fnt: fnt, lang: lang}
+	b := &sceneBuilder{res: res, fnt: fnt, lang: lang, session: shell.NewDemoSession()}
 	menu, err := b.menu()
 	if err != nil {
 		return err
