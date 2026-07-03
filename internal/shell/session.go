@@ -234,8 +234,27 @@ func (s *GameSession) ApplyCombatOutcome(enemy string, playerStart, enemyStart i
 // shipNamePool 供新造艦命名(依序循環)。
 var shipNamePool = []string{"先鋒號", "勝利號", "無畏號", "蒼穹號", "星辰號", "破曉號", "遠征號", "不朽號", "疾風號", "曙光號"}
 
-// ShipCost 造某艦體等級所需國庫 BC(依戰力點)。
-func ShipCost(class string) int { return shipStrength(class) * 20 }
+// ShipCost 造某艦體等級所需生產成本(MOO2 空殼艦體生產成本,每級約 ×3:
+// 巡防18/驅逐60/巡洋180/戰艦540/泰坦1620/末日之星4860)。
+func ShipCost(class string) int {
+	switch class {
+	case "巡防艦", "護衛艦":
+		return 18
+	case "驅逐艦":
+		return 60
+	case "巡洋艦":
+		return 180
+	case "戰艦":
+		return 540
+	case "泰坦":
+		return 1620
+	case "末日之星":
+		return 4860
+	case "偵察艦":
+		return 10
+	}
+	return 18
+}
 
 // BuildShip 造一艘指定艦體等級的艦:扣國庫 BC,加入艦隊。BC 不足回 false 不造。
 func (s *GameSession) BuildShip(class string) bool {
@@ -302,9 +321,10 @@ type ColonyBuild struct {
 	Cost     int
 }
 
-// buildOptions 是可建造的項目(名稱 + 工業成本)。空字串為「不建造」。
+// buildOptions 是可建造的項目(名稱 + 生產成本,對齊 MOO2 建築生產成本:
+// 多數基礎建築 60、太空港 100、星基 300)。空字串為「不建造」。
 var buildOptions = []ColonyBuild{
-	{"", 0, 0}, {"住宅", 0, 30}, {"工廠", 0, 60}, {"研究實驗室", 0, 80}, {"星港", 0, 120},
+	{"", 0, 0}, {"自動工廠", 0, 60}, {"海軍陸戰隊營", 0, 60}, {"研究實驗室", 0, 60}, {"太空港", 0, 100}, {"星基", 0, 300},
 }
 
 // CycleColonyBuild 循環切換某殖民地的建造項目(進度歸零)。

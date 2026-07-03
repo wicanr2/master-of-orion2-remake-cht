@@ -1093,9 +1093,24 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		{470, 440, 80, 20, "Cancel", 0},
 		{558, 440, 72, 20, "Build", 0},
 	}
-	return loadOverlayScreen(b.res, "design.lbx", 0, b.lang, b.fnt, "assets/i18n/tech.tsv",
+	s, err := loadOverlayScreen(b.res, "design.lbx", 0, b.lang, b.fnt, "assets/i18n/tech.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"buffer0.lbx", 0}})
+	if err != nil {
+		return nil, err
+	}
+	// 各艦體成本(對齊 MOO2 空殼生產成本)+ 目前國庫,顯示在艦體清單右方。
+	if b.fnt != nil && b.session != nil {
+		body := color.RGBA{210, 216, 230, 255}
+		classes := []string{"巡防艦", "驅逐艦", "巡洋艦", "戰艦", "泰坦", "末日之星"}
+		for i, cl := range classes {
+			s.extras = append(s.extras, extraText{x: 250, y: float64(60 + i*17), size: 11,
+				text: fmt.Sprintf("%d BC", shell.ShipCost(cl)), col: body, align: 0})
+		}
+		s.extras = append(s.extras, extraText{x: 12, y: 460, size: 12,
+			text: fmt.Sprintf("國庫 %d BC", b.session.Player.BC), col: color.RGBA{240, 220, 120, 255}})
+	}
+	return s, nil
 }
 
 // officer 建原版軍官列表畫面(OFFICER.LBX 資產 0)。座標經 PIL 量測
