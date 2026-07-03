@@ -585,6 +585,7 @@ type GameSession struct {
 	FleetAtStar      int                 // 玩家艦隊所在星索引(初始=母星 0)
 	FleetDestStar    int                 // 艦隊目的星索引(-1=無航行任務)
 	FleetETA         int                 // 抵達目的星尚需回合數(0=已抵達/靜止)
+	popAccum         []int               // 各殖民地人口成長累加值(達門檻則 +1 人口)
 }
 
 // SendFleet 派遣玩家艦隊前往 dest 星:依兩星歐氏距離換算航行回合數(ETA),每回合 EndTurn
@@ -627,10 +628,37 @@ func (s *GameSession) EndTurn() {
 		out := engine.RunAIEmpireTurn(s.AIPlayers[i].Player, s.AIPlayers[i].Colonies, s.AIPlayers[i].Decider)
 		s.AIPlayers[i].Player = out.Player
 	}
-	s.advanceBuilds()    // 以本回合淨工業推進各殖民地建造
-	s.advanceResearch()  // 目前研究主題完成則自動推進到下一個未完成的元件解鎖主題
-	s.advanceFleet()     // 推進艦隊星間航行(ETA 遞減,抵達則標記探索)
+	s.advanceBuilds()      // 以本回合淨工業推進各殖民地建造
+	s.advanceResearch()    // 目前研究主題完成則自動推進到下一個未完成的元件解鎖主題
+	s.advanceFleet()       // 推進艦隊星間航行(ETA 遞減,抵達則標記探索)
+	s.advancePopulation()  // 累積各殖民地成長,達門檻則 +1 人口(回寫 Population)
 	s.Turn++
+}
+
+// popGrowthThreshold 是「成長累加值 → +1 人口單位」的門檻。MOO2 手冊(MANUAL_150.html p111
+// Growth Formula)給出每回合成長率 a=trunc[(2000·POPRACE·(POPMAX-POPAGG)/POPMAX)^0.5](典型
+// ~90),並說明顯示人口為「累積成長率 + 功能人口單位」,但**未給累加→整格人口的明確門檻**;
+// 存檔 pop_growth 欄位在單一種族殖民地此存檔為 0/~86,未能乾淨反推。故此門檻為 remake 調校值
+// (取 300,使健康殖民地約每 3-4 回合 +1 人口),非 MOO2 精確值。詳見 docs/tech/component-values.md 同款 provenance 註記。
+const popGrowthThreshold = 300
+
+// advancePopulation 把各殖民地本回合成長率(LastPlayerOutput.Colonies[i].PopGrowth)累加到
+// popAccum,達門檻則 +1 人口(回寫 Population,新單位預設為工人),受 PopMax 上限。
+func (s *GameSession) advancePopulation() {
+	if s.popAccum == nil {
+		s.popAccum = make([]int, len(s.PlayerColonies))
+	}
+	for i := range s.PlayerColonies {
+		if i >= len(s.LastPlayerOutput.Colonies) || i >= len(s.popAccum) {
+			break
+		}
+		s.popAccum[i] += s.LastPlayerOutput.Colonies[i].PopGrowth
+		for s.popAccum[i] >= popGrowthThreshold && s.PlayerColonies[i].Population < s.PlayerColonies[i].PopMax {
+			s.popAccum[i] -= popGrowthThreshold
+			s.PlayerColonies[i].Population++
+			s.PlayerColonies[i].Workers++ // 新人口預設分配為工人
+		}
+	}
 }
 
 // researchQueue 回傳「所有元件解鎖主題」依研究成本遞增去重排序的序列。作為研究自動推進的

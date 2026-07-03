@@ -137,7 +137,7 @@
 
 ## Phase 5 — Gameplay 引擎重建
 - [x] 回合結算主迴圈(engine.RunEmpireTurn:殖民地經濟聚合+稅收+國庫+研究推進)
-- [~] 殖民地經濟:食物/工業/研究/稅收/國庫已實作(engine.RunColonyTurn/RunEmpireTurn);人口成長已算 PopGrowth 但未回寫 Population(分數門檻尺度未對實機驗證,見 empire.go 註解)
+- [x] 殖民地經濟:食物/工業/研究/稅收/國庫已實作(engine);人口成長回寫 Population 已補(shell.advancePopulation 累加 PopGrowth 達門檻 +1 人口、新單位為工人、受 PopMax 上限;門檻為 remake 調校值,provenance 見 session.go 註記)。測試 TestPopulationGrowthWriteback/CappedAtMax
 - [~] 建造佇列已實作(advanceBuilds 以淨工業推進);建築完成的長期效果(產出加成)待接
 - [x] 科技研究樹推進(engine.RunResearchPhase 累積+完成判定+溢出保留;session.advanceResearch 自動推進主題)
 - [x] 艦隊移動 + 星圖導航:SendFleet 依星距換算 ETA,EndTurn 跨回合推進,抵達標記探索;星圖點星→面板「派遣艦隊至此星」鈕 + 青色艦隊標記 + 航行連線 + ETA 顯示。測試 TestFleetInterstellarMovement

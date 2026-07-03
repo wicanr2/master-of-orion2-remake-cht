@@ -19,9 +19,10 @@ type EmpireOutput struct {
 //  2. 聚合帝國層級的食物盈餘 / 淨工業 / 研究點。
 //  3. 用研究總點數推進研究進度(RunResearchPhase)。
 //
-// 注意:人口成長(各 ColonyOutput.PopGrowth)本回合只輸出、不回寫 Population——MOO2 的
-// 成長以分數累積到門檻才 +1 人口單位,該累積門檻/尺度尚未對實機驗證,故不擅自換算(避免臆造)。
-// 國庫(BC)結算需 income 公式(手冊未給精確式),同樣待移植,本編排器暫不動 BC。
+// 注意:人口成長(各 ColonyOutput.PopGrowth)在本引擎層只輸出、不回寫 Population——MOO2 的
+// 成長以分數累積到門檻才 +1 人口單位,該累積門檻/尺度手冊未給、存檔未能乾淨反推(避免臆造)。
+// 「累積→回寫 Population」由上層 shell.GameSession.advancePopulation 以 remake 調校門檻處理
+// (見該處 provenance 註記),保持本引擎層公式純淨。國庫 BC 結算已於下方以稅收-維護費處理。
 func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 	out := EmpireOutput{Colonies: make([]ColonyOutput, len(colonies))}
 	for i, cs := range colonies {
