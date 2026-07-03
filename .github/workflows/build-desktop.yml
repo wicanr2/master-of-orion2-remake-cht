@@ -1,0 +1,132 @@
+name: Build Linux / Windows
+
+# 補足本機(Linux dev box)手動跨編 ebiten(CGO)的困難:Windows GUI 版需要
+# mingw-w64 交叉工具鏈、Linux 版需要 X11/OpenGL headers,兩者都用各自原生
+# runner 編,不在這個 workflow 裡跨編。macOS 版另見 build-macos.yml(那份是
+# 重點,因為 Apple SDK EULA + cgo 限制必須用 macOS host)。
+
+on:
+  push:
+    tags:
+      - "v*"
+  pull_request:
+    paths:
+      - "cmd/**"
+      - "internal/**"
+      - "assets/i18n/**"
+      - "go.mod"
+      - "go.sum"
+      - ".github/workflows/build-desktop.yml"
+  workflow_dispatch: {}
+
+env:
+  APP_NAME: MOO2
+
+jobs:
+  build-linux:
+    name: Linux amd64 (.tar.gz)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install ebiten build deps (X11/OpenGL headers)
+        # 對齊 docker/Dockerfile.ebiten 的套件清單。
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gcc pkg-config \
+            libgl1-mesa-dev libxrandr-dev libxcursor-dev libxinerama-dev \
+            libxi-dev libxxf86vm-dev
+
+      - name: Resolve version string
+        id: ver
+        run: |
+          if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-dev-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build
+        env:
+          CGO_ENABLED: "1"
+        run: |
+          mkdir -p dist/${{ env.APP_NAME }}-linux-amd64
+          go build -trimpath -ldflags "-s -w" -o dist/${{ env.APP_NAME }}-linux-amd64/moo2 ./cmd/moo2
+          go build -trimpath -ldflags "-s -w" -o dist/${{ env.APP_NAME }}-linux-amd64/moo2sim ./cmd/moo2sim
+          cp -r assets dist/${{ env.APP_NAME }}-linux-amd64/assets
+
+      - name: Package .tar.gz
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          tar czf "dist/${APP_NAME}-linux-amd64-${VERSION}.tar.gz" \
+            -C dist "${APP_NAME}-linux-amd64"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-linux-amd64
+          path: dist/*.tar.gz
+          retention-days: 14
+
+  build-windows:
+    name: Windows amd64 (.zip)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Setup mingw-w64 (cgo 需要 gcc 才能編 ebiten 的 Windows backend)
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
+
+      - name: Resolve version string
+        id: ver
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-dev-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build
+        shell: bash
+        env:
+          CGO_ENABLED: "1"
+        run: |
+          mkdir -p "dist/${APP_NAME}-windows-amd64"
+          # -H=windowsgui:雙擊執行不彈黑底主控台視窗(GUI app 慣例)。
+          go build -trimpath -ldflags "-s -w -H=windowsgui" \
+            -o "dist/${APP_NAME}-windows-amd64/moo2.exe" ./cmd/moo2
+          go build -trimpath -ldflags "-s -w" \
+            -o "dist/${APP_NAME}-windows-amd64/moo2sim.exe" ./cmd/moo2sim
+          cp -r assets "dist/${APP_NAME}-windows-amd64/assets"
+
+      - name: Package .zip
+        shell: bash
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          cd dist
+          7z a "${APP_NAME}-windows-amd64-${VERSION}.zip" "${APP_NAME}-windows-amd64" >/dev/null
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-windows-amd64
+          path: dist/*.zip
+          retention-days: 14

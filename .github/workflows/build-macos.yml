@@ -1,0 +1,190 @@
+name: Build macOS
+
+# ebiten 的 macOS backend 走 CGO + Cocoa/OpenGL(glfw),必須在真正的 macOS host 編譯
+# (Apple SDK EULA 限制 + cgo 不支援從 Linux 乾淨跨編)。此 workflow 借用 GitHub
+# Actions macos-14 (Apple Silicon) runner 原生編 arm64 + amd64 兩份,再用 lipo 合成
+# universal binary,組成 .app bundle 後打包 .dmg + .tar.gz(雙保險,APFS DMG 在非
+# Mac 平台常讀不到,見 docs/tech/packaging.md)。
+#
+# 注意:本專案的原版遊戲資料(.lbx)與 patch 檔有版權,不進 repo、也不隨這個
+# workflow 打包;打包出的 .app 只含我們自己的執行檔與譯文(assets/i18n),玩家
+# 需自備正版資料並以 -data 指定路徑。
+
+on:
+  push:
+    tags:
+      - "v*"
+  pull_request:
+    paths:
+      - "cmd/**"
+      - "internal/**"
+      - "assets/i18n/**"
+      - "go.mod"
+      - "go.sum"
+      - ".github/workflows/build-macos.yml"
+  workflow_dispatch: {}
+
+env:
+  APP_NAME: MOO2
+  BUNDLE_ID: com.wicanr2.moo2remake
+
+jobs:
+  build-macos:
+    name: macOS universal (.app / .dmg / .tar.gz)
+    runs-on: macos-14 # Apple Silicon (M1),免費額度含 macOS runner
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Resolve version string
+        id: ver
+        run: |
+          if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=0.0.0-dev-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build arm64 (native)
+        env:
+          GOOS: darwin
+          GOARCH: arm64
+          CGO_ENABLED: "1"
+        run: |
+          mkdir -p build/arm64
+          go build -trimpath -ldflags "-s -w" -o build/arm64/moo2 ./cmd/moo2
+          go build -trimpath -ldflags "-s -w" -o build/arm64/moo2sim ./cmd/moo2sim
+
+      - name: Build amd64 (clang -arch x86_64 cross-target)
+        env:
+          GOOS: darwin
+          GOARCH: amd64
+          CGO_ENABLED: "1"
+          CC: clang -arch x86_64
+          CXX: clang++ -arch x86_64
+        run: |
+          # Xcode 的 clang 是 universal 前端,原生就能產 x86_64 object,不需要
+          # Rosetta(那是拿來「跑」x86_64 binary,不是拿來「編」)。
+          mkdir -p build/amd64
+          go build -trimpath -ldflags "-s -w" -o build/amd64/moo2 ./cmd/moo2
+          go build -trimpath -ldflags "-s -w" -o build/amd64/moo2sim ./cmd/moo2sim
+
+      - name: lipo -create universal binaries
+        run: |
+          mkdir -p build/universal
+          lipo -create -output build/universal/moo2 build/arm64/moo2 build/amd64/moo2
+          lipo -create -output build/universal/moo2sim build/arm64/moo2sim build/amd64/moo2sim
+          chmod +x build/universal/moo2 build/universal/moo2sim
+
+      - name: Verify universal (lipo -info must list both arches)
+        run: |
+          set -euo pipefail
+          for bin in build/universal/moo2 build/universal/moo2sim; do
+            info="$(lipo -info "$bin")"
+            echo "$info"
+            echo "$info" | grep -q "arm64" || { echo "::error::$bin 缺 arm64 slice"; exit 1; }
+            echo "$info" | grep -q "x86_64" || { echo "::error::$bin 缺 x86_64 slice"; exit 1; }
+          done
+
+      - name: Assemble .app bundle
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          set -euo pipefail
+          APP="dist/${APP_NAME}.app"
+          rm -rf "$APP"
+          mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+
+          # 真正的 universal binary 放 Resources(非 copyright 資產,可隨 repo 走),
+          # Contents/MacOS 放一支小 launcher shell script:負責把 cwd 切到
+          # Resources 再 exec 真正的 binary。原因:moo2 目前用「相對路徑」找
+          # assets/i18n(見 internal/i18n/registry.go doc comment),而 Finder
+          # 雙擊 .app 啟動時 cwd 通常是使用者家目錄或 /,不是 bundle 內部,
+          # 直接 exec 真 binary 會讀不到譯文。這個 launcher 是繞過方式,詳見
+          # docs/tech/packaging.md。
+          cp build/universal/moo2 "$APP/Contents/Resources/moo2-bin"
+          cp build/universal/moo2sim "$APP/Contents/Resources/moo2sim-bin"
+          chmod +x "$APP/Contents/Resources/moo2-bin" "$APP/Contents/Resources/moo2sim-bin"
+
+          cat > "$APP/Contents/MacOS/${APP_NAME}" <<'LAUNCHER'
+          #!/bin/bash
+          # launcher:cd 到 Resources 讓 moo2 內建的相對路徑(assets/i18n 等)可解析,
+          # 再把使用者的參數原封轉給真正的 universal binary。
+          DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          RES="$DIR/../Resources"
+          cd "$RES"
+          exec "$RES/moo2-bin" "$@"
+          LAUNCHER
+          chmod +x "$APP/Contents/MacOS/${APP_NAME}"
+
+          mkdir -p "$APP/Contents/Resources/assets"
+          cp -r assets/i18n "$APP/Contents/Resources/assets/i18n"
+
+          cat > "$APP/Contents/Info.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleName</key>
+            <string>${APP_NAME}</string>
+            <key>CFBundleDisplayName</key>
+            <string>銀河霸主2 重製</string>
+            <key>CFBundleIdentifier</key>
+            <string>${BUNDLE_ID}</string>
+            <key>CFBundleVersion</key>
+            <string>${VERSION}</string>
+            <key>CFBundleShortVersionString</key>
+            <string>${VERSION}</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+            <key>CFBundleExecutable</key>
+            <string>${APP_NAME}</string>
+            <key>LSApplicationCategoryType</key>
+            <string>public.app-category.strategy-games</string>
+            <key>LSMinimumSystemVersion</key>
+            <string>11.0</string>
+            <key>NSHighResolutionCapable</key>
+            <true/>
+            <key>NSHumanReadableCopyright</key>
+            <string>GPL v2;衍生自 OpenOrion2,遊戲原始資產與字型各依其授權,不含於本 bundle</string>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: Ad-hoc codesign (unsigned, 只求 Gatekeeper 可解隔離後執行)
+        run: |
+          set -euo pipefail
+          codesign --force --deep --sign - "dist/${APP_NAME}.app"
+          codesign -dv --verbose=2 "dist/${APP_NAME}.app"
+
+      - name: Package .dmg (Mac 用戶雙擊安裝)
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          hdiutil create -volname "${APP_NAME}" -srcfolder "dist/${APP_NAME}.app" \
+            -ov -format UDZO "dist/${APP_NAME}-macos-universal-${VERSION}.dmg"
+
+      - name: Package .tar.gz (繞 APFS DMG 在非 Mac 平台讀不到的問題)
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          tar czf "dist/${APP_NAME}-macos-universal-${VERSION}.tar.gz" -C dist "${APP_NAME}.app"
+
+      - name: Upload .dmg artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-macos-universal-dmg
+          path: dist/*.dmg
+          retention-days: 14
+
+      - name: Upload .tar.gz artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-macos-universal-targz
+          path: dist/*.tar.gz
+          retention-days: 14
