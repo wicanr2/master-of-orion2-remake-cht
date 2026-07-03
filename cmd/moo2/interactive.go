@@ -554,9 +554,29 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 		{462, 440, 74, 20, "DISMISS", 0},
 		{540, 440, 80, 20, "RETURN", 0},
 	}
-	return loadOverlayScreen(b.res, "officer.lbx", 0, b.lang, b.fnt, "assets/i18n/officer.tsv",
+	s, err := loadOverlayScreen(b.res, "officer.lbx", 0, b.lang, b.fnt, "assets/i18n/officer.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"buffer0.lbx", 0}})
+	if err != nil {
+		return nil, err
+	}
+	// 領袖名單填進左側槽位(肖像右方名字區;槽中心 y 經 PIL 量測:31/144/253/362 分隔)。
+	if b.session != nil {
+		gold := color.RGBA{240, 220, 120, 255}
+		body := color.RGBA{206, 214, 232, 255}
+		rowY := []float64{87, 198, 307, 415}
+		for i, ld := range b.session.Leaders {
+			if i >= len(rowY) {
+				break
+			}
+			y := rowY[i]
+			s.extras = append(s.extras,
+				extraText{x: 95, y: y - 12, size: 15, text: ld.Name, col: gold},
+				extraText{x: 95, y: y + 12, size: 12, text: fmt.Sprintf("%s ｜ Lv %d", ld.Skill, ld.Level), col: body},
+			)
+		}
+	}
+	return s, nil
 }
 
 // info 建原版科技總覽畫面(INFO.LBX 資產 0,基底 INFO.LBX 資產 1)。座標經 PIL 量測

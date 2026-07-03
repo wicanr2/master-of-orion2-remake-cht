@@ -24,6 +24,24 @@ type Star struct {
 	Owner    int // 0=無主 1=玩家 2=AI
 }
 
+// Leader 是一名可雇用的軍官/領袖(供軍官列表)。
+type Leader struct {
+	Name  string
+	Skill string // 專長
+	Level int    // 等級
+	Ship  bool   // true=艦艇軍官,false=殖民地領袖
+}
+
+// demoLeaders 是示範領袖名單(固定;正式版由 HERODATA.LBX 真英雄資料填)。
+func demoLeaders() []Leader {
+	return []Leader{
+		{"馮·諾伊曼", "科學家", 5, false},
+		{"洛克斐勒", "貿易家", 4, false},
+		{"漢尼拔", "指揮官", 6, true},
+		{"圖靈", "工程師", 3, true},
+	}
+}
+
 // Planet 是一顆行星的顯示資料(供行星列表;正式版由存檔/星系生成填真值)。
 type Planet struct {
 	Name    string // 星名 + 羅馬數字
@@ -84,6 +102,7 @@ type GameSession struct {
 	LastPlayerOutput engine.EmpireOutput // 上一回合玩家結算(供畫面顯示)
 	Stars            []Star              // 星系圖
 	Planets          []Planet            // 行星列表
+	Leaders          []Leader            // 軍官/領袖名單
 }
 
 // EndTurn 推進一回合:先結算玩家帝國,再讓各 AI 對手自行決策並結算,回合數 +1。
@@ -122,5 +141,6 @@ func NewDemoSession() *GameSession {
 		}},
 		Stars:   demoStars(),
 		Planets: genPlanets(demoStars()),
+		Leaders: demoLeaders(),
 	}
 }
