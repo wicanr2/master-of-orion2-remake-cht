@@ -91,7 +91,8 @@
 - [x] 殖民地總覽畫面(COLSUM.LBX 0)接入 COLONIES 按鈕 + 完整中文化
 - [x] 種族關係畫面(RACES.LBX 0)接入 RACES 按鈕 + 中文化(種族關係/會晤/報告/宣戰/忽略/加成/返回)
 - [x] **★ 真新遊戲流程**:主選單→新遊戲→原版 NEW GAME 設定畫面(NEWGAME.LBX 28,調色盤鏈 RACEOPT#4→NEWGAME#1)→ACCEPT→星系主畫面;中文化(難度/星系大小/星系年齡/玩家數/科技等級/戰術戰鬥/隨機事件/安塔蘭攻擊/取消/接受)
-- [x] 已探測定位背景(remain-scan,待接入):議會 COUNCIL.LBX#1、艦艇設計 DESIGN.LBX#0、回合摘要 TURNSUM.LBX#0、讀取存檔 LOADSAVE.LBX#11、外交 DIPLOMAT.LBX#29(有雜訊待查)
+- [x] 回合摘要畫面(TURNSUM.LBX#0)接入 TURN 流程(結束回合→摘要顯示本回合結算:星曆/淨工業/研究/食物/稅收/國庫變化/研究完成)→關閉回星系。中文化(回合摘要/關閉)
+- [x] 已探測定位背景(remain-scan,待接入):議會 COUNCIL.LBX#1、艦艇設計 DESIGN.LBX#0、讀取存檔 LOADSAVE.LBX#11、外交 DIPLOMAT.LBX#29(有雜訊待查)
 - [ ] 細修:NEW GAME 開關列/標題微殘、種族關係 ESPIONAGE/SABOTAGE/HIDE(24 標籤)未翻、各畫面按鈕精確熱區
 - [x] **★ 核心遊戲迴圈第一步**:GameSession 接進 -game;TURN 按鈕呼叫 session.EndTurn()
   (結算帝國經濟 + AI 對手決策),星系畫面即時顯示星曆(3500 起,每回合+1年)+ 國庫 BC

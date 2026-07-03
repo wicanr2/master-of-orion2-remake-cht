@@ -361,9 +361,9 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		case "races":
 			return b.goTo(b.races, "種族關係")
 		case "turn":
-			// 核心迴圈:結算一回合(玩家帝國 + 各 AI 對手決策),再重建星系畫面顯示新星曆。
+			// 核心迴圈:結算一回合(玩家帝國 + 各 AI 對手決策),再顯示回合摘要(原版流程)。
 			b.session.EndTurn()
-			return b.goTo(b.galaxy, "星系主畫面")
+			return b.goTo(b.turnSummary, "回合摘要")
 		}
 		return nil
 	}
@@ -583,6 +583,39 @@ func (b *sceneBuilder) info() (*overlayScreen, error) {
 	// info 選單/標題都疊在均勻的近黑面板背景上,強制用該背景色擦底(採樣會因長英文誤取字色)。
 	black := color.RGBA{0, 8, 24, 255}
 	s.eraseColor = &black
+	return s, nil
+}
+
+// turnSummary 建原版回合摘要畫面(TURNSUM.LBX 資產 0,調色盤鏈 buffer0#0,置中視窗)。
+// 原版流程:結束回合後顯示本回合結算;點 CLOSE 回星系主畫面。
+func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
+	hits, onAction := b.backHit(b.galaxy, "星系主畫面")
+	overlays := []labelRect{
+		{88, 14, 204, 22, "TURN SUMMARY", 0},
+		{158, 324, 64, 18, "CLOSE", 0},
+	}
+	s, err := loadOverlayScreen(b.res, "turnsum.lbx", 0, b.lang, b.fnt, "assets/i18n/misc.tsv",
+		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
+		paletteChain{{"buffer0.lbx", 0}})
+	if err != nil {
+		return nil, err
+	}
+	// 事件區(深色空面板)填本回合結算(座標為 bg 局部,draw 自動加置中偏移)。
+	if b.session != nil {
+		out := b.session.LastPlayerOutput
+		year := 3500 + (b.session.Turn - 1)
+		gold := color.RGBA{240, 220, 120, 255}
+		body := color.RGBA{214, 220, 235, 255}
+		s.extras = []extraText{
+			{x: 40, y: 62, size: 15, text: fmt.Sprintf("星曆 %d 結算", year), col: gold},
+			{x: 40, y: 92, size: 13, text: fmt.Sprintf("淨工業 %d ／ 研究 %d", out.TotalNetIndustry, out.TotalResearch), col: body},
+			{x: 40, y: 116, size: 13, text: fmt.Sprintf("食物盈餘 %d ／ 稅收 %d BC", out.TotalFood, out.TaxRevenue), col: body},
+			{x: 40, y: 140, size: 13, text: fmt.Sprintf("國庫 %d BC(本回合 %+d)", b.session.Player.BC, out.NetBC), col: body},
+		}
+		if out.ResearchDone {
+			s.extras = append(s.extras, extraText{x: 40, y: 168, size: 14, text: "★ 完成一項研究!", col: color.RGBA{120, 220, 140, 255}})
+		}
+	}
 	return s, nil
 }
 
