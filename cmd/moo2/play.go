@@ -153,6 +153,10 @@ type playApp struct {
 	script   []shell.InputState
 	tick     int
 	saved    bool
+
+	// 錄製模式:逐幀存 recordDir/frame_%04d.png,跑滿 recordN 幀後結束(供 gameplay footage)。
+	recordDir string
+	recordN   int
 }
 
 func (a *playApp) pollInput() shell.InputState {
@@ -182,12 +186,18 @@ func (a *playApp) Update() error {
 	if a.shotPath != "" && a.saved {
 		return ebiten.Termination
 	}
+	if a.recordDir != "" && a.tick >= a.recordN {
+		return ebiten.Termination
+	}
 	return nil
 }
 
 func (a *playApp) Draw(dst *ebiten.Image) {
 	dst.Fill(color.RGBA{16, 20, 40, 255})
 	a.cur.draw(dst, a.font)
+	if a.recordDir != "" && a.tick >= 1 && a.tick <= a.recordN {
+		_ = saveScreenshot(dst, fmt.Sprintf("%s/frame_%04d.png", a.recordDir, a.tick))
+	}
 	if a.shotPath != "" && !a.saved && a.tick >= a.frames {
 		if err := saveScreenshot(dst, a.shotPath); err != nil {
 			fmt.Println("截圖失敗:", err)
@@ -198,12 +208,14 @@ func (a *playApp) Draw(dst *ebiten.Image) {
 
 func (a *playApp) Layout(int, int) (int, int) { return playW, playH }
 
-// runPlay 啟動可玩遊戲殼。script 非 nil 時為 headless 驗證模式(注入輸入 + 截圖)。
-func runPlay(fnt *uifont.Font, shot string, frames int, script []shell.InputState) error {
+// runPlay 啟動可玩遊戲殼。script 非 nil 時為 headless 驗證模式(注入輸入)。
+// recordDir 非空時為錄製模式:逐幀存圖(供 gameplay footage),跑滿 recordN 幀後結束。
+func runPlay(fnt *uifont.Font, shot string, frames int, script []shell.InputState, recordDir string, recordN int) error {
 	if fnt == nil {
 		return fmt.Errorf("可玩模式需以 -font 指定字型")
 	}
-	a := &playApp{cur: newMenuScreen(), font: fnt, shotPath: shot, frames: frames, script: script}
+	a := &playApp{cur: newMenuScreen(), font: fnt, shotPath: shot, frames: frames,
+		script: script, recordDir: recordDir, recordN: recordN}
 	ebiten.SetWindowSize(playW, playH)
 	ebiten.SetWindowTitle("Master of Orion II — 繁體中文化")
 	return ebiten.RunGame(a)
@@ -328,4 +340,35 @@ func (c *colonyManageScreen) draw(dst *ebiten.Image, font *uifont.Font) {
 	}
 
 	drawButtons(dst, font, c.buttons)
+}
+
+// recordPlaythrough 產生一段豐富的 gameplay 腳本(點擊 + linger 幀,讓每個動作結果看得清楚),
+// 供 -play-record 逐幀錄製成 gameplay footage。座標對應各畫面按鈕中心。
+func recordPlaythrough() []shell.InputState {
+	var s []shell.InputState
+	hold := func(n int) {
+		for i := 0; i < n; i++ {
+			s = append(s, shell.InputState{})
+		}
+	}
+	click := func(x, y, linger int) {
+		s = append(s, shell.InputState{MouseX: x, MouseY: y, ClickReleased: true})
+		for i := 0; i < linger; i++ {
+			s = append(s, shell.InputState{MouseX: x, MouseY: y}) // hover(不點),讓結果停留
+		}
+	}
+	hold(3)            // 停在主選單
+	click(320, 218, 3) // 新遊戲 → 帝國概況
+	click(315, 438, 2) // 管理殖民地
+	click(365, 185, 2) // 工人 ▲
+	click(365, 185, 2) // 工人 ▲
+	click(365, 225, 2) // 科學家 ▲
+	click(320, 438, 2) // 下個殖民地
+	click(365, 185, 2) // 工人 ▲(第二殖民地)
+	click(85, 438, 2)  // 返回帝國
+	click(495, 438, 3) // 結束回合(星曆 +1)
+	click(495, 438, 3) // 結束回合(AI 持續發展)
+	click(315, 438, 3) // 再次管理殖民地
+	hold(3)
+	return s
 }

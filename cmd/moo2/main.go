@@ -90,6 +90,7 @@ func main() {
 	infoTech := flag.String("info-tech", "Achilles Targeting Unit", "科技總覽右欄範例科技(英文標題)")
 	raceMode := flag.Bool("race-viewer", false, "種族統計畫面模式")
 	playMode := flag.Bool("play", false, "可玩遊戲殼(互動;有 -shot 則跑腳本驗證並截圖)")
+	playRecord := flag.String("play-record", "", "錄製模式:scripted playthrough 逐幀存圖到此目錄(供 gameplay footage)")
 	colonyMode := flag.Bool("colony-viewer", false, "殖民地摘要畫面模式")
 	diploMode := flag.Bool("diplo-viewer", false, "外交關係畫面模式")
 	tsvPath := flag.String("tsv", "", "譯表 TSV(留空用該畫面預設)")
@@ -185,6 +186,14 @@ func main() {
 		if err != nil {
 			fatal(fmt.Errorf("載入字型: %w", err))
 		}
+		// 錄製模式:跑豐富 playthrough 逐幀存圖(gameplay footage)。
+		if *playRecord != "" {
+			script := recordPlaythrough()
+			if err := runPlay(fnt, "", 0, script, *playRecord, len(script)+2); err != nil {
+				fatal(err)
+			}
+			return
+		}
 		var script []shell.InputState
 		if *shot != "" {
 			// 腳本 playthrough:新遊戲→管理殖民地→調工人×2→調科學家 → 截圖驗證互動 gameplay。
@@ -196,7 +205,7 @@ func main() {
 				{MouseX: 365, MouseY: 225, ClickReleased: true}, // 科學家 ▲
 			}
 		}
-		if err := runPlay(fnt, *shot, *frames, script); err != nil {
+		if err := runPlay(fnt, *shot, *frames, script, "", 0); err != nil {
 			fatal(err)
 		}
 		return
