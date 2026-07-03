@@ -7,6 +7,7 @@ import (
 	"os"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -584,6 +585,16 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 				bt = fmt.Sprintf("%s %d/%d", bd.Name, bd.Progress, bd.Cost)
 			}
 			s.extras = append(s.extras, extraText{x: 571, y: y, size: 12, text: bt, col: body, align: 1})
+			// 已建建築(顯示效果來源):在建造欄下方以小字列出。
+			if i < len(b.session.ColonyBuildings) && len(b.session.ColonyBuildings[i]) > 0 {
+				names := make([]string, 0, len(b.session.ColonyBuildings[i]))
+				for n := range b.session.ColonyBuildings[i] {
+					names = append(names, n)
+				}
+				sort.Strings(names)
+				lbl := "已建:" + strings.Join(names, "、")
+				s.extras = append(s.extras, extraText{x: 571, y: y + 13, size: 10, text: lbl, col: color.RGBA{150, 200, 150, 255}, align: 1})
+			}
 		}
 	}
 	return s, nil

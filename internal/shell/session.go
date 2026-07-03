@@ -437,9 +437,32 @@ func (s *GameSession) CycleColonyBuild(idx int) {
 	s.Builds[idx] = ColonyBuild{Name: next.Name, Progress: 0, Cost: next.Cost}
 }
 
-// advanceBuilds 以各殖民地淨工業推進建造;完成則清空並記錄(供回合摘要)。
+// applyBuildingEffect 對殖民地 i 套用某已完工建築的長期產出效果(每殖民地每種建築只套一次)。
+// 效果係數為 remake 調校值(MOO2 手冊未給統一機讀表,對齊各建築定性作用):
+// 自動工廠→工業/工人 +2、研究實驗室→研究/科學家 +5、太空港→貿易(工業/工人 +1)。
+// 海軍陸戰隊營/星基屬防禦設施,現階段無直接產出建模(仍記錄為已建)。
+func (s *GameSession) applyBuildingEffect(i int, name string) {
+	if i < 0 || i >= len(s.PlayerColonies) {
+		return
+	}
+	c := &s.PlayerColonies[i]
+	switch name {
+	case "自動工廠":
+		c.IndustryPerWorker += 2
+	case "研究實驗室":
+		c.ResearchPerScientist += 5
+	case "太空港":
+		c.IndustryPerWorker += 1
+	}
+}
+
+// advanceBuilds 以各殖民地淨工業推進建造;完成則套用建築長期效果、記錄(供回合摘要)並清空。
+// 每殖民地每種建築只建/套用一次(ColonyBuildings 去重),重複建造會即時完成但不再疊加效果。
 func (s *GameSession) advanceBuilds() {
 	s.LastBuilt = nil
+	if s.ColonyBuildings == nil {
+		s.ColonyBuildings = make([]map[string]bool, len(s.PlayerColonies))
+	}
 	for i := range s.Builds {
 		b := &s.Builds[i]
 		if b.Name == "" || b.Cost == 0 {
@@ -451,6 +474,15 @@ func (s *GameSession) advanceBuilds() {
 		}
 		b.Progress += ind
 		if b.Progress >= b.Cost {
+			if i < len(s.ColonyBuildings) {
+				if s.ColonyBuildings[i] == nil {
+					s.ColonyBuildings[i] = make(map[string]bool)
+				}
+				if !s.ColonyBuildings[i][b.Name] {
+					s.ColonyBuildings[i][b.Name] = true
+					s.applyBuildingEffect(i, b.Name) // 首次完工才套用長期效果
+				}
+			}
 			s.LastBuilt = append(s.LastBuilt, fmt.Sprintf("殖民地 %d 完成建造:%s", i+1, b.Name))
 			*b = ColonyBuild{} // 完成清空
 		}
@@ -586,6 +618,7 @@ type GameSession struct {
 	FleetDestStar    int                 // 艦隊目的星索引(-1=無航行任務)
 	FleetETA         int                 // 抵達目的星尚需回合數(0=已抵達/靜止)
 	popAccum         []int               // 各殖民地人口成長累加值(達門檻則 +1 人口)
+	ColonyBuildings  []map[string]bool   // 各殖民地已完工建築(去重,避免重複套用長期效果)
 }
 
 // SendFleet 派遣玩家艦隊前往 dest 星:依兩星歐氏距離換算航行回合數(ETA),每回合 EndTurn
