@@ -4,6 +4,8 @@ package shell
 
 import (
 	"fmt"
+	"math"
+	"math/rand"
 	"sort"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
@@ -308,18 +310,43 @@ func genPlanets(stars []Star) []Planet {
 	return out
 }
 
-// demoStars 是最小示範星系(固定佈局,供星圖視窗渲染;待接真星系生成 + STARNAME.LBX 真星名)。
-func demoStars() []Star {
-	return []Star{
-		{0.12, 0.18, 2, 0, "獵戶", 1}, {0.30, 0.10, 1, 1, "天狼", 0},
-		{0.48, 0.22, 3, 2, "南門", 0}, {0.68, 0.14, 0, 1, "參宿", 0},
-		{0.86, 0.24, 4, 2, "畢宿", 2}, {0.18, 0.42, 4, 3, "織女", 0},
-		{0.40, 0.48, 2, 1, "河鼓", 1}, {0.60, 0.40, 1, 0, "角宿", 0},
-		{0.80, 0.50, 3, 2, "心宿", 0}, {0.10, 0.68, 0, 1, "北落", 0},
-		{0.34, 0.72, 2, 2, "五車", 0}, {0.54, 0.66, 5, 3, "軒轅", 0},
-		{0.72, 0.74, 4, 1, "太微", 2}, {0.90, 0.66, 1, 0, "天津", 0},
-		{0.24, 0.88, 3, 2, "婁宿", 0}, {0.62, 0.86, 2, 1, "氐宿", 0},
+// starNamePool 是星名池(二十八宿 + 常見星名;程序生成時依序取用)。
+var starNamePool = []string{
+	"獵戶", "天狼", "南門", "參宿", "畢宿", "織女", "河鼓", "角宿", "心宿", "北落",
+	"五車", "軒轅", "太微", "天津", "婁宿", "氐宿", "房宿", "尾宿", "箕宿", "斗宿",
+	"牛宿", "女宿", "虛宿", "危宿", "室宿", "壁宿", "奎宿", "胃宿", "昴宿", "觜宿",
+	"井宿", "鬼宿", "柳宿", "星宿", "張宿", "翼宿", "軫宿", "亢宿",
+}
+
+// genGalaxy 程序化生成星系:以種子亂數在抖動網格上佈星,隨機光譜/大小/星名;
+// 第 0 星為玩家母星、約中段一星為 AI 母星。n=星數(對應星系大小)。
+func genGalaxy(n int, seed int64) []Star {
+	r := rand.New(rand.NewSource(seed))
+	cols := int(math.Ceil(math.Sqrt(float64(n))))
+	rows := (n + cols - 1) / cols
+	stars := make([]Star, 0, n)
+	idx := 0
+	names := append([]string(nil), starNamePool...)
+	r.Shuffle(len(names), func(i, j int) { names[i], names[j] = names[j], names[i] })
+	for gy := 0; gy < rows && idx < n; gy++ {
+		for gx := 0; gx < cols && idx < n; gx++ {
+			x := (float64(gx) + 0.15 + r.Float64()*0.7) / float64(cols)
+			y := (float64(gy) + 0.15 + r.Float64()*0.7) / float64(rows)
+			nm := names[idx%len(names)]
+			if idx >= len(names) {
+				nm = fmt.Sprintf("%s-%d", nm, idx/len(names)+1)
+			}
+			owner := 0
+			if idx == 0 {
+				owner = 1 // 玩家母星
+			} else if idx == n/2 {
+				owner = 2 // AI 母星
+			}
+			stars = append(stars, Star{X: x, Y: y, Spectral: r.Intn(7), Size: r.Intn(4), Name: nm, Owner: owner})
+			idx++
+		}
 	}
+	return stars
 }
 
 // GameSession 是一局進行中的遊戲狀態。玩家操作改變狀態,EndTurn 推進一回合(結算玩家 + 各 AI)。
@@ -364,6 +391,7 @@ func NewDemoSession() *GameSession {
 				PlanetSize: 1 /*SMALL*/},
 		}
 	}
+	galaxy := genGalaxy(24, 42) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
 	return &GameSession{
 		Turn:           1,
 		Player:         engine.PlayerState{BC: 100, TaxRate: 40, Maintenance: 5, ResearchTopic: 1},
@@ -374,8 +402,8 @@ func NewDemoSession() *GameSession {
 			Colonies: mkColonies(),
 			Decider:  ai.NewRemakeDecider(ai.ProfileScientific),
 		}},
-		Stars:        demoStars(),
-		Planets:      genPlanets(demoStars()),
+		Stars:        galaxy,
+		Planets:      genPlanets(galaxy),
 		Leaders:      demoLeaders(),
 		Ships:        demoShips(),
 		Builds:       make([]ColonyBuild, 2),
