@@ -1084,18 +1084,18 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		{0, 0, moo2ScreenW, moo2ScreenH, "back"},
 	}
 	onAction := func(a string) *origTransition {
-		switch a {
+		switch a { // 循環只跳到「已研究解鎖」的元件
 		case "weapon":
-			b.designWeapon = (b.designWeapon + 1) % len(shell.WeaponOptions)
+			b.designWeapon = b.session.NextUnlockedComponent(shell.WeaponOptions, b.designWeapon)
 			return b.goTo(b.shipDesign, "艦艇設計")
 		case "armor":
-			b.designArmor = (b.designArmor + 1) % len(shell.ArmorOptions)
+			b.designArmor = b.session.NextUnlockedComponent(shell.ArmorOptions, b.designArmor)
 			return b.goTo(b.shipDesign, "艦艇設計")
 		case "shield":
-			b.designShield = (b.designShield + 1) % len(shell.ShieldOptions)
+			b.designShield = b.session.NextUnlockedComponent(shell.ShieldOptions, b.designShield)
 			return b.goTo(b.shipDesign, "艦艇設計")
 		case "special":
-			b.designSpecial = (b.designSpecial + 1) % len(shell.SpecialOptions)
+			b.designSpecial = b.session.NextUnlockedComponent(shell.SpecialOptions, b.designSpecial)
 			return b.goTo(b.shipDesign, "艦艇設計")
 		}
 		if zh, ok := hullZH[a]; ok && b.session != nil {
@@ -1152,8 +1152,22 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 				extraText{x: 470, y: y, size: 11, text: fmt.Sprintf("%s %dBC", r.eff, r.c.Cost), col: color.RGBA{200, 208, 225, 255}})
 		}
 		total := shell.DesignCost("巡洋艦", b.designWeapon, b.designArmor, b.designShield, b.designSpecial)
+		// 各類已解鎖元件數(需研究對應科技解鎖進階元件)。
+		cnt := func(opts []shell.Component) int {
+			n := 0
+			for _, c := range opts {
+				if b.session.ComponentUnlocked(c) {
+					n++
+				}
+			}
+			return n
+		}
 		s.extras = append(s.extras,
 			extraText{x: 305, y: 168, size: 12, text: fmt.Sprintf("巡洋艦總價 %d BC", total), col: color.RGBA{170, 220, 180, 255}},
+			extraText{x: 305, y: 190, size: 11, text: fmt.Sprintf("已解鎖 武器%d/%d 裝甲%d/%d 護盾%d/%d 特殊%d/%d(研究科技解鎖進階元件)",
+				cnt(shell.WeaponOptions), len(shell.WeaponOptions), cnt(shell.ArmorOptions), len(shell.ArmorOptions),
+				cnt(shell.ShieldOptions), len(shell.ShieldOptions), cnt(shell.SpecialOptions), len(shell.SpecialOptions)),
+				col: color.RGBA{170, 200, 240, 255}},
 			extraText{x: 12, y: 460, size: 12, text: fmt.Sprintf("國庫 %d BC", b.session.Player.BC), col: gold})
 	}
 	return s, nil

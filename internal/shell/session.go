@@ -10,6 +10,7 @@ import (
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
 // AIOpponent 是一個由 AI 操控的對手帝國。
@@ -37,20 +38,50 @@ type Ship struct {
 	WeaponAttack, BonusHP          int    // 武器攻擊加成、裝甲+護盾 HP 加成
 }
 
-// Component 是一個艦艇元件(名稱 + 成本 + 效果值)。
+// Component 是一個艦艇元件(名稱 + 成本 + 效果值 + 解鎖科技)。
 type Component struct {
 	Name  string
 	Cost  int
-	Value int // 武器=攻擊、裝甲/護盾=HP、特殊=攻擊或視元件而定
+	Value int                    // 武器=攻擊、裝甲/護盾=HP、特殊=攻擊或視元件而定
+	Tech  gamedata.ResearchTopic // 解鎖所需研究主題(0=起始科技,一開始就有)
 }
 
-// 元件清單(對齊 MOO2 早期元件概念:武器/裝甲/護盾/特殊裝備,各含成本與效果)。
+// 元件清單(對齊 MOO2:武器/裝甲/護盾/特殊,各含成本、效果、解鎖科技)。進階元件需先研究對應科技。
 var (
-	WeaponOptions  = []Component{{"無武裝", 0, 0}, {"雷射", 20, 2}, {"質量投射器", 40, 4}, {"核飛彈", 60, 6}, {"離子砲", 100, 8}}
-	ArmorOptions   = []Component{{"無裝甲", 0, 0}, {"鈦裝甲", 30, 10}, {"三鈦裝甲", 60, 25}, {"天龍鱗甲", 120, 50}}
-	ShieldOptions  = []Component{{"無護盾", 0, 0}, {"I 級護盾", 40, 15}, {"II 級護盾", 80, 35}, {"III 級護盾", 150, 60}}
-	SpecialOptions = []Component{{"無", 0, 0}, {"戰鬥電腦", 80, 3}, {"自動修復", 60, 0}, {"隱形裝置", 100, 0}}
+	WeaponOptions = []Component{{"無武裝", 0, 0, 0}, {"雷射", 20, 2, 0},
+		{"質量投射器", 40, 4, gamedata.TOPIC_ADVANCED_MAGNETISM}, {"核飛彈", 60, 6, 0},
+		{"離子砲", 100, 8, gamedata.TOPIC_ADVANCED_FUSION}}
+	ArmorOptions = []Component{{"無裝甲", 0, 0, 0}, {"鈦裝甲", 30, 10, 0},
+		{"三鈦裝甲", 60, 25, gamedata.TOPIC_ADVANCED_METALLURGY},
+		{"天龍鱗甲", 120, 50, gamedata.TOPIC_ADVANCED_CONSTRUCTION}}
+	ShieldOptions = []Component{{"無護盾", 0, 0, 0},
+		{"I 級護盾", 40, 15, gamedata.TOPIC_ADVANCED_MAGNETISM},
+		{"II 級護盾", 80, 35, gamedata.TOPIC_ARTIFICIAL_GRAVITY},
+		{"III 級護盾", 150, 60, gamedata.TOPIC_ADVANCED_MANUFACTURING}}
+	SpecialOptions = []Component{{"無", 0, 0, 0},
+		{"戰鬥電腦", 80, 3, gamedata.TOPIC_ARTIFICIAL_INTELLIGENCE},
+		{"自動修復", 60, 0, gamedata.TOPIC_ADVANCED_ROBOTICS},
+		{"隱形裝置", 100, 0, gamedata.TOPIC_ARTIFICIAL_CONSCIOUSNESS}}
 )
+
+// ComponentUnlocked 回傳某元件是否已解鎖(起始科技一律解鎖,否則需已完成對應研究)。
+func (s *GameSession) ComponentUnlocked(c Component) bool {
+	if c.Tech == gamedata.TOPIC_STARTING_TECH {
+		return true
+	}
+	return s.Player.CompletedTopics != nil && s.Player.CompletedTopics[c.Tech]
+}
+
+// NextUnlockedComponent 從 opts[cur] 起找下一個已解鎖元件的索引(循環;至少回 0=無)。
+func (s *GameSession) NextUnlockedComponent(opts []Component, cur int) int {
+	for step := 1; step <= len(opts); step++ {
+		i := (cur + step) % len(opts)
+		if s.ComponentUnlocked(opts[i]) {
+			return i
+		}
+	}
+	return 0
+}
 
 // demoShips 是示範艦隊(固定;正式版由存檔/建造填)。
 func demoShips() []Ship {
