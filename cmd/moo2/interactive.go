@@ -276,8 +276,11 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 		switch a {
 		case "Quit Game":
 			return &origTransition{quit: true}
-		case "New Game", "Continue":
-			// 進入遊戲主樞紐(原版星系 GUI 畫面):後續接真正的新遊戲流程(種族/星系生成)。
+		case "New Game":
+			// 新遊戲:先進原版 NEW GAME 設定畫面(難度/星系/玩家…),ACCEPT 後進星系主畫面。
+			return b.goTo(b.newGameSetup, "新遊戲設定")
+		case "Continue":
+			// 續玩:直接進星系主畫面(後續接讀檔)。
 			return b.goTo(b.galaxy, "星系主畫面")
 		case "Hall of Fame":
 			// 暫借「名人堂」入口示範調色盤鏈解鎖的研究選擇畫面(原本無內嵌調色盤)。
@@ -331,8 +334,10 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			return b.goTo(b.officer, "軍官列表")
 		case "info":
 			return b.goTo(b.info, "科技總覽")
+		case "races":
+			return b.goTo(b.races, "種族關係")
 		}
-		// races / turn:尚未接入,暫不動作。
+		// turn:尚未接入,暫不動作。
 		return nil
 	}
 	// 工具列標籤擦底疊字(x 為按鈕中心對齊,y 中心經 PIL 量測:一般列 450、TURN 455)。
@@ -372,6 +377,55 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 	}
 	return loadOverlayScreen(b.res, "colsum.lbx", 0, b.lang, b.fnt, "assets/i18n/colony.tsv",
 		overlays, color.RGBA{210, 216, 230, 255}, 13, hits, onAction, nil)
+}
+
+// races 建原版種族關係畫面(RACES.LBX 資產 0,自帶完整調色盤)。RACES 按鈕目標。
+func (b *sceneBuilder) races() (*overlayScreen, error) {
+	hits, onAction := b.backHit(b.galaxy, "星系主畫面")
+	// 座標經 PIL 量測(remain-scan/races_a0_f00.png)。
+	overlays := []labelRect{
+		{200, 14, 240, 22, "RACE RELATIONS", 0},
+		{338, 401, 104, 18, "BONUSES", 12},
+		{340, 424, 96, 18, "AUDIENCE", 11},
+		{340, 442, 96, 18, "DECLARE WAR", 10},
+		{438, 424, 90, 18, "REPORT", 11},
+		{438, 442, 90, 18, "IGNORE", 11},
+		{536, 432, 82, 22, "RETURN", 0},
+	}
+	return loadOverlayScreen(b.res, "races.lbx", 0, b.lang, b.fnt, "assets/i18n/diplo.tsv",
+		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction, nil)
+}
+
+// newGameSetup 建原版新遊戲設定畫面(NEWGAME.LBX 資產 28,調色盤鏈 RACEOPT#4→NEWGAME#1)。
+// ACCEPT 進星系主畫面;CANCEL 回主選單。
+func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
+	hits := []hitRegion{
+		{92, 392, 108, 30, "cancel"},
+		{432, 392, 108, 30, "accept"},
+	}
+	onAction := func(a string) *origTransition {
+		if a == "accept" {
+			return b.goTo(b.galaxy, "星系主畫面")
+		}
+		return b.goTo(b.menu, "主選單")
+	}
+	// 座標經 PIL 量測(remain-scan/newgame_a28_f00.png);開關標籤移到核取框右側(x430)避免採到藍框。
+	overlays := []labelRect{
+		{244, 44, 166, 24, "New Game", 0},
+		{86, 78, 130, 22, "DIFFICULTY", 0},
+		{232, 78, 150, 22, "GALAXY SIZE", 0},
+		{398, 78, 150, 22, "GALAXY AGE", 0},
+		{86, 222, 130, 22, "PLAYERS", 0},
+		{232, 222, 150, 22, "TECH LEVEL", 0},
+		{426, 266, 134, 18, "TACTICAL COMBAT", 11},
+		{426, 301, 134, 18, "RANDOM EVENTS", 11},
+		{426, 334, 134, 18, "ANTARANS ATTACK", 11},
+		{100, 388, 96, 24, "CANCEL", 0},
+		{440, 388, 96, 24, "ACCEPT", 0},
+	}
+	return loadOverlayScreen(b.res, "newgame.lbx", 28, b.lang, b.fnt, "assets/i18n/menu.tsv",
+		overlays, color.RGBA{210, 216, 230, 255}, 13, hits, onAction,
+		paletteChain{{"raceopt.lbx", 4}, {"newgame.lbx", 1}})
 }
 
 // fleet 建原版艦隊列表畫面(FLEET.LBX 資產 0,三段調色盤鏈)。座標經 PIL 量測
