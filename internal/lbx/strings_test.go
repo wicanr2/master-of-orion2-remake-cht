@@ -11,9 +11,9 @@ func TestParseFixedStrings(t *testing.T) {
 	buf := make([]byte, 4+3*8)
 	binary.LittleEndian.PutUint16(buf[0:], 3)
 	binary.LittleEndian.PutUint16(buf[2:], 8)
-	copy(buf[4:], "Ion\x00")            // 第 0 條
-	copy(buf[12:], "Fusion\x00")        // 第 1 條
-	copy(buf[20:], "Antimat\x00")       // 第 2 條(7 字元 + NUL)
+	copy(buf[4:], "Ion\x00")      // 第 0 條
+	copy(buf[12:], "Fusion\x00")  // 第 1 條
+	copy(buf[20:], "Antimat\x00") // 第 2 條(7 字元 + NUL)
 	got, err := ParseFixedStrings(buf)
 	if err != nil {
 		t.Fatal(err)

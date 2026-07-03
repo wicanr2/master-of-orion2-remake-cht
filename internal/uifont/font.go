@@ -12,8 +12,8 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	text "github.com/hajimehoshi/ebiten/v2/text/v2"
-	"golang.org/x/image/font/opentype"
 	xfont "golang.org/x/image/font"
+	"golang.org/x/image/font/opentype"
 )
 
 // Font 是一份已解析字型,依尺寸快取 face。

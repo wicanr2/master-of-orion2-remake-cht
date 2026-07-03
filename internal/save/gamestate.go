@@ -4,9 +4,9 @@ import "fmt"
 
 // 存檔佈局常數,對照 openorion2 gamestate.cpp / gamestate.h。
 const (
-	saveVersion       = 0xe0   // GameConfig.version 必為此值
-	saveGameNameSize  = 37     // SAVE_GAME_NAME_SIZE
-	colonyCountOffset = 0x25b  // COLONY_COUNT_OFFSET
+	saveVersion       = 0xe0    // GameConfig.version 必為此值
+	saveGameNameSize  = 37      // SAVE_GAME_NAME_SIZE
+	colonyCountOffset = 0x25b   // COLONY_COUNT_OFFSET
 	galaxyOffset      = 0x31be4 // GameState::load 對 galaxy 的 seek
 
 	maxNebulas  = 4
@@ -109,7 +109,7 @@ type GameState struct {
 	PlanetCount int
 	Planets     []Planet // len maxPlanets
 	StarCount   int
-	Stars       []Star // len maxStars
+	Stars       []Star   // len maxStars
 	Leaders     []Leader // len leaderCount(無獨立計數)
 	PlayerCount int
 	Players     []Player // len maxPlayers

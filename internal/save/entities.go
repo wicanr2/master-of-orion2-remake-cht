@@ -88,14 +88,14 @@ type Colony struct {
 	BudgetDeficit        int16
 	RecycledIndustry     uint8
 
-	FoodConsumptionCitizens   uint8
-	FoodConsumptionAliens     uint8
-	FoodConsumptionPrisoners  uint8
-	FoodConsumptionNatives    uint8
-	IndustryConsumptionCitz   uint8
+	FoodConsumptionCitizens    uint8
+	FoodConsumptionAliens      uint8
+	FoodConsumptionPrisoners   uint8
+	FoodConsumptionNatives     uint8
+	IndustryConsumptionCitz    uint8
 	IndustryConsumptionAndroid uint8
-	IndustryConsumptionAliens uint8
-	IndustryConsumptionPrison uint8
+	IndustryConsumptionAliens  uint8
+	IndustryConsumptionPrison  uint8
 
 	FoodConsumptionRaces     [maxPlayers]uint8
 	IndustryConsumptionRaces [maxPlayers]uint8
@@ -247,9 +247,9 @@ type Star struct {
 	LastPlanetSelected [maxPlayers]uint8
 	BlackHoleBlocks    [bitBytes72]uint8
 
-	Special   uint8
-	Wormhole  int8
-	Blockaded uint8
+	Special     uint8
+	Wormhole    int8
+	Blockaded   uint8
 	BlockadedBy [maxPlayers]uint8
 
 	Visited                 uint8
@@ -268,11 +268,11 @@ type Star struct {
 	HasDimensionalPortal    uint8
 	IsStagepoint            uint8
 
-	OfficerIndex   [maxPlayers]int8
-	PlanetIndex    [maxOrbits]int16
-	RelocateShipTo [maxPlayers]uint16
-	SurrenderTo    [maxPlayers]uint8
-	InNebula       uint8
+	OfficerIndex     [maxPlayers]int8
+	PlanetIndex      [maxOrbits]int16
+	RelocateShipTo   [maxPlayers]uint16
+	SurrenderTo      [maxPlayers]uint8
+	InNebula         uint8
 	ArtifactsGaveApp uint8
 }
 
@@ -434,25 +434,25 @@ func (d *ShipDesign) load(r *reader) {
 
 // ── Ship(129 bytes)───────────────────────────────────────
 type Ship struct {
-	Design           ShipDesign
-	Owner            uint8
-	Status           uint8
-	Star             int16
-	X, Y             uint16
+	Design            ShipDesign
+	Owner             uint8
+	Status            uint8
+	Star              int16
+	X, Y              uint16
 	GroupHasNavigator uint8
-	WarpSpeed        uint8
-	Eta              uint8
-	ShieldDamage     uint8
-	DriveDamage      uint8
-	ComputerDamage   uint8
-	CrewLevel        uint8
-	CrewExp          uint16
-	Officer          int16
-	DamagedSpecials  [bitBytesSpecials]uint8
-	ArmorDamage      uint16
-	StructureDamage  uint16
-	Mission          uint8
-	JustBuilt        uint8
+	WarpSpeed         uint8
+	Eta               uint8
+	ShieldDamage      uint8
+	DriveDamage       uint8
+	ComputerDamage    uint8
+	CrewLevel         uint8
+	CrewExp           uint16
+	Officer           int16
+	DamagedSpecials   [bitBytesSpecials]uint8
+	ArmorDamage       uint16
+	StructureDamage   uint16
+	Mission           uint8
+	JustBuilt         uint8
 }
 
 func (s *Ship) load(r *reader) {
@@ -482,11 +482,11 @@ func (s *Ship) load(r *reader) {
 
 // ── SettlerInfo(4 bytes,bit-packed LE)────────────────────
 type SettlerInfo struct {
-	SourceColony     uint8
+	SourceColony      uint8
 	DestinationPlanet uint8
-	Player           uint8
-	Eta              uint8
-	Job              uint8
+	Player            uint8
+	Eta               uint8
+	Job               uint8
 }
 
 func (s *SettlerInfo) load(r *reader) {
@@ -512,18 +512,18 @@ type Player struct {
 	Personality uint8 // 100 = 人類玩家
 	Objective   uint8
 
-	HomePlayerId      uint16
-	NetworkPlayerId   uint16
-	PlayerDoneFlags   uint8
+	HomePlayerId         uint16
+	NetworkPlayerId      uint16
+	PlayerDoneFlags      uint8
 	ResearchBreakthrough uint8
-	TaxRate           uint8
-	BC                int32
-	TotalFreighters   uint16
-	SurplusFreighters int16
-	CommandPoints     uint16
-	UsedCommandPoints int16
-	FoodFreighted     uint16
-	SettlersFreighted uint16
+	TaxRate              uint8
+	BC                   int32
+	TotalFreighters      uint16
+	SurplusFreighters    int16
+	CommandPoints        uint16
+	UsedCommandPoints    int16
+	FoodFreighted        uint16
+	SettlersFreighted    uint16
 
 	Settlers [maxSettlers]SettlerInfo
 
@@ -543,12 +543,12 @@ type Player struct {
 	TributeCost          uint16
 	OfficerMaintenance   uint16
 
-	ResearchTopics [maxResearchTopics]uint8
-	Techs          [maxTechnologies]uint8
+	ResearchTopics   [maxResearchTopics]uint8
+	Techs            [maxTechnologies]uint8
 	ResearchProgress uint32
-	HyperTechLevels [maxResearchAreas]uint8
-	ResearchTopic  uint8
-	ResearchItem   uint8
+	HyperTechLevels  [maxResearchAreas]uint8
+	ResearchTopic    uint8
+	ResearchItem     uint8
 
 	Blueprints        [maxPlayerBlueprint]ShipDesign
 	SelectedBlueprint ShipDesign
