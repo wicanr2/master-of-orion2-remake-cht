@@ -31,17 +31,27 @@ type Star struct {
 
 // Ship 是一艘艦艇(供艦隊畫面)。
 type Ship struct {
-	Name  string
-	Class string // 艦體等級(護衛艦/驅逐艦/巡洋艦/戰艦…)
+	Name         string
+	Class        string // 艦體等級(護衛艦/巡洋艦/戰艦…)
+	Weapon       string // 主武器(元件)
+	WeaponAttack int    // 武器攻擊加成
+}
+
+// WeaponOptions 是可掛載的主武器元件(名稱 + 成本 BC + 攻擊加成),對齊 MOO2 早期武器概念。
+var WeaponOptions = []struct {
+	Name         string
+	Cost, Attack int
+}{
+	{"無武裝", 0, 0}, {"雷射", 20, 2}, {"質量投射器", 40, 4}, {"核飛彈", 60, 6}, {"離子砲", 100, 8},
 }
 
 // demoShips 是示範艦隊(固定;正式版由存檔/建造填)。
 func demoShips() []Ship {
 	return []Ship{
-		{"探索號", "偵察艦"},
-		{"復仇號", "護衛艦"},
-		{"雷霆號", "驅逐艦"},
-		{"守護號", "巡洋艦"},
+		{"探索號", "偵察艦", "無武裝", 0},
+		{"復仇號", "護衛艦", "雷射", 2},
+		{"雷霆號", "驅逐艦", "質量投射器", 4},
+		{"守護號", "巡洋艦", "核飛彈", 6},
 	}
 }
 
@@ -203,8 +213,9 @@ type CombatShip struct {
 // 玩家艦置左欄、敵方置右欄,依序排列。
 func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip) {
 	for i, sh := range s.Ships {
-		st := shipStrength(sh.Class)
-		player = append(player, CombatShip{Name: sh.Name, HP: st * 3, MaxHP: st * 3, Attack: st, Col: 1, Row: i})
+		hp := shipStrength(sh.Class) * 3
+		atk := shipStrength(sh.Class) + sh.WeaponAttack // 艦體 + 武器元件攻擊
+		player = append(player, CombatShip{Name: sh.Name, HP: hp, MaxHP: hp, Attack: atk, Col: 1, Row: i})
 	}
 	mult := 1.0
 	if s.Difficulty >= 0 && s.Difficulty < len(Difficulties) {
@@ -256,15 +267,19 @@ func ShipCost(class string) int {
 	return 18
 }
 
-// BuildShip 造一艘指定艦體等級的艦:扣國庫 BC,加入艦隊。BC 不足回 false 不造。
-func (s *GameSession) BuildShip(class string) bool {
-	cost := ShipCost(class)
+// BuildShip 造一艘指定艦體 + 武器元件的艦:扣國庫 BC(艦體+武器),加入艦隊。BC 不足回 false。
+func (s *GameSession) BuildShip(class string, weaponIdx int) bool {
+	w := WeaponOptions[0]
+	if weaponIdx >= 0 && weaponIdx < len(WeaponOptions) {
+		w = WeaponOptions[weaponIdx]
+	}
+	cost := ShipCost(class) + w.Cost
 	if s.Player.BC < cost {
 		return false
 	}
 	s.Player.BC -= cost
 	name := shipNamePool[len(s.Ships)%len(shipNamePool)]
-	s.Ships = append(s.Ships, Ship{Name: name, Class: class})
+	s.Ships = append(s.Ships, Ship{Name: name, Class: class, Weapon: w.Name, WeaponAttack: w.Attack})
 	return true
 }
 

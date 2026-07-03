@@ -286,13 +286,14 @@ func loadOverlayScreen(res *assets.Resolver, lbxName string, assetID int, lang i
 // --- sceneBuilder:依需求建構各原版畫面(共用 resolver/字型/語言)---
 
 type sceneBuilder struct {
-	res         *assets.Resolver
-	fnt         *uifont.Font
-	lang        i18n.Lang
-	session     *shell.GameSession // 活的對局狀態(TURN 推進、畫面顯示即時資料)
-	newGameSize int                // NEW GAME 選的星系大小索引(shell.GalaxySizes)
-	newGameDiff int                // NEW GAME 選的難度索引(shell.Difficulties)
-	newGameSeed int                // 每次新遊戲遞增,讓星系種子變化
+	res          *assets.Resolver
+	fnt          *uifont.Font
+	lang         i18n.Lang
+	session      *shell.GameSession // 活的對局狀態(TURN 推進、畫面顯示即時資料)
+	newGameSize  int                // NEW GAME 選的星系大小索引(shell.GalaxySizes)
+	newGameDiff  int                // NEW GAME 選的難度索引(shell.Difficulties)
+	newGameSeed  int                // 每次新遊戲遞增,讓星系種子變化
+	designWeapon int                // 艦艇設計選的武器元件索引(shell.WeaponOptions)
 }
 
 // menu 建原版主選單畫面。按鈕熱區用 menuOverlays 的座標(按鈕即標籤)。
@@ -1073,11 +1074,16 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		{125, 50, 118, 16, "Frigate"}, {125, 67, 118, 16, "Destroyer"},
 		{125, 84, 118, 16, "Cruiser"}, {125, 101, 118, 16, "Battleship"},
 		{125, 118, 118, 16, "Titan"}, {125, 135, 118, 16, "Doom Star"},
+		{300, 60, 250, 40, "weapon"}, // 武器元件選擇(點擊循環)
 		{0, 0, moo2ScreenW, moo2ScreenH, "back"},
 	}
 	onAction := func(a string) *origTransition {
+		if a == "weapon" {
+			b.designWeapon = (b.designWeapon + 1) % len(shell.WeaponOptions)
+			return b.goTo(b.shipDesign, "艦艇設計")
+		}
 		if zh, ok := hullZH[a]; ok && b.session != nil {
-			b.session.BuildShip(zh) // 造艦加入艦隊
+			b.session.BuildShip(zh, b.designWeapon) // 造帶武器的艦
 		}
 		return b.goTo(b.fleet, "艦隊列表")
 	}
@@ -1107,8 +1113,13 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			s.extras = append(s.extras, extraText{x: 250, y: float64(60 + i*17), size: 11,
 				text: fmt.Sprintf("%d BC", shell.ShipCost(cl)), col: body, align: 0})
 		}
-		s.extras = append(s.extras, extraText{x: 12, y: 460, size: 12,
-			text: fmt.Sprintf("國庫 %d BC", b.session.Player.BC), col: color.RGBA{240, 220, 120, 255}})
+		// 選中的武器元件(名稱 + 成本 + 攻擊加成),顯示在右上區。
+		w := shell.WeaponOptions[b.designWeapon]
+		gold := color.RGBA{240, 220, 120, 255}
+		s.extras = append(s.extras,
+			extraText{x: 305, y: 70, size: 13, text: "主武器 ▸", col: color.RGBA{170, 200, 240, 255}},
+			extraText{x: 305, y: 90, size: 14, text: fmt.Sprintf("%s(+%d 攻擊 / %d BC)", w.Name, w.Attack, w.Cost), col: gold},
+			extraText{x: 12, y: 460, size: 12, text: fmt.Sprintf("國庫 %d BC", b.session.Player.BC), col: gold})
 	}
 	return s, nil
 }
@@ -1372,7 +1383,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt *uifont.Font,
 	if err != nil {
 		return err
 	}
-	b := &sceneBuilder{res: res, fnt: fnt, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: 1}
+	b := &sceneBuilder{res: res, fnt: fnt, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: 1, designWeapon: 1}
 	menu, err := b.menu()
 	if err != nil {
 		return err
