@@ -234,6 +234,7 @@ type GameSession struct {
 	Leaders          []Leader            // 軍官/領袖名單
 	Ships            []Ship              // 艦隊
 	LastBattle       *BattleResult       // 上一場戰鬥結果(供戰鬥結果畫面)
+	SelectedStar     int                 // 星圖選中的星索引(-1=未選)
 }
 
 // EndTurn 推進一回合:先結算玩家帝國,再讓各 AI 對手自行決策並結算,回合數 +1。
@@ -270,9 +271,10 @@ func NewDemoSession() *GameSession {
 			Colonies: mkColonies(),
 			Decider:  ai.NewRemakeDecider(ai.ProfileScientific),
 		}},
-		Stars:   demoStars(),
-		Planets: genPlanets(demoStars()),
-		Leaders: demoLeaders(),
-		Ships:   demoShips(),
+		Stars:        demoStars(),
+		Planets:      genPlanets(demoStars()),
+		Leaders:      demoLeaders(),
+		Ships:        demoShips(),
+		SelectedStar: -1,
 	}
 }

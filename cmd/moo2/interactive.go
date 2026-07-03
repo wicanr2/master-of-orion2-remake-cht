@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"os"
 	"sort"
+	"strconv"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -347,7 +348,20 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		{460, 430, 70, 44, "info"},
 		{544, 441, 90, 34, "turn"},
 	}
+	// 星圖各星加點擊熱區(點星 → 顯示該星系行星資訊)。
+	if b.session != nil {
+		for i, st := range b.session.Stars {
+			sx, sy := starScreenPos(st)
+			hits = append(hits, hitRegion{sx - 11, sy - 11, 22, 22, fmt.Sprintf("star%d", i)})
+		}
+	}
 	onAction := func(a string) *origTransition {
+		if len(a) > 4 && a[:4] == "star" && b.session != nil {
+			if idx, err := strconv.Atoi(a[4:]); err == nil {
+				b.session.SelectedStar = idx
+				return b.goTo(b.galaxy, "星系主畫面") // 重繪顯示選中星資訊
+			}
+		}
 		switch a {
 		case "colonies":
 			return b.goTo(b.colonySummary, "殖民地總覽")
@@ -388,24 +402,41 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		sess := b.session
 		fnt := s.font
 		s.postDraw = func(dst *ebiten.Image) {
-			drawStarmap(dst, fnt, sess.Stars)
+			drawStarmap(dst, fnt, sess.Stars, sess.SelectedStar)
 			if fnt != nil {
 				year := 3500 + (sess.Turn - 1)
 				fnt.Draw(dst, fmt.Sprintf("星曆 %d", year), 30, 40, 16, color.RGBA{240, 220, 120, 255})
 				fnt.Draw(dst, fmt.Sprintf("國庫 %d BC", sess.Player.BC), 30, 62, 13, color.RGBA{210, 216, 230, 255})
 				fnt.Draw(dst, fmt.Sprintf("研究:%s", shell.ResearchTopicName(sess.Player.ResearchTopic)), 30, 82, 13, color.RGBA{160, 210, 240, 255})
+				// 選中星:顯示該星系行星資訊(左下角面板)。
+				if sess.SelectedStar >= 0 && sess.SelectedStar < len(sess.Planets) {
+					p := sess.Planets[sess.SelectedStar]
+					vector.DrawFilledRect(dst, 28, 330, 210, 82, color.RGBA{10, 14, 30, 230}, false)
+					vector.StrokeRect(dst, 28, 330, 210, 82, 1, color.RGBA{90, 130, 200, 255}, false)
+					fnt.Draw(dst, p.Name, 38, 352, 15, color.RGBA{240, 220, 120, 255})
+					fnt.Draw(dst, fmt.Sprintf("氣候 %s ／ 大小 %s", p.Climate, p.Size), 38, 376, 12, color.RGBA{210, 216, 230, 255})
+					fnt.Draw(dst, fmt.Sprintf("重力 %s ／ 礦產 %s", p.Gravity, p.Mineral), 38, 398, 12, color.RGBA{210, 216, 230, 255})
+				}
 			}
 		}
 	}
 	return s, nil
 }
 
+// 星圖視窗座標(openorion2 StarmapWidget 20,20,507,401)。
+const starVX0, starVY0, starVX1, starVY1 = 24, 24, 523, 418
+
+// starScreenPos 把星的正規化座標映射到星圖視窗的螢幕座標(供繪製與點擊命中共用)。
+func starScreenPos(st shell.Star) (int, int) {
+	return starVX0 + int(st.X*(starVX1-starVX0)), starVY0 + int(st.Y*(starVY1-starVY0))
+}
+
 // drawStarmap 在星系主畫面中央視窗繪製星圖(深空底 + 依光譜上色/大小定半徑的星 + 星名 +
-// 我方/敵方擁有環)。座標區對應 openorion2 的 StarmapWidget(20,20,507,401)。
-func drawStarmap(dst *ebiten.Image, fnt *uifont.Font, stars []shell.Star) {
-	const vx0, vy0, vx1, vy1 = 24, 24, 523, 418
+// 我方/敵方擁有環 + 選中星高亮環)。
+func drawStarmap(dst *ebiten.Image, fnt *uifont.Font, stars []shell.Star, selected int) {
+	const vx0, vy0, vx1, vy1 = starVX0, starVY0, starVX1, starVY1
 	vector.DrawFilledRect(dst, vx0, vy0, vx1-vx0, vy1-vy0, color.RGBA{6, 6, 16, 255}, false)
-	for _, st := range stars {
+	for i, st := range stars {
 		x := float32(vx0) + float32(st.X)*(vx1-vx0)
 		y := float32(vy0) + float32(st.Y)*(vy1-vy0)
 		col, ok := spectralColors[uint8(st.Spectral)]
@@ -415,6 +446,10 @@ func drawStarmap(dst *ebiten.Image, fnt *uifont.Font, stars []shell.Star) {
 		r := float32(6 - st.Size) // 大=6 .. 小=3
 		if r < 3 {
 			r = 3
+		}
+		// 選中星:黃色高亮環。
+		if i == selected {
+			vector.StrokeCircle(dst, x, y, r+6, 2, color.RGBA{255, 240, 120, 255}, true)
 		}
 		// 擁有環:我方藍綠、敵方紅。
 		switch st.Owner {
