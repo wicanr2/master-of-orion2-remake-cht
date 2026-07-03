@@ -53,29 +53,32 @@ func (h hitRegion) hit(x, y int) bool {
 // --- overlayScreen:原版 LBX 背景 + 中文標籤覆蓋 + 點擊熱區 ---
 
 type overlayScreen struct {
-	bg         *ebiten.Image
-	rgba       *image.RGBA
-	font       *uifont.Font
-	cat        *i18n.Catalog
-	overlays   []labelRect
-	labelColor color.RGBA
-	defSize    float64
-	hits       []hitRegion
-	onAction   func(action string) *origTransition
-	hover      string
+	bg               *ebiten.Image
+	rgba             *image.RGBA
+	font             *uifont.Font
+	cat              *i18n.Catalog
+	overlays         []labelRect
+	labelColor       color.RGBA
+	defSize          float64
+	hits             []hitRegion
+	onAction         func(action string) *origTransition
+	hover            string
+	offsetX, offsetY int // 背景圖在 640×480 畫布上的置中偏移(小於全螢幕的視窗畫面用)
 }
 
 func (s *overlayScreen) update(in shell.InputState) *origTransition {
+	// 命中判定在背景圖局部座標(扣掉置中偏移)。
+	mx, my := in.MouseX-s.offsetX, in.MouseY-s.offsetY
 	s.hover = ""
 	for _, h := range s.hits {
-		if h.hit(in.MouseX, in.MouseY) {
+		if h.hit(mx, my) {
 			s.hover = h.action
 			break
 		}
 	}
 	if in.ClickReleased {
 		for _, h := range s.hits {
-			if h.hit(in.MouseX, in.MouseY) && s.onAction != nil {
+			if h.hit(mx, my) && s.onAction != nil {
 				return s.onAction(h.action)
 			}
 		}
@@ -84,27 +87,33 @@ func (s *overlayScreen) update(in shell.InputState) *origTransition {
 }
 
 func (s *overlayScreen) draw(dst *ebiten.Image) {
-	dst.DrawImage(s.bg, nil)
+	if s.offsetX != 0 || s.offsetY != 0 {
+		dst.Fill(color.RGBA{0, 0, 0, 255}) // 小於全螢幕的視窗:底填黑再置中
+	}
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(float64(s.offsetX), float64(s.offsetY))
+	dst.DrawImage(s.bg, op)
+	ox, oy := float64(s.offsetX), float64(s.offsetY)
 	if s.cat.Lang() == i18n.Traditional {
 		for _, b := range s.overlays {
 			plate := samplePlate(s.rgba, b)
 			// 擦掉烘進圖的英文(蓋底色),再疊中文(同 overlay.go)。
-			vector.DrawFilledRect(dst, float32(b.x+3), float32(b.y+2),
+			vector.DrawFilledRect(dst, float32(float64(b.x+3)+ox), float32(float64(b.y+2)+oy),
 				float32(b.w-6), float32(b.h-4), plate, false)
 			size := b.size
 			if size == 0 {
 				size = s.defSize
 			}
 			zh := s.cat.Translate(b.enKey)
-			s.font.DrawCentered(dst, zh, float64(b.x)+float64(b.w)/2, float64(b.y)+float64(b.h)/2, size, s.labelColor)
+			s.font.DrawCentered(dst, zh, float64(b.x)+float64(b.w)/2+ox, float64(b.y)+float64(b.h)/2+oy, size, s.labelColor)
 		}
 	}
 	// hover 熱區以細框提示可點(互動回饋)。
 	if s.hover != "" {
 		for _, h := range s.hits {
 			if h.action == s.hover {
-				vector.StrokeRect(dst, float32(h.x), float32(h.y), float32(h.w), float32(h.h),
-					1, color.RGBA{255, 240, 120, 200}, false)
+				vector.StrokeRect(dst, float32(float64(h.x)+ox), float32(float64(h.y)+oy),
+					float32(h.w), float32(h.h), 1, color.RGBA{255, 240, 120, 200}, false)
 			}
 		}
 	}
@@ -120,11 +129,15 @@ func samplePlate(rgba *image.RGBA, b labelRect) color.RGBA {
 	return color.RGBA{rgba.Pix[i], rgba.Pix[i+1], rgba.Pix[i+2], 255}
 }
 
-// loadOverlayScreen 載入某原版畫面(LBX 背景 + 譯表),組成可互動的 overlayScreen。
-func loadOverlayScreen(res *assets.Resolver, lbxName string, assetID int, lang i18n.Lang,
-	fnt *uifont.Font, tsvPath string, overlays []labelRect, labelColor color.RGBA, defSize float64,
-	hits []hitRegion, onAction func(string) *origTransition) (*overlayScreen, error) {
+// paletteProvider 指定「調色盤提供圖」:某些原版畫面背景無完整內嵌調色盤,需借另一張
+// 帶調色盤的圖當基底(openorion2 的 base_palette 機制)。lbxName 為空表示不需要。
+type paletteProvider struct {
+	lbxName string
+	assetID int
+}
 
+// decodeAsset 解一張 LBX 影像。
+func decodeAsset(res *assets.Resolver, lbxName string, assetID int) (*lbx.Image, error) {
 	arch, err := res.OpenLBX(lbxName)
 	if err != nil {
 		return nil, err
@@ -133,14 +146,50 @@ func loadOverlayScreen(res *assets.Resolver, lbxName string, assetID int, lang i
 	if err != nil {
 		return nil, err
 	}
-	im, err := lbx.DecodeImage(raw)
+	return lbx.DecodeImage(raw)
+}
+
+// resolvePalette 重現 openorion2 Image::load 的調色盤合併:
+// 最終 = 基底(提供圖的完整調色盤)+ 目標圖自己的部分內嵌範圍疊上去。
+// 無提供圖時直接用目標圖自己的內嵌調色盤。
+func resolvePalette(res *assets.Resolver, im *lbx.Image, prov paletteProvider) (*lbx.Palette, error) {
+	var merged lbx.Palette
+	if prov.lbxName != "" {
+		base, err := decodeAsset(res, prov.lbxName, prov.assetID)
+		if err != nil {
+			return nil, fmt.Errorf("載入調色盤提供圖 %s#%d: %w", prov.lbxName, prov.assetID, err)
+		}
+		if base.Embedded == nil {
+			return nil, fmt.Errorf("調色盤提供圖 %s#%d 無內嵌調色盤", prov.lbxName, prov.assetID)
+		}
+		merged = *base.Embedded
+	} else if im.Embedded == nil {
+		return nil, fmt.Errorf("畫面圖無內嵌調色盤且未指定提供圖")
+	}
+	// 疊上目標圖自己的內嵌範圍(部分覆蓋)。
+	if im.Embedded != nil {
+		for i := im.PalStart; i < im.PalStart+im.PalCount; i++ {
+			merged[i] = im.Embedded[i]
+		}
+	}
+	return &merged, nil
+}
+
+// loadOverlayScreen 載入某原版畫面(LBX 背景 + 譯表),組成可互動的 overlayScreen。
+// prov 非空時走調色盤鏈(無內嵌調色盤的畫面借提供圖上色)。
+func loadOverlayScreen(res *assets.Resolver, lbxName string, assetID int, lang i18n.Lang,
+	fnt *uifont.Font, tsvPath string, overlays []labelRect, labelColor color.RGBA, defSize float64,
+	hits []hitRegion, onAction func(string) *origTransition, prov paletteProvider) (*overlayScreen, error) {
+
+	im, err := decodeAsset(res, lbxName, assetID)
 	if err != nil {
 		return nil, err
 	}
-	if im.Embedded == nil {
-		return nil, fmt.Errorf("%s 資產 %d 無內嵌調色盤", lbxName, assetID)
+	pal, err := resolvePalette(res, im, prov)
+	if err != nil {
+		return nil, fmt.Errorf("%s 資產 %d: %w", lbxName, assetID, err)
 	}
-	rgba := im.Frames[0].ToRGBA(im.Embedded, im.KeyColor())
+	rgba := im.Frames[0].ToRGBA(pal, im.KeyColor())
 
 	cat := i18n.New(lang)
 	if f, err := os.Open(tsvPath); err == nil {
@@ -152,10 +201,20 @@ func loadOverlayScreen(res *assets.Resolver, lbxName string, assetID int, lang i
 		return nil, fmt.Errorf("開啟譯表 %s: %w", tsvPath, err)
 	}
 
+	// 小於 640×480 的視窗畫面置中(openorion2:_x=(SCREEN_WIDTH-_width)/2)。
+	bounds := rgba.Bounds()
+	offX := (moo2ScreenW - bounds.Dx()) / 2
+	offY := (moo2ScreenH - bounds.Dy()) / 2
+	if offX < 0 {
+		offX = 0
+	}
+	if offY < 0 {
+		offY = 0
+	}
 	return &overlayScreen{
 		bg: ebiten.NewImageFromImage(rgba), rgba: rgba, font: fnt, cat: cat,
 		overlays: overlays, labelColor: labelColor, defSize: defSize,
-		hits: hits, onAction: onAction,
+		hits: hits, onAction: onAction, offsetX: offX, offsetY: offY,
 	}, nil
 }
 
@@ -185,12 +244,39 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 				return nil
 			}
 			return &origTransition{next: s}
+		case "Hall of Fame":
+			// 暫借「名人堂」入口示範調色盤鏈解鎖的研究選擇畫面(原本無內嵌調色盤)。
+			s, err := b.research()
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "載入研究選擇:", err)
+				return nil
+			}
+			return &origTransition{next: s}
 		}
-		// Load Game / Multi Player / Hall of Fame:尚未實作,暫不動作。
+		// Load Game / Multi Player:尚未實作,暫不動作。
 		return nil
 	}
 	return loadOverlayScreen(b.res, "mainmenu.lbx", 21, b.lang, b.fnt, "assets/i18n/menu.tsv",
-		menuOverlays, color.RGBA{104, 224, 96, 255}, 15, hits, onAction)
+		menuOverlays, color.RGBA{104, 224, 96, 255}, 15, hits, onAction, paletteProvider{})
+}
+
+// research 建原版研究選擇畫面(TECHSEL.LBX 資產 0,無內嵌調色盤 → 走調色盤鏈,
+// 基底取自 SCIENCE.LBX 資產 0)。點畫面任一處返回主選單。
+func (b *sceneBuilder) research() (*overlayScreen, error) {
+	hits := []hitRegion{{0, 0, moo2ScreenW, moo2ScreenH, "back"}}
+	onAction := func(a string) *origTransition {
+		s, err := b.menu()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "載入主選單:", err)
+			return nil
+		}
+		return &origTransition{next: s}
+	}
+	// 先以忠實原版(不疊字、置中)呈現,證明調色盤鏈解鎖此畫面;
+	// 領域名擦底疊字(建設/動力/化學/社會學/電腦/生物學/物理/力場)+ 座標校對列為下一輪。
+	return loadOverlayScreen(b.res, "techsel.lbx", 0, b.lang, b.fnt, "assets/i18n/tech.tsv",
+		nil, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
+		paletteProvider{"science.lbx", 0})
 }
 
 // planets 建原版行星列表畫面。「返回」按鈕熱區導回主選單。
@@ -208,7 +294,7 @@ func (b *sceneBuilder) planets() (*overlayScreen, error) {
 		return nil
 	}
 	return loadOverlayScreen(b.res, "plntsum.lbx", 0, b.lang, b.fnt, "assets/i18n/planets.tsv",
-		planetsOverlays, color.RGBA{206, 218, 240, 255}, 14, hits, onAction)
+		planetsOverlays, color.RGBA{206, 218, 240, 255}, 14, hits, onAction, paletteProvider{})
 }
 
 // --- interactiveApp(ebiten.Game;支援 headless 腳本驗證)---

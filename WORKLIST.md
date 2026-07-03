@@ -67,6 +67,18 @@
 - [x] i18n TSV 守護測試(載入所有 assets/i18n/*.tsv + 佔位符一致性)
 - [~] 擦底疊字改善(fill 加高;darkest 採樣反而過暗已還原)。「顯示篩選」寬粗英文仍微透,需整圖替換或更寬擦除(降級 todo)
 - [ ] 其餘字串源逐一 dump + 翻:科技描述(TECHDESC)、種族類型名、事件、外交、艦名、星名、help
+- [x] **★ 調色盤鏈解鎖(關鍵)**:對照 openorion2 `gfx.cpp Image::load` 破解「無內嵌調色盤畫面」上色機制(基底提供圖 + 本圖部分內嵌疊加);實作 `cmd/moo2/interactive.go` `resolvePalette`;研究選擇(TECHSEL,借 SCIENCE 調色盤)完整渲染驗證。見 `docs/tech/palette-chain.md`
+- [ ] 依 `palette-chain.md` 對照表逐畫面上色:COLONY(COLONY2 50)/DESIGN/FLEET(FLEETLIST)/INFO/星系 GUI(GAMEMENU)… 提供圖 index 逐一對照 openorion2 建構子(勿憑記憶)
+
+## Phase 4b — 串接互動(還原原版的骨幹,-game)⭐
+> 各原版畫面不再各自獨立 flag,而是串成單一可導覽的互動程式(`cmd/moo2 -game`)。目標:開機進原版主選單,滑鼠點選在原版畫面間跳轉,全繁中。
+- [x] 互動骨架:`origScreen`/`origTransition` 介面 + `overlayScreen`(真 LBX 背景 + 中文擦底疊字 + 點擊熱區)+ `sceneBuilder` + `interactiveApp`(ebiten.Game,支援 headless 腳本驗證)
+- [x] 導覽:原版主選單(真美術)→「新遊戲/繼續」→ 真原版行星列表 →「返回」→ 主選單(headless 驗證通過)
+- [x] 調色盤鏈畫面併入導覽 + 小於全螢幕視窗置中(研究選擇畫面,忠實原版)
+- [ ] 逐畫面接入導覽:殖民地/研究選擇(中文化)/科技總覽/艦隊/軍官/種族/外交/星系圖
+- [ ] 真正的「新遊戲」流程(種族選擇/星系生成)取代目前的示範跳轉
+- [ ] hover highlight 與原版一致(目前為細框提示)
+- [ ] 淘汰自製簡約殼(`-play`):方向不符「與原版一模一樣」,改以原版 overlay 畫面 + 既有回合引擎(internal/engine)重建可玩迴圈
 - [ ] 補齊需全域調色盤鏈的畫面(COLONY/DESIGN/COUNCIL/DIPLOMAT…)到對照組
 - [ ] **[HARD] 開工先做:窮舉所有文字源(LBX 各類 + Go hardcode),各寫 dumper,用引擎自己 reader dump 精確 key**
 - [ ] 逐畫面重建:主選單/載存檔/星系圖/行星清單/殖民地/科技研究/艦隊/軍官/種族資訊/對話框
