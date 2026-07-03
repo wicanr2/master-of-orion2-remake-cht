@@ -303,8 +303,18 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		// colonies / races / turn:尚未接入,暫不動作。
 		return nil
 	}
+	// 工具列標籤擦底疊字(x 為按鈕中心對齊,y 中心經 PIL 量測:一般列 450、TURN 455)。
+	overlays := []labelRect{
+		{13, 443, 71, 14, "Colonies", 12},
+		{88, 443, 71, 14, "Planets", 12},
+		{163, 443, 71, 14, "Fleets", 12},
+		{308, 443, 74, 14, "Leaders", 12},
+		{383, 443, 74, 14, "Races", 12},
+		{458, 443, 74, 14, "Info", 12},
+		{544, 448, 90, 15, "Turn", 12},
+	}
 	return loadOverlayScreen(b.res, "buffer0.lbx", 0, b.lang, b.fnt, "assets/i18n/menu.tsv",
-		nil, color.RGBA{206, 214, 232, 255}, 13, hits, onAction, nil)
+		overlays, color.RGBA{210, 216, 230, 255}, 12, hits, onAction, nil)
 }
 
 // fleet 建原版艦隊列表畫面(FLEET.LBX 資產 0,三段調色盤鏈)。

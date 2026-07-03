@@ -199,7 +199,6 @@ func main() {
 			// → 艦隊列表(驗證樞紐導覽 + 三段調色盤鏈)→ 截圖。
 			script = []shell.InputState{
 				{MouseX: 491, MouseY: 228, ClickReleased: true},
-				{MouseX: 198, MouseY: 452, ClickReleased: true},
 			}
 		}
 		if err := runInteractive(dirs, langID, fnt, script, *shot, *frames); err != nil {
