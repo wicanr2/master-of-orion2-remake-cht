@@ -187,10 +187,13 @@ func main() {
 		}
 		var script []shell.InputState
 		if *shot != "" {
-			// 腳本:第1幀點「新遊戲」(選單鈕中心)、第2幀點「結束回合」(遊戲鈕中心)→ 驗證回合推進。
+			// 腳本 playthrough:新遊戲→管理殖民地→調工人×2→調科學家 → 截圖驗證互動 gameplay。
 			script = []shell.InputState{
-				{MouseX: 320, MouseY: 218, ClickReleased: true}, // 新遊戲
-				{MouseX: 495, MouseY: 438, ClickReleased: true}, // 結束回合
+				{MouseX: 320, MouseY: 218, ClickReleased: true}, // 新遊戲 → 遊戲畫面
+				{MouseX: 315, MouseY: 438, ClickReleased: true}, // 管理殖民地 → 殖民地畫面
+				{MouseX: 365, MouseY: 185, ClickReleased: true}, // 工人 ▲
+				{MouseX: 365, MouseY: 185, ClickReleased: true}, // 工人 ▲
+				{MouseX: 365, MouseY: 225, ClickReleased: true}, // 科學家 ▲
 			}
 		}
 		if err := runPlay(fnt, *shot, *frames, script); err != nil {

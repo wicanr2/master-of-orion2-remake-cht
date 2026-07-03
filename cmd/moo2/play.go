@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
@@ -69,6 +70,7 @@ type gameScreen struct {
 func newGameScreen(s *shell.GameSession) *gameScreen {
 	return &gameScreen{session: s, buttons: []shell.Button{
 		{X: 430, Y: 420, W: 130, H: 36, ID: "endturn", Label: "結束回合"},
+		{X: 240, Y: 420, W: 150, H: 36, ID: "colony", Label: "管理殖民地"},
 		{X: 20, Y: 420, W: 130, H: 36, ID: "menu", Label: "返回主選單"},
 	}}
 }
@@ -78,6 +80,8 @@ func (g *gameScreen) update(in shell.InputState) *transition {
 	case "endturn":
 		g.session.EndTurn()
 		g.msg = fmt.Sprintf("第 %d 回合結算完成", g.session.Turn-1)
+	case "colony":
+		return &transition{next: newColonyManageScreen(g.session, 0)}
 	case "menu":
 		return &transition{next: newMenuScreen()}
 	}
@@ -203,4 +207,125 @@ func runPlay(fnt *uifont.Font, shot string, frames int, script []shell.InputStat
 	ebiten.SetWindowSize(playW, playH)
 	ebiten.SetWindowTitle("Master of Orion II — 繁體中文化")
 	return ebiten.RunGame(a)
+}
+
+// --- 殖民地管理畫面(核心 gameplay:調整人口分配)---
+
+type colonyManageScreen struct {
+	session *shell.GameSession
+	idx     int
+	buttons []shell.Button
+}
+
+func newColonyManageScreen(s *shell.GameSession, idx int) *colonyManageScreen {
+	return &colonyManageScreen{session: s, idx: idx, buttons: []shell.Button{
+		{X: 300, Y: 130, W: 40, H: 30, ID: "f-", Label: "▼"},
+		{X: 345, Y: 130, W: 40, H: 30, ID: "f+", Label: "▲"},
+		{X: 300, Y: 170, W: 40, H: 30, ID: "w-", Label: "▼"},
+		{X: 345, Y: 170, W: 40, H: 30, ID: "w+", Label: "▲"},
+		{X: 300, Y: 210, W: 40, H: 30, ID: "s-", Label: "▼"},
+		{X: 345, Y: 210, W: 40, H: 30, ID: "s+", Label: "▲"},
+		{X: 20, Y: 420, W: 130, H: 36, ID: "back", Label: "返回帝國"},
+		{X: 260, Y: 420, W: 120, H: 36, ID: "next", Label: "下個殖民地"},
+		{X: 430, Y: 420, W: 130, H: 36, ID: "endturn", Label: "結束回合"},
+	}}
+}
+
+// shiftJob 在保持總人口不變下,把 1 人從 from 職務移到 to 職務(from 需有人)。
+func shiftJob(cs *engine.ColonyState, from, to string) {
+	get := func(j string) *int {
+		switch j {
+		case "f":
+			return &cs.Farmers
+		case "w":
+			return &cs.Workers
+		default:
+			return &cs.Scientists
+		}
+	}
+	fp, tp := get(from), get(to)
+	if *fp > 0 {
+		*fp--
+		*tp++
+	}
+}
+
+func (c *colonyManageScreen) update(in shell.InputState) *transition {
+	cs := &c.session.PlayerColonies[c.idx]
+	switch shell.ClickedButton(c.buttons, in) {
+	case "f+": // 加農夫:從工人抽,工人為 0 則從科學家
+		if cs.Workers > 0 {
+			shiftJob(cs, "w", "f")
+		} else {
+			shiftJob(cs, "s", "f")
+		}
+	case "f-":
+		shiftJob(cs, "f", "w")
+	case "w+":
+		if cs.Scientists > 0 {
+			shiftJob(cs, "s", "w")
+		} else {
+			shiftJob(cs, "f", "w")
+		}
+	case "w-":
+		shiftJob(cs, "w", "s")
+	case "s+":
+		if cs.Workers > 0 {
+			shiftJob(cs, "w", "s")
+		} else {
+			shiftJob(cs, "f", "s")
+		}
+	case "s-":
+		shiftJob(cs, "s", "w")
+	case "next":
+		c.idx = (c.idx + 1) % len(c.session.PlayerColonies)
+	case "back":
+		return &transition{next: newGameScreen(c.session)}
+	case "endturn":
+		c.session.EndTurn()
+	}
+	return nil
+}
+
+func (c *colonyManageScreen) draw(dst *ebiten.Image, font *uifont.Font) {
+	gold := color.RGBA{240, 220, 120, 255}
+	body := color.RGBA{220, 225, 235, 255}
+	border := color.RGBA{80, 110, 180, 255}
+	cs := c.session.PlayerColonies[c.idx]
+	out := engine.RunColonyTurn(cs)
+
+	font.DrawCentered(dst, fmt.Sprintf("殖民地 %d / %d — 人口分配", c.idx+1, len(c.session.PlayerColonies)),
+		playW/2, 30, 20, gold)
+	vector.StrokeLine(dst, 16, 50, playW-16, 50, 1, border, false)
+	font.Draw(dst, fmt.Sprintf("總人口:%d ／ 上限 %d", cs.Population, cs.PopMax), 40, 80, 15, body)
+
+	// 三個職務列(名稱 + 人數 + ▲▼)
+	labels := []struct {
+		name string
+		n    int
+	}{{"農夫", cs.Farmers}, {"工人", cs.Workers}, {"科學家", cs.Scientists}}
+	y := 145.0
+	for _, l := range labels {
+		font.Draw(dst, fmt.Sprintf("%s:%d", l.name, l.n), 60, y, 16, body)
+		y += 40
+	}
+
+	// 即時產出預覽(這就是分配的效果)
+	font.Draw(dst, "本回合預估產出:", 420, 130, 15, gold)
+	preview := []string{
+		fmt.Sprintf("食物 %d(消耗 %d)", out.Food, out.FoodConsumed),
+		fmt.Sprintf("淨工業 %d", out.NetIndustry),
+		fmt.Sprintf("研究 %d", out.Research),
+		fmt.Sprintf("成長 %d", out.PopGrowth),
+	}
+	py := 160.0
+	for _, p := range preview {
+		font.Draw(dst, p, 430, py, 14, body)
+		py += 26
+	}
+	if out.Starving {
+		font.Draw(dst, "⚠ 食物不足,饑荒!", 430, py, 14, color.RGBA{230, 120, 120, 255})
+	}
+
+	drawButtons(dst, font, c.buttons)
 }
