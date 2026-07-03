@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -295,10 +296,24 @@ type sceneBuilder struct {
 	newGameDiff   int                // NEW GAME 選的難度索引(shell.Difficulties)
 	newGameRace   int                // NEW GAME 選的種族索引(shell.Races)
 	newGameSeed   int                // 每次新遊戲遞增,讓星系種子變化
+	savePath      string             // remake 存檔路徑(每回合自動存;主選單 Load/Continue 讀)
 	designWeapon  int                // 艦艇設計選的武器元件索引(shell.WeaponOptions)
 	designArmor   int                // 裝甲元件索引(shell.ArmorOptions)
 	designShield  int                // 護盾元件索引(shell.ShieldOptions)
 	designSpecial int                // 特殊元件索引(shell.SpecialOptions)
+}
+
+// savePathFor 回傳 remake 存檔路徑(使用者設定目錄下,退回暫存目錄),確保可寫。
+func savePathFor() string {
+	dir, err := os.UserConfigDir()
+	if err != nil || dir == "" {
+		dir = os.TempDir()
+	}
+	sub := filepath.Join(dir, "moo2-remake-cht")
+	if mkErr := os.MkdirAll(sub, 0o755); mkErr != nil {
+		return filepath.Join(os.TempDir(), "moo2-remake-save.json")
+	}
+	return filepath.Join(sub, "save.json")
 }
 
 // menu 建原版主選單畫面。按鈕熱區用 menuOverlays 的座標(按鈕即標籤)。
@@ -315,13 +330,31 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 			// 新遊戲:先進原版 NEW GAME 設定畫面(難度/星系/玩家…),ACCEPT 後進星系主畫面。
 			return b.goTo(b.newGameSetup, "新遊戲設定")
 		case "Continue":
-			// 續玩:直接進星系主畫面(後續接讀檔)。
+			// 續玩:若有存檔先讀回,否則沿用目前對局,進星系主畫面。
+			if b.savePath != "" && shell.SaveExists(b.savePath) {
+				if gs, err := shell.LoadSession(b.savePath); err == nil {
+					b.session = gs
+				} else {
+					fmt.Fprintln(os.Stderr, "讀檔失敗:", err)
+				}
+			}
 			return b.goTo(b.galaxy, "星系主畫面")
+		case "Load Game":
+			// 讀取存檔並進星系主畫面(無存檔則不動作)。
+			if b.savePath != "" && shell.SaveExists(b.savePath) {
+				if gs, err := shell.LoadSession(b.savePath); err == nil {
+					b.session = gs
+					return b.goTo(b.galaxy, "星系主畫面")
+				} else {
+					fmt.Fprintln(os.Stderr, "讀檔失敗:", err)
+				}
+			}
+			return nil
 		case "Hall of Fame":
 			// 暫借「名人堂」入口示範調色盤鏈解鎖的研究選擇畫面(原本無內嵌調色盤)。
 			return b.goTo(b.research, "研究選擇")
 		}
-		// Load Game / Multi Player:尚未實作,暫不動作。
+		// Multi Player:尚未實作,暫不動作。
 		return nil
 	}
 	return loadOverlayScreen(b.res, "mainmenu.lbx", 21, b.lang, b.fnt, "assets/i18n/menu.tsv",
@@ -393,6 +426,11 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		case "turn":
 			// 核心迴圈:結算一回合(玩家帝國 + 各 AI 對手決策),再顯示回合摘要(原版流程)。
 			b.session.EndTurn()
+			if b.savePath != "" { // 每回合自動存檔(持久化對局)
+				if err := b.session.Save(b.savePath); err != nil {
+					fmt.Fprintln(os.Stderr, "自動存檔失敗:", err)
+				}
+			}
 			return b.goTo(b.turnSummary, "回合摘要")
 		}
 		return nil
@@ -1489,7 +1527,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt *uifont.Font,
 	if err != nil {
 		return err
 	}
-	b := &sceneBuilder{res: res, fnt: fnt, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: 1, designWeapon: 1}
+	b := &sceneBuilder{res: res, fnt: fnt, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: 1, designWeapon: 1, savePath: savePathFor()}
 	menu, err := b.menu()
 	if err != nil {
 		return err
