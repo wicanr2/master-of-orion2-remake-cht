@@ -3,6 +3,8 @@
 package shell
 
 import (
+	"fmt"
+
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 )
@@ -153,6 +155,54 @@ func (s *GameSession) ShiftColonyJob(idx int, from, to string) {
 	}
 }
 
+// ColonyBuild 是某殖民地目前的建造項目。
+type ColonyBuild struct {
+	Name     string
+	Progress int
+	Cost     int
+}
+
+// buildOptions 是可建造的項目(名稱 + 工業成本)。空字串為「不建造」。
+var buildOptions = []ColonyBuild{
+	{"", 0, 0}, {"住宅", 0, 30}, {"工廠", 0, 60}, {"研究實驗室", 0, 80}, {"星港", 0, 120},
+}
+
+// CycleColonyBuild 循環切換某殖民地的建造項目(進度歸零)。
+func (s *GameSession) CycleColonyBuild(idx int) {
+	if idx < 0 || idx >= len(s.Builds) {
+		return
+	}
+	cur := 0
+	for i, o := range buildOptions {
+		if o.Name == s.Builds[idx].Name {
+			cur = i
+			break
+		}
+	}
+	next := buildOptions[(cur+1)%len(buildOptions)]
+	s.Builds[idx] = ColonyBuild{Name: next.Name, Progress: 0, Cost: next.Cost}
+}
+
+// advanceBuilds 以各殖民地淨工業推進建造;完成則清空並記錄(供回合摘要)。
+func (s *GameSession) advanceBuilds() {
+	s.LastBuilt = nil
+	for i := range s.Builds {
+		b := &s.Builds[i]
+		if b.Name == "" || b.Cost == 0 {
+			continue
+		}
+		ind := 0
+		if i < len(s.LastPlayerOutput.Colonies) {
+			ind = s.LastPlayerOutput.Colonies[i].NetIndustry
+		}
+		b.Progress += ind
+		if b.Progress >= b.Cost {
+			s.LastBuilt = append(s.LastBuilt, fmt.Sprintf("殖民地 %d 完成建造:%s", i+1, b.Name))
+			*b = ColonyBuild{} // 完成清空
+		}
+	}
+}
+
 // Leader 是一名可雇用的軍官/領袖(供軍官列表)。
 type Leader struct {
 	Name  string
@@ -235,6 +285,8 @@ type GameSession struct {
 	Ships            []Ship              // 艦隊
 	LastBattle       *BattleResult       // 上一場戰鬥結果(供戰鬥結果畫面)
 	SelectedStar     int                 // 星圖選中的星索引(-1=未選)
+	Builds           []ColonyBuild       // 各殖民地建造項目(對應 PlayerColonies)
+	LastBuilt        []string            // 上回合完成的建造(供回合摘要)
 }
 
 // EndTurn 推進一回合:先結算玩家帝國,再讓各 AI 對手自行決策並結算,回合數 +1。
@@ -245,6 +297,7 @@ func (s *GameSession) EndTurn() {
 		out := engine.RunAIEmpireTurn(s.AIPlayers[i].Player, s.AIPlayers[i].Colonies, s.AIPlayers[i].Decider)
 		s.AIPlayers[i].Player = out.Player
 	}
+	s.advanceBuilds() // 以本回合淨工業推進各殖民地建造
 	s.Turn++
 }
 
@@ -275,6 +328,7 @@ func NewDemoSession() *GameSession {
 		Planets:      genPlanets(demoStars()),
 		Leaders:      demoLeaders(),
 		Ships:        demoShips(),
+		Builds:       make([]ColonyBuild, 2),
 		SelectedStar: -1,
 	}
 }

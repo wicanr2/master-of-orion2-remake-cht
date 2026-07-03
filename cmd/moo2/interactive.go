@@ -482,6 +482,7 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 				hitRegion{104, top, 118, 30, fmt.Sprintf("f%d", i)},
 				hitRegion{236, top, 128, 30, fmt.Sprintf("w%d", i)},
 				hitRegion{376, top, 128, 30, fmt.Sprintf("s%d", i)},
+				hitRegion{510, top, 120, 30, fmt.Sprintf("b%d", i)}, // 建造欄
 			)
 		}
 	}
@@ -498,6 +499,8 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 				b.session.ShiftColonyJob(idx, "f", "w") // 農夫→工人
 			case 's':
 				b.session.ShiftColonyJob(idx, "w", "s") // 工人→科學家
+			case 'b':
+				b.session.CycleColonyBuild(idx) // 循環建造項目
 			}
 			return b.goTo(b.colonySummary, "殖民地總覽") // 重繪顯示新分配
 		}
@@ -541,6 +544,13 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 				extraText{x: colX.wrk, y: y, size: 13, text: fmt.Sprintf("%d", c.Workers), col: body, align: 1},
 				extraText{x: colX.sci, y: y, size: 13, text: fmt.Sprintf("%d", c.Scientists), col: body, align: 1},
 			)
+			// 建造欄:項目名 + 進度(空則顯示「—」提示可點)。
+			bt := "—"
+			if i < len(b.session.Builds) && b.session.Builds[i].Name != "" {
+				bd := b.session.Builds[i]
+				bt = fmt.Sprintf("%s %d/%d", bd.Name, bd.Progress, bd.Cost)
+			}
+			s.extras = append(s.extras, extraText{x: 571, y: y, size: 12, text: bt, col: body, align: 1})
 		}
 	}
 	return s, nil
@@ -845,8 +855,14 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 			{x: 40, y: 116, size: 13, text: fmt.Sprintf("食物盈餘 %d ／ 稅收 %d BC", out.TotalFood, out.TaxRevenue), col: body},
 			{x: 40, y: 140, size: 13, text: fmt.Sprintf("國庫 %d BC(本回合 %+d)", b.session.Player.BC, out.NetBC), col: body},
 		}
+		yy := 168.0
 		if out.ResearchDone {
-			s.extras = append(s.extras, extraText{x: 40, y: 168, size: 14, text: "★ 完成一項研究!", col: color.RGBA{120, 220, 140, 255}})
+			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 14, text: "★ 完成一項研究!", col: color.RGBA{120, 220, 140, 255}})
+			yy += 24
+		}
+		for _, msg := range b.session.LastBuilt {
+			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 13, text: "★ " + msg, col: color.RGBA{120, 220, 140, 255}})
+			yy += 22
 		}
 	}
 	return s, nil
