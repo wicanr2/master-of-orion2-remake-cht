@@ -4,6 +4,7 @@ package shell
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
@@ -63,12 +64,13 @@ func shipStrength(class string) int {
 	return 1
 }
 
-// BattleResult 是一場戰鬥的結果。
+// BattleResult 是一場戰鬥的結果(逐回合解算)。
 type BattleResult struct {
-	Enemy                         string
-	PlayerStrength, EnemyStrength int
-	PlayerWon                     bool
-	PlayerLosses, EnemyLosses     int
+	Enemy                     string
+	PlayerStart, EnemyStart   int // 開戰時雙方艦數
+	PlayerWon                 bool
+	PlayerLosses, EnemyLosses int
+	Log                       []string // 逐回合戰報
 }
 
 // removeWeakestShip 移除戰力最弱的一艘艦。
@@ -81,32 +83,59 @@ func (s *GameSession) removeWeakestShip() {
 		if shipStrength(sh.Class) < shipStrength(s.Ships[wi].Class) {
 			wi = i
 		}
-		_ = i
 	}
 	s.Ships = append(s.Ships[:wi], s.Ships[wi+1:]...)
 }
 
-// ResolveBattle 解算與某敵方的一場戰鬥:比較雙方艦隊總戰力,套用損失,回傳結果。
-// 敵方戰力隨回合數增強(示範規則;正式版由敵方實際艦隊算)。
-func (s *GameSession) ResolveBattle(enemy string) BattleResult {
-	ps := 0
-	for _, sh := range s.Ships {
-		ps += shipStrength(sh.Class)
+// applyDamage 對艦隊(以各艦戰力當 HP)造成 dmg 傷害,由最弱艦起逐艘擊沉,回傳擊沉數。
+func applyDamage(fleet *[]int, dmg int) int {
+	sort.Ints(*fleet)
+	destroyed := 0
+	for len(*fleet) > 0 && dmg >= (*fleet)[0] {
+		dmg -= (*fleet)[0]
+		*fleet = (*fleet)[1:]
+		destroyed++
 	}
-	es := 8 + s.Turn*3
-	res := BattleResult{Enemy: enemy, PlayerStrength: ps, EnemyStrength: es}
-	if ps >= es {
-		res.PlayerWon = true
-		res.EnemyLosses = es
-		if ps < es*3/2 && len(s.Ships) > 0 { // 慘勝小損
-			s.removeWeakestShip()
-			res.PlayerLosses = 1
+	return destroyed
+}
+
+// genEnemyFleet 依回合數生成敵方艦隊(戰力清單;越後期越強)。
+func genEnemyFleet(turn int) []int {
+	n := 2 + turn/3
+	sizes := []int{2, 4, 8, 16}
+	f := make([]int, 0, n)
+	for i := 0; i < n; i++ {
+		f = append(f, sizes[i%len(sizes)])
+	}
+	return f
+}
+
+// ResolveBattle 逐回合解算與某敵方的一場戰鬥:雙方艦隊每回合交火、逐艦擊沉,直到一方全滅
+// 或滿 6 回合;套用玩家損失到艦隊。
+func (s *GameSession) ResolveBattle(enemy string) BattleResult {
+	pFleet := make([]int, 0, len(s.Ships))
+	for _, sh := range s.Ships {
+		pFleet = append(pFleet, shipStrength(sh.Class))
+	}
+	eFleet := genEnemyFleet(s.Turn)
+	res := BattleResult{Enemy: enemy, PlayerStart: len(pFleet), EnemyStart: len(eFleet)}
+	for round := 1; round <= 6 && len(pFleet) > 0 && len(eFleet) > 0; round++ {
+		pPower, ePower := 0, 0
+		for _, v := range pFleet {
+			pPower += v
 		}
-	} else {
-		for len(s.Ships) > 0 && res.PlayerLosses < 2 {
-			s.removeWeakestShip()
-			res.PlayerLosses++
+		for _, v := range eFleet {
+			ePower += v
 		}
+		eDestroyed := applyDamage(&eFleet, pPower)
+		pDestroyed := applyDamage(&pFleet, ePower)
+		res.Log = append(res.Log, fmt.Sprintf("第 %d 回合:擊沉敵艦 %d ／ 我方損失 %d", round, eDestroyed, pDestroyed))
+	}
+	res.PlayerLosses = res.PlayerStart - len(pFleet)
+	res.EnemyLosses = res.EnemyStart - len(eFleet)
+	res.PlayerWon = len(eFleet) == 0 || len(pFleet) >= len(eFleet)
+	for i := 0; i < res.PlayerLosses; i++ {
+		s.removeWeakestShip()
 	}
 	s.LastBattle = &res
 	return res

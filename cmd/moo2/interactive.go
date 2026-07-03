@@ -615,11 +615,17 @@ func (b *sceneBuilder) battleResult() (*overlayScreen, error) {
 			outcome, oc = "★ 勝利!", win
 		}
 		s.extras = []extraText{
-			{x: 40, y: 60, size: 15, text: fmt.Sprintf("對「%s」開戰", bt.Enemy), col: gold},
-			{x: 40, y: 92, size: 16, text: outcome, col: oc},
-			{x: 40, y: 122, size: 13, text: fmt.Sprintf("我方戰力 %d ／ 敵方戰力 %d", bt.PlayerStrength, bt.EnemyStrength), col: body},
-			{x: 40, y: 146, size: 13, text: fmt.Sprintf("損失:我方 %d 艘", bt.PlayerLosses), col: body},
+			{x: 40, y: 56, size: 15, text: fmt.Sprintf("對「%s」開戰", bt.Enemy), col: gold},
+			{x: 40, y: 84, size: 16, text: outcome, col: oc},
+			{x: 40, y: 110, size: 12, text: fmt.Sprintf("我方 %d 艦 ／ 敵方 %d 艦", bt.PlayerStart, bt.EnemyStart), col: body},
 		}
+		yy := 134.0
+		for _, line := range bt.Log { // 逐回合戰報
+			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 12, text: line, col: body})
+			yy += 20
+		}
+		s.extras = append(s.extras, extraText{x: 40, y: yy + 4, size: 13,
+			text: fmt.Sprintf("損失:我方 %d 艦 ／ 敵方 %d 艦", bt.PlayerLosses, bt.EnemyLosses), col: gold})
 	}
 	return s, nil
 }
