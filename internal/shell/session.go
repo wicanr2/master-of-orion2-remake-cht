@@ -15,6 +15,29 @@ type AIOpponent struct {
 	Decider  ai.Decider
 }
 
+// Star 是星系圖上的一顆星(供星圖渲染;正規化座標 0..1)。
+type Star struct {
+	X, Y     float64 // 0..1 正規化位置
+	Spectral int     // 0=藍 1=白 2=黃 3=橙 4=紅 5=棕 6=黑洞
+	Size     int     // 0=大 .. 3=小
+	Name     string
+	Owner    int // 0=無主 1=玩家 2=AI
+}
+
+// demoStars 是最小示範星系(固定佈局,供星圖視窗渲染;待接真星系生成 + STARNAME.LBX 真星名)。
+func demoStars() []Star {
+	return []Star{
+		{0.12, 0.18, 2, 0, "獵戶", 1}, {0.30, 0.10, 1, 1, "天狼", 0},
+		{0.48, 0.22, 3, 2, "南門", 0}, {0.68, 0.14, 0, 1, "參宿", 0},
+		{0.86, 0.24, 4, 2, "畢宿", 2}, {0.18, 0.42, 4, 3, "織女", 0},
+		{0.40, 0.48, 2, 1, "河鼓", 1}, {0.60, 0.40, 1, 0, "角宿", 0},
+		{0.80, 0.50, 3, 2, "心宿", 0}, {0.10, 0.68, 0, 1, "北落", 0},
+		{0.34, 0.72, 2, 2, "五車", 0}, {0.54, 0.66, 5, 3, "軒轅", 0},
+		{0.72, 0.74, 4, 1, "太微", 2}, {0.90, 0.66, 1, 0, "天津", 0},
+		{0.24, 0.88, 3, 2, "婁宿", 0}, {0.62, 0.86, 2, 1, "氐宿", 0},
+	}
+}
+
 // GameSession 是一局進行中的遊戲狀態。玩家操作改變狀態,EndTurn 推進一回合(結算玩家 + 各 AI)。
 type GameSession struct {
 	Turn             int
@@ -22,6 +45,7 @@ type GameSession struct {
 	PlayerColonies   []engine.ColonyState
 	AIPlayers        []AIOpponent
 	LastPlayerOutput engine.EmpireOutput // 上一回合玩家結算(供畫面顯示)
+	Stars            []Star              // 星系圖
 }
 
 // EndTurn 推進一回合:先結算玩家帝國,再讓各 AI 對手自行決策並結算,回合數 +1。
@@ -58,5 +82,6 @@ func NewDemoSession() *GameSession {
 			Colonies: mkColonies(),
 			Decider:  ai.NewRemakeDecider(ai.ProfileScientific),
 		}},
+		Stars: demoStars(),
 	}
 }

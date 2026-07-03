@@ -63,9 +63,10 @@ type overlayScreen struct {
 	hits             []hitRegion
 	onAction         func(action string) *origTransition
 	hover            string
-	offsetX, offsetY int         // 背景圖在 640×480 畫布上的置中偏移(小於全螢幕的視窗畫面用)
-	eraseColor       *color.RGBA // 非 nil 時強制用此色擦底(背景均勻的畫面用,勝過採樣猜測)
-	extras           []extraText // 即時動態文字(星曆、國庫…),疊在背景+overlay 之上
+	offsetX, offsetY int                     // 背景圖在 640×480 畫布上的置中偏移(小於全螢幕的視窗畫面用)
+	eraseColor       *color.RGBA             // 非 nil 時強制用此色擦底(背景均勻的畫面用,勝過採樣猜測)
+	extras           []extraText             // 即時動態文字(星曆、國庫…),疊在背景+overlay 之上
+	postDraw         func(dst *ebiten.Image) // 任意額外繪製(如星圖),在最後呼叫
 }
 
 // extraText 是一段即時繪製的動態文字(非來自譯表的固定標籤)。
@@ -138,6 +139,9 @@ func (s *overlayScreen) draw(dst *ebiten.Image) {
 		} else {
 			s.font.Draw(dst, e.text, e.x+ox, e.y+oy, e.size, e.col)
 		}
+	}
+	if s.postDraw != nil {
+		s.postDraw(dst)
 	}
 }
 
@@ -377,17 +381,50 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 即時狀態:星曆(原版起始年 3500,每回合 +1 年)+ 國庫,疊在星圖視窗左上。
+	// 星圖(中央視窗,openorion2 StarmapWidget 20,20,507,401)+ 即時狀態文字(疊在星圖之上)。
 	if b.session != nil {
-		year := 3500 + (b.session.Turn - 1)
-		gold := color.RGBA{240, 220, 120, 255}
-		body := color.RGBA{210, 216, 230, 255}
-		s.extras = []extraText{
-			{x: 30, y: 40, size: 16, text: fmt.Sprintf("星曆 %d", year), col: gold},
-			{x: 30, y: 62, size: 13, text: fmt.Sprintf("國庫 %d BC", b.session.Player.BC), col: body},
+		sess := b.session
+		fnt := s.font
+		s.postDraw = func(dst *ebiten.Image) {
+			drawStarmap(dst, fnt, sess.Stars)
+			if fnt != nil {
+				year := 3500 + (sess.Turn - 1)
+				fnt.Draw(dst, fmt.Sprintf("星曆 %d", year), 30, 40, 16, color.RGBA{240, 220, 120, 255})
+				fnt.Draw(dst, fmt.Sprintf("國庫 %d BC", sess.Player.BC), 30, 62, 13, color.RGBA{210, 216, 230, 255})
+			}
 		}
 	}
 	return s, nil
+}
+
+// drawStarmap 在星系主畫面中央視窗繪製星圖(深空底 + 依光譜上色/大小定半徑的星 + 星名 +
+// 我方/敵方擁有環)。座標區對應 openorion2 的 StarmapWidget(20,20,507,401)。
+func drawStarmap(dst *ebiten.Image, fnt *uifont.Font, stars []shell.Star) {
+	const vx0, vy0, vx1, vy1 = 24, 24, 523, 418
+	vector.DrawFilledRect(dst, vx0, vy0, vx1-vx0, vy1-vy0, color.RGBA{6, 6, 16, 255}, false)
+	for _, st := range stars {
+		x := float32(vx0) + float32(st.X)*(vx1-vx0)
+		y := float32(vy0) + float32(st.Y)*(vy1-vy0)
+		col, ok := spectralColors[uint8(st.Spectral)]
+		if !ok {
+			col = color.RGBA{200, 200, 200, 255}
+		}
+		r := float32(6 - st.Size) // 大=6 .. 小=3
+		if r < 3 {
+			r = 3
+		}
+		// 擁有環:我方藍綠、敵方紅。
+		switch st.Owner {
+		case 1:
+			vector.StrokeCircle(dst, x, y, r+3, 1.5, color.RGBA{90, 230, 180, 255}, true)
+		case 2:
+			vector.StrokeCircle(dst, x, y, r+3, 1.5, color.RGBA{235, 90, 80, 255}, true)
+		}
+		vector.DrawFilledCircle(dst, x, y, r, col, true)
+		if fnt != nil && st.Name != "" {
+			fnt.Draw(dst, st.Name, float64(x)+float64(r)+3, float64(y)-2, 11, color.RGBA{170, 185, 210, 255})
+		}
+	}
 }
 
 // colonySummary 建原版殖民地總覽畫面(COLSUM.LBX 資產 0,自帶完整調色盤)。
