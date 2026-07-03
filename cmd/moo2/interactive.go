@@ -433,7 +433,41 @@ func drawStarmap(dst *ebiten.Image, fnt *uifont.Font, stars []shell.Star) {
 // colonySummary 建原版殖民地總覽畫面(COLSUM.LBX 資產 0,自帶完整調色盤)。
 // openorion2 未實作此 view,背景資產由本專案自 LBX 探測定位。
 func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
-	hits, onAction := b.backHit(b.galaxy, "星系主畫面")
+	// 點各殖民地的職務欄 → 重分配 1 名人口(農夫欄→多農夫、工人欄→多工人、科學家欄→多科學家);
+	// RETURN → 星系主畫面。列中心 y 與欄 x 對齊資料。
+	rowY := []float64{47, 78, 109, 140, 171, 202, 233, 264, 295}
+	hits := []hitRegion{{582, 452, 52, 20, "return"}}
+	if b.session != nil {
+		for i := range b.session.PlayerColonies {
+			if i >= len(rowY) {
+				break
+			}
+			top := int(rowY[i]) - 15
+			hits = append(hits,
+				hitRegion{104, top, 118, 30, fmt.Sprintf("f%d", i)},
+				hitRegion{236, top, 128, 30, fmt.Sprintf("w%d", i)},
+				hitRegion{376, top, 128, 30, fmt.Sprintf("s%d", i)},
+			)
+		}
+	}
+	onAction := func(a string) *origTransition {
+		if a == "return" {
+			return b.goTo(b.galaxy, "星系主畫面")
+		}
+		if len(a) == 2 && b.session != nil {
+			idx := int(a[1] - '0')
+			switch a[0] {
+			case 'f':
+				b.session.ShiftColonyJob(idx, "w", "f") // 工人→農夫
+			case 'w':
+				b.session.ShiftColonyJob(idx, "f", "w") // 農夫→工人
+			case 's':
+				b.session.ShiftColonyJob(idx, "w", "s") // 工人→科學家
+			}
+			return b.goTo(b.colonySummary, "殖民地總覽") // 重繪顯示新分配
+		}
+		return nil
+	}
 	// 欄位標題(上)+ 排序列(下)擦底疊字。座標經 PIL 量測。
 	overlays := []labelRect{
 		{18, 10, 78, 20, "NAME", 0},

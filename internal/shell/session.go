@@ -113,10 +113,44 @@ func (s *GameSession) ResolveBattle(enemy string) BattleResult {
 // shipNamePool 供新造艦命名(依序循環)。
 var shipNamePool = []string{"先鋒號", "勝利號", "無畏號", "蒼穹號", "星辰號", "破曉號", "遠征號", "不朽號", "疾風號", "曙光號"}
 
-// BuildShip 造一艘指定艦體等級的艦(名稱依序取自名稱池),加入艦隊。
-func (s *GameSession) BuildShip(class string) {
+// ShipCost 造某艦體等級所需國庫 BC(依戰力點)。
+func ShipCost(class string) int { return shipStrength(class) * 20 }
+
+// BuildShip 造一艘指定艦體等級的艦:扣國庫 BC,加入艦隊。BC 不足回 false 不造。
+func (s *GameSession) BuildShip(class string) bool {
+	cost := ShipCost(class)
+	if s.Player.BC < cost {
+		return false
+	}
+	s.Player.BC -= cost
 	name := shipNamePool[len(s.Ships)%len(shipNamePool)]
 	s.Ships = append(s.Ships, Ship{Name: name, Class: class})
+	return true
+}
+
+// ShiftColonyJob 在某殖民地把 1 名人口從 from 職務移到 to(f=農夫 w=工人 s=科學家);
+// from 需有人。供殖民地人口重分配(影響下回合經濟)。
+func (s *GameSession) ShiftColonyJob(idx int, from, to string) {
+	if idx < 0 || idx >= len(s.PlayerColonies) {
+		return
+	}
+	c := &s.PlayerColonies[idx]
+	get := func(j string) *int {
+		switch j {
+		case "f":
+			return &c.Farmers
+		case "w":
+			return &c.Workers
+		case "s":
+			return &c.Scientists
+		}
+		return nil
+	}
+	fp, tp := get(from), get(to)
+	if fp != nil && tp != nil && *fp > 0 {
+		*fp--
+		*tp++
+	}
 }
 
 // Leader 是一名可雇用的軍官/領袖(供軍官列表)。
