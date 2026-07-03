@@ -35,6 +35,10 @@ type ColonyState struct {
 
 	// 成長獎金(百分點)之和:g 一般 + r 種族 + i AI + t 科技 + l + e(住房 h 由引擎計)。
 	GrowthBonusSum int
+
+	// MoralePercent 是淨士氣對產出的百分點調整(每格笑臉 +10、哭臉 -10;正負皆可)。
+	// 依手冊套用於食物/工業/研究(見 gamedata.MoraleProductionOutput)。
+	MoralePercent int
 }
 
 // PlayerState 是回合引擎操作的乾淨玩家(帝國)狀態。

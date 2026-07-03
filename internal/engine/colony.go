@@ -5,9 +5,9 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 // 每人口單位每回合消耗 1 食物(MOO2 標準)。
 const foodPerPopulation = 1
 
-// colonyFood 計算農業產出、消耗與盈餘。
+// colonyFood 計算農業產出(經士氣調整)、消耗與盈餘。
 func colonyFood(cs ColonyState) (food, consumed, surplus int) {
-	food = cs.Farmers * cs.FoodPerFarmer
+	food = gamedata.MoraleProductionOutput(cs.Farmers*cs.FoodPerFarmer, cs.MoralePercent)
 	consumed = cs.Population * foodPerPopulation
 	return food, consumed, food - consumed
 }
@@ -40,9 +40,10 @@ func colonyGrowth(cs ColonyState, foodSurplus, netIndustry int) int {
 // 食物 → 工業 → 污染(縮減淨工業)→ 研究 → 人口成長。
 func RunColonyTurn(cs ColonyState) ColonyOutput {
 	food, consumed, surplus := colonyFood(cs)
-	gross := cs.Workers * cs.IndustryPerWorker
+	// 工業與研究同樣經士氣調整(手冊:每格士氣 ±10% 套用於食物/工業/研究/收入)。
+	gross := gamedata.MoraleProductionOutput(cs.Workers*cs.IndustryPerWorker, cs.MoralePercent)
 	pollutingProd, cleanupCost, netIndustry := colonyPollution(cs, gross)
-	research := cs.Scientists * cs.ResearchPerScientist
+	research := gamedata.MoraleProductionOutput(cs.Scientists*cs.ResearchPerScientist, cs.MoralePercent)
 	growth := colonyGrowth(cs, surplus, netIndustry)
 
 	return ColonyOutput{

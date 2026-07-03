@@ -70,3 +70,22 @@ func TestRunColonyTurnTolerantRace(t *testing.T) {
 		t.Errorf("Tolerant 污染錯誤:%+v", got)
 	}
 }
+
+func TestRunColonyTurnMorale(t *testing.T) {
+	// 士氣 +30%(3 格笑臉)→ 食物/工業/研究皆 ×1.3。
+	cs := ColonyState{
+		Population: 10, PopMax: 20, Farmers: 4, Workers: 2, Scientists: 2,
+		FoodPerFarmer: 5, IndustryPerWorker: 10, ResearchPerScientist: 5,
+		PlanetSize: gamedata.TINY_PLANET, TolerantRace: true, MoralePercent: 30,
+	}
+	got := RunColonyTurn(cs)
+	if got.Food != 26 { // 20*130/100
+		t.Errorf("士氣調整食物 = %d,預期 26", got.Food)
+	}
+	if got.GrossIndustry != 26 { // 20*1.3
+		t.Errorf("士氣調整工業 = %d,預期 26", got.GrossIndustry)
+	}
+	if got.Research != 13 { // 10*1.3
+		t.Errorf("士氣調整研究 = %d,預期 13", got.Research)
+	}
+}
