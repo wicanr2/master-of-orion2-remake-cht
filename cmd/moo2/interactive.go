@@ -272,10 +272,21 @@ func (b *sceneBuilder) research() (*overlayScreen, error) {
 		}
 		return &origTransition{next: s}
 	}
-	// 先以忠實原版(不疊字、置中)呈現,證明調色盤鏈解鎖此畫面;
-	// 領域名擦底疊字(建設/動力/化學/社會學/電腦/生物學/物理/力場)+ 座標校對列為下一輪。
+	// 研究領域標籤擦底疊字(座標為 bg 局部座標,472×480;draw 時自動加置中偏移)。
+	// 座標經 PIL 量測原版標籤中心(左右欄列中心 y=36/140/246/352,標題 18);h=18,y=中心−9。
+	overlays := []labelRect{
+		{155, 9, 162, 18, "Select New Research", 0},
+		{22, 27, 128, 18, "Construction", 0},
+		{244, 27, 124, 18, "Power", 0},
+		{22, 131, 128, 18, "Chemistry", 0},
+		{244, 131, 124, 18, "Sociology", 0},
+		{22, 237, 128, 18, "Computers", 0},
+		{244, 237, 124, 18, "Biology", 0},
+		{22, 343, 128, 18, "Physics", 0},
+		{244, 343, 124, 18, "Force Fields", 0},
+	}
 	return loadOverlayScreen(b.res, "techsel.lbx", 0, b.lang, b.fnt, "assets/i18n/tech.tsv",
-		nil, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
+		overlays, color.RGBA{210, 216, 230, 255}, 13, hits, onAction,
 		paletteProvider{"science.lbx", 0})
 }
 
