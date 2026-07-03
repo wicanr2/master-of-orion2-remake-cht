@@ -195,8 +195,12 @@ func main() {
 		dirs := strings.Split(*dataDirs, ",")
 		var script []shell.InputState
 		if *shot != "" {
-			// headless 驗證:點「名人堂」(415,262,153,23 中心 491,273)→ 調色盤鏈研究選擇畫面 → 截圖。
-			script = []shell.InputState{{MouseX: 491, MouseY: 273, ClickReleased: true}}
+			// headless 驗證:新遊戲(491,228)→ 星系主畫面 → 點 FLEETS(165,430,67,44 中心 198,452)
+			// → 艦隊列表(驗證樞紐導覽 + 三段調色盤鏈)→ 截圖。
+			script = []shell.InputState{
+				{MouseX: 491, MouseY: 228, ClickReleased: true},
+				{MouseX: 198, MouseY: 452, ClickReleased: true},
+			}
 		}
 		if err := runInteractive(dirs, langID, fnt, script, *shot, *frames); err != nil {
 			fatal(err)

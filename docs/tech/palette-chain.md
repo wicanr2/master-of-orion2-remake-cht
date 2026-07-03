@@ -16,7 +16,10 @@ MOO2 的畫面背景圖存在各 `.lbx` 內。**部分**背景圖自帶內嵌調
 2. 若呼叫端有給 `base_palette` → `memcpy` 整份 256 色當基底;否則若連自己的內嵌調色盤都沒有 → 丟 `Palette missing`。
 3. 若本圖有 `FLAG_PALETTE` → 讀出 `(palstart, palsize)`,把**自己的部分內嵌範圍疊寫**到 `_palettes[0]` 上。
 
-一句話:**最終調色盤 = 基底(某張帶調色盤的圖提供,完整 256)+ 本圖自己的部分內嵌範圍覆蓋上去。**
+一句話:**最終調色盤 = 依序疊加各提供圖的內嵌範圍當基底 + 本圖自己的部分內嵌範圍覆蓋上去。**
+
+> 修正(實測):提供圖**不必填滿 256 色**,只需其內嵌範圍涵蓋目標圖實際用到的索引即可。例:`buffer0.lbx#0` 只內嵌 0–191、`science.lbx#0` 只內嵌 192–255;消費端圖像剛好只用到被覆蓋的索引。真正填滿 256 色的提供圖很少(如 `info.lbx#1`)。
+> 部分畫面是**多段鏈**(艦隊列表:`buffer0.lbx#0` → 疊 `fleet.lbx#111` → 疊 `fleet.lbx#0` 本身),`resolvePalette` 以 `paletteChain []assetRef` 依序疊加支援。
 
 那張「基底提供圖」由各畫面自己指定,通常是同畫面的一個小圖/游標。openorion2 各畫面範例(`getImage(archive, asset, providerPalette)`):
 
