@@ -119,14 +119,33 @@ func (s *overlayScreen) draw(dst *ebiten.Image) {
 	}
 }
 
-// samplePlate 取標籤左內緣中線的底色(用來擦掉英文;置中文字不在此,採到的是乾淨底板)。
+// samplePlate 取標籤底板色(用來擦掉烘進圖的英文)。
+// 策略:在標籤左內緣一條窄直帶(置中文字通常不及此)採樣多點,取「眾數色」——比單點採樣穩健,
+// 不會因單點剛好落在字上而取到字色(較寬的按鈕標籤單點易誤取)。與極性無關(不假設字比底亮或暗)。
 func samplePlate(rgba *image.RGBA, b labelRect) color.RGBA {
-	x, y := b.x+6, b.y+b.h/2
-	if x < 0 || y < 0 || x >= rgba.Bounds().Dx() || y >= rgba.Bounds().Dy() {
-		return color.RGBA{0, 0, 0, 255}
+	W, H := rgba.Bounds().Dx(), rgba.Bounds().Dy()
+	counts := map[color.RGBA]int{}
+	best := color.RGBA{0, 0, 0, 255}
+	bestN := 0
+	for _, dx := range []int{3, 5, 7, 9} {
+		x := b.x + dx
+		if x < 0 || x >= W {
+			continue
+		}
+		for y := b.y + 1; y < b.y+b.h-1; y++ {
+			if y < 0 || y >= H {
+				continue
+			}
+			i := rgba.PixOffset(x, y)
+			c := color.RGBA{rgba.Pix[i], rgba.Pix[i+1], rgba.Pix[i+2], 255}
+			counts[c]++
+			if counts[c] > bestN {
+				bestN = counts[c]
+				best = c
+			}
+		}
 	}
-	i := rgba.PixOffset(x, y)
-	return color.RGBA{rgba.Pix[i], rgba.Pix[i+1], rgba.Pix[i+2], 255}
+	return best
 }
 
 // assetRef 指向某 LBX 內一張影像。
