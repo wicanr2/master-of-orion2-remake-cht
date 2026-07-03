@@ -21,6 +21,7 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/assets"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/lbx"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
 
@@ -88,6 +89,7 @@ func main() {
 	infoMode := flag.Bool("info-viewer", false, "科技總覽畫面模式(示範單畫面多 TSV 來源)")
 	infoTech := flag.String("info-tech", "Achilles Targeting Unit", "科技總覽右欄範例科技(英文標題)")
 	raceMode := flag.Bool("race-viewer", false, "種族統計畫面模式")
+	playMode := flag.Bool("play", false, "可玩遊戲殼(互動;有 -shot 則跑腳本驗證並截圖)")
 	colonyMode := flag.Bool("colony-viewer", false, "殖民地摘要畫面模式")
 	diploMode := flag.Bool("diplo-viewer", false, "外交關係畫面模式")
 	tsvPath := flag.String("tsv", "", "譯表 TSV(留空用該畫面預設)")
@@ -172,6 +174,26 @@ func main() {
 		}
 		dirs := strings.Split(*dataDirs, ",")
 		if err := runInfoReview(dirs, "help.lbx", langID, fnt, reg, *infoTech, *shot, *frames); err != nil {
+			fatal(err)
+		}
+		return
+	}
+
+	// 可玩遊戲殼:互動主選單→遊戲畫面→結束回合。headless(-shot)時跑內建腳本驗證互動。
+	if *playMode {
+		fnt, err := loadFont(*fontPath)
+		if err != nil {
+			fatal(fmt.Errorf("載入字型: %w", err))
+		}
+		var script []shell.InputState
+		if *shot != "" {
+			// 腳本:第1幀點「新遊戲」(選單鈕中心)、第2幀點「結束回合」(遊戲鈕中心)→ 驗證回合推進。
+			script = []shell.InputState{
+				{MouseX: 320, MouseY: 218, ClickReleased: true}, // 新遊戲
+				{MouseX: 495, MouseY: 438, ClickReleased: true}, // 結束回合
+			}
+		}
+		if err := runPlay(fnt, *shot, *frames, script); err != nil {
 			fatal(err)
 		}
 		return
