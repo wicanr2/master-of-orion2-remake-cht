@@ -5,6 +5,7 @@ import "testing"
 // TestPopulationGrowthWriteback 驗證殖民地人口會隨回合成長並回寫 Population,且不超過 PopMax。
 func TestPopulationGrowthWriteback(t *testing.T) {
 	s := NewDemoSession()
+	s.DisableEvents = true // 隔離瘟疫/隕石(會扣人口,干擾精確斷言)
 	if len(s.PlayerColonies) == 0 {
 		t.Fatal("需至少一個殖民地")
 	}

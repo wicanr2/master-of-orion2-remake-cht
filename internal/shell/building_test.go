@@ -6,6 +6,7 @@ import "testing"
 // 且效果只套一次(重複完工不疊加)。
 func TestBuildingLongTermEffect(t *testing.T) {
 	s := NewDemoSession()
+	s.DisableEvents = true // 隔離隨機事件(富礦脈會改工業,干擾精確斷言)
 	if len(s.PlayerColonies) == 0 {
 		t.Fatal("需至少一個殖民地")
 	}
@@ -42,6 +43,7 @@ func TestBuildingLongTermEffect(t *testing.T) {
 // TestResearchLabEffect 驗證研究實驗室提升研究/科學家 +5。
 func TestResearchLabEffect(t *testing.T) {
 	s := NewDemoSession()
+	s.DisableEvents = true
 	start := s.PlayerColonies[0].ResearchPerScientist
 	s.Builds[0] = ColonyBuild{Name: "研究實驗室", Progress: 0, Cost: 60}
 	for i := 0; i < 25 && s.Builds[0].Name != ""; i++ {

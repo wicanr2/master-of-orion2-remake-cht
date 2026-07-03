@@ -621,6 +621,7 @@ type GameSession struct {
 	ColonyBuildings  []map[string]bool   // 各殖民地已完工建築(去重,避免重複套用長期效果)
 	EventSeed        int64               // 隨機事件亂數種子(可重現;新遊戲遞增)
 	LastEvent        string              // 本回合觸發的隨機事件描述(空=無事件;供回合摘要)
+	DisableEvents    bool                // 關閉隨機事件(供確定性經濟測試隔離)
 	eventRand        *rand.Rand          // 事件亂數源(由 EventSeed 惰性建立)
 }
 
@@ -629,6 +630,9 @@ type GameSession struct {
 // 可重現。事件與效果為 remake 設計(對齊 MOO2 事件定性:繁榮/瘟疫/海盜/礦脈/突破/隕石)。
 func (s *GameSession) advanceEvents() {
 	s.LastEvent = ""
+	if s.DisableEvents {
+		return
+	}
 	if s.eventRand == nil {
 		s.eventRand = rand.New(rand.NewSource(s.EventSeed*2654435761 + 1))
 	}
