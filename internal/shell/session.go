@@ -619,6 +619,72 @@ type GameSession struct {
 	FleetETA         int                 // 抵達目的星尚需回合數(0=已抵達/靜止)
 	popAccum         []int               // 各殖民地人口成長累加值(達門檻則 +1 人口)
 	ColonyBuildings  []map[string]bool   // 各殖民地已完工建築(去重,避免重複套用長期效果)
+	EventSeed        int64               // 隨機事件亂數種子(可重現;新遊戲遞增)
+	LastEvent        string              // 本回合觸發的隨機事件描述(空=無事件;供回合摘要)
+	eventRand        *rand.Rand          // 事件亂數源(由 EventSeed 惰性建立)
+}
+
+// advanceEvents 每回合以固定機率觸發一個 MOO2 風格隨機事件並套用效果,結果記於 LastEvent
+// (供回合摘要顯示)。效果皆有界(BC 不為負、殖民地人口不低於 1)。事件亂數由 EventSeed 決定,
+// 可重現。事件與效果為 remake 設計(對齊 MOO2 事件定性:繁榮/瘟疫/海盜/礦脈/突破/隕石)。
+func (s *GameSession) advanceEvents() {
+	s.LastEvent = ""
+	if s.eventRand == nil {
+		s.eventRand = rand.New(rand.NewSource(s.EventSeed*2654435761 + 1))
+	}
+	if s.eventRand.Float64() >= 0.30 { // 每回合 30% 機率有事件
+		return
+	}
+	colony := func() *engine.ColonyState {
+		if len(s.PlayerColonies) == 0 {
+			return nil
+		}
+		return &s.PlayerColonies[s.eventRand.Intn(len(s.PlayerColonies))]
+	}
+	losePop := func(c *engine.ColonyState, n int) {
+		for ; n > 0 && c.Population > 1; n-- {
+			c.Population--
+			switch { // 由最多的職務扣人
+			case c.Workers >= c.Farmers && c.Workers >= c.Scientists && c.Workers > 0:
+				c.Workers--
+			case c.Farmers >= c.Scientists && c.Farmers > 0:
+				c.Farmers--
+			case c.Scientists > 0:
+				c.Scientists--
+			}
+		}
+	}
+	switch s.eventRand.Intn(6) {
+	case 0: // 經濟繁榮
+		gain := 50 + s.Turn
+		s.Player.BC += gain
+		s.LastEvent = fmt.Sprintf("經濟繁榮:國庫獲得 %d BC", gain)
+	case 1: // 太空海盜
+		loss := 40
+		if loss > s.Player.BC {
+			loss = s.Player.BC
+		}
+		s.Player.BC -= loss
+		s.LastEvent = fmt.Sprintf("太空海盜劫掠:損失 %d BC", loss)
+	case 2: // 富礦脈
+		if c := colony(); c != nil {
+			c.IndustryPerWorker++
+			s.LastEvent = "發現富礦脈:一殖民地工業/工人 +1"
+		}
+	case 3: // 瘟疫
+		if c := colony(); c != nil && c.Population > 1 {
+			losePop(c, 2)
+			s.LastEvent = "瘟疫爆發:一殖民地人口減少"
+		}
+	case 4: // 科學突破
+		s.Player.ResearchProgress += 150
+		s.LastEvent = "科學突破:研究進度 +150 RP"
+	case 5: // 隕石撞擊
+		if c := colony(); c != nil && c.Population > 1 {
+			losePop(c, 1)
+			s.LastEvent = "隕石撞擊:一殖民地人口減少"
+		}
+	}
 }
 
 // SendFleet 派遣玩家艦隊前往 dest 星:依兩星歐氏距離換算航行回合數(ETA),每回合 EndTurn
@@ -665,6 +731,7 @@ func (s *GameSession) EndTurn() {
 	s.advanceResearch()    // 目前研究主題完成則自動推進到下一個未完成的元件解鎖主題
 	s.advanceFleet()       // 推進艦隊星間航行(ETA 遞減,抵達則標記探索)
 	s.advancePopulation()  // 累積各殖民地成長,達門檻則 +1 人口(回寫 Population)
+	s.advanceEvents()      // 觸發 MOO2 風格隨機事件(繁榮/瘟疫/海盜…),記於 LastEvent
 	s.Turn++
 }
 
@@ -761,5 +828,6 @@ func NewDemoSession() *GameSession {
 		SelectedStar:  -1,
 		FleetAtStar:   0,  // 母星
 		FleetDestStar: -1, // 無航行任務
+		EventSeed:     42, // 隨機事件種子(可重現;正式新遊戲遞增)
 	}
 }

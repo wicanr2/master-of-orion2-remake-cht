@@ -144,7 +144,8 @@
 - [ ] 艦艇設計
 - [x] 戰鬥:格子戰術戰鬥(自繪畫面,逐艦token+HP+聚焦開火);宣戰→戰術戰鬥→戰鬥結果。艦艇移動/逐武器瞄準待深化
 - [x] 外交對談(自繪功能面板);議會投票(依人口)
-- [ ] 隨機事件 / 安塔蘭人
+- [x] 隨機事件系統:每回合 30% 觸發 6 種 MOO2 風格事件(經濟繁榮/太空海盜/富礦脈/瘟疫/科學突破/隕石),效果有界(BC 不為負、人口不低於1)、種子化可重現,顯示於回合摘要。測試 TestRandomEventsFireAndBounded/Reproducible
+- [ ] 安塔蘭人入侵(獨立事件鏈,待接)
 - [ ] AI 對手(策略見 `docs/kickoff/07-ai-strategy.md`:先參考 1oom `game_ai_classic.c` + GameFAQs 文獻,有必要才逆向)
   - [ ] 精讀 1oom `game_ai_classic.c`,抽「AI 決策流程」語言無關筆記
   - [ ] 精讀 GameFAQs MOO2 AI FAQ + 策略指南,補 MOO2 特有行為

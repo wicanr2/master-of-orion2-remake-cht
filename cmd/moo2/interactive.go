@@ -1319,6 +1319,11 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 13, text: "★ " + msg, col: color.RGBA{120, 220, 140, 255}})
 			yy += 22
 		}
+		// 隨機事件(繁榮/瘟疫/海盜…)。
+		if b.session.LastEvent != "" {
+			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 14, text: "◆ " + b.session.LastEvent, col: color.RGBA{240, 190, 110, 255}})
+			yy += 24
+		}
 	}
 	return s, nil
 }
