@@ -18,18 +18,43 @@ var clickSound func()
 // moo2SampleRate 是 MOO2 全部音訊的取樣率(見格式研究文件)。
 const moo2SampleRate = 22050
 
-// initAudio 建立 Mixer、載入主選單背景音樂與按鈕音效,回傳 Mixer(需被持有以免 GC)。
+// 場景 BGM 曲目索引(STREAMHD.LBX 內序,0-based)。
+// ⚠ 推定:依 last.fm 曲名順序(Theme1/2/3→各族→Battle)假設,**待對原版聆聽確認**
+// (見 docs/tech/audio-track-map.md 第三節)。機制本身與最終對應無關,可先接。
+const (
+	bgmMenu   = 0  // 推定 Theme 1
+	bgmGalaxy = 1  // 推定 Theme 2
+	bgmCombat = 17 // 推定 Battle 1(20 條中靠後的戰鬥曲)
+)
+
+var (
+	theMixer   *moo2audio.Mixer
+	musicClips []*moo2audio.Clip
+	curBGM     = -1
+)
+
+// playSceneBGM 切換背景音樂到指定曲目索引(headless / 未載入音樂時為 no-op)。
+// 同曲重播則略過,避免每次進同場景就從頭。
+func playSceneBGM(i int) {
+	if theMixer == nil || i < 0 || i >= len(musicClips) || i == curBGM {
+		return
+	}
+	if err := theMixer.PlayBGM(musicClips[i]); err == nil {
+		curBGM = i
+	}
+}
+
+// initAudio 建立 Mixer、載入全部背景音樂與按鈕音效,回傳 Mixer(需被持有以免 GC)。
 // 任何一步失敗都不致命:音訊是加分項,絕不擋遊戲執行。
 func initAudio(res *assets.Resolver) *moo2audio.Mixer {
 	m := moo2audio.NewMixer(moo2SampleRate)
+	theMixer = m
 
-	// 背景音樂:STREAMHD.LBX(Win95 版採用的較完整音樂)。
-	// TODO(task 4):clips[0] 只是「第一條可用曲」,主選單主題的正確 entry 待對原版聆聽定案。
+	// 背景音樂:STREAMHD.LBX 全部曲目(供各場景切換;曲目↔場景對應見常數註記)。
 	if arch, err := res.OpenLBX("streamhd.lbx"); err == nil {
 		if clips, _, err := moo2audio.LoadMusic(arch); err == nil && len(clips) > 0 {
-			if err := m.PlayBGM(clips[0]); err != nil {
-				fmt.Println("音樂播放失敗(略過):", err)
-			}
+			musicClips = clips
+			playSceneBGM(bgmMenu) // 開場播主選單曲
 		} else if err != nil {
 			fmt.Println("音樂載入失敗(略過):", err)
 		}

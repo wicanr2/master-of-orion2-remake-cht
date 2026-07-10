@@ -322,6 +322,7 @@ func savePathFor() string {
 
 // menu 建原版主選單畫面。按鈕熱區用 menuOverlays 的座標(按鈕即標籤)。
 func (b *sceneBuilder) menu() (*overlayScreen, error) {
+	playSceneBGM(bgmMenu)
 	hits := make([]hitRegion, 0, len(menuOverlays))
 	for _, o := range menuOverlays {
 		hits = append(hits, hitRegion{o.x, o.y, o.w, o.h, o.enKey})
@@ -385,6 +386,7 @@ func (b *sceneBuilder) backHit(dest func() (*overlayScreen, error), name string)
 // galaxy 建原版星系主畫面(遊戲主樞紐,BUFFER0.LBX 資產 0)。底部工具列導覽到各畫面
 // (座標取自 openorion2 galaxy.cpp GalaxyView::initWidgets)。
 func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
+	playSceneBGM(bgmGalaxy)
 	hits := []hitRegion{
 		{15, 430, 67, 44, "colonies"},
 		{90, 430, 67, 44, "planets"},
@@ -980,6 +982,7 @@ func (t *tacticalScreen) draw(dst *ebiten.Image) {
 
 // tacticalCombat 進入格子戰術戰鬥畫面。
 func (b *sceneBuilder) tacticalCombat() (origScreen, error) {
+	playSceneBGM(bgmCombat)
 	if b.session == nil {
 		return nil, fmt.Errorf("無對局")
 	}
