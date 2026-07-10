@@ -306,6 +306,7 @@ type sceneBuilder struct {
 	designArmor   int                // 裝甲元件索引(shell.ArmorOptions)
 	designShield  int                // 護盾元件索引(shell.ShieldOptions)
 	designSpecial int                // 特殊元件索引(shell.SpecialOptions)
+	designMsg     string             // 艦艇設計畫面「空間不足,擋下建造」的提示訊息(切換元件/成功建造時清空)
 	lastActionMsg string             // 星圖畫面「載運陸戰隊/發動地面入侵」的最近一次結果訊息(選新星時清空)
 }
 
@@ -1457,19 +1458,30 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		switch a { // 循環只跳到「已研究解鎖」的元件
 		case "weapon":
 			b.designWeapon = b.session.NextUnlockedComponent(shell.WeaponOptions, b.designWeapon)
+			b.designMsg = "" // 換元件可能改變空間是否超格,清掉舊的建造提示避免誤導
 			return b.goTo(b.shipDesign, "艦艇設計")
 		case "armor":
 			b.designArmor = b.session.NextUnlockedComponent(shell.ArmorOptions, b.designArmor)
+			b.designMsg = ""
 			return b.goTo(b.shipDesign, "艦艇設計")
 		case "shield":
 			b.designShield = b.session.NextUnlockedComponent(shell.ShieldOptions, b.designShield)
+			b.designMsg = ""
 			return b.goTo(b.shipDesign, "艦艇設計")
 		case "special":
 			b.designSpecial = b.session.NextUnlockedComponent(shell.SpecialOptions, b.designSpecial)
+			b.designMsg = ""
 			return b.goTo(b.shipDesign, "艦艇設計")
 		}
 		if zh, ok := hullZH[a]; ok && b.session != nil {
+			// 建造前驗證空間:超出艦體空間上限(shell.ShipDesignFits)就擋下,留在設計畫面提示,不扣款不造艦。
+			if !shell.ShipDesignFits(zh, b.designWeapon, b.designArmor, b.designShield, b.designSpecial) {
+				b.designMsg = fmt.Sprintf("空間不足,無法建造%s(目前元件超出艦體空間上限)", zh)
+				return b.goTo(b.shipDesign, "艦艇設計")
+			}
+			b.designMsg = ""
 			b.session.BuildShip(zh, b.designWeapon, b.designArmor, b.designShield, b.designSpecial)
+			return b.goTo(b.fleet, "艦隊列表")
 		}
 		return b.goTo(b.fleet, "艦隊列表")
 	}
@@ -1539,6 +1551,31 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 				cnt(shell.ShieldOptions), len(shell.ShieldOptions), cnt(shell.SpecialOptions), len(shell.SpecialOptions)),
 				col: color.RGBA{170, 200, 240, 255}},
 			extraText{x: 12, y: 460, size: 12, text: fmt.Sprintf("國庫 %d BC", b.session.Player.BC), col: gold})
+
+		// 空間預算/已用(依目前選定元件即時計算):逐艦體列出「空間:已用／總」,超格轉紅並標
+		// 「空間不足」。點艦體列建造時,onAction 用同一份 shell.ShipDesignFits 判斷擋下建造
+		// (不扣款、不入艦隊),designMsg 顯示擋下提示——顯示與建造驗證共用同一份判斷,不會不一致。
+		spaceHeaderY := 208.0
+		s.extras = append(s.extras, extraText{x: 305, y: spaceHeaderY, size: 12,
+			text: "各艦體空間(依目前元件):", col: gold})
+		okCol := color.RGBA{170, 220, 180, 255}
+		badCol := color.RGBA{230, 90, 90, 255}
+		for i, cl := range classes {
+			used := shell.ShipDesignSpaceUsed(cl, b.designWeapon, b.designArmor, b.designShield, b.designSpecial)
+			totalSp := gamedata.ShipHullSpace(gamedata.CombatShipClass(i))
+			fits := used <= totalSp
+			txt := fmt.Sprintf("%s 空間:%d／%d", cl, used, totalSp)
+			col := okCol
+			if !fits {
+				txt += "(空間不足)"
+				col = badCol
+			}
+			s.extras = append(s.extras, extraText{x: 305, y: spaceHeaderY + 17 + float64(i*17), size: 11, text: txt, col: col})
+		}
+		if b.designMsg != "" {
+			s.extras = append(s.extras, extraText{x: 305, y: spaceHeaderY + 17 + float64(len(classes)*17) + 8, size: 12,
+				text: b.designMsg, col: badCol})
+		}
 	}
 	return s, nil
 }
