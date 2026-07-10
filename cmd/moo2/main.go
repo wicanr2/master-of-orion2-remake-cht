@@ -168,6 +168,7 @@ func main() {
 	lbxName := flag.String("lbx", "mainmenu.lbx", "背景所在的 .lbx")
 	assetID := flag.Int("asset", 21, "背景資產 index")
 	palAsset := flag.Int("palasset", -1, "調色盤提供資產 index(該 lbx 內;目標資產無內嵌調色盤時用)")
+	palLBX := flag.String("pallbx", "", "調色盤提供資產所在的 .lbx(留空則沿用 -lbx,即同一檔內取色盤;跨檔借色盤時指定)")
 	accum := flag.Bool("accum", false, "多幀 delta 累積渲染(動畫資產如 DIPLOMAT 使節)")
 	shot := flag.String("shot", "", "headless 截圖輸出路徑(設定則跑 N 幀後結束)")
 	audioDump := flag.String("audiodump", "", "把原版音樂/音效抽成 wav 到此目錄(headless,需 -data)")
@@ -430,9 +431,17 @@ func main() {
 		fatal(fmt.Errorf("解碼資產 %d: %w", *assetID, err))
 	}
 	// 調色盤:優先用 -palasset 指定的提供資產(供無內嵌調色盤的資產如 DIPLOMAT 使節)。
+	// -pallbx 指定時,改從另一個 .lbx 借調色盤(供該檔全體資產皆無內嵌調色盤時,如 STARBG/CMBTSHP)。
 	pal := im.Embedded
 	if *palAsset >= 0 {
-		praw, perr := arch.Asset(*palAsset)
+		palArch := arch
+		if *palLBX != "" {
+			palArch, err = res.OpenLBX(*palLBX)
+			if err != nil {
+				fatal(fmt.Errorf("開啟調色盤來源 lbx %s: %w", *palLBX, err))
+			}
+		}
+		praw, perr := palArch.Asset(*palAsset)
 		if perr != nil {
 			fatal(fmt.Errorf("讀調色盤資產 %d: %w", *palAsset, perr))
 		}

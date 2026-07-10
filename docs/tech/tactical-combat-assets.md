@@ -29,13 +29,19 @@ openorion2 galaxy 用 `STARBG#3` 當背景,palette = `_gui->palette()`(全域 GU
 - 360 = 多艦型 × 尺寸 × 種族。無內嵌調色盤,借戰鬥場景 palette。
 - 另有 CMBTFGTR(戰機)、CMBTMISL(飛彈)、CMBTPLNT(戰鬥星球,含 32 色內嵌 palette)。
 
-## 二、調色盤假設(待實作渲染核對)
+## 二、調色盤來源(已渲染核實 2026-07-10)
 
-STARBG#0–5 與 CMBTSHP 皆無內嵌調色盤。候選來源:
-1. **COMBAT.LBX#11**(256 色,同屬戰鬥資產,最可能)。
-2. 全域 GUI 調色盤(如 FONTS.LBX 內某資產,openorion2 galaxy 走這條)。
+**結論:`COMBAT.LBX#11`(1×1、flag 0x1000、256 色)是 STARBG#0–5 與 CMBTSHP 的正確調色盤。**
 
-實作時用 `paletteChain`(cross-LBX,見 `interactive.go` resolvePalette)先試 COMBAT#11,渲染乾淨即中;不乾淨再試 GUI palette。
+核實方法(rulebook 64 拓樸比對):
+- STARBG 是**稀疏 RLE**(僅 ~6.6% 像素有寫入),其餘未寫入=**透明**,原版設計是**疊在純黑太空背景上**。
+- ⚠ 陷阱:直接看渲染 PNG 會把透明區當白色 → 誤判「全畫面雜點」。三個不相關候選色盤得到**同形狀**雜點就是鐵證(色盤只改顏色不改透明遮罩)。**必須疊黑底**(`alpha_composite` over black)才看得出真圖。
+- 疊黑底後比色彩連貫:COMBAT#11 → STARBG 五變體(#0,1,2,4,5)乾淨藍白星點+星雲、CMBTSHP(#0,#20)乾淨灰白艦體+紅色引擎/武器重點;BUFFER0#0(galaxy 全域 GUI 色盤)星空可但**艦艇錯成洋紅**;MAINMENU#1 全錯。
+- ∴ 借對色盤是 **per-screen**(COMBAT.LBX 自帶戰鬥專屬色盤),非隨便借全域色盤。同 DIPLOMAT 專職色盤持有資產慣例。
+
+工具:`cmd/moo2` 已加 `-pallbx <file>` 旗標支援跨-LBX 借色盤:
+`-lbx STARBG.LBX -asset 0 -pallbx COMBAT.LBX -palasset 11 -shot out.png`
+實作時:先鋪**純黑**底,再貼 STARBG(透明處透出黑),艦艇/UI 同借 COMBAT#11。
 
 ## 三、重建規格(交實作子代理)
 
