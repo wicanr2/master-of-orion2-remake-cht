@@ -2,8 +2,23 @@ package shell
 
 import "testing"
 
+// bcCrashFloor80Turns 是 TestAntaresRaidsScheduleAndEscalate 80 回合內允許的 BC 下限。
+//
+// 忠實 yield 經濟(母星 Terran/Abundant,見 docs/tech/colony-economy-maintenance.md)下,
+// 建築維護費固定 3 BC/回合,但人口只剩 1 時,不論把僅存的 1 人配置成農夫或工人,收入都不到
+// 3 BC(食物盈餘出售 0.5 BC/單位、稅收 40%,單人口撐死賺 1~2 BC)——這不是本輪任何算式錯誤,
+// 而是「建築維護費不隨人口規模縮小」這個手冊本身就有的機制,在忠實(零緩衝)經濟下被誠實呈現
+// 出來:此測試刻意無艦隊防禦、吃滿安塔蘭入侵傷害,人口會被反覆打到剩 1(母星人口下限本身仍
+// 受下方斷言保護),因此本測試不再要求「BC 絕不為負」(那個假設建立在舊 placeholder 經濟
+// NetBC 穩定 +3/回合累積出的巨額緩衝上,忠實經濟沒有這個緩衝)。改驗證「BC 不會失控式無下限
+// 崩潰」——以本測試固定 EventSeed=42 的確定性軌跡實測,80 回合最低點是 -3(見
+// docs/tech/colony-economy-maintenance.md),這裡抓一個有餘裕但仍能抓到「異常擴大化」的下限。
+const bcCrashFloor80Turns = -20
+
 // TestAntaresRaidsScheduleAndEscalate 驗證安塔蘭入侵:前期寬限不觸發,達排程回合週期性觸發,
-// 次數遞增(升級),且效果有界(BC 不為負、母星人口不低於 1)。
+// 次數遞增(升級),母星人口不低於 1,且 BC 不會失控式無下限崩潰(見 bcCrashFloor80Turns 註解:
+// 忠實經濟下人口被打到剩 1 時,單人口收入結構性不足以覆蓋建築維護費,短暫轉負是誠實的經濟後果,
+// 不是 bug)。
 func TestAntaresRaidsScheduleAndEscalate(t *testing.T) {
 	s := NewDemoSession()
 	s.Ships = nil // 無艦隊防禦,吃滿傷害(方便觀察)
@@ -14,8 +29,8 @@ func TestAntaresRaidsScheduleAndEscalate(t *testing.T) {
 		if s.LastAntares != "" {
 			raidTurns = append(raidTurns, s.Turn)
 		}
-		if s.Player.BC < 0 {
-			t.Fatalf("BC 為負:%d", s.Player.BC)
+		if s.Player.BC < bcCrashFloor80Turns {
+			t.Fatalf("BC 崩潰超出合理下限:%d(< %d)", s.Player.BC, bcCrashFloor80Turns)
 		}
 		if s.PlayerColonies[0].Population < 1 {
 			t.Fatalf("母星人口 <1:%d", s.PlayerColonies[0].Population)

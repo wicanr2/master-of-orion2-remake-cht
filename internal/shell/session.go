@@ -978,7 +978,13 @@ func (s *GameSession) advanceAntares() {
 		bcLoss /= 2
 	}
 
-	if bcLoss > s.Player.BC {
+	// 夾在 [0, 現有 BC] 之間:忠實 yield 經濟(零緩衝)下 BC 可能已經是負值(見
+	// docs/tech/colony-economy-maintenance.md),若只判斷「bcLoss > s.Player.BC」,
+	// s.Player.BC 為負時 bcLoss 會被夾成負值,下面的 `BC -= bcLoss` 反而變成「損失負數」=
+	// 白白多贈送 BC,和「入侵造成損失」的敘述矛盾。BC 本來就非正時,沒有更多可虧損,bcLoss=0。
+	if s.Player.BC <= 0 {
+		bcLoss = 0
+	} else if bcLoss > s.Player.BC {
 		bcLoss = s.Player.BC
 	}
 	s.Player.BC -= bcLoss
@@ -1004,8 +1010,12 @@ func (s *GameSession) advanceAntares() {
 }
 
 // advanceEvents 每回合以固定機率觸發一個 MOO2 風格隨機事件並套用效果,結果記於 LastEvent
-// (供回合摘要顯示)。效果皆有界(BC 不為負、殖民地人口不低於 1)。事件亂數由 EventSeed 決定,
-// 可重現。事件與效果為 remake 設計(對齊 MOO2 事件定性:繁榮/瘟疫/海盜/礦脈/突破/隕石)。
+// (供回合摘要顯示)。單次效果本身有界(單一事件不會虧超過當下 BC、殖民地人口不低於 1)——但
+// 這不保證 BC 全局不為負:忠實 yield 經濟(見 docs/tech/colony-economy-maintenance.md)緩衝
+// 很薄,國庫仍可能因連續多回合建築維護費 > 收入而變負,事件本身不是這種情況的成因,只是不會
+// 加重「已經非正的 BC」繼續被誤夾成負值虧損(見 case 1 太空海盜的夾值處理)。事件亂數由
+// EventSeed 決定,可重現。事件與效果為 remake 設計(對齊 MOO2 事件定性:繁榮/瘟疫/海盜/礦脈/
+// 突破/隕石)。
 func (s *GameSession) advanceEvents() {
 	s.LastEvent = ""
 	if s.DisableEvents {
@@ -1043,7 +1053,9 @@ func (s *GameSession) advanceEvents() {
 		s.LastEvent = fmt.Sprintf("經濟繁榮:國庫獲得 %d BC", gain)
 	case 1: // 太空海盜
 		loss := 40
-		if loss > s.Player.BC {
+		if s.Player.BC <= 0 { // 見 advanceAntares 同款夾值註解:BC 已非正時沒有更多可虧損
+			loss = 0
+		} else if loss > s.Player.BC {
 			loss = s.Player.BC
 		}
 		s.Player.BC -= loss
@@ -1114,11 +1126,44 @@ func (s *GameSession) totalBuildingMaintenance() int {
 	return total
 }
 
+// recoverFromFamine 饑荒防死鎖:若某玩家殖民地上回合結算後 Farmers=0 且 Starving(食物盈餘
+// <0),但仍有人口(Population>0),自動把 1 個非農夫單位(優先 Worker,其次 Scientist)
+// 改派回農業,近似「玩家發現饑荒會手動 ShiftColonyJob 自救」的行為。
+//
+// 沒有這個機制,零緩衝的忠實 yield 經濟一旦被隨機事件/安塔蘭入侵把僅有的農夫扣到 0,
+// engine/colony.go 的 colonyGrowth 會在饑荒時永久不套用成長公式,且本專案在此之前完全沒有
+// 任何自動改派農夫的機制(ShiftColonyJob 只由玩家 UI 操作觸發)——殖民地會卡死在
+// NetIndustry=0、TaxRevenue=0,而建築維護費仍每回合照扣,BC 保證單調流血至負值。這是
+// docs/tech/colony-economy-maintenance.md §2.2 實測記錄的死結,本函式是解法之一(任務指示的
+// 選項②):非饑荒(Farmers>0 或未 Starving)不動作,一次只搶救 1 人(避免一次饑荒就把整個
+// 職務分配打亂),不改動 AI 殖民地(AI 目前的 Farmers/Workers 由 ApplyAIEconomy 每回合依
+// decider 重新決定,不會卡在饑荒鎖死)。
+func (s *GameSession) recoverFromFamine() {
+	for i := range s.PlayerColonies {
+		c := &s.PlayerColonies[i]
+		if c.Population <= 0 || c.Farmers > 0 {
+			continue
+		}
+		if i >= len(s.LastPlayerOutput.Colonies) || !s.LastPlayerOutput.Colonies[i].Starving {
+			continue
+		}
+		switch {
+		case c.Workers > 0:
+			c.Workers--
+			c.Farmers++
+		case c.Scientists > 0:
+			c.Scientists--
+			c.Farmers++
+		}
+	}
+}
+
 // EndTurn 推進一回合:先結算玩家帝國,再讓各 AI 對手自行決策並結算,回合數 +1。
 func (s *GameSession) EndTurn() {
 	s.Player.Maintenance = s.totalBuildingMaintenance() // 依本回合結算前的實際已建建築重算(取代平坦常數)
 	s.LastPlayerOutput = engine.RunEmpireTurn(s.Player, s.PlayerColonies)
 	s.Player = s.LastPlayerOutput.Player
+	s.recoverFromFamine() // 饑荒防死鎖:見函式註解;依本回合 Starving 結果修正下回合職務分配
 	for i := range s.AIPlayers {
 		out := engine.RunAIEmpireTurn(s.AIPlayers[i].Player, s.AIPlayers[i].Colonies, s.AIPlayers[i].Decider)
 		s.AIPlayers[i].Player = out.Player
@@ -1273,7 +1318,7 @@ func (s *GameSession) advanceResearch() {
 	}
 }
 
-// averageHomeworldColony 建一個「Average 起始文明等級」的忠實母星殖民地,依
+// averageHomeworldColony 建一個「Average 起始文明等級」的母星殖民地,供 AI 對手使用,依
 // docs/tech/homeworld-init.md:單一母星(§1)、PlanetSize=Large(母星通常為大型)、
 // PopMax=20 對齊 gamedata `pop_max` 表(Large 星球容量,§8 交叉驗證高信心)。
 //
@@ -1281,26 +1326,51 @@ func (s *GameSession) advanceResearch() {
 // 零命中(§2.1),此為手冊 §3.5 建築數公式 worked example 用的同一 pop 值(8),沿用作合理
 // 預設,兩者皆待 DOSBox 原版存檔確認。
 //
-// ⚠ FoodPerFarmer/IndustryPerWorker 仍是 remake placeholder(4/6),**刻意未**接上
-// gamedata/planet_yield.go 的 Terran/Abundant 手冊查表值(FoodPerFarmer=2、
-// IndustryPerWorker=3)。已實際試接過並用本套件既有的隨機事件/安塔蘭入侵機制跑滿 300 回合
-// 驗證(見下方經濟可持續性調查結論),發現接上忠實 yield 後 Farmers=4 恰好打平 8 人口食物
-// 消耗(0 緩衝),一旦任何一次「瘟疫/隕石/安塔蘭入侵」事件把僅有的農夫人口扣到 0(losePop
-// 目前的扣除順序不保證留下農夫),殖民地會進入*永久*饑荒:Starving=true 使
-// engine/colony.go 的 colonyGrowth 整回合停擺(見該檔「饑荒時不套用成長公式」),
-// 且本專案目前沒有任何機制把工人/科學家重新指回農夫——經濟從此卡死在
-// NetIndustry=0、TaxRevenue=0,而建築維護費仍持續每回合扣款,BC 保證單調流血至負值
-// (以固定 EventSeed=42 實測 100~300 回合皆重現,非機率僥倖)。這不是「稅率/維護費算式
-// 差一點」的量級問題,而是零緩衝經濟撞上既有饑荒-鎖死機制的結構性死結,需要 gamedata/income.go
-// 已備妥但目前全專案未接線的 TradeGoodsIncome/IncomeFoodSurplusRevenue(貿易財/餘糧收入)
-// 或饑荒復原機制其中之一先落地,才有本錢真的把 Farmers/Workers 換成 Terran/Abundant 忠實值,
-// 否則就是把「經濟可持續」的假象建立在從未觸發任何隨機事件的僥倖之上。
-// 詳見 docs/tech/colony-economy-maintenance.md(本輪產出的可持續性調查記錄)。
+// ⚠ FoodPerFarmer/IndustryPerWorker 刻意維持 remake placeholder(4/6),**不**接上
+// gamedata/planet_yield.go 的 Terran/Abundant 手冊查表值——這是本輪(見
+// docs/tech/colony-economy-maintenance.md)刻意縮小的範圍:玩家母星已改用下方
+// playerHomeworldColony() 接上忠實 yield,但 AI 對手的 `advanceAI`(session.go)有一個既有
+// 的整數捨去 bug——`FleetStrength += TotalNetIndustry/invest`,當 TotalNetIndustry 小於
+// invest(Scientific 性格為 4)時,Go 的整數除法會把結果捨去成 0,FleetStrength 永久卡死在
+// 原值不動。若 AI 母星也套用忠實 yield(Workers 從 4 降到 1、IndustryPerWorker 從 6 降到 3),
+// NetIndustry 會穩定落在 3(3/4=0),TestAIBuildsAndExpands/TestAIStanceHostileWhenStrong
+// 會因為 AI 軍力永久停滯而必然失敗——這不是「經濟基準改變、更新測試期望值」可以誠實處理的情況
+// (AI 軍力並非變慢,而是完全停止成長,機制本身壞掉),而是暴露一個獨立、不屬本輪任務授權範圍
+// 的既有 bug(任務邊界明訂「不要順手修 AI 整數捨去 bug」)。因此本函式(AI 用)維持舊值不動,
+// 待該 bug 另案修好(建議用 advancePopulation 的 popAccum 累加餘數模式)後再讓 AI 一併接上
+// 忠實 yield。
 func averageHomeworldColony() engine.ColonyState {
 	return engine.ColonyState{
 		Population: 8, PopMax: 20, Farmers: 3, Workers: 4, Scientists: 1,
 		FoodPerFarmer: 4, IndustryPerWorker: 6, ResearchPerScientist: 30,
 		PlanetSize: gamedata.LARGE_PLANET, MoralePercent: 10,
+	}
+}
+
+// playerHomeworldColony 建玩家母星殖民地:與 averageHomeworldColony 相同的起始文明等級/
+// PopMax/PlanetSize 設定,但 FoodPerFarmer/IndustryPerWorker 改接
+// gamedata.ClimateFoodPerFarmer(TERRAN)=2、gamedata.MineralIndustryPerWorker(ABUNDANT)=3
+// ——母星氣候/礦產基準 Terran/Abundant(docs/tech/homeworld-init.md),手冊 GAME_MANUAL.pdf
+// p.58-59/p.56-57 實據(見 planet_yield.go 逐頁引註)。
+//
+// Farmers=4/Workers=3(對調自 averageHomeworldColony 的 3/4)是機械必要的人口分配調整:
+// Population=8、新 FoodPerFarmer=2 時,沿用舊的 Farmers=3 只夠 3×2=6 食物,餵不飽 8 人口
+// (結構性饑荒);調成 Farmers=4 才能與消耗打平(4×2=8=8×1 消耗),這是把「農夫該配置多少人」
+// 這個機械限制忠實反映出來,不是為了湊測試反推(該推導過程與數字見
+// docs/tech/colony-economy-maintenance.md §2.1)。
+//
+// 接上忠實 yield 後開局第一回合是「零緩衝打平」(FoodSurplus=0),需要搭配兩項機制才不會被
+// 隨機事件/安塔蘭入侵的人口損失推入永久饑荒鎖死:①EndTurn 的 recoverFromFamine(饑荒防死鎖,
+// 見該函式)②engine.RunEmpireTurn 新接上的 gamedata.IncomeFoodSurplusRevenue(食物盈餘→BC,
+// 見 empire.go),讓殖民地在食物盈餘轉正的回合能多存一點 BC 緩衝,吸收下次事件衝擊。
+// 詳見 docs/tech/colony-economy-maintenance.md 本輪最新記錄(含 300 回合實測數字)。
+func playerHomeworldColony() engine.ColonyState {
+	return engine.ColonyState{
+		Population: 8, PopMax: 20, Farmers: 4, Workers: 3, Scientists: 1,
+		FoodPerFarmer:        gamedata.ClimateFoodPerFarmer(gamedata.TERRAN),
+		IndustryPerWorker:    gamedata.MineralIndustryPerWorker(gamedata.ABUNDANT),
+		ResearchPerScientist: 30,
+		PlanetSize:           gamedata.LARGE_PLANET, MoralePercent: 10,
 	}
 }
 
@@ -1353,20 +1423,22 @@ func homeworldBuildings() map[string]bool {
 }
 
 // NewDemoSession 建一個最小可玩對局:玩家 + 1 個科學傾向 AI 對手,雙方各持 Average 起始
-// 文明等級的忠實單一母星(docs/tech/homeworld-init.md,取代先前程序生成的 2 假殖民地)。
-// 供「最小可玩迴圈」骨架用;正式新遊戲流程(選種族/星系生成/起始文明等級選擇)為後續工作。
+// 文明等級的單一母星(docs/tech/homeworld-init.md,取代先前程序生成的 2 假殖民地)。玩家母星
+// yield 接忠實 Terran/Abundant 查表值(playerHomeworldColony);AI 母星暫維持 placeholder yield
+// (averageHomeworldColony,理由見該函式註解)。供「最小可玩迴圈」骨架用;正式新遊戲流程
+// (選種族/星系生成/起始文明等級選擇)為後續工作。
 func NewDemoSession() *GameSession {
 	galaxy := genGalaxy(24, 42) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
 	galaxy[0].Explored = true   // 母星初始已探索
 	return &GameSession{
 		Turn:            1,
 		Player:          newHomeworldPlayerState(gamedata.TOPIC_ADVANCED_CONSTRUCTION),
-		PlayerColonies:  []engine.ColonyState{averageHomeworldColony()},
+		PlayerColonies:  []engine.ColonyState{playerHomeworldColony()},
 		ColonyBuildings: []map[string]bool{homeworldBuildings()},
 		AIPlayers: []AIOpponent{{
 			Name:     "AI (賽隆人)",
 			Player:   newHomeworldPlayerState(1),
-			Colonies: []engine.ColonyState{averageHomeworldColony()}, // 對稱:AI 同樣忠實單一母星
+			Colonies: []engine.ColonyState{averageHomeworldColony()}, // AI 同為 Average 起始單一母星,yield 暫維持 placeholder(見該函式註解)
 			Decider:  ai.NewRemakeDecider(ai.ProfileScientific),
 		}},
 		Stars:         galaxy,
