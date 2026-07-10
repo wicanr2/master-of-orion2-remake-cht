@@ -19,11 +19,18 @@
 - [x] **中文化稽核補漏**:galaxy 工具列 ZOOM→縮放、頂部 GAME→遊戲(擦底疊字)
 - [x] **`-gamegallery` 端到端截圖廊**:8 畫面互動 app 內全繁中渲染驗證(修無限迴圈 CPU bug:硬性終止+timeout)
 
-**進行中(本 session 尾,對手冊/攻略/一代/原版驗證,派 subagent):**
-- [~] **音樂曲目↔場景定案**(task 13):subagent 對原版資料/openorion2/OST 確認,取代推定配置
-- [~] **地面戰係數**(task 14):既有 `ground-combat-algorithm.md` 已有結構式+手冊加成表;歧義處依 directive 用一代公式補
-- [~] **真母星初始狀態**(task 15):subagent 從手冊+攻略萃取 → `homeworld-init.md`
-- [~] **核心 gameplay 還原**(task 16):subagent 從手冊萃取殖民地建築全表 → `colony-buildings.md`,續逐系統
+**四 directive 收官狀態(對手冊/攻略/一代/EXE 驗證,不再等使用者 oracle):**
+- [x] **音樂曲目↔場景定案**(task 13):三輪對原版確認到靜態溯源極限——外交樂**反組譯硬證**(Orion2.exe `_diplomacy_bad_music=Get_Random(3)+13` → track 13/14/15);menu/galaxy/combat 因對應 Play 函式在 DOS build 為死碼,維持時長啟發式(誠實標)。
+- [x] **地面戰係數**(task 14):RE 定案用一代 1oom `game_ground_kill`(d100+force)+ 二代加成表/hits-to-kill;`ResolveGroundBattle` 實作+確定性測試綠。剩 UI 入侵接線(歸 task 16)。
+- [x] **真母星初始狀態**(task 15):Average 忠實開局實作(單一母星、Marine Barracks+Star Base、起始科技對 tech.cpp 驗證、建築數公式、1 Colony+2 Scout)+ 測試綠。
+- [~] **核心 gameplay 還原**(task 16):逐塊自驅中(見下)。
+
+**task 16 分塊進度(2026-07-10,使用者授權自主排序):**
+- [x] 殖民地建築 5→40 棟入 `gamedata/buildings.go` + 前置科技 gating(`colony-buildings.md`)
+- [x] 行星→產出 yield 表(`planet_yield.go`,climate 食物/mineral 工業/gravity,手冊頁碼有據)
+- [x] 維護費由建築算(`BuiltMaintenanceBC`,母星 3 BC,取代無據平坦 5)
+- [~] 經濟可持續化(饑荒復原 + 接食物盈餘/貿易財收入 + 接 yields + 更新測試)— subagent 進行中
+- [ ] 地面戰 UI 入侵流程接線(解算已備);艦艇設計(空間格);飛彈/球狀傷害(需 RE,獨立)
 
 ## Phase 0 — Kick-off / 可行性(本輪)
 - [x] 盤點 openorion2 完成度(`docs/kickoff/01`)
@@ -167,8 +174,8 @@
 - [x] 科技研究樹推進(engine.RunResearchPhase 累積+完成判定+溢出保留;session.advanceResearch 自動推進主題)
 - [x] 艦隊移動 + 星圖導航:SendFleet 依星距換算 ETA,EndTurn 跨回合推進,抵達標記探索;星圖點星→面板「派遣艦隊至此星」鈕 + 青色艦隊標記 + 航行連線 + ETA 顯示。測試 TestFleetInterstellarMovement
 - [ ] 艦艇設計
-- [x] 戰鬥:格子戰術戰鬥(自繪畫面,逐艦token+HP+聚焦開火);宣戰→戰術戰鬥→戰鬥結果。艦艇移動/逐武器瞄準待深化
-- [x] 外交對談(自繪功能面板);議會投票(依人口)
+- [x] 戰鬥:格子戰術戰鬥(2026-07-10 換原版美術:STARBG 星空+COMBAT 控制列+可見 CMBTSHP 艦艇+控制列 7 按鈕中文化;逐發用真 ResolveShot 命中/傷害/過盾/過甲);宣戰→戰術戰鬥→戰鬥結果。艦型 sprite 完整對照(task 12)/球狀傷害/飛彈待深化
+- [x] 外交對談(2026-07-10 破解 DIPLOMAT.LBX 換原版美術:逐族使節房+使節疊合,13 族對應對 RACESEL 核實);議會投票(依人口)
 - [x] 隨機事件系統:每回合 30% 觸發 6 種 MOO2 風格事件(經濟繁榮/太空海盜/富礦脈/瘟疫/科學突破/隕石),效果有界(BC 不為負、人口不低於1)、種子化可重現,顯示於回合摘要。測試 TestRandomEventsFireAndBounded/Reproducible
 - [x] 安塔蘭人入侵:週期性終局威脅(前20回合寬限,之後每15回合一次),強度隨次數升級,攻母星(人口+BC損失,有界),母星艦隊可部分防禦減損;顯示於回合摘要(紅色警報)。測試 TestAntaresRaidsScheduleAndEscalate/DefenseReducesDamage
 - [~] AI 對手主動行為:造艦(淨工業投資軍力,好戰性格更多)/ 擴張(每5回合佔無主星)/ 外交態勢(依 AI-玩家軍力差+難度漂移關係→ai.DecideStance 宣戰/敵視/中立/提議貿易/結盟);種族關係畫面顯示各 AI 名/態勢/軍力/佔星。測試 TestAIBuildsAndExpands/StanceHostileWhenStrong。深層策略見 `docs/kickoff/07-ai-strategy.md`:先參考 1oom `game_ai_classic.c` + GameFAQs 文獻,有必要才逆向)
@@ -177,7 +184,7 @@
   - [x] 設計可插拔 AI 介面(ai.Decider)+ 難度加成係數(已用於經濟+態勢)
   - [ ] 標示「必須逆向才能確定」的項目(若有)
 - [x] 開新遊戲流程:種族選擇 + 星系大小/難度 → ApplyRace/RegenGalaxy(見 Phase 4b)
-- [ ] 以手冊逐系統對照驗證規則正確性
+- [~] 以手冊逐系統對照驗證規則正確性(task 16 進行中:地面戰解算/真母星/建築全表/行星 yield/建築維護費 已逐項對手冊或一代驗證並實作;經濟可持續化+yield 接線進行中)
 
 ## Phase 6 — 音樂 / 音效
 > 第一性原理翻案(2026-07-10):MOO2 **沒有 XMI/MIDI 音樂**,全部是 LBX 內的 22050Hz 8-bit PCM WAV。故無需 SoundFont/OPL 合成——原封播原版 PCM 即 bit-identical。研究定案見 `docs/tech/audio-format.md`。
@@ -185,7 +192,7 @@
 - [x] 逆向音效格式 → SOUND.LBX 內 WAV;entry0 為 20-byte 名稱表(BUTTON1…),已解出 68 個具名音效
 - [x] ebiten 音訊播放整合 — `internal/audio`(WAV 解碼→16-bit stereo、Mixer BGM 迴圈+SFX;headless 停用避免無音效卡崩潰)+ 單元/真檔測試綠
 - [x] 接線:主選單 BGM(STREAMHD)+ 按鈕點擊音效(BUTTON1)— `cmd/moo2/audiohook.go`
-- [~] 曲目/UI 事件對應:目前場景 BGM 為推定配置;**改為對原版資料/openorion2/OST 交叉定案**(2026-07-10 subagent 進行,task 13),不再等人耳聆聽
+- [x] 曲目/UI 事件對應(2026-07-10 定案到靜態溯源極限):外交樂反組譯硬證(track 13/14/15);menu/galaxy/combat 對應 Play 函式在 DOS build 為死碼,維持時長啟發式(誠實標,再定案需聆聽或 Windows build RE)。見 `audio-track-map.md` 第七節
 - [ ] `CMBTSFX/SPHERSFX` 巢狀音庫格式逆向(戰鬥期音效)
 - [x] ~~SoundFont 處理~~ → 不需要(無 MIDI 音樂)
 - [ ] 桌面實測驗收:使用者對原版聆聽比對(主選單 BGM + 點擊音是否為正確曲/音)
