@@ -37,7 +37,15 @@
 - [x] TradeGoodsIncome 接線(2026-07-11):貿易品是建造佇列選項(非第四種職務配置,原判斷是誤判)——建造選單新增「貿易品」、`engine.ColonyState.TradeGoods` + `syncTradeGoodsFlag`、`RunEmpireTurn` 接上 2:1 換算(`EmpireOutput.TradeGoodsRevenue`);Fantastic Trader 仍 TODO。見 `docs/tech/gameplay-systems-status.md` §2
 - [x] 原版 672 艦名池翻譯並接入(取代硬編 10 名)(2026-07-11:190 組基底詞意譯+羅馬數字流水號保留,`assets/i18n/shipname.tsv` + `internal/shell/shipnames.go`,見 `docs/tech/proper-noun-strategy.md` 艦名節)
 - [x] 原版 829 隨機星名池翻譯並接入(取代二十八宿占位池)(2026-07-11:829 條英文名彼此互不重複——真名/圍棋術語彩蛋/克蘇魯神話等專有名詞優先意譯,虛構短音節規則化音譯,`assets/i18n/starname-random.tsv` + `internal/shell/starnames.go`,`genGalaxy` 改用 `randomStarNamePool`,二十八宿 `starNamePool` 已移除;見 `docs/tech/proper-noun-strategy.md` 隨機星名節)
-- [ ] 飛彈/球狀傷害(需 RE);間諜/議會/勝利條件深層
+- [x] **勝利條件(2026-07-11)**:銀河議會選舉(手冊 GAME_MANUAL.pdf p.183,`gamedata/council.go`
+  +`shell/council.go`)——議會成立門檻(半數銀河已殖民 + 存續帝國數,本 remake 因資料模型固定
+  只有1個AI對手覆寫為2)、票數=人口(手冊無精確換算公式,近似1:1)、2/3超級多數勝出(沿用
+  `internal/engine/victory.go` 既有但先前從未接線的 `CheckHighCouncil`)、AI當選時玩家可
+  accept/reject(手冊:議會無法強迫接受)、玩家達標立即勝利。另接殲滅所有對手勝利(沿用同檔
+  `CheckExtermination`,`InvadeColony` 攻陷AI唯一殖民地後立即偵測)。UI 僅議會畫面文字狀態,
+  無獨立結束畫面/accept-reject 互動介面(見 HONEST-STATUS)。Antares母星次元傳送門勝利仍全無
+  ——需要 Dimensional Portal 科技/建造 + 艦隊遠征流程 + 母星戰鬥,整套子系統不存在,列 TODO。
+  飛彈/球狀傷害(需 RE)、間諜仍缺。
 
 ## Phase 0 — Kick-off / 可行性(本輪)
 - [x] 盤點 openorion2 完成度(`docs/kickoff/01`)
@@ -131,7 +139,9 @@
   - [~] 版面像素對齊原版 + 用 RACESEL 名稱按鈕圖/描述板;Custom 點數畫面;命名+旗色;依 Starting Civilization 真實母星初始(WORKLIST 續,task 8)
 - [x] 回合摘要畫面(TURNSUM.LBX#0)接入 TURN 流程(結束回合→摘要顯示本回合結算:星曆/淨工業/研究/食物/稅收/國庫變化/研究完成)→關閉回星系。中文化(回合摘要/關閉)
 - [x] 艦艇設計畫面(DESIGN.LBX#0)接入(艦隊→點艦艇格→艦艇設計)+ 中文化(艦艇設計/巡防艦…末日之星/清除/取消/建造);艦隊 RETURN 改精確熱區
-- [x] 議會畫面(COUNCIL.LBX#1)接入 + 投票系統:CouncilVote 依人口計票,顯示票數 + 當選結果
+- [x] 議會畫面(COUNCIL.LBX#1)接入 + 投票系統(2026-07-11 大改,見下方「勝利條件」任務):舊版
+  `CouncilVote`(無成立門檻、無2/3多數、票數=人口較高者當選)已移除,畫面改讀
+  `GameSession.CouncilStatus()` 誠實呈現議會是否已成立/目前票數/是否已分出勝負或待玩家回應
 - [x] 已探測定位背景(remain-scan,待接入):讀取存檔 LOADSAVE.LBX#11(空存檔格)、外交 DIPLOMAT.LBX#29(有雜訊待查)
 - [x] **存檔/讀檔(remake 自身格式)**:GameSession JSON 序列化(shell/persist.go),AI Decider 以性格重建、含未匯出遊戲狀態;每回合自動存檔(UserConfigDir),主選單「載入遊戲/繼續」讀回續玩。測試 TestSaveLoadRoundTrip(Turn/BC/種族/星系/艦隊/建造/AI 一致且可續跑)
 - [ ] 細修:NEW GAME 開關列/標題微殘、種族關係 ESPIONAGE/SABOTAGE/HIDE(24 標籤)未翻、各畫面按鈕精確熱區
@@ -186,7 +196,7 @@
 - [x] 艦隊移動 + 星圖導航:SendFleet 依星距換算 ETA,EndTurn 跨回合推進,抵達標記探索;星圖點星→面板「派遣艦隊至此星」鈕 + 青色艦隊標記 + 航行連線 + ETA 顯示。測試 TestFleetInterstellarMovement
 - [ ] 艦艇設計
 - [x] 戰鬥:格子戰術戰鬥(2026-07-10 換原版美術:STARBG 星空+COMBAT 控制列+可見 CMBTSHP 艦艇+控制列 7 按鈕中文化;逐發用真 ResolveShot 命中/傷害/過盾/過甲);宣戰→戰術戰鬥→戰鬥結果。艦型 sprite 完整對照(task 12)/球狀傷害/飛彈待深化
-- [x] 外交對談(2026-07-10 破解 DIPLOMAT.LBX 換原版美術:逐族使節房+使節疊合,13 族對應對 RACESEL 核實);議會投票(依人口)
+- [x] 外交對談(2026-07-10 破解 DIPLOMAT.LBX 換原版美術:逐族使節房+使節疊合,13 族對應對 RACESEL 核實);銀河議會選舉勝利條件(2026-07-11,見下方勝利條件任務,取代原本無門檻/無2/3多數的簡化投票)
 - [x] 隨機事件系統:每回合 30% 觸發 6 種 MOO2 風格事件(經濟繁榮/太空海盜/富礦脈/瘟疫/科學突破/隕石),效果有界(BC 不為負、人口不低於1)、種子化可重現,顯示於回合摘要。測試 TestRandomEventsFireAndBounded/Reproducible
 - [x] 安塔蘭人入侵:週期性終局威脅(前20回合寬限,之後每15回合一次),強度隨次數升級,攻母星(人口+BC損失,有界),母星艦隊可部分防禦減損;顯示於回合摘要(紅色警報)。測試 TestAntaresRaidsScheduleAndEscalate/DefenseReducesDamage
 - [~] AI 對手主動行為:造艦(淨工業投資軍力,好戰性格更多)/ 擴張(每5回合佔無主星)/ 外交態勢(依 AI-玩家軍力差+難度漂移關係→ai.DecideStance 宣戰/敵視/中立/提議貿易/結盟);種族關係畫面顯示各 AI 名/態勢/軍力/佔星。測試 TestAIBuildsAndExpands/StanceHostileWhenStrong。深層策略見 `docs/kickoff/07-ai-strategy.md`:先參考 1oom `game_ai_classic.c` + GameFAQs 文獻,有必要才逆向)

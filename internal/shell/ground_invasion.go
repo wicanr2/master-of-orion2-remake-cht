@@ -339,6 +339,7 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 			aiPlayer.OwnedStars--
 		}
 		out.StarCaptured = true
+		s.advanceConquestVictory() // 若這是該 AI 對手的最後一個殖民地,立即偵測「殲滅所有對手」勝利(見 council.go),不用等下個 EndTurn
 	}
 	return out
 }

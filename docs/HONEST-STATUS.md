@@ -46,6 +46,18 @@
 - 戰鬥:原版有真實武器機制(命中/傷害/射程/防禦/飛彈躲避/球狀傷害/地面戰);我的原本是抽象戰力相減。**(2026-07-10 部分忠實化:太空戰命中/傷害/過盾/過甲已接 gamedata 真公式(`ResolveShot`,對 openorion2/手冊核實),戰場已換原版 STARBG+COMBAT 美術;仍待:飛彈躲避、球狀傷害、地面戰傷亡係數校準(需 DOSBox oracle)、艦型 sprite 對照。)**
 - 艦艇設計:原版有艦體空間格、每元件佔空間、改造(mod);我的是四個下拉選單。**(2026-07-11 部分忠實化:艦體空間格 + 武器佔格已接手冊確認值(`gamedata/shipspace.go` + `session.go` `ShipDesignSpaceUsed`/`ShipDesignFits`,詳見 `docs/tech/ship-design-space.md`),超格設計可被驗證函式擋下;仍待:改造 mod 佔格、特殊系統精確佔格(手冊無數字,現為 5% 估計值)、Design Dock UI 本身。)**
 - 外交/間諜/議會、隨機事件、安塔蘭母星與歐瑞恩守護者、勝利條件——**大多缺席或極度簡化**。
+  **(2026-07-11 更新:勝利條件從「完全沒有」變成「兩條路徑已接引擎層」。** 銀河議會選舉
+  (手冊 GAME_MANUAL.pdf p.183:半數銀河殖民+≥3存續種族才成立、票數依人口、2/3超級多數當選、
+  AI當選時玩家可accept/reject)與殲滅所有對手,兩者都已接進 `EndTurn`/`InvadeColony`,沿用
+  `internal/engine/victory.go`(2026-07-03 就存在但從未被呼叫過的死碼)+ 新增
+  `internal/gamedata/council.go`(人口→票數、成立門檻)、`internal/shell/council.go`(狀態機/
+  存讀檔),取代先前議會畫面用的無門檻/無2/3多數簡化版 `CouncilVote`。**資料模型限制誠實標注**:
+  本 remake 固定只有 1 個 AI 對手,議會「≥3 存續種族」門檻字面上永遠不可達,shell 層用
+  documented override(2)頂替,不是手冊原意;「候選人由票數最高兩者出線 + 第三方依外交關係投票」
+  這條規則因只有 2 個帝國、沒有第三方可搖擺,現況下沒有實質作用。**UI 仍未做**:議會畫面只印文字
+  狀態(尚未成立/待開/已分出勝負/待回應),沒有 accept/reject 互動熱區、沒有勝利/落敗結束畫面。
+  Antares 母星次元傳送門勝利(手冊第三條路徑)完全沒有對應流程(無 Dimensional Portal/艦隊遠征/
+  母星戰鬥),列 TODO 不硬做。詳見 `docs/tech/victory-conditions.md`。)**
 
 一句話:**你現在無法真的玩一局 MOO2**,只能在像原版的畫面間點來點去,附帶幾個玩具數字。
 

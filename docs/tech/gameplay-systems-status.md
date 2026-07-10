@@ -80,7 +80,10 @@
 
 ### 4. 其他自編
 - `advancePopulation` 的 `popGrowthThreshold=300` 是 remake 調校值(存檔 pop_growth 未能乾淨反推,已在 session.go 標註 provenance)。
-- 隨機事件、安塔蘭、外交、間諜、議會:多為簡化,gamedata 有 `spy.go`/`morale.go`/`ground.go` 等可漸進接。
+- 隨機事件、安塔蘭、外交、間諜:多為簡化,gamedata 有 `spy.go`/`morale.go`/`ground.go` 等可漸進接。
+- **議會/勝利條件:2026-07-11 已從「完全沒有」接上兩條路徑**(銀河議會選舉 2/3 超級多數、殲滅所有
+  對手),沿用先前死碼的 `internal/engine/victory.go` + 新增 `gamedata/council.go`/`shell/council.go`。
+  詳見獨立文件 `docs/tech/victory-conditions.md`(手冊逐字引用 + 資料模型限制 + TODO)。
 
 ## 建議下輪順序
 

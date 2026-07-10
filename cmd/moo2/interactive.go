@@ -16,6 +16,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/assets"
 	moo2audio "github.com/wicanr2/master-of-orion2-remake-cht/internal/audio"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/lbx"
@@ -430,7 +431,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		if len(a) > 4 && a[:4] == "star" && b.session != nil {
 			if idx, err := strconv.Atoi(a[4:]); err == nil {
 				b.session.SelectedStar = idx
-				b.lastActionMsg = "" // 換選中星,清掉上一顆星的動作結果訊息
+				b.lastActionMsg = ""             // 換選中星,清掉上一顆星的動作結果訊息
 				return b.goTo(b.galaxy, "星系主畫面") // 重繪顯示選中星資訊
 			}
 		}
@@ -1211,7 +1212,7 @@ func (t *tacticalScreen) draw(dst *ebiten.Image) {
 		op.GeoM.Translate(0, float64(moo2ScreenH-129))
 		dst.DrawImage(t.bar, op)
 		t.drawBarLabelsCHT(dst) // 控制列烘進的英文按鈕疊中文(CLAUDE.md:button 也要中文化)
-		logY = 343             // log 移到控制列上方星空,不壓按鈕
+		logY = 343              // log 移到控制列上方星空,不壓按鈕
 	}
 	if t.fnt != nil {
 		t.fnt.DrawCentered(dst, t.log, 320, logY, 14, color.RGBA{214, 220, 235, 255})
@@ -1309,16 +1310,36 @@ func (b *sceneBuilder) council() (*overlayScreen, error) {
 			{x: moo2ScreenW / 2, y: 30, size: 22, text: "銀河議會", col: gold, align: 1},
 		}
 		if b.session != nil {
-			v := b.session.CouncilVote()
+			// 這裡刻意不重建原版議會投票 UI(見 docs/HONEST-STATUS.md「UI 未做」標注),只誠實
+			// 呈現 shell.GameSession 已算好的議會狀態(gamedata/council.go + shell/council.go,
+			// 依 GAME_MANUAL.pdf p.183 手冊原文):是否已成立、目前票數、是否已分出勝負/待回應。
+			v := b.session.CouncilStatus()
 			win := color.RGBA{120, 220, 140, 255}
 			lose := color.RGBA{235, 120, 110, 255}
-			outcome, oc := "賽隆人當選銀河領袖", lose
-			if v.PlayerWon {
-				outcome, oc = "★ 你當選銀河領袖!", win
+			neutral := color.RGBA{214, 220, 235, 255}
+			var line1, line2 string
+			var oc color.RGBA
+			switch {
+			case v.Victory.Over && v.Victory.Reason == engine.VictoryHighCouncil:
+				line1 = fmt.Sprintf("已於第 %d 回合分出勝負(共召開 %d 屆選舉)", v.Victory.Turn, v.Meetings)
+				if v.Victory.Winner == "player" {
+					line2, oc = "★ 你已當選銀河領袖!", win
+				} else {
+					line2, oc = v.Victory.Winner+" 已當選銀河領袖", lose
+				}
+			case v.Pending != nil:
+				line1 = fmt.Sprintf("第 %d 屆選舉:%s 以 %d/%d 票達2/3多數當選", v.Meetings, v.Pending.EnemyName, v.Pending.EnemyVotes, v.Pending.TotalVotes)
+				line2, oc = "等待你回應是否接受(尚無互動介面,見 HONEST-STATUS)", neutral
+			case !v.Eligible:
+				line1 = "銀河議會尚未成立"
+				line2, oc = "需半數銀河星系已殖民 + ≥2個存續帝國", neutral
+			default:
+				line1 = fmt.Sprintf("議會已成立(第 %d 屆待開)  我方 %d 票 ／ %s %d 票", v.Meetings+1, v.PlayerVotes, v.EnemyName, v.EnemyVotes)
+				line2, oc = "尚無一方達2/3多數", neutral
 			}
 			s.extras = append(s.extras,
-				extraText{x: moo2ScreenW / 2, y: 418, size: 15, text: fmt.Sprintf("本屆投票  我方 %d 票 ／ 賽隆人 %d 票", v.PlayerVotes, v.EnemyVotes), col: color.RGBA{214, 220, 235, 255}, align: 1},
-				extraText{x: moo2ScreenW / 2, y: 444, size: 17, text: outcome, col: oc, align: 1},
+				extraText{x: moo2ScreenW / 2, y: 418, size: 15, text: line1, col: neutral, align: 1},
+				extraText{x: moo2ScreenW / 2, y: 444, size: 17, text: line2, col: oc, align: 1},
 			)
 		}
 	}

@@ -549,26 +549,9 @@ func (s *GameSession) ShiftColonyJob(idx int, from, to string) {
 	}
 }
 
-// VoteResult 是一屆銀河議會投票結果(票數依人口)。
-type VoteResult struct {
-	PlayerVotes, EnemyVotes int
-	PlayerWon               bool
-}
-
-// CouncilVote 解算一屆銀河議會投票:雙方票數 = 各自帝國總人口,較高者當選領袖。
-func (s *GameSession) CouncilVote() VoteResult {
-	pv := 0
-	for _, c := range s.PlayerColonies {
-		pv += c.Population
-	}
-	ev := 0
-	for _, a := range s.AIPlayers {
-		for _, c := range a.Colonies {
-			ev += c.Population
-		}
-	}
-	return VoteResult{PlayerVotes: pv, EnemyVotes: ev, PlayerWon: pv >= ev}
-}
+// 銀河議會選舉勝利條件(成立門檻/2-3方候選/2/3多數/勝利判定)見 council.go
+// ——2026-07-11 取代這裡原本「票數=人口、較高者當選」的簡化版(無成立門檻、無2/3多數、
+// 未接勝利判定,對照 GAME_MANUAL.pdf p.183 手冊原文是錯誤示範,已移除)。
 
 // ColonyBuild 是某殖民地目前的建造項目。
 type ColonyBuild struct {
@@ -1149,6 +1132,13 @@ type GameSession struct {
 	// Dictatorship——任何建構 GameSession 卻沒有明確設定本欄位的呼叫端,會被誤判為封建政府,
 	// 必須明確賦值,不能依賴零值。
 	Government gamedata.MoraleGovernmentType
+
+	// --- 勝利條件(見 council.go)---
+	Victory                VictoryState     // 遊戲是否已分出勝負(Over=true 後不再產生新的議會選舉)
+	PendingCouncilElection *CouncilElection // 非玩家當選、等待玩家 RespondToCouncilElection 回應(手冊:議會無法強迫玩家接受)
+	LastCouncil            string           // 本回合議會動態描述(空=無;供回合摘要)
+	CouncilMeetings        int              // 已召開過的議會屆數
+	lastCouncilTurn        int              // 上次召開議會的回合數(0=從未召開)
 }
 
 // 安塔蘭人入侵參數:MOO2 的週期性終局威脅。前期寬限,之後每隔數回合一次突襲,強度隨次數升級。
@@ -1436,7 +1426,9 @@ func (s *GameSession) EndTurn() {
 	s.advancePopulation() // 累積各殖民地成長,達門檻則 +1 人口(回寫 Population)
 	s.advanceEvents()     // 觸發 MOO2 風格隨機事件(繁榮/瘟疫/海盜…),記於 LastEvent
 	s.Turn++
-	s.advanceAntares() // 安塔蘭人週期性入侵(依 Turn 排程升級),記於 LastAntares
+	s.advanceAntares()         // 安塔蘭人週期性入侵(依 Turn 排程升級),記於 LastAntares
+	s.advanceConquestVictory() // 對手是否已全滅(手冊三條勝利路徑之一:殲滅所有對手)
+	s.advanceCouncil()         // 銀河議會選舉(手冊三條勝利路徑之一:2/3 多數當選銀河領袖),記於 LastCouncil
 }
 
 // popGrowthThreshold 是「成長累加值 → +1 人口單位」的門檻。MOO2 手冊(MANUAL_150.html p111
