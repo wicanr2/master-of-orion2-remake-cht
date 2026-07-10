@@ -1,13 +1,25 @@
 # 交接文件（給接手的 Claude / 開發者）
 
 > 這份是「重啟 session 後第一個要讀的檔」。目的:讓全新的 Claude 5 分鐘內接手,不重犯前一輪的錯。
-> 最後更新:2026-07-04。搭配讀:[`HONEST-STATUS.md`](HONEST-STATUS.md)(現況真相)、根目錄 `CLAUDE.md`(專案目標)、`WORKLIST.md`(細項)、`PLAN.md`(階段)。
+> 最後更新:2026-07-10。搭配讀:[`HONEST-STATUS.md`](HONEST-STATUS.md)(現況真相)、根目錄 `CLAUDE.md`(專案目標)、`WORKLIST.md`(細項)、`PLAN.md`(階段)、`docs/tech/*`(各系統文件)。
 
 ## 0. 先認清現況(最重要)
 
-**還原度約 20%(使用者實測)。目前不是能玩的 MOO2,是「載入原版美術的中文畫面導覽器 + 幾個自製玩具系統」。**
+**基準:2026-07-04 使用者實測還原度約 20%(畫面導覽器 + 玩具系統)。2026-07-10 一輪大幅推進,但整體「完全跟原版一樣」仍是多輪工程,且還原度須由使用者對原版實測重評——勿用測試綠/新增系統自評。**
 
-**前一輪最大的錯:用「單元測試綠 + 新增自製系統」謊報還原進度。** 那些 gameplay 係數大多是自編的 remake 近似值,不是手冊真值。**接手後鐵律:還原度只用「對原版實測比對」評估,不看測試套件是否綠。** 測試只防自己的回歸。細節見 `HONEST-STATUS.md`。
+**2026-07-10 這輪的實質進展(全真值驅動、無自編數值謊報)**:
+- **音樂**:翻案 MOO2 無 XMI/MIDI——音樂/音效是 LBX 內 PCM WAV(`STREAM/STREAMHD/SOUND.LBX`),原封播即 bit-identical;已整合 ebiten 音訊 + 主選單/星系/外交/戰鬥場景 BGM + 按鈕音效 + `-audiodump` 工具。曲目↔場景配置已「先用我的判斷、待聆聽微調」(改常數即可)。見 `docs/tech/audio-format.md`、`audio-track-map.md`。
+- **新遊戲流程**:原版畫面鏈從無到有——主選單→星系設定→**獨立種族選擇(RACESEL 真肖像)→自訂種族點數(官方 patch1.5 config 真值)→命名旗色**→進遊戲。見 `docs/tech/newgame-flow.md`、`custom-race-picks.md`。
+- **研究/科技系統(首個完整忠實 gameplay 系統)**:真 RP 成本 + **每主題數科技間抉擇 UI(真中文名)** + **抉擇決定艦艇元件解鎖**。見 `docs/tech/research-system-status.md`、`component-tech-mapping.md`。
+- **戰鬥系統**:格子戰術 + 快速結算兩路徑都接 gamedata 真公式(命中/傷害/過盾/過甲)+ 護盾裝甲分離。見 `docs/tech/gameplay-systems-status.md`。
+- **殖民地經濟**:盤點確認核心已接 gamedata 真公式(產出/污染/成長/稅收)。
+
+**前一輪最大的錯(仍是鐵律):用「單元測試綠 + 新增自製系統」謊報進度。** 這輪守住:每個係數標來源(openorion2/官方 config/手冊)、推定標「待確認」、需 oracle 的不自編、不做低值 theater。**接手後鐵律:還原度用「對原版實測比對」評估,不看測試綠。**
+
+## 0b. 剩餘工作(2026-07-10,分「需 oracle」與「可自驅」)
+
+- **需要使用者 oracle**(我無法替代):① 曲目↔場景定案(聽 `~/moo2-audio-dump`)② 真母星初始(DOSBox 開局第 1 回合 `.GAM` 存檔)③ 地面戰/飛彈**精確解算校準**(DOSBox 實測;演算法已社群逆向,見 `ground-combat-algorithm.md`,但傷亡式有歧義待校準)。
+- **可自驅**:① 自繪畫面重建成原版佈局(diplomacy 使節動畫 + tactical 戰場,見 `screen-rebuild-plan.md`)② 逐畫面「渲染原版→量測→精確熱區」(原版美術即 oracle,不需外部截圖)③ 其他系統逐一接 gamedata 真公式。
 
 ## 1. 環境 / 路徑(這台機器)
 
