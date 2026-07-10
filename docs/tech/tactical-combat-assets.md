@@ -60,8 +60,12 @@ openorion2 galaxy 用 `STARBG#3` 當背景,palette = `_gui->palette()`(全域 GU
 - 戰鬥:STARBG 星空 + COMBAT 原版控制列 + 中文艦名/提示 ✓
 - ⚠ **CPU 教訓**:截圖廊初版沒有終止保護 + 存圖用 `tick==目標`(精確相等),ebiten Update/Draw 解耦會跳幀漏存 → **永不終止的 render loop 空轉燒 CPU**(兩個容器各卡 17–20 分)。已修:存圖改 `tick>=目標`、Update 超過末 tick+3 硬性終止;跑時容器內外雙 `timeout`。**教訓:headless GUI 迴圈必設硬性終止 + timeout**(rulebook 35)。
 
+### Phase 2 進行中(2026-07-10)
+- ✅ **控制列按鈕中文化**:7 個實際控制按鈕(AUTO→自動/SCAN→掃描/BOARD→登船/RETREAT→撤退/WAIT→等待/DONE→完成/OPTIONS→選項)已疊深色底+中文蓋掉烘進英文(`drawBarLabelsCHT` + `barButtonsCHT` 座標表,於實際截圖逐像素量測)。log 移到控制列上方星空避免壓按鈕。截圖驗證對齊乾淨。
+- ⏳ 未使用清單面板的 WEAPONS/SPECIALS 欄位標頭刻意略過(remake 未顯示武器清單);若之後接上武器列表再中文化。
+- ⏳ 艦艇 sprite 仍全共用 CMBTSHP#30(可見佔位);per 艦型/尺寸完整對照待做。
+
 ### Phase 1 遺留(後續)
-- ⚠ **控制列按鈕是烘進點陣圖的英文**(WEAPONS/AUTO/…);完整中文化需在其上疊中文字或重繪按鈕區——屬 localization 後續。
 - ⚠ **艦艇 sprite 太暗看不見**:CMBTSHP#0 是小型深色戰機(疊灰底可見輪廓,疊黑星空幾乎隱形)。sprite 載入/縮放/翻轉管線已通(debug 確認 t.ship 非 nil、59×60、20 幀),但 #0 不適合當佔位。Phase 2 需挑「較大/較亮」或按實際艦型選 sprite,並考慮加選取高亮/描邊讓艦艇在星空上可讀。現況艦艇仍主要靠標籤方框+艦名辨識(功能正常)。
 - keyColor 修正:loadCombatShip 從強制 true 改為 `im.KeyColor()`(CMBTSHP flags=0→false);強制 true 會把 index-0 艦體判透明。
 

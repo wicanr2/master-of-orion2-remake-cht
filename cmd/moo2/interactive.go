@@ -1148,10 +1148,37 @@ func (t *tacticalScreen) draw(dst *ebiten.Image) {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(0, float64(moo2ScreenH-129))
 		dst.DrawImage(t.bar, op)
-		logY = 400 // 疊在控制列區域內
+		t.drawBarLabelsCHT(dst) // 控制列烘進的英文按鈕疊中文(CLAUDE.md:button 也要中文化)
+		logY = 343             // log 移到控制列上方星空,不壓按鈕
 	}
 	if t.fnt != nil {
 		t.fnt.DrawCentered(dst, t.log, 320, logY, 14, color.RGBA{214, 220, 235, 255})
+	}
+}
+
+// barButtonsCHT 是 COMBAT.LBX#0 控制列上各英文按鈕的螢幕中心座標 + 中文標籤。
+// 座標於實際戰鬥截圖(gallery)量測;控制列貼在 y=moo2ScreenH-129=351。
+// WEAPONS/SPECIALS 兩個欄位標頭在 remake 未用的清單面板內,略過。
+var barButtonsCHT = []struct {
+	cx, cy int
+	label  string
+}{
+	{302, 378, "自動"}, {373, 378, "掃描"}, // AUTO / SCAN
+	{302, 402, "登船"}, {373, 402, "撤退"}, // BOARD / RETREAT
+	{302, 433, "等待"}, {373, 433, "完成"}, // WAIT / DONE
+	{337, 461, "選項"}, // OPTIONS
+}
+
+// drawBarLabelsCHT 在原版控制列的英文按鈕上疊深色底 + 中文字,蓋掉烘進的英文。
+func (t *tacticalScreen) drawBarLabelsCHT(dst *ebiten.Image) {
+	if t.fnt == nil {
+		return
+	}
+	for _, b := range barButtonsCHT {
+		x, y := float32(b.cx-27), float32(b.cy-10)
+		vector.DrawFilledRect(dst, x, y, 54, 20, color.RGBA{40, 44, 54, 255}, false)
+		vector.StrokeRect(dst, x, y, 54, 20, 1, color.RGBA{120, 130, 150, 255}, false)
+		t.fnt.DrawCentered(dst, b.label, float64(b.cx), float64(b.cy), 13, color.RGBA{225, 230, 240, 255})
 	}
 }
 
