@@ -45,7 +45,12 @@ type ColonyState struct {
 type PlayerState struct {
 	BC               int                    // 國庫(Billion Credits)
 	TaxRate          int                    // 稅率(百分比)
-	Maintenance      int                    // 每回合總維護費(建築/艦隊/間諜/軍官…),BC 結算時扣除
+	// Maintenance 每回合總維護費,BC 結算時扣除。目前呼叫端(shell.GameSession.EndTurn)只
+	// 依實際已建成建築(gamedata.BuiltMaintenanceBC)加總計入;艦隊/間諜/軍官維護費本專案尚無
+	// 可推導的模型(未追蹤運輸艦數量等),未計入——TODO 待補,見 session.go
+	// totalBuildingMaintenance/newHomeworldPlayerState 的同款註記。此欄位本身仍是純粹輸入,
+	// 引擎層不關心維護費怎麼算出來。
+	Maintenance int
 	ResearchTopic    gamedata.ResearchTopic // 目前研究中的主題
 	ResearchProgress int                    // 目前主題已累積的研究點(RP)
 	// CompletedTopics 記錄已完成的研究主題(避免重複)。

@@ -1101,8 +1101,22 @@ func (s *GameSession) advanceFleet() {
 	}
 }
 
+// totalBuildingMaintenance 加總玩家目前所有殖民地「已建成」建築的維護費(BC/回合),取代
+// 先前 Player.Maintenance 平坦寫死 5 的 placeholder。逐殖民地用 gamedata.BuiltMaintenanceBC
+// 查表加總——只算建築,艦艇/間諜/軍官維護費本專案尚無可推導的模型(未追蹤運輸艦數量),
+// 不計入,見 newHomeworldPlayerState 同款 TODO 註記。s.ColonyBuildings 為 nil 或某殖民地
+// 尚無記錄時,該殖民地視為 0(尚未建成任何建築,非漏算)。
+func (s *GameSession) totalBuildingMaintenance() int {
+	total := 0
+	for _, built := range s.ColonyBuildings {
+		total += gamedata.BuiltMaintenanceBC(built)
+	}
+	return total
+}
+
 // EndTurn 推進一回合:先結算玩家帝國,再讓各 AI 對手自行決策並結算,回合數 +1。
 func (s *GameSession) EndTurn() {
+	s.Player.Maintenance = s.totalBuildingMaintenance() // 依本回合結算前的實際已建建築重算(取代平坦常數)
 	s.LastPlayerOutput = engine.RunEmpireTurn(s.Player, s.PlayerColonies)
 	s.Player = s.LastPlayerOutput.Player
 	for i := range s.AIPlayers {
@@ -1265,7 +1279,23 @@ func (s *GameSession) advanceResearch() {
 //
 // ⚠ Population=8、Farmers/Workers/Scientists 分配:手冊全文搜尋「starting population」
 // 零命中(§2.1),此為手冊 §3.5 建築數公式 worked example 用的同一 pop 值(8),沿用作合理
-// 預設,人口分配比例（§2.3 手冊亦未給）延續既有 remake 預設,兩者皆待 DOSBox 原版存檔確認。
+// 預設,兩者皆待 DOSBox 原版存檔確認。
+//
+// ⚠ FoodPerFarmer/IndustryPerWorker 仍是 remake placeholder(4/6),**刻意未**接上
+// gamedata/planet_yield.go 的 Terran/Abundant 手冊查表值(FoodPerFarmer=2、
+// IndustryPerWorker=3)。已實際試接過並用本套件既有的隨機事件/安塔蘭入侵機制跑滿 300 回合
+// 驗證(見下方經濟可持續性調查結論),發現接上忠實 yield 後 Farmers=4 恰好打平 8 人口食物
+// 消耗(0 緩衝),一旦任何一次「瘟疫/隕石/安塔蘭入侵」事件把僅有的農夫人口扣到 0(losePop
+// 目前的扣除順序不保證留下農夫),殖民地會進入*永久*饑荒:Starving=true 使
+// engine/colony.go 的 colonyGrowth 整回合停擺(見該檔「饑荒時不套用成長公式」),
+// 且本專案目前沒有任何機制把工人/科學家重新指回農夫——經濟從此卡死在
+// NetIndustry=0、TaxRevenue=0,而建築維護費仍持續每回合扣款,BC 保證單調流血至負值
+// (以固定 EventSeed=42 實測 100~300 回合皆重現,非機率僥倖)。這不是「稅率/維護費算式
+// 差一點」的量級問題,而是零緩衝經濟撞上既有饑荒-鎖死機制的結構性死結,需要 gamedata/income.go
+// 已備妥但目前全專案未接線的 TradeGoodsIncome/IncomeFoodSurplusRevenue(貿易財/餘糧收入)
+// 或饑荒復原機制其中之一先落地,才有本錢真的把 Farmers/Workers 換成 Terran/Abundant 忠實值,
+// 否則就是把「經濟可持續」的假象建立在從未觸發任何隨機事件的僥倖之上。
+// 詳見 docs/tech/colony-economy-maintenance.md(本輪產出的可持續性調查記錄)。
 func averageHomeworldColony() engine.ColonyState {
 	return engine.ColonyState{
 		Population: 8, PopMax: 20, Farmers: 3, Workers: 4, Scientists: 1,
@@ -1284,9 +1314,16 @@ func averageHomeworldColony() engine.ColonyState {
 //     語意與 engine.recordCompletion 對 ResearchAll 主題的既有記錄慣例一致。
 //
 // BC 國庫沿用既有 remake 預設值 100——手冊未給開局 BC 數字(§6.1),待確認。
+//
+// Maintenance 不再是無據 placeholder(先前寫死 5):改由 gamedata.BuiltMaintenanceBC 加總
+// 母星起始已建成建築(homeworldBuildings:海軍陸戰隊營 1 BC + 星基 2 BC = 3 BC/回合,兩個
+// 數字都是手冊 MaintenanceBC 實據,見 buildings.go)算出。玩家後續每回合的 Maintenance 由
+// EndTurn 依 s.ColonyBuildings 實際清單重算(見 GameSession.totalBuildingMaintenance),
+// 這裡只是開局第一回合前的初始值。艦艇/間諜/軍官維護費目前無手冊可推導的模型(本專案未追蹤
+// 運輸艦數量),暫不計入——TODO:待接上艦隊維護模型後補上,不臆造數字。
 func newHomeworldPlayerState(researchTopic gamedata.ResearchTopic) engine.PlayerState {
 	return engine.PlayerState{
-		BC: 100, TaxRate: 40, Maintenance: 5, ResearchTopic: researchTopic,
+		BC: 100, TaxRate: 40, Maintenance: gamedata.BuiltMaintenanceBC(homeworldBuildings()), ResearchTopic: researchTopic,
 		CompletedTopics: map[gamedata.ResearchTopic]bool{
 			gamedata.TOPIC_STARTING_TECH: true,
 			gamedata.TOPIC_ENGINEERING:   true,

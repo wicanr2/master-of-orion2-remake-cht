@@ -351,6 +351,27 @@ func BuildingByNameZH(zh string) (Building, bool) {
 	return Building{}, false
 }
 
+// BuiltMaintenanceBC 加總一組「已建成」建築(以中文名為 key,值為 true 代表已建成)的每回合
+// 維護費(BC)。每項 MaintenanceBC 皆為手冊實據(見檔頭誠實聲明,ProductionCost 才有
+// EstimatedCost 的區分,MaintenanceBC 40 項全數手冊有給,無估計值)。
+//
+// 用途:取代 remake 先前「每回合固定 Maintenance=5」的無據 placeholder——維護費現在由
+// 玩家(或 AI)實際已建成的建築清單加總而來,而非常數。找不到對應建築資料(理論上不會
+// 發生,呼叫端的 built 只會記錄本檔 Buildings 表中存在的中文名)的 key 直接跳過不計,
+// 不臆造數字。
+func BuiltMaintenanceBC(built map[string]bool) int {
+	total := 0
+	for name, ok := range built {
+		if !ok {
+			continue
+		}
+		if b, found := BuildingByNameZH(name); found {
+			total += b.MaintenanceBC
+		}
+	}
+	return total
+}
+
 // AvailableBuildings 回傳「前置研究已完成」的建築清單,依 Buildings 原順序。
 // completedTopics 為 nil 時視為尚無任何研究完成(只回傳前置為 TOPIC_STARTING_TECH 的項目——
 // 目前表中無此類建築,故回傳空清單)。
