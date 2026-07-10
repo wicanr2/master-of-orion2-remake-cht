@@ -91,6 +91,32 @@ func TestGaiaTransformationCanApply(t *testing.T) {
 	}
 }
 
+func TestTerraformPopMaxAfterClimateChange(t *testing.T) {
+	cases := []struct {
+		name                   string
+		popMax                 int
+		oldClimate, newClimate PlanetClimate
+		want                   int
+	}{
+		// Barren(25%) → Desert(25%):同一係數,PopMax 不動。
+		{"Barren→Desert 同係數不動", 20, BARREN, DESERT, 20},
+		// Swamp(40%) → Terran(80%):係數翻倍,PopMax 翻倍。
+		{"Swamp→Terran 係數翻倍", 20, SWAMP, TERRAN, 40},
+		// Terran(80%) → Gaia(100%):係數 80→100,PopMax 等比例放大。
+		{"Terran→Gaia 係數 80→100", 40, TERRAN, GAIA, 50},
+		// Arid(60%) → Terran(80%):20*80/60=26(向下取整)。
+		{"Arid→Terran 向下取整", 20, ARID, TERRAN, 26},
+		// oldClimate 超出合法範圍(係數 0):不換算,原樣回傳,避免除以零。
+		{"oldClimate 超出範圍不換算", 20, PlanetClimate(-1), TERRAN, 20},
+	}
+	for _, c := range cases {
+		if got := TerraformPopMaxAfterClimateChange(c.popMax, c.oldClimate, c.newClimate); got != c.want {
+			t.Errorf("%s: TerraformPopMaxAfterClimateChange(%d, %v, %v) = %d,預期 %d",
+				c.name, c.popMax, c.oldClimate, c.newClimate, got, c.want)
+		}
+	}
+}
+
 func TestTerraformClimatePopFactorPercent(t *testing.T) {
 	// MANUAL_150.html: pop_climate = 25 25 25 25 25 25 40 60 80 100
 	// (順序依 enums.go 的 PlanetClimate,並與 openorion2/src/gamestate.cpp 的

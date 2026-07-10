@@ -55,6 +55,11 @@ func ColonyStateFromSave(c *save.Colony, planet *save.Planet) ColonyState {
 		PlanetSize:           gamedata.PlanetSize(planet.Size),
 		PlanetGravity:        gamedata.PlanetGravity(planet.Gravity),   // 見檔頭「行星重力」說明
 		MineralRichness:      gamedata.PlanetMinerals(planet.Minerals), // 見檔頭「礦產豐度」說明
+		// Climate:save.Planet.Climate 同樣是直接從存檔二進位讀出的 uint8,與 gamedata.PlanetClimate
+		// 同源於 openorion2 gamestate.h 的同一組 enum ordinal(TOXIC=0..GAIA=9,見該檔
+		// `enum PlanetClimate` 定義),故可直接數值轉型,不需要字串映射表(比照上面 Gravity/
+		// Minerals 兩欄位的既有轉型慣例)。
+		Climate: gamedata.PlanetClimate(planet.Climate),
 		// 建築旗標/Tolerant/成長獎金 v1 未對映(見檔頭說明),留零值。
 	}
 }

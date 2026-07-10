@@ -124,3 +124,26 @@ func TerraformClimatePopFactorPercent(climate PlanetClimate) int {
 	}
 	return terraformClimatePopFactor[climate]
 }
+
+// TerraformPopMaxAfterClimateChange 依氣候變動前後的 pop_climate 百分比係數(見
+// terraformClimatePopFactor),對目前 PopMax 做等比例縮放,回傳地形改造/蓋亞轉化套用後的新 PopMax。
+//
+// 誠實近似聲明:MANUAL_150.html modding 附錄把 pop_climate 定義成「星球人口容量的百分比係數」,
+// 字面意思應該是「行星尺寸決定的基礎人口容量 × pop_climate% = PopMax」。但本 remake 的
+// engine.ColonyState 沒有獨立追蹤「行星尺寸 → 基礎人口容量」這個中介值——PopMax 是直接烘進的
+// 整數,可能已經疊加了生態圈(Biospheres p.99 +2)等其他建築的固定加成(見
+// docs/tech/colony-buildings.md §6.1)。因此本函式改用「目前 PopMax 整體乘上新舊係數比例」近似,
+// 而不是精確重算「基礎值 × 新係數」——這代表已疊加的固定加成也會跟著等比例縮放,不是官方精確
+// 公式,是誠實記錄的近似值。TODO:待補「行星尺寸→基礎人口容量」對映表(手冊/資料檔尚未查到)後,
+// 可回頭重算成精確版本。
+//
+// oldClimate 對應係數 <=0(超出 PlanetClimate 合法範圍)時視為無法換算,直接回傳原 PopMax 不動,
+// 避免除以零、也避免把 PopMax 錯誤歸零。
+func TerraformPopMaxAfterClimateChange(currentPopMax int, oldClimate, newClimate PlanetClimate) int {
+	oldFactor := TerraformClimatePopFactorPercent(oldClimate)
+	if oldFactor <= 0 {
+		return currentPopMax
+	}
+	newFactor := TerraformClimatePopFactorPercent(newClimate)
+	return currentPopMax * newFactor / oldFactor
+}

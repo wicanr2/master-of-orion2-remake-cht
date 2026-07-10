@@ -119,6 +119,25 @@ type ColonyState struct {
 	// ColonyState{...} 字面值(engine/shell 測試、cmd/moo2sim)在這次接線時都已明確補上
 	// MineralRichness——新增呼叫端請比照辦理,別漏設這個欄位。
 	MineralRichness gamedata.PlanetMinerals
+
+	// Climate 該殖民地所在行星目前的氣候階梯(TOXIC..GAIA,GAME_MANUAL.pdf p.58-59)。地形改造
+	// (Terraforming)/蓋亞轉化(Gaia Transformation)兩個一次性「Special」行動(見
+	// internal/gamedata/terraform.go,不是常駐建築,docs/tech/colony-buildings.md 已註明其型別
+	// 排除在 40 項建築表之外)靠這個欄位判斷「目前在哪一階、下一階是什麼」;套用完成時直接推進
+	// 本欄位,並連帶重算 FoodPerFarmer(gamedata.ClimateFoodPerFarmer 前後差值疊加,保留既有建築
+	// 加成不被覆蓋)與 PopMax(gamedata.TerraformPopMaxAfterClimateChange 等比例縮放,近似值,
+	// 理由見該函式註解)。實際套用邏輯在 shell.GameSession.applyClimateChange。
+	//
+	// 與 PlanetGravity/MineralRichness 不同:Climate 不會被 RunColonyTurn 每回合讀取——它是被動
+	// 儲存的「目前狀態」,只在地形改造/蓋亞轉化套用的那個瞬間被讀寫一次,平常回合結算仍完全依賴
+	// FoodPerFarmer 這個已烘進的費率欄位,不會每回合重新查表。
+	//
+	// Go 零值陷阱:gamedata.TOXIC 的 ordinal 恰好是 0,與本欄位「未設定」的零值相同——比照
+	// PlanetGravity/MineralRichness 的既有慣例,任何會被玩家實際操作地形改造/蓋亞轉化的
+	// ColonyState 建構點(shell.playerHomeworldColony、engine.ColonyStateFromSave)都已明確補上
+	// Climate,不依賴零值隱含語意。既有 engine/shell/cmd 單元測試(不牽涉地形改造機制)維持零值
+	// 不受影響——因為本欄位不像 PlanetGravity 那樣被每回合的核心公式讀取,零值對那些測試無副作用。
+	Climate gamedata.PlanetClimate
 }
 
 // PlayerState 是回合引擎操作的乾淨玩家(帝國)狀態。

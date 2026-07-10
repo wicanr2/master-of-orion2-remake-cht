@@ -602,24 +602,33 @@ const TradeGoodsBuildName = "貿易品"
 // gate)請用 availableBuildOptions,CycleColonyBuild 已改用該函式。
 var buildOptions = allBuildOptions()
 
-// allBuildOptions 把 gamedata.Buildings 轉成 ColonyBuild 選項清單(含「不建造」「貿易品」
-// 兩個非建築特殊項於前兩位)。
+// allBuildOptions 把 gamedata.Buildings + gamedata.SpecialActions 轉成 ColonyBuild 選項清單
+// (含「不建造」「貿易品」兩個非建築特殊項於前兩位)。SpecialActions(地形改造/蓋亞轉化/
+// 土壤改良)排在 Buildings 之後——它們是「Special」型別的一次性行動,不是常駐建築,但同樣走
+// 殖民地建造佇列選單,見 gamedata/special_actions.go 檔頭說明。
 func allBuildOptions() []ColonyBuild {
-	out := make([]ColonyBuild, 0, len(gamedata.Buildings)+2)
+	out := make([]ColonyBuild, 0, len(gamedata.Buildings)+len(gamedata.SpecialActions)+2)
 	out = append(out, ColonyBuild{"", 0, 0})
 	out = append(out, ColonyBuild{TradeGoodsBuildName, 0, 0})
 	for _, b := range gamedata.Buildings {
 		out = append(out, ColonyBuild{Name: b.NameZH, Progress: 0, Cost: b.ProductionCost})
 	}
+	for _, a := range gamedata.SpecialActions {
+		out = append(out, ColonyBuild{Name: a.NameZH, Progress: 0, Cost: a.ProductionCost})
+	}
 	return out
 }
 
 // availableBuildOptions 回傳「玩家已研究前置科技」才會出現的建造選單(「不建造」「貿易品」
-// 兩個特殊選項恆在,不受前置科技限制)。
+// 兩個特殊選項恆在,不受前置科技限制)。地形改造/蓋亞轉化/土壤改良比照建築同款前置科技 gate
+// (gamedata.AvailableSpecialActions),排在建築清單之後。
 func availableBuildOptions(completedTopics map[gamedata.ResearchTopic]bool) []ColonyBuild {
 	out := []ColonyBuild{{"", 0, 0}, {TradeGoodsBuildName, 0, 0}}
 	for _, b := range gamedata.AvailableBuildings(completedTopics) {
 		out = append(out, ColonyBuild{Name: b.NameZH, Progress: 0, Cost: b.ProductionCost})
+	}
+	for _, a := range gamedata.AvailableSpecialActions(completedTopics) {
+		out = append(out, ColonyBuild{Name: a.NameZH, Progress: 0, Cost: a.ProductionCost})
 	}
 	return out
 }
@@ -809,19 +818,74 @@ func (s *GameSession) advanceBuilds() {
 		b.Progress += ind
 		if b.Progress >= b.Cost {
 			if i < len(s.ColonyBuildings) {
-				if s.ColonyBuildings[i] == nil {
-					s.ColonyBuildings[i] = make(map[string]bool)
-				}
-				if !s.ColonyBuildings[i][b.Name] {
-					s.ColonyBuildings[i][b.Name] = true
-					s.applyBuildingEffect(i, b.Name) // 首次完工才套用長期效果
-					s.recalcColonyMorale(i)          // 士氣建築(全息模擬艙/歡樂穹頂)或 Barracks 完工需重算士氣
+				if _, isSpecial := gamedata.SpecialActionByNameZH(b.Name); isSpecial {
+					// Special 一次性行動(地形改造/蓋亞轉化/土壤改良):刻意不記入 ColonyBuildings。
+					// 手冊明講地形改造「可以套用好幾次」("You can terraform a planet several
+					// times"),若記入 ColonyBuildings,第二次套用會被下面「已建過就不再套用效果」
+					// 的 dedup 判斷擋下,不符手冊——見 gamedata/special_actions.go 檔頭說明。
+					s.applySpecialAction(i, b.Name)
+				} else {
+					if s.ColonyBuildings[i] == nil {
+						s.ColonyBuildings[i] = make(map[string]bool)
+					}
+					if !s.ColonyBuildings[i][b.Name] {
+						s.ColonyBuildings[i][b.Name] = true
+						s.applyBuildingEffect(i, b.Name) // 首次完工才套用長期效果
+						s.recalcColonyMorale(i)          // 士氣建築(全息模擬艙/歡樂穹頂)或 Barracks 完工需重算士氣
+					}
 				}
 			}
 			s.LastBuilt = append(s.LastBuilt, fmt.Sprintf("殖民地 %d 完成建造:%s", i+1, b.Name))
 			*b = ColonyBuild{} // 完成清空
 		}
 	}
+}
+
+// applySpecialAction 對殖民地 i 套用某個已完工的 Special 一次性行動(地形改造/蓋亞轉化/
+// 土壤改良,見 gamedata/special_actions.go)。與 applyBuildingEffect 不同:呼叫端(advanceBuilds)
+// 刻意不記入 ColonyBuildings,故本函式每次完工都會被呼叫一次,不是「只套一次」。
+func (s *GameSession) applySpecialAction(i int, name string) {
+	if i < 0 || i >= len(s.PlayerColonies) {
+		return
+	}
+	c := &s.PlayerColonies[i]
+	switch name {
+	case gamedata.TerraformActionName: // Terraforming p.99-101:把氣候沿階梯往 Terran 方向推進一級。
+		targets := gamedata.TerraformNextClimateOptions(c.Climate)
+		if len(targets) == 0 {
+			// 手冊未定義下一級(已到 Terran/Gaia 終點,或該氣候本來就不能地形改造,如
+			// Toxic/Radiated——見 terraform.go terraformNextClimate 註解)。本次套用無效果,
+			// PP 已消耗但不改變任何狀態;手冊沒有「退款/擋下建造」的規則,保守不擋。
+			return
+		}
+		// 手冊對 Barren 的下一級給了兩個候選(Desert/Tundra)且未說明選擇條件(見 terraform.go
+		// terraformNextClimate 註解),remake 保守固定選第一個候選,不臆造選擇規則。
+		s.applyClimateChange(i, targets[0])
+	case gamedata.GaiaTransformationActionName: // Gaia Transformation p.99-101:只能套用在 Terran。
+		if !gamedata.GaiaTransformationCanApply(c.Climate) {
+			return // 非 Terran 星球套用蓋亞轉化,手冊未給效果,保守視為無效果。
+		}
+		s.applyClimateChange(i, gamedata.GaiaTransformationResultClimate)
+	case gamedata.SoilEnrichmentActionName: // Soil Enrichment p.99:每個農夫食物 +1。
+		if !gamedata.TerraformSoilEnrichmentWorks(c.Climate) {
+			// 手冊:Barren/Radiated/Toxic 星球的化學反應會抵銷肥沃化效果("undo the fertilization
+			// as fast as it is done")——誠實模擬「套用了但沒有效果」,不是在建造選單擋下這個選項
+			// 本身(手冊沒有明講遊戲介面是否允許排入這種星球的建造佇列,保守不擋選單)。
+			return
+		}
+		c.FoodPerFarmer += gamedata.TerraformSoilEnrichmentFoodBonusPerFarmer
+	}
+}
+
+// applyClimateChange 把殖民地 i 的氣候推進到 next,同步重算 FoodPerFarmer(手冊給的每氣候絕對
+// 食物值,前後差值疊加,保留既有建築加成不被覆蓋)與 PopMax(gamedata.TerraformPopMaxAfterClimateChange
+// 依 pop_climate 百分比係數等比例縮放,近似值,理由見該函式註解)。
+func (s *GameSession) applyClimateChange(i int, next gamedata.PlanetClimate) {
+	c := &s.PlayerColonies[i]
+	old := c.Climate
+	c.FoodPerFarmer += gamedata.ClimateFoodPerFarmer(next) - gamedata.ClimateFoodPerFarmer(old)
+	c.PopMax = gamedata.TerraformPopMaxAfterClimateChange(c.PopMax, old, next)
+	c.Climate = next
 }
 
 // Leader 是一名可雇用的軍官/領袖(供軍官列表)。
@@ -1660,6 +1724,11 @@ func playerHomeworldColony() engine.ColonyState {
 		// (docs/tech/homeworld-init.md 慣例基準)。engine.ColonyState.MineralRichness 的
 		// Go 零值恰好是 gamedata.ULTRA_POOR(ordinal 0),必須明確賦值(見該欄位註解)。
 		MineralRichness: gamedata.ABUNDANT,
+		// Climate 母星固定 Terran,與上面 FoodPerFarmer 用的
+		// gamedata.ClimateFoodPerFarmer(gamedata.TERRAN) 同一組母星氣候設定。
+		// engine.ColonyState.Climate 的 Go 零值恰好是 gamedata.TOXIC(ordinal 0),必須明確賦值
+		// (見該欄位註解)——否則地形改造/蓋亞轉化(見 applySpecialAction)會誤判母星氣候。
+		Climate: gamedata.TERRAN,
 	}
 }
 
