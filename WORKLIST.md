@@ -7,6 +7,24 @@
 > 可勾選工作清單,對應 `PLAN.md` 階段。允許擴充(CLAUDE.md)。完整性優先:不預先砍項;卡關記錄方法換路,不寫「暫緩/低投報」。
 > 圖例:`[ ]` 待辦 `[~]` 進行中 `[x]` 完成(⚠ 多為自製系統的完成,非原版對齊)。
 
+## ★ 2026-07-10 session 進展摘要(接手後,對原版/手冊驗證)
+> 本段為快速索引,細節散見各 Phase 與 docs/tech/。
+
+**已完成並截圖/資料驗證:**
+- [x] **音訊基礎**:PCM WAV 原封播放 + 主選單 BGM + 按鈕音效(`internal/audio`、`audiohook.go`)
+- [x] **研究系統完整忠實化**:真 RP 成本 + 每主題抉擇 UI(真中文名)+ 抉擇解鎖元件(對 openorion2 核實,`research-system-status.md`)
+- [x] **獨立種族選擇流程**:13 族肖像 + 自訂點數 + 命名/旗色(`newgame-flow.md`)
+- [x] **外交畫面破解重建**:DIPLOMAT.LBX 全破解(13 palette+13 房+13 使節,配對律 r)+ 逐族使節疊合 + 13 族對應核實(`diplomat-lbx-layout.md`)
+- [x] **戰術戰鬥換原版美術**:STARBG 星空 + COMBAT 控制列 + CMBTSHP 可見艦艇;太空戰接真命中/傷害/過盾/過甲公式(`ResolveShot`);**控制列 7 按鈕中文化**(自動/掃描/登船/撤退/等待/完成/選項)(`tactical-combat-assets.md`)
+- [x] **中文化稽核補漏**:galaxy 工具列 ZOOM→縮放、頂部 GAME→遊戲(擦底疊字)
+- [x] **`-gamegallery` 端到端截圖廊**:8 畫面互動 app 內全繁中渲染驗證(修無限迴圈 CPU bug:硬性終止+timeout)
+
+**進行中(本 session 尾,對手冊/攻略/一代/原版驗證,派 subagent):**
+- [~] **音樂曲目↔場景定案**(task 13):subagent 對原版資料/openorion2/OST 確認,取代推定配置
+- [~] **地面戰係數**(task 14):既有 `ground-combat-algorithm.md` 已有結構式+手冊加成表;歧義處依 directive 用一代公式補
+- [~] **真母星初始狀態**(task 15):subagent 從手冊+攻略萃取 → `homeworld-init.md`
+- [~] **核心 gameplay 還原**(task 16):subagent 從手冊萃取殖民地建築全表 → `colony-buildings.md`,續逐系統
+
 ## Phase 0 — Kick-off / 可行性(本輪)
 - [x] 盤點 openorion2 完成度(`docs/kickoff/01`)
 - [x] 中文化策略(`02`)
@@ -89,7 +107,7 @@
 - [x] 軍官列表中文化(殖民地領袖/艦艇軍官/雇用/人才庫/解雇/返回)
 - [x] 科技總覽中文化(星曆/歷史圖表/科技總覽/種族統計/回合摘要/參考資料/返回)
 - [x] 擦底採樣穩健化:samplePlate 左緣帶+上下橫帶眾數;背景均勻畫面(info)改 overlayScreen.eraseColor 強制底色
-- [ ] 殘留細修:galaxy 工具列 GAME 標題未翻;行星/艦隊個別按鈕邊緣極微殘(紋理按鈕固有)
+- [x] galaxy 工具列 GAME 標題已翻(→遊戲)+ ZOOM 已翻(→縮放)(2026-07-10);行星/艦隊個別按鈕邊緣極微殘(紋理按鈕固有)為長尾
 - [ ] 各子畫面 RETURN 按鈕精確熱區(目前暫用全螢幕返回)
 - [x] 科技總覽「科技總覽」列可點進研究選擇畫面(其餘選單項待接)
 - [x] 殖民地總覽畫面(COLSUM.LBX 0)接入 COLONIES 按鈕 + 完整中文化
@@ -167,7 +185,7 @@
 - [x] 逆向音效格式 → SOUND.LBX 內 WAV;entry0 為 20-byte 名稱表(BUTTON1…),已解出 68 個具名音效
 - [x] ebiten 音訊播放整合 — `internal/audio`(WAV 解碼→16-bit stereo、Mixer BGM 迴圈+SFX;headless 停用避免無音效卡崩潰)+ 單元/真檔測試綠
 - [x] 接線:主選單 BGM(STREAMHD)+ 按鈕點擊音效(BUTTON1)— `cmd/moo2/audiohook.go`
-- [~] 曲目/UI 事件對應:BGM 暫用 clips[0]、點擊暫用 BUTTON1;**正確對應待對原版聆聽定案(oracle)**
+- [~] 曲目/UI 事件對應:目前場景 BGM 為推定配置;**改為對原版資料/openorion2/OST 交叉定案**(2026-07-10 subagent 進行,task 13),不再等人耳聆聽
 - [ ] `CMBTSFX/SPHERSFX` 巢狀音庫格式逆向(戰鬥期音效)
 - [x] ~~SoundFont 處理~~ → 不需要(無 MIDI 音樂)
 - [ ] 桌面實測驗收:使用者對原版聆聽比對(主選單 BGM + 點擊音是否為正確曲/音)
