@@ -18,6 +18,13 @@
   - 渲染工具已備(`-lbx ... -palasset N -accum`),供這項解碼 RE 的視覺驗證。
   - **雜點根因確認(2026-07-10 徹底查明)**:`AccumulatedRGBA` 把全部 38 幀已寫像素疊起——**動畫中會動的中央使節/能量在各幀位置不同,全疊=散點**(靜態廊柱不動故乾淨)。但改渲染**單一 frame 0** 也不乾淨:結構較清楚,惟**天空/穹頂區變白噪點**(疑該區 index 對 palette 0 映射錯,或稀疏星場)。→ **兩種渲染法都不乾淨**,換 palette provider 也不解。結論:DIPLOMAT 動畫資產是**動態調色盤(color-cycling)+ delta 幀**的困難組合,忠實靜態呈現需**聚焦解碼 RE**(逐幀 + palette cycling 分析,對照 openorion2 逐位元組),**非快速修法**。
   - **現況最佳解**:diplomacy 畫面目前用的 **room#29(accumulated)是目前最乾淨的可用資產**(比 15/21/27 少雜點),故先維持;deeper 忠實(逐族使節 + 乾淨動畫)待上述解碼 RE。
+
+  - **解碼機制查明(2026-07-10,對照 openorion2 `gfx.cpp` Image::loadFrames/decodeFrame 逐項驗證)**:
+    - 旗標:`FLAG_JUNCTION 0x2000 / FLAG_PALETTE 0x1000 / FLAG_KEYCOLOR 0x0800 / FLAG_FILLBG 0x0400 / FLAG_NOCOMPRESS 0x0100`。openorion2 每幀維持持久 buffer,**FILLBG set 才每幀重置**(各幀獨立),否則 delta 累積;每幀各自 registerTexture,GUI 畫**指定 frame**(非累積全部)。
+    - **實測 asset 15/29 旗標皆 `0x0000`(無 FILLBG)、38 幀** → 純 delta 動畫,本專案 `AccumulatedRGBA`(依序累積)**結構上正確**(修正稍早「FILLBG 疊影」假設——實測否定)。
+    - **∴ #15 雜點是 palette-per-asset 借用問題**:DIPLOMAT 大圖無內嵌調色盤,需借 asset 0–12 其一;#29 借 asset 0 渲染乾淨,#15 借 asset 0 不合(index 對不上該 palette)。原版靠「畫該資產前載入的 current palette」決定,需從遊戲載入序列或逐 provider 試出 #15 的正確 palette。
+    - **本專案解碼器可強化**:`internal/lbx` 已定義 `flagFillBg` 但未實作;可加「依 FILLBG 逐幀正確 buffer 語意 + 取指定 frame RGBA」的方法(比照 openorion2),供未來需畫特定動畫幀時用(目前 delta 資產用 AccumulatedRGBA 已足)。
+    - **下一步(下輪)**:①逐 provider(0–12)試出 #15/各族使節資產的正確 palette(渲染乾淨即中);②辨識哪些大圖是各族使節房間、對應 13 族;③使節「臉」可能是另一組小資產,查證。屬逐資產 palette + 語意 RE。
   - 重建:依對手種族選對應使節肖像(動畫)+ 房間 + 對話框 + 提議按鈕(位置量測自原版)。
 - **接線**:種族關係畫面「報告」→ diplomacy;已接 `bgmDiplo` 場景音樂。
 
