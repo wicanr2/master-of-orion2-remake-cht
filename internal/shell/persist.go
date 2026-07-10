@@ -15,14 +15,15 @@ const saveFormatVersion = 1
 // aiSnapshot 是一個 AI 對手的可序列化快照。Decider 為介面不能直接序列化,故只存其性格
 // (ai.Profile,純 struct),讀檔時以 ai.NewRemakeDecider 重建。
 type aiSnapshot struct {
-	Name          string               `json:"name"`
-	Player        engine.PlayerState   `json:"player"`
-	Colonies      []engine.ColonyState `json:"colonies"`
-	Profile       ai.Profile           `json:"profile"`
-	FleetStrength int                  `json:"fleetStrength"`
-	Relation      int                  `json:"relation"`
-	StanceName    string               `json:"stanceName"`
-	OwnedStars    int                  `json:"ownedStars"`
+	Name            string               `json:"name"`
+	Player          engine.PlayerState   `json:"player"`
+	Colonies        []engine.ColonyState `json:"colonies"`
+	Profile         ai.Profile           `json:"profile"`
+	FleetStrength   int                  `json:"fleetStrength"`
+	FleetInvestPool int                  `json:"fleetInvestPool"` // 造艦投資餘數池(見 session.go advanceAI)
+	Relation        int                  `json:"relation"`
+	StanceName      string               `json:"stanceName"`
+	OwnedStars      int                  `json:"ownedStars"`
 }
 
 // sessionSnapshot 是 GameSession 的完整可序列化狀態(排除純顯示的暫態:LastEvent/LastAntares
@@ -61,7 +62,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 			prof = rd.Profile
 		}
 		ais[i] = aiSnapshot{Name: a.Name, Player: a.Player, Colonies: a.Colonies, Profile: prof,
-			FleetStrength: a.FleetStrength, Relation: a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars}
+			FleetStrength: a.FleetStrength, FleetInvestPool: a.FleetInvestPool,
+			Relation: a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars}
 	}
 	return sessionSnapshot{
 		Version: saveFormatVersion, Turn: s.Turn, Player: s.Player,
@@ -81,8 +83,10 @@ func (snap sessionSnapshot) restore() *GameSession {
 	for i, a := range snap.AIPlayers {
 		ais[i] = AIOpponent{
 			Name: a.Name, Player: a.Player, Colonies: a.Colonies,
-			Decider:       ai.NewRemakeDecider(a.Profile), // 由性格重建決策器
-			FleetStrength: a.FleetStrength, Relation: a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars,
+			Decider:         ai.NewRemakeDecider(a.Profile), // 由性格重建決策器
+			FleetStrength:   a.FleetStrength,
+			FleetInvestPool: a.FleetInvestPool,
+			Relation:        a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars,
 		}
 	}
 	return &GameSession{

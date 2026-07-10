@@ -16,14 +16,16 @@ import (
 
 // AIOpponent 是一個由 AI 操控的對手帝國。
 type AIOpponent struct {
-	Name          string
-	Player        engine.PlayerState
-	Colonies      []engine.ColonyState
-	Decider       ai.Decider
-	FleetStrength int    // 累積軍力(每回合由淨工業投資,好戰性格投更多)
-	Relation      int    // 對玩家的外交關係分數(驅動 17 級 RelationLevel 與態勢)
-	StanceName    string // 目前對玩家態勢(中文;由 ai.DecideStance 推得)
-	OwnedStars    int    // 已擴張佔領的星數(含母星)
+	Name            string
+	Player          engine.PlayerState
+	Colonies        []engine.ColonyState
+	Decider         ai.Decider
+	FleetStrength   int // 累積軍力(每回合由淨工業投資,好戰性格投更多)
+	FleetInvestPool int // 造艦投資的餘數池(見 advanceAI):累積未達 invest 門檻的 NetIndustry,
+	// 避免整數除法把小額淨工業直接捨去成 0(見 advanceAI 註解)。
+	Relation   int    // 對玩家的外交關係分數(驅動 17 級 RelationLevel 與態勢)
+	StanceName string // 目前對玩家態勢(中文;由 ai.DecideStance 推得)
+	OwnedStars int    // 已擴張佔領的星數(含母星)
 }
 
 // Star 是星系圖上的一顆星(供星圖渲染;正規化座標 0..1)。
@@ -1233,12 +1235,20 @@ func (s *GameSession) advanceAI(i int, out engine.EmpireOutput) {
 	prof := aiProfile(*a)
 
 	// 1) 造艦:好戰(工業權重高)投資比例較高。
+	//
+	// FleetInvestPool 是餘數池,修正既有整數捨去 bug:直接算 TotalNetIndustry/invest 時,
+	// 若 TotalNetIndustry(如忠實 yield 下常見的 3)小於 invest(Scientific 性格為 4),
+	// 整數除法每回合都捨去成 0,FleetStrength 永久停滯(見 playerHomeworldColony 上方歷史記錄註解/
+	// docs/tech/colony-economy-maintenance.md)。改成先把 NetIndustry 存進池子、池子夠 invest
+	// 才兌現軍力、餘數留到下回合累積,小額淨工業也能跨回合逐步兌現,不會卡死。
 	invest := 4 // 分母越小投資越多
 	if prof.IndustryWeight > prof.ResearchWeight {
 		invest = 2
 	}
 	if out.TotalNetIndustry > 0 {
-		a.FleetStrength += out.TotalNetIndustry / invest
+		a.FleetInvestPool += out.TotalNetIndustry
+		a.FleetStrength += a.FleetInvestPool / invest
+		a.FleetInvestPool %= invest
 	}
 
 	// 2) 擴張:每 5 回合佔一顆最靠近既有版圖的無主星。
@@ -1318,37 +1328,17 @@ func (s *GameSession) advanceResearch() {
 	}
 }
 
-// averageHomeworldColony 建一個「Average 起始文明等級」的母星殖民地,供 AI 對手使用,依
-// docs/tech/homeworld-init.md:單一母星(§1)、PlanetSize=Large(母星通常為大型)、
-// PopMax=20 對齊 gamedata `pop_max` 表(Large 星球容量,§8 交叉驗證高信心)。
-//
-// ⚠ Population=8、Farmers/Workers/Scientists 分配:手冊全文搜尋「starting population」
-// 零命中(§2.1),此為手冊 §3.5 建築數公式 worked example 用的同一 pop 值(8),沿用作合理
-// 預設,兩者皆待 DOSBox 原版存檔確認。
-//
-// ⚠ FoodPerFarmer/IndustryPerWorker 刻意維持 remake placeholder(4/6),**不**接上
-// gamedata/planet_yield.go 的 Terran/Abundant 手冊查表值——這是本輪(見
-// docs/tech/colony-economy-maintenance.md)刻意縮小的範圍:玩家母星已改用下方
-// playerHomeworldColony() 接上忠實 yield,但 AI 對手的 `advanceAI`(session.go)有一個既有
-// 的整數捨去 bug——`FleetStrength += TotalNetIndustry/invest`,當 TotalNetIndustry 小於
-// invest(Scientific 性格為 4)時,Go 的整數除法會把結果捨去成 0,FleetStrength 永久卡死在
-// 原值不動。若 AI 母星也套用忠實 yield(Workers 從 4 降到 1、IndustryPerWorker 從 6 降到 3),
-// NetIndustry 會穩定落在 3(3/4=0),TestAIBuildsAndExpands/TestAIStanceHostileWhenStrong
-// 會因為 AI 軍力永久停滯而必然失敗——這不是「經濟基準改變、更新測試期望值」可以誠實處理的情況
-// (AI 軍力並非變慢,而是完全停止成長,機制本身壞掉),而是暴露一個獨立、不屬本輪任務授權範圍
-// 的既有 bug(任務邊界明訂「不要順手修 AI 整數捨去 bug」)。因此本函式(AI 用)維持舊值不動,
-// 待該 bug 另案修好(建議用 advancePopulation 的 popAccum 累加餘數模式)後再讓 AI 一併接上
-// 忠實 yield。
-func averageHomeworldColony() engine.ColonyState {
-	return engine.ColonyState{
-		Population: 8, PopMax: 20, Farmers: 3, Workers: 4, Scientists: 1,
-		FoodPerFarmer: 4, IndustryPerWorker: 6, ResearchPerScientist: 30,
-		PlanetSize: gamedata.LARGE_PLANET, MoralePercent: 10,
-	}
-}
+// (歷史記錄)AI 母星原本用一個獨立的 averageHomeworldColony(FoodPerFarmer/IndustryPerWorker
+// 維持 remake placeholder 4/6,不接查表值),因為 advanceAI 的造艦投資曾有整數捨去 bug——
+// `FleetStrength += TotalNetIndustry/invest`,TotalNetIndustry 小於 invest(Scientific 性格為
+// 4)時直接捨去成 0,FleetStrength 永久停滯。忠實 yield 下 AI NetIndustry 會穩定落在 3
+// (3/4=0),接上去會讓 AI 軍力完全停止成長。該 bug 現已用 FleetInvestPool 餘數池修好(見
+// advanceAI 註解:小額淨工業累積到池子裡跨回合兌現,不再捨去歸零),AI 母星於是與玩家共用
+// 下方 playerHomeworldColony() 的忠實 yield,經濟對稱完整。詳見
+// docs/tech/colony-economy-maintenance.md。
 
-// playerHomeworldColony 建玩家母星殖民地:與 averageHomeworldColony 相同的起始文明等級/
-// PopMax/PlanetSize 設定,但 FoodPerFarmer/IndustryPerWorker 改接
+// playerHomeworldColony 建母星殖民地(玩家與 AI 共用):起始文明等級/PopMax/PlanetSize 設定,
+// FoodPerFarmer/IndustryPerWorker 接
 // gamedata.ClimateFoodPerFarmer(TERRAN)=2、gamedata.MineralIndustryPerWorker(ABUNDANT)=3
 // ——母星氣候/礦產基準 Terran/Abundant(docs/tech/homeworld-init.md),手冊 GAME_MANUAL.pdf
 // p.58-59/p.56-57 實據(見 planet_yield.go 逐頁引註)。
@@ -1423,9 +1413,10 @@ func homeworldBuildings() map[string]bool {
 }
 
 // NewDemoSession 建一個最小可玩對局:玩家 + 1 個科學傾向 AI 對手,雙方各持 Average 起始
-// 文明等級的單一母星(docs/tech/homeworld-init.md,取代先前程序生成的 2 假殖民地)。玩家母星
-// yield 接忠實 Terran/Abundant 查表值(playerHomeworldColony);AI 母星暫維持 placeholder yield
-// (averageHomeworldColony,理由見該函式註解)。供「最小可玩迴圈」骨架用;正式新遊戲流程
+// 文明等級的單一母星(docs/tech/homeworld-init.md,取代先前程序生成的 2 假殖民地)。玩家與
+// AI 母星 yield 皆接忠實 Terran/Abundant 查表值(playerHomeworldColony)——AI 原本因
+// advanceAI 造艦投資的整數捨去 bug 而暫維持 placeholder yield,該 bug 已用 FleetInvestPool
+// 餘數池修好(見 advanceAI 註解),經濟對稱完整。供「最小可玩迴圈」骨架用;正式新遊戲流程
 // (選種族/星系生成/起始文明等級選擇)為後續工作。
 func NewDemoSession() *GameSession {
 	galaxy := genGalaxy(24, 42) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
@@ -1438,7 +1429,7 @@ func NewDemoSession() *GameSession {
 		AIPlayers: []AIOpponent{{
 			Name:     "AI (賽隆人)",
 			Player:   newHomeworldPlayerState(1),
-			Colonies: []engine.ColonyState{averageHomeworldColony()}, // AI 同為 Average 起始單一母星,yield 暫維持 placeholder(見該函式註解)
+			Colonies: []engine.ColonyState{playerHomeworldColony()}, // AI 同為 Average 起始單一母星,與玩家共用忠實 yield
 			Decider:  ai.NewRemakeDecider(ai.ProfileScientific),
 		}},
 		Stars:         galaxy,
