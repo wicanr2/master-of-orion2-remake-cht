@@ -66,7 +66,7 @@ var (
 	// 真科技樹無單一 TOPIC 可掛,暫掛簡化 proxy 主題、UnlockTech=TECH_NONE(走主題層級,標註待重設計)。
 	WeaponOptions = []Component{
 		{"無武裝", 0, 0, 0, 0},
-		{"雷射", 20, 4, gamedata.TOPIC_PHYSICS, gamedata.TECH_LASER_CANNON},        // ResearchAll(早期)
+		{"雷射", 20, 4, gamedata.TOPIC_PHYSICS, gamedata.TECH_LASER_CANNON},       // ResearchAll(早期)
 		{"核飛彈", 30, 6, gamedata.TOPIC_CHEMISTRY, gamedata.TECH_NUCLEAR_MISSILE}, // ResearchAll(早期)
 		{"質量投射器", 40, 8, gamedata.TOPIC_ADVANCED_MAGNETISM, gamedata.TECH_MASS_DRIVER},
 		{"中子爆破槍", 60, 12, gamedata.TOPIC_NEUTRINO_PHYSICS, gamedata.TECH_NEUTRON_BLASTER}, // ✓ 值
@@ -167,6 +167,7 @@ func (s *GameSession) NextUnlockedComponent(opts []Component, cur int) int {
 //     數量本就是 2,非正式列表)。
 //   - 除此 3 艘外是否還有 Outpost Ship/護衛艦等其他艦,手冊未列完整清單(§4.3 待確認),
 //     故 remake 目前只給這 3 艘,不臆測補齊。
+//
 // 三艘均為空武裝(殖民船/偵察艦在原版本就不具備武器容量,非本 remake 遺漏)。
 func homeworldShips() []Ship {
 	return []Ship{
@@ -526,10 +527,29 @@ type ColonyBuild struct {
 	Cost     int
 }
 
-// buildOptions 是可建造的項目(名稱 + 生產成本,對齊 MOO2 建築生產成本:
-// 多數基礎建築 60、太空港 100、星基 300)。空字串為「不建造」。
-var buildOptions = []ColonyBuild{
-	{"", 0, 0}, {"自動工廠", 0, 60}, {"海軍陸戰隊營", 0, 60}, {"研究實驗室", 0, 60}, {"太空港", 0, 100}, {"星基", 0, 300},
+// buildOptions 是「不看前置科技」的全部可建項目(名稱 + 生產成本),衍生自
+// gamedata.Buildings(手冊全表 40 項:35 建築 + 5 衛星),空字串為「不建造」排第一個。
+// 供將來「完整建築圖鑑」類 UI 參考;實際建造選單(有前置科技 gate)請用
+// availableBuildOptions,CycleColonyBuild 已改用該函式。
+var buildOptions = allBuildOptions()
+
+// allBuildOptions 把 gamedata.Buildings 轉成 ColonyBuild 選項清單(含「不建造」空項於首位)。
+func allBuildOptions() []ColonyBuild {
+	out := make([]ColonyBuild, 0, len(gamedata.Buildings)+1)
+	out = append(out, ColonyBuild{"", 0, 0})
+	for _, b := range gamedata.Buildings {
+		out = append(out, ColonyBuild{Name: b.NameZH, Progress: 0, Cost: b.ProductionCost})
+	}
+	return out
+}
+
+// availableBuildOptions 回傳「玩家已研究前置科技」才會出現的建造選單(空字串「不建造」恆在)。
+func availableBuildOptions(completedTopics map[gamedata.ResearchTopic]bool) []ColonyBuild {
+	out := []ColonyBuild{{"", 0, 0}}
+	for _, b := range gamedata.AvailableBuildings(completedTopics) {
+		out = append(out, ColonyBuild{Name: b.NameZH, Progress: 0, Cost: b.ProductionCost})
+	}
+	return out
 }
 
 // 起始文明等級的殖民地開局建築數上限(不含 Capitol),依 docs/tech/homeworld-init.md §2.2
@@ -562,38 +582,79 @@ func StartingBuildingCount(pop, cap int) int {
 	return n
 }
 
-// CycleColonyBuild 循環切換某殖民地的建造項目(進度歸零)。
+// CycleColonyBuild 循環切換某殖民地的建造項目(進度歸零)。選項依玩家目前已完成研究 gate
+// (availableBuildOptions):尚未解鎖前置科技的建築不會出現在循環清單中。
 func (s *GameSession) CycleColonyBuild(idx int) {
 	if idx < 0 || idx >= len(s.Builds) {
 		return
 	}
+	opts := availableBuildOptions(s.Player.CompletedTopics)
+	if len(opts) == 0 {
+		return
+	}
 	cur := 0
-	for i, o := range buildOptions {
+	for i, o := range opts {
 		if o.Name == s.Builds[idx].Name {
 			cur = i
 			break
 		}
 	}
-	next := buildOptions[(cur+1)%len(buildOptions)]
+	next := opts[(cur+1)%len(opts)]
 	s.Builds[idx] = ColonyBuild{Name: next.Name, Progress: 0, Cost: next.Cost}
 }
 
 // applyBuildingEffect 對殖民地 i 套用某已完工建築的長期產出效果(每殖民地每種建築只套一次)。
-// 效果係數為 remake 調校值(MOO2 手冊未給統一機讀表,對齊各建築定性作用):
-// 自動工廠→工業/工人 +2、研究實驗室→研究/科學家 +5、太空港→貿易(工業/工人 +1)。
+//
+// 既有 5 棟(不可壞,對齊既有測試/remake 調校值):
+// 自動工廠→工業/工人 +2、研究實驗室→研究/科學家 +5、太空港→工業/工人 +1。
 // 海軍陸戰隊營/星基屬防禦設施,現階段無直接產出建模(仍記錄為已建)。
+//
+// 新增建築:手冊有明確「每單位人口 +N 產出」且對應到 engine.ColonyState 既有欄位
+// (IndustryPerWorker/ResearchPerScientist/FoodPerFarmer 每工人-單位產出率;或
+// PollutionProcessor/AtmosphericRenewer/CoreWasteDump 既有污染布林旗標)者才建模;
+// 其餘(殖民地整體「+N 固定值」、「收入 +N%」、「士氣 +N%」等)因 engine.ColonyState
+// 目前無對應欄位,暫不建模,只記錄為已建——TODO:待 engine 補上殖民地固定加成/百分比
+// 欄位後回填(不在本次任務範圍,詳見 docs/tech/colony-buildings.md)。
 func (s *GameSession) applyBuildingEffect(i int, name string) {
 	if i < 0 || i >= len(s.PlayerColonies) {
 		return
 	}
 	c := &s.PlayerColonies[i]
 	switch name {
-	case "自動工廠":
+	case "自動工廠": // Automated Factories(既有,不可壞)
 		c.IndustryPerWorker += 2
-	case "研究實驗室":
+	case "研究實驗室": // Research Laboratory(既有,不可壞;手冊另有 +5 固定研究點,engine 無固定欄位,TODO)
 		c.ResearchPerScientist += 5
-	case "太空港":
+	case "太空港": // Spaceport(既有,不可壞;手冊實為「BC 收入 +50%」,engine 無收入百分比欄位,以工業近似)
 		c.IndustryPerWorker += 1
+	case "機器人採礦廠": // Robo Mining Plant:每工業人口 +2 產能(手冊另有 +10 固定值,TODO)
+		c.IndustryPerWorker += 2
+	case "深層核心礦場": // Deep Core Mine:每工人 +3 產能(手冊另有 +15 固定值,TODO)
+		c.IndustryPerWorker += 3
+	case "污染處理器": // Pollution Processor:對應 engine.ColonyState.PollutionProcessor 既有旗標
+		c.PollutionProcessor = true
+	case "大氣更新器": // Atmospheric Renewer:對應 engine.ColonyState.AtmosphericRenewer 既有旗標
+		c.AtmosphericRenewer = true
+	case "核心廢料場": // Core Waste Dumps:完全消除污染,對應 engine.ColonyState.CoreWasteDump 既有旗標
+		c.CoreWasteDump = true
+	case "行星超級電腦": // Planetary Supercomputer:每科學家 +2 研究點(手冊另有 +10 固定值,TODO)
+		c.ResearchPerScientist += 2
+	case "銀河網路中心": // Galactic Cybernet:每科學家 +3 研究點(手冊另有 +15 固定值,TODO)
+		c.ResearchPerScientist += 3
+	case "水耕農場": // Hydroponic Farm:手冊為殖民地整體 +2 固定食物,engine 無固定欄位,以每農夫 +1 近似
+		c.FoodPerFarmer += 1
+	case "地底農場": // Subterranean Farms:手冊為殖民地整體 +4 固定食物,engine 無固定欄位,以每農夫 +2 近似
+		c.FoodPerFarmer += 2
+	case "氣候控制器": // Weather Controller:每農業人口食物產出 +2(手冊數值,對應欄位存在,直接建模)
+		c.FoodPerFarmer += 2
+		// 其餘 25 項(飛彈基地、裝甲營房、戰機基地、地面砲台、再生反應爐、機器人工廠、
+		// 食物複製機、太空學院、異族管理中心、行星證券交易所、太空大學、全息模擬艙、
+		// 自動實驗室、歡樂穹頂、生態圈、複製中心、行星重力產生器、行星輻射/通量/屏障護盾、
+		// 曲速力場干擾器、戰鬥站、星辰要塞、阿提米絲系統網、次元傳送門)手冊效果不對應
+		// engine.ColonyState 既有欄位(陸戰隊生成/艦艇駐防/百分比收入/百分比士氣/人口上限/
+		// 軌道防禦等),暫不建模——僅由 advanceBuilds 記入 s.ColonyBuildings 為「已建」,
+		// 顯示於畫面,不影響數值結算。TODO:待對應遊戲系統(陸戰隊/艦隊駐防/士氣/國庫/
+		// 人口上限)建好後回頭補建模。
 	}
 }
 
