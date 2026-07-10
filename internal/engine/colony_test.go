@@ -11,7 +11,7 @@ func TestRunColonyTurn(t *testing.T) {
 		Population: 10, PopMax: 20,
 		Farmers: 4, Workers: 4, Scientists: 2,
 		FoodPerFarmer: 3, IndustryPerWorker: 5, ResearchPerScientist: 4,
-		PlanetSize: gamedata.MEDIUM_PLANET, // 容忍 = 2*(2+1) = 6
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, // 容忍 = 2*(2+1) = 6
 	}
 	got := RunColonyTurn(cs)
 
@@ -38,7 +38,7 @@ func TestRunColonyTurnPollutionProcessor(t *testing.T) {
 	// 污染處理器:eighths 8→4,產污減半 → 清理成本降。
 	cs := ColonyState{
 		Population: 10, PopMax: 20, Workers: 4, IndustryPerWorker: 5,
-		PlanetSize: gamedata.MEDIUM_PLANET, PollutionProcessor: true,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, PollutionProcessor: true,
 	}
 	got := RunColonyTurn(cs)
 	// gross=20,eighths=4,產污=20*4/8=10,清理=(10-6)/2=2,淨=18
@@ -51,7 +51,7 @@ func TestRunColonyTurnStarving(t *testing.T) {
 	// 食物不足 → 饑荒,成長為 0 並標 Starving。
 	cs := ColonyState{
 		Population: 10, PopMax: 20, Farmers: 1, FoodPerFarmer: 3,
-		PlanetSize: gamedata.MEDIUM_PLANET,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G,
 	}
 	got := RunColonyTurn(cs)
 	if got.FoodSurplus != -7 || !got.Starving || got.PopGrowth != 0 {
@@ -63,7 +63,7 @@ func TestRunColonyTurnTolerantRace(t *testing.T) {
 	// Tolerant 種族:清理成本 0,淨工業 = 毛工業。
 	cs := ColonyState{
 		Population: 5, PopMax: 20, Workers: 6, IndustryPerWorker: 5,
-		PlanetSize: gamedata.TINY_PLANET, TolerantRace: true,
+		PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, TolerantRace: true,
 	}
 	got := RunColonyTurn(cs)
 	if got.PollutionCleanupCost != 0 || got.NetIndustry != 30 {
@@ -76,7 +76,7 @@ func TestRunColonyTurnTolerantRace(t *testing.T) {
 func TestRunColonyTurnFlatFood(t *testing.T) {
 	base := ColonyState{
 		Population: 5, PopMax: 20, FoodPerFarmer: 3,
-		PlanetSize: gamedata.MEDIUM_PLANET, FlatFood: 2,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, FlatFood: 2,
 	}
 	small := base
 	small.Farmers = 1 // 1*3+2=5
@@ -98,7 +98,7 @@ func TestRunColonyTurnFlatFood(t *testing.T) {
 func TestRunColonyTurnFlatIndustry(t *testing.T) {
 	cs := ColonyState{
 		Population: 10, PopMax: 20, Workers: 4, IndustryPerWorker: 5,
-		PlanetSize:   gamedata.MEDIUM_PLANET, // 容忍 = 6
+		PlanetSize:   gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, // 容忍 = 6
 		FlatIndustry: 10,
 	}
 	got := RunColonyTurn(cs)
@@ -116,7 +116,7 @@ func TestRunColonyTurnFlatIndustry(t *testing.T) {
 func TestRunColonyTurnFlatResearch(t *testing.T) {
 	cs := ColonyState{
 		Population: 5, PopMax: 20, Scientists: 2, ResearchPerScientist: 4,
-		PlanetSize: gamedata.MEDIUM_PLANET, FlatResearch: 5,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, FlatResearch: 5,
 	}
 	got := RunColonyTurn(cs)
 	if got.Research != 13 { // 2*4+5
@@ -130,7 +130,7 @@ func TestRunColonyTurnFlatResearch(t *testing.T) {
 func TestRunColonyTurnPopMaxBonusRaisesGrowthCeiling(t *testing.T) {
 	full := ColonyState{
 		Population: 20, PopMax: 20, Farmers: 20, FoodPerFarmer: 1,
-		PlanetSize: gamedata.MEDIUM_PLANET,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G,
 	}
 	got := RunColonyTurn(full)
 	if got.PopGrowth != 0 {
@@ -152,7 +152,7 @@ func TestRunColonyTurnFlatGrowthUntilPopMax(t *testing.T) {
 	notFull := ColonyState{
 		Population: 10, PopMax: 20, FlatGrowth: 30,
 		Farmers: 10, FoodPerFarmer: 1, // 食物打平消耗,避免饑荒把成長歸零,隔離 FlatGrowth 單一變數
-		PlanetSize: gamedata.MEDIUM_PLANET,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G,
 	}
 	got := RunColonyTurn(notFull)
 	// base=sqrt(2000*10*10/20)=100,+FlatGrowth 30 = 130
@@ -163,7 +163,7 @@ func TestRunColonyTurnFlatGrowthUntilPopMax(t *testing.T) {
 	full := ColonyState{
 		Population: 20, PopMax: 20, FlatGrowth: 30,
 		Farmers: 20, FoodPerFarmer: 1,
-		PlanetSize: gamedata.MEDIUM_PLANET,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G,
 	}
 	got2 := RunColonyTurn(full)
 	if got2.PopGrowth != 0 {
@@ -176,7 +176,7 @@ func TestRunColonyTurnMorale(t *testing.T) {
 	cs := ColonyState{
 		Population: 10, PopMax: 20, Farmers: 4, Workers: 2, Scientists: 2,
 		FoodPerFarmer: 5, IndustryPerWorker: 10, ResearchPerScientist: 5,
-		PlanetSize: gamedata.TINY_PLANET, TolerantRace: true, MoralePercent: 30,
+		PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, TolerantRace: true, MoralePercent: 30,
 	}
 	got := RunColonyTurn(cs)
 	if got.Food != 26 { // 20*130/100
@@ -187,5 +187,81 @@ func TestRunColonyTurnMorale(t *testing.T) {
 	}
 	if got.Research != 13 { // 10*1.3
 		t.Errorf("士氣調整研究 = %d,預期 13", got.Research)
+	}
+}
+
+// TestRunColonyTurnGravityHeavyPenalty 驗證 Heavy-G 行星(GAME_MANUAL.pdf p.58:「All three
+// types of production are reduced by 50%」)對食物/工業/研究三種 per-worker 產出都打對折,
+// 固定加成(此測試未設 Flat*,略)不受影響。種族重力天賦未建模,以 NORMAL_G 為基準
+// (見 colonyGravityPenaltyPercent 註解),故 HEAVY_G 行星懲罰 = gravityPenaltyTable[NORMAL_G][HEAVY_G] = -50。
+func TestRunColonyTurnGravityHeavyPenalty(t *testing.T) {
+	cs := ColonyState{
+		Population: 10, PopMax: 20, Farmers: 4, Workers: 4, Scientists: 2,
+		FoodPerFarmer: 5, IndustryPerWorker: 10, ResearchPerScientist: 5,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.HEAVY_G,
+	}
+	got := RunColonyTurn(cs)
+	if got.Food != 10 { // 4*5=20,×50% = 10
+		t.Errorf("Heavy-G 食物 = %d,預期 10", got.Food)
+	}
+	if got.GrossIndustry != 20 { // 4*10=40,×50% = 20
+		t.Errorf("Heavy-G 毛工業 = %d,預期 20", got.GrossIndustry)
+	}
+	if got.Research != 5 { // 2*5=10,×50% = 5
+		t.Errorf("Heavy-G 研究 = %d,預期 5", got.Research)
+	}
+}
+
+// TestRunColonyTurnGravityNormalizeGravityCancelsPenalty 驗證行星重力產生器
+// (NormalizeGravity=true,p.104「正常化至 Normal-G,消除 Low-G/Heavy-G 負面效果」)接線後
+// 真的會讓同一顆 Heavy-G 行星的重力懲罰歸零——這是本輪把「無效旗標」接成「有效旗標」的
+// 直接證明:與 TestRunColonyTurnGravityHeavyPenalty 同一組 cs,只差 NormalizeGravity。
+func TestRunColonyTurnGravityNormalizeGravityCancelsPenalty(t *testing.T) {
+	cs := ColonyState{
+		Population: 10, PopMax: 20, Farmers: 4, Workers: 4, Scientists: 2,
+		FoodPerFarmer: 5, IndustryPerWorker: 10, ResearchPerScientist: 5,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.HEAVY_G,
+		NormalizeGravity: true,
+	}
+	got := RunColonyTurn(cs)
+	if got.Food != 20 { // 無懲罰:4*5=20
+		t.Errorf("重力產生器後食物 = %d,預期 20(懲罰應歸零)", got.Food)
+	}
+	if got.GrossIndustry != 40 { // 無懲罰:4*10=40
+		t.Errorf("重力產生器後毛工業 = %d,預期 40(懲罰應歸零)", got.GrossIndustry)
+	}
+	if got.Research != 10 { // 無懲罰:2*5=10
+		t.Errorf("重力產生器後研究 = %d,預期 10(懲罰應歸零)", got.Research)
+	}
+}
+
+// TestRunColonyTurnGravityNormalGNoPenalty 驗證 Normal-G 行星(手冊:「Production rates on
+// these planets are unaffected by gravity」)不受重力調整,產出與零值 pct 相同。
+func TestRunColonyTurnGravityNormalGNoPenalty(t *testing.T) {
+	cs := ColonyState{
+		Population: 10, PopMax: 20, Farmers: 4, Workers: 4, Scientists: 2,
+		FoodPerFarmer: 5, IndustryPerWorker: 10, ResearchPerScientist: 5,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G,
+	}
+	got := RunColonyTurn(cs)
+	if got.Food != 20 || got.GrossIndustry != 40 || got.Research != 10 {
+		t.Errorf("Normal-G 不應受重力影響:%+v", got)
+	}
+}
+
+// TestRunColonyTurnGravityAndMoraleCombinedPercent 驗證士氣與重力先加總成單一百分點再套一次
+// 公式(colonyFood/RunColonyTurn 註解說明的順序選擇):Low-G(-25%)+ 士氣 +10% = 合併 -15%,
+// 而非兩次連續除法(20*75/100=15,15*110/100=16,與合併版 20*85/100=17 不同)——用這組數字
+// 確認 remake 採「先加總、再套一次」而非「連續套用兩次」。
+func TestRunColonyTurnGravityAndMoraleCombinedPercent(t *testing.T) {
+	cs := ColonyState{
+		Population: 10, PopMax: 20, Workers: 4, IndustryPerWorker: 5,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.LOW_G,
+		MoralePercent: 10, TolerantRace: true, // Tolerant 避開污染清理,單純看毛工業
+	}
+	got := RunColonyTurn(cs)
+	// base=4*5=20,合併百分點=10+(-25)=-15 → 20*85/100=17(無條件捨去)
+	if got.GrossIndustry != 17 {
+		t.Errorf("士氣+重力合併毛工業 = %d,預期 17(合併 -15%% 一次套用,非連續兩次除法)", got.GrossIndustry)
 	}
 }

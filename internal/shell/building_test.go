@@ -165,9 +165,17 @@ func TestCloningCenterFlatGrowth(t *testing.T) {
 	}
 }
 
-// TestPlanetaryGravityGeneratorRecordedOnly 驗證行星重力產生器(p.104)目前只記錄
-// NormalizeGravity 旗標,誠實反映「重力懲罰系統尚未接進生產管線」的現況(見
-// engine.ColonyState.NormalizeGravity 欄位註解)。
+// TestPlanetaryGravityGeneratorRecordedOnly 驗證 shell.applyBuildingEffect 對行星重力產生器
+// (p.104)完工後正確把 NormalizeGravity 旗標設到殖民地上,並記錄為已建。
+//
+// 2026-07-11 更新:重力懲罰系統已接進生產管線(engine.ColonyState.PlanetGravity +
+// colony.go 的 colonyGravityPenaltyPercent),NormalizeGravity 現在會真的讓
+// gamedata.GravityPenaltyPercent 歸零,不再是無效旗標——數值效果的端到端驗證見
+// internal/engine/colony_test.go 的 TestRunColonyTurnGravityNormalizeGravityCancelsPenalty
+// (該測試直接操作 ColonyState,能精確控制 PlanetGravity 驗證懲罰前後差異)。這裡維持
+// shell 層級的原始範圍:只驗證「建造完工→旗標正確寫入」這段管線本身,不重複驗證 engine
+// 已測過的數值公式。NewDemoSession 的母星固定 Normal-G(playerHomeworldColony),故本測試
+// 看不到 Food/Industry 數字變化屬預期——那不是本測試要驗證的範圍。
 func TestPlanetaryGravityGeneratorRecordedOnly(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true

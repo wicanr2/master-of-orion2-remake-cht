@@ -78,18 +78,32 @@ type ColonyState struct {
 	// 收入加成,未講維護費打折)。
 	IncomeBonusPercent int
 
-	// NormalizeGravity 對應行星重力產生器(p.104,手冊:「將星球重力正常化至 Normal-G,消除
-	// Low-G/Heavy-G 負面效果」)。
+	// PlanetGravity 該殖民地所在行星的重力等級(LOW_G/NORMAL_G/HEAVY_G,GAME_MANUAL.pdf p.58)。
+	// 驅動 colonyFood/RunColonyTurn 對 per-worker 產出套用的重力懲罰(見
+	// gamedata.GravityPenaltyPercent)。
 	//
-	// 誠實聲明:本引擎目前**完全沒有重力懲罰的套用路徑**——gamedata.GravityPenaltyPercent/
-	// GravityAdjustedProduction 兩個函式已依手冊 p.58 移植且有單元測試,但通盤搜尋
-	// internal/engine、internal/shell 後確認**零呼叫端**在套用它們(colony.go 的
-	// FoodPerFarmer/IndustryPerWorker/ResearchPerScientist 是存檔/建立殖民地時就算好的靜態
-	// 費率,目前沒有任何地方讀取殖民地的重力等級去打折)。這代表重力懲罰本身尚未接進生產管線,
-	// 是比「單一建築固定加成」更大的既有缺口(需要先幫 ColonyState 補上 PlanetGravity/種族
-	// 重力天賦兩個欄位,再串進 RunColonyTurn)。此欄位先建起來(供 applyBuildingEffect 記錄
-	// 「此殖民地已建成該建築」),但**目前不影響任何數值計算**——TODO:待重力懲罰系統本身建好
-	// 後,再讓這個旗標把 GravityPenaltyPercent 歸零。
+	// 種族自身的 Low-G/High-G 重力天賦(TRAIT_LOW_G 等,見 docs/tech/custom-race-picks.md)
+	// 尚未在 ColonyState 建模——RunColonyTurn 呼叫 GravityPenaltyPercent 時固定傳
+	// gamedata.NORMAL_G 當「種族重力」基準,懲罰值只反映「行星重力」單一因子,不含種族天賦
+	// 平移。這是 remake 建模簡化,非手冊本節文字直接依據(手冊本節只講行星重力對一般種族的
+	// 影響,見 planet_yield.go 檔頭大段註解的版本落差說明)。
+	//
+	// Go 零值陷阱:gamedata.LOW_G 的 ordinal 恰好是 0,與這個欄位「未設定」的零值相同——
+	// 任何建構 ColonyState 卻沒有明確設定本欄位的呼叫端,會被視為 Low-G(-25% 懲罰),而非
+	// 預期的「無重力資料」。因此所有既有 ColonyState{...} 字面值(engine/shell 測試、
+	// cmd/moo2sim)在這次接線時都已明確補上 PlanetGravity(多半是 NORMAL_G),不依賴零值
+	// 隱含語意——新增呼叫端請比照辦理,別漏設這個欄位。
+	PlanetGravity gamedata.PlanetGravity
+
+	// NormalizeGravity 對應行星重力產生器(p.104,手冊:「將星球重力正常化至 Normal-G,消除
+	// Low-G/Heavy-G 負面效果」)。true 時 RunColonyTurn 強制把重力懲罰歸零,即使
+	// PlanetGravity 是 LOW_G/HEAVY_G。
+	//
+	// 2026-07-11 已接線:gamedata.GravityPenaltyPercent/GravityAdjustedProduction 現由
+	// colony.go 的 colonyGravityPenaltyPercent 呼叫,套用在 colonyFood/RunColonyTurn 的
+	// per-worker 產出上(食物/工業/研究三者皆套,固定加成 FlatFood/FlatIndustry/
+	// FlatResearch 不套,理由見 colony.go 註解)。此旗標現在會真正讓 GravityPenaltyPercent
+	// 歸零,行星重力產生器不再是無效旗標。
 	NormalizeGravity bool
 }
 

@@ -733,10 +733,10 @@ func (s *GameSession) applyBuildingEffect(i int, name string) {
 		// 這個尺度的 1/10;colonyGrowth 已依 Population<PopMax 判斷是否還要套用固定成長。
 		c.FlatGrowth += popGrowthThreshold / 10
 	case "行星重力產生器": // Planetary Gravity Generator p.104:重力正常化,消除 Low-G/Heavy-G 負面效果。
-		// 誠實聲明:engine 目前完全沒有重力懲罰的套用路徑(見 engine.ColonyState.
-		// NormalizeGravity 欄位註解——GravityPenaltyPercent/GravityAdjustedProduction 已移植
-		// 但零呼叫端),此旗標暫時只記錄「已建」,不影響任何數值。TODO:待重力懲罰系統本身
-		// 接進生產管線後,再讓這個旗標生效。
+		// 2026-07-11 已接線:engine.ColonyState.NormalizeGravity=true 時,colonyGravityPenaltyPercent
+		// (colony.go)強制把重力懲罰歸零,不論 PlanetGravity 是什麼——此旗標現在真的有效,不再是
+		// no-op。玩家母星固定 Normal-G(playerHomeworldColony)本來就無懲罰可消,故這棟建築在
+		// demo session 目前看不出效果差異;要在 Low-G/Heavy-G 殖民地(例如存檔載入模式)上才看得出。
 		c.NormalizeGravity = true
 	case "機器人工廠": // Robotic Factory p.82:依礦產豐度固定加成(Ultra Poor+5/Poor+8/Abundant+10/
 		// Rich+15/Ultra Rich+20)。TODO:engine.ColonyState 目前不追蹤逐殖民地的礦產豐度分級
@@ -1483,6 +1483,10 @@ func playerHomeworldColony() engine.ColonyState {
 		IndustryPerWorker:    gamedata.MineralIndustryPerWorker(gamedata.ABUNDANT),
 		ResearchPerScientist: 30,
 		PlanetSize:           gamedata.LARGE_PLANET, MoralePercent: 10,
+		// PlanetGravity 母星固定 Normal-G(手冊/homeworld-init.md 慣例基準,與 Terran/Abundant
+		// 同一組母星設定),無重力懲罰。engine.ColonyState.PlanetGravity 的 Go 零值恰好是
+		// gamedata.LOW_G(ordinal 0),必須明確賦值,不能依賴零值(見該欄位註解)。
+		PlanetGravity: gamedata.NORMAL_G,
 	}
 }
 

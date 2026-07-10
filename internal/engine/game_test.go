@@ -12,7 +12,9 @@ func TestRunGameTurn(t *testing.T) {
 	// 兩顆行星:0=MEDIUM、1=SMALL
 	gs.Planets = make([]save.Planet, 2)
 	gs.Planets[0].Size = uint8(gamedata.MEDIUM_PLANET)
+	gs.Planets[0].Gravity = uint8(gamedata.NORMAL_G) // 明確設 Normal-G,避免零值=LOW_G 混入本測試(見 adapter.go 檔頭說明)
 	gs.Planets[1].Size = uint8(gamedata.SMALL_PLANET)
+	gs.Planets[1].Gravity = uint8(gamedata.NORMAL_G)
 	gs.PlanetCount = 2
 
 	// 兩個殖民地:colony0 屬玩家0(行星0),colony1 屬玩家1(行星1)

@@ -22,6 +22,10 @@ func TestColonyStateFromSave(t *testing.T) {
 
 	var pl save.Planet
 	pl.Size = uint8(gamedata.MEDIUM_PLANET)
+	// 明確設 Normal-G:save.Planet.Gravity 的 Go 零值(0)與 gamedata.LOW_G 的 ordinal 相同
+	// (見 adapter.go 檔頭「行星重力」說明),這裡要驗證的是一般欄位對映,不是重力懲罰,
+	// 故明確賦值避免零值被誤讀為 Low-G(-25%)污染下方的 Food 端到端斷言。
+	pl.Gravity = uint8(gamedata.NORMAL_G)
 
 	cs := ColonyStateFromSave(&c, &pl)
 	if cs.Farmers != 2 || cs.Workers != 1 || cs.Scientists != 1 {
@@ -34,10 +38,37 @@ func TestColonyStateFromSave(t *testing.T) {
 	if cs.PlanetSize != gamedata.MEDIUM_PLANET {
 		t.Errorf("行星尺寸 = %d,預期 MEDIUM", cs.PlanetSize)
 	}
+	if cs.PlanetGravity != gamedata.NORMAL_G {
+		t.Errorf("行星重力 = %d,預期 NORMAL_G", cs.PlanetGravity)
+	}
 	// 端到端:轉出的狀態能直接跑一回合
 	out := RunColonyTurn(cs)
-	if out.Food != 10 { // 2*5
+	if out.Food != 10 { // 2*5,Normal-G 無懲罰
 		t.Errorf("轉出後跑回合 Food = %d,預期 10", out.Food)
+	}
+}
+
+// TestColonyStateFromSaveGravityMapping 驗證 save.Planet.Gravity(uint8)直接數值轉型成
+// gamedata.PlanetGravity(兩者同源 openorion2 enum ordinal,見 adapter.go 檔頭說明),
+// LOW_G/HEAVY_G 都能正確映射並在 RunColonyTurn 端到端反映重力懲罰。
+func TestColonyStateFromSaveGravityMapping(t *testing.T) {
+	var c save.Colony
+	c.Population = 2
+	c.FoodPerFarmer = 4
+	c.Colonists[0].Job = uint8(gamedata.FARMER)
+	c.Colonists[1].Job = uint8(gamedata.FARMER)
+
+	var pl save.Planet
+	pl.Size = uint8(gamedata.MEDIUM_PLANET)
+	pl.Gravity = uint8(gamedata.HEAVY_G)
+
+	cs := ColonyStateFromSave(&c, &pl)
+	if cs.PlanetGravity != gamedata.HEAVY_G {
+		t.Fatalf("行星重力 = %d,預期 HEAVY_G", cs.PlanetGravity)
+	}
+	out := RunColonyTurn(cs)
+	if out.Food != 4 { // 2*4=8,Heavy-G -50% → 4
+		t.Errorf("Heavy-G 存檔殖民地 Food = %d,預期 4", out.Food)
 	}
 }
 

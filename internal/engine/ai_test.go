@@ -10,7 +10,7 @@ import (
 func TestApplyAIEconomy(t *testing.T) {
 	colonies := []ColonyState{
 		{Population: 10, Farmers: 10, FoodPerFarmer: 5, IndustryPerWorker: 10,
-			ResearchPerScientist: 5, PlanetSize: gamedata.MEDIUM_PLANET},
+			ResearchPerScientist: 5, PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G},
 	}
 	ps := PlayerState{BC: 500}
 	d := ai.NewRemakeDecider(ai.ProfileScientific)
@@ -26,7 +26,7 @@ func TestApplyAIEconomy(t *testing.T) {
 func TestRunAIEmpireTurn(t *testing.T) {
 	colonies := []ColonyState{
 		{Population: 10, Farmers: 10, FoodPerFarmer: 5, IndustryPerWorker: 10,
-			ResearchPerScientist: 5, PlanetSize: gamedata.MEDIUM_PLANET},
+			ResearchPerScientist: 5, PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G},
 	}
 	ps := PlayerState{BC: 100, ResearchTopic: gamedata.ResearchTopic(1)}
 	out := RunAIEmpireTurn(ps, colonies, ai.NewRemakeDecider(ai.ProfileScientific))
