@@ -58,6 +58,15 @@
   狀態(尚未成立/待開/已分出勝負/待回應),沒有 accept/reject 互動熱區、沒有勝利/落敗結束畫面。
   Antares 母星次元傳送門勝利(手冊第三條路徑)完全沒有對應流程(無 Dimensional Portal/艦隊遠征/
   母星戰鬥),列 TODO 不硬做。詳見 `docs/tech/victory-conditions.md`。)**
+  **(2026-07-11 再更新:間諜從「公式移植未接(零呼叫端死碼)」變成「最小可玩迴圈已接」。**
+  `internal/gamedata/spy.go` 的 8 個機率函式(手冊 `Notes on Spying`,`SpySlotBonus`/
+  `SpyEffectiveThreshold`/`SpyRollChance`/`SpyVsSpy*` 等)先前雖已移植但無任何呼叫端;新增
+  `internal/shell/spy.go` 接上「訓練間諜(`TrainSpy`,花 BC)→ 每回合結算 STEAL(偷科技)→
+  SpyVsSpy 判定」的最小迴圈,玩家 ↔ 單一 AI 對手雙向生效。**只涵蓋 STEAL 一項任務**:破壞
+  (SABOTAGE)手冊只定性描述效果、無數值規則,標 TODO 不做;逐對手分配/任務選單(Espionage/
+  Sabotage/Hide 分開指派)延後,最小迴圈預設所有間諜對唯一 AI 對手做 STEAL;防禦方 Agent 不
+  獨立追蹤(固定 DB=0,對應手冊「零 Agent 防禦仍生效」的描述,非遺漏);種族/科技/政府對間諜
+  的加成現行無資料可推導,一律 0(TODO)。詳見 `docs/tech/spy-system.md`。)**
 
 - 領袖/軍官:原本純裝飾——`demoLeaders()`(如「馮·諾伊曼 科學家 Level 5」)的技能字串不 bonus
   任何東西,`gamedata/officer.go`(`LeaderExpLevel`/`LeaderSkillBonus`)、`formulas.go`

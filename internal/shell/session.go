@@ -27,6 +27,12 @@ type AIOpponent struct {
 	StanceName string // 目前對玩家態勢(中文;由 ai.DecideStance 推得)
 	OwnedStars int    // 已擴張佔領的星數(含母星)
 
+	// Spies 是這個 AI 對手派來偷玩家科技的間諜數(見 spy.go advanceEspionage)。opt-in,
+	// 新對局預設 0(Go 零值恰好是想要的預設值,無零值陷阱)。AI 目前用簡單週期政策自動增加
+	// (見 advanceAI),不像玩家的 PlayerSpies 需要花 BC 呼叫 TrainSpy——AI 的訓練成本/BC
+	// 限制未建模,是誠實簡化而非疏漏(見 spy.go 檔頭說明)。
+	Spies int
+
 	// ColonyStars 是 Colonies[i] 對應到 Stars 的索引(平行陣列)。
 	//
 	// 簡化限制(見 aiExpand):AI 每 5 回合用 aiExpand 佔領一顆無主星時,只標記
@@ -1313,6 +1319,15 @@ type GameSession struct {
 	LastCouncil            string           // 本回合議會動態描述(空=無;供回合摘要)
 	CouncilMeetings        int              // 已召開過的議會屆數
 	lastCouncilTurn        int              // 上次召開議會的回合數(0=從未召開)
+
+	// --- 間諜(見 spy.go,最小可玩迴圈:只做偷科技 STEAL,見該檔檔頭說明) ---
+	// PlayerSpies 是玩家派駐到 AIPlayers[i] 的間諜數(平行 AIPlayers)。opt-in,預設 0
+	// (Go 零值即想要的預設值)。玩家經 TrainSpy(idx) 花 BC 增加;逐對手分配已經是這個陣列
+	// 天然支援的結構,只是目前唯一一個 AI 對手時看不出差異。
+	PlayerSpies []int
+	// LastEspionage 是本回合諜報結算的訊息(供回合摘要顯示;每回合開頭清空)。
+	LastEspionage []string
+	spyRand       *rand.Rand // 間諜擲骰亂數源(由 EventSeed 惰性建立,比照 eventRand 慣例)
 }
 
 // 安塔蘭人入侵參數:MOO2 的週期性終局威脅。前期寬限,之後每隔數回合一次突襲,強度隨次數升級。
@@ -1593,6 +1608,9 @@ func (s *GameSession) EndTurn() {
 		s.AIPlayers[i].Player = out.Player
 		s.advanceAI(i, out) // AI 主動行為:造艦 / 擴張 / 外交態勢
 	}
+	// 間諜結算須排在玩家與所有 AI 本回合研究都跑完之後(用最新的 CompletedTopics/ChosenTech
+	// 判定「對方已知、我方未知」的可偷科技清單),故緊接在上面的 AI 迴圈之後。
+	s.advanceEspionage() // 玩家 ↔ AI 間諜行動(最小迴圈:偷科技 STEAL,見 spy.go)
 	s.advanceBuilds()     // 以本回合淨工業推進各殖民地建造
 	s.advanceResearch()   // 目前研究主題完成則自動推進到下一個未完成的元件解鎖主題
 	s.advanceFleet()      // 推進艦隊星間航行(ETA 遞減,抵達則標記探索)
@@ -1680,6 +1698,14 @@ func (s *GameSession) advanceAI(i int, out engine.EmpireOutput) {
 	// 2) 擴張:每 5 回合佔一顆最靠近既有版圖的無主星。
 	if s.Turn%5 == 0 {
 		s.aiExpand(i)
+	}
+
+	// 2.5) 間諜:AI 用最簡單的週期政策每 6 回合訓練 1 名間諜派來偷玩家科技(見 spy.go
+	// advanceEspionage),上限比照手冊每對手 63 人(gamedata.SpySlotBonus 的夾範圍)。不像
+	// 玩家 TrainSpy 需要花 BC——AI 訓練成本/BC 限制目前無資料可推導,誠實簡化為免費週期政策
+	// (TODO:待有更細緻 AI 經濟模型後補上維護費/訓練成本)。
+	if s.Turn%6 == 0 && a.Spies < 63 {
+		a.Spies++
 	}
 
 	// 3) 外交態勢:AI 越強、難度越高,對玩家越敵對。

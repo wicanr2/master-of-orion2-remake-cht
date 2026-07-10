@@ -47,7 +47,16 @@
   `CheckExtermination`,`InvadeColony` 攻陷AI唯一殖民地後立即偵測)。UI 僅議會畫面文字狀態,
   無獨立結束畫面/accept-reject 互動介面(見 HONEST-STATUS)。Antares母星次元傳送門勝利仍全無
   ——需要 Dimensional Portal 科技/建造 + 艦隊遠征流程 + 母星戰鬥,整套子系統不存在,列 TODO。
-  飛彈躲避/AMR/球狀傷害已接進戰鬥解算(見 task 16 分塊「戰鬥公式依武器類型分流」);間諜仍缺。
+  飛彈躲避/AMR/球狀傷害已接進戰鬥解算(見 task 16 分塊「戰鬥公式依武器類型分流」)。
+- [x] **間諜最小可玩迴圈(2026-07-11)**:`gamedata/spy.go`(手冊 `Notes on Spying` 8 個機率
+  函式,先前零呼叫端死碼)接上 `internal/shell/spy.go`——訓練間諜(`TrainSpy`,花 30 BC
+  remake 拍板值)→ 每回合結算(`advanceEspionage`,由 `EndTurn` 呼叫)偷科技(STEAL,偷一項
+  「對方已知、我方未知」的科技,依 GAME_MANUAL.pdf p.174-175「tries to steal technologies
+  you have yet to gain」推出)→ SpyVsSpy 判定(±80 淨值門檻)。玩家 ↔ 單一 AI 對手雙向生效,
+  維護費 opt-in(0 間諜時零影響)。**只做 STEAL**:破壞(SABOTAGE)手冊無數值規則,標 TODO
+  不做;逐對手分配/任務選單(Espionage/Sabotage/Hide)延後;防禦方 Agent 不獨立追蹤(DB 固定
+  0,對應手冊「零 Agent 防禦仍生效」);種族/科技/政府對間諜的加成現行無資料可推導,一律 0
+  (TODO)。詳見 `docs/tech/spy-system.md`。
 
 ## Phase 0 — Kick-off / 可行性(本輪)
 - [x] 盤點 openorion2 完成度(`docs/kickoff/01`)

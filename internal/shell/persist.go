@@ -26,6 +26,7 @@ type aiSnapshot struct {
 	StanceName      string               `json:"stanceName"`
 	OwnedStars      int                  `json:"ownedStars"`
 	ColonyStars     []int                `json:"colonyStars"` // 見 shell.AIOpponent.ColonyStars 註解
+	Spies           int                  `json:"spies"`       // AI 派來偷玩家科技的間諜數,見 spy.go
 }
 
 // sessionSnapshot 是 GameSession 的完整可序列化狀態(排除純顯示的暫態:LastEvent/LastAntares
@@ -68,6 +69,11 @@ type sessionSnapshot struct {
 	PendingCouncilElection *CouncilElection `json:"pendingCouncilElection,omitempty"`
 	CouncilMeetings        int              `json:"councilMeetings"`
 	LastCouncilTurn        int              `json:"lastCouncilTurn"`
+
+	// PlayerSpies 是玩家派駐到各 AI 對手的間諜數(平行 AIPlayers),見 spy.go。
+	// LastEspionage(本回合諜報結算訊息)比照 LastEvent/LastAntares/LastBattle,是下回合會
+	// 重算的純顯示暫態,刻意不存檔。
+	PlayerSpies []int `json:"playerSpies"`
 }
 
 // snapshot 擷取 GameSession 目前狀態成可序列化快照。
@@ -81,7 +87,7 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		ais[i] = aiSnapshot{Name: a.Name, Player: a.Player, Colonies: a.Colonies, Profile: prof,
 			FleetStrength: a.FleetStrength, FleetInvestPool: a.FleetInvestPool,
 			Relation: a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars,
-			ColonyStars: a.ColonyStars}
+			ColonyStars: a.ColonyStars, Spies: a.Spies}
 	}
 	return sessionSnapshot{
 		Version: saveFormatVersion, Turn: s.Turn, Player: s.Player,
@@ -96,6 +102,7 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		MarineBarracksAge: s.MarineBarracksAge, Government: s.Government,
 		Victory: s.Victory, PendingCouncilElection: s.PendingCouncilElection,
 		CouncilMeetings: s.CouncilMeetings, LastCouncilTurn: s.lastCouncilTurn,
+		PlayerSpies: s.PlayerSpies,
 	}
 }
 
@@ -109,7 +116,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 			FleetStrength:   a.FleetStrength,
 			FleetInvestPool: a.FleetInvestPool,
 			Relation:        a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars,
-			ColonyStars: a.ColonyStars,
+			ColonyStars: a.ColonyStars, Spies: a.Spies,
 		}
 	}
 	return &GameSession{
@@ -124,6 +131,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 		MarineBarracksAge: snap.MarineBarracksAge, Government: snap.Government,
 		Victory: snap.Victory, PendingCouncilElection: snap.PendingCouncilElection,
 		CouncilMeetings: snap.CouncilMeetings, lastCouncilTurn: snap.LastCouncilTurn,
+		PlayerSpies: snap.PlayerSpies,
 	}
 }
 
