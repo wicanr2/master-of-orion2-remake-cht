@@ -11,7 +11,11 @@
 - **重建所需(已初步調查)**:
   - `DIPLOMAT.LBX` 共 **39 個 asset**;0–6 為小圖示(已渲染確認),使節肖像在中後段(15/20/25/28 等**需調色盤鏈**才能渲染,推測 palette provider = asset 0,同 room#29 的解法 `loadDiplomatRoom`)。
   - **工具已備**:`cmd/moo2` 加了 `-palasset <n>`(用另一資產當調色盤)+ `-accum`(多幀 delta 累積)渲染旗標,可 `moo2 -lbx diplomat.lbx -asset 15 -palasset 0 -accum -shot out.png` 渲染需調色盤鏈的動畫資產。
-  - **⚠ 關鍵障礙(2026-07-10 查明)**:DIPLOMAT.LBX **各資產用不同調色盤**——asset 15/21/27 是大圖(~350KB),但用 asset 0 的調色盤渲染會**出現雜點**(palette 不匹配),且看起來仍是議事廳而非使節近臉。room#29 用 asset 0 palette 渲染乾淨(現況所用),但其他資產不然。故**下一步是逐資產找對的調色盤 provider**(可能每族一組 palette,或 palette 混在動畫資料內),再辨識使節 vs 房間。這是逐資產 palette RE 子任務,非小工作。
+  - **⚠ 關鍵障礙(2026-07-10 深入查明)**:DIPLOMAT.LBX 的大圖資產(13+,如 15/21/27)是**王座廳場景**(中央有使節/領袖figure),但**解碼有雜點缺陷**:
+    - asset 0–12 有內嵌調色盤(provider 候選);13+ 無,需借調色盤。
+    - asset 15 換 palette provider 0/10/12 **都仍雜點**(中央 figure 區尤重)→ **問題不在 palette 選擇**,而在這批**多幀 delta 動畫資產的 delta 解碼 / 動態調色盤**未被 `internal/lbx` 乾淨還原。現況 diplomacy 用的 room#29 中央也有同款雜點(見 `diplo_cur.png`)。
+    - **→ 真正的下一步是解決 `internal/lbx` 對 DIPLOMAT 動畫資產的解碼**(可能是 color-cycling 動畫調色盤,或 delta 幀重建的邊角情形),對照 openorion2 `lbx.cpp` 影像解碼再逐位元組核。這是**解碼器層級的 RE**,不是畫面佈局工作。解決後才能乾淨顯示使節,再談重建佈局 + 逐族資產對應。
+  - 渲染工具已備(`-lbx ... -palasset N -accum`),供這項解碼 RE 的視覺驗證。
   - 重建:依對手種族選對應使節肖像(動畫)+ 房間 + 對話框 + 提議按鈕(位置量測自原版)。
 - **接線**:種族關係畫面「報告」→ diplomacy;已接 `bgmDiplo` 場景音樂。
 
