@@ -803,6 +803,7 @@ func (b *sceneBuilder) diplomacy() (origScreen, error) {
 	if b.session == nil {
 		return nil, fmt.Errorf("無對局")
 	}
+	playSceneBGM(bgmDiplo)
 	return newDiplomacyScreen(b), nil
 }
 

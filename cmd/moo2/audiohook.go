@@ -19,12 +19,13 @@ var clickSound func()
 const moo2SampleRate = 22050
 
 // 場景 BGM 曲目索引(STREAMHD.LBX 內序,0-based)。
-// ⚠ 推定:依 last.fm 曲名順序(Theme1/2/3→各族→Battle)假設,**待對原版聆聽確認**
-// (見 docs/tech/audio-track-map.md 第三節)。機制本身與最終對應無關,可先接。
+// 選定配置(2026-07-10,依 last.fm 曲名順序 Theme1/2/3→各族→Battle 的推定;先用,之後對原版
+// 聆聽再微調——使用者指示)。見 docs/tech/audio-track-map.md。
 const (
-	bgmMenu   = 0  // 推定 Theme 1
-	bgmGalaxy = 1  // 推定 Theme 2
-	bgmCombat = 17 // 推定 Battle 1(20 條中靠後的戰鬥曲)
+	bgmMenu    = 0  // Theme 1(主選單/標題)
+	bgmGalaxy  = 1  // Theme 2(星系圖/一般經營)
+	bgmDiplo   = 3  // 種族/外交主題(暫用第 4 條;各族專屬待細分)
+	bgmCombat  = 17 // Battle 1(20 條中靠後的戰鬥曲)
 )
 
 var (
