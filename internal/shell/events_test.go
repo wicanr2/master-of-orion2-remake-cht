@@ -7,20 +7,24 @@ import (
 
 // bcCrashFloor300Turns 是 TestRandomEventsFireAndBounded 300 回合內允許的 BC 下限。
 // 理由同 antares_test.go 的 bcCrashFloor80Turns:忠實 yield 經濟緩衝薄,300 回合中夾雜安塔蘭
-// 入侵反覆把人口打到剩 1 時,單人口收入結構性覆蓋不了建築維護費,會有一段時間 BC 走負——以本
-// 測試固定 EventSeed=42 的確定性軌跡實測,300 回合最低點約 -59,且會在人口回穩後回升(實測
-// 300 回合終值為正、達數百 BC),不是無止盡崩潰。這裡抓一個有餘裕但仍能抓到「異常擴大化」的
-// 下限,詳見 docs/tech/colony-economy-maintenance.md。
+// 入侵反覆把人口打到剩 1 時,單人口收入結構性覆蓋不了建築維護費,會有一段時間 BC 走負——這是
+// 誠實的經濟後果,不是 bug,詳見 docs/tech/colony-economy-maintenance.md。實際下限數字隨底下
+// 指揮評等供需結算的演進變動,見下方更新記錄。
 //
-// 2026-07-11 更新:接上指揮評等(Command Rating)供需結算(GAME_MANUAL.pdf p.169,
+// 2026-07-11 更新①:接上指揮評等(Command Rating)供需結算(GAME_MANUAL.pdf p.169,
 // gamedata.IncomeCommandOverflowCost 從先前零呼叫端的死碼變成 RunEmpireTurn 實際會扣款的邏輯)
-// 後,下限重新校準。本測試全程被動跑 300 回合(s.Builds 恆為「不建造」,從未新建軌道衛星;
-// s.Ships 也維持開局 3 艘不變),母星開局只有 1 座星基(+1 供給)卻有 3 艘艦艇(殖民船+2 偵察艦
-// =3 點需求),缺口固定 2 點,每回合被動扣 20 BC(2×10,IncomeCommandOverflowCostPerPoint)。
-// 這是忠實但被動放大的手冊機制(玩家若真的玩,會建戰鬥站/星辰要塞或裁減艦隊來補上缺口,本測試
-// 刻意不做任何建造/艦隊決策),300 回合線性攤提實測最低點約 -3710(第 273 回合)、終值約
-// -3252,重新抓一個有餘裕但仍能抓到「數值算式跑飛」的下限。
-const bcCrashFloor300Turns = -4000
+// 後,一度發現開局供給只算了軌道衛星、漏了帝國基礎值,母星開局只有 1 座星基(+1 供給)卻有
+// 3 艘開局艦艇(殖民船+2 偵察艦=3 點需求),缺口固定 2 點,每回合被動扣 20 BC,300 回合線性
+// 攤提到最低點約 -3710(這是 regression,不是忠實機制——見下一段)。
+//
+// 2026-07-11 更新②(regression 修復):用真實存檔 SAVE10.GAM oracle 反推確認帝國基礎指揮
+// 評等供給應為 5(gamedata.CommandPointsBase,見該常數註解完整推導),shell.
+// totalCommandPointsSupply 補上後,開局供給 = 5(基礎)+1(星基)= 6 ≥ 3(需求),不再超支。
+// 重新量測 300 回合(EventSeed=42,固定可重現軌跡):最低點約 -51(第 133 回合,安塔蘭入侵/
+// 隨機事件把人口打低時單人口收入結構性不足以覆蓋建築維護費的短暫波動,非 bug,同
+// bcCrashFloor80Turns 的性質),終值約 +718。下限抓一個有餘裕(約 8 倍)但仍能抓到「數值算式
+// 跑飛」的門檻,不再用先前為掩蓋死亡螺旋而放寬的 -4000。
+const bcCrashFloor300Turns = -400
 
 // TestRandomEventsFireAndBounded 驗證隨機事件會在多回合中觸發,殖民地人口不低於 1,且 BC
 // 不會失控式無下限崩潰(忠實經濟下人口被打到剩 1 的期間會短暫轉負,詳見 bcCrashFloor300Turns

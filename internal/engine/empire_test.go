@@ -107,6 +107,16 @@ func TestRunEmpireTurnBC(t *testing.T) {
 // TestRunEmpireTurnCommandOverflow 驗證指揮評等(Command Rating)供給不足艦艇需求時,
 // 每回合每未覆蓋點扣 10 BC(GAME_MANUAL.pdf p.169,gamedata.IncomeCommandOverflowCost),
 // 並正確併入 NetBC/Player.BC,曝露在 EmpireOutput.CommandOverflowCost。
+//
+// 2026-07-11 附註:本測試直接手寫 PlayerState.CommandPointsSupply=1(任意取值,測引擎公式本身
+// 的 uncovered/overflow 算術),不是透過 shell.totalCommandPointsSupply() 算出來的實際供給——
+// 帝國基礎值 gamedata.CommandPointsBase(=5,見該常數 oracle 反推註解)是 shell 層
+// totalCommandPointsSupply 才會加的東西,RunEmpireTurn 本身只認呼叫端傳進來的
+// CommandPointsSupply/UsedCommandPoints 兩個數字,不知道、也不需要知道基礎值怎麼來的。
+// 因此這裡刻意不跟著 CommandPointsBase 修復「+5」,改成加 5 反而會讓 uncovered 從 2 變 -3
+// (夾到 0),整個測試失去驗證「超支路徑」的意義。真正會受 CommandPointsBase 影響的整合測試
+// 在 internal/shell/command_points_test.go(TestEndTurnCommandOverflowPenalty)與
+// internal/shell/events_test.go(bcCrashFloor300Turns),已個別更新。
 func TestRunEmpireTurnCommandOverflow(t *testing.T) {
 	colonies := []ColonyState{
 		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,

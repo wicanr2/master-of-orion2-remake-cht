@@ -1515,12 +1515,18 @@ func (s *GameSession) totalBuildingMaintenance() int {
 	return total
 }
 
-// totalCommandPointsSupply 加總玩家目前所有殖民地「已建成」軌道衛星(星基/戰鬥站/星辰要塞)
-// 提供的指揮評等(Command Rating)供給,逐殖民地用 gamedata.CommandPointsFromBuildings 查表
-// (三者取代關係已在該函式內處理,不會重複疊加)。與 totalBuildingMaintenance 同款模式:
-// s.ColonyBuildings 為 nil 或某殖民地尚無記錄時,該殖民地視為 0。
+// totalCommandPointsSupply 加總玩家目前的指揮評等(Command Rating)供給:帝國基礎值
+// gamedata.CommandPointsBase(每帝國加一次,非逐殖民地——見該常數註解的 oracle 依據與
+// flat-vs-per-colony 不確定性 TODO)加上所有殖民地「已建成」軌道衛星(星基/戰鬥站/星辰要塞)
+// 供給的總和(逐殖民地用 gamedata.CommandPointsFromBuildings 查表,三者取代關係已在該函式內
+// 處理,不會重複疊加)。與 totalBuildingMaintenance 同款模式:s.ColonyBuildings 為 nil 或
+// 某殖民地尚無記錄時,該殖民地視為 0。
+//
+// 2026-07-11 修正:先前這裡只加總建築供給,漏了基礎值,導致開局供給只有星基 1 點 < 需求 3 點
+// (殖民船+2偵察艦),每回合 -20 BC 死亡螺旋(SAVE10.GAM oracle 反推證實基礎應為 5,見
+// gamedata.CommandPointsBase 註解)。修正後開局供給 = 5(基礎)+1(星基)= 6 ≥ 3,不再超支。
 func (s *GameSession) totalCommandPointsSupply() int {
-	total := 0
+	total := gamedata.CommandPointsBase
 	for _, built := range s.ColonyBuildings {
 		total += gamedata.CommandPointsFromBuildings(built)
 	}
@@ -1860,11 +1866,15 @@ func playerHomeworldColony() engine.ColonyState {
 func newHomeworldPlayerState(researchTopic gamedata.ResearchTopic) engine.PlayerState {
 	return engine.PlayerState{
 		BC: 100, TaxRate: 40, Maintenance: gamedata.BuiltMaintenanceBC(homeworldBuildings()), ResearchTopic: researchTopic,
-		// CommandPointsSupply 開局即由母星星基(homeworldBuildings 的"星基":true)貢獻 1 點
-		// (見 gamedata.CommandPointsFromBuildings)。UsedCommandPoints 這裡刻意不填(留 0):
-		// 本函式同時供玩家與 AI 共用,AI 沒有逐艦清單(見 UsedCommandPoints 欄位註解),玩家的
-		// 初始值改由 NewDemoSession 在 Ships 欄位就位後另外設定,避免在此對 AI 也套用玩家專屬的
-		// 開局艦隊假設。
+		// CommandPointsSupply 這裡刻意只填母星星基(homeworldBuildings 的"星基":true)貢獻的
+		// 1 點建築供給,不含 gamedata.CommandPointsBase(帝國基礎值 5)——這只是「第一次 EndTurn
+		// 前」的暫時值,玩家這欄會在 GameSession.EndTurn 用 totalCommandPointsSupply()(基礎值+
+		// 建築供給)整個重算覆蓋掉(見該函式)。AI 這欄則從未被重算(AI 沒有逐殖民地/逐艦追蹤
+		// 機制),但 AI 的 UsedCommandPoints 也刻意留 0(見下方),uncovered 永遠夾在 0,是否含
+		// 基礎值不影響 AI 是否超支,故這裡不必為 AI 補上——避免誤導未來讀者以為 AI 有真的算過。
+		// UsedCommandPoints 這裡刻意不填(留 0):本函式同時供玩家與 AI 共用,AI 沒有逐艦清單
+		// (見 UsedCommandPoints 欄位註解),玩家的初始值改由 NewDemoSession 在 Ships 欄位就位後
+		// 另外設定,避免在此對 AI 也套用玩家專屬的開局艦隊假設。
 		CommandPointsSupply: gamedata.CommandPointsFromBuildings(homeworldBuildings()),
 		CompletedTopics: map[gamedata.ResearchTopic]bool{
 			gamedata.TOPIC_STARTING_TECH: true,

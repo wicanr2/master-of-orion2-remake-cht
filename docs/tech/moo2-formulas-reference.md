@@ -265,13 +265,25 @@ with the Operations skill also add to the rating.」)——本專案目前只建
 `gamedata.CommandPointsFromBuildings(built map[string]bool) int`(`buildings.go`,單一殖民地);
 跨殖民地加總見 `shell.GameSession.totalCommandPointsSupply()`(`session.go`)。
 
-**殖民地基礎供給 / 政府型態**:手冊全文(GAME_MANUAL.pdf + MANUAL_150.html)未提及殖民地本身
-(不含建築)有任何基礎指揮評等——不加,非漏算。政府型態方面,手冊 p.60「Imperium」段落確實有
-明文數字:「Your command rating is increased by 50%.」(Imperium 是 Dictatorship 的進階型態),
-但本專案目前政府型態全域固定為 `gamedata.MoraleGovDictatorship`(見 `session.go` 的
-`GameSession.Government` 欄位,尚無政府升級/選擇機制),沒有 Imperium 這個狀態可觸發,故
-**TODO 未實作**——待政府進階系統補上後,再對 Imperium 套用此 +50%(其餘政府型態手冊未提供
-任何指揮評等加成數字,維持 0)。
+**帝國基礎供給(2026-07-11 修正,取代先前「不加」的錯誤結論)**:手冊全文(GAME_MANUAL.pdf +
+MANUAL_150.html)確實沒有直接寫出「基礎指揮評等」這幾個字的段落,先前因此判定「不加,非漏算」
+——但這個判定只查了手冊文字,沒有核對真實存檔行為,結果讓 remake 開局供給只剩星基 1 點,3 艘
+開局艦艇(需求 3 點)缺口 2 點,每回合 -20 BC 死亡螺旋(regression,詳見
+`docs/HONEST-STATUS.md` 指揮評等一節)。改用 **oracle 反推**(rulebook 62/64:已知輸出反推
+未知輸入)修正:真實存檔 `SAVE10.GAM`(`/home/anr2/moo2-private-build/gamedata/mastori2/SAVE10.GAM`)
+有 5 個活躍玩家(不同種族)各持 1 殖民地,`CommandPoints` 欄位讀到 6(其中 1 名玩家=8);比對
+各自已建成的軌道衛星,讀到 6 的玩家只建星基(+1,6-1=5),讀到 8 的玩家建了星辰要塞(+3,
+8-3=5)——5 個不同種族玩家一致反推出基礎值 **5**,與種族/政府無關。已訂為
+`gamedata.CommandPointsBase = 5`(`income.go`),`shell.GameSession.totalCommandPointsSupply()`
+在逐殖民地建築供給之外,每帝國(非逐殖民地)加這一次。**已知限制(TODO)**:SAVE10.GAM 5 名
+玩家都只有 1 殖民地,無法從單一存檔分辨這 5 點是「每帝國一次性」還是「每殖民地各自 +5」(兩種
+假設在單殖民地情境下算出的總供給相同),暫採 per-empire flat,待多殖民地存檔驗證。
+
+**政府型態**:手冊 p.60「Imperium」段落確實有明文數字:「Your command rating is increased by
+50%.」(Imperium 是 Dictatorship 的進階型態),但本專案目前政府型態全域固定為
+`gamedata.MoraleGovDictatorship`(見 `session.go` 的 `GameSession.Government` 欄位,尚無政府
+升級/選擇機制),沒有 Imperium 這個狀態可觸發,故**TODO 未實作**——待政府進階系統補上後,再對
+Imperium 套用此 +50%(其餘政府型態手冊未提供任何指揮評等加成數字,維持 0)。
 
 **通訊科技**(Tachyon/Subspace/Hyperspace Communications,均為 Achievement 型應用):手冊
 p.101「Tachyon Communications... add 1 Command Rating point for each orbital base.」、p.104-105

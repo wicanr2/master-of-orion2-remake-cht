@@ -63,6 +63,28 @@ const (
 	// that is not covered, 10 BCs come out of your income every turn")。
 	IncomeCommandOverflowCostPerPoint = 10
 
+	// CommandPointsBase 帝國「基礎」指揮評等供給——手冊 p.169 只寫軌道衛星(星基/戰鬥站/
+	// 星辰要塞)的加成數字,沒有明講不建任何軌道衛星時的評等下限是不是 0,先前 remake 誤植為 0
+	// (只算建築供給),導致開局殖民船+2 偵察艦=3 點需求、供給只有母星星基 1 點,缺口 2 點
+	// 每回合 -20 BC 死亡螺旋(2026-07-11 回合探針實測:BC 第 7 回合轉負、第 21 回合 -255,
+	// 人口第 20 回合起餓死)。
+	//
+	// 這個常數是用真實存檔反推(oracle,見 rulebook 62/64「靜態溯源+已知輸出反推」)校正回來的:
+	// /home/anr2/moo2-private-build/gamedata/mastori2/SAVE10.GAM 有 5 個活躍玩家(不同種族)
+	// 各持 1 個殖民地,CommandPoints 欄位分別讀到 6(其中 1 名玩家=8)、UsedCommandPoints=3。
+	// 逐一比對該玩家殖民地已建成的軌道衛星:
+	//   - CommandPoints=6 的玩家:殖民地只建了 BUILDING_STAR_BASE(存檔 Buildings 索引 40,
+	//     星基,+1)。6 - 1 = 5。
+	//   - CommandPoints=8 的玩家:殖民地建了星辰要塞(索引 41,+3)。8 - 3 = 5。
+	// 5 個不同種族玩家(含以上兩名)反推出的基礎值一致都是 5,與種族/政府無關,故訂為通用常數。
+	//
+	// 已知限制(TODO,誠實標記不假裝確定):SAVE10.GAM 裡每個玩家都只有 1 個殖民地,無法從單一
+	// 存檔分辨這 5 點是「每帝國(per-empire)一次性」還是「每殖民地(per-colony)各自 +5」——
+	// 兩種假設在單殖民地情境下算出來的總供給完全相同,無法用這份存檔區分。本專案暫採
+	// per-empire flat(較保守、較貼近手冊敘述「你的」指揮評等而非「每個殖民地」的指揮評等),
+	// 待找到多殖民地存檔驗證後再確認或修正。
+	CommandPointsBase = 5
+
 	// IncomeFreighterMaintenanceHalfBCNumerator / ...Denominator 每艘「使用中」的運輸艦
 	// (Freighter)每回合維護費 0.5 BC(GAME_MANUAL.pdf p.169:"each freighter that is in use costs
 	// 1/2 BC per turn for maintenance")。未使用中的運輸艦不計費(手冊同段:閒置的運輸艦可以直接
