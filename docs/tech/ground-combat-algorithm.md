@@ -2,7 +2,7 @@
 
 > 目的:記錄 MOO2 地面戰(入侵殖民地)的**解算演算法**,供實作 `ResolveGroundBattle` 用。
 > 日期:2026-07-10。方法:reference-before-reverse——手冊(GAME_MANUAL.pdf p.164)只給加成表與定性描述,**無解算式**;openorion2 只有 ground 的 tech-group/trait 引用(渲染殼,無解算)。故解算式取自**社群逆向**。
-> ⚠ **鐵律**:社群公式的傷亡判定步驟記述較鬆散(運算子優先序/基礎值刻度有歧義),**尚未當精確真值**;實作前須對原版實測校準這些歧義點。已忠實的部分(加成表)在 `internal/gamedata/ground.go`。
+> ✅ **2026-07-10 定案**:社群公式歧義**不採用**;依使用者 directive 改用**一代(1oom)`game_ground_kill` 的 d100+force 解算**(明確、無歧義、不需 DOSBox 校準)+ 二代手冊加成表。詳見下方「解算式定案」。加成表(手冊驗證)在 `internal/gamedata/ground.go`。
 
 ## 已忠實(gamedata,手冊驗證)
 
@@ -10,7 +10,32 @@
 - hits-to-kill:`GroundMarineHitsToKill`(基礎 + High-G + Powered Armor)、`GroundTankHitsToKill`。
 - 戰力加成:`GroundArmorTechBonus`(Tritanium+10…Xentronium+30)、`GroundEquipmentTechBonus`(Powered Armor/Anti-Grav/Personal Shield)、`GroundRaceCombatBonus`(Bulrathi+10/Gnolam-10)、Low-G 懲罰、穴居防守+10、Battleoid+10、步槍(Laser/Fusion Rifle)。
 
-## 解算式(社群逆向,Steam 討論串)
+## ★ 解算式定案(2026-07-10,依 directive 用一代公式補歧義)
+
+> 使用者定案:手冊無 MOO2 解算式 → **沿用一代(1oom)公式**,不再等 DOSBox oracle。
+> 一代來源:`~/master-of-orion/1oom/src/game/game_ground.c`(`game_ground_kill`,GPL 重製,逐位元組對齊原版)。
+
+**採納的解算(1oom `game_ground_kill`,簡潔且無歧義)**:
+```
+每回合(game_ground_kill):
+  v1 = rnd_1_n(100) + 攻方 force      // d100 + 戰力
+  v2 = rnd_1_n(100) + 守方 force
+  若 v1 <= v2 → 攻方損失一單位(平手歸守方)
+  否則        → 守方損失一單位
+反覆(game_turn_ground 的 while)至一方單位歸零;歸零方落敗。
+```
+
+**force 計算**:採 **MOO2 加成表**(已在 `internal/gamedata/ground.go`,手冊驗證),非一代的 tier×5——即「一代解算結構 + 二代數值表」:
+- force = Σ(裝甲科技加成 `GroundArmorTechBonus` + 裝備 `GroundEquipmentTechBonus` + 種族 `GroundRaceCombatBonus` + 步槍 + Battleoid `GroundBattleoidCombatBonus`) − Low-G 懲罰;
+- 守方另加 Subterranean 防禦 `GroundSubterraneanBonus(true)`(+10)。(一代守方 +5 之對應;MOO2 用穴居 +10 有手冊據,故採 MOO2。)
+
+**hits-to-kill 疊加(MOO2 手冊 p.129,一代無)**:一代「損失一單位」= 直接 −1 pop;MOO2 單位需被命中 `GroundMarineHitsToKill`/`GroundTankHitsToKill`/`GroundBattleoidHitsToKill` 次才移除。故本專案:每回合敗方「最前單位」受 1 hit,累積達其 hits-to-kill 才移除(pop −1)。此為二代手冊表 + 一代解算的忠實合成。
+
+**∴ 歧義全消解**:先前社群式的 x₁/x₂/x₃/x₄ 與傷亡運算子優先序歧義**不採用**;改用一代明確的 d100+force 對決。此定案不需原版實測即可實作(directive)。實作 `ResolveGroundBattle` 依此。
+
+---
+
+## (存查)社群逆向式(不採用,保留追溯)
 
 **單位基礎戰力(combat rating)**:
 - 步兵 = 0.5 + 步槍 + 艦裝甲科技 + 特殊裝備 + 種族
@@ -37,11 +62,11 @@
 3. **傷亡式**中 `vᵢ × 對方總值/對方擲和` 的確切定義(vᵢ 值域、擲和是 r 和還是 v 和)社群描述含糊。
 4. hits-to-kill 如何與「單位陣亡判定」結合(一次判定=一次 hit?)未明。
 
-## 實作計畫(下輪,對原版校準後)
+## 實作計畫(定案後,不需 oracle)
 
-1. 建 `ResolveGroundBattle(atk, def GroundForce, rng)`:先用上式**結構**(每單位 1~1.5、總值對決、armor 攻+100/守+50、反覆至一方歸零)實作,歧義點取一種合理解讀並**標為待校準**。
+1. 建 `ResolveGroundBattle(atk, def GroundForce, rng)`:用**一代解算**(每回合雙方 d100+force,低者敗損 1 hit;平手歸守方)+ **二代 hits-to-kill**(單位累積達 hits-to-kill 才 −1 pop)+ **二代 force 加成表**(gamedata/ground.go)。反覆至一方歸零。可寫確定性測試(固定 seed 驗勝負趨勢:force 高方勝率高、雙倍兵力優勢)。
 2. 建入侵流程:運輸艦載陸戰隊 → 抵敵殖民地 → 觸發地面戰 → 勝則轉移殖民地(+同化/滅絕選擇,手冊 p.164)。
-3. **校準**:用原版(DOSBox)跑數場已知兵力/科技的入侵,記錄勝負與傷亡,回頭調歧義點,直到趨勢吻合(這步需 oracle:原版實測)。
+3. 驗證:確定性單測(seed 化)驗「force 差 → 勝率」「兵力比 → 勝率」符合社群經驗法則(每差 10-20 點需雙倍兵力);**不需原版實測**(一代公式即定案)。
 
 ## 來源
 
