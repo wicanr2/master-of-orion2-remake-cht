@@ -29,6 +29,11 @@
   (`shieldReduceByName`,依護盾階 0/2/4/6/8/10),兩路徑套用,`DamageAfterShield` 護盾機制真正生效。
 - **仍待**:①球狀傷害/飛彈/戰機/地面戰未接;②護盾減傷精確 per-class 真值待逆向(現為階梯推導);
   ③per-ship 攻防/傷害為 remake 由艦艇設計推導(精確值需艦體空間格+元件佔格+軍官技能模型)。
+
+### 1a. 地面戰/飛彈:需「演算法逆向」而非「接現成公式」(2026-07-10 盤點)
+- **地面戰**:gamedata `ground.go` 有完整**加成表**(裝甲/裝備/種族/Low-G/穴居防守 hits-to-kill,手冊 p.15-129 逐條驗證),但**手冊只描述加成、未給解算演算法**(戰力→命中機率的公式)——手冊 6916 段只說「advanced tech gives a better chance of winning」。故忠實 `ResolveGroundBattle` 需先**逆向遊戲內部解算迴圈**(或社群 wiki 反推),不能憑加成表自編機率公式。且需先建入侵流程(運輸艦載陸戰隊、抵敵殖民地觸發)。
+- **飛彈**:gamedata `missile.go` 有 jam/AMR 命中/速度,但飛彈**飛行回合、點防攔截互動**的完整解算同樣超出手冊文字,需逆向。
+- **結論**:這兩者與「球狀傷害/艦艇空間格」同屬**需逆向演算法的新子系統**,不是本輪「接 gamedata 真公式」那種可安全自驅的工作。硬編自製解算=違反不臆造鐵律,故不做;列為需 RE(動態 dump/反編/社群反推)的獨立任務。beam 戰鬥(命中/傷害/過盾/過甲)因手冊有 Classic Chance to Hit + Damage 公式且已轉寫進 gamedata,才能安全接線(已完成)。
 - gamedata **已備妥完整真公式**(未接):
   - 命中:`CombatHitThreshold`、`CombatClassicToHit`、`CombatAlternativeToHit`、射程 `CombatRangeLevel*`/`CombatRangeLevelPenalty`。
   - 傷害:`DamageForHit`(依命中結果算傷)、`DamageApplyDissipation`、`DamageMountAdjustedValue`。
