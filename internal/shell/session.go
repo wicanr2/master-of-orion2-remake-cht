@@ -742,12 +742,27 @@ func (s *GameSession) applyBuildingEffect(i int, name string) {
 		// Rich+15/Ultra Rich+20)。TODO:engine.ColonyState 目前不追蹤逐殖民地的礦產豐度分級
 		// (只在建立殖民地當下把豐度烘進 IndustryPerWorker 靜態費率,事後拿不回原始豐度分類),
 		// 故無法忠實建模,暫不套用任何固定值,僅記錄為已建——待補礦產豐度欄位後回填。
-		// 其餘 24 項(飛彈基地、裝甲營房、戰機基地、地面砲台、再生反應爐、食物複製機、太空學院、
-		// 異族管理中心、全息模擬艙、自動實驗室、歡樂穹頂、行星輻射/通量/屏障護盾、曲速力場
-		// 干擾器、戰鬥站、星辰要塞、阿提米絲系統網、次元傳送門)手冊效果不對應 engine.ColonyState
-		// 既有欄位(陸戰隊生成/艦艇駐防/百分比士氣/軌道防禦等系統尚未建),暫不建模——僅由
-		// advanceBuilds 記入 s.ColonyBuildings 為「已建」,顯示於畫面,不影響數值結算。
-		// TODO:待對應遊戲系統(陸戰隊/艦隊駐防/士氣/軌道防禦)建好後回頭補建模。
+		//
+		// 2026-07-11 已接線(移出下方 no-op 清單):全息模擬艙、歡樂穹頂、異族管理中心、裝甲營房。
+		// 本 case 語句不直接改 MoralePercent——advanceBuilds 完工當下另外呼叫
+		// s.recalcColonyMorale(i),該函式(colonyMoralePercent)讀 s.ColonyBuildings[i] 判斷這些
+		// 建築是否存在,依手冊常數加總出淨士氣百分點:
+		//   - 全息模擬艙 +20%、歡樂穹頂 +30%:確實會改變 MoralePercent,效果可見。
+		//   - 裝甲營房:原本純 no-op,現貢獻 hasBarracks(與海軍陸戰隊營同等地位,解除政府
+		//     「無 Barracks -20%」懲罰);裝甲營本身「產生裝甲營駐軍」的效果仍未建模(TODO,
+		//     海軍陸戰隊營的駐軍生成系統見 ground_invasion.go,裝甲營房尚無對應版本)。
+		//   - 異族管理中心:士氣計算路徑已預留(colonyMoralePercent 讀取此建築名),但因 remake
+		//     無多種族人口追蹤,目前一律不套用多種族懲罰,故此建築在士氣上的效果暫不可見
+		//     (詳見 colonyMoralePercent 註解)——不是假裝已完整建模,是誠實標記「架構已備、
+		//     資料尚未跟上」。
+		// 海軍陸戰隊營本來就有獨立的陸戰隊召兵系統(ground_invasion.go),現在額外貢獻
+		// hasBarracks,兩個系統各自獨立生效,互不影響。
+		//
+		// 其餘 20 項(飛彈基地、戰機基地、地面砲台、再生反應爐、食物複製機、太空學院、自動實驗室、
+		// 行星輻射/通量/屏障護盾、曲速力場干擾器、戰鬥站、星辰要塞、阿提米絲系統網、次元傳送門)
+		// 手冊效果不對應 engine.ColonyState 既有欄位(艦艇駐防/軌道防禦等系統尚未建),暫不建模
+		// ——僅由 advanceBuilds 記入 s.ColonyBuildings 為「已建」,顯示於畫面,不影響數值結算。
+		// TODO:待對應遊戲系統(艦隊駐防/軌道防禦)建好後回頭補建模。
 	}
 }
 
@@ -780,6 +795,7 @@ func (s *GameSession) advanceBuilds() {
 				if !s.ColonyBuildings[i][b.Name] {
 					s.ColonyBuildings[i][b.Name] = true
 					s.applyBuildingEffect(i, b.Name) // 首次完工才套用長期效果
+					s.recalcColonyMorale(i)          // 士氣建築(全息模擬艙/歡樂穹頂)或 Barracks 完工需重算士氣
 				}
 			}
 			s.LastBuilt = append(s.LastBuilt, fmt.Sprintf("殖民地 %d 完成建造:%s", i+1, b.Name))
@@ -934,17 +950,96 @@ var FlagColors = []struct {
 // Governments 是自訂種族可選的政府型態(順序對應 customrace 政府型態循環選項)。
 var Governments = []string{"獨裁", "封建", "統一", "民主"}
 
-// ApplyGovernment 套用政府型態對「本 remake 已建模資源」的效果(手冊 p.20–23 明列百分比):
+// moraleGovByIndex 把 Governments(自訂種族政府循環選項,索引 0-3)映射到
+// gamedata.MoraleGovernmentType(士氣查表用的政府 enum,見 internal/gamedata/morale.go)。
+//
+// MOO2 原版政府其實分基礎型/進階型兩層(Feudalism→Confederation、Dictatorship→Imperium、
+// Democracy→Federation、Unification→Galactic Unification),但 Governments 這個 remake 選單
+// 只給四個基礎型,故一律映射到對應基礎型,不區分進階版(進階政府的差異——如 Imperium 額外
+// +20% 士氣、Command Rating+50%——remake 尚未實作「政府升級」機制,見
+// docs/tech/custom-race-picks.md 附錄)。
+var moraleGovByIndex = []gamedata.MoraleGovernmentType{
+	gamedata.MoraleGovDictatorship, // 0 獨裁
+	gamedata.MoraleGovFeudalism,    // 1 封建
+	gamedata.MoraleGovUnification,  // 2 統一
+	gamedata.MoraleGovDemocracy,    // 3 民主
+}
+
+// colonyMoralePercent 依政府基礎值 + 該殖民地已建士氣相關建築,算出淨士氣百分點
+// (engine.ColonyState.MoralePercent 的來源;數值一律用 gamedata/morale.go 手冊常數,不自行
+// 杜撰)。buildings 是該殖民地的 ColonyBuildings 項目(nil 視為尚無任何建築,map 讀取安全)。
+//
+// 已套用的來源:
+//  1. gamedata.MoraleGovernmentBase(gov, hasBarracks)——hasBarracks 依手冊 p.76-79:
+//     海軍陸戰隊營(Marine Barracks)或裝甲營房(Armor Barracks)其一即可解除
+//     封建/獨裁/統一政府「無 Barracks -20%」的懲罰。
+//  2. 全息模擬艙(Holo Simulator)已建 → +gamedata.MoraleHoloSimulatorBonus(+20,p.95-96)。
+//  3. 歡樂穹頂(Pleasure Dome)已建 → +gamedata.MoralePleasureDomeBonus(+30,p.97-98)。
+//
+// 誠實列出「未套用」的手冊來源(不假裝精確,詳見呼叫端 ApplyGovernment/advanceBuilds 註解):
+//   - Virtual Reality Network(全帝國 +20%,p.97-98):手冊定性為「成就」而非一般建築,不在
+//     gamedata.Buildings 清單、remake 也無「成就」追蹤系統,無從得知是否擁有,故不套用。
+//   - 多種族懲罰 gamedata.MoraleMultiRacialPenalty:remake 的 ColonyState 沒有「殖民地人口是否
+//     含未同化外族血統」這個狀態(Population/Farmers/Workers/Scientists 只是職務數字,不分血統
+//     來源),故無法判斷是否該套用,保守視為「單一種族」一律不套用——異族管理中心已建/未建在
+//     此近似下暫無可見差異(與行星重力產生器在 demo session 暫不可見同一類「架構已備、資料
+//     尚未跟上」情形,見 colony-buildings.md)。
+//   - 首都淪陷懲罰 gamedata.MoraleCapitalCapturedPenalty:remake 沒有「首都被攻陷」這個狀態,
+//     TODO 待地面入侵系統擴充到「可攻佔玩家母星」後補上,現在不加。
+func colonyMoralePercent(gov gamedata.MoraleGovernmentType, buildings map[string]bool) int {
+	hasBarracks := buildings["海軍陸戰隊營"] || buildings["裝甲營房"]
+	pct := gamedata.MoraleGovernmentBase(gov, hasBarracks)
+	if buildings["全息模擬艙"] {
+		pct += gamedata.MoraleHoloSimulatorBonus
+	}
+	if buildings["歡樂穹頂"] {
+		pct += gamedata.MoralePleasureDomeBonus
+	}
+	return pct
+}
+
+// buildingsFor 回傳殖民地 i 已完工建築集合。s.ColonyBuildings 是延遲配置的(見 advanceBuilds
+// 註解),索引越界或該殖民地尚無記錄一律視為「尚無建築」(nil map 讀取回傳零值,不 panic)。
+func (s *GameSession) buildingsFor(i int) map[string]bool {
+	if i < 0 || i >= len(s.ColonyBuildings) {
+		return nil
+	}
+	return s.ColonyBuildings[i]
+}
+
+// recalcColonyMorale 依目前政府(s.Government)+ 殖民地 i 已建士氣建築,重算
+// PlayerColonies[i].MoralePercent(見 colonyMoralePercent)。呼叫時機:政府變更
+// (ApplyGovernment)、建築完工(advanceBuilds)。
+func (s *GameSession) recalcColonyMorale(i int) {
+	if i < 0 || i >= len(s.PlayerColonies) {
+		return
+	}
+	s.PlayerColonies[i].MoralePercent = colonyMoralePercent(s.Government, s.buildingsFor(i))
+}
+
+// recalcAllColonyMorale 對所有玩家殖民地重算士氣(見 recalcColonyMorale)。
+func (s *GameSession) recalcAllColonyMorale() {
+	for i := range s.PlayerColonies {
+		s.recalcColonyMorale(i)
+	}
+}
+
+// ApplyGovernment 套用政府型態:①「本 remake 已建模資源」的乘數效果(手冊 p.20–23 明列百分比)
+// ②(2026-07-11 接線)記錄選定政府並重算所有殖民地士氣(colonyMoralePercent)。
 //   - 封建(1):研究減半。
 //   - 統一(2):食物 +50%、產能 +50%。
 //   - 民主(3):研究 +50%。
 //   - 獨裁(0):基準,無資源乘數。
 //
-// ⚠ 誠實標註:政府在原版還有士氣、征服同化回合、間諜/防禦加成、造艦成本、首都陷落效應等,
-// 這些系統本 remake 尚未建模,故**未模擬**(不自編近似)。詳見 docs/tech/custom-race-picks.md
-// 政府效果附錄與缺口說明。gov 索引對應 Governments。
+// ⚠ 誠實標註:政府在原版還有征服同化回合、間諜/防禦加成、造艦成本等系統本 remake 尚未建模,
+// 故**未模擬**(不自編近似)——但士氣已從「未建模」升級為「已建模」(見 colonyMoralePercent),
+// 上面這條舊聲明已不再涵蓋士氣。詳見 docs/tech/custom-race-picks.md 政府效果附錄與缺口說明。
+// gov 索引對應 Governments。
 func (s *GameSession) ApplyGovernment(gov int) {
 	pct150 := func(v int) int { return (v*3 + 1) / 2 } // ×1.5 四捨五入
+	if gov >= 0 && gov < len(moraleGovByIndex) {
+		s.Government = moraleGovByIndex[gov]
+	}
 	for i := range s.PlayerColonies {
 		switch gov {
 		case 1: // 封建:研究減半
@@ -956,6 +1051,7 @@ func (s *GameSession) ApplyGovernment(gov int) {
 			s.PlayerColonies[i].ResearchPerScientist = pct150(s.PlayerColonies[i].ResearchPerScientist)
 		}
 	}
+	s.recalcAllColonyMorale()
 }
 
 // GalaxySizes 是星系大小選項(名稱 + 星數),對應 NEW GAME 的 GALAXY SIZE。
@@ -1041,6 +1137,16 @@ type GameSession struct {
 	FlagColor           int               // 玩家旗幟顏色索引(shell.FlagColors)
 	RaceCombatPct       int               // 種族戰鬥戰力百分點加成(供戰鬥使用)
 	raceGrowthPct       int               // 種族人口成長百分點加成(供 advancePopulation)
+
+	// Government 是玩家目前政府型態(2026-07-11 接線,供 colonyMoralePercent 士氣計算用)。
+	// 由 ApplyGovernment 設定;新遊戲若從未呼叫 ApplyGovernment,預設見 NewDemoSession
+	// (獨裁/Dictatorship,對應自訂種族 0 點基準)。
+	//
+	// Go 零值陷阱(比照 ColonyState.PlanetGravity 同款註解):gamedata.MoraleGovernmentType 的
+	// 零值是 MoraleGovFeudalism(iota 從 0 開始,見 morale.go enum 順序),不是想要的預設政府
+	// Dictatorship——任何建構 GameSession 卻沒有明確設定本欄位的呼叫端,會被誤判為封建政府,
+	// 必須明確賦值,不能依賴零值。
+	Government gamedata.MoraleGovernmentType
 }
 
 // 安塔蘭人入侵參數:MOO2 的週期性終局威脅。前期寬限,之後每隔數回合一次突襲,強度隨次數升級。
@@ -1476,13 +1582,23 @@ func (s *GameSession) advanceResearch() {
 // 見該函式)②engine.RunEmpireTurn 新接上的 gamedata.IncomeFoodSurplusRevenue(食物盈餘→BC,
 // 見 empire.go),讓殖民地在食物盈餘轉正的回合能多存一點 BC 緩衝,吸收下次事件衝擊。
 // 詳見 docs/tech/colony-economy-maintenance.md 本輪最新記錄(含 300 回合實測數字)。
+//
+// 2026-07-11 士氣接線訂正:MoralePercent 先前硬編 +10(無手冊依據的 remake placeholder),
+// 現改用 colonyMoralePercent(獨裁/Dictatorship 基準 + homeworldBuildings() 已建建築)算出忠實值。
+// **這個值是 0,不是原本想像的 +10**:獨裁政府「無 Barracks -20%」(手冊 p.21-22/p.165-167)在
+// homeworldBuildings() 已含海軍陸戰隊營(Marine Barracks)時被解除、淨額歸零,且母星起始未建
+// 全息模擬艙/歡樂穹頂,故無額外正面加成——0% 士氣即無 bonus/無 penalty 的中性起點,是手冊算出來
+// 的忠實值,不是「退步」。這會讓新遊戲第一回合的食物/工業/研究產出比先前的 demo(+10% 灌水)少
+// 一成,玩家會感覺到差異,回報/HONEST-STATUS.md 需誠實標明。政府基準選獨裁(索引 0)理由見
+// GameSession.Government 欄位註解(自訂種族 0 點基準)。
 func playerHomeworldColony() engine.ColonyState {
 	return engine.ColonyState{
 		Population: 8, PopMax: 20, Farmers: 4, Workers: 3, Scientists: 1,
 		FoodPerFarmer:        gamedata.ClimateFoodPerFarmer(gamedata.TERRAN),
 		IndustryPerWorker:    gamedata.MineralIndustryPerWorker(gamedata.ABUNDANT),
 		ResearchPerScientist: 30,
-		PlanetSize:           gamedata.LARGE_PLANET, MoralePercent: 10,
+		PlanetSize:           gamedata.LARGE_PLANET,
+		MoralePercent:        colonyMoralePercent(gamedata.MoraleGovDictatorship, homeworldBuildings()),
 		// PlanetGravity 母星固定 Normal-G(手冊/homeworld-init.md 慣例基準,與 Terran/Abundant
 		// 同一組母星設定),無重力懲罰。engine.ColonyState.PlanetGravity 的 Go 零值恰好是
 		// gamedata.LOW_G(ordinal 0),必須明確賦值,不能依賴零值(見該欄位註解)。
@@ -1554,6 +1670,7 @@ func NewDemoSession() *GameSession {
 		Player:          newHomeworldPlayerState(gamedata.TOPIC_ADVANCED_CONSTRUCTION),
 		PlayerColonies:  []engine.ColonyState{playerHomeworldColony()},
 		ColonyBuildings: []map[string]bool{homeworldBuildings()},
+		Government:      gamedata.MoraleGovDictatorship, // 預設獨裁(自訂種族 0 點基準),見欄位註解的零值陷阱說明
 		AIPlayers: []AIOpponent{{
 			Name:        "AI (賽隆人)",
 			Player:      newHomeworldPlayerState(1),

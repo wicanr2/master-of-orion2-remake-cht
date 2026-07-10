@@ -7,6 +7,7 @@ import (
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
 // saveFormatVersion 標記存檔格式版本(未來欄位變動時據以相容/拒絕)。
@@ -53,6 +54,10 @@ type sessionSnapshot struct {
 	RaceCombatPct  int                  `json:"raceCombatPct"`
 	RaceGrowthPct  int                  `json:"raceGrowthPct"`
 
+	// Government 是玩家政府型態(2026-07-11 士氣接線;見 GameSession.Government 欄位註解)。
+	// 底層是 gamedata.MoraleGovernmentType(int-based enum),json 直接序列化成數字。
+	Government gamedata.MoraleGovernmentType `json:"government"`
+
 	// --- 地面戰入侵(見 ground_invasion.go) ---
 	FleetMarines        int   `json:"fleetMarines"`
 	PlayerColonyMarines []int `json:"playerColonyMarines"`
@@ -82,7 +87,7 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		AntaresRaids: s.AntaresRaids, RaceIndex: s.RaceIndex,
 		RaceCombatPct: s.RaceCombatPct, RaceGrowthPct: s.raceGrowthPct,
 		FleetMarines: s.FleetMarines, PlayerColonyMarines: s.PlayerColonyMarines,
-		MarineBarracksAge: s.MarineBarracksAge,
+		MarineBarracksAge: s.MarineBarracksAge, Government: s.Government,
 	}
 }
 
@@ -108,7 +113,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 		EventSeed: snap.EventSeed, AntaresRaids: snap.AntaresRaids, RaceIndex: snap.RaceIndex,
 		RaceCombatPct: snap.RaceCombatPct, raceGrowthPct: snap.RaceGrowthPct,
 		FleetMarines: snap.FleetMarines, PlayerColonyMarines: snap.PlayerColonyMarines,
-		MarineBarracksAge: snap.MarineBarracksAge,
+		MarineBarracksAge: snap.MarineBarracksAge, Government: snap.Government,
 	}
 }
 

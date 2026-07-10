@@ -137,9 +137,18 @@
 
 **remake 實作範圍(2026-07-10,`shell.ApplyGovernment`)**:僅實作「已建模資源」的乘數——
 封建研究×½、統一食物/產能×1.5、民主研究×1.5(數值取自上表)。**其餘效果未模擬**(誠實標註,
-不自編):士氣、征服同化回合、間諜/防禦加成、造艦成本、首都陷落效應——因 remake 尚未建立
-這些系統。進階型態(Confederation/Imperium/Federation/Galactic Unification)未納入(自訂畫面
-只提供四種基礎政府)。
+不自編):征服同化回合、間諜/防禦加成、造艦成本、首都陷落效應——因 remake 尚未建立這些系統。
+進階型態(Confederation/Imperium/Federation/Galactic Unification)未納入(自訂畫面只提供四種
+基礎政府;`moraleGovByIndex` 一律映射到對應基礎型)。
+
+**2026-07-11 追加:士氣(Morale)已接線**,不再是上面清單裡的「未模擬」項——`GameSession.Government`
++ `shell.colonyMoralePercent` 依政府基礎值(封建/獨裁/統一無 Barracks -20%,民主 0,對照本表
+`govt_bonus` 交叉驗證數字)+ 已建士氣建築(全息模擬艙 +20%、歡樂穹頂 +30%)算出
+`ColonyState.MoralePercent`,由 `RunColonyTurn` 套用到食物/工業/研究產出。仍未模擬(誠實列出):
+Imperium 額外 +20%/Confederation-Feudal 差異(進階政府未納入,見上段)、首都陷落 Morale 懲罰
+(remake 無「首都被攻陷」狀態)、多種族懲罰(remake 不追蹤殖民地是否含未同化外族人口)、
+Virtual Reality Network(手冊定性為「成就」而非建築,remake 無成就追蹤系統)。詳見
+`internal/gamedata/morale.go`、`docs/tech/colony-buildings.md` §6.1 士氣列。
 
 ## 附錄:選用 mod「150 improved」(150i)的另一組點數(僅供參考,非預設值,勿直接採用)
 
