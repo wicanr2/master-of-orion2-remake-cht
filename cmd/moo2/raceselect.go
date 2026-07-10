@@ -126,10 +126,17 @@ func (s *raceSelectScreen) update(in shell.InputState) *origTransition {
 		}
 		return s.b.goTo(s.b.newGameSetup, "星系設定")
 	}
-	// 接受 → 套用種族 + 產生星系 → 進星系主畫面。
+	// 接受 → 若為自訂種族進點數畫面;否則套用種族 + 產生星系 → 星系主畫面。
 	if x, y, w, h := s.acceptRect(); hitBox(in.MouseX, in.MouseY, x, y, w, h) {
 		if clickSound != nil {
 			clickSound()
+		}
+		if raceSelectList[s.sel].shellIdx < 0 { // 自訂種族 → 點數畫面
+			sc, err := s.b.customRace()
+			if err != nil {
+				return nil
+			}
+			return &origTransition{next: sc}
 		}
 		s.applyAndStart()
 		return s.b.goTo(s.b.galaxy, "星系主畫面")

@@ -608,6 +608,21 @@ func (s *GameSession) ApplyRace(idx int) {
 	s.Player.BC += r.StartBC
 }
 
+// ApplyCustomRaceBonuses 套用自訂種族(Custom Race)聚合出的數值加成。
+// 加成來自 docs/tech/custom-race-picks.md 的官方 patch 1.5 點數值(生產/成長/戰鬥/國庫)。
+// ⚠ 政府型態與特殊能力的深層效果(創造力科技解鎖、貿易奇才、心靈感應等)尚未模擬,
+// 目前只套用可對應到 Race 欄位的數值部分;其餘由 Custom 畫面記錄待後續實作。
+func (s *GameSession) ApplyCustomRaceBonuses(r Race) {
+	s.raceGrowthPct = r.GrowthPct
+	s.RaceCombatPct = r.CombatPct
+	for i := range s.PlayerColonies {
+		s.PlayerColonies[i].IndustryPerWorker += r.IndBonus
+		s.PlayerColonies[i].ResearchPerScientist += r.ResBonus
+		s.PlayerColonies[i].FoodPerFarmer += r.FoodBonus
+	}
+	s.Player.BC += r.StartBC
+}
+
 // GalaxySizes 是星系大小選項(名稱 + 星數),對應 NEW GAME 的 GALAXY SIZE。
 var GalaxySizes = []struct {
 	Name  string
