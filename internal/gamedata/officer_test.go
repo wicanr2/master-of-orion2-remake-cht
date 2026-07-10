@@ -48,3 +48,69 @@ func TestLeaderSkillBonus(t *testing.T) {
 		}
 	}
 }
+
+func TestLeaderSkillTier(t *testing.T) {
+	// bit 位置 = skillnum*2,每技能佔 2 bit(tier 0-3)。
+	// commonSkills: code0(Assassin)=tier1(0b01)、code6(Researcher)=tier2(0b10) → bits = 0b10_...(code6) | 0b01(code0)
+	commonSkills := uint32(1) | uint32(2)<<(2*6) // Assassin tier1, Researcher tier2
+	specialSkills := uint32(3) << (2 * 3)        // code3 tier3(進階上限,captain=Helmsman/admin=Instructor)
+
+	cases := []struct {
+		name       string
+		skillID    int
+		leaderType int
+		want       int
+	}{
+		{"common Assassin tier1(與 leaderType 無關)", int(SKILL_ASSASSIN), LeaderTypeAdmin, 1},
+		{"common Researcher tier2", int(SKILL_RESEARCHER), LeaderTypeCaptain, 2},
+		{"common 未設技能 tier0", int(SKILL_TRADER), LeaderTypeAdmin, 0},
+		{"captain Helmsman tier3,leaderType=Captain 才生效", int(SKILL_HELMSMAN), LeaderTypeCaptain, 3},
+		{"captain Helmsman,leaderType=Admin 視為 0(specialSkills 不讀 captain 表)", int(SKILL_HELMSMAN), LeaderTypeAdmin, 0},
+		{"admin Instructor tier3,leaderType=Admin 才生效", int(SKILL_INSTRUCTOR), LeaderTypeAdmin, 3},
+		{"admin Instructor,leaderType=Captain 視為 0", int(SKILL_INSTRUCTOR), LeaderTypeCaptain, 0},
+	}
+	for _, c := range cases {
+		if got := LeaderSkillTier(c.skillID, c.leaderType, commonSkills, specialSkills); got != c.want {
+			t.Errorf("%s: LeaderSkillTier(%#x,%d,...) = %d,預期 %d",
+				c.name, c.skillID, c.leaderType, got, c.want)
+		}
+	}
+}
+
+func TestLeaderMaintenanceCost(t *testing.T) {
+	cases := []struct {
+		name          string
+		hireCost      int
+		hasMegawealth bool
+		want          int
+	}{
+		{"Megawealth 免費", 500, true, 0},
+		{"無 Megawealth,ceil(299/100)=3", 299, false, 3},
+		{"無 Megawealth,整除 200/100=2", 200, false, 2},
+		{"無 Megawealth,下限1(hireCost=0)", 0, false, 1},
+	}
+	for _, c := range cases {
+		if got := LeaderMaintenanceCost(c.hireCost, c.hasMegawealth); got != c.want {
+			t.Errorf("%s: LeaderMaintenanceCost(%d,%v) = %d,預期 %d",
+				c.name, c.hireCost, c.hasMegawealth, got, c.want)
+		}
+	}
+}
+
+func TestLeaderHireModifier(t *testing.T) {
+	cases := []struct {
+		name    string
+		bonuses []int
+		want    int
+	}{
+		{"無 Famous 領袖,修正0", nil, 0},
+		{"單一 Famous,取該負值", []int{-60}, -60},
+		{"多個 Famous,取最負(效果最強)", []int{-60, -300, -120}, -300},
+		{"混入 tier0 的0(不影響 MIN)", []int{0, -60, 0}, -60},
+	}
+	for _, c := range cases {
+		if got := LeaderHireModifier(c.bonuses); got != c.want {
+			t.Errorf("%s: LeaderHireModifier(%v) = %d,預期 %d", c.name, c.bonuses, got, c.want)
+		}
+	}
+}

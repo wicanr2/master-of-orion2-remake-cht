@@ -173,3 +173,50 @@ func TestShipCombatStateFromDesign(t *testing.T) {
 		t.Errorf("state.Destroyed = true, want false")
 	}
 }
+
+// TestShipBeamAttackWithOfficer 沿用 TestShipBeamAttackFromDesign_FullBonus 的固定裝(基準值165),
+// 疊加軍官 Weaponry 加成(例如 gamedata.LeaderSkillBonus(int(gamedata.SKILL_WEAPONRY),1,4)=25,
+// captain code7 base5*(4+1)=25),對照 GameState::shipBeamOffense 的 officer.skillBonus 疊加。
+func TestShipBeamAttackWithOfficer(t *testing.T) {
+	var d save.ShipDesign
+	d.Size = 2
+	d.Computer = 3
+	setSpecBit(&d, SpecBattleScanner)
+
+	got := ShipBeamAttackWithOfficer(&d, 2, 0, nil, 10, 25)
+	want := 165 + 25
+	if got != want {
+		t.Errorf("ShipBeamAttackWithOfficer = %d, want %d", got, want)
+	}
+}
+
+// TestShipBeamAttackWithOfficer_NoOfficer 未指派軍官(或軍官無 Weaponry 技能)時傳 0,
+// 行為應與 ShipBeamAttackFromDesign 完全一致(對照原碼 sptr->officer < 0 不加成)。
+func TestShipBeamAttackWithOfficer_NoOfficer(t *testing.T) {
+	var d save.ShipDesign
+	d.Size = 2
+	d.Computer = 3
+	setSpecBit(&d, SpecBattleScanner)
+
+	got := ShipBeamAttackWithOfficer(&d, 2, 0, nil, 10, 0)
+	want := ShipBeamAttackFromDesign(&d, 2, 0, nil, 10)
+	if got != want {
+		t.Errorf("ShipBeamAttackWithOfficer(bonus=0) = %d, want %d(= ShipBeamAttackFromDesign)", got, want)
+	}
+}
+
+// TestShipBeamDefenseWithOfficer 沿用 TestShipBeamDefenseFromDesign_AugmentedAndNullifier 的固定裝
+// (基準值225),疊加軍官 Helmsman 加成(captain code3 base5*(4+1)=25,tier1 exp4)。
+func TestShipBeamDefenseWithOfficer(t *testing.T) {
+	var d save.ShipDesign
+	d.BaseCombatSpeed = 10
+	d.Size = 2
+	setSpecBit(&d, SpecAugmentedEngines)
+	setSpecBit(&d, SpecInertialNullifier)
+
+	got := ShipBeamDefenseWithOfficer(&d, 3, 0, nil, false, 25)
+	want := 225 + 25
+	if got != want {
+		t.Errorf("ShipBeamDefenseWithOfficer = %d, want %d", got, want)
+	}
+}

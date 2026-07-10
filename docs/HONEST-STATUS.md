@@ -59,6 +59,21 @@
   Antares 母星次元傳送門勝利(手冊第三條路徑)完全沒有對應流程(無 Dimensional Portal/艦隊遠征/
   母星戰鬥),列 TODO 不硬做。詳見 `docs/tech/victory-conditions.md`。)**
 
+- 領袖/軍官:原本純裝飾——`demoLeaders()`(如「馮·諾伊曼 科學家 Level 5」)的技能字串不 bonus
+  任何東西,`gamedata/officer.go`(`LeaderExpLevel`/`LeaderSkillBonus`)、`formulas.go`
+  (`LeaderHireCost`)是移植好卻零呼叫端的死碼。**(2026-07-11 更新:從裝飾變成技能真正生效,但
+  只有 2 個技能實際接進遊戲。**openorion2 全專案 grep 後發現:MOO2 25 個領袖技能裡,openorion2
+  自己也只給 4 個(`SKILL_WEAPONRY`/`SKILL_HELMSMAN`/`SKILL_FAMOUS`/`SKILL_MEGAWEALTH`)寫了真
+  正的效果消費端,其餘技能(科學/財政/工業/外交/間諜等)在原專案裡也只是「畫面顯示 + 可算數字
+  但沒人用」——這不是 remake 特有的缺口,是原專案本身的完成度天花板。本輪接了「科學家」→固定
+  研究點數(`ColonyState.FlatResearch`)、「貿易家」→收入百分比(`ColonyState.IncomeBonusPercent`)
+  兩個殖民地領袖技能,母星研究產出因此從 30 → 55(`TestGameSessionEndTurn` 已同步更新)。**艦艇
+  軍官(指揮官/工程師)目前仍是裝飾**:引擎層已備妥 `ShipBeamAttackWithOfficer`/
+  `ShipBeamDefenseWithOfficer`(Weaponry/Helmsman 命中閃避加成)與 `HireLeader`(雇用金流),但
+  remake 的 `shell.Ship` 沒有軍官指派欄位、也沒有戰鬥解算迴圈會呼叫這兩個新函式,demoLeaders
+  的「指揮官」技能標籤本身也無法唯一對應到任何 openorion2 技能(待使用者定案)、「工程師」對應
+  的艦艇維修率加成 remake 無承接系統。詳見 `docs/tech/leader-officer-skills.md`。)**
+
 一句話:**你現在無法真的玩一局 MOO2**,只能在像原版的畫面間點來點去,附帶幾個玩具數字。
 
 ## 要達到「高還原度」真正該做的(誠實 worklist)

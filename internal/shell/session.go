@@ -891,18 +891,93 @@ func (s *GameSession) applyClimateChange(i int, next gamedata.PlanetClimate) {
 // Leader 是一名可雇用的軍官/領袖(供軍官列表)。
 type Leader struct {
 	Name  string
-	Skill string // 專長
-	Level int    // 等級
-	Ship  bool   // true=艦艇軍官,false=殖民地領袖
+	Skill string // 專長(中文顯示標籤;技能效果透過 leaderSkillIDByName 對應到 gamedata 技能 id)
+	Level int    // 顯示等級(1..5,對照 openorion2 MAX_LEADER_LEVELS=5 顯示慣例:1=最低、5=最高)。
+	// 換算成 gamedata.LeaderSkillBonus 用的 expLevel(0..4)時用 leaderDisplayLevelToExpLevel(Level)。
+	// 這是 demo 資料的既有欄位語意(非 HERODATA 真實經驗值,是直接指定的顯示等級)。
+	Ship bool // true=艦艇軍官,false=殖民地領袖
+
+	// Tier 技能階(0 無/1 一般/2 進階),對照 openorion2 Leader::hasSkill 的回傳值。demoLeaders
+	// 皆為手動指定的示範資料(非 HERODATA 真實英雄),保守預設 1(一般技能),不臆造「進階」。
+	Tier int
 }
 
 // demoLeaders 是示範領袖名單(固定;正式版由 HERODATA.LBX 真英雄資料填)。
 func demoLeaders() []Leader {
 	return []Leader{
-		{"馮·諾伊曼", "科學家", 5, false},
-		{"洛克斐勒", "貿易家", 4, false},
-		{"漢尼拔", "指揮官", 6, true},
-		{"圖靈", "工程師", 3, true},
+		{"馮·諾伊曼", "科學家", 5, false, 1},
+		{"洛克斐勒", "貿易家", 4, false, 1},
+		{"漢尼拔", "指揮官", 6, true, 1},
+		{"圖靈", "工程師", 3, true, 1},
+	}
+}
+
+// leaderSkillIDByName 把 demoLeaders 的中文技能標籤對應到 gamedata 技能 id(openorion2
+// gamestate.h enum LeaderSkills)。只收「名稱與技能語意清楚一對一」的項目:
+//   - 科學家 → SKILL_RESEARCHER(common,officer.cpp skillFormatStrings row0 idx6 格式 "%+d",
+//     為固定研究點數加成,非百分比)。
+//   - 貿易家 → SKILL_TRADER(common,row0 idx9 格式 "%+d%%",收入百分比加成)。
+//   - 工程師 → SKILL_ENGINEER(captain,row1 idx0 格式 "%+d%%",真實效果是艦艇維修速率加成——
+//     remake 目前沒有艦艇維修系統,故技能 id 對應清楚但效果暫不生效,見 applyLeaderShipBonuses
+//     的 TODO 註解)。
+//
+// 「指揮官」(漢尼拔)刻意不收錄:這是 demo 資料自訂的中文頭銜/風格字,不是從 HERODATA 或手冊
+// 技能表衍生的標籤,沒有唯一對應的技能 id(openorion2 技能表裡沒有字面叫「Commander」的技能,
+// 猜一個掛上去就是臆測)。留空 = 目前這名領袖沒有任何技能加成生效,待使用者從
+// SKILL_COMMANDO(地面戰指揮,但基礎加成手冊未給數字,見 gamedata/ground.go TODO)/
+// SKILL_WEAPONRY(艦艇攻擊,語意最接近「指揮官」但仍是猜測)等候選定案。
+var leaderSkillIDByName = map[string]int{
+	"科學家": int(gamedata.SKILL_RESEARCHER),
+	"貿易家": int(gamedata.SKILL_TRADER),
+	"工程師": int(gamedata.SKILL_ENGINEER),
+}
+
+// leaderDisplayLevelToExpLevel 把 Leader.Level(demo 資料的 1..5 顯示等級)換算成
+// gamedata.LeaderSkillBonus 用的 expLevel(0..4)。openorion2 Leader::rank()把
+// expLevel(0..4)直接轉成 5 種官階顯示字串,顯示慣例是「數字愈大階級愈高」,故這裡採
+// Level-1 對應 expLevel、並夾在 [0,4](demoLeaders 目前有 Level=6 的示範值,略高於官方
+// MAX_LEADER_LEVELS=5 上限,夾在 4 是保守處理,不是新規則)。
+func leaderDisplayLevelToExpLevel(level int) int {
+	exp := level - 1
+	if exp < 0 {
+		return 0
+	}
+	if exp > 4 {
+		return 4
+	}
+	return exp
+}
+
+// applyLeaderColonyBonuses 把殖民地領袖(Ship=false)的技能加成套到指定殖民地(demo 只有母星,
+// 呼叫端傳 &session.PlayerColonies[0])。只接「對應到 engine.ColonyState 既有欄位」的技能:
+//   - SKILL_RESEARCHER(固定研究點數,格式 "%+d")→ FlatColony 整體固定加成 ColonyState.FlatResearch
+//   - SKILL_TRADER(收入百分比,格式 "%+d%%")→ ColonyState.IncomeBonusPercent(與太空港/
+//     證券交易所等建築的百分比加成同一欄位,可疊加)
+//
+// 其餘有對應 skill id 但 remake 尚無承接系統的技能(如 SKILL_SCIENCE_LEADER/
+// SKILL_FINANCIAL_LEADER/SKILL_LABOR_LEADER 等 admin 技能──demoLeaders 目前沒有領袖標成這些
+// 名稱,故不處理)一律略過,不臆造欄位。
+func applyLeaderColonyBonuses(leaders []Leader, colony *engine.ColonyState) {
+	for _, l := range leaders {
+		if l.Ship {
+			continue // 艦艇軍官不影響殖民地,見 applyLeaderShipBonuses
+		}
+		id, ok := leaderSkillIDByName[l.Skill]
+		if !ok {
+			continue // 無法對應的技能標籤(如「指揮官」),誠實跳過
+		}
+		expLevel := leaderDisplayLevelToExpLevel(l.Level)
+		bonus := gamedata.LeaderSkillBonus(id, l.Tier, expLevel)
+		switch id {
+		case int(gamedata.SKILL_RESEARCHER):
+			colony.FlatResearch += bonus
+		case int(gamedata.SKILL_TRADER):
+			colony.IncomeBonusPercent += bonus
+		// SKILL_ENGINEER(工程師)等其餘已知 id 若指派給非 Ship 領袖,目前無殖民地承接欄位,
+		// 略過不加總(不應該發生:工程師是 captain 技能,demoLeaders 裡標工程師的都是 Ship=true;
+		// 這裡防禦性略過,避免未來資料改動時誤加到不相關欄位)。
+		default:
+		}
 	}
 }
 
@@ -1829,5 +1904,9 @@ func NewDemoSession() *GameSession {
 		EventSeed:     42, // 隨機事件種子(可重現;正式新遊戲遞增)
 	}
 	session.Player.UsedCommandPoints = session.usedCommandPoints() // 依開局艦隊(homeworldShips)算實際需求,顯示與第一次 EndTurn 後一致
+	// 領袖技能接線(2026-07-11):demoLeaders 裡 Ship=false 的殖民地領袖(科學家/貿易家)套到母星
+	// (目前唯一的殖民地),見 applyLeaderColonyBonuses。艦艇軍官(指揮官/工程師)暫無殖民地效果
+	// (指揮官技能標籤無法對應、工程師對應的維修系統未建),見該函式與 leaderSkillIDByName 註解。
+	applyLeaderColonyBonuses(session.Leaders, &session.PlayerColonies[0])
 	return session
 }

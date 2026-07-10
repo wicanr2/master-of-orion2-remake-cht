@@ -122,6 +122,30 @@ func ShipBeamDefenseFromDesign(d *save.ShipDesign, crewLevel int, driveDamage in
 	return ret
 }
 
+// ShipBeamAttackWithOfficer 在 ShipBeamAttackFromDesign 之上疊加艦艇軍官的 Weaponry 技能加成,
+// 對照 GameState::shipBeamOffense(openorion2/src/gamestate.cpp:2365-2377):
+//
+//	ret := sptr->beamOffense(ignoreDamage); ... if (sptr->officer >= 0) ret += officer.skillBonus(SKILL_WEAPONRY);
+//
+// officerWeaponryBonus 由呼叫端以
+// gamedata.LeaderSkillBonus(int(gamedata.SKILL_WEAPONRY), tier, expLevel) 算好傳入
+// (該艦未指派軍官,或軍官沒有 Weaponry 技能,傳 0 即可,行為與原碼「sptr->officer < 0」等價)。
+// 只加一個新參數而不改既有函式簽章:ShipBeamAttackFromDesign 已有測試鎖住既有行為,不動它。
+func ShipBeamAttackWithOfficer(d *save.ShipDesign, crewLevel int, compDamage int, specDamage []uint8, raceShipAttack int, officerWeaponryBonus int) int {
+	return ShipBeamAttackFromDesign(d, crewLevel, compDamage, specDamage, raceShipAttack) + officerWeaponryBonus
+}
+
+// ShipBeamDefenseWithOfficer 在 ShipBeamDefenseFromDesign 之上疊加艦艇軍官的 Helmsman 技能加成,
+// 對照 GameState::shipBeamDefense(openorion2/src/gamestate.cpp:2387-2405):
+//
+//	if (sptr->officer >= 0) ret += officer.skillBonus(SKILL_HELMSMAN);
+//
+// officerHelmsmanBonus 由呼叫端以
+// gamedata.LeaderSkillBonus(int(gamedata.SKILL_HELMSMAN), tier, expLevel) 算好傳入。
+func ShipBeamDefenseWithOfficer(d *save.ShipDesign, crewLevel int, driveDamage int, specDamage []uint8, transDimensional bool, officerHelmsmanBonus int) int {
+	return ShipBeamDefenseFromDesign(d, crewLevel, driveDamage, specDamage, transDimensional) + officerHelmsmanBonus
+}
+
 // ShipCombatStateFromDesign 組出 ShipCombatState。BeamDefense 由 ShipBeamDefenseFromDesign 推導,
 // 其餘欄位(ArmorHP/StructureHP/ShieldReduction/HardShield)需要武器/裝甲/護盾數值表——那些查表
 // gamedata 尚未移植(openorion2 armor/shield 型別對應的 HP/減傷數值),為避免臆造數字,
