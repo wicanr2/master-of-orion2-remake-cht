@@ -925,7 +925,9 @@ func loadCombatShip(res *assets.Resolver) *ebiten.Image {
 	if err != nil || prov.Embedded == nil {
 		return nil
 	}
-	im, err := decodeAsset(res, "cmbtshp.lbx", 0)
+	// 佔位艦型:CMBTSHP#30(大型艦,亮部結構在黑星空上清晰可讀;#0 是最小最暗的
+	// 戰機,疊黑星空幾乎隱形——經黑底對比挑出 #30)。Phase 2 再按實際艦型/尺寸對照。
+	im, err := decodeAsset(res, "cmbtshp.lbx", 30)
 	if err != nil || len(im.Frames) == 0 {
 		return nil
 	}
