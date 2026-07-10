@@ -50,6 +50,13 @@ type PlayerState struct {
 	ResearchProgress int                    // 目前主題已累積的研究點(RP)
 	// CompletedTopics 記錄已完成的研究主題(避免重複)。
 	CompletedTopics map[gamedata.ResearchTopic]bool
+	// ChosenTech 記錄每個已完成主題「實際選定解鎖」的那一項科技(MOO2 每主題數科技抉擇)。
+	// ResearchAll 主題會把全部 Choices 記入。多選主題完成時預設記第一項,玩家可經 UI 改選。
+	ChosenTech map[gamedata.ResearchTopic]gamedata.Technology
+	// PendingChoice 為「剛完成、玩家可改選解鎖科技」的主題;HasPendingChoice 標記其有效
+	// (因 ResearchTopic 0 = 起始科技為合法值,不能用零值判斷)。
+	PendingChoice    gamedata.ResearchTopic
+	HasPendingChoice bool
 }
 
 // ColonyOutput 是一回合殖民地經濟結算結果。

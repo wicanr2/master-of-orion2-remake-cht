@@ -3,6 +3,7 @@ package shell
 import (
 	"fmt"
 
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
@@ -59,6 +60,34 @@ func ResearchTopicName(t gamedata.ResearchTopic) string {
 		return "起始科技"
 	}
 	return fmt.Sprintf("研究主題 #%d", int(t))
+}
+
+// PendingResearchChoice 回傳玩家「剛完成、可改選解鎖科技」的主題與其可選科技清單。
+// ok=false 表示目前沒有待決抉擇。供研究抉擇 UI 使用(MOO2 每主題數科技間抉擇)。
+func (s *GameSession) PendingResearchChoice() (topic gamedata.ResearchTopic, choices []gamedata.Technology, ok bool) {
+	if !s.Player.HasPendingChoice {
+		return 0, nil, false
+	}
+	t := s.Player.PendingChoice
+	return t, gamedata.ResearchChoiceFor(t).Choices, true
+}
+
+// ChooseResearchTech 把目前待決主題改選為 tech(須為合法選項),回傳是否成功。
+func (s *GameSession) ChooseResearchTech(tech gamedata.Technology) bool {
+	ps, ok := engine.ApplyResearchChoice(s.Player, tech)
+	if ok {
+		s.Player = ps
+	}
+	return ok
+}
+
+// ChosenTechFor 回傳某已完成主題實際選定解鎖的科技(未完成/未記錄回 false)。
+func (s *GameSession) ChosenTechFor(topic gamedata.ResearchTopic) (gamedata.Technology, bool) {
+	if s.Player.ChosenTech == nil {
+		return 0, false
+	}
+	t, ok := s.Player.ChosenTech[topic]
+	return t, ok
 }
 
 // SetResearchTopic 切換玩家目前研究主題;若切到不同主題則歸零進度(換題重來)。

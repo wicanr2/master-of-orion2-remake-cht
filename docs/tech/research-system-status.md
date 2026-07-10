@@ -15,17 +15,16 @@
 - `engine/research.go:9–11` 註明「只回答主題是否完成,**不選擇** Choices 中哪一項」。
 - `shell.ComponentUnlocked`(session.go:102)以 **`CompletedTopics[topic]`**(主題層級)判解鎖 → 等於**一次解鎖該主題全部選項**,無取捨。
 
-## 執行計畫(下輪,乾淨落地)
+## 執行計畫與進度
 
-分三步,每步可單元測試 + headless 驗證:
-
-1. **模型層(engine)**:
-   - `PlayerState` 加 `ChosenTech map[ResearchTopic]Technology` 與 `PendingChoice ResearchTopic`(0=無)。
-   - `RunResearchPhase` 完成非 `ResearchAll` 主題時:設 `PendingChoice=topic`、**不**自動推進;`ResearchAll` 主題:把全部 `Choices` 記入 `ChosenTech` 並推進。
-   - 加 `ChooseTech(topic, tech)`:驗證 tech ∈ `Choices`,寫入 `ChosenTech`,清 `PendingChoice`。
-2. **解鎖 gating 改科技層級**:`ComponentUnlocked` 改為「該元件對應的 `Technology` 已在 `ChosenTech`(或其主題 `ResearchAll`)」。需確認元件↔Technology 對應(目前 Component.Tech 是 ResearchTopic,須擴充為 Technology 或加映射)。這是最需小心的一步,改完跑既有 `techtree_verify_test` 與艦艇設計解鎖測試護欄。
-3. **抉擇 UI**:`PendingChoice` 非空時,研究畫面(SCIENCE.LBX)彈出該主題的 `Choices`(用真科技名 TECHNAME.LBX + i18n),玩家點選 → `ChooseTech`。AI 由 decider 自動選(可先取第一項或依性格)。
-   - headless:腳本點選一項,截圖驗證。
+1. ✅ **模型層(engine)完成**(2026-07-10,非破壞、有測試):
+   - `PlayerState` 加 `ChosenTech map[ResearchTopic]Technology`、`PendingChoice`、`HasPendingChoice`。
+   - `RunResearchPhase` 完成主題時 `recordCompletion`:ResearchAll/單選直接記;**多選預設記第一項並開 PendingChoice**(不阻塞回合,玩家可改選)。
+   - `engine.ApplyResearchChoice(ps, tech)` 驗證合法選項後改選、清待決。
+   - shell:`PendingResearchChoice()` / `ChooseResearchTech(tech)` / `ChosenTechFor(topic)`。
+   - 測試:`internal/engine/research_choice_test.go`、`internal/shell/research_choice_test.go`(多選預設+改選+非法拒絕+ResearchAll 不待決)。
+2. ⏳ **解鎖 gating 改科技層級**(未做):`ComponentUnlocked` 目前仍按 `CompletedTopics[topic]`(主題層級=完成即解該主題全部 remake 元件)。要真忠實需把 remake 元件對應到具體 `Technology` 並改查 `ChosenTech`。需先建 **Component↔Technology 映射**。
+3. ⏳ **抉擇 UI**(未做):`PendingResearchChoice()` 非空時,研究畫面彈出該主題 `Choices` 供玩家點選 → `ChooseResearchTech`。**前置**:需 `Technology enum → 英文名` 表(200+ 條,對照 TECHNAME.LBX;可派子代理機械轉寫),再接 tech.tsv 得中文名。AI 由 decider 自動選(現為預設第一項)。
 
 ## 驗收
 
