@@ -32,6 +32,12 @@ type ColonyState struct {
 	AtmosphericRenewer bool // 大氣更新器
 	CoreWasteDump      bool // 核心廢料場(完全消除污染)
 	Housing            bool // 是否處於「住房」產能配置(啟用住房成長獎金 h)
+	// TradeGoods 是否處於「貿易品」建造佇列配置(shell.GameSession.syncTradeGoodsFlag 依玩家
+	// 建造選單同步)。true 時該殖民地當回合淨工業不蓋建築,改由 RunEmpireTurn 呼叫
+	// gamedata.TradeGoodsIncome 以 2:1(一般種族)/1:1(Fantastic Trader)換算成 BC,計入
+	// EmpireOutput.TradeGoodsRevenue(GAME_MANUAL.pdf p.70)。「不累積建造進度」由呼叫端
+	// (shell.advanceBuilds)依建造項名稱處理,engine 層只負責換算收入。
+	TradeGoods bool
 
 	// 成長獎金(百分點)之和:g 一般 + r 種族 + i AI + t 科技 + l + e(住房 h 由引擎計)。
 	GrowthBonusSum int

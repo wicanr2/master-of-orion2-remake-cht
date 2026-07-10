@@ -13,7 +13,8 @@
 | 稅收 | `engine/empire.go` `RunEmpireTurn` | `IncomeTaxRevenue` |
 | **研究/科技(2026-07-10 完成)** | `engine/research.go` + `shell/research.go` + `cmd/moo2/researchchoice.go` | `researchChoices`(真成本+選項)+ 抉擇 UI + 元件解鎖對映(見 `research-system-status.md`)|
 
-→ **殖民地經濟核心已大致忠實**(比 `HONEST-STATUS.md` 舊描述好)。剩收入細項未接(見下)。
+→ **殖民地經濟核心已大致忠實**(比 `HONEST-STATUS.md` 舊描述好)。收入細項已接稅收/餘糧/貿易品
+三項(見下 §2),剩指揮/運輸艦/政府加成三項未接。
 
 ## 自編近似 / 未接真公式(待忠實化,依影響排序)
 
@@ -62,8 +63,17 @@
   - 驗收:同配置對原版戰鬥結果趨勢一致(命中率隨射程下降、盾/甲吸收、穿甲穿盾生效)。
 
 ### 2. 收入細項
-- 未接:`TradeGoodsIncome`(需「工業配置到貿易品」模型)、`IncomeFoodSurplusRevenue`(需帝國食物池/運輸)、`IncomeCommandOverflowCost`、`IncomeFreighterMaintenanceCost`、`IncomeApplyGovernmentMoneyBonus`。
-- 前置:先建「帝國食物池 + 運輸艦 + 工業分配(建造/貿易品/研究)」模型,才不會 piecemeal 出錯。
+- **已接(2026-07-11)**:`TradeGoodsIncome`——貿易品是「建造佇列選項」(與 Housing 同類),不需要
+  「第四種職務配置」這個原判斷是誤判。`internal/shell/session.go` 建造選單新增 `TradeGoodsBuildName`
+  (「貿易品」,恆可選、Cost=0,同「不建造」不累積建造進度);`engine.ColonyState` 新增
+  `TradeGoods bool`,`syncTradeGoodsFlag` 依建造選單同步;`engine.RunEmpireTurn` 對該旗標為真的殖民地,
+  以其 `NetIndustry` 呼叫 `gamedata.TradeGoodsIncome`(一般種族 2:1)累加進新欄位
+  `EmpireOutput.TradeGoodsRevenue`,計入 `NetBC`。`fantasticTrader` 固定傳 `false`(同
+  `IncomeFoodSurplusRevenue` 既有 TODO,待種族特質系統補上種族欄位)。`IncomeFoodSurplusRevenue`
+  同樣已接(見 `colony-economy-maintenance.md` §6.2,不需要「帝國食物池/運輸艦」模型,只需正
+  `FoodSurplus` 即可,原判斷同樣過度前置)。
+- 仍未接:`IncomeCommandOverflowCost`、`IncomeFreighterMaintenanceCost`(需追蹤運輸艦數量)、
+  `IncomeApplyGovernmentMoneyBonus`(需政府形式系統)。
 
 ### 3. 艦艇設計(空間格)
 - **(2026-07-11)shell/gamedata 層已完成**:`internal/gamedata/shipspace.go` 建了艦體總空間表(`ShipHullSpace`,手冊 p.121 確認值)+ 武器佔格表(`WeaponSpaceByName`,手冊 p.124 確認值);`internal/shell/session.go` 的 `ShipDesignSpaceUsed`/`ShipDesignFits` 接進四下拉模型驗證設計是否超格。細節、估計值標註(特殊系統佔格手冊無數字,5% 估計)、與「裝甲/護盾不佔空間」的手冊澄清見 `ship-design-space.md`。**仍待**:武器改裝(mod)對佔格的影響(手冊已有公式,未接線)、Design Dock 畫面 UI 繪製(不碰 `interactive.go`,歸後續 task)。
@@ -81,7 +91,8 @@
 依「對玩家體驗影響 × 有權威來源可自驅」排序:
 1. **殖民地建築全表(進行中)**:5 棟 → 手冊 40 棟入 `gamedata/buildings.go`,綁前置科技 gating(subagent 實作中)。
 2. **產出行星驅動**:`FoodPerFarmer`/`IndustryPerWorker` 現為固定值,改依 climate/gravity/mineral(手冊 yield 表)推導——讓不同行星經濟有別(MOO2 核心手感)。
-3. **貿易財收入接線**:`income.go` 的 2:1 轉換公式已備,接進回合結算(需「工業配置到貿易品」模型 + 建造選單「Trade Goods」選項)。
+3. **貿易財收入接線:已完成(2026-07-11)**——建造選單新增「貿易品」選項 + `engine.RunEmpireTurn`
+   接上 `TradeGoodsIncome`,見 §2。
 4. **地面戰 UI 入侵流程**:模型 + 流程 shell 層已接線完成(§1c,2026-07-11);剩 UI 繪製/操作介面。
 5. **艦艇設計(空間格)**:shell/gamedata 層已完成(2026-07-11,見 §3);UI 繪製留後續。
 

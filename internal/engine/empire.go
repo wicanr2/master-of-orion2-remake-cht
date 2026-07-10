@@ -10,7 +10,8 @@ type EmpireOutput struct {
 	TotalResearch      int            // 各殖民地研究總和(投入研究進度)
 	TaxRevenue         int            // 各殖民地稅收 BC 總和
 	FoodSurplusRevenue int            // 各殖民地「餘糧出售」BC 總和(見下方 RunEmpireTurn 說明)
-	NetBC              int            // 本回合國庫淨變化(TaxRevenue + FoodSurplusRevenue - Maintenance)
+	TradeGoodsRevenue  int            // 各「貿易品」殖民地淨工業換算 BC 總和(見下方 RunEmpireTurn 說明)
+	NetBC              int            // 本回合國庫淨變化(TaxRevenue + FoodSurplusRevenue + TradeGoodsRevenue - Maintenance)
 	Player             PlayerState    // 研究推進 + BC 結算後的玩家狀態
 	ResearchDone       bool           // 本回合是否有研究主題完成
 }
@@ -45,16 +46,21 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		if co.FoodSurplus > 0 {
 			out.FoodSurplusRevenue += gamedata.IncomeFoodSurplusRevenue(co.FoodSurplus, false)
 		}
+		// 貿易品(Trade Goods)收入:貿易品是「建造佇列選項」(與 Housing 同類,見
+		// engine.ColonyState.Housing 的先例),不是獨立的產能分配職務——手冊(GAME_MANUAL.pdf
+		// p.70)描述的是「殖民地把建造改設為貿易品」,該殖民地當回合的淨工業整包不蓋建築、改以
+		// 2:1(一般種族)換算成 BC。cs.TradeGoods 由 shell.GameSession.syncTradeGoodsFlag 依玩家
+		// 建造選單同步(見該函式);「不累積建造進度」則由 shell.advanceBuilds 依建造項名稱處理,
+		// 兩處合力達成手冊行為,engine 層只負責換算收入。fantasticTrader 固定傳 false:同上
+		// FoodSurplusRevenue 呼叫的理由,ColonyState 目前無「Fantastic Trader」種族特質欄位,
+		// TODO 待種族特質系統補上後再接。
+		if cs.TradeGoods {
+			out.TradeGoodsRevenue += gamedata.TradeGoodsIncome(co.NetIndustry, false)
+		}
 	}
 	out.Player, out.ResearchDone = RunResearchPhase(ps, out.TotalResearch)
-	// 國庫結算:稅收 + 餘糧收入 - 維護費。
-	//
-	// TradeGoodsIncome(貿易財收入,gamedata/income.go)刻意未接:手冊定義的貿易財是「玩家把部分
-	// 工人產能明確配置去生產 Trade Goods(而非科技/建造)」換來的 BC,但本專案的 ColonyState
-	// 只有 Farmers/Workers/Scientists 三種職務,沒有「配置到貿易財」這個第四種產能分配欄位或
-	// 對應 UI——沒有可推導的輸入模型,強行套用等於臆造一個不存在的分配比例。TODO:待補「貿易財
-	// 配置」這個職務/產能分配機制後再接 TradeGoodsIncome,不在本輪自行捏造模型。
-	out.NetBC = out.TaxRevenue + out.FoodSurplusRevenue - ps.Maintenance
+	// 國庫結算:稅收 + 餘糧收入 + 貿易品收入 - 維護費。
+	out.NetBC = out.TaxRevenue + out.FoodSurplusRevenue + out.TradeGoodsRevenue - ps.Maintenance
 	out.Player.BC += out.NetBC
 	return out
 }

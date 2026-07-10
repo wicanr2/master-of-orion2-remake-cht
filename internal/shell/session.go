@@ -580,25 +580,35 @@ type ColonyBuild struct {
 	Cost     int
 }
 
+// TradeGoodsBuildName 是「貿易品」建造佇列選項的名稱。與空字串「不建造」同類——是佇列的
+// 特殊選擇而非 gamedata.Buildings 裡的實體建築,恆可選、無前置科技 gate(手冊 GAME_MANUAL.pdf
+// p.70:貿易品是把殖民地產能整包轉現金的建造選項)。Cost 固定 0,讓既有的
+// advanceBuilds「b.Cost == 0 則不累積進度」判斷同時涵蓋「不建造」與「貿易品」兩種特殊選項,
+// 不需要另外用名稱比對(見 advanceBuilds 註解)。
+const TradeGoodsBuildName = "貿易品"
+
 // buildOptions 是「不看前置科技」的全部可建項目(名稱 + 生產成本),衍生自
-// gamedata.Buildings(手冊全表 40 項:35 建築 + 5 衛星),空字串為「不建造」排第一個。
-// 供將來「完整建築圖鑑」類 UI 參考;實際建造選單(有前置科技 gate)請用
-// availableBuildOptions,CycleColonyBuild 已改用該函式。
+// gamedata.Buildings(手冊全表 40 項:35 建築 + 5 衛星),空字串為「不建造」排第一個,
+// 「貿易品」特殊選項排第二個。供將來「完整建築圖鑑」類 UI 參考;實際建造選單(有前置科技
+// gate)請用 availableBuildOptions,CycleColonyBuild 已改用該函式。
 var buildOptions = allBuildOptions()
 
-// allBuildOptions 把 gamedata.Buildings 轉成 ColonyBuild 選項清單(含「不建造」空項於首位)。
+// allBuildOptions 把 gamedata.Buildings 轉成 ColonyBuild 選項清單(含「不建造」「貿易品」
+// 兩個非建築特殊項於前兩位)。
 func allBuildOptions() []ColonyBuild {
-	out := make([]ColonyBuild, 0, len(gamedata.Buildings)+1)
+	out := make([]ColonyBuild, 0, len(gamedata.Buildings)+2)
 	out = append(out, ColonyBuild{"", 0, 0})
+	out = append(out, ColonyBuild{TradeGoodsBuildName, 0, 0})
 	for _, b := range gamedata.Buildings {
 		out = append(out, ColonyBuild{Name: b.NameZH, Progress: 0, Cost: b.ProductionCost})
 	}
 	return out
 }
 
-// availableBuildOptions 回傳「玩家已研究前置科技」才會出現的建造選單(空字串「不建造」恆在)。
+// availableBuildOptions 回傳「玩家已研究前置科技」才會出現的建造選單(「不建造」「貿易品」
+// 兩個特殊選項恆在,不受前置科技限制)。
 func availableBuildOptions(completedTopics map[gamedata.ResearchTopic]bool) []ColonyBuild {
-	out := []ColonyBuild{{"", 0, 0}}
+	out := []ColonyBuild{{"", 0, 0}, {TradeGoodsBuildName, 0, 0}}
 	for _, b := range gamedata.AvailableBuildings(completedTopics) {
 		out = append(out, ColonyBuild{Name: b.NameZH, Progress: 0, Cost: b.ProductionCost})
 	}
@@ -713,6 +723,10 @@ func (s *GameSession) applyBuildingEffect(i int, name string) {
 
 // advanceBuilds 以各殖民地淨工業推進建造;完成則套用建築長期效果、記錄(供回合摘要)並清空。
 // 每殖民地每種建築只建/套用一次(ColonyBuildings 去重),重複建造會即時完成但不再疊加效果。
+// 「不建造」()與「貿易品」(TradeGoodsBuildName)兩個特殊選項的 Cost 皆固定 0,故下方
+// b.Cost == 0 判斷同時排除兩者,不累積建造進度——貿易品該殖民地的淨工業改由
+// engine.RunEmpireTurn(依 syncTradeGoodsFlag 同步的 ColonyState.TradeGoods)換算成 BC,
+// 不會、也不應該疊加到這裡的建造進度。
 func (s *GameSession) advanceBuilds() {
 	s.LastBuilt = nil
 	if s.ColonyBuildings == nil {
@@ -1216,9 +1230,22 @@ func (s *GameSession) recoverFromFamine() {
 	}
 }
 
+// syncTradeGoodsFlag 依 s.Builds(建造選單,UI 側狀態,對應 PlayerColonies——見該欄位註解)
+// 目前選擇,同步各殖民地 engine.ColonyState.TradeGoods 旗標。玩家把某殖民地的建造項切到
+// 「貿易品」(TradeGoodsBuildName)時,此處把旗標同步到 engine 層,結算時
+// (engine.RunEmpireTurn)才知道該殖民地當回合要把淨工業換 BC 而非蓋建築。以 s.Builds 為
+// 單一真相來源、只在結算前同步一次,不在 CycleColonyBuild 額外維護第二份旗標,避免兩處
+// 狀態不同步。
+func (s *GameSession) syncTradeGoodsFlag() {
+	for i := range s.PlayerColonies {
+		s.PlayerColonies[i].TradeGoods = i < len(s.Builds) && s.Builds[i].Name == TradeGoodsBuildName
+	}
+}
+
 // EndTurn 推進一回合:先結算玩家帝國,再讓各 AI 對手自行決策並結算,回合數 +1。
 func (s *GameSession) EndTurn() {
 	s.Player.Maintenance = s.totalBuildingMaintenance() // 依本回合結算前的實際已建建築重算(取代平坦常數)
+	s.syncTradeGoodsFlag()                              // 依建造選單同步「貿易品」旗標,供 RunEmpireTurn 判斷是否換算收入
 	s.LastPlayerOutput = engine.RunEmpireTurn(s.Player, s.PlayerColonies)
 	s.Player = s.LastPlayerOutput.Player
 	s.recoverFromFamine() // 饑荒防死鎖:見函式註解;依本回合 Starving 結果修正下回合職務分配

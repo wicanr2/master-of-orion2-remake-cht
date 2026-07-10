@@ -103,3 +103,42 @@ func TestRunEmpireTurnBC(t *testing.T) {
 		t.Errorf("國庫 = %d,預期 107", out.Player.BC)
 	}
 }
+
+// TestRunEmpireTurnTradeGoods 驗證「貿易品」殖民地(cs.TradeGoods=true)的淨工業改以 2:1
+// 換算成 BC(gamedata.TradeGoodsIncome,一般種族、非 Fantastic Trader),計入
+// EmpireOutput.TradeGoodsRevenue 與 NetBC。
+func TestRunEmpireTurnTradeGoods(t *testing.T) {
+	// Tolerant 種族免污染清理:淨工業=毛工業=20(Workers 2*10)。未設稅率(0%)、無農夫
+	// (食物盈餘為負,不計餘糧收入),隔離出貿易品收入單一變數。
+	colonies := []ColonyState{
+		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
+			PlanetSize: gamedata.TINY_PLANET, TolerantRace: true, TradeGoods: true},
+	}
+	ps := PlayerState{BC: 100, Maintenance: 3, ResearchTopic: gamedata.ResearchTopic(1)}
+	out := RunEmpireTurn(ps, colonies)
+
+	if out.TradeGoodsRevenue != 10 { // 20 淨工業 * 1/2(一般種族 2:1)
+		t.Errorf("貿易品收入 = %d,預期 10", out.TradeGoodsRevenue)
+	}
+	if out.NetBC != 7 { // 0 稅收 + 0 餘糧收入(負盈餘不計) + 10 貿易品 - 3 維護
+		t.Errorf("淨 BC = %d,預期 7", out.NetBC)
+	}
+	if out.Player.BC != 107 { // 100 + 7
+		t.Errorf("國庫 = %d,預期 107", out.Player.BC)
+	}
+}
+
+// TestRunEmpireTurnTradeGoodsFalseSkipsRevenue 驗證非貿易品殖民地(cs.TradeGoods 預設 false)
+// 不計入 TradeGoodsRevenue——確保旗標關閉時行為與加欄位前一致,不會誤觸發轉換。
+func TestRunEmpireTurnTradeGoodsFalseSkipsRevenue(t *testing.T) {
+	colonies := []ColonyState{
+		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
+			PlanetSize: gamedata.TINY_PLANET, TolerantRace: true}, // TradeGoods 預設 false
+	}
+	ps := PlayerState{BC: 100, Maintenance: 3, ResearchTopic: gamedata.ResearchTopic(1)}
+	out := RunEmpireTurn(ps, colonies)
+
+	if out.TradeGoodsRevenue != 0 {
+		t.Errorf("非貿易品殖民地不應計入貿易品收入,實得 %d", out.TradeGoodsRevenue)
+	}
+}
