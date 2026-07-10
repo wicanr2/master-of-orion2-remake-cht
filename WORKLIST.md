@@ -29,8 +29,9 @@
 - [x] 殖民地建築 5→40 棟入 `gamedata/buildings.go` + 前置科技 gating(`colony-buildings.md`)
 - [x] 行星→產出 yield 表(`planet_yield.go`,climate 食物/mineral 工業/gravity,手冊頁碼有據)
 - [x] 維護費由建築算(`BuiltMaintenanceBC`,母星 3 BC,取代無據平坦 5)
-- [~] 經濟可持續化(饑荒復原 + 接食物盈餘/貿易財收入 + 接 yields + 更新測試)— subagent 進行中
-- [ ] 地面戰 UI 入侵流程接線(解算已備);艦艇設計(空間格);飛彈/球狀傷害(需 RE,獨立)
+- [x] 經濟可持續化:饑荒復原 + 食物盈餘收入(手冊 p.25)+ 玩家母星行星驅動 yields;300 回合自我修復、測試更新到忠實基準。TradeGoods/AI yields 待補(AI 有既存整數捨去 bug,另案)
+- [~] 地面戰 UI 入侵流程接線(解算已備)— 進行中
+- [ ] 艦艇設計(空間格);飛彈/球狀傷害(需 RE,獨立);AI 整數捨去 bug 修(解鎖 AI 忠實 yield);TradeGoodsIncome(需職務配置模型)
 
 ## Phase 0 — Kick-off / 可行性(本輪)
 - [x] 盤點 openorion2 完成度(`docs/kickoff/01`)
