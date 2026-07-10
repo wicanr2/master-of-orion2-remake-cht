@@ -1,5 +1,9 @@
 # 銀河霸主2 中文化
 
+> ⚠ **接手先讀 [`docs/HANDOFF.md`](docs/HANDOFF.md) + [`docs/HONEST-STATUS.md`](docs/HONEST-STATUS.md)。**
+> 現況(2026-07-04 使用者實測):還原度約 20%,尚不能真的玩。**驗收看對原版實測,不看單元測試綠。**
+> 最高優先未做:①音樂 ②忠實新遊戲流程 ③按鍵像素對齊 ④忠實 gameplay 規則。
+
 - 使用 openorion2 @~/moo2/openorion2 
 - github repo (工作repo) 只放 patch
 
