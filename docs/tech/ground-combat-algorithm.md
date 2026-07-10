@@ -67,6 +67,7 @@
 1. ✅ **已完成**(見 `internal/gamedata/ground_battle.go`):`ResolveGroundBattle(atk, def GroundForce, rng)`,一代解算 + 二代 hits-to-kill + 二代 force 加成表,確定性測試綠(`ground_battle_test.go`)。
 2. ✅ **已完成**(2026-07-11,`internal/shell/ground_invasion.go` + `ground_invasion_test.go`):陸戰隊生成 → 運送 → 觸發入侵 → 勝則轉移殖民地的「模型 + 流程」shell 層接線,細節見下方「2026-07-11 shell 層接線」一節。**尚未做**:UI 繪製/操作介面(不碰 interactive.go)、同化/滅絕選擇(手冊 p.164,本輪只做「整批過戶」的簡化版)。
 3. ✅ **已完成**:確定性單測驗「force 差/兵力比 → 勝率」符合社群經驗法則,見 `ground_battle_test.go` 與本輪新增的 `ground_invasion_test.go`(接了 shell 層模型後的端到端勝率測試)。
+4. ✅ **已完成**(2026-07-11,`internal/shell/orbital_bombardment.go` + `ground_invasion.go` 補完):裝甲營房戰車生成/載運/納入攻方 `GroundForce`(Battleoids 升級切換 hits-to-kill/force 加成)+ 軌道轟炸(10 輪齊射模擬 → hits → 扣人口),細節見下方「2026-07-11 裝甲營房戰車 + 軌道轟炸接線」一節。**尚未做**:守方戰車(AI 無 `ColonyBuildings` 追蹤,無資料可推導)、轟炸扣建築/儲存生產/駐軍(AI 無對應持久資料)、光束/魚雷減半與電腦命中加成套用到轟炸(戰術戰鬥層本身尚無這兩項的獨立函式)、UI 操作介面。
 
 ## 2026-07-11 shell 層接線(InvadeColony 流程)
 
@@ -87,6 +88,90 @@
 5. **可入侵範圍**:AI 每 5 回合 `aiExpand` 佔領的無主星只標記 `Owner=2`,不建立殖民地經濟模型(見 `AIOpponent.ColonyStars` 註解)。故本輪只有 AI 開局母星(唯一有真實 `ColonyState` 的星)可被入侵;其餘擴張版圖入侵時會回報「無可入侵的殖民地模型」。
 
 **流程選擇**:入侵由玩家主動呼叫 `InvadeColony`(非艦隊一抵達就自動觸發),與既有架構一致——`SendFleet`/`BuildShip`/`ShiftColonyJob` 等所有玩家決策都是顯式呼叫,不是 `EndTurn` 自動觸發;也讓玩家能先觀察/多載陸戰隊再決定開打,貼近原版「艦隊指令選單」的操作語意。
+
+## 2026-07-11 裝甲營房戰車 + 軌道轟炸接線
+
+上一節「shell 層接線」只做了陸戰隊(Marine Barracks);`internal/gamedata/ground.go` 當時還有
+幾個零呼叫端的死碼:`GroundArmorBarracksUnits`/`GroundArmorBarracksCap`(裝甲營房生成戰車)、
+`GroundTankHitsToKill`(戰車耐久)、`GroundBombHitsFromDamage`/`GroundPlanetTotalHits`(軌道
+轟炸)。本輪把這些接進去,只用已移植公式,不自編數字。
+
+### 裝甲營房戰車生成
+
+比照陸戰隊完全對稱的做法(`internal/shell/ground_invasion.go`):
+- `GameSession` 新增 `FleetTanks`/`PlayerColonyTanks`/`ArmorBarracksAge` 三個欄位,對應
+  `FleetMarines`/`PlayerColonyMarines`/`MarineBarracksAge`。
+- `advanceArmor()`(接進 `EndTurn`,緊接在 `advanceMarines()` 之後):依
+  `gamedata.GroundArmorBarracksUnits(age, pop, popMax, warlord)` 逐回合補充戰車營駐軍池,
+  上限 `GroundArmorBarracksCap`,只認 `ColonyBuildings[i]["裝甲營房"]`(新增
+  `armorBarracksBuildingName` 常數,取代先前只在 `colonyMoralePercent` 出現過的寫死字面字串)。
+- `LoadTanks(colonyIdx)`:載運戰車上艦隊。⚠ 簡化:remake 沒有獨立的「戰車運輸艙位」資料
+  (手冊只明講 Transport Ship/Troop Pods 是針對 Marine),與 `LoadMarines` **共用同一個**
+  `MarineTransportCapacity()` 運力池(`room = 運力 - FleetMarines - FleetTanks`)。
+- `InvadeColony` 攻方 `GroundForce` 混編:`FleetMarines` 個陸戰隊單位 + `FleetTanks` 個戰車
+  單位。**排序決策(已選定,列出讓 L.CY 定案)**:合併陣列「陸戰隊在前、戰車在後」——這不是
+  戰術隊形選擇(手冊未提供地面戰隊形資訊),而是**技術上唯一能把 `ResolveGroundBattle` 回傳的
+  單一 `AttackerSurvived` 總數,精確拆回「陸戰隊存活數/戰車存活數」的排法**:該解算式的規則是
+  「最前面存活單位先受創」,即單位嚴格按索引順序陣亡,故存活者必是原始順序的「後段」;把戰車
+  放在後段,戰後只需 `tanksSurvived = min(總存活, 戰車原始數量)` 即可還原分兵種存活數,不需
+  更動 `gamedata.GroundUnit`/`GroundForce` 結構(該結構本身無兵種標記欄位,加欄位是更大改動,
+  超出本輪死碼串接範圍)。若未來要精確模擬「戰車在前掩護陸戰隊」這種戰術隊形,需要先幫
+  `GroundUnit` 加兵種欄位。
+- Battleoids 升級(手冊 p.81,`TOPIC_ASTRO_CONSTRUCTION` 三選一 `TECH_BATTLEOIDS`,真實可研究
+  科技,非里程碑 proxy):已研究則戰車固定 3 hits(`GroundBattleoidHitsToKill`,不再套用
+  Heavy-G 修飾)+ 額外 `GroundBattleoidCombatBonus`(+10)force 加成,**只在戰車數 > 0 時套用**
+  (0 輛戰車不該白拿這個「戰車升級後」的加成)。
+- **守方戰車:TODO 未接**,且理由與陸戰隊側不同——`InvadeColony` 對守方陸戰隊的近似(用
+  `s.Turn` 當 `turnsSinceBuilt`)至少有「AI 母星開局必有 Marine Barracks」(`homeworldBuildings`)
+  這個事實撐腰;但 `homeworldBuildings()` 本身就沒有裝甲營房,且 `AIOpponent` 完全沒有
+  `ColonyBuildings` 追蹤機制可判斷「AI 是否已建成裝甲營房」,沒有資料可誠實推導守方戰車數,
+  不臆測補上。
+
+單測(`ground_invasion_test.go`):裝甲營房隨回合生成戰車受上限節制、無裝甲營房不生成、
+`LoadTanks` 與 `LoadMarines` 共用運力池、Battleoid hits-to-kill/force 加成切換、
+`InvadeColony` 只有戰車也能發動入侵、混編後存活數拆解一致性(30 場迴圈驗證恆等式)、
+**加戰車確實提升攻方勝率**(3 陸戰隊+0 戰車 vs 3 陸戰隊+12 戰車,100 場對照組,證明戰車真的
+被納入解算而非擺著沒用的死碼)。
+
+### 軌道轟炸(Orbital Bombardment)
+
+手冊 MANUAL_150.html p.129「Notes on Orbital Assault > Orbital Bombardment」與地面入侵是**兩個
+獨立動作**:轟炸只削弱/殺人口(不佔領),佔領仍要靠 `InvadeColony` 的陸戰隊/戰車入侵。新增
+`internal/shell/orbital_bombardment.go`:
+
+- `fleetBombardDamage(rng)`:依手冊「All remaining ships fire all weapons 10 times... total
+  damage is calculated from it」模擬 10 輪齊射,逐發解算重用既有戰術戰鬥公式(`ResolveShot`/
+  `ResolveMissileShot`,依 `weaponKindByName` 分流,同 `battleVolley` 的既有分流邏輯),目標從
+  「敵艦」換成「殖民地」,不模擬殖民地反擊(手冊本段只描述攻方輸出)。
+- `BombardColony(starIdx)`:`fleetBombardDamage` 總傷害 → `gamedata.GroundBombHitsFromDamage`
+  換算 hits → 依 Planet Hits 表「每整數人口 1 hit」直接扣減 `colony.Population`(夾在 0 以上)。
+  另用 `gamedata.GroundPlanetTotalHits` 算一個純供顯示參考的 `PlanetHitsRequired`(對應手冊 UI
+  「Estimated Bomb Hits」旁邊同時顯示的「Planet Hits」欄,讓玩家判斷這波轟炸夠不夠),**不**
+  用它去扣建築/駐軍(見下方範圍限制)。
+
+**範圍限制(誠實標註,非杜撰真值,是既有 remake 資料模型限制,非本輪引入)**:
+1. **只扣人口,不扣建築/儲存生產/駐軍**——AI(`AIOpponent`)完全沒有 `ColonyBuildings`/儲存
+   生產/駐軍的持久資料可扣,扣了會是憑空生資料,故不做。這與「只做攻方戰車」是同一種誠實邊界:
+   有資料才接,沒資料不臆測。
+2. **手冊「Damage of beams and torpedoes is halved just like in tactical combat」與「A better
+   computer helps for beams here too」未套用**——不是轟炸專屬的遺漏,是戰術戰鬥層本身現在就
+   還沒有獨立的「光束/魚雷減半」或「電腦命中加成接線」函式(`ground.go` 檔尾原有 TODO 已載明),
+   本模擬只能沿用一般 `ResolveShot`,兩項都待戰術戰鬥層先補上才能真正對齊手冊轟炸公式。
+3. **行星護盾未建模**——`damage.go` 的 `DamageAfterShield` 明講「本函式只處理艦對艦,行星護盾
+   情境不適用」,remake 目前也沒有任何「行星防禦/護盾」資料欄位,故轟炸模擬視同殖民地護盾/
+   裝甲恆為 0(無防禦)。
+4. **人口歸零後的後續未定義**——手冊沒講「殖民地被轟炸到 0 人口」要不要摧毀殖民地/移除星系
+   Owner,本函式讓 `Population` 停在 0、殖民地本身仍存在於 `aiPlayer.Colonies`,不臆測補上
+   摧毀邏輯(TODO,留給未來確認手冊或 openorion2 行為後再接)。
+5. **UI 觸發最小化**——`BombardColony` 只是引擎層函式,`cmd/moo2/interactive.go` 尚未接對應
+   按鈕/熱區(對照 `InvadeColony` 已有的 `"invade"` 熱區,`BombardColony` 目前只能被測試/未來
+   UI 呼叫),完整轟炸操作介面延後。
+
+單測(`orbital_bombardment_test.go`):前置條件(無效星索引/艦隊未抵達/非敵方/無艦艇/無殖民地
+模型)、rng 種子化可重現、**用保證命中+固定滿傷的艦隊(atk=101≥99,`CombatClassicToHit`/
+`DamageForHit` 手冊「[2] BA+CO-AF-BD>=99 恆命中恆滿傷」分支)手算驗證整條換算鏈**(10 輪×1 艦
+×101 傷害=1010 總傷害→hits=10→母星預設人口 8 全數扣光→`RemainingHits`=2)、人口不會扣成負數、
+轟炸不佔領星/不增減 AI 殖民地筆數。
 
 ## 來源
 

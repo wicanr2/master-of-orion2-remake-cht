@@ -303,3 +303,213 @@ func TestEndTurn_AdvancesMarineBarracks(t *testing.T) {
 		t.Fatalf("EndTurn 後母星(有 Marine Barracks)應已生成陸戰隊,got %v", s.PlayerColonyMarines)
 	}
 }
+
+// --- 裝甲營房(Armor Barracks)戰車營生成(死碼串接:GroundArmorBarracksUnits/Cap) ---
+
+// TestAdvanceArmor_GrowsOverTurnsUpToCap 驗證 Armor Barracks 駐軍池隨回合成長,且不超過
+// GroundArmorBarracksCap 上限。母星預設沒有裝甲營房(homeworldBuildings 只給海軍陸戰隊營+
+// 星基),故先手動標記,再灌高人口(40/40)讓 cap=10(手冊初始 2,每 5 回合 +1)。
+func TestAdvanceArmor_GrowsOverTurnsUpToCap(t *testing.T) {
+	s := NewDemoSession()
+	s.ColonyBuildings[0][armorBarracksBuildingName] = true
+	s.PlayerColonies[0].Population = 40
+	s.PlayerColonies[0].PopMax = 40
+
+	wantCap := gamedata.GroundArmorBarracksCap(40, 40, false)
+	if wantCap != 10 {
+		t.Fatalf("測試前提錯誤:預期 cap=10,got %d(檢查 GroundArmorBarracksCap 公式是否變動)", wantCap)
+	}
+
+	s.advanceArmor() // age=0:初始 2 單位(未達 10 的上限)
+	if s.PlayerColonyTanks[0] != 2 {
+		t.Fatalf("首次 advanceArmor 後應為手冊初始值 2,got %d", s.PlayerColonyTanks[0])
+	}
+
+	for i := 0; i < 40; i++ {
+		s.advanceArmor()
+	}
+	if s.PlayerColonyTanks[0] != wantCap {
+		t.Fatalf("40+1 回合後戰車營應成長到上限 %d,got %d", wantCap, s.PlayerColonyTanks[0])
+	}
+}
+
+// TestAdvanceArmor_NoBarracksNoGrowth 驗證沒有裝甲營房的殖民地不會生成戰車營(母星開局預設
+// 就是這個情境,homeworldBuildings 沒有裝甲營房)。
+func TestAdvanceArmor_NoBarracksNoGrowth(t *testing.T) {
+	s := NewDemoSession()
+	for i := 0; i < 10; i++ {
+		s.advanceArmor()
+	}
+	if s.PlayerColonyTanks[0] != 0 {
+		t.Fatalf("無 Armor Barracks 的殖民地不應生成戰車營,got %d", s.PlayerColonyTanks[0])
+	}
+}
+
+// TestEndTurn_AdvancesArmorBarracks 驗證 EndTurn 有接上 advanceArmor(母星預設無裝甲營房,
+// 故驗證「跑了但沒生成」——真正生成的成長曲線見 TestAdvanceArmor_GrowsOverTurnsUpToCap)。
+func TestEndTurn_AdvancesArmorBarracks(t *testing.T) {
+	s := NewDemoSession()
+	s.DisableEvents = true
+	if s.PlayerColonyTanks != nil {
+		t.Fatalf("EndTurn 前 PlayerColonyTanks 應為 nil(懶初始化),got %v", s.PlayerColonyTanks)
+	}
+	s.EndTurn()
+	if len(s.PlayerColonyTanks) != 1 || s.PlayerColonyTanks[0] != 0 {
+		t.Fatalf("EndTurn 後應已懶初始化 PlayerColonyTanks(母星無裝甲營房,值應為 0),got %v", s.PlayerColonyTanks)
+	}
+}
+
+// TestLoadTanks_SharesTransportCapacityWithMarines 驗證 LoadTanks 與 LoadMarines 共用同一個
+// MarineTransportCapacity() 運力池(既有簡化,見 LoadTanks 註解),先載的一方先吃到運力。
+func TestLoadTanks_SharesTransportCapacityWithMarines(t *testing.T) {
+	s := NewDemoSession()
+	s.PlayerColonyMarines = []int{999}
+	s.PlayerColonyTanks = []int{999}
+	capacity := s.MarineTransportCapacity()
+	if capacity <= 0 {
+		t.Fatalf("預期新遊戲艦隊應有正的運力上限,got %d", capacity)
+	}
+
+	nMarines := s.LoadMarines(0)
+	if nMarines != capacity {
+		t.Fatalf("陸戰隊應先吃滿運力上限,got %d want %d", nMarines, capacity)
+	}
+	nTanks := s.LoadTanks(0)
+	if nTanks != 0 {
+		t.Fatalf("運力已被陸戰隊吃滿,LoadTanks 應回 0,got %d", nTanks)
+	}
+
+	// 換個順序:先載一半陸戰隊,驗證戰車能吃掉剩餘運力(而非被完全排除)。
+	s2 := NewDemoSession()
+	half := capacity / 2
+	s2.PlayerColonyMarines = []int{half}
+	s2.PlayerColonyTanks = []int{999}
+	if got := s2.LoadMarines(0); got != half {
+		t.Fatalf("應載運全部 %d 陸戰隊,got %d", half, got)
+	}
+	wantTanks := capacity - half
+	if got := s2.LoadTanks(0); got != wantTanks {
+		t.Fatalf("戰車應吃掉剩餘運力 %d,got %d", wantTanks, got)
+	}
+	if s2.FleetMarines != half || s2.FleetTanks != wantTanks {
+		t.Fatalf("FleetMarines/FleetTanks 應等於已載運數,got marines=%d tanks=%d", s2.FleetMarines, s2.FleetTanks)
+	}
+}
+
+// --- Battleoids 升級(GroundBattleoidHitsToKill / GroundBattleoidCombatBonus) ---
+
+// TestTankHitsToKillFor_BattleoidsUpgrade 驗證未研究 Battleoids 沿用 GroundTankHitsToKill,
+// 已研究則改用固定 3 hits 的 GroundBattleoidHitsToKill(手冊 p.81,整批換裝、不再疊加)。
+func TestTankHitsToKillFor_BattleoidsUpgrade(t *testing.T) {
+	s := NewDemoSession()
+	if got := tankHitsToKillFor(s.Player); got != gamedata.GroundTankHitsToKill(false) {
+		t.Fatalf("未研究 Battleoids 應沿用 GroundTankHitsToKill(false)=%d,got %d", gamedata.GroundTankHitsToKill(false), got)
+	}
+	s.Player.CompletedTopics[gamedata.TOPIC_ASTRO_CONSTRUCTION] = true
+	if got := tankHitsToKillFor(s.Player); got != gamedata.GroundBattleoidHitsToKill {
+		t.Fatalf("已研究 Battleoids 應改用 GroundBattleoidHitsToKill=%d,got %d", gamedata.GroundBattleoidHitsToKill, got)
+	}
+}
+
+// TestTankForceBonusFor_OnlyWhenTanksPresent 驗證 Battleoid 的 +10 相對加成只在 tankCount>0
+// 時套用(0 輛戰車不該白拿加成)。
+func TestTankForceBonusFor_OnlyWhenTanksPresent(t *testing.T) {
+	s := NewDemoSession()
+	s.Player.CompletedTopics[gamedata.TOPIC_ASTRO_CONSTRUCTION] = true
+	if got := tankForceBonusFor(s.Player, 0); got != 0 {
+		t.Fatalf("0 輛戰車不應套用 Battleoid 加成,got %d", got)
+	}
+	if got := tankForceBonusFor(s.Player, 3); got != gamedata.GroundBattleoidCombatBonus {
+		t.Fatalf("有戰車且已升級 Battleoid,應套用 +%d 加成,got %d", gamedata.GroundBattleoidCombatBonus, got)
+	}
+	// 未升級 Battleoid 則即使有戰車也不套用。
+	s2 := NewDemoSession()
+	if got := tankForceBonusFor(s2.Player, 3); got != 0 {
+		t.Fatalf("未升級 Battleoid,有戰車也不應套用加成,got %d", got)
+	}
+}
+
+// --- 戰車納入 InvadeColony 攻方 GroundForce ---
+
+// TestInvadeColony_TanksAloneCanInvade 驗證只有戰車、沒有陸戰隊時仍可發動入侵(guard 條件已
+// 從「FleetMarines>0」放寬為「FleetMarines>0 或 FleetTanks>0」)。
+func TestInvadeColony_TanksAloneCanInvade(t *testing.T) {
+	s, starIdx := newFleetAtAIHomeSession(t)
+	s.FleetMarines = 0
+	s.FleetTanks = 5
+	res := s.InvadeColony(starIdx)
+	if !res.Ok {
+		t.Fatalf("只有戰車、無陸戰隊,應仍可發動入侵,got Reason=%q", res.Reason)
+	}
+}
+
+// TestInvadeColony_NoGroundForceRejected 驗證陸戰隊與戰車皆為 0 時,仍應被前置條件擋下。
+func TestInvadeColony_NoGroundForceRejected(t *testing.T) {
+	s, starIdx := newFleetAtAIHomeSession(t)
+	s.FleetMarines = 0
+	s.FleetTanks = 0
+	res := s.InvadeColony(starIdx)
+	if res.Ok {
+		t.Fatalf("陸戰隊與戰車皆為 0 不應允許入侵,got Ok=true")
+	}
+}
+
+// TestInvadeColony_TanksSplitSurvivorsConsistently 驗證陸戰隊+戰車混編入侵後,
+// AttackerMarinesSurvived/AttackerTanksSurvived 的拆解與 AttackerSurvived 總數一致,且各自
+// 不超過原始載運數,FleetMarines/FleetTanks 正確回寫拆分後存活數。
+func TestInvadeColony_TanksSplitSurvivorsConsistently(t *testing.T) {
+	const n = 30
+	for i := 0; i < n; i++ {
+		s, starIdx := newFleetAtAIHomeSession(t)
+		s.Turn = i + 1
+		s.FleetMarines = 3
+		s.FleetTanks = 4
+
+		res := s.InvadeColony(starIdx)
+		if !res.Ok {
+			t.Fatalf("i=%d: 前置條件應齊備,got Reason=%q", i, res.Reason)
+		}
+		if res.AttackerSurvived != res.AttackerMarinesSurvived+res.AttackerTanksSurvived {
+			t.Fatalf("i=%d: AttackerSurvived(%d) 應等於陸戰隊+戰車拆解和(%d+%d)", i, res.AttackerSurvived, res.AttackerMarinesSurvived, res.AttackerTanksSurvived)
+		}
+		if res.AttackerTanksSurvived > 4 {
+			t.Fatalf("i=%d: 戰車存活數不應超過原始載運數 4,got %d", i, res.AttackerTanksSurvived)
+		}
+		if res.AttackerMarinesSurvived > 3 {
+			t.Fatalf("i=%d: 陸戰隊存活數不應超過原始載運數 3,got %d", i, res.AttackerMarinesSurvived)
+		}
+		if s.FleetMarines != res.AttackerMarinesSurvived || s.FleetTanks != res.AttackerTanksSurvived {
+			t.Fatalf("i=%d: FleetMarines/FleetTanks 應回寫拆分後存活數,got marines=%d(want %d) tanks=%d(want %d)",
+				i, s.FleetMarines, res.AttackerMarinesSurvived, s.FleetTanks, res.AttackerTanksSurvived)
+		}
+	}
+}
+
+// TestInvadeColony_TanksImproveWinRate 驗證加上戰車營確實提升攻方勝率(對照組:同樣 3 陸戰隊
+// 但沒有戰車 vs 3 陸戰隊+12 戰車),證明坦克真的被納入了 GroundForce 解算,不是擺著沒用的死碼。
+func TestInvadeColony_TanksImproveWinRate(t *testing.T) {
+	const n = 100
+	winRate := func(tanks int) float64 {
+		wins := 0
+		for i := 0; i < n; i++ {
+			s, starIdx := newFleetAtAIHomeSession(t)
+			s.Turn = i + 1
+			s.FleetMarines = 3
+			s.FleetTanks = tanks
+			res := s.InvadeColony(starIdx)
+			if !res.Ok {
+				t.Fatalf("tanks=%d i=%d: 前置條件應齊備,got Reason=%q", tanks, i, res.Reason)
+			}
+			if res.AttackerWon {
+				wins++
+			}
+		}
+		return float64(wins) / n
+	}
+	withoutTanks := winRate(0)
+	withTanks := winRate(12)
+	if withTanks <= withoutTanks {
+		t.Fatalf("加上 12 輛戰車應提升攻方勝率,got 無戰車=%.2f 有戰車=%.2f", withoutTanks, withTanks)
+	}
+	t.Logf("無戰車勝率=%.2f 有戰車(12)勝率=%.2f", withoutTanks, withTanks)
+}

@@ -90,6 +90,35 @@ func hasPoweredArmorFor(ps engine.PlayerState) bool {
 	return groundEquipTechOwned(ps, gamedata.TOPIC_ROBOTICS, gamedata.TECH_POWERED_ARMOR)
 }
 
+// hasBattleoidsFor 回傳 ps 是否已研究 Battleoids(手冊 p.81,techtree.go TOPIC_ASTRO_CONSTRUCTION
+// 三選一 TECH_BATTLEOIDS)。沿用 groundEquipTechOwned 的判定規則(主題完成 + 未明確抉擇時視為
+// 解鎖、已明確抉擇時需選中該科技),與 hasPoweredArmorFor 同款,只是換主題/科技。
+func hasBattleoidsFor(ps engine.PlayerState) bool {
+	return groundEquipTechOwned(ps, gamedata.TOPIC_ASTRO_CONSTRUCTION, gamedata.TECH_BATTLEOIDS)
+}
+
+// tankHitsToKillFor 回傳 ps 這方戰車營單位的陣亡所需 hits。已研究 Battleoids 者手冊 p.81
+// 明講「整批換成 Battleoid,固定 3 hits」(GroundBattleoidHitsToKill,不再套用 Heavy-G 修飾,
+// 見 ground.go GroundTankHitsToKill 註解);未研究者沿用 GroundTankHitsToKill(highG 未建模,
+// 理由同 playerMarineForce 對 Subterranean/High-G 的留白)。
+func tankHitsToKillFor(ps engine.PlayerState) int {
+	if hasBattleoidsFor(ps) {
+		return gamedata.GroundBattleoidHitsToKill
+	}
+	return gamedata.GroundTankHitsToKill(false)
+}
+
+// tankForceBonusFor 回傳 tankCount 輛戰車若已升級 Battleoids,對整個地面戰 force 額外貢獻的
+// 加成(手冊 p.81:「a ground combat rating 10 higher than a tank」,GroundBattleoidCombatBonus)。
+// 只在 tankCount>0 時套用——0 輛戰車的一方不該白拿這個加成(該加成描述的是「戰車營升級
+// Battleoid 後」的相對戰力,無戰車時無意義)。
+func tankForceBonusFor(ps engine.PlayerState, tankCount int) int {
+	if tankCount > 0 && hasBattleoidsFor(ps) {
+		return gamedata.GroundBattleoidCombatBonus
+	}
+	return 0
+}
+
 // groundEquipmentBonusFor 加總 ps 已擁有的地面裝備科技加成。三項(Powered Armor/Anti-Grav
 // Harness/Personal Shield)是各自獨立的裝備(非同一裝甲槽的互斥升級,不同於 ArmorOptions),
 // 手冊逐條描述皆為各自加成,故加總而非取最高。
@@ -137,6 +166,11 @@ func aiMarineForce(a AIOpponent) int {
 // (session.go applyBuildingEffect/homeworldBuildings 已用同一字串當 key)。
 const marineBarracksBuildingName = "海軍陸戰隊營"
 
+// armorBarracksBuildingName 是 gamedata.Buildings 對應「Armor Barracks」的中文譯名(見
+// gamedata/buildings.go NameZH:"裝甲營房";先前 session.go colonyMoralePercent 已用同一字面
+// 字串當士氣判定的一部分,這裡補一個具名常數取代各處寫死字串,對稱 marineBarracksBuildingName)。
+const armorBarracksBuildingName = "裝甲營房"
+
 // advanceMarines 讓每個已建成 Marine Barracks 的玩家殖民地依手冊公式
 // (gamedata.GroundMarineBarracksUnits)補充陸戰隊駐軍池,有上限(GroundMarineBarracksCap)。
 // 只會成長,不會因為公式重算而倒退(用 max 寫回,而非直接覆蓋)——已消耗掉(見 LoadMarines)
@@ -168,6 +202,38 @@ func (s *GameSession) advanceMarines() {
 			s.PlayerColonyMarines[i] = n
 		}
 		s.MarineBarracksAge[i]++
+	}
+}
+
+// advanceArmor 讓每個已建成 Armor Barracks 的玩家殖民地依手冊公式
+// (gamedata.GroundArmorBarracksUnits)補充戰車營駐軍池,有上限(GroundArmorBarracksCap)。
+// 邏輯與 advanceMarines 完全對稱(見該函式註解),只是換裝甲營房建築名/戰車駐軍池欄位。
+//
+// Warlord 特性同樣未建模(理由同 advanceMarines),一律傳 false。
+func (s *GameSession) advanceArmor() {
+	if s.PlayerColonyTanks == nil {
+		s.PlayerColonyTanks = make([]int, len(s.PlayerColonies))
+	}
+	if s.ArmorBarracksAge == nil {
+		s.ArmorBarracksAge = make([]int, len(s.PlayerColonies))
+	}
+	for len(s.PlayerColonyTanks) < len(s.PlayerColonies) {
+		s.PlayerColonyTanks = append(s.PlayerColonyTanks, 0)
+	}
+	for len(s.ArmorBarracksAge) < len(s.PlayerColonies) {
+		s.ArmorBarracksAge = append(s.ArmorBarracksAge, 0)
+	}
+	for i := range s.PlayerColonies {
+		if i >= len(s.ColonyBuildings) || s.ColonyBuildings[i] == nil || !s.ColonyBuildings[i][armorBarracksBuildingName] {
+			continue
+		}
+		age := s.ArmorBarracksAge[i]
+		c := s.PlayerColonies[i]
+		n := gamedata.GroundArmorBarracksUnits(age, c.Population, c.PopMax, false)
+		if n > s.PlayerColonyTanks[i] {
+			s.PlayerColonyTanks[i] = n
+		}
+		s.ArmorBarracksAge[i]++
 	}
 }
 
@@ -207,6 +273,31 @@ func (s *GameSession) LoadMarines(colonyIdx int) int {
 	return n
 }
 
+// LoadTanks 把玩家殖民地 colonyIdx 的 Armor Barracks 駐軍池戰車營,載上隨艦隊出征的
+// FleetTanks。⚠ 簡化:remake 沒有獨立的「戰車運輸艙位」資料(手冊只明講 Transport Ship /
+// Troop Pods 是針對 Marine),故與 FleetMarines 共用同一個 MarineTransportCapacity() 運力池
+// (room 扣掉兩者已載運的量)——這是誠實的簡化,不是手冊原文規則,見 MarineTransportCapacity
+// 註解。回傳實際載運數(0 表示無可載運空間或該殖民地無駐軍)。
+func (s *GameSession) LoadTanks(colonyIdx int) int {
+	if colonyIdx < 0 || colonyIdx >= len(s.PlayerColonyTanks) {
+		return 0
+	}
+	room := s.MarineTransportCapacity() - s.FleetMarines - s.FleetTanks
+	if room <= 0 {
+		return 0
+	}
+	n := s.PlayerColonyTanks[colonyIdx]
+	if n > room {
+		n = room
+	}
+	if n <= 0 {
+		return 0
+	}
+	s.PlayerColonyTanks[colonyIdx] -= n
+	s.FleetTanks += n
+	return n
+}
+
 // --- 入侵觸發 + 解算 ---
 
 // findAIColonyByStar 尋找 starIdx 對應到哪個 AI 對手的哪個殖民地(依 AIOpponent.ColonyStars
@@ -237,29 +328,50 @@ func (s *GameSession) PlayerOwnedStars() int {
 
 // GroundInvasionResult 是一次入侵嘗試的結果(供 UI/測試檢視)。
 type GroundInvasionResult struct {
-	Ok               bool   // 是否成功發動了一場入侵解算(false = 前置條件不足,未開打)
-	Reason           string // Ok=false 時的原因(供 UI 提示;Ok=true 時為空字串)
-	AttackerWon      bool   // Ok=true 時才有意義
-	AttackerSurvived int
-	DefenderSurvived int
-	Rounds           int
-	StarCaptured     bool // 攻方勝且完成佔領星 + 殖民地過戶
+	Ok                      bool   // 是否成功發動了一場入侵解算(false = 前置條件不足,未開打)
+	Reason                  string // Ok=false 時的原因(供 UI 提示;Ok=true 時為空字串)
+	AttackerWon             bool   // Ok=true 時才有意義
+	AttackerSurvived        int    // 攻方存活總數(陸戰隊+戰車營,拆解見下兩欄)
+	AttackerMarinesSurvived int    // 攻方存活的陸戰隊數(AttackerSurvived 的子集,見 InvadeColony 拆解說明)
+	AttackerTanksSurvived   int    // 攻方存活的戰車營數(同上)
+	DefenderSurvived        int
+	Rounds                  int
+	StarCaptured            bool // 攻方勝且完成佔領星 + 殖民地過戶
 }
 
 // InvadeColony 嘗試對 starIdx 這顆星發動地面入侵。前置條件:
 //  1. 玩家艦隊已抵達該星(FleetAtStar==starIdx 且 FleetETA==0,航行中不能發動)。
 //  2. 該星是敵方(Owner==2)且有「已建模」的殖民地(findAIColonyByStar 找得到)。
-//  3. 玩家艦隊已載運陸戰隊(FleetMarines>0,由 LoadMarines 載運)。
+//  3. 玩家艦隊已載運地面部隊(FleetMarines>0 或 FleetTanks>0,由 LoadMarines/LoadTanks 載運)。
 //
 // 任一條件不足回傳 Ok=false + Reason,不消耗任何狀態、不呼叫 rng。
 //
 // 解算組雙方 gamedata.GroundForce:
-//   - 攻方:FleetMarines 個單位,force=playerMarineForce()、hits-to-kill 依
-//     GroundMarineHitsToKill(highG 未建模=false, 是否已有 Powered Armor)。
+//
+//   - 攻方:FleetMarines 個陸戰隊單位 + FleetTanks 個戰車營單位混編。force 統一套用
+//     playerMarineForce()(裝甲/裝備/種族加成,對整支部隊一視同仁——本 remake 的
+//     GroundForce.Force 本來就是「side 級」單一加成,不分兵種,見 ground_battle.go 設計),
+//     若持有 Battleoids 再疊加 tankForceBonusFor 的相對加成。hits-to-kill 陸戰隊/戰車營
+//     分開算(GroundMarineHitsToKill / tankHitsToKillFor)。
+//
+//     ⚠ 單位排序(無把握的接法,已選定但列出讓 L.CY 定案):合併後的 Units 陣列「陸戰隊在前、
+//     戰車營在後」——這不是敘事上的「誰當前鋒」選擇(手冊未提供地面戰隊形資訊),而是技術上
+//     唯一能在戰後把 res.AttackerSurvived(單一總數)準確拆回「陸戰隊存活數 / 戰車營存活數」
+//     的排法:ResolveGroundBattle 的規則是「最前面存活單位先受創」,即單位嚴格按索引順序陣亡
+//     (index 0 全滅後才輪到 index 1),故存活者必是原始順序的「後段」;把戰車營放在後段,
+//     戰後只需 tanksSurvived=min(total存活,戰車營原始數量) 即可還原分兵種存活數,不需更動
+//     gamedata 層的 GroundUnit/GroundForce 結構(該結構本身無兵種標記欄位)。若未來要精確
+//     模擬「戰車在前掩護陸戰隊」的戰術隊形,需要先幫 GroundUnit 加兵種欄位,超出本輪死碼
+//     串接範圍。
+//
 //   - 守方:兵力簡化為 gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population,
 //     colony.PopMax, false)——AI 未追蹤各殖民地 Marine Barracks 是否已建成/已運作幾回合
 //     (AI 無對應 ColonyBuildings 追蹤機制),以「已運作 s.Turn 回合」做近似(AI 母星開局
-//     即有 Marine Barracks,見 homeworldBuildings);force=aiMarineForce()。
+//     即有 Marine Barracks,見 homeworldBuildings);force=aiMarineForce()。守方戰車營
+//     TODO 未接:AI 開局 homeworldBuildings() 本就沒有裝甲營房(只有海軍陸戰隊營+星基),
+//     且 AIOpponent 完全沒有 ColonyBuildings 追蹤機制可供判斷「AI 是否已建成裝甲營房」,
+//     沒有資料可誠實推導守方戰車數,故不臆測補上——這與 marine 側的近似不同,marine 側
+//     至少有「開局必有 Marine Barracks」這個已知事實撐腰,armor 側沒有對應事實。
 //
 // rng 依「回合數 + 星索引」種子化(同 ResolveBattle/ResolveGroundBattle 呼叫慣例),同一回合
 // 對同一顆星重複輸入必得到相同結果,可重現。
@@ -271,8 +383,8 @@ type GroundInvasionResult struct {
 // 存活戰鬥單位數」(手冊 p.162-164 只有敘述性描述,無精確的「入侵後保留多少平民人口」公式,
 // 至少保留 1 人口,標簡化待精修)。
 //
-// 攻方敗(含平手皆歸守方,見 ResolveGroundBattle):FleetMarines 回寫為攻方存活數(戰損),
-// Owner 不變、殖民地不轉移。
+// 攻方敗(含平手皆歸守方,見 ResolveGroundBattle):FleetMarines/FleetTanks 回寫為攻方存活數
+// (戰損),Owner 不變、殖民地不轉移。
 func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	if starIdx < 0 || starIdx >= len(s.Stars) {
 		return GroundInvasionResult{Reason: "無效的星索引"}
@@ -284,8 +396,8 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	if star.Owner != 2 {
 		return GroundInvasionResult{Reason: "該星不是敵方殖民地"}
 	}
-	if s.FleetMarines <= 0 {
-		return GroundInvasionResult{Reason: "艦隊未載運陸戰隊"}
+	if s.FleetMarines <= 0 && s.FleetTanks <= 0 {
+		return GroundInvasionResult{Reason: "艦隊未載運地面部隊"}
 	}
 	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
 	if !ok {
@@ -294,9 +406,17 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	aiPlayer := &s.AIPlayers[aiIdx]
 	colony := aiPlayer.Colonies[colonyIdx]
 
-	atkForce := s.playerMarineForce()
-	atkHits := gamedata.GroundMarineHitsToKill(false, s.hasPoweredArmor())
-	atk := gamedata.NewGroundForce(s.FleetMarines, atkHits, atkForce, false)
+	tankCount := s.FleetTanks
+	atkForce := s.playerMarineForce() + tankForceBonusFor(s.Player, tankCount)
+	marineHits := gamedata.GroundMarineHitsToKill(false, s.hasPoweredArmor())
+	tankHits := tankHitsToKillFor(s.Player)
+	// 合併陸戰隊+戰車營單位:Force 只借用 marineUnits/tankUnits 建構出來的 Units,side 級的
+	// atkForce 已在上面算好,故建構單位時 force 參數傳 0(NewGroundForce 的 force 只是塞進
+	// GroundForce.Force 欄位,這裡改在合併後的 atk struct 上設一次即可,避免混淆)。
+	marineUnits := gamedata.NewGroundForce(s.FleetMarines, marineHits, 0, false).Units
+	tankUnits := gamedata.NewGroundForce(tankCount, tankHits, 0, false).Units
+	atkUnits := append(append([]gamedata.GroundUnit{}, marineUnits...), tankUnits...)
+	atk := gamedata.GroundForce{Units: atkUnits, Force: atkForce, Defending: false}
 
 	defCount := gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population, colony.PopMax, false)
 	defForce := aiMarineForce(*aiPlayer)
@@ -306,12 +426,23 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	rng := rand.New(rand.NewSource(int64(s.Turn)*2654435761 + int64(starIdx)*97 + 555))
 	res := gamedata.ResolveGroundBattle(atk, def, rng)
 
+	// 拆回陸戰隊/戰車營各自存活數:見上方函式註解「單位排序」——戰車營排在合併陣列尾端,
+	// 故戰後存活者必優先含括戰車營(死亡按原始順序發生),tanksSurvived 最多不超過原始戰車營
+	// 數量,剩下的存活數才輪到陸戰隊。
+	tanksSurvived := res.AttackerSurvived
+	if tanksSurvived > tankCount {
+		tanksSurvived = tankCount
+	}
+	marinesSurvived := res.AttackerSurvived - tanksSurvived
+
 	out := GroundInvasionResult{
 		Ok: true, AttackerWon: res.AttackerWon,
 		AttackerSurvived: res.AttackerSurvived, DefenderSurvived: res.DefenderSurvived,
+		AttackerMarinesSurvived: marinesSurvived, AttackerTanksSurvived: tanksSurvived,
 		Rounds: res.Rounds,
 	}
-	s.FleetMarines = res.AttackerSurvived
+	s.FleetMarines = marinesSurvived
+	s.FleetTanks = tanksSurvived
 
 	if res.AttackerWon {
 		star.Owner = 1
@@ -331,6 +462,12 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 		}
 		for len(s.MarineBarracksAge) < len(s.PlayerColonies) {
 			s.MarineBarracksAge = append(s.MarineBarracksAge, 0)
+		}
+		for len(s.PlayerColonyTanks) < len(s.PlayerColonies) {
+			s.PlayerColonyTanks = append(s.PlayerColonyTanks, 0)
+		}
+		for len(s.ArmorBarracksAge) < len(s.PlayerColonies) {
+			s.ArmorBarracksAge = append(s.ArmorBarracksAge, 0)
 		}
 
 		aiPlayer.Colonies = append(aiPlayer.Colonies[:colonyIdx], aiPlayer.Colonies[colonyIdx+1:]...)

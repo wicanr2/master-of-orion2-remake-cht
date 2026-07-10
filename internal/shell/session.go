@@ -394,11 +394,11 @@ type CombatShip struct {
 	Attack    int // Beam Attack(BA,命中判定用)
 	Col, Row  int // 格位(8 欄 × 6 列)
 	// 以下供 ResolveShot 真戰鬥公式使用(remake 由艦艇設計推導,見 StartCombat 註記)。
-	Defense         int // 守方防禦(AF+BD),減 netAttack
-	WeaponMin       int // 單發最小傷害
-	WeaponMax       int // 單發最大傷害
-	ShieldReduction int // 護盾每發減傷
-	ArmorHP         int // 裝甲 HP(結構外的緩衝,先耗盡才傷結構)
+	Defense         int        // 守方防禦(AF+BD),減 netAttack
+	WeaponMin       int        // 單發最小傷害
+	WeaponMax       int        // 單發最大傷害
+	ShieldReduction int        // 護盾每發減傷
+	ArmorHP         int        // 裝甲 HP(結構外的緩衝,先耗盡才傷結構)
 	Kind            WeaponKind // 武器戰鬥解算路徑(beam/missile/spherical,見 weapon_kind.go);
 	// 敵方艦(genEnemyFleet)無個別武器設計資料,一律留零值 WeaponKindBeam(既有簡化)。
 }
@@ -1204,17 +1204,23 @@ type GameSession struct {
 	PlayerColonyMarines []int             // 各玩家殖民地 Marine Barracks 駐軍池(平行 PlayerColonies)
 	MarineBarracksAge   []int             // 各玩家殖民地 Marine Barracks 已運作回合數(平行 PlayerColonies)
 	ColonyBuildings     []map[string]bool // 各殖民地已完工建築(去重,避免重複套用長期效果)
-	EventSeed           int64             // 隨機事件亂數種子(可重現;新遊戲遞增)
-	LastEvent           string            // 本回合觸發的隨機事件描述(空=無事件;供回合摘要)
-	DisableEvents       bool              // 關閉隨機事件(供確定性經濟測試隔離)
-	eventRand           *rand.Rand        // 事件亂數源(由 EventSeed 惰性建立)
-	AntaresRaids        int               // 已發生的安塔蘭突襲次數(逐次升級強度)
-	LastAntares         string            // 本回合安塔蘭突襲描述(空=無;供回合摘要)
-	RaceIndex           int               // 玩家選定的種族(shell.Races 索引)
-	PlayerName          string            // 玩家帝國/領袖名稱(新遊戲命名畫面設定)
-	FlagColor           int               // 玩家旗幟顏色索引(shell.FlagColors)
-	RaceCombatPct       int               // 種族戰鬥戰力百分點加成(供戰鬥使用)
-	raceGrowthPct       int               // 種族人口成長百分點加成(供 advancePopulation)
+
+	// FleetTanks / PlayerColonyTanks / ArmorBarracksAge:裝甲營房(Armor Barracks)戰車營
+	// 駐軍系統,與上面三個 Marine 對應欄位對稱(見 advanceArmor/LoadTanks,ground_invasion.go)。
+	FleetTanks        int        // 隨玩家艦隊出征、已載運的戰車營數(與 FleetMarines 共用 MarineTransportCapacity 運力池,見 LoadTanks)
+	PlayerColonyTanks []int      // 各玩家殖民地 Armor Barracks 駐軍池(平行 PlayerColonies)
+	ArmorBarracksAge  []int      // 各玩家殖民地 Armor Barracks 已運作回合數(平行 PlayerColonies)
+	EventSeed         int64      // 隨機事件亂數種子(可重現;新遊戲遞增)
+	LastEvent         string     // 本回合觸發的隨機事件描述(空=無事件;供回合摘要)
+	DisableEvents     bool       // 關閉隨機事件(供確定性經濟測試隔離)
+	eventRand         *rand.Rand // 事件亂數源(由 EventSeed 惰性建立)
+	AntaresRaids      int        // 已發生的安塔蘭突襲次數(逐次升級強度)
+	LastAntares       string     // 本回合安塔蘭突襲描述(空=無;供回合摘要)
+	RaceIndex         int        // 玩家選定的種族(shell.Races 索引)
+	PlayerName        string     // 玩家帝國/領袖名稱(新遊戲命名畫面設定)
+	FlagColor         int        // 玩家旗幟顏色索引(shell.FlagColors)
+	RaceCombatPct     int        // 種族戰鬥戰力百分點加成(供戰鬥使用)
+	raceGrowthPct     int        // 種族人口成長百分點加成(供 advancePopulation)
 
 	// Government 是玩家目前政府型態(2026-07-11 接線,供 colonyMoralePercent 士氣計算用)。
 	// 由 ApplyGovernment 設定;新遊戲若從未呼叫 ApplyGovernment,預設見 NewDemoSession
@@ -1516,6 +1522,7 @@ func (s *GameSession) EndTurn() {
 	s.advanceResearch()   // 目前研究主題完成則自動推進到下一個未完成的元件解鎖主題
 	s.advanceFleet()      // 推進艦隊星間航行(ETA 遞減,抵達則標記探索)
 	s.advanceMarines()    // 各 Marine Barracks 殖民地依手冊公式補充陸戰隊駐軍(有上限)
+	s.advanceArmor()      // 各 Armor Barracks 殖民地依手冊公式補充戰車營駐軍(有上限,見 ground_invasion.go)
 	s.advancePopulation() // 累積各殖民地成長,達門檻則 +1 人口(回寫 Population)
 	s.advanceEvents()     // 觸發 MOO2 風格隨機事件(繁榮/瘟疫/海盜…),記於 LastEvent
 	s.Turn++
