@@ -1065,7 +1065,9 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 
 func (t *tacticalScreen) fireRound(target int) {
 	tc, tr := t.enemy[target].Col, t.enemy[target].Row
-	// 射程內我艦逐一以真戰鬥公式對目標射擊(命中判定→傷害→過盾→過甲)。
+	// 射程內我艦逐一依武器類型分流真戰鬥公式:beam(ResolveShot,不動)/missile
+	// (ResolveMissileShot,躲避+AMR 攔截)/spherical(ResolveSphericalShot,現行武器表
+	// 暫無掛載,分支保留供未來串接)。見 shell/weapon_kind.go 的分類依據。
 	pAtk, firing := 0, 0
 	for i := range t.player {
 		s := &t.player[i]
@@ -1074,13 +1076,34 @@ func (t *tacticalScreen) fireRound(target int) {
 			continue
 		}
 		firing++
-		roll := t.rng.Intn(100) + 1
-		net := s.Attack - t.enemy[target].Defense
-		shot := shell.ResolveShot(net, s.WeaponMin, s.WeaponMax, dist,
-			t.enemy[target].ShieldReduction, t.enemy[target].ArmorHP, roll, false, false)
+		enemy := &t.enemy[target]
+		var shot shell.ShotResult
+		switch s.Kind {
+		case shell.WeaponKindMissile:
+			amrRoll := t.rng.Intn(100) + 1
+			jamRoll := t.rng.Intn(100) + 1
+			// hasAMR/evasion 加成現行皆無對應可造艦元件,保守傳 0/false(見
+			// shell.ResolveMissileShot 註解的 TODO);dist 是實際格距離(比 battleVolley
+			// 固定 range=2 更忠實)。
+			shot = shell.ResolveMissileShot(false, dist, amrRoll, 0, 0, false, jamRoll,
+				s.WeaponMax, enemy.ShieldReduction, enemy.ArmorHP, false)
+		case shell.WeaponKindSpherical:
+			span := s.WeaponMax - s.WeaponMin
+			r := 0
+			if span > 0 {
+				r = t.rng.Intn(span + 1)
+			}
+			aggD := gamedata.DamageSphericalRoll(s.WeaponMin, r, 100)
+			shot = shell.ResolveSphericalShot(aggD, enemy.ShieldReduction, enemy.ArmorHP, false, false)
+		default:
+			roll := t.rng.Intn(100) + 1
+			net := s.Attack - enemy.Defense
+			shot = shell.ResolveShot(net, s.WeaponMin, s.WeaponMax, dist,
+				enemy.ShieldReduction, enemy.ArmorHP, roll, false, false)
+		}
 		if shot.Hit {
-			t.enemy[target].ArmorHP = shot.RemainingArmorHP
-			t.enemy[target].HP -= shot.DamageToStructure
+			enemy.ArmorHP = shot.RemainingArmorHP
+			enemy.HP -= shot.DamageToStructure
 			pAtk += shot.DamageToStructure
 		}
 	}
@@ -1111,6 +1134,8 @@ func (t *tacticalScreen) fireRound(target int) {
 			if dist > fireRange {
 				continue
 			}
+			// 敵艦(genEnemyFleet)沒有個別武器設計,es.Kind 恆為 WeaponKindBeam(既有
+			// 簡化,非本輪引入),故還擊固定走 beam 路徑,不需要分流。
 			roll := t.rng.Intn(100) + 1
 			net := es.Attack - t.player[wi].Defense
 			shot := shell.ResolveShot(net, es.WeaponMin, es.WeaponMax, dist,

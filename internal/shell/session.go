@@ -252,9 +252,17 @@ func genEnemyFleet(turn int, mult float64) []int {
 // ResolveBattle 逐回合解算與某敵方的一場戰鬥:雙方艦隊每回合交火、逐艦擊沉,直到一方全滅
 // 或滿 6 回合;套用玩家損失到艦隊。
 // combatant 是快速艦隊結算用的單艦戰鬥屬性(與 StartCombat 同款由艦艇設計推導)。
-type combatant struct{ hp, atk, def, wmin, wmax, shield, armor int }
+// kind 依武器名分類戰鬥解算路徑(見 weapon_kind.go);敵方艦隊(genEnemyFleet)沒有個別
+// 武器設計資料,一律留零值 WeaponKindBeam(既有簡化,非本輪引入)。
+type combatant struct {
+	hp, atk, def, wmin, wmax, shield, armor int
+	kind                                    WeaponKind
+}
 
-// battleVolley 讓每個存活 attacker 對第一個存活 defender 射一發(真戰鬥公式,固定近距 range=2)。
+// battleVolley 讓每個存活 attacker 對第一個存活 defender 射一發(固定近距 range=2),
+// 依 attacker 的武器類型分流真戰鬥公式:beam 沿用 ResolveShot(不動,回歸測試見
+// combat_weapon_kind_test.go);missile 改用 ResolveMissileShot(躲避/AMR 攔截);
+// spherical 改用 ResolveSphericalShot(現行武器表暫無球形武器掛載,分支保留供未來串接)。
 // 回傳本輪擊沉的 defender 數。移除陣亡艦。
 func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand) int {
 	before := len(*defenders)
@@ -270,9 +278,26 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 			break
 		}
 		d := &(*defenders)[ti]
-		roll := rng.Intn(100) + 1
-		net := attackers[i].atk - d.def
-		shot := ResolveShot(net, attackers[i].wmin, attackers[i].wmax, 2, d.shield, d.armor, roll, false, false)
+		var shot ShotResult
+		switch attackers[i].kind {
+		case WeaponKindMissile:
+			amrRoll := rng.Intn(100) + 1
+			jamRoll := rng.Intn(100) + 1
+			shot = ResolveMissileShot(false, 2, amrRoll, 0, 0, false, jamRoll,
+				attackers[i].wmax, d.shield, d.armor, false)
+		case WeaponKindSpherical:
+			span := attackers[i].wmax - attackers[i].wmin
+			r := 0
+			if span > 0 {
+				r = rng.Intn(span + 1)
+			}
+			aggD := gamedata.DamageSphericalRoll(attackers[i].wmin, r, 100)
+			shot = ResolveSphericalShot(aggD, d.shield, d.armor, false, false)
+		default:
+			roll := rng.Intn(100) + 1
+			net := attackers[i].atk - d.def
+			shot = ResolveShot(net, attackers[i].wmin, attackers[i].wmax, 2, d.shield, d.armor, roll, false, false)
+		}
 		if shot.Hit {
 			d.armor = shot.RemainingArmorHP
 			d.hp -= shot.DamageToStructure
@@ -298,7 +323,8 @@ func (s *GameSession) ResolveBattle(enemy string) BattleResult {
 			atk := body + sh.WeaponAttack
 			atk += atk * s.RaceCombatPct / 100 // 種族戰鬥加成(姆瑞森+25、布拉西/阿爾卡里+15…)
 			out = append(out, combatant{hp: body * 3, atk: atk, def: body, wmin: atk / 2, wmax: atk,
-				shield: shieldReduceByName(sh.Shield), armor: armorHPByName(sh.Armor)})
+				shield: shieldReduceByName(sh.Shield), armor: armorHPByName(sh.Armor),
+				kind: weaponKindByName(sh.Weapon)})
 		}
 		return out
 	}
@@ -373,6 +399,8 @@ type CombatShip struct {
 	WeaponMax       int // 單發最大傷害
 	ShieldReduction int // 護盾每發減傷
 	ArmorHP         int // 裝甲 HP(結構外的緩衝,先耗盡才傷結構)
+	Kind            WeaponKind // 武器戰鬥解算路徑(beam/missile/spherical,見 weapon_kind.go);
+	// 敵方艦(genEnemyFleet)無個別武器設計資料,一律留零值 WeaponKindBeam(既有簡化)。
 }
 
 // StartCombat 依玩家艦隊 + 難度生成敵方,建立格子戰鬥雙方艦艇(HP=戰力×3、攻擊=戰力);
@@ -389,6 +417,7 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			Name: sh.Name, HP: body * 3, MaxHP: body * 3, Attack: atk, Col: 1, Row: i,
 			Defense: body, WeaponMin: atk / 2, WeaponMax: atk,
 			ShieldReduction: shieldReduceByName(sh.Shield), ArmorHP: armorHPByName(sh.Armor),
+			Kind: weaponKindByName(sh.Weapon),
 		})
 	}
 	mult := 1.0
