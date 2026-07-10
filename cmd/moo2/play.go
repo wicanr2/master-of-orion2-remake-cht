@@ -8,6 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
@@ -106,7 +107,8 @@ func (g *gameScreen) draw(dst *ebiten.Image, font *uifont.Font) {
 	// 玩家帝國
 	out := s.LastPlayerOutput
 	font.Draw(dst, "【我方帝國】", 32, 70, 16, gold)
-	topicName := shell.ResearchTopicName(s.Player.ResearchTopic)
+	// play.go 是繁中專用簡約殼:主題名經 tech.tsv 翻中文(shell.ResearchTopicName 現回英文 key)。
+	topicName := topicNameZh(i18n.Traditional, s.Player.ResearchTopic)
 	topicCost := shell.ResearchCost(s.Player.ResearchTopic)
 	rows := []string{
 		fmt.Sprintf("殖民地:%d 座", len(s.PlayerColonies)),

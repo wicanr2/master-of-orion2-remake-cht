@@ -518,7 +518,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				year := 3500 + (sess.Turn - 1)
 				fnt.Draw(dst, fmt.Sprintf("星曆 %d", year), 30, 40, 16, color.RGBA{240, 220, 120, 255})
 				fnt.Draw(dst, fmt.Sprintf("國庫 %d BC", sess.Player.BC), 30, 62, 13, color.RGBA{210, 216, 230, 255})
-				fnt.Draw(dst, fmt.Sprintf("研究:%s", shell.ResearchTopicName(sess.Player.ResearchTopic)), 30, 82, 13, color.RGBA{160, 210, 240, 255})
+				fnt.Draw(dst, fmt.Sprintf("研究:%s", topicNameZh(b.lang, sess.Player.ResearchTopic)), 30, 82, 13, color.RGBA{160, 210, 240, 255})
 				// 艦隊位置標記(青色三角)+ 航行目的連線。
 				if sess.FleetAtStar >= 0 && sess.FleetAtStar < len(sess.Stars) {
 					fx, fy := starScreenPos(sess.Stars[sess.FleetAtStar])

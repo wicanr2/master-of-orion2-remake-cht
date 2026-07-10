@@ -1,17 +1,16 @@
 package shell
 
 import (
-	"fmt"
-
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
 // research.go:可玩遊戲殼的研究主題選單資料(純邏輯)。
 //
-// 說明:原版每個研究主題的名稱存在遊戲資料 LBX(執行期才載入),demo 對局未載入 LBX,
-// 因此這裡提供一份「精選早期主題 + 專案內建譯名 + 成本」的最小集,讓玩家能實際選擇研究方向。
-// 待整合原版 LBX 科技名後,ResearchTopicName 可改接權威來源。成本一律以 gamedata 為準(不硬抄)。
+// 說明:原版每個研究主題的名稱存在遊戲資料 LBX(執行期才載入)。83 個 topic 的英文顯示名
+// 現由 gamedata.TopicEnglishName 提供(權威來源,= tech.tsv 的 i18n key);shell 層不 import
+// i18n,故 ResearchTopicName 回英文名,由 cmd/moo2 顯示端經 i18n catalog 翻中文
+// (與其他畫面字串一致的顯示層翻譯做法)。成本一律以 gamedata 為準(不硬抄)。
 
 // ResearchOption 是一個可選研究主題。
 type ResearchOption struct {
@@ -49,17 +48,11 @@ func ResearchCost(t gamedata.ResearchTopic) int {
 	return gamedata.ResearchChoiceFor(t).Cost
 }
 
-// ResearchTopicName 回傳主題的顯示名;未收錄者回後備字串。
+// ResearchTopicName 回傳主題的英文顯示名(83 個 topic 全收錄,= gamedata.TopicEnglishName,
+// 也就是 assets/i18n/tech.tsv 的 i18n key)。shell 層不 import i18n,由 cmd/moo2 顯示端
+// 經 catalog 翻中文(見 cmd/moo2/topicname.go 的 topicNameZh),與其他畫面字串一致。
 func ResearchTopicName(t gamedata.ResearchTopic) string {
-	for _, o := range StarterResearchTopics() {
-		if o.Topic == t {
-			return o.Name
-		}
-	}
-	if t == gamedata.TOPIC_STARTING_TECH {
-		return "起始科技"
-	}
-	return fmt.Sprintf("研究主題 #%d", int(t))
+	return gamedata.TopicEnglishName(t)
 }
 
 // PendingResearchChoice 回傳玩家「剛完成、可改選解鎖科技」的主題與其可選科技清單。

@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
@@ -22,13 +23,21 @@ func TestStarterResearchTopics_CostsFromGamedata(t *testing.T) {
 	}
 }
 
-func TestResearchTopicName_Fallback(t *testing.T) {
-	if got := ResearchTopicName(gamedata.TOPIC_STARTING_TECH); got != "起始科技" {
-		t.Errorf("起始科技名 = %q", got)
+func TestResearchTopicName_ReturnsEnglishKey(t *testing.T) {
+	// ResearchTopicName 現回英文顯示名(= tech.tsv 的 i18n key),中文由顯示層翻。
+	if got := ResearchTopicName(gamedata.TOPIC_STARTING_TECH); got != "Starting Tech" {
+		t.Errorf("起始科技英文名 = %q,期望 Starting Tech", got)
 	}
-	// 未收錄主題應回後備字串而非空。
-	if got := ResearchTopicName(gamedata.TOPIC_ADVANCED_GOVERNMENTS); got == "" {
-		t.Error("未收錄主題不應回空字串")
+	// 先前 fallback「研究主題 #N」的主題(如 TOPIC_ADVANCED_GOVERNMENTS)現應有英文名。
+	if got := ResearchTopicName(gamedata.TOPIC_ADVANCED_GOVERNMENTS); got != "Advanced Governments" {
+		t.Errorf("進階政體英文名 = %q,期望 Advanced Governments", got)
+	}
+	// 83 個 topic 全收錄,不再有 Topic#N 後備。
+	for i := 0; i < 83; i++ {
+		got := ResearchTopicName(gamedata.ResearchTopic(i))
+		if got == "" || strings.HasPrefix(got, "Topic#") {
+			t.Errorf("topic #%d 未收錄英文名,得 %q", i, got)
+		}
 	}
 }
 
