@@ -19,6 +19,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/assets"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/audio"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/lbx"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
@@ -72,11 +73,102 @@ func saveScreenshot(img *ebiten.Image, path string) error {
 	return png.Encode(f, rgba)
 }
 
+// runAudioDump 開啟音樂/音效 LBX,原封抽出所有 WAV entry 寫到 dir。
+// 單一 LBX 開啟失敗(例如該版本資料夾沒有該檔)只印警告續跑,不中止其餘檔案。
+func runAudioDump(dirs []string, dir string) error {
+	res, err := assets.NewResolver(dirs...)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("建立輸出目錄 %q: %w", dir, err)
+	}
+
+	total := 0
+
+	dumpMusic := func(lbxName, prefix string) {
+		arch, err := res.OpenLBX(lbxName)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "警告:開啟 %s 失敗,略過: %v\n", lbxName, err)
+			return
+		}
+		clips, err := audio.RawMusic(arch)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "警告:%s 抽取失敗,略過: %v\n", lbxName, err)
+			return
+		}
+		for _, c := range clips {
+			name := fmt.Sprintf("%s_%02d.wav", prefix, c.Index)
+			path := filepath.Join(dir, name)
+			if err := os.WriteFile(path, c.WAV, 0o644); err != nil {
+				fmt.Fprintf(os.Stderr, "警告:寫入 %s 失敗: %v\n", path, err)
+				continue
+			}
+			fmt.Printf("%s\t%d bytes\t%.2fs\n", name, len(c.WAV), wavSeconds(c.WAV))
+			total++
+		}
+	}
+
+	dumpMusic("streamhd.lbx", "streamhd")
+	dumpMusic("stream.lbx", "stream")
+
+	if arch, err := res.OpenLBX("sound.lbx"); err != nil {
+		fmt.Fprintf(os.Stderr, "警告:開啟 sound.lbx 失敗,略過: %v\n", err)
+	} else if clips, err := audio.RawSounds(arch); err != nil {
+		fmt.Fprintf(os.Stderr, "警告:sound.lbx 抽取失敗,略過: %v\n", err)
+	} else {
+		for _, c := range clips {
+			var name string
+			if c.Name == "" {
+				name = fmt.Sprintf("sound_%03d.wav", c.Index)
+			} else {
+				name = fmt.Sprintf("sound_%03d_%s.wav", c.Index, sanitizeFilename(c.Name))
+			}
+			path := filepath.Join(dir, name)
+			if err := os.WriteFile(path, c.WAV, 0o644); err != nil {
+				fmt.Fprintf(os.Stderr, "警告:寫入 %s 失敗: %v\n", path, err)
+				continue
+			}
+			fmt.Printf("%s\t%d bytes\t%.2fs\n", name, len(c.WAV), wavSeconds(c.WAV))
+			total++
+		}
+	}
+
+	fmt.Printf("共抽出 %d 個 wav 檔到 %s\n", total, dir)
+	return nil
+}
+
+// sanitizeFilename 把名稱中非 [A-Za-z0-9_-] 的字元換成 '_',供組檔名安全使用。
+func sanitizeFilename(name string) string {
+	b := []byte(name)
+	for i, c := range b {
+		switch {
+		case c >= 'A' && c <= 'Z', c >= 'a' && c <= 'z', c >= '0' && c <= '9', c == '_', c == '-':
+			// 保留
+		default:
+			b[i] = '_'
+		}
+	}
+	return string(b)
+}
+
+// wavSeconds 從 RIFF/WAVE bytes 的 fmt+data chunk 概算播放秒數;解析失敗回傳 0。
+func wavSeconds(wav []byte) float64 {
+	clip, err := audio.DecodeWAV(wav)
+	if err != nil || clip.SampleRate <= 0 {
+		return 0
+	}
+	// Clip.PCM 已統一轉為 16-bit 雙聲道交錯,每 frame 固定 4 bytes。
+	frames := len(clip.PCM) / 4
+	return float64(frames) / float64(clip.SampleRate)
+}
+
 func main() {
 	dataDirs := flag.String("data", "", "遊戲資料夾,可用逗號串多個(前者優先,如 patch,base)")
 	lbxName := flag.String("lbx", "mainmenu.lbx", "背景所在的 .lbx")
 	assetID := flag.Int("asset", 21, "背景資產 index")
 	shot := flag.String("shot", "", "headless 截圖輸出路徑(設定則跑 N 幀後結束)")
+	audioDump := flag.String("audiodump", "", "把原版音樂/音效抽成 wav 到此目錄(headless,需 -data)")
 	frames := flag.Int("frames", 3, "截圖前先跑幾幀")
 	savePath := flag.String("save", "", "存檔路徑;設定則以星圖模式繪製該存檔")
 	fontPath := flag.String("font", "", "CJK 字型檔(.ttf/.otf/.ttc);設定則用它渲染中文")
@@ -101,6 +193,20 @@ func main() {
 	langID := i18n.Traditional
 	if *lang == "en" {
 		langID = i18n.English
+	}
+
+	// 音訊抽取模式:headless,把原版音樂/音效原封抽成 .wav 到指定目錄,
+	// 供人耳試聽、建立曲目/音效對應表(不開視窗,不需字型/i18n)。
+	if *audioDump != "" {
+		if *dataDirs == "" {
+			fmt.Fprintln(os.Stderr, "需指定 -data <遊戲資料夾>")
+			os.Exit(2)
+		}
+		dirs := strings.Split(*dataDirs, ",")
+		if err := runAudioDump(dirs, *audioDump); err != nil {
+			fatal(err)
+		}
+		return
 	}
 
 	// 畫面覆蓋(擦底疊字)模式:主選單 / 行星列表。
