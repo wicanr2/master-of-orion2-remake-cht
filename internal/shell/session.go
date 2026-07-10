@@ -623,6 +623,21 @@ func (s *GameSession) ApplyCustomRaceBonuses(r Race) {
 	s.Player.BC += r.StartBC
 }
 
+// FlagColors 是玩家旗幟顏色選項(原版新遊戲命名畫面選旗色)。RGB 為近似值,供 UI 呈現。
+var FlagColors = []struct {
+	Name    string
+	R, G, B uint8
+}{
+	{"紅", 210, 60, 50},
+	{"黃", 230, 210, 80},
+	{"綠", 80, 190, 90},
+	{"藍", 70, 130, 220},
+	{"白", 220, 220, 230},
+	{"紫", 170, 90, 200},
+	{"橙", 230, 140, 60},
+	{"棕", 150, 110, 70},
+}
+
 // GalaxySizes 是星系大小選項(名稱 + 星數),對應 NEW GAME 的 GALAXY SIZE。
 var GalaxySizes = []struct {
 	Name  string
@@ -697,6 +712,8 @@ type GameSession struct {
 	AntaresRaids     int                 // 已發生的安塔蘭突襲次數(逐次升級強度)
 	LastAntares      string              // 本回合安塔蘭突襲描述(空=無;供回合摘要)
 	RaceIndex        int                 // 玩家選定的種族(shell.Races 索引)
+	PlayerName       string              // 玩家帝國/領袖名稱(新遊戲命名畫面設定)
+	FlagColor        int                 // 玩家旗幟顏色索引(shell.FlagColors)
 	RaceCombatPct    int                 // 種族戰鬥戰力百分點加成(供戰鬥使用)
 	raceGrowthPct    int                 // 種族人口成長百分點加成(供 advancePopulation)
 }

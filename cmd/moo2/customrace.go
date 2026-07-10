@@ -179,7 +179,7 @@ func (s *customRaceScreen) update(in shell.InputState) *origTransition {
 			clickSound()
 		}
 		s.applyAndStart()
-		return s.b.goTo(s.b.galaxy, "星系主畫面")
+		return &origTransition{next: s.b.nameFlag("自訂帝國")}
 	}
 	return nil
 }

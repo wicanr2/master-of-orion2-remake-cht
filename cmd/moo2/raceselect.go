@@ -139,7 +139,7 @@ func (s *raceSelectScreen) update(in shell.InputState) *origTransition {
 			return &origTransition{next: sc}
 		}
 		s.applyAndStart()
-		return s.b.goTo(s.b.galaxy, "星系主畫面")
+		return &origTransition{next: s.b.nameFlag(raceSelectList[s.sel].zh + "帝國")}
 	}
 	return nil
 }
