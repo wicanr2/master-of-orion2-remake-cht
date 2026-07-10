@@ -43,7 +43,23 @@ openorion2 galaxy 用 `STARBG#3` 當背景,palette = `_gui->palette()`(全域 GU
 `-lbx STARBG.LBX -asset 0 -pallbx COMBAT.LBX -palasset 11 -shot out.png`
 實作時:先鋪**純黑**底,再貼 STARBG(透明處透出黑),艦艇/UI 同借 COMBAT#11。
 
-## 三、重建規格(交實作子代理)
+## 三、重建規格與進度
+
+### Phase 1 — ✅ 已完成(2026-07-10,實作子代理 + 主代理核實)
+
+`tacticalScreen`(interactive.go)視覺層換原版美術,**戰鬥數學/流程/RNG 零改動**:
+- `loadCombatBG`:STARBG#0 借 COMBAT#11 → 黑底星空背景(未寫入處透明疊黑)。
+- `loadCombatBar`:COMBAT#0 借 COMBAT#11 → 底部控制列(渲染出原版真 UI:WEAPONS/SPECIALS/AUTO/SCAN/BOARD/RETREAT/WAIT/DONE/OPTIONS 按鈕 + 迷你星圖)。
+- `loadCombatShip`:CMBTSHP#0 frame0 借 COMBAT#11,keyColor → 59×60 艦艇 sprite(佔位:全艦共用)。
+- draw():黑底 → STARBG → 淡格線 → 艦艇 sprite(敵方水平翻轉)→ 控制列;三者任一載入失敗都 fallback 回原自繪。
+- 主代理核實:控制列/艦艇/背景渲染圖皆色彩連貫無雜色;diff 確認戰鬥邏輯未動。
+
+### Phase 1 遺留(後續)
+- ⚠ **控制列按鈕是烘進點陣圖的英文**(WEAPONS/AUTO/…);完整中文化需在其上疊中文字或重繪按鈕區——屬 localization 後續。
+- 艦艇仍全共用 CMBTSHP#0;per 艦型/朝向對照見下方待查。
+- 未端到端渲染 tactical(無 headless 到戰鬥的導覽腳本);驗證止於資產/色盤層 + build/vet。若要 in-app 截圖需補 InputState 腳本路徑到 tacticalCombat。
+
+### 原始規格(Phase 1 依此,保留供追溯)
 
 現行 `tacticalScreen`(interactive.go)為自繪:8×6 方格 + token + HP 條,**戰鬥數學已接 gamedata 真公式(保留)**。改動:
 

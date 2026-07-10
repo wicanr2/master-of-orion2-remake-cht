@@ -881,6 +881,53 @@ type tacticalScreen struct {
 	over, won      bool
 	pStart, eStart int
 	rng            *rand.Rand // 戰鬥擲骰(依回合數種子,可重現)
+	bg             *ebiten.Image
+	bar            *ebiten.Image
+	ship           *ebiten.Image
+}
+
+// loadCombatBG 載入戰場星空背景(STARBG.LBX#0,640×480),借 COMBAT.LBX#11 調色盤。
+// STARBG 是稀疏 RLE(大量未寫入像素),原版設計疊在純黑太空上,故未寫入處回傳透明,
+// 由呼叫端鋪在黑底上即為正確畫面(見任務交接的 de-risk 事實)。載入失敗回傳 nil,
+// 由 draw() fallback 回原本純色 + 格線。
+func loadCombatBG(res *assets.Resolver) *ebiten.Image {
+	prov, err := decodeAsset(res, "combat.lbx", 11)
+	if err != nil || prov.Embedded == nil {
+		return nil
+	}
+	im, err := decodeAsset(res, "starbg.lbx", 0)
+	if err != nil || len(im.Frames) == 0 {
+		return nil
+	}
+	return ebiten.NewImageFromImage(im.Frames[0].ToRGBA(prov.Embedded, im.KeyColor()))
+}
+
+// loadCombatBar 載入戰鬥畫面底部控制列(COMBAT.LBX#0,640×129),同借 COMBAT#11 調色盤。
+func loadCombatBar(res *assets.Resolver) *ebiten.Image {
+	prov, err := decodeAsset(res, "combat.lbx", 11)
+	if err != nil || prov.Embedded == nil {
+		return nil
+	}
+	im, err := decodeAsset(res, "combat.lbx", 0)
+	if err != nil || len(im.Frames) == 0 {
+		return nil
+	}
+	return ebiten.NewImageFromImage(im.Frames[0].ToRGBA(prov.Embedded, im.KeyColor()))
+}
+
+// loadCombatShip 載入艦艇 sprite(CMBTSHP.LBX#0 frame0,59×60),借 COMBAT#11 調色盤,
+// keyColor 強制 true 讓艦體外圍透明。Phase 1 佔位:所有艦共用同一張圖,先證明
+// sprite 渲染管線可行,之後再依艦型/朝向擴充成完整 20 幀對照表。
+func loadCombatShip(res *assets.Resolver) *ebiten.Image {
+	prov, err := decodeAsset(res, "combat.lbx", 11)
+	if err != nil || prov.Embedded == nil {
+		return nil
+	}
+	im, err := decodeAsset(res, "cmbtshp.lbx", 0)
+	if err != nil || len(im.Frames) == 0 {
+		return nil
+	}
+	return ebiten.NewImageFromImage(im.Frames[0].ToRGBA(prov.Embedded, true))
 }
 
 func newTacticalScreen(b *sceneBuilder) *tacticalScreen {
@@ -889,7 +936,8 @@ func newTacticalScreen(b *sceneBuilder) *tacticalScreen {
 	seed := int64(b.session.Turn*2654435761 + 1013904223)
 	return &tacticalScreen{b: b, fnt: b.fnt, player: p, enemy: e, sel: -1,
 		log: "點我方艦選取→點空格移動;點敵艦→射程內我艦開火", pStart: len(p), eStart: len(e),
-		rng: rand.New(rand.NewSource(seed))}
+		rng: rand.New(rand.NewSource(seed)),
+		bg:  loadCombatBG(b.res), bar: loadCombatBar(b.res), ship: loadCombatShip(b.res)}
 }
 
 func cellRect(col, row int) (x, y, w, h int) { return gcX0 + col*gcCW, gcY0 + row*gcCH, gcCW, gcCH }
@@ -1025,10 +1073,28 @@ func (t *tacticalScreen) fireRound(target int) {
 	}
 }
 
-func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base color.RGBA, selected bool) {
+// drawShip 畫單艘艦:有 t.ship sprite 就縮放貼原版艦圖(敵方水平翻轉朝左),
+// 否則 fallback 回原本的矩形 token 畫法。HP 條、艦名、選中金框一律疊在最上層,
+// 不受美術是否載入影響。
+func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base color.RGBA, selected bool, enemy bool) {
 	x, y, w, h := cellRect(s.Col, s.Row)
 	x, y, w, h = x+4, y+6, w-8, h-12
-	vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{base.R / 3, base.G / 3, base.B / 3, 255}, false)
+	if t.ship != nil {
+		sb := t.ship.Bounds()
+		sw0, sh0 := float64(sb.Dx()), float64(sb.Dy())
+		sc := float64(h) / sh0 // 依格高等比縮放,寬度可能超出格寬少許,可接受
+		op := &ebiten.DrawImageOptions{}
+		if enemy {
+			op.GeoM.Scale(-sc, sc)
+			op.GeoM.Translate(float64(x)+sw0*sc, float64(y))
+		} else {
+			op.GeoM.Scale(sc, sc)
+			op.GeoM.Translate(float64(x), float64(y))
+		}
+		dst.DrawImage(t.ship, op)
+	} else {
+		vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{base.R / 3, base.G / 3, base.B / 3, 255}, false)
+	}
 	sw := float32(1.5)
 	sc := base
 	if selected {
@@ -1047,8 +1113,14 @@ func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base co
 }
 
 func (t *tacticalScreen) draw(dst *ebiten.Image) {
-	dst.Fill(color.RGBA{6, 6, 16, 255})
-	grid := color.RGBA{28, 38, 66, 255}
+	dst.Fill(color.RGBA{0, 0, 0, 255}) // 純黑太空底;STARBG 未寫入處透明,疊上後黑底透出即原版構圖
+	if t.bg != nil {
+		dst.DrawImage(t.bg, nil)
+	} else {
+		dst.Fill(color.RGBA{6, 6, 16, 255}) // fallback:原本深藍純色底
+	}
+	// 格線很淡地疊在星空上,保留移動格線功能但不搶戲。
+	grid := color.RGBA{60, 80, 120, 40}
 	for gx := 0; gx <= gcCols; gx++ {
 		x := float32(gcX0 + gx*gcCW)
 		vector.StrokeLine(dst, x, gcY0, x, float32(gcY0+gcRows*gcCH), 1, grid, false)
@@ -1062,13 +1134,20 @@ func (t *tacticalScreen) draw(dst *ebiten.Image) {
 		t.fnt.DrawCentered(dst, "戰術戰鬥", 320, 34, 20, gold)
 	}
 	for i, s := range t.player {
-		t.drawShip(dst, s, color.RGBA{90, 220, 170, 255}, i == t.sel)
+		t.drawShip(dst, s, color.RGBA{90, 220, 170, 255}, i == t.sel, false)
 	}
 	for _, s := range t.enemy {
-		t.drawShip(dst, s, color.RGBA{235, 110, 100, 255}, false)
+		t.drawShip(dst, s, color.RGBA{235, 110, 100, 255}, false, true)
+	}
+	logY := 452.0
+	if t.bar != nil {
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(0, float64(moo2ScreenH-129))
+		dst.DrawImage(t.bar, op)
+		logY = 400 // 疊在控制列區域內
 	}
 	if t.fnt != nil {
-		t.fnt.DrawCentered(dst, t.log, 320, 452, 14, color.RGBA{214, 220, 235, 255})
+		t.fnt.DrawCentered(dst, t.log, 320, logY, 14, color.RGBA{214, 220, 235, 255})
 	}
 }
 
