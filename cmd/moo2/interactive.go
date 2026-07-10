@@ -306,6 +306,7 @@ type sceneBuilder struct {
 	designArmor   int                // 裝甲元件索引(shell.ArmorOptions)
 	designShield  int                // 護盾元件索引(shell.ShieldOptions)
 	designSpecial int                // 特殊元件索引(shell.SpecialOptions)
+	lastActionMsg string             // 星圖畫面「載運陸戰隊/發動地面入侵」的最近一次結果訊息(選新星時清空)
 }
 
 // savePathFor 回傳 remake 存檔路徑(使用者設定目錄下,退回暫存目錄),確保可寫。
@@ -399,22 +400,62 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 	}
 	// 星圖各星加點擊熱區(點星 → 顯示該星系行星資訊)。
 	if b.session != nil {
-		for i, st := range b.session.Stars {
+		sess := b.session
+		for i, st := range sess.Stars {
 			sx, sy := starScreenPos(st)
 			hits = append(hits, hitRegion{sx - 11, sy - 11, 22, 22, fmt.Sprintf("star%d", i)})
 		}
-		// 派遣艦隊按鈕(選中星資訊面板內;僅選中非現址星且艦隊靜止時有效)。
-		hits = append(hits, hitRegion{38, 398, 190, 22, "dispatch"})
+		// 選中星資訊面板內的操作鈕(座標同 postDraw 繪製的按鈕框):三種互斥,依艦隊/選中星
+		// 狀態擇一顯示——派遣艦隊(艦隊不在選中星)、載運陸戰隊(艦隊在玩家母星,唯一已知
+		// 有 Marine Barracks 殖民地模型對映的星,見 shell.AIOpponent.ColonyStars 註解同款限制)、
+		// 發動地面入侵(艦隊在敵方殖民地星且已載運陸戰隊)。
+		if sess.SelectedStar >= 0 && sess.SelectedStar < len(sess.Stars) {
+			switch {
+			case sess.FleetETA > 0:
+				// 航行中,面板只顯示狀態文字,無按鈕。
+			case sess.SelectedStar == sess.FleetAtStar:
+				switch {
+				case sess.SelectedStar == 0:
+					hits = append(hits, hitRegion{38, 402, 190, 20, "loadmarines"})
+				case sess.Stars[sess.SelectedStar].Owner == 2 && sess.FleetMarines > 0:
+					hits = append(hits, hitRegion{38, 402, 190, 20, "invade"})
+				}
+			default:
+				hits = append(hits, hitRegion{38, 402, 190, 20, "dispatch"})
+			}
+		}
 	}
 	onAction := func(a string) *origTransition {
 		if len(a) > 4 && a[:4] == "star" && b.session != nil {
 			if idx, err := strconv.Atoi(a[4:]); err == nil {
 				b.session.SelectedStar = idx
+				b.lastActionMsg = "" // 換選中星,清掉上一顆星的動作結果訊息
 				return b.goTo(b.galaxy, "星系主畫面") // 重繪顯示選中星資訊
 			}
 		}
 		if a == "dispatch" && b.session != nil {
 			b.session.SendFleet(b.session.SelectedStar) // 派遣艦隊至選中星(航行由 EndTurn 推進)
+			return b.goTo(b.galaxy, "星系主畫面")
+		}
+		if a == "loadmarines" && b.session != nil {
+			n := b.session.LoadMarines(0) // 母星是唯一已知殖民地索引對映(見上方熱區註解)
+			if n > 0 {
+				b.lastActionMsg = fmt.Sprintf("已載運 %d 名陸戰隊上艦", n)
+			} else {
+				b.lastActionMsg = "無陸戰隊可載運(駐軍不足或艦隊已滿載)"
+			}
+			return b.goTo(b.galaxy, "星系主畫面")
+		}
+		if a == "invade" && b.session != nil {
+			res := b.session.InvadeColony(b.session.SelectedStar)
+			switch {
+			case !res.Ok:
+				b.lastActionMsg = res.Reason
+			case res.AttackerWon:
+				b.lastActionMsg = fmt.Sprintf("入侵勝利!佔領此星(存活 %d／敵剩 %d)", res.AttackerSurvived, res.DefenderSurvived)
+			default:
+				b.lastActionMsg = fmt.Sprintf("入侵失敗(我方存活 %d／敵剩 %d)", res.AttackerSurvived, res.DefenderSurvived)
+			}
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
 		switch a {
@@ -487,24 +528,42 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					}
 					vector.DrawFilledRect(dst, float32(fx-4), float32(fy-4), 8, 8, color.RGBA{80, 240, 240, 255}, false)
 				}
-				// 選中星:顯示該星系行星資訊 + 派遣艦隊按鈕(左下角面板)。
+				// 選中星:顯示該星系行星資訊 + 派遣艦隊/載運陸戰隊/發動入侵按鈕(左下角面板)。
 				if sess.SelectedStar >= 0 && sess.SelectedStar < len(sess.Planets) {
 					p := sess.Planets[sess.SelectedStar]
 					vector.DrawFilledRect(dst, 28, 326, 210, 110, color.RGBA{10, 14, 30, 235}, false)
 					vector.StrokeRect(dst, 28, 326, 210, 110, 1, color.RGBA{90, 130, 200, 255}, false)
-					fnt.Draw(dst, p.Name, 38, 346, 15, color.RGBA{240, 220, 120, 255})
-					fnt.Draw(dst, fmt.Sprintf("氣候 %s ／ 大小 %s", p.Climate, p.Size), 38, 368, 12, color.RGBA{210, 216, 230, 255})
-					fnt.Draw(dst, fmt.Sprintf("重力 %s ／ 礦產 %s", p.Gravity, p.Mineral), 38, 386, 12, color.RGBA{210, 216, 230, 255})
-					// 派遣艦隊按鈕/狀態。
+					fnt.Draw(dst, p.Name, 38, 344, 14, color.RGBA{240, 220, 120, 255})
+					fnt.Draw(dst, fmt.Sprintf("氣候 %s ／ 大小 %s", p.Climate, p.Size), 38, 362, 11, color.RGBA{210, 216, 230, 255})
+					fnt.Draw(dst, fmt.Sprintf("重力 %s ／ 礦產 %s", p.Gravity, p.Mineral), 38, 378, 11, color.RGBA{210, 216, 230, 255})
+					// 陸戰隊狀態行:艦隊目前載運數,選中母星時另顯示殖民地駐軍池數(唯一已知對映)。
+					marineLine := fmt.Sprintf("艦隊陸戰隊 %d", sess.FleetMarines)
+					if sess.SelectedStar == 0 && len(sess.PlayerColonyMarines) > 0 {
+						marineLine = fmt.Sprintf("艦隊陸戰隊 %d／殖民地駐軍 %d", sess.FleetMarines, sess.PlayerColonyMarines[0])
+					}
+					fnt.Draw(dst, marineLine, 38, 394, 11, color.RGBA{200, 220, 170, 255})
+					// 操作鈕/狀態(與 galaxy() 建 hits 時的判斷邏輯一致)。
 					switch {
+					case b.lastActionMsg != "":
+						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{30, 55, 35, 235}, false)
+						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{110, 200, 140, 255}, false)
+						fnt.Draw(dst, b.lastActionMsg, 42, 415, 10, color.RGBA{225, 240, 225, 255})
 					case sess.FleetETA > 0:
-						fnt.Draw(dst, fmt.Sprintf("艦隊航行中…剩 %d 回合", sess.FleetETA), 38, 410, 12, color.RGBA{120, 200, 240, 255})
+						fnt.Draw(dst, fmt.Sprintf("艦隊航行中…剩 %d 回合", sess.FleetETA), 38, 415, 11, color.RGBA{120, 200, 240, 255})
+					case sess.SelectedStar == sess.FleetAtStar && sess.SelectedStar == 0:
+						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{40, 70, 120, 255}, false)
+						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{110, 160, 230, 255}, false)
+						fnt.Draw(dst, "▶ 載運陸戰隊", 46, 415, 12, color.RGBA{230, 235, 245, 255})
+					case sess.SelectedStar == sess.FleetAtStar && sess.Stars[sess.SelectedStar].Owner == 2 && sess.FleetMarines > 0:
+						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{120, 50, 40, 255}, false)
+						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{230, 130, 110, 255}, false)
+						fnt.Draw(dst, "▶ 發動地面入侵", 46, 415, 12, color.RGBA{245, 235, 230, 255})
 					case sess.SelectedStar == sess.FleetAtStar:
-						fnt.Draw(dst, "艦隊已在此星", 38, 410, 12, color.RGBA{140, 200, 140, 255})
+						fnt.Draw(dst, "艦隊已在此星", 38, 415, 11, color.RGBA{140, 200, 140, 255})
 					default:
-						vector.DrawFilledRect(dst, 38, 398, 190, 22, color.RGBA{40, 70, 120, 255}, false)
-						vector.StrokeRect(dst, 38, 398, 190, 22, 1, color.RGBA{110, 160, 230, 255}, false)
-						fnt.Draw(dst, "▶ 派遣艦隊至此星", 46, 413, 13, color.RGBA{230, 235, 245, 255})
+						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{40, 70, 120, 255}, false)
+						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{110, 160, 230, 255}, false)
+						fnt.Draw(dst, "▶ 派遣艦隊至此星", 46, 415, 12, color.RGBA{230, 235, 245, 255})
 					}
 				}
 			}
