@@ -867,14 +867,6 @@ func genPlanets(stars []Star) []Planet {
 	return out
 }
 
-// starNamePool 是星名池(二十八宿 + 常見星名;程序生成時依序取用)。
-var starNamePool = []string{
-	"獵戶", "天狼", "南門", "參宿", "畢宿", "織女", "河鼓", "角宿", "心宿", "北落",
-	"五車", "軒轅", "太微", "天津", "婁宿", "氐宿", "房宿", "尾宿", "箕宿", "斗宿",
-	"牛宿", "女宿", "虛宿", "危宿", "室宿", "壁宿", "奎宿", "胃宿", "昴宿", "觜宿",
-	"井宿", "鬼宿", "柳宿", "星宿", "張宿", "翼宿", "軫宿", "亢宿",
-}
-
 // Race 是可選種族(名稱 + 起始加成)。加成對齊 MOO2 各族招牌特性(remake 調校值,非自訂點數精算):
 // 工業/研究/食物為每單位產出加成、GrowthPct 為人口成長百分點、StartBC 為額外起始國庫、
 // CombatPct 為戰鬥戰力百分點。Desc 為特性摘要(供顯示)。
@@ -1079,13 +1071,15 @@ func (s *GameSession) RegenGalaxy(n int, seed int64) {
 
 // genGalaxy 程序化生成星系:以種子亂數在抖動網格上佈星,隨機光譜/大小/星名;
 // 第 0 星為玩家母星、約中段一星為 AI 母星。n=星數(對應星系大小)。
+// 星名取自原版 STARNAME.LBX asset1 的 829 條隨機星名池(randomStarNamePool,見
+// internal/shell/starnames.go),829 遠大於任何星系大小上限(最大 48 星),不需 fallback。
 func genGalaxy(n int, seed int64) []Star {
 	r := rand.New(rand.NewSource(seed))
 	cols := int(math.Ceil(math.Sqrt(float64(n))))
 	rows := (n + cols - 1) / cols
 	stars := make([]Star, 0, n)
 	idx := 0
-	names := append([]string(nil), starNamePool...)
+	names := append([]string(nil), randomStarNamePool...)
 	r.Shuffle(len(names), func(i, j int) { names[i], names[j] = names[j], names[i] })
 	for gy := 0; gy < rows && idx < n; gy++ {
 		for gx := 0; gx < cols && idx < n; gx++ {

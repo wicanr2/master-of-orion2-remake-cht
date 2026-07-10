@@ -3,8 +3,8 @@
 窮舉 openorion2 `TextManager::load` 載入的所有字串源(mom playbook [HARD]:漏一源 = 整類畫面英文)。目標:完成所有訊息翻譯。譯文放 `assets/i18n/*.tsv`(英文原文即 key)。
 
 **完整性狀態(2026-07-02):`TextManager::load` 全部 22 個來源已逐一 account。**
-所有敘述/UI 類字串源均已翻譯完成;**專有名詞池**共 4 個(STARNAME 母星/隨機星名、SHIPNAME 艦名、RACENAME AI 統治者名),依策略逐一定案——母星名(13)與艦名(672)已翻譯落地,RACENAME(104)依既有先例定案保留原文,僅隨機星名池(829)因曝光度低仍暫緩。
-即「完成所有訊息翻譯」的顯示文字部分已達成。
+所有敘述/UI 類字串源均已翻譯完成;**專有名詞池**共 4 個(STARNAME 母星/隨機星名、SHIPNAME 艦名、RACENAME AI 統治者名),依策略逐一定案——母星名(13)、艦名(672)、隨機星名(829)均已翻譯落地,RACENAME(104)依既有先例定案保留原文。
+即「完成所有訊息翻譯」的顯示文字部分已達成,四個專有名詞池全數定案(僅 RACENAME 定案為保留原文,非未完成)。
 
 ## 進度總表
 
@@ -14,7 +14,7 @@
 | SKILDESC | loadAsset | 0 | 27 | 軍官技能名 | skills.tsv | ✅ 完成 |
 | RACESTUF | loadStrings | 0 | 64 | 種族特性/自訂 pick | races.tsv | ✅ 完成 |
 | STARNAME | loadAsset | 0 | 13 | 母星名 | starname.tsv | ✅ 完成(實星名用中文天文名,虛構音譯) |
-| STARNAME | loadAsset | 1 | 829 | 星名池(隨機) | — | ⏳ 專有名詞池,低優先 |
+| STARNAME | loadAsset | 1 | 829 | 星名池(隨機) | starname-random.tsv | ✅ 完成(2026-07-11,829 條英文名彼此互不重複;真名/圍棋術語/神話專有名詞優先意譯,虛構短音節規則化音譯,見 proper-noun-strategy.md) |
 | SHIPNAME | loadAsset | 0 | 672 | 艦名池(隨機) | shipname.tsv | ✅ 完成(2026-07-11,190 組基底詞意譯+羅馬數字流水號保留,見 proper-noun-strategy.md) |
 | RACENAME | loadAsset | 0 | 104 | AI 統治者姓名 | — | ⏳ 專有名詞池,保留原文 |
 | RACESTUF | loadStrings | 8 | 32 | 種族資訊面板 | raceinfo.tsv | ✅ 完成 |
