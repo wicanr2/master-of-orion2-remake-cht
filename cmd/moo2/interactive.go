@@ -14,6 +14,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/assets"
+	moo2audio "github.com/wicanr2/master-of-orion2-remake-cht/internal/audio"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/lbx"
@@ -96,6 +97,9 @@ func (s *overlayScreen) update(in shell.InputState) *origTransition {
 	if in.ClickReleased {
 		for _, h := range s.hits {
 			if h.hit(mx, my) && s.onAction != nil {
+				if clickSound != nil {
+					clickSound() // 命中按鈕才播原版點擊音(SOUND.LBX BUTTON1)
+				}
 				return s.onAction(h.action)
 			}
 		}
@@ -1490,6 +1494,8 @@ type interactiveApp struct {
 	tick     int
 	saved    bool
 	scale    int // 目前視窗放大倍率(1~4)
+
+	audio *moo2audio.Mixer // 持有音訊 Mixer,避免 player 被 GC(headless 為 nil)
 }
 
 // handleWindowKeys 處理縮放/全螢幕快捷鍵:+/- 調整放大倍率(1~4)、F11 或 F 切換全螢幕。
@@ -1591,6 +1597,11 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt *uifont.Font,
 		scale = 1
 	}
 	app := &interactiveApp{cur: menu, script: script, shotPath: shot, frames: frames, scale: scale}
+	// 只有真正互動(非 headless 截圖/腳本)才啟用音訊:headless 環境常無音效卡,
+	// 且截圖驗證不需要聲音。音訊初始化失敗不致命。
+	if shot == "" && script == nil {
+		app.audio = initAudio(res)
+	}
 	ebiten.SetWindowSize(moo2ScreenW*scale, moo2ScreenH*scale)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled) // 允許拖曳邊框縮放
 	ebiten.SetWindowTitle("Master of Orion II — 繁體中文化 (remake)｜+/- 縮放  F11 全螢幕")

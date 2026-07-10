@@ -160,10 +160,15 @@
 - [ ] 以手冊逐系統對照驗證規則正確性
 
 ## Phase 6 — 音樂 / 音效
-- [ ] 逆向 .lbx 音樂(XMI)格式
-- [ ] 逆向音效格式
-- [ ] ebiten 音訊播放整合
-- [ ] SoundFont 處理(承襲 moo1 音樂音色經驗)
+> 第一性原理翻案(2026-07-10):MOO2 **沒有 XMI/MIDI 音樂**,全部是 LBX 內的 22050Hz 8-bit PCM WAV。故無需 SoundFont/OPL 合成——原封播原版 PCM 即 bit-identical。研究定案見 `docs/tech/audio-format.md`。
+- [x] ~~逆向 .lbx 音樂(XMI)格式~~ → 實為 PCM WAV,存 STREAM/STREAMHD.LBX(格式研究文件已定案,含 provenance)
+- [x] 逆向音效格式 → SOUND.LBX 內 WAV;entry0 為 20-byte 名稱表(BUTTON1…),已解出 68 個具名音效
+- [x] ebiten 音訊播放整合 — `internal/audio`(WAV 解碼→16-bit stereo、Mixer BGM 迴圈+SFX;headless 停用避免無音效卡崩潰)+ 單元/真檔測試綠
+- [x] 接線:主選單 BGM(STREAMHD)+ 按鈕點擊音效(BUTTON1)— `cmd/moo2/audiohook.go`
+- [~] 曲目/UI 事件對應:BGM 暫用 clips[0]、點擊暫用 BUTTON1;**正確對應待對原版聆聽定案(oracle)**
+- [ ] `CMBTSFX/SPHERSFX` 巢狀音庫格式逆向(戰鬥期音效)
+- [x] ~~SoundFont 處理~~ → 不需要(無 MIDI 音樂)
+- [ ] 桌面實測驗收:使用者對原版聆聽比對(主選單 BGM + 點擊音是否為正確曲/音)
 
 ## Phase 7 — 版本 1.3 / 1.5
 - [ ] 研究「1.3 → 1.5 規則差異清單」(手冊×2 + CHANGELOG_150 + PARAMETERS.CFG 逐條)
