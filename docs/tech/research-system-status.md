@@ -24,7 +24,14 @@
    - shell:`PendingResearchChoice()` / `ChooseResearchTech(tech)` / `ChosenTechFor(topic)`。
    - 測試:`internal/engine/research_choice_test.go`、`internal/shell/research_choice_test.go`(多選預設+改選+非法拒絕+ResearchAll 不待決)。
 2. ⏳ **解鎖 gating 改科技層級**(未做):`ComponentUnlocked` 目前仍按 `CompletedTopics[topic]`(主題層級=完成即解該主題全部 remake 元件)。要真忠實需把 remake 元件對應到具體 `Technology` 並改查 `ChosenTech`。需先建 **Component↔Technology 映射**。
-3. ⏳ **抉擇 UI**(未做):`PendingResearchChoice()` 非空時,研究畫面彈出該主題 `Choices` 供玩家點選 → `ChooseResearchTech`。**前置**:需 `Technology enum → 英文名` 表(200+ 條,對照 TECHNAME.LBX;可派子代理機械轉寫),再接 tech.tsv 得中文名。AI 由 decider 自動選(現為預設第一項)。
+3. ✅ **抉擇 UI 完成**(2026-07-10,可玩、headless 渲染驗證):
+   - `gamedata/technames.go`:`Technology → 英文名`(203 條,對 tech.tsv 驗證;8 個 HYPER 填充項無名)。
+   - `cmd/moo2/researchchoice.go`:回合結束若 `PendingResearchChoice` 非空 → 抉擇畫面(RACEOPT 框 + 真科技選項,經 TECHNAME/tech.tsv 中文化);點選 → `ChooseResearchTech` → 回合摘要。
+   - 接線:`galaxy` 結束回合後偵測待決抉擇導向此畫面。
+   - 驗證:進階建築學 → 自動化工廠/重型裝甲/行星飛彈基地(真資料),end-to-end 流程跑通。
+   - AI 目前用預設第一項(decider 依性格選為後續小改)。
+
+**目前狀態總結**:研究「每主題數科技間抉擇」的玩家體驗**已忠實**(真成本 + 真選項 + 擇一)。唯一未做的是第 2 步「元件解鎖改科技層級」——即被選科技才解鎖對應 remake 元件(需 Component↔Technology 映射);目前元件仍按主題解鎖,故抉擇「選了哪項」尚未反映到艦艇設計可用元件。這是研究系統剩下的最後一塊忠實化。
 
 ## 驗收
 
