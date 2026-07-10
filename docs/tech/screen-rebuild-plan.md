@@ -5,8 +5,11 @@
 
 ## 待重建的自繪畫面
 
-### 1. 外交對談(diplomacy,`cmd/moo2/interactive.go` diplomacyScreen)
-- **現況**:用 `DIPLOMAT.LBX#29`(議事大廳)當背景 + 自繪深色選項按鈕(提議和平/貿易/威脅)。功能可用但**非原版佈局**。
+### 1. 外交對談(diplomacy,`cmd/moo2/interactive.go` diplomacyScreen)— ✅ 解碼與構圖已解(2026-07-10)
+
+> **佈局徹底破解,見 `diplomat-lbx-layout.md`**。DIPLOMAT.LBX = 13 調色盤(0–12)+ 13 使節房(13+2r)+ 13 使節動畫(14+2r);配對律「同 r」。已改 `loadDiplomatScene(res, r)` 疊合房+使節(各借 palette r),推翻「解碼損壞」舊假設。殘留穹頂白點為原版抖色星空(非 bug)。剩逐族臉↔名對應(機械後續,可派 subagent)+ 對話框像素對齊(選做)。以下為破解前的調查歷程,保留供追溯。
+
+- **現況(破解前)**:用 `DIPLOMAT.LBX#29`(議事大廳)當背景 + 自繪深色選項按鈕(提議和平/貿易/威脅)。功能可用但**非原版佈局**。
 - **原版**:顯示**該種族使節的動畫肖像 + 其專屬房間** + 對話文字 + 提議選項(原版 UI 樣式)。
 - **重建所需(已初步調查)**:
   - `DIPLOMAT.LBX` 共 **39 個 asset**;0–6 為小圖示(已渲染確認),使節肖像在中後段(15/20/25/28 等**需調色盤鏈**才能渲染,推測 palette provider = asset 0,同 room#29 的解法 `loadDiplomatRoom`)。

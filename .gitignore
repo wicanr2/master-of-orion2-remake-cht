@@ -34,3 +34,4 @@ scratch/
 
 # docker build 快取
 .docker-cache/
+scratchpad_shots/

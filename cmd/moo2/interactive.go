@@ -715,35 +715,64 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 	return s, nil
 }
 
-// --- 外交對談畫面(自繪 origScreen;原版 DIPLOMAT#29 LBX 解碼損壞,改自繪功能面板)---
+// --- 外交對談畫面(用原版 DIPLOMAT 使節房 + 逐族使節疊合)---
+//
+// DIPLOMAT.LBX 佈局(2026-07-10 破解,見 docs/tech/diplomat-lbx-layout.md):
+//   asset 0–12    :24×24 內嵌調色盤,13 個(各族專屬 palette)。
+//   asset 13+2r   :640×480 使節房背景(種族 r,r=0..12)。
+//   asset 14+2r   :480×480 FLAG_JUNCTION 使節動畫(種族 r,含使節像 + 廊柱)。
+// 配對律:種族 r 的房/使節/調色盤都用同一個 r。房或使節借錯 palette 才會全畫面雜點。
+
+// diplomatRaceIndex 把敵方種族名對應到 DIPLOMAT.LBX 的種族序 r(0..12)。
+// 目前僅確認 r=0 為爬蟲類使節(對應賽隆人/Sakkra,與現行單一對手一致);
+// 其餘 12 族的臉↔r 對應待逐使節視覺核對(見 layout 文件 TODO),先回退 0。
+func diplomatRaceIndex(enemy string) int {
+	switch enemy {
+	case "賽隆人":
+		return 0
+	default:
+		return 0
+	}
+}
+
+// loadDiplomatScene 疊合種族 r 的使節房(640×480 背景)+ 使節動畫(480×480,置中),
+// 兩者都用同一個 palette provider r(配對律)。使節 sprite 的未寫入邊緣為透明,疊上後
+// 房間從邊緣透出,中央被使節像覆蓋——即原版外交畫面構圖。
+func loadDiplomatScene(res *assets.Resolver, r int) *ebiten.Image {
+	prov, err := decodeAsset(res, "diplomat.lbx", r) // 該族專屬調色盤
+	if err != nil || prov.Embedded == nil {
+		return nil
+	}
+	room, err := decodeAsset(res, "diplomat.lbx", 13+2*r)
+	if err != nil || len(room.Frames) == 0 {
+		return nil
+	}
+	scene := ebiten.NewImageFromImage(room.Frames[0].ToRGBA(prov.Embedded, room.KeyColor()))
+	// 使節 sprite 疊上(480 寬置中於 640)。
+	if envoy, err := decodeAsset(res, "diplomat.lbx", 14+2*r); err == nil && len(envoy.Frames) > 0 {
+		esprite := ebiten.NewImageFromImage(envoy.Frames[0].ToRGBA(prov.Embedded, true))
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64((room.Width-envoy.Width)/2), 0)
+		scene.DrawImage(esprite, op)
+	}
+	return scene
+}
 
 type diplomacyScreen struct {
 	b        *sceneBuilder
 	fnt      *uifont.Font
 	enemy    string
 	response string
-	room     *ebiten.Image // 原版 DIPLOMAT 議事廳(多幀累積解碼)
+	room     *ebiten.Image // 原版 DIPLOMAT 使節房 + 使節疊合
 	opts     []struct {
 		label, action string
 	}
 	backRect [4]int
 }
 
-// loadDiplomatRoom 用「多幀累積 + diplomat#0 調色盤」解出原版外交議事廳當背景。
-func loadDiplomatRoom(res *assets.Resolver) *ebiten.Image {
-	room, err := decodeAsset(res, "diplomat.lbx", 29)
-	if err != nil {
-		return nil
-	}
-	prov, err := decodeAsset(res, "diplomat.lbx", 0)
-	if err != nil || prov.Embedded == nil {
-		return nil
-	}
-	return ebiten.NewImageFromImage(room.AccumulatedRGBA(prov.Embedded))
-}
-
 func newDiplomacyScreen(b *sceneBuilder) *diplomacyScreen {
-	return &diplomacyScreen{b: b, fnt: b.fnt, enemy: "賽隆人", room: loadDiplomatRoom(b.res),
+	enemy := "賽隆人"
+	return &diplomacyScreen{b: b, fnt: b.fnt, enemy: enemy, room: loadDiplomatScene(b.res, diplomatRaceIndex(enemy)),
 		response: "賽隆人使節:人類,你有何提議?",
 		opts: []struct{ label, action string }{
 			{"提議和平", "peace"}, {"提議貿易", "trade"}, {"威脅恫嚇", "threat"},
