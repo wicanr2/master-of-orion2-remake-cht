@@ -192,17 +192,6 @@ func (s *GameSession) removeWeakestShip() {
 }
 
 // applyDamage 對艦隊(以各艦戰力當 HP)造成 dmg 傷害,由最弱艦起逐艘擊沉,回傳擊沉數。
-func applyDamage(fleet *[]int, dmg int) int {
-	sort.Ints(*fleet)
-	destroyed := 0
-	for len(*fleet) > 0 && dmg >= (*fleet)[0] {
-		dmg -= (*fleet)[0]
-		*fleet = (*fleet)[1:]
-		destroyed++
-	}
-	return destroyed
-}
-
 // Difficulties 是難度選項(名稱 + 敵方戰力倍率),對應 NEW GAME 的 DIFFICULTY。
 var Difficulties = []struct {
 	Name string
@@ -228,33 +217,76 @@ func genEnemyFleet(turn int, mult float64) []int {
 
 // ResolveBattle 逐回合解算與某敵方的一場戰鬥:雙方艦隊每回合交火、逐艦擊沉,直到一方全滅
 // 或滿 6 回合;套用玩家損失到艦隊。
+// combatant 是快速艦隊結算用的單艦戰鬥屬性(與 StartCombat 同款由艦艇設計推導)。
+type combatant struct{ hp, atk, def, wmin, wmax, shield, armor int }
+
+// battleVolley 讓每個存活 attacker 對第一個存活 defender 射一發(真戰鬥公式,固定近距 range=2)。
+// 回傳本輪擊沉的 defender 數。移除陣亡艦。
+func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand) int {
+	before := len(*defenders)
+	for i := range attackers {
+		ti := -1
+		for j := range *defenders {
+			if (*defenders)[j].hp > 0 {
+				ti = j
+				break
+			}
+		}
+		if ti < 0 {
+			break
+		}
+		d := &(*defenders)[ti]
+		roll := rng.Intn(100) + 1
+		net := attackers[i].atk - d.def
+		shot := ResolveShot(net, attackers[i].wmin, attackers[i].wmax, 2, d.shield, d.armor, roll, false, false)
+		if shot.Hit {
+			d.armor = shot.RemainingArmorHP
+			d.hp -= shot.DamageToStructure
+		}
+	}
+	alive := (*defenders)[:0]
+	for _, c := range *defenders {
+		if c.hp > 0 {
+			alive = append(alive, c)
+		}
+	}
+	*defenders = alive
+	return before - len(*defenders)
+}
+
+// ResolveBattle 快速艦隊自動結算(無格子;供非互動戰鬥)。改用 gamedata 真戰鬥公式逐發解算,
+// 與格子戰術戰鬥(tacticalScreen)一致:每回合雙方齊射,每發走命中判定→傷害→過盾→過甲。
 func (s *GameSession) ResolveBattle(enemy string) BattleResult {
-	pFleet := make([]int, 0, len(s.Ships))
-	for _, sh := range s.Ships {
-		pFleet = append(pFleet, shipStrength(sh.Class))
+	mkPlayer := func() []combatant {
+		var out []combatant
+		for _, sh := range s.Ships {
+			body := shipStrength(sh.Class)
+			atk := body + sh.WeaponAttack
+			atk += atk * s.RaceCombatPct / 100 // 種族戰鬥加成(姆瑞森+25、布拉西/阿爾卡里+15…)
+			out = append(out, combatant{hp: body * 3, atk: atk, def: body, wmin: atk / 2, wmax: atk, armor: sh.BonusHP})
+		}
+		return out
 	}
 	mult := 1.0
 	if s.Difficulty >= 0 && s.Difficulty < len(Difficulties) {
 		mult = Difficulties[s.Difficulty].Mult
 	}
-	eFleet := genEnemyFleet(s.Turn, mult)
-	res := BattleResult{Enemy: enemy, PlayerStart: len(pFleet), EnemyStart: len(eFleet)}
-	for round := 1; round <= 6 && len(pFleet) > 0 && len(eFleet) > 0; round++ {
-		pPower, ePower := 0, 0
-		for _, v := range pFleet {
-			pPower += v
-		}
-		pPower += pPower * s.RaceCombatPct / 100 // 種族戰鬥加成(姆瑞森+25、布拉西/阿爾卡里+15…)
-		for _, v := range eFleet {
-			ePower += v
-		}
-		eDestroyed := applyDamage(&eFleet, pPower)
-		pDestroyed := applyDamage(&pFleet, ePower)
+	var ef []combatant
+	for _, st := range genEnemyFleet(s.Turn, mult) {
+		ef = append(ef, combatant{hp: st * 3, atk: st, def: st, wmin: st / 2, wmax: st, armor: st})
+	}
+	pf := mkPlayer()
+
+	res := BattleResult{Enemy: enemy, PlayerStart: len(pf), EnemyStart: len(ef)}
+	rng := rand.New(rand.NewSource(int64(s.Turn)*2654435761 + 12345)) // 依回合種子,可重現
+	for round := 1; round <= 6 && len(pf) > 0 && len(ef) > 0; round++ {
+		eDestroyed := battleVolley(pf, &ef, rng)
+		pDestroyed := battleVolley(ef, &pf, rng)
 		res.Log = append(res.Log, fmt.Sprintf("第 %d 回合:擊沉敵艦 %d ／ 我方損失 %d", round, eDestroyed, pDestroyed))
 	}
-	res.PlayerLosses = res.PlayerStart - len(pFleet)
-	res.EnemyLosses = res.EnemyStart - len(eFleet)
-	res.PlayerWon = len(eFleet) == 0 || len(pFleet) >= len(eFleet)
+	res.PlayerLosses = res.PlayerStart - len(pf)
+	res.EnemyLosses = res.EnemyStart - len(ef)
+	res.PlayerWon = len(ef) == 0 || len(pf) >= len(ef)
 	for i := 0; i < res.PlayerLosses; i++ {
 		s.removeWeakestShip()
 	}
