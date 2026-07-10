@@ -294,28 +294,44 @@ func (s *GameSession) DiplomacyResponse(action, enemy string) string {
 	return ""
 }
 
-// CombatShip 是格子戰術戰鬥中的一艘艦(有 HP + 格位)。
+// CombatShip 是格子戰術戰鬥中的一艘艦(有 HP + 格位 + 真戰鬥公式所需的攻防/傷害/盾甲)。
 type CombatShip struct {
 	Name      string
-	HP, MaxHP int
-	Attack    int
+	HP, MaxHP int // 艦體結構 HP
+	Attack    int // Beam Attack(BA,命中判定用)
 	Col, Row  int // 格位(8 欄 × 6 列)
+	// 以下供 ResolveShot 真戰鬥公式使用(remake 由艦艇設計推導,見 StartCombat 註記)。
+	Defense         int // 守方防禦(AF+BD),減 netAttack
+	WeaponMin       int // 單發最小傷害
+	WeaponMax       int // 單發最大傷害
+	ShieldReduction int // 護盾每發減傷
+	ArmorHP         int // 裝甲 HP(結構外的緩衝,先耗盡才傷結構)
 }
 
 // StartCombat 依玩家艦隊 + 難度生成敵方,建立格子戰鬥雙方艦艇(HP=戰力×3、攻擊=戰力);
 // 玩家艦置左欄、敵方置右欄,依序排列。
 func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip) {
+	// 由艦艇設計推導真戰鬥公式所需數值(remake 近似;精確值需艦體空間格 + 元件佔格 + 軍官技能):
+	//   結構 HP = 艦體×3;裝甲 HP = 設計 BonusHP;Beam Attack = 艦體 + 武器攻擊;
+	//   防禦 = 艦體(小艦=低戰力=低防,趨勢近原版);單發傷害 min=max/2、max=Attack;
+	//   護盾減傷暫 0(艦艇設計尚未把護盾與裝甲分離,見 gameplay-systems-status.md)。
 	for i, sh := range s.Ships {
-		hp := shipStrength(sh.Class)*3 + sh.BonusHP     // 艦體 + 裝甲/護盾 HP
-		atk := shipStrength(sh.Class) + sh.WeaponAttack // 艦體 + 武器(含戰鬥電腦)攻擊
-		player = append(player, CombatShip{Name: sh.Name, HP: hp, MaxHP: hp, Attack: atk, Col: 1, Row: i})
+		body := shipStrength(sh.Class)
+		atk := body + sh.WeaponAttack
+		player = append(player, CombatShip{
+			Name: sh.Name, HP: body * 3, MaxHP: body * 3, Attack: atk, Col: 1, Row: i,
+			Defense: body, WeaponMin: atk / 2, WeaponMax: atk, ShieldReduction: 0, ArmorHP: sh.BonusHP,
+		})
 	}
 	mult := 1.0
 	if s.Difficulty >= 0 && s.Difficulty < len(Difficulties) {
 		mult = Difficulties[s.Difficulty].Mult
 	}
 	for i, st := range genEnemyFleet(s.Turn, mult) {
-		enemyShips = append(enemyShips, CombatShip{Name: fmt.Sprintf("%s艦%d", enemy, i+1), HP: st * 3, MaxHP: st * 3, Attack: st, Col: 6, Row: i})
+		enemyShips = append(enemyShips, CombatShip{
+			Name: fmt.Sprintf("%s艦%d", enemy, i+1), HP: st * 3, MaxHP: st * 3, Attack: st, Col: 6, Row: i,
+			Defense: st, WeaponMin: st / 2, WeaponMax: st, ShieldReduction: 0, ArmorHP: st,
+		})
 	}
 	return
 }

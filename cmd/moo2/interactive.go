@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"sort"
@@ -824,12 +825,16 @@ type tacticalScreen struct {
 	log            string
 	over, won      bool
 	pStart, eStart int
+	rng            *rand.Rand // 戰鬥擲骰(依回合數種子,可重現)
 }
 
 func newTacticalScreen(b *sceneBuilder) *tacticalScreen {
 	p, e := b.session.StartCombat("賽隆人")
+	// 戰鬥 RNG 依當前回合數種子:同一局同一回合的戰鬥可重現(不引入 wall-clock 不確定性)。
+	seed := int64(b.session.Turn*2654435761 + 1013904223)
 	return &tacticalScreen{b: b, fnt: b.fnt, player: p, enemy: e, sel: -1,
-		log: "點我方艦選取→點空格移動;點敵艦→射程內我艦開火", pStart: len(p), eStart: len(e)}
+		log: "點我方艦選取→點空格移動;點敵艦→射程內我艦開火", pStart: len(p), eStart: len(e),
+		rng: rand.New(rand.NewSource(seed))}
 }
 
 func cellRect(col, row int) (x, y, w, h int) { return gcX0 + col*gcCW, gcY0 + row*gcCH, gcCW, gcCH }
@@ -890,11 +895,23 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 
 func (t *tacticalScreen) fireRound(target int) {
 	tc, tr := t.enemy[target].Col, t.enemy[target].Row
+	// 射程內我艦逐一以真戰鬥公式對目標射擊(命中判定→傷害→過盾→過甲)。
 	pAtk, firing := 0, 0
-	for _, s := range t.player { // 只有射程內的我艦開火
-		if abs(s.Col-tc)+abs(s.Row-tr) <= fireRange {
-			pAtk += s.Attack
-			firing++
+	for i := range t.player {
+		s := &t.player[i]
+		dist := abs(s.Col-tc) + abs(s.Row-tr)
+		if dist > fireRange {
+			continue
+		}
+		firing++
+		roll := t.rng.Intn(100) + 1
+		net := s.Attack - t.enemy[target].Defense
+		shot := shell.ResolveShot(net, s.WeaponMin, s.WeaponMax, dist,
+			t.enemy[target].ShieldReduction, t.enemy[target].ArmorHP, roll, false, false)
+		if shot.Hit {
+			t.enemy[target].ArmorHP = shot.RemainingArmorHP
+			t.enemy[target].HP -= shot.DamageToStructure
+			pAtk += shot.DamageToStructure
 		}
 	}
 	if firing == 0 {
@@ -902,7 +919,6 @@ func (t *tacticalScreen) fireRound(target int) {
 		return
 	}
 	t.round++
-	t.enemy[target].HP -= pAtk
 	alive := t.enemy[:0]
 	for _, s := range t.enemy {
 		if s.HP > 0 {
@@ -910,18 +926,31 @@ func (t *tacticalScreen) fireRound(target int) {
 		}
 	}
 	t.enemy = alive
+	// 敵方還擊我方最脆弱艦(同樣走真戰鬥公式,每艦一發)。
 	eAtk := 0
-	for _, s := range t.enemy {
-		eAtk += s.Attack
-	}
-	if len(t.player) > 0 && eAtk > 0 { // 敵方還擊我方最脆弱艦
+	if len(t.player) > 0 && len(t.enemy) > 0 {
 		wi := 0
 		for i := range t.player {
 			if t.player[i].HP < t.player[wi].HP {
 				wi = i
 			}
 		}
-		t.player[wi].HP -= eAtk
+		for i := range t.enemy {
+			es := &t.enemy[i]
+			dist := abs(es.Col-t.player[wi].Col) + abs(es.Row-t.player[wi].Row)
+			if dist > fireRange {
+				continue
+			}
+			roll := t.rng.Intn(100) + 1
+			net := es.Attack - t.player[wi].Defense
+			shot := shell.ResolveShot(net, es.WeaponMin, es.WeaponMax, dist,
+				t.player[wi].ShieldReduction, t.player[wi].ArmorHP, roll, false, false)
+			if shot.Hit {
+				t.player[wi].ArmorHP = shot.RemainingArmorHP
+				t.player[wi].HP -= shot.DamageToStructure
+				eAtk += shot.DamageToStructure
+			}
+		}
 	}
 	palive := t.player[:0]
 	for _, s := range t.player {

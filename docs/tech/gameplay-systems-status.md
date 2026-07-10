@@ -17,8 +17,14 @@
 
 ## 自編近似 / 未接真公式(待忠實化,依影響排序)
 
-### 1. 戰鬥系統(最大缺口)
-- 現況:`shell/session.go` `ResolveBattle` 是**抽象「戰力相減」**(加總雙方 power,依差額 `applyDamage`),格子戰術戰鬥 `tacticalScreen` 亦為簡化 attack−defense。
+### 1. 戰鬥系統(進行中)
+- **格子戰術戰鬥已接真公式(2026-07-10)**:`tacticalScreen.fireRound` 逐發用 `shell.ResolveShot`
+  (射程等級→射程懲罰→命中門檻→`CombatClassicToHit`→`DamageForHit`→`DamageAfterShield`→`DamageApplyArmor`),
+  RNG 依回合種子可重現;`CombatShip` 加 Defense/WeaponMin/Max/ShieldReduction/ArmorHP(remake 由艦艇設計推導,
+  精確值待艦體空間格+元件佔格+軍官技能模型)。測試 `combat_formula_test.go`。
+- **仍待**:①`ResolveBattle`(快速艦隊結算,自動戰鬥用)仍是抽象戰力相減,未接真公式;
+  ②護盾未與裝甲分離(ShieldReduction 暫 0),需艦艇設計 model 拆分;③球狀傷害/飛彈/戰機/地面戰未接。
+- 原況(供對照):`ResolveBattle` **抽象「戰力相減」**(加總雙方 power,依差額 `applyDamage`)。
 - gamedata **已備妥完整真公式**(未接):
   - 命中:`CombatHitThreshold`、`CombatClassicToHit`、`CombatAlternativeToHit`、射程 `CombatRangeLevel*`/`CombatRangeLevelPenalty`。
   - 傷害:`DamageForHit`(依命中結果算傷)、`DamageApplyDissipation`、`DamageMountAdjustedValue`。
