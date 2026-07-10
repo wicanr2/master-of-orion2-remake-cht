@@ -724,14 +724,39 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 // 配對律:種族 r 的房/使節/調色盤都用同一個 r。房或使節借錯 palette 才會全畫面雜點。
 
 // diplomatRaceIndex 把敵方種族名對應到 DIPLOMAT.LBX 的種族序 r(0..12)。
-// 目前僅確認 r=0 為爬蟲類使節(對應賽隆人/Sakkra,與現行單一對手一致);
-// 其餘 12 族的臉↔r 對應待逐使節視覺核對(見 layout 文件 TODO),先回退 0。
+// 13 族皆已對 RACESEL 肖像逐一核實對應,見 docs/tech/diplomat-lbx-layout.md。
 func diplomatRaceIndex(enemy string) int {
 	switch enemy {
-	case "賽隆人":
+	case "阿爾卡里":
 		return 0
+	case "布拉西":
+		return 1
+	case "達洛克":
+		return 2
+	case "埃雷里安":
+		return 3
+	case "諾蘭姆":
+		return 4
+	case "人類":
+		return 5
+	case "克拉肯":
+		return 6
+	case "梅克拉":
+		return 7
+	case "姆瑞森":
+		return 8
+	case "席隆":
+		return 9
+	case "薩克拉":
+		return 10
+	case "矽基":
+		return 11
+	case "崔拉里安":
+		return 12
+	case "賽隆人": // 舊字串相容(現行單一對手預設種族)
+		return 10
 	default:
-		return 0
+		return 10
 	}
 }
 
@@ -771,9 +796,9 @@ type diplomacyScreen struct {
 }
 
 func newDiplomacyScreen(b *sceneBuilder) *diplomacyScreen {
-	enemy := "賽隆人"
+	enemy := "薩克拉"
 	return &diplomacyScreen{b: b, fnt: b.fnt, enemy: enemy, room: loadDiplomatScene(b.res, diplomatRaceIndex(enemy)),
-		response: "賽隆人使節:人類,你有何提議?",
+		response: "薩克拉使節:人類,你有何提議?",
 		opts: []struct{ label, action string }{
 			{"提議和平", "peace"}, {"提議貿易", "trade"}, {"威脅恫嚇", "threat"},
 		},

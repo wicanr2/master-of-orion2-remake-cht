@@ -43,11 +43,31 @@ frame0 渲染後,穹頂開口區仍有白色抖色點。判定為**原版美術*
 ## 四、畫面重建(已實作)
 
 `cmd/moo2/interactive.go`:
-- `diplomatRaceIndex(enemy)`:敵族名 → r。**目前僅確認 r=0 = 爬蟲類使節 = 賽隆人(Sakkra)**,與現行單一對手一致;其餘族回退 0。
-- `loadDiplomatScene(res, r)`:房 `13+2r`(frame0,palette r)當底 + 使節 `14+2r`(frame0,palette r,透明邊緣)置中疊上 → 原版構圖。
+- `diplomatRaceIndex(enemy)`:敵族名 → r,**13 族全部對應完成**(見下表,已對 RACESEL 肖像逐一核實)。
+- `loadDiplomatScene(res, r)`:房 `13+2r`(frame0,palette r)當底 + 使節 `14+2r`(frame0,palette r,透明邊緣)置中疊上 → 原版構圖。已 composite 渲染驗證(薩克拉 r=10 使節顯示正確)。
+
+### 逐族對應表(對 RACESEL.LBX 肖像 asset 15–27 交叉比對確認)
+
+| r | 使節 asset | 種族(英) | 中文名 | 核實 |
+|---|---|---|---|---|
+| 0 | 14 | Alkari | 阿爾卡里 | 高(對 RACESEL#15 頭冠/翼) |
+| 1 | 16 | Bulrathi | 布拉西 | 高(熊/鬃毛獠牙) |
+| 2 | 18 | Darlok | 達洛克 | 高(兜帽長袍) |
+| 3 | 20 | Elerian | 埃雷里安 | 高(靈能女性施法) |
+| 4 | 22 | Gnolam | 諾蘭姆 | 高(地精大耳大鼻) |
+| 5 | 24 | Human | 人類 | 高(光頭男性紫袍) |
+| 6 | 26 | Klackon | 克拉肯 | 高(複眼甲殼蟻身) |
+| 7 | 28 | Meklar | 梅克拉 | 中(金屬觸手;刪去法定案) |
+| 8 | 30 | Mrrshan | 姆瑞森 | 高(貓科虎斑) |
+| 9 | 32 | Psilon | 席隆 | 高(狹長頭顱綠視鏡) |
+| 10 | 34 | Sakkra | 薩克拉 | 高(紫恐龍頭背脊尖刺利齒,主代理親驗) |
+| 11 | 36 | Silicoid | 矽基 | 高(岩石水晶心形裂縫) |
+| 12 | 38 | Trilarian | 崔拉里安 | 高(多眼球頭翼鰭觸鬚) |
+
+**修正紀錄**:先前誤判「r=0 = Sakkra 爬蟲」——實為 Alkari(鳥,低解析頭冠/翼被誤看成鱗角);真 Sakkra 是 r=10。經與 RACESEL 已知肖像交叉比對糾正。
 
 ## 五、待辦(機械後續,非封鎖)
 
-1. **逐使節臉↔種族名對應**:渲染 asset 14/16/…/38(各配 palette 0..12),比對 13 族外觀(Alkari 鳥、Bulrathi 熊、Darlok 影、Elerian、Gnolam、Human、Klackon 蟲、Meklar 機、Mrrshan 貓、Psilon、Sakkra 蜥、Silicoid 晶、Trilarian 魚),填 `diplomatRaceIndex`。屬純視覺盤點,可派便宜 subagent。
+1. **r=7 Meklar** 為刪去法定案(中信心),其餘 12 族高信心;若要 100% 可再對 RACESEL#22 面罩特徵複核。
 2. 使節動畫多幀(現用 frame0 靜態);若要動畫需逐幀播放(delta 累積語意見 `internal/lbx`)。
 3. 對話框/提議按鈕座標若要像素對齊原版 UI,再量測。
