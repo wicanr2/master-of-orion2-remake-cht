@@ -84,3 +84,11 @@ openorion2 galaxy 用 `STARBG#3` 當背景,palette = `_gui->palette()`(全域 GU
 - CMBTSHP 艦型/尺寸/種族 → asset index 的對應表(360 個)。
 - 20 幀朝向的角度對應(哪一幀對哪個航向)。
 - STARBG 6 張背景是否依星域/星球類型選用。
+
+## 追記(2026-07-11):CMBTSHP vs ships.lbx —— #12 艦型對照為何 RE-gated
+
+派工前對 openorion2 做柵欄原則核實,釐清一個關鍵歧義,記錄以免未來重踩:
+
+- **openorion2 完全不使用 CMBTSHP.LBX**(全 `src/*.cpp` grep 零命中)。它的艦艇 sprite 來自 **`ships.lbx`**(`ships.cpp` `SHIPSPRITE_ARCHIVE`),索引公式 `ships.cpp:112-114`:`ships.lbx[玩家色 × (MAX_SHIP_SPRITES+1=50) + ship.picture]`,配玩家色調色盤;`ship.picture`(0-48,`MAX_SHIP_SPRITES=49`)存在存檔 ShipDesign(remake `internal/save` 已解析 `Picture uint8`)。特殊 sprite:ANTARAN=0/GUARDIAN=7/MONSTER=8/MINIMONSTER=20。
+- **但 `ships.lbx` 的 `_shipimg` 在 openorion2 是否用於戰術戰鬥畫面,無法從碼確認**;而 **CMBTSHP.LBX 資產 0 有 20 幀**(旋轉動畫),與「戰術戰鬥中艦艇會朝不同方向」的需求吻合——強烈暗示 **CMBTSHP 才是 DOS 原版戰術戰鬥的艦 sprite**,`ships.lbx` 可能是星系/艦隊/設計畫面的靜態小圖。故 remake 現行選 CMBTSHP 疊戰場**很可能是對的**,不應貿然改成 ships.lbx。
+- **結論:#12(艦級 → CMBTSHP 資產索引 完整對照)確實 RE-gated。** 對照關係**不在 openorion2 參考碼**(它不碰 CMBTSHP),CMBTSHP 360 資產的分組語意(哪些資產對應哪個艦體大小/種族/朝向)須靠 ① DOSBox 原版戰鬥截圖當 oracle 逐一比對,或 ② 逆推 CMBTSHP.LBX 內部結構(幀數/尺寸分組)+ 原版艦體美術交叉驗證。非本輪「接已備 gamedata 模型」式的乾淨自驅任務。現行「全艦共用 CMBTSHP#30 佔位」維持,待 DOSBox oracle 就緒再逐級對照。
