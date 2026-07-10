@@ -135,6 +135,12 @@
 出處:Feudal/Confederation 767–799 行;Dictatorship/Imperium 801–825 行;Democracy/Federation
 827–855 行;Unification/Galactic Unification 858–889 行(皆 `manual.txt`,約印刷頁 20–23)。
 
+**remake 實作範圍(2026-07-10,`shell.ApplyGovernment`)**:僅實作「已建模資源」的乘數——
+封建研究×½、統一食物/產能×1.5、民主研究×1.5(數值取自上表)。**其餘效果未模擬**(誠實標註,
+不自編):士氣、征服同化回合、間諜/防禦加成、造艦成本、首都陷落效應——因 remake 尚未建立
+這些系統。進階型態(Confederation/Imperium/Federation/Galactic Unification)未納入(自訂畫面
+只提供四種基礎政府)。
+
 ## 附錄:選用 mod「150 improved」(150i)的另一組點數(僅供參考,非預設值,勿直接採用)
 
 `moo2_patch1.5/MOO2-1.50.26.zip → patch/150/mods/150i/cfg/PICKS_SP.CFG`(單機)與

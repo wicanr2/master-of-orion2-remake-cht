@@ -638,6 +638,33 @@ var FlagColors = []struct {
 	{"棕", 150, 110, 70},
 }
 
+// Governments 是自訂種族可選的政府型態(順序對應 customrace 政府型態循環選項)。
+var Governments = []string{"獨裁", "封建", "統一", "民主"}
+
+// ApplyGovernment 套用政府型態對「本 remake 已建模資源」的效果(手冊 p.20–23 明列百分比):
+//   - 封建(1):研究減半。
+//   - 統一(2):食物 +50%、產能 +50%。
+//   - 民主(3):研究 +50%。
+//   - 獨裁(0):基準,無資源乘數。
+//
+// ⚠ 誠實標註:政府在原版還有士氣、征服同化回合、間諜/防禦加成、造艦成本、首都陷落效應等,
+// 這些系統本 remake 尚未建模,故**未模擬**(不自編近似)。詳見 docs/tech/custom-race-picks.md
+// 政府效果附錄與缺口說明。gov 索引對應 Governments。
+func (s *GameSession) ApplyGovernment(gov int) {
+	pct150 := func(v int) int { return (v*3 + 1) / 2 } // ×1.5 四捨五入
+	for i := range s.PlayerColonies {
+		switch gov {
+		case 1: // 封建:研究減半
+			s.PlayerColonies[i].ResearchPerScientist /= 2
+		case 2: // 統一:食物 +50%、產能 +50%
+			s.PlayerColonies[i].FoodPerFarmer = pct150(s.PlayerColonies[i].FoodPerFarmer)
+			s.PlayerColonies[i].IndustryPerWorker = pct150(s.PlayerColonies[i].IndustryPerWorker)
+		case 3: // 民主:研究 +50%
+			s.PlayerColonies[i].ResearchPerScientist = pct150(s.PlayerColonies[i].ResearchPerScientist)
+		}
+	}
+}
+
 // GalaxySizes 是星系大小選項(名稱 + 星數),對應 NEW GAME 的 GALAXY SIZE。
 var GalaxySizes = []struct {
 	Name  string
