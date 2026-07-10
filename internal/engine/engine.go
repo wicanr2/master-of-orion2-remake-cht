@@ -57,6 +57,9 @@ type PlayerState struct {
 	// (因 ResearchTopic 0 = 起始科技為合法值,不能用零值判斷)。
 	PendingChoice    gamedata.ResearchTopic
 	HasPendingChoice bool
+	// ExplicitChoice 記錄哪些主題是玩家「明確抉擇」過的(非預設)。用於元件解鎖:
+	// 明確抉擇過的主題只解鎖所選科技對應元件;未明確抉擇(AI/預設)維持主題層級(不回歸)。
+	ExplicitChoice map[gamedata.ResearchTopic]bool
 }
 
 // ColonyOutput 是一回合殖民地經濟結算結果。

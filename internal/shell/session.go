@@ -50,6 +50,9 @@ type Component struct {
 	Cost  int
 	Value int                    // 武器=攻擊、裝甲/護盾=HP、特殊=攻擊或視元件而定
 	Tech  gamedata.ResearchTopic // 解鎖所需研究主題(0=起始科技,一開始就有)
+	// UnlockTech 是該元件真正對應的 MOO2 科技(0=TECH_NONE=未映射/里程碑/抽象元件,走主題層級)。
+	// 校正依據見 docs/tech/component-tech-mapping.md。多選主題中,唯有玩家明確抉擇到此科技才解鎖。
+	UnlockTech gamedata.Technology
 }
 
 // 元件清單(名稱取自 MOO2 真實科技譯名 tech.tsv;成本/效果依 MOO2 遞進,各標解鎖科技)。
@@ -58,48 +61,69 @@ var (
 	// Value = 單裝武器最大傷害。標 ✓ 者取自 patch 1.5 官方文件(MANUAL_150.html)確認值:
 	// 中子爆破槍 12、高斯砲 18、電漿砲 20(1.50;1.31 為 30,版本相依)。其餘為依科技階遞增
 	// 的單調估計,精確值待掃描版手冊武器附錄 OCR 交叉核對。詳見 docs/tech/component-values.md。
+	// Tech/UnlockTech 經 docs/tech/component-tech-mapping.md 對真科技樹校正:
+	// 掛正確主題 + 真 Technology。里程碑科技(死光/氙素裝甲)與抽象元件(戰鬥電腦/重生程序)
+	// 真科技樹無單一 TOPIC 可掛,暫掛簡化 proxy 主題、UnlockTech=TECH_NONE(走主題層級,標註待重設計)。
 	WeaponOptions = []Component{
-		{"無武裝", 0, 0, 0}, {"雷射", 20, 4, 0}, {"核飛彈", 30, 6, 0},
-		{"質量投射器", 40, 8, gamedata.TOPIC_ADVANCED_MAGNETISM},
-		{"中子爆破槍", 60, 12, gamedata.TOPIC_ADVANCED_CHEMISTRY}, // ✓
-		{"核融合光束", 80, 16, gamedata.TOPIC_ADVANCED_FUSION},
-		{"麥克萊特飛彈", 90, 17, gamedata.TOPIC_ADVANCED_CHEMISTRY},
-		{"高斯砲", 120, 18, gamedata.TOPIC_ADVANCED_MANUFACTURING}, // ✓ 戰鬥最大
-		{"相位砲", 160, 19, gamedata.TOPIC_ANTIMATTER_FISSION},
-		{"電漿砲", 200, 20, gamedata.TOPIC_ARTIFICIAL_GRAVITY}, // ✓ 1.50(1.31=30)
-		{"死光", 300, 25, gamedata.TOPIC_ARTIFICIAL_LIFE},
+		{"無武裝", 0, 0, 0, 0},
+		{"雷射", 20, 4, gamedata.TOPIC_PHYSICS, gamedata.TECH_LASER_CANNON},        // ResearchAll(早期)
+		{"核飛彈", 30, 6, gamedata.TOPIC_CHEMISTRY, gamedata.TECH_NUCLEAR_MISSILE}, // ResearchAll(早期)
+		{"質量投射器", 40, 8, gamedata.TOPIC_ADVANCED_MAGNETISM, gamedata.TECH_MASS_DRIVER},
+		{"中子爆破槍", 60, 12, gamedata.TOPIC_NEUTRINO_PHYSICS, gamedata.TECH_NEUTRON_BLASTER}, // ✓ 值
+		{"核融合光束", 80, 16, gamedata.TOPIC_FUSION_PHYSICS, gamedata.TECH_FUSION_BEAM},
+		{"麥克萊特飛彈", 90, 17, gamedata.TOPIC_ADVANCED_CHEMISTRY, gamedata.TECH_MERCULITE_MISSILE},
+		{"高斯砲", 120, 18, gamedata.TOPIC_SUBSPACE_FIELDS, gamedata.TECH_GAUSS_CANNON}, // ✓ 值 戰鬥最大
+		{"相位砲", 160, 19, gamedata.TOPIC_MULTIPHASED_PHYSICS, gamedata.TECH_PHASOR},
+		{"電漿砲", 200, 20, gamedata.TOPIC_PLASMA_PHYSICS, gamedata.TECH_PLASMA_CANNON}, // ✓ 值 1.50
+		{"死光", 300, 25, gamedata.TOPIC_ARTIFICIAL_LIFE, 0},                           // 里程碑,proxy
 	}
 	ArmorOptions = []Component{
-		{"無裝甲", 0, 0, 0}, {"鈦裝甲", 30, 10, 0},
-		{"三鈦裝甲", 60, 20, gamedata.TOPIC_ADVANCED_METALLURGY},
-		{"佐特裝甲", 100, 35, gamedata.TOPIC_ADVANCED_CONSTRUCTION},
-		{"中子素裝甲", 160, 55, gamedata.TOPIC_ANTIMATTER_FISSION},
-		{"精金裝甲", 240, 80, gamedata.TOPIC_ARTIFICIAL_GRAVITY},
-		{"氙素裝甲", 350, 120, gamedata.TOPIC_ARTIFICIAL_LIFE},
+		{"無裝甲", 0, 0, 0, 0},
+		{"鈦裝甲", 30, 10, gamedata.TOPIC_CHEMISTRY, gamedata.TECH_TITANIUM_ARMOR}, // ResearchAll(早期)
+		{"三鈦裝甲", 60, 20, gamedata.TOPIC_ADVANCED_METALLURGY, gamedata.TECH_TRITANIUM_ARMOR},
+		{"佐特裝甲", 100, 35, gamedata.TOPIC_NANO_TECHNOLOGY, gamedata.TECH_ZORTRIUM_ARMOR},
+		{"中子素裝甲", 160, 55, gamedata.TOPIC_MOLECULAR_MANIPULATION, gamedata.TECH_NEUTRONIUM_ARMOR},
+		{"精金裝甲", 240, 80, gamedata.TOPIC_MOLECULAR_CONTROL, gamedata.TECH_ADAMANTIUM_ARMOR},
+		{"氙素裝甲", 350, 120, gamedata.TOPIC_ARTIFICIAL_LIFE, 0}, // 里程碑,proxy
 	}
 	ShieldOptions = []Component{
-		{"無護盾", 0, 0, 0},
-		{"第一級護盾", 40, 15, gamedata.TOPIC_ADVANCED_MAGNETISM},
-		{"第三級護盾", 90, 35, gamedata.TOPIC_ARTIFICIAL_GRAVITY},
-		{"第五級護盾", 150, 60, gamedata.TOPIC_ADVANCED_MANUFACTURING},
-		{"第七級護盾", 230, 90, gamedata.TOPIC_ANTIMATTER_FISSION},
-		{"第十級護盾", 350, 140, gamedata.TOPIC_ARTIFICIAL_LIFE},
+		{"無護盾", 0, 0, 0, 0},
+		{"第一級護盾", 40, 15, gamedata.TOPIC_ADVANCED_MAGNETISM, gamedata.TECH_CLASS_I_SHIELD},
+		{"第三級護盾", 90, 35, gamedata.TOPIC_MAGNETO_GRAVITICS, gamedata.TECH_CLASS_III_SHIELD},
+		{"第五級護盾", 150, 60, gamedata.TOPIC_SUBSPACE_FIELDS, gamedata.TECH_CLASS_V_SHIELD},
+		{"第七級護盾", 230, 90, gamedata.TOPIC_QUANTUM_FIELDS, gamedata.TECH_CLASS_VII_SHIELD},
+		{"第十級護盾", 350, 140, gamedata.TOPIC_TEMPORAL_FIELDS, gamedata.TECH_CLASS_X_SHIELD},
 	}
 	SpecialOptions = []Component{
-		{"無", 0, 0, 0},
-		{"戰鬥電腦", 80, 3, gamedata.TOPIC_ARTIFICIAL_INTELLIGENCE},
-		{"自動修復", 60, 0, gamedata.TOPIC_ADVANCED_ROBOTICS},
-		{"隱形裝置", 100, 0, gamedata.TOPIC_ARTIFICIAL_CONSCIOUSNESS},
-		{"重生程序", 150, 0, gamedata.TOPIC_ARTIFICIAL_LIFE},
+		{"無", 0, 0, 0, 0},
+		{"戰鬥電腦", 80, 3, gamedata.TOPIC_ARTIFICIAL_INTELLIGENCE, 0}, // 抽象(電腦研究鏈),proxy 待重設計
+		{"自動修復", 60, 0, gamedata.TOPIC_ADVANCED_MANUFACTURING, gamedata.TECH_AUTOMATED_REPAIR_UNIT},
+		{"隱形裝置", 100, 0, gamedata.TOPIC_DISTORTION_FIELDS, gamedata.TECH_CLOAKING_DEVICE},
+		{"重生程序", 150, 0, gamedata.TOPIC_ARTIFICIAL_LIFE, 0}, // 抽象(種族特性),proxy 待重設計
 	}
 )
 
-// ComponentUnlocked 回傳某元件是否已解鎖(起始科技一律解鎖,否則需已完成對應研究)。
+// ComponentUnlocked 回傳某元件是否已解鎖。
+//
+// 解鎖規則(MOO2 每主題數科技間抉擇的非破壞式實作):
+//   - 起始科技(Tech=0)一律解鎖。
+//   - 主題未完成 → 未解鎖。
+//   - 主題已完成、但元件未映射真科技(UnlockTech=TECH_NONE,如里程碑/抽象元件)→ 主題層級解鎖。
+//   - 主題已完成、元件有映射科技、但玩家「未明確抉擇」該主題(AI/預設)→ 主題層級解鎖(不回歸)。
+//   - 主題已完成、有映射科技、玩家「已明確抉擇」該主題 → 僅所選科技對應元件解鎖(忠實抉擇)。
 func (s *GameSession) ComponentUnlocked(c Component) bool {
 	if c.Tech == gamedata.TOPIC_STARTING_TECH {
 		return true
 	}
-	return s.Player.CompletedTopics != nil && s.Player.CompletedTopics[c.Tech]
+	if s.Player.CompletedTopics == nil || !s.Player.CompletedTopics[c.Tech] {
+		return false
+	}
+	// 主題已完成:未映射科技或未明確抉擇 → 主題層級(維持既有行為)。
+	if c.UnlockTech == gamedata.TECH_NONE || s.Player.ExplicitChoice == nil || !s.Player.ExplicitChoice[c.Tech] {
+		return true
+	}
+	// 已明確抉擇該主題:僅所選科技對應元件解鎖。
+	return s.Player.ChosenTech != nil && s.Player.ChosenTech[c.Tech] == c.UnlockTech
 }
 
 // NextUnlockedComponent 從 opts[cur] 起找下一個已解鎖元件的索引(循環;至少回 0=無)。

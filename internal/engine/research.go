@@ -91,7 +91,11 @@ func ApplyResearchChoice(ps PlayerState, tech gamedata.Technology) (PlayerState,
 	if ps.ChosenTech == nil {
 		ps.ChosenTech = make(map[gamedata.ResearchTopic]gamedata.Technology)
 	}
+	if ps.ExplicitChoice == nil {
+		ps.ExplicitChoice = make(map[gamedata.ResearchTopic]bool)
+	}
 	ps.ChosenTech[ps.PendingChoice] = tech
+	ps.ExplicitChoice[ps.PendingChoice] = true // 標記此主題已明確抉擇(元件解鎖改科技層級)
 	ps.HasPendingChoice = false
 	return ps, true
 }
