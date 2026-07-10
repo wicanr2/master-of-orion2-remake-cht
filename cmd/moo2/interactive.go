@@ -454,6 +454,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 	overlays := []labelRect{
 		{13, 443, 71, 14, "Colonies", 12},
 		{88, 443, 71, 14, "Planets", 12},
+		{254, 1, 88, 19, "Game", 13}, // 頂部標題列烘進的 GAME
 		{163, 443, 71, 14, "Fleets", 12},
 		{235, 443, 74, 14, "Zoom", 12},
 		{308, 443, 74, 14, "Leaders", 12},
