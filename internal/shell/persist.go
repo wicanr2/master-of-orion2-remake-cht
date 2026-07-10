@@ -24,6 +24,7 @@ type aiSnapshot struct {
 	Relation        int                  `json:"relation"`
 	StanceName      string               `json:"stanceName"`
 	OwnedStars      int                  `json:"ownedStars"`
+	ColonyStars     []int                `json:"colonyStars"` // 見 shell.AIOpponent.ColonyStars 註解
 }
 
 // sessionSnapshot 是 GameSession 的完整可序列化狀態(排除純顯示的暫態:LastEvent/LastAntares
@@ -51,6 +52,11 @@ type sessionSnapshot struct {
 	RaceIndex      int                  `json:"raceIndex"`
 	RaceCombatPct  int                  `json:"raceCombatPct"`
 	RaceGrowthPct  int                  `json:"raceGrowthPct"`
+
+	// --- 地面戰入侵(見 ground_invasion.go) ---
+	FleetMarines        int   `json:"fleetMarines"`
+	PlayerColonyMarines []int `json:"playerColonyMarines"`
+	MarineBarracksAge   []int `json:"marineBarracksAge"`
 }
 
 // snapshot 擷取 GameSession 目前狀態成可序列化快照。
@@ -63,7 +69,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		}
 		ais[i] = aiSnapshot{Name: a.Name, Player: a.Player, Colonies: a.Colonies, Profile: prof,
 			FleetStrength: a.FleetStrength, FleetInvestPool: a.FleetInvestPool,
-			Relation: a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars}
+			Relation: a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars,
+			ColonyStars: a.ColonyStars}
 	}
 	return sessionSnapshot{
 		Version: saveFormatVersion, Turn: s.Turn, Player: s.Player,
@@ -74,6 +81,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		PopAccum: s.popAccum, ColonyBuild: s.ColonyBuildings, EventSeed: s.EventSeed,
 		AntaresRaids: s.AntaresRaids, RaceIndex: s.RaceIndex,
 		RaceCombatPct: s.RaceCombatPct, RaceGrowthPct: s.raceGrowthPct,
+		FleetMarines: s.FleetMarines, PlayerColonyMarines: s.PlayerColonyMarines,
+		MarineBarracksAge: s.MarineBarracksAge,
 	}
 }
 
@@ -87,6 +96,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 			FleetStrength:   a.FleetStrength,
 			FleetInvestPool: a.FleetInvestPool,
 			Relation:        a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars,
+			ColonyStars: a.ColonyStars,
 		}
 	}
 	return &GameSession{
@@ -97,6 +107,8 @@ func (snap sessionSnapshot) restore() *GameSession {
 		FleetETA: snap.FleetETA, popAccum: snap.PopAccum, ColonyBuildings: snap.ColonyBuild,
 		EventSeed: snap.EventSeed, AntaresRaids: snap.AntaresRaids, RaceIndex: snap.RaceIndex,
 		RaceCombatPct: snap.RaceCombatPct, raceGrowthPct: snap.RaceGrowthPct,
+		FleetMarines: snap.FleetMarines, PlayerColonyMarines: snap.PlayerColonyMarines,
+		MarineBarracksAge: snap.MarineBarracksAge,
 	}
 }
 

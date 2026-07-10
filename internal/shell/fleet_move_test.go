@@ -31,7 +31,7 @@ func TestFleetInterstellarMovement(t *testing.T) {
 
 	eta := s.FleetETA
 	// 航行中不可再下新令。
-	if s.SendFleet((dest%(len(s.Stars)-1))+1) {
+	if s.SendFleet((dest % (len(s.Stars) - 1)) + 1) {
 		t.Fatal("艦隊航行中不應接受新派遣令")
 	}
 

@@ -64,9 +64,29 @@
 
 ## 實作計畫(定案後,不需 oracle)
 
-1. 建 `ResolveGroundBattle(atk, def GroundForce, rng)`:用**一代解算**(每回合雙方 d100+force,低者敗損 1 hit;平手歸守方)+ **二代 hits-to-kill**(單位累積達 hits-to-kill 才 −1 pop)+ **二代 force 加成表**(gamedata/ground.go)。反覆至一方歸零。可寫確定性測試(固定 seed 驗勝負趨勢:force 高方勝率高、雙倍兵力優勢)。
-2. 建入侵流程:運輸艦載陸戰隊 → 抵敵殖民地 → 觸發地面戰 → 勝則轉移殖民地(+同化/滅絕選擇,手冊 p.164)。
-3. 驗證:確定性單測(seed 化)驗「force 差 → 勝率」「兵力比 → 勝率」符合社群經驗法則(每差 10-20 點需雙倍兵力);**不需原版實測**(一代公式即定案)。
+1. ✅ **已完成**(見 `internal/gamedata/ground_battle.go`):`ResolveGroundBattle(atk, def GroundForce, rng)`,一代解算 + 二代 hits-to-kill + 二代 force 加成表,確定性測試綠(`ground_battle_test.go`)。
+2. ✅ **已完成**(2026-07-11,`internal/shell/ground_invasion.go` + `ground_invasion_test.go`):陸戰隊生成 → 運送 → 觸發入侵 → 勝則轉移殖民地的「模型 + 流程」shell 層接線,細節見下方「2026-07-11 shell 層接線」一節。**尚未做**:UI 繪製/操作介面(不碰 interactive.go)、同化/滅絕選擇(手冊 p.164,本輪只做「整批過戶」的簡化版)。
+3. ✅ **已完成**:確定性單測驗「force 差/兵力比 → 勝率」符合社群經驗法則,見 `ground_battle_test.go` 與本輪新增的 `ground_invasion_test.go`(接了 shell 層模型後的端到端勝率測試)。
+
+## 2026-07-11 shell 層接線(InvadeColony 流程)
+
+把上方已定案的解算式接進活的對局狀態(`internal/shell/ground_invasion.go`),流程:陸戰隊生成
+(Marine Barracks)→ 載運(LoadMarines)→ 入侵解算(InvadeColony)→ 勝則佔領。
+
+**忠實部分**(直接用手冊/已驗證加成表,無臆測):
+- 陸戰隊生成公式 `GroundMarineBarracksUnits`(初始 4 + 每 5 回合 +1,上限 `GroundMarineBarracksCap`)逐回合接進 `EndTurn`(`advanceMarines`)。
+- Force 計算重用既有「艦艇元件解鎖」判定(`ComponentUnlocked`/`ArmorOptions`):玩家裝甲科技加成取「已解鎖裝甲元件中最高階者」對應的 `GroundArmorTechBonus`,而非另建一套獨立判定,避免地面戰科技狀態與造艦科技狀態不同步。
+- Powered Armor / Anti-Grav Harness / Personal Shield 三項裝備科技(本 remake 艦艇元件模型未收錄)直接查 `CompletedTopics`/`ChosenTech`,加總(非互斥升級,三者可並存,不同於裝甲槽)。
+- 種族地面戰加成:僅 Bulrathi(+10)/Gnolam(−10 + Low-G 10% 懲罰)手冊有明確數字,套用 `groundRaceFor`;其餘種族與尚未建模的「特殊能力(Subterranean/High-G)」誠實留白,不臆測。
+
+**簡化(標記待精修,依 83-completeness-over-roi 誠實揭露,不是藉口不做)**:
+1. **運輸艦運力**:本 remake 尚無獨立「運輸艦」船體類別,`MarineTransportCapacity()` 用「艦隊現有艦數 × 手冊每艘 4 個單位」近似,不分船體類型。待補真正運輸艦船體後應改為只計數該類型。
+2. **AI 守方兵力**:AIOpponent 沒有追蹤各殖民地 Marine Barracks 是否建成/已運作幾回合(無 AI 版 ColonyBuildings),用「已運作 `s.Turn` 回合」近似 `GroundMarineBarracksUnits` 的 turnsSinceBuilt 參數(AI 母星開局即有 Marine Barracks,近似合理但非精確追蹤)。
+3. **AI 種族/特殊能力**:AIOpponent 無 RaceIndex,AI 側 force 只計裝甲/裝備科技加成,不套種族/Low-G/Subterranean。
+4. **入侵後保留人口**:手冊 p.162-164 只有敘述性描述,無精確的「入侵後保留多少平民人口」公式;以「守方地面戰存活戰鬥單位數」近似戰後殖民地人口(至少 1),不做同化/滅絕的玩家抉擇(手冊有此選項,本輪未做)。
+5. **可入侵範圍**:AI 每 5 回合 `aiExpand` 佔領的無主星只標記 `Owner=2`,不建立殖民地經濟模型(見 `AIOpponent.ColonyStars` 註解)。故本輪只有 AI 開局母星(唯一有真實 `ColonyState` 的星)可被入侵;其餘擴張版圖入侵時會回報「無可入侵的殖民地模型」。
+
+**流程選擇**:入侵由玩家主動呼叫 `InvadeColony`(非艦隊一抵達就自動觸發),與既有架構一致——`SendFleet`/`BuildShip`/`ShiftColonyJob` 等所有玩家決策都是顯式呼叫,不是 `EndTurn` 自動觸發;也讓玩家能先觀察/多載陸戰隊再決定開打,貼近原版「艦隊指令選單」的操作語意。
 
 ## 來源
 

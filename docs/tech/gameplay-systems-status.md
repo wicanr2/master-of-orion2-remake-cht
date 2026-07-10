@@ -27,7 +27,7 @@
   → **兩條戰鬥解算路徑(格子戰術 + 快速艦隊)現都用真 MOO2 戰鬥公式。**
 - **護盾與裝甲已分離(2026-07-10)**:戰鬥時依元件名查表得裝甲 HP(`armorHPByName`)+ 護盾每發減傷
   (`shieldReduceByName`,依護盾階 0/2/4/6/8/10),兩路徑套用,`DamageAfterShield` 護盾機制真正生效。
-- **仍待**:①球狀傷害/飛彈/戰機/地面戰未接;②護盾減傷精確 per-class 真值待逆向(現為階梯推導);
+- **仍待**:①球狀傷害/飛彈/戰機未接(地面戰已於 §1a/1c 接線完成);②護盾減傷精確 per-class 真值待逆向(現為階梯推導);
   ③per-ship 攻防/傷害為 remake 由艦艇設計推導(精確值需艦體空間格+元件佔格+軍官技能模型)。
 
 ### 1a. ★ 地面戰:已解算(2026-07-10 更新——推翻本節下方舊「故不做」結論)
@@ -35,12 +35,18 @@
 > **本節下方原判定「地面戰需逆向、硬編=違反鐵律、故不做」已被使用者 directive 推翻並解決。**
 > 使用者定案:手冊無 MOO2 解算式 → **沿用一代(1oom)`game_ground_kill` 公式**(d100+force 對決,明確無歧義)+ 二代手冊加成表/hits-to-kill。這**不是硬編臆造**,是有權威來源(1oom GPL 重製碼,逐位元組對齊原版)的忠實移植,符合鐵律。
 > 已實作:`internal/gamedata/ground_battle.go` `ResolveGroundBattle` + 確定性測試(force 高方勝率 0.96、雙倍兵力 0.92、對稱 ~0.49、無死迴圈)。詳見 `ground-combat-algorithm.md`「解算式定案」。
-> **仍待**:UI 入侵流程接線(運輸艦→抵敵殖民地→觸發→轉移殖民地);屬 task 16 後續。
+> **2026-07-11 更新**:shell 層「模型 + 流程」接線已完成(見 §1c),**仍待**只剩 UI 繪製/操作介面(不碰 interactive.go,屬後續 task)。
 
-### 1b. 飛彈/球狀傷害:仍需「演算法逆向」(2026-07-10 盤點)
-- **地面戰**:gamedata `ground.go` 有完整**加成表**(裝甲/裝備/種族/Low-G/穴居防守 hits-to-kill,手冊 p.15-129 逐條驗證),但**手冊只描述加成、未給解算演算法**(戰力→命中機率的公式)——手冊 6916 段只說「advanced tech gives a better chance of winning」。故忠實 `ResolveGroundBattle` 需先**逆向遊戲內部解算迴圈**(或社群 wiki 反推),不能憑加成表自編機率公式。且需先建入侵流程(運輸艦載陸戰隊、抵敵殖民地觸發)。
+### 1b. 飛彈/球狀傷害:仍需「演算法逆向」(2026-07-10 盤點;地面戰已移出,見 §1a/1c)
 - **飛彈**:gamedata `missile.go` 有 jam/AMR 命中/速度,但飛彈**飛行回合、點防攔截互動**的完整解算同樣超出手冊文字,需逆向。
-- **結論**:這兩者與「球狀傷害/艦艇空間格」同屬**需逆向演算法的新子系統**,不是本輪「接 gamedata 真公式」那種可安全自驅的工作。硬編自製解算=違反不臆造鐵律,故不做;列為需 RE(動態 dump/反編/社群反推)的獨立任務。beam 戰鬥(命中/傷害/過盾/過甲)因手冊有 Classic Chance to Hit + Damage 公式且已轉寫進 gamedata,才能安全接線(已完成)。
+- **結論**:飛彈與「球狀傷害/艦艇空間格」同屬**需逆向演算法的新子系統**,不是本輪「接 gamedata 真公式」那種可安全自驅的工作。硬編自製解算=違反不臆造鐵律,故不做;列為需 RE(動態 dump/反編/社群反推)的獨立任務。beam 戰鬥(命中/傷害/過盾/過甲)因手冊有 Classic Chance to Hit + Damage 公式且已轉寫進 gamedata,才能安全接線(已完成);地面戰因使用者 directive 定案沿用一代公式,同樣已安全接線(見 §1a),兩者都**不**屬於本節「仍需 RE」的範圍。
+
+### 1c. ★ 地面戰 shell 層接線:已完成(2026-07-11)
+- `internal/shell/ground_invasion.go`:陸戰隊生成(`advanceMarines`,接 `EndTurn`)→ 載運(`LoadMarines`,運力=艦數×手冊每艘 4 個單位的近似,無獨立運輸艦船體類別,標簡化)→ 入侵解算(`GameSession.InvadeColony`,組雙方 `gamedata.GroundForce` 接 `ResolveGroundBattle`,rng 依回合+星索引種子化可重現)→ 勝則星 Owner 轉移 + 殖民地過戶(AI 端移除)。
+- Force 計算重用既有 `ComponentUnlocked`/`ArmorOptions` 元件解鎖判定推導裝甲科技加成,避免地面戰科技狀態與造艦科技狀態不同步;種族加成僅套用手冊有明確數字的 Bulrathi/Gnolam。
+- 簡化項(標記待精修,不臆造):運輸艦運力近似、AI 守方兵力用「已運作 s.Turn 回合」近似(AI 無 ColonyBuildings 追蹤)、AI 側不套種族加成(AIOpponent 無 RaceIndex)、入侵後保留人口以「守方存活戰鬥單位數」近似(手冊無精確公式)、可入侵範圍僅限 AI 開局母星(`aiExpand` 佔領的星未建殖民地模型)。
+- 測試:`ground_invasion_test.go`(強攻方/強守方勝率、前置條件檢查、可重現性、Marine Barracks 成長上限、載運上限)。
+- 詳細設計/簡化清單見 `ground-combat-algorithm.md`「2026-07-11 shell 層接線」一節。**仍待**:UI 繪製/操作介面(不碰 interactive.go)。
 - gamedata **已備妥完整真公式**(未接):
   - 命中:`CombatHitThreshold`、`CombatClassicToHit`、`CombatAlternativeToHit`、射程 `CombatRangeLevel*`/`CombatRangeLevelPenalty`。
   - 傷害:`DamageForHit`(依命中結果算傷)、`DamageApplyDissipation`、`DamageMountAdjustedValue`。
@@ -73,7 +79,7 @@
 1. **殖民地建築全表(進行中)**:5 棟 → 手冊 40 棟入 `gamedata/buildings.go`,綁前置科技 gating(subagent 實作中)。
 2. **產出行星驅動**:`FoodPerFarmer`/`IndustryPerWorker` 現為固定值,改依 climate/gravity/mineral(手冊 yield 表)推導——讓不同行星經濟有別(MOO2 核心手感)。
 3. **貿易財收入接線**:`income.go` 的 2:1 轉換公式已備,接進回合結算(需「工業配置到貿易品」模型 + 建造選單「Trade Goods」選項)。
-4. **地面戰 UI 入侵流程**:解算已備(§1a),接運輸艦→入侵→轉移殖民地。
+4. **地面戰 UI 入侵流程**:模型 + 流程 shell 層已接線完成(§1c,2026-07-11);剩 UI 繪製/操作介面。
 5. **艦艇設計(空間格)**:艦體空間格 + 元件佔格模型(§3);較大,最後。
 
 每塊:手冊/openorion2/一代為權威 → 派 subagent 實作 → 主代理核實 diff/測試才 commit。飛彈/球狀傷害(§1b)仍需 RE,獨立處理。

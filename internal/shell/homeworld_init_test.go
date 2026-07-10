@@ -21,10 +21,10 @@ func TestStartingBuildingCountManualExample(t *testing.T) {
 func TestStartingBuildingCountCapsAndRounding(t *testing.T) {
 	cases := []struct{ pop, cap, want int }{
 		{0, BuildingCapAverage, 0},
-		{1, BuildingCapAverage, 1},  // ceil(2/3)=1
-		{2, BuildingCapAverage, 2},  // ceil(4/3)=2
-		{3, BuildingCapAverage, 2},  // ceil(6/3)=2
-		{4, BuildingCapAverage, 3},  // ceil(8/3)=3
+		{1, BuildingCapAverage, 1},                    // ceil(2/3)=1
+		{2, BuildingCapAverage, 2},                    // ceil(4/3)=2
+		{3, BuildingCapAverage, 2},                    // ceil(6/3)=2
+		{4, BuildingCapAverage, 3},                    // ceil(8/3)=3
 		{100, BuildingCapPreWarp, BuildingCapPreWarp}, // 上限截斷
 	}
 	for _, c := range cases {

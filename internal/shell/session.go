@@ -26,6 +26,15 @@ type AIOpponent struct {
 	Relation   int    // 對玩家的外交關係分數(驅動 17 級 RelationLevel 與態勢)
 	StanceName string // 目前對玩家態勢(中文;由 ai.DecideStance 推得)
 	OwnedStars int    // 已擴張佔領的星數(含母星)
+
+	// ColonyStars 是 Colonies[i] 對應到 Stars 的索引(平行陣列)。
+	//
+	// 簡化限制(見 aiExpand):AI 每 5 回合用 aiExpand 佔領一顆無主星時,只標記
+	// Star.Owner=2、OwnedStars++,並不會為那顆星建立真正的 engine.ColonyState(economy
+	// 建模成本高、非本輪任務範圍)。因此 ColonyStars 目前只會有「開局母星」這一筆對映
+	// (NewDemoSession 建局時填入),其餘靠 aiExpand 擴張出的星是「有旗標無殖民地模型」的
+	// 版圖——地面入侵(InvadeColony)只能打有實際殖民地模型的星,找不到對映即回報無法入侵。
+	ColonyStars []int
 }
 
 // Star 是星系圖上的一顆星(供星圖渲染;正規化座標 0..1)。
@@ -136,18 +145,9 @@ func shieldReduceByName(name string) int {
 //   - 主題已完成、元件有映射科技、但玩家「未明確抉擇」該主題(AI/預設)→ 主題層級解鎖(不回歸)。
 //   - 主題已完成、有映射科技、玩家「已明確抉擇」該主題 → 僅所選科技對應元件解鎖(忠實抉擇)。
 func (s *GameSession) ComponentUnlocked(c Component) bool {
-	if c.Tech == gamedata.TOPIC_STARTING_TECH {
-		return true
-	}
-	if s.Player.CompletedTopics == nil || !s.Player.CompletedTopics[c.Tech] {
-		return false
-	}
-	// 主題已完成:未映射科技或未明確抉擇 → 主題層級(維持既有行為)。
-	if c.UnlockTech == gamedata.TECH_NONE || s.Player.ExplicitChoice == nil || !s.Player.ExplicitChoice[c.Tech] {
-		return true
-	}
-	// 已明確抉擇該主題:僅所選科技對應元件解鎖。
-	return s.Player.ChosenTech != nil && s.Player.ChosenTech[c.Tech] == c.UnlockTech
+	// 規則本體抽成 componentUnlockedFor(ground_invasion.go),供玩家與 AI 共用同一套判定
+	// (地面戰 force 加成需要對 AIOpponent.Player 套用相同規則)。
+	return componentUnlockedFor(s.Player, c)
 }
 
 // NextUnlockedComponent 從 opts[cur] 起找下一個已解鎖元件的索引(循環;至少回 0=無)。
@@ -929,18 +929,23 @@ type GameSession struct {
 	FleetDestStar    int                 // 艦隊目的星索引(-1=無航行任務)
 	FleetETA         int                 // 抵達目的星尚需回合數(0=已抵達/靜止)
 	popAccum         []int               // 各殖民地人口成長累加值(達門檻則 +1 人口)
-	ColonyBuildings  []map[string]bool   // 各殖民地已完工建築(去重,避免重複套用長期效果)
-	EventSeed        int64               // 隨機事件亂數種子(可重現;新遊戲遞增)
-	LastEvent        string              // 本回合觸發的隨機事件描述(空=無事件;供回合摘要)
-	DisableEvents    bool                // 關閉隨機事件(供確定性經濟測試隔離)
-	eventRand        *rand.Rand          // 事件亂數源(由 EventSeed 惰性建立)
-	AntaresRaids     int                 // 已發生的安塔蘭突襲次數(逐次升級強度)
-	LastAntares      string              // 本回合安塔蘭突襲描述(空=無;供回合摘要)
-	RaceIndex        int                 // 玩家選定的種族(shell.Races 索引)
-	PlayerName       string              // 玩家帝國/領袖名稱(新遊戲命名畫面設定)
-	FlagColor        int                 // 玩家旗幟顏色索引(shell.FlagColors)
-	RaceCombatPct    int                 // 種族戰鬥戰力百分點加成(供戰鬥使用)
-	raceGrowthPct    int                 // 種族人口成長百分點加成(供 advancePopulation)
+
+	// --- 地面戰入侵(見 ground_invasion.go) ---
+	FleetMarines        int               // 隨玩家艦隊出征、已載運的陸戰隊數(簡化模型,見 LoadMarines)
+	PlayerColonyMarines []int             // 各玩家殖民地 Marine Barracks 駐軍池(平行 PlayerColonies)
+	MarineBarracksAge   []int             // 各玩家殖民地 Marine Barracks 已運作回合數(平行 PlayerColonies)
+	ColonyBuildings     []map[string]bool // 各殖民地已完工建築(去重,避免重複套用長期效果)
+	EventSeed           int64             // 隨機事件亂數種子(可重現;新遊戲遞增)
+	LastEvent           string            // 本回合觸發的隨機事件描述(空=無事件;供回合摘要)
+	DisableEvents       bool              // 關閉隨機事件(供確定性經濟測試隔離)
+	eventRand           *rand.Rand        // 事件亂數源(由 EventSeed 惰性建立)
+	AntaresRaids        int               // 已發生的安塔蘭突襲次數(逐次升級強度)
+	LastAntares         string            // 本回合安塔蘭突襲描述(空=無;供回合摘要)
+	RaceIndex           int               // 玩家選定的種族(shell.Races 索引)
+	PlayerName          string            // 玩家帝國/領袖名稱(新遊戲命名畫面設定)
+	FlagColor           int               // 玩家旗幟顏色索引(shell.FlagColors)
+	RaceCombatPct       int               // 種族戰鬥戰力百分點加成(供戰鬥使用)
+	raceGrowthPct       int               // 種族人口成長百分點加成(供 advancePopulation)
 }
 
 // 安塔蘭人入侵參數:MOO2 的週期性終局威脅。前期寬限,之後每隔數回合一次突襲,強度隨次數升級。
@@ -1174,6 +1179,7 @@ func (s *GameSession) EndTurn() {
 	s.advanceBuilds()     // 以本回合淨工業推進各殖民地建造
 	s.advanceResearch()   // 目前研究主題完成則自動推進到下一個未完成的元件解鎖主題
 	s.advanceFleet()      // 推進艦隊星間航行(ETA 遞減,抵達則標記探索)
+	s.advanceMarines()    // 各 Marine Barracks 殖民地依手冊公式補充陸戰隊駐軍(有上限)
 	s.advancePopulation() // 累積各殖民地成長,達門檻則 +1 人口(回寫 Population)
 	s.advanceEvents()     // 觸發 MOO2 風格隨機事件(繁榮/瘟疫/海盜…),記於 LastEvent
 	s.Turn++
@@ -1419,18 +1425,22 @@ func homeworldBuildings() map[string]bool {
 // 餘數池修好(見 advanceAI 註解),經濟對稱完整。供「最小可玩迴圈」骨架用;正式新遊戲流程
 // (選種族/星系生成/起始文明等級選擇)為後續工作。
 func NewDemoSession() *GameSession {
-	galaxy := genGalaxy(24, 42) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
-	galaxy[0].Explored = true   // 母星初始已探索
+	const galaxyStars = 24
+	galaxy := genGalaxy(galaxyStars, 42) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
+	galaxy[0].Explored = true            // 母星初始已探索
+	aiHomeStar := galaxyStars / 2        // 與 genGalaxy 內部「idx==n/2 → AI 母星」的規則一致
 	return &GameSession{
 		Turn:            1,
 		Player:          newHomeworldPlayerState(gamedata.TOPIC_ADVANCED_CONSTRUCTION),
 		PlayerColonies:  []engine.ColonyState{playerHomeworldColony()},
 		ColonyBuildings: []map[string]bool{homeworldBuildings()},
 		AIPlayers: []AIOpponent{{
-			Name:     "AI (賽隆人)",
-			Player:   newHomeworldPlayerState(1),
-			Colonies: []engine.ColonyState{playerHomeworldColony()}, // AI 同為 Average 起始單一母星,與玩家共用忠實 yield
-			Decider:  ai.NewRemakeDecider(ai.ProfileScientific),
+			Name:        "AI (賽隆人)",
+			Player:      newHomeworldPlayerState(1),
+			Colonies:    []engine.ColonyState{playerHomeworldColony()}, // AI 同為 Average 起始單一母星,與玩家共用忠實 yield
+			ColonyStars: []int{aiHomeStar},                             // 唯一有實際殖民地模型的星(見 AIOpponent.ColonyStars 註解)
+			Decider:     ai.NewRemakeDecider(ai.ProfileScientific),
+			OwnedStars:  1,
 		}},
 		Stars:         galaxy,
 		Planets:       genPlanets(galaxy),
