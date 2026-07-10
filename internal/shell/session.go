@@ -419,9 +419,6 @@ func (s *GameSession) ApplyCombatOutcome(enemy string, playerStart, enemyStart i
 	}
 }
 
-// shipNamePool 供新造艦命名(依序循環)。
-var shipNamePool = []string{"先鋒號", "勝利號", "無畏號", "蒼穹號", "星辰號", "破曉號", "遠征號", "不朽號", "疾風號", "曙光號"}
-
 // ShipCost 造某艦體等級所需生產成本(MOO2 空殼艦體生產成本,每級約 ×3:
 // 巡防18/驅逐60/巡洋180/戰艦540/泰坦1620/末日之星4860)。
 func ShipCost(class string) int {
