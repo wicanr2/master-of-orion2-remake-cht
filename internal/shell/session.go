@@ -103,6 +103,28 @@ var (
 	}
 )
 
+// armorHPByName 依裝甲元件名回傳其 HP 值(戰鬥用);查無回 0。
+func armorHPByName(name string) int {
+	for _, c := range ArmorOptions {
+		if c.Name == name {
+			return c.Value
+		}
+	}
+	return 0
+}
+
+// shieldReduceByName 依護盾元件名回傳「每發減傷」(戰鬥用)。
+// remake 由護盾階推導:無=0、第一級=2、第三級=4…第十級=10(精確 per-class 真值待逆向,
+// 見 docs/tech/gameplay-systems-status.md);讓 DamageAfterShield 的護盾機制生效。
+func shieldReduceByName(name string) int {
+	for i, c := range ShieldOptions {
+		if c.Name == name {
+			return i * 2
+		}
+	}
+	return 0
+}
+
 // ComponentUnlocked 回傳某元件是否已解鎖。
 //
 // 解鎖規則(MOO2 每主題數科技間抉擇的非破壞式實作):
@@ -142,8 +164,8 @@ func demoShips() []Ship {
 	return []Ship{
 		{"探索號", "偵察艦", "無武裝", "無裝甲", "無護盾", "無", 0, 0},
 		{"復仇號", "護衛艦", "雷射", "鈦裝甲", "無護盾", "無", 2, 10},
-		{"雷霆號", "驅逐艦", "質量投射器", "三鈦裝甲", "I 級護盾", "無", 4, 40},
-		{"守護號", "巡洋艦", "核飛彈", "三鈦裝甲", "II 級護盾", "戰鬥電腦", 9, 60},
+		{"雷霆號", "驅逐艦", "質量投射器", "三鈦裝甲", "第一級護盾", "無", 4, 40},
+		{"守護號", "巡洋艦", "核飛彈", "三鈦裝甲", "第三級護盾", "戰鬥電腦", 9, 60},
 	}
 }
 
@@ -263,7 +285,8 @@ func (s *GameSession) ResolveBattle(enemy string) BattleResult {
 			body := shipStrength(sh.Class)
 			atk := body + sh.WeaponAttack
 			atk += atk * s.RaceCombatPct / 100 // 種族戰鬥加成(姆瑞森+25、布拉西/阿爾卡里+15…)
-			out = append(out, combatant{hp: body * 3, atk: atk, def: body, wmin: atk / 2, wmax: atk, armor: sh.BonusHP})
+			out = append(out, combatant{hp: body * 3, atk: atk, def: body, wmin: atk / 2, wmax: atk,
+				shield: shieldReduceByName(sh.Shield), armor: armorHPByName(sh.Armor)})
 		}
 		return out
 	}
@@ -352,7 +375,8 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 		atk := body + sh.WeaponAttack
 		player = append(player, CombatShip{
 			Name: sh.Name, HP: body * 3, MaxHP: body * 3, Attack: atk, Col: 1, Row: i,
-			Defense: body, WeaponMin: atk / 2, WeaponMax: atk, ShieldReduction: 0, ArmorHP: sh.BonusHP,
+			Defense: body, WeaponMin: atk / 2, WeaponMax: atk,
+			ShieldReduction: shieldReduceByName(sh.Shield), ArmorHP: armorHPByName(sh.Armor),
 		})
 	}
 	mult := 1.0
