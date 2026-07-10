@@ -455,6 +455,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		{13, 443, 71, 14, "Colonies", 12},
 		{88, 443, 71, 14, "Planets", 12},
 		{163, 443, 71, 14, "Fleets", 12},
+		{235, 443, 74, 14, "Zoom", 12},
 		{308, 443, 74, 14, "Leaders", 12},
 		{383, 443, 74, 14, "Races", 12},
 		{458, 443, 74, 14, "Info", 12},
