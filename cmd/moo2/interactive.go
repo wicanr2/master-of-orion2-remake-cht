@@ -915,9 +915,11 @@ func loadCombatBar(res *assets.Resolver) *ebiten.Image {
 	return ebiten.NewImageFromImage(im.Frames[0].ToRGBA(prov.Embedded, im.KeyColor()))
 }
 
-// loadCombatShip 載入艦艇 sprite(CMBTSHP.LBX#0 frame0,59×60),借 COMBAT#11 調色盤,
-// keyColor 強制 true 讓艦體外圍透明。Phase 1 佔位:所有艦共用同一張圖,先證明
-// sprite 渲染管線可行,之後再依艦型/朝向擴充成完整 20 幀對照表。
+// loadCombatShip 載入艦艇 sprite(CMBTSHP.LBX#0 frame0,59×60),借 COMBAT#11 調色盤。
+// keyColor 用資產自身旗標(CMBTSHP flags=0x0000 → false):艦體外圍透明來自未寫入的
+// RLE 像素(ToRGBA 一律留透明),而艦體本身含 index-0 深色像素須保留——先前誤設
+// keyColor=true 會把 index-0 艦體也判成透明,導致 sprite 幾乎全消失(端到端截圖查出)。
+// Phase 1 佔位:所有艦共用同一張圖,之後再依艦型/朝向擴充成完整對照表。
 func loadCombatShip(res *assets.Resolver) *ebiten.Image {
 	prov, err := decodeAsset(res, "combat.lbx", 11)
 	if err != nil || prov.Embedded == nil {
@@ -927,7 +929,7 @@ func loadCombatShip(res *assets.Resolver) *ebiten.Image {
 	if err != nil || len(im.Frames) == 0 {
 		return nil
 	}
-	return ebiten.NewImageFromImage(im.Frames[0].ToRGBA(prov.Embedded, true))
+	return ebiten.NewImageFromImage(im.Frames[0].ToRGBA(prov.Embedded, im.KeyColor()))
 }
 
 func newTacticalScreen(b *sceneBuilder) *tacticalScreen {
@@ -1675,6 +1677,63 @@ type interactiveApp struct {
 	scale    int // 目前視窗放大倍率(1~4)
 
 	audio *moo2audio.Mixer // 持有音訊 Mixer,避免 player 被 GC(headless 為 nil)
+
+	// 過場截圖廊(-gamegallery):script 為導覽腳本,galleryShots 指定在哪個絕對 tick
+	// 存哪張圖(可多張,依序達成)。與單張 shotPath 模式互斥。
+	galleryDir   string
+	galleryShots []galleryShot
+	galleryDone  int
+}
+
+// galleryShot 是「端到端過場截圖廊」腳本中,在某個絕對 tick 存一張圖的指令。
+type galleryShot struct {
+	tick int
+	name string
+}
+
+// buildGalleryScript 產生「主選單→新遊戲流程→星系主畫面→殖民地/研究/外交/戰鬥」的
+// headless 導覽腳本,並標出各到達畫面該存圖的 tick。
+//
+// 座標換算依各畫面實作:
+//   - overlayScreen 系(menu/newGameSetup/galaxy/colonySummary/info/research/races):
+//     hitRegion 座標為背景局部座標,實際點擊座標 = 局部座標 + offsetX/offsetY
+//     (offsetX=(640-bg寬)/2,小於整版寬時置中;見 loadOverlayScreen)。
+//     menu/newGameSetup/galaxy/colonySummary/info/races 背景皆滿版 640×480(offset=0),
+//     直接沿用 hitRegion 座標;research(techsel.lbx)背景 472×480(見該函式註解),
+//     offsetX=84,座標需加上此偏移。
+//   - raceSelectScreen/nameFlagScreen 為自繪滿版畫面(dst.DrawImage 無置中位移),
+//     其 Rect 座標即為絕對螢幕座標,直接使用。
+//   - diplomacyScreen/tacticalScreen 亦為自繪滿版畫面,同上。
+func buildGalleryScript() ([]shell.InputState, []galleryShot) {
+	click := func(x, y int) shell.InputState { return shell.InputState{MouseX: x, MouseY: y, ClickReleased: true} }
+	idle := shell.InputState{}
+	script := []shell.InputState{
+		idle,            // t1: 主選單(未點擊)
+		click(491, 228), // t2: 主選單「新遊戲」→ 新遊戲設定
+		click(486, 405), // t3: 新遊戲設定「Accept」→ 種族選擇
+		click(540, 451), // t4: 種族選擇「接受」→ 命名/旗色
+		click(540, 454), // t5: 命名/旗色「接受」→ 星系主畫面
+		click(48, 452),  // t6: 星系主畫面工具列「殖民地」→ 殖民地總覽
+		click(608, 462), // t7: 殖民地總覽「RETURN」→ 星系主畫面
+		click(495, 452), // t8: 星系主畫面工具列「INFO」→ 科技總覽
+		click(113, 89),  // t9: 科技總覽「Tech Review」→ 研究選擇
+		click(204, 186), // t10: 研究選擇(任一領域,如 Chemistry)→ 星系主畫面
+		click(420, 452), // t11: 星系主畫面工具列「RACES」→ 種族關係
+		click(483, 428), // t12: 種族關係「REPORT」→ 外交對談
+		click(320, 437), // t13: 外交對談「結束對談」→ 種族關係
+		click(388, 448), // t14: 種族關係「DECLARE WAR」→ 戰術戰鬥
+	}
+	shots := []galleryShot{
+		{1, "01_menu.png"},
+		{3, "02_raceselect.png"},
+		{4, "03_nameflag.png"},
+		{5, "04_galaxy.png"},
+		{6, "05_colony.png"},
+		{9, "06_research.png"},
+		{12, "07_diplomacy.png"},
+		{14, "08_tactical.png"},
+	}
+	return script, shots
 }
 
 // handleWindowKeys 處理縮放/全螢幕快捷鍵:+/- 調整放大倍率(1~4)、F11 或 F 切換全螢幕。
@@ -1736,6 +1795,17 @@ func (a *interactiveApp) Update() error {
 			a.cur = t.next
 		}
 	}
+	if a.galleryDir != "" {
+		if a.galleryDone >= len(a.galleryShots) {
+			return ebiten.Termination
+		}
+		// 硬性終止保護:即使某些圖因導覽失敗/Draw 跳幀而存不到,超過最後一張的
+		// 目標 tick(+緩衝)也一定結束,絕不留無限 render loop 空轉燒 CPU。
+		if n := len(a.galleryShots); n > 0 && a.tick > a.galleryShots[n-1].tick+3 {
+			return ebiten.Termination
+		}
+		return nil
+	}
 	if a.shotPath != "" && a.saved {
 		return ebiten.Termination
 	}
@@ -1744,6 +1814,18 @@ func (a *interactiveApp) Update() error {
 
 func (a *interactiveApp) Draw(dst *ebiten.Image) {
 	a.cur.draw(dst)
+	if a.galleryDir != "" {
+		for a.galleryDone < len(a.galleryShots) && a.tick >= a.galleryShots[a.galleryDone].tick {
+			path := filepath.Join(a.galleryDir, a.galleryShots[a.galleryDone].name)
+			if err := saveScreenshot(dst, path); err != nil {
+				fmt.Println("截圖失敗:", path, err)
+			} else {
+				fmt.Println("已存:", path)
+			}
+			a.galleryDone++
+		}
+		return
+	}
 	if a.shotPath != "" && !a.saved && a.tick >= a.frames {
 		if err := saveScreenshot(dst, a.shotPath); err != nil {
 			fmt.Println("截圖失敗:", err)
@@ -1754,9 +1836,10 @@ func (a *interactiveApp) Draw(dst *ebiten.Image) {
 
 func (a *interactiveApp) Layout(int, int) (int, int) { return moo2ScreenW, moo2ScreenH }
 
-// runInteractive 啟動「還原原版」的互動遊戲。script/shot 非空時為 headless 驗證。
+// runInteractive 啟動「還原原版」的互動遊戲。script/shot 非空時為 headless 驗證;
+// galleryDir 非空時為「端到端過場截圖廊」模式(見 buildGalleryScript),優先於 script/shot。
 func runInteractive(dirs []string, lang i18n.Lang, fnt *uifont.Font,
-	script []shell.InputState, shot string, frames int) error {
+	script []shell.InputState, shot string, frames int, galleryDir string) error {
 
 	if lang == i18n.Traditional && fnt == nil {
 		return fmt.Errorf("中文模式需以 -font 指定 CJK 字型")
@@ -1770,13 +1853,23 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt *uifont.Font,
 	if err != nil {
 		return err
 	}
-	// 預設放大 2 倍(headless 驗證維持 1 倍);視窗可自由拉伸,內容等比縮放置中。
+
+	var shots []galleryShot
+	if galleryDir != "" {
+		if err := os.MkdirAll(galleryDir, 0o755); err != nil {
+			return fmt.Errorf("建立過場截圖目錄 %q: %w", galleryDir, err)
+		}
+		script, shots = buildGalleryScript()
+	}
+
+	// 預設放大 2 倍(headless 驗證/截圖廊維持 1 倍);視窗可自由拉伸,內容等比縮放置中。
 	scale := 2
-	if shot != "" {
+	if shot != "" || galleryDir != "" {
 		scale = 1
 	}
-	app := &interactiveApp{cur: menu, script: script, shotPath: shot, frames: frames, scale: scale}
-	// 只有真正互動(非 headless 截圖/腳本)才啟用音訊:headless 環境常無音效卡,
+	app := &interactiveApp{cur: menu, script: script, shotPath: shot, frames: frames, scale: scale,
+		galleryDir: galleryDir, galleryShots: shots}
+	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,
 	// 且截圖驗證不需要聲音。音訊初始化失敗不致命。
 	if shot == "" && script == nil {
 		app.audio = initAudio(res)

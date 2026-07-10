@@ -185,6 +185,7 @@ func main() {
 	infoTech := flag.String("info-tech", "Achilles Targeting Unit", "科技總覽右欄範例科技(英文標題)")
 	raceMode := flag.Bool("race-viewer", false, "種族統計畫面模式")
 	gameMode := flag.Bool("game", false, "還原原版互動遊戲(原版主選單→導覽各原版畫面,全繁中;有 -shot 則腳本驗證)")
+	gameGallery := flag.String("gamegallery", "", "headless 導覽腳本:依序點擊主選單→新遊戲→星系主畫面→殖民地/研究/外交/戰鬥,各到達畫面存一張圖到此目錄(需 -game;優先於 -shot)")
 	playMode := flag.Bool("play", false, "可玩遊戲殼(互動;有 -shot 則跑腳本驗證並截圖)")
 	playRecord := flag.String("play-record", "", "錄製模式:scripted playthrough 逐幀存圖到此目錄(供 gameplay footage)")
 	colonyMode := flag.Bool("colony-viewer", false, "殖民地摘要畫面模式")
@@ -303,7 +304,7 @@ func main() {
 		}
 		dirs := strings.Split(*dataDirs, ",")
 		var script []shell.InputState
-		if *shot != "" {
+		if *shot != "" && *gameGallery == "" {
 			// headless 驗證:主選單新遊戲(491,228)→ 星系設定 → Accept(486,405)
 			//   →【獨立種族選擇畫面】→ 截圖(驗證新遊戲流程新增的種族畫面)。
 			script = []shell.InputState{
@@ -311,7 +312,7 @@ func main() {
 				{MouseX: 486, MouseY: 405, ClickReleased: true},
 			}
 		}
-		if err := runInteractive(dirs, langID, fnt, script, *shot, *frames); err != nil {
+		if err := runInteractive(dirs, langID, fnt, script, *shot, *frames, *gameGallery); err != nil {
 			fatal(err)
 		}
 		return

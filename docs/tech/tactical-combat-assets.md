@@ -54,10 +54,16 @@ openorion2 galaxy 用 `STARBG#3` 當背景,palette = `_gui->palette()`(全域 GU
 - draw():黑底 → STARBG → 淡格線 → 艦艇 sprite(敵方水平翻轉)→ 控制列;三者任一載入失敗都 fallback 回原自繪。
 - 主代理核實:控制列/艦艇/背景渲染圖皆色彩連貫無雜色;diff 確認戰鬥邏輯未動。
 
+### Phase 1 端到端驗證(2026-07-10,`-gamegallery` 截圖廊)
+補了 `cmd/moo2` 的 `-gamegallery <dir>` headless 導覽模式:主選單→種族→命名→星系→殖民地→研究→**外交→戰鬥**,各畫面存一張圖。實測 8 張全渲染:
+- 外交:原版議事廳 + **薩克拉使節** + 全繁中對談選項 ✓
+- 戰鬥:STARBG 星空 + COMBAT 原版控制列 + 中文艦名/提示 ✓
+- ⚠ **CPU 教訓**:截圖廊初版沒有終止保護 + 存圖用 `tick==目標`(精確相等),ebiten Update/Draw 解耦會跳幀漏存 → **永不終止的 render loop 空轉燒 CPU**(兩個容器各卡 17–20 分)。已修:存圖改 `tick>=目標`、Update 超過末 tick+3 硬性終止;跑時容器內外雙 `timeout`。**教訓:headless GUI 迴圈必設硬性終止 + timeout**(rulebook 35)。
+
 ### Phase 1 遺留(後續)
 - ⚠ **控制列按鈕是烘進點陣圖的英文**(WEAPONS/AUTO/…);完整中文化需在其上疊中文字或重繪按鈕區——屬 localization 後續。
-- 艦艇仍全共用 CMBTSHP#0;per 艦型/朝向對照見下方待查。
-- 未端到端渲染 tactical(無 headless 到戰鬥的導覽腳本);驗證止於資產/色盤層 + build/vet。若要 in-app 截圖需補 InputState 腳本路徑到 tacticalCombat。
+- ⚠ **艦艇 sprite 太暗看不見**:CMBTSHP#0 是小型深色戰機(疊灰底可見輪廓,疊黑星空幾乎隱形)。sprite 載入/縮放/翻轉管線已通(debug 確認 t.ship 非 nil、59×60、20 幀),但 #0 不適合當佔位。Phase 2 需挑「較大/較亮」或按實際艦型選 sprite,並考慮加選取高亮/描邊讓艦艇在星空上可讀。現況艦艇仍主要靠標籤方框+艦名辨識(功能正常)。
+- keyColor 修正:loadCombatShip 從強制 true 改為 `im.KeyColor()`(CMBTSHP flags=0→false);強制 true 會把 index-0 艦體判透明。
 
 ### 原始規格(Phase 1 依此,保留供追溯)
 
