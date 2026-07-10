@@ -1320,7 +1320,14 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 // officer 建原版軍官列表畫面(OFFICER.LBX 資產 0)。座標經 PIL 量測
 // (screens-scan/officer_leaderlist.png):頁籤列 y=12-32,按鈕列 y=440-462。
 func (b *sceneBuilder) officer() (*overlayScreen, error) {
-	hits, onAction := b.backHit(b.galaxy, "星系主畫面")
+	// 精確返回鍵熱區(用已量測的 RETURN 按鈕座標,取代整畫面返回;更忠實:僅返回鍵返回)。
+	hits := []hitRegion{{540, 440, 80, 20, "Return"}}
+	onAction := func(a string) *origTransition {
+		if a == "Return" {
+			return b.goTo(b.galaxy, "星系主畫面")
+		}
+		return nil
+	}
 	overlays := []labelRect{
 		{20, 11, 133, 20, "Colony Leaders", 0},
 		{166, 11, 124, 20, "Ship Officers", 0},
