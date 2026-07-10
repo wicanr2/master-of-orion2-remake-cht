@@ -167,6 +167,8 @@ func main() {
 	dataDirs := flag.String("data", "", "遊戲資料夾,可用逗號串多個(前者優先,如 patch,base)")
 	lbxName := flag.String("lbx", "mainmenu.lbx", "背景所在的 .lbx")
 	assetID := flag.Int("asset", 21, "背景資產 index")
+	palAsset := flag.Int("palasset", -1, "調色盤提供資產 index(該 lbx 內;目標資產無內嵌調色盤時用)")
+	accum := flag.Bool("accum", false, "多幀 delta 累積渲染(動畫資產如 DIPLOMAT 使節)")
 	shot := flag.String("shot", "", "headless 截圖輸出路徑(設定則跑 N 幀後結束)")
 	audioDump := flag.String("audiodump", "", "把原版音樂/音效抽成 wav 到此目錄(headless,需 -data)")
 	frames := flag.Int("frames", 3, "截圖前先跑幾幀")
@@ -427,10 +429,28 @@ func main() {
 	if err != nil {
 		fatal(fmt.Errorf("解碼資產 %d: %w", *assetID, err))
 	}
-	if im.Embedded == nil {
-		fatal(fmt.Errorf("資產 %d 無內嵌調色盤(此骨架僅示範背景圖)", *assetID))
+	// 調色盤:優先用 -palasset 指定的提供資產(供無內嵌調色盤的資產如 DIPLOMAT 使節)。
+	pal := im.Embedded
+	if *palAsset >= 0 {
+		praw, perr := arch.Asset(*palAsset)
+		if perr != nil {
+			fatal(fmt.Errorf("讀調色盤資產 %d: %w", *palAsset, perr))
+		}
+		pim, perr := lbx.DecodeImage(praw)
+		if perr != nil || pim.Embedded == nil {
+			fatal(fmt.Errorf("調色盤資產 %d 無內嵌調色盤", *palAsset))
+		}
+		pal = pim.Embedded
 	}
-	rgba := im.Frames[0].ToRGBA(im.Embedded, im.KeyColor())
+	if pal == nil {
+		fatal(fmt.Errorf("資產 %d 無內嵌調色盤(用 -palasset 指定提供資產)", *assetID))
+	}
+	var rgba *image.RGBA
+	if *accum {
+		rgba = im.AccumulatedRGBA(pal) // 多幀 delta 累積(動畫資產)
+	} else {
+		rgba = im.Frames[0].ToRGBA(pal, im.KeyColor())
+	}
 
 	g := &game{
 		bg:       ebiten.NewImageFromImage(rgba),

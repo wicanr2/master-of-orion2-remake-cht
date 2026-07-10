@@ -10,7 +10,8 @@
 - **原版**:顯示**該種族使節的動畫肖像 + 其專屬房間** + 對話文字 + 提議選項(原版 UI 樣式)。
 - **重建所需(已初步調查)**:
   - `DIPLOMAT.LBX` 共 **39 個 asset**;0–6 為小圖示(已渲染確認),使節肖像在中後段(15/20/25/28 等**需調色盤鏈**才能渲染,推測 palette provider = asset 0,同 room#29 的解法 `loadDiplomatRoom`)。
-  - **待做**:寫一次性工具或臨時畫面,以「asset N + 調色盤 asset 0」渲染 15–28 全部,讀圖辨識**哪些是使節肖像、對應哪個種族**(13 族);使節多為**多幀 delta 動畫**(記憶 `DIPLOMAT 多幀累積已修好`,`AccumulatedRGBA`)。
+  - **工具已備**:`cmd/moo2` 加了 `-palasset <n>`(用另一資產當調色盤)+ `-accum`(多幀 delta 累積)渲染旗標,可 `moo2 -lbx diplomat.lbx -asset 15 -palasset 0 -accum -shot out.png` 渲染需調色盤鏈的動畫資產。
+  - **⚠ 關鍵障礙(2026-07-10 查明)**:DIPLOMAT.LBX **各資產用不同調色盤**——asset 15/21/27 是大圖(~350KB),但用 asset 0 的調色盤渲染會**出現雜點**(palette 不匹配),且看起來仍是議事廳而非使節近臉。room#29 用 asset 0 palette 渲染乾淨(現況所用),但其他資產不然。故**下一步是逐資產找對的調色盤 provider**(可能每族一組 palette,或 palette 混在動畫資料內),再辨識使節 vs 房間。這是逐資產 palette RE 子任務,非小工作。
   - 重建:依對手種族選對應使節肖像(動畫)+ 房間 + 對話框 + 提議按鈕(位置量測自原版)。
 - **接線**:種族關係畫面「報告」→ diplomacy;已接 `bgmDiplo` 場景音樂。
 
