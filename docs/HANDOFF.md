@@ -66,10 +66,12 @@ docker images:`moo2-ebiten`(CGO+X11+xvfb,已存在)、`golang:1.25-bookworm`(純
 
 > 每項的驗收 = **對原版實測比對**,不是加一個系統+測試綠。做之前先 Read `HONEST-STATUS.md`。
 
-### 優先 1 — 音樂 / 音效(Phase 6,完全沒動)
-- [ ] 逆向 MOO2 音樂格式(XMI/.lbx 內嵌)+ 音效格式。先查 openorion2/1oom 有無現成解析參考。
-- [ ] ebiten 音訊整合(SoundFont 音色,沿用 moo1 音樂經驗,見記憶 `ebiten-cht-reference-paths`)。
-- [ ] 主選單/星系/戰鬥至少各有背景音樂;按鈕音效。
+### 優先 1 — 音樂 / 音效(Phase 6,基礎已打通,2026-07-10)
+> ⚠ **翻案**:MOO2 **沒有 XMI/MIDI 音樂**。全部音樂/音效是 LBX 內的 22050Hz 8-bit PCM WAV,原封播即與原版 bit-identical,**不需 SoundFont/OPL 合成**。定案見 `docs/tech/audio-format.md`。
+- [x] 格式逆向 + ebiten 音訊整合(`internal/audio`)+ 主選單 BGM(STREAMHD)+ 按鈕音效(BUTTON1),`cmd/moo2/audiohook.go`;單元/真檔測試綠。
+- [~] **曲目/UI 事件對應待對原版聆聽定案**:BGM 暫用 clips[0]、點擊暫用 BUTTON1(哪條是主選單主題、哪個 BUTTONx 對哪類按鈕,需 oracle)。
+- [ ] 星系/戰鬥各場景的 BGM 對應;`CMBTSFX/SPHERSFX` 巢狀音庫(戰鬥音效)逆向。
+- [ ] 桌面實測驗收(headless 停用音訊,聽感只能桌面驗)。
 
 ### 優先 2 — 忠實的新遊戲流程(目前跳程序生成假星系)
 - [ ] 獨立**種族選擇畫面**:原版有 13 族肖像 + 自訂種族點數(RACEOPT.LBX)。目前擠在設定畫面一格,要拆成真畫面。
