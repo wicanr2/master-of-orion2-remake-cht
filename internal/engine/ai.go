@@ -13,7 +13,10 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
 func ApplyAIEconomy(ps PlayerState, colonies []ColonyState, decider ai.Decider) (PlayerState, []ColonyState) {
 	out := make([]ColonyState, len(colonies))
 	for i, cs := range colonies {
-		f, w, s := decider.ColonyJobs(cs.Population, cs.FoodPerFarmer)
+		// Maintenance(帝國固定支出)傳入供財政保底(見 ai.Decider.ColonyJobs 註解):AI 不應該
+		// 把殖民地職務分配壓到連稅率上限都打平不了固定支出的程度,結構性赤字非原版行為,見
+		// docs/tech/ai-fiscal-solvency.md。
+		f, w, s := decider.ColonyJobs(cs.Population, cs.FoodPerFarmer, cs.IndustryPerWorker, cs.MoralePercent, ps.Maintenance)
 		cs.Farmers, cs.Workers, cs.Scientists = f, w, s
 		out[i] = cs
 	}

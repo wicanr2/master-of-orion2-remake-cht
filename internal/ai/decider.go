@@ -27,8 +27,10 @@ func (m AIMode) Name() string {
 
 // Decider 是 AI 決策介面。remake 與 original 兩種實作以此統一,供上層依玩家選擇注入。
 type Decider interface {
-	// ColonyJobs 決定殖民地工作分配(農夫/工人/科學家)。
-	ColonyJobs(population, foodPerFarmer int) (farmers, workers, scientists int)
+	// ColonyJobs 決定殖民地工作分配(農夫/工人/科學家)。industryPerWorker/moralePercent 供
+	// 財政保底計算換算稅收,maintenanceBC 是該帝國目前的固定支出(建築維護費等)——<=0 表示
+	// 不需要保底(見 DecideColonyJobsSolvent/MinWorkersForSolvency)。
+	ColonyJobs(population, foodPerFarmer, industryPerWorker, moralePercent, maintenanceBC int) (farmers, workers, scientists int)
 	// TaxRate 依國庫決定稅率(%)。
 	TaxRate(treasuryBC int) int
 	// ResearchTopic 從候選中選研究主題(回 TopicID,無候選 -1)。
@@ -53,8 +55,8 @@ func NewRemakeDecider(p Profile) *RemakeDecider {
 	return &RemakeDecider{Profile: p, TreasuryLow: 50, TreasuryHi: 300}
 }
 
-func (d *RemakeDecider) ColonyJobs(pop, fpf int) (int, int, int) {
-	return DecideColonyJobs(pop, fpf, d.Profile)
+func (d *RemakeDecider) ColonyJobs(pop, fpf, industryPerWorker, moralePercent, maintenanceBC int) (int, int, int) {
+	return DecideColonyJobsSolvent(pop, fpf, industryPerWorker, moralePercent, maintenanceBC, d.Profile)
 }
 func (d *RemakeDecider) TaxRate(bc int) int {
 	return DecideTaxRate(bc, d.TreasuryLow, d.TreasuryHi)

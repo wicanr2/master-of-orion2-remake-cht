@@ -11,8 +11,9 @@ func TestRemakeDecider(t *testing.T) {
 	if d.Mode() != ModeRemake || d.Mode().Name() != "remake" {
 		t.Errorf("模式錯誤:%d", d.Mode())
 	}
-	// 委派既有函式:科學傾向 10 人口/5 食物 → 2/2/6
-	f, w, s := d.ColonyJobs(10, 5)
+	// 委派既有函式:科學傾向 10 人口/5 食物 → 2/2/6(maintenanceBC=0:不觸發財政保底,見
+	// TestColonyJobsSolvent 測保底邏輯本身)
+	f, w, s := d.ColonyJobs(10, 5, 10, 0, 0)
 	if f != 2 || w != 2 || s != 6 {
 		t.Errorf("ColonyJobs 委派錯誤:%d/%d/%d", f, w, s)
 	}
@@ -38,7 +39,7 @@ func TestNewDeciderModes(t *testing.T) {
 		t.Fatal("fallback 決策器不應為 nil")
 	}
 	// fallback 決策器仍能運作(remake 行為)
-	if f, _, _ := d.ColonyJobs(4, 2); f != 2 {
+	if f, _, _ := d.ColonyJobs(4, 2, 10, 0, 0); f != 2 {
 		t.Errorf("fallback 決策器 ColonyJobs 錯誤:農%d", f)
 	}
 }

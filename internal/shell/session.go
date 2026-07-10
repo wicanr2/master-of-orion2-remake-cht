@@ -1223,7 +1223,15 @@ func (s *GameSession) EndTurn() {
 	s.Player = s.LastPlayerOutput.Player
 	s.recoverFromFamine() // 饑荒防死鎖:見函式註解;依本回合 Starving 結果修正下回合職務分配
 	for i := range s.AIPlayers {
-		out := engine.RunAIEmpireTurn(s.AIPlayers[i].Player, s.AIPlayers[i].Colonies, s.AIPlayers[i].Decider)
+		// 分兩步而非直接呼叫 engine.RunAIEmpireTurn:ApplyAIEconomy 回傳的 colonies(職務
+		// 重新分配後的結果)必須寫回 s.AIPlayers[i].Colonies——先前直接用 RunAIEmpireTurn 時,
+		// 這個回傳值只在函式內部傳給 RunEmpireTurn 算完當回合經濟就丟棄,從未寫回存檔用的
+		// AIOpponent.Colonies,導致存檔/未來 UI 若讀取 AI 殖民地職務分配會看到「從未更新」的
+		// 初始值(雖然目前無 UI 讀取此欄位,經濟結算本身不受影響——因為每回合都是從同一組
+		// 靜態 Population/FoodPerFarmer 重新算,但欄位本身是錯的,發現後順手修正)。
+		ps, colonies := engine.ApplyAIEconomy(s.AIPlayers[i].Player, s.AIPlayers[i].Colonies, s.AIPlayers[i].Decider)
+		s.AIPlayers[i].Colonies = colonies
+		out := engine.RunEmpireTurn(ps, colonies)
 		s.AIPlayers[i].Player = out.Player
 		s.advanceAI(i, out) // AI 主動行為:造艦 / 擴張 / 外交態勢
 	}

@@ -43,3 +43,50 @@ func TestDecideTaxRate(t *testing.T) {
 		t.Error("國庫充裕應降至 10")
 	}
 }
+
+// TestMinWorkersForSolvency 驗證財政保底門檻計算(見 economy.go 註解的第一性原理推導)。
+// 母星實際數值(playerHomeworldColony/homeworldBuildings):IndustryPerWorker=3、
+// MoralePercent=10、Maintenance=3。工人數 w 產出 gross=MoraleProductionOutput(w*3,10),
+// 換算稅收 gamedata.IncomeTaxRevenue(gross,50)——逐一驗算:
+//
+//	w=1: gross=3*110/100=3,  tax=3*50/100=1  <3(不足)
+//	w=2: gross=6*110/100=6,  tax=6*50/100=3  >=3(打平,是最小值)
+func TestMinWorkersForSolvency(t *testing.T) {
+	if got := MinWorkersForSolvency(3, 10, 3, 4); got != 2 {
+		t.Errorf("母星保底工人數 = %d,預期 2", got)
+	}
+	if got := MinWorkersForSolvency(3, 10, 0, 4); got != 0 {
+		t.Errorf("maintenanceBC<=0 應回 0,實得 %d", got)
+	}
+	if got := MinWorkersForSolvency(0, 10, 3, 4); got != 0 {
+		t.Errorf("industryPerWorker<=0 應回 0(無法產工業打平),實得 %d", got)
+	}
+	// 財政不可能打平(maintenanceBC 遠超過 maxWorkers 能生產的上限)時,回 maxWorkers(盡力而為,
+	// 不無限迴圈、不 panic)。
+	if got := MinWorkersForSolvency(3, 10, 1000, 4); got != 4 {
+		t.Errorf("財政不可能打平時應回 maxWorkers=4,實得 %d", got)
+	}
+}
+
+// TestDecideColonyJobsSolvent 驗證財政保底只在「純比例分配打平不了」時介入,且只挪動最少量。
+func TestDecideColonyJobsSolvent(t *testing.T) {
+	// 母星實際場景(docs/tech/ai-fiscal-solvency.md):Population=8、FoodPerFarmer=2、
+	// IndustryPerWorker=3、MoralePercent=10、Maintenance=3。
+	// Scientific(1:3)純比例會給 farmers=4,workers=1,scientists=3——workers=1 打平不了
+	// maintenanceBC=3(見 TestMinWorkersForSolvency,需要至少 2),保底應把 1 個科學家挪回
+	// 工人:farmers=4,workers=2,scientists=2。
+	if f, w, s := DecideColonyJobsSolvent(8, 2, 3, 10, 3, ProfileScientific); f != 4 || w != 2 || s != 2 {
+		t.Errorf("Scientific 財政保底 = %d/%d/%d,預期 4/2/2", f, w, s)
+	}
+	// Aggressive(3:1)純比例給 farmers=4,workers=3,scientists=1——workers=3 已經 >= 保底需求 2,
+	// 不應被保底邏輯多動:維持 4/3/1(與 DecideColonyJobs 純比例結果一致)。
+	if f, w, s := DecideColonyJobsSolvent(8, 2, 3, 10, 3, ProfileAggressive); f != 4 || w != 3 || s != 1 {
+		t.Errorf("Aggressive 不應被保底邏輯多動 = %d/%d/%d,預期 4/3/1(與純比例相同)", f, w, s)
+	}
+	// maintenanceBC<=0(如尚無建築維護費)時,行為應與純比例 DecideColonyJobs 完全相同——
+	// 保底邏輯不介入。
+	wantF, wantW, wantS := DecideColonyJobs(8, 2, ProfileScientific)
+	if f, w, s := DecideColonyJobsSolvent(8, 2, 3, 10, 0, ProfileScientific); f != wantF || w != wantW || s != wantS {
+		t.Errorf("maintenanceBC=0 應與純比例分配相同:得 %d/%d/%d,預期 %d/%d/%d", f, w, s, wantF, wantW, wantS)
+	}
+}
