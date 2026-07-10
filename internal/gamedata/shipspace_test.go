@@ -33,6 +33,38 @@ func TestShipHullSpaceOutOfRange(t *testing.T) {
 	}
 }
 
+// TestShipCommandCost 對照 GAME_MANUAL.pdf p.169「size class」公式(Frigate=1,Destroyer=2,
+// and so on),並以 p.83 Titan=5、p.84 Doom Star=6 兩處具體數字交叉驗證。
+func TestShipCommandCost(t *testing.T) {
+	cases := []struct {
+		name  string
+		class CombatShipClass
+		want  int
+	}{
+		{"Frigate", SHIP_FRIGATE, 1},
+		{"Destroyer", SHIP_DESTROYER, 2},
+		{"Cruiser", SHIP_CRUISER, 3},
+		{"Battleship", SHIP_BATTLESHIP, 4},
+		{"Titan", SHIP_TITAN, 5},       // p.83:「Titan class ships require 5 Command Rating points」
+		{"DoomStar", SHIP_DOOMSTAR, 6}, // p.84:「A Doom Star requires 6 Command Rating points」
+	}
+	for _, c := range cases {
+		if got := ShipCommandCost(c.class); got != c.want {
+			t.Errorf("ShipCommandCost(%s)=%d, want %d", c.name, got, c.want)
+		}
+	}
+}
+
+// TestShipCommandCostOutOfRange 邊界:非法 class 回 0,不 panic,呼應 ShipHullSpace 慣例。
+func TestShipCommandCostOutOfRange(t *testing.T) {
+	if got := ShipCommandCost(-1); got != 0 {
+		t.Errorf("ShipCommandCost(-1)=%d, want 0", got)
+	}
+	if got := ShipCommandCost(CombatShipClass(6)); got != 0 {
+		t.Errorf("ShipCommandCost(6)=%d, want 0", got)
+	}
+}
+
 // TestWeaponSpaceByName 核對手冊 p.124 確認值(Size 欄)。
 func TestWeaponSpaceByName(t *testing.T) {
 	cases := []struct {

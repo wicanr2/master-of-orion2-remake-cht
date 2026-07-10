@@ -250,6 +250,70 @@ IncomeTaxRemainingIndustry(totalIndustry, taxRate)  = totalIndustry - IncomeTaxR
 
 一般種族每單位剩餘糧食換 0.5 BC,Fantastic Trader 每單位換 1 BC(p.25:「1 BC (instead of the usual half) for every surplus unit of food generated」)。`IncomeFoodSurplusRevenue(surplusFoodUnits int, fantasticTrader bool) int`(`income.go:139`),無條件捨去。
 
+### 指揮評等(Command Rating)供需(2026-07-11 已接線)
+
+**供給**(手冊 p.169:「Every orbital base... adds to it. Communications technology and leaders
+with the Operations skill also add to the rating.」)——本專案目前只建模「軌道衛星」這一項供給
+來源(三者互斥取代,不疊加,取最高階):
+
+| 建築 | 供給 | 手冊出處 |
+|---|---|---|
+| 星基(Star Base) | +1 | p.79「A Star Base requires 2 BC per turn to maintain and adds 1 to your Command Rating.」 |
+| 戰鬥站(Battlestation) | +2(取代星基) | p.82「...adds 2 to your Command Rating.... It replaces any Star Base in orbit around the same planet.」 |
+| 星辰要塞(Star Fortress) | +3(取代戰鬥站/星基) | p.83「...adds 3 to your Command Rating.... The fortress replaces any Battlestation or Star Base in orbit around the same planet.」 |
+
+`gamedata.CommandPointsFromBuildings(built map[string]bool) int`(`buildings.go`,單一殖民地);
+跨殖民地加總見 `shell.GameSession.totalCommandPointsSupply()`(`session.go`)。
+
+**殖民地基礎供給 / 政府型態**:手冊全文(GAME_MANUAL.pdf + MANUAL_150.html)未提及殖民地本身
+(不含建築)有任何基礎指揮評等——不加,非漏算。政府型態方面,手冊 p.60「Imperium」段落確實有
+明文數字:「Your command rating is increased by 50%.」(Imperium 是 Dictatorship 的進階型態),
+但本專案目前政府型態全域固定為 `gamedata.MoraleGovDictatorship`(見 `session.go` 的
+`GameSession.Government` 欄位,尚無政府升級/選擇機制),沒有 Imperium 這個狀態可觸發,故
+**TODO 未實作**——待政府進階系統補上後,再對 Imperium 套用此 +50%(其餘政府型態手冊未提供
+任何指揮評等加成數字,維持 0)。
+
+**通訊科技**(Tachyon/Subspace/Hyperspace Communications,均為 Achievement 型應用):手冊
+p.101「Tachyon Communications... add 1 Command Rating point for each orbital base.」、p.104-105
+「Hyperspace Communications... replaces any Command Rating bonus to orbital bases given by
+Tachyon or Subspace Communications with a +3 bonus.」——這些是「每軌道衛星額外加成」,有具體
+數字,但**TODO 未實作**:需要先有「玩家已研究哪個 Achievement」與「逐軌道衛星計數」兩份資料
+串接,目前 `CommandPointsFromBuildings` 只知道某殖民地「有沒有」星基/戰鬥站/星辰要塞,不知道
+玩家帝國總共幾座——留待後續擴充,不臆造併入現有函式。
+
+**Operations 軍官技能**(p.136:「Operations: Adds to your Command Rating, thus reducing or
+eliminating the maintenance cost of ships in your fleets.」):手冊只有定性敘述,無精確數字,
+**TODO 未實作**,不臆造。
+
+**需求**(手冊 p.169:「Every ship you build (except Freighter Fleets) uses points from this
+rating as a maintenance cost. The number of points a ship requires is the same as that ship's
+size class (Frigate = 1, Destroyer = 2, and so on). Support ships count as Frigates for the
+purposes of maintenance.」)——`gamedata.ShipCommandCost(class CombatShipClass) int`
+(`shipspace.go`)直接回傳 `int(class)+1`,交叉驗證見下表(手冊另外三處各自獨立給出的具體數字,
+與「size class」公式吻合,非單一來源臆測):
+
+| 艦體等級 | 指揮評等需求 | 手冊出處 |
+|---|---|---|
+| Frigate | 1 | p.169 公式基準 |
+| Destroyer | 2 | p.169 公式基準 |
+| Cruiser | 3 | p.169 公式基準 |
+| Battleship | 4 | p.169 公式基準 |
+| Titan | 5 | p.83「Titan class ships require 5 Command Rating points or 50 BC in maintenance per turn.」(5×10=50,吻合超支費率) |
+| Doom Star | 6 | p.84「A Doom Star requires 6 Command Rating points or 60 BC in maintenance each turn.」(6×10=60,吻合超支費率) |
+| Colony Ship / Outpost Ship / Transport Ship(支援艦) | 1(視同 Frigate) | p.84-85 各自「requires 1 Command Rating point or 10 BC in maintenance」 |
+| Freighter Fleet(貨運艦隊) | **不計**(手冊明文排除) | p.168「freighters do not use Command Rating points」 |
+
+跨艦加總見 `shell.GameSession.usedCommandPoints()`(`session.go`,對 `s.Ships` 逐艦查
+`gamedata.ShipCommandCost`;本專案的貨運艦隊未塑模成 `Ship` 條目,故不會誤計入)。
+
+**接線點**:`shell.GameSession.EndTurn()` 每回合結算前,依實際已建成建築/艦艇重算
+`s.Player.CommandPointsSupply` / `s.Player.UsedCommandPoints`(與既有 `Maintenance` 重算同一
+模式),交給 `engine.RunEmpireTurn` 算 `uncovered = max(0, UsedCommandPoints-CommandPointsSupply)`,
+呼叫 `gamedata.IncomeCommandOverflowCost(uncovered)` 併入 `NetBC`(曝露於
+`EmpireOutput.CommandOverflowCost` 供測試/UI 檢視)。AI 對手目前用 `FleetStrength` 抽象戰力值,
+無逐艦清單可推導 `UsedCommandPoints`,兩欄位維持零值預設(供給/需求皆視為 0,無超支懲罰)——
+誠實的「架構未跟上」,非漏算。
+
 ### 指揮評等超支與運輸艦維護
 
 | 項目 | 費用 | 手冊出處 |
@@ -257,7 +321,8 @@ IncomeTaxRemainingIndustry(totalIndustry, taxRate)  = totalIndustry - IncomeTaxR
 | 指揮評等(Command Rating)每點未覆蓋需求 | 每回合 -10 BC | p.169「For each rating point required by a ship that is not covered, 10 BCs come out of your income every turn」 |
 | 每艘使用中運輸艦(Freighter) | 每回合 -0.5 BC(無條件捨去) | p.169「each freighter that is in use costs 1/2 BC per turn for maintenance」;未使用中的運輸艦不計費 |
 
-`IncomeCommandOverflowCost(uncoveredCommandPoints int) int`(`income.go:148`)、`IncomeFreighterMaintenanceCost(activeFreighters int) int`(`income.go:157`)。
+`IncomeCommandOverflowCost(uncoveredCommandPoints int) int`(`income.go:148`,2026-07-11 起實際由
+`engine.RunEmpireTurn` 呼叫,不再是零呼叫端的死碼)、`IncomeFreighterMaintenanceCost(activeFreighters int) int`(`income.go:157`,仍是零呼叫端——運輸艦數量未追蹤,TODO)。
 
 ### 士氣對收入的影響
 

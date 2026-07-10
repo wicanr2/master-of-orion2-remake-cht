@@ -139,3 +139,26 @@ func TestOtherCostsAreMarkedEstimated(t *testing.T) {
 		}
 	}
 }
+
+// TestCommandPointsFromBuildings 驗證星基/戰鬥站/星辰要塞的指揮評等供給,以及三者「取代關係」
+// 下不疊加(GAME_MANUAL.pdf p.79/82/83)。
+func TestCommandPointsFromBuildings(t *testing.T) {
+	cases := []struct {
+		name  string
+		built map[string]bool
+		want  int
+	}{
+		{"無任何軌道衛星", nil, 0},
+		{"只有星基", map[string]bool{"星基": true}, 1},
+		{"只有戰鬥站", map[string]bool{"戰鬥站": true}, 2},
+		{"只有星辰要塞", map[string]bool{"星辰要塞": true}, 3},
+		{"星基+戰鬥站同時記錄(取代關係,不疊加,取最高階)", map[string]bool{"星基": true, "戰鬥站": true}, 2},
+		{"三者同時記錄(取代關係,不疊加,取最高階)", map[string]bool{"星基": true, "戰鬥站": true, "星辰要塞": true}, 3},
+		{"其他無關建築不影響", map[string]bool{"海軍陸戰隊營": true}, 0},
+	}
+	for _, c := range cases {
+		if got := CommandPointsFromBuildings(c.built); got != c.want {
+			t.Errorf("%s: CommandPointsFromBuildings=%d, want %d", c.name, got, c.want)
+		}
+	}
+}

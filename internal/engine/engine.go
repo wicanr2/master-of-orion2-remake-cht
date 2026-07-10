@@ -130,9 +130,29 @@ type PlayerState struct {
 	// 可推導的模型(未追蹤運輸艦數量等),未計入——TODO 待補,見 session.go
 	// totalBuildingMaintenance/newHomeworldPlayerState 的同款註記。此欄位本身仍是純粹輸入,
 	// 引擎層不關心維護費怎麼算出來。
-	Maintenance      int
-	ResearchTopic    gamedata.ResearchTopic // 目前研究中的主題
-	ResearchProgress int                    // 目前主題已累積的研究點(RP)
+	Maintenance int
+	// CommandPointsSupply / UsedCommandPoints 指揮評等(Command Rating)供需(GAME_MANUAL.pdf
+	// p.169)。與 Maintenance 同款輸入模式:引擎層不關心怎麼算出來,純粹接收呼叫端(通常是
+	// shell.GameSession.EndTurn,依實際已建成的軌道衛星 gamedata.CommandPointsFromBuildings +
+	// 玩家艦艇清單 gamedata.ShipCommandCost 加總)算好的數字,由 RunEmpireTurn 算超支懲罰。
+	//
+	// CommandPointsSupply:玩家目前所有殖民地的星基/戰鬥站/星辰要塞供給的指揮評等點數總和
+	// (三者取代關係不疊加,見 gamedata.CommandPointsFromBuildings)。手冊同段還提到「通訊科技
+	// (Tachyon/Subspace/Hyperspace Communications)與具備 Operations 技能的軍官也會增加此
+	// 評等」,但通訊科技只有「每軌道衛星 +1(Tachyon)/+3(Hyperspace,取代前者)」的定性數字、
+	// Operations 軍官技能手冊完全沒給數字——兩者都不計入本欄位,TODO 待補(不臆造)。
+	// 殖民地本身(不含建築)是否提供基礎指揮評等:手冊全文未提及,故亦不計入,同上 TODO。
+	//
+	// UsedCommandPoints:玩家目前所有艦艇(不含貨運艦隊 Freighter Fleet,手冊 p.168 明文排除)
+	// 依艦體等級加總的指揮評等需求(gamedata.ShipCommandCost)。
+	//
+	// 兩者預設值 0(呼叫端未設值時視為「供給/需求皆零」,即無超支懲罰)——AI 對手目前用
+	// FleetStrength 抽象戰力值,無逐艦清單可推導 UsedCommandPoints,暫不計算,是誠實的
+	// 「架構未跟上」而非漏算,見 RunEmpireTurn 註解。
+	CommandPointsSupply int
+	UsedCommandPoints   int
+	ResearchTopic       gamedata.ResearchTopic // 目前研究中的主題
+	ResearchProgress    int                    // 目前主題已累積的研究點(RP)
 	// CompletedTopics 記錄已完成的研究主題(避免重複)。
 	CompletedTopics map[gamedata.ResearchTopic]bool
 	// ChosenTech 記錄每個已完成主題「實際選定解鎖」的那一項科技(MOO2 每主題數科技抉擇)。

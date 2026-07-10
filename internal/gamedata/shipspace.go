@@ -39,6 +39,35 @@ func ShipHullSpace(class CombatShipClass) int {
 // Cruiser 120 / Battleship 250 / Titan 500 / Doom Star 1200)。
 var shipHullSpaceTable = [6]int{25, 60, 120, 250, 500, 1200}
 
+// ShipCommandCost 回傳一艘艦艇依艦體等級(size class)需要消耗的指揮評等(Command Rating)點數。
+//
+// 手冊原文(GAME_MANUAL.pdf p.169,「Command Rating」章節):「Every ship you build (except
+// Freighter Fleets) uses points from this rating as a maintenance cost. The number of points a
+// ship requires is the same as that ship's size class (Frigate = 1, Destroyer = 2, and so on).
+// Support ships count as Frigates for the purposes of maintenance.」
+//
+// 即 CombatShipClass 索引(0=Frigate..5=DoomStar)+1 = 所需點數。交叉驗證(手冊另外兩處各自
+// 獨立給出的具體數字,與「size class」公式完全吻合,非單一來源臆測):
+//   - p.83「Titan class ships require 5 Command Rating points or 50 BC in maintenance per
+//     turn.」→ Titan 是第 5 個等級(索引 4),4+1=5,且 5 點 × 10 BC/點(p.169 超支懲罰費率,
+//     見 IncomeCommandOverflowCostPerPoint)= 50 BC,與「or 50 BC」完全對上。
+//   - p.84「A Doom Star requires 6 Command Rating points or 60 BC in maintenance each turn.」→
+//     Doom Star 索引 5,5+1=6,6×10=60 BC,同樣吻合。
+//   - p.84-85:Colony Ship / Outpost Ship / Transport Ship 各自「requires 1 Command Rating
+//     point or 10 BC in maintenance」——這些是手冊所稱的「支援艦(support ships)」,吻合
+//     「count as Frigates」= 1 點的規則。
+//
+// 手冊同段明白排除 Freighter Fleets(貨運艦隊)：「freighters do not use Command Rating
+// points」(p.168)——呼叫端不應把貨運艦隊算入本函式的加總對象。
+//
+// 非法 class(超出 0..5)回 0,不 panic,呼應 ShipHullSpace 的邊界處理慣例。
+func ShipCommandCost(class CombatShipClass) int {
+	if class < 0 || int(class) >= len(shipHullSpaceTable) {
+		return 0
+	}
+	return int(class) + 1
+}
+
 // WeaponSpaceByName 各武器元件的佔用空間(手冊「Size」欄,p.124-127),對照
 // internal/shell/session.go 的 WeaponOptions 元件名(Component.Name)。
 //

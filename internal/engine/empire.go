@@ -11,9 +11,13 @@ type EmpireOutput struct {
 	TaxRevenue         int            // 各殖民地稅收 BC 總和
 	FoodSurplusRevenue int            // 各殖民地「餘糧出售」BC 總和(見下方 RunEmpireTurn 說明)
 	TradeGoodsRevenue  int            // 各「貿易品」殖民地淨工業換算 BC 總和(見下方 RunEmpireTurn 說明)
-	NetBC              int            // 本回合國庫淨變化(TaxRevenue + FoodSurplusRevenue + TradeGoodsRevenue - Maintenance)
-	Player             PlayerState    // 研究推進 + BC 結算後的玩家狀態
-	ResearchDone       bool           // 本回合是否有研究主題完成
+	NetBC              int            // 本回合國庫淨變化(TaxRevenue + FoodSurplusRevenue + TradeGoodsRevenue - Maintenance - CommandOverflowCost)
+	// CommandOverflowCost 指揮評等(Command Rating)供給不足艦艇需求時,每回合從收入額外扣除
+	// 的維護費(GAME_MANUAL.pdf p.169,gamedata.IncomeCommandOverflowCost)。已計入 NetBC,
+	// 這裡單獨曝露供測試/UI 顯示「這筆錢花在哪」,供≥需時為 0。
+	CommandOverflowCost int
+	Player              PlayerState // 研究推進 + BC 結算後的玩家狀態
+	ResearchDone        bool        // 本回合是否有研究主題完成
 }
 
 // RunEmpireTurn 編排一個帝國的一回合:
@@ -74,8 +78,17 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		out.TradeGoodsRevenue += tradeRev
 	}
 	out.Player, out.ResearchDone = RunResearchPhase(ps, out.TotalResearch)
-	// 國庫結算:稅收 + 餘糧收入 + 貿易品收入 - 維護費。
-	out.NetBC = out.TaxRevenue + out.FoodSurplusRevenue + out.TradeGoodsRevenue - ps.Maintenance
+	// 指揮評等(Command Rating)超支懲罰(GAME_MANUAL.pdf p.169:「For each rating point
+	// required by a ship that is not covered, 10 BCs come out of your income every turn.」)。
+	// uncovered 為負(供給 > 需求)時夾在 0,IncomeCommandOverflowCost 內部也會再夾一次
+	// (雙重保險,不影響結果)。
+	uncoveredCommandPoints := ps.UsedCommandPoints - ps.CommandPointsSupply
+	if uncoveredCommandPoints < 0 {
+		uncoveredCommandPoints = 0
+	}
+	out.CommandOverflowCost = gamedata.IncomeCommandOverflowCost(uncoveredCommandPoints)
+	// 國庫結算:稅收 + 餘糧收入 + 貿易品收入 - 維護費 - 指揮評等超支懲罰。
+	out.NetBC = out.TaxRevenue + out.FoodSurplusRevenue + out.TradeGoodsRevenue - ps.Maintenance - out.CommandOverflowCost
 	out.Player.BC += out.NetBC
 	return out
 }

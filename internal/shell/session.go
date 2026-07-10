@@ -1336,6 +1336,33 @@ func (s *GameSession) totalBuildingMaintenance() int {
 	return total
 }
 
+// totalCommandPointsSupply 加總玩家目前所有殖民地「已建成」軌道衛星(星基/戰鬥站/星辰要塞)
+// 提供的指揮評等(Command Rating)供給,逐殖民地用 gamedata.CommandPointsFromBuildings 查表
+// (三者取代關係已在該函式內處理,不會重複疊加)。與 totalBuildingMaintenance 同款模式:
+// s.ColonyBuildings 為 nil 或某殖民地尚無記錄時,該殖民地視為 0。
+func (s *GameSession) totalCommandPointsSupply() int {
+	total := 0
+	for _, built := range s.ColonyBuildings {
+		total += gamedata.CommandPointsFromBuildings(built)
+	}
+	return total
+}
+
+// usedCommandPoints 加總玩家目前所有艦艇(s.Ships)消耗的指揮評等(Command Rating)點數
+// (GAME_MANUAL.pdf p.169,gamedata.ShipCommandCost)。s.Ships 目前的艦體種類只有殖民船/
+// 偵察艦/六級戰鬥艦體(見 shipClassFromName),不含貨運艦隊(Freighter Fleet)——本專案未把
+// 貨運艦隊塑模成 Ship 條目(IncomeFreighterMaintenanceCost 走獨立的「使用中運輸艦數量」參數,
+// 與 s.Ships 無關),故不會誤把手冊明文排除的貨運艦隊算進指揮評等需求。偵察艦不在手冊 Ship
+// Design 六級表內,shipClassFromName 近似當 Frigate(=1 點)處理,與其他空間/戰力計算一致。
+func (s *GameSession) usedCommandPoints() int {
+	total := 0
+	for _, sh := range s.Ships {
+		class, _ := shipClassFromName(sh.Class)
+		total += gamedata.ShipCommandCost(class)
+	}
+	return total
+}
+
 // recoverFromFamine 饑荒防死鎖:若某玩家殖民地上回合結算後 Farmers=0 且 Starving(食物盈餘
 // <0),但仍有人口(Population>0),自動把 1 個非農夫單位(優先 Worker,其次 Scientist)
 // 改派回農業,近似「玩家發現饑荒會手動 ShiftColonyJob 自救」的行為。
@@ -1382,8 +1409,10 @@ func (s *GameSession) syncTradeGoodsFlag() {
 
 // EndTurn 推進一回合:先結算玩家帝國,再讓各 AI 對手自行決策並結算,回合數 +1。
 func (s *GameSession) EndTurn() {
-	s.Player.Maintenance = s.totalBuildingMaintenance() // 依本回合結算前的實際已建建築重算(取代平坦常數)
-	s.syncTradeGoodsFlag()                              // 依建造選單同步「貿易品」旗標,供 RunEmpireTurn 判斷是否換算收入
+	s.Player.Maintenance = s.totalBuildingMaintenance()         // 依本回合結算前的實際已建建築重算(取代平坦常數)
+	s.Player.CommandPointsSupply = s.totalCommandPointsSupply() // 指揮評等供給:實際已建成的星基/戰鬥站/星辰要塞
+	s.Player.UsedCommandPoints = s.usedCommandPoints()          // 指揮評等需求:玩家目前所有艦艇加總
+	s.syncTradeGoodsFlag()                                      // 依建造選單同步「貿易品」旗標,供 RunEmpireTurn 判斷是否換算收入
 	s.LastPlayerOutput = engine.RunEmpireTurn(s.Player, s.PlayerColonies)
 	s.Player = s.LastPlayerOutput.Player
 	s.recoverFromFamine() // 饑荒防死鎖:見函式註解;依本回合 Starving 結果修正下回合職務分配
@@ -1633,6 +1662,12 @@ func playerHomeworldColony() engine.ColonyState {
 func newHomeworldPlayerState(researchTopic gamedata.ResearchTopic) engine.PlayerState {
 	return engine.PlayerState{
 		BC: 100, TaxRate: 40, Maintenance: gamedata.BuiltMaintenanceBC(homeworldBuildings()), ResearchTopic: researchTopic,
+		// CommandPointsSupply 開局即由母星星基(homeworldBuildings 的"星基":true)貢獻 1 點
+		// (見 gamedata.CommandPointsFromBuildings)。UsedCommandPoints 這裡刻意不填(留 0):
+		// 本函式同時供玩家與 AI 共用,AI 沒有逐艦清單(見 UsedCommandPoints 欄位註解),玩家的
+		// 初始值改由 NewDemoSession 在 Ships 欄位就位後另外設定,避免在此對 AI 也套用玩家專屬的
+		// 開局艦隊假設。
+		CommandPointsSupply: gamedata.CommandPointsFromBuildings(homeworldBuildings()),
 		CompletedTopics: map[gamedata.ResearchTopic]bool{
 			gamedata.TOPIC_STARTING_TECH: true,
 			gamedata.TOPIC_ENGINEERING:   true,
@@ -1672,7 +1707,7 @@ func NewDemoSession() *GameSession {
 	galaxy := genGalaxy(galaxyStars, 42) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
 	galaxy[0].Explored = true            // 母星初始已探索
 	aiHomeStar := galaxyStars / 2        // 與 genGalaxy 內部「idx==n/2 → AI 母星」的規則一致
-	return &GameSession{
+	session := &GameSession{
 		Turn:            1,
 		Player:          newHomeworldPlayerState(gamedata.TOPIC_ADVANCED_CONSTRUCTION),
 		PlayerColonies:  []engine.ColonyState{playerHomeworldColony()},
@@ -1696,4 +1731,6 @@ func NewDemoSession() *GameSession {
 		FleetDestStar: -1, // 無航行任務
 		EventSeed:     42, // 隨機事件種子(可重現;正式新遊戲遞增)
 	}
+	session.Player.UsedCommandPoints = session.usedCommandPoints() // 依開局艦隊(homeworldShips)算實際需求,顯示與第一次 EndTurn 後一致
+	return session
 }

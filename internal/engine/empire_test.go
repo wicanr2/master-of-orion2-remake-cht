@@ -104,6 +104,49 @@ func TestRunEmpireTurnBC(t *testing.T) {
 	}
 }
 
+// TestRunEmpireTurnCommandOverflow 驗證指揮評等(Command Rating)供給不足艦艇需求時,
+// 每回合每未覆蓋點扣 10 BC(GAME_MANUAL.pdf p.169,gamedata.IncomeCommandOverflowCost),
+// 並正確併入 NetBC/Player.BC,曝露在 EmpireOutput.CommandOverflowCost。
+func TestRunEmpireTurnCommandOverflow(t *testing.T) {
+	colonies := []ColonyState{
+		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
+			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, TolerantRace: true},
+	}
+	// 稅收 10(20*50/100),維護費 3;供給 1(僅星基)、需求 3(2 艘 Frigate+1 艘 Destroyer=1+1+2)
+	// → uncovered=2 → 超支懲罰 2*10=20 BC。
+	ps := PlayerState{BC: 100, TaxRate: 50, Maintenance: 3, CommandPointsSupply: 1, UsedCommandPoints: 3,
+		ResearchTopic: gamedata.ResearchTopic(1)}
+	out := RunEmpireTurn(ps, colonies)
+
+	if out.CommandOverflowCost != 20 {
+		t.Errorf("CommandOverflowCost = %d,預期 20", out.CommandOverflowCost)
+	}
+	if out.NetBC != -13 { // 10(稅收) - 3(維護) - 20(指揮評等超支) = -13
+		t.Errorf("淨 BC = %d,預期 -13", out.NetBC)
+	}
+	if out.Player.BC != 87 { // 100 - 13
+		t.Errorf("國庫 = %d,預期 87", out.Player.BC)
+	}
+}
+
+// TestRunEmpireTurnCommandSupplyCoversDemand 驗證供給 >= 需求時無懲罰(NetBC 不含超支扣款)。
+func TestRunEmpireTurnCommandSupplyCoversDemand(t *testing.T) {
+	colonies := []ColonyState{
+		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
+			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, TolerantRace: true},
+	}
+	ps := PlayerState{BC: 100, TaxRate: 50, Maintenance: 3, CommandPointsSupply: 3, UsedCommandPoints: 3,
+		ResearchTopic: gamedata.ResearchTopic(1)}
+	out := RunEmpireTurn(ps, colonies)
+
+	if out.CommandOverflowCost != 0 {
+		t.Errorf("供給=需求時 CommandOverflowCost 應為 0,got %d", out.CommandOverflowCost)
+	}
+	if out.NetBC != 7 { // 10 - 3,同 TestRunEmpireTurnBC
+		t.Errorf("淨 BC = %d,預期 7", out.NetBC)
+	}
+}
+
 // TestRunEmpireTurnTradeGoods 驗證「貿易品」殖民地(cs.TradeGoods=true)的淨工業改以 2:1
 // 換算成 BC(gamedata.TradeGoodsIncome,一般種族、非 Fantastic Trader),計入
 // EmpireOutput.TradeGoodsRevenue 與 NetBC。

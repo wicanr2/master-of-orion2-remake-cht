@@ -372,6 +372,34 @@ func BuiltMaintenanceBC(built map[string]bool) int {
 	return total
 }
 
+// CommandPointsFromBuildings 回傳單一殖民地「軌道衛星」建築提供的指揮評等(Command Rating)供給。
+//
+// 手冊原文逐項出處(GAME_MANUAL.pdf):
+//   - p.79「A Star Base requires 2 BC per turn to maintain and adds 1 to your Command Rating.」
+//   - p.82「A Battlestation costs 3 BC in maintenance each turn and adds 2 to your Command
+//     Rating.... It replaces any Star Base in orbit around the same planet.」
+//   - p.83「A Star Fortress costs 4 BC in maintenance each turn and adds 3 to your Command
+//     Rating.... The fortress replaces any Battlestation or Star Base in orbit around the same
+//     planet.」
+//
+// 三者是「取代關係」(replaces),不是可疊加的獨立加成——同一殖民地最多只有一座軌道衛星在軌
+// (完工時舊的一併出售,見 buildings.go 三項 Effect 欄「取代」敘述)。本函式故意不用加總,
+// 而是依「built 中最高階者」直接回傳其固定值,天然滿足互斥語意,即使呼叫端的 built map 因為
+// 某種原因(如存檔相容或未來 UI)同時記錄了兩者也不會被誤算成疊加。
+//
+// built 為 nil(尚無任何建築)回傳 0,非漏算。
+func CommandPointsFromBuildings(built map[string]bool) int {
+	switch {
+	case built["星辰要塞"]: // Star Fortress,取代 Battlestation/Star Base
+		return 3
+	case built["戰鬥站"]: // Battlestation,取代 Star Base
+		return 2
+	case built["星基"]: // Star Base
+		return 1
+	}
+	return 0
+}
+
 // AvailableBuildings 回傳「前置研究已完成」的建築清單,依 Buildings 原順序。
 // completedTopics 為 nil 時視為尚無任何研究完成(只回傳前置為 TOPIC_STARTING_TECH 的項目——
 // 目前表中無此類建築,故回傳空清單)。

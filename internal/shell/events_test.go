@@ -11,7 +11,16 @@ import (
 // 測試固定 EventSeed=42 的確定性軌跡實測,300 回合最低點約 -59,且會在人口回穩後回升(實測
 // 300 回合終值為正、達數百 BC),不是無止盡崩潰。這裡抓一個有餘裕但仍能抓到「異常擴大化」的
 // 下限,詳見 docs/tech/colony-economy-maintenance.md。
-const bcCrashFloor300Turns = -150
+//
+// 2026-07-11 更新:接上指揮評等(Command Rating)供需結算(GAME_MANUAL.pdf p.169,
+// gamedata.IncomeCommandOverflowCost 從先前零呼叫端的死碼變成 RunEmpireTurn 實際會扣款的邏輯)
+// 後,下限重新校準。本測試全程被動跑 300 回合(s.Builds 恆為「不建造」,從未新建軌道衛星;
+// s.Ships 也維持開局 3 艘不變),母星開局只有 1 座星基(+1 供給)卻有 3 艘艦艇(殖民船+2 偵察艦
+// =3 點需求),缺口固定 2 點,每回合被動扣 20 BC(2×10,IncomeCommandOverflowCostPerPoint)。
+// 這是忠實但被動放大的手冊機制(玩家若真的玩,會建戰鬥站/星辰要塞或裁減艦隊來補上缺口,本測試
+// 刻意不做任何建造/艦隊決策),300 回合線性攤提實測最低點約 -3710(第 273 回合)、終值約
+// -3252,重新抓一個有餘裕但仍能抓到「數值算式跑飛」的下限。
+const bcCrashFloor300Turns = -4000
 
 // TestRandomEventsFireAndBounded 驗證隨機事件會在多回合中觸發,殖民地人口不低於 1,且 BC
 // 不會失控式無下限崩潰(忠實經濟下人口被打到剩 1 的期間會短暫轉負,詳見 bcCrashFloor300Turns
