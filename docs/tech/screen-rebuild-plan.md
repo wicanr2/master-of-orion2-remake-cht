@@ -16,6 +16,8 @@
     - asset 15 換 palette provider 0/10/12 **都仍雜點**(中央 figure 區尤重)→ **問題不在 palette 選擇**,而在這批**多幀 delta 動畫資產的 delta 解碼 / 動態調色盤**未被 `internal/lbx` 乾淨還原。現況 diplomacy 用的 room#29 中央也有同款雜點(見 `diplo_cur.png`)。
     - **→ 真正的下一步是解決 `internal/lbx` 對 DIPLOMAT 動畫資產的解碼**(可能是 color-cycling 動畫調色盤,或 delta 幀重建的邊角情形),對照 openorion2 `lbx.cpp` 影像解碼再逐位元組核。這是**解碼器層級的 RE**,不是畫面佈局工作。解決後才能乾淨顯示使節,再談重建佈局 + 逐族資產對應。
   - 渲染工具已備(`-lbx ... -palasset N -accum`),供這項解碼 RE 的視覺驗證。
+  - **雜點根因確認(2026-07-10 徹底查明)**:`AccumulatedRGBA` 把全部 38 幀已寫像素疊起——**動畫中會動的中央使節/能量在各幀位置不同,全疊=散點**(靜態廊柱不動故乾淨)。但改渲染**單一 frame 0** 也不乾淨:結構較清楚,惟**天空/穹頂區變白噪點**(疑該區 index 對 palette 0 映射錯,或稀疏星場)。→ **兩種渲染法都不乾淨**,換 palette provider 也不解。結論:DIPLOMAT 動畫資產是**動態調色盤(color-cycling)+ delta 幀**的困難組合,忠實靜態呈現需**聚焦解碼 RE**(逐幀 + palette cycling 分析,對照 openorion2 逐位元組),**非快速修法**。
+  - **現況最佳解**:diplomacy 畫面目前用的 **room#29(accumulated)是目前最乾淨的可用資產**(比 15/21/27 少雜點),故先維持;deeper 忠實(逐族使節 + 乾淨動畫)待上述解碼 RE。
   - 重建:依對手種族選對應使節肖像(動畫)+ 房間 + 對話框 + 提議按鈕(位置量測自原版)。
 - **接線**:種族關係畫面「報告」→ diplomacy;已接 `bgmDiplo` 場景音樂。
 
