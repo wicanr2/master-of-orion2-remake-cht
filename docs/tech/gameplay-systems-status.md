@@ -22,9 +22,11 @@
   (射程等級→射程懲罰→命中門檻→`CombatClassicToHit`→`DamageForHit`→`DamageAfterShield`→`DamageApplyArmor`),
   RNG 依回合種子可重現;`CombatShip` 加 Defense/WeaponMin/Max/ShieldReduction/ArmorHP(remake 由艦艇設計推導,
   精確值待艦體空間格+元件佔格+軍官技能模型)。測試 `combat_formula_test.go`。
-- **仍待**:①`ResolveBattle`(快速艦隊結算,自動戰鬥用)仍是抽象戰力相減,未接真公式;
-  ②護盾未與裝甲分離(ShieldReduction 暫 0),需艦艇設計 model 拆分;③球狀傷害/飛彈/戰機/地面戰未接。
-- 原況(供對照):`ResolveBattle` **抽象「戰力相減」**(加總雙方 power,依差額 `applyDamage`)。
+- **`ResolveBattle` 快速結算也已接真公式(2026-07-10)**:非互動自動戰鬥同樣逐發走 `ResolveShot`
+  (每回合雙方齊射;種族加成入攻擊;RNG 依回合種子可重現);移除死碼 `applyDamage`。
+  → **兩條戰鬥解算路徑(格子戰術 + 快速艦隊)現都用真 MOO2 戰鬥公式。**
+- **仍待**:①護盾未與裝甲分離(ShieldReduction 暫 0),需艦艇設計 model 拆分;②球狀傷害/飛彈/戰機/地面戰未接;
+  ③per-ship 攻防/傷害為 remake 由艦艇設計推導(精確值需艦體空間格+元件佔格+軍官技能模型)。
 - gamedata **已備妥完整真公式**(未接):
   - 命中:`CombatHitThreshold`、`CombatClassicToHit`、`CombatAlternativeToHit`、射程 `CombatRangeLevel*`/`CombatRangeLevelPenalty`。
   - 傷害:`DamageForHit`(依命中結果算傷)、`DamageApplyDissipation`、`DamageMountAdjustedValue`。
