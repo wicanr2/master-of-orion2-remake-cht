@@ -25,7 +25,9 @@
 - **`ResolveBattle` 快速結算也已接真公式(2026-07-10)**:非互動自動戰鬥同樣逐發走 `ResolveShot`
   (每回合雙方齊射;種族加成入攻擊;RNG 依回合種子可重現);移除死碼 `applyDamage`。
   → **兩條戰鬥解算路徑(格子戰術 + 快速艦隊)現都用真 MOO2 戰鬥公式。**
-- **仍待**:①護盾未與裝甲分離(ShieldReduction 暫 0),需艦艇設計 model 拆分;②球狀傷害/飛彈/戰機/地面戰未接;
+- **護盾與裝甲已分離(2026-07-10)**:戰鬥時依元件名查表得裝甲 HP(`armorHPByName`)+ 護盾每發減傷
+  (`shieldReduceByName`,依護盾階 0/2/4/6/8/10),兩路徑套用,`DamageAfterShield` 護盾機制真正生效。
+- **仍待**:①球狀傷害/飛彈/戰機/地面戰未接;②護盾減傷精確 per-class 真值待逆向(現為階梯推導);
   ③per-ship 攻防/傷害為 remake 由艦艇設計推導(精確值需艦體空間格+元件佔格+軍官技能模型)。
 - gamedata **已備妥完整真公式**(未接):
   - 命中:`CombatHitThreshold`、`CombatClassicToHit`、`CombatAlternativeToHit`、射程 `CombatRangeLevel*`/`CombatRangeLevelPenalty`。
