@@ -18,6 +18,12 @@ import (
 // openorion2/src/gamestate.cpp:535「if (gravity > HEAVY_G) throw」的合法範圍檢查),故可直接
 // 數值轉型,不需要字串映射表。若存檔含超出 0-2 的髒值,gamedata.GravityPenaltyPercent 本身會
 // 對超範圍輸入回 0(視同無懲罰,保守預設),此處不重複做邊界檢查。
+//
+// 礦產豐度(planet.Minerals):save.Planet.Minerals 同樣是直接從存檔二進位讀出的 uint8,
+// 與 gamedata.PlanetMinerals 同源於 openorion2 gamestate.h 的同一組 enum ordinal
+// (ULTRA_POOR=0/POOR=1/ABUNDANT=2/RICH=3/ULTRA_RICH=4,見該檔 enum PlanetMinerals 定義),
+// 故同樣可直接數值轉型,不需要字串映射表或範圍檢查(呼叫端 ProdRoboticFactoryBonus 對超範圍
+// 輸入回 0)。
 
 // ColonyStateFromSave 把存檔的 Colony(需另給其所在 Planet 以取得尺寸)轉成引擎 ColonyState。
 // 依 Colonist.Job(0 農夫/1 工人/2 科學家)統計前 Population 名殖民者的工作分配。
@@ -47,7 +53,8 @@ func ColonyStateFromSave(c *save.Colony, planet *save.Planet) ColonyState {
 		IndustryPerWorker:    int(c.IndustryPerWorker),
 		ResearchPerScientist: int(c.ResearchPerScientist),
 		PlanetSize:           gamedata.PlanetSize(planet.Size),
-		PlanetGravity:        gamedata.PlanetGravity(planet.Gravity), // 見檔頭「行星重力」說明
+		PlanetGravity:        gamedata.PlanetGravity(planet.Gravity),   // 見檔頭「行星重力」說明
+		MineralRichness:      gamedata.PlanetMinerals(planet.Minerals), // 見檔頭「礦產豐度」說明
 		// 建築旗標/Tolerant/成長獎金 v1 未對映(見檔頭說明),留零值。
 	}
 }

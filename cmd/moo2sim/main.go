@@ -72,10 +72,10 @@ func runAI(turns int, name string) {
 	colonies := []engine.ColonyState{
 		{Population: 8, PopMax: 20,
 			FoodPerFarmer: 4, IndustryPerWorker: 6, ResearchPerScientist: 30,
-			PlanetSize: gamedata.LARGE_PLANET, PlanetGravity: gamedata.NORMAL_G, MoralePercent: 10},
+			PlanetSize: gamedata.LARGE_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, MoralePercent: 10},
 		{Population: 4, PopMax: 12,
 			FoodPerFarmer: 4, IndustryPerWorker: 5, ResearchPerScientist: 20,
-			PlanetSize: gamedata.SMALL_PLANET, PlanetGravity: gamedata.NORMAL_G},
+			PlanetSize: gamedata.SMALL_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT},
 	}
 	ps := engine.PlayerState{
 		BC: 100, TaxRate: 40, Maintenance: 5,
@@ -146,10 +146,10 @@ func runSynthetic(turns int) {
 	colonies := []engine.ColonyState{
 		{Population: 8, PopMax: 20, Farmers: 3, Workers: 4, Scientists: 1,
 			FoodPerFarmer: 4, IndustryPerWorker: 6, ResearchPerScientist: 30,
-			PlanetSize: gamedata.LARGE_PLANET, PlanetGravity: gamedata.NORMAL_G, MoralePercent: 10},
+			PlanetSize: gamedata.LARGE_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, MoralePercent: 10},
 		{Population: 4, PopMax: 12, Farmers: 2, Workers: 1, Scientists: 1,
 			FoodPerFarmer: 4, IndustryPerWorker: 5, ResearchPerScientist: 20,
-			PlanetSize: gamedata.SMALL_PLANET, PlanetGravity: gamedata.NORMAL_G},
+			PlanetSize: gamedata.SMALL_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT},
 	}
 	ps := engine.PlayerState{
 		BC: 100, TaxRate: 40, Maintenance: 5,

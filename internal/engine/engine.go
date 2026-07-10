@@ -105,6 +105,20 @@ type ColonyState struct {
 	// FlatResearch 不套,理由見 colony.go 註解)。此旗標現在會真正讓 GravityPenaltyPercent
 	// 歸零,行星重力產生器不再是無效旗標。
 	NormalizeGravity bool
+
+	// MineralRichness 該殖民地所在行星的礦產豐度分級(ULTRA_POOR..ULTRA_RICH,GAME_MANUAL.pdf
+	// p.56-57)。ColonyState 建立當下已經把這個分級「烘」進 IndustryPerWorker(見
+	// gamedata.MineralIndustryPerWorker)算出每工人的基礎產能——本欄位是額外保留的原始分類,
+	// 供 applyBuildingEffect 的機器人工廠(Robotic Factory p.82)查表取得依豐度分級的
+	// 固定加成(gamedata.ProdRoboticFactoryBonus),因為那筆固定加成無法從已經算好的
+	// per-worker 費率反推回原始豐度分類。
+	//
+	// Go 零值陷阱:gamedata.ULTRA_POOR 的 ordinal 恰好是 0,與本欄位「未設定」的零值相同——
+	// 比照 PlanetGravity 的既有慣例(見該欄位註解),任何建構 ColonyState 卻未明確設定本欄位的
+	// 呼叫端,會被靜默當成 Ultra Poor(機器人工廠只 +5,而非實際豐度應有的加成)。因此所有既有
+	// ColonyState{...} 字面值(engine/shell 測試、cmd/moo2sim)在這次接線時都已明確補上
+	// MineralRichness——新增呼叫端請比照辦理,別漏設這個欄位。
+	MineralRichness gamedata.PlanetMinerals
 }
 
 // PlayerState 是回合引擎操作的乾淨玩家(帝國)狀態。

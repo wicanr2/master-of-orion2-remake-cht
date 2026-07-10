@@ -739,9 +739,17 @@ func (s *GameSession) applyBuildingEffect(i int, name string) {
 		// demo session 目前看不出效果差異;要在 Low-G/Heavy-G 殖民地(例如存檔載入模式)上才看得出。
 		c.NormalizeGravity = true
 	case "機器人工廠": // Robotic Factory p.82:依礦產豐度固定加成(Ultra Poor+5/Poor+8/Abundant+10/
-		// Rich+15/Ultra Rich+20)。TODO:engine.ColonyState 目前不追蹤逐殖民地的礦產豐度分級
-		// (只在建立殖民地當下把豐度烘進 IndustryPerWorker 靜態費率,事後拿不回原始豐度分類),
-		// 故無法忠實建模,暫不套用任何固定值,僅記錄為已建——待補礦產豐度欄位後回填。
+		// Rich+15/Ultra Rich+20)。
+		//
+		// 2026-07-11 已接線:engine.ColonyState 新增 MineralRichness 欄位(比照 PlanetGravity
+		// 的接線手法,見該欄位註解的零值陷阱說明),獨立保留建立殖民地當下的原始豐度分類——
+		// 不再從已經烘進 IndustryPerWorker 的靜態費率事後反推。gamedata.ProdRoboticFactoryBonus
+		// (production.go)是既有查表函式(索引與 formulas.go mineralProductionTable 一致),
+		// 直接依 c.MineralRichness 查出手冊固定值加進 FlatIndustry。
+		// 注意:機器人工廠效果只有固定加成,不動 IndustryPerWorker——避免與建立殖民地當下已經
+		// 烘進 IndustryPerWorker 的礦產費率(gamedata.MineralIndustryPerWorker)重複計算同一份
+		// 礦產豐度效果。
+		c.FlatIndustry += gamedata.ProdRoboticFactoryBonus(int(c.MineralRichness))
 		//
 		// 2026-07-11 已接線(移出下方 no-op 清單):全息模擬艙、歡樂穹頂、異族管理中心、裝甲營房。
 		// 本 case 語句不直接改 MoralePercent——advanceBuilds 完工當下另外呼叫
@@ -1603,6 +1611,11 @@ func playerHomeworldColony() engine.ColonyState {
 		// 同一組母星設定),無重力懲罰。engine.ColonyState.PlanetGravity 的 Go 零值恰好是
 		// gamedata.LOW_G(ordinal 0),必須明確賦值,不能依賴零值(見該欄位註解)。
 		PlanetGravity: gamedata.NORMAL_G,
+		// MineralRichness 母星固定 Abundant,與上面 IndustryPerWorker 用的
+		// gamedata.MineralIndustryPerWorker(gamedata.ABUNDANT) 同一組母星礦產設定
+		// (docs/tech/homeworld-init.md 慣例基準)。engine.ColonyState.MineralRichness 的
+		// Go 零值恰好是 gamedata.ULTRA_POOR(ordinal 0),必須明確賦值(見該欄位註解)。
+		MineralRichness: gamedata.ABUNDANT,
 	}
 }
 

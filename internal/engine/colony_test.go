@@ -11,7 +11,7 @@ func TestRunColonyTurn(t *testing.T) {
 		Population: 10, PopMax: 20,
 		Farmers: 4, Workers: 4, Scientists: 2,
 		FoodPerFarmer: 3, IndustryPerWorker: 5, ResearchPerScientist: 4,
-		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, // 容忍 = 2*(2+1) = 6
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, // 容忍 = 2*(2+1) = 6
 	}
 	got := RunColonyTurn(cs)
 
@@ -38,7 +38,7 @@ func TestRunColonyTurnPollutionProcessor(t *testing.T) {
 	// 污染處理器:eighths 8→4,產污減半 → 清理成本降。
 	cs := ColonyState{
 		Population: 10, PopMax: 20, Workers: 4, IndustryPerWorker: 5,
-		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, PollutionProcessor: true,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, PollutionProcessor: true,
 	}
 	got := RunColonyTurn(cs)
 	// gross=20,eighths=4,產污=20*4/8=10,清理=(10-6)/2=2,淨=18
@@ -51,7 +51,7 @@ func TestRunColonyTurnStarving(t *testing.T) {
 	// 食物不足 → 饑荒,成長為 0 並標 Starving。
 	cs := ColonyState{
 		Population: 10, PopMax: 20, Farmers: 1, FoodPerFarmer: 3,
-		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT,
 	}
 	got := RunColonyTurn(cs)
 	if got.FoodSurplus != -7 || !got.Starving || got.PopGrowth != 0 {
@@ -63,7 +63,7 @@ func TestRunColonyTurnTolerantRace(t *testing.T) {
 	// Tolerant 種族:清理成本 0,淨工業 = 毛工業。
 	cs := ColonyState{
 		Population: 5, PopMax: 20, Workers: 6, IndustryPerWorker: 5,
-		PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, TolerantRace: true,
+		PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, TolerantRace: true,
 	}
 	got := RunColonyTurn(cs)
 	if got.PollutionCleanupCost != 0 || got.NetIndustry != 30 {
@@ -76,7 +76,7 @@ func TestRunColonyTurnTolerantRace(t *testing.T) {
 func TestRunColonyTurnFlatFood(t *testing.T) {
 	base := ColonyState{
 		Population: 5, PopMax: 20, FoodPerFarmer: 3,
-		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, FlatFood: 2,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, FlatFood: 2,
 	}
 	small := base
 	small.Farmers = 1 // 1*3+2=5
@@ -98,7 +98,7 @@ func TestRunColonyTurnFlatFood(t *testing.T) {
 func TestRunColonyTurnFlatIndustry(t *testing.T) {
 	cs := ColonyState{
 		Population: 10, PopMax: 20, Workers: 4, IndustryPerWorker: 5,
-		PlanetSize:   gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, // 容忍 = 6
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, // 容忍 = 6
 		FlatIndustry: 10,
 	}
 	got := RunColonyTurn(cs)
@@ -116,7 +116,7 @@ func TestRunColonyTurnFlatIndustry(t *testing.T) {
 func TestRunColonyTurnFlatResearch(t *testing.T) {
 	cs := ColonyState{
 		Population: 5, PopMax: 20, Scientists: 2, ResearchPerScientist: 4,
-		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, FlatResearch: 5,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, FlatResearch: 5,
 	}
 	got := RunColonyTurn(cs)
 	if got.Research != 13 { // 2*4+5
@@ -130,7 +130,7 @@ func TestRunColonyTurnFlatResearch(t *testing.T) {
 func TestRunColonyTurnPopMaxBonusRaisesGrowthCeiling(t *testing.T) {
 	full := ColonyState{
 		Population: 20, PopMax: 20, Farmers: 20, FoodPerFarmer: 1,
-		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT,
 	}
 	got := RunColonyTurn(full)
 	if got.PopGrowth != 0 {
@@ -152,7 +152,7 @@ func TestRunColonyTurnFlatGrowthUntilPopMax(t *testing.T) {
 	notFull := ColonyState{
 		Population: 10, PopMax: 20, FlatGrowth: 30,
 		Farmers: 10, FoodPerFarmer: 1, // 食物打平消耗,避免饑荒把成長歸零,隔離 FlatGrowth 單一變數
-		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT,
 	}
 	got := RunColonyTurn(notFull)
 	// base=sqrt(2000*10*10/20)=100,+FlatGrowth 30 = 130
@@ -163,7 +163,7 @@ func TestRunColonyTurnFlatGrowthUntilPopMax(t *testing.T) {
 	full := ColonyState{
 		Population: 20, PopMax: 20, FlatGrowth: 30,
 		Farmers: 20, FoodPerFarmer: 1,
-		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT,
 	}
 	got2 := RunColonyTurn(full)
 	if got2.PopGrowth != 0 {
@@ -176,7 +176,7 @@ func TestRunColonyTurnMorale(t *testing.T) {
 	cs := ColonyState{
 		Population: 10, PopMax: 20, Farmers: 4, Workers: 2, Scientists: 2,
 		FoodPerFarmer: 5, IndustryPerWorker: 10, ResearchPerScientist: 5,
-		PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, TolerantRace: true, MoralePercent: 30,
+		PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, TolerantRace: true, MoralePercent: 30,
 	}
 	got := RunColonyTurn(cs)
 	if got.Food != 26 { // 20*130/100
@@ -198,7 +198,7 @@ func TestRunColonyTurnGravityHeavyPenalty(t *testing.T) {
 	cs := ColonyState{
 		Population: 10, PopMax: 20, Farmers: 4, Workers: 4, Scientists: 2,
 		FoodPerFarmer: 5, IndustryPerWorker: 10, ResearchPerScientist: 5,
-		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.HEAVY_G,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.HEAVY_G, MineralRichness: gamedata.ABUNDANT,
 	}
 	got := RunColonyTurn(cs)
 	if got.Food != 10 { // 4*5=20,×50% = 10
@@ -220,7 +220,7 @@ func TestRunColonyTurnGravityNormalizeGravityCancelsPenalty(t *testing.T) {
 	cs := ColonyState{
 		Population: 10, PopMax: 20, Farmers: 4, Workers: 4, Scientists: 2,
 		FoodPerFarmer: 5, IndustryPerWorker: 10, ResearchPerScientist: 5,
-		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.HEAVY_G,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.HEAVY_G, MineralRichness: gamedata.ABUNDANT,
 		NormalizeGravity: true,
 	}
 	got := RunColonyTurn(cs)
@@ -241,7 +241,7 @@ func TestRunColonyTurnGravityNormalGNoPenalty(t *testing.T) {
 	cs := ColonyState{
 		Population: 10, PopMax: 20, Farmers: 4, Workers: 4, Scientists: 2,
 		FoodPerFarmer: 5, IndustryPerWorker: 10, ResearchPerScientist: 5,
-		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT,
 	}
 	got := RunColonyTurn(cs)
 	if got.Food != 20 || got.GrossIndustry != 40 || got.Research != 10 {
@@ -256,7 +256,7 @@ func TestRunColonyTurnGravityNormalGNoPenalty(t *testing.T) {
 func TestRunColonyTurnGravityAndMoraleCombinedPercent(t *testing.T) {
 	cs := ColonyState{
 		Population: 10, PopMax: 20, Workers: 4, IndustryPerWorker: 5,
-		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.LOW_G,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.LOW_G, MineralRichness: gamedata.ABUNDANT,
 		MoralePercent: 10, TolerantRace: true, // Tolerant 避開污染清理,單純看毛工業
 	}
 	got := RunColonyTurn(cs)

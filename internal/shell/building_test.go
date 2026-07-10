@@ -191,6 +191,61 @@ func TestPlanetaryGravityGeneratorRecordedOnly(t *testing.T) {
 	}
 }
 
+// TestRoboticFactoryEffect 驗證機器人工廠(Robotic Factory p.82)在母星(playerHomeworldColony
+// 固定 MineralRichness=Abundant)完工後給 FlatIndustry +10,且不更動 IndustryPerWorker——
+// 礦產豐度的 per-worker 效果已在建立殖民地當下烘進 IndustryPerWorker
+// (gamedata.MineralIndustryPerWorker),機器人工廠只補手冊額外描述的固定加成,兩者不可疊加
+// 計算同一份豐度效果。
+func TestRoboticFactoryEffect(t *testing.T) {
+	s := NewDemoSession()
+	s.DisableEvents = true
+	startIPW := s.PlayerColonies[0].IndustryPerWorker
+	startFlat := s.PlayerColonies[0].FlatIndustry
+
+	s.applyBuildingEffect(0, "機器人工廠")
+
+	if got := s.PlayerColonies[0].FlatIndustry - startFlat; got != 10 {
+		t.Fatalf("母星(Abundant)機器人工廠固定加成 = %d,預期 10(p.82)", got)
+	}
+	if s.PlayerColonies[0].IndustryPerWorker != startIPW {
+		t.Fatalf("機器人工廠不應更動 IndustryPerWorker(避免與已烘進的礦產費率重複計算):%d → %d",
+			startIPW, s.PlayerColonies[0].IndustryPerWorker)
+	}
+}
+
+// TestRoboticFactoryEffectByMineralRichness 逐豐度分級驗證機器人工廠固定加成,對照
+// GAME_MANUAL.pdf p.82 原文:"+5 on Ultra Poor worlds, +8 for Poor, +10 on Abundant
+// planets, +15 for Rich, and +20 on Ultra Rich worlds"。比照 PlanetGravity 接線測試手法
+// (colony_test.go 的 TestRunColonyTurnGravityHeavyPenalty 等),直接操作
+// ColonyState.MineralRichness 精確控制分級再驗證效果差異。
+func TestRoboticFactoryEffectByMineralRichness(t *testing.T) {
+	cases := []struct {
+		name     string
+		richness gamedata.PlanetMinerals
+		want     int
+	}{
+		{"UltraPoor", gamedata.ULTRA_POOR, 5},
+		{"Poor", gamedata.POOR, 8},
+		{"Abundant", gamedata.ABUNDANT, 10},
+		{"Rich", gamedata.RICH, 15},
+		{"UltraRich", gamedata.ULTRA_RICH, 20},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			s := NewDemoSession()
+			s.DisableEvents = true
+			s.PlayerColonies[0].MineralRichness = c.richness
+			before := s.PlayerColonies[0].FlatIndustry
+
+			s.applyBuildingEffect(0, "機器人工廠")
+
+			if got := s.PlayerColonies[0].FlatIndustry - before; got != c.want {
+				t.Fatalf("%s 機器人工廠固定加成 = %d,預期 %d", c.name, got, c.want)
+			}
+		})
+	}
+}
+
 // TestTradeGoodsBuildOption 驗證「貿易品」建造佇列選項(見 session.go TradeGoodsBuildName):
 // 設為貿易品的殖民地淨工業不累積建造進度,改以 gamedata.TradeGoodsIncome(一般種族 2:1)
 // 換算成 BC 計入國庫。

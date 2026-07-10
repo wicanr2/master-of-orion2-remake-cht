@@ -11,10 +11,10 @@ func TestRunEmpireTurn(t *testing.T) {
 	colonies := []ColonyState{
 		{Population: 10, PopMax: 20, Farmers: 4, Workers: 4, Scientists: 2,
 			FoodPerFarmer: 3, IndustryPerWorker: 5, ResearchPerScientist: 100,
-			PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G}, // 研究 200
+			PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT}, // 研究 200
 		{Population: 8, PopMax: 20, Farmers: 3, Workers: 3, Scientists: 2,
 			FoodPerFarmer: 3, IndustryPerWorker: 5, ResearchPerScientist: 100,
-			PlanetSize: gamedata.SMALL_PLANET, PlanetGravity: gamedata.NORMAL_G}, // 研究 200
+			PlanetSize: gamedata.SMALL_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT}, // 研究 200
 	}
 	ps := PlayerState{ResearchTopic: gamedata.ResearchTopic(1), ResearchProgress: 0} // cost 400
 	out := RunEmpireTurn(ps, colonies)
@@ -41,7 +41,7 @@ func TestRunEmpireTurnResearchNotComplete(t *testing.T) {
 	// 研究總點不足成本 → 累積但不完成。
 	colonies := []ColonyState{
 		{Population: 5, PopMax: 20, Scientists: 1, ResearchPerScientist: 50,
-			PlanetSize: gamedata.SMALL_PLANET, PlanetGravity: gamedata.NORMAL_G},
+			PlanetSize: gamedata.SMALL_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT},
 	}
 	ps := PlayerState{ResearchTopic: gamedata.ResearchTopic(1)} // cost 400
 	out := RunEmpireTurn(ps, colonies)
@@ -58,7 +58,7 @@ func TestRunEmpireTurnMultiTurnProgression(t *testing.T) {
 	// 驗證研究進度跨回合累積,並在累積達成本(400)的那回合完成。
 	colonies := []ColonyState{
 		{Population: 6, PopMax: 20, Scientists: 3, ResearchPerScientist: 50,
-			PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G}, // 每回合研究 150
+			PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT}, // 每回合研究 150
 	}
 	ps := PlayerState{ResearchTopic: gamedata.ResearchTopic(1)} // cost 400
 
@@ -87,7 +87,7 @@ func TestRunEmpireTurnBC(t *testing.T) {
 	// Tolerant 種族免污染清理:淨工業=毛工業。Workers 2*10=20,稅率 50% → 稅收 10。
 	colonies := []ColonyState{
 		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
-			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, TolerantRace: true},
+			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, TolerantRace: true},
 	}
 	ps := PlayerState{BC: 100, TaxRate: 50, Maintenance: 3,
 		ResearchTopic: gamedata.ResearchTopic(1)}
@@ -112,7 +112,7 @@ func TestRunEmpireTurnTradeGoods(t *testing.T) {
 	// (食物盈餘為負,不計餘糧收入),隔離出貿易品收入單一變數。
 	colonies := []ColonyState{
 		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
-			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, TolerantRace: true, TradeGoods: true},
+			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, TolerantRace: true, TradeGoods: true},
 	}
 	ps := PlayerState{BC: 100, Maintenance: 3, ResearchTopic: gamedata.ResearchTopic(1)}
 	out := RunEmpireTurn(ps, colonies)
@@ -135,7 +135,7 @@ func TestRunEmpireTurnTradeGoods(t *testing.T) {
 func TestRunEmpireTurnIncomeBonusPercent(t *testing.T) {
 	colonies := []ColonyState{
 		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
-			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, TolerantRace: true, IncomeBonusPercent: 150},
+			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, TolerantRace: true, IncomeBonusPercent: 150},
 	}
 	ps := PlayerState{BC: 100, TaxRate: 50, Maintenance: 3, ResearchTopic: gamedata.ResearchTopic(1)}
 	out := RunEmpireTurn(ps, colonies)
@@ -153,9 +153,9 @@ func TestRunEmpireTurnIncomeBonusPercent(t *testing.T) {
 func TestRunEmpireTurnIncomeBonusPercentPerColony(t *testing.T) {
 	colonies := []ColonyState{
 		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
-			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, TolerantRace: true, IncomeBonusPercent: 50}, // 稅收 10→15
+			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, TolerantRace: true, IncomeBonusPercent: 50}, // 稅收 10→15
 		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
-			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, TolerantRace: true}, // 無加成,稅收 10
+			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, TolerantRace: true}, // 無加成,稅收 10
 	}
 	ps := PlayerState{TaxRate: 50, ResearchTopic: gamedata.ResearchTopic(1)}
 	out := RunEmpireTurn(ps, colonies)
@@ -170,7 +170,7 @@ func TestRunEmpireTurnIncomeBonusPercentPerColony(t *testing.T) {
 func TestRunEmpireTurnTradeGoodsFalseSkipsRevenue(t *testing.T) {
 	colonies := []ColonyState{
 		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
-			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, TolerantRace: true}, // TradeGoods 預設 false
+			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, TolerantRace: true}, // TradeGoods 預設 false
 	}
 	ps := PlayerState{BC: 100, Maintenance: 3, ResearchTopic: gamedata.ResearchTopic(1)}
 	out := RunEmpireTurn(ps, colonies)
