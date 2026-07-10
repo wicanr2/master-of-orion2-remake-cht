@@ -27,8 +27,10 @@
   → **兩條戰鬥解算路徑(格子戰術 + 快速艦隊)現都用真 MOO2 戰鬥公式。**
 - **護盾與裝甲已分離(2026-07-10)**:戰鬥時依元件名查表得裝甲 HP(`armorHPByName`)+ 護盾每發減傷
   (`shieldReduceByName`,依護盾階 0/2/4/6/8/10),兩路徑套用,`DamageAfterShield` 護盾機制真正生效。
-- **仍待**:①球狀傷害/飛彈/戰機未接(地面戰已於 §1a/1c 接線完成);②護盾減傷精確 per-class 真值待逆向(現為階梯推導);
-  ③per-ship 攻防/傷害為 remake 由艦艇設計推導(精確值需艦體空間格+元件佔格+軍官技能模型)。
+- **仍待**:①球狀傷害/飛彈/戰機未接(地面戰已於 §1a/1c 接線完成);②護盾減傷精確 per-class 真值待逆向(現為階梯推導,
+  **2026-07-11 提示**:`ship-design-space.md` §1 在手冊 p.121 表格額外挖到 Armor/Struct./Shield 三欄可能就是缺的
+  ArmorHP/StructureHP/shipSize 查表,尚未核實接線,留給本項);③per-ship 攻防/傷害為 remake 由艦艇設計推導
+  (空間格模型已完成,見 §3;精確值仍需軍官技能模型)。
 
 ### 1a. ★ 地面戰:已解算(2026-07-10 更新——推翻本節下方舊「故不做」結論)
 
@@ -39,7 +41,8 @@
 
 ### 1b. 飛彈/球狀傷害:仍需「演算法逆向」(2026-07-10 盤點;地面戰已移出,見 §1a/1c)
 - **飛彈**:gamedata `missile.go` 有 jam/AMR 命中/速度,但飛彈**飛行回合、點防攔截互動**的完整解算同樣超出手冊文字,需逆向。
-- **結論**:飛彈與「球狀傷害/艦艇空間格」同屬**需逆向演算法的新子系統**,不是本輪「接 gamedata 真公式」那種可安全自驅的工作。硬編自製解算=違反不臆造鐵律,故不做;列為需 RE(動態 dump/反編/社群反推)的獨立任務。beam 戰鬥(命中/傷害/過盾/過甲)因手冊有 Classic Chance to Hit + Damage 公式且已轉寫進 gamedata,才能安全接線(已完成);地面戰因使用者 directive 定案沿用一代公式,同樣已安全接線(見 §1a),兩者都**不**屬於本節「仍需 RE」的範圍。
+- **結論**:飛彈同屬**需逆向演算法的新子系統**,不是本輪「接 gamedata 真公式」那種可安全自驅的工作。硬編自製解算=違反不臆造鐵律,故不做;列為需 RE(動態 dump/反編/社群反推)的獨立任務。beam 戰鬥(命中/傷害/過盾/過甲)因手冊有 Classic Chance to Hit + Damage 公式且已轉寫進 gamedata,才能安全接線(已完成);地面戰因使用者 directive 定案沿用一代公式,同樣已安全接線(見 §1a),兩者都**不**屬於本節「仍需 RE」的範圍。
+- **~~艦艇空間格~~ 已移出本節(2026-07-11)**:原本把「艦艇空間格」也歸類成「需逆向演算法」是誤判——真正原因是先前只查過 `original_game/…CD Manual.pdf`(掃描圖,抽字 0 字元)與 `MANUAL_150.html`(1.50 異動摘要,非完整手冊),沒注意到 `moo2_patch1.5/GAME_MANUAL.pdf` 是**可正常抽字的 188 頁完整文字版手冊**,Ship Design 章節(p.119-132)有完整的艦體空間表 + 武器佔格表,不需要任何逆向工程。詳見 `ship-design-space.md`。
 
 ### 1c. ★ 地面戰 shell 層接線:已完成(2026-07-11)
 - `internal/shell/ground_invasion.go`:陸戰隊生成(`advanceMarines`,接 `EndTurn`)→ 載運(`LoadMarines`,運力=艦數×手冊每艘 4 個單位的近似,無獨立運輸艦船體類別,標簡化)→ 入侵解算(`GameSession.InvadeColony`,組雙方 `gamedata.GroundForce` 接 `ResolveGroundBattle`,rng 依回合+星索引種子化可重現)→ 勝則星 Owner 轉移 + 殖民地過戶(AI 端移除)。
@@ -63,7 +66,7 @@
 - 前置:先建「帝國食物池 + 運輸艦 + 工業分配(建造/貿易品/研究)」模型,才不會 piecemeal 出錯。
 
 ### 3. 艦艇設計(空間格)
-- 現況:四下拉(武器/裝甲/護盾/特殊)。原版是艦體空間格 + 每元件佔格 + 改造 mod。gamedata 有元件資料,但「空間格」模型未建。
+- **(2026-07-11)shell/gamedata 層已完成**:`internal/gamedata/shipspace.go` 建了艦體總空間表(`ShipHullSpace`,手冊 p.121 確認值)+ 武器佔格表(`WeaponSpaceByName`,手冊 p.124 確認值);`internal/shell/session.go` 的 `ShipDesignSpaceUsed`/`ShipDesignFits` 接進四下拉模型驗證設計是否超格。細節、估計值標註(特殊系統佔格手冊無數字,5% 估計)、與「裝甲/護盾不佔空間」的手冊澄清見 `ship-design-space.md`。**仍待**:武器改裝(mod)對佔格的影響(手冊已有公式,未接線)、Design Dock 畫面 UI 繪製(不碰 `interactive.go`,歸後續 task)。
 
 ### 4. 其他自編
 - `advancePopulation` 的 `popGrowthThreshold=300` 是 remake 調校值(存檔 pop_growth 未能乾淨反推,已在 session.go 標註 provenance)。
@@ -80,6 +83,6 @@
 2. **產出行星驅動**:`FoodPerFarmer`/`IndustryPerWorker` 現為固定值,改依 climate/gravity/mineral(手冊 yield 表)推導——讓不同行星經濟有別(MOO2 核心手感)。
 3. **貿易財收入接線**:`income.go` 的 2:1 轉換公式已備,接進回合結算(需「工業配置到貿易品」模型 + 建造選單「Trade Goods」選項)。
 4. **地面戰 UI 入侵流程**:模型 + 流程 shell 層已接線完成(§1c,2026-07-11);剩 UI 繪製/操作介面。
-5. **艦艇設計(空間格)**:艦體空間格 + 元件佔格模型(§3);較大,最後。
+5. **艦艇設計(空間格)**:shell/gamedata 層已完成(2026-07-11,見 §3);UI 繪製留後續。
 
 每塊:手冊/openorion2/一代為權威 → 派 subagent 實作 → 主代理核實 diff/測試才 commit。飛彈/球狀傷害(§1b)仍需 RE,獨立處理。

@@ -451,6 +451,57 @@ func pick(opts []Component, i int) Component {
 	return opts[0]
 }
 
+// shipClassFromName 把艦體等級中文名對應到 gamedata.CombatShipClass(供空間驗證查表用)。
+// 未知/不在手冊 6 個 Design 艦級表內的艦體(如「偵察艦」Scout,手冊 Ship Design 章節只列
+// Frigate..Doom Star 六級,Scout 屬另建的支援艦,無獨立空間表)一律以 Frigate 空間近似
+// (最保守、最小的手冊數值),並回傳 ok=false 供呼叫端知道這是近似對應。
+func shipClassFromName(class string) (c gamedata.CombatShipClass, ok bool) {
+	switch class {
+	case "巡防艦", "護衛艦":
+		return gamedata.SHIP_FRIGATE, true
+	case "驅逐艦":
+		return gamedata.SHIP_DESTROYER, true
+	case "巡洋艦":
+		return gamedata.SHIP_CRUISER, true
+	case "戰艦":
+		return gamedata.SHIP_BATTLESHIP, true
+	case "泰坦":
+		return gamedata.SHIP_TITAN, true
+	case "末日之星":
+		return gamedata.SHIP_DOOMSTAR, true
+	}
+	return gamedata.SHIP_FRIGATE, false // 例:偵察艦,近似值,非手冊確認
+}
+
+// ShipDesignSpaceUsed 回傳一組元件選擇(武器/裝甲/護盾/特殊)已用的艦體空間總和。
+//
+// 依 GAME_MANUAL.pdf p.121-122(見 internal/gamedata/shipspace.go 檔頭 [HARD 誠實原則 2]):
+// 裝甲(armor)與護盾(shield)在原版是「Automatics」,自動裝上目前科技最好的一套,不佔用
+// Weapons/Specials 共用的空間預算——因此本函式的 armor/shield 參數目前一律不計入空間(回報 0),
+// 只是為了與既有四下拉呼叫介面(DesignCost/BuildShip)保持一致的簽名,不是遺漏或臆造。
+// 真正佔空間的是武器(gamedata.WeaponSpaceByName,手冊 Size 欄確認值)與特殊系統
+// (gamedata.SpecialSpace,估計值,見該函式註解)。
+func ShipDesignSpaceUsed(class string, weapon, armor, shield, special int) int {
+	_ = armor // 見上方註解:手冊行為上裝甲不佔空間,顯式忽略以避免「未使用參數」誤解成疏漏
+	_ = shield
+	w := pick(WeaponOptions, weapon)
+	sp := pick(SpecialOptions, special)
+	classID, _ := shipClassFromName(class)
+	hullSpace := gamedata.ShipHullSpace(classID)
+	used := gamedata.WeaponSpaceByName[w.Name]
+	used += gamedata.SpecialSpace(hullSpace, sp.Name != "" && sp.Name != "無")
+	return used
+}
+
+// ShipDesignFits 回傳一組元件選擇是否能塞進指定艦體(已用空間 <= 艦體總空間)。
+// 未知艦體等級(shipClassFromName 回傳 ok=false,如偵察艦)以 Frigate 空間近似判定,
+// 保守地拒絕過大的設計;供 UI 判斷是否標記「不可建造」用。
+func ShipDesignFits(class string, weapon, armor, shield, special int) bool {
+	classID, _ := shipClassFromName(class)
+	hullSpace := gamedata.ShipHullSpace(classID)
+	return ShipDesignSpaceUsed(class, weapon, armor, shield, special) <= hullSpace
+}
+
 // DesignCost 回傳一組元件選擇(艦體 + 武器/裝甲/護盾/特殊)的總生產成本。
 func DesignCost(class string, weapon, armor, shield, special int) int {
 	return ShipCost(class) + pick(WeaponOptions, weapon).Cost + pick(ArmorOptions, armor).Cost +

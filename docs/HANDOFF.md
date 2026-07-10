@@ -98,7 +98,7 @@ docker images:`moo2-ebiten`(CGO+X11+xvfb,已存在)、`golang:1.25-bookworm`(純
 - [ ] 殖民地:格子地形 + 每格產出 + 30+ 建築全表 + 污染/食物/貿易真公式(手冊為權威)。
 - [ ] 科技樹:每主題在數科技間**抉擇** + 真 RP 成本表(gamedata 已有 cResearchCosts)。
 - [ ] 戰鬥:真實武器機制(命中/傷害/射程/防禦/飛彈躲避/球狀傷害/地面戰)。
-- [ ] 艦艇設計:艦體空間格 + 每元件佔格 + 改造 mod。
+- [~] 艦艇設計:艦體空間格 + 每元件佔格已完成(2026-07-11,shell/gamedata 層,見 `docs/tech/ship-design-space.md`);改造 mod 佔格與 Design Dock UI 繪製仍待。
 - [ ] 把 session.go 裡自編的近似係數逐一換成手冊/逆向真值,或在 UI/文件明標 remake 近似。
 
 ## 5. 鐵律(接手必守)
