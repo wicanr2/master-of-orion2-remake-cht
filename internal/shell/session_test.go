@@ -12,12 +12,13 @@ func TestGameSessionEndTurn(t *testing.T) {
 	if s.Turn != 2 {
 		t.Errorf("EndTurn 後回合 = %d,預期 2", s.Turn)
 	}
-	// 玩家研究:殖民地1 科學家1*30*士氣1.1=33 + 殖民地2 1*20=20 = 53
-	if s.LastPlayerOutput.TotalResearch != 53 {
-		t.Errorf("玩家總研究 = %d,預期 53", s.LastPlayerOutput.TotalResearch)
+	// 玩家研究:母星(單一殖民地,docs/tech/homeworld-init.md)科學家1*30*士氣1.1=33。
+	// (原本 53 含已移除的假殖民地2 貢獻的 20,母星初始狀態改為忠實單一母星後不再適用。)
+	if s.LastPlayerOutput.TotalResearch != 33 {
+		t.Errorf("玩家總研究 = %d,預期 33", s.LastPlayerOutput.TotalResearch)
 	}
-	if s.Player.ResearchProgress != 53 {
-		t.Errorf("玩家研究進度 = %d,預期 53", s.Player.ResearchProgress)
+	if s.Player.ResearchProgress != 33 {
+		t.Errorf("玩家研究進度 = %d,預期 33", s.Player.ResearchProgress)
 	}
 	// AI 也推進了(研究進度增加)
 	if s.AIPlayers[0].Player.ResearchProgress <= aiBefore {

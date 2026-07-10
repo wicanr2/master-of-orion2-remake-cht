@@ -159,13 +159,20 @@ func (s *GameSession) NextUnlockedComponent(opts []Component, cur int) int {
 	return 0
 }
 
-// demoShips 是示範艦隊(固定;正式版由存檔/建造填)。
-func demoShips() []Ship {
+// homeworldShips 是「Average 起始文明等級」的忠實開局艦隊:1 艘殖民船 + 2 艘偵察艦。
+// 依據 docs/tech/homeworld-init.md §4:
+//   - 手冊 p.13 定性保證「small star fleet, including one Colony Ship」(高信心)。
+//   - 「2 艘起始偵察艦」取自 patch 1.50 changelog「the two starting scouts will have 12
+//     combat speed instead of 10」的間接證據(中信心;changelog 只改速度數值、隱含經典版
+//     數量本就是 2,非正式列表)。
+//   - 除此 3 艘外是否還有 Outpost Ship/護衛艦等其他艦,手冊未列完整清單(§4.3 待確認),
+//     故 remake 目前只給這 3 艘,不臆測補齊。
+// 三艘均為空武裝(殖民船/偵察艦在原版本就不具備武器容量,非本 remake 遺漏)。
+func homeworldShips() []Ship {
 	return []Ship{
-		{"探索號", "偵察艦", "無武裝", "無裝甲", "無護盾", "無", 0, 0},
-		{"復仇號", "護衛艦", "雷射", "鈦裝甲", "無護盾", "無", 2, 10},
-		{"雷霆號", "驅逐艦", "質量投射器", "三鈦裝甲", "第一級護盾", "無", 4, 40},
-		{"守護號", "巡洋艦", "核飛彈", "三鈦裝甲", "第三級護盾", "戰鬥電腦", 9, 60},
+		{"拓荒號", "殖民船", "無武裝", "無裝甲", "無護盾", "無", 0, 0},
+		{"先驅一號", "偵察艦", "無武裝", "無裝甲", "無護盾", "無", 0, 0},
+		{"先驅二號", "偵察艦", "無武裝", "無裝甲", "無護盾", "無", 0, 0},
 	}
 }
 
@@ -174,6 +181,8 @@ func shipStrength(class string) int {
 	switch class {
 	case "偵察艦":
 		return 1
+	case "殖民船":
+		return 1 // 非戰鬥艦(殖民/擴張用途),暫沿用最低戰力占位;remake 尚無獨立非戰鬥艦模型
 	case "巡防艦", "護衛艦":
 		return 2
 	case "驅逐艦":
@@ -521,6 +530,36 @@ type ColonyBuild struct {
 // 多數基礎建築 60、太空港 100、星基 300)。空字串為「不建造」。
 var buildOptions = []ColonyBuild{
 	{"", 0, 0}, {"自動工廠", 0, 60}, {"海軍陸戰隊營", 0, 60}, {"研究實驗室", 0, 60}, {"太空港", 0, 100}, {"星基", 0, 300},
+}
+
+// 起始文明等級的殖民地開局建築數上限(不含 Capitol),依 docs/tech/homeworld-init.md §2.2
+// (MANUAL_150.html「Initial Buildings」段,一手來源):
+// "The number of starting buildings on each colony is capped to 3 for Pre-warp,
+// 5 for Average/Postwarp and 9 for Advanced game starts."
+const (
+	BuildingCapPreWarp  = 3
+	BuildingCapAverage  = 5
+	BuildingCapPostWarp = 5
+	BuildingCapAdvanced = 9
+)
+
+// StartingBuildingCount 依手冊「Initial Buildings」公式算出某殖民地開局建築數(不含 Capitol):
+// min(⅔ pop 無條件進位, 該起始等級上限)。手冊原文驗證範例(docs/tech/homeworld-init.md §3.5):
+// 「a HW with 8 pop can have 6 buildings on Advanced Tech start, but only 5 on Average start
+// due to the cap」——即 StartingBuildingCount(8, BuildingCapAdvanced)==6、
+// StartingBuildingCount(8, BuildingCapAverage)==5,已寫進本套件單元測試。
+// 注意:此函式只回傳「上限」,實際會生成哪些建築仍取決於 initial_buildings 優先清單與
+// 已知科技(§3.3:Pre-warp/Average 僅 Marine Barracks + Star Base 兩項符合條件,即使
+// 上限允許更多)。
+func StartingBuildingCount(pop, cap int) int {
+	if pop < 0 {
+		pop = 0
+	}
+	n := (pop*2 + 2) / 3 // ⅔ pop 無條件進位
+	if n > cap {
+		return cap
+	}
+	return n
 }
 
 // CycleColonyBuild 循環切換某殖民地的建造項目(進度歸零)。
@@ -1159,36 +1198,84 @@ func (s *GameSession) advanceResearch() {
 	}
 }
 
-// NewDemoSession 建一個最小可玩對局:玩家 2 殖民地 + 1 個科學傾向 AI 對手。
-// 供「最小可玩迴圈」骨架用;正式新遊戲流程(選種族/星系生成)為後續工作。
-func NewDemoSession() *GameSession {
-	mkColonies := func() []engine.ColonyState {
-		return []engine.ColonyState{
-			{Population: 8, PopMax: 20, Farmers: 3, Workers: 4, Scientists: 1,
-				FoodPerFarmer: 4, IndustryPerWorker: 6, ResearchPerScientist: 30,
-				PlanetSize: 3 /*LARGE*/, MoralePercent: 10},
-			{Population: 4, PopMax: 12, Farmers: 2, Workers: 1, Scientists: 1,
-				FoodPerFarmer: 4, IndustryPerWorker: 5, ResearchPerScientist: 20,
-				PlanetSize: 1 /*SMALL*/},
-		}
+// averageHomeworldColony 建一個「Average 起始文明等級」的忠實母星殖民地,依
+// docs/tech/homeworld-init.md:單一母星(§1)、PlanetSize=Large(母星通常為大型)、
+// PopMax=20 對齊 gamedata `pop_max` 表(Large 星球容量,§8 交叉驗證高信心)。
+//
+// ⚠ Population=8、Farmers/Workers/Scientists 分配:手冊全文搜尋「starting population」
+// 零命中(§2.1),此為手冊 §3.5 建築數公式 worked example 用的同一 pop 值(8),沿用作合理
+// 預設,人口分配比例（§2.3 手冊亦未給）延續既有 remake 預設,兩者皆待 DOSBox 原版存檔確認。
+func averageHomeworldColony() engine.ColonyState {
+	return engine.ColonyState{
+		Population: 8, PopMax: 20, Farmers: 3, Workers: 4, Scientists: 1,
+		FoodPerFarmer: 4, IndustryPerWorker: 6, ResearchPerScientist: 30,
+		PlanetSize: gamedata.LARGE_PLANET, MoralePercent: 10,
 	}
+}
+
+// newHomeworldPlayerState 建立「Average 起始文明等級」的忠實起始 PlayerState:標記兩項
+// 恆真起始科技已完成,依 docs/tech/homeworld-init.md §3.1/§5.1(MANUAL_150.html 一手來源,
+// 與 openorion2 tech.cpp:170/212 交叉驗證,高信心):
+//   - Tech field 0(TOPIC_STARTING_TECH):Capitol/Spy Network/Pulse Rifle 一律已知
+//     (cost 0、無子項清單,ResearchTopic 層級本身即效果)。
+//   - Tech field Engineering(TOPIC_ENGINEERING):Colony Base/Star Base/Marine Barracks
+//     一律已知(ResearchAll=true)。ChosenTech 記入 Choices[0](TECH_COLONY_BASE)代表「全解」,
+//     語意與 engine.recordCompletion 對 ResearchAll 主題的既有記錄慣例一致。
+//
+// BC 國庫沿用既有 remake 預設值 100——手冊未給開局 BC 數字(§6.1),待確認。
+func newHomeworldPlayerState(researchTopic gamedata.ResearchTopic) engine.PlayerState {
+	return engine.PlayerState{
+		BC: 100, TaxRate: 40, Maintenance: 5, ResearchTopic: researchTopic,
+		CompletedTopics: map[gamedata.ResearchTopic]bool{
+			gamedata.TOPIC_STARTING_TECH: true,
+			gamedata.TOPIC_ENGINEERING:   true,
+		},
+		ChosenTech: map[gamedata.ResearchTopic]gamedata.Technology{
+			gamedata.TOPIC_ENGINEERING: gamedata.TECH_COLONY_BASE, // ResearchAll 代表值(全解語意)
+		},
+	}
+}
+
+// homeworldBuildings 是 Average 起始文明等級母星「已建成」的常駐建築標記,依
+// docs/tech/homeworld-init.md §3.2/§3.3(MANUAL_150.html 一手來源,高信心):
+//   - Marine Barracks + Star Base:唯二出現在預設 initial_buildings 清單且技術已知的項目
+//     ("Pre-warp and Average Tech games only start with Marine Barracks and a Star Base")。
+//   - Colony Base 刻意不列入:它是一次性殖民行動,非常駐建築(§3.3)。
+//   - Capitol 刻意不列入此 map:Capitol 不佔用建築格位、不計入 StartingBuildingCount 上限
+//     (§3.2),且非玩家可建/可失去的一般建築,本專案的 ColonyBuildings 追蹤機制不收錄它,
+//     視為首都固有(隱性)狀態。
+//
+// 建築數 2 遠低於 StartingBuildingCount(8, BuildingCapAverage)=5 的上限——這是符合手冊的
+// (上限只是「至多」,實際只有這兩項的科技條件成立,見 §3.3)。
+func homeworldBuildings() map[string]bool {
+	return map[string]bool{
+		"海軍陸戰隊營": true, // Marine Barracks
+		"星基":     true, // Star Base
+	}
+}
+
+// NewDemoSession 建一個最小可玩對局:玩家 + 1 個科學傾向 AI 對手,雙方各持 Average 起始
+// 文明等級的忠實單一母星(docs/tech/homeworld-init.md,取代先前程序生成的 2 假殖民地)。
+// 供「最小可玩迴圈」骨架用;正式新遊戲流程(選種族/星系生成/起始文明等級選擇)為後續工作。
+func NewDemoSession() *GameSession {
 	galaxy := genGalaxy(24, 42) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
 	galaxy[0].Explored = true   // 母星初始已探索
 	return &GameSession{
-		Turn:           1,
-		Player:         engine.PlayerState{BC: 100, TaxRate: 40, Maintenance: 5, ResearchTopic: gamedata.TOPIC_ADVANCED_CONSTRUCTION},
-		PlayerColonies: mkColonies(),
+		Turn:            1,
+		Player:          newHomeworldPlayerState(gamedata.TOPIC_ADVANCED_CONSTRUCTION),
+		PlayerColonies:  []engine.ColonyState{averageHomeworldColony()},
+		ColonyBuildings: []map[string]bool{homeworldBuildings()},
 		AIPlayers: []AIOpponent{{
 			Name:     "AI (賽隆人)",
-			Player:   engine.PlayerState{BC: 100, TaxRate: 40, Maintenance: 5, ResearchTopic: 1},
-			Colonies: mkColonies(),
+			Player:   newHomeworldPlayerState(1),
+			Colonies: []engine.ColonyState{averageHomeworldColony()}, // 對稱:AI 同樣忠實單一母星
 			Decider:  ai.NewRemakeDecider(ai.ProfileScientific),
 		}},
 		Stars:         galaxy,
 		Planets:       genPlanets(galaxy),
 		Leaders:       demoLeaders(),
-		Ships:         demoShips(),
-		Builds:        make([]ColonyBuild, 2),
+		Ships:         homeworldShips(),
+		Builds:        make([]ColonyBuild, 1),
 		SelectedStar:  -1,
 		FleetAtStar:   0,  // 母星
 		FleetDestStar: -1, // 無航行任務
