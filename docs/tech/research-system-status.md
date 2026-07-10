@@ -23,7 +23,14 @@
    - `engine.ApplyResearchChoice(ps, tech)` 驗證合法選項後改選、清待決。
    - shell:`PendingResearchChoice()` / `ChooseResearchTech(tech)` / `ChosenTechFor(topic)`。
    - 測試:`internal/engine/research_choice_test.go`、`internal/shell/research_choice_test.go`(多選預設+改選+非法拒絕+ResearchAll 不待決)。
-2. ⏳ **解鎖 gating 改科技層級**(未做):`ComponentUnlocked` 目前仍按 `CompletedTopics[topic]`(主題層級=完成即解該主題全部 remake 元件)。要真忠實需把 remake 元件對應到具體 `Technology` 並改查 `ChosenTech`。需先建 **Component↔Technology 映射**。
+2. ⏳ **解鎖 gating 改科技層級**(未做,前置是資料校正)。深入盤點(2026-07-10)發現**真正的阻礙**:
+   remake 元件目前掛的 `Tech`(ResearchTopic)**大多與真科技樹的選項對不上**,無法乾淨映射到具體 Technology:
+   - ✅ 對得上:質量投射器→`TECH_MASS_DRIVER`(在 ADVANCED_MAGNETISM 選項內)、麥克萊特飛彈→`TECH_MERCULITE_MISSILE`(在 ADVANCED_CHEMISTRY 內)。
+   - ❌ 對不上:中子爆破槍掛 ADVANCED_CHEMISTRY,但該主題真選項是 {麥克萊特飛彈, 污染處理器},**無中子爆破槍**;核融合光束掛 ADVANCED_FUSION,真選項是 {增壓引擎, 核融合彈, 核融合引擎},**無光束**;高斯砲/相位砲/電漿砲同類對不上。
+   → **前置工作(下輪)**:先把每個 remake 武器/裝甲/護盾元件**重新對應到它真正的 Technology + 正確主題**(對照 tech.tsv/techtree.go 真資料;可派子代理逐一核),校正 `Component.Tech`。校正後再:
+     - `Component` 加 `UnlockTech Technology`;`PlayerState` 加 `ExplicitChoice map[topic]bool`(`ApplyResearchChoice` 設 true)。
+     - `ComponentUnlocked`:未映射→維持主題層級(非破壞);已映射且該主題有明確抉擇→僅 `ChosenTech[topic]==UnlockTech` 解鎖;完成但未明確抉擇→主題層級後備(非破壞,AI/預設不回歸)。
+   這樣抉擇才會真正反映到艦艇設計可用元件。**未先做資料校正就上機制=只作用於 2 個元件的 theater,故不硬做。**
 3. ✅ **抉擇 UI 完成**(2026-07-10,可玩、headless 渲染驗證):
    - `gamedata/technames.go`:`Technology → 英文名`(203 條,對 tech.tsv 驗證;8 個 HYPER 填充項無名)。
    - `cmd/moo2/researchchoice.go`:回合結束若 `PendingResearchChoice` 非空 → 抉擇畫面(RACEOPT 框 + 真科技選項,經 TECHNAME/tech.tsv 中文化);點選 → `ChooseResearchTech` → 回合摘要。
