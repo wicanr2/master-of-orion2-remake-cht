@@ -34,7 +34,7 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		out.TotalNetIndustry += co.NetIndustry
 		out.TotalResearch += co.Research
 		// 稅收:對各殖民地淨工業依帝國稅率抽稅(gamedata.IncomeTaxRevenue,1:1 換 BC)。
-		out.TaxRevenue += gamedata.IncomeTaxRevenue(co.NetIndustry, ps.TaxRate)
+		tax := gamedata.IncomeTaxRevenue(co.NetIndustry, ps.TaxRate)
 		// 餘糧收入(GAME_MANUAL.pdf p.25,見 gamedata/income.go IncomeFoodSurplusRevenue
 		// provenance):把「賣不完的食物」換成 BC,每單位 0.5 BC(無條件捨去)。只對正盈餘
 		// (co.FoodSurplus>0)計入——手冊只描述「出售剩餘糧食」這個收入來源,饑荒(負盈餘)
@@ -43,8 +43,9 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		// 夾在正盈餘才呼叫,避免雙重懲罰)。fantasticTrader 固定傳 false:本專案的 ColonyState
 		// 目前沒有追蹤「Fantastic Trader」這個種族特質的欄位(無可推導模型),TODO 待種族特質
 		// 系統補上後再接。
+		foodRev := 0
 		if co.FoodSurplus > 0 {
-			out.FoodSurplusRevenue += gamedata.IncomeFoodSurplusRevenue(co.FoodSurplus, false)
+			foodRev = gamedata.IncomeFoodSurplusRevenue(co.FoodSurplus, false)
 		}
 		// 貿易品(Trade Goods)收入:貿易品是「建造佇列選項」(與 Housing 同類,見
 		// engine.ColonyState.Housing 的先例),不是獨立的產能分配職務——手冊(GAME_MANUAL.pdf
@@ -54,9 +55,23 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		// 兩處合力達成手冊行為,engine 層只負責換算收入。fantasticTrader 固定傳 false:同上
 		// FoodSurplusRevenue 呼叫的理由,ColonyState 目前無「Fantastic Trader」種族特質欄位,
 		// TODO 待種族特質系統補上後再接。
+		tradeRev := 0
 		if cs.TradeGoods {
-			out.TradeGoodsRevenue += gamedata.TradeGoodsIncome(co.NetIndustry, false)
+			tradeRev = gamedata.TradeGoodsIncome(co.NetIndustry, false)
 		}
+		// IncomeBonusPercent(太空港 p.79 +50、行星證券交易所 p.93 +100,可疊加):手冊原文是
+		// 「該殖民地所有來源 BC 收入 +N%」——這裡在「逐殖民地」這層迴圈內,對這個殖民地當回合
+		// 的稅收+餘糧收入+貿易品收入小計套用加成,再併入帝國總額,精確對應手冊「該殖民地」的
+		// 範圍(不是先加總帝國全部收入再打折的近似做法)。不含維護費(手冊只講收入加成,沒講
+		// 維護費打折)。
+		if cs.IncomeBonusPercent != 0 {
+			subtotal := tax + foodRev + tradeRev
+			bonus := subtotal * cs.IncomeBonusPercent / 100
+			tax += bonus // 加成金額計入稅收分項,不拆分到三個子項(避免無意義的捨入分配)
+		}
+		out.TaxRevenue += tax
+		out.FoodSurplusRevenue += foodRev
+		out.TradeGoodsRevenue += tradeRev
 	}
 	out.Player, out.ResearchDone = RunResearchPhase(ps, out.TotalResearch)
 	// 國庫結算:稅收 + 餘糧收入 + 貿易品收入 - 維護費。

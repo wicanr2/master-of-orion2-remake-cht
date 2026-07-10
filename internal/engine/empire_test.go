@@ -128,6 +128,43 @@ func TestRunEmpireTurnTradeGoods(t *testing.T) {
 	}
 }
 
+// TestRunEmpireTurnIncomeBonusPercent 驗證 IncomeBonusPercent(太空港 p.79 +50%、行星證券
+// 交易所 p.93 +100%,可疊加)精確套用在「該殖民地」當回合的收入小計上,而非帝國整體近似:
+// Tolerant 種族免污染清理,淨工業=毛工業=20(Workers 2*10),稅率 50% → 稅收基數 10;
+// IncomeBonusPercent=150(太空港50+證券100)→ 稅收 = 10*250/100 = 25。
+func TestRunEmpireTurnIncomeBonusPercent(t *testing.T) {
+	colonies := []ColonyState{
+		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
+			PlanetSize: gamedata.TINY_PLANET, TolerantRace: true, IncomeBonusPercent: 150},
+	}
+	ps := PlayerState{BC: 100, TaxRate: 50, Maintenance: 3, ResearchTopic: gamedata.ResearchTopic(1)}
+	out := RunEmpireTurn(ps, colonies)
+
+	if out.TaxRevenue != 25 {
+		t.Errorf("加成後稅收 = %d,預期 25(基數10 ×250%%)", out.TaxRevenue)
+	}
+	if out.NetBC != 22 { // 25 - 3 維護
+		t.Errorf("淨 BC = %d,預期 22", out.NetBC)
+	}
+}
+
+// TestRunEmpireTurnIncomeBonusPercentPerColony 驗證 IncomeBonusPercent 只影響「有該旗標」
+// 的殖民地,不會誤把加成套到帝國內其他殖民地的收入上(逐殖民地套用,非先加總帝國收入再打折)。
+func TestRunEmpireTurnIncomeBonusPercentPerColony(t *testing.T) {
+	colonies := []ColonyState{
+		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
+			PlanetSize: gamedata.TINY_PLANET, TolerantRace: true, IncomeBonusPercent: 50}, // 稅收 10→15
+		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
+			PlanetSize: gamedata.TINY_PLANET, TolerantRace: true}, // 無加成,稅收 10
+	}
+	ps := PlayerState{TaxRate: 50, ResearchTopic: gamedata.ResearchTopic(1)}
+	out := RunEmpireTurn(ps, colonies)
+
+	if out.TaxRevenue != 25 { // 15 + 10
+		t.Errorf("兩殖民地合計稅收 = %d,預期 25(僅第一個殖民地吃到 +50%%)", out.TaxRevenue)
+	}
+}
+
 // TestRunEmpireTurnTradeGoodsFalseSkipsRevenue 驗證非貿易品殖民地(cs.TradeGoods 預設 false)
 // 不計入 TradeGoodsRevenue——確保旗標關閉時行為與加欄位前一致,不會誤觸發轉換。
 func TestRunEmpireTurnTradeGoodsFalseSkipsRevenue(t *testing.T) {

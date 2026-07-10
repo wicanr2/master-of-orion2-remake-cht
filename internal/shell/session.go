@@ -665,56 +665,89 @@ func (s *GameSession) CycleColonyBuild(idx int) {
 
 // applyBuildingEffect 對殖民地 i 套用某已完工建築的長期產出效果(每殖民地每種建築只套一次)。
 //
-// 既有 5 棟(不可壞,對齊既有測試/remake 調校值):
-// 自動工廠→工業/工人 +2、研究實驗室→研究/科學家 +5、太空港→工業/工人 +1。
-// 海軍陸戰隊營/星基屬防禦設施,現階段無直接產出建模(仍記錄為已建)。
+// 2026-07-11 忠實化訂正(詳見 docs/tech/colony-buildings.md 逐項頁碼):舊版把手冊「殖民地整體
+// 固定加成」的建築(自動化工廠/機器人採礦廠/深層核心礦場/研究實驗室/行星超級電腦/銀河網路
+// 中心/水耕農場/地底農場)近似揉進「每工人/科學家/農夫」per-worker 欄位裡湊數——這會讓小殖民地
+// 過度受益、大殖民地受益不足。現在 engine.ColonyState 補上 FlatFood/FlatIndustry/FlatResearch/
+// IncomeBonusPercent/PopMax(直接疊加)/FlatGrowth/NormalizeGravity,per-worker 與固定值分開
+// 累加,per-worker 數字也一併訂正回手冊原值(不再為了湊固定效果而虛增)。
 //
-// 新增建築:手冊有明確「每單位人口 +N 產出」且對應到 engine.ColonyState 既有欄位
-// (IndustryPerWorker/ResearchPerScientist/FoodPerFarmer 每工人-單位產出率;或
-// PollutionProcessor/AtmosphericRenewer/CoreWasteDump 既有污染布林旗標)者才建模;
-// 其餘(殖民地整體「+N 固定值」、「收入 +N%」、「士氣 +N%」等)因 engine.ColonyState
-// 目前無對應欄位,暫不建模,只記錄為已建——TODO:待 engine 補上殖民地固定加成/百分比
-// 欄位後回填(不在本次任務範圍,詳見 docs/tech/colony-buildings.md)。
+// 太空港(手冊:該殖民地所有來源 BC 收入 +50%)舊版誤植為「工業/工人 +1」,現改用
+// IncomeBonusPercent,不再動 IndustryPerWorker。
+//
+// 氣候控制器(每農業人口食物產出 +2)本來就對應到 FoodPerFarmer 這個既有欄位、且數值正確,
+// 維持不動。
 func (s *GameSession) applyBuildingEffect(i int, name string) {
 	if i < 0 || i >= len(s.PlayerColonies) {
 		return
 	}
 	c := &s.PlayerColonies[i]
 	switch name {
-	case "自動工廠": // Automated Factories(既有,不可壞)
-		c.IndustryPerWorker += 2
-	case "研究實驗室": // Research Laboratory(既有,不可壞;手冊另有 +5 固定研究點,engine 無固定欄位,TODO)
-		c.ResearchPerScientist += 5
-	case "太空港": // Spaceport(既有,不可壞;手冊實為「BC 收入 +50%」,engine 無收入百分比欄位,以工業近似)
+	case "自動工廠": // Automated Factories p.78:每工業人口 +1 產能 + 殖民地整體固定 +5 產能。
+		// 舊版 IndustryPerWorker+=2 是「per-worker 值虛增以湊固定效果」的近似,訂正回手冊 +1。
 		c.IndustryPerWorker += 1
-	case "機器人採礦廠": // Robo Mining Plant:每工業人口 +2 產能(手冊另有 +10 固定值,TODO)
+		c.FlatIndustry += 5
+	case "研究實驗室": // Research Laboratory p.94:每科學家 +1 研究點 + 殖民地整體固定 +5 研究點。
+		// 舊版 ResearchPerScientist+=5 把「固定 5 點」錯當成「每科學家 5 點」,訂正為 +1/科學家。
+		c.ResearchPerScientist += 1
+		c.FlatResearch += 5
+	case "太空港": // Spaceport p.79:該殖民地所有來源 BC 收入 +50%(手冊原文,不是工業加成)。
+		c.IncomeBonusPercent += 50
+	case "機器人採礦廠": // Robo Mining Plant p.80:每工業人口 +2 產能(既有值與手冊相符,不動) + 固定 +10 產能。
 		c.IndustryPerWorker += 2
-	case "深層核心礦場": // Deep Core Mine:每工人 +3 產能(手冊另有 +15 固定值,TODO)
+		c.FlatIndustry += 10
+	case "深層核心礦場": // Deep Core Mine p.82:每工人 +3 產能(既有值與手冊相符,不動) + 固定 +15 產能。
 		c.IndustryPerWorker += 3
+		c.FlatIndustry += 15
 	case "污染處理器": // Pollution Processor:對應 engine.ColonyState.PollutionProcessor 既有旗標
 		c.PollutionProcessor = true
 	case "大氣更新器": // Atmospheric Renewer:對應 engine.ColonyState.AtmosphericRenewer 既有旗標
 		c.AtmosphericRenewer = true
 	case "核心廢料場": // Core Waste Dumps:完全消除污染,對應 engine.ColonyState.CoreWasteDump 既有旗標
 		c.CoreWasteDump = true
-	case "行星超級電腦": // Planetary Supercomputer:每科學家 +2 研究點(手冊另有 +10 固定值,TODO)
+	case "行星超級電腦": // Planetary Supercomputer p.95:每科學家 +2 研究點(既有值相符,不動) + 固定 +10 研究點。
 		c.ResearchPerScientist += 2
-	case "銀河網路中心": // Galactic Cybernet:每科學家 +3 研究點(手冊另有 +15 固定值,TODO)
+		c.FlatResearch += 10
+	case "銀河網路中心": // Galactic Cybernet p.98:每科學家 +3 研究點(既有值相符,不動) + 固定 +15 研究點。
 		c.ResearchPerScientist += 3
-	case "水耕農場": // Hydroponic Farm:手冊為殖民地整體 +2 固定食物,engine 無固定欄位,以每農夫 +1 近似
+		c.FlatResearch += 15
+	case "水耕農場": // Hydroponic Farm p.99:殖民地食物整體固定 +2(手冊只有固定值,無 per-farmer 敘述)。
+		// 舊版誤建模成 FoodPerFarmer+=1(每農夫 +1),訂正為純固定值、不再動 FoodPerFarmer。
+		c.FlatFood += 2
+	case "地底農場": // Subterranean Farms p.100:星球食物整體固定 +4(手冊只有固定值,無 per-farmer 敘述)。
+		// 舊版誤建模成 FoodPerFarmer+=2,訂正為純固定值、不再動 FoodPerFarmer。
+		c.FlatFood += 4
+	case "氣候控制器": // Weather Controller p.100:每農業人口食物產出 +2(既有值正確,勿動)。
+		c.FoodPerFarmer += 2
+	case "行星證券交易所": // Planetary Stock Exchange p.93:該殖民地收入 +100%,與太空港同款累加。
+		c.IncomeBonusPercent += 100
+	case "太空大學": // Astro University p.93:每受教育人口(農/工/科)額外 +1 對應產出,per-worker 直接建模。
 		c.FoodPerFarmer += 1
-	case "地底農場": // Subterranean Farms:手冊為殖民地整體 +4 固定食物,engine 無固定欄位,以每農夫 +2 近似
-		c.FoodPerFarmer += 2
-	case "氣候控制器": // Weather Controller:每農業人口食物產出 +2(手冊數值,對應欄位存在,直接建模)
-		c.FoodPerFarmer += 2
-		// 其餘 25 項(飛彈基地、裝甲營房、戰機基地、地面砲台、再生反應爐、機器人工廠、
-		// 食物複製機、太空學院、異族管理中心、行星證券交易所、太空大學、全息模擬艙、
-		// 自動實驗室、歡樂穹頂、生態圈、複製中心、行星重力產生器、行星輻射/通量/屏障護盾、
-		// 曲速力場干擾器、戰鬥站、星辰要塞、阿提米絲系統網、次元傳送門)手冊效果不對應
-		// engine.ColonyState 既有欄位(陸戰隊生成/艦艇駐防/百分比收入/百分比士氣/人口上限/
-		// 軌道防禦等),暫不建模——僅由 advanceBuilds 記入 s.ColonyBuildings 為「已建」,
-		// 顯示於畫面,不影響數值結算。TODO:待對應遊戲系統(陸戰隊/艦隊駐防/士氣/國庫/
-		// 人口上限)建好後回頭補建模。
+		c.IndustryPerWorker += 1
+		c.ResearchPerScientist += 1
+	case "生態圈": // Biospheres p.99:星球人口上限 +2 單位,直接疊加到 PopMax(見該欄位註解:
+		// 不另立 PopMaxBonus 影子欄位,PopMax 本身就是成長/人口上限的唯一讀取點)。
+		c.PopMax += 2
+	case "複製中心": // Cloning Center p.99:人口成長 +0.1 單位/回合,直到達人口上限為止。
+		// popGrowthThreshold(=300)這個 remake 尺度代表 1 人口單位,故 0.1 單位換算成
+		// 這個尺度的 1/10;colonyGrowth 已依 Population<PopMax 判斷是否還要套用固定成長。
+		c.FlatGrowth += popGrowthThreshold / 10
+	case "行星重力產生器": // Planetary Gravity Generator p.104:重力正常化,消除 Low-G/Heavy-G 負面效果。
+		// 誠實聲明:engine 目前完全沒有重力懲罰的套用路徑(見 engine.ColonyState.
+		// NormalizeGravity 欄位註解——GravityPenaltyPercent/GravityAdjustedProduction 已移植
+		// 但零呼叫端),此旗標暫時只記錄「已建」,不影響任何數值。TODO:待重力懲罰系統本身
+		// 接進生產管線後,再讓這個旗標生效。
+		c.NormalizeGravity = true
+	case "機器人工廠": // Robotic Factory p.82:依礦產豐度固定加成(Ultra Poor+5/Poor+8/Abundant+10/
+		// Rich+15/Ultra Rich+20)。TODO:engine.ColonyState 目前不追蹤逐殖民地的礦產豐度分級
+		// (只在建立殖民地當下把豐度烘進 IndustryPerWorker 靜態費率,事後拿不回原始豐度分類),
+		// 故無法忠實建模,暫不套用任何固定值,僅記錄為已建——待補礦產豐度欄位後回填。
+		// 其餘 24 項(飛彈基地、裝甲營房、戰機基地、地面砲台、再生反應爐、食物複製機、太空學院、
+		// 異族管理中心、全息模擬艙、自動實驗室、歡樂穹頂、行星輻射/通量/屏障護盾、曲速力場
+		// 干擾器、戰鬥站、星辰要塞、阿提米絲系統網、次元傳送門)手冊效果不對應 engine.ColonyState
+		// 既有欄位(陸戰隊生成/艦艇駐防/百分比士氣/軌道防禦等系統尚未建),暫不建模——僅由
+		// advanceBuilds 記入 s.ColonyBuildings 為「已建」,顯示於畫面,不影響數值結算。
+		// TODO:待對應遊戲系統(陸戰隊/艦隊駐防/士氣/軌道防禦)建好後回頭補建模。
 	}
 }
 

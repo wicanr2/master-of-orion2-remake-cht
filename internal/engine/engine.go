@@ -14,7 +14,12 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 // ColonyState 是回合引擎操作的乾淨殖民地狀態(人口與產出以「單位」計)。
 type ColonyState struct {
 	Population int // 該殖民地目前總人口
-	PopMax     int // 人口上限(gamedata.MaxPopulation=42 為硬上限)
+	// PopMax 人口上限(gamedata.MaxPopulation=42 為硬上限)。生態圈(Biospheres p.99,「星球
+	// 人口上限 +2 單位」)直接對這個欄位 += 2(shell.applyBuildingEffect),不另立
+	// PopMaxBonus 影子欄位——PopMax 本身就是 colonyGrowth/shell.advancePopulation 直接讀取
+	// 的成長上限,沒有其他公式需要區分「原始值」與「加成後的值」,疊加一個影子欄位只會多一個
+	// 「兩處都要記得加總」的錯誤來源,不划算。
+	PopMax     int
 	Farmers    int // 分配為農夫的人口數
 	Workers    int // 分配為工人的人口數
 	Scientists int // 分配為科學家的人口數
@@ -45,18 +50,59 @@ type ColonyState struct {
 	// MoralePercent 是淨士氣對產出的百分點調整(每格笑臉 +10、哭臉 -10;正負皆可)。
 	// 依手冊套用於食物/工業/研究(見 gamedata.MoraleProductionOutput)。
 	MoralePercent int
+
+	// --- 殖民地整體「固定加成」欄位(與人數無關,對照 docs/tech/colony-buildings.md 逐項頁碼) ---
+	//
+	// 這組欄位修正舊版建模誤差:手冊裡明寫「殖民地整體固定 +N」的建築(自動化工廠 p.78、
+	// 機器人採礦廠 p.80、深層核心礦場 p.82、研究實驗室 p.94、行星超級電腦 p.95、銀河網路
+	// 中心 p.98、水耕農場 p.99、地底農場 p.100),因 engine 舊版沒有固定加成欄位,曾被近似
+	// 揉進「每工人/科學家/農夫」的 per-worker 欄位(FoodPerFarmer/IndustryPerWorker/
+	// ResearchPerScientist)裡湊數——這會讓小殖民地(人少)吃到過高倍率、大殖民地(人多)吃到
+	// 過低倍率,兩頭都偏離原版。加了這組獨立欄位後,per-worker 與固定值分開累加,不再互相污染。
+	FlatFood     int // 殖民地食物整體固定加成(水耕農場 p.99 +2、地底農場 p.100 +4)
+	FlatIndustry int // 殖民地工業整體固定加成(自動化工廠 p.78 +5、機器人採礦廠 p.80 +10、深層核心礦場 p.82 +15)
+	FlatResearch int // 殖民地研究整體固定加成(研究實驗室 p.94 +5、行星超級電腦 p.95 +10、銀河網路中心 p.98 +15)
+
+	// FlatGrowth 是複製中心(p.99)「人口成長 +0.1 單位/回合,直到達星球人口上限為止」的固定
+	// 成長點數。本 remake 的成長累加尺度(shell.popGrowthThreshold=300 代表 1 人口單位)本身
+	// 是調校值、非官方 1 人口=100,000 的精確换算(見 session.go popGrowthThreshold 註記),故
+	// 0.1 官方人口單位無法精確转成這個尺度的點數——呼叫端(shell.applyBuildingEffect)以
+	// 「popGrowthThreshold 的 1/10」設定本欄位,維持與既有成長門檻同一把尺,但仍是近似值,
+	// 非官方精確數字。
+	FlatGrowth int
+
+	// IncomeBonusPercent 是該殖民地「所有來源 BC 收入」加成百分比,可累加(太空港 p.79 +50、
+	// 行星證券交易所 p.93 +100 → 兩者皆建則 +150)。套用點在 RunEmpireTurn(逐殖民地迴圈內,
+	// 對「這個殖民地」當回合稅收+餘糧收入+貿易品收入的小計乘上 (100+bonus)/100,再併入帝國
+	// 總額)——可精確做到手冊原文「該殖民地」的範圍,不是帝國整體近似。不含維護費(手冊只講
+	// 收入加成,未講維護費打折)。
+	IncomeBonusPercent int
+
+	// NormalizeGravity 對應行星重力產生器(p.104,手冊:「將星球重力正常化至 Normal-G,消除
+	// Low-G/Heavy-G 負面效果」)。
+	//
+	// 誠實聲明:本引擎目前**完全沒有重力懲罰的套用路徑**——gamedata.GravityPenaltyPercent/
+	// GravityAdjustedProduction 兩個函式已依手冊 p.58 移植且有單元測試,但通盤搜尋
+	// internal/engine、internal/shell 後確認**零呼叫端**在套用它們(colony.go 的
+	// FoodPerFarmer/IndustryPerWorker/ResearchPerScientist 是存檔/建立殖民地時就算好的靜態
+	// 費率,目前沒有任何地方讀取殖民地的重力等級去打折)。這代表重力懲罰本身尚未接進生產管線,
+	// 是比「單一建築固定加成」更大的既有缺口(需要先幫 ColonyState 補上 PlanetGravity/種族
+	// 重力天賦兩個欄位,再串進 RunColonyTurn)。此欄位先建起來(供 applyBuildingEffect 記錄
+	// 「此殖民地已建成該建築」),但**目前不影響任何數值計算**——TODO:待重力懲罰系統本身建好
+	// 後,再讓這個旗標把 GravityPenaltyPercent 歸零。
+	NormalizeGravity bool
 }
 
 // PlayerState 是回合引擎操作的乾淨玩家(帝國)狀態。
 type PlayerState struct {
-	BC               int                    // 國庫(Billion Credits)
-	TaxRate          int                    // 稅率(百分比)
+	BC      int // 國庫(Billion Credits)
+	TaxRate int // 稅率(百分比)
 	// Maintenance 每回合總維護費,BC 結算時扣除。目前呼叫端(shell.GameSession.EndTurn)只
 	// 依實際已建成建築(gamedata.BuiltMaintenanceBC)加總計入;艦隊/間諜/軍官維護費本專案尚無
 	// 可推導的模型(未追蹤運輸艦數量等),未計入——TODO 待補,見 session.go
 	// totalBuildingMaintenance/newHomeworldPlayerState 的同款註記。此欄位本身仍是純粹輸入,
 	// 引擎層不關心維護費怎麼算出來。
-	Maintenance int
+	Maintenance      int
 	ResearchTopic    gamedata.ResearchTopic // 目前研究中的主題
 	ResearchProgress int                    // 目前主題已累積的研究點(RP)
 	// CompletedTopics 記錄已完成的研究主題(避免重複)。
