@@ -58,7 +58,7 @@ Alkari · Bulrathi · Darloks · Elerians · Gnolams · Humans · Klackons · Me
 
 ## 六、還原計畫(分步,逐畫面對原版對齊)
 
-1. **獨立種族選擇畫面**(task 7):以 RACESEL 組畫面——14 名稱按鈕(1–14)+ hover 顯示對應肖像(15–28)+ 描述板(30)+ Accept/Custom。逐畫面截圖對原版量測熱區。
+1. ✅ **獨立種族選擇畫面**(task 7,2026-07-10 完成合成版):`cmd/moo2/raceselect.go`——RACEOPT#0 螢幕框 + 14 族中文名清單 + 選定顯示真肖像(RACESEL 15–28,字母序,15=Alkari/20=Humans 讀圖確認)+ 描述 + 取消/接受。設定畫面 Accept 改導向此畫面。**已 headless 渲染確認名稱↔肖像正確**。⚠ 版面為合成近似,**尚未對原版截圖像素對齊**(待取得原版 Race Selection 截圖後校正,接優先3)。用 RACESEL 自身的名稱按鈕圖(1–14)取代文字、描述板(30)亦待接。
 2. **種族自訂點數畫面**:RACEOPT 框(#0 已渲染=螢幕外框)+ 11 主題點數 UI + 10 Picks 邏輯(數值對照手冊 p.20–23)。
 3. **命名 + 旗色畫面**。
 4. **真實起始狀態**:依 Starting Civilization 設定真實母星/殖民地/科技,取代 `RegenGalaxy` 亂數(對照手冊 p.13 四級 civ)。

@@ -1076,17 +1076,15 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 		case "size":
 			b.newGameSize = (b.newGameSize + 1) % len(shell.GalaxySizes)
 			return b.goTo(b.newGameSetup, "新遊戲設定")
-		case "race":
-			b.newGameRace = (b.newGameRace + 1) % len(shell.Races)
-			return b.goTo(b.newGameSetup, "新遊戲設定")
-		case "accept":
-			if b.session != nil {
-				b.session.Difficulty = b.newGameDiff
-				b.newGameSeed++
-				b.session.RegenGalaxy(shell.GalaxySizes[b.newGameSize].Stars, int64(b.newGameSeed*7919+42)) // 每次新遊戲不同種子
-				b.session.ApplyRace(b.newGameRace)                                                          // 套用種族起始加成
+		case "race", "accept":
+			// 原版流程:星系設定 → Accept →【獨立種族選擇畫面】(不在此直接開局)。
+			// 點種族框或按 Accept 都進種族選擇;開局的 RegenGalaxy/ApplyRace 移到該畫面。
+			sc, err := b.raceSelect()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "載入種族選擇: %v\n", err)
+				return nil
 			}
-			return b.goTo(b.galaxy, "星系主畫面")
+			return &origTransition{next: sc}
 		}
 		return b.goTo(b.menu, "主選單")
 	}

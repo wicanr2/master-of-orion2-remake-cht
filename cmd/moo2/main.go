@@ -301,9 +301,11 @@ func main() {
 		dirs := strings.Split(*dataDirs, ",")
 		var script []shell.InputState
 		if *shot != "" {
-			// headless 驗證:新遊戲(491,228)→ NEW GAME 設定畫面 → 截圖。
+			// headless 驗證:主選單新遊戲(491,228)→ 星系設定 → Accept(486,405)
+			//   →【獨立種族選擇畫面】→ 截圖(驗證新遊戲流程新增的種族畫面)。
 			script = []shell.InputState{
 				{MouseX: 491, MouseY: 228, ClickReleased: true},
+				{MouseX: 486, MouseY: 405, ClickReleased: true},
 			}
 		}
 		if err := runInteractive(dirs, langID, fnt, script, *shot, *frames); err != nil {
