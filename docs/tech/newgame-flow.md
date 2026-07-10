@@ -60,8 +60,8 @@ Alkari · Bulrathi · Darloks · Elerians · Gnolams · Humans · Klackons · Me
 
 1. ✅ **獨立種族選擇畫面**(task 7,2026-07-10 完成合成版):`cmd/moo2/raceselect.go`——RACEOPT#0 螢幕框 + 14 族中文名清單 + 選定顯示真肖像(RACESEL 15–28,字母序,15=Alkari/20=Humans 讀圖確認)+ 描述 + 取消/接受。設定畫面 Accept 改導向此畫面。**已 headless 渲染確認名稱↔肖像正確**。⚠ 版面為合成近似,**尚未對原版截圖像素對齊**(待取得原版 Race Selection 截圖後校正,接優先3)。用 RACESEL 自身的名稱按鈕圖(1–14)取代文字、描述板(30)亦待接。
 2. ✅ **種族自訂點數畫面**(2026-07-10 完成 v1):`cmd/moo2/customrace.go`——RACEOPT#0 框 + 生產類循環(人口成長/農業/工業/研究/商業/艦艇攻擊/政府)+ 11 特殊能力開關 + 即時「剩餘點數/10」+ 互斥 + 超支不可接受。點數為官方 patch 1.5 真值(見 `custom-race-picks.md`)。種族選擇選「自訂種族」→ 此畫面 → 接受聚合數值加成開局。⚠ 生產/成長/戰鬥類數值有實際套用;**政府型態/特殊能力深層效果尚未模擬**(只計點數);版面待像素對齊。
-3. **命名 + 旗色畫面**。
-4. **真實起始狀態**:依 Starting Civilization 設定真實母星/殖民地/科技,取代 `RegenGalaxy` 亂數(對照手冊 p.13 四級 civ)。
+3. ✅ **命名 + 旗色畫面**(2026-07-10 完成):`cmd/moo2/nameflag.go`——RACEOPT#0 框 + 可鍵盤編輯帝國名(預填「<族>帝國」)+ 8 旗色;開始遊戲存 `session.PlayerName/FlagColor`。**新遊戲流程鏈補完**:主選單→設定→種族選擇→[自訂點數]→命名旗色→進遊戲。
+4. **真實起始狀態**(⚠ 待 oracle):依 Starting Civilization 設定真實母星/殖民地/科技,取代 `RegenGalaxy` 亂數(對照手冊 p.13 四級 civ)。**手冊無精確起始數值,需 DOSBox 開局參考存檔解析,否則會自編近似——暫緩以守不臆造鐵律**。
 5. 每步驟以 xvfb 截圖 + 原版對照,熱區逐一量測(接 HANDOFF 優先3)。
 
 ## 待辦(讀圖確認項)
