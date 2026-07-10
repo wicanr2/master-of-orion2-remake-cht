@@ -437,6 +437,14 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					fmt.Fprintln(os.Stderr, "自動存檔失敗:", err)
 				}
 			}
+			// 若本回合完成的研究主題有多科技可選 → 先進抉擇畫面(MOO2 每主題擇一),
+			// 選定後再顯示回合摘要。
+			if _, _, pending := b.session.PendingResearchChoice(); pending {
+				sc, err := b.researchChoice(b.turnSummary)
+				if err == nil {
+					return &origTransition{next: sc}
+				}
+			}
 			return b.goTo(b.turnSummary, "回合摘要")
 		}
 		return nil
