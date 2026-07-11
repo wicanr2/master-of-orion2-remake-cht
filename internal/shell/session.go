@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/rand"
 	"sort"
+	"strings"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/diplomacy"
@@ -465,6 +466,24 @@ func (s *GameSession) ApplyCombatOutcome(enemy string, playerStart, enemyStart i
 		Enemy: enemy, PlayerStart: playerStart, EnemyStart: enemyStart, PlayerWon: won,
 		PlayerLosses: playerStart - len(kept), EnemyLosses: enemyStart,
 	}
+}
+
+// PrimaryEnemyName 回傳戰鬥/外交畫面顯示用的「主要對手」名稱。取第一個 AI 對手的種族名,
+// 去掉 demoAIOpponentSetup 的「AI (…)」外殼(戰鬥標籤前綴接「艦N」時較自然,如「席隆人艦1」
+// 而非「AI (席隆人)艦1」)。無 AI 對手時 fallback「敵軍」——避免舊硬編「賽隆人」(Races 表裡
+// 根本不存在的錯字,見 demoAIOpponentSetup 註解)顯示在戰鬥畫面。
+//
+// 註:目前戰鬥為單一通用敵艦隊(genEnemyFleet),此名稱純顯示標籤,不綁定特定 AI 的實艦;
+// 待「多 AI 目標選擇 UI」接上後改為玩家實際交戰的對手(見 remaining-work-roadmap 節 B)。
+func (s *GameSession) PrimaryEnemyName() string {
+	if len(s.AIPlayers) == 0 {
+		return "敵軍"
+	}
+	name := s.AIPlayers[0].Name
+	if strings.HasPrefix(name, "AI (") && strings.HasSuffix(name, ")") {
+		return name[len("AI (") : len(name)-len(")")]
+	}
+	return name
 }
 
 // ShipCost 造某艦體等級所需生產成本(MOO2 空殼艦體生產成本,每級約 ×3:

@@ -981,7 +981,7 @@ func diplomatRaceIndex(enemy string) int {
 		return 11
 	case "崔拉里安":
 		return 12
-	case "賽隆人": // 舊字串相容(現行單一對手預設種族)
+	case "賽隆人": // 舊字串殘留防禦:已無 producer(戰鬥改用 PrimaryEnemyName),僅防舊存檔/LastBattle 帶此錯字
 		return 10
 	default:
 		return 10
@@ -1163,7 +1163,7 @@ func loadCombatShip(res *assets.Resolver) *ebiten.Image {
 }
 
 func newTacticalScreen(b *sceneBuilder) *tacticalScreen {
-	p, e := b.session.StartCombat("賽隆人")
+	p, e := b.session.StartCombat(b.session.PrimaryEnemyName())
 	// 戰鬥 RNG 依當前回合數種子:同一局同一回合的戰鬥可重現(不引入 wall-clock 不確定性)。
 	seed := int64(b.session.Turn*2654435761 + 1013904223)
 	return &tacticalScreen{b: b, fnt: b.fnt, player: p, enemy: e, sel: -1,
@@ -1206,7 +1206,7 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 		for _, s := range t.player {
 			survivors[s.Name] = true
 		}
-		t.b.session.ApplyCombatOutcome("賽隆人", t.pStart, t.eStart, survivors, t.won)
+		t.b.session.ApplyCombatOutcome(t.b.session.PrimaryEnemyName(), t.pStart, t.eStart, survivors, t.won)
 		return t.b.goTo(t.b.battleResult, "戰鬥結果")
 	}
 	col, row, ok := cellAt(in.MouseX, in.MouseY)
