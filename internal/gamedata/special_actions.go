@@ -5,10 +5,14 @@ package gamedata
 // Special 套用後改變星球狀態或觸發一次性效果,不是可維護的建物,依 docs/tech/colony-buildings.md
 // 的既有結論**刻意不計入**該檔「40 項建築」的統計(見該檔「不列入本表的型別」說明)。
 //
-// 本檔只收錄地形改造(Terraforming)/蓋亞轉化(Gaia Transformation)/土壤改良(Soil Enrichment)
-// 三項——這三項是 terraform.go 已移植好唯讀規則、但先前零呼叫端的部分。Colony Base 是另一個
-// Special 行動,但它走專屬的起始殖民/新殖民地流程(見 docs/tech/homeworld-init.md),不透過這裡
-// 的一般建造佇列,故不收錄於本表。
+// 本檔收錄地形改造(Terraforming)/蓋亞轉化(Gaia Transformation)/土壤改良(Soil Enrichment)/
+// 運輸艦隊(Freighter Fleet,2026-07-11 補實作 #4)四項。前三項是 terraform.go 已移植好唯讀
+// 規則、但先前零呼叫端的部分,套用後改變星球狀態(氣候/PopMax 等)。運輸艦隊性質不同——它不改
+// 殖民地狀態,是帝國整體效果(engine.PlayerState.ActiveFreighters 增量 + 一次性現金加成,見
+// applySpecialAction 的「運輸艦隊」case),但共用同一個「Special 一次性行動、可重複建造、不記入
+// ColonyBuildings dedup」框架,故沿用同一個 SpecialAction 型別收錄,不另開新型別。Colony Base
+// 是另一個 Special 行動,但它走專屬的起始殖民/新殖民地流程(見 docs/tech/homeworld-init.md),
+// 不透過這裡的一般建造佇列,故不收錄於本表。
 //
 // 前置研究主題(PrereqTopic)來源:openorion2/src/tech.cpp 的 research_choices[] 是以
 // ResearchTopic 的整數值直接當陣列索引(`research_choices[_topic]`,非依 techtree[field][level]
@@ -36,6 +40,12 @@ package gamedata
 // cost"),但未給任何遞增公式或起始值——本檔的 ProductionCost 是固定值,**不模擬遞增**,誠實
 // TODO:待未來取得存檔/資料檔(.LBX)實際數字後補上遞增公式,目前每次套用都收同一個估計成本,
 // 保守簡化,不臆造遞增曲線。
+//
+// 運輸艦隊(Freighter Fleet,2026-07-11 補實作 #4)的 PrereqTopic 出處:
+// openorion2/src/tech.cpp research_choices[55]={50, {TECH_FREIGHTERS, TECH_NUCLEAR_BOMB,
+// TECH_NUCLEAR_DRIVE}} → TOPIC_NUCLEAR_FISSION(index 55,同一索引法見上段說明)。建造成本(PP)
+// 手冊同樣沒給任何數字,比照上面的估計慣例:TOPIC_NUCLEAR_FISSION 研究成本 RP50,與
+// TOPIC_ENGINEERING(同為 RP50)的「海軍陸戰隊營」估計 PP60 同一量級,本檔取同一值 60。
 type SpecialAction struct {
 	NameZH string
 	NameEN string
@@ -53,9 +63,12 @@ const (
 	GaiaTransformationActionName = "蓋亞轉化"
 	// SoilEnrichmentActionName 土壤改良(Soil Enrichment)在殖民地建造佇列的中文顯示名稱。
 	SoilEnrichmentActionName = "土壤改良"
+	// FreighterFleetActionName 運輸艦隊(Freighter Fleet)在殖民地建造佇列的中文顯示名稱
+	// (2026-07-11 補實作 #4:運輸艦淨現金版本差異,見檔頭說明)。
+	FreighterFleetActionName = "運輸艦隊"
 )
 
-// SpecialActions 是本 remake 目前接線的全部 Special 一次性行動(見檔頭說明,只收錄 3 項)。
+// SpecialActions 是本 remake 目前接線的全部 Special 一次性行動(見檔頭說明,收錄 4 項)。
 var SpecialActions = []SpecialAction{
 	{
 		NameZH: TerraformActionName, NameEN: "Terraforming",
@@ -71,6 +84,11 @@ var SpecialActions = []SpecialAction{
 		NameZH: SoilEnrichmentActionName, NameEN: "Soil Enrichment",
 		PrereqTopic:    TOPIC_ADVANCED_BIOLOGY,
 		ProductionCost: 150, EstimatedCost: true, // 見檔頭「建造成本缺口」說明,非手冊實據
+	},
+	{
+		NameZH: FreighterFleetActionName, NameEN: "Freighter Fleet",
+		PrereqTopic:    TOPIC_NUCLEAR_FISSION,
+		ProductionCost: 60, EstimatedCost: true, // 見檔頭「運輸艦隊」段說明,非手冊實據
 	},
 }
 

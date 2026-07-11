@@ -811,8 +811,8 @@ var buildOptions = allBuildOptions()
 
 // allBuildOptions 把 gamedata.Buildings + gamedata.SpecialActions 轉成 ColonyBuild 選項清單
 // (含「不建造」「貿易品」兩個非建築特殊項於前兩位)。SpecialActions(地形改造/蓋亞轉化/
-// 土壤改良)排在 Buildings 之後——它們是「Special」型別的一次性行動,不是常駐建築,但同樣走
-// 殖民地建造佇列選單,見 gamedata/special_actions.go 檔頭說明。
+// 土壤改良/運輸艦隊)排在 Buildings 之後——它們是「Special」型別的一次性行動,不是常駐建築,但
+// 同樣走殖民地建造佇列選單,見 gamedata/special_actions.go 檔頭說明。
 func allBuildOptions() []ColonyBuild {
 	out := make([]ColonyBuild, 0, len(gamedata.Buildings)+len(gamedata.SpecialActions)+2)
 	out = append(out, ColonyBuild{"", 0, 0})
@@ -827,8 +827,8 @@ func allBuildOptions() []ColonyBuild {
 }
 
 // availableBuildOptions 回傳「玩家已研究前置科技」才會出現的建造選單(「不建造」「貿易品」
-// 兩個特殊選項恆在,不受前置科技限制)。地形改造/蓋亞轉化/土壤改良比照建築同款前置科技 gate
-// (gamedata.AvailableSpecialActions),排在建築清單之後。
+// 兩個特殊選項恆在,不受前置科技限制)。地形改造/蓋亞轉化/土壤改良/運輸艦隊比照建築同款前置
+// 科技 gate(gamedata.AvailableSpecialActions),排在建築清單之後。
 func availableBuildOptions(completedTopics map[gamedata.ResearchTopic]bool) []ColonyBuild {
 	out := []ColonyBuild{{"", 0, 0}, {TradeGoodsBuildName, 0, 0}}
 	for _, b := range gamedata.AvailableBuildings(completedTopics) {
@@ -1026,10 +1026,11 @@ func (s *GameSession) advanceBuilds() {
 		if b.Progress >= b.Cost {
 			if i < len(s.ColonyBuildings) {
 				if _, isSpecial := gamedata.SpecialActionByNameZH(b.Name); isSpecial {
-					// Special 一次性行動(地形改造/蓋亞轉化/土壤改良):刻意不記入 ColonyBuildings。
-					// 手冊明講地形改造「可以套用好幾次」("You can terraform a planet several
-					// times"),若記入 ColonyBuildings,第二次套用會被下面「已建過就不再套用效果」
-					// 的 dedup 判斷擋下,不符手冊——見 gamedata/special_actions.go 檔頭說明。
+					// Special 一次性行動(地形改造/蓋亞轉化/土壤改良/運輸艦隊):刻意不記入
+					// ColonyBuildings。手冊明講地形改造「可以套用好幾次」("You can terraform a
+					// planet several times"),運輸艦隊同樣可反覆建造(每次都再 +5 艘),若記入
+					// ColonyBuildings,第二次套用會被下面「已建過就不再套用效果」的 dedup 判斷
+					// 擋下,不符手冊——見 gamedata/special_actions.go 檔頭說明。
 					s.applySpecialAction(i, b.Name)
 				} else {
 					if s.ColonyBuildings[i] == nil {
@@ -1081,6 +1082,21 @@ func (s *GameSession) applySpecialAction(i int, name string) {
 			return
 		}
 		c.FoodPerFarmer += gamedata.TerraformSoilEnrichmentFoodBonusPerFarmer
+	case gamedata.FreighterFleetActionName: // Freighter Fleet p.168:每次建成 +5 艘運輸艦 + 版本現金加成(#4)。
+		// 帝國整體效果,不是這個殖民地本身的狀態,故不用 c(above 已宣告但本 case 用不到)。
+		//
+		// 維護費(每艘 0.5 BC/回合)不在這裡處理——ActiveFreighters 一旦變動,下回合
+		// engine.RunEmpireTurn(EndTurn 既有呼叫)就會透過 gamedata.IncomeFreighterMaintenanceCost
+		// 自動把維護費併入 NetBC,見 engine/empire.go 與該欄位註解,本檔不重複算一次。
+		//
+		// 現金加成:比照 s.Player.BC += r.StartBC(殖民/擴張既有直接寫 BC 的慣例,見本檔其他呼叫
+		// 端),完工當下直接把 RuleProfile.FreightersCashBonus 加進國庫——這是「固定回饋」那一側
+		// (見 ruleprofile.go FreightersCashBonus 註解),本 remake 刻意不模擬手冊同段講的「0-3 BC
+		// 建造當下維護費立即扣款」那一側(該側本身已被 1.40+ 改成「下回合才扣」,且金額極小、
+		// 對整體淨額影響有限,見 MANUAL_150.html Free Cash Bug 表),故 1.3/1.5 呈現的是簡化後的
+		// 「淨現金效果方向與量級對」,不是逐 BC 精確重現。
+		s.Player.ActiveFreighters += gamedata.FreighterFleetShipsPerBuild
+		s.Player.BC += s.RuleProfile.FreightersCashBonus
 	}
 }
 
@@ -1902,8 +1918,12 @@ func (s *GameSession) EndTurn() {
 	s.Player.UsedCommandPoints = s.usedCommandPoints()          // 指揮評等需求:玩家目前所有艦艇加總
 	// GovtBonusMoneyPercent 依目前政府型態算好傳給 RunEmpireTurn(engine 層不關心政府列舉本身,
 	// 見 engine.PlayerState.GovtBonusMoneyPercent 註解)。demo 預設 Dictatorship → 0,no-op。
-	// ActiveFreighters 未設值,維持零值(Go 零值陷阱在此剛好是想要的預設:remake 無 Freighter
-	// 艦種塑模,見 engine.PlayerState.ActiveFreighters 註解),故不需要在此顯式賦值。
+	// ActiveFreighters 這裡不需要顯式賦值——它不是每回合重算的衍生值(不同於 Maintenance/
+	// CommandPointsSupply),而是由 advanceBuilds()(本函式下方)在「運輸艦隊」完工當下直接
+	// 累加的持久欄位(2026-07-11(#4)接線,見 engine.PlayerState.ActiveFreighters 註解、
+	// gamedata.FreighterFleetActionName)。此處呼叫 RunEmpireTurn 時吃的是「上回合累積到現在」
+	// 的值,故新完工的運輸艦要下回合才開始計維護費——此處的零值陷阱只在「玩家從未建過運輸艦隊」
+	// 時才恆為 0,不是本欄位的固定行為。
 	s.Player.GovtBonusMoneyPercent = gamedata.IncomeGovtMoneyBonusPercent(s.Government)
 	// HyperAdvancedResearchCost 依這局遊戲的版本規則 profile 算好傳給 RunResearchPhase(engine 層
 	// 不關心 RuleProfile 本身,只吃算好的數字,見 engine.PlayerState.HyperAdvancedResearchCost

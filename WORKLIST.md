@@ -274,9 +274,11 @@
   `TaxRevenue`。demo 預設 Dictatorship→0,no-op;AI 對手無 `Government` 欄位建模,不受影響。
   ②**運輸艦(Freighter)維護費**(每艘使用中 -0.5 BC,`gamedata.IncomeFreighterMaintenanceCost`)。
   新增 `engine.PlayerState.ActiveFreighters` 欄位,`RunEmpireTurn` 算出 `EmpireOutput.FreighterMaintenanceCost`
-  併入 `NetBC`。本專案艦種塑模(`gamedata.ShipType`:`COMBAT_SHIP`/`COLONY_SHIP`/`TRANSPORT_SHIP`/
-  `OUTPOST_SHIP`)沒有獨立的「Freighter」艦種(`TRANSPORT_SHIP` 是地面入侵運兵船,非手冊講的貨運
-  艦隊),呼叫端恆傳 0,目前 no-op,接線先備妥。③**士氣對收入的調整**
+  併入 `NetBC`。當時(本條寫下時)本專案艦種塑模(`gamedata.ShipType`:`COMBAT_SHIP`/`COLONY_SHIP`/
+  `TRANSPORT_SHIP`/`OUTPOST_SHIP`)沒有獨立的「Freighter」艦種,呼叫端恆傳 0,目前 no-op,接線先備妥。
+  ★ **此缺口已於同日稍後補上(見上方 Phase 7 §「#4 運輸艦淨現金版本差異」條)**:新增「運輸艦隊」
+  建造選項後,玩家側 `ActiveFreighters` 真的變非 0,維護費隨之生效,並補上 1.3/1.5 版本現金加成
+  差異。③**士氣對收入的調整**
   (`gamedata.IncomeMoraleAdjustedProduction`,手冊 p.170)**判定為刻意不接**:查證
   `internal/engine/colony.go` `RunColonyTurn` 發現士氣(`MoralePercent`)早就套進食物/工業/研究的
   per-worker 產出(`pct := cs.MoralePercent + colonyGravityPenaltyPercent(cs)` 套 `GravityAdjustedProduction`),
@@ -337,7 +339,8 @@
 - [~] **diff 全量表未實作系統補上(使用者指定,近似公式)**:批次 A(地面戰/轟炸 #5/#6/#7/#8/#9/#11)已做——#6 攻方指揮官倍率 + #11 行星尺寸轟炸幾何**完整接線**;**#7 建築+1hit 已於 2026-07-11 隨「AI 建築模型+軌道防禦」子系統接線**(見下);#5 守方指揮官2.5x/#8 civilian_armor(HP模型)/#9 防禦裝甲**仍因資料模型缺口(AI 無 Leaders、remake 採 hits 計數非 HP 模型)只做公式+版本欄位+TODO 掛鉤**(`docs/tech/ground-combat-algorithm.md`、`gamedata/ground_version_diff.go`)。
   - [x] **AI 殖民地建築資料模型 + 軌道防禦吸收轟炸(2026-07-11,使用者選定方向)**:`AIOpponent` 新增 `ColonyBuildings []map[string]bool`(第三平行陣列,`buildDemoAIOpponents` 母星初始化為 `homeworldBuildings()` 獨立拷貝、`aiExpand` 新殖民地 append 空 map、`InvadeColony` 攻陷同步移除,三處維持等長;`persist.go` `aiSnapshot` 同步序列化,舊存檔 nil 安全降級)。`BombardColony`:bomb hits 先依建築名字母序(決定性、不吃 rng)摧毀建築(每棟耗 `GroundPlanetHitsPerBuilding + RuleProfile.BombardmentBuildingBonusHits`,**#7 版本接線**:1.3 每棟多 +1 hit),餘數 hits 才扣人口——軌道防禦讓人口在防禦被轟掉前受保護。`GroundBombardResult` 新增 `BuildingsDestroyed`/`BuildingsRemaining`。nil/空建築 map 逐位元回歸舊行為。測試:更新 `TestBombardColony_ReducesPopulationDeterministically`(母星2建築吸2 hits→popLoss 8→6)+ 4 新測試(建築先於人口吸收/餘數轉人口/#7 版本差異摧毀棟數不同/nil 回歸);moo2sim 20 回合軌跡與改動前逐字元相同(不動 EndTurn 經濟)。**本輪不做**防禦方反擊摧毀玩家艦(下一輪)。誠實簡化:#7 語意近似(CHANGELOG 原句模糊)、摧毀順序字母序非原版、入侵過戶不轉移建築、#8 HP模型未調和。
   - [x] **#14 衛星/軌道防禦基地「space 預算武器平台」+ 版本相依 beam arc-cost(2026-07-11)**:`internal/gamedata/satellite.go` 新增獨立衛星/基地 space 預算(飛彈基地 300、地面砲台 450——手冊 p.78/p.81 確認值;星基/戰鬥站/星辰要塞 250/500/1200——借用 `ShipHullSpace` 同量級近似值)+ arc-cost 佔格公式(比照 `WeaponSpaceWithMods`)+ fit 公式;`RuleProfile` 新增 `SatelliteBeamArcCostPct`(1.3=25/1.5=33)、`GroundBatteryBeamArcCostPct`(1.3=0/1.5=50,CHANGELOG_150.TXT 1.50.7/1.50.10)。`internal/shell/orbital_bombardment.go` `retaliationAttackers` 改簽名讀 defender 科技(`bestUnlockedWeaponValue`,新 helper)+ profile,取代舊 shipStrength 4/8/16 固定 tier,推導出「隨科技變強」+「隨版本 arc-cost 不同而不同」的反擊戰力。校準除數 `SatelliteStrengthScale=20` 使雷射參考點下星基/戰鬥站重現舊 tier 4/8,星辰要塞算出 20(非近似 19,誠實標見常數註解)。平衡 sanity:開局艦隊轟炸開局 AI 母星(僅星基),Profile13/15 各掃 Turn 0..14,最大損艦數皆為 1(不破壞平衡)。測試:`internal/gamedata/satellite_test.go`(fit/arc 公式錨點)+ `internal/shell/satellite_defense_test.go`(版本差異/科技效果/飛彈基地不吃 arc/地面砲台/平衡 sanity)。誠實限制:AI 現行資料模型無研究進度推進機制,`bestUnlockedWeaponValue` 在 `NewDemoSession` 自然對局裡恆落到 fallback 分支(雷射/核飛彈),「科技變強」效果目前只能在單元測試手動建構已解鎖科技的 `PlayerState` 觀察到。
-  - 批次 B(經濟/研究 #4/#10)、C(偵測 #13 掃描)、D(#12 已=1.5行為/#15 非差異)待續——**多需前置子系統(貨運追蹤/掃描系統),非公式缺口**(見 memory `moo2-diff-items-need-subsystems`)
+  - [x] **#4 運輸艦淨現金版本差異(2026-07-11 補實作)**:新增「運輸艦隊」(Freighter Fleet)殖民地建造選項(`gamedata.FreighterFleetActionName`,前置科技 `TOPIC_NUCLEAR_FISSION`,估計建造成本 PP60——沿用既有 Special 一次性行動框架,見 `gamedata/special_actions.go`)。完工時 `shell.GameSession.applySpecialAction`:`s.Player.ActiveFreighters += gamedata.FreighterFleetShipsPerBuild`(手冊 p.168:每次建造 +5 艘)+ `s.Player.BC += s.RuleProfile.FreightersCashBonus`(新 `RuleProfile` 欄位,1.3=5/1.5=0,出處 MANUAL_150.html「Buildings & Freighters Free Cash Bug」+ CHANGELOG_150.TXT 1.50.8)。維護費(每艘 0.5 BC/回合)不用另外接——`engine.PlayerState.ActiveFreighters` 先前已接進 `RunEmpireTurn`(恆 0 no-op),本輪讓它真的變非 0,維護費隨之自動生效。**批次 B 的 #10 也已確認非差異**(見 `version-1.3-1.5-diff.md` #10),批次 B 至此結案。**簡化(誠實標)**:只模擬手冊「固定回饋」那一側,不模擬 0-3 BC 建造當下維護費立即扣款那一側;不做完整貨運/補給物流(殖民地間運食物/殖民者)——運輸艦本輪只有「可建造+維護費+版本現金加成」三件事;**AI 未接同一建造流程**,`ActiveFreighters` 對 AI 恆為 0。測試:`TestSpecialActionByNameZH`/`TestAvailableSpecialActions`(gamedata,新增運輸艦隊斷言)、`TestProfile13Values`/`TestProfile15Values`(gamedata,新增 `FreightersCashBonus` 斷言)、`TestFreighterFleetBuild*`(shell,新增:完工增加 ActiveFreighters+國庫、1.3 vs 1.5 現金加成差異、維護費隨後續回合生效、開局不建造回歸不變)。詳見 `docs/tech/version-1.3-1.5-diff.md` #4、`docs/tech/moo2-formulas-reference.md`「運輸艦淨現金版本差異」節。
+  - 批次 C(偵測 #13 掃描)待續——需從零建掃描子系統,非公式缺口
 - [ ] 資產分版(1.31 vs 1.5 LBX/資料)一起換——目前只分規則值,資產未分版
 
 ## Phase 8 — 文件 / 考究 / 文化 / 研究

@@ -196,12 +196,18 @@ type PlayerState struct {
 
 	// ActiveFreighters 玩家目前「使用中」的運輸艦(Freighter)數量,供 RunEmpireTurn 算維護費
 	// (gamedata.IncomeFreighterMaintenanceCost,GAME_MANUAL.pdf p.169:每艘 0.5 BC/回合,無條件
-	// 捨去)。本專案目前的艦種塑模(gamedata.ShipType:COMBAT_SHIP/COLONY_SHIP/TRANSPORT_SHIP/
+	// 捨去)。本專案的艦種塑模(gamedata.ShipType:COMBAT_SHIP/COLONY_SHIP/TRANSPORT_SHIP/
 	// OUTPOST_SHIP,見 enums.go)沒有獨立的「Freighter」艦種概念——TRANSPORT_SHIP 是地面入侵
 	// 用的運兵船,不是手冊這裡講的貨運艦隊(Freighter Fleet,一種抽象的貿易/後勤艦隊,不佔
-	// Command Rating,見 shipspace.go 註解)。呼叫端目前恆傳 0(零值,誠實的「尚未建模」而非
-	// 漏算),接線先做好——未來若補上貨運艦種追蹤,只需讓呼叫端算出正確數字即可,RunEmpireTurn
-	// 端不用再改。
+	// Command Rating,見 shipspace.go 註解)。
+	//
+	// 2026-07-11(#4)追加接線:本欄位不再是零呼叫端的死碼——`internal/shell` 新增「運輸艦隊」
+	// (`gamedata.FreighterFleetActionName`)殖民地建造選項(Special 一次性行動,見
+	// `gamedata/special_actions.go`),每完工一次由 `shell.GameSession.applySpecialAction` 對本
+	// 欄位 `+= gamedata.FreighterFleetShipsPerBuild`(手冊:每次建造 +5 艘)。engine 層本身不變,
+	// 仍只是「吃呼叫端算好的數字」,呼叫端從恆傳 0 變成會隨玩家建造累加——這就是本欄位原本設計
+	// 「接線先備妥、待補艦種追蹤即生效」的那個生效時刻。AI 對手(`AIOpponent`)未接同一個建造
+	// 佇列流程,本欄位對 AI 仍恆為 0,見該呼叫端(`shell.EndTurn`)AI 迴圈註解。
 	ActiveFreighters int
 
 	// HyperAdvancedResearchCost 是版本規則 profile 對 Hyper-Advanced Lv1 研究(8 個共用同一

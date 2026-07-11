@@ -72,8 +72,11 @@
   `IncomeFoodSurplusRevenue` 既有 TODO,待種族特質系統補上種族欄位)。`IncomeFoodSurplusRevenue`
   同樣已接(見 `colony-economy-maintenance.md` §6.2,不需要「帝國食物池/運輸艦」模型,只需正
   `FoodSurplus` 即可,原判斷同樣過度前置)。
-- 仍未接:`IncomeCommandOverflowCost`、`IncomeFreighterMaintenanceCost`(需追蹤運輸艦數量)、
-  `IncomeApplyGovernmentMoneyBonus`(需政府形式系統)。
+- ★ 以下三項寫下當時仍是「仍未接」,已於後續輪次全部接線,核實以 code 為準(rulebook 63):
+  `IncomeCommandOverflowCost`(指揮評等供需,見 `moo2-formulas-reference.md`)、
+  `IncomeApplyGovernmentMoneyBonus`(政府型態已接,見上方本節「已接」條目)、
+  `IncomeFreighterMaintenanceCost`(2026-07-11(#4)新增「運輸艦隊」建造選項後,玩家側
+  `ActiveFreighters` 可變非 0,維護費隨之生效;AI 對手仍未接同一建造流程,對 AI 恆 0)。
 
 ### 3. 艦艇設計(空間格)
 - **(2026-07-11)shell/gamedata 層已完成**:`internal/gamedata/shipspace.go` 建了艦體總空間表(`ShipHullSpace`,手冊 p.121 確認值)+ 武器佔格表(`WeaponSpaceByName`,手冊 p.124 確認值);`internal/shell/session.go` 的 `ShipDesignSpaceUsed`/`ShipDesignFits` 接進四下拉模型驗證設計是否超格。細節、估計值標註(特殊系統佔格手冊無數字,5% 估計)、與「裝甲/護盾不佔空間」的手冊澄清見 `ship-design-space.md`。**仍待**:武器改裝(mod)對佔格的影響(手冊已有公式,未接線)、Design Dock 畫面 UI 繪製(不碰 `interactive.go`,歸後續 task)。

@@ -92,6 +92,12 @@ const (
 	IncomeFreighterMaintenanceNumerator   = 1
 	IncomeFreighterMaintenanceDenominator = 2
 
+	// FreighterFleetShipsPerBuild 每建成一次「運輸艦隊」(Freighter Fleet)取得的運輸艦艘數
+	// (GAME_MANUAL.pdf p.168:"Every time you build a Freighter Fleet, you gain a group of 5
+	// ships"；MANUAL_150.html 同段重申 "Every time you build one of these, you get 5 support
+	// ships")。兩份手冊皆明確給 5,無版本差異,故不進 RuleProfile。
+	FreighterFleetShipsPerBuild = 5
+
 	// IncomeMoraleProductionPercentPerIcon 殖民地畫面上每一格士氣圖示(笑臉/哭臉),代表該殖民地
 	// 「總產出」(食物、工業、科研、收入)變化 10%(GAME_MANUAL.pdf p.170:"Every morale icon on
 	// the Colony screen represents a change of 10% in the total production output of the colony.

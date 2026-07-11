@@ -32,12 +32,15 @@
   - `EndTurn()` 開頭改為 `s.Player.Maintenance = s.totalBuildingMaintenance()`,每回合依「玩家當下
     實際已建成建築清單」重算,取代常數——玩家日後蓋更多建築,維護費會如實增加。
 
-**未涵蓋(誠實列出,不臆造)**:艦艇/間諜/軍官維護費。手冊有「每艘使用中運輸艦 0.5 BC/回合」
-（`gamedata.IncomeFreighterMaintenanceCost`,已實作待接線)與指揮評等超支費用
-（`gamedata.IncomeCommandOverflowCost`,同樣已實作待接線),但本專案目前完全不追蹤運輸艦數量,
-`Ships` 只有作戰艦艇,沒有可推導的模型,故本輪不計入,標 TODO。AI 對手（`AIOpponent`)沒有
-`ColonyBuildings` 追蹤機制,`Maintenance` 由 `newHomeworldPlayerState` 設一次後不再重算——這對
-AI 是誠實的(AI 的建築集合在本專案裡本就從未變動過),不是遺漏。
+**未涵蓋(誠實列出,不臆造)**:間諜/軍官維護費。指揮評等超支費用
+（`gamedata.IncomeCommandOverflowCost`)已於後續輪次接線(見 `moo2-formulas-reference.md`「指揮評等
+供需」節)。運輸艦維護費（`gamedata.IncomeFreighterMaintenanceCost`)當時（本文件寫下時)本專案
+完全不追蹤運輸艦數量、`Ships` 只有作戰艦艇——**此缺口已於 2026-07-11(#4)補上**:新增「運輸艦隊」
+建造選項(`gamedata.FreighterFleetActionName`),玩家建造完工後 `ActiveFreighters` 會真的累加,
+維護費隨之生效,詳見 `moo2-formulas-reference.md`「運輸艦淨現金版本差異」節;AI 對手仍未接同一
+建造流程,`ActiveFreighters` 對 AI 恆為 0。AI 對手（`AIOpponent`)沒有 `ColonyBuildings` 追蹤機制,
+`Maintenance` 由 `newHomeworldPlayerState` 設一次後不再重算——這對 AI 是誠實的(AI 的建築集合在
+本專案裡本就從未變動過),不是遺漏。
 
 **影響**:3 BC/回合 < 舊的 5 BC/回合,對經濟餘裕只有正面影響,不會讓任何既有測試變差
 (已跑過完整 `go test ./internal/...`,`internal/shell` 全綠,見下方「五、驗證結果」)。

@@ -12,8 +12,9 @@
 ## 0. 結論先講:能落地程式碼的真正數值差異其實很少
 
 逐條過完整份 CHANGELOG 後,**落在本專案已實作系統上、且是真正「數值改變」(非只是新增可調參數、
-非純 timing/bookkeeping)的項目只有 3 條**(§2),另有 2 條屬「已實作但尚未接線」的系統,分版意義較低
-(§3)。CHANGELOG 裡另有大量新增 `xxx_config_parameter`——這些**多半是把既有經典行為暴露成可調參數,
+非純 timing/bookkeeping)的項目最初只找到 3 條**(§2),後續輪次陸續補上前置子系統、確證更多項目
+真的落在已實作系統上(見下方 §0.5 進度追蹤,含本文件最新項目數的唯一真相)。CHANGELOG 裡另有
+大量新增 `xxx_config_parameter`——這些**多半是把既有經典行為暴露成可調參數,
 預設值本來就等於 1.3 經典值**(`PARAMETERS.CFG` 逐一標註 `(default, classic)`),不代表 1.5 出廠預設
 真的改了規則。這對版本 profile 是好消息:第一版分版範圍可以很小(§6)。
 
@@ -28,7 +29,7 @@
 | 1 | 研究成本 Hyper-Advanced Lv1(15k/25k) | ✅ 完成 | `3eef521` 消費端接進 `engine.RunResearchPhase` + `EndTurn` 玩家/AI 注入 |
 | 2 | 電漿砲傷害(30/20) | ✅ 完成 | `3eef521` `BuildShipWithMods` 改讀 `BuildWeaponOptions(RuleProfile)`,隨 `Ship.WeaponAttack` 進戰鬥 |
 | 3 | 軌道轟炸齊射(5/10) | ✅ 完成 | `RuleProfile.BombardmentVolleys` 接 `fleetBombardDamage`(先前輪次) |
-| **4** | **運輸艦淨現金(freighters_cash_bonus)** | ❌ **未排** | 需「貨運艦建造事件追蹤」子系統;專案完全不追蹤運輸艦數量/建造事件 |
+| **4** | **運輸艦淨現金(freighters_cash_bonus)** | ✅ **完成**(2026-07-11) | 新增「運輸艦隊」建造選項(`gamedata.FreighterFleetActionName`,前置科技 `TOPIC_NUCLEAR_FISSION`)補上先前缺的「貨運艦建造事件追蹤」子系統。完工時 `shell.GameSession.applySpecialAction`:`s.Player.ActiveFreighters += gamedata.FreighterFleetShipsPerBuild`(手冊 p.168 每次 +5 艘)+ `s.Player.BC += s.RuleProfile.FreightersCashBonus`(新欄位,1.3=5/1.5=0)。**簡化**:只模擬手冊表格「固定回饋」那一側,不模擬 0-3 BC 建造當下維護費立即扣款那一側(金額小,1.40+ 已改下回合扣);AI 對手未接同一建造流程,`ActiveFreighters` 對 AI 仍恆 0 |
 | **5** | **防禦方指揮官 2.5x(defender commando)** | ✅ **完成** | `gamedata.GroundCommandoDefenderForceBonus` + `RuleProfile.DefenderCommandoBonus` 已接進 `InvadeColony` 守方(`internal/shell/ground_invasion.go`);前置的 AI 領袖資料模型(`AIOpponent.Leaders`)已補上,`buildDemoAIOpponents` 依種族性格開局固定指派(布拉西人 Tier2/姆瑞森人 Tier1/席隆人無)——**誠實近似**:非手冊逐字的隨機雇用機制,見 `session.go` `AIOpponent.Leaders`/`demoAIOpponentSetup.commandoTier` 欄位註解 |
 | 6 | commando 倍率門檻 | ✅ 非差異 | `PARAMETERS.CFG:2745-2753`「(default, classic)」,1.5 預設=1.3,無需做 |
 | **7** | **轟炸建築 +1hit(BombardmentBuildingBonusHits)** | ✅ **完成** | `b239f94` 隨 AI 建築模型接進 `BombardColony` 建築吸收(1.3 每棟 +1 hit);語意近似已標註 |
@@ -41,10 +42,11 @@
 | **14** | **衛星/砲台佔格(beam arc cost)** | ✅ **完成**(2026-07-11) | `internal/gamedata/satellite.go` 把軌道基地/飛彈基地/地面砲台建模成「space 預算→塞入依科技解鎖的最佳武器」,beam 佔格套 `RuleProfile.SatelliteBeamArcCostPct`(1.3=25/1.5=33)、`GroundBatteryBeamArcCostPct`(1.3=0/1.5=50,CHANGELOG_150.TXT 1.50.7/1.50.10);`internal/shell/orbital_bombardment.go` `retaliationAttackers` 改用此模型取代舊 shipStrength 4/8/16 固定 tier。飛彈基地(300 space)/地面砲台(450 space)為手冊 p.78/p.81 確認值,星基/戰鬥站/星辰要塞(250/500/1200)是借用 ShipHullSpace 同量級的近似值;校準除數 `SatelliteStrengthScale=20` 使雷射參考點下星基/戰鬥站重現舊 tier 4/8,星辰要塞算出 20(非近似 19,見常數註解的誠實落差說明)。平衡 sanity(開局艦隊轟炸開局 AI 母星,Turn 0..14 掃描)兩版本最大損艦數皆為 1,見 `internal/shell/satellite_defense_test.go`。 |
 | 15 | 維護費入帳時機 | ✅ 非差異 | 淨額 0,只差「哪一回合帳上出現」,remake 逐回合重算不模擬「完工瞬間」 |
 
-**真正「還沒安排、且是真缺口」的**(需前置子系統,非公式缺口——見 memory `moo2-diff-items-need-subsystems`):
-- **#4**(需貨運建造事件追蹤)、**#13**(需掃描子系統,從零)。
+**真正「還沒安排、且是真缺口」的**(需前置子系統,非公式缺口):
+- **#13**(需掃描子系統,從零)。#4(需貨運建造事件追蹤)已於 2026-07-11 補上子系統,見上表,
+  不再屬於此類——舊版本文件曾把 #4 列在此處,已更正(rulebook 63:錯誤斷言直接更正,不留 stale marker)。
 
-其餘 15 項中:§2 三條真差異(#1/#2/#3)+ #5/#7/#14(2026-07-11 消費端接線完成)已完成;
+其餘 15 項中:§2 三條真差異(#1/#2/#3)+ #4/#5/#7/#14(2026-07-11 消費端接線完成)已完成;
 #6/#8/#9/#10/#11/#15 為確認的非差異;#12 已等同 1.5。
 
 ## 1. 差異清單(全量表)
@@ -56,7 +58,7 @@
 | 1 | 研究成本(Hyper-Advanced Lv1) | **實際成本 15,000 RP**(顯示卻是 25,000,官方承認的 bug) | 顯示與實際皆 **25,000 RP**(1.50.9 修正) | ✅ 是,`internal/gamedata/techtree.go` 8 個 `TOPIC_HYPER_*` | CHANGELOG_150.TXT 1.50.9「Fixed actual tech cost of first level Hyper-Advanced from 15k to 25k.」+ MANUAL_150.html「Hyper-Advanced Tech Cost Bug: Fixed the cost of level 1 hyper-advanced tech fields that were shown as 25k research points but had a real cost of 15k. Now both actual and displayed cost is 25k RP.」 |
 | 2 | 戰鬥傷害(電漿砲) | Damage **6–30** | Damage **4–20** | ✅ 是,`internal/shell/session.go` `WeaponOptions`「電漿砲」 | MANUAL_150.html「Plasma Cannon min/max damage from 6/30 to 4/20」(已收錄於 `docs/tech/component-values.md`) |
 | 3 | 軌道轟炸命中換算 | Bomb 武器 = **5 次攻擊**當量;戰機 = **0**(無當量) | Bomb 武器 = **10 次攻擊**當量;戰機 = **1** 次 | ✅ 是,`internal/shell/orbital_bombardment.go` `fleetBombardDamage`(現行 `for round:=0;round<10` 即 1.5 值) | CHANGELOG_150.TXT 1.50.9「Fixed bomb hits calculation for orbital bombardment: Bomb weapons now get bomb hits equivalent to 10 instead of 5 attacks. Fighters get the equivalence of 1 strike instead of 0.」 |
-| 4 | 經濟(新造運輸艦淨現金) | 完工時**淨得 +2~5 BC**(0-3 BC 立即成本 + 固定 5 BC 補償,官方手冊原文承認此為 1.3 就有的「一律有淨利」quirk,非等到 1.40 才算 bug) | `freighters_cash_bonus` 出廠預設 **0**(1.50.8 起),淨得 0 BC | ⚠ 半實作——`gamedata.IncomeFreighterMaintenanceCost`(每回合 0.5 BC/艘持續維護費)已寫好,但「完工當下的一次性現金效果」整條機制(對應手冊 `freighters_cash_bonus`)本專案**完全沒有程式碼**(不追蹤運輸艦建造事件),不算「已實作」 | MANUAL_150.html「Buildings & Freighters Free Cash Bug」全段(1.31/1.40/1.50 三欄對照表)+ CHANGELOG 1.50.8「Changed freighters_cash_bonus default from 5 to 0 BC」 |
+| 4 | 經濟(新造運輸艦淨現金) | 完工時**淨得 +2~5 BC**(0-3 BC 立即成本 + 固定 5 BC 補償,官方手冊原文承認此為 1.3 就有的「一律有淨利」quirk,非等到 1.40 才算 bug) | `freighters_cash_bonus` 出廠預設 **0**(1.50.8 起),淨得 0 BC | ✅ 是(2026-07-11 完成)——`gamedata.IncomeFreighterMaintenanceCost`(每回合 0.5 BC/艘持續維護費)先前已寫好;本輪補上「完工當下的一次性現金效果」:新增「運輸艦隊」建造選項(`gamedata.FreighterFleetActionName`),完工時 `s.Player.ActiveFreighters += gamedata.FreighterFleetShipsPerBuild`(+5 艘)+ `s.Player.BC += s.RuleProfile.FreightersCashBonus`(新欄位,1.3=5/1.5=0)。**簡化**:只模擬手冊表格的「固定回饋」那一側,不模擬 0-3 BC 建造當下維護費立即扣款那一側 | MANUAL_150.html「Buildings & Freighters Free Cash Bug」全段(1.31/1.40/1.50 三欄對照表)+ CHANGELOG 1.50.8「Changed freighters_cash_bonus default from 5 to 0 BC」 |
 | 5 | 地面戰:防禦方指揮官加成 | 防禦方 Commando 技能領袖**無**額外加成(僅攻方有 2.5x) | 新增:防禦方 Commando 領袖也給 **2.5x** 加成(攻方不變) | ✅ 是(2026-07-11 完成)——`gamedata.GroundCommandoDefenderForceBonus` + `RuleProfile.DefenderCommandoBonus` 已接進 `InvadeColony` 守方,前置的 `AIOpponent.Leaders` 資料模型(種族性格近似指派)已補齊 | MANUAL_150.html「Commando Leader: A defending commando gives 2.5x the regular commando bonus to ground troops, just like an attacking commando already gives in classic.」 |
 | 6 | 地面戰:commando 倍率門檻 | 攻方 5x/7.5x、守方 2x/3x(依技能等級) | **出廠預設不變**,只是新增 `ground_commando_attacker_x2`/`ground_commando_defender_x5` 讓玩家可調換 | ❌ 否(且屬確認非差異) | `PARAMETERS.CFG:2745-2753`「(default, classic)」逐條標註 |
 | 7 | 轟炸:建築 hits 加成 | 未記錄文件的 **+1 hit** bonus(bug) | 移除該 +1 bug | ❌ 否——本專案軌道轟炸只扣人口,不扣建築(見 `docs/tech/ground-combat-algorithm.md`「範圍限制」),此差異對本專案模型無作用 | CHANGELOG_150.TXT 1.50.10「Undocumented +1 hit bonus for civilian buildings during bombardment removed.」 |
@@ -93,14 +95,18 @@
 1.5 的「戰機 1 當量」這條差異目前**無法對應到任何變數**——這是「發現了差異,但我們連 1.5 值本身
 都还没有为它建模」的情況,誠實標「待未來戰機武器分類任務接線後再談分版」。
 
-## 3. 已實作但尚未接線的系統(§1 #4,經濟)
+## 3. [★ 歷史快照,已於 2026-07-11 補上,核實以上方 §0.5/§1 #4 為準] 已實作但尚未接線的系統
 
-`gamedata.IncomeFreighterMaintenanceCost`(每回合持續維護費 0.5 BC/艘,手冊 p.169 有據)已寫好但
-零呼叫端(`colony-economy-maintenance.md` §1 已記錄「本專案完全不追蹤運輸艦數量」)。手冊裡真正
-1.3→1.5 有差的是**另一條機制**——「完工當下一次性補償」(`freighters_cash_bonus`,1.3 淨賺
-2-5 BC、1.5 淨賺 0 BC)——這條機制本專案完全沒有程式碼,不是「差 0 vs 5」的分版問題,是「這個
-機制本身还不存在」。若未來要做,設計時直接用 1.5 的行為(淨額 0,最簡單)當預設,1.3 覆寫值才有
-意義;現在談分版為時過早。
+> 本節寫下當時(#4 經濟)確實是「公式有、消費端無、機制本身還不存在」;**2026-07-11 同日稍後
+> 已補上完整機制**(見 §0.5 #4 現況),下面段落保留當時的分析過程當歷史記錄,結論(「現在談分版
+> 為時過早」)已不成立,不可再引用。
+
+`gamedata.IncomeFreighterMaintenanceCost`(每回合持續維護費 0.5 BC/艘,手冊 p.169 有據)當時已寫好
+但零呼叫端。手冊裡真正 1.3→1.5 有差的是**另一條機制**——「完工當下一次性補償」
+(`freighters_cash_bonus`,1.3 淨賺 2-5 BC、1.5 淨賺 0 BC)——當時這條機制本專案完全沒有程式碼。
+現況:新增「運輸艦隊」建造選項(`gamedata.FreighterFleetActionName`)補上建造事件追蹤,
+`RuleProfile.FreightersCashBonus`(1.3=5/1.5=0)接進 `applySpecialAction`,詳見 §0.5 #4、
+`docs/tech/moo2-formulas-reference.md`「運輸艦淨現金版本差異」節。
 
 ## 4. shipped-game 預設值來源(PARAMETERS.CFG `(default, classic)` 交叉核對)
 
@@ -122,8 +128,12 @@
 
 ### 5.1 最小可行設計(對應§2 三個確證差異)
 
+> ★ 歷史快照:下面是 2026-07-11 當輪最初的設計稿(僅 3 欄位)。**已實作且持續擴充**——現行
+> `internal/gamedata/ruleprofile.go` 欄位數已超過此處,以該檔為準,不要照抄下面的欄位清單當
+> 現況(rulebook 63)。保留本段只為了展示「最小可行設計」的思路本身。
+
 ```go
-// internal/gamedata/ruleprofile.go(建議新檔,尚未實作,設計稿)
+// internal/gamedata/ruleprofile.go(建議新檔,尚未實作,設計稿——已實作,見上方 ★ 說明)
 
 package gamedata
 
@@ -209,9 +219,9 @@ func Profile15() RuleProfile {
   條目要嘛是純 bug fix(如衛星生成 bug)、要嘛是新增的可調參數但預設值等於經典值(§4)、要嘛
   落在本專案當時尚未實作的系統(戰機分類/領袖加成/運輸艦建造事件/衛星 space 模型等)。**這不是
   研究不夠深入,是逐條核實後的真實結論**——之後每完成一個新系統(#5 領袖加成、#7 轟炸建築 hits、
-  #14 衛星 space 預算模型皆已在同一輪陸續補上,見 §0.5 追蹤表當前狀態),就回頭比對 CHANGELOG
-  是否有該系統的版本差異,再擴充 `RuleProfile`——目前仍未排的只剩 #4(貨運建造事件追蹤)、
-  #13(掃描子系統),兩者都需要從零建全新子系統,非公式缺口。
+  #14 衛星 space 預算模型、#4 運輸艦建造事件追蹤皆已在同一輪陸續補上,見 §0.5 追蹤表當前狀態),
+  就回頭比對 CHANGELOG 是否有該系統的版本差異,再擴充 `RuleProfile`——目前仍未排的只剩
+  #13(掃描子系統),需要從零建全新子系統,非公式缺口。
 
 ## 7. 主選單「選版本」與 profile 的關係(範圍澄清)
 

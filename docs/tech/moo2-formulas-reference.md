@@ -336,11 +336,31 @@ purposes of maintenance.」)——`gamedata.ShipCommandCost(class CombatShipClas
 `IncomeCommandOverflowCost(uncoveredCommandPoints int) int`(`income.go:148`,2026-07-11 起實際由
 `engine.RunEmpireTurn` 呼叫,不再是零呼叫端的死碼)、`IncomeFreighterMaintenanceCost(activeFreighters int) int`
 (`income.go:157`,**2026-07-11 追加接線**:`engine.PlayerState` 新增 `ActiveFreighters` 欄位,
-`RunEmpireTurn` 呼叫本函式算出 `EmpireOutput.FreighterMaintenanceCost` 併入 `NetBC`。本專案目前的
+`RunEmpireTurn` 呼叫本函式算出 `EmpireOutput.FreighterMaintenanceCost` 併入 `NetBC`)。本專案目前的
 艦種塑模——`gamedata.ShipType`:`COMBAT_SHIP`/`COLONY_SHIP`/`TRANSPORT_SHIP`/`OUTPOST_SHIP`——沒有
-獨立的「Freighter」艦種(`TRANSPORT_SHIP` 是地面入侵運兵船,不是手冊講的貨運艦隊),呼叫端
-(`shell.GameSession`)恆傳 0,故目前是 no-op,但接線已就緒,補上艦種追蹤後即生效,不需再改
-`engine` 層)。
+獨立的「Freighter」艦種(`TRANSPORT_SHIP` 是地面入侵運兵船,不是手冊講的貨運艦隊)。
+
+**2026-07-11 同日再追加(#4,運輸艦淨現金版本差異)**:上面「呼叫端恆傳 0」的缺口已補上建造
+途徑——`gamedata/special_actions.go` 新增「運輸艦隊」(`FreighterFleetActionName`,Special 一次性
+行動,前置科技 `TOPIC_NUCLEAR_FISSION`,估計建造成本 PP60)。玩家在殖民地建造佇列排入並完工後,
+`shell.GameSession.applySpecialAction` 對 `s.Player.ActiveFreighters += gamedata.FreighterFleetShipsPerBuild`
+(手冊 p.168:每次建造 +5 艘)並套用版本現金加成(見下方 §「運輸艦淨現金版本差異」節)。**AI
+對手未接同一個建造佇列流程,`ActiveFreighters` 對 AI 仍恆為 0**,只有玩家側會真的變非 0——
+`FreighterMaintenanceCost` 因此只對玩家側 NetBC 有實際影響,誠實標記非全帝國通用。
+
+### 運輸艦淨現金版本差異(#4,2026-07-11 補實作)
+
+手冊「Buildings & Freighters Free Cash Bug」表(MANUAL_150.html):1.31 版建造運輸艦隊時,實際
+維護費立即扣款是 0-3 BC(依當時是否缺糧,0.5 BC/艘無條件捨去),但固定回饋(補償)5 BC,淨得
+恆為 2-5 BC(手冊承認這是 1.31 就有的「一律有淨利」quirk)。`CHANGELOG_150.TXT` 1.50.8:「Changed
+freighters_cash_bonus default from 5 to 0 BC so building a freighter fleet no longer generates
+free cash.」——1.50 出廠預設把固定回饋改成 0。
+
+本 remake 用 `gamedata.RuleProfile.FreightersCashBonus`(`Profile13()=5`、`Profile15()=0`)模擬
+「固定回饋」這一側,`applySpecialAction` 完工當下 `s.Player.BC += s.RuleProfile.FreightersCashBonus`
+(比照既有 `s.Player.BC += r.StartBC` 直接寫 BC 的慣例)。**刻意不模擬** 0-3 BC 那一側的建造當下
+維護費立即扣款——該側本身金額小且已被 1.40+ 改成「下回合才扣」,對整體淨額影響有限,詳見
+`docs/tech/version-1.3-1.5-diff.md` #4。
 
 ### 士氣對收入的影響——**判定結論:不接,會雙重計算**
 

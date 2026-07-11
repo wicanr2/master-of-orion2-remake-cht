@@ -18,8 +18,9 @@ type EmpireOutput struct {
 	CommandOverflowCost int
 	// FreighterMaintenanceCost 使用中運輸艦(Freighter)每回合維護費總和(GAME_MANUAL.pdf
 	// p.169,gamedata.IncomeFreighterMaintenanceCost,每艘 0.5 BC)。已計入 NetBC,單獨曝露
-	// 供測試/UI 顯示。ps.ActiveFreighters 目前恆 0(見該欄位註解:remake 無 Freighter 艦種
-	// 塑模)→ 本欄位目前恆為 0,是 no-op,接線已備妥待補艦種後生效。
+	// 供測試/UI 顯示。ps.ActiveFreighters 玩家側已可透過建造「運輸艦隊」變非 0(見該欄位註解
+	// 2026-07-11(#4)追加接線段落)——本欄位隨之反映真實維護費;AI 對手未接該建造流程,
+	// ActiveFreighters 對 AI 仍恆為 0,本欄位對 AI 側仍是 no-op。
 	FreighterMaintenanceCost int
 	Player                   PlayerState // 研究推進 + BC 結算後的玩家狀態
 	ResearchDone             bool        // 本回合是否有研究主題完成
@@ -121,8 +122,8 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 	}
 	out.CommandOverflowCost = gamedata.IncomeCommandOverflowCost(uncoveredCommandPoints)
 	// 運輸艦(Freighter)維護費(GAME_MANUAL.pdf p.169,gamedata.IncomeFreighterMaintenanceCost)。
-	// 獨立於 ps.Maintenance(只含已建建築維護費,見該欄位註解)。ps.ActiveFreighters 目前恆 0
-	// (remake 無 Freighter 艦種塑模,見該欄位註解)→ no-op,接線已備妥。
+	// 獨立於 ps.Maintenance(只含已建建築維護費,見該欄位註解)。ps.ActiveFreighters 玩家側
+	// 建造「運輸艦隊」後會非 0(見該欄位註解 2026-07-11(#4)追加接線段落),AI 對手仍恆 0。
 	out.FreighterMaintenanceCost = gamedata.IncomeFreighterMaintenanceCost(ps.ActiveFreighters)
 	// 國庫結算:稅收 + 餘糧收入 + 貿易品收入 - 維護費 - 指揮評等超支懲罰 - 運輸艦維護費。
 	out.NetBC = out.TaxRevenue + out.FoodSurplusRevenue + out.TradeGoodsRevenue - ps.Maintenance - out.CommandOverflowCost - out.FreighterMaintenanceCost

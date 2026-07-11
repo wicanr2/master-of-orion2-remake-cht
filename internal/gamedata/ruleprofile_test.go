@@ -24,6 +24,9 @@ func TestProfile13Values(t *testing.T) {
 	if p.GroundBatteryBeamArcCostPct != 0 {
 		t.Errorf("GroundBatteryBeamArcCostPct = %d,want 0(#14,1.3 地面砲台無 arc-cost 懲罰)", p.GroundBatteryBeamArcCostPct)
 	}
+	if p.FreightersCashBonus != 5 {
+		t.Errorf("FreightersCashBonus = %d,want 5(#4,MANUAL_150.html Free Cash Bug 表:運輸艦隊固定回饋 5 BC)", p.FreightersCashBonus)
+	}
 }
 
 // TestProfile15Values 驗證 patch 1.5 規則 profile 的三個值,並確認等於本專案改用 profile 前
@@ -53,6 +56,9 @@ func TestProfile15Values(t *testing.T) {
 	}
 	if p.GroundBatteryBeamArcCostPct != 50 {
 		t.Errorf("GroundBatteryBeamArcCostPct = %d,want 50(#14,CHANGELOG_150.TXT 1.50.7)", p.GroundBatteryBeamArcCostPct)
+	}
+	if p.FreightersCashBonus != 0 {
+		t.Errorf("FreightersCashBonus = %d,want 0(#4,CHANGELOG_150.TXT 1.50.8 freighters_cash_bonus 出廠預設)", p.FreightersCashBonus)
 	}
 
 	// 交叉核對:techtree.go 8 條 TOPIC_HYPER_* 的表定值本身也必須等於 wantHyperCost,

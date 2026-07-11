@@ -33,8 +33,11 @@
 | **開局經濟平衡** | 本 session 數處改了開局狀態:士氣 +10→**0**(手冊忠實)、指揮點數(先前誤判**-20 BC/回合為忠實**,2026-07-11 同日已修復——用真實存檔 `SAVE10.GAM` oracle 反推補上帝國基礎供給 `gamedata.CommandPointsBase=5`,開局供給=5+1(星基)=6≥3(需求),不再超支,詳見 `docs/HONEST-STATUS.md`/`docs/tech/moo2-formulas-reference.md`「指揮評等供需」節)、領袖研究 **+25**(正 bonus 抵銷)。指揮點數這項死結已解,剩士氣 0 起跳+領袖 +25 這兩項待你 playtest 判斷是否偏苦 | 你回報「正常/太苦」→ 我接 income 死碼(政府 money bonus、morale 對收入的影響、貨運維護 `income.go`,均已移植) |
 
 > **income 死碼接線已完成(2026-07-11,同日稍後)**:政府 money 加成(Democracy/Federation)已接進
-> `RunEmpireTurn`,demo(Dictatorship)no-op;運輸艦維護費已接線但 remake 無 Freighter 艦種,
-> 恆 0 no-op;士氣對收入的調整**判定為刻意不接**(收入已從士氣調整過的產出換算出來,再套一次會
+> `RunEmpireTurn`,demo(Dictatorship)no-op;運輸艦維護費當時已接線但 remake 無 Freighter 艦種,
+> 恆 0 no-op——**此缺口已於同日晚些補上(#4)**:新增「運輸艦隊」建造選項後,玩家側
+> `ActiveFreighters` 會真的變非 0,維護費隨之生效,並補上 1.3/1.5 版本現金加成差異,詳見
+> `docs/tech/moo2-formulas-reference.md`「運輸艦淨現金版本差異」節;AI 對手仍未接同一建造流程,
+> 恆 0 no-op。士氣對收入的調整**判定為刻意不接**(收入已從士氣調整過的產出換算出來,再套一次會
 > 雙重計算,見 `docs/tech/moo2-formulas-reference.md`「士氣對收入的影響」節)。20 回合 BC 軌跡探針
 > 確認接線前後一致(101→130),無 regression。詳見 `docs/HONEST-STATUS.md` 2026-07-11 收入死碼段落。
 
