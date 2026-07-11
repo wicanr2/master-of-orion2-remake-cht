@@ -57,7 +57,7 @@
 ## 真正缺、或根本不忠實的部分(這 ~80%)
 
 ### A. 使用者本次直接點出的兩點
-1. ~~**完全沒有音樂/音效**~~ **(2026-07-10 更新:基礎已打通)**。第一性原理翻案:MOO2 **無 XMI/MIDI**,音樂/音效是 LBX 內 PCM WAV,已整合 ebiten 音訊 + 主選單 BGM + 按鈕音效(`internal/audio`、`cmd/moo2/audiohook.go`,測試綠)。**仍待**:曲目↔場景對應對原版聆聽定案、星系/戰鬥各場景 BGM、戰鬥音效庫(CMBTSFX/SPHERSFX)。見 `docs/tech/audio-format.md`、`audio-track-map.md`。
+1. ~~**完全沒有音樂/音效**~~ **(2026-07-10 更新:基礎已打通)**。第一性原理翻案:MOO2 **無 XMI/MIDI**,音樂/音效是 LBX 內 PCM WAV,已整合 ebiten 音訊 + 主選單 BGM + 按鈕音效(`internal/audio`、`cmd/moo2/audiohook.go`,測試綠)。星系/戰鬥/外交各場景 BGM 已接線切換(`playSceneBGM`),戰鬥音效已接進戰術戰鬥(取自 `SOUND.LBX`)。**仍待**:曲目↔場景精確身分對原版人耳聆聽最終定案(桌面驗收)。~~戰鬥音效庫 CMBTSFX/SPHERSFX 逆向~~ 已裁定為視覺特效非音效,無此缺口。見 `docs/tech/audio-format.md`、`audio-track-map.md`。
 2. **一進新遊戲就跟原版差異太大 + 按鍵沒完整對齊**:
    - 原版新遊戲流程:主選單 →(選好設定)→ **獨立的種族選擇畫面(13 族肖像 + 自訂種族點數)** → 真正的星系生成與母星配置 → 進到有真實殖民地資料的遊戲畫面。
    - 我的版本:把種族擠進設定畫面一格、ACCEPT 後跳到**程序生成的假星系 + 示範殖民地**。體驗與原版完全不同。

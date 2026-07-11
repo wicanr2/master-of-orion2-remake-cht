@@ -82,8 +82,9 @@ docker images:`moo2-ebiten`(CGO+X11+xvfb,已存在)、`golang:1.25-bookworm`(純
 > ⚠ **翻案**:MOO2 **沒有 XMI/MIDI 音樂**。全部音樂/音效是 LBX 內的 22050Hz 8-bit PCM WAV,原封播即與原版 bit-identical,**不需 SoundFont/OPL 合成**。定案見 `docs/tech/audio-format.md`。
 - [x] 格式逆向 + ebiten 音訊整合(`internal/audio`)+ 主選單 BGM(STREAMHD)+ 按鈕音效(BUTTON1),`cmd/moo2/audiohook.go`;單元/真檔測試綠。
 - [~] **曲目/UI 事件對應待對原版聆聽定案**:BGM 暫用 clips[0]、點擊暫用 BUTTON1(哪條是主選單主題、哪個 BUTTONx 對哪類按鈕,需 oracle)。
-- [ ] 星系/戰鬥各場景的 BGM 對應;`CMBTSFX/SPHERSFX` 巢狀音庫(戰鬥音效)逆向。
-- [ ] 桌面實測驗收(headless 停用音訊,聽感只能桌面驗)。
+- [x] 星系/戰鬥/外交各場景 BGM 對應已接線(`playSceneBGM` 於 menu/galaxy/diplo/combat 切換,見 `interactive.go`);外交曲有反組譯硬證。
+- [x] ~~`CMBTSFX/SPHERSFX` 音庫逆向~~ **無此需求**:2026-07-12 byte 級驗證裁定兩者為 LBX **影像庫**(戰鬥視覺特效非音效);戰鬥音效全在 `SOUND.LBX`,已接進戰術戰鬥。
+- [ ] 桌面實測驗收(headless 停用音訊,聽感只能桌面驗);曲目↔場景精確身分仍待人耳最終定案。
 
 ### 優先 2 — 忠實的新遊戲流程(目前跳程序生成假星系)
 - [ ] 獨立**種族選擇畫面**:原版有 13 族肖像 + 自訂種族點數(RACEOPT.LBX)。目前擠在設定畫面一格,要拆成真畫面。

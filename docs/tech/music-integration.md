@@ -91,14 +91,14 @@ DOS/4G Copyright (C) Rational Systems  (WATCOM C/C++32 Run-Time)
 
 | 檔案 | 大小 | 資產數 | 內容 | 格式 |
 |---|---|---|---|---|
-| `SOUND.LBX` | ~4.25 MB | 69 | UI / 泛用音效 | **內嵌 RIFF/WAVE**(69 個 RIFF、68 個 WAVEfmt,實測);規格同 §2 |
-| `CMBTSFX.LBX` | ~2.29 MB | 79 | 戰鬥音效 | **無 RIFF header**(0 個 RIFF,實測)→ 疑為裸 PCM 或自訂小 header |
-| `SPHERSFX.LBX` | ~0.53 MB | 2 | Antaran / 球體音效 | **無 RIFF header** |
+| `SOUND.LBX` | ~4.25 MB | 69 | UI / 泛用 **+ 戰鬥** 音效 | **內嵌 RIFF/WAVE**(69 個 RIFF、68 個 WAVEfmt,實測);規格同 §2 |
+| `CMBTSFX.LBX` | ~2.29 MB | 79 | 戰鬥**視覺特效 sprite**(非音效)| **LBX 影像庫**(非音訊) |
+| `SPHERSFX.LBX` | ~0.53 MB | 2 | 安塔蘭**球體視覺特效**(非音效)| **LBX 影像庫**(非音訊) |
 
-- `SOUND.LBX` 每個資產直接是完整 WAV,抽出即可用。
-- `CMBTSFX.LBX` / `SPHERSFX.LBX` 資產**沒有 RIFF 包裝**:資產開頭是一段疑似自訂 header(如 `CMBTSFX` asset 0 開頭 `49 00 49 00 …` 不是 `RIFF`),需比對 openorion2 是否有對應解碼;**格式尚未逐位元組驗證**(待辦)。合理假設是同為 22 kHz/8-bit 裸 PCM 樣本 + 少量 metadata,但**別在驗證前當定論**。
+- `SOUND.LBX` 每個資產直接是完整 WAV,抽出即可用;**戰鬥音效也全在此**(NRGBLAST/MISLFIRE/SHIPHIT1/EXPL-1… 等具名音效,見 `bank.go`)。
+- **`CMBTSFX.LBX` / `SPHERSFX.LBX` 是影像不是音效(2026-07-12 byte 級訂正,rulebook 62/63)**:兩者資產開頭是標準 **LBX 影像 header**(前 4 byte = 寬、高):`CMBTSFX` asset0 = `49 00 49 00` = **73×73**(與已知為圖的 `CMBTSHP` asset0 `3b 00 3c 00`=59×60 同結構)、asset1=76×27、asset2=129×19;`SPHERSFX` asset0/1 = 270×257。即爆炸/光束/護盾命中/安塔蘭球體的多幀動畫 sprite。前一版憑「開頭不是 `RIFF`」臆測為裸 PCM 音庫,**是把影像尺寸 `49 00 49 00` 誤讀成音訊自訂 header 的錯誤斷言,已作廢**。
 
-> **待辦(靜態溯源)**:查 openorion2 `src/` 是否有 SFX/sound 資產解碼路徑(初步 grep 未見音訊解碼;openorion2 對音訊著墨少,`gui.h` 僅 `// TODO: Add support for transition audio`)。若 openorion2 無現成解碼,`CMBTSFX/SPHERSFX` 的 header 要自行反追(參考 shikadi ModdingWiki 的 MOO2 頁 / LBX 音訊條目)。
+> **結論:戰鬥音效無任何待逆向格式。** 戰鬥期音效全部來自 `SOUND.LBX`(標準 WAV,已解碼、已接進戰術戰鬥),`CMBTSFX/SPHERSFX` 屬視覺特效素材(渲染層,不是音訊層)。
 
 ---
 
@@ -132,11 +132,9 @@ DOS/4G Copyright (C) Rational Systems  (WATCOM C/C++32 Run-Time)
 - **優點**:體積小、ebiten 原生支援、串流解碼省記憶體。**缺點**:有損(但來源已是 8-bit,聽感差異小);多一個建置步驟。
 - **注意**:轉檔在 docker 內(對齊本專案 [HARD] 編譯/工具走 docker),別污染系統。
 
-### 路線 C —— 無 header 音效的處理(`CMBTSFX` / `SPHERSFX`)
+### 路線 C —— (已作廢)無 header 音效處理
 
-- 先反追其資產 header(§3 待辦)確認 sample rate / bit / 聲道與 data 起點。
-- 取出裸樣本 → 轉成 ebiten 要的 **signed 16-bit LE 立體聲**(8-bit unsigned → 減 128 再 `<<8`;單聲道 → 複製成雙聲道),包成 `io.Reader` 播;或乾脆在建置期補上標準 WAV header 後走路線 A/B。
-- **取捨**:一次性寫個轉換工具即可;屬「格式對齊」工程,不難但需先驗證 header。
+> 前一版此處規劃「反追 `CMBTSFX`/`SPHERSFX` 裸 PCM header」。**2026-07-12 byte 級驗證後作廢**:此兩檔是 LBX 影像庫(視覺特效 sprite),不是音效(見 §3)。戰鬥音效全在 `SOUND.LBX` 標準 WAV,走路線 A 即可,**無裸 PCM 需處理**。保留此標題僅為說明「曾有此誤判、已裁掉」。
 
 ### 路線 D —— XMI→MIDI→SoundFont / XMI→OPL 離線渲染(**本專案不需要,僅存為理論路線**)
 
@@ -161,13 +159,13 @@ DOS/4G Copyright (C) Rational Systems  (WATCOM C/C++32 Run-Time)
 
 1. **音樂**:路線 A 先跑通(抽 `STREAM.LBX` WAV → ebiten `wav` 播,驗證出聲、循環正確),再加路線 B(建置期 docker ffmpeg 轉 Ogg)縮體積。音樂資產 gitignore。
 2. **UI/泛用音效**:`SOUND.LBX` 走路線 A(已是 WAV,直接播);短音效可全載入記憶體(`audio.NewPlayerFromBytes`)。
-3. **戰鬥音效**:先做路線 C 的 header 反追(§3 待辦),確認 `CMBTSFX/SPHERSFX` 格式後補 WAV header 或轉 16-bit。
+3. **戰鬥音效**:已完成——全部取自 `SOUND.LBX` 具名 WAV(NRGBLAST/MISLFIRE/SHIPHIT1/EXPL-1),已接進戰術戰鬥;`CMBTSFX/SPHERSFX` 經查為視覺特效非音效,不涉音訊(§3)。
 4. **MIDI(D/E)**:目前不做;僅在確認有 XMIDI-only 音樂、或要保全 MT-32/OPL 音色版時再議。
 5. 音樂/音效列 WORKLIST 後期項(可玩畫面與輸入優先);全程遵守版權鐵則(路線 F)。
 
 ## 7. 待驗證 / 不確定(誠實標註)
 
-- [ ] `CMBTSFX.LBX` / `SPHERSFX.LBX` 資產的實際 header 與 PCM 規格(§3)—— 靜態反追 + 對照 openorion2 / shikadi ModdingWiki。
+- [x] ~~`CMBTSFX.LBX` / `SPHERSFX.LBX` 的 PCM 規格~~ —— 已於 2026-07-12 裁定為 **LBX 影像庫(非音效)**,無 PCM 可解(§3)。
 - [ ] 是否有任何音樂/jingle 走 XMIDI 而非 PCM(§1 不確定項);`SAMPLE.*` 音色庫是否真被遊戲用到。
 - [ ] `STREAMHD` 與 `STREAM` 的關係(HD 是高音質?不同情境音樂?)—— 名稱臆測,待實聽/比對確認。
 - [ ] 各曲目對應的**遊戲情境**(主選單/星圖/戰鬥/勝負畫面)—— 播放觸發邏輯要另查 openorion2 或原版行為,別憑檔名/順序假設。
