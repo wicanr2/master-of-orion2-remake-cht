@@ -335,6 +335,23 @@ type sceneBuilder struct {
 	designMods    []string           // 目前設計勾選的武器改造(gamedata.WeaponModCode 字串;僅 beam 武器生效)
 	designMsg     string             // 艦艇設計畫面「空間不足,擋下建造」的提示訊息(切換元件/成功建造時清空)
 	lastActionMsg string             // 星圖畫面「載運陸戰隊/發動地面入侵」的最近一次結果訊息(選新星時清空)
+	gameVersion   gamedata.GameVersion // 主選單選的規則版本(1.3/1.5);開局注入 session.RuleProfile
+}
+
+// profileForVersion 把主選單選的版本轉成對應 RuleProfile(開局注入 session)。
+func profileForVersion(v gamedata.GameVersion) gamedata.RuleProfile {
+	if v == gamedata.VersionClassic13 {
+		return gamedata.Profile13()
+	}
+	return gamedata.Profile15()
+}
+
+// versionShort 版本短名(主選單切換顯示用)。
+func versionShort(v gamedata.GameVersion) string {
+	if v == gamedata.VersionClassic13 {
+		return "1.3"
+	}
+	return "1.5"
 }
 
 // savePathFor 回傳 remake 存檔路徑(使用者設定目錄下,退回暫存目錄),確保可寫。
@@ -353,12 +370,21 @@ func savePathFor() string {
 // menu 建原版主選單畫面。按鈕熱區用 menuOverlays 的座標(按鈕即標籤)。
 func (b *sceneBuilder) menu() (*overlayScreen, error) {
 	playSceneBGM(bgmMenu)
-	hits := make([]hitRegion, 0, len(menuOverlays))
+	hits := make([]hitRegion, 0, len(menuOverlays)+1)
 	for _, o := range menuOverlays {
 		hits = append(hits, hitRegion{o.x, o.y, o.w, o.h, o.enKey})
 	}
+	// 規則版本切換(CLAUDE.md:主選單選 1.3/1.5)——左下角熱區,點擊循環切換,開局注入 RuleProfile。
+	hits = append(hits, hitRegion{12, 450, 220, 22, "toggleVersion"})
 	onAction := func(a string) *origTransition {
 		switch a {
+		case "toggleVersion":
+			if b.gameVersion == gamedata.VersionClassic13 {
+				b.gameVersion = gamedata.VersionCommunity15
+			} else {
+				b.gameVersion = gamedata.VersionClassic13
+			}
+			return b.goTo(b.menu, "主選單") // 重繪以更新版本顯示
 		case "Quit Game":
 			return &origTransition{quit: true}
 		case "New Game":
@@ -398,8 +424,18 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 	if menuFont == nil {
 		menuFont = b.fnt
 	}
-	return loadOverlayScreen(b.res, "mainmenu.lbx", 21, b.lang, menuFont, "assets/i18n/menu.tsv",
+	s, err := loadOverlayScreen(b.res, "mainmenu.lbx", 21, b.lang, menuFont, "assets/i18n/menu.tsv",
 		menuOverlays, color.RGBA{104, 224, 96, 255}, 15, hits, onAction, nil)
+	if err != nil {
+		return nil, err
+	}
+	// 左下角版本切換標籤(點擊上方熱區循環)。
+	s.extras = append(s.extras, extraText{
+		x: 16, y: 458, size: 13,
+		text: fmt.Sprintf("規則版本 %s(點此切換)", versionShort(b.gameVersion)),
+		col:  color.RGBA{150, 210, 150, 255},
+	})
+	return s, nil
 }
 
 // goTo 建構下一個場景並包成 transition;失敗時記錄錯誤並留在原畫面。
@@ -2395,7 +2431,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 	if err != nil {
 		return err
 	}
-	b := &sceneBuilder{res: res, fnt: fnt, fntVec: fntVec, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: 1, designWeapon: 1, savePath: savePathFor()}
+	b := &sceneBuilder{res: res, fnt: fnt, fntVec: fntVec, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: 1, designWeapon: 1, savePath: savePathFor(), gameVersion: gamedata.VersionCommunity15}
 	menu, err := b.menu()
 	if err != nil {
 		return err
