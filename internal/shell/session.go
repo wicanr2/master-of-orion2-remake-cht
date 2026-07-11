@@ -1261,7 +1261,7 @@ type Race struct {
 // Races 是 MOO2 十三經典種族,各帶招牌起始加成(remake 調校)。索引 0 為人類(預設)。
 var Races = []Race{
 	{"人類", "Humans", 0, 0, 0, 0, 60, 0, "外交貿易見長,起始國庫充裕"},
-	{"席隆", "Psilons", 0, 4, 0, 0, 0, 0, "創造性研究,科學家產出高"},
+	{"席隆", "Psilons", 0, 2, 0, 0, 0, 0, "創造性研究,科學家產出高"}, // ResBonus+2:手冊 p.614「2 more than galactic norm」,norm3+2=5,對齊 SAVE10.GAM Psilon 母星每科研=5
 	{"薩克拉", "Sakkra", 0, 0, 1, 30, 0, 0, "繁殖迅速,人口成長加成"},
 	{"克拉肯", "Klackons", 2, 0, 0, 0, 0, 0, "團結勤奮,工業產出高"},
 	{"姆瑞森", "Mrrshan", 0, 0, 0, 0, 0, 25, "好戰善攻,艦艇攻擊加成"},
@@ -2189,10 +2189,15 @@ func (s *GameSession) advanceResearch() {
 // GameSession.Government 欄位註解(自訂種族 0 點基準)。
 func playerHomeworldColony() engine.ColonyState {
 	return engine.ColonyState{
+		// 職務分配維持 農4工3科1(本輪只校研究基準,不動分配——分配改動會漣漪到工業/稅收
+		// 收入,破壞 government_test 等,依「別盲改堆疊經濟」教訓拆成獨立後續:母星科學家對齊
+		// 原版科2-4 需連同食物/農夫校正一起做,見 original-gameplay-reference.md §7.0.1)。
 		Population: 8, PopMax: 20, Farmers: 4, Workers: 3, Scientists: 1,
-		FoodPerFarmer:        gamedata.ClimateFoodPerFarmer(gamedata.TERRAN),
-		IndustryPerWorker:    gamedata.MineralIndustryPerWorker(gamedata.ABUNDANT),
-		ResearchPerScientist: 30,
+		FoodPerFarmer:     gamedata.ClimateFoodPerFarmer(gamedata.TERRAN),
+		IndustryPerWorker: gamedata.MineralIndustryPerWorker(gamedata.ABUNDANT),
+		// 研究每科學家=銀河基準 3(手冊 p.949「usual 3」+ Psilon +2 邏輯 + SAVE10.GAM 驗證,
+		// 見 gamedata.ResearchPerScientistNorm)。先前硬編 30 約 10x 過高,2026-07-12 校正。
+		ResearchPerScientist: gamedata.ResearchPerScientistNorm,
 		PlanetSize:           gamedata.LARGE_PLANET,
 		MoralePercent:        colonyMoralePercent(gamedata.MoraleGovDictatorship, homeworldBuildings()),
 		// PlanetGravity 母星固定 Normal-G(手冊/homeworld-init.md 慣例基準,與 Terran/Abundant

@@ -23,12 +23,13 @@ func TestApplyRaceBonuses(t *testing.T) {
 		t.Fatalf("克拉肯工業應 +2:%d → %d", baseInd, got)
 	}
 
-	// 席隆:研究/科學家 +4。
+	// 席隆:研究/科學家 +2(手冊 p.614「2 more than galactic norm」,norm3+2=5,對齊 SAVE10.GAM
+	// Psilon 母星每科研=5;2026-07-12 由先前 remake 調校值 +4 訂正為手冊真值 +2)。
 	s = NewDemoSession()
 	baseRes := s.PlayerColonies[0].ResearchPerScientist
 	s.ApplyRace(idx("Psilons"))
-	if got := s.PlayerColonies[0].ResearchPerScientist; got != baseRes+4 {
-		t.Fatalf("席隆研究應 +4:%d → %d", baseRes, got)
+	if got := s.PlayerColonies[0].ResearchPerScientist; got != baseRes+2 {
+		t.Fatalf("席隆研究應 +2:%d → %d", baseRes, got)
 	}
 
 	// 諾蘭姆:起始國庫 +120。

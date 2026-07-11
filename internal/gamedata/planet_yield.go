@@ -73,6 +73,18 @@ func MineralIndustryPerWorker(mineral PlanetMinerals) int {
 	return PlanetBaseProduction(int(mineral))
 }
 
+// ResearchPerScientistNorm 是「銀河基準」每個科學家人口單位的基礎研究產出(GAME_MANUAL.pdf
+// 三重確認:①p.949「produces 5 research points instead of the usual 3」明列 usual=3;②p.614
+// 「Each Psilon scientist produces 2 more research than the galactic norm」(Psilon=norm+2);
+// ③原版存檔 SAVE10.GAM 普通種族母星 ResearchPerScientist=3、Psilon 母星=5)。與食物(氣候表)/
+// 工業(礦產表)不同,研究基準不依氣候/礦產,是全域固定值。Psilon 等創造性種族的 +2 由
+// Race.ResBonus 疊加(見 shell.Races)。
+//
+// 注意:先前 playerHomeworldColony 硬編 ResearchPerScientist=30(約 10x 過高,無手冊出處),
+// 2026-07-12 依上述三重來源校正為 norm=3——這是開局經濟平衡的載重改動,已探針驗證研究節奏
+// 忠實變慢但遊戲仍可進展。
+const ResearchPerScientistNorm = 3
+
 // PlanetBasePopMax 回傳指定行星大小(size,0-based TINY..HUGE)、氣候(climate)下的「基礎人口
 // 容量」——新殖民地建立當下的 PopMax(不含 Biospheres/+2、Advanced City Planning/+5、
 // Subterranean/+2*(size+1)、Tolerant/+25%、Aquatic 等加成,那些由呼叫端疊加,與既有
