@@ -229,7 +229,12 @@ func main() {
 			if tsv == "" {
 				tsv = "assets/i18n/menu.tsv"
 			}
-			err = runMenu(dirs, langID, fnt, tsv, *shot, *frames)
+			// 主選單用純向量 Noto(平滑,與 -game 主選單一致);zh 未帶 -font 時退回混合字型。
+			menuFont := fnt
+			if vec, verr := loadFontVector(*fontPath); verr == nil && vec != nil {
+				menuFont = vec
+			}
+			err = runMenu(dirs, langID, menuFont, tsv, *shot, *frames)
 		} else {
 			tsv := *tsvPath
 			if tsv == "" {
@@ -302,6 +307,11 @@ func main() {
 		if err != nil {
 			fatal(fmt.Errorf("載入字型: %w", err))
 		}
+		// 主選單等要平滑向量的畫面用純 Noto(不附點陣);zh 未帶 -font 時為 nil,menu 會退回 fnt。
+		fntVec, err := loadFontVector(*fontPath)
+		if err != nil {
+			fatal(fmt.Errorf("載入向量字型: %w", err))
+		}
 		dirs := strings.Split(*dataDirs, ",")
 		var script []shell.InputState
 		if *shot != "" && *gameGallery == "" {
@@ -312,7 +322,7 @@ func main() {
 				{MouseX: 486, MouseY: 405, ClickReleased: true},
 			}
 		}
-		if err := runInteractive(dirs, langID, fnt, script, *shot, *frames, *gameGallery); err != nil {
+		if err := runInteractive(dirs, langID, fnt, fntVec, script, *shot, *frames, *gameGallery); err != nil {
 			fatal(err)
 		}
 		return
@@ -477,13 +487,9 @@ func main() {
 	}
 }
 
-// loadFont 依語言載入字型:zh 用內嵌點陣繁中字(bitmapfont FaceTC,免外部檔),
-// 其餘(en/未指定)維持向量字(依副檔名載入,.ttc 走集合解析取第 0 個)。
-// lang!=zh 且 path 為空時回 nil(不畫中文,行為與改動前一致)。
-func loadFont(path string, lang i18n.Lang) (*uifont.Font, error) {
-	if lang == i18n.Traditional {
-		return uifont.LoadBitmapTC(), nil
-	}
+// loadFontVector 只載向量字(Noto),不附點陣。path 為空回 (nil,nil)。
+// 供「主選單」等需純平滑向量的畫面用(見 loadFont 的混合說明)。
+func loadFontVector(path string) (*uifont.Font, error) {
 	if path == "" {
 		return nil, nil
 	}
@@ -495,6 +501,26 @@ func loadFont(path string, lang i18n.Lang) (*uifont.Font, error) {
 		return uifont.LoadCollection(data, 0)
 	}
 	return uifont.Load(data)
+}
+
+// loadFont 依語言載入內文用字型。
+//   - zh:混合字型 —— 內文(<18px)走 bitmapfont FaceTC 點陣(銳利),標題(≥18px)走 Noto
+//     向量(平滑,避免點陣放大鋸齒)。需 -font 指向 Noto 才有向量分支;-font 為空時退回
+//     純點陣(LoadBitmapTC,標題也點陣但至少不 crash、能顯示中文)。
+//   - en/未指定:純向量 Noto;path 為空回 nil(不畫中文,行為與改動前一致)。
+func loadFont(path string, lang i18n.Lang) (*uifont.Font, error) {
+	if lang == i18n.Traditional {
+		vec, err := loadFontVector(path)
+		if err != nil {
+			return nil, err
+		}
+		if vec == nil {
+			// 無 Noto 可混合:退回純點陣(標題也點陣,但可顯示中文、不 crash)。
+			return uifont.LoadBitmapTC(), nil
+		}
+		return vec.WithBitmapTC(18), nil
+	}
+	return loadFontVector(path)
 }
 
 func fatal(err error) {

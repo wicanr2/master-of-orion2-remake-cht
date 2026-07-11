@@ -73,7 +73,12 @@ type overlayScreen struct {
 	hover            string
 	offsetX, offsetY int                     // 背景圖在 640×480 畫布上的置中偏移(小於全螢幕的視窗畫面用)
 	eraseColor       *color.RGBA             // 非 nil 時強制用此色擦底(背景均勻的畫面用,勝過採樣猜測)
-	extras           []extraText             // 即時動態文字(星曆、國庫…),疊在背景+overlay 之上
+	eraseInsetX      int                     // 擦底框在基準(左右各3px)之外「再往內縮」的水平量(每邊);0=不變
+	eraseInsetY      int                     // 擦底框在基準(上下各2px)之外「再往內縮」的垂直量(每邊);0=不變
+	plateFace        bool                    // true=擦底色改採按鈕面色(浮雕按鈕列用,見 samplePlate faceSample)
+	// eraseInset 用途:浮雕按鈕的上下/左右斜邊會被擦底塊蓋掉 → 加內縮只擦中間文字帶,保留浮雕框
+	// (仍蓋掉烘進的英文,因英文置中於文字帶內);plateFace 則讓擦底色貼合按鈕面,兩者可併用。
+	extras []extraText // 即時動態文字(星曆、國庫…),疊在背景+overlay 之上
 	postDraw         func(dst *ebiten.Image) // 任意額外繪製(如星圖),在最後呼叫
 	mx, my           int                     // 最近一次 update() 算出的滑鼠局部座標(扣掉置中偏移),供 postDraw 讀取做懸停偵測(如殖民地總覽 Planetary/Production Info)
 }
@@ -123,12 +128,15 @@ func (s *overlayScreen) draw(dst *ebiten.Image) {
 		for _, b := range s.overlays {
 			// 擦掉烘進圖的英文:填單色底(eraseColor 指定則用之,否則取標籤帶的「中位數色」——
 			// 代表性中間調,避免誤取過暗陰影形成黑框;單色填充不複製紋理,故不會有錯位歪斜)。
-			plate := samplePlate(s.rgba, b)
+			plate := samplePlate(s.rgba, b, s.plateFace)
 			if s.eraseColor != nil {
 				plate = *s.eraseColor
 			}
-			vector.DrawFilledRect(dst, float32(float64(b.x+3)+ox), float32(float64(b.y+2)+oy),
-				float32(b.w-6), float32(b.h-4), plate, false)
+			// 基準內縮左右各3、上下各2;eraseInsetX/Y 再各邊多縮,保留浮雕框(見欄位註解)。
+			ex := 3 + s.eraseInsetX
+			ey := 2 + s.eraseInsetY
+			vector.DrawFilledRect(dst, float32(float64(b.x+ex)+ox), float32(float64(b.y+ey)+oy),
+				float32(b.w-2*ex), float32(b.h-2*ey), plate, false)
 			// 疊中文(同 overlay.go)。
 			size := b.size
 			if size == 0 {
@@ -165,7 +173,11 @@ func (s *overlayScreen) draw(dst *ebiten.Image) {
 // 「中位數亮度色」——中位數為代表性中間調,對少數的亮字/暗陰影都穩健,不會像眾數那樣
 // 誤取到反覆出現的過暗陰影而形成黑框。
 // 註:背景均勻但文字靠左/寬粗填滿的畫面(如 info),改用 overlayScreen.eraseColor 強制底色。
-func samplePlate(rgba *image.RGBA, b labelRect) color.RGBA {
+//
+// faceSample=true(浮雕按鈕列,如殖民地底列):只採「左右內緣的垂直中央帶」當面色,
+// 跳過上下緣列——那兩列會落在按鈕的上亮/下暗斜邊或按鈕間隙,把中位數往暗拉,擦出來的
+// 底板比按鈕面更暗、像挖了黑洞蓋住浮雕框。改採面色後,擦底與按鈕面同色,浮雕框自然可見。
+func samplePlate(rgba *image.RGBA, b labelRect, faceSample bool) color.RGBA {
 	W, H := rgba.Bounds().Dx(), rgba.Bounds().Dy()
 	var cols []color.RGBA
 	add := func(x, y int) {
@@ -175,15 +187,25 @@ func samplePlate(rgba *image.RGBA, b labelRect) color.RGBA {
 		i := rgba.PixOffset(x, y)
 		cols = append(cols, color.RGBA{rgba.Pix[i], rgba.Pix[i+1], rgba.Pix[i+2], 255})
 	}
-	// 上下緣各兩列(文字上下的乾淨底)橫跨全寬 + 左內緣窄帶。
-	for _, y := range []int{b.y + 1, b.y + 2, b.y + b.h - 3, b.y + b.h - 2} {
-		for x := b.x + 3; x < b.x+b.w-3; x += 2 {
-			add(x, y)
+	if faceSample {
+		// 左右內緣各三行,取垂直中央帶(避開上下斜邊列與置中英文),得按鈕面色。
+		for _, dx := range []int{3, 5, 7} {
+			for y := b.y + 4; y < b.y+b.h-4; y++ {
+				add(b.x+dx, y)
+				add(b.x+b.w-1-dx, y)
+			}
 		}
-	}
-	for _, dx := range []int{3, 5, 7} {
-		for y := b.y + 3; y < b.y+b.h-3; y++ {
-			add(b.x+dx, y)
+	} else {
+		// 上下緣各兩列(文字上下的乾淨底)橫跨全寬 + 左內緣窄帶。
+		for _, y := range []int{b.y + 1, b.y + 2, b.y + b.h - 3, b.y + b.h - 2} {
+			for x := b.x + 3; x < b.x+b.w-3; x += 2 {
+				add(x, y)
+			}
+		}
+		for _, dx := range []int{3, 5, 7} {
+			for y := b.y + 3; y < b.y+b.h-3; y++ {
+				add(b.x+dx, y)
+			}
 		}
 	}
 	if len(cols) == 0 {
@@ -297,7 +319,8 @@ func loadOverlayScreen(res *assets.Resolver, lbxName string, assetID int, lang i
 
 type sceneBuilder struct {
 	res           *assets.Resolver
-	fnt           *uifont.Font
+	fnt           *uifont.Font // 內文用字型(zh 為混合:內文點陣、標題向量)
+	fntVec        *uifont.Font // 純向量 Noto(供主選單等要平滑的畫面;nil 時退回 fnt)
 	lang          i18n.Lang
 	session       *shell.GameSession // 活的對局狀態(TURN 推進、畫面顯示即時資料)
 	newGameSize   int                // NEW GAME 選的星系大小索引(shell.GalaxySizes)
@@ -369,7 +392,13 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 		// Multi Player:尚未實作,暫不動作。
 		return nil
 	}
-	return loadOverlayScreen(b.res, "mainmenu.lbx", 21, b.lang, b.fnt, "assets/i18n/menu.tsv",
+	// 主選單用純向量 Noto(平滑),不走內文點陣(使用者要求主選單維持向量觀感);
+	// 無 fntVec(如 zh 未帶 -font)時退回 b.fnt。
+	menuFont := b.fntVec
+	if menuFont == nil {
+		menuFont = b.fnt
+	}
+	return loadOverlayScreen(b.res, "mainmenu.lbx", 21, b.lang, menuFont, "assets/i18n/menu.tsv",
 		menuOverlays, color.RGBA{104, 224, 96, 255}, 15, hits, onAction, nil)
 }
 
@@ -697,6 +726,27 @@ func planetSizeNameZH(sz gamedata.PlanetSize) string {
 	return "未知"
 }
 
+// truncateToWidth 把 s 截到在 fnt/size 下量測寬度不超過 maxW,超過則去尾加「…」。
+// 用於欄寬有限的清單文字(如殖民地「已建:…」),避免溢出 cell 框。fnt 為 nil 或本就
+// 不超寬時原樣回傳。逐 rune 縮短(CJK 無空白),保證至少留 1 個字 + 省略號。
+func truncateToWidth(fnt *uifont.Font, s string, size, maxW float64) string {
+	if fnt == nil {
+		return s
+	}
+	if w, _ := fnt.Measure(s, size); w <= maxW {
+		return s
+	}
+	rs := []rune(s)
+	for len(rs) > 1 {
+		rs = rs[:len(rs)-1]
+		cand := string(rs) + "…"
+		if w, _ := fnt.Measure(cand, size); w <= maxW {
+			return cand
+		}
+	}
+	return string(rs)
+}
+
 func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 	// 點各殖民地的職務欄 → 重分配 1 名人口(農夫欄→多農夫、工人欄→多工人、科學家欄→多科學家);
 	// RETURN → 星系主畫面。列中心 y 與欄 x 對齊資料。
@@ -758,6 +808,8 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 	if err != nil {
 		return nil, err
 	}
+	// 底列/欄名皆浮雕鈕:擦底色改採按鈕面色,避免暗塊蓋掉浮雕框(見 samplePlate faceSample)。
+	s.plateFace = true
 	// 即時殖民地資料填進表格列(欄位中心 x 對齊標題;列中心 y 經 PIL 量測,每列約 31px)。
 	if b.session != nil {
 		body := color.RGBA{214, 220, 235, 255}
@@ -788,7 +840,9 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 					names = append(names, n)
 				}
 				sort.Strings(names)
-				lbl := "已建:" + strings.Join(names, "、")
+				// 依「建造」欄寬截斷,避免長建築清單溢出 cell 框、撞出畫面右緣
+				// (點陣字最小 12px,小字撐大更易超框;BUILDING 欄 x512 寬118,留邊取 110)。
+				lbl := truncateToWidth(b.fnt, "已建:"+strings.Join(names, "、"), 10, 110)
 				s.extras = append(s.extras, extraText{x: 571, y: y + 13, size: 10, text: lbl, col: color.RGBA{150, 200, 150, 255}, align: 1})
 			}
 		}
@@ -2303,7 +2357,7 @@ func (a *interactiveApp) Layout(int, int) (int, int) { return moo2ScreenW, moo2S
 
 // runInteractive 啟動「還原原版」的互動遊戲。script/shot 非空時為 headless 驗證;
 // galleryDir 非空時為「端到端過場截圖廊」模式(見 buildGalleryScript),優先於 script/shot。
-func runInteractive(dirs []string, lang i18n.Lang, fnt *uifont.Font,
+func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 	script []shell.InputState, shot string, frames int, galleryDir string) error {
 
 	if lang == i18n.Traditional && fnt == nil {
@@ -2313,7 +2367,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt *uifont.Font,
 	if err != nil {
 		return err
 	}
-	b := &sceneBuilder{res: res, fnt: fnt, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: 1, designWeapon: 1, savePath: savePathFor()}
+	b := &sceneBuilder{res: res, fnt: fnt, fntVec: fntVec, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: 1, designWeapon: 1, savePath: savePathFor()}
 	menu, err := b.menu()
 	if err != nil {
 		return err
