@@ -635,6 +635,21 @@ func drawStarmap(dst *ebiten.Image, fnt *uifont.Font, stars []shell.Star, select
 
 // colonySummary 建原版殖民地總覽畫面(COLSUM.LBX 資產 0,自帶完整調色盤)。
 // openorion2 未實作此 view,背景資產由本專案自 LBX 探測定位。
+//
+// 2026-07-11 查證下方 4 個預覽面板(game tester 回報「3黑1雜訊,疑似解碼失敗」):
+// 對照 GAME_MANUAL.pdf(patch1.5)p.38-40「Colonies [C]」一節,原版明文列出這 4 格由左到右
+// 依序是 Planetary Info / Production Info / Mini Map(顯示殖民地在銀河的位置)/ 一個「稍後說明」
+// 的方格(後續段落證實是 Empire Summary:國庫/收支/人口/食物/研究)。
+// 逐像素比對後確認:第 3 格(x≈380-508)那片「白雜訊」實際是 alpha=0(keyColor 透明)背景上
+// 散布著真正不透明的星點像素——即 Mini Map 本該有的星圖縮圖,不是調色盤錯或解碼失敗
+// (若是解碼錯誤,黑色像素也會是 alpha=0 或呈現隨機色塊,不會是「透明底 + 乾淨星點」這種
+// 有意義的稀疏圖樣)。其餘 3 格(x≈10-92 / 102-371 / 516-628)是 alpha=255 的純黑,同樣是
+// 正確解碼的原始美術——原版設計是「靜態黑底 + 執行期依滑鼠懸停的殖民地動態疊圖」,本專案
+// 尚未接上懸停互動,故維持乾淨黑底(不是壞掉,只是功能未實作)。
+// 結論:不動這 4 格底圖(它們是正確的原版美術,亂改等於銷毀真實資產,見 rulebook 83 完整性
+// 原則);已知可在不動邏輯層前提下補上的,是第 4 格 Empire Summary——用既有 session 欄位
+// (LastPlayerOutput.*、Player.BC)畫成文字,取代空黑格。Planetary Info / Production Info 兩格
+// 因需要「目前懸停哪個殖民地」這個新互動狀態,超出本輪純渲染修正範圍,留 TODO。
 func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 	// 點各殖民地的職務欄 → 重分配 1 名人口(農夫欄→多農夫、工人欄→多工人、科學家欄→多科學家);
 	// RETURN → 星系主畫面。列中心 y 與欄 x 對齊資料。
@@ -729,6 +744,25 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 				lbl := "已建:" + strings.Join(names, "、")
 				s.extras = append(s.extras, extraText{x: 571, y: y + 13, size: 10, text: lbl, col: color.RGBA{150, 200, 150, 255}, align: 1})
 			}
+		}
+		// 第 4 格「Empire Summary」面板(x≈516-628,y≈349-438;見上方函式註解的
+		// manual 查證):原本是空黑格,補上既有 session 欄位算好的帝國概況文字
+		// (國庫/收支/人口/食物/研究),不新增邏輯、只讀既有資料。
+		pop := 0
+		for _, c := range b.session.PlayerColonies {
+			pop += c.Population
+		}
+		out := b.session.LastPlayerOutput
+		es := color.RGBA{205, 218, 235, 255}
+		lines := []string{
+			fmt.Sprintf("國庫 %d BC", b.session.Player.BC),
+			fmt.Sprintf("收支 %+d/回合", out.NetBC),
+			fmt.Sprintf("人口 %d", pop),
+			fmt.Sprintf("食物 %+d", out.TotalFood),
+			fmt.Sprintf("研究 %d/回合", out.TotalResearch),
+		}
+		for i, l := range lines {
+			s.extras = append(s.extras, extraText{x: 522, y: 360 + float64(i)*16, size: 11, text: l, col: es})
 		}
 	}
 	return s, nil
@@ -1185,24 +1219,37 @@ func (t *tacticalScreen) fireRound(target int) {
 // drawShip 畫單艘艦:有 t.ship sprite 就縮放貼原版艦圖(敵方水平翻轉朝左),
 // 否則 fallback 回原本的矩形 token 畫法。HP 條、艦名、選中金框一律疊在最上層,
 // 不受美術是否載入影響。
+//
+// 2026-07-11 修疊字 bug:原本圖示等比縮放頂滿整格高度,艦名疊在圖示正中央(y+13 恰好落在
+// 圖示範圍內),兩者互相蓋字難辨(端到端截圖查出)。改成上→下三段式版面:艦名帶(固定於格
+// 頂、半透明黑底墊字)→ 圖示(縮小置中,讓開文字帶與血條)→ HP 條(格底),彼此不重疊。
 func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base color.RGBA, selected bool, enemy bool) {
 	x, y, w, h := cellRect(s.Col, s.Row)
 	x, y, w, h = x+4, y+6, w-8, h-12
+	const labelH = 13 // 艦名帶高度(固定在格頂)
+	const hpH = 8     // 血條預留高度(固定在格底)
+	iconTop := y + labelH
+	iconH := h - labelH - hpH
+	if iconH < 4 {
+		iconH = 4
+	}
 	if t.ship != nil {
 		sb := t.ship.Bounds()
 		sw0, sh0 := float64(sb.Dx()), float64(sb.Dy())
-		sc := float64(h) / sh0 // 依格高等比縮放,寬度可能超出格寬少許,可接受
+		sc := float64(iconH) / sh0 // 依縮小後的圖示高度等比縮放(不再頂滿整格)
+		iconW := sw0 * sc
+		iconX := float64(x) + (float64(w)-iconW)/2 // 水平置中於格內
 		op := &ebiten.DrawImageOptions{}
 		if enemy {
 			op.GeoM.Scale(-sc, sc)
-			op.GeoM.Translate(float64(x)+sw0*sc, float64(y))
+			op.GeoM.Translate(iconX+iconW, float64(iconTop))
 		} else {
 			op.GeoM.Scale(sc, sc)
-			op.GeoM.Translate(float64(x), float64(y))
+			op.GeoM.Translate(iconX, float64(iconTop))
 		}
 		dst.DrawImage(t.ship, op)
 	} else {
-		vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{base.R / 3, base.G / 3, base.B / 3, 255}, false)
+		vector.DrawFilledRect(dst, float32(x), float32(iconTop), float32(w), float32(iconH), color.RGBA{base.R / 3, base.G / 3, base.B / 3, 255}, false)
 	}
 	sw := float32(1.5)
 	sc := base
@@ -1210,8 +1257,13 @@ func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base co
 		sw, sc = 3, color.RGBA{255, 240, 120, 255}
 	}
 	vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), sw, sc, false)
+	// 艦名帶:半透明黑底 + 文字,固定在格頂、圖示上方,不與圖示重疊。
+	// 注意 uifont.Font.Draw 的 (x,y) 是文字「左上角」基準(非 baseline),故這裡從帶子頂端
+	// 往下留 1px 起畫,讓字身整個落在 labelH 高度內,不溢出到下方圖示區(先前 y+labelH-2
+	// 誤當 baseline 用,實際會把字往下推到圖示範圍,疊字 bug 未修好,端到端截圖二次查出)。
+	vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(labelH), color.RGBA{0, 0, 0, 150}, false)
 	if t.fnt != nil {
-		t.fnt.Draw(dst, s.Name, float64(x)+5, float64(y)+13, 11, color.RGBA{230, 235, 245, 255})
+		t.fnt.Draw(dst, s.Name, float64(x)+3, float64(y)+1, 10, color.RGBA{235, 240, 250, 255})
 	}
 	frac := float32(s.HP) / float32(s.MaxHP)
 	if frac < 0 {
@@ -1835,20 +1887,41 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 	return s, nil
 }
 
+// researchAreaOrder 把畫面 8 個領域熱區名對應到 gamedata.TechTree() 的領域索引(見
+// internal/gamedata/techtree.go 陣列註解:0=Biology…7=Sociology)。
+var researchAreaOrder = map[string]int{
+	"Construction": 3, "Power": 1, "Chemistry": 5, "Sociology": 7,
+	"Computers": 6, "Biology": 0, "Physics": 2, "Force Fields": 4,
+}
+
+// currentAreaTopic 回傳某研究領域「目前應研究的主題」:MOO2 原版機制是玩家選定領域、
+// 該領域依 techtree 固定順序逐一解鎖(非玩家自由挑選領域內個別主題,完成一項後才跳下一項,
+// 期間若有多科技可選走 researchChoiceScreen 另外決定),故此處回傳該領域第一個尚未完成的
+// 主題 + 其 RP 成本(gamedata.researchChoices 為權威來源)。done=true 表示整領域已研究完畢。
+func currentAreaTopic(session *shell.GameSession, areaIdx int) (topic gamedata.ResearchTopic, cost int, done bool) {
+	topics := gamedata.TechTree()[areaIdx]
+	completed := session.Player.CompletedTopics
+	for _, t := range topics {
+		if completed == nil || !completed[t] {
+			return t, shell.ResearchCost(t), false
+		}
+	}
+	if len(topics) > 0 {
+		last := topics[len(topics)-1]
+		return last, shell.ResearchCost(last), true
+	}
+	return 0, 0, true
+}
+
 // research 建原版研究選擇畫面(TECHSEL.LBX 資產 0,無內嵌調色盤 → 走調色盤鏈,
 // 基底取自 SCIENCE.LBX 資產 0)。點畫面任一處返回主選單。
+//
+// 2026-07-11 修盲選 bug:原本 8 領域框各自綁死一個寫死的代表主題(如 Chemistry 恆選
+// TOPIC_ADVANCED_CHEMISTRY),玩家看不到實際會研究哪個主題、要花多少 RP 就得盲點。
+// 改為即時算出該領域「目前應研究的主題」(currentAreaTopic,依 techtree 固定順序取第一個
+// 未完成主題)並把中文名 + RP 成本疊字顯示在領域框內,點擊即設定為該真主題(而非寫死值)。
 func (b *sceneBuilder) research() (*overlayScreen, error) {
-	// 8 個研究領域為點擊熱區(bg 局部座標;涵蓋整塊面板)→ 設定該領域代表研究主題 → 回星系。
-	areaTopic := map[string]gamedata.ResearchTopic{
-		"Construction": gamedata.TOPIC_ADVANCED_CONSTRUCTION,
-		"Power":        gamedata.TOPIC_ADVANCED_FUSION,
-		"Chemistry":    gamedata.TOPIC_ADVANCED_CHEMISTRY,
-		"Sociology":    gamedata.TOPIC_ADVANCED_GOVERNMENTS,
-		"Computers":    gamedata.TOPIC_ARTIFICIAL_INTELLIGENCE,
-		"Biology":      gamedata.TOPIC_ADVANCED_BIOLOGY,
-		"Physics":      gamedata.TOPIC_ADVANCED_MAGNETISM,
-		"Force Fields": gamedata.TOPIC_ADVANCED_ENGINEERING,
-	}
+	// 8 個研究領域為點擊熱區(bg 局部座標;涵蓋整塊面板)→ 設定該領域目前主題 → 回星系。
 	hits := []hitRegion{
 		{16, 32, 208, 98, "Construction"}, {242, 32, 214, 98, "Power"},
 		{16, 137, 208, 98, "Chemistry"}, {242, 137, 214, 98, "Sociology"},
@@ -1856,8 +1929,10 @@ func (b *sceneBuilder) research() (*overlayScreen, error) {
 		{16, 348, 208, 98, "Physics"}, {242, 348, 214, 98, "Force Fields"},
 	}
 	onAction := func(a string) *origTransition {
-		if t, ok := areaTopic[a]; ok && b.session != nil {
-			b.session.SetResearchTopic(t) // 實際設定研究主題,結束回合朝此累積
+		if idx, ok := researchAreaOrder[a]; ok && b.session != nil {
+			if t, _, done := currentAreaTopic(b.session, idx); !done {
+				b.session.SetResearchTopic(t) // 實際設定研究主題,結束回合朝此累積
+			}
 		}
 		return b.goTo(b.galaxy, "星系主畫面")
 	}
@@ -1874,9 +1949,33 @@ func (b *sceneBuilder) research() (*overlayScreen, error) {
 		{22, 343, 128, 18, "Physics", 0},
 		{244, 343, 124, 18, "Force Fields", 0},
 	}
-	return loadOverlayScreen(b.res, "techsel.lbx", 0, b.lang, b.fnt, "assets/i18n/tech.tsv",
+	s, err := loadOverlayScreen(b.res, "techsel.lbx", 0, b.lang, b.fnt, "assets/i18n/tech.tsv",
 		overlays, color.RGBA{210, 216, 230, 255}, 13, hits, onAction,
 		paletteChain{{"science.lbx", 0}})
+	if err != nil {
+		return nil, err
+	}
+	// 領域框內疊「目前主題 ・ RP 成本」(取代原本盲選):文字置中在標題帶下方的空白區。
+	if b.session != nil {
+		gold := color.RGBA{235, 210, 130, 255}
+		body := color.RGBA{200, 214, 232, 255}
+		for _, h := range hits {
+			idx, ok := researchAreaOrder[h.action]
+			if !ok {
+				continue
+			}
+			t, cost, done := currentAreaTopic(b.session, idx)
+			label := fmt.Sprintf("%s ・ %d RP", topicNameZh(b.lang, t), cost)
+			col := body
+			if done {
+				label, col = "已完成本領域全部科技", gold
+			}
+			cx := float64(h.x) + float64(h.w)/2
+			cy := float64(h.y) + 40 // 標題帶(高18)下方留白處置中
+			s.extras = append(s.extras, extraText{x: cx, y: cy, size: 12, text: label, col: col, align: 1})
+		}
+	}
+	return s, nil
 }
 
 // planets 建原版行星列表畫面。「返回」按鈕熱區導回星系主畫面。
