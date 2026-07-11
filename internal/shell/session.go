@@ -1069,11 +1069,13 @@ func demoLeaders() []Leader {
 //     remake 目前沒有艦艇維修系統,故技能 id 對應清楚但效果暫不生效,見 applyLeaderShipBonuses
 //     的 TODO 註解)。
 //
-// 「指揮官」(漢尼拔)刻意不收錄:這是 demo 資料自訂的中文頭銜/風格字,不是從 HERODATA 或手冊
-// 技能表衍生的標籤,沒有唯一對應的技能 id(openorion2 技能表裡沒有字面叫「Commander」的技能,
-// 猜一個掛上去就是臆測)。留空 = 目前這名領袖沒有任何技能加成生效,待使用者從
-// SKILL_COMMANDO(地面戰指揮,但基礎加成手冊未給數字,見 gamedata/ground.go TODO)/
-// SKILL_WEAPONRY(艦艇攻擊,語意最接近「指揮官」但仍是猜測)等候選定案。
+// 「指揮官」(漢尼拔)刻意不收錄在這張表:這張表只服務「殖民地經濟被動加成」
+// (applyLeaderColonyBonuses,固定研究點數/收入百分比這種格式化數值)。2026-07-11 已確定
+// 「指揮官」對應 gamedata.SKILL_COMMANDO(手冊 p.135 Commando,地面戰鬥系統),但它的消費端
+// 是地面戰 force 加成而非殖民地經濟欄位,故改在 internal/shell/ground_invasion.go 用獨立的
+// commandoLeaderTier(leaders []Leader) 依 l.Skill=="指揮官" 直接掃描、不透過本表——避免把
+// 語意/單位都不同的兩套加成(經濟 vs 地面戰鬥)混進同一張映射表。SKILL_WEAPONRY 等其餘候選
+// 已不採用(Commando 已定案)。
 var leaderSkillIDByName = map[string]int{
 	"科學家": int(gamedata.SKILL_RESEARCHER),
 	"貿易家": int(gamedata.SKILL_TRADER),

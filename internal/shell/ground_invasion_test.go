@@ -513,3 +513,58 @@ func TestInvadeColony_TanksImproveWinRate(t *testing.T) {
 	}
 	t.Logf("無戰車勝率=%.2f 有戰車(12)勝率=%.2f", withoutTanks, withTanks)
 }
+
+// TestCommandoLeaderTier 驗證 commandoLeaderTier(2026-07-11,#5/#6)只認 Skill=="指揮官" 的
+// 領袖,回傳其中最高 Tier;找不到回 0;Ship 欄位不影響判定(見函式註解的近似說明:remake 無
+// 「領袖指派到某次入侵」模型,不論該領袖是艦艇軍官或殖民地領袖)。
+func TestCommandoLeaderTier(t *testing.T) {
+	if got := commandoLeaderTier(nil); got != 0 {
+		t.Errorf("nil leaders 應回 0,got %d", got)
+	}
+	leaders := []Leader{
+		{"甲", "科學家", 5, false, 1},
+		{"乙", "指揮官", 6, true, 2},
+		{"丙", "指揮官", 3, false, 1}, // 較低 tier,應取最高
+	}
+	if got := commandoLeaderTier(leaders); got != 2 {
+		t.Errorf("應回最高 tier=2,got %d", got)
+	}
+	if got := commandoLeaderTier([]Leader{{"甲", "科學家", 5, false, 1}}); got != 0 {
+		t.Errorf("無指揮官技能領袖應回 0,got %d", got)
+	}
+}
+
+// TestInvadeColony_CommandoLeaderImprovesWinRate 驗證 demoLeaders() 內建的指揮官(漢尼拔,
+// Tier=1)確實透過 gamedata.GroundCommandoAttackerForceBonus 提升攻方勝率,不是擺著沒用的死碼
+// (對照組:清空 s.Leaders vs 保留 NewDemoSession 預設領袖名單)。雙方都不使用裝甲科技/戰車,
+// 只讓 Commando 加成本身造成差異;母星駐軍公式在此設定下固定為 4(見
+// TestAdvanceMarines_RespectsCapWhenPopulationSmall 的同款人口/上限推導),攻方 5 陸戰隊給出
+// 未飽和(非 0%/100%)的中段勝率,足以觀察到加成的方向性影響。
+func TestInvadeColony_CommandoLeaderImprovesWinRate(t *testing.T) {
+	const n = 150
+	winRate := func(clearLeaders bool) float64 {
+		wins := 0
+		for i := 0; i < n; i++ {
+			s, starIdx := newFleetAtAIHomeSession(t)
+			s.Turn = i + 1
+			s.FleetMarines = 5
+			if clearLeaders {
+				s.Leaders = nil
+			}
+			res := s.InvadeColony(starIdx)
+			if !res.Ok {
+				t.Fatalf("clearLeaders=%v i=%d: 前置條件應齊備,got Reason=%q", clearLeaders, i, res.Reason)
+			}
+			if res.AttackerWon {
+				wins++
+			}
+		}
+		return float64(wins) / n
+	}
+	withoutCommando := winRate(true)
+	withCommando := winRate(false)
+	if withCommando <= withoutCommando {
+		t.Fatalf("保留指揮官領袖應提升攻方勝率,got 無指揮官=%.2f 有指揮官=%.2f", withoutCommando, withCommando)
+	}
+	t.Logf("無指揮官勝率=%.2f 有指揮官(demoLeaders)勝率=%.2f", withoutCommando, withCommando)
+}

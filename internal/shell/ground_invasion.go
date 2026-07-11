@@ -108,6 +108,33 @@ func tankHitsToKillFor(ps engine.PlayerState) int {
 	return gamedata.GroundTankHitsToKill(false)
 }
 
+// commandoLeaderTier 掃描 leaders 找出擁有「指揮官」技能標籤(對應 gamedata.SKILL_COMMANDO,
+// 手冊 p.135 Commando)的最高技能階(Tier:0 無/1 一般/2 進階)。找不到回傳 0(=無 Commando
+// 領袖,無加成)。
+//
+// ⚠ 近似(2026-07-11,docs/tech/version-1.3-1.5-diff.md #5/#6):手冊描述 Commando 效果綁定
+// 「同系統的殖民地領袖」或「同艦隊的艦艇軍官」,remake 沒有「領袖指派到某次入侵/某支艦隊」的
+// 模型(shell.Leader/GameSession.Leaders 是帝國全域清單,無指派欄位)。故用「帝國是否擁有
+// Commando 技能領袖」當代理條件,不論該領袖的 Ship 欄位、不論其實際位置——只要帝國內存在一名
+// Tier>0 的指揮官技能領袖,任何一次入侵都套用其加成。此為誠實標記的近似,非精確的「該次入侵
+// 指派了哪位領袖」模擬。
+//
+// 與 leaderSkillIDByName(session.go)刻意分開:那張表只服務「殖民地經濟被動加成」
+// (applyLeaderColonyBonuses,科學家/貿易家/工程師),Commando 屬於地面戰鬥系統,語意/消費端
+// 都不同,不應該混進同一張表。
+func commandoLeaderTier(leaders []Leader) int {
+	best := 0
+	for _, l := range leaders {
+		if l.Skill != "指揮官" {
+			continue
+		}
+		if l.Tier > best {
+			best = l.Tier
+		}
+	}
+	return best
+}
+
 // tankForceBonusFor 回傳 tankCount 輛戰車若已升級 Battleoids,對整個地面戰 force 額外貢獻的
 // 加成(手冊 p.81:「a ground combat rating 10 higher than a tank」,GroundBattleoidCombatBonus)。
 // 只在 tankCount>0 時套用——0 輛戰車的一方不該白拿這個加成(該加成描述的是「戰車營升級
@@ -351,8 +378,9 @@ type GroundInvasionResult struct {
 //   - 攻方:FleetMarines 個陸戰隊單位 + FleetTanks 個戰車營單位混編。force 統一套用
 //     playerMarineForce()(裝甲/裝備/種族加成,對整支部隊一視同仁——本 remake 的
 //     GroundForce.Force 本來就是「side 級」單一加成,不分兵種,見 ground_battle.go 設計),
-//     若持有 Battleoids 再疊加 tankForceBonusFor 的相對加成。hits-to-kill 陸戰隊/戰車營
-//     分開算(GroundMarineHitsToKill / tankHitsToKillFor)。
+//     若持有 Battleoids 再疊加 tankForceBonusFor 的相對加成,再疊加 Commando 領袖加成(見
+//     commandoLeaderTier + gamedata.GroundCommandoAttackerForceBonus,2026-07-11,#5/#6)。
+//     hits-to-kill 陸戰隊/戰車營分開算(GroundMarineHitsToKill / tankHitsToKillFor)。
 //
 //     ⚠ 單位排序(無把握的接法,已選定但列出讓 L.CY 定案):合併後的 Units 陣列「陸戰隊在前、
 //     戰車營在後」——這不是敘事上的「誰當前鋒」選擇(手冊未提供地面戰隊形資訊),而是技術上
@@ -408,6 +436,9 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 
 	tankCount := s.FleetTanks
 	atkForce := s.playerMarineForce() + tankForceBonusFor(s.Player, tankCount)
+	// Commando 領袖加成(#5/#6,2026-07-11,見 commandoLeaderTier 註解的近似說明):兩版攻方
+	// 倍率相同(非差異項),不需要查 RuleProfile。
+	atkForce += gamedata.GroundCommandoAttackerForceBonus(commandoLeaderTier(s.Leaders))
 	marineHits := gamedata.GroundMarineHitsToKill(false, s.hasPoweredArmor())
 	tankHits := tankHitsToKillFor(s.Player)
 	// 合併陸戰隊+戰車營單位:Force 只借用 marineUnits/tankUnits 建構出來的 Units,side 級的
@@ -420,6 +451,11 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 
 	defCount := gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population, colony.PopMax, false)
 	defForce := aiMarineForce(*aiPlayer)
+	// TODO 守方 Commando 加成(#5,ruleprofile.go RuleProfile.DefenderCommandoBonus)掛鉤點:
+	// gamedata.GroundCommandoDefenderForceBonus(tier, s.RuleProfile.DefenderCommandoBonus) 已
+	// 實作+測試,但 AIOpponent 沒有 Leaders 欄位(AI 完全沒有領袖資料模型,不同於陸戰隊/戰車那種
+	// 「至少有開局必有 Marine Barracks」的可推導事實撐腰),沒有資料可誠實推導 AI 是否有 Commando
+	// 領袖,故不臆測補上(不寫死 tier=0 假裝有接線——這裡就是誠實留白,見 RuleProfile 欄位註解)。
 	defHits := gamedata.GroundMarineHitsToKill(false, hasPoweredArmorFor(aiPlayer.Player))
 	def := gamedata.NewGroundForce(defCount, defHits, defForce, true)
 

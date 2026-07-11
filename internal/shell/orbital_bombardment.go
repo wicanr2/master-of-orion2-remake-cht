@@ -99,11 +99,14 @@ type GroundBombardResult struct {
 //
 // 解算:fleetBombardDamage 模擬 RuleProfile.BombardmentVolleys 輪齊射 →
 // gamedata.GroundBombHitsFromDamage 換算 hits →
-// 依手冊 Planet Hits 表「每整數人口 1 hit」直接扣減 colony.Population(夾在 0 以上)。
+// gamedata.GroundBombardPopulationLoss 依行星尺寸係數(#11,2026-07-11,非差異項)換算實際
+// 扣減的人口單位數(大行星較耐轟,近似公式見該函式註解)→ 扣減 colony.Population(夾在 0 以上)。
 //
 // ⚠ 範圍限制(誠實標註,非本函式應臆測補齊的部分):
 //   - 只扣人口,不扣建築/儲存生產/駐軍——AI 沒有這些的持久資料可扣(見 GroundBombardResult
-//     欄位註解),扣了會是憑空生資料,故不做。
+//     欄位註解),扣了會是憑空生資料,故不做。RuleProfile.BombardmentBuildingBonusHits(#7)/
+//     gamedata.GroundCivilianArmorHP(#8)屬於這個未建的「建築損傷」模型,欄位/常數已備妥,
+//     尚未有任何函式讀取(TODO 掛鉤點)。
 //   - 手冊未講「殖民地人口被轟炸到 0」時的後續(是否直接摧毀殖民地/移除星系 Owner):不在本
 //     函式臆測補上,留給未來確認手冊或 openorion2 行為後再接(TODO)。目前行為是 Population
 //     可以停在 0,殖民地本身仍存在於 aiPlayer.Colonies(不會被移除)。
@@ -138,7 +141,17 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 
 	res := GroundBombardResult{Ok: true, TotalDamage: totalDamage, Hits: hits}
 
-	popLoss := hits
+	// 行星尺寸幾何(#11,2026-07-11,docs/tech/version-1.3-1.5-diff.md,非差異項——1.5 系列
+	// 中途曾改過又於 1.50.11 修回 classic 3-4-6-7-8,對 1.3 vs 最終 1.5 不構成差異):大行星
+	// 較耐轟,近似公式與已知限制見 gamedata.GroundBombardPopulationLoss 註解。母星預設
+	// LARGE_PLANET(係數 7)時,hits=10 算出 popLoss=8,與換係數前的舊行為(popLoss=hits 直接
+	// 相等)剛好一致,見 orbital_bombardment_test.go 既有測試不受影響。
+	//
+	// TODO #7(BombardmentBuildingBonusHits)/#8(GroundCivilianArmorHP)掛鉤點:兩者都屬於
+	// 「轟炸建築損傷」模型,本函式目前只扣人口,不扣建築(AI 無 ColonyBuildings 持久資料可扣),
+	// 故 s.RuleProfile.BombardmentBuildingBonusHits 在此尚未被讀取,見該欄位與
+	// gamedata.GroundCivilianArmorHP 註解的誠實範圍說明。
+	popLoss := gamedata.GroundBombardPopulationLoss(hits, colony.PlanetSize)
 	if popLoss > colony.Population {
 		popLoss = colony.Population
 	}

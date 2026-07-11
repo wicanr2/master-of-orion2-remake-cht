@@ -338,11 +338,13 @@ func GroundPlanetTotalHits(buildings int, storedProductionPositive bool, fullPop
 //
 // - Commando Leader(手冊 p.135「Commando: Increases the ground combat strength of all
 //   troops in the same system as the Colony leader or the strength of all marines in the
-//   same fleet as the Ship Officer.」)未給基礎加成數字;MANUAL_150.html 只補充「A defending
-//   commando gives 2.5x the regular commando bonus to ground troops, just like an attacking
-//   commando already gives in classic.」——2.5x 是相對倍率,但「regular commando bonus」本身
-//   的基準值兩份手冊都沒有給出精確數字(僅在 ORION2.CFG 找到技能訓練花費 10/30 BC 的資料,
-//   與戰力加成無關)。
+//   same fleet as the Ship Officer.」):2026-07-11 已用 PARAMETERS.CFG:2745-2753 逐字數字
+//   (攻方 5x/7.5x、守方 2x/3x,守方 1.5 起再追平攻方套用 2.5x)近似補實作,見
+//   ground_version_diff.go(GroundCommandoAttackerForceBonus/GroundCommandoDefenderForceBonus)
+//   + ruleprofile.go(RuleProfile.DefenderCommandoBonus)。⚠ 誠實範圍:「regular commando
+//   bonus」基準值本身(2/3)手冊只以相對倍率描述,本專案直接當成最終加成點數,屬近似而非手冊
+//   獨立驗證值;shell 層(internal/shell/ground_invasion.go)只接了攻方(玩家 Leaders 有資料),
+//   守方(AI 無 Leaders 模型)仍是掛鉤未接,詳見該檔案與 RuleProfile 欄位註解。
 // - AI Ground Troops Bonus(MANUAL_150.html:「During ground invasion, the AI troops
 //   bonus/penalty was listed but not added to the sum... this bonus/penalty did already
 //   apply to the actual combat resolve.」)只確認該加成存在且已生效,未列出依難度分級的精確

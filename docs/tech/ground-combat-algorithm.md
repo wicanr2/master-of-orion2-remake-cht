@@ -173,8 +173,41 @@
 ×101 傷害=1010 總傷害→hits=10→母星預設人口 8 全數扣光→`RemainingHits`=2)、人口不會扣成負數、
 轟炸不佔領星/不增減 AI 殖民地筆數。
 
+## 2026-07-11 版本差異補實作
+
+補實作 `docs/tech/version-1.3-1.5-diff.md` §1 全量表 #5/#6/#7/#8/#9/#11(地面戰/軌道轟炸的
+patch 1.3 vs 1.5 差異項)。新程式碼:`internal/gamedata/ground_version_diff.go`(公式)+
+`internal/gamedata/ground_version_diff_test.go`(測試);接線:`internal/shell/ground_invasion.go`
+(`commandoLeaderTier` + `InvadeColony` 攻方 force 疊加)、`internal/shell/orbital_bombardment.go`
+(`BombardColony` 改用 `gamedata.GroundBombardPopulationLoss`);`internal/gamedata/ruleprofile.go`
+新增 2 欄位(`DefenderCommandoBonus`、`BombardmentBuildingBonusHits`)。逐項誠實記錄:
+
+| # | 項目 | 版本差異? | 實作程度 | 說明 |
+|---|---|---|---|---|
+| #6 | 指揮官(Commando)攻方倍率 | 否(兩版同) | **完整接線**(近似公式) | `GroundCommandoAttackerForceBonus(tier)`:tier1=5、tier≥2=7(2.5×3=7.5 捨去)。已接進 `InvadeColony` 的攻方 force(`commandoLeaderTier(s.Leaders)` 掃描帝國 Leaders 找 `Skill=="指揮官"` 的最高 Tier)。**近似**:①「regular commando bonus」基準值(2/3)手冊只給相對倍率,沒給獨立驗證的絕對數字,本檔直接當成最終加成點數;②remake 無「領袖指派到某次入侵」模型,用「帝國是否擁有 Commando 技能領袖」當代理條件,不論其 `Ship`/實際位置。單測:`TestGroundCommandoAttackerForceBonus`、`TestInvadeColony_CommandoLeaderImprovesWinRate`(實測無指揮官勝率 0.63→有指揮官 0.75,150 場)。 |
+| #5 | 防禦方 Commando 2.5x | **是** | **gamedata 完整實作+測試,shell 層未接線(無消費端)** | `RuleProfile.DefenderCommandoBonus`(1.3=1.0、1.5=2.5)套進 `GroundCommandoDefenderForceBonus(tier, bonus)`。`TestDefenderCommandoBonusVersionDiff` 驗證兩版數字確實不同(tier1:2→5,tier2:3→7)。**未接線理由(誠實,非藉口)**:`InvadeColony` 目前守方恆為 AI(`AIOpponent` 完全沒有 `Leaders` 欄位/領袖資料模型),沒有資料可推導「AI 是否擁有 Commando 領袖」,寫死 tier=0 呼叫只會製造「看起來已接線但恆為 0」的假象,故只在 `ground_invasion.go` 留 TODO 掛鉤註解,不呼叫。 |
+| #7 | 轟炸建築 +1 hit(1.3 bug) | **是** | **僅 RuleProfile 欄位 + TODO 掛鉤** | `RuleProfile.BombardmentBuildingBonusHits`(1.3=1、1.5=0)。本 remake 軌道轟炸只扣人口不扣建築(AI 無 `ColonyBuildings` 持久資料可扣),無「建築 hit」概念可套用這個加成,故只加欄位 + `BombardColony` 內註解掛鉤點,無任何函式讀取它。 |
+| #8 | civilian_armor 100hp | 否(兩版同) | **常數鎖定,無消費端** | `gamedata.GroundCivilianArmorHP = 100`(PARAMETERS.CFG:1778-1786 逐字數字)。與 #7 同屬未建的「建築損傷模型」,先鎖定數字供未來引用。單測:`TestGroundCivilianArmorHP_LockedValue`(純數值鎖定)。 |
+| #9 | 地面防禦建築結構倍率 | 否(兩版同) | **常數鎖定,無消費端** | `gamedata.GroundDefenseArmorMultiplier = 100`(PARAMETERS.CFG:1772-1775)。remake 沒有「地面防禦建築」這個資料實體(`ColonyBuildings` 只是 `map[string]bool` 有/無旗標,無 HP/結構值欄位;AI 側連追蹤都沒有),無法真正套用,誠實標「掛鉤備妥、待防禦建築系統」。單測:`TestGroundDefenseArmorMultiplier_LockedValue`。 |
+| #11 | 轟炸行星尺寸幾何 3-4-6-7-8 | 否(1.5 系列中途改過又於 1.50.11 修回 classic,對 1.3 vs 最終 1.5 不構成差異) | **完整接線**(近似公式) | `GroundPlanetSizeBombardCoefficient(size)` 對照手冊/CHANGELOG 數字(Tiny=3/Small=4/Medium=6/Large=7/Huge=8);`GroundBombardPopulationLoss(hits, size) = hits×6/coef`(以 Medium 為基準 1:1,大行星較耐轟)。已接進 `BombardColony` 取代原本的 `popLoss := hits` 直接相等。**近似**:手冊只給尺寸係數本身,沒給「係數如何代入人口損傷公式」的精確算式(原版可能牽涉地圖網格/區域數,remake 沒有這層模型),本檔採「與係數成反比、Medium 基準」的最簡近似。**behavior-preserving 巧合**:母星預設 `LARGE_PLANET`(係數 7),既有測試 `TestBombardColony_ReducesPopulationDeterministically` 的 hits=10 算出 popLoss=8,與換公式前的舊行為(`popLoss==hits` 直接相等,10 被人口 8 封頂為 8)結果剛好一致,測試未變紅。單測:`TestBombardmentPlanetSizeScaling`(Tiny 24 > Small 18 > Medium 12 > Large 10 > Huge 9,hits=12)。 |
+
+**RuleProfile 新增欄位**(`internal/gamedata/ruleprofile.go`):
+- `DefenderCommandoBonus float64`(Profile13=1.0 / Profile15=2.5)
+- `BombardmentBuildingBonusHits int`(Profile13=1 / Profile15=0)
+
+**驗證**:docker(`moo2-ebiten:latest`)內 `go build -buildvcs=false ./...`/`go vet ./...`/
+`go test ./internal/...` 全綠(僅既有的 `internal/uifont` X11/GLFW headless 限制,與本輪無關,
+既有已知環境限制);`go build -buildvcs=false -o /tmp/moo2-groundcombat-check ./cmd/moo2` 成功
+(未寫回 repo 根目錄 `moo2` 二進位)。既有 `ground_invasion_test.go`/`orbital_bombardment_test.go`
+全部維持綠燈,無需更新任何既有斷言數字。
+
 ## 來源
 
 - Steam《Master of Orion》社群〈Ground Combat Formula〉討論串(社群逆向)。<https://steamcommunity.com/app/298050/discussions/0/135509124605301259/>
 - StrategyWiki《MOO2/Battle tactics》。
 - 手冊 GAME_MANUAL.pdf p.164(定性 + 加成)、gamedata/ground.go(加成表,已驗證)。
+- `moo2_patch1.5/MOO2-1.50.26.zip` 內 `patch/150/docs/PARAMETERS.CFG:1772-1786,2740-2758`(地面
+  防禦建築結構倍率/civilian_armor/Commando 倍率門檻,`(default, classic)` 逐條標註)。
+- `moo2_patch1.5/MANUAL_150.html`(python 去標籤全文關鍵字搜尋 "Commando":Commando Leader 段落
+  「A defending commando gives 2.5x the regular commando bonus...」)。
+- `docs/tech/version-1.3-1.5-diff.md` §1 全量表 #5-#11(本節補實作的來源清單與逐條核對紀錄)。
