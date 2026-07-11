@@ -1810,7 +1810,9 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 	hits := []hitRegion{
 		{338, 50, 288, 300, "design"},
 		{20, 388, 260, 20, "assault"},
-		{543, 432, 84, 28, "return"},
+		// RETURN 真值座標取自 openorion2 ships.cpp:718 FleetListView
+		// RETURN createWidget(556, 430, ...)(原估計 543,432)。
+		{556, 430, 84, 28, "return"},
 	}
 	onAction := func(a string) *origTransition {
 		switch a {
@@ -2054,8 +2056,9 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 // officer 建原版軍官列表畫面(OFFICER.LBX 資產 0)。座標經 PIL 量測
 // (screens-scan/officer_leaderlist.png):頁籤列 y=12-32,按鈕列 y=440-462。
 func (b *sceneBuilder) officer() (*overlayScreen, error) {
-	// 精確返回鍵熱區(用已量測的 RETURN 按鈕座標,取代整畫面返回;更忠實:僅返回鍵返回)。
-	hits := []hitRegion{{540, 440, 80, 20, "Return"}}
+	// 精確返回鍵熱區(RETURN 按鈕真值座標取自 openorion2 officer.cpp:418
+	// LeaderListView RETURN createWidget(538, 441, ...);取代整畫面返回,僅返回鍵返回)。
+	hits := []hitRegion{{538, 441, 80, 20, "Return"}}
 	onAction := func(a string) *origTransition {
 		if a == "Return" {
 			return b.goTo(b.galaxy, "星系主畫面")
@@ -2098,10 +2101,12 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 // info 建原版科技總覽畫面(INFO.LBX 資產 0,基底 INFO.LBX 資產 1)。座標經 PIL 量測
 // (screens-scan/info_overview.png):左側選單五列 y=57/79/105/134/154,標題 y=16,RETURN y=436。
 func (b *sceneBuilder) info() (*overlayScreen, error) {
-	// 「科技總覽」列 → 研究選擇畫面;RETURN 或他處 → 星系主畫面。
+	// 「科技總覽」列 → 研究選擇畫面;RETURN → 星系主畫面。
+	// RETURN 真值座標取自 openorion2 info.cpp:1028 InfoView
+	// RETURN createWidget(535, 434, ...);取代整畫面返回,僅返回鍵返回。
 	hits := []hitRegion{
 		{15, 78, 197, 22, "tech"},
-		{0, 0, moo2ScreenW, moo2ScreenH, "back"},
+		{535, 434, 84, 22, "back"},
 	}
 	onAction := func(a string) *origTransition {
 		if a == "tech" {
