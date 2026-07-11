@@ -366,6 +366,18 @@ func TestBombardColony_NilColonyBuildingsRegressionSafe(t *testing.T) {
 
 // retaliationTestSetup 建一個「AI 母星只有指定防禦建築、玩家艦隊固定」的轟炸情境,
 // 回傳 session 與目標星索引,供以下反擊測試共用。
+//
+// 2026-07-11(#14,space 預算模型改版)誠實記錄:這裡刻意沿用零值 RuleProfile
+// (SatelliteBeamArcCostPct 隨之為 0%),且 AI 母星(newFleetAtAIHomeSession 建出的
+// buildDemoAIOpponents)開局 CompletedTopics 沒有任何武器科技主題,retaliationAttackers 內部
+// bestUnlockedWeaponValue 因此固定落到雷射 fallback(Value=4,space=10,見該函式註解)。舊版
+// (改版前)反擊戰力是固定 tier 4/8/16,新公式在這組「零 arc-cost + 雷射 fallback」輸入下實際
+// 算出 5(星基,fit=25*4/20)/10(戰鬥站,fit=50*4/20)/24(星辰要塞,fit=120*4/20)——比舊值
+// 略高,但下方各測試斷言檢查的是「是否觸發反擊」「單艦是否被一發擊沉」「星辰要塞反擊是否不弱於
+// 星基」這類質性行為,不是斷言精確 atk 數字,重新驗證(go test)後這些質性結果全部維持不變,
+// 故不需要改動既有斷言——版本相依(1.3 vs 1.5 arc-cost 不同)與科技效果(解鎖電漿砲後基地
+// 變強)兩項新行為的精確數字驗證見 satellite_defense_test.go 直接呼叫 retaliationAttackers
+// 的單元測試,不在這裡用 BombardColony 端對端斷言重複驗證。
 func retaliationTestSetup(t *testing.T, buildings map[string]bool, ships []Ship) (*GameSession, int, int, int) {
 	t.Helper()
 	s, starIdx := newFleetAtAIHomeSession(t)

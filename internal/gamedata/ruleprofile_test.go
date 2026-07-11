@@ -18,6 +18,12 @@ func TestProfile13Values(t *testing.T) {
 	if p.BombardmentVolleys != 5 {
 		t.Errorf("BombardmentVolleys = %d,want 5", p.BombardmentVolleys)
 	}
+	if p.SatelliteBeamArcCostPct != 25 {
+		t.Errorf("SatelliteBeamArcCostPct = %d,want 25(#14,CHANGELOG_150.TXT 1.50.7 修正前舊值)", p.SatelliteBeamArcCostPct)
+	}
+	if p.GroundBatteryBeamArcCostPct != 0 {
+		t.Errorf("GroundBatteryBeamArcCostPct = %d,want 0(#14,1.3 地面砲台無 arc-cost 懲罰)", p.GroundBatteryBeamArcCostPct)
+	}
 }
 
 // TestProfile15Values 驗證 patch 1.5 規則 profile 的三個值,並確認等於本專案改用 profile 前
@@ -41,6 +47,12 @@ func TestProfile15Values(t *testing.T) {
 	}
 	if p.BombardmentVolleys != wantBombardmentVolleys {
 		t.Errorf("BombardmentVolleys = %d,want %d(=orbital_bombardment.go 現行硬編值)", p.BombardmentVolleys, wantBombardmentVolleys)
+	}
+	if p.SatelliteBeamArcCostPct != 33 {
+		t.Errorf("SatelliteBeamArcCostPct = %d,want 33(#14,CHANGELOG_150.TXT 1.50.10 最終值 33.3%% 取整)", p.SatelliteBeamArcCostPct)
+	}
+	if p.GroundBatteryBeamArcCostPct != 50 {
+		t.Errorf("GroundBatteryBeamArcCostPct = %d,want 50(#14,CHANGELOG_150.TXT 1.50.7)", p.GroundBatteryBeamArcCostPct)
 	}
 
 	// 交叉核對:techtree.go 8 條 TOPIC_HYPER_* 的表定值本身也必須等於 wantHyperCost,

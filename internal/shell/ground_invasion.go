@@ -51,6 +51,56 @@ func componentUnlockedFor(ps engine.PlayerState, c Component) bool {
 	return ps.ChosenTech != nil && ps.ChosenTech[c.Tech] == c.UnlockTech
 }
 
+// bestUnlockedWeaponValue 掃描 profile 版本規則下的武器清單(BuildWeaponOptions),在指定
+// WeaponKind(beam/missile)裡挑出 ps 已解鎖(componentUnlockedFor)、Value 最大的一款,回傳
+// 其 Value 與 gamedata.WeaponSpaceByName 查到的佔格。供 orbital_bombardment.go
+// retaliationAttackers 用來推導軌道防禦基地「配備目前最好的武器」的戰力(#14)。
+//
+// 一款都沒解鎖時(ok=false):回退到該類「最基礎款」——beam 用雷射(Value=4,space=10)、
+// missile 用核飛彈(Value=6,space=10),回退值就是該武器本身表列的 Value/Space(動態查表,
+// 非另外硬編一組數字),與「玩家剛解鎖雷射/核飛彈當下」的數字完全相同,故 fallback 不會讓
+// 早期 AI 的軌道防禦戰力算出不合理的 0——手冊對行星防禦的定性描述是「配備目前最好的武器」,
+// 在「什麼都還沒解鎖」這個邊界情況下,合理的預設就是最基礎的雷射/核飛彈,不是 0 火力。ok 只
+// 作誠實旗標供測試/未來 UI 判斷「這是不是真解鎖出來的值」,不影響 value/space 的計算結果。
+//
+// ⚠ 誠實記錄(現況邊界,非本函式引入的問題):NewDemoSession 開局
+// (buildDemoAIOpponents→newHomeworldPlayerState)AI 的 CompletedTopics 全程只有
+// TOPIC_STARTING_TECH/TOPIC_ENGINEERING,不含任何武器科技主題(雷射所在的 TOPIC_PHYSICS
+// 等)——也就是說,demo 對局裡 AI 從頭到尾都會落到這條 fallback 分支(ok 恆為 false),不會
+// 真的解鎖到雷射/電漿砲,因為 AI 目前沒有研究進度推進機制(見 spy.go 唯一會寫入
+// CompletedTopics 的路徑)。這不是本函式的 bug,是既有 AI 資料模型的既定限制——「科技變強讓
+// 基地變強」這個設計效果因此在 demo 對局裡目前只能靠單元測試手動建構一個 CompletedTopics
+// 含 TOPIC_PLASMA_PHYSICS 的 PlayerState 驗證,無法在 NewDemoSession 的自然對局流程裡觀察到
+// (TODO,超出本輪範圍:AI 需要真正的研究進度推進機制才能讓這條路徑在正常遊戲裡被走到)。
+func bestUnlockedWeaponValue(ps engine.PlayerState, profile gamedata.RuleProfile, kind WeaponKind) (value, space int, ok bool) {
+	options := BuildWeaponOptions(profile)
+	bestValue, bestSpace := -1, 0
+	for _, c := range options {
+		if c.Name == "無武裝" {
+			continue
+		}
+		if weaponKindByName(c.Name) != kind {
+			continue
+		}
+		if !componentUnlockedFor(ps, c) {
+			continue
+		}
+		if c.Value > bestValue {
+			bestValue = c.Value
+			bestSpace = gamedata.WeaponSpaceByName[c.Name]
+		}
+	}
+	if bestValue >= 0 {
+		return bestValue, bestSpace, true
+	}
+	switch kind {
+	case WeaponKindMissile:
+		return 6, gamedata.WeaponSpaceByName["核飛彈"], false
+	default:
+		return 4, gamedata.WeaponSpaceByName["雷射"], false
+	}
+}
+
 // groundArmorBonusFor 依 ps 已解鎖的裝甲元件中最高階者,回傳 gamedata.GroundArmorTechBonus。
 // 沿用既有 ArmorOptions/ComponentUnlocked 解鎖判定(尊重「已明確抉擇」語意),由高到低找
 // 第一個 UnlockTech != TECH_NONE 且已解鎖的裝甲元件。氙素裝甲(Xentronium,proxy 元件,

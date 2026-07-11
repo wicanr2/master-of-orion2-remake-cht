@@ -65,6 +65,24 @@ type RuleProfile struct {
 	// 多吸一擊、還是建築多受一擊才被摧毀),本 remake 採「每棟建築在 1.3 需多 +1 hit 才摧毀」的
 	// 保守解讀,見 BombardColony 檔頭「建築吸收」段落的誠實標註,非手冊逐字驗證值。
 	BombardmentBuildingBonusHits int
+
+	// 軌道防禦(#14,2026-07-11 補實作):衛星光束武器的 arc-cost 百分比,套進
+	// gamedata.SatelliteBeamSpaceWithArc,由 internal/shell 的 retaliationAttackers 用來把
+	// 「星基/戰鬥站/星辰要塞」的 space 預算換算成能塞入的光束武器把數。來源:
+	// CHANGELOG_150.TXT 1.50.7「Beam weapons on satellites... arc cost»、1.50.10「衛星
+	// arc cost 由 +40% 修正為 +33.3%」——1.3 維持較舊的 +25%,1.5 最終值取整數 33
+	// (33.3% 四捨五入)。
+	SatelliteBeamArcCostPct int
+
+	// 軌道防禦(#14):地面砲台(Ground Batteries,手冊 p.81「as many as fit in 450
+	// space」)光束武器的 arc-cost 百分比。來源同上,CHANGELOG_150.TXT 1.50.7:1.3 地面砲台
+	// arc-cost 為 +0%(無懲罰),1.5 統一改為 +50%。
+	//
+	// ⚠ 現況(2026-07-11):AI 開局 homeworldBuildings() 沒有「地面砲台」這項建築(見
+	// session.go homeworldBuildings 註解),本欄位目前在 NewDemoSession 的自然對局流程走不到
+	// ——只有 retaliationAttackers 對「地面砲台」存在時才會讀取,供未來 AI/玩家真的建出地面
+	// 砲台後使用,不是遺漏,是誠實標註「已備妥但暫無呼叫端會觸發」。
+	GroundBatteryBeamArcCostPct int
 }
 
 // Profile13 回傳官方最後正式 patch 1.31 的規則 profile。
@@ -76,6 +94,8 @@ func Profile13() RuleProfile {
 		BombardmentVolleys:           5,
 		DefenderCommandoBonus:        1.0, // 守方 Commando 無額外加乘(維持基準值 2/3)
 		BombardmentBuildingBonusHits: 1,   // 未記錄的 +1 hit bug(尚未接線,見欄位註解)
+		SatelliteBeamArcCostPct:      25,  // 衛星 arc-cost +25%(CHANGELOG_150.TXT 1.50.7 修正前的舊值)
+		GroundBatteryBeamArcCostPct:  0,   // 地面砲台無 arc-cost 懲罰
 	}
 }
 
@@ -90,6 +110,8 @@ func Profile15() RuleProfile {
 		BombardmentVolleys:           10,    // = 現行 orbital_bombardment.go 硬編值
 		DefenderCommandoBonus:        2.5,   // 守方追平攻方 2.5x 加乘
 		BombardmentBuildingBonusHits: 0,     // bug 已移除(尚未接線,見欄位註解)
+		SatelliteBeamArcCostPct:      33,    // 衛星 arc-cost 最終值 +33.3%(1.50.10),取整數
+		GroundBatteryBeamArcCostPct:  50,    // 地面砲台 arc-cost +50%(1.50.7)
 	}
 }
 

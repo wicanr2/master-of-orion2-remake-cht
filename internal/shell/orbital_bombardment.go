@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"sort"
 
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
@@ -112,44 +113,83 @@ type GroundBombardResult struct {
 // retaliationAttackers 依「轟炸建築吸收階段之後仍存活」的防禦建築,組出防禦方反擊用的
 // []combatant(供 battleVolley 當 attackers)。
 //
-// ⚠ 誠實標註(近似,非手冊逐字數字,設計已由使用者確認採用):本 remake 沒有「殖民地綁定的
-// 正規太空戰」(openorion2 是渲染殼、無獨立殖民地空戰引擎),故用「軌道轟炸階段冒充太空戰、
-// 由防禦建築反擊」近似手冊 p.129 一節「軌道基地/飛彈基地會對轟炸艦隊開火」的描述。基地→
-// 艦級戰力的對應只 ground 在既有 shipStrength 校準表 + 手冊定性描述的火力遞增序(星基 <
-// 戰鬥站 < 星辰要塞,對照 buildings.go 建築說明「Star Fortress 比 Battlestation 更強」),
-// 不是手冊給出的具體數字(手冊沒有逐一列出基地換算成艦級戰力的表)。
+// 2026-07-11 改版(diff 全量表 #14「衛星/軌道防禦基地當 space 預算武器平台」):不再用固定的
+// shipStrength tier 表(舊版 4/8/16),改把每座防禦建築建模成「固定 space 預算,塞入 defender
+// (AI)依科技解鎖的最佳武器,beam 佔格另外套用版本相依 arc-cost」,由此推導反擊戰力——見
+// gamedata/satellite.go(space/scale 常數 + fit 公式)與 bestUnlockedWeaponValue(挑最佳已解鎖
+// 武器,ground_invasion.go)。
+//
+// ⚠ 誠實標註(近似,非手冊逐字數字,設計已由使用者確認採用並校準):本 remake 沒有「殖民地
+// 綁定的正規太空戰」(openorion2 是渲染殼、無獨立殖民地空戰引擎),故用「軌道轟炸階段冒充太空
+// 戰、由防禦建築反擊」近似手冊 p.129 一節「軌道基地/飛彈基地會對轟炸艦隊開火」的描述。
+// 星基/戰鬥站/星辰要塞的 space 預算(250/500/1200)是【近似】值(比照 ShipHullSpace 同量級
+// 艦體借用,見 satellite.go 檔頭說明);飛彈基地 300、地面砲台 450 space 是手冊 p.78/p.81
+// 【確認】值。SatelliteStrengthScale=20 是把「塞入把數 × 武器 Value」換算回艦級 atk 的校準
+// 除數,選定依據見 gamedata.SatelliteStrengthScale 註解的完整推導(雷射參考點下星基/戰鬥站
+// 重現舊 tier 4/8,星辰要塞算出 20,非近似 19——如實記錄,不假造成 19)。
 //
 //   - 軌道基地(擇一,取代不疊加——手冊:星辰要塞取代同軌道的戰鬥站/星基,不共存):
-//     星辰要塞(最高階) → shipStrength("戰艦")=16;戰鬥站 → shipStrength("巡洋艦")=8;
-//     星基(最低階) → shipStrength("驅逐艦")=4。
+//     hull space 分別取 gamedata.StarFortressSpace/BattlestationSpace/StarBaseSpace,配
+//     defender 已解鎖的最佳 beam 武器(bestUnlockedWeaponValue),beam 佔格套用
+//     profile.SatelliteBeamArcCostPct 的 arc-cost 後算 fit,fit*Value/SatelliteStrengthScale
+//     即 atk(最少 1,避免有基地卻算出 0 戰力的不合理狀態)。
 //   - 飛彈基地(若存活,與上面軌道基地並列,不互斥——手冊描述是兩種獨立的行星防禦設施):
-//     額外一個 WeaponKindMissile attacker,atk 比照 shipStrength("驅逐艦")=4(手冊「配備
-//     最佳飛彈」定性描述,以驅逐艦級飛彈當近似,無法用 shipStrength 之外的數字杜撰)。
+//     hull space 固定 gamedata.MissileBaseSpace(300,確認值),配 defender 已解鎖的最佳
+//     missile 武器——missile 不吃 beam 的 arc-cost(見 SatelliteBeamSpaceWithArc 註解),
+//     直接用 WeaponSpaceByName 原始佔格算 fit。
+//   - 地面砲台(若存活——現行 AI 資料模型尚無此建築,見 RuleProfile.GroundBatteryBeamArcCostPct
+//     欄位註解,這裡是為完整性支援,非死碼:未來 AI/玩家真建出地面砲台時即可運作):
+//     hull space 固定 gamedata.GroundBatterySpace(450,確認值),套用
+//     profile.GroundBatteryBeamArcCostPct 的 arc-cost,算法同軌道基地。
 //   - wmin/wmax 換算比照 fleetBombardDamage/mkPlayerCombatants 同款慣例(wmin=atk/2,
 //     wmax=atk)。shield/armor 刻意留 0:這些 attacker 不建模 HP,本輪基地不受玩家反殺
 //     損傷(基地存續與否走「建築吸收」那條路徑,不走這裡的戰鬥解算)。
 //
 // 沒有任何防禦建築存活時回傳空 slice(呼叫端據此判斷 DefenderRetaliated=false,不呼叫
 // battleVolley)。
-func retaliationAttackers(buildings map[string]bool) []combatant {
+func retaliationAttackers(buildings map[string]bool, defender engine.PlayerState, profile gamedata.RuleProfile) []combatant {
 	var out []combatant
 
-	baseAtk := 0
+	// satelliteAtk 是「軌道基地/地面砲台」共用的推導公式:hull space 塞最佳 beam 武器
+	// (套 arc-cost),換算成艦級 atk。
+	satelliteAtk := func(hullSpace, arcCostPct int) int {
+		bv, bs, _ := bestUnlockedWeaponValue(defender, profile, WeaponKindBeam)
+		perBeam := gamedata.SatelliteBeamSpaceWithArc(bs, arcCostPct)
+		fit := gamedata.SatelliteWeaponFitCount(hullSpace, perBeam)
+		atk := fit * bv / gamedata.SatelliteStrengthScale
+		if atk < 1 {
+			atk = 1
+		}
+		return atk
+	}
+
+	orbitalHull := 0
 	switch {
 	case buildings["星辰要塞"]:
-		baseAtk = shipStrength("戰艦") // 16,對應手冊「星辰要塞比戰鬥站更強」的最高階軌道基地
+		orbitalHull = gamedata.StarFortressSpace
 	case buildings["戰鬥站"]:
-		baseAtk = shipStrength("巡洋艦") // 8
+		orbitalHull = gamedata.BattlestationSpace
 	case buildings["星基"]:
-		baseAtk = shipStrength("驅逐艦") // 4,最低階軌道基地
+		orbitalHull = gamedata.StarBaseSpace
 	}
-	if baseAtk > 0 {
-		out = append(out, combatant{atk: baseAtk, wmin: baseAtk / 2, wmax: baseAtk, kind: WeaponKindBeam})
+	if orbitalHull > 0 {
+		atk := satelliteAtk(orbitalHull, profile.SatelliteBeamArcCostPct)
+		out = append(out, combatant{atk: atk, wmin: atk / 2, wmax: atk, kind: WeaponKindBeam})
 	}
 
 	if buildings["飛彈基地"] {
-		missileAtk := shipStrength("驅逐艦") // 4,「配備最佳飛彈」近似值,見函式頂部說明
-		out = append(out, combatant{atk: missileAtk, wmin: missileAtk / 2, wmax: missileAtk, kind: WeaponKindMissile})
+		mv, ms, _ := bestUnlockedWeaponValue(defender, profile, WeaponKindMissile)
+		fit := gamedata.SatelliteWeaponFitCount(gamedata.MissileBaseSpace, ms) // missile 不吃 beam arc-cost
+		atk := fit * mv / gamedata.SatelliteStrengthScale
+		if atk < 1 {
+			atk = 1
+		}
+		out = append(out, combatant{atk: atk, wmin: atk / 2, wmax: atk, kind: WeaponKindMissile})
+	}
+
+	if buildings["地面砲台"] {
+		atk := satelliteAtk(gamedata.GroundBatterySpace, profile.GroundBatteryBeamArcCostPct)
+		out = append(out, combatant{atk: atk, wmin: atk / 2, wmax: atk, kind: WeaponKindBeam})
 	}
 
 	return out
@@ -275,7 +315,7 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 	// 建築吸收 + 人口損失之後,只有「這次轟炸打完仍存活」的防禦建築(此刻的 buildings,已經過
 	// 上方建築吸收迴圈刪除摧毀項)才有資格反擊——本次轟炸把防禦建築全炸掉時無反擊(壓制了
 	// 防禦,合理),完全不呼叫下面的戰鬥解算(逐位元回歸加這個機制之前的行為)。
-	if attackers := retaliationAttackers(buildings); len(attackers) > 0 {
+	if attackers := retaliationAttackers(buildings, aiPlayer.Player, s.RuleProfile); len(attackers) > 0 {
 		defenders := s.mkPlayerCombatants()
 		// 只打一輪齊射(battleVolley 本身就是「每個存活 attacker 對第一個存活 defender 射一發」
 		// 的單輪函式,非到一方全滅的迴圈)——手冊語意是「一次轟炸換一次反擊」,不是讓基地把
