@@ -102,6 +102,30 @@ var (
 		{"電漿砲", 200, 20, gamedata.TOPIC_PLASMA_PHYSICS, gamedata.TECH_PLASMA_CANNON}, // ✓ 值 1.50
 		{"死光", 300, 25, gamedata.TOPIC_ARTIFICIAL_LIFE, 0},                           // 里程碑,proxy
 	}
+)
+
+// BuildWeaponOptions 依版本規則 profile 回傳一份武器元件清單:除「電漿砲」的 Value(最大傷害)
+// 改讀 p.PlasmaCannonMaxDamage 外,其餘元件與套件級 WeaponOptions 逐一相同。
+//
+// ⚠ 現況(2026-07-11):這是 1.3 規則的「最小掛勾」——套件級 WeaponOptions 本身刻意不變(仍是
+// 1.5 的硬編值 20,見上方元件清單),ShipDesignSpaceUsedWithMods/DesignCostWithMods/
+// BuildShipWithMods/researchQueue 等現有呼叫端也刻意不改為讀本函式,原因:這些函式目前是套件級
+// 純函式,沒有 GameSession/profile 可查,要讓建艦/戰鬥全流程真正吃到 1.3 電漿砲傷害,需要把
+// profile 一路傳進這些函式(或改造成 GameSession 方法),屬於比本任務(資料層 profile 本身)更大
+// 的資料流重構,誠實留待「主選單真的接 1.3 選項」的任務再一併處理。本函式已測試、行為正確,可供
+// 該未來重構或 UI 預覽(「若選 1.3,電漿砲傷害是多少」)直接呼叫。
+func BuildWeaponOptions(p gamedata.RuleProfile) []Component {
+	out := make([]Component, len(WeaponOptions))
+	copy(out, WeaponOptions)
+	for i, c := range out {
+		if c.Name == "電漿砲" {
+			out[i].Value = p.PlasmaCannonMaxDamage
+		}
+	}
+	return out
+}
+
+var (
 	ArmorOptions = []Component{
 		{"無裝甲", 0, 0, 0, 0},
 		{"鈦裝甲", 30, 10, gamedata.TOPIC_CHEMISTRY, gamedata.TECH_TITANIUM_ARMOR}, // ResearchAll(早期)
@@ -1515,6 +1539,16 @@ type GameSession struct {
 	// 必須明確賦值,不能依賴零值。
 	Government gamedata.MoraleGovernmentType
 
+	// RuleProfile 是這局遊戲的版本規則 profile(patch 1.3 vs 1.5,見
+	// gamedata.RuleProfile/docs/tech/version-1.3-1.5-diff.md)。唯讀設定,開局決定、遊戲中不可變
+	// (原版本身也是「一開局就決定規則集」,無 mid-game 切換)。
+	//
+	// Go 零值陷阱:gamedata.RuleProfile{} 的零值三個欄位皆為 0(不是任何一版的真值),任何建構
+	// GameSession 卻沒有明確設定本欄位的呼叫端,會導致轟炸輪數/研究成本/武器傷害查詢異常——
+	// NewDemoSession 已明確設為 gamedata.Profile15()(=現行硬編值,no-op),新的建構路徑
+	// (未來 UI 選 1.3)須呼叫 SetRuleProfile 或直接賦值,不能依賴零值。
+	RuleProfile gamedata.RuleProfile
+
 	// --- 勝利條件(見 council.go)---
 	Victory                VictoryState     // 遊戲是否已分出勝負(Over=true 後不再產生新的議會選舉)
 	PendingCouncilElection *CouncilElection // 非玩家當選、等待玩家 RespondToCouncilElection 回應(手冊:議會無法強迫玩家接受)
@@ -2227,6 +2261,7 @@ func NewDemoSession() *GameSession {
 		FleetAtStar:       0,  // 母星
 		FleetDestStar:     -1, // 無航行任務
 		EventSeed:         42, // 隨機事件種子(可重現;正式新遊戲遞增)
+		RuleProfile:       gamedata.Profile15(),
 	}
 	session.Player.UsedCommandPoints = session.usedCommandPoints() // 依開局艦隊(homeworldShips)算實際需求,顯示與第一次 EndTurn 後一致
 	// 領袖技能接線(2026-07-11):demoLeaders 裡 Ship=false 的殖民地領袖(科學家/貿易家)套到母星
@@ -2234,4 +2269,13 @@ func NewDemoSession() *GameSession {
 	// (指揮官技能標籤無法對應、工程師對應的維修系統未建),見該函式與 leaderSkillIDByName 註解。
 	applyLeaderColonyBonuses(session.Leaders, &session.PlayerColonies[0])
 	return session
+}
+
+// SetRuleProfile 設定這局遊戲的版本規則 profile(gamedata.Profile13()/Profile15())。
+//
+// 最小掛勾:供未來主選單「選 1.3/1.5」的新遊戲流程呼叫(建立 GameSession 後、EndTurn 前設定
+// 一次),本任務不接 UI,只確保注入路徑存在。SetupNewGame(重開新局)刻意不重置 RuleProfile——
+// 版本規則由更上層的「選版本」流程決定,不屬於「重新產生星系/AI」的 SetupNewGame 職責範圍。
+func (s *GameSession) SetRuleProfile(p gamedata.RuleProfile) {
+	s.RuleProfile = p
 }

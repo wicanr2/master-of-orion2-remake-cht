@@ -13,9 +13,10 @@ import (
 // 供未來 UI 呼叫的引擎函式,目前 cmd/moo2/interactive.go 尚未接對應按鈕(TODO,見下方
 // BombardColony 註解與 docs/tech 更新)。
 
-// fleetBombardDamage 依手冊「Estimated Bomb Hits」段落模擬玩家艦隊對殖民地做「10 輪齊射」,
-// 回傳累積造成的總傷害(尚未除以 100、尚未套用 320 上限,由呼叫端接
-// gamedata.GroundBombHitsFromDamage)。
+// fleetBombardDamage 依手冊「Estimated Bomb Hits」段落模擬玩家艦隊對殖民地做「s.RuleProfile.
+// BombardmentVolleys 輪齊射」(1.5 預設 10 輪、1.3 為 5 輪,見 gamedata.RuleProfile 與
+// docs/tech/version-1.3-1.5-diff.md §2),回傳累積造成的總傷害(尚未除以 100、尚未套用 320
+// 上限,由呼叫端接 gamedata.GroundBombHitsFromDamage)。
 //
 // 手冊原文:「All remaining ships fire all weapons 10 times, or as many times as there is
 // ammo in 10 turns... and total damage is calculated from it.」逐發解算沿用既有戰術戰鬥公式
@@ -32,7 +33,7 @@ import (
 //     ResolveShot 命中/傷害公式——TODO,待戰術戰鬥層先補上這兩項才能真正對齊手冊轟炸公式。
 func (s *GameSession) fleetBombardDamage(rng *rand.Rand) int {
 	total := 0
-	for round := 0; round < 10; round++ {
+	for round := 0; round < s.RuleProfile.BombardmentVolleys; round++ {
 		for _, sh := range s.Ships {
 			body := shipStrength(sh.Class)
 			atk := body + sh.WeaponAttack
@@ -68,7 +69,7 @@ func (s *GameSession) fleetBombardDamage(rng *rand.Rand) int {
 type GroundBombardResult struct {
 	Ok          bool   // 是否成功發動了一場轟炸解算(false = 前置條件不足,未開打)
 	Reason      string // Ok=false 時的原因
-	TotalDamage int    // 10 輪齊射總傷害(套用前見 fleetBombardDamage 註解的已知簡化)
+	TotalDamage int    // RuleProfile.BombardmentVolleys 輪齊射總傷害(套用前見 fleetBombardDamage 註解的已知簡化)
 	Hits        int    // gamedata.GroundBombHitsFromDamage(TotalDamage),Estimated Bomb Hits
 
 	PopulationLost int // 實際扣減的殖民地人口單位數(1 hit = 1 人口單位,Planet Hits 表)
@@ -96,7 +97,8 @@ type GroundBombardResult struct {
 //
 // 任一條件不足回傳 Ok=false + Reason,不消耗任何狀態、不呼叫 rng。
 //
-// 解算:fleetBombardDamage 模擬 10 輪齊射 → gamedata.GroundBombHitsFromDamage 換算 hits →
+// 解算:fleetBombardDamage 模擬 RuleProfile.BombardmentVolleys 輪齊射 →
+// gamedata.GroundBombHitsFromDamage 換算 hits →
 // 依手冊 Planet Hits 表「每整數人口 1 hit」直接扣減 colony.Population(夾在 0 以上)。
 //
 // ⚠ 範圍限制(誠實標註,非本函式應臆測補齊的部分):
