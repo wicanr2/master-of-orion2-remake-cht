@@ -61,23 +61,32 @@
   成長(3→101,同期間近 2 倍),玩家開局 BC 軌跡不受影響(兩版本一致:102→…→96)。**AI 政府
   型態未建模**(`AIOpponent` 沒有 `Government` 欄位),`aiExpand` 建殖民地時士氣一律用
   `gamedata.MoraleGovDictatorship` 保守預設(與母星 `playerHomeworldColony` 基準一致);AI 也
-  沒有種族加成模型,`foodBonus`/`indBonus`/`resBonus` 一律傳 0,不臆造。**仍缺**:多 AI 對手
-  數量(demo 仍僅 1 個 AI)、AI 選星策略(目前是「星圖索引順序第一顆無主星」,非距離/資源導向)、
-  行星選擇子畫面(每星固定一顆行星,暫不需要)、氣態巨星/小行星帶類型(本 remake 星系生成從未
-  產生這兩類,科技 gate 掛勾點已留但無案例可測)。詳見 `docs/tech/colonization.md`。
+  沒有種族加成模型,`foodBonus`/`indBonus`/`resBonus` 一律傳 0,不臆造。**仍缺**:AI 選星策略
+  (目前是「星圖索引順序第一顆無主星」,非距離/資源導向)、行星選擇子畫面(每星固定一顆行星,暫不
+  需要)、氣態巨星/小行星帶類型(本 remake 星系生成從未產生這兩類,科技 gate 掛勾點已留但無案例可
+  測)。詳見 `docs/tech/colonization.md`。**(2026-07-11 更新:多 AI 對手數量已由 1 個擴為 3 個**
+  ——`NewDemoSession` 建 3 個性格互異的 AI 對手(席隆人/科學傾向、姆瑞森人/好戰、布拉西人/擴張),
+  各自不同母星星、獨立造艦/擴張/外交態勢,經 ~40 回合探針驗證三者都會各自成長,不是只有第一個在
+  動。AI 選星策略(星圖索引順序,非距離/資源導向)、AI 對 AI 互動(3 個 AI 只各自獨立對玩家,彼此
+  不打仗不外交)仍是既有簡化,見 `docs/tech/victory-conditions.md` 第 6 節 TODO。)**
 - 外交/間諜/議會、隨機事件、安塔蘭母星與歐瑞恩守護者、勝利條件——**大多缺席或極度簡化**。
   **(2026-07-11 更新:勝利條件從「完全沒有」變成「兩條路徑已接引擎層」。** 銀河議會選舉
   (手冊 GAME_MANUAL.pdf p.183:半數銀河殖民+≥3存續種族才成立、票數依人口、2/3超級多數當選、
   AI當選時玩家可accept/reject)與殲滅所有對手,兩者都已接進 `EndTurn`/`InvadeColony`,沿用
   `internal/engine/victory.go`(2026-07-03 就存在但從未被呼叫過的死碼)+ 新增
   `internal/gamedata/council.go`(人口→票數、成立門檻)、`internal/shell/council.go`(狀態機/
-  存讀檔),取代先前議會畫面用的無門檻/無2/3多數簡化版 `CouncilVote`。**資料模型限制誠實標注**:
-  本 remake 固定只有 1 個 AI 對手,議會「≥3 存續種族」門檻字面上永遠不可達,shell 層用
-  documented override(2)頂替,不是手冊原意;「候選人由票數最高兩者出線 + 第三方依外交關係投票」
-  這條規則因只有 2 個帝國、沒有第三方可搖擺,現況下沒有實質作用。**UI 仍未做**:議會畫面只印文字
-  狀態(尚未成立/待開/已分出勝負/待回應),沒有 accept/reject 互動熱區、沒有勝利/落敗結束畫面。
+  存讀檔),取代先前議會畫面用的無門檻/無2/3多數簡化版 `CouncilVote`。**UI 仍未做**:議會畫面只印
+  文字狀態(尚未成立/待開/已分出勝負/待回應),沒有 accept/reject 互動熱區、沒有勝利/落敗結束畫面。
   Antares 母星次元傳送門勝利(手冊第三條路徑)完全沒有對應流程(無 Dimensional Portal/艦隊遠征/
   母星戰鬥),列 TODO 不硬做。詳見 `docs/tech/victory-conditions.md`。)**
+  **(2026-07-11 再更新:議會由「玩家 vs 單一 AI 二元計票」擴為「N 帝國真議會」。** `NewDemoSession`
+  已建 3 個 AI 對手(見上「拓殖」段落),場上存續帝國上限變成玩家+3 AI=4,手冊字面門檻
+  `gamedata.CouncilMinExtantRaces`(≥3 存續種族)現在真的可達——先前的 shell 層資料模型限制近似
+  覆寫值 `councilMinExtantRacesOverride`(=2)**已移除**。`advanceCouncil` 也從「雙方各算一次票」
+  generalize 為逐帝國(玩家 + 每個 AI 各自獨立)算票、2/3 門檻用全體總票數判定,`PendingCouncilElection.
+  EnemyName` 正確指向實際當選的那個 AI(不是寫死 `AIPlayers[0]`)。仍未實作的簡化:「候選人限定
+  票數最高兩位 + 第三方外交搖擺票」這條手冊規則(需要 AI 對 AI 的外交關係模型,目前
+  `AIOpponent.Relation` 只有對玩家一個方向),見 `docs/tech/victory-conditions.md` 第 5-6 節。)**
   **(2026-07-11 再更新:間諜從「公式移植未接(零呼叫端死碼)」變成「最小可玩迴圈已接」。**
   `internal/gamedata/spy.go` 的 8 個機率函式(手冊 `Notes on Spying`,`SpySlotBonus`/
   `SpyEffectiveThreshold`/`SpyRollChance`/`SpyVsSpy*` 等)先前雖已移植但無任何呼叫端;新增

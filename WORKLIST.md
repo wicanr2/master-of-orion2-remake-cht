@@ -40,23 +40,38 @@
 - [x] 原版 672 艦名池翻譯並接入(取代硬編 10 名)(2026-07-11:190 組基底詞意譯+羅馬數字流水號保留,`assets/i18n/shipname.tsv` + `internal/shell/shipnames.go`,見 `docs/tech/proper-noun-strategy.md` 艦名節)
 - [x] 原版 829 隨機星名池翻譯並接入(取代二十八宿占位池)(2026-07-11:829 條英文名彼此互不重複——真名/圍棋術語彩蛋/克蘇魯神話等專有名詞優先意譯,虛構短音節規則化音譯,`assets/i18n/starname-random.tsv` + `internal/shell/starnames.go`,`genGalaxy` 改用 `randomStarNamePool`,二十八宿 `starNamePool` 已移除;見 `docs/tech/proper-noun-strategy.md` 隨機星名節)
 - [x] **勝利條件(2026-07-11)**:銀河議會選舉(手冊 GAME_MANUAL.pdf p.183,`gamedata/council.go`
-  +`shell/council.go`)——議會成立門檻(半數銀河已殖民 + 存續帝國數,本 remake 因資料模型固定
-  只有1個AI對手覆寫為2)、票數=人口(手冊無精確換算公式,近似1:1)、2/3超級多數勝出(沿用
-  `internal/engine/victory.go` 既有但先前從未接線的 `CheckHighCouncil`)、AI當選時玩家可
-  accept/reject(手冊:議會無法強迫接受)、玩家達標立即勝利。另接殲滅所有對手勝利(沿用同檔
-  `CheckExtermination`,`InvadeColony` 攻陷AI唯一殖民地後立即偵測)。UI 僅議會畫面文字狀態,
-  無獨立結束畫面/accept-reject 互動介面(見 HONEST-STATUS)。Antares母星次元傳送門勝利仍全無
-  ——需要 Dimensional Portal 科技/建造 + 艦隊遠征流程 + 母星戰鬥,整套子系統不存在,列 TODO。
-  飛彈躲避/AMR/球狀傷害已接進戰鬥解算(見 task 16 分塊「戰鬥公式依武器類型分流」)。
+  +`shell/council.go`)——議會成立門檻(半數銀河已殖民 + 存續帝國數)、票數=人口(手冊無精確換算
+  公式,近似1:1)、2/3超級多數勝出(沿用 `internal/engine/victory.go` 既有但先前從未接線的
+  `CheckHighCouncil`)、AI當選時玩家可 accept/reject(手冊:議會無法強迫接受)、玩家達標立即
+  勝利。另接殲滅所有對手勝利(沿用同檔 `CheckExtermination`,`InvadeColony` 攻陷AI唯一殖民地後
+  立即偵測)。UI 僅議會畫面文字狀態,無獨立結束畫面/accept-reject 互動介面(見 HONEST-STATUS)。
+  Antares母星次元傳送門勝利仍全無——需要 Dimensional Portal 科技/建造 + 艦隊遠征流程 + 母星戰鬥,
+  整套子系統不存在,列 TODO。飛彈躲避/AMR/球狀傷害已接進戰鬥解算(見 task 16 分塊「戰鬥公式依
+  武器類型分流」)。**(舊斷言訂正,2026-07-11 見下一項)**:議會成立門檻最初因本 remake 資料模型
+  固定只有 1 個 AI 對手,曾用 `councilMinExtantRacesOverride`(=2)覆寫手冊字面值 3——這個覆寫值
+  與相關斷言已隨下一項的多 AI 升級移除/訂正,不再成立。
+- [x] **多 AI 對手(N=3)+ 真議會(2026-07-11)**:`NewDemoSession` 由建 1 個 AI 對手擴為 3 個
+  (`internal/shell/session.go`)——3 個不同母星星(`genGalaxy` 新增 `aiHomes` 參數,均勻攤開
+  母星索引,`aiHomes=1` 時與舊版逐位元相同,`RegenGalaxy` 呼叫端行為不變)、3 種不同種族名+
+  `ai.Profile` 性格(席隆人/科學、姆瑞森人/好戰、布拉西人/擴張)、`PlayerSpies` 平行陣列同步。
+  議會 generalize:移除 `councilMinExtantRacesOverride`,`councilEligible` 直接用手冊字面值
+  `gamedata.CouncilMinExtantRaces`(=3,玩家+3AI=4個帝國,門檻真的可達);`advanceCouncil` 由
+  「玩家 vs 單一 AI 二元計票」改為逐帝國(玩家+每個AI各自獨立)算票、2/3門檻用全體總票數判定,
+  `PendingCouncilElection.EnemyName` 正確指向實際當選的 AI(非寫死 `AIPlayers[0]`)。~40 回合
+  regression 探針驗證:3 個 AI 各自獨立成長(殖民地/軍力隨性格分化)、玩家開局經濟不 regression、
+  議會用真門檻正常召開、全程無 panic、spy 對每個 AI 都結算。仍未做:AI 選星策略(索引順序非
+  距離導向)、AI 對 AI 互動(彼此不打仗不外交)、「候選人限定票數最高兩位+第三方外交搖擺票」
+  (需要 AI 對 AI 關係模型)。詳見 `docs/tech/victory-conditions.md`、`internal/shell/multi_ai_test.go`。
 - [x] **間諜最小可玩迴圈(2026-07-11)**:`gamedata/spy.go`(手冊 `Notes on Spying` 8 個機率
   函式,先前零呼叫端死碼)接上 `internal/shell/spy.go`——訓練間諜(`TrainSpy`,花 30 BC
   remake 拍板值)→ 每回合結算(`advanceEspionage`,由 `EndTurn` 呼叫)偷科技(STEAL,偷一項
   「對方已知、我方未知」的科技,依 GAME_MANUAL.pdf p.174-175「tries to steal technologies
-  you have yet to gain」推出)→ SpyVsSpy 判定(±80 淨值門檻)。玩家 ↔ 單一 AI 對手雙向生效,
-  維護費 opt-in(0 間諜時零影響)。**只做 STEAL**:破壞(SABOTAGE)手冊無數值規則,標 TODO
-  不做;逐對手分配/任務選單(Espionage/Sabotage/Hide)延後;防禦方 Agent 不獨立追蹤(DB 固定
-  0,對應手冊「零 Agent 防禦仍生效」);種族/科技/政府對間諜的加成現行無資料可推導,一律 0
-  (TODO)。詳見 `docs/tech/spy-system.md`。
+  you have yet to gain」推出)→ SpyVsSpy 判定(±80 淨值門檻)。玩家 ↔ 每個 AI 對手雙向生效
+  (`PlayerSpies`/`AIOpponent.Spies` 皆為平行陣列/逐一結算,`NewDemoSession` 現有 3 個 AI 對手
+  時同樣各自獨立算,見上一項多 AI 升級),維護費 opt-in(0 間諜時零影響)。**只做 STEAL**:破壞
+  (SABOTAGE)手冊無數值規則,標 TODO 不做;逐對手分配/任務選單(Espionage/Sabotage/Hide)延後;
+  防禦方 Agent 不獨立追蹤(DB 固定 0,對應手冊「零 Agent 防禦仍生效」);種族/科技/政府對間諜的
+  加成現行無資料可推導,一律 0(TODO)。詳見 `docs/tech/spy-system.md`。
 
 ## Phase 0 — Kick-off / 可行性(本輪)
 - [x] 盤點 openorion2 完成度(`docs/kickoff/01`)

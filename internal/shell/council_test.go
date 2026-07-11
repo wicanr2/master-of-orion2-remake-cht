@@ -157,12 +157,20 @@ func TestCouncilDisableEventsSkips(t *testing.T) {
 	}
 }
 
-// TestConquestVictoryWhenAllOpponentsEliminated 驗證手冊第一條勝利路徑:AI 對手的殖民地清單
-// 一旦全空(InvadeColony 攻陷其唯一殖民地後的狀態,見 ground_invasion.go),即判定玩家以
+// TestConquestVictoryWhenAllOpponentsEliminated 驗證手冊第一條勝利路徑:所有 AI 對手的殖民地
+// 清單一旦全空(InvadeColony 逐一攻陷後的狀態,見 ground_invasion.go),即判定玩家以
 // engine.VictoryExtermination 勝利。直接操作 Colonies 切片以聚焦驗證勝利偵測本身,不重跑整套地面戰。
+//
+// 2026-07-11 訂正(N=3 AI generalize):NewDemoSession 現建 3 個 AI 對手(先前只有 1 個),
+// engine.CheckExtermination 的語意是「只剩一方存活」——只清空 AIPlayers[0] 不夠了,AIPlayers[1]/
+// [2] 仍存活,不該判定殲滅勝利(這正是下面新增的 TestConquestVictoryNotTriggeredWithPartialElimination
+// 要驗證的新行為)。本測試改成清空「所有」AI 對手的殖民地,才是「殲滅所有對手」這條手冊規則的
+// 真實觸發條件,不是為了讓測試通過而放寬斷言。
 func TestConquestVictoryWhenAllOpponentsEliminated(t *testing.T) {
 	s := NewDemoSession()
-	s.AIPlayers[0].Colonies = nil
+	for i := range s.AIPlayers {
+		s.AIPlayers[i].Colonies = nil
+	}
 
 	s.advanceConquestVictory()
 
@@ -183,5 +191,23 @@ func TestConquestVictoryNotTriggeredWhileOpponentAlive(t *testing.T) {
 	s.advanceConquestVictory()
 	if s.Victory.Over {
 		t.Fatalf("AI 對手仍有殖民地,不應判定勝利")
+	}
+}
+
+// TestConquestVictoryNotTriggeredWithPartialElimination 是 N=3 AI 生效後的新行為驗證:只消滅
+// 一部分(而非全部)AI 對手時,不應誤判「殲滅勝利」——這在只有 1 個 AI 對手的舊資料模型下沒有
+// 中間狀態可測(只有「有」或「全空」兩種),3 個 AI 對手才第一次出現這個中間態,值得專門驗證
+// engine.CheckExtermination「只剩一方存活」語意在多 AI 下確實生效,不是巧合通過。
+func TestConquestVictoryNotTriggeredWithPartialElimination(t *testing.T) {
+	s := NewDemoSession()
+	if len(s.AIPlayers) < 2 {
+		t.Fatalf("本測試需要至少 2 個 AI 對手才能測「部分消滅」,got %d", len(s.AIPlayers))
+	}
+	s.AIPlayers[0].Colonies = nil // 只消滅第一個 AI,其餘仍存活
+
+	s.advanceConquestVictory()
+
+	if s.Victory.Over {
+		t.Fatalf("僅消滅部分 AI 對手,其餘仍存活,不應判定殲滅勝利,got Victory=%+v", s.Victory)
 	}
 }

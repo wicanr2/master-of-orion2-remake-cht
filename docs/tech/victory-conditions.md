@@ -105,13 +105,16 @@ openorion2 裡確實連影子都沒有,只能依手冊從零設計,沒有既有 
   `LastCouncil string`、`CouncilMeetings int`、`lastCouncilTurn int`(存讀檔已同步,見
   `internal/shell/persist.go`)。
 - `advanceCouncil()`:`EndTurn` 每回合呼叫的狀態機。議會成立(`councilEligible`)、距上次開會滿
-  `councilInterval` 回合(首次成立立即開會,不用等)才開會;雙方票數 = `gamedata.CouncilVotes(人口)`;
-  依 `engine.CheckHighCouncil` 判定:
+  `councilInterval` 回合(首次成立立即開會,不用等)才開會;**逐帝國**(玩家 + 每個 AI 對手各自
+  獨立,2026-07-11 由「玩家 vs 單一 AI 二元計票」generalize 為 N 帝國)算 `gamedata.CouncilVotes
+  (該帝國殖民地人口加總)`,2/3 門檻用全體(玩家+所有 AI)總票數,依 `engine.CheckHighCouncil` 逐一
+  判定:
   - 玩家達 2/3 → 立即勝利(`Victory.Reason = engine.VictoryHighCouncil`,不需要「接受」這一步——
     手冊那句「議會無法強迫你接受」只適用於「當選者不是你」的情境)。
-  - AI 達 2/3 → 記錄 `PendingCouncilElection`,等玩家用 `RespondToCouncilElection(accept bool)` 回應:
-    `accept=true` 結束遊戲判負,`accept=false` 不結束、下一屆再開(手冊原句直接翻譯成這個互動)。
-  - 兩者皆未達標 → 流會,`LastCouncil` 記錄本屆票數,下一屆再開。
+  - 某個 AI 達 2/3 → 記錄 `PendingCouncilElection`(`EnemyName` = 該 AI 名稱,不是寫死的
+    `AIPlayers[0]`),等玩家用 `RespondToCouncilElection(accept bool)` 回應:`accept=true` 結束遊戲
+    判負,`accept=false` 不結束、下一屆再開(手冊原句直接翻譯成這個互動)。
+  - 沒有任何一方達標 → 流會,`LastCouncil` 記錄本屆票數,下一屆再開。
 - `advanceConquestVictory()`:殲滅所有對手,沿用 `engine.CheckExtermination`(對稱判定,理論上也涵蓋
   「玩家 0 殖民地、AI 存活」→ AI 勝利的方向,但本 remake 目前沒有任何機制會讓玩家殖民地清零,這個
   分支現況不可達,只是沿用同一個對稱函式的自然結果)。`InvadeColony` 攻陷 AI 唯一殖民地後立即呼叫一次
@@ -129,19 +132,22 @@ openorion2 裡確實連影子都沒有,只能依手冊從零設計,沒有既有 
 
 ## 5. 資料模型限制(重要,誠實標注)
 
-`shell.GameSession.AIPlayers` 目前**固定只有 1 個 AI 對手**(`NewDemoSession` 寫死一筆),場上存續
-帝國數上限就是「玩家 + 1 AI」= 2。這對議會機制造成兩個字面上無法照搬手冊的地方:
+**2026-07-11 更新:`NewDemoSession` 已由 1 個 AI 對手擴為 3 個**(多帝國競爭骨架,見
+`docs/HONEST-STATUS.md` 同日段落),場上存續帝國數上限變成「玩家 + 3 AI」= 4。這解除了下面第 1 點
+(門檻永遠不可達),但第 2 點(候選人/第三方搖擺票規則的簡化)仍未完整實作:
 
-1. **成立門檻「≥3 存續種族」永遠不可能達成。** 本 remake 用
-   `councilMinExtantRacesOverride = 2`(`internal/shell/council.go`)覆寫這個門檻,**只影響 shell 層
-   整合、不改動 `gamedata.CouncilMinExtantRaces` 這個手冊字面值常數**——未來若擴充 `AIPlayers` 支援
-   多個 AI 對手,應把 override 改回手冊值 3。
-2. **「兩位候選人由票數最高者出線」與「其餘種族依外交關係決定投給哪位候選人」這兩條規則沒有意義。**
-   這兩條規則只在 ≥3 個帝國同場才有意義(需要「第三方」帝國把票投給兩位候選人之一)。本 remake 只有
-   2 個帝國,沒有第三方可搖擺,直接把僅有的兩個帝國當成僅有的兩位候選人、各自的票就是自己的人口票。
-   等資料模型支援 >1 個 AI 對手時,才需要真正實作「候選人由票數最高兩者出線 + 第三方依外交關係投票」
-   ——`AIOpponent.Relation` 目前也只記錄「對玩家」的關係分數,沒有 AI 對 AI 的關係,這也是屆時需要
-   一併補的資料。
+1. **成立門檻「≥3 存續種族」現在真的可達成。** `councilMinExtantRacesOverride`(先前的 shell 層
+   資料模型限制近似覆寫值,固定為 2)**已移除**,`councilEligible` 直接引用手冊字面值常數
+   `gamedata.CouncilMinExtantRaces`(=3)——玩家 + 3 個 AI 對手共 4 個帝國,只要其中至少 3 個仍存續
+   (各自至少 1 個殖民地)就滿足門檻,不再需要 remake 近似值。
+2. **「兩位候選人由票數最高者出線」與「其餘種族依外交關係決定投給哪位候選人」這條規則仍是簡化版。**
+   手冊原文是「先選出票數最高的兩位候選人,其餘種族依外交關係把票投給其中一位」——這需要「第三方
+   帝國依對兩位候選人的外交關係分配搖擺票」的模型,`AIOpponent.Relation` 目前只記錄「對玩家」的
+   關係分數,沒有 AI 對 AI 的關係,做不出真正的搖擺票分配。`advanceCouncil` 因此採取一個與此規則
+   在「沒有搖擺票」情境下等價的簡化讀法:不特別挑兩位候選人,而是每個帝國(玩家或某個 AI)各自
+   的票數都直接跟全體總票數比 2/3——這個簡化在 N=3 AI 下已經比先前「玩家 vs 單一 AI 二元計票」更
+   貼近手冊「每個帝國各自被分配票數、各自可能達標」的語意,但仍未實作「候選人只能是票數最高兩位」
+   與「第三方外交搖擺票」這兩個子規則,列 TODO(見下方第 6 節)。
 
 `councilInterval = 8`(議會重開間隔)是 remake 排程選擇,手冊完全沒有給這個數字,只從外交台詞證實
 議會確實會反覆召開;與 `antaresInterval`(15 回合,安塔蘭突襲)同數量級但較短,理由是議會需要「半數
@@ -157,14 +163,25 @@ openorion2 裡確實連影子都沒有,只能依手冊從零設計,沒有既有 
   只是預先記錄的權威值。
 - **議會選舉結束畫面 + accept/reject 互動 UI**:目前只有文字狀態,沒有原版議會 3D 場景的投票動畫、
   沒有結束畫面(勝利/落敗的專屬畫面),`RespondToCouncilElection` 也還沒有 UI 熱區可以觸發。
-- **多 AI 對手支援**:見上「資料模型限制」——這是讓議會機制真正貼近手冊(≥3 種族、候選人+外交搖擺票)
-  的前置工程,目前不在範圍內。
+- **候選人限定「票數最高兩位」+ 第三方外交搖擺票**:見上「資料模型限制」第 2 點——`NewDemoSession`
+  已建 3 個 AI 對手(前置的多 AI 對手支援已完成),但「只有票數最高兩位帝國夠格當候選人、其餘帝國
+  依外交關係分票」這條規則仍未實作,需要先幫 `AIOpponent` 補上「AI 對 AI」的外交關係模型(目前
+  `Relation` 只有「對玩家」一個方向)。
+- **AI 對 AI 的戰爭/外交互動**:3 個 AI 對手目前只會各自獨立對玩家造艦/擴張/態勢漂移,彼此之間沒有
+  戰爭、外交、搶星衝突——`aiExpand` 每個 AI 各自從星圖索引 0 開始找無主星,雖然不會重複佔領(已佔
+  的星會被跳過),但也不會互相攻打對方的殖民地。完整 N-way AI 互動超出本輪任務範圍,列 TODO。
 
 ## 7. 測試
 
 - `internal/gamedata/council_test.go`:`CouncilEligible`(門檻邊界)、`CouncilVotes`(含負值/零值)。
 - `internal/shell/council_test.go`:議會未成立不開會、成立後立即開第一屆、玩家達標直接勝利、AI 達標
   待回應(拒絕不結束+下一屆再開、接受才結束)、五五波流會、`DisableEvents` 關閉議會、殲滅勝利判定
-  (含「對手仍存活不誤判」)。
+  (含「對手仍存活不誤判」;2026-07-11 訂正為「全部 AI 對手殖民地清空」才觸發,見下方 multi_ai_test.go
+  的「僅消滅部分 AI 不誤判」新案例)。
+- `internal/shell/multi_ai_test.go`(2026-07-11 新增):`NewDemoSession` 建 3 個 AI 對手(母星不
+  重疊、名稱/性格互異、`PlayerSpies` 平行陣列同步)、3 個 AI 各自獨立造艦/擴張、議會 N 帝國計票
+  (非 `AIPlayers[0]` 當選也能正確判定、多 AI 人口分散時不誤判)、`gamedata.CouncilMinExtantRaces`
+  真門檻(只剩 2 個存續帝國時議會不成立)、剛好達門檻(3 帝國)時 N 帝國計票邏輯仍正確、部分消滅
+  AI 對手不誤判殲滅勝利。
 - `internal/engine/victory_test.go`(既有,2026-07-03):`CheckExtermination`/`CheckHighCouncil`/
   `CheckAntaranVictory`/`CheckVictory` 純函式門檻邊界。

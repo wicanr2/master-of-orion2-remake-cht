@@ -1223,21 +1223,72 @@ var GalaxySizes = []struct {
 }
 
 // RegenGalaxy 依指定星數重生星系(+ 對應行星);供 NEW GAME 依星系大小生成。
+//
+// aiHomes 固定傳 1:cmd/moo2 的新遊戲流程(customrace.go/raceselect.go)目前完全不建立
+// AIPlayers(該流程尚未接上 AI 對手,是既有落差,不在本輪任務範圍),沿用「舊版 genGalaxy
+// 固定標 1 顆 AI 母星」的行為不變——這裡不是本輪多 AI 任務的實際受益端,只是保持
+// genGalaxy 簽名統一後的呼叫相容。真正建 3 個 AI 對手母星的是 NewDemoSession 直接呼叫
+// genGalaxy(n, seed, 3),不經過本函式。
 func (s *GameSession) RegenGalaxy(n int, seed int64) {
-	s.Stars = genGalaxy(n, seed)
+	stars, _ := genGalaxy(n, seed, 1)
+	s.Stars = stars
 	s.Planets = genPlanets(s.Stars)
 	s.SelectedStar = -1
 }
 
+// aiHomeStarIndices 依「星數 n、AI 對手數 aiHomes」算出 aiHomes 個彼此不同、且都不是星 0
+// (玩家母星)的星索引,供 genGalaxy 標記 AI 母星用。分佈公式 idx_k = n*k/(aiHomes+1)
+// (k=1..aiHomes)把 AI 母星在星圖索引上盡量平均攤開,不擠在同一角落;aiHomes=1 時
+// idx_1 = n*1/2 = n/2,與 genGalaxy 舊版「唯一 AI 母星固定在 n/2」逐位元相同,故
+// RegenGalaxy(仍只需 1 個 AI 母星索引的呼叫端)行為完全不變,不是新的星系配置。
+// 若算出的索引撞到已佔用的(理論上只在 n 遠小於 aiHomes 時發生,目前呼叫端 n>=8),
+// 用「向後掃描找下一個未佔用索引、繞回 idx=1 續找」補位,最多嘗試 n 次避免死迴圈——
+// 極端小 n 高 aiHomes 下不保證完全不撞,只保證函式一定終止。
+func aiHomeStarIndices(n, aiHomes int) []int {
+	if aiHomes <= 0 || n <= 1 {
+		return nil
+	}
+	used := map[int]bool{0: true} // 星 0 保留給玩家母星
+	out := make([]int, 0, aiHomes)
+	for k := 1; k <= aiHomes; k++ {
+		idx := n * k / (aiHomes + 1)
+		if idx <= 0 {
+			idx = 1
+		}
+		if idx >= n {
+			idx = n - 1
+		}
+		for tries := 0; used[idx] && tries < n; tries++ {
+			idx++
+			if idx >= n {
+				idx = 1
+			}
+		}
+		used[idx] = true
+		out = append(out, idx)
+	}
+	return out
+}
+
 // genGalaxy 程序化生成星系:以種子亂數在抖動網格上佈星,隨機光譜/大小/星名;
-// 第 0 星為玩家母星、約中段一星為 AI 母星。n=星數(對應星系大小)。
+// 第 0 星為玩家母星、aiHomes 個星(見 aiHomeStarIndices)為各 AI 對手母星。
+// n=星數(對應星系大小),回傳值第二項是各 AI 母星依序(對應 AIPlayers[0]、[1]、…)的星索引,
+// 供呼叫端(NewDemoSession)直接拿來設 AIOpponent.ColonyStars,不必在呼叫端重算一次索引公式
+// (先前 1 AI 版本 NewDemoSession 用 `aiHomeStar := galaxyStars/2` 手動重算,靠註解說明「與
+// genGalaxy 內部規則一致」维持同步——兩處各算一次同一個公式是有漂移風險的重複邏輯,這裡改成
+// 單一權威來源直接回傳)。
 // 星名取自原版 STARNAME.LBX asset1 的 829 條隨機星名池(randomStarNamePool,見
 // internal/shell/starnames.go),829 遠大於任何星系大小上限(最大 48 星),不需 fallback。
-func genGalaxy(n int, seed int64) []Star {
+func genGalaxy(n int, seed int64, aiHomes int) ([]Star, []int) {
 	r := rand.New(rand.NewSource(seed))
 	cols := int(math.Ceil(math.Sqrt(float64(n))))
 	rows := (n + cols - 1) / cols
 	stars := make([]Star, 0, n)
+	aiIdx := aiHomeStarIndices(n, aiHomes)
+	aiSet := make(map[int]bool, len(aiIdx))
+	for _, x := range aiIdx {
+		aiSet[x] = true
+	}
 	idx := 0
 	names := append([]string(nil), randomStarNamePool...)
 	r.Shuffle(len(names), func(i, j int) { names[i], names[j] = names[j], names[i] })
@@ -1252,14 +1303,15 @@ func genGalaxy(n int, seed int64) []Star {
 			owner := 0
 			if idx == 0 {
 				owner = 1 // 玩家母星
-			} else if idx == n/2 {
-				owner = 2 // AI 母星
+			} else if aiSet[idx] {
+				owner = 2 // AI 母星(不分哪個 AI——個別歸屬見 AIOpponent.ColonyStars,Star.Owner
+				// 只是粗粒度「有主/無主/玩家/AI」旗標,見型別註解)
 			}
 			stars = append(stars, Star{X: x, Y: y, Spectral: r.Intn(7), Size: r.Intn(4), Name: nm, Owner: owner})
 			idx++
 		}
 	}
-	return stars
+	return stars, aiIdx
 }
 
 // GameSession 是一局進行中的遊戲狀態。玩家操作改變狀態,EndTurn 推進一回合(結算玩家 + 各 AI)。
@@ -1945,17 +1997,63 @@ func homeworldBuildings() map[string]bool {
 	}
 }
 
-// NewDemoSession 建一個最小可玩對局:玩家 + 1 個科學傾向 AI 對手,雙方各持 Average 起始
-// 文明等級的單一母星(docs/tech/homeworld-init.md,取代先前程序生成的 2 假殖民地)。玩家與
-// AI 母星 yield 皆接忠實 Terran/Abundant 查表值(playerHomeworldColony)——AI 原本因
-// advanceAI 造艦投資的整數捨去 bug 而暫維持 placeholder yield,該 bug 已用 FleetInvestPool
-// 餘數池修好(見 advanceAI 註解),經濟對稱完整。供「最小可玩迴圈」骨架用;正式新遊戲流程
-// (選種族/星系生成/起始文明等級選擇)為後續工作。
+// demoAIOpponentSetup 是 NewDemoSession 建立各 AI 對手時的固定名稱/性格配置(順序對應
+// AIPlayers[0]/[1]/[2])。三個都取自 Races(session.go 上方 13 經典種族表)裡實際存在的
+// 種族名,對應手冊描述的招牌性格,搭配 ai.Profile 的造艦/研究權重:
+//   - 席隆人(Psilons):手冊「創造性研究,科學家產出高」→ ai.ProfileScientific(重研究)。
+//   - 姆瑞森人(Mrrshan):手冊「好戰善攻,艦艇攻擊加成」→ ai.ProfileAggressive(重工業造艦)。
+//   - 布拉西人(Bulrathi):手冊「體格強悍,地面與戰鬥加成」→ ai.ProfileExpansionist(偏工業,
+//     這裡取「擴張」而非「好戰」對應,避免兩個 AI 都是同一種造艦優先權重、行為趨同看不出差異;
+//     手冊沒有描述 Bulrathi 特別擅長殖民擴張,這點是 remake 為了讓 3 個 AI 行為可辨識的選擇,
+//     非手冊逐字對應)。
+//
+// 舊版單 AI demo 用的名稱是「AI (賽隆人)」——「賽隆人」四字實際上不在 Races 表裡(疑似「席隆人」
+// 的手誤,且 cmd/moo2 的 diplomatRaceIndex 早已把它當「舊字串相容」映射到薩克拉肖像,可見
+// 命名本身從一開始就不精確)。這裡順手訂正為 Races 表裡真實存在的「席隆人」,不延續錯字——沒有
+// 任何測試字串比對這個名稱(已查證,見 grep AIPlayers[0].Name),訂正不影響既有測試。
+var demoAIOpponentSetup = []struct {
+	name    string
+	profile ai.Profile
+}{
+	{"AI (席隆人)", ai.ProfileScientific},
+	{"AI (姆瑞森人)", ai.ProfileAggressive},
+	{"AI (布拉西人)", ai.ProfileExpansionist},
+}
+
+// NewDemoSession 建一個最小可玩對局:玩家 + 3 個性格互異的 AI 對手(多帝國競爭骨架,見
+// demoAIOpponentSetup),各自持 Average 起始文明等級的單一母星(docs/tech/homeworld-init.md,
+// 取代先前程序生成的假殖民地)。玩家與各 AI 母星 yield 皆接忠實 Terran/Abundant 查表值
+// (playerHomeworldColony)——AI 原本因 advanceAI 造艦投資的整數捨去 bug 而暫維持 placeholder
+// yield,該 bug 已用 FleetInvestPool 餘數池修好(見 advanceAI 註解),經濟對稱完整。
+//
+// 2026-07-11 由 1 AI 擴為 3 AI(激活真議會,見 council.go councilEligible/advanceCouncil):
+// 資料模型(AIPlayers 平行陣列、PlayerSpies 平行陣列、council 的 extantRaceCount/
+// aiPopulationTotal 迴圈)先前就已是「對任意個數 AI 迴圈處理」的寫法,只是從未真的建過 >1 個
+// AI 去驗證——見各處「天然支援,只是 1 AI 看不出差異」的既有註解。這裡是把資料模型的既有
+// N-ready 設計第一次接上實際的 N=3。
+//
+// 供「最小可玩迴圈」骨架用;正式新遊戲流程(選種族/星系生成/起始文明等級選擇,含真正的多 AI
+// 建構)為後續工作——cmd/moo2 的 RegenGalaxy 呼叫端(customrace.go/raceselect.go)目前完全
+// 不建立 AIPlayers,是既有落差,不在本輪範圍內。
 func NewDemoSession() *GameSession {
 	const galaxyStars = 24
-	galaxy := genGalaxy(galaxyStars, 42) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
-	galaxy[0].Explored = true            // 母星初始已探索
-	aiHomeStar := galaxyStars / 2        // 與 genGalaxy 內部「idx==n/2 → AI 母星」的規則一致
+	const numAIOpponents = 3
+	galaxy, aiHomeStars := genGalaxy(galaxyStars, 42, numAIOpponents) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
+	galaxy[0].Explored = true                                        // 母星初始已探索
+
+	aiPlayers := make([]AIOpponent, 0, numAIOpponents)
+	for i := 0; i < numAIOpponents && i < len(aiHomeStars); i++ {
+		setup := demoAIOpponentSetup[i%len(demoAIOpponentSetup)]
+		aiPlayers = append(aiPlayers, AIOpponent{
+			Name:        setup.name,
+			Player:      newHomeworldPlayerState(1),
+			Colonies:    []engine.ColonyState{playerHomeworldColony()}, // AI 同為 Average 起始單一母星,與玩家共用忠實 yield
+			ColonyStars: []int{aiHomeStars[i]},                         // 唯一有實際殖民地模型的星(見 AIOpponent.ColonyStars 註解)
+			Decider:     ai.NewRemakeDecider(setup.profile),
+			OwnedStars:  1,
+		})
+	}
+
 	session := &GameSession{
 		Turn:              1,
 		Player:            newHomeworldPlayerState(gamedata.TOPIC_ADVANCED_CONSTRUCTION),
@@ -1963,23 +2061,17 @@ func NewDemoSession() *GameSession {
 		ColonyBuildings:   []map[string]bool{homeworldBuildings()},
 		PlayerColonyStars: []int{0},                       // 母星 = 星 0(見欄位註解)
 		Government:        gamedata.MoraleGovDictatorship, // 預設獨裁(自訂種族 0 點基準),見欄位註解的零值陷阱說明
-		AIPlayers: []AIOpponent{{
-			Name:        "AI (賽隆人)",
-			Player:      newHomeworldPlayerState(1),
-			Colonies:    []engine.ColonyState{playerHomeworldColony()}, // AI 同為 Average 起始單一母星,與玩家共用忠實 yield
-			ColonyStars: []int{aiHomeStar},                             // 唯一有實際殖民地模型的星(見 AIOpponent.ColonyStars 註解)
-			Decider:     ai.NewRemakeDecider(ai.ProfileScientific),
-			OwnedStars:  1,
-		}},
-		Stars:         galaxy,
-		Planets:       genPlanets(galaxy),
-		Leaders:       demoLeaders(),
-		Ships:         homeworldShips(),
-		Builds:        make([]ColonyBuild, 1),
-		SelectedStar:  -1,
-		FleetAtStar:   0,  // 母星
-		FleetDestStar: -1, // 無航行任務
-		EventSeed:     42, // 隨機事件種子(可重現;正式新遊戲遞增)
+		AIPlayers:         aiPlayers,
+		PlayerSpies:       make([]int, len(aiPlayers)), // 玩家對每個 AI 對手的間諜數,平行 AIPlayers,開局皆 0(見欄位/spy.go ensurePlayerSpies 註解)
+		Stars:             galaxy,
+		Planets:           genPlanets(galaxy),
+		Leaders:           demoLeaders(),
+		Ships:             homeworldShips(),
+		Builds:            make([]ColonyBuild, 1),
+		SelectedStar:      -1,
+		FleetAtStar:       0,  // 母星
+		FleetDestStar:     -1, // 無航行任務
+		EventSeed:         42, // 隨機事件種子(可重現;正式新遊戲遞增)
 	}
 	session.Player.UsedCommandPoints = session.usedCommandPoints() // 依開局艦隊(homeworldShips)算實際需求,顯示與第一次 EndTurn 後一致
 	// 領袖技能接線(2026-07-11):demoLeaders 裡 Ship=false 的殖民地領袖(科學家/貿易家)套到母星

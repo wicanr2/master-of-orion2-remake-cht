@@ -15,16 +15,11 @@ import (
 // CheckExtermination(2026-07-03 就已存在,但先前從未被 shell/cmd 呼叫過,是一組沒接進實際
 // 回合流程的死碼,見 gamedata/council.go 檔頭說明)。
 
-// councilMinExtantRacesOverride 是本 remake 目前的議會成立「存續種族數」門檻,取代
-// gamedata.CouncilMinExtantRaces 手冊字面值 3。
-//
-// 原因(資料模型限制,非手冊規則變更):shell.GameSession.AIPlayers 目前固定只有 1 個 AI 對手
-// (見 NewDemoSession),場上存續帝國數上限就是「玩家 + 1 AI」= 2,若照搬手冊字面值 3,
-// 議會在本 remake 現況下永遠無法成立——議會選舉這條勝利路徑會變成死路徑,違背本輪任務
-// 「幫遊戲補上可達成的勝利條件」的目的。因此改用 2 作為現況下的可達門檻,並在
-// docs/HONEST-STATUS.md、docs/tech 議會章節誠實標注這是資料模型限制下的近似,不是手冊原意。
-// 未來若擴充 AIPlayers 支援多個 AI 對手,應把這裡改回 gamedata.CouncilMinExtantRaces(3)。
-const councilMinExtantRacesOverride = 2
+// 2026-07-11 訂正:NewDemoSession 已由 1 個 AI 對手擴為 3 個(見該函式),場上存續帝國數
+// 上限變成「玩家 + 3 AI」= 4,手冊字面門檻 gamedata.CouncilMinExtantRaces(3)現在真的可達,
+// 不再需要 councilMinExtantRacesOverride 這個「資料模型限制下的近似覆寫值」——已移除該常數,
+// councilEligible 直接引用 gamedata.CouncilMinExtantRaces。舊有「固定只有 1 AI 故永遠死路徑」
+// 的說明不再成立,見下方 councilEligible/advanceCouncil。
 
 // councilInterval 是議會成立後、每屆選舉的間隔回合數。手冊沒有給出這個數字(見
 // gamedata/council.go 檔尾說明),只從外交台詞(assets/i18n/diplo.tsv「next meeting of the
@@ -106,18 +101,26 @@ func (s *GameSession) extantRaceCount() int {
 	return n
 }
 
-// councilEligible 判定議會這回合是否應該存在(見 councilMinExtantRacesOverride 說明本
-// remake 對手冊字面種族數門檻的覆寫)。
+// councilEligible 判定議會這回合是否應該存在:半數銀河已殖民 + 存續帝國數達
+// gamedata.CouncilMinExtantRaces(手冊字面值 3;見該常數註解,NewDemoSession 現有玩家+3 AI=4
+// 個帝國上限,字面門檻可達,不再需要 remake 覆寫值)。
 func (s *GameSession) councilEligible() bool {
 	settled, total := s.settledStarFraction()
 	if total <= 0 {
 		return false
 	}
-	return settled*2 >= total && s.extantRaceCount() >= councilMinExtantRacesOverride
+	return settled*2 >= total && s.extantRaceCount() >= gamedata.CouncilMinExtantRaces
 }
 
 // playerPopulationTotal/aiPopulationTotal 回傳各自帝國殖民地人口加總,做為
 // gamedata.CouncilVotes 的輸入(手冊:票數依人口規模決定,見 gamedata/council.go)。
+//
+// aiPopulationTotal 是「所有 AI 對手合計」——只供 CouncilStatus 顯示用的既有相容欄位
+// (UI 呈現「我方 vs 全體 AI 陣營合計」的粗略對照,見該型別註解),不是 advanceCouncil 實際
+// 判定 2/3 多數勝負的依據。真正判定勝負時每個帝國(玩家與各 AI)各自獨立算票,見 advanceCouncil
+// 的 empireVotes,不把多個 AI 的人口灌成同一票——手冊原文是「每個種族的領袖各自被分配一定票數」
+// (leader of every race is assigned a number of votes),多 AI 情境下把它們合計成一票會讓
+// 「某一個 AI 單獨達 2/3」與「AI 們合計達 2/3 但個別都沒過半」這兩種手冊語意不同的情況混淆。
 func (s *GameSession) playerPopulationTotal() int {
 	n := 0
 	for _, c := range s.PlayerColonies {
@@ -136,21 +139,35 @@ func (s *GameSession) aiPopulationTotal() int {
 	return n
 }
 
+// empireVote 是 advanceCouncil 用來逐帝國(玩家或某個 AI)算票的中介結構。
+type empireVote struct {
+	name  string // "player" 或 AIOpponent.Name
+	votes int
+}
+
 // advanceCouncil 是 EndTurn 每回合呼叫的議會選舉狀態機:
 //  1. 遊戲已分出勝負、或議會尚未成立(councilEligible=false)、或上一屆選舉玩家還沒回應
 //     (PendingCouncilElection!=nil)→ 不開會。
 //  2. 距離上次開會不足 councilInterval 回合 → 不開會(首次成立後立刻召開第一屆,不用等)。
-//  3. 開會:雙方票數 = gamedata.CouncilVotes(人口),依 engine.CheckHighCouncil 判定是否有
-//     一方達 2/3 多數。
+//  3. 開會:逐帝國(玩家 + 每個 AI 對手各自獨立)算 gamedata.CouncilVotes(該帝國殖民地人口
+//     加總),2/3 門檻用全體(玩家+所有 AI)總票數,依 engine.CheckHighCouncil 逐一判定
+//     是否有某個帝國達 2/3 多數(玩家優先判定——若玩家自己也達標,依規則玩家直接獲勝,不會
+//     跟某個 AI 並列判定順序的問題,因為只可能有一方達 2/3,見 engine.CheckHighCouncil 門檻
+//     本身排他性)。
 //     - 玩家達標 → 立即勝利(手冊:當選者若是玩家,遊戲直接結束,不需要「接受」這個步驟,
 //     那個步驟只為了「當選者不是你、議會無法強迫你接受」這個情境存在)。
-//     - AI 達標 → 記錄 PendingCouncilElection,等待 RespondToCouncilElection。
-//     - 兩者皆未達標 → 流會,下一屆再開(手冊描述議會確實會反覆召開,見 diplo.tsv 台詞)。
+//     - 某個 AI 達標 → 記錄 PendingCouncilElection(EnemyName=該 AI 名稱),等待
+//     RespondToCouncilElection。
+//     - 沒有任何一方達標 → 流會,下一屆再開(手冊描述議會確實會反覆召開,見 diplo.tsv 台詞)。
 //
-// 本 remake 資料模型固定只有玩家 + 1 個 AI 對手(見 councilMinExtantRacesOverride),因此
-// 「兩位候選人由票數最高者出線」與「其餘種族依外交關係投票」這兩條規則沒有第三方可套用,
-// 直接把僅有的兩個帝國當成僅有的兩位候選人、各自的票就是自己的人口票(見
-// gamedata/council.go 檔尾 TODO 說明)。
+// 2026-07-11 由「玩家 vs 單一 AI 二元計票」generalize 為 N 帝國:NewDemoSession 現建 3 個 AI
+// 對手,每個 AI 各自的人口/票數可能差異很大(性格不同、擴張速度不同),不能再像先前只有 1 個
+// AI 時那樣把「AI 那一側」當成單一數字處理。手冊「兩位候選人由票數最高者出線 + 其餘種族依
+// 外交關係決定投給哪位候選人」這條規則,在沒有「第三方依外交關係分配搖擺票」模型的情況下
+// (gamedata/council.go 檔尾 TODO 說明維持這個簡化),這裡採最直接的 generalize 讀法:不特別
+// 挑「票數最高兩位」當候選人,而是每個帝國各自的票數都直接跟「全體總票數」比 2/3——效果等價於
+// 手冊規則在「沒有搖擺票、候選人就是希望勝選的那個帝國自己」情境下的簡化版,且與先前 2 帝國
+// (玩家 vs 1 AI)時的計算完全相容(此時「候選人」必然就是這兩者之一)。
 func (s *GameSession) advanceCouncil() {
 	s.LastCouncil = ""
 	if s.DisableEvents || s.Victory.Over || s.PendingCouncilElection != nil {
@@ -164,35 +181,52 @@ func (s *GameSession) advanceCouncil() {
 	}
 
 	pv := gamedata.CouncilVotes(s.playerPopulationTotal())
-	ev := gamedata.CouncilVotes(s.aiPopulationTotal())
-	total := pv + ev
+	votes := make([]empireVote, 0, 1+len(s.AIPlayers))
+	votes = append(votes, empireVote{name: "player", votes: pv})
+	total := pv
+	for _, a := range s.AIPlayers {
+		pop := 0
+		for _, c := range a.Colonies {
+			pop += c.Population
+		}
+		v := gamedata.CouncilVotes(pop)
+		votes = append(votes, empireVote{name: a.Name, votes: v})
+		total += v
+	}
 	s.CouncilMeetings++
 	s.lastCouncilTurn = s.Turn
-
-	enemyName := "對手"
-	if len(s.AIPlayers) > 0 {
-		enemyName = s.AIPlayers[0].Name
-	}
 
 	switch {
 	case engine.CheckHighCouncil(pv, total):
 		s.Victory = VictoryState{Over: true, Reason: engine.VictoryHighCouncil, Winner: "player", Turn: s.Turn}
 		s.LastCouncil = fmt.Sprintf("銀河議會第 %d 屆選舉:你以 %d/%d 票(達2/3多數)當選銀河領袖!",
 			s.CouncilMeetings, pv, total)
-	case engine.CheckHighCouncil(ev, total):
-		s.PendingCouncilElection = &CouncilElection{Turn: s.Turn, PlayerVotes: pv, EnemyVotes: ev, TotalVotes: total, EnemyName: enemyName}
-		s.LastCouncil = fmt.Sprintf("銀河議會第 %d 屆選舉:%s 以 %d/%d 票(達2/3多數)當選銀河領袖,尚待你回應是否接受",
-			s.CouncilMeetings, enemyName, ev, total)
-	default:
-		s.LastCouncil = fmt.Sprintf("銀河議會第 %d 屆選舉:無人達到2/3多數,流會(我方 %d 票／%s %d 票)",
-			s.CouncilMeetings, pv, enemyName, ev)
+		return
 	}
+	for _, ev := range votes[1:] { // votes[0] 是玩家,已在上面判定過
+		if engine.CheckHighCouncil(ev.votes, total) {
+			s.PendingCouncilElection = &CouncilElection{Turn: s.Turn, PlayerVotes: pv, EnemyVotes: ev.votes, TotalVotes: total, EnemyName: ev.name}
+			s.LastCouncil = fmt.Sprintf("銀河議會第 %d 屆選舉:%s 以 %d/%d 票(達2/3多數)當選銀河領袖,尚待你回應是否接受",
+				s.CouncilMeetings, ev.name, ev.votes, total)
+			return
+		}
+	}
+	s.LastCouncil = fmt.Sprintf("銀河議會第 %d 屆選舉:無人達到2/3多數,流會(我方 %d 票／全體 %d 票)",
+		s.CouncilMeetings, pv, total)
 }
 
 // CouncilStatus 是議會目前狀態的唯讀快照,供 UI 呈現用(cmd/moo2 是 package main,無法直接讀
 // GameSession 的未匯出欄位/方法如 councilEligible,故提供這個匯出方法統一取值)。PlayerVotes/
 // EnemyVotes/TotalVotes 是「若這回合真的開會,票數會是多少」的即時試算,不代表本回合一定會
 // 開會——是否真的開會/流會/分出勝負以 advanceCouncil 每回合的結算為準,這裡只是唯讀快照。
+//
+// ⚠ EnemyVotes/EnemyName(Pending==nil 時)是「全體 AI 陣營合計」的簡化顯示,不是
+// advanceCouncil 實際判定 2/3 多數勝負時逐帝國分算的真實依據(見 advanceCouncil 的
+// empireVote/votes)——3 個 AI 對手性格互異,個別人口可能差很多,合計數字只適合當 UI 摘要,
+// 不能拿來反推「哪個 AI 快贏了」。若要做真正的 N-way 議會 UI(逐帝國票數列表、指認哪個 AI
+// 領先),屬 UI 大改範圍,本輪任務標 TODO 不做(cmd/moo2 目前的議會畫面本來就只顯示单行文字
+// 摘要,見 interactive.go council())。Pending!=nil 時 EnemyName/EnemyVotes 改用
+// CouncilElection 裡記錄的真實當選 AI(advanceCouncil 寫入),準確,不受本限制影響。
 type CouncilStatus struct {
 	Eligible    bool // 議會目前是否已成立(councilEligible)
 	PlayerVotes int
@@ -207,8 +241,13 @@ type CouncilStatus struct {
 // CouncilStatus 回傳議會目前狀態快照(見型別註解)。
 func (s *GameSession) CouncilStatus() CouncilStatus {
 	enemyName := "對手"
-	if len(s.AIPlayers) > 0 {
+	switch len(s.AIPlayers) {
+	case 0:
+		// 保留預設值 "對手"
+	case 1:
 		enemyName = s.AIPlayers[0].Name
+	default:
+		enemyName = fmt.Sprintf("全體 AI 陣營(%d 方合計)", len(s.AIPlayers))
 	}
 	pv := gamedata.CouncilVotes(s.playerPopulationTotal())
 	ev := gamedata.CouncilVotes(s.aiPopulationTotal())
