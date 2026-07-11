@@ -27,6 +27,9 @@ func TestProfile13Values(t *testing.T) {
 	if p.FreightersCashBonus != 5 {
 		t.Errorf("FreightersCashBonus = %d,want 5(#4,MANUAL_150.html Free Cash Bug 表:運輸艦隊固定回饋 5 BC)", p.FreightersCashBonus)
 	}
+	if p.SensorRangeVersionBonusParsec != 0 {
+		t.Errorf("SensorRangeVersionBonusParsec = %d,want 0(#13,1.3 無 Scanners and Communications Discrepancy 修正)", p.SensorRangeVersionBonusParsec)
+	}
 }
 
 // TestProfile15Values 驗證 patch 1.5 規則 profile 的三個值,並確認等於本專案改用 profile 前
@@ -59,6 +62,9 @@ func TestProfile15Values(t *testing.T) {
 	}
 	if p.FreightersCashBonus != 0 {
 		t.Errorf("FreightersCashBonus = %d,want 0(#4,CHANGELOG_150.TXT 1.50.8 freighters_cash_bonus 出廠預設)", p.FreightersCashBonus)
+	}
+	if p.SensorRangeVersionBonusParsec != 1 {
+		t.Errorf("SensorRangeVersionBonusParsec = %d,want 1(#13,MANUAL_150.html Scanners and Communications Discrepancy 近似:1.5 全面 +1 parsec)", p.SensorRangeVersionBonusParsec)
 	}
 
 	// 交叉核對:techtree.go 8 條 TOPIC_HYPER_* 的表定值本身也必須等於 wantHyperCost,

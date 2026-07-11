@@ -100,20 +100,30 @@ type RuleProfile struct {
 	// 「固定回饋 5 BC」)、1.5 設 0(對應 1.50.8 起的預設值),兩版皆非官方逐 BC 精確淨額,是
 	// 「哪個方向、量級對」的版本差異模擬,不是逐分錢重現。
 	FreightersCashBonus int
+
+	// 偵測/掃描(#13,2026-07-11 補實作):版本相依的偵測範圍加成(parsec),套進
+	// gamedata.DetectionRangeNormalized 的 versionBonusParsec 參數。來源:
+	// docs/tech/version-1.3-1.5-diff.md #13——MANUAL_150.html「Scanners and Communications
+	// Discrepancy」一節記載 1.5 修正了顯示值與實際值不一致的問題,多數偵測距離的「實際生效值」
+	// 因此比 1.3 顯示/生效的預設多出約 1 parsec。手冊表格逐科技的精確數字因排版/OCR 去標籤後
+	// 欄位錯位,無法逐條可信引用,故本欄位用「統一 +1 parsec」近似這個修正對整體偵測範圍的效果
+	// 方向與量級,不是逐科技逐字重現手冊數字——1.3=0(不修正)、1.5=1(全面 +1 parsec)。
+	SensorRangeVersionBonusParsec int
 }
 
 // Profile13 回傳官方最後正式 patch 1.31 的規則 profile。
 func Profile13() RuleProfile {
 	return RuleProfile{
-		Version:                      VersionClassic13,
-		HyperAdvancedLevel1Cost:      15000,
-		PlasmaCannonMaxDamage:        30,
-		BombardmentVolleys:           5,
-		DefenderCommandoBonus:        1.0, // 守方 Commando 無額外加乘(維持基準值 2/3)
-		BombardmentBuildingBonusHits: 1,   // 未記錄的 +1 hit bug(尚未接線,見欄位註解)
-		SatelliteBeamArcCostPct:      25,  // 衛星 arc-cost +25%(CHANGELOG_150.TXT 1.50.7 修正前的舊值)
-		GroundBatteryBeamArcCostPct:  0,   // 地面砲台無 arc-cost 懲罰
-		FreightersCashBonus:          5,   // 運輸艦隊完工固定回饋 5 BC(MANUAL_150.html Free Cash Bug 表)
+		Version:                       VersionClassic13,
+		HyperAdvancedLevel1Cost:       15000,
+		PlasmaCannonMaxDamage:         30,
+		BombardmentVolleys:            5,
+		DefenderCommandoBonus:         1.0, // 守方 Commando 無額外加乘(維持基準值 2/3)
+		BombardmentBuildingBonusHits:  1,   // 未記錄的 +1 hit bug(尚未接線,見欄位註解)
+		SatelliteBeamArcCostPct:       25,  // 衛星 arc-cost +25%(CHANGELOG_150.TXT 1.50.7 修正前的舊值)
+		GroundBatteryBeamArcCostPct:   0,   // 地面砲台無 arc-cost 懲罰
+		FreightersCashBonus:           5,   // 運輸艦隊完工固定回饋 5 BC(MANUAL_150.html Free Cash Bug 表)
+		SensorRangeVersionBonusParsec: 0,   // 1.3 無此修正(#13)
 	}
 }
 
@@ -122,15 +132,16 @@ func Profile13() RuleProfile {
 // 常數),故以此 profile 為預設不改變任何現行行為。
 func Profile15() RuleProfile {
 	return RuleProfile{
-		Version:                      VersionCommunity15,
-		HyperAdvancedLevel1Cost:      25000, // = 現行 techtree.go 硬編值
-		PlasmaCannonMaxDamage:        20,    // = 現行 session.go 硬編值
-		BombardmentVolleys:           10,    // = 現行 orbital_bombardment.go 硬編值
-		DefenderCommandoBonus:        2.5,   // 守方追平攻方 2.5x 加乘
-		BombardmentBuildingBonusHits: 0,     // bug 已移除(尚未接線,見欄位註解)
-		SatelliteBeamArcCostPct:      33,    // 衛星 arc-cost 最終值 +33.3%(1.50.10),取整數
-		GroundBatteryBeamArcCostPct:  50,    // 地面砲台 arc-cost +50%(1.50.7)
-		FreightersCashBonus:          0,     // freighters_cash_bonus 出廠預設(CHANGELOG_150.TXT 1.50.8)
+		Version:                       VersionCommunity15,
+		HyperAdvancedLevel1Cost:       25000, // = 現行 techtree.go 硬編值
+		PlasmaCannonMaxDamage:         20,    // = 現行 session.go 硬編值
+		BombardmentVolleys:            10,    // = 現行 orbital_bombardment.go 硬編值
+		DefenderCommandoBonus:         2.5,   // 守方追平攻方 2.5x 加乘
+		BombardmentBuildingBonusHits:  0,     // bug 已移除(尚未接線,見欄位註解)
+		SatelliteBeamArcCostPct:       33,    // 衛星 arc-cost 最終值 +33.3%(1.50.10),取整數
+		GroundBatteryBeamArcCostPct:   50,    // 地面砲台 arc-cost +50%(1.50.7)
+		FreightersCashBonus:           0,     // freighters_cash_bonus 出廠預設(CHANGELOG_150.TXT 1.50.8)
+		SensorRangeVersionBonusParsec: 1,     // 1.5 全面 +1 parsec 近似(#13,MANUAL_150.html)
 	}
 }
 

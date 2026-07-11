@@ -38,16 +38,16 @@
 | 10 | 研究突破隨機性 | ✅ 非差異 | `PARAMETERS.CFG:542-545`;remake 研究本就無「突破機率」建模 |
 | 11 | 行星尺寸轟炸分級(3-4-6-7-8) | ✅ 非差異 + 幾何已接線 | 1.5 系列內部自我修正回 classic;`GroundBombardPopulationLoss` 已用行星尺寸係數 |
 | 12 | 起始偵察艦速度(10/12) | ✅ 等同 | remake `CombatSpeed()` 是統一公式=1.5 修正後行為;重現 1.3 的「自動 vs 手動設計不一致」bug 無意義 |
-| **13** | **掃描/偵測距離** | ❌ **未排** | 專案完全無掃描/偵測系統,需從零建整個子系統(星基+2/戰鬥站+4/星辰要塞+6 parsec、感測科技) |
+| **13** | **掃描/偵測距離** | ✅ **完成**(2026-07-11) | 新增 `internal/gamedata/detection.go`(掃描科技/軌道基地 parsec 查表 + 換算)+ `internal/shell/detection.go`(`GameSession.VisibleStars`/`starVisible`,啟用先前無人讀取的 `Star.Explored` 死旗標)+ `RuleProfile.SensorRangeVersionBonusParsec`(1.3=0/1.5=1);`cmd/moo2/interactive.go` `drawStarmap` 接上輕量戰爭迷霧(未偵測星降噪點、不畫名/擁有環)。**全面近似**:parsec 數值、換算常數皆無原版來源,詳見下方 §1 第 13 列與 `detection.go` 檔頭。fog 純視覺,不 gate 任何操作;不做敵艦 map blip(AI 無地圖座標) |
 | **14** | **衛星/砲台佔格(beam arc cost)** | ✅ **完成**(2026-07-11) | `internal/gamedata/satellite.go` 把軌道基地/飛彈基地/地面砲台建模成「space 預算→塞入依科技解鎖的最佳武器」,beam 佔格套 `RuleProfile.SatelliteBeamArcCostPct`(1.3=25/1.5=33)、`GroundBatteryBeamArcCostPct`(1.3=0/1.5=50,CHANGELOG_150.TXT 1.50.7/1.50.10);`internal/shell/orbital_bombardment.go` `retaliationAttackers` 改用此模型取代舊 shipStrength 4/8/16 固定 tier。飛彈基地(300 space)/地面砲台(450 space)為手冊 p.78/p.81 確認值,星基/戰鬥站/星辰要塞(250/500/1200)是借用 ShipHullSpace 同量級的近似值;校準除數 `SatelliteStrengthScale=20` 使雷射參考點下星基/戰鬥站重現舊 tier 4/8,星辰要塞算出 20(非近似 19,見常數註解的誠實落差說明)。平衡 sanity(開局艦隊轟炸開局 AI 母星,Turn 0..14 掃描)兩版本最大損艦數皆為 1,見 `internal/shell/satellite_defense_test.go`。 |
 | 15 | 維護費入帳時機 | ✅ 非差異 | 淨額 0,只差「哪一回合帳上出現」,remake 逐回合重算不模擬「完工瞬間」 |
 
-**真正「還沒安排、且是真缺口」的**(需前置子系統,非公式缺口):
-- **#13**(需掃描子系統,從零)。#4(需貨運建造事件追蹤)已於 2026-07-11 補上子系統,見上表,
-  不再屬於此類——舊版本文件曾把 #4 列在此處,已更正(rulebook 63:錯誤斷言直接更正,不留 stale marker)。
+**真正「還沒安排、且是真缺口」的**(需前置子系統,非公式缺口):目前**無**。#4(貨運建造事件
+追蹤)、#13(掃描子系統)先前列在此處,已分別於 2026-07-11 補上前置子系統並接線完成,見上表
+——舊版本文件曾把兩者列在此處,已更正(rulebook 63:錯誤斷言直接更正,不留 stale marker)。
 
-其餘 15 項中:§2 三條真差異(#1/#2/#3)+ #4/#5/#7/#14(2026-07-11 消費端接線完成)已完成;
-#6/#8/#9/#10/#11/#15 為確認的非差異;#12 已等同 1.5。
+15 項全量表現況:§2 三條真差異(#1/#2/#3)+ #4/#5/#7/#13/#14(2026-07-11 消費端接線完成)已完成;
+#6/#8/#9/#10/#11/#15 為確認的非差異;#12 已等同 1.5。全量表 15 項至此**全數盤點完畢**。
 
 ## 1. 差異清單(全量表)
 
@@ -67,7 +67,7 @@
 | 10 | 研究:突破隨機性 | `fixed_research_cost=0`(有隨機突破機率) | 出廠預設不變 | ❌ 否(確認非差異;本專案研究系統本來就沒模擬「突破機率」這件事,只有固定 RP 成本) | `PARAMETERS.CFG:542-545`「(default, classic)」 |
 | 11 | 轟炸:炸彈換算的行星大小分級 | 3-4-6-7-8(classic) | 中途版本(1.50.4 起)曾錯改,**1.50.11 已修回同一組 3-4-6-7-8** | ❌ 否——本專案不模擬行星尺寸對轟炸區域的幾何影響;且此差異在 1.5 系列內部自我修正,對 1.3 vs 最終 1.5 而言**不構成差異** | CHANGELOG_150.TXT 1.50.11「Restored planet sizes for bombardment to classic 3-4-6-7-8.」 |
 | 12 | 開局:起始偵察艦戰鬥速度 | 手動設計與自動設計艦速度不一致 bug,起始 2 艘 Scout 戰鬥速度為 **10** | 修正後為 **12**(空間格利用速度加成一致套用) | ⚠ 邊緣——本專案 `CombatSpeed()` 是通用公式(見 `formulas.go`),未特別為「自動設計 vs 手動設計」分流,無法乾淨對應此 bug;可視為低優先 | CHANGELOG_150.TXT 引文見 `docs/tech/homeworld-init.md:111`(已收錄) |
-| 13 | 掃描/通訊距離 | Tachyon/Neutron/Sensors 等偵測科技的顯示值與實際值有 1 格落差(如 Tachyon 顯示 3、實際 4) | 修正「顯示值=實際值」,多數偵測距離**預設值 +1** | ❌ 否——本專案完全未實作掃描/偵測範圍機制(WORKLIST 無此項) | MANUAL_150.html「Scanners and Communications Discrepancy」表(見下方 §4 附註,表格經 HTML 去標籤後欄位對不齊,**精確數字待用原始 HTML `<table>` 結構重新萃取,本表僅供方向性參考**) |
+| 13 | 掃描/通訊距離 | Tachyon/Neutron/Sensors 等偵測科技的顯示值與實際值有 1 格落差(如 Tachyon 顯示 3、實際 4) | 修正「顯示值=實際值」,多數偵測距離**預設值 +1** | ✅ 是(2026-07-11 完成)——新增輕量戰爭迷霧子系統:`gamedata.ScannerRangeParsec`(基礎 2/Space 4/Neutron 6/Tachyon 8,**近似**遞增序,手冊無公開數字)+ `gamedata.OrbitalScannerBonusParsec`(星基+2/戰鬥站+4/星辰要塞+6,**近似**,擇一取代不疊加)+ `gamedata.ParsecToNormalized`(1/10,**近似**換算常數,依 `NewDemoSession()` 實際程序化星系鄰近星距離調參)+ `RuleProfile.SensorRangeVersionBonusParsec`(1.3=0/1.5=1,本欄位即對應本行「預設值 +1」的整體近似,非逐科技數字);`shell.GameSession.VisibleStars`/`starVisible` 用「已探索(啟用 `Star.Explored` 死旗標)∪ 玩家自己的星 ∪ 落在任一玩家殖民地/艦隊偵測範圍內」判定可見,`drawStarmap` 接上 fog 繪製(未偵測星降噪成暗點、不畫名/擁有環)。fog **純視覺**,不 gate 任何操作;**不做敵艦 map blip**(AI 艦隊無地圖座標,零地基) | MANUAL_150.html「Scanners and Communications Discrepancy」表(見下方 §4 附註,表格經 HTML 去標籤後欄位對不齊,**精確數字待用原始 HTML `<table>` 結構重新萃取,本表僅供方向性參考**——故本專案採統一 +1 parsec 近似,非逐科技逐字重現) |
 | 14 | 衛星/地面砲台佔格 | 光束武器在衛星 arc cost +25%、地面砲台 +0% | 修正為統一 arc cost,衛星/地面砲台空間分別 +40%/+50%(1.50.7),之後衛星再由 +40%→+33.3%(1.50.10) | ✅ 是(2026-07-11 完成)——`internal/gamedata/satellite.go` 新增獨立的軌道基地/飛彈基地/地面砲台 space 預算模型(不是 6 級標準艦體表,是另一組專用常數),`RuleProfile.SatelliteBeamArcCostPct`(25/33)、`GroundBatteryBeamArcCostPct`(0/50)接進 `internal/shell/orbital_bombardment.go` `retaliationAttackers` | CHANGELOG_150.TXT 1.50.7、1.50.10 |
 | 15 | 新建築/新間諜維護費入帳時機 | 完工當回合立即扣費 + 補償(淨額 0) | 改為下回合扣費、取消補償(淨額同樣 0) | ❌ 否(且屬淨額非差異——只差「哪一回合帳上出現」,本專案 `BuiltMaintenanceBC` 是逐回合依「目前已建成清單」重算,不模擬「完工瞬間」這個時間點,模型顆粒度不到這一層) | MANUAL_150.html「Buildings & Freighters Free Cash Bug」表 |
 
@@ -220,8 +220,9 @@ func Profile15() RuleProfile {
   落在本專案當時尚未實作的系統(戰機分類/領袖加成/運輸艦建造事件/衛星 space 模型等)。**這不是
   研究不夠深入,是逐條核實後的真實結論**——之後每完成一個新系統(#5 領袖加成、#7 轟炸建築 hits、
   #14 衛星 space 預算模型、#4 運輸艦建造事件追蹤皆已在同一輪陸續補上,見 §0.5 追蹤表當前狀態),
-  就回頭比對 CHANGELOG 是否有該系統的版本差異,再擴充 `RuleProfile`——目前仍未排的只剩
-  #13(掃描子系統),需要從零建全新子系統,非公式缺口。
+  就回頭比對 CHANGELOG 是否有該系統的版本差異,再擴充 `RuleProfile`——#13(掃描子系統)已於
+  2026-07-11 同批補上(輕量戰爭迷霧,見 §0.5/§1 第 13 列),全量表 15 項至此全數盤點完畢,
+  無仍未排項目。
 
 ## 7. 主選單「選版本」與 profile 的關係(範圍澄清)
 

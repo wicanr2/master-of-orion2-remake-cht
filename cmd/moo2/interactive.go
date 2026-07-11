@@ -322,19 +322,19 @@ type sceneBuilder struct {
 	fnt           *uifont.Font // 內文用字型(zh 為混合:內文點陣、標題向量)
 	fntVec        *uifont.Font // 純向量 Noto(供主選單等要平滑的畫面;nil 時退回 fnt)
 	lang          i18n.Lang
-	session       *shell.GameSession // 活的對局狀態(TURN 推進、畫面顯示即時資料)
-	newGameSize   int                // NEW GAME 選的星系大小索引(shell.GalaxySizes)
-	newGameDiff   int                // NEW GAME 選的難度索引(shell.Difficulties)
-	newGameRace   int                // NEW GAME 選的種族索引(shell.Races)
-	newGameSeed   int                // 每次新遊戲遞增,讓星系種子變化
-	savePath      string             // remake 存檔路徑(每回合自動存;主選單 Load/Continue 讀)
-	designWeapon  int                // 艦艇設計選的武器元件索引(shell.WeaponOptions)
-	designArmor   int                // 裝甲元件索引(shell.ArmorOptions)
-	designShield  int                // 護盾元件索引(shell.ShieldOptions)
-	designSpecial int                // 特殊元件索引(shell.SpecialOptions)
-	designMods    []string           // 目前設計勾選的武器改造(gamedata.WeaponModCode 字串;僅 beam 武器生效)
-	designMsg     string             // 艦艇設計畫面「空間不足,擋下建造」的提示訊息(切換元件/成功建造時清空)
-	lastActionMsg string             // 星圖畫面「載運陸戰隊/發動地面入侵」的最近一次結果訊息(選新星時清空)
+	session       *shell.GameSession   // 活的對局狀態(TURN 推進、畫面顯示即時資料)
+	newGameSize   int                  // NEW GAME 選的星系大小索引(shell.GalaxySizes)
+	newGameDiff   int                  // NEW GAME 選的難度索引(shell.Difficulties)
+	newGameRace   int                  // NEW GAME 選的種族索引(shell.Races)
+	newGameSeed   int                  // 每次新遊戲遞增,讓星系種子變化
+	savePath      string               // remake 存檔路徑(每回合自動存;主選單 Load/Continue 讀)
+	designWeapon  int                  // 艦艇設計選的武器元件索引(shell.WeaponOptions)
+	designArmor   int                  // 裝甲元件索引(shell.ArmorOptions)
+	designShield  int                  // 護盾元件索引(shell.ShieldOptions)
+	designSpecial int                  // 特殊元件索引(shell.SpecialOptions)
+	designMods    []string             // 目前設計勾選的武器改造(gamedata.WeaponModCode 字串;僅 beam 武器生效)
+	designMsg     string               // 艦艇設計畫面「空間不足,擋下建造」的提示訊息(切換元件/成功建造時清空)
+	lastActionMsg string               // 星圖畫面「載運陸戰隊/發動地面入侵」的最近一次結果訊息(選新星時清空)
 	gameVersion   gamedata.GameVersion // 主選單選的規則版本(1.3/1.5);開局注入 session.RuleProfile
 }
 
@@ -613,7 +613,8 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		sess := b.session
 		fnt := s.font
 		s.postDraw = func(dst *ebiten.Image) {
-			drawStarmap(dst, fnt, sess.Stars, sess.SelectedStar)
+			// 每幀算一次可見性(#13 輕量戰爭迷霧),避免 drawStarmap 逐星重算。
+			drawStarmap(dst, fnt, sess.Stars, sess.SelectedStar, sess.VisibleStars())
 			if fnt != nil {
 				year := 3500 + (sess.Turn - 1)
 				fnt.Draw(dst, fmt.Sprintf("星曆 %d", year), 30, 40, 16, color.RGBA{240, 220, 120, 255})
@@ -695,10 +696,20 @@ func starScreenPos(st shell.Star) (int, int) {
 
 // drawStarmap 在星系主畫面中央視窗繪製星圖(深空底 + 依光譜上色/大小定半徑的星 + 星名 +
 // 我方/敵方擁有環 + 選中星高亮環)。
-func drawStarmap(dst *ebiten.Image, fnt *uifont.Font, stars []shell.Star, selected int) {
+//
+// visible 是 shell.GameSession.VisibleStars() 算好的可見性陣列(等長 stars,索引對應;nil
+// 表示呼叫端還沒接上可見性資料,視為全部可見,維持舊行為不炸開)——診斷/測試等尚未串 session
+// 的呼叫路徑不受影響。
+//
+// fog 純視覺(diff 全量表 #13):對 !visible[i] 的星,不畫星名(未知)、不畫擁有環(未偵測不知
+// 道歸屬)、星點降低亮度變暗淡小點;可見星維持原本全繪。刻意不 gate 任何操作——選星/派艦/殖民
+// /轟炸等既有流程完全不受影響,玩家仍可對著霧裡的暗星點擊派艦探索。
+func drawStarmap(dst *ebiten.Image, fnt *uifont.Font, stars []shell.Star, selected int, visible []bool) {
 	const vx0, vy0, vx1, vy1 = starVX0, starVY0, starVX1, starVY1
 	vector.DrawFilledRect(dst, vx0, vy0, vx1-vx0, vy1-vy0, color.RGBA{6, 6, 16, 255}, false)
 	for i, st := range stars {
+		seen := visible == nil || (i < len(visible) && visible[i])
+
 		x := float32(vx0) + float32(st.X)*(vx1-vx0)
 		y := float32(vy0) + float32(st.Y)*(vy1-vy0)
 		col, ok := spectralColors[uint8(st.Spectral)]
@@ -708,6 +719,13 @@ func drawStarmap(dst *ebiten.Image, fnt *uifont.Font, stars []shell.Star, select
 		r := float32(6 - st.Size) // 大=6 .. 小=3
 		if r < 3 {
 			r = 3
+		}
+		if !seen {
+			// 未偵測到的霧星:縮成暗灰小點,不畫擁有環/星名/選中高亮(未知歸屬)。
+			r = 2
+			col = color.RGBA{60, 64, 76, 255}
+			vector.DrawFilledCircle(dst, x, y, r, col, true)
+			continue
 		}
 		// 選中星:黃色高亮環。
 		if i == selected {
