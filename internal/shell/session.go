@@ -2189,10 +2189,13 @@ func (s *GameSession) advanceResearch() {
 // GameSession.Government 欄位註解(自訂種族 0 點基準)。
 func playerHomeworldColony() engine.ColonyState {
 	return engine.ColonyState{
-		// 職務分配維持 農4工3科1(本輪只校研究基準,不動分配——分配改動會漣漪到工業/稅收
-		// 收入,破壞 government_test 等,依「別盲改堆疊經濟」教訓拆成獨立後續:母星科學家對齊
-		// 原版科2-4 需連同食物/農夫校正一起做,見 original-gameplay-reference.md §7.0.1)。
-		Population: 8, PopMax: 20, Farmers: 4, Workers: 3, Scientists: 1,
+		// 職務分配 農4/工1/科3(2026-07-12 校正,SAVE10.GAM oracle:5 顆原版 turn-1 母星
+		// 分配全部滿足「工≤2、科≥2」不變式,先前 農4工3科1 兩處違反——工3 超原版上限 2、
+		// 科1 低於原版下限 2,母星科研被嚴重壓縮)。食物中性種族每農夫 2 食物 × 農4 = 8,剛好
+		// 餵飽 pop8;餘 4 人依原版母星偏科研傾向配 工1/科3(SAVE10 Terran 種族多為工0-2/科2-4)。
+		// ⚠ SAVE10 五名皆 AI 種族無 Human 樣本,精確三數為中信心重建(不變式本身高信心);
+		// 分配漣漪到工業/稅收已用 moo2sim 開局軌跡驗證無死亡螺旋。見 original-gameplay-reference.md §7.0.1。
+		Population: 8, PopMax: 20, Farmers: 4, Workers: 1, Scientists: 3,
 		FoodPerFarmer:     gamedata.ClimateFoodPerFarmer(gamedata.TERRAN),
 		IndustryPerWorker: gamedata.MineralIndustryPerWorker(gamedata.ABUNDANT),
 		// 研究每科學家=銀河基準 3(手冊 p.949「usual 3」+ Psilon +2 邏輯 + SAVE10.GAM 驗證,
