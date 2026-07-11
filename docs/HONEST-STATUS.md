@@ -24,6 +24,16 @@
 > FST/MV/OVR,手冊有數字但飛彈解算未接 mod 掛鉤)、小型化等級門檻、火線角(Firing Arc)。詳見
 > `docs/tech/weapon-mods.md`。
 
+> **2026-07-11 game test + 打磨追加**:全面實機驗證(gamegallery headless 導覽,8 畫面逐一到達存圖 +
+> 深度回合探針)——邏輯層扎實(70 回合無 panic、玩家全動作可用、三勝利路徑可達、moo2sim 四性格穩定);
+> 抓到並修復的 GUI 問題見 #38(研究盲選/殖民地面板/戰術糊字)、#39(殖民地總覽 Planetary/Production
+> Info 懸停面板 + Empire Summary)。**本輪打磨**:戰鬥畫面敵方顯示名先前硬編「賽隆人」(不在 Races 表、
+> 與現行 3 真 AI 對手脫節),改用 `GameSession.PrimaryEnemyName()` 取真 AI 種族名(去「AI (…)」外殼),
+> gallery 截圖確認戰鬥畫面現顯示「席隆人艦1/2」。**已知開局幀小差異(非 bug、非本輪 regression)**:殖民地
+> 總覽的 Empire Summary 面板是「上一回合結算結果」面板,第 1 回合未結束時 `LastPlayerOutput` 尚空 →收支/
+> 研究/食物全顯示 0,而同畫面 Production Info 走 fallback 顯示潛在估算(標「約」);兩者計算基準不同(已結算
+> 實值 vs 潛在估算),首次 EndTurn 後即一致。可選打磨:開局幀給 Empire Summary 一個估算或「尚未結算」提示。
+
 ## 為什麼「單元測試全綠」卻只有 20%
 
 先前多輪我用「新增系統 + 單元測試通過 + headless 截圖有畫面」當作完成訊號,逐輪回報「研究/艦隊/人口/建築/事件/安塔蘭/種族/存讀檔/AI 都做完了」。這是**用內部訊號謊報完成**(正是專案規則 `rulebook/65` 警告的反例):
