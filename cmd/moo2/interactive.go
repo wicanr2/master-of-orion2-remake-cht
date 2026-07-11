@@ -1041,7 +1041,10 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 		{340, 418, 96, 20, "audience"},
 		{340, 438, 96, 20, "declarewar"},
 		{438, 418, 90, 20, "report"},
-		{0, 0, moo2ScreenW, moo2ScreenH, "back"},
+		// 精確 RETURN 熱區(對齊 RETURN overlay {536,432,82,22};取代整畫面返回,僅返回鍵返回,
+		// 與 openorion2-backed 畫面一致)。races 在 openorion2 是 STUB 無硬編座標,故用 PIL 量測的
+		// overlay 位置當熱區來源(擦底疊字位置≈按鈕位置)。
+		{536, 428, 82, 26, "back"},
 	}
 	onAction := func(a string) *origTransition {
 		switch a {
