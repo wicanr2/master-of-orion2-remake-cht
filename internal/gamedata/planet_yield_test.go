@@ -115,3 +115,29 @@ func TestGravityAdjustedProduction(t *testing.T) {
 		}
 	}
 }
+
+// TestPlanetBasePopMaxManualRanges 核對 GAME_MANUAL.pdf p.55-56「Size」小節逐段給出的人口容量
+// 範圍(climateFactor 取 25 與 100 兩端代入,見 PlanetBasePopMax 註解逐項推導)。
+func TestPlanetBasePopMaxManualRanges(t *testing.T) {
+	cases := []struct {
+		size         PlanetSize
+		worstClimate PlanetClimate // climateFactor=25 的氣候(如 DESERT/TUNDRA/OCEAN 等常見值)
+		bestClimate  PlanetClimate // GAIA,climateFactor=100
+		wantWorst    int
+		wantBest     int
+	}{
+		{TINY_PLANET, DESERT, GAIA, 1, 5},    // 手冊「1–5」
+		{SMALL_PLANET, DESERT, GAIA, 3, 10},  // 手冊「3–10」
+		{MEDIUM_PLANET, DESERT, GAIA, 4, 15}, // 手冊「4–15」
+		{LARGE_PLANET, DESERT, GAIA, 5, 20},  // 手冊「5–20」
+		{HUGE_PLANET, DESERT, GAIA, 6, 25},   // 手冊「6–25」
+	}
+	for _, c := range cases {
+		if got := PlanetBasePopMax(c.size, c.worstClimate); got != c.wantWorst {
+			t.Errorf("PlanetBasePopMax(%v,%v)=%d,want %d(手冊下限)", c.size, c.worstClimate, got, c.wantWorst)
+		}
+		if got := PlanetBasePopMax(c.size, c.bestClimate); got != c.wantBest {
+			t.Errorf("PlanetBasePopMax(%v,%v)=%d,want %d(手冊上限,Gaia)", c.size, c.bestClimate, got, c.wantBest)
+		}
+	}
+}

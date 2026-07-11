@@ -407,10 +407,11 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			sx, sy := starScreenPos(st)
 			hits = append(hits, hitRegion{sx - 11, sy - 11, 22, 22, fmt.Sprintf("star%d", i)})
 		}
-		// 選中星資訊面板內的操作鈕(座標同 postDraw 繪製的按鈕框):三種互斥,依艦隊/選中星
+		// 選中星資訊面板內的操作鈕(座標同 postDraw 繪製的按鈕框):四種互斥,依艦隊/選中星
 		// 狀態擇一顯示——派遣艦隊(艦隊不在選中星)、載運陸戰隊(艦隊在玩家母星,唯一已知
 		// 有 Marine Barracks 殖民地模型對映的星,見 shell.AIOpponent.ColonyStars 註解同款限制)、
-		// 發動地面入侵(艦隊在敵方殖民地星且已載運陸戰隊)。
+		// 發動地面入侵(艦隊在敵方殖民地星且已載運陸戰隊)、拓殖(艦隊在無主星且載有殖民船,
+		// 見 shell.GameSession.ColonizeStar)。
 		if sess.SelectedStar >= 0 && sess.SelectedStar < len(sess.Stars) {
 			switch {
 			case sess.FleetETA > 0:
@@ -421,6 +422,8 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					hits = append(hits, hitRegion{38, 402, 190, 20, "loadmarines"})
 				case sess.Stars[sess.SelectedStar].Owner == 2 && sess.FleetMarines > 0:
 					hits = append(hits, hitRegion{38, 402, 190, 20, "invade"})
+				case sess.Stars[sess.SelectedStar].Owner == 0 && sess.FleetHasColonyShip():
+					hits = append(hits, hitRegion{38, 402, 190, 20, "colonize"})
 				}
 			default:
 				hits = append(hits, hitRegion{38, 402, 190, 20, "dispatch"})
@@ -457,6 +460,15 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				b.lastActionMsg = fmt.Sprintf("入侵勝利!佔領此星(存活 %d／敵剩 %d)", res.AttackerSurvived, res.DefenderSurvived)
 			default:
 				b.lastActionMsg = fmt.Sprintf("入侵失敗(我方存活 %d／敵剩 %d)", res.AttackerSurvived, res.DefenderSurvived)
+			}
+			return b.goTo(b.galaxy, "星系主畫面")
+		}
+		if a == "colonize" && b.session != nil {
+			res := b.session.ColonizeStar(b.session.SelectedStar)
+			if !res.Ok {
+				b.lastActionMsg = res.Reason
+			} else {
+				b.lastActionMsg = fmt.Sprintf("拓殖成功!新殖民地起始人口 %d(上限 %d)", res.StartPopulation, res.PopMax)
 			}
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
@@ -560,6 +572,10 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{120, 50, 40, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{230, 130, 110, 255}, false)
 						fnt.Draw(dst, "▶ 發動地面入侵", 46, 415, 12, color.RGBA{245, 235, 230, 255})
+					case sess.SelectedStar == sess.FleetAtStar && sess.Stars[sess.SelectedStar].Owner == 0 && sess.FleetHasColonyShip():
+						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{40, 110, 60, 255}, false)
+						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{130, 220, 150, 255}, false)
+						fnt.Draw(dst, "▶ 建立殖民地", 46, 415, 12, color.RGBA{235, 245, 235, 255})
 					case sess.SelectedStar == sess.FleetAtStar:
 						fnt.Draw(dst, "艦隊已在此星", 38, 415, 11, color.RGBA{140, 200, 140, 255})
 					default:

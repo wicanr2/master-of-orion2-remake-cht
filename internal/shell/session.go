@@ -1286,6 +1286,15 @@ type GameSession struct {
 	MarineBarracksAge   []int             // 各玩家殖民地 Marine Barracks 已運作回合數(平行 PlayerColonies)
 	ColonyBuildings     []map[string]bool // 各殖民地已完工建築(去重,避免重複套用長期效果)
 
+	// PlayerColonyStars 是 PlayerColonies[i] 對應到 Stars 的索引(平行陣列),與
+	// AIOpponent.ColonyStars 同一設計(見該欄位註解)。開局只有一筆(母星→星 0,
+	// NewDemoSession 設定)。ColonizeStar(colonization.go)每建一個新殖民地都會同步 append;
+	// InvadeColony(ground_invasion.go)過戶敵方殖民地時也會同步 append 被佔領的星索引。
+	// 舊存檔/舊呼叫端若未同步到這個欄位而導致長度落後 PlayerColonies,兩處寫入前都會先
+	// padding 補 -1(語意「星索引未知」)再 append 真正值,維持 len(PlayerColonyStars)==
+	// len(PlayerColonies) 的不變量。
+	PlayerColonyStars []int
+
 	// FleetTanks / PlayerColonyTanks / ArmorBarracksAge:裝甲營房(Armor Barracks)戰車營
 	// 駐軍系統,與上面三個 Marine 對應欄位對稱(見 advanceArmor/LoadTanks,ground_invasion.go)。
 	FleetTanks        int        // 隨玩家艦隊出征、已載運的戰車營數(與 FleetMarines 共用 MarineTransportCapacity 運力池,見 LoadTanks)
@@ -1621,7 +1630,7 @@ func (s *GameSession) EndTurn() {
 	}
 	// 間諜結算須排在玩家與所有 AI 本回合研究都跑完之後(用最新的 CompletedTopics/ChosenTech
 	// 判定「對方已知、我方未知」的可偷科技清單),故緊接在上面的 AI 迴圈之後。
-	s.advanceEspionage() // 玩家 ↔ AI 間諜行動(最小迴圈:偷科技 STEAL,見 spy.go)
+	s.advanceEspionage()  // 玩家 ↔ AI 間諜行動(最小迴圈:偷科技 STEAL,見 spy.go)
 	s.advanceBuilds()     // 以本回合淨工業推進各殖民地建造
 	s.advanceResearch()   // 目前研究主題完成則自動推進到下一個未完成的元件解鎖主題
 	s.advanceFleet()      // 推進艦隊星間航行(ETA 遞減,抵達則標記探索)
@@ -1921,11 +1930,12 @@ func NewDemoSession() *GameSession {
 	galaxy[0].Explored = true            // 母星初始已探索
 	aiHomeStar := galaxyStars / 2        // 與 genGalaxy 內部「idx==n/2 → AI 母星」的規則一致
 	session := &GameSession{
-		Turn:            1,
-		Player:          newHomeworldPlayerState(gamedata.TOPIC_ADVANCED_CONSTRUCTION),
-		PlayerColonies:  []engine.ColonyState{playerHomeworldColony()},
-		ColonyBuildings: []map[string]bool{homeworldBuildings()},
-		Government:      gamedata.MoraleGovDictatorship, // 預設獨裁(自訂種族 0 點基準),見欄位註解的零值陷阱說明
+		Turn:              1,
+		Player:            newHomeworldPlayerState(gamedata.TOPIC_ADVANCED_CONSTRUCTION),
+		PlayerColonies:    []engine.ColonyState{playerHomeworldColony()},
+		ColonyBuildings:   []map[string]bool{homeworldBuildings()},
+		PlayerColonyStars: []int{0},                       // 母星 = 星 0(見欄位註解)
+		Government:        gamedata.MoraleGovDictatorship, // 預設獨裁(自訂種族 0 點基準),見欄位註解的零值陷阱說明
 		AIPlayers: []AIOpponent{{
 			Name:        "AI (賽隆人)",
 			Player:      newHomeworldPlayerState(1),

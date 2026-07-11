@@ -64,6 +64,9 @@ type sessionSnapshot struct {
 	PlayerColonyMarines []int `json:"playerColonyMarines"`
 	MarineBarracksAge   []int `json:"marineBarracksAge"`
 
+	// PlayerColonyStars 見 GameSession 欄位註解(colonization.go/ground_invasion.go 同步維護)。
+	PlayerColonyStars []int `json:"playerColonyStars"`
+
 	// --- 勝利條件(見 council.go)---
 	Victory                VictoryState     `json:"victory"`
 	PendingCouncilElection *CouncilElection `json:"pendingCouncilElection,omitempty"`
@@ -100,7 +103,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		RaceCombatPct: s.RaceCombatPct, RaceGrowthPct: s.raceGrowthPct,
 		FleetMarines: s.FleetMarines, PlayerColonyMarines: s.PlayerColonyMarines,
 		MarineBarracksAge: s.MarineBarracksAge, Government: s.Government,
-		Victory: s.Victory, PendingCouncilElection: s.PendingCouncilElection,
+		PlayerColonyStars: s.PlayerColonyStars,
+		Victory:           s.Victory, PendingCouncilElection: s.PendingCouncilElection,
 		CouncilMeetings: s.CouncilMeetings, LastCouncilTurn: s.lastCouncilTurn,
 		PlayerSpies: s.PlayerSpies,
 	}
@@ -129,7 +133,8 @@ func (snap sessionSnapshot) restore() *GameSession {
 		RaceCombatPct: snap.RaceCombatPct, raceGrowthPct: snap.RaceGrowthPct,
 		FleetMarines: snap.FleetMarines, PlayerColonyMarines: snap.PlayerColonyMarines,
 		MarineBarracksAge: snap.MarineBarracksAge, Government: snap.Government,
-		Victory: snap.Victory, PendingCouncilElection: snap.PendingCouncilElection,
+		PlayerColonyStars: snap.PlayerColonyStars,
+		Victory:           snap.Victory, PendingCouncilElection: snap.PendingCouncilElection,
 		CouncilMeetings: snap.CouncilMeetings, lastCouncilTurn: snap.LastCouncilTurn,
 		PlayerSpies: snap.PlayerSpies,
 	}

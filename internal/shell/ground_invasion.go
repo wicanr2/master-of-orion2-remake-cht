@@ -469,6 +469,18 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 		for len(s.ArmorBarracksAge) < len(s.PlayerColonies) {
 			s.ArmorBarracksAge = append(s.ArmorBarracksAge, 0)
 		}
+		// popAccum(見 advancePopulation):該函式對 `i >= len(s.popAccum)` 是 break 而非
+		// continue,若這裡不補齊長度,過戶的殖民地(以及任何排在它之後的殖民地)人口成長會被
+		// 永久跳過,不是明顯的 crash,只是靜默停止成長——同步補齊,避免這個潛在缺口。
+		for len(s.popAccum) < len(s.PlayerColonies) {
+			s.popAccum = append(s.popAccum, 0)
+		}
+		// PlayerColonyStars(見 GameSession 欄位註解、colonization.go):過戶的殖民地所在星就是
+		// starIdx 本身,同步補上,維持 len(PlayerColonyStars)==len(PlayerColonies) 不變量。
+		for len(s.PlayerColonyStars) < len(s.PlayerColonies)-1 {
+			s.PlayerColonyStars = append(s.PlayerColonyStars, -1)
+		}
+		s.PlayerColonyStars = append(s.PlayerColonyStars, starIdx)
 
 		aiPlayer.Colonies = append(aiPlayer.Colonies[:colonyIdx], aiPlayer.Colonies[colonyIdx+1:]...)
 		aiPlayer.ColonyStars = append(aiPlayer.ColonyStars[:colonyIdx], aiPlayer.ColonyStars[colonyIdx+1:]...)

@@ -73,6 +73,39 @@ func MineralIndustryPerWorker(mineral PlanetMinerals) int {
 	return PlanetBaseProduction(int(mineral))
 }
 
+// PlanetBasePopMax 回傳指定行星大小(size,0-based TINY..HUGE)、氣候(climate)下的「基礎人口
+// 容量」——新殖民地建立當下的 PopMax(不含 Biospheres/+2、Advanced City Planning/+5、
+// Subterranean/+2*(size+1)、Tolerant/+25%、Aquatic 等加成,那些由呼叫端疊加,與既有
+// ColonyState.PopMax 疊加慣例一致,例如 session.go applyBuildingEffect 的生態圈 +2)。
+//
+// 公式移植自 openorion2/src/gamestate.cpp:2288 GameState::planetMaxPop 的核心運算式(無條件捨去
+// 前的一般種族基準值,忽略該函式裡的 Aquatic/Tolerant/Subterranean/AdvancedCityPlanning 修飾項):
+//
+//	ret = ((size + 1) * 5 * climateFactor + 50) / 100
+//
+// climateFactor = TerraformClimatePopFactorPercent(climate)(0-100,terraform.go 既有表,與
+// MANUAL_150.html modding 附錄 pop_climate 參數同一份數字,已交叉驗證)。
+//
+// 已用 GAME_MANUAL.pdf p.55-56「Size」小節逐段給出的人口容量範圍交叉驗證(climateFactor 代入
+// 25 與 100 兩端,結果與手冊原文逐字相符,高信心,非臆造):
+//
+//	Tiny(size=0):  (1*5*25+50)/100=1 .. (1*5*100+50)/100=5   → 手冊「1–5」
+//	Small(size=1): (2*5*25+50)/100=3 .. (2*5*100+50)/100=10  → 手冊「3–10」
+//	Medium(size=2):(3*5*25+50)/100=4 .. (3*5*100+50)/100=15  → 手冊「4–15」
+//	Large(size=3): (4*5*25+50)/100=5 .. (4*5*100+50)/100=20  → 手冊「5–20」
+//	Huge(size=4):  (5*5*25+50)/100=6 .. (5*5*100+50)/100=25  → 手冊「6–25」
+//
+// ⚠ 與既有 playerHomeworldColony()(session.go)的母星 PopMax=20(Large/Terran)不完全相符:
+// 代入 size=LARGE_PLANET(3)、climate=TERRAN(climateFactor=80)得 (4*5*80+50)/100=16,非 20。
+// 母星的 20 是 docs/tech/homeworld-init.md 既有慣例值(可能含未拆解的起始文明加成),本函式
+// 不回頭套用去改動母星既有數字(避免既有經濟平衡 regression),只用於新建殖民地
+// (shell.GameSession.ColonizeStar)。size/climate 超出合法範圍時 climateFactor 依
+// TerraformClimatePopFactorPercent 的既有邊界規則回 0,本函式不重複做邊界檢查。
+func PlanetBasePopMax(size PlanetSize, climate PlanetClimate) int {
+	factor := TerraformClimatePopFactorPercent(climate)
+	return ((int(size)+1)*5*factor + 50) / 100
+}
+
 // gravityPenaltyTable[raceGravity][planetGravity] = 生產產出的百分比懲罰(0 或負值)。
 // GAME_MANUAL.pdf p.58「Gravity」小節原文(以一般種族、無重力天賦為基準):
 //
