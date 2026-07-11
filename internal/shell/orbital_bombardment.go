@@ -87,6 +87,16 @@ type GroundBombardResult struct {
 	// 供 UI/測試檢視「還剩多少建築沒被炸掉」。
 	BuildingsRemaining int
 
+	// DefenderRetaliated 這次轟炸是否觸發了防禦方反擊(2026-07-11 新增,見下方函式「防禦方
+	// 反擊」段落)。true 表示 BuildingsRemaining 裡至少有一座軌道基地(星基/戰鬥站/星辰要塞)
+	// 或飛彈基地存活,並已對玩家艦隊打了一輪反擊齊射。false 表示本次轟炸把防禦建築全炸掉了
+	// (或該殖民地本來就沒有這些建築)——沒有存活防禦建築時完全不呼叫反擊解算,逐位元回歸
+	// 加這個機制之前的行為。
+	DefenderRetaliated bool
+	// AttackerShipsLost 是防禦方反擊這輪齊射擊沉的玩家艦艇數(DefenderRetaliated=false 時
+	// 恆為 0)。已從 s.Ships 移除(移除規則見下方函式註解)。
+	AttackerShipsLost int
+
 	// PlanetHitsRequired 是手冊「Planet Hits」表算出的「摧毀這個殖民地全部防禦所需 hits」
 	// 估計值(gamedata.GroundPlanetTotalHits),對應手冊 UI 上「Estimated Bomb Hits」旁邊
 	// 同時顯示的「Planet Hits」欄——純供顯示參考(讓玩家判斷這波轟炸夠不夠),不影響
@@ -97,6 +107,52 @@ type GroundBombardResult struct {
 	// 不再恆 0——見下方函式賦值處。戰車營同理:AI 開局 homeworldBuildings() 沒有裝甲營房,也
 	// 無法追蹤是否後續建成,tanks 恆為 0。
 	PlanetHitsRequired int
+}
+
+// retaliationAttackers 依「轟炸建築吸收階段之後仍存活」的防禦建築,組出防禦方反擊用的
+// []combatant(供 battleVolley 當 attackers)。
+//
+// ⚠ 誠實標註(近似,非手冊逐字數字,設計已由使用者確認採用):本 remake 沒有「殖民地綁定的
+// 正規太空戰」(openorion2 是渲染殼、無獨立殖民地空戰引擎),故用「軌道轟炸階段冒充太空戰、
+// 由防禦建築反擊」近似手冊 p.129 一節「軌道基地/飛彈基地會對轟炸艦隊開火」的描述。基地→
+// 艦級戰力的對應只 ground 在既有 shipStrength 校準表 + 手冊定性描述的火力遞增序(星基 <
+// 戰鬥站 < 星辰要塞,對照 buildings.go 建築說明「Star Fortress 比 Battlestation 更強」),
+// 不是手冊給出的具體數字(手冊沒有逐一列出基地換算成艦級戰力的表)。
+//
+//   - 軌道基地(擇一,取代不疊加——手冊:星辰要塞取代同軌道的戰鬥站/星基,不共存):
+//     星辰要塞(最高階) → shipStrength("戰艦")=16;戰鬥站 → shipStrength("巡洋艦")=8;
+//     星基(最低階) → shipStrength("驅逐艦")=4。
+//   - 飛彈基地(若存活,與上面軌道基地並列,不互斥——手冊描述是兩種獨立的行星防禦設施):
+//     額外一個 WeaponKindMissile attacker,atk 比照 shipStrength("驅逐艦")=4(手冊「配備
+//     最佳飛彈」定性描述,以驅逐艦級飛彈當近似,無法用 shipStrength 之外的數字杜撰)。
+//   - wmin/wmax 換算比照 fleetBombardDamage/mkPlayerCombatants 同款慣例(wmin=atk/2,
+//     wmax=atk)。shield/armor 刻意留 0:這些 attacker 不建模 HP,本輪基地不受玩家反殺
+//     損傷(基地存續與否走「建築吸收」那條路徑,不走這裡的戰鬥解算)。
+//
+// 沒有任何防禦建築存活時回傳空 slice(呼叫端據此判斷 DefenderRetaliated=false,不呼叫
+// battleVolley)。
+func retaliationAttackers(buildings map[string]bool) []combatant {
+	var out []combatant
+
+	baseAtk := 0
+	switch {
+	case buildings["星辰要塞"]:
+		baseAtk = shipStrength("戰艦") // 16,對應手冊「星辰要塞比戰鬥站更強」的最高階軌道基地
+	case buildings["戰鬥站"]:
+		baseAtk = shipStrength("巡洋艦") // 8
+	case buildings["星基"]:
+		baseAtk = shipStrength("驅逐艦") // 4,最低階軌道基地
+	}
+	if baseAtk > 0 {
+		out = append(out, combatant{atk: baseAtk, wmin: baseAtk / 2, wmax: baseAtk, kind: WeaponKindBeam})
+	}
+
+	if buildings["飛彈基地"] {
+		missileAtk := shipStrength("驅逐艦") // 4,「配備最佳飛彈」近似值,見函式頂部說明
+		out = append(out, combatant{atk: missileAtk, wmin: missileAtk / 2, wmax: missileAtk, kind: WeaponKindMissile})
+	}
+
+	return out
 }
 
 // BombardColony 嘗試對 starIdx 這顆星發動一次軌道轟炸(手冊 p.129 Orbital Bombardment)。
@@ -214,6 +270,40 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 	colony.Population -= popLoss
 	res.PopulationLost = popLoss
 	res.RemainingHits = remainingHits - popLoss
+
+	// --- 防禦方反擊(2026-07-11 新增,見 retaliationAttackers 函式頂部「誠實標註」段落):
+	// 建築吸收 + 人口損失之後,只有「這次轟炸打完仍存活」的防禦建築(此刻的 buildings,已經過
+	// 上方建築吸收迴圈刪除摧毀項)才有資格反擊——本次轟炸把防禦建築全炸掉時無反擊(壓制了
+	// 防禦,合理),完全不呼叫下面的戰鬥解算(逐位元回歸加這個機制之前的行為)。
+	if attackers := retaliationAttackers(buildings); len(attackers) > 0 {
+		defenders := s.mkPlayerCombatants()
+		// 只打一輪齊射(battleVolley 本身就是「每個存活 attacker 對第一個存活 defender 射一發」
+		// 的單輪函式,非到一方全滅的迴圈)——手冊語意是「一次轟炸換一次反擊」,不是讓基地把
+		// 整支艦隊掃光,同一個種子化 rng(見上方 BombardColony 開頭)保持同回合同星可重現。
+		shipsLost := battleVolley(attackers, &defenders, rng)
+		res.DefenderRetaliated = true
+		res.AttackerShipsLost = shipsLost
+		for i := 0; i < shipsLost; i++ {
+			s.removeWeakestShip()
+		}
+		// 艦隊被打薄後,運力池 MarineTransportCapacity()(= len(s.Ships) * 每艘 4 名,見
+		// ground_invasion.go)跟著縮小,已載運的 FleetMarines/FleetTanks 若超出新容量要夾下來
+		// (LoadMarines/LoadTanks 平時只在「載運當下」檢查上限,不會在艦隊事後被打薄時自動夾,
+		// 故轟炸反擊這裡要補做,否則會出現「容量 0 卻還載著陸戰隊」的不合理狀態)。
+		if len(s.Ships) == 0 {
+			s.FleetMarines = 0
+			s.FleetTanks = 0
+		} else if room := s.MarineTransportCapacity(); s.FleetMarines+s.FleetTanks > room {
+			// 陸戰隊優先保留、戰車營吃剩下的額度——比照 LoadTanks 的 room 扣除順序
+			// (room = capacity - FleetMarines - FleetTanks,即「陸戰隊先佔額度」)。
+			if s.FleetMarines > room {
+				s.FleetMarines = room
+				s.FleetTanks = 0
+			} else {
+				s.FleetTanks = room - s.FleetMarines
+			}
+		}
+	}
 
 	// PlanetHitsRequired 純供顯示參考(見 GroundBombardResult 欄位註解):buildings 參數改用
 	// len(buildings)(本次轟炸「結束後」剩餘的建築數),與下面 defMarines 用「轟炸後」的

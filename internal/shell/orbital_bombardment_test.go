@@ -2,6 +2,7 @@ package shell
 
 import (
 	"math/rand"
+	"reflect"
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
@@ -353,5 +354,137 @@ func TestBombardColony_NilColonyBuildingsRegressionSafe(t *testing.T) {
 	}
 	if got := s.AIPlayers[aiIdx].Colonies[colonyIdx].Population; got != 0 {
 		t.Fatalf("人口應扣光到 0,got %d", got)
+	}
+}
+
+// --- 2026-07-11:防禦方反擊(軌道基地/飛彈基地打玩家艦隊)新增測試 ---
+//
+// 這幾個測試刻意用 RuleProfile{BombardmentVolleys: 0} 讓 fleetBombardDamage 跑 0 輪
+// (TotalDamage=0 → hits=0),確保「建築吸收」那段不會消耗任何 hits、不摧毀任何建築——
+// 這樣才能直接掌控 aiPlayer.ColonyBuildings[colonyIdx] 的內容,乾淨測試反擊本身的行為,
+// 不必和上面「建築吸收」的隨機組合糾纏在一起。
+
+// retaliationTestSetup 建一個「AI 母星只有指定防禦建築、玩家艦隊固定」的轟炸情境,
+// 回傳 session 與目標星索引,供以下反擊測試共用。
+func retaliationTestSetup(t *testing.T, buildings map[string]bool, ships []Ship) (*GameSession, int, int, int) {
+	t.Helper()
+	s, starIdx := newFleetAtAIHomeSession(t)
+	s.RuleProfile = gamedata.RuleProfile{BombardmentVolleys: 0, BombardmentBuildingBonusHits: 0}
+	s.Ships = ships
+	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
+	if !ok {
+		t.Fatal("應找得到 AI 母星的殖民地模型")
+	}
+	s.AIPlayers[aiIdx].ColonyBuildings[colonyIdx] = buildings
+	return s, starIdx, aiIdx, colonyIdx
+}
+
+// TestBombardColony_RetaliationWithSurvivingStarBase 驗證:AI 母星有存活星基時,轟炸觸發
+// DefenderRetaliated=true,且用固定 rng 種子(s.Turn/starIdx 固定)得到確定結果。
+func TestBombardColony_RetaliationWithSurvivingStarBase(t *testing.T) {
+	s, starIdx, _, _ := retaliationTestSetup(t, map[string]bool{"星基": true}, []Ship{deterministicBombardShip()})
+	s.Turn = 3 // 固定種子:此輪對單艦低 HP 目標星基一發命中擊沉(見探測腳本掃過 Turn 0-29 記錄)
+
+	res := s.BombardColony(starIdx)
+	if !res.Ok {
+		t.Fatalf("前置條件應齊備,got Reason=%q", res.Reason)
+	}
+	if !res.DefenderRetaliated {
+		t.Fatalf("存活星基應觸發反擊,got DefenderRetaliated=false")
+	}
+	// 只有 1 艘攻方艦(deterministicBombardShip,body=1、hp=3),星基反擊(atk 用驅逐艦級=4)
+	// 對固定種子 rng(s.Turn=1, starIdx)解算,結果應可重現;實測見下方斷言。
+	if res.AttackerShipsLost != 1 {
+		t.Fatalf("固定種子下星基反擊 AttackerShipsLost 應為 1(單艦低 HP,星基 atk=4 一發應可擊沉),got %d", res.AttackerShipsLost)
+	}
+	if len(s.Ships) != 0 {
+		t.Fatalf("唯一一艘攻方艦被反擊擊沉後 s.Ships 應清空,got %d 艘", len(s.Ships))
+	}
+}
+
+// TestBombardColony_NoRetaliationWithoutDefensiveBuildings 驗證:殖民地無任何防禦建築(本次
+// 轟炸把防禦建築全炸掉,或本來就沒有)時,完全不觸發反擊——DefenderRetaliated=false、
+// AttackerShipsLost=0,且 s.Ships 逐位元不變(回歸,見設計說明「無存活防禦建築時完全不呼叫
+// 反擊解算」)。
+func TestBombardColony_NoRetaliationWithoutDefensiveBuildings(t *testing.T) {
+	ships := []Ship{deterministicBombardShip(), deterministicBombardShip()}
+	s, starIdx, _, _ := retaliationTestSetup(t, map[string]bool{}, ships)
+	beforeShips := append([]Ship(nil), s.Ships...)
+
+	res := s.BombardColony(starIdx)
+	if !res.Ok {
+		t.Fatalf("前置條件應齊備,got Reason=%q", res.Reason)
+	}
+	if res.DefenderRetaliated {
+		t.Fatalf("無防禦建築不應觸發反擊,got DefenderRetaliated=true")
+	}
+	if res.AttackerShipsLost != 0 {
+		t.Fatalf("無反擊時 AttackerShipsLost 應為 0,got %d", res.AttackerShipsLost)
+	}
+	if len(s.Ships) != len(beforeShips) {
+		t.Fatalf("無反擊時 s.Ships 艘數不應變動,got %d want %d", len(s.Ships), len(beforeShips))
+	}
+	for i := range beforeShips {
+		if !reflect.DeepEqual(s.Ships[i], beforeShips[i]) {
+			t.Fatalf("無反擊時 s.Ships[%d] 不應變動,got %+v want %+v", i, s.Ships[i], beforeShips[i])
+		}
+	}
+}
+
+// TestBombardColony_StarFortressRetaliationStrongerThanStarBase 驗證基地分級火力遞增序
+// (星基 < 戰鬥站 < 星辰要塞,對應手冊「Star Fortress 比 Battlestation 更強」定性描述):
+// 同樣的玩家艦隊、同樣的 rng 種子輸入下,星辰要塞反擊擊沉的艦數應 >= 星基反擊擊沉的艦數。
+func TestBombardColony_StarFortressRetaliationStrongerThanStarBase(t *testing.T) {
+	fleet := func() []Ship {
+		return []Ship{
+			{Name: "護衛艦一號", Class: "護衛艦", Weapon: "無", Armor: "無裝甲", Shield: "無護盾"},
+			{Name: "護衛艦二號", Class: "護衛艦", Weapon: "無", Armor: "無裝甲", Shield: "無護盾"},
+			{Name: "護衛艦三號", Class: "護衛艦", Weapon: "無", Armor: "無裝甲", Shield: "無護盾"},
+		}
+	}
+	sBase, idxBase, _, _ := retaliationTestSetup(t, map[string]bool{"星基": true}, fleet())
+	sBase.Turn = 5
+	sFortress, idxFortress, _, _ := retaliationTestSetup(t, map[string]bool{"星辰要塞": true}, fleet())
+	sFortress.Turn = 5
+
+	resBase := sBase.BombardColony(idxBase)
+	resFortress := sFortress.BombardColony(idxFortress)
+	if !resBase.Ok || !resFortress.Ok {
+		t.Fatalf("前置條件應齊備,got base Reason=%q fortress Reason=%q", resBase.Reason, resFortress.Reason)
+	}
+	if !resBase.DefenderRetaliated || !resFortress.DefenderRetaliated {
+		t.Fatalf("兩者皆應觸發反擊,got base=%v fortress=%v", resBase.DefenderRetaliated, resFortress.DefenderRetaliated)
+	}
+	if resFortress.AttackerShipsLost < resBase.AttackerShipsLost {
+		t.Fatalf("星辰要塞(atk=16)反擊應不弱於星基(atk=4),got fortress=%d < base=%d",
+			resFortress.AttackerShipsLost, resBase.AttackerShipsLost)
+	}
+}
+
+// TestBombardColony_RetaliationClearsFleetCargoWhenFleetWiped 驗證:反擊把玩家艦隊整支
+// 擊沉時,FleetMarines/FleetTanks 要跟著歸 0(容量隨艦隊歸零,不能留著「艦隊已消失卻還載運
+// 陸戰隊/戰車營」的不合理狀態),且不出負數。用星辰要塞(atk=16,最高階)打一艘低 HP 單艦,
+// 確保單輪齊射足以擊沉。
+func TestBombardColony_RetaliationClearsFleetCargoWhenFleetWiped(t *testing.T) {
+	s, starIdx, _, _ := retaliationTestSetup(t, map[string]bool{"星辰要塞": true}, []Ship{deterministicBombardShip()})
+	s.Turn = 3
+	s.FleetMarines = 5
+	s.FleetTanks = 2
+
+	res := s.BombardColony(starIdx)
+	if !res.Ok {
+		t.Fatalf("前置條件應齊備,got Reason=%q", res.Reason)
+	}
+	if !res.DefenderRetaliated {
+		t.Fatalf("星辰要塞應觸發反擊,got DefenderRetaliated=false")
+	}
+	if len(s.Ships) != 0 {
+		t.Fatalf("測試前提:唯一一艘攻方艦應被星辰要塞反擊擊沉,got %d 艘存活(需要調整測試前提)", len(s.Ships))
+	}
+	if s.FleetMarines != 0 {
+		t.Fatalf("艦隊清空後 FleetMarines 應歸 0,got %d", s.FleetMarines)
+	}
+	if s.FleetTanks != 0 {
+		t.Fatalf("艦隊清空後 FleetTanks 應歸 0,got %d", s.FleetTanks)
 	}
 }

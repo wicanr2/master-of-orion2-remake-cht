@@ -391,21 +391,26 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 	return before - len(*defenders)
 }
 
+// mkPlayerCombatants 把玩家目前艦隊(s.Ships)轉成 []combatant,供快速艦隊戰鬥解算共用——
+// ResolveBattle 的一般艦隊交戰與 orbital_bombardment.go BombardColony 的軌道基地反擊都用
+// 這一套換算規則(2026-07-11 從 ResolveBattle 內的匿名函式抽出,行為不變,純供多處重用,
+// 避免兩處各自維護、日後改壞其中一邊卻沒同步)。
+func (s *GameSession) mkPlayerCombatants() []combatant {
+	var out []combatant
+	for _, sh := range s.Ships {
+		body := shipStrength(sh.Class)
+		atk := body + sh.WeaponAttack
+		atk += atk * s.RaceCombatPct / 100 // 種族戰鬥加成(姆瑞森+25、布拉西/阿爾卡里+15…)
+		out = append(out, combatant{hp: body * 3, atk: atk, def: body, wmin: atk / 2, wmax: atk,
+			shield: shieldReduceByName(sh.Shield), armor: armorHPByName(sh.Armor),
+			kind: weaponKindByName(sh.Weapon), mods: sh.Mods})
+	}
+	return out
+}
+
 // ResolveBattle 快速艦隊自動結算(無格子;供非互動戰鬥)。改用 gamedata 真戰鬥公式逐發解算,
 // 與格子戰術戰鬥(tacticalScreen)一致:每回合雙方齊射,每發走命中判定→傷害→過盾→過甲。
 func (s *GameSession) ResolveBattle(enemy string) BattleResult {
-	mkPlayer := func() []combatant {
-		var out []combatant
-		for _, sh := range s.Ships {
-			body := shipStrength(sh.Class)
-			atk := body + sh.WeaponAttack
-			atk += atk * s.RaceCombatPct / 100 // 種族戰鬥加成(姆瑞森+25、布拉西/阿爾卡里+15…)
-			out = append(out, combatant{hp: body * 3, atk: atk, def: body, wmin: atk / 2, wmax: atk,
-				shield: shieldReduceByName(sh.Shield), armor: armorHPByName(sh.Armor),
-				kind: weaponKindByName(sh.Weapon), mods: sh.Mods})
-		}
-		return out
-	}
 	mult := 1.0
 	if s.Difficulty >= 0 && s.Difficulty < len(Difficulties) {
 		mult = Difficulties[s.Difficulty].Mult
@@ -414,7 +419,7 @@ func (s *GameSession) ResolveBattle(enemy string) BattleResult {
 	for _, st := range genEnemyFleet(s.Turn, mult) {
 		ef = append(ef, combatant{hp: st * 3, atk: st, def: st, wmin: st / 2, wmax: st, armor: st})
 	}
-	pf := mkPlayer()
+	pf := s.mkPlayerCombatants()
 
 	res := BattleResult{Enemy: enemy, PlayerStart: len(pf), EnemyStart: len(ef)}
 	rng := rand.New(rand.NewSource(int64(s.Turn)*2654435761 + 12345)) // 依回合種子,可重現
