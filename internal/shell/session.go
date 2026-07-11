@@ -33,13 +33,16 @@ type AIOpponent struct {
 	// 限制未建模,是誠實簡化而非疏漏(見 spy.go 檔頭說明)。
 	Spies int
 
-	// ColonyStars 是 Colonies[i] 對應到 Stars 的索引(平行陣列)。
+	// ColonyStars 是 Colonies[i] 對應到 Stars 的索引(平行陣列),兩者長度須一致——aiExpand
+	// append 新殖民地、InvadeColony 玩家攻陷 AI 殖民地時各自同步移除,見兩處函式。
 	//
-	// 簡化限制(見 aiExpand):AI 每 5 回合用 aiExpand 佔領一顆無主星時,只標記
-	// Star.Owner=2、OwnedStars++,並不會為那顆星建立真正的 engine.ColonyState(economy
-	// 建模成本高、非本輪任務範圍)。因此 ColonyStars 目前只會有「開局母星」這一筆對映
-	// (NewDemoSession 建局時填入),其餘靠 aiExpand 擴張出的星是「有旗標無殖民地模型」的
-	// 版圖——地面入侵(InvadeColony)只能打有實際殖民地模型的星,找不到對映即回報無法入侵。
+	// 2026-07-11 訂正:先前 aiExpand 每 5 回合佔領一顆無主星時只標記 Star.Owner=2、
+	// OwnedStars++,並不會為那顆星建立真正的 engine.ColonyState,因此本欄位一度只有「開局
+	// 母星」這一筆對映,其餘擴張出的星是「有旗標無殖民地模型」的版圖——地面入侵
+	// (InvadeColony)打不到、AI 經濟(RunEmpireTurn)也不會因擴張成長。現在 aiExpand 改用
+	// newColonyFromStar(colonization.go,與玩家 ColonizeStar 共用同一套建法)建立真殖民地並
+	// 同步 append 進 Colonies/ColonyStars,擴張出的星此後都有實際殖民地模型,可被入侵、且
+	// 會計入 AI 每回合的 TotalNetIndustry。
 	ColonyStars []int
 }
 
@@ -1755,14 +1758,38 @@ var stanceNames = map[ai.Stance]string{
 	ai.StanceProposeAlliance: "提議結盟",
 }
 
-// aiExpand 讓第 i 個 AI 佔領一顆無主星(標 Owner=2),OwnedStars++。找不到無主星則不動作。
+// aiExpand 讓第 i 個 AI 佔領一顆無主星:標 Star.Owner=2、OwnedStars++,並用
+// newColonyFromStar(colonization.go,與玩家 ColonizeStar 共用同一套建法)建立真正的
+// engine.ColonyState,append 進 AIOpponent.Colonies + ColonyStars(AIOpponent 唯二的殖民地
+// 平行陣列——不像玩家有 Builds/ColonyBuildings/PlayerColonyMarines/MarineBarracksAge/
+// PlayerColonyTanks/ArmorBarracksAge/popAccum 那套逐殖民地建造/駐軍追蹤,因為 EndTurn 對 AI
+// 只呼叫 RunEmpireTurn 結算經濟,從不呼叫 advanceBuilds/advanceMarines/advanceArmor/
+// advancePopulation 這些玩家專屬的逐殖民地流程,故無需同步那些陣列)。
+//
+// 2026-07-11 訂正:先前只設旗標、不建殖民地模型(見 AIOpponent.ColonyStars 欄位註解),
+// 導致 AI 版圖擴張後經濟(EndTurn 的 RunEmpireTurn(ps, a.Colonies))永遠停在初始母星產出,
+// 不會隨佔領星數成長。現在下回合 EndTurn 就會把新殖民地的淨工業算進
+// out.TotalNetIndustry,advanceAI 的造艦投資(見上方)自然吃到更多產出,AI 才會隨擴張變強。
+//
+// gov 傳 gamedata.MoraleGovDictatorship(AIOpponent 沒有 Government 欄位,政府型態未建模,
+// 見 newColonyFromStar 註解);種族加成傳 0(AI 無種族加成模型可查)。若該星行星資料不可殖民
+// (climateColonizable 為 false——目前星系生成從不產生氣態巨星/小行星帶,見 colonization.go
+// 檔頭,故實務上不會發生),保守 continue 找下一顆無主星,不 fallback 成只設旗標(避免旗標與
+// 殖民地模型再度分裂)。找不到任何可擴張的無主星則整個 no-op。
 func (s *GameSession) aiExpand(i int) {
 	for idx := range s.Stars {
-		if s.Stars[idx].Owner == 0 {
-			s.Stars[idx].Owner = 2
-			s.AIPlayers[i].OwnedStars++
-			return
+		if s.Stars[idx].Owner != 0 {
+			continue
 		}
+		colony, ok, _ := s.newColonyFromStar(idx, gamedata.MoraleGovDictatorship, 0, 0, 0)
+		if !ok {
+			continue
+		}
+		s.Stars[idx].Owner = 2
+		s.AIPlayers[i].OwnedStars++
+		s.AIPlayers[i].Colonies = append(s.AIPlayers[i].Colonies, colony)
+		s.AIPlayers[i].ColonyStars = append(s.AIPlayers[i].ColonyStars, idx)
+		return
 	}
 }
 

@@ -167,6 +167,74 @@ type ColonizationResult struct {
 	PopMax          int    // Ok=true 時,新殖民地人口上限(見 gamedata.PlanetBasePopMax)
 }
 
+// newColonyFromStar 依 starIdx 對應的行星資料(s.Planets[starIdx],genPlanets 產生)建一筆新
+// engine.ColonyState,是 ColonizeStar(玩家拓殖,下方)與 session.go aiExpand(AI 擴張)共用的
+// 殖民地建法——2026-07-11 前 aiExpand 只標記 Star.Owner=2 旗標、從未建立真正的殖民地模型(見
+// AIOpponent.ColonyStars 欄位註解),AI 版圖擴張後經濟不會成長。抽出共用後兩處呼叫端行為一致
+// (氣候/重力/礦產/大小解析、PopMax 查表、全農起始、士氣算法皆同一套規則),不會出現「玩家殖民地
+// 一套規則、AI 殖民地另一套」的不忠實分裂。
+//
+// gov 是套用士氣基準的政府型態:玩家傳 s.Government;AI 對手(AIOpponent)沒有 Government 欄位
+// ——政府型態未建模,aiExpand 傳 gamedata.MoraleGovDictatorship 當保守預設(與母星
+// playerHomeworldColony 的政府基準一致,理由見該函式)。
+// foodBonus/indBonus/resBonus 是種族環境加成:玩家傳 Races[s.RaceIndex] 對應值;AI 對手沒有種族
+// 加成模型可查(擴張出的新殖民地非母星,無種族資料來源),aiExpand 一律傳 0,不臆造。
+//
+// 回傳 ok=false 時 reason 說明原因(對映 ColonizeStar 既有的前置條件文字):starIdx 越界(不應
+// 發生)、氣候資料無法辨識(不應發生)、或該行星需額外科技才能殖民(氣態巨星/小行星帶,目前星系
+// 生成從不產生,見檔頭§1,實務上不會觸發)。呼叫端各自處理:ColonizeStar 直接把 reason 回給
+// UI;aiExpand 這類背景擴張沒有 UI 可顯示,只用 ok 決定要不要放棄這顆星、繼續找下一顆。
+func (s *GameSession) newColonyFromStar(starIdx int, gov gamedata.MoraleGovernmentType, foodBonus, indBonus, resBonus int) (colony engine.ColonyState, ok bool, reason string) {
+	if starIdx < 0 || starIdx >= len(s.Planets) {
+		return engine.ColonyState{}, false, "無行星資料(不應發生)"
+	}
+	planet := s.Planets[starIdx]
+
+	climate, cok := climateFromDisplay(planet.Climate)
+	if !cok {
+		return engine.ColonyState{}, false, "行星氣候資料無法辨識(不應發生,見 climateDisplayToGamedata)"
+	}
+	if !climateColonizable(climate) {
+		return engine.ColonyState{}, false, "此類行星需額外科技才能建立殖民地(氣態巨星/小行星帶,尚未支援)"
+	}
+	gravity, gok := gravityFromDisplay(planet.Gravity)
+	if !gok {
+		gravity = gamedata.NORMAL_G // 不應發生的保守預設,見 gravityDisplayToGamedata
+	}
+	mineral, mok := mineralFromDisplay(planet.Mineral)
+	if !mok {
+		mineral = gamedata.POOR // 不應發生的保守預設,見 mineralDisplayToGamedata
+	}
+	size, szok := sizeFromDisplay(planet.Size)
+	if !szok {
+		size = gamedata.MEDIUM_PLANET // 不應發生的保守預設,見 sizeDisplayToGamedata
+	}
+
+	foodPerFarmer := gamedata.ClimateFoodPerFarmer(climate) + foodBonus
+	industryPerWorker := gamedata.MineralIndustryPerWorker(mineral) + indBonus
+	researchPerScientist := 30 + resBonus // 見 playerHomeworldColony 註解:手冊無環境相關公式,remake 沿用同一基準值
+
+	popMax := gamedata.PlanetBasePopMax(size, climate)
+	if popMax < colonizeStartPopulation {
+		popMax = colonizeStartPopulation // 保底:新殖民地的人口上限不能低於起始人口本身
+	}
+
+	colony = engine.ColonyState{
+		Population:           colonizeStartPopulation,
+		PopMax:               popMax,
+		Farmers:              colonizeStartPopulation, // 全農,見檔頭§2 理由(避免首回合饑荒)
+		FoodPerFarmer:        foodPerFarmer,
+		IndustryPerWorker:    industryPerWorker,
+		ResearchPerScientist: researchPerScientist,
+		PlanetSize:           size,
+		PlanetGravity:        gravity,
+		MineralRichness:      mineral,
+		Climate:              climate,
+		MoralePercent:        colonyMoralePercent(gov, nil), // 新殖民地無任何建築,見檔頭§2
+	}
+	return colony, true, ""
+}
+
 // ColonizeStar 嘗試在 starIdx 這顆星建立新殖民地。前置條件:
 //  1. 玩家艦隊已抵達該星(FleetAtStar==starIdx 且 FleetETA==0,航行中不能發動,比照 InvadeColony)。
 //  2. 該星目前無主(Owner==0)——已被玩家或 AI 佔領的星不可再拓殖。
@@ -198,58 +266,15 @@ func (s *GameSession) ColonizeStar(starIdx int) ColonizationResult {
 	if shipIdx < 0 {
 		return ColonizationResult{Reason: "艦隊未載運殖民船"}
 	}
-	if starIdx >= len(s.Planets) {
-		return ColonizationResult{Reason: "無行星資料(不應發生)"}
-	}
-	planet := s.Planets[starIdx]
 
-	climate, ok := climateFromDisplay(planet.Climate)
-	if !ok {
-		return ColonizationResult{Reason: "行星氣候資料無法辨識(不應發生,見 climateDisplayToGamedata)"}
-	}
-	if !climateColonizable(climate) {
-		return ColonizationResult{Reason: "此類行星需額外科技才能建立殖民地(氣態巨星/小行星帶,尚未支援)"}
-	}
-	gravity, ok := gravityFromDisplay(planet.Gravity)
-	if !ok {
-		gravity = gamedata.NORMAL_G // 不應發生的保守預設,見 gravityDisplayToGamedata
-	}
-	mineral, ok := mineralFromDisplay(planet.Mineral)
-	if !ok {
-		mineral = gamedata.POOR // 不應發生的保守預設,見 mineralDisplayToGamedata
-	}
-	size, ok := sizeFromDisplay(planet.Size)
-	if !ok {
-		size = gamedata.MEDIUM_PLANET // 不應發生的保守預設,見 sizeDisplayToGamedata
-	}
-
-	foodPerFarmer := gamedata.ClimateFoodPerFarmer(climate)
-	industryPerWorker := gamedata.MineralIndustryPerWorker(mineral)
-	researchPerScientist := 30 // 見 playerHomeworldColony 註解:手冊無環境相關公式,remake 沿用同一基準值
+	foodBonus, indBonus, resBonus := 0, 0, 0
 	if s.RaceIndex >= 0 && s.RaceIndex < len(Races) {
 		r := Races[s.RaceIndex]
-		foodPerFarmer += r.FoodBonus
-		industryPerWorker += r.IndBonus
-		researchPerScientist += r.ResBonus
+		foodBonus, indBonus, resBonus = r.FoodBonus, r.IndBonus, r.ResBonus
 	}
-
-	popMax := gamedata.PlanetBasePopMax(size, climate)
-	if popMax < colonizeStartPopulation {
-		popMax = colonizeStartPopulation // 保底:新殖民地的人口上限不能低於起始人口本身
-	}
-
-	colony := engine.ColonyState{
-		Population:           colonizeStartPopulation,
-		PopMax:               popMax,
-		Farmers:              colonizeStartPopulation, // 全農,見檔頭§2 理由(避免首回合饑荒)
-		FoodPerFarmer:        foodPerFarmer,
-		IndustryPerWorker:    industryPerWorker,
-		ResearchPerScientist: researchPerScientist,
-		PlanetSize:           size,
-		PlanetGravity:        gravity,
-		MineralRichness:      mineral,
-		Climate:              climate,
-		MoralePercent:        colonyMoralePercent(s.Government, nil), // 新殖民地無任何建築,見檔頭§2
+	colony, ok, reason := s.newColonyFromStar(starIdx, s.Government, foodBonus, indBonus, resBonus)
+	if !ok {
+		return ColonizationResult{Reason: reason}
 	}
 
 	s.PlayerColonies = append(s.PlayerColonies, colony)
@@ -281,5 +306,5 @@ func (s *GameSession) ColonizeStar(starIdx int) ColonizationResult {
 	star.Owner = 1
 	s.Ships = append(s.Ships[:shipIdx], s.Ships[shipIdx+1:]...) // 消耗這艘殖民船
 
-	return ColonizationResult{Ok: true, ColonyIndex: idx, StartPopulation: colonizeStartPopulation, PopMax: popMax}
+	return ColonizationResult{Ok: true, ColonyIndex: idx, StartPopulation: colonizeStartPopulation, PopMax: colony.PopMax}
 }

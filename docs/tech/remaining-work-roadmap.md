@@ -29,7 +29,7 @@
 ### B. 需你授權方向的基礎設施(大工程,選錯白做,故等你點)
 | 項目 | 依賴 | 自驅度 |
 |---|---|---|
-| **多 AI 對手 + 真星系拓殖** | demo 目前仍 1 AI、固定母星;**拓殖部分已接**(2026-07-11:`shell.GameSession.ColonizeStar`,玩家可用殖民船在無主適居星建立新殖民地,起始人口/PopMax 公式對手冊+openorion2 核實,詳見 `docs/tech/colonization.md`) | **多 AI 對手**仍是「能玩完整一局」剩下的最大解鎖。拓殖流程已解鎖,給方向後可自驅(AI 側的人口/殖民地模型、AI 主動拓殖行為) |
+| **多 AI 對手 + 真星系拓殖** | demo 目前仍 1 AI、固定母星;**拓殖部分已接**(2026-07-11:`shell.GameSession.ColonizeStar`,玩家可用殖民船在無主適居星建立新殖民地,起始人口/PopMax 公式對手冊+openorion2 核實,詳見 `docs/tech/colonization.md`)。**AI 側殖民地模型已接**(2026-07-11 追加:`aiExpand` 改用共用函式 `newColonyFromStar`,佔星時建真 `engine.ColonyState`,不再只標旗標——AI 經濟隨擴張成長,見 `docs/HONEST-STATUS.md` 同日追加段落) | **多 AI 對手數量**(demo 仍僅 1 個)與 **AI 選星策略**(現為星圖索引順序,非距離/資源導向)仍是「能玩完整一局」剩下的最大解鎖。給方向後可自驅 |
 | **戰機/航母系統** | 戰鬥基礎設施 | 解鎖 `combat.go` CombatFighter* 死碼 + 戰機庫建築。自驅度中 |
 | **武器改造 mod** | 艦艇設計基礎設施 | 解鎖 `damage.go` DamageMountAdjustedValue 等死碼 + 艦艇設計 mod 佔格。自驅度中 |
 | **安塔蘭母星 + 次元傳送門** | 端遊戲基礎設施 | 解鎖第三勝利條件(`CheckAntaranVictory` 死碼待此)。自驅度中 |

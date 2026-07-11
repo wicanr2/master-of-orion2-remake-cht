@@ -49,10 +49,22 @@
   只有母星、完全無法擴張——`shell.GameSession.ColonizeStar` 現已接線:玩家艦隊帶殖民船抵達無主
   適居星,可建立新殖民地(起始人口 1、全農起步,`gamedata.PlanetBasePopMax` 依行星大小/氣候算
   PopMax,兩者皆為手冊直接引文/openorion2 公式核實,非臆造),`cmd/moo2/interactive.go` 加了對應
-  「建立殖民地」按鈕。**仍缺**:AI 對手主動拓殖行為(AI 側維持先前 `aiExpand` 的「只標旗標、無
-  殖民地模型」簡化)、行星選擇子畫面(每星固定一顆行星,暫不需要)、氣態巨星/小行星帶類型
-  (本 remake 星系生成從未產生這兩類,科技 gate 掛勾點已留但無案例可測)。詳見
-  `docs/tech/colonization.md`。
+  「建立殖民地」按鈕。**(2026-07-11 追加:AI 對手擴張已從「只標旗標無經濟」接上「建真殖民地、
+  經濟隨擴張成長」)**——先前 `aiExpand`(每 5 回合佔一顆無主星)只設 `Star.Owner=2` +
+  `OwnedStars++`,從不建立 `engine.ColonyState`,導致 AI 殖民地數恆為開局母星 1 筆、
+  `RunEmpireTurn` 算出的 `TotalNetIndustry` 永遠停在初始母星產出、AI `FleetStrength` 只能線性
+  成長。現在抽出共用函式 `internal/shell/colonization.go` 的 `newColonyFromStar(starIdx, gov,
+  foodBonus, indBonus, resBonus)`,玩家 `ColonizeStar` 與 AI `aiExpand` 共用同一套建殖民地邏輯
+  (氣候/重力/礦產/大小解析、PopMax 查表、全農起始、士氣算法一致),`aiExpand` 佔星時同步
+  append 進 `AIOpponent.Colonies`/`ColonyStars`。40 回合探針對照:修前 AI 殖民地數恆 1、
+  FleetStrength 線性(3→60,約每回合 +1.5);修後 AI 殖民地數隨回合增至 9、FleetStrength 加速
+  成長(3→101,同期間近 2 倍),玩家開局 BC 軌跡不受影響(兩版本一致:102→…→96)。**AI 政府
+  型態未建模**(`AIOpponent` 沒有 `Government` 欄位),`aiExpand` 建殖民地時士氣一律用
+  `gamedata.MoraleGovDictatorship` 保守預設(與母星 `playerHomeworldColony` 基準一致);AI 也
+  沒有種族加成模型,`foodBonus`/`indBonus`/`resBonus` 一律傳 0,不臆造。**仍缺**:多 AI 對手
+  數量(demo 仍僅 1 個 AI)、AI 選星策略(目前是「星圖索引順序第一顆無主星」,非距離/資源導向)、
+  行星選擇子畫面(每星固定一顆行星,暫不需要)、氣態巨星/小行星帶類型(本 remake 星系生成從未
+  產生這兩類,科技 gate 掛勾點已留但無案例可測)。詳見 `docs/tech/colonization.md`。
 - 外交/間諜/議會、隨機事件、安塔蘭母星與歐瑞恩守護者、勝利條件——**大多缺席或極度簡化**。
   **(2026-07-11 更新:勝利條件從「完全沒有」變成「兩條路徑已接引擎層」。** 銀河議會選舉
   (手冊 GAME_MANUAL.pdf p.183:半數銀河殖民+≥3存續種族才成立、票數依人口、2/3超級多數當選、
