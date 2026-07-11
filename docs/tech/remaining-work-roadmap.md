@@ -7,7 +7,13 @@
 
 **中文化維度:完成**(4 專有名詞池 13+829+672+104 + 22 UI TSV,無未翻字串源)。
 
-**移植維度:核心 gameplay 系統多數已從手冊/openorion2 錨定接線**——殖民地(重力/士氣/礦產/建築18棟/地形改造/污染/成長/饑荒/維護)、艦隊(指揮點數)、戰鬥(beam/飛彈/球狀分流、地面戰陸戰隊+戰車+軌道轟炸)、勝利(征服+議會,**能贏一局**)、領袖技能、間諜最小迴圈、外交關係核心。
+**移植維度:核心 gameplay 系統多數已從手冊/openorion2 錨定接線**——殖民地(重力/士氣/礦產/建築18棟/地形改造/污染/成長/饑荒/維護)、艦隊(指揮點數)、戰鬥(beam/飛彈/球狀分流、地面戰陸戰隊+戰車+軌道轟炸)、勝利(征服+議會+**安塔蘭反攻,三條路徑全接,能贏一局**)、領袖技能、間諜最小迴圈、外交關係核心。
+
+> **安塔蘭勝利路徑已接(2026-07-11 追加)**:次元傳送門建築(`gamedata.Buildings` 早已存在,
+> 本輪只補「建成後解鎖反攻」流程)+ `GameSession.AssaultAntares()`(戰鬥沿用 `ResolveBattle`
+> 同款 `battleVolley` 解算,防禦方戰力用保守預設,見下)+ `advanceAntaranVictory`(`EndTurn`
+> 偵測)。**母星防禦艦隊戰力手冊/openorion2 均無精確數字**(手冊只用「awe-inspiring」定性描述),
+> 保守預設為 6 艘末日之星等級戰力,待考證。詳見 `docs/tech/victory-conditions.md` 第 4 節。
 
 **關鍵洞察**:先前多輪誤判為「RE-gated 需 DOSBox」的東西,絕大多數是**前面 session 已移植進 `gamedata/` 卻沒接進遊戲迴圈的死碼**。接死碼(重力/士氣/勝利/飛彈/間諜…)是本 session 的主線,已挖到見底。
 
@@ -32,7 +38,6 @@
 | **多 AI 對手 + 真星系拓殖** | **多 AI 對手數量已接**(2026-07-11:`NewDemoSession` 由 1 個 AI 擴為 3 個,各不同母星/種族名/`ai.Profile` 性格,議會門檻 `gamedata.CouncilMinExtantRaces` 真值可達、`advanceCouncil` generalize 為逐帝國計票,見 `docs/tech/victory-conditions.md`)。**拓殖部分已接**(2026-07-11:`shell.GameSession.ColonizeStar`,玩家可用殖民船在無主適居星建立新殖民地,起始人口/PopMax 公式對手冊+openorion2 核實,詳見 `docs/tech/colonization.md`)。**AI 側殖民地模型已接**(2026-07-11 追加:`aiExpand` 改用共用函式 `newColonyFromStar`,佔星時建真 `engine.ColonyState`,不再只標旗標——AI 經濟隨擴張成長,見 `docs/HONEST-STATUS.md` 同日追加段落) | 剩 **AI 選星策略**(現為星圖索引順序,非距離/資源導向)與 **AI 對 AI 互動**(3 個 AI 目前只各自獨立對玩家造艦/擴張/外交,彼此不打仗不外交,也沒有「候選人限定票數最高兩位+第三方外交搖擺票」的議會規則,需要先補 AI 對 AI 的關係模型)。給方向後可自驅 |
 | **戰機/航母系統** | 戰鬥基礎設施 | 解鎖 `combat.go` CombatFighter* 死碼 + 戰機庫建築。自驅度中 |
 | **武器改造 mod** | 艦艇設計基礎設施 | 解鎖 `damage.go` DamageMountAdjustedValue 等死碼 + 艦艇設計 mod 佔格。自驅度中 |
-| **安塔蘭母星 + 次元傳送門** | 端遊戲基礎設施 | 解鎖第三勝利條件(`CheckAntaranVictory` 死碼待此)。自驅度中 |
 | **艦艇軍官指派** | 需「軍官→艦艇」指派模型 | 解鎖 `ShipBeamAttackWithOfficer` 死碼(openorion2 `sptr->officer` 有對應)。小工程 |
 
 ### C. 需你定互動設計的 UI(引擎層多已備,缺玩法介面)
@@ -57,7 +62,7 @@
 
 1. **你 playtest 開局平衡**(5 分鐘,零我方成本)→ 解鎖 income + 校準方向。
 2. **多 AI + 真星系拓殖**(最大「能玩一局」解鎖)——你給設計方向,我自驅建。
-3. 依你興趣:戰機/航母 或 武器 mod 或 安塔蘭勝利(各自解鎖一批戰鬥/端遊戲死碼)。
+3. 依你興趣:戰機/航母 或 武器 mod(安塔蘭勝利已於 2026-07-11 接線,不再是待選項)。
 4. UI 畫面(間諜/領袖/外交)——你定互動玩法後我接引擎+最小 UI,逐步補全畫面。
 5. 待你安排 DOSBox oracle / 截圖 → 校驗地面戰·飛彈·像素對齊·sprite。
 

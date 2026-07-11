@@ -1457,13 +1457,24 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 // (screens-scan/fleetlist.png):標題列 y=27,兩排按鈕列 y=394/443。
 func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 	// 點右側艦艇格 → 艦艇設計;右下 RETURN → 星系主畫面(精確熱區)。
+	// 左下空白區(x<338, y 388-408)加一個「攻打安塔蘭」熱區(手冊三條勝利路徑之二,見
+	// internal/shell/antaran_victory.go);只在 CanAssaultAntares() 為真時才顯示提示文字與生效,
+	// 否則點擊無作用(刻意不做灰階按鈕美術,UI 最小化,見 docs/HONEST-STATUS.md)。
 	hits := []hitRegion{
 		{338, 50, 288, 300, "design"},
+		{20, 388, 260, 20, "assault"},
 		{543, 432, 84, 28, "return"},
 	}
 	onAction := func(a string) *origTransition {
-		if a == "design" {
+		switch a {
+		case "design":
 			return b.goTo(b.shipDesign, "艦艇設計")
+		case "assault":
+			if b.session != nil && b.session.CanAssaultAntares() {
+				b.session.AssaultAntares()
+				return b.goTo(b.battleResult, "戰鬥結果")
+			}
+			return b.goTo(b.fleet, "艦隊列表")
 		}
 		return b.goTo(b.galaxy, "星系主畫面")
 	}
@@ -1494,6 +1505,12 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 				extraText{x: 130, y: y, size: 12, text: sh.Class, col: body},
 			)
 			y += 28
+		}
+		// 「攻打安塔蘭」提示(手冊三條勝利路徑之二):只在已建次元傳送門 + 艦隊非空時顯示,
+		// 對應上面 hits 的 "assault" 熱區(見 CanAssaultAntares)。
+		if b.session.CanAssaultAntares() {
+			warn := color.RGBA{235, 160, 90, 255}
+			s.extras = append(s.extras, extraText{x: 28, y: 402, size: 13, text: "⚔ 攻打安塔蘭母星(點此發動終局反攻)", col: warn})
 		}
 	}
 	return s, nil

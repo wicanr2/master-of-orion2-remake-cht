@@ -1,8 +1,11 @@
 # 勝利條件(Victory Conditions)
 
-> 日期:2026-07-11。目的:記錄「銀河霸主2 怎麼贏一局」的手冊權威規則、remake 現況、以及尚未解決的
-> 資料模型限制,供後續接手不必重查手冊。**這是本專案第一次接上任何可達成的勝利路徑**——先前
-> `docs/HONEST-STATUS.md` 點名的核心痛點「遊戲目前沒有任何勝利條件、無法贏一局」,本輪起有解。
+> 日期:2026-07-11(當日兩輪更新)。目的:記錄「銀河霸主2 怎麼贏一局」的手冊權威規則、remake
+> 現況、以及尚未解決的資料模型限制,供後續接手不必重查手冊。**本專案第一次接上任何可達成的勝利
+> 路徑**——先前 `docs/HONEST-STATUS.md` 點名的核心痛點「遊戲目前沒有任何勝利條件、無法贏一局」,
+> 從這輪起有解。**第二輪更新(同日稍後)**:手冊三條勝利路徑已**全部接線(3/3)**——第一輪只接了
+> 征服 + 議會兩條,安塔蘭母星反攻(第三條)當時仍是 TODO(見舊版第 6 節);本輪補上次元傳送門
+> 解鎖反攻 + `AssaultAntares` 戰鬥 + 勝利偵測,詳見第 4 節。
 
 ## 1. 手冊權威規則(逐字引用 + 頁碼)
 
@@ -130,6 +133,82 @@ openorion2 裡確實連影子都沒有,只能依手冊從零設計,沒有既有 
 目前只能用 `GameSession.RespondToCouncilElection(bool)`(尚無 UI 熱區綁定這個呼叫)。這是本輪
 「UI 最小化、延後原版重建」的刻意選擇,已在 `docs/HONEST-STATUS.md` 誠實標注。
 
+### 4.4 安塔蘭母星反攻整合(2026-07-11 第二輪,`internal/shell/antaran_victory.go`)
+
+手冊第二條勝利路徑(GAME_MANUAL.pdf p.183):
+
+> "An alternate method is to seek out and defeat the Antaran home fleet. This involves
+> travelling to the Antaran homeworld, which is not possible until you have the right
+> technology and build a Dimensional Gate. Once you defeat the awe-inspiring Antarans, all
+> the other races in the galaxy recognise your overwhelming superiority and quickly
+> capitulate. (This strategy is not available if you disabled Antaran Attacks when setting up
+> your game.)"
+
+與次元傳送門本身效果(GAME_MANUAL.pdf p.106,「Multi-Dimensional Physics」小節):
+
+> "A Dimensional Portal gives your fleets in the same system the ability to cross into the
+> dimension from which the Antarans stage their attacks. To use this, select a fleet in the
+> same system as the portal, then click the Attack Antarans button instead of selecting a
+> destination."
+>
+> "A Dimensional Portal costs 2 BC in maintenance each turn."
+
+**次元傳送門建築本身不是本輪新建**——`gamedata.Buildings`(`internal/gamedata/buildings.go`)
+早在先前的建築全表萃取(`docs/tech/colony-buildings.md`)就已收錄(`BUILDING_DIMENSIONAL_PORTAL`,
+`ColonyBuilding=14`;前置科技 `TOPIC_MULTIDIMENSIONAL_PHYSICS`,RP 成本 4500,維護 2 BC/回合,
+與手冊逐字相符),只是`docs/tech/colony-buildings.md` §6.2 先前把它列在「記錄已建但不影響任何數值」
+——建成後沒有任何後續流程,是**沒接線的死碼建築**。本輪要做的是「建成後解鎖反攻」這段流程,不是
+重新定義建築資料。
+
+**前置科技怎麼判定**:remake 的建造選單 gate(`availableBuildOptions`,見 `session.go`)是「主題
+完成」層級(`s.Player.CompletedTopics[b.PrereqTopic]`),不看玩家在該主題底下具體選了哪個科技
+(`TOPIC_MULTIDIMENSIONAL_PHYSICS` 底下有 `TECH_DIMENSIONAL_PORTAL`/`TECH_DISRUPTER_CANNON` 兩個
+選項)——這是既有、其餘 39 項建築/衛星共用的既有慣例,本輪未新增或修改判定邏輯,只是確認
+Dimensional Portal 沿用同一套既有機制即可正確 gate,不需要額外的「玩家是否選了 Dimensional Portal
+這個科技」檢查。
+
+**新增的流程**(`internal/shell/antaran_victory.go`):
+
+- `hasDimensionalPortal()`:掃描 `s.ColonyBuildings`(各殖民地已完工建築去重 map)是否有任一筆記
+  「次元傳送門」。remake 簡化:不要求「艦隊與傳送門同星系」(手冊原文有此限制,但 remake 的星際
+  航行模型不追蹤「建築在哪個星系」與「艦隊目前在哪個星系」的交叉可達性),只要求帝國內任一殖民地
+  已建成即視為前置滿足。
+- `CanAssaultAntares()`(匯出):遊戲未結束 + `!DisableEvents`(手冊:關閉安塔蘭攻擊則本路徑不可用)
+  + 已建傳送門 + 艦隊非空,四條件皆滿足才允許反攻。UI 用它決定是否顯示按鈕,`AssaultAntares` 內部
+  也呼叫它做同一份判斷(避免兩處邏輯分岔)。
+- `AssaultAntares()`:前置條件不滿足 → `ok=false`,不消耗艦隊、不觸發戰鬥。滿足 → 解算戰鬥:
+  沿用 `ResolveBattle` 同款 `battleVolley` 逐回合齊射解算(最多 6 回合),防禦方戰力用
+  `antaranHomeFleetDefense` 保守預設(見下)。**與 `ResolveBattle` 不同**:`ResolveBattle` 的
+  `PlayerWon` 只要求「艦數比敵方多或敵方全滅」,`AssaultAntares` 要求防禦方**全滅**才算
+  `PlayerWon`——手冊「Once you defeat the awe-inspiring Antarans」語意是徹底擊敗,不是打退,終局
+  一戰用更嚴格的判定合理。戰勝 → `s.AntaranHomeworldConquered=true`;戰敗 → 套用艦隊損失
+  (`removeWeakestShip`,比照 `ResolveBattle`),不設勝利旗標。
+- `advanceAntaranVictory()`:`EndTurn` 每回合呼叫,偵測 `AntaranHomeworldConquered` 並沿用
+  `engine.CheckAntaranVictory` 純函式判定(不重算邏輯),命中則設定
+  `s.Victory={Over:true, Reason:engine.VictoryAntaran, Winner:"player"}`。呼叫順序排在
+  `advanceConquestVictory`(殲滅)之後、`advanceCouncil`(議會)之前——與 `engine.CheckVictory`
+  文件記載的「滅絕 → 安塔蘭 → 議會」優先序一致(見 `internal/engine/victory.go` 該函式註解)。
+
+**⚠ 誠實聲明(母星防禦艦隊戰力,手冊/openorion2 均無精確數字)**:`GAME_MANUAL.pdf`「Winning」
+小節全文搜尋「Antaran」的 60 餘處出現,只有「the awe-inspiring Antarans」這句定性描述,沒有任何
+具體的母星防禦艦隊組成或戰力數字(第 1 節手冊逐字引用已完整收錄相關段落,沒有遺漏)。
+`openorion2`(`docs/tech/rules-implementation-audit.md` 第 10 項已記載)對 victory/winner 相關邏輯
+全 repo 零命中,自然也沒有母星防禦艦隊的資料可抄——這是從零設計的部分,不是查漏。
+
+保守預設(`antaranHomeFleetDefense`,`internal/shell/antaran_victory.go`):**6 艘「末日之星」等級
+戰力(`shipStrength("末日之星")==64`,MOO2 六級艦體中最高等級)**,合計戰力 384。理由:確保玩家
+不能用隨手一支小艦隊反攻(呼應「awe-inspiring」的定性描述),但仍是「打得贏」的固定值,不是無限強
+的裝飾性數字——玩家投入同等量級的末日之星艦隊(測試驗證 8 艘可穩定取勝)即可一戰。**這是 remake
+保守預設,非手冊或 openorion2 給出的精確值**,若之後找到權威來源(如 openorion2 之外的其他反編/
+社群逆向資料),應更新此常數並移除本段免責聲明。
+
+**最小 UI**(`cmd/moo2/interactive.go` 的 `fleet()` 場景):在艦隊列表畫面左下空白區加一個
+「⚔ 攻打安塔蘭母星」文字提示 + 熱區,只在 `CanAssaultAntares()` 為真時顯示;點擊呼叫
+`AssaultAntares()` 後導向既有的 `battleResult()` 戰鬥結果畫面(該畫面讀 `s.LastBattle`,
+`AssaultAntares` 已寫入,直接複用,不需要新的結果畫面)。**刻意不做**:原版議會選舉那種
+「灰階按鈕」美術(手冊沒有描述具體 UI 佈局可依循)、勝利/落敗專屬結束畫面(與議會選舉同款限制,
+見 4.3 節同款「UI 最小化」決策)。
+
 ## 5. 資料模型限制(重要,誠實標注)
 
 **2026-07-11 更新:`NewDemoSession` 已由 1 個 AI 對手擴為 3 個**(多帝國競爭骨架,見
@@ -155,9 +234,19 @@ openorion2 裡確實連影子都沒有,只能依手冊從零設計,沒有既有 
 
 ## 6. TODO(誠實列出,不硬做)
 
-- **Antares 母星次元傳送門勝利**(手冊第二條路徑):完全沒有對應流程——無 Dimensional Portal 科技/
-  建造、無「派遣艦隊前往 Antares」的星際航行目的地、無母星戰鬥。`engine.VictoryAntaran` 列舉值已存在
-  但本 remake 永遠不會產生這個結果。需要一整套新子系統,超出本輪任務範圍。
+> **Antares 母星次元傳送門勝利(手冊第二條路徑)已於 2026-07-11 第二輪接線**,原本列在這裡的
+> TODO 已移除(舊敘述:「完全沒有對應流程——無 Dimensional Portal 科技/建造、無『派遣艦隊前往
+> Antares』的星際航行目的地、無母星戰鬥」),避免留著過期斷言佔位(rule 63)。詳見第 4.4 節。
+> 仍未做的子項目(不阻塞「能不能贏這條路徑」,是精修/深化):
+> - **「艦隊與傳送門同星系」的精確前置**:remake 簡化為「帝國內任一殖民地已建成即滿足」,見 4.4
+>   節誠實聲明,需要 remake 的星際航行模型先支援「建築所在星系 ↔ 艦隊所在星系」的可達性比對。
+> - **母星防禦艦隊戰力的精確數字**:手冊/openorion2 均無來源,目前是保守預設(6 艘末日之星等級),
+>   若未來找到權威依據應更新,見 4.4 節「誠實聲明」段落。
+> - **安塔蘭母星本身的星圖呈現**:remake 把反攻建模成「一場戰鬥」而非「星圖上一個可航行的目的地
+>   + 母星星球」,手冊原文暗示是實際的星際航行(travelling to the Antaran homeworld)。
+> - **歐瑞恩守護者(Orion Guardian)**:與安塔蘭母星是手冊裡兩個不同的終局戰(Score 小節分別提到
+>   「defeats the Guardian and captures Orion」與「defeats the Antarans at Antares」兩種點數獎勵),
+>   本輪只接安塔蘭母星這一條,歐瑞恩守護者仍完全沒有對應流程。
 - **計分系統(Score Calculation)**:manual/MANUAL_150.html 給了完整公式(時間分/人口分/科技分/
   殲滅加分/Guardian/Antares/Council 各項獎勵),本 remake 完全沒有計分/歷史圖表,`CouncilWinScoreBonus`
   只是預先記錄的權威值。
@@ -185,3 +274,9 @@ openorion2 裡確實連影子都沒有,只能依手冊從零設計,沒有既有 
   AI 對手不誤判殲滅勝利。
 - `internal/engine/victory_test.go`(既有,2026-07-03):`CheckExtermination`/`CheckHighCouncil`/
   `CheckAntaranVictory`/`CheckVictory` 純函式門檻邊界。
+- `internal/shell/antaran_victory_test.go`(2026-07-11 第二輪新增):`CanAssaultAntares` 前置條件
+  (無傳送門/艦隊為空/`DisableEvents` 皆擋下)、`AssaultAntares` 前置不滿足時不消耗艦隊不觸發戰鬥、
+  弱艦隊戰敗不誤判勝利(且正確記錄 `LastBattle`)、強艦隊(8 艘末日之星 vs 保守預設 6 艘)戰勝後
+  `AntaranHomeworldConquered=true`,`advanceAntaranVictory` 隨後正確設定
+  `Victory={Over:true, Reason:VictoryAntaran, Winner:"player"}`、殲滅與安塔蘭同時達成時
+  `EndTurn` 呼叫順序確保殲滅優先(對齊 `engine.CheckVictory` 文件記載的優先序)。

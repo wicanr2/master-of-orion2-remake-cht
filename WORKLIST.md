@@ -45,8 +45,7 @@
   `CheckHighCouncil`)、AI當選時玩家可 accept/reject(手冊:議會無法強迫接受)、玩家達標立即
   勝利。另接殲滅所有對手勝利(沿用同檔 `CheckExtermination`,`InvadeColony` 攻陷AI唯一殖民地後
   立即偵測)。UI 僅議會畫面文字狀態,無獨立結束畫面/accept-reject 互動介面(見 HONEST-STATUS)。
-  Antares母星次元傳送門勝利仍全無——需要 Dimensional Portal 科技/建造 + 艦隊遠征流程 + 母星戰鬥,
-  整套子系統不存在,列 TODO。飛彈躲避/AMR/球狀傷害已接進戰鬥解算(見 task 16 分塊「戰鬥公式依
+  Antares母星次元傳送門勝利當時仍全無(**已於 2026-07-11 第二輪接線,見下方新任務**)。飛彈躲避/AMR/球狀傷害已接進戰鬥解算(見 task 16 分塊「戰鬥公式依
   武器類型分流」)。**(舊斷言訂正,2026-07-11 見下一項)**:議會成立門檻最初因本 remake 資料模型
   固定只有 1 個 AI 對手,曾用 `councilMinExtantRacesOverride`(=2)覆寫手冊字面值 3——這個覆寫值
   與相關斷言已隨下一項的多 AI 升級移除/訂正,不再成立。
@@ -62,6 +61,20 @@
   議會用真門檻正常召開、全程無 panic、spy 對每個 AI 都結算。仍未做:AI 選星策略(索引順序非
   距離導向)、AI 對 AI 互動(彼此不打仗不外交)、「候選人限定票數最高兩位+第三方外交搖擺票」
   (需要 AI 對 AI 關係模型)。詳見 `docs/tech/victory-conditions.md`、`internal/shell/multi_ai_test.go`。
+- [x] **安塔蘭勝利路徑(第三條,2026-07-11 第二輪)**:次元傳送門(手冊 p.106,`gamedata.Buildings`
+  早已存在,`BUILDING_DIMENSIONAL_PORTAL`,前置 `TOPIC_MULTIDIMENSIONAL_PHYSICS`,先前建成後無
+  任何後續流程)建成後解鎖 `internal/shell/antaran_victory.go` 的 `GameSession.AssaultAntares()`——
+  沿用 `ResolveBattle` 同款 `battleVolley` 解算(比一般戰鬥更嚴格:要求防禦方全滅才算勝,呼應手冊
+  「defeat the awe-inspiring Antarans」語意)。**母星防禦艦隊戰力手冊/openorion2 均無精確數字**
+  (手冊只用「awe-inspiring」定性描述),保守預設 6 艘末日之星等級戰力(合計戰力384),已誠實標注
+  待考證。戰勝設 `AntaranHomeworldConquered=true`,`advanceAntaranVictory`(`EndTurn` 呼叫,順序排
+  在殲滅之後、議會之前,對齊 `engine.CheckVictory` 文件記載的優先序)偵測並結束遊戲
+  (`Reason=engine.VictoryAntaran`)。`CanAssaultAntares()` 前置:遊戲未結束+`!DisableEvents`
+  (手冊:關閉安塔蘭攻擊則本路徑不可用)+已建傳送門+艦隊非空。最小 UI:艦隊列表畫面(`fleet()`)
+  加一個文字提示熱區,只在前置滿足時顯示,點擊後導向既有戰鬥結果畫面(複用 `LastBattle`)。
+  單測:`internal/shell/antaran_victory_test.go`(前置條件各分支擋下、弱艦隊戰敗不誤判、強艦隊
+  戰勝後正確偵測勝利、殲滅與安塔蘭同時成立時優先序不亂)。詳見 `docs/tech/victory-conditions.md`
+  §4.4。**手冊三條勝利路徑至此全數接線可達成。**
 - [x] **間諜最小可玩迴圈(2026-07-11)**:`gamedata/spy.go`(手冊 `Notes on Spying` 8 個機率
   函式,先前零呼叫端死碼)接上 `internal/shell/spy.go`——訓練間諜(`TrainSpy`,花 30 BC
   remake 拍板值)→ 每回合結算(`advanceEspionage`,由 `EndTurn` 呼叫)偷科技(STEAL,偷一項

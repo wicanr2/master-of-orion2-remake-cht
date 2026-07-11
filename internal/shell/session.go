@@ -1384,6 +1384,12 @@ type GameSession struct {
 	CouncilMeetings        int              // 已召開過的議會屆數
 	lastCouncilTurn        int              // 上次召開議會的回合數(0=從未召開)
 
+	// AntaranHomeworldConquered 是手冊三條勝利路徑之二「攻陷安塔蘭母星」的達成旗標(見
+	// antaran_victory.go)。由 AssaultAntares 戰勝後設為 true;engine.CheckAntaranVictory 讀取
+	// 這個布林旗標判定(該函式本身不追蹤戰鬥流程,見其註解),advanceAntaranVictory 依此設定
+	// s.Victory。Go 零值(false)即想要的預設值,無零值陷阱。
+	AntaranHomeworldConquered bool
+
 	// --- 間諜(見 spy.go,最小可玩迴圈:只做偷科技 STEAL,見該檔檔頭說明) ---
 	// PlayerSpies 是玩家派駐到 AIPlayers[i] 的間諜數(平行 AIPlayers)。opt-in,預設 0
 	// (Go 零值即想要的預設值)。玩家經 TrainSpy(idx) 花 BC 增加;逐對手分配已經是這個陣列
@@ -1696,6 +1702,7 @@ func (s *GameSession) EndTurn() {
 	s.Turn++
 	s.advanceAntares()         // 安塔蘭人週期性入侵(依 Turn 排程升級),記於 LastAntares
 	s.advanceConquestVictory() // 對手是否已全滅(手冊三條勝利路徑之一:殲滅所有對手)
+	s.advanceAntaranVictory()  // 是否已攻陷安塔蘭母星(手冊三條勝利路徑之二,見 antaran_victory.go)
 	s.advanceCouncil()         // 銀河議會選舉(手冊三條勝利路徑之一:2/3 多數當選銀河領袖),記於 LastCouncil
 }
 

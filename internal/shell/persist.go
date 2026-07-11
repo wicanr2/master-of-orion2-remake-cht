@@ -67,11 +67,12 @@ type sessionSnapshot struct {
 	// PlayerColonyStars 見 GameSession 欄位註解(colonization.go/ground_invasion.go 同步維護)。
 	PlayerColonyStars []int `json:"playerColonyStars"`
 
-	// --- 勝利條件(見 council.go)---
-	Victory                VictoryState     `json:"victory"`
-	PendingCouncilElection *CouncilElection `json:"pendingCouncilElection,omitempty"`
-	CouncilMeetings        int              `json:"councilMeetings"`
-	LastCouncilTurn        int              `json:"lastCouncilTurn"`
+	// --- 勝利條件(見 council.go / antaran_victory.go)---
+	Victory                   VictoryState     `json:"victory"`
+	PendingCouncilElection    *CouncilElection `json:"pendingCouncilElection,omitempty"`
+	CouncilMeetings           int              `json:"councilMeetings"`
+	LastCouncilTurn           int              `json:"lastCouncilTurn"`
+	AntaranHomeworldConquered bool             `json:"antaranHomeworldConquered,omitempty"`
 
 	// PlayerSpies 是玩家派駐到各 AI 對手的間諜數(平行 AIPlayers),見 spy.go。
 	// LastEspionage(本回合諜報結算訊息)比照 LastEvent/LastAntares/LastBattle,是下回合會
@@ -106,7 +107,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		PlayerColonyStars: s.PlayerColonyStars,
 		Victory:           s.Victory, PendingCouncilElection: s.PendingCouncilElection,
 		CouncilMeetings: s.CouncilMeetings, LastCouncilTurn: s.lastCouncilTurn,
-		PlayerSpies: s.PlayerSpies,
+		AntaranHomeworldConquered: s.AntaranHomeworldConquered,
+		PlayerSpies:               s.PlayerSpies,
 	}
 }
 
@@ -136,7 +138,8 @@ func (snap sessionSnapshot) restore() *GameSession {
 		PlayerColonyStars: snap.PlayerColonyStars,
 		Victory:           snap.Victory, PendingCouncilElection: snap.PendingCouncilElection,
 		CouncilMeetings: snap.CouncilMeetings, lastCouncilTurn: snap.LastCouncilTurn,
-		PlayerSpies: snap.PlayerSpies,
+		AntaranHomeworldConquered: snap.AntaranHomeworldConquered,
+		PlayerSpies:               snap.PlayerSpies,
 	}
 }
 
