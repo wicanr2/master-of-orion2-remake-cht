@@ -145,7 +145,10 @@ func (s *raceSelectScreen) update(in shell.InputState) *origTransition {
 }
 
 // applyAndStart 依設定畫面選的難度/大小 + 本畫面選的種族開新局。
-// (真實母星/起始殖民地依 Starting Civilization 設定,屬後續步驟;此處沿用現有 RegenGalaxy。)
+// (真實母星/起始殖民地依 Starting Civilization 設定,屬後續步驟;此處改用 SetupNewGame 重生
+// 星系並同步重建 3 個 AI 對手,取代先前只重生星系、不重建 AI 的 RegenGalaxy——numAI 先固定 3
+// 對齊 NewDemoSession demo 陣容,正式的「玩家可設定 AI 數」UI 尚未接上,見 SetupNewGame 呼叫端
+// 註解。)
 func (s *raceSelectScreen) applyAndStart() {
 	b := s.b
 	if b.session == nil {
@@ -154,7 +157,7 @@ func (s *raceSelectScreen) applyAndStart() {
 	r := raceSelectList[s.sel]
 	b.session.Difficulty = b.newGameDiff
 	b.newGameSeed++
-	b.session.RegenGalaxy(shell.GalaxySizes[b.newGameSize].Stars, int64(b.newGameSeed*7919+42))
+	b.session.SetupNewGame(shell.GalaxySizes[b.newGameSize].Stars, int64(b.newGameSeed*7919+42), 3)
 	if r.shellIdx >= 0 {
 		b.newGameRace = r.shellIdx
 		b.session.ApplyRace(r.shellIdx) // Custom(-1)暫不套加成,待點數畫面

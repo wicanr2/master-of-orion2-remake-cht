@@ -203,7 +203,7 @@ func (s *customRaceScreen) applyAndStart() {
 	}
 	b.session.Difficulty = b.newGameDiff
 	b.newGameSeed++
-	b.session.RegenGalaxy(shell.GalaxySizes[b.newGameSize].Stars, int64(b.newGameSeed*7919+42))
+	b.session.SetupNewGame(shell.GalaxySizes[b.newGameSize].Stars, int64(b.newGameSeed*7919+42), 3)
 	b.session.ApplyCustomRaceBonuses(r)
 	// 政府型態效果(僅已建模資源乘數;政府型態循環索引即 shell.Governments 索引)。
 	for _, c := range s.cats {

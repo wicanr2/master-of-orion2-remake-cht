@@ -1295,18 +1295,41 @@ var GalaxySizes = []struct {
 	{"小型", 12}, {"中型", 24}, {"大型", 36}, {"巨型", 48},
 }
 
-// RegenGalaxy 依指定星數重生星系(+ 對應行星);供 NEW GAME 依星系大小生成。
-//
-// aiHomes 固定傳 1:cmd/moo2 的新遊戲流程(customrace.go/raceselect.go)目前完全不建立
-// AIPlayers(該流程尚未接上 AI 對手,是既有落差,不在本輪任務範圍),沿用「舊版 genGalaxy
-// 固定標 1 顆 AI 母星」的行為不變——這裡不是本輪多 AI 任務的實際受益端,只是保持
-// genGalaxy 簽名統一後的呼叫相容。真正建 3 個 AI 對手母星的是 NewDemoSession 直接呼叫
-// genGalaxy(n, seed, 3),不經過本函式。
+// RegenGalaxy 依指定星數重生星系(+ 對應行星);舊介面,保留供其餘不需要重建 AI 對手的呼叫端
+// 使用。2026-07-11 訂正:cmd/moo2 的新遊戲流程(customrace.go/raceselect.go)先前呼叫的正是
+// 本函式,但本函式只重生星系、完全不重建 s.AIPlayers——結果 NewDemoSession 建的 3 個 AI 的
+// ColonyStars/Colonies 仍指向舊(demo)星系的星索引,新星系裡卻只有 1 顆星被標成 AI 母星
+// (aiHomes 寫死 1),資料與畫面對不上,正式開局形同沒有正確對手。全 repo grep 只有
+// customrace.go/raceselect.go 兩處呼叫端(見 SetupNewGame 呼叫),兩者都已改呼叫 SetupNewGame,
+// 不再經過本函式;本函式轉呼叫 SetupNewGame(n, seed, 1) 保留「只需 1 AI」語意的相容出口,
+// 供將來其他呼叫端(如測試)需要單純重生星系但不在意 AI 正確性時使用。
 func (s *GameSession) RegenGalaxy(n int, seed int64) {
-	stars, _ := genGalaxy(n, seed, 1)
-	s.Stars = stars
-	s.Planets = genPlanets(s.Stars)
+	s.SetupNewGame(n, seed, 1)
+}
+
+// SetupNewGame 重生星系並依 numAI 重建 AI 對手,取代舊版只重生星系的 RegenGalaxy——正式新遊戲
+// 流程(customrace.go/raceselect.go 的 applyAndStart)用本函式開局,確保重生後的星系與
+// s.AIPlayers 的 ColonyStars 對得上號(都指向同一份新星系),不再殘留舊 demo 星系的 stale 索引。
+//
+// 只重建「星系與 AI」,不動玩家的種族加成/政府/殖民地——那些由呼叫端在 SetupNewGame 之後各自
+// ApplyRace/ApplyCustomRaceBonuses/ApplyGovernment(順序與現行一致)。玩家母星/起始殖民地
+// (PlayerColonies/PlayerColonyStars)已由 NewDemoSession 建好(cmd/moo2 的 sceneBuilder 一律以
+// shell.NewDemoSession() 起始 session,見 interactive.go newInteractive),新遊戲流程只是「換一個
+// 星系與 AI 陣容」,玩家殖民地本身維持不動(母星固定星 0,見 PlayerColonyStars 欄位註解)。
+//
+// numAI<=0 時 buildDemoAIOpponents 收到空的 aiHomeStars 會回傳空 slice,退化為無 AI;呼叫端應傳
+// >=1。
+func (s *GameSession) SetupNewGame(stars int, seed int64, numAI int) {
+	galaxy, aiHomeStars := genGalaxy(stars, seed, numAI)
+	galaxy[0].Explored = true // 母星初始已探索(與 NewDemoSession 一致)
+	s.Stars = galaxy
+	s.Planets = genPlanets(galaxy)
 	s.SelectedStar = -1
+	s.AIPlayers = buildDemoAIOpponents(aiHomeStars)
+	s.PlayerSpies = make([]int, len(s.AIPlayers)) // 平行 AIPlayers,重置為全新對手的間諜數(開局皆 0)
+	s.PlayerColonyStars = []int{0}
+	s.FleetAtStar = 0
+	s.FleetDestStar = -1
 }
 
 // aiHomeStarIndices 依「星數 n、AI 對手數 aiHomes」算出 aiHomes 個彼此不同、且都不是星 0
@@ -2115,14 +2138,14 @@ var demoAIOpponentSetup = []struct {
 // 供「最小可玩迴圈」骨架用;正式新遊戲流程(選種族/星系生成/起始文明等級選擇,含真正的多 AI
 // 建構)為後續工作——cmd/moo2 的 RegenGalaxy 呼叫端(customrace.go/raceselect.go)目前完全
 // 不建立 AIPlayers,是既有落差,不在本輪範圍內。
-func NewDemoSession() *GameSession {
-	const galaxyStars = 24
-	const numAIOpponents = 3
-	galaxy, aiHomeStars := genGalaxy(galaxyStars, 42, numAIOpponents) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
-	galaxy[0].Explored = true                                        // 母星初始已探索
-
-	aiPlayers := make([]AIOpponent, 0, numAIOpponents)
-	for i := 0; i < numAIOpponents && i < len(aiHomeStars); i++ {
+// buildDemoAIOpponents 依各 AI 母星索引(aiHomeStars,通常來自 genGalaxy 第二個回傳值)建立
+// 一組 AIOpponent:名稱/性格依序取自 demoAIOpponentSetup(席隆人/姆瑞森人/布拉西人…,索引超出
+// 表長度則循環使用),各自持 Average 起始文明等級的單一母星殖民地(playerHomeworldColony,與
+// 玩家共用忠實 yield)。NewDemoSession 與 SetupNewGame 共用此函式,確保「新遊戲開局怎麼建 AI」
+// 只有一個權威實作,不會兩處各自維護一份、逐漸漂移不一致。
+func buildDemoAIOpponents(aiHomeStars []int) []AIOpponent {
+	aiPlayers := make([]AIOpponent, 0, len(aiHomeStars))
+	for i := 0; i < len(aiHomeStars); i++ {
 		setup := demoAIOpponentSetup[i%len(demoAIOpponentSetup)]
 		aiPlayers = append(aiPlayers, AIOpponent{
 			Name:        setup.name,
@@ -2133,6 +2156,16 @@ func NewDemoSession() *GameSession {
 			OwnedStars:  1,
 		})
 	}
+	return aiPlayers
+}
+
+func NewDemoSession() *GameSession {
+	const galaxyStars = 24
+	const numAIOpponents = 3
+	galaxy, aiHomeStars := genGalaxy(galaxyStars, 42, numAIOpponents) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
+	galaxy[0].Explored = true                                        // 母星初始已探索
+
+	aiPlayers := buildDemoAIOpponents(aiHomeStars)
 
 	session := &GameSession{
 		Turn:              1,
