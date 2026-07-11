@@ -622,7 +622,18 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				// 不畫中文標籤(標籤即圖示),不再疊在星圖左上蓋住星點。
 				year := 3500 + (sess.Turn - 1)
 				fnt.DrawCentered(dst, fmt.Sprintf("%d", year), 580, 34, 11, color.RGBA{240, 220, 120, 255})
-				fnt.DrawCentered(dst, fmt.Sprintf("%d", sess.Player.BC), 579, 110, 12, color.RGBA{245, 230, 150, 255})
+				// 右側 5 格全部填數字(openorion2 galaxy.cpp:1552-1585 五格位置):
+				// 國庫(547,52)/指揮(547,124)/食物(547,199)/貨運(547,273)/研究燒瓶格留給主題名於左上。
+				infoCol := color.RGBA{245, 230, 150, 255}
+				fnt.DrawCentered(dst, fmt.Sprintf("%d", sess.Player.BC), 579, 110, 12, infoCol) // 國庫 BC
+				netCmd := sess.Player.CommandPointsSupply - sess.Player.UsedCommandPoints
+				fnt.DrawCentered(dst, fmt.Sprintf("%d", netCmd), 579, 182, 12, infoCol) // 指揮評等(供給-需求)
+				foodSum := 0
+				for i := range sess.PlayerColonies {
+					foodSum += engine.RunColonyTurn(sess.PlayerColonies[i]).FoodSurplus
+				}
+				fnt.DrawCentered(dst, fmt.Sprintf("%d", foodSum), 579, 257, 12, infoCol)                     // 食物盈餘
+				fnt.DrawCentered(dst, fmt.Sprintf("%d", sess.Player.ActiveFreighters), 579, 331, 12, infoCol) // 運輸艦數
 				// 研究主題名較長(65px 格塞不下),原版該格只放圖示;本 remake 保留可讀的
 				// 主題名一行於左上(僅此一行,不再與星曆/國庫疊三行蓋星圖)。
 				fnt.Draw(dst, fmt.Sprintf("研究:%s", topicNameZh(b.lang, sess.Player.ResearchTopic)), 30, 34, 12, color.RGBA{160, 210, 240, 255})
