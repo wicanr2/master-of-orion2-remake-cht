@@ -82,3 +82,23 @@ func firstN(s []int, n int) []int {
 	}
 	return s[:n]
 }
+
+// TestSoundBankHasCombatSFX 守住「戰鬥音效接線」所依賴的 SOUND.LBX 具名音效存在
+// (audiohook.go 用這幾個名稱註冊戰鬥開火/命中/擊毀音效;名稱一旦對不上就靜默無聲)。
+// 對齊 docs/tech/audio-format.md 2026-07-11 訂正:戰鬥音效在 SOUND.LBX,非 CMBTSFX。
+func TestSoundBankHasCombatSFX(t *testing.T) {
+	dir := os.Getenv("MOO2_AUDIO_TEST")
+	if dir == "" {
+		t.Skip("設定 MOO2_AUDIO_TEST 指向遊戲資料目錄才跑")
+	}
+	a := openRealLBX(t, dir, "SOUND.LBX")
+	sb, err := LoadSoundBank(a)
+	if err != nil {
+		t.Fatalf("LoadSoundBank 失敗: %v", err)
+	}
+	for _, name := range []string{"BUTTON1", "NRGBLAST", "MISLFIRE", "SHIPHIT1", "EXPL-1"} {
+		if sb.Clip(name) == nil {
+			t.Errorf("SOUND.LBX 缺具名音效 %q(戰鬥音效接線會靜默無聲)", name)
+		}
+	}
+}

@@ -323,7 +323,9 @@
 - [x] ebiten 音訊播放整合 — `internal/audio`(WAV 解碼→16-bit stereo、Mixer BGM 迴圈+SFX;headless 停用避免無音效卡崩潰)+ 單元/真檔測試綠
 - [x] 接線:主選單 BGM(STREAMHD)+ 按鈕點擊音效(BUTTON1)— `cmd/moo2/audiohook.go`
 - [x] 曲目/UI 事件對應(2026-07-10 定案到靜態溯源極限):外交樂反組譯硬證(track 13/14/15);menu/galaxy/combat 對應 Play 函式在 DOS build 為死碼,維持時長啟發式(誠實標,再定案需聆聽或 Windows build RE)。見 `audio-track-map.md` 第七節
-- [ ] `CMBTSFX/SPHERSFX` 巢狀音庫格式逆向(戰鬥期音效)
+- [x] ~~`CMBTSFX/SPHERSFX` 巢狀音庫格式逆向~~ **(2026-07-11 前提翻案,rulebook 62/63)**:CMBTSFX/SPHERSFX **不是音效庫,是戰鬥視覺特效動畫**(79 資產,爆炸/光束/護盾命中多幀 sprite,標準 LBX 影像,`lbxinfo` 直接解得);戰鬥**音效**全在 SOUND.LBX(68 具名音效已解碼含 NRGBLAST/PHOTON/TORPDO1/EXPL/SHIPHIT1/SHIELD…)。見 `docs/tech/audio-format.md`
+- [ ] 戰鬥音效接線:把 SOUND.LBX 現成戰鬥音效(開火依武器類型/命中/擊毀/護盾)接到戰術戰鬥事件(`fireRound`);無需逆向,純接線
+- [ ] (選)CMBTSFX 爆炸/光束特效動畫接進戰術戰鬥畫面(視覺增強)
 - [x] ~~SoundFont 處理~~ → 不需要(無 MIDI 音樂)
 - [ ] 桌面實測驗收:使用者對原版聆聽比對(主選單 BGM + 點擊音是否為正確曲/音)
 

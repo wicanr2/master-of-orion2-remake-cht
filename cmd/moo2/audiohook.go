@@ -115,17 +115,52 @@ func initAudio(res *assets.Resolver) *moo2audio.Mixer {
 		}
 	}
 
-	// 按鈕音效:SOUND.LBX 的具名音效 BUTTON1。
+	// UI + 戰鬥音效:SOUND.LBX 的具名音效(全部已解碼,見 docs/tech/audio-format.md;
+	// CMBTSFX 是視覺特效非音效)。註冊本遊戲會用到的幾個,並接上對應的播放閉包。
 	if arch, err := res.OpenLBX("sound.lbx"); err == nil {
 		if sb, err := moo2audio.LoadSoundBank(arch); err == nil {
-			if c := sb.Clip("BUTTON1"); c != nil {
-				m.RegisterSFX("BUTTON1", c)
-				clickSound = func() { m.PlaySFX("BUTTON1") }
+			reg := func(name string) func() {
+				c := sb.Clip(name)
+				if c == nil {
+					return nil // 該音效不存在時回 nil,呼叫端 nil-safe
+				}
+				m.RegisterSFX(name, c)
+				return func() { m.PlaySFX(name) }
 			}
+			clickSound = reg("BUTTON1")   // 按鈕點擊
+			sfxFireBeam = reg("NRGBLAST") // 光束/能量武器開火
+			sfxFireMissile = reg("MISLFIRE")
+			sfxHit = reg("SHIPHIT1") // 命中船體
+			sfxExplode = reg("EXPL-1")
 		} else {
 			fmt.Println("音效載入失敗(略過):", err)
 		}
 	}
 
 	return m
+}
+
+// 戰鬥音效播放閉包(由 initAudio 設定;headless / 缺該音效時為 nil,呼叫端須 nil-check)。
+// 戰術戰鬥 fireRound 依「武器類型 / 是否命中 / 是否擊毀」呼叫,音效來源全為 SOUND.LBX
+// 現成具名音效,不需逆向任何格式(見 docs/tech/audio-format.md 2026-07-11 訂正)。
+var (
+	sfxFireBeam    func() // 光束/能量/球狀武器開火(NRGBLAST)
+	sfxFireMissile func() // 飛彈/魚雷開火(MISLFIRE)
+	sfxHit         func() // 命中敵艦船體(SHIPHIT1)
+	sfxExplode     func() // 敵艦被擊毀(EXPL-1)
+)
+
+// playSFX 播放一個音效閉包,nil(headless / 未載入)則 no-op。
+func playSFX(fn func()) {
+	if fn != nil {
+		fn()
+	}
+}
+
+// fireSFX 依「首艘開火艦是否為飛彈類」回傳對應的開火音效閉包。
+func fireSFX(missile bool) func() {
+	if missile {
+		return sfxFireMissile
+	}
+	return sfxFireBeam
 }

@@ -1287,7 +1287,11 @@ func (t *tacticalScreen) fireRound(target int) {
 	// 射程內我艦逐一依武器類型分流真戰鬥公式:beam(ResolveShot,不動)/missile
 	// (ResolveMissileShot,躲避+AMR 攔截)/spherical(ResolveSphericalShot,現行武器表
 	// 暫無掛載,分支保留供未來串接)。見 shell/weapon_kind.go 的分類依據。
+	preCount := len(t.enemy) // 用來判斷本回合是否有敵艦被擊毀(播爆炸音效)
 	pAtk, firing := 0, 0
+	anyHit := false
+	firedMissile := false // 首艘開火艦是否為飛彈類(決定開火音效)
+	firedAny := false
 	for i := range t.player {
 		s := &t.player[i]
 		dist := abs(s.Col-tc) + abs(s.Row-tr)
@@ -1295,6 +1299,10 @@ func (t *tacticalScreen) fireRound(target int) {
 			continue
 		}
 		firing++
+		if !firedAny {
+			firedAny = true
+			firedMissile = s.Kind == shell.WeaponKindMissile
+		}
 		enemy := &t.enemy[target]
 		var shot shell.ShotResult
 		switch s.Kind {
@@ -1321,6 +1329,7 @@ func (t *tacticalScreen) fireRound(target int) {
 				enemy.ShieldReduction, enemy.ArmorHP, roll, false, shell.WeaponModCodesFromStrings(s.Mods))
 		}
 		if shot.Hit {
+			anyHit = true
 			enemy.ArmorHP = shot.RemainingArmorHP
 			enemy.HP -= shot.DamageToStructure
 			pAtk += shot.DamageToStructure
@@ -1338,6 +1347,14 @@ func (t *tacticalScreen) fireRound(target int) {
 		}
 	}
 	t.enemy = alive
+	// 戰鬥音效(SOUND.LBX 現成音效,headless / 缺音效時閉包為 nil):開火(依武器類型)→
+	// 擊毀播爆炸、否則命中播命中音。見 audiohook.go sfx* 閉包。
+	playSFX(fireSFX(firedMissile))
+	if len(t.enemy) < preCount {
+		playSFX(sfxExplode)
+	} else if anyHit {
+		playSFX(sfxHit)
+	}
 	// 敵方還擊我方最脆弱艦(同樣走真戰鬥公式,每艦一發)。
 	eAtk := 0
 	if len(t.player) > 0 && len(t.enemy) > 0 {

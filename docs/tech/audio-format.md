@@ -25,7 +25,7 @@
 | `STREAM.LBX`(29 MB)| 11 | 8 | **背景音樂**(標準版)| stereo |
 | `STREAMHD.LBX`(21 MB)| 21 | 21 | **背景音樂(HD 版)** | stereo |
 | `SOUND.LBX`(4.25 MB)| 69 | 69 | **UI/介面/武器/爆炸音效** | 多為 mono |
-| `CMBTSFX.LBX` / `SPHERSFX.LBX` | — | 0 | 戰鬥音效庫(**非 RIFF**,巢狀索引原始音庫,待逆向)| — |
+| `CMBTSFX.LBX` / `SPHERSFX.LBX` | 79 | — | **戰鬥視覺特效動畫(非音效!)**——爆炸/光束/護盾命中的多幀 sprite,`lbxinfo` 逐格解讀為影像(如 asset0=73×73×7 幀火球爆炸)。**2026-07-11 訂正**:先前誤標「戰鬥音效庫待逆向」,實測(rulebook 62/63)為標準 LBX 影像庫;戰鬥**音效**其實全在 `SOUND.LBX`(見上一列,68 具名音效含 NRGBLAST/PHOTON/TORPDO1/IONPULSE/MISLFIRE/EXPL-1~5/KABOOM/SHIPHIT1/MISSLHIT/SHIELD3/5/SHIPMOVE/ATAKSHIP/WARP2D…),已解碼,不需逆向任何格式 | — |
 
 所有 WAV 的 `fmt ` chunk 一致:`audioFormat=0x0001`(PCM)、`sampleRate=22050`、`bitsPerSample=8`。→ **播放端統一用 22050 Hz audio context,零重採樣**。
 
