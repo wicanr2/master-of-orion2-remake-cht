@@ -71,16 +71,16 @@ type overlayScreen struct {
 	hits             []hitRegion
 	onAction         func(action string) *origTransition
 	hover            string
-	offsetX, offsetY int                     // 背景圖在 640×480 畫布上的置中偏移(小於全螢幕的視窗畫面用)
-	eraseColor       *color.RGBA             // 非 nil 時強制用此色擦底(背景均勻的畫面用,勝過採樣猜測)
-	eraseInsetX      int                     // 擦底框在基準(左右各3px)之外「再往內縮」的水平量(每邊);0=不變
-	eraseInsetY      int                     // 擦底框在基準(上下各2px)之外「再往內縮」的垂直量(每邊);0=不變
-	plateFace        bool                    // true=擦底色改採按鈕面色(浮雕按鈕列用,見 samplePlate faceSample)
+	offsetX, offsetY int         // 背景圖在 640×480 畫布上的置中偏移(小於全螢幕的視窗畫面用)
+	eraseColor       *color.RGBA // 非 nil 時強制用此色擦底(背景均勻的畫面用,勝過採樣猜測)
+	eraseInsetX      int         // 擦底框在基準(左右各3px)之外「再往內縮」的水平量(每邊);0=不變
+	eraseInsetY      int         // 擦底框在基準(上下各2px)之外「再往內縮」的垂直量(每邊);0=不變
+	plateFace        bool        // true=擦底色改採按鈕面色(浮雕按鈕列用,見 samplePlate faceSample)
 	// eraseInset 用途:浮雕按鈕的上下/左右斜邊會被擦底塊蓋掉 → 加內縮只擦中間文字帶,保留浮雕框
 	// (仍蓋掉烘進的英文,因英文置中於文字帶內);plateFace 則讓擦底色貼合按鈕面,兩者可併用。
-	extras []extraText // 即時動態文字(星曆、國庫…),疊在背景+overlay 之上
-	postDraw         func(dst *ebiten.Image) // 任意額外繪製(如星圖),在最後呼叫
-	mx, my           int                     // 最近一次 update() 算出的滑鼠局部座標(扣掉置中偏移),供 postDraw 讀取做懸停偵測(如殖民地總覽 Planetary/Production Info)
+	extras   []extraText             // 即時動態文字(星曆、國庫…),疊在背景+overlay 之上
+	postDraw func(dst *ebiten.Image) // 任意額外繪製(如星圖),在最後呼叫
+	mx, my   int                     // 最近一次 update() 算出的滑鼠局部座標(扣掉置中偏移),供 postDraw 讀取做懸停偵測(如殖民地總覽 Planetary/Production Info)
 }
 
 // extraText 是一段即時繪製的動態文字(非來自譯表的固定標籤)。
@@ -1165,7 +1165,8 @@ type tacticalScreen struct {
 	rng            *rand.Rand // 戰鬥擲骰(依回合數種子,可重現)
 	bg             *ebiten.Image
 	bar            *ebiten.Image
-	ship           *ebiten.Image
+	res            *assets.Resolver      // 供 shipSprite 延遲載入各艦級 sprite
+	shipSprites    map[int]*ebiten.Image // CMBTSHP 資產索引 → 已解碼 sprite(nil=載入失敗,亦快取)
 }
 
 // loadCombatBG 載入戰場星空背景(STARBG.LBX#0,640×480),借 COMBAT.LBX#11 調色盤。
@@ -1197,19 +1198,18 @@ func loadCombatBar(res *assets.Resolver) *ebiten.Image {
 	return ebiten.NewImageFromImage(im.Frames[0].ToRGBA(prov.Embedded, im.KeyColor()))
 }
 
-// loadCombatShip 載入艦艇 sprite(CMBTSHP.LBX#0 frame0,59×60),借 COMBAT#11 調色盤。
+// loadCombatShipByIdx 載入 CMBTSHP.LBX 第 idx 個艦艇 sprite(frame0),用其所屬色塊的
+// palette-holder(索引 45*(idx/45)+44,內嵌調色盤)上色。見 docs/tech/cmbtshp-ship-sprites.md。
 // keyColor 用資產自身旗標(CMBTSHP flags=0x0000 → false):艦體外圍透明來自未寫入的
 // RLE 像素(ToRGBA 一律留透明),而艦體本身含 index-0 深色像素須保留——先前誤設
 // keyColor=true 會把 index-0 艦體也判成透明,導致 sprite 幾乎全消失(端到端截圖查出)。
-// Phase 1 佔位:所有艦共用同一張圖,之後再依艦型/朝向擴充成完整對照表。
-func loadCombatShip(res *assets.Resolver) *ebiten.Image {
-	prov, err := decodeAsset(res, "combat.lbx", 11)
+func loadCombatShipByIdx(res *assets.Resolver, idx int) *ebiten.Image {
+	palIdx := (idx/45)*45 + 44
+	prov, err := decodeAsset(res, "cmbtshp.lbx", palIdx)
 	if err != nil || prov.Embedded == nil {
 		return nil
 	}
-	// 佔位艦型:CMBTSHP#30(大型艦,亮部結構在黑星空上清晰可讀;#0 是最小最暗的
-	// 戰機,疊黑星空幾乎隱形——經黑底對比挑出 #30)。Phase 2 再按實際艦型/尺寸對照。
-	im, err := decodeAsset(res, "cmbtshp.lbx", 30)
+	im, err := decodeAsset(res, "cmbtshp.lbx", idx)
 	if err != nil || len(im.Frames) == 0 {
 		return nil
 	}
@@ -1223,7 +1223,18 @@ func newTacticalScreen(b *sceneBuilder) *tacticalScreen {
 	return &tacticalScreen{b: b, fnt: b.fnt, player: p, enemy: e, sel: -1,
 		log: "點我方艦選取→點空格移動;點敵艦→射程內我艦開火", pStart: len(p), eStart: len(e),
 		rng: rand.New(rand.NewSource(seed)),
-		bg:  loadCombatBG(b.res), bar: loadCombatBar(b.res), ship: loadCombatShip(b.res)}
+		bg:  loadCombatBG(b.res), bar: loadCombatBar(b.res),
+		res: b.res, shipSprites: map[int]*ebiten.Image{}}
+}
+
+// shipSprite 依 CMBTSHP 資產索引取(並快取)已解碼 sprite,避免每幀重解。
+func (t *tacticalScreen) shipSprite(idx int) *ebiten.Image {
+	if im, ok := t.shipSprites[idx]; ok {
+		return im
+	}
+	im := loadCombatShipByIdx(t.res, idx)
+	t.shipSprites[idx] = im // 允許 nil(載入失敗),快取避免每幀重試
+	return im
 }
 
 func cellRect(col, row int) (x, y, w, h int) { return gcX0 + col*gcCW, gcY0 + row*gcCH, gcCW, gcCH }
@@ -1401,9 +1412,9 @@ func (t *tacticalScreen) fireRound(target int) {
 	}
 }
 
-// drawShip 畫單艘艦:有 t.ship sprite 就縮放貼原版艦圖(敵方水平翻轉朝左),
-// 否則 fallback 回原本的矩形 token 畫法。HP 條、艦名、選中金框一律疊在最上層,
-// 不受美術是否載入影響。
+// drawShip 畫單艘艦:依 s.SpriteIdx 取該艦級的 CMBTSHP sprite 就縮放貼原版艦圖
+// (敵方水平翻轉朝左),否則 fallback 回原本的矩形 token 畫法。HP 條、艦名、選中金框
+// 一律疊在最上層,不受美術是否載入影響。
 //
 // 2026-07-11 修疊字 bug:原本圖示等比縮放頂滿整格高度,艦名疊在圖示正中央(y+13 恰好落在
 // 圖示範圍內),兩者互相蓋字難辨(端到端截圖查出)。改成上→下三段式版面:艦名帶(固定於格
@@ -1418,8 +1429,8 @@ func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base co
 	if iconH < 4 {
 		iconH = 4
 	}
-	if t.ship != nil {
-		sb := t.ship.Bounds()
+	if sprite := t.shipSprite(s.SpriteIdx); sprite != nil {
+		sb := sprite.Bounds()
 		sw0, sh0 := float64(sb.Dx()), float64(sb.Dy())
 		sc := float64(iconH) / sh0 // 依縮小後的圖示高度等比縮放(不再頂滿整格)
 		iconW := sw0 * sc
@@ -1432,7 +1443,7 @@ func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base co
 			op.GeoM.Scale(sc, sc)
 			op.GeoM.Translate(iconX, float64(iconTop))
 		}
-		dst.DrawImage(t.ship, op)
+		dst.DrawImage(sprite, op)
 	} else {
 		vector.DrawFilledRect(dst, float32(x), float32(iconTop), float32(w), float32(iconH), color.RGBA{base.R / 3, base.G / 3, base.B / 3, 255}, false)
 	}

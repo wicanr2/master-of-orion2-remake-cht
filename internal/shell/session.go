@@ -421,6 +421,46 @@ type CombatShip struct {
 	Kind            WeaponKind // 武器戰鬥解算路徑(beam/missile/spherical,見 weapon_kind.go);
 	// 敵方艦(genEnemyFleet)無個別武器設計資料,一律留零值 WeaponKindBeam(既有簡化)。
 	Mods []string // 武器改造(gamedata.WeaponModCode 字串);只對 Kind==WeaponKindBeam 生效。
+	// SpriteIdx 是 CMBTSHP.LBX 資產索引(含色塊偏移,45*色塊+艦級內索引),
+	// 供戰術戰鬥畫面依艦級挑不同大小 sprite。見 docs/tech/cmbtshp-ship-sprites.md。
+	SpriteIdx int
+}
+
+// CombatSpriteForClass 依艦體等級回傳 CMBTSHP 色塊內 sprite 索引(見 docs/tech/cmbtshp-ship-sprites.md)。
+func CombatSpriteForClass(class string) int {
+	switch class {
+	case "驅逐艦":
+		return 12
+	case "巡洋艦":
+		return 20
+	case "戰艦":
+		return 28
+	case "泰坦":
+		return 36
+	case "末日之星":
+		return 43
+	default:
+		return 3 // 巡防艦/護衛艦/偵察艦/殖民船等小艦
+	}
+}
+
+// CombatSpriteForStrength 依 genEnemyFleet 的戰力值反推近似艦級 → sprite 索引
+// (shipStrength:巡防2/驅逐4/巡洋8/戰艦16/泰坦32/末日64)。
+func CombatSpriteForStrength(st int) int {
+	switch {
+	case st >= 64:
+		return 43
+	case st >= 32:
+		return 36
+	case st >= 16:
+		return 28
+	case st >= 8:
+		return 20
+	case st >= 4:
+		return 12
+	default:
+		return 3
+	}
 }
 
 // StartCombat 依玩家艦隊 + 難度生成敵方,建立格子戰鬥雙方艦艇(HP=戰力×3、攻擊=戰力);
@@ -438,6 +478,7 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			Defense: body, WeaponMin: atk / 2, WeaponMax: atk,
 			ShieldReduction: shieldReduceByName(sh.Shield), ArmorHP: armorHPByName(sh.Armor),
 			Kind: weaponKindByName(sh.Weapon), Mods: sh.Mods,
+			SpriteIdx: CombatSpriteForClass(sh.Class), // 色塊 0(玩家)
 		})
 	}
 	mult := 1.0
@@ -448,6 +489,7 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 		enemyShips = append(enemyShips, CombatShip{
 			Name: fmt.Sprintf("%s艦%d", enemy, i+1), HP: st * 3, MaxHP: st * 3, Attack: st, Col: 6, Row: i,
 			Defense: st, WeaponMin: st / 2, WeaponMax: st, ShieldReduction: 0, ArmorHP: st,
+			SpriteIdx: 45 + CombatSpriteForStrength(st), // 色塊 1(敵艦,與玩家色塊區隔)
 		})
 	}
 	return
@@ -2163,7 +2205,7 @@ func NewDemoSession() *GameSession {
 	const galaxyStars = 24
 	const numAIOpponents = 3
 	galaxy, aiHomeStars := genGalaxy(galaxyStars, 42, numAIOpponents) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
-	galaxy[0].Explored = true                                        // 母星初始已探索
+	galaxy[0].Explored = true                                         // 母星初始已探索
 
 	aiPlayers := buildDemoAIOpponents(aiHomeStars)
 
