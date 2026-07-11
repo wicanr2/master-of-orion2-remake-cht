@@ -140,8 +140,16 @@ func CombatHitThreshold(rangePenalty, pdBonus int) int {
 //	    [3a] random(100) + BA+CO-AF-BD >= hit_threshold
 //
 // roll 為呼叫端已擲出的 random(100)(值域 1-100,含);netAttack =
-// BA+CO-AF-BD(Beam Attack + 命中加成 - Point Defense 目標的 AF - Beam
-// Defense,由呼叫端算好);hitThreshold 由 CombatHitThreshold 算得。
+// BA+CO-AF-BD(Beam Attack + Continuous Fire 命中加成 - Auto-Fire 命中懲罰 -
+// 目標 Beam Defense,由呼叫端算好);hitThreshold 由 CombatHitThreshold 算得。
+//
+// [2026-07-11 訂正] 先前這裡把 AF 誤寫成「Point Defense 目標的 AF」(暗示與目標的
+// Point Defense 有關)。移植武器改造(mod)系統時查手冊(GAME_MANUAL.pdf p.115)+
+// docs/tech/community-mechanics-findings.md 引用的社群拆解交叉核對後確認:AF 是
+// Auto-Fire mod 本身的自我懲罰(攻方武器掛 Auto-Fire,每次射擊 -20 命中),與 Point
+// Defense、與「目標」都無關,是攻方 netAttack 裡的一項,不是目標的屬性。CO 同理是
+// Continuous Fire mod 給攻方自己的 +25 命中加成。實作見
+// gamedata.WeaponModNetAttackBonus(weapon_mods.go)。
 func CombatClassicToHit(roll, netAttack, hitThreshold int) bool {
 	if roll > 95 {
 		return true

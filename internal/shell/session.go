@@ -62,6 +62,10 @@ type Ship struct {
 	Class                          string // 艦體等級(護衛艦/巡洋艦/戰艦…)
 	Weapon, Armor, Shield, Special string // 元件名
 	WeaponAttack, BonusHP          int    // 武器攻擊加成、裝甲+護盾 HP 加成
+	// Mods 是掛載在 Weapon 上的武器改造(gamedata.WeaponModCode 字串,如 "HV"/"PD"),
+	// 只對 beam 武器生效(見 WeaponIsBeam / weapon_mods.go)。空切片/nil = 無改造(既有
+	// 存檔沒有這個欄位,JSON 解碼會是 nil,行為與「無改造」完全一致,回歸安全)。
+	Mods []string
 }
 
 // Component 是一個艦艇元件(名稱 + 成本 + 效果值 + 解鎖科技)。
@@ -182,9 +186,9 @@ func (s *GameSession) NextUnlockedComponent(opts []Component, cur int) int {
 // 三艘均為空武裝(殖民船/偵察艦在原版本就不具備武器容量,非本 remake 遺漏)。
 func homeworldShips() []Ship {
 	return []Ship{
-		{"拓荒號", "殖民船", "無武裝", "無裝甲", "無護盾", "無", 0, 0},
-		{"先驅一號", "偵察艦", "無武裝", "無裝甲", "無護盾", "無", 0, 0},
-		{"先驅二號", "偵察艦", "無武裝", "無裝甲", "無護盾", "無", 0, 0},
+		{"拓荒號", "殖民船", "無武裝", "無裝甲", "無護盾", "無", 0, 0, nil},
+		{"先驅一號", "偵察艦", "無武裝", "無裝甲", "無護盾", "無", 0, 0, nil},
+		{"先驅二號", "偵察艦", "無武裝", "無裝甲", "無護盾", "無", 0, 0, nil},
 	}
 }
 
@@ -266,6 +270,10 @@ func genEnemyFleet(turn int, mult float64) []int {
 type combatant struct {
 	hp, atk, def, wmin, wmax, shield, armor int
 	kind                                    WeaponKind
+	// mods 是攻方武器改造(gamedata.WeaponModCode 字串);只有 kind==WeaponKindBeam 時
+	// battleVolley 會套用(見 WeaponIsBeam 判斷),敵方艦隊(genEnemyFleet)沒有個別武器
+	// 設計,一律 nil(既有簡化,非本輪引入)。
+	mods []string
 }
 
 // battleVolley 讓每個存活 attacker 對第一個存活 defender 射一發(固定近距 range=2),
@@ -305,7 +313,8 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 		default:
 			roll := rng.Intn(100) + 1
 			net := attackers[i].atk - d.def
-			shot = ResolveShot(net, attackers[i].wmin, attackers[i].wmax, 2, d.shield, d.armor, roll, false, false)
+			shot = ResolveShotWithMods(net, attackers[i].wmin, attackers[i].wmax, 2, d.shield, d.armor, roll,
+				false, weaponModCodes(attackers[i].mods))
 		}
 		if shot.Hit {
 			d.armor = shot.RemainingArmorHP
@@ -333,7 +342,7 @@ func (s *GameSession) ResolveBattle(enemy string) BattleResult {
 			atk += atk * s.RaceCombatPct / 100 // 種族戰鬥加成(姆瑞森+25、布拉西/阿爾卡里+15…)
 			out = append(out, combatant{hp: body * 3, atk: atk, def: body, wmin: atk / 2, wmax: atk,
 				shield: shieldReduceByName(sh.Shield), armor: armorHPByName(sh.Armor),
-				kind: weaponKindByName(sh.Weapon)})
+				kind: weaponKindByName(sh.Weapon), mods: sh.Mods})
 		}
 		return out
 	}
@@ -410,6 +419,7 @@ type CombatShip struct {
 	ArmorHP         int        // 裝甲 HP(結構外的緩衝,先耗盡才傷結構)
 	Kind            WeaponKind // 武器戰鬥解算路徑(beam/missile/spherical,見 weapon_kind.go);
 	// 敵方艦(genEnemyFleet)無個別武器設計資料,一律留零值 WeaponKindBeam(既有簡化)。
+	Mods []string // 武器改造(gamedata.WeaponModCode 字串);只對 Kind==WeaponKindBeam 生效。
 }
 
 // StartCombat 依玩家艦隊 + 難度生成敵方,建立格子戰鬥雙方艦艇(HP=戰力×3、攻擊=戰力);
@@ -426,7 +436,7 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			Name: sh.Name, HP: body * 3, MaxHP: body * 3, Attack: atk, Col: 1, Row: i,
 			Defense: body, WeaponMin: atk / 2, WeaponMax: atk,
 			ShieldReduction: shieldReduceByName(sh.Shield), ArmorHP: armorHPByName(sh.Armor),
-			Kind: weaponKindByName(sh.Weapon),
+			Kind: weaponKindByName(sh.Weapon), Mods: sh.Mods,
 		})
 	}
 	mult := 1.0
@@ -508,7 +518,8 @@ func shipClassFromName(class string) (c gamedata.CombatShipClass, ok bool) {
 	return gamedata.SHIP_FRIGATE, false // 例:偵察艦,近似值,非手冊確認
 }
 
-// ShipDesignSpaceUsed 回傳一組元件選擇(武器/裝甲/護盾/特殊)已用的艦體空間總和。
+// ShipDesignSpaceUsed 回傳一組元件選擇(武器/裝甲/護盾/特殊)已用的艦體空間總和(無武器改造)。
+// 委派 ShipDesignSpaceUsedWithMods(mods=nil),行為與加入 mods 系統前完全相同(回歸安全)。
 //
 // 依 GAME_MANUAL.pdf p.121-122(見 internal/gamedata/shipspace.go 檔頭 [HARD 誠實原則 2]):
 // 裝甲(armor)與護盾(shield)在原版是「Automatics」,自動裝上目前科技最好的一套,不佔用
@@ -517,37 +528,76 @@ func shipClassFromName(class string) (c gamedata.CombatShipClass, ok bool) {
 // 真正佔空間的是武器(gamedata.WeaponSpaceByName,手冊 Size 欄確認值)與特殊系統
 // (gamedata.SpecialSpace,估計值,見該函式註解)。
 func ShipDesignSpaceUsed(class string, weapon, armor, shield, special int) int {
+	return ShipDesignSpaceUsedWithMods(class, weapon, armor, shield, special, nil)
+}
+
+// ShipDesignSpaceUsedWithMods 同 ShipDesignSpaceUsed,額外套用一組武器改造(mods,見
+// gamedata.WeaponModCode / docs/tech/weapon-mods.md)對武器佔格的影響
+// (gamedata.WeaponSpaceWithMods)。mods 只在武器是 beam 路徑時生效(WeaponIsBeam)——
+// 手冊的 HV/PD/AF/CO 明文只講 beam 武器,飛彈(核飛彈/麥克萊特飛彈)沒有這套 mod 掛鉤,
+// 對非 beam 武器傳 mods 會被忽略,不誤加空間。
+func ShipDesignSpaceUsedWithMods(class string, weapon, armor, shield, special int, mods []string) int {
 	_ = armor // 見上方註解:手冊行為上裝甲不佔空間,顯式忽略以避免「未使用參數」誤解成疏漏
 	_ = shield
 	w := pick(WeaponOptions, weapon)
 	sp := pick(SpecialOptions, special)
 	classID, _ := shipClassFromName(class)
 	hullSpace := gamedata.ShipHullSpace(classID)
-	used := gamedata.WeaponSpaceByName[w.Name]
+	base := gamedata.WeaponSpaceByName[w.Name]
+	used := base
+	if len(mods) > 0 && WeaponIsBeam(w.Name) {
+		used = gamedata.WeaponSpaceWithMods(base, weaponModCodes(mods))
+	}
 	used += gamedata.SpecialSpace(hullSpace, sp.Name != "" && sp.Name != "無")
 	return used
 }
 
-// ShipDesignFits 回傳一組元件選擇是否能塞進指定艦體(已用空間 <= 艦體總空間)。
+// ShipDesignFits 回傳一組元件選擇是否能塞進指定艦體(已用空間 <= 艦體總空間,無武器改造)。
 // 未知艦體等級(shipClassFromName 回傳 ok=false,如偵察艦)以 Frigate 空間近似判定,
 // 保守地拒絕過大的設計;供 UI 判斷是否標記「不可建造」用。
 func ShipDesignFits(class string, weapon, armor, shield, special int) bool {
-	classID, _ := shipClassFromName(class)
-	hullSpace := gamedata.ShipHullSpace(classID)
-	return ShipDesignSpaceUsed(class, weapon, armor, shield, special) <= hullSpace
+	return ShipDesignFitsWithMods(class, weapon, armor, shield, special, nil)
 }
 
-// DesignCost 回傳一組元件選擇(艦體 + 武器/裝甲/護盾/特殊)的總生產成本。
+// ShipDesignFitsWithMods 同 ShipDesignFits,套用武器改造的佔格變動(見
+// ShipDesignSpaceUsedWithMods)。掛 Heavy Mount/Enveloping 等增加佔格的 mod 可能讓原本
+// 塞得下的設計超格,藉此讓 UI/建造流程仍然擋下超格設計。
+func ShipDesignFitsWithMods(class string, weapon, armor, shield, special int, mods []string) bool {
+	classID, _ := shipClassFromName(class)
+	hullSpace := gamedata.ShipHullSpace(classID)
+	return ShipDesignSpaceUsedWithMods(class, weapon, armor, shield, special, mods) <= hullSpace
+}
+
+// DesignCost 回傳一組元件選擇(艦體 + 武器/裝甲/護盾/特殊)的總生產成本(無武器改造)。
 func DesignCost(class string, weapon, armor, shield, special int) int {
-	return ShipCost(class) + pick(WeaponOptions, weapon).Cost + pick(ArmorOptions, armor).Cost +
+	return DesignCostWithMods(class, weapon, armor, shield, special, nil)
+}
+
+// DesignCostWithMods 同 DesignCost,套用武器改造對成本的影響(手冊「adds to the size AND
+// cost」,與佔格用同一套百分比,見 gamedata.WeaponCostWithMods)。
+func DesignCostWithMods(class string, weapon, armor, shield, special int, mods []string) int {
+	w := pick(WeaponOptions, weapon)
+	weaponCost := w.Cost
+	if len(mods) > 0 && WeaponIsBeam(w.Name) {
+		weaponCost = gamedata.WeaponCostWithMods(w.Cost, weaponModCodes(mods))
+	}
+	return ShipCost(class) + weaponCost + pick(ArmorOptions, armor).Cost +
 		pick(ShieldOptions, shield).Cost + pick(SpecialOptions, special).Cost
 }
 
 // BuildShip 造一艘指定艦體 + 全元件(武器/裝甲/護盾/特殊)的艦:扣國庫總成本,加入艦隊。
-// BC 不足回 false。武器加攻擊、裝甲+護盾加 HP、特殊「戰鬥電腦」再加攻擊。
+// BC 不足回 false。武器加攻擊、裝甲+護盾加 HP、特殊「戰鬥電腦」再加攻擊。無武器改造。
 func (s *GameSession) BuildShip(class string, weapon, armor, shield, special int) bool {
+	return s.BuildShipWithMods(class, weapon, armor, shield, special, nil)
+}
+
+// BuildShipWithMods 同 BuildShip,額外把 mods(武器改造)存進造出的 Ship.Mods,並用
+// DesignCostWithMods 算入改造增加/減少的成本。mods 對非 beam 武器無效(WeaponIsBeam),
+// 但仍照玩家選擇存檔(不強制清空),避免玩家切換武器後 UI 狀態被意外抹除;佔格/傷害計算
+// 端(ShipDesignSpaceUsedWithMods / battleVolley)各自已用 WeaponIsBeam 判斷是否套用。
+func (s *GameSession) BuildShipWithMods(class string, weapon, armor, shield, special int, mods []string) bool {
 	w, a, sh, sp := pick(WeaponOptions, weapon), pick(ArmorOptions, armor), pick(ShieldOptions, shield), pick(SpecialOptions, special)
-	cost := ShipCost(class) + w.Cost + a.Cost + sh.Cost + sp.Cost
+	cost := DesignCostWithMods(class, weapon, armor, shield, special, mods)
 	if s.Player.BC < cost {
 		return false
 	}
@@ -557,8 +607,12 @@ func (s *GameSession) BuildShip(class string, weapon, armor, shield, special int
 	if sp.Name == "戰鬥電腦" {
 		atk += sp.Value
 	}
+	var modsCopy []string
+	if len(mods) > 0 {
+		modsCopy = append([]string(nil), mods...)
+	}
 	s.Ships = append(s.Ships, Ship{Name: name, Class: class, Weapon: w.Name, Armor: a.Name, Shield: sh.Name,
-		Special: sp.Name, WeaponAttack: atk, BonusHP: a.Value + sh.Value})
+		Special: sp.Name, WeaponAttack: atk, BonusHP: a.Value + sh.Value, Mods: modsCopy})
 	return true
 }
 

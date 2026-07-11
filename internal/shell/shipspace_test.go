@@ -84,3 +84,90 @@ func TestShipDesignFitsUnknownClassApproximatesFrigate(t *testing.T) {
 		t.Error("偵察艦(近似 Frigate hull 25)裝死光(30)應該超格")
 	}
 }
+
+// ---- 武器改造(mod)佔格接線:ShipDesignSpaceUsedWithMods / ShipDesignFitsWithMods ----
+
+func laserIndex(t *testing.T) int {
+	t.Helper()
+	for i, c := range WeaponOptions {
+		if c.Name == "雷射" {
+			return i
+		}
+	}
+	t.Fatal("找不到「雷射」元件")
+	return -1
+}
+
+// TestShipDesignSpaceUsedWithMods_NoModsMatchesLegacy 無 mods 時應與舊版 ShipDesignSpaceUsed
+// 完全一致(回歸)。
+func TestShipDesignSpaceUsedWithMods_NoModsMatchesLegacy(t *testing.T) {
+	li := laserIndex(t)
+	legacy := ShipDesignSpaceUsed("護衛艦", li, 0, 0, 0)
+	withNil := ShipDesignSpaceUsedWithMods("護衛艦", li, 0, 0, 0, nil)
+	if legacy != withNil {
+		t.Errorf("無 mods 應與舊版一致,legacy=%d withNil=%d", legacy, withNil)
+	}
+}
+
+// TestShipDesignSpaceUsedWithMods_HeavyMountIncreasesSpace 掛 HV 武器佔格應加倍(+100%)。
+func TestShipDesignSpaceUsedWithMods_HeavyMountIncreasesSpace(t *testing.T) {
+	li := laserIndex(t)
+	base := ShipDesignSpaceUsed("護衛艦", li, 0, 0, 0) // 雷射 10 格
+	withHV := ShipDesignSpaceUsedWithMods("護衛艦", li, 0, 0, 0, []string{"HV"})
+	if withHV != base*2 {
+		t.Errorf("掛 HV 佔格應加倍,base=%d withHV=%d", base, withHV)
+	}
+}
+
+// TestShipDesignFitsWithMods_HeavyMountCanOverflow 原本剛好塞得下的設計,掛 HV 後可能超格,
+// ShipDesignFitsWithMods 應正確擋下。
+func TestShipDesignFitsWithMods_HeavyMountCanOverflow(t *testing.T) {
+	plasmaIdx := -1
+	for i, c := range WeaponOptions {
+		if c.Name == "電漿砲" {
+			plasmaIdx = i
+		}
+	}
+	if plasmaIdx < 0 {
+		t.Fatal("找不到「電漿砲」元件")
+	}
+	// 護衛艦(hull 25)裝電漿砲(Size 25)恰好塞滿,見 TestShipDesignFitsBoundary。
+	if !ShipDesignFits("護衛艦", plasmaIdx, 0, 0, 0) {
+		t.Fatal("前提失敗:無 mod 應恰好塞滿")
+	}
+	if ShipDesignFitsWithMods("護衛艦", plasmaIdx, 0, 0, 0, []string{"HV"}) {
+		t.Error("掛 HV 後電漿砲佔格變 50,應超出護衛艦 25 空間,ShipDesignFitsWithMods 應回 false")
+	}
+}
+
+// TestShipDesignSpaceUsedWithMods_IgnoredForMissile mods 對飛彈武器無效(手冊 HV/PD/AF/CO
+// 明文只講 beam,且飛彈路徑未接 mod 掛鉤)。
+func TestShipDesignSpaceUsedWithMods_IgnoredForMissile(t *testing.T) {
+	missileIdx := -1
+	for i, c := range WeaponOptions {
+		if c.Name == "核飛彈" {
+			missileIdx = i
+		}
+	}
+	if missileIdx < 0 {
+		t.Fatal("找不到「核飛彈」元件")
+	}
+	base := ShipDesignSpaceUsed("護衛艦", missileIdx, 0, 0, 0)
+	withMods := ShipDesignSpaceUsedWithMods("護衛艦", missileIdx, 0, 0, 0, []string{"HV"})
+	if base != withMods {
+		t.Errorf("飛彈武器掛 mods 不應改變佔格,base=%d withMods=%d", base, withMods)
+	}
+}
+
+// TestDesignCostWithMods_HeavyMountIncreasesCost 手冊「adds to the size AND cost」,成本應與
+// 佔格用同一套百分比公式。
+func TestDesignCostWithMods_HeavyMountIncreasesCost(t *testing.T) {
+	li := laserIndex(t)
+	base := DesignCost("護衛艦", li, 0, 0, 0)
+	withHV := DesignCostWithMods("護衛艦", li, 0, 0, 0, []string{"HV"})
+	laserCost := WeaponOptions[li].Cost
+	want := base + laserCost // +100% of laser cost
+	if withHV != want {
+		t.Errorf("掛 HV 成本應多加一份雷射成本,base=%d withHV=%d want=%d", base, withHV, want)
+	}
+}

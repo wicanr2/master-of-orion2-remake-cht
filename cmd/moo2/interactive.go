@@ -307,6 +307,7 @@ type sceneBuilder struct {
 	designArmor   int                // 裝甲元件索引(shell.ArmorOptions)
 	designShield  int                // 護盾元件索引(shell.ShieldOptions)
 	designSpecial int                // 特殊元件索引(shell.SpecialOptions)
+	designMods    []string           // 目前設計勾選的武器改造(gamedata.WeaponModCode 字串;僅 beam 武器生效)
 	designMsg     string             // 艦艇設計畫面「空間不足,擋下建造」的提示訊息(切換元件/成功建造時清空)
 	lastActionMsg string             // 星圖畫面「載運陸戰隊/發動地面入侵」的最近一次結果訊息(選新星時清空)
 }
@@ -1114,8 +1115,8 @@ func (t *tacticalScreen) fireRound(target int) {
 		default:
 			roll := t.rng.Intn(100) + 1
 			net := s.Attack - enemy.Defense
-			shot = shell.ResolveShot(net, s.WeaponMin, s.WeaponMax, dist,
-				enemy.ShieldReduction, enemy.ArmorHP, roll, false, false)
+			shot = shell.ResolveShotWithMods(net, s.WeaponMin, s.WeaponMax, dist,
+				enemy.ShieldReduction, enemy.ArmorHP, roll, false, shell.WeaponModCodesFromStrings(s.Mods))
 		}
 		if shot.Hit {
 			enemy.ArmorHP = shot.RemainingArmorHP
@@ -1531,6 +1532,11 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		{300, 82, 300, 22, "armor"},
 		{300, 106, 300, 22, "shield"},
 		{300, 130, 300, 22, "special"},
+		// 武器改造(mod)勾選:8 個 chip,兩排各 4 個,順序對齊 shell.WeaponModOptions
+		// (HV/PD/AF/CO 第一排,AP/ENV/NR/SP 第二排)。只對 beam 武器生效(見 onAction
+		// 的 WeaponIsBeam 判斷),非 beam 武器仍顯示熱區但點擊不生效(避免熱區位移)。
+		{305, 368, 76, 18, "mod:0"}, {385, 368, 76, 18, "mod:1"}, {465, 368, 76, 18, "mod:2"}, {545, 368, 76, 18, "mod:3"},
+		{305, 390, 76, 18, "mod:4"}, {385, 390, 76, 18, "mod:5"}, {465, 390, 76, 18, "mod:6"}, {545, 390, 76, 18, "mod:7"},
 		{0, 0, moo2ScreenW, moo2ScreenH, "back"},
 	}
 	onAction := func(a string) *origTransition {
@@ -1552,14 +1558,29 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			b.designMsg = ""
 			return b.goTo(b.shipDesign, "艦艇設計")
 		}
+		if strings.HasPrefix(a, "mod:") {
+			// mods 只對 beam 武器有意義(手冊 HV/PD/AF/CO 明文只講 beam,見
+			// shell.WeaponIsBeam);非 beam 武器(核飛彈/麥克萊特飛彈)點擊不生效,
+			// 避免玩家對飛彈掛上不會被套用的改造造成誤導。
+			w := shell.WeaponOptions[b.designWeapon]
+			if shell.WeaponIsBeam(w.Name) {
+				var idx int
+				fmt.Sscanf(a, "mod:%d", &idx)
+				if idx >= 0 && idx < len(shell.WeaponModOptions) {
+					b.designMods = shell.ToggleWeaponMod(b.designMods, shell.WeaponModOptions[idx])
+					b.designMsg = ""
+				}
+			}
+			return b.goTo(b.shipDesign, "艦艇設計")
+		}
 		if zh, ok := hullZH[a]; ok && b.session != nil {
-			// 建造前驗證空間:超出艦體空間上限(shell.ShipDesignFits)就擋下,留在設計畫面提示,不扣款不造艦。
-			if !shell.ShipDesignFits(zh, b.designWeapon, b.designArmor, b.designShield, b.designSpecial) {
-				b.designMsg = fmt.Sprintf("空間不足,無法建造%s(目前元件超出艦體空間上限)", zh)
+			// 建造前驗證空間:超出艦體空間上限(shell.ShipDesignFitsWithMods)就擋下,留在設計畫面提示,不扣款不造艦。
+			if !shell.ShipDesignFitsWithMods(zh, b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods) {
+				b.designMsg = fmt.Sprintf("空間不足,無法建造%s(目前元件+改造超出艦體空間上限)", zh)
 				return b.goTo(b.shipDesign, "艦艇設計")
 			}
 			b.designMsg = ""
-			b.session.BuildShip(zh, b.designWeapon, b.designArmor, b.designShield, b.designSpecial)
+			b.session.BuildShipWithMods(zh, b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods)
 			return b.goTo(b.fleet, "艦隊列表")
 		}
 		return b.goTo(b.fleet, "艦隊列表")
@@ -1612,7 +1633,7 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 				extraText{x: 305, y: y, size: 12, text: r.label + " ▸ " + r.c.Name, col: gold},
 				extraText{x: 470, y: y, size: 11, text: fmt.Sprintf("%s %dBC", r.eff, r.c.Cost), col: color.RGBA{200, 208, 225, 255}})
 		}
-		total := shell.DesignCost("巡洋艦", b.designWeapon, b.designArmor, b.designShield, b.designSpecial)
+		total := shell.DesignCostWithMods("巡洋艦", b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods)
 		// 各類已解鎖元件數(需研究對應科技解鎖進階元件)。
 		cnt := func(opts []shell.Component) int {
 			n := 0
@@ -1640,7 +1661,7 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		okCol := color.RGBA{170, 220, 180, 255}
 		badCol := color.RGBA{230, 90, 90, 255}
 		for i, cl := range classes {
-			used := shell.ShipDesignSpaceUsed(cl, b.designWeapon, b.designArmor, b.designShield, b.designSpecial)
+			used := shell.ShipDesignSpaceUsedWithMods(cl, b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods)
 			totalSp := gamedata.ShipHullSpace(gamedata.CombatShipClass(i))
 			fits := used <= totalSp
 			txt := fmt.Sprintf("%s 空間:%d／%d", cl, used, totalSp)
@@ -1654,6 +1675,31 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		if b.designMsg != "" {
 			s.extras = append(s.extras, extraText{x: 305, y: spaceHeaderY + 17 + float64(len(classes)*17) + 8, size: 12,
 				text: b.designMsg, col: badCol})
+		}
+
+		// 武器改造(mod)勾選 chip:8 個,順序對齊 shell.WeaponModOptions 與上方 onAction 的
+		// mod:0..7 熱區。已勾選轉金色高亮,未勾選灰色;非 beam 武器(核飛彈/麥克萊特飛彈)
+		// 整排標「(僅光束武器適用)」提示,不隱藏熱區(避免版面跳動),點擊也不會生效
+		// (onAction 已用 WeaponIsBeam 擋掉)。
+		modHeaderY := 352.0
+		isBeam := shell.WeaponIsBeam(w.Name)
+		modHeaderTxt := "武器改造(點擊切換,HV/PD 互斥):"
+		if !isBeam {
+			modHeaderTxt = "武器改造(僅光束武器適用,此武器不支援):"
+		}
+		s.extras = append(s.extras, extraText{x: 305, y: modHeaderY, size: 11, text: modHeaderTxt, col: gold})
+		activeCol := color.RGBA{240, 220, 120, 255}
+		inactiveCol := color.RGBA{150, 155, 165, 255}
+		modChipX := []float64{305, 385, 465, 545}
+		for i, mod := range shell.WeaponModOptions {
+			row := i / 4
+			chipX := modChipX[i%4]
+			y := modHeaderY + 16 + float64(row*22)
+			chipCol := inactiveCol
+			if shell.HasWeaponMod(b.designMods, mod) {
+				chipCol = activeCol
+			}
+			s.extras = append(s.extras, extraText{x: chipX, y: y, size: 10, text: shell.WeaponModLabelZH(mod), col: chipCol})
 		}
 	}
 	return s, nil

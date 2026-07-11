@@ -174,6 +174,139 @@ func TestWeaponKindByName(t *testing.T) {
 	}
 }
 
+// ---- 武器改造(mod)接線:ResolveShotWithMods ----
+
+// TestResolveShotWithMods_NoModsMatchesLegacy 無 mods 應與 ResolveShot(舊呼叫端)逐位元一致
+// (回歸測試,涵蓋含「無武裝」0 傷害的邊界情況)。
+func TestResolveShotWithMods_NoModsMatchesLegacy(t *testing.T) {
+	cases := []struct {
+		net, wmin, wmax, rng, shield, armor, roll int
+	}{
+		{80, 10, 20, 1, 0, 5, 90},
+		{0, 10, 20, 30, 0, 10, 5},
+		{90, 20, 20, 1, 15, 0, 90},
+		{5, 0, 0, 2, 0, 5, 50}, // 無武裝(0 傷害)邊界:不應被 DamageMountAdjustedValue 夾成 1
+	}
+	for _, c := range cases {
+		legacy := ResolveShot(c.net, c.wmin, c.wmax, c.rng, c.shield, c.armor, c.roll, false, false)
+		withNil := ResolveShotWithMods(c.net, c.wmin, c.wmax, c.rng, c.shield, c.armor, c.roll, false, nil)
+		if legacy != withNil {
+			t.Errorf("case %+v: legacy=%+v withNil=%+v 應相同", c, legacy, withNil)
+		}
+	}
+}
+
+// TestResolveShotWithMods_HeavyMountDamage HV 命中後傷害應為無 mod 情況的 150%。
+func TestResolveShotWithMods_HeavyMountDamage(t *testing.T) {
+	// net 夠高、roll 夠高確保必中(roll>95 分支,固定 max dmg,方便精確驗證倍率)。
+	base := ResolveShotWithMods(50, 40, 100, 1, 0, 0, 99, false, nil)
+	hv := ResolveShotWithMods(50, 40, 100, 1, 0, 0, 99, false, []gamedata.WeaponModCode{gamedata.ModHeavyMount})
+	if !base.Hit || !hv.Hit {
+		t.Fatal("前提失敗:應必中(roll=99>95)")
+	}
+	want := base.DamageToStructure * 3 / 2
+	if hv.DamageToStructure != want {
+		t.Errorf("HV 傷害應為 150%%,base=%d hv=%d want=%d", base.DamageToStructure, hv.DamageToStructure, want)
+	}
+}
+
+// TestResolveShotWithMods_PointDefenseDamage PD 命中後傷害應減半。
+func TestResolveShotWithMods_PointDefenseDamage(t *testing.T) {
+	base := ResolveShotWithMods(50, 40, 100, 1, 0, 0, 99, false, nil)
+	pd := ResolveShotWithMods(50, 40, 100, 1, 0, 0, 99, false, []gamedata.WeaponModCode{gamedata.ModPointDefense})
+	if !base.Hit || !pd.Hit {
+		t.Fatal("前提失敗:應必中")
+	}
+	want := base.DamageToStructure / 2
+	if pd.DamageToStructure != want {
+		t.Errorf("PD 傷害應減半,base=%d pd=%d want=%d", base.DamageToStructure, pd.DamageToStructure, want)
+	}
+}
+
+// TestResolveShotWithMods_EnvelopingQuadruplesDamage ENV 命中後傷害應為無 mod 情況的 4 倍。
+func TestResolveShotWithMods_EnvelopingQuadruplesDamage(t *testing.T) {
+	base := ResolveShotWithMods(50, 10, 20, 1, 0, 0, 99, false, nil)
+	env := ResolveShotWithMods(50, 10, 20, 1, 0, 0, 99, false, []gamedata.WeaponModCode{gamedata.ModEnveloping})
+	if !base.Hit || !env.Hit {
+		t.Fatal("前提失敗:應必中")
+	}
+	if env.DamageToStructure != base.DamageToStructure*4 {
+		t.Errorf("ENV 傷害應四倍,base=%d env=%d", base.DamageToStructure, env.DamageToStructure)
+	}
+}
+
+// TestResolveShotWithMods_ArmorPiercingBypassesArmor AP 命中後傷害應完全跳過裝甲,直打結構。
+func TestResolveShotWithMods_ArmorPiercingBypassesArmor(t *testing.T) {
+	// armorHP(25)須 >= 命中傷害(20)才能在「無 AP」情況下完全吸收,才好對照 AP 生效後的差異。
+	noAP := ResolveShotWithMods(50, 10, 20, 1, 0, 25 /*armorHP*/, 99, false, nil)
+	if noAP.DamageToStructure != 0 {
+		t.Fatalf("無 AP:裝甲(25)應完全吸收傷害(<=20),got DamageToStructure=%d", noAP.DamageToStructure)
+	}
+	ap := ResolveShotWithMods(50, 10, 20, 1, 0, 25, 99, false, []gamedata.WeaponModCode{gamedata.ModArmorPiercing})
+	if ap.DamageToStructure == 0 || ap.RemainingArmorHP != 25 {
+		t.Fatalf("AP 應完全繞過裝甲直打結構,且裝甲 HP 不變,got DamageToStructure=%d RemainingArmorHP=%d",
+			ap.DamageToStructure, ap.RemainingArmorHP)
+	}
+}
+
+// TestResolveShotWithMods_ShieldPiercingBypassesShield SP 命中後傷害應完全跳過護盾。
+func TestResolveShotWithMods_ShieldPiercingBypassesShield(t *testing.T) {
+	noSP := ResolveShotWithMods(50, 10, 20, 1, 20 /*shield 高於傷害*/, 0, 99, false, nil)
+	if noSP.DamageToStructure != 0 {
+		t.Fatalf("無 SP:高護盾應完全吸收,got %d", noSP.DamageToStructure)
+	}
+	sp := ResolveShotWithMods(50, 10, 20, 1, 20, 0, 99, false, []gamedata.WeaponModCode{gamedata.ModShieldPiercing})
+	if sp.DamageToStructure == 0 {
+		t.Fatal("SP 應完全繞過護盾,DamageToStructure 不應為 0")
+	}
+}
+
+// TestResolveShotWithMods_ContinuousFireImprovesAccuracy CO(+25 netAttack)應讓原本卡在命中
+// 門檻邊緣的射擊,從未命中變成命中。
+func TestResolveShotWithMods_ContinuousFireImprovesAccuracy(t *testing.T) {
+	// 挑一個「加 25 前不中、加 25 後中」的邊界:range=1 → level1 → penalty 0 → threshold 40。
+	// roll+netAttack 需 >=40 才中(且 roll<=95、netAttack<99,才會落到門檻判定分支)。
+	// net=10, roll=20 → roll+net=30 <40,不中;+CO(25) → net=35 → 20+35=55>=40,中。
+	base := ResolveShotWithMods(10, 10, 20, 1, 0, 0, 20, false, nil)
+	if base.Hit {
+		t.Fatal("前提失敗:base 應未命中(roll+net=30<40)")
+	}
+	co := ResolveShotWithMods(10, 10, 20, 1, 0, 0, 20, false, []gamedata.WeaponModCode{gamedata.ModContinuousFire})
+	if !co.Hit {
+		t.Fatal("CO(+25)應讓 roll+net+25=55>=40 變成命中")
+	}
+}
+
+// TestResolveShotWithMods_AutoFireHurtsAccuracy AF(-20 netAttack)應讓原本命中的射擊變成未命中。
+func TestResolveShotWithMods_AutoFireHurtsAccuracy(t *testing.T) {
+	// net=30, roll=15 → roll+net=45>=40,中;AF(-20) → net=10 → 15+10=25<40,不中。
+	base := ResolveShotWithMods(30, 10, 20, 1, 0, 0, 15, false, nil)
+	if !base.Hit {
+		t.Fatal("前提失敗:base 應命中(roll+net=45>=40)")
+	}
+	af := ResolveShotWithMods(30, 10, 20, 1, 0, 0, 15, false, []gamedata.WeaponModCode{gamedata.ModAutoFire})
+	if af.Hit {
+		t.Fatal("AF(-20)應讓 roll+net-20=25<40 變成未命中")
+	}
+}
+
+// TestResolveShotWithMods_HeavyPointDefenseUseDifferentRangeLevel 驗證 HV/PD 真的透過
+// CombatRangeLevelForBeamMods 換用不同射程等級表,而非只影響傷害百分比(用會讓三張表算出
+// 不同 level 的距離,觀察命中門檻是否真的不同)。
+func TestResolveShotWithMods_HeavyPointDefenseUseDifferentRangeLevel(t *testing.T) {
+	const rangeSquares = 12 // Regular level4(penalty30→threshold70)/ Heavy level2(penalty10→threshold50)
+	// net+roll=50:卡在「Heavy threshold(50)才夠、Regular threshold(70)不夠」的窄縫。
+	net, roll := 10, 40 // roll+net=50
+	regular := ResolveShotWithMods(net, 10, 20, rangeSquares, 0, 0, roll, false, nil)
+	heavy := ResolveShotWithMods(net, 10, 20, rangeSquares, 0, 0, roll, false, []gamedata.WeaponModCode{gamedata.ModHeavyMount})
+	if regular.Hit {
+		t.Fatal("前提失敗:一般距離懲罰下 roll+net=50 應不足以命中(threshold=70)")
+	}
+	if !heavy.Hit {
+		t.Fatal("HV 應換用 Heavy 射程表(threshold 更低,50),讓原本不中的射擊命中")
+	}
+}
+
 // TestBattleVolleyDispatchByWeaponKind 驗證 battleVolley 真的依 attacker.kind 分流,而不是
 // 全部仍走 beam(回歸/整合層級測試,呼應 combat_formula_test.go 純函式層級的
 // TestResolveMissileVsBeamDivergence)。

@@ -15,7 +15,9 @@ type ShotResult struct {
 }
 
 // ResolveShot 用 gamedata 真公式解算一次射擊(beam 武器路徑,不含 Point Defense/PD 掛載
-// 加成——目前呼叫端皆固定傳 0 PD bonus)。
+// 加成——目前呼叫端皆固定傳 0 PD bonus)。委派 ResolveShotWithMods(mods=nil),行為與加入
+// 武器改造(mod)系統前完全相同(回歸安全:DamageMountAdjustedValue 在 hv/pd bonus 皆 0、
+// rangePenaltyPoints 不變時,對任一 base>=1 恆等於 base,詳見該函式註解)。
 //   - netAttack = 攻方 Beam Attack(含命中加成) − 守方防禦(AF+BD)。
 //   - rangeSquares = 曼哈頓/格數距離(→射程等級→命中懲罰)。
 //   - roll = 呼叫端擲出的 random(1..100)(由戰鬥 RNG 提供,保持可重現)。
@@ -26,16 +28,56 @@ type ShotResult struct {
 // ResolveMissileShot/ResolveSphericalShot),呼叫端須先用 weaponKindByName 分流,
 // 不可對飛彈/球形武器呼叫本函式。
 func ResolveShot(netAttack, weaponMin, weaponMax, rangeSquares, shieldReduction, armorHP, roll int, hardShield, armorPiercing bool) ShotResult {
-	level := gamedata.CombatRangeLevel(rangeSquares)
+	var mods []gamedata.WeaponModCode
+	if armorPiercing {
+		// 舊呼叫端(呼叫本函式而非 WithMods 版)仍可用既有的 armorPiercing bool 表達穿甲,
+		// 不強制改signature,對映成 AP mod 走同一套（DamageApplyArmor 只認 bool,不認
+		// mod 清單本身,這裡只是把 bool 包成 mods 給 ResolveShotWithMods 用同一份實作)。
+		mods = []gamedata.WeaponModCode{gamedata.ModArmorPiercing}
+	}
+	return ResolveShotWithMods(netAttack, weaponMin, weaponMax, rangeSquares, shieldReduction, armorHP, roll, hardShield, mods)
+}
+
+// ResolveShotWithMods 同 ResolveShot,額外接受一組攻方武器改造(mods),依手冊
+// (GAME_MANUAL.pdf p.115-118,見 gamedata/weapon_mods.go)套用其對命中/傷害的效果:
+//   - CO(+25)/AF(-20) 加減 netAttack(BA+CO-AF-BD,見 gamedata.WeaponModNetAttackBonus)。
+//   - PD 額外提供 +25 命中門檻加成(gamedata.WeaponModPDBonus,對應 CombatHitThreshold 的
+//     pdBonus 參數)。
+//   - HV/PD 選用對應的射程等級表(halved/doubled,gamedata.CombatRangeLevelForBeamMods),
+//     再由 gamedata.WeaponModDamageBonuses 算出 hvBonus/pdPenalty 餵給既有的
+//     DamageMountAdjustedValue,調整武器傷害潛力(150%/50%)。
+//   - ENV 對命中後的傷害 *4(gamedata.WeaponModEnvelopingMultiply)。
+//   - AP/SP 分別對應 DamageApplyArmor/DamageAfterShield 既有的 armorPiercing/
+//     shieldPiercing 參數。
+//
+// mods 為 nil 時(無改造)本函式對任何輸入的行為與加入 mod 系統前的 ResolveShot 完全相同
+// (中性回歸,見 combat_formula_test.go 的 no-mod 回歸測試)。
+func ResolveShotWithMods(netAttackBase, weaponMin, weaponMax, rangeSquares, shieldReduction, armorHP, roll int, hardShield bool, mods []gamedata.WeaponModCode) ShotResult {
+	netAttack := netAttackBase + gamedata.WeaponModNetAttackBonus(mods)
+	level := gamedata.CombatRangeLevelForBeamMods(rangeSquares, mods)
 	penalty := gamedata.CombatRangeLevelPenalty(level)
-	threshold := gamedata.CombatHitThreshold(penalty, 0)
+	pdBonus := gamedata.WeaponModPDBonus(mods)
+	threshold := gamedata.CombatHitThreshold(penalty, pdBonus)
 
 	if !gamedata.CombatClassicToHit(roll, netAttack, threshold) {
 		return ShotResult{Hit: false, RemainingArmorHP: armorHP}
 	}
-	dmg := gamedata.DamageForHit(weaponMin, weaponMax, roll, netAttack, threshold)
-	dmg = gamedata.DamageAfterShield(dmg, shieldReduction, hardShield, false)
-	_, toStruct, remArmor := gamedata.DamageApplyArmor(dmg, armorHP, armorPiercing, false)
+
+	// [回歸保護] DamageMountAdjustedValue 對「命中後傷害潛力恆為 1」有夾限(手冊「minimum
+	// damage potential is always 1」),對 base=0 的「無武裝」武器會把 0 誤夾成 1。無 mod 時
+	// 不經過該函式,直接沿用原始 weaponMin/weaponMax(與加入 mod 系統前的 ResolveShot 逐位元
+	// 相同),避免「無武裝艦艇突然打出 1 點傷害」這種不該有的回歸。
+	adjMin, adjMax := weaponMin, weaponMax
+	if len(mods) > 0 {
+		hvBonus, pdPenalty := gamedata.WeaponModDamageBonuses(mods)
+		adjMin = gamedata.DamageMountAdjustedValue(weaponMin, hvBonus, 0, pdPenalty, 0)
+		adjMax = gamedata.DamageMountAdjustedValue(weaponMax, hvBonus, 0, pdPenalty, 0)
+	}
+
+	dmg := gamedata.DamageForHit(adjMin, adjMax, roll, netAttack, threshold)
+	dmg = gamedata.WeaponModEnvelopingMultiply(dmg, mods)
+	dmg = gamedata.DamageAfterShield(dmg, shieldReduction, hardShield, gamedata.WeaponModShieldPiercing(mods))
+	_, toStruct, remArmor := gamedata.DamageApplyArmor(dmg, armorHP, gamedata.WeaponModArmorPiercing(mods), false)
 	return ShotResult{Hit: true, DamageToStructure: toStruct, RemainingArmorHP: remArmor}
 }
 

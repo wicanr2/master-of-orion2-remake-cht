@@ -692,7 +692,12 @@ hit_threshold = min(40 + range_penalty − PD_bonus, 95)
 [3a] random(100) + BA+CO-AF-BD >= hit_threshold → 命中
 ```
 
-`BA+CO-AF-BD` = Beam Attack + 電腦命中加成 − Point Defense 目標 AF − 目標 Beam Defense,由呼叫端算好後以 `netAttack` 傳入。
+`BA+CO-AF-BD` = Beam Attack + Continuous Fire mod 命中加成(+25) − Auto-Fire mod 命中懲罰(每次射擊 -20)
+− 目標 Beam Defense,由呼叫端算好後以 `netAttack` 傳入。**(2026-07-11 訂正)**:先前這裡把 AF 誤寫成
+「Point Defense 目標 AF」,移植武器改造(mod)系統時查手冊(`GAME_MANUAL.pdf` p.115)+
+`community-mechanics-findings.md` 引用的社群拆解交叉核對後確認 AF 是 Auto-Fire mod 對**攻方自己**的
+命中懲罰,與 Point Defense、與目標都無關;CO 同理是 Continuous Fire mod 給攻方自己的加成。詳見
+`docs/tech/weapon-mods.md`、`internal/gamedata/weapon_mods.go` 的 `WeaponModNetAttackBonus`。
 
 **1.50 Alternative Chance to Hit Formula(Optional)**(`CombatAlternativeToHit`,`simplified_beam_formula=1` 時啟用):
 
