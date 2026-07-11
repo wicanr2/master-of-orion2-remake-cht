@@ -75,6 +75,7 @@ type overlayScreen struct {
 	eraseColor       *color.RGBA             // 非 nil 時強制用此色擦底(背景均勻的畫面用,勝過採樣猜測)
 	extras           []extraText             // 即時動態文字(星曆、國庫…),疊在背景+overlay 之上
 	postDraw         func(dst *ebiten.Image) // 任意額外繪製(如星圖),在最後呼叫
+	mx, my           int                     // 最近一次 update() 算出的滑鼠局部座標(扣掉置中偏移),供 postDraw 讀取做懸停偵測(如殖民地總覽 Planetary/Production Info)
 }
 
 // extraText 是一段即時繪製的動態文字(非來自譯表的固定標籤)。
@@ -89,6 +90,7 @@ type extraText struct {
 func (s *overlayScreen) update(in shell.InputState) *origTransition {
 	// 命中判定在背景圖局部座標(扣掉置中偏移)。
 	mx, my := in.MouseX-s.offsetX, in.MouseY-s.offsetY
+	s.mx, s.my = mx, my
 	s.hover = ""
 	for _, h := range s.hits {
 		if h.hit(mx, my) {
@@ -644,12 +646,57 @@ func drawStarmap(dst *ebiten.Image, fnt *uifont.Font, stars []shell.Star, select
 // 散布著真正不透明的星點像素——即 Mini Map 本該有的星圖縮圖,不是調色盤錯或解碼失敗
 // (若是解碼錯誤,黑色像素也會是 alpha=0 或呈現隨機色塊,不會是「透明底 + 乾淨星點」這種
 // 有意義的稀疏圖樣)。其餘 3 格(x≈10-92 / 102-371 / 516-628)是 alpha=255 的純黑,同樣是
-// 正確解碼的原始美術——原版設計是「靜態黑底 + 執行期依滑鼠懸停的殖民地動態疊圖」,本專案
-// 尚未接上懸停互動,故維持乾淨黑底(不是壞掉,只是功能未實作)。
+// 正確解碼的原始美術——原版設計是「靜態黑底 + 執行期依滑鼠懸停的殖民地動態疊圖」。
 // 結論:不動這 4 格底圖(它們是正確的原版美術,亂改等於銷毀真實資產,見 rulebook 83 完整性
-// 原則);已知可在不動邏輯層前提下補上的,是第 4 格 Empire Summary——用既有 session 欄位
-// (LastPlayerOutput.*、Player.BC)畫成文字,取代空黑格。Planetary Info / Production Info 兩格
-// 因需要「目前懸停哪個殖民地」這個新互動狀態,超出本輪純渲染修正範圍,留 TODO。
+// 原則),疊字改用 s.postDraw 逐幀繪製。
+//
+// 2026-07-11 追加(懸停互動):第 4 格 Empire Summary 用既有 session 欄位(LastPlayerOutput.*、
+// Player.BC)畫成文字,固定不隨懸停變動。第 1、2 格 Planetary Info / Production Info 現接上
+// 「目前懸停哪個殖民地」——overlayScreen 新增 mx/my 欄位在 update() 逐幀記錄局部滑鼠座標,
+// s.postDraw 逐幀依 mx/my 落在哪一列殖民地表格列,畫出該殖民地的行星資訊(氣候/重力/礦產/
+// 大小/人口上限)與生產資訊(食物/工業/研究/污染);無懸停落在任何列時預設顯示殖民地 0
+// (母星)。氣候/重力/礦產的中文名沒有官方在地化來源可援引,以 climateNameZH 等函式提供簡明
+// 直譯(僅展示層,不影響任何 engine/gamedata 數值或邏輯)。
+// climateNameZH / gravityNameZH / mineralsNameZH / planetSizeNameZH:僅供本檔案(UI 顯示層)
+// 用的簡明中文對照——既有 i18n TSV 與先前中文化專案(~/master-of-orion)都沒有 MOO2 官方
+// 這幾組列舉的定案譯名可援引,故用簡明直譯頂著顯示,不是官方在地化文本,也不杜撰任何數值。
+// 純展示層查表函式,不影響 engine/gamedata 任何邏輯或數值。
+func climateNameZH(c gamedata.PlanetClimate) string {
+	names := [...]string{"有毒", "輻射", "貧瘠", "沙漠", "凍原", "海洋", "沼澤", "乾旱", "類地", "蓋亞"}
+	if int(c) >= 0 && int(c) < len(names) {
+		return names[c]
+	}
+	return "未知"
+}
+
+func gravityNameZH(g gamedata.PlanetGravity) string {
+	switch g {
+	case gamedata.LOW_G:
+		return "低重力"
+	case gamedata.NORMAL_G:
+		return "標準"
+	case gamedata.HEAVY_G:
+		return "高重力"
+	}
+	return "未知"
+}
+
+func mineralsNameZH(m gamedata.PlanetMinerals) string {
+	names := [...]string{"極貧礦", "貧礦", "普通", "富礦", "極富礦"}
+	if int(m) >= 0 && int(m) < len(names) {
+		return names[m]
+	}
+	return "未知"
+}
+
+func planetSizeNameZH(sz gamedata.PlanetSize) string {
+	names := [...]string{"極小", "小型", "中型", "大型", "巨型"}
+	if int(sz) >= 0 && int(sz) < len(names) {
+		return names[sz]
+	}
+	return "未知"
+}
+
 func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 	// 點各殖民地的職務欄 → 重分配 1 名人口(農夫欄→多農夫、工人欄→多工人、科學家欄→多科學家);
 	// RETURN → 星系主畫面。列中心 y 與欄 x 對齊資料。
@@ -763,6 +810,73 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 		}
 		for i, l := range lines {
 			s.extras = append(s.extras, extraText{x: 522, y: 360 + float64(i)*16, size: 11, text: l, col: es})
+		}
+
+		// --- Planetary Info(第1格,x10-92)+ Production Info(第2格,x102-371) ---
+		// 座標為 PIL 逐像素量測 COLSUM.LBX 資產0既有黑格邊界所得(兩格與 Mini Map/Empire
+		// Summary 同列,y349-438)。原版是「靜態黑底 + 執行期依滑鼠懸停的殖民地動態疊圖」,
+		// 故用 postDraw(在 s.mx/s.my 之上,每幀依當下滑鼠位置重繪)取代固定 extras,才能
+		// 隨懸停即時換內容;無懸停落在殖民地列時預設顯示殖民地 0(母星)。
+		s.postDraw = func(dst *ebiten.Image) {
+			if len(b.session.PlayerColonies) == 0 {
+				return
+			}
+			ox, oy := float64(s.offsetX), float64(s.offsetY)
+			idx := 0
+			for i, ry := range rowY {
+				if i >= len(b.session.PlayerColonies) {
+					break
+				}
+				top, bottom := ry-15, ry+16
+				if float64(s.my) >= top && float64(s.my) < bottom && s.mx >= 10 && s.mx < 628 {
+					idx = i
+					break
+				}
+			}
+			if idx >= len(b.session.PlayerColonies) {
+				idx = 0
+			}
+			c := b.session.PlayerColonies[idx]
+			label := color.RGBA{225, 232, 245, 255}
+
+			// Planetary Info:窄格(82px),短標籤 + 值同行。
+			piLines := []string{
+				fmt.Sprintf("殖民地%d", idx+1),
+				"氣候" + climateNameZH(c.Climate),
+				"重力" + gravityNameZH(c.PlanetGravity),
+				"礦產" + mineralsNameZH(c.MineralRichness),
+				"大小" + planetSizeNameZH(c.PlanetSize),
+				fmt.Sprintf("上限%d", c.PopMax),
+			}
+			for i, l := range piLines {
+				s.font.Draw(dst, l, 14+ox, 358+float64(i)*14+oy, 10, label)
+			}
+
+			// Production Info:較寬(269px)。優先用 LastPlayerOutput.Colonies[idx](當回合已
+			// 結算的實際產出);取不到(如新遊戲尚未跑過第一回合)時退回用 PlayerColonies
+			// 欄位 × 人數的簡化估算,並標「約」避免誤當精確結算值。
+			var prodLines []string
+			if idx < len(b.session.LastPlayerOutput.Colonies) {
+				co := b.session.LastPlayerOutput.Colonies[idx]
+				prodLines = []string{
+					fmt.Sprintf("食物 產%d 耗%d 盈虧%+d", co.Food, co.FoodConsumed, co.FoodSurplus),
+					fmt.Sprintf("工業 毛%d 淨%d", co.GrossIndustry, co.NetIndustry),
+					fmt.Sprintf("研究 %d/回合", co.Research),
+					fmt.Sprintf("污染清理耗產能 %d", co.PollutionCleanupCost),
+				}
+				if co.Starving {
+					prodLines = append(prodLines, "缺糧中(饑荒)")
+				}
+			} else {
+				prodLines = []string{
+					fmt.Sprintf("食物(約) %d", c.Farmers*c.FoodPerFarmer),
+					fmt.Sprintf("工業(約) %d", c.Workers*c.IndustryPerWorker),
+					fmt.Sprintf("研究(約) %d", c.Scientists*c.ResearchPerScientist),
+				}
+			}
+			for i, l := range prodLines {
+				s.font.Draw(dst, l, 110+ox, 360+float64(i)*16+oy, 11, label)
+			}
 		}
 	}
 	return s, nil
