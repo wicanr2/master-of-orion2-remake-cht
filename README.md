@@ -25,7 +25,7 @@
 - **純 Go 跨平台**:ebiten v2.9 Windows backend 已 purego 化,`GOOS=windows CGO_ENABLED=0` 直接跨編;Linux AppImage / Windows / macOS(CI)打包齊備。
 - **忠實與誠實並重**:原版素材(圖/音樂/音效)一律不打包,玩家自備正版;沒有權威來源的機制明確標「設計性重建,非原版」,絕不臆造冒充原版行為。
 
-> **下載(alpha)**:[Releases](https://github.com/wicanr2/master-of-orion2-remake-cht/releases) 有 Linux(AppImage)與 Windows 版。目前是**畫面檢視器 + 引擎 + 完整中文化**可跑的階段,完整可玩(主迴圈/滑鼠鍵盤/音訊)仍在開發。需以 `-data` 指向你合法持有的 MOO2 遊戲資料。
+> **下載(alpha)**:[Releases](https://github.com/wicanr2/master-of-orion2-remake-cht/releases) 有 Linux(AppImage)與 Windows 版。目前是**可玩的多帝國 4X 迴圈**(殖民/研究/造艦/戰鬥/外交/三條勝利路徑,`cmd/moo2 -game`)+ 完整中文化 + 原版音樂音效的階段;逐畫面像素對齊、部分 UI 打磨與 vs 原版的忠實度仍在追趕(詳見 [`docs/HONEST-STATUS.md`](docs/HONEST-STATUS.md))。需以 `-data` 指向你合法持有的 MOO2 遊戲資料。
 
 ---
 
@@ -75,8 +75,79 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
 - **AI／外交(設計性重建 + 原版資料)** `internal/ai`、`internal/diplomacy`:AI 經濟／研究／生產／外交決策、17 級外交關係狀態機;`Decider` 介面支援 remake／original 兩模式(見 [`docs/tech/design-reconstruction.md`](docs/tech/design-reconstruction.md)、[`docs/tech/original-ai-re.md`](docs/tech/original-ai-re.md))。
 - **打包**:Linux AppImage／Windows(純 Go)本機 docker 腳本 + macOS/Linux/Windows 的 GitHub Actions workflow(見 [`docs/tech/packaging.md`](docs/tech/packaging.md))。
 
+### ✅ Phase 5+ — 可玩的多帝國 4X 迴圈(2026-07-11,模擬探針 + GUI 導覽驗證)
+`cmd/moo2 -game` 互動版已可從主選單一路玩到結束一局:玩家與 3 個性格互異的 AI 對手各自拓殖擴張,
+經濟(殖民地建築/重力/礦產/士氣/指揮評等/收入)已對手冊逐項核實,戰鬥(光束/飛彈/球狀傷害/地面戰
+陸戰隊+戰車+軌道轟炸)依真公式解算,三條勝利路徑(征服/銀河議會/安塔蘭母星反攻)全數接線可達成。
+以上皆有 headless 模擬探針(數十~數百回合)與 GUI 導覽截圖(`-gamegallery`,8 畫面端到端)驗證,
+70 回合無 panic。**這是「什麼現在能運作」的可驗證事實,不是還原度自評**——詳見
+[`docs/HONEST-STATUS.md`](docs/HONEST-STATUS.md)。
+
 ### ⏭ 下一步
-完整可玩的遊戲殼:滑鼠/鍵盤輸入、主迴圈、主選單版本/語言/AI 模式選擇、真實遊戲畫面疊字;音訊播放(音樂已確認為 `STREAM.LBX` 的 PCM,見 [`docs/tech/music-integration.md`](docs/tech/music-integration.md));基礎數值表(武器/裝甲,在 `Orion2.exe`,待逆向)。
+逐畫面像素級熱區對齊(多數仍是估計座標)、新遊戲流程與原版母星初始狀態的細節對齊、戰機/航母、
+完整 spy/leader/diplomacy UI、武器 mod 的飛彈專屬項與小型化門檻、音樂曲目↔場景的最終聽感比對定案。
+下一節「目前貢獻」逐項列出已驗證與仍缺的部分。
+
+---
+
+## 目前貢獻(已驗證可運作 / 仍缺)
+
+> 現況基準:[`docs/HONEST-STATUS.md`](docs/HONEST-STATUS.md)(持續更新)。下列每項標示驗證方式
+> (headless 模擬探針 / GUI 導覽截圖 / 單元測試),**不是自評還原度百分比**——與原版的實際還原度
+> 仍待使用者實測,不是本專案自己下結論。
+
+**資產與資料層**
+- LBX 資產解碼:容器 / scan-line RLE 影像 / 調色盤鏈,對照 openorion2 逐位元組驗證(`internal/lbx`,見 [`docs/tech/lbx-format.md`](docs/tech/lbx-format.md))
+- 存檔格式唯讀解析:`SAVE10.GAM` 全區段解出(殖民地/行星/星/領袖/玩家/艦艇)(`internal/save`,見 [`docs/tech/savegame-format.md`](docs/tech/savegame-format.md))
+
+**中文化**
+- 3604 條字串、22 個 LBX 字串來源全數 account,零漏源(見 [`docs/tech/string-sources.md`](docs/tech/string-sources.md))
+- 四個專有名詞池全數定案:科技/元件 419 條、母星名、672 艦名、829 隨機星名(見 [`docs/tech/proper-noun-strategy.md`](docs/tech/proper-noun-strategy.md))
+- 點陣繁中字型(`bitmapfont/v4` 混合:內文點陣、標題 Noto 向量),2258 字缺字 0(見 [`docs/tech/pixel-font-decision.md`](docs/tech/pixel-font-decision.md))
+
+**可玩的 4X 迴圈**
+- 殖民/拓殖:玩家與 3 個 AI 對手皆可建立新殖民地、經濟隨擴張成長(見 [`docs/tech/colonization.md`](docs/tech/colonization.md))
+- 研究:83 主題 × 8 領域,每主題真實科技間抉擇(非線性自動推進)(見 [`docs/tech/research-system-status.md`](docs/tech/research-system-status.md))
+- 戰鬥:光束/飛彈/球狀傷害依武器類型分流解算 + 地面戰(陸戰隊/戰車/軌道轟炸)(見 [`docs/tech/tactical-combat-weapon-kinds.md`](docs/tech/tactical-combat-weapon-kinds.md)、[`docs/tech/ground-combat-algorithm.md`](docs/tech/ground-combat-algorithm.md))
+- 三條勝利路徑全接線可達成:征服 / 銀河議會選舉(手冊 2/3 多數)/ 安塔蘭母星反攻(見 [`docs/tech/victory-conditions.md`](docs/tech/victory-conditions.md))
+- 間諜(偷科技最小迴圈)、領袖技能(25+ 技能中已接 2 項真實效果)(見 [`docs/tech/spy-system.md`](docs/tech/spy-system.md)、[`docs/tech/leader-officer-skills.md`](docs/tech/leader-officer-skills.md))
+
+**音訊**
+- 原版 PCM WAV 音樂/音效已接線(主選單 BGM + 按鈕音效),曲目對應定案到靜態溯源極限(見 [`docs/tech/audio-format.md`](docs/tech/audio-format.md)、[`docs/tech/audio-track-map.md`](docs/tech/audio-track-map.md))
+
+**版本 / 打包**
+- 1.3 / 1.5 規則差異已研究定案,`RuleProfile` 資料結構已接(見 [`docs/tech/version-1.3-1.5-diff.md`](docs/tech/version-1.3-1.5-diff.md))
+- Linux AppImage / Windows(純 Go 跨編)/ macOS(CI)三平台打包(見 [`docs/tech/packaging.md`](docs/tech/packaging.md))
+
+**仍在進行 / 仍缺**(不是「能不能玩」的阻塞,是「像不像原版」的差距)
+- 逐畫面像素級熱區對齊(多數仍是估計座標,非整畫面返回鍵)
+- 完整新遊戲流程與原版母星初始狀態的細節對齊
+- 戰機/航母、完整 spy/leader/diplomacy UI、多 AI 對手的目標選擇策略(目前為索引順序,非距離/資源導向)
+- 武器改造(mod)系統的飛彈專屬 mod、小型化等級門檻、火線角
+- 音樂曲目↔場景的最終聽感比對(現用時長啟發式/反組譯佐證,非逐曲聆聽定案)
+- 多人對戰(考據已定案為 lockstep over TCP,尚未實作,見 [`docs/tech/multiplayer-architecture.md`](docs/tech/multiplayer-architecture.md))
+
+---
+
+## 畫面預覽
+
+以下皆為 `-gamegallery` headless 導覽拍下的**本專案 ebiten renderer 實際輸出**(讀取玩家正版 LBX 資產渲染,非原版截圖翻拍),對應上方「目前貢獻」逐項提到的系統:
+
+| 主選單(含 1.3/1.5 規則版本切換) | 星系主畫面 |
+|---|---|
+| ![主選單](docs/screenshots/01_menu.png) | ![星系主畫面](docs/screenshots/04_galaxy.png) |
+
+| 種族選擇(原版獨立畫面 + 肖像) | 命名/旗色 |
+|---|---|
+| ![種族選擇](docs/screenshots/02_raceselect.png) | ![命名旗色](docs/screenshots/03_nameflag.png) |
+
+| 殖民地總覽 | 研究選擇 |
+|---|---|
+| ![殖民地總覽](docs/screenshots/05_colony.png) | ![研究選擇](docs/screenshots/06_research.png) |
+
+| 外交使節 | 戰術戰鬥 |
+|---|---|
+| ![外交使節](docs/screenshots/07_diplomacy.png) | ![戰術戰鬥](docs/screenshots/08_tactical.png) |
 
 ---
 
@@ -116,15 +187,110 @@ go run ./cmd/lbxdump path/to/FILE.LBX outdir/
 你需要自備正版《Master of Orion II》(如 GOG),把遊戲的 `*.lbx` 資料夾指給程式讀取。
 README 的展示截圖僅為呈現 renderer 成果之用。
 
-## 文件
+## 文件索引
+
+> 每份 `docs/*.md` 都在下面被至少一個分類收錄。文件是持續更新的工作紀錄,部分段落標了「2026-07-11 更新/訂正」——那是誠實記錄推翻先前錯誤斷言的過程(rulebook 63),不是文件品質問題。
+
+### 計畫與現況(先讀這些)
 
 - [`PLAN.md`](PLAN.md) — 分階段計畫與里程碑
-- [`WORKLIST.md`](WORKLIST.md) — 可勾選工作清單
-- [`docs/kickoff/`](docs/kickoff/) — 可行性研究與策略知識庫
-- [`docs/tech/`](docs/tech/) — 逆向格式與數值工程文件
-- [`docs/history/`](docs/history/) — 遊戲歷史、當年評價、華人圈接受考據
-- [`docs/culture/`](docs/culture/) — 華人圈文化現象散文
+- [`WORKLIST.md`](WORKLIST.md) — 可勾選工作清單(逐輪更新,允許擴充)
+- [`docs/HANDOFF.md`](docs/HANDOFF.md) — 交接文件,重啟 session 或換人接手第一個要讀的檔
+- [`docs/HONEST-STATUS.md`](docs/HONEST-STATUS.md) — 誠實現況評估(使用者實測還原度,校正過度樂觀的進度敘述)
 - [`docs/reference-screens.md`](docs/reference-screens.md) — 原版畫面對照組(中文化 before/after 基準 + 翻譯清單)
+
+### Kick-off 可行性研究(`docs/kickoff/`)
+
+- [`00-feasibility.md`](docs/kickoff/00-feasibility.md) — 可行性總論,openorion2 基底評估的核心結論
+- [`01-openorion2-assessment.md`](docs/kickoff/01-openorion2-assessment.md) — openorion2 完成度盤點(ground truth):哪些層可複用、哪些須從頭建
+- [`02-cjk-strategy.md`](docs/kickoff/02-cjk-strategy.md) — 中文化策略,吸收 1oom(MOO1)繁中化實戰經驗
+- [`03-button-cht.md`](docs/kickoff/03-button-cht.md) — 按鈕中文化策略,參考前作經驗避免重蹈覆轍
+- [`04-font-choice.md`](docs/kickoff/04-font-choice.md) — 字型選擇判準與候選(最終決策見 `docs/tech/pixel-font-decision.md`)
+- [`05-lbx-patch.md`](docs/kickoff/05-lbx-patch.md) — LBX 資產與 patch 1.3/1.5 的資料來源與版本策略
+- [`06-ebiten-porting.md`](docs/kickoff/06-ebiten-porting.md) — openorion2(C++/SDL2)架構映射到 go/ebiten 的策略
+- [`07-ai-strategy.md`](docs/kickoff/07-ai-strategy.md) — 對手 AI 策略:先參考文獻/一代移植,逆向是最後手段
+- [`08-mom-ebiten-cht-playbook.md`](docs/kickoff/08-mom-ebiten-cht-playbook.md) — 魔法大帝(mom)ebiten 繁中化 playbook 萃取,可直接搬用的做法
+
+### 遊戲歷史考據(`docs/history/`)
+
+- [`moo2-history-and-reception.md`](docs/history/moo2-history-and-reception.md) — 開發背景、當年媒體評價、商業表現、patch 與社群維護史、類型史地位(14 來源)
+- [`moo2-chinese-community.md`](docs/history/moo2-chinese-community.md) — 華人圈接受與討論考據,事實導向、逐點標來源(31 來源)
+
+### 文化現象(`docs/culture/`)
+
+- [`moo2-chinese-cultural-phenomenon.md`](docs/culture/moo2-chinese-cultural-phenomenon.md) — 華人老玩家集體記憶的敘事散文,事實建立在歷史考據文件之上
+
+### 技術知識庫(`docs/tech/`)
+
+[`docs/tech/README.md`](docs/tech/README.md) 是原本的知識庫總覽索引;下面依主題重新分組,涵蓋該目錄全部文件。
+
+**資料格式(逆向紀錄)**
+- [`lbx-format.md`](docs/tech/lbx-format.md) — `.lbx` 容器格式:magic、frame offset 表、內嵌調色盤、scan-line RLE
+- [`savegame-format.md`](docs/tech/savegame-format.md) — `save?.gam` 存檔精確佈局,對照 `SAVE10.GAM` 逐欄位驗證
+- [`enums.md`](docs/tech/enums.md) — 28 個資料枚舉對照(技術/研究主題/建築/種族特性…),自 `gamestate.h` 自動生成
+- [`formulas.md`](docs/tech/formulas.md) — 唯讀衍生公式與查表精簡版(艦艇戰力/HP/戰速、行星產出、雇用費)
+- [`moo2-formulas-reference.md`](docs/tech/moo2-formulas-reference.md) — 遊戲公式參考完整版,14 個系統逐條附出處與驗證範例
+- [`palette-chain.md`](docs/tech/palette-chain.md) — 無內嵌調色盤畫面的上色機制破解(逐位元組對照 openorion2)
+- [`patch15-cfg-data-source.md`](docs/tech/patch15-cfg-data-source.md) — patch 1.5 `.CFG` 檔案的潛在資料來源評估(需版本消歧)
+
+**中文化 / 在地化**
+- [`string-sources.md`](docs/tech/string-sources.md) — 22 個字串源總清單與翻譯進度(全數 account)
+- [`i18n-catalog-architecture.md`](docs/tech/i18n-catalog-architecture.md) — 顯示層覆蓋 i18n 架構(英文 key)與同形詞稽核
+- [`proper-noun-strategy.md`](docs/tech/proper-noun-strategy.md) — 四個專有名詞池(母星名/艦名/隨機星名/種族名)在地化策略
+- [`pixel-font-decision.md`](docs/tech/pixel-font-decision.md) — 點陣中文字型決策:`bitmapfont/v4` 混合字型定案與驗證證據
+- [`ui-typography-button-review.md`](docs/tech/ui-typography-button-review.md) — 中文 UI 字級/按鈕美術設計 review(依實測回饋)
+- [`cjk-screen-rendering.md`](docs/tech/cjk-screen-rendering.md) — 自繪中文畫面的渲染樣板鏈路
+
+**遊戲邏輯系統(gameplay 忠實化)**
+- [`rules-implementation-audit.md`](docs/tech/rules-implementation-audit.md) — openorion2 遊戲規則實作程度盤點(結論:渲染殼,無回合引擎)
+- [`game-logic-port.md`](docs/tech/game-logic-port.md) — 遊戲邏輯層移植進度總覽
+- [`gameplay-systems-status.md`](docs/tech/gameplay-systems-status.md) — 逐系統標「已用真公式 / 自編近似待接」的忠實化盤點
+- [`design-reconstruction.md`](docs/tech/design-reconstruction.md) — 設計性重建層的誠實界定(官方未給精確規則時怎麼標)
+- [`community-mechanics-findings.md`](docs/tech/community-mechanics-findings.md) — 官方手冊未給數字時的社群 mechanics 補充研究筆記
+- [`homeworld-init.md`](docs/tech/homeworld-init.md) — 開局母星初始狀態萃取(人口/建築/艦隊/科技/資源)
+- [`newgame-flow.md`](docs/tech/newgame-flow.md) — 原版新遊戲流程 + 種族選擇畫面盤點
+- [`custom-race-picks.md`](docs/tech/custom-race-picks.md) — 自訂種族 Picks 點數表來源與方法
+- [`colonization.md`](docs/tech/colonization.md) — 最小拓殖接線紀錄(玩家/AI 建立新殖民地)
+- [`colony-buildings.md`](docs/tech/colony-buildings.md) — 殖民地建築全表(手冊萃取,建造/維護/效果)
+- [`colony-economy-maintenance.md`](docs/tech/colony-economy-maintenance.md) — 維護費與行星驅動 yield 接線調查
+- [`research-system-status.md`](docs/tech/research-system-status.md) — 研究/科技系統現況與「抉擇機制」還原計畫
+- [`ground-combat-algorithm.md`](docs/tech/ground-combat-algorithm.md) — 地面戰解算演算法(社群逆向 + 已知歧義)
+- [`tactical-combat-assets.md`](docs/tech/tactical-combat-assets.md) — 格子戰術戰鬥畫面原版資產清單與重建規格
+- [`tactical-combat-weapon-kinds.md`](docs/tech/tactical-combat-weapon-kinds.md) — 戰鬥解算依武器類型(beam/missile/spherical)分流
+- [`cmbtshp-ship-sprites.md`](docs/tech/cmbtshp-ship-sprites.md) — 戰鬥艦 sprite 結構與艦級對照
+- [`diplomat-lbx-layout.md`](docs/tech/diplomat-lbx-layout.md) — `DIPLOMAT.LBX` 佈局破解與外交畫面重建
+- [`ship-design-space.md`](docs/tech/ship-design-space.md) — 艦艇設計空間格模型(艦體/武器佔格)
+- [`weapon-mods.md`](docs/tech/weapon-mods.md) — 武器改造(mod)系統,8 個光束/通用 mod 逐字核對手冊數字
+- [`component-values.md`](docs/tech/component-values.md) — 艦艇元件數值來源狀態(provenance,避免把印象值當權威)
+- [`component-tech-mapping.md`](docs/tech/component-tech-mapping.md) — 艦艇元件 → 真 MOO2 科技對應表
+- [`victory-conditions.md`](docs/tech/victory-conditions.md) — 三條勝利路徑(征服/議會/安塔蘭)手冊權威規則與接線現況
+- [`spy-system.md`](docs/tech/spy-system.md) — 間諜系統最小可玩迴圈(訓練→結算→偷科技)
+- [`leader-officer-skills.md`](docs/tech/leader-officer-skills.md) — 領袖/軍官技能系統接線(25+ 技能中已接 2 項)
+- [`screen-spec-info-research.md`](docs/tech/screen-spec-info-research.md) — 資訊/研究畫面渲染規格分析
+
+**渲染 / UI 規劃**
+- [`ebiten-notes.md`](docs/tech/ebiten-notes.md) — Phase 2 ebiten 移植工程筆記(640×480、docker headless、截圖)
+- [`ui-adjustment.md`](docs/tech/ui-adjustment.md) — UI 界面調整可行性(版面/座標/縮放層級)
+- [`screen-rebuild-plan.md`](docs/tech/screen-rebuild-plan.md) — 自繪畫面 → 原版佈局重建計畫,標出哪些畫面仍非原版 UI
+- [`sprite-tile-quality.md`](docs/tech/sprite-tile-quality.md) — sprite/tile 畫質優化與重繪可行性
+
+**AI / 外交**
+- [`ai-decision-modes.md`](docs/tech/ai-decision-modes.md) — AI 決策層與外交關係層架構
+- [`ai-fiscal-solvency.md`](docs/tech/ai-fiscal-solvency.md) — AI 財政保底(職務分配防止財政發散)
+- [`original-ai-re.md`](docs/tech/original-ai-re.md) — 原版 MOO2 AI 逆向考據筆記(`OriginalDecider` 研究基礎)
+
+**音訊**
+- [`music-integration.md`](docs/tech/music-integration.md) — 音樂/音效整合可行性總論
+- [`audio-format.md`](docs/tech/audio-format.md) — 音訊格式第一性原理逆向(推翻 XMIDI 假設,實為 PCM WAV)
+- [`audio-track-map.md`](docs/tech/audio-track-map.md) — 曲目/音效 entry 對應到場景與 UI 事件
+
+**版本 / 打包 / 多人**
+- [`version-1.3-1.5-diff.md`](docs/tech/version-1.3-1.5-diff.md) — patch 1.3 → 1.5 規則/數值差異與版本 profile 設計
+- [`packaging.md`](docs/tech/packaging.md) — 跨平台打包(CI + 本機 docker 腳本兩條路徑)
+- [`multiplayer-architecture.md`](docs/tech/multiplayer-architecture.md) — 多人對戰原版通訊考據 + 重製架構建議(lockstep over TCP)
+
+**現況盤點 / 路線圖**
+- [`remaining-work-roadmap.md`](docs/tech/remaining-work-roadmap.md) — 剩餘工作依阻塞類型分類的決策排序路線圖
 
 ## 致謝
 

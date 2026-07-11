@@ -2290,31 +2290,51 @@ type galleryShot struct {
 func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 	click := func(x, y int) shell.InputState { return shell.InputState{MouseX: x, MouseY: y, ClickReleased: true} }
 	idle := shell.InputState{}
+	// 每次導覽點擊後補 idle「settle 幀」再截圖:星系生星、殖民地載面板、研究列表
+	// 都需要至少一個 tick 才渲染完成,截圖 tick 落在轉場後 2 幀,避免抓到半載/前一畫面。
+	// (截圖已改在 Update 精確 tick 用 offscreen 渲染,不再受 ebiten 跳 Draw 影響,
+	//  但 settle 幀仍保留以確保畫面內容本身已載入。)
 	script := []shell.InputState{
-		idle,            // t1: 主選單(未點擊)
+		idle,            // t1: 主選單(未點擊)→ 截圖 menu
 		click(491, 228), // t2: 主選單「新遊戲」→ 新遊戲設定
-		click(486, 405), // t3: 新遊戲設定「Accept」→ 種族選擇
-		click(540, 451), // t4: 種族選擇「接受」→ 命名/旗色
-		click(540, 454), // t5: 命名/旗色「接受」→ 星系主畫面
-		click(48, 452),  // t6: 星系主畫面工具列「殖民地」→ 殖民地總覽
-		click(608, 462), // t7: 殖民地總覽「RETURN」→ 星系主畫面
-		click(495, 452), // t8: 星系主畫面工具列「INFO」→ 科技總覽
-		click(113, 89),  // t9: 科技總覽「Tech Review」→ 研究選擇
-		click(204, 186), // t10: 研究選擇(任一領域,如 Chemistry)→ 星系主畫面
-		click(420, 452), // t11: 星系主畫面工具列「RACES」→ 種族關係
-		click(483, 428), // t12: 種族關係「REPORT」→ 外交對談
-		click(320, 437), // t13: 外交對談「結束對談」→ 種族關係
-		click(388, 448), // t14: 種族關係「DECLARE WAR」→ 戰術戰鬥
+		idle,            // t3: settle
+		click(486, 405), // t4: 新遊戲設定「Accept」→ 種族選擇
+		idle,            // t5: settle
+		idle,            // t6: settle → 截圖 raceselect
+		click(540, 451), // t7: 種族選擇「接受」→ 命名/旗色
+		idle,            // t8: settle → 截圖 nameflag
+		click(540, 454), // t9: 命名/旗色「接受」→ 星系主畫面
+		idle,            // t10: settle
+		idle,            // t11: settle → 截圖 galaxy
+		click(48, 452),  // t12: 星系主畫面工具列「殖民地」→ 殖民地總覽
+		idle,            // t13: settle
+		idle,            // t14: settle → 截圖 colony
+		click(608, 462), // t15: 殖民地總覽「RETURN」→ 星系主畫面
+		click(495, 452), // t16: 星系主畫面工具列「INFO」→ 科技總覽
+		idle,            // t17: settle
+		click(113, 89),  // t18: 科技總覽「Tech Review」→ 研究選擇
+		idle,            // t19: settle
+		idle,            // t20: settle → 截圖 research
+		click(204, 186), // t21: 研究選擇(任一領域)→ 星系主畫面
+		click(420, 452), // t22: 星系主畫面工具列「RACES」→ 種族關係
+		idle,            // t23: settle
+		click(483, 428), // t24: 種族關係「REPORT」→ 外交對談
+		idle,            // t25: settle
+		idle,            // t26: settle → 截圖 diplomacy
+		click(320, 437), // t27: 外交對談「結束對談」→ 種族關係
+		click(388, 448), // t28: 種族關係「DECLARE WAR」→ 戰術戰鬥
+		idle,            // t29: settle
+		idle,            // t30: settle → 截圖 tactical
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
-		{3, "02_raceselect.png"},
-		{4, "03_nameflag.png"},
-		{5, "04_galaxy.png"},
-		{6, "05_colony.png"},
-		{9, "06_research.png"},
-		{12, "07_diplomacy.png"},
-		{14, "08_tactical.png"},
+		{6, "02_raceselect.png"},
+		{8, "03_nameflag.png"},
+		{11, "04_galaxy.png"},
+		{14, "05_colony.png"},
+		{20, "06_research.png"},
+		{26, "07_diplomacy.png"},
+		{30, "08_tactical.png"},
 	}
 	return script, shots
 }
@@ -2379,10 +2399,25 @@ func (a *interactiveApp) Update() error {
 		}
 	}
 	if a.galleryDir != "" {
+		// 截圖在 Update 的精確 tick 用 offscreen image 渲染,與 ebiten 的 Draw
+		// 排程完全解耦:避免負載下 ebiten 跳 Draw、把多張錯過的 shot 批次補在
+		// 同一幀(舊寫法會讓 04_galaxy 抓到 colony 內容 → 重複幀 bug)。
+		for a.galleryDone < len(a.galleryShots) && a.tick >= a.galleryShots[a.galleryDone].tick {
+			off := ebiten.NewImage(moo2ScreenW, moo2ScreenH)
+			a.cur.draw(off)
+			path := filepath.Join(a.galleryDir, a.galleryShots[a.galleryDone].name)
+			if err := saveScreenshot(off, path); err != nil {
+				fmt.Println("截圖失敗:", path, err)
+			} else {
+				fmt.Println("已存:", path)
+			}
+			off.Deallocate()
+			a.galleryDone++
+		}
 		if a.galleryDone >= len(a.galleryShots) {
 			return ebiten.Termination
 		}
-		// 硬性終止保護:即使某些圖因導覽失敗/Draw 跳幀而存不到,超過最後一張的
+		// 硬性終止保護:即使某些圖因導覽失敗而存不到,超過最後一張的
 		// 目標 tick(+緩衝)也一定結束,絕不留無限 render loop 空轉燒 CPU。
 		if n := len(a.galleryShots); n > 0 && a.tick > a.galleryShots[n-1].tick+3 {
 			return ebiten.Termination
