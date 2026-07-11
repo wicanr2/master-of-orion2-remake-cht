@@ -83,6 +83,22 @@
   的「指揮官」技能標籤本身也無法唯一對應到任何 openorion2 技能(待使用者定案)、「工程師」對應
   的艦艇維修率加成 remake 無承接系統。詳見 `docs/tech/leader-officer-skills.md`。)**
 
+- 收入(Income)三個零呼叫端死碼(**2026-07-11 接線**,解鎖自本輪稍早修好的開局經濟平衡):
+  ①**政府 money 加成**(Democracy +50%/Federation +75%,`gamedata.IncomeApplyGovernmentMoneyBonus`)
+  已接進 `engine.RunEmpireTurn`(新增 `IncomeGovtMoneyBonusPercent` 查表 + `PlayerState.GovtBonusMoneyPercent`
+  欄位,`shell.GameSession.EndTurn` 依 `s.Government` 算好傳入)。demo 預設 Dictatorship→0,no-op;
+  AI 對手無 `Government` 欄位建模,不受影響。②**運輸艦維護費**(每艘使用中 -0.5 BC,
+  `gamedata.IncomeFreighterMaintenanceCost`)已接進 `RunEmpireTurn`(新增 `PlayerState.ActiveFreighters`
+  欄位),但本專案的艦種塑模(`COMBAT_SHIP`/`COLONY_SHIP`/`TRANSPORT_SHIP`/`OUTPOST_SHIP`)沒有
+  「Freighter」這個艦種,呼叫端恆傳 0,目前是 no-op,接線先備妥。③**士氣對收入的調整**
+  (`gamedata.IncomeMoraleAdjustedProduction`,手冊 p.170)**判定為不接**——查證後發現
+  `RunColonyTurn` 早就把士氣套進食物/工業/研究產出,`RunEmpireTurn` 的稅收/餘糧收入/貿易品收入
+  全部是從這個已調整過的產出直接換算,若再對收入套一次士氣就是雙重計算。刻意不接,理由完整記錄
+  在 `engine/empire.go` 註解與 `docs/tech/moo2-formulas-reference.md`「士氣對收入的影響」節。
+  這三項在 demo 對局皆是 no-op(政府=Dictatorship、無貨運艦種、母星 morale=0),已用 20 回合 BC
+  軌跡探針確認接線前後一致(101→130 健康爬升,無退化),同重力/礦產這類「demo 看不出效果但對其他
+  狀態忠實」的完成型態。
+
 一句話:**你現在無法真的玩一局 MOO2**,只能在像原版的畫面間點來點去,附帶幾個玩具數字。
 
 ## 要達到「高還原度」真正該做的(誠實 worklist)

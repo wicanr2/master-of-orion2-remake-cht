@@ -1597,7 +1597,12 @@ func (s *GameSession) EndTurn() {
 	s.Player.Maintenance = s.totalBuildingMaintenance()         // 依本回合結算前的實際已建建築重算(取代平坦常數)
 	s.Player.CommandPointsSupply = s.totalCommandPointsSupply() // 指揮評等供給:實際已建成的星基/戰鬥站/星辰要塞
 	s.Player.UsedCommandPoints = s.usedCommandPoints()          // 指揮評等需求:玩家目前所有艦艇加總
-	s.syncTradeGoodsFlag()                                      // 依建造選單同步「貿易品」旗標,供 RunEmpireTurn 判斷是否換算收入
+	// GovtBonusMoneyPercent 依目前政府型態算好傳給 RunEmpireTurn(engine 層不關心政府列舉本身,
+	// 見 engine.PlayerState.GovtBonusMoneyPercent 註解)。demo 預設 Dictatorship → 0,no-op。
+	// ActiveFreighters 未設值,維持零值(Go 零值陷阱在此剛好是想要的預設:remake 無 Freighter
+	// 艦種塑模,見 engine.PlayerState.ActiveFreighters 註解),故不需要在此顯式賦值。
+	s.Player.GovtBonusMoneyPercent = gamedata.IncomeGovtMoneyBonusPercent(s.Government)
+	s.syncTradeGoodsFlag() // 依建造選單同步「貿易品」旗標,供 RunEmpireTurn 判斷是否換算收入
 	s.LastPlayerOutput = engine.RunEmpireTurn(s.Player, s.PlayerColonies)
 	s.Player = s.LastPlayerOutput.Player
 	s.recoverFromFamine() // 饑荒防死鎖:見函式註解;依本回合 Starving 結果修正下回合職務分配

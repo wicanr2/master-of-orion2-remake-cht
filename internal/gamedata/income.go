@@ -197,3 +197,23 @@ func IncomeMoraleAdjustedProduction(baseProduction, netMoraleIcons int) int {
 func IncomeApplyGovernmentMoneyBonus(baseBC, bonusPercent int) int {
 	return baseBC * (100 + bonusPercent) / 100
 }
+
+// IncomeGovtMoneyBonusPercent 依政府型態回傳「money」(BC/稅收)加成百分比,供
+// IncomeApplyGovernmentMoneyBonus 使用。MANUAL_150.html「Modding with Config → Additional
+// Settings」只列出 Democracy(govt_bonus democracy_money=10 → 10*5=50%)與 Federation
+// (federation_money=15 → 15*5=75%)這兩種政府對 money 有加成,其餘政府(含 Feudalism/
+// Confederation/Dictatorship/Imperium/Unification/Galactic Unification)手冊未列出對應項目,
+// 回 0(非漏列,是手冊該節本來就只給這兩項)。
+//
+// gov 用 morale.go 既有的 MoraleGovernmentType(政府列舉本已在該檔定義,見其註解:enums.go
+// 目前無通用 Government 型別,故沿用同一個列舉,不另建第二份撞名的政府型別)。
+func IncomeGovtMoneyBonusPercent(gov MoraleGovernmentType) int {
+	switch gov {
+	case MoraleGovDemocracy:
+		return IncomeGovtBonusDemocracyMoneyPercent
+	case MoraleGovFederation:
+		return IncomeGovtBonusFederationMoneyPercent
+	default:
+		return 0
+	}
+}

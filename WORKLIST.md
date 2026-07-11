@@ -218,6 +218,34 @@
   - [ ] 標示「必須逆向才能確定」的項目(若有)
 - [x] 開新遊戲流程:種族選擇 + 星系大小/難度 → ApplyRace/RegenGalaxy(見 Phase 4b)
 - [x] 地形改造(Terraforming)/蓋亞轉化(Gaia Transformation)/土壤改良(Soil Enrichment)接線(**2026-07-11**):`internal/gamedata/terraform.go` 移植好的氣候階梯/人口係數公式先前零呼叫端(死碼),現接進殖民地建造佇列。新增 `engine.ColonyState.Climate` 欄位(比照 `PlanetGravity`/`MineralRichness` 的零值陷阱處理:`gamedata.TOXIC` ordinal=0,`playerHomeworldColony`/`ColonyStateFromSave` 皆已明確補上;此欄位不像 Gravity/MineralRichness 被每回合核心公式讀取,只在地形改造/蓋亞轉化套用瞬間讀寫,故其餘既有測試字面值不受影響、無需逐一補值)。新增 `internal/gamedata/special_actions.go`:`SpecialAction`/`SpecialActions`/`SpecialActionByNameZH`/`AvailableSpecialActions`,把這三項「Special」型別一次性行動(區別於常駐 Building,不計入 `colony-buildings.md` 40 項建築表)排進 `availableBuildOptions`/`allBuildOptions`。前置科技(地形改造 `TOPIC_GENETIC_MUTATIONS`、蓋亞轉化 `TOPIC_TRANS_GENETICS`、土壤改良 `TOPIC_ADVANCED_BIOLOGY`)取自 `openorion2/src/tech.cpp` 的 `research_choices[]`(陣列索引=`ResearchTopic` 列舉值,已與既有 34 項建築前置科技逐一交叉核對 100% 相符,地形改造的 `TOPIC_GENETIC_MUTATIONS` 亦與 `terraform.go` 檔頭「移植自...『Genetic Mutations』章節」的手冊出處吻合)。`shell.advanceBuilds` 新增分流:這三項完工時呼叫 `applySpecialAction`(不記入 `ColonyBuildings` dedup map,因手冊明講地形改造可重複套用,若記入 dedup 會被既有「已建過不再套用」邏輯擋下第二次),推進氣候(`TerraformNextClimateOptions`/`GaiaTransformationCanApply`)並用新增的 `gamedata.TerraformPopMaxAfterClimateChange` 等比例縮放 PopMax、`ClimateFoodPerFarmer` 差值疊加 FoodPerFarmer(保留既有建築加成)。**誠實近似/TODO**:PopMax 縮放非精確重算(remake 無「行星尺寸→基礎人口容量」對映表,詳見該函式註解);建造成本(PP)手冊無數據,比照其餘估計建築的 RP 量級外推(260/900/150),手冊「地形改造每次套用成本遞增」未模擬(固定成本);Barren 地形改造下一級的兩個候選(Desert/Tundra)手冊未給選擇條件,固定選第一個。測試:`TestTerraformPopMaxAfterClimateChange`/`TestSpecialActionByNameZH`/`TestAvailableSpecialActions`(gamedata)、`TestTerraformAdvancesClimateFoodAndPopMax`/`TestTerraformNoOpWhenNoNextClimate`/`TestGaiaTransformationRequiresTerran`/`TestSoilEnrichmentBlockedOnHostileClimate`/`TestSoilEnrichmentWorksOnHospitableClimate`(shell)。詳見 `docs/tech/colony-buildings.md` §6.1 地形改造列、`docs/HONEST-STATUS.md` 2026-07-11 追加段。
+- [x] income.go 三個零呼叫端死碼接線(**2026-07-11**,解鎖自本輪稍早的開局經濟平衡修復):
+  ①**政府 money 加成**(MANUAL_150.html govt_bonus democracy_money=10→50%/federation_money=15→75%,
+  `gamedata.IncomeApplyGovernmentMoneyBonus`)。新增 `gamedata.IncomeGovtMoneyBonusPercent(gov)` 查表
+  (Democracy→50、Federation→75、其餘→0)+ `engine.PlayerState.GovtBonusMoneyPercent` 欄位(呼叫端
+  算好傳入,同 `Maintenance`/`CommandPointsSupply` 輸入模式)。`shell.GameSession.EndTurn` 依
+  `s.Government` 算好傳入,`RunEmpireTurn` 在逐殖民地迴圈**結束後**(帝國層級,非逐殖民地——政府
+  是帝國屬性不是殖民地建築)對 `TaxRevenue+FoodSurplusRevenue+TradeGoodsRevenue` 套一次,差額併入
+  `TaxRevenue`。demo 預設 Dictatorship→0,no-op;AI 對手無 `Government` 欄位建模,不受影響。
+  ②**運輸艦(Freighter)維護費**(每艘使用中 -0.5 BC,`gamedata.IncomeFreighterMaintenanceCost`)。
+  新增 `engine.PlayerState.ActiveFreighters` 欄位,`RunEmpireTurn` 算出 `EmpireOutput.FreighterMaintenanceCost`
+  併入 `NetBC`。本專案艦種塑模(`gamedata.ShipType`:`COMBAT_SHIP`/`COLONY_SHIP`/`TRANSPORT_SHIP`/
+  `OUTPOST_SHIP`)沒有獨立的「Freighter」艦種(`TRANSPORT_SHIP` 是地面入侵運兵船,非手冊講的貨運
+  艦隊),呼叫端恆傳 0,目前 no-op,接線先備妥。③**士氣對收入的調整**
+  (`gamedata.IncomeMoraleAdjustedProduction`,手冊 p.170)**判定為刻意不接**:查證
+  `internal/engine/colony.go` `RunColonyTurn` 發現士氣(`MoralePercent`)早就套進食物/工業/研究的
+  per-worker 產出(`pct := cs.MoralePercent + colonyGravityPenaltyPercent(cs)` 套 `GravityAdjustedProduction`),
+  `RunEmpireTurn` 的 `TaxRevenue`(讀 `co.NetIndustry`)/`FoodSurplusRevenue`(讀 `co.FoodSurplus`)/
+  `TradeGoodsRevenue`(讀 `co.NetIndustry`)全部是從這個已調整過的產出直接換算,若再套一次士氣就是
+  雙重計算(同一筆錢士氣生效兩次)。故不呼叫該函式,判定依據完整記錄在 `engine/empire.go` 註解與
+  `docs/tech/moo2-formulas-reference.md`「士氣對收入的影響」節;函式本身與其單元測試保留(驗證公式
+  正確,非死碼)。三項在 demo 對局皆 no-op(政府=Dictatorship、無貨運艦種、母星 morale=0),20 回合
+  BC 軌跡探針確認接線前後一致(101→130 健康爬升,無 regression)。測試:
+  `TestIncomeGovtBonusFormula`/`TestIncomeFreighterMaintenanceCost`/`TestIncomeMoraleAdjustedProduction`/
+  `TestIncomeApplyGovernmentMoneyBonus`(gamedata,原有公式測試)、
+  `TestRunEmpireTurnGovtBonusMoneyPercent`/`TestRunEmpireTurnGovtBonusMoneyPercentZeroNoOp`/
+  `TestRunEmpireTurnFreighterMaintenance`/`TestRunEmpireTurnFreighterMaintenanceZeroNoOp`(engine,新增)、
+  `TestEndTurnGovtBonusMoneyWiring`(shell,新增)。詳見 `docs/HONEST-STATUS.md` 2026-07-11 收入死碼段落、
+  `docs/tech/moo2-formulas-reference.md`「政府對 BC 收入的加成」/「士氣對收入的影響」節。
 - [~] 以手冊逐系統對照驗證規則正確性(task 16 進行中:地面戰解算/真母星/建築全表/行星 yield/建築維護費 已逐項對手冊或一代驗證並實作;經濟可持續化+yield 接線進行中)
 - [~] 領袖/軍官技能接線(**2026-07-11**):`internal/gamedata/officer.go`(`LeaderExpLevel`/`LeaderSkillBonus`,先前零呼叫端死碼)+ `formulas.go`(`LeaderHireCost`)首次真正接進遊戲。硬門檻查證:技能 id 列舉已在 `enums.go` 生成(`SKILL_ASSASSIN`..`SKILL_TACTICS`,對照 `openorion2/src/gamestate.h:602-631`),`officer.go` 原本重複定義兩個私有常數未引用完整枚舉,已清掉重複、改直接引用。openorion2 全專案 grep 確認只有 4 個技能有真呼叫端:`SKILL_WEAPONRY`/`SKILL_HELMSMAN`(艦艇命中/閃避加成)、`SKILL_FAMOUS`(雇用費修正,MIN 非累加)、`SKILL_MEGAWEALTH`(維護費全免開關);其餘 20+ 技能 openorion2 本身也沒有效果消費端(只有畫面/skillBonus 可算)。本輪只接對應到 remake 已存在系統的技能:殖民地領袖(`Ship=false`)—— demoLeaders「科學家」(`SKILL_RESEARCHER`,固定研究點)套 `ColonyState.FlatResearch`、「貿易家」(`SKILL_TRADER`,收入%)套 `ColonyState.IncomeBonusPercent`,`NewDemoSession` 建完母星後呼叫 `applyLeaderColonyBonuses` 生效(`TestGameSessionEndTurn` 研究預期值 30→55 同步更新,+25 來自科學家技能)。艦艇軍官:新增 `engine.ShipBeamAttackWithOfficer`/`ShipBeamDefenseWithOfficer`(疊加 Weaponry/Helmsman,不改既有已鎖定行為的函式簽章)+ `engine.HireLeader`(最小雇用金流)+ `gamedata.LeaderSkillTier`(讀真存檔 `save.Leader` 位元技能階,供未來取代 demo 手動 Tier)+ `LeaderMaintenanceCost`/`LeaderHireModifier`,皆為公式已就緒、等系統(remake 尚無艦艇軍官指派欄位/戰鬥解算迴圈/招募 UI)。**待人工定案**:demoLeaders「指揮官」(漢尼拔)技能標籤無唯一對應(不是 openorion2 技能表的字面詞),刻意不映射,目前無加成;「工程師」(圖靈)映射到 `SKILL_ENGINEER` 清楚,但真實效果(艦艇維修率)remake 無承接系統,標 TODO。詳見 `docs/tech/leader-officer-skills.md`。測試:`TestLeaderSkillTier`/`TestLeaderMaintenanceCost`/`TestLeaderHireModifier`(gamedata)、`TestShipBeamAttackWithOfficer`/`TestShipBeamDefenseWithOfficer`/`TestHireLeader`(engine)、`TestApplyLeaderColonyBonuses_*`/`TestLeaderDisplayLevelToExpLevel`/`TestLeaderSkillIDByNameMapping`(shell)。標 `[~]` 非 `[x]`:只接了 2/25+ 技能的真實效果,多數技能因 openorion2/手冊本身無精確效果定義而 TODO,不算完整。
 

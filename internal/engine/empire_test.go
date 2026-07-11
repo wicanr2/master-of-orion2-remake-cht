@@ -232,3 +232,84 @@ func TestRunEmpireTurnTradeGoodsFalseSkipsRevenue(t *testing.T) {
 		t.Errorf("非貿易品殖民地不應計入貿易品收入,實得 %d", out.TradeGoodsRevenue)
 	}
 }
+
+// TestRunEmpireTurnGovtBonusMoneyPercent 驗證政府 money 加成(Democracy +50%,見
+// gamedata.IncomeGovtBonusDemocracyMoneyPercent)套用在帝國「已加總」的稅收+餘糧收入+貿易品
+// 收入上,差額計入 TaxRevenue、併入 NetBC。Tolerant 種族免污染清理,淨工業=毛工業=20
+// (Workers 2*10),稅率 50% → 稅收基數 10;+50% → 15。
+func TestRunEmpireTurnGovtBonusMoneyPercent(t *testing.T) {
+	colonies := []ColonyState{
+		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
+			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, TolerantRace: true},
+	}
+	ps := PlayerState{BC: 100, TaxRate: 50, Maintenance: 3, ResearchTopic: gamedata.ResearchTopic(1),
+		GovtBonusMoneyPercent: gamedata.IncomeGovtBonusDemocracyMoneyPercent}
+	out := RunEmpireTurn(ps, colonies)
+
+	if out.TaxRevenue != 15 { // 10 * 150/100
+		t.Errorf("加成後稅收 = %d,預期 15(基數10 ×150%%)", out.TaxRevenue)
+	}
+	if out.NetBC != 12 { // 15 - 3 維護
+		t.Errorf("淨 BC = %d,預期 12", out.NetBC)
+	}
+}
+
+// TestRunEmpireTurnGovtBonusMoneyPercentZeroNoOp 驗證 GovtBonusMoneyPercent=0(手冊未列出加成
+// 的政府,如 demo 用的 Dictatorship)時完全不影響稅收——確保「無加成政府」與「加欄位前」行為
+// 一致,對齊 demo 開局經濟軌跡不因本次接線變化。
+func TestRunEmpireTurnGovtBonusMoneyPercentZeroNoOp(t *testing.T) {
+	colonies := []ColonyState{
+		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
+			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, TolerantRace: true},
+	}
+	ps := PlayerState{BC: 100, TaxRate: 50, Maintenance: 3, ResearchTopic: gamedata.ResearchTopic(1)} // GovtBonusMoneyPercent 零值
+	out := RunEmpireTurn(ps, colonies)
+
+	if out.TaxRevenue != 10 {
+		t.Errorf("無政府加成時稅收 = %d,預期 10(無加成)", out.TaxRevenue)
+	}
+	if out.NetBC != 7 {
+		t.Errorf("淨 BC = %d,預期 7", out.NetBC)
+	}
+}
+
+// TestRunEmpireTurnFreighterMaintenance 驗證 ps.ActiveFreighters>0 時每艘 0.5 BC 維護費從 NetBC
+// 扣除(GAME_MANUAL.pdf p.169,gamedata.IncomeFreighterMaintenanceCost),並曝露在
+// EmpireOutput.FreighterMaintenanceCost。
+func TestRunEmpireTurnFreighterMaintenance(t *testing.T) {
+	colonies := []ColonyState{
+		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
+			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, TolerantRace: true},
+	}
+	// 稅收 10(20*50/100),維護費 3,運輸艦 5 艘 → 5*0.5=2.5 無條件捨去 → 2。
+	ps := PlayerState{BC: 100, TaxRate: 50, Maintenance: 3, ActiveFreighters: 5, ResearchTopic: gamedata.ResearchTopic(1)}
+	out := RunEmpireTurn(ps, colonies)
+
+	if out.FreighterMaintenanceCost != 2 {
+		t.Errorf("FreighterMaintenanceCost = %d,預期 2", out.FreighterMaintenanceCost)
+	}
+	if out.NetBC != 5 { // 10 - 3(建築維護) - 2(運輸艦維護)
+		t.Errorf("淨 BC = %d,預期 5", out.NetBC)
+	}
+	if out.Player.BC != 105 {
+		t.Errorf("國庫 = %d,預期 105", out.Player.BC)
+	}
+}
+
+// TestRunEmpireTurnFreighterMaintenanceZeroNoOp 驗證 ActiveFreighters=0(demo/remake 目前恆定
+// 狀態,見該欄位註解)時完全不影響 NetBC——確保零值(no Freighter 塑模)與加欄位前行為一致。
+func TestRunEmpireTurnFreighterMaintenanceZeroNoOp(t *testing.T) {
+	colonies := []ColonyState{
+		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
+			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, TolerantRace: true},
+	}
+	ps := PlayerState{BC: 100, TaxRate: 50, Maintenance: 3, ResearchTopic: gamedata.ResearchTopic(1)} // ActiveFreighters 零值
+	out := RunEmpireTurn(ps, colonies)
+
+	if out.FreighterMaintenanceCost != 0 {
+		t.Errorf("FreighterMaintenanceCost = %d,預期 0(無運輸艦塑模)", out.FreighterMaintenanceCost)
+	}
+	if out.NetBC != 7 { // 同 TestRunEmpireTurnBC,確認接線未改變既有 no-op 行為
+		t.Errorf("淨 BC = %d,預期 7", out.NetBC)
+	}
+}

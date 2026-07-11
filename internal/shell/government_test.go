@@ -1,6 +1,10 @@
 package shell
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+)
 
 // TestApplyGovernment 驗證政府型態對已建模資源的乘數效果(手冊 p.20–23 明列百分比)。
 func TestApplyGovernment(t *testing.T) {
@@ -38,5 +42,38 @@ func TestApplyGovernment(t *testing.T) {
 	s.ApplyGovernment(0)
 	if got := s.PlayerColonies[0].ResearchPerScientist; got != base {
 		t.Fatalf("獨裁研究應不變:%d → %d", base, got)
+	}
+}
+
+// TestEndTurnGovtBonusMoneyWiring 驗證 EndTurn 依 s.Government 算出的
+// gamedata.IncomeGovtMoneyBonusPercent 有實際接進 engine.RunEmpireTurn(不是死碼)。
+//
+// 判定依據(income 死碼接線 2026-07-11 輪次):民主(moraleGovByIndex[3])在 MANUAL_150.html
+// 有 +50% money 加成,demo 預設獨裁(0 加成)——切換到民主後,同一組殖民地稅收應嚴格更高;
+// 維持獨裁則應與切換前一致(no-op)。用「稅收隨政府切換而變 / 不變」這種相對比較,而非硬編某
+// 一版本的絕對稅收數字,避免耦合到 demo 母星初始 yield 之後若調整而改壞這條測試。
+func TestEndTurnGovtBonusMoneyWiring(t *testing.T) {
+	// 獨裁(demo 預設):s.Player.GovtBonusMoneyPercent 應為 0,EndTurn 前後稅收不受本次接線影響。
+	sDict := NewDemoSession()
+	sDict.EndTurn()
+	if sDict.Player.GovtBonusMoneyPercent != 0 {
+		t.Fatalf("獨裁 GovtBonusMoneyPercent = %d,預期 0", sDict.Player.GovtBonusMoneyPercent)
+	}
+	dictTax := sDict.LastPlayerOutput.TaxRevenue
+
+	// 民主:切換政府後 EndTurn,GovtBonusMoneyPercent 應反映 +50%,且稅收嚴格高於獨裁那組
+	// (同一份 demo 殖民地/稅率,唯一差異是政府 money 加成)。
+	sDemo := NewDemoSession()
+	sDemo.ApplyGovernment(3) // 民主
+	sDemo.EndTurn()
+	if sDemo.Player.GovtBonusMoneyPercent != gamedata.IncomeGovtBonusDemocracyMoneyPercent {
+		t.Fatalf("民主 GovtBonusMoneyPercent = %d,預期 %d", sDemo.Player.GovtBonusMoneyPercent, gamedata.IncomeGovtBonusDemocracyMoneyPercent)
+	}
+	demoTax := sDemo.LastPlayerOutput.TaxRevenue
+	if dictTax <= 0 {
+		t.Fatalf("獨裁稅收應 > 0 才能比較加成效果,實得 %d(demo 初始稅率可能為 0,測試前提失效)", dictTax)
+	}
+	if demoTax <= dictTax {
+		t.Fatalf("民主稅收 = %d,應嚴格高於獨裁稅收 %d(+50%% money 加成應生效)", demoTax, dictTax)
 	}
 }

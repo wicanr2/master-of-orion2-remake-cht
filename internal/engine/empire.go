@@ -16,8 +16,13 @@ type EmpireOutput struct {
 	// 的維護費(GAME_MANUAL.pdf p.169,gamedata.IncomeCommandOverflowCost)。已計入 NetBC,
 	// 這裡單獨曝露供測試/UI 顯示「這筆錢花在哪」,供≥需時為 0。
 	CommandOverflowCost int
-	Player              PlayerState // 研究推進 + BC 結算後的玩家狀態
-	ResearchDone        bool        // 本回合是否有研究主題完成
+	// FreighterMaintenanceCost 使用中運輸艦(Freighter)每回合維護費總和(GAME_MANUAL.pdf
+	// p.169,gamedata.IncomeFreighterMaintenanceCost,每艘 0.5 BC)。已計入 NetBC,單獨曝露
+	// 供測試/UI 顯示。ps.ActiveFreighters 目前恆 0(見該欄位註解:remake 無 Freighter 艦種
+	// 塑模)→ 本欄位目前恆為 0,是 no-op,接線已備妥待補艦種後生效。
+	FreighterMaintenanceCost int
+	Player                   PlayerState // 研究推進 + BC 結算後的玩家狀態
+	ResearchDone             bool        // 本回合是否有研究主題完成
 }
 
 // RunEmpireTurn 編排一個帝國的一回合:
@@ -38,6 +43,22 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		out.TotalNetIndustry += co.NetIndustry
 		out.TotalResearch += co.Research
 		// 稅收:對各殖民地淨工業依帝國稅率抽稅(gamedata.IncomeTaxRevenue,1:1 換 BC)。
+		//
+		// 2026-07-11 決定不接 gamedata.IncomeMoraleAdjustedProduction 到這裡(或任何收入項目),
+		// 誠實記錄判定依據,避免之後有人「順手」補上造成雙重計算:
+		// 手冊(GAME_MANUAL.pdf p.170)講「士氣調整 food/industry/research/income 四項總產出」,
+		// 但 income(稅收/餘糧收入/貿易品收入)在本 remake 全部是從已經套過士氣的產出「再換算」
+		// 出來的——co.NetIndustry 由 colony.go RunColonyTurn 用
+		// `pct := cs.MoralePercent + colonyGravityPenaltyPercent(cs)` 套過 GravityAdjustedProduction
+		// 才算出(工業/研究皆同一 pct);co.FoodSurplus 同樣經 colonyFood 用同一 pct 算出。
+		// 上面這行 tax 直接讀 co.NetIndustry、下面的 foodRev 讀 co.FoodSurplus、tradeRev 也讀
+		// co.NetIndustry——三者都已經隱含士氣調整過一次。若在這裡對 tax/foodRev/tradeRev(或加總
+		// 後的 NetBC)再套一次 IncomeMoraleAdjustedProduction,士氣就對同一筆錢生效兩次
+		// (一次在「產出」、一次在「產出換算成的收入」),與手冊「每格士氣=10% 總產出變化」
+		// 的單一調整量不符。故本檔刻意不呼叫 IncomeMoraleAdjustedProduction;該函式與其單元測試
+		// (income_test.go TestIncomeMoraleAdjustedProduction)保留,是驗證公式本身正確、供未來
+		// 若改為「income 獨立於已調整產出計算」的架構時使用,不是死碼。demo 母星 morale=0 時
+		// 這個決定本來就是 no-op,不影響探針驗證的 BC 軌跡。
 		tax := gamedata.IncomeTaxRevenue(co.NetIndustry, ps.TaxRate)
 		// 餘糧收入(GAME_MANUAL.pdf p.25,見 gamedata/income.go IncomeFoodSurplusRevenue
 		// provenance):把「賣不完的食物」換成 BC,每單位 0.5 BC(無條件捨去)。只對正盈餘
@@ -77,6 +98,18 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		out.FoodSurplusRevenue += foodRev
 		out.TradeGoodsRevenue += tradeRev
 	}
+	// 政府「money」加成(GAME_MANUAL.pdf 引用 MANUAL_150.html govt_bonus democracy_money/
+	// federation_money,gamedata.IncomeApplyGovernmentMoneyBonus)。與上面 cs.IncomeBonusPercent
+	// (太空港/證券交易所)不同,政府是帝國層級屬性、不是逐殖民地建築,故在迴圈外對「本回合已
+	// 加總的帝國 money 收入」(稅收+餘糧收入+貿易品收入,此時已含各殖民地 IncomeBonusPercent)
+	// 套一次,而非逐殖民地套用。加成後差額計入 TaxRevenue(與上方同款作法:不拆分到三個子項,
+	// 避免無意義的捨入分配)。ps.GovtBonusMoneyPercent=0(手冊未列出加成的政府,含 demo 用的
+	// Dictatorship)時 no-op。
+	if ps.GovtBonusMoneyPercent != 0 {
+		subtotal := out.TaxRevenue + out.FoodSurplusRevenue + out.TradeGoodsRevenue
+		bonused := gamedata.IncomeApplyGovernmentMoneyBonus(subtotal, ps.GovtBonusMoneyPercent)
+		out.TaxRevenue += bonused - subtotal
+	}
 	out.Player, out.ResearchDone = RunResearchPhase(ps, out.TotalResearch)
 	// 指揮評等(Command Rating)超支懲罰(GAME_MANUAL.pdf p.169:「For each rating point
 	// required by a ship that is not covered, 10 BCs come out of your income every turn.」)。
@@ -87,8 +120,12 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		uncoveredCommandPoints = 0
 	}
 	out.CommandOverflowCost = gamedata.IncomeCommandOverflowCost(uncoveredCommandPoints)
-	// 國庫結算:稅收 + 餘糧收入 + 貿易品收入 - 維護費 - 指揮評等超支懲罰。
-	out.NetBC = out.TaxRevenue + out.FoodSurplusRevenue + out.TradeGoodsRevenue - ps.Maintenance - out.CommandOverflowCost
+	// 運輸艦(Freighter)維護費(GAME_MANUAL.pdf p.169,gamedata.IncomeFreighterMaintenanceCost)。
+	// 獨立於 ps.Maintenance(只含已建建築維護費,見該欄位註解)。ps.ActiveFreighters 目前恆 0
+	// (remake 無 Freighter 艦種塑模,見該欄位註解)→ no-op,接線已備妥。
+	out.FreighterMaintenanceCost = gamedata.IncomeFreighterMaintenanceCost(ps.ActiveFreighters)
+	// 國庫結算:稅收 + 餘糧收入 + 貿易品收入 - 維護費 - 指揮評等超支懲罰 - 運輸艦維護費。
+	out.NetBC = out.TaxRevenue + out.FoodSurplusRevenue + out.TradeGoodsRevenue - ps.Maintenance - out.CommandOverflowCost - out.FreighterMaintenanceCost
 	out.Player.BC += out.NetBC
 	return out
 }

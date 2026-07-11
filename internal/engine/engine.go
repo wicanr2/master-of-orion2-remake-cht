@@ -184,6 +184,25 @@ type PlayerState struct {
 	// ExplicitChoice 記錄哪些主題是玩家「明確抉擇」過的(非預設)。用於元件解鎖:
 	// 明確抉擇過的主題只解鎖所選科技對應元件;未明確抉擇(AI/預設)維持主題層級(不回歸)。
 	ExplicitChoice map[gamedata.ResearchTopic]bool
+
+	// GovtBonusMoneyPercent 政府形式對「money」(BC/稅收)收入的加成百分比(MANUAL_150.html
+	// govt_bonus democracy_money/federation_money,見 gamedata.IncomeGovtMoneyBonusPercent /
+	// IncomeApplyGovernmentMoneyBonus)。與 Maintenance/CommandPointsSupply 同款輸入模式:
+	// 呼叫端(shell.GameSession.EndTurn)依 s.Government 算好傳入,引擎層只套用公式,不關心
+	// 政府型態本身如何對應到百分比(不需要 import gamedata 的 MoraleGovernmentType 判斷邏輯)。
+	// 0 = 無加成——手冊只列出 Democracy(+50%)/Federation(+75%)兩種政府有此加成,其餘政府
+	// (含 demo 用的 Dictatorship)呼叫端應傳 0,RunEmpireTurn 對 0 是 no-op。
+	GovtBonusMoneyPercent int
+
+	// ActiveFreighters 玩家目前「使用中」的運輸艦(Freighter)數量,供 RunEmpireTurn 算維護費
+	// (gamedata.IncomeFreighterMaintenanceCost,GAME_MANUAL.pdf p.169:每艘 0.5 BC/回合,無條件
+	// 捨去)。本專案目前的艦種塑模(gamedata.ShipType:COMBAT_SHIP/COLONY_SHIP/TRANSPORT_SHIP/
+	// OUTPOST_SHIP,見 enums.go)沒有獨立的「Freighter」艦種概念——TRANSPORT_SHIP 是地面入侵
+	// 用的運兵船,不是手冊這裡講的貨運艦隊(Freighter Fleet,一種抽象的貿易/後勤艦隊,不佔
+	// Command Rating,見 shipspace.go 註解)。呼叫端目前恆傳 0(零值,誠實的「尚未建模」而非
+	// 漏算),接線先做好——未來若補上貨運艦種追蹤,只需讓呼叫端算出正確數字即可,RunEmpireTurn
+	// 端不用再改。
+	ActiveFreighters int
 }
 
 // ColonyOutput 是一回合殖民地經濟結算結果。

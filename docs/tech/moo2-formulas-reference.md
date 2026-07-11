@@ -334,13 +334,36 @@ purposes of maintenance.」)——`gamedata.ShipCommandCost(class CombatShipClas
 | 每艘使用中運輸艦(Freighter) | 每回合 -0.5 BC(無條件捨去) | p.169「each freighter that is in use costs 1/2 BC per turn for maintenance」;未使用中的運輸艦不計費 |
 
 `IncomeCommandOverflowCost(uncoveredCommandPoints int) int`(`income.go:148`,2026-07-11 起實際由
-`engine.RunEmpireTurn` 呼叫,不再是零呼叫端的死碼)、`IncomeFreighterMaintenanceCost(activeFreighters int) int`(`income.go:157`,仍是零呼叫端——運輸艦數量未追蹤,TODO)。
+`engine.RunEmpireTurn` 呼叫,不再是零呼叫端的死碼)、`IncomeFreighterMaintenanceCost(activeFreighters int) int`
+(`income.go:157`,**2026-07-11 追加接線**:`engine.PlayerState` 新增 `ActiveFreighters` 欄位,
+`RunEmpireTurn` 呼叫本函式算出 `EmpireOutput.FreighterMaintenanceCost` 併入 `NetBC`。本專案目前的
+艦種塑模——`gamedata.ShipType`:`COMBAT_SHIP`/`COLONY_SHIP`/`TRANSPORT_SHIP`/`OUTPOST_SHIP`——沒有
+獨立的「Freighter」艦種(`TRANSPORT_SHIP` 是地面入侵運兵船,不是手冊講的貨運艦隊),呼叫端
+(`shell.GameSession`)恆傳 0,故目前是 no-op,但接線已就緒,補上艦種追蹤後即生效,不需再改
+`engine` 層)。
 
-### 士氣對收入的影響
+### 士氣對收入的影響——**判定結論:不接,會雙重計算**
 
-與 morale.go 同一手冊段落(p.170):「Every morale icon on the Colony screen represents a change of 10% in the total production output of the colony... adding to the food, industry, science, and income of a world.」`IncomeMoraleAdjustedProduction(baseProduction, netMoraleIcons int) int`(`income.go:167`):`baseProduction*(100+netMoraleIcons*10)/100`。與 `morale.go` 的 `MoraleProductionOutput` 是同一條手冊規則的兩個獨立實作(收入與殖民地產出分別呼叫,避免跨檔案耦合),數值邏輯必須保持一致,修改其一時應同步檢查另一邊。
+與 morale.go 同一手冊段落(p.170):「Every morale icon on the Colony screen represents a change of 10% in the total production output of the colony... adding to the food, industry, science, and income of a world.」`IncomeMoraleAdjustedProduction(baseProduction, netMoraleIcons int) int`(`income.go:167`):`baseProduction*(100+netMoraleIcons*10)/100`。
 
-### 政府對 BC 收入的加成
+**2026-07-11 判定(接 income 死碼時核實,結論:刻意不接)**:`engine.RunColonyTurn`(`colony.go`)
+早就把 `MoralePercent`(連同重力懲罰)套進 `GravityAdjustedProduction`,算出的 `NetIndustry`/
+`FoodSurplus`/`Research` 全部已經是「士氣調整過」的產出。`RunEmpireTurn` 的 `TaxRevenue`(讀
+`co.NetIndustry`)、`FoodSurplusRevenue`(讀 `co.FoodSurplus`)、`TradeGoodsRevenue`(讀
+`co.NetIndustry`)三項 income 全部是從這個已調整過的產出直接換算出來的,不是獨立於產出重新計算
+的數字。若在這三項(或加總後的 `NetBC`)再呼叫一次 `IncomeMoraleAdjustedProduction`,士氣就對
+同一筆錢生效兩次——手冊「每格士氣=10% 總產出變化」講的是單一調整量,不是「先調整生產、生產換
+成收入後再調整一次收入」。故本輪**刻意不呼叫** `IncomeMoraleAdjustedProduction`,只在
+`engine/empire.go` 加大段註解記錄本判定依據,防止之後有人「順手」接上造成 double-count。
+該函式與其單元測試(`TestIncomeMoraleAdjustedProduction`)保留——是驗證公式本身正確、供未來若
+改成「income 獨立於已調整產出計算」的架構時使用,不是死碼。demo 母星 morale=0 時這個決定本來
+就是 no-op,不影響任何既有 BC 軌跡。
+
+與 `morale.go` 的 `MoraleProductionOutput` 是同一條手冊規則,但**用途不同**:`MoraleProductionOutput`
+是真正被 `colony.go` 呼叫的那一份(套在食物/工業/研究的 per-worker 產出上,見 §「士氣」節)、
+`IncomeMoraleAdjustedProduction` 目前只是待命的公式(未被任何呼叫端使用,基於上述判定)。
+
+### 政府對 BC 收入的加成——**2026-07-11 已接線**
 
 MANUAL_150.html:「value * 5 is the percent bonus for the item, for example democracy has a 10 * 5 = 50% bonus to research.」該節列出 `democracy_money=10`、`federation_money=15`,故:
 
@@ -350,6 +373,17 @@ Federation: 15*5 = 75%
 ```
 
 `IncomeGovtBonusDemocracyMoneyPercent=50`、`IncomeGovtBonusFederationMoneyPercent=75`;`IncomeApplyGovernmentMoneyBonus(baseBC, bonusPercent int) int`(`income.go:175`)。手冊只列出這兩種政府對「money」的加成,其餘政府的 `govt_bonus` 只列 science/food/production,不套用本函式。
+
+**接線**:新增 `gamedata.IncomeGovtMoneyBonusPercent(gov MoraleGovernmentType) int`(`income.go`,
+Democracy→50、Federation→75、其餘→0),`engine.PlayerState` 新增 `GovtBonusMoneyPercent` 欄位
+(呼叫端算好傳入,引擎層不判斷政府列舉本身,與 `Maintenance`/`CommandPointsSupply` 同款輸入模式)。
+`shell.GameSession.EndTurn` 依 `s.Government` 算出此值。`RunEmpireTurn` 在逐殖民地迴圈結束後(帝國
+層級,非逐殖民地,因為政府是帝國屬性、不是像太空港那樣的殖民地建築),對本回合已加總的
+`TaxRevenue+FoodSurplusRevenue+TradeGoodsRevenue` 套一次 `IncomeApplyGovernmentMoneyBonus`,差額
+併入 `TaxRevenue`。demo 預設 Dictatorship(0 加成)→ no-op,切到 Democracy/Federation 才生效
+(`TestRunEmpireTurnGovtBonusMoneyPercent`/`TestEndTurnGovtBonusMoneyWiring`)。AI 對手無
+`Government` 欄位建模(`AIOpponent` 目前無政府型態概念),`GovtBonusMoneyPercent` 對 AI 恆為零值,
+不受影響——非漏算,是 AI 政府系統本身尚未建模的既有範圍。
 
 ### 驗證範例(`income_test.go`)
 
