@@ -63,6 +63,21 @@ type AIOpponent struct {
 	// nil 安全:舊存檔沒有這個欄位時解碼為 nil,BombardColony 對 nil/空 map 視為「無建築」,
 	// 行為與加這個欄位之前逐位元一致(hits 全部進人口,不會 panic)。
 	ColonyBuildings []map[string]bool
+
+	// Leaders 是這個 AI 對手的領袖名單(欄位型別比照 GameSession.Leaders,同一個 shell.Leader
+	// struct)。2026-07-11 新增,唯一消費端目前是 InvadeColony 的守方 Commando 加成
+	// (commandoLeaderTier(aiPlayer.Leaders),見 ground_invasion.go)。
+	//
+	// ⚠ 誠實近似(#5,docs/tech/version-1.3-1.5-diff.md):原版領袖是從英雄池隨機雇用、可陣亡
+	// 替換的動態資源;本 remake 沒有 AI 英雄雇用/成長系統,改用「開局依種族性格固定指派」當
+	// 近似——布拉西人(手冊「體格強悍,地面戰加成」)給一名 Tier2 進階指揮官、姆瑞森人(好戰
+	// 善攻)給一名 Tier1 一般指揮官、席隆人(重研究)不給指揮官。此清單 buildDemoAIOpponents
+	// 開局建立後不隨遊戲成長變動(不模擬雇用/陣亡),與 commandoLeaderTier 對玩家 s.Leaders
+	// 的「帝國全域清單當代理」同款近似紀律,非手冊逐字的隨機雇用機制。
+	//
+	// nil 安全:舊存檔沒有這個欄位時解碼為 nil,commandoLeaderTier(nil) 回傳 0(無 Commando
+	// 加成),與加這個欄位之前的行為(TODO 留白、无加成)一致,不會 panic。
+	Leaders []Leader
 }
 
 // cloneBuildings 回傳 m 的獨立拷貝(逐鍵複製),供需要「各自獨立、不共享底層 map」的初始化
@@ -2249,13 +2264,30 @@ func homeworldBuildings() map[string]bool {
 // 的手誤,且 cmd/moo2 的 diplomatRaceIndex 早已把它當「舊字串相容」映射到薩克拉肖像,可見
 // 命名本身從一開始就不精確)。這裡順手訂正為 Races 表裡真實存在的「席隆人」,不延續錯字——沒有
 // 任何測試字串比對這個名稱(已查證,見 grep AIPlayers[0].Name),訂正不影響既有測試。
+//
+// commandoTier 欄位(2026-07-11 新增,#5 守方 Commando 加成):依種族性格指派開局固定的
+// Commando 指揮官技能階(0 無/1 一般/2 進階),見 AIOpponent.Leaders 欄位註解的誠實近似說明——
+// 布拉西人(手冊「體格強悍,地面戰加成」)給 Tier2、姆瑞森人(好戰善攻)給 Tier1、席隆人
+// (重研究)給 0(無指揮官)。
 var demoAIOpponentSetup = []struct {
-	name    string
-	profile ai.Profile
+	name         string
+	profile      ai.Profile
+	commandoTier int
 }{
-	{"AI (席隆人)", ai.ProfileScientific},
-	{"AI (姆瑞森人)", ai.ProfileAggressive},
-	{"AI (布拉西人)", ai.ProfileExpansionist},
+	{"AI (席隆人)", ai.ProfileScientific, 0},
+	{"AI (姆瑞森人)", ai.ProfileAggressive, 1},
+	{"AI (布拉西人)", ai.ProfileExpansionist, 2},
+}
+
+// aiCommandoLeader 依 commandoTier 建構一名指揮官技能領袖(Skill="指揮官"),tier<=0 時回傳
+// nil(不指派領袖,對應「該 AI 無 Commando 守將」)。Name/Level/Ship 為示範性零值填法,比照
+// demoLeaders 的既有欄位語意(非 HERODATA 真實英雄資料);消費端(commandoLeaderTier)只讀
+// Skill/Tier,其餘欄位不影響守方加成計算。
+func aiCommandoLeader(name string, tier int) []Leader {
+	if tier <= 0 {
+		return nil
+	}
+	return []Leader{{Name: name, Skill: "指揮官", Level: tier * 2, Ship: false, Tier: tier}}
 }
 
 // NewDemoSession 建一個最小可玩對局:玩家 + 3 個性格互異的 AI 對手(多帝國競爭骨架,見
@@ -2291,8 +2323,11 @@ func buildDemoAIOpponents(aiHomeStars []int) []AIOpponent {
 			// 星基)——每個 AI 各自 cloneBuildings 一份獨立拷貝,不可共享同一個 map 參考(見
 			// AIOpponent.ColonyBuildings 欄位註解)。
 			ColonyBuildings: []map[string]bool{cloneBuildings(homeworldBuildings())},
-			Decider:         ai.NewRemakeDecider(setup.profile),
-			OwnedStars:      1,
+			// Leaders 依種族性格指派開局固定 Commando 守將(#5,見 AIOpponent.Leaders 與
+			// demoAIOpponentSetup.commandoTier 欄位註解的誠實近似說明)。
+			Leaders:    aiCommandoLeader(setup.name, setup.commandoTier),
+			Decider:    ai.NewRemakeDecider(setup.profile),
+			OwnedStars: 1,
 		})
 	}
 	return aiPlayers

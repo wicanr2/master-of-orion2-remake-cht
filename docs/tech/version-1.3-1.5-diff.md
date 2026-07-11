@@ -29,7 +29,7 @@
 | 2 | 電漿砲傷害(30/20) | ✅ 完成 | `3eef521` `BuildShipWithMods` 改讀 `BuildWeaponOptions(RuleProfile)`,隨 `Ship.WeaponAttack` 進戰鬥 |
 | 3 | 軌道轟炸齊射(5/10) | ✅ 完成 | `RuleProfile.BombardmentVolleys` 接 `fleetBombardDamage`(先前輪次) |
 | **4** | **運輸艦淨現金(freighters_cash_bonus)** | ❌ **未排** | 需「貨運艦建造事件追蹤」子系統;專案完全不追蹤運輸艦數量/建造事件 |
-| **5** | **防禦方指揮官 2.5x(defender commando)** | ⚠ **半做** | 批次 A 已做 `gamedata` 公式(`GroundCommandoDefenderForceBonus`)+ `RuleProfile.DefenderCommandoBonus`;**shell 消費端未接**——`InvadeColony` 守方掛鉤待接,前置=AI 領袖資料模型(`AIOpponent` 無 `Leaders`) |
+| **5** | **防禦方指揮官 2.5x(defender commando)** | ✅ **完成** | `gamedata.GroundCommandoDefenderForceBonus` + `RuleProfile.DefenderCommandoBonus` 已接進 `InvadeColony` 守方(`internal/shell/ground_invasion.go`);前置的 AI 領袖資料模型(`AIOpponent.Leaders`)已補上,`buildDemoAIOpponents` 依種族性格開局固定指派(布拉西人 Tier2/姆瑞森人 Tier1/席隆人無)——**誠實近似**:非手冊逐字的隨機雇用機制,見 `session.go` `AIOpponent.Leaders`/`demoAIOpponentSetup.commandoTier` 欄位註解 |
 | 6 | commando 倍率門檻 | ✅ 非差異 | `PARAMETERS.CFG:2745-2753`「(default, classic)」,1.5 預設=1.3,無需做 |
 | **7** | **轟炸建築 +1hit(BombardmentBuildingBonusHits)** | ✅ **完成** | `b239f94` 隨 AI 建築模型接進 `BombardColony` 建築吸收(1.3 每棟 +1 hit);語意近似已標註 |
 | 8 | civilian_armor(100hp) | ✅ 非差異 | `PARAMETERS.CFG:1778-1786`,值兩版相同;remake 採 hits 計數模型非 HP 模型,兩者未調和(誠實標註) |
@@ -43,10 +43,10 @@
 
 **真正「還沒安排、且是真缺口」的**(需前置子系統,非公式缺口——見 memory `moo2-diff-items-need-subsystems`):
 - **#4**(需貨運建造事件追蹤)、**#13**(需掃描子系統,從零)。
-- **#5**(消費端待接,前置=AI 領袖模型)。
 - **#14 的 arc-cost 面向**(前置=獨立衛星船體類別)。
 
-其餘 15 項中:§2 三條真差異(#1/#2/#3)+ #7 已完成;#6/#8/#9/#10/#11/#15 為確認的非差異;#12 已等同 1.5。
+其餘 15 項中:§2 三條真差異(#1/#2/#3)+ #5(2026-07-11 消費端接線完成)+ #7 已完成;
+#6/#8/#9/#10/#11/#15 為確認的非差異;#12 已等同 1.5。
 
 ## 1. 差異清單(全量表)
 
@@ -58,7 +58,7 @@
 | 2 | 戰鬥傷害(電漿砲) | Damage **6–30** | Damage **4–20** | ✅ 是,`internal/shell/session.go` `WeaponOptions`「電漿砲」 | MANUAL_150.html「Plasma Cannon min/max damage from 6/30 to 4/20」(已收錄於 `docs/tech/component-values.md`) |
 | 3 | 軌道轟炸命中換算 | Bomb 武器 = **5 次攻擊**當量;戰機 = **0**(無當量) | Bomb 武器 = **10 次攻擊**當量;戰機 = **1** 次 | ✅ 是,`internal/shell/orbital_bombardment.go` `fleetBombardDamage`(現行 `for round:=0;round<10` 即 1.5 值) | CHANGELOG_150.TXT 1.50.9「Fixed bomb hits calculation for orbital bombardment: Bomb weapons now get bomb hits equivalent to 10 instead of 5 attacks. Fighters get the equivalence of 1 strike instead of 0.」 |
 | 4 | 經濟(新造運輸艦淨現金) | 完工時**淨得 +2~5 BC**(0-3 BC 立即成本 + 固定 5 BC 補償,官方手冊原文承認此為 1.3 就有的「一律有淨利」quirk,非等到 1.40 才算 bug) | `freighters_cash_bonus` 出廠預設 **0**(1.50.8 起),淨得 0 BC | ⚠ 半實作——`gamedata.IncomeFreighterMaintenanceCost`(每回合 0.5 BC/艘持續維護費)已寫好,但「完工當下的一次性現金效果」整條機制(對應手冊 `freighters_cash_bonus`)本專案**完全沒有程式碼**(不追蹤運輸艦建造事件),不算「已實作」 | MANUAL_150.html「Buildings & Freighters Free Cash Bug」全段(1.31/1.40/1.50 三欄對照表)+ CHANGELOG 1.50.8「Changed freighters_cash_bonus default from 5 to 0 BC」 |
-| 5 | 地面戰:防禦方指揮官加成 | 防禦方 Commando 技能領袖**無**額外加成(僅攻方有 2.5x) | 新增:防禦方 Commando 領袖也給 **2.5x** 加成(攻方不變) | ❌ 否——本專案 `ResolveGroundBattle`(1oom 公式+手冊加成表)完全沒有領袖加成項 | MANUAL_150.html「Commando Leader: A defending commando gives 2.5x the regular commando bonus to ground troops, just like an attacking commando already gives in classic.」 |
+| 5 | 地面戰:防禦方指揮官加成 | 防禦方 Commando 技能領袖**無**額外加成(僅攻方有 2.5x) | 新增:防禦方 Commando 領袖也給 **2.5x** 加成(攻方不變) | ✅ 是(2026-07-11 完成)——`gamedata.GroundCommandoDefenderForceBonus` + `RuleProfile.DefenderCommandoBonus` 已接進 `InvadeColony` 守方,前置的 `AIOpponent.Leaders` 資料模型(種族性格近似指派)已補齊 | MANUAL_150.html「Commando Leader: A defending commando gives 2.5x the regular commando bonus to ground troops, just like an attacking commando already gives in classic.」 |
 | 6 | 地面戰:commando 倍率門檻 | 攻方 5x/7.5x、守方 2x/3x(依技能等級) | **出廠預設不變**,只是新增 `ground_commando_attacker_x2`/`ground_commando_defender_x5` 讓玩家可調換 | ❌ 否(且屬確認非差異) | `PARAMETERS.CFG:2745-2753`「(default, classic)」逐條標註 |
 | 7 | 轟炸:建築 hits 加成 | 未記錄文件的 **+1 hit** bonus(bug) | 移除該 +1 bug | ❌ 否——本專案軌道轟炸只扣人口,不扣建築(見 `docs/tech/ground-combat-algorithm.md`「範圍限制」),此差異對本專案模型無作用 | CHANGELOG_150.TXT 1.50.10「Undocumented +1 hit bonus for civilian buildings during bombardment removed.」 |
 | 8 | 轟炸:建築/人口裝甲值 | `civilian_armor`(非防禦建築/人口單位)= **100 hp**(所有裝甲等級皆同) | 出廠預設不變,只是暴露成可調參數 | ❌ 否(且屬確認非差異) | `PARAMETERS.CFG:1778-1786`「Default is 100 hp regardless of armor (classic).」 |

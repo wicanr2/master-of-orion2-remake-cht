@@ -186,7 +186,7 @@ patch 1.3 vs 1.5 差異項)。新程式碼:`internal/gamedata/ground_version_dif
 | # | 項目 | 版本差異? | 實作程度 | 說明 |
 |---|---|---|---|---|
 | #6 | 指揮官(Commando)攻方倍率 | 否(兩版同) | **完整接線**(近似公式) | `GroundCommandoAttackerForceBonus(tier)`:tier1=5、tier≥2=7(2.5×3=7.5 捨去)。已接進 `InvadeColony` 的攻方 force(`commandoLeaderTier(s.Leaders)` 掃描帝國 Leaders 找 `Skill=="指揮官"` 的最高 Tier)。**近似**:①「regular commando bonus」基準值(2/3)手冊只給相對倍率,沒給獨立驗證的絕對數字,本檔直接當成最終加成點數;②remake 無「領袖指派到某次入侵」模型,用「帝國是否擁有 Commando 技能領袖」當代理條件,不論其 `Ship`/實際位置。單測:`TestGroundCommandoAttackerForceBonus`、`TestInvadeColony_CommandoLeaderImprovesWinRate`(實測無指揮官勝率 0.63→有指揮官 0.75,150 場)。 |
-| #5 | 防禦方 Commando 2.5x | **是** | **gamedata 完整實作+測試,shell 層未接線(無消費端)** | `RuleProfile.DefenderCommandoBonus`(1.3=1.0、1.5=2.5)套進 `GroundCommandoDefenderForceBonus(tier, bonus)`。`TestDefenderCommandoBonusVersionDiff` 驗證兩版數字確實不同(tier1:2→5,tier2:3→7)。**未接線理由(誠實,非藉口)**:`InvadeColony` 目前守方恆為 AI(`AIOpponent` 完全沒有 `Leaders` 欄位/領袖資料模型),沒有資料可推導「AI 是否擁有 Commando 領袖」,寫死 tier=0 呼叫只會製造「看起來已接線但恆為 0」的假象,故只在 `ground_invasion.go` 留 TODO 掛鉤註解,不呼叫。 |
+| #5 | 防禦方 Commando 2.5x | **是** | **完整接線(2026-07-11 補完,近似公式)** | `RuleProfile.DefenderCommandoBonus`(1.3=1.0、1.5=2.5)套進 `GroundCommandoDefenderForceBonus(tier, bonus)`,已接進 `InvadeColony` 守方 force(`commandoLeaderTier(aiPlayer.Leaders)`)。前置的 AI 領袖資料模型已補上:`AIOpponent.Leaders`(比照玩家 `GameSession.Leaders`),`buildDemoAIOpponents` 依種族性格開局固定指派(布拉西人 Tier2/姆瑞森人 Tier1/席隆人無指揮官)。**近似(誠實標註)**:原版領袖是從英雄池隨機雇用、可陣亡替換的動態資源;remake 用「開局依種族性格固定指派、不隨遊戲成長」當代理,非手冊逐字機制,與 #6 攻方 `commandoLeaderTier` 的「帝國全域清單當代理」同款近似紀律。`persist.go` `aiSnapshot.Leaders` 已比照 `ColonyBuildings` 雙向序列化,舊存檔解碼為 nil 時 `commandoLeaderTier(nil)=0` 安全降級。單測:`TestBuildDemoAIOpponents_CommandoLeadersByRace`、`TestInvadeColony_DefenderCommandoLowersAttackerWinRate`(實測有守將勝率 0.47 < 無守將 0.59,150 場)、`TestInvadeColony_DefenderCommandoVersionDifference`(1.3 攻方勝率 0.53 > 1.5 攻方勝率 0.47,150 場;公式數值 tier2:1.3→3、1.5→7)、`TestInvadeColony_NoDefenderCommandoForPsilon`(無守將回歸)、`TestInvadeColony_NilAIPlayerLeadersSafeDegrade`(舊存檔安全降級)。 |
 | #7 | 轟炸建築 +1 hit(1.3 bug) | **是** | **僅 RuleProfile 欄位 + TODO 掛鉤** | `RuleProfile.BombardmentBuildingBonusHits`(1.3=1、1.5=0)。本 remake 軌道轟炸只扣人口不扣建築(AI 無 `ColonyBuildings` 持久資料可扣),無「建築 hit」概念可套用這個加成,故只加欄位 + `BombardColony` 內註解掛鉤點,無任何函式讀取它。 |
 | #8 | civilian_armor 100hp | 否(兩版同) | **常數鎖定,無消費端** | `gamedata.GroundCivilianArmorHP = 100`(PARAMETERS.CFG:1778-1786 逐字數字)。與 #7 同屬未建的「建築損傷模型」,先鎖定數字供未來引用。單測:`TestGroundCivilianArmorHP_LockedValue`(純數值鎖定)。 |
 | #9 | 地面防禦建築結構倍率 | 否(兩版同) | **常數鎖定,無消費端** | `gamedata.GroundDefenseArmorMultiplier = 100`(PARAMETERS.CFG:1772-1775)。remake 沒有「地面防禦建築」這個資料實體(`ColonyBuildings` 只是 `map[string]bool` 有/無旗標,無 HP/結構值欄位;AI 側連追蹤都沒有),無法真正套用,誠實標「掛鉤備妥、待防禦建築系統」。單測:`TestGroundDefenseArmorMultiplier_LockedValue`。 |
@@ -201,6 +201,35 @@ patch 1.3 vs 1.5 差異項)。新程式碼:`internal/gamedata/ground_version_dif
 既有已知環境限制);`go build -buildvcs=false -o /tmp/moo2-groundcombat-check ./cmd/moo2` 成功
 (未寫回 repo 根目錄 `moo2` 二進位)。既有 `ground_invasion_test.go`/`orbital_bombardment_test.go`
 全部維持綠燈,無需更新任何既有斷言數字。
+
+## 2026-07-11 追加:防禦方 Commando 消費端接線收尾(#5 收尾)
+
+上一輪(本節上方,同日較早批次)已做好 `gamedata` 公式與 `RuleProfile.DefenderCommandoBonus`,
+但誠實留白——`AIOpponent` 沒有 `Leaders` 欄位,shell 層沒有資料可推導「AI 是否擁有 Commando
+守將」。本輪補上這個最後一哩:
+
+- `AIOpponent` 新增 `Leaders []Leader` 欄位(`internal/shell/session.go`),型別比照
+  `GameSession.Leaders`。`buildDemoAIOpponents` 依種族性格開局固定指派(布拉西人「體格強悍,
+  地面戰加成」→ Tier2 進階指揮官;姆瑞森人「好戰善攻」→ Tier1 一般指揮官;席隆人「重研究」→
+  無指揮官),對應 `demoAIOpponentSetup` 新增的 `commandoTier` 欄位。
+- `ground_invasion.go` `InvadeColony` 守方 force 加上一行:
+  `defForce += gamedata.GroundCommandoDefenderForceBonus(commandoLeaderTier(aiPlayer.Leaders), s.RuleProfile.DefenderCommandoBonus)`,
+  取代原本的 TODO 留白註解。
+- `persist.go` `aiSnapshot` 比照 `ColonyBuildings` 加 `Leaders` 欄位雙向序列化,舊存檔解碼為 nil
+  時 `commandoLeaderTier(nil)=0`,安全降級為無加成。
+
+**誠實標註不變**:原版領袖是從英雄池隨機雇用、可陣亡替換的動態資源;remake 沒有 AI 英雄雇用/
+成長系統,這裡的「依種族性格開局固定指派」是可觀察、確定性的近似(入侵布拉西最難、姆瑞森次之、
+席隆無守方 commando 加成),不是手冊逐字的隨機雇用機制。AI 領袖清單建立後不隨遊戲成長變動。
+
+**版本效果落地**:tier2 基準 3,1.3(`DefenderCommandoBonus=1.0`)→ `int(3*1.0)=3`;1.5
+(`=2.5`)→ `int(3*2.5)=7`。150 場模擬:入侵有 Tier2 守將的布拉西人母星,1.3 攻方勝率 0.53、
+1.5 攻方勝率 0.47——1.5 確實比 1.3 更難入侵,#5 的版本差異在遊戲迴圈裡真的生效,不再是只存在於
+`gamedata` 單元測試裡的公式。
+
+**驗證**(同一 docker image):`go build ./...`/`go vet ./internal/shell ./internal/gamedata`/
+`go test ./internal/shell/ ./internal/gamedata/` 全綠;`moo2sim -turns 20` 經濟軌跡未變(本輪
+只加 AI Leaders 資料 + `InvadeColony` 守方項,不進 `EndTurn`)。
 
 ## 來源
 

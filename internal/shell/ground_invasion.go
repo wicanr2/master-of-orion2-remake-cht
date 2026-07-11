@@ -453,11 +453,13 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 
 	defCount := gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population, colony.PopMax, false)
 	defForce := aiMarineForce(*aiPlayer)
-	// TODO 守方 Commando 加成(#5,ruleprofile.go RuleProfile.DefenderCommandoBonus)掛鉤點:
-	// gamedata.GroundCommandoDefenderForceBonus(tier, s.RuleProfile.DefenderCommandoBonus) 已
-	// 實作+測試,但 AIOpponent 沒有 Leaders 欄位(AI 完全沒有領袖資料模型,不同於陸戰隊/戰車那種
-	// 「至少有開局必有 Marine Barracks」的可推導事實撐腰),沒有資料可誠實推導 AI 是否有 Commando
-	// 領袖,故不臆測補上(不寫死 tier=0 假裝有接線——這裡就是誠實留白,見 RuleProfile 欄位註解)。
+	// 守方 Commando 領袖加成(#5,2026-07-11 已接線;ruleprofile.go RuleProfile.DefenderCommandoBonus):
+	// AIOpponent.Leaders(見該欄位註解)提供「AI 是否擁有 Commando 守將」的資料來源——
+	// buildDemoAIOpponents 依種族性格開局固定指派(布拉西人 Tier2/姆瑞森人 Tier1/席隆人無),
+	// 非手冊逐字的隨機雇用機制,是誠實標記的近似(與攻方 commandoLeaderTier(s.Leaders) 的
+	// 「帝國全域清單當代理」同款近似紀律)。舊存檔 aiPlayer.Leaders 解碼為 nil 時
+	// commandoLeaderTier(nil)=0,安全降級為無加成。
+	defForce += gamedata.GroundCommandoDefenderForceBonus(commandoLeaderTier(aiPlayer.Leaders), s.RuleProfile.DefenderCommandoBonus)
 	defHits := gamedata.GroundMarineHitsToKill(false, hasPoweredArmorFor(aiPlayer.Player))
 	def := gamedata.NewGroundForce(defCount, defHits, defForce, true)
 

@@ -534,6 +534,179 @@ func TestCommandoLeaderTier(t *testing.T) {
 	}
 }
 
+// newFleetAtAISessionForAI 是 newFleetAtAIHomeSession 的參數化版本,可指定入侵哪一個 AI
+// 對手(aiIdx),供守方 Commando 測試鎖定特定種族(布拉西人 AIPlayers[2]/姆瑞森人 AIPlayers[1]/
+// 席隆人 AIPlayers[0],見 demoAIOpponentSetup 順序)。
+func newFleetAtAISessionForAI(t *testing.T, aiIdx int) (*GameSession, int) {
+	t.Helper()
+	s := NewDemoSession()
+	s.DisableEvents = true
+	if len(s.AIPlayers) <= aiIdx || len(s.AIPlayers[aiIdx].ColonyStars) == 0 {
+		t.Fatalf("需 AIPlayers[%d] 存在且有 ColonyStars 對映", aiIdx)
+	}
+	starIdx := s.AIPlayers[aiIdx].ColonyStars[0]
+	s.FleetAtStar = starIdx
+	s.FleetDestStar = -1
+	s.FleetETA = 0
+	return s, starIdx
+}
+
+// TestBuildDemoAIOpponents_CommandoLeadersByRace 驗證 buildDemoAIOpponents 依種族性格指派的
+// 開局固定 Commando 守將(#5,見 AIOpponent.Leaders 與 demoAIOpponentSetup.commandoTier 欄位
+// 註解的誠實近似說明):布拉西人(AIPlayers[2])Tier2、姆瑞森人(AIPlayers[1])Tier1、
+// 席隆人(AIPlayers[0])無指揮官領袖。
+func TestBuildDemoAIOpponents_CommandoLeadersByRace(t *testing.T) {
+	s := NewDemoSession()
+	if len(s.AIPlayers) != 3 {
+		t.Fatalf("預期 3 個 AI 對手,got %d", len(s.AIPlayers))
+	}
+	cases := []struct {
+		idx      int
+		wantName string
+		wantTier int
+	}{
+		{0, "AI (席隆人)", 0},
+		{1, "AI (姆瑞森人)", 1},
+		{2, "AI (布拉西人)", 2},
+	}
+	for _, c := range cases {
+		ai := s.AIPlayers[c.idx]
+		if ai.Name != c.wantName {
+			t.Fatalf("AIPlayers[%d].Name = %q,want %q", c.idx, ai.Name, c.wantName)
+		}
+		if got := commandoLeaderTier(ai.Leaders); got != c.wantTier {
+			t.Fatalf("%s 的 commandoLeaderTier = %d,want %d(Leaders=%+v)", c.wantName, got, c.wantTier, ai.Leaders)
+		}
+	}
+}
+
+// TestInvadeColony_DefenderCommandoLowersAttackerWinRate 驗證守方 Commando 加成(#5)接進
+// InvadeColony 後真的影響戰局:入侵有 Tier2 Commando 守將的布拉西人母星(AIPlayers[2]),
+// 對照組清空該 AI 的 Leaders(模擬無守將),攻方勝率應下降。雙方都清空玩家 s.Leaders,避免攻方
+// Commando 加成(#5/#6 已接線)混進來干擾,只讓守方加成本身造成差異。
+func TestInvadeColony_DefenderCommandoLowersAttackerWinRate(t *testing.T) {
+	const n = 150
+	const bulrathiIdx = 2
+	winRate := func(clearDefenderLeaders bool) float64 {
+		wins := 0
+		for i := 0; i < n; i++ {
+			s, starIdx := newFleetAtAISessionForAI(t, bulrathiIdx)
+			s.Turn = i + 1
+			s.FleetMarines = 5
+			s.Leaders = nil // 排除攻方 commando 干擾
+			if clearDefenderLeaders {
+				s.AIPlayers[bulrathiIdx].Leaders = nil
+			}
+			res := s.InvadeColony(starIdx)
+			if !res.Ok {
+				t.Fatalf("clear=%v i=%d: 前置條件應齊備,got Reason=%q", clearDefenderLeaders, i, res.Reason)
+			}
+			if res.AttackerWon {
+				wins++
+			}
+		}
+		return float64(wins) / n
+	}
+	withDefenderCommando := winRate(false)
+	withoutDefenderCommando := winRate(true)
+	if withDefenderCommando >= withoutDefenderCommando {
+		t.Fatalf("布拉西人有 Tier2 Commando 守將應降低攻方勝率,got 有守將=%.2f 無守將=%.2f",
+			withDefenderCommando, withoutDefenderCommando)
+	}
+	t.Logf("守方有 Commando 勝率=%.2f 守方無 Commando 勝率=%.2f", withDefenderCommando, withoutDefenderCommando)
+}
+
+// TestInvadeColony_DefenderCommandoVersionDifference 驗證 #5 的版本差異落地:同一 AI(布拉西人,
+// 固定 Tier2 守方 Commando)在 Profile13(DefenderCommandoBonus=1.0)vs Profile15(=2.5)下,
+// 攻方勝率應不同——1.5 守方加成更高(基準 3→int(3*2.5)=7,對照 1.3 的 int(3*1.0)=3),入侵應更難
+// (攻方勝率更低)。
+func TestInvadeColony_DefenderCommandoVersionDifference(t *testing.T) {
+	const n = 150
+	const bulrathiIdx = 2
+	winRate := func(profile gamedata.RuleProfile) float64 {
+		wins := 0
+		for i := 0; i < n; i++ {
+			s, starIdx := newFleetAtAISessionForAI(t, bulrathiIdx)
+			s.Turn = i + 1
+			s.FleetMarines = 5
+			s.Leaders = nil // 排除攻方 commando 干擾,只看守方版本差異
+			s.RuleProfile = profile
+			res := s.InvadeColony(starIdx)
+			if !res.Ok {
+				t.Fatalf("i=%d: 前置條件應齊備,got Reason=%q", i, res.Reason)
+			}
+			if res.AttackerWon {
+				wins++
+			}
+		}
+		return float64(wins) / n
+	}
+	rate13 := winRate(gamedata.Profile13())
+	rate15 := winRate(gamedata.Profile15())
+	if rate15 >= rate13 {
+		t.Fatalf("1.5 守方 Commando 加成(2.5x)應比 1.3(1.0x)更難入侵(攻方勝率更低),got 1.3=%.2f 1.5=%.2f", rate13, rate15)
+	}
+	t.Logf("1.3 攻方勝率=%.2f 1.5 攻方勝率=%.2f", rate13, rate15)
+
+	// 直接驗證公式數值本身(不透過機率):tier2 基準 3,1.3→int(3*1.0)=3,1.5→int(3*2.5)=7。
+	if got := gamedata.GroundCommandoDefenderForceBonus(2, gamedata.Profile13().DefenderCommandoBonus); got != 3 {
+		t.Fatalf("tier2 + Profile13 應得 3,got %d", got)
+	}
+	if got := gamedata.GroundCommandoDefenderForceBonus(2, gamedata.Profile15().DefenderCommandoBonus); got != 7 {
+		t.Fatalf("tier2 + Profile15 應得 7,got %d", got)
+	}
+}
+
+// TestInvadeColony_NoDefenderCommandoForPsilon 驗證席隆人(AIPlayers[0],commandoTier=0,無指揮官
+// 領袖)入侵時守方無 Commando 加成(回歸行為與接線前一致):清空/保留其 Leaders(本來就是 nil)
+// 不應造成任何勝率差異。
+func TestInvadeColony_NoDefenderCommandoForPsilon(t *testing.T) {
+	const n = 100
+	const psilonIdx = 0
+	winRate := func(explicitEmpty bool) float64 {
+		wins := 0
+		for i := 0; i < n; i++ {
+			s, starIdx := newFleetAtAISessionForAI(t, psilonIdx)
+			s.Turn = i + 1
+			s.FleetMarines = 5
+			s.Leaders = nil
+			if explicitEmpty {
+				s.AIPlayers[psilonIdx].Leaders = []Leader{} // 顯式空陣列,而非 nil
+			}
+			res := s.InvadeColony(starIdx)
+			if !res.Ok {
+				t.Fatalf("explicitEmpty=%v i=%d: 前置條件應齊備,got Reason=%q", explicitEmpty, i, res.Reason)
+			}
+			if res.AttackerWon {
+				wins++
+			}
+		}
+		return float64(wins) / n
+	}
+	rateNil := winRate(false)
+	rateEmpty := winRate(true)
+	if rateNil != rateEmpty {
+		t.Fatalf("席隆人無指揮官領袖,nil 與顯式空陣列不應造成勝率差異,got nil=%.2f empty=%.2f", rateNil, rateEmpty)
+	}
+	t.Logf("席隆人(無 Commando 守將)勝率=%.2f(nil)/%.2f(空陣列)", rateNil, rateEmpty)
+}
+
+// TestInvadeColony_NilAIPlayerLeadersSafeDegrade 驗證舊存檔情境:AIOpponent.Leaders 解碼為
+// nil 時,commandoLeaderTier(nil)=0,GroundCommandoDefenderForceBonus 回 0,不 panic、安全降級
+// 為「無加成」,行為與加欄位前的 TODO 留白一致。
+func TestInvadeColony_NilAIPlayerLeadersSafeDegrade(t *testing.T) {
+	s, starIdx := newFleetAtAISessionForAI(t, 2) // 布拉西人,正常應有 Tier2 Commando
+	s.AIPlayers[2].Leaders = nil                 // 模擬舊存檔解碼結果
+	s.FleetMarines = 5
+	res := s.InvadeColony(starIdx)
+	if !res.Ok {
+		t.Fatalf("前置條件應齊備,got Reason=%q", res.Reason)
+	}
+	if got := gamedata.GroundCommandoDefenderForceBonus(commandoLeaderTier(s.AIPlayers[2].Leaders), s.RuleProfile.DefenderCommandoBonus); got != 0 {
+		t.Fatalf("nil Leaders 應得 0 加成,got %d", got)
+	}
+}
+
 // TestInvadeColony_CommandoLeaderImprovesWinRate 驗證 demoLeaders() 內建的指揮官(漢尼拔,
 // Tier=1)確實透過 gamedata.GroundCommandoAttackerForceBonus 提升攻方勝率,不是擺著沒用的死碼
 // (對照組:清空 s.Leaders vs 保留 NewDemoSession 預設領袖名單)。雙方都不使用裝甲科技/戰車,

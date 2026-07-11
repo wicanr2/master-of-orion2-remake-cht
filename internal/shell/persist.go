@@ -32,6 +32,11 @@ type aiSnapshot struct {
 	// 解碼時這裡是 nil——BombardColony 對 nil/空 map 視為「無建築」,回歸行為與加欄位前一致,
 	// 不會 panic。
 	ColonyBuildings []map[string]bool `json:"colonyBuildings"`
+
+	// Leaders 見 shell.AIOpponent.Leaders 註解(#5 守方 Commando 加成)。舊存檔(本欄位加入前
+	// 存的檔)解碼時這裡是 nil——commandoLeaderTier(nil) 回傳 0(無加成),回歸行為與加欄位前
+	// 一致(TODO 留白時的行為),不會 panic。
+	Leaders []Leader `json:"leaders"`
 }
 
 // sessionSnapshot 是 GameSession 的完整可序列化狀態(排除純顯示的暫態:LastEvent/LastAntares
@@ -96,7 +101,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		ais[i] = aiSnapshot{Name: a.Name, Player: a.Player, Colonies: a.Colonies, Profile: prof,
 			FleetStrength: a.FleetStrength, FleetInvestPool: a.FleetInvestPool,
 			Relation: a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars,
-			ColonyStars: a.ColonyStars, Spies: a.Spies, ColonyBuildings: a.ColonyBuildings}
+			ColonyStars: a.ColonyStars, Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
+			Leaders: a.Leaders}
 	}
 	return sessionSnapshot{
 		Version: saveFormatVersion, Turn: s.Turn, Player: s.Player,
@@ -128,6 +134,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 			FleetInvestPool: a.FleetInvestPool,
 			Relation:        a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars,
 			ColonyStars: a.ColonyStars, Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
+			Leaders: a.Leaders,
 		}
 	}
 	return &GameSession{
