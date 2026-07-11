@@ -67,7 +67,7 @@
 1. ✅ **已完成**(見 `internal/gamedata/ground_battle.go`):`ResolveGroundBattle(atk, def GroundForce, rng)`,一代解算 + 二代 hits-to-kill + 二代 force 加成表,確定性測試綠(`ground_battle_test.go`)。
 2. ✅ **已完成**(2026-07-11,`internal/shell/ground_invasion.go` + `ground_invasion_test.go`):陸戰隊生成 → 運送 → 觸發入侵 → 勝則轉移殖民地的「模型 + 流程」shell 層接線,細節見下方「2026-07-11 shell 層接線」一節。**尚未做**:UI 繪製/操作介面(不碰 interactive.go)、同化/滅絕選擇(手冊 p.164,本輪只做「整批過戶」的簡化版)。
 3. ✅ **已完成**:確定性單測驗「force 差/兵力比 → 勝率」符合社群經驗法則,見 `ground_battle_test.go` 與本輪新增的 `ground_invasion_test.go`(接了 shell 層模型後的端到端勝率測試)。
-4. ✅ **已完成**(2026-07-11,`internal/shell/orbital_bombardment.go` + `ground_invasion.go` 補完):裝甲營房戰車生成/載運/納入攻方 `GroundForce`(Battleoids 升級切換 hits-to-kill/force 加成)+ 軌道轟炸(10 輪齊射模擬 → hits → 扣人口),細節見下方「2026-07-11 裝甲營房戰車 + 軌道轟炸接線」一節。**尚未做**:守方戰車(AI 無 `ColonyBuildings` 追蹤,無資料可推導)、轟炸扣建築/儲存生產/駐軍(AI 無對應持久資料)、光束/魚雷減半與電腦命中加成套用到轟炸(戰術戰鬥層本身尚無這兩項的獨立函式)、UI 操作介面。
+4. ✅ **已完成**(2026-07-11,`internal/shell/orbital_bombardment.go` + `ground_invasion.go` 補完):裝甲營房戰車生成/載運/納入攻方 `GroundForce`(Battleoids 升級切換 hits-to-kill/force 加成)+ 軌道轟炸(10 輪齊射模擬 → hits → 扣人口),細節見下方「2026-07-11 裝甲營房戰車 + 軌道轟炸接線」一節。**同日稍後補上 UI 操作介面**(`cmd/moo2/interactive.go` galaxy() 新增「軌道轟炸」按鈕,與「發動地面入侵」雙鈕共存)。**尚未做**:守方戰車(AI 無 `ColonyBuildings` 追蹤,無資料可推導)、轟炸扣建築/儲存生產/駐軍(AI 無對應持久資料)、光束/魚雷減半與電腦命中加成套用到轟炸(戰術戰鬥層本身尚無這兩項的獨立函式)。
 
 ## 2026-07-11 shell 層接線(InvadeColony 流程)
 
@@ -163,9 +163,10 @@
 4. **人口歸零後的後續未定義**——手冊沒講「殖民地被轟炸到 0 人口」要不要摧毀殖民地/移除星系
    Owner,本函式讓 `Population` 停在 0、殖民地本身仍存在於 `aiPlayer.Colonies`,不臆測補上
    摧毀邏輯(TODO,留給未來確認手冊或 openorion2 行為後再接)。
-5. **UI 觸發最小化**——`BombardColony` 只是引擎層函式,`cmd/moo2/interactive.go` 尚未接對應
-   按鈕/熱區(對照 `InvadeColony` 已有的 `"invade"` 熱區,`BombardColony` 目前只能被測試/未來
-   UI 呼叫),完整轟炸操作介面延後。
+5. **UI 已接**(2026-07-11 同日稍後補上)——`cmd/moo2/interactive.go` galaxy() 星系主畫面新增
+   `"bombard"` 熱區/按鈕(敵殖民地星恆可用,不需陸戰隊),與既有 `"invade"` 熱區共存,分居
+   y=402/424 兩列(轟炸恆在上排,入侵需 `FleetMarines>0` 才出現在下排)。按鈕點擊直接呼叫
+   `BombardColony`,依 `GroundBombardResult.Ok`/`Reason`/`PopulationLost` 顯示結果訊息。
 
 單測(`orbital_bombardment_test.go`):前置條件(無效星索引/艦隊未抵達/非敵方/無艦艇/無殖民地
 模型)、rng 種子化可重現、**用保證命中+固定滿傷的艦隊(atk=101≥99,`CombatClassicToHit`/

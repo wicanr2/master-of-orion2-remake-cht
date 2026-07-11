@@ -9,9 +9,9 @@ import (
 // orbital_bombardment.go:軌道轟炸(Orbital Bombardment)引擎層最小接線,對應
 // moo2_patch1.5/MANUAL_150.html p.129「Notes on Orbital Assault > Orbital Bombardment」。
 // 與 ground_invasion.go 的地面入侵是兩個獨立動作(手冊:轟炸削弱/殺人口,不代表佔領;佔領
-// 仍要靠 InvadeColony 的陸戰隊/戰車營入侵)。本檔只碰資料/流程,不碰 UI——BombardColony 是
-// 供未來 UI 呼叫的引擎函式,目前 cmd/moo2/interactive.go 尚未接對應按鈕(TODO,見下方
-// BombardColony 註解與 docs/tech 更新)。
+// 仍要靠 InvadeColony 的陸戰隊/戰車營入侵)。本檔只碰資料/流程,不碰 UI——BombardColony 已由
+// cmd/moo2/interactive.go 的 galaxy() 星系主畫面接上「軌道轟炸」按鈕(2026-07-11,敵殖民地星
+// 恆可用,與「發動地面入侵」雙鈕共存,分居 y=402/424 兩列)。
 
 // fleetBombardDamage 依手冊「Estimated Bomb Hits」段落模擬玩家艦隊對殖民地做「s.RuleProfile.
 // BombardmentVolleys 輪齊射」(1.5 預設 10 輪、1.3 為 5 輪,見 gamedata.RuleProfile 與

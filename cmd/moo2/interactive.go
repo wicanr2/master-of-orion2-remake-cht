@@ -475,11 +475,12 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			sx, sy := starScreenPos(st)
 			hits = append(hits, hitRegion{sx - 11, sy - 11, 22, 22, fmt.Sprintf("star%d", i)})
 		}
-		// 選中星資訊面板內的操作鈕(座標同 postDraw 繪製的按鈕框):四種互斥,依艦隊/選中星
-		// 狀態擇一顯示——派遣艦隊(艦隊不在選中星)、載運陸戰隊(艦隊在玩家母星,唯一已知
-		// 有 Marine Barracks 殖民地模型對映的星,見 shell.AIOpponent.ColonyStars 註解同款限制)、
-		// 發動地面入侵(艦隊在敵方殖民地星且已載運陸戰隊)、拓殖(艦隊在無主星且載有殖民船,
-		// 見 shell.GameSession.ColonizeStar)。
+		// 選中星資訊面板內的操作鈕(座標同 postDraw 繪製的按鈕框):依艦隊/選中星狀態擇一或
+		// 兩顆並存——派遣艦隊(艦隊不在選中星)、載運陸戰隊(艦隊在玩家母星,唯一已知有
+		// Marine Barracks 殖民地模型對映的星,見 shell.AIOpponent.ColonyStars 註解同款限制)、
+		// 拓殖(艦隊在無主星且載有殖民船,見 shell.GameSession.ColonizeStar)。敵殖民地星
+		// (Owner==2)例外為雙鈕共存:軌道轟炸(shell.GameSession.BombardColony,恆可用,402)
+		// + 發動地面入侵(shell.GameSession.InvadeColony,額外要求已載運陸戰隊,424)。
 		if sess.SelectedStar >= 0 && sess.SelectedStar < len(sess.Stars) {
 			switch {
 			case sess.FleetETA > 0:
@@ -488,8 +489,13 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				switch {
 				case sess.SelectedStar == 0:
 					hits = append(hits, hitRegion{38, 402, 190, 20, "loadmarines"})
-				case sess.Stars[sess.SelectedStar].Owner == 2 && sess.FleetMarines > 0:
-					hits = append(hits, hitRegion{38, 402, 190, 20, "invade"})
+				case sess.Stars[sess.SelectedStar].Owner == 2:
+					// 敵殖民地:軌道轟炸恆可用(艦隊武器開火,不需陸戰隊);
+					// 發動地面入侵額外要求已載運陸戰隊,兩鈕不同列共存(402/424)。
+					hits = append(hits, hitRegion{38, 402, 190, 20, "bombard"})
+					if sess.FleetMarines > 0 {
+						hits = append(hits, hitRegion{38, 424, 190, 20, "invade"})
+					}
 				case sess.Stars[sess.SelectedStar].Owner == 0 && sess.FleetHasColonyShip():
 					hits = append(hits, hitRegion{38, 402, 190, 20, "colonize"})
 				}
@@ -516,6 +522,18 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				b.lastActionMsg = fmt.Sprintf("已載運 %d 名陸戰隊上艦", n)
 			} else {
 				b.lastActionMsg = "無陸戰隊可載運(駐軍不足或艦隊已滿載)"
+			}
+			return b.goTo(b.galaxy, "星系主畫面")
+		}
+		if a == "bombard" && b.session != nil {
+			res := b.session.BombardColony(b.session.SelectedStar)
+			switch {
+			case !res.Ok:
+				b.lastActionMsg = res.Reason
+			case res.PopulationLost > 0:
+				b.lastActionMsg = fmt.Sprintf("軌道轟炸:敵殖民地損失 %d 人口", res.PopulationLost)
+			default:
+				b.lastActionMsg = "軌道轟炸無效果"
 			}
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
@@ -610,11 +628,13 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					}
 					vector.DrawFilledRect(dst, float32(fx-4), float32(fy-4), 8, 8, color.RGBA{80, 240, 240, 255}, false)
 				}
-				// 選中星:顯示該星系行星資訊 + 派遣艦隊/載運陸戰隊/發動入侵按鈕(左下角面板)。
+				// 選中星:顯示該星系行星資訊 + 派遣艦隊/載運陸戰隊/軌道轟炸/發動入侵按鈕(左下角面板)。
 				if sess.SelectedStar >= 0 && sess.SelectedStar < len(sess.Planets) {
 					p := sess.Planets[sess.SelectedStar]
-					vector.DrawFilledRect(dst, 28, 326, 210, 110, color.RGBA{10, 14, 30, 235}, false)
-					vector.StrokeRect(dst, 28, 326, 210, 110, 1, color.RGBA{90, 130, 200, 255}, false)
+					// 面板高度 132(非原版 110):敵殖民地時軌道轟炸(402)/地面入侵(424)雙鈕
+					// 共存需多留一列,否則第二顆鈕會露出面板背景框之外。
+					vector.DrawFilledRect(dst, 28, 326, 210, 132, color.RGBA{10, 14, 30, 235}, false)
+					vector.StrokeRect(dst, 28, 326, 210, 132, 1, color.RGBA{90, 130, 200, 255}, false)
 					fnt.Draw(dst, p.Name, 38, 344, 14, color.RGBA{240, 220, 120, 255})
 					fnt.Draw(dst, fmt.Sprintf("氣候 %s ／ 大小 %s", p.Climate, p.Size), 38, 362, 11, color.RGBA{210, 216, 230, 255})
 					fnt.Draw(dst, fmt.Sprintf("重力 %s ／ 礦產 %s", p.Gravity, p.Mineral), 38, 378, 11, color.RGBA{210, 216, 230, 255})
@@ -636,10 +656,17 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{40, 70, 120, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{110, 160, 230, 255}, false)
 						fnt.Draw(dst, "▶ 載運陸戰隊", 46, 415, 12, color.RGBA{230, 235, 245, 255})
-					case sess.SelectedStar == sess.FleetAtStar && sess.Stars[sess.SelectedStar].Owner == 2 && sess.FleetMarines > 0:
-						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{120, 50, 40, 255}, false)
-						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{230, 130, 110, 255}, false)
-						fnt.Draw(dst, "▶ 發動地面入侵", 46, 415, 12, color.RGBA{245, 235, 230, 255})
+					case sess.SelectedStar == sess.FleetAtStar && sess.Stars[sess.SelectedStar].Owner == 2:
+						// 軌道轟炸恆可用(艦隊武器開火,不需陸戰隊),畫在 402 這列。
+						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{90, 60, 130, 255}, false)
+						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{170, 140, 230, 255}, false)
+						fnt.Draw(dst, "▶ 軌道轟炸", 46, 415, 12, color.RGBA{240, 235, 250, 255})
+						// 發動地面入侵額外要求已載運陸戰隊,畫在下一列(424),與轟炸鈕並存。
+						if sess.FleetMarines > 0 {
+							vector.DrawFilledRect(dst, 38, 424, 190, 20, color.RGBA{120, 50, 40, 255}, false)
+							vector.StrokeRect(dst, 38, 424, 190, 20, 1, color.RGBA{230, 130, 110, 255}, false)
+							fnt.Draw(dst, "▶ 發動地面入侵", 46, 437, 12, color.RGBA{245, 235, 230, 255})
+						}
 					case sess.SelectedStar == sess.FleetAtStar && sess.Stars[sess.SelectedStar].Owner == 0 && sess.FleetHasColonyShip():
 						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{40, 110, 60, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{130, 220, 150, 255}, false)
