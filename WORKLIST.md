@@ -86,6 +86,24 @@
   防禦方 Agent 不獨立追蹤(DB 固定 0,對應手冊「零 Agent 防禦仍生效」);種族/科技/政府對間諜的
   加成現行無資料可推導,一律 0(TODO)。詳見 `docs/tech/spy-system.md`。
 
+## ★ 2026-07-11(續 session:字型打磨 + game test 收尾 + 多人考據)
+> 本段索引本 session 的完成項;細節見各 commit 與 docs/tech/。
+- [x] **點陣中文字型改造(Stage 1/2,使用者指定「一致化 + 點陣字」)**:中文 UI 由 Noto 平滑向量改
+  `bitmapfont/v4 FaceTC`(Cubic 11 + Ark Pixel,OFL)。最終為**混合字型**:內文(<18px)點陣、標題
+  (≥18px)Noto 向量(避免點陣放大鋸齒);**主選單**整個純 Noto(使用者偏好)。可行性經全語料窮舉
+  驗證(2258 字缺字 0)+ 覆蓋回歸測試(墨點判準,守未來新增字)。殖民地擦底改採按鈕面色
+  (`plateFace`,修「黑塊蓋浮雕框」)+「已建:…」建築清單依欄寬截斷(`truncateToWidth`,修溢出建造欄)。
+  commits `ea8821b`/`5bdb78b`/`4d84146`;設計 review `3589b9e`;決策 `docs/tech/pixel-font-decision.md`、
+  `docs/tech/ui-typography-button-review.md`。
+- [x] **戰鬥畫面對手改用真實 AI 名**(修硬編「賽隆人」stale 標籤,`PrimaryEnemyName` 取真 AI 種族名),`4a58665`。
+- [x] **game test 全面實機驗證 + 修 GUI bug**(task 37/38/39):xvfb GUI 玩家路徑 8 畫面截圖 + 深度回合探針;
+  修 3 個 GUI bug(研究盲選/殖民地面板/戰術糊字)、補殖民地總覽 **Empire Summary 面板 + Planetary/
+  Production Info 懸停面板**(`c3540ee`,即 /goal 的「game test 回報問題」)。邏輯層 70 回合無 panic、
+  三勝利路徑可達。
+- [x] **多人對戰通訊考據 + Phase 9 開項**:原版 CD 手冊 OCR 出通訊方式(序列/數據機/IPX 區網/TEN),
+  架構=決定性 lockstep;方向定案「保留 lockstep、傳輸換 TCP、先做熱座」。`docs/tech/multiplayer-architecture.md`、
+  `d31d182`(見下方 Phase 9)。
+
 ## Phase 0 — Kick-off / 可行性(本輪)
 - [x] 盤點 openorion2 完成度(`docs/kickoff/01`)
 - [x] 中文化策略(`02`)
@@ -130,11 +148,11 @@
 ## Phase 3 — UI 框架 + 文字系統 + 主選單(做法見 `08` playbook)
 - [ ] gui widget 樹翻譯(Toggle/Choice/ScrollBar/Label/Composite + ViewStack)
 - [ ] callback → Go closure/interface
-- [x] CJK 渲染:`internal/uifont`(ebiten text/v2,依尺寸快取 face;text/v2 原生向量 rasterize 取代手動 supersample)+ Measure
+- [x] CJK 渲染:`internal/uifont`(ebiten text/v2,依尺寸快取 face)+ Measure。**2026-07-11 升級為混合字型**:zh 內文用 `bitmapfont/v4 FaceTC` 點陣(<18px)、標題用 Noto 向量(≥18px);en 純 Noto。見 `docs/tech/pixel-font-decision.md`
 - [x] 顯示層覆蓋 i18n:`internal/i18n`(TSV 英文即 key + 查無 fallback + TranslateFormat)+ 測試
 - [x] [HARD] 只翻顯示層,不動資料層(i18n 設計即如此)
 - [x] 字型:NotoSansCJK-Regular.ttc 經 Go opentype.ParseCollection 驗證可解析+量測中文(★ [HARD] 相容檢查通過);galaxy 標題已渲染繁中
-- [ ] 繪字描邊/陰影版 + 逐字斷行(目前基本 Draw/Measure;進階待用到時補)
+- [ ] 繪字描邊/陰影版 + 逐字斷行(目前基本 Draw/Measure;混合字型上線後標題走平滑 Noto、內文點陣暗底可讀,描邊需求降為次要,待「字疊亮星點」處再補)
 - [ ] 字型子集 pyftsubset(docker)+ go:embed 內嵌(待譯文集齊;目前用完整 .ttc runtime 掛載)
 - [x] 主選單中文化 + 截圖校對(cmd/moo2 -menu:擦底疊字六按鈕繼續/載入遊戲/…;before/after 見 docs/reference-screens.md)
 - [ ] 主選單:語言 中/英 runtime 切換(mom 無此,我們要做)
