@@ -333,7 +333,7 @@
 - [x] 研究「1.3 → 1.5 規則差異清單」:逐條核對 1730 行 CHANGELOG_150 + MANUAL_150 + PARAMETERS.CFG,`docs/tech/version-1.3-1.5-diff.md`。結論:落在已實作系統的真差異只 3 個(多數 CHANGELOG 是 bug fix 或「新增可調參數但預設=經典值」)
 - [x] rule profile 資料結構:`gamedata.RuleProfile` + `GameVersion` + `Profile13/15`(`internal/gamedata/ruleprofile.go`)
 - [x] 1.3/1.5 profile 實作 + 驗證(值 + 預設 Profile15=現行 三層回歸斷言)
-- [~] 主選單版本切換生效:**UI + 開局注入已接**(主選單左下角「規則版本 1.3/1.5」切換 → `GameSession.RuleProfile`);**live 消費端目前只有軌道轟炸齊射**(1.3=5/1.5=10 有測試)。研究成本(Hyper-Advanced)/電漿砲傷害的 profile 值已備,但呼叫端(`engine.RunResearchPhase` 純函式、套件級 `WeaponOptions`)尚未消費 → 選版本暫不影響那兩項,待把 profile 穿進 engine/gamedata 純函式(**收尾待辦**)
+- [x] 主選單版本切換生效(**2026-07-11 收尾完成**):UI + 開局注入 + **三個 live 消費端全部接線**——①軌道轟炸齊射(1.3=5/1.5=10)②電漿砲傷害(`BuildShipWithMods` 改讀 `BuildWeaponOptions(s.RuleProfile)`,造艦定案值隨 `Ship.WeaponAttack` 帶進 `ResolveBattle`/`StartCombat`)③超先進科技研究成本(`engine.PlayerState.HyperAdvancedResearchCost`,`RunResearchPhase` 對 Hyper 主題套版本覆寫,`EndTurn` 對玩家+AI 同步注入避免規則不對稱;顯示層 `ResearchCostForDisplay` 帝國概況/研究選擇畫面一致)。測試:`BuildWeaponOptions(Profile15)` 逐元件等於套件級(behavior-preserving)+ 電漿傷害/研究成本隨 profile 變動斷言
 - [~] **diff 全量表未實作系統補上(使用者指定,近似公式)**:批次 A(地面戰/轟炸 #5/#6/#7/#8/#9/#11)已做——#6 攻方指揮官倍率 + #11 行星尺寸轟炸幾何**完整接線**,#5 守方指揮官2.5x/#7 建築+1hit/#8 civilian_armor/#9 防禦裝甲**因資料模型缺口(AI 無 Leaders、無建築損傷模型)只做公式+版本欄位+TODO 掛鉤**(`docs/tech/ground-combat-algorithm.md`、`gamedata/ground_version_diff.go`)。批次 B(經濟/研究 #4/#10)、C(偵測/單位 #13/#14)、D(#12/#15)待續
 - [ ] 資產分版(1.31 vs 1.5 LBX/資料)一起換——目前只分規則值,資產未分版
 
