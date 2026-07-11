@@ -616,10 +616,16 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			// 每幀算一次可見性(#13 輕量戰爭迷霧),避免 drawStarmap 逐星重算。
 			drawStarmap(dst, fnt, sess.Stars, sess.SelectedStar, sess.VisibleStars())
 			if fnt != nil {
+				// 狀態數字畫進原版右側資訊格(openorion2 galaxy.cpp:1552-1588 硬編位置,
+				// 對齊 buffer0.lbx#0 背景烘印的圖示格):星曆→頂右薄框(549,27,63,13)、
+				// 國庫→硬幣格(547,52,65,67)底部。原版這些格是「圖示+數字」,故只畫數字、
+				// 不畫中文標籤(標籤即圖示),不再疊在星圖左上蓋住星點。
 				year := 3500 + (sess.Turn - 1)
-				fnt.Draw(dst, fmt.Sprintf("星曆 %d", year), 30, 40, 16, color.RGBA{240, 220, 120, 255})
-				fnt.Draw(dst, fmt.Sprintf("國庫 %d BC", sess.Player.BC), 30, 62, 13, color.RGBA{210, 216, 230, 255})
-				fnt.Draw(dst, fmt.Sprintf("研究:%s", topicNameZh(b.lang, sess.Player.ResearchTopic)), 30, 82, 13, color.RGBA{160, 210, 240, 255})
+				fnt.DrawCentered(dst, fmt.Sprintf("%d", year), 580, 34, 11, color.RGBA{240, 220, 120, 255})
+				fnt.DrawCentered(dst, fmt.Sprintf("%d", sess.Player.BC), 579, 110, 12, color.RGBA{245, 230, 150, 255})
+				// 研究主題名較長(65px 格塞不下),原版該格只放圖示;本 remake 保留可讀的
+				// 主題名一行於左上(僅此一行,不再與星曆/國庫疊三行蓋星圖)。
+				fnt.Draw(dst, fmt.Sprintf("研究:%s", topicNameZh(b.lang, sess.Player.ResearchTopic)), 30, 34, 12, color.RGBA{160, 210, 240, 255})
 				// 艦隊位置標記(青色三角)+ 航行目的連線。
 				if sess.FleetAtStar >= 0 && sess.FleetAtStar < len(sess.Stars) {
 					fx, fy := starScreenPos(sess.Stars[sess.FleetAtStar])
