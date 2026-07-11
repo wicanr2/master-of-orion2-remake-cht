@@ -17,6 +17,37 @@
 預設值本來就等於 1.3 經典值**(`PARAMETERS.CFG` 逐一標註 `(default, classic)`),不代表 1.5 出廠預設
 真的改了規則。這對版本 profile 是好消息:第一版分版範圍可以很小(§6)。
 
+## 0.5 實作進度追蹤(2026-07-11 起,每輪更新——「還差哪些」看這節)
+
+> 對照 §1 全量表 15 項的當前實作狀態。狀態語意:**✅ 完成**(已接進遊戲迴圈或確認無需做)、
+> **⚠ 半做**(公式/資料層在,但消費端未接)、**❌ 未排**(真缺口,需前置子系統)。commit 為
+> 本 repo 提交雜湊。動手前先看這表,避免重做已完成項或誤把「確認非差異」當缺口。
+
+| # | 項目 | 狀態 | 依據 / commit |
+|---|---|---|---|
+| 1 | 研究成本 Hyper-Advanced Lv1(15k/25k) | ✅ 完成 | `3eef521` 消費端接進 `engine.RunResearchPhase` + `EndTurn` 玩家/AI 注入 |
+| 2 | 電漿砲傷害(30/20) | ✅ 完成 | `3eef521` `BuildShipWithMods` 改讀 `BuildWeaponOptions(RuleProfile)`,隨 `Ship.WeaponAttack` 進戰鬥 |
+| 3 | 軌道轟炸齊射(5/10) | ✅ 完成 | `RuleProfile.BombardmentVolleys` 接 `fleetBombardDamage`(先前輪次) |
+| **4** | **運輸艦淨現金(freighters_cash_bonus)** | ❌ **未排** | 需「貨運艦建造事件追蹤」子系統;專案完全不追蹤運輸艦數量/建造事件 |
+| **5** | **防禦方指揮官 2.5x(defender commando)** | ⚠ **半做** | 批次 A 已做 `gamedata` 公式(`GroundCommandoDefenderForceBonus`)+ `RuleProfile.DefenderCommandoBonus`;**shell 消費端未接**——`InvadeColony` 守方掛鉤待接,前置=AI 領袖資料模型(`AIOpponent` 無 `Leaders`) |
+| 6 | commando 倍率門檻 | ✅ 非差異 | `PARAMETERS.CFG:2745-2753`「(default, classic)」,1.5 預設=1.3,無需做 |
+| **7** | **轟炸建築 +1hit(BombardmentBuildingBonusHits)** | ✅ **完成** | `b239f94` 隨 AI 建築模型接進 `BombardColony` 建築吸收(1.3 每棟 +1 hit);語意近似已標註 |
+| 8 | civilian_armor(100hp) | ✅ 非差異 | `PARAMETERS.CFG:1778-1786`,值兩版相同;remake 採 hits 計數模型非 HP 模型,兩者未調和(誠實標註) |
+| 9 | 防禦建築結構倍率(100) | ✅ 非差異 | `PARAMETERS.CFG:1772-1775` |
+| 10 | 研究突破隨機性 | ✅ 非差異 | `PARAMETERS.CFG:542-545`;remake 研究本就無「突破機率」建模 |
+| 11 | 行星尺寸轟炸分級(3-4-6-7-8) | ✅ 非差異 + 幾何已接線 | 1.5 系列內部自我修正回 classic;`GroundBombardPopulationLoss` 已用行星尺寸係數 |
+| 12 | 起始偵察艦速度(10/12) | ✅ 等同 | remake `CombatSpeed()` 是統一公式=1.5 修正後行為;重現 1.3 的「自動 vs 手動設計不一致」bug 無意義 |
+| **13** | **掃描/偵測距離** | ❌ **未排** | 專案完全無掃描/偵測系統,需從零建整個子系統(星基+2/戰鬥站+4/星辰要塞+6 parsec、感測科技) |
+| **14** | **衛星/砲台佔格(beam arc cost)** | ❌ 版本差異未做 | 無獨立衛星船體類別,arc-cost 版本數值暫無法忠實對應。**相鄰進展**:軌道防禦 *gameplay*(非 arc-cost)本 session 在建——軌道轟炸接迴圈 `6c9c152` + 建築吸收轟炸 `b239f94` + 防禦方反擊(進行中,待落地補 commit) |
+| 15 | 維護費入帳時機 | ✅ 非差異 | 淨額 0,只差「哪一回合帳上出現」,remake 逐回合重算不模擬「完工瞬間」 |
+
+**真正「還沒安排、且是真缺口」的**(需前置子系統,非公式缺口——見 memory `moo2-diff-items-need-subsystems`):
+- **#4**(需貨運建造事件追蹤)、**#13**(需掃描子系統,從零)。
+- **#5**(消費端待接,前置=AI 領袖模型)。
+- **#14 的 arc-cost 面向**(前置=獨立衛星船體類別)。
+
+其餘 15 項中:§2 三條真差異(#1/#2/#3)+ #7 已完成;#6/#8/#9/#10/#11/#15 為確認的非差異;#12 已等同 1.5。
+
 ## 1. 差異清單(全量表)
 
 依「是否落在本專案已實作系統」排序;類別欄對應 WORKLIST.md 的系統分類。
