@@ -35,3 +35,8 @@ scratch/
 # docker build 快取
 .docker-cache/
 scratchpad_shots/
+
+# 編譯產物(go build ./cmd/moo2 輸出到 repo 根)
+/moo2
+/moo2sim
+/moo2test
