@@ -329,6 +329,15 @@
 - [x] 本機 docker 打包腳本(`docs/tech/packaging.md` §5):`scripts/package-appimage.sh`(Linux AppImage,linuxdeploy+appimagetool)、`scripts/package-windows.sh`(Windows zip)已實際跑過,`dist/MasterOfOrion2-cht-x86_64.AppImage`、`dist/MasterOfOrion2-cht-windows-amd64.zip` 皆產出並驗證內容(解壓/objdump 確認)。**推翻先前假設**:ebiten v2.9.9 Windows backend 已改純 Go(purego,無 cgo),`CGO_ENABLED=0` 即可跨編,不需 mingw-w64(`build-desktop.yml` 仍裝了 mingw,屬保守多餘,非錯誤,可留後續簡化)
 - [ ] `cmd/moo2` 加可覆寫 assets/i18n 路徑(或 go:embed)取代相對路徑假設,讓 macOS `.app` 不需 launcher script 繞路(見 packaging.md §4 待辦)
 
+## Phase 9 — 多人對戰(hotseat / 網路 lockstep→TCP)
+> 考據定案見 `docs/tech/multiplayer-architecture.md`(原版通訊 OCR 自 CD 手冊 + 架構佐證自 patch 1.5 手冊)。
+> 方向(使用者定案 2026-07-11):**保留原版決定性 lockstep 架構,傳輸換成 TCP**;起步先做熱座。
+- [x] 原版多人通訊考據(手冊):序列/數據機/IPX 區網(2–8人)+ TEN 網際網路服務;DirectX 6.1→DirectPlay;決定性 lockstep + host 廣播 config + 同時回合(`docs/tech/multiplayer-architecture.md`)
+- [ ] **熱座(hotseat)**:多位真人同機,在回合迴圈同時/輪流下令(零網路、零決定性風險,最省起步)
+- [ ] **引擎決定性化**:統一 RNG 種子(不用全域 `math/rand`/wall-clock)+ 消除影響模擬的 `range map` 不定序;加「兩機同指令序列→狀態雜湊比對」desync 偵測回歸測試
+- [ ] **區網/線上 lockstep over TCP**:host/client、config 廣播、逐回合指令收齊→同步→結算、斷線重連、狀態雜湊校驗(中大型獨立子專案,排音樂/新遊戲流程/像素對齊之後)
+- [ ] 主選單「多人對戰」按鈕接上實際流程(目前為沿用原版美術、無功能)
+
 ## 工作方式(使用者定案)
 - go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)
 - **不用多代理 workflow**;翻譯一組一組慢慢做(單代理逐項,使用者可隨時審閱)
