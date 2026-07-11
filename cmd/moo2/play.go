@@ -109,7 +109,7 @@ func (g *gameScreen) draw(dst *ebiten.Image, font *uifont.Font) {
 	font.Draw(dst, "【我方帝國】", 32, 70, 16, gold)
 	// play.go 是繁中專用簡約殼:主題名經 tech.tsv 翻中文(shell.ResearchTopicName 現回英文 key)。
 	topicName := topicNameZh(i18n.Traditional, s.Player.ResearchTopic)
-	topicCost := shell.ResearchCost(s.Player.ResearchTopic)
+	topicCost := s.ResearchCostForDisplay(s.Player.ResearchTopic)
 	rows := []string{
 		fmt.Sprintf("殖民地:%d 座", len(s.PlayerColonies)),
 		fmt.Sprintf("國庫:%d BC", s.Player.BC),

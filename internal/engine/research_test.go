@@ -99,6 +99,76 @@ func TestRunResearchPhaseNilCompletedTopicsMap(t *testing.T) {
 	}
 }
 
+func TestRunResearchPhase_HyperAdvancedCostOverride(t *testing.T) {
+	// TOPIC_HYPER_BIOLOGY 是 8 個共用 Hyper-Advanced Lv1 成本的主題之一,套件級硬編值 25000
+	// (techtree.go),見 gamedata.IsHyperAdvancedTopic/HyperAdvancedCost。
+	hyperTopic := gamedata.TOPIC_HYPER_BIOLOGY
+
+	t.Run("override>0 對 Hyper 主題生效(1.3 profile=15000)", func(t *testing.T) {
+		ps := PlayerState{ResearchTopic: hyperTopic, ResearchProgress: 0, HyperAdvancedResearchCost: 15000}
+
+		got, done := RunResearchPhase(ps, 15000)
+
+		if !done {
+			t.Fatalf("done = false,預期 true(15000 點打到覆寫成本 15000 應完成)")
+		}
+		if got.ResearchProgress != 0 {
+			t.Errorf("ResearchProgress = %d,預期 0(15000-15000)", got.ResearchProgress)
+		}
+		if !got.CompletedTopics[hyperTopic] {
+			t.Errorf("hyperTopic 應標記完成:%+v", got.CompletedTopics)
+		}
+	})
+
+	t.Run("override>0 但未打到覆寫成本則不完成(驗證真的用 15000 而非套件級 25000)", func(t *testing.T) {
+		ps := PlayerState{ResearchTopic: hyperTopic, ResearchProgress: 0, HyperAdvancedResearchCost: 15000}
+
+		got, done := RunResearchPhase(ps, 20000) // >= 套件級 25000?否;>= 覆寫 15000?是——用來反證真的讀覆寫值
+
+		if !done {
+			t.Fatalf("done = false,預期 true:20000 >= 覆寫成本 15000,若誤用套件級 25000 則會是 false")
+		}
+		if got.ResearchProgress != 5000 {
+			t.Errorf("ResearchProgress = %d,預期 5000(20000-15000 溢出保留)", got.ResearchProgress)
+		}
+	})
+
+	t.Run("override=0 時退回 gamedata 套件級預設 25000(Profile15 行為不變)", func(t *testing.T) {
+		ps := PlayerState{ResearchTopic: hyperTopic, ResearchProgress: 0, HyperAdvancedResearchCost: 0}
+
+		got, done := RunResearchPhase(ps, 15000)
+
+		if done {
+			t.Fatalf("done = true,預期 false:15000 < 套件級預設成本 25000,override=0 不應覆寫")
+		}
+		if got.ResearchProgress != 15000 {
+			t.Errorf("ResearchProgress = %d,預期 15000(未完成,原樣累加)", got.ResearchProgress)
+		}
+
+		got2, done2 := RunResearchPhase(got, 10000) // 累加到 25000,套件級預設成本應完成
+		if !done2 {
+			t.Fatalf("done2 = false,預期 true:15000+10000=25000 應達套件級預設成本")
+		}
+		if got2.ResearchProgress != 0 {
+			t.Errorf("ResearchProgress = %d,預期 0(25000-25000)", got2.ResearchProgress)
+		}
+	})
+
+	t.Run("override>0 對非 Hyper 主題不生效", func(t *testing.T) {
+		// topicCost400 成本固定 400,即使 override 設為離譜的值也不應套用(只對 Hyper 主題生效)。
+		ps := PlayerState{ResearchTopic: topicCost400, ResearchProgress: 0, HyperAdvancedResearchCost: 15000}
+
+		got, done := RunResearchPhase(ps, 400)
+
+		if !done {
+			t.Fatalf("done = false,預期 true:非 Hyper 主題應仍用套件級成本 400,不受 override 影響")
+		}
+		if got.ResearchProgress != 0 {
+			t.Errorf("ResearchProgress = %d,預期 0(400-400,非 400-15000)", got.ResearchProgress)
+		}
+	})
+}
+
 func TestRunResearchPhasePreservesExistingCompletedTopics(t *testing.T) {
 	// 已完成的舊主題不應被新一輪呼叫覆蓋掉。
 	ps := PlayerState{

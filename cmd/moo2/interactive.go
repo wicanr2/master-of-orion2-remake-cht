@@ -2135,12 +2135,12 @@ func currentAreaTopic(session *shell.GameSession, areaIdx int) (topic gamedata.R
 	completed := session.Player.CompletedTopics
 	for _, t := range topics {
 		if completed == nil || !completed[t] {
-			return t, shell.ResearchCost(t), false
+			return t, session.ResearchCostForDisplay(t), false
 		}
 	}
 	if len(topics) > 0 {
 		last := topics[len(topics)-1]
-		return last, shell.ResearchCost(last), true
+		return last, session.ResearchCostForDisplay(last), true
 	}
 	return 0, 0, true
 }

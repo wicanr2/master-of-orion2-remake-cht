@@ -203,6 +203,17 @@ type PlayerState struct {
 	// 漏算),接線先做好——未來若補上貨運艦種追蹤,只需讓呼叫端算出正確數字即可,RunEmpireTurn
 	// 端不用再改。
 	ActiveFreighters int
+
+	// HyperAdvancedResearchCost 是版本規則 profile 對 Hyper-Advanced Lv1 研究(8 個共用同一
+	// 成本的 TOPIC_HYPER_* 主題,見 gamedata.IsHyperAdvancedTopic)的成本覆寫值,與
+	// CommandPointsSupply/GovtBonusMoneyPercent 同款輸入模式:引擎層不關心版本 profile 本身
+	// (不 import gamedata.RuleProfile 判斷邏輯),只接收呼叫端(shell.GameSession.EndTurn,依
+	// gamedata.HyperAdvancedCost(s.RuleProfile) 算好)傳入的數字。
+	//
+	// 0 = 用 gamedata.ResearchChoiceFor(topic).Cost 的套件級預設值(techtree.go 硬編 25000,
+	// 即現行 Profile15 行為);非 0 = 覆寫(見 internal/gamedata/ruleprofile.go RuleProfile)。
+	// 呼叫端未設值時 Go 零值剛好是「用預設」,無零值陷阱。
+	HyperAdvancedResearchCost int
 }
 
 // ColonyOutput 是一回合殖民地經濟結算結果。

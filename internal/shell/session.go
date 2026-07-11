@@ -107,13 +107,15 @@ var (
 // BuildWeaponOptions 依版本規則 profile 回傳一份武器元件清單:除「電漿砲」的 Value(最大傷害)
 // 改讀 p.PlasmaCannonMaxDamage 外,其餘元件與套件級 WeaponOptions 逐一相同。
 //
-// ⚠ 現況(2026-07-11):這是 1.3 規則的「最小掛勾」——套件級 WeaponOptions 本身刻意不變(仍是
-// 1.5 的硬編值 20,見上方元件清單),ShipDesignSpaceUsedWithMods/DesignCostWithMods/
-// BuildShipWithMods/researchQueue 等現有呼叫端也刻意不改為讀本函式,原因:這些函式目前是套件級
-// 純函式,沒有 GameSession/profile 可查,要讓建艦/戰鬥全流程真正吃到 1.3 電漿砲傷害,需要把
-// profile 一路傳進這些函式(或改造成 GameSession 方法),屬於比本任務(資料層 profile 本身)更大
-// 的資料流重構,誠實留待「主選單真的接 1.3 選項」的任務再一併處理。本函式已測試、行為正確,可供
-// 該未來重構或 UI 預覽(「若選 1.3,電漿砲傷害是多少」)直接呼叫。
+// 2026-07-11 接線:GameSession.BuildShipWithMods(session.go)已改用本函式(以 s.RuleProfile 為
+// 參數)取代直接 pick(WeaponOptions, weapon) 算武器攻擊值,故 BuildShip/BuildShipWithMods 造出的
+// 艦艇 WeaponAttack 現在真的隨版本 profile 變動(1.3 電漿砲=30、1.5=20)。
+//
+// ⚠ 仍未接線的呼叫端:ShipDesignSpaceUsedWithMods/DesignCostWithMods(佔格/造價,套件級純函式,
+// 無 GameSession 可查)——但兩版電漿砲的 Cost 與佔格本身相同(見元件清單/component-values.md),
+// 只有 Value 隨版本差異,故這兩者維持讀套件級 WeaponOptions 不影響正確性,非遺漏。
+// battleVolley 等既有戰鬥計算讀的是已建成 Ship.WeaponAttack(本次接線後已含版本值),非重新
+// pick(WeaponOptions, ...),故戰鬥傷害自然隨造艦時的版本值走,不需另外接線。
 func BuildWeaponOptions(p gamedata.RuleProfile) []Component {
 	out := make([]Component, len(WeaponOptions))
 	copy(out, WeaponOptions)
@@ -681,7 +683,11 @@ func (s *GameSession) BuildShip(class string, weapon, armor, shield, special int
 // 但仍照玩家選擇存檔(不強制清空),避免玩家切換武器後 UI 狀態被意外抹除;佔格/傷害計算
 // 端(ShipDesignSpaceUsedWithMods / battleVolley)各自已用 WeaponIsBeam 判斷是否套用。
 func (s *GameSession) BuildShipWithMods(class string, weapon, armor, shield, special int, mods []string) bool {
-	w, a, sh, sp := pick(WeaponOptions, weapon), pick(ArmorOptions, armor), pick(ShieldOptions, shield), pick(SpecialOptions, special)
+	// 武器傷害(w.Value)吃這局遊戲的版本規則 profile(s.RuleProfile,見 BuildWeaponOptions 註解:
+	// 電漿砲 1.3=30/1.5=20,其餘元件與套件級 WeaponOptions 逐一相同)——造艦時真正掛上版本相依
+	// 傷害值,不再永遠是套件級硬編的 1.5 值。成本(DesignCostWithMods)不受影響:兩版電漿砲 Cost
+	// 相同,差異只在 Value,見 ruleprofile.go RuleProfile.PlasmaCannonMaxDamage 註解。
+	w, a, sh, sp := pick(BuildWeaponOptions(s.RuleProfile), weapon), pick(ArmorOptions, armor), pick(ShieldOptions, shield), pick(SpecialOptions, special)
 	cost := DesignCostWithMods(class, weapon, armor, shield, special, mods)
 	if s.Player.BC < cost {
 		return false
@@ -1846,6 +1852,11 @@ func (s *GameSession) EndTurn() {
 	// ActiveFreighters 未設值,維持零值(Go 零值陷阱在此剛好是想要的預設:remake 無 Freighter
 	// 艦種塑模,見 engine.PlayerState.ActiveFreighters 註解),故不需要在此顯式賦值。
 	s.Player.GovtBonusMoneyPercent = gamedata.IncomeGovtMoneyBonusPercent(s.Government)
+	// HyperAdvancedResearchCost 依這局遊戲的版本規則 profile 算好傳給 RunResearchPhase(engine 層
+	// 不關心 RuleProfile 本身,只吃算好的數字,見 engine.PlayerState.HyperAdvancedResearchCost
+	// 註解)。Profile15(現行預設)= 25000 = 套件級硬編值,no-op;Profile13 = 15000,真的改變
+	// Hyper-Advanced Lv1 研究成本。
+	s.Player.HyperAdvancedResearchCost = gamedata.HyperAdvancedCost(s.RuleProfile)
 	s.syncTradeGoodsFlag() // 依建造選單同步「貿易品」旗標,供 RunEmpireTurn 判斷是否換算收入
 	s.LastPlayerOutput = engine.RunEmpireTurn(s.Player, s.PlayerColonies)
 	s.Player = s.LastPlayerOutput.Player
@@ -1857,6 +1868,10 @@ func (s *GameSession) EndTurn() {
 		// AIOpponent.Colonies,導致存檔/未來 UI 若讀取 AI 殖民地職務分配會看到「從未更新」的
 		// 初始值(雖然目前無 UI 讀取此欄位,經濟結算本身不受影響——因為每回合都是從同一組
 		// 靜態 Population/FoodPerFarmer 重新算,但欄位本身是錯的,發現後順手修正)。
+		// AI 對手與玩家共用同一局的版本規則 profile(RuleProfile 是整個 GameSession 唯讀設定,
+		// 見該欄位註解),Hyper-Advanced 研究成本覆寫同樣要套用,否則 1.3 局裡 AI 仍會用 1.5 的
+		// 25000 成本研究,造成玩家/AI 規則不對稱。
+		s.AIPlayers[i].Player.HyperAdvancedResearchCost = gamedata.HyperAdvancedCost(s.RuleProfile)
 		ps, colonies := engine.ApplyAIEconomy(s.AIPlayers[i].Player, s.AIPlayers[i].Colonies, s.AIPlayers[i].Decider)
 		s.AIPlayers[i].Colonies = colonies
 		out := engine.RunEmpireTurn(ps, colonies)

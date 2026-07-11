@@ -31,6 +31,11 @@ func RunResearchPhase(ps PlayerState, researchPoints int) (PlayerState, bool) {
 
 	choice := gamedata.ResearchChoiceFor(ps.ResearchTopic)
 	cost := choice.Cost
+	// Hyper-Advanced Lv1 版本覆寫(見 PlayerState.HyperAdvancedResearchCost 註解):呼叫端算好
+	// 非 0 值時,對 8 個共用 TOPIC_HYPER_* 主題取代套件級預設 25000(如 1.3 profile 傳入 15000)。
+	if ps.HyperAdvancedResearchCost > 0 && gamedata.IsHyperAdvancedTopic(ps.ResearchTopic) {
+		cost = ps.HyperAdvancedResearchCost
+	}
 
 	if cost == 0 {
 		ps.CompletedTopics[ps.ResearchTopic] = true
