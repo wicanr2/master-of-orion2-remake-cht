@@ -2229,7 +2229,8 @@ func playerHomeworldColony() engine.ColonyState {
 //     一律已知(ResearchAll=true)。ChosenTech 記入 Choices[0](TECH_COLONY_BASE)代表「全解」,
 //     語意與 engine.recordCompletion 對 ResearchAll 主題的既有記錄慣例一致。
 //
-// BC 國庫沿用既有 remake 預設值 100——手冊未給開局 BC 數字(§6.1),待確認。
+// BC 國庫 50(2026-07-12 校正,SAVE10.GAM oracle:5 名玩家開局 BC 全=50,humbe.no
+// 攻略獨立記「~50 BC」交叉一致)。先前沿用 remake 預設 100 為未確認佔位值,已訂正。
 //
 // Maintenance 不再是無據 placeholder(先前寫死 5):改由 gamedata.BuiltMaintenanceBC 加總
 // 母星起始已建成建築(homeworldBuildings:海軍陸戰隊營 1 BC + 星基 2 BC = 3 BC/回合,兩個
@@ -2239,7 +2240,7 @@ func playerHomeworldColony() engine.ColonyState {
 // 運輸艦數量),暫不計入——TODO:待接上艦隊維護模型後補上,不臆造數字。
 func newHomeworldPlayerState(researchTopic gamedata.ResearchTopic) engine.PlayerState {
 	return engine.PlayerState{
-		BC: 100, TaxRate: 40, Maintenance: gamedata.BuiltMaintenanceBC(homeworldBuildings()), ResearchTopic: researchTopic,
+		BC: 50, TaxRate: 40, Maintenance: gamedata.BuiltMaintenanceBC(homeworldBuildings()), ResearchTopic: researchTopic,
 		// CommandPointsSupply 這裡刻意只填母星星基(homeworldBuildings 的"星基":true)貢獻的
 		// 1 點建築供給,不含 gamedata.CommandPointsBase(帝國基礎值 5)——這只是「第一次 EndTurn
 		// 前」的暫時值,玩家這欄會在 GameSession.EndTurn 用 totalCommandPointsSupply()(基礎值+
