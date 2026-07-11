@@ -219,7 +219,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "需指定 -data <遊戲資料夾>")
 			os.Exit(2)
 		}
-		fnt, err := loadFont(*fontPath)
+		fnt, err := loadFont(*fontPath, langID)
 		if err != nil {
 			fatal(fmt.Errorf("載入字型: %w", err))
 		}
@@ -249,7 +249,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "需指定 -data <遊戲資料夾>")
 			os.Exit(2)
 		}
-		fnt, err := loadFont(*fontPath)
+		fnt, err := loadFont(*fontPath, langID)
 		if err != nil {
 			fatal(fmt.Errorf("載入字型: %w", err))
 		}
@@ -276,7 +276,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "需指定 -data <遊戲資料夾>")
 			os.Exit(2)
 		}
-		fnt, err := loadFont(*fontPath)
+		fnt, err := loadFont(*fontPath, langID)
 		if err != nil {
 			fatal(fmt.Errorf("載入字型: %w", err))
 		}
@@ -298,7 +298,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "需指定 -data <遊戲資料夾>")
 			os.Exit(2)
 		}
-		fnt, err := loadFont(*fontPath)
+		fnt, err := loadFont(*fontPath, langID)
 		if err != nil {
 			fatal(fmt.Errorf("載入字型: %w", err))
 		}
@@ -320,7 +320,7 @@ func main() {
 
 	// 可玩遊戲殼:互動主選單→遊戲畫面→結束回合。headless(-shot)時跑內建腳本驗證互動。
 	if *playMode {
-		fnt, err := loadFont(*fontPath)
+		fnt, err := loadFont(*fontPath, langID)
 		if err != nil {
 			fatal(fmt.Errorf("載入字型: %w", err))
 		}
@@ -351,7 +351,7 @@ func main() {
 
 	// 種族統計模式:多來源(misc 標題 + raceinfo 標籤 + estrings 政體),不需遊戲資料。
 	if *raceMode {
-		fnt, err := loadFont(*fontPath)
+		fnt, err := loadFont(*fontPath, langID)
 		if err != nil {
 			fatal(fmt.Errorf("載入字型: %w", err))
 		}
@@ -367,7 +367,7 @@ func main() {
 
 	// 殖民地摘要模式:多來源(misc 標題 + rstring 回合結算摘要 + estrings 分類標籤),不需遊戲資料。
 	if *colonyMode {
-		fnt, err := loadFont(*fontPath)
+		fnt, err := loadFont(*fontPath, langID)
 		if err != nil {
 			fatal(fmt.Errorf("載入字型: %w", err))
 		}
@@ -383,7 +383,7 @@ func main() {
 
 	// 外交關係模式:多來源(estrings 種族名 + misc 關係等級/條約狀態),不需遊戲資料。
 	if *diploMode {
-		fnt, err := loadFont(*fontPath)
+		fnt, err := loadFont(*fontPath, langID)
 		if err != nil {
 			fatal(fmt.Errorf("載入字型: %w", err))
 		}
@@ -399,7 +399,7 @@ func main() {
 
 	// 星圖模式:載入存檔並繪製(資料驅動畫面)。
 	if *savePath != "" {
-		fnt, err := loadFont(*fontPath)
+		fnt, err := loadFont(*fontPath, langID)
 		if err != nil {
 			fatal(fmt.Errorf("載入字型: %w", err))
 		}
@@ -477,8 +477,13 @@ func main() {
 	}
 }
 
-// loadFont 依副檔名載入 CJK 字型(.ttc 走集合解析取第 0 個)。path 為空回 nil(不畫中文)。
-func loadFont(path string) (*uifont.Font, error) {
+// loadFont 依語言載入字型:zh 用內嵌點陣繁中字(bitmapfont FaceTC,免外部檔),
+// 其餘(en/未指定)維持向量字(依副檔名載入,.ttc 走集合解析取第 0 個)。
+// lang!=zh 且 path 為空時回 nil(不畫中文,行為與改動前一致)。
+func loadFont(path string, lang i18n.Lang) (*uifont.Font, error) {
+	if lang == i18n.Traditional {
+		return uifont.LoadBitmapTC(), nil
+	}
 	if path == "" {
 		return nil, nil
 	}
