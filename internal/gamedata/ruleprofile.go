@@ -58,11 +58,12 @@ type RuleProfile struct {
 	// +1 hit bonus for civilian buildings during bombardment removed.」1.3=1(有這個未記錄的
 	// bug 加成)、1.5=0(已移除)。
 	//
-	// ⚠ 現況(2026-07-11):本 remake 軌道轟炸目前只扣人口,不扣建築(AI 無 ColonyBuildings
-	// 持久資料可扣,見 internal/shell/orbital_bombardment.go BombardColony「範圍限制」),故
-	// 本欄位只是資料層佔位 + BombardColony 內留 TODO 掛鉤註解,尚未有任何函式真正讀取它——
-	// 建築損傷模型建好前,這個欄位「有欄位、無行為」,不臆測套用到人口損傷上(人口不是建築,
-	// 套用會是張冠李戴)。
+	// 現況(2026-07-11 已接線):AIOpponent 新增 ColonyBuildings 欄位後,
+	// internal/shell/orbital_bombardment.go BombardColony 已把本欄位讀進「每棟建築消耗的
+	// hits = GroundPlanetHitsPerBuilding + BombardmentBuildingBonusHits」,實際影響轟炸摧毀
+	// 幾棟建築(1.3 每棟建築多 +1 hit 才摧毀、1.5 不加)。⚠ CHANGELOG 原句語意本身模糊(是建築
+	// 多吸一擊、還是建築多受一擊才被摧毀),本 remake 採「每棟建築在 1.3 需多 +1 hit 才摧毀」的
+	// 保守解讀,見 BombardColony 檔頭「建築吸收」段落的誠實標註,非手冊逐字驗證值。
 	BombardmentBuildingBonusHits int
 }
 
@@ -115,12 +116,12 @@ func IsHyperAdvancedTopic(topic ResearchTopic) bool {
 // 1.5 的硬編值,呼叫端要套用版本差異時,對 IsHyperAdvancedTopic(topic)==true 的主題改用
 // HyperAdvancedCost(profile) 取代 ResearchChoiceFor(topic).Cost。
 //
-// ⚠ 現況(2026-07-11):本函式尚未接進 engine.RunResearchPhase——該函式簽名只吃
-// engine.PlayerState(見 internal/engine/research.go),不含 RuleProfile,也沒有 GameSession
-// 可查;要接線需先讓研究流程知道玩家所在的版本 profile,這會動到 engine/shell 邊界的既有資料流
-// (RunResearchPhase 呼叫鏈:engine.RunEmpireTurn → shell.EndTurn),屬於比本任務(資料層 profile
-// 本身)更大的重構,誠實留待「主選單真的接 1.3 選項」的任務再一併處理。本函式已測試、隨時可用,
-// 亦可先供 UI 顯示「若選 1.3,這項科技要花多少 RP」的預覽用途。
+// 現況(2026-07-11 已接線):engine.PlayerState 新增 HyperAdvancedResearchCost 欄位,
+// engine.RunResearchPhase 對 Hyper 主題套用該覆寫值(見 internal/engine/research.go);
+// shell.EndTurn 在呼叫 RunEmpireTurn 前,對玩家與每個 AI 對手都執行
+// `Player.HyperAdvancedResearchCost = gamedata.HyperAdvancedCost(s.RuleProfile)` 注入這局的
+// 版本規則值(見 internal/shell/session.go EndTurn),避免玩家用 1.3、AI 仍吃 1.5 硬編值的
+// 規則不對稱。顯示層見 internal/shell/research.go GameSession.ResearchCostForDisplay。
 func HyperAdvancedCost(p RuleProfile) int {
 	return p.HyperAdvancedLevel1Cost
 }

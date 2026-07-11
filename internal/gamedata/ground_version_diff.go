@@ -86,10 +86,12 @@ const GroundDefenseArmorMultiplier = 100
 // 相同,非差異項。與 #7(BombardmentBuildingBonusHits,見 ruleprofile.go)同屬「轟炸建築模型」
 // 的一部分。
 //
-// ⚠ 掛鉤備妥、待建築損傷模型(誠實標記):本 remake 軌道轟炸目前只扣人口(見
-// internal/shell/orbital_bombardment.go BombardColony「範圍限制」),不扣建築——AI 沒有
-// ColonyBuildings 持久資料可扣,扣了會是憑空生資料。本常數先鎖定數字本身,供未來建築損傷模型
-// 完成後直接引用,不臆測提前套用。
+// ⚠ 掛鉤備妥、仍待接線(誠實標記):2026-07-11 起 AIOpponent.ColonyBuildings 已備妥、
+// internal/shell/orbital_bombardment.go BombardColony 已用「hits 計數」模型接線建築吸收
+// (#7 BombardmentBuildingBonusHits),但那套模型是「每棟建築固定消耗 N 個 hit」,不是本常數
+// 描述的「HP 值」模型(逐點傷害扣血,而非離散 hit 計數)——兩者是手冊 Planet Hits 表裡並存但
+// 顆粒度不同的描述,remake 選了 hits 計數這條路徑實作(與 GroundPlanetHitsPerBuilding 同一套),
+// 本常數(HP 值)本身仍未被任何函式讀取,不臆測套用去改寫已選定的 hits 模型。
 const GroundCivilianArmorHP = 100
 
 // --- #11:轟炸行星尺寸幾何(3-4-6-7-8) ---

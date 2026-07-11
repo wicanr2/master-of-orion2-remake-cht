@@ -45,6 +45,39 @@ type AIOpponent struct {
 	// 同步 append 進 Colonies/ColonyStars,擴張出的星此後都有實際殖民地模型,可被入侵、且
 	// 會計入 AI 每回合的 TotalNetIndustry。
 	ColonyStars []int
+
+	// ColonyBuildings 是 Colonies[i] 對應的已完工建築集合(平行陣列,比照 Colonies/ColonyStars
+	// 兩者的長度不變量——三者長度須恆一致)。2026-07-11 新增:讓 AI 對手的殖民地也有建築資料
+	// 可扣(見 orbital_bombardment.go BombardColony「軌道防禦建築吸收軌道轟炸」),補齊先前
+	// 「AI 完全沒有建築欄位,轟炸只能扣人口」的資料模型缺口。
+	//
+	// 同步時機(逐一核對,勿遺漏):
+	//   - buildDemoAIOpponents:每個 AI 母星初始化為 homeworldBuildings() 的獨立拷貝
+	//     (cloneBuildings)——不可共享同一個 map 參考,否則轟炸掉一個 AI 的星基會連動到共用
+	//     同一份 map 的其他 AI。
+	//   - aiExpand:新殖民地 append 空 map(map[string]bool{}),不是 homeworldBuildings() 的
+	//     拷貝——手冊只保證母星有星基,新拓殖星沒有,故新 AI 殖民地開局無建築。
+	//   - InvadeColony:玩家攻陷 AI 殖民地移除該筆 Colonies/ColonyStars 時,同步移除對應的
+	//     ColonyBuildings[colonyIdx](三者一起從陣列中刪除,維持等長)。
+	//
+	// nil 安全:舊存檔沒有這個欄位時解碼為 nil,BombardColony 對 nil/空 map 視為「無建築」,
+	// 行為與加這個欄位之前逐位元一致(hits 全部進人口,不會 panic)。
+	ColonyBuildings []map[string]bool
+}
+
+// cloneBuildings 回傳 m 的獨立拷貝(逐鍵複製),供需要「各自獨立、不共享底層 map」的初始化
+// 情境使用(例如每個 AI 對手各自的 ColonyBuildings[0],若直接共用同一個 homeworldBuildings()
+// 回傳值會導致轟炸掉一個 AI 的建築連動影響其他 AI——map 是參考型別,共享會出這種隱性 bug)。
+// m 為 nil 時回傳 nil(不創建空 map,維持與「這個殖民地本來就沒有建築資料」一致的語意)。
+func cloneBuildings(m map[string]bool) map[string]bool {
+	if m == nil {
+		return nil
+	}
+	out := make(map[string]bool, len(m))
+	for k, v := range m {
+		out[k] = v
+	}
+	return out
 }
 
 // Star 是星系圖上的一顆星(供星圖渲染;正規化座標 0..1)。
@@ -2008,11 +2041,12 @@ var stanceNames = map[ai.Stance]string{
 
 // aiExpand 讓第 i 個 AI 佔領一顆無主星:標 Star.Owner=2、OwnedStars++,並用
 // newColonyFromStar(colonization.go,與玩家 ColonizeStar 共用同一套建法)建立真正的
-// engine.ColonyState,append 進 AIOpponent.Colonies + ColonyStars(AIOpponent 唯二的殖民地
-// 平行陣列——不像玩家有 Builds/ColonyBuildings/PlayerColonyMarines/MarineBarracksAge/
-// PlayerColonyTanks/ArmorBarracksAge/popAccum 那套逐殖民地建造/駐軍追蹤,因為 EndTurn 對 AI
-// 只呼叫 RunEmpireTurn 結算經濟,從不呼叫 advanceBuilds/advanceMarines/advanceArmor/
-// advancePopulation 這些玩家專屬的逐殖民地流程,故無需同步那些陣列)。
+// engine.ColonyState,append 進 AIOpponent.Colonies + ColonyStars + ColonyBuildings(三者是
+// AIOpponent 的殖民地平行陣列,長度須恆等——不像玩家還有 Builds/PlayerColonyMarines/
+// MarineBarracksAge/PlayerColonyTanks/ArmorBarracksAge/popAccum 那套逐殖民地建造/駐軍追蹤,
+// 因為 EndTurn 對 AI 只呼叫 RunEmpireTurn 結算經濟,從不呼叫 advanceBuilds/advanceMarines/
+// advanceArmor/advancePopulation 這些玩家專屬的逐殖民地流程,故無需同步那些陣列)。新殖民地的
+// ColonyBuildings 項 append 空 map(手冊只保證母星有星基,新拓殖星沒有)。
 //
 // 2026-07-11 訂正:先前只設旗標、不建殖民地模型(見 AIOpponent.ColonyStars 欄位註解),
 // 導致 AI 版圖擴張後經濟(EndTurn 的 RunEmpireTurn(ps, a.Colonies))永遠停在初始母星產出,
@@ -2037,6 +2071,9 @@ func (s *GameSession) aiExpand(i int) {
 		s.AIPlayers[i].OwnedStars++
 		s.AIPlayers[i].Colonies = append(s.AIPlayers[i].Colonies, colony)
 		s.AIPlayers[i].ColonyStars = append(s.AIPlayers[i].ColonyStars, idx)
+		// ColonyBuildings 同步 append 空 map,維持三個平行陣列等長(見 AIOpponent.ColonyBuildings
+		// 欄位註解)——手冊只保證母星有星基,新拓殖星沒有,故新 AI 殖民地開局無建築可扣。
+		s.AIPlayers[i].ColonyBuildings = append(s.AIPlayers[i].ColonyBuildings, map[string]bool{})
 		return
 	}
 }
@@ -2245,8 +2282,12 @@ func buildDemoAIOpponents(aiHomeStars []int) []AIOpponent {
 			Player:      newHomeworldPlayerState(1),
 			Colonies:    []engine.ColonyState{playerHomeworldColony()}, // AI 同為 Average 起始單一母星,與玩家共用忠實 yield
 			ColonyStars: []int{aiHomeStars[i]},                         // 唯一有實際殖民地模型的星(見 AIOpponent.ColonyStars 註解)
-			Decider:     ai.NewRemakeDecider(setup.profile),
-			OwnedStars:  1,
+			// ColonyBuildings 母星比照玩家,開局已建成 homeworldBuildings()(海軍陸戰隊營+
+			// 星基)——每個 AI 各自 cloneBuildings 一份獨立拷貝,不可共享同一個 map 參考(見
+			// AIOpponent.ColonyBuildings 欄位註解)。
+			ColonyBuildings: []map[string]bool{cloneBuildings(homeworldBuildings())},
+			Decider:         ai.NewRemakeDecider(setup.profile),
+			OwnedStars:      1,
 		})
 	}
 	return aiPlayers

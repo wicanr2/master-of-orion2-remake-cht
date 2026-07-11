@@ -2,6 +2,7 @@ package shell
 
 import (
 	"math/rand"
+	"sort"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
@@ -72,19 +73,29 @@ type GroundBombardResult struct {
 	TotalDamage int    // RuleProfile.BombardmentVolleys 輪齊射總傷害(套用前見 fleetBombardDamage 註解的已知簡化)
 	Hits        int    // gamedata.GroundBombHitsFromDamage(TotalDamage),Estimated Bomb Hits
 
-	PopulationLost int // 實際扣減的殖民地人口單位數(1 hit = 1 人口單位,Planet Hits 表)
-	RemainingHits  int // 扣完人口後剩餘、未消耗掉的 hits(通常應為 0;殖民地人口歸零時會 > 0)
+	// PopulationLost 實際扣減的殖民地人口單位數(1 hit = 1 人口單位,Planet Hits 表)。
+	// 2026-07-11 起:這裡的 hits 是「建築吸收後的餘數」,不是 Hits 原始值——見下方函式註解
+	// 「建築吸收」段落與 BuildingsDestroyed 欄位。
+	PopulationLost int
+	RemainingHits  int // 扣完建築+人口後剩餘、未消耗掉的 hits(通常應為 0;殖民地人口歸零時會 > 0)
+
+	// BuildingsDestroyed 是本次轟炸摧毀的建築數(2026-07-11 新增,#7/#8 接線:見下方函式註解
+	// 「建築吸收」段落)。0 表示沒有建築被摧毀(可能是 hits 不夠、也可能是該殖民地本來就沒有
+	// 建築——兩種情況本欄位都合法回 0,不額外區分)。
+	BuildingsDestroyed int
+	// BuildingsRemaining 是轟炸結束後該殖民地剩餘的建築數(len(ColonyBuildings[colonyIdx])),
+	// 供 UI/測試檢視「還剩多少建築沒被炸掉」。
+	BuildingsRemaining int
 
 	// PlanetHitsRequired 是手冊「Planet Hits」表算出的「摧毀這個殖民地全部防禦所需 hits」
 	// 估計值(gamedata.GroundPlanetTotalHits),對應手冊 UI 上「Estimated Bomb Hits」旁邊
 	// 同時顯示的「Planet Hits」欄——純供顯示參考(讓玩家判斷這波轟炸夠不夠),不影響
-	// PopulationLost 的實際扣減(扣減直接用 Hits,見下方函式註解)。
+	// PopulationLost 的實際扣減(扣減邏輯見下方函式註解)。
 	//
-	// TODO 誠實限制:AI 側完全沒有建築/儲存生產追蹤(AIOpponent 無 ColonyBuildings,見
-	// ground_invasion.go InvadeColony 註解),故本欄位的 buildings/storedProduction 兩項
-	// 恆為 0/false,不代表真的沒有建築,只代表「目前資料模型量不到」——不臆測填數字。
-	// 戰車營同理:AI 開局 homeworldBuildings() 沒有裝甲營房,也無法追蹤是否後續建成,tanks
-	// 恆為 0。
+	// TODO 誠實限制:AI 側仍無「儲存生產」追蹤(storedProduction 恆 false)。建築數本身
+	// (2026-07-11 起 AIOpponent.ColonyBuildings 已備妥)已改用轟炸結束後的實際剩餘建築數,
+	// 不再恆 0——見下方函式賦值處。戰車營同理:AI 開局 homeworldBuildings() 沒有裝甲營房,也
+	// 無法追蹤是否後續建成,tanks 恆為 0。
 	PlanetHitsRequired int
 }
 
@@ -98,22 +109,40 @@ type GroundBombardResult struct {
 // 任一條件不足回傳 Ok=false + Reason,不消耗任何狀態、不呼叫 rng。
 //
 // 解算:fleetBombardDamage 模擬 RuleProfile.BombardmentVolleys 輪齊射 →
-// gamedata.GroundBombHitsFromDamage 換算 hits →
-// gamedata.GroundBombardPopulationLoss 依行星尺寸係數(#11,2026-07-11,非差異項)換算實際
-// 扣減的人口單位數(大行星較耐轟,近似公式見該函式註解)→ 扣減 colony.Population(夾在 0 以上)。
+// gamedata.GroundBombHitsFromDamage 換算 hits → hits 先花在摧毀殖民地建築(見下方「建築吸收」
+// 段落)→ 建築吸收後的餘數 hits 才交給 gamedata.GroundBombardPopulationLoss 依行星尺寸係數
+// (#11,2026-07-11,非差異項)換算實際扣減的人口單位數(大行星較耐轟,近似公式見該函式註解)→
+// 扣減 colony.Population(夾在 0 以上)。
+//
+// 建築吸收(#7/#8 接線,2026-07-11):對應手冊 p.78「飛彈基地只能被軌道轟炸摧毀」+ #8
+// civilian building 轟炸裝甲 100hp——忠實模型是「bomb hits 先摧毀殖民地建築,餘數才扣人口」,
+// 軌道防禦讓殖民地人口在防禦被轟掉前受保護:
+//   - 每棟建築消耗的 hits = gamedata.GroundPlanetHitsPerBuilding + s.RuleProfile.
+//     BombardmentBuildingBonusHits(1.3 每棟建築多 +1 hit 才摧毀,CHANGELOG「Undocumented +1
+//     hit bonus for civilian buildings during bombardment removed」;1.5 已移除此 bug,見
+//     ruleprofile.go 欄位註解)。
+//     ⚠ 誠實標註:CHANGELOG 這句話本身語意模糊(是建築多吸一擊、還是建築多受一擊才被摧毀),
+//     本 remake 採「每棟建築在 1.3 需多 +1 hit 才摧毀」的保守解讀,非手冊逐字驗證值。
+//   - 分配順序:依建築名稱字母序(sort.Strings)固定摧毀,不用 rng——同一批建築、同一 hits
+//     輸入,摧毀結果永遠一樣,可重現。hits 不夠摧毀下一棟就停止(不會摧毀「一半」的建築)。
+//   - 被摧毀的建築從 aiPlayer.ColonyBuildings[colonyIdx] 刪除(map 是參考型別,直接
+//     mutate,不需要寫回)。
+//   - colony 無建築(nil/空 map)時,這段等同 no-op,全部 hits 直接進人口損傷——與加這個機制
+//     之前的行為逐位元一致(見 orbital_bombardment_test.go 既有測試)。
 //
 // ⚠ 範圍限制(誠實標註,非本函式應臆測補齊的部分):
-//   - 只扣人口,不扣建築/儲存生產/駐軍——AI 沒有這些的持久資料可扣(見 GroundBombardResult
-//     欄位註解),扣了會是憑空生資料,故不做。RuleProfile.BombardmentBuildingBonusHits(#7)/
-//     gamedata.GroundCivilianArmorHP(#8)屬於這個未建的「建築損傷」模型,欄位/常數已備妥,
-//     尚未有任何函式讀取(TODO 掛鉤點)。
+//   - 不扣「儲存生產」/駐軍——AI 沒有這些的持久資料可扣,扣了會是憑空生資料,故不做(建築已
+//     於本輪補上,見上方「建築吸收」)。
+//   - 本輪不做「防禦方反擊摧毀玩家艦艇」(軌道基地對轟炸艦隊開火)——那是下一輪工作,本函式
+//     不改動 s.Ships。
 //   - 手冊未講「殖民地人口被轟炸到 0」時的後續(是否直接摧毀殖民地/移除星系 Owner):不在本
 //     函式臆測補上,留給未來確認手冊或 openorion2 行為後再接(TODO)。目前行為是 Population
 //     可以停在 0,殖民地本身仍存在於 aiPlayer.Colonies(不會被移除)。
 //   - 轟炸不會使殖民地被佔領(手冊:入侵才佔領),故本函式不改動 Star.Owner。
 //
 // rng 依「回合數 + 星索引」種子化(與 InvadeColony 同款慣例,但另加不同的乘數避免與入侵用的
-// rng 種子巧合撞在一起),同一回合對同一顆星重複呼叫必得到相同結果。
+// rng 種子巧合撞在一起),同一回合對同一顆星重複呼叫必得到相同結果(建築摧毀順序本身不吃 rng,
+// 見上方「分配順序」)。
 func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 	if starIdx < 0 || starIdx >= len(s.Stars) {
 		return GroundBombardResult{Reason: "無效的星索引"}
@@ -141,17 +170,41 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 
 	res := GroundBombardResult{Ok: true, TotalDamage: totalDamage, Hits: hits}
 
+	// --- 建築吸收(#7/#8 接線,見函式檔頭「建築吸收」段落):hits 先花在摧毀建築 ---
+	remainingHits := hits
+	var buildings map[string]bool
+	if colonyIdx < len(aiPlayer.ColonyBuildings) {
+		buildings = aiPlayer.ColonyBuildings[colonyIdx]
+	}
+	if len(buildings) > 0 {
+		hitsPerBuilding := gamedata.GroundPlanetHitsPerBuilding + s.RuleProfile.BombardmentBuildingBonusHits
+		if hitsPerBuilding < 1 {
+			hitsPerBuilding = 1 // 防禦性下限,避免 RuleProfile 誤設非正值造成除零/無限摧毀
+		}
+		// 固定優先序(依建築名稱字母序),不吃 rng,同一批建築+同一 hits 輸入摧毀結果必重現。
+		names := make([]string, 0, len(buildings))
+		for name := range buildings {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		for _, name := range names {
+			if remainingHits < hitsPerBuilding {
+				break
+			}
+			delete(buildings, name)
+			remainingHits -= hitsPerBuilding
+			res.BuildingsDestroyed++
+		}
+	}
+	res.BuildingsRemaining = len(buildings)
+
 	// 行星尺寸幾何(#11,2026-07-11,docs/tech/version-1.3-1.5-diff.md,非差異項——1.5 系列
 	// 中途曾改過又於 1.50.11 修回 classic 3-4-6-7-8,對 1.3 vs 最終 1.5 不構成差異):大行星
-	// 較耐轟,近似公式與已知限制見 gamedata.GroundBombardPopulationLoss 註解。母星預設
-	// LARGE_PLANET(係數 7)時,hits=10 算出 popLoss=8,與換係數前的舊行為(popLoss=hits 直接
-	// 相等)剛好一致,見 orbital_bombardment_test.go 既有測試不受影響。
-	//
-	// TODO #7(BombardmentBuildingBonusHits)/#8(GroundCivilianArmorHP)掛鉤點:兩者都屬於
-	// 「轟炸建築損傷」模型,本函式目前只扣人口,不扣建築(AI 無 ColonyBuildings 持久資料可扣),
-	// 故 s.RuleProfile.BombardmentBuildingBonusHits 在此尚未被讀取,見該欄位與
-	// gamedata.GroundCivilianArmorHP 註解的誠實範圍說明。
-	popLoss := gamedata.GroundBombardPopulationLoss(hits, colony.PlanetSize)
+	// 較耐轟,近似公式與已知限制見 gamedata.GroundBombardPopulationLoss 註解。colony 無建築時
+	// remainingHits==hits,母星預設 LARGE_PLANET(係數 7)時 hits=10 算出 popLoss=8,與加建築
+	// 吸收機制前的舊行為(popLoss=hits 直接相等)剛好一致(見 orbital_bombardment_test.go
+	// TestBombardColony_ nil 建築回歸測試)。
+	popLoss := gamedata.GroundBombardPopulationLoss(remainingHits, colony.PlanetSize)
 	if popLoss > colony.Population {
 		popLoss = colony.Population
 	}
@@ -160,12 +213,15 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 	}
 	colony.Population -= popLoss
 	res.PopulationLost = popLoss
-	res.RemainingHits = hits - popLoss
+	res.RemainingHits = remainingHits - popLoss
 
-	// PlanetHitsRequired 純供顯示參考,見 GroundBombardResult 欄位註解的 TODO 範圍限制。
+	// PlanetHitsRequired 純供顯示參考(見 GroundBombardResult 欄位註解):buildings 參數改用
+	// len(buildings)(本次轟炸「結束後」剩餘的建築數),與下面 defMarines 用「轟炸後」的
+	// colony.Population 同一種語意(顯示「打完這波,對方還剩多少防禦要打」)——AI 建築資料
+	// 2026-07-11 起已備妥,不再恆為 0;storedProduction 仍恆 false,見欄位註解的剩餘 TODO。
 	defMarines := gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population, colony.PopMax, false)
 	defMarineHits := gamedata.GroundMarineHitsToKill(false, hasPoweredArmorFor(aiPlayer.Player))
-	res.PlanetHitsRequired = gamedata.GroundPlanetTotalHits(0, false, colony.Population, 0, defMarines, defMarineHits, 0, 0)
+	res.PlanetHitsRequired = gamedata.GroundPlanetTotalHits(len(buildings), false, colony.Population, 0, defMarines, defMarineHits, 0, 0)
 
 	return res
 }

@@ -405,8 +405,10 @@ type GroundInvasionResult struct {
 // 對同一顆星重複輸入必得到相同結果,可重現。
 //
 // 攻方勝:星 Owner 轉 1;把該 AI 殖民地整筆過戶為玩家殖民地(PlayerColonies 新增一筆,
-// Builds/ColonyBuildings/PlayerColonyMarines/MarineBarracksAge 同步補齊長度)、從
-// AIOpponent.Colonies/ColonyStars 移除、雙方持有星數更新(AI.OwnedStars--;玩家由
+// Builds/ColonyBuildings(玩家側,補 nil 佔位)/PlayerColonyMarines/MarineBarracksAge 同步補齊
+// 長度——⚠ 誠實簡化:AI 側若有實際建築(AIOpponent.ColonyBuildings)並不會轉移過戶,過戶後的
+// 玩家殖民地一律視為「無已完工建築」起算,非本輪範圍,見該欄位設計動機)、從
+// AIOpponent.Colonies/ColonyStars/ColonyBuildings 移除、雙方持有星數更新(AI.OwnedStars--;玩家由
 // PlayerOwnedStars() 即時算,Owner 已轉 1 故自動反映)。過戶殖民地人口簡化為「地面戰守方
 // 存活戰鬥單位數」(手冊 p.162-164 只有敘述性描述,無精確的「入侵後保留多少平民人口」公式,
 // 至少保留 1 人口,標簡化待精修)。
@@ -520,6 +522,12 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 
 		aiPlayer.Colonies = append(aiPlayer.Colonies[:colonyIdx], aiPlayer.Colonies[colonyIdx+1:]...)
 		aiPlayer.ColonyStars = append(aiPlayer.ColonyStars[:colonyIdx], aiPlayer.ColonyStars[colonyIdx+1:]...)
+		// ColonyBuildings 同步移除對應項,維持三個平行陣列等長(見 AIOpponent.ColonyBuildings
+		// 欄位註解)。colonyIdx 理論上恆在範圍內(與 Colonies/ColonyStars 同步維護),但仍防禦性
+		// 檢查長度,避免舊存檔欄位缺失導致 panic。
+		if colonyIdx < len(aiPlayer.ColonyBuildings) {
+			aiPlayer.ColonyBuildings = append(aiPlayer.ColonyBuildings[:colonyIdx], aiPlayer.ColonyBuildings[colonyIdx+1:]...)
+		}
 		if aiPlayer.OwnedStars > 0 {
 			aiPlayer.OwnedStars--
 		}
