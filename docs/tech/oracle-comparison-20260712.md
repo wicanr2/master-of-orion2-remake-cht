@@ -107,6 +107,27 @@
 - **#5-1**:History Graph 接上(國力折線圖)或明標未實作、停用不可按(別讓玩家以為壞了)。
 - 完整版:INFO 做成 5 分頁檢視器 + 淨收入分解(較大,屬 UI 增強)。
 
+### 殖民地總覽(COLONIES)— 母星開局狀態逐項 oracle(高價值)
+使用者點 COLONIES 截原版母星「Sol III」,對照 remake「殖民地 1」:
+
+| 項目 | 原版 Sol III | remake | 判定 |
+|---|---|---|---|
+| **職務分配** | 農 4 / **工 2** / 科 2 | 農 4 / **工 1** / 科 3 | ❌ **remake 錯**;正解 **4/2/2**(釘死記憶裡「科學家分配」開放項) |
+| **殖民地名** | Sol III(真星系+羅馬數字) | 「殖民地 1」通用名 | ❌ 母星該用真星名 |
+| **礦產豐度** | Mineral **Abundant** | 礦產普通(Normal) | ❌ 母星礦產應 Abundant |
+| **行星大小 / PopMax** | Medium Terran / ~12 | **大型 / 上限 20** | ❌ 母星該 Medium(上限約 12–16),remake 給太大 |
+| **建造中** | **Trade Goods**(工業→BC) | 顯示已建星基/海軍陸,無「建造中」項 | ❌ 開局應排 Trade Goods |
+| 收支 | Reserve 62 / **Income +12** | 國庫 50 / **收支 +0** | ❌ remake 開局 +0(因沒建 Trade Goods) |
+| 研究 | 2 科學家 → **9 RP** | 3 科學家 → 9 RP | ◐ 總數同、配置不同(原版 2 科=9,per-sci≈4.5) |
+| 底部 SORT | Name/Population/Food/Industry/Science/Producing/BC | 名稱/人口/食物/工業/科學/生產中/BC | ✅ |
+
+**→ D 組數值疑點大解**:remake 開局**指揮 −2 / 收支 +0** 的根源,一大半是**母星開局狀態沒對齊原版**:
+1. 職務 4/2/2(非 4/1/3)。
+2. 母星礦產 Abundant、大小 Medium(remake 給了普通礦產 + 大型/上限20)。
+3. **開局建造排 Trade Goods**(原版母星預設造 Trade Goods,工業轉 BC → +12 收入);remake 沒排,所以 +0。
+4. 母星命名用真星名(Sol III 之類),非「殖民地 1」。
+這些是「turn-1 母星初始態」的精確 oracle,直接可改(gamedata/session 開局殖民地建構)。
+
 ### 事件黃框(issue #3)— remake 渲染問題,直接查 code
 原版事件是對話窗;remake 的「黃色框」是事件文字擦底/邊框 artifact,屬 remake 渲染面,不需原版截圖即可查修(未觸發事件截原版,列 code 查)。
 

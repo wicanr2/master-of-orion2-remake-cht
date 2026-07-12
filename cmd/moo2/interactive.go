@@ -490,6 +490,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		// (Owner==2)例外為雙鈕共存:軌道轟炸(shell.GameSession.BombardColony,恆可用,402)
 		// + 發動地面入侵(shell.GameSession.InvadeColony,額外要求已載運陸戰隊,424)。
 		if sess.SelectedStar >= 0 && sess.SelectedStar < len(sess.Stars) {
+			hits = append(hits, hitRegion{216, 330, 20, 16, "closestar"}) // 面板右上 CLOSE(✕),對齊原版 Star System 彈窗
 			switch {
 			case sess.FleetETA > 0:
 				// 航行中,面板只顯示狀態文字,無按鈕。
@@ -515,10 +516,19 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 	onAction := func(a string) *origTransition {
 		if len(a) > 4 && a[:4] == "star" && b.session != nil {
 			if idx, err := strconv.Atoi(a[4:]); err == nil {
-				b.session.SelectedStar = idx
+				if idx == b.session.SelectedStar {
+					b.session.SelectedStar = -1 // 再點同一顆星 → 取消選取(關閉資訊面板,issue #6)
+				} else {
+					b.session.SelectedStar = idx
+				}
 				b.lastActionMsg = ""             // 換選中星,清掉上一顆星的動作結果訊息
 				return b.goTo(b.galaxy, "星系主畫面") // 重繪顯示選中星資訊
 			}
+		}
+		if a == "closestar" && b.session != nil {
+			b.session.SelectedStar = -1 // 面板 CLOSE 鈕 → 關閉(對齊原版 Star System 彈窗的 CLOSE,issue #6)
+			b.lastActionMsg = ""
+			return b.goTo(b.galaxy, "星系主畫面")
 		}
 		if a == "dispatch" && b.session != nil {
 			b.session.SendFleet(b.session.SelectedStar) // 派遣艦隊至選中星(航行由 EndTurn 推進)
@@ -668,6 +678,8 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					vector.DrawFilledRect(dst, 28, 326, 210, 132, color.RGBA{10, 14, 30, 235}, false)
 					vector.StrokeRect(dst, 28, 326, 210, 132, 1, color.RGBA{90, 130, 200, 255}, false)
 					fnt.Draw(dst, p.Name, 38, 344, 14, color.RGBA{240, 220, 120, 255})
+					// 右上 CLOSE 鈕(✕),對齊上方 "closestar" 熱區與原版彈窗 CLOSE(issue #6)。
+					fnt.Draw(dst, "✕", 220, 344, 14, color.RGBA{235, 150, 140, 255})
 					fnt.Draw(dst, fmt.Sprintf("氣候 %s ／ 大小 %s", p.Climate, p.Size), 38, 362, 11, color.RGBA{210, 216, 230, 255})
 					fnt.Draw(dst, fmt.Sprintf("重力 %s ／ 礦產 %s", p.Gravity, p.Mineral), 38, 378, 11, color.RGBA{210, 216, 230, 255})
 					// 陸戰隊狀態行:艦隊目前載運數,選中母星時另顯示殖民地駐軍池數(唯一已知對映)。
