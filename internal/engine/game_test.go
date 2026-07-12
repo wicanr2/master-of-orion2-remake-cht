@@ -55,12 +55,13 @@ func TestRunGameTurn(t *testing.T) {
 	if p0.TotalNetIndustry != 13 {
 		t.Errorf("玩家0 淨工業 = %d,預期 13", p0.TotalNetIndustry)
 	}
-	if p0.TaxRevenue != 6 {
-		t.Errorf("玩家0 稅收 = %d,預期 6", p0.TaxRevenue)
+	// 2026-07-12 收入模型:含人頭基礎收入(Pop5 × 1 BC = 5)。工業稅 6 + 人頭 5 = 11。
+	if p0.TaxRevenue != 11 {
+		t.Errorf("玩家0 money 收入 = %d,預期 11(工業稅6+人頭5)", p0.TaxRevenue)
 	}
-	// 玩家1:稅率0 → 稅收0
+	// 玩家1:稅率0 → 工業稅 0,但仍有人頭基礎收入(Pop4 × 1 = 4)。
 	p1 := res.PlayerOutputs[1]
-	if len(p1.Colonies) != 1 || p1.TaxRevenue != 0 {
-		t.Errorf("玩家1 結果錯誤:colonies=%d tax=%d", len(p1.Colonies), p1.TaxRevenue)
+	if len(p1.Colonies) != 1 || p1.TaxRevenue != 4 {
+		t.Errorf("玩家1 結果錯誤:colonies=%d money收入=%d(預期 tax0+人頭4=4)", len(p1.Colonies), p1.TaxRevenue)
 	}
 }

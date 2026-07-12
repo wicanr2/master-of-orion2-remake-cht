@@ -78,14 +78,12 @@ type ColonyState struct {
 	// 收入加成,未講維護費打折)。
 	IncomeBonusPercent int
 
-	// IncomePerPop 是種族「錢」特質:每單位人口每回合額外產生的 BC,以**半 BC 為單位**(與
-	// food_per_farmer 同款半單位慣例,因手冊 Money pick 有 0.5 粒度)。手冊 GAME_MANUAL.pdf
-	// p.16 諾蘭姆「each unit of Gnolam population generates an additional 1 BC per turn」=money3
-	// pick(+1 BC/人=2 半單位);自訂種族 Money pick:差 -0.5(-1)、佳 +0.5(+1)、優 +1(+2)。
-	// 與 IncomeBonusPercent(建築 %)不同,這是每人固定 BC 基礎收入,套用點在 RunEmpireTurn 逐
-	// 殖民地迴圈:income = IncomePerPop * Population / 2,先併入該殖民地稅收+餘糧+貿易品小計(故
-	// 建築 % 加成會一併放大,對應手冊「money 收入受太空港/證券交易所加成」),再進帝國總額。
-	// 一般種族為 0。
+	// IncomePerPop 是種族「錢」特質對人頭收入的**增量(delta)**,以半 BC 為單位(與 food_per_farmer
+	// 同款半單位慣例,因手冊 Money pick 有 0.5 粒度)。一般種族為 0(仍享 gamedata.BaseIncomePerPopHalfBC
+	// 的每人基礎 1 BC);諾蘭姆 +2(手冊 p.16「additional 1 BC per turn」→基礎1+額外1=2 BC/人);
+	// 自訂種族 Money pick:差 -1(-0.5)、佳 +1(+0.5)、優 +2(+1)。套用點在 RunEmpireTurn 逐殖民地
+	// 迴圈:perCapita = (BaseIncomePerPopHalfBC + IncomePerPop),floor 0,income = perCapita*Pop/2,
+	// 併入殖民地稅收+餘糧+貿易品小計(故建築 % 一併放大,對應手冊「money 收入受太空港/證交所加成」)。
 	IncomePerPop int
 
 	// PlanetGravity 該殖民地所在行星的重力等級(LOW_G/NORMAL_G/HEAVY_G,GAME_MANUAL.pdf p.58)。

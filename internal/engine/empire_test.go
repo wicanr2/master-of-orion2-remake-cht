@@ -93,14 +93,15 @@ func TestRunEmpireTurnBC(t *testing.T) {
 		ResearchTopic: gamedata.ResearchTopic(1)}
 	out := RunEmpireTurn(ps, colonies)
 
-	if out.TaxRevenue != 10 { // 20*50/100
-		t.Errorf("稅收 = %d,預期 10", out.TaxRevenue)
+	// 2026-07-12 收入模型:併入人頭基礎收入(Pop5 × 1 BC = 5,見 gamedata.BaseIncomePerPopHalfBC)。
+	if out.TaxRevenue != 15 { // 工業稅 10(20*50/100)+ 人頭 5
+		t.Errorf("money 收入 = %d,預期 15", out.TaxRevenue)
 	}
-	if out.NetBC != 7 { // 10 - 3 維護
-		t.Errorf("淨 BC = %d,預期 7", out.NetBC)
+	if out.NetBC != 12 { // 15 - 3 維護
+		t.Errorf("淨 BC = %d,預期 12", out.NetBC)
 	}
-	if out.Player.BC != 107 { // 100 + 7
-		t.Errorf("國庫 = %d,預期 107", out.Player.BC)
+	if out.Player.BC != 112 { // 100 + 12
+		t.Errorf("國庫 = %d,預期 112", out.Player.BC)
 	}
 }
 
@@ -131,11 +132,11 @@ func TestRunEmpireTurnCommandOverflow(t *testing.T) {
 	if out.CommandOverflowCost != 20 {
 		t.Errorf("CommandOverflowCost = %d,預期 20", out.CommandOverflowCost)
 	}
-	if out.NetBC != -13 { // 10(稅收) - 3(維護) - 20(指揮評等超支) = -13
-		t.Errorf("淨 BC = %d,預期 -13", out.NetBC)
+	if out.NetBC != -8 { // 15(工業稅10+人頭5) - 3(維護) - 20(指揮評等超支) = -8
+		t.Errorf("淨 BC = %d,預期 -8", out.NetBC)
 	}
-	if out.Player.BC != 87 { // 100 - 13
-		t.Errorf("國庫 = %d,預期 87", out.Player.BC)
+	if out.Player.BC != 92 { // 100 - 8
+		t.Errorf("國庫 = %d,預期 92", out.Player.BC)
 	}
 }
 
@@ -152,8 +153,8 @@ func TestRunEmpireTurnCommandSupplyCoversDemand(t *testing.T) {
 	if out.CommandOverflowCost != 0 {
 		t.Errorf("供給=需求時 CommandOverflowCost 應為 0,got %d", out.CommandOverflowCost)
 	}
-	if out.NetBC != 7 { // 10 - 3,同 TestRunEmpireTurnBC
-		t.Errorf("淨 BC = %d,預期 7", out.NetBC)
+	if out.NetBC != 12 { // 15(工業稅10+人頭5) - 3,同 TestRunEmpireTurnBC
+		t.Errorf("淨 BC = %d,預期 12", out.NetBC)
 	}
 }
 
@@ -173,11 +174,11 @@ func TestRunEmpireTurnTradeGoods(t *testing.T) {
 	if out.TradeGoodsRevenue != 10 { // 20 淨工業 * 1/2(一般種族 2:1)
 		t.Errorf("貿易品收入 = %d,預期 10", out.TradeGoodsRevenue)
 	}
-	if out.NetBC != 7 { // 0 稅收 + 0 餘糧收入(負盈餘不計) + 10 貿易品 - 3 維護
-		t.Errorf("淨 BC = %d,預期 7", out.NetBC)
+	if out.NetBC != 12 { // 人頭5 + 0 稅收 + 0 餘糧收入(負盈餘不計) + 10 貿易品 - 3 維護
+		t.Errorf("淨 BC = %d,預期 12", out.NetBC)
 	}
-	if out.Player.BC != 107 { // 100 + 7
-		t.Errorf("國庫 = %d,預期 107", out.Player.BC)
+	if out.Player.BC != 112 { // 100 + 12
+		t.Errorf("國庫 = %d,預期 112", out.Player.BC)
 	}
 }
 
@@ -193,11 +194,11 @@ func TestRunEmpireTurnIncomeBonusPercent(t *testing.T) {
 	ps := PlayerState{BC: 100, TaxRate: 50, Maintenance: 3, ResearchTopic: gamedata.ResearchTopic(1)}
 	out := RunEmpireTurn(ps, colonies)
 
-	if out.TaxRevenue != 25 {
-		t.Errorf("加成後稅收 = %d,預期 25(基數10 ×250%%)", out.TaxRevenue)
+	if out.TaxRevenue != 37 {
+		t.Errorf("加成後 money 收入 = %d,預期 37((工業稅10+人頭5)×250%%)", out.TaxRevenue)
 	}
-	if out.NetBC != 22 { // 25 - 3 維護
-		t.Errorf("淨 BC = %d,預期 22", out.NetBC)
+	if out.NetBC != 34 { // 37 - 3 維護
+		t.Errorf("淨 BC = %d,預期 34", out.NetBC)
 	}
 }
 
@@ -213,8 +214,8 @@ func TestRunEmpireTurnIncomeBonusPercentPerColony(t *testing.T) {
 	ps := PlayerState{TaxRate: 50, ResearchTopic: gamedata.ResearchTopic(1)}
 	out := RunEmpireTurn(ps, colonies)
 
-	if out.TaxRevenue != 25 { // 15 + 10
-		t.Errorf("兩殖民地合計稅收 = %d,預期 25(僅第一個殖民地吃到 +50%%)", out.TaxRevenue)
+	if out.TaxRevenue != 37 { // 殖1(工業稅10+人頭5)×150%=22 + 殖2(10+5)=15
+		t.Errorf("兩殖民地合計 money 收入 = %d,預期 37(僅第一個殖民地吃到 +50%%)", out.TaxRevenue)
 	}
 }
 
@@ -246,11 +247,11 @@ func TestRunEmpireTurnGovtBonusMoneyPercent(t *testing.T) {
 		GovtBonusMoneyPercent: gamedata.IncomeGovtBonusDemocracyMoneyPercent}
 	out := RunEmpireTurn(ps, colonies)
 
-	if out.TaxRevenue != 15 { // 10 * 150/100
-		t.Errorf("加成後稅收 = %d,預期 15(基數10 ×150%%)", out.TaxRevenue)
+	if out.TaxRevenue != 22 { // (工業稅10+人頭5)=15 * 150/100
+		t.Errorf("加成後 money 收入 = %d,預期 22((10+5)×150%%)", out.TaxRevenue)
 	}
-	if out.NetBC != 12 { // 15 - 3 維護
-		t.Errorf("淨 BC = %d,預期 12", out.NetBC)
+	if out.NetBC != 19 { // 22 - 3 維護
+		t.Errorf("淨 BC = %d,預期 19", out.NetBC)
 	}
 }
 
@@ -265,11 +266,11 @@ func TestRunEmpireTurnGovtBonusMoneyPercentZeroNoOp(t *testing.T) {
 	ps := PlayerState{BC: 100, TaxRate: 50, Maintenance: 3, ResearchTopic: gamedata.ResearchTopic(1)} // GovtBonusMoneyPercent 零值
 	out := RunEmpireTurn(ps, colonies)
 
-	if out.TaxRevenue != 10 {
-		t.Errorf("無政府加成時稅收 = %d,預期 10(無加成)", out.TaxRevenue)
+	if out.TaxRevenue != 15 { // 工業稅10 + 人頭5(無政府加成)
+		t.Errorf("無政府加成時 money 收入 = %d,預期 15", out.TaxRevenue)
 	}
-	if out.NetBC != 7 {
-		t.Errorf("淨 BC = %d,預期 7", out.NetBC)
+	if out.NetBC != 12 {
+		t.Errorf("淨 BC = %d,預期 12", out.NetBC)
 	}
 }
 
@@ -288,11 +289,11 @@ func TestRunEmpireTurnFreighterMaintenance(t *testing.T) {
 	if out.FreighterMaintenanceCost != 2 {
 		t.Errorf("FreighterMaintenanceCost = %d,預期 2", out.FreighterMaintenanceCost)
 	}
-	if out.NetBC != 5 { // 10 - 3(建築維護) - 2(運輸艦維護)
-		t.Errorf("淨 BC = %d,預期 5", out.NetBC)
+	if out.NetBC != 10 { // 15(工業稅10+人頭5) - 3(建築維護) - 2(運輸艦維護)
+		t.Errorf("淨 BC = %d,預期 10", out.NetBC)
 	}
-	if out.Player.BC != 105 {
-		t.Errorf("國庫 = %d,預期 105", out.Player.BC)
+	if out.Player.BC != 110 {
+		t.Errorf("國庫 = %d,預期 110", out.Player.BC)
 	}
 }
 
@@ -309,7 +310,7 @@ func TestRunEmpireTurnFreighterMaintenanceZeroNoOp(t *testing.T) {
 	if out.FreighterMaintenanceCost != 0 {
 		t.Errorf("FreighterMaintenanceCost = %d,預期 0(無運輸艦塑模)", out.FreighterMaintenanceCost)
 	}
-	if out.NetBC != 7 { // 同 TestRunEmpireTurnBC,確認接線未改變既有 no-op 行為
-		t.Errorf("淨 BC = %d,預期 7", out.NetBC)
+	if out.NetBC != 12 { // 同 TestRunEmpireTurnBC(工業稅10+人頭5-3),確認接線未改變既有 no-op 行為
+		t.Errorf("淨 BC = %d,預期 12", out.NetBC)
 	}
 }

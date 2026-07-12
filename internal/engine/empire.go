@@ -90,12 +90,16 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		// 的稅收+餘糧收入+貿易品收入小計套用加成,再併入帝國總額,精確對應手冊「該殖民地」的
 		// 範圍(不是先加總帝國全部收入再打折的近似做法)。不含維護費(手冊只講收入加成,沒講
 		// 維護費打折)。
-		// 種族「錢」特質:每單位人口每回合固定 BC(手冊 p.16 諾蘭姆,見 ColonyState.IncomePerPop)。
-		// 併入稅收分項,使其一併受下方 IncomeBonusPercent(太空港/證券交易所)加成放大,對應手冊
-		// 「money 收入受建築加成」。一般種族 IncomePerPop=0 時 no-op。
-		if cs.IncomePerPop != 0 {
-			tax += cs.IncomePerPop * cs.Population / 2 // IncomePerPop 為半 BC 單位(見欄位註解)
+		// 人頭基礎收入(MOO2 收入模型核心,見 gamedata.BaseIncomePerPopHalfBC):每人口每回合基礎
+		// 1 BC(2 半BC),與工業/稅完全分離。種族 Money 特質(cs.IncomePerPop 半BC delta,諾蘭姆
+		// +2、自訂 Money picks ±)在此基礎上加減,floor 在 0/人(手冊 p.20「cannot reduce below zero
+		// per population unit」)。併入稅收分項,一併受下方 IncomeBonusPercent(太空港/證券交易所)
+		// 加成放大,對應手冊「money 收入受建築加成」。
+		perCapitaHalf := gamedata.BaseIncomePerPopHalfBC + cs.IncomePerPop
+		if perCapitaHalf < 0 {
+			perCapitaHalf = 0
 		}
+		tax += cs.Population * perCapitaHalf / 2
 		if cs.IncomeBonusPercent != 0 {
 			subtotal := tax + foodRev + tradeRev
 			bonus := subtotal * cs.IncomeBonusPercent / 100

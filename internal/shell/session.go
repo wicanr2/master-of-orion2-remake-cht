@@ -2251,7 +2251,11 @@ func playerHomeworldColony() engine.ColonyState {
 // 運輸艦數量),暫不計入——TODO:待接上艦隊維護模型後補上,不臆造數字。
 func newHomeworldPlayerState(researchTopic gamedata.ResearchTopic) engine.PlayerState {
 	return engine.PlayerState{
-		BC: 50, TaxRate: 40, Maintenance: gamedata.BuiltMaintenanceBC(homeworldBuildings()), ResearchTopic: researchTopic,
+		// TaxRate 15:2026-07-12 校正。手冊 p.37 工業稅是「臨時要現金才拉」的補充收入(原生 0-50%、
+		// 10% 級距、預設偏低),主收入是人頭(每人 1 BC,見 gamedata.BaseIncomePerPopHalfBC)。先前
+		// 寫死 40 把工業稅當唯一收入來源,導致低工業母星流血。使用者定 remake 起始預設為 15(介於
+		// 原版慣用的 0 與舊值之間;原生級距為 10 的倍數,15 是 remake 起始值,玩家後續可調)。
+		BC: 50, TaxRate: 15, Maintenance: gamedata.BuiltMaintenanceBC(homeworldBuildings()), ResearchTopic: researchTopic,
 		// CommandPointsSupply 這裡刻意只填母星星基(homeworldBuildings 的"星基":true)貢獻的
 		// 1 點建築供給,不含 gamedata.CommandPointsBase(帝國基礎值 5)——這只是「第一次 EndTurn
 		// 前」的暫時值,玩家這欄會在 GameSession.EndTurn 用 totalCommandPointsSupply()(基礎值+

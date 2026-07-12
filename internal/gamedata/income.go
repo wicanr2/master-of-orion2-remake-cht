@@ -58,6 +58,19 @@ const (
 	// unit of food generated")。
 	IncomeFoodSurplusFantasticTraderPerUnitBC = 1
 
+	// BaseIncomePerPopHalfBC 是「人頭基礎收入」:每個人口單位每回合自動產生的基礎 BC,以半 BC 為
+	// 單位(=2 → 每人 1 BC)。這是 MOO2 收入模型的核心:錢與生產「完全分離」(與 MOO1 不同),
+	// 不需工業、不需稅、不需貿易品,每個人口自動貢獻。依據:
+	//   - GAME_MANUAL.pdf p.20 Money 特質以「per population unit」為單位、且「cannot reduce...
+	//     below zero per population unit」——證實收入是逐人口計、種族 Money 特質在此基礎上加減、
+	//     floor 在 0/人。
+	//   - p.22 民主政府「+50% ... per capita (tax) income」——證實有「per capita income」這個量。
+	//   - p.16 諾蘭姆「generates an additional 1 BC per turn」——「additional」證實一般種族本有基礎值。
+	// ⚠ 基礎值恰為「1 BC/人」的數字來自社群逆向(StrategyWiki Calculations)+ 資深實況實測(開局
+	// 稅率0%、無貿易品時母星淨 +5 BC/回合,反推每人約 1 BC),手冊未逐字寫出「1」。信心中高、非
+	// 手冊逐字。種族 Money 特質(engine.ColonyState.IncomePerPop 半BC delta)在此基礎上加減。
+	BaseIncomePerPopHalfBC = 2
+
 	// IncomeCommandOverflowCostPerPoint 指揮評等(Command Rating)不足時,每一點未被覆蓋的評等
 	// 需求,每回合從收入扣 10 BC(GAME_MANUAL.pdf p.169:"For each rating point required by a ship
 	// that is not covered, 10 BCs come out of your income every turn")。
