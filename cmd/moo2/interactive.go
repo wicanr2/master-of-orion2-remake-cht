@@ -1735,9 +1735,10 @@ func (b *sceneBuilder) council() (*overlayScreen, error) {
 			{x: moo2ScreenW / 2, y: 30, size: 22, text: "銀河議會", col: gold, align: 1},
 		}
 		if b.session != nil {
-			// 這裡刻意不重建原版議會投票 UI(見 docs/HONEST-STATUS.md「UI 未做」標注),只誠實
-			// 呈現 shell.GameSession 已算好的議會狀態(gamedata/council.go + shell/council.go,
-			// 依 GAME_MANUAL.pdf p.183 手冊原文):是否已成立、目前票數、是否已分出勝負/待回應。
+			// 在原版 council.lbx 底圖上,誠實呈現 shell.GameSession 已算好的議會狀態(gamedata/
+			// council.go + shell/council.go,依 GAME_MANUAL.pdf p.183):是否已成立、逐帝國票數與
+			// 搖擺票去向、是否已分出勝負/待回應。逐帝國明細取代舊的單行合計摘要,讓手冊的搖擺票
+			// 機制(候選人+第三方依外交關係投票/棄權)在畫面上看得見。
 			v := b.session.CouncilStatus()
 			win := color.RGBA{120, 220, 140, 255}
 			lose := color.RGBA{235, 120, 110, 255}
@@ -1759,13 +1760,45 @@ func (b *sceneBuilder) council() (*overlayScreen, error) {
 				line1 = "銀河議會尚未成立"
 				line2, oc = "需半數銀河星系已殖民 + ≥2個存續帝國", neutral
 			default:
-				line1 = fmt.Sprintf("議會已成立(第 %d 屆待開)  我方 %d 票 ／ %s %d 票", v.Meetings+1, v.PlayerVotes, v.EnemyName, v.EnemyVotes)
+				line1 = fmt.Sprintf("議會已成立(第 %d 屆待開)", v.Meetings+1)
 				line2, oc = "尚無一方達2/3多數", neutral
 			}
+			// 逐帝國投票明細(僅在議會已成立且尚未分出勝負時攤開;其餘狀態沿用 line1/line2 摘要)。
+			if v.Eligible && !v.Victory.Over && v.Pending == nil {
+				bd := b.session.CouncilBreakdown()
+				if bd.Valid {
+					gold := color.RGBA{240, 220, 120, 255}
+					line1 = fmt.Sprintf("第 %d 屆待開  候選人:%s／%s  達2/3需 %d／%d 票",
+						v.Meetings+1, bd.Candidates[0], bd.Candidates[1], bd.Threshold, bd.Total)
+					s.extras = append(s.extras,
+						extraText{x: moo2ScreenW / 2, y: 96, size: 13, text: line1, col: gold, align: 1})
+					y := 128.0
+					for _, r := range bd.Rows {
+						var suffix string
+						rc := neutral
+						switch {
+						case r.IsCandidate:
+							suffix, rc = "(候選人)", gold
+						case r.Abstained:
+							suffix, rc = "→ 棄權", lose
+						default:
+							suffix = "→ 投給 " + r.VotedFor
+						}
+						txt := fmt.Sprintf("%s  %d 票  %s", r.Name, r.BaseVotes, suffix)
+						s.extras = append(s.extras,
+							extraText{x: moo2ScreenW / 2, y: y, size: 14, text: txt, col: rc, align: 1})
+						y += 24
+					}
+					line1 = ""
+					line2, oc = "第三方帝國依外交關係投票或棄權(手冊 p.183)", neutral
+				}
+			}
+			if line1 != "" {
+				s.extras = append(s.extras,
+					extraText{x: moo2ScreenW / 2, y: 418, size: 15, text: line1, col: neutral, align: 1})
+			}
 			s.extras = append(s.extras,
-				extraText{x: moo2ScreenW / 2, y: 418, size: 15, text: line1, col: neutral, align: 1},
-				extraText{x: moo2ScreenW / 2, y: 444, size: 17, text: line2, col: oc, align: 1},
-			)
+				extraText{x: moo2ScreenW / 2, y: 444, size: 17, text: line2, col: oc, align: 1})
 		}
 	}
 	return s, nil

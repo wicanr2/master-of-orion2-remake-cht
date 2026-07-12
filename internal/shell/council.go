@@ -185,7 +185,21 @@ type councilTally struct {
 	candVotes [2]int    // 候選人最終得票(自身基礎票 + 收到的搖擺票)
 	total     int       // 全體帝國基礎票總和(2/3 門檻的分母)
 	valid     bool      // 是否湊足兩位候選人(帝國數<2 時為 false)
+	rows      []councilVoteRow // 逐帝國投票明細(依基礎票降冪),供 UI 呈現;判定邏輯不讀此欄
 }
+
+// councilVoteRow 是一屆選舉中單一帝國的投票明細(供議會畫面逐列呈現)。
+type councilVoteRow struct {
+	idx         int    // -1=玩家,否則 AIPlayers 索引
+	name        string // "player" 或 AIOpponent.Name
+	baseVotes   int    // 該帝國自身票數
+	isCandidate bool   // 是否為兩位候選人之一
+	votedForIdx int    // 搖擺票投給的候選人 idx;-1/>=0 皆可能,candidateAbstain 表棄權;候選人=自身 idx
+}
+
+// councilVoteAbstain 是 councilVoteRow.votedForIdx 的哨兵值,表示該帝國棄權(未投給任一候選人)。
+// 用 -2(玩家是 -1、AI 是 >=0,都不會撞到)。
+const councilVoteAbstain = -2
 
 // tallyCouncil 忠實模擬一屆選舉:
 //  1. 每個帝國(玩家 + 各 AI)依人口算基礎票(gamedata.CouncilVotes)。
@@ -225,22 +239,30 @@ func (s *GameSession) tallyCouncil() councilTally {
 	sort.SliceStable(order, func(a, b int) bool { return emps[order[a]].votes > emps[order[b]].votes })
 	ca, cb := emps[order[0]], emps[order[1]]
 	votesA, votesB := ca.votes, cb.votes
+	rows := make([]councilVoteRow, 0, len(order))
+	rows = append(rows,
+		councilVoteRow{idx: ca.idx, name: ca.name, baseVotes: ca.votes, isCandidate: true, votedForIdx: ca.idx},
+		councilVoteRow{idx: cb.idx, name: cb.name, baseVotes: cb.votes, isCandidate: true, votedForIdx: cb.idx})
 	// 其餘帝國依外交關係把全部票投給偏好且達友好門檻的候選人;對兩位都不夠友好則棄權。
 	for k := 2; k < len(order); k++ {
 		e := emps[order[k]]
 		relA := s.councilRelation(e.idx, ca.idx)
 		relB := s.councilRelation(e.idx, cb.idx)
+		votedFor := councilVoteAbstain
 		switch {
 		case relA >= relB && relA >= councilSwingVoteMinRelation:
 			votesA += e.votes
+			votedFor = ca.idx
 		case relB > relA && relB >= councilSwingVoteMinRelation:
 			votesB += e.votes
+			votedFor = cb.idx
 			// 否則:對兩位候選人都不夠友好,棄權(不投票,票數仍在 total 分母內)。
 		}
+		rows = append(rows, councilVoteRow{idx: e.idx, name: e.name, baseVotes: e.votes, votedForIdx: votedFor})
 	}
 	return councilTally{
 		candIdx: [2]int{ca.idx, cb.idx}, candName: [2]string{ca.name, cb.name},
-		candVotes: [2]int{votesA, votesB}, total: total, valid: true,
+		candVotes: [2]int{votesA, votesB}, total: total, valid: true, rows: rows,
 	}
 }
 
@@ -358,6 +380,72 @@ func (s *GameSession) CouncilStatus() CouncilStatus {
 		Eligible: s.councilEligible(), PlayerVotes: pv, EnemyVotes: ev, TotalVotes: pv + ev,
 		EnemyName: enemyName, Meetings: s.CouncilMeetings, Pending: s.PendingCouncilElection,
 		Victory: s.Victory,
+	}
+}
+
+// CouncilVoteRow 是議會逐帝國投票明細的匯出版本(供 cmd/moo2 議會畫面呈現)。VotedFor 是該帝國
+// 這一票投給的候選人 display 名;候選人自身列 IsCandidate=true、VotedFor 為自己;棄權列
+// Abstained=true、VotedFor 空字串。
+type CouncilVoteRow struct {
+	Name        string // display:玩家為「你」,AI 為其名稱
+	IsPlayer    bool
+	BaseVotes   int
+	IsCandidate bool
+	Abstained   bool
+	VotedFor    string
+}
+
+// CouncilBreakdown 是一屆選舉的完整逐帝國明細(供議會畫面逐列呈現搖擺票/棄權)。Valid=false 表示
+// 帝國數不足兩位(無選舉)。Threshold 是達 2/3 所需票數(向上取整,顯示用)。
+type CouncilBreakdown struct {
+	Valid      bool
+	Rows       []CouncilVoteRow // 依基礎票降冪
+	Candidates [2]string
+	CandVotes  [2]int
+	Total      int
+	Threshold  int
+}
+
+// councilDisplayName 把帝國 idx(-1=玩家)轉成畫面用中文名。
+func (s *GameSession) councilDisplayName(idx int) string {
+	if idx == -1 {
+		return "你"
+	}
+	if idx >= 0 && idx < len(s.AIPlayers) {
+		return s.AIPlayers[idx].Name
+	}
+	return "對手"
+}
+
+// CouncilBreakdown 回傳「若這回合開會」的逐帝國票數與投票去向明細(即時試算,不代表本回合一定
+// 開會;是否真的開會以 advanceCouncil 為準,同 CouncilStatus 的即時試算語意)。供議會畫面把搖擺票
+// 攤開呈現,取代舊的單行合計摘要。
+func (s *GameSession) CouncilBreakdown() CouncilBreakdown {
+	t := s.tallyCouncil()
+	if !t.valid {
+		return CouncilBreakdown{Total: t.total}
+	}
+	rows := make([]CouncilVoteRow, 0, len(t.rows))
+	for _, r := range t.rows {
+		row := CouncilVoteRow{
+			Name: s.councilDisplayName(r.idx), IsPlayer: r.idx == -1,
+			BaseVotes: r.baseVotes, IsCandidate: r.isCandidate,
+		}
+		switch {
+		case r.isCandidate:
+			row.VotedFor = s.councilDisplayName(r.idx) // 候選人投自己
+		case r.votedForIdx == councilVoteAbstain:
+			row.Abstained = true
+		default:
+			row.VotedFor = s.councilDisplayName(r.votedForIdx)
+		}
+		rows = append(rows, row)
+	}
+	return CouncilBreakdown{
+		Valid: true, Rows: rows,
+		Candidates: [2]string{s.councilDisplayName(t.candIdx[0]), s.councilDisplayName(t.candIdx[1])},
+		CandVotes:  t.candVotes, Total: t.total,
+		Threshold: (t.total*2 + 2) / 3, // ceil(total*2/3):達 2/3 所需票數
 	}
 }
 
