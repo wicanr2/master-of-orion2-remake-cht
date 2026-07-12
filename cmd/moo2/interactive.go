@@ -467,6 +467,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		{385, 430, 70, 44, "races"},
 		{460, 430, 70, 44, "info"},
 		{544, 441, 90, 34, "turn"},
+		{547, 52, 65, 67, "taxrate"}, // 國庫框:點擊循環工業稅率(手冊 p.37,0-50%/10%級距)
 	}
 	// 星圖各星加點擊熱區(點星 → 顯示該星系行星資訊)。
 	if b.session != nil {
@@ -571,6 +572,10 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			return b.goTo(b.info, "科技總覽")
 		case "races":
 			return b.goTo(b.races, "種族關係")
+		case "taxrate":
+			// 點國庫框循環工業稅率(手冊 p.37,0-50%/10%級距):更多稅=更多 BC 但更慢建造。
+			b.session.CycleTaxRate()
+			return b.goTo(b.galaxy, "星系主畫面")
 		case "turn":
 			// 核心迴圈:結算一回合(玩家帝國 + 各 AI 對手決策),再顯示回合摘要(原版流程)。
 			b.session.EndTurn()
@@ -626,6 +631,8 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				// 國庫(547,52)/指揮(547,124)/食物(547,199)/貨運(547,273)/研究燒瓶格留給主題名於左上。
 				infoCol := color.RGBA{245, 230, 150, 255}
 				fnt.DrawCentered(dst, fmt.Sprintf("%d", sess.Player.BC), 579, 110, 12, infoCol) // 國庫 BC
+				// 工業稅率(點國庫框循環,手冊 p.37):畫在國庫格頂端,提示可調的經濟槓桿。
+				fnt.DrawCentered(dst, fmt.Sprintf("稅%d%%", sess.Player.TaxRate), 579, 62, 9, color.RGBA{205, 215, 165, 255})
 				netCmd := sess.Player.CommandPointsSupply - sess.Player.UsedCommandPoints
 				fnt.DrawCentered(dst, fmt.Sprintf("%d", netCmd), 579, 182, 12, infoCol) // 指揮評等(供給-需求)
 				foodSum := 0

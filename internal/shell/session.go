@@ -2431,3 +2431,15 @@ func NewDemoSession() *GameSession {
 func (s *GameSession) SetRuleProfile(p gamedata.RuleProfile) {
 	s.RuleProfile = p
 }
+
+// CycleTaxRate 循環切換帝國工業稅率(手冊 GAME_MANUAL.pdf p.37:點國庫框調整,0-50%、
+// 10% 級距)。每次呼叫進到下一個 10% 級距,超過 50% 繞回 0%;非標準起始值(如 remake
+// 預設 15)會進位到下一個 10 的倍數。稅率影響 advanceBuilds(建造吃 (100-稅率)% 工業)與
+// RunEmpireTurn(稅率% 工業換 BC),是「更多錢 vs 更快建造」的取捨。
+func (s *GameSession) CycleTaxRate() {
+	next := (s.Player.TaxRate/gamedata.TaxRateStepPercent + 1) * gamedata.TaxRateStepPercent
+	if next > gamedata.TaxRateMaxPercent {
+		next = gamedata.TaxRateMinPercent
+	}
+	s.Player.TaxRate = next
+}
