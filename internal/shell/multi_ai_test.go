@@ -207,3 +207,54 @@ func TestAdvanceCouncilNWayLogicWorksAtManualMinimum(t *testing.T) {
 			s.Victory.Over, s.Victory.Reason, s.Victory.Winner)
 	}
 }
+
+// TestCouncilSwingVotesElectFrontrunner 驗證忠實搖擺票機制:玩家是票數領先者但自身票不足 2/3,
+// 兩個對玩家友好(關係達 councilSwingVoteMinRelation)的 AI 把票投給玩家,推玩家越過 2/3 當選。
+// 直接呼叫 advanceCouncil(不走 EndTurn),避免 advanceAI 每回合重算 AIOpponent.Relation 沖掉
+// 這裡刻意設定的友好關係——比照 TestConquestVictory* 直呼引擎函式的既有測試手法。
+//
+// 場景:玩家 40、AI0 30、AI1 20、AI2 10,總 100(2/3≈67)。候選人=玩家(40)+ AI0(30)。
+// AI1/AI2 對玩家友好(Relation=20)、對 AI0 中立(AIRelations 預設 0)→ 兩者搖擺票(20+10)投玩家
+// → 玩家 70/100 達 2/3 當選。玩家單靠自身 40 票達不到,證明搖擺票確實改變了選舉結果。
+func TestCouncilSwingVotesElectFrontrunner(t *testing.T) {
+	s := NewDemoSession()
+	settleHalfGalaxy(s)
+	s.PlayerColonies[0].Population = 40
+	s.AIPlayers[0].Colonies[0].Population = 30
+	s.AIPlayers[1].Colonies[0].Population = 20
+	s.AIPlayers[2].Colonies[0].Population = 10
+	s.ensureAIRelations()
+	s.AIPlayers[1].Relation = 20 // AI1 對玩家友好
+	s.AIPlayers[2].Relation = 20 // AI2 對玩家友好
+
+	s.advanceCouncil()
+
+	if !s.Victory.Over {
+		t.Fatalf("友好 AI 的搖擺票應把玩家推過 2/3 當選,got Victory=%+v LastCouncil=%q", s.Victory, s.LastCouncil)
+	}
+	if s.Victory.Reason != engine.VictoryHighCouncil || s.Victory.Winner != "player" {
+		t.Fatalf("應為玩家以議會選舉當選,got Reason=%v Winner=%q", s.Victory.Reason, s.Victory.Winner)
+	}
+}
+
+// TestCouncilNeutralAISAbstainNoWinner 是上一個測試的對照組:同樣的人口分布(玩家 40 領先),
+// 但兩個搖擺 AI 對玩家「中立」(Relation=0,未達友好門檻)→ 依手冊棄權,不投給任一候選人 →
+// 玩家維持 40 票,達不到 2/3,流會。證明搖擺票的關鍵是「友好門檻」,不是「領先者自動吸走中立票」。
+func TestCouncilNeutralAISAbstainNoWinner(t *testing.T) {
+	s := NewDemoSession()
+	settleHalfGalaxy(s)
+	s.PlayerColonies[0].Population = 40
+	s.AIPlayers[0].Colonies[0].Population = 30
+	s.AIPlayers[1].Colonies[0].Population = 20
+	s.AIPlayers[2].Colonies[0].Population = 10
+	s.ensureAIRelations() // 全部關係預設 0(中立),未達 councilSwingVoteMinRelation
+
+	s.advanceCouncil()
+
+	if s.Victory.Over {
+		t.Fatalf("中立 AI 應棄權,玩家 40 票達不到 2/3,不應分出勝負,got Victory=%+v", s.Victory)
+	}
+	if s.PendingCouncilElection != nil {
+		t.Fatalf("無人達 2/3,不該留下待回應選舉,got %+v", s.PendingCouncilElection)
+	}
+}
