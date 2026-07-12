@@ -1186,9 +1186,14 @@ type diplomacyScreen struct {
 }
 
 func newDiplomacyScreen(b *sceneBuilder) *diplomacyScreen {
+	// 對談對象改用真正的主要 AI 對手(races 畫面第一個),使外交動作實際改變其關係、可見於
+	// 態勢/議會;取不到 session 時退回示範名。
 	enemy := "薩克拉"
+	if b.session != nil {
+		enemy = b.session.PrimaryEnemyName()
+	}
 	return &diplomacyScreen{b: b, fnt: b.fnt, enemy: enemy, room: loadDiplomatScene(b.res, diplomatRaceIndex(enemy)),
-		response: "薩克拉使節:人類,你有何提議?",
+		response: enemy + "使節:人類,你有何提議?",
 		opts: []struct{ label, action string }{
 			{"提議和平", "peace"}, {"提議貿易", "trade"}, {"威脅恫嚇", "threat"},
 		},

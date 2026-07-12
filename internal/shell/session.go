@@ -463,6 +463,47 @@ func (s *GameSession) ResolveBattle(enemy string) BattleResult {
 }
 
 // DiplomacyResponse 依雙方相對實力回應一個外交提議(和平/貿易/威脅)。
+// raceDiploBonusPct 回傳目前種族的外交加成百分比。人類 Charismatic +50%(手冊 p.15「Humans
+// gain a 50% bonus to their diplomatic efforts」)——這是移除人類假起始金後,其招牌特質首個
+// 真正的消費端。first-version 只認人類(RaceIndex 0);自訂種族「魅力非凡」pick 尚未追蹤,回 0
+// (誠實標)。
+func (s *GameSession) raceDiploBonusPct() int {
+	if s.RaceIndex == 0 { // 人類
+		return 50
+	}
+	return 0
+}
+
+// aiByDisplayName 依畫面顯示名找 AI 對手(模糊比對含 "AI (…)" 外殼);找不到退回主要對手
+// (AIPlayers[0])。回傳可修改指標;無 AI 時回 nil。
+func (s *GameSession) aiByDisplayName(enemy string) *AIOpponent {
+	for i := range s.AIPlayers {
+		n := s.AIPlayers[i].Name
+		if n == enemy || strings.Contains(n, enemy) || strings.Contains(enemy, n) {
+			return &s.AIPlayers[i]
+		}
+	}
+	if len(s.AIPlayers) > 0 {
+		return &s.AIPlayers[0]
+	}
+	return nil
+}
+
+// adjustRelation 調整某 AI 對玩家的關係分數,夾在 -40..40(同 advanceAI 慣例)。
+func (a *AIOpponent) adjustRelation(delta int) {
+	a.Relation += delta
+	if a.Relation > 40 {
+		a.Relation = 40
+	}
+	if a.Relation < -40 {
+		a.Relation = -40
+	}
+}
+
+// DiplomacyResponse 處理玩家對某對手的外交動作(提議和平/貿易/威脅),**實際改變該 AI 的關係
+// 分數**(先前只回文字不改狀態),並回一句回應。和平/貿易改善關係、威脅惡化;改善量受種族外交
+// 加成放大(人類 Charismatic +50%,見 raceDiploBonusPct)。關係變化會反映到 races 畫面的態勢與
+// 議會投票傾向(RelationLevelForScore/DecideStance)。
 func (s *GameSession) DiplomacyResponse(action, enemy string) string {
 	pPop, ePop := 0, 0
 	for _, c := range s.PlayerColonies {
@@ -477,19 +518,30 @@ func (s *GameSession) DiplomacyResponse(action, enemy string) string {
 	for _, sh := range s.Ships {
 		pFleet += shipStrength(sh.Class)
 	}
+	ai := s.aiByDisplayName(enemy)
+	diploPct := 100 + s.raceDiploBonusPct() // 人類 150、其餘 100
 	switch action {
 	case "peace":
-		if pPop >= ePop {
-			return enemy + ":你們的實力我們敬佩,和平協議成立。"
+		if ai != nil {
+			ai.adjustRelation(15 * diploPct / 100) // 提議和平改善關係(Charismatic 放大)
 		}
-		return enemy + ":哼,弱者不配談和。"
+		if pPop >= ePop {
+			return enemy + ":你們的實力我們敬佩,和平協議成立。(關係改善)"
+		}
+		return enemy + ":我們記下你的善意,但真正的和平言之過早。(關係略改善)"
 	case "trade":
-		return enemy + ":貿易協定成立,願雙方繁榮昌盛。"
+		if ai != nil {
+			ai.adjustRelation(10 * diploPct / 100)
+		}
+		return enemy + ":貿易協定成立,願雙方繁榮昌盛。(關係改善)"
 	case "threat":
+		if ai != nil {
+			ai.adjustRelation(-20)
+		}
 		if pFleet >= 10 {
 			return enemy + ":……我們會記住這份侮辱。(關係惡化)"
 		}
-		return enemy + ":就憑你們這點艦隊?可笑!"
+		return enemy + ":就憑你們這點艦隊?可笑!(關係惡化)"
 	}
 	return ""
 }
