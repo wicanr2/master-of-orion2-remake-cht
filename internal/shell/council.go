@@ -345,13 +345,11 @@ func (s *GameSession) advanceCouncil() {
 // EnemyVotes/TotalVotes 是「若這回合真的開會,票數會是多少」的即時試算,不代表本回合一定會
 // 開會——是否真的開會/流會/分出勝負以 advanceCouncil 每回合的結算為準,這裡只是唯讀快照。
 //
-// ⚠ EnemyVotes/EnemyName(Pending==nil 時)是「全體 AI 陣營合計」的簡化顯示,不是
-// advanceCouncil 實際判定 2/3 多數勝負時逐帝國分算的真實依據(見 advanceCouncil 的
-// empireVote/votes)——3 個 AI 對手性格互異,個別人口可能差很多,合計數字只適合當 UI 摘要,
-// 不能拿來反推「哪個 AI 快贏了」。若要做真正的 N-way 議會 UI(逐帝國票數列表、指認哪個 AI
-// 領先),屬 UI 大改範圍,本輪任務標 TODO 不做(cmd/moo2 目前的議會畫面本來就只顯示单行文字
-// 摘要,見 interactive.go council())。Pending!=nil 時 EnemyName/EnemyVotes 改用
-// CouncilElection 裡記錄的真實當選 AI(advanceCouncil 寫入),準確,不受本限制影響。
+// ⚠ EnemyVotes/EnemyName(Pending==nil 時)是「全體 AI 陣營合計」的簡化顯示,不是 advanceCouncil
+// 逐帝國分算 2/3 勝負的真實依據——合計數字只適合當粗略摘要,不能反推「哪個 AI 快贏了」。要看
+// 逐帝國票數與搖擺票去向,改用 CouncilBreakdown()(2026-07-12 新增,議會畫面已改用它攤開明細,
+// 見 interactive.go council())。CouncilStatus 保留只為向後相容/Pending 摘要。Pending!=nil 時
+// EnemyName/EnemyVotes 改用 CouncilElection 記錄的真實當選 AI(advanceCouncil 寫入),準確。
 type CouncilStatus struct {
 	Eligible    bool // 議會目前是否已成立(councilEligible)
 	PlayerVotes int
