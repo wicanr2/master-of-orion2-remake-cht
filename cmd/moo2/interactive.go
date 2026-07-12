@@ -474,7 +474,8 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		{385, 430, 70, 44, "races"},
 		{460, 430, 70, 44, "info"},
 		{544, 441, 90, 34, "turn"},
-		{547, 52, 65, 67, "taxrate"}, // 國庫框:點擊循環工業稅率(手冊 p.37,0-50%/10%級距)
+		{547, 52, 65, 67, "taxrate"},   // 國庫框:點擊循環工業稅率(手冊 p.37,0-50%/10%級距)
+		{547, 348, 65, 67, "research"}, // 研究框(右側第5格):點擊開研究選擇畫面(對齊原版,取代 info→tech 錯接)
 	}
 	// 星圖各星加點擊熱區(點星 → 顯示該星系行星資訊)。
 	if b.session != nil {
@@ -529,6 +530,9 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			b.session.SelectedStar = -1 // 面板 CLOSE 鈕 → 關閉(對齊原版 Star System 彈窗的 CLOSE,issue #6)
 			b.lastActionMsg = ""
 			return b.goTo(b.galaxy, "星系主畫面")
+		}
+		if a == "research" {
+			return b.goTo(b.research, "研究選擇") // 星系右側研究框 → 研究選擇(對齊原版)
 		}
 		if a == "dispatch" && b.session != nil {
 			b.session.SendFleet(b.session.SelectedStar) // 派遣艦隊至選中星(航行由 EndTurn 推進)
@@ -2257,10 +2261,12 @@ func (b *sceneBuilder) info() (*overlayScreen, error) {
 		{535, 434, 84, 22, "back"},
 	}
 	onAction := func(a string) *origTransition {
-		if a == "tech" {
-			return b.goTo(b.research, "研究選擇")
+		if a == "back" {
+			return b.goTo(b.galaxy, "星系主畫面")
 		}
-		return b.goTo(b.galaxy, "星系主畫面")
+		// 分頁(科技總覽/歷史圖表/種族統計/回合摘要)內容開發中,點擊不跳轉——修 issue #5-2
+		//(原本「tech」誤接研究選擇畫面,點一下就退回星系,像壞掉)。研究選擇已改由星系右側研究框進入。
+		return nil
 	}
 	// 選單項原版為靠左文字疊在近黑面板背景上(無實心板);擦底取黑=黑疊黑(正確),
 	// rect 寬取足以蓋住最長英文、中文置中於偏左位置貼近原版。y 中心經 PIL 量測:64/88/114/142/162。
@@ -2281,6 +2287,16 @@ func (b *sceneBuilder) info() (*overlayScreen, error) {
 		paletteChain{{"info.lbx", 1}})
 	if err != nil {
 		return nil, err
+	}
+	// 右側面板加誠實狀態說明(原版此處是 Reference 分類清單;remake 分頁內容開發中,修 #5-1/#5-2
+	// 讓玩家知道非壞掉:研究選擇改由星系研究框進入)。
+	if b.fnt != nil {
+		note := color.RGBA{170, 190, 220, 255}
+		s.extras = append(s.extras,
+			extraText{x: 430, y: 230, size: 13, text: "資訊分頁開發中", col: color.RGBA{220, 200, 130, 255}, align: 1},
+			extraText{x: 430, y: 256, size: 11, text: "歷史圖表／科技總覽／種族統計／回合摘要", col: note, align: 1},
+			extraText{x: 430, y: 276, size: 11, text: "研究選擇請點星系主畫面右側「研究框」", col: note, align: 1},
+		)
 	}
 	// info 選單/標題都疊在均勻的近黑面板背景上,強制用該背景色擦底(採樣會因長英文誤取字色)。
 	black := color.RGBA{0, 8, 24, 255}
