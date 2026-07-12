@@ -1020,7 +1020,12 @@ func (s *GameSession) advanceBuilds() {
 		}
 		ind := 0
 		if i < len(s.LastPlayerOutput.Colonies) {
-			ind = s.LastPlayerOutput.Colonies[i].NetIndustry
+			// 稅金與建造搶同一份生產(手冊 GAME_MANUAL.pdf p.37:「Every rise in the tax rate
+			// causes a corresponding drop in production」):稅率抽走 TaxRate% 的淨工業換 BC,剩下
+			// (100-TaxRate)% 才用於建造。先前建造吃完整 NetIndustry、稅又另抽一次=稅金變免費錢
+			// (非忠實),2026-07-12 校正扣掉稅金那份,使稅率成為真正的「更多錢 vs 更快建造」取捨。
+			netInd := s.LastPlayerOutput.Colonies[i].NetIndustry
+			ind = netInd * (100 - s.Player.TaxRate) / 100
 		}
 		b.Progress += ind
 		if b.Progress >= b.Cost {
