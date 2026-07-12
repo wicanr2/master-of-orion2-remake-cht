@@ -215,3 +215,25 @@ func CombatFighterSpeed(baseSpeed, ftlLevel int) int {
 func CombatFighterBeamDefense(speed, racialShipDefenseBonus, fighterPilotBonus, helmsmanBonus int) int {
 	return 5*speed + racialShipDefenseBonus + fighterPilotBonus + helmsmanBonus
 }
+
+// --- 戰機庫(Fighter Bay)對抽象快速戰鬥的貢獻 ---
+
+// FighterInterceptorSquadron 是一個攔截機戰機庫每次出擊的戰機數(手冊 GM p.127「出擊數」欄:
+// 攔截機 4)。first-version 戰機庫以最常見的攔截機隊建模。此值為手冊硬數字。
+const FighterInterceptorSquadron = 4
+
+// 每攔截機對抽象戰力的攻擊/HP 貢獻。⚠ remake 近似,非手冊定值:手冊給攔截機「1 光束」武裝
+// (實際傷害隨當局光束科技,非固定數)與血量 2-20(隨裝甲級),此處取低階代表值。中隊規模(4)
+// 本身是手冊硬數字(見上)。remake 的 ResolveBattle 是艦級抽象結算、不逐戰機模擬,故以「母艦
+// 戰力加成」承接一整隊戰機的火力,而非獨立 combatant。
+const (
+	fighterInterceptorAttackApprox = 3
+	fighterInterceptorHPApprox     = 4
+)
+
+// FighterBayCombatContribution 回傳一個攔截機戰機庫在 ResolveBattle 快速結算中對母艦戰力的
+// 加成(攻擊, HP):中隊 4 架(手冊 GM p.127),每架近似攻 3 / HP 4 → 母艦 +12 攻、+16 HP。
+func FighterBayCombatContribution() (atk, hp int) {
+	return FighterInterceptorSquadron * fighterInterceptorAttackApprox,
+		FighterInterceptorSquadron * fighterInterceptorHPApprox
+}

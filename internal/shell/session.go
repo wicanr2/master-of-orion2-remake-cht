@@ -199,6 +199,7 @@ var (
 		{"自動修復", 60, 0, gamedata.TOPIC_ADVANCED_MANUFACTURING, gamedata.TECH_AUTOMATED_REPAIR_UNIT},
 		{"隱形裝置", 100, 0, gamedata.TOPIC_DISTORTION_FIELDS, gamedata.TECH_CLOAKING_DEVICE},
 		{"重生程序", 150, 0, gamedata.TOPIC_ARTIFICIAL_LIFE, 0}, // 抽象(種族特性),proxy 待重設計
+		{"戰機庫", 90, 0, gamedata.TOPIC_ADVANCED_ENGINEERING, gamedata.TECH_FIGHTER_BAYS}, // 攔截機隊出擊4(手冊 GM p.127),ResolveBattle 加母艦戰力
 	}
 )
 
@@ -416,7 +417,15 @@ func (s *GameSession) mkPlayerCombatants() []combatant {
 		body := shipStrength(sh.Class)
 		atk := body + sh.WeaponAttack
 		atk += atk * s.RaceCombatPct / 100 // 種族戰鬥加成(姆瑞森+25、布拉西/阿爾卡里+15…)
-		out = append(out, combatant{hp: body * 3, atk: atk, def: body, wmin: atk / 2, wmax: atk,
+		hp := body * 3
+		// 戰機庫:出擊一隊攔截機(手冊 GM p.127 出擊 4),在艦級抽象結算中以母艦戰力加成承接
+		// 整隊火力與血量(gamedata.FighterBayCombatContribution,中隊規模手冊錨定、每架近似)。
+		if sh.Special == "戰機庫" {
+			fatk, fhp := gamedata.FighterBayCombatContribution()
+			atk += fatk
+			hp += fhp
+		}
+		out = append(out, combatant{hp: hp, atk: atk, def: body, wmin: atk / 2, wmax: atk,
 			shield: shieldReduceByName(sh.Shield), armor: armorHPByName(sh.Armor),
 			kind: weaponKindByName(sh.Weapon), mods: sh.Mods})
 	}
