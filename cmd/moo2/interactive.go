@@ -323,6 +323,7 @@ type sceneBuilder struct {
 	fntVec        *uifont.Font // 純向量 Noto(供主選單等要平滑的畫面;nil 時退回 fnt)
 	lang          i18n.Lang
 	session       *shell.GameSession   // 活的對局狀態(TURN 推進、畫面顯示即時資料)
+	herodataMercs []shell.Leader       // HERODATA.LBX 解出的真英雄傭兵候選(快取;讀檔後重注入)
 	newGameSize   int                  // NEW GAME 選的星系大小索引(shell.GalaxySizes)
 	newGameDiff   int                  // NEW GAME 選的難度索引(shell.Difficulties)
 	newGameRace   int                  // NEW GAME 選的種族索引(shell.Races)
@@ -395,6 +396,9 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 			if b.savePath != "" && shell.SaveExists(b.savePath) {
 				if gs, err := shell.LoadSession(b.savePath); err == nil {
 					b.session = gs
+					if len(b.herodataMercs) > 0 {
+						b.session.SetMercCandidates(b.herodataMercs) // 讀檔建的是新 session,重注入真英雄池
+					}
 				} else {
 					fmt.Fprintln(os.Stderr, "讀檔失敗:", err)
 				}
@@ -405,6 +409,9 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 			if b.savePath != "" && shell.SaveExists(b.savePath) {
 				if gs, err := shell.LoadSession(b.savePath); err == nil {
 					b.session = gs
+					if len(b.herodataMercs) > 0 {
+						b.session.SetMercCandidates(b.herodataMercs) // 讀檔重注入真英雄池
+					}
 					return b.goTo(b.galaxy, "星系主畫面")
 				} else {
 					fmt.Fprintln(os.Stderr, "讀檔失敗:", err)
@@ -2579,6 +2586,12 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		return err
 	}
 	b := &sceneBuilder{res: res, fnt: fnt, fntVec: fntVec, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: 1, designWeapon: 1, savePath: savePathFor(), gameVersion: gamedata.VersionCommunity15}
+	// 傭兵候選池改用原版 HERODATA.LBX 真英雄(解析失敗自動退回內建策展名單,不擋遊戲);快取一份
+	// 供新局/讀檔後重新注入(SetupNewGame 保留注入池,LoadSession 建新 session 需重注)。
+	b.herodataMercs = loadHerodataMercs(res)
+	if len(b.herodataMercs) > 0 {
+		b.session.SetMercCandidates(b.herodataMercs)
+	}
 	menu, err := b.menu()
 	if err != nil {
 		return err

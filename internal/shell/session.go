@@ -1639,9 +1639,10 @@ type GameSession struct {
 	LastPlayerOutput engine.EmpireOutput // 上一回合玩家結算(供畫面顯示)
 	Stars            []Star              // 星系圖
 	Planets          []Planet            // 行星列表
-	Leaders          []Leader            // 已雇用的軍官/領袖名單(Leader Pool)
-	MercPool         []Leader            // 目前上門可雇用的傭兵領袖(手冊 p.134,見 advanceMercOffers/HireMerc)
-	MercOfferedIdx   int                 // 已釋出過的傭兵候選數(遞增指標,避免重複 offer 同一候選)
+	Leaders           []Leader           // 已雇用的軍官/領袖名單(Leader Pool)
+	MercPool          []Leader           // 目前上門可雇用的傭兵領袖(手冊 p.134,見 advanceMercOffers/HireMerc)
+	MercOfferedIdx    int                // 已釋出過的傭兵候選數(遞增指標,避免重複 offer 同一候選)
+	MercCandidatePool []Leader           // 傭兵候選池(cmd 層由 HERODATA.LBX 真英雄注入,見 SetMercCandidates);nil=用內建策展名單
 	Ships            []Ship              // 艦隊
 	LastBattle       *BattleResult       // 上一場戰鬥結果(供戰鬥結果畫面)
 	SelectedStar     int                 // 星圖選中的星索引(-1=未選)
@@ -2508,11 +2509,18 @@ func (s *GameSession) CycleTaxRate() {
 	s.Player.TaxRate = next
 }
 
-// mercCandidates 是傭兵候選名單。first-version 用策展名單,**低階起步**(手冊/攻略:「Only the
-// lowest level leaders are available at the start of the game」),故 Level 1-2、雇用費親民
-// (開局經濟雇得起);HERODATA.LBX 真英雄資料池(含逐族真名/技能/隨遊戲進程出現高階者)的完整
-// 解析待後續。名單有限為誠實標註的 first-version 限制。
-func mercCandidates() []Leader {
+// SetMercCandidates 注入傭兵候選池(cmd 層從 HERODATA.LBX 真英雄解析後傳入,見
+// cmd/moo2 loadHerodataMercs)。傳空則維持內建策展名單。建議依等級升冪排序,使開局先遇到低階
+// (便宜、雇得起)傭兵,對齊攻略「開局只有最低階領袖」。
+func (s *GameSession) SetMercCandidates(pool []Leader) { s.MercCandidatePool = pool }
+
+// mercCandidates 回傳傭兵候選名單:優先用注入的 HERODATA 真英雄池(MercCandidatePool);未注入
+// (無 LBX / headless)時退回內建策展名單,**低階起步**(手冊/攻略:「Only the lowest level
+// leaders are available at the start of the game」),Level 1-2、雇用費親民。
+func (s *GameSession) mercCandidates() []Leader {
+	if len(s.MercCandidatePool) > 0 {
+		return s.MercCandidatePool
+	}
 	return []Leader{
 		{"馮·諾伊曼", "科學家", 2, false, 1}, // 殖民地領袖:固定研究加成
 		{"洛克斐勒", "貿易家", 1, false, 1},  // 殖民地領袖:收入%加成
@@ -2529,7 +2537,7 @@ func (s *GameSession) advanceMercOffers() {
 	if s.Turn%4 != 0 || len(s.MercPool) >= 3 {
 		return
 	}
-	cands := mercCandidates()
+	cands := s.mercCandidates()
 	if s.MercOfferedIdx >= len(cands) {
 		return
 	}
