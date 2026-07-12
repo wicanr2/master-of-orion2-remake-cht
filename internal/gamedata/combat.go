@@ -237,3 +237,21 @@ func FighterBayCombatContribution() (atk, hp int) {
 	return FighterInterceptorSquadron * fighterInterceptorAttackApprox,
 		FighterInterceptorSquadron * fighterInterceptorHPApprox
 }
+
+// FighterHeavySquadron 是一個重戰機庫每次出擊的重戰機數(手冊 GM p.127「出擊數」欄:重戰機 2)。
+// 手冊硬數字。重戰機武裝為「1 光束 + 1 炸彈」,對艦火力較攔截機強、數量較少。
+const FighterHeavySquadron = 2
+
+// 每重戰機對抽象戰力的攻擊/HP 貢獻。⚠ remake 近似,非手冊定值(同攔截機的理由:手冊給武裝類型
+// 與血量範圍 5-50 隨裝甲級,非固定戰力值),取較攔截機高的低階代表值以反映重戰機較強。
+const (
+	fighterHeavyAttackApprox = 8
+	fighterHeavyHPApprox     = 8
+)
+
+// FighterHeavyBayCombatContribution 回傳一個重戰機庫對母艦戰力的加成(攻擊, HP):中隊 2 架
+// (手冊 GM p.127),每架近似攻 8 / HP 8 → 母艦 +16 攻、+16 HP(較攔截機庫 +12 攻略強)。
+func FighterHeavyBayCombatContribution() (atk, hp int) {
+	return FighterHeavySquadron * fighterHeavyAttackApprox,
+		FighterHeavySquadron * fighterHeavyHPApprox
+}

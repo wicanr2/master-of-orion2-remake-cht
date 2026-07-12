@@ -199,7 +199,8 @@ var (
 		{"自動修復", 60, 0, gamedata.TOPIC_ADVANCED_MANUFACTURING, gamedata.TECH_AUTOMATED_REPAIR_UNIT},
 		{"隱形裝置", 100, 0, gamedata.TOPIC_DISTORTION_FIELDS, gamedata.TECH_CLOAKING_DEVICE},
 		{"重生程序", 150, 0, gamedata.TOPIC_ARTIFICIAL_LIFE, 0}, // 抽象(種族特性),proxy 待重設計
-		{"戰機庫", 90, 0, gamedata.TOPIC_ADVANCED_ENGINEERING, gamedata.TECH_FIGHTER_BAYS}, // 攔截機隊出擊4(手冊 GM p.127),ResolveBattle 加母艦戰力
+		{"戰機庫", 90, 0, gamedata.TOPIC_ADVANCED_ENGINEERING, gamedata.TECH_FIGHTER_BAYS},          // 攔截機隊出擊4(手冊 GM p.127),ResolveBattle 加母艦戰力
+		{"重戰機庫", 160, 0, gamedata.TOPIC_SUPERSCALAR_CONSTRUCTION, gamedata.TECH_HEAVY_FIGHTER_BAYS}, // 重戰機隊出擊2、火力較強(手冊 GM p.127)
 	}
 )
 
@@ -418,10 +419,15 @@ func (s *GameSession) mkPlayerCombatants() []combatant {
 		atk := body + sh.WeaponAttack
 		atk += atk * s.RaceCombatPct / 100 // 種族戰鬥加成(姆瑞森+25、布拉西/阿爾卡里+15…)
 		hp := body * 3
-		// 戰機庫:出擊一隊攔截機(手冊 GM p.127 出擊 4),在艦級抽象結算中以母艦戰力加成承接
-		// 整隊火力與血量(gamedata.FighterBayCombatContribution,中隊規模手冊錨定、每架近似)。
-		if sh.Special == "戰機庫" {
+		// 戰機庫:出擊一隊戰機(手冊 GM p.127 出擊數:攔截機 4 / 重戰機 2),在艦級抽象結算中以
+		// 母艦戰力加成承接整隊火力與血量(中隊規模手冊錨定、每架近似)。重戰機庫火力較強。
+		switch sh.Special {
+		case "戰機庫":
 			fatk, fhp := gamedata.FighterBayCombatContribution()
+			atk += fatk
+			hp += fhp
+		case "重戰機庫":
+			fatk, fhp := gamedata.FighterHeavyBayCombatContribution()
 			atk += fatk
 			hp += fhp
 		}
