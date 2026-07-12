@@ -1578,7 +1578,9 @@ type GameSession struct {
 	LastPlayerOutput engine.EmpireOutput // 上一回合玩家結算(供畫面顯示)
 	Stars            []Star              // 星系圖
 	Planets          []Planet            // 行星列表
-	Leaders          []Leader            // 軍官/領袖名單
+	Leaders          []Leader            // 已雇用的軍官/領袖名單(Leader Pool)
+	MercPool         []Leader            // 目前上門可雇用的傭兵領袖(手冊 p.134,見 advanceMercOffers/HireMerc)
+	MercOfferedIdx   int                 // 已釋出過的傭兵候選數(遞增指標,避免重複 offer 同一候選)
 	Ships            []Ship              // 艦隊
 	LastBattle       *BattleResult       // 上一場戰鬥結果(供戰鬥結果畫面)
 	SelectedStar     int                 // 星圖選中的星索引(-1=未選)
@@ -1982,6 +1984,7 @@ func (s *GameSession) EndTurn() {
 	s.advanceConquestVictory() // 對手是否已全滅(手冊三條勝利路徑之一:殲滅所有對手)
 	s.advanceAntaranVictory()  // 是否已攻陷安塔蘭母星(手冊三條勝利路徑之二,見 antaran_victory.go)
 	s.advanceCouncil()         // 銀河議會選舉(手冊三條勝利路徑之一:2/3 多數當選銀河領袖),記於 LastCouncil
+	s.advanceMercOffers()      // 傭兵領袖不定期上門(手冊 p.134),補進 MercPool 供玩家在軍官畫面雇用
 }
 
 // popGrowthThreshold 是「成長累加值 → +1 人口單位」的門檻。MOO2 手冊(MANUAL_150.html p111
@@ -2442,4 +2445,76 @@ func (s *GameSession) CycleTaxRate() {
 		next = gamedata.TaxRateMinPercent
 	}
 	s.Player.TaxRate = next
+}
+
+// mercCandidates 是傭兵候選名單。first-version 用策展名單,**低階起步**(手冊/攻略:「Only the
+// lowest level leaders are available at the start of the game」),故 Level 1-2、雇用費親民
+// (開局經濟雇得起);HERODATA.LBX 真英雄資料池(含逐族真名/技能/隨遊戲進程出現高階者)的完整
+// 解析待後續。名單有限為誠實標註的 first-version 限制。
+func mercCandidates() []Leader {
+	return []Leader{
+		{"馮·諾伊曼", "科學家", 2, false, 1}, // 殖民地領袖:固定研究加成
+		{"洛克斐勒", "貿易家", 1, false, 1},  // 殖民地領袖:收入%加成
+		{"漢尼拔", "指揮官", 2, true, 1},    // 艦艇軍官
+		{"圖靈", "工程師", 1, true, 1},     // 艦艇軍官
+	}
+}
+
+// advanceMercOffers 每 4 回合有一名傭兵上門(手冊 GAME_MANUAL.pdf p.134「odd individuals
+// occasionally show up on your imperial doorstep, offering their services」),補進 MercPool
+// (同時最多 3 個 offer)。依 MercOfferedIdx 順序釋出候選、不重複;確定性(依 Turn,不用亂數)
+// 以維持存檔/探針可重現。候選釋出完即停(first-version 名單有限)。
+func (s *GameSession) advanceMercOffers() {
+	if s.Turn%4 != 0 || len(s.MercPool) >= 3 {
+		return
+	}
+	cands := mercCandidates()
+	if s.MercOfferedIdx >= len(cands) {
+		return
+	}
+	s.MercPool = append(s.MercPool, cands[s.MercOfferedIdx])
+	s.MercOfferedIdx++
+}
+
+// MercHireCost 回傳雇用某傭兵的一次性費用(gamedata.LeaderHireCost,依技能等級遞增)。
+func (s *GameSession) MercHireCost(ld Leader) int {
+	exp := leaderDisplayLevelToExpLevel(ld.Level)
+	return gamedata.LeaderHireCost(5, exp, 0) // skillValue 基準 5,modifier 0(無 Charismatic 折扣建模)
+}
+
+// leaderSlotsFull 回傳該類領袖(殖民地 Ship=false / 艦艇 Ship=true)是否已達上限 4
+// (手冊 p.134:「up to four Colony Leaders and four Ship Officers」)。
+func (s *GameSession) leaderSlotsFull(ship bool) bool {
+	n := 0
+	for _, l := range s.Leaders {
+		if l.Ship == ship {
+			n++
+		}
+	}
+	return n >= 4
+}
+
+// HireMerc 雇用 MercPool 的第一名傭兵(手冊 p.134:扣一次性雇用費、招入 Leader Pool)。BC 不足或
+// 對應領袖類別已滿(各 4 名)則不雇用、傭兵留在池中。回傳是否成功。
+func (s *GameSession) HireMerc() bool {
+	if len(s.MercPool) == 0 {
+		return false
+	}
+	ld := s.MercPool[0]
+	if s.leaderSlotsFull(ld.Ship) {
+		return false
+	}
+	newBC, ok := engine.HireLeader(s.Player.BC, s.MercHireCost(ld))
+	if !ok {
+		return false // BC 不足
+	}
+	s.Player.BC = newBC
+	s.MercPool = s.MercPool[1:]
+	s.Leaders = append(s.Leaders, ld)
+	// 只套「新雇這一名」的殖民地加成——applyLeaderColonyBonuses 是 += 累加,不可對全名單重跑
+	// (會重複計算既有領袖),故傳單元素 slice(見該函式註解)。
+	if len(s.PlayerColonies) > 0 && !ld.Ship {
+		applyLeaderColonyBonuses([]Leader{ld}, &s.PlayerColonies[0])
+	}
+	return true
 }

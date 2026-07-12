@@ -88,6 +88,11 @@ type sessionSnapshot struct {
 	// LastEspionage(本回合諜報結算訊息)比照 LastEvent/LastAntares/LastBattle,是下回合會
 	// 重算的純顯示暫態,刻意不存檔。
 	PlayerSpies []int `json:"playerSpies"`
+
+	// MercPool/MercOfferedIdx 是傭兵領袖招募狀態(見 session.go advanceMercOffers/HireMerc)。
+	// omitempty:舊存檔無此欄位時解為零值(空池),讀檔後由 advanceMercOffers 自然補回,不破壞相容。
+	MercPool       []Leader `json:"mercPool,omitempty"`
+	MercOfferedIdx int      `json:"mercOfferedIdx,omitempty"`
 }
 
 // snapshot 擷取 GameSession 目前狀態成可序列化快照。
@@ -120,6 +125,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		CouncilMeetings: s.CouncilMeetings, LastCouncilTurn: s.lastCouncilTurn,
 		AntaranHomeworldConquered: s.AntaranHomeworldConquered,
 		PlayerSpies:               s.PlayerSpies,
+		MercPool:                  s.MercPool,
+		MercOfferedIdx:            s.MercOfferedIdx,
 	}
 }
 
@@ -152,6 +159,8 @@ func (snap sessionSnapshot) restore() *GameSession {
 		CouncilMeetings: snap.CouncilMeetings, lastCouncilTurn: snap.LastCouncilTurn,
 		AntaranHomeworldConquered: snap.AntaranHomeworldConquered,
 		PlayerSpies:               snap.PlayerSpies,
+		MercPool:                  snap.MercPool,
+		MercOfferedIdx:            snap.MercOfferedIdx,
 	}
 }
 

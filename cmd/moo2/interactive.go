@@ -2068,9 +2068,19 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 func (b *sceneBuilder) officer() (*overlayScreen, error) {
 	// 精確返回鍵熱區(RETURN 按鈕真值座標取自 openorion2 officer.cpp:418
 	// LeaderListView RETURN createWidget(538, 441, ...);取代整畫面返回,僅返回鍵返回)。
-	hits := []hitRegion{{538, 441, 80, 20, "Return"}}
+	// HIRE 熱區對齊原版 OFFICER.LBX 的 HIRE 按鈕(overlay 標於 310,440):雇用 MercPool 首名傭兵。
+	hits := []hitRegion{
+		{538, 441, 80, 20, "Return"},
+		{310, 440, 68, 20, "hire"},
+	}
 	onAction := func(a string) *origTransition {
-		if a == "Return" {
+		switch a {
+		case "hire":
+			if b.session != nil {
+				b.session.HireMerc() // 雇用池首名傭兵(BC不足/滿員則無作用),手冊 p.134
+			}
+			return b.goTo(b.officer, "軍官列表")
+		case "Return":
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
 		return nil
@@ -2093,16 +2103,36 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 	if b.session != nil {
 		gold := color.RGBA{240, 220, 120, 255}
 		body := color.RGBA{206, 214, 232, 255}
+		hireCol := color.RGBA{150, 220, 160, 255} // 可雇用傭兵用綠色標示
 		rowY := []float64{87, 198, 307, 415}
-		for i, ld := range b.session.Leaders {
-			if i >= len(rowY) {
+		row := 0
+		// 已雇用領袖填前幾個槽位。
+		for _, ld := range b.session.Leaders {
+			if row >= len(rowY) {
 				break
 			}
-			y := rowY[i]
+			y := rowY[row]
 			s.extras = append(s.extras,
 				extraText{x: 95, y: y - 12, size: 15, text: ld.Name, col: gold},
 				extraText{x: 95, y: y + 12, size: 12, text: fmt.Sprintf("%s ｜ Lv %d", ld.Skill, ld.Level), col: body},
 			)
+			row++
+		}
+		// 剩餘槽位顯示上門待雇的傭兵(綠色 + 雇用費;點 HIRE 鈕雇用池首名)。
+		for _, ld := range b.session.MercPool {
+			if row >= len(rowY) {
+				break
+			}
+			y := rowY[row]
+			s.extras = append(s.extras,
+				extraText{x: 95, y: y - 12, size: 15, text: "◆ " + ld.Name, col: hireCol},
+				extraText{x: 95, y: y + 12, size: 12, text: fmt.Sprintf("%s ｜ Lv %d ｜ 雇用費 %d BC", ld.Skill, ld.Level, b.session.MercHireCost(ld)), col: hireCol},
+			)
+			row++
+		}
+		// 池空且無領袖時,提示傭兵會不定期上門(手冊 p.134)。
+		if len(b.session.Leaders) == 0 && len(b.session.MercPool) == 0 {
+			s.extras = append(s.extras, extraText{x: 95, y: rowY[0], size: 13, text: "(傭兵領袖會不定期上門,屆時按 HIRE 雇用)", col: body})
 		}
 	}
 	return s, nil
