@@ -41,8 +41,8 @@ func TestApplyRaceBonuses(t *testing.T) {
 	if got := s.Player.BC; got != baseBC {
 		t.Fatalf("諾蘭姆不應加起始國庫(原版無此機制):%d → %d", baseBC, got)
 	}
-	if got := s.PlayerColonies[0].IncomePerPop; got != 1 {
-		t.Fatalf("諾蘭姆殖民地 IncomePerPop 應為 1(每人每回合+1BC),實得 %d", got)
+	if got := s.PlayerColonies[0].IncomePerPop; got != 2 {
+		t.Fatalf("諾蘭姆殖民地 IncomePerPop 應為 2 半BC(=每人每回合+1BC),實得 %d", got)
 	}
 	// 每回合 EndTurn 後,諾蘭姆母星(pop8)應比無此特質多約 8 BC 收入。
 	baseTax := func() int {

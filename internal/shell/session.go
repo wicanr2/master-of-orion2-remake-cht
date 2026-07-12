@@ -1251,8 +1251,8 @@ func genPlanets(stars []Star) []Planet {
 // ⚠ 2026-07-12 手冊考據校正(GAME_MANUAL.pdf p.15-16 種族章 + SAVE10.GAM):**原版沒有任何
 // 種族靠「一次性起始國庫」取得優勢**——五個種族存檔開局 BC 全=50,種族「錢」優勢一律是「每回合
 // 按人口的收入加成」。故 StartBC 的種族差異全數移除(人類 60/諾蘭姆 120/達洛克 30 皆為先前捏造),
-// 諾蘭姆改用手冊逐字公式 IncomePerPop=1(「each unit of Gnolam population generates an additional
-// 1 BC per turn」);人類真實特質是外交 +50%/易同化/雇用領袖便宜(尚未在此數值模型建模,誠實留白);
+// 諾蘭姆改用手冊逐字公式 IncomePerPop=2 半BC(=+1 BC/人/回合,「each unit of Gnolam population
+// generates an additional 1 BC per turn」);人類真實特質是外交 +50%/易同化/雇用領袖便宜(尚未建模,誠實留白);
 // 達洛克是間諜 +20/隱形(對應間諜系統,無錢加成)。StartBC 欄位保留供自訂種族 money pick 用。
 type Race struct {
 	Name         string // 中文名
@@ -1280,7 +1280,7 @@ var Races = []Race{
 	{"達洛克", "Darloks", 0, 0, 0, 0, 0, 0, 0, "潛伏間諜,擅長滲透與隱形"},
 	{"崔拉里安", "Trilarians", 0, 0, 1, 10, 0, 0, 0, "水棲民族,食物與成長加成"},
 	{"埃雷里安", "Elerians", 0, 1, 0, 0, 0, 0, 15, "心靈感應,研究與戰鬥"},
-	{"諾蘭姆", "Gnolams", 0, 0, 0, 0, 0, 1, 0, "幸運富商,每人口每回合額外進帳"}, // IncomePerPop=1:手冊 p.16「each unit of Gnolam population generates an additional 1 BC per turn」
+	{"諾蘭姆", "Gnolams", 0, 0, 0, 0, 0, 2, 0, "幸運富商,每人口每回合額外進帳"}, // IncomePerPop=2 半BC=+1 BC/人:手冊 p.16「each unit of Gnolam population generates an additional 1 BC per turn」(=money3 pick)
 	{"矽基", "Silicoids", 1, 0, 0, -20, 0, 0, 0, "岩石生命,耐任何環境但成長慢"},
 }
 

@@ -19,10 +19,12 @@ import (
 )
 
 // pickOpt 是一個可循環選項:點數成本 + 對 Race 數值欄位的增量(未對應者留 0)。
+// incPerPop 為「每人每回合 BC」的半單位增量(對應 shell.Race.IncomePerPop / 手冊 Money pick,
+// 差 -1(-0.5)、佳 +1(+0.5)、優 +2(+1);見 engine.ColonyState.IncomePerPop 半單位註解)。
 type pickOpt struct {
-	label                              string
-	cost                               int
-	ind, res, food, growth, combat, bc int
+	label                                     string
+	cost                                      int
+	ind, res, food, growth, combat, incPerPop int
 }
 
 // pickCat 是一組互斥選項(循環選一),如「人口成長:無/差/佳/優」。
@@ -48,7 +50,7 @@ func defaultPickCats() []pickCat {
 		{"農業", []pickOpt{{"無", 0, 0, 0, 0, 0, 0, 0}, {"差", -3, 0, 0, -1, 0, 0, 0}, {"佳", 4, 0, 0, 1, 0, 0, 0}, {"優", 7, 0, 0, 2, 0, 0, 0}}, 0},
 		{"工業", []pickOpt{{"無", 0, 0, 0, 0, 0, 0, 0}, {"差", -3, -1, 0, 0, 0, 0, 0}, {"佳", 3, 1, 0, 0, 0, 0, 0}, {"優", 6, 2, 0, 0, 0, 0, 0}}, 0},
 		{"研究", []pickOpt{{"無", 0, 0, 0, 0, 0, 0, 0}, {"差", -3, 0, -1, 0, 0, 0, 0}, {"佳", 3, 0, 1, 0, 0, 0, 0}, {"優", 6, 0, 2, 0, 0, 0, 0}}, 0},
-		{"商業", []pickOpt{{"無", 0, 0, 0, 0, 0, 0, 0}, {"差", -4, 0, 0, 0, 0, 0, 0}, {"佳", 5, 0, 0, 0, 0, 0, 0}, {"優", 8, 0, 0, 0, 0, 0, 0}}, 0}, // 稅賦效果待實作
+		{"商業", []pickOpt{{"無", 0, 0, 0, 0, 0, 0, 0}, {"差", -4, 0, 0, 0, 0, -1, 0}, {"佳", 5, 0, 0, 0, 0, 1, 0}, {"優", 8, 0, 0, 0, 0, 2, 0}}, 0}, // Money pick 每人每回合半BC:差-0.5/佳+0.5/優+1(手冊 p.16,同諾蘭姆機制)
 		{"艦艇攻擊", []pickOpt{{"無", 0, 0, 0, 0, 0, 0, 0}, {"差", -2, 0, 0, 0, 0, -20, 0}, {"佳", 2, 0, 0, 0, 0, 20, 0}, {"優", 4, 0, 0, 0, 0, 50, 0}}, 0},
 		{"政府型態", []pickOpt{{"獨裁", 0, 0, 0, 0, 0, 0, 0}, {"封建", -4, 0, 0, 0, 0, 0, 0}, {"統一", 6, 0, 0, 0, 0, 0, 0}, {"民主", 7, 0, 0, 0, 0, 0, 0}}, 0}, // 政府效果待實作
 	}
@@ -199,7 +201,7 @@ func (s *customRaceScreen) applyAndStart() {
 		r.FoodBonus += o.food
 		r.GrowthPct += o.growth
 		r.CombatPct += o.combat
-		r.StartBC += o.bc
+		r.IncomePerPop += o.incPerPop // 商業 pick → 每人每回合半BC(取代先前捏造的一次性 StartBC)
 	}
 	b.session.Difficulty = b.newGameDiff
 	b.newGameSeed++

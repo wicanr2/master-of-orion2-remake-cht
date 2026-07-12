@@ -94,7 +94,7 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		// 併入稅收分項,使其一併受下方 IncomeBonusPercent(太空港/證券交易所)加成放大,對應手冊
 		// 「money 收入受建築加成」。一般種族 IncomePerPop=0 時 no-op。
 		if cs.IncomePerPop != 0 {
-			tax += cs.IncomePerPop * cs.Population
+			tax += cs.IncomePerPop * cs.Population / 2 // IncomePerPop 為半 BC 單位(見欄位註解)
 		}
 		if cs.IncomeBonusPercent != 0 {
 			subtotal := tax + foodRev + tradeRev
