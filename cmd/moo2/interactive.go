@@ -1933,11 +1933,13 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 		{190, 17, 260, 20, "FLEET OPERATIONS", 0},
 		{346, 384, 70, 18, "ALL", 0},
 		{440, 384, 93, 18, "RELOCATE", 0},
-		{552, 384, 64, 18, "SCRAP", 0},
+		{549, 384, 64, 18, "SCRAP", 0},
 		{342, 436, 76, 18, "LEADERS", 0},
 		{425, 436, 60, 18, "Support", 0},
-		{482, 436, 62, 18, "Combat", 0},
-		{543, 436, 82, 18, "RETURN", 0},
+		// Combat/RETURN/SCRAP 標籤由 PIL 校正為 openorion2 ships.cpp 真值(Combat 按鈕 487,435,60,19;
+		// RETURN 對齊按鈕框 556,430,84,28;SCRAP 549)。
+		{487, 435, 60, 19, "Combat", 0},
+		{556, 430, 84, 28, "RETURN", 0},
 	}
 	s, err := loadOverlayScreen(b.res, "fleet.lbx", 0, b.lang, b.fnt, "assets/i18n/menu.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
@@ -2163,7 +2165,7 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 	// HIRE 熱區對齊原版 OFFICER.LBX 的 HIRE 按鈕(overlay 標於 310,440):雇用 MercPool 首名傭兵。
 	hits := []hitRegion{
 		{538, 441, 80, 20, "Return"},
-		{310, 440, 68, 20, "hire"},
+		{313, 440, 68, 20, "hire"}, // HIRE 按鈕真值 x=313(openorion2 officer.cpp;原 PIL 310)
 	}
 	onAction := func(a string) *origTransition {
 		switch a {
@@ -2180,7 +2182,7 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 	overlays := []labelRect{
 		{20, 11, 133, 20, "Colony Leaders", 0},
 		{166, 11, 124, 20, "Ship Officers", 0},
-		{310, 440, 68, 20, "HIRE", 0},
+		{313, 440, 68, 20, "HIRE", 0},
 		{388, 440, 69, 20, "POOL", 0},
 		{462, 440, 74, 20, "DISMISS", 0},
 		{540, 440, 80, 20, "RETURN", 0},
@@ -2191,12 +2193,14 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 領袖名單填進左側槽位(肖像右方名字區;槽中心 y 經 PIL 量測:31/144/253/362 分隔)。
+	// 領袖名單填進左側槽位:槽中心 y = openorion2 officer.cpp LeaderListView 真值
+	// FIRST_ROW 38 + SLOT_HEIGHT 105/2 + i*ROW_DIST 109 = 90.5+i*109 → 取整 90/199/308/417
+	// (原 PIL 87/198/307/415 每列高約 1.5-3px、列距不均;現還原 109px 等距)。
 	if b.session != nil {
 		gold := color.RGBA{240, 220, 120, 255}
 		body := color.RGBA{206, 214, 232, 255}
 		hireCol := color.RGBA{150, 220, 160, 255} // 可雇用傭兵用綠色標示
-		rowY := []float64{87, 198, 307, 415}
+		rowY := []float64{90, 199, 308, 417}
 		row := 0
 		// 已雇用領袖填前幾個槽位。
 		for _, ld := range b.session.Leaders {
@@ -2237,7 +2241,7 @@ func (b *sceneBuilder) info() (*overlayScreen, error) {
 	// RETURN 真值座標取自 openorion2 info.cpp:1028 InfoView
 	// RETURN createWidget(535, 434, ...);取代整畫面返回,僅返回鍵返回。
 	hits := []hitRegion{
-		{15, 78, 197, 22, "tech"},
+		{21, 76, 164, 26, "tech"}, // 對齊 openorion2 info.cpp 選單容器真值(x21/w164),原 PIL 15/197
 		{535, 434, 84, 22, "back"},
 	}
 	onAction := func(a string) *origTransition {
@@ -2248,14 +2252,17 @@ func (b *sceneBuilder) info() (*overlayScreen, error) {
 	}
 	// 選單項原版為靠左文字疊在近黑面板背景上(無實心板);擦底取黑=黑疊黑(正確),
 	// rect 寬取足以蓋住最長英文、中文置中於偏左位置貼近原版。y 中心經 PIL 量測:64/88/114/142/162。
+	// 五列選單 x/w 由 PIL 校正為 openorion2 info.cpp ChoiceWidget(21,50,164,131) 真值(x15→21、w182→164);
+	// y 為 PIL(openorion2 按鈕 y 由精靈高 runtime 累加、無字面,均距推導與現值 ≤5px 一致,保留)。
+	// STAR DATE 是烘進背景的字幕、openorion2 無座標,保留 PIL。RETURN 標籤對齊按鈕真值 535,434。
 	overlays := []labelRect{
 		{15, 20, 200, 26, "STAR DATE", 0},
-		{15, 56, 182, 18, "History Graph", 0},
-		{15, 80, 182, 18, "Tech Review", 0},
-		{15, 106, 182, 18, "Race Statistics", 0},
-		{15, 134, 182, 18, "Turn Summary", 0},
-		{15, 154, 182, 18, "Reference", 0},
-		{538, 436, 84, 22, "RETURN", 0},
+		{21, 56, 164, 18, "History Graph", 0},
+		{21, 80, 164, 18, "Tech Review", 0},
+		{21, 106, 164, 18, "Race Statistics", 0},
+		{21, 134, 164, 18, "Turn Summary", 0},
+		{21, 154, 164, 18, "Reference", 0},
+		{535, 434, 84, 22, "RETURN", 0},
 	}
 	s, err := loadOverlayScreen(b.res, "info.lbx", 0, b.lang, b.fnt, "assets/i18n/misc.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
@@ -2368,17 +2375,18 @@ func (b *sceneBuilder) research() (*overlayScreen, error) {
 		return b.goTo(b.galaxy, "星系主畫面")
 	}
 	// 研究領域標籤擦底疊字(座標為 bg 局部座標,472×480;draw 時自動加置中偏移)。
-	// 座標經 PIL 量測原版標籤中心(左右欄列中心 y=36/140/246/352,標題 18);h=18,y=中心−9。
+	// y=27/131/237/343 為 PIL 量測(openorion2 無按鈕 y 字面,均距推導一致,保留)。
+	// 右欄 x 由 PIL 244 校正為 openorion2 tech.cpp 按鈕圖真值 248(左欄 22 與真值 21 僅差 1px,保留)。
 	overlays := []labelRect{
 		{155, 9, 162, 18, "Select New Research", 0},
 		{22, 27, 128, 18, "Construction", 0},
-		{244, 27, 124, 18, "Power", 0},
+		{248, 27, 124, 18, "Power", 0},
 		{22, 131, 128, 18, "Chemistry", 0},
-		{244, 131, 124, 18, "Sociology", 0},
+		{248, 131, 124, 18, "Sociology", 0},
 		{22, 237, 128, 18, "Computers", 0},
-		{244, 237, 124, 18, "Biology", 0},
+		{248, 237, 124, 18, "Biology", 0},
 		{22, 343, 128, 18, "Physics", 0},
-		{244, 343, 124, 18, "Force Fields", 0},
+		{248, 343, 124, 18, "Force Fields", 0},
 	}
 	s, err := loadOverlayScreen(b.res, "techsel.lbx", 0, b.lang, b.fnt, "assets/i18n/tech.tsv",
 		overlays, color.RGBA{210, 216, 230, 255}, 13, hits, onAction,
@@ -2426,7 +2434,9 @@ func (b *sceneBuilder) planets() (*overlayScreen, error) {
 	// 即時行星資料填進表格列(欄位中心 x 對齊標題;列中心 y 經量測估計)。
 	if b.session != nil {
 		body := color.RGBA{206, 218, 240, 255}
-		rowY := []float64{61, 116, 170, 225, 280, 335, 390} // 格中心,PIL 量測(格線 34/89/143/198/253/308/363/418)
+		// 格中心 = openorion2 galaxy.cpp PlanetsListView 真值:FIRST_ROW 36 + ROW_HEIGHT 50/2 + i*ROW_DIST 55
+		// = 61 + i*55,共 PLANET_LIST_ROWS=8 列(先前 PIL 量測只有 7 列且第 3 列起 -1px 漂移、第 8 顆行星永不顯示)。
+		rowY := []float64{61, 116, 171, 226, 281, 336, 391, 446}
 		cx := struct{ name, cli, grv, min, siz float64 }{57, 136, 218, 303, 382}
 		for i, p := range b.session.Planets {
 			if i >= len(rowY) {
