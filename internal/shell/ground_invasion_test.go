@@ -715,18 +715,21 @@ func TestInvadeColony_NilAIPlayerLeadersSafeDegrade(t *testing.T) {
 // 未飽和(非 0%/100%)的中段勝率,足以觀察到加成的方向性影響。
 func TestInvadeColony_CommandoLeaderImprovesWinRate(t *testing.T) {
 	const n = 150
-	winRate := func(clearLeaders bool) float64 {
+	// 2026-07-12:開局領袖池已改為空(手冊 p.47/134 原版開局無領袖須雇用),故不再依賴
+	// NewDemoSession 預設帶指揮官;測試自行指派一個指揮官領袖(漢尼拔,Ship=true,Tier1)代表
+	// 「已雇用並指派」狀態,對照無領袖組。
+	winRate := func(withCommando bool) float64 {
 		wins := 0
 		for i := 0; i < n; i++ {
 			s, starIdx := newFleetAtAIHomeSession(t)
 			s.Turn = i + 1
 			s.FleetMarines = 5
-			if clearLeaders {
-				s.Leaders = nil
+			if withCommando {
+				s.Leaders = []Leader{{"漢尼拔", "指揮官", 6, true, 1}}
 			}
 			res := s.InvadeColony(starIdx)
 			if !res.Ok {
-				t.Fatalf("clearLeaders=%v i=%d: 前置條件應齊備,got Reason=%q", clearLeaders, i, res.Reason)
+				t.Fatalf("withCommando=%v i=%d: 前置條件應齊備,got Reason=%q", withCommando, i, res.Reason)
 			}
 			if res.AttackerWon {
 				wins++
@@ -734,10 +737,10 @@ func TestInvadeColony_CommandoLeaderImprovesWinRate(t *testing.T) {
 		}
 		return float64(wins) / n
 	}
-	withoutCommando := winRate(true)
-	withCommando := winRate(false)
+	withoutCommando := winRate(false)
+	withCommando := winRate(true)
 	if withCommando <= withoutCommando {
-		t.Fatalf("保留指揮官領袖應提升攻方勝率,got 無指揮官=%.2f 有指揮官=%.2f", withoutCommando, withCommando)
+		t.Fatalf("指揮官領袖應提升攻方勝率,got 無指揮官=%.2f 有指揮官=%.2f", withoutCommando, withCommando)
 	}
-	t.Logf("無指揮官勝率=%.2f 有指揮官(demoLeaders)勝率=%.2f", withoutCommando, withCommando)
+	t.Logf("無指揮官勝率=%.2f 有指揮官勝率=%.2f", withoutCommando, withCommando)
 }

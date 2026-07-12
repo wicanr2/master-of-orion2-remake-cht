@@ -32,12 +32,27 @@ func TestApplyRaceBonuses(t *testing.T) {
 		t.Fatalf("席隆研究應 +2:%d → %d", baseRes, got)
 	}
 
-	// 諾蘭姆:起始國庫 +120。
+	// 諾蘭姆:每人口每回合 +1 BC(手冊 p.16「each unit of Gnolam population generates an
+	// additional 1 BC per turn」)。2026-07-12 校正:原版種族無「一次性起始國庫」加成(SAVE10
+	// 五族開局 BC 全=50),先前 remake 的 StartBC +120 已移除,改為 IncomePerPop 每回合收入。
 	s = NewDemoSession()
 	baseBC := s.Player.BC
 	s.ApplyRace(idx("Gnolams"))
-	if got := s.Player.BC; got != baseBC+120 {
-		t.Fatalf("諾蘭姆國庫應 +120:%d → %d", baseBC, got)
+	if got := s.Player.BC; got != baseBC {
+		t.Fatalf("諾蘭姆不應加起始國庫(原版無此機制):%d → %d", baseBC, got)
+	}
+	if got := s.PlayerColonies[0].IncomePerPop; got != 1 {
+		t.Fatalf("諾蘭姆殖民地 IncomePerPop 應為 1(每人每回合+1BC),實得 %d", got)
+	}
+	// 每回合 EndTurn 後,諾蘭姆母星(pop8)應比無此特質多約 8 BC 收入。
+	baseTax := func() int {
+		ns := NewDemoSession()
+		ns.EndTurn()
+		return ns.LastPlayerOutput.TaxRevenue
+	}()
+	s.EndTurn()
+	if s.LastPlayerOutput.TaxRevenue <= baseTax {
+		t.Fatalf("諾蘭姆稅收應高於基準(每人+1BC×pop):諾蘭姆 %d vs 基準 %d", s.LastPlayerOutput.TaxRevenue, baseTax)
 	}
 }
 

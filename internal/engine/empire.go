@@ -90,6 +90,12 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		// 的稅收+餘糧收入+貿易品收入小計套用加成,再併入帝國總額,精確對應手冊「該殖民地」的
 		// 範圍(不是先加總帝國全部收入再打折的近似做法)。不含維護費(手冊只講收入加成,沒講
 		// 維護費打折)。
+		// 種族「錢」特質:每單位人口每回合固定 BC(手冊 p.16 諾蘭姆,見 ColonyState.IncomePerPop)。
+		// 併入稅收分項,使其一併受下方 IncomeBonusPercent(太空港/證券交易所)加成放大,對應手冊
+		// 「money 收入受建築加成」。一般種族 IncomePerPop=0 時 no-op。
+		if cs.IncomePerPop != 0 {
+			tax += cs.IncomePerPop * cs.Population
+		}
 		if cs.IncomeBonusPercent != 0 {
 			subtotal := tax + foodRev + tradeRev
 			bonus := subtotal * cs.IncomeBonusPercent / 100

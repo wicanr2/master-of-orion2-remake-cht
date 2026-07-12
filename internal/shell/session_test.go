@@ -13,17 +13,14 @@ func TestGameSessionEndTurn(t *testing.T) {
 		t.Errorf("EndTurn 後回合 = %d,預期 2", s.Turn)
 	}
 	// 玩家研究:母星科學家3 * 每科研3(gamedata.ResearchPerScientistNorm,銀河基準)* 士氣(1+0%)
-	// = 9 基礎。2026-07-12 依原版 SAVE10.GAM 校正母星分配 科1→科3(oracle 不變式科≥2,先前科1
-	// 違反),每科研基準 3(手冊 p.949「usual 3」,先前硬編 30 約 10x 過高已訂正)。
-	// 領袖:demoLeaders「馮·諾伊曼(科學家)」套 SKILL_RESEARCHER 固定加成 +25
-	// (LeaderSkillBonus(SKILL_RESEARCHER, tier1, exp4)=5*(4+1)),故 9 + 25 = 34(先前 28=3+25)。
-	// ⚠ 已知後續議題(見 original-gameplay-reference.md §7.0.1):領袖 +25 現仍大於基礎 9、
-	// 且原版開局本無領袖,待後續獨立輪次處理。
-	if s.LastPlayerOutput.TotalResearch != 34 {
-		t.Errorf("玩家總研究 = %d,預期 34(9 基礎[科3×norm3] + 25 領袖技能)", s.LastPlayerOutput.TotalResearch)
+	// = 9。2026-07-12 校正:①母星分配 科1→科3(SAVE10 oracle 不變式科≥2)②每科研基準 3(手冊
+	// p.949「usual 3」,先前硬編 30 約 10x 過高)③開局領袖池改為空(手冊 p.47/134 原版開局無領袖、
+	// 須雇用,先前 demoLeaders 自帶「馮·諾伊曼」+25 是機制錯誤)。故總研究 = 9 純基礎,不再 +25。
+	if s.LastPlayerOutput.TotalResearch != 9 {
+		t.Errorf("玩家總研究 = %d,預期 9(科3×norm3,開局無領袖)", s.LastPlayerOutput.TotalResearch)
 	}
-	if s.Player.ResearchProgress != 34 {
-		t.Errorf("玩家研究進度 = %d,預期 34", s.Player.ResearchProgress)
+	if s.Player.ResearchProgress != 9 {
+		t.Errorf("玩家研究進度 = %d,預期 9", s.Player.ResearchProgress)
 	}
 	// AI 也推進了(研究進度增加)
 	if s.AIPlayers[0].Player.ResearchProgress <= aiBefore {

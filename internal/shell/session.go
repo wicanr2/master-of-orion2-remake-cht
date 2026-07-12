@@ -1245,34 +1245,43 @@ func genPlanets(stars []Star) []Planet {
 
 // Race 是可選種族(名稱 + 起始加成)。加成對齊 MOO2 各族招牌特性(remake 調校值,非自訂點數精算):
 // 工業/研究/食物為每單位產出加成、GrowthPct 為人口成長百分點、StartBC 為額外起始國庫、
-// CombatPct 為戰鬥戰力百分點。Desc 為特性摘要(供顯示)。
+// IncomePerPop 為每人口每回合額外 BC(種族「錢」特質)、CombatPct 為戰鬥戰力百分點。
+// Desc 為特性摘要(供顯示)。
+//
+// ⚠ 2026-07-12 手冊考據校正(GAME_MANUAL.pdf p.15-16 種族章 + SAVE10.GAM):**原版沒有任何
+// 種族靠「一次性起始國庫」取得優勢**——五個種族存檔開局 BC 全=50,種族「錢」優勢一律是「每回合
+// 按人口的收入加成」。故 StartBC 的種族差異全數移除(人類 60/諾蘭姆 120/達洛克 30 皆為先前捏造),
+// 諾蘭姆改用手冊逐字公式 IncomePerPop=1(「each unit of Gnolam population generates an additional
+// 1 BC per turn」);人類真實特質是外交 +50%/易同化/雇用領袖便宜(尚未在此數值模型建模,誠實留白);
+// 達洛克是間諜 +20/隱形(對應間諜系統,無錢加成)。StartBC 欄位保留供自訂種族 money pick 用。
 type Race struct {
-	Name      string // 中文名
-	EnName    string // 英文名(對應 ai/original.go 種族性格)
-	IndBonus  int
-	ResBonus  int
-	FoodBonus int
-	GrowthPct int
-	StartBC   int
-	CombatPct int
-	Desc      string
+	Name         string // 中文名
+	EnName       string // 英文名(對應 ai/original.go 種族性格)
+	IndBonus     int
+	ResBonus     int
+	FoodBonus    int
+	GrowthPct    int
+	StartBC      int
+	IncomePerPop int
+	CombatPct    int
+	Desc         string
 }
 
-// Races 是 MOO2 十三經典種族,各帶招牌起始加成(remake 調校)。索引 0 為人類(預設)。
+// Races 是 MOO2 十三經典種族(招牌特性依手冊 p.15-16 校正,見 Race 型別註解)。索引 0 為人類(預設)。
 var Races = []Race{
-	{"人類", "Humans", 0, 0, 0, 0, 60, 0, "外交貿易見長,起始國庫充裕"},
-	{"席隆", "Psilons", 0, 2, 0, 0, 0, 0, "創造性研究,科學家產出高"}, // ResBonus+2:手冊 p.614「2 more than galactic norm」,norm3+2=5,對齊 SAVE10.GAM Psilon 母星每科研=5
-	{"薩克拉", "Sakkra", 0, 0, 1, 30, 0, 0, "繁殖迅速,人口成長加成"},
-	{"克拉肯", "Klackons", 2, 0, 0, 0, 0, 0, "團結勤奮,工業產出高"},
-	{"姆瑞森", "Mrrshan", 0, 0, 0, 0, 0, 25, "好戰善攻,艦艇攻擊加成"},
-	{"布拉西", "Bulrathi", 0, 0, 0, 0, 0, 15, "體格強悍,地面與戰鬥加成"},
-	{"阿爾卡里", "Alkari", 0, 0, 0, 0, 0, 15, "飛行天賦,艦艇迴避加成"},
-	{"梅克拉", "Meklars", 1, 1, 0, 0, 0, 0, "半機械,工業與研究兼具"},
-	{"達洛克", "Darloks", 0, 0, 0, 0, 30, 0, "潛伏間諜,擅長滲透"},
-	{"崔拉里安", "Trilarians", 0, 0, 1, 10, 0, 0, "水棲民族,食物與成長加成"},
-	{"埃雷里安", "Elerians", 0, 1, 0, 0, 0, 15, "心靈感應,研究與戰鬥"},
-	{"諾蘭姆", "Gnolams", 0, 0, 0, 0, 120, 0, "幸運富商,起始國庫豐厚"},
-	{"矽基", "Silicoids", 1, 0, 0, -20, 0, 0, "岩石生命,耐任何環境但成長慢"},
+	{"人類", "Humans", 0, 0, 0, 0, 0, 0, 0, "外交手腕高明,雇用領袖較廉(民主政府)"},
+	{"席隆", "Psilons", 0, 2, 0, 0, 0, 0, 0, "創造性研究,科學家產出高"}, // ResBonus+2:手冊 p.614「2 more than galactic norm」,norm3+2=5,對齊 SAVE10.GAM Psilon 母星每科研=5
+	{"薩克拉", "Sakkra", 0, 0, 1, 30, 0, 0, 0, "繁殖迅速,人口成長加成"},
+	{"克拉肯", "Klackons", 2, 0, 0, 0, 0, 0, 0, "團結勤奮,工業產出高"},
+	{"姆瑞森", "Mrrshan", 0, 0, 0, 0, 0, 0, 25, "好戰善攻,艦艇攻擊加成"},
+	{"布拉西", "Bulrathi", 0, 0, 0, 0, 0, 0, 15, "體格強悍,地面與戰鬥加成"},
+	{"阿爾卡里", "Alkari", 0, 0, 0, 0, 0, 0, 15, "飛行天賦,艦艇迴避加成"},
+	{"梅克拉", "Meklars", 1, 1, 0, 0, 0, 0, 0, "半機械,工業與研究兼具"},
+	{"達洛克", "Darloks", 0, 0, 0, 0, 0, 0, 0, "潛伏間諜,擅長滲透與隱形"},
+	{"崔拉里安", "Trilarians", 0, 0, 1, 10, 0, 0, 0, "水棲民族,食物與成長加成"},
+	{"埃雷里安", "Elerians", 0, 1, 0, 0, 0, 0, 15, "心靈感應,研究與戰鬥"},
+	{"諾蘭姆", "Gnolams", 0, 0, 0, 0, 0, 1, 0, "幸運富商,每人口每回合額外進帳"}, // IncomePerPop=1:手冊 p.16「each unit of Gnolam population generates an additional 1 BC per turn」
+	{"矽基", "Silicoids", 1, 0, 0, -20, 0, 0, 0, "岩石生命,耐任何環境但成長慢"},
 }
 
 // ApplyRace 把 Races[idx] 的起始加成套到玩家帝國:各殖民地每單位產出加成、額外起始國庫、
@@ -1289,6 +1298,7 @@ func (s *GameSession) ApplyRace(idx int) {
 		s.PlayerColonies[i].IndustryPerWorker += r.IndBonus
 		s.PlayerColonies[i].ResearchPerScientist += r.ResBonus
 		s.PlayerColonies[i].FoodPerFarmer += r.FoodBonus
+		s.PlayerColonies[i].IncomePerPop += r.IncomePerPop // 種族「錢」特質(諾蘭姆每人+1BC/回合)
 	}
 	s.Player.BC += r.StartBC
 }
@@ -1304,6 +1314,7 @@ func (s *GameSession) ApplyCustomRaceBonuses(r Race) {
 		s.PlayerColonies[i].IndustryPerWorker += r.IndBonus
 		s.PlayerColonies[i].ResearchPerScientist += r.ResBonus
 		s.PlayerColonies[i].FoodPerFarmer += r.FoodBonus
+		s.PlayerColonies[i].IncomePerPop += r.IncomePerPop
 	}
 	s.Player.BC += r.StartBC
 }
@@ -2381,7 +2392,12 @@ func NewDemoSession() *GameSession {
 		PlayerSpies:       make([]int, len(aiPlayers)), // 玩家對每個 AI 對手的間諜數,平行 AIPlayers,開局皆 0(見欄位/spy.go ensurePlayerSpies 註解)
 		Stars:             galaxy,
 		Planets:           genPlanets(galaxy),
-		Leaders:           demoLeaders(),
+		// 開局領袖池為空(2026-07-12 手冊考據校正)。手冊 GAME_MANUAL.pdf p.47 + p.134「Mercenary
+		// Leaders」:原版開局玩家**完全沒有任何領袖**,傭兵不定期上門、須花雇用費招入 Leader Pool
+		// (上限殖民領袖 4 + 艦艇軍官 4)。先前 demoLeaders() 讓玩家開局自帶「馮·諾伊曼 科學家」並
+		// 固定 +25 研究套進母星,是機制錯誤(那應是雇用並指派後才生效)。改為 nil = 忠實空池。
+		// demoLeaders()/applyLeaderColonyBonuses 保留供未來「傭兵招募流程」實作後 seed 用(TODO)。
+		Leaders:           nil,
 		Ships:             homeworldShips(),
 		Builds:            make([]ColonyBuild, 1),
 		SelectedStar:      -1,
@@ -2391,9 +2407,9 @@ func NewDemoSession() *GameSession {
 		RuleProfile:       gamedata.Profile15(),
 	}
 	session.Player.UsedCommandPoints = session.usedCommandPoints() // 依開局艦隊(homeworldShips)算實際需求,顯示與第一次 EndTurn 後一致
-	// 領袖技能接線(2026-07-11):demoLeaders 裡 Ship=false 的殖民地領袖(科學家/貿易家)套到母星
-	// (目前唯一的殖民地),見 applyLeaderColonyBonuses。艦艇軍官(指揮官/工程師)暫無殖民地效果
-	// (指揮官技能標籤無法對應、工程師對應的維修系統未建),見該函式與 leaderSkillIDByName 註解。
+	// 領袖技能接線(2026-07-11):把 Ship=false 的殖民地領袖(科學家/貿易家)技能套到母星。
+	// 2026-07-12 開局改為空領袖池(見上方 Leaders 註解),故此呼叫目前是 no-op;保留接線,待未來
+	// 傭兵招募流程實作後,玩家雇用並指派殖民地領袖時即生效。
 	applyLeaderColonyBonuses(session.Leaders, &session.PlayerColonies[0])
 	return session
 }

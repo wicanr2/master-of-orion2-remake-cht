@@ -78,6 +78,13 @@ type ColonyState struct {
 	// 收入加成,未講維護費打折)。
 	IncomeBonusPercent int
 
+	// IncomePerPop 是「每單位人口每回合額外產生的 BC」,承接種族「錢」特質(手冊 GAME_MANUAL.pdf
+	// p.16:諾蘭姆 Gnolams「each unit of Gnolam population generates an additional 1 BC per turn」,
+	// 對應自訂種族 money3 pick)。與 IncomeBonusPercent(建築 %)不同,這是每人固定 BC 基礎收入,
+	// 套用點在 RunEmpireTurn 逐殖民地迴圈:先併入該殖民地稅收+餘糧+貿易品小計(故建築 % 加成會
+	// 一併放大,對應手冊「money 收入受太空港/證券交易所加成」),再進帝國總額。一般種族為 0。
+	IncomePerPop int
+
 	// PlanetGravity 該殖民地所在行星的重力等級(LOW_G/NORMAL_G/HEAVY_G,GAME_MANUAL.pdf p.58)。
 	// 驅動 colonyFood/RunColonyTurn 對 per-worker 產出套用的重力懲罰(見
 	// gamedata.GravityPenaltyPercent)。
