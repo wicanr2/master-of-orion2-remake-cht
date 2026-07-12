@@ -92,9 +92,9 @@ docker images:`moo2-ebiten`(CGO+X11+xvfb,已存在)、`golang:1.25-bookworm`(純
 - [x] 真母星初始狀態(手冊忠實 Average 開局:人口職務模型 + 起始 BC 依 SAVE10 oracle + 無開局領袖忠實雇用制 + 種族錢優勢),取代 demo colonies。
 - [~] **殘留(校準非重建)**:turn-1 少數數值待 playtest 定案(如科學家分配 科3 vs 原版可能科4);屬對齊,非缺畫面/流程。
 
-### 優先 3 — 按鍵 / 熱區逐畫面像素對齊
-- [ ] 現在多數熱區是估計座標,不少是「整畫面當返回鍵」。要逐畫面用截圖 + 原版對照,量每個按鈕真實座標。
-- [ ] 方法見 `re-retro-cht-rulebook` skill(逆向/老遊戲中文化路由)+ PIL 單欄掃描量測法(見記憶 `moo2-game-interactive-architecture`)。
+### 優先 3 — 按鍵 / 熱區逐畫面像素對齊 ✅ 已做到 oracle 上限(2026-07-12)
+- [x] 逐畫面比對 openorion2 `initWidgets` 硬編 `createWidget` 真值 vs remake 現行座標,把有真值卻用 PIL/估計的補齊:menu(本就 0px)、planets(補第8列 + 修 -1px 漂移)、research(右欄標籤)、fleet(Combat/RETURN/SCRAP 標籤)、officer(領袖槽距 + HIRE)、info(五列選單 + tech 熱區)。方法:派 subagent 逐畫面對碼、Opus 核實後套用。
+- [~] **oracle 上限**:colony/races/newgame/shipDesign 在 openorion2 是 STUB 或無對應 view,無硬編座標可覆蓋,維持 PIL 量測(要再精確只能靠原版截圖,本專案不採)。battleResult/council/turnSummary 是結果/摘要顯示畫面,維持「點任意處返回」(合理 UX,使用者確認不動)。
 
 ### 優先 4 — 忠實 gameplay 規則(主體工作量,對應 PLAN「從零重建引擎」軌)
 - [ ] 殖民地:格子地形 + 每格產出 + 30+ 建築全表 + 污染/食物/貿易真公式(手冊為權威)。
