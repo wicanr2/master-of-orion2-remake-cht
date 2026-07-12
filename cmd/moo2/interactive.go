@@ -1100,13 +1100,28 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 	if b.session != nil && b.fnt != nil {
 		gold := color.RGBA{240, 220, 120, 255}
 		body := color.RGBA{210, 216, 230, 255}
-		y := 70.0
-		for _, a := range b.session.AIPlayers {
+		dim := color.RGBA{170, 178, 195, 255}
+		y := 66.0
+		for i, a := range b.session.AIPlayers {
 			s.extras = append(s.extras,
 				extraText{x: 40, y: y, size: 15, text: a.Name, col: gold},
-				extraText{x: 40, y: y + 22, size: 12, text: fmt.Sprintf("態勢:%s ／ 軍力 %d ／ 佔領 %d 星", a.StanceName, a.FleetStrength, a.OwnedStars), col: body},
+				extraText{x: 40, y: y + 20, size: 12, text: fmt.Sprintf("對你:%s ／ 軍力 %d ／ 佔領 %d 星", a.StanceName, a.FleetStrength, a.OwnedStars), col: body},
 			)
-			y += 56
+			// AI 之間的外交關係(活星系;支撐議會第三方搖擺)。
+			rel := ""
+			for j := range b.session.AIPlayers {
+				if j == i {
+					continue
+				}
+				if rel != "" {
+					rel += "、"
+				}
+				rel += fmt.Sprintf("%s:%s", b.session.AIPlayers[j].Name, b.session.AIRelationName(i, j))
+			}
+			if rel != "" {
+				s.extras = append(s.extras, extraText{x: 40, y: y + 38, size: 10, text: "對他國 " + rel, col: dim})
+			}
+			y += 62
 		}
 	}
 	return s, nil

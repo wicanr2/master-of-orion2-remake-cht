@@ -93,6 +93,10 @@ type sessionSnapshot struct {
 	// omitempty:舊存檔無此欄位時解為零值(空池),讀檔後由 advanceMercOffers 自然補回,不破壞相容。
 	MercPool       []Leader `json:"mercPool,omitempty"`
 	MercOfferedIdx int      `json:"mercOfferedIdx,omitempty"`
+
+	// AIRelations 是 AI 對手彼此關係矩陣(見 GameSession.AIRelations)。omitempty:舊存檔無此欄位
+	// 解為 nil,ensureAIRelations 讀檔後自然補回,不破壞相容。
+	AIRelations [][]int `json:"aiRelations,omitempty"`
 }
 
 // snapshot 擷取 GameSession 目前狀態成可序列化快照。
@@ -127,6 +131,7 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		PlayerSpies:               s.PlayerSpies,
 		MercPool:                  s.MercPool,
 		MercOfferedIdx:            s.MercOfferedIdx,
+		AIRelations:               s.AIRelations,
 	}
 }
 
@@ -161,6 +166,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 		PlayerSpies:               snap.PlayerSpies,
 		MercPool:                  snap.MercPool,
 		MercOfferedIdx:            snap.MercOfferedIdx,
+		AIRelations:               snap.AIRelations,
 	}
 }
 

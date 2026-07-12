@@ -1642,6 +1642,11 @@ type GameSession struct {
 	Player           engine.PlayerState
 	PlayerColonies   []engine.ColonyState
 	AIPlayers        []AIOpponent
+	// AIRelations 是 AI 對手彼此的外交關係矩陣(AIRelations[i][j] = AI i 對 AI j 的關係分數,
+	// 夾 -40..40,同 AIOpponent.Relation 尺度)。先前 AI 只對玩家單向有關係;此矩陣讓多帝國彼此
+	// 也有關係(依相對軍力漂移),使星系「活起來」並可支撐議會第三方搖擺票(見 advanceAIDiplomacy)。
+	// 對稱維護(i↔j 各記一半視角)。長度 = len(AIPlayers)。
+	AIRelations [][]int
 	LastPlayerOutput engine.EmpireOutput // 上一回合玩家結算(供畫面顯示)
 	Stars            []Star              // 星系圖
 	Planets          []Planet            // 行星列表
@@ -2051,6 +2056,7 @@ func (s *GameSession) EndTurn() {
 	s.advanceAntares()         // 安塔蘭人週期性入侵(依 Turn 排程升級),記於 LastAntares
 	s.advanceConquestVictory() // 對手是否已全滅(手冊三條勝利路徑之一:殲滅所有對手)
 	s.advanceAntaranVictory()  // 是否已攻陷安塔蘭母星(手冊三條勝利路徑之二,見 antaran_victory.go)
+	s.advanceAIDiplomacy()     // AI 對手彼此外交關係漂移(多帝國活星系;支撐議會第三方搖擺)
 	s.advanceCouncil()         // 銀河議會選舉(手冊三條勝利路徑之一:2/3 多數當選銀河領袖),記於 LastCouncil
 	s.advanceMercOffers()      // 傭兵領袖不定期上門(手冊 p.134),補進 MercPool 供玩家在軍官畫面雇用
 }
@@ -2155,6 +2161,73 @@ func (s *GameSession) advanceAI(i int, out engine.EmpireOutput) {
 	}
 	stance := ai.DecideStance(diplomacy.RelationLevelForScore(a.Relation), prof)
 	a.StanceName = stanceNames[stance]
+}
+
+// ensureAIRelations 確保 AIRelations 矩陣尺寸 = len(AIPlayers)(懶初始化;新建/讀舊檔皆補齊,
+// 保留已有值)。
+func (s *GameSession) ensureAIRelations() {
+	n := len(s.AIPlayers)
+	if len(s.AIRelations) == n {
+		return
+	}
+	m := make([][]int, n)
+	for i := range m {
+		m[i] = make([]int, n)
+		if i < len(s.AIRelations) {
+			copy(m[i], s.AIRelations[i])
+		}
+	}
+	s.AIRelations = m
+}
+
+// advanceAIDiplomacy 每回合漂移 AI 對手彼此的外交關係:軍力領先者令鄰邦戒懼(關係下滑),尺度
+// /夾值同 AIOpponent.Relation。使多帝國彼此形成敵友,讓星系「活起來」並支撐議會第三方搖擺票。
+func (s *GameSession) advanceAIDiplomacy() {
+	s.ensureAIRelations()
+	n := len(s.AIPlayers)
+	if n < 2 {
+		return
+	}
+	diff := 1.0
+	if s.Difficulty >= 0 && s.Difficulty < len(Difficulties) {
+		diff = Difficulties[s.Difficulty].Mult
+	}
+	for i := 0; i < n; i++ {
+		for j := 0; j < n; j++ {
+			if i == j {
+				continue
+			}
+			gap := s.AIPlayers[j].FleetStrength - s.AIPlayers[i].FleetStrength // j 領先 → i 戒懼 j
+			r := s.AIRelations[i][j] - int(float64(gap)/20*diff)
+			if r > 40 {
+				r = 40
+			}
+			if r < -40 {
+				r = -40
+			}
+			s.AIRelations[i][j] = r
+		}
+	}
+}
+
+// AIRelationName 回傳 AI i 對 AI j 的關係中文分級(供 races 畫面顯示);越界/無矩陣回「中立」。
+// 依分數分五級,對齊 Chinese UI 語氣(RelationLevel.Name() 是英文,不直接用於顯示)。
+func (s *GameSession) AIRelationName(i, j int) string {
+	if i < 0 || j < 0 || i >= len(s.AIRelations) || j >= len(s.AIRelations[i]) {
+		return "中立"
+	}
+	switch r := s.AIRelations[i][j]; {
+	case r <= -25:
+		return "敵對"
+	case r <= -8:
+		return "緊張"
+	case r < 8:
+		return "中立"
+	case r < 25:
+		return "友好"
+	default:
+		return "同盟"
+	}
 }
 
 // stanceNames 是 ai.Stance 的中文顯示。
