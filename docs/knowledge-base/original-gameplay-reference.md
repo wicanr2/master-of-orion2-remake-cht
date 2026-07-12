@@ -394,6 +394,8 @@ Barren **0** / Desert **1** / Tundra **1** / Ocean **2** / Swamp **2** / Arid **
 | 🟢 開局建築數 = min(⅔pop↑, 上限);上限 Pre 3 / Avg·Post 5 / Adv 9,Capitol 不計 | remake 母星生成的建築棟數是否套此公式(而非隨機/固定) |
 | 🟢 母星 8 人口、Marine Barracks 內 3 陸戰隊、**50 BC** | ✅ 已對齊:remake pop=8、陸戰隊=3(Marine Barracks formula)、**開局 BC 100→50(2026-07-12,SAVE10 五名玩家全 50 + humbe.no)** |
 | 🟢 開局農夫/工人/科學家分配 | ✅ 已對齊(2026-07-12):remake 農4/工1/科3,SAVE10 dump 不變式工≤2/科≥2/偏科研(見 §7.0.1)。無 Human 樣本故精確三數中信心 |
+| 🟢 開局**無領袖**(傭兵須雇用入 Leader Pool)| ✅ 已對齊(2026-07-12):手冊 p.47/134「Mercenary Leaders」。remake 移除先前自帶的「馮·諾伊曼 +25 研究」,開局空池;傭兵招募流程待實作(HireLeader 金流已備)|
+| 🟢 種族「錢」優勢=每回合按人口收入(非一次性起始金)| ✅ 已對齊(2026-07-12):手冊 p.15-16 + SAVE10 五族全 50 BC。移除捏造 StartBC(人類60/諾蘭姆120/達洛克30→0);諾蘭姆改手冊逐字「每人+1BC/回合」(`ColonyState.IncomePerPop`)。人類真實特質(外交/同化/雇傭折扣)、達洛克隱形、Fantastic Traders% 尚未建模,誠實留白 |
 
 ### 7.3 每回合 / 殖民地
 | 原版行為 | 驗證點 |
