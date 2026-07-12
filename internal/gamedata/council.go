@@ -84,13 +84,12 @@ func CouncilVotes(population int) int {
 // (candidateVotes*3 >= totalVotes*2,整數運算避免浮點誤差,已有測試
 // internal/engine/victory_test.go)。殲滅勝利同理沿用 internal/engine.CheckExtermination。
 
-// 手冊有明確描述但本檔刻意不實作精確公式的部分(呼叫端需要時應先補查證,不要編造係數):
-//   - 「兩位候選人由票數最高者出線」與「其餘種族依外交關係決定投給哪位候選人」:這套規則只在
-//     3 個以上帝國同場才有意義(需要「第三方」帝國把票投給兩位候選人之一)。本 remake 資料
-//     模型固定只有玩家 + 1 個 AI(共 2 個帝國),沒有第三方可搖擺,故這條規則在目前 remake
-//     裡沒有可觀察的行為差異——shell 層整合直接視兩個既有帝國為僅有的兩位「候選人」,
-//     各自的票就是自己的人口票,不需要外交關係分配規則。等資料模型支援 >1 個 AI 對手時,
-//     才需要真正實作「候選人由票數最高兩者出線 + 第三方依外交關係投票」。
+// 手冊規則的實作狀態(呼叫端需要精確公式時應先補查證,不要編造係數):
+//   - 「兩位候選人由票數最高者出線」與「其餘種族依外交關係決定投給哪位候選人」:2026-07-12 已在
+//     shell 層忠實實作(見 shell/council.go tallyCouncil / councilSwingVoteMinRelation)。條件是
+//     資料模型已支援多 AI 對手(NewDemoSession 現建 3 AI,共 4 帝國,有真正的「第三方」可搖擺)
+//     且 AI-vs-AI 外交關係矩陣已建立(shell/session.go advanceAIDiplomacy)。此前本註解記載的
+//     「固定只有玩家+1 AI、沒有第三方、不實作搖擺票」已過時,是那個資料模型下的權宜說明。
 //   - 議會多久召開一次(首次成立後的重複開會間隔):手冊原文沒有給出turns/years數字,只從
 //     外交台詞(assets/i18n/diplo.tsv 大量「next meeting of the Council」「your last Council
 //     vote」)得知議會確實會反覆召開。shell 層的重開間隔常數因此是 remake 排程選擇,非手冊值,
