@@ -104,9 +104,13 @@
   AI當選時玩家可accept/reject)與殲滅所有對手,兩者都已接進 `EndTurn`/`InvadeColony`,沿用
   `internal/engine/victory.go`(2026-07-03 就存在但從未被呼叫過的死碼)+ 新增
   `internal/gamedata/council.go`(人口→票數、成立門檻)、`internal/shell/council.go`(狀態機/
-  存讀檔),取代先前議會畫面用的無門檻/無2/3多數簡化版 `CouncilVote`。**UI 仍未做**:議會畫面只印
-  文字狀態(尚未成立/待開/已分出勝負/待回應),沒有 accept/reject 互動熱區、沒有勝利/落敗結束畫面。
-  詳見 `docs/tech/victory-conditions.md`。)**
+  存讀檔),取代先前議會畫面用的無門檻/無2/3多數簡化版 `CouncilVote`。
+  **(2026-07-12 更新:議會 UI 已補上。** 議會畫面現在攤開逐帝國搖擺票明細(候選人/投給誰/棄權,
+  依手冊 p.183 第三方外交關係投票 + `CouncilBreakdown`),且待回應選舉時有 accept/reject 可點擊
+  互動熱區(接受落敗結束 / 拒絕繼續遊戲,呼叫 `RespondToCouncilElection`)。搖擺票機制本身也從
+  「每帝國獨立比 2/3」升級為忠實的「兩候選人 + 第三方依 AI-vs-AI 關係矩陣投票/棄權」。**仍未做**:
+  勝利/落敗專屬結束畫面(接受落敗後回星系主畫面,不是原版的結局動畫);accept/reject 用文字提示
+  而非原版議會落敗對話框藝術(尚未定位該原版對話框 LBX)。詳見 `docs/tech/victory-conditions.md`。)**
   **(2026-07-11 第二輪更新:安塔蘭母星反攻(手冊第三條路徑)已接線,三條路徑全數可達。**
   次元傳送門建築(`gamedata.Buildings` 早已存在,只是先前建成後沒有任何後續流程)建成後解鎖
   `internal/shell/antaran_victory.go` 的 `AssaultAntares()`——沿用 `ResolveBattle` 同款戰鬥解算

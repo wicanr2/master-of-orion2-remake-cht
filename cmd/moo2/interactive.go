@@ -1722,7 +1722,30 @@ func (b *sceneBuilder) battleResult() (*overlayScreen, error) {
 // council 建原版銀河議會畫面(COUNCIL.LBX 資產 1,調色盤鏈 COUNCIL#0)。3D 議事廳,
 // 無烘字,疊「銀河議會」標題;點畫面返回種族關係。
 func (b *sceneBuilder) council() (*overlayScreen, error) {
+	// 有待回應選舉(AI 當選)時,改用「接受/拒絕」熱區——手冊:議會無法強迫玩家接受決議
+	// (RespondToCouncilElection)。其餘狀態下整頁點擊返回種族關係(backHit)。原版議會是 3D
+	// 議事廳、無內建 accept/reject 按鈕藝術,故此處以可點擊文字提示補上互動,不偽造浮雕按鈕框
+	// (尊重「用原版 LBX、不自創按鈕藝術」;仍疊在原版 council.lbx 底圖上)。
+	pending := b.session != nil && b.session.CouncilStatus().Pending != nil
 	hits, onAction := b.backHit(b.races, "種族關係")
+	if pending {
+		hits = []hitRegion{
+			{120, 402, 400, 26, "accept"},
+			{120, 432, 400, 26, "reject"},
+			{0, 0, moo2ScreenW, moo2ScreenH, "back"}, // 其餘處:不回應直接離開(pending 保留,可再進來)
+		}
+		onAction = func(a string) *origTransition {
+			switch a {
+			case "accept":
+				b.session.RespondToCouncilElection(true) // 接受落敗 → 遊戲結束
+				return b.goTo(b.galaxy, "星系主畫面")
+			case "reject":
+				b.session.RespondToCouncilElection(false) // 拒絕 → 清空待決,繼續遊戲
+				return b.goTo(b.council, "銀河議會")       // 重繪議會,反映已回應
+			}
+			return b.goTo(b.races, "種族關係")
+		}
+	}
 	s, err := loadOverlayScreen(b.res, "council.lbx", 1, b.lang, b.fnt, "assets/i18n/misc.tsv",
 		nil, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"council.lbx", 0}})
@@ -1754,8 +1777,15 @@ func (b *sceneBuilder) council() (*overlayScreen, error) {
 					line2, oc = v.Victory.Winner+" 已當選銀河領袖", lose
 				}
 			case v.Pending != nil:
-				line1 = fmt.Sprintf("第 %d 屆選舉:%s 以 %d/%d 票達2/3多數當選", v.Meetings, v.Pending.EnemyName, v.Pending.EnemyVotes, v.Pending.TotalVotes)
-				line2, oc = "等待你回應是否接受(尚無互動介面,見 HONEST-STATUS)", neutral
+				// 待回應選舉:顯示當選 AI + 兩個可點擊選項(接受落敗 / 拒絕接受繼續遊戲),
+				// 對應上方 pending 分支設定的 accept/reject 熱區。
+				s.extras = append(s.extras,
+					extraText{x: moo2ScreenW / 2, y: 300, size: 16, text: fmt.Sprintf("第 %d 屆選舉:%s 以 %d/%d 票達2/3多數當選銀河領袖", v.Meetings, v.Pending.EnemyName, v.Pending.EnemyVotes, v.Pending.TotalVotes), col: lose, align: 1},
+					extraText{x: moo2ScreenW / 2, y: 330, size: 14, text: "議會無法強迫你接受不同意的決議(手冊 p.183)——請抉擇:", col: neutral, align: 1},
+					extraText{x: moo2ScreenW / 2, y: 410, size: 18, text: "▶  接受落敗結果(遊戲結束)", col: lose, align: 1},
+					extraText{x: moo2ScreenW / 2, y: 440, size: 18, text: "▶  拒絕接受(繼續遊戲,下屆再選)", col: win, align: 1},
+				)
+				line1, line2 = "", ""
 			case !v.Eligible:
 				line1 = "銀河議會尚未成立"
 				line2, oc = "需半數銀河星系已殖民 + ≥2個存續帝國", neutral
@@ -1797,8 +1827,10 @@ func (b *sceneBuilder) council() (*overlayScreen, error) {
 				s.extras = append(s.extras,
 					extraText{x: moo2ScreenW / 2, y: 418, size: 15, text: line1, col: neutral, align: 1})
 			}
-			s.extras = append(s.extras,
-				extraText{x: moo2ScreenW / 2, y: 444, size: 17, text: line2, col: oc, align: 1})
+			if line2 != "" {
+				s.extras = append(s.extras,
+					extraText{x: moo2ScreenW / 2, y: 444, size: 17, text: line2, col: oc, align: 1})
+			}
 		}
 	}
 	return s, nil
