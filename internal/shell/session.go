@@ -342,12 +342,74 @@ func (s *GameSession) removeWeakestShip() {
 
 // applyDamage 對艦隊(以各艦戰力當 HP)造成 dmg 傷害,由最弱艦起逐艘擊沉,回傳擊沉數。
 // Difficulties 是難度選項(名稱 + 敵方戰力倍率),對應 NEW GAME 的 DIFFICULTY。
+//
+// **五級**是反組譯確認的:新遊戲畫面的難度選擇器建立時傳選項數 5
+// (`sub_CCE2E` 裡 `push 5` + 變數 `word_1A1362`),而 `NEWGAME.LBX` 的難度圖正好也是 5 張
+// (資產 4–8,五張手勢:伸手扶持 → 握手 → 比讚 → 握拳 → 雙拳相抵,難度遞增)。
+// remake 先前只有四級,少的是最低的「教學」。
+//
+// ⚠ 這次補在**索引 0**,所以既有存檔的 Difficulty 索引整體位移一格(舊的「簡單」讀回來會變
+// 「教學」,依此類推)。難度只影響敵方戰力倍率與 AI 關係漂移,舊存檔讀回來會變簡單一級,
+// 不會壞掉。alpha 階段取「對齊原版」而非「保存索引」。
 var Difficulties = []struct {
 	Name string
 	Mult float64
 }{
-	{"簡單", 0.6}, {"普通", 1.0}, {"困難", 1.5}, {"不可能", 2.2},
+	// 教學倍率 0.3:原版 Tutor 是「比 Easy 更寬鬆」的入門級,remake 沒有原版倍率表,
+	// 取既有 Easy(0.6)的一半當保守值——這是 remake 調校值,不是原版數字。
+	{"教學", 0.3}, {"簡單", 0.6}, {"普通", 1.0}, {"困難", 1.5}, {"不可能", 2.2},
 }
+
+// GalaxyAges 是星系年齡選項,對應 NEW GAME 的 GALAXY AGE(反組譯:選項數 3,變數
+// `word_1A1358`;`NEWGAME.LBX` 資產 1–3 是三張地景圖:熔岩 → 沙漠 → 綠地湖泊)。
+//
+// 效果在 `gamedata`(光譜分布 `StarClassWeights` 與氣候骰表 `OldGalaxyClimateWeights`)
+// 早就實作了,先前只是被一個常數寫死成 Average,UI 完全選不到。
+var GalaxyAges = []struct {
+	Name string
+	Age  gamedata.GalaxyAge
+}{
+	{"年輕", gamedata.GalaxyYouthful},
+	{"普通", gamedata.GalaxyAverage},
+	{"成熟", gamedata.GalaxyMature},
+}
+
+// TechLevels 是起始科技等級,對應 NEW GAME 的 TECH LEVEL(原版手冊稱 Starting Civilization)。
+//
+// **三級**同樣是反組譯確認的(選項數 3、變數 `word_1A1360`,`NEWGAME.LBX` 資產 20–22 是三張
+// 城市圖,由樸素到未來)。patch 1.5 手冊寫的是「Pre-warp / Avg / Post-warp / Advanced」四級
+// ——**那是 1.5 才加的**,1.5 的 CHANGELOG 明寫「Added pictures for cluster, random and
+// post warp in newgame.lbx」。1.3 的 LBX 裡就是沒有第四張圖,兩邊沒有矛盾。
+//
+// ⚠ 目前只接**設定本身**(存進對局、畫面顯示),**gameplay 效果尚未接**。手冊已經給出可用的
+// 硬證,留給下一輪:
+//   - 初始建築數上限:Pre-warp 3 / Average·Post-warp 5 / Advanced 9(不含 Capitol),
+//     且 = min(⅔ 人口無條件進位, 上限)。remake 的母星建築是固定一組,還沒有依人口生成的機制。
+//   - 開局已知科技領域數:Pre-warp 2 個(field 0 + Construction 第一個)、其餘 6 個。
+//     remake 現在開局是 2 個(`newHomeworldPlayerState` 的 CompletedTopics)= **等同 Pre-warp**,
+//     所以預設選 Average 時其實還沒拿到該有的 6 個領域。要補得先查出那 6 個是哪些
+//     (手冊只說預設第一個是 field #29),沒有一手表之前不臆造。
+//   - Pre-warp 另有「無 FTL,艦隊無法離開母星系」的硬規則(手冊),remake 的 SendFleet 未設限。
+var TechLevels = []struct {
+	Name string
+	Desc string
+}{
+	{"曲速前", "只有母星,無 FTL"},
+	{"一般", "母星 + 基本艦隊"},
+	{"先進", "多項科技 + 跨星系艦隊"},
+}
+
+// OpponentCounts 是可選的帝國總數,對應 NEW GAME 的 PLAYERS。
+//
+// 反組譯:選項數 7、變數 `word_1A1366`,而且該變數是由 `byte_199CB1` **減 2** 得來
+// (`movzx ax, byte_199CB1 / dec eax / dec eax`)——所以選項 0..6 對應帝國總數 **2..8**。
+// `NEWGAME.LBX` 資產 13–19 正是七張數字圖「2 3 4 5 6 7 8」,兩邊互證。
+//
+// remake 的 `SetupNewGame(stars, seed, numAI)` 吃的是**對手數**,即帝國總數 − 1。
+const (
+	MinEmpires = 2
+	MaxEmpires = 8
+)
 
 // genEnemyFleet 依回合數 + 難度倍率生成敵方艦隊(戰力清單;越後期/越難越強)。
 func genEnemyFleet(turn int, mult float64) []int {
@@ -1479,11 +1541,20 @@ type SystemBody struct {
 //	2 = 再加上行星類別(氣態巨星/小行星帶,`_orbit_to_satellite_type`)與同系其他天體
 const planetGenVersion = 2
 
-// galaxyAgeSetting 是星系年齡設定。原版把它放在新遊戲畫面(Youthful/Average/Mature),
-// remake 的新遊戲流程還沒有這個選項,先固定 Average——它影響光譜分布與氣候骰表(見
-// gamedata.StarClassWeights / OldGalaxyClimateWeights)。接上 UI 選項時把這個常數換成
-// GameSession 欄位即可,生成端不必改。
+// galaxyAgeSetting 是星系年齡的**預設值**(沒設定時用)。
+//
+// 2026-08-07:這裡原本是「remake 的新遊戲流程還沒有這個選項,先固定 Average」——已不成立。
+// NEW GAME 畫面的 GALAXY AGE 欄接上了(反組譯確認原版就有這個欄位,見 shell.GalaxyAges),
+// 實際值改讀 `GameSession.GalaxyAge`,本常數只當零值時的退路。
 const galaxyAgeSetting = gamedata.GalaxyAverage
+
+// galaxyAge 回傳這一局的星系年齡。未設定(nil GalaxyAgeSet)時用預設值。
+func (s *GameSession) galaxyAge() gamedata.GalaxyAge {
+	if !s.GalaxyAgeSet {
+		return galaxyAgeSetting
+	}
+	return s.GalaxyAge
+}
 
 // demoHomeStarSet 把「玩家母星 + AI 母星」的星索引收成集合,供 genPlanets 強制生成宜居行星。
 func demoHomeStarSet(aiHomeStars []int) map[int]bool {
@@ -1884,12 +1955,12 @@ func (s *GameSession) RegenGalaxy(n int, seed int64) {
 // numAI<=0 時 buildDemoAIOpponents 收到空的 aiHomeStars 會回傳空 slice,退化為無 AI;呼叫端應傳
 // >=1。
 func (s *GameSession) SetupNewGame(stars int, seed int64, numAI int) {
-	galaxy, aiHomeStars := genGalaxy(stars, seed, numAI)
+	galaxy, aiHomeStars := genGalaxy(stars, seed, numAI, s.galaxyAge())
 	galaxy[0].Explored = true // 母星初始已探索(與 NewDemoSession 一致)
 	s.Stars = galaxy
 	// 行星生成用獨立的亂數流(seed+1),讓「同一 seed 的星圖佈局」不受行星骰表的抽取次數影響——
 	// 骰表每顆星抽的次數依光譜而異,共用一條流會讓佈局跟著漂。
-	s.Planets = genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), galaxyAgeSetting, demoHomeStarSet(aiHomeStars))
+	s.Planets = genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), s.galaxyAge(), demoHomeStarSet(aiHomeStars))
 	// 守衛怪獸也用獨立亂數流(seed+2),理由同上:不讓它的抽取次數影響星圖與行星的骰序。
 	// 它會就地修改 s.Planets(手冊 p.60:有怪獸的星系一定另有一個特殊物產),故在 genPlanets 之後。
 	s.Monsters = genMonsters(galaxy, s.Planets, rand.New(rand.NewSource(seed+2)), demoHomeStarSet(aiHomeStars))
@@ -1944,7 +2015,7 @@ func aiHomeStarIndices(n, aiHomes int) []int {
 // 單一權威來源直接回傳)。
 // 星名取自原版 STARNAME.LBX asset1 的 829 條隨機星名池(randomStarNamePool,見
 // internal/shell/starnames.go),829 遠大於任何星系大小上限(最大 48 星),不需 fallback。
-func genGalaxy(n int, seed int64, aiHomes int) ([]Star, []int) {
+func genGalaxy(n int, seed int64, aiHomes int, age gamedata.GalaxyAge) ([]Star, []int) {
 	r := rand.New(rand.NewSource(seed))
 	cols := int(math.Ceil(math.Sqrt(float64(n))))
 	rows := (n + cols - 1) / cols
@@ -1976,7 +2047,7 @@ func genGalaxy(n int, seed int64, aiHomes int) ([]Star, []int) {
 			// 均勻擲是 remake 星圖與原版最明顯的差異來源(見 gamedata.StarClassWeights)。
 			// 母星所在的星強制為黃星:原版玩家母星恆在黃色恆星系,而加權骰有 37% 機率骰到紅矮星,
 			// 那會讓母星落在生不出宜居行星的溫度帶(見 gamedata.ClassToGroup 紅矮列)。
-			spectral := int(gamedata.RollSpectralClass(r, galaxyAgeSetting))
+			spectral := int(gamedata.RollSpectralClass(r, age))
 			if owner != 0 {
 				spectral = int(gamedata.Yellow)
 			}
@@ -2128,6 +2199,17 @@ type GameSession struct {
 	// 所有既有邏輯逐位元不變——熱座只在席位數 > 1 時才會動到任何東西。
 	Seats      []seat
 	ActiveSeat int
+
+	// GalaxyAge / TechLevel 是 NEW GAME 畫面的兩個設定(見 shell.GalaxyAges / TechLevels)。
+	//
+	// Go 零值陷阱:`gamedata.GalaxyAge` 的零值是 `GalaxyYouthful`(不是想要的 Average),
+	// 所以另用 `GalaxyAgeSet` 標記「有沒有真的設過」——舊存檔與沒走設定畫面的建構路徑
+	// 解出來 GalaxyAgeSet=false,`galaxyAge()` 退回 Average,與加這個欄位之前的行為一致。
+	// TechLevel 的零值 0 = 「曲速前」,同樣不是預設值;它目前只影響顯示(gameplay 效果未接,
+	// 見 shell.TechLevels 註解),故不另加標記,但新的建構路徑應明確設成 1(一般)。
+	GalaxyAge    gamedata.GalaxyAge
+	GalaxyAgeSet bool
+	TechLevel    int
 	// LastEspionage 是本回合諜報結算的訊息(供回合摘要顯示;每回合開頭清空)。
 	LastEspionage []string
 	spyRand       *rand.Rand // 間諜擲骰亂數源(由 EventSeed 惰性建立,比照 eventRand 慣例)
@@ -3222,8 +3304,8 @@ func buildDemoAIOpponents(aiHomeStars []int, difficulty int, seed int64) []AIOpp
 func NewDemoSession() *GameSession {
 	const galaxyStars = 24
 	const numAIOpponents = 3
-	galaxy, aiHomeStars := genGalaxy(galaxyStars, 42, numAIOpponents) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
-	galaxy[0].Explored = true                                         // 母星初始已探索
+	galaxy, aiHomeStars := genGalaxy(galaxyStars, 42, numAIOpponents, galaxyAgeSetting) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
+	galaxy[0].Explored = true                                                           // 母星初始已探索
 
 	aiPlayers := buildDemoAIOpponents(aiHomeStars, 1, 42) // demo 固定難度 1 / seed 42(可重現)
 

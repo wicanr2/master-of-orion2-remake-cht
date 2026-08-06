@@ -124,7 +124,7 @@ func TestAttackMonsterPreconditions(t *testing.T) {
 // 生成規則:手冊 p.60「a system with a monster will always have another special」。
 func TestGenMonstersAlwaysGiveStarASpecial(t *testing.T) {
 	for seed := int64(0); seed < 25; seed++ {
-		galaxy, aiHomes := genGalaxy(24, seed, 3)
+		galaxy, aiHomes := genGalaxy(24, seed, 3, galaxyAgeSetting)
 		homes := demoHomeStarSet(aiHomes)
 		planets := genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), galaxyAgeSetting, homes)
 		monsters := genMonsters(galaxy, planets, rand.New(rand.NewSource(seed+2)), homes)

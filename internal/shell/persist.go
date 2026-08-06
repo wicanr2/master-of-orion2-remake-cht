@@ -136,6 +136,15 @@ type sessionSnapshot struct {
 	// omitempty:單人局與舊存檔無此欄位,解為 nil → HotseatEnabled() 為 false,行為不變。
 	Seats      []seat `json:"seats,omitempty"`
 	ActiveSeat int    `json:"activeSeat,omitempty"`
+
+	// GalaxyAge / TechLevel 是 NEW GAME 畫面的兩個設定(見 shell.GalaxyAges / TechLevels)。
+	// 星系年齡在生成完之後就不再影響任何事(星圖已經存進 Stars/Planets),存它是為了讓
+	// 「這一局是什麼設定」可以回頭查、也讓未來要用到時不必再改存檔格式。
+	// omitempty:舊存檔沒有這兩個欄位,GalaxyAgeSet 解成 false → galaxyAge() 退回預設,
+	// 與加欄位之前的行為一致。
+	GalaxyAge    gamedata.GalaxyAge `json:"galaxyAge,omitempty"`
+	GalaxyAgeSet bool               `json:"galaxyAgeSet,omitempty"`
+	TechLevel    int                `json:"techLevel,omitempty"`
 }
 
 // snapshot 擷取 GameSession 目前狀態成可序列化快照。
@@ -187,6 +196,9 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		History:                   s.History,
 		Seats:                     seats,
 		ActiveSeat:                s.ActiveSeat,
+		GalaxyAge:                 s.GalaxyAge,
+		GalaxyAgeSet:              s.GalaxyAgeSet,
+		TechLevel:                 s.TechLevel,
 	}
 }
 
@@ -233,6 +245,9 @@ func (snap sessionSnapshot) restore() *GameSession {
 		History:                   snap.History,
 		Seats:                     snap.Seats,
 		ActiveSeat:                snap.ActiveSeat,
+		GalaxyAge:                 snap.GalaxyAge,
+		GalaxyAgeSet:              snap.GalaxyAgeSet,
+		TechLevel:                 snap.TechLevel,
 	}
 }
 

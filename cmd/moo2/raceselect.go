@@ -144,11 +144,14 @@ func (s *raceSelectScreen) update(in shell.InputState) *origTransition {
 	return nil
 }
 
-// applyAndStart 依設定畫面選的難度/大小 + 本畫面選的種族開新局。
-// (真實母星/起始殖民地依 Starting Civilization 設定,屬後續步驟;此處改用 SetupNewGame 重生
-// 星系並同步重建 3 個 AI 對手,取代先前只重生星系、不重建 AI 的 RegenGalaxy——numAI 先固定 3
-// 對齊 NewDemoSession demo 陣容,正式的「玩家可設定 AI 數」UI 尚未接上,見 SetupNewGame 呼叫端
-// 註解。)
+// applyAndStart 依設定畫面選的五個設定 + 本畫面選的種族開新局。
+//
+// 2026-08-07:「numAI 先固定 3、玩家可設定 AI 數的 UI 尚未接上」已不成立——NEW GAME 畫面的
+// PLAYERS 欄接上了(那本來就是原版該欄的用途,見 interactive.go 的 ngSettings 檔頭),
+// 對手數 = 帝國總數 − 1。星系年齡同樣接上了(先前被一個常數寫死成「普通」)。
+//
+// ⚠ 順序有講究:`GalaxyAge` 必須在 `SetupNewGame` **之前**設好——星系與行星就是在那裡
+// 依年齡骰出來的,設晚了這一局的年齡設定等於沒選。
 func (s *raceSelectScreen) applyAndStart() {
 	b := s.b
 	if b.session == nil {
@@ -156,8 +159,9 @@ func (s *raceSelectScreen) applyAndStart() {
 	}
 	r := raceSelectList[s.sel]
 	b.session.Difficulty = b.newGameDiff
+	b.applyNewGameSettings()
 	b.newGameSeed++
-	b.session.SetupNewGame(shell.GalaxySizes[b.newGameSize].Stars, int64(b.newGameSeed*7919+42), shell.DefaultOpponents)
+	b.session.SetupNewGame(shell.GalaxySizes[b.newGameSize].Stars, int64(b.newGameSeed*7919+42), b.newGameOpponents())
 	b.session.SetRuleProfile(profileForVersion(b.gameVersion)) // 主選單選的 1.3/1.5 規則版本
 	if r.shellIdx >= 0 {
 		b.newGameRace = r.shellIdx

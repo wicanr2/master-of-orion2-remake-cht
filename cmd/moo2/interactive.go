@@ -339,6 +339,9 @@ type sceneBuilder struct {
 	newGameDiff       int                  // NEW GAME 選的難度索引(shell.Difficulties)
 	newGameRace       int                  // NEW GAME 選的種族索引(shell.Races)
 	newGameSeed       int                  // 每次新遊戲遞增,讓星系種子變化
+	newGameAge        int                  // NEW GAME 選的星系年齡索引(shell.GalaxyAges)
+	newGameTech       int                  // NEW GAME 選的起始科技等級索引(shell.TechLevels)
+	newGameEmpires    int                  // NEW GAME 選的帝國總數(含玩家,shell.MinEmpires..MaxEmpires)
 	pendingHotseat    int                  // 多人設定畫面選的真人席位數;0/1 = 單人局(開局後由 applyHotseat 套用)
 	savePath          string               // remake 存檔路徑(每回合自動存;主選單 Load/Continue 讀)
 	designWeapon      int                  // 艦艇設計選的武器元件索引(shell.WeaponOptions)
@@ -2000,27 +2003,160 @@ func (b *sceneBuilder) council() (*overlayScreen, error) {
 	return s, nil
 }
 
+// ============ NEW GAME 設定畫面(原版 `Newgame_Screen_` @ 0xCD435)============
+//
+// 版面**全部取自反組譯**,先前是 PIL 量測的估計值。三個獨立來源互相印證:
+//
+//	① 建 widget:`sub_CCE2E`。畫面原點 `word_1831D4`=X=0x0F(15)、`word_1831D6`=Y=0x05(5)。
+//	   五個設定框(`sub_11438B` 熱區)與五條數值列(`sub_C6A43` 選擇器)、三個開關
+//	   (`sub_11523B`)、兩顆鈕(`sub_1151B0`)的座標全是立即數。
+//	② 畫值圖:`sub_CCC3D` 是一個 3 欄 × 2 列的迴圈,起點 (X+0x79, Y+0x77)、
+//	   欄距 0x9B(155)、列距 0x8C(140),右下那格跳過。算出來的欄 x = 121/276/431、
+//	   列 y = 119/259,**與 ① 的熱區 x1/y1 逐一相同**。
+//	③ 美術:`NEWGAME.LBX` 資產 1–22 剛好 22 張 65×65,而五個選擇器的選項數
+//	   3+5+4+7+3 = 22。逐張看內容,分組是自證的:
+//	     1–3   熔岩 / 沙漠 / 綠地湖泊      → 星系年齡(年輕→成熟)
+//	     4–8   伸手扶持 → … → 雙拳相抵    → 難度(五級)
+//	     9–12  螺旋星系由小到大            → 星系大小
+//	     13–19 數字 2 3 4 5 6 7 8          → 帝國總數
+//	     20–22 城市由樸素到未來            → 起始科技等級
+//
+// ⚠ **修正一個真的還原錯誤**:左下那個框在原版是 **PLAYERS**(帝國總數 2–8,變數
+// `word_1A1366` 由 `byte_199CB1 − 2` 得來,配 13–19 的數字圖),remake 先前把它當成
+// RACE 用。種族在原版是 ACCEPT 之後的**獨立畫面**(remake 本來就是這樣走的),
+// 所以這裡改回 PLAYERS,不影響流程。
+//
+// ⚠ 誠實留白:TECH LEVEL 目前**只存設定、不影響 gameplay**(原因與手冊給的硬證見
+// `shell.TechLevels` 註解)。patch 1.5 的第四級 Post-warp 也未做——1.5 的 CHANGELOG
+// 明寫那一級的圖是 1.5 才加進 newgame.lbx 的,1.3 的 LBX 裡沒有。
+
+// 原版新遊戲畫面的座標(全部相對螢幕;已含原點 (15,5))。
+const (
+	ngOriginX, ngOriginY = 15, 5 // word_1831D4 / word_1831D6
+
+	ngBoxW, ngBoxH = 67, 65 // 熱區 0x79..0xBC / 0x77..0xB8
+	ngColStep      = 155    // 0x9B
+	ngRowStep      = 140    // 0x8C
+	ngBoxX0        = 121    // 0x79
+	ngBoxY0        = 119    // 0x77
+	ngPicW, ngPicH = 65, 65 // NEWGAME.LBX 值圖尺寸
+
+	ngStripX0 = 105 // 0x69   數值列(選擇器)左緣,相對原點
+	ngStripY0 = 204 // 0xCC
+	ngStripW  = 100 // 0xCD−0x69
+	ngStripH  = 20  // 0xE0−0xCC
+	// 數值列的欄距與列距同值圖格(0x105−0x69 = 0x9C ≈ 欄距;0x15D−0xCC = 0x91 ≈ 列距)。
+	// 這兩個差值與值圖格的 0x9B/0x8C 差 1，故各自另記,不共用常數。
+	ngStripColStep = 156 // 0x105−0x69
+	ngStripRowStep = 145 // 0x15D−0xCC
+
+	ngToggleX  = 380 // 0x17C,三個開關同一個 x
+	ngToggleY0 = 259 // 0x103
+	ngToggleY1 = 295 // 0x127
+	ngToggleY2 = 330 // 0x14A
+
+	ngCancelX, ngCancelY = 100, 386 // 0x64, 0x182
+	ngAcceptX, ngAcceptY = 418, 387 // 0x1A2, 0x183
+)
+
+// 三個設定的預設索引。用具名常數而非字面數字,因為這些清單會增刪
+// (2026-08-07 補「教學」之後難度索引就整體位移過一次,見 shell.Difficulties)。
+const (
+	newGameDiffDefault = 2 // 普通
+	newGameAgeDefault  = 1 // 普通(gamedata.GalaxyAverage)
+	newGameTechDefault = 1 // 一般
+)
+
+// ngSetting 是新遊戲畫面上的一個設定欄。
+type ngSetting struct {
+	act      string
+	col, row int // 值圖格的欄/列(0-based)
+	asset0   int // 該設定第一個選項在 NEWGAME.LBX 的資產索引
+	n        func(b *sceneBuilder) int
+	idx      func(b *sceneBuilder) int
+	set      func(b *sceneBuilder, i int)
+	label    func(b *sceneBuilder) string
+}
+
+// ngSettings 是五個設定欄。欄/列與資產起點見檔頭的三來源對照。
+var ngSettings = []ngSetting{
+	{
+		act: "diff", col: 0, row: 0, asset0: 4,
+		n:     func(b *sceneBuilder) int { return len(shell.Difficulties) },
+		idx:   func(b *sceneBuilder) int { return b.newGameDiff },
+		set:   func(b *sceneBuilder, i int) { b.newGameDiff = i },
+		label: func(b *sceneBuilder) string { return shell.Difficulties[b.newGameDiff].Name },
+	},
+	{
+		act: "size", col: 1, row: 0, asset0: 9,
+		n:   func(b *sceneBuilder) int { return len(shell.GalaxySizes) },
+		idx: func(b *sceneBuilder) int { return b.newGameSize },
+		set: func(b *sceneBuilder, i int) { b.newGameSize = i },
+		label: func(b *sceneBuilder) string {
+			gs := shell.GalaxySizes[b.newGameSize]
+			return fmt.Sprintf("%s %d 星", gs.Name, gs.Stars)
+		},
+	},
+	{
+		act: "age", col: 2, row: 0, asset0: 1,
+		n:     func(b *sceneBuilder) int { return len(shell.GalaxyAges) },
+		idx:   func(b *sceneBuilder) int { return b.newGameAge },
+		set:   func(b *sceneBuilder, i int) { b.newGameAge = i },
+		label: func(b *sceneBuilder) string { return shell.GalaxyAges[b.newGameAge].Name },
+	},
+	{
+		act: "players", col: 0, row: 1, asset0: 13,
+		n:   func(b *sceneBuilder) int { return shell.MaxEmpires - shell.MinEmpires + 1 },
+		idx: func(b *sceneBuilder) int { return b.newGameEmpires - shell.MinEmpires },
+		set: func(b *sceneBuilder, i int) { b.newGameEmpires = shell.MinEmpires + i },
+		label: func(b *sceneBuilder) string {
+			return fmt.Sprintf("%d 個帝國", b.newGameEmpires)
+		},
+	},
+	{
+		act: "tech", col: 1, row: 1, asset0: 20,
+		n:     func(b *sceneBuilder) int { return len(shell.TechLevels) },
+		idx:   func(b *sceneBuilder) int { return b.newGameTech },
+		set:   func(b *sceneBuilder, i int) { b.newGameTech = i },
+		label: func(b *sceneBuilder) string { return shell.TechLevels[b.newGameTech].Name },
+	},
+}
+
+// ngBoxRect 回傳某設定的值圖格(螢幕座標)。
+func ngBoxRect(s ngSetting) (int, int, int, int) {
+	return ngOriginX + ngBoxX0 + s.col*ngColStep, ngOriginY + ngBoxY0 + s.row*ngRowStep, ngBoxW, ngBoxH
+}
+
+// ngStripRect 回傳某設定的數值列(螢幕座標)。
+func ngStripRect(s ngSetting) (int, int, int, int) {
+	return ngOriginX + ngStripX0 + s.col*ngStripColStep, ngOriginY + ngStripY0 + s.row*ngStripRowStep,
+		ngStripW, ngStripH
+}
+
 // newGameSetup 建原版新遊戲設定畫面(NEWGAME.LBX 資產 28,調色盤鏈 RACEOPT#4→NEWGAME#1)。
-// ACCEPT 進星系主畫面;CANCEL 回主選單。
+// ACCEPT 進種族選擇;CANCEL 回主選單。版面來源見上方檔頭區塊。
 func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
-	hits := []hitRegion{
-		{86, 100, 130, 108, "diff"},  // 難度選擇框
-		{232, 100, 150, 108, "size"}, // 星系大小選擇框
-		{86, 244, 130, 108, "race"},  // 種族選擇框(PLAYERS 位置)
-		{92, 392, 108, 30, "cancel"},
-		{432, 392, 108, 30, "accept"},
+	hits := make([]hitRegion, 0, len(ngSettings)*2+2)
+	for _, st := range ngSettings {
+		x, y, w, h := ngBoxRect(st)
+		hits = append(hits, hitRegion{x, y, w, h, st.act})
+		sx, sy, sw, sh := ngStripRect(st)
+		hits = append(hits, hitRegion{sx, sy, sw, sh, st.act}) // 數值列也可點,與原版一致
 	}
+	hits = append(hits,
+		hitRegion{ngOriginX + ngCancelX, ngOriginY + ngCancelY, 108, 30, "cancel"},
+		hitRegion{ngOriginX + ngAcceptX, ngOriginY + ngAcceptY, 108, 30, "accept"})
+
 	onAction := func(a string) *origTransition {
-		switch a {
-		case "diff":
-			b.newGameDiff = (b.newGameDiff + 1) % len(shell.Difficulties)
+		for _, st := range ngSettings {
+			if st.act != a {
+				continue
+			}
+			st.set(b, (st.idx(b)+1)%st.n(b)) // 點一下換下一個選項(原版是左右箭頭,remake 循環)
 			return b.goTo(b.newGameSetup, "新遊戲設定")
-		case "size":
-			b.newGameSize = (b.newGameSize + 1) % len(shell.GalaxySizes)
-			return b.goTo(b.newGameSetup, "新遊戲設定")
-		case "race", "accept":
+		}
+		if a == "accept" {
 			// 原版流程:星系設定 → Accept →【獨立種族選擇畫面】(不在此直接開局)。
-			// 點種族框或按 Accept 都進種族選擇;開局的 RegenGalaxy/ApplyRace 移到該畫面。
 			sc, err := b.raceSelect()
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "載入種族選擇: %v\n", err)
@@ -2030,18 +2166,26 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 		}
 		return b.goTo(b.menu, "主選單")
 	}
-	// 座標經 PIL 量測(remain-scan/newgame_a28_f00.png);開關標籤移到核取框右側(x430)避免採到藍框。
+	// 標籤位置是**對美術量測**的:這些字烘在 newgame.lbx#28 背景圖裡,不是程式畫的,
+	// 反組譯裡沒有它們的座標——量圖就是這一項的一手來源。做法是掃出每個標籤的亮像素
+	// 外接矩形(2026-08-07 重量,見下),不是目測估的。
+	//
+	// 重量之前的舊值有兩個看得見的錯:
+	//   ① PLAYERS / TECH LEVEL 的 y 是 222,而數值列佔 209..229 —— 標籤壓在數值列上。
+	//      實測標籤在 y 229..251,要往下移。
+	//   ② 三個開關的標籤 x 從 422 起,但烘上去的英文從 416(ANTARANS)/418(TACTICAL)開始,
+	//      左邊那一兩個字母擦不掉,畫面上會留「AI」「T.」這種殘字。
 	overlays := []labelRect{
-		{86, 78, 130, 22, "DIFFICULTY", 0},
-		{232, 78, 150, 22, "GALAXY SIZE", 0},
-		{398, 78, 150, 22, "GALAXY AGE", 0},
-		{86, 222, 130, 22, "RACE", 0},
-		{232, 222, 150, 22, "TECH LEVEL", 0},
-		{422, 266, 138, 18, "TACTICAL COMBAT", 11},
-		{422, 301, 138, 18, "RANDOM EVENTS", 11},
-		{422, 334, 138, 18, "ANTARANS ATTACK", 11},
-		{100, 388, 96, 24, "CANCEL", 0},
-		{440, 388, 96, 24, "ACCEPT", 0},
+		{107, 84, 105, 22, "DIFFICULTY", 0},  // 實測 107..208 × 85..104
+		{252, 84, 123, 22, "GALAXY SIZE", 0}, // 253..372
+		{408, 84, 118, 22, "GALAXY AGE", 0},  // 409..523
+		{108, 228, 95, 24, "PLAYERS", 0},     // 109..200 × 229..251
+		{257, 228, 104, 24, "TECH LEVEL", 0}, // 258..358 × 230..251
+		{412, 268, 112, 15, "TACTICAL COMBAT", 11},
+		{412, 303, 112, 15, "RANDOM EVENTS", 11},
+		{412, 338, 112, 15, "ANTARANS ATTACK", 11},
+		{100, 385, 95, 20, "CANCEL", 0}, // 101..192 × 386..401
+		{419, 386, 94, 22, "ACCEPT", 0}, // 420..510 × 388..407
 	}
 	s, err := loadOverlayScreen(b.res, "newgame.lbx", 28, b.lang, b.fnt, "assets/i18n/menu.tsv",
 		overlays, color.RGBA{210, 216, 230, 255}, 13, hits, onAction,
@@ -2049,21 +2193,44 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 選定的難度 + 星系大小顯示在各自選擇框內。
-	if b.fnt != nil {
-		gs := shell.GalaxySizes[b.newGameSize]
-		df := shell.Difficulties[b.newGameDiff]
+	// 五個設定各畫一張原版值圖 + 中文值名(原版就是「格內圖 + 格下文字」兩層,見 sub_CCC3D)。
+	pics := b.newGamePics()
+	s.postDraw = func(dst *ebiten.Image) {
 		gold := color.RGBA{240, 220, 120, 255}
-		body := color.RGBA{210, 216, 230, 255}
-		rc := shell.Races[b.newGameRace]
-		s.extras = []extraText{
-			{x: 151, y: 150, size: 16, text: df.Name, col: gold, align: 1},
-			{x: 307, y: 150, size: 16, text: fmt.Sprintf("%s (%d 星)", gs.Name, gs.Stars), col: gold, align: 1},
-			{x: 151, y: 286, size: 16, text: rc.Name, col: gold, align: 1},
-			{x: 151, y: 312, size: 10, text: rc.Desc, col: body, align: 1},
+		for _, st := range ngSettings {
+			x, y, _, _ := ngBoxRect(st)
+			if im := pics[st.asset0+st.idx(b)]; im != nil {
+				op := &ebiten.DrawImageOptions{}
+				op.GeoM.Translate(float64(x+(ngBoxW-ngPicW)/2), float64(y))
+				dst.DrawImage(im, op)
+			}
+			if b.fnt == nil {
+				continue
+			}
+			sx, sy, sw, sh := ngStripRect(st)
+			b.fnt.DrawCentered(dst, st.label(b), float64(sx+sw/2), float64(sy+sh/2), 12, gold)
 		}
 	}
 	return s, nil
+}
+
+// newGamePics 解出 NEWGAME.LBX 的 22 張設定值圖(資產 1–22),索引即資產編號。
+// 資產 1–3 自帶調色盤,其餘沒有,一律借資產 1 的上色(它們同屬一組美術)。
+// 載不動就回空 map——值名文字仍會畫,畫面不會壞。
+func (b *sceneBuilder) newGamePics() map[int]*ebiten.Image {
+	out := map[int]*ebiten.Image{}
+	prov, err := decodeAsset(b.res, "newgame.lbx", 1)
+	if err != nil || prov.Embedded == nil {
+		return out
+	}
+	for i := 1; i <= 22; i++ {
+		im, err := decodeAsset(b.res, "newgame.lbx", i)
+		if err != nil || len(im.Frames) == 0 {
+			continue
+		}
+		out[i] = ebiten.NewImageFromImage(im.Frames[0].ToRGBA(prov.Embedded, false))
+	}
+	return out
 }
 
 // fleet 建原版艦隊列表畫面(FLEET.LBX 資產 0,三段調色盤鏈)。座標經 PIL 量測
@@ -2919,6 +3086,9 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
+		// NEW GAME 設定畫面先前從沒被截圖廊拍過(腳本從主選單直接點到種族選擇),
+		// 所以那個畫面的版面錯了也不會被發現。名字用 01b 而不是重編後面 23 張的號。
+		{3, "01b_newgame.png"},
 		{6, "02_raceselect.png"},
 		{8, "03_nameflag.png"},
 		{11, "04_galaxy.png"},
@@ -3187,7 +3357,8 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 	if err != nil {
 		return err
 	}
-	b := &sceneBuilder{res: res, fnt: fnt, fntVec: fntVec, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: 1, designWeapon: 1, savePath: savePathFor(), gameVersion: gamedata.VersionCommunity15}
+	b := &sceneBuilder{res: res, fnt: fnt, fntVec: fntVec, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: newGameDiffDefault,
+		newGameAge: newGameAgeDefault, newGameTech: newGameTechDefault, newGameEmpires: 1 + shell.DefaultOpponents, designWeapon: 1, savePath: savePathFor(), gameVersion: gamedata.VersionCommunity15}
 	b.skipCutscenes = shot != "" || galleryDir != "" // 見該欄位註解
 	// 傭兵候選池改用原版 HERODATA.LBX 真英雄(解析失敗自動退回內建策展名單,不擋遊戲);快取一份
 	// 供新局/讀檔後重新注入(SetupNewGame 保留注入池,LoadSession 建新 session 需重注)。
@@ -3251,4 +3422,32 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled) // 允許拖曳邊框縮放
 	ebiten.SetWindowTitle("Master of Orion II — 繁體中文化 (remake)｜+/- 縮放  F11 全螢幕")
 	return ebiten.RunGame(app)
+}
+
+// applyNewGameSettings 把 NEW GAME 畫面的設定寫進對局。
+//
+// **必須在 SetupNewGame 之前呼叫**:星系年齡決定光譜與氣候骰表,星系與行星就是在那裡生成的。
+func (b *sceneBuilder) applyNewGameSettings() {
+	if b.session == nil {
+		return
+	}
+	if b.newGameAge >= 0 && b.newGameAge < len(shell.GalaxyAges) {
+		b.session.GalaxyAge = shell.GalaxyAges[b.newGameAge].Age
+		b.session.GalaxyAgeSet = true
+	}
+	b.session.TechLevel = b.newGameTech
+}
+
+// newGameOpponents 把「帝國總數」換成 SetupNewGame 要的「AI 對手數」。
+// 熱座會再從這些 AI 帝國裡接管席位(見 internal/shell/hotseat.go SetupHotseat),
+// 所以帝國總數同時決定了熱座最多能開幾席。
+func (b *sceneBuilder) newGameOpponents() int {
+	n := b.newGameEmpires - 1
+	if n < shell.MinEmpires-1 {
+		n = shell.MinEmpires - 1
+	}
+	if n > shell.MaxEmpires-1 {
+		n = shell.MaxEmpires - 1
+	}
+	return n
 }

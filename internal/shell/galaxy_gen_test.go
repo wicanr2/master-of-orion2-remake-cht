@@ -118,7 +118,7 @@ func TestOldSavePlanetsBackfillIDs(t *testing.T) {
 // 母星恆為一般行星:交給類別骰有機會生出「母星是氣態巨星」這種開局就死的局面。
 func TestGenPlanetsHomeStarsAlwaysHabitable(t *testing.T) {
 	for seed := int64(0); seed < 20; seed++ {
-		galaxy, aiHomes := genGalaxy(24, seed, 3)
+		galaxy, aiHomes := genGalaxy(24, seed, 3, galaxyAgeSetting)
 		homes := demoHomeStarSet(aiHomes)
 		ps := genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), galaxyAgeSetting, homes)
 		for i := range ps {
@@ -140,7 +140,7 @@ func TestGenPlanetsHomeStarsAlwaysHabitable(t *testing.T) {
 func TestGenPlanetsPrefersHabitableRepresentative(t *testing.T) {
 	nonHab, withHabSibling := 0, 0
 	for seed := int64(0); seed < 40; seed++ {
-		galaxy, aiHomes := genGalaxy(24, seed, 3)
+		galaxy, aiHomes := genGalaxy(24, seed, 3, galaxyAgeSetting)
 		ps := genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), galaxyAgeSetting, demoHomeStarSet(aiHomes))
 		for _, p := range ps {
 			if p.NoPlanet || p.TypeID == gamedata.HABITABLE {
@@ -167,7 +167,7 @@ func TestGenPlanetsPrefersHabitableRepresentative(t *testing.T) {
 // 同系天體不包含代表行星本身(避免兩份資料要同步),且軌道不重複。
 func TestGenPlanetsSystemBodiesExcludeRepresentative(t *testing.T) {
 	for seed := int64(0); seed < 20; seed++ {
-		galaxy, aiHomes := genGalaxy(24, seed, 3)
+		galaxy, aiHomes := genGalaxy(24, seed, 3, galaxyAgeSetting)
 		ps := genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), galaxyAgeSetting, demoHomeStarSet(aiHomes))
 		for i, p := range ps {
 			seen := map[int]bool{p.Orbit: true}

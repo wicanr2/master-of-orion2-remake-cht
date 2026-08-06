@@ -208,8 +208,10 @@ func (s *customRaceScreen) applyAndStart() {
 		r.IncomePerPop += o.incPerPop // 商業 pick → 每人每回合半BC(取代先前捏造的一次性 StartBC)
 	}
 	b.session.Difficulty = b.newGameDiff
+	// 五個 NEW GAME 設定要在 SetupNewGame 之前套用(星系年齡會影響星系生成,見該函式註解)。
+	b.applyNewGameSettings()
 	b.newGameSeed++
-	b.session.SetupNewGame(shell.GalaxySizes[b.newGameSize].Stars, int64(b.newGameSeed*7919+42), shell.DefaultOpponents)
+	b.session.SetupNewGame(shell.GalaxySizes[b.newGameSize].Stars, int64(b.newGameSeed*7919+42), b.newGameOpponents())
 	b.session.SetRuleProfile(profileForVersion(b.gameVersion)) // 主選單選的 1.3/1.5 規則版本
 	b.session.ApplyCustomRaceBonuses(r)
 	// 政府型態效果(僅已建模資源乘數;政府型態循環索引即 shell.Governments 索引)。

@@ -141,8 +141,9 @@ func TestAIExpand_NoOpWhenNoUnownedStars(t *testing.T) {
 func TestAIStanceHostileWhenStrong(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
-	s.Ships = nil    // 玩家無軍力
-	s.Difficulty = 3 // 不可能難度(倍率高)
+	s.Ships = nil                        // 玩家無軍力
+	s.Difficulty = len(Difficulties) - 1 // 最高難度(倍率最高);用長度而非硬編索引,
+	// 免得 Difficulties 增刪選項時這個測試靜默改測到別的難度(2026-08-07 補 Tutor 就踩過)。
 	for i := 0; i < 40; i++ {
 		s.EndTurn()
 	}

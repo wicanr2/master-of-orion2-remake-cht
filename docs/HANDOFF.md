@@ -111,6 +111,9 @@ docker images:`moo2-ebiten`(CGO+X11+xvfb,已存在)、`golang:1.25-bookworm`(純
   對它零命中,而反組譯直接給出全部座標:`sub_B8BC7`/`sub_B8C8B`(兩側面板貼圖點、`Darken_Fill_` 矩形、
   文字置中 x、列高)、`sub_B88B2` + 常數 `dword_B6CDE`(部隊落點公式與兩側基準 X)。
   **凡是 openorion2 沒有的畫面,先去反組譯挖 `Print_Centered_` / `Darken_Fill_` / 貼圖呼叫的立即數,別退回估計值。**
+  **2026-08-07 第二個實例:NEW GAME 設定畫面**(`sub_CCE2E` 建 widget + `sub_CCC3D` 畫值圖 + LBX 資產數,
+  三個來源互證),連帶抓出「左下那個框在原版是 PLAYERS 不是 RACE」這個真的還原錯誤,見
+  `docs/re/01-gap-report.md` 第 21 項。**newgame 這一項可以從「仍待重挖」的名單移除了。**
   battleResult/council/turnSummary 是結果/摘要顯示畫面,維持「點任意處返回」(合理 UX,使用者確認不動)。
 
 ### 優先 4 — 忠實 gameplay 規則(主體工作量,對應 PLAN「從零重建引擎」軌)

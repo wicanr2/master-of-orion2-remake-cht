@@ -44,9 +44,9 @@ import (
 // 實際可用席數另受星圖大小限制(每席要一顆母星)。
 const MaxHotseatSeats = 8
 
-// DefaultOpponents 是新遊戲的 AI 對手數(cmd/moo2 的新遊戲流程一律用這個值開局)。
-// 抽成常數是因為熱座的可用席數 = 1 + 對手數(見 SetupHotseat),UI 需要知道上限;
-// 先前這個 3 硬編在 customrace.go / raceselect.go 兩處。
+// DefaultOpponents 是新遊戲的**預設** AI 對手數(帝國總數 4 = 玩家 + 3)。
+// 玩家可在 NEW GAME 畫面的 PLAYERS 欄改成 2..8 個帝國(見 shell.MinEmpires/MaxEmpires),
+// 這裡只是沒選過時的起始值。先前這個 3 硬編在 customrace.go / raceselect.go 兩處。
 const DefaultOpponents = 3
 
 // seat 是一位真人玩家的完整帝國狀態。
