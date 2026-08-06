@@ -34,13 +34,19 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
 
 // raceEntry 是種族選擇清單一列:中/英名、RACESEL 肖像 asset、對應 shell.Races 索引(-1=Custom)。
+//
+// en 是**複數**族名(原版按鈕上烘的就是這個);enAdj 是當形容詞用的單數形
+// (「Human Empire」而不是「Humans Empire」)。分兩欄而不是自動去尾 s——
+// Alkari / Bulrathi / Mrrshan / Sakkra 本來就沒有 s,規則化只會埋雷。
 type raceEntry struct {
 	zh, en   string
+	enAdj    string
 	portrait int
 	shellIdx int
 }
@@ -48,20 +54,20 @@ type raceEntry struct {
 // raceSelectList 依原版字母序排列(對齊 RACESEL 肖像 15..28),shellIdx 指回 shell.Races。
 // Custom(28)尚無點數畫面,暫以無加成處理(TODO:接 Race Customization 畫面)。
 var raceSelectList = []raceEntry{
-	{"阿爾卡里", "Alkari", 15, 6},
-	{"布拉西", "Bulrathi", 16, 5},
-	{"達洛克", "Darloks", 17, 8},
-	{"埃雷里安", "Elerians", 18, 10},
-	{"諾蘭姆", "Gnolams", 19, 11},
-	{"人類", "Humans", 20, 0},
-	{"克拉肯", "Klackons", 21, 3},
-	{"梅克拉", "Meklars", 22, 7},
-	{"姆瑞森", "Mrrshan", 23, 4},
-	{"席隆", "Psilons", 24, 1},
-	{"薩克拉", "Sakkra", 25, 2},
-	{"矽基", "Silicoids", 26, 12},
-	{"崔拉里安", "Trilarians", 27, 9},
-	{"自訂種族", "Custom", 28, -1},
+	{"阿爾卡里", "Alkari", "Alkari", 15, 6},
+	{"布拉西", "Bulrathi", "Bulrathi", 16, 5},
+	{"達洛克", "Darloks", "Darlok", 17, 8},
+	{"埃雷里安", "Elerians", "Elerian", 18, 10},
+	{"諾蘭姆", "Gnolams", "Gnolam", 19, 11},
+	{"人類", "Humans", "Human", 20, 0},
+	{"克拉肯", "Klackons", "Klackon", 21, 3},
+	{"梅克拉", "Meklars", "Meklar", 22, 7},
+	{"姆瑞森", "Mrrshan", "Mrrshan", 23, 4},
+	{"席隆", "Psilons", "Psilon", 24, 1},
+	{"薩克拉", "Sakkra", "Sakkra", 25, 2},
+	{"矽基", "Silicoids", "Silicoid", 26, 12},
+	{"崔拉里安", "Trilarians", "Trilarian", 27, 9},
+	{"自訂種族", "Custom", "Custom", 28, -1},
 }
 
 type raceSelectScreen struct {
@@ -89,6 +95,7 @@ const (
 
 	rsTitleX, rsTitleY = 366, 52 // 標題橫幅(資產 33,219×29)
 	rsTitleW, rsTitleH = 219, 29
+	rsTitleAsset       = 33 // 0x21,Draw_Race_Selection_Screen_ 畫的標題橫幅
 )
 
 // raceSelect 建構種族選擇畫面。預設選「人類」(清單索引 5)。
@@ -167,7 +174,8 @@ func (s *raceSelectScreen) update(in shell.InputState) *origTransition {
 			return &origTransition{next: sc}
 		}
 		s.applyAndStart()
-		return &origTransition{next: s.b.nameFlag(raceSelectList[s.sel].zh + "帝國")}
+		e := raceSelectList[s.sel]
+		return &origTransition{next: s.b.nameFlag(s.b.tr(e.zh+"帝國", e.enAdj+" Empire"))}
 	}
 	return nil
 }
@@ -218,11 +226,21 @@ func (s *raceSelectScreen) draw(dst *ebiten.Image) {
 		dst.DrawImage(p, op)
 	}
 
-	// 標題橫幅位置(資產 33 @ 366,52)上疊中文。原版那張是烘死的英文,直接蓋掉。
-	vector.DrawFilledRect(dst, rsTitleX, rsTitleY, rsTitleW, rsTitleH,
-		color.RGBA{26, 28, 34, 255}, false)
-	s.fnt.DrawCentered(dst, "選擇你的種族",
-		float64(rsTitleX+rsTitleW/2), float64(rsTitleY+rsTitleH/2), 16, gold)
+	// 標題橫幅(資產 33 @ 366,52):**先畫原版那張**。
+	// 先前只在中文模式擦掉這塊再疊中文,從沒真的畫過它——中文模式看不出來(反正要蓋掉),
+	// 英文模式一跳過覆蓋就露出一片空白。畫了之後兩種語言都對:英文露原版標題,中文照蓋。
+	if im := s.raceButton(rsTitleAsset, 0); im != nil {
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(rsTitleX, rsTitleY)
+		dst.DrawImage(im, op)
+	}
+	// 上疊中文。**英文模式不擦不疊**:原版美術上本來就是英文標題。
+	if s.b.lang == i18n.Traditional {
+		vector.DrawFilledRect(dst, rsTitleX, rsTitleY, rsTitleW, rsTitleH,
+			color.RGBA{26, 28, 34, 255}, false)
+		s.fnt.DrawCentered(dst, "選擇你的種族",
+			float64(rsTitleX+rsTitleW/2), float64(rsTitleY+rsTitleH/2), 16, gold)
+	}
 
 	// 右側:14 顆種族鈕,2 欄 × 7 列(座標為反組譯真值)。
 	// 用原版的按鈕圖:第 0 幀=一般、第 1 幀=選中,再擦底疊中文族名。
@@ -242,6 +260,10 @@ func (s *raceSelectScreen) draw(dst *ebiten.Image) {
 				color.RGBA{34, 38, 48, 255}, false)
 		}
 		// 擦掉烘在按鈕上的英文族名再疊中文(上下左右各留 4px 保住浮雕邊框)。
+		// 英文模式跳過整段:原版按鈕上就是英文族名,擦掉再畫一次只會更醜。
+		if s.b.lang != i18n.Traditional {
+			continue
+		}
 		face := color.RGBA{92, 88, 78, 255}
 		if i == s.sel {
 			face = color.RGBA{70, 66, 58, 255}
@@ -259,17 +281,19 @@ func (s *raceSelectScreen) draw(dst *ebiten.Image) {
 	// (`sub_103915(60,175,寬280)` 那個文字帶只在「該族已被別的玩家選走」的多人分支才畫)。
 	cx, cy, cw, ch := s.cancelRect()
 	tx := float64(cx + cw + 12 + (rsPortX+rsPortW-(cx+cw+12))/2)
-	s.fnt.DrawCentered(dst, r.zh, tx, float64(cy+4), 14, gold)
+	s.fnt.DrawCentered(dst, s.b.tr(r.zh, r.en), tx, float64(cy+4), 14, gold)
 	descW := float64(rsPortX + rsPortW - (cx + cw + 12))
 	if r.shellIdx >= 0 {
-		for i, ln := range s.fnt.Wrap(shell.Races[r.shellIdx].Desc, 10, descW) {
+		desc := s.b.tr(shell.Races[r.shellIdx].Desc, shell.Races[r.shellIdx].EnDesc)
+		for i, ln := range s.fnt.Wrap(desc, 10, descW) {
 			if i >= 2 {
 				break
 			}
 			s.fnt.DrawCentered(dst, ln, tx, float64(cy+20+i*14), 10, body)
 		}
 	} else {
-		s.fnt.DrawCentered(dst, "自行分配種族點數", tx, float64(cy+20), 10, dim)
+		s.fnt.DrawCentered(dst, s.b.tr("自行分配種族點數", "Spend your own race picks"),
+			tx, float64(cy+20), 10, dim)
 	}
 
 	// 取消(remake 自己加的,原版只綁 ESC,見 cancelRect 註解)。
@@ -277,7 +301,7 @@ func (s *raceSelectScreen) draw(dst *ebiten.Image) {
 		color.RGBA{34, 34, 44, 255}, false)
 	vector.StrokeRect(dst, float32(cx), float32(cy), float32(cw), float32(ch), 1.5,
 		color.RGBA{160, 140, 100, 255}, false)
-	s.fnt.DrawCentered(dst, "取消", float64(cx+cw/2), float64(cy+ch/2), 14, body)
+	s.fnt.DrawCentered(dst, s.b.tr("取消", "CANCEL"), float64(cx+cw/2), float64(cy+ch/2), 14, body)
 }
 
 // raceButton 惰性載入某族的選擇鈕(RACESEL 資產 1–14,兩幀:一般 / 選中)。

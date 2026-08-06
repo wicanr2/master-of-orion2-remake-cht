@@ -7,6 +7,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
@@ -80,26 +81,27 @@ const (
 	mpHotseat
 )
 
-// mpButton 是面板上的一顆鈕:資產、相對面板的位置、中文標籤、動作代號。
+// mpButton 是面板上的一顆鈕:資產、相對面板的位置、中/英標籤、動作代號。
+// 英文用原版烘在按鈕上的字(NETWORK / MODEM / …),不是自己另譯的。
 type mpButton struct {
 	asset  int
 	dx, dy int
-	zh     string
+	zh, en string
 	act    string
 }
 
 // mpButtons 是左欄四個連線方式 + 右欄四個動作 + CANCEL,全部座標見檔頭。
 var mpButtons = []mpButton{
-	{2, mpColLeftDX, mpRow0DY, "區域網路", "network"},
-	{3, mpColLeftDX, mpRow1DY, "數據機", "modem"},
-	{4, mpColLeftDX, mpRow2DY, "序列埠直連", "nullmodem"},
-	{5, mpColLeftDX, mpRow3DY, "熱座", "hotseat"},
-	{7, mpColRightDX, mpRow0DY, "開始新遊戲", "start"},
-	{8, mpColRightDX, mpRow1DY, "載入遊戲", "load"},
-	{9, mpColRightDX, mpRow2DY, "加入遊戲", "join"},
-	{10, mpColRightDX, mpRow3DY, "連線資訊", "comm"},
-	{256, mpTenDX, mpTenDY, "TEN 連線服務", "ten"},
-	{6, mpCancelDX, mpCancelDY, "取消", "cancel"},
+	{2, mpColLeftDX, mpRow0DY, "區域網路", "NETWORK", "network"},
+	{3, mpColLeftDX, mpRow1DY, "數據機", "MODEM", "modem"},
+	{4, mpColLeftDX, mpRow2DY, "序列埠直連", "NULL MODEM", "nullmodem"},
+	{5, mpColLeftDX, mpRow3DY, "熱座", "HOTSEAT", "hotseat"},
+	{7, mpColRightDX, mpRow0DY, "開始新遊戲", "START NEW GAME", "start"},
+	{8, mpColRightDX, mpRow1DY, "載入遊戲", "LOAD GAME", "load"},
+	{9, mpColRightDX, mpRow2DY, "加入遊戲", "JOIN GAME", "join"},
+	{10, mpColRightDX, mpRow3DY, "連線資訊", "COMM INFO", "comm"},
+	{256, mpTenDX, mpTenDY, "TEN 連線服務", "TOTAL ENTERTAINMENT NETWORK", "ten"},
+	{6, mpCancelDX, mpCancelDY, "取消", "CANCEL", "cancel"},
 }
 
 // multiplayerScreen 是多人遊戲設定畫面。
@@ -326,7 +328,8 @@ func (s *multiplayerScreen) click(act string) *origTransition {
 	switch act {
 	case "network", "modem", "nullmodem":
 		// 原版這三個真的能連線;remake 沒有網路層,說清楚而不是假裝可選。
-		s.msg = "本版只實作熱座(同機輪流)。連線對戰需要原版的 IPX / 數據機層。"
+		s.msg = s.b.tr("本版只實作熱座(同機輪流)。連線對戰需要原版的 IPX / 數據機層。",
+			"Only hot seat is implemented. Network play needs the original IPX / modem layer.")
 		return nil
 	case "hotseat":
 		if s.mode != mpHotseat {
@@ -341,28 +344,30 @@ func (s *multiplayerScreen) click(act string) *origTransition {
 		return nil
 	case "start":
 		if s.mode != mpHotseat {
-			s.msg = "請先選「熱座」——其餘連線方式本版未實作。"
+			s.msg = s.b.tr("請先選「熱座」——其餘連線方式本版未實作。",
+				"Select HOTSEAT first — the other connection types are not implemented.")
 			return nil
 		}
 		s.b.pendingHotseat = s.humans
 		return s.b.goTo(s.b.newGameSetup, "新遊戲設定")
 	case "load":
 		if !shell.AnySaveExists(saveDirFor()) {
-			s.msg = "還沒有任何存檔。"
+			s.msg = s.b.tr("還沒有任何存檔。", "No saved games yet.")
 			return nil
 		}
 		sc, err := s.b.loadGame()
 		if err != nil {
-			s.msg = "存檔視窗開不起來。"
+			s.msg = s.b.tr("存檔視窗開不起來。", "Could not open the load window.")
 			return nil
 		}
 		return &origTransition{next: sc}
 	case "join", "comm":
-		s.msg = "本版只實作熱座(同機輪流)。"
+		s.msg = s.b.tr("本版只實作熱座(同機輪流)。", "Only hot seat is implemented.")
 		return nil
 	case "ten":
 		// TEN(Total Entertainment Network)是 1990 年代的線上對戰服務,1999 年就收了。
-		s.msg = "TEN 是原版年代的線上對戰服務,早已停止營運。"
+		s.msg = s.b.tr("TEN 是原版年代的線上對戰服務,早已停止營運。",
+			"TEN was the 1990s online service for this game; it shut down long ago.")
 		return nil
 	}
 	return s.b.goTo(s.b.menu, "主選單")
@@ -395,6 +400,11 @@ func (s *multiplayerScreen) draw(dst *ebiten.Image) {
 			dst.DrawImage(im, op)
 		}
 		// 擦掉烘在圖上的英文再疊中文(上下左右各留 3px 保住浮雕邊框)。
+		// 英文模式整段跳過:原版按鈕上烘的就是 NETWORK / MODEM / …,露出來比用 Noto
+		// 重畫一次更像原版(熱座席位數改由面板下方那行說明交代)。
+		if s.b.lang != i18n.Traditional {
+			continue
+		}
 		if face, ok := s.frameFace(btn.asset, frame); ok {
 			vector.DrawFilledRect(dst, float32(x+3), float32(y+3), float32(w-6), float32(h-6), face, false)
 		}
@@ -415,12 +425,16 @@ func (s *multiplayerScreen) draw(dst *ebiten.Image) {
 	// 面板標題帶(MULTI-PLAYER GAME SET UP)烘在面板上,同樣擦底疊中文。
 	// 底色從標題帶自身採樣(左緣往內 8px),不用猜的常數——面板調色盤換了也不會露餡。
 	tx, ty, tw, th := s.panX+30, s.panY+16, s.panW-60, 24
-	vector.DrawFilledRect(dst, float32(tx), float32(ty), float32(tw), float32(th), s.titleFace, false)
-	s.fnt.DrawCentered(dst, "多人遊戲設定", float64(s.panX+s.panW/2), float64(ty+th/2), 16, sel)
+	if s.b.lang == i18n.Traditional { // 英文模式露原版烘在面板上的標題
+		vector.DrawFilledRect(dst, float32(tx), float32(ty), float32(tw), float32(th), s.titleFace, false)
+		s.fnt.DrawCentered(dst, "多人遊戲設定",
+			float64(s.panX+s.panW/2), float64(ty+th/2), 16, sel)
+	}
 
-	note := fmt.Sprintf("熱座:%d 位真人輪流下令,其餘帝國仍由 AI 操作。", s.humans)
+	note := fmt.Sprintf(s.b.tr("熱座:%d 位真人輪流下令,其餘帝國仍由 AI 操作。",
+		"Hot seat: %d humans take turns; the remaining empires stay AI-controlled."), s.humans)
 	if s.mode != mpHotseat {
-		note = "本版只實作熱座。"
+		note = s.b.tr("本版只實作熱座。", "Only hot seat is implemented in this build.")
 	}
 	s.fnt.DrawCentered(dst, note, 320, float64(s.panY+s.panH+16), 12, dim)
 	if s.msg != "" {

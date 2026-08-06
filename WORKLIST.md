@@ -162,6 +162,15 @@
 - [x] 主選單中文化 + 截圖校對(cmd/moo2 -menu:擦底疊字六按鈕繼續/載入遊戲/…;before/after 見 docs/reference-screens.md)
 - [x] 主選單:語言 中/英 runtime 切換(2026-08-07,`cmd/moo2/interactive.go` 的 `toggleLang`)
       ——先前只有啟動旗標 `-lang`,進了遊戲換不掉,不符 `CLAUDE.md` 那條需求
+- [~] **英文模式覆蓋率**:切換機制有了,**內容沒補齊**。overlay 那條路徑天生雙語(英文模式
+      跳過擦字疊字,露原版美術);remake **自繪**畫面則寫死中文,英文模式下整片中文。
+      2026-08-07 收掉六個畫面:遊戲選單 / 多人設定 / 種族選擇 / 載入儲存 / 命名旗色 / 熱座交接。
+      做法優先「讓路」(底下是原版美術就讓英文烘字露出來,比用 Noto 重畫更像原版),
+      沒有原版英文可露時才用新建的 `b.tr(zh, en)`。順帶修掉一個中文模式看不出來的 bug:
+      種族選擇的標題橫幅(RACESEL#33)從來沒被畫過,只是被擦底方塊蓋住。
+      `cmd/moo2` 尚有約 610 條(大宗 `interactive.go` 259、`infosubscreens.go` 60、
+      `customrace.go` 54)、`internal/` 另有一整層(引擎自己就回傳中文字串)。
+      逐檔清單、量法與收尾原則見 `docs/HONEST-STATUS.md`「英文模式覆蓋率」
 - [x] 主選單:版本 1.3/1.5 選擇框架(`toggleVersion`,左下角)
 - [ ] 按鈕垂直置中微調(目前略偏上)+ hover 狀態中文
 

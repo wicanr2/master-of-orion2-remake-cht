@@ -1,6 +1,6 @@
 # 銀河霸主 2:安塔瑞斯之戰 — go/ebiten 重製 + 繁體中文化
 
-以 [OpenOrion2](https://github.com/next-ghost/openorion2) 為參考基底,用 Go + [Ebitengine](https://ebitengine.org/) 重新打造《Master of Orion II: Battle at Antares》(1996),提供完整**繁體中文**在地化與英文原文切換,並支援 **1.3 / 1.5** 兩個版本的規則與資料。
+以 [OpenOrion2](https://github.com/next-ghost/openorion2) 為參考基底,用 Go + [Ebitengine](https://ebitengine.org/) 重新打造《Master of Orion II: Battle at Antares》(1996),提供完整**繁體中文**在地化(英文模式可切換,但 remake 自繪畫面尚未補齊,見 [`docs/HONEST-STATUS.md`](docs/HONEST-STATUS.md)「英文模式覆蓋率」),並支援 **1.3 / 1.5** 兩個版本的規則與資料。
 
 ![繁體中文化主選單(本專案 ebiten renderer 實際輸出)](docs/images/main-menu-cht.png)
 

@@ -8,6 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/assets"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
@@ -198,11 +199,12 @@ func (s *loadGameScreen) update(in shell.InputState) *origTransition {
 	for i := range s.slots {
 		if x, y, w, h := s.slotRect(i); hitRect(in, x, y, w, h) {
 			if s.mode == modeLoad && !s.slots[i].Exists {
-				s.msg = "這一格是空的"
+				s.msg = s.b.tr("這一格是空的", "That slot is empty.")
 				return nil
 			}
 			if s.mode == modeSave && i == shell.AutoSaveSlot {
-				s.msg = "最後一格是自動存檔,不能手動覆寫"
+				s.msg = s.b.tr("最後一格是自動存檔,不能手動覆寫",
+					"The last slot is the autosave; it cannot be overwritten by hand.")
 				return nil
 			}
 			s.selected, s.msg = i, ""
@@ -215,17 +217,17 @@ func (s *loadGameScreen) update(in shell.InputState) *origTransition {
 // doSave 把目前對局寫進選定的槽。
 func (s *loadGameScreen) doSave() *origTransition {
 	if s.selected < 0 || s.selected >= len(s.slots) || s.selected == shell.AutoSaveSlot {
-		s.msg = "請先選一格(自動存檔格除外)"
+		s.msg = s.b.tr("請先選一格(自動存檔格除外)", "Pick a slot first (not the autosave).")
 		return nil
 	}
 	if s.b.session == nil {
-		s.msg = "目前沒有進行中的對局"
+		s.msg = s.b.tr("目前沒有進行中的對局", "There is no game in progress.")
 		return nil
 	}
 	path := s.slots[s.selected].Path
 	if err := s.b.session.Save(path); err != nil {
 		fmt.Fprintln(os.Stderr, "存檔失敗:", err)
-		s.msg = "寫不進去(磁碟或權限問題)"
+		s.msg = s.b.tr("寫不進去(磁碟或權限問題)", "Could not write the file (disk or permissions).")
 		return nil
 	}
 	// 之後的自動存檔跟著寫到這一格,與讀檔後的行為一致。
@@ -236,13 +238,14 @@ func (s *loadGameScreen) doSave() *origTransition {
 // doLoad 讀取選定的槽並進星系主畫面。
 func (s *loadGameScreen) doLoad() *origTransition {
 	if s.selected < 0 || s.selected >= len(s.slots) || !s.slots[s.selected].Exists {
-		s.msg = "請先選一格有存檔的格子"
+		s.msg = s.b.tr("請先選一格有存檔的格子", "Pick a slot that has a saved game.")
 		return nil
 	}
 	gs, err := shell.LoadSession(s.slots[s.selected].Path)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "讀檔失敗:", err)
-		s.msg = "這個存檔讀不起來(格式可能來自舊版本)"
+		s.msg = s.b.tr("這個存檔讀不起來(格式可能來自舊版本)",
+			"That save would not load (it may come from an older build).")
 		return nil
 	}
 	s.b.session = gs
@@ -279,9 +282,9 @@ func (s *loadGameScreen) draw(dst *ebiten.Image) {
 		tx := float64(s.winX + loadSlotTextX)
 		ty := float64(s.winY + loadTextY + loadSlotStep*i)
 		if !sl.Exists {
-			label := "（空）"
+			label := s.b.tr("（空）", "(empty)")
 			if sl.Auto {
-				label = "（自動存檔：尚無）"
+				label = s.b.tr("（自動存檔：尚無）", "(autosave: none yet)")
 			}
 			c := dim
 			if s.mode == modeSave && i == s.selected {
@@ -296,11 +299,11 @@ func (s *loadGameScreen) draw(dst *ebiten.Image) {
 		}
 		title := fmt.Sprintf("%d. %s", i+1, name)
 		if sl.Auto {
-			title = fmt.Sprintf("自動  %s", name)
+			title = fmt.Sprintf(s.b.tr("自動  %s", "AUTO  %s"), name)
 		}
 		s.fnt.Draw(dst, title, tx, ty, 12, col)
 		// 第二行:星曆在名稱正下方、存檔時間在 +122(原版 drawSlot 的兩個 renderText)。
-		s.fnt.Draw(dst, fmt.Sprintf("星曆 %s", sl.Stardate), tx, ty+loadSlotSubDY, 10, col)
+		s.fnt.Draw(dst, fmt.Sprintf(s.b.tr("星曆 %s", "Stardate %s"), sl.Stardate), tx, ty+loadSlotSubDY, 10, col)
 		if !sl.Modified.IsZero() {
 			// 日期用兩位數年份(26/08/06):這一欄從 x+122 起,x+206 就是對局類型圖示,
 			// 只有 84px 可用。原版在這裡用的是 C 的 `%x`,在 C locale 同樣是兩位數年份的
@@ -335,19 +338,22 @@ func (s *loadGameScreen) draw(dst *ebiten.Image) {
 	// 兩顆鈕的英文(LOAD / CANCEL)烘在圖上,照既有做法擦底疊中文:先用採樣到的面色
 	// 填掉文字帶(上下左右各留 3px 保住浮雕邊框),再疊中文。
 	drawBtnLabel := func(x, y, w, h int, face color.RGBA, zh string) {
+		if s.b.lang != i18n.Traditional {
+			return // 英文模式露原版鈕上烘的 LOAD / SAVE / CANCEL
+		}
 		if face.A > 0 {
 			vector.DrawFilledRect(dst, float32(x+3), float32(y+3), float32(w-6), float32(h-6), face, false)
 		}
 		s.fnt.DrawCentered(dst, zh, float64(x+w/2), float64(y+h/2), 13, body)
 	}
-	action := "載入"
+	action := s.b.tr("載入", "LOAD")
 	if s.mode == modeSave {
-		action = "儲存"
+		action = s.b.tr("儲存", "SAVE")
 	}
 	lx, ly, lw, lh := s.loadRect()
 	drawBtnLabel(lx, ly, lw, lh, s.loadFace, action)
 	cx, cy, cw, ch := s.cancelRect()
-	drawBtnLabel(cx, cy, cw, ch, s.cancelFace, "取消")
+	drawBtnLabel(cx, cy, cw, ch, s.cancelFace, s.b.tr("取消", "CANCEL"))
 
 	if s.msg != "" {
 		s.fnt.DrawCentered(dst, s.msg, 320, float64(s.winY+s.winH+14), 12,

@@ -91,13 +91,14 @@ func (h *hotseatScreen) draw(dst *ebiten.Image) {
 	dim := color.RGBA{140, 150, 170, 255}
 
 	cx := float64(x + w/2)
-	h.fnt.DrawCentered(dst, "換人接手", cx, float64(y+30), 18, gold)
+	h.fnt.DrawCentered(dst, h.b.tr("換人接手", "PASS THE KEYBOARD"), cx, float64(y+30), 18, gold)
 	// 原版的文字錨點:視窗左上 +14 / +70。
 	tx := float64(x + hotseatTextDX)
 	ty := float64(y + hotseatTextDY)
-	h.fnt.Draw(dst, "下一位:"+h.name, tx, ty, 14, body)
-	h.fnt.Draw(dst, fmt.Sprintf("(席位 %d / %d)", h.seat+1, h.total), tx, ty+20, 11, dim)
-	h.fnt.Draw(dst, "請把鍵盤交給這位玩家,確認之後再按「接手」。", tx, ty+44, 13, dim)
+	h.fnt.Draw(dst, h.b.tr("下一位:", "Next: ")+h.name, tx, ty, 14, body)
+	h.fnt.Draw(dst, fmt.Sprintf(h.b.tr("(席位 %d / %d)", "(seat %d of %d)"), h.seat+1, h.total), tx, ty+20, 11, dim)
+	h.fnt.Draw(dst, h.b.tr("請把鍵盤交給這位玩家,確認之後再按「接手」。",
+		"Pass the keyboard, then press TAKE OVER."), tx, ty+44, 13, dim)
 	if h.note != "" {
 		h.fnt.Draw(dst, h.note, tx, ty+68, 12, color.RGBA{200, 180, 110, 255})
 	}
@@ -105,7 +106,7 @@ func (h *hotseatScreen) draw(dst *ebiten.Image) {
 	bx, by, bw, bh := h.okRect()
 	vector.DrawFilledRect(dst, float32(bx), float32(by), float32(bw), float32(bh), color.RGBA{40, 48, 66, 255}, false)
 	vector.StrokeRect(dst, float32(bx), float32(by), float32(bw), float32(bh), 1.5, color.RGBA{150, 165, 200, 255}, false)
-	h.fnt.DrawCentered(dst, "接手", float64(bx+bw/2), float64(by+bh/2), 15, body)
+	h.fnt.DrawCentered(dst, h.b.tr("接手", "TAKE OVER"), float64(bx+bw/2), float64(by+bh/2), 15, body)
 }
 
 // applyPendingHotseat 在新遊戲流程走完後,把多人設定畫面選的席位數套用到這一局。
@@ -179,5 +180,6 @@ func (b *sceneBuilder) endTurnPressed() *origTransition {
 	// 繞回第 0 席:所有真人都下完令 → 交接畫面按下去才推進世界,
 	// 這樣第一位玩家一接手就看到本回合的結算,不會錯過事件快報。
 	return &origTransition{next: newHotseatScreen(b, next, b.session.SeatName(next),
-		"本回合全員已下令,接手後結算。", b.advanceWorldTurn)}
+		b.tr("本回合全員已下令,接手後結算。", "All players have moved; the turn resolves after you take over."),
+		b.advanceWorldTurn)}
 }

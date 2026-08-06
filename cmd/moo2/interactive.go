@@ -523,6 +523,22 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 	return s, nil
 }
 
+// tr 是**自繪畫面**的雙語切換:回傳目前語言該顯示的字串。
+//
+// 為什麼需要:`overlayScreen` 那套「擦底疊字」在英文模式會整段跳過,直接露出原版烘在
+// 美術上的英文——那條路徑本來就雙語正確。但**自繪畫面**(remake 自己畫的面板:多人設定、
+// 熱座交接、命名旗色、地面戰、轟炸、遊戲選單、載入視窗、自訂種族…)底下沒有原版英文可露,
+// 字是程式直接寫死的中文,於是**英文模式下那些畫面仍然全是中文**。
+//
+// CLAUDE.md 明列「允許在主選單選擇中文/英文」,所以這是個真的缺口,不是設計取捨。
+// 現況與待補清單見 docs/HONEST-STATUS.md 的「英文模式覆蓋率」一節。
+func (b *sceneBuilder) tr(zh, en string) string {
+	if b.lang == i18n.Traditional {
+		return zh
+	}
+	return en
+}
+
 // goTo 建構下一個場景並包成 transition;失敗時記錄錯誤並留在原畫面。
 func (b *sceneBuilder) goTo(build func() (*overlayScreen, error), name string) *origTransition {
 	s, err := build()

@@ -1749,23 +1749,24 @@ type Race struct {
 	IncomePerPop int
 	CombatPct    int
 	Desc         string
+	EnDesc       string // 英文模式的同一段說明(remake 自撰摘要的英譯,非原版文案)
 }
 
 // Races 是 MOO2 十三經典種族(招牌特性依手冊 p.15-16 校正,見 Race 型別註解)。索引 0 為人類(預設)。
 var Races = []Race{
-	{"人類", "Humans", 0, 0, 0, 0, 0, 0, 0, "外交手腕高明,雇用領袖較廉(民主政府)"},
-	{"席隆", "Psilons", 0, 2, 0, 0, 0, 0, 0, "創造性研究,科學家產出高"}, // ResBonus+2:手冊 p.614「2 more than galactic norm」,norm3+2=5,對齊 SAVE10.GAM Psilon 母星每科研=5
-	{"薩克拉", "Sakkra", 0, 0, 1, 30, 0, 0, 0, "繁殖迅速,人口成長加成"},
-	{"克拉肯", "Klackons", 2, 0, 0, 0, 0, 0, 0, "團結勤奮,工業產出高"},
-	{"姆瑞森", "Mrrshan", 0, 0, 0, 0, 0, 0, 25, "好戰善攻,艦艇攻擊加成"},
-	{"布拉西", "Bulrathi", 0, 0, 0, 0, 0, 0, 15, "體格強悍,地面與戰鬥加成"},
-	{"阿爾卡里", "Alkari", 0, 0, 0, 0, 0, 0, 15, "飛行天賦,艦艇迴避加成"},
-	{"梅克拉", "Meklars", 1, 1, 0, 0, 0, 0, 0, "半機械,工業與研究兼具"},
-	{"達洛克", "Darloks", 0, 0, 0, 0, 0, 0, 0, "潛伏間諜,擅長滲透與隱形"},
-	{"崔拉里安", "Trilarians", 0, 0, 1, 10, 0, 0, 0, "水棲民族,食物與成長加成"},
-	{"埃雷里安", "Elerians", 0, 1, 0, 0, 0, 0, 15, "心靈感應,研究與戰鬥"},
-	{"諾蘭姆", "Gnolams", 0, 0, 0, 0, 0, 2, 0, "幸運富商,每人口每回合額外進帳"}, // IncomePerPop=2 半BC=+1 BC/人:手冊 p.16「each unit of Gnolam population generates an additional 1 BC per turn」(=money3 pick)
-	{"矽基", "Silicoids", 1, 0, 0, -20, 0, 0, 0, "岩石生命,耐任何環境但成長慢"},
+	{"人類", "Humans", 0, 0, 0, 0, 0, 0, 0, "外交手腕高明,雇用領袖較廉(民主政府)", "Skilled diplomats; leaders come cheap (Democracy)"},
+	{"席隆", "Psilons", 0, 2, 0, 0, 0, 0, 0, "創造性研究,科學家產出高", "Creative researchers; high output per scientist"}, // ResBonus+2:手冊 p.614「2 more than galactic norm」,norm3+2=5,對齊 SAVE10.GAM Psilon 母星每科研=5
+	{"薩克拉", "Sakkra", 0, 0, 1, 30, 0, 0, 0, "繁殖迅速,人口成長加成", "Prolific breeders; bonus to population growth"},
+	{"克拉肯", "Klackons", 2, 0, 0, 0, 0, 0, 0, "團結勤奮,工業產出高", "Unified and industrious; high factory output"},
+	{"姆瑞森", "Mrrshan", 0, 0, 0, 0, 0, 0, 25, "好戰善攻,艦艇攻擊加成", "Warlike marksmen; bonus to ship attack"},
+	{"布拉西", "Bulrathi", 0, 0, 0, 0, 0, 0, 15, "體格強悍,地面與戰鬥加成", "Powerful build; bonus to ground and ship combat"},
+	{"阿爾卡里", "Alkari", 0, 0, 0, 0, 0, 0, 15, "飛行天賦,艦艇迴避加成", "Born pilots; bonus to ship defense"},
+	{"梅克拉", "Meklars", 1, 1, 0, 0, 0, 0, 0, "半機械,工業與研究兼具", "Cybernetic; strong in both industry and research"},
+	{"達洛克", "Darloks", 0, 0, 0, 0, 0, 0, 0, "潛伏間諜,擅長滲透與隱形", "Shapeshifting spies; infiltration and stealth"},
+	{"崔拉里安", "Trilarians", 0, 0, 1, 10, 0, 0, 0, "水棲民族,食物與成長加成", "Aquatic; bonus to food and population growth"},
+	{"埃雷里安", "Elerians", 0, 1, 0, 0, 0, 0, 15, "心靈感應,研究與戰鬥", "Telepathic; strong in research and combat"},
+	{"諾蘭姆", "Gnolams", 0, 0, 0, 0, 0, 2, 0, "幸運富商,每人口每回合額外進帳", "Lucky traders; extra income per unit of population"}, // IncomePerPop=2 半BC=+1 BC/人:手冊 p.16「each unit of Gnolam population generates an additional 1 BC per turn」(=money3 pick)
+	{"矽基", "Silicoids", 1, 0, 0, -20, 0, 0, 0, "岩石生命,耐任何環境但成長慢", "Lithovore; immune to environment but slow to grow"},
 }
 
 // ApplyRace 把 Races[idx] 的起始加成套到玩家帝國:各殖民地每單位產出加成、額外起始國庫、
@@ -1806,16 +1807,17 @@ func (s *GameSession) ApplyCustomRaceBonuses(r Race) {
 // FlagColors 是玩家旗幟顏色選項(原版新遊戲命名畫面選旗色)。RGB 為近似值,供 UI 呈現。
 var FlagColors = []struct {
 	Name    string
+	EnName  string
 	R, G, B uint8
 }{
-	{"紅", 210, 60, 50},
-	{"黃", 230, 210, 80},
-	{"綠", 80, 190, 90},
-	{"藍", 70, 130, 220},
-	{"白", 220, 220, 230},
-	{"紫", 170, 90, 200},
-	{"橙", 230, 140, 60},
-	{"棕", 150, 110, 70},
+	{"紅", "Red", 210, 60, 50},
+	{"黃", "Yellow", 230, 210, 80},
+	{"綠", "Green", 80, 190, 90},
+	{"藍", "Blue", 70, 130, 220},
+	{"白", "White", 220, 220, 230},
+	{"紫", "Purple", 170, 90, 200},
+	{"橙", "Orange", 230, 140, 60},
+	{"棕", "Brown", 150, 110, 70},
 }
 
 // Governments 是自訂種族可選的政府型態(順序對應 customrace 政府型態循環選項)。

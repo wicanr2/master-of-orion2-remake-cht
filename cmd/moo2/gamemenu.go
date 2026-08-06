@@ -5,6 +5,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
@@ -181,6 +182,10 @@ func (s *gameMenuScreen) draw(dst *ebiten.Image) {
 			dst.DrawImage(s.btnImg[i], op)
 		}
 		// 英文烘在鈕上,擦底疊中文(同 loadgame.go 的做法)。
+		// 英文模式跳過:GAME.LBX 那六顆鈕上本來就是 SAVE GAME / LOAD GAME / …。
+		if s.b.lang != i18n.Traditional {
+			continue
+		}
 		if s.btnFace[i].A > 0 {
 			vector.DrawFilledRect(dst, float32(x+3), float32(y+3), float32(w-6), float32(h-6),
 				s.btnFace[i], false)

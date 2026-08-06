@@ -85,7 +85,7 @@ func (s *nameFlagScreen) update(in shell.InputState) *origTransition {
 		if s.b.session != nil {
 			name := string(s.name)
 			if name == "" {
-				name = "銀河帝國"
+				name = s.b.tr("銀河帝國", "Galactic Empire")
 			}
 			s.b.session.PlayerName = name
 			s.b.session.FlagColor = s.flagSel
@@ -109,7 +109,7 @@ func (s *nameFlagScreen) draw(dst *ebiten.Image) {
 	gold := color.RGBA{240, 220, 120, 255}
 	body := color.RGBA{206, 218, 240, 255}
 
-	s.fnt.DrawCentered(dst, "為你的帝國命名", 320, 70, 18, gold)
+	s.fnt.DrawCentered(dst, s.b.tr("為你的帝國命名", "NAME YOUR EMPIRE"), 320, 70, 18, gold)
 
 	// 名稱輸入框。
 	bx, by, bw, bh := 170, 140, 300, 40
@@ -117,10 +117,11 @@ func (s *nameFlagScreen) draw(dst *ebiten.Image) {
 	vector.StrokeRect(dst, float32(bx), float32(by), float32(bw), float32(bh), 1.5, color.RGBA{110, 150, 210, 255}, false)
 	name := string(s.name) + "_" // 尾端游標
 	s.fnt.DrawCentered(dst, name, float64(bx+bw/2), float64(by+bh/2), 18, body)
-	s.fnt.DrawCentered(dst, "(輸入名稱;可用鍵盤編輯)", 320, 200, 11, color.RGBA{150, 160, 180, 255})
+	s.fnt.DrawCentered(dst, s.b.tr("(輸入名稱;可用鍵盤編輯)", "(type a name; the keyboard edits it)"),
+		320, 200, 11, color.RGBA{150, 160, 180, 255})
 
 	// 旗幟顏色。
-	s.fnt.DrawCentered(dst, "選擇旗幟顏色", 320, 232, 13, gold)
+	s.fnt.DrawCentered(dst, s.b.tr("選擇旗幟顏色", "CHOOSE YOUR BANNER COLOR"), 320, 232, 13, gold)
 	for i, fc := range shell.FlagColors {
 		x, y, w, h := s.flagRect(i)
 		vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{fc.R, fc.G, fc.B, 255}, false)
@@ -135,7 +136,8 @@ func (s *nameFlagScreen) draw(dst *ebiten.Image) {
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), bw2, bord, false)
 	}
 	if s.flagSel >= 0 && s.flagSel < len(shell.FlagColors) {
-		s.fnt.DrawCentered(dst, "旗色:"+shell.FlagColors[s.flagSel].Name, 320, 312, 13, body)
+		fc := shell.FlagColors[s.flagSel]
+		s.fnt.DrawCentered(dst, s.b.tr("旗色:"+fc.Name, "Banner: "+fc.EnName), 320, 312, 13, body)
 	}
 
 	drawBtn := func(rect func() (int, int, int, int), label string, accent color.RGBA) {
@@ -144,6 +146,6 @@ func (s *nameFlagScreen) draw(dst *ebiten.Image) {
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, accent, false)
 		s.fnt.DrawCentered(dst, label, float64(x+w/2), float64(y+h/2), 14, body)
 	}
-	drawBtn(s.cancelRect, "返回", color.RGBA{160, 140, 100, 255})
-	drawBtn(s.acceptRect, "開始遊戲", color.RGBA{120, 200, 130, 255})
+	drawBtn(s.cancelRect, s.b.tr("返回", "BACK"), color.RGBA{160, 140, 100, 255})
+	drawBtn(s.acceptRect, s.b.tr("開始遊戲", "START GAME"), color.RGBA{120, 200, 130, 255})
 }
