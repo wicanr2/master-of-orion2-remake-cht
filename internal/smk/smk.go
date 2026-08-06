@@ -8,30 +8,35 @@
 //
 // 這份實作是照 Smacker 的位元流結構自己寫的,不是移植誰的程式碼。驗收方式是拿真檔解。
 //
-// ============ ⚠ 現況:能解,但還沒解對 ============
+// ============ 驗收現況 ============
 //
-// **已驗證正確**(三個檔 INTRO / ORIONFIN / WININFIN 都成立):
+// **已驗證**(INTRO / ORIONFIN / WININFIN 三個檔都成立):
 //   - 標頭、幀大小表、幀旗標表、樹區的解析:所有幀資料吃完後檔案**殘餘 0 位元組**
 //     (`Trailing()`)。幀邊界只要錯一個位元組,這個數字就不會是 0。
-//   - 四棵 Huffman 樹:節點數都在標頭給的上界 `((size+3)>>2)+4` 之內(`TreeWarnings()`)。
+//   - 四棵 Huffman 樹的節點數都在標頭上界 `((size+3)>>2)+4` 之內(`TreeWarnings()`)。
 //   - 全片 1407 幀解得完,**沒有任何一次位元流走出樹外**。
-//   - 畫面內容是連貫的:認得出飛船、太空站、行星地表、星雲,顏色也對。
+//   - **位元預算幾乎完全吻合**:1407 幀合計只多讀 721 bits(平均每幀 0.5 bit,
+//     就是最後一個 code 跨過位元組邊界的填補)。樹的形狀是固定的,消耗的位元數
+//     只由「讀了哪些 code」決定——位元預算對得上,就代表 code 讀對了。
+//   - 第 1050 幀(經過一千多幀差分累積)畫面依然乾淨連貫。值解錯的解碼器會愈解愈爛。
 //
-// **尚未解對**:1407 幀裡有 **162 幀**(全部是 10–14 KB 的大幀)**多讀了位元**
-// (最多一幀多讀 5952 bits);小幀則精準到只差 −9 bits(正常的位元組尾端補齊)。
-// 多讀的部分會拿到 0,於是解出零星的壞塊——畫面上看得到的雜訊就是這麼來的。
+// ⚠ **一個曾經誤判、寫下來免得重犯**:中段幾幀(118–124,全片動作最劇烈的段落)畫面有明顯
+// 的方塊感,一開始被當成解碼錯誤查了很久。那是**原始素材本身**——1996 年 480×160、
+// 256 色、低位元率的 Smacker,高動態段落本來就這樣。真正的 bug 是另一件事(見下)。
 //
-// **已經測過、確定不是原因的**(負面結果,別再重試):
-//   - escape 值的位元組序反過來 → 超讀幀數 162 → **701**,更糟。
-//   - MRU 拿掉「與 last[0] 相同就跳過」的判斷 → 162 → **210**,更糟。
-//   - 對 SMK2 也讀 SMK4 的全彩模式位元 → 162 → **517**,更糟。
-//   - 幀大小表低位遮罩、樹的讀取順序、樹的上界:三個檔都自我檢查通過(見上)。
+// **修掉的 bug**:編碼器在「剩餘區塊全部與上一幀相同」時就**停筆**,不會把 SKIP 一路寫到
+// 最後一格。原本的實作照著「解滿 blocks 個區塊」跑,位元流用完之後繼續從補零的位元讀,
+// 於是在畫面底部畫出垃圾。改成位元流用完就停、剩餘區塊維持上一幀內容之後,
+// 超讀從 **1,289,836 bits(162 幀)降到 721 bits(38 幀)**。
 //
-// 所以問題範圍已經收斂到「**大幀的區塊迴圈裡,某條路徑比編碼器多消耗了位元**」。
-// 診斷工具留在 `cmd/smkdump`(`SMKDUMP_USAGE=1` 印每幀位元消耗、`SMKDUMP_DIAG=1`
-// 另外輸出索引灰階圖與調色盤色卡——索引圖乾淨而彩色圖髒就是調色盤的問題,反之亦然)。
+// **已測過、確定不是原因的**(負面結果,別再重試):escape 值的位元組序反過來
+// (超讀 162→701 幀,更糟)、MRU 拿掉「與 last[0] 相同就跳過」的判斷(162→210,更糟)、
+// 對 SMK2 也讀 SMK4 的全彩模式位元(162→517,更糟)。
 //
-// **因此這個解碼器目前不接進遊戲**:一段帶明顯雜訊的片頭比沒有片頭更糟。
+// 診斷工具在 `cmd/smkdump`:`SMKDUMP_USAGE=1` 印每幀位元消耗、超讀起點與消耗曲線;
+// `SMKDUMP_DIAG=1` 另外輸出索引灰階圖與調色盤色卡(索引圖乾淨而彩色圖髒 = 調色盤問題,
+// 反之 = 影像解碼問題)。真檔驗收:
+// `MOO2_SMK_TEST=<某個 .smk> scripts/test.sh ./internal/smk/`。
 //
 // ============ 格式重點(全部由實作驗證)============
 //
@@ -152,6 +157,28 @@ type Decoder struct {
 	trailing int
 	// treeWarn 記錄「樹的格數超過標頭上界」的自我檢查結果(空 = 四棵樹都在界內)。
 	treeWarn []string
+
+	// 診斷用:上一幀的區塊統計(見 LastBlockStats)。
+	blkTotal    int
+	blkOverAt   int    // 位元位置首次超出資料尾端時的區塊索引(-1 = 沒超出)
+	blkTypeUsed [4]int // 各型別各用了幾次
+	blkCurve    [][2]int
+}
+
+// LastBlockCurve 回傳上一幀的「區塊進度% vs 位元消耗%」取樣(八個點)。
+func (d *Decoder) LastBlockCurve() [][2]int { return d.blkCurve }
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+// LastBlockStats 回傳上一幀的區塊統計:總區塊數、超讀起點的區塊索引(-1 = 沒超讀)、
+// 四種區塊型別各用了幾次。超讀起點落在尾端 = 系統性少算;落在中段 = 解碼中途漂移。
+func (d *Decoder) LastBlockStats() (total, overAt int, byType [4]int) {
+	return d.blkTotal, d.blkOverAt, d.blkTypeUsed
 }
 
 // TreeWarnings 回傳建樹時的自我檢查警告(空 = 正常)。
@@ -356,12 +383,34 @@ func (d *Decoder) decodeVideo(data []byte) error {
 	blocks := bw * bh
 	v4 := d.H.Signature[3] == smkVersion4
 
+	d.blkTotal, d.blkOverAt, d.blkTypeUsed = blocks, -1, [4]int{}
+	limit := len(data) * 8
+
+	d.blkCurve = d.blkCurve[:0]
+	nextMark := blocks / 8
+
 	blk := 0
 	for blk < blocks {
+		if br.pos > limit {
+			// 位元流用完了:剩下的區塊維持上一幀的內容。
+			// 編碼器在「剩餘區塊全部不變」時就停筆,不會把 SKIP 一路寫到最後一格;
+			// 繼續解下去只會從補零的位元讀出垃圾,畫在畫面底部。
+			if d.blkOverAt < 0 {
+				d.blkOverAt = blk
+			}
+			break
+		}
+		for blocks > 0 && blk >= nextMark && len(d.blkCurve) < 8 {
+			// 記「解到 X% 的區塊時,位元用掉幾 %」。兩個百分比同步 = 均勻;
+			// 位元跑在前面 = 每個 code 都多吃一點;末段才暴衝 = 收尾有問題。
+			d.blkCurve = append(d.blkCurve, [2]int{blk * 100 / blocks, br.pos * 100 / max(limit, 1)})
+			nextMark += blocks / 8
+		}
 		t, err := d.typ.get(br)
 		if err != nil {
 			return err
 		}
+		d.blkTypeUsed[t&3]++
 		run := blockRuns[(t>>2)&0x3F]
 		switch t & 3 {
 		case blkMono:

@@ -2701,8 +2701,10 @@ type interactiveApp struct {
 	galleryGameMenuTick int
 	// galleryBombTick 是截圖廊在哪個 tick 切到軌道轟炸畫面(見該常數說明)。
 	galleryBombTick int
-	galleryBuilder  *sceneBuilder
-	gallerySession  *shell.GameSession
+	// galleryIntroTick 是截圖廊在哪個 tick 切到片頭過場(見該常數說明)。
+	galleryIntroTick int
+	galleryBuilder   *sceneBuilder
+	gallerySession   *shell.GameSession
 }
 
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
@@ -2730,6 +2732,13 @@ const galleryGameMenuTick = 71
 
 // galleryBombTick 是截圖廊在哪個 tick 切到軌道轟炸畫面——取截圖(t74)的前一拍。
 const galleryBombTick = 73
+
+// galleryIntroTick 是截圖廊在哪個 tick 切到片頭過場——留三拍讓它播出幾幀再截圖
+// (第一幀是黑的,截了看不出解碼有沒有成功)。
+const galleryIntroTick = 75
+
+// galleryIntroSeekFrames 是截圖廊要快轉幾幀才截圖(取一個已確認有內容的畫面)。
+const galleryIntroSeekFrames = 350
 
 // galleryShot 是「端到端過場截圖廊」腳本中,在某個絕對 tick 存一張圖的指令。
 type galleryShot struct {
@@ -2861,6 +2870,12 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		// 敵殖民地星、在星資訊面板點轟炸,敵星位置隨 seed 變動,腳本點不準。
 		idle, // t73: 由 galleryBombTick 換成轟炸畫面
 		idle, // t74: settle → 截圖 bombing
+
+		// 片頭過場(原版 Smack)。放最後:它會一直往前播,插在中間會吃掉後續的 tick。
+		idle, // t75: 由 galleryIntroTick 換成片頭
+		idle, // t76: settle
+		idle, // t77: settle
+		idle, // t78: settle → 截圖 intro(已播幾幀,不是全黑的第一幀)
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -2883,6 +2898,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{70, "18_loadgame.png"},
 		{72, "19_gamemenu.png"},
 		{74, "20_bombing.png"},
+		{78, "21_intro.png"},
 	}
 	return script, shots
 }
@@ -3008,6 +3024,17 @@ func (a *interactiveApp) Update() error {
 			a.cur = sc
 		}
 	}
+	// 截圖廊專用:片頭過場。正常模式是開場就播,截圖廊為了不打亂 tick 才挪到最後。
+	if a.galleryIntroTick > 0 && a.tick == a.galleryIntroTick && a.galleryBuilder != nil {
+		if sc := a.galleryBuilder.intro(); sc != nil {
+			// 快轉到有內容的一幀:片頭 76ms/幀而截圖廊一拍 16.7ms,照正常速度要等上百拍;
+			// 第 0 幀又是全黑的(片頭從黑淡入),截了看不出解碼成功與否。
+			if cs, ok := sc.(*cutsceneScreen); ok {
+				cs.seekForGallery(galleryIntroSeekFrames)
+			}
+			a.cur = sc
+		}
+	}
 	if t := a.cur.update(a.pollInput()); t != nil {
 		if t.quit {
 			return ebiten.Termination
@@ -3113,7 +3140,15 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 	if shot != "" || galleryDir != "" {
 		scale = 1
 	}
-	app := &interactiveApp{cur: menu, script: script, shotPath: shot, frames: frames, scale: scale,
+	// 正常互動模式先播片頭(原版 Smack 過場,見 cmd/moo2/cutscene.go);headless 驗證
+	// 與截圖廊直接進主選單——那些腳本是從主選單第一拍開始數 tick 的,插一段影片會整串偏掉。
+	start := origScreen(menu)
+	if shot == "" && galleryDir == "" {
+		if sc := b.intro(); sc != nil {
+			start = sc
+		}
+	}
+	app := &interactiveApp{cur: start, script: script, shotPath: shot, frames: frames, scale: scale,
 		galleryDir: galleryDir, galleryShots: shots}
 	if galleryDir != "" {
 		app.gallerySession = b.session
@@ -3124,6 +3159,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.galleryLoadWinTick = galleryLoadWinTick
 		app.galleryGameMenuTick = galleryGameMenuTick
 		app.galleryBombTick = galleryBombTick
+		app.galleryIntroTick = galleryIntroTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,

@@ -59,8 +59,19 @@ func main() {
 			if over := bits - nb*8; over > 0 {
 				overFrames++
 				overBits += over
-				if overFrames <= 8 {
-					fmt.Printf("  超讀 幀 %d: 影像 %d bytes,多讀 %d bits\n", i, nb, over)
+				if overFrames <= 6 {
+					total, overAt, byType := d.LastBlockStats()
+					pct := 0
+					if total > 0 && overAt >= 0 {
+						pct = overAt * 100 / total
+					}
+					fmt.Printf("  超讀 幀 %d: %d bytes,多讀 %d bits;超讀起點 區塊 %d/%d(%d%%);型別次數 單色%d 全彩%d 略過%d 填色%d\n",
+						i, nb, over, overAt, total, pct, byType[0], byType[1], byType[2], byType[3])
+					fmt.Printf("       區塊%%/位元%%:")
+					for _, c := range d.LastBlockCurve() {
+						fmt.Printf(" %d/%d", c[0], c[1])
+					}
+					fmt.Println()
 				}
 			}
 		}
