@@ -17,14 +17,18 @@
 
 ## 扎實資產層(有逆向驗證基礎)
 
-LBX 解碼(scan-line RLE 影像 / 多幀 delta / 調色盤鏈)、SAVE10.GAM 唯讀解析、16 畫面真原版美術 + 擦底疊字、數百條 UI 譯表、go/ebiten + docker 編譯截圖 + AppImage 打包骨架。
+LBX 解碼(scan-line RLE 影像 / 多幀 delta / 調色盤鏈)、SAVE10.GAM 唯讀解析、各原版畫面的真美術 + 擦底疊字、數百條 UI 譯表、go/ebiten + docker 編譯截圖 + AppImage 打包骨架。
+(畫面數以程式碼為準:`grep -c '^func (b \*sceneBuilder) ' cmd/moo2/*.go`。文件裡寫死數字必然過期。)
 
 ## 仍近似 / 待校準 / oracle-gated(誠實 caveat)
 
-- **③ 按鍵逐畫面像素對齊 ✅ 已做到 oracle 上限**(2026-07-12):逐畫面比對 openorion2 `initWidgets` 真值,把有真值卻用 PIL 的補齊(planets 補第8列、research/fleet/officer/info 座標校正;menu 本就 0px)。無對應 openorion2 view 的畫面(colony/races/newgame/shipDesign)無硬編真值可覆蓋,維持 PIL;結果顯示畫面維持整畫面返回。要再精確只能靠原版截圖(本專案不採)。
+- **③ 按鍵逐畫面像素對齊**:openorion2 那條線已做到頂(2026-07-12 逐畫面比對 `initWidgets` 真值,把有真值卻用 PIL 的補齊:planets 補第8列、research/fleet/officer/info 座標校正;menu 本就 0px)。
+  ⚠ **2026-08-07 翻案**:這裡原本寫「無對應 openorion2 view 的畫面無硬編真值可覆蓋…要再精確只能靠原版截圖(本專案不採)」——**錯的**。真正的一手座標在**原版執行檔的反組譯**裡,與 openorion2 有沒有實作無關。當天做地面戰畫面(openorion2 對它零命中)時,反組譯直接給出全部座標:兩側面板貼圖點、`Darken_Fill_` 矩形、置中文字 x、列高、部隊落點公式與兩側基準 X。**openorion2 沒有的畫面,先去反組譯挖繪製呼叫的立即數,別退回估計值。** colony/races/newgame/shipDesign 仍待用這個方法重挖。
 - **需原版 oracle 對照**(用 archive.org 線上 DOS 原版,**不需 DOSBox**;見 `docs/tech/oracle-comparison-20260712.md`、記憶 `moo2-oracle-is-archive-org-online`):飛彈速度(`missile.go` 手冊公式與附表自相矛盾)、地面戰 d100 核心傷亡解算結構(`ResolveGroundBattle` 沿用一代 1oom 借用結構,force 值用 MOO2 手冊表但結構本身未對 MOO2 實機核實)、安塔蘭母星防禦艦隊戰力(手冊/openorion2 均無精確數字,用保守預設 6 艘末日之星等級)、**母星開局態**(2026-07-12 oracle 已釘死:農4/工2/科2/Abundant/Trade Goods,待校準)。
 - **需先建基礎設施**:戰機/航母(新戰鬥子模型)、部分軍事/防禦建築(~13 棟,需艦隊駐防/軌道防禦系統先落地)。
-- **UI 最小化**:議會/安塔蘭無勝利/落敗結局動畫;議會 accept/reject 用文字提示疊在原版底圖,非原版落敗對話框藝術(尚未定位該 LBX);完整 spy/leader/多AI 目標選擇 UI 未做。
+- **UI 最小化**:議會無勝利/落敗結局動畫,accept/reject 用文字提示疊在原版底圖,非原版落敗對話框藝術(尚未定位該 LBX);完整 spy/leader/多AI 目標選擇 UI 未做。
+  (安塔蘭這一路已補畫面:2026-08-07 建了王座廳 `cmd/moo2/antaranroom.go`,用原版 `antaroom.LBX`;
+  留白是原版的 55 幀推鏡動畫只取最終定格。)
 - **openorion2 完成度天花板**:MOO2 25 個領袖技能,openorion2 自己也只實作 4 個效果消費端;remake 接了科學家/貿易家 2 個殖民地技能,艦艇軍官技能仍裝飾(非 remake 特有缺口)。
 - **turn-1 校準開放項**:科學家分配(科3 vs 原版可能科4)待 playtest 定案。
 

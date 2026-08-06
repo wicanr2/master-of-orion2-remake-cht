@@ -1,5 +1,10 @@
 # WORKLIST — 銀河霸主2 go/ebiten 重製 + 繁中化
 
+> ⚠ **勾選狀態會過期,以程式碼為準**(rule 63)。這份清單橫跨數十輪,底下 Phase 0–4 有不少
+> `[ ]` 其實早就做完了(2026-08-07 已修掉一批可核實的)。要判斷「某項做了沒」,
+> **先 grep 程式碼,別信這裡的方框**。各輪的實際成果以 `docs/re/01-gap-report.md`
+> 與 `git log` 為準。
+
 > ⚠ **「還原度 20%」是 2026-07-04 接原版美術前的過期快照,勿再當現況錨點。** 現為可玩的多帝國 4X 迴圈;詳見 [`docs/HONEST-STATUS.md`](docs/HONEST-STATUS.md)。
 > 下方大量 `[x]` 中,gameplay 子系統類仍須以「對原版實測」重評數值對齊度(rulebook 65),不因測試綠自評還原度。
 > 優先進度(2026-07-12 使用者確認):**①音樂/音效 已完成**(PCM 播放 + 場景 BGM 切換 + 按鈕音效;曲目↔場景精確身分待人耳定案)、**②忠實新遊戲流程 已完成**(版本選擇→難度/星系→14 族肖像選擇→自訂點數→命名旗色→真母星;turn-1 少數數值待 playtest 校準)、**④gameplay 子系統全接**(殘留=原版 oracle 校準數字)、**③按鍵像素對齊已做到 openorion2 oracle 上限**(逐畫面比對 initWidgets 真值補齊估計座標;無對應 view 的畫面只能維持 PIL)。**至此無純自驅剩項**——剩全是 oracle-gated(DOSBox)、需建基礎設施(戰機/航母)、或設計面 UI。
@@ -114,11 +119,11 @@
 - [x] 可行性總論(`00`)
 - [x] PLAN.md / WORKLIST.md
 - [x] .gitignore(擋版權素材)
-- [ ] README(含致謝)
-- [ ] 本機 git commit(push 待使用者確認)
+- [x] README(含致謝)——`README.md` §致謝
+- [x] 本機 git commit(push 待使用者確認)
 
 ## Phase 1 — 資料層移植(純 Go)
-- [ ] Go module 初始化 + docker build 環境
+- [x] Go module 初始化 + docker build 環境(`go.mod`、`docker/`、`scripts/build.sh`)
 - [x] LBX 容器解析(magic 0xfead、offset 表)— internal/lbx,真實檔驗證
 - [x] scan-line RLE 影像解碼 — internal/lbx/image.go
 - [x] palette 解析(6-bit → 8-bit)— 解碼與上色解耦(Frame.ToRGBA)
@@ -169,7 +174,7 @@
 - [~] 擦底疊字改善(fill 加高;darkest 採樣反而過暗已還原)。「顯示篩選」寬粗英文仍微透,需整圖替換或更寬擦除(降級 todo)
 - [x] 其餘字串源逐一 dump + 翻(2026-07-11 盤點:多數已完成,見 assets/i18n/):科技描述 techdesc.tsv(83)、種族 races/raceinfo.tsv、事件 event.tsv(98)、外交 diplo.tsv(780)、help.tsv(704)、母星名 starname.tsv、技能 skilldesc.tsv、estrings(585)/rstring(178)/antaran、艦名 shipname.tsv(535,同日稍後完成,見下方獨立項)、隨機星名 starname-random.tsv(829,同日稍後完成,見下方獨立項)
 - [x] **★ 調色盤鏈解鎖(關鍵)**:對照 openorion2 `gfx.cpp Image::load` 破解「無內嵌調色盤畫面」上色機制(基底提供圖 + 本圖部分內嵌疊加);實作 `cmd/moo2/interactive.go` `resolvePalette`;研究選擇(TECHSEL,借 SCIENCE 調色盤)完整渲染驗證。見 `docs/tech/palette-chain.md`
-- [ ] 依 `palette-chain.md` 對照表逐畫面上色:COLONY(COLONY2 50)/DESIGN/FLEET(FLEETLIST)/INFO/星系 GUI(GAMEMENU)… 提供圖 index 逐一對照 openorion2 建構子(勿憑記憶)
+- [x] 依 `palette-chain.md` 對照表逐畫面上色——機制是 `resolvePalette` + `paletteChain`,各畫面都在用。剩 COLGCBT(地面戰 sprite)的來源未定案,見 `cmd/moo2/groundcombat.go` 檔頭
 
 ## Phase 4b — 串接互動(還原原版的骨幹,-game)⭐
 > 各原版畫面不再各自獨立 flag,而是串成單一可導覽的互動程式(`cmd/moo2 -game`)。目標:開機進原版主選單,滑鼠點選在原版畫面間跳轉,全繁中。
@@ -231,9 +236,9 @@
 - [x] 新遊戲種族選擇:NEW GAME 設定畫面加種族選擇框(13 經典種族循環選,顯示名+特性),ACCEPT 套 ApplyRace 起始加成(工業/研究/食物/成長/國庫/戰鬥百分點,對齊各族招牌特性)。測試 TestApplyRaceBonuses/SakkraGrowthFaster/MrrshanCombatBonus
 - [ ] hover highlight 與原版一致(目前為細框提示)
 - [ ] 淘汰自製簡約殼(`-play`):方向不符「與原版一模一樣」,改以原版 overlay 畫面 + 既有回合引擎(internal/engine)重建可玩迴圈
-- [ ] 補齊需全域調色盤鏈的畫面(COLONY/DESIGN/COUNCIL/DIPLOMAT…)到對照組
+- [x] ~~補齊需全域調色盤鏈的畫面到對照組~~ 這些畫面在遊戲裡早就跑起來了;`docs/reference-screens.md` 的靜態對照組收錄落後於實作,已在該文標明
 - [ ] **[HARD] 開工先做:窮舉所有文字源(LBX 各類 + Go hardcode),各寫 dumper,用引擎自己 reader dump 精確 key**
-- [ ] 逐畫面重建:主選單/載存檔/星系圖/行星清單/殖民地/科技研究/艦隊/軍官/種族資訊/對話框
+- [~] 逐畫面重建:主選單/星系圖/行星清單/殖民地/科技研究/艦隊/軍官/種族資訊/對話框皆已建;**只剩「載存檔」畫面**(LOADSAVE.LBX 全 repo 零引用,主選單 Continue/Load 目前無存檔選單——原版 oracle 對照的 issue #2 仍開著)
 - [ ] IMGLOG 探查模式:記錄 `(lbx,index)` 對照畫面 UI(盤點烘字按鈕/標籤用)
 - [ ] 烘進 gfx 的英文:擦底疊字(cht_label 模式)or 整圖替換(image_override 模式)
 - [x] LBX 字串譯文表:科技名/描述、種族、事件、外交、星名、help、技能、殖民地、議會、選單等 22 個逐源分檔 TSV 已完成(assets/i18n/*.tsv);艦名池(2026-07-11 補完,shipname.tsv)、隨機星名池(2026-07-11 補完,starname-random.tsv)均已落地,四個專有名詞池全數定案
@@ -326,7 +331,7 @@
 - [x] 接線:主選單 BGM(STREAMHD)+ 按鈕點擊音效(BUTTON1)— `cmd/moo2/audiohook.go`
 - [x] 曲目/UI 事件對應(2026-07-10 定案到靜態溯源極限):外交樂反組譯硬證(track 13/14/15);menu/galaxy/combat 對應 Play 函式在 DOS build 為死碼,維持時長啟發式(誠實標,再定案需聆聽或 Windows build RE)。見 `audio-track-map.md` 第七節
 - [x] ~~`CMBTSFX/SPHERSFX` 巢狀音庫格式逆向~~ **(2026-07-11 前提翻案,rulebook 62/63)**:CMBTSFX/SPHERSFX **不是音效庫,是戰鬥視覺特效動畫**(79 資產,爆炸/光束/護盾命中多幀 sprite,標準 LBX 影像,`lbxinfo` 直接解得);戰鬥**音效**全在 SOUND.LBX(68 具名音效已解碼含 NRGBLAST/PHOTON/TORPDO1/EXPL/SHIPHIT1/SHIELD…)。見 `docs/tech/audio-format.md`
-- [ ] 戰鬥音效接線:把 SOUND.LBX 現成戰鬥音效(開火依武器類型/命中/擊毀/護盾)接到戰術戰鬥事件(`fireRound`);無需逆向,純接線
+- [x] 戰鬥音效接線:SOUND.LBX 的 NRGBLAST/MISLFIRE/SHIPHIT1… 已接進戰術戰鬥(`cmd/moo2/audiohook.go`)
 - [ ] (選)CMBTSFX 爆炸/光束特效動畫接進戰術戰鬥畫面(視覺增強)
 - [x] ~~SoundFont 處理~~ → 不需要(無 MIDI 音樂)
 - [ ] 桌面實測驗收:使用者對原版聆聽比對(主選單 BGM + 點擊音是否為正確曲/音)
@@ -349,8 +354,8 @@
 - [x] 技術知識庫:LBX 資產格式 / 存檔格式 / 枚舉 / 公式 / ebiten 移植筆記(`docs/tech/`)
 - [x] 華人圈中文討論資訊考究章節(`docs/history/moo2-chinese-community.md`,歷史考究專家,31 來源+誠實揭露侷限)
 - [x] 華人圈文化現象(`docs/culture/moo2-chinese-cultural-phenomenon.md`,文案作家,事實有本、無 AI 味)
-- [ ] sprite/tile 畫質優化可行性 markdown
-- [ ] UI 界面調整可行性 markdown
+- [x] sprite/tile 畫質優化可行性 markdown(`docs/tech/sprite-tile-quality.md`)
+- [x] UI 界面調整可行性 markdown(`docs/tech/ui-adjustment.md`)
 - [ ] 技術知識庫:音樂整合 / 鍵盤滑鼠整合 / patch 處理 / 選單擴展(後續各 Phase 完成時補)
 - [x] 三平台打包 CI(`docs/tech/packaging.md`):macOS(`.github/workflows/build-macos.yml`,`macos-14` runner 原生編 arm64+amd64 → `lipo` universal → `.app`/`.dmg`/`.tar.gz`)+ Linux/Windows(`.github/workflows/build-desktop.yml`);YAML 經 actionlint + yaml.safe_load 驗證,尚未在真 Mac 上實跑驗證(無 Mac 測試機)
 - [x] 本機 docker 打包腳本(`docs/tech/packaging.md` §5):`scripts/package-appimage.sh`(Linux AppImage,linuxdeploy+appimagetool)、`scripts/package-windows.sh`(Windows zip)已實際跑過,`dist/MasterOfOrion2-cht-x86_64.AppImage`、`dist/MasterOfOrion2-cht-windows-amd64.zip` 皆產出並驗證內容(解壓/objdump 確認)。**推翻先前假設**:ebiten v2.9.9 Windows backend 已改純 Go(purego,無 cgo),`CGO_ENABLED=0` 即可跨編,不需 mingw-w64(`build-desktop.yml` 仍裝了 mingw,屬保守多餘,非錯誤,可留後續簡化)

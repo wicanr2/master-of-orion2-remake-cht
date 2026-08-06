@@ -203,7 +203,9 @@ Dimensional Portal 沿用同一套既有機制即可正確 gate,不需要額外�
 社群逆向資料),應更新此常數並移除本段免責聲明。
 
 **最小 UI**(`cmd/moo2/interactive.go` 的 `fleet()` 場景):在艦隊列表畫面左下空白區加一個
-「⚔ 攻打安塔蘭母星」文字提示 + 熱區,只在 `CanAssaultAntares()` 為真時顯示;點擊呼叫
+「攻打安塔蘭母星」文字提示 + 熱區,只在 `CanAssaultAntares()` 為真時顯示。
+⚠ **2026-08-07 更新**:點擊改為**進入安塔蘭王座廳**(原版 `Main_Antaran_Room`,
+`cmd/moo2/antaranroom.go`,用原版 `antaroom.LBX` 美術),由該畫面確認後才呼叫
 `AssaultAntares()` 後導向既有的 `battleResult()` 戰鬥結果畫面(該畫面讀 `s.LastBattle`,
 `AssaultAntares` 已寫入,直接複用,不需要新的結果畫面)。**刻意不做**:原版議會選舉那種
 「灰階按鈕」美術(手冊沒有描述具體 UI 佈局可依循)、勝利/落敗專屬結束畫面(與議會選舉同款限制,

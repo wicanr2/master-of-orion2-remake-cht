@@ -27,7 +27,10 @@
 ## 0b. 剩餘工作(2026-07-10,分「需 oracle」與「可自驅」)
 
 - **需要使用者 oracle**(我無法替代):① 曲目↔場景定案(聽 `~/moo2-audio-dump`)② 真母星初始(DOSBox 開局第 1 回合 `.GAM` 存檔)③ 地面戰/飛彈**精確解算校準**(DOSBox 實測;演算法已社群逆向,見 `ground-combat-algorithm.md`,但傷亡式有歧義待校準)。
-- **可自驅**:① 自繪畫面重建成原版佈局(diplomacy 使節動畫 + tactical 戰場,見 `screen-rebuild-plan.md`)② 逐畫面「渲染原版→量測→精確熱區」(原版美術即 oracle,不需外部截圖)③ 其他系統逐一接 gamedata 真公式。
+- **可自驅**:① 自繪畫面重建成原版佈局(diplomacy 使節動畫 + tactical 戰場,見 `screen-rebuild-plan.md`)
+  ② **逐畫面座標對齊:一手來源是反組譯**(`Print_Centered_` @ 0x1210FD、`Darken_Fill_` @ 0x1298DE 等繪製
+  呼叫的立即數就是真值);openorion2 `initWidgets` 是次要來源(它自己缺很多畫面);渲染原版美術量測是
+  最後手段。③ 其他系統逐一接 gamedata 真公式。
 
 ## 1. 環境 / 路徑(這台機器)
 
@@ -43,14 +46,14 @@
 
 ## 2. 建置 / 測試 / 執行(一律 docker,[HARD])
 
-```bash
-# 編譯 -game(需 CGO/X11 → moo2-ebiten image)
-docker run --rm -v "$PWD:/src" -v "$PWD/.docker-cache/go:/go" -w /src moo2-ebiten \
-  bash -c 'go build -buildvcs=false -o /dev/null ./cmd/moo2 && echo OK'
+> **用 `scripts/` 底下的腳本,別手打 `docker run`**——手打容易漏掉 `--log-opt max-size/max-file`
+> (daemon 預設的 json-file 沒有 rotation,曾把 log 長到幾百 GB)。
 
-# 純 Go 單元測試(shell/engine/save/lbx/i18n/gamedata)
-docker run --rm -v "$PWD:/src" -v "$PWD/.docker-cache/go:/go" -w /src moo2-ebiten \
-  bash -c 'go test ./internal/...'   # 注意:internal/uifont 需 display,用 xvfb 才過
+```bash
+scripts/build.sh                      # 純 Go 套件編譯(CGO=0)
+scripts/test.sh ./internal/shell/     # 純 Go 單元測試;不給參數則跑預設清單
+scripts/test-ebiten.sh ./cmd/moo2/    # 需 CGO/X11 的套件(cmd/moo2、internal/uifont)
+scripts/screenshot.sh <遊戲夾> out.png -- -lbx fleet.lbx -asset 0   # 單張畫面截圖
 
 # headless 跑 -game 並截圖驗證(對原版比對的唯一自動化手段)
 DATA=/home/anr2/moo2-private-build/gamedata/mastori2
@@ -72,7 +75,7 @@ docker images:`moo2-ebiten`(CGO+X11+xvfb,已存在)、`golang:1.25-bookworm`(純
 - `internal/lbx/`:LBX 解碼(容器/RLE/多幀 delta/調色盤鏈)。對照 openorion2 逐位元組驗證。
 - `internal/save/`:原版存檔唯讀解析(SAVE10.GAM 全區段,有回歸護欄)。
 - `internal/gamedata/`:少數真手冊公式(人口成長 colony.go、研究成本表)。**其他很多是估計。**
-- `cmd/moo2/interactive.go`:16 畫面載入真 LBX 美術 + 擦底疊字中文化。畫面像原版。
+- `cmd/moo2/*.go`:各原版畫面載入真 LBX 美術 + 擦底疊字中文化(數量會變動,以 `grep -c '^func (b \*sceneBuilder) ' cmd/moo2/*.go` 為準,別在文件裡寫死)。畫面像原版。
 - `assets/i18n/*.tsv`:UI 譯表(數百條)。
 
 **自製 / 不忠實(當心,別信它的測試綠)**
@@ -102,14 +105,27 @@ docker images:`moo2-ebiten`(CGO+X11+xvfb,已存在)、`golang:1.25-bookworm`(純
 
 ### 優先 3 — 按鍵 / 熱區逐畫面像素對齊 ✅ 已做到 oracle 上限(2026-07-12)
 - [x] 逐畫面比對 openorion2 `initWidgets` 硬編 `createWidget` 真值 vs remake 現行座標,把有真值卻用 PIL/估計的補齊:menu(本就 0px)、planets(補第8列 + 修 -1px 漂移)、research(右欄標籤)、fleet(Combat/RETURN/SCRAP 標籤)、officer(領袖槽距 + HIRE)、info(五列選單 + tech 熱區)。方法:派 subagent 逐畫面對碼、Opus 核實後套用。
-- [~] **oracle 上限**:colony/races/newgame/shipDesign 在 openorion2 是 STUB 或無對應 view,無硬編座標可覆蓋,維持 PIL 量測(要再精確只能靠原版截圖,本專案不採)。battleResult/council/turnSummary 是結果/摘要顯示畫面,維持「點任意處返回」(合理 UX,使用者確認不動)。
+- [~] **openorion2 這條線到頂了,但不是「沒有真值可用」**:colony/races/newgame/shipDesign 在 openorion2 是 STUB 或無對應 view。
+  ⚠ **2026-08-07 翻案**:原本這裡寫「要再精確只能靠原版截圖(本專案不採)」——**錯的,而且是會擋死後續工作的錯**。
+  真正的一手座標在**原版執行檔的反組譯**裡,openorion2 有沒有實作完全不相干。當天做地面戰畫面時,openorion2
+  對它零命中,而反組譯直接給出全部座標:`sub_B8BC7`/`sub_B8C8B`(兩側面板貼圖點、`Darken_Fill_` 矩形、
+  文字置中 x、列高)、`sub_B88B2` + 常數 `dword_B6CDE`(部隊落點公式與兩側基準 X)。
+  **凡是 openorion2 沒有的畫面,先去反組譯挖 `Print_Centered_` / `Darken_Fill_` / 貼圖呼叫的立即數,別退回估計值。**
+  battleResult/council/turnSummary 是結果/摘要顯示畫面,維持「點任意處返回」(合理 UX,使用者確認不動)。
 
 ### 優先 4 — 忠實 gameplay 規則(主體工作量,對應 PLAN「從零重建引擎」軌)
-- [ ] 殖民地:格子地形 + 每格產出 + 30+ 建築全表 + 污染/食物/貿易真公式(手冊為權威)。
-- [ ] 科技樹:每主題在數科技間**抉擇** + 真 RP 成本表(gamedata 已有 cResearchCosts)。
-- [ ] 戰鬥:真實武器機制(命中/傷害/射程/防禦/飛彈躲避/球狀傷害/地面戰)。
-- [~] 艦艇設計:艦體空間格 + 每元件佔格已完成(2026-07-11,shell/gamedata 層,見 `docs/tech/ship-design-space.md`);改造 mod 佔格與 Design Dock UI 繪製仍待。
-- [ ] 把 session.go 裡自編的近似係數逐一換成手冊/逆向真值,或在 UI/文件明標 remake 近似。
+
+> ⚠ 這一節的勾選狀態原本停在 2026-07-10,與同一份文件 §0 的「研究系統是首個完整忠實 gameplay 系統」
+> 以及 `HONEST-STATUS.md` 的「④ gameplay 子系統全接」互相矛盾。2026-08-07 依程式碼現況訂正。
+
+- [x] 殖民地:建築全表 + 污染/食物/貿易真公式(`docs/tech/colony-buildings.md`、`colony-economy-maintenance.md`)。
+      ⚠ **格子地形 + 每格產出未做**——remake 的殖民地是「職務人數 × 每人產出」模型,不是原版的逐格地形。
+- [x] 科技樹:每主題在數科技間**抉擇** + 真 RP 成本表(`docs/tech/research-system-status.md`)。
+- [x] 戰鬥:命中/傷害/射程/防禦/飛彈躲避/球狀傷害/地面戰皆已接 gamedata 真公式;
+      艦艇損傷與修復 2026-08-07 補上(`internal/shell/repair.go`)。
+- [~] 艦艇設計:艦體空間格 + 每元件佔格 + 改造 mod 佔格已完成;Design Dock 的原版繪製仍待。
+- [~] 把 session.go 裡自編的近似係數逐一換成手冊/逆向真值——**持續進行中**,每輪的成果記在
+      `docs/re/01-gap-report.md`。剩餘的自編值都已在程式碼註解標明來源等級。
 
 ## 5. 鐵律(接手必守)
 
@@ -117,7 +133,7 @@ docker images:`moo2-ebiten`(CGO+X11+xvfb,已存在)、`golang:1.25-bookworm`(純
 2. 編譯/測試**一律 docker**([HARD]);Python 用 docker uv.venv。
 3. **版權資產絕不入 repo**:遊戲 LBX/存檔只在 `/home/anr2/moo2-private-build/`;`.gitignore` 已擋;`dist/` 已 ignore。
 4. **不臆造數值**:每個係數標來源;查不到就說查不到(見 `docs/tech/component-values.md` 的 provenance 做法),不憑印象填。第一性原理查手冊/逆向。
-5. 預設繁體中文;commit message 結尾 `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`。
+5. 預設繁體中文;commit message 結尾加 `Co-Authored-By:` 署名(型號依當時 session 的環境設定,別照抄舊值)。
 6. 每輪 push 到 `main`;每輪盤點新文件與 worklist/audit 有無衝突,清掉過期斷言(rule 63)。
 7. 機械工作(翻譯/移植/打包)可派便宜 subagent;但**還原度判斷要對原版實測**,別只信 subagent 回報(記憶 `moo2-cheap-subagent-division`)。
 
@@ -125,4 +141,4 @@ docker images:`moo2-ebiten`(CGO+X11+xvfb,已存在)、`golang:1.25-bookworm`(純
 
 - 記憶自動載入:`~/.claude/projects/-home-anr2-moo2/memory/MEMORY.md`(索引)。關鍵:`moo2-fidelity-20pct-not-test-green`、`moo2-game-interactive-architecture`、`openorion2-is-renderer-not-engine`、`ebiten-cht-reference-paths`。
 - 若要在**別台機器**接續同一對話(`claude -r`),用 `dev-setup-bundle` skill 打包(含 `claude-session/`)。同機重啟不需要,直接讀本檔即可。
-- 最近進度:`git log --oneline -15`。HEAD = `40216fc`(誠實現況評估)。
+- 最近進度:`git log --oneline -15`。(**不要在文件裡寫死 HEAD**——寫下的那一刻就開始過期。)
