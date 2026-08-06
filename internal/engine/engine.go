@@ -86,6 +86,14 @@ type ColonyState struct {
 	// 併入殖民地稅收+餘糧+貿易品小計(故建築 % 一併放大,對應手冊「money 收入受太空港/證交所加成」)。
 	IncomePerPop int
 
+	// SpecialIncome 是行星特殊物產給這個殖民地的每回合固定 BC 收入
+	// (手冊:寶石礦 +10 BC/回合、金礦 +5 BC/回合;見 gamedata.SpecialIncomePerTurn)。
+	// 與 IncomePerPop 不同,這筆與人口無關——三人小殖民地與四十人大都會拿一樣多。
+	// 套用點在 RunEmpireTurn 逐殖民地迴圈,併進該殖民地的收入小計,因此一併受
+	// IncomeBonusPercent(太空港/證交所)放大——手冊原文是「該殖民地**所有來源** BC 收入
+	// +N%」,寶石礦收入是該殖民地的一個 BC 來源,不排除。
+	SpecialIncome int
+
 	// PlanetGravity 該殖民地所在行星的重力等級(LOW_G/NORMAL_G/HEAVY_G,GAME_MANUAL.pdf p.58)。
 	// 驅動 colonyFood/RunColonyTurn 對 per-worker 產出套用的重力懲罰(見
 	// gamedata.GravityPenaltyPercent)。

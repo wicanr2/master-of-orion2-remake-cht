@@ -203,6 +203,9 @@ func (b *sceneBuilder) drawColonyLeftPanel(dst *ebiten.Image, idx int, c engine.
 	if star := sess.PlayerColonyStarIndex(idx); star >= 0 && star < len(sess.Planets) {
 		p := sess.Planets[star]
 		env = fmt.Sprintf("%s / %s / 礦產%s / 重力%s", p.Climate, p.Size, p.Mineral, p.Gravity)
+		if sp := gamedata.PlanetSpecialName(p.SpecialID); sp != "" {
+			env += " / ★" + sp // 特殊物產:金礦/寶石礦的收入、遠古文物的研究都靠它
+		}
 	}
 	b.fnt.Draw(dst, env, x, 82, 11, colBodyCol)
 	b.fnt.Draw(dst, fmt.Sprintf("人口 %d / %d", c.Population, c.PopMax), x, 100, 12, colBodyCol)

@@ -269,22 +269,37 @@ func (s *GameSession) newColonyFromStar(starIdx int, gov gamedata.MoraleGovernme
 		return engine.ColonyState{}, false, "此類行星需額外科技才能建立殖民地(氣態巨星/小行星帶,尚未支援)"
 	}
 
-	foodPerFarmer := gamedata.ClimateFoodPerFarmer(climate) + foodBonus
+	// 行星特殊物產的效果(手冊定性 + 反組譯定量,見 gamedata/planet_special.go)。
+	//
+	// 這裡只處理「殖民當下」的兩類:①原住民併入人口 ②持續性產出/收入修正。
+	// 太空殘骸/海盜藏寶/失散殖民地/受困英雄/遠古文物那五種是**抵達星系時**觸發的一次性發現
+	// (原版 Do_System_Discoveries_At_Star_),在 discovery.go,不在這裡。
+	special := planet.SpecialID
+	// 原住民:殖民船帶來的 1 個人口單位之外,原版再加 3 個原住民人口單位(全部是農夫)。
+	startPop := colonizeStartPopulation + gamedata.SpecialExtraPopulationOnColonize(special)
+
+	foodPerFarmer := gamedata.ClimateFoodPerFarmer(climate) + foodBonus +
+		gamedata.SpecialFoodPerFarmerBonus(special) // 原住民:手冊「+2 food production advantage」
 	industryPerWorker := gamedata.MineralIndustryPerWorker(mineral) + indBonus
 	// 每科學家研究用銀河基準 3(gamedata.ResearchPerScientistNorm)。
 	// 先前這裡硬編 30——那是 2026-07-12 母星校正前的舊值,母星改成 3 之後這裡沒跟著改,
 	// 造成「拓殖一顆新星,研究產出是母星的十倍」的失衡。手冊無環境相關的研究公式,兩處同一基準。
 	researchPerScientist := gamedata.ResearchPerScientistNorm + resBonus
+	if n := gamedata.SpecialResearchPerScientist(special); n > 0 {
+		// 遠古文物:手冊「produces 5 research points instead of the usual 3」——
+		// 是**取代**基準值而不是相加,故種族加成仍疊在上面。
+		researchPerScientist = n + resBonus
+	}
 
 	popMax := gamedata.PlanetBasePopMax(size, climate)
-	if popMax < colonizeStartPopulation {
-		popMax = colonizeStartPopulation // 保底:新殖民地的人口上限不能低於起始人口本身
+	if popMax < startPop {
+		popMax = startPop // 保底:新殖民地的人口上限不能低於起始人口本身
 	}
 
 	colony = engine.ColonyState{
-		Population:           colonizeStartPopulation,
+		Population:           startPop,
 		PopMax:               popMax,
-		Farmers:              colonizeStartPopulation, // 全農,見檔頭§2 理由(避免首回合饑荒)
+		Farmers:              startPop, // 全農,見檔頭§2 理由(避免首回合饑荒)
 		FoodPerFarmer:        foodPerFarmer,
 		IndustryPerWorker:    industryPerWorker,
 		ResearchPerScientist: researchPerScientist,
@@ -293,6 +308,9 @@ func (s *GameSession) newColonyFromStar(starIdx int, gov gamedata.MoraleGovernme
 		MineralRichness:      mineral,
 		Climate:              climate,
 		MoralePercent:        colonyMoralePercent(gov, nil), // 新殖民地無任何建築,見檔頭§2
+		// 金礦 +5 / 寶石礦 +10 BC/回合(手冊逐字)。SpecialIncome 是殖民地層的固定收入,
+		// 由 engine.RunEmpireTurn 併進帝國總收入。
+		SpecialIncome: gamedata.SpecialIncomePerTurn(special),
 	}
 	return colony, true, ""
 }
@@ -367,6 +385,20 @@ func (s *GameSession) ColonizeStar(starIdx int) ColonizationResult {
 
 	star.Owner = 1
 	s.Ships = append(s.Ships[:shipIdx], s.Ships[shipIdx+1:]...) // 消耗這艘殖民船
+	s.consumeSpecialOnColonize(starIdx)
 
-	return ColonizationResult{Ok: true, ColonyIndex: idx, StartPopulation: colonizeStartPopulation, PopMax: colony.PopMax}
+	return ColonizationResult{Ok: true, ColonyIndex: idx, StartPopulation: colony.Population, PopMax: colony.PopMax}
+}
+
+// consumeSpecialOnColonize 把「殖民後就消失」的特殊物產從行星上清掉。
+// 原版只有原住民這一種(`Make_New_Colony_Or_Outpost_` 在原住民分支寫 `[planet+0x0F] = 0`)——
+// 原住民一旦併進殖民地人口就不再是「這顆星上的特殊物產」,再殖民一次不會又冒出 3 個人;
+// 金礦/寶石礦/遠古文物則是持續效果,原版不清,這裡也不清。
+func (s *GameSession) consumeSpecialOnColonize(starIdx int) {
+	if starIdx < 0 || starIdx >= len(s.Planets) {
+		return
+	}
+	if gamedata.SpecialConsumedOnColonize(s.Planets[starIdx].SpecialID) {
+		s.Planets[starIdx].SpecialID = gamedata.NoSpecial
+	}
 }

@@ -314,3 +314,50 @@ func TestRunEmpireTurnFreighterMaintenanceZeroNoOp(t *testing.T) {
 		t.Errorf("淨 BC = %d,預期 12", out.NetBC)
 	}
 }
+
+// TestRunEmpireTurnSpecialIncome 驗證行星特殊物產的固定收入(寶石礦 +10 / 金礦 +5 BC/回合,
+// 手冊逐字)真的進到帝國收入,且與人口無關——同一顆寶石礦星,人口 5 與人口 1 拿到的一樣多。
+func TestRunEmpireTurnSpecialIncome(t *testing.T) {
+	base := ColonyState{
+		Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
+		PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G,
+		MineralRichness: gamedata.ABUNDANT, TolerantRace: true,
+	}
+	ps := PlayerState{BC: 100, ResearchTopic: gamedata.ResearchTopic(1)}
+
+	plain := RunEmpireTurn(ps, []ColonyState{base})
+	gems := base
+	gems.SpecialIncome = 10
+	withGems := RunEmpireTurn(ps, []ColonyState{gems})
+	if got := withGems.TaxRevenue - plain.TaxRevenue; got != 10 {
+		t.Errorf("寶石礦收入 = %d,預期 10", got)
+	}
+
+	// 與人口無關:人口砍到 1,特殊物產收入不變(對照人頭收入會少 4)。
+	small := gems
+	small.Population, small.Workers = 1, 1
+	plainSmall := base
+	plainSmall.Population, plainSmall.Workers = 1, 1
+	if got := RunEmpireTurn(ps, []ColonyState{small}).TaxRevenue -
+		RunEmpireTurn(ps, []ColonyState{plainSmall}).TaxRevenue; got != 10 {
+		t.Errorf("人口 1 時寶石礦收入 = %d,預期仍是 10(固定收入不隨人口縮放)", got)
+	}
+}
+
+// TestRunEmpireTurnSpecialIncomeTakesBuildingBonus 驗證特殊物產收入一併受
+// IncomeBonusPercent(太空港/證交所)放大——手冊寫的是「該殖民地**所有來源** BC 收入 +N%」,
+// 寶石礦收入是該殖民地的一個 BC 來源,不排除在外。
+func TestRunEmpireTurnSpecialIncomeTakesBuildingBonus(t *testing.T) {
+	cs := ColonyState{
+		Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,
+		PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G,
+		MineralRichness: gamedata.ABUNDANT, TolerantRace: true,
+		SpecialIncome: 10, IncomeBonusPercent: 100,
+	}
+	ps := PlayerState{BC: 100, ResearchTopic: gamedata.ResearchTopic(1)}
+	out := RunEmpireTurn(ps, []ColonyState{cs})
+	// 人頭 5 + 寶石 10 = 15,×200% = 30
+	if out.TaxRevenue != 30 {
+		t.Errorf("money 收入 = %d,預期 30((人頭5+寶石10)×200%%)", out.TaxRevenue)
+	}
+}

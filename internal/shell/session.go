@@ -1329,6 +1329,13 @@ type Planet struct {
 	SizeID     gamedata.PlanetSize
 	Orbit      int  // 該行星所在軌道(0..4),決定溫度帶進而決定氣候
 	NoPlanet   bool // 該恆星沒有行星(黑洞;原版 Generate_Number_Of_Satellites_ 回 0)
+	// SpecialID 是行星特殊物產(金礦/寶石礦/原住民…),依原版權重表生成,
+	// 見 gamedata/planet_special.go。零值 = 無(原版 64% 的行星都是無)。
+	SpecialID gamedata.PlanetSpecial
+	// SpecialSeen 表示「抵達星系時的一次性發現」已經結算過(見 discovery.go)。
+	// 原版是把結算後的 Star.special 覆寫成訊息碼來達成同樣的「只觸發一次」;remake 沒有
+	// Star.special,改用這個旗標,語意一致。
+	SpecialSeen bool
 }
 
 // planetGenVersion 是目前生成器版本,寫進 Planet.Gen。
@@ -1411,6 +1418,8 @@ func genPlanets(stars []Star, r *rand.Rand, age gamedata.GalaxyAge, homeStars ma
 		p.MineralID = gamedata.RollMineralClass(r.Intn(10)+1, sc)
 		p.GravityID = gamedata.PlanetGravityFor(p.MineralID, p.SizeID)
 		p.ClimateID = gamedata.RollClimate(r, group, age, homeStars[i])
+		// 特殊物產(原版 _planet_special_weighted_chance:64% 無、寶石礦只有 2%)。
+		p.SpecialID = gamedata.RollPlanetSpecial(r)
 
 		p.Name = s.Name + " " + roman[orbit]
 		p.Climate = climateDisplayName(p.ClimateID)
@@ -1772,6 +1781,10 @@ type GameSession struct {
 	// 與 LastEvent(純文字,回合摘要用)同時寫入,見 events.go advanceEvents。
 	// 比照 LastEvent 是「下回合會重算的顯示暫態」,刻意不存檔。
 	LastEventReport *EventReport
+
+	// LastDiscovery 是上一回合抵達星系時觸發的一次性發現(太空殘骸/失散殖民地…);
+	// nil = 無。與 LastEventReport 分開:隨機事件是全銀河的新聞,發現是自家艦隊的回報。
+	LastDiscovery *SystemDiscovery
 	LastPlayerOutput engine.EmpireOutput // 上一回合玩家結算(供畫面顯示)
 	Stars            []Star              // 星系圖
 	Planets          []Planet            // 行星列表
@@ -1972,6 +1985,10 @@ func (s *GameSession) advanceFleet() {
 		s.FleetDestStar = -1
 		if s.FleetAtStar < len(s.Stars) {
 			s.Stars[s.FleetAtStar].Explored = true
+			// 抵達星系當下結算一次性發現(原版 Do_System_Discoveries_At_Star_,見 discovery.go)。
+			if d := s.discoverSystemSpecials(s.FleetAtStar); d != nil {
+				s.LastDiscovery = d
+			}
 		}
 	}
 }
@@ -2120,7 +2137,8 @@ func (s *GameSession) EndTurn() {
 	s.advanceEspionage()  // 玩家 ↔ AI 間諜行動(最小迴圈:偷科技 STEAL,見 spy.go)
 	s.advanceBuilds()     // 以本回合淨工業推進各殖民地建造
 	s.advanceResearch()   // 目前研究主題完成則自動推進到下一個未完成的元件解鎖主題
-	s.advanceFleet()      // 推進艦隊星間航行(ETA 遞減,抵達則標記探索)
+	s.LastDiscovery = nil // 每回合先清掉上一回合的發現(與 advanceEvents 清 LastEvent 同一個節奏)
+	s.advanceFleet()      // 推進艦隊星間航行(ETA 遞減,抵達則標記探索 + 結算一次性發現)
 	s.advanceMarines()    // 各 Marine Barracks 殖民地依手冊公式補充陸戰隊駐軍(有上限)
 	s.advanceArmor()      // 各 Armor Barracks 殖民地依手冊公式補充戰車營駐軍(有上限,見 ground_invasion.go)
 	s.advancePopulation() // 累積各殖民地成長,達門檻則 +1 人口(回寫 Population)
@@ -2423,6 +2441,7 @@ func (s *GameSession) aiExpand(i int) {
 		// ColonyBuildings 同步 append 空 map,維持三個平行陣列等長(見 AIOpponent.ColonyBuildings
 		// 欄位註解)——手冊只保證母星有星基,新拓殖星沒有,故新 AI 殖民地開局無建築可扣。
 		s.AIPlayers[i].ColonyBuildings = append(s.AIPlayers[i].ColonyBuildings, map[string]bool{})
+		s.consumeSpecialOnColonize(idx) // 原住民被 AI 併入人口後同樣從行星上消失(見 colonization.go)
 		return
 	}
 }
@@ -2463,9 +2482,7 @@ func (s *GameSession) aiPlanetValue(aiIdx, starIdx int) int {
 		Gravity:   p.GravityID,
 		// FoodBase 對應原版 planet.foodbase;remake 的等價量是該氣候的每農夫食物。
 		FoodBase: gamedata.ClimateFoodPerFarmer(p.ClimateID),
-		// Special:remake 尚未建模行星特殊物產(見 docs/re/01-gap-report.md Part C-3),
-		// 一律 0 = 無加分,不臆造。
-		Special: 0,
+		Special: int(p.SpecialID),
 	}, obj)
 	if base <= 0 {
 		return 0
@@ -2576,6 +2593,7 @@ func (s *GameSession) aiPlanetBaseValue(starIdx int, obj gamedata.AIObjective) i
 		Climate:   p.ClimateID,
 		Gravity:   p.GravityID,
 		FoodBase:  gamedata.ClimateFoodPerFarmer(p.ClimateID),
+		Special:   int(p.SpecialID),
 	}, obj)
 }
 

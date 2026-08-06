@@ -100,6 +100,11 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 			perCapitaHalf = 0
 		}
 		tax += cs.Population * perCapitaHalf / 2
+		// 行星特殊物產的固定收入(寶石礦 +10 / 金礦 +5,手冊逐字)。與人口無關,
+		// 但同屬「該殖民地的 BC 收入」,故計入小計、受 IncomeBonusPercent 加成。
+		if cs.SpecialIncome > 0 {
+			tax += cs.SpecialIncome
+		}
 		if cs.IncomeBonusPercent != 0 {
 			subtotal := tax + foodRev + tradeRev
 			bonus := subtotal * cs.IncomeBonusPercent / 100

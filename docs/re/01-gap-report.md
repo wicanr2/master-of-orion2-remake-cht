@@ -154,7 +154,7 @@
 | ~~`_base_planet_values` / `_g_*`~~ | **AI 行星估值** | ✅ 2026-08-06 已移植公式(`gamedata/ai_planet_value.go`),AI 選星改用估值排序。公式來自反編 `Uncolonized_Planet_Worth_To_Player_`(那兩個符號是指標,指向執行期填的 BSS,dump 不到數值)。`Colony_Worth_To_Player_` / `Proximity_Worth_To_Player_` / `Enemy_Colony_Worth_To_Player_` 尚未移植 |
 | ~~`_climate_maintenance_modifiers`~~ | 氣候維護成本 | ✅ 語意已確認:索引 = 氣候,由 `Uncolonized_Planet_Worth_To_Player_` 以 `[planet.climate]` 讀。值 = `[50,25,0,25,0,0,0,0,0,0]`,已用於 AI 估值;**尚未接進殖民地實際維護費** |
 | `_planet_max_mines` = `2 4 6 9 12` | 各大小礦場上限 | 已建表,**尚未接進生產**(remake 無礦場上限概念) |
-| `_planet_special` / `_planet_special_weighted_chance` | 行星特殊物產(12 種,權重和 100) | 已 dump,remake 無此系統 |
+| ~~`_planet_special` / `_planet_special_weighted_chance`~~ | 行星特殊物產(12 種,權重和 100) | ✅ 2026-08-06 已整套接進(`gamedata/planet_special.go` + `shell/discovery.go`),見下方 C-4 |
 | ~~`_ranged_to_hit_penalty` / `_ranged_damage_penalty`~~ | 射程命中/傷害懲罰(各 9 個 word) | ✅ 兩張表 remake 早已有且逐格相同(手冊值);傷害衰減已於 2026-08-06 接進 `ResolveShotWithMods` |
 | `_orbit_to_satellite_type` | 衛星類型 | 已 dump(50 bytes),維度未確認 |
 | `_spy_bonuses` | 間諜加成 | remake 一律 0(標 TODO) |
@@ -162,7 +162,33 @@
 | `_tech_research_level_values` | 科技研究等級 | `gamedata/techtree.go` |
 | `_high/_low/_moderate_*_values`(9 張) | 疑似 AI 難度曲線 | 未知 |
 
-**最大的剩餘數值缺口**:①行星特殊物產(remake 無此系統)②間諜加成 ③氣候維護費接進殖民地開銷。
+**最大的剩餘數值缺口**:①間諜加成 ②氣候維護費接進殖民地開銷 ③礦場上限。
+
+### C-4 行星特殊物產:手冊沒給的數字,反組譯給了(2026-08-06)
+
+這一項值得單獨記,因為它是**「手冊不足以還原、非讀執行檔不可」的典型案例**:
+手冊只說太空殘骸/海盜藏寶的所得「is added to your treasury」,金額一個字都沒提。
+
+| 特殊物產 | 效果 | 來源 |
+|---|---|---|
+| 太空殘骸(2) | 抵達星系 → 國庫 **+50 BC** | `Do_System_Discoveries_At_Star_` @ 0xE9927:`add dword [player+32h], 32h` |
+| 海盜藏寶(3) | 抵達星系 → 國庫 **+100 BC** | 同上,`add … 64h` |
+| 金礦(4) | 殖民地 +5 BC/回合 | 手冊(AI 估值加分 1280 佐證) |
+| 寶石礦(5) | 殖民地 +10 BC/回合 | 手冊(AI 估值加分 2560 = 金礦兩倍,比例一致) |
+| 原住民(6) | 殖民時**額外 3 個人口單位**、全為農夫、每農夫 +2 食物,之後該 special 消失 | `Make_New_Colony_Or_Outpost_` @ 0xE5EB3:迴圈 colony+0x10→0x1C(stride 4),`[colony+0Ah]=4`,`[planet+0Fh]=0` |
+| 失散殖民地(7) | 抵達星系 → 就地生出殖民地,人口 = **min(該行星人口上限, 3)** | `cmp al,3 / jbe / mov byte [colony+0Ah],3` |
+| 受困英雄(8) | 抵達星系 → 免費得一名領袖 | 手冊 + 原版該分支只設訊息碼 |
+| 遠古文物(10) | 抵達星系 → **白送 1 項可研究科技**;殖民後每科學家 5 研究 | 掃 204 個研究主題挑 `RSTATE_READY` 者蓄水池抽樣;送幾項 = `Random_(4)/4+1` **恆為 1**(原版自己寫得有問題,照抄不臆改) |
+
+欄位偏移怎麼確定不是猜的:同一個函式裡的行星指標 stride = 0x11 = 17 bytes = openorion2
+`struct Planet` 的大小,而 `[planet+0x0F]` 對上該結構的 `special`;殖民地那邊
+`[colony+0x0A]`(population)、`[colony+0x0C]`(colonists[])、`[colony+0xE2]`(climate)
+三個偏移同時對上 `struct Colony`;人口單位的位元佈局(race bits0-3 / loyalty 4-6 / job 7-8)
+與 `Colonist::load` 逐位元相同;原住民寫進去的 race id 是 **9**,而 openorion2 的
+`MAX_RACES = MAX_PLAYERS+2` 註解寫明「player races + androids + natives」——8 機器人、9 原住民。
+最後,符號表裡獨立存在一個 `Planet_Has_Splinter_Colony_`,內容正好是 `[planet+0x0F] == 7`。
+
+**六個獨立證據互相咬合,不是靠單一位址猜語意。**
 
 ---
 
@@ -207,5 +233,8 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
 8. **地面戰解算**(`Resolve_Ground_Combat_` / `Ground_Combat_Round_`)→ 取代目前沿用一代 1oom 的借用結構。
 
 ### 第三梯:補完整性
-9. 前哨站、艙損/維修、Hall of Fame / Hi-Score、安塔蘭房間、Smacker 過場、行星特殊物產。
+9. 前哨站、艙損/維修、Hall of Fame / Hi-Score、安塔蘭房間、Smacker 過場。
+   ~~行星特殊物產~~ → **已完成**(2026-08-06,見 C-4):12 種權重表 + 抵達發現(殘骸/藏寶/
+   失散殖民地/受困英雄/遠古文物)+ 殖民效果(原住民人口、金礦寶石收入、文物研究),
+   接進 `advanceFleet` 抵達點與快報畫面。
 10. 多人連線(獨立子專案)。

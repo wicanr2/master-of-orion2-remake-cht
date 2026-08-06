@@ -617,9 +617,9 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					return &origTransition{next: sc}
 				}
 			}
-			// 本回合有隨機事件 → 先播 GNN 快報(原版事件有專屬畫面,不是回合摘要裡一行字,
+			// 本回合有隨機事件或星系發現 → 先播快報(原版事件有專屬畫面,不是回合摘要裡一行字,
 			// 見 eventscreen.go 檔頭),按「繼續」才進回合摘要。
-			if b.session.LastEventReport != nil {
+			if b.currentReport() != nil {
 				return b.goTo(b.eventScreen, "事件快報")
 			}
 			return b.goTo(b.turnSummary, "回合摘要")
@@ -693,6 +693,18 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					fnt.Draw(dst, p.Name, 38, 344, 14, color.RGBA{240, 220, 120, 255})
 					// 右上 CLOSE 鈕(✕),對齊上方 "closestar" 熱區與原版彈窗 CLOSE(issue #6)。
 					fnt.Draw(dst, "✕", 220, 344, 14, color.RGBA{235, 150, 140, 255})
+					// 行星特殊物產(金礦/寶石礦/原住民/遠古文物…)接在星名右邊,另用一色標出來——
+					// 這是「這顆星值不值得搶」的關鍵資訊,埋在下面兩行環境資料裡會被忽略。
+					if sp := gamedata.PlanetSpecialName(p.SpecialID); sp != "" {
+						nameW, _ := fnt.Measure(p.Name, 14)
+						spW, _ := fnt.Measure("★"+sp, 11)
+						// 星名很長時往左推,確保不會壓到右上角的 ✕(x=220)。
+						sx := 38 + nameW + 10
+						if sx+spW > 214 {
+							sx = 214 - spW
+						}
+						fnt.Draw(dst, "★"+sp, sx, 346, 11, color.RGBA{250, 200, 100, 255})
+					}
 					fnt.Draw(dst, fmt.Sprintf("氣候 %s ／ 大小 %s", p.Climate, p.Size), 38, 362, 11, color.RGBA{210, 216, 230, 255})
 					fnt.Draw(dst, fmt.Sprintf("重力 %s ／ 礦產 %s", p.Gravity, p.Mineral), 38, 378, 11, color.RGBA{210, 216, 230, 255})
 					// 陸戰隊狀態行:艦隊目前載運數,選中母星時另顯示殖民地駐軍池數(唯一已知對映)。

@@ -36,11 +36,43 @@ var (
 	evBrandCol  = color.RGBA{120, 180, 240, 255}
 	evButtonBg  = color.RGBA{30, 40, 70, 255}
 	evGNNHeader = "銀河新聞網 GNN ── 快報"
+	// 星系發現不是 GNN 新聞,是自家勘查隊的回報,台標列另用一組字。
+	evScoutHeader = "帝國勘查回報"
 )
 
-// eventScreen 建事件快報畫面。內容取自 session.LastEventReport;沒有事件就直接回回合摘要。
+// reportPanel 是快報面板要畫的內容(隨機事件與星系發現共用同一個版面)。
+type reportPanel struct {
+	header string // 台標列文字
+	title  string // 標題(事件名/特殊物產名)
+	tag    string // 標題前的方括號標記
+	body   string // 內文
+	good   bool   // 好消息(綠框)/壞消息(紅框)
+}
+
+// currentReport 依 session 目前的狀態決定要播哪一則快報;兩者皆無回 nil。
+// 隨機事件優先——它是本回合結算出來的全銀河新聞,發現則是自家艦隊的回報,兩則同時發生時
+// 先播新聞、發現的內容仍留在回合摘要文字裡。
+func (b *sceneBuilder) currentReport() *reportPanel {
+	if b.session == nil {
+		return nil
+	}
+	if r := b.session.LastEventReport; r != nil {
+		tag := "警訊"
+		if r.Good {
+			tag = "喜訊"
+		}
+		return &reportPanel{header: evGNNHeader, title: r.Name, tag: tag, body: r.Message, good: r.Good}
+	}
+	if d := b.session.LastDiscovery; d != nil {
+		// 星系發現一律是好消息(原版這五種特殊物產沒有負面的)。
+		return &reportPanel{header: evScoutHeader, title: d.Name, tag: "發現", body: d.Message, good: true}
+	}
+	return nil
+}
+
+// eventScreen 建快報畫面。內容取自 currentReport();沒有可播的就直接回回合摘要。
 func (b *sceneBuilder) eventScreen() (*overlayScreen, error) {
-	if b.session == nil || b.session.LastEventReport == nil {
+	if b.currentReport() == nil {
 		return b.turnSummary()
 	}
 	hits := []hitRegion{{270, 372, 100, 24, "ok"}}
@@ -70,15 +102,15 @@ func (b *sceneBuilder) eventScreen() (*overlayScreen, error) {
 	return s, nil
 }
 
-// drawEventReport 畫 GNN 快報面板。
+// drawEventReport 畫快報面板(隨機事件 / 星系發現共用)。
 func (b *sceneBuilder) drawEventReport(dst *ebiten.Image) {
-	if b.fnt == nil || b.session == nil || b.session.LastEventReport == nil {
+	rep := b.currentReport()
+	if b.fnt == nil || rep == nil {
 		return
 	}
-	rep := b.session.LastEventReport
 
 	edge := evBadEdge
-	if rep.Good {
+	if rep.good {
 		edge = evGoodEdge
 	}
 	// 先鋪一層暗遮罩:快報是疊在回合摘要背景上的彈窗,不遮的話底下的「TURN SUMMARY」
@@ -89,17 +121,13 @@ func (b *sceneBuilder) drawEventReport(dst *ebiten.Image) {
 
 	// 台標列(原版 EVENTMSG 前 8 條就是這種 GNN 開場白)。
 	vector.DrawFilledRect(dst, evPanelX, evPanelY, evPanelW, 26, color.RGBA{18, 30, 60, 255}, false)
-	b.fnt.Draw(dst, evGNNHeader, evPanelX+12, evPanelY+6, 13, evBrandCol)
+	b.fnt.Draw(dst, rep.header, evPanelX+12, evPanelY+6, 13, evBrandCol)
 
 	// 事件名 + 好壞標記(對應原版 _event_good_array)。
-	tag := "警訊"
-	if rep.Good {
-		tag = "喜訊"
-	}
-	b.fnt.Draw(dst, "【"+tag+"】"+rep.Name, evPanelX+16, evPanelY+42, 15, evTitleCol)
+	b.fnt.Draw(dst, "【"+rep.tag+"】"+rep.title, evPanelX+16, evPanelY+42, 15, evTitleCol)
 
 	// 快報內文(自動換行)。
-	for i, ln := range b.fnt.Wrap(rep.Message, 13, evPanelW-32) {
+	for i, ln := range b.fnt.Wrap(rep.body, 13, evPanelW-32) {
 		if i >= 8 {
 			break
 		}
