@@ -1647,6 +1647,9 @@ type GameSession struct {
 	// 也有關係(依相對軍力漂移),使星系「活起來」並可支撐議會第三方搖擺票(見 advanceAIDiplomacy)。
 	// 對稱維護(i↔j 各記一半視角)。長度 = len(AIPlayers)。
 	AIRelations [][]int
+	// History 是逐回合的全帝國國力快照(原版 module 122 Record_History_ 的對應物,
+	// 供 INFO 的 History Graph 子畫面畫折線;見 history.go 檔頭)。
+	History          []HistoryTurn
 	LastPlayerOutput engine.EmpireOutput // 上一回合玩家結算(供畫面顯示)
 	Stars            []Star              // 星系圖
 	Planets          []Planet            // 行星列表
@@ -2059,6 +2062,7 @@ func (s *GameSession) EndTurn() {
 	s.advanceAIDiplomacy()     // AI 對手彼此外交關係漂移(多帝國活星系;支撐議會第三方搖擺)
 	s.advanceCouncil()         // 銀河議會選舉(手冊三條勝利路徑之一:2/3 多數當選銀河領袖),記於 LastCouncil
 	s.advanceMercOffers()      // 傭兵領袖不定期上門(手冊 p.134),補進 MercPool 供玩家在軍官畫面雇用
+	s.recordHistory()          // 全帝國國力快照(原版 module 122 Record_History_),供 INFO 歷史圖表
 }
 
 // popGrowthThreshold 是「成長累加值 → +1 人口單位」的門檻。MOO2 手冊(MANUAL_150.html p111

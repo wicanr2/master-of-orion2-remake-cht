@@ -337,6 +337,8 @@ type sceneBuilder struct {
 	designMsg     string               // 艦艇設計畫面「空間不足,擋下建造」的提示訊息(切換元件/成功建造時清空)
 	lastActionMsg string               // 星圖畫面「載運陸戰隊/發動地面入侵」的最近一次結果訊息(選新星時清空)
 	gameVersion   gamedata.GameVersion // 主選單選的規則版本(1.3/1.5);開局注入 session.RuleProfile
+	infoTab       int                  // INFO 畫面目前分頁(0=歷史圖表 1=科技總覽 2=種族統計 3=回合摘要 4=參考),見 infosubscreens.go
+	infoHistoryMetric int              // 歷史圖表目前指標(shell.HistoryMetric)
 }
 
 // profileForVersion 把主選單選的版本轉成對應 RuleProfile(開局注入 session)。
@@ -2256,16 +2258,32 @@ func (b *sceneBuilder) info() (*overlayScreen, error) {
 	// 「科技總覽」列 → 研究選擇畫面;RETURN → 星系主畫面。
 	// RETURN 真值座標取自 openorion2 info.cpp:1028 InfoView
 	// RETURN createWidget(535, 434, ...);取代整畫面返回,僅返回鍵返回。
+	// 五個分頁各自的熱區(y 對齊下方 overlays 的五列選單;高 24 為列距內的可點帶)。
+	// 原版結構由反組譯確認:INFO 是「單一畫面 + 5 個子畫面」,各有獨立的
+	// Draw_History_Subscreen_ / Draw_Tech_Review_Subscreen_ / Draw_Race_Stats_Subscreen_ /
+	// Draw_Turn_Summary_Subscreen_ / Draw_Reference_*_Subscreen_(見 docs/re/01-gap-report.md)。
 	hits := []hitRegion{
-		{21, 76, 164, 26, "tech"}, // 對齊 openorion2 info.cpp 選單容器真值(x21/w164),原 PIL 15/197
+		{21, 52, 164, 24, "tab0"}, // History Graph
+		{21, 76, 164, 24, "tab1"}, // Tech Review
+		{21, 102, 164, 24, "tab2"}, // Race Statistics
+		{21, 130, 164, 22, "tab3"}, // Turn Summary
+		{21, 152, 164, 22, "tab4"}, // Reference
+		{214, 96, 412, 268, "histmetric"}, // 歷史圖表區:點擊循環指標(人口/國庫/艦隊)
 		{535, 434, 84, 22, "back"},
 	}
 	onAction := func(a string) *origTransition {
-		if a == "back" {
+		switch a {
+		case "back":
 			return b.goTo(b.galaxy, "星系主畫面")
+		case "tab0", "tab1", "tab2", "tab3", "tab4":
+			b.infoTab = int(a[3] - '0')
+			return b.goTo(b.info, "情報") // 重繪切換子畫面
+		case "histmetric":
+			if b.infoTab == 0 { // 只有歷史圖表分頁才有意義
+				b.infoHistoryMetric = (b.infoHistoryMetric + 1) % 3
+				return b.goTo(b.info, "情報")
+			}
 		}
-		// 分頁(科技總覽/歷史圖表/種族統計/回合摘要)內容開發中,點擊不跳轉——修 issue #5-2
-		//(原本「tech」誤接研究選擇畫面,點一下就退回星系,像壞掉)。研究選擇已改由星系右側研究框進入。
 		return nil
 	}
 	// 選單項原版為靠左文字疊在近黑面板背景上(無實心板);擦底取黑=黑疊黑(正確),
@@ -2288,15 +2306,9 @@ func (b *sceneBuilder) info() (*overlayScreen, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 右側面板加誠實狀態說明(原版此處是 Reference 分類清單;remake 分頁內容開發中,修 #5-1/#5-2
-	// 讓玩家知道非壞掉:研究選擇改由星系研究框進入)。
+	// 右側面板依 b.infoTab 繪出對應子畫面(對齊原版 5 個 Draw_*_Subscreen_)。
 	if b.fnt != nil {
-		note := color.RGBA{170, 190, 220, 255}
-		s.extras = append(s.extras,
-			extraText{x: 430, y: 230, size: 13, text: "資訊分頁開發中", col: color.RGBA{220, 200, 130, 255}, align: 1},
-			extraText{x: 430, y: 256, size: 11, text: "歷史圖表／科技總覽／種族統計／回合摘要", col: note, align: 1},
-			extraText{x: 430, y: 276, size: 11, text: "研究選擇請點星系主畫面右側「研究框」", col: note, align: 1},
-		)
+		b.drawInfoSubscreen(s)
 	}
 	// info 選單/標題都疊在均勻的近黑面板背景上,強制用該背景色擦底(採樣會因長英文誤取字色)。
 	black := color.RGBA{0, 8, 24, 255}

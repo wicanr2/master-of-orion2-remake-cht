@@ -97,6 +97,10 @@ type sessionSnapshot struct {
 	// AIRelations 是 AI 對手彼此關係矩陣(見 GameSession.AIRelations)。omitempty:舊存檔無此欄位
 	// 解為 nil,ensureAIRelations 讀檔後自然補回,不破壞相容。
 	AIRelations [][]int `json:"aiRelations,omitempty"`
+
+	// History 是逐回合國力快照(見 shell/history.go)。omitempty:舊存檔無此欄位解為 nil,
+	// 之後每回合自然累積,不破壞相容(折線圖在累積足夠回合前只顯示提示)。
+	History []HistoryTurn `json:"history,omitempty"`
 }
 
 // snapshot 擷取 GameSession 目前狀態成可序列化快照。
@@ -132,6 +136,7 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		MercPool:                  s.MercPool,
 		MercOfferedIdx:            s.MercOfferedIdx,
 		AIRelations:               s.AIRelations,
+		History:                   s.History,
 	}
 }
 
@@ -167,6 +172,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 		MercPool:                  snap.MercPool,
 		MercOfferedIdx:            snap.MercOfferedIdx,
 		AIRelations:               snap.AIRelations,
+		History:                   snap.History,
 	}
 }
 
