@@ -87,46 +87,90 @@ func (s *GameSession) FleetHasColonyShip() bool {
 // 手動核對到 gamedata enum 語意最接近的值;找不到對映(理論上不會發生,除非 genPlanets 改字串
 // 卻忘了同步這裡)回 ok=false,呼叫端保守拒絕拓殖,不猜測。
 
-// climateDisplayToGamedata 對映 genPlanets 的 climates 陣列(僅 7 種,缺 Swamp/Arid/Terran/
-// Gaia——那 4 種是「地形改造終點/母星專屬」氣候,無主隨機星本就不生成,見 genPlanets 註解)。
-// 「地獄」無手冊對應氣候名稱(genPlanets 用作 Spectral=6/黑洞星系的敘事填充),保守映射到手冊
-// 定性最惡劣的 TOXIC(p.58:"Farming is impossible"),不臆造新的氣候值。
-var climateDisplayToGamedata = map[string]gamedata.PlanetClimate{
-	"放射": gamedata.RADIATED,
-	"貧瘠": gamedata.BARREN,
-	"海洋": gamedata.OCEAN,
-	"沙漠": gamedata.DESERT,
-	"凍原": gamedata.TUNDRA,
-	"有毒": gamedata.TOXIC,
-	"地獄": gamedata.TOXIC, // 見上方註解:無手冊對應,保守取最惡劣氣候,非新發明的氣候值
+// 以下四張表是「顯示字串 ↔ gamedata enum」的雙向對照。
+//
+// 2026-08-06 起 genPlanets 直接把 enum 存進 Planet.*ID,新程式碼應該讀 ID 而不是反解字串;
+// 這幾張表現在只有兩個用途:①產生顯示字串 ②把 2026-08-06 之前的舊存檔(Planet.Gen==0,
+// 只有字串)回填成 enum。
+//
+// 涵蓋範圍已補齊到十氣候 / 五大小 / 五礦產 —— 舊版只有 7 氣候 4 大小 4 礦產,
+// 因為當時的生成器根本產不出 Swamp/Arid/Terran/Gaia/Tiny/Ultra Poor;
+// 換成原版骰表之後這些都會實際出現。
+
+var climateDisplayNames = [10]string{
+	"有毒", "放射", "貧瘠", "沙漠", "凍原", "海洋", "沼澤", "乾旱", "類地", "蓋亞",
 }
 
-// gravityDisplayToGamedata 對映 genPlanets 的 gravs 陣列(低/常態/高,恰好三種,與
-// gamedata.PlanetGravity 一一對應,無需近似)。
+var gravityDisplayNames = [3]string{"低", "常態", "高"}
+
+var mineralDisplayNames = [5]string{"極貧", "貧瘠", "一般", "豐富", "富饒"}
+
+var sizeDisplayNames = [5]string{"微型", "小型", "中型", "大型", "巨大"}
+
+func climateDisplayName(c gamedata.PlanetClimate) string {
+	if c < 0 || int(c) >= len(climateDisplayNames) {
+		return "未知"
+	}
+	return climateDisplayNames[c]
+}
+
+func gravityDisplayName(g gamedata.PlanetGravity) string {
+	if g < 0 || int(g) >= len(gravityDisplayNames) {
+		return "常態"
+	}
+	return gravityDisplayNames[g]
+}
+
+func mineralDisplayName(m gamedata.PlanetMinerals) string {
+	if m < 0 || int(m) >= len(mineralDisplayNames) {
+		return "一般"
+	}
+	return mineralDisplayNames[m]
+}
+
+func sizeDisplayName(s gamedata.PlanetSize) string {
+	if s < 0 || int(s) >= len(sizeDisplayNames) {
+		return "中型"
+	}
+	return sizeDisplayNames[s]
+}
+
+// climateDisplayToGamedata 反向對照。「地獄」是舊生成器對黑洞星系的敘事填充詞,無手冊對應氣候,
+// 保守映射到手冊定性最惡劣的 TOXIC(p.58:"Farming is impossible");保留它純粹為了讀舊存檔。
+var climateDisplayToGamedata = map[string]gamedata.PlanetClimate{
+	"有毒": gamedata.TOXIC,
+	"放射": gamedata.RADIATED,
+	"貧瘠": gamedata.BARREN,
+	"沙漠": gamedata.DESERT,
+	"凍原": gamedata.TUNDRA,
+	"海洋": gamedata.OCEAN,
+	"沼澤": gamedata.SWAMP,
+	"乾旱": gamedata.ARID,
+	"類地": gamedata.TERRAN,
+	"蓋亞": gamedata.GAIA,
+	"地獄": gamedata.TOXIC, // 舊存檔專用,見上方註解
+}
+
 var gravityDisplayToGamedata = map[string]gamedata.PlanetGravity{
 	"低":  gamedata.LOW_G,
 	"常態": gamedata.NORMAL_G,
 	"高":  gamedata.HEAVY_G,
 }
 
-// mineralDisplayToGamedata 對映 genPlanets 的 minerals 陣列(4 種:貧瘠/一般/豐富/富饒),
-// gamedata.PlanetMinerals 有 5 級(多一級 ULTRA_POOR)。「貧瘠」映射到 POOR 而非 ULTRA_POOR——
-// genPlanets 沒有「極度貧瘠」這個顯示詞,POOR 是字面最接近的一級,非隨意選擇。
 var mineralDisplayToGamedata = map[string]gamedata.PlanetMinerals{
+	"極貧": gamedata.ULTRA_POOR,
 	"貧瘠": gamedata.POOR,
 	"一般": gamedata.ABUNDANT,
 	"豐富": gamedata.RICH,
 	"富饒": gamedata.ULTRA_RICH,
 }
 
-// sizeDisplayToGamedata 對映 genPlanets 的 sizes 陣列(4 種:巨大/大型/中型/小型),
-// gamedata.PlanetSize 有 5 級(多一級 TINY_PLANET)。genPlanets 從未生成「小型」以下的行星,
-// 故 TINY_PLANET 這裡用不到,不影響 ColonizeStar 的實際案例。
 var sizeDisplayToGamedata = map[string]gamedata.PlanetSize{
-	"巨大": gamedata.HUGE_PLANET,
-	"大型": gamedata.LARGE_PLANET,
-	"中型": gamedata.MEDIUM_PLANET,
+	"微型": gamedata.TINY_PLANET,
 	"小型": gamedata.SMALL_PLANET,
+	"中型": gamedata.MEDIUM_PLANET,
+	"大型": gamedata.LARGE_PLANET,
+	"巨大": gamedata.HUGE_PLANET,
 }
 
 func climateFromDisplay(s string) (gamedata.PlanetClimate, bool) {
@@ -190,29 +234,47 @@ func (s *GameSession) newColonyFromStar(starIdx int, gov gamedata.MoraleGovernme
 	}
 	planet := s.Planets[starIdx]
 
-	climate, cok := climateFromDisplay(planet.Climate)
-	if !cok {
-		return engine.ColonyState{}, false, "行星氣候資料無法辨識(不應發生,見 climateDisplayToGamedata)"
+	if planet.NoPlanet {
+		return engine.ColonyState{}, false, "這顆恆星沒有行星(黑洞)"
+	}
+
+	var (
+		climate gamedata.PlanetClimate
+		gravity gamedata.PlanetGravity
+		mineral gamedata.PlanetMinerals
+		size    gamedata.PlanetSize
+	)
+	if planet.Gen >= 1 {
+		// 原版骰表生成的行星:直接讀 enum,不從顯示字串反解。
+		climate, gravity, mineral, size = planet.ClimateID, planet.GravityID, planet.MineralID, planet.SizeID
+	} else {
+		// 2026-08-06 之前的存檔只有顯示字串,回填一次(見 Planet.Gen 註解)。
+		var cok bool
+		climate, cok = climateFromDisplay(planet.Climate)
+		if !cok {
+			return engine.ColonyState{}, false, "行星氣候資料無法辨識(不應發生,見 climateDisplayToGamedata)"
+		}
+		var gok, mok, szok bool
+		if gravity, gok = gravityFromDisplay(planet.Gravity); !gok {
+			gravity = gamedata.NORMAL_G // 不應發生的保守預設,見 gravityDisplayToGamedata
+		}
+		if mineral, mok = mineralFromDisplay(planet.Mineral); !mok {
+			mineral = gamedata.POOR // 不應發生的保守預設,見 mineralDisplayToGamedata
+		}
+		if size, szok = sizeFromDisplay(planet.Size); !szok {
+			size = gamedata.MEDIUM_PLANET // 不應發生的保守預設,見 sizeDisplayToGamedata
+		}
 	}
 	if !climateColonizable(climate) {
 		return engine.ColonyState{}, false, "此類行星需額外科技才能建立殖民地(氣態巨星/小行星帶,尚未支援)"
 	}
-	gravity, gok := gravityFromDisplay(planet.Gravity)
-	if !gok {
-		gravity = gamedata.NORMAL_G // 不應發生的保守預設,見 gravityDisplayToGamedata
-	}
-	mineral, mok := mineralFromDisplay(planet.Mineral)
-	if !mok {
-		mineral = gamedata.POOR // 不應發生的保守預設,見 mineralDisplayToGamedata
-	}
-	size, szok := sizeFromDisplay(planet.Size)
-	if !szok {
-		size = gamedata.MEDIUM_PLANET // 不應發生的保守預設,見 sizeDisplayToGamedata
-	}
 
 	foodPerFarmer := gamedata.ClimateFoodPerFarmer(climate) + foodBonus
 	industryPerWorker := gamedata.MineralIndustryPerWorker(mineral) + indBonus
-	researchPerScientist := 30 + resBonus // 見 playerHomeworldColony 註解:手冊無環境相關公式,remake 沿用同一基準值
+	// 每科學家研究用銀河基準 3(gamedata.ResearchPerScientistNorm)。
+	// 先前這裡硬編 30——那是 2026-07-12 母星校正前的舊值,母星改成 3 之後這裡沒跟著改,
+	// 造成「拓殖一顆新星,研究產出是母星的十倍」的失衡。手冊無環境相關的研究公式,兩處同一基準。
+	researchPerScientist := gamedata.ResearchPerScientistNorm + resBonus
 
 	popMax := gamedata.PlanetBasePopMax(size, climate)
 	if popMax < colonizeStartPopulation {

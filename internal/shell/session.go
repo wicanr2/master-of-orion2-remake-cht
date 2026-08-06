@@ -1278,39 +1278,95 @@ func applyLeaderColonyBonuses(leaders []Leader, colony *engine.ColonyState) {
 	}
 }
 
-// Planet 是一顆行星的顯示資料(供行星列表;正式版由存檔/星系生成填真值)。
+// Planet 是一顆行星的資料(供行星列表與拓殖)。
+//
+// 字串欄位是顯示用;`*ID` 欄位是原版骰表產生的真值。兩者並存的理由是相容既有存檔:
+// 2026-08-06 之前的存檔只有字串,載入時由 restorePlanetIDs 從字串回填(見 persist.go)。
+// 新程式碼一律讀 `*ID`,不要再從顯示字串反解語意。
 type Planet struct {
 	Name    string // 星名 + 羅馬數字
 	Climate string
 	Gravity string
 	Mineral string
 	Size    string
+
+	// Gen 是生成器版本:0 = 2026-08-06 之前的舊存檔(只有字串,ID 欄位無意義),
+	// 1 = 原版骰表生成(gamedata/galaxygen.go)。用顯式版本號而不是「ID 是否為零值」判斷,
+	// 因為 TOXIC/LOW_G/ULTRA_POOR/TINY 的 enum 值都恰好是 0,零值無法區分「未設」與「真的是它」。
+	Gen        int
+	ClimateID  gamedata.PlanetClimate
+	GravityID  gamedata.PlanetGravity
+	MineralID  gamedata.PlanetMinerals
+	SizeID     gamedata.PlanetSize
+	Orbit      int  // 該行星所在軌道(0..4),決定溫度帶進而決定氣候
+	NoPlanet   bool // 該恆星沒有行星(黑洞;原版 Generate_Number_Of_Satellites_ 回 0)
 }
 
-// genPlanets 依星系生成每星一顆行星(氣候由光譜、大小由星體衍生;固定規則,不用亂數)。
-func genPlanets(stars []Star) []Planet {
-	climates := []string{"放射", "貧瘠", "海洋", "沙漠", "凍原", "有毒", "地獄"}
-	sizes := []string{"巨大", "大型", "中型", "小型"}
-	minerals := []string{"貧瘠", "一般", "豐富", "富饒"}
-	gravs := []string{"低", "常態", "高"}
-	roman := []string{"I", "II", "III"}
+// planetGenVersion 是目前生成器版本,寫進 Planet.Gen。
+const planetGenVersion = 1
+
+// galaxyAgeSetting 是星系年齡設定。原版把它放在新遊戲畫面(Youthful/Average/Mature),
+// remake 的新遊戲流程還沒有這個選項,先固定 Average——它影響光譜分布與氣候骰表(見
+// gamedata.StarClassWeights / OldGalaxyClimateWeights)。接上 UI 選項時把這個常數換成
+// GameSession 欄位即可,生成端不必改。
+const galaxyAgeSetting = gamedata.GalaxyAverage
+
+// demoHomeStarSet 把「玩家母星 + AI 母星」的星索引收成集合,供 genPlanets 強制生成宜居行星。
+func demoHomeStarSet(aiHomeStars []int) map[int]bool {
+	m := map[int]bool{0: true} // 星 0 恆為玩家母星,見 PlayerColonyStars 欄位註解
+	for _, idx := range aiHomeStars {
+		m[idx] = true
+	}
+	return m
+}
+
+// genPlanets 依原版骰表生成每顆恆星的代表行星。
+//
+// 生成鏈與原版一致(見 gamedata/galaxygen.go 的函式對照):
+// 恆星光譜 → 該恆星的行星數(黑洞為 0)→ 隨機取一條軌道 → [光譜][軌道] 得溫度帶
+// → 溫度帶加權骰出氣候;行星大小/礦產各自骰表,重力由「礦產(密度)× 大小(體積)」查表。
+//
+// ⚠ 已知簡化:原版每顆恆星有 1–5 顆行星各佔一條軌道,remake 目前是「一星一行星」
+// (s.Planets 與 s.Stars 索引一一對應,UI/拓殖/AI 全部依賴這個對齊)。這裡的做法是
+// **在該恆星的軌道中隨機取一條**當代表行星,讓氣候的邊際分布與原版一致;
+// 「一星多行星」是獨立的一項改造,見 docs/re/01-gap-report.md。
+//
+// homeStars 內的索引(玩家與 AI 母星)強制生成宜居行星:原版母星恆為可農作世界,
+// 交給機率骰有機會生出 Toxic 母星。
+func genPlanets(stars []Star, r *rand.Rand, age gamedata.GalaxyAge, homeStars map[int]bool) []Planet {
+	roman := []string{"I", "II", "III", "IV", "V"}
 	out := make([]Planet, 0, len(stars))
 	for i, s := range stars {
-		cl := "地獄"
-		if s.Spectral >= 0 && s.Spectral < len(climates) {
-			cl = climates[s.Spectral]
+		sc := gamedata.SpectralClass(s.Spectral)
+		nPlanets := gamedata.RollNumSatellites(r.Intn(10)+1, sc)
+		p := Planet{Gen: planetGenVersion}
+
+		if nPlanets <= 0 && !homeStars[i] {
+			p.Name = s.Name
+			p.NoPlanet = true
+			p.Climate, p.Gravity, p.Mineral, p.Size = "無行星", "—", "—", "—"
+			out = append(out, p)
+			continue
 		}
-		sz := "中型"
-		if s.Size >= 0 && s.Size < len(sizes) {
-			sz = sizes[s.Size]
+
+		orbit := r.Intn(5)
+		if nPlanets > 0 && nPlanets <= 5 {
+			orbit = r.Intn(nPlanets)
 		}
-		out = append(out, Planet{
-			Name:    s.Name + " " + roman[i%len(roman)],
-			Climate: cl,
-			Gravity: gravs[i%len(gravs)],
-			Mineral: minerals[i%len(minerals)],
-			Size:    sz,
-		})
+		group := gamedata.PlanetOrbitGroup(sc, orbit)
+
+		p.Orbit = orbit
+		p.SizeID = gamedata.RollPlanetSize(r.Intn(10) + 1)
+		p.MineralID = gamedata.RollMineralClass(r.Intn(10)+1, sc)
+		p.GravityID = gamedata.PlanetGravityFor(p.MineralID, p.SizeID)
+		p.ClimateID = gamedata.RollClimate(r, group, age, homeStars[i])
+
+		p.Name = s.Name + " " + roman[orbit]
+		p.Climate = climateDisplayName(p.ClimateID)
+		p.Gravity = gravityDisplayName(p.GravityID)
+		p.Mineral = mineralDisplayName(p.MineralID)
+		p.Size = sizeDisplayName(p.SizeID)
+		out = append(out, p)
 	}
 	return out
 }
@@ -1549,7 +1605,9 @@ func (s *GameSession) SetupNewGame(stars int, seed int64, numAI int) {
 	galaxy, aiHomeStars := genGalaxy(stars, seed, numAI)
 	galaxy[0].Explored = true // 母星初始已探索(與 NewDemoSession 一致)
 	s.Stars = galaxy
-	s.Planets = genPlanets(galaxy)
+	// 行星生成用獨立的亂數流(seed+1),讓「同一 seed 的星圖佈局」不受行星骰表的抽取次數影響——
+	// 骰表每顆星抽的次數依光譜而異,共用一條流會讓佈局跟著漂。
+	s.Planets = genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), galaxyAgeSetting, demoHomeStarSet(aiHomeStars))
 	s.SelectedStar = -1
 	s.AIPlayers = buildDemoAIOpponents(aiHomeStars)
 	s.PlayerSpies = make([]int, len(s.AIPlayers)) // 平行 AIPlayers,重置為全新對手的間諜數(開局皆 0)
@@ -1629,7 +1687,16 @@ func genGalaxy(n int, seed int64, aiHomes int) ([]Star, []int) {
 				owner = 2 // AI 母星(不分哪個 AI——個別歸屬見 AIOpponent.ColonyStars,Star.Owner
 				// 只是粗粒度「有主/無主/玩家/AI」旗標,見型別註解)
 			}
-			stars = append(stars, Star{X: x, Y: y, Spectral: r.Intn(7), Size: r.Intn(4), Name: nm, Owner: owner})
+			// 光譜依原版 _star_class_table 加權(紅矮星近半、藍白星稀少),不是均勻亂數——
+			// 均勻擲是 remake 星圖與原版最明顯的差異來源(見 gamedata.StarClassWeights)。
+			// 母星所在的星強制為黃星:原版玩家母星恆在黃色恆星系,而加權骰有 37% 機率骰到紅矮星,
+			// 那會讓母星落在生不出宜居行星的溫度帶(見 gamedata.ClassToGroup 紅矮列)。
+			spectral := int(gamedata.RollSpectralClass(r, galaxyAgeSetting))
+			if owner != 0 {
+				spectral = int(gamedata.Yellow)
+			}
+			// Star.Size 是星圖上的**視覺**大小(0=大..3=小),與行星大小無關,維持原本的均勻亂數。
+			stars = append(stars, Star{X: x, Y: y, Spectral: spectral, Size: r.Intn(4), Name: nm, Owner: owner})
 			idx++
 		}
 	}
@@ -2587,7 +2654,7 @@ func NewDemoSession() *GameSession {
 		AIPlayers:         aiPlayers,
 		PlayerSpies:       make([]int, len(aiPlayers)), // 玩家對每個 AI 對手的間諜數,平行 AIPlayers,開局皆 0(見欄位/spy.go ensurePlayerSpies 註解)
 		Stars:             galaxy,
-		Planets:           genPlanets(galaxy),
+		Planets:           genPlanets(galaxy, rand.New(rand.NewSource(43)), galaxyAgeSetting, demoHomeStarSet(aiHomeStars)),
 		// 開局領袖池為空(2026-07-12 手冊考據校正)。手冊 GAME_MANUAL.pdf p.47 + p.134「Mercenary
 		// Leaders」:原版開局玩家**完全沒有任何領袖**,傭兵不定期上門、須花雇用費招入 Leader Pool
 		// (上限殖民領袖 4 + 艦艇軍官 4)。先前 demoLeaders() 讓玩家開局自帶「馮·諾伊曼 科學家」並

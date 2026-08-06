@@ -154,6 +154,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 			Leaders: a.Leaders,
 		}
 	}
+	restorePlanetIDs(snap.Planets)
 	return &GameSession{
 		Turn: snap.Turn, Player: snap.Player, PlayerColonies: snap.PlayerColonies,
 		AIPlayers: ais, Stars: snap.Stars, Planets: snap.Planets, Leaders: snap.Leaders,
@@ -173,6 +174,42 @@ func (snap sessionSnapshot) restore() *GameSession {
 		MercOfferedIdx:            snap.MercOfferedIdx,
 		AIRelations:               snap.AIRelations,
 		History:                   snap.History,
+	}
+}
+
+// restorePlanetIDs 把 2026-08-06 之前存檔裡「只有顯示字串」的行星回填成 enum 欄位(就地修改)。
+// 那批存檔的 Planet.Gen 是 0(JSON 缺欄位 → 零值),回填後標成 planetGenVersion,
+// 讓後續程式碼一律走 enum 路徑,不必到處判斷存檔世代。
+//
+// 舊生成器產不出 Swamp/Arid/Terran/Gaia/Tiny/Ultra Poor,所以回填不會遇到查不到的詞;
+// 真的查不到(手改過的存檔)就落在各自的保守預設,與舊版 newColonyFromStar 的行為一致。
+func restorePlanetIDs(planets []Planet) {
+	for i := range planets {
+		p := &planets[i]
+		if p.Gen >= planetGenVersion {
+			continue
+		}
+		if c, ok := climateFromDisplay(p.Climate); ok {
+			p.ClimateID = c
+		} else {
+			p.ClimateID = gamedata.TOXIC
+		}
+		if g, ok := gravityFromDisplay(p.Gravity); ok {
+			p.GravityID = g
+		} else {
+			p.GravityID = gamedata.NORMAL_G
+		}
+		if m, ok := mineralFromDisplay(p.Mineral); ok {
+			p.MineralID = m
+		} else {
+			p.MineralID = gamedata.POOR
+		}
+		if s, ok := sizeFromDisplay(p.Size); ok {
+			p.SizeID = s
+		} else {
+			p.SizeID = gamedata.MEDIUM_PLANET
+		}
+		p.Gen = planetGenVersion
 	}
 }
 
