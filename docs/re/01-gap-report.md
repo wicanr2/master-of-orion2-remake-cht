@@ -61,14 +61,14 @@
 |---|---|---|---|
 | 1 | ~~**`Colony`**(獨立殖民地畫面)~~ | 高 | ✅ 2026-08-06 已建(`cmd/moo2/colonyscreen.go`),從總覽點殖民地名進入;含 7 格建造佇列。版面未對齊原版(無 COLONY.LBX 版面資料),結構與流程已對 |
 | 2 | ~~**`Event`**~~ | 高 | ✅ 2026-08-06 已建(`cmd/moo2/eventscreen.go`),GNN 新聞快報樣式;事件表同步換成原版 36 種 |
-| 3 | **`Tech_Review`** | 中高 | INFO 子畫面;remake 誤接成研究選擇跳板(issue #5-2 根因,**二進位證實**) |
-| 4 | **`History`** | 中高 | INFO 子畫面,國力折線圖(issue #5-1);資料源是原版 module 122 的 `Record_History_` |
-| 5 | **`Race_Stats`** | 中 | INFO 子畫面 |
-| 6 | **`Reference_Main` / `_Category` / `_How_To`** | 中 | INFO 的內建說明書(3 個子畫面) |
+| 3 | ~~**`Tech_Review`**~~ | 中高 | ✅ 已建(`cmd/moo2/infosubscreens.go` `infoTechReview`);當初「誤接成研究選擇跳板」的 issue #5-2 已修,研究選擇改由星系研究框進入 |
+| 4 | ~~**`History`**~~ | 中高 | ✅ 已建(`infoHistory`),國力折線圖,可點擊切換人口/國庫/艦隊指標 |
+| 5 | ~~**`Race_Stats`**~~ | 中 | ✅ 已建(`infoRaceStats`) |
+| 6 | ~~**`Reference_Main` / `_Category` / `_How_To`**~~ | 中 | ✅ 已建(`infoReference` + `cmd/moo2/inforeview.go`),remake 合成單一「參考資料」分頁而非 3 個子畫面 |
 | 7 | **`Command_Points`** | 中 | 原版有**專屬指揮點數畫面**;remake 只在星系右欄顯示一個數字 |
 | 8 | **`Colony_Landing` / `Colony_Combat` / `Colony_Bombing`** | 中 | 地面戰/轟炸的**畫面**;remake 有引擎層解算但無畫面(只有文字結果) |
-| 9 | **`Main_Antaran_Room`** | 中 | 安塔蘭房間;remake 的安塔蘭勝利是「艦隊列表一個文字按鈕」 |
-| 10 | **`Hall_Of_Fame` / `Hi_Score`** | 低 | 名人堂/高分榜(主選單有入口) |
+| 9 | ~~**`Main_Antaran_Room`**~~ | 中 | ✅ 2026-08-07 已建(`cmd/moo2/antaranroom.go`),用原版 `antaroom.LBX` 資產 1(55 幀累積)當背景;留白:原版是推鏡動畫,remake 取最終定格 |
+| 10 | ~~**`Hall_Of_Fame` / `Hi_Score`**~~ | 低 | ✅ 2026-08-07 已建(`cmd/moo2/hiscore.go` + `gamedata/score.go`),八項計分係數全來自反組譯 module 60 |
 | 11 | **`Smack`** | 低 | Smacker 過場影片播放 |
 | 12 | 多人連線 11 個畫面 | — | `Join_Net`/`MP_Setup`/`Hotseat`/`Modem_Setup`/`NullModem_Setup`/`Choose_Net_Plyrs`/`Choose_Multi_Net_Game`/`Generic_Net_Info`/`SendGet_Net_Info`/`Net_Next_Turn`/`Wait_For_*` — WORKLIST 已列獨立子專案 |
 
@@ -405,8 +405,26 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     順帶修掉一個對映錯誤:損傷寫回原本用外部平行陣列對映「第 k 個參戰艦 → 第 k 艘船」,
     但戰鬥中有人陣亡後這個對映就錯位,會把 A 船的傷記到 B 船上。改成把船索引放進
     `combatant` 結構裡,過濾陣亡者時整個 struct 複製、索引跟著倖存者走。
-14. 安塔蘭房間、Smacker 過場。
+14. ~~安塔蘭房間~~ → **已完成**(2026-08-07,`cmd/moo2/antaranroom.go`)。原本這條勝利路徑的
+    入口是艦隊列表左下角一行文字,點下去直接跳戰鬥結果——中間沒有確認、沒有戰力對比,
+    前置條件不滿足時更是「點了完全沒反應」(`CanAssaultAntares` 回 false,而畫面上毫無跡象)。
+
+    美術來源是反組譯 `sub_14C83`:`mov edx, 0 / mov eax, offset aAntaroomLbx / call sub_126B42`
+    ——載 `antaroom.LBX` **資產 0**。實際查下去,資產 0 是個小圖但**帶內嵌調色盤**,資產 1 才是
+    640×480、55 幀的 delta 動畫(鏡頭推進到安塔蘭統治者面前);用資產 0 的調色盤去解資產 1 才
+    出得來,拿 `buffer0` 的色盤解會是一團彩色雜訊。累積成最終畫格的做法沿用外交議事廳
+    (`DIPLOMAT#29`,38 幀)那條已驗證的路徑(`lbx.Image.AccumulatedRGBA`)。
+
+    畫面內容:戰力對比(我方 `playerMilitary()` vs 安塔蘭防禦艦隊,同一套數字,不另算一份)、
+    發動/撤退兩顆按鈕、以及**擋下時逐條講明卡在哪**(`AssaultAntaresBlockReason`:勝負已定 /
+    本局關閉安塔蘭攻擊 / 沒有次元傳送門 / 沒有艦隊)。手冊 p.183 那句
+    「not available if you disabled Antaran Attacks」現在玩家看得到了。
+
+    ⚠ 留白:原版把 55 幀當推鏡動畫播,remake 只呈現最終定格(`overlayScreen` 沒有動畫層,
+    加上去等於 55 張 640×480 貼圖常駐)。
+
+15. Smacker 過場。
    ~~行星特殊物產~~ → **已完成**(2026-08-06,見 C-4):12 種權重表 + 抵達發現(殘骸/藏寶/
    失散殖民地/受困英雄/遠古文物)+ 殖民效果(原住民人口、金礦寶石收入、文物研究),
    接進 `advanceFleet` 抵達點與快報畫面。
-15. 多人連線(獨立子專案)。
+16. 多人連線(獨立子專案)。

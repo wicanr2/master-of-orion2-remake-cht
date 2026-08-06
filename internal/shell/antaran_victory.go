@@ -142,3 +142,57 @@ func (s *GameSession) advanceAntaranVictory() {
 	}
 	s.Victory = VictoryState{Over: true, Reason: engine.VictoryAntaran, Winner: "player", Turn: s.Turn}
 }
+
+// AntaranDefenseStrength 回傳安塔蘭母星防禦艦隊的總戰力(供安塔蘭房間畫面顯示戰力對比)。
+// 值來自 antaranHomeFleetDefense——那是 remake 的保守預設,不是手冊或 openorion2 的精確值,
+// 理由見該變數的註解。
+func AntaranDefenseStrength() int {
+	n := 0
+	for _, st := range antaranHomeFleetDefense {
+		n += st
+	}
+	return n
+}
+
+// AntaranDefenseShipCount 回傳安塔蘭母星防禦艦隊的艦數(同上,供畫面顯示)。
+func AntaranDefenseShipCount() int { return len(antaranHomeFleetDefense) }
+
+// PlayerFleetStrength 回傳玩家艦隊總戰力(安塔蘭房間用來與上面兩個值對比)。
+// 與 AI 態勢判斷共用同一個 playerMilitary,避免畫面上顯示的數字跟實際結算用的不是同一套。
+func (s *GameSession) PlayerFleetStrength() int { return s.playerMilitary() }
+
+// AssaultAntaresBlockReason 回傳「為什麼現在不能發動終局反攻」;可以發動時回空字串。
+// CanAssaultAntares 只回 bool,玩家看不出卡在哪一條——把四個前置條件逐條講白。
+func (s *GameSession) AssaultAntaresBlockReason() string {
+	switch {
+	case s.Victory.Over:
+		return "對局已分出勝負"
+	case s.DisableEvents:
+		// 手冊 p.183:「This strategy is not available if you disabled Antaran Attacks
+		// when setting up your game.」
+		return "本局關閉了安塔蘭攻擊,此勝利路徑不可用"
+	case !s.hasDimensionalPortal():
+		return "尚未建成「" + dimensionalPortalBuildingName + "」——沒有它到不了安塔蘭母星"
+	case len(s.Ships) == 0:
+		return "沒有艦隊可派"
+	}
+	return ""
+}
+
+// GrantDimensionalPortalForGallery 直接把次元傳送門記進第一個殖民地的建築清單。
+//
+// **僅供 headless 截圖廊使用**:安塔蘭王座廳的「發動終局反攻」按鈕要有傳送門才會亮,
+// 而正常玩到多維物理再蓋出傳送門要幾十回合,截圖驗證等不起。正常遊戲流程不會呼叫它
+// ——傳送門一律得靠 gamedata.Buildings 的建造佇列蓋出來。
+func (s *GameSession) GrantDimensionalPortalForGallery() {
+	if len(s.PlayerColonies) == 0 {
+		return
+	}
+	for len(s.ColonyBuildings) < len(s.PlayerColonies) {
+		s.ColonyBuildings = append(s.ColonyBuildings, map[string]bool{})
+	}
+	if s.ColonyBuildings[0] == nil {
+		s.ColonyBuildings[0] = map[string]bool{}
+	}
+	s.ColonyBuildings[0][dimensionalPortalBuildingName] = true
+}

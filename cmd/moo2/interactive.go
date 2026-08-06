@@ -2011,8 +2011,8 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 	// 點右側艦艇格 → 艦艇設計;右下 RETURN → 星系主畫面(精確熱區)。
 	// 左下空白區(x<338, y 388-408)加一個「攻打安塔蘭」熱區(手冊三條勝利路徑之二,見
-	// internal/shell/antaran_victory.go);只在 CanAssaultAntares() 為真時才顯示提示文字與生效,
-	// 否則點擊無作用(刻意不做灰階按鈕美術,UI 最小化,見 docs/HONEST-STATUS.md)。
+	// internal/shell/antaran_victory.go)。點擊一律進安塔蘭王座廳(原版 Main_Antaran_Room),
+	// 發動與否在那裡決定;提示文字仍只在條件滿足時顯示,免得沒有傳送門就先誘導玩家點進去。
 	hits := []hitRegion{
 		{338, 50, 288, 300, "design"},
 		{20, 388, 260, 20, "assault"},
@@ -2025,11 +2025,14 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 		case "design":
 			return b.goTo(b.shipDesign, "艦艇設計")
 		case "assault":
-			if b.session != nil && b.session.CanAssaultAntares() {
-				b.session.AssaultAntares()
-				return b.goTo(b.battleResult, "戰鬥結果")
+			// 進安塔蘭王座廳(原版 Main_Antaran_Room),由那個畫面確認後才發動。
+			// 前置條件不滿足時照樣進得去——王座廳會逐條講明卡在哪,比「點了沒反應」清楚。
+			sc, err := b.antaranRoom()
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "安塔蘭王座廳:", err)
+				return b.goTo(b.fleet, "艦隊列表")
 			}
-			return b.goTo(b.fleet, "艦隊列表")
+			return &origTransition{next: sc}
 		}
 		return b.goTo(b.galaxy, "星系主畫面")
 	}
@@ -2074,10 +2077,11 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 			y += 28
 		}
 		// 「攻打安塔蘭」提示(手冊三條勝利路徑之二):只在已建次元傳送門 + 艦隊非空時顯示,
-		// 對應上面 hits 的 "assault" 熱區(見 CanAssaultAntares)。
+		// 對應上面 hits 的 "assault" 熱區(見 CanAssaultAntares)。點下去進王座廳,
+		// 發動與否在那裡決定——文案要講清楚是「進去看」而不是「按了就打」。
 		if b.session.CanAssaultAntares() {
 			warn := color.RGBA{235, 160, 90, 255}
-			s.extras = append(s.extras, extraText{x: 28, y: 402, size: 13, text: "⚔ 攻打安塔蘭母星(點此發動終局反攻)", col: warn})
+			s.extras = append(s.extras, extraText{x: 28, y: 402, size: 13, text: "攻打安塔蘭母星(點此進入王座廳)", col: warn})
 		}
 	}
 	return s, nil
@@ -2637,19 +2641,24 @@ type interactiveApp struct {
 	// 走得到最終得分畫面。與上面 EventSeed=1 同一個理由——那條路徑靠正常遊玩要好幾百回合,
 	// 截圖驗證等不起。只在截圖廊模式下設值,正常遊戲恆為 0(不觸發)。
 	galleryVictoryTick int
-	// galleryDamageTick 是截圖廊在哪個 tick 給艦隊注入結構損傷(見 Update 內的說明:
-	// 必須晚於最後一次結束回合,否則會被停靠母星的完全修復清掉)。
-	galleryDamageTick int
-	gallerySession    *shell.GameSession
+	// galleryFleetTick 是截圖廊在哪個 tick 給艦隊注入結構損傷 + 次元傳送門
+	// (見該常數的說明:必須晚於最後一次結束回合,否則損傷會被停靠母星的完全修復清掉)。
+	galleryFleetTick int
+	gallerySession   *shell.GameSession
 }
 
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
 // 「按 TURN 進最終得分」那一拍(t29),取它的前一拍。
-const galleryVictoryTick = 28
+const galleryVictoryTick = 38
 
-// galleryDamageTick 是截圖廊在哪個 tick 給艦隊注入結構損傷——取「進艦隊列表」那一拍(t41)
-// 的前一拍,確保晚於腳本裡最後一次「結束回合」(t29)。
-const galleryDamageTick = 40
+// galleryFleetTick 是截圖廊在哪個 tick 給艦隊注入結構損傷 + 次元傳送門——取「進艦隊列表」
+// 那一拍(t19)的前一拍。
+//
+// ⚠ 這一拍必須晚於腳本裡最後一次「結束回合」(t17 之前那次),否則 EndTurn 的
+// advanceShipRepair 會把傷清光:艦隊開局就停在母星,照原版 Repair_Ships_At_Colonies_
+// 的規則會被**完全修復**。先前注入在 t28 而 t29 按了結束回合,截出來一艘傷都沒有——
+// 那不是顯示壞了,是修復規則正常運作。
+const galleryFleetTick = 18
 
 // galleryShot 是「端到端過場截圖廊」腳本中,在某個絕對 tick 存一張圖的指令。
 type galleryShot struct {
@@ -2701,57 +2710,65 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		click(320, 393), // t17: 回合摘要「關閉」→ 星系主畫面
 		idle,            // t18: settle
 
-		click(48, 452),  // t19: 星系主畫面工具列「殖民地」→ 殖民地總覽
+		// 艦隊列表 + 安塔蘭王座廳。排在最終得分**之前**,王座廳才照得到「按鈕可用」的樣子
+		// ——勝負一旦定了,前置條件第一條就先擋掉(見 AssaultAntaresBlockReason)。
+		// 艦艇損傷與次元傳送門由 galleryFleetTick 在這一段前注入(見 Update)。
+		click(198, 452), // t19: 工具列「FLEETS」→ 艦隊列表
 		idle,            // t20: settle
-		idle,            // t21: settle → 截圖 colonysummary
-		click(50, 47),   // t22: 總覽第一列「殖民地名」欄 → 單一殖民地畫面
+		idle,            // t21: settle → 截圖 fleet(含艦艇損傷顯示)
+		click(150, 398), // t22: 艦隊列表左下「攻打安塔蘭」→ 安塔蘭王座廳
 		idle,            // t23: settle
-		idle,            // t24: settle → 截圖 colonyscreen
-		click(590, 459), // t25: 殖民地畫面「返回」→ 殖民地總覽
+		idle,            // t24: settle → 截圖 antaranroom
+		click(449, 418), // t25: 王座廳「撤退」→ 艦隊列表
 		idle,            // t26: settle
-		click(608, 462), // t27: 殖民地總覽「RETURN」→ 星系主畫面
+		click(598, 444), // t27: 艦隊列表「RETURN」→ 星系主畫面
 		idle,            // t28: settle
+
+		click(48, 452),  // t29: 星系主畫面工具列「殖民地」→ 殖民地總覽
+		idle,            // t30: settle
+		idle,            // t31: settle → 截圖 colonysummary
+		click(50, 47),   // t32: 總覽第一列「殖民地名」欄 → 單一殖民地畫面
+		idle,            // t33: settle
+		idle,            // t34: settle → 截圖 colonyscreen
+		click(590, 459), // t35: 殖民地畫面「返回」→ 殖民地總覽
+		idle,            // t36: settle
+		click(608, 462), // t37: 殖民地總覽「RETURN」→ 星系主畫面
+		idle,            // t38: settle
 
 		// 最終得分畫面:對局分出勝負後按 TURN 就會進去(見 interactive.go 的 turn 分支)。
 		// 勝負由 galleryVictoryTick 在下面第一拍前設好——那條路徑正常玩要幾百回合才走得到,
 		// 截圖驗證等不起,與上面固定 EventSeed 是同一個理由。
-		click(589, 458), // t29: 「結束回合」→ 最終得分
-		idle,            // t30: settle
-		idle,            // t31: settle → 截圖 hiscore
-		click(320, 400), // t32: 最終得分「繼續」→ 回合摘要
-		idle,            // t33: settle
-		click(320, 393), // t34: 回合摘要「關閉」→ 星系主畫面
-		idle,            // t35: settle
-
-		click(123, 450), // t36: 工具列「PLANETS」→ 行星列表
-		idle,            // t37: settle
-		idle,            // t38: settle → 截圖 planets
-		click(532, 451), // t39: 行星列表「返回」→ 星系主畫面
+		click(589, 458), // t39: 「結束回合」→ 最終得分
 		idle,            // t40: settle
-
-		click(198, 452), // t41: 工具列「FLEETS」→ 艦隊列表
-		idle,            // t42: settle
-		idle,            // t43: settle → 截圖 fleet(含艦艇損傷顯示)
-		click(598, 444), // t44: 艦隊列表「RETURN」→ 星系主畫面
+		idle,            // t41: settle → 截圖 hiscore
+		click(320, 400), // t42: 最終得分「繼續」→ 回合摘要
+		idle,            // t43: settle
+		click(320, 393), // t44: 回合摘要「關閉」→ 星系主畫面
 		idle,            // t45: settle
 
-		click(495, 452), // t46: 工具列「INFO」→ 情報畫面
+		click(123, 450), // t46: 工具列「PLANETS」→ 行星列表
 		idle,            // t47: settle
-		idle,            // t48: settle → 截圖 info(預設分頁:歷史圖表)
-		click(21, 80),   // t49: INFO 左欄「科技總覽」分頁
-		idle,            // t50: settle → 截圖 info_tech
-		click(535, 434), // t51: INFO「RETURN」→ 星系主畫面
-		idle,            // t52: settle
+		idle,            // t48: settle → 截圖 planets
+		click(532, 451), // t49: 行星列表「返回」→ 星系主畫面
+		idle,            // t50: settle
 
-		click(420, 452), // t53: 工具列「RACES」→ 種族關係
-		idle,            // t54: settle
-		click(483, 428), // t55: 種族關係「REPORT」→ 外交對談
-		idle,            // t56: settle
-		idle,            // t57: settle → 截圖 diplomacy
-		click(320, 437), // t58: 外交對談「結束對談」→ 種族關係
-		click(388, 448), // t59: 種族關係「DECLARE WAR」→ 戰術戰鬥
-		idle,            // t60: settle
-		idle,            // t61: settle → 截圖 tactical
+		click(495, 452), // t51: 工具列「INFO」→ 情報畫面
+		idle,            // t52: settle
+		idle,            // t53: settle → 截圖 info(預設分頁:歷史圖表)
+		click(21, 80),   // t54: INFO 左欄「科技總覽」分頁
+		idle,            // t55: settle → 截圖 info_tech
+		click(535, 434), // t56: INFO「RETURN」→ 星系主畫面
+		idle,            // t57: settle
+
+		click(420, 452), // t58: 工具列「RACES」→ 種族關係
+		idle,            // t59: settle
+		click(483, 428), // t60: 種族關係「REPORT」→ 外交對談
+		idle,            // t61: settle
+		idle,            // t62: settle → 截圖 diplomacy
+		click(320, 437), // t63: 外交對談「結束對談」→ 種族關係
+		click(388, 448), // t64: 種族關係「DECLARE WAR」→ 戰術戰鬥
+		idle,            // t65: settle
+		idle,            // t66: settle → 截圖 tactical
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -2760,15 +2777,16 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{11, "04_galaxy.png"},
 		{14, "05_event.png"},
 		{16, "06_turnsummary.png"},
-		{21, "07_colonysummary.png"},
-		{24, "08_colonyscreen.png"},
-		{31, "09_hiscore.png"},
-		{38, "10_planets.png"},
-		{43, "11_fleet.png"},
-		{48, "12_info.png"},
-		{50, "13_info_tech.png"},
-		{57, "14_diplomacy.png"},
-		{61, "15_tactical.png"},
+		{21, "07_fleet.png"},
+		{24, "08_antaranroom.png"},
+		{31, "09_colonysummary.png"},
+		{34, "10_colonyscreen.png"},
+		{41, "11_hiscore.png"},
+		{48, "12_planets.png"},
+		{53, "13_info.png"},
+		{55, "14_info_tech.png"},
+		{62, "15_diplomacy.png"},
+		{66, "16_tactical.png"},
 	}
 	return script, shots
 }
@@ -2832,15 +2850,10 @@ func (a *interactiveApp) Update() error {
 		}
 		a.gallerySession.AntaranHomeworldConquered = true
 	}
-	// 截圖廊專用:給艦隊製造結構損傷,好讓艦隊列表的損傷欄位有東西可畫
-	// (見 internal/shell/repair.go)。與上面同一個理由——截圖驗證等不起真的打一場。
-	//
-	// ⚠ 必須排在最後一次「結束回合」之後:EndTurn 會呼叫 advanceShipRepair,而艦隊開局
-	// 就停在母星(自家據點),照原版 Repair_Ships_At_Colonies_ 的規則會被**完全修復**。
-	// 先前注入在 galleryVictoryTick(t28)、而 t29 按了結束回合,傷就這樣被清光,截出來
-	// 一艘傷都沒有——那不是顯示壞了,是修復規則正常運作。
-	if a.galleryDamageTick > 0 && a.tick == a.galleryDamageTick && a.gallerySession != nil {
-		// 輕傷/完好/重傷各一,琥珀與紅兩個顏色分支都要真的畫出來才算驗到。
+	// 截圖廊專用:艦隊列表與安塔蘭王座廳的前置狀態(見 galleryFleetTick 的說明)。
+	// 與上面同一個理由——截圖驗證等不起真的打一場、也等不起研究到多維物理再蓋傳送門。
+	if a.galleryFleetTick > 0 && a.tick == a.galleryFleetTick && a.gallerySession != nil {
+		// ① 艦艇損傷:輕傷/完好/重傷各一,琥珀與紅兩個顏色分支都要真的畫出來才算驗到。
 		// 開局艦隊都是 strength 1 的船(偵察艦/殖民船,最大血量 3),損傷刻度本來就只有
 		// 0/33/66% 三檔——這是艦級抽象戰鬥模型的必然,不是顯示精度問題。
 		for i := range a.gallerySession.Ships {
@@ -2851,6 +2864,8 @@ func (a *interactiveApp) Update() error {
 				a.gallerySession.Ships[i].Damage = 99 // 重傷 → 紅(ShipDamage 會夾到「最大血量−1」)
 			}
 		}
+		// ② 次元傳送門:安塔蘭王座廳的「發動終局反攻」要它才會亮起來(手冊 p.183)。
+		a.gallerySession.GrantDimensionalPortalForGallery()
 	}
 	if t := a.cur.update(a.pollInput()); t != nil {
 		if t.quit {
@@ -2963,7 +2978,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.gallerySession = b.session
 		// t29 是腳本裡「按 TURN 進最終得分」那一拍;勝負必須在它之前設好,故取 t28。
 		app.galleryVictoryTick = galleryVictoryTick
-		app.galleryDamageTick = galleryDamageTick
+		app.galleryFleetTick = galleryFleetTick
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,
 	// 且截圖驗證不需要聲音。音訊初始化失敗不致命。
