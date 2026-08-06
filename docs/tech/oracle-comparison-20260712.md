@@ -21,6 +21,8 @@
 
 **→ issue #2 結論**:原版 Continue 無存檔時**本來就不能按**(灰階)。remake 應:①無存檔時 Continue/Load 顯示為停用、不可點;②Load Game 點下去開「存檔選擇畫面」(原版 Load Game Window)。使用者「點繼續沒出現選存檔」是因為 remake 沒 disable、也沒存檔選單。
 
+> ✅ **2026-08-07 兩項都已完成**:無存檔時 Continue / Load Game 不給熱區 + 標籤畫成暗綠;Load Game 開十格存檔選單(`cmd/moo2/loadgame.go`,座標取自 openorion2 `LoadGameWindow`)。
+
 ---
 
 ### 新遊戲設定(NEW GAME)

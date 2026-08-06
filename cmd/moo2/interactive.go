@@ -78,9 +78,13 @@ type overlayScreen struct {
 	plateFace        bool        // true=擦底色改採按鈕面色(浮雕按鈕列用,見 samplePlate faceSample)
 	// eraseInset 用途:浮雕按鈕的上下/左右斜邊會被擦底塊蓋掉 → 加內縮只擦中間文字帶,保留浮雕框
 	// (仍蓋掉烘進的英文,因英文置中於文字帶內);plateFace 則讓擦底色貼合按鈕面,兩者可併用。
-	extras   []extraText             // 即時動態文字(星曆、國庫…),疊在背景+overlay 之上
-	postDraw func(dst *ebiten.Image) // 任意額外繪製(如星圖),在最後呼叫
-	mx, my   int                     // 最近一次 update() 算出的滑鼠局部座標(扣掉置中偏移),供 postDraw 讀取做懸停偵測(如殖民地總覽 Planetary/Production Info)
+	// labelColorFor 以 enKey 覆寫個別標籤的顏色(空 = 全部用 labelColor)。
+	// 目前唯一的用途是把「停用」的選項畫成灰的——原版主選單無存檔時 Continue / Load Game
+	// 就是灰階不可按的(2026-07-12 archive.org oracle 對照 issue #2)。
+	labelColorFor map[string]color.RGBA
+	extras        []extraText             // 即時動態文字(星曆、國庫…),疊在背景+overlay 之上
+	postDraw      func(dst *ebiten.Image) // 任意額外繪製(如星圖),在最後呼叫
+	mx, my        int                     // 最近一次 update() 算出的滑鼠局部座標(扣掉置中偏移),供 postDraw 讀取做懸停偵測(如殖民地總覽 Planetary/Production Info)
 }
 
 // extraText 是一段即時繪製的動態文字(非來自譯表的固定標籤)。
@@ -143,7 +147,11 @@ func (s *overlayScreen) draw(dst *ebiten.Image) {
 				size = s.defSize
 			}
 			zh := s.cat.Translate(b.enKey)
-			s.font.DrawCentered(dst, zh, float64(b.x)+float64(b.w)/2+ox, float64(b.y)+float64(b.h)/2+oy, size, s.labelColor)
+			lc := s.labelColor
+			if c, ok := s.labelColorFor[b.enKey]; ok { // 停用的選項畫成灰的
+				lc = c
+			}
+			s.font.DrawCentered(dst, zh, float64(b.x)+float64(b.w)/2+ox, float64(b.y)+float64(b.h)/2+oy, size, lc)
 		}
 	}
 	// hover 熱區以細框提示可點(互動回饋)。
@@ -359,24 +367,44 @@ func versionShort(v gamedata.GameVersion) string {
 	return "1.5"
 }
 
-// savePathFor 回傳 remake 存檔路徑(使用者設定目錄下,退回暫存目錄),確保可寫。
-func savePathFor() string {
+// saveDirFor 回傳 remake 存檔目錄(使用者設定目錄下,退回暫存目錄),確保可寫。
+// 環境變數 `MOO2_SAVE_DIR` 可覆寫——headless 驗證/截圖廊用它把存檔導到暫存目錄,
+// 免得測試把玩家真正的存檔覆蓋掉。
+func saveDirFor() string {
+	if d := os.Getenv("MOO2_SAVE_DIR"); d != "" {
+		if err := os.MkdirAll(d, 0o755); err == nil {
+			return d
+		}
+	}
 	dir, err := os.UserConfigDir()
 	if err != nil || dir == "" {
 		dir = os.TempDir()
 	}
 	sub := filepath.Join(dir, "moo2-remake-cht")
 	if mkErr := os.MkdirAll(sub, 0o755); mkErr != nil {
-		return filepath.Join(os.TempDir(), "moo2-remake-save.json")
+		return os.TempDir()
 	}
-	return filepath.Join(sub, "save.json")
+	return sub
 }
+
+// savePathFor 回傳自動存檔的路徑(存檔槽的最後一格,見 shell/saveslots.go)。
+// 從載入視窗讀某一格之後,`b.savePath` 會被改成那一格,後續自動存檔就寫回同一格。
+func savePathFor() string { return shell.SaveSlotPath(saveDirFor(), shell.AutoSaveSlot) }
 
 // menu 建原版主選單畫面。按鈕熱區用 menuOverlays 的座標(按鈕即標籤)。
 func (b *sceneBuilder) menu() (*overlayScreen, error) {
 	playSceneBGM(bgmMenu)
+	// 無存檔時 Continue / Load Game **停用**:不給熱區(點了不動作)+ 標籤畫成灰的。
+	// 這是 2026-07-12 archive.org 原版 oracle 對照的 issue #2 結論——原版那兩顆本來就是
+	// 灰階不可按,remake 先前是「可按但靜默無反應」,玩家會以為壞了。
+	hasSave := shell.AnySaveExists(saveDirFor())
+	dimmed := map[string]color.RGBA{}
 	hits := make([]hitRegion, 0, len(menuOverlays)+1)
 	for _, o := range menuOverlays {
+		if !hasSave && (o.enKey == "Continue" || o.enKey == "Load Game") {
+			dimmed[o.enKey] = color.RGBA{104, 116, 104, 255} // 綠色主選單字的暗化版
+			continue                                         // 不加熱區 = 點不到
+		}
 		hits = append(hits, hitRegion{o.x, o.y, o.w, o.h, o.enKey})
 	}
 	// 規則版本切換(CLAUDE.md:主選單選 1.3/1.5)——左下角熱區,點擊循環切換,開局注入 RuleProfile。
@@ -396,35 +424,40 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 			// 新遊戲:先進原版 NEW GAME 設定畫面(難度/星系/玩家…),ACCEPT 後進星系主畫面。
 			return b.goTo(b.newGameSetup, "新遊戲設定")
 		case "Continue":
-			// 續玩:若有存檔先讀回,否則沿用目前對局,進星系主畫面。
-			if b.savePath != "" && shell.SaveExists(b.savePath) {
-				if gs, err := shell.LoadSession(b.savePath); err == nil {
-					b.session = gs
-					if len(b.herodataMercs) > 0 {
-						b.session.SetMercCandidates(b.herodataMercs) // 讀檔建的是新 session,重注入真英雄池
-					}
-				} else {
-					fmt.Fprintln(os.Stderr, "讀檔失敗:", err)
-				}
+			// 續玩:接續**最近的存檔槽**(原版 Continue 就是接最近進度,不彈選單)。
+			// 無存檔時這顆鈕是停用的,理論上進不來;真進來了就當作沒事發生。
+			dir := saveDirFor()
+			slot := shell.LatestSaveSlot(dir)
+			if slot < 0 {
+				return nil
 			}
+			path := shell.SaveSlotPath(dir, slot)
+			gs, err := shell.LoadSession(path)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "讀檔失敗:", err)
+				return nil
+			}
+			b.session = gs
+			if len(b.herodataMercs) > 0 {
+				b.session.SetMercCandidates(b.herodataMercs) // 讀檔建的是新 session,重注入真英雄池
+			}
+			b.savePath = path // 後續自動存檔寫回同一格
 			return b.goTo(b.galaxy, "星系主畫面")
 		case "Load Game":
-			// 讀取存檔並進星系主畫面(無存檔則不動作)。
-			if b.savePath != "" && shell.SaveExists(b.savePath) {
-				if gs, err := shell.LoadSession(b.savePath); err == nil {
-					b.session = gs
-					if len(b.herodataMercs) > 0 {
-						b.session.SetMercCandidates(b.herodataMercs) // 讀檔重注入真英雄池
-					}
-					return b.goTo(b.galaxy, "星系主畫面")
-				} else {
-					fmt.Fprintln(os.Stderr, "讀檔失敗:", err)
-				}
+			// 開原版的十格存檔選擇視窗(見 cmd/moo2/loadgame.go)。無存檔時這顆鈕停用。
+			if !shell.AnySaveExists(saveDirFor()) {
+				return nil
 			}
-			return nil
+			sc, err := b.loadGame()
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "載入遊戲視窗:", err)
+				return nil
+			}
+			return &origTransition{next: sc}
 		case "Hall of Fame":
-			// 暫借「名人堂」入口示範調色盤鏈解鎖的研究選擇畫面(原本無內嵌調色盤)。
-			return b.goTo(b.research, "研究選擇")
+			// 名人堂 → 最終得分畫面(原版 Hall of Fame / Hi-Score,見 cmd/moo2/hiscore.go)。
+			// ⚠ 這裡先前暫借給「研究選擇」畫面當調色盤鏈的示範入口,是接錯的,2026-08-07 改正。
+			return b.goTo(b.hiScore, "最終得分")
 		}
 		// Multi Player:尚未實作,暫不動作。
 		return nil
@@ -439,6 +472,9 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 		menuOverlays, color.RGBA{104, 224, 96, 255}, 15, hits, onAction, nil)
 	if err != nil {
 		return nil, err
+	}
+	if len(dimmed) > 0 {
+		s.labelColorFor = dimmed // 無存檔 → Continue / Load Game 畫成灰的
 	}
 	// 左下角版本切換標籤(點擊上方熱區循環)。
 	s.extras = append(s.extras, extraText{
@@ -2648,8 +2684,10 @@ type interactiveApp struct {
 	galleryFleetTick int
 	// galleryGroundTick 是截圖廊在哪個 tick 直接把畫面換成地面戰戰報(見該常數說明)。
 	galleryGroundTick int
-	galleryBuilder    *sceneBuilder
-	gallerySession    *shell.GameSession
+	// galleryLoadWinTick 是截圖廊在哪個 tick 切到載入遊戲視窗(見該常數說明)。
+	galleryLoadWinTick int
+	galleryBuilder     *sceneBuilder
+	gallerySession     *shell.GameSession
 }
 
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
@@ -2667,6 +2705,10 @@ const galleryFleetTick = 18
 
 // galleryGroundTick 是截圖廊在哪個 tick 把畫面換成地面戰戰報——取截圖那一拍(t68)的前一拍。
 const galleryGroundTick = 67
+
+// galleryLoadWinTick 是截圖廊在哪個 tick 寫兩格示範存檔並切到載入視窗——取截圖(t70)的前一拍。
+// 存檔寫到 `MOO2_SAVE_DIR` 指的暫存目錄(見 saveDirFor),不碰玩家真正的存檔。
+const galleryLoadWinTick = 69
 
 // galleryShot 是「端到端過場截圖廊」腳本中,在某個絕對 tick 存一張圖的指令。
 type galleryShot struct {
@@ -2783,6 +2825,11 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		// 故由 galleryGroundTick 直接把畫面推上來(見 Update)。
 		idle, // t67: 由 galleryGroundTick 換成地面戰畫面
 		idle, // t68: settle → 截圖 groundcombat
+
+		// 載入遊戲視窗(原版 Mainmenu_Load_Game_Popup_)。同樣由 tick 直接推上來——
+		// 走正常路徑要「先有存檔、回主選單、點 Load Game」,而截圖廊是一路往前走的單向腳本。
+		idle, // t69: 由 galleryLoadWinTick 寫示範存檔並換成載入視窗
+		idle, // t70: settle → 截圖 loadgame
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -2802,6 +2849,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{62, "15_diplomacy.png"},
 		{66, "16_tactical.png"},
 		{68, "17_groundcombat.png"},
+		{70, "18_loadgame.png"},
 	}
 	return script, shots
 }
@@ -2894,6 +2942,18 @@ func (a *interactiveApp) Update() error {
 			Rounds: 4,
 		}
 		if sc, err := a.galleryBuilder.groundCombat(demo); err == nil {
+			a.cur = sc
+		}
+	}
+	// 截圖廊專用:載入遊戲視窗。先寫幾格示範存檔(空白的十格截起來看不出什麼),再切過去。
+	if a.galleryLoadWinTick > 0 && a.tick == a.galleryLoadWinTick && a.galleryBuilder != nil && a.gallerySession != nil {
+		dir := saveDirFor()
+		for _, slot := range []int{1, 4, shell.AutoSaveSlot} {
+			if err := a.gallerySession.Save(shell.SaveSlotPath(dir, slot)); err != nil {
+				fmt.Fprintln(os.Stderr, "截圖廊寫示範存檔:", err)
+			}
+		}
+		if sc, err := a.galleryBuilder.loadGame(); err == nil {
 			a.cur = sc
 		}
 	}
@@ -3010,6 +3070,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.galleryVictoryTick = galleryVictoryTick
 		app.galleryFleetTick = galleryFleetTick
 		app.galleryGroundTick = galleryGroundTick
+		app.galleryLoadWinTick = galleryLoadWinTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,

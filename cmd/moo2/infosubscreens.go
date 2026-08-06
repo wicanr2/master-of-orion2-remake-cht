@@ -276,7 +276,7 @@ func (b *sceneBuilder) infoTurnSummary(s *overlayScreen) {
 
 	y := infoPanelY + 44
 	rows := [][2]string{
-		{"星曆", fmt.Sprintf("%d", 3500+(b.session.Turn-1))},
+		{"星曆", shell.StardateForTurn(b.session.Turn)}, // 3500 起算,見 shell.StartStardate 的反組譯出處
 		{"國庫", fmt.Sprintf("%d BC(本回合 %+d)", b.session.Player.BC, out.NetBC)},
 		{"稅收", fmt.Sprintf("%d BC", out.TaxRevenue)},
 		{"餘糧收入", fmt.Sprintf("%d BC", out.FoodSurplusRevenue)},

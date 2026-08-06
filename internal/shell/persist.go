@@ -84,8 +84,14 @@ type sessionSnapshot struct {
 	EventSeed     int64             `json:"eventSeed"`
 	AntaresRaids  int               `json:"antaresRaids"`
 	RaceIndex     int               `json:"raceIndex"`
-	RaceCombatPct int               `json:"raceCombatPct"`
-	RaceGrowthPct int               `json:"raceGrowthPct"`
+	// PlayerName / FlagColor 是新遊戲「命名旗色」畫面設定的帝國名與旗色。
+	// ⚠ 這兩個欄位先前**完全沒有進存檔**——玩家取的帝國名與選的旗色一讀檔就消失,
+	// 換回預設值。2026-08-07 補上(存檔槽列表要顯示帝國名時才發現)。舊存檔沒有這兩個
+	// 欄位,解出來是零值,restore 會退回預設(見該處註解),不會壞。
+	PlayerName    string `json:"playerName,omitempty"`
+	FlagColor     int    `json:"flagColor,omitempty"`
+	RaceCombatPct int    `json:"raceCombatPct"`
+	RaceGrowthPct int    `json:"raceGrowthPct"`
 
 	// Government 是玩家政府型態(2026-07-11 士氣接線;見 GameSession.Government 欄位註解)。
 	// 底層是 gamedata.MoraleGovernmentType(int-based enum),json 直接序列化成數字。
@@ -152,6 +158,7 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		FleetAtStar:      s.FleetAtStar, FleetDestStar: s.FleetDestStar, FleetETA: s.FleetETA,
 		PopAccum: s.popAccum, ColonyBuild: s.ColonyBuildings, EventSeed: s.EventSeed,
 		AntaresRaids: s.AntaresRaids, RaceIndex: s.RaceIndex,
+		PlayerName: s.PlayerName, FlagColor: s.FlagColor,
 		RaceCombatPct: s.RaceCombatPct, RaceGrowthPct: s.raceGrowthPct,
 		FleetMarines: s.FleetMarines, PlayerColonyMarines: s.PlayerColonyMarines,
 		MarineBarracksAge: s.MarineBarracksAge, Government: s.Government,
@@ -191,6 +198,9 @@ func (snap sessionSnapshot) restore() *GameSession {
 		FleetAtStar: snap.FleetAtStar, FleetDestStar: snap.FleetDestStar,
 		FleetETA: snap.FleetETA, popAccum: snap.PopAccum, ColonyBuildings: snap.ColonyBuild,
 		EventSeed: snap.EventSeed, AntaresRaids: snap.AntaresRaids, RaceIndex: snap.RaceIndex,
+		// 舊存檔沒有這兩個欄位 → 零值:PlayerName 空字串由 UI 自行退回預設顯示,
+		// FlagColor 0 正好是 FlagColors 的第一個顏色,兩者都是安全的降級。
+		PlayerName: snap.PlayerName, FlagColor: snap.FlagColor,
 		RaceCombatPct: snap.RaceCombatPct, raceGrowthPct: snap.RaceGrowthPct,
 		FleetMarines: snap.FleetMarines, PlayerColonyMarines: snap.PlayerColonyMarines,
 		MarineBarracksAge: snap.MarineBarracksAge, Government: snap.Government,

@@ -38,7 +38,8 @@
 
 | 原版 | remake | 備註 |
 |---|---|---|
-| `Main_Menu` / `Mainmenu_Load` | `menu` | ✅ 座標已對齊 |
+| `Main_Menu` | `menu` | ✅ 座標已對齊;2026-08-07 補上原版的「無存檔時 Continue / Load Game 灰階停用」|
+| `Mainmenu_Load_Game_Popup_` @ 0x804B7 | `loadGame` | ✅ 2026-08-07 已建(`cmd/moo2/loadgame.go`),十格存檔選單 |
 | `Newgame` | `newGameSetup` | ⚠ 原版底排是 **PLAYERS**(對手數),remake 誤作 RACE 入口 |
 | `Race_Selection` | `raceSelect` | ⚠ 版面左右相反(原版肖像左/2欄按鈕右) |
 | `Racial_Option` | `customRace` | 自訂種族點數 |
@@ -455,8 +456,37 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     ⑥文字列高用 12 而非原版的 11——中文字比原版單位元組字型高,11 會上下相黏。**這是整個
     版面唯一沒照抄原版數字的地方。**
 
-16. `Colony_Bombing` 畫面、Smacker 過場。
+16. ~~載入遊戲視窗~~ → **已完成**(2026-08-07,`cmd/moo2/loadgame.go` + `internal/shell/saveslots.go`)。
+    `LOADSAVE.LBX` 先前全 repo 零引用不是巧合——remake 根本只有**一個**存檔檔案,每回合覆寫,
+    主選單的 Continue 與 Load Game 都是「讀那一個檔」,沒存檔時點下去靜默無反應。
+
+    | 元素 | 真值 | 來源 |
+    |---|---|---|
+    | 背景 / LOAD 鈕 / CANCEL 鈕 | `game.lbx` 資產 20 / 21 / 22,調色盤取 `mainmenu.lbx` 資產 21 | openorion2 `LoadGameWindow` |
+    | 視窗定位 | `x=(640−寬)/2`、`y=(480−高)/2` | 同上 |
+    | LOAD 鈕 / CANCEL 鈕 | (37,337) / (171,338) 68×22 | `initWidgets` |
+    | 存檔槽 | 10 格,第 i 格 (22, 22+31×i) 232×27;文字 (x+32, y+24+31×i) | `initWidgets` + `drawSlot` |
+    | 槽位規格 | `SAVEGAME_SLOTS = 10`,**最後一格固定是自動存檔** | `mainmenu.h` + `drawSlot` |
+
+    順帶了結兩件事:
+    - **oracle issue #2 結案**:原版無存檔時 Continue / Load Game 是**灰階不可按**的
+      (2026-07-12 archive.org 對照的結論)。remake 先前是「可按但靜默無反應」,玩家會以為壞了。
+      現在無存檔就不給熱區 + 標籤畫成暗綠。
+    - **主選單「名人堂」接錯的入口修正**:它先前被暫借給「研究選擇」畫面當調色盤鏈的示範入口,
+      現在導向真正的最終得分畫面(`hiScore`,2026-08-07 已建)。
+
+    途中發現的一個真 bug:**`PlayerName` 與 `FlagColor` 從來沒有進過存檔**——玩家在命名旗色
+    畫面取的帝國名和選的旗色,一讀檔就變回預設值。做存檔槽列表要顯示帝國名時才撞到,已補進
+    `sessionSnapshot`(舊存檔解出零值,退回預設,不會壞)。
+
+    ⚠ 誠實留白:①**只有「載入」沒有「儲存」**——原版另有 `Do_Save_Game_Popup_` @ 0x7E154,
+    remake 目前只在每回合結束時自動存檔,玩家無法主動存進指定格 ②原版視窗右側會依存檔類型畫
+    單人/熱座/網路/數據機四種圖示(`game.lbx` 資產 23-26),remake 只有單人對局,四種只會出現
+    一種,畫上去等於裝飾,等多人連線落地再補 ③存檔用 remake 自己的 JSON 格式,不是原版 `.GAM`
+    (原版格式由 `internal/save` **唯讀**解析,寫回不在範圍內)。
+
+17. `Colony_Bombing` 畫面、Smacker 過場、儲存遊戲視窗。
    ~~行星特殊物產~~ → **已完成**(2026-08-06,見 C-4):12 種權重表 + 抵達發現(殘骸/藏寶/
    失散殖民地/受困英雄/遠古文物)+ 殖民效果(原住民人口、金礦寶石收入、文物研究),
    接進 `advanceFleet` 抵達點與快報畫面。
-17. 多人連線(獨立子專案)。
+18. 多人連線(獨立子專案)。
