@@ -2455,7 +2455,7 @@ func (s *GameSession) aiPlanetValue(aiIdx, starIdx int) int {
 			obj = gamedata.AIObjectiveBalancedHigh
 		}
 	}
-	return gamedata.AIPlanetValue(gamedata.AIPlanetValueInput{
+	base := gamedata.AIPlanetValue(gamedata.AIPlanetValueInput{
 		Habitable: true,
 		MaxPop:    gamedata.PlanetBasePopMax(p.SizeID, p.ClimateID),
 		Minerals:  p.MineralID,
@@ -2466,6 +2466,116 @@ func (s *GameSession) aiPlanetValue(aiIdx, starIdx int) int {
 		// Special:remake 尚未建模行星特殊物產(見 docs/re/01-gap-report.md Part C-3),
 		// 一律 0 = 無加分,不臆造。
 		Special: 0,
+	}, obj)
+	if base <= 0 {
+		return 0
+	}
+	// 第二、三層:鄰近價值與協同效應(原版 Proximity_Worth_To_Player_ /
+	// Compute_Contextual_Planet_Values_)。原版的「同一恆星系內的其他行星」在 remake
+	// 對應成「鄰近的星」,因為 remake 是一星一行星(見 genPlanets 註解)。
+	ctx := s.aiNeighborhood(aiIdx, starIdx, obj)
+	ctx.Base = base + gamedata.AIProximityValue(ctx.distances)
+	ctx.Size = p.SizeID
+	ctx.Colonized = s.Stars[starIdx].Owner != 0
+	return gamedata.AIContextualPlanetValue(ctx.AIContextualInput)
+}
+
+// aiNeighborhoodResult 是某顆候選星的鄰近狀況(供 aiPlanetValue 的第二、三層用)。
+type aiNeighborhoodResult struct {
+	gamedata.AIContextualInput
+	distances []int // 到每一顆我方已佔星的距離(整數化,見 aiNeighborRadius)
+}
+
+// aiNeighborRadius 是「鄰近」的判定半徑(星圖座標為 0..1 正規化,故用比例)。
+//
+// 原版判定的是「同一個恆星系內的其他行星」——那是很緊的範圍(同一顆恆星的其他軌道)。
+// remake 一星一行星,只能用距離代替;半徑本身是 remake 的選擇,不是原版值。
+// 取 0.15:24 星星圖的平均間距約 1/√24 ≈ 0.2,所以這大致等於「緊鄰的那一兩顆星」。
+// 先前取 0.28(涵蓋約四分之一星圖)太寬——母星周圍一大片都會被當成「同系」,
+// 全部套上「同系已有我方殖民地 → ×(size+1)/10」的邊際價值折扣,近處變得幾乎不值得殖民。
+const aiNeighborRadius = 0.15
+
+// aiDistanceUnit 把 0..1 的星圖距離換成原版距離表那種「小整數」尺度,
+// 讓 AIProximityValue 的 120/distance 落在與第一層估值相稱的範圍
+// (實測第一層是 1..80,取 40 讓鄰近加成落在 5..15;取 12 會讓近星拿到 60 分,
+// 壓過行星本身的好壞——那不是原版的意思,原版的距離表單位另有尺度)。
+const aiDistanceUnit = 40.0
+
+// aiMaxNeighbors 是計入協同效應的鄰居數上限。
+//
+// 原版的「鄰居」是**同一恆星系內的其他行星**,一個星系最多 5 個軌道,所以天然上限是 4。
+// remake 一星一行星、鄰近用半徑判定,鄰居數沒有天花板——不設限的話,
+// 星圖密集處的空星會靠「鄰居 base 總和 / 8」堆出比行星本身還高的分數
+// (實測:本體 3 分的貧瘠星最終 27 分,壓過本體 76 分的大型乾旱星)。
+// 取最近的 4 顆,對齊原版的天然上限。
+const aiMaxNeighbors = 4
+
+// aiNeighborhood 掃候選星周圍,統計我方/敵方/無主鄰居,並收集到我方星的距離。
+func (s *GameSession) aiNeighborhood(aiIdx, starIdx int, obj gamedata.AIObjective) aiNeighborhoodResult {
+	var out aiNeighborhoodResult
+	if starIdx < 0 || starIdx >= len(s.Stars) {
+		return out
+	}
+	me := s.Stars[starIdx]
+	ownStars := map[int]bool{}
+	if aiIdx >= 0 && aiIdx < len(s.AIPlayers) {
+		for _, idx := range s.AIPlayers[aiIdx].ColonyStars {
+			ownStars[idx] = true
+		}
+	}
+	type neighbor struct {
+		idx int
+		d   float64
+	}
+	var near []neighbor
+	for j := range s.Stars {
+		if j == starIdx {
+			continue
+		}
+		d := math.Hypot(s.Stars[j].X-me.X, s.Stars[j].Y-me.Y)
+		if ownStars[j] {
+			out.distances = append(out.distances, int(d*aiDistanceUnit))
+		}
+		if d <= aiNeighborRadius {
+			near = append(near, neighbor{j, d})
+		}
+	}
+	// 只取最近的 aiMaxNeighbors 顆(見該常數註解)。
+	sort.Slice(near, func(a, b int) bool { return near[a].d < near[b].d })
+	if len(near) > aiMaxNeighbors {
+		near = near[:aiMaxNeighbors]
+	}
+	for _, n := range near {
+		switch {
+		case ownStars[n.idx]:
+			out.NeighborOwnN++
+			out.NeighborOwn += s.aiPlanetBaseValue(n.idx, obj)
+		case s.Stars[n.idx].Owner != 0:
+			out.NeighborEnemyN++
+		default:
+			out.NeighborEmpty += s.aiPlanetBaseValue(n.idx, obj)
+		}
+	}
+	return out
+}
+
+// aiPlanetBaseValue 只算第一層(行星本身),供鄰居統計用——不能直接呼叫 aiPlanetValue,
+// 否則會遞迴(鄰居的估值又要掃它自己的鄰居)。
+func (s *GameSession) aiPlanetBaseValue(starIdx int, obj gamedata.AIObjective) int {
+	if starIdx < 0 || starIdx >= len(s.Planets) {
+		return 0
+	}
+	p := s.Planets[starIdx]
+	if p.NoPlanet || p.Gen < planetGenVersion || !climateColonizable(p.ClimateID) {
+		return 0
+	}
+	return gamedata.AIPlanetValue(gamedata.AIPlanetValueInput{
+		Habitable: true,
+		MaxPop:    gamedata.PlanetBasePopMax(p.SizeID, p.ClimateID),
+		Minerals:  p.MineralID,
+		Climate:   p.ClimateID,
+		Gravity:   p.GravityID,
+		FoodBase:  gamedata.ClimateFoodPerFarmer(p.ClimateID),
 	}, obj)
 }
 

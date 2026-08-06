@@ -156,3 +156,86 @@ func AIPlanetValue(in AIPlanetValueInput, obj AIObjective) int {
 	}
 	return v
 }
+
+// --- 第二層:鄰近價值(原版 `Proximity_Worth_To_Player_` @ 0xD2AEA)---
+//
+// 原版對每顆行星掃一遍射程內的恆星,依距離倒數累加:
+//
+//	自己的星:   worth += (該星我已探索 ? 120 : 80) / distance
+//	別人的星:   worth += 100 / distance,並記錄最近距離
+//
+// 也就是「離我的地盤越近越值錢」。remake 先前的 AI 完全不看距離,會跑到星圖另一端殖民。
+
+// AIProximityOwnWeight / AIProximityUnknownWeight / AIProximityOtherWeight 是原版的三個權重
+// (見上方公式)。原版用「該星的旗標是否含我的 player bit」區分前兩者。
+const (
+	AIProximityOwnWeight     = 120
+	AIProximityUnknownWeight = 80
+	AIProximityOtherWeight   = 100
+)
+
+// AIProximityValue 依距離倒數累加鄰近價值。
+// distances 是候選星到「每一顆我方已佔星」的距離(同一套單位即可,原版用的是預算好的距離表)。
+// 距離 0 視為 1,避免除以零。
+func AIProximityValue(distances []int) int {
+	sum := 0
+	for _, d := range distances {
+		if d <= 0 {
+			d = 1
+		}
+		sum += AIProximityOwnWeight / d
+	}
+	return sum
+}
+
+// --- 第三層:星系內協同(原版 `Compute_Contextual_Planet_Values_` @ 0xD3125)---
+//
+// 原版對每顆行星掃「同一恆星系內的其他行星」,依它們的歸屬調整這顆的分數:
+//
+//	contextual = base
+//	           + (同系無主行星的 base 總和) / 8
+//	           + (同系我方殖民地的 base 總和) / 4        // 只在這顆已有殖民地時
+//	若這顆是空的且同系已有我方殖民地 → contextual = contextual * (size+1) / 10
+//	若同系有敵方殖民地 n 個          → contextual /= (n + 2)
+//
+// 語意是「整系開發有加成、敵方已進駐的星系要避開」。
+//
+// ⚠ remake 是「一星一行星」(見 shell.genPlanets 註解),沒有同系兄弟行星。
+// 這裡把「同一恆星系」映射成「鄰近的星」——結構與係數照原版,鄰近的定義是 remake 的。
+type AIContextualInput struct {
+	Base           int // 第一層 AIPlanetValue 的結果
+	NeighborEmpty  int // 鄰近無主星的 base 值總和
+	NeighborOwn    int // 鄰近我方殖民地的 base 值總和
+	NeighborOwnN   int // 鄰近我方殖民地數
+	NeighborEnemyN int // 鄰近敵方殖民地數
+	Size           PlanetSize
+	Colonized      bool // 這顆星本身是否已有殖民地
+}
+
+// AIContextualPlanetValue 套用星系內協同效應,回傳最終估值(夾在 0..65535)。
+func AIContextualPlanetValue(in AIContextualInput) int {
+	v := in.Base
+	emptyBonus := in.NeighborEmpty / 8
+
+	if in.Colonized {
+		v += emptyBonus
+		v += in.NeighborOwn / 4
+	} else {
+		if in.NeighborOwnN <= 0 {
+			v += emptyBonus
+		} else {
+			// 已有我方鄰居:依行星大小縮放(大星才值得再開一個殖民地)。
+			v = v * (int(in.Size) + 1) / 10
+		}
+	}
+	if in.NeighborEnemyN > 0 {
+		v /= in.NeighborEnemyN + 2
+	}
+	if v > 65535 {
+		return 65535
+	}
+	if v < 0 {
+		return 0
+	}
+	return v
+}

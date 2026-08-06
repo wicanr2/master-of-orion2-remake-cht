@@ -1,9 +1,11 @@
 package shell
 
 import (
+	"math"
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
 // TestAIBuildsAndExpands 驗證 AI 對手主動造艦(FleetStrength 成長)並擴張星圖(佔無主星)。
@@ -239,5 +241,93 @@ func TestAIPicksBestPlanetNotFirstAvailable(t *testing.T) {
 	if got != bestIdx {
 		t.Errorf("AI 應挑估值最高的星 %d(%d 分),got 星 %d(%d 分)",
 			bestIdx, bestVal, got, s.aiPlanetValue(0, got))
+	}
+}
+
+// TestAIAvoidsEnemyNeighborhood 驗證 AI 估值會避開敵方勢力範圍
+// (原版 Compute_Contextual_Planet_Values_ 的 /(敵方鄰居數+2))。
+func TestAIAvoidsEnemyNeighborhood(t *testing.T) {
+	s := NewDemoSession()
+	s.DisableEvents = true
+
+	// 找一顆有價值的無主星,記下原始估值;把它的鄰居標成敵方後估值應下降。
+	target := -1
+	for i := range s.Stars {
+		if s.Stars[i].Owner == 0 && s.aiPlanetValue(0, i) > 0 {
+			target = i
+			break
+		}
+	}
+	if target < 0 {
+		t.Skip("這局沒有可估值的無主星")
+	}
+	before := s.aiPlanetValue(0, target)
+
+	// 把最近的一顆無主星標成敵方。
+	nearest, nd := -1, 1e9
+	for j := range s.Stars {
+		if j == target || s.Stars[j].Owner != 0 {
+			continue
+		}
+		d := math.Hypot(s.Stars[j].X-s.Stars[target].X, s.Stars[j].Y-s.Stars[target].Y)
+		if d < nd {
+			nearest, nd = j, d
+		}
+	}
+	if nearest < 0 || nd > aiNeighborRadius {
+		t.Skip("目標星附近沒有可標記成敵方的鄰星")
+	}
+	s.Stars[nearest].Owner = 2
+	after := s.aiPlanetValue(0, target)
+	if after >= before {
+		t.Errorf("鄰近出現敵方後估值應下降:%d → %d", before, after)
+	}
+}
+
+// TestAIPrefersNearbyWhenPlanetsEqual 驗證行星本身條件相同時,AI 偏好離自己近的
+// (原版 Proximity_Worth_To_Player_ 的 120/distance)。
+func TestAIPrefersNearbyWhenPlanetsEqual(t *testing.T) {
+	s := NewDemoSession()
+	s.DisableEvents = true
+	home := s.AIPlayers[0].ColonyStars[0]
+
+	// 找兩顆行星資料完全相同、但距離不同的無主星。
+	nearIdx := -1
+	var nearD, farD float64
+	for i := range s.Stars {
+		if s.Stars[i].Owner != 0 || i >= len(s.Planets) || s.Planets[i].NoPlanet {
+			continue
+		}
+		d := math.Hypot(s.Stars[i].X-s.Stars[home].X, s.Stars[i].Y-s.Stars[home].Y)
+		for j := i + 1; j < len(s.Stars); j++ {
+			if s.Stars[j].Owner != 0 || j >= len(s.Planets) || s.Planets[j].NoPlanet {
+				continue
+			}
+			if s.Planets[i].ClimateID != s.Planets[j].ClimateID ||
+				s.Planets[i].SizeID != s.Planets[j].SizeID ||
+				s.Planets[i].MineralID != s.Planets[j].MineralID ||
+				s.Planets[i].GravityID != s.Planets[j].GravityID {
+				continue
+			}
+			dj := math.Hypot(s.Stars[j].X-s.Stars[home].X, s.Stars[j].Y-s.Stars[home].Y)
+			if d < dj {
+				nearIdx, nearD, farD = i, d, dj
+			} else {
+				nearIdx, nearD, farD = j, dj, d
+			}
+			break
+		}
+		if nearIdx >= 0 {
+			break
+		}
+	}
+	if nearIdx < 0 {
+		t.Skip("這局沒有兩顆行星條件完全相同的無主星")
+	}
+	// 排除鄰近效應的干擾:只比 proximity 那一項。
+	nearProx := gamedata.AIProximityValue([]int{int(nearD * aiDistanceUnit)})
+	farProx := gamedata.AIProximityValue([]int{int(farD * aiDistanceUnit)})
+	if nearProx <= farProx {
+		t.Errorf("近星的鄰近價值應高於遠星:%.3f→%d vs %.3f→%d", nearD, nearProx, farD, farProx)
 	}
 }

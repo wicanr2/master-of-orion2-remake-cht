@@ -107,3 +107,69 @@ func TestAIPlanetValueClampedTo16Bit(t *testing.T) {
 		t.Errorf("極端輸入應夾在 65535,got %d", got)
 	}
 }
+
+// TestAIProximityValueFavoursNearby 驗證鄰近價值隨距離遞減(原版 120/distance)。
+func TestAIProximityValueFavoursNearby(t *testing.T) {
+	near := AIProximityValue([]int{2})
+	far := AIProximityValue([]int{20})
+	if near <= far {
+		t.Errorf("近的星鄰近價值應較高:距離2=%d 距離20=%d", near, far)
+	}
+	// 多顆我方星應該累加。
+	if two := AIProximityValue([]int{4, 4}); two <= AIProximityValue([]int{4}) {
+		t.Error("多顆我方鄰星的鄰近價值應累加")
+	}
+	// 距離 0 不應除以零。
+	if AIProximityValue([]int{0}) != AIProximityOwnWeight {
+		t.Error("距離 0 應視為 1,回傳完整權重")
+	}
+}
+
+// TestAIContextualEnemyPenalty 驗證敵方鄰居會壓低估值(原版 /(n+2))。
+// 這是「避開敵方勢力範圍」的來源。
+func TestAIContextualEnemyPenalty(t *testing.T) {
+	clean := AIContextualInput{Base: 1000, Size: MEDIUM_PLANET}
+	oneEnemy := clean
+	oneEnemy.NeighborEnemyN = 1
+	twoEnemies := clean
+	twoEnemies.NeighborEnemyN = 2
+
+	c, o, w := AIContextualPlanetValue(clean), AIContextualPlanetValue(oneEnemy), AIContextualPlanetValue(twoEnemies)
+	if !(c > o && o > w) {
+		t.Errorf("敵方鄰居越多估值應越低:無敵 %d > 一敵 %d > 兩敵 %d", c, o, w)
+	}
+	if o != 1000/3 {
+		t.Errorf("一個敵方鄰居應除以 (1+2):want %d got %d", 1000/3, o)
+	}
+}
+
+// TestAIContextualEmptyNeighborBonus 驗證「鄰近有無主星」會加分(整區開發的潛力)。
+func TestAIContextualEmptyNeighborBonus(t *testing.T) {
+	alone := AIContextualInput{Base: 500, Size: MEDIUM_PLANET}
+	withEmpty := alone
+	withEmpty.NeighborEmpty = 800
+	if AIContextualPlanetValue(withEmpty) <= AIContextualPlanetValue(alone) {
+		t.Error("鄰近有可殖民的無主星應加分")
+	}
+	if got, want := AIContextualPlanetValue(withEmpty), 500+800/8; got != want {
+		t.Errorf("無主鄰居加分應為總和/8:want %d got %d", want, got)
+	}
+}
+
+// TestAIContextualOwnNeighborScalesBySize 驗證「鄰近已有我方殖民地」時改成依行星大小縮放
+// (原版:同系第二顆殖民地的邊際價值較低,大星才值得)。
+func TestAIContextualOwnNeighborScalesBySize(t *testing.T) {
+	base := AIContextualInput{Base: 1000, NeighborOwnN: 1, NeighborOwn: 500}
+	small, huge := base, base
+	small.Size, huge.Size = SMALL_PLANET, HUGE_PLANET
+	if AIContextualPlanetValue(huge) <= AIContextualPlanetValue(small) {
+		t.Error("鄰近已有我方殖民地時,大星的邊際價值應高於小星")
+	}
+	// 已有殖民地的星走另一條路徑:加鄰居價值而非縮放。
+	colonized := base
+	colonized.Colonized = true
+	colonized.Size = SMALL_PLANET
+	if AIContextualPlanetValue(colonized) <= AIContextualPlanetValue(small) {
+		t.Error("已殖民的星應走「加鄰居價值」路徑,不套用大小縮放折扣")
+	}
+}
