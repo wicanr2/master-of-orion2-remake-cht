@@ -24,7 +24,11 @@ type AIOpponent struct {
 	FleetStrength   int // 累積軍力(每回合由淨工業投資,好戰性格投更多)
 	FleetInvestPool int // 造艦投資的餘數池(見 advanceAI):累積未達 invest 門檻的 NetIndustry,
 	// 避免整數除法把小額淨工業直接捨去成 0(見 advanceAI 註解)。
-	Relation   int    // 對玩家的外交關係分數(驅動 17 級 RelationLevel 與態勢)
+	// Personality 是原版 AI 性格(AIRACES.CFG race_personality 0-6),開局依種族分布抽出。
+	// 驅動關係演化、擴張積極度等行為差異——先前三個 AI 除了名字之外行為完全相同,
+	// 因為所有性格相關的數字都是硬編的固定值(見 ai/personality_tables.go)。
+	Personality ai.Personality
+	Relation    int    // 對玩家的外交關係分數(驅動 17 級 RelationLevel 與態勢)
 	StanceName string // 目前對玩家態勢(中文;由 ai.DecideStance 推得)
 	OwnedStars int    // 已擴張佔領的星數(含母星)
 
@@ -496,6 +500,17 @@ func (s *GameSession) aiByDisplayName(enemy string) *AIOpponent {
 }
 
 // adjustRelation 調整某 AI 對玩家的關係分數,夾在 -40..40(同 advanceAI 慣例)。
+// clampRelation 把關係分數夾在 -40..40(與 adjustRelation 同一個尺度)。
+func clampRelation(v int) int {
+	if v > 40 {
+		return 40
+	}
+	if v < -40 {
+		return -40
+	}
+	return v
+}
+
 func (a *AIOpponent) adjustRelation(delta int) {
 	a.Relation += delta
 	if a.Relation > 40 {
@@ -1645,7 +1660,7 @@ func (s *GameSession) SetupNewGame(stars int, seed int64, numAI int) {
 	// 骰表每顆星抽的次數依光譜而異,共用一條流會讓佈局跟著漂。
 	s.Planets = genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), galaxyAgeSetting, demoHomeStarSet(aiHomeStars))
 	s.SelectedStar = -1
-	s.AIPlayers = buildDemoAIOpponents(aiHomeStars)
+	s.AIPlayers = buildDemoAIOpponents(aiHomeStars, s.Difficulty, seed)
 	s.PlayerSpies = make([]int, len(s.AIPlayers)) // 平行 AIPlayers,重置為全新對手的間諜數(開局皆 0)
 	s.PlayerColonyStars = []int{0}
 	s.FleetAtStar = 0
@@ -2236,7 +2251,26 @@ func (s *GameSession) advanceAI(i int, out engine.EmpireOutput) {
 	}
 	pm := s.playerMilitary()
 	strengthGap := a.FleetStrength - pm // AI 領先越多越敢敵對
-	a.Relation -= int(float64(strengthGap)/20*diff) + 0
+
+	// 關係往一個**平衡點**漂移,而不是每回合無止境累減。
+	//
+	// 先前是 `Relation -= strengthGap/20*diff`,純累加:只要 AI 軍力領先,關係必定一路
+	// 觸底 -40,60 回合後三個 AI 一律「宣戰」,性格完全沒有體感(2026-08-06 探針實測)。
+	//
+	// 平衡點 = 性格的基礎關係傾向(原版 _personality_relation_modifiers,±70 尺度縮到
+	// ±35 對齊 Relation 的 ±40)再被軍力差往敵對方向推。和平主義(+30)因此會停在友好側,
+	// 除非玩家軍力遠遜於它;冷酷無情(-20)本來就偏敵對,軍力一領先就迅速宣戰。
+	//
+	// ⚠ 原版關係演化的確切公式尚未反編(module 27 的 Diplomacy_Growth_/Change_Relations_),
+	// 「往平衡點漂移」是 remake 的模型;有硬證的只有平衡點取自哪張表。
+	equilibrium := ai.PersonalityRelationModifier(a.Personality) / 2
+	target := equilibrium - int(float64(strengthGap)/5*diff)
+	switch {
+	case a.Relation < target:
+		a.Relation++
+	case a.Relation > target:
+		a.Relation--
+	}
 	if a.Relation > 40 {
 		a.Relation = 40
 	}
@@ -2343,6 +2377,16 @@ var stanceNames = map[ai.Stance]string{
 // 檔頭,故實務上不會發生),保守 continue 找下一顆無主星,不 fallback 成只設旗標(避免旗標與
 // 殖民地模型再度分裂)。找不到任何可擴張的無主星則整個 no-op。
 func (s *GameSession) aiExpand(i int) {
+	// 擴張積極度依性格(原版 _personality_expansion_chance:冷酷 100、和平主義只有 30)。
+	// 先前所有 AI 一律每回合都嘗試擴張,擴張速度毫無性格差異。
+	if chance := ai.PersonalityExpansionChance(s.AIPlayers[i].Personality); chance < 100 {
+		if s.eventRand == nil {
+			s.eventRand = rand.New(rand.NewSource(s.EventSeed*2654435761 + 1))
+		}
+		if s.eventRand.Intn(100) >= chance {
+			return
+		}
+	}
 	for idx := range s.Stars {
 		if s.Stars[idx].Owner != 0 {
 			continue
@@ -2554,14 +2598,42 @@ func homeworldBuildings() map[string]bool {
 // Commando 指揮官技能階(0 無/1 一般/2 進階),見 AIOpponent.Leaders 欄位註解的誠實近似說明——
 // 布拉西人(手冊「體格強悍,地面戰加成」)給 Tier2、姆瑞森人(好戰善攻)給 Tier1、席隆人
 // (重研究)給 0(無指揮官)。
+//
+// 2026-08-06 起 profile 不再手動指派:raceEn 對到原版 AIRACES.CFG 的種族性格分布
+// (ai.ClassicRacePersonality),開局抽出性格後由 ai.ProfileForPersonality 推導經濟傾向。
+// 那張分布表 remake 早就有,但一直是死碼——三個 AI 的行為差異全靠這裡手寫的 profile。
 var demoAIOpponentSetup = []struct {
 	name         string
-	profile      ai.Profile
+	raceEn       string // AIRACES.CFG 的種族名(ai.ClassicRacePersonality 的 key)
 	commandoTier int
 }{
-	{"AI (席隆人)", ai.ProfileScientific, 0},
-	{"AI (姆瑞森人)", ai.ProfileAggressive, 1},
-	{"AI (布拉西人)", ai.ProfileExpansionist, 2},
+	{"AI (席隆人)", "Psilons", 0},
+	{"AI (姆瑞森人)", "Mrrshan", 1},
+	{"AI (布拉西人)", "Bulrathi", 2},
+}
+
+// pickAIPersonality 依原版公式從種族的性格分布抽一個性格。
+//
+// 原版(docs/tech/original-ai-re.md §1.3):
+//
+//	column := Random(10) + 1 - difficulty_byte(0-4)   // clamp 到 1..10
+//	personality := race_personality[race][column-1]
+//
+// 難度越高,欄位越往前偏 → 抽到分布表前段(通常是比較兇的性格)的機率越大。
+// 查無此族時退回「反覆無常」這個中性性格,不臆造。
+func pickAIPersonality(raceEn string, difficulty int, r *rand.Rand) ai.Personality {
+	dist, ok := ai.ClassicRacePersonality(raceEn)
+	if !ok {
+		return ai.PersonalityErratic
+	}
+	col := r.Intn(10) + 1 - difficulty
+	if col < 1 {
+		col = 1
+	}
+	if col > 10 {
+		col = 10
+	}
+	return dist[col-1]
 }
 
 // aiCommandoLeader 依 commandoTier 建構一名指揮官技能領袖(Skill="指揮官"),tier<=0 時回傳
@@ -2595,10 +2667,13 @@ func aiCommandoLeader(name string, tier int) []Leader {
 // 表長度則循環使用),各自持 Average 起始文明等級的單一母星殖民地(playerHomeworldColony,與
 // 玩家共用忠實 yield)。NewDemoSession 與 SetupNewGame 共用此函式,確保「新遊戲開局怎麼建 AI」
 // 只有一個權威實作,不會兩處各自維護一份、逐漸漂移不一致。
-func buildDemoAIOpponents(aiHomeStars []int) []AIOpponent {
+func buildDemoAIOpponents(aiHomeStars []int, difficulty int, seed int64) []AIOpponent {
 	aiPlayers := make([]AIOpponent, 0, len(aiHomeStars))
+	// 性格抽樣用獨立的亂數流:同一個 seed 一定抽出同一組性格(存讀檔與重跑要可重現)。
+	pr := rand.New(rand.NewSource(seed*31 + 17))
 	for i := 0; i < len(aiHomeStars); i++ {
 		setup := demoAIOpponentSetup[i%len(demoAIOpponentSetup)]
+		pers := pickAIPersonality(setup.raceEn, difficulty, pr)
 		aiPlayers = append(aiPlayers, AIOpponent{
 			Name:        setup.name,
 			Player:      newHomeworldPlayerState(1),
@@ -2610,9 +2685,14 @@ func buildDemoAIOpponents(aiHomeStars []int) []AIOpponent {
 			ColonyBuildings: []map[string]bool{cloneBuildings(homeworldBuildings())},
 			// Leaders 依種族性格指派開局固定 Commando 守將(#5,見 AIOpponent.Leaders 與
 			// demoAIOpponentSetup.commandoTier 欄位註解的誠實近似說明)。
-			Leaders:    aiCommandoLeader(setup.name, setup.commandoTier),
-			Decider:    ai.NewRemakeDecider(setup.profile),
+			Leaders:     aiCommandoLeader(setup.name, setup.commandoTier),
+			Personality: pers,
+			// 經濟傾向由性格推導(見 ai.ProfileForPersonality),不再手寫。
+			Decider:    ai.NewRemakeDecider(ai.ProfileForPersonality(pers)),
 			OwnedStars: 1,
+			// 基礎關係傾向依性格起跳(原版 _personality_relation_modifiers):
+			// 和平主義 +30、排外 -50……先前所有 AI 一律從 0 開始,性格毫無體感。
+			Relation: clampRelation(ai.PersonalityRelationModifier(pers) / 2),
 		})
 	}
 	return aiPlayers
@@ -2624,7 +2704,7 @@ func NewDemoSession() *GameSession {
 	galaxy, aiHomeStars := genGalaxy(galaxyStars, 42, numAIOpponents) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
 	galaxy[0].Explored = true                                         // 母星初始已探索
 
-	aiPlayers := buildDemoAIOpponents(aiHomeStars)
+	aiPlayers := buildDemoAIOpponents(aiHomeStars, 1, 42) // demo 固定難度 1 / seed 42(可重現)
 
 	session := &GameSession{
 		Turn:              1,

@@ -1,6 +1,10 @@
 package shell
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
+)
 
 // TestAIBuildsAndExpands 驗證 AI 對手主動造艦(FleetStrength 成長)並擴張星圖(佔無主星)。
 func TestAIBuildsAndExpands(t *testing.T) {
@@ -48,6 +52,10 @@ func TestAIBuildsAndExpands(t *testing.T) {
 func TestAIExpand_CreatesRealColony(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
+	// 這個測試要驗的是「擴張執行後會建出真的殖民地模型」,不是「AI 每回合都想擴張」——
+	// 2026-08-06 起擴張前會先過性格的積極度判定(原版 _personality_expansion_chance:
+	// 和平主義只有 30%),把性格固定成擴張率 100% 的冷酷無情,才測得到機制本身。
+	s.AIPlayers[0].Personality = ai.PersonalityRuthless
 	beforeColonies := len(s.AIPlayers[0].Colonies)
 	beforeStars := len(s.AIPlayers[0].ColonyStars)
 
@@ -79,6 +87,11 @@ func TestAIExpand_CreatesRealColony(t *testing.T) {
 func TestAIExpand_EconomyGrowsWithColonyCount(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
+	// 同上:固定成擴張率 100% 的性格,讓「擴張 → 經濟成長」這條因果測得準,
+	// 不受性格積極度的機率影響。
+	for i := range s.AIPlayers {
+		s.AIPlayers[i].Personality = ai.PersonalityRuthless
+	}
 
 	for turn := 0; turn < 10; turn++ {
 		s.EndTurn()
@@ -139,4 +152,57 @@ func TestAIStanceHostileWhenStrong(t *testing.T) {
 		t.Fatalf("AI 強勢時態勢應敵對(宣戰/敵視),實得「%s」", st)
 	}
 	t.Logf("AI 關係 %d、態勢「%s」", s.AIPlayers[0].Relation, st)
+}
+
+// TestAIPersonalitiesDiverge 驗證性格接線真的造成行為差異,不是只多了一個欄位。
+//
+// 2026-08-06 之前三個 AI 對手除了名字之外行為完全相同:profile 是手寫的、關係演化用固定
+// 係數、擴張每回合必試。接上原版性格表(ai/personality_tables.go)後,擴張速度與外交走向
+// 應該依性格分岔。
+func TestAIPersonalitiesDiverge(t *testing.T) {
+	grow := func(p ai.Personality) (colonies, relation int) {
+		s := NewDemoSession()
+		s.DisableEvents = true
+		for i := range s.AIPlayers {
+			s.AIPlayers[i].Personality = p
+			s.AIPlayers[i].Relation = 0
+		}
+		// 20 回合:夠讓擴張速度分出高下,又不會兩邊都把 24 星的星圖佔滿而看不出差異
+		// (60 回合時和平主義也會飽和,實測 7 vs 8 幾乎相同)。
+		for turn := 0; turn < 20; turn++ {
+			s.EndTurn()
+		}
+		return len(s.AIPlayers[0].Colonies), s.AIPlayers[0].Relation
+	}
+	pacifistColonies, pacifistRel := grow(ai.PersonalityPacifist)
+	ruthlessColonies, ruthlessRel := grow(ai.PersonalityRuthless)
+
+	// 擴張:冷酷無情(100%)應該明顯多於和平主義(30%)。
+	if ruthlessColonies <= pacifistColonies {
+		t.Errorf("冷酷無情的擴張應多於和平主義:%d vs %d 個殖民地", ruthlessColonies, pacifistColonies)
+	}
+	// 外交:和平主義的關係平衡點在友好側,不該跟冷酷無情一樣觸底。
+	if pacifistRel <= ruthlessRel {
+		t.Errorf("和平主義的關係應優於冷酷無情:%+d vs %+d", pacifistRel, ruthlessRel)
+	}
+	t.Logf("和平主義:%d 殖民地 關係%+d ／ 冷酷無情:%d 殖民地 關係%+d",
+		pacifistColonies, pacifistRel, ruthlessColonies, ruthlessRel)
+}
+
+// TestAIPersonalityIsReproducible 驗證同一 seed 抽出同一組性格(存讀檔與重跑的前提)。
+func TestAIPersonalityIsReproducible(t *testing.T) {
+	a, b := NewDemoSession(), NewDemoSession()
+	for i := range a.AIPlayers {
+		if a.AIPlayers[i].Personality != b.AIPlayers[i].Personality {
+			t.Errorf("AI %d 的性格不可重現:%v vs %v", i, a.AIPlayers[i].Personality, b.AIPlayers[i].Personality)
+		}
+	}
+	// 存讀檔後性格要保留。
+	restored := a.snapshot().restore()
+	for i := range a.AIPlayers {
+		if restored.AIPlayers[i].Personality != a.AIPlayers[i].Personality {
+			t.Errorf("存讀檔後 AI %d 的性格跑掉:%v → %v",
+				i, a.AIPlayers[i].Personality, restored.AIPlayers[i].Personality)
+		}
+	}
 }

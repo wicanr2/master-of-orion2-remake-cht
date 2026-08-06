@@ -27,6 +27,10 @@ type aiSnapshot struct {
 	OwnedStars      int                  `json:"ownedStars"`
 	ColonyStars     []int                `json:"colonyStars"` // 見 shell.AIOpponent.ColonyStars 註解
 	Spies           int                  `json:"spies"`       // AI 派來偷玩家科技的間諜數,見 spy.go
+	// Personality 是 AI 性格(見 shell.AIOpponent.Personality)。omitempty 不適用:
+	// 0 是合法值(排外),舊存檔缺欄位會解成 0——那與「排外」無法區分,屬已知的相容性折衷,
+	// 影響只是舊存檔的 AI 性格會一律變成排外,不會壞掉。
+	Personality ai.Personality `json:"personality"`
 
 	// ColonyBuildings 見 shell.AIOpponent.ColonyBuildings 註解。舊存檔(本欄位加入前存的檔)
 	// 解碼時這裡是 nil——BombardColony 對 nil/空 map 視為「無建築」,回歸行為與加欄位前一致,
@@ -118,7 +122,7 @@ func (s *GameSession) snapshot() sessionSnapshot {
 			FleetStrength: a.FleetStrength, FleetInvestPool: a.FleetInvestPool,
 			Relation: a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars,
 			ColonyStars: a.ColonyStars, Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
-			Leaders: a.Leaders}
+			Leaders: a.Leaders, Personality: a.Personality}
 	}
 	return sessionSnapshot{
 		Version: saveFormatVersion, Turn: s.Turn, Player: s.Player,
@@ -155,7 +159,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 			FleetInvestPool: a.FleetInvestPool,
 			Relation:        a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars,
 			ColonyStars: a.ColonyStars, Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
-			Leaders: a.Leaders,
+			Leaders: a.Leaders, Personality: a.Personality,
 		}
 	}
 	restorePlanetIDs(snap.Planets)
