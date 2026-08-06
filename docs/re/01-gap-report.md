@@ -150,8 +150,8 @@
 
 | 原版資料表 | 用途 | remake 現況 |
 |---|---|---|
-| `_personality_relation_modifiers` 等 **6 張** | **AI 性格行為** | remake 是手寫 `ai.Profile` |
-| `_base_planet_values` / `_contextual_planet_values` / `_g_*` | **AI 行星估值** | remake AI 選星是「星圖索引順序」 |
+| ~~`_personality_*` **14 張**~~ | **AI 性格行為** | ✅ 2026-08-06 已接(`ai/personality_tables.go`)。實際是 **14 張**不是 6 張,每張 7 欄對應 Personality 0-6 |
+| `_base_planet_values` / `_contextual_planet_values` / `_g_*` | **AI 行星估值** | remake AI 選星仍是「星圖索引順序」。⚠ 這兩張不是靜態表:`_base/_contextual_planet_values` 各只有 4 bytes(**指標**),指向 `_g_*` 的 5760 bytes BSS,由 `Compute_Base_Planet_Values_` / `Compute_Contextual_Planet_Values_`(module 92)執行期填——要取得的是**公式**不是數值 |
 | `_climate_maintenance_modifiers` | 氣候維護成本 | **remake 無此概念**;已 dump(cseg01 0xDD4BA)但讀取者未確認 |
 | `_planet_max_mines` = `2 4 6 9 12` | 各大小礦場上限 | 已建表,**尚未接進生產**(remake 無礦場上限概念) |
 | `_planet_special` / `_planet_special_weighted_chance` | 行星特殊物產(12 種,權重和 100) | 已 dump,remake 無此系統 |
@@ -162,7 +162,7 @@
 | `_tech_research_level_values` | 科技研究等級 | `gamedata/techtree.go` |
 | `_high/_low/_moderate_*_values`(9 張) | 疑似 AI 難度曲線 | 未知 |
 
-**最大的剩餘數值缺口**:①AI 性格與行星估值 ②氣候維護成本 ③行星特殊物產。
+**最大的剩餘數值缺口**:①AI 行星估值(需反編公式,非靜態表)②氣候維護成本 ③行星特殊物產。
 
 ---
 
@@ -198,7 +198,9 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
    (`combatRangeLevelPenaltyTable`、`damageDissipationPenaltyTable`);真正的缺口是
    **傷害衰減從未被呼叫**——同一發雷射在 1 格與 23 格外傷害一樣。已接進
    `ResolveShotWithMods`,順帶讓 NR(No Range Dissipation)改造第一次有實際效果。
-5. **`_personality_*` 6 張表 + AI 行星估值** → 把 remake 手寫 AI 換成原版行為模型。
+5. ~~`_personality_*` 表~~ → **已完成**(2026-08-06,14 張)。**AI 行星估值**仍缺:
+   要反編 `Compute_Base_Planet_Values_` / `Compute_Contextual_Planet_Values_` 取得公式
+   (那兩個符號指向的是執行期算出來的 BSS,不是可以直接 dump 的靜態表)。
 6. **一星多行星** → 原版每顆恆星 1–5 顆行星各佔一條軌道;remake 的 `Stars`/`Planets`
    索引一一對應是 UI/拓殖/AI 共同的假設,拆開是跨層改造(見 `genPlanets` 註解)。
 7. ~~獨立 Colony 畫面 + Event 畫面~~ → **兩個都已完成**(2026-08-06)。
