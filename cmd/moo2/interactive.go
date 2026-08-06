@@ -2971,7 +2971,11 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		click(486, 405), // t4: 新遊戲設定「Accept」→ 種族選擇
 		idle,            // t5: settle
 		idle,            // t6: settle → 截圖 raceselect
-		click(540, 451), // t7: 種族選擇「接受」→ 命名/旗色
+		// t7: 種族選擇——**點種族鈕即確認**(原版沒有 ACCEPT,見 raceselect.go 檔頭)。
+		// 人類是清單第 5 項 → 第 0 欄第 5 列 → x 351..474、y 330..375。
+		// (先前這裡點的是 (540,451) 的「接受」鈕,2026-08-07 版面改成原版的 2×7 網格後
+		//  那個座標什麼都不會命中,腳本會卡在種族畫面、後面每一張都截錯。)
+		click(410, 350), // t7: 種族選擇「人類」→ 命名/旗色
 		idle,            // t8: settle → 截圖 nameflag
 		click(540, 454), // t9: 命名/旗色「接受」→ 星系主畫面
 		idle,            // t10: settle
