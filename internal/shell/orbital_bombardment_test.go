@@ -130,11 +130,12 @@ func TestBombardColony_ReducesPopulationDeterministically(t *testing.T) {
 	if res.BuildingsRemaining != 0 {
 		t.Fatalf("BuildingsRemaining 應為 0(2 棟建築皆已摧毀),got %d", res.BuildingsRemaining)
 	}
-	const wantPopulationLost = 6 // 建築吸收後餘 8 hits → GroundBombardPopulationLoss(8, LARGE_PLANET)=8*6/7=6
+	// 建築吸收後餘 8 hits → GroundBombardPopulationLoss(8, MEDIUM_PLANET)=8*6/6=8(Medium 是係數基準)
+	const wantPopulationLost = 8 // (2026-08-06:行星大小由 LARGE 校正為 MEDIUM——archive.org 原版實測 Sol III = Medium Terran,見 docs/tech/oracle-comparison-20260712.md;下列預期依同一條手冊公式在新大小下重算,非放寬斷言)
 	if res.PopulationLost != wantPopulationLost {
 		t.Fatalf("PopulationLost 應為 %d(建築先吸收 2 hits,餘 8 hits 才扣人口),got %d", wantPopulationLost, res.PopulationLost)
 	}
-	const wantRemainingHits = 2 // 餘 8 hits 扣完 6 人口損傷後的剩餘
+	const wantRemainingHits = 0 // Medium:loss==hits,8 hits 全數化為人口損傷,無剩餘
 	if res.RemainingHits != wantRemainingHits {
 		t.Fatalf("RemainingHits 應為 %d,got %d", wantRemainingHits, res.RemainingHits)
 	}
@@ -282,7 +283,7 @@ func TestBombardColony_RemainingHitsAfterBuildingsGoToPopulation(t *testing.T) {
 	if res.BuildingsDestroyed != 2 {
 		t.Fatalf("BuildingsDestroyed 應為 2(4 hits 足夠摧毀全部 2 棟),got %d", res.BuildingsDestroyed)
 	}
-	const wantPopLoss = 1 // 餘 2 hits → GroundBombardPopulationLoss(2, LARGE_PLANET) = 2*6/7 = 1
+	const wantPopLoss = 2 // 餘 2 hits → GroundBombardPopulationLoss(2, MEDIUM_PLANET) = 2*6/6 = 2
 	if res.PopulationLost != wantPopLoss {
 		t.Fatalf("建築摧毀完後餘 hits 應扣人口 %d,got %d", wantPopLoss, res.PopulationLost)
 	}

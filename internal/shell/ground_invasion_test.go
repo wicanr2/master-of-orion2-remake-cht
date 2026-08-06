@@ -196,18 +196,22 @@ func TestInvadeColony_UnmodeledExpansionStarRejected(t *testing.T) {
 }
 
 // TestAdvanceMarines_GrowsOverTurnsUpToCap 驗證 Marine Barracks 駐軍池隨回合成長,且不超過
-// GroundMarineBarracksCap 上限。把殖民地人口灌高到 16(cap=min(8,10)=8,高於初始 4),觀察
-// 駐軍池從 4 成長到 8。
+// GroundMarineBarracksCap 上限。把殖民地人口灌高到 16,讓 cap 由 PopMax 那一半決定(高於初始 4),
+// 觀察駐軍池從 4 成長到 cap。
+// cap 不寫死:母星是 Medium/Terran(PopMax=12,archive.org oracle 對照 Sol III),
+// cap = min(16/2, 12/2) = 6;寫死數字只會把行星大小重複編碼進測試(2026-08-06 已踩過一次)。
 func TestAdvanceMarines_GrowsOverTurnsUpToCap(t *testing.T) {
 	s := NewDemoSession()
-	s.PlayerColonies[0].Population = 16 // PopMax 沿用 playerHomeworldColony() 的 20
+	s.PlayerColonies[0].Population = 16
 
-	wantCap := gamedata.GroundMarineBarracksCap(16, 20, false)
-	if wantCap != 8 {
-		t.Fatalf("測試前提錯誤:預期 cap=8,got %d(檢查 GroundMarineBarracksCap 公式是否變動)", wantCap)
+	c := s.PlayerColonies[0]
+	wantCap := gamedata.GroundMarineBarracksCap(c.Population, c.PopMax, false)
+	if wantCap <= 4 {
+		t.Fatalf("測試前提錯誤:cap 需高於初始 4 才看得到成長,got %d(pop=%d PopMax=%d)",
+			wantCap, c.Population, c.PopMax)
 	}
 
-	s.advanceMarines() // age=0:初始 4 單位(未達 8 的上限)
+	s.advanceMarines() // age=0:初始 4 單位(未達上限)
 	if s.PlayerColonyMarines[0] != 4 {
 		t.Fatalf("首次 advanceMarines 後應為手冊初始值 4,got %d", s.PlayerColonyMarines[0])
 	}
@@ -220,10 +224,10 @@ func TestAdvanceMarines_GrowsOverTurnsUpToCap(t *testing.T) {
 	}
 }
 
-// TestAdvanceMarines_RespectsCapWhenPopulationSmall 驗證人口偏低(母星預設 8/20)時,cap=4,
+// TestAdvanceMarines_RespectsCapWhenPopulationSmall 驗證人口偏低(母星預設 8/12)時,cap=4,
 // 即使跑很多回合也不會超過(不像 popAccum 式成長無上限)。
 func TestAdvanceMarines_RespectsCapWhenPopulationSmall(t *testing.T) {
-	s := NewDemoSession() // Population=8, PopMax=20 → cap = min(4,10) = 4
+	s := NewDemoSession() // Population=8, PopMax=12 → cap = min(4,6) = 4
 	for i := 0; i < 100; i++ {
 		s.advanceMarines()
 	}

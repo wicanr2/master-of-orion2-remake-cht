@@ -12,15 +12,16 @@ func TestGameSessionEndTurn(t *testing.T) {
 	if s.Turn != 2 {
 		t.Errorf("EndTurn 後回合 = %d,預期 2", s.Turn)
 	}
-	// 玩家研究:母星科學家3 * 每科研3(gamedata.ResearchPerScientistNorm,銀河基準)* 士氣(1+0%)
-	// = 9。2026-07-12 校正:①母星分配 科1→科3(SAVE10 oracle 不變式科≥2)②每科研基準 3(手冊
-	// p.949「usual 3」,先前硬編 30 約 10x 過高)③開局領袖池改為空(手冊 p.47/134 原版開局無領袖、
-	// 須雇用,先前 demoLeaders 自帶「馮·諾伊曼」+25 是機制錯誤)。故總研究 = 9 純基礎,不再 +25。
-	if s.LastPlayerOutput.TotalResearch != 9 {
-		t.Errorf("玩家總研究 = %d,預期 9(科3×norm3,開局無領袖)", s.LastPlayerOutput.TotalResearch)
+	// 玩家研究:母星科學家2 * 每科研3(gamedata.ResearchPerScientistNorm,銀河基準)* 士氣(1+0%)
+	// = 6。沿革:2026-07-12 由科1→科3(SAVE10 oracle 不變式科≥2)+ 每科研基準 3(手冊 p.949
+	// 「usual 3」,先前硬編 30 約 10x 過高)+ 開局領袖池清空(原版須雇用);2026-08-06 再由科3→科2
+	// ——archive.org 線上原版實測直接讀到 Sol III 母星是 農4/工2/科2(直接觀察原版,oracle 優先序
+	// 高於 SAVE10 不變式重建,且仍滿足「工≤2、科≥2」),見 docs/tech/oracle-comparison-20260712.md。
+	if s.LastPlayerOutput.TotalResearch != 6 {
+		t.Errorf("玩家總研究 = %d,預期 6(科2×norm3,開局無領袖)", s.LastPlayerOutput.TotalResearch)
 	}
-	if s.Player.ResearchProgress != 9 {
-		t.Errorf("玩家研究進度 = %d,預期 9", s.Player.ResearchProgress)
+	if s.Player.ResearchProgress != 6 {
+		t.Errorf("玩家研究進度 = %d,預期 6", s.Player.ResearchProgress)
 	}
 	// AI 也推進了(研究進度增加)
 	if s.AIPlayers[0].Player.ResearchProgress <= aiBefore {

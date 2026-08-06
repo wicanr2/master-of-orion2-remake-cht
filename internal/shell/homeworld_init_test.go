@@ -44,8 +44,9 @@ func TestNewDemoSessionHomeworldState(t *testing.T) {
 		t.Fatalf("玩家應只有 1 座母星,got %d", len(s.PlayerColonies))
 	}
 	hw := s.PlayerColonies[0]
-	if hw.PlanetSize != gamedata.LARGE_PLANET {
-		t.Fatalf("母星應為 Large,got %v", hw.PlanetSize)
+	// 母星行星大小 = Medium (2026-08-06:行星大小由 LARGE 校正為 MEDIUM——archive.org 原版實測 Sol III = Medium Terran,見 docs/tech/oracle-comparison-20260712.md;下列預期依同一條手冊公式在新大小下重算,非放寬斷言)
+	if hw.PlanetSize != gamedata.MEDIUM_PLANET {
+		t.Fatalf("母星應為 Medium(archive.org 原版實測 Sol III = Medium Terran),got %v", hw.PlanetSize)
 	}
 	if hw.Population != 8 {
 		t.Fatalf("母星起始人口應為 8(手冊未給精確值,採 worked example 值),got %d", hw.Population)

@@ -2390,13 +2390,21 @@ func playerHomeworldColony() engine.ColonyState {
 		// 餵飽 pop8;餘 4 人依原版母星偏科研傾向配 工1/科3(SAVE10 Terran 種族多為工0-2/科2-4)。
 		// ⚠ SAVE10 五名皆 AI 種族無 Human 樣本,精確三數為中信心重建(不變式本身高信心);
 		// 分配漣漪到工業/稅收已用 moo2sim 開局軌跡驗證無死亡螺旋。見 original-gameplay-reference.md §7.0.1。
-		Population: 8, PopMax: 20, Farmers: 4, Workers: 1, Scientists: 3,
+		// 2026-08-06 再校正為 農4/工2/科2:archive.org 線上原版實測(2026-07-12 oracle,
+		// docs/tech/oracle-comparison-20260712.md)直接讀到 Sol III 母星就是 FARMERS 4 /
+		// WORKERS 2 / SCIENTISTS 2。這是**直接觀察原版**(oracle 優先序高於 SAVE10 不變式重建),
+		// 且同時滿足 SAVE10 的「工≤2、科≥2」兩條不變式。先前 4/1/3 是無 Human 樣本下的重建值。
+		// PopMax 由 gamedata 依「大小×氣候」推導,不再硬編:archive.org 原版實測讀到母星是
+		// **Medium Terran**(先前 remake 硬編 LARGE/上限 20 偏大)。
+		// PlanetBasePopMax(MEDIUM,TERRAN) = (2+1)*5 * 80% = 12,與 oracle 筆記記的「約 12」相符。
+		Population: 8, PopMax: gamedata.PlanetBasePopMax(gamedata.MEDIUM_PLANET, gamedata.TERRAN),
+		Farmers:    4, Workers: 2, Scientists: 2,
 		FoodPerFarmer:     gamedata.ClimateFoodPerFarmer(gamedata.TERRAN),
 		IndustryPerWorker: gamedata.MineralIndustryPerWorker(gamedata.ABUNDANT),
 		// 研究每科學家=銀河基準 3(手冊 p.949「usual 3」+ Psilon +2 邏輯 + SAVE10.GAM 驗證,
 		// 見 gamedata.ResearchPerScientistNorm)。先前硬編 30 約 10x 過高,2026-07-12 校正。
 		ResearchPerScientist: gamedata.ResearchPerScientistNorm,
-		PlanetSize:           gamedata.LARGE_PLANET,
+		PlanetSize:           gamedata.MEDIUM_PLANET, // 原版 Sol III = Medium Terran(archive.org oracle)
 		MoralePercent:        colonyMoralePercent(gamedata.MoraleGovDictatorship, homeworldBuildings()),
 		// PlanetGravity 母星固定 Normal-G(手冊/homeworld-init.md 慣例基準,與 Terran/Abundant
 		// 同一組母星設定),無重力懲罰。engine.ColonyState.PlanetGravity 的 Go 零值恰好是
@@ -2587,7 +2595,11 @@ func NewDemoSession() *GameSession {
 		// demoLeaders()/applyLeaderColonyBonuses 保留供未來「傭兵招募流程」實作後 seed 用(TODO)。
 		Leaders:           nil,
 		Ships:             homeworldShips(),
-		Builds:            make([]ColonyBuild, 1),
+		// 母星開局預設建造「貿易品」:archive.org 線上原版實測(2026-07-12 oracle)讀到 Sol III
+		// 的 BUILDING 欄就是「Trade Goods」,右下 Income +12 BC——remake 先前開局是「不建造」、
+		// 收支 +0,是母星開局態沒對齊的一環(見 docs/tech/oracle-comparison-20260712.md)。
+		// Cost 0 同「不建造」語意(見 TradeGoodsBuildName 註解:整包工業轉現金,不累積進度)。
+		Builds: []ColonyBuild{{Name: TradeGoodsBuildName, Progress: 0, Cost: 0}},
 		SelectedStar:      -1,
 		FleetAtStar:       0,  // 母星
 		FleetDestStar:     -1, // 無航行任務
