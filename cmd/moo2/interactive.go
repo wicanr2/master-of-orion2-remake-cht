@@ -627,7 +627,14 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			return b.goTo(b.research, "研究選擇") // 星系右側研究框 → 研究選擇(對齊原版)
 		}
 		if a == "dispatch" && b.session != nil {
-			b.session.SendFleet(b.session.SelectedStar) // 派遣艦隊至選中星(航行由 EndTurn 推進)
+			// 派遣艦隊至選中星(航行由 EndTurn 推進)。曲速前開局沒有 FTL、出不了本星系,
+			// SendFleet 會直接回 false——要說清楚原因,不然玩家只會看到「點了沒反應」。
+			if !b.session.SendFleet(b.session.SelectedStar) {
+				if !b.session.FleetHasFTL() {
+					b.lastActionMsg = "沒有 FTL 引擎,艦隊無法離開本星系——先研究「核分裂」" +
+						"(曲速前開局的規則,手冊:探索本星系之外在研究出 FTL 之前是不可能的)"
+				}
+			}
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
 		if a == "loadmarines" && b.session != nil {
@@ -3502,7 +3509,7 @@ func (b *sceneBuilder) applyNewGameSettings() {
 		b.session.GalaxyAge = shell.GalaxyAges[b.newGameAge].Age
 		b.session.GalaxyAgeSet = true
 	}
-	b.session.TechLevel = b.newGameTech
+	b.session.TechLevel, b.session.TechLevelSet = b.newGameTech, true
 }
 
 // newGameOpponents 把「帝國總數」換成 SetupNewGame 要的「AI 對手數」。

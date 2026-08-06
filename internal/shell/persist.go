@@ -145,6 +145,7 @@ type sessionSnapshot struct {
 	GalaxyAge    gamedata.GalaxyAge `json:"galaxyAge,omitempty"`
 	GalaxyAgeSet bool               `json:"galaxyAgeSet,omitempty"`
 	TechLevel    int                `json:"techLevel,omitempty"`
+	TechLevelSet bool               `json:"techLevelSet,omitempty"`
 }
 
 // snapshot 擷取 GameSession 目前狀態成可序列化快照。
@@ -199,6 +200,7 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		GalaxyAge:                 s.GalaxyAge,
 		GalaxyAgeSet:              s.GalaxyAgeSet,
 		TechLevel:                 s.TechLevel,
+		TechLevelSet:              s.TechLevelSet,
 	}
 }
 
@@ -248,6 +250,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 		GalaxyAge:                 snap.GalaxyAge,
 		GalaxyAgeSet:              snap.GalaxyAgeSet,
 		TechLevel:                 snap.TechLevel,
+		TechLevelSet:              snap.TechLevelSet,
 	}
 }
 

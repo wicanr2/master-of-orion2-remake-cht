@@ -100,7 +100,8 @@ func TestDifficultyCountMatchesOriginal(t *testing.T) {
 // TestNewGameSettingsSurviveSaveLoad:設定要進存檔,否則讀回來查不到這局是什麼設定。
 func TestNewGameSettingsSurviveSaveLoad(t *testing.T) {
 	s := NewDemoSession()
-	s.GalaxyAge, s.GalaxyAgeSet, s.TechLevel = gamedata.GalaxyMature, true, 2
+	s.GalaxyAge, s.GalaxyAgeSet = gamedata.GalaxyMature, true
+	s.TechLevel, s.TechLevelSet = 2, true
 	path := t.TempDir() + "/settings.json"
 	if err := s.Save(path); err != nil {
 		t.Fatalf("存檔失敗:%v", err)
@@ -112,7 +113,70 @@ func TestNewGameSettingsSurviveSaveLoad(t *testing.T) {
 	if !got.GalaxyAgeSet || got.GalaxyAge != gamedata.GalaxyMature {
 		t.Errorf("星系年齡沒還原:set=%v age=%v", got.GalaxyAgeSet, got.GalaxyAge)
 	}
-	if got.TechLevel != 2 {
-		t.Errorf("科技等級沒還原:%d", got.TechLevel)
+	if !got.TechLevelSet || got.TechLevel != 2 {
+		t.Errorf("科技等級沒還原:set=%v level=%d", got.TechLevelSet, got.TechLevel)
+	}
+}
+
+// --- 起始科技等級的 gameplay 效果(2026-08-07 接上的第一項) ---
+
+// TestPrewarpFleetCannotLeaveSystem:曲速前開局沒有 FTL,艦隊出不了本星系。
+// 手冊直引:「Exploring outside that system is impossible until faster than light (FTL)
+// technologies are discovered.」
+func TestPrewarpFleetCannotLeaveSystem(t *testing.T) {
+	s := NewDemoSession()
+	s.SetupNewGame(24, 5, DefaultOpponents)
+	s.TechLevel, s.TechLevelSet = TechLevelPrewarp, true
+
+	if s.FleetHasFTL() {
+		t.Fatal("曲速前且未研究核分裂時不該有 FTL")
+	}
+	dest := (s.FleetAtStar + 1) % len(s.Stars)
+	if s.SendFleet(dest) {
+		t.Error("曲速前開局的艦隊不該派得出去")
+	}
+	if s.FleetETA != 0 || s.FleetDestStar >= 0 {
+		t.Errorf("派遣被擋下時不該留下航行狀態:ETA=%d dest=%d", s.FleetETA, s.FleetDestStar)
+	}
+
+	// 研究完 FTL 主題就解禁。
+	if s.Player.CompletedTopics == nil {
+		s.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{}
+	}
+	s.Player.CompletedTopics[FTLTopic] = true
+	if !s.FleetHasFTL() {
+		t.Error("研究完 FTL 主題後應可離開本星系")
+	}
+	if !s.SendFleet(dest) {
+		t.Error("有 FTL 之後派遣應成功")
+	}
+}
+
+// TestNonPrewarpFleetUnrestricted:一般 / 先進開局本來就配了 FTL 引擎,不該被擋。
+func TestNonPrewarpFleetUnrestricted(t *testing.T) {
+	for _, lvl := range []int{1, 2} {
+		s := NewDemoSession()
+		s.SetupNewGame(24, 5, DefaultOpponents)
+		s.TechLevel, s.TechLevelSet = lvl, true
+		if !s.FleetHasFTL() {
+			t.Errorf("科技等級 %d 開局就該有 FTL", lvl)
+		}
+		if !s.SendFleet((s.FleetAtStar + 1) % len(s.Stars)) {
+			t.Errorf("科技等級 %d 的艦隊派遣不該被擋", lvl)
+		}
+	}
+}
+
+// TestTechLevelZeroValueDoesNotFreezeFleet:**零值陷阱的回歸測試**。
+// TechLevel 的 Go 零值是 0 = 曲速前;沒有 TechLevelSet 標記的話,舊存檔與任何沒設過
+// 這欄的建構路徑會被靜默判成曲速前、艦隊整個凍住。
+func TestTechLevelZeroValueDoesNotFreezeFleet(t *testing.T) {
+	s := NewDemoSession()
+	s.SetupNewGame(24, 5, DefaultOpponents)
+	if s.TechLevelSet {
+		t.Fatal("demo session 不該自稱設過科技等級")
+	}
+	if !s.FleetHasFTL() {
+		t.Error("沒設過科技等級時應退回「一般」,艦隊不該被凍住")
 	}
 }

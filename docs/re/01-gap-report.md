@@ -776,3 +776,49 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
 **HANDOFF/HONEST-STATUS 上「colony/races/newgame/shipDesign 仍待重挖」那份名單已清空。**
 剩下的不是「座標沒挖」,而是「子系統沒做」——殖民地中段的行星表面 + 建築 sprite 擺放、
 艦艇設計右上那兩格的內容、戰機/航母戰鬥子模型。
+
+25. **TECH LEVEL 接上第一個 gameplay 效果:曲速前的 FTL 限制**(2026-08-07)。
+
+    第 21 項留下的「TECH LEVEL 只存設定、不影響 gameplay」不再完全成立。手冊直引
+    (已收在 `docs/tech/homeworld-init.md`):
+
+    > "Every race has one colony — their home star system. Exploring outside that system is
+    >  impossible until faster than light (FTL) technologies are discovered."
+
+    接法:`FleetHasFTL()` — 只有**曲速前**(TechLevel 0)受限,且限制在研究完
+    `FTLTopic` 後解除。`FTLTopic = TOPIC_NUCLEAR_FISSION`,因為 remake 科技樹裡
+    `TECH_NUCLEAR_DRIVE`(MOO2 的入門 FTL 引擎)就在那一列(techtree.go 第 55 列,
+    Cost 50、ResearchAll),**不在開局就給的 `TOPIC_STARTING_TECH` 裡**。
+    一般 / 先進開局手冊描述本來就有星際艦,不受限。
+
+    UI:派遣被擋下時在星圖顯示原因,不是「點了沒反應」。
+
+    ⚠ **踩到一個真的零值陷阱,值得記下來**:`TechLevel` 的 Go 零值是 0 = 曲速前。
+    接上限制的當下 `TestFleetInterstellarMovement` 立刻紅燈——`NewDemoSession` 從沒設過
+    這一欄。如果沒有測試護著,**所有舊存檔讀回來都會變成曲速前、艦隊整個凍住**。
+    修法與 `GalaxyAgeSet` 同款:加 `TechLevelSet` 標記,未設過一律退回「一般」,
+    並補一條專門盯這件事的回歸測試(`TestTechLevelZeroValueDoesNotFreezeFleet`)。
+    **加「零值有意義」的列舉欄位時,一律配一個 Set 標記。**
+
+    ⚠ 仍未接的 TECH LEVEL 效果(手冊有硬證但缺表):
+    - 初始建築數上限 Pre-warp 3 / Avg·Post-warp 5 / Advanced 9,且數量 = min(⌈⅔ 人口⌉, 上限)。
+      remake 的母星建築是固定一組(2 棟),低於所有上限,只加上限不會有任何效果——
+      要先有「依人口 + `initial_buildings` 優先序生成」的機制,而那張優先序表還沒到手。
+    - 開局已知科技領域數:Pre-warp 2 個、其餘 6 個。remake 現在固定 2 個 = 等同 Pre-warp,
+      所以選「一般」其實還少了 4 個領域。要補得先查出那 6 個是哪些(手冊只說預設第一個
+      是 field #29)。
+
+26. **行星表面 + 建築 sprite 擺放:先查清楚為什麼不能照上面那套方法做**(2026-08-07 調查)。
+
+    這是殖民地畫面中段仍留白的那塊。追下去發現它**不是幾個立即數**,而是查表:
+
+    - `CR_To_XY_` @ 0xBC5D8:`word_182C9C[56a + 8b + 4c]` — 一張四維 word 表
+      (a 步距 56 位元組、b 步距 8、c 步距 4)。
+    - `Bldg_Coords_To_Centered_Screen_Coord_` @ 0xBC866:`dword_182E24[...]` 與
+      `dword_182E2C[...]` 兩張表相加再除二。
+
+    也就是說格點→螢幕座標是**烘在資料段的幾何表**,沒有公式可抄。要做這一塊得先把那幾張表
+    從執行檔的資料段抽出來、驗證維度與語意,再配 `Make_Bldg_Array_For_Colony_` /
+    `Sort_Bldg_Array_Columns_` / `Box_Bldg_Slot_` 的排序與命中邏輯,以及 COLBLDG.LBX 的
+    建築圖對應。**那是獨立工程,不是再挖幾個立即數就能收掉的**——這一輪不硬做,
+    把結論記在這裡,免得下次又從頭找一遍才發現同一件事。

@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"math/rand"
 
-	moo2audio "github.com/wicanr2/master-of-orion2-remake-cht/internal/audio"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/assets"
+	moo2audio "github.com/wicanr2/master-of-orion2-remake-cht/internal/audio"
 )
 
 // clickSound 由 overlayScreen.update 在按鈕命中時呼叫;未初始化(headless)則為 nil。
@@ -23,22 +23,22 @@ const moo2SampleRate = 22050
 //
 // 2026-07-10 第二輪定案:openorion2 完全未實作音樂(零 provenance 可查,見
 // docs/tech/audio-track-map.md 附錄);改用三路資料交叉推定:
-//   1. Orion2.exe(DOS 版,Watcom 除錯字串未 strip)反映真實程式架構:
-//      Play_Background_Music_ / Play_Combat_Music_ 是「各自獨立」的函式(戰鬥音樂
-//      非背景樂延續),Start_Diplomacy_Music_ 搭配 _diplomacy_good_music /
-//      _diplomacy_bad_music 兩個變數(外交音樂依「該族當下關係好壞」切換,非固定單曲)。
-//   2. 官方 2016 重製版原聲帶(Steam App 468020,Dave Govett 掛名同一作曲家)曲名
-//      實證 "XXX Race-Peace" / "XXX Race-War" 命名法——證實「每族一對和平/戰爭曲」
-//      是跨代設計慣例(佐證用,非本檔案 byte 級證據)。
-//   3. 本機 STREAMHD.LBX 20 條實測時長(entry 1-20 對應 musicClips[0..19]):
-//      發現多組近乎相同時長的配對(如 idx2/idx7 皆 42.66s、idx12/idx17 皆 21.32s、
-//      idx0/idx13 為 38.54/38.41s),與 (1)(2) 的「和平/戰爭配對」結構吻合,佐證
-//      STREAMHD 內確有配對存在——但**無法**由時長反推「哪一族/哪個配對」,此為本輪
-//      duration-clustering 的已知上限(自產訊號,非外部 oracle,見 rulebook/65)。
-//   結論:menu 維持原推定(有時長輪廓佐證);galaxy 由「短曲」改選「另一條
-//   獨立長曲」(較合理的長迴圈背景樂);combat 由「與配對曲同長」改選「無配對的
-//   短曲」(較符合 Play_Combat_Music_ 獨立分派的假設)。**這三項皆非曲名級別確證**,
-//   曲目↔場景/種族的精確身分待人耳聆聽定案。見 docs/tech/audio-track-map.md 完整表。
+//  1. Orion2.exe(DOS 版,Watcom 除錯字串未 strip)反映真實程式架構:
+//     Play_Background_Music_ / Play_Combat_Music_ 是「各自獨立」的函式(戰鬥音樂
+//     非背景樂延續),Start_Diplomacy_Music_ 搭配 _diplomacy_good_music /
+//     _diplomacy_bad_music 兩個變數(外交音樂依「該族當下關係好壞」切換,非固定單曲)。
+//  2. 官方 2016 重製版原聲帶(Steam App 468020,Dave Govett 掛名同一作曲家)曲名
+//     實證 "XXX Race-Peace" / "XXX Race-War" 命名法——證實「每族一對和平/戰爭曲」
+//     是跨代設計慣例(佐證用,非本檔案 byte 級證據)。
+//  3. 本機 STREAMHD.LBX 20 條實測時長(entry 1-20 對應 musicClips[0..19]):
+//     發現多組近乎相同時長的配對(如 idx2/idx7 皆 42.66s、idx12/idx17 皆 21.32s、
+//     idx0/idx13 為 38.54/38.41s),與 (1)(2) 的「和平/戰爭配對」結構吻合,佐證
+//     STREAMHD 內確有配對存在——但**無法**由時長反推「哪一族/哪個配對」,此為本輪
+//     duration-clustering 的已知上限(自產訊號,非外部 oracle,見 rulebook/65)。
+//     結論:menu 維持原推定(有時長輪廓佐證);galaxy 由「短曲」改選「另一條
+//     獨立長曲」(較合理的長迴圈背景樂);combat 由「與配對曲同長」改選「無配對的
+//     短曲」(較符合 Play_Combat_Music_ 獨立分派的假設)。**這三項皆非曲名級別確證**,
+//     曲目↔場景/種族的精確身分待人耳聆聽定案。見 docs/tech/audio-track-map.md 完整表。
 //
 // 2026-07-10 第三輪(反組譯呼叫點硬證,見 docs/tech/audio-track-map.md 第七節):
 // 反組譯 Orion2.exe 找到 `_diplomacy_bad_music`(外交關係差時要播的曲)的實際賦值碼

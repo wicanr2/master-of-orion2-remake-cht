@@ -381,20 +381,23 @@ var GalaxyAges = []struct {
 // ——**那是 1.5 才加的**,1.5 的 CHANGELOG 明寫「Added pictures for cluster, random and
 // post warp in newgame.lbx」。1.3 的 LBX 裡就是沒有第四張圖,兩邊沒有矛盾。
 //
-// ⚠ 目前只接**設定本身**(存進對局、畫面顯示),**gameplay 效果尚未接**。手冊已經給出可用的
-// 硬證,留給下一輪:
+// gameplay 效果**已接一項**(2026-08-07):曲速前開局沒有 FTL,艦隊離不開本星系,
+// 直到研究完 `FTLTopic`(見 `FleetHasFTL`)。手冊直引:「Exploring outside that system is
+// impossible until faster than light (FTL) technologies are discovered.」
+//
+// ⚠ 其餘效果仍未接。手冊已經給出可用的硬證,留給下一輪:
 //   - 初始建築數上限:Pre-warp 3 / Average·Post-warp 5 / Advanced 9(不含 Capitol),
 //     且 = min(⅔ 人口無條件進位, 上限)。remake 的母星建築是固定一組,還沒有依人口生成的機制。
 //   - 開局已知科技領域數:Pre-warp 2 個(field 0 + Construction 第一個)、其餘 6 個。
 //     remake 現在開局是 2 個(`newHomeworldPlayerState` 的 CompletedTopics)= **等同 Pre-warp**,
 //     所以預設選 Average 時其實還沒拿到該有的 6 個領域。要補得先查出那 6 個是哪些
 //     (手冊只說預設第一個是 field #29),沒有一手表之前不臆造。
-//   - Pre-warp 另有「無 FTL,艦隊無法離開母星系」的硬規則(手冊),remake 的 SendFleet 未設限。
+//     (這一項與上面的 FTL 限制無關:FTL 只管「能不能出星系」,科技領域數管「開局會哪些技術」。)
 var TechLevels = []struct {
 	Name string
 	Desc string
 }{
-	{"曲速前", "只有母星,無 FTL"},
+	{"曲速前", "只有母星,無 FTL(需研究核分裂才能離開本星系)"},
 	{"一般", "母星 + 基本艦隊"},
 	{"先進", "多項科技 + 跨星系艦隊"},
 }
@@ -2205,11 +2208,16 @@ type GameSession struct {
 	// Go 零值陷阱:`gamedata.GalaxyAge` 的零值是 `GalaxyYouthful`(不是想要的 Average),
 	// 所以另用 `GalaxyAgeSet` 標記「有沒有真的設過」——舊存檔與沒走設定畫面的建構路徑
 	// 解出來 GalaxyAgeSet=false,`galaxyAge()` 退回 Average,與加這個欄位之前的行為一致。
-	// TechLevel 的零值 0 = 「曲速前」,同樣不是預設值;它目前只影響顯示(gameplay 效果未接,
-	// 見 shell.TechLevels 註解),故不另加標記,但新的建構路徑應明確設成 1(一般)。
+	// TechLevel 同款零值陷阱,而且**更危險**:零值 0 = 「曲速前」,而曲速前的艦隊
+	// 離不開本星系(見 FleetHasFTL)。沒有標記的話,舊存檔與任何沒設過這欄的建構路徑
+	// 會被靜默判成曲速前、艦隊整個凍住。所以同樣用 `TechLevelSet` 標記,
+	// 未設過一律當「一般」(techLevel() 的退路)。
+	// ⚠ 2026-08-07 就是在這裡踩到:接上 FTL 限制後 TestFleetInterstellarMovement 立刻
+	// 紅燈,因為 NewDemoSession 沒設過這欄。
 	GalaxyAge    gamedata.GalaxyAge
 	GalaxyAgeSet bool
 	TechLevel    int
+	TechLevelSet bool
 	// LastEspionage 是本回合諜報結算的訊息(供回合摘要顯示;每回合開頭清空)。
 	LastEspionage []string
 	spyRand       *rand.Rand // 間諜擲骰亂數源(由 EventSeed 惰性建立,比照 eventRand 慣例)
@@ -2297,6 +2305,9 @@ func (s *GameSession) SendFleet(dest int) bool {
 	if dest < 0 || dest >= len(s.Stars) || dest == s.FleetAtStar || s.FleetETA > 0 {
 		return false
 	}
+	if !s.FleetHasFTL() {
+		return false // 曲速前開局:沒有 FTL 就出不了本星系(見 FleetHasFTL)
+	}
 	a, b := s.Stars[s.FleetAtStar], s.Stars[dest]
 	dist := math.Hypot(a.X-b.X, a.Y-b.Y)
 	eta := int(math.Ceil(dist * 8)) // 8 = 星系跨度→回合的換算(全跨約 8-11 回合)
@@ -2306,6 +2317,47 @@ func (s *GameSession) SendFleet(dest int) bool {
 	s.FleetDestStar = dest
 	s.FleetETA = eta
 	return true
+}
+
+// FTLTopic 是「解鎖星際航行」的研究主題。
+//
+// remake 的科技樹裡 `TECH_NUCLEAR_DRIVE`(核融合引擎,MOO2 的入門 FTL 引擎)屬於
+// `TOPIC_NUCLEAR_FISSION`(techtree.go 第 55 列,Cost 50、ResearchAll)——不在開局就給的
+// `TOPIC_STARTING_TECH` 裡。所以「有沒有 FTL」在 remake 就是「這個主題研究完了沒」。
+const FTLTopic = gamedata.TOPIC_NUCLEAR_FISSION
+
+// FleetHasFTL 回傳艦隊能不能離開本星系。
+//
+// 手冊直引(Pre-warp 起始文明,見 docs/tech/homeworld-init.md 的引文):
+//
+//	"Every race has one colony — their home star system. Exploring outside that system is
+//	 impossible until faster than light (FTL) technologies are discovered."
+//
+// **只有「曲速前」(TechLevel 0)這一級受限**:一般 / 先進開局本來就配了 FTL 引擎,
+// 手冊描述它們開局就有星際艦。TechLevel 的其餘效果仍未接,見 shell.TechLevels 註解。
+//
+// ⚠ 這條在 2026-08-07 之前完全沒有實作:NEW GAME 的 TECH LEVEL 是「只存設定、不影響
+// gameplay」,選了曲速前照樣能全圖亂飛。這是接上的第一個真效果。
+func (s *GameSession) FleetHasFTL() bool {
+	if s.techLevel() != TechLevelPrewarp {
+		return true
+	}
+	return s.Player.CompletedTopics != nil && s.Player.CompletedTopics[FTLTopic]
+}
+
+// TechLevelPrewarp / TechLevelDefault 是 shell.TechLevels 裡的索引。
+const (
+	TechLevelPrewarp = 0 // 曲速前
+	TechLevelDefault = 1 // 一般(未設定時的退路)
+)
+
+// techLevel 回傳這一局的起始科技等級。未設定(舊存檔、demo session)時退回「一般」——
+// **不能直接讀 TechLevel**,零值 0 是「曲速前」,見該欄位註解。
+func (s *GameSession) techLevel() int {
+	if !s.TechLevelSet {
+		return TechLevelDefault
+	}
+	return s.TechLevel
 }
 
 // advanceFleet 推進艦隊航行:ETA 遞減,歸零則抵達(FleetAtStar=目的),並將該星標記為已探索。

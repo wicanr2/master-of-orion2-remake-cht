@@ -180,11 +180,11 @@ const councilSwingVoteMinRelation = 8
 // councilTally 是一屆議會計票結果(手冊 GAME_MANUAL.pdf p.183「兩位候選人由票數最高者出線,
 // 其餘種族依外交關係決定投給哪位候選人」的忠實建模)。
 type councilTally struct {
-	candIdx   [2]int    // 兩位候選人的帝國索引(-1=玩家)
-	candName  [2]string // 候選人名(display)
-	candVotes [2]int    // 候選人最終得票(自身基礎票 + 收到的搖擺票)
-	total     int       // 全體帝國基礎票總和(2/3 門檻的分母)
-	valid     bool      // 是否湊足兩位候選人(帝國數<2 時為 false)
+	candIdx   [2]int           // 兩位候選人的帝國索引(-1=玩家)
+	candName  [2]string        // 候選人名(display)
+	candVotes [2]int           // 候選人最終得票(自身基礎票 + 收到的搖擺票)
+	total     int              // 全體帝國基礎票總和(2/3 門檻的分母)
+	valid     bool             // 是否湊足兩位候選人(帝國數<2 時為 false)
 	rows      []councilVoteRow // 逐帝國投票明細(依基礎票降冪),供 UI 呈現;判定邏輯不讀此欄
 }
 

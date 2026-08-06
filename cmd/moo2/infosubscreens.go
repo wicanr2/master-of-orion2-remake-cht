@@ -108,8 +108,8 @@ func (b *sceneBuilder) infoHistory(s *overlayScreen) {
 	}
 
 	// 圖表區
-	gx, gy := infoPanelX + 40, infoPanelY + 56
-	gw, gh := infoPanelW - 60, 250.0
+	gx, gy := infoPanelX+40, infoPanelY+56
+	gw, gh := infoPanelW-60, 250.0
 	maxV := 1
 	for _, ser := range series {
 		for _, v := range ser {
