@@ -32,8 +32,12 @@ LBX 解碼(scan-line RLE 影像 / 多幀 delta / 調色盤鏈)、SAVE10.GAM 唯�
   - **行星表面的幾何已到手**(gap report 第 27 項):7×7 角點表從 `word_182C9C` 抽出、
     對 `COLONY.LBX#8` 的高亮菱形逐點驗過,走訪順序來自 `dword_BA784`;建築 sprite 是
     **已畫好位置**的 640×480 稀疏圖(資產 = 型別×36 + 格號),不需要座標就能貼。
-    落在 `cmd/moo2/colonysurface.go` + 5 條回歸測試。**畫面還沒改**——缺的是「remake 建築
-    ↔ 原版型別編號」對照與地表底圖來源,沒到手之前擺圖只會擺錯。
+    建築編號對照也拿到了:`Cache_Load_Bldg_` @ 0xAF6DC 給出 `資產 = ((id−1)%10)×36 + 格號`、
+    檔案 `BLDG{(id−1)/10}.LBX`,編號本身由 openorion2 的 `BUILDING_*` 列舉與原版
+    `TECHNAME.LBX` 第 295 條起的字串順序**互相對上**。離線合成 9 棟驗證:每棟都正落在
+    自己的格子裡、遠近遮擋正確。落在 `cmd/moo2/colonysurface.go` + 9 條回歸測試。
+    **畫面還沒改**——剩:擺放規則(哪一格放哪棟)、陰影混色(建築圖的陰影是洋紅索引,
+    要和地表混)、以及把建造佇列搬回原版的獨立彈出視窗才騰得出地表的位置。
     順帶推翻一句:行星表面**不是**關在中段那個框裡,它是整個 640×480 的底圖,面板疊在上面。
 - **需原版 oracle 對照**(用 archive.org 線上 DOS 原版,**不需 DOSBox**;見 `docs/tech/oracle-comparison-20260712.md`、記憶 `moo2-oracle-is-archive-org-online`):飛彈速度(`missile.go` 手冊公式與附表自相矛盾)、地面戰 d100 核心傷亡解算結構(`ResolveGroundBattle` 沿用一代 1oom 借用結構,force 值用 MOO2 手冊表但結構本身未對 MOO2 實機核實)、安塔蘭母星防禦艦隊戰力(手冊/openorion2 均無精確數字,用保守預設 6 艘末日之星等級)、**母星開局態**(2026-07-12 oracle 已釘死:農4/工2/科2/Abundant/Trade Goods,待校準)。
 - **需先建基礎設施**:戰機/航母(新戰鬥子模型)、部分軍事/防禦建築(~13 棟,需艦隊駐防/軌道防禦系統先落地)。

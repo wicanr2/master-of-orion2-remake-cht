@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 // colonysurface.go:殖民地畫面的**行星表面格點**(原版 module 74 的 `CR_To_XY_` 那一套)。
 //
 // ============ 這一塊先前被判定為「卡住」,卡的原因是找錯了 ============
@@ -59,10 +61,31 @@ package main
 // 畫的時候直接貼 (0,0) 就對位,`Draw_Building_With_Bottom_Centered_` 那套底邊置中是原版
 // **產生**這些圖時用的,不是執行期需要的。資產數 360/360/360/360/324 → 10+10+10+10+9 = **49 種**。
 //
-// ⚠ **還沒到手的是「remake 的建築 ↔ 原版建築型別編號」對照**。remake 的 `gamedata.Buildings`
-// 是照手冊 The Big List 排的 40 項,跟原版內部編號不是同一套順序,硬對會擺錯圖。
-// 這一塊要另外從執行檔的建築表挖,沒挖到之前**不猜**——所以本檔只提供格點幾何,
-// 不提供建築圖擺放。
+// ============ 建築編號 → 圖檔:`Cache_Load_Bldg_` @ 0xAF6DC 給出全部算式 ============
+//
+//	dec ebx                     ; 建築編號是 **1-based**(0 = 空格)
+//	mov eax, ebx / idiv 10      ; 檔號 = (id−1) / 10
+//	mov eax, 0C9h / call E_Strings_ / sprintf_   ; 格式字串 → "BLDG%d.LBX"
+//	mov eax, ebx / idiv 10 / imul ebx, edx, 24h  ; 檔內型別 = (id−1) % 10,再 ×36
+//	call sub_BC8A6              ; (a,b) → 格號
+//	add edx, ebx                ; 資產 = 檔內型別×36 + 格號
+//
+// `sub_BC8A6`(格號)也是一張乾淨的算式,不是表:
+//
+//	slot(a,b) = b×6 + a      (b 偶數)
+//	slot(a,b) = b×6 + 5 − a  (b 奇數)
+//
+// 也就是**蛇行**(一列由左往右、下一列反過來),與實測 BLDG0 資產 0..35 墨點的走法一致。
+//
+// ============ 建築編號本身:兩個獨立來源對上才敢用 ============
+//
+//	① openorion2 `src/gamestate.h` 的 `BUILDING_*` 列舉:`BUILDING_NONE = 0` 起,48 棟。
+//	② 原版 `TECHNAME.LBX` 資產 0 的第 295 條起:"No Building"、"Alien Control Center"、
+//	   "Armor Barracks"…"Artificial Planet" —— **逐條與 ① 同序**
+//	   (openorion2 `src/lang.h` 也寫著 `TNAME_BUILDING_NONE 295`)。
+//
+// 一個是別人重製專案的列舉、一個是原版資料檔的字串順序,對得起來才算數。
+// 48 棟 → 型別 0..47,而圖檔共 49 種(360/360/360/360/324),最後一種沒有對應建築。
 
 // colonyGridCorners 是 7×7 角點的螢幕座標,直接抄自 word_182C9C(見檔頭)。
 // 第一維是 a(反組譯裡步距 56 的那一維),第二維是 b(步距 8)。
@@ -148,4 +171,73 @@ func pointInQuad(px, py int, q [4][2]int) bool {
 		}
 	}
 	return in
+}
+
+// colonyBuildingSlot 依 `sub_BC8A6` 把格 (a,b) 換成格號 0..35(蛇行:偶數列左→右、
+// 奇數列右→左)。這是 BLDGn.LBX 資產編號的低位部分。
+func colonyBuildingSlot(a, b int) int {
+	if b%2 == 0 {
+		return b*colonyGridCells + a
+	}
+	return b*colonyGridCells + (colonyGridCells - 1 - a)
+}
+
+// origBuildingID 是 remake 的建築英文名(`gamedata.Building.NameEN`,取自手冊 The Big List)
+// → **原版內部建築編號**(1-based,見檔頭的兩個獨立來源)。
+//
+// 為什麼需要一張手寫對照:手冊的用字和遊戲內部字串不一樣——手冊寫 "Automated Factories"、
+// 遊戲內部是 "Automated Factory";手冊 "Alien Management Center"、內部 "Alien Control Center";
+// 手冊 "Planetary Stock Exchange"、內部 "Stock Exchange"。照字串比對會漏一半。
+// 右欄註記的是原版 TECHNAME.LBX 裡的原文,方便日後核對。
+var origBuildingID = map[string]int{
+	"Alien Management Center":     1,  // Alien Control Center
+	"Armor Barracks":              2,  // Armor Barracks
+	"Artemis System Net":          3,  // Artemis System Net
+	"Astro University":            4,  // Astro University
+	"Atmospheric Renewer":         5,  // Atmosphere Renewer
+	"Autolab":                     6,  // Autolab
+	"Automated Factories":         7,  // Automated Factory
+	"Battlestation":               8,  // Battlestation
+	"Cloning Center":              10, // Cloning Center
+	"Deep Core Mine":              12, // Deep Core Mine
+	"Core Waste Dumps":            13, // Core Waste Dump
+	"Dimensional Portal":          14, // Dimensional Portal
+	"Biospheres":                  15, // Biospheres
+	"Food Replicators":            16, // Food Replicators
+	"Galactic Cybernet":           19, // Galactic Cybernet
+	"Holo Simulator":              20, // Holo Simulator
+	"Hydroponic Farm":             21, // Hydroponic Farm
+	"Marine Barracks":             22, // Marine Barracks
+	"Planetary Barrier Shield":    23, // Barrier Shield
+	"Planetary Flux Shield":       24, // Flux Shield
+	"Planetary Gravity Generator": 25, // Gravity Generator
+	"Missile Base":                26, // Missile Base
+	"Ground Batteries":            27, // Ground Batteries
+	"Planetary Radiation Shield":  28, // Radiation Shield
+	"Planetary Stock Exchange":    29, // Stock Exchange
+	"Planetary Supercomputer":     30, // Supercomputer
+	"Pleasure Dome":               31, // Pleasure Dome
+	"Pollution Processor":         32, // Pollution Processor
+	"Recyclotron":                 33, // Recyclotron
+	"Robotic Factory":             34, // Robotic Factory
+	"Research Laboratory":         35, // Research Lab
+	"Robo Mining Plant":           36, // Robo Miner Plant
+	"Space Academy":               38, // Space Academy
+	"Spaceport":                   39, // Spaceport
+	"Star Base":                   40, // Star Base
+	"Star Fortress":               41, // Star Fortress
+	"Subterranean Farms":          43, // Subterranean Farms
+	"Warp Field Interdictor":      45, // Warp Interdictor
+	"Weather Controller":          46, // Weather Controller
+	"Fighter Garrison":            47, // Fighter Garrison
+}
+
+// colonyBuildingSprite 把「原版建築編號 + 格 (a,b)」換成該畫哪個檔的哪個資產。
+// 算式全部來自 `Cache_Load_Bldg_`(見檔頭)。編號不在 1..48 就回 ok=false。
+func colonyBuildingSprite(origID, a, b int) (lbx string, asset int, ok bool) {
+	if origID < 1 || origID > 48 {
+		return "", 0, false
+	}
+	t := origID - 1
+	return fmt.Sprintf("bldg%d.lbx", t/10), (t%10)*36 + colonyBuildingSlot(a, b), true
 }

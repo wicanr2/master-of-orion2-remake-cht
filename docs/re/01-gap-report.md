@@ -872,12 +872,45 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     同理:`COLROADS.LBX`(156 個 640×480)是道路、`COLVEGGI.LBX`(104 個小圖)是植被,
     對應 `Draw_Road_List` 與 `Build_Veggie_List_Based_On_Bldg_List_`。
 
+    ### 建築編號 → 圖檔:`Cache_Load_Bldg_` @ 0xAF6DC 把整條算式寫死了
+
+        dec ebx                     ; 建築編號是 1-based(0 = 空格)
+        idiv 10 → eax               ; 檔號 = (id−1) / 10          → BLDG{0..4}.LBX
+        E_Strings_(0C9h) + sprintf_ ; 格式字串 "BLDG%d.LBX"
+        idiv 10 → edx               ; 檔內型別 = (id−1) % 10
+        imul ebx, edx, 24h          ; ×36
+        call sub_BC8A6              ; (a,b) → 格號
+        add edx, ebx                ; 資產 = 檔內型別×36 + 格號
+
+    `sub_BC8A6` 也是算式不是表——**蛇行**:`slot = b×6 + a`(b 偶數)/ `b×6 + 5 − a`(b 奇數),
+    與實測 BLDG0 資產 0..35 墨點的走法一致。
+
+    ### 建築編號本身:兩個獨立來源對上
+
+    | 來源 | 內容 |
+    |---|---|
+    | openorion2 `src/gamestate.h` | `BUILDING_NONE = 0` 起的 `BUILDING_*` 列舉,48 棟 |
+    | 原版 `TECHNAME.LBX` 資產 0 | 第 295 條起 "No Building"、"Alien Control Center"、"Armor Barracks"…"Artificial Planet",**逐條與列舉同序**(openorion2 `src/lang.h` 亦寫 `TNAME_BUILDING_NONE 295`)|
+
+    一個是別人重製專案的列舉、一個是原版資料檔的字串順序——對得起來才算數。
+    remake 的 40 棟對照表寫在 `cmd/moo2/colonysurface.go` 的 `origBuildingID`,
+    要手寫是因為手冊用字和遊戲內部字串不同("Automated Factories" vs "Automated Factory"、
+    "Alien Management Center" vs "Alien Control Center"、"Planetary Stock Exchange" vs
+    "Stock Exchange"),照字串比對會漏一半。
+
+    ### 端到端驗證
+
+    離線合成一張:取 9 棟建築、依算式算出各自的 (檔, 資產),疊上去,再把格點畫在最上層。
+    **每一棟都正正落在自己的格子裡、站在格線平面上、遠近遮擋正確**。
+    幾何來自執行檔資料段、資產編號來自執行檔算式、建築編號來自另外兩個來源——
+    三條線各自獨立,最後在同一張圖上對上。
+
     ### 還缺的(不猜)
 
-    - **remake 的建築 ↔ 原版建築型別編號**。remake 的 `gamedata.Buildings` 是照手冊
-      The Big List 排的 40 項,跟原版內部編號不是同一套順序,硬對會擺錯圖。要另外從執行檔的
-      建築表挖出編號順序。**沒挖到之前不擺圖**——擺錯比不擺更難發現。
-    - **哪一格放哪棟**的規則(`Make_Bldg_Array_For_Colony_` / `Sort_Bldg_Array_Columns_`)。
+    - **哪一格放哪棟**的規則(`Make_Bldg_Array_For_Colony_` / `Sort_Bldg_Array_Columns_` /
+      `Insert_Bldg_Into_Array_` / `Find_Replacement_Slot_For_Building_`)。
+    - **陰影**:建築圖裡最大宗的顏色是 (108,48,108) 的洋紅,那是原版用來和地表混色的
+      陰影索引,直接畫會變成一塊洋紅。要先弄清楚原版怎麼混。
     - **地表底圖**本身:`C_Anims` 的動畫清單是依行星氣候載入的,還沒追到來源 LBX。
       `COLBLDG.LBX#0` 不是地表,是**建造彈出視窗的框架**(Auto Build / REFIT / DESIGN /
       REPEAT BUILD / CANCEL / OK,中段透明)。
@@ -885,5 +918,10 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
       `Build_Queue_Popup_` @ 0xB4041(7 格 x 207..458、y 329+20i,座標已到手)。
       要上地表就得先把佇列搬進那個彈出視窗。
 
-    落地的部分:`cmd/moo2/colonysurface.go`(角點表 + 走訪順序 + 格四角/中心/命中測試)
-    與 5 條回歸測試。**還沒改畫面**——上面那幾項沒到手之前改了只會擺錯。
+    落地的部分:`cmd/moo2/colonysurface.go`(角點表 + 走訪順序 + 格四角/中心/命中測試 +
+    建築編號對照 + 資產算式)與 9 條回歸測試(含「每棟都對到編號」「對照表沒有多餘項」
+    「算出的資產落在該檔真實資產數內」)。
+
+    **畫面還沒改**,剩兩件事擋著:①上面那兩項(擺放規則、陰影混色);②remake 現在把建造佇列
+    放在中段,而原版那裡是地表、佇列是獨立彈出視窗 `Build_Queue_Popup_` @ 0xB4041
+    (7 格 x 207..458、y 329+20i,座標已到手)——要上地表得先把佇列搬進那個視窗。

@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+)
 
 // colonysurface_test.go:行星表面格點的護欄。
 //
@@ -92,5 +96,106 @@ func TestColonyCellAtRejectsOutside(t *testing.T) {
 		if a, b := colonyCellAt(p[0], p[1]); a >= 0 {
 			t.Errorf("(%d,%d) 不該落在格子上,卻回了 (%d,%d)", p[0], p[1], a, b)
 		}
+	}
+}
+
+// TestColonyBuildingSlotCoversEveryIndex:36 格的格號要恰好覆蓋 0..35。
+// 蛇行寫錯(忘了奇數列反向)會讓某些格號重複、某些沒人用,建築就會擺到別格去。
+func TestColonyBuildingSlotCoversEveryIndex(t *testing.T) {
+	seen := map[int]bool{}
+	for b := 0; b < colonyGridCells; b++ {
+		for a := 0; a < colonyGridCells; a++ {
+			s := colonyBuildingSlot(a, b)
+			if s < 0 || s >= 36 {
+				t.Fatalf("格 (%d,%d) 的格號 %d 超出 0..35", a, b, s)
+			}
+			if seen[s] {
+				t.Errorf("格號 %d 重複(格 (%d,%d))", s, a, b)
+			}
+			seen[s] = true
+		}
+	}
+	if len(seen) != 36 {
+		t.Errorf("只用到 %d 個格號,應為 36", len(seen))
+	}
+	// 蛇行的定錨:第 0 列由左往右,第 1 列反過來。
+	if got := colonyBuildingSlot(0, 0); got != 0 {
+		t.Errorf("格 (0,0) 應為格號 0,實得 %d", got)
+	}
+	if got := colonyBuildingSlot(5, 0); got != 5 {
+		t.Errorf("格 (5,0) 應為格號 5,實得 %d", got)
+	}
+	if got := colonyBuildingSlot(0, 1); got != 11 {
+		t.Errorf("格 (0,1) 應為格號 11(奇數列反向),實得 %d", got)
+	}
+	if got := colonyBuildingSlot(5, 1); got != 6 {
+		t.Errorf("格 (5,1) 應為格號 6,實得 %d", got)
+	}
+}
+
+// TestEveryBuildingHasOrigID:remake 每一棟建築都要對到原版編號。
+// 漏一棟不會編譯失敗,只會在畫面上少一棟房子——而那要跑起來才看得到。
+func TestEveryBuildingHasOrigID(t *testing.T) {
+	byID := map[int]string{}
+	for _, b := range gamedata.Buildings {
+		id, ok := origBuildingID[b.NameEN]
+		if !ok {
+			t.Errorf("%q(%s)沒有對到原版建築編號", b.NameEN, b.NameZH)
+			continue
+		}
+		if id < 1 || id > 48 {
+			t.Errorf("%q 的編號 %d 超出 1..48", b.NameEN, id)
+		}
+		if prev, dup := byID[id]; dup {
+			t.Errorf("編號 %d 被 %q 與 %q 同時使用", id, prev, b.NameEN)
+		}
+		byID[id] = b.NameEN
+	}
+}
+
+// TestOrigBuildingIDHasNoStrays:對照表裡不該有 remake 建築表沒有的名字
+// (打錯字會變成一筆永遠用不到的項目,而測試若只檢查「每棟都有對到」是抓不出來的)。
+func TestOrigBuildingIDHasNoStrays(t *testing.T) {
+	known := map[string]bool{}
+	for _, b := range gamedata.Buildings {
+		known[b.NameEN] = true
+	}
+	for name := range origBuildingID {
+		if !known[name] {
+			t.Errorf("對照表有 %q,但 gamedata.Buildings 裡沒有這個名字", name)
+		}
+	}
+}
+
+// TestColonyBuildingSpriteWithinAssetCounts:算出來的 (檔, 資產) 要落在該檔真實存在的
+// 資產範圍內。BLDG0..BLDG3 各 360、BLDG4 是 324(實測 lbxinfo)。
+// 算式抄錯(例如 ×36 寫成 ×35)會在這裡越界。
+func TestColonyBuildingSpriteWithinAssetCounts(t *testing.T) {
+	counts := map[string]int{
+		"bldg0.lbx": 360, "bldg1.lbx": 360, "bldg2.lbx": 360,
+		"bldg3.lbx": 360, "bldg4.lbx": 324,
+	}
+	for _, id := range origBuildingID {
+		for b := 0; b < colonyGridCells; b++ {
+			for a := 0; a < colonyGridCells; a++ {
+				lbxName, asset, ok := colonyBuildingSprite(id, a, b)
+				if !ok {
+					t.Fatalf("編號 %d 應該有圖", id)
+				}
+				n, known := counts[lbxName]
+				if !known {
+					t.Fatalf("編號 %d 指到不存在的檔 %s", id, lbxName)
+				}
+				if asset < 0 || asset >= n {
+					t.Errorf("編號 %d 格 (%d,%d):%s 資產 %d 超出 0..%d", id, a, b, lbxName, asset, n-1)
+				}
+			}
+		}
+	}
+	if _, _, ok := colonyBuildingSprite(0, 0, 0); ok {
+		t.Error("編號 0 是空格,不該有圖")
+	}
+	if _, _, ok := colonyBuildingSprite(49, 0, 0); ok {
+		t.Error("編號 49 超出 48 棟,不該有圖")
 	}
 }
