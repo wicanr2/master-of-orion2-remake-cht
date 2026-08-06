@@ -160,7 +160,7 @@
 | `_tech_research_level_values` | 科技研究等級 | `gamedata/techtree.go` |
 | `_high/_low/_moderate_*_values`(9 張) | 疑似 AI 難度曲線 | 未知 |
 
-**最大的剩餘數值缺口**:①AI 性格與行星估值 ②射程懲罰接進戰鬥 ③氣候維護成本。
+**最大的剩餘數值缺口**:①AI 性格與行星估值 ②氣候維護成本 ③行星特殊物產。
 
 ---
 
