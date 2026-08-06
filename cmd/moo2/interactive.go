@@ -513,6 +513,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		{310, 430, 70, 44, "leaders"},
 		{385, 430, 70, 44, "races"},
 		{460, 430, 70, 44, "info"},
+		{249, 5, 66, 24, "gamemenu"}, // 頂端「遊戲」鈕(openorion2 GalaxyView:createWidget(249,5,…GAME_BUTTON))
 		{544, 441, 90, 34, "turn"},
 		{547, 52, 65, 67, "taxrate"},   // 國庫框:點擊循環工業稅率(手冊 p.37,0-50%/10%級距)
 		{547, 348, 65, 67, "research"}, // 研究框(右側第5格):點擊開研究選擇畫面(對齊原版,取代 info→tech 錯接)
@@ -654,6 +655,14 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
 		switch a {
+		case "gamemenu":
+			// 原版的存檔/讀檔/開新局/離開都在這個視窗裡(見 cmd/moo2/gamemenu.go)。
+			sc, err := b.gameMenu()
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "遊戲選單:", err)
+				return nil
+			}
+			return &origTransition{next: sc}
 		case "colonies":
 			return b.goTo(b.colonySummary, "殖民地總覽")
 		case "planets":
@@ -2686,8 +2695,10 @@ type interactiveApp struct {
 	galleryGroundTick int
 	// galleryLoadWinTick 是截圖廊在哪個 tick 切到載入遊戲視窗(見該常數說明)。
 	galleryLoadWinTick int
-	galleryBuilder     *sceneBuilder
-	gallerySession     *shell.GameSession
+	// galleryGameMenuTick 是截圖廊在哪個 tick 切到遊戲選單視窗(見該常數說明)。
+	galleryGameMenuTick int
+	galleryBuilder      *sceneBuilder
+	gallerySession      *shell.GameSession
 }
 
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
@@ -2709,6 +2720,9 @@ const galleryGroundTick = 67
 // galleryLoadWinTick 是截圖廊在哪個 tick 寫兩格示範存檔並切到載入視窗——取截圖(t70)的前一拍。
 // 存檔寫到 `MOO2_SAVE_DIR` 指的暫存目錄(見 saveDirFor),不碰玩家真正的存檔。
 const galleryLoadWinTick = 69
+
+// galleryGameMenuTick 是截圖廊在哪個 tick 切到遊戲選單視窗——取截圖(t72)的前一拍。
+const galleryGameMenuTick = 71
 
 // galleryShot 是「端到端過場截圖廊」腳本中,在某個絕對 tick 存一張圖的指令。
 type galleryShot struct {
@@ -2830,6 +2844,11 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		// 走正常路徑要「先有存檔、回主選單、點 Load Game」,而截圖廊是一路往前走的單向腳本。
 		idle, // t69: 由 galleryLoadWinTick 寫示範存檔並換成載入視窗
 		idle, // t70: settle → 截圖 loadgame
+
+		// 遊戲選單視窗(原版 GameMenuWindow)。從星系主畫面點頂端「遊戲」鈕進得去,
+		// 但截圖廊此刻停在載入視窗,直接推上來比重新導覽回星系可靠。
+		idle, // t71: 由 galleryGameMenuTick 換成遊戲選單
+		idle, // t72: settle → 截圖 gamemenu
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -2850,6 +2869,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{66, "16_tactical.png"},
 		{68, "17_groundcombat.png"},
 		{70, "18_loadgame.png"},
+		{72, "19_gamemenu.png"},
 	}
 	return script, shots
 }
@@ -2954,6 +2974,12 @@ func (a *interactiveApp) Update() error {
 			}
 		}
 		if sc, err := a.galleryBuilder.loadGame(); err == nil {
+			a.cur = sc
+		}
+	}
+	// 截圖廊專用:遊戲選單視窗。
+	if a.galleryGameMenuTick > 0 && a.tick == a.galleryGameMenuTick && a.galleryBuilder != nil {
+		if sc, err := a.galleryBuilder.gameMenu(); err == nil {
 			a.cur = sc
 		}
 	}
@@ -3071,6 +3097,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.galleryFleetTick = galleryFleetTick
 		app.galleryGroundTick = galleryGroundTick
 		app.galleryLoadWinTick = galleryLoadWinTick
+		app.galleryGameMenuTick = galleryGameMenuTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,

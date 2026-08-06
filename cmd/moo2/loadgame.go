@@ -12,7 +12,13 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
 
-// loadgame.go:載入遊戲視窗(原版 `Mainmenu_Load_Game_Popup_` @ 0x804B7)。
+// loadgame.go:載入 / 儲存遊戲視窗(原版 `Mainmenu_Load_Game_Popup_` @ 0x804B7、
+// `Do_Save_Game_Popup_` @ 0x7E154)。
+//
+// **兩者是同一個視窗**:原版的繪製函式只有一個,叫 `_Draw_Load_Save_Game_Popup_` @ 0x7F206
+// ——名字自己就把這件事說完了。差別只在說明列(`Set_Load_Game_Screen_Help_List_` @ 0x6F850
+// vs `Set_Save_Game_Screen_Help_List_` @ 0x6F865)與動作鈕的字。remake 照這個結構做:
+// 同一個 `loadGameScreen`,`mode` 決定是讀還是存。
 //
 // remake 先前根本沒有這個畫面:主選單的 Continue 與 Load Game 都是「讀那唯一一個存檔檔案」,
 // 沒有存檔時點下去靜默無反應。2026-07-12 用 archive.org 線上原版對照時,使用者回報的
@@ -42,6 +48,9 @@ const (
 	loadWinBGAsset  = 20 // ASSET_LOAD_BACKGROUND
 	loadWinBtnAsset = 21 // ASSET_LOAD_LOADBUTTON
 	loadWinCanAsset = 22 // ASSET_LOAD_CANCEL
+	// 上面三個索引與反組譯對得上:`Load_Mainmenu_Load_Game_Popup_` @ 0x803D9 依序載
+	// GAME.LBX 資產 0x14/0x15/0x16/0x17/0x18/0x19/0x1A(20–26),正是 openorion2 的
+	// ASSET_LOAD_BACKGROUND…MODEM 那一串。兩個獨立來源互相印證。
 
 	loadWinPalLBX   = "mainmenu.lbx"
 	loadWinPalAsset = 21 // ASSET_MENU_BACKGROUND(主選單背景提供調色盤)
@@ -55,10 +64,22 @@ const (
 	loadSlotTextX, loadTextY = 32, 24 // 槽內文字相對視窗左上的偏移
 )
 
-// loadGameScreen 是載入遊戲視窗。
+// saveLoadMode 決定這個視窗是「讀」還是「存」(原版共用同一個視窗,見檔頭)。
+type saveLoadMode int
+
+const (
+	modeLoad saveLoadMode = iota
+	modeSave
+)
+
+// loadGameScreen 是載入 / 儲存遊戲視窗。
 type loadGameScreen struct {
-	b   *sceneBuilder
-	fnt *uifont.Font
+	b    *sceneBuilder
+	fnt  *uifont.Font
+	mode saveLoadMode
+	// back 是關閉視窗後要回哪裡——從主選單開的回主選單,從遊戲選單開的回星系主畫面。
+	back     func() (*overlayScreen, error)
+	backName string
 
 	bg, loadBtn, cancelBtn *ebiten.Image
 	// loadFace / cancelFace 是兩顆鈕的「面色」,用來擦掉烘在圖上的英文(LOAD / CANCEL)
@@ -95,8 +116,8 @@ func loadWinImage(res *assets.Resolver, assetID int, keyColor bool) (*ebiten.Ima
 	return ebiten.NewImageFromImage(rgba), face
 }
 
-func newLoadGameScreen(b *sceneBuilder) *loadGameScreen {
-	s := &loadGameScreen{b: b, fnt: b.fnt, selected: -1}
+func newLoadGameScreen(b *sceneBuilder, mode saveLoadMode, back func() (*overlayScreen, error), backName string) *loadGameScreen {
+	s := &loadGameScreen{b: b, fnt: b.fnt, mode: mode, back: back, backName: backName, selected: -1}
 	s.bg, _ = loadWinImage(b.res, loadWinBGAsset, false)
 	s.loadBtn, s.loadFace = loadWinImage(b.res, loadWinBtnAsset, true)
 	s.cancelBtn, s.cancelFace = loadWinImage(b.res, loadWinCanAsset, true)
@@ -107,9 +128,19 @@ func newLoadGameScreen(b *sceneBuilder) *loadGameScreen {
 	}
 	s.winX, s.winY = (moo2ScreenW-s.winW)/2, (moo2ScreenH-s.winH)/2
 	s.slots = shell.ReadSaveSlots(saveDirFor())
-	// 預選最近的存檔——十格都要玩家自己找太煩,而 Continue 本來就是接續最近進度。
-	if latest := shell.LatestSaveSlot(saveDirFor()); latest >= 0 {
-		s.selected = latest
+	// 讀檔預選最近的存檔(十格都要玩家自己找太煩,而 Continue 本來就是接續最近進度);
+	// 存檔預選第一個空格,免得手一滑蓋掉舊進度。
+	if mode == modeLoad {
+		if latest := shell.LatestSaveSlot(saveDirFor()); latest >= 0 {
+			s.selected = latest
+		}
+		return s
+	}
+	for i, sl := range s.slots {
+		if !sl.Exists && i != shell.AutoSaveSlot { // 自動存檔格不給手動存
+			s.selected = i
+			break
+		}
 	}
 	return s
 }
@@ -137,15 +168,22 @@ func (s *loadGameScreen) update(in shell.InputState) *origTransition {
 		return nil
 	}
 	if x, y, w, h := s.cancelRect(); hitRect(in, x, y, w, h) {
-		return s.b.goTo(s.b.menu, "主選單")
+		return s.b.goTo(s.back, s.backName)
 	}
 	if x, y, w, h := s.loadRect(); hitRect(in, x, y, w, h) {
+		if s.mode == modeSave {
+			return s.doSave()
+		}
 		return s.doLoad()
 	}
 	for i := range s.slots {
 		if x, y, w, h := s.slotRect(i); hitRect(in, x, y, w, h) {
-			if !s.slots[i].Exists {
+			if s.mode == modeLoad && !s.slots[i].Exists {
 				s.msg = "這一格是空的"
+				return nil
+			}
+			if s.mode == modeSave && i == shell.AutoSaveSlot {
+				s.msg = "最後一格是自動存檔,不能手動覆寫"
 				return nil
 			}
 			s.selected, s.msg = i, ""
@@ -153,6 +191,27 @@ func (s *loadGameScreen) update(in shell.InputState) *origTransition {
 		}
 	}
 	return nil
+}
+
+// doSave 把目前對局寫進選定的槽。
+func (s *loadGameScreen) doSave() *origTransition {
+	if s.selected < 0 || s.selected >= len(s.slots) || s.selected == shell.AutoSaveSlot {
+		s.msg = "請先選一格(自動存檔格除外)"
+		return nil
+	}
+	if s.b.session == nil {
+		s.msg = "目前沒有進行中的對局"
+		return nil
+	}
+	path := s.slots[s.selected].Path
+	if err := s.b.session.Save(path); err != nil {
+		fmt.Fprintln(os.Stderr, "存檔失敗:", err)
+		s.msg = "寫不進去(磁碟或權限問題)"
+		return nil
+	}
+	// 之後的自動存檔跟著寫到這一格,與讀檔後的行為一致。
+	s.b.savePath = path
+	return s.b.goTo(s.back, s.backName)
 }
 
 // doLoad 讀取選定的槽並進星系主畫面。
@@ -205,7 +264,11 @@ func (s *loadGameScreen) draw(dst *ebiten.Image) {
 			if sl.Auto {
 				label = "（自動存檔：尚無）"
 			}
-			s.fnt.Draw(dst, label, tx, ty, 12, dim)
+			c := dim
+			if s.mode == modeSave && i == s.selected {
+				c = sel // 存檔模式下空格是可選的
+			}
+			s.fnt.Draw(dst, label, tx, ty, 12, c)
 			continue
 		}
 		name := sl.Empire
@@ -240,8 +303,12 @@ func (s *loadGameScreen) draw(dst *ebiten.Image) {
 		}
 		s.fnt.DrawCentered(dst, zh, float64(x+w/2), float64(y+h/2), 13, body)
 	}
+	action := "載入"
+	if s.mode == modeSave {
+		action = "儲存"
+	}
 	lx, ly, lw, lh := s.loadRect()
-	drawBtnLabel(lx, ly, lw, lh, s.loadFace, "載入")
+	drawBtnLabel(lx, ly, lw, lh, s.loadFace, action)
 	cx, cy, cw, ch := s.cancelRect()
 	drawBtnLabel(cx, cy, cw, ch, s.cancelFace, "取消")
 
@@ -251,5 +318,17 @@ func (s *loadGameScreen) draw(dst *ebiten.Image) {
 	}
 }
 
-// loadGame 進入載入遊戲視窗。
-func (b *sceneBuilder) loadGame() (origScreen, error) { return newLoadGameScreen(b), nil }
+// loadGame 從主選單進入載入遊戲視窗(取消回主選單)。
+func (b *sceneBuilder) loadGame() (origScreen, error) {
+	return newLoadGameScreen(b, modeLoad, b.menu, "主選單"), nil
+}
+
+// loadGameInPlay 從遊戲中的「遊戲選單」進入載入視窗(取消回星系主畫面)。
+func (b *sceneBuilder) loadGameInPlay() (origScreen, error) {
+	return newLoadGameScreen(b, modeLoad, b.galaxy, "星系主畫面"), nil
+}
+
+// saveGameInPlay 從遊戲中的「遊戲選單」進入儲存視窗(同一個視窗,見檔頭)。
+func (b *sceneBuilder) saveGameInPlay() (origScreen, error) {
+	return newLoadGameScreen(b, modeSave, b.galaxy, "星系主畫面"), nil
+}

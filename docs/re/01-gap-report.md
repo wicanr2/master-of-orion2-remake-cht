@@ -39,7 +39,8 @@
 | 原版 | remake | 備註 |
 |---|---|---|
 | `Main_Menu` | `menu` | ✅ 座標已對齊;2026-08-07 補上原版的「無存檔時 Continue / Load Game 灰階停用」|
-| `Mainmenu_Load_Game_Popup_` @ 0x804B7 | `loadGame` | ✅ 2026-08-07 已建(`cmd/moo2/loadgame.go`),十格存檔選單 |
+| `Mainmenu_Load_Game_Popup_` @ 0x804B7 / `Do_Save_Game_Popup_` @ 0x7E154 | `loadGame` / `saveGameInPlay` | ✅ 2026-08-07 已建(`cmd/moo2/loadgame.go`),十格存檔選單,存讀共用同一視窗 |
+| `GameMenuWindow`(遊戲中的「遊戲」選單)| `gameMenu` | ✅ 2026-08-07 已建(`cmd/moo2/gamemenu.go`),星系畫面頂端「遊戲」鈕先前是死的 |
 | `Newgame` | `newGameSetup` | ⚠ 原版底排是 **PLAYERS**(對手數),remake 誤作 RACE 入口 |
 | `Race_Selection` | `raceSelect` | ⚠ 版面左右相反(原版肖像左/2欄按鈕右) |
 | `Racial_Option` | `customRace` | 自訂種族點數 |
@@ -485,8 +486,30 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     一種,畫上去等於裝飾,等多人連線落地再補 ③存檔用 remake 自己的 JSON 格式,不是原版 `.GAM`
     (原版格式由 `internal/save` **唯讀**解析,寫回不在範圍內)。
 
-17. `Colony_Bombing` 畫面、Smacker 過場、儲存遊戲視窗。
+17. ~~儲存遊戲視窗 + 遊戲中的「遊戲」選單~~ → **已完成**(2026-08-07,
+    `cmd/moo2/gamemenu.go`;儲存視窗併進 `loadgame.go`)。
+
+    **存檔與載入是同一個視窗**——這不是 remake 的簡化,是原版的結構:繪製函式只有一個,
+    叫 `_Draw_Load_Save_Game_Popup_` @ 0x7F206,名字自己就說完了;差別只在說明列
+    (`Set_Load_Game_Screen_Help_List_` @ 0x6F850 vs `Set_Save_Game_Screen_Help_List_` @ 0x6F865)
+    與動作鈕的字。
+
+    順帶把 openorion2 的資產索引拿反組譯核了一次:`Load_Mainmenu_Load_Game_Popup_` @ 0x803D9
+    依序載 GAME.LBX 資產 **0x14–0x1A(20–26)**,正是 openorion2 的
+    `ASSET_LOAD_BACKGROUND`…`ASSET_LOAD_MODEM` 那一串。兩個獨立來源互相印證。
+
+    遊戲選單視窗(`GameMenuWindow`)的座標:視窗 **(144, 25)** ——硬編不是置中;
+    SAVE (40,43) / LOAD (147,43) / NEW (40,88) / QUIT (147,88) / SETTINGS (40,307) /
+    RETURN (151,307),精靈為 `game.lbx` 資產 1–6,背景資產 0,調色盤取 `buffer0.lbx` 資產 0。
+    星系畫面上那顆「遊戲」鈕本身在 **(249, 5)** ——它先前**畫得出來但點了沒事**,
+    等於玩家在遊戲中沒有任何辦法主動存檔。
+
+    ⚠ 誠實留白:原版這個視窗中段有 Music / Sound Fx 兩條音量滑桿(背景圖上畫得很清楚),
+    remake 的音訊層沒有音量控制介面,滑桿不畫也不接——畫一條拖不動的滑桿比沒有更糟;
+    SETTINGS 同理,原版另有一整個設定畫面,remake 尚無對應內容,按鈕保留但按了只回訊息。
+
+18. `Colony_Bombing` 畫面、Smacker 過場。
    ~~行星特殊物產~~ → **已完成**(2026-08-06,見 C-4):12 種權重表 + 抵達發現(殘骸/藏寶/
    失散殖民地/受困英雄/遠古文物)+ 殖民效果(原住民人口、金礦寶石收入、文物研究),
    接進 `advanceFleet` 抵達點與快報畫面。
-18. 多人連線(獨立子專案)。
+19. 多人連線(獨立子專案)。
