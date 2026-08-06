@@ -60,7 +60,7 @@
 | # | 原版畫面 | 影響 | 備註 |
 |---|---|---|---|
 | 1 | ~~**`Colony`**(獨立殖民地畫面)~~ | 高 | ✅ 2026-08-06 已建(`cmd/moo2/colonyscreen.go`),從總覽點殖民地名進入;含 7 格建造佇列。版面未對齊原版(無 COLONY.LBX 版面資料),結構與流程已對 |
-| 2 | **`Event`** | 高 | 原版事件有**專屬畫面**;remake 把事件塞進回合摘要文字(與 issue #3「事件黃框」直接相關) |
+| 2 | ~~**`Event`**~~ | 高 | ✅ 2026-08-06 已建(`cmd/moo2/eventscreen.go`),GNN 新聞快報樣式;事件表同步換成原版 36 種 |
 | 3 | **`Tech_Review`** | 中高 | INFO 子畫面;remake 誤接成研究選擇跳板(issue #5-2 根因,**二進位證實**) |
 | 4 | **`History`** | 中高 | INFO 子畫面,國力折線圖(issue #5-1);資料源是原版 module 122 的 `Record_History_` |
 | 5 | **`Race_Stats`** | 中 | INFO 子畫面 |
@@ -94,7 +94,7 @@
 | 141 | 71 | `Load_Font_File_`、`Get_String_Width_` | `internal/uifont` | |
 | 28 | 67 | `Get_Ship_Combat_Bonuses_`、`Init_Ship_Designs_` | `gamedata/combat.go` | |
 | 58 | 67 | `Load_Officer_Picture_`、`Assert_Marooned_Leaders_` | `shell` 領袖 | 原版有 marooned leader 機制 |
-| **15** | **57** | `Init_Events_`、`Check_For_Event_` | `shell` 事件(簡化) | **事件系統**,原版是完整子系統 |
+| **15** | **71** | `Init_Events_`、`Check_For_Event_` | `shell/events.go` | 事件清單已對齊原版 36 種(16 種已實作,其餘缺子系統,見 `gamedata/events.go`) |
 | **27** | **56** | `Init_Diplomatic_Relations_`、`Diplomacy_Growth_`、`Change_Relations_` | `internal/diplomacy` | 原版關係演化更完整 |
 | 20 | 54 | `Apply_Internal_Damage_`、`Repair_Combat_Ship_` | `gamedata/damage.go` | 原版有**內部艙損/維修** |
 | 18 | 40 | `Safe_To_Fire_Sphere_Weapon_`、`Ai_Self_Destruct_Check_` | `shell/weapon_kind.go` | 原版戰鬥 AI 較深 |
@@ -105,7 +105,9 @@
 
 **最大的系統級缺口(A 級硬證)**:
 1. **歷史記錄系統**(module 122,73 函式)——remake 完全沒有,History Graph 因此做不出來。
-2. **事件系統**(module 15,57 函式)——remake 只有簡化隨機事件。
+2. ~~事件系統~~ → **2026-08-06 已對齊**:36 種事件表 + GNN 快報畫面,16 種已可忠實結算。
+   剩餘 20 種缺的是各自的子系統(太空怪獸實體、超新星、時空異象、曲速漏斗…),已逐項記在
+   `gamedata.RandomEvents` 的 `Needs` 欄。
 3. **前哨站(Outpost)**——原版到處都是 `..._And_Outposts_...`,remake 只有殖民地。
 4. **艙損/維修**(module 20)——`Apply_Internal_Damage_`、`Repair_Combat_Ship_`。
 
@@ -199,8 +201,7 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
 5. **`_personality_*` 6 張表 + AI 行星估值** → 把 remake 手寫 AI 換成原版行為模型。
 6. **一星多行星** → 原版每顆恆星 1–5 顆行星各佔一條軌道;remake 的 `Stars`/`Planets`
    索引一一對應是 UI/拓殖/AI 共同的假設,拆開是跨層改造(見 `genPlanets` 註解)。
-7. ~~獨立 Colony 畫面~~ → **已完成**(2026-08-06)。**Event 畫面**仍缺:原版事件有專屬畫面,
-   remake 把事件塞進回合摘要文字。
+7. ~~獨立 Colony 畫面 + Event 畫面~~ → **兩個都已完成**(2026-08-06)。
 8. **地面戰解算**(`Resolve_Ground_Combat_` / `Ground_Combat_Round_`)→ 取代目前沿用一代 1oom 的借用結構。
 
 ### 第三梯:補完整性
