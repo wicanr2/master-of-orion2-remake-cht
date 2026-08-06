@@ -69,17 +69,20 @@ type sessionSnapshot struct {
 	Outposts []Outpost `json:"outposts,omitempty"`
 	// Monsters 是星圖上的守衛怪獸(見 monster.go)。omitempty:舊存檔沒有這個欄位,
 	// 解碼成 nil = 「星圖上沒有怪獸」,與加這個系統之前的行為逐位元一致。
-	Monsters      []MonsterGuard    `json:"monsters,omitempty"`
-	FleetAtStar   int               `json:"fleetAtStar"`
-	FleetDestStar int               `json:"fleetDestStar"`
-	FleetETA      int               `json:"fleetETA"`
-	PopAccum      []int             `json:"popAccum"`
-	ColonyBuild   []map[string]bool `json:"colonyBuildings"`
-	EventSeed     int64             `json:"eventSeed"`
-	AntaresRaids  int               `json:"antaresRaids"`
-	RaceIndex     int               `json:"raceIndex"`
-	RaceCombatPct int               `json:"raceCombatPct"`
-	RaceGrowthPct int               `json:"raceGrowthPct"`
+	Monsters []MonsterGuard `json:"monsters,omitempty"`
+	// PersistentEvents 是進行中的持續型事件(見 events_persistent.go)。omitempty:
+	// 舊存檔沒有這個欄位,解碼成 nil = 「沒有進行中的持續事件」,與加這個系統之前一致。
+	PersistentEvents []PersistentEvent `json:"persistent_events,omitempty"`
+	FleetAtStar      int               `json:"fleetAtStar"`
+	FleetDestStar    int               `json:"fleetDestStar"`
+	FleetETA         int               `json:"fleetETA"`
+	PopAccum         []int             `json:"popAccum"`
+	ColonyBuild      []map[string]bool `json:"colonyBuildings"`
+	EventSeed        int64             `json:"eventSeed"`
+	AntaresRaids     int               `json:"antaresRaids"`
+	RaceIndex        int               `json:"raceIndex"`
+	RaceCombatPct    int               `json:"raceCombatPct"`
+	RaceGrowthPct    int               `json:"raceGrowthPct"`
 
 	// Government 是玩家政府型態(2026-07-11 士氣接線;見 GameSession.Government 欄位註解)。
 	// 底層是 gamedata.MoraleGovernmentType(int-based enum),json 直接序列化成數字。
@@ -138,10 +141,11 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		PlayerColonies: s.PlayerColonies, AIPlayers: ais,
 		Stars: s.Stars, Planets: s.Planets, Leaders: s.Leaders, Ships: s.Ships,
 		SelectedStar: s.SelectedStar, Difficulty: s.Difficulty, Builds: s.Builds,
-		BuildQueue:  s.BuildQueue,
-		Outposts:    s.Outposts,
-		Monsters:    s.Monsters,
-		FleetAtStar: s.FleetAtStar, FleetDestStar: s.FleetDestStar, FleetETA: s.FleetETA,
+		BuildQueue:       s.BuildQueue,
+		Outposts:         s.Outposts,
+		Monsters:         s.Monsters,
+		PersistentEvents: s.PersistentEvents,
+		FleetAtStar:      s.FleetAtStar, FleetDestStar: s.FleetDestStar, FleetETA: s.FleetETA,
 		PopAccum: s.popAccum, ColonyBuild: s.ColonyBuildings, EventSeed: s.EventSeed,
 		AntaresRaids: s.AntaresRaids, RaceIndex: s.RaceIndex,
 		RaceCombatPct: s.RaceCombatPct, RaceGrowthPct: s.raceGrowthPct,
@@ -179,7 +183,8 @@ func (snap sessionSnapshot) restore() *GameSession {
 		AIPlayers: ais, Stars: snap.Stars, Planets: snap.Planets, Leaders: snap.Leaders,
 		Ships: snap.Ships, SelectedStar: snap.SelectedStar, Difficulty: snap.Difficulty,
 		Builds: snap.Builds, BuildQueue: snap.BuildQueue, Outposts: snap.Outposts, Monsters: snap.Monsters,
-		FleetAtStar: snap.FleetAtStar, FleetDestStar: snap.FleetDestStar,
+		PersistentEvents: snap.PersistentEvents,
+		FleetAtStar:      snap.FleetAtStar, FleetDestStar: snap.FleetDestStar,
 		FleetETA: snap.FleetETA, popAccum: snap.PopAccum, ColonyBuildings: snap.ColonyBuild,
 		EventSeed: snap.EventSeed, AntaresRaids: snap.AntaresRaids, RaceIndex: snap.RaceIndex,
 		RaceCombatPct: snap.RaceCombatPct, raceGrowthPct: snap.RaceGrowthPct,

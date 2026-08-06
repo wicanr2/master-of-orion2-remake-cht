@@ -475,10 +475,15 @@ func (s *GameSession) RespondToCouncilElection(accept bool) {
 // CheckExtermination 本身是雙向對稱的「只剩一方存活」判定,故本函式同時涵蓋兩種結果:
 //   - 玩家存活、所有 AI 對手皆 0 殖民地 → 玩家以 VictoryExtermination 勝利(InvadeColony
 //     攻陷 AI 唯一殖民地後會把該筆從 AIOpponent.Colonies 移除,見 ground_invasion.go)。
-//   - 玩家 0 殖民地、某 AI 對手存活 → 該 AI 以 VictoryExtermination「勝利」(玩家戰敗)。本
-//     remake 目前沒有任何機制會讓 PlayerColonies 完全清空(安塔蘭突襲只扣人口不摧毀殖民地、
-//     AI 無地面入侵玩家的邏輯),故這個分支現況下不可達,只是沿用同一個對稱判定函式的
-//     自然結果,不是額外實作的機制。
+//   - 玩家 0 殖民地、**且只剩一個** AI 對手存活 → 該 AI 以 VictoryExtermination「勝利」。
+//
+// ⚠ 2026-08-06 訂正:這段註解原本寫著「remake 沒有任何機制會讓 PlayerColonies 完全清空,
+// 故這個分支現況下不可達」——**那個斷言已經過期**。超新星事件(events_persistent.go,
+// 手冊 p.181:「all colonies are destroyed」)會摧毀整個星系的殖民地,玩家確實可能歸零。
+//
+// 而且 CheckExtermination 是「只剩一方存活」的判定:玩家死光但還有三個 AI 活著時它回 false,
+// 遊戲會就這樣繼續跑下去,玩家永遠沒有殖民地也不會結束。玩家戰敗因此由
+// advancePlayerDefeat 單獨判定,見該函式。
 //
 // len(s.AIPlayers)==0 視為未設置對手,不觸發(避免測試/工具建構的 GameSession 意外判定勝利)。
 func (s *GameSession) advanceConquestVictory() {
@@ -502,4 +507,37 @@ func (s *GameSession) advanceConquestVictory() {
 		winnerName = s.AIPlayers[winner-1].Name
 	}
 	s.Victory = VictoryState{Over: true, Reason: engine.VictoryExtermination, Winner: winnerName, Turn: s.Turn}
+}
+
+// advancePlayerDefeat 判定玩家戰敗:一座殖民地都不剩。
+//
+// 手冊 p.184 講計分時明確提到「If an empire is eliminated by a random event or by Antarans」
+// ——**帝國被隨機事件消滅是原版就有的概念**,不是 remake 自創的失敗條件。remake 這一側的
+// 觸發來源目前是超新星(手冊 p.181:「all of the system's inhabitants are killed and all
+// colonies are destroyed」)。
+//
+// 為什麼不靠 advanceConquestVictory:那條走的是 CheckExtermination(只剩一方存活),
+// 玩家死光但還有多個 AI 活著時它不成立,遊戲會無聲地繼續跑——這是 2026-08-06 的 400 回合
+// 探針實際跑出來的狀態(結束時玩家 0 殖民地、BC 0,但遊戲沒結束)。
+//
+// 只在「有 AI 對手」的對局判定,避免測試/工具建構的空 session 意外判定戰敗。
+func (s *GameSession) advancePlayerDefeat() {
+	if s.Victory.Over || len(s.AIPlayers) == 0 {
+		return
+	}
+	if len(s.PlayerColonies) > 0 {
+		return
+	}
+	// 勝者取目前殖民地最多的 AI(手冊沒規定多方混戰時誰算贏家,取實力最強者是自然選擇)。
+	best, bestN := -1, -1
+	for i, a := range s.AIPlayers {
+		if n := len(a.Colonies); n > bestN {
+			best, bestN = i, n
+		}
+	}
+	winner := "對手帝國"
+	if best >= 0 && bestN > 0 {
+		winner = s.AIPlayers[best].Name
+	}
+	s.Victory = VictoryState{Over: true, Reason: engine.VictoryExtermination, Winner: winner, Turn: s.Turn}
 }

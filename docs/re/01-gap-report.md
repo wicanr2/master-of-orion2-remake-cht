@@ -310,8 +310,33 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
       設定(`_user_wants_n_space_monsters` @ 0x19A006),remake 先用固定密度
     - 順帶依手冊 p.119「Support ships … **do not fight**」把殖民船/前哨船排除在戰鬥火力之外
       ——先前它們會以最低戰力混進戰列
-11. 艙損/維修、Hall of Fame / Hi-Score、安塔蘭房間、Smacker 過場。
+11. ~~持續型隨機事件~~ → **已完成**(2026-08-06,`internal/shell/events_persistent.go`)。
+    先前 9 個事件卡在「缺子系統」,真正缺的是同一個東西:remake 只有「單次結算」的事件模型,
+    **沒有任何跨回合的事件狀態**。補上那個模型之後,手冊 p.180-181 就直接是規格書:
+
+    | 事件 | 手冊給的數字 |
+    |---|---|
+    | 超新星(24) | ≥200 回合觸發、倒數 6-14 回合、系統研究點全投入搶救、失敗則全滅 + 行星變輻射 |
+    | 時空異象(25) | 星系凍結:不生產不成長,也不吃食物不繳維護費;6 回合後每回合 5% 結束 |
+    | 超空間獸(26) | 航行中的艦隊有機率損失一艘;6 回合後每回合 5% 離開 |
+    | 蟲洞(28) | 航行中的艦隊「in a single turn」抵達 |
+    | 怪獸入侵(19-23) | 變形蟲 ≥100、太空鰻 ≥150、水晶 ≥200、九頭蛇 ≥250、巨龍 ≥300 |
+
+    超新星那條的張力也是手冊寫死的:「if the emperor doesn't accelerate the colony's research
+    efforts, the colonies will discover the solution **one turn too late**」——remake 據此把
+    需求量設成「系統自然產出 × (倒數+1)」,讓「什麼都不做剛好差一回合」成立。
+
+    ⚠ 太空鰻是**近似**:手冊說牠「never attack colonies or outposts」、只封鎖,且 30 回合後
+    會分裂(最多 4 隻)。remake 用盤據型怪獸代打「封鎖」那一半,另兩半未建模,已標在事件表的
+    `Needs` 欄。
+
+    **這一批順帶翻出一個過期斷言**:`advanceConquestVictory` 的註解寫著「remake 沒有任何機制
+    會讓 PlayerColonies 完全清空,故玩家戰敗這個分支不可達」。超新星讓它可達了,而
+    `CheckExtermination`(只剩一方存活)在「玩家死光但還有三個 AI」時回 false——400 回合探針
+    實測到玩家 0 殖民地、遊戲卻繼續空轉。已補 `advancePlayerDefeat`(手冊 p.184 計分段明講
+    「If an empire is eliminated by a random event」,帝國被隨機事件消滅是原版就有的概念)。
+12. 艙損/維修、Hall of Fame / Hi-Score、安塔蘭房間、Smacker 過場。
    ~~行星特殊物產~~ → **已完成**(2026-08-06,見 C-4):12 種權重表 + 抵達發現(殘骸/藏寶/
    失散殖民地/受困英雄/遠古文物)+ 殖民效果(原住民人口、金礦寶石收入、文物研究),
    接進 `advanceFleet` 抵達點與快報畫面。
-12. 多人連線(獨立子專案)。
+13. 多人連線(獨立子專案)。

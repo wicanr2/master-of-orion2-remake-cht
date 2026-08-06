@@ -2002,6 +2002,10 @@ type GameSession struct {
 	// Monsters 是星圖上守衛星系的太空怪獸(見 monster.go)。清空 = 全部已被清除。
 	Monsters []MonsterGuard
 
+	// PersistentEvents 是進行中的持續型隨機事件(超新星倒數/時空異象/超空間獸,
+	// 見 events_persistent.go)。空 = 沒有任何持續事件。
+	PersistentEvents []PersistentEvent
+
 	// Outposts 是玩家的軍事前哨站(見 outpost.go)。與 PlayerColonies **完全分開**——
 	// 手冊 p.85「produces nothing」,前哨站沒有人口也沒有產出,混進殖民地陣列會讓帝國經濟
 	// 憑空多出一個殖民地。
@@ -2179,10 +2183,48 @@ func (s *GameSession) advanceFleet() {
 // 尚無記錄時,該殖民地視為 0(尚未建成任何建築,非漏算)。
 func (s *GameSession) totalBuildingMaintenance() int {
 	total := 0
-	for _, built := range s.ColonyBuildings {
+	for i, built := range s.ColonyBuildings {
+		if s.ColonyInStasis(i) {
+			// 手冊 p.181:被時空異象凍結的殖民地「do not need food or cost maintenance either」。
+			continue
+		}
 		total += gamedata.BuiltMaintenanceBC(built)
 	}
 	return total
+}
+
+// coloniesForTurn 回傳這回合要交給 engine.RunEmpireTurn 結算的殖民地清單。
+//
+// 與 s.PlayerColonies **索引一一對應**(呼叫端 advanceBuilds/advancePopulation 都靠這個對齊),
+// 但被時空異象凍結的殖民地換成一份「人口歸零」的副本:人口 0 → 沒有產出、沒有食物消耗、
+// 沒有人口成長、沒有建造進度,正好對上手冊 p.181 的
+// 「unable to produce, grow, or move population … do not need food or cost maintenance either」。
+//
+// 為什麼用「換成零人口副本」而不是「從清單裡拿掉」:拿掉會破壞索引對齊,而那個對齊是
+// 好幾個呼叫端共用的不變量。零人口副本讓凍結成為一個純資料上的效果,不動任何控制流。
+func (s *GameSession) coloniesForTurn() []engine.ColonyState {
+	frozen := false
+	for i := range s.PlayerColonies {
+		if s.ColonyInStasis(i) {
+			frozen = true
+			break
+		}
+	}
+	if !frozen {
+		return s.PlayerColonies // 常態:沒有凍結的殖民地,直接用原本的切片,零額外成本
+	}
+	out := make([]engine.ColonyState, len(s.PlayerColonies))
+	copy(out, s.PlayerColonies)
+	for i := range out {
+		if !s.ColonyInStasis(i) {
+			continue
+		}
+		out[i].Population = 0
+		out[i].Farmers, out[i].Workers, out[i].Scientists = 0, 0, 0
+		out[i].FlatFood, out[i].FlatIndustry, out[i].FlatResearch = 0, 0, 0
+		out[i].SpecialIncome = 0
+	}
+	return out
 }
 
 // totalCommandPointsSupply 加總玩家目前的指揮評等(Command Rating)供給:帝國基礎值
@@ -2291,7 +2333,7 @@ func (s *GameSession) EndTurn() {
 	// Hyper-Advanced Lv1 研究成本。
 	s.Player.HyperAdvancedResearchCost = gamedata.HyperAdvancedCost(s.RuleProfile)
 	s.syncTradeGoodsFlag() // 依建造選單同步「貿易品」旗標,供 RunEmpireTurn 判斷是否換算收入
-	s.LastPlayerOutput = engine.RunEmpireTurn(s.Player, s.PlayerColonies)
+	s.LastPlayerOutput = engine.RunEmpireTurn(s.Player, s.coloniesForTurn())
 	s.Player = s.LastPlayerOutput.Player
 	s.recoverFromFamine() // 饑荒防死鎖:見函式註解;依本回合 Starving 結果修正下回合職務分配
 	for i := range s.AIPlayers {
@@ -2322,10 +2364,22 @@ func (s *GameSession) EndTurn() {
 	s.advanceArmor()      // 各 Armor Barracks 殖民地依手冊公式補充戰車營駐軍(有上限,見 ground_invasion.go)
 	s.advancePopulation() // 累積各殖民地成長,達門檻則 +1 人口(回寫 Population)
 	s.advanceEvents()     // 觸發 MOO2 風格隨機事件(繁榮/瘟疫/海盜…),記於 LastEvent
+	// 持續型事件(超新星倒數/時空異象/超空間獸)每回合推進一次,見 events_persistent.go。
+	// 它們的訊息接在 LastEvent 後面——一回合可能同時有「新抽到的事件」與「持續中的狀態」。
+	if msgs := s.advancePersistentEvents(); len(msgs) > 0 {
+		for _, m := range msgs {
+			if s.LastEvent == "" {
+				s.LastEvent = m
+			} else {
+				s.LastEvent += "|" + m
+			}
+		}
+	}
 	s.Turn++
 	s.advanceAntares()         // 安塔蘭人週期性入侵(依 Turn 排程升級),記於 LastAntares
 	s.advanceAIRaids()         // AI 對手突襲玩家殖民地(戰爭態勢 + 軍力領先才發動),記於 LastRaid
 	s.advanceConquestVictory() // 對手是否已全滅(手冊三條勝利路徑之一:殲滅所有對手)
+	s.advancePlayerDefeat()    // 玩家是否已無任何殖民地(超新星等事件可致,見該函式)
 	s.advanceAntaranVictory()  // 是否已攻陷安塔蘭母星(手冊三條勝利路徑之二,見 antaran_victory.go)
 	s.advanceAIDiplomacy()     // AI 對手彼此外交關係漂移(多帝國活星系;支撐議會第三方搖擺)
 	s.advanceCouncil()         // 銀河議會選舉(手冊三條勝利路徑之一:2/3 多數當選銀河領袖),記於 LastCouncil

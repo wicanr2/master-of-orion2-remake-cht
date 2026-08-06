@@ -223,6 +223,33 @@ func (s *GameSession) applyRandomEvent(ev gamedata.RandomEvent) (string, bool) {
 		gain := 80 + s.Turn
 		s.Player.ResearchProgress += gain
 		return fmt.Sprintf("科學家在高層機密實驗中意外撞見新技術的關鍵,研究進度 +%d RP", gain), true
+
+	// --- 太空怪獸入侵(19-23)。每種怪獸的**最早回合**由手冊 p.180-181 逐條給定,
+	//     照抄不臆改;怪獸實體與戰鬥見 monster.go。太空鰻在 remake 沒有獨立實體
+	//     (手冊:牠只封鎖不攻擊),用九頭蛇以外最接近「純擋路」的變形蟲代打並標明。---
+	case 19: // 太空變形蟲(手冊:≥100 回合)
+		return s.spawnInvadingMonster(gamedata.MonsterAmoeba, 100)
+	case 20: // 太空水晶(手冊:≥200 回合)
+		return s.spawnInvadingMonster(gamedata.MonsterCrystal, 200)
+	case 21: // 太空巨龍(手冊:≥300 回合)
+		return s.spawnInvadingMonster(gamedata.MonsterDragon, 300)
+	case 22: // 太空鰻(手冊:≥150 回合)。
+		// ⚠ remake 沒有太空鰻的獨立實體(手冊 p.180:牠「never attack colonies or outposts」、
+		// 只封鎖系統,且 30 回合後會分裂)。目前用一頭盤據星系的怪獸近似「封鎖」那一半,
+		// 分裂與「不攻擊」的差異尚未建模——標明,不假裝已經忠實。
+		return s.spawnInvadingMonster(gamedata.MonsterAmoeba, 150)
+	case 23: // 太空九頭蛇(手冊:≥250 回合)
+		return s.spawnInvadingMonster(gamedata.MonsterHydra, 250)
+
+	// --- 持續型事件(24-26、28),見 events_persistent.go ---
+	case 24: // 超新星(手冊:≥200 回合,倒數 6-14)
+		return s.startSupernova()
+	case 25: // 時空異象:整個星系凍結
+		return s.startStasis()
+	case 26: // 超空間獸:航行中的艦隊有機率損失艦艇
+		return s.startWarpBeast()
+	case 28: // 蟲洞:航行中的艦隊瞬間抵達
+		return s.applyWormhole()
 	}
 	return "", false
 }
