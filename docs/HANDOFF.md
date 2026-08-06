@@ -117,7 +117,8 @@ docker images:`moo2-ebiten`(CGO+X11+xvfb,已存在)、`golang:1.25-bookworm`(純
   **同日第三個實例:殖民地畫面**——`Add_Job_Field_For_` @ 0xBCB4B 給職業欄座標,框架美術是
   **COLPUPS.LBX#5**(不是 COLONY.LBX),見第 22 項。**colony 也可以移除了。**同日第四個實例:**種族選擇畫面**(`Race_Selection_Screen_` @ 0x5C510
   的 2×7 建鈕迴圈 + `Draw_Race_Selection_Screen_` 的肖像位置 + RACESEL 資產尺寸三方互證),
-  順便修掉「左右擺反」這個還原錯誤,見第 23 項。**只剩 shipDesign。**
+  順便修掉「左右擺反」這個還原錯誤,見第 23 項。**shipDesign 同日也做完(六格不等距,見第 24 項)——這份名單清空了。**
+  剩下的不是「座標沒挖」而是「子系統沒做」,見 gap report 末尾的進度表。
   battleResult/council/turnSummary 是結果/摘要顯示畫面,維持「點任意處返回」(合理 UX,使用者確認不動)。
 
 ### 優先 4 — 忠實 gameplay 規則(主體工作量,對應 PLAN「從零重建引擎」軌)

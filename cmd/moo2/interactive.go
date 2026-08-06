@@ -2315,28 +2315,69 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 	return s, nil
 }
 
-// shipDesign 建原版艦艇設計畫面(DESIGN.LBX 資產 0,調色盤鏈 buffer0#0)。
+// 艦艇設計畫面的原版座標(全部是 sub_6C8F9 / Add_Design_Buttons_ 的立即數,見下方檔頭)。
+var (
+	dsHullOrder = []string{"Frigate", "Destroyer", "Cruiser", "Battleship", "Titan", "Doom Star"}
+	// dsHullY[i] = {y1, y2}。原版六格**不等距**(高 15/14/17/14/14/16),
+	// 不是等距 17px——先前 remake 就是照等距排的,越往下偏得越多。
+	dsHullY = [6][2]int{{54, 69}, {70, 84}, {85, 102}, {103, 117}, {118, 132}, {133, 149}}
+	// 底部三顆鈕(CLEAR / CANCEL / BUILD)。
+	dsBtnX = [3]int{374, 461, 547}
+)
+
+const (
+	dsHullX0, dsHullX1 = 118, 227 // 0x76..0xE3,六格共用
+	dsBtnY             = 443
+	dsBtnW, dsBtnH     = 80, 22
+)
+
+// ============ 艦艇設計畫面(原版 `Design_Screen_` @ 0x6B9B2)============
+//
+// 版面 2026-08-07 改用反組譯真值(先前是估計座標,x 差 7px、底部三鈕差 6–11px,
+// 而且**六列艦體是照 17px 等距排的,原版根本不等距**)。
+//
+//	`sub_6C8F9`(由 `Add_Design_Buttons_` @ 0x69E62 對 i=0..5 呼叫)是一張乾淨的
+//	switch 表,直接給出六個艦體槽的矩形:
+//	    x 一律 `0x76..0xE3` = **118..227**(共用,寫在 default 分支)
+//	    y1 = 0x36 / 0x46 / 0x55 / 0x67 / 0x76 / 0x85 = 54 / 70 / 85 / 103 / 118 / 133
+//	    y2 = 0x45 / 0x54 / 0x66 / 0x75 / 0x84 / 0x95 = 69 / 84 / 102 / 117 / 132 / 149
+//	    → 列高 15/14/17/14/14/16,**不等距**(那是原版美術上那六格的實際高度)
+//
+//	底部三顆鈕(`sub_1151B0`,引數是三個熱鍵字串 `aLb` / `+2` / `+4`):
+//	    (374, 443) / (461, 443) / (547, 443)
+//
+// ⚠ 尚未套用、但座標已到手(記在 docs/re/01-gap-report.md 第 24 項):
+//   - 已裝元件清單列:x 55..68、y = 169 + 13i(`imul eax, esi, 0Dh` / `add eax, 0A9h`)
+//   - 右上兩個資訊面板:(437..627, 56..95) 與 (437..627, 97..123)
+//     remake 現在把元件選擇列排在 x 300..600,與原版這兩個面板的位置不同;
+//     要對齊得先確認那兩格在原版顯示什麼(尚未追到繪製端)。
+//
 // 點艦體等級 → 建造該艦加入艦隊 → 回艦隊;點他處 → 返回艦隊。
 func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 	hullZH := map[string]string{
 		"Frigate": "巡防艦", "Destroyer": "驅逐艦", "Cruiser": "巡洋艦",
 		"Battleship": "戰艦", "Titan": "泰坦", "Doom Star": "末日之星",
 	}
-	hits := []hitRegion{
-		{125, 50, 118, 16, "Frigate"}, {125, 67, 118, 16, "Destroyer"},
-		{125, 84, 118, 16, "Cruiser"}, {125, 101, 118, 16, "Battleship"},
-		{125, 118, 118, 16, "Titan"}, {125, 135, 118, 16, "Doom Star"},
-		{300, 58, 300, 22, "weapon"}, // 元件選擇(點擊各列循環)
-		{300, 82, 300, 22, "armor"},
-		{300, 106, 300, 22, "shield"},
-		{300, 130, 300, 22, "special"},
+	hits := make([]hitRegion, 0, 20)
+	// 六個艦體槽:座標為反組譯真值(見檔頭的 sub_6C8F9 switch 表),不等距。
+	for i, name := range dsHullOrder {
+		y0, y1 := dsHullY[i][0], dsHullY[i][1]
+		hits = append(hits, hitRegion{dsHullX0, y0, dsHullX1 - dsHullX0 + 1, y1 - y0 + 1, name})
+	}
+	hits = append(hits,
+		hitRegion{300, 58, 300, 22, "weapon"}, // 元件選擇(點擊各列循環)
+		hitRegion{300, 82, 300, 22, "armor"},
+		hitRegion{300, 106, 300, 22, "shield"},
+		hitRegion{300, 130, 300, 22, "special"},
 		// 武器改造(mod)勾選:8 個 chip,兩排各 4 個,順序對齊 shell.WeaponModOptions
 		// (HV/PD/AF/CO 第一排,AP/ENV/NR/SP 第二排)。只對 beam 武器生效(見 onAction
 		// 的 WeaponIsBeam 判斷),非 beam 武器仍顯示熱區但點擊不生效(避免熱區位移)。
-		{305, 368, 76, 18, "mod:0"}, {385, 368, 76, 18, "mod:1"}, {465, 368, 76, 18, "mod:2"}, {545, 368, 76, 18, "mod:3"},
-		{305, 390, 76, 18, "mod:4"}, {385, 390, 76, 18, "mod:5"}, {465, 390, 76, 18, "mod:6"}, {545, 390, 76, 18, "mod:7"},
-		{0, 0, moo2ScreenW, moo2ScreenH, "back"},
-	}
+		hitRegion{305, 368, 76, 18, "mod:0"}, hitRegion{385, 368, 76, 18, "mod:1"},
+		hitRegion{465, 368, 76, 18, "mod:2"}, hitRegion{545, 368, 76, 18, "mod:3"},
+		hitRegion{305, 390, 76, 18, "mod:4"}, hitRegion{385, 390, 76, 18, "mod:5"},
+		hitRegion{465, 390, 76, 18, "mod:6"}, hitRegion{545, 390, 76, 18, "mod:7"},
+		hitRegion{0, 0, moo2ScreenW, moo2ScreenH, "back"},
+	)
 	onAction := func(a string) *origTransition {
 		switch a { // 循環只跳到「已研究解鎖」的元件
 		case "weapon":
@@ -2383,17 +2424,16 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		}
 		return b.goTo(b.fleet, "艦隊列表")
 	}
-	overlays := []labelRect{
-		{255, 12, 320, 24, "Ship Design", 0},
-		{130, 52, 105, 16, "Frigate", 12},
-		{130, 69, 105, 16, "Destroyer", 12},
-		{130, 86, 105, 16, "Cruiser", 12},
-		{130, 103, 105, 16, "Battleship", 12},
-		{130, 120, 105, 16, "Titan", 12},
-		{130, 137, 105, 16, "Doom Star", 12},
-		{380, 440, 80, 20, "Clear", 0},
-		{470, 440, 80, 20, "Cancel", 0},
-		{558, 440, 72, 20, "Build", 0},
+	overlays := []labelRect{{255, 12, 320, 24, "Ship Design", 0}}
+	// 六列艦體名的擦底帶跟著槽走(各留 2px 邊,不吃到浮雕框)。
+	for i, name := range dsHullOrder {
+		y0, y1 := dsHullY[i][0], dsHullY[i][1]
+		overlays = append(overlays, labelRect{
+			dsHullX0 + 2, y0 + 2, dsHullX1 - dsHullX0 - 3, y1 - y0 - 3, name, 12})
+	}
+	// 底部三顆鈕:反組譯真值 (374/461/547, 443)。
+	for i, name := range []string{"Clear", "Cancel", "Build"} {
+		overlays = append(overlays, labelRect{dsBtnX[i], dsBtnY, dsBtnW, dsBtnH, name, 0})
 	}
 	s, err := loadOverlayScreen(b.res, "design.lbx", 0, b.lang, b.fnt, "assets/i18n/tech.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
@@ -2405,8 +2445,12 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 	if b.fnt != nil && b.session != nil {
 		body := color.RGBA{210, 216, 230, 255}
 		classes := []string{"巡防艦", "驅逐艦", "巡洋艦", "戰艦", "泰坦", "末日之星"}
+		// 價格跟著艦體槽的真實 y 走(dsHullY 不等距;先前照 60+17i 等距排,越往下偏越多,
+		// 最後一格會壓到下面的總價那一行)。
 		for i, cl := range classes {
-			s.extras = append(s.extras, extraText{x: 250, y: float64(60 + i*17), size: 11,
+			y0, y1 := dsHullY[i][0], dsHullY[i][1]
+			s.extras = append(s.extras, extraText{
+				x: float64(dsHullX1 + 16), y: float64(y0+y1)/2 - 6, size: 11,
 				text: fmt.Sprintf("%d BC", shell.ShipCost(cl)), col: body, align: 0})
 		}
 		// 四類元件(點擊各列循環選擇),顯示名稱 + 效果 + 成本。
@@ -2887,8 +2931,10 @@ type interactiveApp struct {
 	// galleryMultiTick / galleryHotseatTick 是截圖廊切到多人設定畫面 / 熱座交接畫面的 tick。
 	galleryMultiTick   int
 	galleryHotseatTick int
-	galleryBuilder     *sceneBuilder
-	gallerySession     *shell.GameSession
+	// galleryDesignTick 是截圖廊切到艦艇設計畫面的 tick。
+	galleryDesignTick int
+	galleryBuilder    *sceneBuilder
+	gallerySession    *shell.GameSession
 }
 
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
@@ -2937,6 +2983,11 @@ const galleryMultiTick = 81
 // galleryHotseatTick 是截圖廊在哪個 tick 切到熱座交接畫面——取截圖(t84)的前一拍。
 // 這一拍會順手把對局設成兩席熱座,交接畫面才有真的席位名可顯示。
 const galleryHotseatTick = 83
+
+// galleryDesignTick 是截圖廊在哪個 tick 切到艦艇設計畫面——取截圖(t86)的前一拍。
+// 這個畫面先前**從沒被截圖廊拍過**(要從艦隊列表點進去,而腳本沒走那一步),
+// 所以版面錯了也不會被發現——與 NEW GAME 同一個盲點。
+const galleryDesignTick = 85
 
 // galleryShot 是「端到端過場截圖廊」腳本中,在某個絕對 tick 存一張圖的指令。
 type galleryShot struct {
@@ -3088,6 +3139,9 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		idle, // t82: settle → 截圖 multiplayer
 		idle, // t83: 由 galleryHotseatTick 設成兩席熱座並換成交接畫面
 		idle, // t84: settle → 截圖 hotseat
+
+		idle, // t85: 由 galleryDesignTick 換成艦艇設計畫面
+		idle, // t86: settle → 截圖 shipdesign
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -3117,6 +3171,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{80, "22_ending.png"},
 		{82, "23_multiplayer.png"},
 		{84, "24_hotseat.png"},
+		{86, "25_shipdesign.png"},
 	}
 	return script, shots
 }
@@ -3286,6 +3341,12 @@ func (a *interactiveApp) Update() error {
 			}
 		}
 	}
+	// 截圖廊專用:艦艇設計畫面(走正常路徑是艦隊列表 → 點右側艦艇格)。
+	if a.galleryDesignTick > 0 && a.tick == a.galleryDesignTick && a.galleryBuilder != nil {
+		if sc, err := a.galleryBuilder.shipDesign(); err == nil {
+			a.cur = sc
+		}
+	}
 	if t := a.cur.update(a.pollInput()); t != nil {
 		if t.quit {
 			return ebiten.Termination
@@ -3416,6 +3477,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.galleryEndingTick = galleryEndingTick
 		app.galleryMultiTick = galleryMultiTick
 		app.galleryHotseatTick = galleryHotseatTick
+		app.galleryDesignTick = galleryDesignTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,
