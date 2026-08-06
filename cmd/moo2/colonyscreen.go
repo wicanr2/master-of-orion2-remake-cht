@@ -25,24 +25,74 @@ import (
 //  2. **7 格建造佇列**(原版 `Add_Build_Queue_Fields_`:queue_fields[7])
 //  3. 已建建築與行星環境一覽
 //
-// 版面說明:remake 沒有原版 COLONY.LBX 的版面資料(repo 不含版權資產),故這個畫面
-// 疊在既有的 colsum.lbx 背景上、以自繪面板覆蓋,不宣稱像素對齊原版。
-// 對齊的是**結構與流程**(哪些操作在同一個畫面上、佇列幾格、完工怎麼接),
-// 那部分有反組譯硬證;版面留待取得 COLONY.LBX 版面座標後再對。
+// ============ 版面(2026-08-07 改用原版框架 + 反組譯座標)============
+//
+// ⚠ 這裡原本寫「remake 沒有原版 COLONY.LBX 的版面資料(repo 不含版權資產),故疊在
+// colsum.lbx 上自繪」——**兩句都不對**,而且第二句是會擋死後續工作的錯:
+//   ① 版面資料在**執行檔**裡,不在 LBX 裡。`Add_Job_Field_For_` @ 0xBCB4B 直接給出
+//      職業欄的座標(見下)。
+//   ② 畫面框架的美術也在,只是不在 COLONY.LBX——是 **COLPUPS.LBX 資產 5**
+//      (640×480,中段透明,那裡原版畫行星表面)。COLONY.LBX#6 是道路動畫,不是底圖。
+//
+// 三個獨立來源互證(與 NEW GAME 那次同一套方法):
+//
+//	反組譯 `Add_Job_Field_For_` @ 0xBCB4B(由 `Add_Job_Fields_` 迴圈 i=0..2 呼叫):
+//	    ecx = 0x136(310)、push 0x1FE(510)  → 欄位 x = 310..510
+//	    ebx = i*0x1E(30);ebx += 0x3E(62)  → 第 i 列 y = 62 + 30i(62 / 92 / 122)
+//	量 COLPUPS.LBX#5 的深色內凹面板:
+//	    左 x 7..115 y 28..148 / 中 x 126..304 y 31..140 / **右 x 308..511 y 31..146**
+//	    → 右面板與職業欄的 310..510 逐像素吻合(各留 1–2px 內縮),三列 ×30 正好塞滿。
+//
+// 其餘量自同一張框架圖:上方資訊列 y 15..158、中段行星表面 y 159..423(透明)、
+// 右下 LEADERS y 424..449 / RETURN y 456..479,兩顆都在 x 551..637。
+//
+// ⚠ 誠實留白:中段(y 159..423)原版畫的是**行星表面 + 建築 sprite 依格點擺放**
+// (`Make_Bldg_Array_For_Colony_` / `Bldg_Coords_To_Screen_Coord_` / `Sort_Bldg_Array_Columns_`
+// 那一整套,配 COLBLDG.LBX 的建築圖)。remake 還沒有那個子系統,那塊改放建造佇列與
+// 可建清單——**這是 remake 自己的版面,不是原版的**。原版的建造佇列是獨立彈出視窗
+// (`Build_Queue_Popup_` @ 0xB4041,7 格 x 207..458、y 329+20i,座標同樣已到手)。
 
 const (
 	colScreenW = 640.0
 	colScreenH = 480.0
 
-	colQueueX = 330.0 // 右欄:建造佇列 + 可建清單
-	colQueueY = 84.0
-	colRowH   = 22.0
+	// --- 原版框架(COLPUPS.LBX#5)與其內部面板 ---
+	colChromeLBX   = "colpups.lbx"
+	colChromeAsset = 5
+	colChromePal   = "colbldg.lbx" // 框架自己沒有調色盤,借建築圖那組(bombing.go 同一條鏈)
 
-	// 佇列 7 格佔 y=84..238;其下依序是清單標題、翻頁鈕、清單本體(到返回鈕之上)。
-	colListTitleY = 246.0
-	colListPageY  = 264.0
-	colListY      = 292.0 // 可建清單起始 y
-	colListRows   = 7     // 可建清單一頁顯示幾列(7×22=154,底在 446,不撞返回鈕)
+	colTopBarY0, colTopBarY1 = 15, 158  // 上方資訊列
+	colFieldY0, colFieldY1   = 159, 423 // 中段:原版畫行星表面,remake 放佇列/清單
+
+	colPanelLX, colPanelLY, colPanelLW, colPanelLH = 7, 28, 109, 121   // 左:行星
+	colPanelMX, colPanelMY, colPanelMW, colPanelMH = 126, 31, 179, 110 // 中:產出
+	colPanelRX, colPanelRY, colPanelRW, colPanelRH = 308, 31, 204, 116 // 右:職業分配
+
+	// 職業欄:反組譯真值(x 310..510、y 62+30i)。
+	colJobX0, colJobX1 = 310, 510
+	colJobY0           = 62
+	colJobStep         = 30
+
+	colBtnX, colBtnW = 551, 87
+	// CHANGE / BUY(量自框架圖,放大 4 倍比對 plate 邊緣)。remake 兩顆都還沒接功能。
+	colChangeX, colChangeW   = 519, 61
+	colBuyX, colBuyW         = 588, 40
+	colChangeY, colChangeH   = 123, 20
+	colLeadersY, colLeadersH = 424, 26
+	colReturnY, colReturnH   = 456, 24
+
+	// --- remake 自己的中段版面(原版那裡是行星表面,見檔頭留白說明)---
+	colQueueX = 24.0
+	colQueueY = 186.0
+	colRowH   = 22.0
+	colQueueW = 280.0
+
+	colListTitleY = 168.0
+	colListX      = 330.0
+	colListPageY  = 186.0
+	colListY      = 214.0 // 可建清單起始 y
+	colListRows   = 9     // 一頁 9 列(9×22=198,底在 412,落在中段內)
+	colListW      = 280.0
 )
 
 var (
@@ -65,29 +115,32 @@ func (b *sceneBuilder) colonyScreen() (*overlayScreen, error) {
 	}
 
 	hits := []hitRegion{
-		{552, 448, 76, 22, "return"},
-		// 職業分配:三個「+1」按鈕,各自從工人挪一名過來(工人自己那顆從農夫挪)。
-		{28, 150, 90, 20, "job_f"},
-		{28, 174, 90, 20, "job_w"},
-		{28, 198, 90, 20, "job_s"},
+		{colBtnX, colReturnY, colBtnW, colReturnH, "return"},
+		{colBtnX, colLeadersY, colBtnW, colLeadersH, "leaders"},
+	}
+	// 職業分配三列:座標是反組譯真值(見檔頭)。點一下該列 +1,從別的職業挪一名過來。
+	for i, act := range []string{"job_f", "job_w", "job_s"} {
+		hits = append(hits, hitRegion{
+			colJobX0, colJobY0 + i*colJobStep, colJobX1 - colJobX0, colJobStep - 2, act,
+		})
 	}
 	// 佇列 7 格:點一下移除該格。
 	for i := 0; i < shell.BuildQueueTotalSlots; i++ {
 		hits = append(hits, hitRegion{
-			int(colQueueX), int(colQueueY + float64(i)*colRowH), 286, int(colRowH) - 2,
+			int(colQueueX), int(colQueueY + float64(i)*colRowH), int(colQueueW), int(colRowH) - 2,
 			fmt.Sprintf("qdel%d", i),
 		})
 	}
 	// 可建清單:點一下排進佇列。
 	for i := 0; i < colListRows; i++ {
 		hits = append(hits, hitRegion{
-			int(colQueueX), int(colListY + float64(i)*colRowH), 286, int(colRowH) - 2,
+			int(colListX), int(colListY + float64(i)*colRowH), int(colListW), int(colRowH) - 2,
 			fmt.Sprintf("qadd%d", i),
 		})
 	}
 	hits = append(hits,
-		hitRegion{int(colQueueX), int(colListPageY), 60, 20, "listup"},
-		hitRegion{int(colQueueX) + 70, int(colListPageY), 60, 20, "listdown"},
+		hitRegion{int(colListX), int(colListPageY), 60, 20, "listup"},
+		hitRegion{int(colListX) + 70, int(colListPageY), 60, 20, "listdown"},
 	)
 
 	onAction := func(a string) *origTransition {
@@ -95,6 +148,9 @@ func (b *sceneBuilder) colonyScreen() (*overlayScreen, error) {
 		switch {
 		case a == "return":
 			return b.goTo(b.colonySummary, "殖民地總覽")
+		case a == "leaders":
+			// 原版這顆是殖民地領袖指派;remake 的領袖畫面是全帝國一份(見 cmd/moo2 officer)。
+			return b.goTo(b.officer, "軍官列表")
 		case a == "job_f":
 			s.ShiftColonyJob(idx, "w", "f")
 		case a == "job_w":
@@ -164,7 +220,11 @@ func (b *sceneBuilder) colonyBuildChoices() []shell.ColonyBuild {
 	return out
 }
 
-// drawColonyScreen 畫整個殖民地畫面(自繪面板蓋掉底下的總覽表格)。
+// drawColonyScreen 畫整個殖民地畫面:先鋪底與原版框架,內容再畫上去。
+//
+// ⚠ 順序踩過一次坑:框架(COLPUPS.LBX#5)只有**中段**(y 159..423,原版的行星表面)
+// 是透明的,上方那三個資訊面板是**不透明的深色星空紋理**。先畫內容再蓋框架,
+// 上半部的字會被整片蓋掉——看起來像資訊全都不見了。框架必須先畫。
 func (b *sceneBuilder) drawColonyScreen(dst *ebiten.Image, idx int) {
 	if b.fnt == nil || b.session == nil {
 		return
@@ -173,104 +233,146 @@ func (b *sceneBuilder) drawColonyScreen(dst *ebiten.Image, idx int) {
 	c := sess.PlayerColonies[idx]
 
 	vector.DrawFilledRect(dst, 0, 0, colScreenW, colScreenH, colPanelBg, false)
-	vector.StrokeRect(dst, 4, 4, colScreenW-8, colScreenH-8, 2, colPanelEdge, false)
+	if im := b.colonyChrome(); im != nil {
+		dst.DrawImage(im, &ebiten.DrawImageOptions{})
+	}
 
+	b.drawColonyTopBar(dst, idx, c)
+	b.drawColonyQueue(dst, idx)
+	b.drawColonyBuildList(dst)
+
+	// 兩顆鈕的英文(LEADERS / RETURN)烘在框架圖上,照既有做法擦底疊中文。
+	drawBtn := func(y, h int, zh string) {
+		vector.DrawFilledRect(dst, float32(colBtnX+3), float32(y+3),
+			float32(colBtnW-6), float32(h-6), color.RGBA{72, 76, 84, 255}, false)
+		b.fnt.DrawCentered(dst, zh, float64(colBtnX+colBtnW/2), float64(y+h/2), 12, colBodyCol)
+	}
+	drawBtn(colLeadersY, colLeadersH, "領袖")
+	drawBtn(colReturnY, colReturnH, "返回")
+
+	// CHANGE / BUY 也是烘在框架上的英文。兩顆在 remake **都還沒有對應功能**
+	// (原版 CHANGE 是換目前建造項、BUY 是花 BC 立即完工),所以照主選單 Continue /
+	// Load Game 無存檔時的既有做法:**不給熱區 + 字畫成灰的**,而不是留英文、
+	// 也不是給一顆點了沒反應的中文鈕。
+	for _, btn := range []struct {
+		x, y, w, h int
+		zh         string
+	}{
+		{colChangeX, colChangeY, colChangeW, colChangeH, "更換"},
+		{colBuyX, colChangeY, colBuyW, colChangeH, "購買"},
+	} {
+		vector.DrawFilledRect(dst, float32(btn.x+3), float32(btn.y+3),
+			float32(btn.w-6), float32(btn.h-6), color.RGBA{112, 116, 120, 255}, false)
+		b.fnt.DrawCentered(dst, btn.zh, float64(btn.x+btn.w/2), float64(btn.y+btn.h/2), 11,
+			color.RGBA{72, 74, 78, 255})
+	}
+}
+
+// colonyChrome 解出原版殖民地畫面的框架(COLPUPS.LBX#5)。
+// 它自己沒有調色盤,借 COLBLDG.LBX#0 的(同一組殖民地美術;bombing.go 用的是同一條鏈)。
+// 載不動就回 nil——畫面會退回純自繪版,不會壞。
+func (b *sceneBuilder) colonyChrome() *ebiten.Image {
+	if b.colChrome != nil {
+		return b.colChrome
+	}
+	pal, err := decodeAsset(b.res, colChromePal, 0)
+	if err != nil || pal.Embedded == nil {
+		return nil
+	}
+	im, err := decodeAsset(b.res, colChromeLBX, colChromeAsset)
+	if err != nil || len(im.Frames) == 0 {
+		return nil
+	}
+	b.colChrome = ebiten.NewImageFromImage(im.Frames[0].ToRGBA(pal.Embedded, true))
+	return b.colChrome
+}
+
+// drawColonyTopBar 畫上方資訊列的三個面板:左=行星、中=產出、右=職業分配。
+// 三個面板的座標量自原版框架,職業列的座標是反組譯真值(見檔頭)。
+func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.ColonyState) {
+	sess := b.session
+
+	// --- 左面板:殖民地名 + 行星環境 + 人口 ---
+	lx := float64(colPanelLX + 5)
 	name := fmt.Sprintf("殖民地 %d", idx+1)
 	if star := sess.PlayerColonyStarIndex(idx); star >= 0 && star < len(sess.Planets) {
 		if pn := sess.Planets[star].Name; pn != "" {
 			name = pn
 		}
 	}
-	b.fnt.DrawCentered(dst, name, colScreenW/2, 30, 17, colTitleCol)
-
-	b.drawColonyLeftPanel(dst, idx, c)
-	b.drawColonyQueue(dst, idx)
-	b.drawColonyBuildList(dst)
-
-	// RETURN
-	vector.DrawFilledRect(dst, 552, 448, 76, 22, colSlotBg, false)
-	vector.StrokeRect(dst, 552, 448, 76, 22, 1, colPanelEdge, false)
-	b.fnt.DrawCentered(dst, "返回", 590, 459, 13, colBodyCol)
-}
-
-// drawColonyLeftPanel 畫左欄:行星環境、人口與職業分配、產出、已建建築。
-func (b *sceneBuilder) drawColonyLeftPanel(dst *ebiten.Image, idx int, c engine.ColonyState) {
-	sess := b.session
-	x := 24.0
-	b.fnt.Draw(dst, "行星", x, 62, 14, colTitleCol)
-
-	env := "—"
+	b.fnt.Draw(dst, name, lx, float64(colPanelLY+6), 13, colTitleCol)
 	if star := sess.PlayerColonyStarIndex(idx); star >= 0 && star < len(sess.Planets) {
 		p := sess.Planets[star]
-		env = fmt.Sprintf("%s / %s / 礦產%s / 重力%s", p.Climate, p.Size, p.Mineral, p.Gravity)
+		rows := []string{p.Climate, p.Size, "礦產" + p.Mineral, "重力" + p.Gravity}
 		if sp := gamedata.PlanetSpecialName(p.SpecialID); sp != "" {
-			env += " / ★" + sp // 特殊物產:金礦/寶石礦的收入、遠古文物的研究都靠它
+			rows = append(rows, "★"+sp) // 特殊物產:金礦/寶石礦的收入、遠古文物的研究都靠它
+		}
+		for i, r := range rows {
+			if i >= 5 {
+				break
+			}
+			b.fnt.Draw(dst, r, lx, float64(colPanelLY+26+i*16), 10, colBodyCol)
 		}
 	}
-	b.fnt.Draw(dst, env, x, 82, 11, colBodyCol)
-	b.fnt.Draw(dst, fmt.Sprintf("人口 %d / %d", c.Population, c.PopMax), x, 100, 12, colBodyCol)
+	b.fnt.Draw(dst, fmt.Sprintf("人口 %d/%d", c.Population, c.PopMax),
+		lx, float64(colPanelLY+colPanelLH-16), 11, colOkCol)
 
-	// 職業分配:三列,每列一個可點的「+1」。
-	b.fnt.Draw(dst, "職業分配(點擊 +1)", x, 128, 13, colTitleCol)
-	jobs := []struct {
-		label string
-		n     int
-		y     float64
-	}{
-		{"農夫", c.Farmers, 150},
-		{"工人", c.Workers, 174},
-		{"科學家", c.Scientists, 198},
-	}
-	for _, j := range jobs {
-		vector.DrawFilledRect(dst, float32(x+4), float32(j.y), 90, 20, colSlotBg, false)
-		vector.StrokeRect(dst, float32(x+4), float32(j.y), 90, 20, 1, colPanelEdge, false)
-		b.fnt.Draw(dst, fmt.Sprintf("%s %d", j.label, j.n), x+12, j.y+4, 12, colBodyCol)
-	}
-
-	// 產出:優先用上一回合的結算(與總覽同一份資料);第 1 回合還沒結算過就即時算一次,
+	// --- 中面板:本回合產出 + 已建建築 ---
+	// 產出優先用上一回合的結算(與總覽同一份資料);第 1 回合還沒結算過就即時算一次,
 	// 讓玩家一進畫面就看得到數字,而不是「結束回合後才顯示」。
-	b.fnt.Draw(dst, "本回合產出", x, 244, 13, colTitleCol)
 	var co engine.ColonyOutput
 	if out := sess.LastPlayerOutput; idx < len(out.Colonies) {
 		co = out.Colonies[idx]
 	} else {
 		co = engine.RunColonyTurn(c)
 	}
+	mx := float64(colPanelMX + 6)
 	foodCol := colOkCol
 	if co.FoodSurplus < 0 {
 		foodCol = colWarnCol
 	}
-	b.fnt.Draw(dst, fmt.Sprintf("食物 %+d", co.FoodSurplus), x+4, 264, 12, foodCol)
-	for i, l := range []string{
-		fmt.Sprintf("工業 %d", co.NetIndustry),
-		fmt.Sprintf("研究 %d", co.Research),
-		// MoralePercent 是「對產出的百分點調整」(每格笑臉 +10、哭臉 -10),0 = 無加成也無懲罰,
-		// 不是「士氣只有 0 分」。標成「士氣修正」避免誤讀(見 engine.ColonyState.MoralePercent)。
-		fmt.Sprintf("士氣修正 %+d%%", c.MoralePercent),
-	} {
-		b.fnt.Draw(dst, l, x+4, 282+float64(i)*18, 12, colBodyCol)
-	}
+	b.fnt.Draw(dst, fmt.Sprintf("食物 %+d", co.FoodSurplus), mx, float64(colPanelMY+6), 11, foodCol)
+	b.fnt.Draw(dst, fmt.Sprintf("工業 %d", co.NetIndustry), mx+88, float64(colPanelMY+6), 11, colBodyCol)
+	b.fnt.Draw(dst, fmt.Sprintf("研究 %d", co.Research), mx, float64(colPanelMY+22), 11, colBodyCol)
+	// MoralePercent 是「對產出的百分點調整」(每格笑臉 +10、哭臉 -10),0 = 無加成也無懲罰,
+	// 不是「士氣只有 0 分」。標成「士氣修正」避免誤讀(見 engine.ColonyState.MoralePercent)。
+	b.fnt.Draw(dst, fmt.Sprintf("士氣 %+d%%", c.MoralePercent), mx+88, float64(colPanelMY+22), 11, colBodyCol)
 
-	// 已建建築。
-	b.fnt.Draw(dst, "已建建築", x, 352, 13, colTitleCol)
+	b.fnt.Draw(dst, "已建建築", mx, float64(colPanelMY+44), 11, colTitleCol)
 	names := sess.ColonyBuildingNames(idx)
 	if len(names) == 0 {
-		b.fnt.Draw(dst, "(無)", x+4, 372, 11, colDimCol)
-		return
-	}
-	sort.Strings(names)
-	for i, ln := range b.fnt.Wrap(strings.Join(names, "、"), 11, 270) {
-		if i >= 5 {
-			break
+		b.fnt.Draw(dst, "(無)", mx, float64(colPanelMY+60), 10, colDimCol)
+	} else {
+		sort.Strings(names)
+		for i, ln := range b.fnt.Wrap(strings.Join(names, "、"), 10, float64(colPanelMW-14)) {
+			if i >= 4 {
+				break
+			}
+			b.fnt.Draw(dst, ln, mx, float64(colPanelMY+60+i*14), 10, colOkCol)
 		}
-		b.fnt.Draw(dst, ln, x+4, 372+float64(i)*16, 11, colOkCol)
+	}
+
+	// --- 右面板:職業分配三列(x/y 為反組譯真值)---
+	jobs := []struct {
+		label string
+		n     int
+	}{{"農夫", c.Farmers}, {"工人", c.Workers}, {"科學家", c.Scientists}}
+	for i, j := range jobs {
+		y := colJobY0 + i*colJobStep
+		vector.DrawFilledRect(dst, float32(colJobX0), float32(y),
+			float32(colJobX1-colJobX0), float32(colJobStep-4), colSlotBg, false)
+		vector.StrokeRect(dst, float32(colJobX0), float32(y),
+			float32(colJobX1-colJobX0), float32(colJobStep-4), 1, colPanelEdge, false)
+		b.fnt.Draw(dst, j.label, float64(colJobX0+10), float64(y+6), 12, colTitleCol)
+		b.fnt.Draw(dst, fmt.Sprintf("%d 人", j.n), float64(colJobX0+70), float64(y+6), 12, colBodyCol)
+		b.fnt.Draw(dst, "點此 +1", float64(colJobX1-56), float64(y+7), 10, colDimCol)
 	}
 }
 
 // drawColonyQueue 畫右欄上半:7 格建造佇列(第 0 格是建造中,有進度條)。
 func (b *sceneBuilder) drawColonyQueue(dst *ebiten.Image, idx int) {
 	b.fnt.Draw(dst, fmt.Sprintf("建造佇列(%d 格,點擊移除)", shell.BuildQueueTotalSlots),
-		colQueueX, colQueueY-18, 13, colTitleCol)
+		colQueueX, colListTitleY, 13, colTitleCol)
 
 	q := b.session.BuildQueueFor(idx)
 	for i := 0; i < shell.BuildQueueTotalSlots; i++ {
@@ -279,7 +381,7 @@ func (b *sceneBuilder) drawColonyQueue(dst *ebiten.Image, idx int) {
 		if i == 0 {
 			bg = colCurBg // 建造中那格高亮
 		}
-		vector.DrawFilledRect(dst, float32(colQueueX), float32(y), 286, float32(colRowH)-2, bg, false)
+		vector.DrawFilledRect(dst, float32(colQueueX), float32(y), float32(colQueueW), float32(colRowH)-2, bg, false)
 
 		if i >= len(q) || q[i].Name == "" {
 			b.fnt.Draw(dst, "—", colQueueX+8, y+4, 11, colDimCol)
@@ -294,9 +396,9 @@ func (b *sceneBuilder) drawColonyQueue(dst *ebiten.Image, idx int) {
 				label += fmt.Sprintf("  約 %d 回合", eta)
 			}
 			// 進度條
-			w := float32(282 * item.Progress / item.Cost)
-			if w > 282 {
-				w = 282
+			w := float32(float64(colQueueW-4) * float64(item.Progress) / float64(item.Cost))
+			if w > float32(colQueueW-4) {
+				w = float32(colQueueW - 4)
 			}
 			vector.DrawFilledRect(dst, float32(colQueueX)+2, float32(y+colRowH)-6, w, 3, colOkCol, false)
 		} else if item.Cost > 0 {
@@ -320,18 +422,18 @@ func (b *sceneBuilder) drawColonyBuildList(dst *ebiten.Image) {
 	}
 
 	b.fnt.Draw(dst, fmt.Sprintf("可建項目(%d/%d 頁,點擊排入)", page, pages),
-		colQueueX, colListTitleY, 13, colTitleCol)
+		colListX, colListTitleY, 13, colTitleCol)
 	for i, lbl := range []string{"上一頁", "下一頁"} {
-		bx := colQueueX + float64(i)*70
+		bx := colListX + float64(i)*70
 		vector.DrawFilledRect(dst, float32(bx), float32(colListPageY), 60, 20, colSlotBg, false)
 		vector.StrokeRect(dst, float32(bx), float32(colListPageY), 60, 20, 1, colPanelEdge, false)
 		b.fnt.DrawCentered(dst, lbl, bx+30, colListPageY+10, 11, colBodyCol)
 	}
 	if total == 0 {
 		// 開局科技少、可蓋的又都蓋了或已排進佇列時清單就是空的——說清楚,不要留一片空白讓人以為畫面壞了。
-		b.fnt.Draw(dst, "目前沒有可排入的項目", colQueueX, colListY+4, 12, colDimCol)
+		b.fnt.Draw(dst, "目前沒有可排入的項目", colListX, colListY+4, 12, colDimCol)
 		b.fnt.Draw(dst, "(已建或已在佇列中的不重複列出;完成研究會解鎖更多)",
-			colQueueX, colListY+24, 11, colDimCol)
+			colListX, colListY+24, 11, colDimCol)
 		return
 	}
 
@@ -341,7 +443,7 @@ func (b *sceneBuilder) drawColonyBuildList(dst *ebiten.Image) {
 		if j >= total {
 			break
 		}
-		vector.DrawFilledRect(dst, float32(colQueueX), float32(y), 286, float32(colRowH)-2, colSlotBg, false)
+		vector.DrawFilledRect(dst, float32(colListX), float32(y), float32(colListW), float32(colRowH)-2, colSlotBg, false)
 		o := opts[j]
 		txt := o.Name
 		if o.Cost > 0 {
@@ -352,6 +454,6 @@ func (b *sceneBuilder) drawColonyBuildList(dst *ebiten.Image) {
 		if _, isSpecial := gamedata.SpecialActionByNameZH(o.Name); isSpecial {
 			txt += "  ※可重複"
 		}
-		b.fnt.Draw(dst, txt, colQueueX+8, y+4, 11, colBodyCol)
+		b.fnt.Draw(dst, txt, colListX+8, y+4, 11, colBodyCol)
 	}
 }

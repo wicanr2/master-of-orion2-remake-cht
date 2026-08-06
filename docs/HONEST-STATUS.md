@@ -24,7 +24,8 @@ LBX 解碼(scan-line RLE 影像 / 多幀 delta / 調色盤鏈)、SAVE10.GAM 唯�
 
 - **③ 按鍵逐畫面像素對齊**:openorion2 那條線已做到頂(2026-07-12 逐畫面比對 `initWidgets` 真值,把有真值卻用 PIL 的補齊:planets 補第8列、research/fleet/officer/info 座標校正;menu 本就 0px)。
   ⚠ **2026-08-07 翻案**:這裡原本寫「無對應 openorion2 view 的畫面無硬編真值可覆蓋…要再精確只能靠原版截圖(本專案不採)」——**錯的**。真正的一手座標在**原版執行檔的反組譯**裡,與 openorion2 有沒有實作無關。當天做地面戰畫面(openorion2 對它零命中)時,反組譯直接給出全部座標:兩側面板貼圖點、`Darken_Fill_` 矩形、置中文字 x、列高、部隊落點公式與兩側基準 X。**openorion2 沒有的畫面,先去反組譯挖繪製呼叫的立即數,別退回估計值。** newgame 已於 2026-08-07 用這個方法重挖完(連帶修正「左下框是 PLAYERS 不是 RACE」的還原錯誤,
-  並接上先前選不到的星系年齡與帝國總數,見 `docs/re/01-gap-report.md` 第 21 項);colony/races/shipDesign 仍待。
+  並接上先前選不到的星系年齡與帝國總數,見 `docs/re/01-gap-report.md` 第 21 項);colony 同日也做完(框架換成原版的 COLPUPS.LBX#5、職業欄用反組譯真值;
+  中段的行星表面 + 建築 sprite 擺放子系統仍未做,見第 22 項)。**只剩 races / shipDesign。**
 - **需原版 oracle 對照**(用 archive.org 線上 DOS 原版,**不需 DOSBox**;見 `docs/tech/oracle-comparison-20260712.md`、記憶 `moo2-oracle-is-archive-org-online`):飛彈速度(`missile.go` 手冊公式與附表自相矛盾)、地面戰 d100 核心傷亡解算結構(`ResolveGroundBattle` 沿用一代 1oom 借用結構,force 值用 MOO2 手冊表但結構本身未對 MOO2 實機核實)、安塔蘭母星防禦艦隊戰力(手冊/openorion2 均無精確數字,用保守預設 6 艘末日之星等級)、**母星開局態**(2026-07-12 oracle 已釘死:農4/工2/科2/Abundant/Trade Goods,待校準)。
 - **需先建基礎設施**:戰機/航母(新戰鬥子模型)、部分軍事/防禦建築(~13 棟,需艦隊駐防/軌道防禦系統先落地)。
 - **多人**:熱座(同機輪流)2026-08-07 已可玩,主選單 MULTI PLAYER 接上了原版的設定畫面

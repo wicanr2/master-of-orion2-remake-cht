@@ -669,3 +669,38 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     Pre-warp 2、其餘 6),但 remake 現在開局固定 2 個領域 = 等同 Pre-warp,
     要補得先查出 Average 該有的那 6 個領域是哪些——手冊只說預設第一個是 field #29,
     沒有一手表之前不臆造。細節記在 `shell.TechLevels` 註解。
+
+22. ~~殖民地畫面「沒有原版版面資料」~~ → **2026-08-07 翻案 + 換上原版框架**
+    (`cmd/moo2/colonyscreen.go` 檔頭有完整對照)。
+
+    `colonyscreen.go` 原本寫著「remake 沒有原版 COLONY.LBX 的版面資料(repo 不含版權資產),
+    故疊在 colsum.lbx 上自繪」。**兩句都不對**,而且第二句是會擋死後續工作的錯:
+
+    - **版面資料在執行檔裡,不在 LBX 裡。**`Add_Job_Field_For_` @ 0xBCB4B(由
+      `Add_Job_Fields_` @ 0xBCC3D 迴圈 i=0..2 呼叫)直接給出職業欄座標:
+      `ecx = 0x136`(310)、`push 0x1FE`(510)→ x 310..510;
+      `ebx = i*0x1E` 再 `+= 0x3E` → 第 i 列 y = 62 + 30i。
+    - **框架美術也在,只是不在 COLONY.LBX。**是 **COLPUPS.LBX 資產 5**(640×480,
+      中段透明)。COLONY.LBX#6(73 幀 delta)累積出來是**道路動畫**,不是底圖——
+      這一條是實際 accumulate 出來看過才確定的,不是從檔名猜的。
+
+    量框架圖的深色內凹面板得到:左 x 7..115 y 28..148 / 中 x 126..304 y 31..140 /
+    **右 x 308..511 y 31..146**——右面板與反組譯的職業欄 310..510 **逐像素吻合**,
+    三列 ×30 正好塞滿面板高度。第三個獨立來源。
+
+    其餘量自同一張圖:上方資訊列 y 15..158、中段(行星表面)y 159..423、
+    右下 LEADERS y 424..449 / RETURN y 456..479(x 551..637)、
+    CHANGE (519,123,61,20) / BUY (588,123,40,20)。
+
+    現況:畫面改用原版框架,職業三列在反組譯真值座標,LEADERS / RETURN 在原版位置。
+    CHANGE(換目前建造項)與 BUY(花 BC 立即完工)remake 都還沒有對應功能,
+    照主選單 Continue / Load Game 無存檔時的既有做法**畫成灰的 + 不給熱區**,
+    不留英文也不給點了沒反應的中文鈕。
+
+    ⚠ 誠實留白:中段(y 159..423)原版畫的是**行星表面 + 建築 sprite 依格點擺放**
+    (`Make_Bldg_Array_For_Colony_` / `Bldg_Coords_To_Screen_Coord_` /
+    `Sort_Bldg_Array_Columns_` / `Box_Bldg_Slot_` 那一整套,配 COLBLDG.LBX 的建築圖)。
+    remake 還沒有那個子系統,那塊放的是自己的建造佇列與可建清單——**那是 remake 的版面,
+    不是原版的**。原版的建造佇列本身是獨立彈出視窗(`Build_Queue_Popup_` @ 0xB4041,
+    `Add_Build_Queue_Fields_` @ 0xB325A 給出 7 格:x 207..458、y 329+20i),座標已到手,
+    等中段的行星表面子系統落地再一起做。

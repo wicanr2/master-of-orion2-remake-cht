@@ -114,6 +114,8 @@ docker images:`moo2-ebiten`(CGO+X11+xvfb,已存在)、`golang:1.25-bookworm`(純
   **2026-08-07 第二個實例:NEW GAME 設定畫面**(`sub_CCE2E` 建 widget + `sub_CCC3D` 畫值圖 + LBX 資產數,
   三個來源互證),連帶抓出「左下那個框在原版是 PLAYERS 不是 RACE」這個真的還原錯誤,見
   `docs/re/01-gap-report.md` 第 21 項。**newgame 這一項可以從「仍待重挖」的名單移除了。**
+  **同日第三個實例:殖民地畫面**——`Add_Job_Field_For_` @ 0xBCB4B 給職業欄座標,框架美術是
+  **COLPUPS.LBX#5**(不是 COLONY.LBX),見第 22 項。**colony 也可以移除了,只剩 races / shipDesign。**
   battleResult/council/turnSummary 是結果/摘要顯示畫面,維持「點任意處返回」(合理 UX,使用者確認不動)。
 
 ### 優先 4 — 忠實 gameplay 規則(主體工作量,對應 PLAN「從零重建引擎」軌)
