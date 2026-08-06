@@ -617,6 +617,11 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					return &origTransition{next: sc}
 				}
 			}
+			// 本回合有隨機事件 → 先播 GNN 快報(原版事件有專屬畫面,不是回合摘要裡一行字,
+			// 見 eventscreen.go 檔頭),按「繼續」才進回合摘要。
+			if b.session.LastEventReport != nil {
+				return b.goTo(b.eventScreen, "事件快報")
+			}
 			return b.goTo(b.turnSummary, "回合摘要")
 		}
 		return nil
@@ -2567,41 +2572,60 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		click(540, 454), // t9: 命名/旗色「接受」→ 星系主畫面
 		idle,            // t10: settle
 		idle,            // t11: settle → 截圖 galaxy
-		click(48, 452),  // t12: 星系主畫面工具列「殖民地」→ 殖民地總覽
+
+		// 事件快報排在最前面:「星系主畫面按 TURN」是最短、最不依賴前置狀態的路徑,
+		// 截圖廊固定了會觸發事件的 seed(見 runInteractive),所以這一步必定走到快報畫面。
+		// (先前把它排在戰鬥之後,只要中間任何一步的座標過期就整串偏掉——2026-08-06 踩過。)
+		click(589, 458), // t12: 「結束回合」→ 事件快報
 		idle,            // t13: settle
-		idle,            // t14: settle → 截圖 colony(總覽)
-		click(50, 47),   // t15: 總覽第一列「殖民地名」欄 → 單一殖民地畫面(原版 Do_Colony_Screen_)
-		idle,            // t16: settle
-		idle,            // t17: settle → 截圖 colonyscreen
-		click(590, 459), // t18: 殖民地畫面「返回」→ 殖民地總覽
-		idle,            // t19: settle
-		click(608, 462), // t20: 殖民地總覽「RETURN」→ 星系主畫面
-		click(495, 452), // t21: 星系主畫面工具列「INFO」→ 科技總覽
-		idle,            // t22: settle
-		click(113, 89),  // t23: 科技總覽「Tech Review」→ 研究選擇
-		idle,            // t24: settle
-		idle,            // t25: settle → 截圖 research
-		click(204, 186), // t26: 研究選擇(任一領域)→ 星系主畫面
-		click(420, 452), // t27: 星系主畫面工具列「RACES」→ 種族關係
+		idle,            // t14: settle → 截圖 event
+		click(320, 384), // t15: 事件快報「繼續」→ 回合摘要
+		idle,            // t16: settle → 截圖 turnsummary
+		click(320, 393), // t17: 回合摘要「關閉」→ 星系主畫面
+		idle,            // t18: settle
+
+		click(48, 452),  // t19: 星系主畫面工具列「殖民地」→ 殖民地總覽
+		idle,            // t20: settle
+		idle,            // t21: settle → 截圖 colonysummary
+		click(50, 47),   // t22: 總覽第一列「殖民地名」欄 → 單一殖民地畫面
+		idle,            // t23: settle
+		idle,            // t24: settle → 截圖 colonyscreen
+		click(590, 459), // t25: 殖民地畫面「返回」→ 殖民地總覽
+		idle,            // t26: settle
+		click(608, 462), // t27: 殖民地總覽「RETURN」→ 星系主畫面
 		idle,            // t28: settle
-		click(483, 428), // t29: 種族關係「REPORT」→ 外交對談
+
+		click(495, 452), // t29: 工具列「INFO」→ 情報畫面
 		idle,            // t30: settle
-		idle,            // t31: settle → 截圖 diplomacy
-		click(320, 437), // t32: 外交對談「結束對談」→ 種族關係
-		click(388, 448), // t33: 種族關係「DECLARE WAR」→ 戰術戰鬥
-		idle,            // t34: settle
-		idle,            // t35: settle → 截圖 tactical
+		idle,            // t31: settle → 截圖 info(預設分頁:歷史圖表)
+		click(21, 80),   // t32: INFO 左欄「科技總覽」分頁
+		idle,            // t33: settle → 截圖 info_tech
+		click(535, 434), // t34: INFO「RETURN」→ 星系主畫面
+		idle,            // t35: settle
+
+		click(420, 452), // t36: 工具列「RACES」→ 種族關係
+		idle,            // t37: settle
+		click(483, 428), // t38: 種族關係「REPORT」→ 外交對談
+		idle,            // t39: settle
+		idle,            // t40: settle → 截圖 diplomacy
+		click(320, 437), // t41: 外交對談「結束對談」→ 種族關係
+		click(388, 448), // t42: 種族關係「DECLARE WAR」→ 戰術戰鬥
+		idle,            // t43: settle
+		idle,            // t44: settle → 截圖 tactical
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
 		{6, "02_raceselect.png"},
 		{8, "03_nameflag.png"},
 		{11, "04_galaxy.png"},
-		{14, "05_colonysummary.png"},
-		{17, "06_colonyscreen.png"},
-		{25, "07_research.png"},
-		{31, "08_diplomacy.png"},
-		{35, "09_tactical.png"},
+		{14, "05_event.png"},
+		{16, "06_turnsummary.png"},
+		{21, "07_colonysummary.png"},
+		{24, "08_colonyscreen.png"},
+		{31, "09_info.png"},
+		{33, "10_info_tech.png"},
+		{40, "11_diplomacy.png"},
+		{44, "12_tactical.png"},
 	}
 	return script, shots
 }
@@ -2751,6 +2775,10 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 			return fmt.Errorf("建立過場截圖目錄 %q: %w", galleryDir, err)
 		}
 		script, shots = buildGalleryScript()
+		// 截圖廊要驗證「事件快報畫面」,但隨機事件每回合只有 30% 機率,靠連按碰運氣既慢又不穩。
+		// 固定成一個已知「第一次 EndTurn 就觸發」的種子(見 events.go;seed 1 → 古代遺骸科技),
+		// 讓這條驗收路徑每次都走得到事件畫面。只影響截圖廊模式,不影響正常遊戲。
+		b.session.EventSeed = 1
 	}
 
 	// 預設放大 2 倍(headless 驗證/截圖廊維持 1 倍);視窗可自由拉伸,內容等比縮放置中。

@@ -1753,6 +1753,10 @@ type GameSession struct {
 	// History 是逐回合的全帝國國力快照(原版 module 122 Record_History_ 的對應物,
 	// 供 INFO 的 History Graph 子畫面畫折線;見 history.go 檔頭)。
 	History          []HistoryTurn
+	// LastEventReport 是上一回合觸發的隨機事件(結構化,供事件畫面用);nil = 本回合無事件。
+	// 與 LastEvent(純文字,回合摘要用)同時寫入,見 events.go advanceEvents。
+	// 比照 LastEvent 是「下回合會重算的顯示暫態」,刻意不存檔。
+	LastEventReport *EventReport
 	LastPlayerOutput engine.EmpireOutput // 上一回合玩家結算(供畫面顯示)
 	Stars            []Star              // 星系圖
 	Planets          []Planet            // 行星列表
@@ -1925,71 +1929,6 @@ func (s *GameSession) advanceAntares() {
 // 加重「已經非正的 BC」繼續被誤夾成負值虧損(見 case 1 太空海盜的夾值處理)。事件亂數由
 // EventSeed 決定,可重現。事件與效果為 remake 設計(對齊 MOO2 事件定性:繁榮/瘟疫/海盜/礦脈/
 // 突破/隕石)。
-func (s *GameSession) advanceEvents() {
-	s.LastEvent = ""
-	if s.DisableEvents {
-		return
-	}
-	if s.eventRand == nil {
-		s.eventRand = rand.New(rand.NewSource(s.EventSeed*2654435761 + 1))
-	}
-	if s.eventRand.Float64() >= 0.30 { // 每回合 30% 機率有事件
-		return
-	}
-	colony := func() *engine.ColonyState {
-		if len(s.PlayerColonies) == 0 {
-			return nil
-		}
-		return &s.PlayerColonies[s.eventRand.Intn(len(s.PlayerColonies))]
-	}
-	losePop := func(c *engine.ColonyState, n int) {
-		for ; n > 0 && c.Population > 1; n-- {
-			c.Population--
-			switch { // 由最多的職務扣人
-			case c.Workers >= c.Farmers && c.Workers >= c.Scientists && c.Workers > 0:
-				c.Workers--
-			case c.Farmers >= c.Scientists && c.Farmers > 0:
-				c.Farmers--
-			case c.Scientists > 0:
-				c.Scientists--
-			}
-		}
-	}
-	switch s.eventRand.Intn(6) {
-	case 0: // 經濟繁榮
-		gain := 50 + s.Turn
-		s.Player.BC += gain
-		s.LastEvent = fmt.Sprintf("經濟繁榮:國庫獲得 %d BC", gain)
-	case 1: // 太空海盜
-		loss := 40
-		if s.Player.BC <= 0 { // 見 advanceAntares 同款夾值註解:BC 已非正時沒有更多可虧損
-			loss = 0
-		} else if loss > s.Player.BC {
-			loss = s.Player.BC
-		}
-		s.Player.BC -= loss
-		s.LastEvent = fmt.Sprintf("太空海盜劫掠:損失 %d BC", loss)
-	case 2: // 富礦脈
-		if c := colony(); c != nil {
-			c.IndustryPerWorker++
-			s.LastEvent = "發現富礦脈:一殖民地工業/工人 +1"
-		}
-	case 3: // 瘟疫
-		if c := colony(); c != nil && c.Population > 1 {
-			losePop(c, 2)
-			s.LastEvent = "瘟疫爆發:一殖民地人口減少"
-		}
-	case 4: // 科學突破
-		s.Player.ResearchProgress += 150
-		s.LastEvent = "科學突破:研究進度 +150 RP"
-	case 5: // 隕石撞擊
-		if c := colony(); c != nil && c.Population > 1 {
-			losePop(c, 1)
-			s.LastEvent = "隕石撞擊:一殖民地人口減少"
-		}
-	}
-}
-
 // SendFleet 派遣玩家艦隊前往 dest 星:依兩星歐氏距離換算航行回合數(ETA),每回合 EndTurn
 // 遞減。dest 無效、與現址相同、或艦隊正航行中則忽略。回傳是否成功下令。
 func (s *GameSession) SendFleet(dest int) bool {
