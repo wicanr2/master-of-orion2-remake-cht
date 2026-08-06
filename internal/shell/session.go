@@ -279,6 +279,17 @@ func homeworldShips() []Ship {
 	}
 }
 
+// isSupportShipClass 回傳該艦體等級是否為支援艦(手冊 p.119 明列的三種:運輸艦、殖民船、
+// 前哨船;運輸艦在 remake 尚無獨立艦種,陸戰隊由 FleetMarines 抽象承載)。
+// 支援艦不參戰(見 mkPlayerCombatants)。
+func isSupportShipClass(class string) bool {
+	switch class {
+	case ColonyShipClass, OutpostShipClass:
+		return true
+	}
+	return false
+}
+
 // shipStrength 依艦體等級給戰力點(供最小戰鬥解算;正式版由艦艇設計的武器/裝甲算)。
 func shipStrength(class string) int {
 	switch class {
@@ -425,6 +436,16 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 func (s *GameSession) mkPlayerCombatants() []combatant {
 	var out []combatant
 	for _, sh := range s.Ships {
+		if isSupportShipClass(sh.Class) {
+			// 手冊 p.119 逐字:「Support ships … **do not fight**, but are destroyed if an enemy
+			// military fleet chooses to engage them in combat.」——支援艦(殖民船/前哨船/運輸艦)
+			// 不參與火力計算。先前它們會以最低戰力(shipStrength 回 1)混進戰列,等於帶著殖民船
+			// 去打仗還能加一點傷害,並且在計算損失時第一個被打掉。
+			//
+			// 「被擊毀」那一半仍然成立:損失是由呼叫端的 removeWeakestShip 處理,支援艦戰力最低,
+			// 打輸時本來就會先被移除,與手冊一致。
+			continue
+		}
 		body := shipStrength(sh.Class)
 		atk := body + sh.WeaponAttack
 		atk += atk * s.RaceCombatPct / 100 // 種族戰鬥加成(姆瑞森+25、布拉西/阿爾卡里+15…)
@@ -1810,6 +1831,9 @@ func (s *GameSession) SetupNewGame(stars int, seed int64, numAI int) {
 	// 行星生成用獨立的亂數流(seed+1),讓「同一 seed 的星圖佈局」不受行星骰表的抽取次數影響——
 	// 骰表每顆星抽的次數依光譜而異,共用一條流會讓佈局跟著漂。
 	s.Planets = genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), galaxyAgeSetting, demoHomeStarSet(aiHomeStars))
+	// 守衛怪獸也用獨立亂數流(seed+2),理由同上:不讓它的抽取次數影響星圖與行星的骰序。
+	// 它會就地修改 s.Planets(手冊 p.60:有怪獸的星系一定另有一個特殊物產),故在 genPlanets 之後。
+	s.Monsters = genMonsters(galaxy, s.Planets, rand.New(rand.NewSource(seed+2)), demoHomeStarSet(aiHomeStars))
 	s.SelectedStar = -1
 	s.AIPlayers = buildDemoAIOpponents(aiHomeStars, s.Difficulty, seed)
 	s.PlayerSpies = make([]int, len(s.AIPlayers)) // 平行 AIPlayers,重置為全新對手的間諜數(開局皆 0)
@@ -1975,6 +1999,9 @@ type GameSession struct {
 	eventRand         *rand.Rand // 事件亂數源(由 EventSeed 惰性建立)
 	AntaresRaids      int        // 已發生的安塔蘭突襲次數(逐次升級強度)
 	LastAntares       string     // 本回合安塔蘭突襲描述(空=無;供回合摘要)
+	// Monsters 是星圖上守衛星系的太空怪獸(見 monster.go)。清空 = 全部已被清除。
+	Monsters []MonsterGuard
+
 	// Outposts 是玩家的軍事前哨站(見 outpost.go)。與 PlayerColonies **完全分開**——
 	// 手冊 p.85「produces nothing」,前哨站沒有人口也沒有產出,混進殖民地陣列會讓帝國經濟
 	// 憑空多出一個殖民地。
@@ -2583,6 +2610,9 @@ func (s *GameSession) aiExpand(i int) {
 		if s.Stars[idx].Owner != 0 {
 			continue
 		}
+		if s.StarGuardedByMonster(idx) {
+			continue // 怪獸盤據的星系 AI 也進不去(手冊 p.62 的清場條件對所有帝國一體適用)
+		}
 		colony, ok, _ := s.newColonyFromStar(idx, gamedata.MoraleGovDictatorship, 0, 0, 0)
 		if !ok {
 			continue
@@ -2612,6 +2642,9 @@ func (s *GameSession) aiPlanetValue(aiIdx, starIdx int) int {
 	p := s.Planets[starIdx]
 	if p.NoPlanet || p.Gen < planetGenVersion {
 		return 0
+	}
+	if s.StarGuardedByMonster(starIdx) {
+		return 0 // 打不下來的星不該排進拓殖目標
 	}
 	// 氣態巨星/小行星帶不能殖民(原版 AIPlanetValue 開頭也是 `type != HABITABLE → 0`),
 	// AI 不該把它們排進拓殖目標。
@@ -3067,6 +3100,8 @@ func NewDemoSession() *GameSession {
 		PlayerSpies:       make([]int, len(aiPlayers)), // 玩家對每個 AI 對手的間諜數,平行 AIPlayers,開局皆 0(見欄位/spy.go ensurePlayerSpies 註解)
 		Stars:             galaxy,
 		Planets:           genPlanets(galaxy, rand.New(rand.NewSource(43)), galaxyAgeSetting, demoHomeStarSet(aiHomeStars)),
+		// Monsters 在下面 session 建好後補上——genMonsters 會就地修改 Planets(手冊 p.60:
+		// 有怪獸的星系一定另有一個特殊物產),不能在同一個複合字面值裡引用尚未建立的欄位。
 		// 開局領袖池為空(2026-07-12 手冊考據校正)。手冊 GAME_MANUAL.pdf p.47 + p.134「Mercenary
 		// Leaders」:原版開局玩家**完全沒有任何領袖**,傭兵不定期上門、須花雇用費招入 Leader Pool
 		// (上限殖民領袖 4 + 艦艇軍官 4)。先前 demoLeaders() 讓玩家開局自帶「馮·諾伊曼 科學家」並
@@ -3085,6 +3120,9 @@ func NewDemoSession() *GameSession {
 		EventSeed:     42, // 隨機事件種子(可重現;正式新遊戲遞增)
 		RuleProfile:   gamedata.Profile15(),
 	}
+	// 守衛怪獸(見 monster.go)。放在這裡而不是上面的複合字面值裡,因為 genMonsters 會就地
+	// 修改 session.Planets(手冊 p.60:有怪獸的星系一定另有一個特殊物產)。
+	session.Monsters = genMonsters(galaxy, session.Planets, rand.New(rand.NewSource(44)), demoHomeStarSet(aiHomeStars))
 	session.Player.UsedCommandPoints = session.usedCommandPoints() // 依開局艦隊(homeworldShips)算實際需求,顯示與第一次 EndTurn 後一致
 	// 領袖技能接線(2026-07-11):把 Ship=false 的殖民地領袖(科學家/貿易家)技能套到母星。
 	// 2026-07-12 開局改為空領袖池(見上方 Leaders 註解),故此呼叫目前是 no-op;保留接線,待未來

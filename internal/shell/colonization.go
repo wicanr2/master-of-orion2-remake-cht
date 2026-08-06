@@ -352,6 +352,12 @@ func (s *GameSession) ColonizeStar(starIdx int) ColonizationResult {
 	if star.Owner != 0 {
 		return ColonizationResult{Reason: "該星已有歸屬,不可拓殖"}
 	}
+	// 手冊 p.62 逐字:殖民船要「as long as all space monsters and enemy ships have been
+	// cleared from that planet's system」。這條 gate 先前寫在檔頭的引文裡卻沒有實作,
+	// 因為 remake 根本沒有怪獸(見 monster.go)。
+	if reason := s.monsterBlockReason(starIdx); reason != "" {
+		return ColonizationResult{Reason: reason}
+	}
 	shipIdx := s.findColonyShipIndex()
 	if shipIdx < 0 {
 		return ColonizationResult{Reason: "艦隊未載運殖民船"}

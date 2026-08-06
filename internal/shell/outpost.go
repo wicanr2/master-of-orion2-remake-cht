@@ -111,6 +111,11 @@ func (s *GameSession) BuildOutpost(starIdx int) OutpostResult {
 	if s.HasOutpostAt(starIdx) {
 		return OutpostResult{Reason: "該星已有前哨站"}
 	}
+	// 怪獸擋路(見 monster.go)。手冊只對殖民船寫明這條,但怪獸就盤據在那個星系裡,
+	// 沒有理由前哨船能無視它——比照處理,並在此標明這是延伸而非手冊逐字。
+	if reason := s.monsterBlockReason(starIdx); reason != "" {
+		return OutpostResult{Reason: reason}
+	}
 	shipIdx := s.findOutpostShipIndex()
 	if shipIdx < 0 {
 		return OutpostResult{Reason: "艦隊未載運前哨船"}

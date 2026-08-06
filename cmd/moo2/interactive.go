@@ -510,6 +510,9 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					if sess.FleetMarines > 0 {
 						hits = append(hits, hitRegion{38, 424, 190, 20, "invade"})
 					}
+				case sess.StarGuardedByMonster(sess.SelectedStar):
+					// 怪獸盤據:唯一能做的是打它(手冊 p.62:清場之後才能進駐)。
+					hits = append(hits, hitRegion{38, 402, 190, 20, "attackmonster"})
 				case sess.Stars[sess.SelectedStar].Owner == 0:
 					// 無主星:拓殖(需殖民船)與建前哨站(需前哨船)兩鈕可並存於 402/424——
 					// 氣態巨星/小行星帶只有後者可用,一般行星兩者都可以(手冊 p.85:前哨站
@@ -591,6 +594,15 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				b.lastActionMsg = res.Reason
 			} else {
 				b.lastActionMsg = fmt.Sprintf("拓殖成功!新殖民地起始人口 %d(上限 %d)", res.StartPopulation, res.PopMax)
+			}
+			return b.goTo(b.galaxy, "星系主畫面")
+		}
+		if a == "attackmonster" && b.session != nil {
+			res := b.session.AttackMonster(b.session.SelectedStar)
+			if !res.Ok {
+				b.lastActionMsg = res.Reason
+			} else {
+				b.lastActionMsg = res.Message
 			}
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
@@ -714,7 +726,10 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					fnt.Draw(dst, "✕", 220, 344, 14, color.RGBA{235, 150, 140, 255})
 					// 行星特殊物產(金礦/寶石礦/原住民/遠古文物…)接在星名右邊,另用一色標出來——
 					// 這是「這顆星值不值得搶」的關鍵資訊,埋在下面兩行環境資料裡會被忽略。
-					if sp := gamedata.PlanetSpecialName(p.SpecialID); sp != "" {
+					if mon := sess.MonsterNameAtStar(sess.SelectedStar); mon != "" {
+						nameW, _ := fnt.Measure(p.Name, 14)
+						fnt.Draw(dst, "☠"+mon, 38+nameW+10, 346, 11, color.RGBA{240, 130, 150, 255})
+					} else if sp := gamedata.PlanetSpecialName(p.SpecialID); sp != "" {
 						nameW, _ := fnt.Measure(p.Name, 14)
 						spW, _ := fnt.Measure("★"+sp, 11)
 						// 星名很長時往左推,確保不會壓到右上角的 ✕(x=220)。
@@ -757,6 +772,10 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 							vector.StrokeRect(dst, 38, 424, 190, 20, 1, color.RGBA{230, 130, 110, 255}, false)
 							fnt.Draw(dst, "▶ 發動地面入侵", 46, 437, 12, color.RGBA{245, 235, 230, 255})
 						}
+					case sess.SelectedStar == sess.FleetAtStar && sess.StarGuardedByMonster(sess.SelectedStar):
+						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{110, 45, 60, 255}, false)
+						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{230, 120, 140, 255}, false)
+						fnt.Draw(dst, "▶ 挑戰"+sess.MonsterNameAtStar(sess.SelectedStar), 46, 415, 12, color.RGBA{250, 230, 235, 255})
 					case sess.SelectedStar == sess.FleetAtStar && sess.Stars[sess.SelectedStar].Owner == 0 &&
 						(sess.FleetHasColonyShip() || (sess.FleetHasOutpostShip() && !sess.HasOutpostAt(sess.SelectedStar))):
 						// 兩鈕可並存(與 galaxy() 建 hits 的判斷同一套):有殖民船畫在 402,

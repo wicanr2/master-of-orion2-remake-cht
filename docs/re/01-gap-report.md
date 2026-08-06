@@ -198,6 +198,10 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
 訂正的方法是回頭讀 `Random_` 本身,而不是繼續從呼叫端推語意——`_orbit_to_satellite_type`
 的 `roll = Random_(10) - 1` 落在 0..9(剛好對上 10 列)也反過來佐證了這件事。
 
+**手冊後來獨立證實了訂正後的結論**:p.60 System Specials 講遠古文物時寫
+「the first empire to discover the system gets **one or two** free technology advancements」
+——「一或兩項」,正是 `Random_(4)/4+1` 在 1..n 語意下的值域。
+
 ### C-4 行星特殊物產:手冊沒給的數字,反組譯給了(2026-08-06)
 
 這一項值得單獨記,因為它是**「手冊不足以還原、非讀執行檔不可」的典型案例**:
@@ -290,8 +294,24 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
    ⚠ 未兌現的一半:「延伸艦艇航程 / 加油站」(手冊 p.119/p.133)——remake 的 SendFleet 沒有
    航程上限這個概念,沒有可套用的機制,不臆造。
    ⚠ 手冊 p.50 的「前哨站升級成可住人殖民地」科技仍未做(需要對應科技旗標)。
-10. 艙損/維修、Hall of Fame / Hi-Score、安塔蘭房間、Smacker 過場。
+10. ~~太空怪獸~~ → **已完成**(2026-08-06,`internal/shell/monster.go` + `gamedata/space_monster.go`)。
+    這一項有個值得記的地方:**它一直被程式碼引用著卻不存在**——colonization.go 檔頭抄的手冊
+    原文就寫著殖民船要「as long as all space monsters and enemy ships have been cleared from
+    that planet's system」,但那個 gate 從來沒有東西可擋。
+
+    - 五種怪獸的名字來自執行檔字串表(0x1F742C 起連續:Guardian / Amoeba / Dragon / Hydra /
+      Crystal),對應五個 `Load_*_Ship_Design_` 函式與 `_monster_names` @ 0x199266
+    - 傷害數字來自手冊 p.114「Monster Traits」逐字(水晶射線 40-80、電漿吐息必中上限 60、
+      相位眼 5-10、龍焰必中上限 300 每格 -15、腐蝕黏液 25-50 每回合 -5)
+    - 生成規則來自手冊 p.60 逐字:「a system with a monster will always have another special
+      — that's usually what drew the monster there in the first place」,已落地成「擺怪獸時
+      強制補一個特殊物產」
+    - ⚠ 怪獸的**結構值**與挑選機率是 remake 估值(手冊只給武器傷害);原版的數量是新遊戲
+      設定(`_user_wants_n_space_monsters` @ 0x19A006),remake 先用固定密度
+    - 順帶依手冊 p.119「Support ships … **do not fight**」把殖民船/前哨船排除在戰鬥火力之外
+      ——先前它們會以最低戰力混進戰列
+11. 艙損/維修、Hall of Fame / Hi-Score、安塔蘭房間、Smacker 過場。
    ~~行星特殊物產~~ → **已完成**(2026-08-06,見 C-4):12 種權重表 + 抵達發現(殘骸/藏寶/
    失散殖民地/受困英雄/遠古文物)+ 殖民效果(原住民人口、金礦寶石收入、文物研究),
    接進 `advanceFleet` 抵達點與快報畫面。
-11. 多人連線(獨立子專案)。
+12. 多人連線(獨立子專案)。

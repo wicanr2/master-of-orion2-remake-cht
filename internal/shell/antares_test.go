@@ -61,6 +61,11 @@ func TestAntaresRaidsScheduleAndEscalate(t *testing.T) {
 func TestAntaresDefenseReducesDamage(t *testing.T) {
 	run := func(withFleet bool) int {
 		s := NewDemoSession()
+		// 隔離變數:拿掉 AI 對手。這條測試量的是「安塔蘭入侵造成的 BC 損失」,但它其實是用
+		// 「該回合國庫的總變化」當代理值,任何其他也會扣 BC 的系統都會混進來。AI 突襲
+		// (2026-08-06 新增,見 ai_attack.go)正是這樣一個系統,而且它的發動條件**看玩家軍力**
+		// ——正好是這條測試在對照的那個變數,不隔離就會反向污染結果。
+		s.AIPlayers = nil
 		if !withFleet {
 			s.Ships = nil
 		} else {
