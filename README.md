@@ -79,13 +79,22 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
 `cmd/moo2 -game` 互動版已可從主選單一路玩到結束一局:玩家與 3 個性格互異的 AI 對手各自拓殖擴張,
 經濟(殖民地建築/重力/礦產/士氣/指揮評等/收入)已對手冊逐項核實,戰鬥(光束/飛彈/球狀傷害/地面戰
 陸戰隊+戰車+軌道轟炸)依真公式解算,三條勝利路徑(征服/銀河議會/安塔蘭母星反攻)全數接線可達成。
-以上皆有 headless 模擬探針(數十~數百回合)與 GUI 導覽截圖(`-gamegallery`,24 畫面端到端)驗證,
+以上皆有 headless 模擬探針(數十~數百回合)與 GUI 導覽截圖(`-gamegallery`,26 畫面端到端)驗證,
 70 回合無 panic。**這是「什麼現在能運作」的可驗證事實,不是還原度自評**——詳見
 [`docs/HONEST-STATUS.md`](docs/HONEST-STATUS.md)。
 
+### ✅ Phase 6 — 版面改對原版執行檔的反組譯(2026-08-07)
+
+先前「無對應 openorion2 view 的畫面只能用估計座標」是**錯的**:真值在原版執行檔的反組譯裡,
+與 openorion2 有沒有實作無關。改用「反組譯立即數 → openorion2 `initWidgets` → LBX 資產尺寸交叉
+驗證」這條優先序後,新遊戲設定、殖民地、種族選擇、艦艇設計、地面戰、多人設定逐一重挖完成,
+順帶修掉三個**只看畫面看不出來**的還原錯誤:新遊戲左下框是 PLAYERS 不是 RACE、種族選擇的
+左右擺反了、艦艇設計六個艦體槽在原版**不等距**(remake 先前照 17px 等距排)。
+方法與逐項對照見 [`docs/re/01-gap-report.md`](docs/re/01-gap-report.md)。
+
 ### ⏭ 下一步
-逐畫面像素級熱區對齊(多數仍是估計座標)、新遊戲流程與原版母星初始狀態的細節對齊、戰機/航母、
-完整 spy/leader/diplomacy UI、武器 mod 的飛彈專屬項與小型化門檻、音樂曲目↔場景的最終聽感比對定案。
+母星初始狀態的數值校準、戰機/航母子模型、完整 spy/leader/diplomacy UI、武器 mod 的飛彈專屬項與
+小型化門檻、音樂曲目↔場景的最終聽感比對定案、英文模式的引擎層字串。
 下一節「目前貢獻」逐項列出已驗證與仍缺的部分。
 
 ---
@@ -120,8 +129,10 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
 - Linux AppImage / Windows(純 Go 跨編)/ macOS(CI)三平台打包(見 [`docs/tech/packaging.md`](docs/tech/packaging.md))
 
 **仍在進行 / 仍缺**(不是「能不能玩」的阻塞,是「像不像原版」的差距)
-- 逐畫面像素級熱區對齊(多數仍是估計座標,非整畫面返回鍵)
-- 完整新遊戲流程與原版母星初始狀態的細節對齊
+- 兩個**子系統**(不是座標沒挖):殖民地畫面中段的行星表面 + 建築 sprite 擺放、艦艇設計右上兩格的
+  內容欄位——兩者都卡在執行檔裡烘死的幾何表尚未抽出,見 [`docs/re/01-gap-report.md`](docs/re/01-gap-report.md)
+- 母星初始狀態的數值校準(流程本身已對齊原版:版本→難度/星系→14 族肖像→自訂點數→命名旗色)
+- 英文模式:UI 層已雙語,引擎產生的字串(星名/建築名/行星屬性)仍是中文
 - 戰機/航母、完整 spy/leader/diplomacy UI、多 AI 對手的目標選擇策略(目前為索引順序,非距離/資源導向)
 - 武器改造(mod)系統的飛彈專屬 mod、小型化等級門檻、火線角
 - 音樂曲目↔場景的最終聽感比對(現用時長啟發式/反組譯佐證,非逐曲聆聽定案)
@@ -131,23 +142,56 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
 
 ## 畫面預覽
 
-以下皆為 `-gamegallery` headless 導覽拍下的**本專案 ebiten renderer 實際輸出**(讀取玩家正版 LBX 資產渲染,非原版截圖翻拍),對應上方「目前貢獻」逐項提到的系統:
+以下皆為 `-gamegallery` headless 導覽拍下的**本專案 ebiten renderer 實際輸出**(讀取玩家正版 LBX 資產渲染,非原版截圖翻拍)。
+版面座標優先取自**原版執行檔的反組譯立即數**,openorion2 沒有實作的畫面也一樣(見 [`docs/re/01-gap-report.md`](docs/re/01-gap-report.md))。
 
-| 主選單(含 1.3/1.5 規則版本切換) | 星系主畫面 |
+| 主選單(1.3/1.5 規則版本 + 中英切換) | 新遊戲設定(五欄,反組譯真值版面) |
 |---|---|
-| ![主選單](docs/screenshots/01_menu.png) | ![星系主畫面](docs/screenshots/04_galaxy.png) |
+| ![主選單](docs/screenshots/01_menu.png) | ![新遊戲設定](docs/screenshots/01b_newgame.png) |
 
-| 種族選擇(原版獨立畫面 + 肖像) | 命名/旗色 |
+| 種族選擇(左肖像 + 右 2×7 網格,同原版) | 命名 / 旗色 |
 |---|---|
 | ![種族選擇](docs/screenshots/02_raceselect.png) | ![命名旗色](docs/screenshots/03_nameflag.png) |
 
-| 殖民地總覽 | 研究選擇 |
+| 星系主畫面 | 回合摘要 |
 |---|---|
-| ![殖民地總覽](docs/screenshots/05_colony.png) | ![研究選擇](docs/screenshots/06_research.png) |
+| ![星系主畫面](docs/screenshots/04_galaxy.png) | ![回合摘要](docs/screenshots/06_turnsummary.png) |
+
+| 殖民地畫面(原版 COLPUPS 框架) | 殖民地總覽 |
+|---|---|
+| ![殖民地畫面](docs/screenshots/10_colonyscreen.png) | ![殖民地總覽](docs/screenshots/09_colonysummary.png) |
+
+| 行星列表 | 帝國資訊(歷史圖表 / 科技 / 種族 / 摘要 / 參考) |
+|---|---|
+| ![行星列表](docs/screenshots/12_planets.png) | ![帝國資訊](docs/screenshots/13_info.png) |
+
+| 艦艇設計(六個艦體槽為原版的**不等距**版面) | 科技總覽 |
+|---|---|
+| ![艦艇設計](docs/screenshots/25_shipdesign.png) | ![科技總覽](docs/screenshots/14_info_tech.png) |
 
 | 外交使節 | 戰術戰鬥 |
 |---|---|
-| ![外交使節](docs/screenshots/07_diplomacy.png) | ![戰術戰鬥](docs/screenshots/08_tactical.png) |
+| ![外交使節](docs/screenshots/15_diplomacy.png) | ![戰術戰鬥](docs/screenshots/16_tactical.png) |
+
+| 地面戰 | 軌道轟炸 |
+|---|---|
+| ![地面戰](docs/screenshots/17_groundcombat.png) | ![軌道轟炸](docs/screenshots/20_bombing.png) |
+
+| 多人遊戲設定(熱座可玩) | |
+|---|---|
+| ![多人遊戲設定](docs/screenshots/23_multiplayer.png) | |
+
+### 英文模式
+
+`-lang en`(或主選單左下角點一下)切回英文。畫面底下是原版美術時**整段讓路**——不擦字、不疊字,
+直接露出 1996 年烘在圖上的英文,比用 Noto 重畫一次更接近原版:
+
+| 種族選擇(露原版 `SELECT RACE` 與族名鈕) | 遊戲選單(露 GAME.LBX 六顆鈕) |
+|---|---|
+| ![英文種族選擇](docs/screenshots/en/02_raceselect.png) | ![英文遊戲選單](docs/screenshots/en/19_gamemenu.png) |
+
+星名、建築名等由引擎產生的字串目前仍是中文,原因與待補清單見
+[`docs/HONEST-STATUS.md`](docs/HONEST-STATUS.md)「英文模式覆蓋率」。
 
 ---
 
