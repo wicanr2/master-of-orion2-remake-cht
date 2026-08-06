@@ -148,3 +148,21 @@ func TestAISpecialBonusMatchesManualRatio(t *testing.T) {
 		t.Error("手冊收入的金礦:寶石比應為 1:2,與 AI 加分同比")
 	}
 }
+
+// 遠古文物送幾項:原版 `Random_(4)/4 + 1`,而 Random_ 回 1..n(見 planet_special.go 訂正說明)。
+// roll 1-3 → 1 項、roll 4 → 2 項,也就是 25% 的機率拿到 2 項。
+func TestArtifactFreeTechCount(t *testing.T) {
+	want := map[int]int{1: 1, 2: 1, 3: 1, 4: 2}
+	for roll, w := range want {
+		if got := ArtifactFreeTechCount(roll); got != w {
+			t.Errorf("ArtifactFreeTechCount(%d) = %d,want %d", roll, got, w)
+		}
+	}
+	// 越界的 roll 夾回合法範圍,不回奇怪的數字。
+	if got := ArtifactFreeTechCount(0); got != 1 {
+		t.Errorf("roll 0 應夾成 1 → 1 項,實得 %d", got)
+	}
+	if got := ArtifactFreeTechCount(99); got != 2 {
+		t.Errorf("roll 99 應夾成 4 → 2 項,實得 %d", got)
+	}
+}

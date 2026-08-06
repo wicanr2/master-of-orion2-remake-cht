@@ -1,6 +1,8 @@
 package shell
 
 import (
+	"math/rand"
+	"strings"
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
@@ -108,5 +110,145 @@ func TestOldSavePlanetsBackfillIDs(t *testing.T) {
 	// 「地獄」是舊生成器對黑洞星系的填充詞,應回填成 TOXIC(見 climateDisplayToGamedata)。
 	if old[1].ClimateID != gamedata.TOXIC {
 		t.Errorf("「地獄」應回填成 TOXIC,got %v", old[1].ClimateID)
+	}
+}
+
+// --- 行星類別(Gen 2:_orbit_to_satellite_type)---
+
+// 母星恆為一般行星:交給類別骰有機會生出「母星是氣態巨星」這種開局就死的局面。
+func TestGenPlanetsHomeStarsAlwaysHabitable(t *testing.T) {
+	for seed := int64(0); seed < 20; seed++ {
+		galaxy, aiHomes := genGalaxy(24, seed, 3)
+		homes := demoHomeStarSet(aiHomes)
+		ps := genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), galaxyAgeSetting, homes)
+		for i := range ps {
+			if !homes[i] {
+				continue
+			}
+			if ps[i].TypeID != gamedata.HABITABLE {
+				t.Fatalf("seed %d:母星 %d 的類別是 %d,應為一般行星", seed, i, ps[i].TypeID)
+			}
+			if ps[i].NoPlanet {
+				t.Fatalf("seed %d:母星 %d 沒有行星", seed, i)
+			}
+		}
+	}
+}
+
+// 代表行星的挑法:系統裡只要有一般行星,代表行星就必須是它(對齊原版「一個系統有一顆可殖民
+// 的行星就能殖民」),而不是隨機挑到氣態巨星就整顆星報銷。
+func TestGenPlanetsPrefersHabitableRepresentative(t *testing.T) {
+	nonHab, withHabSibling := 0, 0
+	for seed := int64(0); seed < 40; seed++ {
+		galaxy, aiHomes := genGalaxy(24, seed, 3)
+		ps := genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), galaxyAgeSetting, demoHomeStarSet(aiHomes))
+		for _, p := range ps {
+			if p.NoPlanet || p.TypeID == gamedata.HABITABLE {
+				continue
+			}
+			nonHab++
+			for _, b := range p.SystemBodies {
+				if b.Type == gamedata.HABITABLE {
+					withHabSibling++
+					break
+				}
+			}
+		}
+	}
+	if nonHab == 0 {
+		t.Fatal("40 個星圖裡一顆不可殖民的星都沒有,類別骰可能沒接上")
+	}
+	if withHabSibling != 0 {
+		t.Errorf("有 %d 顆星的代表行星不可殖民、但同系其實有一般行星(挑法錯了)", withHabSibling)
+	}
+	t.Logf("不可殖民的星共 %d 顆(佔 40×24 = 960 顆星)", nonHab)
+}
+
+// 同系天體不包含代表行星本身(避免兩份資料要同步),且軌道不重複。
+func TestGenPlanetsSystemBodiesExcludeRepresentative(t *testing.T) {
+	for seed := int64(0); seed < 20; seed++ {
+		galaxy, aiHomes := genGalaxy(24, seed, 3)
+		ps := genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), galaxyAgeSetting, demoHomeStarSet(aiHomes))
+		for i, p := range ps {
+			seen := map[int]bool{p.Orbit: true}
+			for _, b := range p.SystemBodies {
+				if b.Orbit == p.Orbit {
+					t.Fatalf("seed %d 星 %d:同系天體與代表行星同軌道 %d", seed, i, b.Orbit)
+				}
+				if seen[b.Orbit] {
+					t.Fatalf("seed %d 星 %d:軌道 %d 重複", seed, i, b.Orbit)
+				}
+				seen[b.Orbit] = true
+				if b.Orbit < 0 || b.Orbit > 4 {
+					t.Fatalf("seed %d 星 %d:軌道 %d 越界", seed, i, b.Orbit)
+				}
+			}
+		}
+	}
+}
+
+// 氣態巨星/小行星帶不能殖民(手冊 p.55「colonies can only survive on a solid planet」),
+// 而且拒絕的理由要講得出是哪一類,不是一句「不支援」。
+func TestColonizeRejectsNonHabitable(t *testing.T) {
+	for _, tp := range []gamedata.PlanetType{gamedata.GAS_GIANT, gamedata.ASTEROIDS} {
+		s := NewDemoSession()
+		target := -1
+		for i := range s.Stars {
+			if s.Stars[i].Owner == 0 && i < len(s.Planets) {
+				target = i
+				break
+			}
+		}
+		s.Planets[target] = Planet{
+			Name: "測試星 I", Gen: planetGenVersion, TypeID: tp,
+			ClimateID: gamedata.TERRAN, GravityID: gamedata.NORMAL_G,
+			MineralID: gamedata.ABUNDANT, SizeID: gamedata.MEDIUM_PLANET,
+		}
+		s.Ships = append(s.Ships, Ship{Class: ColonyShipClass})
+		s.FleetAtStar, s.FleetETA = target, 0
+
+		res := s.ColonizeStar(target)
+		if res.Ok {
+			t.Errorf("類別 %d 不該可以殖民", tp)
+		}
+		if want := planetTypeDisplayName(tp); !strings.Contains(res.Reason, want) {
+			t.Errorf("類別 %d 的拒絕理由 %q 應含 %q", tp, res.Reason, want)
+		}
+		// 被拒絕時不該消耗殖民船,也不該改變星的歸屬。
+		if s.findColonyShipIndex() < 0 {
+			t.Errorf("類別 %d:拒絕拓殖卻消耗了殖民船", tp)
+		}
+		if s.Stars[target].Owner != 0 {
+			t.Errorf("類別 %d:拒絕拓殖卻改了星的歸屬", tp)
+		}
+	}
+}
+
+// AI 也不該把氣態巨星/小行星帶排進拓殖目標(原版 AIPlanetValue 開頭就是 type != HABITABLE → 0)。
+func TestAIPlanetValueZeroForNonHabitable(t *testing.T) {
+	s := NewDemoSession()
+	target := -1
+	for i := range s.Stars {
+		if s.Stars[i].Owner == 0 && i < len(s.Planets) {
+			target = i
+			break
+		}
+	}
+	base := Planet{
+		Name: "測試星 I", Gen: planetGenVersion, TypeID: gamedata.HABITABLE,
+		ClimateID: gamedata.TERRAN, GravityID: gamedata.NORMAL_G,
+		MineralID: gamedata.ABUNDANT, SizeID: gamedata.LARGE_PLANET,
+	}
+	s.Planets[target] = base
+	if got := s.aiPlanetValue(0, target); got <= 0 {
+		t.Fatalf("一般行星的 AI 估值應 > 0,實得 %d", got)
+	}
+	for _, tp := range []gamedata.PlanetType{gamedata.GAS_GIANT, gamedata.ASTEROIDS} {
+		p := base
+		p.TypeID = tp
+		s.Planets[target] = p
+		if got := s.aiPlanetValue(0, target); got != 0 {
+			t.Errorf("類別 %d 的 AI 估值應為 0,實得 %d", tp, got)
+		}
 	}
 }

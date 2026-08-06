@@ -101,16 +101,16 @@ var NormalGalaxyClimateWeights = [10][4]int{
 // 原版 `_old_gal_climate_roll_table` @ 0x17D7CF(40 bytes = 10×4),四欄總和皆為 100。
 // 與 Normal 相比:宜居帶(欄2)的可農作氣候合計 65 → 79,Gaia 從 2% 升到 4%。
 var OldGalaxyClimateWeights = [10][4]int{
-	{15, 5, 5, 20},   // Toxic
-	{40, 30, 8, 0},   // Radiated
-	{20, 20, 8, 50},  // Barren
-	{25, 25, 13, 0},  // Desert
-	{0, 20, 13, 30},  // Tundra
-	{0, 0, 13, 0},    // Ocean
-	{0, 0, 13, 0},    // Swamp
-	{0, 0, 13, 0},    // Arid
-	{0, 0, 10, 0},    // Terran
-	{0, 0, 4, 0},     // Gaia
+	{15, 5, 5, 20},  // Toxic
+	{40, 30, 8, 0},  // Radiated
+	{20, 20, 8, 50}, // Barren
+	{25, 25, 13, 0}, // Desert
+	{0, 20, 13, 30}, // Tundra
+	{0, 0, 13, 0},   // Ocean
+	{0, 0, 13, 0},   // Swamp
+	{0, 0, 13, 0},   // Arid
+	{0, 0, 10, 0},   // Terran
+	{0, 0, 4, 0},    // Gaia
 }
 
 // GravityTable 是 [礦產豐度][行星大小] → 重力等級(0=Low, 1=Normal, 2=Heavy)。
@@ -321,4 +321,86 @@ func clampRoll10(roll int) int {
 		return 10
 	}
 	return roll
+}
+
+// --- 行星類別:氣態巨星 / 小行星帶 / 一般行星 ---
+//
+// 原版 `Generate_Satellite_Type_` @ 0x8C6FE 決定每條軌道上的天體是什麼:
+//
+//	roll = Random_(10) - 1                       // 0..9(Random_ 回 1..n,見下方註記)
+//	t    = _orbit_to_satellite_type[roll*5 + orbit]
+//	if t == 4 { …特例,見 OrbitSatelliteSpecialRoll… }
+//	if t == GAS_GIANT && orbit == 0 { 整個重骰 }  // 最內圈不放氣態巨星
+//
+// 索引方式怎麼確定的:表是 50 bytes,而 `_class_to_num_satellites` 之後緊接著它,
+// 大小正好 10 列 × 5 軌道。決定性的佐證是那個唯一的 `4`——它只出現在 (roll 1, orbit 0),
+// 而原版處理 4 的特例分支寫死了 `bl == 1 && orbit == 0`。兩邊完全咬合,索引不可能是別的擺法。
+//
+// ⚠ `Random_` 的語意(0x1247A0):LCG 取樣 + 拒絕超界值,最後 `div bucket` 再 **`inc eax`**,
+// 所以回的是 **1..n**,不是 C 慣例的 0..n-1。`roll = Random_(10) - 1` 因此落在 0..9,
+// 剛好對上 10 列——這也是「表是 10×5 不是 5×10」的另一個佐證。
+
+// planetTypeSpecialMarker 是表裡的 4:不是行星類別,是「特例處理」的標記(見
+// OrbitSatelliteSpecialRoll)。真正的行星類別只有 1/2/3(對齊 openorion2 `enum PlanetType`)。
+const planetTypeSpecialMarker = 4
+
+// orbitToSatelliteType 是原版 `_orbit_to_satellite_type` @ 0x17D6BC(50 bytes)。
+// 列 = Random_(10)-1(0..9),欄 = 軌道(0..4,由內而外)。
+// 值:1 小行星帶、2 氣態巨星、3 一般行星、4 特例標記。
+//
+// 讀出來的分布本身就有物理直覺:內圈多岩石/小行星、外圈多氣態巨星,
+// 而 roll 值越大整個系統越「宜居」(roll 6-9 五條軌道全是一般行星)。
+var orbitToSatelliteType = [10][5]int{
+	{1, 1, 1, 1, 1}, // roll 0:整組小行星帶
+	{4, 1, 1, 1, 2}, // roll 1:內圈特例,外圈氣態巨星
+	{3, 2, 1, 2, 2},
+	{3, 3, 2, 2, 2},
+	{3, 3, 2, 2, 2},
+	{3, 3, 3, 3, 2},
+	{3, 3, 3, 3, 3},
+	{3, 3, 3, 3, 3},
+	{3, 3, 3, 3, 3},
+	{3, 3, 3, 3, 3}, // roll 9
+}
+
+// OrbitSatelliteSpecialRoll 是 4 這個標記的特例機率(原版 `Random_(100)`,命中 1..10)。
+// 也就是 **10%**;沒命中就退回小行星帶。
+const OrbitSatelliteSpecialRoll = 10
+
+// RollSatelliteType 依原版表決定某條軌道上的天體類別。
+//
+//	roll10  = Random_(10) 的結果(1..10)
+//	orbit   = 軌道 0..4
+//	special = Random_(100) 的結果(1..100),只在命中表裡的 4 時才會用到
+//
+// 回傳 (類別, 是否為特例天體)。特例天體在原版會依恆星光譜寫進一個 4 以上的類別碼
+// (`spectral == 0 ? 5 : spectral + 4`),remake 沒有那些類別的任何行為或美術,
+// 一律當成小行星帶處理、另外用 bool 標出來——**不臆造原版那些碼的語意**。
+func RollSatelliteType(roll10, orbit, special int) (t PlanetType, isSpecial bool) {
+	r := roll10 - 1
+	if r < 0 {
+		r = 0
+	}
+	if r > 9 {
+		r = 9
+	}
+	if orbit < 0 {
+		orbit = 0
+	}
+	if orbit > 4 {
+		orbit = 4
+	}
+	v := orbitToSatelliteType[r][orbit]
+	if v == planetTypeSpecialMarker {
+		if special >= 1 && special <= OrbitSatelliteSpecialRoll {
+			return ASTEROIDS, true
+		}
+		return ASTEROIDS, false
+	}
+	if PlanetType(v) == GAS_GIANT && orbit == 0 {
+		// 原版在這裡整個重骰;呼叫端拿不到新的骰子,退回一般行星(表裡 orbit 0 從來不是 2,
+		// 這條路實際走不到,留著是為了不讓「最內圈出現氣態巨星」這個原版明確排除的情況溜過去)。
+		return HABITABLE, false
+	}
+	return PlanetType(v), false
 }

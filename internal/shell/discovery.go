@@ -2,6 +2,8 @@ package shell
 
 import (
 	"fmt"
+	"math/rand"
+	"strings"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
@@ -26,8 +28,8 @@ import (
 //   - 原版失散殖民地的人口上限用 `Colony_Race_Pop_Limit_`(含種族/科技修正);remake 用
 //     gamedata.PlanetBasePopMax(既有的「大小×氣候」推導),再與 3 取小。
 //   - 原版遠古文物送的是「狀態 == RSTATE_READY」的研究主題;remake 的研究狀態模型只有
-//     CompletedTopics,故改送 researchQueue() 裡第一個未完成的主題(仍是「一項、且是現在
-//     真的排得到的」,選法是 remake 的)。
+//     CompletedTopics,故改送 researchQueue() 裡最前面的未完成主題(數量照原版公式,
+//     **挑哪一項**的選法是 remake 的——原版是在合格主題裡蓄水池抽樣)。
 
 // SystemDiscovery 是一次星系發現的結果(供回合摘要/報告畫面顯示)。
 type SystemDiscovery struct {
@@ -156,21 +158,45 @@ func (s *GameSession) grantMaroonedLeader() (Leader, bool) {
 	return Leader{}, false
 }
 
-// grantArtifactTech 白送一項研究主題(標記為已完成),回傳其顯示名。
+// grantArtifactTech 白送研究主題(標記為已完成),回傳送出的主題名(以「、」相連)。
 // 沒有可送的主題(全都研究完了)回 ok=false。
+//
+// 數量依原版公式 `Random_(4)/4 + 1` = 1 項(25% 機率 2 項),見
+// gamedata.ArtifactFreeTechCount 與該處對 Random_ 回傳 1..n 的訂正說明。
 func (s *GameSession) grantArtifactTech() (string, bool) {
 	if s.Player.CompletedTopics == nil {
 		s.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{}
 	}
+	n := gamedata.ArtifactFreeTechCount(s.discoveryRoll(4))
+	var got []string
 	for _, t := range researchQueue() {
+		if len(got) >= n {
+			break
+		}
 		if s.Player.CompletedTopics[t] {
 			continue
 		}
 		s.Player.CompletedTopics[t] = true
-		s.advanceResearch() // 目前主題若正好是它,順勢推進到下一個,避免研究卡在已完成的主題
-		return gamedata.TopicEnglishName(t), true
+		got = append(got, gamedata.TopicEnglishName(t))
 	}
-	return "", false
+	if len(got) == 0 {
+		return "", false
+	}
+	// 目前研究主題若正好被送掉了,順勢推進到下一個,避免研究卡在已完成的主題。
+	s.advanceResearch()
+	return strings.Join(got, "、"), true
+}
+
+// discoveryRoll 回傳 1..n 的擲骰(對齊原版 Random_ 的 1..n 語意)。
+// 亂數源由 EventSeed 惰性建立、與事件流分開,維持存檔/探針可重現(比照 eventRand 慣例)。
+func (s *GameSession) discoveryRoll(n int) int {
+	if n < 1 {
+		return 1
+	}
+	if s.discoveryRand == nil {
+		s.discoveryRand = rand.New(rand.NewSource(s.EventSeed*6364136223846793005 + 1442695040888963407))
+	}
+	return s.discoveryRand.Intn(n) + 1
 }
 
 // appendPlayerColony 把一筆殖民地接到 PlayerColonies 與全部平行陣列上(padding 模式與

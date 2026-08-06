@@ -185,10 +185,28 @@ func SpecialGrantsFreeLeader(s PlanetSpecial) bool {
 // 主題記錄,挑出「狀態 == 2」(openorion2 `RSTATE_READY`,即現在就能研究)且通過另一個條件
 // 檢查的主題,用蓄水池抽樣選一項送出(`Random_(k) == 1`)。
 //
-// 送幾項:`Random_(4) / 4 + 1` —— `Random_(4)` 回 0..3,整數除 4 恆為 0,所以**恆為 1 項**。
-// 這行看起來像原版寫壞了(大概想寫 Random(4)/2+1 之類),但照抄原版行為,不臆改成「1-2 項」。
+// 送幾項:`Random_(4) / 4 + 1`。原版的 `Random_(n)` **回 1..n**,不是 0..n-1
+// (0x1247A0:LCG 取樣、拒絕超界值,最後 `div bucket` 再 `inc eax`),所以 `Random_(4)`
+// ∈ {1,2,3,4},整數除 4 得 0(roll 1-3)或 1(roll 4)→ **1 項,25% 機率 2 項**。
+//
+// ⚠ 訂正:本檔第一版把它記成「恆為 1 項、原版寫壞了」,那是把 Random_ 當成 C 的
+// `rand()%n` 語意的誤讀。訂正的方法是回頭讀 Random_ 本身,不是從呼叫端繼續推。
+// 同一個誤讀連帶影響另外兩處,都已一併訂正(見 docs/re/01-gap-report.md「Random_ 訂正」):
+// 蓄水池抽樣 `Random_(k)==1` 其實是**正確的** 1/k(k=1 時必中,不是「第一個永遠不會被選」);
+// 失散殖民地在不可耕行星上的職務 `Random_(2) & 3` 是**工人或科學家**(1 或 2),不是農夫或工人。
 func SpecialGrantsFreeTech(s PlanetSpecial) bool {
 	return s == AncientArtifacts
+}
+
+// ArtifactFreeTechCount 依原版公式回傳遠古文物送幾項科技(roll = Random_(4) 的結果,1..4)。
+func ArtifactFreeTechCount(roll int) int {
+	if roll < 1 {
+		roll = 1
+	}
+	if roll > 4 {
+		roll = 4
+	}
+	return roll/4 + 1
 }
 
 // SpecialIsSystemDiscovery 回傳該特殊物產是否屬於「抵達星系時一次性觸發」那一類。

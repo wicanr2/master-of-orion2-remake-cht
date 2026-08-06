@@ -215,3 +215,93 @@ func TestMatureGalaxyHasMoreHabitableWorlds(t *testing.T) {
 		t.Errorf("成熟星系宜居帶的可農作權重應高於一般星系:%d vs %d", mature, normal)
 	}
 }
+
+// --- _orbit_to_satellite_type(原版 @ 0x17D6BC,50 bytes)---
+
+// 表的形狀:10 列(Random_(10)-1)× 5 欄(軌道),值域 1..4。
+func TestOrbitToSatelliteTypeShape(t *testing.T) {
+	n := 0
+	for r := range orbitToSatelliteType {
+		for o := range orbitToSatelliteType[r] {
+			v := orbitToSatelliteType[r][o]
+			if v < 1 || v > 4 {
+				t.Errorf("[%d][%d] = %d,值域應為 1..4", r, o, v)
+			}
+			n++
+		}
+	}
+	if n != 50 {
+		t.Errorf("表共 %d 格,原版是 50 bytes", n)
+	}
+}
+
+// 決定性佐證:唯一的 4 只出現在 (roll 1, orbit 0),而原版特例分支寫死 `bl == 1 && orbit == 0`。
+// 這條測試把「索引擺法正確」這件事釘在程式碼裡——擺法錯了(例如轉置成 5×10)就會失敗。
+func TestOrbitSatelliteSpecialMarkerPosition(t *testing.T) {
+	for r := range orbitToSatelliteType {
+		for o := range orbitToSatelliteType[r] {
+			if orbitToSatelliteType[r][o] != planetTypeSpecialMarker {
+				continue
+			}
+			if r != 1 || o != 0 {
+				t.Errorf("特例標記 4 出現在 [%d][%d],原版只在 [1][0]", r, o)
+			}
+		}
+	}
+	if orbitToSatelliteType[1][0] != planetTypeSpecialMarker {
+		t.Error("[1][0] 應為特例標記 4")
+	}
+}
+
+// 最內圈永遠不會是氣態巨星(原版對 orbit 0 的氣態巨星會整個重骰)。
+func TestNoGasGiantInInnermostOrbit(t *testing.T) {
+	for roll := 1; roll <= 10; roll++ {
+		if got, _ := RollSatelliteType(roll, 0, 100); got == GAS_GIANT {
+			t.Errorf("roll %d 在最內圈骰出氣態巨星", roll)
+		}
+	}
+}
+
+// 特例標記:命中 10% 才是特例天體,否則退回小行星帶;兩種情形類別都是小行星帶。
+func TestRollSatelliteTypeSpecialMarker(t *testing.T) {
+	for _, sp := range []int{1, 5, OrbitSatelliteSpecialRoll} {
+		got, isSpecial := RollSatelliteType(2, 0, sp) // roll10=2 → r=1 → 表裡的 4
+		if got != ASTEROIDS || !isSpecial {
+			t.Errorf("special=%d:得 (%d,%v),want (小行星帶, true)", sp, got, isSpecial)
+		}
+	}
+	for _, sp := range []int{OrbitSatelliteSpecialRoll + 1, 50, 100} {
+		got, isSpecial := RollSatelliteType(2, 0, sp)
+		if got != ASTEROIDS || isSpecial {
+			t.Errorf("special=%d:得 (%d,%v),want (小行星帶, false)", sp, got, isSpecial)
+		}
+	}
+}
+
+// 分布語意:roll 越大整個系統越宜居(roll 7-10 五條軌道全是一般行星);
+// roll 1 全是小行星帶。這是「表沒讀錯」的語意檢查,不是實作反推。
+func TestSatelliteTypeDistributionSemantics(t *testing.T) {
+	for orbit := 0; orbit < 5; orbit++ {
+		if got, _ := RollSatelliteType(1, orbit, 100); got != ASTEROIDS {
+			t.Errorf("roll 1 orbit %d 應為小行星帶,得 %d", orbit, got)
+		}
+		for roll := 7; roll <= 10; roll++ {
+			if got, _ := RollSatelliteType(roll, orbit, 100); got != HABITABLE {
+				t.Errorf("roll %d orbit %d 應為一般行星,得 %d", roll, orbit, got)
+			}
+		}
+	}
+	// 氣態巨星集中在外圈:統計整張表,orbit 4 的氣態巨星比 orbit 1 多。
+	countGas := func(orbit int) int {
+		n := 0
+		for roll := 1; roll <= 10; roll++ {
+			if got, _ := RollSatelliteType(roll, orbit, 100); got == GAS_GIANT {
+				n++
+			}
+		}
+		return n
+	}
+	if countGas(4) <= countGas(1) {
+		t.Errorf("氣態巨星應集中在外圈:orbit4=%d orbit1=%d", countGas(4), countGas(1))
+	}
+}

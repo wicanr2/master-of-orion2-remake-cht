@@ -14,14 +14,17 @@ import (
 // 「戰爭」,玩家卻毫髮無傷。整局遊戲唯一的軍事壓力來自安塔蘭人(週期性腳本),
 // 三個 AI 對手實質上是背景裝飾。
 //
-// 原版有一整條「挑目標 → 派艦隊 → 打」的鏈:
+// 原版有一整條「挑目標 → 派艦隊 → 打」的鏈,三個估值函式都已移植:
 //
 //	Colony_Worth_To_Player_       @ 0xD2CAE  已殖民星值多少(產出/人口/成長空間/氣候/重力/特殊物產)
-//	Enemy_Colony_Worth_To_Player_ @ 0xD2B3E  敵方殖民地作為**攻擊目標**值多少
+//	Enemy_Colony_Worth_To_Player_ @ 0xD8D11  敵方殖民地作為**攻擊目標**值多少
 //	Proximity_Worth_To_Player_    @ 0xD2AEA  距離加權
 //
-// 目標估值(Colony_Worth_To_Player_)已依原版公式移植進 gamedata.AIColonyValue;
-// **「什麼時候打、打贏了會怎樣」這一段是 remake 的模型**,原版對應的決策函式尚未反編。
+// 目標選擇因此是原版的:`AIEnemyColonyValue` 依外交狀態把「這顆星對**主人**有多值錢」與
+// 「對**我**有多值錢」加權混合(權重偏向前者——打他最痛的地方,不是搶我最想要的地方),
+// 再除以距離。
+//
+// **「什麼時候打、打贏了會怎樣」這一段仍是 remake 的模型**,原版對應的決策函式尚未反編。
 // 下面每個常數都標明了這一點,別把它們當成考據結果。
 //
 // 設計上刻意保守(這是「讓遊戲有壓力」而不是「讓玩家開局被輾死」):
@@ -106,15 +109,25 @@ func (s *GameSession) aiRaidWilling(i int) bool {
 
 // aiRaidTarget 挑第 i 個 AI 最想打的玩家殖民地,回傳其索引;沒有可打的回 -1。
 //
-// 估值 = gamedata.AIColonyValue(原版公式)再除以距離(原版 Proximity 是「越近越值錢」的
-// 倒數加權,這裡沿用同一個方向:遠的星打起來不划算)。
+// 三層都用原版公式:
+//  1. `AIColonyValue`(Colony_Worth_To_Player_)算這個殖民地本身值多少——分別站在
+//     「主人(玩家)」與「攻擊者(AI)」兩個立場各算一次。
+//  2. `AIEnemyColonyValue`(Enemy_Colony_Worth_To_Player_)依外交狀態把兩者加權混合。
+//  3. 除以距離(Proximity_Worth_To_Player_ 的倒數加權方向)。
+//
+// ⚠ 立場差異在 remake 只反映在「目標傾向」這一項:AI 用自己性格對應的 AIObjective,
+// 玩家用中性的 BalancedLow(remake 的玩家沒有 AI 目標傾向這個欄位)。原版兩個立場還會
+// 差在種族人口上限與重力天賦,remake 沒有那兩層,故兩個估值目前只有權重不同。
 func (s *GameSession) aiRaidTarget(i int) int {
 	a := &s.AIPlayers[i]
 	obj := aiObjectiveFor(a.Personality)
+	policy := aiForeignPolicyFor(a)
 	best, bestVal := -1, 0
 	for ci := range s.PlayerColonies {
 		star := s.PlayerColonyStarIndex(ci)
-		v := s.aiColonyValue(ci, obj)
+		ownerVal := s.aiColonyValue(ci, gamedata.AIObjectiveBalancedLow) // 玩家(主人)立場
+		selfVal := s.aiColonyValue(ci, obj)                              // AI(攻擊者)立場
+		v := gamedata.AIEnemyColonyValue(ownerVal, selfVal, policy, false)
 		if v <= 0 {
 			continue
 		}
@@ -129,6 +142,30 @@ func (s *GameSession) aiRaidTarget(i int) int {
 		}
 	}
 	return best
+}
+
+// aiForeignPolicyFor 把 remake 的 AI 態勢對映到原版的 ForeignPolicy 編碼。
+//
+// remake 的態勢是 ai.DecideStance 由關係分數推得的五級(戰爭/敵視/中立/提議貿易/提議結盟),
+// 原版是 ForeignPolicy 六級(無/互不侵犯/同盟/和平/有限戰爭/戰爭)。兩套不是同一個維度,
+// 這裡取語意最接近的對映——**對映本身是 remake 的**,原版的態勢↔外交狀態關係另有機制。
+func aiForeignPolicyFor(a *AIOpponent) gamedata.AIForeignPolicy {
+	switch a.StanceName {
+	case stanceNames[ai.StanceWar]:
+		// 關係已經觸底(-30 以下)視為原版那一檔更極端的狀態:目標估值完全站在受害者立場。
+		if a.Relation <= -30 {
+			return gamedata.DiploTotalWar
+		}
+		return gamedata.DiploLimitedWar
+	case stanceNames[ai.StanceProposeAlliance]:
+		return gamedata.DiploAlliance
+	case stanceNames[ai.StanceProposeTrade]:
+		return gamedata.DiploPeace
+	case stanceNames[ai.StanceHostile]:
+		return gamedata.DiploNonAggression
+	default:
+		return gamedata.DiploNone
+	}
 }
 
 // aiColonyValue 算玩家第 ci 個殖民地對 AI 的價值(原版 Colony_Worth_To_Player_)。

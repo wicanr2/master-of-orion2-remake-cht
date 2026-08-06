@@ -707,6 +707,8 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					}
 					fnt.Draw(dst, fmt.Sprintf("氣候 %s ／ 大小 %s", p.Climate, p.Size), 38, 362, 11, color.RGBA{210, 216, 230, 255})
 					fnt.Draw(dst, fmt.Sprintf("重力 %s ／ 礦產 %s", p.Gravity, p.Mineral), 38, 378, 11, color.RGBA{210, 216, 230, 255})
+					// 同系其他天體(氣態巨星/小行星帶)的完整摘要放在行星列表畫面——這個面板
+					// 只有 344~400 這四列的空間,402 起是操作鈕,再塞一列會壓到按鈕。
 					// 陸戰隊狀態行:艦隊目前載運數,選中母星時另顯示殖民地駐軍池數(唯一已知對映)。
 					marineLine := fmt.Sprintf("艦隊陸戰隊 %d", sess.FleetMarines)
 					if sess.SelectedStar == 0 && len(sess.PlayerColonyMarines) > 0 {
@@ -2529,6 +2531,18 @@ func (b *sceneBuilder) planets() (*overlayScreen, error) {
 				extraText{x: cx.min, y: y, size: 12, text: p.Mineral, col: body, align: 1},
 				extraText{x: cx.siz, y: y, size: 12, text: p.Size, col: body, align: 1},
 			)
+			// 兩項原版有、remake 先前完全沒顯示的資訊,各自塞進對應欄位格子的第二行
+			// (格高 50,主文字置中,y+13 這一行還在格內)。
+			//
+			// ⚠ 不要往 x>410 放:那裡是原版的排序/篩選面板,不是空白區——2026-08-06 試過一次,
+			// 文字直接疊在面板按鈕上。
+			sub := color.RGBA{150, 172, 205, 255}
+			if n := p.SystemBodyCountText(); n != "" {
+				s.extras = append(s.extras, extraText{x: cx.name, y: y + 11, size: 9, text: n, col: sub, align: 1})
+			}
+			if sp := gamedata.PlanetSpecialName(p.SpecialID); sp != "" {
+				s.extras = append(s.extras, extraText{x: cx.min, y: y + 11, size: 9, text: "★" + sp, col: sub, align: 1})
+			}
 		}
 	}
 	return s, nil
@@ -2617,23 +2631,29 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		click(608, 462), // t27: 殖民地總覽「RETURN」→ 星系主畫面
 		idle,            // t28: settle
 
-		click(495, 452), // t29: 工具列「INFO」→ 情報畫面
+		click(123, 450), // t29: 工具列「PLANETS」→ 行星列表
 		idle,            // t30: settle
-		idle,            // t31: settle → 截圖 info(預設分頁:歷史圖表)
-		click(21, 80),   // t32: INFO 左欄「科技總覽」分頁
-		idle,            // t33: settle → 截圖 info_tech
-		click(535, 434), // t34: INFO「RETURN」→ 星系主畫面
-		idle,            // t35: settle
+		idle,            // t31: settle → 截圖 planets
+		click(532, 451), // t32: 行星列表「返回」→ 星系主畫面
+		idle,            // t33: settle
 
-		click(420, 452), // t36: 工具列「RACES」→ 種族關係
-		idle,            // t37: settle
-		click(483, 428), // t38: 種族關係「REPORT」→ 外交對談
-		idle,            // t39: settle
-		idle,            // t40: settle → 截圖 diplomacy
-		click(320, 437), // t41: 外交對談「結束對談」→ 種族關係
-		click(388, 448), // t42: 種族關係「DECLARE WAR」→ 戰術戰鬥
-		idle,            // t43: settle
-		idle,            // t44: settle → 截圖 tactical
+		click(495, 452), // t34: 工具列「INFO」→ 情報畫面
+		idle,            // t35: settle
+		idle,            // t36: settle → 截圖 info(預設分頁:歷史圖表)
+		click(21, 80),   // t37: INFO 左欄「科技總覽」分頁
+		idle,            // t38: settle → 截圖 info_tech
+		click(535, 434), // t39: INFO「RETURN」→ 星系主畫面
+		idle,            // t40: settle
+
+		click(420, 452), // t41: 工具列「RACES」→ 種族關係
+		idle,            // t42: settle
+		click(483, 428), // t43: 種族關係「REPORT」→ 外交對談
+		idle,            // t44: settle
+		idle,            // t45: settle → 截圖 diplomacy
+		click(320, 437), // t46: 外交對談「結束對談」→ 種族關係
+		click(388, 448), // t47: 種族關係「DECLARE WAR」→ 戰術戰鬥
+		idle,            // t48: settle
+		idle,            // t49: settle → 截圖 tactical
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -2644,10 +2664,11 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{16, "06_turnsummary.png"},
 		{21, "07_colonysummary.png"},
 		{24, "08_colonyscreen.png"},
-		{31, "09_info.png"},
-		{33, "10_info_tech.png"},
-		{40, "11_diplomacy.png"},
-		{44, "12_tactical.png"},
+		{31, "09_planets.png"},
+		{36, "10_info.png"},
+		{38, "11_info_tech.png"},
+		{45, "12_diplomacy.png"},
+		{49, "13_tactical.png"},
 	}
 	return script, shots
 }

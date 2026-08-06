@@ -173,3 +173,68 @@ func TestAIContextualOwnNeighborScalesBySize(t *testing.T) {
 		t.Error("已殖民的星應走「加鄰居價值」路徑,不套用大小縮放折扣")
 	}
 }
+
+// --- Enemy_Colony_Worth_To_Player_ @ 0xD8D11 ---
+
+// 權重恆和 6(原版最後 idiv 6),且各檔的分派與組語逐條相同。
+func TestAIEnemyTargetWeightsSumToSix(t *testing.T) {
+	cases := []struct {
+		policy      AIForeignPolicy
+		owner, self int
+	}{
+		{DiploNone, 5, 1},
+		{DiploNonAggression, 5, 1},
+		{DiploAlliance, 5, 1},
+		{DiploPeace, 5, 1},
+		{DiploLimitedWar, 4, 2},
+		{DiploWar, 5, 1}, // ⚠ 原版對 5 沒有專屬分支,落在 default——不是漏寫
+		{DiploTotalWar, 6, 0},
+		{AIForeignPolicy(7), 5, 1},
+	}
+	for _, c := range cases {
+		o, s := aiEnemyTargetWeights(c.policy)
+		if o != c.owner || s != c.self {
+			t.Errorf("policy %d 權重 = (%d,%d),want (%d,%d)", c.policy, o, s, c.owner, c.self)
+		}
+		if o+s != AIEnemyTargetWeightSum {
+			t.Errorf("policy %d 權重和 = %d,want %d", c.policy, o+s, AIEnemyTargetWeightSum)
+		}
+	}
+}
+
+// 核心語意:目標估值偏向「主人的估值」——打他最痛的地方,不是搶我最想要的地方。
+func TestAIEnemyColonyValueFavoursVictimValuation(t *testing.T) {
+	const ownerVal, selfVal = 600, 60
+	peace := AIEnemyColonyValue(ownerVal, selfVal, DiploPeace, false)
+	limited := AIEnemyColonyValue(ownerVal, selfVal, DiploLimitedWar, false)
+	total := AIEnemyColonyValue(ownerVal, selfVal, DiploTotalWar, false)
+
+	// 全面戰爭那一檔完全不看自己想不想要(6:0)。
+	if total != ownerVal {
+		t.Errorf("全面戰爭應完全採用主人估值:%d,want %d", total, ownerVal)
+	}
+	// 有限戰爭給自己的估值多一點權重 → 在「主人估值 > 自己估值」時總分較低。
+	if limited >= peace {
+		t.Errorf("有限戰爭(4:2)應低於和平(5:1):%d vs %d", limited, peace)
+	}
+	// 三檔都應落在兩個估值之間。
+	for _, v := range []int{peace, limited, total} {
+		if v < selfVal || v > ownerVal {
+			t.Errorf("估值 %d 落在 [%d, %d] 之外", v, selfVal, ownerVal)
+		}
+	}
+}
+
+// shiftToSelf(原版玩家結構偏移 0x8B8 的種族旗標)把權重往自己的估值挪一格。
+func TestAIEnemyColonyValueShiftToSelf(t *testing.T) {
+	const ownerVal, selfVal = 600, 60
+	base := AIEnemyColonyValue(ownerVal, selfVal, DiploPeace, false)
+	shifted := AIEnemyColonyValue(ownerVal, selfVal, DiploPeace, true)
+	if shifted >= base {
+		t.Errorf("往自己的估值挪一格後應變低(自己估值較小):%d vs %d", shifted, base)
+	}
+	// 挪到底(6:0 → 5:1)不會讓權重變負。
+	if got := AIEnemyColonyValue(ownerVal, selfVal, DiploTotalWar, true); got >= ownerVal {
+		t.Errorf("全面戰爭挪一格後應低於純主人估值:%d", got)
+	}
+}

@@ -367,3 +367,81 @@ func AIColonyValue(in AIColonyValueInput, obj AIObjective) int {
 	}
 	return v
 }
+
+// --- 第五層:敵方殖民地作為攻擊目標的價值(原版 `Enemy_Colony_Worth_To_Player_` @ 0xD8D11)---
+//
+// ⚠ 位址訂正:先前的缺口報告寫 0xD2B3E,那是錯的。符號表裡這個函式在 **0xD8D11**,
+// module 95——與 `Assign_New_Colony_Ship_Destinations_`(0xD896F)、
+// `Best_Uncolonized_Undestined_Planet_`(0xD8C79)同一個模組,也就是 AI 決定「艦隊往哪去」
+// 的那一支,位置本身就佐證了它的用途。
+//
+// 這個函式短得出乎意料,而且設計很有意思:
+//
+//	w = 依「我對這個殖民地主人的外交狀態」決定的一組權重(兩個數字恆和為 6)
+//	return (w.owner * 該行星對**主人**的基礎估值
+//	      + w.self  * 該行星對**我**的基礎估值) / 6
+//
+// 兩個估值都取自 `_g_base_planet_values`(8 玩家 × 360 行星 × 2 bytes = 5760,由
+// `Compute_Base_Planet_Values_` 每回合逐玩家填好),也就是第一層 AIPlanetValue 的結果。
+// 組語裡那個 stride 0x2D0 = 720 bytes = 360 行星 × 2 bytes,正好對上這個維度。
+//
+// **權重偏向「主人的估值」而不是「我的估值」**——語意是「打他最痛的地方」,不是「搶我最想要
+// 的地方」。在最極端的那一檔(狀態 6)甚至是 6:0,完全不看自己想不想要。
+//
+// 外交狀態編碼取自 openorion2 `enum ForeignPolicy`(0 無/1 互不侵犯/2 同盟/3 和平/
+// 4 有限戰爭/5 戰爭,>5 也算戰爭)。原版的分派**不是單調的**:狀態 5(戰爭)與和平以下
+// 共用同一組權重,只有 4(有限戰爭)與 6 各自一組。照抄,不「修正」成看起來比較合理的樣子。
+
+// AIForeignPolicy 是外交狀態(openorion2 `enum ForeignPolicy`)。
+type AIForeignPolicy int
+
+const (
+	DiploNone          AIForeignPolicy = 0
+	DiploNonAggression AIForeignPolicy = 1
+	DiploAlliance      AIForeignPolicy = 2
+	DiploPeace         AIForeignPolicy = 3
+	DiploLimitedWar    AIForeignPolicy = 4
+	DiploWar           AIForeignPolicy = 5
+	DiploTotalWar      AIForeignPolicy = 6 // openorion2 只說「>5 也算戰爭」;原版對 6 另有一組權重
+)
+
+// AIEnemyTargetWeightSum 是兩個權重的總和(原版最後除以 6)。
+const AIEnemyTargetWeightSum = 6
+
+// aiEnemyTargetWeights 回傳 (主人估值權重, 自己估值權重),兩者恆和為 6。
+func aiEnemyTargetWeights(policy AIForeignPolicy) (owner, self int) {
+	switch {
+	case policy < DiploLimitedWar:
+		return 5, 1
+	case policy == DiploLimitedWar:
+		return 4, 2
+	case policy == DiploTotalWar:
+		return 6, 0
+	default: // 含 DiploWar(5) 與 >6:原版落在同一個 default
+		return 5, 1
+	}
+}
+
+// AIEnemyColonyValue 算一個敵方殖民地作為攻擊目標的價值。
+//
+// ownerValue / selfValue 分別是該行星對「殖民地主人」與「評估者」的基礎估值
+// (= AIPlanetValue 的結果,原版存在 `_g_base_planet_values`)。
+//
+// shiftToSelf 對應原版那個「評估者有、而殖民地主人沒有」的種族旗標(玩家結構偏移 0x8B8):
+// 成立時把權重往自己的估值挪一格(owner-1 / self+1)。該旗標語意尚未釘死,remake 一律傳
+// false——寧可少一個修正,也不套用語意不明的條件。
+func AIEnemyColonyValue(ownerValue, selfValue int, policy AIForeignPolicy, shiftToSelf bool) int {
+	wOwner, wSelf := aiEnemyTargetWeights(policy)
+	if shiftToSelf && wOwner > 0 {
+		wOwner--
+		wSelf++
+	}
+	v := (wOwner*ownerValue + wSelf*selfValue) / AIEnemyTargetWeightSum
+	if v < 0 {
+		return 0
+	}
+	if v > 65535 {
+		return 65535
+	}
+	return v
+}

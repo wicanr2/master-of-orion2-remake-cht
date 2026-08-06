@@ -148,8 +148,9 @@ func TestDiscoveryAncientArtifactsGrantsOneTech(t *testing.T) {
 			after++
 		}
 	}
-	if after != before+1 {
-		t.Errorf("已完成主題數應 %d,實得 %d(原版恆送 1 項)", before+1, after)
+	// 原版 `Random_(4)/4 + 1` → 1 項,25% 機率 2 項(Random_ 回 1..n,見 gamedata 訂正說明)。
+	if got := after - before; got < 1 || got > 2 {
+		t.Errorf("送出主題數 %d,應為 1 或 2", got)
 	}
 }
 

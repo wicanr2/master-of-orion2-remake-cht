@@ -201,6 +201,14 @@ func restorePlanetIDs(planets []Planet) {
 		if p.Gen >= planetGenVersion {
 			continue
 		}
+		// Gen 1 的存檔已經有全部 ID 欄位,只缺 Gen 2 才有的行星類別——舊生成器只產一般行星,
+		// 一律回填 HABITABLE 就是它當時的實際語意,不必重解字串。
+		if p.Gen >= 1 {
+			p.TypeID = gamedata.HABITABLE
+			p.Gen = planetGenVersion
+			continue
+		}
+		p.TypeID = gamedata.HABITABLE
 		if c, ok := climateFromDisplay(p.Climate); ok {
 			p.ClimateID = c
 		} else {

@@ -7,6 +7,7 @@ import (
 	"math"
 	"math/rand"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
@@ -1341,10 +1342,37 @@ type Planet struct {
 	// 原版是把結算後的 Star.special 覆寫成訊息碼來達成同樣的「只觸發一次」;remake 沒有
 	// Star.special,改用這個旗標,語意一致。
 	SpecialSeen bool
+
+	// TypeID 是這顆代表行星的類別(原版 `Generate_Satellite_Type_` + `_orbit_to_satellite_type`,
+	// 見 gamedata.RollSatelliteType)。氣態巨星/小行星帶不能直接殖民——手冊 p.61 只允許
+	// 「solid planet」建殖民地,那兩類要蓋前哨站。Gen < 2 的舊存檔沒有這個欄位,
+	// restorePlanetIDs 一律回填 HABITABLE(舊生成器本來就只產一般行星)。
+	TypeID gamedata.PlanetType
+
+	// SystemBodies 是同一顆恆星底下**除了代表行星以外**的其他天體(氣態巨星/小行星帶/
+	// 額外的一般行星),依軌道由內而外排列。
+	//
+	// 為什麼要有這個欄位:原版每顆恆星有 1-5 個天體各佔一條軌道,而 remake 的
+	// Stars[i] ↔ Planets[i] 是一一對應(UI/拓殖/AI 全依賴這個對齊)。折衷做法是——
+	// 代表行星仍然只有一顆(挑該系統裡最適合殖民的),其餘天體記在這裡供星系資訊面板顯示
+	// 與日後的前哨站使用。**這裡不重複放代表行星本身**,避免兩份資料要同步的老問題。
+	SystemBodies []SystemBody
+}
+
+// SystemBody 是恆星系裡的一個非代表天體(見 Planet.SystemBodies)。
+// 只帶顯示與前哨站判斷需要的最小資訊,不是完整的 Planet——它沒有殖民地、沒有特殊物產結算。
+type SystemBody struct {
+	Orbit  int                 // 軌道 0..4(由內而外)
+	Type   gamedata.PlanetType // 小行星帶 / 氣態巨星 / 一般行星
+	Name   string              // 顯示名(恆星名 + 羅馬數字)
+	SizeID gamedata.PlanetSize // 一般行星才有意義;氣態巨星/小行星帶留零值
 }
 
 // planetGenVersion 是目前生成器版本,寫進 Planet.Gen。
-const planetGenVersion = 1
+//
+//	1 = 原版骰表(光譜/大小/氣候/礦產/重力/行星數)
+//	2 = 再加上行星類別(氣態巨星/小行星帶,`_orbit_to_satellite_type`)與同系其他天體
+const planetGenVersion = 2
 
 // galaxyAgeSetting 是星系年齡設定。原版把它放在新遊戲畫面(Youthful/Average/Mature),
 // remake 的新遊戲流程還沒有這個選項,先固定 Average——它影響光譜分布與氣候骰表(見
@@ -1383,6 +1411,7 @@ func genPlanets(stars []Star, r *rand.Rand, age gamedata.GalaxyAge, homeStars ma
 		p := Planet{Gen: planetGenVersion}
 
 		if homeStars[i] {
+			p.TypeID = gamedata.HABITABLE
 			// 母星不骰:直接給與 playerHomeworldColony 一致的行星資料。
 			//
 			// 為什麼要特判:母星的殖民地狀態(playerHomeworldColony,硬編 Terran/Medium/Abundant,
@@ -1412,12 +1441,27 @@ func genPlanets(stars []Star, r *rand.Rand, age gamedata.GalaxyAge, homeStars ma
 			continue
 		}
 
-		orbit := r.Intn(5)
-		if nPlanets > 0 && nPlanets <= 5 {
-			orbit = r.Intn(nPlanets)
+		// 依原版 `_orbit_to_satellite_type` 骰出這個恆星系每條軌道上的天體類別,
+		// 再挑一顆「代表行星」:優先一般行星(可殖民),整組都不宜居時才退而取第一個天體。
+		// 這樣每顆星的**可殖民與否**與原版一致(原版一個系統只要有一顆一般行星就能殖民),
+		// 而不是把單一天體的類別直接當成整顆星的命運。
+		if nPlanets > 5 {
+			nPlanets = 5
+		}
+		types := make([]gamedata.PlanetType, nPlanets)
+		for o := 0; o < nPlanets; o++ {
+			types[o], _ = gamedata.RollSatelliteType(r.Intn(10)+1, o, r.Intn(100)+1)
+		}
+		orbit := 0
+		for o := 0; o < nPlanets; o++ {
+			if types[o] == gamedata.HABITABLE {
+				orbit = o
+				break
+			}
 		}
 		group := gamedata.PlanetOrbitGroup(sc, orbit)
 
+		p.TypeID = types[orbit]
 		p.Orbit = orbit
 		p.SizeID = gamedata.RollPlanetSize(r.Intn(10) + 1)
 		p.MineralID = gamedata.RollMineralClass(r.Intn(10)+1, sc)
@@ -1431,9 +1475,77 @@ func genPlanets(stars []Star, r *rand.Rand, age gamedata.GalaxyAge, homeStars ma
 		p.Gravity = gravityDisplayName(p.GravityID)
 		p.Mineral = mineralDisplayName(p.MineralID)
 		p.Size = sizeDisplayName(p.SizeID)
+		if p.TypeID != gamedata.HABITABLE {
+			// 氣態巨星/小行星帶沒有氣候與農業,顯示字串換掉——沿用一般行星的「凍原/海洋」
+			// 會讓玩家以為那是可以殖民的星。礦產/重力/大小仍有意義(前哨站升級後會用到)。
+			p.Climate = planetTypeDisplayName(p.TypeID)
+		}
+		// 同系其他天體(不含代表行星本身,見 Planet.SystemBodies 註解)。
+		for o := 0; o < nPlanets; o++ {
+			if o == orbit {
+				continue
+			}
+			b := SystemBody{Orbit: o, Type: types[o], Name: s.Name + " " + roman[o]}
+			if types[o] == gamedata.HABITABLE {
+				b.SizeID = gamedata.RollPlanetSize(r.Intn(10) + 1)
+			}
+			p.SystemBodies = append(p.SystemBodies, b)
+		}
 		out = append(out, p)
 	}
 	return out
+}
+
+// SystemCompositionText 回傳「同一恆星系裡除了代表行星以外還有什麼」的摘要字串
+// (如「同系:氣態巨星×2、小行星帶」);沒有其他天體回空字串。供星系資訊面板顯示。
+func (p Planet) SystemCompositionText() string {
+	if len(p.SystemBodies) == 0 {
+		return ""
+	}
+	order := []gamedata.PlanetType{gamedata.HABITABLE, gamedata.GAS_GIANT, gamedata.ASTEROIDS}
+	n := map[gamedata.PlanetType]int{}
+	for _, b := range p.SystemBodies {
+		n[b.Type]++
+	}
+	out := ""
+	for _, t := range order {
+		if n[t] == 0 {
+			continue
+		}
+		if out != "" {
+			out += "、"
+		}
+		out += planetTypeDisplayName(t)
+		if n[t] > 1 {
+			out += "×" + strconv.Itoa(n[t])
+		}
+	}
+	if out == "" {
+		return ""
+	}
+	return "同系:" + out
+}
+
+// SystemBodyCountText 回傳「同系還有幾個天體」的極短字串(如「另有 3 天體」),
+// 供欄位很窄的行星列表用;沒有其他天體回空字串。完整組成用 SystemCompositionText。
+func (p Planet) SystemBodyCountText() string {
+	if len(p.SystemBodies) == 0 {
+		return ""
+	}
+	return "另有 " + strconv.Itoa(len(p.SystemBodies)) + " 天體"
+}
+
+// planetTypeDisplayName 回傳行星類別的中文顯示名。
+func planetTypeDisplayName(t gamedata.PlanetType) string {
+	switch t {
+	case gamedata.ASTEROIDS:
+		return "小行星帶"
+	case gamedata.GAS_GIANT:
+		return "氣態巨星"
+	case gamedata.HABITABLE:
+		return "一般行星"
+	}
+	return "未知"
 }
 
 // Race 是可選種族(名稱 + 起始加成)。加成對齊 MOO2 各族招牌特性(remake 調校值,非自訂點數精算):
@@ -1889,6 +2001,7 @@ type GameSession struct {
 	// LastEspionage 是本回合諜報結算的訊息(供回合摘要顯示;每回合開頭清空)。
 	LastEspionage []string
 	spyRand       *rand.Rand // 間諜擲骰亂數源(由 EventSeed 惰性建立,比照 eventRand 慣例)
+	discoveryRand *rand.Rand // 星系發現擲骰亂數源(見 discovery.go discoveryRoll,同上慣例)
 }
 
 // 安塔蘭人入侵參數:MOO2 的週期性終局威脅。前期寬限,之後每隔數回合一次突襲,強度隨次數升級。
@@ -2470,6 +2583,11 @@ func (s *GameSession) aiPlanetValue(aiIdx, starIdx int) int {
 	if p.NoPlanet || p.Gen < planetGenVersion {
 		return 0
 	}
+	// 氣態巨星/小行星帶不能殖民(原版 AIPlanetValue 開頭也是 `type != HABITABLE → 0`),
+	// AI 不該把它們排進拓殖目標。
+	if p.TypeID != gamedata.HABITABLE {
+		return 0
+	}
 	if !climateColonizable(p.ClimateID) {
 		return 0
 	}
@@ -2593,7 +2711,8 @@ func (s *GameSession) aiPlanetBaseValue(starIdx int, obj gamedata.AIObjective) i
 		return 0
 	}
 	p := s.Planets[starIdx]
-	if p.NoPlanet || p.Gen < planetGenVersion || !climateColonizable(p.ClimateID) {
+	if p.NoPlanet || p.Gen < planetGenVersion || p.TypeID != gamedata.HABITABLE ||
+		!climateColonizable(p.ClimateID) {
 		return 0
 	}
 	return gamedata.AIPlanetValue(gamedata.AIPlanetValueInput{

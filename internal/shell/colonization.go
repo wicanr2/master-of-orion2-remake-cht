@@ -265,8 +265,18 @@ func (s *GameSession) newColonyFromStar(starIdx int, gov gamedata.MoraleGovernme
 			size = gamedata.MEDIUM_PLANET // 不應發生的保守預設,見 sizeDisplayToGamedata
 		}
 	}
+	// 行星類別門檻(手冊 p.61:「A Colony Ship can establish a colonial foothold on any
+	// uncolonized planet」但 p.55 明講殖民地只能建在 solid planet 上)。氣態巨星/小行星帶
+	// 要先蓋前哨站、再解鎖對應科技才能升級成殖民地——remake 目前只做到「擋下來並說明原因」,
+	// 前哨站本身還沒實作(見 docs/re/01-gap-report.md 第三梯)。
+	//
+	// Gen < 2 的舊存檔沒有 TypeID(零值 0 不是任何合法類別),restorePlanetIDs 已回填
+	// HABITABLE;這裡再擋一次零值,免得手改過的存檔繞過去。
+	if planet.TypeID != 0 && planet.TypeID != gamedata.HABITABLE {
+		return engine.ColonyState{}, false, planetTypeDisplayName(planet.TypeID) + "不能直接殖民,需要前哨站(尚未實作)"
+	}
 	if !climateColonizable(climate) {
-		return engine.ColonyState{}, false, "此類行星需額外科技才能建立殖民地(氣態巨星/小行星帶,尚未支援)"
+		return engine.ColonyState{}, false, "此類行星的氣候無法建立殖民地"
 	}
 
 	// 行星特殊物產的效果(手冊定性 + 反組譯定量,見 gamedata/planet_special.go)。
