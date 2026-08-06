@@ -59,7 +59,7 @@
 
 | # | 原版畫面 | 影響 | 備註 |
 |---|---|---|---|
-| 1 | **`Colony`**(獨立殖民地畫面) | 高 | 原版 `Colony` 與 `Colony_Summary` 是**兩個不同畫面**;remake 只有總覽,缺單一殖民地的詳細管理畫面 |
+| 1 | ~~**`Colony`**(獨立殖民地畫面)~~ | 高 | ✅ 2026-08-06 已建(`cmd/moo2/colonyscreen.go`),從總覽點殖民地名進入;含 7 格建造佇列。版面未對齊原版(無 COLONY.LBX 版面資料),結構與流程已對 |
 | 2 | **`Event`** | 高 | 原版事件有**專屬畫面**;remake 把事件塞進回合摘要文字(與 issue #3「事件黃框」直接相關) |
 | 3 | **`Tech_Review`** | 中高 | INFO 子畫面;remake 誤接成研究選擇跳板(issue #5-2 根因,**二進位證實**) |
 | 4 | **`History`** | 中高 | INFO 子畫面,國力折線圖(issue #5-1);資料源是原版 module 122 的 `Record_History_` |
@@ -166,6 +166,23 @@
 
 ## 優先序(依「對還原度的槓桿 ÷ 成本」)
 
+### 原版畫面流程(反編 call graph,2026-08-06)
+
+從 `.asm` 的 call 關係過濾出畫面主迴圈函式,得到原版的畫面跳轉:
+
+```
+Main_Menu_Screen_   → Do_Mainmenu_Load_Screen_
+Newgame_Screen_     → Race_Selection_Screen_
+Race_Selection_Screen_ → Racial_Option_Screen_ | Flag_Screen_
+Racial_Option_Screen_  → Flag_Screen_
+Main_Screen_        → Do_Colony_Screen_ / Get_Ship_Stack_For_Officers_Screen_ / Get_Star_Id_For_Officers_Screen_
+Race_Screen_        → Diplomacy_Screen_ / Race_Report_Screen_
+Planet_Colonization_In_Main_Screen_ → Colony_Landing_Screen_
+Hotseat_Screen_ / Start_Net_Screen_ → Race_Selection_Screen_
+```
+
+remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_` 是先前缺的那一層。
+
 ### 第一梯 — 已完成(2026-08-06)
 1. ~~星系/行星生成表~~ → **已接進 remake**(`gamedata/galaxygen.go`,commit `f8bbcbd`)。
    光譜/大小/氣候/礦產/重力/行星數全部改用原版骰表,並加了分布回歸測試。
@@ -182,7 +199,8 @@
 5. **`_personality_*` 6 張表 + AI 行星估值** → 把 remake 手寫 AI 換成原版行為模型。
 6. **一星多行星** → 原版每顆恆星 1–5 顆行星各佔一條軌道;remake 的 `Stars`/`Planets`
    索引一一對應是 UI/拓殖/AI 共同的假設,拆開是跨層改造(見 `genPlanets` 註解)。
-7. **獨立 Colony 畫面 + Event 畫面** → 兩個原版有而 remake 缺的核心畫面。
+7. ~~獨立 Colony 畫面~~ → **已完成**(2026-08-06)。**Event 畫面**仍缺:原版事件有專屬畫面,
+   remake 把事件塞進回合摘要文字。
 8. **地面戰解算**(`Resolve_Ground_Combat_` / `Ground_Combat_Round_`)→ 取代目前沿用一代 1oom 的借用結構。
 
 ### 第三梯:補完整性
