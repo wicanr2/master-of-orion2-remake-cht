@@ -32,15 +32,21 @@ import (
 //	LOAD 鈕     (37, 337),圖 game.lbx 資產 21
 //	CANCEL 鈕   (171, 338),68×22,圖 game.lbx 資產 22
 //	存檔槽      10 格,第 i 格 (22, 22 + 31×i),232×27
-//	槽內文字    (_x + 32, _y + 24 + 31×i)
+//	槽內第一行  存檔名 (_x + 32, _y + 24 + 31×i)
+//	槽內第二行  星曆 (_x + 32, +14)、存檔時間 (_x + 122, +14),皆用更小一級的字
+//	對局類型    圖示 (_x + 206, +12)
 //	最後一格    固定是自動存檔(`if (slot == SAVEGAME_SLOTS - 1)` → ESTR_SAVESLOT_AUTO)
 //
 // 上面除了「置中」是公式,其餘都是硬編立即數,一個都沒有估。槽位規格(10 格、末格自動存檔)
 // 見 internal/shell/saveslots.go 檔頭。
 //
-// ⚠ 誠實留白:原版這個視窗右側還會依存檔類型畫單人/熱座/網路/數據機四種圖示
-// (`ASSET_LOAD_SINGLE`=23 / `HOTSEAT`=24 / `NETWORK`=25 / `MODEM`=26)。remake 只有單人對局,
-// 四種圖示只會有一種,畫上去等於裝飾,故不畫——等多人連線子專案落地再補。
+// 對局類型圖示(2026-08-07 補):原版右側依存檔類型畫單人/熱座/網路/數據機四種
+// (`ASSET_LOAD_SINGLE`=23 / `HOTSEAT`=24 / `NETWORK`=25 / `MODEM`=26,位置
+// `_x + 206, y + 12`)。熱座落地後 remake 有單人與熱座兩種對局,兩種圖示都畫得出來,
+// 故接上;網路/數據機 remake 沒有,那兩張永遠不會被選到。
+//
+// ⚠ 誠實留白:remake 存檔用自己的 JSON 格式,不是原版 `.GAM`
+// (原版格式由 `internal/save` **唯讀**解析,寫回不在範圍內)。
 
 // 原版載入視窗的資產與座標(openorion2 mainmenu.cpp)。
 const (
@@ -61,7 +67,16 @@ const (
 	loadSlotX, loadSlotY0    = 22, 22
 	loadSlotW, loadSlotH     = 232, 27
 	loadSlotStep             = 31
-	loadSlotTextX, loadTextY = 32, 24 // 槽內文字相對視窗左上的偏移
+	loadSlotTextX, loadTextY = 32, 24 // 槽內第一行(存檔名)相對視窗左上的偏移
+
+	// 第二行:星曆在名稱正下方 14px,存檔時間在 x+122(openorion2 drawSlot:
+	// `smallfnt->renderText(_x + 32, y + 14, …)` 與 `(_x + 122, y + 14, …)`)。
+	loadSlotSubDY   = 14
+	loadSlotTimeX   = 122
+	loadSlotIconX   = 206 // 對局類型圖示 `_singleIcon->draw(_x + 206, y + 12)`
+	loadSlotIconDY  = 12
+	loadWinIconSing = 23 // ASSET_LOAD_SINGLE
+	loadWinIconHot  = 24 // ASSET_LOAD_HOTSEAT
 )
 
 // saveLoadMode 決定這個視窗是「讀」還是「存」(原版共用同一個視窗,見檔頭)。
@@ -82,6 +97,8 @@ type loadGameScreen struct {
 	backName string
 
 	bg, loadBtn, cancelBtn *ebiten.Image
+	// singleIcon / hotseatIcon 是槽右側的對局類型圖示(見檔頭)。
+	singleIcon, hotseatIcon *ebiten.Image
 	// loadFace / cancelFace 是兩顆鈕的「面色」,用來擦掉烘在圖上的英文(LOAD / CANCEL)
 	// 再疊中文——與 overlayScreen 的擦底疊字同一套手法,只是這裡是自繪畫面,得自己採樣。
 	loadFace, cancelFace   color.RGBA
@@ -121,6 +138,8 @@ func newLoadGameScreen(b *sceneBuilder, mode saveLoadMode, back func() (*overlay
 	s.bg, _ = loadWinImage(b.res, loadWinBGAsset, false)
 	s.loadBtn, s.loadFace = loadWinImage(b.res, loadWinBtnAsset, true)
 	s.cancelBtn, s.cancelFace = loadWinImage(b.res, loadWinCanAsset, true)
+	s.singleIcon, _ = loadWinImage(b.res, loadWinIconSing, true)
+	s.hotseatIcon, _ = loadWinImage(b.res, loadWinIconHot, true)
 	// 視窗置中(openorion2:_x = (SCREEN_WIDTH − _width) / 2)。
 	s.winW, s.winH = 276, 376 // 取不到背景時的退路尺寸(實測 game.lbx#20 為此尺寸)
 	if s.bg != nil {
@@ -280,7 +299,25 @@ func (s *loadGameScreen) draw(dst *ebiten.Image) {
 			title = fmt.Sprintf("自動  %s", name)
 		}
 		s.fnt.Draw(dst, title, tx, ty, 12, col)
-		s.fnt.Draw(dst, fmt.Sprintf("星曆 %s", sl.Stardate), tx+140, ty, 11, col)
+		// 第二行:星曆在名稱正下方、存檔時間在 +122(原版 drawSlot 的兩個 renderText)。
+		s.fnt.Draw(dst, fmt.Sprintf("星曆 %s", sl.Stardate), tx, ty+loadSlotSubDY, 10, col)
+		if !sl.Modified.IsZero() {
+			// 日期用兩位數年份(26/08/06):這一欄從 x+122 起,x+206 就是對局類型圖示,
+			// 只有 84px 可用。原版在這裡用的是 C 的 `%x`,在 C locale 同樣是兩位數年份的
+			// 八字元日期——寫完整年月日會壓到圖示上,那是版面本來就沒有的空間。
+			s.fnt.Draw(dst, sl.Modified.Format("06/01/02 15:04"),
+				float64(s.winX+loadSlotTimeX), ty+loadSlotSubDY, 10, col)
+		}
+		// 對局類型圖示:remake 只會是單人或熱座(網路/數據機沒做)。
+		icon := s.singleIcon
+		if sl.Hotseat {
+			icon = s.hotseatIcon
+		}
+		if icon != nil {
+			op := &ebiten.DrawImageOptions{}
+			op.GeoM.Translate(float64(s.winX+loadSlotIconX), ty+loadSlotIconDY)
+			dst.DrawImage(icon, op)
+		}
 	}
 
 	if s.loadBtn != nil {

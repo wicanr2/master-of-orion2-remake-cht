@@ -3045,6 +3045,15 @@ func (a *interactiveApp) Update() error {
 				fmt.Fprintln(os.Stderr, "截圖廊寫示範存檔:", err)
 			}
 		}
+		// 其中一格改寫成熱座局,好讓列表右側的兩種對局圖示都露出來。
+		// 用「讀回來的獨立 session」設熱座,不動正在跑的 gallerySession——
+		// SetupHotseat 會接管 AI 對手,直接對活的對局做會影響後面幾拍的畫面。
+		if hs, err := shell.LoadSession(shell.SaveSlotPath(dir, 4)); err == nil {
+			hs.SetupHotseat(2)
+			if err := hs.Save(shell.SaveSlotPath(dir, 4)); err != nil {
+				fmt.Fprintln(os.Stderr, "截圖廊寫熱座示範存檔:", err)
+			}
+		}
 		if sc, err := a.galleryBuilder.loadGame(); err == nil {
 			a.cur = sc
 		}

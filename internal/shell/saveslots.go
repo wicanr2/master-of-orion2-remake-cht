@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 // saveslots.go:存檔槽。
@@ -56,6 +57,12 @@ type SaveSlotInfo struct {
 	Turn     int    // 存檔當時的回合
 	Stardate string // 由回合換算的星曆(原版列表顯示星曆,見 HSTR_SAVESLOT_STARDATE)
 	Empire   string // 玩家帝國/領袖名
+	// Hotseat 是這個存檔是不是熱座局(原版存檔header的 `multiplayer` 欄位,
+	// openorion2 `MultiplayerType`;載入視窗右側依此畫不同圖示)。
+	Hotseat bool
+	// Modified 是存檔檔案的修改時間(原版列表在星曆右邊顯示存檔日期時間,
+	// openorion2 drawSlot:`buf.ftime("%x   %H:%M", ltime)` 畫在 `_x+122, y+14`)。
+	Modified time.Time
 }
 
 // SaveSlotPath 回傳某個槽的存檔路徑。dir 為存檔目錄。
@@ -75,6 +82,9 @@ type saveSlotPeek struct {
 	Version    int    `json:"version"`
 	Turn       int    `json:"turn"`
 	PlayerName string `json:"playerName"`
+	// Seats 只需要知道「有幾席」,所以解成 json.RawMessage 的陣列就夠——
+	// 不必為了列表顯示把每一席的完整帝國狀態都解出來。
+	Seats []json.RawMessage `json:"seats"`
 }
 
 // ReadSaveSlot 讀取單一槽的摘要。檔案不存在或不可讀時回傳 Exists=false(不回錯誤——
@@ -93,6 +103,10 @@ func ReadSaveSlot(dir string, slot int) SaveSlotInfo {
 	info.Turn = p.Turn
 	info.Stardate = StardateForTurn(p.Turn)
 	info.Empire = p.PlayerName
+	info.Hotseat = len(p.Seats) > 1
+	if st, err := os.Stat(info.Path); err == nil {
+		info.Modified = st.ModTime()
+	}
 	return info
 }
 

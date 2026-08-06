@@ -37,8 +37,8 @@ const (
 
 // hotseatScreen 是換人時的交接畫面。
 type hotseatScreen struct {
-	b    *sceneBuilder
-	fnt  *uifont.Font
+	b     *sceneBuilder
+	fnt   *uifont.Font
 	name  string // 接手的玩家
 	seat  int    // 接手的席位(0-based)
 	total int    // 這一局共幾席
