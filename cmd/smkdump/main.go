@@ -48,6 +48,16 @@ func main() {
 	for _, w := range d.TreeWarnings() {
 		fmt.Printf("  ⚠ %s\n", w)
 	}
+	// SMKDUMP_LAST=1:只輸出最後一幀(判斷「這段影片是哪個結局」最快的方法——
+	// 檔名是二手推論,畫面內容才是一手資料)。
+	if os.Getenv("SMKDUMP_LAST") != "" {
+		every, maxShots = d.H.Frames, 1
+		for i := 0; i < d.H.Frames-1; i++ {
+			if _, _, err := d.DecodeNext(); err != nil {
+				fatal(fmt.Errorf("第 %d 幀: %w", i, err))
+			}
+		}
+	}
 	shots, overFrames, overBits := 0, 0, 0
 	for i := 0; i < d.H.Frames && shots < maxShots; i++ {
 		pix, pal, err := d.DecodeNext()
@@ -75,7 +85,7 @@ func main() {
 				}
 			}
 		}
-		if i%every != 0 {
+		if os.Getenv("SMKDUMP_LAST") == "" && i%every != 0 {
 			continue
 		}
 		img := image.NewRGBA(image.Rect(0, 0, d.H.Width, d.H.Height))

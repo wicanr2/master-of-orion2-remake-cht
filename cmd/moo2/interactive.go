@@ -326,6 +326,9 @@ func loadOverlayScreen(res *assets.Resolver, lbxName string, assetID int, lang i
 // --- sceneBuilder:依需求建構各原版畫面(共用 resolver/字型/語言)---
 
 type sceneBuilder struct {
+	// skipCutscenes:headless 驗證與截圖廊要跳過流程中的過場影片——那些腳本是逐 tick
+	// 數出來的,插一段會一直往前播的影片會整串偏掉。截圖廊另外用 tick 注入單獨截過場。
+	skipCutscenes     bool
 	res               *assets.Resolver
 	fnt               *uifont.Font // 內文用字型(zh 為混合:內文點陣、標題向量)
 	fntVec            *uifont.Font // 純向量 Noto(供主選單等要平滑的畫面;nil 時退回 fnt)
@@ -697,9 +700,15 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					return &origTransition{next: sc}
 				}
 			}
-			// 對局已分出勝負 → 直接進最終得分畫面(原版 Hi-Score / Hall of Fame,module 60)。
+			// 對局已分出勝負 → 先播結局過場,再進最終得分(原版也是這個順序)。
 			// 排在事件快報之前:遊戲都結束了,再播一則新聞快報只是擋路。
+			// 過場載不動就直接跳到最終得分——結局片不該擋住結算。
 			if b.session.Victory.Over {
+				if !b.skipCutscenes {
+					if sc := b.endingCutsceneFor(); sc != nil {
+						return &origTransition{next: sc}
+					}
+				}
 				return b.goTo(b.hiScore, "最終得分")
 			}
 			// 本回合有隨機事件或星系發現 → 先播快報(原版事件有專屬畫面,不是回合摘要裡一行字,
@@ -2703,8 +2712,10 @@ type interactiveApp struct {
 	galleryBombTick int
 	// galleryIntroTick 是截圖廊在哪個 tick 切到片頭過場(見該常數說明)。
 	galleryIntroTick int
-	galleryBuilder   *sceneBuilder
-	gallerySession   *shell.GameSession
+	// galleryEndingTick 是截圖廊在哪個 tick 切到結局過場(見該常數說明)。
+	galleryEndingTick int
+	galleryBuilder    *sceneBuilder
+	gallerySession    *shell.GameSession
 }
 
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
@@ -2739,6 +2750,12 @@ const galleryIntroTick = 75
 
 // galleryIntroSeekFrames 是截圖廊要快轉幾幀才截圖(取一個已確認有內容的畫面)。
 const galleryIntroSeekFrames = 350
+
+// galleryEndingTick 是截圖廊在哪個 tick 切到結局過場;同樣要快轉(第一幀是黑的)。
+const galleryEndingTick = 79
+
+// galleryEndingSeekFrames 是結局過場要快轉幾幀(ANWINFIN 共 323 幀,取中後段)。
+const galleryEndingSeekFrames = 220
 
 // galleryShot 是「端到端過場截圖廊」腳本中,在某個絕對 tick 存一張圖的指令。
 type galleryShot struct {
@@ -2876,6 +2893,10 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		idle, // t76: settle
 		idle, // t77: settle
 		idle, // t78: settle → 截圖 intro(已播幾幀,不是全黑的第一幀)
+
+		// 結局過場(勝負分出後、進最終得分前播的那一段)。同樣由 tick 注入 + 快轉。
+		idle, // t79: 由 galleryEndingTick 換成結局過場
+		idle, // t80: settle → 截圖 ending
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -2899,6 +2920,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{72, "19_gamemenu.png"},
 		{74, "20_bombing.png"},
 		{78, "21_intro.png"},
+		{80, "22_ending.png"},
 	}
 	return script, shots
 }
@@ -3035,6 +3057,15 @@ func (a *interactiveApp) Update() error {
 			a.cur = sc
 		}
 	}
+	// 截圖廊專用:結局過場。正常模式是勝負分出後自動播,這裡直接推上來 + 快轉。
+	if a.galleryEndingTick > 0 && a.tick == a.galleryEndingTick && a.galleryBuilder != nil {
+		if sc := a.galleryBuilder.endingCutsceneFor(); sc != nil {
+			if cs, ok := sc.(*cutsceneScreen); ok {
+				cs.seekForGallery(galleryEndingSeekFrames)
+			}
+			a.cur = sc
+		}
+	}
 	if t := a.cur.update(a.pollInput()); t != nil {
 		if t.quit {
 			return ebiten.Termination
@@ -3112,6 +3143,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		return err
 	}
 	b := &sceneBuilder{res: res, fnt: fnt, fntVec: fntVec, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: 1, designWeapon: 1, savePath: savePathFor(), gameVersion: gamedata.VersionCommunity15}
+	b.skipCutscenes = shot != "" || galleryDir != "" // 見該欄位註解
 	// 傭兵候選池改用原版 HERODATA.LBX 真英雄(解析失敗自動退回內建策展名單,不擋遊戲);快取一份
 	// 供新局/讀檔後重新注入(SetupNewGame 保留注入池,LoadSession 建新 session 需重注)。
 	b.herodataMercs = loadHerodataMercs(res)
@@ -3143,7 +3175,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 	// 正常互動模式先播片頭(原版 Smack 過場,見 cmd/moo2/cutscene.go);headless 驗證
 	// 與截圖廊直接進主選單——那些腳本是從主選單第一拍開始數 tick 的,插一段影片會整串偏掉。
 	start := origScreen(menu)
-	if shot == "" && galleryDir == "" {
+	if !b.skipCutscenes {
 		if sc := b.intro(); sc != nil {
 			start = sc
 		}
@@ -3160,6 +3192,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.galleryGameMenuTick = galleryGameMenuTick
 		app.galleryBombTick = galleryBombTick
 		app.galleryIntroTick = galleryIntroTick
+		app.galleryEndingTick = galleryEndingTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,

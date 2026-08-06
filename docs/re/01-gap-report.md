@@ -567,8 +567,34 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     接線:正常互動模式開場播片頭(整數倍放大置中、點任意處跳過、載不動就直接進主選單);
     headless 驗證與截圖廊直接進主選單——那些腳本是從主選單第一拍開始數 tick 的。
 
+    **結局過場也接了**(2026-08-07,`internal/gamedata/cutscene.go`)。這一步的重點是
+    **對映不能照檔名猜**——專案紀律明訂一手資料勝過檔名推論。三條獨立證據:
+
+    ① **反組譯**(唯一的直接證據,但只涵蓋三個檔):執行檔字串表裡只有三個 `*FIN` 名字,
+       而且呼叫端明白告訴我們**它們根本不是結局**——
+       `AMEBAFIN` 與 `PLNTDFIN` ← `Bomb_Results_Popups_` @ 0xE85F7 +
+       `Do_Attacker_Beat_Colony_Stuff_` @ 0xE87D2;`DIMTVFIN` ← `Tactical_Combat_` @ 0x47939。
+       其餘六個名字執行檔**完全沒有字面引用**,存在 `ESTRINGS.LBX` 的字串池裡
+       (按字母排序的資產名池,前後文認不出語意)。
+
+    ② **尺寸分群**:九個檔剛好分成兩群——480×160(INTRO / WININFIN / GENWINFN / LOSERFIN /
+       ANWINFIN)與 288×208(AMEBAFIN / PLNTDFIN / DIMTVFIN / ORIONFIN / ANATKFIN)。
+       ①已證實的三個遊戲內事件動畫**全都是 288×208**,片頭則是 480×160。
+       所以 **ORIONFIN 與 ANATKFIN 跟著事件那群走,不是結局**——光看檔名會全部猜錯。
+
+    ③ **末幀內容**(解出來直接看):GENWINFN 收在**遊戲標題 logo**、LOSERFIN 收在**燃燒中的
+       廢墟城市**、ORIONFIN 收在**行星表面的城市**(與 288×208 事件群一致)。
+
+    接線:勝負分出 → 依 `Victory` 選過場(敗北 LOSERFIN / 安塔蘭勝 ANWINFIN / 其餘 GENWINFN)
+    → 播完或點擊 → 最終得分。過場載不動就直接跳到最終得分,不擋結算。
+
+    ⚠ **仍未定**:`WININFIN` 與 `GENWINFN` 都在結局群,但「哪一個對應哪一種勝利」沒有證據
+    ——挑選它們的程式碼不在執行檔的字面引用裡。remake 一律用 `GENWINFN`(已由末幀確認是
+    完整結局片),`WININFIN` 標為待定,不臆測。`ORIONFIN` / `ANATKFIN` 等事件動畫也還沒接
+    (前者需要獵戶座星系,remake 還沒有)。清單見 `gamedata.UnmappedCutscenes`。
+
     ⚠ 誠實留白:**只有畫面沒有聲音**。Smacker 的音軌是壓縮的(片頭第 0 軌 23748 bytes、
     11025 Hz),解碼器跳過音訊區塊——那需要再實作一組 Smacker 音訊 Huffman,與畫面是兩套
-    獨立的編碼。另外只接了片頭,各結局過場(`*FIN.LBX`)還沒接到對應的結局流程。
+    獨立的編碼。
 
 20. 多人連線(獨立子專案)。

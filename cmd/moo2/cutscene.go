@@ -7,6 +7,8 @@ import (
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/smk"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
@@ -140,10 +142,10 @@ func (s *cutsceneScreen) seekForGallery(n int) {
 	}
 }
 
-// intro 播放片頭(INTRO.LBX),播完或點擊後進主選單。
+// intro 播放片頭,播完或點擊後進主選單。
 // 影片載不動時直接回主選單——過場不該擋住玩家進遊戲。
 func (b *sceneBuilder) intro() origScreen {
-	if sc := newCutsceneScreen(b, "intro.lbx", b.menu, "主選單"); sc != nil {
+	if sc := newCutsceneScreen(b, gamedata.CutsceneFileFor(gamedata.CutsceneIntro), b.menu, "主選單"); sc != nil {
 		return sc
 	}
 	s, err := b.menu()
@@ -151,4 +153,30 @@ func (b *sceneBuilder) intro() origScreen {
 		return nil
 	}
 	return s
+}
+
+// endingCutsceneFor 依這局的勝負挑一段結局過場(對映依據見 gamedata/cutscene.go 檔頭)。
+// 沒有對應的過場、或影片載不動時回 nil,呼叫端直接跳到最終得分——結局片不該擋住結算。
+func (b *sceneBuilder) endingCutsceneFor() origScreen {
+	if b.session == nil || !b.session.Victory.Over {
+		return nil
+	}
+	var kind gamedata.CutsceneKind
+	switch {
+	case b.session.Victory.Winner != "player":
+		kind = gamedata.CutsceneDefeat
+	case b.session.Victory.Reason == engine.VictoryAntaran:
+		kind = gamedata.CutsceneAntaranWin
+	default:
+		kind = gamedata.CutsceneWin
+	}
+	name := gamedata.CutsceneFileFor(kind)
+	if name == "" {
+		return nil
+	}
+	// 結局片播完 → 最終得分(原版也是結局片接 Hall of Fame)。
+	if sc := newCutsceneScreen(b, name, b.hiScore, "最終得分"); sc != nil {
+		return sc
+	}
+	return nil
 }
