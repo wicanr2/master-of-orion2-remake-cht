@@ -232,11 +232,14 @@ func (g *groundCombatScreen) draw(dst *ebiten.Image) {
 	defCol := color.RGBA{240, 160, 140, 255}
 
 	// 標題:原版 Draw_Colony_Landing_Screen_ 在 (319, 10) 畫一行字(mov eax,13Fh / mov edx,0Ah)。
+	// 那個 y 是文字**上緣**不是中心(當中心的話會被畫面上緣切掉),remake 的 DrawCentered
+	// 以中心對齊,故加半個字高。
+	const titleSize = 16
 	title := "地面戰"
 	if g.res.ColonyName != "" {
 		title = "地面戰 — " + g.res.ColonyName
 	}
-	g.fnt.DrawCentered(dst, title, 319, 10, 16, gold)
+	g.fnt.DrawCentered(dst, title, 319, 10+titleSize/2, titleSize, gold)
 
 	r := g.res
 	g.drawSidePanel(dst, gcAtkPanelX, gcAtkTextX, gcDarkenAtkX0, gcDarkenAtkX1, []string{

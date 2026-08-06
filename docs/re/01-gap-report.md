@@ -68,7 +68,7 @@
 | 5 | ~~**`Race_Stats`**~~ | 中 | ✅ 已建(`infoRaceStats`) |
 | 6 | ~~**`Reference_Main` / `_Category` / `_How_To`**~~ | 中 | ✅ 已建(`infoReference` + `cmd/moo2/inforeview.go`),remake 合成單一「參考資料」分頁而非 3 個子畫面 |
 | 7 | **`Command_Points`** | 中 | 原版有**專屬指揮點數畫面**;remake 只在星系右欄顯示一個數字 |
-| 8 | ~~**`Colony_Landing` / `Colony_Combat`**~~ | 中 | ✅ 2026-08-07 已建(`cmd/moo2/groundcombat.go`),版面座標全部取自反組譯(見下方第 15 項)。`Colony_Bombing` 的**畫面**仍缺(軌道轟炸目前只有文字結果) |
+| 8 | ~~**`Colony_Landing` / `Colony_Combat` / `Colony_Bombing`**~~ | 中 | ✅ 2026-08-07 全部已建(`cmd/moo2/groundcombat.go`、`cmd/moo2/bombing.go`),版面座標取自反組譯(見下方第 15、18 項)|
 | 9 | ~~**`Main_Antaran_Room`**~~ | 中 | ✅ 2026-08-07 已建(`cmd/moo2/antaranroom.go`),用原版 `antaroom.LBX` 資產 1(55 幀累積)當背景;留白:原版是推鏡動畫,remake 取最終定格 |
 | 10 | ~~**`Hall_Of_Fame` / `Hi_Score`**~~ | 低 | ✅ 2026-08-07 已建(`cmd/moo2/hiscore.go` + `gamedata/score.go`),八項計分係數全來自反組譯 module 60 |
 | 11 | **`Smack`** | 低 | Smacker 過場影片播放 |
@@ -508,8 +508,36 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     remake 的音訊層沒有音量控制介面,滑桿不畫也不接——畫一條拖不動的滑桿比沒有更糟;
     SETTINGS 同理,原版另有一整個設定畫面,remake 尚無對應內容,按鈕保留但按了只回訊息。
 
-18. `Colony_Bombing` 畫面、Smacker 過場。
+18. ~~`Colony_Bombing` 畫面~~ → **已完成**(2026-08-07,`cmd/moo2/bombing.go`)。
+
+    反組譯挖到的:
+    - `Draw_Colony_Bombing_Screen_` @ 0xB4800 標題 `Print_Centered_(319, 10)`——與地面戰
+      同一個錨點,兩個畫面共用版面慣例。
+    - `Do_Bomb_` @ 0xB4606:炸彈記錄**每筆 15 位元組**(+0 精靈 / +4 X / +6 Y / +8 幀 / +0x0E 啟用),
+      每 tick 已啟用者幀 +1,**未啟用者 `Random_(5) == 1` 才啟用**——所以原版的炸彈是零零星星
+      散著炸,不是整排同時落地。
+    - `Add_Bomb_To_End_Of_Queue_` @ 0xB43A6:在 **49** 個目標槽上蓄水池抽樣挑下一個挨炸目標。
+    - 背景是 `COLONY.LBX#8`(640×480,6 幀 delta)——殖民地的**建築格地面**,呼應那 49 個槽。
+
+    **一個順帶確認的推論**:格線用 COLBLDG#0 上色後是一條紫色階(#6C306C/#8C488C/#B05CB0)。
+    那不是美術本來的顏色,是**帝國旗色的佔位色**——原版有
+    `Replace_Colgcbt_Color_With_Player_Colors_` @ 0xB8EFB 專門做這件事。remake 照做了
+    (`recolorPlayerRamp`),格線會跟著玩家選的旗色變。這同時解釋了先前 dump 地面戰士兵時
+    腳下那塊洋紅色是什麼。
+
+    ⚠ 一個資料層的事實,記下來免得後人重查:`Load_Bombing_Anims_` @ 0xB435A 載
+    **COLONY.LBX 資產 1**,但**這份遊戲資料裡該資產是 0 位元組**(資產 0–4 全部長度為 0,實測)。
+    炸彈動畫的圖抽不出來,remake 用自繪爆點代替。
+
+    ⚠ 其餘留白:①remake 的殖民地不是**空間格**模型(只有職務人數 + 建築集合),沒有「第 k 座
+    建築在格子哪個位置」,所以彈著點是散在格面上而非打在真正的建築格 ②原版是逐幀動畫,
+    remake 呈現戰後定格。
+
+    另外訂正了一個版面推論:原版的 `Print_Centered_` 第二個引數是文字的**上緣**不是中心
+    ——當中心的話 y=10 會被畫面上緣切掉,原版不可能這樣排。地面戰畫面的標題一併修正。
+
+19. Smacker 過場。
    ~~行星特殊物產~~ → **已完成**(2026-08-06,見 C-4):12 種權重表 + 抵達發現(殘骸/藏寶/
    失散殖民地/受困英雄/遠古文物)+ 殖民效果(原住民人口、金礦寶石收入、文物研究),
    接進 `advanceFleet` 抵達點與快報畫面。
-19. 多人連線(獨立子專案)。
+20. 多人連線(獨立子專案)。

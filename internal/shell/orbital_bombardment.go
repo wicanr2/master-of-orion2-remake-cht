@@ -98,6 +98,12 @@ type GroundBombardResult struct {
 	// 恆為 0)。已從 s.Ships 移除(移除規則見下方函式註解)。
 	AttackerShipsLost int
 
+	// ColonyName 是被轟炸的星名(供轟炸畫面標題;engine.ColonyState 本身沒有名稱欄位,
+	// 與 GroundInvasionResult.ColonyName 同款處理)。
+	ColonyName string
+	// PopulationBefore 是開炸前的殖民地人口,供畫面顯示「炸掉多少 / 原本多少」。
+	PopulationBefore int
+
 	// PlanetHitsRequired 是手冊「Planet Hits」表算出的「摧毀這個殖民地全部防禦所需 hits」
 	// 估計值(gamedata.GroundPlanetTotalHits),對應手冊 UI 上「Estimated Bomb Hits」旁邊
 	// 同時顯示的「Planet Hits」欄——純供顯示參考(讓玩家判斷這波轟炸夠不夠),不影響
@@ -264,7 +270,8 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 	totalDamage := s.fleetBombardDamage(rng)
 	hits := gamedata.GroundBombHitsFromDamage(totalDamage)
 
-	res := GroundBombardResult{Ok: true, TotalDamage: totalDamage, Hits: hits}
+	res := GroundBombardResult{Ok: true, TotalDamage: totalDamage, Hits: hits,
+		ColonyName: s.starName(starIdx), PopulationBefore: colony.Population}
 
 	// --- 建築吸收(#7/#8 接線,見函式檔頭「建築吸收」段落):hits 先花在摧毀建築 ---
 	remainingHits := hits

@@ -603,15 +603,17 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		}
 		if a == "bombard" && b.session != nil {
 			res := b.session.BombardColony(b.session.SelectedStar)
-			switch {
-			case !res.Ok:
+			if !res.Ok { // 前置條件不足:沒開炸,留在星系主畫面說明原因
 				b.lastActionMsg = res.Reason
-			case res.PopulationLost > 0:
-				b.lastActionMsg = fmt.Sprintf("軌道轟炸:敵殖民地損失 %d 人口", res.PopulationLost)
-			default:
-				b.lastActionMsg = "軌道轟炸無效果"
+				return b.goTo(b.galaxy, "星系主畫面")
 			}
-			return b.goTo(b.galaxy, "星系主畫面")
+			// 真的炸了 → 進轟炸畫面(原版 Colony_Bombing_Screen_),見 cmd/moo2/bombing.go。
+			sc, err := b.bombing(res)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "軌道轟炸:", err)
+				return b.goTo(b.galaxy, "星系主畫面")
+			}
+			return &origTransition{next: sc}
 		}
 		if a == "invade" && b.session != nil {
 			res := b.session.InvadeColony(b.session.SelectedStar)
@@ -2697,8 +2699,10 @@ type interactiveApp struct {
 	galleryLoadWinTick int
 	// galleryGameMenuTick 是截圖廊在哪個 tick 切到遊戲選單視窗(見該常數說明)。
 	galleryGameMenuTick int
-	galleryBuilder      *sceneBuilder
-	gallerySession      *shell.GameSession
+	// galleryBombTick 是截圖廊在哪個 tick 切到軌道轟炸畫面(見該常數說明)。
+	galleryBombTick int
+	galleryBuilder  *sceneBuilder
+	gallerySession  *shell.GameSession
 }
 
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
@@ -2723,6 +2727,9 @@ const galleryLoadWinTick = 69
 
 // galleryGameMenuTick 是截圖廊在哪個 tick 切到遊戲選單視窗——取截圖(t72)的前一拍。
 const galleryGameMenuTick = 71
+
+// galleryBombTick 是截圖廊在哪個 tick 切到軌道轟炸畫面——取截圖(t74)的前一拍。
+const galleryBombTick = 73
 
 // galleryShot 是「端到端過場截圖廊」腳本中,在某個絕對 tick 存一張圖的指令。
 type galleryShot struct {
@@ -2849,6 +2856,11 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		// 但截圖廊此刻停在載入視窗,直接推上來比重新導覽回星系可靠。
 		idle, // t71: 由 galleryGameMenuTick 換成遊戲選單
 		idle, // t72: settle → 截圖 gamemenu
+
+		// 軌道轟炸畫面(原版 Colony_Bombing_Screen_)。與地面戰同理:走正常路徑要艦隊飛到
+		// 敵殖民地星、在星資訊面板點轟炸,敵星位置隨 seed 變動,腳本點不準。
+		idle, // t73: 由 galleryBombTick 換成轟炸畫面
+		idle, // t74: settle → 截圖 bombing
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -2870,6 +2882,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{68, "17_groundcombat.png"},
 		{70, "18_loadgame.png"},
 		{72, "19_gamemenu.png"},
+		{74, "20_bombing.png"},
 	}
 	return script, shots
 }
@@ -2980,6 +2993,18 @@ func (a *interactiveApp) Update() error {
 	// 截圖廊專用:遊戲選單視窗。
 	if a.galleryGameMenuTick > 0 && a.tick == a.galleryGameMenuTick && a.galleryBuilder != nil {
 		if sc, err := a.galleryBuilder.gameMenu(); err == nil {
+			a.cur = sc
+		}
+	}
+	// 截圖廊專用:軌道轟炸畫面。餵一組固定的示範戰果(不呼叫 BombardColony,不動遊戲狀態)。
+	if a.galleryBombTick > 0 && a.tick == a.galleryBombTick && a.galleryBuilder != nil {
+		demo := shell.GroundBombardResult{
+			Ok: true, TotalDamage: 148, Hits: 7, ColonyName: "示範殖民地",
+			BuildingsDestroyed: 3, BuildingsRemaining: 5,
+			PopulationLost: 4, PopulationBefore: 12,
+			DefenderRetaliated: true, AttackerShipsLost: 1,
+		}
+		if sc, err := a.galleryBuilder.bombing(demo); err == nil {
 			a.cur = sc
 		}
 	}
@@ -3098,6 +3123,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.galleryGroundTick = galleryGroundTick
 		app.galleryLoadWinTick = galleryLoadWinTick
 		app.galleryGameMenuTick = galleryGameMenuTick
+		app.galleryBombTick = galleryBombTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,
