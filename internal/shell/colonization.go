@@ -396,6 +396,16 @@ func (s *GameSession) ColonizeStar(starIdx int) ColonizationResult {
 	star.Owner = 1
 	s.Ships = append(s.Ships[:shipIdx], s.Ships[shipIdx+1:]...) // 消耗這艘殖民船
 	s.consumeSpecialOnColonize(starIdx)
+	// 手冊 p.85:「If a colony is created at an outpost, the building remains and is repurposed
+	// as Marine Barracks.」——原本的前哨站不是白蓋的,改建成海軍陸戰隊營留給新殖民地。
+	if s.consumeOutpostForColony(starIdx) {
+		if s.ColonyBuildings[idx] == nil {
+			s.ColonyBuildings[idx] = make(map[string]bool)
+		}
+		s.ColonyBuildings[idx][OutpostMarineBarracks] = true
+		s.applyBuildingEffect(idx, OutpostMarineBarracks)
+		s.recalcColonyMorale(idx) // 海軍陸戰隊營會解除獨裁政府的無 Barracks 士氣懲罰
+	}
 
 	return ColonizationResult{Ok: true, ColonyIndex: idx, StartPopulation: colony.Population, PopMax: colony.PopMax}
 }

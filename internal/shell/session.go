@@ -742,6 +742,11 @@ func shipClassFromName(class string) (c gamedata.CombatShipClass, ok bool) {
 		return gamedata.SHIP_TITAN, true
 	case "末日之星":
 		return gamedata.SHIP_DOOMSTAR, true
+	case ColonyShipClass, OutpostShipClass:
+		// 手冊 p.41 逐字:「Colony Ships, Transports and Outpost Ships count as Frigate class
+		// ships」。這一條先前是靠下面的 fallback 碰巧算對,現在有手冊出處就明寫出來——
+		// 它同時決定這兩種支援艦的指揮點數需求(手冊 p.85:各 1 點)。
+		return gamedata.SHIP_FRIGATE, true
 	}
 	return gamedata.SHIP_FRIGATE, false // 例:偵察艦,近似值,非手冊確認
 }
@@ -1204,7 +1209,27 @@ func (s *GameSession) applySpecialAction(i int, name string) {
 		// 「淨現金效果方向與量級對」,不是逐 BC 精確重現。
 		s.Player.ActiveFreighters += gamedata.FreighterFleetShipsPerBuild
 		s.Player.BC += s.RuleProfile.FreightersCashBonus
+
+	case gamedata.ColonyShipActionName: // 殖民船完工 → 進玩家艦隊(手冊 p.85 Frigate 級支援艦)
+		s.Ships = append(s.Ships, Ship{Name: s.nextSupportShipName(ColonyShipClass), Class: ColonyShipClass,
+			Weapon: "無武裝", Armor: "無裝甲", Shield: "無護盾", Special: "無"})
+
+	case gamedata.OutpostShipActionName: // 前哨船完工 → 進玩家艦隊(見 outpost.go)
+		s.Ships = append(s.Ships, Ship{Name: s.nextSupportShipName(OutpostShipClass), Class: OutpostShipClass,
+			Weapon: "無武裝", Armor: "無裝甲", Shield: "無護盾", Special: "無"})
 	}
+}
+
+// nextSupportShipName 給新造的支援艦一個不重複的名字(如「殖民船 2 號」)。
+// 不用隨機艦名池:支援艦在原版的艦隊清單裡也是以用途辨識,編號比隨機名字好認。
+func (s *GameSession) nextSupportShipName(class string) string {
+	n := 1
+	for _, sh := range s.Ships {
+		if sh.Class == class {
+			n++
+		}
+	}
+	return class + " " + strconv.Itoa(n) + " 號"
 }
 
 // applyClimateChange 把殖民地 i 的氣候推進到 next,同步重算 FoodPerFarmer(手冊給的每氣候絕對
@@ -1950,6 +1975,11 @@ type GameSession struct {
 	eventRand         *rand.Rand // 事件亂數源(由 EventSeed 惰性建立)
 	AntaresRaids      int        // 已發生的安塔蘭突襲次數(逐次升級強度)
 	LastAntares       string     // 本回合安塔蘭突襲描述(空=無;供回合摘要)
+	// Outposts 是玩家的軍事前哨站(見 outpost.go)。與 PlayerColonies **完全分開**——
+	// 手冊 p.85「produces nothing」,前哨站沒有人口也沒有產出,混進殖民地陣列會讓帝國經濟
+	// 憑空多出一個殖民地。
+	Outposts []Outpost
+
 	// LastRaid / LastRaidReport 是本回合 AI 對玩家殖民地的突襲(見 ai_attack.go);
 	// 空/nil = 無。與 LastAntares 分開:安塔蘭人是週期腳本,AI 突襲是外交/軍備的後果。
 	LastRaid       string

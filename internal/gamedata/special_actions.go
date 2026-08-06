@@ -66,6 +66,19 @@ const (
 	// FreighterFleetActionName 運輸艦隊(Freighter Fleet)在殖民地建造佇列的中文顯示名稱
 	// (2026-07-11 補實作 #4:運輸艦淨現金版本差異,見檔頭說明)。
 	FreighterFleetActionName = "運輸艦隊"
+
+	// ColonyShipActionName / OutpostShipActionName 是兩種支援艦在建造佇列的名稱。
+	//
+	// 為什麼放在 SpecialActions 而不是 Buildings:它們造出來的是**艦艇**(進玩家艦隊),
+	// 不是殖民地建築,而且可以重複建造——這正是 SpecialActions 這一類的定義(見檔頭),
+	// 與運輸艦隊同款。
+	//
+	// 手冊 p.41 明列這兩者與運輸艦同為 Frigate 級支援艦;p.85 兩者的維護費也一樣
+	// (「1 Command Rating point or 10 BC in maintenance each turn until it is dismantled」)。
+	// remake 先前**兩種船都無法建造**:開局送一艘殖民船,用掉就再也不能擴張,前哨船更是
+	// 完全不存在。
+	ColonyShipActionName  = "殖民船"
+	OutpostShipActionName = "前哨船"
 )
 
 // SpecialActions 是本 remake 目前接線的全部 Special 一次性行動(見檔頭說明,收錄 4 項)。
@@ -89,6 +102,22 @@ var SpecialActions = []SpecialAction{
 		NameZH: FreighterFleetActionName, NameEN: "Freighter Fleet",
 		PrereqTopic:    TOPIC_NUCLEAR_FISSION,
 		ProductionCost: 60, EstimatedCost: true, // 見檔頭「運輸艦隊」段說明,非手冊實據
+	},
+	{
+		NameZH: ColonyShipActionName, NameEN: "Colony Ship",
+		PrereqTopic: TOPIC_STARTING_TECH, // 開局即有(手冊把它列為基礎支援艦,不掛在任何科技下)
+		// ⚠ 成本是 remake 估值。原版的艦艇造價由艦體 + 元件逐項算出(`_hull_data` @ 0x18001E
+		// 被 IDA 拆成一堆單獨命名的 word,不是能直接讀成「Frigate = N」的乾淨陣列),
+		// 手冊也沒給數字。這裡取「比運輸艦隊(60)貴、比土壤改良(150)便宜」的量級,
+		// 讓開局第二艘殖民船大約要十幾回合——與原版「擴張是要下決心的投資」的節奏相符。
+		ProductionCost: 120, EstimatedCost: true,
+	},
+	{
+		NameZH: OutpostShipActionName, NameEN: "Outpost Ship",
+		PrereqTopic: TOPIC_STARTING_TECH,
+		// ⚠ 同上為 remake 估值。取殖民船的一半:前哨站沒有人口、沒有產出(手冊 p.85
+		// 「produces nothing」),只買到掃描與立足點,理應比殖民船便宜。
+		ProductionCost: 60, EstimatedCost: true,
 	},
 }
 

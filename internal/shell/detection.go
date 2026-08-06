@@ -49,7 +49,7 @@ type detectionSource struct {
 // scannerParsec 是玩家目前最佳掃描科技的偵測範圍(呼叫端先用 bestPlayerScannerParsec 算好),
 // versionBonusParsec 是這局遊戲版本規則的偵測加成(RuleProfile.SensorRangeVersionBonusParsec,
 // #13:1.5 比 1.3 多 +1 parsec)。
-func playerDetectionVisible(stars []Star, playerColonyStars []int, fleetAtStar int, colonyBuildings []map[string]bool, scannerParsec, versionBonusParsec int) []bool {
+func playerDetectionVisible(stars []Star, playerColonyStars []int, fleetAtStar int, colonyBuildings []map[string]bool, scannerParsec, versionBonusParsec int, outpostStars []int) []bool {
 	visible := make([]bool, len(stars))
 
 	// 蒐集本局所有玩家偵測源:各殖民地所在星(含軌道基地加成)+ 艦隊目前所在星(無軌道加成)。
@@ -66,6 +66,13 @@ func playerDetectionVisible(stars []Star, playerColonyStars []int, fleetAtStar i
 	}
 	if fleetAtStar >= 0 && fleetAtStar < len(stars) {
 		sources = append(sources, detectionSource{starIdx: fleetAtStar, orbitalParsec: 0})
+	}
+	// 前哨站是掃描站(手冊 p.119「These outposts act as scanning stations」),與殖民地一樣
+	// 是常駐偵測源;它沒有軌道基地,故無 orbital 加成。
+	for _, idx := range outpostStars {
+		if idx >= 0 && idx < len(stars) {
+			sources = append(sources, detectionSource{starIdx: idx, orbitalParsec: 0})
+		}
 	}
 
 	for i, st := range stars {
@@ -89,7 +96,8 @@ func playerDetectionVisible(stars []Star, playerColonyStars []int, fleetAtStar i
 // cmd/moo2 的 drawStarmap 決定 fog 繪製,一次算好整個星圖再逐星查表,避免逐星重算。
 func (s *GameSession) VisibleStars() []bool {
 	scannerParsec := bestPlayerScannerParsec(s.Player)
-	return playerDetectionVisible(s.Stars, s.PlayerColonyStars, s.FleetAtStar, s.ColonyBuildings, scannerParsec, s.RuleProfile.SensorRangeVersionBonusParsec)
+	return playerDetectionVisible(s.Stars, s.PlayerColonyStars, s.FleetAtStar, s.ColonyBuildings,
+		scannerParsec, s.RuleProfile.SensorRangeVersionBonusParsec, s.outpostStarIndices())
 }
 
 // starVisible 是 VisibleStars 對單一星索引的便利包裝(主要供測試/未來零星呼叫端使用;

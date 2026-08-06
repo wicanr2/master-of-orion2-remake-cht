@@ -510,8 +510,18 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					if sess.FleetMarines > 0 {
 						hits = append(hits, hitRegion{38, 424, 190, 20, "invade"})
 					}
-				case sess.Stars[sess.SelectedStar].Owner == 0 && sess.FleetHasColonyShip():
-					hits = append(hits, hitRegion{38, 402, 190, 20, "colonize"})
+				case sess.Stars[sess.SelectedStar].Owner == 0:
+					// 無主星:拓殖(需殖民船)與建前哨站(需前哨船)兩鈕可並存於 402/424——
+					// 氣態巨星/小行星帶只有後者可用,一般行星兩者都可以(手冊 p.85:前哨站
+					// 不限宜居世界)。
+					row := 402
+					if sess.FleetHasColonyShip() {
+						hits = append(hits, hitRegion{38, row, 190, 20, "colonize"})
+						row = 424
+					}
+					if sess.FleetHasOutpostShip() && !sess.HasOutpostAt(sess.SelectedStar) {
+						hits = append(hits, hitRegion{38, row, 190, 20, "outpost"})
+					}
 				}
 			default:
 				hits = append(hits, hitRegion{38, 402, 190, 20, "dispatch"})
@@ -581,6 +591,15 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				b.lastActionMsg = res.Reason
 			} else {
 				b.lastActionMsg = fmt.Sprintf("拓殖成功!新殖民地起始人口 %d(上限 %d)", res.StartPopulation, res.PopMax)
+			}
+			return b.goTo(b.galaxy, "星系主畫面")
+		}
+		if a == "outpost" && b.session != nil {
+			res := b.session.BuildOutpost(b.session.SelectedStar)
+			if !res.Ok {
+				b.lastActionMsg = res.Reason
+			} else {
+				b.lastActionMsg = "軍事前哨站建立完成——掃描範圍已往外推(手冊:前哨站沒有產出)"
 			}
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
@@ -738,10 +757,22 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 							vector.StrokeRect(dst, 38, 424, 190, 20, 1, color.RGBA{230, 130, 110, 255}, false)
 							fnt.Draw(dst, "▶ 發動地面入侵", 46, 437, 12, color.RGBA{245, 235, 230, 255})
 						}
-					case sess.SelectedStar == sess.FleetAtStar && sess.Stars[sess.SelectedStar].Owner == 0 && sess.FleetHasColonyShip():
-						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{40, 110, 60, 255}, false)
-						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{130, 220, 150, 255}, false)
-						fnt.Draw(dst, "▶ 建立殖民地", 46, 415, 12, color.RGBA{235, 245, 235, 255})
+					case sess.SelectedStar == sess.FleetAtStar && sess.Stars[sess.SelectedStar].Owner == 0 &&
+						(sess.FleetHasColonyShip() || (sess.FleetHasOutpostShip() && !sess.HasOutpostAt(sess.SelectedStar))):
+						// 兩鈕可並存(與 galaxy() 建 hits 的判斷同一套):有殖民船畫在 402,
+						// 前哨船接在下一列;只有前哨船時它自己佔 402。
+						row := float32(402)
+						if sess.FleetHasColonyShip() {
+							vector.DrawFilledRect(dst, 38, row, 190, 20, color.RGBA{40, 110, 60, 255}, false)
+							vector.StrokeRect(dst, 38, row, 190, 20, 1, color.RGBA{130, 220, 150, 255}, false)
+							fnt.Draw(dst, "▶ 建立殖民地", 46, float64(row)+13, 12, color.RGBA{235, 245, 235, 255})
+							row = 424
+						}
+						if sess.FleetHasOutpostShip() && !sess.HasOutpostAt(sess.SelectedStar) {
+							vector.DrawFilledRect(dst, 38, row, 190, 20, color.RGBA{45, 80, 110, 255}, false)
+							vector.StrokeRect(dst, 38, row, 190, 20, 1, color.RGBA{140, 190, 230, 255}, false)
+							fnt.Draw(dst, "▶ 建立前哨站", 46, float64(row)+13, 12, color.RGBA{230, 240, 250, 255})
+						}
 					case sess.SelectedStar == sess.FleetAtStar:
 						fnt.Draw(dst, "艦隊已在此星", 38, 415, 11, color.RGBA{140, 200, 140, 255})
 					default:
