@@ -142,7 +142,7 @@ func (s *gameMenuScreen) update(in shell.InputState) *origTransition {
 			}
 		case "load":
 			if !shell.AnySaveExists(saveDirFor()) {
-				s.msg = "還沒有任何存檔"
+				s.msg = s.b.tr("還沒有任何存檔", "No saved games yet")
 				return nil
 			}
 			sc, err := s.b.loadGameInPlay()
@@ -155,7 +155,7 @@ func (s *gameMenuScreen) update(in shell.InputState) *origTransition {
 			return s.b.goTo(s.b.menu, "主選單") // 原版是回主選單,不是直接關程式
 		case "settings":
 			// 原版另有一整個設定畫面,remake 尚無對應內容(見檔頭留白)。
-			s.msg = "設定畫面尚未建置"
+			s.msg = s.b.tr("設定畫面尚未建置", "The settings screen is not implemented yet")
 		}
 		return nil
 	}

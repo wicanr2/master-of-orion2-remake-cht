@@ -18,7 +18,7 @@ const (
 // loadHerodataMercs 從玩家自備的 HERODATA.LBX 解析原版真英雄,轉成傭兵候選池(shell.Leader),
 // 依等級升冪排序(開局先遇到低階、便宜、雇得起的傭兵,對齊攻略「開局只有最低階領袖」)。
 // 任何一步失敗回 nil(呼叫端退回內建策展名單,音訊/資料缺失絕不擋遊戲)。
-func loadHerodataMercs(res *assets.Resolver) []shell.Leader {
+func loadHerodataMercs(b *sceneBuilder, res *assets.Resolver) []shell.Leader {
 	arch, err := res.OpenLBX("herodata.lbx")
 	if err != nil {
 		return nil
@@ -43,7 +43,7 @@ func loadHerodataMercs(res *assets.Resolver) []shell.Leader {
 		if lvl > 5 {
 			lvl = 5
 		}
-		out = append(out, shell.Leader{Name: h.Name, Skill: mercSkillLabel(h), Level: lvl, Ship: h.Ship(), Tier: 1})
+		out = append(out, shell.Leader{Name: h.Name, Skill: mercSkillLabel(b, h), Level: lvl, Ship: h.Ship(), Tier: 1})
 	}
 	sort.SliceStable(out, func(i, j int) bool { return out[i].Level < out[j].Level })
 	return out
@@ -53,15 +53,15 @@ func loadHerodataMercs(res *assets.Resolver) []shell.Leader {
 // (科學家→研究加成 / 貿易家→收入加成,見 shell.leaderSkillIDByName)會產生實際殖民地效果;
 // 其餘依類別給通用標籤(艦艇軍官→指揮官、殖民地→行政官),無 modeled 加成——這與 remake「只接
 // 少數技能」的既有限制一致(誠實,不臆造效果)。
-func mercSkillLabel(h herodata.Leader) string {
+func mercSkillLabel(b *sceneBuilder, h herodata.Leader) string {
 	switch {
 	case h.CommonSkills&skillCommonResearcherBit != 0:
-		return "科學家"
+		return b.tr("科學家", "Scientist")
 	case h.CommonSkills&skillCommonTraderBit != 0:
-		return "貿易家"
+		return b.tr("貿易家", "Trader")
 	case h.Ship():
-		return "指揮官"
+		return b.tr("指揮官", "Commander")
 	default:
-		return "行政官"
+		return b.tr("行政官", "Administrator")
 	}
 }

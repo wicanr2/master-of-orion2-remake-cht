@@ -163,9 +163,9 @@ func (s *bombingScreen) draw(dst *ebiten.Image) {
 	body := color.RGBA{228, 232, 240, 255}
 	warn := color.RGBA{240, 150, 120, 255}
 
-	title := "軌道轟炸"
+	title := s.b.tr("軌道轟炸", "ORBITAL BOMBARDMENT")
 	if s.res.ColonyName != "" {
-		title = "軌道轟炸 — " + s.res.ColonyName
+		title += " — " + s.res.ColonyName
 	}
 	s.fnt.DrawCentered(dst, title, bombTitleX, bombTitleY+bombTitleSize/2, bombTitleSize, gold)
 
@@ -185,19 +185,24 @@ func (s *bombingScreen) draw(dst *ebiten.Image) {
 		s.fnt.DrawCentered(dst, text, 320, y, 14, col)
 		y += 24
 	}
-	line(fmt.Sprintf("齊射總傷害 %d,估計命中 %d 發", s.res.TotalDamage, s.res.Hits), body)
-	line(fmt.Sprintf("摧毀建築 %d 座(該殖民地尚存 %d 座)", s.res.BuildingsDestroyed, s.res.BuildingsRemaining), body)
-	line(fmt.Sprintf("人口損失 %d(轟炸前 %d)", s.res.PopulationLost, s.res.PopulationBefore), warn)
+	line(fmt.Sprintf(s.b.tr("齊射總傷害 %d,估計命中 %d 發", "Salvo damage %d, est. %d hits"),
+		s.res.TotalDamage, s.res.Hits), body)
+	line(fmt.Sprintf(s.b.tr("摧毀建築 %d 座(該殖民地尚存 %d 座)", "%d buildings destroyed (%d still standing)"),
+		s.res.BuildingsDestroyed, s.res.BuildingsRemaining), body)
+	line(fmt.Sprintf(s.b.tr("人口損失 %d(轟炸前 %d)", "%d population lost (was %d)"),
+		s.res.PopulationLost, s.res.PopulationBefore), warn)
 	if s.res.DefenderRetaliated {
-		line(fmt.Sprintf("敵方軌道防禦反擊,我方損失 %d 艘", s.res.AttackerShipsLost), warn)
+		line(fmt.Sprintf(s.b.tr("敵方軌道防禦反擊,我方損失 %d 艘", "Orbital defenses returned fire; %d ships lost"),
+			s.res.AttackerShipsLost), warn)
 	} else {
-		line("敵方無存活的軌道防禦,未遭反擊", color.RGBA{160, 220, 160, 255})
+		line(s.b.tr("敵方無存活的軌道防禦,未遭反擊", "No orbital defenses survived; no return fire"),
+			color.RGBA{160, 220, 160, 255})
 	}
 
 	cx, cy, cw, ch := s.contRect()
 	vector.DrawFilledRect(dst, float32(cx), float32(cy), float32(cw), float32(ch), color.RGBA{34, 30, 40, 235}, false)
 	vector.StrokeRect(dst, float32(cx), float32(cy), float32(cw), float32(ch), 1.5, color.RGBA{150, 140, 170, 255}, false)
-	s.fnt.DrawCentered(dst, "繼續", float64(cx+cw/2), float64(cy+ch/2), 14, body)
+	s.fnt.DrawCentered(dst, s.b.tr("繼續", "CONTINUE"), float64(cx+cw/2), float64(cy+ch/2), 14, body)
 }
 
 // bombing 進入軌道轟炸畫面。

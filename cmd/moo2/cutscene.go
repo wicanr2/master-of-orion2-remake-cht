@@ -127,7 +127,7 @@ func (s *cutsceneScreen) draw(dst *ebiten.Image) {
 	op.GeoM.Translate(float64(s.offX), float64(s.offY))
 	dst.DrawImage(s.canvas, op)
 	if s.fnt != nil {
-		s.fnt.DrawCentered(dst, "點擊跳過", 320, 468, 11, color.RGBA{130, 140, 150, 255})
+		s.fnt.DrawCentered(dst, s.b.tr("點擊跳過", "click to skip"), 320, 468, 11, color.RGBA{130, 140, 150, 255})
 	}
 }
 

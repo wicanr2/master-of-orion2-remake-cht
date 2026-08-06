@@ -295,7 +295,7 @@ func (s *loadGameScreen) draw(dst *ebiten.Image) {
 		}
 		name := sl.Empire
 		if name == "" {
-			name = "無名帝國" // 舊存檔沒存帝國名(見 persist.go 該欄位註解)
+			name = s.b.tr("無名帝國", "Unnamed Empire") // 舊存檔沒存帝國名(見 persist.go 該欄位註解)
 		}
 		title := fmt.Sprintf("%d. %s", i+1, name)
 		if sl.Auto {

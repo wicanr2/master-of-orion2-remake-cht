@@ -118,18 +118,22 @@ func (a *antaranRoomScreen) draw(dst *ebiten.Image) {
 
 	// 標題帶:背景是滿版美術,文字直接疊上去會看不清,壓一條半透明深色。
 	vector.DrawFilledRect(dst, 0, 24, moo2ScreenW, 74, color.RGBA{6, 4, 2, 175}, false)
-	a.fnt.DrawCentered(dst, "安塔蘭王座廳", 320, 46, 22, gold)
-	a.fnt.DrawCentered(dst, "次元傳送門的彼端,安塔蘭統治者在等著。", 320, 78, 14, body)
+	a.fnt.DrawCentered(dst, a.b.tr("安塔蘭王座廳", "THE ANTARAN THRONE ROOM"), 320, 46, 22, gold)
+	a.fnt.DrawCentered(dst, a.b.tr("次元傳送門的彼端,安塔蘭統治者在等著。",
+		"Beyond the dimensional gate, the Antaran overlords are waiting."), 320, 78, 14, body)
 
 	// 戰力對比:同一套 playerMilitary,與實際結算用的數字一致。
 	vector.DrawFilledRect(dst, 0, 300, moo2ScreenW, 76, color.RGBA{6, 4, 2, 175}, false)
 	a.fnt.DrawCentered(dst,
-		fmt.Sprintf("安塔蘭母星防禦艦隊:%d 艘,總戰力 %d", a.theirCount, a.theirPower), 320, 320, 14, warn)
+		fmt.Sprintf(a.b.tr("安塔蘭母星防禦艦隊:%d 艘,總戰力 %d", "Antaran home fleet: %d ships, %d combat power"),
+			a.theirCount, a.theirPower), 320, 320, 14, warn)
 	a.fnt.DrawCentered(dst,
-		fmt.Sprintf("我方艦隊總戰力:%d", a.ourStrength), 320, 344, 14, body)
-	odds, oddsCol := "勝算渺茫——這一戰要求對方全滅,帶不夠戰力等於送死", warn
+		fmt.Sprintf(a.b.tr("我方艦隊總戰力:%d", "Your fleet: %d combat power"), a.ourStrength), 320, 344, 14, body)
+	odds, oddsCol := a.b.tr("勝算渺茫——這一戰要求對方全滅,帶不夠戰力等於送死",
+		"Long odds — this fight demands total annihilation; arriving under-armed is suicide"), warn
 	if a.ourStrength >= a.theirPower {
-		odds, oddsCol = "戰力已足以一戰", color.RGBA{150, 220, 150, 255}
+		odds, oddsCol = a.b.tr("戰力已足以一戰", "Your fleet is strong enough to make the attempt"),
+			color.RGBA{150, 220, 150, 255}
 	}
 	a.fnt.DrawCentered(dst, odds, 320, 366, 12, oddsCol)
 
@@ -142,7 +146,7 @@ func (a *antaranRoomScreen) draw(dst *ebiten.Image) {
 	}
 	vector.DrawFilledRect(dst, float32(ax), float32(ay), float32(aw), float32(ah), face, false)
 	vector.StrokeRect(dst, float32(ax), float32(ay), float32(aw), float32(ah), 1.5, edge, false)
-	lab, labCol := "發動終局反攻", body
+	lab, labCol := a.b.tr("發動終局反攻", "LAUNCH THE FINAL ASSAULT"), body
 	if !enabled {
 		labCol = color.RGBA{150, 142, 132, 255}
 	}
@@ -150,11 +154,11 @@ func (a *antaranRoomScreen) draw(dst *ebiten.Image) {
 
 	vector.DrawFilledRect(dst, float32(rx), float32(ry), float32(rw), float32(rh), color.RGBA{34, 30, 44, 235}, false)
 	vector.StrokeRect(dst, float32(rx), float32(ry), float32(rw), float32(rh), 1.5, color.RGBA{140, 130, 170, 255}, false)
-	a.fnt.DrawCentered(dst, "撤退", float64(rx+rw/2), float64(ry+rh/2), 16, body)
+	a.fnt.DrawCentered(dst, a.b.tr("撤退", "WITHDRAW"), float64(rx+rw/2), float64(ry+rh/2), 16, body)
 
 	if !enabled {
 		vector.DrawFilledRect(dst, 0, 448, moo2ScreenW, 26, color.RGBA{6, 4, 2, 190}, false)
-		a.fnt.DrawCentered(dst, "無法發動:"+a.blockReason, 320, 461, 12, warn)
+		a.fnt.DrawCentered(dst, a.b.tr("無法發動:", "Cannot launch: ")+a.blockReason, 320, 461, 12, warn)
 	}
 }
 

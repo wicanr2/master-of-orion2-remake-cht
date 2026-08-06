@@ -68,24 +68,24 @@ func (b *sceneBuilder) drawHiScore(dst *ebiten.Image) {
 	vector.DrawFilledRect(dst, hsPanelX, hsPanelY, hsPanelW, hsPanelH, color.RGBA{10, 14, 30, 245}, false)
 	vector.StrokeRect(dst, hsPanelX, hsPanelY, hsPanelW, hsPanelH, 2, edge, false)
 
-	title := "帝國殞落"
+	title := b.tr("帝國殞落", "YOUR EMPIRE HAS FALLEN")
 	if won {
-		title = "銀河霸主"
+		title = b.tr("銀河霸主", "MASTER OF ORION")
 	}
 	b.fnt.DrawCentered(dst, title, 320, 84, 22, edge)
 
 	// 勝負與方式。
 	reason := map[engine.VictoryCondition]string{
-		engine.VictoryExtermination: "殲滅所有對手",
-		engine.VictoryHighCouncil:   "銀河議會選舉",
-		engine.VictoryAntaran:       "攻陷安塔蘭母星",
+		engine.VictoryExtermination: b.tr("殲滅所有對手", "all rivals exterminated"),
+		engine.VictoryHighCouncil:   b.tr("銀河議會選舉", "elected by the Galactic Council"),
+		engine.VictoryAntaran:       b.tr("攻陷安塔蘭母星", "the Antaran homeworld taken"),
 	}[v.Reason]
 	if reason == "" {
-		reason = "對局結束"
+		reason = b.tr("對局結束", "game over")
 	}
-	line := fmt.Sprintf("第 %d 回合・%s", v.Turn, reason)
+	line := fmt.Sprintf(b.tr("第 %d 回合・%s", "Turn %d — %s"), v.Turn, reason)
 	if !won {
-		line = fmt.Sprintf("第 %d 回合・%s 取得勝利", v.Turn, v.Winner)
+		line = fmt.Sprintf(b.tr("第 %d 回合・%s 取得勝利", "Turn %d — %s wins"), v.Turn, v.Winner)
 	}
 	b.fnt.DrawCentered(dst, line, 320, 112, 13, color.RGBA{200, 214, 232, 255})
 
@@ -110,5 +110,5 @@ func (b *sceneBuilder) drawHiScore(dst *ebiten.Image) {
 
 	vector.DrawFilledRect(dst, 270, 388, 100, 24, color.RGBA{30, 40, 70, 255}, false)
 	vector.StrokeRect(dst, 270, 388, 100, 24, 1, edge, false)
-	b.fnt.DrawCentered(dst, "繼續", 320, 400, 13, color.RGBA{220, 228, 242, 255})
+	b.fnt.DrawCentered(dst, b.tr("繼續", "CONTINUE"), 320, 400, 13, color.RGBA{220, 228, 242, 255})
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
 
@@ -37,6 +38,9 @@ const (
 // infoTabTitles 是五個分頁的中文標題(順序同 b.infoTab)。
 var infoTabTitles = []string{"歷史圖表", "科技總覽", "種族統計", "回合摘要", "參考資料"}
 
+// infoTabTitlesEn 是原版 INFO 畫面那五個分頁的英文名。
+var infoTabTitlesEn = []string{"HISTORY", "TECHNOLOGY", "RACES", "TURN SUMMARY", "REFERENCE"}
+
 // drawInfoSubscreen 依 b.infoTab 把對應子畫面內容加進 overlayScreen。
 func (b *sceneBuilder) drawInfoSubscreen(s *overlayScreen) {
 	tab := b.infoTab
@@ -46,12 +50,12 @@ func (b *sceneBuilder) drawInfoSubscreen(s *overlayScreen) {
 	gold := infoTitleCol
 	s.extras = append(s.extras, extraText{
 		x: infoPanelX + infoPanelW/2, y: infoPanelY + 16, size: 15,
-		text: infoTabTitles[tab], col: gold, align: 1,
+		text: b.tr(infoTabTitles[tab], infoTabTitlesEn[tab]), col: gold, align: 1,
 	})
 	if b.session == nil {
 		s.extras = append(s.extras, extraText{
 			x: infoPanelX + infoPanelW/2, y: infoPanelY + 60, size: 12,
-			text: "尚無對局資料", col: infoBodyCol, align: 1,
+			text: b.tr("尚無對局資料", "No game data yet"), col: infoBodyCol, align: 1,
 		})
 		return
 	}
@@ -97,12 +101,14 @@ func (b *sceneBuilder) infoHistory(s *overlayScreen) {
 
 	s.extras = append(s.extras, extraText{
 		x: infoPanelX + infoPanelW/2, y: infoPanelY + 36, size: 11,
-		text: "指標:" + shell.HistoryMetricName(metric) + "(點圖表切換)", col: body, align: 1,
+		text: b.tr("指標:", "Metric: ") + shell.HistoryMetricName(metric) +
+			b.tr("(點圖表切換)", " (click the chart to switch)"), col: body, align: 1,
 	})
 	if len(turns) < 2 {
 		s.extras = append(s.extras, extraText{
 			x: infoPanelX + infoPanelW/2, y: infoPanelY + 90, size: 12,
-			text: "尚未累積足夠回合(結束回合後開始記錄)", col: body, align: 1,
+			text: b.tr("尚未累積足夠回合(結束回合後開始記錄)",
+				"Not enough turns recorded yet (recording starts after you end a turn)"), col: body, align: 1,
 		})
 		return
 	}
@@ -141,8 +147,8 @@ func (b *sceneBuilder) infoHistory(s *overlayScreen) {
 	s.extras = append(s.extras,
 		extraText{x: gx - 34, y: gy + 6, size: 10, text: fmt.Sprintf("%d", maxV), col: body},
 		extraText{x: gx - 20, y: gy + gh + 4, size: 10, text: "0", col: body},
-		extraText{x: gx, y: gy + gh + 18, size: 10, text: fmt.Sprintf("第 %d 回合", turns[0]), col: body},
-		extraText{x: gx + gw - 50, y: gy + gh + 18, size: 10, text: fmt.Sprintf("第 %d 回合", turns[len(turns)-1]), col: body},
+		extraText{x: gx, y: gy + gh + 18, size: 10, text: fmt.Sprintf(b.tr("第 %d 回合", "Turn %d"), turns[0]), col: body},
+		extraText{x: gx + gw - 50, y: gy + gh + 18, size: 10, text: fmt.Sprintf(b.tr("第 %d 回合", "Turn %d"), turns[len(turns)-1]), col: body},
 	)
 	ly := gy + gh + 34
 	for i, nm := range names {
@@ -174,12 +180,13 @@ func (b *sceneBuilder) infoTechReview(s *overlayScreen) {
 	y := infoPanelY + 44
 	s.extras = append(s.extras, extraText{
 		x: infoPanelX + 16, y: y, size: 12,
-		text: fmt.Sprintf("研究中:%s(%d RP)", topicNameZh(b.lang, p.ResearchTopic), p.ResearchProgress), col: cur,
+		text: fmt.Sprintf(b.tr("研究中:%s(%d RP)", "Researching: %s (%d RP)"),
+			topicNameZh(b.lang, p.ResearchTopic), p.ResearchProgress), col: cur,
 	})
 	y += 22
 	s.extras = append(s.extras, extraText{
 		x: infoPanelX + 16, y: y, size: 12,
-		text: fmt.Sprintf("已完成主題:%d 項", len(completed)), col: body,
+		text: fmt.Sprintf(b.tr("已完成主題:%d 項", "Fields completed: %d"), len(completed)), col: body,
 	})
 	y += 20
 	// 兩欄列出已完成主題
@@ -187,7 +194,7 @@ func (b *sceneBuilder) infoTechReview(s *overlayScreen) {
 		if y+float64(i/2)*15 > infoPanelY+infoPanelH-40 {
 			s.extras = append(s.extras, extraText{
 				x: infoPanelX + 16, y: infoPanelY + infoPanelH - 30, size: 10,
-				text: fmt.Sprintf("…另有 %d 項", len(completed)-i), col: body,
+				text: fmt.Sprintf(b.tr("…另有 %d 項", "…and %d more"), len(completed)-i), col: body,
 			})
 			break
 		}
@@ -198,7 +205,7 @@ func (b *sceneBuilder) infoTechReview(s *overlayScreen) {
 	}
 	if len(completed) == 0 {
 		s.extras = append(s.extras, extraText{
-			x: infoPanelX + 16, y: y, size: 11, text: "(尚無已完成的研究主題)", col: body,
+			x: infoPanelX + 16, y: y, size: 11, text: b.tr("(尚無已完成的研究主題)", "(no fields completed yet)"), col: body,
 		})
 	}
 }
@@ -212,11 +219,11 @@ func (b *sceneBuilder) infoRaceStats(s *overlayScreen) {
 
 	y := infoPanelY + 44
 	s.extras = append(s.extras,
-		extraText{x: infoPanelX + 16, y: y, size: 11, text: "帝國", col: gold},
-		extraText{x: infoPanelX + 150, y: y, size: 11, text: "殖民地", col: gold},
-		extraText{x: infoPanelX + 215, y: y, size: 11, text: "人口", col: gold},
-		extraText{x: infoPanelX + 268, y: y, size: 11, text: "艦隊", col: gold},
-		extraText{x: infoPanelX + 325, y: y, size: 11, text: "態勢", col: gold},
+		extraText{x: infoPanelX + 16, y: y, size: 11, text: b.tr("帝國", "EMPIRE"), col: gold},
+		extraText{x: infoPanelX + 150, y: y, size: 11, text: b.tr("殖民地", "COLONIES"), col: gold},
+		extraText{x: infoPanelX + 215, y: y, size: 11, text: b.tr("人口", "POP"), col: gold},
+		extraText{x: infoPanelX + 268, y: y, size: 11, text: b.tr("艦隊", "FLEET"), col: gold},
+		extraText{x: infoPanelX + 325, y: y, size: 11, text: b.tr("態勢", "STANCE"), col: gold},
 	)
 	y += 20
 
@@ -225,7 +232,7 @@ func (b *sceneBuilder) infoRaceStats(s *overlayScreen) {
 		pop += c.Population
 	}
 	s.extras = append(s.extras,
-		extraText{x: infoPanelX + 16, y: y, size: 11, text: "你", col: empireLineColors[0]},
+		extraText{x: infoPanelX + 16, y: y, size: 11, text: b.tr("你", "You"), col: empireLineColors[0]},
 		extraText{x: infoPanelX + 150, y: y, size: 11, text: fmt.Sprintf("%d", len(sess.PlayerColonies)), col: body},
 		extraText{x: infoPanelX + 215, y: y, size: 11, text: fmt.Sprintf("%d", pop), col: body},
 		extraText{x: infoPanelX + 268, y: y, size: 11, text: fmt.Sprintf("%d", sess.PlayerFleetStrengthForUI()), col: body},
@@ -252,7 +259,7 @@ func (b *sceneBuilder) infoRaceStats(s *overlayScreen) {
 
 	// AI 彼此關係(本專案 2026-07-12 建的 AIRelations 矩陣,原版對應 module 27 外交關係)
 	y += 10
-	s.extras = append(s.extras, extraText{x: infoPanelX + 16, y: y, size: 11, text: "AI 之間的關係", col: gold})
+	s.extras = append(s.extras, extraText{x: infoPanelX + 16, y: y, size: 11, text: b.tr("AI 之間的關係", "Relations between AI empires"), col: gold})
 	y += 18
 	for i := range sess.AIPlayers {
 		line := sess.AIPlayers[i].Name + ":"
@@ -276,16 +283,17 @@ func (b *sceneBuilder) infoTurnSummary(s *overlayScreen) {
 
 	y := infoPanelY + 44
 	rows := [][2]string{
-		{"星曆", shell.StardateForTurn(b.session.Turn)}, // 3500 起算,見 shell.StartStardate 的反組譯出處
-		{"國庫", fmt.Sprintf("%d BC(本回合 %+d)", b.session.Player.BC, out.NetBC)},
-		{"稅收", fmt.Sprintf("%d BC", out.TaxRevenue)},
-		{"餘糧收入", fmt.Sprintf("%d BC", out.FoodSurplusRevenue)},
-		{"貿易品收入", fmt.Sprintf("%d BC", out.TradeGoodsRevenue)},
-		{"維護支出", fmt.Sprintf("%d BC", b.session.Player.Maintenance)},
-		{"指揮超支", fmt.Sprintf("%d BC", out.CommandOverflowCost)},
-		{"食物盈餘", fmt.Sprintf("%d", out.TotalFood)},
-		{"淨工業", fmt.Sprintf("%d", out.TotalNetIndustry)},
-		{"研究產出", fmt.Sprintf("%d RP", out.TotalResearch)},
+		{b.tr("星曆", "Stardate"), shell.StardateForTurn(b.session.Turn)}, // 3500 起算,見 shell.StartStardate 的反組譯出處
+		{b.tr("國庫", "Treasury"), fmt.Sprintf(b.tr("%d BC(本回合 %+d)", "%d BC (%+d this turn)"),
+			b.session.Player.BC, out.NetBC)},
+		{b.tr("稅收", "Taxes"), fmt.Sprintf("%d BC", out.TaxRevenue)},
+		{b.tr("餘糧收入", "Food surplus"), fmt.Sprintf("%d BC", out.FoodSurplusRevenue)},
+		{b.tr("貿易品收入", "Trade goods"), fmt.Sprintf("%d BC", out.TradeGoodsRevenue)},
+		{b.tr("維護支出", "Maintenance"), fmt.Sprintf("%d BC", b.session.Player.Maintenance)},
+		{b.tr("指揮超支", "Command overrun"), fmt.Sprintf("%d BC", out.CommandOverflowCost)},
+		{b.tr("食物盈餘", "Food surplus"), fmt.Sprintf("%d", out.TotalFood)},
+		{b.tr("淨工業", "Net industry"), fmt.Sprintf("%d", out.TotalNetIndustry)},
+		{b.tr("研究產出", "Research"), fmt.Sprintf("%d RP", out.TotalResearch)},
 	}
 	for _, r := range rows {
 		s.extras = append(s.extras,
@@ -314,15 +322,25 @@ func (b *sceneBuilder) infoReference(s *overlayScreen) {
 	// 原版 Reference 是「分類 + 怎麼做」兩欄清單(archive.org oracle 截圖已確認版面)。
 	// remake 這裡放同結構的速查:左欄=規則分類、右欄=常用操作,內容取自專案的繁中機制大全
 	// (docs/knowledge-base/manual-cht/),不重抄手冊原文。
+	// 這兩份清單是原版 INFO → REFERENCE 分頁的目錄,英文取原版用語。
 	cats := []string{"政府型態", "行星與星系", "太空建設", "艦艇系統", "艦艇引擎", "艦艇防禦",
 		"艦艇武器", "飛彈與炸彈", "地面戰", "人口", "生產", "生態", "安全", "成就"}
+	catsEn := []string{"Government", "Planets & Star Systems", "Space Construction", "Ship Systems",
+		"Ship Drives", "Ship Defenses", "Ship Weapons", "Missiles & Bombs", "Ground Combat",
+		"Population", "Production", "Ecology", "Security", "Achievements"}
 	hows := []string{"建立新殖民地", "移動艦隊", "調動人口", "指派領袖", "前往安塔蘭",
 		"入侵行星", "俘獲艦艇", "調整稅率", "設計艦艇", "取得更多說明"}
+	howsEn := []string{"Create a new colony", "Move a fleet", "Move population", "Assign leaders",
+		"Go to Antares", "Invade a planet", "Capture a ship", "Adjust taxes", "Design a ship",
+		"Get more help"}
+	if b.lang != i18n.Traditional {
+		cats, hows = catsEn, howsEn
+	}
 
 	y := infoPanelY + 44
 	s.extras = append(s.extras,
-		extraText{x: infoPanelX + 24, y: y, size: 12, text: "分類", col: gold},
-		extraText{x: infoPanelX + 220, y: y, size: 12, text: "怎麼做?", col: gold},
+		extraText{x: infoPanelX + 24, y: y, size: 12, text: b.tr("分類", "CATEGORY"), col: gold},
+		extraText{x: infoPanelX + 220, y: y, size: 12, text: b.tr("怎麼做?", "HOW DO I…?"), col: gold},
 	)
 	y += 20
 	for i := 0; i < len(cats) || i < len(hows); i++ {
@@ -335,7 +353,8 @@ func (b *sceneBuilder) infoReference(s *overlayScreen) {
 	}
 	s.extras = append(s.extras, extraText{
 		x: infoPanelX + 24, y: infoPanelY + infoPanelH - 24, size: 10,
-		text: "詳細規則見專案文件 docs/knowledge-base/manual-cht/", col: infoDimCol,
+		text: b.tr("詳細規則見專案文件 docs/knowledge-base/manual-cht/",
+			"Full rules: docs/knowledge-base/manual-cht/ in the project repo"), col: infoDimCol,
 	})
 }
 

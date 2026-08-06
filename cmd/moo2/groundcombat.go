@@ -235,23 +235,23 @@ func (g *groundCombatScreen) draw(dst *ebiten.Image) {
 	// 那個 y 是文字**上緣**不是中心(當中心的話會被畫面上緣切掉),remake 的 DrawCentered
 	// 以中心對齊,故加半個字高。
 	const titleSize = 16
-	title := "地面戰"
+	title := g.b.tr("地面戰", "GROUND COMBAT")
 	if g.res.ColonyName != "" {
-		title = "地面戰 — " + g.res.ColonyName
+		title += " — " + g.res.ColonyName
 	}
 	g.fnt.DrawCentered(dst, title, 319, 10+titleSize/2, titleSize, gold)
 
 	r := g.res
 	g.drawSidePanel(dst, gcAtkPanelX, gcAtkTextX, gcDarkenAtkX0, gcDarkenAtkX1, []string{
-		"攻方",
-		fmt.Sprintf("陸戰隊  %d → %d", r.AttackerMarinesStart, r.AttackerMarinesSurvived),
-		fmt.Sprintf("戰車營  %d → %d", r.AttackerTanksStart, r.AttackerTanksSurvived),
-		fmt.Sprintf("存活合計  %d", r.AttackerSurvived),
+		g.b.tr("攻方", "ATTACKER"),
+		fmt.Sprintf(g.b.tr("陸戰隊  %d → %d", "Marines  %d → %d"), r.AttackerMarinesStart, r.AttackerMarinesSurvived),
+		fmt.Sprintf(g.b.tr("戰車營  %d → %d", "Armor    %d → %d"), r.AttackerTanksStart, r.AttackerTanksSurvived),
+		fmt.Sprintf(g.b.tr("存活合計  %d", "Survivors  %d"), r.AttackerSurvived),
 	}, atkCol)
 	g.drawSidePanel(dst, gcDefPanelX, gcDefTextX, gcDarkenDefX0, gcDarkenDefX1, []string{
-		"守方",
-		fmt.Sprintf("守軍  %d → %d", r.DefenderStart, r.DefenderSurvived),
-		fmt.Sprintf("交戰  %d 回合", r.Rounds),
+		g.b.tr("守方", "DEFENDER"),
+		fmt.Sprintf(g.b.tr("守軍  %d → %d", "Garrison  %d → %d"), r.DefenderStart, r.DefenderSurvived),
+		fmt.Sprintf(g.b.tr("交戰  %d 回合", "%d rounds fought"), r.Rounds),
 	}, defCol)
 
 	// 戰場:整個畫面。部隊落點用原版公式(見檔頭)。
@@ -265,11 +265,12 @@ func (g *groundCombatScreen) draw(dst *ebiten.Image) {
 	}
 	drawTroops(dst, g.defMarine, r.DefenderStart, gcDefBaseX, 7, true)
 
-	outcome, outCol := "入侵失敗,殖民地仍在敵方手中", defCol
+	outcome, outCol := g.b.tr("入侵失敗,殖民地仍在敵方手中",
+		"Invasion repelled — the colony remains in enemy hands"), defCol
 	if r.AttackerWon {
-		outcome, outCol = "入侵成功", color.RGBA{160, 230, 160, 255}
+		outcome, outCol = g.b.tr("入侵成功", "Invasion successful"), color.RGBA{160, 230, 160, 255}
 		if r.StarCaptured {
-			outcome = "入侵成功,已佔領此星"
+			outcome = g.b.tr("入侵成功,已佔領此星", "Invasion successful — the system is yours")
 		}
 	}
 	g.fnt.DrawCentered(dst, outcome, 319, 208, 15, outCol)
@@ -277,7 +278,7 @@ func (g *groundCombatScreen) draw(dst *ebiten.Image) {
 	cx, cy, cw, ch := g.contRect()
 	vector.DrawFilledRect(dst, float32(cx), float32(cy), float32(cw), float32(ch), color.RGBA{38, 44, 34, 255}, false)
 	vector.StrokeRect(dst, float32(cx), float32(cy), float32(cw), float32(ch), 1.5, color.RGBA{150, 170, 130, 255}, false)
-	g.fnt.DrawCentered(dst, "繼續", float64(cx+cw/2), float64(cy+ch/2), 14, body)
+	g.fnt.DrawCentered(dst, g.b.tr("繼續", "CONTINUE"), float64(cx+cw/2), float64(cy+ch/2), 14, body)
 }
 
 // groundCombat 進入地面戰畫面。

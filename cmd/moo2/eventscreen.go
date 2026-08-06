@@ -28,16 +28,18 @@ const (
 )
 
 var (
-	evPanelBg   = color.RGBA{10, 14, 30, 245}
-	evGoodEdge  = color.RGBA{90, 190, 120, 255} // 好消息:綠框
-	evBadEdge   = color.RGBA{210, 110, 90, 255} // 壞消息:紅框
-	evTitleCol  = color.RGBA{240, 220, 120, 255}
-	evBodyCol   = color.RGBA{220, 228, 242, 255}
-	evBrandCol  = color.RGBA{120, 180, 240, 255}
-	evButtonBg  = color.RGBA{30, 40, 70, 255}
-	evGNNHeader = "銀河新聞網 GNN ── 快報"
+	evPanelBg     = color.RGBA{10, 14, 30, 245}
+	evGoodEdge    = color.RGBA{90, 190, 120, 255} // 好消息:綠框
+	evBadEdge     = color.RGBA{210, 110, 90, 255} // 壞消息:紅框
+	evTitleCol    = color.RGBA{240, 220, 120, 255}
+	evBodyCol     = color.RGBA{220, 228, 242, 255}
+	evBrandCol    = color.RGBA{120, 180, 240, 255}
+	evButtonBg    = color.RGBA{30, 40, 70, 255}
+	evGNNHeader   = "銀河新聞網 GNN ── 快報"
+	evGNNHeaderEn = "GALACTIC NEWS NETWORK ── BULLETIN"
 	// 星系發現不是 GNN 新聞,是自家勘查隊的回報,台標列另用一組字。
-	evScoutHeader = "帝國勘查回報"
+	evScoutHeader   = "帝國勘查回報"
+	evScoutHeaderEn = "IMPERIAL SURVEY REPORT"
 )
 
 // reportPanel 是快報面板要畫的內容(隨機事件與星系發現共用同一個版面)。
@@ -57,15 +59,17 @@ func (b *sceneBuilder) currentReport() *reportPanel {
 		return nil
 	}
 	if r := b.session.LastEventReport; r != nil {
-		tag := "警訊"
+		tag := b.tr("警訊", "ALERT")
 		if r.Good {
-			tag = "喜訊"
+			tag = b.tr("喜訊", "GOOD NEWS")
 		}
-		return &reportPanel{header: evGNNHeader, title: r.Name, tag: tag, body: r.Message, good: r.Good}
+		return &reportPanel{header: b.tr(evGNNHeader, evGNNHeaderEn),
+			title: r.Name, tag: tag, body: r.Message, good: r.Good}
 	}
 	if d := b.session.LastDiscovery; d != nil {
 		// 星系發現一律是好消息(原版這五種特殊物產沒有負面的)。
-		return &reportPanel{header: evScoutHeader, title: d.Name, tag: "發現", body: d.Message, good: true}
+		return &reportPanel{header: b.tr(evScoutHeader, evScoutHeaderEn),
+			title: d.Name, tag: b.tr("發現", "DISCOVERY"), body: d.Message, good: true}
 	}
 	return nil
 }
@@ -137,5 +141,5 @@ func (b *sceneBuilder) drawEventReport(dst *ebiten.Image) {
 	// 確認鈕
 	vector.DrawFilledRect(dst, 270, 372, 100, 24, evButtonBg, false)
 	vector.StrokeRect(dst, 270, 372, 100, 24, 1, edge, false)
-	b.fnt.DrawCentered(dst, "繼續", 320, 384, 13, evBodyCol)
+	b.fnt.DrawCentered(dst, b.tr("繼續", "CONTINUE"), 320, 384, 13, evBodyCol)
 }

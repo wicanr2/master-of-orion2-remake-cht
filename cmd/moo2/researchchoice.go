@@ -89,9 +89,11 @@ func (s *researchChoiceScreen) draw(dst *ebiten.Image) {
 	body := color.RGBA{206, 218, 240, 255}
 	dim := color.RGBA{150, 160, 180, 255}
 
-	s.fnt.DrawCentered(dst, "研究突破:選擇要解鎖的科技", 320, 70, 18, gold)
+	s.fnt.DrawCentered(dst, s.b.tr("研究突破:選擇要解鎖的科技", "BREAKTHROUGH — choose the technology to unlock"),
+		320, 70, 18, gold)
 	topicName := topicNameZh(s.b.lang, s.topic)
-	s.fnt.DrawCentered(dst, "主題:"+topicName+"(僅能擇一,其餘放棄)", 320, 104, 12, dim)
+	s.fnt.DrawCentered(dst, s.b.tr("主題:"+topicName+"(僅能擇一,其餘放棄)",
+		"Field: "+topicName+" (pick one; the rest are forfeited)"), 320, 104, 12, dim)
 
 	for i, t := range s.choices {
 		x, y, w, h := s.rowRect(i)

@@ -247,8 +247,8 @@ func (b *sceneBuilder) drawColonyScreen(dst *ebiten.Image, idx int) {
 			float32(colBtnW-6), float32(h-6), color.RGBA{72, 76, 84, 255}, false)
 		b.fnt.DrawCentered(dst, zh, float64(colBtnX+colBtnW/2), float64(y+h/2), 12, colBodyCol)
 	}
-	drawBtn(colLeadersY, colLeadersH, "領袖")
-	drawBtn(colReturnY, colReturnH, "返回")
+	drawBtn(colLeadersY, colLeadersH, b.tr("領袖", "LEADERS"))
+	drawBtn(colReturnY, colReturnH, b.tr("返回", "RETURN"))
 
 	// CHANGE / BUY 也是烘在框架上的英文。兩顆在 remake **都還沒有對應功能**
 	// (原版 CHANGE 是換目前建造項、BUY 是花 BC 立即完工),所以照主選單 Continue /
@@ -258,8 +258,8 @@ func (b *sceneBuilder) drawColonyScreen(dst *ebiten.Image, idx int) {
 		x, y, w, h int
 		zh         string
 	}{
-		{colChangeX, colChangeY, colChangeW, colChangeH, "更換"},
-		{colBuyX, colChangeY, colBuyW, colChangeH, "購買"},
+		{colChangeX, colChangeY, colChangeW, colChangeH, b.tr("更換", "CHANGE")},
+		{colBuyX, colChangeY, colBuyW, colChangeH, b.tr("購買", "BUY")},
 	} {
 		vector.DrawFilledRect(dst, float32(btn.x+3), float32(btn.y+3),
 			float32(btn.w-6), float32(btn.h-6), color.RGBA{112, 116, 120, 255}, false)
@@ -294,7 +294,7 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 
 	// --- 左面板:殖民地名 + 行星環境 + 人口 ---
 	lx := float64(colPanelLX + 5)
-	name := fmt.Sprintf("殖民地 %d", idx+1)
+	name := fmt.Sprintf(b.tr("殖民地 %d", "Colony %d"), idx+1)
 	if star := sess.PlayerColonyStarIndex(idx); star >= 0 && star < len(sess.Planets) {
 		if pn := sess.Planets[star].Name; pn != "" {
 			name = pn
@@ -303,7 +303,8 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 	b.fnt.Draw(dst, name, lx, float64(colPanelLY+6), 13, colTitleCol)
 	if star := sess.PlayerColonyStarIndex(idx); star >= 0 && star < len(sess.Planets) {
 		p := sess.Planets[star]
-		rows := []string{p.Climate, p.Size, "礦產" + p.Mineral, "重力" + p.Gravity}
+		rows := []string{p.Climate, p.Size,
+			b.tr("礦產", "Minerals ") + p.Mineral, b.tr("重力", "Gravity ") + p.Gravity}
 		if sp := gamedata.PlanetSpecialName(p.SpecialID); sp != "" {
 			rows = append(rows, "★"+sp) // 特殊物產:金礦/寶石礦的收入、遠古文物的研究都靠它
 		}
@@ -314,7 +315,7 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 			b.fnt.Draw(dst, r, lx, float64(colPanelLY+26+i*16), 10, colBodyCol)
 		}
 	}
-	b.fnt.Draw(dst, fmt.Sprintf("人口 %d/%d", c.Population, c.PopMax),
+	b.fnt.Draw(dst, fmt.Sprintf(b.tr("人口 %d/%d", "Pop %d/%d"), c.Population, c.PopMax),
 		lx, float64(colPanelLY+colPanelLH-16), 11, colOkCol)
 
 	// --- 中面板:本回合產出 + 已建建築 ---
@@ -331,17 +332,17 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 	if co.FoodSurplus < 0 {
 		foodCol = colWarnCol
 	}
-	b.fnt.Draw(dst, fmt.Sprintf("食物 %+d", co.FoodSurplus), mx, float64(colPanelMY+6), 11, foodCol)
-	b.fnt.Draw(dst, fmt.Sprintf("工業 %d", co.NetIndustry), mx+88, float64(colPanelMY+6), 11, colBodyCol)
-	b.fnt.Draw(dst, fmt.Sprintf("研究 %d", co.Research), mx, float64(colPanelMY+22), 11, colBodyCol)
+	b.fnt.Draw(dst, fmt.Sprintf(b.tr("食物 %+d", "Food %+d"), co.FoodSurplus), mx, float64(colPanelMY+6), 11, foodCol)
+	b.fnt.Draw(dst, fmt.Sprintf(b.tr("工業 %d", "Ind %d"), co.NetIndustry), mx+88, float64(colPanelMY+6), 11, colBodyCol)
+	b.fnt.Draw(dst, fmt.Sprintf(b.tr("研究 %d", "Res %d"), co.Research), mx, float64(colPanelMY+22), 11, colBodyCol)
 	// MoralePercent 是「對產出的百分點調整」(每格笑臉 +10、哭臉 -10),0 = 無加成也無懲罰,
 	// 不是「士氣只有 0 分」。標成「士氣修正」避免誤讀(見 engine.ColonyState.MoralePercent)。
-	b.fnt.Draw(dst, fmt.Sprintf("士氣 %+d%%", c.MoralePercent), mx+88, float64(colPanelMY+22), 11, colBodyCol)
+	b.fnt.Draw(dst, fmt.Sprintf(b.tr("士氣 %+d%%", "Morale %+d%%"), c.MoralePercent), mx+88, float64(colPanelMY+22), 11, colBodyCol)
 
-	b.fnt.Draw(dst, "已建建築", mx, float64(colPanelMY+44), 11, colTitleCol)
+	b.fnt.Draw(dst, b.tr("已建建築", "Buildings"), mx, float64(colPanelMY+44), 11, colTitleCol)
 	names := sess.ColonyBuildingNames(idx)
 	if len(names) == 0 {
-		b.fnt.Draw(dst, "(無)", mx, float64(colPanelMY+60), 10, colDimCol)
+		b.fnt.Draw(dst, b.tr("(無)", "(none)"), mx, float64(colPanelMY+60), 10, colDimCol)
 	} else {
 		sort.Strings(names)
 		for i, ln := range b.fnt.Wrap(strings.Join(names, "、"), 10, float64(colPanelMW-14)) {
@@ -356,7 +357,8 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 	jobs := []struct {
 		label string
 		n     int
-	}{{"農夫", c.Farmers}, {"工人", c.Workers}, {"科學家", c.Scientists}}
+	}{{b.tr("農夫", "Farmers"), c.Farmers}, {b.tr("工人", "Workers"), c.Workers},
+		{b.tr("科學家", "Scientists"), c.Scientists}}
 	for i, j := range jobs {
 		y := colJobY0 + i*colJobStep
 		vector.DrawFilledRect(dst, float32(colJobX0), float32(y),
@@ -364,14 +366,15 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 		vector.StrokeRect(dst, float32(colJobX0), float32(y),
 			float32(colJobX1-colJobX0), float32(colJobStep-4), 1, colPanelEdge, false)
 		b.fnt.Draw(dst, j.label, float64(colJobX0+10), float64(y+6), 12, colTitleCol)
-		b.fnt.Draw(dst, fmt.Sprintf("%d 人", j.n), float64(colJobX0+70), float64(y+6), 12, colBodyCol)
-		b.fnt.Draw(dst, "點此 +1", float64(colJobX1-56), float64(y+7), 10, colDimCol)
+		b.fnt.Draw(dst, fmt.Sprintf(b.tr("%d 人", "%d"), j.n), float64(colJobX0+70), float64(y+6), 12, colBodyCol)
+		b.fnt.Draw(dst, b.tr("點此 +1", "click +1"), float64(colJobX1-56), float64(y+7), 10, colDimCol)
 	}
 }
 
 // drawColonyQueue 畫右欄上半:7 格建造佇列(第 0 格是建造中,有進度條)。
 func (b *sceneBuilder) drawColonyQueue(dst *ebiten.Image, idx int) {
-	b.fnt.Draw(dst, fmt.Sprintf("建造佇列(%d 格,點擊移除)", shell.BuildQueueTotalSlots),
+	b.fnt.Draw(dst, fmt.Sprintf(b.tr("建造佇列(%d 格,點擊移除)", "Build queue (%d slots; click to remove)"),
+		shell.BuildQueueTotalSlots),
 		colQueueX, colListTitleY, 13, colTitleCol)
 
 	q := b.session.BuildQueueFor(idx)
@@ -393,7 +396,7 @@ func (b *sceneBuilder) drawColonyQueue(dst *ebiten.Image, idx int) {
 			// 建造中:顯示進度與預估剩餘回合(用上一回合的實際投入速率推,不另立公式)。
 			label = fmt.Sprintf("%s  %d/%d", item.Name, item.Progress, item.Cost)
 			if eta := b.session.BuildETATurns(idx); eta > 0 {
-				label += fmt.Sprintf("  約 %d 回合", eta)
+				label += fmt.Sprintf(b.tr("  約 %d 回合", "  ~%d turns"), eta)
 			}
 			// 進度條
 			w := float32(float64(colQueueW-4) * float64(item.Progress) / float64(item.Cost))
@@ -421,9 +424,10 @@ func (b *sceneBuilder) drawColonyBuildList(dst *ebiten.Image) {
 		pages = 1
 	}
 
-	b.fnt.Draw(dst, fmt.Sprintf("可建項目(%d/%d 頁,點擊排入)", page, pages),
+	b.fnt.Draw(dst, fmt.Sprintf(b.tr("可建項目(%d/%d 頁,點擊排入)", "Available (page %d/%d; click to queue)"),
+		page, pages),
 		colListX, colListTitleY, 13, colTitleCol)
-	for i, lbl := range []string{"上一頁", "下一頁"} {
+	for i, lbl := range []string{b.tr("上一頁", "PREV"), b.tr("下一頁", "NEXT")} {
 		bx := colListX + float64(i)*70
 		vector.DrawFilledRect(dst, float32(bx), float32(colListPageY), 60, 20, colSlotBg, false)
 		vector.StrokeRect(dst, float32(bx), float32(colListPageY), 60, 20, 1, colPanelEdge, false)
@@ -431,8 +435,9 @@ func (b *sceneBuilder) drawColonyBuildList(dst *ebiten.Image) {
 	}
 	if total == 0 {
 		// 開局科技少、可蓋的又都蓋了或已排進佇列時清單就是空的——說清楚,不要留一片空白讓人以為畫面壞了。
-		b.fnt.Draw(dst, "目前沒有可排入的項目", colListX, colListY+4, 12, colDimCol)
-		b.fnt.Draw(dst, "(已建或已在佇列中的不重複列出;完成研究會解鎖更多)",
+		b.fnt.Draw(dst, b.tr("目前沒有可排入的項目", "Nothing available to queue"), colListX, colListY+4, 12, colDimCol)
+		b.fnt.Draw(dst, b.tr("(已建或已在佇列中的不重複列出;完成研究會解鎖更多)",
+			"(already built or queued items are hidden; research unlocks more)"),
 			colListX, colListY+24, 11, colDimCol)
 		return
 	}
@@ -449,10 +454,10 @@ func (b *sceneBuilder) drawColonyBuildList(dst *ebiten.Image) {
 		if o.Cost > 0 {
 			txt = fmt.Sprintf("%s  (%d PP)", o.Name, o.Cost)
 		} else if o.Name == shell.TradeGoodsBuildName {
-			txt = o.Name + "  (工業轉現金)"
+			txt = o.Name + b.tr("  (工業轉現金)", "  (industry → cash)")
 		}
 		if _, isSpecial := gamedata.SpecialActionByNameZH(o.Name); isSpecial {
-			txt += "  ※可重複"
+			txt += b.tr("  ※可重複", "  * repeatable")
 		}
 		b.fnt.Draw(dst, txt, colListX+8, y+4, 11, colBodyCol)
 	}
