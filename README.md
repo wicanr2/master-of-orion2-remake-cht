@@ -69,7 +69,7 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
 
 ### ✅ Phase 3+ — 中文化、遊戲邏輯、回合引擎、AI
 
-- **完整中文化**:3604 條訊息、21 份 TSV 譯表(英文原文為 key 的顯示層覆蓋,不動資料層);6 個中文畫面檢視器(百科／科技總覽／種族統計／殖民地摘要／外交關係)。
+- **完整中文化**:5046 條訊息、24 份 TSV 譯表(英文原文為 key 的顯示層覆蓋,不動資料層);6 個中文畫面檢視器(百科／科技總覽／種族統計／殖民地摘要／外交關係)。
 - **遊戲邏輯層** `internal/gamedata`(14 模組):殖民成長、生產污染、研究樹(83 主題×8 領域)、軍官、艦艇衍生值、光束命中＋傷害、飛彈防禦、間諜、地面戰、士氣、收入、地形改造 —— 全對權威來源逐條驗證(見 [`docs/tech/moo2-formulas-reference.md`](docs/tech/moo2-formulas-reference.md))。
 - **回合引擎** `internal/engine`:殖民經濟→研究→國庫的帝國回合、頂層 `RunGameTurn`、單發戰鬥解算、勝利條件、save↔engine adapter;headless 回合模擬器 `cmd/moo2sim`。
 - **AI／外交(設計性重建 + 原版資料)** `internal/ai`、`internal/diplomacy`:AI 經濟／研究／生產／外交決策、17 級外交關係狀態機;`Decider` 介面支援 remake／original 兩模式(見 [`docs/tech/design-reconstruction.md`](docs/tech/design-reconstruction.md)、[`docs/tech/original-ai-re.md`](docs/tech/original-ai-re.md))。
@@ -79,7 +79,7 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
 `cmd/moo2 -game` 互動版已可從主選單一路玩到結束一局:玩家與 3 個性格互異的 AI 對手各自拓殖擴張,
 經濟(殖民地建築/重力/礦產/士氣/指揮評等/收入)已對手冊逐項核實,戰鬥(光束/飛彈/球狀傷害/地面戰
 陸戰隊+戰車+軌道轟炸)依真公式解算,三條勝利路徑(征服/銀河議會/安塔蘭母星反攻)全數接線可達成。
-以上皆有 headless 模擬探針(數十~數百回合)與 GUI 導覽截圖(`-gamegallery`,8 畫面端到端)驗證,
+以上皆有 headless 模擬探針(數十~數百回合)與 GUI 導覽截圖(`-gamegallery`,24 畫面端到端)驗證,
 70 回合無 panic。**這是「什麼現在能運作」的可驗證事實,不是還原度自評**——詳見
 [`docs/HONEST-STATUS.md`](docs/HONEST-STATUS.md)。
 
@@ -125,7 +125,7 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
 - 戰機/航母、完整 spy/leader/diplomacy UI、多 AI 對手的目標選擇策略(目前為索引順序,非距離/資源導向)
 - 武器改造(mod)系統的飛彈專屬 mod、小型化等級門檻、火線角
 - 音樂曲目↔場景的最終聽感比對(現用時長啟發式/反組譯佐證,非逐曲聆聽定案)
-- 多人對戰(考據已定案為 lockstep over TCP,尚未實作,見 [`docs/tech/multiplayer-architecture.md`](docs/tech/multiplayer-architecture.md))
+- 連線多人對戰:**熱座(同機輪流)已可玩**,網路 / 數據機 / 序列埠直連未做(方向已定案為 lockstep over TCP,見 [`docs/tech/multiplayer-architecture.md`](docs/tech/multiplayer-architecture.md))
 
 ---
 
