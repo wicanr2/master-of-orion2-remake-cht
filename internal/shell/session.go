@@ -125,6 +125,10 @@ type Ship struct {
 	// 只對 beam 武器生效(見 WeaponIsBeam / weapon_mods.go)。空切片/nil = 無改造(既有
 	// 存檔沒有這個欄位,JSON 解碼會是 nil,行為與「無改造」完全一致,回歸安全)。
 	Mods []string
+	// Damage 是累積的結構損傷(0 = 完好)。remake 先前沒有艦艇損傷的概念——一艘船不是完好
+	// 就是被擊沉——「自動修復」元件因此從加進來就沒有任何效果。見 repair.go。
+	// 舊存檔沒有這個欄位,JSON 解碼為 0 = 完好,回歸安全。
+	Damage int
 }
 
 // Component 是一個艦艇元件(名稱 + 成本 + 效果值 + 解鎖科技)。
@@ -273,9 +277,9 @@ func (s *GameSession) NextUnlockedComponent(opts []Component, cur int) int {
 // 三艘均為空武裝(殖民船/偵察艦在原版本就不具備武器容量,非本 remake 遺漏)。
 func homeworldShips() []Ship {
 	return []Ship{
-		{"拓荒號", "殖民船", "無武裝", "無裝甲", "無護盾", "無", 0, 0, nil},
-		{"先驅一號", "偵察艦", "無武裝", "無裝甲", "無護盾", "無", 0, 0, nil},
-		{"先驅二號", "偵察艦", "無武裝", "無裝甲", "無護盾", "無", 0, 0, nil},
+		{Name: "拓荒號", Class: "殖民船", Weapon: "無武裝", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
+		{Name: "先驅一號", Class: "偵察艦", Weapon: "無武裝", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
+		{Name: "先驅二號", Class: "偵察艦", Weapon: "無武裝", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
 	}
 }
 
@@ -367,7 +371,16 @@ func genEnemyFleet(turn int, mult float64) []int {
 // 武器設計資料,一律留零值 WeaponKindBeam(既有簡化,非本輪引入)。
 type combatant struct {
 	hp, atk, def, wmin, wmax, shield, armor int
-	kind                                    WeaponKind
+	// maxHP 是未受損時的血量,供戰鬥中的自動修復算「已受損多少」(見 repair.go)。
+	// 0 = 未設(敵方艦隊不需要),此時視為等於 hp。
+	maxHP int
+	// autoRepair 標記這艘船裝有自動修復元件(手冊 p.82:每回合修復 20% 結構損傷)。
+	autoRepair bool
+	// shipIdx 是這個 combatant 對應 s.Ships 的索引(-1 = 敵方/無對應)。
+	// battleVolley 過濾陣亡者時是整個 struct 複製,所以這個欄位會跟著倖存者走——
+	// 這正是「戰後把剩餘血量寫回正確那艘船」需要的東西(先前用外部平行陣列會在有人陣亡後錯位)。
+	shipIdx int
+	kind    WeaponKind
 	// mods 是攻方武器改造(gamedata.WeaponModCode 字串);只有 kind==WeaponKindBeam 時
 	// battleVolley 會套用(見 WeaponIsBeam 判斷),敵方艦隊(genEnemyFleet)沒有個別武器
 	// 設計,一律 nil(既有簡化,非本輪引入)。
@@ -434,8 +447,17 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 // 這一套換算規則(2026-07-11 從 ResolveBattle 內的匿名函式抽出,行為不變,純供多處重用,
 // 避免兩處各自維護、日後改壞其中一邊卻沒同步)。
 func (s *GameSession) mkPlayerCombatants() []combatant {
+	out, _ := s.mkPlayerCombatantsIndexed()
+	return out
+}
+
+// mkPlayerCombatantsIndexed 同 mkPlayerCombatants,另外回傳「第 k 個參戰艦對應 s.Ships 的
+// 哪個索引」。戰後要把剩餘血量寫回持久損傷(見 repair.go applyBattleDamage)時需要這個對映
+// ——支援艦不參戰(手冊 p.119),所以兩邊的索引不是一一對應。
+func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 	var out []combatant
-	for _, sh := range s.Ships {
+	var idx []int
+	for shipIdx, sh := range s.Ships {
 		if isSupportShipClass(sh.Class) {
 			// 手冊 p.119 逐字:「Support ships … **do not fight**, but are destroyed if an enemy
 			// military fleet chooses to engage them in combat.」——支援艦(殖民船/前哨船/運輸艦)
@@ -462,11 +484,20 @@ func (s *GameSession) mkPlayerCombatants() []combatant {
 			atk += fatk
 			hp += fhp
 		}
-		out = append(out, combatant{hp: hp, atk: atk, def: body, wmin: atk / 2, wmax: atk,
+		// 持久損傷(見 repair.go):受損的船帶著傷上陣,不再每場戰鬥都滿血。
+		if d := ShipDamage(sh); d > 0 {
+			hp -= d
+			if hp < ShipDamageFloorHP {
+				hp = ShipDamageFloorHP
+			}
+		}
+		out = append(out, combatant{hp: hp, maxHP: shipMaxHP(sh), atk: atk, def: body, wmin: atk / 2, wmax: atk,
 			shield: shieldReduceByName(sh.Shield), armor: armorHPByName(sh.Armor),
-			kind: weaponKindByName(sh.Weapon), mods: sh.Mods})
+			kind: weaponKindByName(sh.Weapon), mods: sh.Mods,
+			autoRepair: shipHasAutoRepair(sh), shipIdx: shipIdx})
+		idx = append(idx, shipIdx)
 	}
-	return out
+	return out, idx
 }
 
 // ResolveBattle 快速艦隊自動結算(無格子;供非互動戰鬥)。改用 gamedata 真戰鬥公式逐發解算,
@@ -478,9 +509,9 @@ func (s *GameSession) ResolveBattle(enemy string) BattleResult {
 	}
 	var ef []combatant
 	for _, st := range genEnemyFleet(s.Turn, mult) {
-		ef = append(ef, combatant{hp: st * 3, atk: st, def: st, wmin: st / 2, wmax: st, armor: st})
+		ef = append(ef, combatant{hp: st * 3, atk: st, def: st, wmin: st / 2, wmax: st, armor: st, shipIdx: -1})
 	}
-	pf := s.mkPlayerCombatants()
+	pf, pfIdx := s.mkPlayerCombatantsIndexed()
 
 	res := BattleResult{Enemy: enemy, PlayerStart: len(pf), EnemyStart: len(ef)}
 	rng := rand.New(rand.NewSource(int64(s.Turn)*2654435761 + 12345)) // 依回合種子,可重現
@@ -492,11 +523,33 @@ func (s *GameSession) ResolveBattle(enemy string) BattleResult {
 	res.PlayerLosses = res.PlayerStart - len(pf)
 	res.EnemyLosses = res.EnemyStart - len(ef)
 	res.PlayerWon = len(ef) == 0 || len(pf) >= len(ef)
+	// 倖存艦的剩餘血量寫回持久損傷(見 repair.go)。battleVolley 會就地移除陣亡艦,
+	// 故 pf 剩下的是「倖存者、且保持原始相對順序」——與 pfIdx 的前綴對齊。
+	s.applySurvivorDamage(pf, pfIdx)
 	for i := 0; i < res.PlayerLosses; i++ {
 		s.removeWeakestShip()
 	}
+	s.repairAfterBattle() // 自動修復元件/進階損害管制:戰後完全修復(手冊 p.80/p.82)
 	s.LastBattle = &res
 	return res
+}
+
+// applySurvivorDamage 把戰鬥結束時倖存艦的剩餘血量寫回 Ship.Damage。
+//
+// 對映靠 combatant.shipIdx(過濾陣亡者時整個 struct 複製,索引跟著倖存者走),
+// 不是靠外部平行陣列——後者在有人陣亡後就會錯位,把 A 船的傷記到 B 船上。
+//
+// idx 參數保留給呼叫端表達「這一批 combatant 原本對應哪些船」,目前只用於長度檢查。
+func (s *GameSession) applySurvivorDamage(survivors []combatant, _ []int) {
+	for _, c := range survivors {
+		// maxHP <= 0 同時擋掉兩種不該寫回的來源:敵方艦隊,以及 antaran_victory.go /
+		// orbital_bombardment.go 那些沒填 maxHP 的臨時 combatant(它們的 shipIdx 是 Go 零值 0,
+		// 若不擋就會把傷害記到玩家的第一艘船上)。
+		if c.shipIdx < 0 || c.shipIdx >= len(s.Ships) || c.maxHP <= 0 {
+			continue
+		}
+		s.applyBattleDamage([]int{c.shipIdx}, []int{c.hp})
+	}
 }
 
 // DiplomacyResponse 依雙方相對實力回應一個外交提議(和平/貿易/威脅)。
@@ -2381,6 +2434,7 @@ func (s *GameSession) EndTurn() {
 		}
 	}
 	s.Turn++
+	s.advanceShipRepair()      // 停在自家據點的艦艇完全修復(原版 Repair_Ships_At_Colonies_)
 	s.advanceAntares()         // 安塔蘭人週期性入侵(依 Turn 排程升級),記於 LastAntares
 	s.advanceAIRaids()         // AI 對手突襲玩家殖民地(戰爭態勢 + 軍力領先才發動),記於 LastRaid
 	s.advanceConquestVictory() // 對手是否已全滅(手冊三條勝利路徑之一:殲滅所有對手)

@@ -138,7 +138,7 @@ func (s *GameSession) AttackMonster(starIdx int) MonsterBattleResult {
 	if !ok {
 		return MonsterBattleResult{Reason: "怪獸資料不存在"}
 	}
-	pf := s.mkPlayerCombatants()
+	pf, pfIdx := s.mkPlayerCombatantsIndexed()
 	if len(pf) == 0 {
 		return MonsterBattleResult{Reason: "艦隊沒有可戰鬥的艦艇"}
 	}
@@ -182,9 +182,19 @@ func (s *GameSession) AttackMonster(starIdx int) MonsterBattleResult {
 			}
 			if dmg >= pf[weakest].hp {
 				pf = append(pf[:weakest], pf[weakest+1:]...)
+				pfIdx = append(pfIdx[:weakest], pfIdx[weakest+1:]...)
 				res.ShipsLost++
 			} else {
 				pf[weakest].hp -= dmg
+			}
+		}
+		// 自動修復元件:每回合修復 20% 的結構損傷(手冊 p.82)。
+		for i := range pf {
+			if !pf[i].autoRepair || pf[i].maxHP <= 0 {
+				continue
+			}
+			if r := autoRepairInCombat(pf[i].maxHP - pf[i].hp); r > 0 {
+				pf[i].hp += r
 			}
 		}
 	}
@@ -196,9 +206,12 @@ func (s *GameSession) AttackMonster(starIdx int) MonsterBattleResult {
 	} else {
 		res.Remaining = m.Structure
 	}
+	// 倖存艦帶傷回港(見 repair.go);先寫損傷再移除陣亡艦,順序與 ResolveBattle 一致。
+	s.applySurvivorDamage(pf, pfIdx)
 	for i := 0; i < res.ShipsLost; i++ {
 		s.removeWeakestShip()
 	}
+	s.repairAfterBattle() // 自動修復/進階損害管制:戰後完全修復(手冊 p.80/p.82)
 
 	if res.Won {
 		res.Message = fmt.Sprintf("擊殺%s!該星系已可拓殖(我方損失 %d 艘)", res.Name, res.ShipsLost)

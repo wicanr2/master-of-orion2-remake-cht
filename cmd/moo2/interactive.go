@@ -2061,6 +2061,16 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 				extraText{x: 28, y: y, size: 13, text: sh.Name, col: gold},
 				extraText{x: 130, y: y, size: 12, text: sh.Class, col: body},
 			)
+			// 結構損傷(見 internal/shell/repair.go)。原版是在艦艇資訊面板用損壞色標示,
+			// remake 只有結構這一份損傷值,直接寫百分比;完好的船不畫,免得整排都是「損傷 0%」。
+			if d := shell.ShipDamagePercent(sh); d > 0 {
+				col := color.RGBA{235, 190, 90, 255} // 輕傷:琥珀
+				if d >= 50 {
+					col = color.RGBA{230, 110, 90, 255} // 重傷:紅
+				}
+				s.extras = append(s.extras,
+					extraText{x: 246, y: y, size: 12, text: fmt.Sprintf("損傷 %d%%", d), col: col})
+			}
 			y += 28
 		}
 		// 「攻打安塔蘭」提示(手冊三條勝利路徑之二):只在已建次元傳送門 + 艦隊非空時顯示,
@@ -2627,12 +2637,19 @@ type interactiveApp struct {
 	// 走得到最終得分畫面。與上面 EventSeed=1 同一個理由——那條路徑靠正常遊玩要好幾百回合,
 	// 截圖驗證等不起。只在截圖廊模式下設值,正常遊戲恆為 0(不觸發)。
 	galleryVictoryTick int
-	gallerySession     *shell.GameSession
+	// galleryDamageTick 是截圖廊在哪個 tick 給艦隊注入結構損傷(見 Update 內的說明:
+	// 必須晚於最後一次結束回合,否則會被停靠母星的完全修復清掉)。
+	galleryDamageTick int
+	gallerySession    *shell.GameSession
 }
 
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
 // 「按 TURN 進最終得分」那一拍(t29),取它的前一拍。
 const galleryVictoryTick = 28
+
+// galleryDamageTick 是截圖廊在哪個 tick 給艦隊注入結構損傷——取「進艦隊列表」那一拍(t41)
+// 的前一拍,確保晚於腳本裡最後一次「結束回合」(t29)。
+const galleryDamageTick = 40
 
 // galleryShot 是「端到端過場截圖廊」腳本中,在某個絕對 tick 存一張圖的指令。
 type galleryShot struct {
@@ -2712,23 +2729,29 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		click(532, 451), // t39: 行星列表「返回」→ 星系主畫面
 		idle,            // t40: settle
 
-		click(495, 452), // t41: 工具列「INFO」→ 情報畫面
+		click(198, 452), // t41: 工具列「FLEETS」→ 艦隊列表
 		idle,            // t42: settle
-		idle,            // t43: settle → 截圖 info(預設分頁:歷史圖表)
-		click(21, 80),   // t44: INFO 左欄「科技總覽」分頁
-		idle,            // t45: settle → 截圖 info_tech
-		click(535, 434), // t46: INFO「RETURN」→ 星系主畫面
-		idle,            // t47: settle
+		idle,            // t43: settle → 截圖 fleet(含艦艇損傷顯示)
+		click(598, 444), // t44: 艦隊列表「RETURN」→ 星系主畫面
+		idle,            // t45: settle
 
-		click(420, 452), // t48: 工具列「RACES」→ 種族關係
-		idle,            // t49: settle
-		click(483, 428), // t50: 種族關係「REPORT」→ 外交對談
-		idle,            // t51: settle
-		idle,            // t52: settle → 截圖 diplomacy
-		click(320, 437), // t53: 外交對談「結束對談」→ 種族關係
-		click(388, 448), // t54: 種族關係「DECLARE WAR」→ 戰術戰鬥
-		idle,            // t55: settle
-		idle,            // t56: settle → 截圖 tactical
+		click(495, 452), // t46: 工具列「INFO」→ 情報畫面
+		idle,            // t47: settle
+		idle,            // t48: settle → 截圖 info(預設分頁:歷史圖表)
+		click(21, 80),   // t49: INFO 左欄「科技總覽」分頁
+		idle,            // t50: settle → 截圖 info_tech
+		click(535, 434), // t51: INFO「RETURN」→ 星系主畫面
+		idle,            // t52: settle
+
+		click(420, 452), // t53: 工具列「RACES」→ 種族關係
+		idle,            // t54: settle
+		click(483, 428), // t55: 種族關係「REPORT」→ 外交對談
+		idle,            // t56: settle
+		idle,            // t57: settle → 截圖 diplomacy
+		click(320, 437), // t58: 外交對談「結束對談」→ 種族關係
+		click(388, 448), // t59: 種族關係「DECLARE WAR」→ 戰術戰鬥
+		idle,            // t60: settle
+		idle,            // t61: settle → 截圖 tactical
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -2741,10 +2764,11 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{24, "08_colonyscreen.png"},
 		{31, "09_hiscore.png"},
 		{38, "10_planets.png"},
-		{43, "11_info.png"},
-		{45, "12_info_tech.png"},
-		{52, "13_diplomacy.png"},
-		{56, "14_tactical.png"},
+		{43, "11_fleet.png"},
+		{48, "12_info.png"},
+		{50, "13_info_tech.png"},
+		{57, "14_diplomacy.png"},
+		{61, "15_tactical.png"},
 	}
 	return script, shots
 }
@@ -2807,6 +2831,26 @@ func (a *interactiveApp) Update() error {
 			Over: true, Reason: engine.VictoryAntaran, Winner: "player", Turn: a.gallerySession.Turn,
 		}
 		a.gallerySession.AntaranHomeworldConquered = true
+	}
+	// 截圖廊專用:給艦隊製造結構損傷,好讓艦隊列表的損傷欄位有東西可畫
+	// (見 internal/shell/repair.go)。與上面同一個理由——截圖驗證等不起真的打一場。
+	//
+	// ⚠ 必須排在最後一次「結束回合」之後:EndTurn 會呼叫 advanceShipRepair,而艦隊開局
+	// 就停在母星(自家據點),照原版 Repair_Ships_At_Colonies_ 的規則會被**完全修復**。
+	// 先前注入在 galleryVictoryTick(t28)、而 t29 按了結束回合,傷就這樣被清光,截出來
+	// 一艘傷都沒有——那不是顯示壞了,是修復規則正常運作。
+	if a.galleryDamageTick > 0 && a.tick == a.galleryDamageTick && a.gallerySession != nil {
+		// 輕傷/完好/重傷各一,琥珀與紅兩個顏色分支都要真的畫出來才算驗到。
+		// 開局艦隊都是 strength 1 的船(偵察艦/殖民船,最大血量 3),損傷刻度本來就只有
+		// 0/33/66% 三檔——這是艦級抽象戰鬥模型的必然,不是顯示精度問題。
+		for i := range a.gallerySession.Ships {
+			switch i % 3 {
+			case 0:
+				a.gallerySession.Ships[i].Damage = 1 // 輕傷 → 琥珀
+			case 2:
+				a.gallerySession.Ships[i].Damage = 99 // 重傷 → 紅(ShipDamage 會夾到「最大血量−1」)
+			}
+		}
 	}
 	if t := a.cur.update(a.pollInput()); t != nil {
 		if t.quit {
@@ -2919,6 +2963,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.gallerySession = b.session
 		// t29 是腳本裡「按 TURN 進最終得分」那一拍;勝負必須在它之前設好,故取 t28。
 		app.galleryVictoryTick = galleryVictoryTick
+		app.galleryDamageTick = galleryDamageTick
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,
 	// 且截圖驗證不需要聲音。音訊初始化失敗不致命。
