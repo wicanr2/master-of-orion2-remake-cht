@@ -54,6 +54,9 @@ type sessionSnapshot struct {
 	SelectedStar   int                  `json:"selectedStar"`
 	Difficulty     int                  `json:"difficulty"`
 	Builds         []ColonyBuild        `json:"builds"`
+	// BuildQueue 是各殖民地的後續建造排隊項(原版 7 格 BUILD QUEUE,見 buildqueue.go)。
+	// omitempty:2026-08-06 之前的存檔沒有這個欄位,解碼成 nil = 「佇列是空的」,語意正確。
+	BuildQueue [][]ColonyBuild `json:"build_queue,omitempty"`
 	FleetAtStar    int                  `json:"fleetAtStar"`
 	FleetDestStar  int                  `json:"fleetDestStar"`
 	FleetETA       int                  `json:"fleetETA"`
@@ -122,6 +125,7 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		PlayerColonies: s.PlayerColonies, AIPlayers: ais,
 		Stars: s.Stars, Planets: s.Planets, Leaders: s.Leaders, Ships: s.Ships,
 		SelectedStar: s.SelectedStar, Difficulty: s.Difficulty, Builds: s.Builds,
+		BuildQueue: s.BuildQueue,
 		FleetAtStar: s.FleetAtStar, FleetDestStar: s.FleetDestStar, FleetETA: s.FleetETA,
 		PopAccum: s.popAccum, ColonyBuild: s.ColonyBuildings, EventSeed: s.EventSeed,
 		AntaresRaids: s.AntaresRaids, RaceIndex: s.RaceIndex,
@@ -159,7 +163,8 @@ func (snap sessionSnapshot) restore() *GameSession {
 		Turn: snap.Turn, Player: snap.Player, PlayerColonies: snap.PlayerColonies,
 		AIPlayers: ais, Stars: snap.Stars, Planets: snap.Planets, Leaders: snap.Leaders,
 		Ships: snap.Ships, SelectedStar: snap.SelectedStar, Difficulty: snap.Difficulty,
-		Builds: snap.Builds, FleetAtStar: snap.FleetAtStar, FleetDestStar: snap.FleetDestStar,
+		Builds: snap.Builds, BuildQueue: snap.BuildQueue,
+		FleetAtStar: snap.FleetAtStar, FleetDestStar: snap.FleetDestStar,
 		FleetETA: snap.FleetETA, popAccum: snap.PopAccum, ColonyBuildings: snap.ColonyBuild,
 		EventSeed: snap.EventSeed, AntaresRaids: snap.AntaresRaids, RaceIndex: snap.RaceIndex,
 		RaceCombatPct: snap.RaceCombatPct, raceGrowthPct: snap.RaceGrowthPct,

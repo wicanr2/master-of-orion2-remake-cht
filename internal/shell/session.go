@@ -870,6 +870,18 @@ type ColonyBuild struct {
 // 不需要另外用名稱比對(見 advanceBuilds 註解)。
 const TradeGoodsBuildName = "貿易品"
 
+// HousingBuildName 是「住宅」建造佇列選項的名稱。與「貿易品」「不建造」同類——是佇列的
+// 恆可選特殊項,不是 gamedata.Buildings 裡的實體建築,沒有前置科技 gate。
+//
+// 手冊把住宅與貿易品並列為「repetitive items」(patch1.5 changelog:"repetitive items
+// (housing, trade goods or repeat builds) in the queue"),選它時該殖民地的淨工業不蓋建築、
+// 改成加速人口成長(engine.ColonyState.Housing → gamedata.ColonyHousingBonus)。
+//
+// 為什麼補這一項:remake 的住房獎金公式與 ColonyState.Housing 欄位早就寫好,卻**從來沒有
+// 任何地方設過那個欄位**——因為建造選單裡沒有「住宅」。開局玩家科技只解鎖 2 個建築、
+// 而母星兩個都已蓋好,建造選單實際上只剩「貿易品」與「不建造」兩項可選(2026-08-06 實測)。
+const HousingBuildName = "住宅"
+
 // buildOptions 是「不看前置科技」的全部可建項目(名稱 + 生產成本),衍生自
 // gamedata.Buildings(手冊全表 40 項:35 建築 + 5 衛星),空字串為「不建造」排第一個,
 // 「貿易品」特殊選項排第二個。供將來「完整建築圖鑑」類 UI 參考;實際建造選單(有前置科技
@@ -884,6 +896,7 @@ func allBuildOptions() []ColonyBuild {
 	out := make([]ColonyBuild, 0, len(gamedata.Buildings)+len(gamedata.SpecialActions)+2)
 	out = append(out, ColonyBuild{"", 0, 0})
 	out = append(out, ColonyBuild{TradeGoodsBuildName, 0, 0})
+	out = append(out, ColonyBuild{HousingBuildName, 0, 0})
 	for _, b := range gamedata.Buildings {
 		out = append(out, ColonyBuild{Name: b.NameZH, Progress: 0, Cost: b.ProductionCost})
 	}
@@ -897,7 +910,7 @@ func allBuildOptions() []ColonyBuild {
 // 兩個特殊選項恆在,不受前置科技限制)。地形改造/蓋亞轉化/土壤改良/運輸艦隊比照建築同款前置
 // 科技 gate(gamedata.AvailableSpecialActions),排在建築清單之後。
 func availableBuildOptions(completedTopics map[gamedata.ResearchTopic]bool) []ColonyBuild {
-	out := []ColonyBuild{{"", 0, 0}, {TradeGoodsBuildName, 0, 0}}
+	out := []ColonyBuild{{"", 0, 0}, {TradeGoodsBuildName, 0, 0}, {HousingBuildName, 0, 0}}
 	for _, b := range gamedata.AvailableBuildings(completedTopics) {
 		out = append(out, ColonyBuild{Name: b.NameZH, Progress: 0, Cost: b.ProductionCost})
 	}
@@ -1117,6 +1130,7 @@ func (s *GameSession) advanceBuilds() {
 			}
 			s.LastBuilt = append(s.LastBuilt, fmt.Sprintf("殖民地 %d 完成建造:%s", i+1, b.Name))
 			*b = ColonyBuild{} // 完成清空
+			s.popNextBuild(i)  // 佇列有排隊項就自動接上(原版 7 格 BUILD QUEUE 行為)
 		}
 	}
 }
@@ -1341,7 +1355,29 @@ func genPlanets(stars []Star, r *rand.Rand, age gamedata.GalaxyAge, homeStars ma
 		nPlanets := gamedata.RollNumSatellites(r.Intn(10)+1, sc)
 		p := Planet{Gen: planetGenVersion}
 
-		if nPlanets <= 0 && !homeStars[i] {
+		if homeStars[i] {
+			// 母星不骰:直接給與 playerHomeworldColony 一致的行星資料。
+			//
+			// 為什麼要特判:母星的殖民地狀態(playerHomeworldColony,硬編 Terran/Medium/Abundant,
+			// 依 archive.org 原版實測 Sol III)與星圖上那顆星的 Planets 資料是**兩份獨立資料**。
+			// 交給骰表決定會出現「殖民地總覽說類地、殖民地畫面說凍原」這種自打嘴巴
+			// (2026-08-06 實機截圖抓到)。原版母星本來就是固定的,不是生成出來的。
+			// AI 母星比照辦理——AI 殖民地同樣以宜居母星起家。
+			p.Orbit = 2 // 宜居帶(見 gamedata.ClassToGroup:黃星第 3 軌道 = 溫度帶 2)
+			p.ClimateID = gamedata.TERRAN
+			p.SizeID = gamedata.MEDIUM_PLANET
+			p.MineralID = gamedata.ABUNDANT
+			p.GravityID = gamedata.NORMAL_G
+			p.Name = s.Name + " " + roman[p.Orbit]
+			p.Climate = climateDisplayName(p.ClimateID)
+			p.Gravity = gravityDisplayName(p.GravityID)
+			p.Mineral = mineralDisplayName(p.MineralID)
+			p.Size = sizeDisplayName(p.SizeID)
+			out = append(out, p)
+			continue
+		}
+
+		if nPlanets <= 0 {
 			p.Name = s.Name
 			p.NoPlanet = true
 			p.Climate, p.Gravity, p.Mineral, p.Size = "無行星", "—", "—", "—"
@@ -1728,7 +1764,11 @@ type GameSession struct {
 	LastBattle       *BattleResult       // 上一場戰鬥結果(供戰鬥結果畫面)
 	SelectedStar     int                 // 星圖選中的星索引(-1=未選)
 	Difficulty       int                 // 難度索引(shell.Difficulties)
-	Builds           []ColonyBuild       // 各殖民地建造項目(對應 PlayerColonies)
+	Builds           []ColonyBuild       // 各殖民地「當前建造中」的項目(對應 PlayerColonies;佇列見 BuildQueue)
+	// BuildQueue[i] 是殖民地 i 的**後續**建造排隊項(不含 Builds[i] 那一格)。
+	// 原版殖民地畫面的 BUILD QUEUE 是 7 格(反組譯 Add_Build_Queue_Fields_ 確認),
+	// 完工自動接下一項;remake 先前只有一格。見 buildqueue.go 檔頭。
+	BuildQueue [][]ColonyBuild
 	LastBuilt        []string            // 上回合完成的建造(供回合摘要)
 	FleetAtStar      int                 // 玩家艦隊所在星索引(初始=母星 0)
 	FleetDestStar    int                 // 艦隊目的星索引(-1=無航行任務)
@@ -2075,6 +2115,9 @@ func (s *GameSession) recoverFromFamine() {
 func (s *GameSession) syncTradeGoodsFlag() {
 	for i := range s.PlayerColonies {
 		s.PlayerColonies[i].TradeGoods = i < len(s.Builds) && s.Builds[i].Name == TradeGoodsBuildName
+		// 住宅同理:選它時該殖民地進入「住房」產能配置,啟用 gamedata.ColonyHousingBonus 的
+		// 成長加成(engine.colonyGrowth 早已支援,先前無人設過這個旗標)。
+		s.PlayerColonies[i].Housing = i < len(s.Builds) && s.Builds[i].Name == HousingBuildName
 	}
 }
 

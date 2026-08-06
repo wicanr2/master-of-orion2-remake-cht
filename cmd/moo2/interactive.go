@@ -338,6 +338,8 @@ type sceneBuilder struct {
 	lastActionMsg string               // 星圖畫面「載運陸戰隊/發動地面入侵」的最近一次結果訊息(選新星時清空)
 	gameVersion   gamedata.GameVersion // 主選單選的規則版本(1.3/1.5);開局注入 session.RuleProfile
 	infoTab       int                  // INFO 畫面目前分頁(0=歷史圖表 1=科技總覽 2=種族統計 3=回合摘要 4=參考),見 infosubscreens.go
+	colonyIdx     int                  // 單一殖民地畫面目前管理哪個殖民地(索引 PlayerColonies),見 colonyscreen.go
+	colonyListTop int                  // 單一殖民地畫面「可建項目」清單的捲動起點
 	infoHistoryMetric int              // 歷史圖表目前指標(shell.HistoryMetric)
 }
 
@@ -889,6 +891,9 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 			}
 			top := int(rowY[i]) - 15
 			hits = append(hits,
+				// 殖民地名欄 → 進入單一殖民地畫面(原版 Main_Screen_ → Do_Colony_Screen_,
+				// COLONY 與 COLONY SUMMARY 是兩個不同畫面,見 colonyscreen.go 檔頭)。
+				hitRegion{18, top, 78, 30, fmt.Sprintf("n%d", i)},
 				hitRegion{104, top, 118, 30, fmt.Sprintf("f%d", i)},
 				hitRegion{236, top, 128, 30, fmt.Sprintf("w%d", i)},
 				hitRegion{376, top, 128, 30, fmt.Sprintf("s%d", i)},
@@ -911,6 +916,10 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 				b.session.ShiftColonyJob(idx, "w", "s") // 工人→科學家
 			case 'b':
 				b.session.CycleColonyBuild(idx) // 循環建造項目
+			case 'n':
+				b.colonyIdx = idx
+				b.colonyListTop = 0
+				return b.goTo(b.colonyScreen, "殖民地")
 			}
 			return b.goTo(b.colonySummary, "殖民地總覽") // 重繪顯示新分配
 		}
@@ -961,6 +970,9 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 			if i < len(b.session.Builds) && b.session.Builds[i].Name != "" {
 				bd := b.session.Builds[i]
 				bt = fmt.Sprintf("%s %d/%d", bd.Name, bd.Progress, bd.Cost)
+			}
+			if n := b.session.BuildQueueBacklogLen(i); n > 0 {
+				bt += fmt.Sprintf(" +%d", n) // 佇列還排著 n 項(原版 7 格 BUILD QUEUE)
 			}
 			s.extras = append(s.extras, extraText{x: 571, y: y, size: 12, text: bt, col: body, align: 1})
 			// 已建建築(顯示效果來源):在建造欄下方以小字列出。
@@ -2557,33 +2569,39 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		idle,            // t11: settle → 截圖 galaxy
 		click(48, 452),  // t12: 星系主畫面工具列「殖民地」→ 殖民地總覽
 		idle,            // t13: settle
-		idle,            // t14: settle → 截圖 colony
-		click(608, 462), // t15: 殖民地總覽「RETURN」→ 星系主畫面
-		click(495, 452), // t16: 星系主畫面工具列「INFO」→ 科技總覽
-		idle,            // t17: settle
-		click(113, 89),  // t18: 科技總覽「Tech Review」→ 研究選擇
+		idle,            // t14: settle → 截圖 colony(總覽)
+		click(50, 47),   // t15: 總覽第一列「殖民地名」欄 → 單一殖民地畫面(原版 Do_Colony_Screen_)
+		idle,            // t16: settle
+		idle,            // t17: settle → 截圖 colonyscreen
+		click(590, 459), // t18: 殖民地畫面「返回」→ 殖民地總覽
 		idle,            // t19: settle
-		idle,            // t20: settle → 截圖 research
-		click(204, 186), // t21: 研究選擇(任一領域)→ 星系主畫面
-		click(420, 452), // t22: 星系主畫面工具列「RACES」→ 種族關係
-		idle,            // t23: settle
-		click(483, 428), // t24: 種族關係「REPORT」→ 外交對談
-		idle,            // t25: settle
-		idle,            // t26: settle → 截圖 diplomacy
-		click(320, 437), // t27: 外交對談「結束對談」→ 種族關係
-		click(388, 448), // t28: 種族關係「DECLARE WAR」→ 戰術戰鬥
-		idle,            // t29: settle
-		idle,            // t30: settle → 截圖 tactical
+		click(608, 462), // t20: 殖民地總覽「RETURN」→ 星系主畫面
+		click(495, 452), // t21: 星系主畫面工具列「INFO」→ 科技總覽
+		idle,            // t22: settle
+		click(113, 89),  // t23: 科技總覽「Tech Review」→ 研究選擇
+		idle,            // t24: settle
+		idle,            // t25: settle → 截圖 research
+		click(204, 186), // t26: 研究選擇(任一領域)→ 星系主畫面
+		click(420, 452), // t27: 星系主畫面工具列「RACES」→ 種族關係
+		idle,            // t28: settle
+		click(483, 428), // t29: 種族關係「REPORT」→ 外交對談
+		idle,            // t30: settle
+		idle,            // t31: settle → 截圖 diplomacy
+		click(320, 437), // t32: 外交對談「結束對談」→ 種族關係
+		click(388, 448), // t33: 種族關係「DECLARE WAR」→ 戰術戰鬥
+		idle,            // t34: settle
+		idle,            // t35: settle → 截圖 tactical
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
 		{6, "02_raceselect.png"},
 		{8, "03_nameflag.png"},
 		{11, "04_galaxy.png"},
-		{14, "05_colony.png"},
-		{20, "06_research.png"},
-		{26, "07_diplomacy.png"},
-		{30, "08_tactical.png"},
+		{14, "05_colonysummary.png"},
+		{17, "06_colonyscreen.png"},
+		{25, "07_research.png"},
+		{31, "08_diplomacy.png"},
+		{35, "09_tactical.png"},
 	}
 	return script, shots
 }
