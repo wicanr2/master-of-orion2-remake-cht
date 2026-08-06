@@ -1,19 +1,34 @@
 # 總缺口報告:原版 Orion2.exe vs remake
 
-> 日期:2026-08-06。方法:解析原版執行檔內建的 8,590 個 Watcom 除錯符號
+> 日期:2026-08-06(當日稍晚修訂)。方法:解析原版執行檔內建的 8,589 個 Watcom 除錯符號
 > (見 [`00-orion2-symbols.md`](00-orion2-symbols.md)),對照 remake 現行程式碼。
 > **這是第一次能用原版二進位當基準做全面盤點**——先前只能靠手冊、攻略與 openorion2(純渲染殼)。
+
+## ⚠ 本報告初版的一處錯誤已修正
+
+初版依據的符號表 parser 把記錄格式讀反(位址其實在名字**之前**),導致
+**name↔addr 全部錯開一格**。修正細節與方法論教訓見
+[`00-orion2-symbols.md`](00-orion2-symbols.md)。
+
+對本報告的影響:
+
+- **Part A(畫面清單)與 Part B(模組分群)基本不受影響**——它們只用到名字與模組歸屬,
+  而同一 `.c` 模組的符號連續,位移一格只動到模組邊界的一兩個名字。重算後
+  module 122(歷史記錄)74 個函式、module 15(事件)58 個,與初版的 73/57 差一。
+- **Part C(資料表)整段重寫**:初版對照到的是**相鄰那張表**的內容,所以才會出現
+  「`_food_per_farmer_table` 的值是 64..101,名字一定掛錯」這種結論。修正後
+  該表就是手冊 p.59 的十氣候食物值,名字沒錯。
 
 ## 可信度分級(每條結論都標)
 
 | 級別 | 意義 |
 |---|---|
-| **A 硬證** | 符號名 + 已驗證的位址映射;「原版有這個函式/資料表」是事實 |
-| **B 推論** | 由符號名語意推斷用途,未反編驗證函式體 |
-| **C 待驗** | 反編結果含 `JUMPOUT`(IDA 函式邊界錯誤),**不可採信**,需先修邊界 |
+| **A 硬證** | 符號名 + 位址,且已用「讀它的函式怎麼索引」交叉確認語意 |
+| **B 推論** | 由符號名語意推斷用途,未反編驗證 |
+| **C 待驗** | 反編結果含 `JUMPOUT`(IDA 函式邊界錯誤),不可採信 |
 
 ⚠ 本報告的「原版有 X」一律是 **A 級**(符號存在是事實);
-「X 的具體行為/數值是 Y」則**尚未驗證**,列在下方待深挖清單。
+「X 的具體行為/數值是 Y」則需個別確認,未確認的列在待深挖清單。
 
 ---
 
@@ -96,49 +111,80 @@
 
 ---
 
-## Part C — 資料表缺口(37 張權威數值表)
+## Part C — 資料表(修正後重寫)
 
 原版把數值放在具名資料表,**這些是比手冊更權威的數值來源**(手冊會簡化、會有筆誤——
 專案先前已抓到手冊自身的 AMR 命中率與飛彈速度矛盾)。
 
+### C-1 已釘死並接進 remake(2026-08-06)
+
+星系/行星生成整組骰表已 dump、確認語意、寫進 `internal/gamedata/galaxygen.go`,
+星系生成改用原版模型。逐格數值見 [`00-orion2-symbols.md`](00-orion2-symbols.md);
+語意由「哪個原版函式怎麼索引它」釘死,不是靠名字猜:
+
+| 表 | 讀它的原版函式 | 索引 |
+|---|---|---|
+| `_star_class_table` | `Generate_Spectral_Class_` | `[spectral*3 + age]` |
+| `_planet_size_table` | `Generate_Size_` | d10 累計骰表 |
+| `_class_to_group` | `Get_Planet_Group_` | `[spectral*5 + orbit]` |
+| `_normal_gal` / `_old_gal_climate_roll_table` | `Generate_Climate_` | `[climate*4 + group]` |
+| `_class_to_mineral` | `Generate_Mineral_Class_` | `[(d10-1)*6 + spectral]` |
+| `_gravity_table` | `Generate_Gravity_Class_` | `[mineral*5 + size]` |
+| `_class_to_num_satellites` | `Generate_Number_Of_Satellites_` | `[(d10-1)*6 + spectral]` |
+| `_planet_max_farms` | `Generate_Max_Farms_` | `[size]` |
+| `_food_per_farmer_table` | `Generate_Food_Per_Farmer_` | `[climate]` |
+
+### C-2 已交叉驗證,remake 數值本來就對(不必改)
+
+| 表 | 結論 |
+|---|---|
+| `_food_per_farmer_table` = `0 0 0 1 1 2 2 1 2 3` | 與手冊 p.59 逐格相同 |
+| `_minerals_per_mine` = `1 2 3 5 8` | 與手冊礦產豐度五級相同 |
+| `_planet_max_population` = `5 10 15 20 25` | 等於 remake 既有的 `(size+1)*5` |
+
+**這三項可以撤銷「手冊可能簡化過」的存疑**——原版硬編值與手冊一致。
+
+### C-3 仍是缺口
+
 | 原版資料表 | 用途 | remake 現況 |
 |---|---|---|
-| `_food_per_farmer_table` | 各氣候每農夫food | `gamedata` 用手冊值 |
-| `_climate_modifier_table` / `_climate_roll_table` / `_normal_gal_climate_roll_table` / `_old_gal_climate_roll_table` | **星系生成**氣候骰表 | remake 自訂生成(oracle 對照發現星圖明顯比原版稀) |
-| `_planet_size_table` / `_gravity_table` / `_spectral_class_table` / `_star_class_table` | 行星/恆星生成 | 同上 |
-| `_minerals_per_mine` / `_minerals_extracted_table` | 礦產產出 | 手冊值 |
-| `_climate_maintenance_modifiers` | 氣候維護成本 | **remake 無此概念** |
-| `_ability_costs` | 自訂種族點數成本 | 用 patch1.5 config(已對) |
 | `_personality_relation_modifiers` 等 **6 張** | **AI 性格行為** | remake 是手寫 `ai.Profile` |
 | `_base_planet_values` / `_contextual_planet_values` / `_g_*` | **AI 行星估值** | remake AI 選星是「星圖索引順序」 |
+| `_climate_maintenance_modifiers` | 氣候維護成本 | **remake 無此概念**;已 dump(cseg01 0xDD4BA)但讀取者未確認 |
+| `_planet_max_mines` = `2 4 6 9 12` | 各大小礦場上限 | 已建表,**尚未接進生產**(remake 無礦場上限概念) |
+| `_planet_special` / `_planet_special_weighted_chance` | 行星特殊物產(12 種,權重和 100) | 已 dump,remake 無此系統 |
+| ~~`_ranged_to_hit_penalty` / `_ranged_damage_penalty`~~ | 射程命中/傷害懲罰(各 9 個 word) | ✅ 兩張表 remake 早已有且逐格相同(手冊值);傷害衰減已於 2026-08-06 接進 `ResolveShotWithMods` |
+| `_orbit_to_satellite_type` | 衛星類型 | 已 dump(50 bytes),維度未確認 |
 | `_spy_bonuses` | 間諜加成 | remake 一律 0(標 TODO) |
+| `_ability_costs` | 自訂種族點數成本 | 用 patch1.5 config(已對) |
 | `_tech_research_level_values` | 科技研究等級 | `gamedata/techtree.go` |
 | `_high/_low/_moderate_*_values`(9 張) | 疑似 AI 難度曲線 | 未知 |
 
-**最大的數值缺口**:①星系生成整組骰表 ②AI 性格與行星估值 ③氣候維護成本。
+**最大的剩餘數值缺口**:①AI 性格與行星估值 ②射程懲罰接進戰鬥 ③氣候維護成本。
 
 ---
 
-## 優先序建議(依「對還原度的槓桿 ÷ 成本」)
+## 優先序(依「對還原度的槓桿 ÷ 成本」)
 
-### 第一梯:高槓桿、成本低(建議先做)
-1. **反編 5 張星系/行星生成表 + 對應函式** → 修正「星圖密度比原版稀」(oracle 已觀察到)。表是靜態資料,dump 即得。
-2. **反編殖民地經濟表**(`_food_per_farmer_table`、`_minerals_per_mine`、`_climate_maintenance_modifiers`)→ 用權威值取代手冊值,順帶解決母星開局態校準。
-3. **INFO 5 個子畫面**(Tech_Review / History / Race_Stats / Turn_Summary / Reference)→ issue #5 的完整解;其中 History 需先建歷史記錄系統(module 122)。
+### 第一梯 — 已完成(2026-08-06)
+1. ~~星系/行星生成表~~ → **已接進 remake**(`gamedata/galaxygen.go`,commit `f8bbcbd`)。
+   光譜/大小/氣候/礦產/重力/行星數全部改用原版骰表,並加了分布回歸測試。
+2. ~~殖民地經濟表~~ → **已交叉驗證**:`_food_per_farmer_table`、`_minerals_per_mine`、
+   `_planet_max_population` 三項與 remake 現值一致,不必改(見 C-2)。
+   `_climate_maintenance_modifiers` 仍待確認讀取者。
+3. ~~INFO 5 個子畫面~~ → **已實作**(commit `fade3f7`),含 module 122 歷史記錄系統。
 
-### 第二梯:中槓桿
-4. **`_personality_*` 6 張表 + AI 行星估值** → 把 remake 手寫 AI 換成原版行為模型。
-5. **獨立 Colony 畫面 + Event 畫面** → 兩個原版有而 remake 缺的核心畫面。
-6. **地面戰解算**(`Resolve_Ground_Combat_` / `Ground_Combat_Round_`)→ 取代目前沿用一代 1oom 的借用結構。
+### 第二梯 — 下一批
+4. ~~射程命中/傷害懲罰~~ → **已完成**。查證發現兩張表 remake 早就有且與原版逐格相同
+   (`combatRangeLevelPenaltyTable`、`damageDissipationPenaltyTable`);真正的缺口是
+   **傷害衰減從未被呼叫**——同一發雷射在 1 格與 23 格外傷害一樣。已接進
+   `ResolveShotWithMods`,順帶讓 NR(No Range Dissipation)改造第一次有實際效果。
+5. **`_personality_*` 6 張表 + AI 行星估值** → 把 remake 手寫 AI 換成原版行為模型。
+6. **一星多行星** → 原版每顆恆星 1–5 顆行星各佔一條軌道;remake 的 `Stars`/`Planets`
+   索引一一對應是 UI/拓殖/AI 共同的假設,拆開是跨層改造(見 `genPlanets` 註解)。
+7. **獨立 Colony 畫面 + Event 畫面** → 兩個原版有而 remake 缺的核心畫面。
+8. **地面戰解算**(`Resolve_Ground_Combat_` / `Ground_Combat_Round_`)→ 取代目前沿用一代 1oom 的借用結構。
 
 ### 第三梯:補完整性
-7. 前哨站、艙損/維修、Hall of Fame / Hi-Score、安塔蘭房間、Smacker 過場。
-8. 多人連線(獨立子專案)。
-
----
-
-## 待解的技術前提
-
-**IDA 函式邊界修正**:Watcom 共用尾碼導致部分函式反編出 `JUMPOUT`(如 `Colony_Research_Per_Scientist_`、
-`Missile_Speed_`)。深挖**函式**前要先解這個;但**資料表**不受影響,可以直接 dump ——
-這也是把「第一梯」排在資料表的原因。
+9. 前哨站、艙損/維修、Hall of Fame / Hi-Score、安塔蘭房間、Smacker 過場、行星特殊物產。
+10. 多人連線(獨立子專案)。

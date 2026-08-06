@@ -63,15 +63,30 @@ func ResolveShotWithMods(netAttackBase, weaponMin, weaponMax, rangeSquares, shie
 		return ShotResult{Hit: false, RemainingArmorHP: armorHP}
 	}
 
+	// 距離傷害衰減(dissipation):命中之後,傷害還要依 range level 打折。
+	//
+	// 對應原版 Get_Beam_Weapon_Modifiers_(sub_39434):
+	//     if (!(mods & 0x20) && !(weaponFlags & 0x04))
+	//         *damagePct += ranged_damage_penalty[range];
+	// 即「除非帶 NR 改造、或武器天生免疫,否則一律套」。remake 先前完全沒接這一段
+	// (weapon_mods.go 的 ModNoRangeDissipation 註解記著這個 TODO),遠距離射擊的傷害
+	// 與貼臉一樣——NR 這個改造因此也一直沒有可觀察的效果。
+	//
+	// gamedata.damageDissipationPenaltyTable = {0,0,10,20,30,40,50,60,65} 與原版
+	// `_ranged_damage_penalty`(0x17D867)逐格相同,表本身早就對,缺的只是這裡的接線。
+	dissipation := 0
+	if !gamedata.WeaponModNoRangeDissipation(mods) {
+		dissipation = gamedata.DamageDissipationPenalty(level)
+	}
+
 	// [回歸保護] DamageMountAdjustedValue 對「命中後傷害潛力恆為 1」有夾限(手冊「minimum
-	// damage potential is always 1」),對 base=0 的「無武裝」武器會把 0 誤夾成 1。無 mod 時
-	// 不經過該函式,直接沿用原始 weaponMin/weaponMax(與加入 mod 系統前的 ResolveShot 逐位元
-	// 相同),避免「無武裝艦艇突然打出 1 點傷害」這種不該有的回歸。
+	// damage potential is always 1」),對 base=0 的「無武裝」武器會把 0 誤夾成 1。
+	// 因此 weaponMax<=0 一律跳過調整,避免「無武裝艦艇突然打出 1 點傷害」這種回歸。
 	adjMin, adjMax := weaponMin, weaponMax
-	if len(mods) > 0 {
+	if weaponMax > 0 && (len(mods) > 0 || dissipation > 0) {
 		hvBonus, pdPenalty := gamedata.WeaponModDamageBonuses(mods)
-		adjMin = gamedata.DamageMountAdjustedValue(weaponMin, hvBonus, 0, pdPenalty, 0)
-		adjMax = gamedata.DamageMountAdjustedValue(weaponMax, hvBonus, 0, pdPenalty, 0)
+		adjMin = gamedata.DamageMountAdjustedValue(weaponMin, hvBonus, 0, pdPenalty, dissipation)
+		adjMax = gamedata.DamageMountAdjustedValue(weaponMax, hvBonus, 0, pdPenalty, dissipation)
 	}
 
 	dmg := gamedata.DamageForHit(adjMin, adjMax, roll, netAttack, threshold)

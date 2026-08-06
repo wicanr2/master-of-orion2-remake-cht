@@ -67,11 +67,10 @@ const (
 	// increases the size and cost of the weapon by 25% and is not applicable until the intended
 	// weapon has undergone 1 level of miniaturization.」
 	//
-	// [誠實記錄] remake 的 shell.ResolveShot 簡化模型目前不對 weaponMin/weaponMax 套用
-	// 任何射程衰減(固定近距離解算,dissipation 一直是 0),故 NR 在現行引擎下沒有可觀察的
-	// 效果——不是遺漏,是因為「要消除的衰減」本身還沒被模擬。保留此 mod 的佔格/成本數字供
-	// 玩家設計與存檔使用,傷害效果待 shell 導入射程衰減後再串接(TODO,見
-	// docs/tech/weapon-mods.md)。
+	// 2026-08-06 已接線:shell.ResolveShotWithMods 會依 range level 套 DamageDissipationPenalty,
+	// 帶 NR 時跳過。對應原版 Get_Beam_Weapon_Modifiers_ 的
+	// `if (!(mods & 0x20) && !(weaponFlags & 0x04)) *damagePct += ranged_damage_penalty[range]`。
+	// (先前這裡記著「NR 沒有可觀察效果」,因為衰減本身還沒模擬——那個 TODO 已解。)
 	ModNoRangeDissipation WeaponModCode = "NR"
 	// ModShieldPiercing 手冊原文(p.118):「SP: Shield Piercing weapons ignore the target's
 	// shields completely, passing through as if there were no shields. This modification has no
@@ -230,6 +229,21 @@ func WeaponModArmorPiercing(mods []WeaponModCode) bool {
 
 // WeaponModShieldPiercing 回傳是否掛 SP(直接對應 damage.go DamageAfterShield 的
 // shieldPiercing 參數)。
+// WeaponModNoRangeDissipation 回傳該組改造是否含 NR(No Range Dissipation)——
+// 有的話命中後的傷害不吃距離衰減。
+//
+// 對應原版 Get_Beam_Weapon_Modifiers_(sub_39434)的這一段:
+//
+//	if (!(mods & 0x20) && !(weaponFlags & 0x04))
+//	    *damagePct += ranged_damage_penalty[range];
+//
+// 即「除非帶了這個改造、或武器本身天生免疫,否則一律套距離衰減」。
+// (weaponFlags & 0x04 那一支是「天生不衰減」的武器如質量投射器/高斯砲,
+// remake 的武器資料尚未帶這個旗標,見 damage.go DamageApplyDissipation 註解。)
+func WeaponModNoRangeDissipation(mods []WeaponModCode) bool {
+	return WeaponModHas(mods, ModNoRangeDissipation)
+}
+
 func WeaponModShieldPiercing(mods []WeaponModCode) bool {
 	return WeaponModHas(mods, ModShieldPiercing)
 }

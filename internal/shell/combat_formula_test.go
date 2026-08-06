@@ -211,9 +211,13 @@ func TestResolveShotWithMods_HeavyMountDamage(t *testing.T) {
 }
 
 // TestResolveShotWithMods_PointDefenseDamage PD 命中後傷害應減半。
+//
+// 距離用 0 格(同格),讓 PD 的「射程視為加倍」不會連帶引入距離衰減——PD 在遠距離會吃
+// 雙重虧(命中與衰減都按加倍後的 range band 算,見 ResolveShotWithMods 的 dissipation 段),
+// 那是另一回事,由 TestResolveShotWithMods_PointDefenseDoubleRangeDissipation 專門驗。
 func TestResolveShotWithMods_PointDefenseDamage(t *testing.T) {
-	base := ResolveShotWithMods(50, 40, 100, 1, 0, 0, 99, false, nil)
-	pd := ResolveShotWithMods(50, 40, 100, 1, 0, 0, 99, false, []gamedata.WeaponModCode{gamedata.ModPointDefense})
+	base := ResolveShotWithMods(50, 40, 100, 0, 0, 0, 99, false, nil)
+	pd := ResolveShotWithMods(50, 40, 100, 0, 0, 0, 99, false, []gamedata.WeaponModCode{gamedata.ModPointDefense})
 	if !base.Hit || !pd.Hit {
 		t.Fatal("前提失敗:應必中")
 	}
@@ -340,5 +344,60 @@ func TestBattleVolleyDispatchByWeaponKind(t *testing.T) {
 	}
 	if missCount == 0 {
 		t.Fatalf("beam 極端劣勢 net attack 應在 30 個 seed 中至少出現一次未命中(理論 95%% 機率),卻全部命中")
+	}
+}
+
+// TestResolveShotDamageDissipatesWithRange 驗證命中後的傷害會隨距離衰減。
+//
+// 對應原版 Get_Beam_Weapon_Modifiers_(sub_39434)的
+// `if (!NR && !immune) *damagePct += ranged_damage_penalty[range]`。
+// remake 在 2026-08-06 之前完全沒接這一段:同一發雷射在 1 格與 23 格外傷害一樣,
+// 「靠近射擊」在戰術上沒有意義。
+func TestResolveShotDamageDissipatesWithRange(t *testing.T) {
+	// roll=99 走「必中且吃滿 max 傷害」分支,排除命中率變因,單看傷害潛力。
+	near := ResolveShotWithMods(50, 100, 100, 0, 0, 0, 99, false, nil)
+	far := ResolveShotWithMods(50, 100, 100, 23, 0, 0, 99, false, nil)
+	if !near.Hit || !far.Hit {
+		t.Fatal("前提失敗:roll=99 應必中")
+	}
+	// 23 格 = range level 8 → 衰減 65 個百分點 → 35% 傷害。
+	if want := 35; far.DamageToStructure != want {
+		t.Errorf("23 格外傷害應衰減到 %d(base 100,level 8 衰減 65%%),got %d", want, far.DamageToStructure)
+	}
+	if near.DamageToStructure != 100 {
+		t.Errorf("同格射擊不應衰減,got %d", near.DamageToStructure)
+	}
+}
+
+// TestResolveShotNoRangeDissipationModIgnoresDistance 驗證 NR 改造讓傷害不受距離影響。
+// 這個 mod 在接線前完全沒有可觀察效果(weapon_mods.go 曾誠實記著這個 TODO)。
+func TestResolveShotNoRangeDissipationModIgnoresDistance(t *testing.T) {
+	nr := []gamedata.WeaponModCode{gamedata.ModNoRangeDissipation}
+	near := ResolveShotWithMods(50, 100, 100, 0, 0, 0, 99, false, nr)
+	far := ResolveShotWithMods(50, 100, 100, 23, 0, 0, 99, false, nr)
+	if !near.Hit || !far.Hit {
+		t.Fatal("前提失敗:roll=99 應必中")
+	}
+	if near.DamageToStructure != far.DamageToStructure {
+		t.Errorf("帶 NR 時遠近傷害應相同:近 %d 遠 %d", near.DamageToStructure, far.DamageToStructure)
+	}
+	if far.DamageToStructure != 100 {
+		t.Errorf("帶 NR 的 base 100 武器遠距離仍應打滿 100,got %d", far.DamageToStructure)
+	}
+}
+
+// TestResolveShotWithMods_PointDefenseDoubleRangeDissipation 驗證 PD 在距離上吃雙重虧:
+// 傷害衰減用的是「射程視為加倍」之後的 range band,與命中懲罰同一個 band(原版行為)。
+func TestResolveShotWithMods_PointDefenseDoubleRangeDissipation(t *testing.T) {
+	pd := []gamedata.WeaponModCode{gamedata.ModPointDefense}
+	plain := ResolveShotWithMods(50, 100, 100, 4, 0, 0, 99, false, nil)
+	withPD := ResolveShotWithMods(50, 100, 100, 4, 0, 0, 99, false, pd)
+	if !plain.Hit || !withPD.Hit {
+		t.Fatal("前提失敗:roll=99 應必中")
+	}
+	// PD 已經先砍一半傷害;若衰減也照加倍後的 band 算,結果必定低於「單純減半」。
+	if withPD.DamageToStructure >= plain.DamageToStructure/2 {
+		t.Errorf("PD 在 4 格外應同時吃減半與加倍 band 的衰減:一般 %d,PD %d(僅減半會是 %d)",
+			plain.DamageToStructure, withPD.DamageToStructure, plain.DamageToStructure/2)
 	}
 }
