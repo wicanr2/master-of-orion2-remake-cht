@@ -408,6 +408,10 @@ type GroundInvasionResult struct {
 	Ok                      bool   // 是否成功發動了一場入侵解算(false = 前置條件不足,未開打)
 	Reason                  string // Ok=false 時的原因(供 UI 提示;Ok=true 時為空字串)
 	AttackerWon             bool   // Ok=true 時才有意義
+	AttackerMarinesStart    int    // 開打前攻方陸戰隊數(供地面戰畫面顯示戰前/戰後對比)
+	AttackerTanksStart      int    // 開打前攻方戰車營數(同上)
+	DefenderStart           int    // 開打前守方兵力(同上)
+	ColonyName              string // 被入侵的星名(畫面標題用;engine.ColonyState 本身沒有名稱欄位)
 	AttackerSurvived        int    // 攻方存活總數(陸戰隊+戰車營,拆解見下兩欄)
 	AttackerMarinesSurvived int    // 攻方存活的陸戰隊數(AttackerSurvived 的子集,見 InvadeColony 拆解說明)
 	AttackerTanksSurvived   int    // 攻方存活的戰車營數(同上)
@@ -527,6 +531,8 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 
 	out := GroundInvasionResult{
 		Ok: true, AttackerWon: res.AttackerWon,
+		AttackerMarinesStart: s.FleetMarines, AttackerTanksStart: tankCount,
+		DefenderStart: defCount, ColonyName: s.starName(starIdx),
 		AttackerSurvived: res.AttackerSurvived, DefenderSurvived: res.DefenderSurvived,
 		AttackerMarinesSurvived: marinesSurvived, AttackerTanksSurvived: tanksSurvived,
 		Rounds: res.Rounds,
@@ -594,3 +600,6 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	}
 	return out
 }
+
+// HasBattleoids 回傳玩家是否已研究機動裝甲兵(手冊 p.101);地面戰畫面用來決定載具圖示。
+func (s *GameSession) HasBattleoids() bool { return hasBattleoidsFor(s.Player) }

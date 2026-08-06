@@ -578,15 +578,17 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		}
 		if a == "invade" && b.session != nil {
 			res := b.session.InvadeColony(b.session.SelectedStar)
-			switch {
-			case !res.Ok:
+			if !res.Ok { // 前置條件不足:沒開打,留在星系主畫面說明原因
 				b.lastActionMsg = res.Reason
-			case res.AttackerWon:
-				b.lastActionMsg = fmt.Sprintf("入侵勝利!佔領此星(存活 %d／敵剩 %d)", res.AttackerSurvived, res.DefenderSurvived)
-			default:
-				b.lastActionMsg = fmt.Sprintf("入侵失敗(我方存活 %d／敵剩 %d)", res.AttackerSurvived, res.DefenderSurvived)
+				return b.goTo(b.galaxy, "星系主畫面")
 			}
-			return b.goTo(b.galaxy, "星系主畫面")
+			// 真的打了一場 → 進地面戰畫面(原版 Colony_Combat),見 cmd/moo2/groundcombat.go。
+			sc, err := b.groundCombat(res)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "地面戰:", err)
+				return b.goTo(b.galaxy, "星系主畫面")
+			}
+			return &origTransition{next: sc}
 		}
 		if a == "colonize" && b.session != nil {
 			res := b.session.ColonizeStar(b.session.SelectedStar)
@@ -2644,7 +2646,10 @@ type interactiveApp struct {
 	// galleryFleetTick 是截圖廊在哪個 tick 給艦隊注入結構損傷 + 次元傳送門
 	// (見該常數的說明:必須晚於最後一次結束回合,否則損傷會被停靠母星的完全修復清掉)。
 	galleryFleetTick int
-	gallerySession   *shell.GameSession
+	// galleryGroundTick 是截圖廊在哪個 tick 直接把畫面換成地面戰戰報(見該常數說明)。
+	galleryGroundTick int
+	galleryBuilder    *sceneBuilder
+	gallerySession    *shell.GameSession
 }
 
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
@@ -2659,6 +2664,9 @@ const galleryVictoryTick = 38
 // 的規則會被**完全修復**。先前注入在 t28 而 t29 按了結束回合,截出來一艘傷都沒有——
 // 那不是顯示壞了,是修復規則正常運作。
 const galleryFleetTick = 18
+
+// galleryGroundTick 是截圖廊在哪個 tick 把畫面換成地面戰戰報——取截圖那一拍(t68)的前一拍。
+const galleryGroundTick = 67
 
 // galleryShot 是「端到端過場截圖廊」腳本中,在某個絕對 tick 存一張圖的指令。
 type galleryShot struct {
@@ -2769,6 +2777,12 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		click(388, 448), // t64: 種族關係「DECLARE WAR」→ 戰術戰鬥
 		idle,            // t65: settle
 		idle,            // t66: settle → 截圖 tactical
+
+		// 地面戰畫面(原版 Colony_Combat)。走正常玩家路徑要「艦隊飛到敵殖民地星 + 載陸戰隊
+		// + 在星資訊面板點入侵」,而敵星在星圖上的位置隨 seed 變動,腳本點不準;
+		// 故由 galleryGroundTick 直接把畫面推上來(見 Update)。
+		idle, // t67: 由 galleryGroundTick 換成地面戰畫面
+		idle, // t68: settle → 截圖 groundcombat
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -2787,6 +2801,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{55, "14_info_tech.png"},
 		{62, "15_diplomacy.png"},
 		{66, "16_tactical.png"},
+		{68, "17_groundcombat.png"},
 	}
 	return script, shots
 }
@@ -2866,6 +2881,21 @@ func (a *interactiveApp) Update() error {
 		}
 		// ② 次元傳送門:安塔蘭王座廳的「發動終局反攻」要它才會亮起來(手冊 p.183)。
 		a.gallerySession.GrantDimensionalPortalForGallery()
+	}
+	// 截圖廊專用:把畫面直接換成地面戰戰報。走正常路徑要艦隊飛到敵殖民地星、載滿陸戰隊、
+	// 再在星資訊面板點入侵,而敵星在星圖上的位置隨 seed 變動,點擊腳本對不準。
+	// 這裡餵的是一組固定的示範戰果(不呼叫 InvadeColony,不動遊戲狀態)。
+	if a.galleryGroundTick > 0 && a.tick == a.galleryGroundTick && a.galleryBuilder != nil {
+		demo := shell.GroundInvasionResult{
+			Ok: true, AttackerWon: true, StarCaptured: true, ColonyName: "示範殖民地",
+			AttackerMarinesStart: 6, AttackerTanksStart: 2, DefenderStart: 5,
+			AttackerSurvived:        5,
+			AttackerMarinesSurvived: 3, AttackerTanksSurvived: 2, DefenderSurvived: 0,
+			Rounds: 4,
+		}
+		if sc, err := a.galleryBuilder.groundCombat(demo); err == nil {
+			a.cur = sc
+		}
 	}
 	if t := a.cur.update(a.pollInput()); t != nil {
 		if t.quit {
@@ -2979,6 +3009,8 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		// t29 是腳本裡「按 TURN 進最終得分」那一拍;勝負必須在它之前設好,故取 t28。
 		app.galleryVictoryTick = galleryVictoryTick
 		app.galleryFleetTick = galleryFleetTick
+		app.galleryGroundTick = galleryGroundTick
+		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,
 	// 且截圖驗證不需要聲音。音訊初始化失敗不致命。
