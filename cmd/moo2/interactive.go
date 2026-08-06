@@ -648,6 +648,11 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					return &origTransition{next: sc}
 				}
 			}
+			// 對局已分出勝負 → 直接進最終得分畫面(原版 Hi-Score / Hall of Fame,module 60)。
+			// 排在事件快報之前:遊戲都結束了,再播一則新聞快報只是擋路。
+			if b.session.Victory.Over {
+				return b.goTo(b.hiScore, "最終得分")
+			}
 			// 本回合有隨機事件或星系發現 → 先播快報(原版事件有專屬畫面,不是回合摘要裡一行字,
 			// 見 eventscreen.go 檔頭),按「繼續」才進回合摘要。
 			if b.currentReport() != nil {
@@ -2618,7 +2623,16 @@ type interactiveApp struct {
 	galleryDir   string
 	galleryShots []galleryShot
 	galleryDone  int
+	// galleryVictoryTick 是截圖廊專用:在這個 tick 把對局設成「已分出勝負」,好讓導覽腳本
+	// 走得到最終得分畫面。與上面 EventSeed=1 同一個理由——那條路徑靠正常遊玩要好幾百回合,
+	// 截圖驗證等不起。只在截圖廊模式下設值,正常遊戲恆為 0(不觸發)。
+	galleryVictoryTick int
+	gallerySession     *shell.GameSession
 }
+
+// galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
+// 「按 TURN 進最終得分」那一拍(t29),取它的前一拍。
+const galleryVictoryTick = 28
 
 // galleryShot 是「端到端過場截圖廊」腳本中,在某個絕對 tick 存一張圖的指令。
 type galleryShot struct {
@@ -2681,29 +2695,40 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		click(608, 462), // t27: 殖民地總覽「RETURN」→ 星系主畫面
 		idle,            // t28: settle
 
-		click(123, 450), // t29: 工具列「PLANETS」→ 行星列表
+		// 最終得分畫面:對局分出勝負後按 TURN 就會進去(見 interactive.go 的 turn 分支)。
+		// 勝負由 galleryVictoryTick 在下面第一拍前設好——那條路徑正常玩要幾百回合才走得到,
+		// 截圖驗證等不起,與上面固定 EventSeed 是同一個理由。
+		click(589, 458), // t29: 「結束回合」→ 最終得分
 		idle,            // t30: settle
-		idle,            // t31: settle → 截圖 planets
-		click(532, 451), // t32: 行星列表「返回」→ 星系主畫面
+		idle,            // t31: settle → 截圖 hiscore
+		click(320, 400), // t32: 最終得分「繼續」→ 回合摘要
 		idle,            // t33: settle
-
-		click(495, 452), // t34: 工具列「INFO」→ 情報畫面
+		click(320, 393), // t34: 回合摘要「關閉」→ 星系主畫面
 		idle,            // t35: settle
-		idle,            // t36: settle → 截圖 info(預設分頁:歷史圖表)
-		click(21, 80),   // t37: INFO 左欄「科技總覽」分頁
-		idle,            // t38: settle → 截圖 info_tech
-		click(535, 434), // t39: INFO「RETURN」→ 星系主畫面
+
+		click(123, 450), // t36: 工具列「PLANETS」→ 行星列表
+		idle,            // t37: settle
+		idle,            // t38: settle → 截圖 planets
+		click(532, 451), // t39: 行星列表「返回」→ 星系主畫面
 		idle,            // t40: settle
 
-		click(420, 452), // t41: 工具列「RACES」→ 種族關係
+		click(495, 452), // t41: 工具列「INFO」→ 情報畫面
 		idle,            // t42: settle
-		click(483, 428), // t43: 種族關係「REPORT」→ 外交對談
-		idle,            // t44: settle
-		idle,            // t45: settle → 截圖 diplomacy
-		click(320, 437), // t46: 外交對談「結束對談」→ 種族關係
-		click(388, 448), // t47: 種族關係「DECLARE WAR」→ 戰術戰鬥
-		idle,            // t48: settle
-		idle,            // t49: settle → 截圖 tactical
+		idle,            // t43: settle → 截圖 info(預設分頁:歷史圖表)
+		click(21, 80),   // t44: INFO 左欄「科技總覽」分頁
+		idle,            // t45: settle → 截圖 info_tech
+		click(535, 434), // t46: INFO「RETURN」→ 星系主畫面
+		idle,            // t47: settle
+
+		click(420, 452), // t48: 工具列「RACES」→ 種族關係
+		idle,            // t49: settle
+		click(483, 428), // t50: 種族關係「REPORT」→ 外交對談
+		idle,            // t51: settle
+		idle,            // t52: settle → 截圖 diplomacy
+		click(320, 437), // t53: 外交對談「結束對談」→ 種族關係
+		click(388, 448), // t54: 種族關係「DECLARE WAR」→ 戰術戰鬥
+		idle,            // t55: settle
+		idle,            // t56: settle → 截圖 tactical
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -2714,11 +2739,12 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{16, "06_turnsummary.png"},
 		{21, "07_colonysummary.png"},
 		{24, "08_colonyscreen.png"},
-		{31, "09_planets.png"},
-		{36, "10_info.png"},
-		{38, "11_info_tech.png"},
-		{45, "12_diplomacy.png"},
-		{49, "13_tactical.png"},
+		{31, "09_hiscore.png"},
+		{38, "10_planets.png"},
+		{43, "11_info.png"},
+		{45, "12_info_tech.png"},
+		{52, "13_diplomacy.png"},
+		{56, "14_tactical.png"},
 	}
 	return script, shots
 }
@@ -2773,6 +2799,14 @@ func (a *interactiveApp) Update() error {
 	a.tick++
 	if a.script == nil { // 互動模式才處理視窗快捷鍵(headless 略過)
 		a.handleWindowKeys()
+	}
+	// 截圖廊專用:到了指定 tick 把對局設成已分出勝負,好讓導覽腳本走得到最終得分畫面
+	// (見 galleryVictoryTick 欄位註解)。
+	if a.galleryVictoryTick > 0 && a.tick == a.galleryVictoryTick && a.gallerySession != nil {
+		a.gallerySession.Victory = shell.VictoryState{
+			Over: true, Reason: engine.VictoryAntaran, Winner: "player", Turn: a.gallerySession.Turn,
+		}
+		a.gallerySession.AntaranHomeworldConquered = true
 	}
 	if t := a.cur.update(a.pollInput()); t != nil {
 		if t.quit {
@@ -2881,6 +2915,11 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 	}
 	app := &interactiveApp{cur: menu, script: script, shotPath: shot, frames: frames, scale: scale,
 		galleryDir: galleryDir, galleryShots: shots}
+	if galleryDir != "" {
+		app.gallerySession = b.session
+		// t29 是腳本裡「按 TURN 進最終得分」那一拍;勝負必須在它之前設好,故取 t28。
+		app.galleryVictoryTick = galleryVictoryTick
+	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,
 	// 且截圖驗證不需要聲音。音訊初始化失敗不致命。
 	if shot == "" && script == nil {

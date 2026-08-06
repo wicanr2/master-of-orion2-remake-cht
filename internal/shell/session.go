@@ -2002,6 +2002,11 @@ type GameSession struct {
 	// Monsters 是星圖上守衛星系的太空怪獸(見 monster.go)。清空 = 全部已被清除。
 	Monsters []MonsterGuard
 
+	// CapturedPop 是玩家透過地面入侵俘虜來的人口單位總數(見 ground_invasion.go
+	// InvadeColony)。原版計分對俘虜人口另有一份加分(手冊 p.184「You also get a premium
+	// for captured population units」),見 score.go。
+	CapturedPop int
+
 	// PersistentEvents 是進行中的持續型隨機事件(超新星倒數/時空異象/超空間獸,
 	// 見 events_persistent.go)。空 = 沒有任何持續事件。
 	PersistentEvents []PersistentEvent

@@ -335,8 +335,32 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     `CheckExtermination`(只剩一方存活)在「玩家死光但還有三個 AI」時回 false——400 回合探針
     實測到玩家 0 殖民地、遊戲卻繼續空轉。已補 `advancePlayerDefeat`(手冊 p.184 計分段明講
     「If an empire is eliminated by a random event」,帝國被隨機事件消滅是原版就有的概念)。
-12. 艙損/維修、Hall of Fame / Hi-Score、安塔蘭房間、Smacker 過場。
+12. ~~Hall of Fame / Hi-Score~~ → **已完成**(2026-08-07,`gamedata/score.go` + `shell/score.go`
+    + `cmd/moo2/hiscore.go`)。手冊 p.184 列了八條計分因素但**一個數字都沒給**;原版 module 60
+    的一整組 `Get_*_Score_` 函式每個都短到能逐指令讀完,八條的係數全在裡面:
+
+    | 項目 | 公式(反組譯) | 手冊對應的那句話 |
+    |---|---|---|
+    | 時間/星圖/種族數 | `nPlayers × (20×(星圖大小+1) + 80) − 已過回合數`;人口 0 則整項 0 | 「越快贏分越高」「星圖越大分越高」「種族越多分越高」三句合一 |
+    | 人口 | 自己所有殖民地人口總和 | 「total number of population units … added to your score」 |
+    | 俘虜人口 | `俘虜 × 2 ÷ (星圖大小 + 1)` | 「premium … **higher in smaller galaxies**」——除數就是那句話 |
+    | 科技 | `3 × 已知主題 + 5 × Hyper-Advanced 等級` | 「First level Hyper-Advanced … worth **more** points than normal ones」——5 > 3 |
+    | 殲滅種族 | 每族 50 | 「a boost」 |
+    | 獵戶座 | 100 | 「a big chunk of points」 |
+    | 議會勝利 | 100 | 「a substantial addition」 |
+    | 安塔蘭勝利 | 250 | 「the **biggest** point bonus of all」 |
+
+    **相對大小完全對上手冊的形容詞排序**:250 > 100 = 100 > 50。另有兩個順帶的交叉驗證:
+    科技分掃的是 `player+0xC4` 起 0x53(83)長的研究主題陣列——0xC4 與
+    `Do_System_Discoveries_At_Star_` 讀遠古文物時用的是同一個偏移,83 也與 remake 既有的
+    研究主題數相同;時間分用 `word[0x192FD8] − 0x88B8` 算已過回合,0x88B8 = 35000 =
+    星曆 3500.0 ×10,正是遊戲起始星曆。
+
+    ⚠ remake 側的落差:①獵戶座系統還沒做,該項恆 0 ②「殲滅種族」原版有逐玩家的
+    「這個玩家滅了誰」陣列(player+0x1F2),remake 沒追蹤是誰滅的,目前全算給玩家,
+    AI 互滅時會高估——標明,不假裝精確。
+13. 艙損/維修、安塔蘭房間、Smacker 過場。
    ~~行星特殊物產~~ → **已完成**(2026-08-06,見 C-4):12 種權重表 + 抵達發現(殘骸/藏寶/
    失散殖民地/受困英雄/遠古文物)+ 殖民效果(原住民人口、金礦寶石收入、文物研究),
    接進 `advanceFleet` 抵達點與快報畫面。
-13. 多人連線(獨立子專案)。
+14. 多人連線(獨立子專案)。

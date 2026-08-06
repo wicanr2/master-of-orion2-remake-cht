@@ -571,6 +571,12 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 			s.PlayerColonyStars = append(s.PlayerColonyStars, -1)
 		}
 		s.PlayerColonyStars = append(s.PlayerColonyStars, starIdx)
+		// 俘虜人口:過戶過來的殖民地人口計入 CapturedPop(手冊 p.184 計分「You also get a
+		// premium for captured population units」,見 score.go)。累計而非當下人口——之後這些
+		// 人口自然成長或死亡都不影響「當初俘虜了多少」這個歷史數字。
+		if idx := len(s.PlayerColonies) - 1; idx >= 0 && idx < len(s.PlayerColonies) {
+			s.CapturedPop += s.PlayerColonies[idx].Population
+		}
 
 		aiPlayer.Colonies = append(aiPlayer.Colonies[:colonyIdx], aiPlayer.Colonies[colonyIdx+1:]...)
 		aiPlayer.ColonyStars = append(aiPlayer.ColonyStars[:colonyIdx], aiPlayer.ColonyStars[colonyIdx+1:]...)
