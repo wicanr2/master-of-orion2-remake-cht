@@ -318,29 +318,29 @@ func loadOverlayScreen(res *assets.Resolver, lbxName string, assetID int, lang i
 // --- sceneBuilder:依需求建構各原版畫面(共用 resolver/字型/語言)---
 
 type sceneBuilder struct {
-	res           *assets.Resolver
-	fnt           *uifont.Font // 內文用字型(zh 為混合:內文點陣、標題向量)
-	fntVec        *uifont.Font // 純向量 Noto(供主選單等要平滑的畫面;nil 時退回 fnt)
-	lang          i18n.Lang
-	session       *shell.GameSession   // 活的對局狀態(TURN 推進、畫面顯示即時資料)
-	herodataMercs []shell.Leader       // HERODATA.LBX 解出的真英雄傭兵候選(快取;讀檔後重注入)
-	newGameSize   int                  // NEW GAME 選的星系大小索引(shell.GalaxySizes)
-	newGameDiff   int                  // NEW GAME 選的難度索引(shell.Difficulties)
-	newGameRace   int                  // NEW GAME 選的種族索引(shell.Races)
-	newGameSeed   int                  // 每次新遊戲遞增,讓星系種子變化
-	savePath      string               // remake 存檔路徑(每回合自動存;主選單 Load/Continue 讀)
-	designWeapon  int                  // 艦艇設計選的武器元件索引(shell.WeaponOptions)
-	designArmor   int                  // 裝甲元件索引(shell.ArmorOptions)
-	designShield  int                  // 護盾元件索引(shell.ShieldOptions)
-	designSpecial int                  // 特殊元件索引(shell.SpecialOptions)
-	designMods    []string             // 目前設計勾選的武器改造(gamedata.WeaponModCode 字串;僅 beam 武器生效)
-	designMsg     string               // 艦艇設計畫面「空間不足,擋下建造」的提示訊息(切換元件/成功建造時清空)
-	lastActionMsg string               // 星圖畫面「載運陸戰隊/發動地面入侵」的最近一次結果訊息(選新星時清空)
-	gameVersion   gamedata.GameVersion // 主選單選的規則版本(1.3/1.5);開局注入 session.RuleProfile
-	infoTab       int                  // INFO 畫面目前分頁(0=歷史圖表 1=科技總覽 2=種族統計 3=回合摘要 4=參考),見 infosubscreens.go
-	colonyIdx     int                  // 單一殖民地畫面目前管理哪個殖民地(索引 PlayerColonies),見 colonyscreen.go
-	colonyListTop int                  // 單一殖民地畫面「可建項目」清單的捲動起點
-	infoHistoryMetric int              // 歷史圖表目前指標(shell.HistoryMetric)
+	res               *assets.Resolver
+	fnt               *uifont.Font // 內文用字型(zh 為混合:內文點陣、標題向量)
+	fntVec            *uifont.Font // 純向量 Noto(供主選單等要平滑的畫面;nil 時退回 fnt)
+	lang              i18n.Lang
+	session           *shell.GameSession   // 活的對局狀態(TURN 推進、畫面顯示即時資料)
+	herodataMercs     []shell.Leader       // HERODATA.LBX 解出的真英雄傭兵候選(快取;讀檔後重注入)
+	newGameSize       int                  // NEW GAME 選的星系大小索引(shell.GalaxySizes)
+	newGameDiff       int                  // NEW GAME 選的難度索引(shell.Difficulties)
+	newGameRace       int                  // NEW GAME 選的種族索引(shell.Races)
+	newGameSeed       int                  // 每次新遊戲遞增,讓星系種子變化
+	savePath          string               // remake 存檔路徑(每回合自動存;主選單 Load/Continue 讀)
+	designWeapon      int                  // 艦艇設計選的武器元件索引(shell.WeaponOptions)
+	designArmor       int                  // 裝甲元件索引(shell.ArmorOptions)
+	designShield      int                  // 護盾元件索引(shell.ShieldOptions)
+	designSpecial     int                  // 特殊元件索引(shell.SpecialOptions)
+	designMods        []string             // 目前設計勾選的武器改造(gamedata.WeaponModCode 字串;僅 beam 武器生效)
+	designMsg         string               // 艦艇設計畫面「空間不足,擋下建造」的提示訊息(切換元件/成功建造時清空)
+	lastActionMsg     string               // 星圖畫面「載運陸戰隊/發動地面入侵」的最近一次結果訊息(選新星時清空)
+	gameVersion       gamedata.GameVersion // 主選單選的規則版本(1.3/1.5);開局注入 session.RuleProfile
+	infoTab           int                  // INFO 畫面目前分頁(0=歷史圖表 1=科技總覽 2=種族統計 3=回合摘要 4=參考),見 infosubscreens.go
+	colonyIdx         int                  // 單一殖民地畫面目前管理哪個殖民地(索引 PlayerColonies),見 colonyscreen.go
+	colonyListTop     int                  // 單一殖民地畫面「可建項目」清單的捲動起點
+	infoHistoryMetric int                  // 歷史圖表目前指標(shell.HistoryMetric)
 }
 
 // profileForVersion 把主選單選的版本轉成對應 RuleProfile(開局注入 session)。
@@ -669,7 +669,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				for i := range sess.PlayerColonies {
 					foodSum += engine.RunColonyTurn(sess.PlayerColonies[i]).FoodSurplus
 				}
-				fnt.DrawCentered(dst, fmt.Sprintf("%d", foodSum), 579, 257, 12, infoCol)                     // 食物盈餘
+				fnt.DrawCentered(dst, fmt.Sprintf("%d", foodSum), 579, 257, 12, infoCol)                      // 食物盈餘
 				fnt.DrawCentered(dst, fmt.Sprintf("%d", sess.Player.ActiveFreighters), 579, 331, 12, infoCol) // 運輸艦數
 				// 研究主題名較長(65px 格塞不下),原版該格只放圖示;本 remake 保留可讀的
 				// 主題名一行於左上(僅此一行,不再與星曆/國庫疊三行蓋星圖)。
@@ -1788,7 +1788,7 @@ func (b *sceneBuilder) council() (*overlayScreen, error) {
 				return b.goTo(b.galaxy, "星系主畫面")
 			case "reject":
 				b.session.RespondToCouncilElection(false) // 拒絕 → 清空待決,繼續遊戲
-				return b.goTo(b.council, "銀河議會")       // 重繪議會,反映已回應
+				return b.goTo(b.council, "銀河議會")          // 重繪議會,反映已回應
 			}
 			return b.goTo(b.races, "種族關係")
 		}
@@ -2292,11 +2292,11 @@ func (b *sceneBuilder) info() (*overlayScreen, error) {
 	// Draw_History_Subscreen_ / Draw_Tech_Review_Subscreen_ / Draw_Race_Stats_Subscreen_ /
 	// Draw_Turn_Summary_Subscreen_ / Draw_Reference_*_Subscreen_(見 docs/re/01-gap-report.md)。
 	hits := []hitRegion{
-		{21, 52, 164, 24, "tab0"}, // History Graph
-		{21, 76, 164, 24, "tab1"}, // Tech Review
-		{21, 102, 164, 24, "tab2"}, // Race Statistics
-		{21, 130, 164, 22, "tab3"}, // Turn Summary
-		{21, 152, 164, 22, "tab4"}, // Reference
+		{21, 52, 164, 24, "tab0"},         // History Graph
+		{21, 76, 164, 24, "tab1"},         // Tech Review
+		{21, 102, 164, 24, "tab2"},        // Race Statistics
+		{21, 130, 164, 22, "tab3"},        // Turn Summary
+		{21, 152, 164, 22, "tab4"},        // Reference
 		{214, 96, 412, 268, "histmetric"}, // 歷史圖表區:點擊循環指標(人口/國庫/艦隊)
 		{535, 434, 84, 22, "back"},
 	}
@@ -2388,6 +2388,16 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 		// 安塔蘭人入侵警報(紅色醒目)。
 		if b.session.LastAntares != "" {
 			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 14, text: b.session.LastAntares, col: color.RGBA{240, 110, 90, 255}})
+			yy += 24
+		}
+		// AI 對手突襲警報(見 shell/ai_attack.go)。擊退用綠字、被打用紅字,
+		// 讓玩家一眼看出「這回合的軍備夠不夠」。
+		if b.session.LastRaid != "" {
+			col := color.RGBA{240, 110, 90, 255}
+			if b.session.LastRaidReport != nil && b.session.LastRaidReport.Repelled {
+				col = color.RGBA{130, 220, 150, 255}
+			}
+			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 14, text: b.session.LastRaid, col: col})
 			yy += 24
 		}
 	}

@@ -296,7 +296,7 @@ func (b *sceneBuilder) infoTurnSummary(s *overlayScreen) {
 	}
 	// 本回合事件/戰報(原版事件有獨立畫面,remake 暫列於此)
 	y += 8
-	for _, msg := range []string{b.session.LastEvent, b.session.LastAntares, b.session.LastCouncil} {
+	for _, msg := range []string{b.session.LastEvent, b.session.LastAntares, b.session.LastRaid, b.session.LastCouncil} {
 		if msg == "" {
 			continue
 		}

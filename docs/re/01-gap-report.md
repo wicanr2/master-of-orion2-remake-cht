@@ -151,7 +151,7 @@
 | 原版資料表 | 用途 | remake 現況 |
 |---|---|---|
 | ~~`_personality_*` **14 張**~~ | **AI 性格行為** | ✅ 2026-08-06 已接(`ai/personality_tables.go`)。實際是 **14 張**不是 6 張,每張 7 欄對應 Personality 0-6 |
-| ~~`_base_planet_values` / `_g_*`~~ | **AI 行星估值** | ✅ 2026-08-06 已移植公式(`gamedata/ai_planet_value.go`),AI 選星改用估值排序。公式來自反編 `Uncolonized_Planet_Worth_To_Player_`(那兩個符號是指標,指向執行期填的 BSS,dump 不到數值)。`Colony_Worth_To_Player_` / `Proximity_Worth_To_Player_` / `Enemy_Colony_Worth_To_Player_` 尚未移植 |
+| ~~`_base_planet_values` / `_g_*`~~ | **AI 行星估值** | ✅ 2026-08-06 已移植 4 個公式(`gamedata/ai_planet_value.go`):`Uncolonized_Planet_Worth_To_Player_`(選星)、`Proximity_Worth_To_Player_`(距離)、`Compute_Contextual_Planet_Values_`(星系協同)、`Colony_Worth_To_Player_`(已殖民星,供 AI 挑攻擊目標)。剩 `Enemy_Colony_Worth_To_Player_` |
 | ~~`_climate_maintenance_modifiers`~~ | 氣候維護成本 | ✅ 語意已確認:索引 = 氣候,由 `Uncolonized_Planet_Worth_To_Player_` 以 `[planet.climate]` 讀。值 = `[50,25,0,25,0,0,0,0,0,0]`,已用於 AI 估值;**尚未接進殖民地實際維護費** |
 | `_planet_max_mines` = `2 4 6 9 12` | 各大小礦場上限 | 已建表,**尚未接進生產**(remake 無礦場上限概念) |
 | ~~`_planet_special` / `_planet_special_weighted_chance`~~ | 行星特殊物產(12 種,權重和 100) | ✅ 2026-08-06 已整套接進(`gamedata/planet_special.go` + `shell/discovery.go`),見下方 C-4 |
@@ -224,9 +224,17 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
    (`combatRangeLevelPenaltyTable`、`damageDissipationPenaltyTable`);真正的缺口是
    **傷害衰減從未被呼叫**——同一發雷射在 1 格與 23 格外傷害一樣。已接進
    `ResolveShotWithMods`,順帶讓 NR(No Range Dissipation)改造第一次有實際效果。
-5. ~~`_personality_*` 表 + AI 行星估值~~ → **都已完成**(2026-08-06)。
-   剩餘的 AI 估值函式:`Colony_Worth_To_Player_`(已有殖民地的價值)、
-   `Proximity_Worth_To_Player_`(距離加權)、`Enemy_Colony_Worth_To_Player_`(攻擊目標選擇)。
+5. ~~`_personality_*` 表 + AI 行星估值~~ → **都已完成**(2026-08-06),含後續補上的
+   `Proximity_Worth_To_Player_`、`Compute_Contextual_Planet_Values_`、`Colony_Worth_To_Player_`。
+   最後一個 `Enemy_Colony_Worth_To_Player_` 是「攻擊目標的**額外**加權」,
+   remake 目前用 `AIColonyValue ÷ 距離` 代打(見 `shell/ai_attack.go`)。
+
+   **順帶補上的缺口:AI 宣戰之後真的會打了。** 先前 AI 只會擴張與宣戰,關係掉到 -40、
+   態勢寫著「戰爭」,玩家卻毫髮無傷——整局唯一的軍事壓力來自安塔蘭人腳本。現在 AI 會依
+   `Colony_Worth_To_Player_` 的估值挑玩家最有價值的殖民地突襲(`shell/ai_attack.go`),
+   造成人口/國庫/建築損失;玩家的艦隊、駐軍、軌道防禦建築會擋,擋不住也會消耗攻方戰力。
+   ⚠ **「何時打、打贏怎樣」是 remake 的模型**(原版決策函式尚未反編),只有目標估值是原版公式。
+   300 回合探針:56 次突襲、最早第 26 回合、經濟未崩(結束 BC 641)。
 6. **一星多行星** → 原版每顆恆星 1–5 顆行星各佔一條軌道;remake 的 `Stars`/`Planets`
    索引一一對應是 UI/拓殖/AI 共同的假設,拆開是跨層改造(見 `genPlanets` 註解)。
 7. ~~獨立 Colony 畫面 + Event 畫面~~ → **兩個都已完成**(2026-08-06)。

@@ -239,3 +239,131 @@ func AIContextualPlanetValue(in AIContextualInput) int {
 	}
 	return v
 }
+
+// --- 第四層:已有殖民地的價值(原版 `Colony_Worth_To_Player_` @ 0xD2CAE)---
+//
+// 前三層評的是「無主星值不值得去佔」;這一層評的是「一個**已經有殖民地**的星值多少」——
+// AI 用它挑攻擊目標、評估外交籌碼。兩者算法不同:未殖民星用礦產推估潛力,已殖民星直接用
+// 該殖民地**目前的實際產出**。
+//
+// 原版公式(變數名依 openorion2 結構欄位還原):
+//
+//	if colony.is_outpost                       → 只算鄰近價值(前哨站沒有產出)
+//	avgMaxPop = (該殖民地主人的人口上限 + 評估者的人口上限 + 1) / 2
+//	prod      = 6*食物 + 3*(工業 + 研究)      // 兩個種族旗標會改權重,見下方註記
+//	v         = (w0*目前人口 + w1*avgMaxPop) * prod * (avgMaxPop + 100 - 目前人口) / 100
+//	v         = v * (100 - climate_maintenance[climate]/4) / 100
+//	            海洋/沼澤再 × 3/4
+//	v         = 依重力與種族重力天賦打折
+//	v        += 特殊物產加分(金礦 1000、寶石礦 2000)
+//	return (v >> 6) + 鄰近價值
+//
+// `(avgMaxPop + 100 - 目前人口)` 這一項是「還有多少成長空間」:人口越接近上限,這顆星對
+// 侵略者的邊際價值越低。
+//
+// ⚠ remake 沒有建模、因而取中性值的部分(與 AIPlanetValue 同一批):
+//   - 玩家結構偏移 2224 / 2225 兩個種族旗標會把產出權重改成 `4*(食+工+研)` 或 `6*(工+研)`
+//     (後者等於「食物毫無價值」,推測是不吃食物的種族);remake 取預設的 `6*食 + 3*(工+研)`。
+//   - 偏移 410 == 3 這個條件會讓重力懲罰輕一格(12→13/16、6→7/12);remake 取未緩和的值。
+//   - 偏移 2207 的種族等級(值 0/1/2 → ×3/2、×4/3、×6/5)與殖民地偏移 319 的旗標搭配使用,
+//     兩者語意都還沒釘死,remake 不套用——寧可少一個乘數,也不套用語意不明的數字。
+
+// aiColonyObjectiveWeights[objective] = {目前人口權重, 平均人口上限權重}。
+// 四組都是原版硬編值(`Colony_Worth_To_Player_` 依玩家結構偏移 2208 分派):
+// 206→{95,5}、0→{90,10}、50→{85,15}、100→{80,20}。索引順序同 AIObjective。
+//
+// 注意這與 aiObjectiveWeights(未殖民星)是**不同的兩組數字**,不是同一張表被兩處共用——
+// 原版就是各自硬編一套。
+var aiColonyObjectiveWeights = [4][2]int{
+	{95, 5},  // Mineral(原版值 206)
+	{90, 10}, // BalancedLow(原版值 0)
+	{85, 15}, // BalancedHigh(原版值 50)
+	{80, 20}, // Population(原版值 100)
+}
+
+// aiColonySpecialBonus 是已殖民星的特殊物產加分(原版硬編:金礦 1000、寶石礦 2000)。
+// 與未殖民星的 1280 / 2560 是不同數字,但**同樣是 1:2**,也同樣只判金礦/寶石礦。
+func aiColonySpecialBonus(special int) int {
+	switch special {
+	case 4:
+		return 1000
+	case 5:
+		return 2000
+	}
+	return 0
+}
+
+// AIColonyValueInput 是估一顆「已有殖民地」的行星所需的資料。
+type AIColonyValueInput struct {
+	IsOutpost  bool // colony.is_outpost:前哨站沒有產出,原版直接跳到只算鄰近價值
+	Population int  // 該殖民地目前人口
+	MaxPop     int  // (該殖民地主人的人口上限 + 評估者的人口上限 + 1) / 2
+	Food       int  // 該殖民地的食物產出(原版取半單位再除 2,傳入時已是整單位)
+	Industry   int  // 工業產出
+	Research   int  // 研究產出
+	Climate    PlanetClimate
+	Gravity    PlanetGravity
+	Special    int // planet.special(4/5 有加分)
+	// RaceLowG / RaceHeavyG 是評估者種族的重力天賦(同 AIPlanetValueInput)。
+	RaceLowG, RaceHeavyG bool
+}
+
+// AIColonyValue 依原版公式算一顆已殖民行星對某個 AI 的價值(0..65535)。
+// 前哨站回 0(原版走的是「只算鄰近價值」那條路,鄰近價值由呼叫端另外加)。
+func AIColonyValue(in AIColonyValueInput, obj AIObjective) int {
+	if in.IsOutpost || in.Population <= 0 {
+		return 0
+	}
+	o := int(obj)
+	if o < 0 || o >= len(aiColonyObjectiveWeights) {
+		o = int(AIObjectiveBalancedLow)
+	}
+	w := aiColonyObjectiveWeights[o]
+
+	// 產出加權(預設分支,見檔頭註記)。
+	prod := 6*in.Food + 3*(in.Industry+in.Research)
+	if prod < 0 {
+		prod = 0
+	}
+
+	v := (w[0]*in.Population + w[1]*in.MaxPop) * prod
+	// 成長空間:人口越接近上限,對侵略者的邊際價值越低。夾在 0 以上,避免超額人口翻成負值。
+	room := in.MaxPop + 100 - in.Population
+	if room < 0 {
+		room = 0
+	}
+	v = v * room / 100
+
+	v = v * (100 - ClimateMaintenanceModifier(in.Climate)/4) / 100
+	if in.Climate == OCEAN || in.Climate == SWAMP {
+		v = v * 3 / 4
+	}
+
+	// 重力折扣。注意係數與 AIPlanetValue 不同(那邊 18/20 與 4/6,這邊 12/16 與 6/12)——
+	// 原版對「已殖民」的重力懲罰更重,兩處分別硬編,不是同一組常數。
+	switch in.Gravity {
+	case LOW_G:
+		if !in.RaceLowG {
+			v = v * 12 / 16
+		}
+	case NORMAL_G:
+		if in.RaceLowG {
+			v = v * 12 / 16
+		}
+	case HEAVY_G:
+		if !in.RaceHeavyG {
+			v = v * 6 / 12
+		}
+	}
+
+	v += aiColonySpecialBonus(in.Special)
+
+	v >>= 6
+	if v > 65535 {
+		return 65535
+	}
+	if v < 0 {
+		return 0
+	}
+	return v
+}

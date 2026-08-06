@@ -31,6 +31,9 @@ type aiSnapshot struct {
 	// 0 是合法值(排外),舊存檔缺欄位會解成 0——那與「排外」無法區分,屬已知的相容性折衷,
 	// 影響只是舊存檔的 AI 性格會一律變成排外,不會壞掉。
 	Personality ai.Personality `json:"personality"`
+	// LastRaidTurn 是這個 AI 上次突襲玩家的回合(見 ai_attack.go)。不存的話讀檔後
+	// 每個 AI 的間隔計時器都歸零,存檔當回合可能立刻又被突襲一次。
+	LastRaidTurn int `json:"last_raid_turn"`
 
 	// ColonyBuildings 見 shell.AIOpponent.ColonyBuildings 註解。舊存檔(本欄位加入前存的檔)
 	// 解碼時這裡是 nil——BombardColony 對 nil/空 map 視為「無建築」,回歸行為與加欄位前一致,
@@ -60,17 +63,17 @@ type sessionSnapshot struct {
 	Builds         []ColonyBuild        `json:"builds"`
 	// BuildQueue 是各殖民地的後續建造排隊項(原版 7 格 BUILD QUEUE,見 buildqueue.go)。
 	// omitempty:2026-08-06 之前的存檔沒有這個欄位,解碼成 nil = 「佇列是空的」,語意正確。
-	BuildQueue [][]ColonyBuild `json:"build_queue,omitempty"`
-	FleetAtStar    int                  `json:"fleetAtStar"`
-	FleetDestStar  int                  `json:"fleetDestStar"`
-	FleetETA       int                  `json:"fleetETA"`
-	PopAccum       []int                `json:"popAccum"`
-	ColonyBuild    []map[string]bool    `json:"colonyBuildings"`
-	EventSeed      int64                `json:"eventSeed"`
-	AntaresRaids   int                  `json:"antaresRaids"`
-	RaceIndex      int                  `json:"raceIndex"`
-	RaceCombatPct  int                  `json:"raceCombatPct"`
-	RaceGrowthPct  int                  `json:"raceGrowthPct"`
+	BuildQueue    [][]ColonyBuild   `json:"build_queue,omitempty"`
+	FleetAtStar   int               `json:"fleetAtStar"`
+	FleetDestStar int               `json:"fleetDestStar"`
+	FleetETA      int               `json:"fleetETA"`
+	PopAccum      []int             `json:"popAccum"`
+	ColonyBuild   []map[string]bool `json:"colonyBuildings"`
+	EventSeed     int64             `json:"eventSeed"`
+	AntaresRaids  int               `json:"antaresRaids"`
+	RaceIndex     int               `json:"raceIndex"`
+	RaceCombatPct int               `json:"raceCombatPct"`
+	RaceGrowthPct int               `json:"raceGrowthPct"`
 
 	// Government 是玩家政府型態(2026-07-11 士氣接線;見 GameSession.Government 欄位註解)。
 	// 底層是 gamedata.MoraleGovernmentType(int-based enum),json 直接序列化成數字。
@@ -122,14 +125,14 @@ func (s *GameSession) snapshot() sessionSnapshot {
 			FleetStrength: a.FleetStrength, FleetInvestPool: a.FleetInvestPool,
 			Relation: a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars,
 			ColonyStars: a.ColonyStars, Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
-			Leaders: a.Leaders, Personality: a.Personality}
+			Leaders: a.Leaders, Personality: a.Personality, LastRaidTurn: a.LastRaidTurn}
 	}
 	return sessionSnapshot{
 		Version: saveFormatVersion, Turn: s.Turn, Player: s.Player,
 		PlayerColonies: s.PlayerColonies, AIPlayers: ais,
 		Stars: s.Stars, Planets: s.Planets, Leaders: s.Leaders, Ships: s.Ships,
 		SelectedStar: s.SelectedStar, Difficulty: s.Difficulty, Builds: s.Builds,
-		BuildQueue: s.BuildQueue,
+		BuildQueue:  s.BuildQueue,
 		FleetAtStar: s.FleetAtStar, FleetDestStar: s.FleetDestStar, FleetETA: s.FleetETA,
 		PopAccum: s.popAccum, ColonyBuild: s.ColonyBuildings, EventSeed: s.EventSeed,
 		AntaresRaids: s.AntaresRaids, RaceIndex: s.RaceIndex,
@@ -159,7 +162,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 			FleetInvestPool: a.FleetInvestPool,
 			Relation:        a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars,
 			ColonyStars: a.ColonyStars, Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
-			Leaders: a.Leaders, Personality: a.Personality,
+			Leaders: a.Leaders, Personality: a.Personality, LastRaidTurn: a.LastRaidTurn,
 		}
 	}
 	restorePlanetIDs(snap.Planets)

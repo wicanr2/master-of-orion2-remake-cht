@@ -29,14 +29,19 @@ type AIOpponent struct {
 	// 因為所有性格相關的數字都是硬編的固定值(見 ai/personality_tables.go)。
 	Personality ai.Personality
 	Relation    int    // 對玩家的外交關係分數(驅動 17 級 RelationLevel 與態勢)
-	StanceName string // 目前對玩家態勢(中文;由 ai.DecideStance 推得)
-	OwnedStars int    // 已擴張佔領的星數(含母星)
+	StanceName  string // 目前對玩家態勢(中文;由 ai.DecideStance 推得)
+	OwnedStars  int    // 已擴張佔領的星數(含母星)
 
 	// Spies 是這個 AI 對手派來偷玩家科技的間諜數(見 spy.go advanceEspionage)。opt-in,
 	// 新對局預設 0(Go 零值恰好是想要的預設值,無零值陷阱)。AI 目前用簡單週期政策自動增加
 	// (見 advanceAI),不像玩家的 PlayerSpies 需要花 BC 呼叫 TrainSpy——AI 的訓練成本/BC
 	// 限制未建模,是誠實簡化而非疏漏(見 spy.go 檔頭說明)。
 	Spies int
+
+	// LastRaidTurn 是這個 AI 上次對玩家發動突襲的回合(見 ai_attack.go),用來維持
+	// aiRaidInterval 的最短間隔。0 = 從未突襲(Go 零值即想要的預設值:第一次突襲最早
+	// 發生在 Turn >= aiRaidGraceTurns,不會因為零值提早)。
+	LastRaidTurn int
 
 	// ColonyStars 是 Colonies[i] 對應到 Stars 的索引(平行陣列),兩者長度須一致——aiExpand
 	// append 新殖民地、InvadeColony 玩家攻陷 AI 殖民地時各自同步移除,見兩處函式。
@@ -202,8 +207,8 @@ var (
 		{"戰鬥電腦", 80, 3, gamedata.TOPIC_ARTIFICIAL_INTELLIGENCE, 0}, // 抽象(電腦研究鏈),proxy 待重設計
 		{"自動修復", 60, 0, gamedata.TOPIC_ADVANCED_MANUFACTURING, gamedata.TECH_AUTOMATED_REPAIR_UNIT},
 		{"隱形裝置", 100, 0, gamedata.TOPIC_DISTORTION_FIELDS, gamedata.TECH_CLOAKING_DEVICE},
-		{"重生程序", 150, 0, gamedata.TOPIC_ARTIFICIAL_LIFE, 0}, // 抽象(種族特性),proxy 待重設計
-		{"戰機庫", 90, 0, gamedata.TOPIC_ADVANCED_ENGINEERING, gamedata.TECH_FIGHTER_BAYS},          // 攔截機隊出擊4(手冊 GM p.127),ResolveBattle 加母艦戰力
+		{"重生程序", 150, 0, gamedata.TOPIC_ARTIFICIAL_LIFE, 0},                                         // 抽象(種族特性),proxy 待重設計
+		{"戰機庫", 90, 0, gamedata.TOPIC_ADVANCED_ENGINEERING, gamedata.TECH_FIGHTER_BAYS},             // 攔截機隊出擊4(手冊 GM p.127),ResolveBattle 加母艦戰力
 		{"重戰機庫", 160, 0, gamedata.TOPIC_SUPERSCALAR_CONSTRUCTION, gamedata.TECH_HEAVY_FIGHTER_BAYS}, // 重戰機隊出擊2、火力較強(手冊 GM p.127)
 	}
 )
@@ -1322,13 +1327,13 @@ type Planet struct {
 	// Gen 是生成器版本:0 = 2026-08-06 之前的舊存檔(只有字串,ID 欄位無意義),
 	// 1 = 原版骰表生成(gamedata/galaxygen.go)。用顯式版本號而不是「ID 是否為零值」判斷,
 	// 因為 TOXIC/LOW_G/ULTRA_POOR/TINY 的 enum 值都恰好是 0,零值無法區分「未設」與「真的是它」。
-	Gen        int
-	ClimateID  gamedata.PlanetClimate
-	GravityID  gamedata.PlanetGravity
-	MineralID  gamedata.PlanetMinerals
-	SizeID     gamedata.PlanetSize
-	Orbit      int  // 該行星所在軌道(0..4),決定溫度帶進而決定氣候
-	NoPlanet   bool // 該恆星沒有行星(黑洞;原版 Generate_Number_Of_Satellites_ 回 0)
+	Gen       int
+	ClimateID gamedata.PlanetClimate
+	GravityID gamedata.PlanetGravity
+	MineralID gamedata.PlanetMinerals
+	SizeID    gamedata.PlanetSize
+	Orbit     int  // 該行星所在軌道(0..4),決定溫度帶進而決定氣候
+	NoPlanet  bool // 該恆星沒有行星(黑洞;原版 Generate_Number_Of_Satellites_ 回 0)
 	// SpecialID 是行星特殊物產(金礦/寶石礦/原住民…),依原版權重表生成,
 	// 見 gamedata/planet_special.go。零值 = 無(原版 64% 的行星都是無)。
 	SpecialID gamedata.PlanetSpecial
@@ -1765,10 +1770,10 @@ func genGalaxy(n int, seed int64, aiHomes int) ([]Star, []int) {
 
 // GameSession 是一局進行中的遊戲狀態。玩家操作改變狀態,EndTurn 推進一回合(結算玩家 + 各 AI)。
 type GameSession struct {
-	Turn             int
-	Player           engine.PlayerState
-	PlayerColonies   []engine.ColonyState
-	AIPlayers        []AIOpponent
+	Turn           int
+	Player         engine.PlayerState
+	PlayerColonies []engine.ColonyState
+	AIPlayers      []AIOpponent
 	// AIRelations 是 AI 對手彼此的外交關係矩陣(AIRelations[i][j] = AI i 對 AI j 的關係分數,
 	// 夾 -40..40,同 AIOpponent.Relation 尺度)。先前 AI 只對玩家單向有關係;此矩陣讓多帝國彼此
 	// 也有關係(依相對軍力漂移),使星系「活起來」並可支撐議會第三方搖擺票(見 advanceAIDiplomacy)。
@@ -1776,7 +1781,7 @@ type GameSession struct {
 	AIRelations [][]int
 	// History 是逐回合的全帝國國力快照(原版 module 122 Record_History_ 的對應物,
 	// 供 INFO 的 History Graph 子畫面畫折線;見 history.go 檔頭)。
-	History          []HistoryTurn
+	History []HistoryTurn
 	// LastEventReport 是上一回合觸發的隨機事件(結構化,供事件畫面用);nil = 本回合無事件。
 	// 與 LastEvent(純文字,回合摘要用)同時寫入,見 events.go advanceEvents。
 	// 比照 LastEvent 是「下回合會重算的顯示暫態」,刻意不存檔。
@@ -1784,28 +1789,28 @@ type GameSession struct {
 
 	// LastDiscovery 是上一回合抵達星系時觸發的一次性發現(太空殘骸/失散殖民地…);
 	// nil = 無。與 LastEventReport 分開:隨機事件是全銀河的新聞,發現是自家艦隊的回報。
-	LastDiscovery *SystemDiscovery
-	LastPlayerOutput engine.EmpireOutput // 上一回合玩家結算(供畫面顯示)
-	Stars            []Star              // 星系圖
-	Planets          []Planet            // 行星列表
-	Leaders           []Leader           // 已雇用的軍官/領袖名單(Leader Pool)
-	MercPool          []Leader           // 目前上門可雇用的傭兵領袖(手冊 p.134,見 advanceMercOffers/HireMerc)
-	MercOfferedIdx    int                // 已釋出過的傭兵候選數(遞增指標,避免重複 offer 同一候選)
-	MercCandidatePool []Leader           // 傭兵候選池(cmd 層由 HERODATA.LBX 真英雄注入,見 SetMercCandidates);nil=用內建策展名單
-	Ships            []Ship              // 艦隊
-	LastBattle       *BattleResult       // 上一場戰鬥結果(供戰鬥結果畫面)
-	SelectedStar     int                 // 星圖選中的星索引(-1=未選)
-	Difficulty       int                 // 難度索引(shell.Difficulties)
-	Builds           []ColonyBuild       // 各殖民地「當前建造中」的項目(對應 PlayerColonies;佇列見 BuildQueue)
+	LastDiscovery     *SystemDiscovery
+	LastPlayerOutput  engine.EmpireOutput // 上一回合玩家結算(供畫面顯示)
+	Stars             []Star              // 星系圖
+	Planets           []Planet            // 行星列表
+	Leaders           []Leader            // 已雇用的軍官/領袖名單(Leader Pool)
+	MercPool          []Leader            // 目前上門可雇用的傭兵領袖(手冊 p.134,見 advanceMercOffers/HireMerc)
+	MercOfferedIdx    int                 // 已釋出過的傭兵候選數(遞增指標,避免重複 offer 同一候選)
+	MercCandidatePool []Leader            // 傭兵候選池(cmd 層由 HERODATA.LBX 真英雄注入,見 SetMercCandidates);nil=用內建策展名單
+	Ships             []Ship              // 艦隊
+	LastBattle        *BattleResult       // 上一場戰鬥結果(供戰鬥結果畫面)
+	SelectedStar      int                 // 星圖選中的星索引(-1=未選)
+	Difficulty        int                 // 難度索引(shell.Difficulties)
+	Builds            []ColonyBuild       // 各殖民地「當前建造中」的項目(對應 PlayerColonies;佇列見 BuildQueue)
 	// BuildQueue[i] 是殖民地 i 的**後續**建造排隊項(不含 Builds[i] 那一格)。
 	// 原版殖民地畫面的 BUILD QUEUE 是 7 格(反組譯 Add_Build_Queue_Fields_ 確認),
 	// 完工自動接下一項;remake 先前只有一格。見 buildqueue.go 檔頭。
-	BuildQueue [][]ColonyBuild
-	LastBuilt        []string            // 上回合完成的建造(供回合摘要)
-	FleetAtStar      int                 // 玩家艦隊所在星索引(初始=母星 0)
-	FleetDestStar    int                 // 艦隊目的星索引(-1=無航行任務)
-	FleetETA         int                 // 抵達目的星尚需回合數(0=已抵達/靜止)
-	popAccum         []int               // 各殖民地人口成長累加值(達門檻則 +1 人口)
+	BuildQueue    [][]ColonyBuild
+	LastBuilt     []string // 上回合完成的建造(供回合摘要)
+	FleetAtStar   int      // 玩家艦隊所在星索引(初始=母星 0)
+	FleetDestStar int      // 艦隊目的星索引(-1=無航行任務)
+	FleetETA      int      // 抵達目的星尚需回合數(0=已抵達/靜止)
+	popAccum      []int    // 各殖民地人口成長累加值(達門檻則 +1 人口)
 
 	// --- 地面戰入侵(見 ground_invasion.go) ---
 	FleetMarines        int               // 隨玩家艦隊出征、已載運的陸戰隊數(簡化模型,見 LoadMarines)
@@ -1833,11 +1838,15 @@ type GameSession struct {
 	eventRand         *rand.Rand // 事件亂數源(由 EventSeed 惰性建立)
 	AntaresRaids      int        // 已發生的安塔蘭突襲次數(逐次升級強度)
 	LastAntares       string     // 本回合安塔蘭突襲描述(空=無;供回合摘要)
-	RaceIndex         int        // 玩家選定的種族(shell.Races 索引)
-	PlayerName        string     // 玩家帝國/領袖名稱(新遊戲命名畫面設定)
-	FlagColor         int        // 玩家旗幟顏色索引(shell.FlagColors)
-	RaceCombatPct     int        // 種族戰鬥戰力百分點加成(供戰鬥使用)
-	raceGrowthPct     int        // 種族人口成長百分點加成(供 advancePopulation)
+	// LastRaid / LastRaidReport 是本回合 AI 對玩家殖民地的突襲(見 ai_attack.go);
+	// 空/nil = 無。與 LastAntares 分開:安塔蘭人是週期腳本,AI 突襲是外交/軍備的後果。
+	LastRaid       string
+	LastRaidReport *AIRaidReport
+	RaceIndex      int    // 玩家選定的種族(shell.Races 索引)
+	PlayerName     string // 玩家帝國/領袖名稱(新遊戲命名畫面設定)
+	FlagColor      int    // 玩家旗幟顏色索引(shell.FlagColors)
+	RaceCombatPct  int    // 種族戰鬥戰力百分點加成(供戰鬥使用)
+	raceGrowthPct  int    // 種族人口成長百分點加成(供 advancePopulation)
 
 	// Government 是玩家目前政府型態(2026-07-11 接線,供 colonyMoralePercent 士氣計算用)。
 	// 由 ApplyGovernment 設定;新遊戲若從未呼叫 ApplyGovernment,預設見 NewDemoSession
@@ -2145,6 +2154,7 @@ func (s *GameSession) EndTurn() {
 	s.advanceEvents()     // 觸發 MOO2 風格隨機事件(繁榮/瘟疫/海盜…),記於 LastEvent
 	s.Turn++
 	s.advanceAntares()         // 安塔蘭人週期性入侵(依 Turn 排程升級),記於 LastAntares
+	s.advanceAIRaids()         // AI 對手突襲玩家殖民地(戰爭態勢 + 軍力領先才發動),記於 LastRaid
 	s.advanceConquestVictory() // 對手是否已全滅(手冊三條勝利路徑之一:殲滅所有對手)
 	s.advanceAntaranVictory()  // 是否已攻陷安塔蘭母星(手冊三條勝利路徑之二,見 antaran_victory.go)
 	s.advanceAIDiplomacy()     // AI 對手彼此外交關係漂移(多帝國活星系;支撐議會第三方搖擺)
@@ -2482,7 +2492,7 @@ func (s *GameSession) aiPlanetValue(aiIdx, starIdx int) int {
 		Gravity:   p.GravityID,
 		// FoodBase 對應原版 planet.foodbase;remake 的等價量是該氣候的每農夫食物。
 		FoodBase: gamedata.ClimateFoodPerFarmer(p.ClimateID),
-		Special: int(p.SpecialID),
+		Special:  int(p.SpecialID),
 	}, obj)
 	if base <= 0 {
 		return 0
@@ -2682,7 +2692,7 @@ func playerHomeworldColony() engine.ColonyState {
 		// **Medium Terran**(先前 remake 硬編 LARGE/上限 20 偏大)。
 		// PlanetBasePopMax(MEDIUM,TERRAN) = (2+1)*5 * 80% = 12,與 oracle 筆記記的「約 12」相符。
 		Population: 8, PopMax: gamedata.PlanetBasePopMax(gamedata.MEDIUM_PLANET, gamedata.TERRAN),
-		Farmers:    4, Workers: 2, Scientists: 2,
+		Farmers: 4, Workers: 2, Scientists: 2,
 		FoodPerFarmer:     gamedata.ClimateFoodPerFarmer(gamedata.TERRAN),
 		IndustryPerWorker: gamedata.MineralIndustryPerWorker(gamedata.ABUNDANT),
 		// 研究每科學家=銀河基準 3(手冊 p.949「usual 3」+ Psilon +2 邏輯 + SAVE10.GAM 驗證,
@@ -2913,18 +2923,18 @@ func NewDemoSession() *GameSession {
 		// (上限殖民領袖 4 + 艦艇軍官 4)。先前 demoLeaders() 讓玩家開局自帶「馮·諾伊曼 科學家」並
 		// 固定 +25 研究套進母星,是機制錯誤(那應是雇用並指派後才生效)。改為 nil = 忠實空池。
 		// demoLeaders()/applyLeaderColonyBonuses 保留供未來「傭兵招募流程」實作後 seed 用(TODO)。
-		Leaders:           nil,
-		Ships:             homeworldShips(),
+		Leaders: nil,
+		Ships:   homeworldShips(),
 		// 母星開局預設建造「貿易品」:archive.org 線上原版實測(2026-07-12 oracle)讀到 Sol III
 		// 的 BUILDING 欄就是「Trade Goods」,右下 Income +12 BC——remake 先前開局是「不建造」、
 		// 收支 +0,是母星開局態沒對齊的一環(見 docs/tech/oracle-comparison-20260712.md)。
 		// Cost 0 同「不建造」語意(見 TradeGoodsBuildName 註解:整包工業轉現金,不累積進度)。
-		Builds: []ColonyBuild{{Name: TradeGoodsBuildName, Progress: 0, Cost: 0}},
-		SelectedStar:      -1,
-		FleetAtStar:       0,  // 母星
-		FleetDestStar:     -1, // 無航行任務
-		EventSeed:         42, // 隨機事件種子(可重現;正式新遊戲遞增)
-		RuleProfile:       gamedata.Profile15(),
+		Builds:        []ColonyBuild{{Name: TradeGoodsBuildName, Progress: 0, Cost: 0}},
+		SelectedStar:  -1,
+		FleetAtStar:   0,  // 母星
+		FleetDestStar: -1, // 無航行任務
+		EventSeed:     42, // 隨機事件種子(可重現;正式新遊戲遞增)
+		RuleProfile:   gamedata.Profile15(),
 	}
 	session.Player.UsedCommandPoints = session.usedCommandPoints() // 依開局艦隊(homeworldShips)算實際需求,顯示與第一次 EndTurn 後一致
 	// 領袖技能接線(2026-07-11):把 Ship=false 的殖民地領袖(科學家/貿易家)技能套到母星。

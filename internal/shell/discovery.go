@@ -31,15 +31,15 @@ import (
 
 // SystemDiscovery 是一次星系發現的結果(供回合摘要/報告畫面顯示)。
 type SystemDiscovery struct {
-	StarIndex int                  // 觸發的星索引
-	StarName  string               // 星名(顯示用)
+	StarIndex int                    // 觸發的星索引
+	StarName  string                 // 星名(顯示用)
 	Special   gamedata.PlanetSpecial // 觸發的特殊物產
-	Name      string               // 特殊物產中文名
-	Message   string               // 已填好數字/名稱的敘述
-	BCGained  int                  // 一次性入袋的 BC(太空殘骸/海盜藏寶)
-	ColonyIdx int                  // 失散殖民地建成後的殖民地索引;-1 = 無
-	LeaderGot string               // 免費領袖的名字;空 = 無
-	TechGot   string               // 白送的科技主題名;空 = 無
+	Name      string                 // 特殊物產中文名
+	Message   string                 // 已填好數字/名稱的敘述
+	BCGained  int                    // 一次性入袋的 BC(太空殘骸/海盜藏寶)
+	ColonyIdx int                    // 失散殖民地建成後的殖民地索引;-1 = 無
+	LeaderGot string                 // 免費領袖的名字;空 = 無
+	TechGot   string                 // 白送的科技主題名;空 = 無
 }
 
 // discoverSystemSpecials 結算玩家艦隊剛抵達的這顆星的一次性發現。

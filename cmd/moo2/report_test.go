@@ -26,8 +26,8 @@ func TestCurrentReportDiscoveryUsesScoutHeader(t *testing.T) {
 	s := shell.NewDemoSession()
 	s.LastDiscovery = &shell.SystemDiscovery{
 		StarName: "測試星", Special: gamedata.PirateCache,
-		Name: gamedata.PlanetSpecialName(gamedata.PirateCache),
-		Message: "勘查小隊在測試星星系裡找到海盜藏寶,變賣所得 100 BC 已入國庫。",
+		Name:     gamedata.PlanetSpecialName(gamedata.PirateCache),
+		Message:  "勘查小隊在測試星星系裡找到海盜藏寶,變賣所得 100 BC 已入國庫。",
 		BCGained: 100, ColonyIdx: -1,
 	}
 	b := &sceneBuilder{session: s}
