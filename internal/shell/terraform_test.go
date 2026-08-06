@@ -20,6 +20,11 @@ func TestTerraformAdvancesClimateFoodAndPopMax(t *testing.T) {
 	c.Climate = gamedata.ARID
 	c.FoodPerFarmer = gamedata.ClimateFoodPerFarmer(gamedata.ARID) // = 1
 	c.PopMax = 20                                                  // Arid 係數 60%
+	// 本測試要驗的是地形改造的「氣候推進 + FoodPerFarmer 差值疊加 + PopMax 等比縮放」數學,
+	// 不是饑荒。Arid 每農夫只有 1 食物,pop 8 得全員務農才餵得飽,工業會歸零、改造永遠蓋不完
+	// (2026-08-06 recoverFromFamine 改成「只要缺糧就加派農夫」後實際發生)。給一份固定食物
+	// (等同已建水耕農場)讓殖民地吃得飽、工人留在生產線,才測得到改造本身。
+	c.FlatFood = 12
 
 	// 解鎖地形改造前置科技(TOPIC_GENETIC_MUTATIONS)。
 	if s.Player.CompletedTopics == nil {

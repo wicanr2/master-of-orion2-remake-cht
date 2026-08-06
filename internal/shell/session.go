@@ -1973,16 +1973,22 @@ func (s *GameSession) usedCommandPoints() int {
 // 選項②):非饑荒(Farmers>0 或未 Starving)不動作,一次只搶救 1 人(避免一次饑荒就把整個
 // 職務分配打亂),不改動 AI 殖民地(AI 目前的 Farmers/Workers 由 ApplyAIEconomy 每回合依
 // decider 重新決定,不會卡在饑荒鎖死)。
+// 2026-08-06 修正觸發條件(反組譯佐證):原本只在 Farmers==0 才搶救,但實測有更常見的
+// 死結——殖民地農夫還有好幾個卻仍然缺糧(例:瘟疫事件的 losePop 從「人數最多的職務」扣人,
+// 當農夫最多時就扣農夫,食物翻負後永遠回不來,30 回合探針 pop 10→…→6、食物卡在 -1)。
+// 原版 Orion2.exe 有 Assign_Additional_Unblockaded_Farmers_(A 級硬證,見 docs/re/01-gap-report.md),
+// 語意是「缺糧時加派『額外的』農夫」,不是「農夫歸零才救」。故改成:只要 Starving 就每回合
+// 補 1 名農夫,不論目前農夫數——任何成因(事件扣人、人口成長、氣候改變)造成的赤字都會自癒。
 func (s *GameSession) recoverFromFamine() {
 	for i := range s.PlayerColonies {
 		c := &s.PlayerColonies[i]
-		if c.Population <= 0 || c.Farmers > 0 {
+		if c.Population <= 0 {
 			continue
 		}
 		if i >= len(s.LastPlayerOutput.Colonies) || !s.LastPlayerOutput.Colonies[i].Starving {
 			continue
 		}
-		switch {
+		switch { // 一次只搶救 1 人,避免一次饑荒把整個職務分配打亂
 		case c.Workers > 0:
 			c.Workers--
 			c.Farmers++
@@ -2088,9 +2094,34 @@ func (s *GameSession) advancePopulation() {
 		for s.popAccum[i] >= popGrowthThreshold && s.PlayerColonies[i].Population < s.PlayerColonies[i].PopMax {
 			s.popAccum[i] -= popGrowthThreshold
 			s.PlayerColonies[i].Population++
-			s.PlayerColonies[i].Workers++ // 新人口預設分配為工人
+			s.assignNewColonist(i)
 		}
 	}
+}
+
+// assignNewColonist 決定新增人口的職務(殖民地 i 的 Population 已 +1,尚未配職)。
+//
+// 原版行為依據(A 級硬證):Orion2.exe 除錯符號表有 Make_First_Unassigned_Into_Farmer_ 與
+// Assign_Additional_Unblockaded_Farmers_(見 docs/re/01-gap-report.md),即原版會在需要時
+// 把新增/未指派人口指派成農夫。remake 先前一律 Workers++,導致人口一成長就缺糧 →
+// 餓死螺旋(30 回合探針:pop 8→9→…→5、食物 -1)。
+//
+// ⚠ 精確的原版判斷式尚未反編(函式邊界問題,見 docs/re/00-orion2-symbols.md),此處採
+// 函式名直接蘊含的最小忠實規則:**先試工人,若會造成食物赤字就改配農夫**。
+// 這不是臆造機制(機制存在是硬證),只是判斷門檻取「不讓殖民地挨餓」這個保守值。
+func (s *GameSession) assignNewColonist(i int) {
+	if i < 0 || i >= len(s.PlayerColonies) {
+		return
+	}
+	cand := s.PlayerColonies[i]
+	cand.Workers++ // 原版預設:新人口進生產線
+	if engine.RunColonyTurn(cand).FoodSurplus >= 0 {
+		s.PlayerColonies[i] = cand
+		return
+	}
+	cand = s.PlayerColonies[i]
+	cand.Farmers++ // 會缺糧 → 改配農夫(Assign_Additional_Unblockaded_Farmers_)
+	s.PlayerColonies[i] = cand
 }
 
 // aiProfile 取出 AI 對手的性格(從 RemakeDecider);非該型別則回平衡型。
