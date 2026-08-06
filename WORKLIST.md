@@ -160,8 +160,9 @@
 - [ ] 繪字描邊/陰影版 + 逐字斷行(目前基本 Draw/Measure;混合字型上線後標題走平滑 Noto、內文點陣暗底可讀,描邊需求降為次要,待「字疊亮星點」處再補)
 - [ ] 字型子集 pyftsubset(docker)+ go:embed 內嵌(待譯文集齊;目前用完整 .ttc runtime 掛載)
 - [x] 主選單中文化 + 截圖校對(cmd/moo2 -menu:擦底疊字六按鈕繼續/載入遊戲/…;before/after 見 docs/reference-screens.md)
-- [ ] 主選單:語言 中/英 runtime 切換(mom 無此,我們要做)
-- [ ] 主選單:版本 1.3/1.5 選擇框架
+- [x] 主選單:語言 中/英 runtime 切換(2026-08-07,`cmd/moo2/interactive.go` 的 `toggleLang`)
+      ——先前只有啟動旗標 `-lang`,進了遊戲換不掉,不符 `CLAUDE.md` 那條需求
+- [x] 主選單:版本 1.3/1.5 選擇框架(`toggleVersion`,左下角)
 - [ ] 按鈕垂直置中微調(目前略偏上)+ hover 狀態中文
 
 ## Phase 4 — 畫面重建 + 完整中文化(做法見 `08` playbook)

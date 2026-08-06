@@ -412,8 +412,21 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 	}
 	// 規則版本切換(CLAUDE.md:主選單選 1.3/1.5)——左下角熱區,點擊循環切換,開局注入 RuleProfile。
 	hits = append(hits, hitRegion{12, 450, 220, 22, "toggleVersion"})
+	// 語言切換(CLAUDE.md:「允許在主選單選擇中文/英文」)——擺在版本切換正上方。
+	// 先前語言只有啟動旗標 `-lang`,進了遊戲就換不掉,不符合這條需求。
+	hits = append(hits, hitRegion{12, 428, 220, 22, "toggleLang"})
 	onAction := func(a string) *origTransition {
 		switch a {
+		case "toggleLang":
+			// 切語言 = 換整個顯示層:overlayScreen 是在建構時把譯表烘進去的,
+			// 所以改完 b.lang 要重建畫面才會生效(與版本切換同款做法)。
+			// 英文模式下 overlay 機制整段跳過擦底疊字,直接露出原版烘進圖的英文。
+			if b.lang == i18n.Traditional {
+				b.lang = i18n.English
+			} else {
+				b.lang = i18n.Traditional
+			}
+			return b.goTo(b.menu, "主選單")
 		case "toggleVersion":
 			if b.gameVersion == gamedata.VersionClassic13 {
 				b.gameVersion = gamedata.VersionCommunity15
@@ -479,12 +492,20 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 	if len(dimmed) > 0 {
 		s.labelColorFor = dimmed // 無存檔 → Continue / Load Game 畫成灰的
 	}
-	// 左下角版本切換標籤(點擊上方熱區循環)。
-	s.extras = append(s.extras, extraText{
-		x: 16, y: 458, size: 13,
-		text: fmt.Sprintf("規則版本 %s(點此切換)", versionShort(b.gameVersion)),
-		col:  color.RGBA{150, 210, 150, 255},
-	})
+	// 左下角版本 / 語言切換標籤(點擊上方熱區循環)。
+	// 語言標籤本身要跟著當前語言走,否則英文模式下留一行中文很怪。
+	langLabel := "語言 繁體中文(點此切換)"
+	if b.lang != i18n.Traditional {
+		langLabel = "Language: English (click to switch)"
+	}
+	verLabel := fmt.Sprintf("規則版本 %s(點此切換)", versionShort(b.gameVersion))
+	if b.lang != i18n.Traditional {
+		verLabel = fmt.Sprintf("Rules %s (click to switch)", versionShort(b.gameVersion))
+	}
+	s.extras = append(s.extras,
+		extraText{x: 16, y: 436, size: 13, text: langLabel, col: color.RGBA{150, 210, 150, 255}},
+		extraText{x: 16, y: 458, size: 13, text: verLabel, col: color.RGBA{150, 210, 150, 255}},
+	)
 	return s, nil
 }
 
