@@ -90,6 +90,9 @@ func (s *nameFlagScreen) update(in shell.InputState) *origTransition {
 			s.b.session.PlayerName = name
 			s.b.session.FlagColor = s.flagSel
 		}
+		// 熱座局:命名旗色是新遊戲流程的最後一步,席位要在這裡才建——`SetupHotseat`
+		// 會把「目前的玩家狀態」整組存成第 0 席,種族/名字/旗色都定案之後做才對。
+		s.b.applyPendingHotseat()
 		return s.b.goTo(s.b.galaxy, "星系主畫面")
 	}
 	return nil

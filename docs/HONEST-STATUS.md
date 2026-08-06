@@ -26,6 +26,10 @@ LBX 解碼(scan-line RLE 影像 / 多幀 delta / 調色盤鏈)、SAVE10.GAM 唯�
   ⚠ **2026-08-07 翻案**:這裡原本寫「無對應 openorion2 view 的畫面無硬編真值可覆蓋…要再精確只能靠原版截圖(本專案不採)」——**錯的**。真正的一手座標在**原版執行檔的反組譯**裡,與 openorion2 有沒有實作無關。當天做地面戰畫面(openorion2 對它零命中)時,反組譯直接給出全部座標:兩側面板貼圖點、`Darken_Fill_` 矩形、置中文字 x、列高、部隊落點公式與兩側基準 X。**openorion2 沒有的畫面,先去反組譯挖繪製呼叫的立即數,別退回估計值。** colony/races/newgame/shipDesign 仍待用這個方法重挖。
 - **需原版 oracle 對照**(用 archive.org 線上 DOS 原版,**不需 DOSBox**;見 `docs/tech/oracle-comparison-20260712.md`、記憶 `moo2-oracle-is-archive-org-online`):飛彈速度(`missile.go` 手冊公式與附表自相矛盾)、地面戰 d100 核心傷亡解算結構(`ResolveGroundBattle` 沿用一代 1oom 借用結構,force 值用 MOO2 手冊表但結構本身未對 MOO2 實機核實)、安塔蘭母星防禦艦隊戰力(手冊/openorion2 均無精確數字,用保守預設 6 艘末日之星等級)、**母星開局態**(2026-07-12 oracle 已釘死:農4/工2/科2/Abundant/Trade Goods,待校準)。
 - **需先建基礎設施**:戰機/航母(新戰鬥子模型)、部分軍事/防禦建築(~13 棟,需艦隊駐防/軌道防禦系統先落地)。
+- **多人**:熱座(同機輪流)2026-08-07 已可玩,主選單 MULTI PLAYER 接上了原版的設定畫面
+  (版面全部取自反組譯)。**網路 / 數據機 / 序列埠直連沒有做**,那三顆在畫面上是灰的。
+  熱座本身的兩個已知不對稱寫在 `docs/re/01-gap-report.md` 第 20 項:非當前席位在 `EndTurn`
+  最後才結算(差一個 AI 回合的資訊)、勝負判定只對當前席位跑。
 - **UI 最小化**:議會無勝利/落敗結局動畫,accept/reject 用文字提示疊在原版底圖,非原版落敗對話框藝術(尚未定位該 LBX);完整 spy/leader/多AI 目標選擇 UI 未做。
   (安塔蘭這一路已補畫面:2026-08-07 建了王座廳 `cmd/moo2/antaranroom.go`,用原版 `antaroom.LBX`;
   留白是原版的 55 幀推鏡動畫只取最終定格。)

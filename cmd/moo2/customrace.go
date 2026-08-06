@@ -119,10 +119,14 @@ const (
 	crSpcW         = 280
 )
 
-func (s *customRaceScreen) catRect(i int) (int, int, int, int) { return crCatX, crCatY + i*crCatH, crCatW, crCatH - 4 }
-func (s *customRaceScreen) spcRect(i int) (int, int, int, int) { return crSpcX, crSpcY + i*crSpcH, crSpcW, crSpcH - 4 }
-func (s *customRaceScreen) cancelRect() (int, int, int, int)   { return 40, 440, 120, 28 }
-func (s *customRaceScreen) acceptRect() (int, int, int, int)   { return 480, 440, 120, 28 }
+func (s *customRaceScreen) catRect(i int) (int, int, int, int) {
+	return crCatX, crCatY + i*crCatH, crCatW, crCatH - 4
+}
+func (s *customRaceScreen) spcRect(i int) (int, int, int, int) {
+	return crSpcX, crSpcY + i*crSpcH, crSpcW, crSpcH - 4
+}
+func (s *customRaceScreen) cancelRect() (int, int, int, int) { return 40, 440, 120, 28 }
+func (s *customRaceScreen) acceptRect() (int, int, int, int) { return 480, 440, 120, 28 }
 
 func (s *customRaceScreen) update(in shell.InputState) *origTransition {
 	s.hoverCat, s.hoverSpc = -1, -1
@@ -205,7 +209,7 @@ func (s *customRaceScreen) applyAndStart() {
 	}
 	b.session.Difficulty = b.newGameDiff
 	b.newGameSeed++
-	b.session.SetupNewGame(shell.GalaxySizes[b.newGameSize].Stars, int64(b.newGameSeed*7919+42), 3)
+	b.session.SetupNewGame(shell.GalaxySizes[b.newGameSize].Stars, int64(b.newGameSeed*7919+42), shell.DefaultOpponents)
 	b.session.SetRuleProfile(profileForVersion(b.gameVersion)) // 主選單選的 1.3/1.5 規則版本
 	b.session.ApplyCustomRaceBonuses(r)
 	// 政府型態效果(僅已建模資源乘數;政府型態循環索引即 shell.Governments 索引)。

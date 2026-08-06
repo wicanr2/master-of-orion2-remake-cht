@@ -339,6 +339,7 @@ type sceneBuilder struct {
 	newGameDiff       int                  // NEW GAME 選的難度索引(shell.Difficulties)
 	newGameRace       int                  // NEW GAME 選的種族索引(shell.Races)
 	newGameSeed       int                  // 每次新遊戲遞增,讓星系種子變化
+	pendingHotseat    int                  // 多人設定畫面選的真人席位數;0/1 = 單人局(開局後由 applyHotseat 套用)
 	savePath          string               // remake 存檔路徑(每回合自動存;主選單 Load/Continue 讀)
 	designWeapon      int                  // 艦艇設計選的武器元件索引(shell.WeaponOptions)
 	designArmor       int                  // 裝甲元件索引(shell.ArmorOptions)
@@ -438,7 +439,17 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 			return &origTransition{quit: true}
 		case "New Game":
 			// 新遊戲:先進原版 NEW GAME 設定畫面(難度/星系/玩家…),ACCEPT 後進星系主畫面。
+			b.pendingHotseat = 0 // 單人局(從多人設定畫面進來的才會帶席位數)
 			return b.goTo(b.newGameSetup, "新遊戲設定")
+		case "Multi Player":
+			// 原版 MULTI-PLAYER GAME SET UP(見 cmd/moo2/multiplayer.go)。
+			// remake 只實作其中的 HOTSEAT,其餘連線方式在那個畫面裡明示未實作。
+			sc, err := b.multiPlayer()
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "多人遊戲設定:", err)
+				return nil
+			}
+			return &origTransition{next: sc}
 		case "Continue":
 			// 續玩:接續**最近的存檔槽**(原版 Continue 就是接最近進度,不彈選單)。
 			// 無存檔時這顆鈕是停用的,理論上進不來;真進來了就當作沒事發生。
@@ -475,7 +486,6 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 			// ⚠ 這裡先前暫借給「研究選擇」畫面當調色盤鏈的示範入口,是接錯的,2026-08-07 改正。
 			return b.goTo(b.hiScore, "最終得分")
 		}
-		// Multi Player:尚未實作,暫不動作。
 		return nil
 	}
 	// 主選單用純向量 Noto(平滑),不走內文點陣(使用者要求主選單維持向量觀感);
@@ -707,37 +717,8 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			return b.goTo(b.galaxy, "星系主畫面")
 		case "turn":
 			// 核心迴圈:結算一回合(玩家帝國 + 各 AI 對手決策),再顯示回合摘要(原版流程)。
-			b.session.EndTurn()
-			if b.savePath != "" { // 每回合自動存檔(持久化對局)
-				if err := b.session.Save(b.savePath); err != nil {
-					fmt.Fprintln(os.Stderr, "自動存檔失敗:", err)
-				}
-			}
-			// 若本回合完成的研究主題有多科技可選 → 先進抉擇畫面(MOO2 每主題擇一),
-			// 選定後再顯示回合摘要。
-			if _, _, pending := b.session.PendingResearchChoice(); pending {
-				sc, err := b.researchChoice(b.turnSummary)
-				if err == nil {
-					return &origTransition{next: sc}
-				}
-			}
-			// 對局已分出勝負 → 先播結局過場,再進最終得分(原版也是這個順序)。
-			// 排在事件快報之前:遊戲都結束了,再播一則新聞快報只是擋路。
-			// 過場載不動就直接跳到最終得分——結局片不該擋住結算。
-			if b.session.Victory.Over {
-				if !b.skipCutscenes {
-					if sc := b.endingCutsceneFor(); sc != nil {
-						return &origTransition{next: sc}
-					}
-				}
-				return b.goTo(b.hiScore, "最終得分")
-			}
-			// 本回合有隨機事件或星系發現 → 先播快報(原版事件有專屬畫面,不是回合摘要裡一行字,
-			// 見 eventscreen.go 檔頭),按「繼續」才進回合摘要。
-			if b.currentReport() != nil {
-				return b.goTo(b.eventScreen, "事件快報")
-			}
-			return b.goTo(b.turnSummary, "回合摘要")
+			// 熱座多人時「結束回合」先交棒,全員下完令才推進世界(見 cmd/moo2/hotseat.go)。
+			return b.endTurnPressed()
 		}
 		return nil
 	}
@@ -2735,8 +2716,11 @@ type interactiveApp struct {
 	galleryIntroTick int
 	// galleryEndingTick 是截圖廊在哪個 tick 切到結局過場(見該常數說明)。
 	galleryEndingTick int
-	galleryBuilder    *sceneBuilder
-	gallerySession    *shell.GameSession
+	// galleryMultiTick / galleryHotseatTick 是截圖廊切到多人設定畫面 / 熱座交接畫面的 tick。
+	galleryMultiTick   int
+	galleryHotseatTick int
+	galleryBuilder     *sceneBuilder
+	gallerySession     *shell.GameSession
 }
 
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
@@ -2777,6 +2761,14 @@ const galleryEndingTick = 79
 
 // galleryEndingSeekFrames 是結局過場要快轉幾幀(ANWINFIN 共 323 幀,取中後段)。
 const galleryEndingSeekFrames = 220
+
+// galleryMultiTick 是截圖廊在哪個 tick 切到多人遊戲設定畫面——取截圖(t82)的前一拍。
+// 走正常路徑是「主選單 → MULTI PLAYER」,但截圖廊此刻停在結局過場,直接推上來比繞回去可靠。
+const galleryMultiTick = 81
+
+// galleryHotseatTick 是截圖廊在哪個 tick 切到熱座交接畫面——取截圖(t84)的前一拍。
+// 這一拍會順手把對局設成兩席熱座,交接畫面才有真的席位名可顯示。
+const galleryHotseatTick = 83
 
 // galleryShot 是「端到端過場截圖廊」腳本中,在某個絕對 tick 存一張圖的指令。
 type galleryShot struct {
@@ -2918,6 +2910,12 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		// 結局過場(勝負分出後、進最終得分前播的那一段)。同樣由 tick 注入 + 快轉。
 		idle, // t79: 由 galleryEndingTick 換成結局過場
 		idle, // t80: settle → 截圖 ending
+
+		// 多人遊戲設定(原版 Multi_Player_Screen_)與熱座交接(Hotseat_Screen_)。
+		idle, // t81: 由 galleryMultiTick 換成多人設定畫面
+		idle, // t82: settle → 截圖 multiplayer
+		idle, // t83: 由 galleryHotseatTick 設成兩席熱座並換成交接畫面
+		idle, // t84: settle → 截圖 hotseat
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -2942,6 +2940,8 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{74, "20_bombing.png"},
 		{78, "21_intro.png"},
 		{80, "22_ending.png"},
+		{82, "23_multiplayer.png"},
+		{84, "24_hotseat.png"},
 	}
 	return script, shots
 }
@@ -3087,6 +3087,21 @@ func (a *interactiveApp) Update() error {
 			a.cur = sc
 		}
 	}
+	// 截圖廊專用:多人遊戲設定畫面(走正常路徑是主選單 → MULTI PLAYER)。
+	if a.galleryMultiTick > 0 && a.tick == a.galleryMultiTick && a.galleryBuilder != nil {
+		if sc, err := a.galleryBuilder.multiPlayer(); err == nil {
+			a.cur = sc
+		}
+	}
+	// 截圖廊專用:熱座交接畫面。先把對局設成兩席熱座,交接畫面才有真的席位名可顯示。
+	if a.galleryHotseatTick > 0 && a.tick == a.galleryHotseatTick && a.galleryBuilder != nil && a.gallerySession != nil {
+		a.gallerySession.SetupHotseat(2)
+		if a.gallerySession.HotseatEnabled() {
+			if t := a.galleryBuilder.endTurnPressed(); t != nil && t.next != nil {
+				a.cur = t.next
+			}
+		}
+	}
 	if t := a.cur.update(a.pollInput()); t != nil {
 		if t.quit {
 			return ebiten.Termination
@@ -3214,6 +3229,8 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.galleryBombTick = galleryBombTick
 		app.galleryIntroTick = galleryIntroTick
 		app.galleryEndingTick = galleryEndingTick
+		app.galleryMultiTick = galleryMultiTick
+		app.galleryHotseatTick = galleryHotseatTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,

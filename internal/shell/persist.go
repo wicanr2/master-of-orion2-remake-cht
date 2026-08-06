@@ -129,10 +129,24 @@ type sessionSnapshot struct {
 	// History 是逐回合國力快照(見 shell/history.go)。omitempty:舊存檔無此欄位解為 nil,
 	// 之後每回合自然累積,不破壞相容(折線圖在累積足夠回合前只顯示提示)。
 	History []HistoryTurn `json:"history,omitempty"`
+
+	// Seats / ActiveSeat 是熱座多人的席位快照(見 shell/hotseat.go)。原版也把遊戲模式
+	// 寫進存檔(`byte_199F3A` 在 save/load 各有一次 1 byte 的 fread/fwrite),不存的話
+	// 熱座局讀回來會變成單人局、其餘真人的帝國直接消失。
+	// omitempty:單人局與舊存檔無此欄位,解為 nil → HotseatEnabled() 為 false,行為不變。
+	Seats      []seat `json:"seats,omitempty"`
+	ActiveSeat int    `json:"activeSeat,omitempty"`
 }
 
 // snapshot 擷取 GameSession 目前狀態成可序列化快照。
 func (s *GameSession) snapshot() sessionSnapshot {
+	// 熱座:目前這一席的「活的」狀態放在頂層欄位(Player/PlayerColonies/…),
+	// Seats[ActiveSeat] 停在上次換人時的快照。存檔前先同步回去,否則讀檔會退回上一輪。
+	seats := s.Seats
+	if s.HotseatEnabled() {
+		seats = append([]seat(nil), s.Seats...) // 複製,不就地改動活的 session
+		seats[s.ActiveSeat] = s.saveSeat()
+	}
 	ais := make([]aiSnapshot, len(s.AIPlayers))
 	for i, a := range s.AIPlayers {
 		prof := ai.ProfileBalanced
@@ -171,6 +185,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		MercOfferedIdx:            s.MercOfferedIdx,
 		AIRelations:               s.AIRelations,
 		History:                   s.History,
+		Seats:                     seats,
+		ActiveSeat:                s.ActiveSeat,
 	}
 }
 
@@ -189,6 +205,8 @@ func (snap sessionSnapshot) restore() *GameSession {
 		}
 	}
 	restorePlanetIDs(snap.Planets)
+	// ⚠ 存檔裡的 Seats[ActiveSeat] 與頂層的 Player/Colonies/… 是同一份資料的兩個副本
+	// (snapshot 存檔前才剛同步過)。restore 之後兩邊仍一致,直到下一次 AdvanceSeat。
 	return &GameSession{
 		Turn: snap.Turn, Player: snap.Player, PlayerColonies: snap.PlayerColonies,
 		AIPlayers: ais, Stars: snap.Stars, Planets: snap.Planets, Leaders: snap.Leaders,
@@ -213,6 +231,8 @@ func (snap sessionSnapshot) restore() *GameSession {
 		MercOfferedIdx:            snap.MercOfferedIdx,
 		AIRelations:               snap.AIRelations,
 		History:                   snap.History,
+		Seats:                     snap.Seats,
+		ActiveSeat:                snap.ActiveSeat,
 	}
 }
 

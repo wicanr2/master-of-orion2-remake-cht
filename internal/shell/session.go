@@ -762,7 +762,13 @@ func (s *GameSession) PrimaryEnemyName() string {
 	if len(s.AIPlayers) == 0 {
 		return "敵軍"
 	}
-	name := s.AIPlayers[0].Name
+	return stripAILabel(s.AIPlayers[0].Name)
+}
+
+// stripAILabel 去掉 demoAIOpponentSetup 的「AI (…)」外殼,只留種族名。
+// 兩個呼叫端:戰鬥標籤(PrimaryEnemyName)與熱座接管 AI 帝國時的席位命名(seatFromAI)
+// ——後者若不去掉,交接畫面會寫「下一位:AI(布拉西人)」,但接手的是真人。
+func stripAILabel(name string) string {
 	if strings.HasPrefix(name, "AI (") && strings.HasSuffix(name, ")") {
 		return name[len("AI (") : len(name)-len(")")]
 	}
@@ -2117,6 +2123,11 @@ type GameSession struct {
 	// (Go 零值即想要的預設值)。玩家經 TrainSpy(idx) 花 BC 增加;逐對手分配已經是這個陣列
 	// 天然支援的結構,只是目前唯一一個 AI 對手時看不出差異。
 	PlayerSpies []int
+
+	// Seats / ActiveSeat 是熱座多人(見 hotseat.go)。單人局 Seats 為 nil、ActiveSeat 為 0,
+	// 所有既有邏輯逐位元不變——熱座只在席位數 > 1 時才會動到任何東西。
+	Seats      []seat
+	ActiveSeat int
 	// LastEspionage 是本回合諜報結算的訊息(供回合摘要顯示;每回合開頭清空)。
 	LastEspionage []string
 	spyRand       *rand.Rand // 間諜擲骰亂數源(由 EventSeed 惰性建立,比照 eventRand 慣例)
@@ -2371,8 +2382,11 @@ func (s *GameSession) syncTradeGoodsFlag() {
 	}
 }
 
-// EndTurn 推進一回合:先結算玩家帝國,再讓各 AI 對手自行決策並結算,回合數 +1。
-func (s *GameSession) EndTurn() {
+// prepPlayerDerived 把「結算前要先重算的玩家衍生值」算好。
+//
+// 抽成獨立函式是為了讓熱座的其餘席位(hotseat.go advanceSeatEmpire)能跑同一段,
+// 不必複製一份會漂移的副本。內容與順序原樣搬自 EndTurn,無行為變更。
+func (s *GameSession) prepPlayerDerived() {
 	s.Player.Maintenance = s.totalBuildingMaintenance()         // 依本回合結算前的實際已建建築重算(取代平坦常數)
 	s.Player.CommandPointsSupply = s.totalCommandPointsSupply() // 指揮評等供給:實際已建成的星基/戰鬥站/星辰要塞
 	s.Player.UsedCommandPoints = s.usedCommandPoints()          // 指揮評等需求:玩家目前所有艦艇加總
@@ -2391,6 +2405,11 @@ func (s *GameSession) EndTurn() {
 	// Hyper-Advanced Lv1 研究成本。
 	s.Player.HyperAdvancedResearchCost = gamedata.HyperAdvancedCost(s.RuleProfile)
 	s.syncTradeGoodsFlag() // 依建造選單同步「貿易品」旗標,供 RunEmpireTurn 判斷是否換算收入
+}
+
+// EndTurn 推進一回合:先結算玩家帝國,再讓各 AI 對手自行決策並結算,回合數 +1。
+func (s *GameSession) EndTurn() {
+	s.prepPlayerDerived()
 	s.LastPlayerOutput = engine.RunEmpireTurn(s.Player, s.coloniesForTurn())
 	s.Player = s.LastPlayerOutput.Player
 	s.recoverFromFamine() // 饑荒防死鎖:見函式註解;依本回合 Starving 結果修正下回合職務分配
@@ -2444,6 +2463,12 @@ func (s *GameSession) EndTurn() {
 	s.advanceCouncil()         // 銀河議會選舉(手冊三條勝利路徑之一:2/3 多數當選銀河領袖),記於 LastCouncil
 	s.advanceMercOffers()      // 傭兵領袖不定期上門(手冊 p.134),補進 MercPool 供玩家在軍官畫面雇用
 	s.recordHistory()          // 全帝國國力快照(原版 module 122 Record_History_),供 INFO 歷史圖表
+	// 熱座:其餘真人席位的帝國也要各自過完這一回合,否則他們的殖民地會被凍結
+	// (見 hotseat.go advanceIdleSeats,含各席位不對稱之處的說明)。
+	// 單人局 HotseatEnabled() 為 false,這裡是 no-op,既有行為不變。
+	if s.HotseatEnabled() {
+		s.advanceIdleSeats()
+	}
 }
 
 // popGrowthThreshold 是「成長累加值 → +1 人口單位」的門檻。MOO2 手冊(MANUAL_150.html p111

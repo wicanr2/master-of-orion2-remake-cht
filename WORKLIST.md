@@ -366,10 +366,23 @@
 > 考據定案見 `docs/tech/multiplayer-architecture.md`(原版通訊 OCR 自 CD 手冊 + 架構佐證自 patch 1.5 手冊)。
 > 方向(使用者定案 2026-07-11):**保留原版決定性 lockstep 架構,傳輸換成 TCP**;起步先做熱座。
 - [x] 原版多人通訊考據(手冊):序列/數據機/IPX 區網(2–8人)+ TEN 網際網路服務;DirectX 6.1→DirectPlay;決定性 lockstep + host 廣播 config + 同時回合(`docs/tech/multiplayer-architecture.md`)
-- [ ] **熱座(hotseat)**:多位真人同機,在回合迴圈同時/輪流下令(零網路、零決定性風險,最省起步)
+- [x] **熱座(hotseat)**(2026-08-07):多位真人同機輪流下令。席位交換模型
+  `internal/shell/hotseat.go`(原版是 `player[i]` 陣列 + 當前索引,remake 是單數欄位 →
+  換人時整組搬進 `seat`);交接畫面 `cmd/moo2/hotseat.go`(座標取自 `Draw_Hotseat_Screen_`
+  @ 0x626D6);「結束回合」改成全員下完令才推進世界;席位進存檔(原版也存遊戲模式)。
+  ⚠ 非當前席位的帝國在 `EndTurn` 最後才結算(差一個 AI 回合的資訊),勝負判定只對當前
+  席位跑——兩點都寫在 `advanceIdleSeats` 檔頭與 `docs/re/01-gap-report.md` 第 20 項。
+- [x] **主選單「多人對戰」接上實際流程**(2026-08-07):`cmd/moo2/multiplayer.go`,
+  整張版面取自反組譯(`Multi_Player_Screen_` @ 0xF4D99 / `sub_F42CA` / `sub_F009A`),
+  含原版自己會隱藏的按鈕(熱座模式下沒有 JOIN GAME)。NETWORK / MODEM / NULL MODEM
+  畫成灰的並明示未實作,不假裝可選。
 - [ ] **引擎決定性化**:統一 RNG 種子(不用全域 `math/rand`/wall-clock)+ 消除影響模擬的 `range map` 不定序;加「兩機同指令序列→狀態雜湊比對」desync 偵測回歸測試
 - [ ] **區網/線上 lockstep over TCP**:host/client、config 廣播、逐回合指令收齊→同步→結算、斷線重連、狀態雜湊校驗(中大型獨立子專案,排音樂/新遊戲流程/像素對齊之後)
-- [ ] 主選單「多人對戰」按鈕接上實際流程(目前為沿用原版美術、無功能)
+- [ ] 熱座的**逐帝國真人/AI 標記**:原版是在玩家設定階段把個別帝國標成真人
+  (`Get_Multi_Player_N_Humans_` 就是去數控制碼 100 的帝國),remake 目前只選「幾位真人」,
+  由後往前接管 AI 對手。要對等得先有逐帝國的設定畫面。
+- [ ] 熱座席位補齊玩家側系統:接管過來的 `AIOpponent` 沒有建造佇列 / 領袖 / 間諜 / 前哨站,
+  第 2 席之後起步時這些是空的(見 `seatFromAI` 註解)。
 
 ## 工作方式(使用者定案)
 - go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)

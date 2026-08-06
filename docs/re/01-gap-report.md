@@ -72,7 +72,7 @@
 | 9 | ~~**`Main_Antaran_Room`**~~ | 中 | ✅ 2026-08-07 已建(`cmd/moo2/antaranroom.go`),用原版 `antaroom.LBX` 資產 1(55 幀累積)當背景;留白:原版是推鏡動畫,remake 取最終定格 |
 | 10 | ~~**`Hall_Of_Fame` / `Hi_Score`**~~ | 低 | ✅ 2026-08-07 已建(`cmd/moo2/hiscore.go` + `gamedata/score.go`),八項計分係數全來自反組譯 module 60 |
 | 11 | **`Smack`** | 低 | Smacker 過場影片播放 |
-| 12 | 多人連線 11 個畫面 | — | `Join_Net`/`MP_Setup`/`Hotseat`/`Modem_Setup`/`NullModem_Setup`/`Choose_Net_Plyrs`/`Choose_Multi_Net_Game`/`Generic_Net_Info`/`SendGet_Net_Info`/`Net_Next_Turn`/`Wait_For_*` — WORKLIST 已列獨立子專案 |
+| 12 | 多人連線 11 個畫面 | — | ✅ `MP_Setup`(`cmd/moo2/multiplayer.go`)與 `Hotseat`(`cmd/moo2/hotseat.go`)2026-08-07 已建,版面座標取自反組譯(見下方第 20 項)。其餘 `Join_Net`/`Modem_Setup`/`NullModem_Setup`/`Choose_Net_Plyrs`/`Choose_Multi_Net_Game`/`Generic_Net_Info`/`SendGet_Net_Info`/`Net_Next_Turn`/`Wait_For_*` 需要網路層,未做 |
 
 ### A-3 remake 有、原版無獨立畫面
 
@@ -482,8 +482,9 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
 
     ⚠ 誠實留白:①**只有「載入」沒有「儲存」**——原版另有 `Do_Save_Game_Popup_` @ 0x7E154,
     remake 目前只在每回合結束時自動存檔,玩家無法主動存進指定格 ②原版視窗右側會依存檔類型畫
-    單人/熱座/網路/數據機四種圖示(`game.lbx` 資產 23-26),remake 只有單人對局,四種只會出現
-    一種,畫上去等於裝飾,等多人連線落地再補 ③存檔用 remake 自己的 JSON 格式,不是原版 `.GAM`
+    單人/熱座/網路/數據機四種圖示(`game.lbx` 資產 23-26),remake 現在有單人與熱座兩種對局
+    (2026-08-07 熱座落地),兩種圖示都畫得出來,但視窗還沒接上——這條留白已從「等多人連線」
+    降級成「待補的小工項」 ③存檔用 remake 自己的 JSON 格式,不是原版 `.GAM`
     (原版格式由 `internal/save` **唯讀**解析,寫回不在範圍內)。
 
 17. ~~儲存遊戲視窗 + 遊戲中的「遊戲」選單~~ → **已完成**(2026-08-07,
@@ -597,4 +598,35 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     11025 Hz),解碼器跳過音訊區塊——那需要再實作一組 Smacker 音訊 Huffman,與畫面是兩套
     獨立的編碼。
 
-20. 多人連線(獨立子專案)。
+20. ~~多人連線(獨立子專案)~~ → **熱座已完成**(2026-08-07,`internal/shell/hotseat.go` +
+    `cmd/moo2/multiplayer.go` + `cmd/moo2/hotseat.go`);**網路 / 數據機 / 序列埠直連未做**。
+
+    **原版的多人設定畫面整張版面都拿到了**(`Multi_Player_Screen_` @ 0xF4D99,初始化
+    `sub_F42CA`、建 widget `sub_F009A`):背景 MULTIGM.LBX#0(640×480)、面板 #1(482×335,
+    置中 `(0x280−w)/2` / `(0x1E0−h)/2` → (79,72));左欄四個連線方式 x +0x3B,
+    y +0x5B/+0x7A/+0x9B/+0xBB;右欄四個動作 x +0x10D、同四列;CANCEL (+0xB0, +0x11E)。
+    四顆按鈕的英文逐張 dump 確認是 NETWORK / MODEM / NULL MODEM / HOTSEAT,與
+    `Set_Multi_Player_Game_Type_` @ 0xF5691 寫進 `byte_199F3A` 的四個模式碼
+    (0=單人 1=熱座 2=網路 3=數據機)對得上。
+
+    **連原版自己會隱藏的按鈕都照做**:`sub_F009A` 在選了 HOTSEAT 時把 JOIN GAME 的
+    widget id 設成 `0FC18h`(無效值)——原版熱座模式下就沒有那顆鈕;COMM INFO 同理只在
+    modem / null modem 建。
+
+    **熱座的席位模型**:原版帝國資料本來就是 `player[i]` 陣列(stride 0xEA9)+ 當前索引
+    `word_19999C`,所以 `Save_Hotseat_Map_Info_` @ 0x88F5D **每席只存七個 word**(星圖視野)。
+    `Get_Multi_Player_N_Humans_` @ 0x121F0 則是去數 `player[i]` 裡控制碼為 100 的帝國
+    ——「幾個真人」不是獨立設定,是「有幾個帝國被標成真人」。remake 的 `GameSession` 是單數
+    欄位不是陣列,改成 `player[i]` 要動幾乎每個畫面,故走**席位交換**(`internal/shell/hotseat.go`):
+    玩家側欄位整組進 `seat`,換人時存回目前席位、載入下一席。語意與 `player[current]` 等價。
+
+    ⚠ 誠實留白(全部寫在 `hotseat.go` 檔頭,此處摘要):
+    ①**沒有網路層**,NETWORK / MODEM / NULL MODEM 三顆在畫面上是灰的,點下去說明未實作;
+    ②交接畫面用原版的**尺寸與文字錨點**(`Draw_Hotseat_Screen_` @ 0x626D6:視窗置中、
+    文字 +0x0E/+0x46)但**底圖是自繪的**——原版底圖來自 `dword_19B874` 指向的已載入影像,
+    那個全域在別處填,追不到具體 LBX 資產,故不宣稱像素對齊;
+    ③非當前席位的帝國在 `EndTurn` 最後才結算(當前席位在 AI 決策之前、其餘在之後),
+    差一個 AI 回合的資訊;④勝負判定與歷史快照只對當前席位跑,其餘席位打進安塔蘭母星
+    或全滅不會結束對局——要補得先讓勝負判定吃「哪一位玩家」而不是隱含的 `s.Player`;
+    ⑤真人席位是從 AI 對手**接管**過來的,而 `AIOpponent` 比玩家側薄(沒有建造佇列、領袖、
+    間諜、前哨站),接手的真人是「有母星、有殖民地、有艦隊,但還沒開始蓋東西」的狀態。

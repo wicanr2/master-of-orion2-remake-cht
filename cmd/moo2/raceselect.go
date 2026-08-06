@@ -157,7 +157,7 @@ func (s *raceSelectScreen) applyAndStart() {
 	r := raceSelectList[s.sel]
 	b.session.Difficulty = b.newGameDiff
 	b.newGameSeed++
-	b.session.SetupNewGame(shell.GalaxySizes[b.newGameSize].Stars, int64(b.newGameSeed*7919+42), 3)
+	b.session.SetupNewGame(shell.GalaxySizes[b.newGameSize].Stars, int64(b.newGameSeed*7919+42), shell.DefaultOpponents)
 	b.session.SetRuleProfile(profileForVersion(b.gameVersion)) // 主選單選的 1.3/1.5 規則版本
 	if r.shellIdx >= 0 {
 		b.newGameRace = r.shellIdx
