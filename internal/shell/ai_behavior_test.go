@@ -206,3 +206,38 @@ func TestAIPersonalityIsReproducible(t *testing.T) {
 		}
 	}
 }
+
+// TestAIPicksBestPlanetNotFirstAvailable 驗證 AI 擴張會挑估值最高的星,
+// 而不是「掃到第一顆能殖民的就佔」(2026-08-06 之前的行為)。
+func TestAIPicksBestPlanetNotFirstAvailable(t *testing.T) {
+	s := NewDemoSession()
+	s.DisableEvents = true
+	s.AIPlayers[0].Personality = ai.PersonalityRuthless // 擴張率 100%,確保一定會出手
+
+	// 找出所有無主星裡估值最高的那顆,以及索引最小的那顆。
+	bestIdx, bestVal, firstIdx := -1, -1, -1
+	for idx := range s.Stars {
+		if s.Stars[idx].Owner != 0 {
+			continue
+		}
+		if s.aiPlanetValue(0, idx) <= 0 {
+			continue
+		}
+		if firstIdx < 0 {
+			firstIdx = idx
+		}
+		if v := s.aiPlanetValue(0, idx); v > bestVal {
+			bestIdx, bestVal = idx, v
+		}
+	}
+	if bestIdx < 0 || bestIdx == firstIdx {
+		t.Skip("這局的最佳星恰好就是索引最小的星,測不出差異")
+	}
+
+	s.aiExpand(0)
+	got := s.AIPlayers[0].ColonyStars[len(s.AIPlayers[0].ColonyStars)-1]
+	if got != bestIdx {
+		t.Errorf("AI 應挑估值最高的星 %d(%d 分),got 星 %d(%d 分)",
+			bestIdx, bestVal, got, s.aiPlanetValue(0, got))
+	}
+}

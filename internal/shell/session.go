@@ -2387,7 +2387,28 @@ func (s *GameSession) aiExpand(i int) {
 			return
 		}
 	}
+	// 依原版行星估值挑最好的目標,而不是「掃到第一顆能殖民的就佔」。
+	// 原版每回合替每個玩家把全星圖算一輪分數(Compute_Base_Planet_Values_),AI 據此挑目標;
+	// remake 這裡即時算候選星的分數取最大值,結果等價而不必維護一張快取表。
+	best, bestVal := -1, 0
 	for idx := range s.Stars {
+		if s.Stars[idx].Owner != 0 {
+			continue
+		}
+		if v := s.aiPlanetValue(i, idx); v > bestVal {
+			best, bestVal = idx, v
+		}
+	}
+	// 全部候選都是 0 分(不宜居/無行星)時退回原本的順序掃描,確保不會因為估值而完全停止擴張。
+	order := make([]int, 0, len(s.Stars))
+	if best >= 0 {
+		order = append(order, best)
+	} else {
+		for idx := range s.Stars {
+			order = append(order, idx)
+		}
+	}
+	for _, idx := range order {
 		if s.Stars[idx].Owner != 0 {
 			continue
 		}
@@ -2404,6 +2425,48 @@ func (s *GameSession) aiExpand(i int) {
 		s.AIPlayers[i].ColonyBuildings = append(s.AIPlayers[i].ColonyBuildings, map[string]bool{})
 		return
 	}
+}
+
+// aiPlanetValue 算某顆星對 AI i 的價值(原版 Uncolonized_Planet_Worth_To_Player_)。
+// 星索引越界、無行星資料或該行星不可殖民時回 0。
+//
+// AI 的目標傾向由性格決定:冷酷/排外偏礦產(工業=軍力),和平主義偏人口。
+// 原版的目標傾向是獨立於性格的另一個維度(玩家結構偏移 2208),remake 沒有那一層,
+// 用性格代打——這是 remake 的映射,不是原版對照。
+func (s *GameSession) aiPlanetValue(aiIdx, starIdx int) int {
+	if starIdx < 0 || starIdx >= len(s.Planets) {
+		return 0
+	}
+	p := s.Planets[starIdx]
+	if p.NoPlanet || p.Gen < planetGenVersion {
+		return 0
+	}
+	if !climateColonizable(p.ClimateID) {
+		return 0
+	}
+	obj := gamedata.AIObjectiveBalancedLow
+	if aiIdx >= 0 && aiIdx < len(s.AIPlayers) {
+		switch s.AIPlayers[aiIdx].Personality {
+		case ai.PersonalityRuthless, ai.PersonalityXenophobic:
+			obj = gamedata.AIObjectiveMineral
+		case ai.PersonalityPacifist, ai.PersonalityHonorable:
+			obj = gamedata.AIObjectivePopulation
+		case ai.PersonalityAggressive:
+			obj = gamedata.AIObjectiveBalancedHigh
+		}
+	}
+	return gamedata.AIPlanetValue(gamedata.AIPlanetValueInput{
+		Habitable: true,
+		MaxPop:    gamedata.PlanetBasePopMax(p.SizeID, p.ClimateID),
+		Minerals:  p.MineralID,
+		Climate:   p.ClimateID,
+		Gravity:   p.GravityID,
+		// FoodBase 對應原版 planet.foodbase;remake 的等價量是該氣候的每農夫食物。
+		FoodBase: gamedata.ClimateFoodPerFarmer(p.ClimateID),
+		// Special:remake 尚未建模行星特殊物產(見 docs/re/01-gap-report.md Part C-3),
+		// 一律 0 = 無加分,不臆造。
+		Special: 0,
+	}, obj)
 }
 
 // researchQueue 回傳「所有元件解鎖主題」依研究成本遞增去重排序的序列。作為研究自動推進的
