@@ -18,8 +18,8 @@
 
 用 Go + Ebitengine 重製《Master of Orion II》(1996) + 繁體中文化。**不是套翻譯外掛,是從資料層到遊戲邏輯逐塊重建。** 技術重點:
 
-- **顯示層 i18n 覆蓋**(英文原文為 key,不動資料層):**3604 條字串**、22 個 LBX 字串來源全數 account、零漏源(逆向含 707 條百科全文、770 條外交對白)。
-- **遊戲邏輯從零重建**:14 個 `gamedata` 公式模組,對官方手冊 + openorion2 **逐條驗證**,**191 個單元測試全綠**(戰鬥命中/傷害、飛彈、間諜、地面戰、殖民成長、士氣、收入…)。過程中抓到手冊自己的筆誤(AMR 命中率、飛彈速度)並擋掉搜尋引擎生成的假數字。
+- **顯示層 i18n 覆蓋**(英文原文為 key,不動資料層):**5,046 條字串**(24 份 TSV)、22 個 LBX 字串來源全數 account、零漏源(逆向含 707 條百科全文、770 條外交對白)。
+- **遊戲邏輯從零重建**:14 個 `gamedata` 公式模組,對官方手冊 + openorion2 **逐條驗證**,**300+ 個 `gamedata` 單元測試全綠**(全專案 1,100+;戰鬥命中/傷害、飛彈、間諜、地面戰、殖民成長、士氣、收入…)。過程中抓到手冊自己的筆誤(AMR 命中率、飛彈速度)並擋掉搜尋引擎生成的假數字。
 - **回合引擎**:`RunColonyTurn`→`RunEmpireTurn`→`RunGameTurn`(colony→research→treasury)+ 單發戰鬥解算 + save↔engine adapter,純函式、可單測。
 - **AI 抽象成 `Decider` 介面**:**remake**(設計性重建)/ **original**(從官方 patch 手冊移植的難度加成表)兩實作,玩家可選,如同選 1.3/1.5 版本。
 - **純 Go 跨平台**:ebiten v2.9 Windows backend 已 purego 化,`GOOS=windows CGO_ENABLED=0` 直接跨編;Linux AppImage / Windows / macOS(CI)打包齊備。
@@ -110,7 +110,7 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
 - 存檔格式唯讀解析:`SAVE10.GAM` 全區段解出(殖民地/行星/星/領袖/玩家/艦艇)(`internal/save`,見 [`docs/tech/savegame-format.md`](docs/tech/savegame-format.md))
 
 **中文化**
-- 3604 條字串、22 個 LBX 字串來源全數 account,零漏源(見 [`docs/tech/string-sources.md`](docs/tech/string-sources.md))
+- 5,046 條字串(24 份 TSV)、22 個 LBX 字串來源全數 account,零漏源(見 [`docs/tech/string-sources.md`](docs/tech/string-sources.md))
 - 四個專有名詞池全數定案:科技/元件 419 條、母星名、672 艦名、829 隨機星名(見 [`docs/tech/proper-noun-strategy.md`](docs/tech/proper-noun-strategy.md))
 - 點陣繁中字型(`bitmapfont/v4` 混合:內文點陣、標題 Noto 向量),2258 字缺字 0(見 [`docs/tech/pixel-font-decision.md`](docs/tech/pixel-font-decision.md))
 
@@ -119,7 +119,7 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
 - 研究:83 主題 × 8 領域,每主題真實科技間抉擇(非線性自動推進)(見 [`docs/tech/research-system-status.md`](docs/tech/research-system-status.md))
 - 戰鬥:光束/飛彈/球狀傷害依武器類型分流解算 + 地面戰(陸戰隊/戰車/軌道轟炸)(見 [`docs/tech/tactical-combat-weapon-kinds.md`](docs/tech/tactical-combat-weapon-kinds.md)、[`docs/tech/ground-combat-algorithm.md`](docs/tech/ground-combat-algorithm.md))
 - 三條勝利路徑全接線可達成:征服 / 銀河議會選舉(手冊 2/3 多數)/ 安塔蘭母星反攻(見 [`docs/tech/victory-conditions.md`](docs/tech/victory-conditions.md))
-- 間諜(偷科技最小迴圈)、領袖技能(25+ 技能中已接 2 項真實效果)(見 [`docs/tech/spy-system.md`](docs/tech/spy-system.md)、[`docs/tech/leader-officer-skills.md`](docs/tech/leader-officer-skills.md))
+- 間諜(偷科技最小迴圈)、領袖技能(27 項技能中已接 **13 項**真實效果:殖民地經濟 11 項 + 地面戰指揮官 + 領航員)(見 [`docs/tech/spy-system.md`](docs/tech/spy-system.md)、[`docs/tech/leader-officer-skills.md`](docs/tech/leader-officer-skills.md))
 
 **音訊**
 - 原版 PCM WAV 音樂/音效已接線(主選單 BGM + 按鈕音效),曲目對應定案到靜態溯源極限(見 [`docs/tech/audio-format.md`](docs/tech/audio-format.md)、[`docs/tech/audio-track-map.md`](docs/tech/audio-track-map.md))
@@ -136,7 +136,7 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
 - 戰機/航母、完整 spy/leader/diplomacy UI、多 AI 對手的目標選擇策略(目前為索引順序,非距離/資源導向)
 - 武器改造(mod)系統的飛彈專屬 mod、小型化等級門檻、火線角
 - 音樂曲目↔場景的最終聽感比對(現用時長啟發式/反組譯佐證,非逐曲聆聽定案)
-- 連線多人對戰:**熱座(同機輪流)已可玩**,網路 / 數據機 / 序列埠直連未做(方向已定案為 lockstep over TCP,見 [`docs/tech/multiplayer-architecture.md`](docs/tech/multiplayer-architecture.md))
+- 數據機 / 序列埠直連:**明確不做**(那兩種硬體已經不存在)。熱座與**網路對戰(lockstep over TCP)都已可玩**——大廳配號、廣播種子、UDP 區網探索、6 張畫面、聊天列都接線了(見 [`docs/tech/multiplayer-architecture.md`](docs/tech/multiplayer-architecture.md))
 
 ---
 
@@ -317,7 +317,7 @@ README 的展示截圖僅為呈現 renderer 成果之用。
 - [`component-tech-mapping.md`](docs/tech/component-tech-mapping.md) — 艦艇元件 → 真 MOO2 科技對應表
 - [`victory-conditions.md`](docs/tech/victory-conditions.md) — 三條勝利路徑(征服/議會/安塔蘭)手冊權威規則與接線現況
 - [`spy-system.md`](docs/tech/spy-system.md) — 間諜系統最小可玩迴圈(訓練→結算→偷科技)
-- [`leader-officer-skills.md`](docs/tech/leader-officer-skills.md) — 領袖/軍官技能系統接線(25+ 技能中已接 2 項)
+- [`leader-officer-skills.md`](docs/tech/leader-officer-skills.md) — 領袖/軍官技能系統接線(27 項技能中已接 13 項)
 - [`screen-spec-info-research.md`](docs/tech/screen-spec-info-research.md) — 資訊/研究畫面渲染規格分析
 
 **渲染 / UI 規劃**

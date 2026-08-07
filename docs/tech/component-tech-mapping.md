@@ -1,5 +1,22 @@
 # 艦艇元件 → 真 MOO2 科技對應表
 
+> # ⚠⚠ 這份文件的「目前掛的 TOPIC」欄是**修正前的歷史快照**,不是現況
+> #
+> # **不要照這份文件去改程式碼。** 2026-08-08 逐項核對 `internal/shell/session.go`,
+> # 下表指出的 16 個「掛錯」**已經全部修好了**——每一個元件現在掛的就是本表
+> # 「正確 TOPIC」欄那一個(雷射→`TOPIC_PHYSICS`、中子爆破槍→`TOPIC_NEUTRINO_PHYSICS`、
+> # 高斯砲→`TOPIC_SUBSPACE_FIELDS`、電漿砲→`TOPIC_PLASMA_PHYSICS`、
+> # 佐特裝甲→`TOPIC_NANO_TECHNOLOGY`、第三級護盾→`TOPIC_MAGNETO_GRAVITICS`…)。
+> #
+> # 照本文結論段去「修正」程式碼,會**把已經對的改回錯的**。
+> #
+> # 本文仍然有價值的部分是**右半邊**:每個元件的真 Technology、正確 TOPIC、
+> # 以及「里程碑科技結構性無 TOPIC」「ResearchAll 主題不是起始科技」這兩條判準——
+> # 那些是當初查證的成果,現在是驗收的依據。
+> #
+> # (發現於 2026-08-08 的文件稽核,見 `docs/re/doc-audit-20260808.md` 第 3 項。)
+
+
 > 本文件由資料校正 subagent 產出,**只列對得上真資料的對應,對不上的明講,不臆造**。
 > 不改動任何程式碼。核對範圍:`internal/shell/session.go`(WeaponOptions/ArmorOptions/ShieldOptions/SpecialOptions)
 > ↔ `assets/i18n/tech.tsv`(中英對照)↔ `internal/gamedata/technames.go`(`TechnologyNames`)↔

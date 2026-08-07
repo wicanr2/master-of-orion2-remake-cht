@@ -30,13 +30,18 @@ p.50 節錄(Advanced Colonization Techniques 一類科技的效果描述):
 真正殖民地)、一般固態行星(「habitable worlds」,殖民船可直接殖民,不需額外科技,只要求系統內
 無敵艦/怪物)。
 
-**本 remake 現況**:星系生成(`internal/shell/session.go` 的 `genGalaxy`/`genPlanets`)每顆星
-固定生成一顆「一般行星」,**從未生成氣態巨星或小行星帶**——`gamedata.PlanetType`(`ASTEROIDS`/
-`GAS_GIANT`/`HABITABLE`)這個 enum 雖然存在(由 openorion2 `gamestate.h` 生成),但 `genPlanets`
-完全沒有使用它標記行星類別。因此「哪些行星需要額外科技」這個問題在目前的資料模型裡**沒有實際
-案例可套用**——所有可拓殖目標必然是「一般行星」,直接可殖民。`internal/shell/colonization.go`
-的 `climateColonizable` 函式保留為未來擴充掛勾點(若日後補上氣態巨星/小行星帶星系生成),現階段
-恆真,不是刻意放寬規則。
+**本 remake 現況(2026-08-08 訂正)**:星系生成**已經是一星多行星、三種星體類型**了。
+`genPlanets`(`internal/shell/session.go`)逐衛星擲骰決定類型
+(`gamedata.RollSatelliteType`),`order := []gamedata.PlanetType{HABITABLE, GAS_GIANT, ASTEROIDS}`
+在兩處明確列出三種;`:1752` 的註解也寫著「氣態巨星/小行星帶不能直接殖民」。
+
+> ⚠ 這一整段原本寫「每顆星固定生成一顆一般行星,**從未生成氣態巨星或小行星帶**…
+> `genPlanets` 完全沒有使用 `PlanetType`」——**那是多星體改版之前的快照,已被推翻**
+> (WORKLIST 第 51 項「一星多行星第二階段:SystemBodies 升格成真正的行星」)。
+> 發現於 2026-08-08 的文件稽核,見 `docs/re/doc-audit-20260808.md` 第 4 項。
+>
+> §1.1 與 §3 這兩段的細節尚未逐條重寫,**在重寫之前不要引用本文對「現況」的描述**
+> ——右半邊的手冊引文與規則考據仍然有效,過期的是「remake 做到哪」那幾句。
 
 ### 1.2 新殖民地起始狀態
 
@@ -120,8 +125,9 @@ size=LARGE(3)、climate=TERRAN(climateFactor=80)得 `(4*5*80+50)/100=16`,非 20�
 - `internal/shell/persist.go`:`PlayerColonyStars` 納入存讀檔快照。
 - `cmd/moo2/interactive.go`:星系主畫面選中一顆無主星、艦隊已抵達、載有殖民船時,顯示「建立
   殖民地」按鈕(綠色,與既有派遣/入侵/載運按鈕同一互斥切換邏輯),點擊呼叫 `ColonizeStar` 並顯示
-  結果訊息。**未做**:行星選擇子畫面(手冊原文的 System 視窗)——目前每星固定一顆行星,不需要
-  選擇,故省略。
+  結果訊息。
+  > ⚠ 原文接著寫「**未做**:行星選擇子畫面——目前每星固定一顆行星,不需要選擇」
+  > ——**前提已不成立**(見 §1.1 的訂正)。行星選擇本身做了沒,請 grep 程式碼,別信這句。
 
 ## 3. 已知簡化 / TODO
 
@@ -132,8 +138,9 @@ size=LARGE(3)、climate=TERRAN(climateFactor=80)得 `(4*5*80+50)/100=16`,非 20�
 - Aquatic/Tolerant/Subterranean 等種族特性對 PopMax 的加成(`gamestate.cpp:2288` 原始函式裡的
   修飾項)未套用——本 remake 沒有種族特性追蹤系統(見 `custom-race-picks.md`),留白。
 - 氣態巨星/小行星帶科技 gate(§1.1)無實際案例可測,是未來若補上這兩類行星才會啟用的掛勾點。
-- 不支援「同系統多顆行星、選擇殖民哪一顆」(手冊原文的 System 視窗選擇畫面)——本 remake 每星
-  固定一顆行星,本輪任務也明確排除行星選擇子畫面。
+- ~~不支援「同系統多顆行星、選擇殖民哪一顆」——本 remake 每星固定一顆行星~~
+  **已推翻(2026-08-08)**:一星多行星已實作(WORKLIST 第 51 項)。這一條的理由不成立,
+  現況請 grep `genPlanets` / `RollSatelliteType` / `ColonizePlanet`。
 - `PlayerColonyStars` 是本次新增欄位,若讀取舊版(本次修改前)存檔,JSON 反序列化會得到 nil
   slice——下一次 `ColonizeStar`/`InvadeColony` 呼叫時會自動 padding 補齊(見兩處程式碼的
   padding loop),不會 panic,但舊存檔本身直到那之前不會有這個欄位的資料。

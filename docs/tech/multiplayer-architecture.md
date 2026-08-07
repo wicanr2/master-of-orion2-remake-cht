@@ -86,8 +86,17 @@ Mutation-on-battle-turn desync),可反推原版網路架構為:
   `cmd/moo2/hotseat.go`(交接畫面)、`cmd/moo2/multiplayer.go`(原版 MULTI-PLAYER 設定畫面)。
   主選單的「多人對戰」接上了,版面座標全部取自反組譯(`Multi_Player_Screen_` @ 0xF4D99)。
   「結束回合」改成全員下完令才推進世界;席位進存檔。
-- **網路 / 數據機 / 序列埠直連未做**——設定畫面上那三顆是灰的,點下去會說明本版沒有網路層。
-  上表第 2 步(引擎決定性化)與第 3 步(lockstep over TCP)仍未開工。
+- **網路對戰已實作**(上表第 2、3 步,2026-08-07 20:00 之後那批 commit)——引擎決定性化
+  (`internal/shell/determinism.go` 的狀態指紋)與 lockstep over TCP 都完成了:
+  `internal/netplay/`(`lockstep.go` / `lobby.go` / `discovery.go` / `chat.go` /
+  `protocol.go` / `frame.go`,各有對應測試),`cmd/moo2` 側 6 張畫面 + 43 處呼叫端。
+  大廳配號、廣播種子、UDP 區網探索、每回合狀態指紋比對、聊天列都接上了。
+- **數據機 / 序列埠直連:明確不做**——那兩種硬體已經不存在,不是待辦。
+
+> ⚠ 這一段在 2026-08-08 訂正過。原文寫「網路 / 數據機 / 序列埠直連**未做**…第 2、3 步仍未開工」,
+> 而那句話是在 netplay 真正做完**之前**寫的(文件的訂正 commit `db4fbb7` 是 2026-08-07 03:49,
+> 五個 netplay 功能 commit 是同日 20:12–23:11),之後沒有回頭更新。
+> **這正是「文件斷言會過期、程式碼才是唯一真相」的教科書案例。**
 - 熱座本身的已知不對稱(非當前席位的結算時點、勝負判定只對當前席位跑)見
   `docs/re/01-gap-report.md` 第 20 項。
 - 對應 WORKLIST「Phase 9 — 多人對戰」。
