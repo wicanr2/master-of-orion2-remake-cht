@@ -1812,6 +1812,26 @@ Elite(500),統帥種族 Regular(0)→Veteran(50)→Elite(150)→Ultra-Elite(500)
 **寫測試時抓到一件事**:第一版斷言「先進級 25 個」實際拿到 26,差的正好是
 `TOPIC_STARTING_TECH`(第 91 項認出來的自環容器主題)。不是程式錯,是斷言少算了一個已知的東西。
 
+## ★ 2026-08-07 上游補完之後,下游要跟著讀真的東西(gap report 第 100 項)
+
+第 99 項把 19 個隨機主題發出去了,但先進級母星**還是只有兩棟**——`homeworldBuildingsFor`
+從**固定表**現算科技集合,**看不到那 19 個**。上游補齊之後,下游如果還在自己算一份,
+補齊就傳不下去。改法很小:多一支吃真正 `CompletedTopics` 的版本。
+
+**結果自己對上了**:曲速前 1 主題 → 2 棟、一般 6 主題 → 2 棟(手冊逐字「only start with
+Marine Barracks and a Star Base」)、**先進 25 主題 → 6 棟**(名額數 ⌈⅔×8⌉)。
+那個 6 **正是第 81 項寫測試時留的正對照預測的數字**——缺口補上之後兩邊自己對上,
+不是把斷言改成事後諸葛。
+
+**順帶把過期斷言清掉**:第 99 項做完後仍有四處文件/註解寫著「19 個隨機主題還沒接」
+(`starting_tech.go` 兩處、gap report 第 80/81/91 項、HONEST-STATUS),全部改成現況。
+`TestAdvancedStartIsBlockedByTheMissingRandomTopics` 改名為
+`TestAdvancedStartFillsAllBuildingSlots` 並反轉斷言——**它自己當年就寫著「那 19 個若接上了,
+這條測試要跟著改」**。
+
+這一輪的形狀與第 98 項同款:**做完一件事之後,回頭找它讓哪些話變成假的**。
+留白與缺口記錄的價值在於反映現況;一旦落後,它就從導航變成誤導。
+
 ## 工作方式(使用者定案)
 - go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)
 - **不用多代理 workflow**;翻譯一組一組慢慢做(單代理逐項,使用者可隨時審閱)

@@ -290,13 +290,38 @@ func TestStartingBuildingCountMatchesTheManualExample(t *testing.T) {
 // 上限是 9、⌈⅔×8⌉ = 6,所以名額有 6 個;但清單裡科技條件成立的只有兩棟——因為
 // 先進級該多拿的 19 個隨機主題還沒發(見 gamedata.StartingTopicRandomExtras)。
 // **這一條把「缺口在哪一層」釘住**:機制是對的,缺的是上游的科技。
-func TestAdvancedStartIsBlockedByTheMissingRandomTopics(t *testing.T) {
-	adv := homeworldBuildingsFor(2, homeworldStartPop)
-	if len(adv) != 2 {
-		t.Errorf("先進級目前應仍是兩棟(缺口在上游的隨機主題),實得 %d 棟:%v", len(adv), adv)
+// ⚠ 這支測試 2026-08-07(第 100 項)改名並反轉了斷言。
+//
+// 它原本叫 `TestAdvancedStartIsBlockedByTheMissingRandomTopics`,斷言「先進級目前應仍是
+// 兩棟(缺口在上游的隨機主題)」,並附一句「那 19 個隨機主題若接上了,這條測試要跟著改」。
+// 第 99 項把 19 個接上了,所以它跟著改。
+//
+// **舊版的正對照預測了新版的結果**:那句「科技全解時應發滿 6 個名額(⌈⅔×8⌉)」正是
+// 先進級現在真的拿到的棟數。缺口補上之後兩邊自己對上,不是把斷言改成事後諸葛。
+func TestAdvancedStartFillsAllBuildingSlots(t *testing.T) {
+	// 先進級現在有 25 個開局主題(第 99 項),所以 6 個名額全部發得出來。
+	s := NewDemoSession()
+	s.DisableEvents = true
+	s.TechLevel, s.TechLevelSet = 2, true
+	s.applyStartingTech()
+	if got := len(s.ColonyBuildings[0]); got != 6 {
+		t.Errorf("先進級母星應發滿 6 個名額(⌈⅔×8⌉),實得 %d 棟:%v",
+			got, s.ColonyBuildings[0])
+	}
+	// 手冊逐字:曲速前與一般級「only start with Marine Barracks and a Star Base
+	// because no other techs are Known that are also in the default initial buildings list」。
+	for _, lv := range []int{0, 1} {
+		s := NewDemoSession()
+		s.DisableEvents = true
+		s.TechLevel, s.TechLevelSet = lv, true
+		s.applyStartingTech()
+		if got := len(s.ColonyBuildings[0]); got != 2 {
+			t.Errorf("TECH LEVEL %d 應仍是兩棟(手冊逐字),實得 %d 棟:%v",
+				lv, got, s.ColonyBuildings[0])
+		}
 	}
 	if gamedata.StartingTopicRandomExtras(2) != 19 {
-		t.Error("缺口的大小變了——那 19 個隨機主題若接上了,這條測試要跟著改")
+		t.Error("先進級的隨機主題數量變了——第 99 項的接線要跟著檢查")
 	}
 	// 正對照:科技夠多的時候,這套機制**確實**會發到名額用完。
 	rich := map[gamedata.ResearchTopic]bool{gamedata.TOPIC_STARTING_TECH: true}

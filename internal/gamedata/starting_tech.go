@@ -71,9 +71,10 @@ func StartingTopicCount(techLevel int) int {
 
 // StartingTopics 回傳某個 TECH LEVEL 開局送的主題清單。
 //
-// ⚠ 只回**固定表**的部分。原版超過 6 個之後是 `sub_FD335` 逐個隨機挑,那一段要接
-// 「隨機挑一個尚未取得的主題」的決定性亂數流才有意義——沒接之前,回六個固定的比
-// 亂編十九個誠實。缺的那幾個記在 `StartingTopicRandomExtras`。
+// ⚠ 只回**固定表**的部分。原版超過 6 個之後是 `sub_FD335` 逐個隨機挑。
+// 那一段 2026-08-07(第 99 項)接上了,在 `starting_random_tech.go`
+// ——這支仍然只回固定表,隨機那一半由 `shell.applyStartingRandomTech` 另外發。
+// 兩者的數量關係由 `StartingTopicRandomExtras` 表示。
 func StartingTopics(techLevel int) []ResearchTopic {
 	n := StartingTopicCount(techLevel)
 	if n > len(StartingTopicOrder) {
@@ -89,8 +90,11 @@ func StartingTopics(techLevel int) []ResearchTopic {
 
 // StartingTopicRandomExtras 回傳原版在固定表之外**還會隨機送幾個**。
 //
-// 這個函式存在的理由是「把缺口變成一個看得見的數字」:先進開局照原版應該再隨機拿 19 個,
-// remake 目前沒送。回傳 0 以外的值就代表這一級還沒完全還原。
+// 這個函式原本的理由是「把缺口變成一個看得見的數字」:先進開局照原版應該再隨機拿 19 個,
+// 而 remake 當時沒送。
+//
+// **2026-08-07(第 99 項)那 19 個接上了**,所以它現在的角色變成「還要再發幾個」
+// ——`shell.applyStartingRandomTech` 直接用這個數字當迴圈次數。
 func StartingTopicRandomExtras(techLevel int) int {
 	n := StartingTopicCount(techLevel) - len(StartingTopicOrder)
 	if n < 0 {

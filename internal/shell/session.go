@@ -2298,7 +2298,13 @@ func (s *GameSession) applyStartingRandomTech() {
 //
 // 只動母星(索引 0):其他殖民地是玩家自己拓的,不歸開局規則管。
 func (s *GameSession) applyStartingBuildings() {
-	b := homeworldBuildingsFor(s.techLevel(), homeworldStartPop)
+	// 讀**玩家實際知道的主題**而不是再算一次固定表:先進級的 19 個隨機主題
+	// (第 99 項)也要算進去,否則母星永遠只蓋得出兩棟(見 homeworldBuildingsForKnown)。
+	known := s.Player.CompletedTopics
+	if known == nil {
+		known = map[gamedata.ResearchTopic]bool{gamedata.TOPIC_STARTING_TECH: true}
+	}
+	b := homeworldBuildingsForKnown(s.techLevel(), homeworldStartPop, known)
 	if len(s.ColonyBuildings) > 0 {
 		s.ColonyBuildings[0] = cloneBuildings(b)
 	}
@@ -3787,6 +3793,18 @@ func homeworldBuildingsFor(techLevel, pop int) map[string]bool {
 	for _, t := range gamedata.StartingTopics(techLevel) {
 		known[t] = true
 	}
+	return homeworldBuildingsForKnown(techLevel, pop, known)
+}
+
+// homeworldBuildingsForKnown 同上,但直接吃**這位玩家實際知道的主題集合**。
+//
+// 2026-08-07(第 100 項):第 99 項把先進級的 19 個隨機主題發出去之後,
+// `homeworldBuildingsFor` 那條路就不夠用了——它從固定表現算科技集合,
+// **看不到那 19 個**,所以先進級的母星仍然只蓋得出兩棟(手冊說先進級上限是 9 棟)。
+//
+// 這正是第 81 項寫的那條依賴鏈:開局建築取決於開局知道哪些科技。
+// 上游補齊了,下游就得跟著讀真正的集合,而不是再算一次固定表。
+func homeworldBuildingsForKnown(techLevel, pop int, known map[gamedata.ResearchTopic]bool) map[string]bool {
 	n := StartingBuildingCount(pop, gamedata.InitialBuildingCap(techLevel))
 	out := map[string]bool{}
 	for _, name := range gamedata.InitialBuildings(known, n) {
