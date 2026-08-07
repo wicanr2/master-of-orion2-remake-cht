@@ -339,7 +339,11 @@ func loadOverlayScreen(res *assets.Resolver, lbxName string, assetID int, lang i
 type sceneBuilder struct {
 	// skipCutscenes:headless 驗證與截圖廊要跳過流程中的過場影片——那些腳本是逐 tick
 	// 數出來的,插一段會一直往前播的影片會整串偏掉。截圖廊另外用 tick 注入單獨截過場。
-	skipCutscenes   bool
+	skipCutscenes bool
+	// officerScroll 是軍官清單的捲動位移(第 109 項加的上下箭頭)。
+	// 原版那兩顆鈕的座標一直都在(`_officer_up_button_seg` / `_officer_dn_button_seg`),
+	// 只是 remake 先前沒接——所以清單超過四列就看不到後面的人。
+	officerScroll   int
 	res             *assets.Resolver
 	fnt             *uifont.Font // 內文用字型(zh 為混合:內文點陣、標題向量)
 	fntVec          *uifont.Font // 純向量 Noto(供主選單等要平滑的畫面;nil 時退回 fnt)
@@ -3116,13 +3120,28 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 // officer 建原版軍官列表畫面(OFFICER.LBX 資產 0)。座標經 PIL 量測
 // (screens-scan/officer_leaderlist.png):頁籤列 y=12-32,按鈕列 y=440-462。
 func (b *sceneBuilder) officer() (*overlayScreen, error) {
-	// 精確返回鍵熱區(RETURN 按鈕真值座標取自 openorion2 officer.cpp:418
-	// LeaderListView RETURN createWidget(538, 441, ...);取代整畫面返回,僅返回鍵返回)。
-	// HIRE 熱區對齊原版 OFFICER.LBX 的 HIRE 按鈕(overlay 標於 310,440):雇用 MercPool 首名傭兵。
-	hits := []hitRegion{
-		{538, 441, 80, 20, "Return"},
-		{313, 440, 68, 20, "hire"}, // HIRE 按鈕真值 x=313(openorion2 officer.cpp;原 PIL 310)
-	}
+	// ⚠ 2026-08-08(第 109 項)座標來源升級:openorion2 → **原版執行檔的立即數**。
+	//
+	// `Add_Officer_Screen_Fields_` @ 0x9264E 逐欄位讀出來的值,與先前照 openorion2
+	// `officer.cpp` 抄的差了幾像素——依專案的來源優先序(**反組譯立即數 > openorion2**),
+	// 以執行檔為準:
+	//
+	//	| 元素 | 先前(openorion2/PIL) | 執行檔立即數 |
+	//	|---|---|---|
+	//	| Colony Leaders 分頁 | x=20 | **x=9** |
+	//	| Ship Leaders 分頁 | x=166 | **x=156** |
+	//	| HIRE | (313, 440) | (313, **441**) |
+	//	| POOL | (388, 440) | (388, **441**) |
+	//	| DISMISS | (462, 440) | (**463**, **441**) |
+	//	| RETURN | (540, 440) | (**538**, **441**) |
+	//	| 清單列中心 | 90/199/308/417 | **88/197/306/415**(列起點 34、高 108、列距 109)|
+	//	| 上下捲鈕 | **沒有** | (613, 22) / (613, 170) |
+	//
+	// 寬高**維持原樣**:執行檔那邊的寬高是 LBX 資產控制碼,不是字面尺寸(見
+	// `docs/re/screen-coords-spy-leader.md` §2.3),**沒查到的就不動**。
+	//
+	// RETURN 那一格先前還自相矛盾:熱區在 538(對的)、疊字標籤在 540。一併對齊。
+	hits := officerHitRegions()
 	onAction := func(a string) *origTransition {
 		switch a {
 		case "hire":
@@ -3130,58 +3149,73 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 				b.session.HireMerc() // 雇用池首名傭兵(BC不足/滿員則無作用),手冊 p.134
 			}
 			return b.goTo(b.officer, "軍官列表")
+		case "scrollUp":
+			if b.officerScroll > 0 {
+				b.officerScroll--
+			}
+			return b.goTo(b.officer, "軍官列表")
+		case "scrollDown":
+			b.officerScroll++
+			return b.goTo(b.officer, "軍官列表")
 		case "Return":
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
 		return nil
 	}
-	overlays := []labelRect{
-		{20, 11, 133, 20, "Colony Leaders", 0},
-		{166, 11, 124, 20, "Ship Officers", 0},
-		{313, 440, 68, 20, "HIRE", 0},
-		{388, 440, 69, 20, "POOL", 0},
-		{462, 440, 74, 20, "DISMISS", 0},
-		{540, 440, 80, 20, "RETURN", 0},
-	}
+	overlays := officerOverlays()
 	s, err := loadOverlayScreen(b.res, "officer.lbx", 0, b.lang, b.fnt, "assets/i18n/officer.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"buffer0.lbx", 0}})
 	if err != nil {
 		return nil, err
 	}
-	// 領袖名單填進左側槽位:槽中心 y = openorion2 officer.cpp LeaderListView 真值
-	// FIRST_ROW 38 + SLOT_HEIGHT 105/2 + i*ROW_DIST 109 = 90.5+i*109 → 取整 90/199/308/417
-	// (原 PIL 87/198/307/415 每列高約 1.5-3px、列距不均;現還原 109px 等距)。
+	// 領袖名單填進左側槽位。槽中心來自**執行檔立即數**(第 109 項):
+	// `Add_Officer_Screen_Fields_` 的清單迴圈建立四列熱區,y 範圍 34–142 / 143–251 /
+	// 252–360 / 361–469——列起點 34、高 108、**列距 109**,中心即 88/197/306/415。
+	//
+	// 先前的 90/199/308/417 是照 openorion2 的 `FIRST_ROW 38 + SLOT_HEIGHT 105/2` 推的,
+	// 列距 109 對上了(那一半 openorion2 是對的),起點差 2px。
+	//
+	// ⚠ 那四列熱區的**語意**沒有 100% 確認(沒讀 `Check_Officer_Fields_`),
+	// 但座標本身是立即數,而且四列高度精確一致——手算若有錯不會這麼齊。
 	if b.session != nil {
 		gold := color.RGBA{240, 220, 120, 255}
 		body := color.RGBA{206, 214, 232, 255}
 		hireCol := color.RGBA{150, 220, 160, 255} // 可雇用傭兵用綠色標示
-		rowY := []float64{90, 199, 308, 417}
-		row := 0
-		// 已雇用領袖填前幾個槽位。
-		for _, ld := range b.session.Leaders {
-			if row >= len(rowY) {
-				break
+		rowY := officerRowCenters()
+		// 捲動:把「已雇用領袖 + 待雇傭兵」當成一份連續清單,捲動位移就是跳過前 n 筆。
+		// 夾在 [0, 總筆數-1]——捲過頭會變成一片空白,那看起來像壞掉而不是捲到底。
+		roster := make([]shell.Leader, 0, len(b.session.Leaders)+len(b.session.MercPool))
+		roster = append(roster, b.session.Leaders...)
+		mercFrom := len(roster)
+		roster = append(roster, b.session.MercPool...)
+		if b.officerScroll > len(roster)-1 {
+			b.officerScroll = len(roster) - 1
+		}
+		if b.officerScroll < 0 {
+			b.officerScroll = 0
+		}
+		// 從捲動位移開始填,一次填滿四列。已雇用的是金色,待雇傭兵是綠色 + 雇用費。
+		for row, k := 0, b.officerScroll; row < len(rowY) && k < len(roster); row, k = row+1, k+1 {
+			ld, y := roster[k], rowY[row]
+			if k >= mercFrom {
+				s.extras = append(s.extras,
+					extraText{x: 95, y: y - 12, size: 15, text: "◆ " + ld.Name, col: hireCol},
+					extraText{x: 95, y: y + 12, size: 12, text: fmt.Sprintf(b.tr("%s ｜ Lv %d ｜ 雇用費 %d BC", "%s | Lv %d | hire %d BC"),
+						ld.Skill, ld.Level, b.session.MercHireCost(ld)), col: hireCol},
+				)
+				continue
 			}
-			y := rowY[row]
 			s.extras = append(s.extras,
 				extraText{x: 95, y: y - 12, size: 15, text: ld.Name, col: gold},
 				extraText{x: 95, y: y + 12, size: 12, text: fmt.Sprintf(b.tr("%s ｜ Lv %d", "%s | Lv %d"), ld.Skill, ld.Level), col: body},
 			)
-			row++
 		}
-		// 剩餘槽位顯示上門待雇的傭兵(綠色 + 雇用費;點 HIRE 鈕雇用池首名)。
-		for _, ld := range b.session.MercPool {
-			if row >= len(rowY) {
-				break
-			}
-			y := rowY[row]
-			s.extras = append(s.extras,
-				extraText{x: 95, y: y - 12, size: 15, text: "◆ " + ld.Name, col: hireCol},
-				extraText{x: 95, y: y + 12, size: 12, text: fmt.Sprintf(b.tr("%s ｜ Lv %d ｜ 雇用費 %d BC", "%s | Lv %d | hire %d BC"),
-					ld.Skill, ld.Level, b.session.MercHireCost(ld)), col: hireCol},
-			)
-			row++
+		// 捲到看得見的範圍之外時,標明還有幾筆——不然玩家不知道清單還有下文。
+		if rest := len(roster) - b.officerScroll - len(rowY); rest > 0 {
+			s.extras = append(s.extras, extraText{x: 95, y: rowY[len(rowY)-1] + 30, size: 11,
+				text: fmt.Sprintf(b.tr("(還有 %d 位,按右上下箭頭捲動)", "(%d more; scroll with the arrows)"), rest),
+				col:  body})
 		}
 		// 池空且無領袖時,提示傭兵會不定期上門(手冊 p.134)。
 		if len(b.session.Leaders) == 0 && len(b.session.MercPool) == 0 {
