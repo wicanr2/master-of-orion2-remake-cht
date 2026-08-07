@@ -41,13 +41,19 @@ const ColonyRelocationNone = -1
 //
 // 合法性在 `Okay_To_Set_Relocate_Star_` @ 0x75035(`dl` 區分是不是終點):
 //
-//	① 光譜 6(黑洞)→ 不行(起點終點都不行,只是訊息不同)
-//	② 玩家沒探索過那顆星(`star[+0x33] & (1<<玩家)`)→ 不行
-//	③ 目的星上有艦隊 → **跳確認框**問玩家(當起點則直接不行)
-//	④ 起點必須是玩家自己有殖民地的星(`star[+0x38]` 的位元測試)
+//	① 光譜 6(黑洞)→ 不行(起點終點都不行,只是訊息不同:0x83 / 0x84)
+//	② `Player_Has_Visited_` 為假 → 不行(訊息 0x85 / 0x86)
+//	③ `Star_Guarded_By_Monster_` 為真:
+//	     終點 → sprintf(訊息 0x87, 星, `Race_Name_(怪獸)`) 之後
+//	            `User_Box_(kind=1)` = **是/否確認框**,答案就是這條規則的結果
+//	     起點 → 直接不行(而且**不出訊息**:`loc_7511B` 只把結果清 0)
+//	④ 起點另外要求 `Player_Has_Colony_In_System_`(訊息 0x88)
 //
-// ⚠ 第 ③ 條的確認框 remake 沒做(沒有 modal 對話框的基礎設施),目前直接允許。
-// 這是**已知的簡化**,不是漏看。
+// ⚠ **2026-08-07 訂正**:這段原本寫著「③ 目的星上有艦隊 → 跳確認框」,
+// 而且註明「remake 沒有 modal 對話框的基礎設施,目前直接允許」。
+// 逐指令讀過 `Okay_To_Set_Relocate_Star_` 之後:**那個條件是怪獸不是艦隊**
+// (`sub_7A47A` = `Star_Guarded_By_Monster_`,符號表裡就有名字)。
+// 確認框的基礎設施也做了(見 cmd/moo2/confirmbox.go,版面取自 `Confirmation_Box_` @ 0x77658)。
 
 // RelocateRefusal 是「這顆星不能當起點/終點」的原因(空字串 = 可以)。
 type RelocateRefusal string
@@ -63,6 +69,11 @@ func (s *GameSession) CanRelocateFrom(star int) RelocateRefusal {
 	if !s.Stars[star].Explored {
 		return "還沒探索過這顆星"
 	}
+	// 怪獸盤據的星當**起點**直接不行——原版連訊息都不出(`loc_7511B` 只把結果清 0)。
+	// remake 出一句話:靜默失敗在有滑鼠提示的介面裡只會讓玩家以為按鈕壞了。
+	if s.StarGuardedByMonster(star) {
+		return RelocateRefusal("那裡被" + s.MonsterNameAtStar(star) + "盤據,不能當遷移起點")
+	}
 	if colonyIndexAt(s, star) < 0 {
 		return "那裡沒有你的殖民地——遷移是從自己的殖民地送出去的"
 	}
@@ -71,7 +82,8 @@ func (s *GameSession) CanRelocateFrom(star int) RelocateRefusal {
 
 // CanRelocateTo 檢查某顆星能不能當遷移終點,回傳不行的原因(空 = 可以)。
 //
-// ⚠ 原版還有「目的星上有艦隊 → 跳確認框」那一條,remake 沒有 modal 對話框,直接允許。
+// ⚠ 怪獸不在這裡擋——原版對**終點**的怪獸是問一句(是/否確認框),不是拒絕。
+// 見 RelocateToNeedsConfirm。
 func (s *GameSession) CanRelocateTo(star int) RelocateRefusal {
 	if star < 0 || star >= len(s.Stars) {
 		return "沒有這顆星"
@@ -83,6 +95,25 @@ func (s *GameSession) CanRelocateTo(star int) RelocateRefusal {
 		return "還沒探索過這顆星"
 	}
 	return ""
+}
+
+// RelocateToNeedsConfirm 回傳「設成這顆終點之前要先問玩家的那句話」;空字串 = 不用問。
+//
+// 原版 `Okay_To_Set_Relocate_Star_` 的第 ③ 條:終點被怪獸盤據時
+// sprintf(訊息 0x87, 星名, 怪獸名) 之後跳 `User_Box_(kind=1)`(是/否)。
+// **它不是拒絕**——玩家說是就照設,新造的艦會一艘艘送進怪獸的嘴裡,那是玩家的選擇。
+//
+// ⚠ 訊息 0x87 的原文在 LBX 的字串表裡,remake 沒有逐字抄(那是遊戲文字不是規則);
+// 這裡用等義的中文,並保留「星名 + 怪獸名」這兩個原版會填進去的參數。
+func (s *GameSession) RelocateToNeedsConfirm(star int) string {
+	if star < 0 || star >= len(s.Stars) {
+		return ""
+	}
+	if !s.StarGuardedByMonster(star) {
+		return ""
+	}
+	return s.Stars[star].Name + "被" + s.MonsterNameAtStar(star) +
+		"盤據,送過去的艦艇會遭到攻擊。仍要把集結點設在那裡嗎?"
 }
 
 // colonyIndexAt 回傳玩家在某顆星的殖民地索引(沒有回 −1)。

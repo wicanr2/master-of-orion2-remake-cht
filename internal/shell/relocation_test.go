@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
@@ -288,5 +289,59 @@ func TestClearAllRemovesEverything(t *testing.T) {
 	// 已經是空的再清一次:回 0,不是負數也不是重複計數。
 	if n := s.ClearAllStarRelocations(); n != 0 {
 		t.Errorf("再清一次應回 0,實得 %d", n)
+	}
+}
+
+// --- 怪獸:原版對起點與終點的處理**不一樣**(Okay_To_Set_Relocate_Star_)---
+//
+// ⚠ 這兩支測試同時是一條訂正的護欄:relocation.go 檔頭原本寫「③ 目的星上有艦隊 → 跳確認框」,
+// 逐指令讀過之後那個條件是 `Star_Guarded_By_Monster_`,不是艦隊。
+
+func relocMonsterSession() *GameSession {
+	s := relocSession()
+	for i := range s.Stars {
+		s.Stars[i].Explored = true
+	}
+	s.Stars[2].Name = "怪獸星"
+	s.Monsters = []MonsterGuard{{StarIndex: 2, Kind: 0, Structure: 100}}
+	return s
+}
+
+// 怪獸盤據的星不能當**起點**(原版直接不行,連訊息都不出)。
+func TestMonsterStarCannotBeRelocationOrigin(t *testing.T) {
+	s := relocMonsterSession()
+	s.PlayerColonyStars = []int{2, 4} // 把第一個殖民地搬到怪獸星上,好單獨驗這條規則
+	if r := s.CanRelocateFrom(2); r == "" {
+		t.Error("怪獸盤據的星不該能當遷移起點")
+	}
+}
+
+// 怪獸盤據的星**可以**當終點,但要先問過玩家——這是原版 User_Box_(kind=1) 那一問。
+func TestMonsterStarAsDestinationAsksInsteadOfRefusing(t *testing.T) {
+	s := relocMonsterSession()
+	if r := s.CanRelocateTo(2); r != "" {
+		t.Errorf("怪獸不該讓終點被**拒絕**(原版是問一句),實得拒絕原因:%s", r)
+	}
+	msg := s.RelocateToNeedsConfirm(2)
+	if msg == "" {
+		t.Fatal("怪獸盤據的終點應該要問一句")
+	}
+	// 原版那句話是 sprintf(訊息, 星, 怪獸名) —— 兩個參數都要出現在文字裡。
+	if !strings.Contains(msg, "怪獸星") {
+		t.Errorf("確認訊息應含星名,實得:%s", msg)
+	}
+	if name := s.MonsterNameAtStar(2); name != "" && !strings.Contains(msg, name) {
+		t.Errorf("確認訊息應含怪獸名 %q,實得:%s", name, msg)
+	}
+	// 沒有怪獸的星不該問。
+	if got := s.RelocateToNeedsConfirm(3); got != "" {
+		t.Errorf("沒有怪獸的終點不該問,實得:%s", got)
+	}
+	// 問完說「是」就照設——確認不是拒絕。
+	if r := s.SetStarRelocation(0, 2); r != "" {
+		t.Errorf("玩家確認後應該設得起來,實得拒絕:%s", r)
+	}
+	if got := s.ColonyRelocation(0); got != 2 {
+		t.Errorf("集結點應設成 2,實得 %d", got)
 	}
 }

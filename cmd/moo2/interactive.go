@@ -394,6 +394,27 @@ type sceneBuilder struct {
 	planetListTop int
 	// planetListMsg 是行星列表畫面最近一次動作的結果訊息。
 	planetListMsg string
+	// pendingConfirm 是「這一下要先問過玩家」的是/否確認框(原版 `User_Box_(kind=1)`,
+	// 見 cmd/moo2/confirmbox.go)。處理器只負責記下來,由呼叫端 takePendingConfirm 換成畫面
+	// ——處理器手上沒有「下層畫面」,而確認框要疊在它上面。
+	pendingConfirm *pendingConfirm
+}
+
+// pendingConfirm 是一個等著被換成畫面的確認框。
+type pendingConfirm struct {
+	msg   string
+	onYes func() *origTransition
+}
+
+// takePendingConfirm 取走這一幀待跳的確認框並疊到星圖上;沒有就回 nil。
+func (b *sceneBuilder) takePendingConfirm() origScreen {
+	p := b.pendingConfirm
+	if p == nil {
+		return nil
+	}
+	b.pendingConfirm = nil
+	under, _ := b.galaxy() // 取不到就讓確認框自己鋪深色底(見 confirmScreen.draw)
+	return b.confirm(under, p.msg, p.onYes, nil)
 }
 
 // profileForVersion 把主選單選的版本轉成對應 RuleProfile(開局注入 session)。
@@ -680,6 +701,9 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			if idx, err := strconv.Atoi(a[4:]); err == nil {
 				// 測距(F9)與挑集結點模式先吃掉點星:那一下是模式的輸入,不是「選這顆星」。
 				if b.measureClickedStar(idx) || b.relocatePickClickedStar(idx) {
+					if c := b.takePendingConfirm(); c != nil {
+						return &origTransition{next: c} // 原版對這一下要先問一句(見 confirmbox.go)
+					}
 					return b.goTo(b.galaxy, "星系主畫面")
 				}
 				if idx == b.session.SelectedStar {
@@ -1300,6 +1324,32 @@ func truncateToWidth(fnt *uifont.Font, s string, size, maxW float64) string {
 		}
 	}
 	return string(rs)
+}
+
+// wrapToWidth 把 s 折成每行寬度不超過 maxW 的多行。
+//
+// 中文沒有空白可斷,所以逐 rune 累積;遇到 '\n' 強制換行。西文詞會被硬切——
+// remake 的 UI 文字以中文為主,為了一句英文提示引進斷詞規則不划算,
+// 真的需要時在原文裡自己放 '\n'。
+func wrapToWidth(fnt *uifont.Font, s string, size, maxW float64) []string {
+	if fnt == nil || s == "" {
+		return []string{s}
+	}
+	var out []string
+	for _, para := range strings.Split(s, "\n") {
+		line := make([]rune, 0, 32)
+		for _, r := range para {
+			cand := append(append([]rune(nil), line...), r)
+			if w, _ := fnt.Measure(string(cand), size); w > maxW && len(line) > 0 {
+				out = append(out, string(line))
+				line = []rune{r}
+				continue
+			}
+			line = cand
+		}
+		out = append(out, string(line))
+	}
+	return out
 }
 
 func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
@@ -3542,6 +3592,8 @@ type interactiveApp struct {
 	galleryCommandPointsTick int
 	// galleryMeasureTick 是截圖廊切回星圖並打開 F9 測距的 tick。
 	galleryMeasureTick int
+	// galleryConfirmTick 是截圖廊把畫面換成是/否確認框的 tick。
+	galleryConfirmTick int
 	galleryBuilder     *sceneBuilder
 	gallerySession     *shell.GameSession
 }
@@ -3604,6 +3656,12 @@ const galleryBuildPopupTick = 87
 // galleryCommandPointsTick 是截圖廊在哪個 tick 切到指揮點數視窗——取截圖(t90)的前一拍。
 // 走正常路徑是星圖點右欄第 2 格,但腳本此刻停在建造視窗,直接推上來比重新導覽回星圖可靠。
 const galleryCommandPointsTick = 89
+
+// galleryConfirmTick 是截圖廊在哪個 tick 換成是/否確認框——取截圖(t94)的前一拍。
+//
+// 走正常路徑要「艦隊列表按 RELOCATE → 點自己的殖民地 → 點一顆被怪獸盤據的星」,
+// 那要求截圖廊那一局剛好有怪獸而且看得見;直接推上來可靠得多(同建造視窗/指揮點數的處理)。
+const galleryConfirmTick = 93
 
 // galleryMeasureTick 是截圖廊在哪個 tick 切回星圖並打開 F9 測距——取截圖(t92)的前一拍。
 // 走正常路徑要從指揮點數視窗關回星圖再按 F9,直接推上來比重新導覽可靠(同上面幾個)。
@@ -3790,6 +3848,10 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		// 因為「移到哪就顯示到哪」正是要驗的行為——沒有游標位置就什麼都不會畫。
 		idle, // t91: 由 galleryMeasureTick 切回星圖 + 打開測距
 		idle, // t92: settle(游標由 galleryMeasureHover 每幀注入)→ 截圖 measure
+
+		// 是/否確認框(原版 Confirmation_Box_)。同上,直接推上來。
+		idle, // t93: 由 galleryConfirmTick 換成確認框
+		idle, // t94: settle → 截圖 confirm
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -3823,6 +3885,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{88, "26_buildqueue.png"},
 		{90, "27_commandpoints.png"},
 		{92, "28_measure.png"},
+		{94, "29_confirm.png"},
 	}
 	return script, shots
 }
@@ -4032,6 +4095,13 @@ func (a *interactiveApp) Update() error {
 			a.cur = sc
 		}
 	}
+	// 截圖廊專用:是/否確認框,疊在星圖上(原版就是這樣疊的)。
+	if a.galleryConfirmTick > 0 && a.tick == a.galleryConfirmTick && a.galleryBuilder != nil {
+		b := a.galleryBuilder
+		b.measure.on = false // 測距的提示線會蓋在框上,先關掉
+		under, _ := b.galaxy()
+		a.cur = b.confirm(under, b.galleryConfirmMessage(), nil, nil)
+	}
 	// 截圖廊專用:切回星圖並打開 F9 測距,起點設在母星;順便設一個集結點,
 	// 好讓遷移連線那一層真的畫得出來(不設就永遠是空的,截圖驗不到)。
 	if a.galleryMeasureTick > 0 && a.tick == a.galleryMeasureTick && a.galleryBuilder != nil {
@@ -4185,6 +4255,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.galleryBuildPopupTick = galleryBuildPopupTick
 		app.galleryCommandPointsTick = galleryCommandPointsTick
 		app.galleryMeasureTick = galleryMeasureTick
+		app.galleryConfirmTick = galleryConfirmTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,

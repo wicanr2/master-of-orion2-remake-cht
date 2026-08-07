@@ -185,6 +185,10 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
 |---|---|
 | ![指揮點數視窗](docs/screenshots/27_commandpoints.png) | ![F9 測距:兩星之間的秒差距](docs/screenshots/28_measure.png) |
 
+| 是/否確認框(疊在星圖上,版面取自反組譯) |
+|---|
+| ![確認框:集結點設在怪獸盤據的星系](docs/screenshots/29_confirm.png) |
+
 ### 英文模式
 
 `-lang en`(或主選單左下角點一下)切回英文。畫面底下是原版美術時**整段讓路**——不擦字、不疊字,

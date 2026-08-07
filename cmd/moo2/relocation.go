@@ -213,6 +213,20 @@ func (b *sceneBuilder) relocatePickClickedStar(star int) bool {
 	}
 	// 第二段:選終點。
 	from := b.relocPick.from
+	// 原版對「終點被怪獸盤據」是**問一句**不是拒絕(`Okay_To_Set_Relocate_Star_` 走
+	// `User_Box_(kind=1)`);玩家說是就照設。⚠ 上面的 ALL 分支沒有這一問——
+	// 原版的 `Set_All_Star_Relocations_` 是一支沒有任何驗證的迴圈,不替它加規則。
+	if msg := sess.RelocateToNeedsConfirm(star); msg != "" {
+		b.relocPick.on = false
+		b.pendingConfirm = &pendingConfirm{
+			msg: b.tr(msg, msg),
+			onYes: func() *origTransition {
+				b.applyRelocation(from, star)
+				return nil // 回到下層的星圖
+			},
+		}
+		return true
+	}
 	if r := sess.SetStarRelocation(from, star); r != "" {
 		b.flash(b.tr(string(r), string(r)))
 		return true
@@ -226,6 +240,25 @@ func (b *sceneBuilder) relocatePickClickedStar(star int) bool {
 			"Relocation set — new ships will travel there"))
 	}
 	return true
+}
+
+// applyRelocation 落地一次集結點設定並回報結果(確認框按「是」之後走這支)。
+func (b *sceneBuilder) applyRelocation(from, to int) {
+	sess := b.session
+	if sess == nil {
+		return
+	}
+	if r := sess.SetStarRelocation(from, to); r != "" {
+		b.flash(b.tr(string(r), string(r)))
+		return
+	}
+	ci := colonyIndexAtStar(sess, from)
+	if t := sess.ColonyRelocation(ci); t == shell.ColonyRelocationNone {
+		b.flash(b.tr("已取消集結點", "Relocation cleared"))
+		return
+	}
+	b.flash(b.tr("集結點已設定——新造的艦會自動送過去",
+		"Relocation set — new ships will travel there"))
 }
 
 // colonyIndexAtStar 回傳玩家在某顆星的殖民地索引(沒有回 −1)。
@@ -313,4 +346,21 @@ func starPanelColonyRows(sess *shell.GameSession) []starPanelRow {
 		out = out[:1]
 	}
 	return out
+}
+
+// galleryConfirmMessage 是截圖廊要顯示在確認框裡的那句話。
+//
+// 優先用真的規則產出的訊息(找一顆被怪獸盤據的星,走 RelocateToNeedsConfirm)——
+// 截圖要驗的是「這句話長什麼樣、放不放得下」,拿一句寫死的假字驗不到折行。
+// 這一局沒有怪獸時退回一句等長的示意文字。
+func (b *sceneBuilder) galleryConfirmMessage() string {
+	if sess := b.session; sess != nil {
+		for i := range sess.Stars {
+			if msg := sess.RelocateToNeedsConfirm(i); msg != "" {
+				return msg
+			}
+		}
+	}
+	return b.tr("這個星系被太空怪獸盤據,送過去的艦艇會遭到攻擊。仍要把集結點設在那裡嗎?",
+		"That system is guarded by a space monster and ships sent there will be attacked. Set the rally point anyway?")
 }
