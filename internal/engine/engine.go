@@ -236,6 +236,12 @@ type PlayerState struct {
 	// 放在 PlayerState 不是 ColonyState:它是**帝國層**特性,每個殖民地都一樣;
 	// 放進殖民地會變成 N 份可以不一致的真相。
 	FantasticTrader bool
+	// FleetResearch 是艦上偵察實驗室每回合產生的研究點數(手冊:依艦體 1/2/4/8/16/32)。
+	//
+	// 與殖民地研究併入同一個研究階段——手冊沒有把它們分開處理,而分開會多出一個
+	// 「艦隊研究要不要吃士氣/政體加成」的問題,那個問題手冊沒有答案。
+	// 由 shell.GameSession.FleetResearchPoints 每回合算好傳入(同 Maintenance 的輸入模式)。
+	FleetResearch int
 	// Maintenance 每回合總維護費,BC 結算時扣除。目前呼叫端(shell.GameSession.EndTurn)只
 	// 依實際已建成建築(gamedata.BuiltMaintenanceBC)加總計入;艦隊/間諜/軍官維護費本專案尚無
 	// 可推導的模型(未追蹤運輸艦數量等),未計入——TODO 待補,見 session.go

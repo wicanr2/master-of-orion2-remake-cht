@@ -376,6 +376,13 @@ var (
 		// 部隊艙:`gamedata.GroundTroopPodsMultiplier = 2`(手冊 p.79「doubling the number of
 		// Marines on board a ship」)同樣零生產端,同樣是因為元件不存在。
 		{"部隊艙", 70, 0, gamedata.TOPIC_CAPSULE_CONSTRUCTION, gamedata.TECH_TROOP_PODS},
+		// --- 第 134 項:第 133 項盤點出來那 20 個裡,數字最硬、且 remake 已有承接位置的五個 ---
+		// 主題同樣全部取自執行檔的 tech→topic 表;成本一律 remake 值。
+		// 沒接的十幾個與各自的理由寫在 ship_systems.go 檔尾。
+		{"偵察實驗室", 60, 0, gamedata.TOPIC_ARTIFICIAL_INTELLIGENCE, gamedata.TECH_SCOUT_LAB},
+		{"強化船體", 90, 0, gamedata.TOPIC_ADVANCED_ENGINEERING, gamedata.TECH_REINFORCED_HULL},
+		{"多相護盾", 170, 0, gamedata.TOPIC_MULTIPHASED_PHYSICS, gamedata.TECH_MULTIPHASED_SHIELDS},
+		{"戰鬥掃描器", 120, 0, gamedata.TOPIC_TACHYON_PHYSICS, gamedata.TECH_BATTLE_SCANNER},
 	}
 )
 
@@ -756,7 +763,10 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 		}
 		body := shipStrength(sh.Class)
 		atk := body + sh.WeaponAttack
-		atk += atk * s.RaceCombatPct / 100 // 種族戰鬥加成(姆瑞森+25、布拉西/阿爾卡里+15…)
+		atk += atk * s.RaceCombatPct / 100 // 種族戰鬥加成(姆瑞森艦攻+50、埃雷里安+20…)
+		// 戰鬥掃描器(第 134 項):手冊「increases the ship's chance to hit with beam weapons
+		// by 50」——**點數加成**,所以加在種族百分比之後(理由同下面的艦員加成)。
+		atk += shipBeamOffenseBonus(sh)
 		// 艦員經驗(手冊 p.121 的 BA/BD 兩欄):老手打得準也閃得掉。
 		// 加在種族加成**之後**——那兩張表是直接的點數加成,不是百分比,所以不該被種族倍率放大。
 		crew := s.shipCrewLevel(sh)
@@ -769,7 +779,11 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 		// 種族艦艇**防禦**加成(阿爾卡里 +50、埃雷里安 +25)。與攻擊側對稱:
 		// 套在艦體值上、在艦員點數加成之前——理由同上,那兩欄是點數不是百分比。
 		defBody := body + body*s.RaceShipDefPct/100
-		hp := body * 3
+		// 慣性穩定器/抵消器(第 134 項,補第 133 項漏掉的那一半):手冊那一條同時給
+		// 「+50 beam defense」與「+25 missile evasion」,先前只接了後者。
+		defBody += shipBeamDefenseBonus(sh)
+		// 強化船體:手冊「triples the amount of structural damage a ship can sustain」。
+		hp := body * 3 * shipStructureMultiplier(sh) / 100
 		// 戰機庫:出擊一隊戰機(手冊:中隊一律 4 架;返航前射擊次數攔截機 4、重戰機 2),
 		// 在艦級抽象結算中以母艦戰力加成承接整隊火力與血量。
 		// ⚠ 2026-08-07 訂正:這裡原本寫「出擊數:攔截機 4 / 重戰機 2」——那一欄是 **Shots**
@@ -793,9 +807,10 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 		}
 		out = append(out, combatant{hp: hp, maxHP: shipMaxHP(sh), atk: atk, def: defBody + crewDef,
 			wmin: atk / 2, wmax: atk,
-			shield: s.nebulaShield(shieldReduceByName(sh.Shield), shipHasHardShield(sh)),
-			armor:  effectiveArmorHP(sh),
-			kind:   weaponKindByName(sh.Weapon), weaponName: sh.Weapon, mods: sh.Mods,
+			shield: s.nebulaShield(shieldReduceByName(sh.Shield), shipHasHardShield(sh)) *
+				shipShieldMultiplier(sh) / 100, // 多相護盾:吸收量 +50%
+			armor: effectiveArmorHP(sh),
+			kind:  weaponKindByName(sh.Weapon), weaponName: sh.Weapon, mods: sh.Mods,
 			sizeClass:         shipSizeClass(sh.Class),
 			hasAMR:            sh.Special == antiMissileRocketName,
 			hasHEF:            sh.Special == highEnergyFocusName,
@@ -1053,7 +1068,8 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 	//   護盾減傷暫 0(艦艇設計尚未把護盾與裝甲分離,見 gameplay-systems-status.md)。
 	for i, sh := range s.Fleet().Ships {
 		body := shipStrength(sh.Class)
-		atk := body + sh.WeaponAttack
+		atk := body + sh.WeaponAttack + shipBeamOffenseBonus(sh)
+		hullHP := body * 3 * shipStructureMultiplier(sh) / 100
 		// 戰機庫 → 這艘船在格子戰場上能派中隊出擊(見 fighter.go)。同一個 Special 欄位
 		// 在快速結算裡是母艦戰力加成,兩條路徑讀同一份設計資料,不會各說各話。
 		bay, bayKind := false, FighterInterceptor
@@ -1064,12 +1080,13 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			bay, bayKind = true, FighterHeavy
 		}
 		player = append(player, CombatShip{
-			Name: sh.Name, HP: body * 3, MaxHP: body * 3, Attack: atk, Col: 1, Row: i,
-			Defense: body, WeaponMin: atk / 2, WeaponMax: atk,
-			ShieldReduction: s.nebulaShield(shieldReduceByName(sh.Shield), shipHasHardShield(sh)),
-			HardShield:      shipHasHardShield(sh),
-			ArmorHP:         effectiveArmorHP(sh),
-			Kind:            weaponKindByName(sh.Weapon), Mods: sh.Mods,
+			Name: sh.Name, HP: hullHP, MaxHP: hullHP, Attack: atk, Col: 1, Row: i,
+			Defense: body + shipBeamDefenseBonus(sh), WeaponMin: atk / 2, WeaponMax: atk,
+			ShieldReduction: s.nebulaShield(shieldReduceByName(sh.Shield), shipHasHardShield(sh)) *
+				shipShieldMultiplier(sh) / 100,
+			HardShield: shipHasHardShield(sh),
+			ArmorHP:    effectiveArmorHP(sh),
+			Kind:       weaponKindByName(sh.Weapon), Mods: sh.Mods,
 			HEF:       sh.Special == highEnergyFocusName,
 			APNegated: shipNegatesArmorPiercing(sh),
 			MissileEvasion: gamedata.ShipCrewMissileEvasionBonus(s.shipCrewLevel(sh)) +

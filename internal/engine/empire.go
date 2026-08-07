@@ -142,6 +142,9 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		subtotal := out.TaxRevenue + out.FoodSurplusRevenue + out.TradeGoodsRevenue
 		out.TaxRevenue += gamedata.IncomeApplyGalacticCurrencyExchange(subtotal) - subtotal
 	}
+	// 偵察實驗室的艦隊研究(第 134 項)併進總研究。加在 TotalResearch 上而不是另開一條:
+	// 研究階段只有一個投入口,分開會讓「研究完成」的判定要看兩個地方。
+	out.TotalResearch += ps.FleetResearch
 	out.Player, out.ResearchDone = RunResearchPhase(ps, out.TotalResearch)
 	// 指揮評等(Command Rating)超支懲罰(GAME_MANUAL.pdf p.169:「For each rating point
 	// required by a ship that is not covered, 10 BCs come out of your income every turn.」)。

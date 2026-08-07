@@ -7254,3 +7254,66 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
         啟動/未啟動狀態。**查得到 ≠ 用得上。**
 
     截圖:25_shipdesign 的「特殊 1/11 → 1/19」(23 px)。
+
+134. **第 133 項那一桶的第一批,外加修掉第 133 項自己的一個缺失**(2026-08-08)。
+
+    ### 先講缺失
+
+    第 133 項接慣性穩定器時,只給了 **+25 飛彈閃避**。手冊那一條的全文是:
+
+    > The result is a **+50 addition to the ship's beam defense**, **+25 to the ship's
+    > missile evasion**, and a halving of the movement cost for turning the ship in place.
+
+    **三個效果,接了一個。**
+
+    原因值得記:第 133 項是從 `gamedata/missile.go` 那一側往回找元件的——那個檔案只收
+    飛彈相關的常數,`MissileInertialStabilizer = 25` 在那個脈絡裡看起來就是它的全部效果。
+    **從單一檔案回推元件效果會漏東西**,正解是回去讀手冊那一條的全文。
+
+    (而 `gamedata.BeamDefense`(移植自 openorion2 `ShipDesign::beamDefense`)其實早就有
+    `inertialStabilizer` 參數並且加 50——又一個「規則在、呼叫端不在」,只是這次它躲在
+    另一個檔案裡,從飛彈那一側完全看不到。)
+
+    ### 接上的四個(第 133 項「仍缺、可做」那 20 個裡的第一批)
+
+    選擇標準是**同時**滿足兩個條件,不滿足的不接:
+
+      ① 手冊給了確切數字(不是「considerably」「vastly」這種形容詞)
+      ② remake 已經有承接它的位置(不必先造一個新機制)
+
+    | 元件 | 手冊原文 | 落點 |
+    |---|---|---|
+    | 戰鬥掃描器 | increases the ship's chance to hit with beam weapons by **50** | `combatant.atk` |
+    | 強化船體 | **triples** the amount of structural damage a ship can sustain | `combatant.hp` |
+    | 多相護盾 | increasing the maximum amount of damage that they can absorb by **50%** | `combatant.shield` |
+    | 偵察實驗室 | Frigate = **1**, Destroyer = **2**, Cruiser = **4**, Battleship = **8**, Titan = **16**, Doom Star = **32** | 研究階段 |
+
+    偵察實驗室那一條罕見地把整張表都列出來了。艦隊研究**併進** `TotalResearch` 而不是
+    另開一條:研究階段只有一個投入口,分開會讓「研究完成」的判定要看兩個地方。
+
+    ### 沒接的十幾個,與各自的理由
+
+    寫在 `internal/shell/ship_systems.go` 檔尾,逐項列。摘要:
+
+      - **機制不存在**:保安站(登艦戰,第 119 項)、增強引擎與時間扭曲加速器(戰鬥速度/
+        回合結構,第 128 項)、匿蹤力場與相位匿蹤(可見性狀態)、超載電容與快速飛彈架
+        (回合內射擊次數)、能量吸收器(儲能狀態)、傳送器(護盾分面)
+      - **加了不影響任何東西**:戰鬥艙(「add equipment space」——remake 沒有逐元件佔格)
+      - **會讓兩條戰鬥路徑不一致**:測距瞄準器(把距離縮成 1/3,而快速結算固定 range=2,
+        只有格子戰術有真距離)——那正是第 131–133 項一直在防的事
+      - **要先重構**:結構分析儀與阿基里斯瞄準器都要動 `ResolveShotWithMods` 的傷害鏈,
+        而該函式的參數已經排到第 11 個。再加下去該先把攻方/守方系統各收成一個結構
+        ——**那是重構,不該夾在資料項裡做**
+
+    ### 誠實留白
+
+      - **強化船體只接了結構那一半。** 手冊同一句還說「tripling the amount of damage
+        required to destroy the drive system」——remake 沒有逐系統損毀(船不是完好就是被擊沉
+        加一個累積損傷值)。
+      - **偵察實驗室的弱點分析沒接。** 手冊說它讓艦隊「analyze the opponent's biology or
+        structure and seek out weaknesses」——remake 的怪物戰鬥沒有「弱點」這個概念。
+      - **`PlayerState.FleetResearch` 是每回合重算的衍生值。** 它會進存檔(整個 PlayerState
+        都會),但在 `EndTurn` 開頭就被覆寫,舊存檔的陳舊值影響不到任何判定
+        ——與第 130 項那個錯誤不同:那裡存的是**沒有人會重算**的種族編號。
+
+    截圖:25_shipdesign 的「特殊 1/19 → 1/23」(26 px)、30_netwait 狀態指紋(101 px)。

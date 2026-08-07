@@ -82,6 +82,9 @@ func (s *GameSession) RaceFantasticTrader() bool {
 // **只有跨層那兩個欄位需要同步**——shell 自己用的一律走上面那幾個方法,不留副本。
 func (s *GameSession) syncRaceEngineFields() {
 	s.Player.FantasticTrader = s.RaceFantasticTrader()
+	// 偵察實驗室(第 134 項):艦隊研究每回合重算——船會造、會沉、會被拆,
+	// 存一份下來遲早不同步。與這裡的種族旗標同一個理由,所以搭同一班車。
+	s.Player.FleetResearch = s.FleetResearchPoints()
 	tolerant := s.RaceTolerant()
 	for i := range s.PlayerColonies {
 		s.PlayerColonies[i].TolerantRace = tolerant

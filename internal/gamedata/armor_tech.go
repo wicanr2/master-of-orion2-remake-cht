@@ -92,3 +92,36 @@ const ArmorHeavyArmorMultiplier = 3
 func ArmorNegatesArmorPiercing(tech Technology) bool {
 	return tech == TECH_XENTRONIUM_ARMOR
 }
+
+// --- 艦載系統的固定加成(手冊逐句,第 134 項)---
+
+const (
+	// ShipInertialStabilizerBeamDefense 手冊(Inertial Stabilizer):「a +50 addition to the
+	// ship's beam defense」。與 BeamDefense(移植自 openorion2 ShipDesign::beamDefense)同值。
+	ShipInertialStabilizerBeamDefense = 50
+	// ShipInertialNullifierBeamDefense 慣性抵消器的對應值(BeamDefense 的 +100 分支)。
+	ShipInertialNullifierBeamDefense = 100
+	// ShipBattleScannerBeamOffense 手冊(Battle Scanner):「The scanner increases the ship's
+	// chance to hit with beam weapons by 50.」與 BeamOffense 的 battleScanner 分支同值。
+	ShipBattleScannerBeamOffense = 50
+	// ShipReinforcedHullStructurePercent 手冊(Reinforced Hull):「triples the amount of
+	// structural damage a ship can sustain before being destroyed」→ 300%。
+	ShipReinforcedHullStructurePercent = 300
+	// ShipMultiPhasedShieldPercent 手冊(Multi-Phased Shields):「increasing the maximum
+	// amount of damage that they can absorb by 50%」→ 150%。
+	ShipMultiPhasedShieldPercent = 150
+)
+
+// shipScoutLabResearch 是偵察實驗室依艦體等級每回合產生的研究點數。
+//
+// 手冊罕見地把整張表列出來了:「Frigate = 1, Destroyer = 2, Cruiser = 4, Battleship = 8,
+// Titan = 16, and Doom Star = 32.」索引對應 CombatShipClass(0=巡防艦 … 5=末日之星)。
+var shipScoutLabResearch = [6]int{1, 2, 4, 8, 16, 32}
+
+// ShipScoutLabResearch 回傳偵察實驗室在該艦體等級每回合的研究點數;超界回 0。
+func ShipScoutLabResearch(class CombatShipClass) int {
+	if int(class) < 0 || int(class) >= len(shipScoutLabResearch) {
+		return 0
+	}
+	return shipScoutLabResearch[class]
+}
