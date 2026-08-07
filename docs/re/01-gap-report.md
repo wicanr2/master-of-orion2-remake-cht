@@ -4605,4 +4605,75 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     ——但現在知道缺的到底是什麼:一個吃「成本 ÷ 每回合研究點 = 幾回合」、
     再乘上種族/性格權重的加權隨機挑選器,而且權重那一半在那 985 行裡。
 
+92. **三面行星護盾 + 自動實驗室 + 再生反應爐接線**(2026-08-07)。
+
+    HONEST-STATUS 寫著「部分軍事/防禦建築(~13 棟,需艦隊駐防/軌道防禦系統先落地)」。
+    照 rulebook 63 對程式碼盤點(掃建築名有沒有在 `buildings.go` 以外被消費過),
+    實際是 **11 棟**,而且其中**有三棟根本不需要新子系統**——它們接的軌道轟炸早就有了。
+
+    ### 先前為什麼沒接
+
+    `fleetBombardDamage` 的註解自己講了:
+
+    > 沒有「行星護盾」資料(damage.go DamageAfterShield 明講「本函式只處理艦對艦,
+    > 行星護盾情境不適用」),故護盾/裝甲一律視為 0(無防禦)。
+
+    那不是建模選擇,是缺資料。手冊三段各給了一個數字:
+
+    | 建築 | 手冊原文 | 減傷 | 手冊維護費 | 建築表(來自執行檔) |
+    |---|---|---|---|---|
+    | Planetary Radiation Shield | reducing bombardment damage by 5 points | 5 | 1 BC | **1** |
+    | Planetary Flux Shield | reduces all damage … by 10 points **per attack** | 10 | 3 BC | **3** |
+    | Planetary Barrier Shield | reducing all damage … by 20 points **per attack** | 20 | 5 BC | **5** |
+
+    右邊兩欄是第二個來源:減傷值與維護費出自手冊的**同一段文字**,而維護費三棟
+    全部對得上執行檔的建築表——**那段文字可信,減傷值不是孤證**。
+
+    ### 「per attack」決定了接在哪一行
+
+    接在**逐發**傷害(`shot.DamageToStructure`)而不是總傷害。在 10 輪齊射下這兩個接法
+    差一個數量級,而且用 hits 驗測不出來——`GroundBombHitsFromDamage` 除以 100 會把差異吃掉。
+    所以測試釘的是 `TotalDamage`:10 輪 × (101 − 減傷),手算得出來。
+
+    ### 取代不是疊加
+
+    手冊每一段都寫了取代關係(「A Planetary Flux Shield **replaces** any Planetary
+    Radiation Shield already in existence」),所以 `PlanetaryShieldReduction` 取**最強的那一面**。
+    資料上真的同時出現兩棟時(存檔亂了),取最大值才是還原;加總會讓資料異常變成強化。
+
+    ### 再生反應爐:接對地方比接上去重要
+
+    手冊 p.81 兩句話缺一不可:
+
+    > each unit of population generates 1 industrial production, **regardless of its assigned job**
+    >
+    > This increased production does **not count toward the planetary pollution level**
+
+    第二句決定了接的位置。`FlatIndustry` 是在污染縮減之**前**併進 gross 的
+    ——接那裡會讓這份產能跟著產生污染,**正好是手冊否定的那句**。
+    改成一個旗標,在 `RunColonyTurn` 的污染切分點之後才加。
+
+    測試也照這兩句話拆成兩個獨立斷言,外加一條**正對照**:
+    同樣多出來的產能若接成 `FlatIndustry`,污染一定會變——那條在,才證明「污染沒變」
+    不是因為這個殖民地本來就不污染。
+
+    ### 自動實驗室
+
+    手冊 p.96「generating 30 research points per turn」,一個數字、沒有 per-scientist 敘述,
+    所以只動 `FlatResearch`。
+
+    ### 誠實留白
+
+    - 三棟護盾都寫著「Radiated 氣候轉 Barren」,屏障護盾還多一句「生物武器無法進入大氣層」。
+      前者要接殖民地氣候欄位、後者要有生物武器這個分類,**這一輪只接減傷,並在檔頭寫明**。
+    - 剩下 8 棟未接:食物複製機(要產能↔食物轉換管線 + 每單位 1 BC)、
+      阿提米絲系統網(要艦體等級觸發機率 + 護盾等級,是完整的水雷子系統)、
+      太空學院(要艦員經驗值子系統)、異族管理中心(同化子系統)、
+      戰機基地(戰術格子戰鬥的獨立戰機單位)、恆星轉換器,以及先前已知的兩棟。
+      **這些是真的需要新子系統,不是沒接線。**
+    - `30_netwait.png` 變了:狀態指紋是存檔快照的 SHA-256,`ColonyState` 多一個欄位就會變。
+      那是 `determinism.go` 註解寫明的設計(「新增欄位只要進得了存檔就自動進得了指紋」),
+      畫面上其餘每一個像素都相同。
+
+
 

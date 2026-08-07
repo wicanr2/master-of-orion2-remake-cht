@@ -213,7 +213,7 @@ func TestBombardColony_Deterministic(t *testing.T) {
 func TestFleetBombardDamage_NoShipsZeroDamage(t *testing.T) {
 	s := &GameSession{}
 	rng := rand.New(rand.NewSource(1))
-	if got := s.fleetBombardDamage(rng); got != 0 {
+	if got := s.fleetBombardDamage(rng, 0); got != 0 {
 		t.Fatalf("無艦艇時總傷害應為 0,got %d", got)
 	}
 }
@@ -499,5 +499,55 @@ func TestBombardColony_RetaliationClearsFleetCargoWhenFleetWiped(t *testing.T) {
 	}
 	if s.Fleet().Tanks != 0 {
 		t.Fatalf("艦隊清空後 FleetTanks 應歸 0,got %d", s.Fleet().Tanks)
+	}
+}
+
+// 行星護盾接線:三面護盾各自把**每一次攻擊**扣掉一個定值(手冊 −5 / −10 / −20)。
+//
+// 這裡沿用 deterministicBombardShip 那組必中滿傷的參數,所以總傷害是手算得出來的:
+// 10 輪 × 1 艦 × (101 − 減傷)。用總傷害驗而不是用 hits,是因為 hits 經過除以 100
+// 會把差異吃掉——那正好也是「接在總傷害而不是逐發」會犯的錯。
+func TestBombardColony_PlanetaryShieldsReduceDamagePerAttack(t *testing.T) {
+	for _, tc := range []struct {
+		building  string
+		reduction int
+	}{
+		{gamedata.BuildingPlanetaryRadiationShield, 5},
+		{gamedata.BuildingPlanetaryFluxShield, 10},
+		{gamedata.BuildingPlanetaryBarrierShield, 20},
+	} {
+		s, starIdx := newFleetAtAIHomeSession(t)
+		s.RaceCombatPct = 0
+		s.Fleet().Ships = []Ship{deterministicBombardShip()}
+		aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
+		if !ok {
+			t.Fatal("應找得到 AI 母星的殖民地模型")
+		}
+		s.AIPlayers[aiIdx].ColonyBuildings[colonyIdx][tc.building] = true
+
+		res := s.BombardColony(starIdx)
+		if !res.Ok {
+			t.Fatalf("%s:前置條件應齊備,got Reason=%q", tc.building, res.Reason)
+		}
+		want := s.RuleProfile.BombardmentVolleys * (101 - tc.reduction)
+		if res.TotalDamage != want {
+			t.Errorf("%s:總傷害應為 %d 輪 × (101 − %d) = %d,得到 %d",
+				tc.building, s.RuleProfile.BombardmentVolleys, tc.reduction, want, res.TotalDamage)
+		}
+	}
+}
+
+// 正對照:沒有護盾時仍是原來的 10 × 101。
+// 少了這條,「護盾一律扣光」也會讓上面通過。
+func TestBombardColony_NoShieldKeepsFullDamage(t *testing.T) {
+	s, starIdx := newFleetAtAIHomeSession(t)
+	s.RaceCombatPct = 0
+	s.Fleet().Ships = []Ship{deterministicBombardShip()}
+	res := s.BombardColony(starIdx)
+	if !res.Ok {
+		t.Fatalf("前置條件應齊備,got Reason=%q", res.Reason)
+	}
+	if want := s.RuleProfile.BombardmentVolleys * 101; res.TotalDamage != want {
+		t.Errorf("無護盾總傷害應為 %d,得到 %d", want, res.TotalDamage)
 	}
 }

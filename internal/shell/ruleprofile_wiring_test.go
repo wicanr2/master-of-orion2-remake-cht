@@ -83,10 +83,10 @@ func TestFleetBombardDamage_VolleyCountFollowsRuleProfile(t *testing.T) {
 	}
 
 	s15 := build(gamedata.Profile15())
-	dmg15 := s15.fleetBombardDamage(rand.New(rand.NewSource(1)))
+	dmg15 := s15.fleetBombardDamage(rand.New(rand.NewSource(1)), 0)
 
 	s13 := build(gamedata.Profile13())
-	dmg13 := s13.fleetBombardDamage(rand.New(rand.NewSource(1)))
+	dmg13 := s13.fleetBombardDamage(rand.New(rand.NewSource(1)), 0)
 
 	if dmg15 != 10*101 {
 		t.Fatalf("Profile15(10 輪) 總傷害 = %d,want %d(10 輪 * 每輪 101 固定滿傷)", dmg15, 10*101)

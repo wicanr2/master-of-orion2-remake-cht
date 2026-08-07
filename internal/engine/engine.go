@@ -36,7 +36,17 @@ type ColonyState struct {
 	PollutionProcessor bool // 污染處理器
 	AtmosphericRenewer bool // 大氣更新器
 	CoreWasteDump      bool // 核心廢料場(完全消除污染)
-	Housing            bool // 是否處於「住房」產能配置(啟用住房成長獎金 h)
+
+	// Recyclotron 是再生反應爐(GAME_MANUAL.pdf p.81)。
+	//
+	// 手冊原文兩句缺一不可:「each unit of population generates 1 industrial production,
+	// **regardless of its assigned job**」與「This increased production does **not count
+	// toward the planetary pollution level**, since all the materials used are recycled.」
+	//
+	// 所以它**不能**接成 FlatIndustry:那個欄位是在污染縮減之**前**併進 gross 的,
+	// 接錯地方會讓這份產能跟著產生污染,正好與手冊那句相反。接法見 colonyOutput。
+	Recyclotron bool
+	Housing     bool // 是否處於「住房」產能配置(啟用住房成長獎金 h)
 	// TradeGoods 是否處於「貿易品」建造佇列配置(shell.GameSession.syncTradeGoodsFlag 依玩家
 	// 建造選單同步)。true 時該殖民地當回合淨工業不蓋建築,改由 RunEmpireTurn 呼叫
 	// gamedata.TradeGoodsIncome 以 2:1(一般種族)/1:1(Fantastic Trader)換算成 BC,計入

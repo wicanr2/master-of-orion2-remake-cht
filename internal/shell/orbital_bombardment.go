@@ -26,14 +26,18 @@ import (
 // 「殖民地」,且不模擬殖民地反擊(手冊本段只描述攻方輸出,未提及行星火力回擊,回擊屬於另一套
 // 「行星飛彈基地/星基防禦」機制,不在本函式範圍)。
 //
+// 2026-08-07:**行星護盾接上了**。shieldReduction 是這個殖民地三面護盾裡最強那一面的
+// 每次攻擊減傷(gamedata.PlanetaryShieldReduction,手冊 −5 / −10 / −20)。接在**逐發**
+// 傷害那一行而不是總傷害——手冊寫的是「per attack」,在 10 輪齊射下兩個接法差一個數量級。
+//
 // 已知簡化(誠實標註,非杜撰真值,是既有 remake 資料模型限制,非本函式引入):
-//   - 沒有「行星護盾」資料(damage.go DamageAfterShield 明講「本函式只處理艦對艦,行星護盾
-//     情境不適用」),故護盾/裝甲一律視為 0(無防禦)。
+//   - 艦對艦意義下的「行星裝甲」仍是 0(damage.go DamageAfterShield 明講不處理行星情境);
+//     護盾只有建築給的那個定值,沒有原版可能另有的護盾等級模型。
 //   - 手冊「Damage of beams and torpedoes is halved just like in tactical combat」與
 //     「A better computer helps for beams here too」:目前戰術戰鬥層本身都還沒有獨立的「減半」
 //     或「電腦命中加成」函式接線(見 ground.go 檔尾 TODO),故本模擬未套用,直接沿用一般
 //     ResolveShot 命中/傷害公式——TODO,待戰術戰鬥層先補上這兩項才能真正對齊手冊轟炸公式。
-func (s *GameSession) fleetBombardDamage(rng *rand.Rand) int {
+func (s *GameSession) fleetBombardDamage(rng *rand.Rand, shieldReduction int) int {
 	total := 0
 	for round := 0; round < s.RuleProfile.BombardmentVolleys; round++ {
 		for _, sh := range s.Fleet().Ships {
@@ -60,7 +64,7 @@ func (s *GameSession) fleetBombardDamage(rng *rand.Rand) int {
 				shot = ResolveShot(atk, wmin, wmax, 2, 0, 0, roll, false, false)
 			}
 			if shot.Hit {
-				total += shot.DamageToStructure
+				total += gamedata.PlanetaryShieldedDamage(shot.DamageToStructure, shieldReduction)
 			}
 		}
 	}
@@ -266,8 +270,16 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 	aiPlayer := &s.AIPlayers[aiIdx]
 	colony := &aiPlayer.Colonies[colonyIdx]
 
+	// 建築清單要**先**取出來:行星護盾是建築給的,而它影響的是逐發傷害,
+	// 所以必須在解算傷害之前就知道有沒有護盾(先前這段在傷害之後,護盾接不上)。
+	var buildings map[string]bool
+	if colonyIdx < len(aiPlayer.ColonyBuildings) {
+		buildings = aiPlayer.ColonyBuildings[colonyIdx]
+	}
+	shield := gamedata.PlanetaryShieldReduction(buildings)
+
 	rng := rand.New(rand.NewSource(int64(s.Turn)*2654435761 + int64(starIdx)*131 + 777))
-	totalDamage := s.fleetBombardDamage(rng)
+	totalDamage := s.fleetBombardDamage(rng, shield)
 	hits := gamedata.GroundBombHitsFromDamage(totalDamage)
 
 	res := GroundBombardResult{Ok: true, TotalDamage: totalDamage, Hits: hits,
@@ -275,10 +287,6 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 
 	// --- 建築吸收(#7/#8 接線,見函式檔頭「建築吸收」段落):hits 先花在摧毀建築 ---
 	remainingHits := hits
-	var buildings map[string]bool
-	if colonyIdx < len(aiPlayer.ColonyBuildings) {
-		buildings = aiPlayer.ColonyBuildings[colonyIdx]
-	}
 	if len(buildings) > 0 {
 		hitsPerBuilding := gamedata.GroundPlanetHitsPerBuilding + s.RuleProfile.BombardmentBuildingBonusHits
 		if hitsPerBuilding < 1 {

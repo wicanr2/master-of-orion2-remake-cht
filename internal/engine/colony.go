@@ -83,6 +83,16 @@ func RunColonyTurn(cs ColonyState) ColonyOutput {
 	pct := cs.MoralePercent + colonyGravityPenaltyPercent(cs)
 	gross := gamedata.GravityAdjustedProduction(cs.Workers*cs.IndustryPerWorker, pct) + cs.FlatIndustry
 	pollutingProd, cleanupCost, netIndustry := colonyPollution(cs, gross)
+	// 再生反應爐(p.81)加在**污染縮減之後**:手冊明說這份產能不計入污染。
+	// 每單位人口 +1,不分職業——所以是 Population 而不是 Workers。
+	//
+	// ⚠ 這一行的位置就是它的正確性。搬到 gross 那一行去(接成 FlatIndustry)語意會變成
+	// 「這份產能也會污染」,那正好是手冊否定的那句。
+	recycled := 0
+	if cs.Recyclotron {
+		recycled = cs.Population
+		netIndustry += recycled
+	}
 	research := gamedata.GravityAdjustedProduction(cs.Scientists*cs.ResearchPerScientist, pct) + cs.FlatResearch
 	growth := colonyGrowth(cs, surplus, netIndustry)
 
@@ -91,7 +101,7 @@ func RunColonyTurn(cs ColonyState) ColonyOutput {
 		FoodConsumed:         consumed,
 		FoodSurplus:          surplus,
 		Starving:             surplus < 0,
-		GrossIndustry:        gross,
+		GrossIndustry:        gross + recycled,
 		PollutingProduction:  pollutingProd,
 		PollutionCleanupCost: cleanupCost,
 		NetIndustry:          netIndustry,

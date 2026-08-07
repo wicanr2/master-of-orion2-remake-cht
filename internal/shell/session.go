@@ -1281,6 +1281,13 @@ func (s *GameSession) applyBuildingEffect(i int, name string) {
 		// popGrowthThreshold(=300)這個 remake 尺度代表 1 人口單位,故 0.1 單位換算成
 		// 這個尺度的 1/10;colonyGrowth 已依 Population<PopMax 判斷是否還要套用固定成長。
 		c.FlatGrowth += popGrowthThreshold / 10
+	case "自動實驗室": // Autolab p.96:「generating 30 research points per turn」——固定 30,不依賴人口。
+		// 手冊那一句只有一個數字、沒有 per-scientist 敘述,所以只動 FlatResearch。
+		c.FlatResearch += 30
+	case "再生反應爐": // Recyclotron p.81:每單位人口 +1 產能(不分職業),且該產能不計入污染。
+		// 不接 FlatIndustry ——那個欄位在污染縮減之前併入 gross,接錯地方會讓這份產能
+		// 跟著產生污染,正好與手冊那句相反。接法見 engine.RunColonyTurn 的 recycled。
+		c.Recyclotron = true
 	case "行星重力產生器": // Planetary Gravity Generator p.104:重力正常化,消除 Low-G/Heavy-G 負面效果。
 		// 2026-07-11 已接線:engine.ColonyState.NormalizeGravity=true 時,colonyGravityPenaltyPercent
 		// (colony.go)強制把重力懲罰歸零,不論 PlanetGravity 是什麼——此旗標現在真的有效,不再是
