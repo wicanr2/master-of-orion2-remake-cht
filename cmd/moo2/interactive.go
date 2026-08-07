@@ -1854,6 +1854,9 @@ type tacticalScreen struct {
 	shipSprites    map[int]*ebiten.Image // CMBTSHP 資產索引 → 已解碼 sprite(nil=載入失敗,亦快取)
 	// squads 是場上的戰機中隊(見 tacticalfighter.go / internal/shell/fighter.go)。
 	squads []shell.FighterSquadron
+	// moveLeft 是各我方艦這一回合剩餘的移動格數(第 137 項)。每回合重置為
+	// shell.TacticalMoveSquares(艦的戰鬥速度)。
+	moveLeft []int
 }
 
 // loadCombatBG 載入戰場星空背景(STARBG.LBX#0,640×480),借 COMBAT.LBX#11 調色盤。
@@ -1913,7 +1916,17 @@ func newTacticalScreen(b *sceneBuilder) *tacticalScreen {
 		pStart: len(p), eStart: len(e),
 		rng: rand.New(rand.NewSource(seed)),
 		bg:  loadCombatBG(b.res), bar: loadCombatBar(b.res),
-		res: b.res, shipSprites: map[int]*ebiten.Image{}}
+		res: b.res, shipSprites: map[int]*ebiten.Image{},
+		moveLeft: freshMoveBudgets(p)}
+}
+
+// freshMoveBudgets 依各艦的戰鬥速度算出這一回合的移動格數(第 137 項)。
+func freshMoveBudgets(ships []shell.CombatShip) []int {
+	out := make([]int, len(ships))
+	for i, sh := range ships {
+		out[i] = shell.TacticalMoveSquares(sh.CombatSpeed)
+	}
+	return out
 }
 
 // shipSprite 依 CMBTSHP 資產索引取(並快取)已解碼 sprite,避免每幀重解。
@@ -1983,9 +1996,30 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 		t.fireRound(ei)
 		return nil
 	}
-	if t.sel >= 0 && t.sel < len(t.player) { // 點空格 → 移動選中艦
-		t.player[t.sel].Col, t.player[t.sel].Row = col, row
-		t.log = fmt.Sprintf(t.b.tr("%s 移動到 (%d,%d)", "%s moves to (%d,%d)"), t.player[t.sel].Name, col, row)
+	if t.sel >= 0 && t.sel < len(t.player) { // 點空格 → 移動選中艦(受戰鬥速度限制)
+		sh := &t.player[t.sel]
+		// ⚠ 2026-08-08(第 137 項):先前這裡是**瞬移**——點任何空格都能到,沒有距離限制。
+		// 現在照原版走戰鬥速度:一回合能走幾格見 shell.TacticalMoveSquares
+		// (原版棋盤 81×68 vs remake 8×6,比例尺約 1:10)。
+		//
+		// 距離用曼哈頓距離,與同一畫面的射程判定(fireRound 的 `abs(dc)+abs(dr)`)同一個度量
+		// ——**兩處用不同度量會讓「走得到卻打不到」變成一種很難解釋的行為**。
+		budget := 0
+		if t.sel < len(t.moveLeft) {
+			budget = t.moveLeft[t.sel]
+		}
+		need := abs(sh.Col-col) + abs(sh.Row-row)
+		if need > budget {
+			t.log = fmt.Sprintf(t.b.tr("%s 這回合只剩 %d 格移動力(需要 %d)",
+				"%s has %d movement left this round (needs %d)"), sh.Name, budget, need)
+			return nil
+		}
+		sh.Col, sh.Row = col, row
+		if t.sel < len(t.moveLeft) {
+			t.moveLeft[t.sel] = budget - need
+		}
+		t.log = fmt.Sprintf(t.b.tr("%s 移動到 (%d,%d),剩 %d 格", "%s moves to (%d,%d), %d left"),
+			sh.Name, col, row, t.moveLeft[t.sel])
 	}
 	return nil
 }
@@ -2122,6 +2156,10 @@ func (t *tacticalScreen) fireRound(target int) {
 		}
 	}
 	t.player = palive
+	// ⚠ 移動力重置**必須在戰損壓縮之後**(第 137 項)。放在 round++ 那裡的話,
+	// 下面這個 palive 壓縮會把 t.player 縮短並讓索引往前移,而 moveLeft 還停在舊長度
+	// ——選中第 3 艘卻讀到第 5 艘的移動力,而且陣列還會越界。
+	t.moveLeft = freshMoveBudgets(t.player)
 	if t.sel >= len(t.player) {
 		t.sel = -1
 	}

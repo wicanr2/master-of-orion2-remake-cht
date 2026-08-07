@@ -186,3 +186,29 @@ func TestAugmentedEnginesHasItsRealTopic(t *testing.T) {
 		t.Errorf("主題應為執行檔的 %v,得到 %v", topic, found.Tech)
 	}
 }
+
+// 棋盤比例尺:原版 81 欄 vs remake 8 欄,速度 13..30 應換算成 1..3 格。
+func TestTacticalMoveSquaresScaleIsSane(t *testing.T) {
+	if got := TacticalMoveSquares(0); got != 0 {
+		t.Errorf("沒有引擎不該能動,得到 %d", got)
+	}
+	// 最慢(階1 末日之星 max=13)與最快(階6 巡防艦 max=30 + 增強 + 跨維)
+	slow := gamedata.ShipCombatSpeed(1, 5, false, false)
+	fast := gamedata.ShipCombatSpeed(gamedata.CombatSpeedDriveLevels, 0, true, true)
+	ns, nf := TacticalMoveSquares(slow), TacticalMoveSquares(fast)
+	if ns < 1 {
+		t.Errorf("最慢的船也要能動至少 1 格,得到 %d(速度 %d)", ns, slow)
+	}
+	if nf <= ns {
+		t.Errorf("最快的船應走得比最慢的遠:%d vs %d", nf, ns)
+	}
+	// 不該有任何組合可以一步橫跨全場——那正是先前「瞬移」的行為。
+	if nf >= TacticalGridColumns {
+		t.Errorf("最快的船 %d 格已可橫跨 %d 欄的棋盤", nf, TacticalGridColumns)
+	}
+	// 比例尺本身:用一手的原版欄數,不是隨手挑的數字。
+	if gamedata.CombatGridColumns != 81 || gamedata.CombatGridRows != 68 {
+		t.Errorf("原版棋盤應為 81×68(Assign_Combat_Grids_ 的迴圈界限),得到 %d×%d",
+			gamedata.CombatGridColumns, gamedata.CombatGridRows)
+	}
+}

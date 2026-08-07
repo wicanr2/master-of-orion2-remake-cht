@@ -70,3 +70,45 @@ const augmentedEnginesName = "增強引擎"
 func sortByInitiative(cs []combatant) {
 	sort.SliceStable(cs, func(i, j int) bool { return cs[i].initiative > cs[j].initiative })
 }
+
+// --- 戰術棋盤比例尺(第 137 項)---
+//
+// remake 的戰術棋盤是 **8 × 6**,原版是 **81 × 68**(見 gamedata.CombatGridColumns,
+// 從 `Assign_Combat_Grids_` 的清空迴圈界限挖出來)。兩邊差約 **10 倍**:
+//
+//	81 / 8 ≈ 10.1      68 / 6 ≈ 11.3
+//
+// 所以原版的速度值(13..30)換算到 remake 盤面是 **1..3 格**。
+//
+// ⚠ **「remake 用 8×6」本身是 remake 的簡化**,不是原版的東西;所以這個比例尺是一個
+// **明說的 remake 決定**,不是轉寫。但它至少是**從一手尺寸推出來的**決定,而不是
+// 「覺得走 2 格差不多」——差別在於:原版尺寸改了(或以後把棋盤放大),這個換算會跟著對。
+//
+// 保留原版的相對關係才是重點:小船走得比大船遠、引擎升級走得更遠、增強引擎再多一點。
+// 下限 1 格是刻意的——速度再慢的船也要能動,否則末日之星在低引擎階會完全無法移動,
+// 那不是手冊講的東西(手冊只說大船比較慢)。
+
+// TacticalGridColumns / TacticalGridRows 是 remake 戰術棋盤的尺寸。
+//
+// 與 `cmd/moo2` 的 `gcCols`/`gcRows` 必須一致——`drive_level_test.go` 沒辦法從 shell
+// 檢查 cmd 的常數,所以那一側自己有一條測試釘住兩邊相同。
+const (
+	TacticalGridColumns = 8
+	TacticalGridRows    = 6
+)
+
+// TacticalMoveSquares 把原版的戰鬥速度換算成 remake 棋盤上一回合可走的格數。
+//
+// 用外圈(欄)的比例:兩軸的比例分別是 10.1 與 11.3,取較小的那個會讓縱向移動偏慢,
+// 而 remake 的戰列是橫向排開的(玩家在左欄、敵方在右欄),橫向距離才是主要的。
+// 下限 1(見上方說明)。
+func TacticalMoveSquares(combatSpeed int) int {
+	if combatSpeed <= 0 {
+		return 0 // 沒有引擎的船不能動
+	}
+	n := combatSpeed * TacticalGridColumns / gamedata.CombatGridColumns
+	if n < 1 {
+		n = 1
+	}
+	return n
+}

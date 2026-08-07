@@ -137,3 +137,32 @@ func DriveLevelForTech(tech Technology) int {
 	}
 	return 0
 }
+
+// --- 原版戰術棋盤尺寸(第 137 項,一手)---
+//
+// `Assign_Combat_Grids_`(0x46CC8)開頭把整張格點清成 0xFFFF:
+//
+//	loc_46CD4:
+//	  xor  eax, eax
+//	loc_46CD6:
+//	  imul esi, ecx, 88h              ; 列距 0x88 = 136 位元組 = 68 格 × 2
+//	  mov  word_18C9A8[esi+ecx*2], 0FFFFh
+//	  cmp  ax, 44h                    ; 0x44 = 68
+//	  jl   short loc_46CD6
+//	  inc  ebx
+//	  cmp  bx, 51h                    ; 0x51 = 81
+//	  jl   short loc_46CD4
+//
+// **兩個界限與列距互相驗證**:列距 136 位元組正好裝得下 68 個 uint16,而內圈上界就是 68。
+// 同一支函式稍後用 `[ship+21h]` 當外圈索引、`[ship+22h]` 當內圈索引寫回艦艇編號,
+// 所以那兩個位元組就是艦艇在棋盤上的座標。
+//
+// 這兩個數字解釋了手冊那些「以格為單位」的射程為什麼可以那麼大:
+// 質子魚雷 24 格、傳送器 12 格、投彈 3 格——放在 81×68 的盤面上都是合理的比例。
+
+const (
+	// CombatGridColumns 是原版戰術棋盤的外圈格數(`cmp bx, 51h`)。
+	CombatGridColumns = 81
+	// CombatGridRows 是內圈格數(`cmp ax, 44h`,亦即列距 0x88 / 2)。
+	CombatGridRows = 68
+)
