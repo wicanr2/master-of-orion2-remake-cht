@@ -252,21 +252,66 @@ func GroundRaceCombatBonus(race GroundRace) int {
 	}
 }
 
-// GroundLowGPenaltyPercent 手冊 p.24(Low-G World):「Low-G troops suffer a 10% penalty
-// during ground combat.」(此為與 GroundRaceGnolam 的種族 -10 分開的獨立效果——Gnolam 剛好
-// 兩者皆適用,但 Low-G 懲罰是任何 Low-G 種族共通的百分比懲罰,不限 Gnolam。)
-const GroundLowGPenaltyPercent = 10
+// --- 重力種族特性(手冊 p.24 + `Compute_Player_Ground_Combat_Bonuses_` @ 0xEC15C)---
+//
+// 手冊明說這兩個**互斥**(「High-G World and Low-G World are mutually exclusive」),
+// 而反組譯把互斥直接寫成 `if / else if`:
+//
+//	cmp byte ptr [player+8AAh], 0     ; High-G
+//	jz  short loc_EC227
+//	mov byte ptr [out+0Ch], 1         ; → 耐受命中數 +1
+//	jmp short loc_EC234
+//	loc_EC227:
+//	cmp byte ptr [player+8A9h], 0     ; Low-G(只有在不是 High-G 時才看)
+//	jz  short loc_EC234
+//	mov byte ptr [out+0Dh], 0F6h      ; → 攻擊力 −10(0xF6 = −10 的有號位元組)
+//
+// **那個 else 本身就是互斥的證據**,而互斥又是手冊明寫的——兩邊互證。
 
-// GroundApplyLowGPenalty 對地面戰力套用 Low-G 種族的 10% 懲罰。手冊只給了百分比數字本身,
-// 未列出「10% 套用在哪個基準值、如何捨入」的計算細節;此處採最直接的讀法——以整數戰力乘 10%
-// 後捨去,交由呼叫端在需要不同捨入方式時自行調整。
+// GroundHighGExtraHits 是 High-G 種族的地面部隊多挨幾下才死。
+//
+// 手冊逐字:「High-G ground troops can sustain substantially more physical damage than
+// other troops; **they take 1 hit more than normal troops before being slain in ground
+// combat.**」——與反組譯的 `mov byte ptr [out+0Ch], 1` 逐字對上
+// (基礎耐受是 `[out+0x0C] + 1`,見 ground_battle_orig.go 的 `GroundBaseHitsToKill`)。
+const GroundHighGExtraHits = 1
+
+// GroundLowGCombatPenalty 是 Low-G 種族的地面戰力懲罰。
+//
+// ⚠ **這裡與手冊的字面讀法不同,而且是刻意的。** 手冊寫「Low-G troops suffer a **10%**
+// penalty during ground combat」,remake 先前照字面做成乘法(戰力 × 90%)並在註解裡寫著
+// 「手冊未列出 10% 套用在哪個基準值、如何捨入」。
+//
+// 2026-08-07 反組譯給了答案:`mov byte ptr [ecx+0Dh], 0F6h` —— **0xF6 是有號位元組的 −10,
+// 是個定值,不是百分比**。它與其他所有加成一起加進攻擊力(`Compute_Ground_Combat_Info_`
+// 的 `var_4`),而那些加成本身也都是 +10/+15/+20 這種定值。
+//
+// 手冊那個「%」多半是行文上的隨手寫法(其他加成手冊也是寫「adds 10 to…」而不是 10%)。
+// 一手事實優先。
+const GroundLowGCombatPenalty = -10
+
+// GroundApplyLowGPenalty 對地面戰力套用 Low-G 種族的懲罰。
+//
+// ⚠ 2026-08-07 由「×90%」改成 **−10 定值**(見 GroundLowGCombatPenalty)。
+// 差異在典型戰力(30..60)下是 3..6 點 vs 固定 10 點,不是可以忽略的捨入差。
 func GroundApplyLowGPenalty(strength int) int {
-	return strength - strength*GroundLowGPenaltyPercent/100
+	return strength + GroundLowGCombatPenalty
 }
 
 // GroundSubterraneanDefenseBonus 手冊 p.24(Subterranean):「subterranean troops receive a
 // +10 ground combat bonus when defending their colonies.」僅在防守己方殖民地時生效,
 // 進攻時不適用(手冊未提供攻擊情境下的數字)。
+//
+// ✅ 2026-08-07 反組譯**獨立確認**:`Compute_Player_Ground_Combat_Bonuses_` @ 0xEC15C
+//
+//	cmp byte ptr [player+8ACh], 0     ; Subterranean
+//	jz  short loc_EC247
+//	cmp [ebp+var_4], 0                ; ← 呼叫端傳的旗標;殖民地(守方)傳 1
+//	jz  short loc_EC247
+//	mov byte ptr [out+0Eh], 0Ah       ; → +10
+//
+// 「只有守方才給」在原版是那個由呼叫端傳進來的旗標,而 `Compute_Colony_Ground_Combat_Info_`
+// (殖民地 = 守方)傳的正是 1。數字與條件兩邊都對上——這一條從「手冊單一來源」升級為雙來源。
 const GroundSubterraneanDefenseBonus = 10
 
 // GroundSubterraneanBonus 依是否為防守方回傳 Subterranean 種族的地面戰力加成。

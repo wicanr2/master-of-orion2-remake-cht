@@ -4250,3 +4250,66 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     `[+5]`/`[+7]`/`[+9]` 那三張查表(stride 15 / 3 / 3,索引由 `sub_DC323`/`sub_DC416`/`sub_DC449`
     算出)、`[+0x0B]`、`[+0x10]` 還沒逐欄對出意義。它們對應的是手冊已經列出的那幾類加成,
     而 remake 已用手冊的表算過——**不重複實作**,免得同一個加成被加兩次。
+
+87. **重力種族特性:High-G 逐字對上,Low-G 的「10%」其實是定值 −10**(2026-08-07)。
+
+    第 86 項留下的加成塊欄位又追出三個,而且三個都能與手冊互證。
+
+    ### 那個 `else` 就是「互斥」的證據
+
+    ```
+    cmp byte ptr [player+8AAh], 0     ; High-G
+    jz  short loc_EC227
+    mov byte ptr [out+0Ch], 1         ; → 耐受命中數 +1
+    jmp short loc_EC234
+    loc_EC227:
+    cmp byte ptr [player+8A9h], 0     ; Low-G(**只有在不是 High-G 時才看**)
+    jz  short loc_EC234
+    mov byte ptr [out+0Dh], 0F6h      ; → 攻擊力 −10
+    ```
+
+    手冊明寫「High-G World and Low-G World are **mutually exclusive**」——
+    而原版把互斥直接寫成 `if / else if`。**兩邊互證**。
+
+    ### High-G:手冊逐字
+
+    > 「High-G ground troops can sustain substantially more physical damage than other troops;
+    > **they take 1 hit more than normal troops before being slain in ground combat.**」
+
+    對上 `mov byte ptr [out+0Ch], 1`,而耐受命中數 = `[out+0x0C] + 1`
+    (第 86 項)→ 一般 1 下、High-G 2 下。**一字不差**。
+
+    ### Low-G:手冊寫「10%」,原版是**定值 −10**
+
+    `mov byte ptr [ecx+0Dh], 0F6h` —— `0xF6` 是有號位元組的 **−10**,是個定值。
+    它與其他所有加成一起加進攻擊力(`var_4`),而那些加成本身也都是 +10/+15/+20 這種定值。
+
+    手冊那個「%」多半是行文上的隨手寫法(其他加成手冊也是寫「adds 10 to…」)。
+
+    remake 先前照字面做成乘法(戰力 × 90%),註解裡還寫著「手冊未列出 10% 套用在哪個
+    基準值、如何捨入」——**那個不確定性現在有答案了**。差異在典型戰力(30..60)下是
+    3..6 點 vs 固定 10 點,不是可以忽略的捨入差;戰力 7 時舊版甚至因整數除法完全不扣。
+
+    ⚠ 測試也跟著改寫:舊測試裡 `100 → 90` 這一列**兩種算法的答案剛好相同**——
+    只測那一個數的話,這個改動驗不出來。新測試加了 50/10/7/0 與「定值 = 差與基準無關」的性質。
+
+    ### Subterranean:從單一來源升級為雙來源
+
+    ```
+    cmp byte ptr [player+8ACh], 0     ; Subterranean
+    jz  short loc_EC247
+    cmp [ebp+var_4], 0                ; ← 呼叫端傳的旗標
+    jz  short loc_EC247
+    mov byte ptr [out+0Eh], 0Ah       ; → +10
+    ```
+
+    「只有守方才給」在原版是那個呼叫端旗標,而 `Compute_Colony_Ground_Combat_Info_`
+    (殖民地 = 守方)傳的正是 1。數字 10 與「僅守方」兩個條件都對上 remake 既有的
+    `GroundSubterraneanDefenseBonus`——這一條從「手冊單一來源」升級為雙來源,沒有改動。
+
+    ### 誠實留白
+
+    `[player+0x8A7]`(有號,加進所有類型)看起來就是種族的地面戰加成
+    (remake 的 `GroundRaceCombatBonus`:布拉西 +10 / 諾蘭姆 −10),但**沒有直接證據**
+    指出那個位元組就是它——不寫進程式碼,只記在這裡。
+    `[+5]`/`[+7]`/`[+9]` 三張查表與 `[+0x10]` 同樣仍未定義。

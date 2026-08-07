@@ -1526,6 +1526,29 @@ MOO2 實機核實」。`Ground_Combat_Round_` @ 0xEC4FE 給出原版的 26 位�
 **誠實留白**:`[+5]`/`[+7]`/`[+9]` 那三張查表與 `[+0x0B]`/`[+0x10]` 還沒對出意義;
 它們對應手冊已列出的加成,remake 已算過,**不重複實作**免得同一個加成被加兩次。
 
+## ★ 2026-08-07 重力種族特性(gap report 第 87 項)
+
+上一項留的加成塊欄位又追出三個,三個都與手冊互證。
+
+**那個 `else` 就是「互斥」的證據**:原版先看 High-G(`[player+0x8AA]`),不成立才看
+Low-G(`[player+0x8A9]`)——而手冊明寫「High-G World and Low-G World are mutually exclusive」。
+
+**High-G 手冊逐字**:「they take **1 hit more** than normal troops before being slain」
+= `mov byte ptr [out+0Ch], 1`,而耐受 = `[+0x0C] + 1` → 一般 1 下、High-G 2 下。一字不差。
+
+**Low-G 有落差**:手冊寫「a **10%** penalty」,原版是 `mov byte ptr [ecx+0Dh], 0F6h`
+= **定值 −10**。它與其他加成一起加進攻擊力,而那些也都是 +10/+15/+20 的定值——
+手冊那個「%」多半是行文的隨手寫法。remake 先前照字面做乘法,註解還寫著「手冊未列出
+10% 套用在哪個基準值」——**那個不確定性現在有答案了**。已改成定值。
+
+⚠ 舊測試裡 `100 → 90` 這一列**兩種算法答案剛好相同**——只測那個數驗不出這個改動。
+新測試加了 50/10/7/0 與「定值 = 差與基準無關」的性質。
+
+**Subterranean 升級為雙來源**:`mov byte ptr [out+0Eh], 0Ah` + 只有守方才傳那個旗標,
+數字與條件都對上 remake 既有的手冊值,沒有改動。
+
+**誠實留白**:`[player+0x8A7]` 看起來是種族地面戰加成,但**沒有直接證據**,不寫進程式碼。
+
 ## 工作方式(使用者定案)
 - go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)
 - **不用多代理 workflow**;翻譯一組一組慢慢做(單代理逐項,使用者可隨時審閱)

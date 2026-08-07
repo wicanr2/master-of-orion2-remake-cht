@@ -170,21 +170,59 @@ func TestGroundRaceCombatBonus(t *testing.T) {
 	}
 }
 
-// TestGroundApplyLowGPenalty 手冊 p.24:「Low-G troops suffer a 10% penalty during ground
-// combat.」
+// ★ TestGroundApplyLowGPenalty:Low-G 的懲罰是 **−10 定值**,不是 −10%。
+//
+// 2026-08-07 改寫。手冊寫「a **10%** penalty」,而 `Compute_Player_Ground_Combat_Bonuses_`
+// @ 0xEC15C 寫 `mov byte ptr [ecx+0Dh], 0F6h` —— 0xF6 是有號位元組的 −10,是定值。
+// 它與其他加成一起加進攻擊力,而那些加成本身也都是 +10/+15/+20 這種定值。
+// 手冊那個「%」多半是行文上的隨手寫法。一手事實優先。
 func TestGroundApplyLowGPenalty(t *testing.T) {
 	cases := map[int]int{
-		100: 90,
-		50:  45,
-		10:  9,
-		0:   0,
-		// 7*10/100 在整數運算中先乘後除:7*10=70,70/100=0(整數除法捨去),故 7-0=7。
-		7: 7,
+		100: 90, // 剛好與舊的 −10% 相同 —— 所以只測 100 是驗不出這個改動的
+		50:  40, // 舊版 45
+		10:  0,  // 舊版 9
+		7:   -3, // 舊版 7(整數除法把懲罰吃掉了)
+		0:   -10,
 	}
 	for strength, want := range cases {
 		if got := GroundApplyLowGPenalty(strength); got != want {
 			t.Errorf("GroundApplyLowGPenalty(%d) = %d,預期 %d", strength, got, want)
 		}
+	}
+	// 不夾在 0:原版就是直接加進攻擊力,負的攻擊力是有意義的(必輸而已)。
+	if GroundApplyLowGPenalty(3) >= 0 {
+		t.Error("低戰力時應該可以變成負的——原版沒有夾")
+	}
+	// 定值 = 不論基準多少,差都是 10。
+	if GroundApplyLowGPenalty(80)-GroundApplyLowGPenalty(90) != -10 {
+		t.Error("兩個基準相差 10 時,套用後也該相差 10(定值的性質)")
+	}
+	if a, b := 100-GroundApplyLowGPenalty(100), 50-GroundApplyLowGPenalty(50); a != b {
+		t.Errorf("定值懲罰應與基準無關:100 扣 %d、50 扣 %d", a, b)
+	}
+}
+
+// High-G 種族的地面部隊多挨一下才死(手冊逐字 + 反組譯 `mov byte ptr [out+0Ch], 1`)。
+func TestGroundHighGExtraHits(t *testing.T) {
+	if GroundHighGExtraHits != 1 {
+		t.Errorf("手冊:「take 1 hit more than normal troops」,實得 %d", GroundHighGExtraHits)
+	}
+	// 基礎 1 + High-G 的 1 = 2,與 GroundBaseHitsToKill(true) 一致——兩條路要走到同一個答案。
+	if got, want := GroundBaseHitsToKill(true), GroundBaseHitsToKill(false)+GroundHighGExtraHits; got != want {
+		t.Errorf("High-G 的耐受應為 %d,實得 %d", want, got)
+	}
+}
+
+// High-G 與 Low-G 互斥(手冊明寫),而原版是用 if/else 編碼這件事。
+// 這條釘住「兩者不該同時生效」的意圖。
+func TestHighGAndLowGAreMutuallyExclusive(t *testing.T) {
+	// 兩者的效果落在不同的量上(耐受 vs 攻擊力)——若哪天有人把它們合成一個函式,
+	// 這條會提醒「原版是二選一,不是可以疊加的兩個加成」。
+	if GroundLowGCombatPenalty >= 0 {
+		t.Error("Low-G 是懲罰,應為負")
+	}
+	if GroundHighGExtraHits <= 0 {
+		t.Error("High-G 是加成,應為正")
 	}
 }
 
