@@ -1180,6 +1180,24 @@ window, you can use the All button」、p.47「All: Selects all of the ships in 
 colony in」,但 `Okay_To_Set_Relocate_Star_` 對終點沒有這條檢查(那條只在起點分支)。
 程式碼是實際行為,手冊那句更像是描述常見用法——不改規則,記下來。
 
+## ★ 2026-08-07 「AI 的遷移設定」不是缺口(gap report 第 71 項)
+
+表上寫著「AI 沒有逐星的艦隊位置,所以沒有遷移可設」。前半是對的
+(`AIOpponent.FleetStrength` 是抽象數字),但後半的結論要先確認**原版的 AI 有沒有在用這個欄位**。
+
+逐一追過那個欄位的**五個寫入者**(`Universe_Generation_` 初始化成 −1、`Set_Relocation_`、
+`Clear_Star_Relocation_`、`Set_All_Star_Relocations_`、`Clear_All_Star_Relocations_`),
+呼叫端全部是玩家的星圖/遷移 UI,**沒有一個在 AI 的程式碼裡**。讀取端
+`Redirect_Newly_Built_Ships_` 確實逐玩家跑,所以 AI 的欄位有人讀——只是永遠是 −1。
+欄位逐玩家是因為星球結構替 8 個玩家各留一格:**多人對戰時每個人類玩家用自己那格**。
+
+**結論:原版的 AI 也不設集結點。** remake 什麼都不用做;要替 AI 加會是加一條原版沒有的規則。
+
+**方法上的坑**:第一次用 `grep '*2+54h]'` 找寫入者**漏掉了兩個**——`Set_All`/`Clear_All`
+把 `星基 + 玩家×2` 先加好再 `mov [eax+54h], bx`,定址式裡沒有 `*2`。正確做法是先切出每一支
+函式,再找「同時碰星表基址、`71h` stride 與 `+54h]`」的那些。那組條件把漏網的撈了回來,
+也就是這個「不存在」結論的正對照。
+
 ## 工作方式(使用者定案)
 - go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)
 - **不用多代理 workflow**;翻譯一組一組慢慢做(單代理逐項,使用者可隨時審閱)

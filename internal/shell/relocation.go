@@ -55,6 +55,29 @@ const ColonyRelocationNone = -1
 // (`sub_7A47A` = `Star_Guarded_By_Monster_`,符號表裡就有名字)。
 // 確認框的基礎設施也做了(見 cmd/moo2/confirmbox.go,版面取自 `Confirmation_Box_` @ 0x77658)。
 
+// ============ AI 不設集結點——那是**原版行為**,不是 remake 的缺口 ============
+//
+// gap report 一度把「AI 的遷移設定」列為缺口(「AI 沒有逐星的艦隊位置,所以沒有遷移可設」)。
+// 2026-08-07 逐一追過那個欄位的**所有寫入者**之後:原版的 AI 也不設集結點。
+//
+//	Universe_Generation_        把 [星 + 玩家×2 + 0x54] 對 8 個玩家全部初始化成 −1
+//	Set_Relocation_             唯一呼叫端是 Star_Relocation_(玩家的兩段點選)
+//	Clear_Star_Relocation_      唯一呼叫端也是 Star_Relocation_(點回同一顆 = 取消)
+//	Set_All_Star_Relocations_   呼叫端是星圖輸入處理器 sub_73980 與 Main_Screen_
+//	Clear_All_Star_Relocations_ 呼叫端是 sub_73980
+//
+// 五個寫入者**沒有一個在 AI 的程式碼裡**。讀取端 `Redirect_Newly_Built_Ships_` 確實是
+// 逐玩家跑的(它收 player 參數、查 `Has_Relocation_(星, 玩家)`),所以 AI 的欄位有人讀——
+// 只是永遠是 −1。欄位之所以逐玩家,是因為星球結構本來就替 8 個玩家各留一格
+// (多人對戰時每個**人類**玩家用自己那格)。
+//
+// ⚠ 方法上的一個坑,記下來:第一次用 `grep '\*2+54h]'` 找寫入者時**漏掉了兩個**
+// (`Set_All` / `Clear_All` 把 `星基 + 玩家×2` 先加好再 `mov [eax+54h], bx`,
+// 定址式裡沒有 `*2`)。正確做法是先切出每一支函式,再找「同時碰 `dword_19306C`、`71h`
+// 與 `+54h]`」的那些——那組條件把兩個漏網的都撈了回來,也就是這個結論的正對照。
+//
+// 所以 remake 這邊**什麼都不用做**。要替 AI 加集結點會是加一條原版沒有的規則。
+
 // RelocateRefusal 是「這顆星不能當起點/終點」的原因(空字串 = 可以)。
 type RelocateRefusal string
 
