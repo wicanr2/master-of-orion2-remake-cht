@@ -292,9 +292,13 @@ func armorHPByName(name string) int {
 // remake 由護盾階推導:無=0、第一級=2、第三級=4…第十級=10(精確 per-class 真值待逆向,
 // 見 docs/tech/gameplay-systems-status.md);讓 DamageAfterShield 的護盾機制生效。
 func shieldReduceByName(name string) int {
-	for i, c := range ShieldOptions {
+	for _, c := range ShieldOptions {
 		if c.Name == name {
-			return i * 2
+			// ⚠ 2026-08-08(第 121 項):這裡原本回 `i * 2`(清單索引 × 2),
+			// 五級裡有四級與手冊不符而且一律偏高(1/3/5/7/10 被算成 2/4/6/8/10)。
+			// 手冊值改由 gamedata.ShieldReductionForTech 依**科技**查——名稱會被翻譯、
+			// 清單順序一改索引就跑掉,那正是原本那個算法出問題的地方。
+			return gamedata.ShieldReductionForTech(c.UnlockTech)
 		}
 	}
 	return 0

@@ -293,3 +293,38 @@ func DamageEngineExplosionPotential(maxEngineHP int, quantumDetonator bool) int 
 	}
 	return potential
 }
+
+// ShieldReductionForTech 回傳某級護盾的**每次攻擊減傷**(手冊值)。
+//
+// ============ 為什麼要有這一支 ============
+//
+// 上面那組 `DamageShieldReductionClass*` 常數從抄進來的那天起就**零消費**——
+// 而 shell 那邊自己算了一套:`shieldReduceByName` 回傳「這個護盾在清單裡的索引 × 2」。
+//
+//	護盾      索引  索引×2   手冊
+//	第一級      1      2       1
+//	第三級      2      4       3
+//	第五級      3      6       5
+//	第七級      4      8       7
+//	第十級      5     10      10
+//
+// **五級裡有四級是錯的,而且一律偏高。** 元件名稱本身就寫著答案(第一級/第三級/…),
+// 而手冊說得很直白:每次攻擊減傷 = 等級數字。
+//
+// 用**科技**當鍵而不是名稱:名稱會被翻譯,而且清單順序一改索引就跑掉——那正是原本
+// 那個 `i*2` 出問題的地方。不是已知的護盾科技回 0(無護盾)。
+func ShieldReductionForTech(tech Technology) int {
+	switch tech {
+	case TECH_CLASS_I_SHIELD:
+		return DamageShieldReductionClassI
+	case TECH_CLASS_III_SHIELD:
+		return DamageShieldReductionClassIII
+	case TECH_CLASS_V_SHIELD:
+		return DamageShieldReductionClassV
+	case TECH_CLASS_VII_SHIELD:
+		return DamageShieldReductionClassVII
+	case TECH_CLASS_X_SHIELD:
+		return DamageShieldReductionClassX
+	}
+	return 0
+}
