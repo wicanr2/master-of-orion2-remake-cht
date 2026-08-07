@@ -61,15 +61,18 @@ func (h hitRegion) hit(x, y int) bool {
 // --- overlayScreen:原版 LBX 背景 + 中文標籤覆蓋 + 點擊熱區 ---
 
 type overlayScreen struct {
-	bg               *ebiten.Image
-	rgba             *image.RGBA
-	font             *uifont.Font
-	cat              *i18n.Catalog
-	overlays         []labelRect
-	labelColor       color.RGBA
-	defSize          float64
-	hits             []hitRegion
-	onAction         func(action string) *origTransition
+	bg         *ebiten.Image
+	rgba       *image.RGBA
+	font       *uifont.Font
+	cat        *i18n.Catalog
+	overlays   []labelRect
+	labelColor color.RGBA
+	defSize    float64
+	hits       []hitRegion
+	onAction   func(action string) *origTransition
+	// onHotkey 處理這個畫面的鍵盤快捷鍵(nil = 該畫面沒有快捷鍵)。
+	// 目前只有星圖接了(見 cmd/moo2/hotkeys.go)。
+	onHotkey         func(code string) *origTransition
 	hover            string
 	offsetX, offsetY int         // 背景圖在 640×480 畫布上的置中偏移(小於全螢幕的視窗畫面用)
 	eraseColor       *color.RGBA // 非 nil 時強制用此色擦底(背景均勻的畫面用,勝過採樣猜測)
@@ -105,6 +108,12 @@ func (s *overlayScreen) update(in shell.InputState) *origTransition {
 		if h.hit(mx, my) {
 			s.hover = h.action
 			break
+		}
+	}
+	// 快捷鍵先於滑鼠處理:同一幀既按鍵又點擊時,鍵盤那步不該被點擊蓋掉。
+	if in.Hotkey != "" && s.onHotkey != nil {
+		if tr := s.onHotkey(in.Hotkey); tr != nil {
+			return tr
 		}
 	}
 	if in.ClickReleased {
@@ -328,42 +337,45 @@ func loadOverlayScreen(res *assets.Resolver, lbxName string, assetID int, lang i
 type sceneBuilder struct {
 	// skipCutscenes:headless 驗證與截圖廊要跳過流程中的過場影片——那些腳本是逐 tick
 	// 數出來的,插一段會一直往前播的影片會整串偏掉。截圖廊另外用 tick 注入單獨截過場。
-	skipCutscenes     bool
-	res               *assets.Resolver
-	fnt               *uifont.Font // 內文用字型(zh 為混合:內文點陣、標題向量)
-	fntVec            *uifont.Font // 純向量 Noto(供主選單等要平滑的畫面;nil 時退回 fnt)
-	lang              i18n.Lang
-	session           *shell.GameSession       // 活的對局狀態(TURN 推進、畫面顯示即時資料)
-	herodataMercs     []shell.Leader           // HERODATA.LBX 解出的真英雄傭兵候選(快取;讀檔後重注入)
-	newGameSize       int                      // NEW GAME 選的星系大小索引(shell.GalaxySizes)
-	newGameDiff       int                      // NEW GAME 選的難度索引(shell.Difficulties)
-	newGameRace       int                      // NEW GAME 選的種族索引(shell.Races)
-	newGameSeed       int                      // 每次新遊戲遞增,讓星系種子變化
-	newGameAge        int                      // NEW GAME 選的星系年齡索引(shell.GalaxyAges)
-	newGameTech       int                      // NEW GAME 選的起始科技等級索引(shell.TechLevels)
-	newGameEmpires    int                      // NEW GAME 選的帝國總數(含玩家,shell.MinEmpires..MaxEmpires)
-	colChrome         *ebiten.Image            // 殖民地畫面的原版框架(COLPUPS.LBX#5,惰性解碼快取)
-	colBldgCache      map[string]*ebiten.Image // 地表建築圖(BLDGn.LBX,惰性解碼快取)
-	colVegSizeCache   map[int][2]int           // COLVEGGI 資產的寬高;地表每幀重算,不快取會每幀重解 LBX
+	skipCutscenes   bool
+	res             *assets.Resolver
+	fnt             *uifont.Font // 內文用字型(zh 為混合:內文點陣、標題向量)
+	fntVec          *uifont.Font // 純向量 Noto(供主選單等要平滑的畫面;nil 時退回 fnt)
+	lang            i18n.Lang
+	session         *shell.GameSession       // 活的對局狀態(TURN 推進、畫面顯示即時資料)
+	herodataMercs   []shell.Leader           // HERODATA.LBX 解出的真英雄傭兵候選(快取;讀檔後重注入)
+	newGameSize     int                      // NEW GAME 選的星系大小索引(shell.GalaxySizes)
+	newGameDiff     int                      // NEW GAME 選的難度索引(shell.Difficulties)
+	newGameRace     int                      // NEW GAME 選的種族索引(shell.Races)
+	newGameSeed     int                      // 每次新遊戲遞增,讓星系種子變化
+	newGameAge      int                      // NEW GAME 選的星系年齡索引(shell.GalaxyAges)
+	newGameTech     int                      // NEW GAME 選的起始科技等級索引(shell.TechLevels)
+	newGameEmpires  int                      // NEW GAME 選的帝國總數(含玩家,shell.MinEmpires..MaxEmpires)
+	colChrome       *ebiten.Image            // 殖民地畫面的原版框架(COLPUPS.LBX#5,惰性解碼快取)
+	colBldgCache    map[string]*ebiten.Image // 地表建築圖(BLDGn.LBX,惰性解碼快取)
+	colVegSizeCache map[int][2]int           // COLVEGGI 資產的寬高;地表每幀重算,不快取會每幀重解 LBX
 	// animTick 是動畫用的重畫計數(由 interactiveApp.Update 每幀同步過來)。
 	// 原版的動畫是「每次重畫推進一次計數」,remake 把「一次重畫」對應成一個 ebiten 幀,
 	// 見 starsprite.go 黑洞那段的 ⚠。
 	animTick int
-	nebMaskCache      map[int]*nebulaMask      // 星雲遮罩;派遣時沿航線取樣上百次,不快取會重解上百次 LBX
-	pendingHotseat    int                      // 多人設定畫面選的真人席位數;0/1 = 單人局(開局後由 applyHotseat 套用)
-	savePath          string                   // remake 存檔路徑(每回合自動存;主選單 Load/Continue 讀)
-	designWeapon      int                      // 艦艇設計選的武器元件索引(shell.WeaponOptions)
-	designArmor       int                      // 裝甲元件索引(shell.ArmorOptions)
-	designShield      int                      // 護盾元件索引(shell.ShieldOptions)
-	designSpecial     int                      // 特殊元件索引(shell.SpecialOptions)
-	designMods        []string                 // 目前設計勾選的武器改造(gamedata.WeaponModCode 字串;僅 beam 武器生效)
-	designMsg         string                   // 艦艇設計畫面「空間不足,擋下建造」的提示訊息(切換元件/成功建造時清空)
-	lastActionMsg     string                   // 星圖畫面「載運陸戰隊/發動地面入侵」的最近一次結果訊息(選新星時清空)
-	gameVersion       gamedata.GameVersion     // 主選單選的規則版本(1.3/1.5);開局注入 session.RuleProfile
-	infoTab           int                      // INFO 畫面目前分頁(0=歷史圖表 1=科技總覽 2=種族統計 3=回合摘要 4=參考),見 infosubscreens.go
-	colonyIdx         int                      // 單一殖民地畫面目前管理哪個殖民地(索引 PlayerColonies),見 colonyscreen.go
-	colonyListTop     int                      // 單一殖民地畫面「可建項目」清單的捲動起點
-	infoHistoryMetric int                      // 歷史圖表目前指標(shell.HistoryMetric)
+	// measure 是 F9 測距模式的狀態(見 hotkeys.go)。放這裡不放 GameSession:
+	// 它是「看的方式」不是世界狀態,不該進存檔。
+	measure           measureState
+	nebMaskCache      map[int]*nebulaMask  // 星雲遮罩;派遣時沿航線取樣上百次,不快取會重解上百次 LBX
+	pendingHotseat    int                  // 多人設定畫面選的真人席位數;0/1 = 單人局(開局後由 applyHotseat 套用)
+	savePath          string               // remake 存檔路徑(每回合自動存;主選單 Load/Continue 讀)
+	designWeapon      int                  // 艦艇設計選的武器元件索引(shell.WeaponOptions)
+	designArmor       int                  // 裝甲元件索引(shell.ArmorOptions)
+	designShield      int                  // 護盾元件索引(shell.ShieldOptions)
+	designSpecial     int                  // 特殊元件索引(shell.SpecialOptions)
+	designMods        []string             // 目前設計勾選的武器改造(gamedata.WeaponModCode 字串;僅 beam 武器生效)
+	designMsg         string               // 艦艇設計畫面「空間不足,擋下建造」的提示訊息(切換元件/成功建造時清空)
+	lastActionMsg     string               // 星圖畫面「載運陸戰隊/發動地面入侵」的最近一次結果訊息(選新星時清空)
+	gameVersion       gamedata.GameVersion // 主選單選的規則版本(1.3/1.5);開局注入 session.RuleProfile
+	infoTab           int                  // INFO 畫面目前分頁(0=歷史圖表 1=科技總覽 2=種族統計 3=回合摘要 4=參考),見 infosubscreens.go
+	colonyIdx         int                  // 單一殖民地畫面目前管理哪個殖民地(索引 PlayerColonies),見 colonyscreen.go
+	colonyListTop     int                  // 單一殖民地畫面「可建項目」清單的捲動起點
+	infoHistoryMetric int                  // 歷史圖表目前指標(shell.HistoryMetric)
 }
 
 // profileForVersion 把主選單選的版本轉成對應 RuleProfile(開局注入 session)。
@@ -595,7 +607,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		sess := b.session
 		for i, st := range sess.Stars {
 			sx, sy := starScreenPos(st)
-			hits = append(hits, hitRegion{sx - 11, sy - 11, 22, 22, fmt.Sprintf("star%d", i)})
+			hits = append(hits, hitRegion{sx - starHitHalf, sy - starHitHalf, 2 * starHitHalf, 2 * starHitHalf, fmt.Sprintf("star%d", i)})
 		}
 		// 選中星資訊面板內的操作鈕(座標同 postDraw 繪製的按鈕框):依艦隊/選中星狀態擇一或
 		// 兩顆並存——派遣艦隊(艦隊不在選中星)、載運陸戰隊(艦隊在玩家母星,唯一已知有
@@ -643,6 +655,10 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 	onAction := func(a string) *origTransition {
 		if len(a) > 4 && a[:4] == "star" && b.session != nil {
 			if idx, err := strconv.Atoi(a[4:]); err == nil {
+				// 測距模式(F9)先吃掉點星:那一下是「定起點」不是「選這顆星」。
+				if b.measureClickedStar(idx) {
+					return b.goTo(b.galaxy, "星系主畫面")
+				}
 				if idx == b.session.SelectedStar {
 					b.session.SelectedStar = -1 // 再點同一顆星 → 取消選取(關閉資訊面板,issue #6)
 				} else {
@@ -821,6 +837,13 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 	if err != nil {
 		return nil, err
 	}
+	// 星圖的鍵盤快捷鍵(F1/F2 循環艦隊、F5/F6 切換已殖民星系、F9 測距;見 hotkeys.go)。
+	s.onHotkey = func(code string) *origTransition {
+		if b.handleGalaxyHotkey(code) {
+			return b.goTo(b.galaxy, "星系主畫面")
+		}
+		return nil
+	}
 	// 星圖(中央視窗,openorion2 StarmapWidget 20,20,507,401)+ 即時狀態文字(疊在星圖之上)。
 	if b.session != nil {
 		sess := b.session
@@ -832,8 +855,9 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			b.drawNebulae(dst, sess.Nebulae) // 背景地形,壓在星星之下
 			vis := sess.VisibleStars()
 			drawStarmap(b, dst, fnt, sess.Stars, sess.SelectedStar, vis)
-			b.drawGateIcons(dst, vis)  // 狀態標示,蓋在星星之上
-			b.drawAudienceLights(dst)  // 會談請求燈(星圖上緣,原版 y=5、由右往左)
+			b.drawGateIcons(dst, vis)             // 狀態標示,蓋在星星之上
+			b.drawAudienceLights(dst)             // 會談請求燈(星圖上緣,原版 y=5、由右往左)
+			b.drawMeasureOverlay(dst, s.mx, s.my) // F9 測距(手冊:游標移到哪就顯示到哪)
 			if fnt != nil {
 				// 狀態數字畫進原版右側資訊格(openorion2 galaxy.cpp:1552-1588 硬編位置,
 				// 對齊 buffer0.lbx#0 背景烘印的圖示格):星曆→頂右薄框(549,27,63,13)、
@@ -3183,8 +3207,10 @@ type interactiveApp struct {
 	galleryBuildPopupTick int
 	// galleryCommandPointsTick 是截圖廊切到指揮點數視窗的 tick。
 	galleryCommandPointsTick int
-	galleryBuilder           *sceneBuilder
-	gallerySession           *shell.GameSession
+	// galleryMeasureTick 是截圖廊切回星圖並打開 F9 測距的 tick。
+	galleryMeasureTick int
+	galleryBuilder     *sceneBuilder
+	gallerySession     *shell.GameSession
 }
 
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
@@ -3245,6 +3271,16 @@ const galleryBuildPopupTick = 87
 // galleryCommandPointsTick 是截圖廊在哪個 tick 切到指揮點數視窗——取截圖(t90)的前一拍。
 // 走正常路徑是星圖點右欄第 2 格,但腳本此刻停在建造視窗,直接推上來比重新導覽回星圖可靠。
 const galleryCommandPointsTick = 89
+
+// galleryMeasureTick 是截圖廊在哪個 tick 切回星圖並打開 F9 測距——取截圖(t92)的前一拍。
+// 走正常路徑要從指揮點數視窗關回星圖再按 F9,直接推上來比重新導覽可靠(同上面幾個)。
+const galleryMeasureTick = 91
+
+// galleryMeasureFrom 是測距的起點星(0 = 玩家母星,每個 seed 都有)。
+// 終點**不能寫死索引**——要驗的是「游標移到某顆星上就顯示距離」,而星圖有戰爭迷霧,
+// 隨便一個索引很可能是還沒探索、根本畫不出來的星(第一版寫死 1,截圖就停在
+// 「移到另一顆星」的提示上,什麼距離都沒畫)。改成執行時挑一顆**可見的**。
+const galleryMeasureFrom = 0
 
 // galleryShot 是「端到端過場截圖廊」腳本中,在某個絕對 tick 存一張圖的指令。
 type galleryShot struct {
@@ -3408,6 +3444,12 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		// 指揮點數視窗(原版 Show_Command_Points_Screen_)。同上,直接推上來。
 		idle, // t89: 由 galleryCommandPointsTick 換成指揮點數視窗
 		idle, // t90: settle → 截圖 commandpoints
+
+		// F9 測距(手冊:點第一顆星,游標移到另一顆就顯示秒差距)。畫面由
+		// galleryMeasureTick 推回星圖並設好起點;這裡只負責把游標放到第二顆星上,
+		// 因為「移到哪就顯示到哪」正是要驗的行為——沒有游標位置就什麼都不會畫。
+		idle, // t91: 由 galleryMeasureTick 切回星圖 + 打開測距
+		idle, // t92: settle(游標由 galleryMeasureHover 每幀注入)→ 截圖 measure
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -3440,6 +3482,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{86, "25_shipdesign.png"},
 		{88, "26_buildqueue.png"},
 		{90, "27_commandpoints.png"},
+		{92, "28_measure.png"},
 	}
 	return script, shots
 }
@@ -3478,15 +3521,24 @@ func (a *interactiveApp) setScale(s int) {
 
 func (a *interactiveApp) pollInput() shell.InputState {
 	if a.script != nil {
+		in := shell.InputState{}
 		if idx := a.tick - 1; idx >= 0 && idx < len(a.script) {
-			return a.script[idx]
+			in = a.script[idx]
 		}
-		return shell.InputState{}
+		// 截圖廊的 F9 測距:游標位置得指到第二顆星上,而星的螢幕座標隨 seed 變動,
+		// 靜態腳本寫不死。測距打開之後就每幀算一次注入進去。
+		if a.galleryMeasureTick > 0 && a.tick >= a.galleryMeasureTick && a.galleryBuilder != nil {
+			if idx := a.galleryBuilder.galleryMeasureTarget(); idx >= 0 {
+				in.MouseX, in.MouseY = starScreenPos(a.galleryBuilder.session.Stars[idx])
+			}
+		}
+		return in
 	}
 	x, y := ebiten.CursorPosition()
 	return shell.InputState{
 		MouseX: x, MouseY: y,
 		ClickReleased: inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft),
+		Hotkey:        pollHotkey(),
 	}
 }
 
@@ -3633,6 +3685,14 @@ func (a *interactiveApp) Update() error {
 			a.cur = sc
 		}
 	}
+	// 截圖廊專用:切回星圖並打開 F9 測距,起點設在母星。
+	if a.galleryMeasureTick > 0 && a.tick == a.galleryMeasureTick && a.galleryBuilder != nil {
+		b := a.galleryBuilder
+		b.measure.on, b.measure.from = true, galleryMeasureFrom
+		if sc, err := b.galaxy(); err == nil {
+			a.cur = sc
+		}
+	}
 	if t := a.cur.update(a.pollInput()); t != nil {
 		if t.quit {
 			return ebiten.Termination
@@ -3767,6 +3827,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.galleryDesignTick = galleryDesignTick
 		app.galleryBuildPopupTick = galleryBuildPopupTick
 		app.galleryCommandPointsTick = galleryCommandPointsTick
+		app.galleryMeasureTick = galleryMeasureTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,

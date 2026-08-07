@@ -181,6 +181,10 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
 |---|---|
 | ![軌道轟炸](docs/screenshots/20_bombing.png) | ![多人遊戲設定(熱座可玩)](docs/screenshots/23_multiplayer.png) |
 
+| 指揮點數 | F9 測距(手冊快捷鍵) |
+|---|---|
+| ![指揮點數視窗](docs/screenshots/27_commandpoints.png) | ![F9 測距:兩星之間的秒差距](docs/screenshots/28_measure.png) |
+
 ### 英文模式
 
 `-lang en`(或主選單左下角點一下)切回英文。畫面底下是原版美術時**整段讓路**——不擦字、不疊字,
