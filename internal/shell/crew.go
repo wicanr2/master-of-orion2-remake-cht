@@ -169,3 +169,32 @@ func destroyedEnemySizeClasses(startStrengths []int, survivors []combatant) []in
 	}
 	return out
 }
+
+// helmsmanEvasionBonus 回傳艦上軍官的舵手技能貢獻的飛彈閃避加成。
+//
+// 手冊:「Half bonus of the Helmsman value」——所以是技能值的一半
+// (`gamedata.MissileHelmsmanEvasionBonus`)。
+//
+// ⚠ 只算**艦艇軍官**(`l.Ship`):舵手是開船的,殖民地領袖不會坐在艦橋上。
+// 這與 `starlane.go` 挑領航員(Navigator)是同一條規則,那邊也只看 l.Ship。
+//
+// 多位軍官取**最佳的那一位**,不加總——手冊只在 Megawealth/Researcher 明說累加,
+// 其餘一律取最佳(見 gamedata/leader_skill_apply.go)。
+func (s *GameSession) helmsmanEvasionBonus() int {
+	best := 0
+	for _, l := range s.Leaders {
+		if !l.Ship {
+			continue
+		}
+		tier := leaderSkillTier(l, int(gamedata.SKILL_HELMSMAN))
+		if tier <= 0 {
+			continue
+		}
+		v := gamedata.LeaderSkillBonus(int(gamedata.SKILL_HELMSMAN), tier,
+			leaderDisplayLevelToExpLevel(l.Level))
+		if ev := gamedata.MissileHelmsmanEvasionBonus(v); ev > best {
+			best = ev
+		}
+	}
+	return best
+}

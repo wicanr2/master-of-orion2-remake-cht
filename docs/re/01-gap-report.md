@@ -6318,3 +6318,64 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     `30_netwait.png` 差了 **134 個像素,全部落在 x 83–129 / y 229–237** ——
     那正是狀態指紋的位置。`ColonyState` 多了兩個欄位,存檔 JSON 就變了,指紋跟著變。
     逐像素核對過範圍才重錄,不是看到 diff 就覆蓋。其餘 33 張零位元組差異。
+
+119. **註解說「打得準也閃得掉」,程式只做了前半**(2026-08-08)。
+
+    覆蓋率清單裡剩下的兩支艦員加成:
+
+    ```
+    ShipCrewBoardingBonus         0 個呼叫端
+    ShipCrewMissileEvasionBonus   0 個呼叫端
+    ```
+
+    追下去才發現同一段還藏著第三件事——**`ShipCrewDefenseBonus` 也沒接**,
+    而且那一項比另外兩支更難發現:它**有**呼叫端,在 `engine.BeamDefense` 裡。
+    只是 `engine.BeamDefense` 在一局裡從來沒被執行過(shell 的戰鬥自己算,沒走它)。
+
+    ### 註解與程式對不起來
+
+    `mkPlayerCombatantsIndexed` 寫著:
+
+    ```go
+    // 艦員經驗(手冊 p.121 的 BA/BD 兩欄):老手打得準也閃得掉。
+    crew := s.shipCrewLevel(sh)
+    atk += gamedata.ShipCrewOffenseBonus(crew)
+    ```
+
+    註解說**兩欄**,程式只加了 BA 那一欄;`def` 從頭到尾只有艦體值。
+    手冊 p.121 的 BA/BD 是分開的兩個加成,openorion2 的 `Ship::beamDefense` 也是這樣算的。
+
+    **這種 bug 特別難抓**:註解讀起來完全正確,測試也不會紅——沒有人寫過「老手的防禦
+    應該比新兵高」這條斷言。它是被「哪些 gamedata 函式從來沒執行過」問出來的。
+
+    ### 飛彈閃避:擋門理由對了一半
+
+    `ResolveMissileShot` 的 `defenderEvasionBonus` 一直恆傳 0,理由是:
+
+    > 現行 remake 的艦艇設計/軍官系統尚未提供這些元件,呼叫端目前一律傳 0
+
+    手冊列的閃避來源有六項。逐項核對:
+
+    | 來源 | 現況 |
+    |---|---|
+    | ECM 干擾器 / 慣性穩定器 | ✅ 仍缺(SpecialOptions 沒有這些元件)|
+    | 種族 Ship Defense 特性 | ✅ 仍缺(手冊連檔位名稱都沒列)|
+    | **艦員經驗** | ❌ **算得出來**——`shipCrewLevel` 每回合都在更新 |
+    | **舵手(Helmsman)軍官** | ❌ **算得出來**——`SKILL_HELMSMAN` 在第 103 項就進來了 |
+
+    接上後兩項。舵手那一項是技能值的**一半**(手冊:「Half bonus of the Helmsman value」),
+    而且**只算艦艇軍官**——舵手是開船的,殖民地領袖不會坐在艦橋上,這與 `starlane.go`
+    挑領航員是同一條規則。多位取最佳不加總(手冊只在 Megawealth/Researcher 明說累加)。
+
+    ### 登艦戰那一支仍然不接,而且理由是好的
+
+    `ShipCrewBoardingBonus` 零呼叫端,但 `crew.go` 自己寫了為什麼:
+
+    > 登艦戰先前沒有建模所以沒人抄。抄進來,即使暫時沒有呼叫端:
+    > 缺一條軌會讓下次有人接登艦戰時以為手冊沒給數字。
+
+    **remake 確實沒有登艦戰機制**(grep 過整個 repo,零命中)。這不是「忘了接」,
+    是「那個系統還不存在」——與前幾項的「理由過期了」不同,這個理由現在仍然成立。
+    不為了讓覆蓋率好看而硬接一個沒有消費端的加成。
+
+    截圖廊零位元組差異。

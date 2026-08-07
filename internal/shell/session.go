@@ -514,6 +514,9 @@ type combatant struct {
 	// 這正是「戰後把剩餘血量寫回正確那艘船」需要的東西(先前用外部平行陣列會在有人陣亡後錯位)。
 	shipIdx int
 	kind    WeaponKind
+	// missileEvasion 是這艘船的飛彈閃避加成(手冊 ME 欄 + 舵手技能)。
+	// 只有當**它是防守方**時才有意義;敵方艦隊無逐艦資料,一律 0(既有簡化)。
+	missileEvasion int
 	// mods 是攻方武器改造(gamedata.WeaponModCode 字串);只有 kind==WeaponKindBeam 時
 	// battleVolley 會套用(見 WeaponIsBeam 判斷),敵方艦隊(genEnemyFleet)沒有個別武器
 	// 設計,一律 nil(既有簡化,非本輪引入)。
@@ -544,7 +547,10 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 		case WeaponKindMissile:
 			amrRoll := rng.Intn(100) + 1
 			jamRoll := rng.Intn(100) + 1
-			shot = ResolveMissileShot(false, 2, amrRoll, 0, 0, false, jamRoll,
+			// 防守方的飛彈閃避先前恆傳 0(「艦艇設計/軍官系統尚未提供這些元件」)。
+			// 那句話對 ECM 干擾器/慣性穩定器仍成立,但**艦員經驗與舵手技能兩項現在算得出來**
+			// ——見 mkPlayerCombatantsIndexed 填的 missileEvasion。
+			shot = ResolveMissileShot(false, 2, amrRoll, d.missileEvasion, 0, false, jamRoll,
 				attackers[i].wmax, d.shield, d.armor, false)
 		case WeaponKindSpherical:
 			span := attackers[i].wmax - attackers[i].wmin
@@ -608,6 +614,11 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 		// 加在種族加成**之後**——那兩張表是直接的點數加成,不是百分比,所以不該被種族倍率放大。
 		crew := s.shipCrewLevel(sh)
 		atk += gamedata.ShipCrewOffenseBonus(crew)
+		// ⚠ 2026-08-08(第 119 項):上面那句註解說「打得準**也閃得掉**」,
+		// 但先前只加了 BA(攻擊)那一欄,BD(防禦)那一欄從來沒加過——`def` 只有艦體值。
+		// 手冊 p.121 的兩欄是分開的兩個加成,`engine.BeamDefense` 也是這樣算的
+		// (openorion2 `Ship::beamDefense` 末項),只是 shell 這條路徑沒有走它。
+		crewDef := gamedata.ShipCrewDefenseBonus(crew)
 		hp := body * 3
 		// 戰機庫:出擊一隊戰機(手冊:中隊一律 4 架;返航前射擊次數攔截機 4、重戰機 2),
 		// 在艦級抽象結算中以母艦戰力加成承接整隊火力與血量。
@@ -630,11 +641,13 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 				hp = ShipDamageFloorHP
 			}
 		}
-		out = append(out, combatant{hp: hp, maxHP: shipMaxHP(sh), atk: atk, def: body, wmin: atk / 2, wmax: atk,
+		out = append(out, combatant{hp: hp, maxHP: shipMaxHP(sh), atk: atk, def: body + crewDef,
+			wmin: atk / 2, wmax: atk,
 			shield: s.nebulaShield(shieldReduceByName(sh.Shield), shipHasHardShield(sh)),
 			armor:  armorHPByName(sh.Armor),
 			kind:   weaponKindByName(sh.Weapon), mods: sh.Mods,
-			autoRepair: shipHasAutoRepair(sh), shipIdx: shipIdx})
+			missileEvasion: gamedata.ShipCrewMissileEvasionBonus(crew) + s.helmsmanEvasionBonus(),
+			autoRepair:     shipHasAutoRepair(sh), shipIdx: shipIdx})
 		idx = append(idx, shipIdx)
 	}
 	return out, idx
