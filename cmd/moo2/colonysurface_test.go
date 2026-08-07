@@ -353,3 +353,86 @@ func newSurfaceTestBuilder(t *testing.T) *sceneBuilder {
 	}
 	return &sceneBuilder{session: sess, lang: i18n.Traditional}
 }
+
+// --- 軌道衛星 ---
+
+// TestOrigSatelliteAssetsCoverEveryCategory7:分類 7 的建築編號與衛星圖對照要**互相涵蓋**。
+// 少一筆 → 那顆衛星在畫面上悄悄消失(不會報錯);多一筆 → 會去畫一棟其實在地表的建築。
+func TestOrigSatelliteAssetsCoverEveryCategory7(t *testing.T) {
+	for id := 1; id <= 48; id++ {
+		_, hasSprite := origSatelliteAsset[id]
+		isSat := origBuildingCategory[id] == 7
+		if isSat && !hasSprite {
+			t.Errorf("建築 %d 是分類 7 卻沒有衛星圖", id)
+		}
+		if hasSprite && !isSat {
+			t.Errorf("建築 %d 有衛星圖卻不是分類 7", id)
+		}
+	}
+	// ⚠ 資產編號含 `sub_BBB9F` 的 +9。少了它會去讀 COLONY.LBX 資產 0..4——
+	// 那五格在檔案裡是零長度的,解出來是空圖,畫面什麼都不會出現而且不會報錯。
+	for id, asset := range origSatelliteAsset {
+		if asset < 9 || asset > 16 {
+			t.Errorf("建築 %d 的衛星圖資產 %d 不在 9..16(是不是漏了 +9?)", id, asset)
+		}
+	}
+}
+
+// TestColonySatelliteUpgradeChain:星基 → 戰鬥站 → 星際要塞 的升級鏈,
+// 抄自 `sub_BC21B`(回傳 1 = 這顆不畫)。三顆同時存在時只該看到最高階那顆。
+func TestColonySatelliteUpgradeChain(t *testing.T) {
+	set := func(ids ...int) map[int]bool {
+		m := map[int]bool{}
+		for _, id := range ids {
+			m[id] = true
+		}
+		return m
+	}
+	eq := func(got []int, want ...int) bool {
+		if len(got) != len(want) {
+			return false
+		}
+		for i := range got {
+			if got[i] != want[i] {
+				return false
+			}
+		}
+		return true
+	}
+	cases := []struct {
+		name string
+		have map[int]bool
+		want []int
+	}{
+		{"只有星基", set(40), []int{40}},
+		{"星基+戰鬥站 → 只剩戰鬥站", set(40, 8), []int{8}},
+		{"星基+戰鬥站+要塞 → 只剩要塞", set(40, 8, 41), []int{41}},
+		{"星基+要塞(跳過戰鬥站)→ 只剩要塞", set(40, 41), []int{41}},
+		{"天網與傳送門不受升級鏈影響", set(3, 14, 40, 41), []int{3, 14, 41}},
+		{"地表建築不進清單", set(22, 35), nil},
+	}
+	for _, c := range cases {
+		if got := colonySatelliteList(c.have); !eq(got, c.want...) {
+			t.Errorf("%s:得到 %v,want %v", c.name, got, c.want)
+		}
+	}
+}
+
+// TestColonySatellitePositionsMatchOriginal:x = 295 + (i 偶數 ? +1 : −1) × i × 50。
+// 釘住前幾顆的絕對座標——寫錯正負或步距,衛星會擠成一團或飛出畫面。
+func TestColonySatellitePositionsMatchOriginal(t *testing.T) {
+	want := []int{295, 245, 395, 145, 495, 45, 595, -55}
+	for i, w := range want {
+		if got := colonySatelliteX(i); got != w {
+			t.Errorf("第 %d 顆 x = %d,want %d", i, got, w)
+		}
+	}
+	// 第 7 顆在 x = −55,57 寬的圖只剩右緣 2px 在畫面內;第 8 顆 x = 695 整個在右外。
+	// 原版清單雖有 10 格,實際看得到的就是前 7 顆——這是原版本來的裁切,不特別處理。
+	if x := colonySatelliteX(7); x+57 > 5 {
+		t.Errorf("第 7 顆右緣 %d 應該幾乎全在畫布左外", x+57)
+	}
+	if x := colonySatelliteX(8); x < moo2ScreenW {
+		t.Errorf("第 8 顆 x = %d 應該整個在畫布右外", x)
+	}
+}

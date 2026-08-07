@@ -207,6 +207,7 @@ func (b *sceneBuilder) drawColonyScreen(dst *ebiten.Image, idx int) {
 		dst.DrawImage(im, &ebiten.DrawImageOptions{})
 	}
 	b.drawColonyBuildings(dst, idx)
+	b.drawColonySatellites(dst, idx)
 	b.drawColonyTopBar(dst, idx, c)
 
 	// 兩顆鈕的英文(LEADERS / RETURN)烘在框架圖上,照既有做法擦底疊中文。

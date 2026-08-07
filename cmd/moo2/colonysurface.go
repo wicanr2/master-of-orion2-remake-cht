@@ -349,16 +349,7 @@ func (b *sceneBuilder) colonySurfacePlan(idx int) map[[2]int]int {
 	}
 
 	// 已建建築:依**原版編號順序**逐棟插入(原版的迴圈就是 id 0..48,不是玩家建造順序)。
-	has := map[int]bool{}
-	if idx < len(b.session.ColonyBuildings) {
-		for zh := range b.session.ColonyBuildings[idx] {
-			if bd, ok := gamedata.BuildingByNameZH(zh); ok {
-				if id, ok := origBuildingID[bd.NameEN]; ok {
-					has[id] = true
-				}
-			}
-		}
-	}
+	has := b.colonyOrigBuildingIDs(idx)
 	for id := 1; id <= 48; id++ {
 		if !has[id] || origBuildingCategory[id] == 7 {
 			continue // 分類 7 = 軌道衛星,不畫在地表
@@ -380,6 +371,22 @@ func (b *sceneBuilder) colonySurfacePlan(idx int) map[[2]int]int {
 		}
 	}
 	return plan
+}
+
+// colonyOrigBuildingIDs 把某殖民地已建的建築換成**原版編號**的集合。
+func (b *sceneBuilder) colonyOrigBuildingIDs(idx int) map[int]bool {
+	has := map[int]bool{}
+	if b.session == nil || idx < 0 || idx >= len(b.session.ColonyBuildings) {
+		return has
+	}
+	for zh := range b.session.ColonyBuildings[idx] {
+		if bd, ok := gamedata.BuildingByNameZH(zh); ok {
+			if id, ok := origBuildingID[bd.NameEN]; ok {
+				has[id] = true
+			}
+		}
+	}
+	return has
 }
 
 // colonyGridKey 把格陣索引換回 (a, b)。原版的元素位址是 `colony_bldgs[24×a + 4×b]`
@@ -499,7 +506,7 @@ func colonyTerrainVariant(star int) int {
 // drawColonyTerrain 畫地表兩層。取不到資產就整張留空(不再自畫格線佔位——
 // 原版地表上**沒有格線**,格點是隱形的)。
 func (b *sceneBuilder) drawColonyTerrain(dst *ebiten.Image, idx int) {
-	if im := b.colonyScreenImage(colTerrainSkyLBX, colTerrainSkyAsset); im != nil {
+	if im := b.colonyScreenImage(colTerrainSkyLBX, colTerrainSkyAsset, colonyBasePalette); im != nil {
 		dst.DrawImage(im, &ebiten.DrawImageOptions{})
 	}
 	sess := b.session
@@ -511,14 +518,17 @@ func (b *sceneBuilder) drawColonyTerrain(dst *ebiten.Image, idx int) {
 		return
 	}
 	asset := climate*colTerrainVariants + colonyTerrainVariant(sess.PlayerColonyStarIndex(idx))
-	if im := b.colonyScreenImage(colTerrainLBX, asset); im != nil {
+	if im := b.colonyScreenImage(colTerrainLBX, asset, colonyBasePalette); im != nil {
 		dst.DrawImage(im, &ebiten.DrawImageOptions{})
 	}
 }
 
-// colonyScreenImage 取一張整螢幕底圖並快取。調色盤走 buffer0 基底 + 該圖自己的內嵌範圍
-// (PLANETS 每張只帶 80 色,缺的要基底補,否則裂縫會變成一片洋紅)。
-func (b *sceneBuilder) colonyScreenImage(lbxName string, asset int) *ebiten.Image {
+// colonyScreenImage 解一張殖民地畫面用的圖並快取。
+//
+// 調色盤走「chain 當基底 + 該圖自己的內嵌範圍」:PLANETS 每張只帶 80 色,缺的要基底補,
+// 否則熔岩裂縫會變成一片洋紅(⚠ 與第 29 項那次的洋紅**不同原因**——那次是 index ≥ 0xF0)。
+// COLONY.LBX 的衛星圖完全沒有內嵌盤,整組都得靠 chain。
+func (b *sceneBuilder) colonyScreenImage(lbxName string, asset int, chain paletteChain) *ebiten.Image {
 	key := lbxName + ":" + strconv.Itoa(asset)
 	if im, hit := b.colBldgCache[key]; hit {
 		return im
@@ -528,12 +538,129 @@ func (b *sceneBuilder) colonyScreenImage(lbxName string, asset int) *ebiten.Imag
 	}
 	var img *ebiten.Image
 	if im, err := decodeAsset(b.res, lbxName, asset); err == nil && len(im.Frames) > 0 {
-		if pal, err := resolvePalette(b.res, im, paletteChain{{"buffer0.lbx", 0}}); err == nil {
+		if pal, err := resolvePalette(b.res, im, chain); err == nil {
 			img = ebiten.NewImageFromImage(im.Frames[0].ToRGBADropTranslucent(pal, im.KeyColor()))
 		}
 	}
 	b.colBldgCache[key] = img
 	return img
+}
+
+// colonyBasePalette 是殖民地畫面的調色盤基底:全域基底 + 殖民地美術那組。
+var colonyBasePalette = paletteChain{{"buffer0.lbx", 0}, {colChromePal, 0}}
+
+// --- 軌道衛星 ---
+//
+// 分類 7 的建築**不進地表格點**。`Make_Bldg_Array_For_Colony_` 把它們丟進 `word_19F99C`
+// 那份 10 格的清單(依建築編號遞增附加),由 `Draw_Colony_Satellites_` @ 0xBE366 另外畫。
+//
+// 位置(`Draw_Colony_Satellites_` 尾段,整段沒有查表):
+//
+//	x = 295 + (i 偶數 ? +1 : −1) × i × 50      ; 295 = 0x127、50 = 0x32
+//	y = 162                                    ; 0xA2,固定
+//	Draw(x, y, img)                            ; 左上角對位
+//
+// → 第 0 顆在 295、第 1 顆 245、第 2 顆 395、第 3 顆 145…往兩側交錯散開。
+// 第 7 顆起 x 已是負的(−55),原版清單雖有 10 格但實際塞得下約 7 顆。
+//
+// 圖檔(`sub_BE306` 的比較鏈 + `sub_BBB9F` 的 `loc_BBBAF: add edx, 9`):
+//
+//	⚠ 那個 **+9 不能漏**。`sub_BE306` 算出來的是 0/1/2/3/7,加 9 之後才是真正的資產編號。
+//	漏掉會去讀 COLONY.LBX 資產 0..4 —— 那五格在檔案裡是**零長度**的(offset 表全是 0x800),
+//	解出來是空圖,畫面上什麼都不會出現,而且不會報錯。
+//
+//	| 建築 | 編號 | sub_BE306 | COLONY.LBX 資產 |
+//	|---|---|---|---|
+//	| 星際要塞 Star Fortress | 41 | 0 | 9 |
+//	| 戰鬥站 Battlestation | 8 | 1 | 10 |
+//	| 星基 Star Base | 40 | 2 | 11 |
+//	| 次元傳送門 Dimensional Portal | 14 | 3 | 12 |
+//	| 天網 Artemis System Net | 3 | 7 | 16 |
+//
+// 資產 9..16 全是 57×70,尺寸自洽。
+//
+// 抑制規則(`sub_BC21B`,回傳 1 = 這顆不畫)——就是原版的**星基升級鏈**:
+//
+//	星基(40):有戰鬥站(colony+0x13E)或星際要塞(colony+0x15F)就不畫
+//	戰鬥站(8):有星際要塞就不畫
+//
+// (`0x136 + id` 是「這個殖民地有沒有這棟」的旗標陣列,0x136+8 = 0x13E、0x136+41 = 0x15F,
+// 兩個位移都對得起來。)
+const (
+	colonySatLBX   = "colony.lbx"
+	colonySatBaseX = 295
+	colonySatStepX = 50
+	colonySatY     = 162
+	colonySatSlots = 10 // word_19F99C 的長度(memset 20 bytes)
+)
+
+// origSatelliteAsset 分類 7 的建築編號 → COLONY.LBX 資產(已含 +9,見上方 ⚠)。
+var origSatelliteAsset = map[int]int{
+	41: 9,  // 星際要塞
+	8:  10, // 戰鬥站
+	40: 11, // 星基
+	14: 12, // 次元傳送門
+	3:  16, // 天網
+}
+
+// colonySatellites 回傳要畫的衛星編號,順序 = 建築編號遞增(原版迴圈的順序)。
+func (b *sceneBuilder) colonySatellites(idx int) []int {
+	return colonySatelliteList(b.colonyOrigBuildingIDs(idx))
+}
+
+// colonySatelliteX 回傳第 i 顆衛星的左上角 x(見上方公式)。
+func colonySatelliteX(i int) int {
+	if i%2 != 0 {
+		return colonySatBaseX - i*colonySatStepX
+	}
+	return colonySatBaseX + i*colonySatStepX
+}
+
+// colonySatelliteList 是 colonySatellites 的純函式部分(方便直接測抑制規則)。
+func colonySatelliteList(has map[int]bool) []int {
+	var out []int
+	for id := 1; id <= 48; id++ {
+		if !has[id] || origBuildingCategory[id] != 7 {
+			continue
+		}
+		switch id {
+		case 40: // 星基:被戰鬥站或星際要塞取代
+			if has[8] || has[41] {
+				continue
+			}
+		case 8: // 戰鬥站:被星際要塞取代
+			if has[41] {
+				continue
+			}
+		}
+		if len(out) >= colonySatSlots {
+			break
+		}
+		out = append(out, id)
+	}
+	return out
+}
+
+// drawColonySatellites 把衛星畫在軌道上。原版的次序是建築之後(`Draw_Colony_Screen_`:
+// `Draw_Colony_Bldgs` → `Draw_Colony_Satellites`)。
+func (b *sceneBuilder) drawColonySatellites(dst *ebiten.Image, idx int) {
+	for i, id := range b.colonySatellites(idx) {
+		asset, ok := origSatelliteAsset[id]
+		if !ok {
+			continue
+		}
+		x := colonySatelliteX(i)
+		if x <= -57 || x >= moo2ScreenW {
+			continue // 原版也是這樣被畫布裁掉,不特別處理
+		}
+		im := b.colonyScreenImage(colonySatLBX, asset, colonyBasePalette)
+		if im == nil {
+			continue
+		}
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(x), colonySatY)
+		dst.DrawImage(im, op)
+	}
 }
 
 // colonyBuildingImage 取(建築編號, 格)對應的那張**已畫好位置**的 640×480 稀疏圖,

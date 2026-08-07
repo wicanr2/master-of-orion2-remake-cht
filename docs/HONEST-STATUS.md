@@ -43,8 +43,11 @@ LBX 解碼(scan-line RLE 影像 / 多幀 delta / 調色盤鏈)、SAVE10.GAM 唯�
     地表底圖接上(COLONY2.LBX#49 星空 + PLANETS.LBX 依 `氣候×3 + 變體` 選的地形),
     佔位格線移除。過程中抓到一個**不會有症狀**的軸向錯誤(格陣索引與角點表對調 → 整張
     佈局鏡射,徵狀只有「建築擠在遠端」),已加 `TestColonyGridKeyMatchesOriginalAddressing` 釘住。
-    **仍是缺口**:軌道衛星沒畫(星基 / 次元傳送門這類分類 7 的建築在畫面上完全看不到)、
-    擺放的最後一段隨機微調沒做、道路沒畫、地形變體那一欄用 PRNG 代替原版的存檔欄位。
+    軌道衛星同日補上(`Draw_Colony_Satellites_`:x = 295 ± i×50、y = 162,圖來自 COLONY.LBX
+    9/10/11/12/16 —— 編號要經過 `add edx, 9`,漏了會去讀零長度的資產 0..4,畫面空白且不報錯;
+    抑制規則是原版的星基→戰鬥站→星際要塞升級鏈)。
+    **仍是缺口**:擺放的最後一段隨機微調沒做、道路沒畫、地形變體那一欄用 PRNG 代替原版的
+    存檔欄位(不是真值,已標明)。
 - **需原版 oracle 對照**(用 archive.org 線上 DOS 原版,**不需 DOSBox**;見 `docs/tech/oracle-comparison-20260712.md`、記憶 `moo2-oracle-is-archive-org-online`):飛彈速度(`missile.go` 手冊公式與附表自相矛盾)、地面戰 d100 核心傷亡解算結構(`ResolveGroundBattle` 沿用一代 1oom 借用結構,force 值用 MOO2 手冊表但結構本身未對 MOO2 實機核實)、安塔蘭母星防禦艦隊戰力(手冊/openorion2 均無精確數字,用保守預設 6 艘末日之星等級)、**母星開局態**(2026-07-12 oracle 已釘死:農4/工2/科2/Abundant/Trade Goods,待校準)。
 - **需先建基礎設施**:戰機/航母(新戰鬥子模型)、部分軍事/防禦建築(~13 棟,需艦隊駐防/軌道防禦系統先落地)。
 - **起始科技等級(TECH LEVEL)**:2026-08-07 接上第一個真效果——**曲速前開局沒有 FTL,
