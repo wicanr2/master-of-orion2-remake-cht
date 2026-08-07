@@ -1345,10 +1345,13 @@ func (s *GameSession) applyBuildingEffect(i int, name string) {
 		//   - 裝甲營房:原本純 no-op,現貢獻 hasBarracks(與海軍陸戰隊營同等地位,解除政府
 		//     「無 Barracks -20%」懲罰);裝甲營本身「產生裝甲營駐軍」的效果仍未建模(TODO,
 		//     海軍陸戰隊營的駐軍生成系統見 ground_invasion.go,裝甲營房尚無對應版本)。
-		//   - 異族管理中心:士氣計算路徑已預留(colonyMoralePercent 讀取此建築名),但因 remake
-		//     無多種族人口追蹤,目前一律不套用多種族懲罰,故此建築在士氣上的效果暫不可見
-		//     (詳見 colonyMoralePercent 註解)——不是假裝已完整建模,是誠實標記「架構已備、
-		//     資料尚未跟上」。
+		//   - 異族管理中心:⚠ **這裡原本寫著「士氣計算路徑已預留(colonyMoralePercent 讀取
+		//     此建築名)」——那句是假的。** 2026-08-07 查證:那個建築名在整個 repo 裡只出現在
+		//     資料表與註解裡,`colonyMoralePercent` 從來沒讀過它。
+		//     真正接上的是**同化速率**(第 96 項,見 assimilation.go):手冊「1 per 2 turns,
+		//     regardless of government」,對統一政體等於十倍速。
+		//     手冊另外那兩條(消除多種族 20% 士氣懲罰、叛亂機率減半)仍未接——
+		//     remake 沒有多種族人口對士氣的路徑,也沒有叛亂系統。
 		// 海軍陸戰隊營本來就有獨立的陸戰隊召兵系統(ground_invasion.go),現在額外貢獻
 		// hasBarracks,兩個系統各自獨立生效,互不影響。
 		//
@@ -1358,9 +1361,14 @@ func (s *GameSession) applyBuildingEffect(i int, name string) {
 		// **行星輻射/通量/屏障護盾**改由 orbital_bombardment.go 在轟炸解算時讀
 		// s.ColonyBuildings(gamedata.PlanetaryShieldReduction),不經 ColonyState。
 		//
-		// 仍未建模的(飛彈基地、戰機基地、地面砲台、太空學院、曲速力場干擾器、戰鬥站、
-		// 星辰要塞、阿提米絲系統網、次元傳送門)**是真的缺子系統**,不是沒接線:
-		// 艦隊駐防、軌道防禦火力、艦員經驗值、格子戰鬥的獨立戰機單位。
+		// 2026-08-07(第 94–96 項)又縮短三棟,而且都不經 ColonyState:
+		// **阿提米絲系統網**(artemis.go,艦隊進入敵方星系時結算水雷)、
+		// **太空學院**(crew.go,起始艦員等級 +1 與同星系每回合 +1 經驗)、
+		// **異族管理中心**(assimilation.go,同化速率固定 2 回合不分政體)。
+		//
+		// 仍未建模的(飛彈基地、戰機基地、地面砲台、曲速力場干擾器、戰鬥站、星辰要塞、
+		// 次元傳送門)**是真的缺子系統**,不是沒接線:艦隊駐防、軌道防禦火力、
+		// 格子戰鬥的獨立戰機單位。
 		// 這些仍只由 advanceBuilds 記入 s.ColonyBuildings 為「已建」,顯示於畫面,不影響數值結算。
 	}
 }
@@ -2446,6 +2454,14 @@ type GameSession struct {
 	// 先前 ground_invasion.go / orbital_bombardment.go 有五處各自硬寫 `false`,
 	// 特質系統補上時要改五個地方而且很容易漏掉一個。
 	RaceWarlord bool
+	// RaceRepulsive / RaceCharismatic 是「排斥 / 魅力」兩個互斥的種族特質(手冊 p.25)。
+	// 目前只用在同化速率上(assimilation.go):排斥種族同化速度減半。
+	//
+	// ⚠ 與 RaceWarlord 同款狀況——**沒有任何內建種族會設它們**,特質表還沒有這些欄位。
+	// 魅力那一個更特別:手冊只說「assimilate conquered colonists **easily**」而**沒給數字**,
+	// 所以它現在連在同化那邊都不生效(見 gamedata/assimilation.go 的誠實留白)。
+	RaceRepulsive   bool
+	RaceCharismatic bool
 
 	raceGrowthPct int // 種族人口成長百分點加成(供 advancePopulation)
 
@@ -2938,6 +2954,7 @@ func (s *GameSession) EndTurn() {
 	s.LastDiscovery = nil     // 每回合先清掉上一回合的發現(與 advanceEvents 清 LastEvent 同一個節奏)
 	s.advanceFleet()          // 推進艦隊星間航行(ETA 遞減,抵達則標記探索 + 結算一次性發現)
 	s.advanceCrewExperience() // 艦員經驗:每回合 +1,停泊星系每有一座太空學院再 +1(見 crew.go)
+	s.advanceAssimilation()   // 征服人口同化:依政體 2–20 回合同化一單位(見 assimilation.go)
 	s.advanceMarines()        // 各 Marine Barracks 殖民地依手冊公式補充陸戰隊駐軍(有上限)
 	s.advanceArmor()          // 各 Armor Barracks 殖民地依手冊公式補充戰車營駐軍(有上限,見 ground_invasion.go)
 	s.advancePopulation()     // 累積各殖民地成長,達門檻則 +1 人口(回寫 Population)

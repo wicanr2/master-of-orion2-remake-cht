@@ -651,6 +651,9 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 		if captured.Population < 1 {
 			captured.Population = 1
 		}
+		// 剛攻下來的殖民地整批是未同化的外族人口(手冊 p.21-24:依政體 2–20 回合
+		// 同化一單位)。見 assimilation.go——這是「征服打法」在規則層的成本。
+		markColonyConquered(&captured)
 		s.PlayerColonies = append(s.PlayerColonies, captured)
 		s.Builds = append(s.Builds, ColonyBuild{})
 		for len(s.ColonyBuildings) < len(s.PlayerColonies) {

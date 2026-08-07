@@ -1,0 +1,92 @@
+package shell
+
+import (
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+)
+
+// assimilation.go:**征服人口的同化**接進回合迴圈。
+//
+// 速率表(逐政體 2–20 回合、排斥種族 ×2、異族管理中心固定 2)全在
+// `gamedata/assimilation.go`,這一檔負責:攻下殖民地時記下「這裡全是外族」、
+// 每回合推進、以及把 remake 的政體索引對到那張表。
+//
+// ============ 為什麼這是「征服打法」的門檻 ============
+//
+// 民主 4 回合 vs 統一 20 回合——差五倍。一個統一政體的帝國打下一顆 8 人口的星,
+// 要 160 回合才全部同化完;民主只要 32。這不是細節,是原版把「和平科技流」與
+// 「征服流」分開的規則手段。異族管理中心(維護費 1 BC)把它壓成固定 2 回合,
+// 所以那棟建築對統一政體等於十倍速。
+//
+// ============ 誠實留白 ============
+//
+//   - **未同化人口目前沒有負面效果。** 手冊說多種族殖民地有 20% 士氣懲罰(異族管理中心
+//     可消除)、未同化人口會增加叛亂機率(建築減半)。remake 的士氣路徑還沒接這一條,
+//     叛亂系統根本不存在。所以現在同化只是一個會走完的計時器——**機制在、後果還沒接**,
+//     這裡寫明白,不假裝完整。
+//   - AI 攻下玩家殖民地那條路徑沒有同化(AI 沒有殖民地狀態的完整模型)。
+
+// assimilationGovernment 把 remake 的政體對到同化速率表的政體。
+//
+// 進階政體(邦聯/帝國/聯邦/銀河統一)在原版是研究出來的升級版,所以這裡看對應科技:
+// 有那個科技就走進階那一格(同化更快)。
+func (s *GameSession) assimilationGovernment() gamedata.AssimilationGovernment {
+	base := gamedata.AssimDictatorship
+	var advTech gamedata.Technology
+	switch s.Government {
+	case gamedata.MoraleGovFeudalism:
+		base, advTech = gamedata.AssimFeudal, gamedata.TECH_CONFEDERATION
+	case gamedata.MoraleGovDictatorship:
+		base, advTech = gamedata.AssimDictatorship, gamedata.TECH_IMPERIUM
+	case gamedata.MoraleGovDemocracy:
+		base, advTech = gamedata.AssimDemocracy, gamedata.TECH_FEDERATION
+	case gamedata.MoraleGovUnification:
+		base, advTech = gamedata.AssimUnification, gamedata.TECH_GALACTIC_UNIFICATION
+	}
+	// 進階政體的判定沿用 hasPoweredArmorFor 那組既有規則(主題完成 + 抉擇命中),
+	// 不另立一套——四個進階政體都在 TOPIC_ADVANCED_GOVERNMENTS 這個四選一主題底下。
+	if groundEquipTechOwned(s.Player, gamedata.TOPIC_ADVANCED_GOVERNMENTS, advTech) {
+		return gamedata.AssimilationAdvancedForm(base)
+	}
+	return base
+}
+
+// AssimilationTurnsFor 回傳某個殖民地同化一單位人口要幾回合(供 UI 顯示)。
+func (s *GameSession) AssimilationTurnsFor(colonyIdx int) int {
+	hasCenter := colonyIdx >= 0 && colonyIdx < len(s.ColonyBuildings) &&
+		s.ColonyBuildings[colonyIdx][alienManagementCenterName]
+	return gamedata.AssimilationTurns(s.assimilationGovernment(), hasCenter, s.RaceRepulsive, s.RaceCharismatic)
+}
+
+// alienManagementCenterName 是建築表裡的中文名(gamedata.Buildings 的 NameZH)。
+const alienManagementCenterName = "異族管理中心"
+
+// markColonyConquered 把剛攻下的殖民地標成「全部是未同化的外族人口」。
+func markColonyConquered(c *engine.ColonyState) {
+	c.UnassimilatedPop = c.Population
+	c.AssimilationProgress = 0
+}
+
+// advanceAssimilation 每回合推進所有殖民地的同化。
+//
+// 一個殖民地累積滿「這個政體的回合數」就同化掉一單位人口,餘數留著繼續累
+// ——不是「每 N 回合歸零重來」,那會在政體改變時吃掉玩家已經累積的進度。
+func (s *GameSession) advanceAssimilation() {
+	for i := range s.PlayerColonies {
+		c := &s.PlayerColonies[i]
+		if c.UnassimilatedPop <= 0 {
+			c.AssimilationProgress = 0 // 沒有外族人口時不留殘值
+			continue
+		}
+		need := s.AssimilationTurnsFor(i)
+		c.AssimilationProgress++
+		for c.AssimilationProgress >= need && c.UnassimilatedPop > 0 {
+			c.AssimilationProgress -= need
+			c.UnassimilatedPop--
+		}
+		// 人口被炸掉/餓死時未同化數不該超過總人口。
+		if c.UnassimilatedPop > c.Population {
+			c.UnassimilatedPop = c.Population
+		}
+	}
+}

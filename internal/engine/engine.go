@@ -37,6 +37,16 @@ type ColonyState struct {
 	AtmosphericRenewer bool // 大氣更新器
 	CoreWasteDump      bool // 核心廢料場(完全消除污染)
 
+	// UnassimilatedPop 是這個殖民地還沒被同化的**征服人口**(GAME_MANUAL.pdf p.21-24)。
+	// 攻下一個殖民地時等於當地全部人口,之後每隔幾回合減一(回合數依政體,見
+	// gamedata/assimilation.go)。0 = 全部是自己的子民(自己拓殖的殖民地一開始就是 0)。
+	//
+	// AssimilationProgress 是「朝下一個單位累積了幾回合」。兩個欄位都由
+	// shell.advanceAssimilation 推進,engine 的經濟結算目前不讀它們
+	// ——多種族人口對產出的影響(20% 士氣懲罰)還沒接,見 assimilation.go 檔頭。
+	UnassimilatedPop     int
+	AssimilationProgress int
+
 	// FoodReplicators 是食物複製機(GAME_MANUAL.pdf p.85)。true 時,食物赤字會用產能
 	// 以 2:1 換成食物補足(每單位再花 1 BC,由 RunEmpireTurn 結算)。
 	// **只補缺口、不換出盈餘**——見 gamedata/food_replicators.go 的「as needed」段落。
