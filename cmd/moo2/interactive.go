@@ -344,6 +344,7 @@ type sceneBuilder struct {
 	newGameEmpires    int                      // NEW GAME 選的帝國總數(含玩家,shell.MinEmpires..MaxEmpires)
 	colChrome         *ebiten.Image            // 殖民地畫面的原版框架(COLPUPS.LBX#5,惰性解碼快取)
 	colBldgCache      map[string]*ebiten.Image // 地表建築圖(BLDGn.LBX,惰性解碼快取)
+	colVegSizeCache   map[int][2]int           // COLVEGGI 資產的寬高;地表每幀重算,不快取會每幀重解 LBX
 	pendingHotseat    int                      // 多人設定畫面選的真人席位數;0/1 = 單人局(開局後由 applyHotseat 套用)
 	savePath          string                   // remake 存檔路徑(每回合自動存;主選單 Load/Continue 讀)
 	designWeapon      int                      // 艦艇設計選的武器元件索引(shell.WeaponOptions)

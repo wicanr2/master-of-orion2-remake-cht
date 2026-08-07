@@ -313,18 +313,26 @@ var colonyHouseStyles = [4]int{3, 14, 40, 41}
 //	排序之後還有 `jitterColonyHouses`(8 輪房屋微調),再 `buildColonyRoads`(道路)——
 //	三者串在同一條亂數流上,順序不能動。
 func (b *sceneBuilder) colonySurfacePlan(idx int) map[[2]int]int {
-	plan, _ := b.colonySurfaceLayout(idx)
-	return plan
+	return b.colonySurfaceLayout(idx).plan
 }
 
-// colonySurfaceLayout 同時回傳建築落點與道路。兩者共用同一條亂數流且**有先後**,
-// 拆成兩支各自起種就會兩邊都錯,所以只有這一個入口在推。
-func (b *sceneBuilder) colonySurfaceLayout(idx int) (map[[2]int]int, colonyRoadMap) {
-	plan := map[[2]int]int{}
-	var roads colonyRoadMap
+// colonySurface 是一個殖民地地表的完整內容:建築落點、道路、植被。
+//
+// 三者**共用同一條亂數流而且有先後**(建築 → 道路 → 植被),拆成三支各自起種就會全錯,
+// 所以只有 `colonySurfaceLayout` 這一個入口在推。
+type colonySurface struct {
+	plan  map[[2]int]int
+	roads colonyRoadMap
+	veg   colonyVeggieMap
+}
+
+// colonySurfaceLayout 推出整片地表。
+func (b *sceneBuilder) colonySurfaceLayout(idx int) colonySurface {
+	surf := colonySurface{plan: map[[2]int]int{}}
 	if b.session == nil || idx < 0 || idx >= len(b.session.PlayerColonies) {
-		return plan, roads
+		return surf
 	}
+	plan := surf.plan
 	rng := gamedata.NewOrigRand(uint32(idx)) // Set_Random_Seed(colonyIdx)
 	var grid [36]int                         // grid[a*6+b],0 = 空(軸向見下方註解)
 
@@ -379,14 +387,18 @@ func (b *sceneBuilder) colonySurfaceLayout(idx int) (map[[2]int]int, colonyRoadM
 	// 同一條流上,所以這一步不能省。
 	findColonyBuilding(&grid, origCapitolID, rng)
 
-	roads = buildColonyRoads(&grid, rng)
+	surf.roads = buildColonyRoads(&grid, rng)
+	// 植被接在道路後面。`N_Bldgs_` 數的是殖民地擁有的建築(含軌道衛星),
+	// 即 `has` 的大小——它只影響 `Random(n+2)` 的參數,但那一次抽樣會動到共用的亂數流。
+	surf.veg = buildColonyVeggies(&grid, surf.roads, len(has),
+		int(b.session.PlayerColonies[idx].Climate), b.colonyVeggieSize, rng)
 
 	for i, id := range grid {
 		if id != 0 {
 			plan[colonyGridKey(i)] = id
 		}
 	}
-	return plan, roads
+	return surf
 }
 
 // origCapitolID 是國會大廈的原版建築編號。
@@ -578,10 +590,14 @@ func findColonyBuilding(grid *[36]int, id int, rng *gamedata.OrigRand) (int, int
 //
 // 貼的次序用 `colonySlotOrder`(遠 → 近),那是原版 `Add_Bldg_Fields_` 那張表的順序,
 // 也正是重疊建築要的畫家演算法次序。
-func (b *sceneBuilder) drawColonyBuildings(dst *ebiten.Image, idx int) {
-	plan := b.colonySurfacePlan(idx)
+//
+// **每一格是「先植被再建築」**,不是「先畫完所有植被再畫所有建築」——原版
+// `Draw_Colony_Bldgs_` @ 0xBEBDC 在同一個迴圈裡對每格先呼叫 `sub_B6B95`(植被)再畫建築。
+// 差別在遮擋:近處的草要蓋住遠處的建築下緣。
+func (b *sceneBuilder) drawColonyBuildings(dst *ebiten.Image, surf colonySurface) {
 	for _, cell := range colonySlotOrder {
-		id, ok := plan[cell]
+		b.drawColonyVeggiesAt(dst, surf.veg, cell[0], cell[1])
+		id, ok := surf.plan[cell]
 		if !ok || id == 0 {
 			continue
 		}
