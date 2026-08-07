@@ -266,6 +266,50 @@ func (fr *Frame) ToRGBA(pal *Palette, keyColor bool) *image.RGBA {
 	return img
 }
 
+// AccumulatedUpToRGBA 回傳「播到第 n 幀時」的畫面:把第 0..n 幀的已寫入像素依序疊起來。
+//
+// ⚠ 這與「直接把第 n 幀上色」**不是同一件事**,而差別足以讓畫面整個消失:
+// LBX 的多幀動畫多半是 **delta 幀**——第 0 幀是完整畫面,之後每幀只帶會變的那幾個像素。
+// 逐幀獨立上色播放,第 1 幀開始就只剩幾顆閃燈,面板本體全沒了。
+//
+// (2026-08-07 撞到:MULTIGM 資產 15「等待其他玩家加入」面板 10 幀,截圖廊播到第 1 幀
+// 整張面板消失。同樣的坑對 27、42 這些帶動畫的面板都成立,所以修在 lbx 這一層。)
+//
+// n 超出範圍時夾到有效區間;keyColor 與未寫入像素的處理同 Frame.ToRGBA(透明)。
+func (im *Image) AccumulatedUpToRGBA(pal *Palette, n int, keyColor bool) *image.RGBA {
+	if len(im.Frames) == 0 {
+		return image.NewRGBA(image.Rect(0, 0, im.Width, im.Height))
+	}
+	if n < 0 {
+		n = 0
+	}
+	if n >= len(im.Frames) {
+		n = len(im.Frames) - 1
+	}
+	w, h := im.Width, im.Height
+	buf := make([]uint8, w*h)
+	seen := make([]bool, w*h)
+	for f := 0; f <= n; f++ {
+		fr := im.Frames[f]
+		for i, wr := range fr.Written {
+			if wr && i < len(buf) {
+				buf[i], seen[i] = fr.Index[i], true
+			}
+		}
+	}
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	for i, idx := range buf {
+		if !seen[i] || (keyColor && idx == 0) {
+			continue // 透明
+		}
+		img.Pix[4*i+0] = pal[idx].R
+		img.Pix[4*i+1] = pal[idx].G
+		img.Pix[4*i+2] = pal[idx].B
+		img.Pix[4*i+3] = 0xff
+	}
+	return img
+}
+
 // AccumulatedRGBA 把多幀動畫依 openorion2 語意累積成單張圖:各幀的已寫入像素依序疊到
 // 同一 index buffer(未 FILLBG 時 buffer 不重置=delta 動畫),未被任何幀寫入的像素填
 // palette[0](非透明)。適合把「最終畫格」當靜態背景(如外交議事廳 DIPLOMAT#29,38 幀)。

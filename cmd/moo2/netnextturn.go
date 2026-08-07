@@ -252,7 +252,13 @@ func (b *sceneBuilder) multigmFrameWithKey(assetID, f int, keyColor bool) *ebite
 	if im.Embedded != nil {
 		pal = im.Embedded
 	}
-	return ebiten.NewImageFromImage(im.Frames[f].ToRGBA(pal, keyColor))
+	// ⚠ **累積**到第 f 幀,不是直接把第 f 幀上色。
+	//
+	// MULTIGM 的動畫面板是 delta 幀:第 0 幀是完整畫面,之後每幀只帶會閃的那幾顆燈。
+	// 逐幀獨立上色的話,第 1 幀開始整張面板就消失了,只剩幾個小亮點。
+	// 這個 bug 先前沒被發現,是因為截圖廊每張都恰好落在第 0 幀——直到「等待其他玩家加入」
+	// 那張刻意多留幾拍才露出來(見 internal/lbx 的 AccumulatedUpToRGBA)。
+	return ebiten.NewImageFromImage(im.AccumulatedUpToRGBA(pal, f, keyColor))
 }
 
 // netNextTurnDemo 建一張「示範用」的等待畫面:表格是即時建的,人名取目前對局的帝國名。

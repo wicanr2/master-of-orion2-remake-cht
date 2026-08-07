@@ -274,9 +274,17 @@ func (b *sceneBuilder) hostNetLobby() (origScreen, error) {
 			}
 		}
 	}()
-	sc := b.chooseNetPlayers(lb.Roster(), 0, true, lb.Addr())
-	sc.lobby = lb
-	return sc, nil
+	// 原版的順序是**先等人、再指派**:`Reload_Waiting_For_Joiners_Screen_` 是主機開局後
+	// 看到的那一張(人數欄位由 `Add_Waiting_For_Joiners_Field_` 逐幀更新),
+	// 點過去才是 `Choose_Net_Plyrs` 的名冊。照這個順序接。
+	wait := b.netInfo(netInfoWaitingForJoiners)
+	wait.lobby, wait.total, wait.hosting = lb, cnpMaxRows, true
+	wait.onCancel = func() *origTransition {
+		sc := b.chooseNetPlayers(lb.Roster(), 0, true, lb.Addr())
+		sc.lobby = lb
+		return &origTransition{next: sc}
+	}
+	return wait, nil
 }
 
 // joinNetLobby 連上大廳並進名冊畫面。
@@ -292,3 +300,9 @@ func (b *sceneBuilder) joinNetLobby() (origScreen, error) {
 	b.netConn = conn
 	return b.chooseNetPlayers(roster, me, false, netLobbyDialAddr), nil
 }
+
+// netInfoJoining 這個狀態在 remake 裡**沒有停留的時機**:`netplay.Join` 是同步的,
+// 連上或逾時都在同一個呼叫裡結束,沒有「連線中」那一段可以顯示。
+// 原版有,是因為它的連線走 IPX / 數據機,協商要好幾秒。
+// 版面與資產已經對好(見 netinfo.go),等哪天連線改成非同步就有觸發點——
+// 現在硬插一張會是假的載入畫面。

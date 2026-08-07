@@ -1309,6 +1309,31 @@ remake 照這個形狀做,但傳輸換成 **TCP + JSON**(原版走 IPX / 數據�
 
 **剩 4 張**:`Join_Net` / `Choose_Multi_Net_Game` / `Generic_Net_Info` / `SendGet_Net_Info`。
 
+## ★ 2026-08-07 連線狀態面板(gap report 第 77 項)
+
+**反組譯把「還缺 4 張」改寫成「還缺 1 張」**:`Draw_Generic_Net_Info_Screen_` 與
+`Draw_Join_Net_Screen_` 是**同一個位址**(0xF19C7)。往上追,`Reload_Generic_Net_Info_`
+收一個資產編號當參數,七個 `Reload_*_Info_` 都只是帶不同編號呼叫它
+——15 等人加入 / 23 加入中 / 24 等種族資料 / 25 初始化 / 26 傳送 / 30 產生星圖 / 31 接收。
+所以那不是七張畫面,是**一個面板 + 一個狀態列舉**。版面照樣是算的:置中於 640×480。
+
+**這一輪修掉兩個自己犯的錯,兩個都是截圖抓到的:**
+
+1. **把 `Add_Waiting_For_Joiners_Field_` 讀成人數欄位。** 截圖上數字壓在 START NET GAME 上,
+   才回去查它呼叫的 `sub_1151B0` = **`Add_Button_Field_`**——那個座標是**按鈕**。
+   符號名是二手推論,被呼叫的函式是一手事實。
+2. **LBX 多幀動畫是 delta 幀。** 第 0 幀完整、之後只帶會變的像素;逐幀獨立上色會讓
+   整張面板消失。這個 bug 一直都在,只是截圖廊每張都恰好落在第 0 幀。修在
+   `internal/lbx`(`AccumulatedUpToRGBA`)——資產 27、42 也會踩,只是還沒播到。
+
+**誠實留白**:只有「等待加入」有觸發點(主機開大廳 → 這一張 → 點過去進名冊);
+「加入對局中」永遠不會停留(`netplay.Join` 是同步的,原版慢是因為 IPX/數據機協商);
+人數位置是量的不是真值。
+
+**剩 1 張**:`Choose_Multi_Net_Game`(`Load_Choose_Multi_Net_Game_Screen_` @ 0xF40D3 +
+`Add_Choose_Multi_Net_Game_Fields_` @ 0xEFF87 已抽:主面板資產 41,
+`y = ((0x1E0 − 高) − 0x51)/2 + 0x25`,10 列對局,列高 22、列距 27、起點 +64)。
+
 ## 工作方式(使用者定案)
 - go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)
 - **不用多代理 workflow**;翻譯一組一組慢慢做(單代理逐項,使用者可隨時審閱)

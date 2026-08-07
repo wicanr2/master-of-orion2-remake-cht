@@ -3671,8 +3671,10 @@ type interactiveApp struct {
 	galleryNetWaitTick int
 	// galleryNetRosterTick 是截圖廊把畫面換成連線玩家名冊的 tick。
 	galleryNetRosterTick int
-	galleryBuilder       *sceneBuilder
-	gallerySession       *shell.GameSession
+	// galleryNetInfoTick 是截圖廊把畫面換成連線狀態面板的 tick。
+	galleryNetInfoTick int
+	galleryBuilder     *sceneBuilder
+	gallerySession     *shell.GameSession
 }
 
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
@@ -3693,6 +3695,13 @@ const galleryNetWaitTick = 95
 
 // galleryNetRosterTick 是截圖廊在哪個 tick 換成連線玩家名冊——取截圖(t98)的前一拍。
 const galleryNetRosterTick = 97
+
+// galleryNetInfoTick 是截圖廊在哪個 tick 換成連線狀態面板。
+//
+// ⚠ 這一拍**不能與前一張的截圖同一拍**:換畫面的處理跑在截圖之前,設成 98 會把
+// 名冊那張(t98)換掉——截出來的 31_netroster 變成狀態面板。第一次就是這樣寫錯的,
+// 截圖廊的逐位元組比對當場抓到。所以是 99,截圖留到 t102 讓面板動畫推幾幀。
+const galleryNetInfoTick = 99
 
 // galleryFighterTick 是截圖廊在哪個 tick 於戰術戰鬥裡派出一隊戰機——取截圖(t66)的前一拍。
 //
@@ -3950,6 +3959,12 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		// 連線玩家名冊(原版 Choose_Network_Plyrs_Screen_)。同上,直接推上來。
 		idle, // t97: 由 galleryNetRosterTick 換成名冊畫面
 		idle, // t98: settle → 截圖 netroster
+
+		// 連線狀態面板(原版 Generic_Net_Info / Join_Net / SendGet_Net_Info 共用的那一張)。
+		idle, // t99:  由 galleryNetInfoTick 換成狀態面板
+		idle, // t100: 推動畫
+		idle, // t101: 推動畫
+		idle, // t102: settle → 截圖 netinfo
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -3986,6 +4001,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{94, "29_confirm.png"},
 		{96, "30_netwait.png"},
 		{98, "31_netroster.png"},
+		{102, "32_netinfo.png"},
 	}
 	return script, shots
 }
@@ -4203,6 +4219,10 @@ func (a *interactiveApp) Update() error {
 	if a.galleryNetRosterTick > 0 && a.tick == a.galleryNetRosterTick && a.galleryBuilder != nil {
 		a.cur = a.galleryBuilder.chooseNetPlayersDemo()
 	}
+	// 截圖廊專用:連線狀態面板(原版 Generic_Net_Info 家族)。
+	if a.galleryNetInfoTick > 0 && a.tick == a.galleryNetInfoTick && a.galleryBuilder != nil {
+		a.cur = a.galleryBuilder.netInfoDemo()
+	}
 	// 截圖廊專用:戰術戰鬥裡派一隊戰機出擊(見 galleryFighterTick 的說明)。
 	if a.galleryFighterTick > 0 && a.tick == a.galleryFighterTick {
 		if ts, ok := a.cur.(*tacticalScreen); ok && len(ts.player) > 1 {
@@ -4379,6 +4399,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.galleryFighterTick = galleryFighterTick
 		app.galleryNetWaitTick = galleryNetWaitTick
 		app.galleryNetRosterTick = galleryNetRosterTick
+		app.galleryNetInfoTick = galleryNetInfoTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,

@@ -72,7 +72,7 @@
 | 9 | ~~**`Main_Antaran_Room`**~~ | 中 | ✅ 2026-08-07 已建(`cmd/moo2/antaranroom.go`),用原版 `antaroom.LBX` 資產 1(55 幀累積)當背景;留白:原版是推鏡動畫,remake 取最終定格 |
 | 10 | ~~**`Hall_Of_Fame` / `Hi_Score`**~~ | 低 | ✅ 2026-08-07 已建(`cmd/moo2/hiscore.go` + `gamedata/score.go`),八項計分係數全來自反組譯 module 60 |
 | 11 | ~~**`Smack`**~~ | 低 | ✅ 已建(`cmd/moo2/cutscene.go` + `internal/smk`,真的解 Smacker,不是靜態圖)|
-| 12 | 多人連線 11 個畫面 | — | ✅ `MP_Setup`(`cmd/moo2/multiplayer.go`)與 `Hotseat`(`cmd/moo2/hotseat.go`)2026-08-07 已建,版面座標取自反組譯(見下方第 20 項)。`Net_Next_Turn`(第 75 項)與 `Choose_Net_Plyrs`(第 76 項)2026-08-07 已建。`Modem_Setup`/`NullModem_Setup`/`Comm Info` **不做**(硬體已不存在)。剩 `Join_Net`/`Choose_Multi_Net_Game`/`Generic_Net_Info`/`SendGet_Net_Info` |
+| 12 | 多人連線 11 個畫面 | — | ✅ `MP_Setup`(`cmd/moo2/multiplayer.go`)與 `Hotseat`(`cmd/moo2/hotseat.go`)2026-08-07 已建,版面座標取自反組譯(見下方第 20 項)。`Net_Next_Turn`(第 75 項)與 `Choose_Net_Plyrs`(第 76 項)2026-08-07 已建。`Modem_Setup`/`NullModem_Setup`/`Comm Info` **不做**(硬體已不存在)。`Join_Net`/`Generic_Net_Info`/`SendGet_Net_Info` 是同一張畫面的不同狀態,第 77 項一併做掉。剩 `Choose_Multi_Net_Game` |
 
 ### A-3 remake 有、原版無獨立畫面
 
@@ -128,7 +128,7 @@
 
 | 缺口 | 性質 | 備註 |
 |---|---|---|
-| **網路多人** | 整塊子系統 | ~~決定性化~~(72)、~~傳輸層 + 鎖步~~(73)、~~指令解譯器~~(74)、~~`Net_Next_Turn` 等待畫面~~(75)、~~連線大廳 + `Choose_Net_Plyrs` 名冊~~(76)。**剩 4 張**(`Join_Net` / `Choose_Multi_Net_Game` / `Generic_Net_Info` / `SendGet_Net_Info`)+ 文字輸入框(沒有它「加入」只連得上本機);`Modem_Setup` / `NullModem_Setup` / `Comm Info` 三張**不做**(數據機與序列線硬體已不存在,remake 走 TCP——替不存在的硬體做設定畫面不是還原) |
+| **網路多人** | 整塊子系統 | ~~決定性化~~(72)、~~傳輸層 + 鎖步~~(73)、~~指令解譯器~~(74)、~~`Net_Next_Turn` 等待畫面~~(75)、~~連線大廳 + `Choose_Net_Plyrs` 名冊~~(76)、~~連線狀態面板 7 狀態~~(77,反組譯證明 `Join_Net`/`Generic_Net_Info`/`SendGet_Net_Info` 是同一張畫面的不同狀態)。**剩 1 張**(`Choose_Multi_Net_Game`)+ 文字輸入框(沒有它「加入」只連得上本機);`Modem_Setup` / `NullModem_Setup` / `Comm Info` 三張**不做**(數據機與序列線硬體已不存在,remake 走 TCP——替不存在的硬體做設定畫面不是還原) |
 
 > **2026-08-07:這張表只剩一列了。** 表上原本的其餘七列在同一天被逐一了結
 > (第 65–71 項),移到下方「已了結」表。剩下的那一列是整塊子系統,不是一個洞。
@@ -3661,3 +3661,62 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     - **沒有重連、沒有心跳、沒有加密。** 這是區網對戰的最低限度,寫在 `lobby.go` 檔頭。
 
     剩下 4 張(`Join_Net` / `Choose_Multi_Net_Game` / `Generic_Net_Info` / `SendGet_Net_Info`)。
+
+77. **連線狀態面板——反組譯把「還缺 4 張」改寫成「還缺 1 張」**(2026-08-07)。
+
+    ### 抽版面時發現那 4 張其實是 2 張
+
+    ```
+    0xF19C7  Draw_Generic_Net_Info_Screen_
+    0xF19C7  Draw_Join_Net_Screen_          ← 同一個位址
+    ```
+
+    兩個名字指向同一段程式碼。往上追,`Reload_Generic_Net_Info_` @ 0xF53D7 收一個
+    **資產編號**當參數,而下面這一整排都只是帶不同編號呼叫它:
+
+    | 呼叫者 | 資產 | 尺寸 | 意思 |
+    |---|---|---|---|
+    | `Reload_Waiting_For_Joiners_Screen_` @ 0xF552A | 15 | 479×150,10 幀 | 等其他玩家加入 |
+    | `Reload_Join_Net_Screen_` @ 0xF54CF | 23 | 478×70,4 幀 | 加入對局中 |
+    | `Reload_Wait_For_Race_Info_` @ 0xF551B | 24 | 480×116,4 幀 | 等種族資料 |
+    | `Reload_Initializing_Net_Info_` @ 0xF54BE | 25 | 478×70,4 幀 | 初始化連線 |
+    | `Reload_Sending_Data_Info_` @ 0xF54D9 | 26 | 411×105,4 幀 | 傳送資料 |
+    | `Reload_Generating_Map_Info_` @ 0xF53CB | 30 | 478×70,5 幀 | 產生星圖 |
+    | `Reload_Getting_Data_Info_` @ 0xF54A0 | 31 | 443×105,4 幀 | 接收資料 |
+
+    也就是「`Join_Net`」「`Generic_Net_Info`」「`SendGet_Net_Info`」不是三張畫面,
+    是**同一張畫面的三個狀態**。照著畫面名清單一張一張做,會做出七份幾乎一樣的程式碼;
+    追到共用的那個 loader 才看得出真正的形狀是「一個面板 + 一個狀態列舉」。
+
+    版面又是算的:`x = (0x280 − 資產.寬)/2`、`y = (0x1E0 − 資產.高)/2`,字型 id 4。
+    `Draw_SendGet_Net_Info_Screen_` @ 0xF2C8B 另給進度數字的兩組位移
+    ——`[win+0x10F]==0`(傳送)→ (+0x72,+0x42)、`==1`(接收)→ (+0x79,+0x41),
+    兩者共用同一段繪製,只差那幾個像素。
+
+    ### 這一輪修掉兩個自己犯的錯,兩個都是截圖抓到的
+
+    **一、把 `Add_Waiting_For_Joiners_Field_` 讀成「已加入人數」欄位。**
+    截圖上那串數字壓在 `START NET GAME` 上,才回去查它呼叫的 `sub_1151B0` 是什麼——
+    符號表寫著 **`Add_Button_Field_`**。那個 (+0x9E,+0x6A) 是**按鈕**的左上角,
+    把資產 15 攤開來看正好對上。名字裡的 "Waiting_For_Joiners" 指的是「這顆鈕加在哪張畫面」,
+    不是它顯示什麼。**符號名是二手推論,被呼叫的函式是一手事實。**
+
+    **二、LBX 多幀動畫是 delta 幀,逐幀獨立上色會讓整張面板消失。**
+    資產 15 的第 0 幀是完整面板,第 1~9 幀只帶會閃的那幾顆燈。remake 的
+    `multigmFrameWithKey` 一直是逐幀獨立解碼——這個 bug 先前沒被發現,是因為截圖廊
+    每一張都恰好落在第 0 幀,直到這張刻意多留幾拍才露出來。
+
+    修在 `internal/lbx`(`AccumulatedUpToRGBA`)而不是這一個畫面:同樣的坑對
+    資產 27(名冊標題帶)、42(等待畫面標題帶)都成立,只是還沒播到。
+    測試造一張 2×1 兩幀的合成圖直接比對「逐幀上色 vs 累積上色」——
+    錯的那個在畫面上是「什麼都沒有」,不做正對照就只會看到一片黑而不知道為什麼。
+
+    ### 誠實留白
+
+    - remake 目前只有「等待加入」這個狀態有觸發點(主機開大廳 → 這一張 → 點過去進名冊)。
+      其餘六個狀態的資產與版面都對好了,**不是死碼,是連線流程還沒走到那幾步**。
+    - 「加入對局中」永遠不會停留:`netplay.Join` 是同步的,連上或逾時都在同一個呼叫裡結束。
+      原版有那一段,是因為它的連線走 IPX / 數據機,協商要好幾秒。
+    - 已加入人數的位置是**量的**,不是反組譯真值——原版沒有給那個欄位。
+
+    **剩 1 張**:`Choose_Multi_Net_Game`(版面已抽出,見下輪)。
