@@ -1577,6 +1577,8 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 		// overlay 位置當熱區來源(擦底疊字位置≈按鈕位置)。
 		{536, 428, 82, 26, "back"},
 	}
+	// 每個已接觸種族一顆「派間諜」鈕,座標是**執行檔立即數**(見 racesSpyAnchors)。
+	hits = append(hits, racesSpyHitRegions(b.aiCount())...)
 	onAction := func(a string) *origTransition {
 		switch a {
 		case "audience":
@@ -1595,6 +1597,12 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 				return nil
 			}
 			return &origTransition{next: sc}
+		}
+		if idx, ok := racesSpyActionIndex(a); ok {
+			if b.session != nil {
+				b.session.TrainSpy(idx) // BC 不足時無作用(見 shell.TrainSpy)
+			}
+			return b.goTo(b.races, "種族關係")
 		}
 		return b.goTo(b.galaxy, "星系主畫面")
 	}
@@ -1618,8 +1626,12 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 		gold := color.RGBA{240, 220, 120, 255}
 		body := color.RGBA{210, 216, 230, 255}
 		dim := color.RGBA{170, 178, 195, 255}
-		y := 66.0
 		for i, a := range b.session.AIPlayers {
+			if i >= racesMaxRows {
+				break // 版面只放得下 7 個(原版就是這個上限,見 racesSpyAnchors)
+			}
+			// 列位置改用**執行檔立即數**(`_race_bar` @ 0x18400D),不再是等距 62px 的自編排版。
+			y := float64(racesRelationBars[i][1])
 			s.extras = append(s.extras,
 				extraText{x: 40, y: y, size: 15, text: a.Name, col: gold},
 				extraText{x: 40, y: y + 20, size: 12, text: fmt.Sprintf(b.tr("對你:%s ／ 軍力 %d ／ 佔領 %d 星", "Toward you: %s / power %d / %d systems"),
@@ -1639,7 +1651,15 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 			if rel != "" {
 				s.extras = append(s.extras, extraText{x: 40, y: y + 38, size: 10, text: b.tr("對他國 ", "Toward others: ") + rel, col: dim})
 			}
-			y += 62
+			// 「派間諜」鈕的標籤(座標同熱區)。
+			spies := 0
+			if i < len(b.session.PlayerSpies) {
+				spies = b.session.PlayerSpies[i]
+			}
+			btn := racesSpyAnchors[i]
+			s.extras = append(s.extras, extraText{x: float64(btn[0]) + 2, y: float64(btn[1]) + 12, size: 11,
+				text: fmt.Sprintf(b.tr("派間諜(%d)", "send spy (%d)"), spies),
+				col:  color.RGBA{150, 220, 160, 255}})
 		}
 	}
 	return s, nil
