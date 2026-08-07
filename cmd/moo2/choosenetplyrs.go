@@ -248,18 +248,44 @@ const netLobbyAddr = "0.0.0.0:24501"
 // 要打任意位址仍然需要文字輸入框——那是還沒做的一項,不是這裡偷懶。
 const netLobbyDialAddr = "127.0.0.1:24501"
 
-// hostNetLobby 開一個大廳並進名冊畫面。
+// hostNetLobby 先問對局名稱,再開大廳。
+//
+// 先問名稱是原版的順序:`Multi_Player_Screen_` @ 0xF4D99 在開局前呼叫
+// `Change_MP_Game_Name_` @ 0xF5777(長度上限 8、且要與既有對局不同名)。
+// 名稱是別人在清單上看到的東西,開完局才改就晚了。
+func (b *sceneBuilder) hostNetLobby() (origScreen, error) {
+	def := b.tr("主機玩家", "Host")
+	if b.session != nil && b.session.PlayerName != "" {
+		def = b.session.PlayerName
+	}
+	if r := []rune(def); len(r) > netplay.GameNameMax {
+		def = string(r[:netplay.GameNameMax])
+	}
+	under, err := b.multiPlayer()
+	if err != nil {
+		return nil, err
+	}
+	return b.inputBox(under, b.tr("對局名稱", "Game name"), def, netplay.GameNameMax,
+		func(name string) *origTransition {
+			sc, err := b.startNetLobby(name)
+			if err != nil {
+				return nil // 開不起來就留在輸入框上,不要無聲跳走
+			}
+			return &origTransition{next: sc}
+		}), nil
+}
+
+// startNetLobby 用指定的對局名稱開大廳並進「等待其他玩家加入」。
 //
 // ⚠ 這裡**不阻塞等人加入**:UI 是單執行緒的,`AcceptOne` 會把整個畫面凍住。
-// 收人放在背景 goroutine,名冊畫面每幀重讀 `lobby.Roster()`。
-func (b *sceneBuilder) hostNetLobby() (origScreen, error) {
+// 收人放在背景 goroutine,畫面每幀重讀 `lobby.Roster()`。
+func (b *sceneBuilder) startNetLobby(name string) (origScreen, error) {
 	seed := int64(1)
-	name := b.tr("主機玩家", "Host")
 	if b.session != nil {
 		seed = b.session.EventSeed
-		if b.session.PlayerName != "" {
-			name = b.session.PlayerName
-		}
+	}
+	if name == "" {
+		name = b.tr("主機玩家", "Host")
 	}
 	lb, err := netplay.Host(netLobbyAddr, name, seed)
 	if err != nil {
@@ -268,12 +294,12 @@ func (b *sceneBuilder) hostNetLobby() (origScreen, error) {
 	b.netLobby = lb
 	// 一併廣播,否則區網上的人看不到這場對局(原版靠 IPX 的服務公告,
 	// TCP 沒有那個能力——見 internal/netplay/discovery.go)。
-	gameName := []rune(name)
-	if len(gameName) > netplay.GameNameMax {
-		gameName = gameName[:netplay.GameNameMax]
+	gameName := name
+	if r := []rune(gameName); len(r) > netplay.GameNameMax {
+		gameName = string(r[:netplay.GameNameMax])
 	}
 	if an, err := netplay.Announce(netplay.Game{
-		Name: string(gameName), Addr: lb.Addr(), Players: 1, Max: cnpMaxRows,
+		Name: gameName, Addr: lb.Addr(), Players: 1, Max: cnpMaxRows,
 	}, "", time.Second); err == nil {
 		b.netAnnouncer = an
 	}
@@ -287,7 +313,7 @@ func (b *sceneBuilder) hostNetLobby() (origScreen, error) {
 			// 人數變了要更新廣播內容,不然清單上永遠寫 1 人。
 			if b.netAnnouncer != nil {
 				b.netAnnouncer.Update(netplay.Game{
-					Name: string(gameName), Addr: lb.Addr(),
+					Name: gameName, Addr: lb.Addr(),
 					Players: len(lb.Roster().Players), Max: cnpMaxRows,
 				})
 			}

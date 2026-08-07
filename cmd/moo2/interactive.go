@@ -3679,6 +3679,8 @@ type interactiveApp struct {
 	galleryNetInfoTick int
 	// galleryNetGamesTick 是截圖廊把畫面換成區網對局清單的 tick。
 	galleryNetGamesTick int
+	// galleryInputBoxTick 是截圖廊把畫面換成文字輸入彈窗的 tick。
+	galleryInputBoxTick int
 	galleryBuilder      *sceneBuilder
 	gallerySession      *shell.GameSession
 }
@@ -3711,6 +3713,12 @@ const galleryNetInfoTick = 99
 
 // galleryNetGamesTick 是截圖廊在哪個 tick 換成區網對局清單——取截圖(t104)的前一拍。
 const galleryNetGamesTick = 103
+
+// galleryInputBoxTick 是截圖廊在哪個 tick 疊上文字輸入彈窗——取截圖(t106)的前一拍。
+//
+// 這一張是**疊在對局清單上**的(modal 要看得見下層,同確認框),所以刻意接在
+// galleryNetGamesTick 之後而不是自己推一張底。
+const galleryInputBoxTick = 105
 
 // galleryFighterTick 是截圖廊在哪個 tick 於戰術戰鬥裡派出一隊戰機——取截圖(t66)的前一拍。
 //
@@ -3978,6 +3986,10 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		// 區網對局清單(原版 Choose_Multi_Network_Game_Screen_)。同上,直接推上來。
 		idle, // t103: 由 galleryNetGamesTick 換成對局清單
 		idle, // t104: settle → 截圖 netgames
+
+		// 文字輸入彈窗(原版 Remapped_Input_Box_Popup_),疊在對局清單上。
+		idle, // t105: 由 galleryInputBoxTick 疊上輸入彈窗
+		idle, // t106: settle → 截圖 inputbox
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -4016,6 +4028,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{98, "31_netroster.png"},
 		{102, "32_netinfo.png"},
 		{104, "33_netgames.png"},
+		{106, "34_inputbox.png"},
 	}
 	return script, shots
 }
@@ -4241,6 +4254,14 @@ func (a *interactiveApp) Update() error {
 	if a.galleryNetGamesTick > 0 && a.tick == a.galleryNetGamesTick && a.galleryBuilder != nil {
 		a.cur = a.galleryBuilder.chooseMultiNetGameDemo()
 	}
+	// 截圖廊專用:文字輸入彈窗(原版 Remapped_Input_Box_Popup_),疊在目前畫面上。
+	if a.galleryInputBoxTick > 0 && a.tick == a.galleryInputBoxTick && a.galleryBuilder != nil {
+		ib := a.galleryBuilder.inputBox(a.cur,
+			a.galleryBuilder.tr("輸入主機位址", "Enter host address"),
+			"192.168.1.20:24501", 45, nil)
+		ib.scriptOK = true // 截圖廊不吃鍵盤,否則腳本的按鍵會被它收走
+		a.cur = ib
+	}
 	// 截圖廊專用:戰術戰鬥裡派一隊戰機出擊(見 galleryFighterTick 的說明)。
 	if a.galleryFighterTick > 0 && a.tick == a.galleryFighterTick {
 		if ts, ok := a.cur.(*tacticalScreen); ok && len(ts.player) > 1 {
@@ -4419,6 +4440,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.galleryNetRosterTick = galleryNetRosterTick
 		app.galleryNetInfoTick = galleryNetInfoTick
 		app.galleryNetGamesTick = galleryNetGamesTick
+		app.galleryInputBoxTick = galleryInputBoxTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,

@@ -92,12 +92,24 @@ const (
 	cmngBtnY = 0x158 // +344
 	// 按鈕尺寸量自資產 41(反組譯沒有給,標成量的)。
 	cmngBtnW, cmngBtnH = 86, 22
+
+	// 「直接輸入位址」的熱區。**原版沒有這顆鈕**——擺在最後一列下方的空白帶,
+	// 不佔用任何一個原版座標。
+	cmngDirectDX = 0x26
+	cmngDirectDY = 0x40 + 10*0x1B + 8 // 最後一列之後
+	cmngDirectW  = 130
+	cmngDirectH  = 20
 )
 
 // cmngWindow 回傳主面板左上角(見檔頭的算式)。
 func cmngWindow() (x, y int) {
 	return (moo2ScreenW - cmngPanelW) / 2,
 		((moo2ScreenH-cmngPanelH)-cmngYBias)/2 + cmngYOffset
+}
+
+// cmngDirectRect 回傳「直接輸入位址」的熱區(remake 自加,不是原版座標)。
+func cmngDirectRect(winX, winY int) (x, y, w, h int) {
+	return winX + cmngDirectDX, winY + cmngDirectDY, cmngDirectW, cmngDirectH
 }
 
 // cmngRowRect 回傳第 i 列的點擊區(螢幕座標)。
@@ -171,6 +183,23 @@ func (s *chooseMultiNetGameScreen) update(in shell.InputState) *origTransition {
 			return nil
 		}
 	}
+	dx, dy, dw, dh := cmngDirectRect(winX, winY)
+	if in.MouseX >= dx && in.MouseX < dx+dw && in.MouseY >= dy && in.MouseY < dy+dh {
+		return &origTransition{next: s.b.inputBox(s,
+			s.b.tr("輸入主機位址", "Enter host address"), netLobbyDialAddr, 45,
+			func(addr string) *origTransition {
+				if addr == "" {
+					return nil
+				}
+				sc, err := s.b.joinNetGame(netplay.Game{Name: "direct", Addr: addr})
+				if err != nil {
+					s.msg = s.b.tr("連不上 ", "Could not connect to ") + addr
+					return nil
+				}
+				s.closeBrowser()
+				return &origTransition{next: sc}
+			})}
+	}
 	// 點清單以外的地方 = 離開。
 	s.closeBrowser()
 	sc, err := s.b.multiPlayer()
@@ -243,6 +272,14 @@ func (s *chooseMultiNetGameScreen) draw(dst *ebiten.Image) {
 			s.b.tr("主機端要先在多人設定按「開始新遊戲」", "The host must start a game first"),
 			float64(winX+cmngPanelW/2), float64(winY+cmngRowFirst)+62, 11, dim)
 	}
+
+	// 「直接輸入位址」:原版**沒有**這顆鈕(IPX 自己找得到,不需要打位址)。
+	// remake 的 UDP 廣播只跨得過同一個區網,跨網段就得能打位址——這是補的,不是還原,
+	// 所以擺在清單外面而不是塞進原版的版面裡。
+	dx, dy, dw, dh := cmngDirectRect(winX, winY)
+	vector.StrokeRect(dst, float32(dx), float32(dy), float32(dw), float32(dh), 1, dim, false)
+	s.b.fnt.DrawCentered(dst, s.b.tr("直接輸入位址", "Enter address"),
+		float64(dx+dw/2), float64(dy)+5, 12, body)
 
 	// 底下那顆鈕的位置是反組譯真值(欄位左上角);寬高是量的,原版沒有給。
 	bx, by := winX+cmngBtnX, winY+cmngBtnY
