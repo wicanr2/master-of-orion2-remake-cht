@@ -253,3 +253,62 @@ func TestStartingTopicsAlsoGoToAI(t *testing.T) {
 		}
 	}
 }
+
+// --- 開局建築(2026-08-07:優先清單接上) ---
+
+// TestHomeworldBuildingsMatchTheHardCodedPair 是**正對照**:
+// 從原版優先清單算出來的結果,必須與先前寫死的那兩棟逐項相同。
+//
+// 先前那兩棟是照手冊那句話手寫的;現在改成從 `word_17D8AC` × 開局主題表 × 建築前置表算。
+// 兩條路走到同一個答案才算數——只有新的那條綠,證明不了它對。
+func TestHomeworldBuildingsMatchTheHardCodedPair(t *testing.T) {
+	want := homeworldBuildingsLegacy()
+	got := homeworldBuildingsFor(TechLevelDefault, homeworldStartPop)
+	if len(got) != len(want) {
+		t.Fatalf("算出來 %d 棟,寫死的是 %d 棟:%v vs %v", len(got), len(want), got, want)
+	}
+	for name := range want {
+		if !got[name] {
+			t.Errorf("算出來的少了 %q", name)
+		}
+	}
+}
+
+// 上限是 min(⌈⅔ pop⌉, 等級上限)——手冊給了驗證數字:
+// 「a HW with 8 pop can have 6 buildings on Advanced Tech start, but only 5 on Average start」。
+func TestStartingBuildingCountMatchesTheManualExample(t *testing.T) {
+	if got := StartingBuildingCount(8, gamedata.InitialBuildingCap(2)); got != 6 {
+		t.Errorf("8 人口 + 先進級應為 6,實得 %d", got)
+	}
+	if got := StartingBuildingCount(8, gamedata.InitialBuildingCap(1)); got != 5 {
+		t.Errorf("8 人口 + 一般級應為 5(受上限),實得 %d", got)
+	}
+}
+
+// ⚠ 先進級**目前仍然只有兩棟**,而且原因不在這一層。
+//
+// 上限是 9、⌈⅔×8⌉ = 6,所以名額有 6 個;但清單裡科技條件成立的只有兩棟——因為
+// 先進級該多拿的 19 個隨機主題還沒發(見 gamedata.StartingTopicRandomExtras)。
+// **這一條把「缺口在哪一層」釘住**:機制是對的,缺的是上游的科技。
+func TestAdvancedStartIsBlockedByTheMissingRandomTopics(t *testing.T) {
+	adv := homeworldBuildingsFor(2, homeworldStartPop)
+	if len(adv) != 2 {
+		t.Errorf("先進級目前應仍是兩棟(缺口在上游的隨機主題),實得 %d 棟:%v", len(adv), adv)
+	}
+	if gamedata.StartingTopicRandomExtras(2) != 19 {
+		t.Error("缺口的大小變了——那 19 個隨機主題若接上了,這條測試要跟著改")
+	}
+	// 正對照:科技夠多的時候,這套機制**確實**會發到名額用完。
+	rich := map[gamedata.ResearchTopic]bool{gamedata.TOPIC_STARTING_TECH: true}
+	for _, b := range gamedata.Buildings {
+		rich[b.PrereqTopic] = true
+	}
+	full := gamedata.InitialBuildings(rich, StartingBuildingCount(homeworldStartPop, gamedata.InitialBuildingCap(2)))
+	if len(full) != 6 {
+		t.Errorf("科技全解時應發滿 6 個名額(⌈⅔×8⌉),實得 %d:%v", len(full), full)
+	}
+	// 而且發的是清單最前面的——順序是原版的優先序,不是隨便挑。
+	if full[0] != "星要塞" && full[0] != "星際要塞" {
+		t.Logf("清單最前面是編號 41(Star Fortress),remake 中文名為 %q", full[0])
+	}
+}

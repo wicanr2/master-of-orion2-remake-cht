@@ -2169,6 +2169,26 @@ func (s *GameSession) applyStartingTech() {
 	for i := range s.AIPlayers {
 		grant(&s.AIPlayers[i].Player)
 	}
+	s.applyStartingBuildings()
+}
+
+// applyStartingBuildings 依 TECH LEVEL 重發母星的開局建築。
+//
+// 與 `applyStartingTech` 同一個理由擺在這裡:建築內容取決於「開局知道哪些科技」,
+// 而那由 NEW GAME 的 TECH LEVEL 決定、比 PlayerState 建好的時間晚。
+// 呼叫點就接在發完科技之後——**順序不能反**,建築要看科技。
+//
+// 只動母星(索引 0):其他殖民地是玩家自己拓的,不歸開局規則管。
+func (s *GameSession) applyStartingBuildings() {
+	b := homeworldBuildingsFor(s.techLevel(), homeworldStartPop)
+	if len(s.ColonyBuildings) > 0 {
+		s.ColonyBuildings[0] = cloneBuildings(b)
+	}
+	for i := range s.AIPlayers {
+		if len(s.AIPlayers[i].ColonyBuildings) > 0 {
+			s.AIPlayers[i].ColonyBuildings[0] = cloneBuildings(b)
+		}
+	}
 }
 
 // aiHomeStarIndices 依「星數 n、AI 對手數 aiHomes」算出 aiHomes 個彼此不同、且都不是星 0
@@ -3589,7 +3609,44 @@ func newHomeworldPlayerState(researchTopic gamedata.ResearchTopic) engine.Player
 //
 // 建築數 2 遠低於 StartingBuildingCount(8, BuildingCapAverage)=5 的上限——這是符合手冊的
 // (上限只是「至多」,實際只有這兩項的科技條件成立,見 §3.3)。
+// ⚠ 2026-08-07:這一組先前是**寫死的兩棟**。現在改成從原版的優先清單算出來
+// (`gamedata.InitialBuildings`,清單來自 `Init_Homeworld_Colony2_` @ 0x13A3D 的 `word_17D8AC`)。
+// 一般等級算出來仍然**正好是這兩棟**——那不是巧合,是手冊那句話的機器版驗證
+// (「no other techs are Known that are also in the default initial buildings list」)。
+// 先進等級才會多出東西,而先進等級先前完全沒有差別。
 func homeworldBuildings() map[string]bool {
+	return homeworldBuildingsFor(TechLevelDefault, homeworldStartPop)
+}
+
+// homeworldStartPop 是母星開局人口(oracle:SAVE10.GAM 8 pop,見 docs/tech/homeworld-init.md)。
+//
+// 只有「開局建築數」用得到它:數量 = min(⌈⅔ pop⌉, 等級上限)。
+const homeworldStartPop = 8
+
+// homeworldBuildingsFor 依 TECH LEVEL 與人口算出開局已建成的建築。
+//
+// 兩層限制,兩層都是真值:
+//
+//	數量 = min(⌈⅔ 人口⌉, `gamedata.InitialBuildingCap`)   ; 上限表 = 原版 byte_13A3A = 3/5/9
+//	內容 = 優先清單裡**科技條件成立**的,照原版順序                ; 清單 = 原版 word_17D8AC
+//
+// 科技用的是 `gamedata.StartingTopics(techLevel)` + field 0 —— 與 `applyStartingTech`
+// 發下去的那一組**同一個來源**。兩邊各算一次的話,「有這棟建築但沒有它的科技」這種矛盾
+// 會靜靜地出現。
+func homeworldBuildingsFor(techLevel, pop int) map[string]bool {
+	known := map[gamedata.ResearchTopic]bool{gamedata.TOPIC_STARTING_TECH: true}
+	for _, t := range gamedata.StartingTopics(techLevel) {
+		known[t] = true
+	}
+	n := StartingBuildingCount(pop, gamedata.InitialBuildingCap(techLevel))
+	out := map[string]bool{}
+	for _, name := range gamedata.InitialBuildings(known, n) {
+		out[name] = true
+	}
+	return out
+}
+
+func homeworldBuildingsLegacy() map[string]bool {
 	return map[string]bool{
 		"海軍陸戰隊營": true, // Marine Barracks
 		"星基":     true, // Star Base

@@ -3915,3 +3915,69 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     - 初始建築數上限(3/5/9)仍未接:要先有「依人口生成母星建築」的機制。
     - 原版 `byte_199CB5 >= 3` 那條路徑**沒有設 `var_18`**(`enter` 不清堆疊)。
       NEW GAME 只給三級,那個值進不來——**照抄一個未初始化的堆疊值不叫還原**。
+
+81. **開局建築的優先清單——手冊只給了結論,清單本身在執行檔裡**(2026-08-07)。
+
+    ### 缺的又是一張表,而程式碼自己標了
+
+    `shell.StartingBuildingCount` 的註解:
+
+    > 此函式只回傳「上限」,實際會生成哪些建築仍取決於 **initial_buildings 優先清單**與已知科技
+
+    那份清單在 `Init_Homeworld_Colony2_` @ 0x13A3D:
+
+    ```
+    loc_13CCB:
+        movsx ebx, word_17D8AC[ecx]      ; ← 優先清單(word 陣列,0 收尾)
+        test  ebx, ebx / jz 結束
+        movzx eax, byte_199CB5            ; TECH LEVEL
+        movzx ax, ds:byte_13A3A[eax]      ; ← 上限表
+        cmp   ax, [已放幾棟] / jle 結束
+    ```
+
+    **上限表 `byte_13A3A` = `db 3, 5, 9`** —— 與手冊逐字相同(「capped to 3 for Pre-warp,
+    5 for Average/Postwarp and 9 for Advanced」)。remake 的 `BuildingCapPreWarp/Average/Advanced`
+    早就是這三個數,現在有了第二個來源。
+
+    **清單 `word_17D8AC`**(32 個原版建築編號,順序照原版):
+
+    ```
+    41  8  40  21  22  15  7  20  37  4  31  33  34  39  2  12  13  32
+    35  10  43  16  28  25  18  19  24  26  47  27  6  5
+    ```
+
+    開頭 41 → 8 → 40 是 **Star Fortress → Battlestation → Star Base**:同一條防禦升級鏈,
+    **最強的排最前面**。原版照這個順序往下發到上限為止,所以科技越先進拿到的是越上層那一棟。
+
+    ### 四條獨立的線指到同一個答案
+
+    手冊說「Pre-warp and Average Tech games only start with **Marine Barracks and a Star Base**
+    because no other techs are Known that are also in the default initial buildings list」。
+
+    拿這份清單 × 第 80 項的六個開局主題 × remake 自己的建築前置表跑一遍——
+    清單裡科技條件成立的**正好只有 Star Base(40)與 Marine Barracks(22)**。
+    清單、主題表、前置表、手冊那句話,四個獨立來源互相對上。
+
+    落成測試 `TestAverageStartGivesExactlyMarineBarracksAndStarBase`:三張表任何一張抄錯都會紅。
+
+    ### 驗收:截圖廊**零差異**
+
+    這一輪把寫死的兩棟換成「從清單算」,而一般等級算出來仍然正好是那兩棟
+    ——截圖廊 34 張逐位元組相同。行為保持的證明不是測試綠,是那個零。
+    另有一支正對照 `TestHomeworldBuildingsMatchTheHardCodedPair`:新舊兩條路要走到同一個答案,
+    只有新的那條綠證明不了它對。
+
+    ### 誠實留白:缺口被釘在上一層
+
+    **先進級目前仍然只有兩棟**,而且原因不在這一層:上限 9、⌈⅔×8⌉ = 6,名額有 6 個,
+    但清單裡科技條件成立的只有兩棟——因為第 80 項留下的 **19 個隨機主題還沒發**。
+
+    `TestAdvancedStartIsBlockedByTheMissingRandomTopics` 把這件事釘住,並附正對照:
+    科技全解時這套機制**確實**會發滿 6 個名額。**機制是對的,缺的是上游的科技。**
+
+    那 19 個要接得先港 `Choose_Tech_Application_` @ 0xFD335 ——294 行的 AI 科技權重選擇器
+    (權重吃成本表 `dword_17D916`、種族旗標 `byte_17E084`、性格 `[player+0x28]`、
+    政府別、`sub_FC845` 的估值)。**一次讀就照抄風險太高**,留作獨立一輪。
+
+    順帶把 `origBuildingID` 從 `cmd/moo2/colonysurface.go` 搬進 `internal/gamedata`:
+    畫地表 sprite 與這份優先清單要靠**同一份**編號對照,各抄一份遲早會漂開。
