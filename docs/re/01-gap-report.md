@@ -5168,6 +5168,80 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     這一輪的形狀與第 98 項同款:**做完一件事之後,回頭找它讓哪些話變成假的**。
     留白與缺口記錄的價值在於它反映現況;一旦落後,它就從導航變成誤導。
 
+101. **領袖技能:修掉一條疊加規則,補上四個技能,並確認一個「不是缺口」**(2026-08-07)。
+
+    HONEST-STATUS 一直寫著「MOO2 25 個領袖技能,remake 接了 2 個」。這一輪逐條查手冊。
+
+    ### 手冊給了一條 remake 一直做錯的規則
+
+    p.137「Applicability」:
+
+    > The effects of the **Megawealth and Researcher** abilities are **cumulative**,
+    > but **the rest are not**. … the fleet gets the effect for that particular ability
+    > of **the leader with the best applicable bonus**.
+
+    `applyLeaderColonyBonuses` 先前是無條件 `+=`——**兩個貿易家就加兩份**,而原版只算最強的
+    那一位。已改成先依技能分組、再依「累加 vs 取最佳」合成(`gamedata.LeaderSkillCombine`)。
+
+    測試同時釘住兩邊:兩個貿易家**不**疊、兩個科學家**要**疊。少了後面那條正對照,
+    「一律取最佳」也會讓前面那條通過。
+
+    負加成另有一個坑:環保官是 −10%,取「數值最大」會挑到**最弱**的那位,所以合成是取
+    **絕對值最大**。
+
+    ### 單位是查出來的,不是猜的
+
+    加成值在 `baseSkillValues[2]`(gamestate.cpp),**單位**在 `skillFormatStrings[2]`
+    (officer.cpp)——兩張表在 openorion2 是分開的,只看數值不知道 10 是「10 點」還是「10%」。
+
+    | 技能 | base | 格式 | 單位 |
+    |---|---|---|---|
+    | 環保官 | −10 | `%+d%%` | 百分比 |
+    | 農業官 | +10 | `%+d%%` | 百分比 |
+    | 財務官 | +10 | `%+d%%` | 百分比 |
+    | **教官** | **+1** | **`%+d`** | **固定點數** |
+    | 勞工官 | +10 | `%+d%%` | 百分比 |
+    | 醫官 | +10 | `%+d%%` | 百分比 |
+    | 科學官 | +10 | `%+d%%` | 百分比 |
+    | 心靈導師 | +5 | `%+d%%` | 百分比 |
+    | 戰術官 | +2 | `%+d` | 固定點數 |
+
+    教官那一格是固定點數而非百分比,**正好對上手冊那句「Boosts the number of experience
+    points earned each turn」**——是每回合多幾點,不是多幾成。兩個獨立來源指到同一個語意。
+
+    ### 接了四個(標準仍是「有現成的承接欄位」)
+
+    | 技能 | 承接欄位 |
+    |---|---|
+    | 財務官 +10% | `ColonyState.IncomeBonusPercent` |
+    | 心靈導師 +5% | `ColonyState.MoralePercent` |
+    | 醫官 +10% | `ColonyState.GrowthBonusSum` |
+    | **教官 +1** | **艦員每回合經驗**(第 95 項才有的東西) |
+
+    教官這一個是**第 95 項的下游**:艦員經驗系統做出來之前,那個技能沒有地方可接。
+
+    ### 沒接的與理由
+
+    環保官(降低「會產生污染的產能」的百分比——remake 的污染模型是 eighths 查表,
+    沒有百分比入口)、農業官/勞工官/科學官(食物/工業/研究的**分項百分比**——
+    `ColonyState` 只有 per-worker 與固定值兩種欄位)。
+
+    ### 一個「不是缺口」的發現
+
+    手冊在 Tactics 那一條的**最後一句**寫著:
+
+    > Improves the coordination of the military forces in the system, adding to the
+    > Beam Attack and the strength of ground troops.  **This skill is not implemented.**
+
+    **原版自己就沒做。** remake 不做它與原版一致——把它列進「還沒接的技能」是分類錯誤。
+    這句話值得記下來,否則下一個盤點的人會花時間去找它該有什麼效果。
+
+    ### 順帶更正一個我自己的誤判
+
+    查這一輪時我一度說「`loadHerodataMercs` 沒有呼叫端、真英雄池從沒裝進遊戲」——**錯的**,
+    它在 `interactive.go:4384` 有呼叫,是我的 grep 被 `head` 截掉了。
+    真英雄池早就接上;真正的缺口是技能對照表只認兩個,而那正是這一項修的。
+
 
 
 

@@ -1832,6 +1832,26 @@ Marine Barracks and a Star Base」)、**先進 25 主題 → 6 棟**(名額數 �
 這一輪的形狀與第 98 項同款:**做完一件事之後,回頭找它讓哪些話變成假的**。
 留白與缺口記錄的價值在於反映現況;一旦落後,它就從導航變成誤導。
 
+## ★ 2026-08-07 領袖技能:疊加規則 + 四個技能 + 一個「不是缺口」(gap report 第 101 項)
+
+**手冊給了一條 remake 一直做錯的規則**(p.137 Applicability):只有 **Megawealth 與
+Researcher 可累加**,其餘取**最強的那一位**。`applyLeaderColonyBonuses` 先前是無條件 `+=`
+——兩個貿易家就加兩份。已改成分組後依規則合成;測試同時釘兩邊(兩個貿易家**不**疊、
+兩個科學家**要**疊)。負加成(環保官 −10%)取**絕對值最大**,取數值最大會挑到最弱那位。
+
+**單位是查出來的**:加成值在 `baseSkillValues[2]`、單位在 `skillFormatStrings[2]`,兩張表在
+openorion2 是分開的。**教官是固定點數而非百分比**,正好對上手冊「Boosts the number of
+experience points earned each turn」——兩個獨立來源指到同一語意。
+
+**接了四個**(標準仍是「有現成的承接欄位」):財務官→`IncomeBonusPercent`、
+心靈導師→`MoralePercent`、醫官→`GrowthBonusSum`、**教官→艦員每回合經驗**(第 95 項才有的東西)。
+
+**一個「不是缺口」的發現**:手冊 Tactics 那條的最後一句明寫 **This skill is not implemented**
+——**原版自己就沒做**,remake 不做它與原版一致。記下來,否則下一個盤點的人會去找它該有什麼效果。
+
+**順帶更正一個誤判**:查這輪時我一度說「`loadHerodataMercs` 沒有呼叫端」——錯的,
+它在 `interactive.go:4384` 有呼叫,是 grep 被 `head` 截掉。真英雄池早就接上。
+
 ## 工作方式(使用者定案)
 - go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)
 - **不用多代理 workflow**;翻譯一組一組慢慢做(單代理逐項,使用者可隨時審閱)

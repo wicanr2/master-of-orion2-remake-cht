@@ -1569,10 +1569,27 @@ func demoLeaders() []Leader {
 // commandoLeaderTier(leaders []Leader) 依 l.Skill=="指揮官" 直接掃描、不透過本表——避免把
 // 語意/單位都不同的兩套加成(經濟 vs 地面戰鬥)混進同一張映射表。SKILL_WEAPONRY 等其餘候選
 // 已不採用(Commando 已定案)。
+//
+// 2026-08-07(第 101 項)再加四個 **admin 技能**——挑選標準仍是「remake 有現成的承接欄位」
+// (第 28 項那條硬門檻),單位查自 openorion2 的 `skillFormatStrings[2]`
+// (見 gamedata/leader_skill_apply.go 的對照表):
+//   - 財務官 → SKILL_FINANCIAL_LEADER(+10%)→ ColonyState.IncomeBonusPercent
+//   - 心靈導師 → SKILL_SPIRITUAL_LEADER(+5%)→ ColonyState.MoralePercent
+//   - 醫官 → SKILL_MEDICINE(+10%)→ ColonyState.GrowthBonusSum(百分點,同一把尺)
+//   - 教官 → SKILL_INSTRUCTOR(**+1 固定點數**)→ 艦員每回合經驗(見 crew.go)
+//
+// 沒收的 admin 技能與理由:環保官(降低「會產生污染的產能」的百分比——remake 的污染模型是
+// eighths 查表,沒有百分比入口)、農業官/勞工官/科學官(食物/工業/研究的**百分比**加成——
+// ColonyState 只有 per-worker 與固定值兩種欄位,沒有分項百分比)、戰術官(**原版自己就沒實作**,
+// 手冊那條的最後一句明寫 This skill is not implemented)。
 var leaderSkillIDByName = map[string]int{
-	"科學家": int(gamedata.SKILL_RESEARCHER),
-	"貿易家": int(gamedata.SKILL_TRADER),
-	"工程師": int(gamedata.SKILL_ENGINEER),
+	"科學家":  int(gamedata.SKILL_RESEARCHER),
+	"貿易家":  int(gamedata.SKILL_TRADER),
+	"工程師":  int(gamedata.SKILL_ENGINEER),
+	"財務官":  int(gamedata.SKILL_FINANCIAL_LEADER),
+	"心靈導師": int(gamedata.SKILL_SPIRITUAL_LEADER),
+	"醫官":   int(gamedata.SKILL_MEDICINE),
+	"教官":   int(gamedata.SKILL_INSTRUCTOR),
 }
 
 // leaderDisplayLevelToExpLevel 把 Leader.Level(demo 資料的 1..5 顯示等級)換算成
@@ -1600,7 +1617,15 @@ func leaderDisplayLevelToExpLevel(level int) int {
 // 其餘有對應 skill id 但 remake 尚無承接系統的技能(如 SKILL_SCIENCE_LEADER/
 // SKILL_FINANCIAL_LEADER/SKILL_LABOR_LEADER 等 admin 技能──demoLeaders 目前沒有領袖標成這些
 // 名稱,故不處理)一律略過,不臆造欄位。
+// ⚠ 2026-08-07(第 101 項)修掉一個一直在的錯:**加成不是每個領袖都疊一份**。
+//
+// 手冊 p.137「Applicability」:「The effects of the **Megawealth and Researcher** abilities
+// are **cumulative**, but **the rest are not** … the leader with the **best applicable
+// bonus**」。remake 先前是無條件 `+=`——兩個貿易家就加兩份,而原版只算最強的那一個。
+// 合成規則收在 `gamedata.LeaderSkillCombine`。
 func applyLeaderColonyBonuses(leaders []Leader, colony *engine.ColonyState) {
+	// 先依技能分組收集,再依「累加 vs 取最佳」合成——不能邊走邊加。
+	bySkill := map[int][]int{}
 	for _, l := range leaders {
 		if l.Ship {
 			continue // 艦艇軍官不影響殖民地,見 applyLeaderShipBonuses
@@ -1610,18 +1635,48 @@ func applyLeaderColonyBonuses(leaders []Leader, colony *engine.ColonyState) {
 			continue // 無法對應的技能標籤(如「指揮官」),誠實跳過
 		}
 		expLevel := leaderDisplayLevelToExpLevel(l.Level)
-		bonus := gamedata.LeaderSkillBonus(id, l.Tier, expLevel)
+		if b := gamedata.LeaderSkillBonus(id, l.Tier, expLevel); b != 0 {
+			bySkill[id] = append(bySkill[id], b)
+		}
+	}
+	for id, list := range bySkill {
+		bonus := gamedata.LeaderSkillCombine(id, list)
 		switch id {
 		case int(gamedata.SKILL_RESEARCHER):
-			colony.FlatResearch += bonus
+			colony.FlatResearch += bonus // 固定點數(格式 "%+d")
 		case int(gamedata.SKILL_TRADER):
-			colony.IncomeBonusPercent += bonus
-		// SKILL_ENGINEER(工程師)等其餘已知 id 若指派給非 Ship 領袖,目前無殖民地承接欄位,
-		// 略過不加總(不應該發生:工程師是 captain 技能,demoLeaders 裡標工程師的都是 Ship=true;
-		// 這裡防禦性略過,避免未來資料改動時誤加到不相關欄位)。
+			colony.IncomeBonusPercent += bonus // 百分比(格式 "%+d%%")
+		case int(gamedata.SKILL_FINANCIAL_LEADER):
+			colony.IncomeBonusPercent += bonus // 百分比,與貿易家/太空港同一欄位可疊
+		case int(gamedata.SKILL_SPIRITUAL_LEADER):
+			colony.MoralePercent += bonus // 百分點,與建築/政府士氣同一把尺
+		case int(gamedata.SKILL_MEDICINE):
+			colony.GrowthBonusSum += bonus // 成長百分點,與種族/科技加成同一把尺
+		// SKILL_INSTRUCTOR 不在這裡:它加的是**艦員每回合經驗**(帝國層,見 crew.go),
+		// 不是殖民地欄位。SKILL_ENGINEER 同理(艦艇維修,見 applyLeaderShipBonuses)。
 		default:
 		}
 	}
+}
+
+// leaderInstructorXPBonus 回傳教官技能給的**每回合額外艦員經驗**(手冊 p.137
+// 「Boosts the number of experience points earned each turn by all ship crews in your
+// empire」;單位是固定點數而非百分比,見 gamedata/leader_skill_apply.go 的格式字串對照)。
+//
+// 這是**帝國層**的技能(手冊原文 "in your empire"),所以不分艦隊、不分殖民地。
+// 依手冊的 Applicability,教官不是累加型 → 多位教官取最強的那一位。
+func leaderInstructorXPBonus(leaders []Leader) int {
+	var list []int
+	for _, l := range leaders {
+		if leaderSkillIDByName[l.Skill] != int(gamedata.SKILL_INSTRUCTOR) {
+			continue
+		}
+		if b := gamedata.LeaderSkillBonus(int(gamedata.SKILL_INSTRUCTOR), l.Tier,
+			leaderDisplayLevelToExpLevel(l.Level)); b != 0 {
+			list = append(list, b)
+		}
+	}
+	return gamedata.LeaderSkillCombine(int(gamedata.SKILL_INSTRUCTOR), list)
 }
 
 // Planet 是一顆行星的資料(供行星列表與拓殖)。

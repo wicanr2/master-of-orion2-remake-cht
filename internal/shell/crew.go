@@ -95,9 +95,12 @@ func (s *GameSession) newShipCrewXP(colonyIdx int) int {
 //
 // 手冊 p.121:每回合在太空 +1;p.97:艦隊所在星系每有一座太空學院再 +1。
 func (s *GameSession) advanceCrewExperience() {
+	// 教官(SKILL_INSTRUCTOR)是**帝國層**技能(手冊「all ship crews in your empire」),
+	// 所以在迴圈外算一次,不分艦隊。
+	instructor := leaderInstructorXPBonus(s.Leaders)
 	for i := range s.Fleets {
 		f := &s.Fleets[i]
-		gain := gamedata.CrewXPPerTurnInSpace
+		gain := gamedata.CrewXPPerTurnInSpace + instructor
 		// 航行中的艦隊不在任何星系上,拿不到學院加成——AtStar 只在停泊時有意義。
 		if f.ETA <= 0 && f.AtStar >= 0 {
 			gain += s.spaceAcademiesAt(f.AtStar) * gamedata.SpaceAcademyXPPerTurn
