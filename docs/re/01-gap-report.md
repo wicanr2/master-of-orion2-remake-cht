@@ -1961,3 +1961,72 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
 
     原版星雲座標在銀河座標系(遮罩是它的 1/3 解析度),remake 的星圖是自有模型、座標正規化,
     兩邊接不起來(與蟲洞同一個情況)。這裡在正規化空間隨機擺並避開母星。
+
+45. **星圖移動換成秒差距模型:四條手冊規則從「無處可掛」變成可實作**(2026-08-07)。
+
+    `internal/gamedata/starlane.go`(數值)+ `internal/shell/starlane.go`(接線),
+    護欄 `starlane_test.go`。第 44 項留下的移動懲罰,前置補完。
+
+    ### 為什麼卡住
+
+    先前的星圖移動是 `ETA = ceil(正規化距離 × 8)` —— 一個**沒有速度概念**的固定換算。
+    手冊有四條規則都以「秒差距/回合」表述,全都無處可掛:
+
+    | 規則 | 手冊 |
+    |---|---|
+    | 星雲 | reduced in speed to 1 parsec per turn |
+    | 黑洞 | No ship can safely pass within 2 parsecs of a black hole (unless … Navigator) |
+    | Navigator | increases the speed of the fleet by 1 or 2 parsecs per turn |
+    | Warp Field Interdictor | radius of 3 full parsecs … slows all enemy ships … to 1 parsec per turn |
+
+    ### 三個真值把換算釘死
+
+    **1 秒差距 = 30 個遊戲座標單位。** `Parsecs_Between_Points_` @ 0xEBE79 整支就是
+    「回傳最小的 p 使得 `p² × 900 ≥ dx² + dy²`」,`900 = 30²` 是立即數。
+    順帶得到:原版的秒差距距離是**整數,無條件進位**。
+
+    **四檔銀河尺寸。** `sub_1693B6` 的 4 路跳表逐檔寫死:
+
+    | 檔位 | 遊戲單位 | 秒差距 | SizeFactor |
+    |---|---|---|---|
+    | 0 小 | 506 × 400 | 16.9 × 13.3 | 10 |
+    | 1 中 | 759 × 600 | 25.3 × 20.0 | 15 |
+    | 2 大 | 1012 × 800 | 33.7 × 26.7 | 20 |
+    | 3 巨 | 1518 × 1200 | 50.6 × 40.0 | 30 |
+
+    三重交叉驗證同時成立:寬恆為 `SizeFactor × 50.6`、高恆為 `SizeFactor × 40`;
+    而原版存檔 **SAVE10.GAM 讀出來就是 759 × 600 / SizeFactor 15**(檔位 1)。
+    順帶量到那局的最近鄰距離:最小 2.25、平均 2.95、最大 4.24 秒差距 ——
+    典型一跳約 3 秒差距,核融引擎(2 秒差距/回合)要 2 回合,合理。
+
+    **星數 → 檔位。** `Galaxy_Size_From_N_Stars_` @ 0x798D2 的門檻是 **20 / 36 / 54 / 72**。
+
+    ### 順帶修掉一個失真:遊戲提供的星系大小本來就不對
+
+    remake 的 `GalaxySizes` 先前是 12/24/36/48(自訂),與原版四檔對不上。
+    而**星雲數、銀河跨距這些表都是以檔位為索引的**,對不上就整串偏掉 ——
+    第 44 項那個「開局常常一團星雲都沒有」就是這麼來的。改成 20/36/54/72。
+
+    ### 引擎速度(手冊逐條)
+
+    核融 2 / 融合 3 / 離子 4 / 反物質 5 / 超空間 6 / 相位 7 秒差距每回合。
+    手冊每一條都補了同一句「This drive is added to all your ships … as soon as you complete
+    your research」——**引擎是全帝國自動升級,不是單艦掛載的元件**,所以只看已研究的最高階。
+
+    ### ⚠ 又一個「畫面上看不出來」的坑
+
+    `FleetHasFTL` 對非曲速前開局**直接回 true、不看科技表**。於是那些開局的引擎階查出來是 0
+    → 航速 0 → **ETA 全被夾成 1**。整個秒差距模型形同虛設,而畫面上只是「每一趟都 1 回合到」,
+    看起來像船很快而已。修法是給一個原則性下界:**有 FTL 就至少是核融引擎**
+    (手冊:「the slowest of the FTL propulsion systems」)。
+    `TestFleetSpeedFallsBackToNuclearWhenFTL` 釘住。
+
+    ### ⚠ 近似與未做
+
+    - **「穿越星雲」近似成起點或終點在星雲內。** 原版的艦隊沿路徑逐段前進,remake 是兩點直接
+      算 ETA,沒有路徑。差別出現在「兩端都在雲外、直線穿過一團星雲」——原版降速、remake 不會。
+      要逐段判定得先有路徑模型。
+    - Navigator 的「+1 或 +2」手冊沒寫判準,取 **+1**(保守下界,不是真值)。
+    - **黑洞 2 秒差距禁行**與 **Warp Field Interdictor 3 秒差距干擾場**的常數已入表
+      (`BlackHoleAvoidParsecs` / `InterdictorRadiusParsecs`),但**還沒接進派遣判定**——
+      兩者都需要「路徑經過哪些星」這個同一個前置。

@@ -1975,7 +1975,11 @@ var GalaxySizes = []struct {
 	Name  string
 	Stars int
 }{
-	{"小型", 12}, {"中型", 24}, {"大型", 36}, {"巨型", 48},
+	// 星數是原版 `Galaxy_Size_From_N_Stars_` @ 0x798D2 的四個門檻(20/36/54/72)——
+	// 那支就是原版自己的「星數 → 銀河大小」判定,門檻值即各檔的星數。
+	// ⚠ 先前是 12/24/36/48(remake 自訂),與原版對不上;而星雲數、銀河跨距(秒差距)
+	// 這些表都是**以檔位為索引**的,對不上就整串偏掉。見 internal/gamedata/starlane.go。
+	{"小型", 20}, {"中型", 36}, {"大型", 54}, {"巨型", 72},
 }
 
 // RegenGalaxy 依指定星數重生星系(+ 對應行星);舊介面,保留供其餘不需要重建 AI 對手的呼叫端
@@ -2368,9 +2372,10 @@ func (s *GameSession) SendFleet(dest int) bool {
 	// 1 回合有手冊錨點:p.181 講隨機事件版的蟲洞時寫的是
 	// 「moves that fleet to their destination in a single turn」,兩者共用這個語意。
 	if !s.WormholeBetween(s.FleetAtStar, dest) {
-		a, b := s.Stars[s.FleetAtStar], s.Stars[dest]
-		dist := math.Hypot(a.X-b.X, a.Y-b.Y)
-		eta = int(math.Ceil(dist * 8)) // 8 = 星系跨度→回合的換算(全跨約 8-11 回合)
+		// 秒差距模型(見 internal/shell/starlane.go):距離換成整數秒差距、除以艦隊航速。
+		// 先前是 `ceil(正規化距離 × 8)` 這種沒有速度概念的固定換算,手冊裡以「秒差距/回合」
+		// 表述的規則(星雲降速、Navigator、干擾場)因此全都無處可掛。
+		eta = s.FleetETATo(s.FleetAtStar, dest)
 		if eta < 1 {
 			eta = 1
 		}
