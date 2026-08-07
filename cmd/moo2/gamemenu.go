@@ -31,7 +31,11 @@ import (
 //
 // ⚠ 誠實留白:原版這個視窗中段有 Music / Sound Fx 兩條音量滑桿(背景圖上畫得很清楚),
 // remake 的音訊層目前沒有音量控制介面,滑桿不畫也不接——畫一條拖不動的滑桿比沒有更糟。
-// SETTINGS 同理:原版另有一整個設定畫面,remake 尚無對應內容,按鈕保留但不接。
+//
+// SETTINGS **2026-08-07 起接了一項**:原版是一整個設定畫面(手冊那組 ALT+Fn 開關),
+// remake 還沒有那個畫面,但已經有一個真的開關——**遷移連線的顯示**(原版 `byte_199BE4`,
+// 見 internal/shell/relocation.go)。所以先把它就地展開在這個視窗裡。
+// ⚠ 那一列**不是原版版面**;建了設定畫面之後要搬過去。
 
 // 原版遊戲選單視窗的資產與座標(openorion2 galaxy.cpp GameMenuWindow)。
 const (
@@ -71,7 +75,9 @@ type gameMenuScreen struct {
 	btnImg                 []*ebiten.Image
 	btnFace                []color.RGBA
 	winX, winY, winW, winH int
-	msg                    string
+	// showSettings 是「設定」鈕展開的那一列(目前只有遷移連線開關,見 settingsRowRect ⚠)。
+	showSettings bool
+	msg          string
 }
 
 // gameMenuImage 取 game.lbx 的某資產(調色盤借 buffer0#0,同星系主畫面那條鏈),
@@ -154,12 +160,39 @@ func (s *gameMenuScreen) update(in shell.InputState) *origTransition {
 		case "quit":
 			return s.b.goTo(s.b.menu, "主選單") // 原版是回主選單,不是直接關程式
 		case "settings":
-			// 原版另有一整個設定畫面,remake 尚無對應內容(見檔頭留白)。
-			s.msg = s.b.tr("設定畫面尚未建置", "The settings screen is not implemented yet")
+			// 原版是一整個設定畫面(手冊那組 ALT+Fn 開關)。remake 還沒有那個畫面,
+			// 但**已經有一個真的開關**(遷移連線,原版 `byte_199BE4`),
+			// 所以先把它就地放在這個視窗裡當第一個項目——見下方 settingsRowRect。
+			s.showSettings = !s.showSettings
+			s.msg = ""
 		}
 		return nil
 	}
+	// 設定列(展開時才在):目前只有一項——遷移連線的顯示開關。
+	if s.showSettings && s.b.session != nil {
+		x, y, w, h := s.settingsRowRect()
+		if hitRect(in, x, y, w, h) {
+			s.b.session.ShowRelocationLines = !s.b.session.ShowRelocationLines
+		}
+	}
 	return nil
+}
+
+// settingsRowRect 是設定列的螢幕矩形(視窗底下、按鈕列之下)。
+//
+// ⚠ 這**不是原版版面**:原版有一整個設定畫面,那些開關在那裡。
+// remake 目前只有一個真的開關,先就地擺在遊戲選單裡——建了設定畫面之後要搬過去。
+func (s *gameMenuScreen) settingsRowRect() (int, int, int, int) {
+	return s.winX + 30, s.winY + 340, s.winW - 60, 18
+}
+
+// settingsRowLabel 回傳設定列要顯示的字。
+func (s *gameMenuScreen) settingsRowLabel() string {
+	on := s.b.tr("開", "ON")
+	if s.b.session == nil || !s.b.session.ShowRelocationLines {
+		on = s.b.tr("關", "OFF")
+	}
+	return s.b.tr("遷移連線:", "Relocation lines: ") + on
 }
 
 func (s *gameMenuScreen) draw(dst *ebiten.Image) {
@@ -191,6 +224,15 @@ func (s *gameMenuScreen) draw(dst *ebiten.Image) {
 				s.btnFace[i], false)
 		}
 		s.fnt.DrawCentered(dst, btn.label, float64(x+w/2), float64(y+h/2), 12, body)
+	}
+	if s.showSettings && s.b.session != nil {
+		x, y, w, h := s.settingsRowRect()
+		vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h),
+			color.RGBA{28, 36, 52, 235}, false)
+		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1,
+			color.RGBA{110, 150, 190, 255}, false)
+		s.fnt.DrawCentered(dst, s.settingsRowLabel(), float64(x+w/2), float64(y+h/2)+4, 11,
+			color.RGBA{200, 225, 240, 255})
 	}
 	if s.msg != "" {
 		s.fnt.DrawCentered(dst, s.msg, 320, float64(s.winY+s.winH+14), 12,

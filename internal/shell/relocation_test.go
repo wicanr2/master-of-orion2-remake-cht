@@ -235,3 +235,58 @@ func TestSetStarRelocationTwoStage(t *testing.T) {
 		t.Errorf("點回自己應取消,實得 %d", got)
 	}
 }
+
+// TestSetAllOnlyRetargetsExisting 釘住那個**猜不到**的細節。
+//
+// 原版 `Set_All_Star_Relocations_` 的迴圈裡有一道 `!= −1` 檢查:只改**已經有設定**的殖民地。
+// 直覺會做成「全部設成這顆」,而那會讓玩家按一下就把所有新殖民地的產出全部抽走。
+func TestSetAllOnlyRetargetsExisting(t *testing.T) {
+	s := relocSession()
+	for i := range s.Stars {
+		s.Stars[i].Explored = true
+	}
+	s.SetColonyRelocation(0, 1) // 只有殖民地 0 設了
+
+	if n := s.SetAllStarRelocations(5); n != 1 {
+		t.Errorf("應只改到 1 個(另一個沒設過),實得 %d", n)
+	}
+	if got := s.ColonyRelocation(0); got != 5 {
+		t.Errorf("已設定的應改成 5,實得 %d", got)
+	}
+	if got := s.ColonyRelocation(1); got != ColonyRelocationNone {
+		t.Errorf("沒設過的不該被順便設上,實得 %d", got)
+	}
+}
+
+// TestSetAllToOwnStarCancels:改到自己所在的星 = 取消(與單筆同一條規則)。
+func TestSetAllToOwnStarCancels(t *testing.T) {
+	s := relocSession()
+	for i := range s.Stars {
+		s.Stars[i].Explored = true
+	}
+	s.SetColonyRelocation(0, 1) // 殖民地 0 在星 0
+	s.SetAllStarRelocations(0)  // 目標就是它自己所在的星
+	if got := s.ColonyRelocation(0); got != ColonyRelocationNone {
+		t.Errorf("改到自己所在的星應等於取消,實得 %d", got)
+	}
+}
+
+// TestClearAllRemovesEverything:全部清掉。
+func TestClearAllRemovesEverything(t *testing.T) {
+	s := relocSession()
+	for i := range s.Stars {
+		s.Stars[i].Explored = true
+	}
+	s.SetColonyRelocation(0, 1)
+	s.SetColonyRelocation(1, 2)
+	if n := s.ClearAllStarRelocations(); n != 2 {
+		t.Errorf("應清掉 2 個,實得 %d", n)
+	}
+	if len(s.RelocationLinks()) != 0 {
+		t.Error("清完之後不該還有連線")
+	}
+	// 已經是空的再清一次:回 0,不是負數也不是重複計數。
+	if n := s.ClearAllStarRelocations(); n != 0 {
+		t.Errorf("再清一次應回 0,實得 %d", n)
+	}
+}

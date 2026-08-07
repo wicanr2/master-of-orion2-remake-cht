@@ -203,3 +203,50 @@ func (s *GameSession) deliverNewShip(colony int, sh Ship) {
 	}
 	s.Fleets = append(s.Fleets, f)
 }
+
+// ---- 一次改全部(原版 `Set_All_Star_Relocations_` @ 0x785EC / `Clear_All_Star_Relocations_` @ 0x77BB1)----
+//
+// 艦隊列表上的 **ALL**(remake 譯「全部」)鈕多半就是這一對(第 59 項記下的推測)。
+
+// SetAllStarRelocations 把**已經有集結點**的殖民地全部改送到同一顆星。
+//
+// ⚠ **這不是「把每個殖民地都設成這顆星」** —— 原版那支的迴圈裡有一道檢查:
+//
+//	if word[星 + 0x54 + 玩家×2] != −1:      ; 只改已經有設定的
+//	    word[...] = 目標星
+//
+// 沒設過的殖民地**不會被順便設上**。這是一個猜不到的細節:直覺會做成「全部設成這顆」,
+// 而那會讓玩家按一下就把所有新殖民地的產出全部抽走。
+//
+// 回傳被改到幾個。
+func (s *GameSession) SetAllStarRelocations(to int) int {
+	if to < 0 || to >= len(s.Stars) {
+		return 0
+	}
+	s.growRelocation()
+	n := 0
+	for i := range s.ColonyRelocateTo {
+		if s.ColonyRelocateTo[i] == ColonyRelocationNone {
+			continue // 沒設過的不動(見上方 ⚠)
+		}
+		if s.colonyStar(i) == to {
+			s.ColonyRelocateTo[i] = ColonyRelocationNone // 送往自己 = 取消(同單筆的規則)
+		} else {
+			s.ColonyRelocateTo[i] = to
+		}
+		n++
+	}
+	return n
+}
+
+// ClearAllStarRelocations 清掉所有集結點,回傳清掉幾個。
+func (s *GameSession) ClearAllStarRelocations() int {
+	n := 0
+	for i := range s.ColonyRelocateTo {
+		if s.ColonyRelocateTo[i] != ColonyRelocationNone {
+			s.ColonyRelocateTo[i] = ColonyRelocationNone
+			n++
+		}
+	}
+	return n
+}

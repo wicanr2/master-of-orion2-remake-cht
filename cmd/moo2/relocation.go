@@ -21,6 +21,7 @@ package main
 // **比例是真值,絕對速度是 remake 的選擇。**
 
 import (
+	"fmt"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -156,11 +157,19 @@ func absF(v float32) float32 {
 type relocatePickState struct {
 	on   bool
 	from int
+	// all = 這一輪是「ALL」:點到的星會把**已經有集結點**的殖民地全部改送過去
+	// (原版 Set_All_Star_Relocations_,見 shell 那支的 ⚠——沒設過的不會被順便設上)。
+	all bool
 }
 
 // beginRelocatePick 從**起點**開始挑(艦隊列表的 RELOCATE 鈕走這條,同原版)。
 func (b *sceneBuilder) beginRelocatePick() {
-	b.relocPick.on, b.relocPick.from = true, -1
+	b.relocPick.on, b.relocPick.from, b.relocPick.all = true, -1, false
+}
+
+// beginRelocateAll 進「一次改全部」模式(艦隊列表的 ALL 鈕)。
+func (b *sceneBuilder) beginRelocateAll() {
+	b.relocPick.on, b.relocPick.from, b.relocPick.all = true, -1, true
 }
 
 // beginRelocatePickFrom 起點已知時直接進第二段(星圖面板的「設定集結點」鈕走這條)。
@@ -177,6 +186,21 @@ func (b *sceneBuilder) relocatePickClickedStar(star int) bool {
 		return false
 	}
 	sess := b.session
+	if b.relocPick.all { // ALL:一次把已經有集結點的全部改送到這顆
+		if r := sess.CanRelocateTo(star); r != "" {
+			b.flash(b.tr(string(r), string(r)))
+			return true
+		}
+		n := sess.SetAllStarRelocations(star)
+		b.relocPick.on, b.relocPick.all = false, false
+		if n == 0 {
+			b.flash(b.tr("沒有任何殖民地設過集結點——ALL 只改已經設過的",
+				"No colony has a rally point — ALL only retargets existing ones"))
+		} else {
+			b.flash(fmt.Sprintf(b.tr("已把 %d 個集結點改到這裡", "Retargeted %d rally points here"), n))
+		}
+		return true
+	}
 	if b.relocPick.from < 0 { // 第一段:選起點
 		if r := sess.CanRelocateFrom(star); r != "" {
 			b.flash(b.tr(string(r), string(r)))

@@ -2548,6 +2548,9 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 		// RELOCATE(remake 譯「調動」)——手冊逐字:「You set up your Relocation orders on the
 		// Fleet Operations console.」**這才是原版的入口**,座標同下面 overlays 的標籤框。
 		{440, 384, 93, 18, "relocate"},
+		// ALL(remake 譯「全部」)—— 推測對應 Set_All_Star_Relocations_(第 59 項)。
+		// ⚠ 那支只改**已經有集結點**的殖民地,不是「全部設成這顆」。
+		{346, 384, 70, 18, "relocateall"},
 		// RETURN 真值座標取自 openorion2 ships.cpp:718 FleetListView
 		// RETURN createWidget(556, 430, ...)(原估計 543,432)。
 		{556, 430, 84, 28, "return"},
@@ -2588,6 +2591,11 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 			return b.goTo(b.fleet, "艦隊列表")
 		}
 		switch a {
+		case "relocateall":
+			b.beginRelocateAll()
+			b.flash(b.tr("全部:點一顆星,把已經設過集結點的殖民地全部改送過去",
+				"ALL: click a star to retarget every existing rally point"))
+			return b.goTo(b.galaxy, "星系主畫面")
 		case "relocate":
 			// 原版 `Star_Relocation_` 是兩段點選:先起點星(自己的殖民地)、再終點星。
 			// 回到星圖進第一段。
