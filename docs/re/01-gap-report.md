@@ -2166,10 +2166,7 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     不是「可建造建築清單」。同一張表裡的 Capitol(9)與 Colony Base(11)也一樣
     (見第 42、48 項)——三個編號、同一個誤判形狀。
 
-    ### 剩下的:48 Artificial Planet
-
-    手冊全文搜尋 **零命中**(不是漏查)。它需要「小行星帶 → 人造行星」這個行星型別轉換,
-    remake 沒有小行星帶這個行星型別。前置與效果都缺,維持開放。
+    ### 剩下的:48 Artificial Planet(⚠ 本節的第一版寫錯,見第 51 項)
 
 
 50. **AI 主動請求會談 + 星圖上緣的請求燈**(2026-08-07)。
@@ -2217,3 +2214,52 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     原版每盞燈是該種族的逐格動畫(幀號存在 `byte_19C148[種族]`),指標陣列由別處填,
     資產來源沒追。這裡用「來意色塊 + 一個字」呈現——玩家要看得出**誰在敲門、為什麼**,
     那才是這一層的作用。追到資產再換。
+
+
+51. **訂正:「手冊全文搜尋零命中」是假陰性——PDF 的連字騙了我**(2026-08-07)。
+
+    第 49 項結尾寫了:
+
+    > 剩下的:48 Artificial Planet。手冊全文搜尋 **零命中**(不是漏查)。
+
+    **那句是錯的。** 手冊裡有,而且寫得很完整。搜不到的原因是這本 PDF 用**連字**排版——
+    `artificial` 實際上是 `arti` + `ﬁ`(U+FB01)+ `cial`,搜 `Artificial` 當然零命中。
+    改搜小寫 `asteroid` 立刻命中,同一段就把規則講完了。
+
+    ### 真正的規則(手冊逐字)
+
+    > (Special) This technology allows a colony in the same system with an asteroid field or
+    > gas giant to assemble this otherwise useless planetary material into a complete
+    > artificial planet that can support a colony. This planet is **Barren, Normal G, and
+    > mineral Abundant**. **Gas giants make Huge worlds, and asteroid belts make Large ones**.
+
+    分類是 **(Special)** —— 與地形改造/Gaia 轉化同類的一次性殖民地行動,
+    這也和它在原版建築表裡維護費 0 對得上(第 36 項那條啟發式在**這一筆**是對的)。
+
+    手冊裡的全名是「Artiﬁcial Planet Construction (Special)」,對應 remake 科技樹的
+    `TECH_PLANET_CONSTRUCTION`(TOPIC_ADVANCED_MANUFACTURING 三選一)——手冊裡它緊接在
+    Automated Repair Unit 之後,而那正是同一個主題的另一個選項,兩邊的相鄰關係對得上。
+
+    ### 而且 remake 自己的註解早就寫著
+
+    `internal/shell/outpost.go` 的「尚未建模、誠實留白」那段裡有一條:
+
+    > 手冊 p.50 提到有科技能把氣態巨星/小行星帶的前哨站升級成可住人殖民地
+    > (行星固定 Barren/Normal-G/Abundant,氣態巨星化為 Huge、小行星帶化為 Large)
+
+    **同一條規則、同樣的數值,早就在 repo 裡。** 兩個獨立來源(手冊 + 自己的舊註解)一致。
+
+    ### 真正的阻塞不是「效果不明」,是資料模型
+
+    remake 的 `Stars[i] ↔ Planets[i]` 是**一對一**(UI/拓殖/AI 全依賴這個對齊,見
+    `Planet.SystemBodies` 的欄位註解)。而人造行星按定義是「在已經有殖民地的星系裡**再多**
+    一顆世界」——轉換 `SystemBody` 之後沒有地方能放第二個殖民地,做出來是空的。
+
+    所以這一項的阻塞從「效果不明」訂正為「**卡在一星一行星模型**」,與遷移連線
+    (卡單一艦隊模型)同一類。前置是多行星殖民地。
+
+    ### 教訓
+
+    「查詢回空」不等於「不存在」。這次的假陰性來源是**排版連字**,是文字擷取類查詢的典型坑
+    ——而我當時還特地加註「(不是漏查)」,反而把假陰性寫成了確信。
+    下次對 PDF 做全文否定判斷前,至少要用**小寫、部分字根**再掃一次當正對照。
