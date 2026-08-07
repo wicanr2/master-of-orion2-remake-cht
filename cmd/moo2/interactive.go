@@ -361,6 +361,10 @@ type sceneBuilder struct {
 	// measure 是 F9 測距模式的狀態(見 hotkeys.go)。放這裡不放 GameSession:
 	// 它是「看的方式」不是世界狀態,不該進存檔。
 	measure measureState
+	// relocPick 是「正在挑集結點」的畫面狀態;relocColors 是遷移連線的 8 色漸層快取
+	// (見 relocation.go)。兩者都是看的方式,不進存檔。
+	relocPick   relocatePickState
+	relocColors []color.RGBA
 	// flashMsg / flashUntil 是星圖底緣的短暫訊息(F10 快速存檔的回報等,見 hotkeys.go)。
 	// flashUntil 用 animTick 計時,到了就不畫。
 	flashMsg          string
@@ -654,13 +658,19 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			default:
 				hits = append(hits, hitRegion{38, 402, 190, 20, "dispatch"})
 			}
+			// 集結點:選中的是**自己的殖民地**就可以設(原版 star[+0x54+玩家×2],見
+			// internal/shell/relocation.go)。放在第二列——第一列在上面各分支已被佔走,
+			// 而「是不是自己的殖民地」與「艦隊在不在這裡」是兩件獨立的事。
+			if colonyIndexAtStar(sess, sess.SelectedStar) >= 0 {
+				hits = append(hits, hitRegion{38, 424, 190, 20, "relocate"})
+			}
 		}
 	}
 	onAction := func(a string) *origTransition {
 		if len(a) > 4 && a[:4] == "star" && b.session != nil {
 			if idx, err := strconv.Atoi(a[4:]); err == nil {
-				// 測距模式(F9)先吃掉點星:那一下是「定起點」不是「選這顆星」。
-				if b.measureClickedStar(idx) {
+				// 測距(F9)與挑集結點模式先吃掉點星:那一下是模式的輸入,不是「選這顆星」。
+				if b.measureClickedStar(idx) || b.relocatePickClickedStar(idx) {
 					return b.goTo(b.galaxy, "星系主畫面")
 				}
 				if idx == b.session.SelectedStar {
@@ -710,6 +720,15 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				return nil
 			}
 			return &origTransition{next: sc}
+		}
+		if a == "relocate" && b.session != nil {
+			ci := colonyIndexAtStar(b.session, b.session.SelectedStar)
+			if ci < 0 {
+				return nil
+			}
+			b.beginRelocatePick(ci)
+			b.flash(b.tr("點一顆星當集結點(點自己就取消)", "Click a star as rally point (click itself to clear)"))
+			return b.goTo(b.galaxy, "星系主畫面")
 		}
 		if a == "dispatch" && b.session != nil {
 			// 派遣艦隊至選中星(航行由 EndTurn 推進)。曲速前開局沒有 FTL、出不了本星系,
@@ -865,6 +884,8 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			// 星圖底:純黑 + 原版 `Draw_Paralax_` 的三層星空(見 starbg.go)。
 			b.drawStarmapBackground(dst)
 			b.drawNebulae(dst, sess.Nebulae) // 背景地形,壓在星星之下
+			// 遷移連線是原版圖層順序的第 2 層(星星是第 3 層),所以畫在星星之下。
+			b.drawRelocationLinks(dst)
 			vis := sess.VisibleStars()
 			drawStarmap(b, dst, fnt, sess.Stars, sess.SelectedStar, vis)
 			b.drawGateIcons(dst, vis)             // 狀態標示,蓋在星星之上
@@ -1004,6 +1025,17 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{40, 70, 120, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{110, 160, 230, 255}, false)
 						fnt.Draw(dst, b.tr("▶ 派遣艦隊至此星", "▶ Send fleet here"), 46, 415, 12, color.RGBA{230, 235, 245, 255})
+					}
+					// 集結點鈕(第二列):選中的是自己的殖民地才有。標題直接寫出目前設到哪,
+					// 不然玩家看不出「有沒有設」——那正是這個功能最容易被忽略的地方。
+					if ci := colonyIndexAtStar(sess, sess.SelectedStar); ci >= 0 {
+						vector.DrawFilledRect(dst, 38, 424, 190, 20, color.RGBA{45, 95, 85, 255}, false)
+						vector.StrokeRect(dst, 38, 424, 190, 20, 1, color.RGBA{120, 200, 180, 255}, false)
+						label := b.tr("▶ 設定集結點", "▶ Set rally point")
+						if to := sess.ColonyRelocation(ci); to >= 0 && to < len(sess.Stars) {
+							label = b.tr("▶ 集結點:", "▶ Rally: ") + sess.Stars[to].Name
+						}
+						fnt.Draw(dst, label, 46, 437, 12, color.RGBA{225, 245, 240, 255})
 					}
 				}
 			}
@@ -3290,6 +3322,13 @@ const galleryCommandPointsTick = 89
 // 走正常路徑要從指揮點數視窗關回星圖再按 F9,直接推上來比重新導覽可靠(同上面幾個)。
 const galleryMeasureTick = 91
 
+// galleryRelocTick 是截圖廊在哪個 tick 設好一個集結點(好讓遷移連線真的畫得出來)。
+// 排在測距那一拍之前:兩者都在星圖上,連線畫在星星之下,不會互相蓋掉。
+const galleryRelocTick = 91
+
+// galleryRelocTo 是示範用的集結點星索引;和測距一樣不能寫死,要挑一顆**可見的**
+// (星圖有戰爭迷霧,固定索引很可能落在畫不出來的星上)。見 galleryMeasureTarget 同款理由。
+
 // galleryMeasureFrom 是測距的起點星(0 = 玩家母星,每個 seed 都有)。
 // 終點**不能寫死索引**——要驗的是「游標移到某顆星上就顯示距離」,而星圖有戰爭迷霧,
 // 隨便一個索引很可能是還沒探索、根本畫不出來的星(第一版寫死 1,截圖就停在
@@ -3701,9 +3740,18 @@ func (a *interactiveApp) Update() error {
 			a.cur = sc
 		}
 	}
-	// 截圖廊專用:切回星圖並打開 F9 測距,起點設在母星。
+	// 截圖廊專用:切回星圖並打開 F9 測距,起點設在母星;順便設一個集結點,
+	// 好讓遷移連線那一層真的畫得出來(不設就永遠是空的,截圖驗不到)。
 	if a.galleryMeasureTick > 0 && a.tick == a.galleryMeasureTick && a.galleryBuilder != nil {
 		b := a.galleryBuilder
+		if sess := b.session; sess != nil {
+			if to := b.galleryRelocTarget(); to >= 0 {
+				// 玩家的第一個殖民地 → 第二顆看得到的星(第一顆被 F9 測距的示範用掉了)。
+				// 起點寫 colonyStar(0) 而不是「母星」:截圖廊跑完幾回合後殖民地清單會變,
+				// 第一個殖民地不保證還在星 0。
+				sess.SetColonyRelocation(0, to)
+			}
+		}
 		b.measure.on, b.measure.from = true, galleryMeasureFrom
 		if sc, err := b.galaxy(); err == nil {
 			a.cur = sc

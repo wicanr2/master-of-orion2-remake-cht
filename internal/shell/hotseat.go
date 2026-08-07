@@ -53,7 +53,13 @@ const DefaultOpponents = 3
 //
 // 欄位 = `GameSession` 裡所有「屬於當前玩家」的欄位。**新增玩家側欄位時這裡也要加**,
 // 否則換人後那個欄位會被下一位玩家繼承。這是本檔最容易出錯的地方,
-// `TestSeatFieldsCoverPlayerSide` 用反射盯著它。
+// `TestSeatRoundTripKeepsEveryField` 用反射盯著它:每個 seat 欄位都要真的被
+// saveSeat 存進去、被 loadSeat 裝回來。
+//
+// (2026-08-07:這裡原本寫著「`TestSeatFieldsCoverPlayerSide` 用反射盯著它」,
+//
+//	而**那支測試根本不存在**。一個指名了不存在的護欄的註解比沒有註解更危險——
+//	它讓人以為這裡有人在看。改成真的寫一支。)
 type seat struct {
 	Player              engine.PlayerState
 	PlayerColonies      []engine.ColonyState
@@ -68,13 +74,16 @@ type seat struct {
 	PopAccum            []int
 	// Fleets / SelectedFleet 是這位玩家的艦隊(多艦隊模型,見 fleet.go)。
 	// 先前是 Ships + FleetAtStar/DestStar/ETA/Marines/Tanks 一組欄位。
-	Fleets         []Fleet
-	SelectedFleet  int
-	Leaders        []Leader
-	MercPool       []Leader
-	MercOfferedIdx int
-	PlayerSpies    []int
-	Outposts       []Outpost
+	Fleets        []Fleet
+	SelectedFleet int
+	// ColonyRelocateTo 是這位玩家各殖民地的集結點(見 relocation.go)。
+	// ⚠ 它是**玩家側**狀態:漏了的話換人後下一位會繼承上一位的集結點設定。
+	ColonyRelocateTo []int
+	Leaders          []Leader
+	MercPool         []Leader
+	MercOfferedIdx   int
+	PlayerSpies      []int
+	Outposts         []Outpost
 
 	SelectedStar int
 
@@ -118,7 +127,8 @@ func (s *GameSession) saveSeat() seat {
 		MercPool: s.MercPool, MercOfferedIdx: s.MercOfferedIdx,
 		PlayerSpies: s.PlayerSpies, Outposts: s.Outposts,
 		Fleets: s.Fleets, SelectedFleet: s.SelectedFleet, SelectedStar: s.SelectedStar,
-		RaceIndex: s.RaceIndex, PlayerName: s.PlayerName, FlagColor: s.FlagColor,
+		ColonyRelocateTo: s.ColonyRelocateTo,
+		RaceIndex:        s.RaceIndex, PlayerName: s.PlayerName, FlagColor: s.FlagColor,
 		RaceCombatPct: s.RaceCombatPct, RaceGrowthPct: s.raceGrowthPct,
 		Government: s.Government, CapturedPop: s.CapturedPop,
 
@@ -140,6 +150,7 @@ func (s *GameSession) loadSeat(v seat) {
 	s.MercPool, s.MercOfferedIdx = v.MercPool, v.MercOfferedIdx
 	s.PlayerSpies, s.Outposts = v.PlayerSpies, v.Outposts
 	s.Fleets, s.SelectedFleet, s.SelectedStar = v.Fleets, v.SelectedFleet, v.SelectedStar
+	s.ColonyRelocateTo = v.ColonyRelocateTo
 	s.ensureFleet() // 席位可能是空的(舊存檔/新建席位),維持「至少一支艦隊」的不變量
 	s.RaceIndex, s.PlayerName, s.FlagColor = v.RaceIndex, v.PlayerName, v.FlagColor
 	s.RaceCombatPct, s.raceGrowthPct = v.RaceCombatPct, v.RaceGrowthPct

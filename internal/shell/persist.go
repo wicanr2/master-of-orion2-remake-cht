@@ -66,6 +66,12 @@ type sessionSnapshot struct {
 	// 舊欄位(Ships / FleetAtStar / …)組出唯一的一支艦隊。
 	Fleets        []Fleet `json:"fleets,omitempty"`
 	SelectedFleet int     `json:"selectedFleet,omitempty"`
+	// ColonyRelocateTo / ShowRelocationLines 是集結點(見 relocation.go)。
+	// omitempty:舊存檔沒有 → nil = 每個殖民地都沒設定,語意正確。
+	// ⚠ ShowRelocationLines 反過來:舊存檔解出 false,但原版預設是**開**,
+	// 所以 restore 端要把「舊檔」補成 true(見 restore)。
+	ColonyRelocateTo    []int `json:"colonyRelocateTo,omitempty"`
+	ShowRelocationLines bool  `json:"showRelocationLines,omitempty"`
 	// ⚠ 以下到 FleetETA 為止是**舊格式,只讀不寫**:單艦隊時代的欄位。
 	// 新存檔一律寫 Fleets;留著是為了讀得回 2026-08-07 之前存的檔。
 	Ships        []Ship        `json:"ships,omitempty"`
@@ -186,6 +192,7 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		PlayerColonies: s.PlayerColonies, AIPlayers: ais,
 		Stars: s.Stars, Planets: s.Planets, Leaders: s.Leaders,
 		Fleets: s.Fleets, SelectedFleet: s.SelectedFleet,
+		ColonyRelocateTo: s.ColonyRelocateTo, ShowRelocationLines: s.ShowRelocationLines,
 		SelectedStar: s.SelectedStar, Difficulty: s.Difficulty, Builds: s.Builds,
 		BuildQueue:       s.BuildQueue,
 		Outposts:         s.Outposts,
@@ -242,7 +249,12 @@ func (snap sessionSnapshot) restore() *GameSession {
 		Turn: snap.Turn, Player: snap.Player, PlayerColonies: snap.PlayerColonies,
 		AIPlayers: ais, Stars: snap.Stars, Planets: snap.Planets, Leaders: snap.Leaders,
 		Fleets: snap.restoredFleets(), SelectedFleet: snap.SelectedFleet,
-		SelectedStar: snap.SelectedStar, Difficulty: snap.Difficulty,
+		ColonyRelocateTo: snap.ColonyRelocateTo,
+		// ⚠ 舊存檔沒有這個欄位 → 解出 false,但原版預設是**開**。
+		// 用「有沒有 Fleets 欄位」判斷是不是舊檔(同 restoredFleets 的判準):
+		// 舊檔一律補成開,新檔照存的值。
+		ShowRelocationLines: len(snap.Fleets) == 0 || snap.ShowRelocationLines,
+		SelectedStar:        snap.SelectedStar, Difficulty: snap.Difficulty,
 		Builds: snap.Builds, BuildQueue: snap.BuildQueue, Outposts: snap.Outposts, Monsters: snap.Monsters,
 		PersistentEvents: snap.PersistentEvents, CapturedPop: snap.CapturedPop,
 		popAccum: snap.PopAccum, ColonyBuildings: snap.ColonyBuild,

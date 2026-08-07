@@ -1393,11 +1393,11 @@ func (s *GameSession) applySpecialAction(i int, name string) {
 	case gamedata.ColonyShipActionName: // 殖民船完工 → 進玩家艦隊(手冊 p.85 Frigate 級支援艦)
 		// 新艦出現在**生產它的殖民地**;那顆星上剛好有艦隊就併進去,否則進第一支
 		// (見 AddShipToHomeFleet ⚠:原版還會依遷移設定自動送往集結點,那要逐殖民地造艦才做得到)。
-		s.AddShipToHomeFleet(s.colonyStar(i), Ship{Name: s.nextSupportShipName(ColonyShipClass), Class: ColonyShipClass,
+		s.deliverNewShip(i, Ship{Name: s.nextSupportShipName(ColonyShipClass), Class: ColonyShipClass,
 			Weapon: "無武裝", Armor: "無裝甲", Shield: "無護盾", Special: "無"})
 
 	case gamedata.OutpostShipActionName: // 前哨船完工 → 進玩家艦隊(見 outpost.go)
-		s.AddShipToHomeFleet(s.colonyStar(i), Ship{Name: s.nextSupportShipName(OutpostShipClass), Class: OutpostShipClass,
+		s.deliverNewShip(i, Ship{Name: s.nextSupportShipName(OutpostShipClass), Class: OutpostShipClass,
 			Weapon: "無武裝", Armor: "無裝甲", Shield: "無護盾", Special: "無"})
 	}
 }
@@ -2172,10 +2172,16 @@ type GameSession struct {
 	// Fleet() 因此可以無條件回傳可寫指標,呼叫端不必逐處 nil 檢查。
 	Fleets        []Fleet
 	SelectedFleet int
-	LastBattle    *BattleResult // 上一場戰鬥結果(供戰鬥結果畫面)
-	SelectedStar  int           // 星圖選中的星索引(-1=未選)
-	Difficulty    int           // 難度索引(shell.Difficulties)
-	Builds        []ColonyBuild // 各殖民地「當前建造中」的項目(對應 PlayerColonies;佇列見 BuildQueue)
+	// ColonyRelocateTo 是各殖民地的集結點星索引(平行 PlayerColonies,見 relocation.go)。
+	// ⚠ 預設必須是 −1 不是 Go 零值——0 是母星的索引。
+	ColonyRelocateTo []int
+	// ShowRelocationLines 是星圖遷移連線的顯示開關(原版 `byte_199BE4`,手冊那組設定裡的一項)。
+	// 預設開:原版新開一局是畫的(`sub_127E1` 初始化時寫 1)。
+	ShowRelocationLines bool
+	LastBattle          *BattleResult // 上一場戰鬥結果(供戰鬥結果畫面)
+	SelectedStar        int           // 星圖選中的星索引(-1=未選)
+	Difficulty          int           // 難度索引(shell.Difficulties)
+	Builds              []ColonyBuild // 各殖民地「當前建造中」的項目(對應 PlayerColonies;佇列見 BuildQueue)
 	// BuildQueue[i] 是殖民地 i 的**後續**建造排隊項(不含 Builds[i] 那一格)。
 	// 原版殖民地畫面的 BUILD QUEUE 是 7 格(反組譯 Add_Build_Queue_Fields_ 確認),
 	// 完工自動接下一項;remake 先前只有一格。見 buildqueue.go 檔頭。
@@ -2454,21 +2460,58 @@ func (s *GameSession) techLevel() int {
 
 // advanceFleet 推進艦隊航行:ETA 遞減,歸零則抵達(FleetAtStar=目的),並將該星標記為已探索。
 func (s *GameSession) advanceFleet() {
-	if s.Fleet().ETA <= 0 || s.Fleet().DestStar < 0 {
-		return
+	// **逐艦隊推進**:多艦隊之後每一支各自航行(自動遷移的新艦也在其中,見 relocation.go)。
+	for i := range s.Fleets {
+		f := &s.Fleets[i]
+		if f.ETA <= 0 || f.DestStar < 0 {
+			continue
+		}
+		f.ETA--
+		if f.ETA != 0 {
+			continue
+		}
+		f.AtStar = f.DestStar
+		f.DestStar = -1
+		if f.AtStar < 0 || f.AtStar >= len(s.Stars) {
+			continue
+		}
+		s.Stars[f.AtStar].Explored = true
+		// 抵達星系當下結算一次性發現(原版 Do_System_Discoveries_At_Star_,見 discovery.go)。
+		if d := s.discoverSystemSpecials(f.AtStar); d != nil {
+			s.LastDiscovery = d
+		}
 	}
-	s.Fleet().ETA--
-	if s.Fleet().ETA == 0 {
-		s.Fleet().AtStar = s.Fleet().DestStar
-		s.Fleet().DestStar = -1
-		if s.Fleet().AtStar < len(s.Stars) {
-			s.Stars[s.Fleet().AtStar].Explored = true
-			// 抵達星系當下結算一次性發現(原版 Do_System_Discoveries_At_Star_,見 discovery.go)。
-			if d := s.discoverSystemSpecials(s.Fleet().AtStar); d != nil {
-				s.LastDiscovery = d
+	s.mergeColocatedFleets()
+}
+
+// mergeColocatedFleets 把停在同一顆星、都沒有航行任務的艦隊併成一支。
+//
+// 為什麼要併:自動遷移每回合可能生出新的一支,不併的話艦隊清單會無限長大,
+// 而玩家看到的是「同一顆星上一堆各有一兩艘船的艦隊」——那不是原版的樣子。
+// 原版的艦隊本來就是「在同一個地方的船的集合」。
+//
+// ⚠ 只併**都靜止**的:還在航行的艦隊各有各的目的地,併了會弄丟任務。
+func (s *GameSession) mergeColocatedFleets() {
+	for i := 0; i < len(s.Fleets); i++ {
+		if s.Fleets[i].DestStar >= 0 {
+			continue
+		}
+		for j := len(s.Fleets) - 1; j > i; j-- {
+			if s.Fleets[j].DestStar >= 0 || s.Fleets[j].AtStar != s.Fleets[i].AtStar {
+				continue
+			}
+			s.Fleets[i].Ships = append(s.Fleets[i].Ships, s.Fleets[j].Ships...)
+			s.Fleets[i].Marines += s.Fleets[j].Marines
+			s.Fleets[i].Tanks += s.Fleets[j].Tanks
+			s.Fleets = append(s.Fleets[:j], s.Fleets[j+1:]...)
+			if s.SelectedFleet == j {
+				s.SelectedFleet = i // 被併掉的那支正被選著 → 焦點跟到合併後的那支
+			} else if s.SelectedFleet > j {
+				s.SelectedFleet--
 			}
 		}
 	}
+	s.ensureFleet()
 }
 
 // totalBuildingMaintenance 加總玩家目前所有殖民地「已建成」建築的維護費(BC/回合),取代
@@ -3502,10 +3545,11 @@ func NewDemoSession() *GameSession {
 		// 的 BUILDING 欄就是「Trade Goods」,右下 Income +12 BC——remake 先前開局是「不建造」、
 		// 收支 +0,是母星開局態沒對齊的一環(見 docs/tech/oracle-comparison-20260712.md)。
 		// Cost 0 同「不建造」語意(見 TradeGoodsBuildName 註解:整包工業轉現金,不累積進度)。
-		Builds:       []ColonyBuild{{Name: TradeGoodsBuildName, Progress: 0, Cost: 0}},
-		SelectedStar: -1,
-		EventSeed:    42, // 隨機事件種子(可重現;正式新遊戲遞增)
-		RuleProfile:  gamedata.Profile15(),
+		Builds:              []ColonyBuild{{Name: TradeGoodsBuildName, Progress: 0, Cost: 0}},
+		SelectedStar:        -1,
+		ShowRelocationLines: true, // 原版預設開(`sub_127E1` 初始化寫 1)
+		EventSeed:           42,   // 隨機事件種子(可重現;正式新遊戲遞增)
+		RuleProfile:         gamedata.Profile15(),
 	}
 	// 守衛怪獸(見 monster.go)。放在這裡而不是上面的複合字面值裡,因為 genMonsters 會就地
 	// 修改 session.Planets(手冊 p.60:有怪獸的星系一定另有一個特殊物產)。
