@@ -84,6 +84,19 @@ type ColonyState struct {
 	// 揉進「每工人/科學家/農夫」的 per-worker 欄位(FoodPerFarmer/IndustryPerWorker/
 	// ResearchPerScientist)裡湊數——這會讓小殖民地(人少)吃到過高倍率、大殖民地(人多)吃到
 	// 過低倍率,兩頭都偏離原版。加了這組獨立欄位後,per-worker 與固定值分開累加,不再互相污染。
+	// --- 分項百分比加成(領袖 admin 技能,GAME_MANUAL.pdf p.137)---
+	//
+	// 與 MoralePercent 同一把尺(百分點),但**只影響一項**:士氣是三項一起動,
+	// 這三個各管各的。合併進同一個 pct 再套一次公式,理由同 colonyFood 註解
+	// (避免兩次連續整數除法的複合誤差)。
+	//
+	// 來源:農業官 / 勞工官 / 科學官各 +10%(gamedata.baseSkillValues[2],單位由
+	// openorion2 的 skillFormatStrings[2] 確認是百分比,見 gamedata/leader_skill_apply.go)。
+	// 固定加成欄位(FlatFood/FlatIndustry/FlatResearch)不吃這個百分比,與士氣的處理一致。
+	FoodBonusPercent     int
+	IndustryBonusPercent int
+	ResearchBonusPercent int
+
 	FlatFood     int // 殖民地食物整體固定加成(水耕農場 p.99 +2、地底農場 p.100 +4)
 	FlatIndustry int // 殖民地工業整體固定加成(自動化工廠 p.78 +5、機器人採礦廠 p.80 +10、深層核心礦場 p.82 +15)
 	FlatResearch int // 殖民地研究整體固定加成(研究實驗室 p.94 +5、行星超級電腦 p.95 +10、銀河網路中心 p.98 +15)

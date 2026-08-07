@@ -1590,6 +1590,9 @@ var leaderSkillIDByName = map[string]int{
 	"心靈導師": int(gamedata.SKILL_SPIRITUAL_LEADER),
 	"醫官":   int(gamedata.SKILL_MEDICINE),
 	"教官":   int(gamedata.SKILL_INSTRUCTOR),
+	"農業官":  int(gamedata.SKILL_FARMING_LEADER),
+	"勞工官":  int(gamedata.SKILL_LABOR_LEADER),
+	"科學官":  int(gamedata.SKILL_SCIENCE_LEADER),
 }
 
 // leaderDisplayLevelToExpLevel 把 Leader.Level(demo 資料的 1..5 顯示等級)換算成
@@ -1652,6 +1655,12 @@ func applyLeaderColonyBonuses(leaders []Leader, colony *engine.ColonyState) {
 			colony.MoralePercent += bonus // 百分點,與建築/政府士氣同一把尺
 		case int(gamedata.SKILL_MEDICINE):
 			colony.GrowthBonusSum += bonus // 成長百分點,與種族/科技加成同一把尺
+		case int(gamedata.SKILL_FARMING_LEADER):
+			colony.FoodBonusPercent += bonus // 分項百分比(2026-08-07 第 102 項加的欄位)
+		case int(gamedata.SKILL_LABOR_LEADER):
+			colony.IndustryBonusPercent += bonus
+		case int(gamedata.SKILL_SCIENCE_LEADER):
+			colony.ResearchBonusPercent += bonus
 		// SKILL_INSTRUCTOR 不在這裡:它加的是**艦員每回合經驗**(帝國層,見 crew.go),
 		// 不是殖民地欄位。SKILL_ENGINEER 同理(艦艇維修,見 applyLeaderShipBonuses)。
 		default:

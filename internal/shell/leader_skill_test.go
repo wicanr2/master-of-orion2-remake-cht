@@ -114,3 +114,55 @@ func TestTwoInstructorsDoNotStack(t *testing.T) {
 		t.Errorf("兩位教官應取最強的那位(%d),得到 %d", one, two)
 	}
 }
+
+// 三個分項百分比技能各自落在自己的欄位(第 102 項)。
+func TestPerCategoryLeaderSkillsLandInTheirOwnFields(t *testing.T) {
+	for _, tc := range []struct {
+		skill string
+		field func(engine.ColonyState) int
+		other []func(engine.ColonyState) int
+		name  string
+	}{
+		{"農業官", func(c engine.ColonyState) int { return c.FoodBonusPercent },
+			[]func(engine.ColonyState) int{
+				func(c engine.ColonyState) int { return c.IndustryBonusPercent },
+				func(c engine.ColonyState) int { return c.ResearchBonusPercent },
+			}, "食物%"},
+		{"勞工官", func(c engine.ColonyState) int { return c.IndustryBonusPercent },
+			[]func(engine.ColonyState) int{
+				func(c engine.ColonyState) int { return c.FoodBonusPercent },
+				func(c engine.ColonyState) int { return c.ResearchBonusPercent },
+			}, "工業%"},
+		{"科學官", func(c engine.ColonyState) int { return c.ResearchBonusPercent },
+			[]func(engine.ColonyState) int{
+				func(c engine.ColonyState) int { return c.FoodBonusPercent },
+				func(c engine.ColonyState) int { return c.IndustryBonusPercent },
+			}, "研究%"},
+	} {
+		var c engine.ColonyState
+		applyLeaderColonyBonuses([]Leader{{"某人", tc.skill, 3, false, 1}}, &c)
+		if tc.field(c) <= 0 {
+			t.Errorf("%s 應加到「%s」,得到 %d", tc.skill, tc.name, tc.field(c))
+		}
+		for i, f := range tc.other {
+			if f(c) != 0 {
+				t.Errorf("%s 不該動到另外兩項(第 %d 個),得到 %d", tc.skill, i, f(c))
+			}
+		}
+	}
+}
+
+// 科學官(百分比)與科學家(固定點數)是**不同的兩個技能**,落在不同欄位。
+// 這條防的是「名字像就混用」——一個是 %+d%%、一個是 %+d。
+func TestScienceLeaderAndResearcherAreDifferentSkills(t *testing.T) {
+	var a engine.ColonyState
+	applyLeaderColonyBonuses([]Leader{{"甲", "科學官", 3, false, 1}}, &a)
+	var b engine.ColonyState
+	applyLeaderColonyBonuses([]Leader{{"乙", "科學家", 3, false, 1}}, &b)
+	if a.ResearchBonusPercent <= 0 || a.FlatResearch != 0 {
+		t.Errorf("科學官應只加百分比:%%=%d、固定=%d", a.ResearchBonusPercent, a.FlatResearch)
+	}
+	if b.FlatResearch <= 0 || b.ResearchBonusPercent != 0 {
+		t.Errorf("科學家應只加固定點數:固定=%d、%%=%d", b.FlatResearch, b.ResearchBonusPercent)
+	}
+}

@@ -31,7 +31,9 @@ func colonyGravityPenaltyPercent(cs ColonyState) int {
 // ColonyState 既有慣例一致:多個百分比/固定加成先加總,再套一次公式(GrowthBonusSum、
 // IncomeBonusPercent 皆是同一模式)。
 func colonyFood(cs ColonyState) (food, consumed, surplus int) {
-	pct := cs.MoralePercent + colonyGravityPenaltyPercent(cs)
+	// FoodBonusPercent(農業官)與士氣/重力合併成單一百分點再套一次公式,
+	// 理由同上面那段註解:避免多次連續整數除法的複合誤差。
+	pct := cs.MoralePercent + colonyGravityPenaltyPercent(cs) + cs.FoodBonusPercent
 	food = gamedata.GravityAdjustedProduction(cs.Farmers*cs.FoodPerFarmer, pct) + cs.FlatFood
 	consumed = cs.Population * foodPerPopulation
 	return food, consumed, food - consumed
@@ -81,7 +83,10 @@ func RunColonyTurn(cs ColonyState) ColonyOutput {
 	// FlatIndustry 在污染縮減之前併入 gross(依手冊,固定產能也算「殖民地產能」,一樣會產生
 	// 污染,見下方 colonyPollution 以 gross 全額計算 pollutingProd/cleanupCost)。
 	pct := cs.MoralePercent + colonyGravityPenaltyPercent(cs)
-	gross := gamedata.GravityAdjustedProduction(cs.Workers*cs.IndustryPerWorker, pct) + cs.FlatIndustry
+	// 工業與研究各自再吃自己那一項的百分比(勞工官 / 科學官)——士氣是三項一起動,
+	// 這兩個各管各的,所以不能併進上面那個共用的 pct。
+	gross := gamedata.GravityAdjustedProduction(cs.Workers*cs.IndustryPerWorker,
+		pct+cs.IndustryBonusPercent) + cs.FlatIndustry
 	pollutingProd, cleanupCost, netIndustry := colonyPollution(cs, gross)
 	// 再生反應爐(p.81)加在**污染縮減之後**:手冊明說這份產能不計入污染。
 	// 每單位人口 +1,不分職業——所以是 Population 而不是 Workers。
@@ -104,7 +109,8 @@ func RunColonyTurn(cs ColonyState) ColonyOutput {
 		surplus += replicated
 		netIndustry -= spent
 	}
-	research := gamedata.GravityAdjustedProduction(cs.Scientists*cs.ResearchPerScientist, pct) + cs.FlatResearch
+	research := gamedata.GravityAdjustedProduction(cs.Scientists*cs.ResearchPerScientist,
+		pct+cs.ResearchBonusPercent) + cs.FlatResearch
 	growth := colonyGrowth(cs, surplus, netIndustry)
 
 	return ColonyOutput{

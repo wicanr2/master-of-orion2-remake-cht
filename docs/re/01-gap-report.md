@@ -5242,6 +5242,60 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     它在 `interactive.go:4384` 有呼叫,是我的 grep 被 `head` 截掉了。
     真英雄池早就接上;真正的缺口是技能對照表只認兩個,而那正是這一項修的。
 
+102. **分項百分比:三個 admin 技能缺的只是一個欄位**(2026-08-07)。
+
+    上一項把農業官 / 勞工官 / 科學官擋在門外,理由是「食物/工業/研究的**分項百分比**——
+    `ColonyState` 只有 per-worker 與固定值兩種欄位」。回頭看那個理由:**缺的只是三個欄位**,
+    而引擎早就有百分比進得去的地方。
+
+    ### 引擎本來就有一條百分比路徑
+
+    ```go
+    pct := cs.MoralePercent + colonyGravityPenaltyPercent(cs)
+    food     = GravityAdjustedProduction(Farmers*FoodPerFarmer, pct) + FlatFood
+    gross    = GravityAdjustedProduction(Workers*IndustryPerWorker, pct) + FlatIndustry
+    research = GravityAdjustedProduction(Scientists*ResearchPerScientist, pct) + FlatResearch
+    ```
+
+    士氣與重力就是走這條。加三個**分項**百分比只要在各自那一行多加自己那一項。
+
+    ### 士氣是三項一起動,這三個不是
+
+    這是它們與士氣的唯一差別,也是測試的主軸:農業官只動食物、勞工官只動工業、
+    科學官只動研究,另外兩項必須**一動也不動**。
+
+    正對照是「士氣**仍然**三項一起動」——少了它,「分項百分比其實沒接上」也會讓前面那支通過。
+
+    第三支釘住「固定加成不吃百分比」(農夫為 0 時食物全來自 `FlatFood`,
+    百分比不該放大它),與士氣/重力的既有處理一致。
+
+    ### 科學官 ≠ 科學家
+
+    兩個中文名很像,但在原版是不同的技能、不同的單位:
+
+    | 技能 | id | 格式 | 落在 |
+    |---|---|---|---|
+    | 科學家 Researcher | 6(common) | `%+d` | `FlatResearch`(固定點數) |
+    | 科學官 Science Leader | 38(admin) | `%+d%%` | `ResearchBonusPercent`(百分比) |
+
+    而且**累加規則也不同**:科學家是手冊明列的兩個累加型之一,科學官不是(取最強那位)。
+    有一支測試專門釘這件事——名字像就混用會同時錯兩處。
+
+    ### 領袖技能的現況
+
+    remake 現在接了 **9 個**:科學家、貿易家、財務官、心靈導師、醫官、教官、
+    農業官、勞工官、科學官,加上地面戰的指揮官。
+
+    仍未接的與理由:
+    - **環保官**:降低「會產生污染的產能」的百分比——remake 的污染模型是 `PollutionEighths`
+      查表(八分之幾),沒有百分比入口。要接得先把污染模型改成連續量。
+    - **工程師**:艦艇維修**速率**加成——remake 的 `advanceShipRepair` 是照原版
+      `Repair_Ship_Full_` 做的**一次修好**,沒有「速率」這個量可以加成。
+      **這不是漏做,是那個量在這個模型裡不存在。**
+    - **戰術官**:原版自己就沒實作(第 101 項)。
+    - 其餘 captain/common 技能(刺客、外交官、間諜大師、心靈感應…)對應的子系統
+      (刺客擲骰、外交修正、反間諜)remake 沒有。
+
 
 
 
