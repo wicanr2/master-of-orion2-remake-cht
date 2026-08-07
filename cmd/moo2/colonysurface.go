@@ -414,6 +414,14 @@ func (b *sceneBuilder) colonySurfaceLayout(idx int) colonySurface {
 //     母星才是自動給予建築的那一個。
 const origCapitolID = 9
 
+// origColonyBaseID 是拓殖基地的原版建築編號,是 `origCapitolID` 的對稱項:
+// **母星有國會大廈,其餘殖民地有拓殖基地**,兩者都是拓殖時自動給予、不可建造的實體建築。
+//
+// 與 Capitol 同一個坑:先前因為「不在建造表裡」就連地表也漏掉了。
+// 分類 0(地表建築)、成本 200 PP、維護 0 —— 真值見 `docs/re/01-gap-report.md` 第 36 項那張表,
+// 該項對它的註記就是「拓殖時自動」。
+const origColonyBaseID = 11
+
 // colonyOrigBuildingIDs 把某殖民地已建的建築換成**原版編號**的集合。
 func (b *sceneBuilder) colonyOrigBuildingIDs(idx int) map[int]bool {
 	has := map[int]bool{}
@@ -423,6 +431,9 @@ func (b *sceneBuilder) colonyOrigBuildingIDs(idx int) map[int]bool {
 	if idx == 0 {
 		// 殖民地 0 恆為玩家母星(見 `GameSession.PlayerColonyStars` 欄位註解:星 0 恆為母星)。
 		has[origCapitolID] = true
+	} else {
+		// 其餘殖民地拿拓殖基地——與母星的國會大廈對稱,都是拓殖時自動給予的實體建築。
+		has[origColonyBaseID] = true
 	}
 	for zh := range b.session.ColonyBuildings[idx] {
 		if bd, ok := gamedata.BuildingByNameZH(zh); ok {

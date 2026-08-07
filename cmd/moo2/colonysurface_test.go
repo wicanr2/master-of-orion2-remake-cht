@@ -325,6 +325,44 @@ func TestColonySurfacePlanHomeworldHasCapitol(t *testing.T) {
 	}
 }
 
+// TestColonySurfacePlanNonHomeworldHasColonyBase 是上一支的對稱項:
+// 非母星殖民地要有拓殖基地,母星則沒有(它有國會大廈)。
+//
+// 兩者是同一個坑的兩半——都因為「不在建造表裡」而連地表也一起漏掉。
+func TestColonySurfacePlanNonHomeworldHasColonyBase(t *testing.T) {
+	b := newSurfaceTestBuilder(t)
+	sess := b.session
+	sess.PlayerColonies = append(sess.PlayerColonies, sess.PlayerColonies[0])
+	dup := map[string]bool{}
+	for k, v := range sess.ColonyBuildings[0] {
+		dup[k] = v
+	}
+	sess.ColonyBuildings = append(sess.ColonyBuildings, dup)
+
+	count := func(idx, id int) int {
+		n := 0
+		for _, got := range b.colonySurfacePlan(idx) {
+			if got == id {
+				n++
+			}
+		}
+		return n
+	}
+	if got := count(1, origColonyBaseID); got != 1 {
+		t.Errorf("非母星應有 1 棟拓殖基地,實得 %d", got)
+	}
+	if got := count(0, origColonyBaseID); got != 0 {
+		t.Errorf("母星不該有拓殖基地(它有國會大廈),實得 %d", got)
+	}
+	// 兩者不可同時出現在同一個殖民地。
+	if count(0, origCapitolID)+count(0, origColonyBaseID) != 1 {
+		t.Error("母星應恰好有國會大廈與拓殖基地其中一棟")
+	}
+	if count(1, origCapitolID)+count(1, origColonyBaseID) != 1 {
+		t.Error("非母星應恰好有國會大廈與拓殖基地其中一棟")
+	}
+}
+
 // TestColonySurfacePlanExcludesOrbitals:軌道衛星(分類 7)不該出現在地表格點上,
 // 除非它是被借去當房屋的那四個編號。原版靠建築表 +14 欄篩掉。
 func TestColonySurfacePlanExcludesOrbitals(t *testing.T) {
