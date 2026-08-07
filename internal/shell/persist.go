@@ -25,6 +25,10 @@ type aiSnapshot struct {
 	Relation        int                  `json:"relation"`
 	StanceName      string               `json:"stanceName"`
 	OwnedStars      int                  `json:"ownedStars"`
+	// 會談請求(見 shell/audience.go)。舊存檔缺欄位解成 false/"" —— 正是「沒有請求」,
+	// 沒有零值陷阱。
+	WantsAudience  bool   `json:"wantsAudience,omitempty"`
+	AudienceReason string `json:"audienceReason,omitempty"`
 	ColonyStars     []int                `json:"colonyStars"` // 見 shell.AIOpponent.ColonyStars 註解
 	Spies           int                  `json:"spies"`       // AI 派來偷玩家科技的間諜數,見 spy.go
 	// Personality 是 AI 性格(見 shell.AIOpponent.Personality)。omitempty 不適用:
@@ -167,7 +171,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 			FleetStrength: a.FleetStrength, FleetInvestPool: a.FleetInvestPool,
 			Relation: a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars,
 			ColonyStars: a.ColonyStars, Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
-			Leaders: a.Leaders, Personality: a.Personality, LastRaidTurn: a.LastRaidTurn}
+			Leaders: a.Leaders, Personality: a.Personality, LastRaidTurn: a.LastRaidTurn,
+			WantsAudience: a.WantsAudience, AudienceReason: a.AudienceReason}
 	}
 	return sessionSnapshot{
 		Version: saveFormatVersion, Turn: s.Turn, Player: s.Player,
@@ -216,6 +221,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 			Relation:        a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars,
 			ColonyStars: a.ColonyStars, Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
 			Leaders: a.Leaders, Personality: a.Personality, LastRaidTurn: a.LastRaidTurn,
+			WantsAudience: a.WantsAudience, AudienceReason: a.AudienceReason,
 		}
 	}
 	restorePlanetIDs(snap.Planets)

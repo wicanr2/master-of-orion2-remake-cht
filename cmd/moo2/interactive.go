@@ -574,6 +574,18 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		// @ 0x8BAB9,見 commandpoints.go)。先前這格只顯示一個淨值數字,點不開。
 		{547, 124, 65, 67, "commandpoints"},
 	}
+	// 會談請求燈(星圖上緣,原版 `Draw_Diplomacy_Request_Lights_`):點一下直接進對談。
+	// 放在星球熱區**之前** append —— 燈在 y=5,和星圖區(y≥24)不重疊,順序其實無所謂,
+	// 但先放能讓「點得到」這件事不依賴後面的熱區數量。
+	if b.session != nil {
+		for n := range b.session.AudienceRequests() {
+			x, y, w, h := audienceLightRect(n)
+			if x < 0 {
+				break
+			}
+			hits = append(hits, hitRegion{x, y, w, h, fmt.Sprintf("audience%d", n)})
+		}
+	}
 	// 星圖各星加點擊熱區(點星 → 顯示該星系行星資訊)。
 	if b.session != nil {
 		sess := b.session
@@ -643,6 +655,28 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		}
 		if a == "research" {
 			return b.goTo(b.research, "研究選擇") // 星系右側研究框 → 研究選擇(對齊原版)
+		}
+		if strings.HasPrefix(a, "audience") && b.session != nil {
+			// 點會談燈 → 直接進外交對談,對象是那位敲門的對手,並把請求清掉(算談過了)。
+			x, y, w, h := 0, 0, 0, 0
+			idx := -1
+			for n := range b.session.AudienceRequests() {
+				if fmt.Sprintf("audience%d", n) == a {
+					x, y, w, h = audienceLightRect(n)
+					idx = b.audienceLightAt(x+w/2, y+h/2)
+					break
+				}
+			}
+			if idx < 0 {
+				return nil
+			}
+			name := audienceEnemyName(b.session, idx)
+			b.session.ClearAudienceRequest(idx)
+			sc, err := b.diplomacyWith(name)
+			if err != nil {
+				return nil
+			}
+			return &origTransition{next: sc}
 		}
 		if a == "commandpoints" {
 			// 星圖右欄第 2 格 → 指揮點數視窗(原版 `Show_Command_Points_Screen_`)。
@@ -794,7 +828,8 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			b.drawNebulae(dst, sess.Nebulae) // 背景地形,壓在星星之下
 			vis := sess.VisibleStars()
 			drawStarmap(b, dst, fnt, sess.Stars, sess.SelectedStar, vis)
-			b.drawGateIcons(dst, vis) // 狀態標示,蓋在星星之上
+			b.drawGateIcons(dst, vis)  // 狀態標示,蓋在星星之上
+			b.drawAudienceLights(dst)  // 會談請求燈(星圖上緣,原版 y=5、由右往左)
 			if fnt != nil {
 				// 狀態數字畫進原版右側資訊格(openorion2 galaxy.cpp:1552-1588 硬編位置,
 				// 對齊 buffer0.lbx#0 背景烘印的圖示格):星曆→頂右薄框(549,27,63,13)、
@@ -1583,13 +1618,30 @@ func (d *diplomacyScreen) draw(dst *ebiten.Image) {
 	d.fnt.DrawCentered(dst, d.b.tr("結束對談", "END AUDIENCE"), float64(bx+bw/2), float64(by+bh/2), 15, body)
 }
 
-// diplomacy 進入外交對談畫面。
+// diplomacy 進入外交對談畫面(對象是主要對手)。
 func (b *sceneBuilder) diplomacy() (origScreen, error) {
 	if b.session == nil {
 		return nil, fmt.Errorf("無對局")
 	}
 	playSceneBGM(bgmDiplo)
 	return newDiplomacyScreen(b), nil
+}
+
+// diplomacyWith 進入外交對談畫面,對象指定。
+//
+// 由星圖上緣的會談請求燈用(見 audience.go)——是**那位**對手來敲門,不是主要對手。
+func (b *sceneBuilder) diplomacyWith(enemy string) (origScreen, error) {
+	if b.session == nil {
+		return nil, fmt.Errorf("無對局")
+	}
+	playSceneBGM(bgmDiplo)
+	d := newDiplomacyScreen(b)
+	if enemy != "" {
+		d.enemy = enemy
+		d.room = loadDiplomatScene(b.res, diplomatRaceIndex(enemy))
+		d.response = enemy + b.tr("使節:人類,你有何提議?", " emissary: Human, what do you propose?")
+	}
+	return d, nil
 }
 
 // --- 格子戰術戰鬥畫面(自繪 origScreen:星空底 + 格線 + 雙方艦艇 token + HP 條)---

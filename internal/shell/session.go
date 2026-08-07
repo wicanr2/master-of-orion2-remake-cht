@@ -44,6 +44,12 @@ type AIOpponent struct {
 	// 發生在 Turn >= aiRaidGraceTurns,不會因為零值提早)。
 	LastRaidTurn int
 
+	// WantsAudience 是「這位對手正在請求會談」(原版 `Humans_Requesting_Diplomacy_` 那個
+	// 位元遮罩裡屬於它的那一位)。AudienceReason 是來意(宣戰/提議貿易/提議結盟)。
+	// 見 audience.go。opt-in,零值 false = 沒有請求(新對局/舊存檔皆安全)。
+	WantsAudience  bool
+	AudienceReason string
+
 	// ColonyStars 是 Colonies[i] 對應到 Stars 的索引(平行陣列),兩者長度須一致——aiExpand
 	// append 新殖民地、InvadeColony 玩家攻陷 AI 殖民地時各自同步移除,見兩處函式。
 	//
@@ -2836,8 +2842,11 @@ func (s *GameSession) advanceAI(i int, out engine.EmpireOutput) {
 	if a.Relation < -40 {
 		a.Relation = -40
 	}
+	prevStance := a.StanceName
 	stance := ai.DecideStance(diplomacy.RelationLevelForScore(a.Relation), prof)
 	a.StanceName = stanceNames[stance]
+	// 態勢改變 = 這位對手有話要說(宣戰要通知、提議要開口)。見 audience.go。
+	a.noteStanceChange(prevStance)
 }
 
 // ensureAIRelations 確保 AIRelations 矩陣尺寸 = len(AIPlayers)(懶初始化;新建/讀舊檔皆補齊,
