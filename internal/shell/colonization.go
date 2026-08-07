@@ -364,12 +364,30 @@ func (s *GameSession) FirstColonizablePlanet(star int) int {
 		if pl.NoPlanet || pl.TypeID != gamedata.HABITABLE {
 			continue // 氣態巨星/小行星帶要蓋前哨站,不能直接殖民(手冊 p.61)
 		}
-		if !climateColonizable(pl.ClimateID) || s.ColonyIndexOnPlanet(p) >= 0 {
+		if !climateColonizable(pl.ClimateID) || s.PlanetColonized(p) {
 			continue
 		}
 		return p
 	}
 	return -1
+}
+
+// PlanetColonized 回傳某顆行星上是否已經有**任何帝國**的殖民地(玩家或 AI)。
+//
+// ⚠ 不能只查玩家:AI 也在同一份 s.Planets 上殖民。只查玩家的話,AI 擴張時會把
+// 兩個殖民地疊在同一顆行星上——那是一星多殖民地打開之後才會出現的競態。
+func (s *GameSession) PlanetColonized(planet int) bool {
+	if s.ColonyIndexOnPlanet(planet) >= 0 {
+		return true
+	}
+	for i := range s.AIPlayers {
+		for _, p := range s.AIPlayers[i].ColonyPlanets {
+			if p == planet {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // ColonyPlanetIndex 回傳玩家第 i 個殖民地座落的行星索引;查不到回 −1。

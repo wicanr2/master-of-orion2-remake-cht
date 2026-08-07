@@ -489,6 +489,15 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	}
 	aiPlayer := &s.AIPlayers[aiIdx]
 	colony := aiPlayer.Colonies[colonyIdx]
+	// 被打下來的是**哪一顆行星**——AI 殖民地自 2026-08-07 起記得住(AIOpponent.ColonyPlanets)。
+	// 要在移除那筆之前先抄下來。舊存檔沒記(−1)時退回該星的代表行星。
+	capturedPlanet := -1
+	if colonyIdx < len(aiPlayer.ColonyPlanets) {
+		capturedPlanet = aiPlayer.ColonyPlanets[colonyIdx]
+	}
+	if capturedPlanet < 0 {
+		capturedPlanet = s.PlanetAt(starIdx)
+	}
 
 	tankCount := s.Fleet().Tanks
 	atkForce := s.playerMarineForce() + tankForceBonusFor(s.Player, tankCount)
@@ -541,8 +550,6 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	s.Fleet().Tanks = tanksSurvived
 
 	if res.AttackerWon {
-		star.Owner = 1
-
 		captured := colony
 		captured.Population = res.DefenderSurvived // 簡化近似,見函式註解
 		if captured.Population < 1 {
@@ -577,12 +584,12 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 			s.PlayerColonyStars = append(s.PlayerColonyStars, -1)
 		}
 		s.PlayerColonyStars = append(s.PlayerColonyStars, starIdx)
-		// 行星索引同步(見 PlayerColonyPlanets 欄位註解)。敵方殖民地目前只記到星,
-		// 沒有「AI 殖民地在哪顆行星」的模型,故取該星系的代表行星——與過戶前的表現一致。
+		// 行星索引同步(見 PlayerColonyPlanets 欄位註解):過戶的是**那一顆行星**上的殖民地,
+		// 不是「該星系的代表行星」——同一個星系可能還有這個 AI 的另一個殖民地。
 		for len(s.PlayerColonyPlanets) < len(s.PlayerColonies)-1 {
 			s.PlayerColonyPlanets = append(s.PlayerColonyPlanets, -1)
 		}
-		s.PlayerColonyPlanets = append(s.PlayerColonyPlanets, s.PlanetAt(starIdx))
+		s.PlayerColonyPlanets = append(s.PlayerColonyPlanets, capturedPlanet)
 		// 俘虜人口:過戶過來的殖民地人口計入 CapturedPop(手冊 p.184 計分「You also get a
 		// premium for captured population units」,見 score.go)。累計而非當下人口——之後這些
 		// 人口自然成長或死亡都不影響「當初俘虜了多少」這個歷史數字。
@@ -601,10 +608,23 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 		if colonyIdx < len(aiPlayer.ColonyBuildings) {
 			aiPlayer.ColonyBuildings = append(aiPlayer.ColonyBuildings[:colonyIdx], aiPlayer.ColonyBuildings[colonyIdx+1:]...)
 		}
-		if aiPlayer.OwnedStars > 0 {
-			aiPlayer.OwnedStars--
+		// ⚠ 星的歸屬只在**這顆星上再也沒有敵方殖民地**時才翻面。同星系多殖民地打開之後
+		// (第 66/67 項),一個星系可能有這個 AI 的兩個殖民地;打下一個就把整顆星判給玩家,
+		// 會讓另一個殖民地變成「站在玩家星系裡的敵軍」,而且星圖顏色與可入侵性都對不上。
+		stillEnemy := false
+		for _, st := range aiPlayer.ColonyStars {
+			if st == starIdx {
+				stillEnemy = true
+				break
+			}
 		}
-		out.StarCaptured = true
+		if !stillEnemy {
+			star.Owner = 1
+			if aiPlayer.OwnedStars > 0 {
+				aiPlayer.OwnedStars--
+			}
+			out.StarCaptured = true
+		}
 		s.advanceConquestVictory() // 若這是該 AI 對手的最後一個殖民地,立即偵測「殲滅所有對手」勝利(見 council.go),不用等下個 EndTurn
 	}
 	return out

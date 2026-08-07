@@ -3084,34 +3084,27 @@ func (s *GameSession) aiExpand(i int) {
 	// 依原版行星估值挑最好的目標,而不是「掃到第一顆能殖民的就佔」。
 	// 原版每回合替每個玩家把全星圖算一輪分數(Compute_Base_Planet_Values_),AI 據此挑目標;
 	// remake 這裡即時算候選星的分數取最大值,結果等價而不必維護一張快取表。
+	cand := s.aiExpansionCandidates(i)
 	best, bestVal := -1, 0
-	for idx := range s.Stars {
-		if s.Stars[idx].Owner != 0 {
-			continue
-		}
+	for _, idx := range cand {
 		if v := s.aiPlanetValue(i, idx); v > bestVal {
 			best, bestVal = idx, v
 		}
 	}
-	// 全部候選都是 0 分(不宜居/無行星)時退回原本的順序掃描,確保不會因為估值而完全停止擴張。
-	order := make([]int, 0, len(s.Stars))
+	// 全部候選都是 0 分(不宜居/無行星)時退回順序掃描,確保不會因為估值而完全停止擴張。
+	order := cand
 	if best >= 0 {
-		order = append(order, best)
-	} else {
-		for idx := range s.Stars {
-			order = append(order, idx)
-		}
+		order = []int{best}
 	}
 	for _, idx := range order {
-		if s.Stars[idx].Owner != 0 {
+		if !s.aiCanExpandInto(i, idx) {
 			continue
 		}
 		if s.StarGuardedByMonster(idx) {
 			continue // 怪獸盤據的星系 AI 也進不去(手冊 p.62 的清場條件對所有帝國一體適用)
 		}
-		// AI 也是「殖民到行星上」——挑該星系第一顆可殖民的天體(同玩家的 ColonizeStar)。
-		// ⚠ AI 目前一個星系只會有一個殖民地(上面那道 `Owner != 0` 的閘),不像玩家可以在
-		// 自己的星系裡再拓殖第二顆行星。那是 AI 擴張模型的缺口,記在 gap report,不臆造。
+		// AI 也是「殖民到行星上」——挑該星系第一顆還沒被任何帝國佔走的可殖民天體
+		// (同玩家的 ColonizeStar)。
 		planetIdx := s.FirstColonizablePlanet(idx)
 		if planetIdx < 0 {
 			continue
@@ -3120,8 +3113,12 @@ func (s *GameSession) aiExpand(i int) {
 		if !ok {
 			continue
 		}
-		s.Stars[idx].Owner = 2
-		s.AIPlayers[i].OwnedStars++
+		if s.Stars[idx].Owner == 0 {
+			// 只有「本來無主」才算多佔一顆星。在自己已有的星系裡再殖民一顆行星不會讓
+			// 版圖變大——OwnedStars 若跟著加,征服勝利的判定與外交評分都會被灌水。
+			s.Stars[idx].Owner = 2
+			s.AIPlayers[i].OwnedStars++
+		}
 		s.AIPlayers[i].Colonies = append(s.AIPlayers[i].Colonies, colony)
 		s.AIPlayers[i].ColonyStars = append(s.AIPlayers[i].ColonyStars, idx)
 		// ColonyBuildings 同步 append 空 map,維持三個平行陣列等長(見 AIOpponent.ColonyBuildings
@@ -3131,6 +3128,50 @@ func (s *GameSession) aiExpand(i int) {
 		s.consumeSpecialOnColonize(planetIdx) // 原住民被 AI 併入人口後同樣從行星上消失(見 colonization.go)
 		return
 	}
+}
+
+// aiCanExpandInto 回傳第 i 個 AI 能不能往 starIdx 這顆星拓殖:無主的可以,
+// **自己已經有殖民地的星系也可以**(同星系多殖民地,手冊 p.61 的條件是那顆行星沒被殖民)。
+// 別人的星系(玩家的、或另一個 AI 的)不行——那要打下來。
+func (s *GameSession) aiCanExpandInto(i, starIdx int) bool {
+	if starIdx < 0 || starIdx >= len(s.Stars) {
+		return false
+	}
+	if s.Stars[starIdx].Owner == 0 {
+		return true
+	}
+	if s.Stars[starIdx].Owner != 2 {
+		return false // 玩家的星系
+	}
+	// Star.Owner 只分「無主/玩家/AI」,分不出是哪一個 AI——要查這個 AI 自己的殖民地清單。
+	for _, st := range s.AIPlayers[i].ColonyStars {
+		if st == starIdx {
+			return true
+		}
+	}
+	return false
+}
+
+// aiExpansionCandidates 列出第 i 個 AI 這一輪可以考慮的拓殖目標星。
+//
+// 自己的星系排在無主星之後:同樣分數時先往外擴,與原版 AI「先搶地盤」的行為一致
+// (而且回內部補行星的機會永遠都在,無主星被別人搶走就沒了)。
+func (s *GameSession) aiExpansionCandidates(i int) []int {
+	out := make([]int, 0, len(s.Stars))
+	for idx := range s.Stars {
+		if s.Stars[idx].Owner == 0 {
+			out = append(out, idx)
+		}
+	}
+	seen := make(map[int]bool, len(s.AIPlayers[i].ColonyStars))
+	for _, st := range s.AIPlayers[i].ColonyStars {
+		if st < 0 || st >= len(s.Stars) || seen[st] {
+			continue
+		}
+		seen[st] = true
+		out = append(out, st)
+	}
+	return out
 }
 
 // syncAIColonyPlanets 把每個 AI 殖民地的行星索引補齊(見 AIOpponent.ColonyPlanets)。

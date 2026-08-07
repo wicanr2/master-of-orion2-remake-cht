@@ -272,3 +272,171 @@ func TestAIExpansionKeepsColonyPlanetsInSync(t *testing.T) {
 		t.Fatal("測試前提不成立:60 回合內沒有任何 AI 擴張過,這支測試等於什麼都沒驗")
 	}
 }
+
+// --- AI 側的同星系多殖民地 ---
+
+// aiOnlySession 造一個「只剩一個 AI、而且銀河裡沒有任何無主星」的局面:
+// 這樣 aiExpand 唯一可能的去處就是它自己的星系。
+func aiOnlySession(t *testing.T) *GameSession {
+	t.Helper()
+	s := NewDemoSession()
+	s.AIPlayers = s.AIPlayers[:1]
+	home := s.AIPlayers[0].ColonyStars[0]
+	for i := range s.Stars {
+		if i == home {
+			continue
+		}
+		s.Stars[i].Owner = 1 // 其餘全部劃給玩家,斷掉「往外擴」這條路
+	}
+	// AI 母星系至少要有兩顆可殖民的天體,否則沒得驗。
+	ps := s.PlanetsAt(home)
+	if len(ps) < 2 {
+		s.Planets = append(s.Planets, Planet{})
+		extra := len(s.Planets) - 1
+		o := s.Stars[home].Orbits
+		placed := false
+		for i := range o {
+			if o[i] == OrbitEmpty {
+				o[i] = extra
+				placed = true
+				break
+			}
+		}
+		if !placed {
+			t.Fatal("AI 母星系軌道已滿,無法造第二顆行星")
+		}
+		s.Stars[home].Orbits = o
+		ps = s.PlanetsAt(home)
+	}
+	for _, p := range ps {
+		s.Planets[p] = Planet{
+			Name: "AI 天體", Gen: planetGenVersion, TypeID: gamedata.HABITABLE,
+			ClimateID: gamedata.TERRAN, GravityID: gamedata.NORMAL_G,
+			MineralID: gamedata.ABUNDANT, SizeID: gamedata.MEDIUM_PLANET,
+		}
+	}
+	// 母星的殖民地登記在第一顆天體上。
+	s.AIPlayers[0].ColonyPlanets = []int{ps[0]}
+	return s
+}
+
+// AI 也能在自己的星系裡拓殖第二顆行星(先前 aiExpand 只找 Owner==0 的星,永遠做不到)。
+func TestAIColonizesSecondPlanetInOwnSystem(t *testing.T) {
+	s := aiOnlySession(t)
+	home := s.AIPlayers[0].ColonyStars[0]
+	before := len(s.AIPlayers[0].Colonies)
+	ownedBefore := s.AIPlayers[0].OwnedStars
+
+	// 擴張是機率性的(性格決定),多跑幾輪讓它有機會發生。
+	for n := 0; n < 40 && len(s.AIPlayers[0].Colonies) == before; n++ {
+		s.aiExpand(0)
+	}
+	a := s.AIPlayers[0]
+	if len(a.Colonies) != before+1 {
+		t.Fatalf("AI 應在自己的星系裡多出一個殖民地,殖民地數 %d → %d", before, len(a.Colonies))
+	}
+	if a.ColonyStars[len(a.ColonyStars)-1] != home {
+		t.Errorf("新殖民地應在母星系 %d,實得 %d", home, a.ColonyStars[len(a.ColonyStars)-1])
+	}
+	// 同星系再殖民不會讓版圖變大——OwnedStars 若跟著加,征服勝利判定會被灌水。
+	if a.OwnedStars != ownedBefore {
+		t.Errorf("在自己的星系裡殖民不該增加持有星數(%d → %d)", ownedBefore, a.OwnedStars)
+	}
+	// 兩個殖民地必須在不同的行星上。
+	if a.ColonyPlanets[0] == a.ColonyPlanets[1] {
+		t.Errorf("兩個 AI 殖民地疊在同一顆行星 %d 上", a.ColonyPlanets[0])
+	}
+}
+
+// AI 不能往玩家的星系拓殖(那要打下來)。
+func TestAIWillNotExpandIntoPlayerSystem(t *testing.T) {
+	s := NewDemoSession()
+	playerStar := s.PlayerColonyStarIndex(0)
+	if s.aiCanExpandInto(0, playerStar) {
+		t.Errorf("AI 不該能往玩家的星系 %d 拓殖", playerStar)
+	}
+}
+
+// AI 也不能往**另一個 AI** 的星系拓殖——Star.Owner 只分「無主/玩家/AI」,分不出是哪一個 AI,
+// 所以這條要靠各自的 ColonyStars 清單判斷。
+func TestAIWillNotExpandIntoAnotherAISystem(t *testing.T) {
+	s := NewDemoSession()
+	if len(s.AIPlayers) < 2 {
+		t.Skip("demo 局的 AI 少於兩家")
+	}
+	other := s.AIPlayers[1].ColonyStars[0]
+	if s.aiCanExpandInto(0, other) {
+		t.Errorf("AI 0 不該能往 AI 1 的星系 %d 拓殖", other)
+	}
+	if !s.aiCanExpandInto(1, other) {
+		t.Errorf("AI 1 應該能在自己的星系 %d 裡再拓殖", other)
+	}
+}
+
+// 玩家與 AI 不能把殖民地疊在同一顆行星上——PlanetColonized 要看見**所有帝國**的殖民地。
+func TestPlanetColonizedSeesAIColonies(t *testing.T) {
+	s := NewDemoSession()
+	aiPlanet := s.AIPlayers[0].ColonyPlanets[0]
+	if !s.PlanetColonized(aiPlanet) {
+		t.Fatalf("AI 母星所在的行星 %d 應被視為已殖民", aiPlanet)
+	}
+	star := s.PlanetStar(aiPlanet)
+	if got := s.FirstColonizablePlanet(star); got == aiPlanet {
+		t.Errorf("可殖民天體不該挑到 AI 已經佔著的行星 %d", aiPlanet)
+	}
+}
+
+// 打下敵方星系裡的**一個**殖民地,不該把整顆星判給玩家——同星系可能還有那個 AI 的另一個
+// 殖民地。星若提早翻面,剩下的敵方殖民地會變成「站在玩家星系裡的敵軍」,
+// 星圖顏色與可入侵性都對不上。
+func TestInvadingOneOfTwoColoniesLeavesStarEnemy(t *testing.T) {
+	s := aiOnlySession(t)
+	a := &s.AIPlayers[0]
+	home := a.ColonyStars[0]
+	ps := s.PlanetsAt(home)
+
+	// 在同一顆星上再給這個 AI 一個殖民地(第二顆天體)。
+	second, ok, _ := s.newColonyFromPlanet(ps[1], gamedata.MoraleGovDictatorship, 0, 0, 0)
+	if !ok {
+		t.Fatal("測試前置:第二顆天體應可建殖民地")
+	}
+	a.Colonies = append(a.Colonies, second)
+	a.ColonyStars = append(a.ColonyStars, home)
+	a.ColonyPlanets = append(a.ColonyPlanets, ps[1])
+	a.ColonyBuildings = append(a.ColonyBuildings, map[string]bool{})
+	s.Stars[home].Owner = 2
+
+	// 壓倒性的登陸部隊,確保一定打贏(這裡驗的是歸屬邏輯不是戰鬥解算)。
+	s.Fleet().AtStar, s.Fleet().ETA = home, 0
+	s.Fleet().Marines = 500
+
+	res := s.InvadeColony(home)
+	if !res.Ok || !res.AttackerWon {
+		t.Fatalf("500 名陸戰隊應打得下來:ok=%v won=%v %s", res.Ok, res.AttackerWon, res.Reason)
+	}
+	if res.StarCaptured {
+		t.Error("星上還有敵方殖民地,不該回報「整顆星拿下」")
+	}
+	if s.Stars[home].Owner != 2 {
+		t.Errorf("星上還有敵方殖民地,歸屬不該翻面(實得 Owner=%d)", s.Stars[home].Owner)
+	}
+	if len(a.Colonies) != 1 {
+		t.Fatalf("AI 應只剩一個殖民地,實得 %d", len(a.Colonies))
+	}
+	// 過戶過來的殖民地要落在**被打下來的那顆行星**上,不是該星系的代表行星。
+	got := s.ColonyPlanetIndex(len(s.PlayerColonies) - 1)
+	if got != ps[0] {
+		t.Errorf("過戶的殖民地應在行星 %d,實得 %d", ps[0], got)
+	}
+
+	// 再打一次:這次是最後一個,星才該翻面。
+	s.Fleet().Marines = 500
+	res2 := s.InvadeColony(home)
+	if !res2.Ok || !res2.AttackerWon {
+		t.Fatalf("第二次入侵應成功:%s", res2.Reason)
+	}
+	if !res2.StarCaptured || s.Stars[home].Owner != 1 {
+		t.Errorf("打完最後一個殖民地,整顆星才該歸玩家(StarCaptured=%v Owner=%d)",
+			res2.StarCaptured, s.Stars[home].Owner)
+	}
+}

@@ -1109,6 +1109,21 @@ SEND COLONY SHIP / SEND OUTPOST SHIP,那就是原版選行星的地方。先前�
 **還沒做**:AI 一個星系仍然只會有一個殖民地(`aiExpand` 只找 `Owner == 0` 的星),
 資料模型(`AIOpponent.ColonyPlanets`)已補齊,規則沒動——記在 gap report。
 
+## ★ 2026-08-07 AI 也會在自己的星系裡拓殖(gap report 第 67 項)
+
+第 66 項只改了玩家側,`aiExpand` 的候選集還寫死「只找 `Owner == 0` 的星」——玩家可以在自己的
+星系裡塞滿殖民地,AI 一個星系永遠只有一個。那不是原版的規則差異,是 remake 改了一半的不對稱。
+
+**`Star.Owner` 分不出是哪一個 AI**(只有 無主/玩家/AI 三個值),所以「這是不是**我自己**的
+星系」要走各自的 `ColonyStars` 清單判斷,不能只看 `Owner`。
+
+**兩個會被灌水的計數器**:`OwnedStars` 只在「本來無主」時才加(同星系多殖民不會讓版圖變大);
+`PlanetColonized` 改成全帝國視角,否則 AI 會把殖民地疊到別人已經佔著的行星上。
+
+**順帶修好入侵的一個 bug**:`InvadeColony` 打贏就無條件把星判給玩家。同星系多殖民地之後,
+打下其中一個殖民地會讓剩下那個敵方殖民地變成「站在玩家星系裡的敵軍」。現在星的歸屬只在
+該 AI 在這顆星上再也沒有殖民地時才翻面,過戶的殖民地也改用 AI 記下的真實行星索引。
+
 ## 工作方式(使用者定案)
 - go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)
 - **不用多代理 workflow**;翻譯一組一組慢慢做(單代理逐項,使用者可隨時審閱)

@@ -132,7 +132,7 @@
 | ~~**同星系多殖民地**~~ | ✅ | 第 66 項:拓殖/前哨站的對象改成**行星**,同一個星系可以有多個殖民地;人造行星改造完的天體也真的能殖民了 |
 | **戰術格子的獨立戰機單位** | 戰鬥子模型 | 戰機**已接進快速艦隊戰鬥**(`FighterBayCombatContribution`,中隊數 4/2 是手冊 GM p.127 硬數字);缺的是格子戰鬥裡的出擊 / 攔截 / 回收 |
 | AI 的遷移設定 | 資料模型 | 第 57 項的續:AI 沒有逐星的艦隊位置,所以沒有遷移可設 |
-| AI 的同星系多殖民地 | 規則 | 第 66 項只做了玩家側。`aiExpand` 仍只找 `Owner == 0` 的星,所以 AI 一個星系永遠只有一個殖民地(資料模型 `AIOpponent.ColonyPlanets` 已補齊) |
+| ~~AI 的同星系多殖民地~~ | ✅ | 第 67 項:`aiExpand` 的候選集加進「自己已有殖民地的星系」;順帶修好入侵只打下星系裡一個殖民地時星就整顆翻面的 bug |
 | ~~遷移連線的顯示開關沒有 UI~~ | ✅ | 第 65 項:接在遊戲選單的 SETTINGS 鈕下(⚠ 那一列不是原版版面,原版有一整個設定畫面) |
 | `Clear_All` 集結點沒有 UI 入口 | 未接 | 第 65 項:`Set_All` 已接上艦隊列表的 ALL 鈕(⚠ 它只改**已經有設定**的,不是全部設成同一顆);`Clear_All` 規則已實作並測試,但原版哪顆鈕對應它沒有確認,不猜 |
 | 遷移確認框 | 基礎設施 | 原版「目的星上有艦隊」時會跳確認框;remake 沒有 modal 對話框的基礎設施(第 59 項) |
@@ -3101,3 +3101,52 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     - `internal/shell/multicolony_test.go`:8 支測試(同系兩殖民地、同行星不可二殖、
       敵系仍不可拓殖、捷徑會挑下一顆、前哨站不被鄰居吃掉、存檔往返、舊存檔退路、
       人造行星改造完可殖民)
+
+67. **AI 也會在自己的星系裡拓殖第二顆行星**(2026-08-07,把第 66 項的另一半補上)。
+
+    ### 一個 remake 自己造出來的不對稱
+
+    第 66 項只改了玩家側。`aiExpand` 的候選集寫死成
+
+    ```go
+    for idx := range s.Stars {
+        if s.Stars[idx].Owner != 0 { continue }   // ← 只找無主星
+        ...
+    }
+    ```
+
+    於是玩家可以在自己的星系裡塞滿殖民地,AI 一個星系永遠只有一個。這不是原版的規則差異,
+    是 remake 改了一半留下的不對稱。
+
+    ### `Star.Owner` 分不出是哪一個 AI
+
+    候選集要加進「**自己**已有殖民地的星系」,而 `Star.Owner` 只有 0/1/2 三個值
+    (無主 / 玩家 / AI),分不出 `2` 是哪一家。所以判定要走各自的 `ColonyStars` 清單
+    (`aiCanExpandInto`),不能只看 `Owner`。兩支測試分別釘住「不能進玩家的星系」與
+    「不能進**另一個 AI** 的星系,但可以進自己的」。
+
+    ### 兩個會被灌水的計數器
+
+    - `OwnedStars` 只在「本來無主」時才 `++`。在自己的星系裡多殖民一顆行星不會讓版圖變大,
+      跟著加的話征服勝利判定與外交評分都會偏。
+    - `PlanetColonized` 取代原本只查玩家的 `ColonyIndexOnPlanet`。只查玩家的話,
+      AI 擴張會把殖民地疊到玩家(或另一個 AI)已經佔著的行星上——那是一星多殖民地
+      打開之後才會出現的競態。
+
+    ### 順帶修好入侵的一個 bug
+
+    `InvadeColony` 打贏就無條件 `star.Owner = 1`。同星系多殖民地之後,
+    打下星系裡的**一個**殖民地會把整顆星判給玩家,剩下那個敵方殖民地就變成
+    「站在玩家星系裡的敵軍」——星圖顏色、可入侵性、`ColonizePlanet` 的 `Owner == 2` 閘全部對不上。
+
+    現在星的歸屬(以及 `StarCaptured` 回報與 `OwnedStars--`)只在**該 AI 在這顆星上
+    再也沒有殖民地**時才發生。同時過戶的殖民地改用 `AIOpponent.ColonyPlanets[colonyIdx]`
+    這個真值,不再退回「該星系的代表行星」——那顆代表行星很可能正是還沒被打下來的那一個。
+
+    ### 落點
+
+    - `internal/shell/session.go`:`aiCanExpandInto` / `aiExpansionCandidates` / `aiExpand`
+    - `internal/shell/colonization.go`:`PlanetColonized`(全帝國視角)
+    - `internal/shell/ground_invasion.go`:歸屬翻面的條件 + 過戶行星用真值
+    - `internal/shell/multicolony_test.go`:再加 5 支(AI 自家星系拓殖、OwnedStars 不灌水、
+      不能進玩家/別家 AI 的星系、PlanetColonized 看得見 AI、入侵不提早翻面)

@@ -111,7 +111,7 @@ func (s *GameSession) OutpostTargetPlanet(starIdx int) int {
 	best := -1
 	for _, p := range s.PlanetsAt(starIdx) {
 		pl := s.Planets[p]
-		if pl.NoPlanet || s.HasOutpostOnPlanet(p) || s.ColonyIndexOnPlanet(p) >= 0 {
+		if pl.NoPlanet || s.HasOutpostOnPlanet(p) || s.PlanetColonized(p) {
 			continue
 		}
 		if pl.TypeID == gamedata.GAS_GIANT || pl.TypeID == gamedata.ASTEROIDS {
