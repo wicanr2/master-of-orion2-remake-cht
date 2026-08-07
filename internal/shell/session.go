@@ -3272,7 +3272,8 @@ func (s *GameSession) playerMilitary() int {
 // advanceAI 推進第 i 個 AI 對手的主動行為(每回合,經濟結算後):
 //  1. 造艦:把部分淨工業投入軍力(好戰性格投更多),FleetStrength 累積。
 //  2. 擴張:每隔數回合佔領一顆無主星(Owner=2,OwnedStars++)。
-//  3. 外交態勢:依「AI 軍力 vs 玩家軍力 + 難度」漂移對玩家關係分數,經 ai.DecideStance
+//  3. 研究:替 AI 處理待決的科技抉擇,並在目前主題完成時挑下一個(見 ai_research.go)。
+//  4. 外交態勢:依「AI 軍力 vs 玩家軍力 + 難度」漂移對玩家關係分數,經 ai.DecideStance
 //     推得態勢(戰爭/敵視/中立/提議貿易/提議結盟),存中文 StanceName。
 func (s *GameSession) advanceAI(i int, out engine.EmpireOutput) {
 	a := &s.AIPlayers[i]
@@ -3299,6 +3300,12 @@ func (s *GameSession) advanceAI(i int, out engine.EmpireOutput) {
 	if s.Turn%5 == 0 {
 		s.aiExpand(i)
 	}
+
+	// 2.7) 研究:處理待決的科技抉擇 + 目前主題完成時挑下一個(見 ai_research.go)。
+	//
+	// 先前完全沒有這一步——AI 每回合把研究點投進一個早就完成的主題,無限重複完成同一項,
+	// 科技線整條靠間諜從玩家那裡偷。
+	s.advanceAIResearch(i)
 
 	// 2.5) 間諜:AI 用最簡單的週期政策每 6 回合訓練 1 名間諜派來偷玩家科技(見 spy.go
 	// advanceEspionage),上限比照手冊每對手 63 人(gamedata.SpySlotBonus 的夾範圍)。不像
