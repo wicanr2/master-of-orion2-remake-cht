@@ -32,6 +32,85 @@ package shell
 // ColonyRelocationNone 是「沒有設定集結點」(原版的 −1)。
 const ColonyRelocationNone = -1
 
+// ============ 原版的設定流程:兩段點選,而且有明確的合法性規則 ============
+//
+// `Star_Relocation_` @ 0x75180 收「起點指標、終點指標、剛點到的星」:
+//
+//	if *起點 == −1:  驗證這顆星能不能當**起點** → 通過就記起來,結束
+//	else:            驗證能不能當**終點** → 通過就記起來;**選到同一顆 = 取消**
+//
+// 合法性在 `Okay_To_Set_Relocate_Star_` @ 0x75035(`dl` 區分是不是終點):
+//
+//	① 光譜 6(黑洞)→ 不行(起點終點都不行,只是訊息不同)
+//	② 玩家沒探索過那顆星(`star[+0x33] & (1<<玩家)`)→ 不行
+//	③ 目的星上有艦隊 → **跳確認框**問玩家(當起點則直接不行)
+//	④ 起點必須是玩家自己有殖民地的星(`star[+0x38]` 的位元測試)
+//
+// ⚠ 第 ③ 條的確認框 remake 沒做(沒有 modal 對話框的基礎設施),目前直接允許。
+// 這是**已知的簡化**,不是漏看。
+
+// RelocateRefusal 是「這顆星不能當起點/終點」的原因(空字串 = 可以)。
+type RelocateRefusal string
+
+// CanRelocateFrom 檢查某顆星能不能當遷移起點,回傳不行的原因(空 = 可以)。
+func (s *GameSession) CanRelocateFrom(star int) RelocateRefusal {
+	if star < 0 || star >= len(s.Stars) {
+		return "沒有這顆星"
+	}
+	if s.Stars[star].Spectral == blackHoleSpectral {
+		return "黑洞不能當遷移起點"
+	}
+	if !s.Stars[star].Explored {
+		return "還沒探索過這顆星"
+	}
+	if colonyIndexAt(s, star) < 0 {
+		return "那裡沒有你的殖民地——遷移是從自己的殖民地送出去的"
+	}
+	return ""
+}
+
+// CanRelocateTo 檢查某顆星能不能當遷移終點,回傳不行的原因(空 = 可以)。
+//
+// ⚠ 原版還有「目的星上有艦隊 → 跳確認框」那一條,remake 沒有 modal 對話框,直接允許。
+func (s *GameSession) CanRelocateTo(star int) RelocateRefusal {
+	if star < 0 || star >= len(s.Stars) {
+		return "沒有這顆星"
+	}
+	if s.Stars[star].Spectral == blackHoleSpectral {
+		return "黑洞不能當遷移終點"
+	}
+	if !s.Stars[star].Explored {
+		return "還沒探索過這顆星"
+	}
+	return ""
+}
+
+// colonyIndexAt 回傳玩家在某顆星的殖民地索引(沒有回 −1)。
+func colonyIndexAt(s *GameSession, star int) int {
+	for i, st := range s.PlayerColonyStars {
+		if st == star && i < len(s.PlayerColonies) {
+			return i
+		}
+	}
+	return -1
+}
+
+// SetStarRelocation 是原版那條路徑:用**起點星**而不是殖民地索引來設定。
+//
+// 起訖同一顆 = 取消(原版 `Cancel_Star_Relocation_`)。回傳不行的原因(空 = 成功)。
+func (s *GameSession) SetStarRelocation(from, to int) RelocateRefusal {
+	if r := s.CanRelocateFrom(from); r != "" {
+		return r
+	}
+	if r := s.CanRelocateTo(to); r != "" {
+		return r
+	}
+	if !s.SetColonyRelocation(colonyIndexAt(s, from), to) {
+		return "設定失敗"
+	}
+	return ""
+}
+
 // SetColonyRelocation 設定第 i 個殖民地的集結點。
 //
 // star 給 ColonyRelocationNone 或該殖民地自己所在的星 = 取消(新艦留在原地)。

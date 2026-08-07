@@ -150,26 +150,52 @@ func absF(v float32) float32 {
 // ---- 設定集結點 ----
 
 // relocatePickState 是「正在挑集結點」的畫面狀態(同 F9 測距,是**看的方式**不進存檔)。
+//
+// **兩段式**,對齊原版 `Star_Relocation_` @ 0x75180:先點起點星(必須是自己的殖民地),
+// 再點終點星;點到同一顆 = 取消。from = −1 表示還在等起點。
 type relocatePickState struct {
-	on     bool
-	colony int // 要設定哪一個殖民地
+	on   bool
+	from int
 }
 
-// beginRelocatePick 進入挑集結點模式。
-func (b *sceneBuilder) beginRelocatePick(colony int) {
-	b.relocPick.on, b.relocPick.colony = true, colony
+// beginRelocatePick 從**起點**開始挑(艦隊列表的 RELOCATE 鈕走這條,同原版)。
+func (b *sceneBuilder) beginRelocatePick() {
+	b.relocPick.on, b.relocPick.from = true, -1
+}
+
+// beginRelocatePickFrom 起點已知時直接進第二段(星圖面板的「設定集結點」鈕走這條)。
+//
+// ⚠ 這是 remake 多出來的捷徑:玩家已經在星資訊面板上選著那顆殖民星了,
+// 再叫他點一次自己是多餘的。規則面走的仍是同一支 `SetStarRelocation`。
+func (b *sceneBuilder) beginRelocatePickFrom(star int) {
+	b.relocPick.on, b.relocPick.from = true, star
 }
 
 // relocatePickClickedStar 在挑集結點模式下吃掉一次點星,回傳是否已消化。
-//
-// 點到殖民地自己所在的星 = 取消集結點(見 shell.SetColonyRelocation)。
 func (b *sceneBuilder) relocatePickClickedStar(star int) bool {
 	if !b.relocPick.on || b.session == nil {
 		return false
 	}
-	b.session.SetColonyRelocation(b.relocPick.colony, star)
+	sess := b.session
+	if b.relocPick.from < 0 { // 第一段:選起點
+		if r := sess.CanRelocateFrom(star); r != "" {
+			b.flash(b.tr(string(r), string(r)))
+			return true // 仍算消化掉:這一下是模式的輸入,不該同時去選星
+		}
+		b.relocPick.from = star
+		b.flash(b.tr("起點已選——再點一顆星當集結點(點回自己就取消)",
+			"Origin set — now click the rally star (click it again to clear)"))
+		return true
+	}
+	// 第二段:選終點。
+	from := b.relocPick.from
+	if r := sess.SetStarRelocation(from, star); r != "" {
+		b.flash(b.tr(string(r), string(r)))
+		return true
+	}
 	b.relocPick.on = false
-	if to := b.session.ColonyRelocation(b.relocPick.colony); to == shell.ColonyRelocationNone {
+	ci := colonyIndexAtStar(sess, from)
+	if to := sess.ColonyRelocation(ci); to == shell.ColonyRelocationNone {
 		b.flash(b.tr("已取消集結點", "Relocation cleared"))
 	} else {
 		b.flash(b.tr("集結點已設定——新造的艦會自動送過去",

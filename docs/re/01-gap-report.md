@@ -2705,3 +2705,49 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     **同一份文件前後矛盾**這件事本身值得記:那三條都寫在「誠實現況評估」裡,
     而它們正是外部(包括自動巡檢)判斷「還缺什麼」的依據。
     過期的缺口清單會讓人去做已經做完的事,或者把做完的事當成沒做。
+
+---
+
+59. **RELOCATE 鈕的原版語意追出來了:兩段點選 + 四條合法性規則**(2026-08-07,第 58 項留的問題)。
+
+    第 58 項把 RELOCATE 鈕標成「按下去做什麼沒有反組譯確認,所以先不接」。查了符號表,
+    整組符號都在,問題直接解掉:
+
+    ```
+    Okay_To_Set_Relocate_From_Star_ @ 0x74F8A    Star_Relocation_        @ 0x75180
+    Okay_To_Set_Relocate_To_Star_   @ 0x74FAA    Cancel_Star_Relocation_ @ 0x7522B
+    Okay_To_Set_Relocate_Star_      @ 0x75035    Set_All_Star_Relocations_ @ 0x785EC
+    ```
+
+    ### 流程:**兩段點選**,不是「選一個殖民地」
+
+    `Star_Relocation_(&起點, &終點, 剛點到的星)`:
+
+    ```
+    if *起點 == −1:  驗證能不能當**起點** → 通過就記起來,結束
+    else:            驗證能不能當**終點** → 通過就記起來
+                     if *終點 == *起點: Cancel_Star_Relocation_    ; 點回自己 = 取消
+    ```
+
+    remake 先前的「星圖面板 → 點一顆星」是**第二段**;第一段被略過(用面板選中的那顆星
+    當起點)。那是合理的捷徑但不是原版入口。現在兩條路都在:
+    艦隊列表的 RELOCATE 走完整兩段(手冊逐字:「You set up your Relocation orders on the
+    **Fleet Operations console**」),星圖面板的鈕走捷徑,規則面共用同一支 `SetStarRelocation`。
+
+    ### 四條合法性規則(`Okay_To_Set_Relocate_Star_`,`dl` 區分起點/終點)
+
+    | 規則 | 反組譯依據 |
+    |---|---|
+    | 黑洞不能當起點也不能當終點 | `cmp byte [星+0x16], 6` → 兩種訊息(0x83/0x84),同一條規則 |
+    | 沒探索過的星不行 | `star[+0x33] & (1<<玩家)` 的位元測試(逐玩家的探索遮罩) |
+    | 目的星上有艦隊 → **跳確認框**;當起點則直接不行 | `sub_7A47A` 走艦隊表 `word_192248[]` |
+    | 起點必須是自己有殖民地的星 | `star[+0x38]` 的位元測試(`sub_79D1C`) |
+
+    ⚠ 第三條的**確認框沒做**——remake 沒有 modal 對話框的基礎設施,目前直接允許。
+    這是**已知的簡化,不是漏看**,寫在 `relocation.go` 檔頭。
+
+    ### 順帶記兩個還沒接的原版功能
+
+    `Set_All_Star_Relocations_` @ 0x785EC 與 `Clear_All_Star_Relocations_` @ 0x77BB1
+    ——艦隊列表上的 **ALL**(remake 譯「全部」)鈕多半就是它們:一次把所有殖民地的集結點
+    設成同一顆星 / 全部清掉。**還沒接**,也還沒確認 ALL 鈕是不是對應這一對。

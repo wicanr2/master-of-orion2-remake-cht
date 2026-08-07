@@ -726,7 +726,8 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			if ci < 0 {
 				return nil
 			}
-			b.beginRelocatePick(ci)
+			_ = ci
+			b.beginRelocatePickFrom(b.session.SelectedStar)
 			b.flash(b.tr("點一顆星當集結點(點自己就取消)", "Click a star as rally point (click itself to clear)"))
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
@@ -2541,6 +2542,9 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 	hits := []hitRegion{
 		{338, 50, 288, 300, "design"},
 		{20, 388, 260, 20, "assault"},
+		// RELOCATE(remake 譯「調動」)——手冊逐字:「You set up your Relocation orders on the
+		// Fleet Operations console.」**這才是原版的入口**,座標同下面 overlays 的標籤框。
+		{440, 384, 93, 18, "relocate"},
 		// RETURN 真值座標取自 openorion2 ships.cpp:718 FleetListView
 		// RETURN createWidget(556, 430, ...)(原估計 543,432)。
 		{556, 430, 84, 28, "return"},
@@ -2558,6 +2562,12 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 			return nil
 		}
 		switch a {
+		case "relocate":
+			// 原版 `Star_Relocation_` 是兩段點選:先起點星(自己的殖民地)、再終點星。
+			// 回到星圖進第一段。
+			b.beginRelocatePick()
+			b.flash(b.tr("調動:先點一顆自己的殖民星當起點", "Relocate: click one of your colony stars first"))
+			return b.goTo(b.galaxy, "星系主畫面")
 		case "assault":
 			// 進安塔蘭王座廳(原版 Main_Antaran_Room),由那個畫面確認後才發動。
 			// 前置條件不滿足時照樣進得去——王座廳會逐條講明卡在哪,比「點了沒反應」清楚。
