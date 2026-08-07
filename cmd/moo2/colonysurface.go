@@ -529,6 +529,9 @@ func (b *sceneBuilder) drawColonyTerrain(dst *ebiten.Image, idx int) {
 // 否則熔岩裂縫會變成一片洋紅(⚠ 與第 29 項那次的洋紅**不同原因**——那次是 index ≥ 0xF0)。
 // COLONY.LBX 的衛星圖完全沒有內嵌盤,整組都得靠 chain。
 func (b *sceneBuilder) colonyScreenImage(lbxName string, asset int, chain paletteChain) *ebiten.Image {
+	if b.res == nil {
+		return nil // 沒有資產解析器(單元測試等):畫面自己降級,不要 panic
+	}
 	key := lbxName + ":" + strconv.Itoa(asset)
 	if im, hit := b.colBldgCache[key]; hit {
 		return im

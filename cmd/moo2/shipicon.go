@@ -70,6 +70,9 @@ func shipIconAsset(flag int) int {
 // shipIconImage 解出艦隊圖示並快取(取不到回 nil,呼叫端自己退回方塊)。
 func (b *sceneBuilder) shipIconImage(flag int) *ebiten.Image {
 	asset := shipIconAsset(flag)
+	if b.res == nil {
+		return nil // 沒有資產解析器(單元測試等):畫面自己降級,不要 panic
+	}
 	key := shipIconLBX + ":" + strconv.Itoa(asset)
 	if im, hit := b.colBldgCache[key]; hit {
 		return im

@@ -774,6 +774,8 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		fnt := s.font
 		s.postDraw = func(dst *ebiten.Image) {
 			// 每幀算一次可見性(#13 輕量戰爭迷霧),避免 drawStarmap 逐星重算。
+			// 星圖底:純黑 + 原版 `Draw_Paralax_` 的三層星空(見 starbg.go)。
+			b.drawStarmapBackground(dst)
 			drawStarmap(dst, fnt, sess.Stars, sess.SelectedStar, sess.VisibleStars())
 			if fnt != nil {
 				// 狀態數字畫進原版右側資訊格(openorion2 galaxy.cpp:1552-1588 硬編位置,
@@ -933,9 +935,10 @@ func starScreenPos(st shell.Star) (int, int) {
 // fog 純視覺(diff 全量表 #13):對 !visible[i] 的星,不畫星名(未知)、不畫擁有環(未偵測不知
 // 道歸屬)、星點降低亮度變暗淡小點;可見星維持原本全繪。刻意不 gate 任何操作——選星/派艦/殖民
 // /轟炸等既有流程完全不受影響,玩家仍可對著霧裡的暗星點擊派艦探索。
+// drawStarmap 畫星圖上的星球。**底色與星空背景由 `drawStarmapBackground` 負責**,
+// 這裡不再自己塗底——順序寫死在呼叫端,免得兩邊各塗一次互相蓋掉。
 func drawStarmap(dst *ebiten.Image, fnt *uifont.Font, stars []shell.Star, selected int, visible []bool) {
 	const vx0, vy0, vx1, vy1 = starVX0, starVY0, starVX1, starVY1
-	vector.DrawFilledRect(dst, vx0, vy0, vx1-vx0, vy1-vy0, color.RGBA{6, 6, 16, 255}, false)
 	for i, st := range stars {
 		seen := visible == nil || (i < len(visible) && visible[i])
 

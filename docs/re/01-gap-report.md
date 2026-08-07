@@ -1217,8 +1217,8 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     | 8 | `Print_Main_Screen_Data_` | 0x87BAE | ⚠ 簡化(右欄五格數字)|
     | 9 | `Draw_Diplomacy_Request_Lights_` | 0x83D06 | ❌ |
 
-    外層 `Draw_Main_Screen_` 另有 `Draw_Nebulae_` @ 0x84F8F 與 `Draw_Paralax_` @ 0x8500F,
-    remake 兩者都沒有——星圖背景目前是純黑。
+    外層 `Draw_Main_Screen_` 另有 `Draw_Nebulae_` @ 0x84F8F 與 `Draw_Paralax_` @ 0x8500F。
+    (視差背景已於第 33 項補上;星雲仍未做。)
 
     ### 艦隊圖示(`Get_Ship_Icon_Pict_Seg_` @ 0xA0D78)
 
@@ -1266,3 +1266,59 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
 
     中文模式 17 張逐像素比對:變的是星圖、命名旗色、軌道轟炸三張(後兩張用 `FlagColors`),
     其餘未變。
+
+33. **星圖視差星空背景**(2026-08-07,第 32 項的續)。
+
+    remake 的星圖區先前是一片 `RGBA{6,6,16}` 純黑,那是佔位。原版底下鋪的是三層星空。
+
+    ### `Draw_Paralax_` @ 0x8500F
+
+    結構完全規則,三層一模一樣只差來源與位移:
+
+    ```
+    sub_8FD71(edx=0x16, ebx=0x20F, ecx=0x1A5)   ; 裁切區 x 22..527、y ..421
+    for layer in 0, 1, 2:
+        img = STARBG.LBX 資產 layer            ; 實測皆 640×480
+        Draw(x,       y      )
+        Draw(x − 640, y      )                  ; 0x280 = 640
+        Draw(x − 640, y − 480)                  ; 0x1E0 = 480
+        Draw(x,       y − 480)
+    ```
+
+    四次貼圖是**環繞平鋪**——捲動時從右邊/下面出去的要從左邊/上面接回來。位移是三對全域:
+
+    | 層 | x | y |
+    |---|---|---|
+    | 0 | `word_199980` | `word_19997E` |
+    | 1 | `word_19998A` | `word_19998E` |
+    | 2 | `word_199984` | `word_199986` |
+
+    三對各自更新且速率不同 —— 這就是視差:近的捲得快、遠的慢。
+
+    ⚠ remake 的星圖不捲動(固定全銀河檢視),三個位移都是 0,環繞平鋪的另外三次全在畫布外,
+    等於三層各貼一次 (0,0)。做出捲動時要把那四次補回來,不是改圖或改公式。
+
+    ### ⚠ 底色不能省(踩過)
+
+    第一版把純黑底改成「有原版資產就不填」,結果整片星圖變成**白底黑點**。
+    原因不是調色盤錯——探針量出來層 0 最多的三個索引是 2/3/5,對到
+    (16,16,24) / (24,24,32) / (44,44,52),**本來就是極暗的藍灰點疊在透明上**。
+    底色一拿掉,透明處就露出底下 `buffer0.lbx#0` 的框架美術。
+    原版也是先 `Fill` 再貼視差層(`Draw_Main_Screen_Filled_`)。
+
+    ⚠ 這條規則**測不到**:ebiten 在 game loop 之外不准 `Image.At()`
+    (`ui: ReadPixels cannot be called before the game starts`),所以「星圖框內是不是純黑」
+    沒辦法寫成單元測試,只能靠截圖廊第 04 張驗收。規則寫在 `starBGFill` 的註解裡。
+
+    ### 順帶修掉一個 nil 解參考
+
+    `decodeAsset` 對 nil `*assets.Resolver` 會 nil 解參考。畫面層的降級路徑本來就該容許
+    「資料夾不完整」,所以 `starBGImage` / `shipIconImage` / `colonyScreenImage` 三個都補了
+    `b.res == nil` 守衛,並加了回歸測試。
+
+    ### 仍是缺口
+
+    - **星雲** `Draw_Nebulae_` @ 0x84F8F:每個星雲 `x = scale(nebula.x − 捲動) + 21`、
+      `y` 同理,圖從 `dword_190298[i*16 + 縮放*4]` 這個快取取。**需要銀河生成先產出星雲表**
+      (位置 + 型別),remake 的星系產生器目前沒有這個欄位——這是資料模型缺口,不是繪圖缺口。
+    - 蟲洞連線、遷移連線、星門、黑洞、外交燈號:同樣都缺對應的資料模型或旗標。
