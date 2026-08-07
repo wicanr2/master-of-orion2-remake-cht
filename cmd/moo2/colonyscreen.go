@@ -184,11 +184,16 @@ func (b *sceneBuilder) colonyBuildChoices() []shell.ColonyBuild {
 	return out
 }
 
-// drawColonyScreen 畫整個殖民地畫面:先鋪底與原版框架,內容再畫上去。
+// drawColonyScreen 畫整個殖民地畫面。
 //
-// ⚠ 順序踩過一次坑:框架(COLPUPS.LBX#5)只有**中段**(y 159..423,原版的行星表面)
-// 是透明的,上方那三個資訊面板是**不透明的深色星空紋理**。先畫內容再蓋框架,
-// 上半部的字會被整片蓋掉——看起來像資訊全都不見了。框架必須先畫。
+// ⚠ 順序踩過兩次坑,現在照原版 `Draw_Colony_Screen_` @ 0xBED21 的次序來:
+//
+//	地表兩層 → 框架(`Draw_Colony_Info_Background`)→ 建築(`Draw_Colony_Bldgs`)→ 資訊面板
+//
+//  1. 框架(COLPUPS.LBX#5)只有**中段**(y 159..423,原版的行星表面)是透明的,上方那三個
+//     資訊面板是**不透明的深色星空紋理**。內容先畫、框架後蓋,上半部的字會整片不見。
+//  2. 反過來把地表也擺在框架後面同樣不行:地表底層是整片 640×480 的星空,會把上方面板
+//     蓋成一片雜點。地表必須在**框架之前**,建築則在**框架之後**——原版就是這樣夾的。
 func (b *sceneBuilder) drawColonyScreen(dst *ebiten.Image, idx int) {
 	if b.fnt == nil || b.session == nil {
 		return
@@ -197,12 +202,12 @@ func (b *sceneBuilder) drawColonyScreen(dst *ebiten.Image, idx int) {
 	c := sess.PlayerColonies[idx]
 
 	vector.DrawFilledRect(dst, 0, 0, colScreenW, colScreenH, colPanelBg, false)
+	b.drawColonyTerrain(dst, idx)
 	if im := b.colonyChrome(); im != nil {
 		dst.DrawImage(im, &ebiten.DrawImageOptions{})
 	}
-
+	b.drawColonyBuildings(dst, idx)
 	b.drawColonyTopBar(dst, idx, c)
-	b.drawColonySurface(dst, idx)
 
 	// 兩顆鈕的英文(LEADERS / RETURN)烘在框架圖上,照既有做法擦底疊中文。
 	drawBtn := func(y, h int, zh string) {

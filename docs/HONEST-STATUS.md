@@ -36,9 +36,15 @@ LBX 解碼(scan-line RLE 影像 / 多幀 delta / 調色盤鏈)、SAVE10.GAM 唯�
     檔案 `BLDG{(id−1)/10}.LBX`,編號本身由 openorion2 的 `BUILDING_*` 列舉與原版
     `TECHNAME.LBX` 第 295 條起的字串順序**互相對上**。離線合成 9 棟驗證:每棟都正落在
     自己的格子裡、遠近遮擋正確。落在 `cmd/moo2/colonysurface.go` + 9 條回歸測試。
-    **畫面還沒改**——剩:擺放規則(哪一格放哪棟)、陰影混色(建築圖的陰影是洋紅索引,
-    要和地表混)、以及把建造佇列搬回原版的獨立彈出視窗才騰得出地表的位置。
     順帶推翻一句:行星表面**不是**關在中段那個框裡,它是整個 640×480 的底圖,面板疊在上面。
+  - **行星表面 2026-08-07 收尾**(gap report 第 30、31 項):中段還給地表、建造佇列搬回原版的
+    彈出視窗(`Build_Queue_Popup_`);原版 PRNG 照抄進 `internal/gamedata/origrand.go`,
+    建築擺放換成 `Make_Bldg_Array_For_Colony_` 的原版演算法(蓄水池抽樣 + 分類排序);
+    地表底圖接上(COLONY2.LBX#49 星空 + PLANETS.LBX 依 `氣候×3 + 變體` 選的地形),
+    佔位格線移除。過程中抓到一個**不會有症狀**的軸向錯誤(格陣索引與角點表對調 → 整張
+    佈局鏡射,徵狀只有「建築擠在遠端」),已加 `TestColonyGridKeyMatchesOriginalAddressing` 釘住。
+    **仍是缺口**:軌道衛星沒畫(星基 / 次元傳送門這類分類 7 的建築在畫面上完全看不到)、
+    擺放的最後一段隨機微調沒做、道路沒畫、地形變體那一欄用 PRNG 代替原版的存檔欄位。
 - **需原版 oracle 對照**(用 archive.org 線上 DOS 原版,**不需 DOSBox**;見 `docs/tech/oracle-comparison-20260712.md`、記憶 `moo2-oracle-is-archive-org-online`):飛彈速度(`missile.go` 手冊公式與附表自相矛盾)、地面戰 d100 核心傷亡解算結構(`ResolveGroundBattle` 沿用一代 1oom 借用結構,force 值用 MOO2 手冊表但結構本身未對 MOO2 實機核實)、安塔蘭母星防禦艦隊戰力(手冊/openorion2 均無精確數字,用保守預設 6 艘末日之星等級)、**母星開局態**(2026-07-12 oracle 已釘死:農4/工2/科2/Abundant/Trade Goods,待校準)。
 - **需先建基礎設施**:戰機/航母(新戰鬥子模型)、部分軍事/防禦建築(~13 棟,需艦隊駐防/軌道防禦系統先落地)。
 - **起始科技等級(TECH LEVEL)**:2026-08-07 接上第一個真效果——**曲速前開局沒有 FTL,

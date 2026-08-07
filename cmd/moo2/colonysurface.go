@@ -2,12 +2,9 @@ package main
 
 import (
 	"fmt"
-	"image/color"
-	"sort"
 	"strconv"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
@@ -95,6 +92,22 @@ import (
 //
 // 一個是別人重製專案的列舉、一個是原版資料檔的字串順序,對得起來才算數。
 // 48 棟 → 型別 0..47,而圖檔共 49 種(360/360/360/360/324),最後一種沒有對應建築。
+//
+// ============ 軸向:格陣的外層索引就是角點表的第一維 ============
+//
+// 這一條**極容易弄反而不自覺**——轉置之後畫面仍然是一片合理的透視格,建築也還在格線上,
+// 只是整張佈局沿對角線鏡射掉。第一版就是這樣錯的(建築全擠在遠端那幾排)。
+// 定案證據在 `Add_Bldg_Fields_` @ 0xBE44A,同一對 (v1, v2) 同時餵給兩邊:
+//
+//	colony_bldgs[24×v1 + 4×v2]                          ; 格陣元素 → v1 是「列」
+//	Bldg_Coords_To_Centered_Screen_Coord(v1, v2, c)     ; 螢幕座標 → 索引 v1×56 + v2×8 + c×4
+//
+// 所以 **格陣 grid[a×6 + b] ↔ 角點 colonyGridCorners[a][b]**,a 是步距 56 那一維。
+// `Insert_Bldg_Into_Array_` 的抽樣迴圈(外 ebx ×0x18、內 edx ×4)與
+// `Sort_Bldg_Array_Columns_` 的雙層迴圈也都是「外層 = a」。
+//
+// ⚠ 格號的算式反過來:`sub_BC8A6(eax=a, edx=b)` → `b×6 + a`(b 為奇數時 `b×6 + 5 − a`)。
+// 格陣索引是 a×6+b、格號是 b×6+a,兩者**不是同一個數**,別互相代用。
 
 // colonyGridCorners 是 7×7 角點的螢幕座標,直接抄自 word_182C9C(見檔頭)。
 // 第一維是 a(反組譯裡步距 56 的那一維),第二維是 b(步距 8)。
@@ -253,103 +266,184 @@ func colonyBuildingSprite(origID, a, b int) (lbx string, asset int, ok bool) {
 
 // --- 以下是「畫出來」的部分:把上面那些真值接到殖民地畫面 ---
 
-// colonySurfacePlan 決定這個殖民地的 36 格各放什麼(原版建築編號,0 = 空)。
+// origBuildingCategory 是建築表 +14 欄(分類),抄自原版執行檔 `off_17EB3D + 14`
+// (`byte_17EB4B`,見 internal/gamedata/buildings.go 檔頭)。索引 = 建築編號 0..48。
 //
-// ⚠ **哪一格放哪棟,remake 與原版不同,這裡誠實標明。**
-// 原版 `Make_Bldg_Array_For_Colony_` @ 0xBC30B 的作法是:
-// `Set_Random_Seed(colonyIdx, 0, 144)` 起手 → 逐棟 `Insert_Bldg_Into_Array_`,
-// 而那支對所有空格做**蓄水池抽樣**(`Random(++n) == 1`)→ 再 `Sort_Bldg_Array_Columns_`
-// 依建築分類做氣泡排序 → 最後一段隨機微調。也就是說擺法綁死在**原版的 PRNG**
-// (`Random_` @ 0x1247A0 / `Set_Random_Seed_` @ 0x124820)上,那還沒實作。
+// 兩處用得到:**7 = 軌道衛星**(`Make_Bldg_Array_For_Colony_` 靠它把衛星排除在地表格點外),
+// 以及 `Sort_Bldg_Array_Columns_` 拿它當排序鍵。
+var origBuildingCategory = [49]uint8{
+	6, 4, 0, 7, 1, 2, 1, 3, 7, 1,
+	0, 0, 0, 0, 7, 3, 1, 1, 5, 5,
+	3, 0, 0, 2, 1, 1, 2, 2, 0, 1,
+	2, 0, 0, 1, 1, 0, 3, 0, 1, 0,
+	7, 7, 0, 0, 0, 0, 0, 0, 0,
+}
+
+// colonyHouseStyles 是四種房屋外觀,借用軌道衛星的編號。
+// 對應 Artemis System Net / Dimensional Portal / Star Base / Star Fortress ——
+// 衛星由 `Draw_Colony_Satellites_` 另外畫在軌道上,不進地表格點,編號因此空著被借去當房屋。
+var colonyHouseStyles = [4]int{3, 14, 40, 41}
+
+// colonySurfacePlan 重現原版 `Make_Bldg_Array_For_Colony_` @ 0xBC30B 的建築擺放。
 //
-// 在 PRNG 到手之前,這裡用「依編號順序從近端往遠端填」——**幾何、圖檔、遮擋順序、
-// 半透明處理全是原版真值,只有落在哪一格是 remake 自己的**。不假裝這是原版擺法。
+// ============ 原版流程(逐步照抄)============
 //
-// 房屋那一段倒是照原版做的:數量 = 人口/3 + 1,外觀在 3 / 14 / 40 / 41 之間輪
-// (那四個是軌道衛星的編號——衛星不畫在地表,所以編號空著被借去當房屋,見檔頭)。
+//	Set_Random_Seed(colonyIdx)          ; 種子就是殖民地索引 → 同一顆星每次進去長得一樣
+//	memset(colony_bldgs, 0, 144)        ; 36 格 × 4 bytes
+//	for id = 0..48:
+//	    if 這個殖民地有這棟:
+//	        if 分類 == 7 → 丟去衛星清單(不進地表)
+//	        else          → Insert_Bldg_Into_Array(colonyIdx, id, count++)
+//	for i < 人口/3 + 1:                  ; 房屋數
+//	    Insert_Bldg_Into_Array(colonyIdx, -3, count++)
+//	Sort_Bldg_Array_Columns()
+//
+//	`Insert_Bldg_Into_Array_` @ 0xBC05E 的選格是**蓄水池抽樣**:
+//	    n = 0
+//	    for b = 0..5: for a = 0..5:
+//	        if 格空 { n++; if Random(n) == 1 { 選這格 } }
+//	  —— 走訪順序是 b 外 a 內,`colony_bldgs[6*b + a]`。抽樣呼叫 `Random` 的**次數與順序**
+//	  都會影響後續,所以連「格不空就不抽」這個細節也得照抄。
+//
+//	房屋外觀:`v5 = (colonyIdx + 目前房屋數) % 4`,再依 `(v5+1) % 4` 選
+//	    0 → 3、1 → 14、2 → 40、3 → 41
+//
+// ============ 還沒照抄的一段(誠實標明)============
+//
+// 原版在 `Sort_Bldg_Array_Columns_` 之後還有一段**隨機微調**:取四種房屋各找一格,
+// 對鄰格以約 1/3 機率互換,跑 8 輪。那段的 `Get_Bldg_CR_` 語意(同一種房屋有多格時挑哪一格)
+// 與邊界夾擠寫得很繞,照抄容易抄錯而不自覺,**這一輪先不做**。
+// 影響是房屋之間的位置會與原版有出入;建築本身的落點由前面那三步決定,已經是原版演算法。
 func (b *sceneBuilder) colonySurfacePlan(idx int) map[[2]int]int {
 	plan := map[[2]int]int{}
 	if b.session == nil || idx < 0 || idx >= len(b.session.PlayerColonies) {
 		return plan
 	}
-	// 近端 → 遠端(colonySlotOrder 是遠→近,倒著走)。
-	free := make([][2]int, 0, len(colonySlotOrder))
-	for i := len(colonySlotOrder) - 1; i >= 0; i-- {
-		free = append(free, colonySlotOrder[i])
+	rng := gamedata.NewOrigRand(uint32(idx)) // Set_Random_Seed(colonyIdx)
+	var grid [36]int                         // grid[a*6+b],0 = 空(軸向見下方註解)
+
+	// 蓄水池抽樣選一格空格(= Insert_Bldg_Into_Array_ 的主路徑)。
+	// 滿了回 (-1,-1):原版此時改走 Find_Replacement_Slot_For_Building_ 擠掉最低優先的格子,
+	// remake 目前直接不放(36 格塞滿的局面要有 30+ 棟建築,現階段到不了)。
+	pick := func() (int, int) {
+		ga, gb, n := -1, -1, 0
+		for a := 0; a < colonyGridCells; a++ {
+			for b := 0; b < colonyGridCells; b++ {
+				if grid[a*colonyGridCells+b] != 0 {
+					continue
+				}
+				n++
+				if rng.N(n) == 1 {
+					ga, gb = a, b
+				}
+			}
+		}
+		return ga, gb
 	}
-	next := 0
 	put := func(id int) {
-		if next >= len(free) {
+		ga, gb := pick()
+		if ga < 0 {
 			return
 		}
-		plan[free[next]] = id
-		next++
+		grid[ga*colonyGridCells+gb] = id
 	}
 
-	// 已建建築:依原版編號排序,讓同一組建築每次畫出來一樣(不隨 map 迭代順序跳動)。
-	var ids []int
+	// 已建建築:依**原版編號順序**逐棟插入(原版的迴圈就是 id 0..48,不是玩家建造順序)。
+	has := map[int]bool{}
 	if idx < len(b.session.ColonyBuildings) {
 		for zh := range b.session.ColonyBuildings[idx] {
-			bd, ok := gamedata.BuildingByNameZH(zh)
-			if !ok {
-				continue
-			}
-			if id, ok := origBuildingID[bd.NameEN]; ok {
-				ids = append(ids, id)
+			if bd, ok := gamedata.BuildingByNameZH(zh); ok {
+				if id, ok := origBuildingID[bd.NameEN]; ok {
+					has[id] = true
+				}
 			}
 		}
 	}
-	sort.Ints(ids)
-	for _, id := range ids {
-		if isOrbitalOnly(id) {
-			continue // 軌道衛星不畫在地表(原版靠建築表 +14 分類 == 7 篩掉)
+	for id := 1; id <= 48; id++ {
+		if !has[id] || origBuildingCategory[id] == 7 {
+			continue // 分類 7 = 軌道衛星,不畫在地表
 		}
 		put(id)
 	}
 
-	// 房屋:人口/3 + 1(原版 `Make_Bldg_Array_For_Colony_` 的迴圈上限)。
+	// 房屋:人口/3 + 1。外觀依 (colonyIdx + 已放房屋數 + 1) % 4 輪。
 	houses := b.session.PlayerColonies[idx].Population/3 + 1
 	for i := 0; i < houses; i++ {
 		put(colonyHouseStyles[(idx+i+1)%len(colonyHouseStyles)])
 	}
+
+	sortColonyColumns(&grid)
+
+	for i, id := range grid {
+		if id != 0 {
+			plan[colonyGridKey(i)] = id
+		}
+	}
 	return plan
 }
 
-// colonyHouseStyles 是四種房屋外觀,借用軌道衛星的編號(見 colonySurfacePlan 註解)。
-// 對應 Artemis System Net / Dimensional Portal / Star Base / Star Fortress。
-var colonyHouseStyles = [4]int{3, 14, 40, 41}
-
-// isOrbitalOnly 回報這個編號是不是只存在於軌道(衛星),不畫在地表。
-func isOrbitalOnly(id int) bool {
-	for _, h := range colonyHouseStyles {
-		if id == h {
-			return true
-		}
-	}
-	return id == 8 // Battlestation
+// colonyGridKey 把格陣索引換回 (a, b)。原版的元素位址是 `colony_bldgs[24×a + 4×b]`
+// (`Add_Bldg_Fields_`,見檔頭「軸向」段),4 個位元組一格 → 索引 = a×6 + b。
+//
+// 單獨抽成一個函式是因為這裡**反過來就會整張鏡射**,而鏡射後的畫面看起來一樣合理。
+// 有它才有地方掛回歸測試。
+func colonyGridKey(i int) [2]int {
+	return [2]int{i / colonyGridCells, i % colonyGridCells}
 }
 
-// drawColonySurface 畫殖民地畫面中段的行星表面:格線 + 建築。
+// sortColonyColumns 是 `Sort_Bldg_Array_Columns_` @ 0xBBDC9:依建築分類做氣泡排序,
+// 每輪對每個 (a,b) 比三個方向的鄰格((a+1,b+1)、(a+1,b)、(a,b+1)),
+// 分類大的往索引大的方向換。最多 6 輪,某一輪沒換過就提早收工。
+// 兩格都非空才換——空格不參與,否則會把建築往空的地方推。
 //
-// 畫的順序用 `colonySlotOrder`(遠 → 近),那是原版 `Add_Bldg_Fields_` 那張表的順序,
-// 也正是重疊建築要的畫家演算法次序。
-func (b *sceneBuilder) drawColonySurface(dst *ebiten.Image, idx int) {
-	plan := b.colonySurfacePlan(idx)
-
-	// 格線:原版這裡是地表底圖(還沒接,見 gap report 第 27 項),先用淡格線把
-	// 透視平面畫出來,免得建築看起來浮在半空。
-	grid := color.RGBA{56, 74, 56, 120}
-	for a := 0; a < colonyGridCells; a++ {
-		for bb := 0; bb < colonyGridCells; bb++ {
-			q := colonyCellQuad(a, bb)
-			for i := 0; i < 4; i++ {
-				j := (i + 1) % 4
-				vector.StrokeLine(dst, float32(q[i][0]), float32(q[i][1]),
-					float32(q[j][0]), float32(q[j][1]), 1, grid, false)
+// 排序鍵是 `byte_17EB4B[id×19]`(建築表 +14 欄的分類),與 `origBuildingCategory` 同一張表。
+// 分類 7 最大,所以四種房屋(借了衛星編號 3/14/40/41,分類都是 7)會被推到索引最大的那一角;
+// 這是原版本來的行為,不是 bug——排序的用意就是把同類聚在一起。
+//
+// 「有沒有換過」原版是用 bx 記(swap 時 `mov bx, word ptr dword_182AFD[eax]` 存被換走的建築編號,
+// 而兩格都已檢查非零),每輪開頭 `xor ebx, ebx` 清掉 —— 等價於一個 bool 旗標。
+func sortColonyColumns(grid *[36]int) {
+	cat := func(id int) uint8 {
+		if id < 0 || id >= len(origBuildingCategory) {
+			return 0
+		}
+		return origBuildingCategory[id]
+	}
+	for pass := 0; pass < colonyGridCells; pass++ {
+		swapped := false
+		for a := 0; a+1 < colonyGridCells; a++ {
+			for b := 0; b+1 < colonyGridCells; b++ {
+				cur := a*colonyGridCells + b
+				for _, other := range []int{
+					(a+1)*colonyGridCells + (b + 1),
+					(a+1)*colonyGridCells + b,
+					a*colonyGridCells + (b + 1),
+				} {
+					if grid[cur] == 0 || grid[other] == 0 {
+						continue
+					}
+					if cat(grid[cur]) > cat(grid[other]) {
+						grid[cur], grid[other] = grid[other], grid[cur]
+						swapped = true
+					}
+				}
 			}
 		}
+		if !swapped {
+			break
+		}
 	}
+}
 
+// drawColonyBuildings 把建築貼上去。與 `drawColonyTerrain` 分開是因為原版**中間夾了框架**:
+// `Draw_Colony_Screen_` 的順序是 地表 → `Draw_Colony_Info_Background`(框架)→
+// `Draw_Colony_Bldgs` → 資訊面板。近端那幾格的 y 會壓到 423 以下(框架非透明區),
+// 順序併掉的話那排建築會被框架切掉一截。
+//
+// 貼的次序用 `colonySlotOrder`(遠 → 近),那是原版 `Add_Bldg_Fields_` 那張表的順序,
+// 也正是重疊建築要的畫家演算法次序。
+func (b *sceneBuilder) drawColonyBuildings(dst *ebiten.Image, idx int) {
+	plan := b.colonySurfacePlan(idx)
 	for _, cell := range colonySlotOrder {
 		id, ok := plan[cell]
 		if !ok || id == 0 {
@@ -359,6 +453,87 @@ func (b *sceneBuilder) drawColonySurface(dst *ebiten.Image, idx int) {
 			dst.DrawImage(im, &ebiten.DrawImageOptions{})
 		}
 	}
+}
+
+// --- 地表底圖 ---
+//
+// `Draw_Colony_Screen_` @ 0xBED21 開場疊兩層,都貼在 (0,0) 且都是 640×480:
+//
+//	v1 = C_Anims(1, 0, 639, 479); Draw(0, 0, v1)   ← 底層
+//	v4 = C_Anims(0, …);           Draw(0, 0, v4)   ← 地形,疊在上面
+//
+// `C_Anims` @ 0xBBA8E 是一張 36 路跳表,這兩路解出來是:
+//
+//	case 1 → COLONY2.LBX 資產 0x31 = 49(整個檔只有這一張是 640×480)
+//	case 0 → PLANETS.LBX,編號現算:
+//	    eax = colony_idx×0x169 + colony_base      ; 殖民地結構
+//	    edx = word[eax+2] × 0x11                  ; 星球索引 × 17(星球表步距)
+//	    ax  = byte[eax+0xE2] × 3                  ; 殖民地 +0xE2 欄 × 3
+//	    dx  = byte[edx + star_base + 9]           ; 星球表 +9 欄
+//	    → 資產 = byte[colony+0xE2]×3 + star[+9]
+//
+// PLANETS.LBX 恰好 30 張 640×480 → **10 種氣候 × 3 個變體**,所以 +0xE2 欄是氣候
+// (0..9)、星球表 +9 欄是變體(0..2)。渲染出來對得上:資產 27 = 9×3 是整片蔥綠(Gaia)、
+// 資產 3 = 1×3 是輻射星的赤紅熔岩裂縫、資產 0..2 是有毒星的三種面貌。remake 的
+// `gamedata.PlanetClimate` 列舉(TOXIC=0 … GAIA=9)與這個順序逐項相同。
+//
+// ⚠ **變體那一欄還沒還原**:它是銀河生成時寫進星球表 +9 的一個存檔欄位,產生規則沒追。
+// 這裡改用原版 PRNG 以星球索引起種來取 1..3 —— 保證「同一顆星每次進去長一樣」這個
+// 玩家看得到的性質,但**不保證與原版同一局的那顆星相同**。追到規則前不要把它寫成真值。
+
+const (
+	colTerrainSkyLBX   = "colony2.lbx"
+	colTerrainSkyAsset = 49
+	colTerrainLBX      = "planets.lbx"
+	colTerrainVariants = 3
+)
+
+// colonyTerrainVariant 回傳某顆星的地形變體 0..2(見上方 ⚠)。
+func colonyTerrainVariant(star int) int {
+	if star < 0 {
+		return 0
+	}
+	return gamedata.NewOrigRand(uint32(star)).N(colTerrainVariants) - 1
+}
+
+// drawColonyTerrain 畫地表兩層。取不到資產就整張留空(不再自畫格線佔位——
+// 原版地表上**沒有格線**,格點是隱形的)。
+func (b *sceneBuilder) drawColonyTerrain(dst *ebiten.Image, idx int) {
+	if im := b.colonyScreenImage(colTerrainSkyLBX, colTerrainSkyAsset); im != nil {
+		dst.DrawImage(im, &ebiten.DrawImageOptions{})
+	}
+	sess := b.session
+	if sess == nil || idx < 0 || idx >= len(sess.PlayerColonies) {
+		return
+	}
+	climate := int(sess.PlayerColonies[idx].Climate)
+	if climate < 0 || climate*colTerrainVariants >= 30 {
+		return
+	}
+	asset := climate*colTerrainVariants + colonyTerrainVariant(sess.PlayerColonyStarIndex(idx))
+	if im := b.colonyScreenImage(colTerrainLBX, asset); im != nil {
+		dst.DrawImage(im, &ebiten.DrawImageOptions{})
+	}
+}
+
+// colonyScreenImage 取一張整螢幕底圖並快取。調色盤走 buffer0 基底 + 該圖自己的內嵌範圍
+// (PLANETS 每張只帶 80 色,缺的要基底補,否則裂縫會變成一片洋紅)。
+func (b *sceneBuilder) colonyScreenImage(lbxName string, asset int) *ebiten.Image {
+	key := lbxName + ":" + strconv.Itoa(asset)
+	if im, hit := b.colBldgCache[key]; hit {
+		return im
+	}
+	if b.colBldgCache == nil {
+		b.colBldgCache = map[string]*ebiten.Image{}
+	}
+	var img *ebiten.Image
+	if im, err := decodeAsset(b.res, lbxName, asset); err == nil && len(im.Frames) > 0 {
+		if pal, err := resolvePalette(b.res, im, paletteChain{{"buffer0.lbx", 0}}); err == nil {
+			img = ebiten.NewImageFromImage(im.Frames[0].ToRGBADropTranslucent(pal, im.KeyColor()))
+		}
+	}
+	b.colBldgCache[key] = img
+	return img
 }
 
 // colonyBuildingImage 取(建築編號, 格)對應的那張**已畫好位置**的 640×480 稀疏圖,

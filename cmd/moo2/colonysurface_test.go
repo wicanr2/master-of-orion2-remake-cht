@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
 
 // colonysurface_test.go:行星表面格點的護欄。
@@ -198,4 +200,156 @@ func TestColonyBuildingSpriteWithinAssetCounts(t *testing.T) {
 	if _, _, ok := colonyBuildingSprite(49, 0, 0); ok {
 		t.Error("編號 49 超出 48 棟,不該有圖")
 	}
+}
+
+// TestColonyGridKeyMatchesOriginalAddressing:格陣索引 → (a,b) 的**軸向**。
+//
+// 這一條是花最多時間才抓到的錯,而且它**不會有任何症狀**:軸向反過來以後,畫面上照樣是
+// 一片合理的透視格、建築也照樣落在格線上,只是整張佈局沿對角線鏡射掉。第一版就是這樣錯的
+// ——當時的徵狀只有「建築全擠在遠端那幾排」,而那太容易被當成隨機。
+//
+// 定案證據是 `Add_Bldg_Fields_` @ 0xBE44A 把同一對 (v1, v2) 同時餵給兩邊:
+// 元素位址 `colony_bldgs[24×v1 + 4×v2]`、螢幕座標
+// `Bldg_Coords_To_Centered_Screen_Coord(v1, v2, c)`(索引 v1×56 + v2×8 + c×4)。
+func TestColonyGridKeyMatchesOriginalAddressing(t *testing.T) {
+	for a := 0; a < colonyGridCells; a++ {
+		for b := 0; b < colonyGridCells; b++ {
+			i := (24*a + 4*b) / 4 // 原版位址 → 索引(一格 4 bytes)
+			if got := colonyGridKey(i); got != [2]int{a, b} {
+				t.Errorf("位址 24×%d+4×%d(索引 %d)應回 (%d,%d),實得 %v", a, b, i, a, b, got)
+			}
+		}
+	}
+	if k := colonyGridKey(1); k != [2]int{0, 1} {
+		t.Fatalf("索引 1 應為 (0,1),實得 %v ——軸向反了,整張佈局會鏡射", k)
+	}
+	if k := colonyGridKey(6); k != [2]int{1, 0} {
+		t.Fatalf("索引 6 應為 (1,0),實得 %v ——軸向反了", k)
+	}
+
+	// 把索引接回螢幕:索引 +1 是沿 b 走(往遠端左上,y 變小、x 變小),
+	// 索引 +6 是沿 a 走(往近端右下,y 變小但 x 變大)。兩者方向不同,軸向反了就對不上。
+	x0, y0 := colonyCellCenter(0, 0)
+	xb, yb := colonyCellCenter(colonyGridKey(1)[0], colonyGridKey(1)[1])
+	xa, ya := colonyCellCenter(colonyGridKey(6)[0], colonyGridKey(6)[1])
+	if !(xb < x0 && yb < y0) {
+		t.Errorf("索引 1 應在 (0,0) 的左上方:(%d,%d) → (%d,%d)", x0, y0, xb, yb)
+	}
+	if !(xa > x0 && ya < y0) {
+		t.Errorf("索引 6 應在 (0,0) 的右上方:(%d,%d) → (%d,%d)", x0, y0, xa, ya)
+	}
+}
+
+// TestColonySurfacePlanIsDeterministic:同一個殖民地每次算出來要一樣。
+// 原版 `Set_Random_Seed(colonyIdx)` 的用意就是這個——玩家每次進去看到同一片城市。
+// 若不小心改用 map 迭代或 Go 的全域 rand,這裡會炸。
+func TestColonySurfacePlanIsDeterministic(t *testing.T) {
+	b := newSurfaceTestBuilder(t)
+	a1 := b.colonySurfacePlan(0)
+	a2 := b.colonySurfacePlan(0)
+	if len(a1) != len(a2) {
+		t.Fatalf("兩次算出的棟數不同:%d vs %d", len(a1), len(a2))
+	}
+	for k, v := range a1 {
+		if a2[k] != v {
+			t.Errorf("格 %v:第一次 %d、第二次 %d", k, v, a2[k])
+		}
+	}
+}
+
+// TestColonySurfacePlanDiffersByColony:種子是殖民地索引,所以**輸入完全一樣的兩個殖民地
+// 也要長得不一樣**。這裡刻意複製一份殖民地 0(建築、人口全同)當殖民地 1——
+// 這樣任何差異都只可能來自種子,不會被「兩顆星本來就不同」蓋過去。
+func TestColonySurfacePlanDiffersByColony(t *testing.T) {
+	b := newSurfaceTestBuilder(t)
+	sess := b.session
+	sess.PlayerColonies = append(sess.PlayerColonies, sess.PlayerColonies[0])
+	dup := map[string]bool{}
+	for k, v := range sess.ColonyBuildings[0] {
+		dup[k] = v
+	}
+	sess.ColonyBuildings = append(sess.ColonyBuildings, dup)
+
+	p0, p1 := b.colonySurfacePlan(0), b.colonySurfacePlan(1)
+	if len(p0) == 0 {
+		t.Skip("殖民地沒有可畫的東西")
+	}
+	if len(p0) != len(p1) {
+		t.Fatalf("輸入相同,棟數卻不同:%d vs %d", len(p0), len(p1))
+	}
+	same := true
+	for k, v := range p0 {
+		if p1[k] != v {
+			same = false
+			break
+		}
+	}
+	if same {
+		t.Error("兩個輸入相同的殖民地擺法完全一樣——Set_Random_Seed(colonyIdx) 沒接上")
+	}
+}
+
+// TestColonySurfacePlanExcludesOrbitals:軌道衛星(分類 7)不該出現在地表格點上,
+// 除非它是被借去當房屋的那四個編號。原版靠建築表 +14 欄篩掉。
+func TestColonySurfacePlanExcludesOrbitals(t *testing.T) {
+	b := newSurfaceTestBuilder(t)
+	house := map[int]bool{}
+	for _, h := range colonyHouseStyles {
+		house[h] = true
+	}
+	for i := range b.session.PlayerColonies {
+		for cell, id := range b.colonySurfacePlan(i) {
+			if origBuildingCategory[id] == 7 && !house[id] {
+				t.Errorf("殖民地 %d 格 %v 放了軌道衛星編號 %d", i, cell, id)
+			}
+		}
+	}
+}
+
+// TestColonySurfacePlanFitsGrid:所有格號都在 6×6 之內,且不重疊。
+func TestColonySurfacePlanFitsGrid(t *testing.T) {
+	b := newSurfaceTestBuilder(t)
+	for i := range b.session.PlayerColonies {
+		plan := b.colonySurfacePlan(i)
+		if len(plan) > colonyGridCells*colonyGridCells {
+			t.Errorf("殖民地 %d 放了 %d 個東西,超過 %d 格", i, len(plan), colonyGridCells*colonyGridCells)
+		}
+		for cell := range plan {
+			if cell[0] < 0 || cell[0] >= colonyGridCells || cell[1] < 0 || cell[1] >= colonyGridCells {
+				t.Errorf("殖民地 %d 的格 %v 超出範圍", i, cell)
+			}
+		}
+	}
+}
+
+// TestSortColonyColumnsOrdersByCategory:分類大的要被換到索引大的那一端,
+// 而且空格不參與(否則建築會被往空的地方推)。
+func TestSortColonyColumnsOrdersByCategory(t *testing.T) {
+	var g [36]int
+	g[0] = 3  // 分類 7(房屋)
+	g[7] = 35 // 分類 0(研究實驗室)—— 在 (a=1,b=1)
+	sortColonyColumns(&g)
+	if origBuildingCategory[g[0]] > origBuildingCategory[g[7]] {
+		t.Errorf("分類大的沒被換到後面:g[0]=%d(分類 %d) g[7]=%d(分類 %d)",
+			g[0], origBuildingCategory[g[0]], g[7], origBuildingCategory[g[7]])
+	}
+
+	// 空格不動:只有一棟建築時排序後那棟還在原地。
+	var h [36]int
+	h[14] = 22
+	sortColonyColumns(&h)
+	if h[14] != 22 {
+		t.Errorf("只有一棟建築時不該被搬走,實得 g[14]=%d", h[14])
+	}
+}
+
+// newSurfaceTestBuilder 建一個有真實對局的 sceneBuilder(不載入任何版權資產)。
+func newSurfaceTestBuilder(t *testing.T) *sceneBuilder {
+	t.Helper()
+	sess := shell.NewDemoSession()
+	sess.SetupNewGame(24, 4242, shell.DefaultOpponents)
+	for i := 0; i < 12; i++ {
+		sess.EndTurn() // 跑幾回合讓殖民地長出建築與人口
+	}
+	return &sceneBuilder{session: sess, lang: i18n.Traditional}
 }
