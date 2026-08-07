@@ -265,7 +265,13 @@ FoodSurplus=0、NetBC=0)。動態實測顯示,配合 6.1+6.2 兩項機制,經濟
 - `TestAntaresRaidsScheduleAndEscalate`、`TestRandomEventsFireAndBounded`:**斷言已更新**
   ——原本「BC 絕不為負」改成「BC 不會失控式無下限崩潰」(具名常數
   `bcCrashFloor80Turns=-20`/`bcCrashFloor300Turns=-150`,均以 §6.5 實測數字為基準,留有餘裕
-  但仍能抓到未來若真的壞掉、無下限崩潰的迴歸)。人口下限(`Population<1` 即失敗)、入侵排程/
+  但仍能抓到未來若真的壞掉、無下限崩潰的迴歸)。
+  > ⚠ 2026-08-08 訂正:上面的 `-20`/`-150` 是本輪(第二輪)當時的數值,後續改動已放寬。
+  > 現況(`grep -n "const bcCrashFloor" internal/shell/antares_test.go internal/shell/events_test.go`):
+  > `bcCrashFloor80Turns = -40`(`internal/shell/antares_test.go:20`)、
+  > `bcCrashFloor300Turns = -400`(`internal/shell/events_test.go:27`),
+  > 兩者都比本節記載的門檻寬鬆一倍以上,具體是哪次改動放寬未查證。
+  人口下限(`Population<1` 即失敗)、入侵排程/
   升級、事件觸發次數等其餘斷言**全部維持原樣未動**——驗證的是機制與趨勢沒有壞掉,不是硬湊
   出一個新的「通過用」數字。兩處測試都在註解裡完整寫明新值來自忠實 yield + 建築維護費 + 食物
   盈餘收入,以及具體的實測最低點數字,可追溯、可重現(`EventSeed=42` 固定)。

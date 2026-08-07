@@ -39,7 +39,8 @@ SA1 盤點(`rules-implementation-audit.md`)確認:**openorion2 是渲染殼,不�
 5. **仍待**:傷害解算細節(dissipation/球形傷害 p126)、地面戰、外交關係演算、**AI 決策**、國庫 income 公式、
    人口成長累積尺度、save↔engine adapter。RNG 擲骰(命中/間諜/閃避)公式已給決定性機率/門檻,擲骰待建可重現 RNG。
 
-> 全部已驗證公式彙整於 `docs/tech/moo2-formulas-reference.md`(8 系統 40 公式,附來源)。
+> 全部已驗證公式彙整於 `docs/tech/moo2-formulas-reference.md`(14 系統,附來源)。
+> ⚠ 2026-08-08 訂正:原寫「8 系統 40 公式」,是索引未同步更新的舊快照;現況見該文件前言與目錄(§1-14)。
 
 > 已移植公式的共同保證:每條都對**權威來源**(openorion2 唯讀表 / patch 1.5 手冊)手算對照測試,Opus 逐條核實。
 > 兩處手冊自相矛盾(AMR 命中率、飛彈速度公式 vs 表格)已在程式碼註解記錄推導/裁決,標待實機動態驗證。

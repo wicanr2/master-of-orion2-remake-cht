@@ -51,6 +51,16 @@ type aiSnapshot struct {
 	// 存的檔)解碼時這裡是 nil——commandoLeaderTier(nil) 回傳 0(無加成),回歸行為與加欄位前
 	// 一致(TODO 留白時的行為),不會 panic。
 	Leaders []Leader `json:"leaders"`
+
+	// AI 主力艦隊在星圖上的位置(見 ai_fleet.go)。**不存的話讀檔後艦隊會瞬移回母星**
+	// ——一支飛了八回合快到玩家家門口的艦隊,存一次檔就回去了。
+	//
+	// 舊存檔沒有這四個欄位:解碼出 FleetPosSet=false,advanceAIFleets 下一回合會把位置
+	// 初始化到母星,行為與加欄位前一致(那時 AI 本來就沒有位置)。
+	FleetStar     int  `json:"fleetStar"`
+	FleetPosSet   bool `json:"fleetPosSet"`
+	FleetDestStar int  `json:"fleetDestStar"`
+	FleetETA      int  `json:"fleetETA"`
 }
 
 // sessionSnapshot 是 GameSession 的完整可序列化狀態(排除純顯示的暫態:LastEvent/LastAntares
@@ -206,7 +216,9 @@ func (s *GameSession) snapshot() sessionSnapshot {
 			ColonyStars: a.ColonyStars, ColonyPlanets: a.ColonyPlanets,
 			Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
 			Leaders: a.Leaders, Personality: a.Personality, LastRaidTurn: a.LastRaidTurn,
-			WantsAudience: a.WantsAudience, AudienceReason: a.AudienceReason}
+			WantsAudience: a.WantsAudience, AudienceReason: a.AudienceReason,
+			FleetStar: a.FleetStar, FleetPosSet: a.FleetPosSet,
+			FleetDestStar: a.FleetDestStar, FleetETA: a.FleetETA}
 	}
 	return sessionSnapshot{
 		Version: saveFormatVersion, Turn: s.Turn, Player: s.Player,
@@ -262,6 +274,8 @@ func (snap sessionSnapshot) restore() *GameSession {
 			Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
 			Leaders: a.Leaders, Personality: a.Personality, LastRaidTurn: a.LastRaidTurn,
 			WantsAudience: a.WantsAudience, AudienceReason: a.AudienceReason,
+			FleetStar: a.FleetStar, FleetPosSet: a.FleetPosSet,
+			FleetDestStar: a.FleetDestStar, FleetETA: a.FleetETA,
 		}
 	}
 	restorePlanetIDs(snap.Planets)

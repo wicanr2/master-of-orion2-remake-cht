@@ -29,9 +29,39 @@ func newRaidTestSession(t *testing.T) *GameSession {
 	return s
 }
 
+// parkAIFleetsAtPlayerColony 把所有 AI 艦隊直接放到玩家殖民地 0 的上空(靜止)。
+//
+// 2026-08-08 第 106 項之後 AI 有位置了,突襲的前提是「艦隊**抵達**目標」而不是「想打」。
+// 只驗結算後果(損失界限/擊退/間隔)的測試用這個把航程跳過去,
+// 免得每一支都要先跑十幾回合等艦隊飛到。
+func parkAIFleetsAtPlayerColony(s *GameSession) {
+	star := s.PlayerColonyStarIndex(0)
+	for i := range s.AIPlayers {
+		s.AIPlayers[i].FleetStar, s.AIPlayers[i].FleetPosSet = star, true
+		s.AIPlayers[i].FleetDestStar, s.AIPlayers[i].FleetETA = -1, 0
+	}
+}
+
+// aiFleetLaunched 回報有沒有任何 AI 這回合派出了艦隊(出發那一刻的守門是否放行)。
+func aiFleetLaunched(s *GameSession) bool {
+	for i := range s.AIPlayers {
+		if s.AIPlayers[i].FleetETA > 0 {
+			return true
+		}
+	}
+	return false
+}
+
+// ⚠ 這四個「守門」測試在第 106 項之後驗的是**出發那一端**(aiLaunchRaidFleet),
+// 不是結算端。理由:守門條件跟著艦隊模型搬到了出發時刻,若還是只呼叫 advanceAIRaids,
+// 這幾支會因為「艦隊本來就不在目標上」而**假綠**——測不到任何東西卻一路通過。
 func TestAIRaidGracePeriod(t *testing.T) {
 	s := newRaidTestSession(t)
 	s.Turn = aiRaidGraceTurns - 1
+	s.advanceAIFleets()
+	if aiFleetLaunched(s) {
+		t.Error("寬限期內不該派出艦隊")
+	}
 	s.advanceAIRaids()
 	if s.LastRaid != "" {
 		t.Errorf("寬限期內不該突襲,卻發生了:%s", s.LastRaid)
@@ -42,6 +72,10 @@ func TestAIRaidNeedsWarStance(t *testing.T) {
 	s := newRaidTestSession(t)
 	for i := range s.AIPlayers {
 		s.AIPlayers[i].StanceName = "中立"
+	}
+	s.advanceAIFleets()
+	if aiFleetLaunched(s) {
+		t.Error("非戰爭態勢不該派出艦隊")
 	}
 	s.advanceAIRaids()
 	if s.LastRaid != "" {
@@ -60,6 +94,10 @@ func TestAIRaidNeedsStrengthAdvantage(t *testing.T) {
 	if pm := s.playerMilitary(); pm == 0 {
 		t.Fatal("測試前提不成立:玩家軍力應 > 0")
 	}
+	s.advanceAIFleets()
+	if aiFleetLaunched(s) {
+		t.Error("AI 軍力不足不該派出艦隊")
+	}
 	s.advanceAIRaids()
 	if s.LastRaid != "" {
 		t.Errorf("AI 軍力不足不該突襲,卻發生了:%s", s.LastRaid)
@@ -74,6 +112,11 @@ func TestAIRaidPacifistNeverRaids(t *testing.T) {
 	}
 	for turn := 0; turn < 30; turn++ {
 		s.Turn = aiRaidGraceTurns + turn
+		s.advanceAIFleets()
+		if aiFleetLaunched(s) {
+			t.Fatalf("和平主義 AI(反應強度 %d)不該派出艦隊",
+				ai.PersonalityLosingGroundChance(ai.PersonalityPacifist))
+		}
 		s.advanceAIRaids()
 		if s.LastRaid != "" {
 			t.Fatalf("和平主義 AI 不該突襲(反應強度 %d),卻發生了:%s",
@@ -87,6 +130,7 @@ func TestAIRaidHappensAndBoundsLosses(t *testing.T) {
 	popBefore := s.PlayerColonies[0].Population
 	bcBefore := s.Player.BC
 
+	parkAIFleetsAtPlayerColony(s)
 	s.advanceAIRaids()
 	if s.LastRaid == "" || s.LastRaidReport == nil {
 		t.Fatal("條件全部滿足時應該發生突襲")
@@ -154,6 +198,7 @@ func TestAIRaidRepelledByFleetAtStar(t *testing.T) {
 	}
 	strengthBefore := s.AIPlayers[0].FleetStrength
 
+	parkAIFleetsAtPlayerColony(s)
 	s.advanceAIRaids()
 	if s.LastRaidReport == nil {
 		t.Fatal("應該發生一次(被擊退的)突襲")
@@ -173,6 +218,7 @@ func TestAIRaidRepelledByFleetAtStar(t *testing.T) {
 // 突襲間隔:同一個 AI 不能連續回合狂打。
 func TestAIRaidRespectsInterval(t *testing.T) {
 	s := newRaidTestSession(t)
+	parkAIFleetsAtPlayerColony(s)
 	s.advanceAIRaids()
 	if s.LastRaid == "" {
 		t.Fatal("第一次應該要打")

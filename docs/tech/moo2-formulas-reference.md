@@ -1121,7 +1121,15 @@ MANUAL_150.html「Reduced by Range」表用 Phasor(base 5-20)、Mauler(base 100-
 
 ## 16. 尚未移植/待查證
 
-依 `docs/tech/rules-implementation-audit.md` 與 `docs/tech/game-logic-port.md` 的盤點,以下系統 openorion2 完全沒有可複用的邏輯(連 UI 殼常常都沒有),需要完全依手冊從零設計:
+依 `docs/tech/rules-implementation-audit.md` 與 `docs/tech/game-logic-port.md` 的盤點,以下系統 openorion2 完全沒有可複用的邏輯(連 UI 殼常常都沒有),需要完全依手冊從零設計。
+**本表描述的是 openorion2(唯讀參考碼)有沒有邏輯可抄,不是 remake 現況**——remake 現況見下方「remake 現況」欄與 `docs/HONEST-STATUS.md`。
+
+> ⚠ 2026-08-08 訂正:下表「外交」「回合編排」「勝利條件」三列的「備註」原本只描述
+> openorion2 現況,字面容易讀成 remake 也缺這些系統。實際查證(見各列後補的「remake 現況」註記):
+> `internal/engine/game.go` 有 `func RunGameTurn`、`internal/engine/empire.go` 有
+> `func RunEmpireTurn`、`internal/engine/colony.go` 有 `func RunColonyTurn`,回合結算函式確實存在;
+> `internal/diplomacy/relations.go` 有完整 17 級關係系統 + `cmd/moo2/diploview.go` 外交畫面;
+> 三條勝利路徑(殲滅/議會票選/安塔蘭母星反攻)已全部接線,見 `docs/tech/victory-conditions.md`。
 
 | 系統 | 狀態 | 備註 |
 |---|---|---|
@@ -1129,13 +1137,13 @@ MANUAL_150.html「Reduced by Range」表用 Phasor(base 5-20)、Mauler(base 100-
 | 地面戰(登陸/轟炸) | 部分完成(第 13 節 `ground.go`) | Barracks 建造/人口上限、單位血量、裝甲/裝備/種族/地形戰力加成、轟炸命中換算已移植;Commando Leader 基準加成、AI Ground Troops Bonus 依難度分級數字、Stored Production 命中曲線手冊未給精確數字,仍待查證 |
 | 地形改造建造成本 | 部分完成(第 5 節 `terraform.go`) | 氣候轉換鏈、人口容量係數已移植;逐次遞增的產能建造成本公式手冊未給數字,仍待查證(需遊戲資料檔而非手冊文字) |
 | 艦艇武裝/裝甲/護盾數值表 | 部分未見(2026-07-11 有新線索) | `internal/engine/ship.go` 的 `ShipCombatStateFromDesign` 已可組出 BeamDefense,但 ArmorHP/StructureHP/ShieldReduction 仍需呼叫端顯式傳入,因為 openorion2 沒有 armor/shield 型別 → HP/減傷的查表可抄;社群整理的武器基礎傷害表、飛彈傷害/HP/ECM 加成表、護盾 HP 係數、裝甲強度係數見 `community-mechanics-findings.md` §4.1(武器傷害,可信度中)、§4.3(飛彈 stats,可信度高)、§4.2/§4.4(護盾/裝甲,可信度中/低)——中高可信但仍需人工核實後才可採用為程式碼常數。**新線索**:艦艇設計空間格任務(`ship-design-space.md`)在 `GAME_MANUAL.pdf` p.121 額外挖到 Armor/Struct./Shield 三欄(Frigate 4/4/1…Doom Star 150/150/20),與同表 Comp./Drive 欄已交叉驗證對應 `formulas.go` 的 `computerHPTable`/`driveHPTable`;這三欄很可能就是這裡缺的 ArmorHP/StructureHP/`DamageShieldCapacity` 的 `shipSize` 查表,但**尚未核實接線**(超出艦艇設計空間格任務範圍),留給下一輪戰鬥系統忠實化任務查證 |
-| 外交 | 未見 | 連 `DiplomacyView` 畫面殼都不存在;AI 六種目標性格判定、Diplomatic Blunder/Marriage 事件全無邏輯可抄。社群同樣未破解每回合關係升降公式與 17 級門檻表(`community-mechanics-findings.md` §2,公認無解),移植時需改走「手冊定性描述+自訂參數+DOSBox 黑箱校準」 |
+| 外交 | 未見(指 openorion2) | 連 `DiplomacyView` 畫面殼都不存在(openorion2 裡);AI 六種目標性格判定、Diplomatic Blunder/Marriage 事件全無邏輯可抄。社群同樣未破解每回合關係升降公式與 17 級門檻表(`community-mechanics-findings.md` §2,公認無解),移植時需改走「手冊定性描述+自訂參數+DOSBox 黑箱校準」。**remake 現況**:`internal/diplomacy/relations.go` 已有完整 17 級關係系統(設計性重建,非原版真值)+ `cmd/moo2/diploview.go` 外交畫面,非「全無」 |
 | AI 決策 | 未見 | 全 repo 零 RNG 來源,任何 AI 判斷邏輯都要重新設計。社群同樣未逆向出難度加成精確數值(`community-mechanics-findings.md` §1,公認無解;WebSearch 曾生出假數字已排除) |
-| 回合編排(把上述公式串成回合) | 待補 | `researchProgress`/`experience` 等欄位全 repo 除建構子外從未被賦值,無回合結算函式存在 |
+| 回合編排(把上述公式串成回合) | 待補(指 openorion2) | `researchProgress`/`experience` 等欄位全 repo 除建構子外從未被賦值,openorion2 裡無回合結算函式存在。**remake 現況**:`internal/engine/game.go` 的 `RunGameTurn`、`internal/engine/empire.go` 的 `RunEmpireTurn`、`internal/engine/colony.go` 的 `RunColonyTurn` 已存在,並非「無回合結算函式存在」 |
 | RNG(命中/間諜/閃避擲骰) | 待補 | 各公式已給出「決定性機率/門檻」,但實際擲骰與可重現的 RNG(含 seed 管理、存檔是否存 RNG 狀態)尚未設計 |
 | 星系/星圖生成 | 未見 | 星系形狀/星星分布/行星屬性/特殊天體的隨機生成演算法要整個重寫 |
 | 種族特性效果套用 | 僅列舉常量 | `RaceTrait` 32 項有列舉與唯讀顯示,但沒有任何函式把特性數值套進生產/戰鬥/成長公式(因為這些公式所在系統本身當時就沒有實作) |
-| 勝利條件 | 未見 | 三種勝利路徑(殲滅/票選/次元傳送門攻陷 Antares)與計分公式全無 |
+| 勝利條件 | 未見(指 openorion2) | 三種勝利路徑(殲滅/票選/次元傳送門攻陷 Antares)與計分公式在 openorion2 裡全無。**remake 現況**:三條路徑已全部接線(3/3),見 `docs/tech/victory-conditions.md` |
 | Antaran/Orion 事件 | 僅美術資源 | 隨機襲擊、守護者遭遇戰、次元傳送門終局戰觸發鏈全無邏輯 |
 
 > 完整逐系統盤點(含每個結論的原始碼行號依據)見 `docs/tech/rules-implementation-audit.md`;移植進度追蹤見 `docs/tech/game-logic-port.md`。本文件與兩者互為參照:本文件是「公式本身」的查閱介面,`rules-implementation-audit.md` 是「openorion2 有沒有可抄的邏輯」的原始碼盤點,`game-logic-port.md` 是移植的進度總表。

@@ -6,8 +6,9 @@
 
 ## 總結
 
-openorion2 是**存檔載入與檢視殼,不是回合制遊戲引擎**。全 repo(`src/*.cpp` 約 16,600 行核心邏輯檔)
-對 `endTurn|nextTurn|processTurn|advanceTurn` 零命中,`main.cpp` 的兩條執行路徑(載入存檔看星系圖 /
+openorion2 是**存檔載入與檢視殼,不是回合制遊戲引擎**。全 repo(`src/*.cpp` 核心邏輯檔,
+`wc -l openorion2/src/*.cpp` 實測 18,712 行;原文寫「約 16,600 行」,差約 13%,統計口徑未註明,
+不影響下方結論)對 `endTurn|nextTurn|processTurn|advanceTurn` 零命中,`main.cpp` 的兩條執行路徑(載入存檔看星系圖 /
 開主選單)完全不含任何回合處理呼叫。更關鍵的是**全 repo 對 `rand()/srand()/mt19937/random_device` 零命中**——
 一個沒有任何隨機數來源的程式碼庫不可能算得出戰鬥命中率、殖民地成長、AI 決策這類手冊明訂「有隨機成分」的規則,
 這比「找不到 combat 函式」更能說明問題的本質:**不是漏抄某幾個函式,而是規則引擎整層不存在**。

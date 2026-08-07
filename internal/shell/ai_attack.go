@@ -233,14 +233,30 @@ func aiObjectiveFor(p ai.Personality) gamedata.AIObjective {
 // 解算模型(remake 的,見檔頭):玩家的防禦力 = 艦隊戰力 + 該殖民地駐軍/坦克折算 +
 // 星基類建築。防禦 >= 攻擊 → 擊退(AI 損失軍力);否則依戰力差造成人口/國庫/建築損失。
 func (s *GameSession) aiRaid(i int) *AIRaidReport {
-	if i < 0 || i >= len(s.AIPlayers) || !s.aiRaidWilling(i) {
+	if i < 0 || i >= len(s.AIPlayers) {
 		return nil
 	}
-	ci := s.aiRaidTarget(i)
-	if ci < 0 {
+	// ⚠ 2026-08-08(第 106 項)突襲的前提從「想打」改成「**打得到**」。
+	//
+	// 先前這裡是 `aiRaidWilling(i)` + `aiRaidTarget(i)`——想打誰就直接結算誰,
+	// AI 艦隊憑空出現在目標上空。現在 AI 有位置了(見 ai_fleet.go),
+	// 條件是「艦隊靜止,而且就停在某個玩家殖民地的星上」。
+	//
+	// 「要不要出兵」與「打誰」那兩個判斷沒有變,只是搬到了出發那一刻
+	// (`aiLaunchRaidFleet`),中間隔著一段航程——**玩家因此看得到它來**。
+	ci, ok := s.aiFleetAtPlayerColony(i)
+	if !ok {
 		return nil
 	}
 	a := &s.AIPlayers[i]
+	// ⚠ 間隔守門**留在這裡**,不能跟著其他條件一起搬到出發那一刻。
+	//
+	// 其餘條件(戰爭態勢/軍力領先/性格)是「要不要出兵」,判一次就夠;
+	// 間隔是「多久能打一次」,而艦隊抵達之後**會一直停在那裡**——少了這道守門,
+	// 一支停在玩家殖民地上空的 AI 艦隊會每一回合都結算一次突襲。
+	if s.Turn-a.LastRaidTurn < aiRaidInterval {
+		return nil
+	}
 	a.LastRaidTurn = s.Turn
 
 	starName := "未知星系"

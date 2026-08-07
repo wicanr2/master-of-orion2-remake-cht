@@ -96,7 +96,10 @@
 ## ★ task 16 核心 gameplay 執行順序(2026-07-10,主代理判斷,使用者授權自主排序)
 
 依「對玩家體驗影響 × 有權威來源可自驅」排序:
-1. **殖民地建築全表(進行中)**:5 棟 → 手冊 40 棟入 `gamedata/buildings.go`,綁前置科技 gating(subagent 實作中)。
+1. **殖民地建築全表:✅ 完成**(41 棟,見 `docs/HONEST-STATUS.md`)。
+   > ⚠ 2026-08-08 訂正:本行原寫「(進行中):5 棟 → 手冊 40 棟…(subagent 實作中)」,是這項任務剛起步時的舊快照。
+   > 查法:`grep -n "len(Buildings)" internal/gamedata/buildings_test.go` → `if got := len(Buildings); got != 41`;
+   > `docs/HONEST-STATUS.md`「建築表 41 棟全部有程式碼消費(2026-08-07 第 97 項重掃確認,0 棟純擺設)」。
 2. **產出行星驅動**:`FoodPerFarmer`/`IndustryPerWorker` 現為固定值,改依 climate/gravity/mineral(手冊 yield 表)推導——讓不同行星經濟有別(MOO2 核心手感)。
 3. **貿易財收入接線:已完成(2026-07-11)**——建造選單新增「貿易品」選項 + `engine.RunEmpireTurn`
    接上 `TradeGoodsIncome`,見 §2。
