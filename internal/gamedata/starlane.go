@@ -123,12 +123,12 @@ type DriveTech struct {
 // 每一級都是「主題內三選一」(核融裂變那一題是 ResearchAll,拿到主題就有引擎),
 // 所以判定要走與 `groundEquipTechOwned` 相同的規則,不能只看主題完成。
 var DriveTechOrder = []DriveTech{
-	{TOPIC_NUCLEAR_FISSION, TECH_NUCLEAR_DRIVE},              // 2 秒差距/回合(手冊:FTL 裡最慢的)
-	{TOPIC_ADVANCED_FUSION, TECH_FUSION_DRIVE},               // 3
-	{TOPIC_ION_FISSION, TECH_ION_DRIVE},                      // 4
-	{TOPIC_ANTIMATTER_FISSION, TECH_ANTIMATTER_DRIVE},        // 5
-	{TOPIC_HYPER_DIMENSIONAL_FISSION, TECH_HYPER_DRIVE},      // 6
-	{TOPIC_INTERPHASED_FISSION, TECH_INTERPHASED_DRIVE},      // 7
+	{TOPIC_NUCLEAR_FISSION, TECH_NUCLEAR_DRIVE},         // 2 秒差距/回合(手冊:FTL 裡最慢的)
+	{TOPIC_ADVANCED_FUSION, TECH_FUSION_DRIVE},          // 3
+	{TOPIC_ION_FISSION, TECH_ION_DRIVE},                 // 4
+	{TOPIC_ANTIMATTER_FISSION, TECH_ANTIMATTER_DRIVE},   // 5
+	{TOPIC_HYPER_DIMENSIONAL_FISSION, TECH_HYPER_DRIVE}, // 6
+	{TOPIC_INTERPHASED_FISSION, TECH_INTERPHASED_DRIVE}, // 7
 }
 
 // NebulaSpeed 是星雲中的航速(手冊:「reduced in speed to 1 parsec per turn」)。

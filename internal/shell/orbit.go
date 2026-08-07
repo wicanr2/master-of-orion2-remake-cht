@@ -21,7 +21,8 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 //
 // ============ 這一層卡著什麼 ============
 //
-//   - **人造行星**(建築 48):按定義就是「在既有星系裡再多一顆世界」——沒有空軌道就無處可放。
+//   - **人造行星**(建築 48):要在同一個星系裡找得到氣態巨星或小行星帶當材料。
+//     ⚠ 它**不需要空軌道**——那是 remake 先前推錯的假設,見 artificialplanet.go 檔頭的訂正。
 //   - **System 視窗**:原版列的是整個星系的行星,remake 只有一顆。
 //   - **同星系多殖民地**。
 //
@@ -152,7 +153,8 @@ func (s *GameSession) PlanetOrbit(planet int) int {
 
 // FreeOrbit 回傳某顆星第一個空軌道的編號(沒有空軌道回 −1)。
 //
-// 人造行星要用這個:沒有空軌道就蓋不了。
+// ⚠ **人造行星不用這個**——它改造的是既有天體,不新增軌道(見 artificialplanet.go 的訂正)。
+// 留著給「真的要新增一顆世界」的場合(目前沒有呼叫端)。
 func (s *GameSession) FreeOrbit(star int) int {
 	if star < 0 || star >= len(s.Stars) {
 		return -1

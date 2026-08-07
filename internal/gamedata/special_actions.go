@@ -63,6 +63,10 @@ const (
 	GaiaTransformationActionName = "蓋亞轉化"
 	// SoilEnrichmentActionName 土壤改良(Soil Enrichment)在殖民地建造佇列的中文顯示名稱。
 	SoilEnrichmentActionName = "土壤改良"
+
+	// ArtificialPlanetActionName 是人造行星(原版建築表編號 48,手冊
+	// 「Artificial Planet Construction (Special)」)。
+	ArtificialPlanetActionName = "人造行星"
 	// FreighterFleetActionName 運輸艦隊(Freighter Fleet)在殖民地建造佇列的中文顯示名稱
 	// (2026-07-11 補實作 #4:運輸艦淨現金版本差異,見檔頭說明)。
 	FreighterFleetActionName = "運輸艦隊"
@@ -97,6 +101,11 @@ var SpecialActions = []SpecialAction{
 		NameZH: SoilEnrichmentActionName, NameEN: "Soil Enrichment",
 		PrereqTopic:    TOPIC_ADVANCED_BIOLOGY,
 		ProductionCost: 120, // 原版執行檔建築表(編號 37)
+	},
+	{
+		NameZH: ArtificialPlanetActionName, NameEN: "Artificial Planet Construction",
+		PrereqTopic:    TOPIC_ADVANCED_MANUFACTURING,
+		ProductionCost: 800, // 原版執行檔建築表(編號 48,見 gap report 第 36 項的全表)
 	},
 	{
 		NameZH: FreighterFleetActionName, NameEN: "Freighter Fleet",

@@ -50,7 +50,7 @@ import (
 //     手冊裡它的全名是「Artiﬁcial Planet Construction (Special)」,而且緊接在
 //     Automated Repair Unit 之後——那正是同一個主題的另一個選項,兩邊的相鄰關係對得上。
 //     **卡的不再是科技旗標,是資料模型**:remake 的 Stars↔Planets 一對一
-//     (見 `Planet.SystemBodies` 註解),而人造行星按定義是「既有星系裡再多一顆世界」,
+//     (見 `Planet.SystemBodies` 註解)。⚠ 人造行星其實是**改造既有天體**不是新增一顆,
 //     轉換完沒有地方能放第二個殖民地。前置是多行星殖民地,見 gap report 第 51 項。
 
 // OutpostShipClass 是前哨船的艦體等級字串(命名慣例同 ColonyShipClass)。

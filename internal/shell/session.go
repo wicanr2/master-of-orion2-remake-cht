@@ -1380,6 +1380,14 @@ func (s *GameSession) applySpecialAction(i int, name string) {
 			return
 		}
 		c.FoodPerFarmer += gamedata.TerraformSoilEnrichmentFoodBonusPerFarmer
+	case gamedata.ArtificialPlanetActionName:
+		// 手冊:把同星系的氣態巨星或小行星帶組裝成一顆可殖民的世界(見 artificialplanet.go)。
+		// 沒有材料時**誠實地什麼都不發生**——與土壤改良在錯誤氣候上的處理同一個立場:
+		// 不在建造選單擋下選項(手冊沒說介面會擋),但套用時不硬塞效果。
+		if newPlanet, ok := s.BuildArtificialPlanet(i); ok {
+			s.LastBuilt = append(s.LastBuilt,
+				"人造行星建成:"+s.Planets[newPlanet].Name+" 已可拓殖")
+		}
 	case gamedata.FreighterFleetActionName: // Freighter Fleet p.168:每次建成 +5 艘運輸艦 + 版本現金加成(#4)。
 		// 帝國整體效果,不是這個殖民地本身的狀態,故不用 c(above 已宣告但本 case 用不到)。
 		//

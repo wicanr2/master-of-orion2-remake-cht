@@ -129,7 +129,7 @@
 | 缺口 | 性質 | 備註 |
 |---|---|---|
 | **網路 / 數據機 / 序列埠多人** | 整塊子系統 | 9 個畫面 + 傳輸層 + 決定性化。熱座已可玩,所以這是「多一種玩法」不是「補一個洞」 |
-| **人造行星 + 同星系多殖民地的規則接線** | 規則 | 資料模型已完成(第 61/62/63 項:軌道表、存取器、同系天體升格成真正的行星)。`FreeOrbit` 已備好。**剩規則面**:建築 48 往空軌道生一顆世界、殖民/前哨站改成選行星而不是選星 |
+| **同星系多殖民地** | 規則 | 資料模型已完成(第 61/62/63 項)。**人造行星已於第 64 項接完**(⚠ 它不需要空軌道,是改造既有天體——第 64 項訂正了寫了兩輪的錯誤假設)。剩:殖民/前哨站改成選**行星**而不是選**星** |
 | **戰術格子的獨立戰機單位** | 戰鬥子模型 | 戰機**已接進快速艦隊戰鬥**(`FighterBayCombatContribution`,中隊數 4/2 是手冊 GM p.127 硬數字);缺的是格子戰鬥裡的出擊 / 攔截 / 回收 |
 | AI 的遷移設定 | 資料模型 | 第 57 項的續:AI 沒有逐星的艦隊位置,所以沒有遷移可設 |
 | 遷移連線的顯示開關沒有 UI | 畫面 | `ShowRelocationLines` 已建,原版在設定畫面(手冊那組 ALT+Fn,⚠ 哪個鍵未確認,見第 54 項) |
@@ -2945,3 +2945,54 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
 
     `FreeOrbit` 現在真的有意義——**人造行星**(建築 48)可以往空軌道放。
     同星系多殖民地也有了資料基礎。兩者的規則接線仍未做。
+
+64. **人造行星:手冊推翻了 remake 自己的假設**(2026-08-07,建築 48 接線)。
+
+    ### 先訂正一句寫了兩輪的話
+
+    gap report 第 61 項(以及更早的第 51 項)寫著:
+
+    > 人造行星按定義是**在既有星系裡再多一顆世界**,remake 的 Stars↔Planets 是一對一,
+    > 轉換完沒地方放第二個殖民地。
+
+    於是 `FreeOrbit` 被寫成「人造行星要用它:沒有空軌道就蓋不了」。**手冊說的不是那樣。**
+
+    > 「This technology allows a colony in the same system with an asteroid field or gas giant
+    >  to **assemble this otherwise useless planetary material** into a complete artificial
+    >  planet that can support a colony. This planet is **Barren, Normal G, and mineral
+    >  Abundant**. **Gas giants make Huge worlds, and asteroid belts make Large ones.**」
+
+    它是把**既有的**氣態巨星或小行星帶組裝成行星——那顆天體**本來就佔著一條軌道**。
+    所以前置是「同星系有材料」,不是「有空軌道」。
+    `TestArtificialPlanetNeedsMaterialNotFreeOrbit` 把這個訂正釘住:
+    **五個軌道全滿但有氣態巨星 → 可以蓋;有空軌道但沒有材料 → 蓋不了。**
+
+    這是「**先查一手資料再推論**」的又一個實例:那句斷言是從「人造行星」這個名字推的,
+    推得很合理,而且它擋了兩輪工作。
+
+    ### 反組譯逐項吻合
+
+    `sub_13FD9` 的那一段走**兩趟**掃這顆星的 5 條軌道:
+
+    | 趟次 | 找什麼 | 結果尺寸 |
+    |---|---|---|
+    | 第一趟 | `planet[+4] == 2`(氣態巨星) | `var_1C = 4` |
+    | 第二趟(第一趟沒中才跑) | `planet[+4] == 1`(小行星帶) | `var_1C = 3` |
+
+    **氣態巨星優先**,而 4 / 3 在尺寸列舉裡正是 **Huge / Large** —— 與手冊那句逐字對上。
+    接著把型別欄寫成 3(一般行星)並改寫整組欄位。
+
+    ⚠ **兩趟不能合成一趟**:合起來的話,軌道較內的小行星帶會搶在外側的氣態巨星前面被挑走。
+    測試用「小行星帶在內、氣態巨星在外」的配置把這個順序釘住。
+
+    ### 成本用真值不用估值
+
+    第一版順手寫了 `ProductionCost: 900`。第 36 項抽出來的原版建築表寫著 **800**。
+    改掉——**專案裡已經有真值就不該再估一個**。
+
+    ### 落點
+
+    - `internal/gamedata/special_actions.go`:第 5 個 Special 行動(前置 `TOPIC_ADVANCED_MANUFACTURING`)
+    - `internal/shell/artificialplanet.go`:兩趟掃描 + 固定結果(Barren / Normal G / Abundant)
+    - `session.go` 的 Special 分派:沒有材料時**誠實地什麼都不發生**
+      (與土壤改良在錯誤氣候上的處理同一個立場:不在選單擋,但套用時不硬塞效果)
