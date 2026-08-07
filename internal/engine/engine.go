@@ -42,10 +42,18 @@ type ColonyState struct {
 	// gamedata/assimilation.go)。0 = 全部是自己的子民(自己拓殖的殖民地一開始就是 0)。
 	//
 	// AssimilationProgress 是「朝下一個單位累積了幾回合」。兩個欄位都由
-	// shell.advanceAssimilation 推進,engine 的經濟結算目前不讀它們
-	// ——多種族人口對產出的影響(20% 士氣懲罰)還沒接,見 assimilation.go 檔頭。
+	// shell.advanceAssimilation 推進;engine 的經濟結算不直接讀它們——多種族人口的
+	// 20% 士氣懲罰走 shell.colonyMoralePercent 折成 MoralePercent(第 98 項接的)。
 	UnassimilatedPop     int
 	AssimilationProgress int
+
+	// ConqueredFrom 是這個殖民地**被打下來之前**的主人(shell.AIPlayers 的索引);
+	// 叛亂成功時殖民地要還給它(手冊 p.165「the colony reverts back」)。
+	//
+	// ⚠ **不能用 0 當「沒有」的哨兵**——0 是合法的 AI 索引,而舊存檔解出來就是 0。
+	// 所以另立 ConqueredFromKnown:false 時 ConqueredFrom 一律無意義。
+	ConqueredFrom      int
+	ConqueredFromKnown bool
 
 	// FoodReplicators 是食物複製機(GAME_MANUAL.pdf p.85)。true 時,食物赤字會用產能
 	// 以 2:1 換成食物補足(每單位再花 1 BC,由 RunEmpireTurn 結算)。

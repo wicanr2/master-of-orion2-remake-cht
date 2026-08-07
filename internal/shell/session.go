@@ -2548,9 +2548,12 @@ type GameSession struct {
 	// 預設開:原版新開一局是畫的(`sub_127E1` 初始化時寫 1)。
 	ShowRelocationLines bool
 	LastBattle          *BattleResult // 上一場戰鬥結果(供戰鬥結果畫面)
-	SelectedStar        int           // 星圖選中的星索引(-1=未選)
-	Difficulty          int           // 難度索引(shell.Difficulties)
-	Builds              []ColonyBuild // 各殖民地「當前建造中」的項目(對應 PlayerColonies;佇列見 BuildQueue)
+	// LastRebellions 是上一回合的叛亂檢定結果(供回合摘要;沒有事情發生時是 nil)。
+	// 不進存檔:它是「這一回合發生了什麼」的展示資料,重載存檔時本來就沒有上一回合。
+	LastRebellions []RebellionResult `json:"-"`
+	SelectedStar   int               // 星圖選中的星索引(-1=未選)
+	Difficulty     int               // 難度索引(shell.Difficulties)
+	Builds         []ColonyBuild     // 各殖民地「當前建造中」的項目(對應 PlayerColonies;佇列見 BuildQueue)
 	// BuildQueue[i] 是殖民地 i 的**後續**建造排隊項(不含 Builds[i] 那一格)。
 	// 原版殖民地畫面的 BUILD QUEUE 是 7 格(反組譯 Add_Build_Queue_Fields_ 確認),
 	// 完工自動接下一項;remake 先前只有一格。見 buildqueue.go 檔頭。
@@ -3123,10 +3126,13 @@ func (s *GameSession) EndTurn() {
 	s.advanceFleet()          // 推進艦隊星間航行(ETA 遞減,抵達則標記探索 + 結算一次性發現)
 	s.advanceCrewExperience() // 艦員經驗:每回合 +1,停泊星系每有一座太空學院再 +1(見 crew.go)
 	s.advanceAssimilation()   // 征服人口同化:依政體 2–20 回合同化一單位(見 assimilation.go)
-	s.advanceMarines()        // 各 Marine Barracks 殖民地依手冊公式補充陸戰隊駐軍(有上限)
-	s.advanceArmor()          // 各 Armor Barracks 殖民地依手冊公式補充戰車營駐軍(有上限,見 ground_invasion.go)
-	s.advancePopulation()     // 累積各殖民地成長,達門檻則 +1 人口(回寫 Population)
-	s.advanceEvents()         // 觸發 MOO2 風格隨機事件(繁榮/瘟疫/海盜…),記於 LastEvent
+	// 叛亂檢定接在同化**之後**:同化先扣掉這一回合該同化的人口,剩下的才是有機會起事的。
+	// 反過來的話,一個「這回合剛好同化完最後一單位」的殖民地還會多擲一次骰。
+	s.LastRebellions = s.advanceRebellions() // 未同化人口叛亂(見 rebellion.go)
+	s.advanceMarines()                       // 各 Marine Barracks 殖民地依手冊公式補充陸戰隊駐軍(有上限)
+	s.advanceArmor()                         // 各 Armor Barracks 殖民地依手冊公式補充戰車營駐軍(有上限,見 ground_invasion.go)
+	s.advancePopulation()                    // 累積各殖民地成長,達門檻則 +1 人口(回寫 Population)
+	s.advanceEvents()                        // 觸發 MOO2 風格隨機事件(繁榮/瘟疫/海盜…),記於 LastEvent
 	// 持續型事件(超新星倒數/時空異象/超空間獸)每回合推進一次,見 events_persistent.go。
 	// 它們的訊息接在 LastEvent 後面——一回合可能同時有「新抽到的事件」與「持續中的狀態」。
 	if msgs := s.advancePersistentEvents(); len(msgs) > 0 {

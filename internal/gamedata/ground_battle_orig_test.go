@@ -193,7 +193,7 @@ func TestGroundTypeDeltasMatchTheOriginalCases(t *testing.T) {
 		{GroundTypeArmor, 10, 1},
 		{GroundTypeMarines, 0, 0},
 		{GroundTypeMilitia, -10, 0},
-		{GroundTypeFourth, -20, 0},
+		{GroundTypeRebels, -20, 0},
 	} {
 		if got := GroundTypeStrengthDelta(c.typ); got != c.str {
 			t.Errorf("類型 %d 的攻擊力調整應為 %d,實得 %d", c.typ, c.str, got)
@@ -208,7 +208,7 @@ func TestGroundTypeDeltasMatchTheOriginalCases(t *testing.T) {
 		GroundTypeStrengthDelta(GroundTypeMarines) >
 			GroundTypeStrengthDelta(GroundTypeMilitia) &&
 		GroundTypeStrengthDelta(GroundTypeMilitia) >
-			GroundTypeStrengthDelta(GroundTypeFourth)) {
+			GroundTypeStrengthDelta(GroundTypeRebels)) {
 		t.Error("強弱順序應為 裝甲 > 陸戰隊 > 民兵 > 第四種")
 	}
 	// 類型 0 是索引 0 —— 這條釘住「不要又把陸戰隊排回 0」。

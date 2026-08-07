@@ -13,7 +13,7 @@ func TestAssimilationCountsDownAfterConquest(t *testing.T) {
 	s.DisableEvents = true
 	s.Government = gamedata.MoraleGovDemocracy // 民主:4 回合一單位
 	c := engine.ColonyState{Population: 3, PopMax: 8, PlanetGravity: gamedata.NORMAL_G}
-	markColonyConquered(&c)
+	markColonyConquered(&c, -1)
 	if c.UnassimilatedPop != 3 {
 		t.Fatalf("剛攻下應整批是外族人口(3),得到 %d", c.UnassimilatedPop)
 	}
@@ -52,7 +52,7 @@ func TestAssimilationProgressCarriesOverAcrossRateChanges(t *testing.T) {
 	s.DisableEvents = true
 	s.Government = gamedata.MoraleGovUnification // 統一:20 回合
 	c := engine.ColonyState{Population: 2, PopMax: 8, PlanetGravity: gamedata.NORMAL_G}
-	markColonyConquered(&c)
+	markColonyConquered(&c, -1)
 	s.PlayerColonies = append(s.PlayerColonies, c)
 	idx := len(s.PlayerColonies) - 1
 	for len(s.ColonyBuildings) < len(s.PlayerColonies) {
@@ -138,7 +138,7 @@ func TestMoralePenaltyLiftsWhenAssimilationFinishes(t *testing.T) {
 	s.DisableEvents = true
 	s.Government = gamedata.MoraleGovDemocracy // 4 回合一單位
 	c := engine.ColonyState{Population: 1, PopMax: 8, PlanetGravity: gamedata.NORMAL_G}
-	markColonyConquered(&c)
+	markColonyConquered(&c, -1)
 	s.PlayerColonies = append(s.PlayerColonies, c)
 	idx := len(s.PlayerColonies) - 1
 	for len(s.ColonyBuildings) < len(s.PlayerColonies) {

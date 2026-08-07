@@ -20,10 +20,9 @@ import (
 //
 // ============ 誠實留白 ============
 //
-//   - **未同化人口目前沒有負面效果。** 手冊說多種族殖民地有 20% 士氣懲罰(異族管理中心
-//     可消除)、未同化人口會增加叛亂機率(建築減半)。remake 的士氣路徑還沒接這一條,
-//     叛亂系統根本不存在。所以現在同化只是一個會走完的計時器——**機制在、後果還沒接**,
-//     這裡寫明白,不假裝完整。
+//   - 未同化人口的兩個後果**都已接上**:20% 士氣懲罰走 `colonyMoralePercent`(第 98 項)、
+//     叛亂走 `rebellion.go`(第 105 項)。所以同化不再只是一個會走完的計時器,
+//     它是「征服打法要付的利息」——同化完之前每一回合都在擲叛亂骰。
 //   - AI 攻下玩家殖民地那條路徑沒有同化(AI 沒有殖民地狀態的完整模型)。
 
 // assimilationGovernment 把 remake 的政體對到同化速率表的政體。
@@ -61,10 +60,12 @@ func (s *GameSession) AssimilationTurnsFor(colonyIdx int) int {
 // alienManagementCenterName 是建築表裡的中文名(gamedata.Buildings 的 NameZH)。
 const alienManagementCenterName = "異族管理中心"
 
-// markColonyConquered 把剛攻下的殖民地標成「全部是未同化的外族人口」。
-func markColonyConquered(c *engine.ColonyState) {
+// markColonyConquered 把剛攻下的殖民地標成「全部是未同化的外族人口」,並記下**舊主是誰**
+// ——叛亂成功時殖民地要還給它(手冊 p.165「the colony reverts back」,見 rebellion.go)。
+func markColonyConquered(c *engine.ColonyState, fromAI int) {
 	c.UnassimilatedPop = c.Population
 	c.AssimilationProgress = 0
+	c.ConqueredFrom, c.ConqueredFromKnown = fromAI, fromAI >= 0
 }
 
 // advanceAssimilation 每回合推進所有殖民地的同化。

@@ -5432,3 +5432,73 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
 
     **13 項有實際效果**。仍未接的只剩戰術官(原版自己就沒實作)與「子系統還沒有」的那幾項
     (刺客擲骰、外交修正、反間諜、艦艇軍官指派 UI)——**沒有一項是卡在「找不到入口」了**。
+
+105. **叛亂:同化計時器的另一半**(2026-08-08)。
+
+    第 96 項接了同化,而那個檔的檔頭自己寫著「叛亂系統根本不存在 …
+    現在同化只是一個會走完的計時器——**機制在、後果還沒接**」。這一項接後果。
+
+    ### 手冊給了規則,沒給數字
+
+    > There is a chance each turn that the conquered aliens will attempt to revolt.
+    > **The more unassimilated aliens, the larger the chance.** This chance is **doubled**
+    > if the captured population is being **exterminated** and **halved** if there is an
+    > **Alien Management Center** … A loss for you is a gain for the world's old ruler —
+    > **the colony reverts back**.(p.165)
+
+    「越多越可能」是什麼函數?沒寫。數字在 `Check_Rebellion_` @ 0xED260:
+
+    ```
+    cmp  byte ptr [colony+12Fh], 4   ; 4 = 未被征服(初始化時設的)→ 根本不檢定
+    jz   結束
+    ...                              ; ecx = 未同化且「原主帝國還在」的人口單位數
+    imul edx, ecx, 0Ah               ; ★ 機率 = 單位數 × 10
+        add edx, 難度×4 − 8          ; ★ 只在「主人是人類、叛軍是 AI」時
+    ...  edx = edx / 2               ; ★ 異族管理中心
+    ...  add edx, edx                ; ★ 滅絕政策
+    mov  eax, 3E8h / call sub_1247A0 ; rand(1..1000)
+    cmp  eax, edx / jg 結束          ; roll <= chance 才叛亂
+    ```
+
+    **每一單位未同化人口 1%**,順序是 基準 → 難度 → 減半 → 加倍。
+
+    ### `[colony+0x137]` 是異族管理中心——三個呼叫端對上手冊的三句
+
+    | 呼叫端 | 條件 | 手冊 |
+    |---|---|---|
+    | `Check_Rebellion_` | `!= 0` → 機率減半 | 「halving the chance of revolt」 |
+    | `Apply_Assimilation_` | `!= 0` → 速率固定 120 | 「1 per 2 turns, **regardless of government**」 |
+    | `sub_DDAD4` | `== 0` 才算多種族 | 「removes the 20% morale penalty from multi-racial colonies」 |
+
+    而 `OrigBuildingID["Alien Management Center"] = 1`。三句對三個呼叫端,不是猜的。
+
+    ### 順帶定名:`GroundTypeFourth` 就是叛軍
+
+    那個常數從第 27 項起一直掛著「⚠ 未定名(−20,且基礎值取自另一方),
+    **而殖民地防守方根本不填它**」。
+
+    `Get_Rebellion_Info_` @ 0xEC65A 把守方三種部隊填進 `[+0x0A]`(裝甲)、`[+0x0C]`(陸戰隊)、
+    `[+0x0E]`(民兵),而**叛軍的數量填進 `[+0x10]`**——同一陣列的第四格。**類型 3 = 叛軍。**
+
+    這也回頭解釋了「守方根本不填它」那句:**叛軍永遠是攻方**。攻擊力 −20(四種裡最弱)
+    也合理——起事的是沒受過訓練的被征服人口。常數已改名 `GroundTypeRebels`。
+
+    ### 手冊沒提的第二個骰
+
+    原版決定叛亂之後又擲了一次:`mov eax, ecx / call sub_1247A0` → 結果直接當叛軍部隊數。
+    所以起事的是 **rand(1..未同化人口數)**,不是全部。
+
+    ### 誠實留白
+
+    - **鎮壓後死多少人**沒有依據。原版那段在 `Resolve_Rebellion_Troops_`,沒有逐指令抄;
+      remake 採「起事者全滅」,**這是建模選擇不是逐字依據**,寫在函式註解裡。
+    - **沒有滅絕政策**:remake 沒這個選項,「×2」那一路目前不會發生
+      (函式仍收這個參數,等 UI 有那個選項直接接)。
+    - `[colony+0x12F]` 的完整列舉沒查(已知 4 = 未征服、0 = 滅絕,1/2/3 語意未定)。
+    - **只檢定玩家的殖民地**:AI 打下玩家殖民地那條路徑本來就沒有同化模型。
+
+    ### IDA 這一輪是壞的
+
+    `tools/ida.sh idc` 三種呼叫形式都回 `Failed to initialize IDA as library (error code 4)`。
+    沒有繼續敲——改讀 `Orion2.exe.asm` 原始清單 + `symbols_fixed.tsv` 對名字,
+    整條規則就是這樣抽出來的。**IDA 只是加速器,不是必要條件。**

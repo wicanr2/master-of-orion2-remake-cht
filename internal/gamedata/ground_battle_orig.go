@@ -74,8 +74,14 @@ package gamedata
 // 對照調整量:類型 0 最強(+10 攻擊、+1 耐受)= **裝甲**(手冊:tank battalions);
 // 類型 1 是基準 = **陸戰隊**;類型 2 −10 = **民兵**(未受訓的平民,最弱,合理)。
 //
-// ⚠ **類型 3 仍未定名**:它的基礎值來自另一方的加成塊、再 −20,而殖民地防守方根本不填它。
-// 不編名字。
+// ⚠ **類型 3 是叛軍**(2026-08-08 第 105 項定名,先前掛著「未定名」)。
+//
+// 認出來的是 `Get_Rebellion_Info_` @ 0xEC65A:它把守方三種部隊填進
+// `[+0x0A]`(裝甲)、`[+0x0C]`(陸戰隊)、`[+0x0E]`(民兵),而**叛軍的數量填進 `[+0x10]`**
+// ——同一個陣列的第四格。所以類型 3 = 叛軍。
+//
+// 這順帶解釋了原本那句「殖民地防守方根本不填它」:**叛軍永遠是攻方**,守方那格當然是空的。
+// 攻擊力 −20(四種裡最弱)也合理——起事的是沒有受過訓練的被征服人口。
 //
 // ⚠ 那幾個「加成塊」欄位(`Compute_Player_Ground_Combat_Bonuses_` @ 0xEC15C 產的)
 // 還沒逐欄對出意義,所以這一檔**只提供類型間的相對差**(那部分是純立即數,不依賴未知欄位),
@@ -86,7 +92,7 @@ const (
 	GroundTypeArmor   = 0 // 裝甲 / 戰車營(+10 攻擊、+1 耐受)
 	GroundTypeMarines = 1 // 陸戰隊(基準)
 	GroundTypeMilitia = 2 // 民兵(−10 攻擊)
-	GroundTypeFourth  = 3 // ⚠ 未定名(−20,且基礎值取自另一方)
+	GroundTypeRebels  = 3 // 叛軍(−20,最弱;見上方的定名依據)
 )
 
 // GroundTypeStrengthDelta 是各部隊類型相對基準的攻擊力調整(原版四個 case 的立即數)。
@@ -101,7 +107,7 @@ func GroundTypeStrengthDelta(unitType int) int {
 		return 0
 	case GroundTypeMilitia:
 		return -10
-	case GroundTypeFourth:
+	case GroundTypeRebels:
 		return -20
 	}
 	return 0
