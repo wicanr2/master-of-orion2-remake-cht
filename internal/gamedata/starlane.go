@@ -134,6 +134,28 @@ var DriveTechOrder = []DriveTech{
 // NebulaSpeed 是星雲中的航速(手冊:「reduced in speed to 1 parsec per turn」)。
 const NebulaSpeed = 1
 
+// ---- 兩種星門(都是 Achievement 科技,效果只在**自己的殖民地之間**)----
+
+// JumpGateSpeedBonus 是躍遷門的加速(手冊 Jump Gate:「increases the speed of your ships
+// traveling between two of your colony systems by 3 parsecs a turn」)。
+const JumpGateSpeedBonus = 3
+
+// StarGateETA 是星際之門的航程(手冊 Star Gate:「allows instantaneous (1 turn) travel
+// between any two of your systems」)。
+const StarGateETA = 1
+
+// TechRef 是「某研究主題內的某個科技」。
+type TechRef struct {
+	Topic ResearchTopic
+	Tech  Technology
+}
+
+// JumpGateTech / StarGateTech 是兩種星門的科技位置(techtree.go 的多選一)。
+var (
+	JumpGateTech = TechRef{TOPIC_SUBSPACE_PHYSICS, TECH_JUMP_GATE}
+	StarGateTech = TechRef{TOPIC_TEMPORAL_PHYSICS, TECH_STAR_GATE}
+)
+
 // InterdictorSpeed 是被 Warp Field Interdictor 場籠罩的敵艦航速(手冊同一句話的另一半)。
 const InterdictorSpeed = 1
 

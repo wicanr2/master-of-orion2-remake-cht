@@ -203,3 +203,99 @@ func TestNavigatorMustBeShipOfficer(t *testing.T) {
 		t.Error("殖民地領袖(Ship=false)不該讓艦隊取得領航效果")
 	}
 }
+
+// gateTestSession 建一個「玩家有兩個殖民地、相距夠遠」的對局。
+func gateTestSession(t *testing.T) (*GameSession, int) {
+	t.Helper()
+	s := NewDemoSession()
+	dest := -1
+	for i := 1; i < len(s.Stars); i++ {
+		if s.ParsecsBetweenStars(0, i) >= 8 && s.Stars[i].Spectral != blackHoleSpectral {
+			dest = i
+			break
+		}
+	}
+	if dest < 0 {
+		t.Skip("星圖上找不到 8 秒差距以外的星")
+	}
+	s.PlayerColonyStars = append(s.PlayerColonyStars, dest) // 把它當成玩家的第二個殖民地
+	return s, dest
+}
+
+// grantTech 讓玩家「擁有」某個主題內的某個科技(明確抉擇)。
+func grantTech(s *GameSession, r gamedata.TechRef) {
+	if s.Player.CompletedTopics == nil {
+		s.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{}
+	}
+	if s.Player.ExplicitChoice == nil {
+		s.Player.ExplicitChoice = map[gamedata.ResearchTopic]bool{}
+	}
+	if s.Player.ChosenTech == nil {
+		s.Player.ChosenTech = map[gamedata.ResearchTopic]gamedata.Technology{}
+	}
+	s.Player.CompletedTopics[r.Topic] = true
+	s.Player.ExplicitChoice[r.Topic] = true
+	s.Player.ChosenTech[r.Topic] = r.Tech
+}
+
+// TestJumpGateAddsThreeParsecsBetweenOwnColonies 釘住手冊 Jump Gate 那條。
+func TestJumpGateAddsThreeParsecsBetweenOwnColonies(t *testing.T) {
+	s, dest := gateTestSession(t)
+	base := s.FleetSpeedParsecs()
+	grantTech(s, gamedata.JumpGateTech)
+	if !s.PlayerHasJumpGate() {
+		t.Fatal("給了科技之後 PlayerHasJumpGate 應為 true")
+	}
+	if got := s.fleetSpeedForTrip(0, dest); got != base+gamedata.JumpGateSpeedBonus {
+		t.Errorf("自己的殖民地之間應 +%d 秒差距(%d → %d),實得 %d",
+			gamedata.JumpGateSpeedBonus, base, base+gamedata.JumpGateSpeedBonus, got)
+	}
+}
+
+// TestJumpGateOnlyBetweenOwnColonies:一端不是自己的殖民地就沒有加成(手冊逐字 "your colony systems")。
+func TestJumpGateOnlyBetweenOwnColonies(t *testing.T) {
+	s, dest := gateTestSession(t)
+	base := s.FleetSpeedParsecs()
+	grantTech(s, gamedata.JumpGateTech)
+	s.PlayerColonyStars = []int{0} // 目的地不再是玩家殖民地
+	if got := s.fleetSpeedForTrip(0, dest); got != base {
+		t.Errorf("目的地不是自己的殖民地時不該有加成,航速應維持 %d,實得 %d", base, got)
+	}
+}
+
+// TestStarGateGivesOneTurnTravel 釘住手冊 Star Gate 那條:自己的系統之間一回合到。
+func TestStarGateGivesOneTurnTravel(t *testing.T) {
+	s, dest := gateTestSession(t)
+	if s.FleetETATo(0, dest) <= gamedata.StarGateETA {
+		t.Skip("這趟本來就只要一回合,驗不出差別")
+	}
+	grantTech(s, gamedata.StarGateTech)
+	if got := s.FleetETATo(0, dest); got != gamedata.StarGateETA {
+		t.Errorf("星際之門在自己的系統之間應為 %d 回合,實得 %d", gamedata.StarGateETA, got)
+	}
+}
+
+// TestStarGateBeatsNebulaPenalty:星際之門形成的是穩定蟲洞終端,不走實空間,
+// 所以沿路的星雲/干擾場懲罰都不適用(與 remake 既有的蟲洞同語意)。
+func TestStarGateBeatsNebulaPenalty(t *testing.T) {
+	s, dest := gateTestSession(t)
+	s.Stars[dest].InNebula = true
+	grantTech(s, gamedata.StarGateTech)
+	if got := s.FleetETATo(0, dest); got != gamedata.StarGateETA {
+		t.Errorf("星際之門不受星雲影響,應為 %d 回合,實得 %d", gamedata.StarGateETA, got)
+	}
+}
+
+// TestStarGateOnlyBetweenOwnColonies:非自己的系統不適用。
+func TestStarGateOnlyBetweenOwnColonies(t *testing.T) {
+	s, dest := gateTestSession(t)
+	long := s.FleetETATo(0, dest)
+	if long <= gamedata.StarGateETA {
+		t.Skip("這趟本來就只要一回合,驗不出差別")
+	}
+	grantTech(s, gamedata.StarGateTech)
+	s.PlayerColonyStars = []int{0}
+	if got := s.FleetETATo(0, dest); got != long {
+		t.Errorf("目的地不是自己的系統時不該生效,應維持 %d 回合,實得 %d", long, got)
+	}
+}

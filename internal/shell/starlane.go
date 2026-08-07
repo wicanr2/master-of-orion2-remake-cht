@@ -100,6 +100,33 @@ func (s *GameSession) FleetSpeedParsecs() int {
 	return sp
 }
 
+// PlayerHasJumpGate / PlayerHasStarGate 回傳玩家是否已取得該 Achievement 科技。
+func (s *GameSession) PlayerHasJumpGate() bool {
+	return driveTechOwned(s.Player, gamedata.JumpGateTech.Topic, gamedata.JumpGateTech.Tech)
+}
+
+func (s *GameSession) PlayerHasStarGate() bool {
+	return driveTechOwned(s.Player, gamedata.StarGateTech.Topic, gamedata.StarGateTech.Tech)
+}
+
+// starIsPlayerColony 回傳某顆星上有沒有玩家的殖民地。
+//
+// 兩種星門的效果都限定「**自己的**殖民地系統之間」(手冊逐字:between two of your colony
+// systems / between any two of your systems),所以只認殖民地,不認「探索過」或「插了旗」。
+func (s *GameSession) starIsPlayerColony(idx int) bool {
+	for _, st := range s.PlayerColonyStars {
+		if st == idx {
+			return true
+		}
+	}
+	return false
+}
+
+// bothEndsArePlayerColonies 回傳這趟的起訖點是不是都是玩家的殖民地系統。
+func (s *GameSession) bothEndsArePlayerColonies(from, to int) bool {
+	return s.starIsPlayerColony(from) && s.starIsPlayerColony(to)
+}
+
 // fleetSpeedForTrip 回傳這一趟的實際航速,套上星雲與干擾場的懲罰。
 //
 //	星雲    手冊「Ships traveling through a nebula are reduced in speed to 1 parsec per turn」;
@@ -111,6 +138,11 @@ func (s *GameSession) fleetSpeedForTrip(from, to int) int {
 	sp := s.FleetSpeedParsecs()
 	if sp <= 0 {
 		return 0
+	}
+	// 躍遷門:自己的殖民地之間 +3 秒差距/回合(手冊 Jump Gate)。
+	// 放在懲罰**之前**——星雲與干擾場都是「reduced **to** 1」,是覆寫不是相減,所以它們仍然贏。
+	if s.PlayerHasJumpGate() && s.bothEndsArePlayerColonies(from, to) {
+		sp += gamedata.JumpGateSpeedBonus
 	}
 	if s.RouteInterdicted(from, to) {
 		return gamedata.InterdictorSpeed
@@ -128,6 +160,12 @@ func (s *GameSession) fleetSpeedForTrip(from, to int) int {
 //
 // 沒有 FTL 回 0(呼叫端當成「去不了」)。
 func (s *GameSession) FleetETATo(from, to int) int {
+	// 星際之門:自己的殖民地之間**一回合到**(手冊 Star Gate「instantaneous (1 turn) travel」)。
+	// 它形成的是穩定的蟲洞終端,不走實空間,所以星雲/干擾場那些沿路的懲罰都不適用——
+	// 與 remake 既有的蟲洞同一個語意(見 SendFleet)。
+	if s.PlayerHasStarGate() && s.bothEndsArePlayerColonies(from, to) && s.FleetHasFTL() {
+		return gamedata.StarGateETA
+	}
 	sp := s.fleetSpeedForTrip(from, to)
 	if sp <= 0 {
 		return 0

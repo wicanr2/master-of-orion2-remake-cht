@@ -792,7 +792,9 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			// 星圖底:純黑 + 原版 `Draw_Paralax_` 的三層星空(見 starbg.go)。
 			b.drawStarmapBackground(dst)
 			b.drawNebulae(dst, sess.Nebulae) // 背景地形,壓在星星之下
-			drawStarmap(b, dst, fnt, sess.Stars, sess.SelectedStar, sess.VisibleStars())
+			vis := sess.VisibleStars()
+			drawStarmap(b, dst, fnt, sess.Stars, sess.SelectedStar, vis)
+			b.drawGateIcons(dst, vis) // 狀態標示,蓋在星星之上
 			if fnt != nil {
 				// 狀態數字畫進原版右側資訊格(openorion2 galaxy.cpp:1552-1588 硬編位置,
 				// 對齊 buffer0.lbx#0 背景烘印的圖示格):星曆→頂右薄框(549,27,63,13)、
