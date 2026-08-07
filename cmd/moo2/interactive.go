@@ -2631,12 +2631,34 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 		// RELOCATE(remake 譯「調動」)——手冊逐字:「You set up your Relocation orders on the
 		// Fleet Operations console.」**這才是原版的入口**,座標同下面 overlays 的標籤框。
 		{440, 384, 93, 18, "relocate"},
-		// ALL(remake 譯「全部」)—— 推測對應 Set_All_Star_Relocations_(第 59 項)。
-		// ⚠ 那支只改**已經有集結點**的殖民地,不是「全部設成這顆」。
-		{346, 384, 70, 18, "relocateall"},
+		// ALL(remake 譯「全部」)—— **全選/全不選這支艦隊的艦艇**,不是集結點。
+		//
+		// ⚠ 2026-08-07 訂正:先前把它接成 `Set_All_Star_Relocations_`,那是**推測**且推錯了。
+		// 手冊在兩個地方各講了一次同一件事:
+		//   p.32「To select or deselect all of the ships in the window, you can use the All button.」
+		//   p.47「All: Selects all of the ships in the fleet to prepare to receive orders.
+		//        (If all the ships are already selected, this deselects them instead.)」
+		// 括號那句(已全選就變成全不選)是 toggle 語意,照做。
+		// Set_All / Clear_All 的真正入口見 relocateall / relocateclear 兩個熱區的註解。
+		{346, 384, 70, 18, "selectall"},
 		// RETURN 真值座標取自 openorion2 ships.cpp:718 FleetListView
 		// RETURN createWidget(556, 430, ...)(原估計 543,432)。
 		{556, 430, 84, 28, "return"},
+		// ⚠ **以下兩顆不是原版版面。**
+		//
+		// 原版的 `Set_All_Star_Relocations_` / `Clear_All_Star_Relocations_` 都是從**星圖**的
+		// 輸入處理器 `sub_73980` 進來的,而且是**鍵盤事件**不是按鈕:
+		//
+		//	cmp eax, 0FFFFFBAFh   ; −1105 → Clear_All_Star_Relocations_(玩家)+ 訊息 0x76
+		//	cmp eax, 0FFFFFC13h   ; −1005 → 切換 byte_19BED0(「下一次點星要 Set_All」模式)
+		//	                      ;         之後點星才呼叫 Set_All_Star_Relocations_ + 訊息 0x77
+		//
+		// 那組負數 id 是鍵盤來的(同一支函式裡 −1002/−1001 是被拿來與滑鼠 widget id 併列判斷的
+		// 替代鍵),而且兩者**差 100**——看起來是「某鍵」與「ALT+同一鍵」。
+		// **是哪一顆鍵沒有確認**(id → 鍵碼的對照表還沒追),所以不綁快捷鍵、不猜。
+		// 先放兩顆明確標示為 remake 自加的鈕在名冊下方,追出鍵碼之後改成快捷鍵。
+		{20, 412, 140, 18, "relocateall"},
+		{168, 412, 140, 18, "relocateclear"},
 	}
 	onAction := func(a string) *origTransition {
 		switch a {
@@ -2674,11 +2696,23 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 			return b.goTo(b.fleet, "艦隊列表")
 		}
 		switch a {
+		case "selectall":
+			// 手冊 p.47:已全選就變成全不選。
+			b.toggleSelectAllShips()
+			return b.goTo(b.fleet, "艦隊列表")
 		case "relocateall":
 			b.beginRelocateAll()
-			b.flash(b.tr("全部:點一顆星,把已經設過集結點的殖民地全部改送過去",
-				"ALL: click a star to retarget every existing rally point"))
+			b.flash(b.tr("全部改送:點一顆星,把已經設過集結點的殖民地全部改送過去",
+				"RETARGET ALL: click a star to retarget every existing rally point"))
 			return b.goTo(b.galaxy, "星系主畫面")
+		case "relocateclear":
+			n := b.session.ClearAllStarRelocations()
+			if n == 0 {
+				b.flash(b.tr("目前沒有任何集結點可清除", "No rally points to clear"))
+			} else {
+				b.flash(fmt.Sprintf(b.tr("已清除 %d 個集結點", "Cleared %d rally points"), n))
+			}
+			return b.goTo(b.fleet, "艦隊列表")
 		case "relocate":
 			// 原版 `Star_Relocation_` 是兩段點選:先起點星(自己的殖民地)、再終點星。
 			// 回到星圖進第一段。
@@ -2809,6 +2843,13 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 			warn := color.RGBA{235, 160, 90, 255}
 			s.extras = append(s.extras, extraText{x: 28, y: 402, size: 13, text: b.tr("攻打安塔蘭母星(點此進入王座廳)", "Assault the Antaran homeworld (click for the throne room)"), col: warn})
 		}
+		// ⚠ 兩個 remake 自加的集結點入口(原版是星圖上的鍵盤指令,見上方 hits 的註解)。
+		// 字前加「＋」與原版烘在美術上的鈕區隔開來——這個畫面沒有自繪框的機制,
+		// 標記只能靠文字本身。
+		mark := color.RGBA{190, 225, 215, 255}
+		s.extras = append(s.extras,
+			extraText{x: 26, y: 425, size: 11, text: b.tr("＋全部改送集結點", "+ Retarget all rally"), col: mark},
+			extraText{x: 174, y: 425, size: 11, text: b.tr("＋清除所有集結點", "+ Clear all rally"), col: mark})
 	}
 	// 艦隊標頭的熱區要等名冊畫完才知道有幾個,所以最後補進去
 	// (loadOverlayScreen 已經把 hits 複製走了,直接接在 s.hits 後面)。

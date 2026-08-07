@@ -17,7 +17,7 @@ Info	情報	星系工具列
 Turn	結束回合	星系工具列
 Game	遊戲	星系工具列
 FLEET OPERATIONS	艦隊作戰	艦隊列表標題
-ALL	全部	艦隊列表按鈕
+ALL	全選	艦隊列表按鈕:全選/全不選這支艦隊的艦艇(手冊 p.47「All: Selects all of the ships in the fleet」)
 RELOCATE	調動	艦隊列表按鈕
 SCRAP	拆解	艦隊列表按鈕
 LEADERS	軍官	艦隊列表按鈕

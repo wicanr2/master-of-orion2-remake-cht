@@ -1159,6 +1159,27 @@ SEND COLONY SHIP / SEND OUTPOST SHIP,那就是原版選行星的地方。先前�
 轟炸機/突擊梭(各自依賴另一套系統)、敵方不派戰機(敵艦沒有設計資料)、
 FTL 階與裝甲級先傳 1/0、出擊鈕不是原版版面。
 
+## ★ 2026-08-07 ALL 鈕根本不是集結點(gap report 第 70 項)
+
+第 65 項把艦隊列表的 **ALL** 鈕接上 `Set_All_Star_Relocations_`,並且自己標了「推測」。
+手冊在兩個地方各講了一次它到底是什麼:p.32「To select or deselect all of the ships in the
+window, you can use the All button」、p.47「All: Selects all of the ships in the fleet …
+(If all the ships are already selected, this deselects them instead)」。
+括號那句是 **toggle** 語意。p.47 同時給出那三顆鈕的完整清單:**All / Relocate / Scrap**。
+
+**那 Set_All / Clear_All 從哪裡進來?** 星圖的輸入處理器 `sub_73980`,而且是**鍵盤事件**:
+`−1105 → Clear_All`、`−1005 → 切換「下一次點星要 Set_All」模式`。同一支函式裡 −1002/−1001
+是與滑鼠 widget id 併列判斷的替代鍵,可見那組負數 id 就是鍵盤來的;兩者差 100,
+看起來是「某鍵」與「ALT+同一鍵」。**是哪一顆鍵沒有確認,不猜**(同第 54 項的立場)。
+
+**落地**:ALL → 全選/全不選(選取狀態本來就有,分艦隊用的就是它,所以「全選 → 拆分」
+兩下就做得完);Set_All / Clear_All → 名冊下方兩個**明確標示為 remake 自加**的入口
+(字前加「＋」),追出鍵碼之後改成星圖快捷鍵。
+
+**一個沒有照手冊改的地方**:p.47 說 Relocate 的終點要「click on another system you've a
+colony in」,但 `Okay_To_Set_Relocate_Star_` 對終點沒有這條檢查(那條只在起點分支)。
+程式碼是實際行為,手冊那句更像是描述常見用法——不改規則,記下來。
+
 ## 工作方式(使用者定案)
 - go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)
 - **不用多代理 workflow**;翻譯一組一組慢慢做(單代理逐項,使用者可隨時審閱)

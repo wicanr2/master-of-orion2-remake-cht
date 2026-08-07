@@ -364,3 +364,40 @@ func (b *sceneBuilder) galleryConfirmMessage() string {
 	return b.tr("這個星系被太空怪獸盤據,送過去的艦艇會遭到攻擊。仍要把集結點設在那裡嗎?",
 		"That system is guarded by a space monster and ships sent there will be attacked. Set the rally point anyway?")
 }
+
+// --- 艦隊列表的 ALL 鈕:全選 / 全不選(手冊 p.32 + p.47)---
+
+// toggleSelectAllShips 全選這支艦隊的艦艇;已經全選就變成全不選。
+//
+// 手冊 p.47 逐字:「All: Selects all of the ships in the fleet to prepare to receive orders.
+// (If all the ships are already selected, this deselects them instead.)」
+// 括號那句是 toggle 語意,不是「按一次全選、再按一次還是全選」。
+//
+// ⚠ 2026-08-07 訂正:這顆鈕先前被接成 `Set_All_Star_Relocations_`,那是**推測**且推錯了
+// (見 interactive.go 那塊 hits 的註解)。選取狀態本來就有——分艦隊用的就是它
+// (`sceneBuilder.shipPick`),所以這顆鈕接上去之後,「全選 → 分艦隊」變成兩下就做得完。
+func (b *sceneBuilder) toggleSelectAllShips() {
+	if b.session == nil {
+		return
+	}
+	f := b.session.Fleet()
+	if f == nil {
+		return
+	}
+	if b.shipPick == nil {
+		b.shipPick = map[int]bool{}
+	}
+	allOn := len(f.Ships) > 0
+	for i := range f.Ships {
+		if !b.shipPick[i] {
+			allOn = false
+			break
+		}
+	}
+	b.shipPick = map[int]bool{}
+	if !allOn {
+		for i := range f.Ships {
+			b.shipPick[i] = true
+		}
+	}
+}

@@ -134,7 +134,7 @@
 | AI 的遷移設定 | 資料模型 | 第 57 項的續:AI 沒有逐星的艦隊位置,所以沒有遷移可設 |
 | ~~AI 的同星系多殖民地~~ | ✅ | 第 67 項:`aiExpand` 的候選集加進「自己已有殖民地的星系」;順帶修好入侵只打下星系裡一個殖民地時星就整顆翻面的 bug |
 | ~~遷移連線的顯示開關沒有 UI~~ | ✅ | 第 65 項:接在遊戲選單的 SETTINGS 鈕下(⚠ 那一列不是原版版面,原版有一整個設定畫面) |
-| `Clear_All` 集結點沒有 UI 入口 | 未接 | 第 65 項:`Set_All` 已接上艦隊列表的 ALL 鈕(⚠ 它只改**已經有設定**的,不是全部設成同一顆);`Clear_All` 規則已實作並測試,但原版哪顆鈕對應它沒有確認,不猜 |
+| ~~`Clear_All` 集結點沒有 UI 入口~~ | ✅ | 第 70 項:兩者都有入口了。⚠ 同時訂正——**ALL 鈕不是 Set_All**,手冊兩處明說它是「全選/全不選艦艇」;原版的 Set_All / Clear_All 是**星圖上的鍵盤指令**(widget id −1005 / −1105),不是按鈕 |
 | ~~遷移確認框~~ | ✅ | 第 68 項:modal 是/否框做了(版面取自 `Confirmation_Box_`);⚠ 同時訂正——原版那個條件是**怪獸**不是艦隊 |
 
 **2026-08-07 逐條核實後從這張表刪掉的**(做完了,但表沒跟上):
@@ -3019,6 +3019,10 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     艦隊列表的 **ALL**(remake 譯「全部」)鈕接上前者;`Clear_All` 規則已實作並測試,
     但**還沒有 UI 入口**——原版那顆鈕按下去是哪一支沒有確認,不猜。
 
+    > ⚠ **2026-08-07 訂正(第 70 項)**:上面那句「ALL 鈕接上前者」是**推測,而且推錯了**。
+    > 手冊兩處明說 ALL 是「全選/全不選這支艦隊的艦艇」;原版的 `Set_All` / `Clear_All`
+    > 是**星圖上的鍵盤指令**,不是按鈕。詳見第 70 項。
+
     ### 遷移連線的顯示開關有地方放了
 
     原版的開關在設定畫面(手冊那組 ALT+Fn ——⚠ 哪一個鍵仍未確認,見第 54 項)。
@@ -3283,3 +3287,49 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     - `internal/shell/session.go`:`CombatShip.Bay` / `BayKind`(與快速結算讀同一份設計資料)
     - `cmd/moo2/tacticalfighter.go`:每回合的目標選擇、推進、結算與繪製(6 支測試)
     - 截圖廊 `16_tactical.png` 換成「一隊攔截機正飛向敵艦」的畫面
+
+70. **ALL 鈕根本不是集結點**(2026-08-07,把第 65 項的一個推測推翻)。
+
+    ### 兩處手冊,同一句話
+
+    第 65 項寫著「艦隊列表的 ALL 鈕接上 `Set_All_Star_Relocations_`」,並且自己標了「推測」。
+    手冊在兩個地方各講了一次它到底是什麼:
+
+    > p.32(Fleet Window)「To select or deselect all of the ships in the window, you can use
+    > the **All** button.」
+    > p.47(艦隊操作台的三顆鈕)「**All**: Selects all of the ships in the fleet to prepare to
+    > receive orders. (If all the ships are already selected, this deselects them instead.)」
+
+    括號那句是 **toggle** 語意——已全選就變成全不選,不是「按一次全選、再按一次還是全選」。
+    p.47 同時給出那三顆鈕的完整清單:**All / Relocate / Scrap**,`Set_All` 不在其中。
+
+    ### 那 Set_All / Clear_All 從哪裡進來?
+
+    星圖的輸入處理器 `sub_73980`:
+
+    ```
+    cmp eax, 0FFFFFBAFh   ; −1105 → Clear_All_Star_Relocations_(玩家) + 訊息 0x76
+    cmp eax, 0FFFFFC13h   ; −1005 → 切換 byte_19BED0(「下一次點星要 Set_All」模式)
+                          ;         之後點星才呼叫 Set_All_Star_Relocations_ + 訊息 0x77
+    ```
+
+    那組負數 id 是**鍵盤**來的:同一支函式裡 −1002 / −1001 是被拿來與滑鼠 widget id
+    **併列**判斷的替代鍵(`cmp ax, [var_40]` … `jz` … `cmp eax, −1002`),而 −1000 到處都是
+    (「沒有事件」)。兩個相關的 id **差 100**,看起來是「某鍵」與「ALT+同一鍵」。
+
+    **是哪一顆鍵沒有確認**(id → 鍵碼的對照表還沒追),所以不綁快捷鍵、不猜——
+    與第 54 項對手冊 ALT+Fn 邊欄標籤的保留同一個立場。
+
+    ### 落地
+
+    - **ALL 鈕** → `toggleSelectAllShips`:全選/全不選。選取狀態本來就有(分艦隊用的就是它),
+      所以接上去之後「全選 → 拆分」兩下就做得完。i18n 的譯名從「全部」改成「全選」。
+    - **Set_All / Clear_All** → 名冊下方兩個**明確標示為 remake 自加**的入口
+      (字前加「＋」,與原版烘在美術上的鈕區隔)。追出鍵碼之後改成星圖快捷鍵。
+
+    ### 一個沒有照手冊改的地方
+
+    p.47 說 Relocate 的終點要「click on another system **you've a colony in**」。
+    但 `Okay_To_Set_Relocate_Star_` 對終點只檢查黑洞/已探索/怪獸確認,
+    `Player_Has_Colony_In_System_` 那一條只在**起點**分支裡。
+    **程式碼是實際行為,手冊那句更像是描述常見用法**——不改規則,記在這裡。

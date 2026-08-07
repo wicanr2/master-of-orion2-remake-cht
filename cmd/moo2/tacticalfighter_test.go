@@ -102,3 +102,43 @@ func TestLaunchButtonIsOnScreen(t *testing.T) {
 		t.Errorf("出擊鈕 (%d,%d,%d,%d) 超出 %d×%d 畫面", x, y, w, h, moo2ScreenW, moo2ScreenH)
 	}
 }
+
+// --- 艦隊列表的 ALL 鈕(手冊 p.32 + p.47:全選/全不選艦艇,不是集結點)---
+
+// mkFleetBuilder 造一個有 3 艘船的最小 session builder。
+func mkFleetBuilder() *sceneBuilder {
+	s := shell.NewDemoSession()
+	s.Fleet().Ships = []shell.Ship{{Name: "甲"}, {Name: "乙"}, {Name: "丙"}}
+	return &sceneBuilder{session: s}
+}
+
+// 按一次全選,再按一次全不選(手冊括號那句:「If all the ships are already selected,
+// this deselects them instead.」)。
+func TestSelectAllTogglesInsteadOfAlwaysSelecting(t *testing.T) {
+	b := mkFleetBuilder()
+	b.toggleSelectAllShips()
+	for i := 0; i < 3; i++ {
+		if !b.shipPick[i] {
+			t.Fatalf("第一次按 ALL 應全選,第 %d 艘沒選到", i)
+		}
+	}
+	b.toggleSelectAllShips()
+	for i := 0; i < 3; i++ {
+		if b.shipPick[i] {
+			t.Errorf("已全選時再按 ALL 應全不選,第 %d 艘仍選著", i)
+		}
+	}
+}
+
+// 只選了一部分時按 ALL 是「補成全選」,不是「取消」——
+// 手冊的條件是 **all** the ships are already selected。
+func TestSelectAllFromPartialSelectionSelectsEverything(t *testing.T) {
+	b := mkFleetBuilder()
+	b.shipPick = map[int]bool{1: true}
+	b.toggleSelectAllShips()
+	for i := 0; i < 3; i++ {
+		if !b.shipPick[i] {
+			t.Errorf("部分選取時按 ALL 應補成全選,第 %d 艘沒選到", i)
+		}
+	}
+}
