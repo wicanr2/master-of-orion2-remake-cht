@@ -11,7 +11,7 @@ type EmpireOutput struct {
 	TaxRevenue         int            // 各殖民地稅收 BC 總和
 	FoodSurplusRevenue int            // 各殖民地「餘糧出售」BC 總和(見下方 RunEmpireTurn 說明)
 	TradeGoodsRevenue  int            // 各「貿易品」殖民地淨工業換算 BC 總和(見下方 RunEmpireTurn 說明)
-	NetBC              int            // 本回合國庫淨變化(TaxRevenue + FoodSurplusRevenue + TradeGoodsRevenue - Maintenance - CommandOverflowCost)
+	NetBC              int            // 本回合國庫淨變化(TaxRevenue + FoodSurplusRevenue + TradeGoodsRevenue − Maintenance − CommandOverflowCost − FreighterMaintenanceCost − FoodReplicatorCost)
 	// CommandOverflowCost 指揮評等(Command Rating)供給不足艦艇需求時,每回合從收入額外扣除
 	// 的維護費(GAME_MANUAL.pdf p.169,gamedata.IncomeCommandOverflowCost)。已計入 NetBC,
 	// 這裡單獨曝露供測試/UI 顯示「這筆錢花在哪」,供≥需時為 0。
@@ -22,8 +22,12 @@ type EmpireOutput struct {
 	// 2026-07-11(#4)追加接線段落)——本欄位隨之反映真實維護費;AI 對手未接該建造流程,
 	// ActiveFreighters 對 AI 仍恆為 0,本欄位對 AI 側仍是 no-op。
 	FreighterMaintenanceCost int
-	Player                   PlayerState // 研究推進 + BC 結算後的玩家狀態
-	ResearchDone             bool        // 本回合是否有研究主題完成
+	// FoodReplicatorCost 是各殖民地食物複製機這回合的 BC 成本總和(每單位食物 1 BC,
+	// GAME_MANUAL.pdf p.85)。已計入 NetBC,單獨曝露供測試/UI 顯示「這筆錢花在哪」。
+	// 沒有殖民地在饑荒(或都沒有這棟)時為 0。
+	FoodReplicatorCost int
+	Player             PlayerState // 研究推進 + BC 結算後的玩家狀態
+	ResearchDone       bool        // 本回合是否有研究主題完成
 }
 
 // RunEmpireTurn 編排一個帝國的一回合:
@@ -41,6 +45,9 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		co := RunColonyTurn(cs)
 		out.Colonies[i] = co
 		out.TotalFood += co.FoodSurplus
+		// 食物複製機的 BC 成本(手冊 1 BC per food)。換出來的食物與已扣掉的產能都在
+		// RunColonyTurn 處理完了,這裡只負責把錢算進帝國結算。
+		out.FoodReplicatorCost += co.FoodReplicated * gamedata.FoodReplicatorBCPerFood
 		out.TotalNetIndustry += co.NetIndustry
 		out.TotalResearch += co.Research
 		// 稅收:對各殖民地淨工業依帝國稅率抽稅(gamedata.IncomeTaxRevenue,1:1 換 BC)。
@@ -149,7 +156,7 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 	// 建造「運輸艦隊」後會非 0(見該欄位註解 2026-07-11(#4)追加接線段落),AI 對手仍恆 0。
 	out.FreighterMaintenanceCost = gamedata.IncomeFreighterMaintenanceCost(ps.ActiveFreighters)
 	// 國庫結算:稅收 + 餘糧收入 + 貿易品收入 - 維護費 - 指揮評等超支懲罰 - 運輸艦維護費。
-	out.NetBC = out.TaxRevenue + out.FoodSurplusRevenue + out.TradeGoodsRevenue - ps.Maintenance - out.CommandOverflowCost - out.FreighterMaintenanceCost
+	out.NetBC = out.TaxRevenue + out.FoodSurplusRevenue + out.TradeGoodsRevenue - ps.Maintenance - out.CommandOverflowCost - out.FreighterMaintenanceCost - out.FoodReplicatorCost
 	out.Player.BC += out.NetBC
 	return out
 }

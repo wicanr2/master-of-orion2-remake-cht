@@ -1284,6 +1284,9 @@ func (s *GameSession) applyBuildingEffect(i int, name string) {
 	case "自動實驗室": // Autolab p.96:「generating 30 research points per turn」——固定 30,不依賴人口。
 		// 手冊那一句只有一個數字、沒有 per-scientist 敘述,所以只動 FlatResearch。
 		c.FlatResearch += 30
+	case "食物複製機": // Food Replicators p.85:饑荒時用產能 2:1 換食物,每單位再花 1 BC。
+		// 「as needed」只補缺口,不換出盈餘——接法與那條規則都在 gamedata/food_replicators.go。
+		c.FoodReplicators = true
 	case "再生反應爐": // Recyclotron p.81:每單位人口 +1 產能(不分職業),且該產能不計入污染。
 		// 不接 FlatIndustry ——那個欄位在污染縮減之前併入 gross,接錯地方會讓這份產能
 		// 跟著產生污染,正好與手冊那句相反。接法見 engine.RunColonyTurn 的 recycled。
@@ -1322,11 +1325,16 @@ func (s *GameSession) applyBuildingEffect(i int, name string) {
 		// 海軍陸戰隊營本來就有獨立的陸戰隊召兵系統(ground_invasion.go),現在額外貢獻
 		// hasBarracks,兩個系統各自獨立生效,互不影響。
 		//
-		// 其餘 20 項(飛彈基地、戰機基地、地面砲台、再生反應爐、食物複製機、太空學院、自動實驗室、
-		// 行星輻射/通量/屏障護盾、曲速力場干擾器、戰鬥站、星辰要塞、阿提米絲系統網、次元傳送門)
-		// 手冊效果不對應 engine.ColonyState 既有欄位(艦艇駐防/軌道防禦等系統尚未建),暫不建模
-		// ——僅由 advanceBuilds 記入 s.ColonyBuildings 為「已建」,顯示於畫面,不影響數值結算。
-		// TODO:待對應遊戲系統(艦隊駐防/軌道防禦)建好後回頭補建模。
+		// 2026-08-07(gap report 第 92/93 項)這段清單縮短了六棟:
+		// **自動實驗室**(+30 研究點)、**再生反應爐**(每單位人口 +1 產能且不計污染)、
+		// **食物複製機**(饑荒時 2:1 換食物 + 1 BC/食物)已在上面的 switch 建模;
+		// **行星輻射/通量/屏障護盾**改由 orbital_bombardment.go 在轟炸解算時讀
+		// s.ColonyBuildings(gamedata.PlanetaryShieldReduction),不經 ColonyState。
+		//
+		// 仍未建模的(飛彈基地、戰機基地、地面砲台、太空學院、曲速力場干擾器、戰鬥站、
+		// 星辰要塞、阿提米絲系統網、次元傳送門)**是真的缺子系統**,不是沒接線:
+		// 艦隊駐防、軌道防禦火力、艦員經驗值、格子戰鬥的獨立戰機單位。
+		// 這些仍只由 advanceBuilds 記入 s.ColonyBuildings 為「已建」,顯示於畫面,不影響數值結算。
 	}
 }
 

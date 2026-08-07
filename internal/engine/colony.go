@@ -93,6 +93,17 @@ func RunColonyTurn(cs ColonyState) ColonyOutput {
 		recycled = cs.Population
 		netIndustry += recycled
 	}
+	// 食物複製機(p.85)在這裡:產能已經扣完污染、成長還沒算。
+	// 「as needed」= 只補缺口,所以盈餘為正時什麼都不做——那條漏掉會變成印鈔機
+	// (換滿食物 → 餘糧出售換 BC),見 gamedata/food_replicators.go。
+	replicated := 0
+	if cs.FoodReplicators && surplus < 0 {
+		spent := 0
+		replicated, spent = gamedata.FoodReplicatorConvert(-surplus, netIndustry)
+		food += replicated
+		surplus += replicated
+		netIndustry -= spent
+	}
 	research := gamedata.GravityAdjustedProduction(cs.Scientists*cs.ResearchPerScientist, pct) + cs.FlatResearch
 	growth := colonyGrowth(cs, surplus, netIndustry)
 
@@ -101,6 +112,7 @@ func RunColonyTurn(cs ColonyState) ColonyOutput {
 		FoodConsumed:         consumed,
 		FoodSurplus:          surplus,
 		Starving:             surplus < 0,
+		FoodReplicated:       replicated,
 		GrossIndustry:        gross + recycled,
 		PollutingProduction:  pollutingProd,
 		PollutionCleanupCost: cleanupCost,

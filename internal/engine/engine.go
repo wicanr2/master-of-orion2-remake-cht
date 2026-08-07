@@ -37,6 +37,11 @@ type ColonyState struct {
 	AtmosphericRenewer bool // 大氣更新器
 	CoreWasteDump      bool // 核心廢料場(完全消除污染)
 
+	// FoodReplicators 是食物複製機(GAME_MANUAL.pdf p.85)。true 時,食物赤字會用產能
+	// 以 2:1 換成食物補足(每單位再花 1 BC,由 RunEmpireTurn 結算)。
+	// **只補缺口、不換出盈餘**——見 gamedata/food_replicators.go 的「as needed」段落。
+	FoodReplicators bool
+
 	// Recyclotron 是再生反應爐(GAME_MANUAL.pdf p.81)。
 	//
 	// 手冊原文兩句缺一不可:「each unit of population generates 1 industrial production,
@@ -255,10 +260,14 @@ type PlayerState struct {
 
 // ColonyOutput 是一回合殖民地經濟結算結果。
 type ColonyOutput struct {
-	Food                 int // 農業總產出
-	FoodConsumed         int // 人口消耗(每人口單位 1)
-	FoodSurplus          int // Food - FoodConsumed(負值=饑荒,見 Starving)
-	Starving             bool
+	Food         int // 農業總產出
+	FoodConsumed int // 人口消耗(每人口單位 1)
+	FoodSurplus  int // Food - FoodConsumed(負值=饑荒,見 Starving)
+	Starving     bool
+	// FoodReplicated 是食物複製機這回合用產能換出來的食物單位數(p.85)。
+	// 已計入 Food / FoodSurplus,且對應的產能已從 NetIndustry 扣掉;單獨曝露是因為
+	// 帝國層要用它乘 gamedata.FoodReplicatorBCPerFood 算 BC 成本。
+	FoodReplicated       int
 	GrossIndustry        int // 工人總工業產出(未扣污染清理)
 	PollutingProduction  int // 仍會產生污染的產能
 	PollutionCleanupCost int // 清理污染消耗的產能

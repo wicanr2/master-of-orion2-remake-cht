@@ -1,6 +1,10 @@
 package engine
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+)
 
 // 再生反應爐 p.81 的兩句話各是一個獨立斷言,兩個都要驗。
 //
@@ -13,6 +17,7 @@ func TestRecyclotronAddsPopulationProductionWithoutPollution(t *testing.T) {
 	base := ColonyState{
 		Population: 8, Workers: 3, PopMax: 10,
 		IndustryPerWorker: 3, PlanetSize: 2,
+		PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT,
 	}
 	off := RunColonyTurn(base)
 
@@ -40,6 +45,7 @@ func TestFlatIndustryDoesRaisePollutionSoTheRecyclotronCheckHasTeeth(t *testing.
 	base := ColonyState{
 		Population: 8, Workers: 3, PopMax: 10,
 		IndustryPerWorker: 3, PlanetSize: 2,
+		PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT,
 	}
 	off := RunColonyTurn(base)
 	flat := base
@@ -59,5 +65,82 @@ func TestRecyclotronCountsTowardGrossIndustry(t *testing.T) {
 	got := RunColonyTurn(on)
 	if diff := got.GrossIndustry - off.GrossIndustry; diff != base.Population {
 		t.Errorf("毛工業應多 %d,實際多 %d", base.Population, diff)
+	}
+}
+
+// 食物複製機:饑荒時用產能換食物,而且只補到剛好不餓。
+func TestFoodReplicatorsCoverTheDeficitButNeverCreateSurplus(t *testing.T) {
+	// 人口 10 吃掉 10,農夫 2 × 每人 1 = 2 → 缺 8。
+	base := ColonyState{
+		Population: 10, PopMax: 12, Farmers: 2, Workers: 5,
+		FoodPerFarmer: 1, IndustryPerWorker: 10, PlanetSize: 2,
+		PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT,
+	}
+	off := RunColonyTurn(base)
+	if off.FoodSurplus != -8 {
+		t.Fatalf("測試前提:應缺 8 食物,得到 %d", off.FoodSurplus)
+	}
+	if off.FoodReplicated != 0 {
+		t.Fatalf("沒有這棟建築時不該換算,得到 %d", off.FoodReplicated)
+	}
+
+	on := base
+	on.FoodReplicators = true
+	got := RunColonyTurn(on)
+
+	if got.FoodSurplus != 0 {
+		t.Errorf("複製機應剛好補平缺口(盈餘 0),得到 %d ——正數代表沒守住「as needed」", got.FoodSurplus)
+	}
+	if got.Starving {
+		t.Error("補平之後不該還算饑荒")
+	}
+	if got.FoodReplicated != 8 {
+		t.Errorf("應換出 8 單位食物,得到 %d", got.FoodReplicated)
+	}
+	if diff := off.NetIndustry - got.NetIndustry; diff != 16 {
+		t.Errorf("換 8 食物應花 16 產能(2:1),實際少了 %d", diff)
+	}
+}
+
+// 產能不夠時只補得了一部分,而且不會把產能扣成負的。
+func TestFoodReplicatorsClampToAvailableProduction(t *testing.T) {
+	base := ColonyState{
+		Population: 10, PopMax: 12, Farmers: 1, Workers: 1,
+		FoodPerFarmer: 1, IndustryPerWorker: 3, PlanetSize: 2,
+		PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT,
+		FoodReplicators: true,
+	}
+	got := RunColonyTurn(base)
+	if got.NetIndustry < 0 {
+		t.Errorf("淨產能不該被扣成負數,得到 %d", got.NetIndustry)
+	}
+	if got.FoodSurplus >= 0 {
+		t.Errorf("產能不足時應仍然是赤字,得到盈餘 %d", got.FoodSurplus)
+	}
+	if got.FoodReplicated*2 > got.FoodReplicated*2+got.NetIndustry {
+		t.Error("換算花掉的產能超出可用量")
+	}
+}
+
+// 食物有盈餘時完全不動——否則會變成「換滿食物 → 餘糧出售換 BC」的印鈔機。
+func TestFoodReplicatorsIdleWhenThereIsSurplus(t *testing.T) {
+	base := ColonyState{
+		Population: 4, PopMax: 12, Farmers: 6, Workers: 4,
+		FoodPerFarmer: 3, IndustryPerWorker: 5, PlanetSize: 2,
+		PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT,
+	}
+	off := RunColonyTurn(base)
+	if off.FoodSurplus <= 0 {
+		t.Fatalf("測試前提:應該有食物盈餘,得到 %d", off.FoodSurplus)
+	}
+	on := base
+	on.FoodReplicators = true
+	got := RunColonyTurn(on)
+	if got.FoodReplicated != 0 {
+		t.Errorf("有盈餘時不該換算,得到 %d", got.FoodReplicated)
+	}
+	if got.NetIndustry != off.NetIndustry || got.FoodSurplus != off.FoodSurplus {
+		t.Errorf("有盈餘時應完全不動:產能 %d→%d、盈餘 %d→%d",
+			off.NetIndustry, got.NetIndustry, off.FoodSurplus, got.FoodSurplus)
 	}
 }
