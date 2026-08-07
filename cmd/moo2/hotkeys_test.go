@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
@@ -130,5 +132,61 @@ func TestStarAtScreenMatchesClickBox(t *testing.T) {
 		if got := b.starAtScreen(x+starHitHalf, y+starHitHalf); got == i {
 			t.Errorf("方框外(+%d)不該命中星 %d", starHitHalf, i)
 		}
+	}
+}
+
+// TestQuickSaveWritesAndReports:F10 要真的寫檔,而且要回報。
+//
+// 「回報」不是裝飾:原版的 F10 是**直接覆蓋**、沒有對話框,玩家按下去唯一的回饋就是那句話。
+// 沒有它,存成功與存失敗看起來完全一樣。
+func TestQuickSaveWritesAndReports(t *testing.T) {
+	b := hotkeyBuilder(3)
+	path := filepath.Join(t.TempDir(), "quick.json")
+	b.savePath = path
+
+	if !b.handleGalaxyHotkey(shell.HotkeyQuickSave) {
+		t.Fatal("F10 應被處理")
+	}
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("存檔沒寫出來:%v", err)
+	}
+	if b.flashMsg == "" {
+		t.Error("存完應該有回報訊息")
+	}
+	if b.flashUntil <= b.animTick {
+		t.Errorf("訊息應該還在有效期內(animTick %d,flashUntil %d)", b.animTick, b.flashUntil)
+	}
+}
+
+// TestQuickSaveWithoutSlotSaysSo:沒有存檔位置時要說出來,不能安靜地什麼都不做。
+func TestQuickSaveWithoutSlotSaysSo(t *testing.T) {
+	b := hotkeyBuilder(3)
+	b.savePath = ""
+	b.handleGalaxyHotkey(shell.HotkeyQuickSave)
+	if b.flashMsg == "" {
+		t.Error("沒有存檔位置時應該回報,不能靜默")
+	}
+}
+
+// TestFlashExpires:訊息要自己消失——一直掛著的「已存檔」會被誤讀成「還在存」。
+func TestFlashExpires(t *testing.T) {
+	b := hotkeyBuilder(3)
+	b.animTick = 100
+	b.flash("測試")
+	if b.flashUntil != 100+flashTicks {
+		t.Errorf("到期時間應為 %d,實得 %d", 100+flashTicks, b.flashUntil)
+	}
+	b.animTick = b.flashUntil - 1
+	if !b.flashVisible() {
+		t.Error("到期前一拍應仍要畫")
+	}
+	b.animTick = b.flashUntil
+	if b.flashVisible() {
+		t.Error("到期後不該再畫")
+	}
+	// 沒有訊息內容時不該畫(避免畫一個空底框)。
+	b.flashMsg, b.animTick = "", 0
+	if b.flashVisible() {
+		t.Error("沒有訊息時不該畫")
 	}
 }

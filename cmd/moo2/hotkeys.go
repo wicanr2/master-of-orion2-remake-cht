@@ -44,12 +44,18 @@ var hotkeyBindings = []struct {
 	{ebiten.KeyF5, shell.HotkeyNextColony},
 	{ebiten.KeyF6, shell.HotkeyPrevColony},
 	{ebiten.KeyF9, shell.HotkeyMeasureDist},
+	{ebiten.KeyF10, shell.HotkeyQuickSave},
 }
 
 // pollHotkey 回傳這一幀剛按下的快捷鍵代碼(沒有回空字串)。
 //
 // 邊緣觸發:按住不連發,和原版一樣是一次一步。
 func pollHotkey() string {
+	// ALT 組合先判:F9 單獨是測距、ALT+F9 是載入(手冊兩處分別寫死),
+	// 不先攔就會被下面的單鍵表當成測距。
+	if inpututil.IsKeyJustPressed(ebiten.KeyF9) && ebiten.IsKeyPressed(ebiten.KeyAlt) {
+		return shell.HotkeyLoadGame
+	}
 	for _, b := range hotkeyBindings {
 		if inpututil.IsKeyJustPressed(b.key) {
 			return b.code
@@ -108,8 +114,36 @@ func (b *sceneBuilder) handleGalaxyHotkey(code string) bool {
 		sess.SelectedStar = idx
 		b.lastActionMsg = ""
 		return true
+	case shell.HotkeyQuickSave:
+		b.quickSave()
+		return true
 	}
 	return false
+}
+
+// quickSave 是 F10:存回目前這一格,不問名字。
+//
+// 手冊逐字:「saves your game under the same name as the last game you saved. Be careful
+// when using this, as it overwrites the previous saved game completely and irreversibly.」
+//
+// remake 的「上次的存檔名」就是 `b.savePath`——開局是自動存檔那一格,從載入視窗讀過某一格
+// 之後會改成那一格(見 sceneBuilder.savePath 註解)。語意因此天然對上,不必另建概念。
+//
+// ⚠ **覆蓋是原版行為,不是疏漏**,所以不加確認對話框;但一定要回報存到哪一格,
+// 否則玩家按下去只會看到「什麼都沒發生」,分不出成功與失敗。
+func (b *sceneBuilder) quickSave() {
+	if b.session == nil {
+		return
+	}
+	if b.savePath == "" {
+		b.flash(b.tr("沒有存檔位置可用", "No save slot available"))
+		return
+	}
+	if err := b.session.Save(b.savePath); err != nil {
+		b.flash(b.tr("快速存檔失敗:", "Quick save failed: ") + err.Error())
+		return
+	}
+	b.flash(b.tr("已快速存檔(覆蓋同一格)", "Quick saved (same slot overwritten)"))
 }
 
 // measureClickedStar 在測距模式下吃掉一次點星:第一次記起點,之後換起點。
@@ -199,4 +233,36 @@ func (b *sceneBuilder) galleryMeasureTarget() int {
 		return i
 	}
 	return -1
+}
+
+// ---- 短暫訊息(flash)----
+//
+// 星圖既有的 `lastActionMsg` 畫在**選中星資訊面板裡**(42,415),沒選星就看不到。
+// 快速存檔這種「沒有對象」的動作需要另一個位置,而且該自己消失——
+// 一直掛著的確認訊息會被誤讀成「還在存」。
+
+// flashTicks 是訊息停留幾次重畫(約 3 秒 @60fps)。
+const flashTicks = 180
+
+// flash 設定一則短暫訊息。
+func (b *sceneBuilder) flash(msg string) {
+	b.flashMsg, b.flashUntil = msg, b.animTick+flashTicks
+}
+
+// flashVisible 回傳現在該不該畫短暫訊息。抽出來是為了能單獨驗到期規則
+// (drawFlash 要有字型和畫布才跑得動)。
+func (b *sceneBuilder) flashVisible() bool {
+	return b.flashMsg != "" && b.animTick < b.flashUntil
+}
+
+// drawFlash 把短暫訊息畫在星圖底緣置中(避開左下角的選中星面板 28..238)。
+func (b *sceneBuilder) drawFlash(dst *ebiten.Image) {
+	if !b.flashVisible() || b.fnt == nil {
+		return
+	}
+	w, _ := b.fnt.Measure(b.flashMsg, 11)
+	const cx, cy = 340, 412 // 星圖視窗(20..527)偏右的底緣,不壓到左下角面板
+	vector.DrawFilledRect(dst, float32(cx)-float32(w)/2-6, cy-11, float32(w)+12, 16,
+		color.RGBA{12, 18, 34, 225}, false)
+	b.fnt.DrawCentered(dst, b.flashMsg, cx, cy, 11, color.RGBA{225, 240, 220, 255})
 }

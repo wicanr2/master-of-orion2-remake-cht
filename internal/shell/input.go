@@ -21,12 +21,13 @@ type InputState struct {
 // 抽出來的文字流會排到前一個選項的描述尾巴,對應關係有 off-by-one 的風險(中間還缺 F4)。
 // **沒有對原版逐項確認之前不要加**。
 const (
-	HotkeyNextFleet   = "F1"  // 循環到下一支已知艦隊
-	HotkeyPrevFleet   = "F2"  // 循環到上一支
-	HotkeyNextColony  = "F5"  // 下一個已殖民星系
-	HotkeyPrevColony  = "F6"  // 上一個已殖民星系
-	HotkeyMeasureDist = "F9"  // 測距:點第一顆星,游標移到另一顆看秒差距
-	HotkeyQuickSave   = "F10" // 快速存檔(沿用上次的存檔名)
+	HotkeyNextFleet   = "F1"     // 循環到下一支已知艦隊
+	HotkeyPrevFleet   = "F2"     // 循環到上一支
+	HotkeyNextColony  = "F5"     // 下一個已殖民星系
+	HotkeyPrevColony  = "F6"     // 上一個已殖民星系
+	HotkeyMeasureDist = "F9"     // 測距:點第一顆星,游標移到另一顆看秒差距
+	HotkeyQuickSave   = "F10"    // 快速存檔(沿用上次的存檔名,**直接覆蓋**)
+	HotkeyLoadGame    = "ALT+F9" // 從星圖叫出載入視窗
 )
 
 // Button 是一個矩形按鈕(左上 X,Y + 寬高),ID 供邏輯辨識、Label 供顯示。

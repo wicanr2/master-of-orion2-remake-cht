@@ -360,7 +360,11 @@ type sceneBuilder struct {
 	animTick int
 	// measure 是 F9 測距模式的狀態(見 hotkeys.go)。放這裡不放 GameSession:
 	// 它是「看的方式」不是世界狀態,不該進存檔。
-	measure           measureState
+	measure measureState
+	// flashMsg / flashUntil 是星圖底緣的短暫訊息(F10 快速存檔的回報等,見 hotkeys.go)。
+	// flashUntil 用 animTick 計時,到了就不畫。
+	flashMsg          string
+	flashUntil        int
 	nebMaskCache      map[int]*nebulaMask  // 星雲遮罩;派遣時沿航線取樣上百次,不快取會重解上百次 LBX
 	pendingHotseat    int                  // 多人設定畫面選的真人席位數;0/1 = 單人局(開局後由 applyHotseat 套用)
 	savePath          string               // remake 存檔路徑(每回合自動存;主選單 Load/Continue 讀)
@@ -839,6 +843,14 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 	}
 	// 星圖的鍵盤快捷鍵(F1/F2 循環艦隊、F5/F6 切換已殖民星系、F9 測距;見 hotkeys.go)。
 	s.onHotkey = func(code string) *origTransition {
+		// ALT+F9 是換畫面(載入視窗),和其他幾個「只換選取星」的不同,單獨處理。
+		if code == shell.HotkeyLoadGame {
+			sc, err := b.loadGameInPlay()
+			if err != nil {
+				return nil
+			}
+			return &origTransition{next: sc}
+		}
 		if b.handleGalaxyHotkey(code) {
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
@@ -858,6 +870,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			b.drawGateIcons(dst, vis)             // 狀態標示,蓋在星星之上
 			b.drawAudienceLights(dst)             // 會談請求燈(星圖上緣,原版 y=5、由右往左)
 			b.drawMeasureOverlay(dst, s.mx, s.my) // F9 測距(手冊:游標移到哪就顯示到哪)
+			b.drawFlash(dst)                      // 短暫訊息(F10 快速存檔的回報等)
 			if fnt != nil {
 				// 狀態數字畫進原版右側資訊格(openorion2 galaxy.cpp:1552-1588 硬編位置,
 				// 對齊 buffer0.lbx#0 背景烘印的圖示格):星曆→頂右薄框(549,27,63,13)、
