@@ -776,7 +776,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			// 每幀算一次可見性(#13 輕量戰爭迷霧),避免 drawStarmap 逐星重算。
 			// 星圖底:純黑 + 原版 `Draw_Paralax_` 的三層星空(見 starbg.go)。
 			b.drawStarmapBackground(dst)
-			drawStarmap(dst, fnt, sess.Stars, sess.SelectedStar, sess.VisibleStars())
+			drawStarmap(b, dst, fnt, sess.Stars, sess.SelectedStar, sess.VisibleStars())
 			if fnt != nil {
 				// 狀態數字畫進原版右側資訊格(openorion2 galaxy.cpp:1552-1588 硬編位置,
 				// 對齊 buffer0.lbx#0 背景烘印的圖示格):星曆→頂右薄框(549,27,63,13)、
@@ -937,7 +937,10 @@ func starScreenPos(st shell.Star) (int, int) {
 // /轟炸等既有流程完全不受影響,玩家仍可對著霧裡的暗星點擊派艦探索。
 // drawStarmap 畫星圖上的星球。**底色與星空背景由 `drawStarmapBackground` 負責**,
 // 這裡不再自己塗底——順序寫死在呼叫端,免得兩邊各塗一次互相蓋掉。
-func drawStarmap(dst *ebiten.Image, fnt *uifont.Font, stars []shell.Star, selected int, visible []bool) {
+//
+// b 只用來取原版的星球 sprite(見 starsprite.go);取不到就退回色圓,
+// 那是**沒有原版資產時的降級**,不是原版的樣子。
+func drawStarmap(b *sceneBuilder, dst *ebiten.Image, fnt *uifont.Font, stars []shell.Star, selected int, visible []bool) {
 	const vx0, vy0, vx1, vy1 = starVX0, starVY0, starVX1, starVY1
 	for i, st := range stars {
 		seen := visible == nil || (i < len(visible) && visible[i])
@@ -948,16 +951,19 @@ func drawStarmap(dst *ebiten.Image, fnt *uifont.Font, stars []shell.Star, select
 		if !ok {
 			col = color.RGBA{200, 200, 200, 255}
 		}
-		r := float32(6 - st.Size) // 大=6 .. 小=3
+		r := float32(6 - st.Size) // 降級色圓的半徑:大=6 .. 小=3
 		if r < 3 {
 			r = 3
 		}
 		if !seen {
-			// 未偵測到的霧星:縮成暗灰小點,不畫擁有環/星名/選中高亮(未知歸屬)。
-			r = 2
-			col = color.RGBA{60, 64, 76, 255}
-			vector.DrawFilledCircle(dst, x, y, r, col, true)
+			// 未偵測到的霧星:縮成暗灰小點,不畫 sprite / 擁有環 / 星名 / 選中高亮(未知歸屬)。
+			vector.DrawFilledCircle(dst, x, y, 2, color.RGBA{60, 64, 76, 255}, true)
 			continue
+		}
+		// 原版 sprite 先畫,拿它的半徑當外圈環的基準;取不到就退回色圓。
+		sprite := b.drawStarSpriteAt(dst, st, int(x), int(y))
+		if sprite > 0 {
+			r = sprite
 		}
 		// 選中星:黃色高亮環。
 		if i == selected {
@@ -970,7 +976,9 @@ func drawStarmap(dst *ebiten.Image, fnt *uifont.Font, stars []shell.Star, select
 		case 2:
 			vector.StrokeCircle(dst, x, y, r+3, 1.5, color.RGBA{235, 90, 80, 255}, true)
 		}
-		vector.DrawFilledCircle(dst, x, y, r, col, true)
+		if sprite == 0 {
+			vector.DrawFilledCircle(dst, x, y, r, col, true)
+		}
 		if fnt != nil && st.Name != "" {
 			fnt.Draw(dst, st.Name, float64(x)+float64(r)+3, float64(y)-2, 11, color.RGBA{170, 185, 210, 255})
 		}

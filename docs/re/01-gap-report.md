@@ -1209,7 +1209,7 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     |---|---|---|---|
     | 1 | `Draw_Wormhole_Links_` | 0x85593 | ❌ |
     | 2 | `Draw_Relocation_Links_` | 0x85320 | ❌ |
-    | 3 | `Draw_Stars_` → 逐星 `Draw_A_Star_` | 0x85550 / 0x83B02 | ⚠ 簡化(自畫圓點,非原版星球 sprite)|
+    | 3 | `Draw_Stars_` → 逐星 `Draw_A_Star_` | 0x85550 / 0x83B02 | ✅ sprite 已接(第 34 項);閃爍動畫未做 |
     | 4 | `Draw_A_Gate_Icon_`(迴圈) | 0x83741 | ❌ |
     | 5 | `Print_Star_Names_` | 0x88CB7 | ⚠ 簡化 |
     | 6 | `Draw_Black_Holes_` | 0x83BF9 | ❌ |
@@ -1322,3 +1322,48 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
       `y` 同理,圖從 `dword_190298[i*16 + 縮放*4]` 這個快取取。**需要銀河生成先產出星雲表**
       (位置 + 型別),remake 的星系產生器目前沒有這個欄位——這是資料模型缺口,不是繪圖缺口。
     - 蟲洞連線、遷移連線、星門、黑洞、外交燈號:同樣都缺對應的資料模型或旗標。
+
+34. **星圖:星球換成原版 sprite**(2026-08-07,第 33 項的續)。
+
+    remake 先前用 `vector.DrawFilledCircle` 畫色圓,那是佔位。
+
+    ### 資產編號:三個獨立來源互相印證
+
+    | 來源 | 內容 |
+    |---|---|
+    | 反組譯 `Get_Star_Picture_Seg_` @ 0x81CD3 | `edx = al×6`;`al == 6` 時 `eax = 縮放`,否則 `eax = 縮放 + bl`;資產 = `0x94 + eax + edx` |
+    | openorion2 `galaxy.cpp:1664` | `_starimg[s->spectralClass][_zoom + s->size]`,`ASSET_GALAXY_STAR_IMAGES 148`、`STAR_TYPE_COUNT 6`、`GALAXY_STAR_SIZES 6` |
+    | 實測 BUFFER0.LBX | 148..183 正好 6 組 × 6 張,每組尺寸 33/29/25/23/21/17(遞減),各 5 幀 |
+
+    → **資產 = 148 + 光譜×6 +(縮放 + 大小)**
+
+    列舉 remake 本來就對上:`Star.Spectral` 0=藍…6=黑洞 = openorion2 `SpectralClass`;
+    `Star.Size` 0=大..3=小 = `StarSize{Large, Medium, Small, Tiny}`。
+
+    ### 公式自己證明了自己(黑洞那條分支)
+
+    光譜 6 不加大小,算出來是 `148 + 6×6 + 縮放` = **184 + 縮放**。而 openorion2
+    `galaxy.cpp:45` 另外命名了 `#define ASSET_GALAXY_BHOLE_IMAGES 184`,用法是
+    `_bholeimg[縮放]`。**兩邊落在同一個數字上**——一邊是從組語推出來的算式、一邊是別人專案裡
+    獨立命名的常數。這同時證實了基底 148、每組 6 張、光譜×6、以及「光譜 6 = 黑洞」四件事。
+
+    ### ⚠ 縮放:原版那個值 remake 沒有對應物
+
+    `Map_Scale_To_Zoom_Level_` @ 0x79917 把地圖比例(`word_199992` = 10/15/20/30,
+    即 openorion2 的 `galaxySizeFactors`)換成縮放 0..3。openorion2 `galaxy.cpp:1385`
+    揭露關鍵:**縮放是銀河尺寸的函式,不是玩家控制的**——銀河越大 → sizeFactor 越大 →
+    星球畫得越小,因為要塞進同一個視窗。螢幕座標是 `21 + 10×(x − 捲動)/sizeFactor`
+    (`transformX`),sizeFactor 越大距離越短,所以 **0 = 最放大、3 = 最縮小**。
+
+    remake 這裡有**模型落差**:它把星球座標正規化成 0..1 攤滿視窗,銀河多大都一樣,也沒有
+    捲動,所以那個對應接不過來,**不存在忠實值**。固定用 3(最縮小),理由是 remake 永遠
+    一次顯示整個銀河。**這是 remake 的選擇不是原版真值**,做出捲動/縮放前別把它寫成真值。
+
+    順帶:這個縮放語意也解釋了第 32 項艦隊圖示那個看起來反直覺的映射(3→0、2→1、1→2、0→3)
+    ——縮小到底(3)配最小的圖(11×11),完全合理。
+
+    ### 仍是缺口
+
+    - 星球的 **5 幀閃爍動畫**沒做,只取第 0 幀(同艦隊圖示的 8 幀)。
+    - 黑洞在原版是 `Draw_Black_Holes_` @ 0x83BF9 的**獨立迴圈**(黑洞是星球以外的地圖物件),
+      remake 把它當光譜 6 的星球一起畫。圖是對的,但**阻擋航線**那套(`Star.blackHoleBlocks`)沒有。
