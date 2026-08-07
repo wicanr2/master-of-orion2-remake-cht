@@ -1,0 +1,145 @@
+package shell
+
+// orbit.go:**一星多行星**的資料模型。
+//
+// remake 先前是 `Stars[i]` ↔ `Planets[i]` **一對一**——一顆星一顆行星。
+// MOO2 不是這樣:**每個星系有 5 個軌道**,每個軌道可能有行星、也可能是空的。
+//
+// ============ 5 個軌道:三個獨立來源 ============
+//
+//	① 偏移算術:星球結構裡軌道陣列在 +0x4A,而下一個已知欄位(遷移目標,見 relocation.go)
+//	   在 +0x54 —— 中間 10 個位元組 = **5 個 word**。
+//	② `System_Planet_Scanned_To_Planet_Id_` @ 0x78CDB:
+//	     word[星×0x71 + 0x4A + 軌道×2]        ; 軌道 → 行星 id(−1 = 空)
+//	③ 走訪那個陣列的迴圈,上界是寫死的:`cmp word ptr [var_4], 5; jge`(0x1CB31)。
+//
+// 行星本身是**獨立的一張表**(`dword_1930D4`,每筆 0x11 = 17 位元組),
+// `Planet_Orbit_` @ 0x783ED 讀 `byte[行星 id×0x11 + 3]` = 它在第幾號軌道。
+// 也就是**雙向都有指標**:星 → 軌道 → 行星 id,以及行星 → 軌道號。
+//
+// ============ 這一層卡著什麼 ============
+//
+//   - **人造行星**(建築 48):按定義就是「在既有星系裡再多一顆世界」——沒有空軌道就無處可放。
+//   - **System 視窗**:原版列的是整個星系的行星,remake 只有一顆。
+//   - **同星系多殖民地**。
+//
+// ============ ⚠ 這一版是「行為不變」的第一階段 ============
+//
+// 產生器目前仍然每顆星只生一顆行星,放在**軌道 0**,其餘 4 個軌道空著。
+// 所以畫面與數值**逐位元不變**——這一階段換的是形狀不是內容。
+// 真正生出多顆行星要等骰表接上(原版 `_orbit_to_satellite_type` 那條,見 gap report C-5)。
+
+// StarOrbits 是每個星系的軌道數(原版真值,見檔頭三個來源)。
+const StarOrbits = 5
+
+// OrbitEmpty 是「這個軌道沒有行星」(原版的 −1)。
+const OrbitEmpty = -1
+
+// PlanetAt 回傳某顆星**第一個有行星的軌道**上那顆行星的索引(沒有回 −1)。
+//
+// 這是給「一顆星只看一顆行星」的舊呼叫端用的橋:一星一行星時它就是原本的 `Planets[star]`,
+// 多行星之後它是「主行星」。**新程式碼要處理整個星系時請用 `PlanetsAt`。**
+func (s *GameSession) PlanetAt(star int) int {
+	for _, p := range s.OrbitsOf(star) {
+		if p != OrbitEmpty {
+			return p
+		}
+	}
+	return -1
+}
+
+// PlanetsAt 回傳某顆星所有軌道上的行星索引(依軌道順序,略過空軌道)。
+func (s *GameSession) PlanetsAt(star int) []int {
+	var out []int
+	for _, p := range s.OrbitsOf(star) {
+		if p != OrbitEmpty {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// OrbitsOf 回傳某顆星的軌道表(越界回全空)。
+//
+// ⚠ 舊存檔沒有 Orbits,解出來是 5 個零值 **0** —— 那會讓每顆星都宣稱軌道 0 上有行星 0
+// (同蟲洞欄位那個坑,見 Star.Wormhole 註解)。讀檔一律走 `normalizeOrbits`。
+func (s *GameSession) OrbitsOf(star int) [StarOrbits]int {
+	if star < 0 || star >= len(s.Stars) {
+		return emptyOrbits()
+	}
+	return s.Stars[star].Orbits
+}
+
+// emptyOrbits 回傳「五個軌道都是空的」。
+func emptyOrbits() [StarOrbits]int {
+	var o [StarOrbits]int
+	for i := range o {
+		o[i] = OrbitEmpty
+	}
+	return o
+}
+
+// PlanetStar 回傳某顆行星屬於哪一顆星(找不到回 −1)。
+//
+// 原版是行星結構自己記著(`Planet_Orbit_` 那一族),remake 目前用反查——
+// 星數與行星數都是幾十,反查的成本可以忽略,而少一份要維護的雙向指標就少一種對不上的方式。
+func (s *GameSession) PlanetStar(planet int) int {
+	for i := range s.Stars {
+		for _, p := range s.Stars[i].Orbits {
+			if p == planet {
+				return i
+			}
+		}
+	}
+	return -1
+}
+
+// PlanetOrbit 回傳某顆行星在第幾號軌道(找不到回 −1)。對應原版 `Planet_Orbit_` @ 0x783ED。
+func (s *GameSession) PlanetOrbit(planet int) int {
+	for i := range s.Stars {
+		for o, p := range s.Stars[i].Orbits {
+			if p == planet {
+				return o
+			}
+		}
+	}
+	return -1
+}
+
+// FreeOrbit 回傳某顆星第一個空軌道的編號(沒有空軌道回 −1)。
+//
+// 人造行星要用這個:沒有空軌道就蓋不了。
+func (s *GameSession) FreeOrbit(star int) int {
+	if star < 0 || star >= len(s.Stars) {
+		return -1
+	}
+	for o, p := range s.Stars[star].Orbits {
+		if p == OrbitEmpty {
+			return o
+		}
+	}
+	return -1
+}
+
+// normalizeOrbits 修掉「舊存檔沒有 Orbits」的零值陷阱,並重建缺漏的軌道表。
+//
+// 判準:整張表都是 0(Go 零值)且行星數與星數相同 → 那是**一星一行星時代的存檔**,
+// 重建成「每顆星的軌道 0 放同索引的行星」。這與該版本的實際狀態逐位元一致。
+func normalizeOrbits(stars []Star, nPlanets int) {
+	for i := range stars {
+		allZero := true
+		for _, p := range stars[i].Orbits {
+			if p != 0 {
+				allZero = false
+				break
+			}
+		}
+		if !allZero {
+			continue // 已經是新格式(至少有一個非零,含 −1)
+		}
+		stars[i].Orbits = emptyOrbits()
+		if i < nPlanets {
+			stars[i].Orbits[0] = i // 舊格式:Planets 與 Stars 平行
+		}
+	}
+}

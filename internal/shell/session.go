@@ -119,6 +119,12 @@ type Star struct {
 	Name     string
 	Owner    int  // 0=無主 1=玩家 2=AI
 	Explored bool // 艦隊是否曾抵達(已探索)
+	// Orbits 是這個星系 5 個軌道上的行星索引(OrbitEmpty = 空),對應原版
+	// `word[星×0x71 + 0x4A + 軌道×2]`。見 orbit.go(含「5 個軌道」的三個來源)。
+	//
+	// ⚠ 舊存檔沒有這個欄位,零值是 5 個 0 —— 那會讓每顆星都宣稱軌道 0 上有行星 0。
+	// 讀檔路徑一律走 `normalizeOrbits`(同 Wormhole 那個坑)。
+	Orbits [StarOrbits]int
 	// Wormhole 是蟲洞另一端的星索引,-1 = 沒有蟲洞。
 	//
 	// 對應原版星球結構 +0x29(int8,0xFF = 無)。**必須是雙向的**——openorion2
@@ -1621,6 +1627,21 @@ func demoHomeStarSet(aiHomeStars []int) map[int]bool {
 func genPlanets(stars []Star, r *rand.Rand, age gamedata.GalaxyAge, homeStars map[int]bool) []Planet {
 	roman := []string{"I", "II", "III", "IV", "V"}
 	out := make([]Planet, 0, len(stars))
+	// 軌道表(見 orbit.go):每顆星 5 個軌道,預設全空。
+	//
+	// ⚠ **這一版仍然每顆星只放一顆行星**——放在它骰到的那個軌道上,其餘 4 格空著。
+	// 同系其他天體仍然只存成 `Planet.SystemBodies` 的摘要(有軌道/類別/名字,沒有氣候礦產)。
+	// 也就是說**行為逐位元不變**,換的是形狀不是內容;把 SystemBodies 升格成真正的行星
+	// 是下一階段的事(那才解得開人造行星與同星系多殖民地)。
+	for i := range stars {
+		stars[i].Orbits = emptyOrbits()
+	}
+	setOrbit := func(star, orbit, planet int) {
+		if orbit < 0 || orbit >= StarOrbits {
+			orbit = 0
+		}
+		stars[star].Orbits[orbit] = planet
+	}
 	for i, s := range stars {
 		sc := gamedata.SpectralClass(s.Spectral)
 		nPlanets := gamedata.RollNumSatellites(r.Intn(10)+1, sc)
@@ -1645,6 +1666,7 @@ func genPlanets(stars []Star, r *rand.Rand, age gamedata.GalaxyAge, homeStars ma
 			p.Gravity = gravityDisplayName(p.GravityID)
 			p.Mineral = mineralDisplayName(p.MineralID)
 			p.Size = sizeDisplayName(p.SizeID)
+			setOrbit(i, p.Orbit, len(out))
 			out = append(out, p)
 			continue
 		}
@@ -1653,6 +1675,10 @@ func genPlanets(stars []Star, r *rand.Rand, age gamedata.GalaxyAge, homeStars ma
 			p.Name = s.Name
 			p.NoPlanet = true
 			p.Climate, p.Gravity, p.Mineral, p.Size = "無行星", "—", "—", "—"
+			// ⚠ 「沒有行星」的星仍然在軌道 0 掛一筆 NoPlanet 條目。
+			// 那是**現況的忠實表示**:remake 的 Planets 目前與 Stars 平行,每顆星都有一筆,
+			// 靠 NoPlanet 旗標區分。等 SystemBodies 升格之後,這種星應該是「五個軌道全空」。
+			setOrbit(i, 0, len(out))
 			out = append(out, p)
 			continue
 		}
@@ -1707,6 +1733,7 @@ func genPlanets(stars []Star, r *rand.Rand, age gamedata.GalaxyAge, homeStars ma
 			}
 			p.SystemBodies = append(p.SystemBodies, b)
 		}
+		setOrbit(i, p.Orbit, len(out))
 		out = append(out, p)
 	}
 	return out

@@ -243,6 +243,10 @@ func (snap sessionSnapshot) restore() *GameSession {
 	// 有蟲洞(星圖畫滿放射狀連線、艦隊到處一回合直達)。normalizeWormholes 把不合法的
 	// (越界 / 自己連自己 / 單向)一律清成 -1,見 wormhole.go。
 	normalizeWormholes(snap.Stars)
+	// ⚠ 舊存檔沒有 Star.Orbits,解出來是 5 個零值 **0** —— 那會讓每顆星都宣稱軌道 0 上有
+	// 行星 0(同蟲洞那個坑)。normalizeOrbits 依「整張表都是 0」判定是舊檔,重建成
+	// 一星一行星時代的形狀(軌道 0 放同索引的行星),與該版本的實際狀態逐位元一致。
+	normalizeOrbits(snap.Stars, len(snap.Planets))
 	// ⚠ 存檔裡的 Seats[ActiveSeat] 與頂層的 Player/Colonies/… 是同一份資料的兩個副本
 	// (snapshot 存檔前才剛同步過)。restore 之後兩邊仍一致,直到下一次 AdvanceSeat。
 	return &GameSession{
