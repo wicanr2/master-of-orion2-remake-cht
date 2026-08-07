@@ -198,3 +198,27 @@ func (s *GameSession) helmsmanEvasionBonus() int {
 	}
 	return best
 }
+
+// FleetCrewSummary 回傳艦隊的艦員狀態摘要,供 UI 顯示。
+//
+// ⚠ 這是**艦隊層級**的摘要,不是逐艦資料:remake 目前沒有逐艦資訊面板,
+// 而「一個只會默默上升的等級對玩家等於不存在」(`gamedata.CrewXPToNextLevel` 的檔頭)。
+// 取**最低**那一艘當代表——艦隊的戰力由最弱的那條線決定,報最高的會讓玩家高估自己。
+//
+// ok=false 表示艦隊沒有任何參戰艦(支援艦不算,理由同 mkPlayerCombatantsIndexed)。
+func (s *GameSession) FleetCrewSummary() (level int, toNext int, ok bool) {
+	level = -1
+	for _, sh := range s.Fleet().Ships {
+		if isSupportShipClass(sh.Class) {
+			continue
+		}
+		lv := s.shipCrewLevel(sh)
+		if level < 0 || lv < level {
+			level, toNext, ok = lv, gamedata.CrewXPToNextLevel(sh.CrewXP, s.RaceWarlord), true
+		}
+	}
+	if !ok {
+		return 0, 0, false
+	}
+	return level, toNext, true
+}

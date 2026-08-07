@@ -1026,6 +1026,15 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 						marineLine = fmt.Sprintf(b.tr("艦隊陸戰隊 %d／殖民地駐軍 %d", "Fleet marines %d / colony garrison %d"),
 							sess.Fleet().Marines, sess.PlayerColonyMarines[0])
 					}
+					// 艦員等級接在同一行:這是玩家唯一看得到艦員經驗的地方(remake 沒有逐艦
+					// 資訊面板),而那個等級直接影響命中、防禦與飛彈閃避(見第 119 項)。
+					// 取艦隊裡**最低**的那一艘——戰力由最弱的那條線決定。
+					if lv, toNext, ok := sess.FleetCrewSummary(); ok {
+						marineLine += fmt.Sprintf(b.tr("／艦員 %s", " / crew %s"), shell.ShipCrewLevelName(lv))
+						if toNext > 0 {
+							marineLine += fmt.Sprintf(b.tr("(再 %d 經驗升級)", " (%d xp to next)"), toNext)
+						}
+					}
 					fnt.Draw(dst, marineLine, 38, 394, 11, color.RGBA{200, 220, 170, 255})
 					// 操作鈕/狀態(與 galaxy() 建 hits 時的判斷邏輯一致)。
 					switch {

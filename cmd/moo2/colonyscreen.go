@@ -290,6 +290,12 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 			b.fnt.Draw(dst, r, lx, float64(colPanelLY+26+i*16), 10, colBodyCol)
 		}
 	}
+	// 同化進度只在**真的有未同化人口**時才畫——沒有征服來的人口時這一行沒有意義,
+	// 而且那也讓沒被征服過的殖民地畫面保持原樣。
+	if turns, ok := sess.AssimilationRemainingTurns(idx); ok {
+		b.fnt.Draw(dst, fmt.Sprintf(b.tr("未同化 %d ／還需 %d 回合", "Unassimilated %d / %d turns"),
+			c.UnassimilatedPop, turns), lx, float64(colPanelLY+colPanelLH-32), 10, colWarnCol)
+	}
 	b.fnt.Draw(dst, fmt.Sprintf(b.tr("人口 %d/%d", "Pop %d/%d"), c.Population, c.PopMax),
 		lx, float64(colPanelLY+colPanelLH-16), 11, colOkCol)
 

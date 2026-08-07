@@ -94,3 +94,27 @@ func (s *GameSession) advanceAssimilation() {
 		s.recalcColonyMorale(i)
 	}
 }
+
+// AssimilationRemainingTurns 回傳殖民地 i 把**剩下的**未同化人口全部同化完還要幾回合。
+//
+// ⚠ 這支的存在理由寫在 `gamedata.AssimilationProgressNeeded` 的檔頭上:
+// 「UI 要顯示『這個殖民地還要幾回合才完全同化』——一個只在背景默默跑的機制對玩家等於不存在」。
+// 那支函式抽出來之後**一直沒有呼叫端**,直到第 120 項。
+//
+// 已累積的進度要扣掉,否則玩家每一回合看到的數字都一樣,像是完全沒有在推進。
+// ok=false 表示這個殖民地沒有未同化人口(不必顯示這一行)。
+func (s *GameSession) AssimilationRemainingTurns(i int) (turns int, ok bool) {
+	if i < 0 || i >= len(s.PlayerColonies) {
+		return 0, false
+	}
+	c := s.PlayerColonies[i]
+	if c.UnassimilatedPop <= 0 {
+		return 0, false
+	}
+	need := gamedata.AssimilationProgressNeeded(c.UnassimilatedPop, s.AssimilationTurnsFor(i))
+	need -= c.AssimilationProgress
+	if need < 1 {
+		need = 1 // 已經滿了但還沒結算——顯示「還有 1 回合」比顯示 0 誠實
+	}
+	return need, true
+}
