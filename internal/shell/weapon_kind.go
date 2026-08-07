@@ -26,11 +26,21 @@ const (
 	WeaponKindBeam WeaponKind = iota
 	WeaponKindMissile
 	WeaponKindSpherical
+	// WeaponKindBomb 是**只能打行星**的炸彈(第 126 項)。
+	//
+	// 手冊 p.126 逐字:「Bombs installed in a ship are only useful against **planetary
+	// targets**」——所以它不是「傷害比較低的光束」,是**在艦隊戰裡完全沒有作用**。
+	// 這正是它必須自成一類的理由:落到預設的 beam 分支會讓一艘掛核彈的船當光束艦用。
+	WeaponKindBomb
 )
 
 // weaponKindByName 依 Component.Name(WeaponOptions 的武器名)分類戰鬥解算路徑。
 func weaponKindByName(name string) WeaponKind {
 	switch name {
+	case "核彈", "融合彈", "反物質彈", "中子彈":
+		// 執行檔的 category 表把這四項全歸在 **category 19(炸彈)**(第 111 項解出的
+		// enum 語意),與手冊 p.126 的 BOMB 表列的正好是同一批——兩個獨立來源同意。
+		return WeaponKindBomb
 	case "核飛彈", "麥克萊特飛彈", "脈衝飛彈", "氙素飛彈", "質子魚雷":
 		// 第 124 項補的三項與既有兩項同類:執行檔的 category 表把它們全歸在
 		// **category 21(飛彈/魚雷)**,與手冊 p.125 的 MISSILE 表一致——

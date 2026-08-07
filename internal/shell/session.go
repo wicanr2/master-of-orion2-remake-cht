@@ -238,6 +238,13 @@ var (
 		{"干擾者", 260, 40, gamedata.TOPIC_MULTIDIMENSIONAL_PHYSICS, gamedata.TECH_DISRUPTER_CANNON},
 		{"粒子束", 280, 30, gamedata.TOPIC_XENON_TECHNOLOGY, gamedata.TECH_PARTICLE_BEAM},
 		{"重錘裝置", 340, 100, gamedata.TOPIC_HYPER_DIMENSIONAL_PHYSICS, gamedata.TECH_MAULER_DEVICE},
+
+		// 炸彈(第 126 項,手冊 p.126 的 BOMB 表)。**只能打行星**——見 WeaponKindBomb。
+		// 主題同樣取自執行檔;四項的執行檔 category 都是 19(炸彈),與手冊分類一致。
+		{"核彈", 40, 12, gamedata.TOPIC_NUCLEAR_FISSION, gamedata.TECH_NUCLEAR_BOMB},
+		{"融合彈", 90, 24, gamedata.TOPIC_ADVANCED_FUSION, gamedata.TECH_FUSION_BOMB},
+		{"反物質彈", 180, 40, gamedata.TOPIC_ANTIMATTER_FISSION, gamedata.TECH_ANTIMATTER_BOMB},
+		{"中子彈", 240, 60, gamedata.TOPIC_INTERPHASED_FISSION, gamedata.TECH_NEUTRONIUM_BOMB},
 	}
 )
 
@@ -581,6 +588,11 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 		d := &(*defenders)[ti]
 		var shot ShotResult
 		switch attackers[i].kind {
+		case WeaponKindBomb:
+			// 手冊 p.126:「Bombs installed in a ship are only useful against planetary
+			// targets」——艦隊戰裡完全不開火。**不是 0 傷害的命中,是根本沒有這一發**,
+			// 所以連骰子都不擲(擲了會位移後面每一發的隨機序列,讓決定性測試無故變動)。
+			continue
 		case WeaponKindMissile:
 			amrRoll := rng.Intn(100) + 1
 			jamRoll := rng.Intn(100) + 1

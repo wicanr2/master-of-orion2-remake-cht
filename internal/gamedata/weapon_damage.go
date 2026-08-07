@@ -63,6 +63,18 @@ var beamWeaponDamage = map[string]WeaponDamageRange{
 	"重錘裝置":  {100, 100}, // Mauler Device 100(固定值;手冊 specials 欄「always hits」)
 }
 
+// bombWeaponDamage 是手冊 p.126 的 BOMB 表。**炸彈只能打行星**(見 shell 的 WeaponKindBomb)。
+//
+// ⚠ 手冊同表還有死亡孢子(10%)與生物滅絕者(20%),它們給的是**殺人口的百分比**不是傷害,
+// 而且第 111 項已經用另一條路徑(科技擁有 → 轟炸時擲骰殺人口)接好了。**不要**把它們
+// 也加進元件表——那會讓同一條規則生效兩次。
+var bombWeaponDamage = map[string]WeaponDamageRange{
+	"核彈":   {3, 12},  // Nuclear Bomb 3-12
+	"融合彈":  {4, 24},  // Fusion Bomb 4-24
+	"反物質彈": {5, 40},  // Anti-Matter Bomb 5-40
+	"中子彈":  {10, 60}, // Neutronium Bomb 10-60
+}
+
 // missileWeaponDamage 是手冊 p.125 的 MISSILE 表(固定傷害,飛彈「never miss」但會被攔截/干擾)。
 var missileWeaponDamage = map[string]WeaponDamageRange{
 	"核飛彈":    {8, 8},   // Nuclear Missile 8
@@ -78,6 +90,9 @@ func WeaponDamageByName(name string) (WeaponDamageRange, bool) {
 	if d, ok := beamWeaponDamage[name]; ok {
 		return d, true
 	}
-	d, ok := missileWeaponDamage[name]
+	if d, ok := missileWeaponDamage[name]; ok {
+		return d, true
+	}
+	d, ok := bombWeaponDamage[name]
 	return d, ok
 }

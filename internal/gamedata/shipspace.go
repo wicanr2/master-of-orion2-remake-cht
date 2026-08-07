@@ -99,6 +99,12 @@ var WeaponSpaceByName = map[string]int{
 	"脈衝飛彈":  10, // Pulson Missile,估計(彈架 10/20/30/35/40,取最小 x2,同核飛彈)
 	"氙素飛彈":  10, // Zeon Missile,估計(同上)
 	"質子魚雷":  20, // Proton Torpedo,p.125 確認值(魚雷不分彈架)
+
+	// 炸彈(第 126 項,手冊 p.126 確認值)。
+	"核彈":   5,  // Nuclear Bomb
+	"融合彈":  7,  // Fusion Bomb
+	"反物質彈": 7,  // Anti-Matter Bomb
+	"中子彈":  10, // Neutronium Bomb
 }
 
 // SpecialSpaceEstimatePercent 是「特殊系統佔空間 = 艦體總空間的 X%」的估計係數。
