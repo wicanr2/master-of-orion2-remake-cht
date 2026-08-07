@@ -1631,3 +1631,56 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
 
     寫在 Part B 那一節的表裡(網路多人、`Command_Points` 專屬畫面、星圖 4 層、2 棟建築、
     地表道路與擺放微調)。⚠ 那份清單同樣會過期,**引用前先 grep**。
+
+40. **指揮點數視窗建起來 + 一個「畫面自己打自己臉」的快取陳舊值**(2026-08-07)。
+
+    第 39 項核實後的清單裡,`Command_Points` 專屬畫面是最小的一項。做掉它。
+
+    ### 畫面結構(`Show_Command_Points_Screen_` @ 0x8BAB9,整支只有 30 行)
+
+    ```
+    sub_1191CA(&Draw_Mini_Main_Screen_, 1)      ; 背景重繪掛成「迷你星圖」
+    sub_11438B(0, 0, 0x27F, 0x1DF, key=0x1B)    ; 整螢幕隱形欄位,ESC 關閉
+    sub_128C32(0, 0, 0x27F, 0x1DF, 0)           ; Fill 清畫面
+    Draw_Mini_Main_Screen_()                     ; 迷你星圖當底
+    Show_Command_Points_(玩家索引)               ; → sub_E2000 組文字 → sub_DDF24 顯示
+    ```
+
+    → **迷你星圖當背景 + 一塊文字視窗,ESC / 點擊關閉**。
+
+    ### 內容:符號名就是權威
+
+    文字本身在執行期才載入的字串區塊裡(`sub_DD4FD` 用 `repne scasb` 逐條走),英文原句沒解出來。
+    但執行檔**帶著符號表**,那幾條訊息的名字直接說明視窗顯示什麼:
+
+    | 符號 | 欄位 |
+    |---|---|
+    | `_starting_command_points_msg` | 起始指揮點數 |
+    | `_total_command_points_msg` | 指揮點數總計 |
+    | `_total_command_points_used_msg` / `_total_command_point_used_msg` | 已使用(原版連單複數都分兩條)|
+    | `_command_summary_msg` | 總結 |
+    | `_command_points_window_field` | 這個視窗的欄位 |
+
+    ⚠ 所以**結構與欄位組成是原版真值,中文用字是 remake 自己的**;視窗座標也是 remake 排的
+    (原版走 `sub_DDF24` 那支泛用訊息視窗,座標是傳進去的,沒有「指揮點數專用」的立即數可抄)。
+    ⚠ ESC 那一半沒接:`shell.InputState` 目前只帶滑鼠,加鍵盤要動共用結構。
+
+    ### ⚠ 順帶抓到:畫面把自己的三個數字擺在一起才看得出來的矛盾
+
+    第一版直接讀 `Player.CommandPointsSupply`,畫出來是:
+
+    ```
+    起始指揮點數    5
+    軌道基地提供    0
+    指揮點數總計    1     ← 5 + 0 = 1 ?
+    ```
+
+    原因:`Player.CommandPointsSupply` / `UsedCommandPoints` 是**只在 `EndTurn` 更新的快取欄位**,
+    開局或剛蓋好星基還沒結算時是舊值。星圖右欄那個淨值數字吃的是同一組欄位,**同樣是舊的**,
+    只是它單獨一個數字擺著,沒有旁邊兩行可以對照,所以一直沒被發現。
+
+    修法:`shell.CommandPointsSupplyNow()` / `CommandPointsUsedNow()` 現算,視窗與星圖右欄都改用它。
+    護欄 `commandpoints_live_test.go`:把快取欄位設成 −999 也要算得對、剛蓋好星基當下就要反映。
+
+    **這是「把有關聯的數字放在同一個畫面上」本身就是一種驗證**的例子——單獨顯示的數字錯了
+    沒人看得出來,三個擺在一起就自己露餡。

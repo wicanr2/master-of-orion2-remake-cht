@@ -567,6 +567,9 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		{544, 441, 90, 34, "turn"},
 		{547, 52, 65, 67, "taxrate"},   // 國庫框:點擊循環工業稅率(手冊 p.37,0-50%/10%級距)
 		{547, 348, 65, 67, "research"}, // 研究框(右側第5格):點擊開研究選擇畫面(對齊原版,取代 info→tech 錯接)
+		// 指揮框(右側第2格):點擊開指揮點數視窗(原版 `Show_Command_Points_Screen_`
+		// @ 0x8BAB9,見 commandpoints.go)。先前這格只顯示一個淨值數字,點不開。
+		{547, 124, 65, 67, "commandpoints"},
 	}
 	// 星圖各星加點擊熱區(點星 → 顯示該星系行星資訊)。
 	if b.session != nil {
@@ -637,6 +640,15 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		}
 		if a == "research" {
 			return b.goTo(b.research, "研究選擇") // 星系右側研究框 → 研究選擇(對齊原版)
+		}
+		if a == "commandpoints" {
+			// 星圖右欄第 2 格 → 指揮點數視窗(原版 `Show_Command_Points_Screen_`)。
+			// 它是 origScreen 不是 overlayScreen(沒有底圖 LBX),所以自己組 transition。
+			sc, err := b.commandPoints()
+			if err != nil {
+				return nil
+			}
+			return &origTransition{next: sc}
 		}
 		if a == "dispatch" && b.session != nil {
 			// 派遣艦隊至選中星(航行由 EndTurn 推進)。曲速前開局沒有 FTL、出不了本星系,
@@ -791,7 +803,8 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				// 工業稅率(點國庫框循環,手冊 p.37):畫在國庫格頂端,提示可調的經濟槓桿。
 				fnt.DrawCentered(dst, fmt.Sprintf(b.tr("稅%d%%", "TAX %d%%"), sess.Player.TaxRate),
 					579, 62, 9, color.RGBA{205, 215, 165, 255})
-				netCmd := sess.Player.CommandPointsSupply - sess.Player.UsedCommandPoints
+				// 現算,不用 EndTurn 才更新的快取欄位(見 shell.CommandPointsSupplyNow)。
+				netCmd := sess.CommandPointsSupplyNow() - sess.CommandPointsUsedNow()
 				fnt.DrawCentered(dst, fmt.Sprintf("%d", netCmd), 579, 182, 12, infoCol) // 指揮評等(供給-需求)
 				foodSum, rpSum := 0, 0
 				for i := range sess.PlayerColonies {
@@ -3098,8 +3111,10 @@ type interactiveApp struct {
 	galleryDesignTick int
 	// galleryBuildPopupTick 是截圖廊切到建造彈出視窗的 tick。
 	galleryBuildPopupTick int
-	galleryBuilder        *sceneBuilder
-	gallerySession        *shell.GameSession
+	// galleryCommandPointsTick 是截圖廊切到指揮點數視窗的 tick。
+	galleryCommandPointsTick int
+	galleryBuilder           *sceneBuilder
+	gallerySession           *shell.GameSession
 }
 
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
@@ -3156,6 +3171,10 @@ const galleryDesignTick = 85
 
 // galleryBuildPopupTick 是截圖廊在哪個 tick 切到建造彈出視窗——取截圖(t88)的前一拍。
 const galleryBuildPopupTick = 87
+
+// galleryCommandPointsTick 是截圖廊在哪個 tick 切到指揮點數視窗——取截圖(t90)的前一拍。
+// 走正常路徑是星圖點右欄第 2 格,但腳本此刻停在建造視窗,直接推上來比重新導覽回星圖可靠。
+const galleryCommandPointsTick = 89
 
 // galleryShot 是「端到端過場截圖廊」腳本中,在某個絕對 tick 存一張圖的指令。
 type galleryShot struct {
@@ -3315,6 +3334,10 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		// 但截圖廊此刻停在艦艇設計,直接推上來比重新導覽回殖民地可靠。
 		idle, // t87: 由 galleryBuildPopupTick 換成建造視窗
 		idle, // t88: settle → 截圖 buildqueue
+
+		// 指揮點數視窗(原版 Show_Command_Points_Screen_)。同上,直接推上來。
+		idle, // t89: 由 galleryCommandPointsTick 換成指揮點數視窗
+		idle, // t90: settle → 截圖 commandpoints
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -3346,6 +3369,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{84, "24_hotseat.png"},
 		{86, "25_shipdesign.png"},
 		{88, "26_buildqueue.png"},
+		{90, "27_commandpoints.png"},
 	}
 	return script, shots
 }
@@ -3530,6 +3554,12 @@ func (a *interactiveApp) Update() error {
 			a.cur = sc
 		}
 	}
+	// 截圖廊專用:指揮點數視窗(走正常路徑是星圖點右欄第 2 格)。
+	if a.galleryCommandPointsTick > 0 && a.tick == a.galleryCommandPointsTick && a.galleryBuilder != nil {
+		if sc, err := a.galleryBuilder.commandPoints(); err == nil {
+			a.cur = sc
+		}
+	}
 	if t := a.cur.update(a.pollInput()); t != nil {
 		if t.quit {
 			return ebiten.Termination
@@ -3662,6 +3692,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.galleryHotseatTick = galleryHotseatTick
 		app.galleryDesignTick = galleryDesignTick
 		app.galleryBuildPopupTick = galleryBuildPopupTick
+		app.galleryCommandPointsTick = galleryCommandPointsTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,

@@ -2480,6 +2480,17 @@ func (s *GameSession) coloniesForTurn() []engine.ColonyState {
 // 2026-07-11 修正:先前這裡只加總建築供給,漏了基礎值,導致開局供給只有星基 1 點 < 需求 3 點
 // (殖民船+2偵察艦),每回合 -20 BC 死亡螺旋(SAVE10.GAM oracle 反推證實基礎應為 5,見
 // gamedata.CommandPointsBase 註解)。修正後開局供給 = 5(基礎)+1(星基)= 6 ≥ 3,不再超支。
+// CommandPointsSupplyNow / CommandPointsUsedNow 是**當下現算**的指揮點數供給與需求。
+//
+// ⚠ 為什麼需要它們:`Player.CommandPointsSupply` / `Player.UsedCommandPoints` 是**快取欄位**,
+// 只在 `EndTurn` 結算時更新。開局第一回合、或剛蓋好一座星基還沒結算時,那兩個欄位是舊值——
+// 畫面直接讀它們會顯示「起始 5 + 建築 1,總計卻是 1」這種自相矛盾的組合(指揮點數視窗
+// 第一版就是這樣被抓到的)。要顯示給玩家看的地方一律走這兩支。
+func (s *GameSession) CommandPointsSupplyNow() int { return s.totalCommandPointsSupply() }
+
+// CommandPointsUsedNow 見 CommandPointsSupplyNow。
+func (s *GameSession) CommandPointsUsedNow() int { return s.usedCommandPoints() }
+
 func (s *GameSession) totalCommandPointsSupply() int {
 	total := gamedata.CommandPointsBase
 	for _, built := range s.ColonyBuildings {

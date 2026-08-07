@@ -559,6 +559,21 @@
 (星雲/遷移連線/星門/外交燈號,卡資料模型)、2 棟建築(真值已抽出,缺效果來源)、
 殖民地地表的道路與擺放微調。
 
+## ★ 2026-08-07 指揮點數視窗(gap report 第 40 項)
+
+第 39 項核實後的清單裡最小的一項,做掉了。原版 `Show_Command_Points_Screen_` @ 0x8BAB9
+整支只有 30 行:迷你星圖當背景 + 一塊文字視窗、ESC/點擊關閉。欄位組成由執行檔符號表
+給出(`_starting_command_points_msg` / `_total_command_points_msg` /
+`_total_command_point(s)_used_msg` / `_command_summary_msg`)——**結構是原版真值,
+中文用字與視窗座標是 remake 自己的**。入口接在星圖右欄第 2 格(先前只顯示數字、點不開)。
+
+⚠ **順帶抓到一個快取陳舊值**:`Player.CommandPointsSupply` / `UsedCommandPoints` 只在
+`EndTurn` 更新,開局時是舊的。視窗第一版畫出「起始 5 + 軌道 0 = 總計 1」自打嘴巴;
+星圖右欄那個淨值吃同一組欄位、**同樣是舊的**,只是單獨一個數字沒得對照所以一直沒被發現。
+改用 `CommandPointsSupplyNow()` / `CommandPointsUsedNow()` 現算,兩處都修。
+
+**把有關聯的數字放在同一個畫面上,本身就是一種驗證。**
+
 ## 工作方式(使用者定案)
 - go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)
 - **不用多代理 workflow**;翻譯一組一組慢慢做(單代理逐項,使用者可隨時審閱)
