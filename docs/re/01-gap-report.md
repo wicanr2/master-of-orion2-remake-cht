@@ -7030,3 +7030,62 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
       - **其餘布林特性(水棲/食岩/半機械/創造力/幸運/全知/匿蹤艦/跨維度/母星品質)未接。**
         它們要的是 remake 還沒有的機制——星球適居度模型、科技樹分支、偵測模型、母星生成
         ——不是「忘了接」。這與第 128 項對 p.127 特殊武器的判斷同一條線:先有機制,再放資料。
+
+131. **高能聚焦:規則寫好了,但那個東西**裝不上**(2026-08-08)。
+
+    ③ 那條問法(被餵固定值的參數)清掉種族那一叢之後,剩下的最大一項是:
+
+        DamageMountAdjustedValue(base, hvBonus, hefBonus, pdPenalty, rangePenalty)
+                                             ↑ 兩個呼叫端都恆傳 0
+
+    `gamedata.DamageMountBonusHEF = 50` 在、公式在、註解裡連手冊原文都抄了
+    (`Hv+HEF: 50*(100+50+50-30)%` 這種算例都寫好了),就是沒有人傳非 0 值進去。
+
+    ### 為什麼
+
+    第 36 項做了武器改造(mod)系統:HV / PD / AF / CO / AP / ENV / NR / SP 全部接上了。
+    HEF 沒有——因為 **HEF 在手冊裡不是武器改造,是艦載系統**:
+
+    > High Energy Focus **(System)**
+
+    改造走 `Ship.Mods`,系統走 `Ship.Special` 與 `SpecialOptions` 那張表,而
+    `SpecialOptions` 裡沒有它。於是「玩家裝不上 → 呼叫端沒有東西可傳 → 恆傳 0」。
+    這不是漏接一行,是**東西被分到錯的類別去了**,所以整條路都沒有。
+
+    ### 手冊那三句話,三個不同的位置
+
+    > increasing the damage each of these weapons inflicts by **50%**.
+    > It **does not improve the chances of hitting** a target at a greater distance,
+    > nor does it **prevent the normal drop-off of damage over range**.
+
+    三句各自對應程式裡的一個地方:傷害走 `DamageMountAdjustedValue` 的 hefBonus、
+    命中走 `CombatHitThreshold`、距離衰減走 `DamageDissipationPenalty`。
+    **只接第一個,另外兩個一個都不能碰。** `hef_test.go` 逐句釘住,其中命中那一條是
+    **逐骰比對** 1..100 兩邊的命中結果必須完全相同——比「找一顆會 miss 的骰」嚴,
+    後者只證明某一顆沒被改變,前者證明整條門檻沒有移動。
+
+    ### 兩條戰鬥路徑都要接
+
+    快速結算(`combatant.hasHEF`)與格子戰術(`CombatShip.HEF`)是兩條獨立的路。
+    只接一邊的話,同一艘船在兩種戰鬥裡會打出不同傷害——而那種不一致在遊玩中幾乎察覺不到,
+    只會讓人覺得「這場怎麼特別難打」。測試同時檢查兩邊。
+
+    ### 順手清掉的過期註解
+
+    `ResolveMissileShot` 的檔頭寫著:
+
+    > 現行 remake 的 SpecialOptions 尚未提供「反飛彈火箭」這個可造艦元件,
+    > 呼叫端目前一律傳 hasAMR=false(TODO:待新增該元件後…)
+
+    **第 125 項已經把該元件補上了**,呼叫端也早就改成依目標艦是否裝載決定。
+    註解比程式碼晚了六項。這是這一輪第六次撞到同一個形狀。
+
+    ### 誠實留白
+
+      - **建造成本 90 是 remake 值。** 手冊行文只給效果不給成本,執行檔的元件表還沒挖到
+        ——RACESTUF 那條路(第 129 項)只有種族資料。取值參考同屬中後期系統的
+        硬化護盾(100)與反飛彈火箭(70),與 `SpecialOptions` 其餘元件同一種標記方式。
+      - **敵方艦不裝。** `genEnemyFleet` 沒有個別元件設計資料,一律 false
+        ——與 Mods / HardShield 同款既有簡化,不是這一項新增的缺口。
+
+    截圖:25_shipdesign 的「特殊 1/9 → 1/10」(521 px)。

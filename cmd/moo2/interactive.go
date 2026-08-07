@@ -2034,7 +2034,8 @@ func (t *tacticalScreen) fireRound(target int) {
 			roll := t.rng.Intn(100) + 1
 			net := s.Attack - enemy.Defense
 			shot = shell.ResolveShotWithMods(net, s.WeaponMin, s.WeaponMax, dist,
-				enemy.ShieldReduction, enemy.ArmorHP, roll, false, shell.WeaponModCodesFromStrings(s.Mods))
+				enemy.ShieldReduction, enemy.ArmorHP, roll, false,
+				shell.WeaponModCodesFromStrings(s.Mods), shell.HEFDamageBonus(s.HEF))
 		}
 		if shot.Hit {
 			anyHit = true

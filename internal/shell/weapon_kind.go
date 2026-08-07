@@ -81,3 +81,24 @@ func shipSizeClass(class string) gamedata.CombatShipClass {
 	c, _ := shipClassFromName(class)
 	return c
 }
+
+// highEnergyFocusName 是高能聚焦系統的元件名(手冊 p.87「High Energy Focus (System)」)。
+//
+// 與 antiMissileRocketName 同款:名字在兩個地方出現(SpecialOptions 與戰列建構),
+// 拉成常數免得其中一邊被改掉之後安靜失效。
+const highEnergyFocusName = "高能聚焦"
+
+// hefBonusFor 把「有沒有裝高能聚焦」換成傷害百分點加成。
+//
+// 手冊只給傷害那一項:「It does not improve the chances of hitting a target at a greater
+// distance, nor does it prevent the normal drop-off of damage over range.」
+// ——所以它只餵 DamageMountAdjustedValue 的 hefBonus,不碰命中門檻也不碰 dissipation。
+func hefBonusFor(hasHEF bool) int {
+	if hasHEF {
+		return gamedata.DamageMountBonusHEF
+	}
+	return 0
+}
+
+// HEFDamageBonus 是 hefBonusFor 的匯出版本,供 cmd/moo2 的格子戰術戰鬥使用。
+func HEFDamageBonus(hasHEF bool) int { return hefBonusFor(hasHEF) }

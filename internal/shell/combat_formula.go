@@ -35,7 +35,7 @@ func ResolveShot(netAttack, weaponMin, weaponMax, rangeSquares, shieldReduction,
 		// mod 清單本身,這裡只是把 bool 包成 mods 給 ResolveShotWithMods 用同一份實作)。
 		mods = []gamedata.WeaponModCode{gamedata.ModArmorPiercing}
 	}
-	return ResolveShotWithMods(netAttack, weaponMin, weaponMax, rangeSquares, shieldReduction, armorHP, roll, hardShield, mods)
+	return ResolveShotWithMods(netAttack, weaponMin, weaponMax, rangeSquares, shieldReduction, armorHP, roll, hardShield, mods, 0)
 }
 
 // ResolveShotWithMods 同 ResolveShot,額外接受一組攻方武器改造(mods),依手冊
@@ -52,7 +52,9 @@ func ResolveShot(netAttack, weaponMin, weaponMax, rangeSquares, shieldReduction,
 //
 // mods 為 nil 時(無改造)本函式對任何輸入的行為與加入 mod 系統前的 ResolveShot 完全相同
 // (中性回歸,見 combat_formula_test.go 的 no-mod 回歸測試)。
-func ResolveShotWithMods(netAttackBase, weaponMin, weaponMax, rangeSquares, shieldReduction, armorHP, roll int, hardShield bool, mods []gamedata.WeaponModCode) ShotResult {
+// hefBonus 是高能聚焦(High Energy Focus)給的傷害百分點加成:裝了傳
+// gamedata.DamageMountBonusHEF(50),沒裝傳 0。用 hefBonusFor 取值,不要自己寫 50。
+func ResolveShotWithMods(netAttackBase, weaponMin, weaponMax, rangeSquares, shieldReduction, armorHP, roll int, hardShield bool, mods []gamedata.WeaponModCode, hefBonus int) ShotResult {
 	netAttack := netAttackBase + gamedata.WeaponModNetAttackBonus(mods)
 	level := gamedata.CombatRangeLevelForBeamMods(rangeSquares, mods)
 	penalty := gamedata.CombatRangeLevelPenalty(level)
@@ -83,10 +85,10 @@ func ResolveShotWithMods(netAttackBase, weaponMin, weaponMax, rangeSquares, shie
 	// damage potential is always 1」),對 base=0 的「無武裝」武器會把 0 誤夾成 1。
 	// 因此 weaponMax<=0 一律跳過調整,避免「無武裝艦艇突然打出 1 點傷害」這種回歸。
 	adjMin, adjMax := weaponMin, weaponMax
-	if weaponMax > 0 && (len(mods) > 0 || dissipation > 0) {
+	if weaponMax > 0 && (len(mods) > 0 || dissipation > 0 || hefBonus > 0) {
 		hvBonus, pdPenalty := gamedata.WeaponModDamageBonuses(mods)
-		adjMin = gamedata.DamageMountAdjustedValue(weaponMin, hvBonus, 0, pdPenalty, dissipation)
-		adjMax = gamedata.DamageMountAdjustedValue(weaponMax, hvBonus, 0, pdPenalty, dissipation)
+		adjMin = gamedata.DamageMountAdjustedValue(weaponMin, hvBonus, hefBonus, pdPenalty, dissipation)
+		adjMax = gamedata.DamageMountAdjustedValue(weaponMax, hvBonus, hefBonus, pdPenalty, dissipation)
 	}
 
 	dmg := gamedata.DamageForHit(adjMin, adjMax, roll, netAttack, threshold)
@@ -105,9 +107,10 @@ func ResolveShotWithMods(netAttackBase, weaponMin, weaponMax, rangeSquares, shie
 //
 // 參數對照手冊/missile.go 出處:
 //   - hasAMR/amrRangeSquares:目標艦是否裝有反飛彈火箭(Anti-Missile Rockets)、與其
-//     距離(格,→ gamedata.MissileAMRRangeIndex →命中率)。現行 remake 的 SpecialOptions
-//     尚未提供「反飛彈火箭」這個可造艦元件,呼叫端目前一律傳 hasAMR=false(TODO:待新增
-//     該元件後,依目標艦是否裝載決定,不在此臆造裝載狀態)。
+//     距離(格,→ gamedata.MissileAMRRangeIndex →命中率)。
+//     ⚠ 2026-08-08:這裡原本寫著「現行 remake 的 SpecialOptions 尚未提供『反飛彈火箭』
+//     這個可造艦元件,呼叫端目前一律傳 hasAMR=false」——**第 125 項已經把該元件補上了**,
+//     呼叫端也改成依目標艦是否裝載決定。註解比程式碼晚了三項才更新。
 //   - defenderEvasionBonus:目標的飛彈閃避加成加總(ECM Jammer/Stabilizer/種族/艦員/
 //     統帥,各項手冊固定數值見 missile.go 的 MissileJammer*/MissileInertialStabilizer/
 //     MissileInertialNullifier/MissileShipDefenseRacialBonus/MissileCrew*/

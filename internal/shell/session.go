@@ -314,6 +314,21 @@ var (
 		// 執行檔的 category 也是 28(反飛彈/干擾),與手冊 p.127 的分類一致。
 		// Value 留 0:AMR 不加攻防,它的效果是攔截(見 battleVolley 的 hasAMR 分支)。
 		{"反飛彈火箭", 70, 0, gamedata.TOPIC_ADVANCED_ENGINEERING, gamedata.TECH_ANTIMISSILE_ROCKETS},
+		// 高能聚焦(第 131 項):`gamedata.DamageMountBonusHEF = 50` 與 `DamageMountAdjustedValue`
+		// 的 hefBonus 參數從寫出來就沒有生產端——因為 **HEF 在手冊裡是「系統」不是武器改造**
+		// (`High Energy Focus (System)`),而系統要進這張表才裝得上,於是兩個呼叫端一路傳 0。
+		//
+		// 手冊逐字:「increasing the damage each of these weapons inflicts by 50%.
+		// It does not improve the chances of hitting a target at a greater distance,
+		// nor does it prevent the normal drop-off of damage over range.」
+		// ——**只加傷害,不動命中、也不抵銷距離衰減**,三句各自對應程式裡的一個位置。
+		//
+		// 主題取自 techtree.go 的 TOPIC_HIGH_ENERGY_DISTRIBUTION 三選一
+		// (能量吸收器 / 高能聚焦 / 超級導管),那張表本身是從執行檔抽的。
+		// ⚠ 成本 90 是 **remake 值**:手冊行文沒給系統的建造成本,執行檔的元件表還沒挖到
+		// (RACESTUF 那條路只有種族資料)。取值參考同屬中後期系統的硬化護盾(100)與
+		// 反飛彈火箭(70)。與本表其餘元件同一種標記方式。
+		{"高能聚焦", 90, 0, gamedata.TOPIC_HIGH_ENERGY_DISTRIBUTION, gamedata.TECH_HIGH_ENERGY_FOCUS},
 	}
 )
 
@@ -569,6 +584,8 @@ type combatant struct {
 	// hasAMR 是這艘船裝了反飛彈火箭(手冊 p.127:攔截來襲飛彈)。
 	// 與 missileEvasion 一樣只在**它是防守方**時有意義。
 	hasAMR bool
+	// hasHEF 是這艘船裝了高能聚焦(手冊 p.87:光束傷害 +50%,不影響命中與距離衰減)。
+	hasHEF bool
 	// missileEvasion 是這艘船的飛彈閃避加成(手冊 ME 欄 + 舵手技能)。
 	// 只有當**它是防守方**時才有意義;敵方艦隊無逐艦資料,一律 0(既有簡化)。
 	missileEvasion int
@@ -635,7 +652,7 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 			roll := rng.Intn(100) + 1
 			net := attackers[i].atk - d.def
 			shot = ResolveShotWithMods(net, attackers[i].wmin, attackers[i].wmax, 2, d.shield, d.armor, roll,
-				false, weaponModCodes(attackers[i].mods))
+				false, weaponModCodes(attackers[i].mods), hefBonusFor(attackers[i].hasHEF))
 		}
 		if shot.Hit {
 			d.armor = shot.RemainingArmorHP
@@ -722,6 +739,7 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 			kind:   weaponKindByName(sh.Weapon), weaponName: sh.Weapon, mods: sh.Mods,
 			sizeClass:      shipSizeClass(sh.Class),
 			hasAMR:         sh.Special == antiMissileRocketName,
+			hasHEF:         sh.Special == highEnergyFocusName,
 			missileEvasion: gamedata.ShipCrewMissileEvasionBonus(crew) + s.helmsmanEvasionBonus(),
 			autoRepair:     shipHasAutoRepair(sh), shipIdx: shipIdx})
 		idx = append(idx, shipIdx)
@@ -911,6 +929,11 @@ type CombatShip struct {
 	// (母艦戰力加成,見本函式下方的 Special 分支)。
 	Bay     bool
 	BayKind FighterKind
+	// HEF 是這艘船裝了高能聚焦(光束傷害 +50%,手冊 p.87)。與 Mods 一樣只對 beam 生效,
+	// 但它是**系統**不是改造,所以另開一個欄位而不是塞進 Mods。
+	//
+	// 敵方艦(genEnemyFleet)沒有個別元件設計資料,一律 false——與 Mods/HardShield 同款簡化。
+	HEF bool
 }
 
 // CombatSpriteForClass 依艦體等級回傳 CMBTSHP 色塊內 sprite 索引(見 docs/tech/cmbtshp-ship-sprites.md)。
@@ -976,6 +999,7 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			HardShield:      shipHasHardShield(sh),
 			ArmorHP:         armorHPByName(sh.Armor),
 			Kind:            weaponKindByName(sh.Weapon), Mods: sh.Mods,
+			HEF:       sh.Special == highEnergyFocusName,
 			SpriteIdx: CombatSpriteForClass(sh.Class), // 色塊 0(玩家)
 			Bay:       bay, BayKind: bayKind,
 		})
