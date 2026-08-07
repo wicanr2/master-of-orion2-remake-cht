@@ -5551,3 +5551,69 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     - **艦員經驗仍拿不到**(同一個原因:沒有逐艦資料)。
     - **航線不判星雲/黑洞/干擾場**:玩家那條路徑模型綁在 `s.Player` 上。
     - **AI 之間不互相出兵**:需要 AI-vs-AI 戰鬥解算,remake 沒有。
+
+107. **三個「待辦」複查:一個早就做完了、一個是證據不足、一個追到源頭**(2026-08-08)。
+
+    WORKLIST 剩餘清冊裡的 F / H / I 三項,這一輪逐一複查而不是逐一開工。
+
+    ### I(turn-1 校準)——**早就做完了**
+
+    `docs/HONEST-STATUS.md` 寫著「turn-1 校準開放項:科學家分配(科3 vs 原版可能科4)待 playtest 定案」。
+    grep 程式碼:
+
+    ```go
+    // internal/shell/session.go, playerHomeworldColony
+    Farmers: 4, Workers: 2, Scientists: 2,
+    ```
+
+    與 2026-07-12 釘死的 oracle 完全一致——「科3」那個狀態在 **2026-08-06 的校正就不存在了**。
+    同一份文件的第 14 行還寫著「農4/工1/科3」,也是同一批過期敘述。
+
+    **這一條的存在本身是教訓:待辦事項會比它描述的問題活得更久。** 斷言「某項還沒做」之前先 grep
+    (rule 63)——這一輪光是複查就結掉一項,比開工便宜得多。
+
+    ### F(戰機基地 10 回合整補)——**證據不足,不是工時不足**
+
+    手冊 p.86:「All ground-based squadrons of fighter craft are **totally renewed every 10 turns**.」
+
+    要「整補」得先有東西**會少**。remake 的戰機基地戰力是當場算出來的:
+
+    ```
+    internal/shell/orbital_bombardment.go:218
+        atk, _ := gamedata.FighterGarrisonCombatContribution(fighterGarrisonTierFor(defender))
+    ```
+
+    `fighterGarrisonTierFor` 只看科技,回傳 10/6/4 個中隊——**沒有任何地方存著「現在剩幾隊」**。
+    補一個 10 回合計時器,它會把一個永遠等於滿額的值重設成滿額。
+
+    而**手冊沒有描述任何耗損機制**。憑「整補」反推「一定會耗損」再自訂損失規則,那是臆造。
+    往前推的下一步是去反組譯找中隊狀態欄位,不是先寫計時器。**擱置,理由寫清楚。**
+
+    ### H(安塔蘭母星防禦艦隊)——**追到源頭了**
+
+    先前寫「手冊/openorion2 均無精確數字,用保守預設 6 艘末日之星等級」。
+    這一輪從符號表找到了整條鏈:
+
+    `Load_Antaran_Defense_Fleet_` @ 0x4D141(只有 77 bytes,全文可讀):
+
+    ```
+    if word_199182 < 1: word_199182 = 1     ; 第 5 筆至少 1
+    for bx = 0..4:                           ; ★ 5 種艦體尺寸
+        while cx < word_19917A[bx*2]:        ; ★ 每種尺寸的數量
+            Load_Combat_Antaran_Ship_(...)
+    Load_Antaran_Star_Fortress_()            ; ★ 外加一座星際要塞
+    ```
+
+    兩個結構性事實立刻推翻了「6 艘同級」這個預設:**艦隊是五種尺寸的混編**,而且**還有一座星際要塞**。
+
+    `word_19917A` 是 BSS(`dw ?`),數量執行期算;寫入端是
+    `Build_Antaran_Defensive_Ships_` @ 0x63F9C(由 `Antaran_Invasion_Check_` @ 0x63D92 呼叫),
+    它從靜態範本 `byte_181746` 以 `movsd/movsd/movsw`(每筆 10 bytes)複製。
+    另有 `sub_646F9` 在艦艇損失時遞減、並從 `word_19918C[]` 補充。
+
+    **範本表的數值與縮放規則已派工解讀中**,結果進 `docs/re/antaran-defense-fleet.md`。
+    在那之前 remake 的 6 艘預設**不動**——結構知道了不等於數字知道了。
+
+    ⚠ 順帶記一件事:`word_199182` 就是 `word_19917A[4]`(位址差 8 = 4 個 word)。
+    開頭那個「夾成至少 1」夾的是**最大艦那一格**——防禦艦隊永遠至少有一艘最大的。
+    這種「兩個看起來無關的符號其實是同一張表」的事,只看符號名看不出來,要算位址。
