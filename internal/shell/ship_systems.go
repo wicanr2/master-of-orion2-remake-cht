@@ -138,6 +138,52 @@ func boolToInt(b bool) int {
 	return 0
 }
 
+// 行動次數家族的元件名(第 140 項)。
+const (
+	fastMissileRacksName    = "快速飛彈架"
+	hyperXCapacitorsName    = "超載電容"
+	timeWarpFacilitatorName = "時間扭曲加速器"
+)
+
+// shipShotsKind 回傳這艘船的「一回合多打一次」屬於哪一種。
+func shipShotsKind(sh Ship) gamedata.ShotsPerRoundKind {
+	switch sh.Special {
+	case hyperXCapacitorsName:
+		return gamedata.ShotsDoubleBeam
+	case fastMissileRacksName:
+		return gamedata.ShotsDoubleMissile
+	case timeWarpFacilitatorName:
+		return gamedata.ShotsDoubleAny
+	}
+	return gamedata.ShotsNormal
+}
+
+// TacticalShotsThisRound 回傳這艘船在格子戰術裡這一回合能開幾次火(第 140 項)。
+func TacticalShotsThisRound(sh CombatShip) int {
+	if sh.InStasis {
+		return 0 // 被停滯力場定住:不能開火(第 138 項)
+	}
+	beam := sh.Kind == WeaponKindBeam
+	missile := sh.Kind == WeaponKindMissile
+	return gamedata.ShotsThisRound(sh.ShotsKind, beam, missile, sh.Charged)
+}
+
+// TacticalAdvanceCharge 依這一回合有沒有開過火,更新下一回合的充能狀態。
+//
+// 手冊的 unused 是「完全沒開火」——連射之後再單射並不會充到電(見 gamedata 檔頭)。
+// 沒有冷卻的系統(時間扭曲加速器)一律保持滿電。
+func TacticalAdvanceCharge(ships []CombatShip) {
+	for i := range ships {
+		sh := &ships[i]
+		if !gamedata.ShotsNeedsCooldown(sh.ShotsKind) {
+			sh.Charged = true
+		} else {
+			sh.Charged = gamedata.ShotsRecharge(sh.Fired)
+		}
+		sh.Fired = false
+	}
+}
+
 // shipBeamAttackerSystems 把這艘船的元件翻成光束射擊要用的攻方系統旗標。
 //
 // 一艘船只有一個 Special 槽,所以最多只會有一項為真——寫成一個函式而不是三個判斷,

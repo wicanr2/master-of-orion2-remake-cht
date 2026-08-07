@@ -2054,59 +2054,65 @@ func (t *tacticalScreen) fireRound(target int) {
 		if dist > fireRange {
 			continue
 		}
-		firing++
-		if !firedAny {
-			firedAny = true
-			firedMissile = s.Kind == shell.WeaponKindMissile
-		}
-		enemy := &t.enemy[target]
-		var shot shell.ShotResult
-		switch s.Kind {
-		case shell.WeaponKindMissile:
-			amrRoll := t.rng.Intn(100) + 1
-			jamRoll := t.rng.Intn(100) + 1
-			// ⚠ 2026-08-08:上一版寫著「hasAMR/evasion 加成現行皆無對應可造艦元件,
-			// 保守傳 0/false」——第 125 項補了反飛彈火箭、第 133 項補了干擾器/慣性穩定器/
-			// 閃電場/位移裝置,四項現在都查得到。dist 是實際格距離(比 battleVolley
-			// 固定 range=2 更忠實)。
-			//
-			// 特殊防禦**裝了才擲骰**:沒裝就不動 t.rng,既有戰鬥逐位元不變。
-			var mdef shell.MissileDefenses
-			if enemy.HasLightningField {
-				mdef.HasLightningField, mdef.LightningRoll = true, t.rng.Intn(100)+1
+		// 行動次數(第 140 項):超載電容/快速飛彈架/時間扭曲加速器可以再打一次。
+		// 沒有這些系統的船 shots==1,整段行為與先前逐位元相同。
+		shots := shell.TacticalShotsThisRound(*s)
+		s.Fired = true // 開過火 → 這一回合結束時不會充能(手冊的 unused 是「完全沒開火」)
+		for shot := 0; shot < shots; shot++ {
+			firing++
+			if !firedAny {
+				firedAny = true
+				firedMissile = s.Kind == shell.WeaponKindMissile
 			}
-			if enemy.HasDisplacement {
-				mdef.HasDisplacement, mdef.DisplacementRoll = true, t.rng.Intn(100)+1
+			enemy := &t.enemy[target]
+			var shot shell.ShotResult
+			switch s.Kind {
+			case shell.WeaponKindMissile:
+				amrRoll := t.rng.Intn(100) + 1
+				jamRoll := t.rng.Intn(100) + 1
+				// ⚠ 2026-08-08:上一版寫著「hasAMR/evasion 加成現行皆無對應可造艦元件,
+				// 保守傳 0/false」——第 125 項補了反飛彈火箭、第 133 項補了干擾器/慣性穩定器/
+				// 閃電場/位移裝置,四項現在都查得到。dist 是實際格距離(比 battleVolley
+				// 固定 range=2 更忠實)。
+				//
+				// 特殊防禦**裝了才擲骰**:沒裝就不動 t.rng,既有戰鬥逐位元不變。
+				var mdef shell.MissileDefenses
+				if enemy.HasLightningField {
+					mdef.HasLightningField, mdef.LightningRoll = true, t.rng.Intn(100)+1
+				}
+				if enemy.HasDisplacement {
+					mdef.HasDisplacement, mdef.DisplacementRoll = true, t.rng.Intn(100)+1
+				}
+				shot = shell.ResolveMissileShot(enemy.HasAMR, dist, amrRoll, enemy.MissileEvasion, 0, false, jamRoll,
+					s.WeaponMax, enemy.ShieldReduction, enemy.ArmorHP, false, mdef)
+			case shell.WeaponKindSpherical:
+				span := s.WeaponMax - s.WeaponMin
+				r := 0
+				if span > 0 {
+					r = t.rng.Intn(span + 1)
+				}
+				aggD := gamedata.DamageSphericalRoll(s.WeaponMin, r, 100)
+				shot = shell.ResolveSphericalShot(aggD, enemy.ShieldReduction, enemy.ArmorHP, false, false)
+			default:
+				roll := t.rng.Intn(100) + 1
+				net := s.Attack - shell.TacticalEffectiveDefense(*enemy)
+				shot = shell.ResolveBeamShot(shell.BeamShot{
+					NetAttack: net, WeaponMin: s.WeaponMin, WeaponMax: s.WeaponMax,
+					RangeSquares: dist, Roll: roll,
+					Mods:     shell.WeaponModCodesFromStrings(s.Mods),
+					Attacker: s.BeamSystems,
+					Target: shell.BeamTargetSystems{
+						ShieldReduction: enemy.ShieldReduction, ArmorHP: enemy.ArmorHP,
+						APNegated: enemy.APNegated,
+					},
+				})
 			}
-			shot = shell.ResolveMissileShot(enemy.HasAMR, dist, amrRoll, enemy.MissileEvasion, 0, false, jamRoll,
-				s.WeaponMax, enemy.ShieldReduction, enemy.ArmorHP, false, mdef)
-		case shell.WeaponKindSpherical:
-			span := s.WeaponMax - s.WeaponMin
-			r := 0
-			if span > 0 {
-				r = t.rng.Intn(span + 1)
+			if shot.Hit {
+				anyHit = true
+				enemy.ArmorHP = shot.RemainingArmorHP
+				enemy.HP -= shot.DamageToStructure
+				pAtk += shot.DamageToStructure
 			}
-			aggD := gamedata.DamageSphericalRoll(s.WeaponMin, r, 100)
-			shot = shell.ResolveSphericalShot(aggD, enemy.ShieldReduction, enemy.ArmorHP, false, false)
-		default:
-			roll := t.rng.Intn(100) + 1
-			net := s.Attack - shell.TacticalEffectiveDefense(*enemy)
-			shot = shell.ResolveBeamShot(shell.BeamShot{
-				NetAttack: net, WeaponMin: s.WeaponMin, WeaponMax: s.WeaponMax,
-				RangeSquares: dist, Roll: roll,
-				Mods:     shell.WeaponModCodesFromStrings(s.Mods),
-				Attacker: s.BeamSystems,
-				Target: shell.BeamTargetSystems{
-					ShieldReduction: enemy.ShieldReduction, ArmorHP: enemy.ArmorHP,
-					APNegated: enemy.APNegated,
-				},
-			})
-		}
-		if shot.Hit {
-			anyHit = true
-			enemy.ArmorHP = shot.RemainingArmorHP
-			enemy.HP -= shot.DamageToStructure
-			pAtk += shot.DamageToStructure
 		}
 	}
 	if firing == 0 {
@@ -2174,6 +2180,10 @@ func (t *tacticalScreen) fireRound(target int) {
 		}
 	}
 	t.player = palive
+	// 充能推進(第 140 項):依這一回合有沒有開過火,決定下一回合能不能連射。
+	// 放在狀態重算旁邊——兩者都是「回合交界」的處理。
+	shell.TacticalAdvanceCharge(t.player)
+	shell.TacticalAdvanceCharge(t.enemy)
 	// 狀態效果每回合重算(第 138 項):產生源被打掉、或目標飛出射程,效果就該消失。
 	// 必須在**移動力重置之前**——移動力是依實際速度算的,而實際速度吃這些狀態。
 	shell.ApplyTacticalStatusEffects(t.player, t.enemy)

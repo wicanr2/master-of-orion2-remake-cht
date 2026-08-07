@@ -397,6 +397,12 @@ var (
 		// (第 136 項)、停滯力場要「這一輪不能動」的狀態。兩塊都建好了,現在接得上。
 		{"牽引光束", 130, 0, gamedata.TOPIC_ARTIFICIAL_GRAVITY, gamedata.TECH_TRACTOR_BEAM},
 		{"停滯力場", 190, 0, gamedata.TOPIC_DISTORTION_FIELDS, gamedata.TECH_STASIS_FIELD},
+		// 行動次數家族(第 140 項):三個元件卡在同一個缺失機制「一回合開幾次火」,
+		// 建一次就一次解三個。冷卻的讀法見 gamedata/shots_per_round.go
+		// ——手冊的 unused 是「完全沒開火」,不是「沒有連射」。
+		{"快速飛彈架", 120, 0, gamedata.TOPIC_SERVO_MECHANICS, gamedata.TECH_FAST_MISSILE_RACKS},
+		{"超載電容", 160, 0, gamedata.TOPIC_HYPER_DIMENSIONAL_FISSION, gamedata.TECH_HYPERX_CAPACITORS},
+		{"時間扭曲加速器", 250, 0, gamedata.TOPIC_TEMPORAL_PHYSICS, gamedata.TECH_TIME_WARP_FACILITATOR},
 	}
 )
 
@@ -658,6 +664,9 @@ type combatant struct {
 	beamSystems BeamAttackerSystems
 	// initiative 是手冊的主動權(Beam Attack + 10×戰鬥速度),決定齊射次序。
 	initiative int
+	// shots 是這一發齊射裡這艘船開幾次火(第 140 項)。快速結算沒有跨回合狀態,
+	// 所以充能一律視為滿——**這是刻意的簡化**:快速結算本來就沒有「上一回合」的概念。
+	shots int
 	// apNegated 是這艘**被打的**船讓敵方穿甲失效(氙素裝甲 或 重裝甲系統,手冊各一句)。
 	apNegated bool
 	// 飛彈特殊防禦(手冊 p.123):裝了才擲骰,見 ResolveMissileShot 的 MissileDefenses。
@@ -684,73 +693,15 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 	// 就地排序沒有問題:呼叫端每次都重新建構戰列(mkPlayerCombatantsIndexed / genEnemyFleet)。
 	sortByInitiative(attackers)
 	for i := range attackers {
-		ti := -1
-		for j := range *defenders {
-			if (*defenders)[j].hp > 0 {
-				ti = j
-				break
-			}
+		// 行動次數(第 140 項):超載電容/快速飛彈架/時間扭曲加速器可以再打一次。
+		// 沒有這些系統的船 shots==1,迴圈只跑一圈——**RNG 消耗與先前逐位元相同**。
+		// ⚠ shots 為 0 的話(零值)這艘船會完全不開火,所以下面夾在至少 1。
+		nshots := attackers[i].shots
+		if nshots < 1 {
+			nshots = 1
 		}
-		if ti < 0 {
-			break
-		}
-		d := &(*defenders)[ti]
-		var shot ShotResult
-		switch attackers[i].kind {
-		case WeaponKindBomb:
-			// 手冊 p.126:「Bombs installed in a ship are only useful against planetary
-			// targets」——艦隊戰裡完全不開火。**不是 0 傷害的命中,是根本沒有這一發**,
-			// 所以連骰子都不擲(擲了會位移後面每一發的隨機序列,讓決定性測試無故變動)。
-			continue
-		case WeaponKindMissile:
-			amrRoll := rng.Intn(100) + 1
-			jamRoll := rng.Intn(100) + 1
-			// 特殊防禦裝置(第 133 項):**裝了才擲骰**,沒裝就完全不動 RNG
-			// ——這樣既有存檔/探針的戰鬥結果逐位元不變(同炸彈分支的處理)。
-			var mdef MissileDefenses
-			if d.hasLightningField {
-				mdef.HasLightningField, mdef.LightningRoll = true, rng.Intn(100)+1
-			}
-			if d.hasDisplacement {
-				mdef.HasDisplacement, mdef.DisplacementRoll = true, rng.Intn(100)+1
-			}
-			// ⚠ 2026-08-08:上一版註解寫「那句話對 ECM 干擾器/慣性穩定器仍成立」
-			// ——第 133 項把那一整族補進 SpecialOptions 了,`missileEvasion` 現在吃得到。
-			shot = ResolveMissileShot(d.hasAMR, 2, amrRoll, d.missileEvasion, 0, false, jamRoll,
-				attackers[i].wmax, d.shield, d.armor, false, mdef)
-		case WeaponKindSpherical:
-			span := attackers[i].wmax - attackers[i].wmin
-			r := 0
-			if span > 0 {
-				r = rng.Intn(span + 1)
-			}
-			aggD := gamedata.DamageSphericalRoll(attackers[i].wmin, r, 100)
-			// 手冊 p.127 把脈衝星與空間壓縮器的傷害寫成「**per size class of target**」
-			// ——同一發打大船比打小船痛。
-			//
-			// ⚠ **「級數」取 index+1 是讀法,不是手冊字面。** 手冊沒列出級數的數字,只給了
-			// 艦體名稱的順序;取 index 會讓護衛艦那一級乘 0(打護衛艦零傷害),那顯然不是
-			// 規則,所以是 index+1(護衛艦 1 … 末日之星 6)。標在這裡,不假裝它是抄來的。
-			aggD *= int(d.sizeClass) + 1
-			// 空間壓縮器手冊明講「does all damage to structure only, ignoring shields
-			// and armor」;脈衝星沒有那一句,所以只有前者豁免。
-			shot = ResolveSphericalShot(aggD, d.shield, d.armor, false,
-				weaponBypassesShieldAndArmor(attackers[i].weaponName))
-		default:
-			roll := rng.Intn(100) + 1
-			net := attackers[i].atk - d.def
-			shot = ResolveBeamShot(BeamShot{
-				NetAttack: net, WeaponMin: attackers[i].wmin, WeaponMax: attackers[i].wmax,
-				RangeSquares: 2, Roll: roll, Mods: weaponModCodes(attackers[i].mods),
-				Attacker: attackers[i].beamSystems,
-				Target: BeamTargetSystems{
-					ShieldReduction: d.shield, ArmorHP: d.armor, APNegated: d.apNegated,
-				},
-			})
-		}
-		if shot.Hit {
-			d.armor = shot.RemainingArmorHP
-			d.hp -= shot.DamageToStructure
+		for sh := 0; sh < nshots; sh++ {
+			battleShot(&attackers[i], defenders, rng)
 		}
 	}
 	alive := (*defenders)[:0]
@@ -761,6 +712,79 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 	}
 	*defenders = alive
 	return before - len(*defenders)
+}
+
+// battleShot 是 battleVolley 裡「一艘船打一發」的那一段(第 140 項從迴圈裡抽出來,
+// 讓連射系統可以重複呼叫)。抽出來的過程沒有改任何判定,只是把 `attackers[i]` 換成參數。
+func battleShot(atk *combatant, defenders *[]combatant, rng *rand.Rand) {
+	ti := -1
+	for j := range *defenders {
+		if (*defenders)[j].hp > 0 {
+			ti = j
+			break
+		}
+	}
+	if ti < 0 {
+		return // 敵方全滅,這一發沒有目標
+	}
+	d := &(*defenders)[ti]
+	var shot ShotResult
+	switch atk.kind {
+	case WeaponKindBomb:
+		// 手冊 p.126:「Bombs installed in a ship are only useful against planetary
+		// targets」——艦隊戰裡完全不開火。**不是 0 傷害的命中,是根本沒有這一發**,
+		// 所以連骰子都不擲(擲了會位移後面每一發的隨機序列,讓決定性測試無故變動)。
+		return
+	case WeaponKindMissile:
+		amrRoll := rng.Intn(100) + 1
+		jamRoll := rng.Intn(100) + 1
+		// 特殊防禦裝置(第 133 項):**裝了才擲骰**,沒裝就完全不動 RNG
+		// ——這樣既有存檔/探針的戰鬥結果逐位元不變(同炸彈分支的處理)。
+		var mdef MissileDefenses
+		if d.hasLightningField {
+			mdef.HasLightningField, mdef.LightningRoll = true, rng.Intn(100)+1
+		}
+		if d.hasDisplacement {
+			mdef.HasDisplacement, mdef.DisplacementRoll = true, rng.Intn(100)+1
+		}
+		// ⚠ 2026-08-08:上一版註解寫「那句話對 ECM 干擾器/慣性穩定器仍成立」
+		// ——第 133 項把那一整族補進 SpecialOptions 了,`missileEvasion` 現在吃得到。
+		shot = ResolveMissileShot(d.hasAMR, 2, amrRoll, d.missileEvasion, 0, false, jamRoll,
+			atk.wmax, d.shield, d.armor, false, mdef)
+	case WeaponKindSpherical:
+		span := atk.wmax - atk.wmin
+		r := 0
+		if span > 0 {
+			r = rng.Intn(span + 1)
+		}
+		aggD := gamedata.DamageSphericalRoll(atk.wmin, r, 100)
+		// 手冊 p.127 把脈衝星與空間壓縮器的傷害寫成「**per size class of target**」
+		// ——同一發打大船比打小船痛。
+		//
+		// ⚠ **「級數」取 index+1 是讀法,不是手冊字面。** 手冊沒列出級數的數字,只給了
+		// 艦體名稱的順序;取 index 會讓護衛艦那一級乘 0(打護衛艦零傷害),那顯然不是
+		// 規則,所以是 index+1(護衛艦 1 … 末日之星 6)。標在這裡,不假裝它是抄來的。
+		aggD *= int(d.sizeClass) + 1
+		// 空間壓縮器手冊明講「does all damage to structure only, ignoring shields
+		// and armor」;脈衝星沒有那一句,所以只有前者豁免。
+		shot = ResolveSphericalShot(aggD, d.shield, d.armor, false,
+			weaponBypassesShieldAndArmor(atk.weaponName))
+	default:
+		roll := rng.Intn(100) + 1
+		net := atk.atk - d.def
+		shot = ResolveBeamShot(BeamShot{
+			NetAttack: net, WeaponMin: atk.wmin, WeaponMax: atk.wmax,
+			RangeSquares: 2, Roll: roll, Mods: weaponModCodes(atk.mods),
+			Attacker: atk.beamSystems,
+			Target: BeamTargetSystems{
+				ShieldReduction: d.shield, ArmorHP: d.armor, APNegated: d.apNegated,
+			},
+		})
+	}
+	if shot.Hit {
+		d.armor = shot.RemainingArmorHP
+		d.hp -= shot.DamageToStructure
+	}
 }
 
 // mkPlayerCombatants 把玩家目前艦隊(s.Ships)轉成 []combatant,供快速艦隊戰鬥解算共用——
@@ -839,11 +863,14 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 				shipShieldMultiplier(sh) / 100, // 多相護盾:吸收量 +50%
 			armor: effectiveArmorHP(sh),
 			kind:  weaponKindByName(sh.Weapon), weaponName: sh.Weapon, mods: sh.Mods,
-			sizeClass:         shipSizeClass(sh.Class),
-			hasAMR:            sh.Special == antiMissileRocketName,
-			hasHEF:            sh.Special == highEnergyFocusName,
-			beamSystems:       shipBeamAttackerSystems(sh),
-			initiative:        gamedata.CombatInitiative(atk, s.shipCombatSpeed(sh)),
+			sizeClass:   shipSizeClass(sh.Class),
+			hasAMR:      sh.Special == antiMissileRocketName,
+			hasHEF:      sh.Special == highEnergyFocusName,
+			beamSystems: shipBeamAttackerSystems(sh),
+			initiative:  gamedata.CombatInitiative(atk, s.shipCombatSpeed(sh)),
+			shots: gamedata.ShotsThisRound(shipShotsKind(sh),
+				weaponKindByName(sh.Weapon) == WeaponKindBeam,
+				weaponKindByName(sh.Weapon) == WeaponKindMissile, true),
 			apNegated:         shipNegatesArmorPiercing(sh),
 			hasLightningField: shipHasLightningField(sh),
 			hasDisplacement:   shipHasDisplacementDevice(sh),
@@ -1069,6 +1096,10 @@ type CombatShip struct {
 	// --- 狀態類武器:承受中的效果(每回合重算,不存檔)---
 	HeldByTractors int  // 身上有幾束敵方牽引光束
 	InStasis       bool // 被停滯力場定住:不能動、不能開火、**也不能被打**
+	// --- 行動次數(第 140 項)---
+	ShotsKind gamedata.ShotsPerRoundKind // 超載電容 / 快速飛彈架 / 時間扭曲加速器
+	Charged   bool                       // 上一回合完全沒開火 → 這一回合可以連射
+	Fired     bool                       // 這一回合開過火(回合結束時決定下一回合的 Charged)
 }
 
 // CombatSpriteForClass 依艦體等級回傳 CMBTSHP 色塊內 sprite 索引(見 docs/tech/cmbtshp-ship-sprites.md)。
@@ -1150,6 +1181,8 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			SizeClass:               shipSizeClass(sh.Class),
 			TractorBeams:            boolToInt(sh.Special == tractorBeamName),
 			HasStasisField:          sh.Special == stasisFieldName,
+			ShotsKind:               shipShotsKind(sh),
+			Charged:                 true, // 開場滿電(手冊沒有「第一回合不能連射」的限制)
 			Initiative:              gamedata.CombatInitiative(atk, s.shipCombatSpeed(sh)),
 			SpriteIdx:               CombatSpriteForClass(sh.Class), // 色塊 0(玩家)
 			Bay:                     bay, BayKind: bayKind,
