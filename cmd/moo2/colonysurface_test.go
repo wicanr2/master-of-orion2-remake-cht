@@ -258,9 +258,47 @@ func TestColonySurfacePlanIsDeterministic(t *testing.T) {
 }
 
 // TestColonySurfacePlanDiffersByColony:種子是殖民地索引,所以**輸入完全一樣的兩個殖民地
-// 也要長得不一樣**。這裡刻意複製一份殖民地 0(建築、人口全同)當殖民地 1——
+// 也要長得不一樣**。這裡複製兩份殖民地 0(建築、人口全同)當殖民地 1 與 2 再比——
 // 這樣任何差異都只可能來自種子,不會被「兩顆星本來就不同」蓋過去。
+//
+// ⚠ 不拿殖民地 0 來比:0 號是母星,會多一棟國會大廈(見 `origCapitolID`),
+// 那是**索引本身帶進來的輸入差異**,不是種子造成的。
 func TestColonySurfacePlanDiffersByColony(t *testing.T) {
+	b := newSurfaceTestBuilder(t)
+	sess := b.session
+	for i := 0; i < 2; i++ {
+		sess.PlayerColonies = append(sess.PlayerColonies, sess.PlayerColonies[0])
+		dup := map[string]bool{}
+		for k, v := range sess.ColonyBuildings[0] {
+			dup[k] = v
+		}
+		sess.ColonyBuildings = append(sess.ColonyBuildings, dup)
+	}
+
+	p1, p2 := b.colonySurfacePlan(1), b.colonySurfacePlan(2)
+	if len(p1) == 0 {
+		t.Skip("殖民地沒有可畫的東西")
+	}
+	if len(p1) != len(p2) {
+		t.Fatalf("輸入相同,棟數卻不同:%d vs %d", len(p1), len(p2))
+	}
+	same := true
+	for k, v := range p1 {
+		if p2[k] != v {
+			same = false
+			break
+		}
+	}
+	if same {
+		t.Error("兩個輸入相同的殖民地擺法完全一樣——Set_Random_Seed(colonyIdx) 沒接上")
+	}
+}
+
+// TestColonySurfacePlanHomeworldHasCapitol:母星要有國會大廈,其他殖民地沒有。
+//
+// 它不在 `gamedata.Buildings` 裡(不可建造,對建造選單而言正確),先前因此連地表也漏掉了——
+// 「不在建造表」與「不在地表」是兩件事。
+func TestColonySurfacePlanHomeworldHasCapitol(t *testing.T) {
 	b := newSurfaceTestBuilder(t)
 	sess := b.session
 	sess.PlayerColonies = append(sess.PlayerColonies, sess.PlayerColonies[0])
@@ -270,22 +308,20 @@ func TestColonySurfacePlanDiffersByColony(t *testing.T) {
 	}
 	sess.ColonyBuildings = append(sess.ColonyBuildings, dup)
 
-	p0, p1 := b.colonySurfacePlan(0), b.colonySurfacePlan(1)
-	if len(p0) == 0 {
-		t.Skip("殖民地沒有可畫的東西")
-	}
-	if len(p0) != len(p1) {
-		t.Fatalf("輸入相同,棟數卻不同:%d vs %d", len(p0), len(p1))
-	}
-	same := true
-	for k, v := range p0 {
-		if p1[k] != v {
-			same = false
-			break
+	count := func(idx int) int {
+		n := 0
+		for _, id := range b.colonySurfacePlan(idx) {
+			if id == origCapitolID {
+				n++
+			}
 		}
+		return n
 	}
-	if same {
-		t.Error("兩個輸入相同的殖民地擺法完全一樣——Set_Random_Seed(colonyIdx) 沒接上")
+	if got := count(0); got != 1 {
+		t.Errorf("母星應有 1 棟國會大廈,實得 %d", got)
+	}
+	if got := count(1); got != 0 {
+		t.Errorf("非母星不該有國會大廈,實得 %d", got)
 	}
 }
 

@@ -310,14 +310,8 @@ var colonyHouseStyles = [4]int{3, 14, 40, 41}
 //	房屋外觀:`v5 = (colonyIdx + 目前房屋數) % 4`,再依 `(v5+1) % 4` 選
 //	    0 → 3、1 → 14、2 → 40、3 → 41
 //
-// ============ 還沒照抄的一段(誠實標明)============
-//
-// 原版在 `Sort_Bldg_Array_Columns_` 之後還有一段**隨機微調**:取四種房屋各找一格,
-// 對鄰格以約 1/3 機率互換,跑 8 輪。那段的 `Get_Bldg_CR_` 語意(同一種房屋有多格時挑哪一格)
-// 與邊界夾擠寫得很繞,照抄容易抄錯而不自覺,**這一輪先不做**。
-// 影響是房屋之間的位置會與原版有出入;建築本身的落點由前面那三步決定,已經是原版演算法。
-// **道路也吃這條亂數流**(`Build_Road_List_Based_On_Bldg_List_` 接在抖動之後),
-// 所以抖動沒補完之前,道路的走法同樣不會與原版逐格相同——見 `colonyroads.go` 檔頭五。
+//	排序之後還有 `jitterColonyHouses`(8 輪房屋微調),再 `buildColonyRoads`(道路)——
+//	三者串在同一條亂數流上,順序不能動。
 func (b *sceneBuilder) colonySurfacePlan(idx int) map[[2]int]int {
 	plan, _ := b.colonySurfaceLayout(idx)
 	return plan
@@ -376,8 +370,15 @@ func (b *sceneBuilder) colonySurfaceLayout(idx int) (map[[2]int]int, colonyRoadM
 	}
 
 	sortColonyColumns(&grid)
+	jitterColonyHouses(&grid, rng)
 
-	// 原版在這裡還有 8 輪房屋抖動(見檔頭「還沒照抄的一段」),之後才推道路。
+	// 抖動之後、道路之前,原版還做一次 `Get_Bldg_CR_(9)`(找國會大廈)。
+	// 找到之後那段交換由 `dword_182B19` 這個全域 gate 住,它初值 0、唯一的寫入點又在
+	// gate 內側,remake 沒有對應概念 —— **交換沒模擬**。
+	// 但**掃描本身無條件執行而且會吃亂數**(見 `findColonyBuilding` 註解),而道路接在
+	// 同一條流上,所以這一步不能省。
+	findColonyBuilding(&grid, origCapitolID, rng)
+
 	roads = buildColonyRoads(&grid, rng)
 
 	for i, id := range grid {
@@ -388,11 +389,28 @@ func (b *sceneBuilder) colonySurfaceLayout(idx int) (map[[2]int]int, colonyRoadM
 	return plan, roads
 }
 
+// origCapitolID 是國會大廈的原版建築編號。
+//
+// 它**不在** `gamedata.Buildings` 裡,那是對的——建立殖民地時自動給予、不可建造,
+// 不該出現在建造選單。但它是一棟**實體建築**:佔一格、有美術(`bldg0.lbx` 資產 8×36+格)、
+// 會被畫在地表上。「不在建造表裡」與「不在地表格陣裡」是兩件事,先前混為一談了。
+//
+// 只有母星有。patch 1.5 手冊三處佐證:
+//   - 「最多建築數(**不計 Capitol**)是 ⅔ 人口無條件進位」——它獨立於一般建築計數。
+//   - 「**沒有** Capitol 的士氣懲罰」可依政府設定——所以殖民地可能沒有。
+//   - 「Colony Base 若加進 `initial_buildings`,會發給**每個玩家的母星**」——
+//     母星才是自動給予建築的那一個。
+const origCapitolID = 9
+
 // colonyOrigBuildingIDs 把某殖民地已建的建築換成**原版編號**的集合。
 func (b *sceneBuilder) colonyOrigBuildingIDs(idx int) map[int]bool {
 	has := map[int]bool{}
 	if b.session == nil || idx < 0 || idx >= len(b.session.ColonyBuildings) {
 		return has
+	}
+	if idx == 0 {
+		// 殖民地 0 恆為玩家母星(見 `GameSession.PlayerColonyStars` 欄位註解:星 0 恆為母星)。
+		has[origCapitolID] = true
 	}
 	for zh := range b.session.ColonyBuildings[idx] {
 		if bd, ok := gamedata.BuildingByNameZH(zh); ok {
@@ -455,6 +473,102 @@ func sortColonyColumns(grid *[36]int) {
 			break
 		}
 	}
+}
+
+// colonyJitterRounds 是房屋微調的輪數(原版 `cmp cx, 8`)。
+const colonyJitterRounds = 8
+
+// jitterColonyHouses 是 `Sort_Bldg_Array_Columns_` 之後那段房屋微調
+// (`Make_Bldg_Array_For_Colony_` @ 0xBC30B 的 `loc_BC441`..`loc_BC560`)。
+//
+// 排序把同類建築聚成整齊的區塊,這一段再把房屋隨機挪一下,免得城市看起來像棋盤。
+// 跑 8 輪,第 n 輪處理 `colonyHouseStyles[n%4]` 那種房屋:找到它的格子,
+// 然後在一個 3×3 的偏移迴圈裡試著和另一格互換,**換成一次就結束該輪**。
+//
+// 機率:目標格非空 → 抽兩次 `Random(3)`,任一次中 1 就換(約 5/9);
+// 目標格是空的 → 只抽一次(約 1/3)。
+//
+// ============ ⚠ 原版這段有兩個 bug,照抄不修 ============
+//
+// 反組譯(已用 objdump 對原始位元組獨立驗過,IDA 清單無誤):
+//
+//	eax = var_14 - si ; if (eax < 0) eax = 0        ; ← 第一個座標:有夾到 0
+//	edx = var_18 - di ; test edx, edx               ; ← 第二個座標:算了、測了號誌…
+//	cmp ax, 5 ; jle → edx = ax ; else edx = 5       ; …然後 edx 被無條件蓋掉
+//
+// **(1) 第二個座標整個被丟棄。** 對應的 `jge / xor edx, edx`(夾到 0)沒有被編出來,
+// 而下一條指令兩條路徑都會覆寫 `edx`。於是換位對象的兩個座標都等於
+// `clamp(a - si, 0, 5)` —— 目標格永遠落在 6×6 格陣的**主對角線**上。
+//
+// **(2) 內圈的 `di` 因此完全沒有作用。** 三次迭代做的是一模一樣的事。
+// 這裡仍然保留那個迴圈:它會影響 `Random` 被抽幾次,而後面的道路接在同一條流上。
+//
+// 換句話說,原版的「隨機微調」實際效果是「把房屋往對角線上搬」。照著原版寫才會得到
+// 原版的畫面;把它修成「與鄰格互換」會讓 remake 比原版合理,但與原版不同。
+func jitterColonyHouses(grid *[36]int, rng *gamedata.OrigRand) {
+	for round := 0; round < colonyJitterRounds; round++ {
+		id := colonyHouseStyles[round%len(colonyHouseStyles)]
+		a, b, ok := findColonyBuilding(grid, id, rng)
+		if !ok {
+			continue
+		}
+		done := false
+		for si := 1; si >= -1 && !done; si-- {
+			for di := 1; di >= -1 && !done; di-- {
+				_ = di // ⚠ 原版沒用到,見上方 bug (2);迴圈本身要留著,它決定抽幾次亂數
+
+				v := a - si
+				if v < 0 {
+					v = 0
+				}
+				if v > colonyGridCells-1 {
+					v = colonyGridCells - 1
+				}
+				target := v*colonyGridCells + v // ⚠ 對角格,見上方 bug (1)
+				src := a*colonyGridCells + b
+
+				swap := grid[target] != 0 && rng.N(3) == 1
+				if !swap {
+					swap = rng.N(3) == 1
+				}
+				if swap {
+					grid[target], grid[src] = grid[src], grid[target]
+					done = true
+				}
+			}
+		}
+	}
+}
+
+// findColonyBuilding 是 `Get_Bldg_CR_` @ 0xBBD37:在格陣裡找編號 id 的格子。
+//
+// 語意比名字繞,三件事要一起看:
+//
+//   - 掃描序是 a 外 b 內,**命中就立刻回傳第一格**(同一種房屋有好幾格時取掃到的第一格)。
+//   - 命中之前每碰到一個**空格**都會抽一次 `Random(n)` 做蓄水池抽樣,記住一個隨機空格。
+//     所以「找一棟建築」這個動作**會消耗亂數,而且消耗幾次取決於資料**——
+//     後面的道路接在同一條流上,這個細節不能省。
+//   - 掃完沒找到時:`id == -1` 回傳那個隨機空格且算成功(原版用這條路徑找空位),
+//     其他 id 一律回傳失敗。
+func findColonyBuilding(grid *[36]int, id int, rng *gamedata.OrigRand) (int, int, bool) {
+	ra, rb, n := 0, 0, 0
+	for a := 0; a < colonyGridCells; a++ {
+		for b := 0; b < colonyGridCells; b++ {
+			switch cell := grid[a*colonyGridCells+b]; cell {
+			case id:
+				return a, b, true
+			case 0:
+				n++
+				if rng.N(n) == 1 {
+					ra, rb = a, b
+				}
+			}
+		}
+	}
+	if id == -1 {
+		return ra, rb, true
+	}
+	return 0, 0, false
 }
 
 // drawColonyBuildings 把建築貼上去。與 `drawColonyTerrain` 分開是因為原版**中間夾了框架**:
