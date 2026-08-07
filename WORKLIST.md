@@ -217,6 +217,17 @@
   - ⚠ **別和隨機事件的蟲洞搞混**——MOO2 兩者都有,remake 也是(`applyWormhole` 早就有)。
   - ⚠ **舊存檔沒有這個欄位,零值是 0**,會讓每顆星都宣稱與星 0 有蟲洞。讀檔走
     `normalizeWormholes`,有專門的回歸測試。
+- **把「原版 48 棟 vs remake 40 棟」的差集查清楚**(gap report 第 36 項,同日):
+  8 個沒建模的編號逐一認出來並從原版建築表讀真值。結論:2 個是自動給予(Capitol /
+  Colony Base,正確地不該在表裡)、3 個已是 `SpecialActions`、**3 個真的缺**
+  (Galactic Currency Exchange 250PP/3BC、Stellar Converter 1000PP/6BC、
+  Artificial Planet 800PP/0BC)。
+  - 順帶驗證:三個 SpecialAction 的成本與重抽逐項相同;且**維護費 0 = 一次性**這條規則
+    正好把 8 個編號分成「常駐建築」與「一次性」兩堆。
+  - ⚠ **抓到一條死路科技**:`TOPIC_GALACTIC_ECONOMICS`(6000 RP)解鎖的
+    `TECH_GALACTIC_CURRENCY_EXCHANGE` 沒有任何東西消費它——研究完什麼都不會發生。
+  - 這輪**沒有直接補上**:效果查不到(手冊沒這條、patch 手冊零命中、遊戲資料檔只有名字沒說明、
+    建築表沒有效果欄),而不編數字是紀律。下一輪的路線寫在 gap report 第 36 項。
   - IDA 的 `-Ohexrays` 這一輪起不來(error code 4,兩次),整項改用手讀 `.asm` 完成。
 - **兩個零值陷阱**(都加了回歸測試):`TechLevel` 零值 = 曲速前 → 舊存檔艦隊全凍住;
   `i18n.English` 是 `Lang` 的零值 → 忘了設 lang 的建構路徑會靜默變英文。

@@ -1433,3 +1433,50 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     - 星圖第 1 層(在星球**之前**,所以線被星球蓋住而不是壓在上面),兩端都沒偵測到就不揭露
       (原版有同樣的探索狀態檢查)。remake 只畫 `i < j` 那一次,結果與原版兩端各畫一次相同。
     - `SendFleet`:兩端有蟲洞 → ETA 固定 1,不看距離。
+
+36. **原版 48 棟建築,remake 到底缺哪幾棟?——把 8 個沒建模的編號查清楚**(2026-08-07)。
+
+    `gamedata.Buildings` 是 40 項(手冊《The Big List》35 建築 + 5 衛星),而原版建築表是 48 棟。
+    先前沒人把差集列出來過,所以「是不是缺了什麼」一直沒有答案。
+
+    差集就是 `cmd/moo2/colonysurface.go` 的 `origBuildingID` 對不到的那 8 個編號。
+    用 openorion2 `gamestate.h` 的 `BUILDING_*` 列舉認名字,再從原版建築表
+    (`off_17EB3D`,19 位元組一列)讀真值:
+
+    | id | 名稱 | 成本 PP | 維護 BC | 分類 | remake 現況 |
+    |---:|---|---:|---:|---:|---|
+    | 9 | Capitol | 200 | 0 | 1 | 建立殖民地時自動給予,不可建造——**正確地不在表裡** |
+    | 11 | Colony Base | 200 | 0 | 0 | 同上(拓殖時自動) |
+    | 17 | Gaia Transformation | 500 | 0 | 1 | ✅ `SpecialActions`(一次性) |
+    | 18 | **Galactic Currency Exchange** | 250 | 3 | 5 | ❌ **完全沒有** |
+    | 37 | Soil Enrichment | 120 | 0 | 0 | ✅ `SpecialActions` |
+    | 42 | **Stellar Converter**(行星版) | 1000 | 6 | 0 | ❌ 沒有(文件註明「不計入 40 項」) |
+    | 44 | Terraforming | 250 | 0 | 0 | ✅ `SpecialActions` |
+    | 48 | **Artificial Planet** | 800 | 0 | 0 | ❌ **完全沒有** |
+
+    ### 這次抽表順帶驗了兩件事
+
+    - 三個 `SpecialActions` 的成本(250 / 500 / 120)與這次重抽**逐項相同** —— 交叉驗證通過。
+    - **維護費 0 = 一次性**:Terraforming / Gaia / Soil Enrichment / Artificial Planet 全是 0,
+      而 Currency Exchange(3)與 Stellar Converter(6)有維護費 → 它們是**常駐建築**不是一次性。
+      這條規則本身就能把 8 個編號分成「該進 `Buildings`」與「該進 `SpecialActions`」兩堆。
+
+    ### ⚠ 順帶抓到一個死路科技
+
+    `TOPIC_GALACTIC_ECONOMICS`(techtree.go,**6000 RP**)解鎖的是
+    `TECH_GALACTIC_CURRENCY_EXCHANGE`,但 remake **沒有任何東西消費它**——
+    玩家花 6000 研究點研究完,什麼也不會發生。這是目前科技樹裡最貴的一條死路。
+
+    ### 為什麼這一輪沒有直接補上
+
+    效果查不到,而**不編數字**是這個專案的紀律。四條路都走過:
+
+    | 來源 | 結果 |
+    |---|---|
+    | 手冊《The Big List》(GAME_MANUAL.pdf)| **沒有這一條**——所以 remake 的 40 項表本來就抄不到它 |
+    | patch 1.5 的 `MANUAL_150.html` | 零命中 |
+    | 遊戲資料檔 | 掃過整個資料夾,只有 `HELP.LBX` / `TECHNAME.LBX` 有**名字**,沒有任何說明文字 |
+    | 反組譯 | 建築表只有 19 位元組(名稱指標/編號/前置/成本/維護/分類),**沒有效果欄**——效果是寫死在程式碼裡的 |
+
+    下一輪要補的話,路線是從 `colony + 0x136 + 18` 那個「已建」旗標的讀取點反追到收入計算,
+    而不是再去翻手冊。成本/維護/前置/分類這四個真值已經在上表,不必重查。
