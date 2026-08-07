@@ -365,11 +365,9 @@ func (s *GameSession) colonyDefense(ci int) int {
 		for _, c := range retaliationAttackers(s.ColonyBuildings[ci], s.Player, s.RuleProfile) {
 			def += c.atk
 		}
-		// 恆星轉換器(行星版):手冊 p.106「400 傷 ×2,無視射程與防禦」。
-		// 它不走 space 預算那條路——手冊直接給了固定傷害,不隨武器科技變。
-		if s.ColonyBuildings[ci][gamedata.StellarConverterName] {
-			def += gamedata.StellarConverterDefense
-		}
+		// 恆星轉換器(行星版)2026-08-07 起由 retaliationAttackers 一併回傳
+		// ——先前它只算在這裡,結果同一棟建築擋得住 AI 來襲卻對軌道轟炸不反擊。
+		// 統一到那一支之後這裡不再另外加,否則會雙重計算。
 	}
 	return def
 }

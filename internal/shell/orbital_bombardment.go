@@ -202,7 +202,56 @@ func retaliationAttackers(buildings map[string]bool, defender engine.PlayerState
 		out = append(out, combatant{atk: atk, wmin: atk / 2, wmax: atk, kind: WeaponKindBeam})
 	}
 
+	// 戰機基地(手冊 p.79):地面的戰機中隊,依已解鎖的最高階戰機科技分三檔
+	// ——攔截機 10 隊 / 轟炸機 6 隊 / 重戰機 4 隊。中隊數隨科技**遞減**(每階更強),
+	// 照抄不要改成遞增。見 gamedata/planet_defense.go。
+	//
+	// ⚠ **已知問題,如實記錄**:用 remake 現行的單隊近似值算出來是
+	// 攔截機 480 / 轟炸機 120 / 重戰機 256 ——**研究出轟炸機艙反而讓基地變弱**。
+	// 那不是手冊的意思(手冊只給中隊數,沒說哪一檔比較強),是 `combat.go` 那兩個
+	// 標明過的近似值(`fighterBeamDamageApprox=3` / `fighterBombDamageApprox=5`)造成的假象:
+	// 攔截機每架 4 次射擊、轟炸機每架只 1 次投彈,4×3=12 對 1×5=5。
+	//
+	// **不在這裡硬調數字去湊一條好看的曲線**——要修的是那兩個近似值,而那需要手冊或
+	// 反組譯給出戰機的真實傷害,目前兩邊都沒有。這段註解是給下一個要校準的人看的。
+	if buildings["戰機基地"] {
+		atk, _ := gamedata.FighterGarrisonCombatContribution(fighterGarrisonTierFor(defender))
+		// 這裡的 atk 已是整座基地全部中隊的貢獻,不再過 SatelliteStrengthScale
+		// ——那個除數是「hull space 塞武器」那條推導用的,戰機的數字是手冊直接給的中隊數。
+		out = append(out, combatant{atk: atk, wmin: atk / 2, wmax: atk, kind: WeaponKindBeam})
+	}
+
+	// 行星版恆星轉換器:400 傷/面、不受距離與防禦影響。
+	//
+	// 2026-08-07 移到這裡:先前它只出現在 `colonyDefense`(ai_attack.go)裡,
+	// 所以**它擋得住 AI 來襲、卻對軌道轟炸完全不反擊**——同一棟建築在兩條路徑上
+	// 行為不一致。搬進 retaliationAttackers 之後兩邊共用同一個來源,
+	// `colonyDefense` 那邊的獨立加總同步移除(否則會變成雙重計算)。
+	if buildings[gamedata.StellarConverterName] {
+		atk := gamedata.StellarConverterRetaliationAttack()
+		out = append(out, combatant{atk: atk, wmin: atk, wmax: atk, kind: WeaponKindBeam})
+	}
+
 	return out
+}
+
+// fighterGarrisonTierFor 依 defender 已解鎖的最高階戰機科技決定戰機基地的檔次。
+//
+// 手冊那句「Note that Interceptors are available immediately」說明了為什麼沒有
+// 「還沒有戰機科技」這一格——攔截機是開局就有的保底檔。
+func fighterGarrisonTierFor(defender engine.PlayerState) gamedata.FighterGarrisonTier {
+	//
+	// ⚠ 兩個科技**不在同一個主題**:轟炸機艙在 TOPIC_ADVANCED_ROBOTICS(11)、
+	// 重戰機艙在 TOPIC_SUPERSCALAR_CONSTRUCTION(42)。這是寫這段時猜錯、被
+	// 第 91 項挖出來的一手科技表(`gamedata.OrigTechTopic`)當場抓到的
+	// ——原本兩個都寫 ADVANCED_ROBOTICS,重戰機那一檔會永遠進不去。
+	switch {
+	case groundEquipTechOwned(defender, gamedata.TOPIC_SUPERSCALAR_CONSTRUCTION, gamedata.TECH_HEAVY_FIGHTER_BAYS):
+		return gamedata.FighterGarrisonHeavyFighter
+	case groundEquipTechOwned(defender, gamedata.TOPIC_ADVANCED_ROBOTICS, gamedata.TECH_BOMBER_BAYS):
+		return gamedata.FighterGarrisonBomber
+	}
+	return gamedata.FighterGarrisonInterceptor
 }
 
 // BombardColony 嘗試對 starIdx 這顆星發動一次軌道轟炸(手冊 p.129 Orbital Bombardment)。

@@ -377,11 +377,18 @@ var Buildings = []Building{
 
 // StellarConverterDefense 是恆星轉換器(行星版)在殖民地防禦解算裡的貢獻。
 //
-// 手冊 p.106 給的是「400 傷 ×2」——**這是這一批防禦建築裡唯一有固定數字的一棟**。
-// 飛彈基地與地面砲台手冊只給「佔 300 / 450 空間、裝當時最佳武器」的規則,傷害隨科技現算,
-// 要等艦艇元件的空間模型就緒才能算(見 docs/knowledge-base/manual-cht/02-buildings.md
-// 「駐軍上限公式」那段的註記),所以那兩棟仍未接進防禦解算。
-const StellarConverterDefense = 800
+// ⚠ **2026-08-07 訂正:先前是 800,來歷寫著「手冊 p.106『400 傷 ×2(雙側共 1600)』」
+// ——那句話自己就矛盾**(400 × 2 = 800,不是 1600)。回去查手冊原文:
+//
+//	It fires a plasma blast that inflicts **400 points of damage to each side** of a
+//	target — **1,600 total damage** — regardless of range and defense.
+//
+// 是「每一**面** 400、四面合計 1600」,不是「兩側 ×2」。1600 / 400 = **4 面**。
+//
+// 那麼防禦貢獻該用哪個?**400**。remake 的防禦解算是抽象的、一次反擊就是一發打在
+// 一個目標上,沒有「同時打四面」這回事;拿 1600 會讓這棟建築的價值變成四倍。
+// 四面總傷記在 `StellarConverterTotalDamage`(planet_defense.go),要用的人看得到它的來歷。
+const StellarConverterDefense = StellarConverterDamagePerSide
 
 // StellarConverterName 是恆星轉換器的中文名(供 shell 判斷殖民地有沒有這棟)。
 const StellarConverterName = "恆星轉換器"
