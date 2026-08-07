@@ -52,11 +52,68 @@ package gamedata
 // 第 1 點是**可觀察的機率差異**:d100 對 d100 平手的機率是 1%,而平手在原版會讓雙方
 // 各損失一次命中。守方原本白拿的那 1% 沒有了。
 //
-// ============ 誠實留白 ============
+// ============ 四種類型是什麼(2026-08-07 追出來的)============
 //
-// 四種部隊類型**沒有對出名字**。MOO2 的地面單位有陸戰隊 / 裝甲(坦克)/ 機械戰士,
-// 那是三種;第四種是什麼、以及各類型的攻擊力從哪張表來,都還沒追。
-// 所以這一檔只提供**解算**,兵力怎麼組還是呼叫端的事(見 `ground_battle.go` 的加成表)。
+// `Compute_Ground_Combat_Info_` @ 0xEC3CE 逐類型算攻擊力與耐受值,四個 case 的**調整量
+// 是純立即數**:
+//
+//	case 0:  攻擊力 += 10 + 加成塊[+1] ; 耐受 += 1 + 加成塊[+2]
+//	case 1:  攻擊力 +=      加成塊[+3] ; 耐受 +=     加成塊[+4]
+//	case 2:  攻擊力 -= 10
+//	case 3:  攻擊力 -= 20              ; 而且基礎值取自**另一方**的加成塊(edi;為 0 時整格歸零)
+//
+// `Compute_Colony_Ground_Combat_Info_` @ 0xED713 給殖民地填三格數量
+//(`[+0x0A]`、`[+0x0C]`、`[+0x0E]`,即類型 0/1/2),第 4 格留 0(它傳 `ebx = 0`)。
+//
+// 手冊那一句把三種對上了:
+//
+//	「Along the bottom left of the view are icons representing all the **Marine and Armor**
+//	 units stationed in defense of this planet. … In addition to Marine and Armor units your
+//	 **militia** are also shown here.」
+//
+// 對照調整量:類型 0 最強(+10 攻擊、+1 耐受)= **裝甲**(手冊:tank battalions);
+// 類型 1 是基準 = **陸戰隊**;類型 2 −10 = **民兵**(未受訓的平民,最弱,合理)。
+//
+// ⚠ **類型 3 仍未定名**:它的基礎值來自另一方的加成塊、再 −20,而殖民地防守方根本不填它。
+// 不編名字。
+//
+// ⚠ 那幾個「加成塊」欄位(`Compute_Player_Ground_Combat_Bonuses_` @ 0xEC15C 產的)
+// 還沒逐欄對出意義,所以這一檔**只提供類型間的相對差**(那部分是純立即數,不依賴未知欄位),
+// side 級的基礎加成仍由呼叫端用手冊的表算(見 `ground_battle.go`)。
+
+// 部隊類型索引(見上方的對應推導)。
+const (
+	GroundTypeArmor   = 0 // 裝甲 / 戰車營(+10 攻擊、+1 耐受)
+	GroundTypeMarines = 1 // 陸戰隊(基準)
+	GroundTypeMilitia = 2 // 民兵(−10 攻擊)
+	GroundTypeFourth  = 3 // ⚠ 未定名(−20,且基礎值取自另一方)
+)
+
+// GroundTypeStrengthDelta 是各部隊類型相對基準的攻擊力調整(原版四個 case 的立即數)。
+//
+// 只回**立即數的部分**;`加成塊[+1]` / `加成塊[+3]` 那兩個科技加成欄位還沒對出意義,
+// 不含在這裡——回一個「差不多」的值會讓日後追出真值時看不出哪裡被污染過。
+func GroundTypeStrengthDelta(unitType int) int {
+	switch unitType {
+	case GroundTypeArmor:
+		return 10
+	case GroundTypeMarines:
+		return 0
+	case GroundTypeMilitia:
+		return -10
+	case GroundTypeFourth:
+		return -20
+	}
+	return 0
+}
+
+// GroundTypeHitsDelta 是各部隊類型相對基準的耐受命中數調整(原版只有類型 0 有 +1)。
+func GroundTypeHitsDelta(unitType int) int {
+	if unitType == GroundTypeArmor {
+		return 1
+	}
+	return 0
+}
 
 // GroundUnitTypes 是原版一方的部隊類型數(索引 0..3;4 = 全滅哨兵值)。
 //

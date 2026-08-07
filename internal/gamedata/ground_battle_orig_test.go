@@ -184,3 +184,56 @@ func TestResolveStopsAtMaxRounds(t *testing.T) {
 		t.Errorf("應在第 10 回合停下,實得 %d", res.Rounds)
 	}
 }
+
+// --- 逐類型的攻擊力/耐受調整(Compute_Ground_Combat_Info_ @ 0xEC3CE 的四個 case)---
+
+// 四個 case 的立即數:+10 / 0 / −10 / −20,耐受只有類型 0 有 +1。
+func TestGroundTypeDeltasMatchTheOriginalCases(t *testing.T) {
+	for _, c := range []struct{ typ, str, hits int }{
+		{GroundTypeArmor, 10, 1},
+		{GroundTypeMarines, 0, 0},
+		{GroundTypeMilitia, -10, 0},
+		{GroundTypeFourth, -20, 0},
+	} {
+		if got := GroundTypeStrengthDelta(c.typ); got != c.str {
+			t.Errorf("類型 %d 的攻擊力調整應為 %d,實得 %d", c.typ, c.str, got)
+		}
+		if got := GroundTypeHitsDelta(c.typ); got != c.hits {
+			t.Errorf("類型 %d 的耐受調整應為 %d,實得 %d", c.typ, c.hits, got)
+		}
+	}
+	// 排序關係才是重點:裝甲 > 陸戰隊 > 民兵 > 第四種。
+	if !(GroundTypeStrengthDelta(GroundTypeArmor) >
+		GroundTypeStrengthDelta(GroundTypeMarines) &&
+		GroundTypeStrengthDelta(GroundTypeMarines) >
+			GroundTypeStrengthDelta(GroundTypeMilitia) &&
+		GroundTypeStrengthDelta(GroundTypeMilitia) >
+			GroundTypeStrengthDelta(GroundTypeFourth)) {
+		t.Error("強弱順序應為 裝甲 > 陸戰隊 > 民兵 > 第四種")
+	}
+	// 類型 0 是索引 0 —— 這條釘住「不要又把陸戰隊排回 0」。
+	if GroundTypeArmor != 0 || GroundTypeMarines != 1 {
+		t.Error("原版的類型 0 是裝甲(最強的那種),不是陸戰隊")
+	}
+}
+
+// 裝甲比陸戰隊強 10 點:同基礎值下,裝甲該贏過陸戰隊。
+func TestArmorBeatsMarinesAtEqualBase(t *testing.T) {
+	const base = 30
+	var st, ct, hk [GroundUnitTypes]int
+	st[0], ct[0], hk[0] = base+GroundTypeStrengthDelta(GroundTypeArmor), 1, 1
+	armor := NewGroundSide(st, ct, hk)
+
+	var st2, ct2, hk2 [GroundUnitTypes]int
+	st2[1], ct2[1], hk2[1] = base+GroundTypeStrengthDelta(GroundTypeMarines), 1, 1
+	marines := NewGroundSide(st2, ct2, hk2)
+
+	// 同一個骰值 → 只有那 10 點的差異決定勝負。
+	GroundCombatRound(armor, marines, func(int) int { return 0 })
+	if armor.DeadType != GroundNone {
+		t.Error("裝甲不該輸給同基礎值的陸戰隊")
+	}
+	if marines.DeadType != GroundTypeMarines {
+		t.Error("陸戰隊應該挨打")
+	}
+}

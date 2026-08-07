@@ -511,14 +511,19 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	// 攻方分兩種部隊:陸戰隊 = 類型 0、戰車營 = 類型 1(原版是「一種打完換下一種」,
 	// 與先前「戰車營排在合併陣列尾端」的意圖相同,只是換成原版的資料結構)。
 	//
-	// ⚠ 兩種的攻擊力目前都填 atkForce ——**原版是逐類型各有一個值**(`[side + type*2 + 2]`),
-	// 但那張表還沒追出來。填同一個值等於維持現行數字,並把差異留在一個看得見的地方;
-	// 追到之後只要改這兩行。
+	// 逐類型的攻擊力/耐受值 = side 級基礎 + 該類型的調整量。
+	// 調整量是原版四個 case 的**純立即數**(裝甲 +10 攻擊 +1 耐受、陸戰隊基準、民兵 −10),
+	// 見 gamedata.GroundTypeStrengthDelta / GroundTypeHitsDelta。
+	//
+	// ⚠ 原版那兩個「科技加成」欄位(加成塊 +1/+3、+2/+4)還沒對出意義,不含在調整量裡
+	// ——回一個「差不多」的值會讓日後追出真值時看不出哪裡被污染過。
 	var atkStrength, atkCounts, atkHits [gamedata.GroundUnitTypes]int
-	atkStrength[groundTypeMarines], atkCounts[groundTypeMarines], atkHits[groundTypeMarines] =
-		atkForce, s.Fleet().Marines, marineHits
-	atkStrength[groundTypeTanks], atkCounts[groundTypeTanks], atkHits[groundTypeTanks] =
-		atkForce, tankCount, tankHits
+	atkStrength[groundTypeMarines] = atkForce + gamedata.GroundTypeStrengthDelta(groundTypeMarines)
+	atkCounts[groundTypeMarines] = s.Fleet().Marines
+	atkHits[groundTypeMarines] = marineHits + gamedata.GroundTypeHitsDelta(groundTypeMarines)
+	atkStrength[groundTypeTanks] = atkForce + gamedata.GroundTypeStrengthDelta(groundTypeTanks)
+	atkCounts[groundTypeTanks] = tankCount
+	atkHits[groundTypeTanks] = tankHits + gamedata.GroundTypeHitsDelta(groundTypeTanks)
 
 	defCount := gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population, colony.PopMax, false)
 	defForce := aiMarineForce(*aiPlayer)
@@ -530,9 +535,14 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	// commandoLeaderTier(nil)=0,安全降級為無加成。
 	defForce += gamedata.GroundCommandoDefenderForceBonus(commandoLeaderTier(aiPlayer.Leaders), s.RuleProfile.DefenderCommandoBonus)
 	defHits := gamedata.GroundMarineHitsToKill(false, hasPoweredArmorFor(aiPlayer.Player))
+	// 守方目前只有陸戰隊。⚠ 原版的殖民地填**三格**(裝甲 / 陸戰隊 / 民兵,見
+	// `Compute_Colony_Ground_Combat_Info_` @ 0xED713 與手冊「your militia are also shown here」)
+	// ——民兵的數量公式(`sub_EC61E`)與 AI 的裝甲營房追蹤都還沒有,所以那兩格留 0。
+	// 留 0 是**少算守方兵力**,方向上對玩家有利,不是隨便選的預設。
 	var defStrength, defCounts, defHitsArr [gamedata.GroundUnitTypes]int
-	defStrength[groundTypeMarines], defCounts[groundTypeMarines], defHitsArr[groundTypeMarines] =
-		defForce, defCount, defHits
+	defStrength[groundTypeMarines] = defForce + gamedata.GroundTypeStrengthDelta(groundTypeMarines)
+	defCounts[groundTypeMarines] = defCount
+	defHitsArr[groundTypeMarines] = defHits + gamedata.GroundTypeHitsDelta(groundTypeMarines)
 
 	rng := rand.New(rand.NewSource(int64(s.Turn)*2654435761 + int64(starIdx)*97 + 555))
 	// 換成原版的解算(`Ground_Combat_Round_` @ 0xEC4FE,見 gamedata/ground_battle_orig.go)。
