@@ -137,7 +137,7 @@ Lore/Ordnance/Security/Navigator(移動力用途)在 openorion2 全專案 grep �
 `gamedata.LeaderSkillCombine` 合成(手冊 p.137:只有 Megawealth 與 Researcher 累加,
 其餘取最強那一位),最後由 switch 決定落在哪個 `ColonyState` 欄位。
 
-## 五、目前有實際效果的技能(共 12 項)
+## 五、目前有實際效果的技能(共 13 項)
 
 | 技能 | 落在 | 消費端 |
 |---|---|---|
@@ -153,6 +153,7 @@ Lore/Ordnance/Security/Navigator(移動力用途)在 openorion2 全專案 grep �
 | 工程師 Engineer | 戰後完全修復(**打贏才有**) | `repair.go` `engineerLeaderTier` |
 | 指揮官 Commando | 地面戰 force 加成 | `ground_invasion.go` `commandoLeaderTier` |
 | 領航員 Navigator | 艦隊航速 + 星雲/黑洞豁免 | `starlane.go` `FleetHasNavigator` |
+| 環保官 Environmentalist | `PollutionReductionPercent`(**正的減幅**) | `engine/colony.go` `colonyPollution` |
 
 > 2026-07-11 版本這一節寫的是「指揮官映射待人工定案,候選 SKILL_WEAPONRY /
 > SKILL_COMMANDO / SKILL_SECURITY」——**已定案為 SKILL_COMMANDO**(手冊 p.135 Commando)。
@@ -162,8 +163,6 @@ Lore/Ordnance/Security/Navigator(移動力用途)在 openorion2 全專案 grep �
 
 ## 六、仍未接的與理由
 
-- **環保官 Environmentalist**:降低「會產生污染的產能」的百分比。remake 的污染模型是
-  `PollutionEighths` 查表(八分之幾),沒有百分比入口。
 - **戰術官 Tactics**:**原版自己就沒實作**——手冊那條的最後一句明寫
   「This skill is not implemented」。不做它與原版一致,不是缺口。
 - **刺客 / 外交官 / 間諜大師 / 心靈感應 / 名人 / 巨富 / 後勤官**:對應的子系統

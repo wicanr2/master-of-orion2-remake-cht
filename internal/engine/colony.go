@@ -40,11 +40,16 @@ func colonyFood(cs ColonyState) (food, consumed, surplus int) {
 }
 
 // colonyPollution 依毛工業產出計算污染清理成本與淨工業。
-// 順序(對照 production.go 註解建議):eighths → 產污產能 → 清理成本 → 淨工業。
+// 順序(對照 production.go 註解建議):eighths → 產污產能 → **環保官** → 清理成本 → 淨工業。
+//
+// 環保官夾在「查表」與「扣容忍值」之間:它降的是「會產生污染的產能」(手冊逐字用語,
+// 見 gamedata.PollutionReducedByPercent),與建築的八分之幾同一個量、同一條相乘鏈。
+// 放到 grossIndustry 那一側會變成減產能——那是手冊那句話的反面。
 func colonyPollution(cs ColonyState, grossIndustry int) (pollutingProd, cleanupCost, netIndustry int) {
 	tolerance := gamedata.PollutionTolerance(cs.PlanetSize)
 	eighths := gamedata.PollutionEighths(cs.PollutionProcessor, cs.AtmosphericRenewer, cs.CoreWasteDump)
 	pollutingProd = gamedata.PollutionPollutingProduction(grossIndustry, eighths)
+	pollutingProd = gamedata.PollutionReducedByPercent(pollutingProd, cs.PollutionReductionPercent)
 	cleanupCost = gamedata.PollutionCleanupCost(pollutingProd, tolerance, cs.TolerantRace)
 	return pollutingProd, cleanupCost, grossIndustry - cleanupCost
 }

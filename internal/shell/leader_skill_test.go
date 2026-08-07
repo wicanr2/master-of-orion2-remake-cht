@@ -166,3 +166,50 @@ func TestScienceLeaderAndResearcherAreDifferentSkills(t *testing.T) {
 		t.Errorf("科學家應只加固定點數:固定=%d、%%=%d", b.FlatResearch, b.ResearchBonusPercent)
 	}
 }
+
+// 環保官的加成是**負的**(base −10),而 ColonyState 那一欄存的是正的「減幅」。
+// 這一條釘住那個符號翻轉——搞反了會變成「請環保官讓污染變嚴重」,而且不會有任何測試報錯。
+func TestEnvironmentalistLandsAsAPositiveReduction(t *testing.T) {
+	var c engine.ColonyState
+	applyLeaderColonyBonuses([]Leader{{
+		Name: "綠黨", Level: 3,
+		Skills: []LeaderSkill{{ID: int(gamedata.SKILL_ENVIRONMENTALIST), Tier: 1}},
+	}}, &c)
+
+	if c.PollutionReductionPercent <= 0 {
+		t.Errorf("環保官應存成正的減幅,得到 %d(負值代表符號翻反了)", c.PollutionReductionPercent)
+	}
+	// 值本身:base −10 × (expLevel+1 = 3) = −30 → 減幅 30。
+	if want := 30; c.PollutionReductionPercent != want {
+		t.Errorf("Level 3(expLevel 2)的環保官應是 %d%%,得到 %d%%", want, c.PollutionReductionPercent)
+	}
+	// 只碰污染那一欄,其餘一律不動。
+	if c.FoodBonusPercent != 0 || c.IndustryBonusPercent != 0 || c.ResearchBonusPercent != 0 ||
+		c.MoralePercent != 0 || c.IncomeBonusPercent != 0 {
+		t.Errorf("環保官不該動到其他欄位:%+v", c)
+	}
+}
+
+// 環保官不是累加型(手冊 p.137 只有 Megawealth 與 Researcher 是)——兩位取**效果最強**的那位。
+//
+// 它的加成是負值,所以「最強」是絕對值最大;`LeaderSkillCombine` 取的就是絕對值最大。
+// 用「取數值最大」會挑到最弱的那個,這條專門擋那個寫法。
+func TestTwoEnvironmentalistsTakeTheStrongest(t *testing.T) {
+	mk := func(leaders []Leader) int {
+		var c engine.ColonyState
+		applyLeaderColonyBonuses(leaders, &c)
+		return c.PollutionReductionPercent
+	}
+	weak := Leader{Name: "弱", Level: 1,
+		Skills: []LeaderSkill{{ID: int(gamedata.SKILL_ENVIRONMENTALIST), Tier: 1}}}
+	strong := Leader{Name: "強", Level: 5,
+		Skills: []LeaderSkill{{ID: int(gamedata.SKILL_ENVIRONMENTALIST), Tier: 2}}}
+
+	both, onlyStrong := mk([]Leader{weak, strong}), mk([]Leader{strong})
+	if both != onlyStrong {
+		t.Errorf("兩位應取最強那位的 %d%%,得到 %d%%", onlyStrong, both)
+	}
+	if both <= mk([]Leader{weak}) {
+		t.Errorf("取到的是弱的那位(%d%%)——負值取「最大」會挑錯人", both)
+	}
+}

@@ -150,3 +150,46 @@ func PollutionEighths(pollutionProcessor, atmosphericRenewer, coreWasteDump bool
 func PollutionPollutingProduction(production, eighths int) int {
 	return production * eighths / 8
 }
+
+// PollutionReducedByPercent 把「仍會產生污染的產能」再打掉一個百分比(環保官領袖技能)。
+//
+// ============ 為什麼是接在這裡 ============
+//
+// 手冊 p.137 那條逐字是:
+//
+//	Environmentalist: Reduces **the amount of production that causes pollution**
+//	on the colonies in the system.
+//
+// 「the amount of production that causes pollution」就是 `PollutionPollutingProduction`
+// 回傳的那個量——這支函式的名字本身就是那句話。所以接的位置是**八分之幾查表之後、
+// 容忍值扣除之前**:eighths → 環保官 → tolerance → 一半。
+//
+// ⚠ 這不是「減產能」。環保官降的是**會致污染的那部分產能**,殖民地實際的工業產出不變
+// (它只讓 `PollutionCleanupCost` 少扣一點)。接到 gross 那一行會變成「請一個環保官等於少一個工人」,
+// 那是手冊那句話的反面。
+//
+// ============ 為什麼是相乘,不是相加 ============
+//
+// 這條規則手冊沒有直接寫,但它給了同一類效果怎麼疊的**算術**(p.90 大氣更新器):
+//
+//	This effect is cumulative with that of the Pollution Processor; if both are in place,
+//	**only one-eighth** of the industry produces pollution.
+//
+// 污染處理器留下 1/2、大氣更新器留下 1/4,兩者並存留下 **1/8 = 1/2 × 1/4**。
+// (手冊用的字是 "cumulative",但它自己算出來的數字是相乘——**數字贏字面**:
+// 相加會是 1/2 + 1/4 或 3/4 之類的值,得不到 1/8。)
+//
+// 所以環保官的百分比也當成同一條鏈上的另一個乘數,套在查表結果之上。這是手冊給過的
+// 唯一一條「污染削減怎麼疊」的規則,不是另創的模型。
+//
+// reductionPercent 是**正的減幅**(環保官的 skillBonus 是負值,呼叫端負負得正);
+// <=0 原封不動,>=100 全部歸零。
+func PollutionReducedByPercent(pollutingProd, reductionPercent int) int {
+	if reductionPercent <= 0 || pollutingProd <= 0 {
+		return pollutingProd
+	}
+	if reductionPercent >= 100 {
+		return 0
+	}
+	return pollutingProd * (100 - reductionPercent) / 100
+}

@@ -1637,8 +1637,8 @@ func leaderDisplayLevelToExpLevel(level int) int {
 // 呼叫端傳 &session.PlayerColonies[0])。
 //
 // **哪些技能真的生效,看下面 switch 有沒有對應的 case**——沒有 case 的技能一律略過,
-// 不臆造欄位。目前接了 8 項(科學家/貿易家/財務官/心靈導師/醫官/農業官/勞工官/科學官);
-// 教官與工程師有 id 但落在別的系統(艦員經驗、艦艇維修),見下方註解。
+// 不臆造欄位。目前接了 9 項(科學家/貿易家/財務官/心靈導師/醫官/農業官/勞工官/科學官/環保官);
+// 教官、工程師、指揮官、領航員有 id 但落在別的系統,見下方註解。
 //
 // ⚠ 2026-08-07(第 101 項)修掉一個一直在的錯:**加成不是每個領袖都疊一份**。
 //
@@ -1682,6 +1682,11 @@ func applyLeaderColonyBonuses(leaders []Leader, colony *engine.ColonyState) {
 			colony.IndustryBonusPercent += bonus
 		case int(gamedata.SKILL_SCIENCE_LEADER):
 			colony.ResearchBonusPercent += bonus
+		case int(gamedata.SKILL_ENVIRONMENTALIST):
+			// 環保官的 skillBonus 是**負值**(base −10,降低會致污染的產能),
+			// 而 ColonyState 那一欄存的是正的「減幅」——負負得正,所以是 `-=`。
+			// 這樣消費端讀起來就是「(100 − 減幅)」,公式裡不必再處理負號。
+			colony.PollutionReductionPercent -= bonus
 		// 落在別的系統、不是殖民地欄位的技能(所以這裡沒有 case,不是漏掉):
 		//   SKILL_INSTRUCTOR → 艦員每回合經驗(帝國層,leaderInstructorXPBonus / crew.go)
 		//   SKILL_ENGINEER   → 戰後完全修復(repair.go engineerLeaderTier)

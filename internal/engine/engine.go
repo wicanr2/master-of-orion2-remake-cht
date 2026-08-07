@@ -97,6 +97,15 @@ type ColonyState struct {
 	IndustryBonusPercent int
 	ResearchBonusPercent int
 
+	// PollutionReductionPercent 是「會產生污染的產能」的減幅百分比(**正值 = 減少**)。
+	//
+	// 來源:環保官(gamedata.baseSkillValues[2][0] = −10%,格式 "%+d%%")。技能的加成值本身
+	// 是負的,存進來時已翻成正的減幅——讓消費端讀起來是「(100 − 減幅)」,公式裡不必處理負號。
+	//
+	// ⚠ 這**不是**減產能。它降的是 colonyPollution 算出來的「致污染產能」,
+	// 殖民地實際工業產出不變,只是清理污染少扣一點。見 gamedata.PollutionReducedByPercent。
+	PollutionReductionPercent int
+
 	FlatFood     int // 殖民地食物整體固定加成(水耕農場 p.99 +2、地底農場 p.100 +4)
 	FlatIndustry int // 殖民地工業整體固定加成(自動化工廠 p.78 +5、機器人採礦廠 p.80 +10、深層核心礦場 p.82 +15)
 	FlatResearch int // 殖民地研究整體固定加成(研究實驗室 p.94 +5、行星超級電腦 p.95 +10、銀河網路中心 p.98 +15)
