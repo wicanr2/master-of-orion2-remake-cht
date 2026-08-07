@@ -5,6 +5,7 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/netplay"
@@ -50,10 +51,13 @@ import (
 // 標題帶(資產 42)是 10 幀動畫,`Draw_Net_Next_Turn_Screen_` 用 `[win+0x1EA]` 當幀號逐幀播、
 // 播完歸零。這裡照做。
 //
-// 其餘 8 個網路畫面:`Modem_Setup` / `NullModem_Setup` / `Comm Info` 是**數據機與序列線**的
-// 設定,那些硬體現在不存在,remake 走 TCP——替不存在的硬體做設定畫面不是還原,是裝飾。
-// `Join_Net` / `Choose_Net_Plyrs` / `Choose_Multi_Net_Game` / `Generic_Net_Info` /
-// `SendGet_Net_Info` 是連線流程的畫面,要等 UI 端的連線流程做出來才有東西可顯示。
+// 玩家列的顏色 remake 沒有照原版的 `Get_Net_Next_Turn_Player_Colors_` @ 0xF31BB 取,
+// 而是照「等待中 / 已完成」給兩色——原版那支是依帝國旗色配色,接上去要先有網路對局的旗色名冊。
+//
+// 剩下的網路畫面:`Modem_Setup` / `NullModem_Setup` / `Comm Info` 是**數據機與序列線**的設定,
+// 那些硬體現在不存在,remake 走 TCP——替不存在的硬體做設定畫面不是還原,是裝飾。
+// (`Choose_Net_Plyrs` / `Choose_Multi_Net_Game` / `Generic_Net_Info` / 輸入框已分別在
+// choosenetplyrs.go、choosemultinetgame.go、netinfo.go、inputbox.go 做完。)
 
 const (
 	nntLBX = "multigm.lbx"
@@ -75,6 +79,10 @@ const (
 	nntRowStep  = 25
 	nntRowFirst = 104 // ⚠ 估計值(中段面板內縮),見檔頭
 
+	// 聊天記錄區:面板是資產 40(nntBotY),偏移量在 internal/netplay/chat.go。
+	nntChatX     = nntX + netplay.ChatTextDX     // 5 + 24 = 29
+	nntChatFirst = nntBotY + netplay.ChatFirstDY // 243 + 14 = 257
+
 	// 標題帶動畫:每幀停幾次重繪(同 starsprite.go 的黑洞,原版每次繪製推進一幀)。
 	nntBannerHold = 4
 )
@@ -91,6 +99,54 @@ type netNextTurnScreen struct {
 	bg, mid, bottom, light *ebiten.Image
 	bannerFrames           []*ebiten.Image
 	tick                   int
+
+	// chat 是聊天記錄,typing 是還沒送出的那一行。
+	chat   netplay.ChatLog
+	typing string
+}
+
+// speakerName 回傳某位發話者要顯示的名字(GNN 不用名字)。
+func (s *netNextTurnScreen) speakerName(speaker int) string {
+	if speaker < 0 || speaker >= len(s.names) {
+		return ""
+	}
+	return s.names[speaker]
+}
+
+// sendChat 把 typing 那一行送出去。
+//
+// ⚠ 目前**只加進本機記錄**:鎖步的 `netplay.Table` 收的是回合指令,聊天不該塞進那條線
+// ——聊天是隨時可送的,而回合表一回合只收一則。真的接上連線時,這裡再多一個
+// `WriteFrame(conn, netplay.ChatMessage(...))`,`ChatLog` 這一端不必動。
+func (s *netNextTurnScreen) sendChat() {
+	m := netplay.ChatMessage(s.me, s.typing)
+	s.typing = ""
+	if m.Text == "" {
+		return // 原版按 Enter 但沒打字也是什麼都不做(`cmp byte_1AAC54, 0 / jz`)
+	}
+	s.chat.Append(m.Player, m.Text)
+}
+
+// typeChatRunes 把字元加進輸入行,超過原版上限就丟掉(同 inputbox 的作法)。
+func (s *netNextTurnScreen) typeChatRunes(rs []rune) {
+	for _, r := range rs {
+		if r < 0x20 || r == 0x7F {
+			continue
+		}
+		if len(s.typing)+len(string(r)) > netplay.ChatTextMax {
+			return
+		}
+		s.typing += string(r)
+	}
+}
+
+// backspaceChat 刪掉輸入行最後一個字元(**一個 rune**,不是一個 byte)。
+func (s *netNextTurnScreen) backspaceChat() {
+	rs := []rune(s.typing)
+	if len(rs) == 0 {
+		return
+	}
+	s.typing = string(rs[:len(rs)-1])
 }
 
 // netNextTurn 建等待畫面。table 為 nil 時畫成「沒有進行中的網路對局」。
@@ -121,7 +177,16 @@ func (s *netNextTurnScreen) bannerFrame() *ebiten.Image {
 
 func (s *netNextTurnScreen) update(in shell.InputState) *origTransition {
 	s.tick++
-	// 這張畫面在原版是**等待**——玩家不能操作,只能等對手。remake 多給一條退路:
+	// 聊天列:原版這張畫面唯一能做的事就是打字給對手看(`Chat_Box_Input_Loop_` @ 0xF55A4)。
+	s.typeChatRunes(ebiten.AppendInputChars(nil))
+	if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
+		s.backspaceChat()
+	}
+	if inpututil.IsKeyJustPressed(ebiten.KeyEnter) || inpututil.IsKeyJustPressed(ebiten.KeyKPEnter) {
+		s.sendChat()
+		return nil
+	}
+	// 這張畫面在原版是**等待**——除了聊天不能做別的。remake 多給一條退路:
 	// 點一下回多人設定畫面,否則連線斷了就卡死在這裡。
 	if in.ClickReleased {
 		sc, err := s.b.multiPlayer()
@@ -196,31 +261,51 @@ func (s *netNextTurnScreen) draw(dst *ebiten.Image) {
 		s.b.fnt.Draw(dst, text, nntX+300, float64(y), 13, col)
 	}
 
-	// 下段面板:回合數與狀態指紋。指紋擺在畫面上不是裝飾——分岔時兩邊念一下這八個字元
-	// 就知道是不是同一個狀態,不必先架 log 收集。
+	// 回合數與狀態指紋放**中段面板下緣**:下段面板(資產 40)整塊是原版的聊天記錄區,
+	// 佔用它就得把聊天往別處挪,那就不是原版的版面了。
+	// 指紋擺在畫面上不是裝飾——分岔時兩邊念一下這八個字元就知道是不是同一個狀態,
+	// 不必先架 log 收集。
 	s.b.fnt.Draw(dst, fmt.Sprintf(s.b.tr("第 %d 回合", "Turn %d"), turn),
-		nntX+24, float64(nntBotY)+26, 14, gold)
+		nntX+24, float64(nntMidY)+142, 14, gold)
 	if s.b.session != nil {
 		s.b.fnt.Draw(dst, s.b.tr("狀態指紋:", "State fingerprint: ")+s.b.session.StateFingerprint(),
-			nntX+24, float64(nntBotY)+48, 12, color.RGBA{170, 200, 230, 255})
+			nntX+24, float64(nntMidY)+162, 12, color.RGBA{170, 200, 230, 255})
 	}
 
-	// 分岔警告:鎖步一旦分岔,繼續玩只會讓兩邊差得更遠,所以講得大聲一點。
+	// 聊天記錄:下段面板由上而下 14 行,行距 12(見 internal/netplay/chat.go)。
+	// 原版每行畫字前先拿資產 40 重畫那一列來擦背景;這裡整張面板每幀重畫,效果相同。
+	gnn := color.RGBA{235, 215, 150, 255}
+	for i, ln := range s.chat.Lines() {
+		if i >= netplay.ChatLogMax {
+			break
+		}
+		col := body
+		if ln.IsGNN() {
+			col = gnn
+		}
+		s.b.fnt.Draw(dst, netplay.ChatPrefix(ln.Speaker, s.speakerName(ln.Speaker))+ln.Text,
+			nntChatX, float64(nntChatFirst+i*netplay.ChatLineStep), 11, col)
+	}
+
+	// 分岔警告:鎖步一旦分岔,繼續玩只會讓兩邊差得更遠,所以蓋在聊天記錄上面也要講。
 	if s.table != nil {
 		if d := s.table.Desync(); d != "" {
-			vector.DrawFilledRect(dst, nntX+16, nntBotY+70, 598, 44, color.RGBA{70, 16, 20, 235}, false)
-			vector.StrokeRect(dst, nntX+16, nntBotY+70, 598, 44, 1, color.RGBA{230, 110, 110, 255}, false)
+			vector.DrawFilledRect(dst, nntX+16, nntBotY+137, 598, 44, color.RGBA{70, 16, 20, 235}, false)
+			vector.StrokeRect(dst, nntX+16, nntBotY+137, 598, 44, 1, color.RGBA{230, 110, 110, 255}, false)
 			s.b.fnt.Draw(dst, s.b.tr("⚠ 狀態分岔——對局已不同步,請停止", "⚠ Desync — the game is out of sync, stop"),
-				nntX+26, float64(nntBotY)+90, 13, color.RGBA{250, 190, 180, 255})
-			s.b.fnt.Draw(dst, d, nntX+26, float64(nntBotY)+108, 11, color.RGBA{240, 200, 195, 255})
+				nntX+26, float64(nntBotY)+157, 13, color.RGBA{250, 190, 180, 255})
+			s.b.fnt.Draw(dst, d, nntX+26, float64(nntBotY)+175, 11, color.RGBA{240, 200, 195, 255})
 		}
 	}
 
-	// 輸入列(原版在 y=430 有一個文字欄位;remake 沒有聊天,畫成提示帶並標明)。
+	// 輸入列(原版 y=430、高 0x11,前綴同樣是 `"(%s)  "` 配本方玩家名)。
 	vector.DrawFilledRect(dst, nntX+16, nntInputY, 598, nntInputH, color.RGBA{18, 24, 38, 220}, false)
-	s.b.fnt.Draw(dst, s.b.tr("點一下離開等待畫面(⚠ 原版此列是聊天輸入,remake 未實作)",
-		"Click to leave (⚠ the original has a chat field here; not implemented)"),
-		nntX+22, float64(nntInputY)+13, 11, color.RGBA{150, 162, 185, 255})
+	caret := ""
+	if (s.tick/30)%2 == 0 {
+		caret = "_"
+	}
+	s.b.fnt.Draw(dst, netplay.ChatPrefix(s.me, s.speakerName(s.me))+s.typing+caret,
+		nntChatX, float64(nntInputY)+13, 11, color.RGBA{225, 232, 245, 255})
 }
 
 // float64Rect 是 vector 那組 API 要 float32、而這一檔的座標常數是 int 的轉接。
@@ -289,5 +374,13 @@ func (b *sceneBuilder) netNextTurnDemo() *netNextTurnScreen {
 		hash = b.session.StateHash()
 	}
 	_ = tb.Add(netplay.Message{Kind: netplay.KindTurnDone, Player: 0, Turn: turn, StateHash: hash})
-	return b.netNextTurn(tb, names, 0)
+	s := b.netNextTurn(tb, names, 0)
+	// 聊天記錄先放三則,不然截圖廊那張下段面板是空的——看不出版面對不對。
+	// 兩種前綴各出現一次(玩家 / GNN),那是原版分兩路的地方。
+	s.chat.AppendGNN(b.tr("議會將於下回合開議。", "The council convenes next turn."))
+	if len(names) > 1 {
+		s.chat.Append(1, b.tr("我這回合下完了,等你。", "Done here, waiting on you."))
+	}
+	s.chat.Append(0, b.tr("再給我一回合。", "One more turn."))
+	return s
 }

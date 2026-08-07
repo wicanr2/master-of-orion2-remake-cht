@@ -41,4 +41,6 @@ type Message struct {
 	Commands  []Command `json:"commands,omitempty"`
 	// Detail 給 KindDesync 帶說明。
 	Detail string `json:"detail,omitempty"`
+	// Text 給 KindChat 帶內文(見 chat.go)。
+	Text string `json:"text,omitempty"`
 }
