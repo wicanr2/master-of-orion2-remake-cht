@@ -219,6 +219,10 @@ func (snap sessionSnapshot) restore() *GameSession {
 		}
 	}
 	restorePlanetIDs(snap.Planets)
+	// ⚠ 舊存檔沒有 Star.Wormhole,JSON 解出來是零值 **0** —— 那會讓每顆星都宣稱與星 0
+	// 有蟲洞(星圖畫滿放射狀連線、艦隊到處一回合直達)。normalizeWormholes 把不合法的
+	// (越界 / 自己連自己 / 單向)一律清成 -1,見 wormhole.go。
+	normalizeWormholes(snap.Stars)
 	// ⚠ 存檔裡的 Seats[ActiveSeat] 與頂層的 Player/Colonies/… 是同一份資料的兩個副本
 	// (snapshot 存檔前才剛同步過)。restore 之後兩邊仍一致,直到下一次 AdvanceSeat。
 	return &GameSession{

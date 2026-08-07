@@ -113,6 +113,15 @@ type Star struct {
 	Name     string
 	Owner    int  // 0=無主 1=玩家 2=AI
 	Explored bool // 艦隊是否曾抵達(已探索)
+	// Wormhole 是蟲洞另一端的星索引,-1 = 沒有蟲洞。
+	//
+	// 對應原版星球結構 +0x29(int8,0xFF = 無)。**必須是雙向的**——openorion2
+	// `gamestate.cpp:1946` 直接對單向蟲洞丟例外("One-way wormholes not allowed"),
+	// 原版 `Draw_Wormhole_Links_` 也是兩端各畫一次線。
+	//
+	// ⚠ 舊存檔沒有這個欄位,零值是 0 而不是 -1 —— 那會讓每顆星都宣稱與星 0 有蟲洞。
+	// 讀檔路徑一律走 `normalizeWormholes`(見 persist.go)。
+	Wormhole int
 }
 
 // Ship 是一艘艦艇(供艦隊畫面);Weapon/Armor/Shield/Special 為掛載的元件。
@@ -1987,6 +1996,10 @@ func (s *GameSession) SetupNewGame(stars int, seed int64, numAI int) {
 	// 守衛怪獸也用獨立亂數流(seed+2),理由同上:不讓它的抽取次數影響星圖與行星的骰序。
 	// 它會就地修改 s.Planets(手冊 p.60:有怪獸的星系一定另有一個特殊物產),故在 genPlanets 之後。
 	s.Monsters = genMonsters(galaxy, s.Planets, rand.New(rand.NewSource(seed+2)), demoHomeStarSet(aiHomeStars))
+	// 蟲洞也用獨立亂數流(seed+3),理由同上——不讓它的抽取次數影響星圖/行星/怪獸的骰序。
+	// 母星(玩家的星 0 + 各 AI 的)不可當端點,與原版一致(見 wormhole.go)。
+	whRand := rand.New(rand.NewSource(seed + 3))
+	genWormholes(s.Stars, demoHomeStarSet(aiHomeStars), whRand.Intn)
 	s.SelectedStar = -1
 	s.AIPlayers = buildDemoAIOpponents(aiHomeStars, s.Difficulty, seed)
 	s.PlayerSpies = make([]int, len(s.AIPlayers)) // 平行 AIPlayers,重置為全新對手的間諜數(開局皆 0)
@@ -2075,7 +2088,7 @@ func genGalaxy(n int, seed int64, aiHomes int, age gamedata.GalaxyAge) ([]Star, 
 				spectral = int(gamedata.Yellow)
 			}
 			// Star.Size 是星圖上的**視覺**大小(0=大..3=小),與行星大小無關,維持原本的均勻亂數。
-			stars = append(stars, Star{X: x, Y: y, Spectral: spectral, Size: r.Intn(4), Name: nm, Owner: owner})
+			stars = append(stars, Star{X: x, Y: y, Spectral: spectral, Size: r.Intn(4), Name: nm, Owner: owner, Wormhole: -1})
 			idx++
 		}
 	}
@@ -2328,11 +2341,18 @@ func (s *GameSession) SendFleet(dest int) bool {
 	if !s.FleetHasFTL() {
 		return false // 曲速前開局:沒有 FTL 就出不了本星系(見 FleetHasFTL)
 	}
-	a, b := s.Stars[s.FleetAtStar], s.Stars[dest]
-	dist := math.Hypot(a.X-b.X, a.Y-b.Y)
-	eta := int(math.Ceil(dist * 8)) // 8 = 星系跨度→回合的換算(全跨約 8-11 回合)
-	if eta < 1 {
-		eta = 1
+	eta := 1
+	// 蟲洞:兩端直通,不看距離。這是 MOO2 蟲洞的**遊戲機制**價值——把銀河兩頭接起來,
+	// 讓遠端的殖民地不再是「派兵要十回合」的孤島(見 internal/shell/wormhole.go)。
+	// 1 回合有手冊錨點:p.181 講隨機事件版的蟲洞時寫的是
+	// 「moves that fleet to their destination in a single turn」,兩者共用這個語意。
+	if !s.WormholeBetween(s.FleetAtStar, dest) {
+		a, b := s.Stars[s.FleetAtStar], s.Stars[dest]
+		dist := math.Hypot(a.X-b.X, a.Y-b.Y)
+		eta = int(math.Ceil(dist * 8)) // 8 = 星系跨度→回合的換算(全跨約 8-11 回合)
+		if eta < 1 {
+			eta = 1
+		}
 	}
 	s.FleetDestStar = dest
 	s.FleetETA = eta
@@ -3378,6 +3398,8 @@ func NewDemoSession() *GameSession {
 	const numAIOpponents = 3
 	galaxy, aiHomeStars := genGalaxy(galaxyStars, 42, numAIOpponents, galaxyAgeSetting) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
 	galaxy[0].Explored = true                                                           // 母星初始已探索
+	// 蟲洞用獨立亂數流(45),與 SetupNewGame 同構——demo 局也要有,否則截圖廊/測試看不到這一層。
+	genWormholes(galaxy, demoHomeStarSet(aiHomeStars), rand.New(rand.NewSource(45)).Intn)
 
 	aiPlayers := buildDemoAIOpponents(aiHomeStars, 1, 42) // demo 固定難度 1 / seed 42(可重現)
 

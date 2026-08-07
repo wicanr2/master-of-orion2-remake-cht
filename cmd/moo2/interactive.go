@@ -942,6 +942,7 @@ func starScreenPos(st shell.Star) (int, int) {
 // 那是**沒有原版資產時的降級**,不是原版的樣子。
 func drawStarmap(b *sceneBuilder, dst *ebiten.Image, fnt *uifont.Font, stars []shell.Star, selected int, visible []bool) {
 	const vx0, vy0, vx1, vy1 = starVX0, starVY0, starVX1, starVY1
+	drawWormholeLinks(dst, stars, visible)
 	for i, st := range stars {
 		seen := visible == nil || (i < len(visible) && visible[i])
 
@@ -999,6 +1000,37 @@ func drawStarmap(b *sceneBuilder, dst *ebiten.Image, fnt *uifont.Font, stars []s
 			}
 			fnt.Draw(dst, st.Name, nx, float64(y)+float64(r), 11, color.RGBA{170, 185, 210, 255})
 		}
+	}
+}
+
+// drawWormholeLinks 畫蟲洞連線(原版 `Draw_Wormhole_Links_` @ 0x85593,星圖的**第 1 層**
+// ——在星球之前,所以線會被星球蓋住而不是壓在上面)。
+//
+//	for i:  other = star[i].+0x29;  if other == -1: continue
+//	        兩端都不可見就跳過(sub_79E32 / sub_79E06 的探索狀態檢查)
+//	        Line(座標(i), 座標(other), 顏色 4)
+//
+// 原版兩端各畫一次(同一條線畫兩遍,無害)。remake 只畫 i < other 那一次,結果相同。
+//
+// ⚠ 顏色「4」是原版調色盤索引,remake 的星圖不是索引色畫布,沒有對應物;
+// 用一個低飽和的青紫色,讓它看得出來又不搶星球。
+func drawWormholeLinks(dst *ebiten.Image, stars []shell.Star, visible []bool) {
+	seen := func(i int) bool { return visible == nil || (i < len(visible) && visible[i]) }
+	col := color.RGBA{120, 100, 190, 190}
+	for i, st := range stars {
+		j := st.Wormhole
+		// 只畫一次:i < j。單向/越界的資料在讀檔時就被 normalizeWormholes 清掉了。
+		if j <= i || j >= len(stars) {
+			continue
+		}
+		if !seen(i) && !seen(j) {
+			continue // 兩端都沒偵測到就不揭露
+		}
+		x1 := float32(starVX0) + float32(st.X)*(starVX1-starVX0)
+		y1 := float32(starVY0) + float32(st.Y)*(starVY1-starVY0)
+		x2 := float32(starVX0) + float32(stars[j].X)*(starVX1-starVX0)
+		y2 := float32(starVY0) + float32(stars[j].Y)*(starVY1-starVY0)
+		vector.StrokeLine(dst, x1, y1, x2, y2, 1, col, true)
 	}
 }
 
