@@ -202,3 +202,32 @@ func TestStatusWeaponsReachTheTacticalShip(t *testing.T) {
 		}
 	}
 }
+
+// 陀螺去穩器走球形路徑:依級數乘、豁免盾甲。
+//
+// 第 128 項把它擋在外面,理由是「光束路徑沒有 per size class 這個乘數」——那句話對,
+// 而正解不是替光束加乘數,是**認出它其實是球形家族**(兩個定義性特徵都有)。
+func TestGyroDestabilizerIsSpherical(t *testing.T) {
+	if got := weaponKindByName(gyroDestabilizerName); got != WeaponKindSpherical {
+		t.Errorf("應歸類為球形武器,得到 %v", got)
+	}
+	if !weaponBypassesShieldAndArmor(gyroDestabilizerName) {
+		t.Error("手冊:Shields and armor offer no protection")
+	}
+	// 反面:脈衝星沒有那一句,不該被推廣。
+	if weaponBypassesShieldAndArmor("脈衝星") {
+		t.Error("脈衝星沒有豁免那一句,不該推廣到整個球形類別")
+	}
+	// 傷害是 1-4(手冊逐字)。
+	rng, ok := gamedata.WeaponDamageByName(gyroDestabilizerName)
+	if !ok || rng.Min != 1 || rng.Max != 4 {
+		t.Errorf("傷害應為 1-4,得到 %+v(ok=%v)", rng, ok)
+	}
+	// 佔格 75:靠「同一列的脈衝星 = 50 對上 p.127 已記值」確認欄位對齊。
+	if got := gamedata.WeaponSpaceByName[gyroDestabilizerName]; got != 75 {
+		t.Errorf("佔格應為 75,得到 %d", got)
+	}
+	if got := gamedata.WeaponSpaceByName["脈衝星"]; got != 50 {
+		t.Errorf("對齊基準:脈衝星佔格應為 50,得到 %d", got)
+	}
+}

@@ -84,6 +84,10 @@ var bombWeaponDamage = map[string]WeaponDamageRange{
 var sphericalWeaponDamage = map[string]WeaponDamageRange{
 	"脈衝星":   {1, 24}, // Pulsar 1-24 per size class
 	"空間壓縮器": {4, 32}, // Spatial Compressor 4-32 structural hits
+	// 陀螺去穩器(第 139 項):手冊「causes **1–4 points of structural damage multiplied by
+	// the size class of the ship**. **Shields and armor offer no protection** and are not
+	// damaged.」——依級數乘 + 豁免盾甲,兩個特徵都與球形家族相同,所以走同一條路。
+	"陀螺去穩器": {1, 4},
 }
 
 // missileWeaponDamage 是手冊 p.125 的 MISSILE 表(固定傷害,飛彈「never miss」但會被攔截/干擾)。

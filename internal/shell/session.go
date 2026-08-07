@@ -250,6 +250,9 @@ var (
 		// 先前 `WeaponKindSpherical` 這條解算分支**掛不到任何武器**——整段是死碼。
 		{"脈衝星", 200, 24, gamedata.TOPIC_WARP_FIELDS, gamedata.TECH_PULSAR},
 		{"空間壓縮器", 260, 32, gamedata.TOPIC_XENON_TECHNOLOGY, gamedata.TECH_SPATIAL_COMPRESSOR},
+		// 陀螺去穩器(第 139 項):第 128 項判定「資料齊但光束路徑沒有 per size class 乘數」
+		// ——正解不是替光束加乘數,是認出它其實屬球形家族(依級數乘 + 豁免盾甲兩個特徵都有)。
+		{"陀螺去穩器", 180, 4, gamedata.TOPIC_GRAVITIC_FIELDS, gamedata.TECH_GYRO_DESTABILIZER},
 	}
 )
 

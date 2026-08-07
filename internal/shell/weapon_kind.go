@@ -39,7 +39,7 @@ const (
 // weaponKindByName 依 Component.Name(WeaponOptions 的武器名)分類戰鬥解算路徑。
 func weaponKindByName(name string) WeaponKind {
 	switch name {
-	case "脈衝星", spatialCompressorName:
+	case "脈衝星", spatialCompressorName, gyroDestabilizerName:
 		// 手冊 p.126「Notes on Spherical Damage」明列的球形武器是 Pulsar、Plasma Flux、
 		// Spatial Compressor、Engine Explosion。remake 掛得上的是前後這兩項——
 		// 電漿通量是海鰻怪獸專屬、引擎爆炸不是可裝載武器。
@@ -67,11 +67,21 @@ const antiMissileRocketName = "反飛彈火箭"
 // spatialCompressorName 是空間壓縮器元件名(手冊唯一明講豁免護盾與裝甲的球形武器)。
 const spatialCompressorName = "空間壓縮器"
 
+// gyroDestabilizerName 是陀螺去穩器元件名。
+//
+// 它不在手冊 p.126 的球形武器清單上,但**兩個定義性特徵都有**:傷害依目標級數相乘、
+// 完全豁免護盾與裝甲。第 128 項當時把它擋在外面,理由是「光束路徑沒有 per size class
+// 這個乘數」——那句話對,而正確的解法不是替光束加一個乘數,是**認出它其實是球形家族**。
+const gyroDestabilizerName = "陀螺去穩器"
+
 // weaponBypassesShieldAndArmor 回報這項武器是否直接打結構、無視護盾與裝甲。
 //
-// 手冊只有空間壓縮器那一項寫著「does all damage to **structure only**, ignoring shields
-// and armor」;脈衝星與其他球形武器都沒有那一句,所以**不要**推廣到整個球形類別。
-func weaponBypassesShieldAndArmor(name string) bool { return name == spatialCompressorName }
+// 手冊只有空間壓縮器與陀螺去穩器兩項寫著豁免(前者「does all damage to **structure only**,
+// ignoring shields and armor」,後者「**Shields and armor offer no protection** and are not
+// damaged」);脈衝星沒有那一句,所以**不要**推廣到整個球形類別。
+func weaponBypassesShieldAndArmor(name string) bool {
+	return name == spatialCompressorName || name == gyroDestabilizerName
+}
 
 // shipSizeClass 回傳艦體等級(球形武器的「per size class of target」要用)。
 //
