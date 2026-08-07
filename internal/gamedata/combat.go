@@ -216,42 +216,89 @@ func CombatFighterBeamDefense(speed, racialShipDefenseBonus, fighterPilotBonus, 
 	return 5*speed + racialShipDefenseBonus + fighterPilotBonus + helmsmanBonus
 }
 
-// --- 戰機庫(Fighter Bay)對抽象快速戰鬥的貢獻 ---
+// --- 戰機(Fighter Craft):中隊規模、射擊次數、血量 ---
+//
+// ⚠ **2026-08-07 訂正一個讀錯的欄位。** 這一段原本寫著
+// 「中隊規模:攔截機 4、重戰機 2(手冊 GM p.127「出擊數」欄)」——
+// 那一欄不是出擊數,是 **Shots(每架返航前開幾次火)**。手冊 p.127 的表頭是
+//
+//	Weapon | Armament | Shots | Size | Cost | Speed | Hits | Strat Dmg
+//
+// 而 Interceptor 那列的 Armament 是「1 beam」、Shots 是 4;Heavy Fighter 是
+// 「1 beam, 1 bomb」、Shots 是 2。**兩個數字都是射擊次數**,不是中隊人數。
+//
+// 中隊規模在正文裡寫得很清楚,而且說了兩次:
+//
+//	p.157「All fighter craft are installed in ships and launched to a target in
+//	       squadrons of four.」
+//	p.83 「Heavy Fighters are installed and launched in squadrons of 4.」
+//
+// 射擊次數同樣有正文對照,與 Shots 欄逐項吻合:
+//
+//	p.82「Interceptors fly directly to their target and **fire 4 times** at point-blank
+//	      range. They then return to the carrier for repair, rearming, and refueling.」
+//	p.83「(Heavy Fighters) fly to the target, drop one bomb and fire a beam. They then
+//	      hover around the target to drop the other bomb and fire a beam again.」= 2 次
+//
+// 也就是說舊值把「一架打幾次」當成了「一隊有幾架」,重戰機庫因此少算了一半的戰機。
 
-// FighterInterceptorSquadron 是一個攔截機戰機庫每次出擊的戰機數(手冊 GM p.127「出擊數」欄:
-// 攔截機 4)。first-version 戰機庫以最常見的攔截機隊建模。此值為手冊硬數字。
-const FighterInterceptorSquadron = 4
+// FighterSquadronSize 是**所有**戰機的中隊規模(手冊 p.157 / p.83,兩處都寫 4)。
+//
+// 手冊同一段還說「You cannot separate the fighters in a squadron to direct them at
+// multiple targets」——中隊是不可分割的單位,這也是 remake 用一個 token 代表一整隊的依據。
+const FighterSquadronSize = 4
 
-// 每攔截機對抽象戰力的攻擊/HP 貢獻。⚠ remake 近似,非手冊定值:手冊給攔截機「1 光束」武裝
-// (實際傷害隨當局光束科技,非固定數)與血量 2-20(隨裝甲級),此處取低階代表值。中隊規模(4)
-// 本身是手冊硬數字(見上)。remake 的 ResolveBattle 是艦級抽象結算、不逐戰機模擬,故以「母艦
-// 戰力加成」承接一整隊戰機的火力,而非獨立 combatant。
+// 各型戰機返航前的射擊次數(手冊 p.127 Shots 欄,正文逐條印證)。
 const (
-	fighterInterceptorAttackApprox = 3
-	fighterInterceptorHPApprox     = 4
+	FighterShotsInterceptor    = 4
+	FighterShotsBomber         = 1
+	FighterShotsHeavyFighter   = 2
+	FighterShotsAssaultShuttle = 1 // 手冊:突擊艇是一次性的,放下陸戰隊就不回來
 )
 
-// FighterBayCombatContribution 回傳一個攔截機戰機庫在 ResolveBattle 快速結算中對母艦戰力的
-// 加成(攻擊, HP):中隊 4 架(手冊 GM p.127),每架近似攻 3 / HP 4 → 母艦 +12 攻、+16 HP。
-func FighterBayCombatContribution() (atk, hp int) {
-	return FighterInterceptorSquadron * fighterInterceptorAttackApprox,
-		FighterInterceptorSquadron * fighterInterceptorHPApprox
+// 各型戰機的基礎血量(手冊 p.127 Hits 欄的下限,正文逐條印證:
+// 攔截機「can take 2 damage modified by your best armor」、重戰機「can take 5 damage」)。
+const (
+	FighterHitsInterceptor  = 2
+	FighterHitsHeavyFighter = 5
+)
+
+// FighterHitsWithArmor 手冊 p.127 表下的註腳:
+// 「base hit points are modified by 2 times armor level above Titanium」。
+// armorLevelAboveTitanium 是裝甲級數比鈦裝甲高幾級(鈦 = 0)。
+func FighterHitsWithArmor(baseHits, armorLevelAboveTitanium int) int {
+	if armorLevelAboveTitanium < 0 {
+		armorLevelAboveTitanium = 0
+	}
+	return baseHits + 2*armorLevelAboveTitanium
 }
 
-// FighterHeavySquadron 是一個重戰機庫每次出擊的重戰機數(手冊 GM p.127「出擊數」欄:重戰機 2)。
-// 手冊硬數字。重戰機武裝為「1 光束 + 1 炸彈」,對艦火力較攔截機強、數量較少。
-const FighterHeavySquadron = 2
+// --- 戰機庫對抽象快速戰鬥的貢獻 ---
+//
+// remake 的 ResolveBattle 是艦級抽象結算、不逐戰機模擬,故以「母艦戰力加成」承接一整隊戰機的
+// 火力,而非獨立 combatant。格子戰術戰鬥裡的獨立戰機單位另見 internal/shell/fighter.go。
 
-// 每重戰機對抽象戰力的攻擊/HP 貢獻。⚠ remake 近似,非手冊定值(同攔截機的理由:手冊給武裝類型
-// 與血量範圍 5-50 隨裝甲級,非固定戰力值),取較攔截機高的低階代表值以反映重戰機較強。
+// 每架戰機對抽象戰力的攻擊貢獻。⚠ remake 近似,非手冊定值:手冊給的是武裝**類型**
+// (攔截機 1 光束、重戰機 1 光束 + 1 炸彈),實際傷害隨當局科技,不是固定數。
+// 這裡取低階代表值,並乘上手冊的**射擊次數**——那一項是真值。
 const (
-	fighterHeavyAttackApprox = 8
-	fighterHeavyHPApprox     = 8
+	fighterBeamDamageApprox = 3 // 一次光束射擊
+	fighterBombDamageApprox = 5 // 一次投彈(炸彈必中,見手冊「Bombs never miss」)
 )
 
-// FighterHeavyBayCombatContribution 回傳一個重戰機庫對母艦戰力的加成(攻擊, HP):中隊 2 架
-// (手冊 GM p.127),每架近似攻 8 / HP 8 → 母艦 +16 攻、+16 HP(較攔截機庫 +12 攻略強)。
+// FighterBayCombatContribution 回傳一個**攔截機**戰機庫對母艦戰力的加成(攻擊, HP)。
+//
+// 攻擊 = 中隊 4 架 × 4 次射擊 × 每次近似 3 = 48;HP = 4 架 × 每架 2 = 8。
+func FighterBayCombatContribution() (atk, hp int) {
+	return FighterSquadronSize * FighterShotsInterceptor * fighterBeamDamageApprox,
+		FighterSquadronSize * FighterHitsInterceptor
+}
+
+// FighterHeavyBayCombatContribution 回傳一個**重戰機**庫對母艦戰力的加成(攻擊, HP)。
+//
+// 重戰機每次出手是「一發光束 + 一枚炸彈」(手冊 p.83),兩次 →
+// 攻擊 = 4 架 × 2 次 × (3 + 5) = 64;HP = 4 架 × 每架 5 = 20。
 func FighterHeavyBayCombatContribution() (atk, hp int) {
-	return FighterHeavySquadron * fighterHeavyAttackApprox,
-		FighterHeavySquadron * fighterHeavyHPApprox
+	return FighterSquadronSize * FighterShotsHeavyFighter * (fighterBeamDamageApprox + fighterBombDamageApprox),
+		FighterSquadronSize * FighterHitsHeavyFighter
 }

@@ -579,8 +579,10 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 		atk := body + sh.WeaponAttack
 		atk += atk * s.RaceCombatPct / 100 // 種族戰鬥加成(姆瑞森+25、布拉西/阿爾卡里+15…)
 		hp := body * 3
-		// 戰機庫:出擊一隊戰機(手冊 GM p.127 出擊數:攔截機 4 / 重戰機 2),在艦級抽象結算中以
-		// 母艦戰力加成承接整隊火力與血量(中隊規模手冊錨定、每架近似)。重戰機庫火力較強。
+		// 戰機庫:出擊一隊戰機(手冊:中隊一律 4 架;返航前射擊次數攔截機 4、重戰機 2),
+		// 在艦級抽象結算中以母艦戰力加成承接整隊火力與血量。
+		// ⚠ 2026-08-07 訂正:這裡原本寫「出擊數:攔截機 4 / 重戰機 2」——那一欄是 **Shots**
+		// (每架返航前開幾次火),不是中隊人數。見 gamedata/combat.go 那一段的完整對照。
 		switch sh.Special {
 		case "戰機庫":
 			fatk, fhp := gamedata.FighterBayCombatContribution()
@@ -774,6 +776,11 @@ type CombatShip struct {
 	// SpriteIdx 是 CMBTSHP.LBX 資產索引(含色塊偏移,45*色塊+艦級內索引),
 	// 供戰術戰鬥畫面依艦級挑不同大小 sprite。見 docs/tech/cmbtshp-ship-sprites.md。
 	SpriteIdx int
+	// Bay / BayKind:這艘船帶不帶戰機庫,以及是哪一型(見 fighter.go)。
+	// 格子戰術戰鬥用它決定「這艘船能不能派戰機出擊」;快速結算走的是另一條路
+	// (母艦戰力加成,見本函式下方的 Special 分支)。
+	Bay     bool
+	BayKind FighterKind
 }
 
 // CombatSpriteForClass 依艦體等級回傳 CMBTSHP 色塊內 sprite 索引(見 docs/tech/cmbtshp-ship-sprites.md)。
@@ -823,6 +830,15 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 	for i, sh := range s.Fleet().Ships {
 		body := shipStrength(sh.Class)
 		atk := body + sh.WeaponAttack
+		// 戰機庫 → 這艘船在格子戰場上能派中隊出擊(見 fighter.go)。同一個 Special 欄位
+		// 在快速結算裡是母艦戰力加成,兩條路徑讀同一份設計資料,不會各說各話。
+		bay, bayKind := false, FighterInterceptor
+		switch sh.Special {
+		case "戰機庫":
+			bay = true
+		case "重戰機庫":
+			bay, bayKind = true, FighterHeavy
+		}
 		player = append(player, CombatShip{
 			Name: sh.Name, HP: body * 3, MaxHP: body * 3, Attack: atk, Col: 1, Row: i,
 			Defense: body, WeaponMin: atk / 2, WeaponMax: atk,
@@ -831,6 +847,7 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			ArmorHP:         armorHPByName(sh.Armor),
 			Kind:            weaponKindByName(sh.Weapon), Mods: sh.Mods,
 			SpriteIdx: CombatSpriteForClass(sh.Class), // 色塊 0(玩家)
+			Bay:       bay, BayKind: bayKind,
 		})
 	}
 	mult := 1.0

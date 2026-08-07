@@ -368,7 +368,14 @@ Speed = 12 + 2×(FTLlevel−1) + FastBonus(4)      ← 明列公式,見下方矛
 
 **戰機**(基礎速度每級驅動 +2;跨維 +4 也適用戰機;血量隨裝甲級 +2/級):
 
-| 戰機 | 武裝 | 出擊數 | 佔格 | 成本 | 速度 | 血量 |
+⚠ **2026-08-07 訂正欄名**:第三欄原本標「出擊數」,那是誤讀——原表頭是 **Shots**,
+指**每架返航前開幾次火**,不是一隊有幾架。中隊規模正文寫了兩次,一律 **4 架**:
+p.157「All fighter craft are installed in ships and launched to a target in squadrons of four」、
+p.83「Heavy Fighters are installed and launched in squadrons of 4」。
+射擊次數也有正文對照:攔截機「fire 4 times at point-blank range」、
+重戰機「drop one bomb and fire a beam … then hover … to drop the other bomb and fire a beam again」(2 次)。
+
+| 戰機 | 武裝 | 射擊次數 Shots | 佔格 | 成本 | 速度 | 血量 |
 |---|---|---|---|---|---|---|
 | 攔截機 Interceptor | 1 光束 | 4 | 30 | 10 | 8-20 | 2-20 |
 | 轟炸機 Bomber | 1 炸彈 | 1 | 60 | 30 | 6-18 | 4-40 |

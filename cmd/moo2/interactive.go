@@ -1804,6 +1804,8 @@ type tacticalScreen struct {
 	bar            *ebiten.Image
 	res            *assets.Resolver      // 供 shipSprite 延遲載入各艦級 sprite
 	shipSprites    map[int]*ebiten.Image // CMBTSHP 資產索引 → 已解碼 sprite(nil=載入失敗,亦快取)
+	// squads 是場上的戰機中隊(見 tacticalfighter.go / internal/shell/fighter.go)。
+	squads []shell.FighterSquadron
 }
 
 // loadCombatBG 載入戰場星空背景(STARBG.LBX#0,640×480),借 COMBAT.LBX#11 調色盤。
@@ -1913,6 +1915,14 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 		t.b.session.ApplyCombatOutcome(t.b.session.PrimaryEnemyName(), t.pStart, t.eStart, survivors, t.won)
 		return t.b.goTo(t.b.battleResult, "戰鬥結果")
 	}
+	// 出擊鈕在格線右側(⚠ 不是原版版面,見 tacticalfighter.go launchRect 註解)。
+	if lx, ly, lw, lh := launchRect(); t.canLaunchFrom(t.sel) && hitBox(in.MouseX, in.MouseY, lx, ly, lw, lh) {
+		if clickSound != nil {
+			clickSound()
+		}
+		t.launchFrom(t.sel)
+		return nil
+	}
 	col, row, ok := cellAt(in.MouseX, in.MouseY)
 	if !ok {
 		return nil
@@ -1990,6 +2000,11 @@ func (t *tacticalScreen) fireRound(target int) {
 		return
 	}
 	t.round++
+	// 戰機中隊與艦砲同一回合行動:先飛+開火,再讓貼身的敵艦還擊它們。
+	fDmg := t.advanceSquadrons()
+	pAtk += fDmg
+	fLost := t.enemyFiresAtSquadrons()
+	t.dropDeadSquadrons()
 	alive := t.enemy[:0]
 	for _, s := range t.enemy {
 		if s.HP > 0 {
@@ -2046,6 +2061,10 @@ func (t *tacticalScreen) fireRound(target int) {
 	}
 	t.log = fmt.Sprintf(t.b.tr("第 %d 回合:%d 艦齊射 %d ／ 敵方還擊 %d",
 		"Round %d: %d ships deal %d / enemy returns %d"), t.round, firing, pAtk, eAtk)
+	if fDmg > 0 || fLost > 0 {
+		t.log += fmt.Sprintf(t.b.tr("(戰機造成 %d,折損 %d 架)", " (fighters deal %d, %d lost)"),
+			fDmg, fLost)
+	}
 	if len(t.enemy) == 0 {
 		t.over, t.won, t.log = true, true, t.b.tr("★ 敵艦隊全滅,勝利!點擊繼續",
 			"★ Enemy fleet destroyed — victory! Click to continue")
@@ -2139,6 +2158,8 @@ func (t *tacticalScreen) draw(dst *ebiten.Image) {
 	for _, s := range t.enemy {
 		t.drawShip(dst, s, color.RGBA{235, 110, 100, 255}, false, true)
 	}
+	t.drawSquadrons(dst) // 戰機畫在艦艇之上(它們是繞著目標飛的)
+	t.drawLaunchButton(dst)
 	logY := 452.0
 	if t.bar != nil {
 		op := &ebiten.DrawImageOptions{}
@@ -2153,6 +2174,9 @@ func (t *tacticalScreen) draw(dst *ebiten.Image) {
 	}
 	if t.fnt != nil {
 		t.fnt.DrawCentered(dst, t.log, 320, logY, 14, color.RGBA{214, 220, 235, 255})
+		if line := t.squadronStatusLine(); line != "" {
+			t.fnt.DrawCentered(dst, line, 320, logY-18, 12, color.RGBA{140, 220, 235, 255})
+		}
 	}
 }
 
@@ -3594,6 +3618,8 @@ type interactiveApp struct {
 	galleryMeasureTick int
 	// galleryConfirmTick 是截圖廊把畫面換成是/否確認框的 tick。
 	galleryConfirmTick int
+	// galleryFighterTick 是截圖廊在戰術戰鬥裡派出一隊戰機的 tick。
+	galleryFighterTick int
 	galleryBuilder     *sceneBuilder
 	gallerySession     *shell.GameSession
 }
@@ -3610,6 +3636,13 @@ const galleryVictoryTick = 38
 // 的規則會被**完全修復**。先前注入在 t28 而 t29 按了結束回合,截出來一艘傷都沒有——
 // 那不是顯示壞了,是修復規則正常運作。
 const galleryFleetTick = 18
+
+// galleryFighterTick 是截圖廊在哪個 tick 於戰術戰鬥裡派出一隊戰機——取截圖(t66)的前一拍。
+//
+// ⚠ 這一拍會**給第一艘我方艦裝上戰機庫**。開局那三艘船(拓荒號/先驅一二號)沒有戰機庫,
+// 而戰機庫要靠艦艇設計 + 生產才拿得到,截圖廊跑不到那一步。同 galleryFleetTick 注入
+// 結構損傷的立場:為了讓那一層**被看見**而擺出狀態,不是改規則。
+const galleryFighterTick = 65
 
 // galleryGroundTick 是截圖廊在哪個 tick 把畫面換成地面戰戰報——取截圖那一拍(t68)的前一拍。
 const galleryGroundTick = 67
@@ -4095,6 +4128,18 @@ func (a *interactiveApp) Update() error {
 			a.cur = sc
 		}
 	}
+	// 截圖廊專用:戰術戰鬥裡派一隊戰機出擊(見 galleryFighterTick 的說明)。
+	if a.galleryFighterTick > 0 && a.tick == a.galleryFighterTick {
+		if ts, ok := a.cur.(*tacticalScreen); ok && len(ts.player) > 1 {
+			// 用第 2 艘(偵察艦)而不是第 1 艘:第 1 艘是殖民船,讓殖民船派戰機出擊
+			// 在截圖裡看起來像個 bug。
+			const carrier = 1
+			ts.player[carrier].Bay, ts.player[carrier].BayKind = true, shell.FighterInterceptor
+			ts.sel = carrier
+			ts.launchFrom(carrier)
+			ts.advanceSquadrons() // 推一回合,好讓中隊離開母艦格、看得出它在飛
+		}
+	}
 	// 截圖廊專用:是/否確認框,疊在星圖上(原版就是這樣疊的)。
 	if a.galleryConfirmTick > 0 && a.tick == a.galleryConfirmTick && a.galleryBuilder != nil {
 		b := a.galleryBuilder
@@ -4256,6 +4301,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.galleryCommandPointsTick = galleryCommandPointsTick
 		app.galleryMeasureTick = galleryMeasureTick
 		app.galleryConfirmTick = galleryConfirmTick
+		app.galleryFighterTick = galleryFighterTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,

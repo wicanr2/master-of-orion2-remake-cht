@@ -130,7 +130,7 @@
 |---|---|---|
 | **網路 / 數據機 / 序列埠多人** | 整塊子系統 | 9 個畫面 + 傳輸層 + 決定性化。熱座已可玩,所以這是「多一種玩法」不是「補一個洞」 |
 | ~~**同星系多殖民地**~~ | ✅ | 第 66 項:拓殖/前哨站的對象改成**行星**,同一個星系可以有多個殖民地;人造行星改造完的天體也真的能殖民了 |
-| **戰術格子的獨立戰機單位** | 戰鬥子模型 | 戰機**已接進快速艦隊戰鬥**(`FighterBayCombatContribution`,中隊數 4/2 是手冊 GM p.127 硬數字);缺的是格子戰鬥裡的出擊 / 攔截 / 回收 |
+| ~~**戰術格子的獨立戰機單位**~~ | ✅ | 第 69 項:中隊在格子上有自己的位置(出擊→飛向目標→貼身開火→返航補給→再出擊)。⚠ 同時訂正——「中隊數 4/2」是把 p.127 的 **Shots** 欄讀成了中隊人數,正確答案是**一律 4 架** |
 | AI 的遷移設定 | 資料模型 | 第 57 項的續:AI 沒有逐星的艦隊位置,所以沒有遷移可設 |
 | ~~AI 的同星系多殖民地~~ | ✅ | 第 67 項:`aiExpand` 的候選集加進「自己已有殖民地的星系」;順帶修好入侵只打下星系裡一個殖民地時星就整顆翻面的 bug |
 | ~~遷移連線的顯示開關沒有 UI~~ | ✅ | 第 65 項:接在遊戲選單的 SETTINGS 鈕下(⚠ 那一列不是原版版面,原版有一整個設定畫面) |
@@ -3209,3 +3209,77 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     - `cmd/moo2/relocation.go` / `interactive.go`:`pendingConfirm` 接線
       (處理器手上沒有下層畫面,所以只記下來,由呼叫端換成畫面)
     - 截圖廊第 30 張 `29_confirm.png`(訊息用**真的規則產出的那句**,才驗得到折行)
+
+69. **戰術格子的獨立戰機單位 + 一個讀錯的欄位**(2026-08-07)。
+
+    ### 先訂正:那一欄是 Shots,不是「出擊數」
+
+    `gamedata/combat.go` 寫著:
+
+    ```go
+    // FighterInterceptorSquadron 是一個攔截機戰機庫每次出擊的戰機數(手冊 GM p.127「出擊數」欄:攔截機 4)
+    const FighterInterceptorSquadron = 4
+    // FighterHeavySquadron 是一個重戰機庫每次出擊的重戰機數(手冊 GM p.127「出擊數」欄:重戰機 2)
+    const FighterHeavySquadron = 2
+    ```
+
+    p.127 那張表的表頭是
+
+    ```
+    Weapon | Armament | Shots | Size | Cost | Speed | Hits | Strat Dmg
+    ```
+
+    第三欄是 **Shots**——**每架返航前開幾次火**。中隊規模在正文裡,而且寫了兩次:
+
+    > p.157「All fighter craft are installed in ships and launched to a target in **squadrons of four**.」
+    > p.83 「Heavy Fighters are installed and launched in **squadrons of 4**.」
+
+    Shots 欄同樣有正文對照,逐項吻合:攔截機「**fire 4 times** at point-blank range」;
+    重戰機「drop one bomb and fire a beam … then hover … to drop the other bomb and fire a
+    beam again」= 2 次。
+
+    也就是說舊值把「一架打幾次」當成了「一隊有幾架」——**重戰機庫因此少算了一半的戰機**。
+    `docs/knowledge-base/manual-cht/03-combat.md` 的欄名也一起改掉了(那份 kb 是這個誤讀的源頭)。
+
+    順帶確認一件沒錯的事:速度/血量欄與正文對得上。表上攔截機 Speed 8-20、重戰機 6-18,
+    而正文說攔截機「speed 10」、重戰機「speed 8」——差 2。套 `CombatFighterSpeed` 就通了:
+    範圍的下限是 FTL 0(base − 2)、上限是 FTL 6(base + 10)。血量欄的下限
+    (攔截機 2、重戰機 5)也正是正文的「can take 2 / 5 damage」。**沒有第二個錯。**
+
+    ### 戰機是一個兵種,不是一個加成
+
+    remake 先前只有「戰機庫 → 母艦戰力 +N」。手冊給戰機的是一整套與艦艇不同的規則,
+    而那些規則要能被看見,中隊就得在格子上有自己的位置:
+
+    | 手冊 | 落地 |
+    |---|---|
+    | 「launched to a target in squadrons of four … cannot separate the fighters」 | 一隊是一個單位(一個 token),不是四個 |
+    | 「fly to their target and use whatever weapons they have at point-blank range」 | `StepToward` 走到曼哈頓距離 ≤1 才開火,不像艦砲有射程 |
+    | 「fighters will attempt to return to their carrier once they are out of shots」 | `ShotsLeft` 歸零 → `Returning` |
+    | 「Once safely back, any surviving fighters get repairs, rearm, refuel, and can be launched again」 | `Recover()` 補血補彈——**但不補人**(手冊寫的是 any **surviving**) |
+    | 「With the exception of Interceptors, fighter craft cannot engage one another」 | `CanTargetFighter()` 只有攔截機為真 |
+    | 「Like missiles, fighter craft are vulnerable to beam weapons」 | 貼身的敵艦會把戰機打下來 |
+    | 「Fighters have a 50% chance to avoid … spherical weapon」 | `FighterAvoidsSpherical(roll)` |
+    | 「(Interceptors) can take 2 damage … (Heavy) can take 5 damage」 | 血量是**每架**的,傷害一架一架吃(不是整隊一條血條) |
+    | 「base hit points are modified by 2 times armor level above Titanium」 | `FighterHitsWithArmor` |
+
+    ### 誠實留白
+
+    - **「always attack from the weakest shield facing」**:remake 的護盾是單一數值
+      (`CombatShip.ShieldReduction`),沒有四面分別的護盾,這條無處可套。
+    - **轟炸機 / 突擊梭**:前者要炸彈對行星的規則、後者要把陸戰隊送上敵艦,各自依賴另一套系統。
+      這一輪只做兩種純對艦戰機(攔截機、重戰機)。
+    - **敵方不會派戰機**:`genEnemyFleet` 產出的敵艦沒有設計資料,讀不到「帶不帶戰機庫」。
+    - **FTL 階 / 裝甲級**:艦艇設計還沒把「目前最佳引擎/裝甲」餵進戰鬥層,出擊時先傳 1 / 0
+      (手冊公式在「剛研究出 FTL、鈦裝甲」時的值)。接上來就換真值。
+    - **出擊鈕不是原版版面**:原版的控制列是烘死的美術,那七顆鈕各有其原意,
+      不能拿其中一顆假裝是出擊。先擺在標題列右側。
+
+    ### 落點
+
+    - `internal/gamedata/combat.go`:`FighterSquadronSize` / `FighterShots*` / `FighterHits*` /
+      `FighterHitsWithArmor`,兩支貢獻函式依真值重算
+    - `internal/shell/fighter.go`:中隊狀態機(11 支測試)
+    - `internal/shell/session.go`:`CombatShip.Bay` / `BayKind`(與快速結算讀同一份設計資料)
+    - `cmd/moo2/tacticalfighter.go`:每回合的目標選擇、推進、結算與繪製(6 支測試)
+    - 截圖廊 `16_tactical.png` 換成「一隊攔截機正飛向敵艦」的畫面
