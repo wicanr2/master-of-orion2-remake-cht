@@ -327,14 +327,12 @@ func (s *multiplayerScreen) update(in shell.InputState) *origTransition {
 func (s *multiplayerScreen) click(act string) *origTransition {
 	switch act {
 	case "network":
-		// 傳輸層與鎖步協定已經有了(internal/netplay),但**連線流程的 UI 還沒做**
-		// (Join_Net / Choose_Net_Plyrs 那幾張)。點下去先給看等待畫面
-		// (原版 Net_Next_Turn,版面見 cmd/moo2/netnextturn.go),並說清楚現況——
-		// 比「點了跳一句沒實作」誠實,也比假裝連得上安全。
+		// 選中「網路」;真正開/加入大廳走右欄的 START NEW GAME / JOIN GAME 兩顆鈕
+		// (原版也是這個分工:左欄選連線方式、右欄選要做什麼)。
 		s.mode, s.msg = mpNetwork, s.b.tr(
-			"連線層已就緒(TCP + 鎖步),但連線流程的畫面還沒做。下面是對局中的等待畫面。",
-			"Transport is ready (TCP + lockstep) but the join flow screens are not built yet.")
-		return &origTransition{next: s.b.netNextTurnDemo()}
+			"網路對戰:右欄「開新遊戲」開大廳等人加入,「加入遊戲」連別人的大廳。",
+			"Network: use START NEW GAME to host a lobby, or JOIN GAME to connect.")
+		return nil
 	case "modem", "nullmodem":
 		// ⚠ 這兩個是**數據機與序列線**——那些硬體現在不存在,remake 走 TCP。
 		// 替不存在的硬體做設定畫面不是還原,是裝飾。
@@ -353,9 +351,17 @@ func (s *multiplayerScreen) click(act string) *origTransition {
 		}
 		return nil
 	case "start":
+		if s.mode == mpNetwork {
+			sc, err := s.b.hostNetLobby()
+			if err != nil {
+				s.msg = s.b.tr("開不了大廳:", "Could not host: ") + err.Error()
+				return nil
+			}
+			return &origTransition{next: sc}
+		}
 		if s.mode != mpHotseat {
-			s.msg = s.b.tr("請先選「熱座」——其餘連線方式本版未實作。",
-				"Select HOTSEAT first — the other connection types are not implemented.")
+			s.msg = s.b.tr("數據機 / 序列線在現在的機器上不存在;請選「網路」或「熱座」。",
+				"Modem / null-modem no longer exists; pick NETWORK or HOTSEAT.")
 			return nil
 		}
 		s.b.pendingHotseat = s.humans
@@ -371,8 +377,17 @@ func (s *multiplayerScreen) click(act string) *origTransition {
 			return nil
 		}
 		return &origTransition{next: sc}
-	case "join", "comm":
-		s.msg = s.b.tr("本版只實作熱座(同機輪流)。", "Only hot seat is implemented.")
+	case "join":
+		sc, err := s.b.joinNetLobby()
+		if err != nil {
+			s.msg = s.b.tr("連不上大廳:", "Could not join: ") + err.Error()
+			return nil
+		}
+		return &origTransition{next: sc}
+	case "comm":
+		// COMM INFO 是數據機/序列線的連線參數(鮑率、COM 埠…)——那些硬體現在不存在。
+		s.msg = s.b.tr("連線參數是數據機 / 序列線年代的東西;本版走 TCP,不需要設定。",
+			"COMM INFO configured modem / serial hardware; this build uses TCP.")
 		return nil
 	case "ten":
 		// TEN(Total Entertainment Network)是 1990 年代的線上對戰服務,1999 年就收了。

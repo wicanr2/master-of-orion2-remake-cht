@@ -72,7 +72,7 @@
 | 9 | ~~**`Main_Antaran_Room`**~~ | 中 | ✅ 2026-08-07 已建(`cmd/moo2/antaranroom.go`),用原版 `antaroom.LBX` 資產 1(55 幀累積)當背景;留白:原版是推鏡動畫,remake 取最終定格 |
 | 10 | ~~**`Hall_Of_Fame` / `Hi_Score`**~~ | 低 | ✅ 2026-08-07 已建(`cmd/moo2/hiscore.go` + `gamedata/score.go`),八項計分係數全來自反組譯 module 60 |
 | 11 | ~~**`Smack`**~~ | 低 | ✅ 已建(`cmd/moo2/cutscene.go` + `internal/smk`,真的解 Smacker,不是靜態圖)|
-| 12 | 多人連線 11 個畫面 | — | ✅ `MP_Setup`(`cmd/moo2/multiplayer.go`)與 `Hotseat`(`cmd/moo2/hotseat.go`)2026-08-07 已建,版面座標取自反組譯(見下方第 20 項)。其餘 `Join_Net`/`Modem_Setup`/`NullModem_Setup`/`Choose_Net_Plyrs`/`Choose_Multi_Net_Game`/`Generic_Net_Info`/`SendGet_Net_Info`/`Net_Next_Turn`/`Wait_For_*` 需要網路層,未做 |
+| 12 | 多人連線 11 個畫面 | — | ✅ `MP_Setup`(`cmd/moo2/multiplayer.go`)與 `Hotseat`(`cmd/moo2/hotseat.go`)2026-08-07 已建,版面座標取自反組譯(見下方第 20 項)。`Net_Next_Turn`(第 75 項)與 `Choose_Net_Plyrs`(第 76 項)2026-08-07 已建。`Modem_Setup`/`NullModem_Setup`/`Comm Info` **不做**(硬體已不存在)。剩 `Join_Net`/`Choose_Multi_Net_Game`/`Generic_Net_Info`/`SendGet_Net_Info` |
 
 ### A-3 remake 有、原版無獨立畫面
 
@@ -128,7 +128,7 @@
 
 | 缺口 | 性質 | 備註 |
 |---|---|---|
-| **網路多人** | 整塊子系統 | ~~決定性化~~(72)、~~傳輸層 + 鎖步~~(73)、~~指令解譯器~~(74)、~~`Net_Next_Turn` 等待畫面~~(75)。**剩連線流程的 5 張畫面**;`Modem_Setup` / `NullModem_Setup` / `Comm Info` 三張**不做**(數據機與序列線硬體已不存在,remake 走 TCP——替不存在的硬體做設定畫面不是還原) |
+| **網路多人** | 整塊子系統 | ~~決定性化~~(72)、~~傳輸層 + 鎖步~~(73)、~~指令解譯器~~(74)、~~`Net_Next_Turn` 等待畫面~~(75)、~~連線大廳 + `Choose_Net_Plyrs` 名冊~~(76)。**剩 4 張**(`Join_Net` / `Choose_Multi_Net_Game` / `Generic_Net_Info` / `SendGet_Net_Info`)+ 文字輸入框(沒有它「加入」只連得上本機);`Modem_Setup` / `NullModem_Setup` / `Comm Info` 三張**不做**(數據機與序列線硬體已不存在,remake 走 TCP——替不存在的硬體做設定畫面不是還原) |
 
 > **2026-08-07:這張表只剩一列了。** 表上原本的其餘七列在同一天被逐一了結
 > (第 65–71 項),移到下方「已了結」表。剩下的那一列是整塊子系統,不是一個洞。
@@ -3593,3 +3593,71 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     剩下的 5 張(`Join_Net` / `Choose_Net_Plyrs` / `Choose_Multi_Net_Game` /
     `Generic_Net_Info` / `SendGet_Net_Info`)是**連線流程**的畫面,要等 UI 端的連線流程
     做出來才有東西可顯示——先做畫面會做出一堆沒有資料來源的空框。
+
+76. **連線大廳 + `Choose_Net_Plyrs` 名冊——第一個「尺寸隨資料變」的版面**(2026-08-07)。
+
+    ### 先做大廳,不先做畫面
+
+    上一項結尾寫的就是這一項的前提:剩下 5 張是連線流程的畫面,沒有資料來源時做出來
+    只是空框。所以這一輪先補 `internal/netplay/lobby.go`——**主機聽、客戶端連、主機廣播名冊**:
+
+    | 角色 | 做的事 |
+    |---|---|
+    | 主機 `Host(addr, name, seed)` | 開 listener,自己是 0 號;`AcceptOne` 收一個人、指派 id、**廣播整份名冊** |
+    | 客戶端 `Join(addr, name, timeout)` | 送 `hello` → 收 `roster` → 拿到自己的 id 與種子 |
+
+    兩個設計決定,而且都不是隨手選的:
+
+    - **玩家編號由主機指派。** 鎖步的指令排序鍵就是玩家編號(見第 73 項),
+      各自取號會撞號,撞號就等於兩邊的指令順序不同 → 一定分岔。
+    - **種子由主機決定並廣播。** 種子決定整張星圖與所有隨機事件;各自產生種子
+      就不是同一局了。名冊訊息把種子一起帶過去,連上線就已經是同一個世界。
+
+    ### 版面:第一個會長高的視窗
+
+    `Choose_Network_Plyrs_Screen_` @ 0xF0E17 的定位段:
+
+    ```
+    x    = (0x280 − 資產27.寬) / 2
+    總高 = 資產28.高 × [win+0x1E1] − 1 + 資產27.高 + 資產29.高
+    y    = (0x1E0 − 總高) / 2
+    ```
+
+    `[win+0x1E1]` 是**列數**——中段面板(資產 28)每位玩家重複一次。先前移植的畫面
+    版面都是固定的(不論立即數或第 75 項那種現算),這是第一個**尺寸隨資料變**的:
+
+    | 人數 | 總高 | y |
+    |---|---|---|
+    | 1 | 36×1 − 1 + 81 + 38 = 154 | 163 |
+    | 4 | 36×4 − 1 + 81 + 38 = 262 | 109 |
+    | 8 | 36×8 − 1 + 81 + 38 = 406 | 37 |
+
+    `Add_Choose_Net_Plyrs_Fields_` @ 0xEFB50 給每列的點擊區(逐項立即數):
+    `x1 = winX + 0x6A`、`y1 = winY + i×0x24 + 0x40`、`x2 = winX + 0x1B3`、`y2 = y1 + 0x1D`
+    ——每列 **329×29**,列距 36,**正好等於資產 28 的高**。那個相等是交叉驗證:
+    列距若與面板高不同,兩邊必有一個抄錯。
+
+    測試同樣釘算式:重算 x、逐人數重算 y、確認「人越多視窗越高」、確認列距等於面板高、
+    確認 8 列(上限,`[win+0xBB]` 那個 widget id 陣列的長度)時整個視窗仍在 640×480 內。
+
+    ### 截圖抓到的一個版面錯誤
+
+    大廳狀態那兩行字(位址 / 種子)第一版畫在底框(資產 29)**裡面**——照 38 px 的高度算
+    完全放得下。截出來才發現:那 38 px 的可見內容只有**頂端那圈金屬圓角**,底下是透明的。
+    結果第一行壓在圓角上、第二行掉到視窗外面。
+
+    這一條讀程式讀不出來,因為「資產高 38」在數字上完全合理。**版面的驗收是看圖,
+    不是算數字**——同第 65 項那條紀律。修法是把兩行移到底框**下方**、加一條擦底,
+    並補 `TestChooseNetPlayersInfoLinesSitBelowTheWindowAndStayOnScreen` 把它釘住
+    (1~8 列都要在畫面內)。
+
+    ### 誠實留白
+
+    - **沒有文字輸入框,所以「加入」只連得上本機。** 要連別台得先做輸入框——
+      這是下一步,不是這一輪偷懶;`netLobbyDialAddr` 的註解寫明了。
+    - **不能點列指派種族。** 原版這張畫面可以(`sub_EFABA` 在每列旁再建一組欄位),
+      remake 的大廳只做到「誰連進來了」,種族仍走既有的單機流程。
+      要接的話得把種族選擇整段納入連線流程,不做半套。
+    - **沒有重連、沒有心跳、沒有加密。** 這是區網對戰的最低限度,寫在 `lobby.go` 檔頭。
+
+    剩下 4 張(`Join_Net` / `Choose_Multi_Net_Game` / `Generic_Net_Info` / `SendGet_Net_Info`)。

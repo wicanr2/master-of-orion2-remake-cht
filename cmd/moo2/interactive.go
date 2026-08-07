@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"math/rand"
+	"net"
 	"os"
 	"path/filepath"
 	"sort"
@@ -20,6 +21,7 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/lbx"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/netplay"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
@@ -394,6 +396,10 @@ type sceneBuilder struct {
 	planetListTop int
 	// planetListMsg 是行星列表畫面最近一次動作的結果訊息。
 	planetListMsg string
+	// netLobby / netConn 是網路對戰的大廳與連線(見 choosenetplyrs.go)。
+	// 放在 sceneBuilder 上是因為它們要活過畫面切換——連線不能隨畫面被 GC 掉。
+	netLobby *netplay.Lobby
+	netConn  net.Conn
 	// pendingConfirm 是「這一下要先問過玩家」的是/否確認框(原版 `User_Box_(kind=1)`,
 	// 見 cmd/moo2/confirmbox.go)。處理器只負責記下來,由呼叫端 takePendingConfirm 換成畫面
 	// ——處理器手上沒有「下層畫面」,而確認框要疊在它上面。
@@ -3663,8 +3669,10 @@ type interactiveApp struct {
 	galleryFighterTick int
 	// galleryNetWaitTick 是截圖廊把畫面換成網路等待畫面的 tick。
 	galleryNetWaitTick int
-	galleryBuilder     *sceneBuilder
-	gallerySession     *shell.GameSession
+	// galleryNetRosterTick 是截圖廊把畫面換成連線玩家名冊的 tick。
+	galleryNetRosterTick int
+	galleryBuilder       *sceneBuilder
+	gallerySession       *shell.GameSession
 }
 
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
@@ -3682,6 +3690,9 @@ const galleryFleetTick = 18
 
 // galleryNetWaitTick 是截圖廊在哪個 tick 換成網路等待畫面——取截圖(t96)的前一拍。
 const galleryNetWaitTick = 95
+
+// galleryNetRosterTick 是截圖廊在哪個 tick 換成連線玩家名冊——取截圖(t98)的前一拍。
+const galleryNetRosterTick = 97
 
 // galleryFighterTick 是截圖廊在哪個 tick 於戰術戰鬥裡派出一隊戰機——取截圖(t66)的前一拍。
 //
@@ -3935,6 +3946,10 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		// 網路等待畫面(原版 Net_Next_Turn)。同上,直接推上來。
 		idle, // t95: 由 galleryNetWaitTick 換成等待畫面
 		idle, // t96: settle → 截圖 netwait
+
+		// 連線玩家名冊(原版 Choose_Network_Plyrs_Screen_)。同上,直接推上來。
+		idle, // t97: 由 galleryNetRosterTick 換成名冊畫面
+		idle, // t98: settle → 截圖 netroster
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -3970,6 +3985,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{92, "28_measure.png"},
 		{94, "29_confirm.png"},
 		{96, "30_netwait.png"},
+		{98, "31_netroster.png"},
 	}
 	return script, shots
 }
@@ -4183,6 +4199,10 @@ func (a *interactiveApp) Update() error {
 	if a.galleryNetWaitTick > 0 && a.tick == a.galleryNetWaitTick && a.galleryBuilder != nil {
 		a.cur = a.galleryBuilder.netNextTurnDemo()
 	}
+	// 截圖廊專用:連線玩家名冊(原版 Choose_Network_Plyrs_Screen_)。
+	if a.galleryNetRosterTick > 0 && a.tick == a.galleryNetRosterTick && a.galleryBuilder != nil {
+		a.cur = a.galleryBuilder.chooseNetPlayersDemo()
+	}
 	// 截圖廊專用:戰術戰鬥裡派一隊戰機出擊(見 galleryFighterTick 的說明)。
 	if a.galleryFighterTick > 0 && a.tick == a.galleryFighterTick {
 		if ts, ok := a.cur.(*tacticalScreen); ok && len(ts.player) > 1 {
@@ -4358,6 +4378,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.galleryConfirmTick = galleryConfirmTick
 		app.galleryFighterTick = galleryFighterTick
 		app.galleryNetWaitTick = galleryNetWaitTick
+		app.galleryNetRosterTick = galleryNetRosterTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,
