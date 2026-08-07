@@ -126,6 +126,14 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		bonused := gamedata.IncomeApplyGovernmentMoneyBonus(subtotal, ps.GovtBonusMoneyPercent)
 		out.TaxRevenue += bonused - subtotal
 	}
+	// 銀河貨幣交易所(Achievement 科技,手冊:「all colonies (from all sources) by 50%」)。
+	// 與政府加成同一層——帝國層級、迴圈外,因為手冊講的是整體收入的乘數而不是逐殖民地的建築加成。
+	// 放在政府加成**之後**:兩者都是對「已含各殖民地建築加成的帝國收入」再乘,順序不影響總額
+	// (乘法可交換),但先政府後科技與手冊敘述的層次一致(政府是體制、科技是全域基礎建設)。
+	if ps.HasGalacticCurrencyExchange {
+		subtotal := out.TaxRevenue + out.FoodSurplusRevenue + out.TradeGoodsRevenue
+		out.TaxRevenue += gamedata.IncomeApplyGalacticCurrencyExchange(subtotal) - subtotal
+	}
 	out.Player, out.ResearchDone = RunResearchPhase(ps, out.TotalResearch)
 	// 指揮評等(Command Rating)超支懲罰(GAME_MANUAL.pdf p.169:「For each rating point
 	// required by a ship that is not covered, 10 BCs come out of your income every turn.」)。

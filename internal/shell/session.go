@@ -2618,6 +2618,10 @@ func (s *GameSession) prepPlayerDerived() {
 	// 的值,故新完工的運輸艦要下回合才開始計維護費——此處的零值陷阱只在「玩家從未建過運輸艦隊」
 	// 時才恆為 0,不是本欄位的固定行為。
 	s.Player.GovtBonusMoneyPercent = gamedata.IncomeGovtMoneyBonusPercent(s.Government)
+	// 銀河貨幣交易所是 **Achievement 科技**(手冊:研究完成即生效,不必建造),所以在這裡由
+	// 科技擁有狀況同步給 engine,而不是走建築表。判定規則與其他多選一主題一致。
+	s.Player.HasGalacticCurrencyExchange = driveTechOwned(s.Player,
+		gamedata.GalacticCurrencyExchangeTech.Topic, gamedata.GalacticCurrencyExchangeTech.Tech)
 	// HyperAdvancedResearchCost 依這局遊戲的版本規則 profile 算好傳給 RunResearchPhase(engine 層
 	// 不關心 RuleProfile 本身,只吃算好的數字,見 engine.PlayerState.HyperAdvancedResearchCost
 	// 註解)。Profile15(現行預設)= 25000 = 套件級硬編值,no-op;Profile13 = 15000,真的改變
