@@ -125,8 +125,11 @@ func TestNewGameSettingsSurviveSaveLoad(t *testing.T) {
 // technologies are discovered.」
 func TestPrewarpFleetCannotLeaveSystem(t *testing.T) {
 	s := NewDemoSession()
-	s.SetupNewGame(24, 5, DefaultOpponents)
+	// ⚠ TECH LEVEL 要在 SetupNewGame **之前**設:開局送的研究主題由它決定
+	// (見 applyStartingTech),而那一步在 SetupNewGame 的最後。
+	// 正式流程也是這個順序(cmd/moo2 的 applyNewGameSettings → SetupNewGame)。
 	s.TechLevel, s.TechLevelSet = TechLevelPrewarp, true
+	s.SetupNewGame(24, 5, DefaultOpponents)
 
 	if s.FleetHasFTL() {
 		t.Fatal("曲速前且未研究核分裂時不該有 FTL")
@@ -178,5 +181,75 @@ func TestTechLevelZeroValueDoesNotFreezeFleet(t *testing.T) {
 	}
 	if !s.FleetHasFTL() {
 		t.Error("沒設過科技等級時應退回「一般」,艦隊不該被凍住")
+	}
+}
+
+// --- 起始科技等級:開局送的研究主題(2026-08-07 接上的第二項效果) ---
+
+// TestTechLevelGrantsTheOriginalStartingTopics:選什麼等級就該拿到那一級的主題。
+//
+// 這條先前**不成立**:不論選哪一級,開局都只有 STARTING_TECH + ENGINEERING 兩個
+// ——照 `Init_Player_Tech_` @ 0x5E55F 那是曲速前(var_18 = 1),而選單上寫著「一般」。
+func TestTechLevelGrantsTheOriginalStartingTopics(t *testing.T) {
+	for _, c := range []struct {
+		level int
+		want  int // 固定表裡該拿到幾個
+	}{
+		{TechLevelPrewarp, 1},
+		{TechLevelDefault, 6},
+		{2, 6}, // 先進級的固定表也是 6,其餘 19 個是隨機的(還沒接)
+	} {
+		s := NewDemoSession()
+		s.TechLevel, s.TechLevelSet = c.level, true
+		s.SetupNewGame(24, 7, DefaultOpponents)
+
+		got := 0
+		for _, topic := range gamedata.StartingTopicOrder {
+			if s.Player.CompletedTopics[topic] {
+				got++
+			}
+		}
+		if got != c.want {
+			t.Errorf("等級 %d 應拿到固定表裡的 %d 個,實得 %d", c.level, c.want, got)
+		}
+		// field 0 與等級無關,一律要有(原版開頭那批無條件寫入)。
+		if !s.Player.CompletedTopics[gamedata.TOPIC_STARTING_TECH] {
+			t.Errorf("等級 %d:field 0 應無條件已知", c.level)
+		}
+		// ENGINEERING 是固定表第一個,每一級都該有。
+		if !s.Player.CompletedTopics[gamedata.TOPIC_ENGINEERING] {
+			t.Errorf("等級 %d:ENGINEERING 是固定表第一個,每一級都該有", c.level)
+		}
+	}
+}
+
+// 曲速前**不能**拿到核分裂——那是 FTL 所在的主題,拿到就等於曲速前開局能飛。
+//
+// 這條是 applyStartingTech 那個「先清再發」的正對照:只加不減的話,
+// NewDemoSession 用預設等級發過的核分裂會留下來,而且不會有任何錯誤訊息。
+func TestPrewarpDoesNotKeepTheDefaultLevelsFTLTopic(t *testing.T) {
+	s := NewDemoSession()
+	if !s.Player.CompletedTopics[FTLTopic] {
+		t.Fatal("測試前提不成立:demo 局(預設一般)本來就該有 FTL 主題")
+	}
+	s.TechLevel, s.TechLevelSet = TechLevelPrewarp, true
+	s.SetupNewGame(24, 7, DefaultOpponents)
+	if s.Player.CompletedTopics[FTLTopic] {
+		t.Error("改成曲速前之後仍留著 FTL 主題——先發後清那一步失效了")
+	}
+}
+
+// AI 也要照同一級發:原版的 Init_Player_Tech_ 是逐玩家跑的,不是玩家專屬。
+func TestStartingTopicsAlsoGoToAI(t *testing.T) {
+	s := NewDemoSession()
+	s.TechLevel, s.TechLevelSet = TechLevelDefault, true
+	s.SetupNewGame(24, 7, DefaultOpponents)
+	if len(s.AIPlayers) == 0 {
+		t.Fatal("測試前提不成立:沒有 AI 對手")
+	}
+	for i := range s.AIPlayers {
+		if !s.AIPlayers[i].Player.CompletedTopics[gamedata.TOPIC_NUCLEAR_FISSION] {
+			t.Errorf("AI %d 沒拿到一般等級該有的核分裂——只發給玩家等於把 AI 留在曲速前", i)
+		}
 	}
 }

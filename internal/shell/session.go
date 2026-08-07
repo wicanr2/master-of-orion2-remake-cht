@@ -427,14 +427,18 @@ var GalaxyAges = []struct {
 // 直到研究完 `FTLTopic`(見 `FleetHasFTL`)。手冊直引:「Exploring outside that system is
 // impossible until faster than light (FTL) technologies are discovered.」
 //
-// ⚠ 其餘效果仍未接。手冊已經給出可用的硬證,留給下一輪:
+// **第二項效果 2026-08-07 接上**:開局送的研究主題依等級而不同。那張表先前拿不到
+// (註解寫著「沒有一手表之前不臆造」),當天從 `Init_Player_Tech_` @ 0x5E55F 挖出來:
+// 數量 `var_18` = 1 / 6 / 25,清單 `word_18111C` = 29, 55, 22, 57, 28, 23。
+// 見 `gamedata.StartingTopicOrder` 與 `GameSession.applyStartingTech`。
+// 手冊獨立說「預設的第一個是 field #29」,與表頭互證。
+//
+// ⚠ 仍未接:
 //   - 初始建築數上限:Pre-warp 3 / Average·Post-warp 5 / Advanced 9(不含 Capitol),
 //     且 = min(⅔ 人口無條件進位, 上限)。remake 的母星建築是固定一組,還沒有依人口生成的機制。
-//   - 開局已知科技領域數:Pre-warp 2 個(field 0 + Construction 第一個)、其餘 6 個。
-//     remake 現在開局是 2 個(`newHomeworldPlayerState` 的 CompletedTopics)= **等同 Pre-warp**,
-//     所以預設選 Average 時其實還沒拿到該有的 6 個領域。要補得先查出那 6 個是哪些
-//     (手冊只說預設第一個是 field #29),沒有一手表之前不臆造。
-//     (這一項與上面的 FTL 限制無關:FTL 只管「能不能出星系」,科技領域數管「開局會哪些技術」。)
+//   - 先進級在固定表之外**還會隨機送 19 個**(`sub_FD335` 逐個挑)。remake 只發固定表的 6 個
+//     ——缺口的大小由 `gamedata.StartingTopicRandomExtras` 回報,不是註解裡的一句話。
+//     要接得先有「隨機挑一個尚未取得的主題」的決定性亂數流。
 var TechLevels = []struct {
 	Name string
 	Desc string
@@ -2124,6 +2128,47 @@ func (s *GameSession) SetupNewGame(stars int, seed int64, numAI int) {
 	s.PlayerColonyStars = []int{0}
 	s.Fleet().AtStar = 0
 	s.Fleet().DestStar = -1
+	s.applyStartingTech()
+}
+
+// applyStartingTech 依 TECH LEVEL 把開局該給的研究主題發下去(玩家 + 所有 AI)。
+//
+// 擺在 `SetupNewGame` 的最後而不是 `newHomeworldPlayerState` 裡,是因為 TECH LEVEL 是
+// NEW GAME 畫面設的,而 PlayerState 在那之前就建好了(`applyNewGameSettings` → `SetupNewGame`
+// 的順序見 cmd/moo2)。在這裡補發,順序上一定拿得到設定,舊存檔也不受影響。
+//
+// **AI 一起發**:原版的 `Init_Player_Tech_` 是逐玩家跑的(第一個參數就是玩家編號),
+// 不是玩家專屬。只發給玩家等於把 AI 永遠留在曲速前。
+func (s *GameSession) applyStartingTech() {
+	topics := gamedata.StartingTopics(s.techLevel())
+	granted := map[gamedata.ResearchTopic]bool{}
+	for _, t := range topics {
+		granted[t] = true
+	}
+	grant := func(ps *engine.PlayerState) {
+		if ps.CompletedTopics == nil {
+			ps.CompletedTopics = map[gamedata.ResearchTopic]bool{}
+		}
+		// 先把**這張固定表裡、這一級不該有的**清掉,再發該有的。
+		//
+		// 不是多餘的一步:`NewDemoSession` 會先用預設等級發一輪,測試/正式流程再改成別的等級
+		// 重新 setup。只加不減的話,曲速前會留著「一般」發過的核分裂——那正好是
+		// 「曲速前不該有 FTL」這條規則的反例,而且不會有任何錯誤訊息。
+		//
+		// 只動這張表裡的主題:玩家真的研究出來的東西不歸這裡管(setup 當下也還沒有)。
+		for _, t := range gamedata.StartingTopicOrder {
+			if !granted[t] {
+				delete(ps.CompletedTopics, t)
+			}
+		}
+		for _, t := range topics {
+			ps.CompletedTopics[t] = true
+		}
+	}
+	grant(&s.Player)
+	for i := range s.AIPlayers {
+		grant(&s.AIPlayers[i].Player)
+	}
 }
 
 // aiHomeStarIndices 依「星數 n、AI 對手數 aiHomes」算出 aiHomes 個彼此不同、且都不是星 0
@@ -3503,6 +3548,10 @@ func playerHomeworldColony() engine.ColonyState {
 // EndTurn 依 s.ColonyBuildings 實際清單重算(見 GameSession.totalBuildingMaintenance),
 // 這裡只是開局第一回合前的初始值。艦艇/間諜/軍官維護費目前無手冊可推導的模型(本專案未追蹤
 // 運輸艦數量),暫不計入——TODO:待接上艦隊維護模型後補上,不臆造數字。
+// ⚠ 這裡**只給 `TOPIC_STARTING_TECH`**(field 0,原版 `Init_Player_Tech_` 開頭那八個
+// 無條件寫入的欄位,與 TECH LEVEL 無關)。其餘主題由 `applyStartingTech` 依 TECH LEVEL 發,
+// 因為 TECH LEVEL 是 NEW GAME 畫面設的、比這裡晚。
+// 先前這裡直接寫死 `TOPIC_ENGINEERING`,等於不論選哪一級都拿曲速前的科技。
 func newHomeworldPlayerState(researchTopic gamedata.ResearchTopic) engine.PlayerState {
 	return engine.PlayerState{
 		// TaxRate 15:2026-07-12 校正。手冊 p.37 工業稅是「臨時要現金才拉」的補充收入(原生 0-50%、
@@ -3521,8 +3570,7 @@ func newHomeworldPlayerState(researchTopic gamedata.ResearchTopic) engine.Player
 		// 另外設定,避免在此對 AI 也套用玩家專屬的開局艦隊假設。
 		CommandPointsSupply: gamedata.CommandPointsFromBuildings(homeworldBuildings()),
 		CompletedTopics: map[gamedata.ResearchTopic]bool{
-			gamedata.TOPIC_STARTING_TECH: true,
-			gamedata.TOPIC_ENGINEERING:   true,
+			gamedata.TOPIC_STARTING_TECH: true, // field 0,無條件(見本函式註解)
 		},
 		ChosenTech: map[gamedata.ResearchTopic]gamedata.Technology{
 			gamedata.TOPIC_ENGINEERING: gamedata.TECH_COLONY_BASE, // ResearchAll 代表值(全解語意)
@@ -3724,6 +3772,9 @@ func NewDemoSession() *GameSession {
 	// 玩家母星座落的行星(見 PlayerColonyPlanets 欄位註解)。星 0 恆為母星,
 	// demoHomeStarSet 保證那裡有可殖民天體。
 	session.PlayerColonyPlanets = []int{session.PlanetAt(0)}
+	// 開局研究主題(依 TECH LEVEL;demo 局沒設過,`techLevel()` 退回「一般」)。
+	// 與 SetupNewGame 走同一條路,免得兩邊漂開。
+	session.applyStartingTech()
 	return session
 }
 
