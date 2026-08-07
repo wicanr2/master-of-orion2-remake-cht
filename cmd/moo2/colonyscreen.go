@@ -203,6 +203,9 @@ func (b *sceneBuilder) drawColonyScreen(dst *ebiten.Image, idx int) {
 
 	vector.DrawFilledRect(dst, 0, 0, colScreenW, colScreenH, colPanelBg, false)
 	b.drawColonyTerrain(dst, idx)
+	// 道路夾在地形與框架之間,和原版 `Draw_Colony_Screen_` 的呼叫序一致。
+	_, roads := b.colonySurfaceLayout(idx)
+	b.drawColonyRoads(dst, roads)
 	if im := b.colonyChrome(); im != nil {
 		dst.DrawImage(im, &ebiten.DrawImageOptions{})
 	}

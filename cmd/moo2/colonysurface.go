@@ -301,10 +301,11 @@ var colonyHouseStyles = [4]int{3, 14, 40, 41}
 //
 //	`Insert_Bldg_Into_Array_` @ 0xBC05E 的選格是**蓄水池抽樣**:
 //	    n = 0
-//	    for b = 0..5: for a = 0..5:
+//	    for a = 0..5: for b = 0..5:
 //	        if 格空 { n++; if Random(n) == 1 { 選這格 } }
-//	  —— 走訪順序是 b 外 a 內,`colony_bldgs[6*b + a]`。抽樣呼叫 `Random` 的**次數與順序**
-//	  都會影響後續,所以連「格不空就不抽」這個細節也得照抄。
+//	  —— 外層是 `colony_bldgs` 步距 6 的那一軸(即本檔的 a),內層是步距 1 的那一軸(b)。
+//	  抽樣呼叫 `Random` 的**次數與順序**都會影響後續(道路就接在這條流上),
+//	  所以連「格不空就不抽」這個細節也得照抄。
 //
 //	房屋外觀:`v5 = (colonyIdx + 目前房屋數) % 4`,再依 `(v5+1) % 4` 選
 //	    0 → 3、1 → 14、2 → 40、3 → 41
@@ -315,10 +316,20 @@ var colonyHouseStyles = [4]int{3, 14, 40, 41}
 // 對鄰格以約 1/3 機率互換,跑 8 輪。那段的 `Get_Bldg_CR_` 語意(同一種房屋有多格時挑哪一格)
 // 與邊界夾擠寫得很繞,照抄容易抄錯而不自覺,**這一輪先不做**。
 // 影響是房屋之間的位置會與原版有出入;建築本身的落點由前面那三步決定,已經是原版演算法。
+// **道路也吃這條亂數流**(`Build_Road_List_Based_On_Bldg_List_` 接在抖動之後),
+// 所以抖動沒補完之前,道路的走法同樣不會與原版逐格相同——見 `colonyroads.go` 檔頭五。
 func (b *sceneBuilder) colonySurfacePlan(idx int) map[[2]int]int {
+	plan, _ := b.colonySurfaceLayout(idx)
+	return plan
+}
+
+// colonySurfaceLayout 同時回傳建築落點與道路。兩者共用同一條亂數流且**有先後**,
+// 拆成兩支各自起種就會兩邊都錯,所以只有這一個入口在推。
+func (b *sceneBuilder) colonySurfaceLayout(idx int) (map[[2]int]int, colonyRoadMap) {
 	plan := map[[2]int]int{}
+	var roads colonyRoadMap
 	if b.session == nil || idx < 0 || idx >= len(b.session.PlayerColonies) {
-		return plan
+		return plan, roads
 	}
 	rng := gamedata.NewOrigRand(uint32(idx)) // Set_Random_Seed(colonyIdx)
 	var grid [36]int                         // grid[a*6+b],0 = 空(軸向見下方註解)
@@ -366,12 +377,15 @@ func (b *sceneBuilder) colonySurfacePlan(idx int) map[[2]int]int {
 
 	sortColonyColumns(&grid)
 
+	// 原版在這裡還有 8 輪房屋抖動(見檔頭「還沒照抄的一段」),之後才推道路。
+	roads = buildColonyRoads(&grid, rng)
+
 	for i, id := range grid {
 		if id != 0 {
 			plan[colonyGridKey(i)] = id
 		}
 	}
-	return plan
+	return plan, roads
 }
 
 // colonyOrigBuildingIDs 把某殖民地已建的建築換成**原版編號**的集合。
