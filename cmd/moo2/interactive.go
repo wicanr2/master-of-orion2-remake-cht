@@ -791,16 +791,20 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					579, 62, 9, color.RGBA{205, 215, 165, 255})
 				netCmd := sess.Player.CommandPointsSupply - sess.Player.UsedCommandPoints
 				fnt.DrawCentered(dst, fmt.Sprintf("%d", netCmd), 579, 182, 12, infoCol) // 指揮評等(供給-需求)
-				foodSum := 0
+				foodSum, rpSum := 0, 0
 				for i := range sess.PlayerColonies {
-					foodSum += engine.RunColonyTurn(sess.PlayerColonies[i]).FoodSurplus
+					out := engine.RunColonyTurn(sess.PlayerColonies[i])
+					foodSum += out.FoodSurplus
+					rpSum += out.Research
 				}
 				fnt.DrawCentered(dst, fmt.Sprintf("%d", foodSum), 579, 257, 12, infoCol)                      // 食物盈餘
 				fnt.DrawCentered(dst, fmt.Sprintf("%d", sess.Player.ActiveFreighters), 579, 331, 12, infoCol) // 運輸艦數
-				// 研究主題名較長(65px 格塞不下),原版該格只放圖示;本 remake 保留可讀的
-				// 主題名一行於左上(僅此一行,不再與星曆/國庫疊三行蓋星圖)。
-				fnt.Draw(dst, fmt.Sprintf(b.tr("研究:%s", "Research: %s"), topicNameZh(b.lang, sess.Player.ResearchTopic)),
-					30, 34, 12, color.RGBA{160, 210, 240, 255})
+				// 第 5 格(綠燒瓶)= 每回合研究點數,補齊右欄五格。
+				//
+				// ⚠ 2026-08-07:先前這裡把「研究:<主題名>」畫在星圖左上 (30,34)。那是 remake 自己
+				// 加的一行——**原版星圖沒有這個東西**(研究主題只在研究畫面顯示),而且它會壓到
+				// 左上角的星星與艦隊圖示。原版這格放的是數字,跟其他四格一樣,所以改成數字。
+				fnt.DrawCentered(dst, fmt.Sprintf("%d", rpSum), 579, 405, 12, infoCol)
 				// 艦隊位置標記(青色三角)+ 航行目的連線。
 				if sess.FleetAtStar >= 0 && sess.FleetAtStar < len(sess.Stars) {
 					fx, fy := starScreenPos(sess.Stars[sess.FleetAtStar])
@@ -808,7 +812,11 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 						dx, dy := starScreenPos(sess.Stars[sess.FleetDestStar])
 						vector.StrokeLine(dst, float32(fx), float32(fy), float32(dx), float32(dy), 1, color.RGBA{80, 220, 220, 180}, false)
 					}
-					vector.DrawFilledRect(dst, float32(fx-4), float32(fy-4), 8, 8, color.RGBA{80, 240, 240, 255}, false)
+					// 艦隊圖示:原版 `Draw_Ship_Icons_` 的帶旗色小艦艇(見 shipicon.go)。
+					// 取不到資產才退回舊的青色方塊——那是佔位,不是原版的東西。
+					if !b.drawShipIconAt(dst, sess.FlagColor, fx, fy) {
+						vector.DrawFilledRect(dst, float32(fx-4), float32(fy-4), 8, 8, color.RGBA{80, 240, 240, 255}, false)
+					}
 				}
 				// 選中星:顯示該星系行星資訊 + 派遣艦隊/載運陸戰隊/軌道轟炸/發動入侵按鈕(左下角面板)。
 				if sess.SelectedStar >= 0 && sess.SelectedStar < len(sess.Planets) {
