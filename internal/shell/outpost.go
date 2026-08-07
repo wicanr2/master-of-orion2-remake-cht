@@ -49,9 +49,9 @@ import (
 //     科技樹裡對應的是 `TECH_PLANET_CONSTRUCTION`(TOPIC_ADVANCED_MANUFACTURING 三選一):
 //     手冊裡它的全名是「Artiﬁcial Planet Construction (Special)」,而且緊接在
 //     Automated Repair Unit 之後——那正是同一個主題的另一個選項,兩邊的相鄰關係對得上。
-//     **卡的不再是科技旗標,是資料模型**:remake 的 Stars↔Planets 一對一
-//     (見 `Planet.SystemBodies` 註解)。⚠ 人造行星其實是**改造既有天體**不是新增一顆,
-//     轉換完沒有地方能放第二個殖民地。前置是多行星殖民地,見 gap report 第 51 項。
+//     ⚠ 2026-08-07:這裡原本寫「卡的是資料模型:remake 的 Stars↔Planets 一對一」——已不成立。
+//     軌道模型(orbit.go)與同星系多殖民地(colonization.go ColonizePlanet)都做完了,
+//     人造行星就地改造前哨站所在的天體(artificialplanet.go),改造完可以在那裡建殖民地。
 
 // OutpostShipClass 是前哨船的艦體等級字串(命名慣例同 ColonyShipClass)。
 const OutpostShipClass = "前哨船"
@@ -66,7 +66,10 @@ const OutpostMarineBarracks = "海軍陸戰隊營"
 // Outpost 是一座軍事前哨站。
 type Outpost struct {
 	StarIndex int // 所在星索引
-	Turn      int // 建立回合(供顯示/未來的年資規則)
+	// PlanetIndex 是前哨站座落的**行星**(手冊 p.119:「Outpost Ships each build a military
+	// outpost on a single planet」)。−1 = 舊存檔沒記,只知道在哪顆星。
+	PlanetIndex int
+	Turn        int // 建立回合(供顯示/未來的年資規則)
 }
 
 // findOutpostShipIndex 回傳玩家艦隊中第一艘前哨船在 s.Fleet().Ships 的索引;找不到回 -1。
@@ -92,6 +95,35 @@ func (s *GameSession) HasOutpostAt(starIdx int) bool {
 	return false
 }
 
+// HasOutpostOnPlanet 回傳某顆行星上是否已有前哨站。
+func (s *GameSession) HasOutpostOnPlanet(planetIdx int) bool {
+	for _, o := range s.Outposts {
+		if o.PlanetIndex == planetIdx {
+			return true
+		}
+	}
+	return false
+}
+
+// OutpostTargetPlanet 挑一顆星系裡適合建前哨站的天體:優先氣態巨星/小行星帶(手冊 p.85 明說
+// 那正是前哨站的用途,而它們也無法殖民),其次任何還沒被佔的天體。找不到回 −1。
+func (s *GameSession) OutpostTargetPlanet(starIdx int) int {
+	best := -1
+	for _, p := range s.PlanetsAt(starIdx) {
+		pl := s.Planets[p]
+		if pl.NoPlanet || s.HasOutpostOnPlanet(p) || s.ColonyIndexOnPlanet(p) >= 0 {
+			continue
+		}
+		if pl.TypeID == gamedata.GAS_GIANT || pl.TypeID == gamedata.ASTEROIDS {
+			return p
+		}
+		if best < 0 {
+			best = p
+		}
+	}
+	return best
+}
+
 // OutpostResult 是一次建前哨站嘗試的結果(欄位風格對稱 ColonizationResult)。
 type OutpostResult struct {
 	Ok     bool
@@ -101,10 +133,10 @@ type OutpostResult struct {
 
 // BuildOutpost 在 starIdx 建立軍事前哨站。前置條件:
 //  1. 玩家艦隊已抵達該星(FleetAtStar==starIdx 且 FleetETA==0),與 ColonizeStar 同款。
-//  2. 該星無主(Owner==0)——別人的地盤不能插旗。
+//  2. 該星不是敵方的(Owner!=2)——別人的地盤不能插旗,自己的星系可以(氣態巨星/小行星帶
+//     常常就在已殖民的星系裡)。
 //  3. 艦隊載有前哨船。
-//  4. 該星有天體可建(NoPlanet 的黑洞不行)。
-//  5. 該星尚無自己的前哨站。
+//  4. 該星系還有沒被佔的天體(見 OutpostTargetPlanet)。
 //
 // 成功:消耗一艘前哨船、記一筆 Outpost、把該星標成玩家所有(Owner=1)並標記已探索。
 // **不建立殖民地**——手冊「produces nothing」,前哨站沒有人口也沒有產出。
@@ -115,11 +147,10 @@ func (s *GameSession) BuildOutpost(starIdx int) OutpostResult {
 	if s.Fleet().AtStar != starIdx || s.Fleet().ETA != 0 {
 		return OutpostResult{Reason: "艦隊尚未抵達該星"}
 	}
-	if s.Stars[starIdx].Owner != 0 {
-		return OutpostResult{Reason: "該星已有歸屬,不可建立前哨站"}
-	}
-	if s.HasOutpostAt(starIdx) {
-		return OutpostResult{Reason: "該星已有前哨站"}
+	if s.Stars[starIdx].Owner == 2 {
+		// 敵方的地盤不能插旗。自己的星系可以——氣態巨星/小行星帶正是前哨站的用途(手冊 p.85),
+		// 那些天體常常就在自己已經殖民的星系裡。
+		return OutpostResult{Reason: "該星已被敵方佔領,不可建立前哨站"}
 	}
 	// 怪獸擋路(見 monster.go)。手冊只對殖民船寫明這條,但怪獸就盤據在那個星系裡,
 	// 沒有理由前哨船能無視它——比照處理,並在此標明這是延伸而非手冊逐字。
@@ -130,12 +161,52 @@ func (s *GameSession) BuildOutpost(starIdx int) OutpostResult {
 	if shipIdx < 0 {
 		return OutpostResult{Reason: "艦隊未載運前哨船"}
 	}
-	if p := s.PlanetOf(starIdx); p != nil && p.NoPlanet {
+	target := s.OutpostTargetPlanet(starIdx)
+	if target < 0 {
 		return OutpostResult{Reason: "該星系沒有可供建立前哨站的天體"}
 	}
+	return s.buildOutpostOn(starIdx, target, shipIdx)
+}
 
+// BuildOutpostOnPlanet 在指定的**行星**上建前哨站(行星列表畫面的「派遣前哨船」走這支)。
+// 前置條件與 BuildOutpost 相同,差別只在天體由呼叫端指定而不是自動挑。
+func (s *GameSession) BuildOutpostOnPlanet(planetIdx int) OutpostResult {
+	if planetIdx < 0 || planetIdx >= len(s.Planets) {
+		return OutpostResult{Reason: "行星索引無效"}
+	}
+	starIdx := s.PlanetStar(planetIdx)
+	if starIdx < 0 {
+		return OutpostResult{Reason: "星索引無效"}
+	}
+	if s.Fleet().AtStar != starIdx || s.Fleet().ETA != 0 {
+		return OutpostResult{Reason: "艦隊尚未抵達該星"}
+	}
+	if s.Stars[starIdx].Owner == 2 {
+		return OutpostResult{Reason: "該星已被敵方佔領,不可建立前哨站"}
+	}
+	if s.HasOutpostOnPlanet(planetIdx) {
+		return OutpostResult{Reason: "那顆天體上已有前哨站"}
+	}
+	if s.ColonyIndexOnPlanet(planetIdx) >= 0 {
+		return OutpostResult{Reason: "那顆天體上已經有你的殖民地"}
+	}
+	if reason := s.monsterBlockReason(starIdx); reason != "" {
+		return OutpostResult{Reason: reason}
+	}
+	if s.Planets[planetIdx].NoPlanet {
+		return OutpostResult{Reason: "該星系沒有可供建立前哨站的天體"}
+	}
+	shipIdx := s.findOutpostShipIndex()
+	if shipIdx < 0 {
+		return OutpostResult{Reason: "艦隊未載運前哨船"}
+	}
+	return s.buildOutpostOn(starIdx, planetIdx, shipIdx)
+}
+
+// buildOutpostOn 是兩個入口共用的落地動作(前置條件已由呼叫端檢查完)。
+func (s *GameSession) buildOutpostOn(starIdx, planetIdx, shipIdx int) OutpostResult {
 	s.Fleet().Ships = append(s.Fleet().Ships[:shipIdx], s.Fleet().Ships[shipIdx+1:]...) // 消耗這艘前哨船
-	s.Outposts = append(s.Outposts, Outpost{StarIndex: starIdx, Turn: s.Turn})
+	s.Outposts = append(s.Outposts, Outpost{StarIndex: starIdx, PlanetIndex: planetIdx, Turn: s.Turn})
 	s.Stars[starIdx].Owner = 1
 	s.Stars[starIdx].Explored = true
 	return OutpostResult{Ok: true, Star: starIdx}
@@ -156,9 +227,16 @@ func (s *GameSession) outpostStarIndices() []int {
 // consumeOutpostForColony 在 starIdx 建立殖民地時處理既有前哨站:移除該筆前哨站,
 // 回傳是否有前哨站被改建(手冊:"If a colony is created at an outpost, the building remains
 // and is repurposed as Marine Barracks")。呼叫端據此替新殖民地補上那棟建築。
-func (s *GameSession) consumeOutpostForColony(starIdx int) bool {
+// planetIdx 是新殖民地座落的行星:**只有同一顆行星上的前哨站才會被改建**——同星系另一顆
+// 氣態巨星上的前哨站與這個殖民地無關,不該被吃掉。舊存檔的前哨站沒記行星(PlanetIndex==−1),
+// 退回舊語意(同星就算)。
+func (s *GameSession) consumeOutpostForColony(starIdx, planetIdx int) bool {
 	for i, o := range s.Outposts {
-		if o.StarIndex != starIdx {
+		if o.PlanetIndex >= 0 {
+			if o.PlanetIndex != planetIdx {
+				continue
+			}
+		} else if o.StarIndex != starIdx {
 			continue
 		}
 		s.Outposts = append(s.Outposts[:i], s.Outposts[i+1:]...)
@@ -183,12 +261,16 @@ func (s *GameSession) OutpostTargetHint(starIdx int) string {
 	if starIdx < 0 || starIdx >= len(s.Planets) {
 		return ""
 	}
-	p, _ := s.PlanetDataAt(starIdx)
+	target := s.OutpostTargetPlanet(starIdx)
+	if target < 0 {
+		return "無天體可用"
+	}
+	p := s.Planets[target]
 	if !planetSupportsOutpost(p) {
 		return "無天體可用"
 	}
 	if p.TypeID != gamedata.HABITABLE && p.TypeID != 0 {
-		return planetTypeDisplayName(p.TypeID) + "・僅能建前哨站"
+		return p.Name + "・" + planetTypeDisplayName(p.TypeID) + "・僅能建前哨站"
 	}
-	return "可建前哨站(掃描站)"
+	return p.Name + "・可建前哨站(掃描站)"
 }

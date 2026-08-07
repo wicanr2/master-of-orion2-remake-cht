@@ -64,6 +64,7 @@ type seat struct {
 	Player              engine.PlayerState
 	PlayerColonies      []engine.ColonyState
 	PlayerColonyStars   []int
+	PlayerColonyPlanets []int
 	PlayerColonyMarines []int
 	PlayerColonyTanks   []int
 	MarineBarracksAge   []int
@@ -120,6 +121,7 @@ type seat struct {
 func (s *GameSession) saveSeat() seat {
 	return seat{
 		Player: s.Player, PlayerColonies: s.PlayerColonies, PlayerColonyStars: s.PlayerColonyStars,
+		PlayerColonyPlanets: s.PlayerColonyPlanets,
 		PlayerColonyMarines: s.PlayerColonyMarines, PlayerColonyTanks: s.PlayerColonyTanks,
 		MarineBarracksAge: s.MarineBarracksAge, ArmorBarracksAge: s.ArmorBarracksAge,
 		Builds: s.Builds, BuildQueue: s.BuildQueue, ColonyBuildings: s.ColonyBuildings,
@@ -143,6 +145,7 @@ func (s *GameSession) saveSeat() seat {
 // loadSeat 把一個席位快照裝回玩家側狀態。
 func (s *GameSession) loadSeat(v seat) {
 	s.Player, s.PlayerColonies, s.PlayerColonyStars = v.Player, v.PlayerColonies, v.PlayerColonyStars
+	s.PlayerColonyPlanets = v.PlayerColonyPlanets
 	s.PlayerColonyMarines, s.PlayerColonyTanks = v.PlayerColonyMarines, v.PlayerColonyTanks
 	s.MarineBarracksAge, s.ArmorBarracksAge = v.MarineBarracksAge, v.ArmorBarracksAge
 	s.Builds, s.BuildQueue, s.ColonyBuildings = v.Builds, v.BuildQueue, v.ColonyBuildings
@@ -239,9 +242,10 @@ func (s *GameSession) SetupHotseat(n int) int {
 // 蓋東西」的狀態起步。要完全對等得先把 AIOpponent 補成完整帝國,那是另一條線。
 func seatFromAI(ai AIOpponent, idx int) seat {
 	v := seat{
-		Player:            ai.Player,
-		PlayerColonies:    ai.Colonies,
-		PlayerColonyStars: append([]int(nil), ai.ColonyStars...),
+		Player:              ai.Player,
+		PlayerColonies:      ai.Colonies,
+		PlayerColonyStars:   append([]int(nil), ai.ColonyStars...),
+		PlayerColonyPlanets: append([]int(nil), ai.ColonyPlanets...),
 		// 名字要去掉「AI (…)」外殼:接手的是真人,交接畫面寫「下一位:AI(布拉西人)」很怪。
 		// 保留種族名當帝國名,玩家自己知道接的是哪一族。
 		PlayerName: seatTakeoverName(idx, ai.Name),

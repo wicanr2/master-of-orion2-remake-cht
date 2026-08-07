@@ -387,6 +387,13 @@ type sceneBuilder struct {
 	colonyIdx         int                  // 單一殖民地畫面目前管理哪個殖民地(索引 PlayerColonies),見 colonyscreen.go
 	colonyListTop     int                  // 單一殖民地畫面「可建項目」清單的捲動起點
 	infoHistoryMetric int                  // 歷史圖表目前指標(shell.HistoryMetric)
+	// planetPick 是行星列表畫面選中的行星索引(−1 = 沒選)。原版那個畫面的
+	// SEND COLONY SHIP / SEND OUTPOST SHIP 兩顆鈕就是對著選中的那一列作用的。
+	planetPick int
+	// planetListTop 是行星列表的捲動起點(該畫面一次只顯示 8 列)。
+	planetListTop int
+	// planetListMsg 是行星列表畫面最近一次動作的結果訊息。
+	planetListMsg string
 }
 
 // profileForVersion 把主選單選的版本轉成對應 RuleProfile(開局注入 session)。
@@ -645,17 +652,16 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				case sess.StarGuardedByMonster(sess.SelectedStar):
 					// 怪獸盤據:唯一能做的是打它(手冊 p.62:清場之後才能進駐)。
 					hits = append(hits, hitRegion{38, 402, 190, 20, "attackmonster"})
-				case sess.Stars[sess.SelectedStar].Owner == 0:
-					// 無主星:拓殖(需殖民船)與建前哨站(需前哨船)兩鈕可並存於 402/424——
+				default:
+					// 無主星或**自己的**星系:拓殖(需殖民船)與建前哨站(需前哨船)。
 					// 氣態巨星/小行星帶只有後者可用,一般行星兩者都可以(手冊 p.85:前哨站
 					// 不限宜居世界)。
-					row := 402
-					if sess.FleetHasColonyShip() {
-						hits = append(hits, hitRegion{38, row, 190, 20, "colonize"})
-						row = 424
-					}
-					if sess.FleetHasOutpostShip() && !sess.HasOutpostAt(sess.SelectedStar) {
-						hits = append(hits, hitRegion{38, row, 190, 20, "outpost"})
+					//
+					// ⚠ 自己的星系也算 —— 同一個星系可以有多個殖民地(手冊 p.61 的條件是
+					// 「那顆**行星**沒被殖民」)。這裡的鈕是「該星系下一顆可用天體」的捷徑;
+					// 要指定是哪一顆,走原版的行星列表畫面(planets(),那才是原版選行星的地方)。
+					for _, r := range starPanelColonyRows(sess) {
+						hits = append(hits, hitRegion{38, r.y, 190, 20, r.action})
 					}
 				}
 			default:
@@ -1007,21 +1013,24 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{230, 120, 140, 255}, false)
 						fnt.Draw(dst, b.tr("▶ 挑戰", "▶ Attack ")+sess.MonsterNameAtStar(sess.SelectedStar),
 							46, 415, 12, color.RGBA{250, 230, 235, 255})
-					case sess.SelectedStar == sess.Fleet().AtStar && sess.Stars[sess.SelectedStar].Owner == 0 &&
-						(sess.FleetHasColonyShip() || (sess.FleetHasOutpostShip() && !sess.HasOutpostAt(sess.SelectedStar))):
-						// 兩鈕可並存(與 galaxy() 建 hits 的判斷同一套):有殖民船畫在 402,
-						// 前哨船接在下一列;只有前哨船時它自己佔 402。
-						row := float32(402)
-						if sess.FleetHasColonyShip() {
-							vector.DrawFilledRect(dst, 38, row, 190, 20, color.RGBA{40, 110, 60, 255}, false)
-							vector.StrokeRect(dst, 38, row, 190, 20, 1, color.RGBA{130, 220, 150, 255}, false)
-							fnt.Draw(dst, b.tr("▶ 建立殖民地", "▶ Colonize"), 46, float64(row)+13, 12, color.RGBA{235, 245, 235, 255})
-							row = 424
-						}
-						if sess.FleetHasOutpostShip() && !sess.HasOutpostAt(sess.SelectedStar) {
-							vector.DrawFilledRect(dst, 38, row, 190, 20, color.RGBA{45, 80, 110, 255}, false)
-							vector.StrokeRect(dst, 38, row, 190, 20, 1, color.RGBA{140, 190, 230, 255}, false)
-							fnt.Draw(dst, b.tr("▶ 建立前哨站", "▶ Build outpost"), 46, float64(row)+13, 12, color.RGBA{230, 240, 250, 255})
+					case sess.SelectedStar == sess.Fleet().AtStar && len(starPanelColonyRows(sess)) > 0:
+						// 與 galaxy() 建 hits 的判斷共用同一支 starPanelColonyRows,
+						// 免得「畫得出來卻點不到」或反過來。
+						for _, r := range starPanelColonyRows(sess) {
+							row := float32(r.y)
+							face, edge, ink := color.RGBA{40, 110, 60, 255}, color.RGBA{130, 220, 150, 255}, color.RGBA{235, 245, 235, 255}
+							label := b.tr("▶ 建立殖民地", "▶ Colonize")
+							if r.action == "outpost" {
+								face, edge, ink = color.RGBA{45, 80, 110, 255}, color.RGBA{140, 190, 230, 255}, color.RGBA{230, 240, 250, 255}
+								label = b.tr("▶ 建立前哨站", "▶ Build outpost")
+							}
+							// 目標天體寫進鈕裡——同星系有多顆天體時,玩家要看得出這一下會落在哪顆。
+							if r.planet >= 0 && r.planet < len(sess.Planets) {
+								label += "：" + sess.Planets[r.planet].Name
+							}
+							vector.DrawFilledRect(dst, 38, row, 190, 20, face, false)
+							vector.StrokeRect(dst, 38, row, 190, 20, 1, edge, false)
+							fnt.Draw(dst, truncateToWidth(fnt, label, 12, 182), 46, float64(row)+13, 12, ink)
 						}
 					case sess.SelectedStar == sess.Fleet().AtStar:
 						fnt.Draw(dst, b.tr("艦隊已在此星", "Fleet is already here"), 38, 415, 11, color.RGBA{140, 200, 140, 255})
@@ -3276,12 +3285,96 @@ func (b *sceneBuilder) research() (*overlayScreen, error) {
 	return s, nil
 }
 
-// planets 建原版行星列表畫面。「返回」按鈕熱區導回星系主畫面。
+// planetListRows 是行星列表一次顯示幾列(openorion2 PLANET_LIST_ROWS)。
+const planetListRows = 8
+
+// planetListRowY 是各列的中心 y(openorion2 galaxy.cpp PlanetsListView 真值:
+// FIRST_ROW 36 + ROW_HEIGHT 50/2 + i×ROW_DIST 55 = 61 + i×55)。
+var planetListRowY = [planetListRows]float64{61, 116, 171, 226, 281, 336, 391, 446}
+
+// visiblePlanets 回傳行星列表要列出的行星索引:**目前看得見的星系**裡的所有天體,
+// 依星、再依軌道排序。
+//
+// 為什麼要過濾:那個畫面在原版是玩家的行星總覽,列出看不見的星系的行星等於免費送情報。
+// 用的是與星圖同一套可見性(shell.VisibleStars:已探索/自己的/在偵測範圍內)——
+// 星圖上點得到的星,它的行星就該出現在這裡,兩邊不該各有一套規則。
+func (b *sceneBuilder) visiblePlanets() []int {
+	if b.session == nil {
+		return nil
+	}
+	vis := b.session.VisibleStars()
+	out := make([]int, 0, len(b.session.Planets))
+	for i := range b.session.Stars {
+		if i < len(vis) && !vis[i] {
+			continue
+		}
+		out = append(out, b.session.PlanetsAt(i)...)
+	}
+	return out
+}
+
+// planetListPage 把捲動起點夾在合法範圍內,並讓「選中的那顆行星」落在可見的 8 列裡——
+// 從星圖選了一顆星再進這個畫面時,要直接看得到那個星系,而不是永遠停在第一頁。
+func (b *sceneBuilder) planetListPage(list []int) int {
+	top := b.planetListTop
+	if sel := b.planetPick; sel >= 0 {
+		at := -1
+		for i, p := range list {
+			if p == sel {
+				at = i
+				break
+			}
+		}
+		if at >= 0 && (at < top || at >= top+planetListRows) {
+			top = at - at%planetListRows
+		}
+	}
+	if max := len(list) - planetListRows; top > max {
+		top = max
+	}
+	if top < 0 {
+		top = 0
+	}
+	return top
+}
+
+// planets 建原版行星列表畫面。
+//
+// 這是原版**選行星**的地方:畫面右下角那兩顆 SEND COLONY SHIP / SEND OUTPOST SHIP
+// 就是對著選中的那一列作用的(星圖上的按鈕只是「這個星系的第一顆」捷徑)。
+// 同一個星系可以有多個殖民地之後,這條路徑才是完整的——星圖面板擠不下逐行星的選擇。
 func (b *sceneBuilder) planets() (*overlayScreen, error) {
-	hits := []hitRegion{{454, 440, 157, 23, "Return"}}
+	list := b.visiblePlanets()
+	// 進畫面時預選星圖上選中的那顆星的代表行星,省得每次都要先點一列。
+	if b.session != nil && b.planetPick < 0 && b.session.SelectedStar >= 0 {
+		b.planetPick = b.session.PlanetAt(b.session.SelectedStar)
+	}
+	top := b.planetListPage(list)
+	b.planetListTop = top
+
+	hits := []hitRegion{
+		{454, 440, 157, 23, "Return"},
+		{454, 386, 156, 23, "sendcolony"},
+		{454, 413, 157, 25, "sendoutpost"},
+	}
+	// 每一列一個熱區(列高 50,中心 y 見 planetListRowY)。
+	for i := 0; i < planetListRows && top+i < len(list); i++ {
+		hits = append(hits, hitRegion{16, int(planetListRowY[i]) - 25, 398, 50, fmt.Sprintf("prow%d", i)})
+	}
 	onAction := func(a string) *origTransition {
 		if a == "Return" {
 			return b.goTo(b.galaxy, "星系主畫面")
+		}
+		if strings.HasPrefix(a, "prow") {
+			if i, err := strconv.Atoi(a[4:]); err == nil && top+i < len(list) {
+				b.planetPick = list[top+i]
+				b.planetListMsg = ""
+			}
+			return b.goTo(b.planets, "行星列表")
+		}
+		if (a == "sendcolony" || a == "sendoutpost") && b.session != nil {
+			b.planetListMsg = b.planetListAction(a)
+			return b.goTo(b.planets, "行星列表")
 		}
 		return nil
 	}
@@ -3290,42 +3383,112 @@ func (b *sceneBuilder) planets() (*overlayScreen, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 即時行星資料填進表格列(欄位中心 x 對齊標題;列中心 y 經量測估計)。
+	// 即時行星資料填進表格列(欄位中心 x 對齊標題;列中心 y 見 planetListRowY)。
 	if b.session != nil {
 		body := color.RGBA{206, 218, 240, 255}
-		// 格中心 = openorion2 galaxy.cpp PlanetsListView 真值:FIRST_ROW 36 + ROW_HEIGHT 50/2 + i*ROW_DIST 55
-		// = 61 + i*55,共 PLANET_LIST_ROWS=8 列(先前 PIL 量測只有 7 列且第 3 列起 -1px 漂移、第 8 顆行星永不顯示)。
-		rowY := []float64{61, 116, 171, 226, 281, 336, 391, 446}
 		cx := struct{ name, cli, grv, min, siz float64 }{57, 136, 218, 303, 382}
-		for i, p := range b.session.Planets {
-			if i >= len(rowY) {
-				break
+		for i := 0; i < planetListRows && top+i < len(list); i++ {
+			pi := list[top+i]
+			p := b.session.Planets[pi]
+			y := planetListRowY[i]
+			col := body
+			if pi == b.planetPick {
+				col = color.RGBA{250, 230, 140, 255} // 選中的那一列換色(這個畫面沒有可畫的選取框)
 			}
-			y := rowY[i]
 			s.extras = append(s.extras,
-				extraText{x: cx.name, y: y, size: 12, text: p.Name, col: body, align: 1},
-				extraText{x: cx.cli, y: y, size: 12, text: p.Climate, col: body, align: 1},
-				extraText{x: cx.grv, y: y, size: 12, text: p.Gravity, col: body, align: 1},
-				extraText{x: cx.min, y: y, size: 12, text: p.Mineral, col: body, align: 1},
-				extraText{x: cx.siz, y: y, size: 12, text: p.Size, col: body, align: 1},
+				// 行星名欄寬 78(標題列 {18,14,78,18});長名字要截,否則會溢出欄框。
+				extraText{x: cx.name, y: y, size: 12, text: truncateToWidth(b.fnt, p.Name, 12, 74), col: col, align: 1},
+				extraText{x: cx.cli, y: y, size: 12, text: p.Climate, col: col, align: 1},
+				extraText{x: cx.grv, y: y, size: 12, text: p.Gravity, col: col, align: 1},
+				extraText{x: cx.min, y: y, size: 12, text: p.Mineral, col: col, align: 1},
+				extraText{x: cx.siz, y: y, size: 12, text: p.Size, col: col, align: 1},
 			)
 			// 兩項原版有、remake 先前完全沒顯示的資訊,各自塞進對應欄位格子的第二行
-			// (格高 50,主文字置中,y+13 這一行還在格內)。
+			// (格高 50,主文字置中,y+11 這一行還在格內)。
 			//
 			// ⚠ 不要往 x>410 放:那裡是原版的排序/篩選面板,不是空白區——2026-08-06 試過一次,
 			// 文字直接疊在面板按鈕上。
 			sub := color.RGBA{150, 172, 205, 255}
-			// ⚠ 從**軌道表**算,不是讀 p.SystemBodies(那個欄位自 2026-08-07 起不再被填,
-			// 見 shell.Planet.SystemCompositionText 的已淘汰註記)。
-			if n := b.session.SystemBodyCountText(b.session.PlanetStar(i)); n != "" {
-				s.extras = append(s.extras, extraText{x: cx.name, y: y + 11, size: 9, text: n, col: sub, align: 1})
+			star := b.session.PlanetStar(pi)
+			// 星名 + 該星系天體數:多天體之後「這顆行星屬於哪個星系」不再能從行星名推出來。
+			if star >= 0 {
+				line := b.session.Stars[star].Name
+				if n := b.session.SystemBodyCountText(star); n != "" {
+					line += " " + n
+				}
+				// 欄寬 78(標題列 {18,14,78,18}),超出會往左溢到欄框外——截掉。
+				s.extras = append(s.extras, extraText{x: cx.name, y: y + 11, size: 9,
+					text: truncateToWidth(b.fnt, line, 9, 74), col: sub, align: 1})
+			}
+			// 這顆行星目前的狀態(自己的殖民地/前哨站),那是「還能不能派船過去」的關鍵資訊。
+			if ci := b.session.ColonyIndexOnPlanet(pi); ci >= 0 {
+				s.extras = append(s.extras, extraText{x: cx.siz, y: y + 11, size: 9,
+					text: b.tr("● 已殖民", "● colony"), col: color.RGBA{150, 225, 165, 255}, align: 1})
+			} else if b.session.HasOutpostOnPlanet(pi) {
+				s.extras = append(s.extras, extraText{x: cx.siz, y: y + 11, size: 9,
+					text: b.tr("● 前哨站", "● outpost"), col: color.RGBA{150, 195, 235, 255}, align: 1})
 			}
 			if sp := gamedata.PlanetSpecialName(p.SpecialID); sp != "" {
 				s.extras = append(s.extras, extraText{x: cx.min, y: y + 11, size: 9, text: "★" + sp, col: sub, align: 1})
 			}
 		}
+		if len(list) == 0 {
+			s.extras = append(s.extras, extraText{x: 210, y: 61, size: 12,
+				text: b.tr("尚未探索任何星系", "No systems explored yet"), col: body, align: 1})
+		}
+		// 動作結果訊息:壓在兩顆動作鈕上方那條空白帶。
+		if b.planetListMsg != "" {
+			s.extras = append(s.extras, extraText{x: 532, y: 376, size: 9, text: b.planetListMsg,
+				col: color.RGBA{240, 215, 150, 255}, align: 1})
+		}
 	}
 	return s, nil
+}
+
+// planetListAction 執行行星列表右下角那兩顆鈕,回傳要顯示給玩家的結果訊息。
+//
+// 艦隊不在該星系時**先把艦隊派過去**——原版那兩顆鈕的字面意思就是「派船過去」,
+// 一步到位;要玩家自己先回星圖點派遣、下回合再回來按一次是 remake 的贅步。
+func (b *sceneBuilder) planetListAction(action string) string {
+	sess := b.session
+	if b.planetPick < 0 || b.planetPick >= len(sess.Planets) {
+		return b.tr("先點一列選一顆行星", "Pick a planet row first")
+	}
+	star := sess.PlanetStar(b.planetPick)
+	if star < 0 {
+		return b.tr("那顆天體不屬於任何星系", "That body belongs to no system")
+	}
+	colony := action == "sendcolony"
+	if colony && !sess.FleetHasColonyShip() {
+		return b.tr("艦隊未載運殖民船", "No colony ship in the fleet")
+	}
+	if !colony && !sess.FleetHasOutpostShip() {
+		return b.tr("艦隊未載運前哨船", "No outpost ship in the fleet")
+	}
+	if sess.Fleet().AtStar != star || sess.Fleet().ETA != 0 {
+		if sess.Fleet().ETA > 0 {
+			return fmt.Sprintf(b.tr("艦隊航行中…剩 %d 回合", "Fleet in transit — %d turns left"), sess.Fleet().ETA)
+		}
+		if !sess.SendFleet(star) {
+			return b.tr("艦隊無法前往該星系", "The fleet cannot reach that system")
+		}
+		return fmt.Sprintf(b.tr("艦隊已出發前往 %s(%d 回合後抵達)", "Fleet en route to %s (%d turns)"),
+			sess.Stars[star].Name, sess.Fleet().ETA)
+	}
+	if colony {
+		res := sess.ColonizePlanet(b.planetPick)
+		if !res.Ok {
+			return res.Reason
+		}
+		return fmt.Sprintf(b.tr("%s 拓殖成功——起始人口 %d(上限 %d)", "Colonized %s — pop %d (max %d)"),
+			sess.Planets[b.planetPick].Name, res.StartPopulation, res.PopMax)
+	}
+	res := sess.BuildOutpostOnPlanet(b.planetPick)
+	if !res.Ok {
+		return res.Reason
+	}
+	return fmt.Sprintf(b.tr("%s 前哨站建立完成(掃描站,無產出)", "Outpost established on %s (scanner, no output)"),
+		sess.Planets[b.planetPick].Name)
 }
 
 // --- interactiveApp(ebiten.Game;支援 headless 腳本驗證)---
@@ -3963,7 +4126,8 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		return err
 	}
 	b := &sceneBuilder{res: res, fnt: fnt, fntVec: fntVec, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: newGameDiffDefault,
-		newGameAge: newGameAgeDefault, newGameTech: newGameTechDefault, newGameEmpires: 1 + shell.DefaultOpponents, designWeapon: 1, savePath: savePathFor(), gameVersion: gamedata.VersionCommunity15}
+		newGameAge: newGameAgeDefault, newGameTech: newGameTechDefault, newGameEmpires: 1 + shell.DefaultOpponents, designWeapon: 1, savePath: savePathFor(), gameVersion: gamedata.VersionCommunity15,
+		planetPick: -1} // −1 = 行星列表還沒選任何一列(0 是行星 0 的索引,不能當「沒選」)
 	b.skipCutscenes = shot != "" || galleryDir != "" // 見該欄位註解
 	// 傭兵候選池改用原版 HERODATA.LBX 真英雄(解析失敗自動退回內建策展名單,不擋遊戲);快取一份
 	// 供新局/讀檔後重新注入(SetupNewGame 保留注入池,LoadSession 建新 session 需重注)。

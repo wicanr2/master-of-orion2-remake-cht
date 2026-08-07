@@ -22,7 +22,11 @@ func newOutpostTestSession(t *testing.T, tp gamedata.PlanetType) (*GameSession, 
 	if target < 0 {
 		t.Fatal("找不到無主星")
 	}
-	s.Planets[target] = Planet{
+	// 這個星系只留一顆天體,測試才問得出「同一個天體不能重複佔用」這種單體問題;
+	// 多天體星系的行為由 TestOutpostAndColonyCoexistInOneSystem 另外測。
+	pIdx := s.PlanetAt(target)
+	s.Stars[target].Orbits = [StarOrbits]int{pIdx, OrbitEmpty, OrbitEmpty, OrbitEmpty, OrbitEmpty}
+	s.Planets[pIdx] = Planet{
 		Name: "測試星 I", Gen: planetGenVersion, TypeID: tp,
 		ClimateID: gamedata.TERRAN, GravityID: gamedata.NORMAL_G,
 		MineralID: gamedata.ABUNDANT, SizeID: gamedata.MEDIUM_PLANET,
@@ -83,19 +87,19 @@ func TestBuildOutpostPreconditions(t *testing.T) {
 
 	// 黑洞(無天體)。
 	s, target = newOutpostTestSession(t, gamedata.GAS_GIANT)
-	s.Planets[target].NoPlanet = true
+	s.Planets[s.PlanetAt(target)].NoPlanet = true
 	if res := s.BuildOutpost(target); res.Ok {
 		t.Error("沒有天體的星系不該能建")
 	}
 
-	// 同一顆星不能建兩次。
+	// 同一顆天體不能建兩次(這個測試星系只有一顆天體,見 newOutpostTestSession)。
 	s, target = newOutpostTestSession(t, gamedata.GAS_GIANT)
 	s.Fleet().Ships = append(s.Fleet().Ships, Ship{Class: OutpostShipClass}) // 兩艘船
 	if res := s.BuildOutpost(target); !res.Ok {
 		t.Fatalf("第一次應成功:%s", res.Reason)
 	}
 	if res := s.BuildOutpost(target); res.Ok {
-		t.Error("同一顆星不該能建第二座前哨站")
+		t.Error("同一顆天體不該能建第二座前哨站")
 	}
 }
 

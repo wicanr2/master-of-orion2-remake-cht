@@ -577,6 +577,12 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 			s.PlayerColonyStars = append(s.PlayerColonyStars, -1)
 		}
 		s.PlayerColonyStars = append(s.PlayerColonyStars, starIdx)
+		// 行星索引同步(見 PlayerColonyPlanets 欄位註解)。敵方殖民地目前只記到星,
+		// 沒有「AI 殖民地在哪顆行星」的模型,故取該星系的代表行星——與過戶前的表現一致。
+		for len(s.PlayerColonyPlanets) < len(s.PlayerColonies)-1 {
+			s.PlayerColonyPlanets = append(s.PlayerColonyPlanets, -1)
+		}
+		s.PlayerColonyPlanets = append(s.PlayerColonyPlanets, s.PlanetAt(starIdx))
 		// 俘虜人口:過戶過來的殖民地人口計入 CapturedPop(手冊 p.184 計分「You also get a
 		// premium for captured population units」,見 score.go)。累計而非當下人口——之後這些
 		// 人口自然成長或死亡都不影響「當初俘虜了多少」這個歷史數字。
@@ -586,6 +592,9 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 
 		aiPlayer.Colonies = append(aiPlayer.Colonies[:colonyIdx], aiPlayer.Colonies[colonyIdx+1:]...)
 		aiPlayer.ColonyStars = append(aiPlayer.ColonyStars[:colonyIdx], aiPlayer.ColonyStars[colonyIdx+1:]...)
+		if colonyIdx < len(aiPlayer.ColonyPlanets) {
+			aiPlayer.ColonyPlanets = append(aiPlayer.ColonyPlanets[:colonyIdx], aiPlayer.ColonyPlanets[colonyIdx+1:]...)
+		}
 		// ColonyBuildings 同步移除對應項,維持三個平行陣列等長(見 AIOpponent.ColonyBuildings
 		// 欄位註解)。colonyIdx 理論上恆在範圍內(與 Colonies/ColonyStars 同步維護),但仍防禦性
 		// 檢查長度,避免舊存檔欄位缺失導致 panic。

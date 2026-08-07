@@ -117,12 +117,16 @@ func (s *GameSession) foundSplinterColony(starIdx int) (idx, pop int, ok bool) {
 	if starIdx < 0 || starIdx >= len(s.Stars) || s.Stars[starIdx].Owner != 0 {
 		return 0, 0, false
 	}
+	planetIdx := s.FirstColonizablePlanet(starIdx)
+	if planetIdx < 0 {
+		return 0, 0, false
+	}
 	foodBonus, indBonus, resBonus := 0, 0, 0
 	if s.RaceIndex >= 0 && s.RaceIndex < len(Races) {
 		r := Races[s.RaceIndex]
 		foodBonus, indBonus, resBonus = r.FoodBonus, r.IndBonus, r.ResBonus
 	}
-	colony, cok, _ := s.newColonyFromStar(starIdx, s.Government, foodBonus, indBonus, resBonus)
+	colony, cok, _ := s.newColonyFromPlanet(planetIdx, s.Government, foodBonus, indBonus, resBonus)
 	if !cok {
 		return 0, 0, false
 	}
@@ -136,7 +140,7 @@ func (s *GameSession) foundSplinterColony(starIdx int) (idx, pop int, ok bool) {
 	}
 	colony.Population = pop
 	colony.Farmers = pop // 原版這批人預設是農夫(可耕的星),與殖民船新殖民地同一個預設
-	s.appendPlayerColony(colony, starIdx)
+	s.appendPlayerColony(colony, starIdx, planetIdx)
 	s.Stars[starIdx].Owner = 1
 	return len(s.PlayerColonies) - 1, pop, true
 }
@@ -204,7 +208,7 @@ func (s *GameSession) discoveryRoll(n int) int {
 
 // appendPlayerColony 把一筆殖民地接到 PlayerColonies 與全部平行陣列上(padding 模式與
 // ColonizeStar 相同——那邊是 inline 展開的,這裡抽成函式給 discovery 共用)。
-func (s *GameSession) appendPlayerColony(colony engine.ColonyState, starIdx int) {
+func (s *GameSession) appendPlayerColony(colony engine.ColonyState, starIdx, planetIdx int) {
 	s.PlayerColonies = append(s.PlayerColonies, colony)
 	s.Builds = append(s.Builds, ColonyBuild{})
 	for len(s.ColonyBuildings) < len(s.PlayerColonies) {
@@ -229,4 +233,8 @@ func (s *GameSession) appendPlayerColony(colony engine.ColonyState, starIdx int)
 		s.PlayerColonyStars = append(s.PlayerColonyStars, -1)
 	}
 	s.PlayerColonyStars = append(s.PlayerColonyStars, starIdx)
+	for len(s.PlayerColonyPlanets) < len(s.PlayerColonies)-1 {
+		s.PlayerColonyPlanets = append(s.PlayerColonyPlanets, -1)
+	}
+	s.PlayerColonyPlanets = append(s.PlayerColonyPlanets, planetIdx)
 }

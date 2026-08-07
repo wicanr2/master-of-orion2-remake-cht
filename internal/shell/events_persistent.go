@@ -261,6 +261,9 @@ func (s *GameSession) removePlayerColony(i int) {
 	if cut(len(s.PlayerColonyStars)) {
 		s.PlayerColonyStars = append(s.PlayerColonyStars[:i], s.PlayerColonyStars[i+1:]...)
 	}
+	if cut(len(s.PlayerColonyPlanets)) {
+		s.PlayerColonyPlanets = append(s.PlayerColonyPlanets[:i], s.PlayerColonyPlanets[i+1:]...)
+	}
 }
 
 // starName 回傳星名(越界回「未知星系」)。

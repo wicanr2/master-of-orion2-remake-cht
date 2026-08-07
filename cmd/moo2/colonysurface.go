@@ -651,12 +651,14 @@ const (
 	colTerrainVariants = 3
 )
 
-// colonyTerrainVariant 回傳某顆星的地形變體 0..2(見上方 ⚠)。
-func colonyTerrainVariant(star int) int {
-	if star < 0 {
+// colonyTerrainVariant 回傳某顆**行星**的地形變體 0..2(見上方 ⚠)。
+//
+// 起種用行星索引不是星索引:同一個星系可以有多個殖民地,用星索引的話它們的地表會一模一樣。
+func colonyTerrainVariant(planet int) int {
+	if planet < 0 {
 		return 0
 	}
-	return gamedata.NewOrigRand(uint32(star)).N(colTerrainVariants) - 1
+	return gamedata.NewOrigRand(uint32(planet)).N(colTerrainVariants) - 1
 }
 
 // drawColonyTerrain 畫地表兩層。取不到資產就整張留空(不再自畫格線佔位——
@@ -673,7 +675,8 @@ func (b *sceneBuilder) drawColonyTerrain(dst *ebiten.Image, idx int) {
 	if climate < 0 || climate*colTerrainVariants >= 30 {
 		return
 	}
-	asset := climate*colTerrainVariants + colonyTerrainVariant(sess.PlayerColonyStarIndex(idx))
+	// 變體種子用**行星**索引:同一個星系的兩個殖民地用星索引會長得一模一樣。
+	asset := climate*colTerrainVariants + colonyTerrainVariant(sess.ColonyPlanetIndex(idx))
 	if im := b.colonyScreenImage(colTerrainLBX, asset, colonyBasePalette); im != nil {
 		dst.DrawImage(im, &ebiten.DrawImageOptions{})
 	}

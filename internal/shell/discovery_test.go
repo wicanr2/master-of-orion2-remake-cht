@@ -25,8 +25,11 @@ func newDiscoveryTestSession(t *testing.T, sp gamedata.PlanetSpecial) *GameSessi
 	if target < 0 {
 		t.Fatal("找不到無主星,demo 星圖有問題")
 	}
-	s.Planets[target] = Planet{
-		Name: "測試星 I", Gen: planetGenVersion,
+	// 星索引 ≠ 行星索引(一顆星有多顆天體),要寫進**那顆星的**代表行星才有效。
+	pIdx := s.PlanetAt(target)
+	s.Stars[target].Orbits = [StarOrbits]int{pIdx, OrbitEmpty, OrbitEmpty, OrbitEmpty, OrbitEmpty}
+	s.Planets[pIdx] = Planet{
+		Name: "測試星 I", Gen: planetGenVersion, TypeID: gamedata.HABITABLE,
 		ClimateID: gamedata.TERRAN, GravityID: gamedata.NORMAL_G,
 		MineralID: gamedata.ABUNDANT, SizeID: gamedata.MEDIUM_PLANET,
 		SpecialID: sp,
@@ -35,11 +38,12 @@ func newDiscoveryTestSession(t *testing.T, sp gamedata.PlanetSpecial) *GameSessi
 	return s
 }
 
+// targetStarOf 回傳測試星所在的**星**索引(不是行星索引——兩者不同,見 orbit.go)。
 func targetStarOf(t *testing.T, s *GameSession) int {
 	t.Helper()
 	for i := range s.Planets {
 		if s.Planets[i].Name == "測試星 I" {
-			return i
+			return s.PlanetStar(i)
 		}
 	}
 	t.Fatal("找不到測試星")

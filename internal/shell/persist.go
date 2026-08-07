@@ -30,7 +30,10 @@ type aiSnapshot struct {
 	WantsAudience  bool   `json:"wantsAudience,omitempty"`
 	AudienceReason string `json:"audienceReason,omitempty"`
 	ColonyStars    []int  `json:"colonyStars"` // 見 shell.AIOpponent.ColonyStars 註解
-	Spies          int    `json:"spies"`       // AI 派來偷玩家科技的間諜數,見 spy.go
+	// ColonyPlanets 見 shell.AIOpponent.ColonyPlanets。舊存檔沒有 → nil,
+	// ColonyPlanetIndexOfAI 退回該星的代表行星,行為與加欄位前一致。
+	ColonyPlanets []int `json:"colonyPlanets,omitempty"`
+	Spies         int   `json:"spies"` // AI 派來偷玩家科技的間諜數,見 spy.go
 	// Personality 是 AI 性格(見 shell.AIOpponent.Personality)。omitempty 不適用:
 	// 0 是合法值(排外),舊存檔缺欄位會解成 0——那與「排外」無法區分,屬已知的相容性折衷,
 	// 影響只是舊存檔的 AI 性格會一律變成排外,不會壞掉。
@@ -121,6 +124,9 @@ type sessionSnapshot struct {
 
 	// PlayerColonyStars 見 GameSession 欄位註解(colonization.go/ground_invasion.go 同步維護)。
 	PlayerColonyStars []int `json:"playerColonyStars"`
+	// PlayerColonyPlanets 見 GameSession 欄位註解。舊存檔沒有 → nil,
+	// ColonyPlanetIndex 退回該星的代表行星,行為與加欄位前一致。
+	PlayerColonyPlanets []int `json:"playerColonyPlanets,omitempty"`
 
 	// --- 勝利條件(見 council.go / antaran_victory.go)---
 	Victory                   VictoryState     `json:"victory"`
@@ -183,7 +189,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		ais[i] = aiSnapshot{Name: a.Name, Player: a.Player, Colonies: a.Colonies, Profile: prof,
 			FleetStrength: a.FleetStrength, FleetInvestPool: a.FleetInvestPool,
 			Relation: a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars,
-			ColonyStars: a.ColonyStars, Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
+			ColonyStars: a.ColonyStars, ColonyPlanets: a.ColonyPlanets,
+			Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
 			Leaders: a.Leaders, Personality: a.Personality, LastRaidTurn: a.LastRaidTurn,
 			WantsAudience: a.WantsAudience, AudienceReason: a.AudienceReason}
 	}
@@ -205,8 +212,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		RaceCombatPct: s.RaceCombatPct, RaceGrowthPct: s.raceGrowthPct,
 		PlayerColonyMarines: s.PlayerColonyMarines,
 		MarineBarracksAge:   s.MarineBarracksAge, Government: s.Government,
-		PlayerColonyStars: s.PlayerColonyStars,
-		Victory:           s.Victory, PendingCouncilElection: s.PendingCouncilElection,
+		PlayerColonyStars: s.PlayerColonyStars, PlayerColonyPlanets: s.PlayerColonyPlanets,
+		Victory: s.Victory, PendingCouncilElection: s.PendingCouncilElection,
 		CouncilMeetings: s.CouncilMeetings, LastCouncilTurn: s.lastCouncilTurn,
 		AntaranHomeworldConquered: s.AntaranHomeworldConquered,
 		PlayerSpies:               s.PlayerSpies,
@@ -233,7 +240,8 @@ func (snap sessionSnapshot) restore() *GameSession {
 			FleetStrength:   a.FleetStrength,
 			FleetInvestPool: a.FleetInvestPool,
 			Relation:        a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars,
-			ColonyStars: a.ColonyStars, Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
+			ColonyStars: a.ColonyStars, ColonyPlanets: a.ColonyPlanets,
+			Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
 			Leaders: a.Leaders, Personality: a.Personality, LastRaidTurn: a.LastRaidTurn,
 			WantsAudience: a.WantsAudience, AudienceReason: a.AudienceReason,
 		}
@@ -269,8 +277,8 @@ func (snap sessionSnapshot) restore() *GameSession {
 		RaceCombatPct: snap.RaceCombatPct, raceGrowthPct: snap.RaceGrowthPct,
 		PlayerColonyMarines: snap.PlayerColonyMarines,
 		MarineBarracksAge:   snap.MarineBarracksAge, Government: snap.Government,
-		PlayerColonyStars: snap.PlayerColonyStars,
-		Victory:           snap.Victory, PendingCouncilElection: snap.PendingCouncilElection,
+		PlayerColonyStars: snap.PlayerColonyStars, PlayerColonyPlanets: snap.PlayerColonyPlanets,
+		Victory: snap.Victory, PendingCouncilElection: snap.PendingCouncilElection,
 		CouncilMeetings: snap.CouncilMeetings, lastCouncilTurn: snap.LastCouncilTurn,
 		AntaranHomeworldConquered: snap.AntaranHomeworldConquered,
 		PlayerSpies:               snap.PlayerSpies,

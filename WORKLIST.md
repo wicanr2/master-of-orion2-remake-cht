@@ -1084,6 +1084,31 @@ artificial planet」——它是把**既有的**氣態巨星或小行星帶組�
 (原版有一整個設定畫面),建了那個畫面之後要搬過去——但「點了沒反應的鈕」與
 「展開唯一一個真開關的鈕」相比,後者誠實得多。
 
+## ★ 2026-08-07 同星系多殖民地:拓殖的對象是行星不是星(gap report 第 66 項)
+
+`ColonizeStar` 的閘寫著「該星已有歸屬,不可拓殖」。一星一行星的時代那是對的
+(一顆星只有一顆行星,有歸屬就等於沒空位);軌道模型上線之後它變成
+「**你自己的星系不准再殖民**」——而手冊 p.61 從頭到尾寫的是 any uncolonized **planet**。
+
+**換掉的東西**:`ColonizePlanet(planet)` 成為入口(`ColonizeStar` 降級成「該星系第一顆
+可殖民行星」的捷徑);殖民地多記一個 `PlayerColonyPlanets[i]`;前哨站多記
+`Outpost.PlanetIndex`(手冊 p.119:build an outpost **on a single planet**);
+殖民地名與地表變體都改用行星索引——否則同星系的兩個殖民地會同名、地表長得一模一樣。
+
+**第四次踩到同一個零值陷阱**:索引型欄位的「未知」必須是 −1。前三次是 `Star.Wormhole`
+(全部連到星 0)、`ColonyRelocateTo`(全部指向母星)、`Star.Orbits`(每顆星都宣稱有行星 0)。
+
+**順帶修好一個 bug**:`consumeOutpostForColony` 原本只比對星,所以在一顆行星建殖民地會把
+同星系另一顆氣態巨星上的前哨站吃掉、還白送一座海軍陸戰隊營。
+
+**選行星的 UI 不必新造**:原版行星列表(`PLNTSUM.LBX`)右下角本來就烘著
+SEND COLONY SHIP / SEND OUTPOST SHIP,那就是原版選行星的地方。先前那個畫面是唯讀展示
+(而且列的是 `Planets[0..7]`,與星系無關)。現在列出看得見的星系的所有天體、可點選、
+兩顆鈕對選中的行星作用,艦隊不在那個星系就先派過去。
+
+**還沒做**:AI 一個星系仍然只會有一個殖民地(`aiExpand` 只找 `Owner == 0` 的星),
+資料模型(`AIOpponent.ColonyPlanets`)已補齊,規則沒動——記在 gap report。
+
 ## 工作方式(使用者定案)
 - go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)
 - **不用多代理 workflow**;翻譯一組一組慢慢做(單代理逐項,使用者可隨時審閱)

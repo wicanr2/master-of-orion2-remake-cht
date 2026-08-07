@@ -62,6 +62,14 @@ type AIOpponent struct {
 	// 會計入 AI 每回合的 TotalNetIndustry。
 	ColonyStars []int
 
+	// ColonyPlanets 是 Colonies[i] 座落的**行星**索引(平行陣列,對 GameSession.Planets),
+	// 語意同玩家的 PlayerColonyPlanets。−1 = 舊存檔沒記,只知道在哪顆星。
+	//
+	// ⚠ AI 目前一個星系仍然只會有一個殖民地(aiExpand 只找 `Owner == 0` 的星),不像玩家
+	// 可以在自己的星系裡拓殖第二顆行星。這個欄位先把資料模型補齊,AI 的多殖民地擴張是
+	// 另一件事(記在 docs/re/01-gap-report.md)。
+	ColonyPlanets []int
+
 	// ColonyBuildings 是 Colonies[i] 對應的已完工建築集合(平行陣列,比照 Colonies/ColonyStars
 	// 兩者的長度不變量——三者長度須恆一致)。2026-07-11 新增:讓 AI 對手的殖民地也有建築資料
 	// 可扣(見 orbital_bombardment.go BombardColony「軌道防禦建築吸收軌道轟炸」),補齊先前
@@ -2094,6 +2102,7 @@ func (s *GameSession) SetupNewGame(stars int, seed int64, numAI int) {
 		s.Stars, rand.New(rand.NewSource(seed+4)))
 	s.SelectedStar = -1
 	s.AIPlayers = buildDemoAIOpponents(aiHomeStars, s.Difficulty, seed)
+	s.syncAIColonyPlanets()                       // 行星索引要等 Planets 生完才補得起來(見該函式)
 	s.PlayerSpies = make([]int, len(s.AIPlayers)) // 平行 AIPlayers,重置為全新對手的間諜數(開局皆 0)
 	s.PlayerColonyStars = []int{0}
 	s.Fleet().AtStar = 0
@@ -2258,6 +2267,13 @@ type GameSession struct {
 	// padding 補 -1(語意「星索引未知」)再 append 真正值,維持 len(PlayerColonyStars)==
 	// len(PlayerColonies) 的不變量。
 	PlayerColonyStars []int
+	// PlayerColonyPlanets 是 PlayerColonies[i] 座落的**行星**索引(平行陣列,對 s.Planets)。
+	//
+	// 為什麼在有了 PlayerColonyStars 之後還要這個:**一個星系可以有多個殖民地**
+	// (手冊 p.61 的殖民地是建在行星上,而一個星系有 1..5 個天體)。只記星索引時,
+	// 「同星系的第二顆殖民地」會與第一顆共用同一筆行星資料,氣候/重力/物產全部串在一起。
+	// 維護慣例同 PlayerColonyStars(padding −1 = 行星索引未知,通常是舊存檔)。
+	PlayerColonyPlanets []int
 
 	// FleetTanks / PlayerColonyTanks / ArmorBarracksAge:裝甲營房(Armor Barracks)戰車營
 	// 駐軍系統,與上面三個 Marine 對應欄位對稱(見 advanceArmor/LoadTanks,ground_invasion.go)。
@@ -3051,10 +3067,9 @@ var stanceNames = map[ai.Stance]string{
 // out.TotalNetIndustry,advanceAI 的造艦投資(見上方)自然吃到更多產出,AI 才會隨擴張變強。
 //
 // gov 傳 gamedata.MoraleGovDictatorship(AIOpponent 沒有 Government 欄位,政府型態未建模,
-// 見 newColonyFromStar 註解);種族加成傳 0(AI 無種族加成模型可查)。若該星行星資料不可殖民
-// (climateColonizable 為 false——目前星系生成從不產生氣態巨星/小行星帶,見 colonization.go
-// 檔頭,故實務上不會發生),保守 continue 找下一顆無主星,不 fallback 成只設旗標(避免旗標與
-// 殖民地模型再度分裂)。找不到任何可擴張的無主星則整個 no-op。
+// 見 newColonyFromPlanet 註解);種族加成傳 0(AI 無種族加成模型可查)。若該星系沒有可殖民的
+// 天體(全是氣態巨星/小行星帶,或氣候不合)就 continue 找下一顆無主星,不 fallback 成只設旗標
+// (避免旗標與殖民地模型再度分裂)。找不到任何可擴張的無主星則整個 no-op。
 func (s *GameSession) aiExpand(i int) {
 	// 擴張積極度依性格(原版 _personality_expansion_chance:冷酷 100、和平主義只有 30)。
 	// 先前所有 AI 一律每回合都嘗試擴張,擴張速度毫無性格差異。
@@ -3094,7 +3109,14 @@ func (s *GameSession) aiExpand(i int) {
 		if s.StarGuardedByMonster(idx) {
 			continue // 怪獸盤據的星系 AI 也進不去(手冊 p.62 的清場條件對所有帝國一體適用)
 		}
-		colony, ok, _ := s.newColonyFromStar(idx, gamedata.MoraleGovDictatorship, 0, 0, 0)
+		// AI 也是「殖民到行星上」——挑該星系第一顆可殖民的天體(同玩家的 ColonizeStar)。
+		// ⚠ AI 目前一個星系只會有一個殖民地(上面那道 `Owner != 0` 的閘),不像玩家可以在
+		// 自己的星系裡再拓殖第二顆行星。那是 AI 擴張模型的缺口,記在 gap report,不臆造。
+		planetIdx := s.FirstColonizablePlanet(idx)
+		if planetIdx < 0 {
+			continue
+		}
+		colony, ok, _ := s.newColonyFromPlanet(planetIdx, gamedata.MoraleGovDictatorship, 0, 0, 0)
 		if !ok {
 			continue
 		}
@@ -3105,8 +3127,28 @@ func (s *GameSession) aiExpand(i int) {
 		// ColonyBuildings 同步 append 空 map,維持三個平行陣列等長(見 AIOpponent.ColonyBuildings
 		// 欄位註解)——手冊只保證母星有星基,新拓殖星沒有,故新 AI 殖民地開局無建築可扣。
 		s.AIPlayers[i].ColonyBuildings = append(s.AIPlayers[i].ColonyBuildings, map[string]bool{})
-		s.consumeSpecialOnColonize(idx) // 原住民被 AI 併入人口後同樣從行星上消失(見 colonization.go)
+		s.AIPlayers[i].ColonyPlanets = append(s.AIPlayers[i].ColonyPlanets, planetIdx)
+		s.consumeSpecialOnColonize(planetIdx) // 原住民被 AI 併入人口後同樣從行星上消失(見 colonization.go)
 		return
+	}
+}
+
+// syncAIColonyPlanets 把每個 AI 殖民地的行星索引補齊(見 AIOpponent.ColonyPlanets)。
+//
+// buildDemoAIOpponents 建 AI 時手上沒有 Planets(它只拿到母星的星索引),所以行星索引在
+// 星系與行星都生完之後才補。舊存檔載入時同樣走這裡把 nil 補成真值。
+func (s *GameSession) syncAIColonyPlanets() {
+	for i := range s.AIPlayers {
+		a := &s.AIPlayers[i]
+		for len(a.ColonyPlanets) < len(a.ColonyStars) {
+			a.ColonyPlanets = append(a.ColonyPlanets, -1)
+		}
+		for j, star := range a.ColonyStars {
+			if j < len(a.ColonyPlanets) && a.ColonyPlanets[j] >= 0 {
+				continue
+			}
+			a.ColonyPlanets[j] = s.PlanetAt(star)
+		}
 	}
 }
 
@@ -3120,7 +3162,12 @@ func (s *GameSession) aiPlanetValue(aiIdx, starIdx int) int {
 	if starIdx < 0 || starIdx >= len(s.Planets) {
 		return 0
 	}
-	p, _ := s.PlanetDataAt(starIdx)
+	// 用「該星系最好的可殖民天體」估值,不是代表行星——多天體之後兩者會不一樣。
+	best := s.FirstColonizablePlanet(starIdx)
+	if best < 0 {
+		return 0
+	}
+	p := s.Planets[best]
 	if p.NoPlanet || p.Gen < planetGenVersion {
 		return 0
 	}
@@ -3610,11 +3657,15 @@ func NewDemoSession() *GameSession {
 	// 守衛怪獸(見 monster.go)。放在這裡而不是上面的複合字面值裡,因為 genMonsters 會就地
 	// 修改 session.Planets(手冊 p.60:有怪獸的星系一定另有一個特殊物產)。
 	session.Monsters = genMonsters(galaxy, session.Planets, rand.New(rand.NewSource(44)), demoHomeStarSet(aiHomeStars))
+	session.syncAIColonyPlanets()                                  // AI 殖民地的行星索引(見該函式)
 	session.Player.UsedCommandPoints = session.usedCommandPoints() // 依開局艦隊(homeworldShips)算實際需求,顯示與第一次 EndTurn 後一致
 	// 領袖技能接線(2026-07-11):把 Ship=false 的殖民地領袖(科學家/貿易家)技能套到母星。
 	// 2026-07-12 開局改為空領袖池(見上方 Leaders 註解),故此呼叫目前是 no-op;保留接線,待未來
 	// 傭兵招募流程實作後,玩家雇用並指派殖民地領袖時即生效。
 	applyLeaderColonyBonuses(session.Leaders, &session.PlayerColonies[0])
+	// 玩家母星座落的行星(見 PlayerColonyPlanets 欄位註解)。星 0 恆為母星,
+	// demoHomeStarSet 保證那裡有可殖民天體。
+	session.PlayerColonyPlanets = []int{session.PlanetAt(0)}
 	return session
 }
 

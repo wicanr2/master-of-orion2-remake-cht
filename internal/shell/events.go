@@ -278,10 +278,10 @@ func (s *GameSession) pickAI() (int, bool) {
 
 // colonyLabel 回傳殖民地的顯示名(優先用所在行星名,取不到才用序號)。
 func (s *GameSession) colonyLabel(i int) string {
-	if star := s.PlayerColonyStarIndex(i); star >= 0 {
-		if p := s.PlanetOf(star); p != nil && p.Name != "" {
-			return p.Name
-		}
+	// 取**該殖民地座落行星**的名字,不是「那顆星的代表行星」——同星系可以有多個殖民地,
+	// 用後者會讓兩個殖民地同名。
+	if n := s.ColonyName(i); n != "" {
+		return n
 	}
 	return fmt.Sprintf("殖民地 %d", i+1)
 }
@@ -339,8 +339,7 @@ func (s *GameSession) destroyRandomBuilding(i int) string {
 func (s *GameSession) shiftColonyMineral(delta int) (idx int, from, to gamedata.PlanetMinerals, ok bool) {
 	cand := make([]int, 0, len(s.PlayerColonies))
 	for i := range s.PlayerColonies {
-		star := s.PlayerColonyStarIndex(i)
-		p := s.PlanetOf(star)
+		p := s.ColonyPlanet(i)
 		if p == nil {
 			continue
 		}
@@ -354,8 +353,7 @@ func (s *GameSession) shiftColonyMineral(delta int) (idx int, from, to gamedata.
 		return 0, 0, 0, false
 	}
 	i := cand[s.eventRand.Intn(len(cand))]
-	star := s.PlayerColonyStarIndex(i)
-	p := s.PlanetOf(star)
+	p := s.ColonyPlanet(i)
 	if p == nil {
 		return 0, 0, 0, false
 	}

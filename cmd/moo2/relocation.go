@@ -265,3 +265,52 @@ func (b *sceneBuilder) galleryRelocTarget() int {
 	}
 	return -1
 }
+
+// --- 星圖星系面板的拓殖/前哨站鈕(hits 與繪製共用同一份佈局)---
+
+// starPanelRow 是面板上的一列動作鈕:螢幕 y、動作碼、以及這一下會落在哪顆天體(−1=不適用)。
+type starPanelRow struct {
+	y      int
+	action string
+	planet int
+}
+
+// starPanelColonyRows 算出選中星要畫哪幾顆拓殖/前哨站鈕。
+//
+// 為什麼要抽出來:先前 hits 與繪製各寫了一份「有殖民船 → 402,有前哨船 → 下一列」的判斷,
+// 兩邊只要有一邊改了就會出現「畫得出來卻點不到」。
+//
+// 版面限制(面板 326..458 高 132):只有 402 與 424 兩列。而**自己的殖民地星系** 424 那列
+// 已經被集結點鈕佔走(見繪製處),所以那種情況只畫得下一顆——依原版的擴張順序,
+// 殖民地優先於前哨站。
+func starPanelColonyRows(sess *shell.GameSession) []starPanelRow {
+	if sess == nil || sess.SelectedStar < 0 || sess.SelectedStar >= len(sess.Stars) {
+		return nil
+	}
+	star := sess.SelectedStar
+	if sess.Stars[star].Owner == 2 || sess.Fleet().AtStar != star || sess.Fleet().ETA != 0 {
+		return nil
+	}
+	if sess.StarGuardedByMonster(star) {
+		return nil // 怪獸盤據:那一列是「挑戰」鈕
+	}
+	var out []starPanelRow
+	if sess.FleetHasColonyShip() {
+		if p := sess.FirstColonizablePlanet(star); p >= 0 {
+			out = append(out, starPanelRow{y: 402, action: "colonize", planet: p})
+		}
+	}
+	if sess.FleetHasOutpostShip() {
+		if p := sess.OutpostTargetPlanet(star); p >= 0 {
+			out = append(out, starPanelRow{y: 402, action: "outpost", planet: p})
+		}
+	}
+	if len(out) == 2 {
+		out[1].y = 424
+	}
+	// 集結點鈕佔著 424:自己的殖民地星系只留第一顆。
+	if colonyIndexAtStar(sess, star) >= 0 && len(out) > 1 {
+		out = out[:1]
+	}
+	return out
+}

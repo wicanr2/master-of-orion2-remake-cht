@@ -129,9 +129,10 @@
 | 缺口 | 性質 | 備註 |
 |---|---|---|
 | **網路 / 數據機 / 序列埠多人** | 整塊子系統 | 9 個畫面 + 傳輸層 + 決定性化。熱座已可玩,所以這是「多一種玩法」不是「補一個洞」 |
-| **同星系多殖民地** | 規則 | 資料模型已完成(第 61/62/63 項)。**人造行星已於第 64 項接完**(⚠ 它不需要空軌道,是改造既有天體——第 64 項訂正了寫了兩輪的錯誤假設)。剩:殖民/前哨站改成選**行星**而不是選**星** |
+| ~~**同星系多殖民地**~~ | ✅ | 第 66 項:拓殖/前哨站的對象改成**行星**,同一個星系可以有多個殖民地;人造行星改造完的天體也真的能殖民了 |
 | **戰術格子的獨立戰機單位** | 戰鬥子模型 | 戰機**已接進快速艦隊戰鬥**(`FighterBayCombatContribution`,中隊數 4/2 是手冊 GM p.127 硬數字);缺的是格子戰鬥裡的出擊 / 攔截 / 回收 |
 | AI 的遷移設定 | 資料模型 | 第 57 項的續:AI 沒有逐星的艦隊位置,所以沒有遷移可設 |
+| AI 的同星系多殖民地 | 規則 | 第 66 項只做了玩家側。`aiExpand` 仍只找 `Owner == 0` 的星,所以 AI 一個星系永遠只有一個殖民地(資料模型 `AIOpponent.ColonyPlanets` 已補齊) |
 | ~~遷移連線的顯示開關沒有 UI~~ | ✅ | 第 65 項:接在遊戲選單的 SETTINGS 鈕下(⚠ 那一列不是原版版面,原版有一整個設定畫面) |
 | `Clear_All` 集結點沒有 UI 入口 | 未接 | 第 65 項:`Set_All` 已接上艦隊列表的 ALL 鈕(⚠ 它只改**已經有設定**的,不是全部設成同一顆);`Clear_All` 規則已實作並測試,但原版哪顆鈕對應它沒有確認,不猜 |
 | 遷移確認框 | 基礎設施 | 原版「目的星上有艦隊」時會跳確認框;remake 沒有 modal 對話框的基礎設施(第 59 項) |
@@ -3026,3 +3027,77 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
 
     ⚠ **那一列不是原版版面**——原版有一整個設定畫面。建了那個畫面之後要搬過去。
     但「一顆點了沒反應的鈕」與「一顆展開唯一一個真開關的鈕」相比,後者誠實得多。
+
+66. **同星系多殖民地:拓殖的對象是行星,不是星**(2026-08-07,把第 61/63 項留的最後一步做完)。
+
+    ### 一句話擋掉了整個擴張手段
+
+    `ColonizeStar` 的第二道閘寫著:
+
+    ```go
+    if star.Owner != 0 {
+        return ColonizationResult{Reason: "該星已有歸屬,不可拓殖"}
+    }
+    ```
+
+    一星一行星的時代它是對的:一顆星只有一顆行星,有歸屬就等於沒空位。
+    軌道模型上線之後(第 63 項,一個星系 1..5 個天體)那句話就變成
+    「**你自己的星系不准再殖民**」——而手冊 p.61 的條件從頭到尾是
+    「any uncolonized **planet**」,講的是行星不是星。
+
+    ### 這一輪換掉的東西
+
+    | 之前 | 之後 |
+    |---|---|
+    | `ColonizeStar(star)` 是唯一入口 | `ColonizePlanet(planet)` 是入口;`ColonizeStar` 變成「該星系第一顆可殖民行星」的捷徑 |
+    | `newColonyFromStar(star)` 讀 `Planets[star]` | `newColonyFromPlanet(planet)` |
+    | 殖民地只記 `PlayerColonyStars[i]` | 加上 `PlayerColonyPlanets[i]`(AI 側是 `AIOpponent.ColonyPlanets`) |
+    | 前哨站只記在哪顆星 | `Outpost.PlanetIndex`(手冊 p.119:「build a military outpost on a single planet」) |
+    | 殖民地名 = 該星代表行星名 | `ColonyName(i)` = 該殖民地**座落行星**的名字 |
+    | 地表變體種子 = 星索引 | = 行星索引(否則同星系兩個殖民地地表一模一樣) |
+
+    ### 又一次同款零值陷阱
+
+    `PlayerColonyPlanets` / `Outpost.PlanetIndex` 的「未知」都必須是 **−1**。
+    這是第四次了(`Star.Wormhole` → 全部連到星 0、`ColonyRelocateTo` → 全部指向母星、
+    `Star.Orbits` → 每顆星都宣稱有行星 0)。索引型欄位的 Go 零值是一個**合法索引**,
+    不是「沒有」。舊存檔沒有這兩個欄位 → nil → 退回「該星的代表行星 / 同星就算」,
+    行為與加欄位前逐位元一致,`TestLegacySaveWithoutColonyPlanetsFallsBackToStar` 釘住。
+
+    ### 前哨站順帶修好的一個 bug
+
+    `consumeOutpostForColony` 原本只比對**星**。多天體之後,在一顆行星建殖民地會把
+    同星系另一顆氣態巨星上的前哨站一起吃掉,還白送一座海軍陸戰隊營。
+    現在比對行星(舊存檔的 −1 退回舊語意),`TestOutpostOnAnotherBodySurvivesColonizingNeighbour` 釘住。
+
+    順便放寬了 `BuildOutpost` 的 `Owner != 0` 閘——氣態巨星/小行星帶常常就在自己已經殖民的
+    星系裡,原版當然讓你在那裡建前哨站。改成只擋敵方(`Owner == 2`)。
+
+    ### 選行星的 UI 就是原版那個畫面
+
+    不必新造:**行星列表**(`PLNTSUM.LBX`)右下角本來就烘著
+    `SEND COLONY SHIP` / `SEND OUTPOST SHIP` / `RETURN` 三顆鈕——那是原版選行星的地方。
+    先前那個畫面是唯讀的展示(而且列的是 `Planets[0..7]`,與星系無關)。現在:
+
+    - 列出**目前看得見的星系**(`shell.VisibleStars`,與星圖同一套可見性)的所有天體
+    - 點一列選中(換色),第二行顯示所屬星系 + 該系天體數 + 已殖民/前哨站狀態
+    - 兩顆動作鈕對選中的那顆行星作用;艦隊不在那個星系就**先派艦隊過去**
+      (原版那兩顆鈕的字面意思就是「派船過去」)
+
+    星圖的星系面板保留「下一顆可用天體」的捷徑鈕,鈕上寫出目標天體名——
+    那個面板只有 402 / 424 兩列,塞不下逐行星的選擇,所以完整的選擇走行星列表。
+
+    ### 落點
+
+    - `internal/shell/colonization.go`:`ColonizePlanet` / `FirstColonizablePlanet` /
+      `ColonyIndexOnPlanet` / `ColonyPlanetIndex` / `ColonyPlanet` / `ColonyName`
+    - `internal/shell/outpost.go`:`Outpost.PlanetIndex` / `BuildOutpostOnPlanet` /
+      `OutpostTargetPlanet` / `HasOutpostOnPlanet`
+    - `internal/shell/session.go`:`PlayerColonyPlanets`、`AIOpponent.ColonyPlanets`、
+      `syncAIColonyPlanets`(行星索引要等 `Planets` 生完才補得起來)
+    - `internal/shell/persist.go` / `hotseat.go`:兩個新陣列的存讀與席位交接
+    - `cmd/moo2/interactive.go`:行星列表接上選擇 + 兩顆動作鈕;`cmd/moo2/relocation.go`
+      的 `starPanelColonyRows`(hits 與繪製共用同一份佈局,免得「畫得出來卻點不到」)
+    - `internal/shell/multicolony_test.go`:8 支測試(同系兩殖民地、同行星不可二殖、
+      敵系仍不可拓殖、捷徑會挑下一顆、前哨站不被鄰居吃掉、存檔往返、舊存檔退路、
+      人造行星改造完可殖民)
