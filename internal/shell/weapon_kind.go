@@ -40,3 +40,9 @@ func weaponKindByName(name string) WeaponKind {
 		return WeaponKindBeam
 	}
 }
+
+// antiMissileRocketName 是反飛彈火箭元件在 SpecialOptions 裡的名稱。
+//
+// 抽成常數而不是散在各處寫字串字面值:`shipHasAutoRepair` 那一族先前就是這樣做的,
+// 而字串比對打錯字不會編譯錯誤——只會安靜地永遠不成立。
+const antiMissileRocketName = "反飛彈火箭"

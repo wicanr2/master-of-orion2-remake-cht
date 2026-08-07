@@ -296,6 +296,12 @@ var (
 		// ⚠ 成本 100 沿用同主題的隱形裝置,是 remake 值不是原版真值——本表其餘成本同樣是
 		// remake 值(見表頭那幾筆的「proxy 待重設計」註記)。
 		{"硬化護盾", 100, gamedata.DamageHardShieldBonus, gamedata.TOPIC_DISTORTION_FIELDS, gamedata.TECH_HARD_SHIELDS},
+		// 反飛彈火箭(第 125 項):`ResolveMissileShot` 的 hasAMR 參數從寫出來就恆傳 false,
+		// 理由是「現行 remake 的 SpecialOptions 尚未提供這個可造艦元件」——那句話對,
+		// 而這一行就是把它補上。研究主題取自執行檔(`OrigTechTopic` → 進階工程),
+		// 執行檔的 category 也是 28(反飛彈/干擾),與手冊 p.127 的分類一致。
+		// Value 留 0:AMR 不加攻防,它的效果是攔截(見 battleVolley 的 hasAMR 分支)。
+		{"反飛彈火箭", 70, 0, gamedata.TOPIC_ADVANCED_ENGINEERING, gamedata.TECH_ANTIMISSILE_ROCKETS},
 	}
 )
 
@@ -542,6 +548,9 @@ type combatant struct {
 	// 這正是「戰後把剩餘血量寫回正確那艘船」需要的東西(先前用外部平行陣列會在有人陣亡後錯位)。
 	shipIdx int
 	kind    WeaponKind
+	// hasAMR 是這艘船裝了反飛彈火箭(手冊 p.127:攔截來襲飛彈)。
+	// 與 missileEvasion 一樣只在**它是防守方**時有意義。
+	hasAMR bool
 	// missileEvasion 是這艘船的飛彈閃避加成(手冊 ME 欄 + 舵手技能)。
 	// 只有當**它是防守方**時才有意義;敵方艦隊無逐艦資料,一律 0(既有簡化)。
 	missileEvasion int
@@ -578,7 +587,8 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 			// 防守方的飛彈閃避先前恆傳 0(「艦艇設計/軍官系統尚未提供這些元件」)。
 			// 那句話對 ECM 干擾器/慣性穩定器仍成立,但**艦員經驗與舵手技能兩項現在算得出來**
 			// ——見 mkPlayerCombatantsIndexed 填的 missileEvasion。
-			shot = ResolveMissileShot(false, 2, amrRoll, d.missileEvasion, 0, false, jamRoll,
+			// hasAMR 先前恆傳 false——現在由防守艦是否裝了反飛彈火箭決定(第 125 項)。
+			shot = ResolveMissileShot(d.hasAMR, 2, amrRoll, d.missileEvasion, 0, false, jamRoll,
 				attackers[i].wmax, d.shield, d.armor, false)
 		case WeaponKindSpherical:
 			span := attackers[i].wmax - attackers[i].wmin
@@ -674,6 +684,7 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 			shield: s.nebulaShield(shieldReduceByName(sh.Shield), shipHasHardShield(sh)),
 			armor:  armorHPByName(sh.Armor),
 			kind:   weaponKindByName(sh.Weapon), mods: sh.Mods,
+			hasAMR:         sh.Special == antiMissileRocketName,
 			missileEvasion: gamedata.ShipCrewMissileEvasionBonus(crew) + s.helmsmanEvasionBonus(),
 			autoRepair:     shipHasAutoRepair(sh), shipIdx: shipIdx})
 		idx = append(idx, shipIdx)
