@@ -390,6 +390,10 @@ var (
 		// 增強引擎(第 136 項):手冊「increase the combat speed of a ship by +5」。
 		// 第 134 項把它列在「機制不存在」那一格——戰鬥速度模型建起來之後就成立了。
 		{"增強引擎", 100, 0, gamedata.TOPIC_ADVANCED_FUSION, gamedata.TECH_AUGMENTED_ENGINES},
+		// 狀態類武器(第 138 項):第 128 項判定它們「卡在機制」——牽引光束要戰鬥速度模型
+		// (第 136 項)、停滯力場要「這一輪不能動」的狀態。兩塊都建好了,現在接得上。
+		{"牽引光束", 130, 0, gamedata.TOPIC_ARTIFICIAL_GRAVITY, gamedata.TECH_TRACTOR_BEAM},
+		{"停滯力場", 190, 0, gamedata.TOPIC_DISTORTION_FIELDS, gamedata.TECH_STASIS_FIELD},
 	}
 )
 
@@ -1054,6 +1058,14 @@ type CombatShip struct {
 	// CombatSpeed / Initiative 見 gamedata/combat_speed.go(執行檔一手表 + 手冊公式)。
 	CombatSpeed int
 	Initiative  int
+	// SizeClass 是艦體級數(0=巡防艦 … 5=末日之星),牽引光束依它算需要幾束才定得住。
+	SizeClass gamedata.CombatShipClass
+	// --- 狀態類武器:投射能力(第 138 項)---
+	TractorBeams   int  // 這艘船投射幾束牽引光束(裝了 = 1)
+	HasStasisField bool // 這艘船帶停滯力場產生器
+	// --- 狀態類武器:承受中的效果(每回合重算,不存檔)---
+	HeldByTractors int  // 身上有幾束敵方牽引光束
+	InStasis       bool // 被停滯力場定住:不能動、不能開火、**也不能被打**
 }
 
 // CombatSpriteForClass 依艦體等級回傳 CMBTSHP 色塊內 sprite 索引(見 docs/tech/cmbtshp-ship-sprites.md)。
@@ -1132,6 +1144,9 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			DriveLevel:              s.driveLevel(),
 			ArmorLevelAboveTitanium: armorLevelAboveTitanium(sh.Armor),
 			CombatSpeed:             s.shipCombatSpeed(sh),
+			SizeClass:               shipSizeClass(sh.Class),
+			TractorBeams:            boolToInt(sh.Special == tractorBeamName),
+			HasStasisField:          sh.Special == stasisFieldName,
 			Initiative:              gamedata.CombatInitiative(atk, s.shipCombatSpeed(sh)),
 			SpriteIdx:               CombatSpriteForClass(sh.Class), // 色塊 0(玩家)
 			Bay:                     bay, BayKind: bayKind,

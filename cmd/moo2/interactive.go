@@ -1910,6 +1910,8 @@ func newTacticalScreen(b *sceneBuilder) *tacticalScreen {
 	p, e := b.session.StartCombat(b.session.PrimaryEnemyName())
 	// 戰鬥 RNG 依當前回合數種子:同一局同一回合的戰鬥可重現(不引入 wall-clock 不確定性)。
 	seed := int64(b.session.Turn*2654435761 + 1013904223)
+	// 開場先算一次狀態效果,否則第一回合的移動力會用未受牽引的速度(第 138 項)。
+	shell.ApplyTacticalStatusEffects(p, e)
 	return &tacticalScreen{b: b, fnt: b.fnt, player: p, enemy: e, sel: -1,
 		log: b.tr("點我方艦選取→點空格移動;點敵艦→射程內我艦開火",
 			"Click your ship to select, an empty cell to move, an enemy to fire"),
@@ -1924,7 +1926,8 @@ func newTacticalScreen(b *sceneBuilder) *tacticalScreen {
 func freshMoveBudgets(ships []shell.CombatShip) []int {
 	out := make([]int, len(ships))
 	for i, sh := range ships {
-		out[i] = shell.TacticalMoveSquares(sh.CombatSpeed)
+		// 用**實際**速度:被牽引光束拖慢或被停滯力場定住的船走不了那麼遠(第 138 項)。
+		out[i] = shell.TacticalMoveSquares(shell.TacticalEffectiveSpeed(sh))
 	}
 	return out
 }
@@ -2034,8 +2037,19 @@ func (t *tacticalScreen) fireRound(target int) {
 	anyHit := false
 	firedMissile := false // 首艘開火艦是否為飛彈類(決定開火音效)
 	firedAny := false
+	if t.enemy[target].InStasis {
+		// 手冊(Stasis Field):「cannot … **or be affected by any weapon**. It is
+		// effectively removed from battle entirely.」——只做「不能動」會讓它變成活靶,
+		// 那是相反的效果。
+		t.log = fmt.Sprintf(t.b.tr("%s 被停滯力場封住,任何武器都打不到它",
+			"%s is held in a stasis field — no weapon can affect it"), t.enemy[target].Name)
+		return
+	}
 	for i := range t.player {
 		s := &t.player[i]
+		if s.InStasis {
+			continue // 被定住的船不能開火
+		}
 		dist := abs(s.Col-tc) + abs(s.Row-tr)
 		if dist > fireRange {
 			continue
@@ -2076,7 +2090,7 @@ func (t *tacticalScreen) fireRound(target int) {
 			shot = shell.ResolveSphericalShot(aggD, enemy.ShieldReduction, enemy.ArmorHP, false, false)
 		default:
 			roll := t.rng.Intn(100) + 1
-			net := s.Attack - enemy.Defense
+			net := s.Attack - shell.TacticalEffectiveDefense(*enemy)
 			shot = shell.ResolveBeamShot(shell.BeamShot{
 				NetAttack: net, WeaponMin: s.WeaponMin, WeaponMax: s.WeaponMax,
 				RangeSquares: dist, Roll: roll,
@@ -2131,6 +2145,9 @@ func (t *tacticalScreen) fireRound(target int) {
 		}
 		for i := range t.enemy {
 			es := &t.enemy[i]
+			if es.InStasis || t.player[wi].InStasis {
+				continue // 被定住的不能打,也不能被打(第 138 項)
+			}
 			dist := abs(es.Col-t.player[wi].Col) + abs(es.Row-t.player[wi].Row)
 			if dist > fireRange {
 				continue
@@ -2138,7 +2155,8 @@ func (t *tacticalScreen) fireRound(target int) {
 			// 敵艦(genEnemyFleet)沒有個別武器設計,es.Kind 恆為 WeaponKindBeam(既有
 			// 簡化,非本輪引入),故還擊固定走 beam 路徑,不需要分流。
 			roll := t.rng.Intn(100) + 1
-			net := es.Attack - t.player[wi].Defense
+			// 防禦用**實際**值:完全被定住的船有 −20 防禦(手冊 Tractor Beam)。
+			net := es.Attack - shell.TacticalEffectiveDefense(t.player[wi])
 			shot := shell.ResolveShot(net, es.WeaponMin, es.WeaponMax, dist,
 				t.player[wi].ShieldReduction, t.player[wi].ArmorHP, roll,
 				t.player[wi].HardShield, false)
@@ -2156,6 +2174,9 @@ func (t *tacticalScreen) fireRound(target int) {
 		}
 	}
 	t.player = palive
+	// 狀態效果每回合重算(第 138 項):產生源被打掉、或目標飛出射程,效果就該消失。
+	// 必須在**移動力重置之前**——移動力是依實際速度算的,而實際速度吃這些狀態。
+	shell.ApplyTacticalStatusEffects(t.player, t.enemy)
 	// ⚠ 移動力重置**必須在戰損壓縮之後**(第 137 項)。放在 round++ 那裡的話,
 	// 下面這個 palive 壓縮會把 t.player 縮短並讓索引往前移,而 moveLeft 還停在舊長度
 	// ——選中第 3 艘卻讀到第 5 艘的移動力,而且陣列還會越界。

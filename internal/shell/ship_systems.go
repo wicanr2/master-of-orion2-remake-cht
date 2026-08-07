@@ -122,6 +122,22 @@ func armorLevelAboveTitanium(name string) int {
 	return 0
 }
 
+// 狀態類武器的元件名(第 138 項)。
+const (
+	tractorBeamName = "牽引光束"
+	stasisFieldName = "停滯力場"
+)
+
+// boolToInt 把「有沒有裝」換成束數。一艘船只有一個 Special 槽,所以最多一束
+// ——手冊講的「multiple Tractor Beams … cumulative」在 remake 只能靠**多艘船**達成,
+// 而那正好是原版最常見的用法(一群小船拖住一艘大船)。
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
 // shipBeamAttackerSystems 把這艘船的元件翻成光束射擊要用的攻方系統旗標。
 //
 // 一艘船只有一個 Special 槽,所以最多只會有一項為真——寫成一個函式而不是三個判斷,

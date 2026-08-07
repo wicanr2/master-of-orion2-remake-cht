@@ -112,3 +112,81 @@ func TacticalMoveSquares(combatSpeed int) int {
 	}
 	return n
 }
+
+// TacticalRangeSquares 把原版棋盤的格數換算成 remake 盤面的格數(第 138 項)。
+//
+// 與 TacticalMoveSquares 同一個比例尺(1:10),但**向上取整**:手冊的短射程
+// (停滯力場 3 格)向下取整會變成 0,那等於這個武器不存在。向上取整之後
+// 牽引光束 12 格 → 2、停滯力場 3 格 → 1,**「牽引比停滯遠」這個相對關係保住了**
+// ——那才是手冊在講的事,絕對值在 8 欄的盤面上本來就表達不出來。
+//
+// ⚠ **既有的 `fireRange = 4` 不走這條路。** 它是 remake 自訂的盤面射程(不是換算來的),
+// 改它會動到現有的戰鬥平衡。兩套射程並存是一個已知的不一致,記在這裡而不是假裝沒有。
+func TacticalRangeSquares(origSquares int) int {
+	if origSquares <= 0 {
+		return 0
+	}
+	n := (origSquares*TacticalGridColumns + gamedata.CombatGridColumns - 1) / gamedata.CombatGridColumns
+	if n < 1 {
+		n = 1
+	}
+	return n
+}
+
+// ApplyTacticalStatusEffects 依雙方位置重算「誰被牽引、誰被定住」(第 138 項)。
+//
+// **每回合重算,不累積。** 手冊把兩者都描述成**持續的場**而不是打出去的一發:
+//
+//	停滯力場:「it remains in effect **as long as the ship generating the field remains
+//	          undestroyed and in combat**」
+//	牽引光束:「**up to the maximum range of** 12 squares away」——離開射程就鬆開
+//
+// 所以每回合從零重算才是對的:產生源被打掉、或目標飛出射程,效果就該消失。
+// 累加的話會出現「產生源早就沒了,目標還定在那裡」。
+//
+// dist 用曼哈頓距離,與射程/移動同一個度量(理由見第 137 項)。
+func ApplyTacticalStatusEffects(a, b []CombatShip) {
+	apply := func(targets, sources []CombatShip) {
+		for i := range targets {
+			t := &targets[i]
+			t.HeldByTractors, t.InStasis = 0, false
+			for _, s := range sources {
+				if s.HP <= 0 {
+					continue // 產生源已被擊毀 → 效果消失
+				}
+				d := absInt(s.Col-t.Col) + absInt(s.Row-t.Row)
+				if s.TractorBeams > 0 && d <= TacticalRangeSquares(gamedata.TractorBeamRangeSquares) {
+					t.HeldByTractors += s.TractorBeams
+				}
+				if s.HasStasisField && d <= TacticalRangeSquares(gamedata.StasisFieldRangeSquares) {
+					t.InStasis = true
+				}
+			}
+		}
+	}
+	apply(a, b)
+	apply(b, a)
+}
+
+// TacticalEffectiveSpeed 回傳這艘船在目前狀態下的實際戰鬥速度。
+func TacticalEffectiveSpeed(sh CombatShip) int {
+	if sh.InStasis {
+		return 0 // 手冊:「the ship cannot move」
+	}
+	return gamedata.TractorSlowedSpeed(sh.CombatSpeed, sh.SizeClass, sh.HeldByTractors)
+}
+
+// TacticalEffectiveDefense 回傳這艘船在目前狀態下的實際防禦。
+//
+// 手冊:「An immobilized ship receives an **additional −20 Ship Defense** penalty」。
+// 只有**完全定住**才扣——被拖慢但還能動的不扣(手冊那句的主詞是 immobilized)。
+func TacticalEffectiveDefense(sh CombatShip) int {
+	def := sh.Defense
+	if gamedata.TractorIsImmobilized(sh.SizeClass, sh.HeldByTractors) {
+		def += gamedata.TractorImmobilizedDefensePenalty
+	}
+	if def < 0 {
+		def = 0
+	}
+	return def
+}
