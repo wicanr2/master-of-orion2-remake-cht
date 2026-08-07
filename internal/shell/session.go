@@ -222,6 +222,22 @@ var (
 		{"相位砲", 160, 20, gamedata.TOPIC_MULTIPHASED_PHYSICS, gamedata.TECH_PHASOR},             // 手冊 5-20(先前 19)
 		{"電漿砲", 200, 20, gamedata.TOPIC_PLASMA_PHYSICS, gamedata.TECH_PLASMA_CANNON},           // 手冊 4-20(1.50)
 		{"死光", 300, 100, gamedata.TOPIC_ARTIFICIAL_LIFE, 0},                                    // 手冊 50-100(先前 25)
+
+		// ⚠ 2026-08-08(第 124 項)補上手冊有、remake 沒有的八項。
+		//
+		// 傷害/佔格取自手冊 p.124-125;**研究主題取自執行檔**(`gamedata.OrigTechTopic`,
+		// 第 108 項那張 211/212 對得上的表)——不是照科技名猜的,有測試逐項核對。
+		//
+		// Cost 是 remake 的生產成本尺度(與手冊的 Cost 欄不同單位,見第 123 項),
+		// 依手冊成本的**相對名次**插在既有鄰居之間——**那是 remake 的選擇,不是手冊值**。
+		{"離子脈衝砲", 100, 10, gamedata.TOPIC_ION_FISSION, gamedata.TECH_ION_PULSE_CANNON},
+		{"引力波束", 140, 15, gamedata.TOPIC_ARTIFICIAL_GRAVITY, gamedata.TECH_GRAVITON_BEAM},
+		{"質子魚雷", 150, 25, gamedata.TOPIC_HYPER_DIMENSIONAL_FISSION, gamedata.TECH_PROTON_TORPEDOES},
+		{"脈衝飛彈", 170, 20, gamedata.TOPIC_MOLECULAR_COMPRESSION, gamedata.TECH_PULSON_MISSILE},
+		{"氙素飛彈", 220, 30, gamedata.TOPIC_MOLECULAR_MANIPULATION, gamedata.TECH_ZEON_MISSILE},
+		{"干擾者", 260, 40, gamedata.TOPIC_MULTIDIMENSIONAL_PHYSICS, gamedata.TECH_DISRUPTER_CANNON},
+		{"粒子束", 280, 30, gamedata.TOPIC_XENON_TECHNOLOGY, gamedata.TECH_PARTICLE_BEAM},
+		{"重錘裝置", 340, 100, gamedata.TOPIC_HYPER_DIMENSIONAL_PHYSICS, gamedata.TECH_MAULER_DEVICE},
 	}
 )
 

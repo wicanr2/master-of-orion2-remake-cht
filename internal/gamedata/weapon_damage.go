@@ -54,12 +54,22 @@ var beamWeaponDamage = map[string]WeaponDamageRange{
 	"相位砲":   {5, 20},   // Phasor 5-20
 	"電漿砲":   {4, 20},   // Plasma Cannon 4-20(1.50;1.31 為 6-30,由 RuleProfile 覆寫)
 	"死光":    {50, 100}, // Death Ray 50-100
+
+	// 第 124 項補上的光束項(手冊 p.124 同一張表)。
+	"離子脈衝砲": {2, 10},    // Ion Pulse Cannon 2-10
+	"引力波束":  {3, 15},    // Graviton Beam 3-15
+	"干擾者":   {40, 40},   // Disrupter 40(固定值)
+	"粒子束":   {10, 30},   // Particle Beam 10-30
+	"重錘裝置":  {100, 100}, // Mauler Device 100(固定值;手冊 specials 欄「always hits」)
 }
 
 // missileWeaponDamage 是手冊 p.125 的 MISSILE 表(固定傷害,飛彈「never miss」但會被攔截/干擾)。
 var missileWeaponDamage = map[string]WeaponDamageRange{
 	"核飛彈":    {8, 8},   // Nuclear Missile 8
 	"麥克萊特飛彈": {14, 14}, // Merculite Missile 14
+	"脈衝飛彈":   {20, 20}, // Pulson Missile 20
+	"氙素飛彈":   {30, 30}, // Zeon Missile 30
+	"質子魚雷":   {25, 25}, // Proton/A-M Torpedo 25
 }
 
 // WeaponDamageByName 回傳某武器元件的手冊傷害範圍;不在表上回 ok=false

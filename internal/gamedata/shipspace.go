@@ -89,6 +89,16 @@ var WeaponSpaceByName = map[string]int{
 	"電漿砲":    25, // Plasma Cannon,p.124 確認值(1.31/1.50 傷害係數不同但 Size 不受影響,
 	// 見 docs/tech/component-values.md 的版本相依記錄)
 	"死光": 30, // Death Ray,p.124 確認值
+
+	// 第 124 項補上的八項,同表 p.124-125。
+	"離子脈衝砲": 30, // Ion Pulse Cannon,p.124 確認值
+	"引力波束":  15, // Graviton Beam,p.124 確認值
+	"干擾者":   20, // Disrupter,p.124 確認值
+	"重錘裝置":  50, // Mauler Device,p.124 確認值
+	"粒子束":   15, // Particle Beam,p.124 確認值
+	"脈衝飛彈":  10, // Pulson Missile,估計(彈架 10/20/30/35/40,取最小 x2,同核飛彈)
+	"氙素飛彈":  10, // Zeon Missile,估計(同上)
+	"質子魚雷":  20, // Proton Torpedo,p.125 確認值(魚雷不分彈架)
 }
 
 // SpecialSpaceEstimatePercent 是「特殊系統佔空間 = 艦體總空間的 X%」的估計係數。

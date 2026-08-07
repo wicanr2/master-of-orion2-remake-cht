@@ -31,7 +31,10 @@ const (
 // weaponKindByName 依 Component.Name(WeaponOptions 的武器名)分類戰鬥解算路徑。
 func weaponKindByName(name string) WeaponKind {
 	switch name {
-	case "核飛彈", "麥克萊特飛彈":
+	case "核飛彈", "麥克萊特飛彈", "脈衝飛彈", "氙素飛彈", "質子魚雷":
+		// 第 124 項補的三項與既有兩項同類:執行檔的 category 表把它們全歸在
+		// **category 21(飛彈/魚雷)**,與手冊 p.125 的 MISSILE 表一致——
+		// 兩個獨立來源同意,不是照名字裡有「飛彈」兩個字分的。
 		return WeaponKindMissile
 	default:
 		return WeaponKindBeam
