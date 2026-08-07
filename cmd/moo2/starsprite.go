@@ -98,13 +98,34 @@ func starSpriteAsset(spectral, size int) int {
 	return starSpriteBase + spectral*starSpriteSize + idx
 }
 
-// starSpriteImage 解出星球圖並快取(取不到回 nil,呼叫端自己退回色圓)。
+// starSpriteImage 解出星球圖(第 0 幀)並快取(取不到回 nil,呼叫端自己退回色圓)。
 func (b *sceneBuilder) starSpriteImage(spectral, size int) *ebiten.Image {
+	return b.starSpriteFrame(starSpriteAsset(spectral, size), 0)
+}
+
+// starSpriteFrameCount 回傳某張星圖有幾幀(取不到回 0)。
+//
+// BUFFER0 的星球圖每張 5 幀(閃爍)、黑洞那張 16 幀(旋渦)——跑 `lbxinfo` 確認過。
+func (b *sceneBuilder) starSpriteFrameCount(asset int) int {
+	if b.res == nil {
+		return 0
+	}
+	im, err := decodeAsset(b.res, starSpriteLBX, asset)
+	if err != nil {
+		return 0
+	}
+	return len(im.Frames)
+}
+
+// starSpriteFrame 解出星球圖的第 frame 幀並快取。
+//
+// 快取的 key 帶幀號 —— 先前只解第 0 幀,所以 key 不必帶;加上動畫之後不帶就會整個星圖
+// 都用同一幀。
+func (b *sceneBuilder) starSpriteFrame(asset, frame int) *ebiten.Image {
 	if b.res == nil {
 		return nil // 沒有資產解析器(單元測試等):畫面自己降級,不要 panic
 	}
-	asset := starSpriteAsset(spectral, size)
-	key := starSpriteLBX + ":" + strconv.Itoa(asset)
+	key := starSpriteLBX + ":" + strconv.Itoa(asset) + ":" + strconv.Itoa(frame)
 	if im, hit := b.colBldgCache[key]; hit {
 		return im
 	}
@@ -112,9 +133,9 @@ func (b *sceneBuilder) starSpriteImage(spectral, size int) *ebiten.Image {
 		b.colBldgCache = map[string]*ebiten.Image{}
 	}
 	var img *ebiten.Image
-	if im, err := decodeAsset(b.res, starSpriteLBX, asset); err == nil && len(im.Frames) > 0 {
+	if im, err := decodeAsset(b.res, starSpriteLBX, asset); err == nil && frame >= 0 && frame < len(im.Frames) {
 		if pal, err := resolvePalette(b.res, im, paletteChain{{"buffer0.lbx", 0}}); err == nil {
-			img = ebiten.NewImageFromImage(im.Frames[0].ToRGBADropTranslucent(pal, im.KeyColor()))
+			img = ebiten.NewImageFromImage(im.Frames[frame].ToRGBADropTranslucent(pal, im.KeyColor()))
 		}
 	}
 	b.colBldgCache[key] = img
@@ -127,7 +148,7 @@ func (b *sceneBuilder) starSpriteImage(spectral, size int) *ebiten.Image {
 // 置中的依據是原版 `Draw_A_Star_`:它取 `word_1931AC[縮放+大小]`(就是這 6 張圖的邊長表)
 // 除以 2 再從座標扣掉——也就是**以圖的中心對準星球座標**。
 func (b *sceneBuilder) drawStarSpriteAt(dst *ebiten.Image, st shell.Star, cx, cy int) float32 {
-	im := b.starSpriteImage(st.Spectral, st.Size)
+	im := b.starSpriteFrame(starSpriteAsset(st.Spectral, st.Size), b.starSpriteFrameFor(st))
 	if im == nil {
 		return 0
 	}
@@ -136,4 +157,54 @@ func (b *sceneBuilder) drawStarSpriteAt(dst *ebiten.Image, st shell.Star, cx, cy
 	op.GeoM.Translate(float64(cx-w/2), float64(cy-h/2))
 	dst.DrawImage(im, op)
 	return float32(w) / 2
+}
+
+// ---- 黑洞的旋渦動畫(原版 `Draw_Black_Holes_` @ 0x83BF9)----
+//
+// 星圖上的黑洞不是靜止的圖。原版那支的推進規則整段可讀:
+//
+//	計數 = (_black_hole_anim_count[黑洞序號] + 1) % (幀數 × 2)
+//	幀號 = 計數 / 2
+//
+// 也就是**每一幀停留 2 次重畫**,而且**每個黑洞各有獨立的計數器**(序號夾在 0..10)。
+// 那個「除以 2」在一般星球的 `Draw_A_Star_` 裡也出現(`sar eax, 1`)——同一個比例被兩處
+// 獨立證實,不是單點讀出來的。
+//
+// ⚠ **只做黑洞,一般星球維持靜止**:`Draw_A_Star_` 的閃爍是**爆發式**的
+// (計數器到 `star[+0x65]` 就停成 -1,而且有個全域併發預算 `word_19C164` 在管同時幾顆在閃),
+// 而「什麼時候開始閃」「爆發長度」「預算值」三個都沒追出來。**不編那三個數**,
+// 所以一般星球先維持第 0 幀。黑洞不一樣——它的動畫無條件連續,規則是完整的。
+//
+// ⚠ **一次重畫 = 一個 ebiten 幀** 是 remake 的對應:原版的主畫面重畫由它自己的迴圈驅動,
+// 頻率沒有解出來,所以**動畫的絕對速度是 remake 的選擇**,只有「2 次重畫換 1 幀」這個**比例**
+// 是原版真值。
+
+// blackHoleHoldRedraws 是每一幀停留幾次重畫(原版 `幀數 × 2` 再除以 2 的那個 2)。
+const blackHoleHoldRedraws = 2
+
+// blackHoleSpectralClass 是黑洞的光譜值(與 shell 的 blackHoleSpectral 一致)。
+const blackHoleSpectralClass = 6
+
+// blackHoleFrameAt 是原版那兩行的直譯:計數 %(幀數×2),再 /2。
+//
+// 抽成純函式是為了能單獨驗——`starSpriteFrameFor` 要有資產解析器才跑得動,
+// 而這條算式本身跟資產無關。
+func blackHoleFrameAt(tick, frames int) int {
+	if frames <= 1 {
+		return 0
+	}
+	if tick < 0 {
+		tick = 0
+	}
+	return (tick % (frames * blackHoleHoldRedraws)) / blackHoleHoldRedraws
+}
+
+// starSpriteFrameFor 回傳這顆星目前該畫第幾幀。
+//
+// 黑洞:依 `b.animTick` 連續循環。其餘:固定第 0 幀(見上方 ⚠)。
+func (b *sceneBuilder) starSpriteFrameFor(st shell.Star) int {
+	if st.Spectral != blackHoleSpectralClass {
+		return 0
+	}
+	return blackHoleFrameAt(b.animTick, b.starSpriteFrameCount(starSpriteAsset(st.Spectral, st.Size)))
 }

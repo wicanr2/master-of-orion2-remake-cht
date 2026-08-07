@@ -345,6 +345,10 @@ type sceneBuilder struct {
 	colChrome         *ebiten.Image            // 殖民地畫面的原版框架(COLPUPS.LBX#5,惰性解碼快取)
 	colBldgCache      map[string]*ebiten.Image // 地表建築圖(BLDGn.LBX,惰性解碼快取)
 	colVegSizeCache   map[int][2]int           // COLVEGGI 資產的寬高;地表每幀重算,不快取會每幀重解 LBX
+	// animTick 是動畫用的重畫計數(由 interactiveApp.Update 每幀同步過來)。
+	// 原版的動畫是「每次重畫推進一次計數」,remake 把「一次重畫」對應成一個 ebiten 幀,
+	// 見 starsprite.go 黑洞那段的 ⚠。
+	animTick int
 	nebMaskCache      map[int]*nebulaMask      // 星雲遮罩;派遣時沿航線取樣上百次,不快取會重解上百次 LBX
 	pendingHotseat    int                      // 多人設定畫面選的真人席位數;0/1 = 單人局(開局後由 applyHotseat 套用)
 	savePath          string                   // remake 存檔路徑(每回合自動存;主選單 Load/Continue 讀)
@@ -3134,6 +3138,7 @@ func (b *sceneBuilder) planets() (*overlayScreen, error) {
 
 type interactiveApp struct {
 	cur origScreen
+	b   *sceneBuilder // 每幀把 tick 同步給它當動畫計數(見 sceneBuilder.animTick)
 
 	// headless 驗證:script 逐幀注入輸入,跑滿 frames 存 shot。
 	script   []shell.InputState
@@ -3487,6 +3492,9 @@ func (a *interactiveApp) pollInput() shell.InputState {
 
 func (a *interactiveApp) Update() error {
 	a.tick++
+	if a.b != nil {
+		a.b.animTick = a.tick // 動畫計數(黑洞旋渦等),見 starsprite.go
+	}
 	if a.script == nil { // 互動模式才處理視窗快捷鍵(headless 略過)
 		a.handleWindowKeys()
 	}
@@ -3742,7 +3750,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		}
 	}
 	app := &interactiveApp{cur: start, script: script, shotPath: shot, frames: frames, scale: scale,
-		galleryDir: galleryDir, galleryShots: shots}
+		galleryDir: galleryDir, galleryShots: shots, b: b}
 	if galleryDir != "" {
 		app.gallerySession = b.session
 		// t29 是腳本裡「按 TURN 進最終得分」那一拍;勝負必須在它之前設好,故取 t28。

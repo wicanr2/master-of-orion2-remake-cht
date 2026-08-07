@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
+)
 
 // starsprite_test.go:星球 sprite 資產編號的護欄。
 //
@@ -58,5 +62,76 @@ func TestStarSpriteAssetClampsOutOfRange(t *testing.T) {
 	// 大小超出 3(原版 StarSize 只有 Large/Medium/Small/Tiny)也不能跨組。
 	if got := starSpriteAsset(0, 99); got > 153 {
 		t.Errorf("大小 99 的資產 %d 溢位到下一個光譜(應夾在 148..153)", got)
+	}
+}
+
+// TestStarSpriteFrameForOnlyAnimatesBlackHoles 釘住一個**刻意的取捨**:
+// 只有黑洞會動,一般星球固定第 0 幀。
+//
+// 一般星球的閃爍在原版是**爆發式**的(`Draw_A_Star_`:計數器到 `star[+0x65]` 就停成 -1,
+// 而且有全域併發預算 `word_19C164` 管同時幾顆在閃),而「什麼時候開始閃」「爆發長度」
+// 「預算值」三個常數都沒追出來。**不編那三個數**,所以一般星球先維持靜止。
+// 黑洞不一樣:`Draw_Black_Holes_` 的動畫無條件連續,規則完整。
+func TestStarSpriteFrameForOnlyAnimatesBlackHoles(t *testing.T) {
+	b := &sceneBuilder{} // 無資產解析器:幀數查不到,一律回 0
+	for _, spectral := range []int{0, 1, 2, 3, 4, 5} {
+		for tick := 0; tick < 20; tick++ {
+			b.animTick = tick
+			if got := b.starSpriteFrameFor(shell.Star{Spectral: spectral, Size: 1}); got != 0 {
+				t.Fatalf("光譜 %d 的星球應恆為第 0 幀,tick %d 得到 %d", spectral, tick, got)
+			}
+		}
+	}
+}
+
+// TestBlackHoleFrameAdvancesEveryTwoRedraws 釘住原版的推進比例:
+// 幀號 = 計數 / 2,也就是**每一幀停留 2 次重畫**。
+//
+// 這個 2 在兩個地方獨立出現(`Draw_Black_Holes_` 的 `幀數 × 2` 再除以 2、
+// 一般星球 `Draw_A_Star_` 的 `sar eax, 1`),不是單點讀出來的。
+func TestBlackHoleFrameAdvancesEveryTwoRedraws(t *testing.T) {
+	if blackHoleHoldRedraws != 2 {
+		t.Fatalf("每幀停留次數應為 2(原版真值),實得 %d", blackHoleHoldRedraws)
+	}
+	// 黑洞那張實測 16 幀,所以一圈是 32 次重畫。
+	const frames = 16
+	for _, c := range []struct{ tick, want int }{
+		{0, 0}, {1, 0}, {2, 1}, {3, 1}, {30, 15}, {31, 15}, {32, 0}, {33, 0},
+	} {
+		if got := blackHoleFrameAt(c.tick, frames); got != c.want {
+			t.Errorf("tick %d 應為第 %d 幀,實得 %d", c.tick, c.want, got)
+		}
+	}
+}
+
+// TestBlackHoleFrameNeverOutOfRange:任何 tick 都不能算出越界的幀號。
+//
+// 這條擋的是「資產只有 1 幀」或「解不出資產(幀數 0)」時的除零/越界——
+// 畫面缺資產要降級,不是 panic。
+func TestBlackHoleFrameNeverOutOfRange(t *testing.T) {
+	for _, frames := range []int{0, 1, 2, 5, 16} {
+		for tick := -3; tick < 100; tick++ {
+			got := blackHoleFrameAt(tick, frames)
+			if got < 0 || (frames > 0 && got >= frames) || (frames <= 1 && got != 0) {
+				t.Fatalf("幀數 %d、tick %d 算出越界幀號 %d", frames, tick, got)
+			}
+		}
+	}
+}
+
+// TestBlackHoleAssetIgnoresStarSize:黑洞那條分支**不加大小偏移**。
+//
+// 原版 `Get_Star_Picture_Seg_` 的 `al == 6` 分支是 `eax = zoom`(其餘光譜才是 `zoom + bl`),
+// 對應 openorion2 的 `_bholeimg[i]`,i 只跑縮放 0..3 → 資產 184..187。
+// 所以四種星球大小都要落在同一張。
+//
+// 落點是 `184 + 縮放`,而 remake 的縮放固定 3(見 starsprite.go 檔頭 ⚠:那是 remake 的選擇),
+// 於是實際取的是 **BUFFER0#187**。實測該張 25×25、16 幀,和 184..187 一整組一致。
+func TestBlackHoleAssetIgnoresStarSize(t *testing.T) {
+	want := 184 + starSpriteZoom
+	for size := 0; size < 4; size++ {
+		if got := starSpriteAsset(blackHoleSpectralClass, size); got != want {
+			t.Errorf("黑洞(大小 %d)應為資產 %d,實得 %d", size, want, got)
+		}
 	}
 }
