@@ -400,6 +400,10 @@ type sceneBuilder struct {
 	// 放在 sceneBuilder 上是因為它們要活過畫面切換——連線不能隨畫面被 GC 掉。
 	netLobby *netplay.Lobby
 	netConn  net.Conn
+	// netAnnouncer / netBrowser 是區網探索的兩端(見 internal/netplay/discovery.go)。
+	// 同樣要活過畫面切換:廣播停了別人就看不到這場對局。
+	netAnnouncer *netplay.Announcer
+	netBrowser   *netplay.Browser
 	// pendingConfirm 是「這一下要先問過玩家」的是/否確認框(原版 `User_Box_(kind=1)`,
 	// 見 cmd/moo2/confirmbox.go)。處理器只負責記下來,由呼叫端 takePendingConfirm 換成畫面
 	// ——處理器手上沒有「下層畫面」,而確認框要疊在它上面。
@@ -3673,8 +3677,10 @@ type interactiveApp struct {
 	galleryNetRosterTick int
 	// galleryNetInfoTick 是截圖廊把畫面換成連線狀態面板的 tick。
 	galleryNetInfoTick int
-	galleryBuilder     *sceneBuilder
-	gallerySession     *shell.GameSession
+	// galleryNetGamesTick 是截圖廊把畫面換成區網對局清單的 tick。
+	galleryNetGamesTick int
+	galleryBuilder      *sceneBuilder
+	gallerySession      *shell.GameSession
 }
 
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
@@ -3702,6 +3708,9 @@ const galleryNetRosterTick = 97
 // 名冊那張(t98)換掉——截出來的 31_netroster 變成狀態面板。第一次就是這樣寫錯的,
 // 截圖廊的逐位元組比對當場抓到。所以是 99,截圖留到 t102 讓面板動畫推幾幀。
 const galleryNetInfoTick = 99
+
+// galleryNetGamesTick 是截圖廊在哪個 tick 換成區網對局清單——取截圖(t104)的前一拍。
+const galleryNetGamesTick = 103
 
 // galleryFighterTick 是截圖廊在哪個 tick 於戰術戰鬥裡派出一隊戰機——取截圖(t66)的前一拍。
 //
@@ -3965,6 +3974,10 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		idle, // t100: 推動畫
 		idle, // t101: 推動畫
 		idle, // t102: settle → 截圖 netinfo
+
+		// 區網對局清單(原版 Choose_Multi_Network_Game_Screen_)。同上,直接推上來。
+		idle, // t103: 由 galleryNetGamesTick 換成對局清單
+		idle, // t104: settle → 截圖 netgames
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -4002,6 +4015,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{96, "30_netwait.png"},
 		{98, "31_netroster.png"},
 		{102, "32_netinfo.png"},
+		{104, "33_netgames.png"},
 	}
 	return script, shots
 }
@@ -4223,6 +4237,10 @@ func (a *interactiveApp) Update() error {
 	if a.galleryNetInfoTick > 0 && a.tick == a.galleryNetInfoTick && a.galleryBuilder != nil {
 		a.cur = a.galleryBuilder.netInfoDemo()
 	}
+	// 截圖廊專用:區網對局清單(原版 Choose_Multi_Network_Game_Screen_)。
+	if a.galleryNetGamesTick > 0 && a.tick == a.galleryNetGamesTick && a.galleryBuilder != nil {
+		a.cur = a.galleryBuilder.chooseMultiNetGameDemo()
+	}
 	// 截圖廊專用:戰術戰鬥裡派一隊戰機出擊(見 galleryFighterTick 的說明)。
 	if a.galleryFighterTick > 0 && a.tick == a.galleryFighterTick {
 		if ts, ok := a.cur.(*tacticalScreen); ok && len(ts.player) > 1 {
@@ -4400,6 +4418,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.galleryNetWaitTick = galleryNetWaitTick
 		app.galleryNetRosterTick = galleryNetRosterTick
 		app.galleryNetInfoTick = galleryNetInfoTick
+		app.galleryNetGamesTick = galleryNetGamesTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,

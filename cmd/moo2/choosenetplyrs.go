@@ -241,10 +241,11 @@ func (s *chooseNetPlayersScreen) draw(dst *ebiten.Image) {
 // 24501 沒有被 IANA 指派給任何服務,撞到的機會低。
 const netLobbyAddr = "0.0.0.0:24501"
 
-// netLobbyDialAddr 是「加入」時的預設目標。
+// netLobbyDialAddr 是「加入」時的**後備**目標。
 //
-// ⚠ remake 還沒有文字輸入框(見 confirmbox.go 對原版聊天列的同款留白),
-// 所以現在只連得上本機。要連別台得先做輸入框——那是下一步,不是這一輪偷懶。
+// 正常路徑是區網探索(見 choosemultinetgame.go):主機廣播、客戶端列出來點一場。
+// 探索開不起來(埠被佔、沒有網路)時才退回這個位址,至少同一台機器上測得動。
+// 要打任意位址仍然需要文字輸入框——那是還沒做的一項,不是這裡偷懶。
 const netLobbyDialAddr = "127.0.0.1:24501"
 
 // hostNetLobby 開一個大廳並進名冊畫面。
@@ -265,12 +266,30 @@ func (b *sceneBuilder) hostNetLobby() (origScreen, error) {
 		return nil, err
 	}
 	b.netLobby = lb
+	// 一併廣播,否則區網上的人看不到這場對局(原版靠 IPX 的服務公告,
+	// TCP 沒有那個能力——見 internal/netplay/discovery.go)。
+	gameName := []rune(name)
+	if len(gameName) > netplay.GameNameMax {
+		gameName = gameName[:netplay.GameNameMax]
+	}
+	if an, err := netplay.Announce(netplay.Game{
+		Name: string(gameName), Addr: lb.Addr(), Players: 1, Max: cnpMaxRows,
+	}, "", time.Second); err == nil {
+		b.netAnnouncer = an
+	}
 	go func() {
 		// 收到上限或大廳關掉為止。錯誤不往上拋——UI 端看得到的是「名冊有沒有多一個人」,
 		// 而 AcceptOne 的錯誤多半是「還沒有人來」的逾時。
 		for i := 1; i < cnpMaxRows; i++ {
 			if _, err := lb.AcceptOne(0); err != nil {
 				return
+			}
+			// 人數變了要更新廣播內容,不然清單上永遠寫 1 人。
+			if b.netAnnouncer != nil {
+				b.netAnnouncer.Update(netplay.Game{
+					Name: string(gameName), Addr: lb.Addr(),
+					Players: len(lb.Roster().Players), Max: cnpMaxRows,
+				})
 			}
 		}
 	}()
@@ -287,18 +306,29 @@ func (b *sceneBuilder) hostNetLobby() (origScreen, error) {
 	return wait, nil
 }
 
-// joinNetLobby 連上大廳並進名冊畫面。
+// joinNetLobby 進「選擇要加入的對局」清單(原版 Choose_Multi_Net_Game)。
+//
+// 探索開不起來時退回直接連本機——沒有清單也要能測得動,總比一個什麼都不做的按鈕好。
 func (b *sceneBuilder) joinNetLobby() (origScreen, error) {
+	if br, err := netplay.Browse(""); err == nil {
+		b.netBrowser = br
+		return b.chooseMultiNetGame(br), nil
+	}
+	return b.joinNetGame(netplay.Game{Name: "local", Addr: netLobbyDialAddr})
+}
+
+// joinNetGame 連上指定的一場對局並進名冊畫面。
+func (b *sceneBuilder) joinNetGame(g netplay.Game) (origScreen, error) {
 	name := b.tr("玩家", "Player")
 	if b.session != nil && b.session.PlayerName != "" {
 		name = b.session.PlayerName
 	}
-	conn, me, roster, err := netplay.Join(netLobbyDialAddr, name, 3*time.Second)
+	conn, me, roster, err := netplay.Join(g.Addr, name, 3*time.Second)
 	if err != nil {
 		return nil, err
 	}
 	b.netConn = conn
-	return b.chooseNetPlayers(roster, me, false, netLobbyDialAddr), nil
+	return b.chooseNetPlayers(roster, me, false, g.Addr), nil
 }
 
 // netInfoJoining 這個狀態在 remake 裡**沒有停留的時機**:`netplay.Join` 是同步的,

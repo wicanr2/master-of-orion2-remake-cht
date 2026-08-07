@@ -72,7 +72,7 @@
 | 9 | ~~**`Main_Antaran_Room`**~~ | 中 | ✅ 2026-08-07 已建(`cmd/moo2/antaranroom.go`),用原版 `antaroom.LBX` 資產 1(55 幀累積)當背景;留白:原版是推鏡動畫,remake 取最終定格 |
 | 10 | ~~**`Hall_Of_Fame` / `Hi_Score`**~~ | 低 | ✅ 2026-08-07 已建(`cmd/moo2/hiscore.go` + `gamedata/score.go`),八項計分係數全來自反組譯 module 60 |
 | 11 | ~~**`Smack`**~~ | 低 | ✅ 已建(`cmd/moo2/cutscene.go` + `internal/smk`,真的解 Smacker,不是靜態圖)|
-| 12 | 多人連線 11 個畫面 | — | ✅ `MP_Setup`(`cmd/moo2/multiplayer.go`)與 `Hotseat`(`cmd/moo2/hotseat.go`)2026-08-07 已建,版面座標取自反組譯(見下方第 20 項)。`Net_Next_Turn`(第 75 項)與 `Choose_Net_Plyrs`(第 76 項)2026-08-07 已建。`Modem_Setup`/`NullModem_Setup`/`Comm Info` **不做**(硬體已不存在)。`Join_Net`/`Generic_Net_Info`/`SendGet_Net_Info` 是同一張畫面的不同狀態,第 77 項一併做掉。剩 `Choose_Multi_Net_Game` |
+| 12 | 多人連線 11 個畫面 | — | ✅ `MP_Setup`(`cmd/moo2/multiplayer.go`)與 `Hotseat`(`cmd/moo2/hotseat.go`)2026-08-07 已建,版面座標取自反組譯(見下方第 20 項)。`Net_Next_Turn`(第 75 項)與 `Choose_Net_Plyrs`(第 76 項)2026-08-07 已建。`Modem_Setup`/`NullModem_Setup`/`Comm Info` **不做**(硬體已不存在)。`Join_Net`/`Generic_Net_Info`/`SendGet_Net_Info` 是同一張畫面的不同狀態(第 77 項),`Choose_Multi_Net_Game` 見第 78 項。**11 張全部結案:8 做 / 3 不做** |
 
 ### A-3 remake 有、原版無獨立畫面
 
@@ -128,7 +128,7 @@
 
 | 缺口 | 性質 | 備註 |
 |---|---|---|
-| **網路多人** | 整塊子系統 | ~~決定性化~~(72)、~~傳輸層 + 鎖步~~(73)、~~指令解譯器~~(74)、~~`Net_Next_Turn` 等待畫面~~(75)、~~連線大廳 + `Choose_Net_Plyrs` 名冊~~(76)、~~連線狀態面板 7 狀態~~(77,反組譯證明 `Join_Net`/`Generic_Net_Info`/`SendGet_Net_Info` 是同一張畫面的不同狀態)。**剩 1 張**(`Choose_Multi_Net_Game`)+ 文字輸入框(沒有它「加入」只連得上本機);`Modem_Setup` / `NullModem_Setup` / `Comm Info` 三張**不做**(數據機與序列線硬體已不存在,remake 走 TCP——替不存在的硬體做設定畫面不是還原) |
+| **網路多人** | 整塊子系統 | ~~決定性化~~(72)、~~傳輸層 + 鎖步~~(73)、~~指令解譯器~~(74)、~~`Net_Next_Turn` 等待畫面~~(75)、~~連線大廳 + `Choose_Net_Plyrs` 名冊~~(76)、~~連線狀態面板 7 狀態~~(77)、~~區網探索 + `Choose_Multi_Net_Game`~~(78)。**9 張網路畫面結案**(6 做 / 3 不做)。剩**文字輸入框**(跨網段直連、改對局名、聊天列都等它);`Modem_Setup` / `NullModem_Setup` / `Comm Info` 三張**不做**(數據機與序列線硬體已不存在,remake 走 TCP——替不存在的硬體做設定畫面不是還原) |
 
 > **2026-08-07:這張表只剩一列了。** 表上原本的其餘七列在同一天被逐一了結
 > (第 65–71 項),移到下方「已了結」表。剩下的那一列是整塊子系統,不是一個洞。
@@ -3720,3 +3720,72 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     - 已加入人數的位置是**量的**,不是反組譯真值——原版沒有給那個欄位。
 
     **剩 1 張**:`Choose_Multi_Net_Game`(版面已抽出,見下輪)。
+
+78. **區網對局探索 + `Choose_Multi_Net_Game`——最後一張網路畫面**(2026-08-07)。
+
+    ### 這張畫面的資料從哪來,原版沒有回答
+
+    原版走 IPX,而 IPX **自帶**廣播式的服務公告——「列出區網上有哪些對局」是**協定**給的能力,
+    不是遊戲自己做的。remake 走 TCP,TCP 沒有這個能力。照抄畫面而不補那一層,
+    會得到一張永遠空的清單:畫面是畫出來了,但那不是還原。
+
+    所以先補 `internal/netplay/discovery.go`:主機每秒往 `255.255.255.255:24502` 廣播
+    一份「我在這裡」(名字、TCP 位址、人數),客戶端聽同一個埠、依 TCP 位址去重。
+    **這一層是移植決策,不是還原**,標在該檔檔頭。
+
+    三個實作決定:
+
+    - **來源 IP 覆蓋封包裡寫的**:主機常常不知道自己對外是哪個位址(多網卡、容器內、NAT)。
+      廣播來源的 IP 比它自己寫的可信,只有埠沿用封包裡的。
+    - **清單依名稱排序,不依到達順序**:到達順序每次都不一樣,而順序決定玩家點到哪一場。
+    - **`Browser` 不阻塞**:UI 是單執行緒的,`Discover` 那種「收兩秒再回傳」會讓畫面凍住兩秒
+      (同 `lobby.AcceptOne` 的處境)。背景 goroutine 收,畫面每幀讀快照。
+
+    測試全部走 **127.0.0.1**,不走真的廣播位址——測試不該把封包送到辦公室網路上。
+    含一支正對照:同一輪送三份壞封包 + 一份合法的,證明過濾器不是把全部都丟掉。
+
+    ### 版面
+
+    `Load_Choose_Multi_Net_Game_Screen_` @ 0xF40D3:
+
+    ```
+    x = (0x280 − 資產41.寬)/2                    = (640−479)/2 = 80
+    y = ((0x1E0 − 資產41.高) − 0x51)/2 + 0x25    = ((480−384)−81)/2 + 37 = 44
+    ```
+
+    ⚠ 那個 `−0x51`(81)剛好等於標題帶(資產 27)的高,但這張畫面**沒有畫標題帶**
+    ——`Draw_Choose_Multi_Net_Game_Screen_` 只 blit 資產 41。也就是它是版面上的讓位,
+    不是「上面還有一塊」。**照抄數字,不照抄自己對數字的解讀。**
+
+    `Add_Choose_Multi_Net_Game_Fields_` @ 0xEFF87 給每列的熱區
+    (`sub_11438B` = `Add_Hidden_Field_`,隱形熱區——美術已經畫好格子了):
+    `x1=+0x26 / x2=+0x190 / y1=+0x40+i×0x1B / y2=y1+0x16`,即每列 **362×22**、列距 27、
+    最多 10 場。底下一顆 `Add_Button_Field_` 在 (+0xBF, +0x158)。
+
+    `Draw_Choose_Multi_Net_Game_Screen_` @ 0xF1AF4 再給文字的擺法:
+    `x = +0x26+9`、`y = winY + var_C + (0x16 − 字高)/2`(var_C 起始 0x43,每列 +0x1B)
+    ——**字在 22 px 的列裡垂直置中**。選中的那一列另有脈動亮度(`[win+0x1E8]` 在 −3..+4
+    之間來回),配色從 (0x95,0x97,0x91) 換成 (0x97,0x99,0x91),就是整組色往上推兩階。
+
+    ### 又一個截圖抓到的錯:上緣不是基線
+
+    第一版把原版的 `(0x16 − 字高)/2` 加了一個字高當基線傳給 `uifont.Draw`,結果**整欄字
+    掉到下一列**——截圖上選取框在第一列、字在第二列。原因是 `uifont.Draw` 底層是
+    ebiten **text/v2**,`GeoM.Translate(x,y)` 的 y 是**行框上緣**(v1 才是基線)。
+    原版的算式本來就是上緣,多加那一下是自己加的。
+
+    測試除了重算算式,另釘一條:**第 i 列的字不得落進第 i+1 列的熱區**——那正是這個 bug 的症狀。
+
+    ### 誠實留白
+
+    - UDP 廣播只跨得過同一個廣播網域(同一個區網)。跨網段要打對方位址,那要文字輸入框。
+      **原版的 IPX 也是同一個限制**,所以這不是退步。
+    - 沒有簽章、沒有加密:區網上任何人都能廣播一個假的對局。與大廳本身的立場一致。
+    - 原版可以在這張畫面**改對局名稱**(`Change_MP_Game_Name_` @ 0xF5777:長度上限 8、
+      且要與既有對局不同名)。remake 還沒有輸入框,名稱取玩家名的前 8 字元;
+      上限與唯一性的規則已記在 `netplay.GameNameMax`,做輸入框時直接套。
+
+    **9 張網路畫面到此結案**:6 張做了(`MP_Setup` / `Hotseat` / `Net_Next_Turn` /
+    `Choose_Net_Plyrs` / 狀態面板 7 狀態 / `Choose_Multi_Net_Game`),
+    3 張明確不做(`Modem_Setup` / `NullModem_Setup` / `Comm Info` —— 硬體已不存在)。
+    網路多人剩下的是**文字輸入框**(跨網段直連 + 改對局名 + 聊天列都等它)。
