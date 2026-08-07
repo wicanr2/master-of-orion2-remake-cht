@@ -15,12 +15,20 @@ func TestApplyRaceBonuses(t *testing.T) {
 		return -1
 	}
 
-	// 克拉肯:工業/工人 +2。
+	// 克拉肯:農業/農民 +2、工業/工人 +1。
+	//
+	// ⚠ 2026-08-08 訂正:這裡原本斷言「工業 +2」,那是自編值。原版的克拉肯是
+	// `TRAIT_FARMING` 2 檔(+2)加 `TRAIT_INDUSTRY` 2 檔(+1)——SAVE10.GAM 裡
+	// Klackon 玩家的 `Traits[2]=2, Traits[3]=1` 直接寫著。
 	s := NewDemoSession()
 	baseInd := s.PlayerColonies[0].IndustryPerWorker
+	baseFood := s.PlayerColonies[0].FoodPerFarmer
 	s.ApplyRace(idx("Klackons"))
-	if got := s.PlayerColonies[0].IndustryPerWorker; got != baseInd+2 {
-		t.Fatalf("克拉肯工業應 +2:%d → %d", baseInd, got)
+	if got := s.PlayerColonies[0].IndustryPerWorker; got != baseInd+1 {
+		t.Fatalf("克拉肯工業應 +1:%d → %d", baseInd, got)
+	}
+	if got := s.PlayerColonies[0].FoodPerFarmer; got != baseFood+2 {
+		t.Fatalf("克拉肯農業應 +2:%d → %d", baseFood, got)
 	}
 
 	// 席隆:研究/科學家 +2(手冊 p.614「2 more than galactic norm」,norm3+2=5,對齊 SAVE10.GAM
@@ -103,7 +111,13 @@ func TestMrrshanCombatBonus(t *testing.T) {
 			s.ApplyRace(i)
 		}
 	}
-	if s.RaceCombatPct != 25 {
-		t.Fatalf("姆瑞森戰鬥加成應為 25%%,實得 %d", s.RaceCombatPct)
+	// ⚠ 2026-08-08 訂正:先前斷言 25%,那是自編值;原版是 `TRAIT_SHIP_ATTACK` 3 檔 = **+50**
+	// (SAVE10.GAM 的 Mrrshan 玩家 `Traits[7]=50`,手冊也寫姆瑞森是攻擊型種族)。
+	if s.RaceCombatPct != 50 {
+		t.Fatalf("姆瑞森艦艇攻擊加成應為 50%%,實得 %d", s.RaceCombatPct)
+	}
+	// 而且它**沒有防禦加成**——先前壓成單一「CombatPct」時,這件事表達不出來。
+	if s.RaceShipDefPct != 0 {
+		t.Fatalf("姆瑞森不該有艦艇防禦加成,實得 %d", s.RaceShipDefPct)
 	}
 }

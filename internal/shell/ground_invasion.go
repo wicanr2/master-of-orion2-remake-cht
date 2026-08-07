@@ -15,28 +15,6 @@ import (
 //
 // 本檔只碰資料/流程,不碰 UI(interactive.go)。
 
-// --- 種族→地面戰 force 加成映射(手冊 p.15-16,僅 Bulrathi/Gnolam 有明確數字) ---
-
-const (
-	raceIdxBulrathi = 5  // shell.Races 索引:布拉西(Bulrathi)
-	raceIdxGnolam   = 11 // shell.Races 索引:諾蘭姆(Gnolams)
-)
-
-// groundRaceFor 把玩家選定的種族索引(shell.Races)映射到 gamedata.GroundRace。
-// 只有 Bulrathi/Gnolam 手冊給出明確地面戰數字,其餘一律 GroundRaceOther(加成 0)。
-// ⚠ AI 對手目前未追蹤種族選擇(AIOpponent 無 RaceIndex 欄位),故本函式只用於玩家側,
-// AI 的地面戰 force 一律不套種族加成(見 aiMarineForce)。
-func groundRaceFor(raceIdx int) gamedata.GroundRace {
-	switch raceIdx {
-	case raceIdxBulrathi:
-		return gamedata.GroundRaceBulrathi
-	case raceIdxGnolam:
-		return gamedata.GroundRaceGnolam
-	default:
-		return gamedata.GroundRaceOther
-	}
-}
-
 // componentUnlockedFor 是 GameSession.ComponentUnlocked 的無 receiver 版本,供玩家與 AI
 // 共用同一套元件解鎖規則(見該方法註解;規則本身完全相同,只是不綁定 s.Player)。
 func componentUnlockedFor(ps engine.PlayerState, c Component) bool {
@@ -192,13 +170,15 @@ func hasBattleoidsFor(ps engine.PlayerState) bool {
 
 // tankHitsToKillFor 回傳 ps 這方戰車營單位的陣亡所需 hits。已研究 Battleoids 者手冊 p.81
 // 明講「整批換成 Battleoid,固定 3 hits」(GroundBattleoidHitsToKill,不再套用 Heavy-G 修飾,
-// 見 ground.go GroundTankHitsToKill 註解);未研究者沿用 GroundTankHitsToKill(highG 未建模,
-// 理由同 playerMarineForce 對 Subterranean/High-G 的留白)。
-func tankHitsToKillFor(ps engine.PlayerState) int {
+// 見 ground.go GroundTankHitsToKill 註解);未研究者沿用 GroundTankHitsToKill。
+//
+// highG 由呼叫端傳(玩家查 `s.raceHasTrait(TRAIT_HIGH_G)`;AI 一律 false——AIOpponent
+// 沒有種族欄位,那一整層還不存在,見 aiMarineForce)。
+func tankHitsToKillFor(ps engine.PlayerState, highG bool) int {
 	if hasBattleoidsFor(ps) {
 		return gamedata.GroundBattleoidHitsToKill
 	}
-	return gamedata.GroundTankHitsToKill(false)
+	return gamedata.GroundTankHitsToKill(highG)
 }
 
 // commandoLeaderTier 掃描 leaders 找出擁有 Commando 技能(gamedata.SKILL_COMMANDO,
@@ -272,17 +252,52 @@ func groundEquipmentBonusFor(ps engine.PlayerState) int {
 	return bonus
 }
 
-// playerMarineForce 回傳玩家陸戰隊單位的 force 加成(裝甲科技 + 裝備科技 + 種族加成,
-// Gnolam 另套 Low-G 10% 懲罰)。Subterranean 加成、High-G hits-to-kill 未套用:本 remake
-// 未建模「特殊能力(Special Abilities)」選取(見 ApplyCustomRaceBonuses 註解),13 個標準
-// 種族也沒有一個具備 Subterranean/High-G,故無從套用,誠實留白而非臆測。
+// playerMarineForce 回傳玩家陸戰隊單位的 force 加成(裝甲科技 + 裝備科技 + 種族特性)。
+//
+// ⚠ **2026-08-08 兩處訂正(第 129 項,種族特性表接線)。**
+//
+// ① 先前的檔頭寫著:
+//
+//	Subterranean 加成、High-G hits-to-kill 未套用:… 13 個標準種族也沒有一個具備
+//	Subterranean/High-G,故無從套用,誠實留白而非臆測。
+//
+// **那句話可證為假。** `RACESTUF.LBX` asset 7 攤開來,薩克拉有 Subterranean、
+// 布拉西有 High-G。當時查不到是因為 remake 沒有特性模型,不是因為原版沒有這兩族。
+//
+// ② **諾蘭姆的低重力懲罰先前扣了兩次**:`GroundRaceCombatBonus(GroundRaceGnolam)` 回 −10,
+// 而下一行的 `GroundApplyLowGPenalty` 又扣一次 −10。反組譯只寫一次
+// (`mov byte ptr [ecx+0Dh], 0F6h`),而諾蘭姆的 `TRAIT_GROUND_COMBAT` 本來就是 0
+// ——它的懲罰完全來自 `TRAIT_LOW_G`。改由特性表驅動之後這個重複自然消失。
+//
+// defending 為真時另加 Subterranean 的守方加成(手冊 p.24 + 反組譯的呼叫端旗標,
+// 見 gamedata.GroundSubterraneanBonus)。
 func (s *GameSession) playerMarineForce() int {
+	return s.marineForceFor(false)
+}
+
+// playerDefendingMarineForce 是守衛自家殖民地時的版本(Subterranean 只在這時生效)。
+func (s *GameSession) playerDefendingMarineForce() int {
+	return s.marineForceFor(true)
+}
+
+func (s *GameSession) marineForceFor(defending bool) int {
 	force := groundArmorBonusFor(s.Player) + groundRifleBonusFor(s.Player) +
-		groundEquipmentBonusFor(s.Player) + gamedata.GroundRaceCombatBonus(groundRaceFor(s.RaceIndex))
-	if s.RaceIndex == raceIdxGnolam {
+		groundEquipmentBonusFor(s.Player) + s.RaceGroundBonus
+	if s.raceHasTrait(gamedata.TRAIT_LOW_G) {
 		force = gamedata.GroundApplyLowGPenalty(force)
 	}
+	if defending && s.raceHasTrait(gamedata.TRAIT_SUBTERRANEAN) {
+		force += gamedata.GroundSubterraneanBonus(true)
+	}
 	return force
+}
+
+// raceHasTrait 回報玩家的種族有沒有某項布林特性。
+//
+// 自訂種族(RaceOrigIdx < 0)一律回 false:它走點數畫面自己組,不在原版 13 族表上,
+// 而點數畫面目前只記錄數值型加成(見 ApplyCustomRaceBonuses)。**寧可少給也不要亂給。**
+func (s *GameSession) raceHasTrait(t gamedata.RaceTrait) bool {
+	return gamedata.OrigRaceHasTrait(s.RaceOrigIdx, t)
 }
 
 // hasPoweredArmor 回傳玩家是否已擁有 Powered Armor。
@@ -582,8 +597,8 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	// Commando 領袖加成(#5/#6,2026-07-11,見 commandoLeaderTier 註解的近似說明):兩版攻方
 	// 倍率相同(非差異項),不需要查 RuleProfile。
 	atkForce += gamedata.GroundCommandoAttackerForceBonus(commandoLeaderTier(s.Leaders))
-	marineHits := gamedata.GroundMarineHitsToKill(false, s.hasPoweredArmor())
-	tankHits := tankHitsToKillFor(s.Player)
+	marineHits := gamedata.GroundMarineHitsToKill(s.raceHasTrait(gamedata.TRAIT_HIGH_G), s.hasPoweredArmor())
+	tankHits := tankHitsToKillFor(s.Player, s.raceHasTrait(gamedata.TRAIT_HIGH_G))
 	// 合併陸戰隊+戰車營單位:Force 只借用 marineUnits/tankUnits 建構出來的 Units,side 級的
 	// atkForce 已在上面算好,故建構單位時 force 參數傳 0(NewGroundForce 的 force 只是塞進
 	// GroundForce.Force 欄位,這裡改在合併後的 atk struct 上設一次即可,避免混淆)。

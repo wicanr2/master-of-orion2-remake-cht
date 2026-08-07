@@ -33,7 +33,7 @@ type GroundUnit struct {
 //
 // Force 由呼叫端依 docs/tech/ground-combat-algorithm.md 的公式算好後填入,本檔不重算:
 //
-//	force = Σ(GroundArmorTechBonus + GroundEquipmentTechBonus + GroundRaceCombatBonus
+//	force = Σ(GroundArmorTechBonus + GroundEquipmentTechBonus + OrigRaceTrait(…, TRAIT_GROUND_COMBAT)
 //	          + GroundBattleoidCombatBonus) 視情況套用 GroundApplyLowGPenalty;
 //	守方另加 GroundSubterraneanBonus(true)。
 //

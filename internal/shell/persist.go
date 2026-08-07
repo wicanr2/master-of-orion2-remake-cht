@@ -132,10 +132,14 @@ type sessionSnapshot struct {
 	// ⚠ 這兩個欄位先前**完全沒有進存檔**——玩家取的帝國名與選的旗色一讀檔就消失,
 	// 換回預設值。2026-08-07 補上(存檔槽列表要顯示帝國名時才發現)。舊存檔沒有這兩個
 	// 欄位,解出來是零值,restore 會退回預設(見該處註解),不會壞。
-	PlayerName    string `json:"playerName,omitempty"`
-	FlagColor     int    `json:"flagColor,omitempty"`
-	RaceCombatPct int    `json:"raceCombatPct"`
-	RaceGrowthPct int    `json:"raceGrowthPct"`
+	PlayerName      string `json:"playerName,omitempty"`
+	FlagColor       int    `json:"flagColor,omitempty"`
+	RaceCombatPct   int    `json:"raceCombatPct"`
+	RaceShipDefPct  int    `json:"raceShipDefPct"`
+	RaceGroundBonus int    `json:"raceGroundBonus"`
+	RaceSpyBonus    int    `json:"raceSpyBonus"`
+	RaceOrigIdx     int    `json:"raceOrigIdx"`
+	RaceGrowthPct   int    `json:"raceGrowthPct"`
 
 	// Government 是玩家政府型態(2026-07-11 士氣接線;見 GameSession.Government 欄位註解)。
 	// 底層是 gamedata.MoraleGovernmentType(int-based enum),json 直接序列化成數字。
@@ -239,6 +243,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		AntaresRaids: s.AntaresRaids, RaceIndex: s.RaceIndex,
 		PlayerName: s.PlayerName, FlagColor: s.FlagColor,
 		RaceCombatPct: s.RaceCombatPct, RaceGrowthPct: s.raceGrowthPct,
+		RaceShipDefPct: s.RaceShipDefPct, RaceGroundBonus: s.RaceGroundBonus,
+		RaceSpyBonus: s.RaceSpyBonus, RaceOrigIdx: s.RaceOrigIdx,
 		PlayerColonyMarines: s.PlayerColonyMarines,
 		MarineBarracksAge:   s.MarineBarracksAge, Government: s.Government,
 		PlayerColonyStars: s.PlayerColonyStars, PlayerColonyPlanets: s.PlayerColonyPlanets,
@@ -307,6 +313,8 @@ func (snap sessionSnapshot) restore() *GameSession {
 		// FlagColor 0 正好是 FlagColors 的第一個顏色,兩者都是安全的降級。
 		PlayerName: snap.PlayerName, FlagColor: snap.FlagColor,
 		RaceCombatPct: snap.RaceCombatPct, raceGrowthPct: snap.RaceGrowthPct,
+		RaceShipDefPct: snap.RaceShipDefPct, RaceGroundBonus: snap.RaceGroundBonus,
+		RaceSpyBonus: snap.RaceSpyBonus, RaceOrigIdx: snap.RaceOrigIdx,
 		PlayerColonyMarines: snap.PlayerColonyMarines,
 		MarineBarracksAge:   snap.MarineBarracksAge, Government: snap.Government,
 		PlayerColonyStars: snap.PlayerColonyStars, PlayerColonyPlanets: snap.PlayerColonyPlanets,

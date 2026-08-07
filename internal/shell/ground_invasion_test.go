@@ -406,11 +406,11 @@ func TestLoadTanks_SharesTransportCapacityWithMarines(t *testing.T) {
 // 已研究則改用固定 3 hits 的 GroundBattleoidHitsToKill(手冊 p.81,整批換裝、不再疊加)。
 func TestTankHitsToKillFor_BattleoidsUpgrade(t *testing.T) {
 	s := NewDemoSession()
-	if got := tankHitsToKillFor(s.Player); got != gamedata.GroundTankHitsToKill(false) {
+	if got := tankHitsToKillFor(s.Player, false); got != gamedata.GroundTankHitsToKill(false) {
 		t.Fatalf("未研究 Battleoids 應沿用 GroundTankHitsToKill(false)=%d,got %d", gamedata.GroundTankHitsToKill(false), got)
 	}
 	s.Player.CompletedTopics[gamedata.TOPIC_ASTRO_CONSTRUCTION] = true
-	if got := tankHitsToKillFor(s.Player); got != gamedata.GroundBattleoidHitsToKill {
+	if got := tankHitsToKillFor(s.Player, false); got != gamedata.GroundBattleoidHitsToKill {
 		t.Fatalf("已研究 Battleoids 應改用 GroundBattleoidHitsToKill=%d,got %d", gamedata.GroundBattleoidHitsToKill, got)
 	}
 }

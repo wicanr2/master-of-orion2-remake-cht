@@ -309,28 +309,18 @@ const GroundBattleoidExtraHits = 1
 // 那一欄進的是**所有類型共用**的基礎(`var_C`)。
 const GroundPoweredArmorAppliesTo = GroundTypeMarines
 
-// GroundRace 手冊種族創建畫面中,對「Ground Combat」有明確數字加成/懲罰的種族。
-// enums.go 的 RaceTrait.TRAIT_GROUND_COMBAT 只標記「此特性存在」,不含正負與數值,
-// 兩個種族的加成方向相反,故另建此列舉對應手冊數字(同 spy.go SpyGovernmentType 的作法)。
-type GroundRace int
-
-const (
-	GroundRaceOther    GroundRace = iota // 手冊未列明確數字的其他種族
-	GroundRaceBulrathi                   // 手冊 p.15:「Bulrathi enjoy a +10 bonus in ground combat」
-	GroundRaceGnolam                     // 手冊 p.16:「Gnolams' Low-G roots put them at a -10 disadvantage in ground combat」
-)
-
-// GroundRaceCombatBonus 種族對地面戰力的固定加成(手冊 p.15-16)。
-func GroundRaceCombatBonus(race GroundRace) int {
-	switch race {
-	case GroundRaceBulrathi:
-		return 10
-	case GroundRaceGnolam:
-		return -10
-	default:
-		return 0
-	}
-}
+// --- 種族地面戰加成:改由 gamedata.OrigRaceTrait(race, TRAIT_GROUND_COMBAT) 提供 ---
+//
+// 這裡原本有一個 `GroundRace` 列舉與 `GroundRaceCombatBonus`,把「手冊有明確數字的種族」
+// 硬編成三格(Bulrathi +10 / Gnolam −10 / 其他 0)。2026-08-08(第 129 項)拆掉,原因有二:
+//
+//	① **一手表出現了。** `RACESTUF.LBX` asset 7 有全部 13 族的特性陣列,
+//	   不必再靠「手冊有沒有寫數字」來決定哪幾族查得到。
+//	② **Gnolam 的 −10 是重複扣的。** 它的 `TRAIT_GROUND_COMBAT` 是 **0**;
+//	   那 −10 完全來自 `TRAIT_LOW_G`,而呼叫端本來就會再套一次 GroundApplyLowGPenalty。
+//	   兩條路各扣一次 → 諾蘭姆的地面戰力被多扣了 10 點。
+//
+// **不要把那個列舉加回來。** 需要某族的地面戰加成就查特性表。
 
 // --- 重力種族特性(手冊 p.24 + `Compute_Player_Ground_Combat_Bonuses_` @ 0xEC15C)---
 //

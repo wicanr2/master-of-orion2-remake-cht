@@ -171,8 +171,8 @@ func applyTechTheft(ps *engine.PlayerState, opt spyStealOption) {
 //     強度分級,而 `Races` 表也沒有這一欄。**資料不存在**,不是沒接。
 //   - **政府**:手冊只給 Defense 欄(攻擊方本來就沒有政府加成),所以這裡不需要它。
 //     防守側見 `spyDefenderBonus`。
-func spyAttackerBonus(ps engine.PlayerState, spyCount int) int {
-	return gamedata.SpySlotBonus(spyCount) + spyTechBonusFor(ps)
+func spyAttackerBonus(ps engine.PlayerState, spyCount, raceBonus int) int {
+	return gamedata.SpySlotBonus(spyCount) + spyTechBonusFor(ps) + raceBonus
 }
 
 // spyTechBonusFor 加總這一方已擁有的間諜相關科技加成(手冊 Spy Bonuses 表的 Technology 列)。
@@ -211,8 +211,8 @@ func spyTechBonusFor(ps engine.PlayerState) int {
 //     govBonus 由呼叫端算好傳入——**只有玩家有政府型態**,`AIOpponent` 沒有這個欄位
 //     (原版是 `[player+0x89F]`,見第 113 項),所以 AI 當防守方時呼叫端傳 0。
 //     那是資料模型的缺口,不是規則沒接。
-func spyDefenderBonus(ps engine.PlayerState, govBonus int) int {
-	return spyTechBonusFor(ps) + govBonus
+func spyDefenderBonus(ps engine.PlayerState, govBonus, raceBonus int) int {
+	return spyTechBonusFor(ps) + govBonus + raceBonus
 }
 
 // playerSpyGovernmentDefenseBonus 回傳玩家目前政府型態的防諜加成。
@@ -276,9 +276,10 @@ type rollSource interface {
 }
 
 func spyStealAttempt(rng rollSource, attackerPS *engine.PlayerState, defenderPS engine.PlayerState,
-	spyCount int, attackerName, defenderName string, defenderGovBonus int) (messages []string, attackerSpyKilled bool) {
-	ab := spyAttackerBonus(*attackerPS, spyCount)
-	db := spyDefenderBonus(defenderPS, defenderGovBonus)
+	spyCount int, attackerName, defenderName string,
+	defenderGovBonus, attackerRaceBonus, defenderRaceBonus int) (messages []string, attackerSpyKilled bool) {
+	ab := spyAttackerBonus(*attackerPS, spyCount, attackerRaceBonus)
+	db := spyDefenderBonus(defenderPS, defenderGovBonus, defenderRaceBonus)
 
 	e := gamedata.SpyEffectiveThreshold(gamedata.SpyThresholdSteal, db, ab)
 	p := gamedata.SpyRollChance(e)
@@ -323,8 +324,10 @@ func (s *GameSession) advanceEspionage() {
 
 		// 玩家 → AI:偷科技 + SpyVsSpy。
 		if s.PlayerSpies[i] > 0 {
-			// AI 當防守方:沒有政府型態欄位,所以政府加成傳 0(見 spyDefenderBonus)。
-			msgs, killed := spyStealAttempt(s.spyRand, &s.Player, a.Player, s.PlayerSpies[i], "我方", a.Name, 0)
+			// AI 當防守方:沒有政府型態欄位,所以政府加成傳 0(見 spyDefenderBonus);
+			// 種族加成同理傳 0——AIOpponent 沒有種族欄位,那一整層還不存在。
+			msgs, killed := spyStealAttempt(s.spyRand, &s.Player, a.Player, s.PlayerSpies[i], "我方", a.Name,
+				0, s.RaceSpyBonus, 0)
 			s.LastEspionage = append(s.LastEspionage, msgs...)
 			if killed && s.PlayerSpies[i] > 0 {
 				s.PlayerSpies[i]--
@@ -335,7 +338,7 @@ func (s *GameSession) advanceEspionage() {
 		if a.Spies > 0 {
 			// 玩家當防守方:政府加成算得出來。
 			msgs, killed := spyStealAttempt(s.spyRand, &a.Player, s.Player, a.Spies, a.Name, "我方",
-				s.playerSpyGovernmentDefenseBonus())
+				s.playerSpyGovernmentDefenseBonus(), 0, s.RaceSpyBonus)
 			s.LastEspionage = append(s.LastEspionage, msgs...)
 			if killed && a.Spies > 0 {
 				a.Spies--

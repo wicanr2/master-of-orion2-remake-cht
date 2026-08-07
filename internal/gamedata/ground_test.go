@@ -209,19 +209,6 @@ func TestGroundBattleoidCombatBonus(t *testing.T) {
 	}
 }
 
-// TestGroundRaceCombatBonus 手冊 p.15-16:Bulrathi +10 / Gnolam -10,其他種族 0。
-func TestGroundRaceCombatBonus(t *testing.T) {
-	if got := GroundRaceCombatBonus(GroundRaceBulrathi); got != 10 {
-		t.Errorf("GroundRaceCombatBonus(Bulrathi) = %d,預期 10", got)
-	}
-	if got := GroundRaceCombatBonus(GroundRaceGnolam); got != -10 {
-		t.Errorf("GroundRaceCombatBonus(Gnolam) = %d,預期 -10", got)
-	}
-	if got := GroundRaceCombatBonus(GroundRaceOther); got != 0 {
-		t.Errorf("GroundRaceCombatBonus(Other) = %d,預期 0", got)
-	}
-}
-
 // ★ TestGroundApplyLowGPenalty:Low-G 的懲罰是 **−10 定值**,不是 −10%。
 //
 // 2026-08-07 改寫。手冊寫「a **10%** penalty」,而 `Compute_Player_Ground_Combat_Bonuses_`

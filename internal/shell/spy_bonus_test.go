@@ -60,13 +60,13 @@ func TestSpyTechnologyBonusIsWired(t *testing.T) {
 // 攻守兩側用同一套科技加成(手冊那張表兩欄同值)。
 func TestSpyTechnologyBonusAppliesToBothSides(t *testing.T) {
 	ps := withTech(t, engine.PlayerState{}, gamedata.TECH_STEALTH_SUIT)
-	atk := spyAttackerBonus(ps, 0)
-	def := spyDefenderBonus(ps, 0)
+	atk := spyAttackerBonus(ps, 0, 0)
+	def := spyDefenderBonus(ps, 0, 0)
 	if atk != 10 || def != 10 {
 		t.Errorf("攻守兩側都應 +10(表中兩欄同值),得到 攻=%d 守=%d", atk, def)
 	}
 	// 攻擊側還要加上人數加成——科技那一項不該把它蓋掉。
-	if withSpies := spyAttackerBonus(ps, 6); withSpies <= atk {
+	if withSpies := spyAttackerBonus(ps, 6, 0); withSpies <= atk {
 		t.Errorf("有間諜人數時攻擊加成應更高:%d vs %d", withSpies, atk)
 	}
 }
@@ -133,7 +133,7 @@ func TestDefenderTechMakesTheftHarder(t *testing.T) {
 		hits := 0
 		for seed := int64(1); seed <= 400; seed++ {
 			atk := clonePlayerState(attackerBase)
-			msgs, _ := spyStealAttempt(newRandStream(seed), &atk, def, 4, "我方", "AI", 0)
+			msgs, _ := spyStealAttempt(newRandStream(seed), &atk, def, 4, "我方", "AI", 0, 0, 0)
 			for _, m := range msgs {
 				if len(m) > 0 && containsSteal(m) {
 					hits++

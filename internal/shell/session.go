@@ -690,6 +690,9 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 		// 手冊 p.121 的兩欄是分開的兩個加成,`engine.BeamDefense` 也是這樣算的
 		// (openorion2 `Ship::beamDefense` 末項),只是 shell 這條路徑沒有走它。
 		crewDef := gamedata.ShipCrewDefenseBonus(crew)
+		// 種族艦艇**防禦**加成(阿爾卡里 +50、埃雷里安 +25)。與攻擊側對稱:
+		// 套在艦體值上、在艦員點數加成之前——理由同上,那兩欄是點數不是百分比。
+		defBody := body + body*s.RaceShipDefPct/100
 		hp := body * 3
 		// 戰機庫:出擊一隊戰機(手冊:中隊一律 4 架;返航前射擊次數攔截機 4、重戰機 2),
 		// 在艦級抽象結算中以母艦戰力加成承接整隊火力與血量。
@@ -712,7 +715,7 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 				hp = ShipDamageFloorHP
 			}
 		}
-		out = append(out, combatant{hp: hp, maxHP: shipMaxHP(sh), atk: atk, def: body + crewDef,
+		out = append(out, combatant{hp: hp, maxHP: shipMaxHP(sh), atk: atk, def: defBody + crewDef,
 			wmin: atk / 2, wmax: atk,
 			shield: s.nebulaShield(shieldReduceByName(sh.Shield), shipHasHardShield(sh)),
 			armor:  armorHPByName(sh.Armor),
@@ -2114,34 +2117,73 @@ func planetTypeDisplayName(t gamedata.PlanetType) string {
 // generates an additional 1 BC per turn」);人類真實特質是外交 +50%/易同化/雇用領袖便宜(尚未建模,誠實留白);
 // 達洛克是間諜 +20/隱形(對應間諜系統,無錢加成)。StartBC 欄位保留供自訂種族 money pick 用。
 type Race struct {
-	Name         string // 中文名
-	EnName       string // 英文名(對應 ai/original.go 種族性格)
+	Name   string // 中文名
+	EnName string // 英文名(對應 ai/original.go 種族性格)
+	// OrigIdx 是原版種族編號(字母序,也是 RACESEL 肖像順序)。
+	//
+	// 有了它才查得到 `gamedata.OrigRaceTraits` 那 31 格特性——**布林特性只能從那裡拿**
+	// (水棲、地底、食岩、寬容、戰帥、神級商人、高/低重力…),下面這幾個數值欄位裝不下。
+	// 自訂種族填 -1。
+	OrigIdx      int
 	IndBonus     int
 	ResBonus     int
 	FoodBonus    int
 	GrowthPct    int
 	StartBC      int
 	IncomePerPop int
-	CombatPct    int
-	Desc         string
-	EnDesc       string // 英文模式的同一段說明(remake 自撰摘要的英譯,非原版文案)
+	// CombatPct 是**艦艇攻擊**加成(原版 TRAIT_SHIP_ATTACK),不是通用戰鬥加成。
+	//
+	// ⚠ 2026-08-08 訂正:原版把攻擊與防禦分成兩個獨立特性(姆瑞森只有攻 +50、
+	// 阿爾卡里只有防 +50、埃雷里安是防 +25 攻 +20),先前 remake 壓成一個
+	// 「CombatPct」再填自編值(25/15/15),等於讓阿爾卡里拿到它沒有的攻擊加成。
+	CombatPct int
+	// ShipDefPct 是艦艇防禦加成(原版 TRAIT_SHIP_DEFENSE)。
+	ShipDefPct int
+	// GroundCombatBonus 是地面戰加成(原版 TRAIT_GROUND_COMBAT,布拉西 +10)。
+	//
+	// **定值不是百分比**:反組譯把低重力懲罰寫成 `mov byte ptr [ecx+0Dh], 0F6h`(有號 −10),
+	// 與其他地面加成一起加進攻擊力;手冊行文的「10%」是隨手寫法
+	// (見 gamedata.GroundLowGCombatPenalty 的完整交代)。
+	GroundCombatBonus int
+	// SpyBonus 是諜報加成(原版 TRAIT_SPYING,達洛克 +20、薩克拉 −10)。
+	// 同樣是定值,與 spyTechBonusFor 那幾項科技加成同一個池子。
+	SpyBonus int
+	Desc     string
+	EnDesc   string // 英文模式的同一段說明(remake 自撰摘要的英譯,非原版文案)
 }
 
-// Races 是 MOO2 十三經典種族(招牌特性依手冊 p.15-16 校正,見 Race 型別註解)。索引 0 為人類(預設)。
+// Races 是 MOO2 十三經典種族。索引 0 為人類(預設)。
+//
+// ⚠ **數值全部來自 `gamedata.OrigRaceTraits`(RACESTUF.LBX + 執行檔換算表 + SAVE10 三方核對),
+// 不是估計值。** 2026-08-08 之前這裡是七個自編數字,對照下來錯了不少:
+//
+//	克拉肯   工業+2       → 實為 農業+2、工業+1
+//	阿爾卡里 通用戰鬥+15   → 實為 艦艇**防禦**+50(它沒有攻擊加成)
+//	姆瑞森   通用戰鬥+25   → 實為 艦艇**攻擊**+50
+//	薩克拉   成長+30、食物+1 → 實為 成長+100、農業+2、間諜-10
+//	崔拉里安 食物+1、成長+10 → 實為 兩者皆 0(它的特性是水棲與跨維度)
+//	埃雷里安 科研+1        → 實為 0(它的加成在艦艇攻防)
+//	矽基     工業+1、成長-20 → 實為 工業 0、成長-50
+//	達洛克   全 0          → 實為 間諜+20
+//
+// `race_traits_wiring_test.go` 逐族釘住這張表與 gamedata 一致,改動任一格都會紅。
+// 欄位序:名稱 / 英文名 / 原版編號 / 工業 / 科研 / 農業 / 成長% / 起始BC / 每人BC(半單位) /
+//
+//	艦攻% / 艦防% / 地面戰% / 諜報% / 中文說明 / 英文說明。
 var Races = []Race{
-	{"人類", "Humans", 0, 0, 0, 0, 0, 0, 0, "外交手腕高明,雇用領袖較廉(民主政府)", "Skilled diplomats; leaders come cheap (Democracy)"},
-	{"席隆", "Psilons", 0, 2, 0, 0, 0, 0, 0, "創造性研究,科學家產出高", "Creative researchers; high output per scientist"}, // ResBonus+2:手冊 p.614「2 more than galactic norm」,norm3+2=5,對齊 SAVE10.GAM Psilon 母星每科研=5
-	{"薩克拉", "Sakkra", 0, 0, 1, 30, 0, 0, 0, "繁殖迅速,人口成長加成", "Prolific breeders; bonus to population growth"},
-	{"克拉肯", "Klackons", 2, 0, 0, 0, 0, 0, 0, "團結勤奮,工業產出高", "Unified and industrious; high factory output"},
-	{"姆瑞森", "Mrrshan", 0, 0, 0, 0, 0, 0, 25, "好戰善攻,艦艇攻擊加成", "Warlike marksmen; bonus to ship attack"},
-	{"布拉西", "Bulrathi", 0, 0, 0, 0, 0, 0, 15, "體格強悍,地面與戰鬥加成", "Powerful build; bonus to ground and ship combat"},
-	{"阿爾卡里", "Alkari", 0, 0, 0, 0, 0, 0, 15, "飛行天賦,艦艇迴避加成", "Born pilots; bonus to ship defense"},
-	{"梅克拉", "Meklars", 1, 1, 0, 0, 0, 0, 0, "半機械,工業與研究兼具", "Cybernetic; strong in both industry and research"},
-	{"達洛克", "Darloks", 0, 0, 0, 0, 0, 0, 0, "潛伏間諜,擅長滲透與隱形", "Shapeshifting spies; infiltration and stealth"},
-	{"崔拉里安", "Trilarians", 0, 0, 1, 10, 0, 0, 0, "水棲民族,食物與成長加成", "Aquatic; bonus to food and population growth"},
-	{"埃雷里安", "Elerians", 0, 1, 0, 0, 0, 0, 15, "心靈感應,研究與戰鬥", "Telepathic; strong in research and combat"},
-	{"諾蘭姆", "Gnolams", 0, 0, 0, 0, 0, 2, 0, "幸運富商,每人口每回合額外進帳", "Lucky traders; extra income per unit of population"}, // IncomePerPop=2 半BC=+1 BC/人:手冊 p.16「each unit of Gnolam population generates an additional 1 BC per turn」(=money3 pick)
-	{"矽基", "Silicoids", 1, 0, 0, -20, 0, 0, 0, "岩石生命,耐任何環境但成長慢", "Lithovore; immune to environment but slow to grow"},
+	{"人類", "Humans", 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "外交手腕高明,雇用領袖較廉(民主政體)", "Skilled diplomats; leaders come cheap (Democracy)"},
+	{"席隆", "Psilons", 9, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, "創造性研究,科學家產出高", "Creative researchers; high output per scientist"},
+	{"薩克拉", "Sakkra", 10, 0, 0, 2, 100, 0, 0, 0, 0, 0, -10, "繁殖迅速、擅農,但不擅諜報", "Prolific breeders and farmers; poor at espionage"},
+	{"克拉肯", "Klackons", 6, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, "團結勤奮,農業與工業兼優,但無創造力", "Unified and industrious; strong farms and factories, uncreative"},
+	{"姆瑞森", "Mrrshan", 8, 0, 0, 0, 0, 0, 0, 50, 0, 0, 0, "好戰善攻,艦艇攻擊加成", "Warlike marksmen; bonus to ship attack"},
+	{"布拉西", "Bulrathi", 1, 0, 0, 0, 0, 0, 0, 20, 0, 10, 0, "體格強悍,地面戰與艦艇攻擊加成", "Powerful build; bonus to ground combat and ship attack"},
+	{"阿爾卡里", "Alkari", 0, 0, 0, 0, 0, 0, 0, 0, 50, 0, 0, "飛行天賦,艦艇防禦加成", "Born pilots; bonus to ship defense"},
+	{"梅克拉", "Meklars", 7, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, "半機械,工業產出高", "Cybernetic; high factory output"},
+	{"達洛克", "Darloks", 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, "潛伏間諜,擅長滲透與匿蹤", "Shapeshifting spies; infiltration and stealth"},
+	{"崔拉里安", "Trilarians", 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "水棲民族,可跨維度航行", "Aquatic; travel between dimensions"},
+	{"埃雷里安", "Elerians", 3, 0, 0, 0, 0, 0, 0, 20, 25, 0, 0, "心靈感應,艦艇攻防兼備", "Telepathic; strong ship attack and defense"},
+	{"諾蘭姆", "Gnolams", 4, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, "幸運富商,每人口每回合額外進帳", "Lucky traders; extra income per unit of population"},
+	{"矽基", "Silicoids", 11, 0, 0, 0, -50, 0, 0, 0, 0, 0, 0, "岩石生命,耐任何環境但成長極慢", "Lithovore; immune to environment but very slow to grow"},
 }
 
 // ApplyRace 把 Races[idx] 的起始加成套到玩家帝國:各殖民地每單位產出加成、額外起始國庫、
@@ -2154,6 +2196,10 @@ func (s *GameSession) ApplyRace(idx int) {
 	s.RaceIndex = idx
 	s.raceGrowthPct = r.GrowthPct
 	s.RaceCombatPct = r.CombatPct
+	s.RaceShipDefPct = r.ShipDefPct
+	s.RaceGroundBonus = r.GroundCombatBonus
+	s.RaceSpyBonus = r.SpyBonus
+	s.RaceOrigIdx = r.OrigIdx
 	for i := range s.PlayerColonies {
 		s.PlayerColonies[i].IndustryPerWorker += r.IndBonus
 		s.PlayerColonies[i].ResearchPerScientist += r.ResBonus
@@ -2170,6 +2216,10 @@ func (s *GameSession) ApplyRace(idx int) {
 func (s *GameSession) ApplyCustomRaceBonuses(r Race) {
 	s.raceGrowthPct = r.GrowthPct
 	s.RaceCombatPct = r.CombatPct
+	s.RaceShipDefPct = r.ShipDefPct
+	s.RaceGroundBonus = r.GroundCombatBonus
+	s.RaceSpyBonus = r.SpyBonus
+	s.RaceOrigIdx = -1 // 自訂種族不在 gamedata 的 13 族表上
 	for i := range s.PlayerColonies {
 		s.PlayerColonies[i].IndustryPerWorker += r.IndBonus
 		s.PlayerColonies[i].ResearchPerScientist += r.ResBonus
@@ -2739,12 +2789,17 @@ type GameSession struct {
 
 	// LastRaid / LastRaidReport 是本回合 AI 對玩家殖民地的突襲(見 ai_attack.go);
 	// 空/nil = 無。與 LastAntares 分開:安塔蘭人是週期腳本,AI 突襲是外交/軍備的後果。
-	LastRaid       string
-	LastRaidReport *AIRaidReport
-	RaceIndex      int    // 玩家選定的種族(shell.Races 索引)
-	PlayerName     string // 玩家帝國/領袖名稱(新遊戲命名畫面設定)
-	FlagColor      int    // 玩家旗幟顏色索引(shell.FlagColors)
-	RaceCombatPct  int    // 種族戰鬥戰力百分點加成(供戰鬥使用)
+	LastRaid        string
+	LastRaidReport  *AIRaidReport
+	RaceIndex       int    // 玩家選定的種族(shell.Races 索引)
+	PlayerName      string // 玩家帝國/領袖名稱(新遊戲命名畫面設定)
+	FlagColor       int    // 玩家旗幟顏色索引(shell.FlagColors)
+	RaceCombatPct   int    // 種族**艦艇攻擊**百分點加成(原版 TRAIT_SHIP_ATTACK)
+	RaceShipDefPct  int    // 種族艦艇防禦百分點加成(原版 TRAIT_SHIP_DEFENSE)
+	RaceGroundBonus int    // 種族地面戰定值加成(原版 TRAIT_GROUND_COMBAT)
+	RaceSpyBonus    int    // 種族諜報定值加成(原版 TRAIT_SPYING)
+	// RaceOrigIdx 是原版種族編號,用來查 gamedata.OrigRaceTraits 的布林特性;自訂種族為 -1。
+	RaceOrigIdx int
 	// RaceWarlord 是種族的「統帥」特質(手冊 p.26-27)。影響兩件事:
 	// 艦員經驗階梯整條往上平移一格(crew.go)、營房容量加倍(gamedata.Ground*BarracksCap)。
 	//

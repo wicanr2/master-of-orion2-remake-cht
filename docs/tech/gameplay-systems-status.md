@@ -52,8 +52,8 @@
 
 ### 1c. ★ 地面戰 shell 層接線:已完成(2026-07-11)
 - `internal/shell/ground_invasion.go`:陸戰隊生成(`advanceMarines`,接 `EndTurn`)→ 載運(`LoadMarines`,運力=艦數×手冊每艘 4 個單位的近似,無獨立運輸艦船體類別,標簡化)→ 入侵解算(`GameSession.InvadeColony`,組雙方 `gamedata.GroundForce` 接 `ResolveGroundBattle`,rng 依回合+星索引種子化可重現)→ 勝則星 Owner 轉移 + 殖民地過戶(AI 端移除)。
-- Force 計算重用既有 `ComponentUnlocked`/`ArmorOptions` 元件解鎖判定推導裝甲科技加成,避免地面戰科技狀態與造艦科技狀態不同步;種族加成僅套用手冊有明確數字的 Bulrathi/Gnolam。
-- 簡化項(標記待精修,不臆造):運輸艦運力近似、AI 守方兵力用「已運作 s.Turn 回合」近似(AI 無 ColonyBuildings 追蹤)、AI 側不套種族加成(AIOpponent 無 RaceIndex)、入侵後保留人口以「守方存活戰鬥單位數」近似(手冊無精確公式)、可入侵範圍僅限 AI 開局母星(`aiExpand` 佔領的星未建殖民地模型)。
+- Force 計算重用既有 `ComponentUnlocked`/`ArmorOptions` 元件解鎖判定推導裝甲科技加成,避免地面戰科技狀態與造艦科技狀態不同步;~~種族加成僅套用手冊有明確數字的 Bulrathi/Gnolam~~ → **2026-08-08(第 129 項)改由 `gamedata.OrigRaceTraits` 全 13 族驅動**;同時修掉諾蘭姆低重力被扣兩次的 bug,並補上薩克拉的地底(守方 +10)與布拉西的高重力(多挨一下)。
+- 簡化項(標記待精修,不臆造):運輸艦運力近似、AI 守方兵力用「已運作 s.Turn 回合」近似(AI 無 ColonyBuildings 追蹤)、AI 側不套種族加成(AIOpponent 無種族欄位——那一整層還不存在,不是漏接)、入侵後保留人口以「守方存活戰鬥單位數」近似(手冊無精確公式)、可入侵範圍僅限 AI 開局母星(`aiExpand` 佔領的星未建殖民地模型)。
 - 測試:`ground_invasion_test.go`(強攻方/強守方勝率、前置條件檢查、可重現性、Marine Barracks 成長上限、載運上限)。
 - 詳細設計/簡化清單見 `ground-combat-algorithm.md`「2026-07-11 shell 層接線」一節。**仍待**:UI 繪製/操作介面(不碰 interactive.go)。
 - gamedata **已備妥完整真公式**(未接):

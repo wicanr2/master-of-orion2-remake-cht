@@ -88,13 +88,17 @@ type seat struct {
 
 	SelectedStar int
 
-	RaceIndex     int
-	PlayerName    string
-	FlagColor     int
-	RaceCombatPct int
-	RaceGrowthPct int
-	Government    gamedata.MoraleGovernmentType
-	CapturedPop   int
+	RaceIndex       int
+	PlayerName      string
+	FlagColor       int
+	RaceCombatPct   int
+	RaceShipDefPct  int
+	RaceGroundBonus int
+	RaceSpyBonus    int
+	RaceOrigIdx     int
+	RaceGrowthPct   int
+	Government      gamedata.MoraleGovernmentType
+	CapturedPop     int
 
 	// 以下是「上一回合發生在我身上的事」。它們看起來像顯示暫態,但在熱座裡必須隨席位走:
 	// 星系主畫面的產出數字、回合摘要的完工清單、事件快報、突襲/發現/戰鬥回報,都是
@@ -132,6 +136,8 @@ func (s *GameSession) saveSeat() seat {
 		ColonyRelocateTo: s.ColonyRelocateTo,
 		RaceIndex:        s.RaceIndex, PlayerName: s.PlayerName, FlagColor: s.FlagColor,
 		RaceCombatPct: s.RaceCombatPct, RaceGrowthPct: s.raceGrowthPct,
+		RaceShipDefPct: s.RaceShipDefPct, RaceGroundBonus: s.RaceGroundBonus,
+		RaceSpyBonus: s.RaceSpyBonus, RaceOrigIdx: s.RaceOrigIdx,
 		Government: s.Government, CapturedPop: s.CapturedPop,
 
 		LastPlayerOutput: s.LastPlayerOutput, LastBuilt: s.LastBuilt,
@@ -157,6 +163,8 @@ func (s *GameSession) loadSeat(v seat) {
 	s.ensureFleet() // 席位可能是空的(舊存檔/新建席位),維持「至少一支艦隊」的不變量
 	s.RaceIndex, s.PlayerName, s.FlagColor = v.RaceIndex, v.PlayerName, v.FlagColor
 	s.RaceCombatPct, s.raceGrowthPct = v.RaceCombatPct, v.RaceGrowthPct
+	s.RaceShipDefPct, s.RaceGroundBonus = v.RaceShipDefPct, v.RaceGroundBonus
+	s.RaceSpyBonus, s.RaceOrigIdx = v.RaceSpyBonus, v.RaceOrigIdx
 	s.Government, s.CapturedPop = v.Government, v.CapturedPop
 
 	s.LastPlayerOutput, s.LastBuilt = v.LastPlayerOutput, v.LastBuilt

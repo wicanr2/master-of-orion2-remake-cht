@@ -91,9 +91,11 @@ func (s *GameSession) resolveRebellionCombat(colonyIdx, rebels int, rebelForce i
 	atkHits[gamedata.GroundTypeRebels] = gamedata.GroundMarineHitsToKill(false, false)
 
 	// 守方:玩家自己的殖民地,難度加成 0(原版只給 AI)。
-	defForce := s.playerMarineForce() +
+	// 用**守方版**——地底種族(薩克拉)只有在守自家殖民地時才拿那 +10,
+	// 而這裡正是手冊與反組譯所說的那個情境(見 gamedata.GroundSubterraneanBonus)。
+	defForce := s.playerDefendingMarineForce() +
 		gamedata.GroundCommandoDefenderForceBonus(commandoLeaderTier(s.Leaders), s.RuleProfile.DefenderCommandoBonus)
-	defHits := gamedata.GroundMarineHitsToKill(false, s.hasPoweredArmor())
+	defHits := gamedata.GroundMarineHitsToKill(s.raceHasTrait(gamedata.TRAIT_HIGH_G), s.hasPoweredArmor())
 
 	var defStrength, defCounts, defHitsArr [gamedata.GroundUnitTypes]int
 	defStrength[groundTypeMarines] = defForce + gamedata.GroundTypeStrengthDelta(groundTypeMarines)
@@ -101,7 +103,7 @@ func (s *GameSession) resolveRebellionCombat(colonyIdx, rebels int, rebelForce i
 	defHitsArr[groundTypeMarines] = defHits
 	defStrength[groundTypeTanks] = defForce + gamedata.GroundTypeStrengthDelta(groundTypeTanks)
 	defCounts[groundTypeTanks] = s.colonyTanksAt(colonyIdx)
-	defHitsArr[groundTypeTanks] = tankHitsToKillFor(s.Player)
+	defHitsArr[groundTypeTanks] = tankHitsToKillFor(s.Player, s.raceHasTrait(gamedata.TRAIT_HIGH_G))
 	defStrength[gamedata.GroundTypeMilitia] = defForce +
 		gamedata.GroundTypeStrengthDelta(gamedata.GroundTypeMilitia)
 	defCounts[gamedata.GroundTypeMilitia] = gamedata.ColonyMilitiaUnits(colony.Population)
