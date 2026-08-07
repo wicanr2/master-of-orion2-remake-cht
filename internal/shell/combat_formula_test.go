@@ -41,7 +41,7 @@ func TestResolveShot(t *testing.T) {
 func TestResolveMissileShotAMRIntercept(t *testing.T) {
 	// sq=0..2 → Range1 → AMR 命中率 61%(見 gamedata.TestMissileAMREndToEnd)。
 	hit := ResolveMissileShot(true, 1, 61 /*amrRoll<=61 命中*/, 0, 0, false, 1,
-		10 /*weaponMax*/, 0, 20, false)
+		10 /*weaponMax*/, 0, 20, false, MissileDefenses{})
 	if hit.Hit {
 		t.Fatalf("amrRoll<=AMR命中率應被攔截,不應命中")
 	}
@@ -50,14 +50,14 @@ func TestResolveMissileShotAMRIntercept(t *testing.T) {
 	}
 
 	miss := ResolveMissileShot(true, 1, 62 /*amrRoll>61 攔截失敗*/, 0, 0, false, 1,
-		10, 0, 20, false)
+		10, 0, 20, false, MissileDefenses{})
 	if !miss.Hit {
 		t.Fatalf("AMR 攔截失敗、且無閃避裝備時應命中")
 	}
 
 	// 超出 AMR 最大射程(15 格)不觸發攔截判定。
 	beyond := ResolveMissileShot(true, gamedata.MissileAMRMaxRangeSquares+1, 1, 0, 0, false, 1,
-		10, 0, 20, false)
+		10, 0, 20, false, MissileDefenses{})
 	if !beyond.Hit {
 		t.Fatalf("超出 AMR 射程應直接跳過攔截判定,直接進入命中流程")
 	}
@@ -71,12 +71,12 @@ func TestResolveMissileShotJamChance(t *testing.T) {
 	const attackerScannerBonus = 20
 	// jamChance=33 → hitChance=67。jamRoll=67 命中,68 被幹擾。
 	hit := ResolveMissileShot(false, 0, 1, defenderEvasionBonus, attackerScannerBonus, true, 67,
-		10, 0, 20, false)
+		10, 0, 20, false, MissileDefenses{})
 	if !hit.Hit {
 		t.Fatalf("jamRoll(67)<=hitChance(67) 應命中")
 	}
 	miss := ResolveMissileShot(false, 0, 1, defenderEvasionBonus, attackerScannerBonus, true, 68,
-		10, 0, 20, false)
+		10, 0, 20, false, MissileDefenses{})
 	if miss.Hit {
 		t.Fatalf("jamRoll(68)>hitChance(67) 應被幹擾,不應命中")
 	}
@@ -84,7 +84,7 @@ func TestResolveMissileShotJamChance(t *testing.T) {
 	// 無任何閃避裝備(現行 remake 現況):jamChance=0,任何 jamRoll(1-100)都必中,
 	// 對應手冊「若目標無任何閃避能力,預設100%命中」(MissileDefaultHitChance)。
 	for _, roll := range []int{1, 50, 100} {
-		always := ResolveMissileShot(false, 0, 1, 0, 0, false, roll, 10, 0, 20, false)
+		always := ResolveMissileShot(false, 0, 1, 0, 0, false, roll, 10, 0, 20, false, MissileDefenses{})
 		if !always.Hit {
 			t.Fatalf("無閃避裝備時 jamRoll=%d 也應必中", roll)
 		}
@@ -94,7 +94,7 @@ func TestResolveMissileShotJamChance(t *testing.T) {
 // TestResolveMissileShotDamageThroughShieldArmor 驗證命中後傷害走與 beam 相同的
 // 過盾→過甲管線(DamageAfterShield/DamageApplyArmor),只是命中判定機制不同。
 func TestResolveMissileShotDamageThroughShieldArmor(t *testing.T) {
-	r := ResolveMissileShot(false, 0, 1, 0, 0, false, 1, 20 /*weaponMax*/, 5 /*shield*/, 10 /*armor*/, false)
+	r := ResolveMissileShot(false, 0, 1, 0, 0, false, 1, 20 /*weaponMax*/, 5 /*shield*/, 10 /*armor*/, false, MissileDefenses{})
 	if !r.Hit {
 		t.Fatalf("應命中")
 	}
@@ -115,7 +115,7 @@ func TestResolveMissileVsBeamDivergence(t *testing.T) {
 		t.Fatalf("beam 在極端劣勢 net attack + 中段 roll 下不應命中(前提有誤)")
 	}
 
-	missile := ResolveMissileShot(false, 0, 1, 0, 0, false, roll, 10, 0, 20, false)
+	missile := ResolveMissileShot(false, 0, 1, 0, 0, false, roll, 10, 0, 20, false, MissileDefenses{})
 	if !missile.Hit {
 		t.Fatalf("missile 應忽略 net attack、只看 Jam Chance(現行無閃避裝備必中),結果卻仍未命中")
 	}

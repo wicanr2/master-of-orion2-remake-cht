@@ -50,7 +50,7 @@ func (s *GameSession) fleetBombardDamage(rng *rand.Rand, shieldReduction int) in
 			case WeaponKindMissile:
 				amrRoll := rng.Intn(100) + 1
 				jamRoll := rng.Intn(100) + 1
-				shot = ResolveMissileShot(false, 0, amrRoll, 0, 0, false, jamRoll, wmax, 0, 0, false)
+				shot = ResolveMissileShot(false, 0, amrRoll, 0, 0, false, jamRoll, wmax, 0, 0, false, MissileDefenses{})
 			case WeaponKindSpherical:
 				span := wmax - wmin
 				r := 0

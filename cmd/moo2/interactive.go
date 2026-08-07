@@ -2017,11 +2017,21 @@ func (t *tacticalScreen) fireRound(target int) {
 		case shell.WeaponKindMissile:
 			amrRoll := t.rng.Intn(100) + 1
 			jamRoll := t.rng.Intn(100) + 1
-			// hasAMR/evasion 加成現行皆無對應可造艦元件,保守傳 0/false(見
-			// shell.ResolveMissileShot 註解的 TODO);dist 是實際格距離(比 battleVolley
+			// ⚠ 2026-08-08:上一版寫著「hasAMR/evasion 加成現行皆無對應可造艦元件,
+			// 保守傳 0/false」——第 125 項補了反飛彈火箭、第 133 項補了干擾器/慣性穩定器/
+			// 閃電場/位移裝置,四項現在都查得到。dist 是實際格距離(比 battleVolley
 			// 固定 range=2 更忠實)。
-			shot = shell.ResolveMissileShot(false, dist, amrRoll, 0, 0, false, jamRoll,
-				s.WeaponMax, enemy.ShieldReduction, enemy.ArmorHP, false)
+			//
+			// 特殊防禦**裝了才擲骰**:沒裝就不動 t.rng,既有戰鬥逐位元不變。
+			var mdef shell.MissileDefenses
+			if enemy.HasLightningField {
+				mdef.HasLightningField, mdef.LightningRoll = true, t.rng.Intn(100)+1
+			}
+			if enemy.HasDisplacement {
+				mdef.HasDisplacement, mdef.DisplacementRoll = true, t.rng.Intn(100)+1
+			}
+			shot = shell.ResolveMissileShot(enemy.HasAMR, dist, amrRoll, enemy.MissileEvasion, 0, false, jamRoll,
+				s.WeaponMax, enemy.ShieldReduction, enemy.ArmorHP, false, mdef)
 		case shell.WeaponKindSpherical:
 			span := s.WeaponMax - s.WeaponMin
 			r := 0

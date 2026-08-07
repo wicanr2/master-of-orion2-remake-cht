@@ -129,11 +129,30 @@ func ResolveShotWithMods(netAttackBase, weaponMin, weaponMax, rangeSquares, shie
 //     beam 專用的 gamedata.DamageForHit(那需要 net-attack/hit-threshold,是命中判定
 //     機制不同的 beam 概念,套用會混淆兩種機制);仍依手冊預設(只有掛 Shield
 //     Piercing/Armor Piercing mod 才豁免,本 remake 尚未對飛彈掛任何 mod)穿過護盾/裝甲。
+//
+// MissileDefenses 是目標艦的「特殊防禦裝置」與它們各自要用的骰(手冊 p.123)。
+//
+// **裝了才擲骰**:呼叫端在沒裝的情況下不該動 RNG,否則整條亂數流會位移,
+// 既有存檔與探針的戰鬥結果全部改變(見 battleVolley 的炸彈分支同款處理)。
+// 沒裝時把對應的 Has* 留 false、骰值留 0 即可,本函式不會讀它。
+type MissileDefenses struct {
+	HasLightningField bool // 閃電場:每一枚來襲飛彈/魚雷/戰機各 50% 直接摧毀
+	LightningRoll     int  // 1..100
+	HasDisplacement   bool // 位移裝置:一律 30% 完全未命中
+	DisplacementRoll  int  // 1..100
+}
+
 func ResolveMissileShot(
 	hasAMR bool, amrRangeSquares, amrRoll int,
 	defenderEvasionBonus, attackerScannerBonus int, hasECCM bool, jamRoll int,
 	weaponMax, shieldReduction, armorHP int, hardShield bool,
+	def MissileDefenses,
 ) ShotResult {
+	// 閃電場在**最前面**:手冊說它「對每一枚試圖命中的飛彈」判定,而且明寫是在
+	// MIRV 分裂彈頭「之前」——那個順序表示它擋的是整枚飛彈,不是彈頭。
+	if def.HasLightningField && def.LightningRoll <= gamedata.MissileLightningFieldDestroyChance {
+		return ShotResult{Hit: false, RemainingArmorHP: armorHP}
+	}
 	if hasAMR && amrRangeSquares <= gamedata.MissileAMRMaxRangeSquares {
 		if amrRoll <= gamedata.MissileAMRChanceToHit(gamedata.MissileAMRRangeIndex(amrRangeSquares)) {
 			return ShotResult{Hit: false, RemainingArmorHP: armorHP} // 被 AMR 擊落
@@ -149,7 +168,13 @@ func ResolveMissileShot(
 		hitChance = 0
 	}
 	if jamRoll > hitChance {
-		return ShotResult{Hit: false, RemainingArmorHP: armorHP} // 被幹擾/閃避
+		return ShotResult{Hit: false, RemainingArmorHP: armorHP} // 被干擾/閃避
+	}
+	// 位移裝置在**最後面**:手冊說它「不論其他裝備或情況」一律 30% 完全未命中,
+	// 而且與匿蹤同組、明寫是在 MIRV 分裂「之後」判定——那個順序表示它躲的是彈頭,
+	// 所以排在閃避判定之後、傷害結算之前。
+	if def.HasDisplacement && def.DisplacementRoll <= gamedata.MissileDisplacementDeviceMissChance {
+		return ShotResult{Hit: false, RemainingArmorHP: armorHP}
 	}
 
 	dmg := gamedata.DamageAfterShield(weaponMax, shieldReduction, hardShield, false)

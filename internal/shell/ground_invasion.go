@@ -412,7 +412,14 @@ func (s *GameSession) MarineTransportCapacity() int {
 	total := 0
 	for _, sh := range s.Fleet().Ships {
 		class, _ := shipClassFromName(sh.Class)
-		total += gamedata.ShipHullMarines(class)
+		n := gamedata.ShipHullMarines(class)
+		// 部隊艙(第 133 項):手冊 p.79「doubling the number of Marines on board a ship」。
+		// `gamedata.GroundTroopPodsMultiplier` 從寫出來就零生產端,因為元件不存在。
+		// 乘在**逐艦**而不是總數上——只有裝了的那艘翻倍,這才是手冊講的「on board a ship」。
+		if shipHasTroopPods(sh) {
+			n *= gamedata.GroundTroopPodsMultiplier
+		}
+		total += n
 	}
 	return total
 }

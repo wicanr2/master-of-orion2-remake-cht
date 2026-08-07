@@ -351,6 +351,31 @@ var (
 		// 主題取自執行檔的 tech→topic 表(進階建設,與自動化工廠/行星飛彈基地三選一)。
 		// ⚠ 成本 110 是 remake 值,理由同高能聚焦。
 		{"重裝甲", 110, 0, gamedata.TOPIC_ADVANCED_CONSTRUCTION, gamedata.TECH_HEAVY_ARMOR},
+		// --- 飛彈防禦系統家族(第 133 項)---
+		//
+		// `gamedata/missile.go` 把手冊 p.123「Special Defensive Systems」與「Missile Evasion」
+		// 整段搬進來了:干擾器三型、慣性穩定/抵消、閃電場、位移裝置,**每一個都有精確數字**。
+		// 而 `ResolveMissileShot` 的 `defenderEvasionBonus` 一直只吃得到艦員經驗與舵手技能
+		// ——那七個常數一個生產端都沒有,因為**這些系統從來不在元件清單上**。
+		//
+		// 這是第 131/132 項同一個形狀的第三次:手冊的 System 沒進 SpecialOptions。
+		// 這次不是一個一個撞到的——把手冊所有 `(System)`/`(Ship)` 條目對四張元件表做了
+		// 完整性盤點,一次撈出來(盤點結果見 docs/re/01-gap-report.md 第 133 項)。
+		//
+		// 主題全部取自執行檔的 tech→topic 表(`OrigTechTopic`),不是猜的。
+		// ⚠ 成本一律是 remake 值(理由同高能聚焦/重裝甲),依主題先後遞增排。
+		// ⚠ **慣性抵消器與位移裝置同屬 Transwarp Fields(71),是三選一裡的兩個選項**
+		// ——研究時只能挑一個,與微晶構築/奈米分解者同款(第 118 項)。
+		{"電子干擾器", 80, 0, gamedata.TOPIC_ADVANCED_MAGNETISM, gamedata.TECH_ECM_JAMMER},
+		{"慣性穩定器", 100, 0, gamedata.TOPIC_GRAVITIC_FIELDS, gamedata.TECH_INERTIAL_STABILIZER},
+		{"廣域干擾器", 130, 0, gamedata.TOPIC_QUANTUM_FIELDS, gamedata.TECH_WIDE_AREA_JAMMER},
+		{"多波電子干擾器", 140, 0, gamedata.TOPIC_SUBSPACE_FIELDS, gamedata.TECH_MULTIWAVE_ECM_JAMMER},
+		{"慣性抵消器", 150, 0, gamedata.TOPIC_TRANSWARP_FIELDS, gamedata.TECH_INERTIAL_NULLIFIER},
+		{"位移裝置", 150, 0, gamedata.TOPIC_TRANSWARP_FIELDS, gamedata.TECH_DISPLACEMENT_DEVICE},
+		{"閃電場", 160, 0, gamedata.TOPIC_WARP_FIELDS, gamedata.TECH_LIGHTNING_FIELD},
+		// 部隊艙:`gamedata.GroundTroopPodsMultiplier = 2`(手冊 p.79「doubling the number of
+		// Marines on board a ship」)同樣零生產端,同樣是因為元件不存在。
+		{"部隊艙", 70, 0, gamedata.TOPIC_CAPSULE_CONSTRUCTION, gamedata.TECH_TROOP_PODS},
 	}
 )
 
@@ -610,6 +635,9 @@ type combatant struct {
 	hasHEF bool
 	// apNegated 是這艘**被打的**船讓敵方穿甲失效(氙素裝甲 或 重裝甲系統,手冊各一句)。
 	apNegated bool
+	// 飛彈特殊防禦(手冊 p.123):裝了才擲骰,見 ResolveMissileShot 的 MissileDefenses。
+	hasLightningField bool
+	hasDisplacement   bool
 	// missileEvasion 是這艘船的飛彈閃避加成(手冊 ME 欄 + 舵手技能)。
 	// 只有當**它是防守方**時才有意義;敵方艦隊無逐艦資料,一律 0(既有簡化)。
 	missileEvasion int
@@ -648,12 +676,19 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 		case WeaponKindMissile:
 			amrRoll := rng.Intn(100) + 1
 			jamRoll := rng.Intn(100) + 1
-			// 防守方的飛彈閃避先前恆傳 0(「艦艇設計/軍官系統尚未提供這些元件」)。
-			// 那句話對 ECM 干擾器/慣性穩定器仍成立,但**艦員經驗與舵手技能兩項現在算得出來**
-			// ——見 mkPlayerCombatantsIndexed 填的 missileEvasion。
-			// hasAMR 先前恆傳 false——現在由防守艦是否裝了反飛彈火箭決定(第 125 項)。
+			// 特殊防禦裝置(第 133 項):**裝了才擲骰**,沒裝就完全不動 RNG
+			// ——這樣既有存檔/探針的戰鬥結果逐位元不變(同炸彈分支的處理)。
+			var mdef MissileDefenses
+			if d.hasLightningField {
+				mdef.HasLightningField, mdef.LightningRoll = true, rng.Intn(100)+1
+			}
+			if d.hasDisplacement {
+				mdef.HasDisplacement, mdef.DisplacementRoll = true, rng.Intn(100)+1
+			}
+			// ⚠ 2026-08-08:上一版註解寫「那句話對 ECM 干擾器/慣性穩定器仍成立」
+			// ——第 133 項把那一整族補進 SpecialOptions 了,`missileEvasion` 現在吃得到。
 			shot = ResolveMissileShot(d.hasAMR, 2, amrRoll, d.missileEvasion, 0, false, jamRoll,
-				attackers[i].wmax, d.shield, d.armor, false)
+				attackers[i].wmax, d.shield, d.armor, false, mdef)
 		case WeaponKindSpherical:
 			span := attackers[i].wmax - attackers[i].wmin
 			r := 0
@@ -761,12 +796,15 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 			shield: s.nebulaShield(shieldReduceByName(sh.Shield), shipHasHardShield(sh)),
 			armor:  effectiveArmorHP(sh),
 			kind:   weaponKindByName(sh.Weapon), weaponName: sh.Weapon, mods: sh.Mods,
-			sizeClass:      shipSizeClass(sh.Class),
-			hasAMR:         sh.Special == antiMissileRocketName,
-			hasHEF:         sh.Special == highEnergyFocusName,
-			apNegated:      shipNegatesArmorPiercing(sh),
-			missileEvasion: gamedata.ShipCrewMissileEvasionBonus(crew) + s.helmsmanEvasionBonus(),
-			autoRepair:     shipHasAutoRepair(sh), shipIdx: shipIdx})
+			sizeClass:         shipSizeClass(sh.Class),
+			hasAMR:            sh.Special == antiMissileRocketName,
+			hasHEF:            sh.Special == highEnergyFocusName,
+			apNegated:         shipNegatesArmorPiercing(sh),
+			hasLightningField: shipHasLightningField(sh),
+			hasDisplacement:   shipHasDisplacementDevice(sh),
+			missileEvasion: gamedata.ShipCrewMissileEvasionBonus(crew) + s.helmsmanEvasionBonus() +
+				shipMissileEvasionBonus(sh),
+			autoRepair: shipHasAutoRepair(sh), shipIdx: shipIdx})
 		idx = append(idx, shipIdx)
 	}
 	return out, idx
@@ -961,6 +999,12 @@ type CombatShip struct {
 	HEF bool
 	// APNegated 是這艘船讓敵方穿甲失效(氙素裝甲 或 重裝甲系統)。
 	APNegated bool
+	// 飛彈防禦(手冊 p.123)。先前格子戰術這一側一律傳 0/false,註解寫著
+	// 「現行皆無對應可造艦元件」——第 125/133 項把那些元件都補上了。
+	MissileEvasion    int  // 艦員經驗 + 舵手技能 + 干擾器/慣性穩定器
+	HasAMR            bool // 反飛彈火箭:射程內攔截
+	HasLightningField bool // 閃電場:每一枚來襲飛彈各 50% 直接摧毀
+	HasDisplacement   bool // 位移裝置:一律 30% 完全未命中
 }
 
 // CombatSpriteForClass 依艦體等級回傳 CMBTSHP 色塊內 sprite 索引(見 docs/tech/cmbtshp-ship-sprites.md)。
@@ -1028,8 +1072,13 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			Kind:            weaponKindByName(sh.Weapon), Mods: sh.Mods,
 			HEF:       sh.Special == highEnergyFocusName,
 			APNegated: shipNegatesArmorPiercing(sh),
-			SpriteIdx: CombatSpriteForClass(sh.Class), // 色塊 0(玩家)
-			Bay:       bay, BayKind: bayKind,
+			MissileEvasion: gamedata.ShipCrewMissileEvasionBonus(s.shipCrewLevel(sh)) +
+				s.helmsmanEvasionBonus() + shipMissileEvasionBonus(sh),
+			HasAMR:            sh.Special == antiMissileRocketName,
+			HasLightningField: shipHasLightningField(sh),
+			HasDisplacement:   shipHasDisplacementDevice(sh),
+			SpriteIdx:         CombatSpriteForClass(sh.Class), // 色塊 0(玩家)
+			Bay:               bay, BayKind: bayKind,
 		})
 	}
 	mult := 1.0
