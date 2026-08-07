@@ -2314,7 +2314,11 @@ type GameSession struct {
 
 	// LastDiscovery 是上一回合抵達星系時觸發的一次性發現(太空殘骸/失散殖民地…);
 	// nil = 無。與 LastEventReport 分開:隨機事件是全銀河的新聞,發現是自家艦隊的回報。
-	LastDiscovery    *SystemDiscovery
+	LastDiscovery *SystemDiscovery
+	// LastArtemis 是上一回合艦隊進入敵方星系時踩到的水雷網結算(阿提米絲系統網,見
+	// artemis.go);nil = 沒踩到或該星沒有水雷網。與 LastDiscovery 分開:發現是好事、
+	// 這個是損失,混在同一個欄位會讓 UI 分不出該用哪種語氣。
+	LastArtemis      *ArtemisStrike
 	LastPlayerOutput engine.EmpireOutput // 上一回合玩家結算(供畫面顯示)
 	Stars            []Star              // 星系圖
 	Nebulae          []Nebula            // 星雲(星圖地形,影響戰鬥護盾;見 nebula.go)
@@ -2645,6 +2649,13 @@ func (s *GameSession) advanceFleet() {
 			continue
 		}
 		s.Stars[f.AtStar].Explored = true
+		// 阿提米絲系統網:手冊寫的是「any enemy ship **entering** that system」,
+		// 是**進入的那一刻**而不是停留每回合,所以結算在這裡(見 artemis.go)。
+		// 放在探索標記之後、一次性發現之前:先挨雷再看見星系裡有什麼,順序與原版一致
+		// (雷區是進門就炸,發現是進去之後才看到的)。
+		if a := s.applyArtemisMines(f, f.AtStar); a != nil {
+			s.LastArtemis = a
+		}
 		// 抵達星系當下結算一次性發現(原版 Do_System_Discoveries_At_Star_,見 discovery.go)。
 		if d := s.discoverSystemSpecials(f.AtStar); d != nil {
 			s.LastDiscovery = d
