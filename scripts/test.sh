@@ -19,7 +19,7 @@ fi
 # 需 CGO/GL,由 scripts/test-ebiten.sh 以 moo2-ebiten image 另行驗證。可傳參覆蓋。
 TARGETS=("$@")
 if [[ ${#TARGETS[@]} -eq 0 ]]; then
-  TARGETS=(./internal/lbx ./internal/save ./internal/gamedata ./internal/assets ./internal/i18n ./cmd/lbxdump)
+  TARGETS=(./internal/lbx ./internal/save ./internal/gamedata ./internal/assets ./internal/i18n ./internal/netplay ./cmd/lbxdump)
 fi
 
 exec docker run --rm \
