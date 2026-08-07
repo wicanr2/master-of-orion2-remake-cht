@@ -65,13 +65,14 @@ func TestStarSpriteAssetClampsOutOfRange(t *testing.T) {
 	}
 }
 
-// TestStarSpriteFrameForOnlyAnimatesBlackHoles 釘住一個**刻意的取捨**:
-// 只有黑洞會動,一般星球固定第 0 幀。
+// TestStarSpriteFrameForOnlyAnimatesBlackHoles 釘住「只有黑洞會動」。
 //
-// 一般星球的閃爍在原版是**爆發式**的(`Draw_A_Star_`:計數器到 `star[+0x65]` 就停成 -1,
-// 而且有全域併發預算 `word_19C164` 管同時幾顆在閃),而「什麼時候開始閃」「爆發長度」
-// 「預算值」三個常數都沒追出來。**不編那三個數**,所以一般星球先維持靜止。
-// 黑洞不一樣:`Draw_Black_Holes_` 的動畫無條件連續,規則完整。
+// 這不是取捨,是查證結果:`Draw_A_Star_` 裡的閃爍碼在出貨版**是死碼**——
+// 啟動它要把 `star[+0x64]` 設成 ≥ 0,而全檔對那個欄位的位元組寫入只有 reset(0xFF);
+// 全域預算 `word_19C164` 更是只減不加。詳見 starsprite.go 檔頭。
+//
+// 所以這條測試擋的是「有人看到 5 幀資產就順手把一般星球也接上動畫」——
+// 那會讓 remake 比原版**多**一個原版沒有的效果。
 func TestStarSpriteFrameForOnlyAnimatesBlackHoles(t *testing.T) {
 	b := &sceneBuilder{} // 無資產解析器:幀數查不到,一律回 0
 	for _, spectral := range []int{0, 1, 2, 3, 4, 5} {
