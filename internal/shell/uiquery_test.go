@@ -51,7 +51,7 @@ func TestFleetCrewSummaryReportsTheWeakestShip(t *testing.T) {
 		t.Skip("這局的艦隊不足兩艘,測不出最低值")
 	}
 	for i := range ships {
-		ships[i].CrewXP = gamedata.CrewXPForLevel(gamedata.CrewLevelCount-2, s.RaceWarlord)
+		ships[i].CrewXP = gamedata.CrewXPForLevel(gamedata.CrewLevelCount-2, s.RaceWarlord())
 	}
 	ships[len(ships)-1].CrewXP = 0 // 最後一艘是新兵
 
@@ -59,7 +59,7 @@ func TestFleetCrewSummaryReportsTheWeakestShip(t *testing.T) {
 	if !ok {
 		t.Fatal("有參戰艦時應回報摘要")
 	}
-	if lv != gamedata.CrewLevelForXP(0, s.RaceWarlord) {
+	if lv != gamedata.CrewLevelForXP(0, s.RaceWarlord()) {
 		t.Errorf("應回報最低的那一艘(新兵),得到等級 %d", lv)
 	}
 }

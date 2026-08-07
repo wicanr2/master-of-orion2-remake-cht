@@ -790,12 +790,15 @@ func (s *GameSession) applySurvivorDamage(survivors []combatant, _ []int) {
 }
 
 // DiplomacyResponse 依雙方相對實力回應一個外交提議(和平/貿易/威脅)。
-// raceDiploBonusPct 回傳目前種族的外交加成百分比。人類 Charismatic +50%(手冊 p.15「Humans
-// gain a 50% bonus to their diplomatic efforts」)——這是移除人類假起始金後,其招牌特質首個
-// 真正的消費端。first-version 只認人類(RaceIndex 0);自訂種族「魅力非凡」pick 尚未追蹤,回 0
-// (誠實標)。
+// raceDiploBonusPct 回傳目前種族的外交加成百分比。魅力非凡 +50%(手冊 p.15「Humans
+// gain a 50% bonus to their diplomatic efforts」)。
+//
+// ⚠ 2026-08-08(第 130 項)由 `s.RaceIndex == 0 // 人類` 改成查特性。
+// 硬比索引在兩個方向上都會錯:`Races` 重排一次就指到別族;而自訂種族選了魅力非凡
+// 也永遠拿不到——先前的註解把後者標成「pick 尚未追蹤」,現在追蹤得到了
+// (自訂種族仍拿不到,但那是因為點數畫面還沒把 pick 寫進特性,不是因為查不到)。
 func (s *GameSession) raceDiploBonusPct() int {
-	if s.RaceIndex == 0 { // 人類
+	if s.RaceCharismatic() {
 		return 50
 	}
 	return 0
@@ -2199,7 +2202,6 @@ func (s *GameSession) ApplyRace(idx int) {
 	s.RaceShipDefPct = r.ShipDefPct
 	s.RaceGroundBonus = r.GroundCombatBonus
 	s.RaceSpyBonus = r.SpyBonus
-	s.RaceOrigIdx = r.OrigIdx
 	for i := range s.PlayerColonies {
 		s.PlayerColonies[i].IndustryPerWorker += r.IndBonus
 		s.PlayerColonies[i].ResearchPerScientist += r.ResBonus
@@ -2214,12 +2216,15 @@ func (s *GameSession) ApplyRace(idx int) {
 // ⚠ 政府型態與特殊能力的深層效果(創造力科技解鎖、貿易奇才、心靈感應等)尚未模擬,
 // 目前只套用可對應到 Race 欄位的數值部分;其餘由 Custom 畫面記錄待後續實作。
 func (s *GameSession) ApplyCustomRaceBonuses(r Race) {
+	// ⚠ 自訂種族不在原版 13 族表上,RaceIndex 必須標成 −1。
+	// 不標的話它會停在預設的 0(人類),於是自訂種族會憑空拿到「魅力非凡」
+	// ——布林特性是由 RaceIndex 查的(見 raceOrigIdx),而 0 是一個合法索引。
+	s.RaceIndex = -1
 	s.raceGrowthPct = r.GrowthPct
 	s.RaceCombatPct = r.CombatPct
 	s.RaceShipDefPct = r.ShipDefPct
 	s.RaceGroundBonus = r.GroundCombatBonus
 	s.RaceSpyBonus = r.SpyBonus
-	s.RaceOrigIdx = -1 // 自訂種族不在 gamedata 的 13 族表上
 	for i := range s.PlayerColonies {
 		s.PlayerColonies[i].IndustryPerWorker += r.IndBonus
 		s.PlayerColonies[i].ResearchPerScientist += r.ResBonus
@@ -2798,24 +2803,6 @@ type GameSession struct {
 	RaceShipDefPct  int    // 種族艦艇防禦百分點加成(原版 TRAIT_SHIP_DEFENSE)
 	RaceGroundBonus int    // 種族地面戰定值加成(原版 TRAIT_GROUND_COMBAT)
 	RaceSpyBonus    int    // 種族諜報定值加成(原版 TRAIT_SPYING)
-	// RaceOrigIdx 是原版種族編號,用來查 gamedata.OrigRaceTraits 的布林特性;自訂種族為 -1。
-	RaceOrigIdx int
-	// RaceWarlord 是種族的「統帥」特質(手冊 p.26-27)。影響兩件事:
-	// 艦員經驗階梯整條往上平移一格(crew.go)、營房容量加倍(gamedata.Ground*BarracksCap)。
-	//
-	// ⚠ **目前沒有任何內建種族會設它**——十三經典種族的特質表(Races)還沒有特質欄位,
-	// 自訂種族的 Warlord pick 也還沒接。留這個欄位是為了讓那兩處共用同一個真相來源:
-	// 先前 ground_invasion.go / orbital_bombardment.go 有五處各自硬寫 `false`,
-	// 特質系統補上時要改五個地方而且很容易漏掉一個。
-	RaceWarlord bool
-	// RaceRepulsive / RaceCharismatic 是「排斥 / 魅力」兩個互斥的種族特質(手冊 p.25)。
-	// 目前只用在同化速率上(assimilation.go):排斥種族同化速度減半。
-	//
-	// ⚠ 與 RaceWarlord 同款狀況——**沒有任何內建種族會設它們**,特質表還沒有這些欄位。
-	// 魅力那一個更特別:手冊只說「assimilate conquered colonists **easily**」而**沒給數字**,
-	// 所以它現在連在同化那邊都不生效(見 gamedata/assimilation.go 的誠實留白)。
-	RaceRepulsive   bool
-	RaceCharismatic bool
 
 	raceGrowthPct int // 種族人口成長百分點加成(供 advancePopulation)
 
@@ -3275,6 +3262,7 @@ func (s *GameSession) prepPlayerDerived() {
 	// Hyper-Advanced Lv1 研究成本。
 	s.Player.HyperAdvancedResearchCost = gamedata.HyperAdvancedCost(s.RuleProfile)
 	s.syncTradeGoodsFlag()          // 依建造選單同步「貿易品」旗標,供 RunEmpireTurn 判斷是否換算收入
+	s.syncRaceEngineFields()        // 種族布林特性 → 引擎層欄位,見 race_boolean_traits.go
 	s.syncAchievementColonyFields() // 成就科技的全帝國效果(污染容忍、每工人產能),見 achievements.go
 	s.recalcAllColonyMorale()       // 成就也影響士氣(VR 網路/心靈學),要在經濟結算之前重算
 }

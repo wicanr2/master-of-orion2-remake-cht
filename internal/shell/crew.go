@@ -28,7 +28,7 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 
 // shipCrewLevel 回傳一艘船目前的艦員等級(由 CrewXP 推導)。
 func (s *GameSession) shipCrewLevel(sh Ship) int {
-	return gamedata.CrewLevelForXP(sh.CrewXP, s.RaceWarlord)
+	return gamedata.CrewLevelForXP(sh.CrewXP, s.RaceWarlord())
 }
 
 // ShipCrewLevel 是 shipCrewLevel 的公開版本,供 UI 顯示。
@@ -77,14 +77,14 @@ const spaceAcademyName = "太空學院"
 // 太空學院把起始等級推高一級(手冊 p.97),用「那一級的門檻經驗」表達。
 // colonyIdx < 0 代表不是從某個殖民地造出來的(事件給的船之類),走一般起始等級。
 func (s *GameSession) newShipCrewXP(colonyIdx int) int {
-	level := gamedata.CrewStartingLevel(s.RaceWarlord)
+	level := gamedata.CrewStartingLevel(s.RaceWarlord())
 	if colonyIdx >= 0 && colonyIdx < len(s.ColonyBuildings) && s.ColonyBuildings[colonyIdx][spaceAcademyName] {
 		level += gamedata.SpaceAcademyStartingLevelBonus
 	}
-	if max := gamedata.CrewMaxLevel(s.RaceWarlord); level > max {
+	if max := gamedata.CrewMaxLevel(s.RaceWarlord()); level > max {
 		level = max
 	}
-	xp := gamedata.CrewXPForLevel(level, s.RaceWarlord)
+	xp := gamedata.CrewXPForLevel(level, s.RaceWarlord())
 	if xp < 0 {
 		return 0
 	}
@@ -214,7 +214,7 @@ func (s *GameSession) FleetCrewSummary() (level int, toNext int, ok bool) {
 		}
 		lv := s.shipCrewLevel(sh)
 		if level < 0 || lv < level {
-			level, toNext, ok = lv, gamedata.CrewXPToNextLevel(sh.CrewXP, s.RaceWarlord), true
+			level, toNext, ok = lv, gamedata.CrewXPToNextLevel(sh.CrewXP, s.RaceWarlord()), true
 		}
 	}
 	if !ok {

@@ -226,6 +226,16 @@ type ColonyState struct {
 type PlayerState struct {
 	BC      int // 國庫(Billion Credits)
 	TaxRate int // 稅率(百分比)
+	// FantasticTrader 是「神級商人」種族特性(諾蘭姆)。影響兩筆帝國收入:
+	// 貿易品 1:1 換 BC(一般種族 2:1)、餘糧每單位 1 BC(一般種族 0.5)。
+	//
+	// ⚠ 2026-08-08(第 130 項)。RunEmpireTurn 先前對這兩處硬傳 `false`,理由寫在
+	// empire.go:「ColonyState 目前沒有追蹤『Fantastic Trader』這個種族特質的欄位
+	// (無可推導模型),TODO 待種族特質系統補上後再接。」——第 129 項把特質表接進來了。
+	//
+	// 放在 PlayerState 不是 ColonyState:它是**帝國層**特性,每個殖民地都一樣;
+	// 放進殖民地會變成 N 份可以不一致的真相。
+	FantasticTrader bool
 	// Maintenance 每回合總維護費,BC 結算時扣除。目前呼叫端(shell.GameSession.EndTurn)只
 	// 依實際已建成建築(gamedata.BuiltMaintenanceBC)加總計入;艦隊/間諜/軍官維護費本專案尚無
 	// 可推導的模型(未追蹤運輸艦數量等),未計入——TODO 待補,見 session.go

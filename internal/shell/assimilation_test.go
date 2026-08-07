@@ -109,7 +109,11 @@ func TestRepulsiveRaceSlowsAssimilationInSession(t *testing.T) {
 	s := NewDemoSession()
 	s.Government = gamedata.MoraleGovDemocracy
 	base := s.AssimilationTurnsFor(0)
-	s.RaceRepulsive = true
+	s.ApplyRace(raceIndexByEnName(t, "Silicoids")) // 矽基是惹人厭種族
+	s.Government = gamedata.MoraleGovDemocracy     // ApplyRace 不動政體,重設保持與 base 同條件
+	if !s.RaceRepulsive() {
+		t.Fatal("矽基應是惹人厭種族")
+	}
 	if got := s.AssimilationTurnsFor(0); got != base*2 {
 		t.Errorf("排斥種族應是兩倍回合:%d → %d", base, got)
 	}

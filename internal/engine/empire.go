@@ -73,24 +73,25 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		// (co.FoodSurplus>0)計入——手冊只描述「出售剩餘糧食」這個收入來源,饑荒(負盈餘)
 		// 本身已經由 Starving/colonyGrowth 停擺懲罰,不應該再疊加一筆負 BC(手冊沒有「食物
 		// 赤字倒扣 BC」的敘述,IncomeFoodSurplusRevenue 若傳負數字面上會算出負值,故由呼叫端
-		// 夾在正盈餘才呼叫,避免雙重懲罰)。fantasticTrader 固定傳 false:本專案的 ColonyState
-		// 目前沒有追蹤「Fantastic Trader」這個種族特質的欄位(無可推導模型),TODO 待種族特質
-		// 系統補上後再接。
+		// 夾在正盈餘才呼叫,避免雙重懲罰)。
+		//
+		// ⚠ 2026-08-08(第 130 項):fantasticTrader 先前硬傳 `false`,註解寫著「ColonyState
+		// 目前沒有追蹤這個種族特質的欄位(無可推導模型),TODO 待種族特質系統補上後再接」。
+		// 特質系統(第 129 項)補上了,改讀 ps.FantasticTrader(諾蘭姆:每單位 1 BC 而非 0.5)。
 		foodRev := 0
 		if co.FoodSurplus > 0 {
-			foodRev = gamedata.IncomeFoodSurplusRevenue(co.FoodSurplus, false)
+			foodRev = gamedata.IncomeFoodSurplusRevenue(co.FoodSurplus, ps.FantasticTrader)
 		}
 		// 貿易品(Trade Goods)收入:貿易品是「建造佇列選項」(與 Housing 同類,見
 		// engine.ColonyState.Housing 的先例),不是獨立的產能分配職務——手冊(GAME_MANUAL.pdf
 		// p.70)描述的是「殖民地把建造改設為貿易品」,該殖民地當回合的淨工業整包不蓋建築、改以
 		// 2:1(一般種族)換算成 BC。cs.TradeGoods 由 shell.GameSession.syncTradeGoodsFlag 依玩家
 		// 建造選單同步(見該函式);「不累積建造進度」則由 shell.advanceBuilds 依建造項名稱處理,
-		// 兩處合力達成手冊行為,engine 層只負責換算收入。fantasticTrader 固定傳 false:同上
-		// FoodSurplusRevenue 呼叫的理由,ColonyState 目前無「Fantastic Trader」種族特質欄位,
-		// TODO 待種族特質系統補上後再接。
+		// 兩處合力達成手冊行為,engine 層只負責換算收入。fantasticTrader 同上改讀
+		// ps.FantasticTrader(諾蘭姆:1:1 而非 2:1)。
 		tradeRev := 0
 		if cs.TradeGoods {
-			tradeRev = gamedata.TradeGoodsIncome(co.NetIndustry, false)
+			tradeRev = gamedata.TradeGoodsIncome(co.NetIndustry, ps.FantasticTrader)
 		}
 		// IncomeBonusPercent(太空港 p.79 +50、行星證券交易所 p.93 +100,可疊加):手冊原文是
 		// 「該殖民地所有來源 BC 收入 +N%」——這裡在「逐殖民地」這層迴圈內,對這個殖民地當回合

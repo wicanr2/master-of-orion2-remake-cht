@@ -54,7 +54,7 @@ func (s *GameSession) assimilationGovernment() gamedata.AssimilationGovernment {
 func (s *GameSession) AssimilationTurnsFor(colonyIdx int) int {
 	hasCenter := colonyIdx >= 0 && colonyIdx < len(s.ColonyBuildings) &&
 		s.ColonyBuildings[colonyIdx][alienManagementCenterName]
-	return gamedata.AssimilationTurns(s.assimilationGovernment(), hasCenter, s.RaceRepulsive, s.RaceCharismatic)
+	return gamedata.AssimilationTurns(s.assimilationGovernment(), hasCenter, s.RaceRepulsive(), s.RaceCharismatic())
 }
 
 // alienManagementCenterName 是建築表裡的中文名(gamedata.Buildings 的 NameZH)。

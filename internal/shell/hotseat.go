@@ -95,7 +95,6 @@ type seat struct {
 	RaceShipDefPct  int
 	RaceGroundBonus int
 	RaceSpyBonus    int
-	RaceOrigIdx     int
 	RaceGrowthPct   int
 	Government      gamedata.MoraleGovernmentType
 	CapturedPop     int
@@ -137,8 +136,8 @@ func (s *GameSession) saveSeat() seat {
 		RaceIndex:        s.RaceIndex, PlayerName: s.PlayerName, FlagColor: s.FlagColor,
 		RaceCombatPct: s.RaceCombatPct, RaceGrowthPct: s.raceGrowthPct,
 		RaceShipDefPct: s.RaceShipDefPct, RaceGroundBonus: s.RaceGroundBonus,
-		RaceSpyBonus: s.RaceSpyBonus, RaceOrigIdx: s.RaceOrigIdx,
-		Government: s.Government, CapturedPop: s.CapturedPop,
+		RaceSpyBonus: s.RaceSpyBonus,
+		Government:   s.Government, CapturedPop: s.CapturedPop,
 
 		LastPlayerOutput: s.LastPlayerOutput, LastBuilt: s.LastBuilt,
 		LastEvent: s.LastEvent, LastEventReport: s.LastEventReport, LastDiscovery: s.LastDiscovery,
@@ -164,7 +163,7 @@ func (s *GameSession) loadSeat(v seat) {
 	s.RaceIndex, s.PlayerName, s.FlagColor = v.RaceIndex, v.PlayerName, v.FlagColor
 	s.RaceCombatPct, s.raceGrowthPct = v.RaceCombatPct, v.RaceGrowthPct
 	s.RaceShipDefPct, s.RaceGroundBonus = v.RaceShipDefPct, v.RaceGroundBonus
-	s.RaceSpyBonus, s.RaceOrigIdx = v.RaceSpyBonus, v.RaceOrigIdx
+	s.RaceSpyBonus = v.RaceSpyBonus
 	s.Government, s.CapturedPop = v.Government, v.CapturedPop
 
 	s.LastPlayerOutput, s.LastBuilt = v.LastPlayerOutput, v.LastBuilt

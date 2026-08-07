@@ -160,7 +160,13 @@ func TestWarlordShipsStartAsRegulars(t *testing.T) {
 	if lv := s.shipCrewLevel(Ship{}); lv != gamedata.CrewGreen {
 		t.Errorf("一般種族的新船應是新兵,得到等級 %d", lv)
 	}
-	s.RaceWarlord = true
+	// ⚠ 2026-08-08:改成真的選姆瑞森,而不是手動把旗標設成 true。
+	// 統帥不再是可以外部指派的欄位,而是由種族算出來的(見 raceOrigIdx)——
+	// 這樣測到的才是「姆瑞森玩家的船出廠就是正規兵」,而不只是「這個 bool 有作用」。
+	s.ApplyRace(raceIndexByEnName(t, "Mrrshan"))
+	if !s.RaceWarlord() {
+		t.Fatal("姆瑞森應是統帥種族")
+	}
 	if lv := s.shipCrewLevel(Ship{}); lv != gamedata.CrewRegular {
 		t.Errorf("統帥種族的新船應是正規兵,得到等級 %d", lv)
 	}

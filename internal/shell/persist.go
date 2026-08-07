@@ -138,7 +138,6 @@ type sessionSnapshot struct {
 	RaceShipDefPct  int    `json:"raceShipDefPct"`
 	RaceGroundBonus int    `json:"raceGroundBonus"`
 	RaceSpyBonus    int    `json:"raceSpyBonus"`
-	RaceOrigIdx     int    `json:"raceOrigIdx"`
 	RaceGrowthPct   int    `json:"raceGrowthPct"`
 
 	// Government 是玩家政府型態(2026-07-11 士氣接線;見 GameSession.Government 欄位註解)。
@@ -244,7 +243,7 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		PlayerName: s.PlayerName, FlagColor: s.FlagColor,
 		RaceCombatPct: s.RaceCombatPct, RaceGrowthPct: s.raceGrowthPct,
 		RaceShipDefPct: s.RaceShipDefPct, RaceGroundBonus: s.RaceGroundBonus,
-		RaceSpyBonus: s.RaceSpyBonus, RaceOrigIdx: s.RaceOrigIdx,
+		RaceSpyBonus:        s.RaceSpyBonus,
 		PlayerColonyMarines: s.PlayerColonyMarines,
 		MarineBarracksAge:   s.MarineBarracksAge, Government: s.Government,
 		PlayerColonyStars: s.PlayerColonyStars, PlayerColonyPlanets: s.PlayerColonyPlanets,
@@ -314,7 +313,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 		PlayerName: snap.PlayerName, FlagColor: snap.FlagColor,
 		RaceCombatPct: snap.RaceCombatPct, raceGrowthPct: snap.RaceGrowthPct,
 		RaceShipDefPct: snap.RaceShipDefPct, RaceGroundBonus: snap.RaceGroundBonus,
-		RaceSpyBonus: snap.RaceSpyBonus, RaceOrigIdx: snap.RaceOrigIdx,
+		RaceSpyBonus:        snap.RaceSpyBonus,
 		PlayerColonyMarines: snap.PlayerColonyMarines,
 		MarineBarracksAge:   snap.MarineBarracksAge, Government: snap.Government,
 		PlayerColonyStars: snap.PlayerColonyStars, PlayerColonyPlanets: snap.PlayerColonyPlanets,

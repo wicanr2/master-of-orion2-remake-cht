@@ -292,12 +292,9 @@ func (s *GameSession) marineForceFor(defending bool) int {
 	return force
 }
 
-// raceHasTrait 回報玩家的種族有沒有某項布林特性。
-//
-// 自訂種族(RaceOrigIdx < 0)一律回 false:它走點數畫面自己組,不在原版 13 族表上,
-// 而點數畫面目前只記錄數值型加成(見 ApplyCustomRaceBonuses)。**寧可少給也不要亂給。**
+// raceHasTrait 回報玩家的種族有沒有某項布林特性(見 race_boolean_traits.go)。
 func (s *GameSession) raceHasTrait(t gamedata.RaceTrait) bool {
-	return gamedata.OrigRaceHasTrait(s.RaceOrigIdx, t)
+	return gamedata.OrigRaceHasTrait(s.raceOrigIdx(), t)
 }
 
 // hasPoweredArmor 回傳玩家是否已擁有 Powered Armor。
@@ -350,7 +347,7 @@ func (s *GameSession) advanceMarines() {
 		}
 		age := s.MarineBarracksAge[i]
 		c := s.PlayerColonies[i]
-		n := gamedata.GroundMarineBarracksUnits(age, c.Population, c.PopMax, s.RaceWarlord)
+		n := gamedata.GroundMarineBarracksUnits(age, c.Population, c.PopMax, s.RaceWarlord())
 		if n > s.PlayerColonyMarines[i] {
 			s.PlayerColonyMarines[i] = n
 		}
@@ -382,7 +379,7 @@ func (s *GameSession) advanceArmor() {
 		}
 		age := s.ArmorBarracksAge[i]
 		c := s.PlayerColonies[i]
-		n := gamedata.GroundArmorBarracksUnits(age, c.Population, c.PopMax, s.RaceWarlord)
+		n := gamedata.GroundArmorBarracksUnits(age, c.Population, c.PopMax, s.RaceWarlord())
 		if n > s.PlayerColonyTanks[i] {
 			s.PlayerColonyTanks[i] = n
 		}
@@ -624,7 +621,7 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	// ——再加一次就會變成 3 / 4。見 gap report 第 89 項的重建表。
 	atkHits[groundTypeTanks] = tankHits
 
-	defCount := gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population, colony.PopMax, s.RaceWarlord)
+	defCount := gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population, colony.PopMax, s.RaceWarlord())
 	defForce := aiMarineForce(*aiPlayer)
 	// 守方 Commando 領袖加成(#5,2026-07-11 已接線;ruleprofile.go RuleProfile.DefenderCommandoBonus):
 	// AIOpponent.Leaders(見該欄位註解)提供「AI 是否擁有 Commando 守將」的資料來源——

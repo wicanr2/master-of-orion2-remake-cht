@@ -25,7 +25,7 @@ func TestCrewExperienceRaisesDefenceNotJustOffence(t *testing.T) {
 
 	// 把艦員練到高階(用 gamedata 的門檻,不自己編數字)。
 	for i := range s.Fleet().Ships {
-		s.Fleet().Ships[i].CrewXP = gamedata.CrewXPForLevel(gamedata.CrewLevelCount-2, s.RaceWarlord)
+		s.Fleet().Ships[i].CrewXP = gamedata.CrewXPForLevel(gamedata.CrewLevelCount-2, s.RaceWarlord())
 	}
 	veteran := s.mkPlayerCombatants()
 
@@ -48,7 +48,7 @@ func TestCrewExperienceRaisesMissileEvasion(t *testing.T) {
 	}
 	green := s.mkPlayerCombatants()
 	for i := range s.Fleet().Ships {
-		s.Fleet().Ships[i].CrewXP = gamedata.CrewXPForLevel(gamedata.CrewLevelCount-2, s.RaceWarlord)
+		s.Fleet().Ships[i].CrewXP = gamedata.CrewXPForLevel(gamedata.CrewLevelCount-2, s.RaceWarlord())
 	}
 	veteran := s.mkPlayerCombatants()
 

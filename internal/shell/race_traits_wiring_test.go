@@ -269,13 +269,13 @@ func TestSpyRaceBonusReachesBothSides(t *testing.T) {
 
 // 自訂種族不會誤查到某一族的布林特性。
 //
-// `ApplyCustomRaceBonuses` 把 RaceOrigIdx 設成 −1,而 `OrigRaceHasTrait` 對越界回 false
+// `raceOrigIdx()` 對 RaceIndex 越界回 −1,而 `OrigRaceHasTrait` 對越界回 false
 // ——寧可少給也不要亂給(自訂種族的特殊能力目前只記錄不生效)。
 func TestCustomRaceHasNoBooleanTraits(t *testing.T) {
 	s := NewDemoSession()
 	s.ApplyCustomRaceBonuses(Race{Name: "測試自訂", EnName: "Custom", OrigIdx: -1, IndBonus: 3})
-	if s.RaceOrigIdx != -1 {
-		t.Fatalf("自訂種族的 OrigIdx 應為 −1,得到 %d", s.RaceOrigIdx)
+	if s.raceOrigIdx() != -1 {
+		t.Fatalf("自訂種族的 OrigIdx 應為 −1,得到 %d", s.raceOrigIdx())
 	}
 	for _, tr := range []gamedata.RaceTrait{
 		gamedata.TRAIT_LOW_G, gamedata.TRAIT_HIGH_G, gamedata.TRAIT_SUBTERRANEAN,
@@ -285,4 +285,16 @@ func TestCustomRaceHasNoBooleanTraits(t *testing.T) {
 			t.Errorf("自訂種族不該查到特性 %d", tr)
 		}
 	}
+}
+
+// raceIndexByEnName 查 shell.Races 的索引(測試共用)。
+func raceIndexByEnName(t *testing.T, en string) int {
+	t.Helper()
+	for i, r := range Races {
+		if r.EnName == en {
+			return i
+		}
+	}
+	t.Fatalf("找不到種族 %s", en)
+	return -1
 }
