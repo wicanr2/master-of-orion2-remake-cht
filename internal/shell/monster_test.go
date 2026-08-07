@@ -126,7 +126,7 @@ func TestGenMonstersAlwaysGiveStarASpecial(t *testing.T) {
 	for seed := int64(0); seed < 25; seed++ {
 		galaxy, aiHomes := genGalaxy(24, seed, 3, galaxyAgeSetting)
 		homes := demoHomeStarSet(aiHomes)
-		planets := genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), galaxyAgeSetting, homes)
+		planets := genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), rand.New(rand.NewSource(seed+5)), galaxyAgeSetting, homes)
 		monsters := genMonsters(galaxy, planets, rand.New(rand.NewSource(seed+2)), homes)
 		if len(monsters) == 0 {
 			t.Fatalf("seed %d:24 星的星圖應該要有怪獸(密度 %d)", seed, gamedata.DefaultGuardMonsterCount)
@@ -140,11 +140,17 @@ func TestGenMonstersAlwaysGiveStarASpecial(t *testing.T) {
 				t.Errorf("seed %d:星 %d 有兩隻怪獸", seed, m.StarIndex)
 			}
 			seen[m.StarIndex] = true
-			if planets[m.StarIndex].NoPlanet {
+			// ⚠ 不能寫 `planets[m.StarIndex]` —— Planets 不再與 Stars 平行。
+			pi := representativePlanet(galaxy, planets, m.StarIndex)
+			if pi < 0 {
+				t.Errorf("seed %d:星系 %d 挑不到代表行星", seed, m.StarIndex)
+				continue
+			}
+			if planets[pi].NoPlanet {
 				t.Errorf("seed %d:怪獸擺在沒有行星的星系 %d", seed, m.StarIndex)
 			}
 			// 手冊 p.60 的規則。
-			if planets[m.StarIndex].SpecialID == gamedata.NoSpecial {
+			if planets[pi].SpecialID == gamedata.NoSpecial {
 				t.Errorf("seed %d:有怪獸的星系 %d 沒有特殊物產(手冊 p.60 說一定有)", seed, m.StarIndex)
 			}
 			if m.Structure <= 0 {

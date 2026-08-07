@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
 // orbit_test.go:一星多行星資料模型的護欄。
@@ -34,35 +36,79 @@ func TestEmptyOrbitsIsMinusOneNotZero(t *testing.T) {
 	}
 }
 
-// TestGeneratedStarsHaveExactlyOneOccupiedOrbit 釘住**這一階段刻意的限制**。
+// TestEveryOrbitEntryIsAValidDistinctPlanet:軌道表要指到真的行星,而且不能有兩格指同一顆。
 //
-// 產生器目前仍然每顆星只放一顆行星(放在它骰到的軌道上),其餘空著——
-// 行為逐位元不變,換的是形狀不是內容。
-//
-// 把 SystemBodies 升格成真正的行星之後這條會紅,**那時候該改的是測試**。
-func TestGeneratedStarsHaveExactlyOneOccupiedOrbit(t *testing.T) {
+// 這條先前叫 `...HasExactlyOneOccupiedOrbit`,釘的是「每顆星只放一顆行星」這個階段性限制,
+// 註解裡寫明「升格之後這條會紅,那時候該改的是測試」。升格做完了(第 63 項),所以改了。
+func TestEveryOrbitEntryIsAValidDistinctPlanet(t *testing.T) {
 	s := NewDemoSession()
+	seen := map[int]int{} // 行星索引 → 是哪顆星的
+	total := 0
 	for i := range s.Stars {
 		n := 0
-		for _, p := range s.Stars[i].Orbits {
-			if p != OrbitEmpty {
-				n++
+		for o, p := range s.Stars[i].Orbits {
+			if p == OrbitEmpty {
+				continue
 			}
+			if p < 0 || p >= len(s.Planets) {
+				t.Fatalf("星 %d 軌道 %d 指到越界的行星 %d", i, o, p)
+			}
+			if prev, dup := seen[p]; dup {
+				t.Fatalf("行星 %d 同時掛在星 %d 與星 %d 上", p, prev, i)
+			}
+			seen[p] = i
+			n++
+			total++
 		}
-		if n != 1 {
-			t.Fatalf("星 %d 目前應恰好一個軌道有行星,實得 %d", i, n)
+		if n < 1 || n > StarOrbits {
+			t.Fatalf("星 %d 的天體數應在 1..%d,實得 %d", i, StarOrbits, n)
 		}
+	}
+	if total != len(s.Planets) {
+		t.Errorf("每一顆行星都該掛在某個軌道上:掛了 %d 顆,實有 %d 顆", total, len(s.Planets))
 	}
 }
 
-// TestPlanetAtMatchesLegacyParallelIndexing:`PlanetAt(星)` 要與舊的 `Planets[星]` 同義。
+// TestGalaxyHasMultiPlanetSystems:升格之後應該真的出現多天體星系。
 //
-// 這是整個遷移的相容性支點——一星一行星時兩者必須逐項相同,否則舊呼叫端換過來就會位移。
-func TestPlanetAtMatchesLegacyParallelIndexing(t *testing.T) {
+// 沒有這一條的話,「升格」可能只是把資料搬個位置而實際仍然一星一顆——
+// 而那從上面那條測試看不出來(1 也在 1..5 的範圍內)。
+func TestGalaxyHasMultiPlanetSystems(t *testing.T) {
+	s := NewDemoSession()
+	if len(s.Planets) <= len(s.Stars) {
+		t.Fatalf("行星數應多於星數(每顆星 1..5 個天體),實得 %d 顆行星 / %d 顆星",
+			len(s.Planets), len(s.Stars))
+	}
+	multi := 0
+	for i := range s.Stars {
+		if len(s.PlanetsAt(i)) > 1 {
+			multi++
+		}
+	}
+	if multi == 0 {
+		t.Error("整個銀河沒有任何多天體星系——升格沒有真的生效")
+	}
+}
+
+// TestPlanetAtPrefersHabitable:代表行星的挑法要與產生器逐字相同。
+//
+// **這是整個遷移的相容性支點**:挑法不一致,所有走 `PlanetAt` 的舊呼叫端就會位移,
+// 而位移的徵狀是「殖民地總覽說類地、殖民地畫面說凍原」那一類自打嘴巴,不是崩潰。
+func TestPlanetAtPrefersHabitable(t *testing.T) {
 	s := NewDemoSession()
 	for i := range s.Stars {
-		if got := s.PlanetAt(i); got != i {
-			t.Fatalf("星 %d 的 PlanetAt 應等於舊的平行索引 %d,實得 %d", i, i, got)
+		rep := s.PlanetAt(i)
+		if rep < 0 {
+			t.Fatalf("星 %d 挑不到代表行星", i)
+		}
+		if s.Planets[rep].TypeID == gamedata.HABITABLE {
+			continue
+		}
+		// 代表不是一般行星 → 整個星系都不能有一般行星,否則挑錯了。
+		for _, p := range s.PlanetsAt(i) {
+			if s.Planets[p].TypeID == gamedata.HABITABLE {
+				t.Fatalf("星 %d 的代表是 %d(非一般行星),但軌道上有一般行星 %d", i, rep, p)
+			}
 		}
 	}
 }

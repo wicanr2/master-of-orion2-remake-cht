@@ -78,10 +78,12 @@ func TestHomeStarsAlwaysHabitable(t *testing.T) {
 			homes = append(homes, ai.ColonyStars...)
 		}
 		for _, idx := range homes {
-			if idx < 0 || idx >= len(s.Planets) {
+			// ⚠ 不能寫 `s.Planets[idx]` —— Planets 自 2026-08-07 起不再與 Stars 平行。
+			pi := s.PlanetAt(idx)
+			if pi < 0 {
 				continue
 			}
-			p := s.Planets[idx]
+			p := s.Planets[pi]
 			if p.NoPlanet {
 				t.Fatalf("seed %d:母星 %d 沒有行星", seed, idx)
 			}
@@ -120,15 +122,19 @@ func TestGenPlanetsHomeStarsAlwaysHabitable(t *testing.T) {
 	for seed := int64(0); seed < 20; seed++ {
 		galaxy, aiHomes := genGalaxy(24, seed, 3, galaxyAgeSetting)
 		homes := demoHomeStarSet(aiHomes)
-		ps := genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), galaxyAgeSetting, homes)
-		for i := range ps {
+		ps := genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), rand.New(rand.NewSource(seed+5)), galaxyAgeSetting, homes)
+		for i := range galaxy {
 			if !homes[i] {
 				continue
 			}
-			if ps[i].TypeID != gamedata.HABITABLE {
-				t.Fatalf("seed %d:母星 %d 的類別是 %d,應為一般行星", seed, i, ps[i].TypeID)
+			pi := representativePlanet(galaxy, ps, i)
+			if pi < 0 {
+				t.Fatalf("seed %d:母星 %d 挑不到代表行星", seed, i)
 			}
-			if ps[i].NoPlanet {
+			if ps[pi].TypeID != gamedata.HABITABLE {
+				t.Fatalf("seed %d:母星 %d 的類別是 %d,應為一般行星", seed, i, ps[pi].TypeID)
+			}
+			if ps[pi].NoPlanet {
 				t.Fatalf("seed %d:母星 %d 沒有行星", seed, i)
 			}
 		}
@@ -141,7 +147,7 @@ func TestGenPlanetsPrefersHabitableRepresentative(t *testing.T) {
 	nonHab, withHabSibling := 0, 0
 	for seed := int64(0); seed < 40; seed++ {
 		galaxy, aiHomes := genGalaxy(24, seed, 3, galaxyAgeSetting)
-		ps := genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), galaxyAgeSetting, demoHomeStarSet(aiHomes))
+		ps := genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), rand.New(rand.NewSource(seed+5)), galaxyAgeSetting, demoHomeStarSet(aiHomes))
 		for _, p := range ps {
 			if p.NoPlanet || p.TypeID == gamedata.HABITABLE {
 				continue
@@ -168,7 +174,7 @@ func TestGenPlanetsPrefersHabitableRepresentative(t *testing.T) {
 func TestGenPlanetsSystemBodiesExcludeRepresentative(t *testing.T) {
 	for seed := int64(0); seed < 20; seed++ {
 		galaxy, aiHomes := genGalaxy(24, seed, 3, galaxyAgeSetting)
-		ps := genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), galaxyAgeSetting, demoHomeStarSet(aiHomes))
+		ps := genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), rand.New(rand.NewSource(seed+5)), galaxyAgeSetting, demoHomeStarSet(aiHomes))
 		for i, p := range ps {
 			seen := map[int]bool{p.Orbit: true}
 			for _, b := range p.SystemBodies {

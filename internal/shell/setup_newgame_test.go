@@ -41,8 +41,15 @@ func TestSetupNewGameRebuildsGalaxyAndAI(t *testing.T) {
 		t.Fatalf("新星系星 0 應仍是玩家母星(Owner==1),got %d", s.Stars[0].Owner)
 	}
 
-	if len(s.Planets) != len(s.Stars) {
-		t.Fatalf("genPlanets 後 Planets 長度應與 Stars 一致,got %d vs %d", len(s.Planets), len(s.Stars))
+	// ⚠ Planets **不再與 Stars 平行**(2026-08-07 第 63 項:每顆星 1..5 個天體各佔一條軌道)。
+	// 這裡改驗真正的不變量:每顆星都挑得到代表行星。
+	if len(s.Planets) < len(s.Stars) {
+		t.Fatalf("行星數不該少於星數(每顆星至少一個天體),got %d vs %d", len(s.Planets), len(s.Stars))
+	}
+	for i := range s.Stars {
+		if s.PlanetAt(i) < 0 {
+			t.Fatalf("星 %d 挑不到代表行星", i)
+		}
 	}
 
 	// 連續推進回合不應 panic(含 AI 造艦/擴張、議會資格判斷等既有流程)。

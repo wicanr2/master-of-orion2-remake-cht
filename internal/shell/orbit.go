@@ -46,15 +46,27 @@ const OrbitEmpty = -1
 // 否則所有舊呼叫端換過來都會位移。多行星之後它是「主行星」——
 // **新程式碼要處理整個星系時請用 `PlanetsAt`**,不要靠這一支。
 func (s *GameSession) PlanetAt(star int) int {
+	return representativePlanet(s.Stars, s.Planets, star)
+}
+
+// representativePlanet 是 `PlanetAt` 的自由函式版本,供**還沒有 GameSession** 的
+// 生成階段用(genMonsters 要在星系剛生出來時挑代表行星)。
+//
+// 兩邊共用同一支,是為了不讓「代表行星怎麼挑」出現第二份實作——
+// 那兩份一旦漂開,徵狀是資料錯位而不是崩潰(見第 62 項)。
+func representativePlanet(stars []Star, planets []Planet, star int) int {
+	if star < 0 || star >= len(stars) {
+		return -1
+	}
 	first := -1
-	for _, p := range s.OrbitsOf(star) {
-		if p == OrbitEmpty {
+	for _, p := range stars[star].Orbits {
+		if p == OrbitEmpty || p < 0 || p >= len(planets) {
 			continue
 		}
 		if first < 0 {
 			first = p
 		}
-		if p < len(s.Planets) && s.Planets[p].TypeID == gamedata.HABITABLE {
+		if planets[p].TypeID == gamedata.HABITABLE {
 			return p
 		}
 	}

@@ -68,7 +68,9 @@ func genMonsters(stars []Star, planets []Planet, r *rand.Rand, homeStars map[int
 		if homeStars[i] || stars[i].Owner != 0 {
 			continue
 		}
-		if i < len(planets) && planets[i].NoPlanet {
+		// ⚠ 不能寫 `planets[i]` ——`Planets` 自 2026-08-07(第 63 項)起**不再與 Stars 平行**,
+		// 一顆星有 1..5 個天體。要挑代表行星請走 representativePlanet(唯一那一份實作)。
+		if p := representativePlanet(stars, planets, i); p >= 0 && planets[p].NoPlanet {
 			continue
 		}
 		cands = append(cands, i)
@@ -93,11 +95,11 @@ func genMonsters(stars []Star, planets []Planet, r *rand.Rand, homeStars map[int
 
 		// 手冊 p.60:有怪獸的星系一定另有一個特殊物產。原本沒有的話補一個
 		// (從權重表重骰,骰到「無」就再骰,最多幾次——骰不到就算了,不硬塞)。
-		if idx < len(planets) && planets[idx].SpecialID == gamedata.NoSpecial {
+		if p := representativePlanet(stars, planets, idx); p >= 0 && planets[p].SpecialID == gamedata.NoSpecial {
 			for try := 0; try < 12; try++ {
 				sp := gamedata.RollPlanetSpecial(r)
 				if sp != gamedata.NoSpecial {
-					planets[idx].SpecialID = sp
+					planets[p].SpecialID = sp
 					break
 				}
 			}

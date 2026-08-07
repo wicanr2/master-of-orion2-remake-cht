@@ -3307,7 +3307,9 @@ func (b *sceneBuilder) planets() (*overlayScreen, error) {
 			// ⚠ 不要往 x>410 放:那裡是原版的排序/篩選面板,不是空白區——2026-08-06 試過一次,
 			// 文字直接疊在面板按鈕上。
 			sub := color.RGBA{150, 172, 205, 255}
-			if n := p.SystemBodyCountText(); n != "" {
+			// ⚠ 從**軌道表**算,不是讀 p.SystemBodies(那個欄位自 2026-08-07 起不再被填,
+			// 見 shell.Planet.SystemCompositionText 的已淘汰註記)。
+			if n := b.session.SystemBodyCountText(b.session.PlanetStar(i)); n != "" {
 				s.extras = append(s.extras, extraText{x: cx.name, y: y + 11, size: 9, text: n, col: sub, align: 1})
 			}
 			if sp := gamedata.PlanetSpecialName(p.SpecialID); sp != "" {

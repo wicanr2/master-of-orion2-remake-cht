@@ -1562,13 +1562,14 @@ type Planet struct {
 	// restorePlanetIDs 一律回填 HABITABLE(舊生成器本來就只產一般行星)。
 	TypeID gamedata.PlanetType
 
-	// SystemBodies 是同一顆恆星底下**除了代表行星以外**的其他天體(氣態巨星/小行星帶/
-	// 額外的一般行星),依軌道由內而外排列。
+	// SystemBodies 是**已淘汰的欄位**(2026-08-07,第 63 項)。
 	//
-	// 為什麼要有這個欄位:原版每顆恆星有 1-5 個天體各佔一條軌道,而 remake 的
-	// Stars[i] ↔ Planets[i] 是一一對應(UI/拓殖/AI 全依賴這個對齊)。折衷做法是——
-	// 代表行星仍然只有一顆(挑該系統裡最適合殖民的),其餘天體記在這裡供星系資訊面板顯示
-	// 與日後的前哨站使用。**這裡不重複放代表行星本身**,避免兩份資料要同步的老問題。
+	// 它原本是一星一行星時代的折衷:代表行星只有一顆,其餘天體記在這裡供顯示用。
+	// 而它自己的註解就在擔心「兩份資料要同步的老問題」——現在同系天體是**真正的
+	// `Planet` 條目**,各佔一條軌道(見 orbit.go),摘要從軌道表算,只有一份資料。
+	//
+	// **新程式碼不要用它,產生器也不再填它。** 留著只為了讀得回舊存檔的顯示
+	// (舊檔的 SystemBodies 仍在 JSON 裡)。
 	SystemBodies []SystemBody
 }
 
@@ -1624,15 +1625,17 @@ func demoHomeStarSet(aiHomeStars []int) map[int]bool {
 //
 // homeStars 內的索引(玩家與 AI 母星)強制生成宜居行星:原版母星恆為可農作世界,
 // 交給機率骰有機會生出 Toxic 母星。
-func genPlanets(stars []Star, r *rand.Rand, age gamedata.GalaxyAge, homeStars map[int]bool) []Planet {
+func genPlanets(stars []Star, r, bodyRand *rand.Rand, age gamedata.GalaxyAge, homeStars map[int]bool) []Planet {
 	roman := []string{"I", "II", "III", "IV", "V"}
 	out := make([]Planet, 0, len(stars))
 	// 軌道表(見 orbit.go):每顆星 5 個軌道,預設全空。
 	//
-	// ⚠ **這一版仍然每顆星只放一顆行星**——放在它骰到的那個軌道上,其餘 4 格空著。
-	// 同系其他天體仍然只存成 `Planet.SystemBodies` 的摘要(有軌道/類別/名字,沒有氣候礦產)。
-	// 也就是說**行為逐位元不變**,換的是形狀不是內容;把 SystemBodies 升格成真正的行星
-	// 是下一階段的事(那才解得開人造行星與同星系多殖民地)。
+	// **同系的每一個天體都是真正的 `Planet` 條目**,各佔一條軌道——`Planets` 因此
+	// 不再與 `Stars` 平行(所有呼叫端已於第 62 項改走存取器)。
+	//
+	// ⚠ 非代表天體用**獨立的亂數流** `bodyRand`,理由與 genPlanets/genMonsters/genWormholes
+	// 各自一條流完全一樣:多骰幾次不能讓**後面每一顆星**的代表行星跟著漂掉。
+	// 沒有這條隔離,同一個 seed 的星系會整個換掉。
 	for i := range stars {
 		stars[i].Orbits = emptyOrbits()
 	}
@@ -1722,25 +1725,43 @@ func genPlanets(stars []Star, r *rand.Rand, age gamedata.GalaxyAge, homeStars ma
 			// 會讓玩家以為那是可以殖民的星。礦產/重力/大小仍有意義(前哨站升級後會用到)。
 			p.Climate = planetTypeDisplayName(p.TypeID)
 		}
-		// 同系其他天體(不含代表行星本身,見 Planet.SystemBodies 註解)。
+		setOrbit(i, p.Orbit, len(out))
+		out = append(out, p)
+		// 同系其他天體:**每一個都是完整的行星條目**,各佔一條軌道。
+		// 用 bodyRand(獨立亂數流),不影響代表行星與後續星系的骰序。
 		for o := 0; o < nPlanets; o++ {
 			if o == orbit {
 				continue
 			}
-			b := SystemBody{Orbit: o, Type: types[o], Name: s.Name + " " + roman[o]}
-			if types[o] == gamedata.HABITABLE {
-				b.SizeID = gamedata.RollPlanetSize(r.Intn(10) + 1)
+			b := Planet{Gen: planetGenVersion, TypeID: types[o], Orbit: o,
+				Name: s.Name + " " + roman[o]}
+			bg := gamedata.PlanetOrbitGroup(sc, o)
+			b.SizeID = gamedata.RollPlanetSize(bodyRand.Intn(10) + 1)
+			b.MineralID = gamedata.RollMineralClass(bodyRand.Intn(10)+1, sc)
+			b.GravityID = gamedata.PlanetGravityFor(b.MineralID, b.SizeID)
+			b.ClimateID = gamedata.RollClimate(bodyRand, bg, age, false)
+			b.SpecialID = gamedata.RollPlanetSpecial(bodyRand)
+			b.Climate = climateDisplayName(b.ClimateID)
+			b.Gravity = gravityDisplayName(b.GravityID)
+			b.Mineral = mineralDisplayName(b.MineralID)
+			b.Size = sizeDisplayName(b.SizeID)
+			if b.TypeID != gamedata.HABITABLE {
+				// 氣態巨星/小行星帶沒有氣候與農業(同代表行星那一段的理由)。
+				b.Climate = planetTypeDisplayName(b.TypeID)
 			}
-			p.SystemBodies = append(p.SystemBodies, b)
+			setOrbit(i, o, len(out))
+			out = append(out, b)
 		}
-		setOrbit(i, p.Orbit, len(out))
-		out = append(out, p)
 	}
 	return out
 }
 
 // SystemCompositionText 回傳「同一恆星系裡除了代表行星以外還有什麼」的摘要字串
 // (如「同系:氣態巨星×2、小行星帶」);沒有其他天體回空字串。供星系資訊面板顯示。
+// ⚠ **已淘汰**:這一支看的是 `Planet.SystemBodies`,而那個欄位自 2026-08-07(第 63 項)
+// 起不再被填——同系天體現在是真正的 `Planet` 條目,掛在軌道表上。
+// 新程式碼請用 `GameSession.SystemCompositionText(星)`。
+// 這一支留著只為了讀得回舊存檔的顯示(舊檔的 SystemBodies 仍在 JSON 裡)。
 func (p Planet) SystemCompositionText() string {
 	if len(p.SystemBodies) == 0 {
 		return ""
@@ -2051,7 +2072,7 @@ func (s *GameSession) SetupNewGame(stars int, seed int64, numAI int) {
 	s.Stars = galaxy
 	// 行星生成用獨立的亂數流(seed+1),讓「同一 seed 的星圖佈局」不受行星骰表的抽取次數影響——
 	// 骰表每顆星抽的次數依光譜而異,共用一條流會讓佈局跟著漂。
-	s.Planets = genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), s.galaxyAge(), demoHomeStarSet(aiHomeStars))
+	s.Planets = genPlanets(galaxy, rand.New(rand.NewSource(seed+1)), rand.New(rand.NewSource(seed+5)), s.galaxyAge(), demoHomeStarSet(aiHomeStars))
 	// 守衛怪獸也用獨立亂數流(seed+2),理由同上:不讓它的抽取次數影響星圖與行星的骰序。
 	// 它會就地修改 s.Planets(手冊 p.60:有怪獸的星系一定另有一個特殊物產),故在 genPlanets 之後。
 	s.Monsters = genMonsters(galaxy, s.Planets, rand.New(rand.NewSource(seed+2)), demoHomeStarSet(aiHomeStars))
@@ -3557,7 +3578,7 @@ func NewDemoSession() *GameSession {
 		PlayerSpies:       make([]int, len(aiPlayers)), // 玩家對每個 AI 對手的間諜數,平行 AIPlayers,開局皆 0(見欄位/spy.go ensurePlayerSpies 註解)
 		Stars:             galaxy,
 		Nebulae:           demoNebulae,
-		Planets:           genPlanets(galaxy, rand.New(rand.NewSource(43)), galaxyAgeSetting, demoHomeStarSet(aiHomeStars)),
+		Planets:           genPlanets(galaxy, rand.New(rand.NewSource(43)), rand.New(rand.NewSource(47)), galaxyAgeSetting, demoHomeStarSet(aiHomeStars)),
 		// Monsters 在下面 session 建好後補上——genMonsters 會就地修改 Planets(手冊 p.60:
 		// 有怪獸的星系一定另有一個特殊物產),不能在同一個複合字面值裡引用尚未建立的欄位。
 		// 開局領袖池為空(2026-07-12 手冊考據校正)。手冊 GAME_MANUAL.pdf p.47 + p.134「Mercenary
@@ -3687,4 +3708,49 @@ func (s *GameSession) HireMerc() bool {
 		applyLeaderColonyBonuses([]Leader{ld}, &s.PlayerColonies[0])
 	}
 	return true
+}
+
+// SystemCompositionText 回傳「這個星系除了代表行星以外還有什麼」的摘要
+// (如「同系:氣態巨星×2、小行星帶」);沒有其他天體回空字串。
+//
+// **從軌道表算**,不是讀 `Planet.SystemBodies` —— 那個欄位是一星一行星時代的折衷,
+// 它自己的註解就在擔心「兩份資料要同步」。現在同系天體是真正的行星條目,
+// 摘要從那裡數出來,只有一份資料。
+func (s *GameSession) SystemCompositionText(star int) string {
+	rep := s.PlanetAt(star)
+	order := []gamedata.PlanetType{gamedata.HABITABLE, gamedata.GAS_GIANT, gamedata.ASTEROIDS}
+	n := map[gamedata.PlanetType]int{}
+	for _, p := range s.PlanetsAt(star) {
+		if p == rep {
+			continue // 代表行星本身不算「同系其他天體」
+		}
+		n[s.Planets[p].TypeID]++
+	}
+	out := ""
+	for _, t := range order {
+		if n[t] == 0 {
+			continue
+		}
+		if out != "" {
+			out += "、"
+		}
+		out += planetTypeDisplayName(t)
+		if n[t] > 1 {
+			out += "×" + strconv.Itoa(n[t])
+		}
+	}
+	if out == "" {
+		return ""
+	}
+	return "同系:" + out
+}
+
+// SystemBodyCountText 回傳「同系還有幾個天體」的極短字串(如「另有 3 天體」),
+// 供欄位很窄的行星列表用;沒有其他天體回空字串。完整組成用 SystemCompositionText。
+func (s *GameSession) SystemBodyCountText(star int) string {
+	n := len(s.PlanetsAt(star)) - 1 // 扣掉代表行星本身
+	if n <= 0 {
+		return ""
+	}
+	return "另有 " + strconv.Itoa(n) + " 天體"
 }
