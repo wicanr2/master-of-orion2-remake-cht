@@ -54,7 +54,7 @@ LBX 解碼(scan-line RLE 影像 / 多幀 delta / 調色盤鏈)、SAVE10.GAM 唯�
     一次性改造沒建模),集合差一棟則落點全偏,所以**「同一顆星會不會長一模一樣」尚未對原版實測**;
     植被在「有格子被選取」時原版一株都不畫(remake 沒有這個狀態)、每株顏色未逐張比對;
     地形變體那一欄用 PRNG 代替原版的存檔欄位(不是真值,已標明)。
-- **需原版 oracle 對照**(用 archive.org 線上 DOS 原版,**不需 DOSBox**;見 `docs/tech/oracle-comparison-20260712.md`、記憶 `moo2-oracle-is-archive-org-online`):飛彈速度(`missile.go` 手冊公式與附表自相矛盾)、地面戰 d100 核心傷亡解算結構(`ResolveGroundBattle` 沿用一代 1oom 借用結構,force 值用 MOO2 手冊表但結構本身未對 MOO2 實機核實)、安塔蘭母星防禦艦隊戰力(手冊/openorion2 均無精確數字,用保守預設 6 艘末日之星等級)、**母星開局態**(2026-07-12 oracle 已釘死:農4/工2/科2/Abundant/Trade Goods,待校準)。
+- **需原版 oracle 對照**(⚠ 2026-08-07 使用者指示:**逐畫面實測非必要**,真要驗用 **DOSBox**,不再用 archive.org 線上版;先窮盡靜態來源——執行檔反組譯立即數 > 手冊行文 > openorion2 原始碼。舊作法的產物 `docs/tech/oracle-comparison-20260712.md` 內容仍有效,但方法不再沿用):飛彈速度(`missile.go` 手冊公式與附表自相矛盾)、地面戰 d100 核心傷亡解算結構(`ResolveGroundBattle` 沿用一代 1oom 借用結構,force 值用 MOO2 手冊表但結構本身未對 MOO2 實機核實)、安塔蘭母星防禦艦隊戰力(手冊/openorion2 均無精確數字,用保守預設 6 艘末日之星等級)、**母星開局態**(2026-07-12 oracle 已釘死:農4/工2/科2/Abundant/Trade Goods,待校準)。
 - **需先建基礎設施**:戰機/航母(新戰鬥子模型)、部分軍事/防禦建築(~13 棟,需艦隊駐防/軌道防禦系統先落地)。
 - **起始科技等級(TECH LEVEL)**:2026-08-07 接上第一個真效果——**曲速前開局沒有 FTL,
   艦隊離不開本星系**,直到研究完核分裂(手冊直引,見 gap report 第 25 項)。

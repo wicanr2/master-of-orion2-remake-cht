@@ -6,7 +6,7 @@
 ## ⏸ 下週繼續(2026-07-12 暫停點,先讀這段)
 
 使用者 GUI 實測 + archive.org 線上原版 oracle 對照後,發現 headless 探針看不到的整合 bug。**接手前先讀 `issues/20260712-issues.md`(使用者原始 issue)+ `docs/tech/oracle-comparison-20260712.md`(逐畫面原版對照 + 修復計畫)**。
-- **oracle 方法**:archive.org 線上 DOS 原版當裁判(不需 DOSBox),見記憶 `moo2-oracle-is-archive-org-online`。
+- **oracle 方法(2026-08-07 更新)**:使用者指示逐畫面實測**非必要**;真要對原版核對就用 **DOSBox**,不再用 archive.org 線上版。順序是先窮盡靜態來源(執行檔反組譯的立即數 > 手冊行文 > openorion2 原始碼 > LBX 資產尺寸交叉驗證),靜態不夠才提 DOSBox。下面這段是舊作法的紀錄,結論仍有效。
 - **已修(本次)**:打包補音樂/herodata、回合鈕→「結束回合」、#6 星系視窗加 CLOSE、#5 info 分頁不誤跳 + 研究選擇改點星系右側研究框。已重打包 `dist/…-full…AppImage`。
 - **翻案(非 bug,別「修」)**:開局領袖槽空 + POOL 停用、Continue 無存檔灰階——原版也這樣。
 - **下週最高價值批 = 母星開局態校準**:oracle 釘死原版 Sol III = 農4/工2/科2、礦產 Abundant、開局建 Trade Goods(→+12 收入)、真星名;remake 現為 4/1/3、普通礦、無建造、+0。**會動經濟,照紀律改一項驗一項 + 跑 60 回合探針**(見記憶 `moo2-save10-oracle-economy-calibration`)。之後 #3 事件黃框、#2 存檔選單。
