@@ -52,8 +52,8 @@ func TestHEFRaisesDamageButNotAccuracyOrRange(t *testing.T) {
 	const net, wmin, wmax, roll = 60, 40, 100, 50
 
 	// ① 傷害:+50%。
-	plain := ResolveShotWithMods(net, wmin, wmax, 1, 0, 0, roll, false, nil, 0)
-	hef := ResolveShotWithMods(net, wmin, wmax, 1, 0, 0, roll, false, nil, gamedata.DamageMountBonusHEF)
+	plain := ResolveShotWithMods(net, wmin, wmax, 1, 0, 0, roll, false, nil, 0, false)
+	hef := ResolveShotWithMods(net, wmin, wmax, 1, 0, 0, roll, false, nil, gamedata.DamageMountBonusHEF, false)
 	if !plain.Hit || !hef.Hit {
 		t.Fatalf("測試前提不成立:兩發都該命中(%v / %v)", plain.Hit, hef.Hit)
 	}
@@ -67,8 +67,8 @@ func TestHEFRaisesDamageButNotAccuracyOrRange(t *testing.T) {
 	// net 用 0(遠距離,命中率低)才會同時出現命中與未命中,測得到兩側。
 	misses := 0
 	for r := 1; r <= 100; r++ {
-		a := ResolveShotWithMods(0, wmin, wmax, 6, 0, 0, r, false, nil, 0)
-		b := ResolveShotWithMods(0, wmin, wmax, 6, 0, 0, r, false, nil, gamedata.DamageMountBonusHEF)
+		a := ResolveShotWithMods(0, wmin, wmax, 6, 0, 0, r, false, nil, 0, false)
+		b := ResolveShotWithMods(0, wmin, wmax, 6, 0, 0, r, false, nil, gamedata.DamageMountBonusHEF, false)
 		if a.Hit != b.Hit {
 			t.Fatalf("roll=%d 的命中結果被高能聚焦改變了(%v → %v)"+
 				"——手冊明說 does not improve the chances of hitting", r, a.Hit, b.Hit)
@@ -82,8 +82,8 @@ func TestHEFRaisesDamageButNotAccuracyOrRange(t *testing.T) {
 	}
 
 	// ③ 距離衰減:仍然存在。遠距離的 HEF 傷害應低於近距離的 HEF 傷害。
-	near := ResolveShotWithMods(net, wmin, wmax, 1, 0, 0, roll, false, nil, gamedata.DamageMountBonusHEF)
-	far := ResolveShotWithMods(net, wmin, wmax, 6, 0, 0, roll, false, nil, gamedata.DamageMountBonusHEF)
+	near := ResolveShotWithMods(net, wmin, wmax, 1, 0, 0, roll, false, nil, gamedata.DamageMountBonusHEF, false)
+	far := ResolveShotWithMods(net, wmin, wmax, 6, 0, 0, roll, false, nil, gamedata.DamageMountBonusHEF, false)
 	if !far.Hit {
 		t.Skip("這個 roll 在遠距離沒打中,換不到可比的樣本")
 	}

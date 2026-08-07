@@ -102,3 +102,46 @@ func hefBonusFor(hasHEF bool) int {
 
 // HEFDamageBonus 是 hefBonusFor 的匯出版本,供 cmd/moo2 的格子戰術戰鬥使用。
 func HEFDamageBonus(hasHEF bool) int { return hefBonusFor(hasHEF) }
+
+// heavyArmorName 是重裝甲系統的元件名(手冊「Heavy Armor (System)」)。
+const heavyArmorName = "重裝甲"
+
+// effectiveArmorHP 回傳這艘船的實際裝甲 HP:裝甲科技的值,裝了重裝甲再乘三。
+//
+// 手冊逐字:「Installing Heavy Armor triples the amount of damage the ship's armor can
+// sustain before damage gets through to the structure and internal systems.」
+// ——乘的是**裝甲**那一池,不是結構,所以只動 armorHPByName 的結果。
+func effectiveArmorHP(sh Ship) int {
+	hp := armorHPByName(sh.Armor)
+	if sh.Special == heavyArmorName {
+		hp *= gamedata.ArmorHeavyArmorMultiplier
+	}
+	return hp
+}
+
+// shipNegatesArmorPiercing 回報這艘船是否讓敵方的穿甲(AP)改造失效。
+//
+// 手冊給了兩條路,兩條都算:
+//
+//	Xentronium Armor:「Negates armor piercing effects of enemy weapons.」
+//	Heavy Armor (System):「also negates the Armor Piercing abilities of enemy weapons
+//	                       that hit the ship.」
+//
+// 這正是 `gamedata.DamageApplyArmor` 那個從寫出來就恆傳 false 的 apNegated 參數
+// ——規則寫好了、註解連兩句原文都抄了,缺的只是「哪艘船算數」。
+func shipNegatesArmorPiercing(sh Ship) bool {
+	if sh.Special == heavyArmorName {
+		return true
+	}
+	return gamedata.ArmorNegatesArmorPiercing(armorUnlockTechByName(sh.Armor))
+}
+
+// armorUnlockTechByName 依裝甲元件名查其解鎖科技;查無回 TECH_NONE。
+func armorUnlockTechByName(name string) gamedata.Technology {
+	for _, c := range ArmorOptions {
+		if c.Name == name {
+			return c.UnlockTech
+		}
+	}
+	return gamedata.TECH_NONE
+}

@@ -277,14 +277,25 @@ func BuildWeaponOptions(p gamedata.RuleProfile) []Component {
 }
 
 var (
+	// ArmorOptions 的 Value(裝甲 HP)= 基準單位 × `gamedata.ArmorStructurePercent`。
+	//
+	// ⚠ 2026-08-08(第 132 項)由自編值 10/20/35/55/80/120 改成手冊階梯
+	// 100/200/400/600/800/1000%(見 gamedata/armor_tech.go 的逐句出處與那則撤回)。
+	// **階梯是一手的,基準單位 10 是 remake 值**——原版沒有獨立的「裝甲池」,
+	// 裝甲科技決定的是艦艇結構點數,兩池是 remake 的抽象。
+	//
+	// 差別最大的三格:佐特 35→40、中子素 55→60、氙素 120→100(它是「10 倍」不是「+1100%」)。
 	ArmorOptions = []Component{
 		{"無裝甲", 0, 0, 0, 0},
 		{"鈦裝甲", 30, 10, gamedata.TOPIC_CHEMISTRY, gamedata.TECH_TITANIUM_ARMOR}, // ResearchAll(早期)
 		{"三鈦裝甲", 60, 20, gamedata.TOPIC_ADVANCED_METALLURGY, gamedata.TECH_TRITANIUM_ARMOR},
-		{"佐特裝甲", 100, 35, gamedata.TOPIC_NANO_TECHNOLOGY, gamedata.TECH_ZORTRIUM_ARMOR},
-		{"中子素裝甲", 160, 55, gamedata.TOPIC_MOLECULAR_MANIPULATION, gamedata.TECH_NEUTRONIUM_ARMOR},
+		{"佐特裝甲", 100, 40, gamedata.TOPIC_NANO_TECHNOLOGY, gamedata.TECH_ZORTRIUM_ARMOR},
+		{"中子素裝甲", 160, 60, gamedata.TOPIC_MOLECULAR_MANIPULATION, gamedata.TECH_NEUTRONIUM_ARMOR},
 		{"精金裝甲", 240, 80, gamedata.TOPIC_MOLECULAR_CONTROL, gamedata.TECH_ADAMANTIUM_ARMOR},
-		{"氙素裝甲", 350, 120, gamedata.TOPIC_ARTIFICIAL_LIFE, 0}, // 里程碑,proxy
+		// ⚠ 主題與解鎖科技一併訂正:先前掛在 TOPIC_ARTIFICIAL_LIFE 且 UnlockTech=0(標「里程碑,proxy」)。
+		// 執行檔的 tech→topic 表說它屬 **Xenon Technology**(第 74 號),而 TECH_XENTRONIUM_ARMOR
+		// 一直都在列舉裡(201)——「proxy」是當時沒查,不是查了查不到。
+		{"氙素裝甲", 350, 100, gamedata.TOPIC_XENON_TECHNOLOGY, gamedata.TECH_XENTRONIUM_ARMOR},
 	}
 	ShieldOptions = []Component{
 		{"無護盾", 0, 0, 0, 0},
@@ -329,6 +340,17 @@ var (
 		// (RACESTUF 那條路只有種族資料)。取值參考同屬中後期系統的硬化護盾(100)與
 		// 反飛彈火箭(70)。與本表其餘元件同一種標記方式。
 		{"高能聚焦", 90, 0, gamedata.TOPIC_HIGH_ENERGY_DISTRIBUTION, gamedata.TECH_HIGH_ENERGY_FOCUS},
+		// 重裝甲(第 132 項):與高能聚焦同一個形狀——手冊寫的是「Heavy Armor **(System)**」,
+		// 系統要進這張表才裝得上,而它先前不在,於是兩個效果都沒有落點:
+		//
+		//	Installing Heavy Armor **triples** the amount of damage the ship's armor can
+		//	sustain before damage gets through to the structure and internal systems.
+		//	This system also **negates the Armor Piercing abilities** of enemy weapons.
+		//
+		// 第二句正是 `DamageApplyArmor` 那個從寫出來就恆傳 false 的 `apNegated` 參數。
+		// 主題取自執行檔的 tech→topic 表(進階建設,與自動化工廠/行星飛彈基地三選一)。
+		// ⚠ 成本 110 是 remake 值,理由同高能聚焦。
+		{"重裝甲", 110, 0, gamedata.TOPIC_ADVANCED_CONSTRUCTION, gamedata.TECH_HEAVY_ARMOR},
 	}
 )
 
@@ -586,6 +608,8 @@ type combatant struct {
 	hasAMR bool
 	// hasHEF 是這艘船裝了高能聚焦(手冊 p.87:光束傷害 +50%,不影響命中與距離衰減)。
 	hasHEF bool
+	// apNegated 是這艘**被打的**船讓敵方穿甲失效(氙素裝甲 或 重裝甲系統,手冊各一句)。
+	apNegated bool
 	// missileEvasion 是這艘船的飛彈閃避加成(手冊 ME 欄 + 舵手技能)。
 	// 只有當**它是防守方**時才有意義;敵方艦隊無逐艦資料,一律 0(既有簡化)。
 	missileEvasion int
@@ -652,7 +676,7 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 			roll := rng.Intn(100) + 1
 			net := attackers[i].atk - d.def
 			shot = ResolveShotWithMods(net, attackers[i].wmin, attackers[i].wmax, 2, d.shield, d.armor, roll,
-				false, weaponModCodes(attackers[i].mods), hefBonusFor(attackers[i].hasHEF))
+				false, weaponModCodes(attackers[i].mods), hefBonusFor(attackers[i].hasHEF), d.apNegated)
 		}
 		if shot.Hit {
 			d.armor = shot.RemainingArmorHP
@@ -735,11 +759,12 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 		out = append(out, combatant{hp: hp, maxHP: shipMaxHP(sh), atk: atk, def: defBody + crewDef,
 			wmin: atk / 2, wmax: atk,
 			shield: s.nebulaShield(shieldReduceByName(sh.Shield), shipHasHardShield(sh)),
-			armor:  armorHPByName(sh.Armor),
+			armor:  effectiveArmorHP(sh),
 			kind:   weaponKindByName(sh.Weapon), weaponName: sh.Weapon, mods: sh.Mods,
 			sizeClass:      shipSizeClass(sh.Class),
 			hasAMR:         sh.Special == antiMissileRocketName,
 			hasHEF:         sh.Special == highEnergyFocusName,
+			apNegated:      shipNegatesArmorPiercing(sh),
 			missileEvasion: gamedata.ShipCrewMissileEvasionBonus(crew) + s.helmsmanEvasionBonus(),
 			autoRepair:     shipHasAutoRepair(sh), shipIdx: shipIdx})
 		idx = append(idx, shipIdx)
@@ -934,6 +959,8 @@ type CombatShip struct {
 	//
 	// 敵方艦(genEnemyFleet)沒有個別元件設計資料,一律 false——與 Mods/HardShield 同款簡化。
 	HEF bool
+	// APNegated 是這艘船讓敵方穿甲失效(氙素裝甲 或 重裝甲系統)。
+	APNegated bool
 }
 
 // CombatSpriteForClass 依艦體等級回傳 CMBTSHP 色塊內 sprite 索引(見 docs/tech/cmbtshp-ship-sprites.md)。
@@ -997,9 +1024,10 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			Defense: body, WeaponMin: atk / 2, WeaponMax: atk,
 			ShieldReduction: s.nebulaShield(shieldReduceByName(sh.Shield), shipHasHardShield(sh)),
 			HardShield:      shipHasHardShield(sh),
-			ArmorHP:         armorHPByName(sh.Armor),
+			ArmorHP:         effectiveArmorHP(sh),
 			Kind:            weaponKindByName(sh.Weapon), Mods: sh.Mods,
 			HEF:       sh.Special == highEnergyFocusName,
+			APNegated: shipNegatesArmorPiercing(sh),
 			SpriteIdx: CombatSpriteForClass(sh.Class), // 色塊 0(玩家)
 			Bay:       bay, BayKind: bayKind,
 		})

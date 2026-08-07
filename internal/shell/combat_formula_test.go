@@ -189,7 +189,7 @@ func TestResolveShotWithMods_NoModsMatchesLegacy(t *testing.T) {
 	}
 	for _, c := range cases {
 		legacy := ResolveShot(c.net, c.wmin, c.wmax, c.rng, c.shield, c.armor, c.roll, false, false)
-		withNil := ResolveShotWithMods(c.net, c.wmin, c.wmax, c.rng, c.shield, c.armor, c.roll, false, nil, 0)
+		withNil := ResolveShotWithMods(c.net, c.wmin, c.wmax, c.rng, c.shield, c.armor, c.roll, false, nil, 0, false)
 		if legacy != withNil {
 			t.Errorf("case %+v: legacy=%+v withNil=%+v 應相同", c, legacy, withNil)
 		}
@@ -199,8 +199,8 @@ func TestResolveShotWithMods_NoModsMatchesLegacy(t *testing.T) {
 // TestResolveShotWithMods_HeavyMountDamage HV 命中後傷害應為無 mod 情況的 150%。
 func TestResolveShotWithMods_HeavyMountDamage(t *testing.T) {
 	// net 夠高、roll 夠高確保必中(roll>95 分支,固定 max dmg,方便精確驗證倍率)。
-	base := ResolveShotWithMods(50, 40, 100, 1, 0, 0, 99, false, nil, 0)
-	hv := ResolveShotWithMods(50, 40, 100, 1, 0, 0, 99, false, []gamedata.WeaponModCode{gamedata.ModHeavyMount}, 0)
+	base := ResolveShotWithMods(50, 40, 100, 1, 0, 0, 99, false, nil, 0, false)
+	hv := ResolveShotWithMods(50, 40, 100, 1, 0, 0, 99, false, []gamedata.WeaponModCode{gamedata.ModHeavyMount}, 0, false)
 	if !base.Hit || !hv.Hit {
 		t.Fatal("前提失敗:應必中(roll=99>95)")
 	}
@@ -216,8 +216,8 @@ func TestResolveShotWithMods_HeavyMountDamage(t *testing.T) {
 // 雙重虧(命中與衰減都按加倍後的 range band 算,見 ResolveShotWithMods 的 dissipation 段),
 // 那是另一回事,由 TestResolveShotWithMods_PointDefenseDoubleRangeDissipation 專門驗。
 func TestResolveShotWithMods_PointDefenseDamage(t *testing.T) {
-	base := ResolveShotWithMods(50, 40, 100, 0, 0, 0, 99, false, nil, 0)
-	pd := ResolveShotWithMods(50, 40, 100, 0, 0, 0, 99, false, []gamedata.WeaponModCode{gamedata.ModPointDefense}, 0)
+	base := ResolveShotWithMods(50, 40, 100, 0, 0, 0, 99, false, nil, 0, false)
+	pd := ResolveShotWithMods(50, 40, 100, 0, 0, 0, 99, false, []gamedata.WeaponModCode{gamedata.ModPointDefense}, 0, false)
 	if !base.Hit || !pd.Hit {
 		t.Fatal("前提失敗:應必中")
 	}
@@ -229,8 +229,8 @@ func TestResolveShotWithMods_PointDefenseDamage(t *testing.T) {
 
 // TestResolveShotWithMods_EnvelopingQuadruplesDamage ENV 命中後傷害應為無 mod 情況的 4 倍。
 func TestResolveShotWithMods_EnvelopingQuadruplesDamage(t *testing.T) {
-	base := ResolveShotWithMods(50, 10, 20, 1, 0, 0, 99, false, nil, 0)
-	env := ResolveShotWithMods(50, 10, 20, 1, 0, 0, 99, false, []gamedata.WeaponModCode{gamedata.ModEnveloping}, 0)
+	base := ResolveShotWithMods(50, 10, 20, 1, 0, 0, 99, false, nil, 0, false)
+	env := ResolveShotWithMods(50, 10, 20, 1, 0, 0, 99, false, []gamedata.WeaponModCode{gamedata.ModEnveloping}, 0, false)
 	if !base.Hit || !env.Hit {
 		t.Fatal("前提失敗:應必中")
 	}
@@ -242,11 +242,11 @@ func TestResolveShotWithMods_EnvelopingQuadruplesDamage(t *testing.T) {
 // TestResolveShotWithMods_ArmorPiercingBypassesArmor AP 命中後傷害應完全跳過裝甲,直打結構。
 func TestResolveShotWithMods_ArmorPiercingBypassesArmor(t *testing.T) {
 	// armorHP(25)須 >= 命中傷害(20)才能在「無 AP」情況下完全吸收,才好對照 AP 生效後的差異。
-	noAP := ResolveShotWithMods(50, 10, 20, 1, 0, 25 /*armorHP*/, 99, false, nil, 0)
+	noAP := ResolveShotWithMods(50, 10, 20, 1, 0, 25 /*armorHP*/, 99, false, nil, 0, false)
 	if noAP.DamageToStructure != 0 {
 		t.Fatalf("無 AP:裝甲(25)應完全吸收傷害(<=20),got DamageToStructure=%d", noAP.DamageToStructure)
 	}
-	ap := ResolveShotWithMods(50, 10, 20, 1, 0, 25, 99, false, []gamedata.WeaponModCode{gamedata.ModArmorPiercing}, 0)
+	ap := ResolveShotWithMods(50, 10, 20, 1, 0, 25, 99, false, []gamedata.WeaponModCode{gamedata.ModArmorPiercing}, 0, false)
 	if ap.DamageToStructure == 0 || ap.RemainingArmorHP != 25 {
 		t.Fatalf("AP 應完全繞過裝甲直打結構,且裝甲 HP 不變,got DamageToStructure=%d RemainingArmorHP=%d",
 			ap.DamageToStructure, ap.RemainingArmorHP)
@@ -255,11 +255,11 @@ func TestResolveShotWithMods_ArmorPiercingBypassesArmor(t *testing.T) {
 
 // TestResolveShotWithMods_ShieldPiercingBypassesShield SP 命中後傷害應完全跳過護盾。
 func TestResolveShotWithMods_ShieldPiercingBypassesShield(t *testing.T) {
-	noSP := ResolveShotWithMods(50, 10, 20, 1, 20 /*shield 高於傷害*/, 0, 99, false, nil, 0)
+	noSP := ResolveShotWithMods(50, 10, 20, 1, 20 /*shield 高於傷害*/, 0, 99, false, nil, 0, false)
 	if noSP.DamageToStructure != 0 {
 		t.Fatalf("無 SP:高護盾應完全吸收,got %d", noSP.DamageToStructure)
 	}
-	sp := ResolveShotWithMods(50, 10, 20, 1, 20, 0, 99, false, []gamedata.WeaponModCode{gamedata.ModShieldPiercing}, 0)
+	sp := ResolveShotWithMods(50, 10, 20, 1, 20, 0, 99, false, []gamedata.WeaponModCode{gamedata.ModShieldPiercing}, 0, false)
 	if sp.DamageToStructure == 0 {
 		t.Fatal("SP 應完全繞過護盾,DamageToStructure 不應為 0")
 	}
@@ -271,11 +271,11 @@ func TestResolveShotWithMods_ContinuousFireImprovesAccuracy(t *testing.T) {
 	// 挑一個「加 25 前不中、加 25 後中」的邊界:range=1 → level1 → penalty 0 → threshold 40。
 	// roll+netAttack 需 >=40 才中(且 roll<=95、netAttack<99,才會落到門檻判定分支)。
 	// net=10, roll=20 → roll+net=30 <40,不中;+CO(25) → net=35 → 20+35=55>=40,中。
-	base := ResolveShotWithMods(10, 10, 20, 1, 0, 0, 20, false, nil, 0)
+	base := ResolveShotWithMods(10, 10, 20, 1, 0, 0, 20, false, nil, 0, false)
 	if base.Hit {
 		t.Fatal("前提失敗:base 應未命中(roll+net=30<40)")
 	}
-	co := ResolveShotWithMods(10, 10, 20, 1, 0, 0, 20, false, []gamedata.WeaponModCode{gamedata.ModContinuousFire}, 0)
+	co := ResolveShotWithMods(10, 10, 20, 1, 0, 0, 20, false, []gamedata.WeaponModCode{gamedata.ModContinuousFire}, 0, false)
 	if !co.Hit {
 		t.Fatal("CO(+25)應讓 roll+net+25=55>=40 變成命中")
 	}
@@ -284,11 +284,11 @@ func TestResolveShotWithMods_ContinuousFireImprovesAccuracy(t *testing.T) {
 // TestResolveShotWithMods_AutoFireHurtsAccuracy AF(-20 netAttack)應讓原本命中的射擊變成未命中。
 func TestResolveShotWithMods_AutoFireHurtsAccuracy(t *testing.T) {
 	// net=30, roll=15 → roll+net=45>=40,中;AF(-20) → net=10 → 15+10=25<40,不中。
-	base := ResolveShotWithMods(30, 10, 20, 1, 0, 0, 15, false, nil, 0)
+	base := ResolveShotWithMods(30, 10, 20, 1, 0, 0, 15, false, nil, 0, false)
 	if !base.Hit {
 		t.Fatal("前提失敗:base 應命中(roll+net=45>=40)")
 	}
-	af := ResolveShotWithMods(30, 10, 20, 1, 0, 0, 15, false, []gamedata.WeaponModCode{gamedata.ModAutoFire}, 0)
+	af := ResolveShotWithMods(30, 10, 20, 1, 0, 0, 15, false, []gamedata.WeaponModCode{gamedata.ModAutoFire}, 0, false)
 	if af.Hit {
 		t.Fatal("AF(-20)應讓 roll+net-20=25<40 變成未命中")
 	}
@@ -301,8 +301,8 @@ func TestResolveShotWithMods_HeavyPointDefenseUseDifferentRangeLevel(t *testing.
 	const rangeSquares = 12 // Regular level4(penalty30→threshold70)/ Heavy level2(penalty10→threshold50)
 	// net+roll=50:卡在「Heavy threshold(50)才夠、Regular threshold(70)不夠」的窄縫。
 	net, roll := 10, 40 // roll+net=50
-	regular := ResolveShotWithMods(net, 10, 20, rangeSquares, 0, 0, roll, false, nil, 0)
-	heavy := ResolveShotWithMods(net, 10, 20, rangeSquares, 0, 0, roll, false, []gamedata.WeaponModCode{gamedata.ModHeavyMount}, 0)
+	regular := ResolveShotWithMods(net, 10, 20, rangeSquares, 0, 0, roll, false, nil, 0, false)
+	heavy := ResolveShotWithMods(net, 10, 20, rangeSquares, 0, 0, roll, false, []gamedata.WeaponModCode{gamedata.ModHeavyMount}, 0, false)
 	if regular.Hit {
 		t.Fatal("前提失敗:一般距離懲罰下 roll+net=50 應不足以命中(threshold=70)")
 	}
@@ -355,8 +355,8 @@ func TestBattleVolleyDispatchByWeaponKind(t *testing.T) {
 // 「靠近射擊」在戰術上沒有意義。
 func TestResolveShotDamageDissipatesWithRange(t *testing.T) {
 	// roll=99 走「必中且吃滿 max 傷害」分支,排除命中率變因,單看傷害潛力。
-	near := ResolveShotWithMods(50, 100, 100, 0, 0, 0, 99, false, nil, 0)
-	far := ResolveShotWithMods(50, 100, 100, 23, 0, 0, 99, false, nil, 0)
+	near := ResolveShotWithMods(50, 100, 100, 0, 0, 0, 99, false, nil, 0, false)
+	far := ResolveShotWithMods(50, 100, 100, 23, 0, 0, 99, false, nil, 0, false)
 	if !near.Hit || !far.Hit {
 		t.Fatal("前提失敗:roll=99 應必中")
 	}
@@ -373,8 +373,8 @@ func TestResolveShotDamageDissipatesWithRange(t *testing.T) {
 // 這個 mod 在接線前完全沒有可觀察效果(weapon_mods.go 曾誠實記著這個 TODO)。
 func TestResolveShotNoRangeDissipationModIgnoresDistance(t *testing.T) {
 	nr := []gamedata.WeaponModCode{gamedata.ModNoRangeDissipation}
-	near := ResolveShotWithMods(50, 100, 100, 0, 0, 0, 99, false, nr, 0)
-	far := ResolveShotWithMods(50, 100, 100, 23, 0, 0, 99, false, nr, 0)
+	near := ResolveShotWithMods(50, 100, 100, 0, 0, 0, 99, false, nr, 0, false)
+	far := ResolveShotWithMods(50, 100, 100, 23, 0, 0, 99, false, nr, 0, false)
 	if !near.Hit || !far.Hit {
 		t.Fatal("前提失敗:roll=99 應必中")
 	}
@@ -390,8 +390,8 @@ func TestResolveShotNoRangeDissipationModIgnoresDistance(t *testing.T) {
 // 傷害衰減用的是「射程視為加倍」之後的 range band,與命中懲罰同一個 band(原版行為)。
 func TestResolveShotWithMods_PointDefenseDoubleRangeDissipation(t *testing.T) {
 	pd := []gamedata.WeaponModCode{gamedata.ModPointDefense}
-	plain := ResolveShotWithMods(50, 100, 100, 4, 0, 0, 99, false, nil, 0)
-	withPD := ResolveShotWithMods(50, 100, 100, 4, 0, 0, 99, false, pd, 0)
+	plain := ResolveShotWithMods(50, 100, 100, 4, 0, 0, 99, false, nil, 0, false)
+	withPD := ResolveShotWithMods(50, 100, 100, 4, 0, 0, 99, false, pd, 0, false)
 	if !plain.Hit || !withPD.Hit {
 		t.Fatal("前提失敗:roll=99 應必中")
 	}

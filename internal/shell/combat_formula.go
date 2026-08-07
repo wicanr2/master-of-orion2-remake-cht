@@ -35,7 +35,7 @@ func ResolveShot(netAttack, weaponMin, weaponMax, rangeSquares, shieldReduction,
 		// mod 清單本身,這裡只是把 bool 包成 mods 給 ResolveShotWithMods 用同一份實作)。
 		mods = []gamedata.WeaponModCode{gamedata.ModArmorPiercing}
 	}
-	return ResolveShotWithMods(netAttack, weaponMin, weaponMax, rangeSquares, shieldReduction, armorHP, roll, hardShield, mods, 0)
+	return ResolveShotWithMods(netAttack, weaponMin, weaponMax, rangeSquares, shieldReduction, armorHP, roll, hardShield, mods, 0, false)
 }
 
 // ResolveShotWithMods 同 ResolveShot,額外接受一組攻方武器改造(mods),依手冊
@@ -54,7 +54,10 @@ func ResolveShot(netAttack, weaponMin, weaponMax, rangeSquares, shieldReduction,
 // (中性回歸,見 combat_formula_test.go 的 no-mod 回歸測試)。
 // hefBonus 是高能聚焦(High Energy Focus)給的傷害百分點加成:裝了傳
 // gamedata.DamageMountBonusHEF(50),沒裝傳 0。用 hefBonusFor 取值,不要自己寫 50。
-func ResolveShotWithMods(netAttackBase, weaponMin, weaponMax, rangeSquares, shieldReduction, armorHP, roll int, hardShield bool, mods []gamedata.WeaponModCode, hefBonus int) ShotResult {
+//
+// apNegated 是**目標**讓穿甲(AP)失效(氙素裝甲 或 重裝甲系統,手冊各一句)。
+// 用 shipNegatesArmorPiercing 判斷,它把兩條路併起來。
+func ResolveShotWithMods(netAttackBase, weaponMin, weaponMax, rangeSquares, shieldReduction, armorHP, roll int, hardShield bool, mods []gamedata.WeaponModCode, hefBonus int, apNegated bool) ShotResult {
 	netAttack := netAttackBase + gamedata.WeaponModNetAttackBonus(mods)
 	level := gamedata.CombatRangeLevelForBeamMods(rangeSquares, mods)
 	penalty := gamedata.CombatRangeLevelPenalty(level)
@@ -94,7 +97,7 @@ func ResolveShotWithMods(netAttackBase, weaponMin, weaponMax, rangeSquares, shie
 	dmg := gamedata.DamageForHit(adjMin, adjMax, roll, netAttack, threshold)
 	dmg = gamedata.WeaponModEnvelopingMultiply(dmg, mods)
 	dmg = gamedata.DamageAfterShield(dmg, shieldReduction, hardShield, gamedata.WeaponModShieldPiercing(mods))
-	_, toStruct, remArmor := gamedata.DamageApplyArmor(dmg, armorHP, gamedata.WeaponModArmorPiercing(mods), false)
+	_, toStruct, remArmor := gamedata.DamageApplyArmor(dmg, armorHP, gamedata.WeaponModArmorPiercing(mods), apNegated)
 	return ShotResult{Hit: true, DamageToStructure: toStruct, RemainingArmorHP: remArmor}
 }
 

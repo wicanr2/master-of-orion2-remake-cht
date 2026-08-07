@@ -7089,3 +7089,70 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
         ——與 Mods / HardShield 同款既有簡化,不是這一項新增的缺口。
 
     截圖:25_shipdesign 的「特殊 1/9 → 1/10」(521 px)。
+
+132. **裝甲科技倍率:一則撤回,外加重裝甲與穿甲抵銷**(2026-08-08)。
+
+    ### 先講撤回
+
+    這一輪稍早(第 123 項一帶)拒絕動 `armorHPByName`,理由寫得很篤定:
+
+    > 手冊的 Armor 欄是**逐艦體**的,而裝甲科技的倍率**手冊與 openorion2 都沒有**
+    > (openorion2 是個沒有戰鬥引擎的渲染殼)。
+
+    **後半句是錯的。** 手冊 Ship 條目裡逐級寫著,只是當時沒讀到那幾頁:
+
+    | 裝甲 | 手冊原文 | 倍率 |
+    |---|---|---|
+    | 鈦 | 「standard armor for FTL ships」(基準,未給倍率) | 100% |
+    | 三鈦 | increases the structural integrity ... by **100%** | 200% |
+    | 佐特 | increases the structural integrity ... by **300%** | 400% |
+    | 中子素 | boost the structural hits ... by **500%** | 600% |
+    | 精金 | increases the structural hits ... by **700%** | 800% |
+    | 氙素 | Ships with this armor have **10 times** the base structure and armor points | 1000% |
+
+    **「我找不到」與「它不存在」被寫成了同一句話**,而那句話又被後續幾項當成既有結論引用。
+    這是 `rules/00-rules-index.md` 那條「要推翻既有斷言之前先找出當初支持它的證據」的反面
+    ——當初根本沒有證據可找。留在 `gamedata/armor_tech.go` 檔頭,不默默改掉。
+
+    改完之後三格差最多:佐特 35→40、中子素 55→60、**氙素 120→100**
+    (它是「10 倍」不是「+1100%」,那一格最容易抄成加法)。
+
+    ⚠ **階梯是一手的,基準單位 10 是 remake 值。** 手冊講的是 structural integrity
+    ——原版沒有獨立的「裝甲池」,裝甲科技決定的是艦艇結構點數,兩池是 remake 的抽象。
+    兩件事分開記,免得日後有人把整條當成原版真值引用。
+
+    ### 順帶訂正:氙素裝甲掛錯主題
+
+    `ArmorOptions` 裡它掛在 `TOPIC_ARTIFICIAL_LIFE`、`UnlockTech = 0`,註解標「里程碑,proxy」。
+    執行檔的 tech→topic 表說它屬 **Xenon Technology**(74),而 `TECH_XENTRONIUM_ARMOR`
+    一直都在列舉裡(201)。「proxy」是當時沒查,不是查了查不到。
+
+    ### 重裝甲:與高能聚焦一模一樣的形狀
+
+    `DamageApplyArmor(dmg, armorHP, armorPiercing, apNegated)` 的 **apNegated 從寫出來就恆傳
+    false**,而它的註解連兩句手冊原文都抄好了:
+
+    > Heavy Armor (System): ... also **negates the Armor Piercing abilities** of enemy weapons
+    > Xentronium Armor: ... **Negates armor piercing effects** of enemy weapons
+
+    氙素裝甲在 `ArmorOptions` 裡,查得到;**重裝甲不在任何清單上**——因為它是
+    「Heavy Armor **(System)**」,系統要進 `SpecialOptions`,而它不在。與第 131 項的
+    高能聚焦同一個形狀:**東西被分到錯的類別,於是整條路都不存在。**
+
+    補上之後兩個效果都有落點:
+
+      - 裝甲耐受量 **×3**(手冊「triples the amount of damage the ship's armor can sustain」)
+      - **抵銷穿甲**,與氙素裝甲取聯集(`shipNegatesArmorPiercing` 把兩條路併起來)
+
+    端到端測試釘住:AP 改造打在會抵銷的目標上,傷害必須**全部由裝甲吸收**、結構吃 0。
+    兩條戰鬥路徑(快速結算 / 格子戰術)都帶旗標——只接一邊會讓同一艘船在兩種戰鬥裡
+    表現不同,而那種不一致在遊玩中幾乎察覺不到。
+
+    ### 誠實留白
+
+      - **建造成本 110 是 remake 值**,理由同高能聚焦(執行檔的元件表還沒挖到)。
+      - **「三倍」乘的是裝甲那一池不是結構。** 手冊明說 "the ship's **armor** can sustain
+        before damage gets through to the structure",所以只動 `armorHPByName` 的結果。
+      - **兩池抽象本身沒有改。** 把裝甲折回結構點數是另一個層級的重構,不在這一項裡。
+
+    截圖:25_shipdesign 的「特殊 1/10 → 1/11」(23 px)。
