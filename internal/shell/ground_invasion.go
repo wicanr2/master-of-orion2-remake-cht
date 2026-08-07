@@ -535,14 +535,22 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	// commandoLeaderTier(nil)=0,安全降級為無加成。
 	defForce += gamedata.GroundCommandoDefenderForceBonus(commandoLeaderTier(aiPlayer.Leaders), s.RuleProfile.DefenderCommandoBonus)
 	defHits := gamedata.GroundMarineHitsToKill(false, hasPoweredArmorFor(aiPlayer.Player))
-	// 守方目前只有陸戰隊。⚠ 原版的殖民地填**三格**(裝甲 / 陸戰隊 / 民兵,見
-	// `Compute_Colony_Ground_Combat_Info_` @ 0xED713 與手冊「your militia are also shown here」)
-	// ——民兵的數量公式(`sub_EC61E`)與 AI 的裝甲營房追蹤都還沒有,所以那兩格留 0。
-	// 留 0 是**少算守方兵力**,方向上對玩家有利,不是隨便選的預設。
+	// 守方:陸戰隊 + **民兵**。原版的殖民地填三格(裝甲 / 陸戰隊 / 民兵,見
+	// `Compute_Colony_Ground_Combat_Info_` @ 0xED713 與手冊「your militia are also shown here」)。
+	//
+	// 民兵 = ⌊人口 / 5⌋(原版 `Colony_N_Militia_` @ 0xEC61E),攻擊力比陸戰隊低 10。
+	// ⚠ **裝甲那一格仍留 0**:AI 沒有 ColonyBuildings 追蹤機制,無法判斷「AI 是否已建成
+	// 裝甲營房」——沒有資料可誠實推導守方戰車數,不臆測。留 0 = 少算守方,方向上對玩家有利。
 	var defStrength, defCounts, defHitsArr [gamedata.GroundUnitTypes]int
 	defStrength[groundTypeMarines] = defForce + gamedata.GroundTypeStrengthDelta(groundTypeMarines)
 	defCounts[groundTypeMarines] = defCount
 	defHitsArr[groundTypeMarines] = defHits + gamedata.GroundTypeHitsDelta(groundTypeMarines)
+	militiaCount := gamedata.ColonyMilitiaUnits(colony.Population)
+	defStrength[gamedata.GroundTypeMilitia] = defForce +
+		gamedata.GroundTypeStrengthDelta(gamedata.GroundTypeMilitia)
+	defCounts[gamedata.GroundTypeMilitia] = militiaCount
+	defHitsArr[gamedata.GroundTypeMilitia] = defHits +
+		gamedata.GroundTypeHitsDelta(gamedata.GroundTypeMilitia)
 
 	rng := rand.New(rand.NewSource(int64(s.Turn)*2654435761 + int64(starIdx)*97 + 555))
 	// 換成原版的解算(`Ground_Combat_Round_` @ 0xEC4FE,見 gamedata/ground_battle_orig.go)。
@@ -560,7 +568,7 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	out := GroundInvasionResult{
 		Ok: true, AttackerWon: res.AttackerWon,
 		AttackerMarinesStart: s.Fleet().Marines, AttackerTanksStart: tankCount,
-		DefenderStart: defCount, ColonyName: s.starName(starIdx),
+		DefenderStart: defCount + militiaCount, ColonyName: s.starName(starIdx),
 		AttackerSurvived: res.AttackerSurvived, DefenderSurvived: res.DefenderSurvived,
 		AttackerMarinesSurvived: marinesSurvived, AttackerTanksSurvived: tanksSurvived,
 		Rounds: res.Rounds,

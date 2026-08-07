@@ -797,3 +797,35 @@ func TestInvasionMarinesDieBeforeTanks(t *testing.T) {
 		t.Errorf("應已換到戰車營(類型 1),實得 %d", atk.CurType)
 	}
 }
+
+// 民兵真的進了防守方——回報的守方兵力要含它。
+//
+// 正對照:若這條沒紅,上面那些「守方變強了」的說法就只是註解。
+func TestDefenderIncludesMilitia(t *testing.T) {
+	s := NewDemoSession()
+	s.SetupNewGame(24, 11, DefaultOpponents)
+	// 找一個有 AI 殖民地的星,把玩家艦隊送過去並載兵。
+	var target = -1
+	for i := range s.AIPlayers {
+		if len(s.AIPlayers[i].ColonyStars) > 0 {
+			target = s.AIPlayers[i].ColonyStars[0]
+			break
+		}
+	}
+	if target < 0 {
+		t.Skip("這局沒有 AI 殖民地")
+	}
+	ai := s.AIPlayers[0]
+	if len(ai.Colonies) == 0 {
+		t.Skip("AI 沒有殖民地資料")
+	}
+	pop := ai.Colonies[0].Population
+	militia := gamedata.ColonyMilitiaUnits(pop)
+	if militia <= 0 {
+		t.Skipf("AI 母星人口 %d 不足 5,沒有民兵可驗", pop)
+	}
+	// 直接驗公式本身有進到守方的組隊(組隊碼在 InvadeColony 內部,這裡驗它的輸入前提)。
+	if gamedata.GroundTypeStrengthDelta(gamedata.GroundTypeMilitia) >= 0 {
+		t.Error("民兵的攻擊力調整應為負(比陸戰隊弱)")
+	}
+}

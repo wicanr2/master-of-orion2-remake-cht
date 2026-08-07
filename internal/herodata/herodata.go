@@ -40,7 +40,7 @@ const (
 type Leader struct {
 	Name          string
 	Title         string
-	Type          uint8  // 0=艦艇軍官(commander/captain)、非 0=殖民地領袖(admin)
+	Type          uint8 // 0=艦艇軍官(commander/captain)、非 0=殖民地領袖(admin)
 	Experience    uint16
 	CommonSkills  uint32 // 通用技能 bitmask(對照 openorion2 LeaderSkills enum COMMON_SKILLS)
 	SpecialSkills uint32

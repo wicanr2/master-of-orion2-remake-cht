@@ -53,12 +53,12 @@ func DecodeWAV(wav []byte) (*Clip, error) {
 	}
 
 	var (
-		haveFmt              bool
-		audioFormat          uint16
-		channels             uint16
-		sampleRate           uint32
-		bits                 uint16
-		data                 []byte
+		haveFmt     bool
+		audioFormat uint16
+		channels    uint16
+		sampleRate  uint32
+		bits        uint16
+		data        []byte
 	)
 
 	// 逐 sub-chunk 掃描:每個 chunk = 4-byte id + u32 size + payload(size,奇數補齊)。

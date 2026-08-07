@@ -237,3 +237,42 @@ func TestArmorBeatsMarinesAtEqualBase(t *testing.T) {
 		t.Error("陸戰隊應該挨打")
 	}
 }
+
+// --- 民兵(Colony_N_Militia_ @ 0xEC61E)---
+
+// 民兵 = ⌊人口 / 5⌋。原版是逐個人口單位掃再除以 5,而 remake 的每一格都算數(見該函式說明)。
+func TestColonyMilitiaIsPopulationOverFive(t *testing.T) {
+	for _, c := range []struct{ pop, want int }{
+		{0, 0}, {1, 0}, {4, 0}, {5, 1}, {9, 1}, {10, 2}, {8, 1}, {25, 5},
+		{-3, 0}, // 負數不該回負的民兵
+	} {
+		if got := ColonyMilitiaUnits(c.pop); got != c.want {
+			t.Errorf("人口 %d 應有 %d 個民兵,實得 %d", c.pop, c.want, got)
+		}
+	}
+	if MilitiaPerPopulation != 5 {
+		t.Errorf("每 5 個人口一個民兵(原版 idiv 5),實得 %d", MilitiaPerPopulation)
+	}
+}
+
+// 民兵比陸戰隊弱 10 點——同基礎值時陸戰隊該贏。
+func TestMilitiaIsWeakerThanMarines(t *testing.T) {
+	const base = 40
+	var st, ct, hk [GroundUnitTypes]int
+	st[GroundTypeMarines] = base + GroundTypeStrengthDelta(GroundTypeMarines)
+	ct[GroundTypeMarines], hk[GroundTypeMarines] = 1, 1
+	marines := NewGroundSide(st, ct, hk)
+
+	var st2, ct2, hk2 [GroundUnitTypes]int
+	st2[GroundTypeMilitia] = base + GroundTypeStrengthDelta(GroundTypeMilitia)
+	ct2[GroundTypeMilitia], hk2[GroundTypeMilitia] = 1, 1
+	militia := NewGroundSide(st2, ct2, hk2)
+
+	GroundCombatRound(marines, militia, func(int) int { return 0 })
+	if marines.DeadType != GroundNone {
+		t.Error("陸戰隊不該輸給同基礎值的民兵")
+	}
+	if militia.DeadType != GroundTypeMilitia {
+		t.Error("民兵應該挨打")
+	}
+}

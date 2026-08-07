@@ -115,6 +115,38 @@ func GroundTypeHitsDelta(unitType int) int {
 	return 0
 }
 
+// MilitiaPerPopulation 是「幾個人口單位出一個民兵」(原版 `Colony_N_Militia_` 的 `idiv 5`)。
+const MilitiaPerPopulation = 5
+
+// ColonyMilitiaUnits 回傳一個殖民地的民兵數(原版 `Colony_N_Militia_` @ 0xEC61E)。
+//
+// 原版是**逐個人口單位掃過去**再除以 5:
+//
+//	ecx = [colony+0x0A]            ; 人口
+//	eax = colony + 0x0C + 人口×4    ; 人口單位陣列的尾端(每個單位 4 位元組)
+//	往前掃每一個單位:
+//	    if (([eax] & 0x0F) >= 8)      跳過   ; 低 4 bits 是**擁有者編號**
+//	    if ([eax+1] & 0x04)           跳過   ; 某個旗標
+//	    計數++
+//	return 計數 / 5
+//
+// 兩個跳過條件都是**人口單位上的資料旗標**:
+//
+//   - `擁有者 >= 8`:玩家編號只有 0..7,8 以上不是正常的帝國人口
+//     (`Init_Homeworld_Colony2_` 寫入時就是 `and ebx, 0Fh` 把玩家編號塞進低 4 bits)。
+//   - `[+1] & 0x04`:初始化時那個位元是被清掉的(`and byte ptr [eax+0Dh], 0F9h / or 2`
+//     只設 bit 1),所以正常人口不會有它。是什麼設的還沒追。
+//
+// remake 的殖民地人口沒有逐單位的擁有者/旗標模型——每一格都是自己的、都能打,
+// 所以兩個條件恆不成立,結果就是 **⌊人口 / 5⌋**。
+// 等哪天有了逐單位模型(異族人口、奴隸…),這裡才需要真的去掃。
+func ColonyMilitiaUnits(population int) int {
+	if population <= 0 {
+		return 0
+	}
+	return population / MilitiaPerPopulation
+}
+
 // GroundUnitTypes 是原版一方的部隊類型數(索引 0..3;4 = 全滅哨兵值)。
 //
 // 來自 `Ground_Combat_Round_` 的 `cmp byte ptr [ebx+16h], 4 / jnb`

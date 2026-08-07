@@ -11,6 +11,7 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 //   - 單一選項主題:直接記入該項。
 //   - 多選項主題:預設記入第一項並設 PendingChoice,讓玩家(或 AI)之後經 ApplyResearchChoice
 //     改選其他項(不阻塞回合:先給預設,可覆寫)。
+//
 // 此函式為純函式,不含 RNG。
 //
 // 溢出處理:完成主題後 ResearchProgress -= cost,保留超出成本的點數帶到下一個主題,
