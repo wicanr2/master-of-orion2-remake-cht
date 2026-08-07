@@ -575,14 +575,14 @@ func TestCommandoLeaderTier(t *testing.T) {
 		t.Errorf("nil leaders 應回 0,got %d", got)
 	}
 	leaders := []Leader{
-		{"甲", "科學家", 5, false, 1},
-		{"乙", "指揮官", 6, true, 2},
-		{"丙", "指揮官", 3, false, 1}, // 較低 tier,應取最高
+		{Name: "甲", Skill: "科學家", Level: 5, Ship: false, Tier: 1},
+		{Name: "乙", Skill: "指揮官", Level: 6, Ship: true, Tier: 2},
+		{Name: "丙", Skill: "指揮官", Level: 3, Ship: false, Tier: 1}, // 較低 tier,應取最高
 	}
 	if got := commandoLeaderTier(leaders); got != 2 {
 		t.Errorf("應回最高 tier=2,got %d", got)
 	}
-	if got := commandoLeaderTier([]Leader{{"甲", "科學家", 5, false, 1}}); got != 0 {
+	if got := commandoLeaderTier([]Leader{{Name: "甲", Skill: "科學家", Level: 5, Ship: false, Tier: 1}}); got != 0 {
 		t.Errorf("無指揮官技能領袖應回 0,got %d", got)
 	}
 }
@@ -778,7 +778,7 @@ func TestInvadeColony_CommandoLeaderImprovesWinRate(t *testing.T) {
 			s.Turn = i + 1
 			s.Fleet().Marines = 5
 			if withCommando {
-				s.Leaders = []Leader{{"漢尼拔", "指揮官", 6, true, 1}}
+				s.Leaders = []Leader{{Name: "漢尼拔", Skill: "指揮官", Level: 6, Ship: true, Tier: 1}}
 			}
 			res := s.InvadeColony(starIdx)
 			if !res.Ok {

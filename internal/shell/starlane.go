@@ -50,11 +50,10 @@ func (s *GameSession) FleetDriveTier() int {
 	})
 }
 
-// navigatorSkillLabel 是領航技能在 `Leader.Skill` 裡的中文標籤。
+// navigatorSkillLabel 是領航技能的中文顯示標籤(測試建構領袖時用)。
 //
-// 直接掃字串而不走 `leaderSkillIDByName`,是照 `commandoLeaderTier` 的既有作法:
-// 那張表只服務「殖民地經濟被動加成」,把單位/語意都不同的加成混進同一張映射表會出事
-// (見 session.go 該表上方的說明)。
+// ⚠ 判「這位軍官有沒有領航技能」**不要比對這個字串**——標籤會被翻譯,英文模式下
+// 存的是 "Navigator",比對中文就永遠不成立。識別鍵是技能 id,見 leaderSkillTier。
 const navigatorSkillLabel = "領航員"
 
 // FleetHasNavigator 回傳艦隊裡是否有領航技能的軍官。
@@ -67,7 +66,7 @@ const navigatorSkillLabel = "領航員"
 // 殖民地領袖不隨艦隊走。
 func (s *GameSession) FleetHasNavigator() bool {
 	for _, l := range s.Leaders {
-		if l.Ship && l.Skill == navigatorSkillLabel {
+		if l.Ship && leaderSkillTier(l, int(gamedata.SKILL_NAVIGATOR)) > 0 {
 			return true
 		}
 	}

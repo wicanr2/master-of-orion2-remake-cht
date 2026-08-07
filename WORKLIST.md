@@ -1872,6 +1872,30 @@ experience points earned each turn」——兩個獨立來源指到同一語意�
 **那個量在這個模型裡不存在**,不是漏做)、戰術官(原版自己就沒實作)、
 其餘 captain/common 技能對應的子系統 remake 沒有。
 
+> ⚠ 2026-08-08 更正:上面工程師那句**只講對了一半**。手冊那條有兩句,這裡只看了第一句。
+> 第二句「repairs all structural and internal systems damage **after the battle is won**」
+> 對得上既有的 `repairAfterBattle`,已在第 103 項接上。
+
+## ★ 2026-08-08 技能欄位讀錯了,所以上面接好的技能真英雄一個都拿不到(gap report 第 103 項)
+
+第 101/102 項把 admin 技能一個個接上去,但上游的 `loadHerodataMercs` **把技能位元讀錯了**。
+原版 `Leader::hasSkill` 是 `(skills >> (2 * skillnum)) & 0x3`——**每技能 2 bit,值就是技能階**;
+remake 讀的是 `1 << 6` / `1 << 9`,一個技能一個 bit。SKILL_RESEARCHER 真正在 bit 12-13,
+bit 6 其實是 SKILL_FAMOUS 的低位。**兩個標籤都貼錯人**,而名字與等級都是對的,畫面看不出來。
+
+順著這條線挖出另外四個:`Tier` 寫死 1(進階技能的 +50% 一次都沒發生)、一位英雄只給一項技能
+(原版一人可有多項)、艦艇軍官通稱「指揮官」撞到 SKILL_COMMANDO 的譯名(每位艦艇軍官都吃到
+地面戰加成)、以及**用翻譯過的中文標籤當識別鍵**——英文模式下三處查表全部落空,
+**所有領袖加成同時靜默失效**。
+
+修法:技能 id 才是識別鍵(`shell.Leader.Skills`),標籤只負責顯示;27 個技能的 id ↔ 中英文名
+收進 `gamedata/leader_skill_names.go`(英文名逐字取自手冊 p.135-137)。舊資料(demo 領袖、
+既有測試、舊存檔)沒有 `Skills` 時退回標籤反查,相容不變。
+
+順帶接上**工程師**:手冊那條的第二句「戰後完全修復」正是 `repairAfterBattle` 在做的事,
+加第三個觸發條件即可。`won` 這個新參數**只**影響工程師那一條——前兩條(自動修復元件、
+進階損害管制)手冊沒有勝負條件,有一支測試專門釘住「打輸時自動修復元件仍然照修」。
+
 ## 工作方式(使用者定案)
 - go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)
 - **不用多代理 workflow**;翻譯一組一組慢慢做(單代理逐項,使用者可隨時審閱)

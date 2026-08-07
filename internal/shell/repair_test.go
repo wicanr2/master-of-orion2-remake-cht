@@ -1,6 +1,10 @@
 package shell
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+)
 
 // repair_test.go:艦艇損傷與修復。
 // 手冊逐字錨定的部分(20% / 完全修復 / 停在自家據點修好)逐條驗;remake 抽象化的部分只驗界限。
@@ -104,7 +108,7 @@ func TestAutoRepairUnitFullyRepairsAfterBattle(t *testing.T) {
 		{Name: "修復艦", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "自動修復", Damage: 9},
 		{Name: "普通艦", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "無", Damage: 9},
 	}
-	s.repairAfterBattle()
+	s.repairAfterBattle(true)
 	if s.Fleet().Ships[0].Damage != 0 {
 		t.Errorf("裝自動修復的船戰後應完全修復,剩餘損傷 %d", s.Fleet().Ships[0].Damage)
 	}
@@ -197,5 +201,68 @@ func TestShipDamagePercentClamps(t *testing.T) {
 	sh.Damage = 99999
 	if p := ShipDamagePercent(sh); p >= 100 {
 		t.Errorf("損傷百分比應恆 < 100%%(船還活著),實得 %d%%", p)
+	}
+}
+
+// 手冊 p.136 的 Engineer 後半句:「repairs all structural and internal systems damage
+// **after the battle is won**」——remake 的 repairAfterBattle 就是那件事。
+func TestEngineerFullyRepairsAfterAWonBattle(t *testing.T) {
+	mk := func() *GameSession {
+		s := NewDemoSession()
+		s.Leaders = []Leader{{
+			Name: "圖靈", Skill: "工程師", Level: 3, Ship: true,
+			Skills: []LeaderSkill{{ID: int(gamedata.SKILL_ENGINEER), Tier: 1}},
+		}}
+		s.Fleet().Ships = []Ship{
+			{Name: "傷艦", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "無", Damage: 9},
+		}
+		return s
+	}
+
+	won := mk()
+	won.repairAfterBattle(true)
+	if d := won.Fleet().Ships[0].Damage; d != 0 {
+		t.Errorf("打贏且有工程師應完全修復,剩餘損傷 %d", d)
+	}
+
+	// 手冊寫的是 **is won**——輸掉那場就沒有這份修復。這一條同時是上面那支的正對照:
+	// 少了勝負判斷,兩種情況會給出一樣的結果。
+	lost := mk()
+	lost.repairAfterBattle(false)
+	if d := lost.Fleet().Ships[0].Damage; d != 9 {
+		t.Errorf("沒打贏不該修,損傷 9 → %d", d)
+	}
+}
+
+// 工程師是 Command Ability:殖民地領袖掛同一個技能不算數。
+func TestEngineerMustBeAShipOfficer(t *testing.T) {
+	s := NewDemoSession()
+	s.Leaders = []Leader{{
+		Name: "文書", Skill: "工程師", Level: 3, Ship: false,
+		Skills: []LeaderSkill{{ID: int(gamedata.SKILL_ENGINEER), Tier: 1}},
+	}}
+	if got := engineerLeaderTier(s.Leaders); got != 0 {
+		t.Errorf("殖民地領袖不該算工程師,得到階 %d", got)
+	}
+	s.Fleet().Ships = []Ship{
+		{Name: "傷艦", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "無", Damage: 9},
+	}
+	s.repairAfterBattle(true)
+	if d := s.Fleet().Ships[0].Damage; d != 9 {
+		t.Errorf("沒有艦艇工程師不該修,損傷 9 → %d", d)
+	}
+}
+
+// 前兩條觸發(自動修復元件/進階損害管制)手冊沒有勝負條件——別讓 won 這個新參數
+// 順手把它們也關掉了。
+func TestAutoRepairStillWorksAfterALostBattle(t *testing.T) {
+	s := NewDemoSession()
+	s.Leaders = nil
+	s.Fleet().Ships = []Ship{
+		{Name: "修復艦", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "自動修復", Damage: 9},
+	}
+	s.repairAfterBattle(false)
+	if d := s.Fleet().Ships[0].Damage; d != 0 {
+		t.Errorf("自動修復元件不看勝負,剩餘損傷 %d", d)
 	}
 }

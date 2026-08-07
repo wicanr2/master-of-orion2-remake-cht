@@ -213,7 +213,7 @@ func (s *GameSession) AttackMonster(starIdx int) MonsterBattleResult {
 	for i := 0; i < res.ShipsLost; i++ {
 		s.removeWeakestShip()
 	}
-	s.repairAfterBattle() // 自動修復/進階損害管制:戰後完全修復(手冊 p.80/p.82)
+	s.repairAfterBattle(res.Won) // 自動修復/進階損害管制/工程師(手冊 p.80/p.82/p.136)
 
 	if res.Won {
 		res.Message = fmt.Sprintf("擊殺%s!該星系已可拓殖(我方損失 %d 艘)", res.Name, res.ShipsLost)

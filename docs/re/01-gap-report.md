@@ -5292,6 +5292,10 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     - **工程師**:艦艇維修**速率**加成——remake 的 `advanceShipRepair` 是照原版
       `Repair_Ship_Full_` 做的**一次修好**,沒有「速率」這個量可以加成。
       **這不是漏做,是那個量在這個模型裡不存在。**
+      > ⚠ 2026-08-08(第 103 項)修正:**這一條只講對了一半。** 手冊那條有兩句,
+      > 上面只看了第一句(戰鬥中的修復)。第二句「repairs all structural and internal
+      > systems damage **after the battle is won**」對得上 remake 既有的
+      > `repairAfterBattle`,已於第 103 項接上。
     - **戰術官**:原版自己就沒實作(第 101 項)。
     - 其餘 captain/common 技能(刺客、外交官、間諜大師、心靈感應…)對應的子系統
       (刺客擲骰、外交修正、反間諜)remake 沒有。
@@ -5300,3 +5304,79 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
 
 
 
+
+103. **HERODATA 的技能欄位是每技能 2 bit,不是 1 bit**(2026-08-08)。
+
+    第 101、102 項把 admin 技能一個個接上去,但**真英雄一個都拿不到**——上游把技能位元讀錯了。
+
+    ### 一手事實
+
+    openorion2 `Leader::hasSkill`(gamestate.cpp:631-662):
+
+    ```cpp
+    skillnum = id & SKILLCODE_MASK;
+    if (skillnum >= max) return 0;
+    return (skills >> (2 * skillnum)) & 0x3;
+    ```
+
+    **每個技能佔 2 bit**,值就是技能階(0 無 / 1 一般 / 2 進階)。而 remake 的
+    `cmd/moo2/herodatamercs.go` 讀的是:
+
+    ```go
+    skillCommonResearcherBit = 1 << 6 // SKILL_RESEARCHER
+    skillCommonTraderBit     = 1 << 9 // SKILL_TRADER
+    ```
+
+    一個技能一個 bit。SKILL_RESEARCHER 真正的位置是 bit 12-13;bit 6 是
+    **skillnum 3(SKILL_FAMOUS)** 的低位,bit 9 是 **skillnum 4(SKILL_MEGAWEALTH)** 的高位。
+    **兩個標籤都貼錯人**,而且畫面上完全看不出來:名字是真的、等級是真的,只有技能是錯的。
+
+    解碼函式 `gamedata.LeaderSkillTier` 早就照 `hasSkill` 寫對了——**只是這裡沒用它**。
+
+    ### 順著這條線挖出的另外四個
+
+    | # | 症狀 | 後果 |
+    |---|---|---|
+    | 1 | `Tier` 寫死 1 | 進階技能的 +50% 一次都沒發生過 |
+    | 2 | 一位英雄只給一項技能 | 原版一人可有多項(所以才要 2 bit × N 欄位) |
+    | 3 | 艦艇軍官通稱「指揮官」 | 那是 SKILL_COMMANDO 的譯名,`commandoLeaderTier` 掃字串 → **每一位**雇來的艦艇軍官都吃到地面戰加成 |
+    | 4 | 效果查表用**中文標籤** | 英文模式下 `Skill` 是 "Scientist",查不到 → **所有領袖加成同時消失**,畫面無異狀 |
+
+    第 4 條是這一輪最值得記的:**翻譯過的字串不能當識別鍵**。remake 有三處這樣寫
+    (`leaderSkillIDByName`、`commandoLeaderTier`、`FleetHasNavigator`),三處都會在切成英文的
+    那一刻靜默失效——沒有錯誤訊息,沒有崩潰,只是加成不見了。
+
+    ### 修法
+
+    - `gamedata/leader_skill_names.go`:27 個技能的 id ↔ 中英文名(英文名逐字取自
+      GAME_MANUAL.pdf p.135-137 三段技能表)+ 原版的列舉順序(專屬技能在前,
+      對照 `LeaderSkillsWidget::update`)。
+    - `shell.Leader` 加 `Skills []LeaderSkill{ID, Tier}`,**id 是識別鍵、標籤只負責顯示**。
+      沒有 `Skills` 的舊資料(demo 領袖、既有測試、舊存檔)退回用中文標籤反查,相容不變。
+    - 三處標籤比對全部改成比對 id。
+    - 艦艇軍官的通稱從「指揮官」改成「艦長」,並用測試釘住
+      **通稱不可以撞到任何真技能的譯名**。
+
+    ### 順帶接上的:工程師
+
+    手冊 p.136 Engineer 那條有兩句,第 102 項只看了第一句就結案。第二句:
+
+    > an Engineer that has not retreated from combat, repairs all structural and internal
+    > systems damage **after the battle is won**.
+
+    「戰後完全修復」正是 `shell.repairAfterBattle` 在做的事——它本來就有兩個觸發
+    (自動修復元件、進階損害管制),加第三個只是多一個條件。`won` 這個新參數**只**影響
+    工程師那一條:前兩條是裝備/科技的被動效果,手冊那兩句沒有勝負條件,不加。
+    (有一支測試專門釘這件事——正對照是「打輸時自動修復元件仍然照修」。)
+
+    誠實留白兩個:手冊的「has not retreated」在 remake 沒有東西可以判(戰鬥解算沒有撤退機制);
+    軍官也沒有指派到艦隊,沿用 `commandoLeaderTier` 的既有近似(帝國內有就算數)。
+
+    ### 領袖技能的現況
+
+    接了 **10 個**:科學家、貿易家、財務官、心靈導師、醫官、教官、農業官、勞工官、科學官、
+    工程師,加上地面戰的指揮官與航行的領航員 —— 共 12 項技能有實際效果。
+
+    仍未接的與理由(與第 102 項相同,扣掉已接的工程師):環保官(污染模型是八分之幾的查表,
+    沒有百分比入口)、戰術官(原版自己就沒實作)、其餘 captain/common 技能對應的子系統
+    remake 沒有。

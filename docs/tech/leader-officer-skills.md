@@ -1,4 +1,8 @@
-# 領袖/軍官技能系統(2026-07-11 接線)
+# 領袖/軍官技能系統(2026-07-11 接線,2026-08-08 修訂)
+
+> **本文第二、三節是一手資料(技能 id 編碼、加成公式、格式字串對照),仍然有效。**
+> 第四節以後是接線現況,已由第 101/102/103 項大幅改寫——2026-07-11 版本裡「只接三個技能」
+> 「指揮官待定案」「工程師沒有承接系統」那些敘述**都已過期**,見第 4.3 節與第五節。
 
 ## 一、問題背景
 
@@ -85,9 +89,14 @@ Lore/Ordnance/Security/Navigator(移動力用途)在 openorion2 全專案 grep �
 是真的沒有效果消費端——已用 `rulebook/62` 反向溯源 SOP 驗證,`shipCombatSpeed`/`shipBeamOffense`/
 `shipBeamDefense`/`leaderHireModifier`/`leaderMaintenanceCost` 已是 `gamestate.cpp` 全部呼叫
 `Leader::skillBonus`/`hasSkill` 的地方,沒有第五個呼叫點)。這些技能的「效果」只存在於手冊文字
-描述(如 Spiritual Leader「Raises morale」、Commando「ground combat strength」),精確數字/
-換算公式手冊沒給——與既有 `internal/gamedata/morale.go`、`ground.go` 檔尾 TODO 清單的判斷標準
-一致(手冊有精確數字才移植,只有文字定性描述不臆造)。
+描述(如 Spiritual Leader「Raises morale」、Commando「ground combat strength」)。
+
+> ⚠ **2026-08-08 更正這一段的最後一句。** 原文寫「精確數字/換算公式手冊沒給」,
+> 那是把「openorion2 沒有消費端」誤讀成「沒有數字」。**數字一直都在**:加成值是
+> `baseSkillValues`(第二節那三行常數表),單位是 `skillFormatStrings`(第二節那張對照表)
+> ——兩者合起來就足以決定該技能接進 remake 的哪個欄位。缺的從來是**承接的子系統**,
+> 不是數字。第 101/102/103 項照這個判準接了 12 項(見第五節)。
+> 真正「沒有數字」的只有戰術官,而那是因為**原版自己就沒實作**。
 
 ## 四、本輪建置範圍(只接對應到 remake 已存在系統的技能)
 
@@ -113,66 +122,75 @@ Lore/Ordnance/Security/Navigator(移動力用途)在 openorion2 全專案 grep �
   金流機制(BC 夠不夠、扣款),供未來招募畫面呼叫。**領袖狀態轉換(ForHire→Working 等)不在本輪
   範圍**,`demoLeaders` 既有領袖視為已受雇,不需要走這個函式。
 
-### 4.3 shell 接線(`internal/shell/session.go`)
+### 4.3 shell 接線(現況,2026-08-08)
 
-- `Leader` 新增 `Tier int` 欄位(demoLeaders 皆保守設 1=一般技能,非 HERODATA 真實資料,不臆造
-  「進階」)。
-- `leaderSkillIDByName`:demoLeaders 中文標籤 → `gamedata` 技能 id 的映射表,只收 3 個語意清楚
-  的:「科學家」→`SKILL_RESEARCHER`、「貿易家」→`SKILL_TRADER`、「工程師」→`SKILL_ENGINEER`。
-- `leaderDisplayLevelToExpLevel(level int) int`:demoLeaders 既有 `Level`(1..5 顯示等級)換算
-  `LeaderSkillBonus` 用的 `expLevel`(0..4),採 `Level-1` 夾在 `[0,4]`。
-- `applyLeaderColonyBonuses(leaders []Leader, colony *engine.ColonyState)`:殖民地領袖
-  (`Ship=false`)套到指定殖民地——`SKILL_RESEARCHER`(固定值)→`ColonyState.FlatResearch`,
-  `SKILL_TRADER`(%)→`ColonyState.IncomeBonusPercent`(與太空港/證交所同一欄位,可疊加)。
-  `NewDemoSession` 建完 `PlayerColonies[0]` 後呼叫一次,套到母星(demo 唯一殖民地)。
+**識別鍵是技能 id,不是中文標籤。** `shell.Leader` 帶 `Skills []LeaderSkill{ID, Tier}`,
+由 HERODATA 的技能位元解出(每技能 2 bit = 技能階,見第 103 項);`Skill` 那個字串只負責顯示,
+會隨語言翻譯,**不可拿來比對**。沒有 `Skills` 的舊資料(demo 領袖、既有測試、舊存檔)
+退回用 `gamedata.LeaderSkillIDByZH` 反查單一技能。
 
-## 五、映射待人工定案(不確定,列出讓使用者確認)
+技能名字表在 `internal/gamedata/leader_skill_names.go`:27 個技能的 id ↔ 中英文名,
+英文名逐字取自 GAME_MANUAL.pdf p.135-137;另含 `LeaderSkillIDsFor(leaderType)` 給出原版技能欄的
+列舉順序(專屬技能在前,對照 `LeaderSkillsWidget::update`)。
 
-- **「指揮官」(漢尼拔,Ship=true)刻意未收錄進 `leaderSkillIDByName`**:這是 demo 資料自訂的
-  中文頭銜字,不是從 openorion2 技能表或手冊衍生的標籤——技能表裡沒有字面叫「Commander」的
-  技能,任何映射都是我方猜測。候選:
-  - `SKILL_WEAPONRY`(語意最接近「指揮官帶頭衝鋒」,且 remake 已有 `ShipBeamAttackWithOfficer`
-    可承接)。
-  - `SKILL_COMMANDO`(地面戰,但基礎加成手冊未給精確數字,見 `gamedata/ground.go` 檔尾 TODO,
-    即使映射對了也套不進任何現有欄位)。
-  - `SKILL_SECURITY`(艦艇安防,openorion2 沒有效果呼叫端)。
-  - 目前保守選擇:**都不套**,漢尼拔在遊戲裡沒有任何技能加成,直到使用者定案。
-- **「工程師」(圖靈,Ship=true)映射到 `SKILL_ENGINEER` 語意清楚,但 remake 沒有艦艇維修系統
-  接收這個 %加成**(真實效果是「每回合修復艦體損傷的百分比」,remake 目前的 `save.Ship` 有
-  損傷欄位但沒有「每回合自動維修」的引擎邏輯)——技能 id 對應沒有疑義,純粹是承接系統未建,
-  標 TODO,不是映射問題。
+`applyLeaderColonyBonuses` 逐**技能**跑(不是逐領袖),先依技能分組收集、再依
+`gamedata.LeaderSkillCombine` 合成(手冊 p.137:只有 Megawealth 與 Researcher 累加,
+其餘取最強那一位),最後由 switch 決定落在哪個 `ColonyState` 欄位。
 
-## 六、TODO(手冊/openorion2 皆無精確數字或 remake 尚無承接系統,誠實不做)
+## 五、目前有實際效果的技能(共 12 項)
 
-- `SKILL_SCIENCE_LEADER`/`SKILL_FINANCIAL_LEADER`/`SKILL_LABOR_LEADER`/`SKILL_FARMING_LEADER`/
-  `SKILL_ENVIRONMENTALIST`/`SKILL_MEDICINE`/`SKILL_INSTRUCTOR`:openorion2 無呼叫端,demoLeaders
-  目前也沒有領袖標成這些技能名稱,暫不建映射(未來若要加同類「XX 領導」demo 角色,可比照
-  Researcher/Trader 的模式:查 `skillFormatStrings` 決定固定值/%,再決定接哪個 `ColonyState`
-  欄位)。
-- `SKILL_SPIRITUAL_LEADER`/`SKILL_TACTICS`:手冊已明講「無精確數字/未實作」,見
-  `internal/gamedata/morale.go`、`ground.go` 檔尾既有 TODO,不重複。
-- `SKILL_ASSASSIN`/`SKILL_COMMANDO`/`SKILL_DIPLOMAT`/`SKILL_OPERATIONS`/`SKILL_SPYMASTER`/
-  `SKILL_TELEPATH`:間諜/外交/地面戰系統 remake 尚未建（或該技能對應的量沒有精確公式），
-  比照任務邊界「間諜主管/心靈感應/外交等需要未建系統的技能一律標 TODO」處理。
-- `SKILL_FIGHTER_PILOT`/`SKILL_GALACTIC_LORE`/`SKILL_ORDNANCE`/`SKILL_SECURITY`/
-  `SKILL_NAVIGATOR`:openorion2 無效果呼叫端(Navigator 只在 `skillBonus` 特例判斷式出現,沒有
-  任何函式讀取它的回傳值),不建模。
-- 艦艇軍官指派 UI + 戰鬥畫面:`ShipBeamAttackWithOfficer`/`ShipBeamDefenseWithOfficer` 已就緒,
-  等 remake 有「軍官上艦」與「戰鬥解算」兩個系統才能真正串起來。
-- 招募 UI:`HireLeader` 已就緒,等軍官列表畫面做「雇用」按鈕才能呼叫。
+| 技能 | 落在 | 消費端 |
+|---|---|---|
+| 科學家 Researcher | `FlatResearch`(固定點數,**累加型**) | `applyLeaderColonyBonuses` |
+| 貿易家 Trader | `IncomeBonusPercent` | 同上 |
+| 財務官 Financial Leader | `IncomeBonusPercent` | 同上 |
+| 心靈導師 Spiritual Leader | `MoralePercent` | 同上 |
+| 醫官 Medicine | `GrowthBonusSum` | 同上 |
+| 農業官 Farming Leader | `FoodBonusPercent` | 同上 |
+| 勞工官 Labor Leader | `IndustryBonusPercent` | 同上 |
+| 科學官 Science Leader | `ResearchBonusPercent` | 同上 |
+| 教官 Instructor | 艦員每回合經驗(固定點數) | `leaderInstructorXPBonus` / `crew.go` |
+| 工程師 Engineer | 戰後完全修復(**打贏才有**) | `repair.go` `engineerLeaderTier` |
+| 指揮官 Commando | 地面戰 force 加成 | `ground_invasion.go` `commandoLeaderTier` |
+| 領航員 Navigator | 艦隊航速 + 星雲/黑洞豁免 | `starlane.go` `FleetHasNavigator` |
+
+> 2026-07-11 版本這一節寫的是「指揮官映射待人工定案,候選 SKILL_WEAPONRY /
+> SKILL_COMMANDO / SKILL_SECURITY」——**已定案為 SKILL_COMMANDO**(手冊 p.135 Commando)。
+> 同版本說工程師「沒有承接系統」,那是只看了手冊那條的第一句;第二句
+> 「repairs all structural and internal systems damage after the battle is won」
+> 對得上既有的 `repairAfterBattle`,已接。
+
+## 六、仍未接的與理由
+
+- **環保官 Environmentalist**:降低「會產生污染的產能」的百分比。remake 的污染模型是
+  `PollutionEighths` 查表(八分之幾),沒有百分比入口。
+- **戰術官 Tactics**:**原版自己就沒實作**——手冊那條的最後一句明寫
+  「This skill is not implemented」。不做它與原版一致,不是缺口。
+- **刺客 / 外交官 / 間諜大師 / 心靈感應 / 名人 / 巨富 / 後勤官**:對應的子系統
+  (刺客擲骰、外交修正、反間諜、雇用費市場、維護費豁免、指揮點數)remake 沒有或未接。
+- **戰機飛行員 / 銀河學者 / 舵手 / 軍械官 / 保安官 / 武器官**:艦艇軍官指派 UI 與
+  逐艦戰鬥屬性都還沒有,`ShipBeamAttackWithOfficer` / `ShipBeamDefenseWithOfficer`
+  公式已備妥,等系統。
 
 ## 七、測試
 
-- `internal/gamedata/officer_test.go`:`TestLeaderSkillTier`/`TestLeaderMaintenanceCost`/
-  `TestLeaderHireModifier`(新增,3 個函式各數例)。
-- `internal/engine/ship_test.go`:`TestShipBeamAttackWithOfficer`(含 `_NoOfficer` 對照組)、
-  `TestShipBeamDefenseWithOfficer`。
-- `internal/engine/leader_test.go`:`TestHireLeader`(5 例:足夠/剛好/不足/cost0/cost負)。
-- `internal/shell/leader_test.go`:`TestApplyLeaderColonyBonuses_Researcher`/`_Trader`/
-  `_ShipOfficerSkipped`/`_UnmappedSkillSkipped`/`_NoLeadersNoop`、
-  `TestLeaderDisplayLevelToExpLevel`、`TestLeaderSkillIDByNameMapping`。
-- `internal/shell/session_test.go`:`TestGameSessionEndTurn` 期望值 30→55 更新(母星 30 基礎研究
-  + 馮·諾伊曼科學家技能 +25),註解記錄換算過程,避免日後誤以為是 regression。
+一手資料層(`internal/gamedata`):
 
-全數跑過 `go build ./...`/`go vet ./...`/`go test ./internal/... ./cmd/...`(docker
-`moo2-ebiten:latest`),除既有已知的 `internal/uifont` X11 環境限制外全綠。
+- `officer_test.go`:`TestLeaderSkillTier`(**每技能 2 bit** 的解碼)/`TestLeaderMaintenanceCost`/
+  `TestLeaderHireModifier`。
+- `leader_skill_apply_test.go`:累加 vs 取最強的合成規則(含環保官負值取絕對值最大)。
+- `leader_skill_names_test.go`:27 個技能一個不多一個不少、中文名不重複、
+  「指揮官」只屬於 SKILL_COMMANDO、列舉順序專屬在前。
+
+接線層:
+
+- `internal/shell/leader_test.go`:標籤退回路徑、**id 勝過顯示標籤**(英文模式不會靜默失效)、
+  一位領袖多項技能、進階階比一般階強 50%。
+- `internal/shell/leader_skill_test.go`:兩個貿易家不疊 vs 兩個科學家會疊(正對照)、
+  分項百分比只動自己那一項 vs 士氣三項一起動(正對照)、科學官 ≠ 科學家。
+- `internal/shell/repair_test.go`:工程師打贏才修 vs 打輸不修(正對照)、
+  工程師必須是艦艇軍官、**自動修復元件不看勝負**(確認新的 `won` 參數沒有波及既有觸發)。
+- `internal/shell/ground_invasion_test.go`:Commando 取最高階、無 Commando 領袖回 0。
+- `cmd/moo2/herodatamercs_test.go`:2 bit 解碼(含「舊遮罩 `1<<6` 指到的是 SKILL_FAMOUS」
+  這條回歸鎖)、進階階讀得出來、specialSkills 依領袖類型解讀、一人多技能且專屬在前、
+  標籤翻譯但 id 不變、**類別通稱不可撞到真技能譯名**。

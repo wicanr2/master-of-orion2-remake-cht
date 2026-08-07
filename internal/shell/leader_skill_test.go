@@ -11,12 +11,12 @@ import (
 // 這是 remake 先前的實際行為,第 101 項修掉。
 func TestTwoTradersDoNotStack(t *testing.T) {
 	one := engine.ColonyState{}
-	applyLeaderColonyBonuses([]Leader{{"甲", "貿易家", 3, false, 1}}, &one)
+	applyLeaderColonyBonuses([]Leader{{Name: "甲", Skill: "貿易家", Level: 3, Ship: false, Tier: 1}}, &one)
 
 	two := engine.ColonyState{}
 	applyLeaderColonyBonuses([]Leader{
-		{"甲", "貿易家", 3, false, 1},
-		{"乙", "貿易家", 3, false, 1},
+		{Name: "甲", Skill: "貿易家", Level: 3, Ship: false, Tier: 1},
+		{Name: "乙", Skill: "貿易家", Level: 3, Ship: false, Tier: 1},
 	}, &two)
 
 	if two.IncomeBonusPercent != one.IncomeBonusPercent {
@@ -26,11 +26,11 @@ func TestTwoTradersDoNotStack(t *testing.T) {
 	// 取的是**最強**的那個:高階領袖在場時要用高階的值。
 	mixed := engine.ColonyState{}
 	applyLeaderColonyBonuses([]Leader{
-		{"甲", "貿易家", 1, false, 1},
-		{"乙", "貿易家", 5, false, 1},
+		{Name: "甲", Skill: "貿易家", Level: 1, Ship: false, Tier: 1},
+		{Name: "乙", Skill: "貿易家", Level: 5, Ship: false, Tier: 1},
 	}, &mixed)
 	best := engine.ColonyState{}
-	applyLeaderColonyBonuses([]Leader{{"乙", "貿易家", 5, false, 1}}, &best)
+	applyLeaderColonyBonuses([]Leader{{Name: "乙", Skill: "貿易家", Level: 5, Ship: false, Tier: 1}}, &best)
 	if mixed.IncomeBonusPercent != best.IncomeBonusPercent {
 		t.Errorf("應取最強那位的 %d%%,得到 %d%%",
 			best.IncomeBonusPercent, mixed.IncomeBonusPercent)
@@ -41,11 +41,11 @@ func TestTwoTradersDoNotStack(t *testing.T) {
 // 少了這條,「一律取最佳」也會讓上面那支通過。
 func TestTwoResearchersDoStack(t *testing.T) {
 	one := engine.ColonyState{}
-	applyLeaderColonyBonuses([]Leader{{"甲", "科學家", 3, false, 1}}, &one)
+	applyLeaderColonyBonuses([]Leader{{Name: "甲", Skill: "科學家", Level: 3, Ship: false, Tier: 1}}, &one)
 	two := engine.ColonyState{}
 	applyLeaderColonyBonuses([]Leader{
-		{"甲", "科學家", 3, false, 1},
-		{"乙", "科學家", 3, false, 1},
+		{Name: "甲", Skill: "科學家", Level: 3, Ship: false, Tier: 1},
+		{Name: "乙", Skill: "科學家", Level: 3, Ship: false, Tier: 1},
 	}, &two)
 	if two.FlatResearch != one.FlatResearch*2 {
 		t.Errorf("兩個同階科學家應累加(手冊明列):一個 %d、兩個 %d(期望 %d)",
@@ -65,14 +65,14 @@ func TestAdminLeaderSkillsLandInTheRightFields(t *testing.T) {
 		{"醫官", func(c engine.ColonyState) int { return c.GrowthBonusSum }, "成長"},
 	} {
 		var c engine.ColonyState
-		applyLeaderColonyBonuses([]Leader{{"某人", tc.skill, 3, false, 1}}, &c)
+		applyLeaderColonyBonuses([]Leader{{Name: "某人", Skill: tc.skill, Level: 3, Ship: false, Tier: 1}}, &c)
 		if tc.field(c) <= 0 {
 			t.Errorf("%s 應加到「%s」欄位,得到 %d", tc.skill, tc.name, tc.field(c))
 		}
 	}
 	// 教官**不**動殖民地欄位——它是帝國層的艦員經驗。
 	var c engine.ColonyState
-	applyLeaderColonyBonuses([]Leader{{"教頭", "教官", 5, false, 1}}, &c)
+	applyLeaderColonyBonuses([]Leader{{Name: "教頭", Skill: "教官", Level: 5, Ship: false, Tier: 1}}, &c)
 	if c.IncomeBonusPercent != 0 || c.MoralePercent != 0 || c.GrowthBonusSum != 0 || c.FlatResearch != 0 {
 		t.Errorf("教官不該加到任何殖民地欄位,得到 %+v", c)
 	}
@@ -87,7 +87,7 @@ func TestInstructorBoostsCrewExperience(t *testing.T) {
 	s.advanceCrewExperience()
 	plain := s.Fleet().Ships[0].CrewXP - base
 
-	s.Leaders = []Leader{{"教頭", "教官", 3, false, 1}}
+	s.Leaders = []Leader{{Name: "教頭", Skill: "教官", Level: 3, Ship: false, Tier: 1}}
 	want := gamedata.LeaderSkillBonus(int(gamedata.SKILL_INSTRUCTOR), 1,
 		leaderDisplayLevelToExpLevel(3))
 	if want <= 0 {
@@ -102,10 +102,10 @@ func TestInstructorBoostsCrewExperience(t *testing.T) {
 
 // 教官也不累加——兩位取最強的那位。
 func TestTwoInstructorsDoNotStack(t *testing.T) {
-	one := leaderInstructorXPBonus([]Leader{{"甲", "教官", 5, false, 1}})
+	one := leaderInstructorXPBonus([]Leader{{Name: "甲", Skill: "教官", Level: 5, Ship: false, Tier: 1}})
 	two := leaderInstructorXPBonus([]Leader{
-		{"甲", "教官", 5, false, 1},
-		{"乙", "教官", 5, false, 1},
+		{Name: "甲", Skill: "教官", Level: 5, Ship: false, Tier: 1},
+		{Name: "乙", Skill: "教官", Level: 5, Ship: false, Tier: 1},
 	})
 	if one <= 0 {
 		t.Fatal("測試前提:一位教官的加成應為正")
@@ -140,7 +140,7 @@ func TestPerCategoryLeaderSkillsLandInTheirOwnFields(t *testing.T) {
 			}, "研究%"},
 	} {
 		var c engine.ColonyState
-		applyLeaderColonyBonuses([]Leader{{"某人", tc.skill, 3, false, 1}}, &c)
+		applyLeaderColonyBonuses([]Leader{{Name: "某人", Skill: tc.skill, Level: 3, Ship: false, Tier: 1}}, &c)
 		if tc.field(c) <= 0 {
 			t.Errorf("%s 應加到「%s」,得到 %d", tc.skill, tc.name, tc.field(c))
 		}
@@ -156,9 +156,9 @@ func TestPerCategoryLeaderSkillsLandInTheirOwnFields(t *testing.T) {
 // 這條防的是「名字像就混用」——一個是 %+d%%、一個是 %+d。
 func TestScienceLeaderAndResearcherAreDifferentSkills(t *testing.T) {
 	var a engine.ColonyState
-	applyLeaderColonyBonuses([]Leader{{"甲", "科學官", 3, false, 1}}, &a)
+	applyLeaderColonyBonuses([]Leader{{Name: "甲", Skill: "科學官", Level: 3, Ship: false, Tier: 1}}, &a)
 	var b engine.ColonyState
-	applyLeaderColonyBonuses([]Leader{{"乙", "科學家", 3, false, 1}}, &b)
+	applyLeaderColonyBonuses([]Leader{{Name: "乙", Skill: "科學家", Level: 3, Ship: false, Tier: 1}}, &b)
 	if a.ResearchBonusPercent <= 0 || a.FlatResearch != 0 {
 		t.Errorf("科學官應只加百分比:%%=%d、固定=%d", a.ResearchBonusPercent, a.FlatResearch)
 	}

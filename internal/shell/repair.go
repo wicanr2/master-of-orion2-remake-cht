@@ -145,17 +145,59 @@ func (s *GameSession) starIsPlayerBase(starIdx int) bool {
 	return s.HasOutpostAt(starIdx)
 }
 
-// repairAfterBattle 依手冊 p.80/p.82 做戰後修復:裝有自動修復元件的船、或玩家已研究
-// 進階損害管制時的所有船,戰鬥結束後完全修復。
-func (s *GameSession) repairAfterBattle() {
+// repairAfterBattle 做戰後修復。三個觸發條件,任一成立就完全修復:
+//
+//   - 裝有自動修復元件的船(手冊 p.82「completely repaired after every battle」)
+//   - 玩家已研究進階損害管制時的所有船(手冊 p.80)
+//   - 艦隊裡有 **Engineer 技能軍官**且**這場打贏了**(手冊 p.136,見下)
+//
+// won 只影響第三條。前兩條是裝備/科技的被動效果,手冊那兩句都沒有勝負條件,不加。
+//
+// ============ Engineer:手冊那句的後半段 ============
+//
+// 手冊 p.136:
+//
+//	Engineer: Helps to repair damage of every ship in the fleet **during combat**.
+//	In addition, an Engineer **that has not retreated from combat**, repairs all
+//	structural and internal systems damage **after the battle is won**.
+//
+// 前半句(戰鬥中的修復速率)remake 沒有承接的量——戰鬥中的修復只有自動修復元件那條
+// 固定 20%,沒有「速率」可以加成。**後半句有**:這支函式做的就是「戰後完全修復」。
+//
+// ⚠ 兩個誠實留白:
+//
+//   - **「has not retreated」沒有東西可以判。** remake 的戰鬥解算沒有撤退機制
+//     (勝負由雙方剩餘艦數決定,見 ResolveBattle),所以這個條件恆真。
+//   - **軍官沒有指派到艦隊。** `GameSession.Leaders` 是帝國全域清單,沒有「這位軍官在哪支
+//     艦隊」的欄位——與 commandoLeaderTier 同一個既有近似:帝國內有這位軍官就算數。
+func (s *GameSession) repairAfterBattle(won bool) {
 	adc := s.playerHasAdvancedDamageControl()
+	eng := won && engineerLeaderTier(s.Leaders) > 0
 	// 只修**參戰的那一支**——戰後修復是戰鬥的收尾,沒去打的艦隊不在其中。
 	f := s.Fleet()
 	for i := range f.Ships {
-		if adc || shipHasAutoRepair(f.Ships[i]) {
+		if adc || eng || shipHasAutoRepair(f.Ships[i]) {
 			repairShipFull(&f.Ships[i])
 		}
 	}
+}
+
+// engineerLeaderTier 回傳帝國內 Engineer 技能**艦艇軍官**的最高技能階(0 = 沒有)。
+//
+// 只認 `Ship == true`:Engineer 屬於手冊的 Command Abilities,那一段開頭寫明
+// 「enhance the combat effectiveness of the ship or fleet **to which you assign the
+// officer**」——殖民地領袖不隨艦隊出戰。
+func engineerLeaderTier(leaders []Leader) int {
+	best := 0
+	for _, l := range leaders {
+		if !l.Ship {
+			continue
+		}
+		if t := leaderSkillTier(l, int(gamedata.SKILL_ENGINEER)); t > best {
+			best = t
+		}
+	}
+	return best
 }
 
 // applyBattleDamage 把一場戰鬥後的剩餘血量寫回艦艇的持久損傷。

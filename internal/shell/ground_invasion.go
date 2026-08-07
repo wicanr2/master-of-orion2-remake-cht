@@ -201,9 +201,13 @@ func tankHitsToKillFor(ps engine.PlayerState) int {
 	return gamedata.GroundTankHitsToKill(false)
 }
 
-// commandoLeaderTier 掃描 leaders 找出擁有「指揮官」技能標籤(對應 gamedata.SKILL_COMMANDO,
-// 手冊 p.135 Commando)的最高技能階(Tier:0 無/1 一般/2 進階)。找不到回傳 0(=無 Commando
-// 領袖,無加成)。
+// commandoLeaderTier 掃描 leaders 找出擁有 Commando 技能(gamedata.SKILL_COMMANDO,
+// 手冊 p.135)的最高技能階(0 無/1 一般/2 進階)。找不到回傳 0(=無 Commando 領袖,無加成)。
+//
+// ⚠ 2026-08-08(第 103 項)從比對中文標籤 `l.Skill == "指揮官"` 改成比對技能 id。
+// 那個比法錯得很安靜:HERODATA 的**艦艇軍官一律被標成「指揮官」**(那是類別通稱,
+// 不是 Commando 的譯名),於是每一位雇來的艦艇軍官都拿到了地面戰加成;
+// 反過來在英文模式下標籤是 "Commander",一個都對不上,加成整個消失。
 //
 // ⚠ 近似(2026-07-11,docs/tech/version-1.3-1.5-diff.md #5/#6):手冊描述 Commando 效果綁定
 // 「同系統的殖民地領袖」或「同艦隊的艦艇軍官」,remake 沒有「領袖指派到某次入侵/某支艦隊」的
@@ -212,17 +216,14 @@ func tankHitsToKillFor(ps engine.PlayerState) int {
 // Tier>0 的指揮官技能領袖,任何一次入侵都套用其加成。此為誠實標記的近似,非精確的「該次入侵
 // 指派了哪位領袖」模擬。
 //
-// 與 leaderSkillIDByName(session.go)刻意分開:那張表只服務「殖民地經濟被動加成」
-// (applyLeaderColonyBonuses,科學家/貿易家/工程師),Commando 屬於地面戰鬥系統,語意/消費端
-// 都不同,不應該混進同一張表。
+// 與 applyLeaderColonyBonuses 分開的理由不變:那邊算的是殖民地經濟欄位,Commando 是地面戰
+// force 加成,語意與單位都不同,不該混進同一段合成邏輯。分開的是**消費端**,識別鍵則是共用的
+// 技能 id(leaderSkillTier)。
 func commandoLeaderTier(leaders []Leader) int {
 	best := 0
 	for _, l := range leaders {
-		if l.Skill != "指揮官" {
-			continue
-		}
-		if l.Tier > best {
-			best = l.Tier
+		if t := leaderSkillTier(l, int(gamedata.SKILL_COMMANDO)); t > best {
+			best = t
 		}
 	}
 	return best

@@ -665,7 +665,7 @@ func (s *GameSession) ResolveBattle(enemy string) BattleResult {
 	for i := 0; i < res.PlayerLosses; i++ {
 		s.removeWeakestShip()
 	}
-	s.repairAfterBattle() // 自動修復元件/進階損害管制:戰後完全修復(手冊 p.80/p.82)
+	s.repairAfterBattle(res.PlayerWon) // 自動修復/進階損害管制/工程師(手冊 p.80/p.82/p.136)
 	s.LastBattle = &res
 	return res
 }
@@ -1529,71 +1529,93 @@ func (s *GameSession) applyClimateChange(i int, next gamedata.PlanetClimate) {
 	c.Climate = next
 }
 
+// LeaderSkill 是一位領袖**實際擁有的一項技能**:技能 id + 技能階。
+//
+// id 用 gamedata 的 LeaderSkills(openorion2 gamestate.h enum),Tier 是
+// `Leader::hasSkill` 的回傳值(1 一般 / 2 進階)。
+type LeaderSkill struct {
+	ID   int `json:"id"`
+	Tier int `json:"tier"`
+}
+
 // Leader 是一名可雇用的軍官/領袖(供軍官列表)。
 type Leader struct {
 	Name  string
-	Skill string // 專長(中文顯示標籤;技能效果透過 leaderSkillIDByName 對應到 gamedata 技能 id)
+	Skill string // 專長的**顯示**標籤(會隨語言翻譯,不可拿來當識別鍵——見 Skills)
 	Level int    // 顯示等級(1..5,對照 openorion2 MAX_LEADER_LEVELS=5 顯示慣例:1=最低、5=最高)。
 	// 換算成 gamedata.LeaderSkillBonus 用的 expLevel(0..4)時用 leaderDisplayLevelToExpLevel(Level)。
 	// 這是 demo 資料的既有欄位語意(非 HERODATA 真實經驗值,是直接指定的顯示等級)。
 	Ship bool // true=艦艇軍官,false=殖民地領袖
 
-	// Tier 技能階(0 無/1 一般/2 進階),對照 openorion2 Leader::hasSkill 的回傳值。demoLeaders
-	// 皆為手動指定的示範資料(非 HERODATA 真實英雄),保守預設 1(一般技能),不臆造「進階」。
+	// Tier 是 Skill 那一項技能的階(0 無/1 一般/2 進階)。**只在 Skills 為空時才有意義**
+	// (demo 領袖與既有測試走這條舊路徑);真英雄的每項技能各自帶自己的階。
 	Tier int
+
+	// Skills 是這位領袖的**完整技能清單**,由 HERODATA 的技能位元解出來(2 bit/技能)。
+	//
+	// ⚠ 這一欄存在的理由是 `Skill` 那個字串**不能當識別鍵**:
+	//   - 它會被翻譯(英文模式下 "Scientist" 查不到任何加成,而畫面上看不出異狀);
+	//   - 一位真英雄本來就可能同時有好幾項技能,一個字串只放得下一個。
+	//
+	// 為空時退回舊路徑(用 Skill 標籤反查單一技能),見 leaderSkills。
+	Skills []LeaderSkill `json:"skills,omitempty"`
 }
 
 // demoLeaders 是示範領袖名單(固定;正式版由 HERODATA.LBX 真英雄資料填)。
 func demoLeaders() []Leader {
 	return []Leader{
-		{"馮·諾伊曼", "科學家", 5, false, 1},
-		{"洛克斐勒", "貿易家", 4, false, 1},
-		{"漢尼拔", "指揮官", 6, true, 1},
-		{"圖靈", "工程師", 3, true, 1},
+		{Name: "馮·諾伊曼", Skill: "科學家", Level: 5, Ship: false, Tier: 1},
+		{Name: "洛克斐勒", Skill: "貿易家", Level: 4, Ship: false, Tier: 1},
+		{Name: "漢尼拔", Skill: "指揮官", Level: 6, Ship: true, Tier: 1},
+		{Name: "圖靈", Skill: "工程師", Level: 3, Ship: true, Tier: 1},
 	}
 }
 
-// leaderSkillIDByName 把 demoLeaders 的中文技能標籤對應到 gamedata 技能 id(openorion2
-// gamestate.h enum LeaderSkills)。只收「名稱與技能語意清楚一對一」的項目:
-//   - 科學家 → SKILL_RESEARCHER(common,officer.cpp skillFormatStrings row0 idx6 格式 "%+d",
-//     為固定研究點數加成,非百分比)。
-//   - 貿易家 → SKILL_TRADER(common,row0 idx9 格式 "%+d%%",收入百分比加成)。
-//   - 工程師 → SKILL_ENGINEER(captain,row1 idx0 格式 "%+d%%",真實效果是艦艇維修速率加成——
-//     remake 目前沒有艦艇維修系統,故技能 id 對應清楚但效果暫不生效,見 applyLeaderShipBonuses
-//     的 TODO 註解)。
+// leaderSkills 回傳這位領袖**生效的技能清單**。
 //
-// 「指揮官」(漢尼拔)刻意不收錄在這張表:這張表只服務「殖民地經濟被動加成」
-// (applyLeaderColonyBonuses,固定研究點數/收入百分比這種格式化數值)。2026-07-11 已確定
-// 「指揮官」對應 gamedata.SKILL_COMMANDO(手冊 p.135 Commando,地面戰鬥系統),但它的消費端
-// 是地面戰 force 加成而非殖民地經濟欄位,故改在 internal/shell/ground_invasion.go 用獨立的
-// commandoLeaderTier(leaders []Leader) 依 l.Skill=="指揮官" 直接掃描、不透過本表——避免把
-// 語意/單位都不同的兩套加成(經濟 vs 地面戰鬥)混進同一張映射表。SKILL_WEAPONRY 等其餘候選
-// 已不採用(Commando 已定案)。
-//
-// 2026-08-07(第 101 項)再加四個 **admin 技能**——挑選標準仍是「remake 有現成的承接欄位」
-// (第 28 項那條硬門檻),單位查自 openorion2 的 `skillFormatStrings[2]`
-// (見 gamedata/leader_skill_apply.go 的對照表):
-//   - 財務官 → SKILL_FINANCIAL_LEADER(+10%)→ ColonyState.IncomeBonusPercent
-//   - 心靈導師 → SKILL_SPIRITUAL_LEADER(+5%)→ ColonyState.MoralePercent
-//   - 醫官 → SKILL_MEDICINE(+10%)→ ColonyState.GrowthBonusSum(百分點,同一把尺)
-//   - 教官 → SKILL_INSTRUCTOR(**+1 固定點數**)→ 艦員每回合經驗(見 crew.go)
-//
-// 沒收的 admin 技能與理由:環保官(降低「會產生污染的產能」的百分比——remake 的污染模型是
-// eighths 查表,沒有百分比入口)、農業官/勞工官/科學官(食物/工業/研究的**百分比**加成——
-// ColonyState 只有 per-worker 與固定值兩種欄位,沒有分項百分比)、戰術官(**原版自己就沒實作**,
-// 手冊那條的最後一句明寫 This skill is not implemented)。
-var leaderSkillIDByName = map[string]int{
-	"科學家":  int(gamedata.SKILL_RESEARCHER),
-	"貿易家":  int(gamedata.SKILL_TRADER),
-	"工程師":  int(gamedata.SKILL_ENGINEER),
-	"財務官":  int(gamedata.SKILL_FINANCIAL_LEADER),
-	"心靈導師": int(gamedata.SKILL_SPIRITUAL_LEADER),
-	"醫官":   int(gamedata.SKILL_MEDICINE),
-	"教官":   int(gamedata.SKILL_INSTRUCTOR),
-	"農業官":  int(gamedata.SKILL_FARMING_LEADER),
-	"勞工官":  int(gamedata.SKILL_LABOR_LEADER),
-	"科學官":  int(gamedata.SKILL_SCIENCE_LEADER),
+// 真英雄(HERODATA)帶 Skills;demo 領袖與既有測試只有一個中文 `Skill` 標籤 + `Tier`,
+// 退回用 `gamedata.LeaderSkillIDByZH` 反查成單一技能。標籤查不到時回 nil(誠實跳過,
+// 不臆造技能)。
+func leaderSkills(l Leader) []LeaderSkill {
+	if len(l.Skills) > 0 {
+		return l.Skills
+	}
+	id, ok := gamedata.LeaderSkillIDByZH(l.Skill)
+	if !ok {
+		return nil
+	}
+	tier := l.Tier
+	if tier < 1 {
+		tier = 1 // demoLeaders 的既有慣例:標籤有寫就是有這項技能,保守給一般階
+	}
+	return []LeaderSkill{{ID: id, Tier: tier}}
 }
+
+// leaderSkillTier 回傳這位領袖某項技能的階,沒有該技能回 0。
+func leaderSkillTier(l Leader, skillID int) int {
+	for _, sk := range leaderSkills(l) {
+		if sk.ID == skillID {
+			return sk.Tier
+		}
+	}
+	return 0
+}
+
+// 技能標籤 → id 的對照表已搬到 `gamedata.LeaderSkillIDByZH`(27 個技能全收,名字來自
+// GAME_MANUAL.pdf p.135-137)。這裡原本有一張只收 10 項的 `leaderSkillIDByName`,
+// 2026-08-08(第 103 項)拿掉,理由有三個:
+//
+//  1. **標籤不能當識別鍵。** 它會被翻譯——英文模式下 `Skill` 存的是 "Scientist",
+//     查表查不到,**所有領袖加成當場全部失效**,而畫面上看不出任何異狀。
+//     現在識別鍵是 `Leader.Skills` 裡的技能 id,標籤只負責顯示。
+//  2. **「這個技能存在」與「remake 有沒有接」是兩件事。** 舊表用「收不收進表裡」
+//     兼表兩者,於是那段註解要一直維護一份「沒收的技能與理由」清單——而它已經過期了
+//     (農業官/勞工官/科學官在第 102 項就接上了,註解卻還寫著沒收)。
+//     現在前者查 gamedata 的全表,後者看 `applyLeaderColonyBonuses` 的 switch 有沒有 case。
+//  3. 一位真英雄本來就可能同時有好幾項技能,一個字串只放得下一個。
+//
+// 各技能落在哪個欄位、單位是點數還是百分比,見 `gamedata/leader_skill_apply.go` 的格式字串
+// 對照表與下面 switch 的逐條註解。
 
 // leaderDisplayLevelToExpLevel 把 Leader.Level(demo 資料的 1..5 顯示等級)換算成
 // gamedata.LeaderSkillBonus 用的 expLevel(0..4)。openorion2 Leader::rank()把
@@ -1612,34 +1634,33 @@ func leaderDisplayLevelToExpLevel(level int) int {
 }
 
 // applyLeaderColonyBonuses 把殖民地領袖(Ship=false)的技能加成套到指定殖民地(demo 只有母星,
-// 呼叫端傳 &session.PlayerColonies[0])。只接「對應到 engine.ColonyState 既有欄位」的技能:
-//   - SKILL_RESEARCHER(固定研究點數,格式 "%+d")→ FlatColony 整體固定加成 ColonyState.FlatResearch
-//   - SKILL_TRADER(收入百分比,格式 "%+d%%")→ ColonyState.IncomeBonusPercent(與太空港/
-//     證券交易所等建築的百分比加成同一欄位,可疊加)
+// 呼叫端傳 &session.PlayerColonies[0])。
 //
-// 其餘有對應 skill id 但 remake 尚無承接系統的技能(如 SKILL_SCIENCE_LEADER/
-// SKILL_FINANCIAL_LEADER/SKILL_LABOR_LEADER 等 admin 技能──demoLeaders 目前沒有領袖標成這些
-// 名稱,故不處理)一律略過,不臆造欄位。
+// **哪些技能真的生效,看下面 switch 有沒有對應的 case**——沒有 case 的技能一律略過,
+// 不臆造欄位。目前接了 8 項(科學家/貿易家/財務官/心靈導師/醫官/農業官/勞工官/科學官);
+// 教官與工程師有 id 但落在別的系統(艦員經驗、艦艇維修),見下方註解。
+//
 // ⚠ 2026-08-07(第 101 項)修掉一個一直在的錯:**加成不是每個領袖都疊一份**。
 //
 // 手冊 p.137「Applicability」:「The effects of the **Megawealth and Researcher** abilities
 // are **cumulative**, but **the rest are not** … the leader with the **best applicable
 // bonus**」。remake 先前是無條件 `+=`——兩個貿易家就加兩份,而原版只算最強的那一個。
 // 合成規則收在 `gamedata.LeaderSkillCombine`。
+//
+// ⚠ 2026-08-08(第 103 項)改成逐**技能**跑而不是逐領袖跑一次:一位真英雄可能同時有
+// 好幾項技能(HERODATA 的技能欄位是每技能 2 bit 的 tier,不是一個人一項技能)。
 func applyLeaderColonyBonuses(leaders []Leader, colony *engine.ColonyState) {
 	// 先依技能分組收集,再依「累加 vs 取最佳」合成——不能邊走邊加。
 	bySkill := map[int][]int{}
 	for _, l := range leaders {
 		if l.Ship {
-			continue // 艦艇軍官不影響殖民地,見 applyLeaderShipBonuses
-		}
-		id, ok := leaderSkillIDByName[l.Skill]
-		if !ok {
-			continue // 無法對應的技能標籤(如「指揮官」),誠實跳過
+			continue // 艦艇軍官不影響殖民地(它們的技能落在戰鬥/航行,見 repair.go、starlane.go)
 		}
 		expLevel := leaderDisplayLevelToExpLevel(l.Level)
-		if b := gamedata.LeaderSkillBonus(id, l.Tier, expLevel); b != 0 {
-			bySkill[id] = append(bySkill[id], b)
+		for _, sk := range leaderSkills(l) {
+			if b := gamedata.LeaderSkillBonus(sk.ID, sk.Tier, expLevel); b != 0 {
+				bySkill[sk.ID] = append(bySkill[sk.ID], b)
+			}
 		}
 	}
 	for id, list := range bySkill {
@@ -1661,8 +1682,11 @@ func applyLeaderColonyBonuses(leaders []Leader, colony *engine.ColonyState) {
 			colony.IndustryBonusPercent += bonus
 		case int(gamedata.SKILL_SCIENCE_LEADER):
 			colony.ResearchBonusPercent += bonus
-		// SKILL_INSTRUCTOR 不在這裡:它加的是**艦員每回合經驗**(帝國層,見 crew.go),
-		// 不是殖民地欄位。SKILL_ENGINEER 同理(艦艇維修,見 applyLeaderShipBonuses)。
+		// 落在別的系統、不是殖民地欄位的技能(所以這裡沒有 case,不是漏掉):
+		//   SKILL_INSTRUCTOR → 艦員每回合經驗(帝國層,leaderInstructorXPBonus / crew.go)
+		//   SKILL_ENGINEER   → 戰後完全修復(repair.go engineerLeaderTier)
+		//   SKILL_COMMANDO   → 地面戰 force(ground_invasion.go commandoLeaderTier)
+		//   SKILL_NAVIGATOR  → 艦隊航速與星雲/黑洞豁免(starlane.go FleetHasNavigator)
 		default:
 		}
 	}
@@ -1677,10 +1701,11 @@ func applyLeaderColonyBonuses(leaders []Leader, colony *engine.ColonyState) {
 func leaderInstructorXPBonus(leaders []Leader) int {
 	var list []int
 	for _, l := range leaders {
-		if leaderSkillIDByName[l.Skill] != int(gamedata.SKILL_INSTRUCTOR) {
+		tier := leaderSkillTier(l, int(gamedata.SKILL_INSTRUCTOR))
+		if tier <= 0 {
 			continue
 		}
-		if b := gamedata.LeaderSkillBonus(int(gamedata.SKILL_INSTRUCTOR), l.Tier,
+		if b := gamedata.LeaderSkillBonus(int(gamedata.SKILL_INSTRUCTOR), tier,
 			leaderDisplayLevelToExpLevel(l.Level)); b != 0 {
 			list = append(list, b)
 		}
@@ -3941,15 +3966,21 @@ func pickAIPersonality(raceEn string, difficulty int, r *rand.Rand) ai.Personali
 	return dist[col-1]
 }
 
-// aiCommandoLeader 依 commandoTier 建構一名指揮官技能領袖(Skill="指揮官"),tier<=0 時回傳
-// nil(不指派領袖,對應「該 AI 無 Commando 守將」)。Name/Level/Ship 為示範性零值填法,比照
-// demoLeaders 的既有欄位語意(非 HERODATA 真實英雄資料);消費端(commandoLeaderTier)只讀
-// Skill/Tier,其餘欄位不影響守方加成計算。
+// aiCommandoLeader 依 commandoTier 建構一名 Commando 技能領袖,tier<=0 時回傳 nil
+// (不指派領袖,對應「該 AI 無 Commando 守將」)。Name/Level/Ship 為示範性填法,比照
+// demoLeaders 的既有欄位語意(非 HERODATA 真實英雄資料);消費端(commandoLeaderTier)
+// 只讀技能 id 與階,其餘欄位不影響守方加成計算。
+//
+// `Skills` 直接帶技能 id(而不是只留中文標籤讓 leaderSkills 反查),理由見 Leader.Skills:
+// 標籤是顯示用的,不該是識別鍵。舊存檔裡的 AI 領袖沒有這一欄,由標籤退回解析,相容不變。
 func aiCommandoLeader(name string, tier int) []Leader {
 	if tier <= 0 {
 		return nil
 	}
-	return []Leader{{Name: name, Skill: "指揮官", Level: tier * 2, Ship: false, Tier: tier}}
+	return []Leader{{
+		Name: name, Skill: "指揮官", Level: tier * 2, Ship: false, Tier: tier,
+		Skills: []LeaderSkill{{ID: int(gamedata.SKILL_COMMANDO), Tier: tier}},
+	}}
 }
 
 // NewDemoSession 建一個最小可玩對局:玩家 + 3 個性格互異的 AI 對手(多帝國競爭骨架,見
@@ -4100,10 +4131,10 @@ func (s *GameSession) mercCandidates() []Leader {
 		return s.MercCandidatePool
 	}
 	return []Leader{
-		{"馮·諾伊曼", "科學家", 2, false, 1}, // 殖民地領袖:固定研究加成
-		{"洛克斐勒", "貿易家", 1, false, 1},  // 殖民地領袖:收入%加成
-		{"漢尼拔", "指揮官", 2, true, 1},    // 艦艇軍官
-		{"圖靈", "工程師", 1, true, 1},     // 艦艇軍官
+		{Name: "馮·諾伊曼", Skill: "科學家", Level: 2, Ship: false, Tier: 1}, // 殖民地領袖:固定研究加成
+		{Name: "洛克斐勒", Skill: "貿易家", Level: 1, Ship: false, Tier: 1},  // 殖民地領袖:收入%加成
+		{Name: "漢尼拔", Skill: "指揮官", Level: 2, Ship: true, Tier: 1},    // 艦艇軍官:Commando
+		{Name: "圖靈", Skill: "工程師", Level: 1, Ship: true, Tier: 1},     // 艦艇軍官
 	}
 }
 
