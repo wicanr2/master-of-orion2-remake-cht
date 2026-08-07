@@ -9,14 +9,7 @@ package shell
 // 數值全部在 `gamedata/starlane.go`,那裡標了每一個的出處(1 秒差距 = 30 單位、四檔銀河尺寸、
 // 星數門檻都是反組譯真值;引擎速度是手冊逐條)。這裡只做接線。
 //
-// ============ ⚠ 一個結構性差異 ============
-//
-// 原版的星圖是「銀河座標 + 逐格路徑」,艦隊每回合前進 N 秒差距、**沿路**會經過別的星域,
-// 所以「穿越星雲時降速」是逐段判定的。remake 的星圖是「兩點之間直接算 ETA」,沒有路徑。
-//
-// 於是這裡把「穿越」近似成**起點或終點在星雲內**。差別會出現在「兩端都在星雲外、
-// 但直線穿過一團星雲」這種情況——原版會降速,remake 不會。要做到逐段判定,
-// 得先有路徑模型,那是另一件事。**這個近似是明講的,不是沒想到。**
+// 「沿路會碰到什麼」(黑洞、干擾場、穿過星雲)由 `route.go` 的線段模型負責。
 
 import (
 	"math"
@@ -107,19 +100,25 @@ func (s *GameSession) FleetSpeedParsecs() int {
 	return sp
 }
 
-// fleetSpeedForTrip 回傳這一趟的實際航速,套上星雲懲罰。
+// fleetSpeedForTrip 回傳這一趟的實際航速,套上星雲與干擾場的懲罰。
 //
-// 星雲:手冊「reduced in speed to 1 parsec per turn」;Navigator 可無視(手冊同一段)。
-// ⚠「穿越」近似成起點或終點在星雲內,見檔頭。
+//	星雲    手冊「Ships traveling through a nebula are reduced in speed to 1 parsec per turn」;
+//	        Navigator 可無視(手冊同一段)。**逐段判定**,見 route.go。
+//	干擾場  Warp Field Interdictor「slows all enemy ships approaching the system to a speed of
+//	        1 parsec per turn」。手冊沒說 Navigator 能無視這個——它是人造的,不是
+//	        「nebulae and black holes」那句涵蓋的自然現象,所以**不給豁免**。
 func (s *GameSession) fleetSpeedForTrip(from, to int) int {
 	sp := s.FleetSpeedParsecs()
 	if sp <= 0 {
 		return 0
 	}
+	if s.RouteInterdicted(from, to) {
+		return gamedata.InterdictorSpeed
+	}
 	if s.FleetHasNavigator() {
 		return sp
 	}
-	if s.StarInNebula(from) || s.StarInNebula(to) {
+	if s.RouteCrossesNebula(from, to) {
 		return gamedata.NebulaSpeed
 	}
 	return sp

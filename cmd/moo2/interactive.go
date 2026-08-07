@@ -345,6 +345,7 @@ type sceneBuilder struct {
 	colChrome         *ebiten.Image            // 殖民地畫面的原版框架(COLPUPS.LBX#5,惰性解碼快取)
 	colBldgCache      map[string]*ebiten.Image // 地表建築圖(BLDGn.LBX,惰性解碼快取)
 	colVegSizeCache   map[int][2]int           // COLVEGGI 資產的寬高;地表每幀重算,不快取會每幀重解 LBX
+	nebMaskCache      map[int]*nebulaMask      // 星雲遮罩;派遣時沿航線取樣上百次,不快取會重解上百次 LBX
 	pendingHotseat    int                      // 多人設定畫面選的真人席位數;0/1 = 單人局(開局後由 applyHotseat 套用)
 	savePath          string                   // remake 存檔路徑(每回合自動存;主選單 Load/Continue 讀)
 	designWeapon      int                      // 艦艇設計選的武器元件索引(shell.WeaponOptions)
@@ -471,6 +472,7 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 				return nil
 			}
 			b.session = gs
+			b.applyNebulaStarFlags(b.session) // 星雲判定式不進存檔,讀檔後要重裝(見 nebula.go)
 			if len(b.herodataMercs) > 0 {
 				b.session.SetMercCandidates(b.herodataMercs) // 讀檔建的是新 session,重注入真英雄池
 			}

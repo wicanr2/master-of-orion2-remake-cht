@@ -95,46 +95,73 @@ func (b *sceneBuilder) drawNebulae(dst *ebiten.Image, nebulae []shell.Nebula) {
 	}
 }
 
+// nebulaMask 是一團星雲的遮罩(調色盤索引)。
+type nebulaMask struct {
+	w, h int
+	idx  []uint8
+}
+
+// nebulaMaskFor 取(並快取)某種星雲的遮罩。
+//
+// ⚠ **一定要快取**:派遣艦隊時要沿航線取樣上百點(見 shell/route.go 的 `RouteCrossesNebula`),
+// 每點都問一次遮罩,而 `decodeAsset` 自己沒有快取。不快取就是每次派遣重解上百次 LBX。
+func (b *sceneBuilder) nebulaMaskFor(typ int) *nebulaMask {
+	if b.res == nil {
+		return nil
+	}
+	if m, hit := b.nebMaskCache[typ]; hit {
+		return m
+	}
+	if b.nebMaskCache == nil {
+		b.nebMaskCache = map[int]*nebulaMask{}
+	}
+	var m *nebulaMask
+	if im, err := decodeAsset(b.res, nebulaLBX, nebulaAsset(typ)); err == nil && len(im.Frames) > 0 {
+		m = &nebulaMask{w: im.Width, h: im.Height, idx: im.Frames[0].Index}
+	}
+	b.nebMaskCache[typ] = m // 取不到也快取,避免每次重試
+	return m
+}
+
 // nebulaMaskHit 回傳星圖上的螢幕點 (sx, sy) 是否落在第 typ 種星雲(左上角在 nx, ny)的亮處。
 //
 // 判定就是原版那條:取該點在圖上的調色盤索引,> 5 算在裡面。
 // 取不到圖一律回 false —— 沒有圖就不該憑空判定有星雲。
 func (b *sceneBuilder) nebulaMaskHit(typ int, nx, ny, sx, sy float64) bool {
-	if b.res == nil {
-		return false
-	}
-	im, err := decodeAsset(b.res, nebulaLBX, nebulaAsset(typ))
-	if err != nil || len(im.Frames) == 0 {
+	m := b.nebulaMaskFor(typ)
+	if m == nil {
 		return false
 	}
 	px, py := int(sx-nx), int(sy-ny)
-	if px < 0 || py < 0 || px >= im.Width || py >= im.Height {
+	if px < 0 || py < 0 || px >= m.w || py >= m.h {
 		return false
 	}
-	idx := im.Frames[0].Index
-	if o := py*im.Width + px; o >= 0 && o < len(idx) {
-		return int(idx[o]) > nebulaInPixelThreshold
+	if o := py*m.w + px; o >= 0 && o < len(m.idx) {
+		return int(m.idx[o]) > nebulaInPixelThreshold
 	}
 	return false
 }
 
-// applyNebulaStarFlags 用真遮罩算出每顆星的「在星雲內」,灌回對局。
+// applyNebulaStarFlags 把「某個正規化座標是否落在星雲內」的判定式裝進對局。
 //
-// 開局(或載入存檔)後呼叫一次即可——星雲與星的位置都不會再變。
+// 規則層(`internal/shell`)不碰資產,所以遮罩判定只能從這裡提供。裝上之後 shell 會用它
+// 重算每顆星的旗標,並在派遣時沿航線取樣判斷「有沒有穿過星雲」(見 shell/route.go)。
+//
+// ⚠ **開新局與讀檔後都要呼叫**:那個判定式是未匯出欄位,不進存檔。
 func (b *sceneBuilder) applyNebulaStarFlags(sess *shell.GameSession) {
 	if sess == nil {
 		return
 	}
-	sess.SetStarNebulaFlags(func(nebIdx, starIdx int) bool {
-		if nebIdx < 0 || nebIdx >= len(sess.Nebulae) || starIdx < 0 || starIdx >= len(sess.Stars) {
-			return false
+	sess.SetNebulaProbe(func(x, y float64) bool {
+		sx := starVX0 + x*(starVX1-starVX0)
+		sy := starVY0 + y*(starVY1-starVY0)
+		for _, n := range sess.Nebulae {
+			nx, ny := nebulaScreenXY(n)
+			if b.nebulaMaskHit(n.Type, nx, ny, sx, sy) {
+				return true
+			}
 		}
-		n := sess.Nebulae[nebIdx]
-		nx, ny := nebulaScreenXY(n)
-		st := sess.Stars[starIdx]
-		sx := starVX0 + st.X*(starVX1-starVX0)
-		sy := starVY0 + st.Y*(starVY1-starVY0)
-		return b.nebulaMaskHit(n.Type, nx, ny, sx, sy)
+		return false
 	})
 }
 

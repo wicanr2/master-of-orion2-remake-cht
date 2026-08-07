@@ -123,14 +123,14 @@ func TestGenNebulaeAvoidsHomeStars(t *testing.T) {
 	}
 }
 
-// TestSetStarNebulaFlagsSkipsBlackHoles 釘住手冊那條:黑洞不會出現在星雲裡
+// TestNebulaProbeSkipsBlackHoles 釘住手冊那條:黑洞不會出現在星雲裡
 // (patch 1.5「Mapgen prevents Black Holes from appearing in Nebulas」)。
-func TestSetStarNebulaFlagsSkipsBlackHoles(t *testing.T) {
+func TestNebulaProbeSkipsBlackHoles(t *testing.T) {
 	s := &GameSession{
 		Stars:   []Star{{Spectral: 2}, {Spectral: blackHoleSpectral}, {Spectral: 4}},
 		Nebulae: []Nebula{{X: 0, Y: 0, Type: 0}},
 	}
-	s.SetStarNebulaFlags(func(nebIdx, starIdx int) bool { return true }) // 全都「在裡面」
+	s.SetNebulaProbe(func(x, y float64) bool { return true }) // 整張圖都是星雲
 	if !s.Stars[0].InNebula || !s.Stars[2].InNebula {
 		t.Error("一般星應被標成在星雲內")
 	}
@@ -139,10 +139,10 @@ func TestSetStarNebulaFlagsSkipsBlackHoles(t *testing.T) {
 	}
 }
 
-// TestSetStarNebulaFlagsNilClears:傳 nil 判定式要把旗標全清掉(headless 模擬即這條路徑)。
-func TestSetStarNebulaFlagsNilClears(t *testing.T) {
+// TestNebulaProbeNilClears:傳 nil 判定式要把旗標全清掉(headless 模擬即這條路徑)。
+func TestNebulaProbeNilClears(t *testing.T) {
 	s := &GameSession{Stars: []Star{{InNebula: true}, {InNebula: true}}}
-	s.SetStarNebulaFlags(nil)
+	s.SetNebulaProbe(nil)
 	for i, st := range s.Stars {
 		if st.InNebula {
 			t.Errorf("星 %d 的旗標沒被清掉", i)

@@ -249,6 +249,7 @@ func (s *loadGameScreen) doLoad() *origTransition {
 		return nil
 	}
 	s.b.session = gs
+	s.b.applyNebulaStarFlags(s.b.session) // 星雲判定式不進存檔,讀檔後要重裝(見 nebula.go)
 	if len(s.b.herodataMercs) > 0 {
 		s.b.session.SetMercCandidates(s.b.herodataMercs) // 讀檔建的是新 session,重注入真英雄池
 	}

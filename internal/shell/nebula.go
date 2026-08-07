@@ -29,8 +29,8 @@ package shell
 // dark pixels can be present causing a star at such a location to be considered "not in nebula"」
 // —— 也就是這個判定本身就會有小破洞,那是原版行為。
 //
-// 遮罩要讀 LBX,而本套件是純規則層不碰資產,所以判定由外層(cmd/moo2)算好之後
-// 用 `SetStarNebulaFlags` 灌進來。沒灌就是全部 false(headless 模擬即如此),已標明。
+// 遮罩要讀 LBX,而本套件是純規則層不碰資產,所以判定式由外層(cmd/moo2)用
+// `SetNebulaProbe` 裝進來(見 route.go)。沒裝就是全部 false(headless 模擬即如此),已標明。
 //
 // ============ 二、數量:看銀河大小 ============
 //
@@ -49,15 +49,16 @@ package shell
 // 自有模型、座標正規化到 0..1,兩邊接不起來(與蟲洞同一個情況,見 wormhole.go)。
 // 這裡改成在正規化空間裡隨機擺,並避開母星。**這是 remake 的選擇,不是原版真值。**
 //
-// ============ 四、還沒做的:移動懲罰 ============
+// ============ 四、移動懲罰 ============
 //
-// 手冊那句「reduced in speed to 1 parsec per turn」需要一個「原本幾 parsec/turn」的基準,
-// 而 remake 的星圖移動是 `ETA = ceil(距離 × 8)` 這種**沒有單艦速度模型**的算法,
-// 沒有可換算的基準。硬套就是自己編一個倍率。**留著不做**,補上單艦速度模型再回來。
-// (領袖技能 Navigator「ignore the movement restrictions caused by nebulae and black holes」
-// 也一起卡在這裡。)
+// 手冊那句「reduced in speed to 1 parsec per turn」已經實作:秒差距模型在 `starlane.go`、
+// 「有沒有穿過星雲」的逐段判定在 `route.go`。Navigator 的豁免也在同兩支。
 
-import "math/rand"
+import (
+	"math/rand"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+)
 
 // nebulaTypes 是星雲外觀的種類數。
 //
@@ -71,20 +72,14 @@ const maxNebulae = 4
 
 // galaxySizeClass 把星數換成銀河大小檔位(0..3),供星雲數的跳表索引。
 //
-// remake 的 `GalaxySizes`(小型/中型/大型/巨型 = 12/24/36/48 星)**本身就是原版那四檔**,
-// 所以這裡直接查表取索引,不另外編一組星數門檻。
+// 就是原版的 `Galaxy_Size_From_N_Stars_`(門檻 20/36/54/72),放在
+// `gamedata.GalaxySizeFromStars`——**銀河跨距(秒差距)也用同一支**,兩處不能各有一套。
 //
-// ⚠ 這一點踩過:第一版自己拿原版四檔的星數(20/36/54/71)取中點當界線,結果「中型」被判成
-// 檔位 0(星雲數 `Random(2) − 1`,有一半機率是 0 團)、「巨型」被判成檔位 2。
-// 徵狀是**開局星圖上常常一團星雲都沒有**,而那看起來完全合理,不會有人覺得是 bug。
-func galaxySizeClass(nStars int) int {
-	for i, g := range GalaxySizes {
-		if nStars <= g.Stars {
-			return i
-		}
-	}
-	return len(GalaxySizes) - 1
-}
+// ⚠ 這一點踩過兩次:第一版自己拿原版四檔的星數取中點當界線;第二版改查 `GalaxySizes`,
+// 但當時那張表是 remake 自訂的 12/24/36/48,和原版四檔對不上。徵狀都一樣——
+// **開局星圖上常常一團星雲都沒有**,而那看起來完全合理。
+// 現在 `GalaxySizes` 已改成原版真值(20/36/54/72),三者對齊。
+func galaxySizeClass(nStars int) int { return gamedata.GalaxySizeFromStars(nStars) }
 
 // Nebula 是一團星雲。X/Y 是**左上角**(不是中心)的正規化位置,與原版一致
 // —— `Point_Is_In_Nebula_N_` 是用 `點 − 星雲` 去索引遮罩的,所以那個座標是原點。
@@ -146,35 +141,6 @@ func genNebulae(size int, homeStars map[int]bool, stars []Star, rnd *rand.Rand) 
 		}
 	}
 	return out
-}
-
-// SetStarNebulaFlags 用外部提供的遮罩判定重算每顆星的「在星雲內」旗標。
-//
-// in(nebulaIndex, starIndex) 回傳該星是否落在該星雲的遮罩內。判定要讀 LBX,
-// 本套件不碰資產,所以由 cmd/moo2 在開局後呼叫一次(見檔頭一)。
-//
-// 順帶套用手冊那條:**黑洞不會出現在星雲裡**（patch 1.5 手冊「Mapgen prevents Black Holes
-// from appearing in Nebulas by replacing any such Black Hole with a normal star」)。
-// remake 這裡採較保守的做法:不改星的光譜,只是不把黑洞標成「在星雲內」——
-// 改光譜會動到已經產生好的星圖,而那條原版自己也承認當年寫壞過。
-func (s *GameSession) SetStarNebulaFlags(in func(nebulaIdx, starIdx int) bool) {
-	for i := range s.Stars {
-		s.Stars[i].InNebula = false
-	}
-	if in == nil {
-		return
-	}
-	for i := range s.Stars {
-		if s.Stars[i].Spectral == blackHoleSpectral {
-			continue
-		}
-		for n := range s.Nebulae {
-			if in(n, i) {
-				s.Stars[i].InNebula = true
-				break
-			}
-		}
-	}
 }
 
 // StarInNebula 回傳某顆星是否在星雲內(索引越界回 false)。

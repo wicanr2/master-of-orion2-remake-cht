@@ -2144,6 +2144,9 @@ type GameSession struct {
 	LastPlayerOutput  engine.EmpireOutput // 上一回合玩家結算(供畫面顯示)
 	Stars             []Star              // 星系圖
 	Nebulae           []Nebula            // 星雲(星圖地形,影響戰鬥護盾;見 nebula.go)
+	// nebulaProbe 判定某個正規化座標是否落在星雲內。要讀星雲圖的遮罩,而本套件不碰資產,
+	// 所以由 cmd/moo2 用 SetNebulaProbe 裝進來。**未匯出 = 不進存檔**,讀檔後要重裝。
+	nebulaProbe func(x, y float64) bool
 	Planets           []Planet            // 行星列表
 	Leaders           []Leader            // 已雇用的軍官/領袖名單(Leader Pool)
 	MercPool          []Leader            // 目前上門可雇用的傭兵領袖(手冊 p.134,見 advanceMercOffers/HireMerc)
@@ -2365,6 +2368,11 @@ func (s *GameSession) SendFleet(dest int) bool {
 	}
 	if !s.FleetHasFTL() {
 		return false // 曲速前開局:沒有 FTL 就出不了本星系(見 FleetHasFTL)
+	}
+	// 黑洞:手冊「No ship can safely pass within 2 parsecs of a black hole
+	// (unless the ship contains an officer with the Navigator skill)」。蟲洞不走實空間,不受限。
+	if !s.WormholeBetween(s.FleetAtStar, dest) && s.RouteBlockedByBlackHole(s.FleetAtStar, dest) {
+		return false
 	}
 	eta := 1
 	// 蟲洞:兩端直通,不看距離。這是 MOO2 蟲洞的**遊戲機制**價值——把銀河兩頭接起來,
