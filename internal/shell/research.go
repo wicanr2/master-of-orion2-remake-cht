@@ -19,26 +19,35 @@ type ResearchOption struct {
 	Cost  int
 }
 
-// StarterResearchTopics 回傳新手可選的早期研究主題(依成本由低到高)。
-// 成本取自 gamedata.ResearchChoiceFor(權威來源),名稱為專案內建譯名。
-func StarterResearchTopics() []ResearchOption {
-	topics := []struct {
-		t    gamedata.ResearchTopic
-		name string
-	}{
-		{gamedata.TOPIC_ADVANCED_ENGINEERING, "進階工程學"},
-		{gamedata.TOPIC_ADVANCED_CONSTRUCTION, "進階建築學"},
-		{gamedata.TOPIC_MILITARY_TACTICS, "軍事戰術"},
-		{gamedata.TOPIC_ADVANCED_FUSION, "進階核融合"},
-		{gamedata.TOPIC_ADVANCED_MAGNETISM, "進階磁學"},
-		{gamedata.TOPIC_ADVANCED_METALLURGY, "進階冶金學"},
-		{gamedata.TOPIC_ADVANCED_BIOLOGY, "進階生物學"},
-		{gamedata.TOPIC_ARTIFICIAL_INTELLIGENCE, "人工智慧"},
-		{gamedata.TOPIC_ADVANCED_CHEMISTRY, "進階化學"},
+// AvailableResearchTopics 回傳這一刻真的可以選的研究主題:**8 個領域各一個**,
+// 取該領域第一個尚未完成的主題(整條研究完的領域不出現)。
+//
+// ============ 這裡先前是一份手挑的清單 ============
+//
+// 舊的 `StarterResearchTopics` 是寫死的 9 個「新手可選的早期主題」。拿原版的樹一比,
+// 那份清單在開局那一刻是錯的:
+//
+//	不該出現(領域裡前面還有沒研究完的):進階建築學、進階生物學、人工智慧、進階化學
+//	漏掉了(該領域的隊首):太空生物學、核融合物理學、光電子學
+//
+// 原因是原版的研究**每個領域是一條線**,同時只有隊首那一個能選——主題表
+// `word_17D90C` 每筆只有一個後繼,完成一個才解鎖下一個(見
+// gamedata/orig_research_table.go)。手挑清單看起來合理,但它跳過了順序。
+//
+// s 為 nil 時回傳「什麼都沒完成」的狀態,可當純資料查詢用。
+func AvailableResearchTopics(s *GameSession) []ResearchOption {
+	var completed map[gamedata.ResearchTopic]bool
+	if s != nil {
+		completed = s.Player.CompletedTopics
 	}
+	topics := gamedata.AvailableTopics(completed)
 	out := make([]ResearchOption, 0, len(topics))
-	for _, x := range topics {
-		out = append(out, ResearchOption{Topic: x.t, Name: x.name, Cost: ResearchCost(x.t)})
+	for _, t := range topics {
+		cost := ResearchCost(t)
+		if s != nil {
+			cost = s.ResearchCostForDisplay(t)
+		}
+		out = append(out, ResearchOption{Topic: t, Name: ResearchTopicName(t), Cost: cost})
 	}
 	return out
 }

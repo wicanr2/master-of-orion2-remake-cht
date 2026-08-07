@@ -130,6 +130,28 @@ var techtree = [8][]ResearchTopic{
 	{TOPIC_MILITARY_TACTICS, TOPIC_XENO_RELATIONS, TOPIC_MACRO_ECONOMICS, TOPIC_TEACHING_METHODS, TOPIC_ADVANCED_GOVERNMENTS, TOPIC_GALACTIC_ECONOMICS, TOPIC_HYPER_SOCIOLOGY},                                                                                                                                                                                                    // Sociology (RESEARCH_SOCIOLOGY)
 }
 
+// AvailableTopics 回傳「現在可以研究的主題」:**每個研究領域各一個**,取該領域第一個
+// 尚未完成的主題。已經整條研究完的領域不出現。
+//
+// 這就是原版的規則,不是簡化。原版的主題表 `word_17D90C` 每筆只有**一個**後繼
+// (`+0` 的 next),完成一個主題就把那一個標成可研究——換句話說每個領域是一條線,
+// 同時只有隊首那一個能選。openorion2 的 `techtree[8][14]` 是同一棵樹的另一種寫法,
+// 兩者的 73 條銜接關係逐條吻合(見 orig_research_table.go 與其測試)。
+//
+// completed 為 nil 視為「什麼都沒完成」,回傳 8 個領域的第一個主題。
+func AvailableTopics(completed map[ResearchTopic]bool) []ResearchTopic {
+	out := make([]ResearchTopic, 0, len(techtree))
+	for _, area := range techtree {
+		for _, t := range area {
+			if !completed[t] {
+				out = append(out, t)
+				break
+			}
+		}
+	}
+	return out
+}
+
 // TechTree 回傳各研究領域的 ResearchTopic 清單,索引順序對應 enums.go 的 ResearchArea 常數
 // (RESEARCH_BIOLOGY=0 ... RESEARCH_SOCIOLOGY=7)。
 func TechTree() [][]ResearchTopic {

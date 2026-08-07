@@ -7,10 +7,10 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
-func TestStarterResearchTopics_CostsFromGamedata(t *testing.T) {
-	opts := StarterResearchTopics()
-	if len(opts) == 0 {
-		t.Fatal("預期至少一個可選研究主題")
+func TestAvailableResearchTopics_CostsFromGamedata(t *testing.T) {
+	opts := AvailableResearchTopics(nil)
+	if len(opts) != 8 {
+		t.Fatalf("8 個研究領域各一個主題,得到 %d 個", len(opts))
 	}
 	for _, o := range opts {
 		want := gamedata.ResearchChoiceFor(o.Topic).Cost
@@ -18,8 +18,41 @@ func TestStarterResearchTopics_CostsFromGamedata(t *testing.T) {
 			t.Errorf("%s 成本 %d,期望取自 gamedata 的 %d", o.Name, o.Cost, want)
 		}
 		if o.Name == "" {
-			t.Errorf("主題 #%d 缺譯名", int(o.Topic))
+			t.Errorf("主題 #%d 缺名稱", int(o.Topic))
 		}
+	}
+}
+
+// 選單只給隊首:某領域的第二個主題,在第一個還沒完成前不該出現。
+func TestAvailableResearchTopicsOffersOnlyTheHeadOfEachArea(t *testing.T) {
+	head := AvailableResearchTopics(nil)
+	got := map[gamedata.ResearchTopic]bool{}
+	for _, o := range head {
+		got[o.Topic] = true
+	}
+	// Construction 領域的順序是 ENGINEERING → ADVANCED_ENGINEERING → ADVANCED_CONSTRUCTION。
+	if !got[gamedata.TOPIC_ENGINEERING] {
+		t.Error("什麼都沒完成時,Construction 的隊首應是 TOPIC_ENGINEERING")
+	}
+	if got[gamedata.TOPIC_ADVANCED_CONSTRUCTION] {
+		t.Error("TOPIC_ADVANCED_CONSTRUCTION 排在第三,前兩個沒完成不該出現")
+	}
+	// 完成前兩個之後,第三個才輪到。
+	done := map[gamedata.ResearchTopic]bool{
+		gamedata.TOPIC_ENGINEERING:          true,
+		gamedata.TOPIC_ADVANCED_ENGINEERING: true,
+	}
+	s := &GameSession{}
+	s.Player.CompletedTopics = done
+	got2 := map[gamedata.ResearchTopic]bool{}
+	for _, o := range AvailableResearchTopics(s) {
+		got2[o.Topic] = true
+	}
+	if !got2[gamedata.TOPIC_ADVANCED_CONSTRUCTION] {
+		t.Error("前兩個完成後,TOPIC_ADVANCED_CONSTRUCTION 應該可選了")
+	}
+	if got2[gamedata.TOPIC_ENGINEERING] {
+		t.Error("已完成的主題不該再出現在選單上")
 	}
 }
 

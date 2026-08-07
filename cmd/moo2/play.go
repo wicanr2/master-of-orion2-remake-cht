@@ -395,7 +395,7 @@ type researchScreen struct {
 }
 
 func newResearchScreen(s *shell.GameSession) *researchScreen {
-	opts := shell.StarterResearchTopics()
+	opts := shell.AvailableResearchTopics(s)
 	btns := make([]shell.Button, 0, len(opts)+1)
 	for i, o := range opts {
 		btns = append(btns, shell.Button{
