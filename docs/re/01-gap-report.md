@@ -5781,3 +5781,72 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
 
     執行檔那邊的寬高是 LBX 資產控制碼。已知的唯一約束是三顆鈕相鄰間距 76,所以單顆不會更寬。
     取 68×20 是 **remake 的選擇,不是真值**,寫在常數註解裡。
+
+111. **屏障護盾擋生物武器:擋門是「分類的語意」,不是規則本身**(2026-08-08)。
+
+    `internal/gamedata/planetary_shield.go` 的檔尾掛了一條沒接的規則:
+
+    > 屏障護盾多一句「biological weapons cannot enter the planet's atmosphere」。
+    > remake 沒有「生物武器」這個分類,**這條沒接**。
+
+    這條擱置的理由現在看是誤判的:缺的不是規則,規則手冊寫得很完整;缺的是
+    **「哪些科技算生物武器」這份名單**。而那份名單其實一直在執行檔裡,只是被我
+    當成「不可解的枚舉」放過去了。
+
+    ### category enum 是可以從成員反推的
+
+    第 108 項從 `Calc_Tech_Value_` 挖出兩張表:`TechItemCategory[212]`(每項科技屬於
+    哪一類)和 `TechCategoryDefaultMultiplier[49]`(每類的權重)。當時只用了權重,
+    **category 的編號代表什麼意思沒解**——0..41 就是一串數字。
+
+    但枚舉的語意可以從**成員**反推:把 212 項科技按 category 分組,同組有什麼共通點,
+    表自己會說。分完之後 41 組每一組都是乾淨的功能類別(0=農業、1=工業、2=研究、
+    26=光束武器、32=裝甲、33=護盾、39=燃料槽、40=士氣建築、41=索引 204–211 的填充)。
+
+    而其中一組直接把這一項解開了:
+
+    | category | 成員 | 組數 |
+    |---|---|---|
+    | **20** | Bio-Terminator、Death Spores | 2 |
+
+    恰好兩項,不多不少。**分類是執行檔給的,不是我自己劃的**——這是這一項與「憑印象
+    列個生物武器清單」的差別。`TestBiologicalWeaponsAreExactlyCategory20` 把兩者釘在一起。
+
+    ### 手冊把剩下三件事都給齊了
+
+    GAME_MANUAL.pdf p.99「Death Spores (System)」:
+
+    > invading ships must introduce them into the target planet's atmosphere
+    > **by orbital bombardment**. Each spore pod launched has a **10% chance to
+    > kill one unit of colonist population**.
+
+    加上後面效果表的兩個數字,三件事都有依據:**投放方式**(軌道轟炸)、
+    **效果**(每莢 10% / 生物滅絕者 20% 殺 1 單位人口)、
+    **反制**(屏障護盾「無法進入大氣層」——完全擋掉,不是減傷)。
+
+    ### 一個實作上的陷阱:護盾要在建築吸收之前問
+
+    `BombardColony` 的流程是「算傷害 → 建築吸收(按建築名字母序拆)→ 扣人口」。
+    生物武器接在扣人口之後,若在那一步才查 `buildings` 有沒有屏障護盾,
+    **「護盾擋不擋得住」就變成取決於字母序有沒有先輪到它被拆**——那是假的精確度,
+    不是規則。所以 `bioBlocked` 與 `shield` 一樣在吸收迴圈之前就取好。
+
+    `TestBombard_BarrierShieldDestroyedThisTurnStillBlocks` 守這條,而且它是 PASS 不是
+    SKIP——那一波轟炸真的把護盾拆掉了,擋阻仍然成立。
+
+    ### 誠實留白
+
+    - **一次轟炸投幾莢沒有真值。** 手冊說「每一個發射出去的孢子莢」,但沒說一次投幾莢,
+      而 remake 沒有「哪幾艘船掛了生物武器、各帶幾莢」的模型。取「艦隊艦艇數」
+      (一艘一莢)是 **remake 的建模選擇**,寫在 `bioweapon.go` 檔頭與呼叫端註解裡。
+    - **只有屏障護盾擋。** 輻射護盾與通量護盾的手冊敘述都沒有那一句。
+      `TestOnlyTheBarrierShieldBlocksBiologicalWeapons` 把這件事釘住,免得日後
+      被當成漏寫「順手補齊」。
+    - **G 項的第二條仍然刻意不做**:護盾被炸掉後氣候不變回 Radiated。
+      remake 沒有「可逆的建築效果」這層模型,這是既有的刻意偏離,不是這一項的遺漏。
+
+    ### 沒有畫面回歸
+
+    截圖廊零位元組差異——因為 `BioWeaponKills` 是單次轟炸結果、不是存檔欄位,
+    也因為轟炸報告那一行只在真的殺到人時才多印一段(報告框高 118px、行距 24,
+    第五行會掉出框外)。

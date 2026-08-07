@@ -95,3 +95,52 @@ func TechCategoryWeight(tech Technology) int {
 	}
 	return TechCategoryDefaultMultiplier[c]
 }
+
+// ============ category enum 的語意(2026-08-08 第 111 項)============
+//
+// `docs/re/calc-tech-value.md` 的「誠實留白」第 1 條寫著:
+//
+//	category enum(1–0x28)每個數值對應哪個實際科技種類**完全不知道**——這是最大的缺口,
+//	常數表裡幾十個 `cmp ebx, 0x1A` 之類的比對,不解出這個 enum 就不知道套用在哪些科技上。
+//
+// **它是可以從成員反推的。** enum 的意義不在別處,就在「哪些科技被歸進同一格」——
+// 把 `TechItemCategory` 依 category 分組、把每組的科技名列出來,每一組都是一個乾淨的功能類別。
+// 不需要另外找一張對照表,表自己會說。
+//
+//	 0 農業/食物        11 高階行星改造    22 艦體尺寸/民用艦   33 護盾
+//	 1 工業/生產        12 間諜/心靈       23 機動/速度         34 進階護盾
+//	 2 研究             13 進階政體        24 掃描器            35 登船/運兵
+//	 3 金融/收入        14 通訊            25 戰鬥電腦          36 雜項特殊裝置
+//	 4 污染處理         15 地面部隊裝備    26 光束武器          37 隱形
+//	 5 帝國級特殊建築   16 步槍            27 命中輔助          38 特殊武器裝置
+//	 6 醫療/人口成長    17 艦體通用改良    28 反飛彈/干擾       39 燃料槽
+//	 7 人口上限/宜居    18 引擎            29 飛彈導引          40 士氣建築
+//	 8 地面駐軍營房     19 炸彈            30 戰機掛艙          41 (填充,索引 204-211
+//	 9 行星/軌道防禦    20 **生物武器**    31 艦體強化/修復        超出科技表範圍)
+//	10 行星護盾         21 飛彈/魚雷       32 裝甲
+//
+// 舉幾組當佐證(這些是分組的**原始輸出**,不是先想好類別再塞):
+//
+//	cat  0 (9): Android Farmers / Biomorphic Fungi / Food Replicators / Hydroponic Farm /
+//	            Soil Enrichment / Subterranean Farms / Terraforming / Weather Control System
+//	cat 16 (5): Fusion Rifle / Laser Rifle / Phasor Rifle / Plasma Rifle / Pulse Rifle
+//	cat 20 (2): Bio-Terminator / Death Spores
+//	cat 32 (6): Adamantium / Neutronium / Titanium / Tritanium / Xentronium / Zortrium Armor
+//	cat 39 (5): Deuterium / Iridium / Standard / Thorium / Urridium Fuel Cells
+//
+// ⚠ 這仍然**不足以照抄 `Calc_Tech_Value_` 的階段 C–K**:那些分支除了 category 之外還吃
+// `player[0x205]` / `[0x206]` / `[0x28]` / `[0x89F..0x8BB]`,那幾個欄位的語意還沒查出來。
+// 解掉的是「category 那一半」。
+
+// TechCategoryBiologicalWeapon 是**生物武器**那一個 category(Bio-Terminator / Death Spores)。
+//
+// 這個常數有一個具體的消費端:手冊給行星屏障護盾的那句
+// 「biological weapons cannot enter the planet's atmosphere」——remake 先前接不了,
+// 因為「沒有生物武器這個分類」。現在有了,而且是執行檔給的,不是自己劃的。
+const TechCategoryBiologicalWeapon = 20
+
+// IsBiologicalWeapon 回報某項科技是否屬於生物武器(category 20)。
+func IsBiologicalWeapon(tech Technology) bool {
+	c, ok := TechCategoryOf(tech)
+	return ok && c == TechCategoryBiologicalWeapon
+}

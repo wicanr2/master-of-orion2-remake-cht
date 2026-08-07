@@ -84,6 +84,11 @@ type GroundBombardResult struct {
 	PopulationLost int
 	RemainingHits  int // 扣完建築+人口後剩餘、未消耗掉的 hits(通常應為 0;殖民地人口歸零時會 > 0)
 
+	// BioWeaponKills 是**生物武器**額外殺掉的人口(手冊 p.99,第 111 項接的)。
+	// 已含在 PopulationLost 裡,獨立記一份是為了讓「這幾個人是被孢子殺的」看得出來
+	// ——屏障護盾把這一項擋成 0 而其他傷害照常,兩者混在一起就看不出護盾有沒有生效。
+	BioWeaponKills int
+
 	// BuildingsDestroyed 是本次轟炸摧毀的建築數(2026-07-11 新增,#7/#8 接線:見下方函式註解
 	// 「建築吸收」段落)。0 表示沒有建築被摧毀(可能是 hits 不夠、也可能是該殖民地本來就沒有
 	// 建築——兩種情況本欄位都合法回 0,不額外區分)。
@@ -326,6 +331,10 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 		buildings = aiPlayer.ColonyBuildings[colonyIdx]
 	}
 	shield := gamedata.PlanetaryShieldReduction(buildings)
+	// 生物武器擋不擋,同理要在建築吸收**之前**問。下面那段吸收迴圈會按字母序拆建築,
+	// 若等到孢子那一步才查 buildings,「屏障護盾擋不擋得住生物武器」就變成取決於
+	// 建築名的字母序有沒有先輪到它被拆——那是假的精確度,不是規則。
+	bioBlocked := gamedata.BiologicalWeaponBlocked(buildings)
 
 	rng := rand.New(rand.NewSource(int64(s.Turn)*2654435761 + int64(starIdx)*131 + 777))
 	totalDamage := s.fleetBombardDamage(rng, shield)
@@ -374,6 +383,33 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 	colony.Population -= popLoss
 	res.PopulationLost = popLoss
 	res.RemainingHits = remainingHits - popLoss
+
+	// --- 生物武器(手冊 p.99;第 111 項接上)---
+	//
+	// 「invading ships must introduce them into the target planet's atmosphere **by orbital
+	// bombardment**. Each spore pod launched has a 10% chance to kill one unit of colonist
+	// population.」——所以投放點就是這裡,而且是**在一般轟炸傷害之外**再殺人口。
+	//
+	// 屏障護盾那句「biological weapons cannot enter the planet's atmosphere」是**完全擋掉**,
+	// 不是減傷,所以擋住時整段跳過(見 gamedata.BiologicalWeaponBlocked)。
+	//
+	// ⚠ **莢數取「艦隊艦艇數」是 remake 的建模選擇。** 手冊說「每一個發射出去的孢子莢」,
+	// 但沒說一次轟炸投幾莢,而 remake 沒有「哪幾艘船掛了生物武器、各帶幾莢」的模型。
+	// 一艘船一莢是最直白的近似,不是手冊數字。
+	if !bioBlocked {
+		pct := gamedata.BestBiologicalWeaponKillPercent(func(tech gamedata.Technology) bool {
+			topic, ok := gamedata.OrigTechTopic(tech)
+			return ok && groundEquipTechOwned(s.Player, topic, tech)
+		})
+		if kills := gamedata.BiologicalWeaponPopKills(len(s.Fleet().Ships), pct, rng.Intn); kills > 0 {
+			if kills > colony.Population {
+				kills = colony.Population
+			}
+			colony.Population -= kills
+			res.PopulationLost += kills
+			res.BioWeaponKills = kills
+		}
+	}
 
 	// --- 防禦方反擊(2026-07-11 新增,見 retaliationAttackers 函式頂部「誠實標註」段落):
 	// 建築吸收 + 人口損失之後,只有「這次轟炸打完仍存活」的防禦建築(此刻的 buildings,已經過

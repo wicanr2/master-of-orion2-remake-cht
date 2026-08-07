@@ -189,8 +189,16 @@ func (s *bombingScreen) draw(dst *ebiten.Image) {
 		s.res.TotalDamage, s.res.Hits), body)
 	line(fmt.Sprintf(s.b.tr("摧毀建築 %d 座(該殖民地尚存 %d 座)", "%d buildings destroyed (%d still standing)"),
 		s.res.BuildingsDestroyed, s.res.BuildingsRemaining), body)
-	line(fmt.Sprintf(s.b.tr("人口損失 %d(轟炸前 %d)", "%d population lost (was %d)"),
-		s.res.PopulationLost, s.res.PopulationBefore), warn)
+	// 生物武器那一份要看得見,否則玩家研究了死亡孢子也不知道它有沒有在作用
+	// ——但只在真的殺到人時才多印一段,沒有生物武器的一般轟炸維持原本的四行版面
+	// (這個報告框高 118px、行距 24,第五行會掉出框外)。
+	popLine := fmt.Sprintf(s.b.tr("人口損失 %d(轟炸前 %d)", "%d population lost (was %d)"),
+		s.res.PopulationLost, s.res.PopulationBefore)
+	if s.res.BioWeaponKills > 0 {
+		popLine = fmt.Sprintf(s.b.tr("人口損失 %d(生物武器 %d;轟炸前 %d)", "%d population lost (%d to bioweapons; was %d)"),
+			s.res.PopulationLost, s.res.BioWeaponKills, s.res.PopulationBefore)
+	}
+	line(popLine, warn)
 	if s.res.DefenderRetaliated {
 		line(fmt.Sprintf(s.b.tr("敵方軌道防禦反擊,我方損失 %d 艘", "Orbital defenses returned fire; %d ships lost"),
 			s.res.AttackerShipsLost), warn)

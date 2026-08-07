@@ -60,10 +60,15 @@ package gamedata
 //
 // ⚠ 只有 **Radiated → Barren** 這一階。其他氣候不受影響——手冊三句都只講 Radiated。
 //
-// ============ 還沒接的那一件 ============
+// ============ 屏障護盾多的那一句(2026-08-08 已接)============
 //
 // 屏障護盾多一句「biological weapons cannot enter the planet's atmosphere」。
-// remake 沒有「生物武器」這個分類,**這條沒接**。
+// 這條曾以「remake 沒有『生物武器』這個分類」為由擱置——**那個理由是誤判的**:
+// 缺的不是規則(手冊 p.99 寫得很完整),是「哪些科技算生物武器」這份名單,
+// 而名單一直在執行檔裡(`Calc_Tech_Value_` 的 category 表,category 20 恰好兩項)。
+//
+// 現在接上了,見 `bioweapon.go`(名單 + 機率 + 擲骰)與
+// `internal/shell/orbital_bombardment.go`(投放點在軌道轟炸)。
 
 // 行星護盾的每次攻擊減傷(GAME_MANUAL.pdf,見檔頭引文)。
 const (
