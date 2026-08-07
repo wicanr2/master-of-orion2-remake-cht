@@ -2,7 +2,6 @@ package shell
 
 import (
 	"fmt"
-	"math/rand"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
@@ -44,7 +43,7 @@ func (s *GameSession) advanceEvents() {
 		return
 	}
 	if s.eventRand == nil {
-		s.eventRand = rand.New(rand.NewSource(s.EventSeed*2654435761 + 1))
+		s.eventRand = newRandStream(s.EventSeed*2654435761 + 1)
 	}
 	if s.eventRand.Float64() >= eventChancePerTurn {
 		return
@@ -398,6 +397,6 @@ var _ = engine.ColonyState{}
 // eventRandForTest 確保 eventRand 已初始化(測試直接呼叫事件工具函式時用)。
 func (s *GameSession) eventRandForTest() {
 	if s.eventRand == nil {
-		s.eventRand = rand.New(rand.NewSource(s.EventSeed*2654435761 + 1))
+		s.eventRand = newRandStream(s.EventSeed*2654435761 + 1)
 	}
 }

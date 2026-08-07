@@ -21,7 +21,6 @@ package shell
 
 import (
 	"fmt"
-	"math/rand"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
@@ -220,7 +219,15 @@ func resolveSpyVsSpy(ab, db int, attackerHide bool) spyVsSpyOutcome {
 // SpyVsSpy 判定,回傳要記進 LastEspionage 的訊息(可能 0~2 則)、attacker 間諜是否被擊殺、
 // 以及偷到的科技是否套用到了 *attackerPS(呼叫端已把 attackerPS 指到正確的 engine.PlayerState)。
 // attackerName/defenderName 純供訊息文字使用。
-func spyStealAttempt(rng *rand.Rand, attackerPS *engine.PlayerState, defenderPS engine.PlayerState,
+// rollSource 是「會擲骰的東西」——`*randStream`(可存檔的流,見 randstream.go)與
+// `*rand.Rand`(測試裡直接餵的臨時流)都滿足它。收介面而不是收具體型別,
+// 是為了讓既有測試不必跟著換掉。
+type rollSource interface {
+	Intn(n int) int
+	Float64() float64
+}
+
+func spyStealAttempt(rng rollSource, attackerPS *engine.PlayerState, defenderPS engine.PlayerState,
 	spyCount int, attackerName, defenderName string) (messages []string, attackerSpyKilled bool) {
 	ab := spyAttackerBonus(spyCount)
 	db := spyDefenderBonus()
@@ -255,7 +262,7 @@ func (s *GameSession) advanceEspionage() {
 	s.LastEspionage = nil
 	s.ensurePlayerSpies()
 	if s.spyRand == nil {
-		s.spyRand = rand.New(rand.NewSource(s.EventSeed*2654435761 + 7))
+		s.spyRand = newRandStream(s.EventSeed*2654435761 + 7)
 	}
 
 	for i := range s.AIPlayers {

@@ -102,8 +102,22 @@ type sessionSnapshot struct {
 	PopAccum      []int             `json:"popAccum"`
 	ColonyBuild   []map[string]bool `json:"colonyBuildings"`
 	EventSeed     int64             `json:"eventSeed"`
-	AntaresRaids  int               `json:"antaresRaids"`
-	RaceIndex     int               `json:"raceIndex"`
+	// RuleVersion 是這局的規則版本(1.3 / 1.5)。存**版本**不存整個 RuleProfile:
+	// profile 是由版本推導出來的衍生資料,存衍生資料會在新增欄位時悄悄留下舊值。
+	//
+	// ⚠ 2026-08-07 補:先前**完全沒存**,於是讀檔後 `s.RuleProfile` 是零值——
+	// 那既不是 1.3 也不是 1.5,而是「Version=1.3 但所有數值欄位都是 0」的混種:
+	// Hyper-Advanced 研究成本、電漿砲傷害、轟炸輪數、守方 Commando 加成、感測器加成、
+	// 貨運現金加成全部歸零。主選單選的版本因此撐不過一次存讀檔。
+	// 舊存檔沒有這個欄位 → 0 = VersionClassic13,由 restore 重建成完整的 Profile13()。
+	RuleVersion gamedata.GameVersion `json:"ruleVersion"`
+	// 三條長壽命亂數流已經抽了幾次(見 randstream.go)。舊存檔沒有這三個欄位 → 0 →
+	// 讀回來的流從頭開始,行為與加欄位前一致。
+	EventDraws     int64 `json:"eventDraws,omitempty"`
+	DiscoveryDraws int64 `json:"discoveryDraws,omitempty"`
+	SpyDraws       int64 `json:"spyDraws,omitempty"`
+	AntaresRaids   int   `json:"antaresRaids"`
+	RaceIndex      int   `json:"raceIndex"`
 	// PlayerName / FlagColor 是新遊戲「命名旗色」畫面設定的帝國名與旗色。
 	// ⚠ 這兩個欄位先前**完全沒有進存檔**——玩家取的帝國名與選的旗色一讀檔就消失,
 	// 換回預設值。2026-08-07 補上(存檔槽列表要顯示帝國名時才發現)。舊存檔沒有這兩個
@@ -207,6 +221,9 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		PersistentEvents: s.PersistentEvents,
 		CapturedPop:      s.CapturedPop,
 		PopAccum:         s.popAccum, ColonyBuild: s.ColonyBuildings, EventSeed: s.EventSeed,
+		RuleVersion: s.RuleProfile.Version,
+		EventDraws:  s.eventRand.Draws(), DiscoveryDraws: s.discoveryRand.Draws(),
+		SpyDraws:     s.spyRand.Draws(),
 		AntaresRaids: s.AntaresRaids, RaceIndex: s.RaceIndex,
 		PlayerName: s.PlayerName, FlagColor: s.FlagColor,
 		RaceCombatPct: s.RaceCombatPct, RaceGrowthPct: s.raceGrowthPct,
@@ -230,7 +247,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 	}
 }
 
-// restore 由快照重建一個 GameSession(重建 AI Decider;eventRand 由 EventSeed 惰性重建)。
+// restore 由快照重建一個 GameSession(重建 AI Decider;三條亂數流由 EventSeed + 抽取次數
+// 快轉回原位,見 randstream.go —— 不快轉的話讀檔會把事件序列從頭重播一次)。
 func (snap sessionSnapshot) restore() *GameSession {
 	ais := make([]AIOpponent, len(snap.AIPlayers))
 	for i, a := range snap.AIPlayers {
@@ -257,7 +275,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 	normalizeOrbits(snap.Stars, len(snap.Planets))
 	// ⚠ 存檔裡的 Seats[ActiveSeat] 與頂層的 Player/Colonies/… 是同一份資料的兩個副本
 	// (snapshot 存檔前才剛同步過)。restore 之後兩邊仍一致,直到下一次 AdvanceSeat。
-	return &GameSession{
+	out := &GameSession{
 		Turn: snap.Turn, Player: snap.Player, PlayerColonies: snap.PlayerColonies,
 		AIPlayers: ais, Stars: snap.Stars, Planets: snap.Planets, Leaders: snap.Leaders,
 		Fleets: snap.restoredFleets(), SelectedFleet: snap.SelectedFleet,
@@ -293,6 +311,19 @@ func (snap sessionSnapshot) restore() *GameSession {
 		TechLevel:                 snap.TechLevel,
 		TechLevelSet:              snap.TechLevelSet,
 	}
+	// 規則版本 → 完整 profile(存的是版本,profile 是衍生資料,見 RuleVersion 欄位註解)。
+	out.RuleProfile = gamedata.Profile15()
+	if snap.RuleVersion == gamedata.VersionClassic13 {
+		out.RuleProfile = gamedata.Profile13()
+	}
+	// 三條長壽命亂數流:快轉到存檔當下的位置。不快轉的話讀檔會把事件序列從頭重播一次
+	// (存檔洗事件變得毫無成本,而且網路對戰時中途讀檔的那台會與其他人分岔)。
+	// 種子公式必須與各自的惰性建立處一致——寫在這裡是為了讓「存了什麼、還原什麼」看得見。
+	out.eventRand = restoreRandStream(snap.EventSeed*2654435761+1, snap.EventDraws)
+	out.discoveryRand = restoreRandStream(
+		snap.EventSeed*6364136223846793005+1442695040888963407, snap.DiscoveryDraws)
+	out.spyRand = restoreRandStream(snap.EventSeed*2654435761+7, snap.SpyDraws)
+	return out
 }
 
 // restorePlanetIDs 把 2026-08-06 之前存檔裡「只有顯示字串」的行星回填成 enum 欄位(就地修改)。

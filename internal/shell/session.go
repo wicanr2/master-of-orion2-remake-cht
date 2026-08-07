@@ -2294,14 +2294,14 @@ type GameSession struct {
 
 	// FleetTanks / PlayerColonyTanks / ArmorBarracksAge:裝甲營房(Armor Barracks)戰車營
 	// 駐軍系統,與上面三個 Marine 對應欄位對稱(見 advanceArmor/LoadTanks,ground_invasion.go)。
-	PlayerColonyTanks []int      // 各玩家殖民地 Armor Barracks 駐軍池(平行 PlayerColonies)
-	ArmorBarracksAge  []int      // 各玩家殖民地 Armor Barracks 已運作回合數(平行 PlayerColonies)
-	EventSeed         int64      // 隨機事件亂數種子(可重現;新遊戲遞增)
-	LastEvent         string     // 本回合觸發的隨機事件描述(空=無事件;供回合摘要)
-	DisableEvents     bool       // 關閉隨機事件(供確定性經濟測試隔離)
-	eventRand         *rand.Rand // 事件亂數源(由 EventSeed 惰性建立)
-	AntaresRaids      int        // 已發生的安塔蘭突襲次數(逐次升級強度)
-	LastAntares       string     // 本回合安塔蘭突襲描述(空=無;供回合摘要)
+	PlayerColonyTanks []int       // 各玩家殖民地 Armor Barracks 駐軍池(平行 PlayerColonies)
+	ArmorBarracksAge  []int       // 各玩家殖民地 Armor Barracks 已運作回合數(平行 PlayerColonies)
+	EventSeed         int64       // 隨機事件亂數種子(可重現;新遊戲遞增)
+	LastEvent         string      // 本回合觸發的隨機事件描述(空=無事件;供回合摘要)
+	DisableEvents     bool        // 關閉隨機事件(供確定性經濟測試隔離)
+	eventRand         *randStream // 事件亂數源(由 EventSeed 惰性建立;抽取次數會進存檔,見 randstream.go)
+	AntaresRaids      int         // 已發生的安塔蘭突襲次數(逐次升級強度)
+	LastAntares       string      // 本回合安塔蘭突襲描述(空=無;供回合摘要)
 	// Monsters 是星圖上守衛星系的太空怪獸(見 monster.go)。清空 = 全部已被清除。
 	Monsters []MonsterGuard
 
@@ -2390,8 +2390,8 @@ type GameSession struct {
 	TechLevelSet bool
 	// LastEspionage 是本回合諜報結算的訊息(供回合摘要顯示;每回合開頭清空)。
 	LastEspionage []string
-	spyRand       *rand.Rand // 間諜擲骰亂數源(由 EventSeed 惰性建立,比照 eventRand 慣例)
-	discoveryRand *rand.Rand // 星系發現擲骰亂數源(見 discovery.go discoveryRoll,同上慣例)
+	spyRand       *randStream // 間諜擲骰亂數源(由 EventSeed 惰性建立,比照 eventRand 慣例)
+	discoveryRand *randStream // 星系發現擲骰亂數源(見 discovery.go discoveryRoll,同上慣例)
 }
 
 // 安塔蘭人入侵參數:MOO2 的週期性終局威脅。前期寬限,之後每隔數回合一次突襲,強度隨次數升級。
@@ -3092,7 +3092,7 @@ func (s *GameSession) aiExpand(i int) {
 	// 先前所有 AI 一律每回合都嘗試擴張,擴張速度毫無性格差異。
 	if chance := ai.PersonalityExpansionChance(s.AIPlayers[i].Personality); chance < 100 {
 		if s.eventRand == nil {
-			s.eventRand = rand.New(rand.NewSource(s.EventSeed*2654435761 + 1))
+			s.eventRand = newRandStream(s.EventSeed*2654435761 + 1)
 		}
 		if s.eventRand.Intn(100) >= chance {
 			return

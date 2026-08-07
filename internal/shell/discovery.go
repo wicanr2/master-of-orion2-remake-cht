@@ -2,7 +2,6 @@ package shell
 
 import (
 	"fmt"
-	"math/rand"
 	"strings"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
@@ -201,7 +200,7 @@ func (s *GameSession) discoveryRoll(n int) int {
 		return 1
 	}
 	if s.discoveryRand == nil {
-		s.discoveryRand = rand.New(rand.NewSource(s.EventSeed*6364136223846793005 + 1442695040888963407))
+		s.discoveryRand = newRandStream(s.EventSeed*6364136223846793005 + 1442695040888963407)
 	}
 	return s.discoveryRand.Intn(n) + 1
 }
