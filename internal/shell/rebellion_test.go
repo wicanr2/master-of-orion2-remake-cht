@@ -239,17 +239,53 @@ func TestRebellionWithoutAKnownOldRulerDoesNotCrash(t *testing.T) {
 	assertPlayerColonyArraysConsistent(t, s)
 }
 
-// 未同化人口不該被 engine 的經濟結算意外讀成別的東西——加了兩個新欄位之後的煙霧測試。
-func TestConqueredMarkerDoesNotLeakIntoEconomy(t *testing.T) {
-	base := engine.ColonyState{
+// 「這個殖民地是從誰手上打下來的」這兩個欄位不該影響經濟結算。
+//
+// ⚠ 2026-08-08(第 116 項)改寫過。原本這條測的是 `markColonyConquered` 整支——
+// 而那支同時設 `UnassimilatedPop`。第 116 項把手冊那條「未整合外星人只產出 3/4」接上去
+// 之後,`UnassimilatedPop` **本來就該**改變經濟結算,所以原本那個斷言反而變成錯的。
+//
+// 這裡把兩件事拆開:記帳用的 `ConqueredFrom`/`ConqueredFromKnown` 仍然不該有經濟效果,
+// 由本條守;`UnassimilatedPop` 的經濟效果由下一條守。
+func TestConqueredFromMarkerDoesNotLeakIntoEconomy(t *testing.T) {
+	base := conqueredEconomyBase()
+	marked := base
+	marked.ConqueredFrom, marked.ConqueredFromKnown = 1, true
+	if got, want := engine.RunColonyTurn(marked), engine.RunColonyTurn(base); got != want {
+		t.Errorf("「從誰手上打下來的」不該改變經濟結算\n有標記: %+v\n無標記: %+v", got, want)
+	}
+}
+
+// 反過來的正對照:未整合的外星人口**要**壓低產出(手冊:each alien unit produces only
+// three quarters what it normally would)。
+//
+// 上一條若寫成「整個 markColonyConquered 都不該影響經濟」,這條規則接上去就會被它擋掉
+// ——這正是原本那個斷言的問題。
+func TestUnassimilatedPopulationLowersOutput(t *testing.T) {
+	base := conqueredEconomyBase()
+	conquered := base
+	markColonyConquered(&conquered, 1)
+
+	got, want := engine.RunColonyTurn(conquered), engine.RunColonyTurn(base)
+	if got.GrossIndustry >= want.GrossIndustry {
+		t.Errorf("全員未整合時工業應低於正常:%d vs %d", got.GrossIndustry, want.GrossIndustry)
+	}
+	if got.Food >= want.Food {
+		t.Errorf("食物同理(手冊寫的是 produces,不限工業):%d vs %d", got.Food, want.Food)
+	}
+	// 同化完就該恢復——懲罰是暫時的,不是永久烙印。
+	healed := conquered
+	healed.UnassimilatedPop = 0
+	if got := engine.RunColonyTurn(healed); got != want {
+		t.Errorf("同化完應回到正常產出\n同化後: %+v\n正常: %+v", got, want)
+	}
+}
+
+func conqueredEconomyBase() engine.ColonyState {
+	return engine.ColonyState{
 		Population: 8, PopMax: 12, Farmers: 4, Workers: 4,
 		FoodPerFarmer: 2, IndustryPerWorker: 3, ResearchPerScientist: 2,
 		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G,
 		MineralRichness: gamedata.ABUNDANT,
-	}
-	conquered := base
-	markColonyConquered(&conquered, 1)
-	if got, want := engine.RunColonyTurn(conquered), engine.RunColonyTurn(base); got != want {
-		t.Errorf("征服標記不該改變經濟結算\n有標記: %+v\n無標記: %+v", got, want)
 	}
 }

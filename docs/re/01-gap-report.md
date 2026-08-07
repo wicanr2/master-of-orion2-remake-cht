@@ -6150,3 +6150,62 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     帝國摘要多一列「領袖薪餉」,單獨列不併進「維護支出」——那一列是**建築**維護,
     來源不同,混在一起玩家就看不出「解雇一個領袖能省多少」。
     截圖廊零位元組差異(新開一局沒有領袖,第 43 項起改成原版的雇用制)。
+
+116. **征服來的人口先前是「免費全額生產」**(2026-08-08)。
+
+    第 115 項用覆蓋率找洞時只看了「應該自動發生」那一類。同一份清單裡還有 196 支
+    `internal/gamedata` 的函式零覆蓋——那些是**純規則**,零覆蓋的意思是
+    「這條規則在一局裡從來沒有適用過」。
+
+    大多數是應該的(軌道轟炸、地面戰、武器改造都要玩家主動觸發)。但兩支不是:
+
+    | 函式 | 呼叫端 |
+    |---|---|
+    | `ProdAlienWorkerOutput` | **0 個** |
+    | `ProdWorkerOutput` | **0 個** |
+
+    ### 手冊寫的是 produces,不是 produces industry
+
+    > Aliens appear in an enemy's colony that you've conquered, representing the population
+    > left there by the former owner. At first, all aliens are **uncooperative**. Until they
+    > are integrated into your empire, **each alien unit produces only three quarters what
+    > it normally would**.
+
+    remake 有 `UnassimilatedPop`(第 105 項的叛亂系統與多種族士氣懲罰都在用),
+    但這條產出懲罰**沒接**——打下一座殖民地,當回合就拿到它的全額產能。
+    「征服打法要付的利息」先前只有叛亂風險那一半。
+
+    動詞是 **produces**,沒有限定工業,所以食物/工業/研究三項都套。
+
+    ### 第二支函式是被第一支帶出來的
+
+    `ProdWorkerOutput` 是「每工人至少 1 產能」的下限。它零覆蓋不是因為沒接
+    ——是因為**永遠不會生效**:礦產表最低就是 1(`mineralProductionTable = {1,2,3,5,8}`),
+    沒有任何東西能把 per-worker 壓到 1 以下。
+
+    3/4 之後 `1 × 3/4 = 0` —— 極貧星上全員未整合的殖民地會產出**零工業**。
+    下限這才真的擋到東西。兩支函式是同一條規則的兩半,一起接才對。
+
+    ⚠ 下限只套**工業**:`ProdWorkerMinimum` 的手冊依據講的是「每個**工人**單位」,
+    沒有講農夫與科學家,不擅自套到那兩項。食物/研究因此真的會被壓到 0——
+    測試把這個不對稱釘住,免得日後被當成 bug「順手補齊」。
+
+    ### 誠實留白:誰在做哪個工作
+
+    手冊講的是「每個 alien **單位**」,而 remake 沒有「哪些外星人在做哪個工作」的模型
+    ——`ColonyState` 只有 `UnassimilatedPop` 與三個職業人數,沒有交叉表。
+    所以按**人口比例**把外星人攤到各職業(向下取整)。**那是 remake 的建模選擇**,
+    不是手冊給的分配規則;手冊也沒說玩家能不能指定外星人的工作。
+
+    ### 一條既有測試在這裡變成錯的
+
+    `TestConqueredMarkerDoesNotLeakIntoEconomy` 斷言「征服標記不該改變經濟結算」,
+    而它測的是整支 `markColonyConquered`——**那支同時設 `UnassimilatedPop`**。
+
+    這條規則接上去之後,那個斷言反而變成錯的:未整合人口**本來就該**改變經濟結算。
+
+    處理方式不是把它刪掉,是**把兩件事拆開**:記帳用的 `ConqueredFrom` /
+    `ConqueredFromKnown` 仍然不該有經濟效果(原意保留);`UnassimilatedPop` 的經濟效果
+    另立一條正對照,並多驗一件事——**同化完要恢復正常產出**,懲罰是暫時的不是永久烙印。
+
+    截圖廊零位元組差異(截圖裡沒有被征服的殖民地)。

@@ -193,3 +193,61 @@ func PollutionReducedByPercent(pollutingProd, reductionPercent int) int {
 	}
 	return pollutingProd * (100 - reductionPercent) / 100
 }
+
+// ============ 未整合外星人的 3/4 產出(2026-08-08 第 116 項接上)============
+//
+// 手冊(GAME_MANUAL.pdf,Population 一節)講被征服殖民地上的「Aliens」圖示:
+//
+//	Aliens appear in an enemy's colony that you've conquered, representing the population
+//	left there by the former owner. At first, all aliens are **uncooperative**. Until they
+//	are integrated into your empire, **each alien unit produces only three quarters what it
+//	normally would**.
+//
+// 注意手冊寫的是「**produces**」——不限工業。所以食物、工業、研究三項都套。
+//
+// ⚠ **remake 沒有「哪些外星人在做哪個工作」的模型。** `ColonyState` 只有
+// `UnassimilatedPop`(還沒同化的征服人口總數)與三個職業人數,沒有交叉表。
+// 所以這裡按**人口比例**把外星人攤到各職業上(向下取整)——那是 remake 的建模選擇,
+// 不是手冊給的分配規則。手冊也沒說玩家能不能指定外星人的工作。
+//
+// 這一段同時把 `ProdWorkerOutput` 那條「每工人至少 1 產能」的下限接上了:
+// 先前礦產表最低就是 1(`mineralProductionTable = {1,2,3,5,8}`),下限**永遠不會生效**,
+// 那支函式因此零覆蓋。有了 3/4 之後 `1 × 3/4 = 0`,下限這才真的擋到東西。
+
+// UncooperativeAlienUnits 回傳某職業裡有幾個單位是未整合的外星人。
+//
+// 按人口比例向下取整(見上方 ⚠)。population <= 0 或沒有未整合人口時回 0;
+// unassimilated 超過 population 時夾住——征服/同化那條路徑若算出不一致的數,
+// 這裡不該把它放大成「外星人比總人口還多」。
+func UncooperativeAlienUnits(jobUnits, unassimilated, population int) int {
+	if jobUnits <= 0 || unassimilated <= 0 || population <= 0 {
+		return 0
+	}
+	if unassimilated > population {
+		unassimilated = population
+	}
+	n := jobUnits * unassimilated / population
+	if n > jobUnits {
+		n = jobUnits
+	}
+	return n
+}
+
+// UncooperativeJobOutput 回傳一個職業的總產出,其中未整合外星人那一份只有 3/4。
+//
+// applyWorkerFloor 只有**工業**要傳 true:`ProdWorkerMinimum` 的手冊依據講的是
+// 「每個**工人**單位至少產出 1 產能」,沒有講農夫與科學家,所以不擅自套到那兩項。
+func UncooperativeJobOutput(jobUnits, perUnit, unassimilated, population int, applyWorkerFloor bool) int {
+	if jobUnits <= 0 || perUnit <= 0 {
+		return 0
+	}
+	aliens := UncooperativeAlienUnits(jobUnits, unassimilated, population)
+	if aliens == 0 {
+		return jobUnits * perUnit
+	}
+	alienPerUnit := ProdAlienWorkerOutput(perUnit)
+	if applyWorkerFloor {
+		alienPerUnit = ProdWorkerOutput(alienPerUnit)
+	}
+	return (jobUnits-aliens)*perUnit + aliens*alienPerUnit
+}
