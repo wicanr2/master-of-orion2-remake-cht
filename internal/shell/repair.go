@@ -110,22 +110,26 @@ func repairShipFull(sh *Ship) { sh.Damage = 0 }
 // advanceShipRepair 每回合結束時修復艦艇(原版 `Repair_Ships_At_Colonies_`)。
 //
 // 規則:艦隊停在「自己有殖民地或前哨站的星」就**完全修復**——原版就是直接呼叫
-// Repair_Ship_Full_,不是逐回合慢慢修。remake 的艦隊是單一集合(沒有多支艦隊各自位置),
-// 故條件簡化為「艦隊目前所在星是自己的據點」。
+// Repair_Ship_Full_,不是逐回合慢慢修。
+//
+// **逐艦隊各自判定**:多艦隊之後,停靠據點的那幾支修、在航行中的不修。
+// (先前 remake 只有一支艦隊,所以這裡只看那一支;現在的形狀才對得上原版
+//
+//	——它的迴圈也是逐艦隊走的。)
 //
 // 回傳被修復的艦艇數(供回合摘要顯示;0 = 這回合沒修到)。
 func (s *GameSession) advanceShipRepair() int {
-	if s.FleetETA > 0 || s.FleetAtStar < 0 {
-		return 0 // 航行中沒有港口可修
-	}
-	if !s.starIsPlayerBase(s.FleetAtStar) {
-		return 0
-	}
 	n := 0
-	for i := range s.Ships {
-		if s.Ships[i].Damage > 0 {
-			repairShipFull(&s.Ships[i])
-			n++
+	for f := range s.Fleets {
+		fl := &s.Fleets[f]
+		if fl.ETA > 0 || fl.AtStar < 0 || !s.starIsPlayerBase(fl.AtStar) {
+			continue // 航行中沒有港口可修;不是自己的據點也不行
+		}
+		for i := range fl.Ships {
+			if fl.Ships[i].Damage > 0 {
+				repairShipFull(&fl.Ships[i])
+				n++
+			}
 		}
 	}
 	return n
@@ -145,27 +149,31 @@ func (s *GameSession) starIsPlayerBase(starIdx int) bool {
 // 進階損害管制時的所有船,戰鬥結束後完全修復。
 func (s *GameSession) repairAfterBattle() {
 	adc := s.playerHasAdvancedDamageControl()
-	for i := range s.Ships {
-		if adc || shipHasAutoRepair(s.Ships[i]) {
-			repairShipFull(&s.Ships[i])
+	// 只修**參戰的那一支**——戰後修復是戰鬥的收尾,沒去打的艦隊不在其中。
+	f := s.Fleet()
+	for i := range f.Ships {
+		if adc || shipHasAutoRepair(f.Ships[i]) {
+			repairShipFull(&f.Ships[i])
 		}
 	}
 }
 
 // applyBattleDamage 把一場戰鬥後的剩餘血量寫回艦艇的持久損傷。
 //
-// combatIdx 是「第 k 個參戰艦」對應到 s.Ships 的索引(mkPlayerCombatantsIndexed 產生);
-// remaining 是戰鬥結束時該艦剩下的血量,-1 表示已被擊沉(呼叫端另行移除)。
+// combatIdx 是「第 k 個參戰艦」對應到**參戰艦隊** Ships 的索引
+// (mkPlayerCombatantsIndexed 產生);remaining 是戰鬥結束時該艦剩下的血量,
+// -1 表示已被擊沉(呼叫端另行移除)。
 func (s *GameSession) applyBattleDamage(combatIdx []int, remaining []int) {
+	f := s.Fleet()
 	for k, shipIdx := range combatIdx {
-		if k >= len(remaining) || shipIdx < 0 || shipIdx >= len(s.Ships) {
+		if k >= len(remaining) || shipIdx < 0 || shipIdx >= len(f.Ships) {
 			continue
 		}
 		r := remaining[k]
 		if r < 0 {
 			continue // 已陣亡,不用記損傷
 		}
-		max := shipMaxHP(s.Ships[shipIdx])
+		max := shipMaxHP(f.Ships[shipIdx])
 		d := max - r
 		if d < 0 {
 			d = 0
@@ -173,7 +181,7 @@ func (s *GameSession) applyBattleDamage(combatIdx []int, remaining []int) {
 		if d > max-ShipDamageFloorHP {
 			d = max - ShipDamageFloorHP
 		}
-		s.Ships[shipIdx].Damage = d
+		f.Ships[shipIdx].Damage = d
 	}
 }
 

@@ -29,7 +29,7 @@ func TestTotalCommandPointsSupply(t *testing.T) {
 // TestUsedCommandPoints 驗證逐艦加總指揮評等需求(GAME_MANUAL.pdf p.169 size class 公式)。
 func TestUsedCommandPoints(t *testing.T) {
 	s := NewDemoSession()
-	s.Ships = []Ship{
+	s.Fleet().Ships = []Ship{
 		{Name: "A", Class: "殖民船"}, // 手冊 p.84:Colony Ship 明文 1 點
 		{Name: "B", Class: "護衛艦"}, // Frigate = 1
 		{Name: "C", Class: "驅逐艦"}, // Destroyer = 2
@@ -43,7 +43,7 @@ func TestUsedCommandPoints(t *testing.T) {
 // TestUsedCommandPointsEmptyFleet 邊界:無艦隊時需求為 0。
 func TestUsedCommandPointsEmptyFleet(t *testing.T) {
 	s := NewDemoSession()
-	s.Ships = nil
+	s.Fleet().Ships = nil
 	if got := s.usedCommandPoints(); got != 0 {
 		t.Errorf("usedCommandPoints(無艦隊)=%d, want 0", got)
 	}
@@ -70,7 +70,7 @@ func TestEndTurnCommandOverflowPenalty(t *testing.T) {
 	s2 := NewDemoSession()
 	s2.DisableEvents = true
 	for i := 0; i < 6; i++ {
-		s2.Ships = append(s2.Ships, Ship{Name: "額外護衛艦", Class: "護衛艦"})
+		s2.Fleet().Ships = append(s2.Fleet().Ships, Ship{Name: "額外護衛艦", Class: "護衛艦"})
 	}
 	s2.EndTurn()
 	if s2.LastPlayerOutput.CommandOverflowCost != 30 {
@@ -82,7 +82,7 @@ func TestEndTurnCommandOverflowPenalty(t *testing.T) {
 	s3 := NewDemoSession()
 	s3.DisableEvents = true
 	for i := 0; i < 6; i++ {
-		s3.Ships = append(s3.Ships, Ship{Name: "額外護衛艦", Class: "護衛艦"})
+		s3.Fleet().Ships = append(s3.Fleet().Ships, Ship{Name: "額外護衛艦", Class: "護衛艦"})
 	}
 	s3.ColonyBuildings[0]["星基"] = false
 	s3.ColonyBuildings[0]["戰鬥站"] = true
@@ -96,7 +96,7 @@ func TestEndTurnCommandOverflowPenalty(t *testing.T) {
 	s4 := NewDemoSession()
 	s4.DisableEvents = true
 	for i := 0; i < 6; i++ {
-		s4.Ships = append(s4.Ships, Ship{Name: "額外護衛艦", Class: "護衛艦"})
+		s4.Fleet().Ships = append(s4.Fleet().Ships, Ship{Name: "額外護衛艦", Class: "護衛艦"})
 	}
 	s4.ColonyBuildings[0]["星基"] = false
 	s4.ColonyBuildings[0]["星辰要塞"] = true
@@ -110,7 +110,7 @@ func TestEndTurnCommandOverflowPenalty(t *testing.T) {
 // gamedata.ShipCommandCost(而非本檔另建一份數字),避免兩處數字未來各自漂移。
 func TestUsedCommandPointsUsesGamedataTable(t *testing.T) {
 	s := NewDemoSession()
-	s.Ships = []Ship{{Name: "X", Class: "末日之星"}}
+	s.Fleet().Ships = []Ship{{Name: "X", Class: "末日之星"}}
 	want := gamedata.ShipCommandCost(gamedata.SHIP_DOOMSTAR)
 	if got := s.usedCommandPoints(); got != want {
 		t.Errorf("usedCommandPoints(末日之星)=%d, want %d(gamedata.ShipCommandCost)", got, want)

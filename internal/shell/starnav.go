@@ -15,24 +15,30 @@ package shell
 // 同一段還給了另一組:「[F5] This changes the view to the next colonized star system.
 // [F6] This returns the view to the previous colonized system.」
 //
-// ============ ⚠ remake 的「已知艦隊」目前只有一支 ============
+// ============ ⚠ 目前只涵蓋玩家自己的艦隊 ============
 //
-// 原版的表是**逐艦隊**的;remake 的玩家艦隊是單一集合(`FleetAtStar`),而 AI 對手只有
-// 抽象的 `FleetStrength`,在星圖上沒有位置。所以 F1/F2 的循環集合現在只有一個元素——
-// 按下去等於「把視角拉回自己的艦隊」。
-//
-// **這不是把規則做小,是資料模型還沒到**:同一個模型缺口也卡著星圖的遷移連線層
-// (見 gap report)。多艦隊做出來之後,這裡的 `KnownFleetStars` 回傳多個元素,循環就自然對了。
+// 多艦隊模型做好之後(見 fleet.go),F1/F2 走的是玩家的每一支艦隊——這一段已經對上原版。
+// **仍缺的是 AI 的艦隊**:手冊說的是「known fleets」,包含看得到的敵方艦隊,
+// 而 remake 的 AI 只有抽象的 `FleetStrength`,在星圖上沒有位置。
+// 那要等 AI 艦隊也有座標才補得起來,不是這一層的事。
 
-// KnownFleetStars 回傳「畫面上看得到艦隊」的星索引,依星索引排序(= 原版表的走訪順序)。
+// KnownFleetStars 回傳「畫面上看得到艦隊」的星索引,依星索引排序、去重
+// (同一顆星上有兩支艦隊只算一個落點——循環的是**視角**,停在同一顆星按第二次不會有反應)。
 //
-// 目前只有玩家自己的艦隊(見檔頭 ⚠)。航行中的艦隊原版也在表裡,remake 的航行是整段跳的,
-// 中途沒有位置,所以只在起點算一次。
+// 航行中的艦隊原版也在表裡;remake 的航行是整段跳的,中途沒有位置,所以用出發星。
 func (s *GameSession) KnownFleetStars() []int {
-	if s.FleetAtStar < 0 || s.FleetAtStar >= len(s.Stars) {
-		return nil
+	var out []int
+	seen := map[int]bool{}
+	for i := range s.Fleets {
+		at := s.Fleets[i].AtStar
+		if at < 0 || at >= len(s.Stars) || seen[at] {
+			continue
+		}
+		seen[at] = true
+		out = append(out, at)
 	}
-	return []int{s.FleetAtStar}
+	sortInts(out)
+	return out
 }
 
 // ColonizedStars 回傳玩家已殖民的星索引,依星索引排序。

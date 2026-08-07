@@ -59,9 +59,9 @@ const ColonyShipClass = "殖民船"
 // 皆為 1 單位人口),高信心手冊數字,非猜測。
 const colonizeStartPopulation = 1
 
-// findColonyShipIndex 回傳玩家艦隊中第一艘殖民船在 s.Ships 的索引;找不到回 -1。
+// findColonyShipIndex 回傳玩家艦隊中第一艘殖民船在 s.Fleet().Ships 的索引;找不到回 -1。
 func (s *GameSession) findColonyShipIndex() int {
-	for i, sh := range s.Ships {
+	for i, sh := range s.Fleet().Ships {
 		if sh.Class == ColonyShipClass {
 			return i
 		}
@@ -340,12 +340,12 @@ func (s *GameSession) newColonyFromStar(starIdx int, gov gamedata.MoraleGovernme
 // 的殖民地,故這裡手動疊加一次)、士氣依目前政府 + 無建築(colonyMoralePercent(s.Government,
 // nil))。append 進 PlayerColonies + 所有平行陣列(Builds/ColonyBuildings/PlayerColonyMarines/
 // MarineBarracksAge/PlayerColonyTanks/ArmorBarracksAge/popAccum/PlayerColonyStars,padding 模式
-// 比照 InvadeColony 既有慣例),Star.Owner 轉 1,並從 s.Ships 移除用掉的那艘殖民船。
+// 比照 InvadeColony 既有慣例),Star.Owner 轉 1,並從 s.Fleet().Ships 移除用掉的那艘殖民船。
 func (s *GameSession) ColonizeStar(starIdx int) ColonizationResult {
 	if starIdx < 0 || starIdx >= len(s.Stars) {
 		return ColonizationResult{Reason: "無效的星索引"}
 	}
-	if s.FleetAtStar != starIdx || s.FleetETA != 0 {
+	if s.Fleet().AtStar != starIdx || s.Fleet().ETA != 0 {
 		return ColonizationResult{Reason: "艦隊尚未抵達該星"}
 	}
 	star := &s.Stars[starIdx]
@@ -400,7 +400,7 @@ func (s *GameSession) ColonizeStar(starIdx int) ColonizationResult {
 	s.PlayerColonyStars = append(s.PlayerColonyStars, starIdx)
 
 	star.Owner = 1
-	s.Ships = append(s.Ships[:shipIdx], s.Ships[shipIdx+1:]...) // 消耗這艘殖民船
+	s.Fleet().Ships = append(s.Fleet().Ships[:shipIdx], s.Fleet().Ships[shipIdx+1:]...) // 消耗這艘殖民船
 	s.consumeSpecialOnColonize(starIdx)
 	// 手冊 p.85:「If a colony is created at an outpost, the building remains and is repurposed
 	// as Marine Barracks.」——原本的前哨站不是白蓋的,改建成海軍陸戰隊營留給新殖民地。

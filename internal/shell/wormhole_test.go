@@ -151,23 +151,23 @@ func TestWormholeMakesTravelInstant(t *testing.T) {
 	for i := range s.Stars {
 		s.Stars[i].Wormhole = -1
 	}
-	s.FleetAtStar, s.FleetDestStar, s.FleetETA = 0, -1, 0
+	s.Fleet().AtStar, s.Fleet().DestStar, s.Fleet().ETA = 0, -1, 0
 	if !s.SendFleet(far) {
 		t.Skip("這局的艦隊派不出去(FTL 未解鎖),ETA 比較不成立")
 	}
-	plain := s.FleetETA
+	plain := s.Fleet().ETA
 	if plain <= 1 {
 		t.Skipf("最遠的星只要 %d 回合,測不出差異", plain)
 	}
 
 	// 接上蟲洞再量一次。
 	s.Stars[0].Wormhole, s.Stars[far].Wormhole = far, 0
-	s.FleetAtStar, s.FleetDestStar, s.FleetETA = 0, -1, 0
+	s.Fleet().AtStar, s.Fleet().DestStar, s.Fleet().ETA = 0, -1, 0
 	if !s.SendFleet(far) {
 		t.Fatal("接上蟲洞之後反而派不出去")
 	}
-	if s.FleetETA != 1 {
-		t.Errorf("走蟲洞的 ETA = %d,應為 1(原本要 %d 回合)", s.FleetETA, plain)
+	if s.Fleet().ETA != 1 {
+		t.Errorf("走蟲洞的 ETA = %d,應為 1(原本要 %d 回合)", s.Fleet().ETA, plain)
 	}
 	if !s.WormholeBetween(0, far) {
 		t.Error("WormholeBetween 沒認出這一對")

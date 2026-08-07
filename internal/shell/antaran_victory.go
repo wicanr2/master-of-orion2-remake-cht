@@ -61,7 +61,7 @@ func (s *GameSession) hasDimensionalPortal() bool {
 // CanAssaultAntares 回傳「玩家現在是否能發起反攻安塔蘭母星」——供 UI 決定是否顯示/啟用按鈕,
 // 也是 AssaultAntares 內部檢查的匯出版本(判斷邏輯只寫一份,兩處共用)。
 func (s *GameSession) CanAssaultAntares() bool {
-	return !s.Victory.Over && !s.DisableEvents && s.hasDimensionalPortal() && len(s.Ships) > 0
+	return !s.Victory.Over && !s.DisableEvents && s.hasDimensionalPortal() && len(s.Fleet().Ships) > 0
 }
 
 // AssaultAntares 解算「反攻安塔蘭母星」戰鬥(手冊三條勝利路徑之二)。
@@ -92,7 +92,7 @@ func (s *GameSession) AssaultAntares() (BattleResult, bool) {
 
 	mkPlayer := func() []combatant {
 		var out []combatant
-		for _, sh := range s.Ships {
+		for _, sh := range s.Fleet().Ships {
 			body := shipStrength(sh.Class)
 			atk := body + sh.WeaponAttack
 			atk += atk * s.RaceCombatPct / 100 // 種族戰鬥加成,比照 ResolveBattle mkPlayer
@@ -173,7 +173,7 @@ func (s *GameSession) AssaultAntaresBlockReason() string {
 		return "本局關閉了安塔蘭攻擊,此勝利路徑不可用"
 	case !s.hasDimensionalPortal():
 		return "尚未建成「" + dimensionalPortalBuildingName + "」——沒有它到不了安塔蘭母星"
-	case len(s.Ships) == 0:
+	case len(s.Fleet().Ships) == 0:
 		return "沒有艦隊可派"
 	}
 	return ""

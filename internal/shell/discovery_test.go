@@ -31,7 +31,7 @@ func newDiscoveryTestSession(t *testing.T, sp gamedata.PlanetSpecial) *GameSessi
 		MineralID: gamedata.ABUNDANT, SizeID: gamedata.MEDIUM_PLANET,
 		SpecialID: sp,
 	}
-	s.FleetAtStar = target
+	s.Fleet().AtStar = target
 	return s
 }
 
@@ -170,8 +170,8 @@ func TestDiscoveryIgnoresOngoingSpecials(t *testing.T) {
 func TestColonizeNativesAddsThreePopulationAndConsumesSpecial(t *testing.T) {
 	s := newDiscoveryTestSession(t, gamedata.Natives)
 	idx := targetStarOf(t, s)
-	s.Ships = append(s.Ships, Ship{Class: ColonyShipClass})
-	s.FleetAtStar, s.FleetETA = idx, 0
+	s.Fleet().Ships = append(s.Fleet().Ships, Ship{Class: ColonyShipClass})
+	s.Fleet().AtStar, s.Fleet().ETA = idx, 0
 
 	res := s.ColonizeStar(idx)
 	if !res.Ok {
@@ -207,8 +207,8 @@ func TestColonizeGoldGemIncome(t *testing.T) {
 	for _, c := range cases {
 		s := newDiscoveryTestSession(t, c.sp)
 		idx := targetStarOf(t, s)
-		s.Ships = append(s.Ships, Ship{Class: ColonyShipClass})
-		s.FleetAtStar, s.FleetETA = idx, 0
+		s.Fleet().Ships = append(s.Fleet().Ships, Ship{Class: ColonyShipClass})
+		s.Fleet().AtStar, s.Fleet().ETA = idx, 0
 		res := s.ColonizeStar(idx)
 		if !res.Ok {
 			t.Fatalf("special %d 拓殖失敗:%s", c.sp, res.Reason)
@@ -223,8 +223,8 @@ func TestColonizeGoldGemIncome(t *testing.T) {
 func TestColonizeArtifactsResearchOverride(t *testing.T) {
 	s := newDiscoveryTestSession(t, gamedata.AncientArtifacts)
 	idx := targetStarOf(t, s)
-	s.Ships = append(s.Ships, Ship{Class: ColonyShipClass})
-	s.FleetAtStar, s.FleetETA = idx, 0
+	s.Fleet().Ships = append(s.Fleet().Ships, Ship{Class: ColonyShipClass})
+	s.Fleet().AtStar, s.Fleet().ETA = idx, 0
 	s.RaceIndex = -1 // 排除種族加成,單看特殊物產本身
 
 	res := s.ColonizeStar(idx)
@@ -246,7 +246,7 @@ func TestDiscoveryFiresDuringRealTurnLoop(t *testing.T) {
 	// 找一顆「不是艦隊現址」的無主星,種一個海盜藏寶進去。
 	target := -1
 	for i := range s.Stars {
-		if i != s.FleetAtStar && s.Stars[i].Owner == 0 && i < len(s.Planets) {
+		if i != s.Fleet().AtStar && s.Stars[i].Owner == 0 && i < len(s.Planets) {
 			target = i
 			break
 		}
@@ -278,7 +278,7 @@ func TestDiscoveryFiresDuringRealTurnLoop(t *testing.T) {
 	}
 	if !got {
 		t.Fatalf("艦隊抵達 %d 號星後仍未觸發發現(FleetAtStar=%d ETA=%d)",
-			target, s.FleetAtStar, s.FleetETA)
+			target, s.Fleet().AtStar, s.Fleet().ETA)
 	}
 	// BC 淨變化含每回合經濟,只確認至少多了那 100(不把整條經濟軌跡綁死在這條測試裡)。
 	if s.Player.BC <= bcBefore {

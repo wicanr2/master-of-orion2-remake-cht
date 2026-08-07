@@ -164,14 +164,14 @@ func (s *GameSession) stepSupernova(e *PersistentEvent) (bool, string) {
 // warpBeastStrike 讓超空間獸對「正在航行的艦隊」出手:有機率拖走一艘船。
 // 手冊只說「there is a random chance」沒給數字——這個機率是 remake 值。
 func (s *GameSession) warpBeastStrike() string {
-	if s.FleetETA <= 0 || len(s.Ships) == 0 {
+	if s.Fleet().ETA <= 0 || len(s.Fleet().Ships) == 0 {
 		return "" // 沒有艦隊在星際航行中,野獸這回合抓不到東西
 	}
 	const warpBeastStrikePercent = 20 // ⚠ remake 值:手冊只說「random chance」
 	if s.eventRoll(100) > warpBeastStrikePercent {
 		return ""
 	}
-	lost := s.Ships[len(s.Ships)-1].Name
+	lost := s.Fleet().Ships[len(s.Fleet().Ships)-1].Name
 	s.removeWeakestShip()
 	if lost == "" {
 		lost = "一艘艦艇"
@@ -341,11 +341,11 @@ func (s *GameSession) startWarpBeast() (string, bool) {
 
 // applyWormhole 蟲洞(手冊 p.181:「moves that fleet to their destination in a single turn」)。
 func (s *GameSession) applyWormhole() (string, bool) {
-	if s.FleetETA <= 1 || s.FleetDestStar < 0 {
+	if s.Fleet().ETA <= 1 || s.Fleet().DestStar < 0 {
 		return "", false // 沒有正在長途航行的艦隊,這個好事無處可用
 	}
-	was := s.FleetETA
-	s.FleetETA = 1
+	was := s.Fleet().ETA
+	s.Fleet().ETA = 1
 	return fmt.Sprintf("一端蟲洞突然出現在艦隊航道上,原本還要 %d 回合的航程縮短為 1 回合", was), true
 }
 

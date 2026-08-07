@@ -8,18 +8,18 @@ import "testing"
 // 損傷會影響下一場戰鬥的血量——先前完全沒有這回事,倖存艦每場都滿血。
 func TestShipDamageReducesCombatHP(t *testing.T) {
 	s := NewDemoSession()
-	s.Ships = []Ship{{Name: "戰艦", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "無"}}
+	s.Fleet().Ships = []Ship{{Name: "戰艦", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "無"}}
 	full, _ := s.mkPlayerCombatantsIndexed()
 	if len(full) != 1 {
 		t.Fatalf("應有 1 艘參戰艦,實得 %d", len(full))
 	}
-	s.Ships[0].Damage = 5
+	s.Fleet().Ships[0].Damage = 5
 	hurt, _ := s.mkPlayerCombatantsIndexed()
 	if hurt[0].hp != full[0].hp-5 {
 		t.Errorf("受損 5 點後血量應 %d,實得 %d", full[0].hp-5, hurt[0].hp)
 	}
 	// 損傷再重也留 1 點,不會出現「還沒開打就 0 血」。
-	s.Ships[0].Damage = 99999
+	s.Fleet().Ships[0].Damage = 99999
 	broken, _ := s.mkPlayerCombatantsIndexed()
 	if broken[0].hp < ShipDamageFloorHP {
 		t.Errorf("血量下限應為 %d,實得 %d", ShipDamageFloorHP, broken[0].hp)
@@ -33,24 +33,24 @@ func TestShipDamageReducesCombatHP(t *testing.T) {
 // 原版 Repair_Ships_At_Colonies_ → Repair_Ship_Full_:停在自家據點的船**完全修復**。
 func TestShipsFullyRepairAtOwnBase(t *testing.T) {
 	s := NewDemoSession()
-	s.Ships = []Ship{{Name: "戰艦", Class: "戰艦", Damage: 7}}
-	s.FleetAtStar, s.FleetETA = s.PlayerColonyStarIndex(0), 0
+	s.Fleet().Ships = []Ship{{Name: "戰艦", Class: "戰艦", Damage: 7}}
+	s.Fleet().AtStar, s.Fleet().ETA = s.PlayerColonyStarIndex(0), 0
 
 	if n := s.advanceShipRepair(); n != 1 {
 		t.Errorf("停在母星應修好 1 艘,實得 %d", n)
 	}
-	if s.Ships[0].Damage != 0 {
-		t.Errorf("原版是完全修復,不是逐回合慢慢修;剩餘損傷 %d", s.Ships[0].Damage)
+	if s.Fleet().Ships[0].Damage != 0 {
+		t.Errorf("原版是完全修復,不是逐回合慢慢修;剩餘損傷 %d", s.Fleet().Ships[0].Damage)
 	}
 }
 
 // 不在自家據點就修不了(航行中、或停在別人的星)。
 func TestNoRepairAwayFromBase(t *testing.T) {
 	s := NewDemoSession()
-	s.Ships = []Ship{{Name: "戰艦", Class: "戰艦", Damage: 7}}
+	s.Fleet().Ships = []Ship{{Name: "戰艦", Class: "戰艦", Damage: 7}}
 
 	// 航行中。
-	s.FleetAtStar, s.FleetETA = s.PlayerColonyStarIndex(0), 3
+	s.Fleet().AtStar, s.Fleet().ETA = s.PlayerColonyStarIndex(0), 3
 	if n := s.advanceShipRepair(); n != 0 {
 		t.Errorf("航行中不該修復,實修 %d 艘", n)
 	}
@@ -65,12 +65,12 @@ func TestNoRepairAwayFromBase(t *testing.T) {
 	if away < 0 {
 		t.Skip("找不到非玩家據點的星")
 	}
-	s.FleetAtStar, s.FleetETA = away, 0
+	s.Fleet().AtStar, s.Fleet().ETA = away, 0
 	if n := s.advanceShipRepair(); n != 0 {
 		t.Errorf("停在非自家據點不該修復,實修 %d 艘", n)
 	}
-	if s.Ships[0].Damage != 7 {
-		t.Errorf("損傷不該變動,實為 %d", s.Ships[0].Damage)
+	if s.Fleet().Ships[0].Damage != 7 {
+		t.Errorf("損傷不該變動,實為 %d", s.Fleet().Ships[0].Damage)
 	}
 }
 
@@ -87,8 +87,8 @@ func TestOutpostCountsAsRepairBase(t *testing.T) {
 	if target < 0 {
 		t.Skip("找不到可建前哨站的星")
 	}
-	s.Ships = []Ship{{Class: OutpostShipClass}, {Name: "戰艦", Class: "戰艦", Damage: 4}}
-	s.FleetAtStar, s.FleetETA = target, 0
+	s.Fleet().Ships = []Ship{{Class: OutpostShipClass}, {Name: "戰艦", Class: "戰艦", Damage: 4}}
+	s.Fleet().AtStar, s.Fleet().ETA = target, 0
 	if res := s.BuildOutpost(target); !res.Ok {
 		t.Fatalf("建前哨站失敗:%s", res.Reason)
 	}
@@ -100,16 +100,16 @@ func TestOutpostCountsAsRepairBase(t *testing.T) {
 // 手冊 p.82:裝有自動修復元件的船「completely repaired after every battle」。
 func TestAutoRepairUnitFullyRepairsAfterBattle(t *testing.T) {
 	s := NewDemoSession()
-	s.Ships = []Ship{
+	s.Fleet().Ships = []Ship{
 		{Name: "修復艦", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "自動修復", Damage: 9},
 		{Name: "普通艦", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "無", Damage: 9},
 	}
 	s.repairAfterBattle()
-	if s.Ships[0].Damage != 0 {
-		t.Errorf("裝自動修復的船戰後應完全修復,剩餘損傷 %d", s.Ships[0].Damage)
+	if s.Fleet().Ships[0].Damage != 0 {
+		t.Errorf("裝自動修復的船戰後應完全修復,剩餘損傷 %d", s.Fleet().Ships[0].Damage)
 	}
-	if s.Ships[1].Damage != 9 {
-		t.Errorf("沒裝自動修復的船不該被修,損傷 %d → %d", 9, s.Ships[1].Damage)
+	if s.Fleet().Ships[1].Damage != 9 {
+		t.Errorf("沒裝自動修復的船不該被修,損傷 %d → %d", 9, s.Fleet().Ships[1].Damage)
 	}
 }
 
@@ -135,7 +135,7 @@ func TestAutoRepairInCombatPercent(t *testing.T) {
 func TestBattleLeavesSurvivorsDamaged(t *testing.T) {
 	s := NewDemoSession()
 	s.Turn = 40 // 敵方艦隊隨回合變強,確保打得起來
-	s.Ships = []Ship{
+	s.Fleet().Ships = []Ship{
 		{Name: "戰艦一", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
 		{Name: "戰艦二", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
 		{Name: "戰艦三", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
@@ -145,11 +145,11 @@ func TestBattleLeavesSurvivorsDamaged(t *testing.T) {
 	everDamaged := false
 	for turn := 40; turn < 80 && !everDamaged; turn += 3 {
 		s.Turn = turn
-		for i := range s.Ships {
-			s.Ships[i].Damage = 0
+		for i := range s.Fleet().Ships {
+			s.Fleet().Ships[i].Damage = 0
 		}
 		s.ResolveBattle("測試敵人")
-		for _, sh := range s.Ships {
+		for _, sh := range s.Fleet().Ships {
 			if sh.Damage > 0 {
 				everDamaged = true
 			}
@@ -160,7 +160,7 @@ func TestBattleLeavesSurvivorsDamaged(t *testing.T) {
 				t.Errorf("%s 的損傷 %d 超過上限 %d", sh.Name, sh.Damage, max-ShipDamageFloorHP)
 			}
 		}
-		if len(s.Ships) == 0 {
+		if len(s.Fleet().Ships) == 0 {
 			break
 		}
 	}
@@ -172,13 +172,13 @@ func TestBattleLeavesSurvivorsDamaged(t *testing.T) {
 // 損傷要能存檔往返(否則讀檔後全艦隊自動變成滿血)。
 func TestShipDamageSurvivesSaveLoad(t *testing.T) {
 	s := NewDemoSession()
-	s.Ships = []Ship{{Name: "戰艦", Class: "戰艦", Damage: 6}}
+	s.Fleet().Ships = []Ship{{Name: "戰艦", Class: "戰艦", Damage: 6}}
 	restored := s.snapshot().restore()
-	if len(restored.Ships) != 1 {
-		t.Fatalf("讀檔後艦艇數 %d,want 1", len(restored.Ships))
+	if len(restored.Fleet().Ships) != 1 {
+		t.Fatalf("讀檔後艦艇數 %d,want 1", len(restored.Fleet().Ships))
 	}
-	if restored.Ships[0].Damage != 6 {
-		t.Errorf("讀檔後損傷 %d,want 6", restored.Ships[0].Damage)
+	if restored.Fleet().Ships[0].Damage != 6 {
+		t.Errorf("讀檔後損傷 %d,want 6", restored.Fleet().Ships[0].Damage)
 	}
 }
 

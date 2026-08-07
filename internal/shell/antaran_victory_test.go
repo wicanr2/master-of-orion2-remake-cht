@@ -44,7 +44,7 @@ func TestCanAssaultAntaresRequiresPortalAndFleet(t *testing.T) {
 		t.Fatalf("已建次元傳送門且艦隊非空,應允許反攻")
 	}
 
-	s.Ships = nil
+	s.Fleet().Ships = nil
 	if s.CanAssaultAntares() {
 		t.Fatalf("艦隊為空,不應允許反攻(手冊:select a fleet)")
 	}
@@ -54,7 +54,7 @@ func TestCanAssaultAntaresRequiresPortalAndFleet(t *testing.T) {
 // 不消耗艦隊、不觸發戰鬥、不誤判勝利。
 func TestAssaultAntaresBlockedWithoutPortal(t *testing.T) {
 	s := NewDemoSession()
-	shipsBefore := len(s.Ships)
+	shipsBefore := len(s.Fleet().Ships)
 
 	res, ok := s.AssaultAntares()
 
@@ -64,8 +64,8 @@ func TestAssaultAntaresBlockedWithoutPortal(t *testing.T) {
 	if res.Enemy != "" || res.PlayerWon || res.PlayerStart != 0 || res.EnemyStart != 0 || res.Log != nil {
 		t.Fatalf("前置條件不滿足時應回傳零值 BattleResult,got %+v", res)
 	}
-	if len(s.Ships) != shipsBefore {
-		t.Fatalf("前置條件不滿足不應消耗艦隊:before=%d after=%d", shipsBefore, len(s.Ships))
+	if len(s.Fleet().Ships) != shipsBefore {
+		t.Fatalf("前置條件不滿足不應消耗艦隊:before=%d after=%d", shipsBefore, len(s.Fleet().Ships))
 	}
 	if s.Victory.Over {
 		t.Fatalf("不應誤判勝利")
@@ -79,7 +79,7 @@ func TestAssaultAntaresBlockedWithoutPortal(t *testing.T) {
 func TestAssaultAntaresBlockedWithEmptyFleet(t *testing.T) {
 	s := NewDemoSession()
 	buildDimensionalPortal(s)
-	s.Ships = nil
+	s.Fleet().Ships = nil
 
 	_, ok := s.AssaultAntares()
 
@@ -110,7 +110,7 @@ func TestAssaultAntaresBlockedWhenEventsDisabled(t *testing.T) {
 func TestAssaultAntaresWeakFleetLoses(t *testing.T) {
 	s := NewDemoSession()
 	buildDimensionalPortal(s)
-	s.Ships = []Ship{{Name: "偵察艦1", Class: "偵察艦"}} // 戰力遠不如 6 艘末日之星等級的防禦艦隊
+	s.Fleet().Ships = []Ship{{Name: "偵察艦1", Class: "偵察艦"}} // 戰力遠不如 6 艘末日之星等級的防禦艦隊
 
 	res, ok := s.AssaultAntares()
 
@@ -137,7 +137,7 @@ func TestAssaultAntaresWeakFleetLoses(t *testing.T) {
 func TestAssaultAntaresStrongFleetWinsAndVictoryDetected(t *testing.T) {
 	s := NewDemoSession()
 	buildDimensionalPortal(s)
-	s.Ships = strongDoomStarFleet(8) // 8 艘末日之星,遠強於 antaranHomeFleetDefense(6 艘同級)
+	s.Fleet().Ships = strongDoomStarFleet(8) // 8 艘末日之星,遠強於 antaranHomeFleetDefense(6 艘同級)
 
 	res, ok := s.AssaultAntares()
 

@@ -16,9 +16,9 @@ func newFleetAtAIHomeSession(t *testing.T) (*GameSession, int) {
 		t.Fatal("需至少一個有 ColonyStars 對映的 AI 對手")
 	}
 	starIdx := s.AIPlayers[0].ColonyStars[0]
-	s.FleetAtStar = starIdx
-	s.FleetDestStar = -1
-	s.FleetETA = 0
+	s.Fleet().AtStar = starIdx
+	s.Fleet().DestStar = -1
+	s.Fleet().ETA = 0
 	return s, starIdx
 }
 
@@ -31,7 +31,7 @@ func TestInvadeColony_StrongAttackerWinsMost(t *testing.T) {
 	for i := 0; i < n; i++ {
 		s, starIdx := newFleetAtAIHomeSession(t)
 		s.Turn = i + 1
-		s.FleetMarines = 40
+		s.Fleet().Marines = 40
 		s.Player.CompletedTopics[gamedata.TOPIC_MOLECULAR_CONTROL] = true // 精金裝甲 +25 force
 
 		beforePlayerColonies := len(s.PlayerColonies)
@@ -62,8 +62,8 @@ func TestInvadeColony_StrongAttackerWinsMost(t *testing.T) {
 			if s.PlayerOwnedStars() < 2 { // 母星(1)+ 新佔領星(1)
 				t.Fatalf("i=%d: PlayerOwnedStars() 應至少為 2,got %d", i, s.PlayerOwnedStars())
 			}
-			if s.FleetMarines != res.AttackerSurvived {
-				t.Fatalf("i=%d: FleetMarines 應回寫攻方存活數,got %d want %d", i, s.FleetMarines, res.AttackerSurvived)
+			if s.Fleet().Marines != res.AttackerSurvived {
+				t.Fatalf("i=%d: FleetMarines 應回寫攻方存活數,got %d want %d", i, s.Fleet().Marines, res.AttackerSurvived)
 			}
 		} else {
 			if s.Stars[starIdx].Owner != 2 {
@@ -90,7 +90,7 @@ func TestInvadeColony_StrongDefenderWinsMost(t *testing.T) {
 	for i := 0; i < n; i++ {
 		s, starIdx := newFleetAtAIHomeSession(t)
 		s.Turn = i + 1
-		s.FleetMarines = 1
+		s.Fleet().Marines = 1
 
 		aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
 		if !ok {
@@ -127,7 +127,7 @@ func TestInvadeColony_Deterministic(t *testing.T) {
 	build := func() (*GameSession, int) {
 		s, starIdx := newFleetAtAIHomeSession(t)
 		s.Turn = 7
-		s.FleetMarines = 6
+		s.Fleet().Marines = 6
 		return s, starIdx
 	}
 	s1, idx1 := build()
@@ -148,23 +148,23 @@ func TestInvadeColony_PreconditionsChecked(t *testing.T) {
 	s, starIdx := newFleetAtAIHomeSession(t)
 
 	// 條件 1:艦隊尚未抵達(仍在母星,FleetETA 尚未歸零)。
-	s.FleetAtStar = 0
-	s.FleetETA = 3
+	s.Fleet().AtStar = 0
+	s.Fleet().ETA = 3
 	if res := s.InvadeColony(starIdx); res.Ok {
 		t.Fatalf("艦隊未抵達不應允許入侵,got Ok=true")
 	}
 
 	// 條件 2:已抵達但沒有載運陸戰隊。
-	s.FleetAtStar = starIdx
-	s.FleetETA = 0
-	s.FleetMarines = 0
+	s.Fleet().AtStar = starIdx
+	s.Fleet().ETA = 0
+	s.Fleet().Marines = 0
 	if res := s.InvadeColony(starIdx); res.Ok {
 		t.Fatalf("無陸戰隊不應允許入侵,got Ok=true")
 	}
 
 	// 條件 3:目標星非敵方(玩家自己的母星)。
-	s.FleetMarines = 5
-	s.FleetAtStar = 0
+	s.Fleet().Marines = 5
+	s.Fleet().AtStar = 0
 	if res := s.InvadeColony(0); res.Ok {
 		t.Fatalf("非敵方星不應允許入侵,got Ok=true")
 	}
@@ -185,9 +185,9 @@ func TestInvadeColony_UnmodeledExpansionStarRejected(t *testing.T) {
 		t.Fatal("找不到可用的無主星做測試")
 	}
 	s.Stars[target].Owner = 2 // 模擬 aiExpand:只標 Owner,不建殖民地模型
-	s.FleetAtStar = target
-	s.FleetETA = 0
-	s.FleetMarines = 10
+	s.Fleet().AtStar = target
+	s.Fleet().ETA = 0
+	s.Fleet().Marines = 10
 
 	res := s.InvadeColony(target)
 	if res.Ok {
@@ -262,8 +262,8 @@ func TestLoadMarines_TransportCapacityLimits(t *testing.T) {
 	if n != capacity {
 		t.Fatalf("應恰好載運到運力上限,got %d want %d", n, capacity)
 	}
-	if s.FleetMarines != capacity {
-		t.Fatalf("FleetMarines 應等於運力上限,got %d", s.FleetMarines)
+	if s.Fleet().Marines != capacity {
+		t.Fatalf("FleetMarines 應等於運力上限,got %d", s.Fleet().Marines)
 	}
 	if s.PlayerColonyMarines[0] != 999-capacity {
 		t.Fatalf("殖民地駐軍池應扣除已載運數,got %d want %d", s.PlayerColonyMarines[0], 999-capacity)
@@ -395,8 +395,8 @@ func TestLoadTanks_SharesTransportCapacityWithMarines(t *testing.T) {
 	if got := s2.LoadTanks(0); got != wantTanks {
 		t.Fatalf("戰車應吃掉剩餘運力 %d,got %d", wantTanks, got)
 	}
-	if s2.FleetMarines != half || s2.FleetTanks != wantTanks {
-		t.Fatalf("FleetMarines/FleetTanks 應等於已載運數,got marines=%d tanks=%d", s2.FleetMarines, s2.FleetTanks)
+	if s2.Fleet().Marines != half || s2.Fleet().Tanks != wantTanks {
+		t.Fatalf("FleetMarines/FleetTanks 應等於已載運數,got marines=%d tanks=%d", s2.Fleet().Marines, s2.Fleet().Tanks)
 	}
 }
 
@@ -439,8 +439,8 @@ func TestTankForceBonusFor_OnlyWhenTanksPresent(t *testing.T) {
 // 從「FleetMarines>0」放寬為「FleetMarines>0 或 FleetTanks>0」)。
 func TestInvadeColony_TanksAloneCanInvade(t *testing.T) {
 	s, starIdx := newFleetAtAIHomeSession(t)
-	s.FleetMarines = 0
-	s.FleetTanks = 5
+	s.Fleet().Marines = 0
+	s.Fleet().Tanks = 5
 	res := s.InvadeColony(starIdx)
 	if !res.Ok {
 		t.Fatalf("只有戰車、無陸戰隊,應仍可發動入侵,got Reason=%q", res.Reason)
@@ -450,8 +450,8 @@ func TestInvadeColony_TanksAloneCanInvade(t *testing.T) {
 // TestInvadeColony_NoGroundForceRejected 驗證陸戰隊與戰車皆為 0 時,仍應被前置條件擋下。
 func TestInvadeColony_NoGroundForceRejected(t *testing.T) {
 	s, starIdx := newFleetAtAIHomeSession(t)
-	s.FleetMarines = 0
-	s.FleetTanks = 0
+	s.Fleet().Marines = 0
+	s.Fleet().Tanks = 0
 	res := s.InvadeColony(starIdx)
 	if res.Ok {
 		t.Fatalf("陸戰隊與戰車皆為 0 不應允許入侵,got Ok=true")
@@ -466,8 +466,8 @@ func TestInvadeColony_TanksSplitSurvivorsConsistently(t *testing.T) {
 	for i := 0; i < n; i++ {
 		s, starIdx := newFleetAtAIHomeSession(t)
 		s.Turn = i + 1
-		s.FleetMarines = 3
-		s.FleetTanks = 4
+		s.Fleet().Marines = 3
+		s.Fleet().Tanks = 4
 
 		res := s.InvadeColony(starIdx)
 		if !res.Ok {
@@ -482,9 +482,9 @@ func TestInvadeColony_TanksSplitSurvivorsConsistently(t *testing.T) {
 		if res.AttackerMarinesSurvived > 3 {
 			t.Fatalf("i=%d: 陸戰隊存活數不應超過原始載運數 3,got %d", i, res.AttackerMarinesSurvived)
 		}
-		if s.FleetMarines != res.AttackerMarinesSurvived || s.FleetTanks != res.AttackerTanksSurvived {
+		if s.Fleet().Marines != res.AttackerMarinesSurvived || s.Fleet().Tanks != res.AttackerTanksSurvived {
 			t.Fatalf("i=%d: FleetMarines/FleetTanks 應回寫拆分後存活數,got marines=%d(want %d) tanks=%d(want %d)",
-				i, s.FleetMarines, res.AttackerMarinesSurvived, s.FleetTanks, res.AttackerTanksSurvived)
+				i, s.Fleet().Marines, res.AttackerMarinesSurvived, s.Fleet().Tanks, res.AttackerTanksSurvived)
 		}
 	}
 }
@@ -498,8 +498,8 @@ func TestInvadeColony_TanksImproveWinRate(t *testing.T) {
 		for i := 0; i < n; i++ {
 			s, starIdx := newFleetAtAIHomeSession(t)
 			s.Turn = i + 1
-			s.FleetMarines = 3
-			s.FleetTanks = tanks
+			s.Fleet().Marines = 3
+			s.Fleet().Tanks = tanks
 			res := s.InvadeColony(starIdx)
 			if !res.Ok {
 				t.Fatalf("tanks=%d i=%d: 前置條件應齊備,got Reason=%q", tanks, i, res.Reason)
@@ -549,9 +549,9 @@ func newFleetAtAISessionForAI(t *testing.T, aiIdx int) (*GameSession, int) {
 		t.Fatalf("需 AIPlayers[%d] 存在且有 ColonyStars 對映", aiIdx)
 	}
 	starIdx := s.AIPlayers[aiIdx].ColonyStars[0]
-	s.FleetAtStar = starIdx
-	s.FleetDestStar = -1
-	s.FleetETA = 0
+	s.Fleet().AtStar = starIdx
+	s.Fleet().DestStar = -1
+	s.Fleet().ETA = 0
 	return s, starIdx
 }
 
@@ -596,7 +596,7 @@ func TestInvadeColony_DefenderCommandoLowersAttackerWinRate(t *testing.T) {
 		for i := 0; i < n; i++ {
 			s, starIdx := newFleetAtAISessionForAI(t, bulrathiIdx)
 			s.Turn = i + 1
-			s.FleetMarines = 5
+			s.Fleet().Marines = 5
 			s.Leaders = nil // 排除攻方 commando 干擾
 			if clearDefenderLeaders {
 				s.AIPlayers[bulrathiIdx].Leaders = nil
@@ -632,7 +632,7 @@ func TestInvadeColony_DefenderCommandoVersionDifference(t *testing.T) {
 		for i := 0; i < n; i++ {
 			s, starIdx := newFleetAtAISessionForAI(t, bulrathiIdx)
 			s.Turn = i + 1
-			s.FleetMarines = 5
+			s.Fleet().Marines = 5
 			s.Leaders = nil // 排除攻方 commando 干擾,只看守方版本差異
 			s.RuleProfile = profile
 			res := s.InvadeColony(starIdx)
@@ -672,7 +672,7 @@ func TestInvadeColony_NoDefenderCommandoForPsilon(t *testing.T) {
 		for i := 0; i < n; i++ {
 			s, starIdx := newFleetAtAISessionForAI(t, psilonIdx)
 			s.Turn = i + 1
-			s.FleetMarines = 5
+			s.Fleet().Marines = 5
 			s.Leaders = nil
 			if explicitEmpty {
 				s.AIPlayers[psilonIdx].Leaders = []Leader{} // 顯式空陣列,而非 nil
@@ -701,7 +701,7 @@ func TestInvadeColony_NoDefenderCommandoForPsilon(t *testing.T) {
 func TestInvadeColony_NilAIPlayerLeadersSafeDegrade(t *testing.T) {
 	s, starIdx := newFleetAtAISessionForAI(t, 2) // 布拉西人,正常應有 Tier2 Commando
 	s.AIPlayers[2].Leaders = nil                 // 模擬舊存檔解碼結果
-	s.FleetMarines = 5
+	s.Fleet().Marines = 5
 	res := s.InvadeColony(starIdx)
 	if !res.Ok {
 		t.Fatalf("前置條件應齊備,got Reason=%q", res.Reason)
@@ -727,7 +727,7 @@ func TestInvadeColony_CommandoLeaderImprovesWinRate(t *testing.T) {
 		for i := 0; i < n; i++ {
 			s, starIdx := newFleetAtAIHomeSession(t)
 			s.Turn = i + 1
-			s.FleetMarines = 5
+			s.Fleet().Marines = 5
 			if withCommando {
 				s.Leaders = []Leader{{"漢尼拔", "指揮官", 6, true, 1}}
 			}

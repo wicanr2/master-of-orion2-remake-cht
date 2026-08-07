@@ -339,7 +339,7 @@ func (s *GameSession) aiRaid(i int) *AIRaidReport {
 func (s *GameSession) colonyDefense(ci int) int {
 	def := 0
 	star := s.PlayerColonyStarIndex(ci)
-	if star >= 0 && s.FleetAtStar == star && s.FleetETA == 0 {
+	if star >= 0 && s.Fleet().AtStar == star && s.Fleet().ETA == 0 {
 		def += s.playerMilitary()
 	}
 	// 駐軍與坦克:折算成戰力(gamedata 無「陸戰隊 → 太空防禦」的換算,這是 remake 的簡化,

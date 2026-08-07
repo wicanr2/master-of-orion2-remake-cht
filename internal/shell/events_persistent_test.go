@@ -131,17 +131,17 @@ func TestSupernovaRescueSucceeds(t *testing.T) {
 func TestWormholeShortensTravelToOneTurn(t *testing.T) {
 	s := NewDemoSession()
 	// 沒有航行中的艦隊 → 這個好事無處可用,應回 ok=false 讓事件重抽。
-	s.FleetETA, s.FleetDestStar = 0, -1
+	s.Fleet().ETA, s.Fleet().DestStar = 0, -1
 	if _, ok := s.applyWormhole(); ok {
 		t.Error("沒有航行中的艦隊時不該套用蟲洞")
 	}
-	s.FleetDestStar, s.FleetETA = 5, 9
+	s.Fleet().DestStar, s.Fleet().ETA = 5, 9
 	msg, ok := s.applyWormhole()
 	if !ok {
 		t.Fatal("有長途航行的艦隊時應可套用蟲洞")
 	}
-	if s.FleetETA != 1 {
-		t.Errorf("蟲洞後 ETA 應為 1(手冊:a single turn),實為 %d", s.FleetETA)
+	if s.Fleet().ETA != 1 {
+		t.Errorf("蟲洞後 ETA 應為 1(手冊:a single turn),實為 %d", s.Fleet().ETA)
 	}
 	if !strings.Contains(msg, "1 回合") {
 		t.Errorf("訊息應說明縮短為 1 回合,實為 %q", msg)
@@ -151,19 +151,19 @@ func TestWormholeShortensTravelToOneTurn(t *testing.T) {
 // 超空間獸(手冊 p.181:航行中的艦隊有機率損失一艘船)。
 func TestWarpBeastOnlyStrikesTravellingFleets(t *testing.T) {
 	s := NewDemoSession()
-	s.FleetETA = 0 // 沒在航行
-	n := len(s.Ships)
+	s.Fleet().ETA = 0 // 沒在航行
+	n := len(s.Fleet().Ships)
 	for i := 0; i < 50; i++ {
 		s.warpBeastStrike()
 	}
-	if len(s.Ships) != n {
-		t.Errorf("沒有航行中的艦隊不該損失艦艇:%d → %d", n, len(s.Ships))
+	if len(s.Fleet().Ships) != n {
+		t.Errorf("沒有航行中的艦隊不該損失艦艇:%d → %d", n, len(s.Fleet().Ships))
 	}
 
 	// 航行中:多擲幾次總會中(20% remake 值),艦艇會減少。
-	s.FleetETA = 5
+	s.Fleet().ETA = 5
 	hit := false
-	for i := 0; i < 200 && len(s.Ships) > 0; i++ {
+	for i := 0; i < 200 && len(s.Fleet().Ships) > 0; i++ {
 		if s.warpBeastStrike() != "" {
 			hit = true
 			break
@@ -224,7 +224,7 @@ func TestPersistentEventsSurviveSaveLoad(t *testing.T) {
 func TestNewlyImplementedEventsAreDispatched(t *testing.T) {
 	s := NewDemoSession()
 	s.Turn = 400 // 過所有回合門檻
-	s.FleetDestStar, s.FleetETA = 5, 9
+	s.Fleet().DestStar, s.Fleet().ETA = 5, 9
 	for _, id := range []int{19, 20, 21, 22, 23, 24, 25, 26, 28} {
 		ev := gamedata.RandomEventByID(id)
 		if ev == nil {
@@ -237,10 +237,10 @@ func TestNewlyImplementedEventsAreDispatched(t *testing.T) {
 		// 這裡用一個乾淨的 session 逐一試,只要求「不是因為沒有 case 而回 false」。
 		fresh := NewDemoSession()
 		fresh.Turn = 400
-		fresh.FleetDestStar, fresh.FleetETA = 5, 9
+		fresh.Fleet().DestStar, fresh.Fleet().ETA = 5, 9
 		fresh.EndTurn() // 讓 LastPlayerOutput 有值(超新星需要)
 		fresh.Turn = 400
-		fresh.FleetDestStar, fresh.FleetETA = 5, 9
+		fresh.Fleet().DestStar, fresh.Fleet().ETA = 5, 9
 		if msg, ok := fresh.applyRandomEvent(*ev); !ok || msg == "" {
 			t.Errorf("事件 %d(%s)分派後沒有結果:ok=%v msg=%q", id, ev.Name, ok, msg)
 		}

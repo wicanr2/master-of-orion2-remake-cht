@@ -29,8 +29,8 @@ type aiSnapshot struct {
 	// 沒有零值陷阱。
 	WantsAudience  bool   `json:"wantsAudience,omitempty"`
 	AudienceReason string `json:"audienceReason,omitempty"`
-	ColonyStars     []int                `json:"colonyStars"` // 見 shell.AIOpponent.ColonyStars 註解
-	Spies           int                  `json:"spies"`       // AI 派來偷玩家科技的間諜數,見 spy.go
+	ColonyStars    []int  `json:"colonyStars"` // 見 shell.AIOpponent.ColonyStars 註解
+	Spies          int    `json:"spies"`       // AI 派來偷玩家科技的間諜數,見 spy.go
 	// Personality 是 AI 性格(見 shell.AIOpponent.Personality)。omitempty 不適用:
 	// 0 是合法值(排外),舊存檔缺欄位會解成 0——那與「排外」無法區分,屬已知的相容性折衷,
 	// 影響只是舊存檔的 AI 性格會一律變成排外,不會壞掉。
@@ -61,10 +61,17 @@ type sessionSnapshot struct {
 	Stars          []Star               `json:"stars"`
 	Planets        []Planet             `json:"planets"`
 	Leaders        []Leader             `json:"leaders"`
-	Ships          []Ship               `json:"ships"`
-	SelectedStar   int                  `json:"selectedStar"`
-	Difficulty     int                  `json:"difficulty"`
-	Builds         []ColonyBuild        `json:"builds"`
+	// Fleets / SelectedFleet 是**多艦隊模型**(見 fleet.go)。
+	// omitempty:2026-08-07 之前的存檔沒有這兩個欄位,解碼成 nil,由 restore 從下面那組
+	// 舊欄位(Ships / FleetAtStar / …)組出唯一的一支艦隊。
+	Fleets        []Fleet `json:"fleets,omitempty"`
+	SelectedFleet int     `json:"selectedFleet,omitempty"`
+	// ⚠ 以下到 FleetETA 為止是**舊格式,只讀不寫**:單艦隊時代的欄位。
+	// 新存檔一律寫 Fleets;留著是為了讀得回 2026-08-07 之前存的檔。
+	Ships        []Ship        `json:"ships,omitempty"`
+	SelectedStar int           `json:"selectedStar"`
+	Difficulty   int           `json:"difficulty"`
+	Builds       []ColonyBuild `json:"builds"`
 	// BuildQueue 是各殖民地的後續建造排隊項(原版 7 格 BUILD QUEUE,見 buildqueue.go)。
 	// omitempty:2026-08-06 之前的存檔沒有這個欄位,解碼成 nil = 「佇列是空的」,語意正確。
 	BuildQueue [][]ColonyBuild `json:"build_queue,omitempty"`
@@ -177,20 +184,20 @@ func (s *GameSession) snapshot() sessionSnapshot {
 	return sessionSnapshot{
 		Version: saveFormatVersion, Turn: s.Turn, Player: s.Player,
 		PlayerColonies: s.PlayerColonies, AIPlayers: ais,
-		Stars: s.Stars, Planets: s.Planets, Leaders: s.Leaders, Ships: s.Ships,
+		Stars: s.Stars, Planets: s.Planets, Leaders: s.Leaders,
+		Fleets: s.Fleets, SelectedFleet: s.SelectedFleet,
 		SelectedStar: s.SelectedStar, Difficulty: s.Difficulty, Builds: s.Builds,
 		BuildQueue:       s.BuildQueue,
 		Outposts:         s.Outposts,
 		Monsters:         s.Monsters,
 		PersistentEvents: s.PersistentEvents,
 		CapturedPop:      s.CapturedPop,
-		FleetAtStar:      s.FleetAtStar, FleetDestStar: s.FleetDestStar, FleetETA: s.FleetETA,
-		PopAccum: s.popAccum, ColonyBuild: s.ColonyBuildings, EventSeed: s.EventSeed,
+		PopAccum:         s.popAccum, ColonyBuild: s.ColonyBuildings, EventSeed: s.EventSeed,
 		AntaresRaids: s.AntaresRaids, RaceIndex: s.RaceIndex,
 		PlayerName: s.PlayerName, FlagColor: s.FlagColor,
 		RaceCombatPct: s.RaceCombatPct, RaceGrowthPct: s.raceGrowthPct,
-		FleetMarines: s.FleetMarines, PlayerColonyMarines: s.PlayerColonyMarines,
-		MarineBarracksAge: s.MarineBarracksAge, Government: s.Government,
+		PlayerColonyMarines: s.PlayerColonyMarines,
+		MarineBarracksAge:   s.MarineBarracksAge, Government: s.Government,
 		PlayerColonyStars: s.PlayerColonyStars,
 		Victory:           s.Victory, PendingCouncilElection: s.PendingCouncilElection,
 		CouncilMeetings: s.CouncilMeetings, LastCouncilTurn: s.lastCouncilTurn,
@@ -234,18 +241,18 @@ func (snap sessionSnapshot) restore() *GameSession {
 	return &GameSession{
 		Turn: snap.Turn, Player: snap.Player, PlayerColonies: snap.PlayerColonies,
 		AIPlayers: ais, Stars: snap.Stars, Planets: snap.Planets, Leaders: snap.Leaders,
-		Ships: snap.Ships, SelectedStar: snap.SelectedStar, Difficulty: snap.Difficulty,
+		Fleets: snap.restoredFleets(), SelectedFleet: snap.SelectedFleet,
+		SelectedStar: snap.SelectedStar, Difficulty: snap.Difficulty,
 		Builds: snap.Builds, BuildQueue: snap.BuildQueue, Outposts: snap.Outposts, Monsters: snap.Monsters,
 		PersistentEvents: snap.PersistentEvents, CapturedPop: snap.CapturedPop,
-		FleetAtStar: snap.FleetAtStar, FleetDestStar: snap.FleetDestStar,
-		FleetETA: snap.FleetETA, popAccum: snap.PopAccum, ColonyBuildings: snap.ColonyBuild,
+		popAccum: snap.PopAccum, ColonyBuildings: snap.ColonyBuild,
 		EventSeed: snap.EventSeed, AntaresRaids: snap.AntaresRaids, RaceIndex: snap.RaceIndex,
 		// 舊存檔沒有這兩個欄位 → 零值:PlayerName 空字串由 UI 自行退回預設顯示,
 		// FlagColor 0 正好是 FlagColors 的第一個顏色,兩者都是安全的降級。
 		PlayerName: snap.PlayerName, FlagColor: snap.FlagColor,
 		RaceCombatPct: snap.RaceCombatPct, raceGrowthPct: snap.RaceGrowthPct,
-		FleetMarines: snap.FleetMarines, PlayerColonyMarines: snap.PlayerColonyMarines,
-		MarineBarracksAge: snap.MarineBarracksAge, Government: snap.Government,
+		PlayerColonyMarines: snap.PlayerColonyMarines,
+		MarineBarracksAge:   snap.MarineBarracksAge, Government: snap.Government,
 		PlayerColonyStars: snap.PlayerColonyStars,
 		Victory:           snap.Victory, PendingCouncilElection: snap.PendingCouncilElection,
 		CouncilMeetings: snap.CouncilMeetings, lastCouncilTurn: snap.LastCouncilTurn,
@@ -341,4 +348,26 @@ func LoadSession(path string) (*GameSession, error) {
 func SaveExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+// restoredFleets 把存檔還原成艦隊清單,並吃下**舊格式**。
+//
+// 2026-08-07 之前的存檔是單艦隊時代的形狀:頂層一組 Ships + FleetAtStar / FleetDestStar /
+// FleetETA / FleetMarines / FleetTanks。那些欄位在新存檔裡不再寫出(omitempty),
+// 讀到舊檔時就在這裡組成唯一的一支艦隊。
+//
+// ⚠ 判斷「是不是舊檔」用的是 `len(Fleets) == 0` 而不是版本號:版本號會被別的改動一起往上帶,
+// 而**這個欄位在不在**才是這件事真正的判準。
+func (snap sessionSnapshot) restoredFleets() []Fleet {
+	if len(snap.Fleets) > 0 {
+		return snap.Fleets
+	}
+	// ⚠ 舊格式**沒有存戰車營**:單艦隊時代的 snapshot 有 fleetMarines 卻沒有對應的
+	// fleetTanks 欄位(2026-08-07 改多艦隊時才發現)。也就是說**舊存檔讀回來戰車營一律歸零**
+	// ——那是舊格式本身的漏欄,不是這次遷移弄丟的。新格式把整個 Fleet 序列化,
+	// Tanks 跟著進去,這個洞就補起來了。
+	return []Fleet{{
+		Ships: snap.Ships, AtStar: snap.FleetAtStar, DestStar: snap.FleetDestStar,
+		ETA: snap.FleetETA, Marines: snap.FleetMarines,
+	}}
 }

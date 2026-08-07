@@ -78,7 +78,7 @@ func TestFleetBombardDamage_VolleyCountFollowsRuleProfile(t *testing.T) {
 	build := func(p gamedata.RuleProfile) *GameSession {
 		s := NewDemoSession()
 		s.RuleProfile = p
-		s.Ships = []Ship{deterministicBombardShip()}
+		s.Fleet().Ships = []Ship{deterministicBombardShip()}
 		return s
 	}
 
@@ -123,8 +123,8 @@ func TestBuildShip_PlasmaDamageFollowsRuleProfile(t *testing.T) {
 	}
 
 	// 母星開局艦隊(homeworldShips)已佔用索引 0 起,新造艦附加在尾端。
-	atk13 := s13.Ships[len(s13.Ships)-1].WeaponAttack
-	atk15 := s15.Ships[len(s15.Ships)-1].WeaponAttack
+	atk13 := s13.Fleet().Ships[len(s13.Fleet().Ships)-1].WeaponAttack
+	atk15 := s15.Fleet().Ships[len(s15.Fleet().Ships)-1].WeaponAttack
 
 	if atk13 != 30 {
 		t.Errorf("Profile13 電漿砲艦 WeaponAttack = %d,want 30", atk13)

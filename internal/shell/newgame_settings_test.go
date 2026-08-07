@@ -131,12 +131,12 @@ func TestPrewarpFleetCannotLeaveSystem(t *testing.T) {
 	if s.FleetHasFTL() {
 		t.Fatal("曲速前且未研究核分裂時不該有 FTL")
 	}
-	dest := (s.FleetAtStar + 1) % len(s.Stars)
+	dest := (s.Fleet().AtStar + 1) % len(s.Stars)
 	if s.SendFleet(dest) {
 		t.Error("曲速前開局的艦隊不該派得出去")
 	}
-	if s.FleetETA != 0 || s.FleetDestStar >= 0 {
-		t.Errorf("派遣被擋下時不該留下航行狀態:ETA=%d dest=%d", s.FleetETA, s.FleetDestStar)
+	if s.Fleet().ETA != 0 || s.Fleet().DestStar >= 0 {
+		t.Errorf("派遣被擋下時不該留下航行狀態:ETA=%d dest=%d", s.Fleet().ETA, s.Fleet().DestStar)
 	}
 
 	// 研究完 FTL 主題就解禁。
@@ -161,7 +161,7 @@ func TestNonPrewarpFleetUnrestricted(t *testing.T) {
 		if !s.FleetHasFTL() {
 			t.Errorf("科技等級 %d 開局就該有 FTL", lvl)
 		}
-		if !s.SendFleet((s.FleetAtStar + 1) % len(s.Stars)) {
+		if !s.SendFleet((s.Fleet().AtStar + 1) % len(s.Stars)) {
 			t.Errorf("科技等級 %d 的艦隊派遣不該被擋", lvl)
 		}
 	}

@@ -69,9 +69,9 @@ type Outpost struct {
 	Turn      int // 建立回合(供顯示/未來的年資規則)
 }
 
-// findOutpostShipIndex 回傳玩家艦隊中第一艘前哨船在 s.Ships 的索引;找不到回 -1。
+// findOutpostShipIndex 回傳玩家艦隊中第一艘前哨船在 s.Fleet().Ships 的索引;找不到回 -1。
 func (s *GameSession) findOutpostShipIndex() int {
-	for i, sh := range s.Ships {
+	for i, sh := range s.Fleet().Ships {
 		if sh.Class == OutpostShipClass {
 			return i
 		}
@@ -112,7 +112,7 @@ func (s *GameSession) BuildOutpost(starIdx int) OutpostResult {
 	if starIdx < 0 || starIdx >= len(s.Stars) {
 		return OutpostResult{Reason: "星索引無效"}
 	}
-	if s.FleetAtStar != starIdx || s.FleetETA != 0 {
+	if s.Fleet().AtStar != starIdx || s.Fleet().ETA != 0 {
 		return OutpostResult{Reason: "艦隊尚未抵達該星"}
 	}
 	if s.Stars[starIdx].Owner != 0 {
@@ -134,7 +134,7 @@ func (s *GameSession) BuildOutpost(starIdx int) OutpostResult {
 		return OutpostResult{Reason: "該星系沒有可供建立前哨站的天體"}
 	}
 
-	s.Ships = append(s.Ships[:shipIdx], s.Ships[shipIdx+1:]...) // 消耗這艘前哨船
+	s.Fleet().Ships = append(s.Fleet().Ships[:shipIdx], s.Fleet().Ships[shipIdx+1:]...) // 消耗這艘前哨船
 	s.Outposts = append(s.Outposts, Outpost{StarIndex: starIdx, Turn: s.Turn})
 	s.Stars[starIdx].Owner = 1
 	s.Stars[starIdx].Explored = true

@@ -129,7 +129,7 @@ func TestEventsHaveRealEffects(t *testing.T) {
 		for turn := 0; turn < 30; turn++ {
 			before := struct {
 				bc, research, ships, pop int
-			}{s.Player.BC, s.Player.ResearchProgress, len(s.Ships), s.PlayerColonies[0].Population}
+			}{s.Player.BC, s.Player.ResearchProgress, len(s.Fleet().Ships), s.PlayerColonies[0].Population}
 			s.EndTurn()
 			r := s.LastEventReport
 			if r == nil {
@@ -144,8 +144,8 @@ func TestEventsHaveRealEffects(t *testing.T) {
 				}
 				return
 			case 8, 13: // 艦船爆炸 / 叛變
-				if len(s.Ships) >= before.ships {
-					t.Errorf("seed %d:艦船事件後艦數應減少(%d → %d)", seed, before.ships, len(s.Ships))
+				if len(s.Fleet().Ships) >= before.ships {
+					t.Errorf("seed %d:艦船事件後艦數應減少(%d → %d)", seed, before.ships, len(s.Fleet().Ships))
 				}
 				return
 			}

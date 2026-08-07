@@ -70,11 +70,11 @@ func TestNewDemoSessionHomeworldState(t *testing.T) {
 		t.Fatal("Tech field Engineering(Colony Base/Star Base/Marine Barracks)應標記已知")
 	}
 
-	if len(s.Ships) != 3 {
-		t.Fatalf("起始艦隊應為 3 艘(1 殖民船+2 偵察艦),got %d", len(s.Ships))
+	if len(s.Fleet().Ships) != 3 {
+		t.Fatalf("起始艦隊應為 3 艘(1 殖民船+2 偵察艦),got %d", len(s.Fleet().Ships))
 	}
 	classCount := map[string]int{}
-	for _, sh := range s.Ships {
+	for _, sh := range s.Fleet().Ships {
 		classCount[sh.Class]++
 	}
 	if classCount["殖民船"] != 1 {

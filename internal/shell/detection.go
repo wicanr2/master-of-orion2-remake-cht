@@ -96,7 +96,7 @@ func playerDetectionVisible(stars []Star, playerColonyStars []int, fleetAtStar i
 // cmd/moo2 的 drawStarmap 決定 fog 繪製,一次算好整個星圖再逐星查表,避免逐星重算。
 func (s *GameSession) VisibleStars() []bool {
 	scannerParsec := bestPlayerScannerParsec(s.Player)
-	return playerDetectionVisible(s.Stars, s.PlayerColonyStars, s.FleetAtStar, s.ColonyBuildings,
+	return playerDetectionVisible(s.Stars, s.PlayerColonyStars, s.Fleet().AtStar, s.ColonyBuildings,
 		scannerParsec, s.RuleProfile.SensorRangeVersionBonusParsec, s.outpostStarIndices())
 }
 

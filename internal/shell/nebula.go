@@ -166,7 +166,7 @@ func shipHasHardShield(sh Ship) bool { return sh.Special == "硬化護盾" }
 //
 // 戰鬥地點取 `FleetAtStar` —— remake 的戰鬥一律發生在艦隊所在星系。
 func (s *GameSession) nebulaShield(base int, hardShield bool) int {
-	if hardShield || !s.CombatShieldsDisabled(s.FleetAtStar) {
+	if hardShield || !s.CombatShieldsDisabled(s.Fleet().AtStar) {
 		return base
 	}
 	return 0

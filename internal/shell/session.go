@@ -355,16 +355,17 @@ type BattleResult struct {
 
 // removeWeakestShip 移除戰力最弱的一艘艦。
 func (s *GameSession) removeWeakestShip() {
-	if len(s.Ships) == 0 {
+	f := s.Fleet() // 戰損打的是**參戰的那一支**艦隊
+	if len(f.Ships) == 0 {
 		return
 	}
 	wi := 0
-	for i, sh := range s.Ships {
-		if shipStrength(sh.Class) < shipStrength(s.Ships[wi].Class) {
+	for i, sh := range f.Ships {
+		if shipStrength(sh.Class) < shipStrength(f.Ships[wi].Class) {
 			wi = i
 		}
 	}
-	s.Ships = append(s.Ships[:wi], s.Ships[wi+1:]...)
+	f.Ships = append(f.Ships[:wi], f.Ships[wi+1:]...)
 }
 
 // applyDamage 對艦隊(以各艦戰力當 HP)造成 dmg 傷害,由最弱艦起逐艘擊沉,回傳擊沉數。
@@ -549,7 +550,7 @@ func (s *GameSession) mkPlayerCombatants() []combatant {
 func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 	var out []combatant
 	var idx []int
-	for shipIdx, sh := range s.Ships {
+	for shipIdx, sh := range s.Fleet().Ships {
 		if isSupportShipClass(sh.Class) {
 			// 手冊 p.119 逐字:「Support ships … **do not fight**, but are destroyed if an enemy
 			// military fleet chooses to engage them in combat.」——支援艦(殖民船/前哨船/運輸艦)
@@ -638,7 +639,7 @@ func (s *GameSession) applySurvivorDamage(survivors []combatant, _ []int) {
 		// maxHP <= 0 同時擋掉兩種不該寫回的來源:敵方艦隊,以及 antaran_victory.go /
 		// orbital_bombardment.go 那些沒填 maxHP 的臨時 combatant(它們的 shipIdx 是 Go 零值 0,
 		// 若不擋就會把傷害記到玩家的第一艘船上)。
-		if c.shipIdx < 0 || c.shipIdx >= len(s.Ships) || c.maxHP <= 0 {
+		if c.shipIdx < 0 || c.shipIdx >= len(s.Fleet().Ships) || c.maxHP <= 0 {
 			continue
 		}
 		s.applyBattleDamage([]int{c.shipIdx}, []int{c.hp})
@@ -709,7 +710,7 @@ func (s *GameSession) DiplomacyResponse(action, enemy string) string {
 		}
 	}
 	pFleet := 0
-	for _, sh := range s.Ships {
+	for _, sh := range s.AllShips() { // 外交看的是**全帝國**軍力,不是眼前這一支
 		pFleet += shipStrength(sh.Class)
 	}
 	ai := s.aiByDisplayName(enemy)
@@ -805,7 +806,7 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 	//   結構 HP = 艦體×3;裝甲 HP = 設計 BonusHP;Beam Attack = 艦體 + 武器攻擊;
 	//   防禦 = 艦體(小艦=低戰力=低防,趨勢近原版);單發傷害 min=max/2、max=Attack;
 	//   護盾減傷暫 0(艦艇設計尚未把護盾與裝甲分離,見 gameplay-systems-status.md)。
-	for i, sh := range s.Ships {
+	for i, sh := range s.Fleet().Ships {
 		body := shipStrength(sh.Class)
 		atk := body + sh.WeaponAttack
 		player = append(player, CombatShip{
@@ -834,13 +835,14 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 
 // ApplyCombatOutcome 依格子戰鬥後存活的玩家艦名,更新艦隊(移除陣亡艦)+ 記錄結果供結果畫面。
 func (s *GameSession) ApplyCombatOutcome(enemy string, playerStart, enemyStart int, survivors map[string]bool, won bool) {
-	kept := s.Ships[:0]
-	for _, sh := range s.Ships {
+	f := s.Fleet() // 戰鬥打的是**參戰的那一支**艦隊
+	kept := f.Ships[:0]
+	for _, sh := range f.Ships {
 		if survivors[sh.Name] {
 			kept = append(kept, sh)
 		}
 	}
-	s.Ships = kept
+	f.Ships = kept
 	s.LastBattle = &BattleResult{
 		Enemy: enemy, PlayerStart: playerStart, EnemyStart: enemyStart, PlayerWon: won,
 		PlayerLosses: playerStart - len(kept), EnemyLosses: enemyStart,
@@ -1015,7 +1017,7 @@ func (s *GameSession) BuildShipWithMods(class string, weapon, armor, shield, spe
 		return false
 	}
 	s.Player.BC -= cost
-	name := shipNamePool[len(s.Ships)%len(shipNamePool)]
+	name := shipNamePool[s.ShipCount()%len(shipNamePool)] // 全帝國計數,不然分艦隊後會撞名
 	atk := w.Value
 	if sp.Name == "戰鬥電腦" {
 		atk += sp.Value
@@ -1024,7 +1026,9 @@ func (s *GameSession) BuildShipWithMods(class string, weapon, armor, shield, spe
 	if len(mods) > 0 {
 		modsCopy = append([]string(nil), mods...)
 	}
-	s.Ships = append(s.Ships, Ship{Name: name, Class: class, Weapon: w.Name, Armor: a.Name, Shield: sh.Name,
+	// 艦艇設計畫面直接花錢造的船,進**目前操作中**的艦隊(玩家按下建造時手上就是那一支)。
+	f := s.Fleet()
+	f.Ships = append(f.Ships, Ship{Name: name, Class: class, Weapon: w.Name, Armor: a.Name, Shield: sh.Name,
 		Special: sp.Name, WeaponAttack: atk, BonusHP: a.Value + sh.Value, Mods: modsCopy})
 	return true
 }
@@ -1387,11 +1391,13 @@ func (s *GameSession) applySpecialAction(i int, name string) {
 		s.Player.BC += s.RuleProfile.FreightersCashBonus
 
 	case gamedata.ColonyShipActionName: // 殖民船完工 → 進玩家艦隊(手冊 p.85 Frigate 級支援艦)
-		s.Ships = append(s.Ships, Ship{Name: s.nextSupportShipName(ColonyShipClass), Class: ColonyShipClass,
+		// 新艦出現在**生產它的殖民地**;那顆星上剛好有艦隊就併進去,否則進第一支
+		// (見 AddShipToHomeFleet ⚠:原版還會依遷移設定自動送往集結點,那要逐殖民地造艦才做得到)。
+		s.AddShipToHomeFleet(s.colonyStar(i), Ship{Name: s.nextSupportShipName(ColonyShipClass), Class: ColonyShipClass,
 			Weapon: "無武裝", Armor: "無裝甲", Shield: "無護盾", Special: "無"})
 
 	case gamedata.OutpostShipActionName: // 前哨船完工 → 進玩家艦隊(見 outpost.go)
-		s.Ships = append(s.Ships, Ship{Name: s.nextSupportShipName(OutpostShipClass), Class: OutpostShipClass,
+		s.AddShipToHomeFleet(s.colonyStar(i), Ship{Name: s.nextSupportShipName(OutpostShipClass), Class: OutpostShipClass,
 			Weapon: "無武裝", Armor: "無裝甲", Shield: "無護盾", Special: "無"})
 	}
 }
@@ -1400,7 +1406,7 @@ func (s *GameSession) applySpecialAction(i int, name string) {
 // 不用隨機艦名池:支援艦在原版的艦隊清單裡也是以用途辨識,編號比隨機名字好認。
 func (s *GameSession) nextSupportShipName(class string) string {
 	n := 1
-	for _, sh := range s.Ships {
+	for _, sh := range s.AllShips() { // 全帝國編號,不然分艦隊後會出現兩艘「殖民船 1 號」
 		if sh.Class == class {
 			n++
 		}
@@ -2034,8 +2040,8 @@ func (s *GameSession) SetupNewGame(stars int, seed int64, numAI int) {
 	s.AIPlayers = buildDemoAIOpponents(aiHomeStars, s.Difficulty, seed)
 	s.PlayerSpies = make([]int, len(s.AIPlayers)) // 平行 AIPlayers,重置為全新對手的間諜數(開局皆 0)
 	s.PlayerColonyStars = []int{0}
-	s.FleetAtStar = 0
-	s.FleetDestStar = -1
+	s.Fleet().AtStar = 0
+	s.Fleet().DestStar = -1
 }
 
 // aiHomeStarIndices 依「星數 n、AI 對手數 aiHomes」算出 aiHomes 個彼此不同、且都不是星 0
@@ -2146,35 +2152,38 @@ type GameSession struct {
 
 	// LastDiscovery 是上一回合抵達星系時觸發的一次性發現(太空殘骸/失散殖民地…);
 	// nil = 無。與 LastEventReport 分開:隨機事件是全銀河的新聞,發現是自家艦隊的回報。
-	LastDiscovery     *SystemDiscovery
-	LastPlayerOutput  engine.EmpireOutput // 上一回合玩家結算(供畫面顯示)
-	Stars             []Star              // 星系圖
-	Nebulae           []Nebula            // 星雲(星圖地形,影響戰鬥護盾;見 nebula.go)
+	LastDiscovery    *SystemDiscovery
+	LastPlayerOutput engine.EmpireOutput // 上一回合玩家結算(供畫面顯示)
+	Stars            []Star              // 星系圖
+	Nebulae          []Nebula            // 星雲(星圖地形,影響戰鬥護盾;見 nebula.go)
 	// nebulaProbe 判定某個正規化座標是否落在星雲內。要讀星雲圖的遮罩,而本套件不碰資產,
 	// 所以由 cmd/moo2 用 SetNebulaProbe 裝進來。**未匯出 = 不進存檔**,讀檔後要重裝。
-	nebulaProbe func(x, y float64) bool
-	Planets           []Planet            // 行星列表
-	Leaders           []Leader            // 已雇用的軍官/領袖名單(Leader Pool)
-	MercPool          []Leader            // 目前上門可雇用的傭兵領袖(手冊 p.134,見 advanceMercOffers/HireMerc)
-	MercOfferedIdx    int                 // 已釋出過的傭兵候選數(遞增指標,避免重複 offer 同一候選)
-	MercCandidatePool []Leader            // 傭兵候選池(cmd 層由 HERODATA.LBX 真英雄注入,見 SetMercCandidates);nil=用內建策展名單
-	Ships             []Ship              // 艦隊
-	LastBattle        *BattleResult       // 上一場戰鬥結果(供戰鬥結果畫面)
-	SelectedStar      int                 // 星圖選中的星索引(-1=未選)
-	Difficulty        int                 // 難度索引(shell.Difficulties)
-	Builds            []ColonyBuild       // 各殖民地「當前建造中」的項目(對應 PlayerColonies;佇列見 BuildQueue)
+	nebulaProbe       func(x, y float64) bool
+	Planets           []Planet // 行星列表
+	Leaders           []Leader // 已雇用的軍官/領袖名單(Leader Pool)
+	MercPool          []Leader // 目前上門可雇用的傭兵領袖(手冊 p.134,見 advanceMercOffers/HireMerc)
+	MercOfferedIdx    int      // 已釋出過的傭兵候選數(遞增指標,避免重複 offer 同一候選)
+	MercCandidatePool []Leader // 傭兵候選池(cmd 層由 HERODATA.LBX 真英雄注入,見 SetMercCandidates);nil=用內建策展名單
+	// Fleets 是玩家的艦隊清單,SelectedFleet 是目前操作中的那一支(見 fleet.go)。
+	// 先前這裡是「Ships + FleetAtStar/DestStar/ETA/Marines/Tanks」一組欄位,
+	// 也就是全帝國只有一支艦隊——那個限制卡住了星圖的遷移連線層與 F1/F2 循環。
+	//
+	// ⚠ 不變量:**永遠至少有一支艦隊**(可以沒有船)。由 ensureFleet 維持,
+	// Fleet() 因此可以無條件回傳可寫指標,呼叫端不必逐處 nil 檢查。
+	Fleets        []Fleet
+	SelectedFleet int
+	LastBattle    *BattleResult // 上一場戰鬥結果(供戰鬥結果畫面)
+	SelectedStar  int           // 星圖選中的星索引(-1=未選)
+	Difficulty    int           // 難度索引(shell.Difficulties)
+	Builds        []ColonyBuild // 各殖民地「當前建造中」的項目(對應 PlayerColonies;佇列見 BuildQueue)
 	// BuildQueue[i] 是殖民地 i 的**後續**建造排隊項(不含 Builds[i] 那一格)。
 	// 原版殖民地畫面的 BUILD QUEUE 是 7 格(反組譯 Add_Build_Queue_Fields_ 確認),
 	// 完工自動接下一項;remake 先前只有一格。見 buildqueue.go 檔頭。
-	BuildQueue    [][]ColonyBuild
-	LastBuilt     []string // 上回合完成的建造(供回合摘要)
-	FleetAtStar   int      // 玩家艦隊所在星索引(初始=母星 0)
-	FleetDestStar int      // 艦隊目的星索引(-1=無航行任務)
-	FleetETA      int      // 抵達目的星尚需回合數(0=已抵達/靜止)
-	popAccum      []int    // 各殖民地人口成長累加值(達門檻則 +1 人口)
+	BuildQueue [][]ColonyBuild
+	LastBuilt  []string // 上回合完成的建造(供回合摘要)
+	popAccum   []int    // 各殖民地人口成長累加值(達門檻則 +1 人口)
 
 	// --- 地面戰入侵(見 ground_invasion.go) ---
-	FleetMarines        int               // 隨玩家艦隊出征、已載運的陸戰隊數(簡化模型,見 LoadMarines)
 	PlayerColonyMarines []int             // 各玩家殖民地 Marine Barracks 駐軍池(平行 PlayerColonies)
 	MarineBarracksAge   []int             // 各玩家殖民地 Marine Barracks 已運作回合數(平行 PlayerColonies)
 	ColonyBuildings     []map[string]bool // 各殖民地已完工建築(去重,避免重複套用長期效果)
@@ -2190,7 +2199,6 @@ type GameSession struct {
 
 	// FleetTanks / PlayerColonyTanks / ArmorBarracksAge:裝甲營房(Armor Barracks)戰車營
 	// 駐軍系統,與上面三個 Marine 對應欄位對稱(見 advanceArmor/LoadTanks,ground_invasion.go)。
-	FleetTanks        int        // 隨玩家艦隊出征、已載運的戰車營數(與 FleetMarines 共用 MarineTransportCapacity 運力池,見 LoadTanks)
 	PlayerColonyTanks []int      // 各玩家殖民地 Armor Barracks 駐軍池(平行 PlayerColonies)
 	ArmorBarracksAge  []int      // 各玩家殖民地 Armor Barracks 已運作回合數(平行 PlayerColonies)
 	EventSeed         int64      // 隨機事件亂數種子(可重現;新遊戲遞增)
@@ -2314,9 +2322,13 @@ func (s *GameSession) advanceAntares() {
 	bcLoss := 30 * sev
 
 	// 母星防禦:艦隊在母星且有戰力則減半損失。
+	// **任何一支**停在母星的艦隊有戰力就算防禦成功——不限玩家目前選中的那一支。
 	defended := false
-	if s.FleetAtStar == 0 {
-		for _, sh := range s.Ships {
+	for f := range s.Fleets {
+		if s.Fleets[f].AtStar != 0 {
+			continue
+		}
+		for _, sh := range s.Fleets[f].Ships {
 			if shipStrength(sh.Class) > 0 {
 				defended = true
 				break
@@ -2369,7 +2381,7 @@ func (s *GameSession) advanceAntares() {
 // SendFleet 派遣玩家艦隊前往 dest 星:依兩星歐氏距離換算航行回合數(ETA),每回合 EndTurn
 // 遞減。dest 無效、與現址相同、或艦隊正航行中則忽略。回傳是否成功下令。
 func (s *GameSession) SendFleet(dest int) bool {
-	if dest < 0 || dest >= len(s.Stars) || dest == s.FleetAtStar || s.FleetETA > 0 {
+	if dest < 0 || dest >= len(s.Stars) || dest == s.Fleet().AtStar || s.Fleet().ETA > 0 {
 		return false
 	}
 	if !s.FleetHasFTL() {
@@ -2377,7 +2389,7 @@ func (s *GameSession) SendFleet(dest int) bool {
 	}
 	// 黑洞:手冊「No ship can safely pass within 2 parsecs of a black hole
 	// (unless the ship contains an officer with the Navigator skill)」。蟲洞不走實空間,不受限。
-	if !s.WormholeBetween(s.FleetAtStar, dest) && s.RouteBlockedByBlackHole(s.FleetAtStar, dest) {
+	if !s.WormholeBetween(s.Fleet().AtStar, dest) && s.RouteBlockedByBlackHole(s.Fleet().AtStar, dest) {
 		return false
 	}
 	eta := 1
@@ -2385,17 +2397,17 @@ func (s *GameSession) SendFleet(dest int) bool {
 	// 讓遠端的殖民地不再是「派兵要十回合」的孤島(見 internal/shell/wormhole.go)。
 	// 1 回合有手冊錨點:p.181 講隨機事件版的蟲洞時寫的是
 	// 「moves that fleet to their destination in a single turn」,兩者共用這個語意。
-	if !s.WormholeBetween(s.FleetAtStar, dest) {
+	if !s.WormholeBetween(s.Fleet().AtStar, dest) {
 		// 秒差距模型(見 internal/shell/starlane.go):距離換成整數秒差距、除以艦隊航速。
 		// 先前是 `ceil(正規化距離 × 8)` 這種沒有速度概念的固定換算,手冊裡以「秒差距/回合」
 		// 表述的規則(星雲降速、Navigator、干擾場)因此全都無處可掛。
-		eta = s.FleetETATo(s.FleetAtStar, dest)
+		eta = s.FleetETATo(s.Fleet().AtStar, dest)
 		if eta < 1 {
 			eta = 1
 		}
 	}
-	s.FleetDestStar = dest
-	s.FleetETA = eta
+	s.Fleet().DestStar = dest
+	s.Fleet().ETA = eta
 	return true
 }
 
@@ -2442,17 +2454,17 @@ func (s *GameSession) techLevel() int {
 
 // advanceFleet 推進艦隊航行:ETA 遞減,歸零則抵達(FleetAtStar=目的),並將該星標記為已探索。
 func (s *GameSession) advanceFleet() {
-	if s.FleetETA <= 0 || s.FleetDestStar < 0 {
+	if s.Fleet().ETA <= 0 || s.Fleet().DestStar < 0 {
 		return
 	}
-	s.FleetETA--
-	if s.FleetETA == 0 {
-		s.FleetAtStar = s.FleetDestStar
-		s.FleetDestStar = -1
-		if s.FleetAtStar < len(s.Stars) {
-			s.Stars[s.FleetAtStar].Explored = true
+	s.Fleet().ETA--
+	if s.Fleet().ETA == 0 {
+		s.Fleet().AtStar = s.Fleet().DestStar
+		s.Fleet().DestStar = -1
+		if s.Fleet().AtStar < len(s.Stars) {
+			s.Stars[s.Fleet().AtStar].Explored = true
 			// 抵達星系當下結算一次性發現(原版 Do_System_Discoveries_At_Star_,見 discovery.go)。
-			if d := s.discoverSystemSpecials(s.FleetAtStar); d != nil {
+			if d := s.discoverSystemSpecials(s.Fleet().AtStar); d != nil {
 				s.LastDiscovery = d
 			}
 		}
@@ -2547,7 +2559,7 @@ func (s *GameSession) totalCommandPointsSupply() int {
 // Design 六級表內,shipClassFromName 近似當 Frigate(=1 點)處理,與其他空間/戰力計算一致。
 func (s *GameSession) usedCommandPoints() int {
 	total := 0
-	for _, sh := range s.Ships {
+	for _, sh := range s.AllShips() { // 手冊 p.169 明文是**全帝國**艦艇,不是單一艦隊
 		class, _ := shipClassFromName(sh.Class)
 		total += gamedata.ShipCommandCost(class)
 	}
@@ -2764,7 +2776,7 @@ func aiProfile(a AIOpponent) ai.Profile {
 // playerMilitary 回傳玩家目前艦隊總戰力(供 AI 態勢比較)。
 func (s *GameSession) playerMilitary() int {
 	m := 0
-	for _, sh := range s.Ships {
+	for _, sh := range s.AllShips() { // 國力是**全帝國**的
 		m += shipStrength(sh.Class)
 	}
 	return m
@@ -3484,17 +3496,16 @@ func NewDemoSession() *GameSession {
 		// 固定 +25 研究套進母星,是機制錯誤(那應是雇用並指派後才生效)。改為 nil = 忠實空池。
 		// demoLeaders()/applyLeaderColonyBonuses 保留供未來「傭兵招募流程」實作後 seed 用(TODO)。
 		Leaders: nil,
-		Ships:   homeworldShips(),
+		// 開局一支艦隊,停在母星(星 0),沒有航行任務(見 fleet.go)。
+		Fleets: []Fleet{{Ships: homeworldShips(), AtStar: 0, DestStar: -1}},
 		// 母星開局預設建造「貿易品」:archive.org 線上原版實測(2026-07-12 oracle)讀到 Sol III
 		// 的 BUILDING 欄就是「Trade Goods」,右下 Income +12 BC——remake 先前開局是「不建造」、
 		// 收支 +0,是母星開局態沒對齊的一環(見 docs/tech/oracle-comparison-20260712.md)。
 		// Cost 0 同「不建造」語意(見 TradeGoodsBuildName 註解:整包工業轉現金,不累積進度)。
-		Builds:        []ColonyBuild{{Name: TradeGoodsBuildName, Progress: 0, Cost: 0}},
-		SelectedStar:  -1,
-		FleetAtStar:   0,  // 母星
-		FleetDestStar: -1, // 無航行任務
-		EventSeed:     42, // 隨機事件種子(可重現;正式新遊戲遞增)
-		RuleProfile:   gamedata.Profile15(),
+		Builds:       []ColonyBuild{{Name: TradeGoodsBuildName, Progress: 0, Cost: 0}},
+		SelectedStar: -1,
+		EventSeed:    42, // 隨機事件種子(可重現;正式新遊戲遞增)
+		RuleProfile:  gamedata.Profile15(),
 	}
 	// 守衛怪獸(見 monster.go)。放在這裡而不是上面的複合字面值裡,因為 genMonsters 會就地
 	// 修改 session.Planets(手冊 p.60:有怪獸的星系一定另有一個特殊物產)。

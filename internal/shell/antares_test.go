@@ -25,7 +25,7 @@ const bcCrashFloor80Turns = -40
 // 不是 bug)。
 func TestAntaresRaidsScheduleAndEscalate(t *testing.T) {
 	s := NewDemoSession()
-	s.Ships = nil // 無艦隊防禦,吃滿傷害(方便觀察)
+	s.Fleet().Ships = nil // 無艦隊防禦,吃滿傷害(方便觀察)
 
 	raidTurns := []int{}
 	for i := 0; i < 80; i++ {
@@ -67,10 +67,10 @@ func TestAntaresDefenseReducesDamage(t *testing.T) {
 		// ——正好是這條測試在對照的那個變數,不隔離就會反向污染結果。
 		s.AIPlayers = nil
 		if !withFleet {
-			s.Ships = nil
+			s.Fleet().Ships = nil
 		} else {
-			s.Ships = []Ship{{Name: "衛戍艦", Class: "戰艦"}}
-			s.FleetAtStar = 0
+			s.Fleet().Ships = []Ship{{Name: "衛戍艦", Class: "戰艦"}}
+			s.Fleet().AtStar = 0
 		}
 		startBC := 0
 		bcLoss := 0

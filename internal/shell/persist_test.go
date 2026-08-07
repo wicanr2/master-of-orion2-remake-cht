@@ -47,7 +47,7 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 		got.PlayerColonies[0].Population != s.PlayerColonies[0].Population {
 		t.Errorf("殖民地人口不符:%d vs %d", got.PlayerColonies[0].Population, s.PlayerColonies[0].Population)
 	}
-	if got.FleetDestStar != s.FleetDestStar || got.FleetETA != s.FleetETA {
+	if got.Fleet().DestStar != s.Fleet().DestStar || got.Fleet().ETA != s.Fleet().ETA {
 		t.Errorf("艦隊航行狀態不符")
 	}
 	if got.Builds[0].Name != s.Builds[0].Name || got.Builds[0].Progress != s.Builds[0].Progress {

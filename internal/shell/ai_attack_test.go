@@ -19,7 +19,7 @@ func newRaidTestSession(t *testing.T) *GameSession {
 	t.Helper()
 	s := NewDemoSession()
 	s.Turn = aiRaidGraceTurns + 1
-	s.Ships = nil // 玩家無艦隊 → playerMilitary()=0,隔離軍力門檻這個變數
+	s.Fleet().Ships = nil // 玩家無艦隊 → playerMilitary()=0,隔離軍力門檻這個變數
 	for i := range s.AIPlayers {
 		s.AIPlayers[i].StanceName = stanceNames[ai.StanceWar]
 		s.AIPlayers[i].FleetStrength = 400
@@ -56,7 +56,7 @@ func TestAIRaidNeedsStrengthAdvantage(t *testing.T) {
 		s.AIPlayers[i].FleetStrength = 10
 	}
 	// 玩家軍力遠超 AI。
-	s.Ships = []Ship{{Class: "巡洋艦"}, {Class: "巡洋艦"}, {Class: "巡洋艦"}}
+	s.Fleet().Ships = []Ship{{Class: "巡洋艦"}, {Class: "巡洋艦"}, {Class: "巡洋艦"}}
 	if pm := s.playerMilitary(); pm == 0 {
 		t.Fatal("測試前提不成立:玩家軍力應 > 0")
 	}
@@ -125,9 +125,9 @@ func TestAIRaidHappensAndBoundsLosses(t *testing.T) {
 func TestAIRaidRepelledByFleetAtStar(t *testing.T) {
 	s := newRaidTestSession(t)
 	// 玩家艦隊停在母星(殖民地 0 所在星)。
-	s.FleetAtStar = s.PlayerColonyStarIndex(0)
-	s.FleetETA = 0
-	s.Ships = []Ship{{Class: "巡洋艦"}, {Class: "巡洋艦"}}
+	s.Fleet().AtStar = s.PlayerColonyStarIndex(0)
+	s.Fleet().ETA = 0
+	s.Fleet().Ships = []Ship{{Class: "巡洋艦"}, {Class: "巡洋艦"}}
 
 	// 母星升級成戰鬥站。
 	//

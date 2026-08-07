@@ -60,7 +60,7 @@ func TestSeatSwapKeepsEmpiresSeparate(t *testing.T) {
 	s.Player.BC = 12345
 	s.PlayerName = "第一帝國"
 	seat0Colonies := len(s.PlayerColonies)
-	seat0Ships := len(s.Ships)
+	seat0Ships := len(s.Fleet().Ships)
 
 	next, wrapped := s.AdvanceSeat()
 	if next != 1 || wrapped {
@@ -85,9 +85,9 @@ func TestSeatSwapKeepsEmpiresSeparate(t *testing.T) {
 	if s.PlayerName != "第一帝國" {
 		t.Errorf("回到第 0 席後帝國名應為「第一帝國」,實得 %q", s.PlayerName)
 	}
-	if len(s.PlayerColonies) != seat0Colonies || len(s.Ships) != seat0Ships {
+	if len(s.PlayerColonies) != seat0Colonies || len(s.Fleet().Ships) != seat0Ships {
 		t.Errorf("回到第 0 席後殖民地/艦艇數應還原(%d/%d),實得 %d/%d",
-			seat0Colonies, seat0Ships, len(s.PlayerColonies), len(s.Ships))
+			seat0Colonies, seat0Ships, len(s.PlayerColonies), len(s.Fleet().Ships))
 	}
 }
 

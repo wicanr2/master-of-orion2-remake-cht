@@ -131,7 +131,7 @@ func (s *GameSession) AttackMonster(starIdx int) MonsterBattleResult {
 	if m == nil {
 		return MonsterBattleResult{Reason: "該星沒有怪獸"}
 	}
-	if s.FleetAtStar != starIdx || s.FleetETA != 0 {
+	if s.Fleet().AtStar != starIdx || s.Fleet().ETA != 0 {
 		return MonsterBattleResult{Reason: "艦隊尚未抵達該星"}
 	}
 	st, ok := gamedata.MonsterStatsFor(m.Kind)

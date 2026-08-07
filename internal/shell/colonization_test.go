@@ -19,19 +19,19 @@ func newFleetAtUnownedStarSession(t *testing.T) (*GameSession, int) {
 	if target < 0 {
 		t.Fatal("找不到可用的無主星做測試")
 	}
-	s.FleetAtStar = target
-	s.FleetDestStar = -1
-	s.FleetETA = 0
+	s.Fleet().AtStar = target
+	s.Fleet().DestStar = -1
+	s.Fleet().ETA = 0
 	return s, target
 }
 
 // TestColonizeStar_Success 驗證前置條件齊備(艦隊抵達無主星、載有殖民船)時,拓殖成功:
-// PlayerColonies +1、Star.Owner 轉 1、殖民船從 s.Ships 移除、平行陣列(PlayerColonyStars 等)
+// PlayerColonies +1、Star.Owner 轉 1、殖民船從 s.Fleet().Ships 移除、平行陣列(PlayerColonyStars 等)
 // 長度與 PlayerColonies 同步。
 func TestColonizeStar_Success(t *testing.T) {
 	s, target := newFleetAtUnownedStarSession(t)
 	beforeColonies := len(s.PlayerColonies)
-	beforeShips := len(s.Ships)
+	beforeShips := len(s.Fleet().Ships)
 	if !s.FleetHasColonyShip() {
 		t.Fatal("測試前提錯誤:開局艦隊(homeworldShips)應含一艘殖民船")
 	}
@@ -52,8 +52,8 @@ func TestColonizeStar_Success(t *testing.T) {
 	if s.Stars[target].Owner != 1 {
 		t.Fatalf("拓殖後 Star.Owner 應轉 1,got %d", s.Stars[target].Owner)
 	}
-	if len(s.Ships) != beforeShips-1 {
-		t.Fatalf("殖民船應被消耗,Ships 應 -1(%d→%d),got %d", beforeShips, beforeShips-1, len(s.Ships))
+	if len(s.Fleet().Ships) != beforeShips-1 {
+		t.Fatalf("殖民船應被消耗,Ships 應 -1(%d→%d),got %d", beforeShips, beforeShips-1, len(s.Fleet().Ships))
 	}
 	if s.FleetHasColonyShip() {
 		t.Fatal("拓殖後艦隊不應再有殖民船(唯一一艘已消耗)")
@@ -86,15 +86,15 @@ func TestColonizeStar_Success(t *testing.T) {
 func TestColonizeStar_PreconditionsChecked(t *testing.T) {
 	// 條件 1:艦隊尚未抵達(仍在航行中)。
 	s, target := newFleetAtUnownedStarSession(t)
-	s.FleetETA = 3
+	s.Fleet().ETA = 3
 	if res := s.ColonizeStar(target); res.Ok {
 		t.Fatalf("艦隊未抵達不應允許拓殖,got Ok=true")
 	}
 
 	// 條件 2:目標星已有歸屬(玩家母星)。
 	s2, _ := newFleetAtUnownedStarSession(t)
-	s2.FleetAtStar = 0
-	s2.FleetETA = 0
+	s2.Fleet().AtStar = 0
+	s2.Fleet().ETA = 0
 	if res := s2.ColonizeStar(0); res.Ok {
 		t.Fatalf("已有歸屬的星不應允許拓殖,got Ok=true")
 	}
@@ -108,13 +108,13 @@ func TestColonizeStar_PreconditionsChecked(t *testing.T) {
 	if shipIdx < 0 {
 		t.Fatal("測試前提錯誤:開局艦隊應有殖民船")
 	}
-	s3.Ships = append(s3.Ships[:shipIdx], s3.Ships[shipIdx+1:]...)
-	beforeShips := len(s3.Ships)
+	s3.Fleet().Ships = append(s3.Fleet().Ships[:shipIdx], s3.Fleet().Ships[shipIdx+1:]...)
+	beforeShips := len(s3.Fleet().Ships)
 	if res := s3.ColonizeStar(target3); res.Ok {
 		t.Fatalf("無殖民船不應允許拓殖,got Ok=true")
 	}
-	if len(s3.Ships) != beforeShips {
-		t.Fatalf("拒絕拓殖不應改動 Ships,got len=%d want %d", len(s3.Ships), beforeShips)
+	if len(s3.Fleet().Ships) != beforeShips {
+		t.Fatalf("拒絕拓殖不應改動 Ships,got len=%d want %d", len(s3.Fleet().Ships), beforeShips)
 	}
 	if s3.Stars[target3].Owner != 0 {
 		t.Fatalf("拒絕拓殖不應改動 Star.Owner,got %d", s3.Stars[target3].Owner)

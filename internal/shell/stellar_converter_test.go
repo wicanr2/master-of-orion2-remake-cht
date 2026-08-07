@@ -79,7 +79,7 @@ func TestColonyDefenceUsesSpaceBudgetModel(t *testing.T) {
 		s.ColonyBuildings[0] = map[string]bool{}
 	}
 	// 艦隊不在場,才量得到純建築的貢獻。
-	s.FleetAtStar, s.FleetETA = -1, 0
+	s.Fleet().AtStar, s.Fleet().ETA = -1, 0
 
 	base := s.colonyDefense(0)
 	for _, name := range []string{"星基", "戰鬥站", "星辰要塞", "飛彈基地", "地面砲台"} {

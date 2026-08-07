@@ -66,19 +66,17 @@ type seat struct {
 	BuildQueue          [][]ColonyBuild
 	ColonyBuildings     []map[string]bool
 	PopAccum            []int
-	Ships               []Ship
-	Leaders             []Leader
-	MercPool            []Leader
-	MercOfferedIdx      int
-	PlayerSpies         []int
-	Outposts            []Outpost
+	// Fleets / SelectedFleet 是這位玩家的艦隊(多艦隊模型,見 fleet.go)。
+	// 先前是 Ships + FleetAtStar/DestStar/ETA/Marines/Tanks 一組欄位。
+	Fleets         []Fleet
+	SelectedFleet  int
+	Leaders        []Leader
+	MercPool       []Leader
+	MercOfferedIdx int
+	PlayerSpies    []int
+	Outposts       []Outpost
 
-	FleetAtStar   int
-	FleetDestStar int
-	FleetETA      int
-	FleetMarines  int
-	FleetTanks    int
-	SelectedStar  int
+	SelectedStar int
 
 	RaceIndex     int
 	PlayerName    string
@@ -116,11 +114,10 @@ func (s *GameSession) saveSeat() seat {
 		PlayerColonyMarines: s.PlayerColonyMarines, PlayerColonyTanks: s.PlayerColonyTanks,
 		MarineBarracksAge: s.MarineBarracksAge, ArmorBarracksAge: s.ArmorBarracksAge,
 		Builds: s.Builds, BuildQueue: s.BuildQueue, ColonyBuildings: s.ColonyBuildings,
-		PopAccum: s.popAccum, Ships: s.Ships, Leaders: s.Leaders,
+		PopAccum: s.popAccum, Leaders: s.Leaders,
 		MercPool: s.MercPool, MercOfferedIdx: s.MercOfferedIdx,
 		PlayerSpies: s.PlayerSpies, Outposts: s.Outposts,
-		FleetAtStar: s.FleetAtStar, FleetDestStar: s.FleetDestStar, FleetETA: s.FleetETA,
-		FleetMarines: s.FleetMarines, FleetTanks: s.FleetTanks, SelectedStar: s.SelectedStar,
+		Fleets: s.Fleets, SelectedFleet: s.SelectedFleet, SelectedStar: s.SelectedStar,
 		RaceIndex: s.RaceIndex, PlayerName: s.PlayerName, FlagColor: s.FlagColor,
 		RaceCombatPct: s.RaceCombatPct, RaceGrowthPct: s.raceGrowthPct,
 		Government: s.Government, CapturedPop: s.CapturedPop,
@@ -139,11 +136,11 @@ func (s *GameSession) loadSeat(v seat) {
 	s.PlayerColonyMarines, s.PlayerColonyTanks = v.PlayerColonyMarines, v.PlayerColonyTanks
 	s.MarineBarracksAge, s.ArmorBarracksAge = v.MarineBarracksAge, v.ArmorBarracksAge
 	s.Builds, s.BuildQueue, s.ColonyBuildings = v.Builds, v.BuildQueue, v.ColonyBuildings
-	s.popAccum, s.Ships, s.Leaders = v.PopAccum, v.Ships, v.Leaders
+	s.popAccum, s.Leaders = v.PopAccum, v.Leaders
 	s.MercPool, s.MercOfferedIdx = v.MercPool, v.MercOfferedIdx
 	s.PlayerSpies, s.Outposts = v.PlayerSpies, v.Outposts
-	s.FleetAtStar, s.FleetDestStar, s.FleetETA = v.FleetAtStar, v.FleetDestStar, v.FleetETA
-	s.FleetMarines, s.FleetTanks, s.SelectedStar = v.FleetMarines, v.FleetTanks, v.SelectedStar
+	s.Fleets, s.SelectedFleet, s.SelectedStar = v.Fleets, v.SelectedFleet, v.SelectedStar
+	s.ensureFleet() // 席位可能是空的(舊存檔/新建席位),維持「至少一支艦隊」的不變量
 	s.RaceIndex, s.PlayerName, s.FlagColor = v.RaceIndex, v.PlayerName, v.FlagColor
 	s.RaceCombatPct, s.raceGrowthPct = v.RaceCombatPct, v.RaceGrowthPct
 	s.Government, s.CapturedPop = v.Government, v.CapturedPop
@@ -239,16 +236,16 @@ func seatFromAI(ai AIOpponent, idx int) seat {
 		PlayerName: seatTakeoverName(idx, ai.Name),
 		// ⚠ AIOpponent 沒有 RaceIndex 欄位(它的種族只以名字與性格呈現),接手的席位
 		// 一律當人類(索引 0)。要對等得先讓 AIOpponent 記下自己是哪一族。
-		RaceIndex:     0,
-		FlagColor:     idx % len(FlagColors),
-		FleetAtStar:   -1,
-		FleetDestStar: -1,
-		SelectedStar:  -1,
-		Government:    gamedata.MoraleGovDictatorship,
+		RaceIndex:    0,
+		FlagColor:    idx % len(FlagColors),
+		SelectedStar: -1,
+		Government:   gamedata.MoraleGovDictatorship,
 	}
+	home := -1
 	if len(ai.ColonyStars) > 0 {
-		v.FleetAtStar = ai.ColonyStars[0] // 艦隊擺在自己的母星
+		home = ai.ColonyStars[0] // 艦隊擺在自己的母星
 	}
+	v.Fleets = []Fleet{NewFleet(home)}
 	// 平行陣列補齊到殖民地數,免得後續索引越界。
 	n := len(v.PlayerColonies)
 	v.Builds = make([]ColonyBuild, n)

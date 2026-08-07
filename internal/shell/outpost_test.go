@@ -27,8 +27,8 @@ func newOutpostTestSession(t *testing.T, tp gamedata.PlanetType) (*GameSession, 
 		ClimateID: gamedata.TERRAN, GravityID: gamedata.NORMAL_G,
 		MineralID: gamedata.ABUNDANT, SizeID: gamedata.MEDIUM_PLANET,
 	}
-	s.Ships = append(s.Ships, Ship{Name: "前哨船 1 號", Class: OutpostShipClass})
-	s.FleetAtStar, s.FleetETA = target, 0
+	s.Fleet().Ships = append(s.Fleet().Ships, Ship{Name: "前哨船 1 號", Class: OutpostShipClass})
+	s.Fleet().AtStar, s.Fleet().ETA = target, 0
 	return s, target
 }
 
@@ -62,14 +62,14 @@ func TestBuildOutpostOnGasGiantAndAsteroids(t *testing.T) {
 func TestBuildOutpostPreconditions(t *testing.T) {
 	// 沒有前哨船。
 	s, target := newOutpostTestSession(t, gamedata.GAS_GIANT)
-	s.Ships = nil
+	s.Fleet().Ships = nil
 	if res := s.BuildOutpost(target); res.Ok {
 		t.Error("沒有前哨船不該能建")
 	}
 
 	// 艦隊不在該星。
 	s, target = newOutpostTestSession(t, gamedata.GAS_GIANT)
-	s.FleetAtStar = (target + 1) % len(s.Stars)
+	s.Fleet().AtStar = (target + 1) % len(s.Stars)
 	if res := s.BuildOutpost(target); res.Ok {
 		t.Error("艦隊不在該星不該能建")
 	}
@@ -90,7 +90,7 @@ func TestBuildOutpostPreconditions(t *testing.T) {
 
 	// 同一顆星不能建兩次。
 	s, target = newOutpostTestSession(t, gamedata.GAS_GIANT)
-	s.Ships = append(s.Ships, Ship{Class: OutpostShipClass}) // 兩艘船
+	s.Fleet().Ships = append(s.Fleet().Ships, Ship{Class: OutpostShipClass}) // 兩艘船
 	if res := s.BuildOutpost(target); !res.Ok {
 		t.Fatalf("第一次應成功:%s", res.Reason)
 	}
@@ -127,8 +127,8 @@ func TestColonizingOutpostStarLeavesMarineBarracks(t *testing.T) {
 	// 建完前哨站後該星變成玩家的,拓殖前置要求「無主」——把它放回無主狀態模擬
 	// 「同一顆星上前哨站先於殖民地」這個手冊情境(原版的前哨站星本來就允許再殖民)。
 	s.Stars[target].Owner = 0
-	s.Ships = append(s.Ships, Ship{Class: ColonyShipClass})
-	s.FleetAtStar, s.FleetETA = target, 0
+	s.Fleet().Ships = append(s.Fleet().Ships, Ship{Class: ColonyShipClass})
+	s.Fleet().AtStar, s.Fleet().ETA = target, 0
 
 	res := s.ColonizeStar(target)
 	if !res.Ok {
@@ -147,8 +147,8 @@ func TestColonizingOutpostStarLeavesMarineBarracks(t *testing.T) {
 // 沒有前哨站的星拓殖時不該憑空多出海軍陸戰隊營。
 func TestColonizingPlainStarHasNoMarineBarracks(t *testing.T) {
 	s, target := newOutpostTestSession(t, gamedata.HABITABLE)
-	s.Ships = []Ship{{Class: ColonyShipClass}}
-	s.FleetAtStar, s.FleetETA = target, 0
+	s.Fleet().Ships = []Ship{{Class: ColonyShipClass}}
+	s.Fleet().AtStar, s.Fleet().ETA = target, 0
 
 	res := s.ColonizeStar(target)
 	if !res.Ok {
@@ -180,14 +180,14 @@ func TestSupportShipsAreBuildable(t *testing.T) {
 	} {
 		s := NewDemoSession()
 		before := 0
-		for _, sh := range s.Ships {
+		for _, sh := range s.Fleet().Ships {
 			if sh.Class == tc.class {
 				before++
 			}
 		}
 		s.applySpecialAction(0, tc.action)
 		after := 0
-		for _, sh := range s.Ships {
+		for _, sh := range s.Fleet().Ships {
 			if sh.Class == tc.class {
 				after++
 			}

@@ -36,7 +36,7 @@ import (
 func (s *GameSession) fleetBombardDamage(rng *rand.Rand) int {
 	total := 0
 	for round := 0; round < s.RuleProfile.BombardmentVolleys; round++ {
-		for _, sh := range s.Ships {
+		for _, sh := range s.Fleet().Ships {
 			body := shipStrength(sh.Class)
 			atk := body + sh.WeaponAttack
 			atk += atk * s.RaceCombatPct / 100
@@ -95,7 +95,7 @@ type GroundBombardResult struct {
 	// 加這個機制之前的行為。
 	DefenderRetaliated bool
 	// AttackerShipsLost 是防禦方反擊這輪齊射擊沉的玩家艦艇數(DefenderRetaliated=false 時
-	// 恆為 0)。已從 s.Ships 移除(移除規則見下方函式註解)。
+	// 恆為 0)。已從 s.Fleet().Ships 移除(移除規則見下方函式註解)。
 	AttackerShipsLost int
 
 	// ColonyName 是被轟炸的星名(供轟炸畫面標題;engine.ColonyState 本身沒有名稱欄位,
@@ -206,7 +206,7 @@ func retaliationAttackers(buildings map[string]bool, defender engine.PlayerState
 // 不需要地面部隊登陸):
 //  1. 玩家艦隊已抵達該星(FleetAtStar==starIdx 且 FleetETA==0)。
 //  2. 該星是敵方(Owner==2)且有「已建模」的殖民地(findAIColonyByStar 找得到)。
-//  3. 玩家艦隊至少有 1 艘艦(len(s.Ships)>0,否則無武器可轟炸)。
+//  3. 玩家艦隊至少有 1 艘艦(len(s.Fleet().Ships)>0,否則無武器可轟炸)。
 //
 // 任一條件不足回傳 Ok=false + Reason,不消耗任何狀態、不呼叫 rng。
 //
@@ -236,7 +236,7 @@ func retaliationAttackers(buildings map[string]bool, defender engine.PlayerState
 //   - 不扣「儲存生產」/駐軍——AI 沒有這些的持久資料可扣,扣了會是憑空生資料,故不做(建築已
 //     於本輪補上,見上方「建築吸收」)。
 //   - 本輪不做「防禦方反擊摧毀玩家艦艇」(軌道基地對轟炸艦隊開火)——那是下一輪工作,本函式
-//     不改動 s.Ships。
+//     不改動 s.Fleet().Ships。
 //   - 手冊未講「殖民地人口被轟炸到 0」時的後續(是否直接摧毀殖民地/移除星系 Owner):不在本
 //     函式臆測補上,留給未來確認手冊或 openorion2 行為後再接(TODO)。目前行為是 Population
 //     可以停在 0,殖民地本身仍存在於 aiPlayer.Colonies(不會被移除)。
@@ -249,14 +249,14 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 	if starIdx < 0 || starIdx >= len(s.Stars) {
 		return GroundBombardResult{Reason: "無效的星索引"}
 	}
-	if s.FleetAtStar != starIdx || s.FleetETA != 0 {
+	if s.Fleet().AtStar != starIdx || s.Fleet().ETA != 0 {
 		return GroundBombardResult{Reason: "艦隊尚未抵達該星"}
 	}
 	star := &s.Stars[starIdx]
 	if star.Owner != 2 {
 		return GroundBombardResult{Reason: "該星不是敵方殖民地"}
 	}
-	if len(s.Ships) == 0 {
+	if len(s.Fleet().Ships) == 0 {
 		return GroundBombardResult{Reason: "艦隊沒有可轟炸的艦艇"}
 	}
 	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
@@ -333,21 +333,21 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 		for i := 0; i < shipsLost; i++ {
 			s.removeWeakestShip()
 		}
-		// 艦隊被打薄後,運力池 MarineTransportCapacity()(= len(s.Ships) * 每艘 4 名,見
+		// 艦隊被打薄後,運力池 MarineTransportCapacity()(= len(s.Fleet().Ships) * 每艘 4 名,見
 		// ground_invasion.go)跟著縮小,已載運的 FleetMarines/FleetTanks 若超出新容量要夾下來
 		// (LoadMarines/LoadTanks 平時只在「載運當下」檢查上限,不會在艦隊事後被打薄時自動夾,
 		// 故轟炸反擊這裡要補做,否則會出現「容量 0 卻還載著陸戰隊」的不合理狀態)。
-		if len(s.Ships) == 0 {
-			s.FleetMarines = 0
-			s.FleetTanks = 0
-		} else if room := s.MarineTransportCapacity(); s.FleetMarines+s.FleetTanks > room {
+		if len(s.Fleet().Ships) == 0 {
+			s.Fleet().Marines = 0
+			s.Fleet().Tanks = 0
+		} else if room := s.MarineTransportCapacity(); s.Fleet().Marines+s.Fleet().Tanks > room {
 			// 陸戰隊優先保留、戰車營吃剩下的額度——比照 LoadTanks 的 room 扣除順序
 			// (room = capacity - FleetMarines - FleetTanks,即「陸戰隊先佔額度」)。
-			if s.FleetMarines > room {
-				s.FleetMarines = room
-				s.FleetTanks = 0
+			if s.Fleet().Marines > room {
+				s.Fleet().Marines = room
+				s.Fleet().Tanks = 0
 			} else {
-				s.FleetTanks = room - s.FleetMarines
+				s.Fleet().Tanks = room - s.Fleet().Marines
 			}
 		}
 	}

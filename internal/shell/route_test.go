@@ -192,12 +192,12 @@ func TestSendFleetRefusesBlackHoleRoute(t *testing.T) {
 	w, h := gamedata.GalaxyParsecSpan(1)
 	s := routeTestSession([][2]float64{{0, 0}, {12 / w, 0}})
 	s.TechLevelSet, s.TechLevel = true, TechLevelDefault
-	s.FleetAtStar, s.FleetDestStar, s.FleetETA = 0, -1, 0
+	s.Fleet().AtStar, s.Fleet().DestStar, s.Fleet().ETA = 0, -1, 0
 
 	if !s.SendFleet(1) {
 		t.Fatal("前提不成立:沒有黑洞時這趟應該派得出去")
 	}
-	s.FleetDestStar, s.FleetETA = -1, 0
+	s.Fleet().DestStar, s.Fleet().ETA = -1, 0
 	s.Stars[2] = Star{X: 6 / w, Y: 1 / h, Spectral: blackHoleSpectral, Wormhole: -1}
 	if s.SendFleet(1) {
 		t.Error("航線被黑洞擋住時不該接受派遣")

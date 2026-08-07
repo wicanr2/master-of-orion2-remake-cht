@@ -324,7 +324,7 @@ func (s *GameSession) advanceArmor() {
 // 4 個單位的數字)」做為近似運力上限——不區分殖民船/偵察艦/戰鬥艦,所有艦一律視為「可搭載
 // 陸戰隊艙位」。待補上真正的運輸艦船體類型後,應改為只計數該類型艦。
 func (s *GameSession) MarineTransportCapacity() int {
-	return len(s.Ships) * gamedata.GroundTransportShipMarineCapacity
+	return len(s.Fleet().Ships) * gamedata.GroundTransportShipMarineCapacity
 }
 
 // LoadMarines 把玩家殖民地 colonyIdx 的 Marine Barracks 駐軍池部隊,載上隨艦隊出征的
@@ -334,7 +334,7 @@ func (s *GameSession) LoadMarines(colonyIdx int) int {
 	if colonyIdx < 0 || colonyIdx >= len(s.PlayerColonyMarines) {
 		return 0
 	}
-	room := s.MarineTransportCapacity() - s.FleetMarines
+	room := s.MarineTransportCapacity() - s.Fleet().Marines
 	if room <= 0 {
 		return 0
 	}
@@ -346,7 +346,7 @@ func (s *GameSession) LoadMarines(colonyIdx int) int {
 		return 0
 	}
 	s.PlayerColonyMarines[colonyIdx] -= n
-	s.FleetMarines += n
+	s.Fleet().Marines += n
 	return n
 }
 
@@ -359,7 +359,7 @@ func (s *GameSession) LoadTanks(colonyIdx int) int {
 	if colonyIdx < 0 || colonyIdx >= len(s.PlayerColonyTanks) {
 		return 0
 	}
-	room := s.MarineTransportCapacity() - s.FleetMarines - s.FleetTanks
+	room := s.MarineTransportCapacity() - s.Fleet().Marines - s.Fleet().Tanks
 	if room <= 0 {
 		return 0
 	}
@@ -371,7 +371,7 @@ func (s *GameSession) LoadTanks(colonyIdx int) int {
 		return 0
 	}
 	s.PlayerColonyTanks[colonyIdx] -= n
-	s.FleetTanks += n
+	s.Fleet().Tanks += n
 	return n
 }
 
@@ -473,14 +473,14 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	if starIdx < 0 || starIdx >= len(s.Stars) {
 		return GroundInvasionResult{Reason: "無效的星索引"}
 	}
-	if s.FleetAtStar != starIdx || s.FleetETA != 0 {
+	if s.Fleet().AtStar != starIdx || s.Fleet().ETA != 0 {
 		return GroundInvasionResult{Reason: "艦隊尚未抵達該星"}
 	}
 	star := &s.Stars[starIdx]
 	if star.Owner != 2 {
 		return GroundInvasionResult{Reason: "該星不是敵方殖民地"}
 	}
-	if s.FleetMarines <= 0 && s.FleetTanks <= 0 {
+	if s.Fleet().Marines <= 0 && s.Fleet().Tanks <= 0 {
 		return GroundInvasionResult{Reason: "艦隊未載運地面部隊"}
 	}
 	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
@@ -490,7 +490,7 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	aiPlayer := &s.AIPlayers[aiIdx]
 	colony := aiPlayer.Colonies[colonyIdx]
 
-	tankCount := s.FleetTanks
+	tankCount := s.Fleet().Tanks
 	atkForce := s.playerMarineForce() + tankForceBonusFor(s.Player, tankCount)
 	// Commando 領袖加成(#5/#6,2026-07-11,見 commandoLeaderTier 註解的近似說明):兩版攻方
 	// 倍率相同(非差異項),不需要查 RuleProfile。
@@ -500,7 +500,7 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	// 合併陸戰隊+戰車營單位:Force 只借用 marineUnits/tankUnits 建構出來的 Units,side 級的
 	// atkForce 已在上面算好,故建構單位時 force 參數傳 0(NewGroundForce 的 force 只是塞進
 	// GroundForce.Force 欄位,這裡改在合併後的 atk struct 上設一次即可,避免混淆)。
-	marineUnits := gamedata.NewGroundForce(s.FleetMarines, marineHits, 0, false).Units
+	marineUnits := gamedata.NewGroundForce(s.Fleet().Marines, marineHits, 0, false).Units
 	tankUnits := gamedata.NewGroundForce(tankCount, tankHits, 0, false).Units
 	atkUnits := append(append([]gamedata.GroundUnit{}, marineUnits...), tankUnits...)
 	atk := gamedata.GroundForce{Units: atkUnits, Force: atkForce, Defending: false}
@@ -531,14 +531,14 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 
 	out := GroundInvasionResult{
 		Ok: true, AttackerWon: res.AttackerWon,
-		AttackerMarinesStart: s.FleetMarines, AttackerTanksStart: tankCount,
+		AttackerMarinesStart: s.Fleet().Marines, AttackerTanksStart: tankCount,
 		DefenderStart: defCount, ColonyName: s.starName(starIdx),
 		AttackerSurvived: res.AttackerSurvived, DefenderSurvived: res.DefenderSurvived,
 		AttackerMarinesSurvived: marinesSurvived, AttackerTanksSurvived: tanksSurvived,
 		Rounds: res.Rounds,
 	}
-	s.FleetMarines = marinesSurvived
-	s.FleetTanks = tanksSurvived
+	s.Fleet().Marines = marinesSurvived
+	s.Fleet().Tanks = tanksSurvived
 
 	if res.AttackerWon {
 		star.Owner = 1

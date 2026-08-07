@@ -70,7 +70,7 @@ func (s *GameSession) recordHistory() {
 // 讓折線圖上玩家與 AI 的軍力可以直接比較(AI 端是抽象累積值,見 advanceAI)。
 func (s *GameSession) playerFleetStrength() int {
 	n := 0
-	for _, sh := range s.Ships {
+	for _, sh := range s.AllShips() { // 國力是**全帝國**的,不是目前選中那一支艦隊
 		n += sh.WeaponAttack + sh.BonusHP/2
 	}
 	return n

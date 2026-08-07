@@ -10,7 +10,7 @@ func navSession(nStars int) *GameSession {
 	for i := range s.Stars {
 		s.Stars[i].Name = "S"
 	}
-	s.FleetAtStar = -1
+	s.Fleet().AtStar = -1
 	return s
 }
 
@@ -105,33 +105,49 @@ func TestCycleWithNoTargetsReturnsMinusOne(t *testing.T) {
 	}
 }
 
-// TestKnownFleetStarsIsSingleForNow 釘住一個**已知的模型限制**,不是期望行為。
+// TestKnownFleetStarsCoversEveryFleet:F1/F2 要走遍**每一支**艦隊。
 //
-// remake 的玩家艦隊是單一集合(`FleetAtStar`),AI 對手只有抽象的 `FleetStrength`、
-// 在星圖上沒有位置。所以 F1/F2 的循環集合現在只有一個元素。
-//
-// 多艦隊做出來時這條測試會紅——**那時候該改的是測試**,而且同一個模型缺口也卡著
-// 星圖的遷移連線層(見 gap report)。
-func TestKnownFleetStarsIsSingleForNow(t *testing.T) {
+// 這條測試先前叫 `...IsSingleForNow`,釘的是「循環集合只有一個元素」這個模型限制,
+// 並寫明「多艦隊做出來時該改的是測試」。多艦隊做出來了(見 fleet.go),所以改了。
+func TestKnownFleetStarsCoversEveryFleet(t *testing.T) {
 	s := navSession(10)
-	s.FleetAtStar = 4
+	s.Fleets = []Fleet{{AtStar: 4, DestStar: -1}, {AtStar: 1, DestStar: -1}, {AtStar: 7, DestStar: -1}}
 	got := s.KnownFleetStars()
-	if len(got) != 1 || got[0] != 4 {
-		t.Fatalf("目前應只有玩家自己那一支艦隊 [4],實得 %v", got)
+	want := []int{1, 4, 7}
+	if len(got) != len(want) {
+		t.Fatalf("應涵蓋三支艦隊 %v,實得 %v", want, got)
 	}
-	if idx := s.CycleFleetStar(-1, true); idx != 4 {
-		t.Errorf("F1 應把選取帶到艦隊所在星 4,實得 %d", idx)
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("應為 %v(依星索引排序),實得 %v", want, got)
+		}
 	}
-	if idx := s.CycleFleetStar(4, true); idx != 4 {
-		t.Errorf("只有一支艦隊時再按 F1 應停在原地,實得 %d", idx)
+	// 連按 F1 走遍三支再繞回來。
+	cur := -1
+	for _, exp := range []int{1, 4, 7, 1} {
+		cur = s.CycleFleetStar(cur, true)
+		if cur != exp {
+			t.Fatalf("F1 應到 %d,實得 %d", exp, cur)
+		}
 	}
 }
 
-// TestFleetOutOfRangeIsNotAFleet:FleetAtStar 越界(未初始化的存檔等)不能算成一支艦隊。
+// TestKnownFleetStarsDedupsSameStar:兩支艦隊停同一顆星只算一個落點。
+//
+// 循環的是**視角**;不去重的話按第二次 F1 看起來像沒反應。
+func TestKnownFleetStarsDedupsSameStar(t *testing.T) {
+	s := navSession(10)
+	s.Fleets = []Fleet{{AtStar: 3, DestStar: -1}, {AtStar: 3, DestStar: -1}}
+	if got := s.KnownFleetStars(); len(got) != 1 || got[0] != 3 {
+		t.Errorf("同一顆星上的兩支艦隊應只算一個落點 [3],實得 %v", got)
+	}
+}
+
+// TestFleetOutOfRangeIsNotAFleet:AtStar 越界(未初始化的存檔等)不能算成一個落點。
 func TestFleetOutOfRangeIsNotAFleet(t *testing.T) {
 	s := navSession(3)
-	s.FleetAtStar = 99
+	s.Fleet().AtStar = 99
 	if got := s.KnownFleetStars(); got != nil {
-		t.Errorf("越界的 FleetAtStar 不該算成艦隊,實得 %v", got)
+		t.Errorf("越界的 AtStar 不該算成艦隊落點,實得 %v", got)
 	}
 }

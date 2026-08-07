@@ -27,23 +27,23 @@ func TestBombardColony_PreconditionsChecked(t *testing.T) {
 	}
 
 	// 艦隊尚未抵達。
-	s.FleetAtStar = 0
-	s.FleetETA = 3
+	s.Fleet().AtStar = 0
+	s.Fleet().ETA = 3
 	if res := s.BombardColony(starIdx); res.Ok {
 		t.Fatalf("艦隊未抵達不應允許轟炸,got Ok=true")
 	}
 
 	// 目標星非敵方(玩家自己的母星)。
-	s.FleetAtStar = 0
-	s.FleetETA = 0
+	s.Fleet().AtStar = 0
+	s.Fleet().ETA = 0
 	if res := s.BombardColony(0); res.Ok {
 		t.Fatalf("非敵方星不應允許轟炸,got Ok=true")
 	}
 
 	// 已抵達敵方星,但艦隊沒有艦艇。
-	s.FleetAtStar = starIdx
-	s.FleetETA = 0
-	s.Ships = nil
+	s.Fleet().AtStar = starIdx
+	s.Fleet().ETA = 0
+	s.Fleet().Ships = nil
 	if res := s.BombardColony(starIdx); res.Ok {
 		t.Fatalf("艦隊無艦艇不應允許轟炸,got Ok=true")
 	}
@@ -64,9 +64,9 @@ func TestBombardColony_UnmodeledExpansionStarRejected(t *testing.T) {
 		t.Fatal("找不到可用的無主星做測試")
 	}
 	s.Stars[target].Owner = 2 // 模擬 aiExpand:只標 Owner,不建殖民地模型
-	s.FleetAtStar = target
-	s.FleetETA = 0
-	s.Ships = []Ship{deterministicBombardShip()}
+	s.Fleet().AtStar = target
+	s.Fleet().ETA = 0
+	s.Fleet().Ships = []Ship{deterministicBombardShip()}
 
 	res := s.BombardColony(target)
 	if res.Ok {
@@ -92,7 +92,7 @@ func TestBombardColony_UnmodeledExpansionStarRejected(t *testing.T) {
 func TestBombardColony_ReducesPopulationDeterministically(t *testing.T) {
 	s, starIdx := newFleetAtAIHomeSession(t)
 	s.RaceCombatPct = 0
-	s.Ships = []Ship{deterministicBombardShip()}
+	s.Fleet().Ships = []Ship{deterministicBombardShip()}
 
 	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
 	if !ok {
@@ -152,7 +152,7 @@ func TestBombardColony_ReducesPopulationDeterministically(t *testing.T) {
 func TestBombardColony_PopulationNeverNegative(t *testing.T) {
 	s, starIdx := newFleetAtAIHomeSession(t)
 	// 3 艘保證滿傷艦艇,傷害遠超過母星人口(8)所需的 hits。
-	s.Ships = []Ship{deterministicBombardShip(), deterministicBombardShip(), deterministicBombardShip()}
+	s.Fleet().Ships = []Ship{deterministicBombardShip(), deterministicBombardShip(), deterministicBombardShip()}
 
 	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
 	if !ok {
@@ -175,7 +175,7 @@ func TestBombardColony_PopulationNeverNegative(t *testing.T) {
 // 佔領仍要靠 InvadeColony 的陸戰隊/戰車入侵),Owner 與 AI 殖民地清單皆不變動。
 func TestBombardColony_DoesNotCaptureStarOrColony(t *testing.T) {
 	s, starIdx := newFleetAtAIHomeSession(t)
-	s.Ships = []Ship{deterministicBombardShip()}
+	s.Fleet().Ships = []Ship{deterministicBombardShip()}
 	beforeAIColonies := len(s.AIPlayers[0].Colonies)
 
 	res := s.BombardColony(starIdx)
@@ -196,7 +196,7 @@ func TestBombardColony_Deterministic(t *testing.T) {
 	build := func() (*GameSession, int) {
 		s, starIdx := newFleetAtAIHomeSession(t)
 		s.Turn = 9
-		s.Ships = []Ship{{Name: "測試艦", Class: "巡防艦", Weapon: "核飛彈", WeaponAttack: 40}}
+		s.Fleet().Ships = []Ship{{Name: "測試艦", Class: "巡防艦", Weapon: "核飛彈", WeaponAttack: 40}}
 		return s, starIdx
 	}
 	s1, idx1 := build()
@@ -229,7 +229,7 @@ func TestBombardColony_BuildingAbsorbsBeforePopulation(t *testing.T) {
 	s, starIdx := newFleetAtAIHomeSession(t)
 	s.RaceCombatPct = 0
 	s.RuleProfile = gamedata.RuleProfile{BombardmentVolleys: 1, BombardmentBuildingBonusHits: 0}
-	s.Ships = []Ship{deterministicBombardShip()}
+	s.Fleet().Ships = []Ship{deterministicBombardShip()}
 
 	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
 	if !ok {
@@ -266,7 +266,7 @@ func TestBombardColony_RemainingHitsAfterBuildingsGoToPopulation(t *testing.T) {
 	s, starIdx := newFleetAtAIHomeSession(t)
 	s.RaceCombatPct = 0
 	s.RuleProfile = gamedata.RuleProfile{BombardmentVolleys: 4, BombardmentBuildingBonusHits: 0}
-	s.Ships = []Ship{deterministicBombardShip()}
+	s.Fleet().Ships = []Ship{deterministicBombardShip()}
 
 	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
 	if !ok {
@@ -303,7 +303,7 @@ func TestBombardColony_BombardmentBuildingBonusHits_VersionDifference(t *testing
 		s, starIdx := newFleetAtAIHomeSession(t)
 		s.RaceCombatPct = 0
 		s.RuleProfile = gamedata.RuleProfile{BombardmentVolleys: 3, BombardmentBuildingBonusHits: bonus}
-		s.Ships = []Ship{deterministicBombardShip()}
+		s.Fleet().Ships = []Ship{deterministicBombardShip()}
 		res := s.BombardColony(starIdx)
 		return &res
 	}
@@ -332,7 +332,7 @@ func TestBombardColony_BombardmentBuildingBonusHits_VersionDifference(t *testing
 func TestBombardColony_NilColonyBuildingsRegressionSafe(t *testing.T) {
 	s, starIdx := newFleetAtAIHomeSession(t)
 	s.RaceCombatPct = 0
-	s.Ships = []Ship{deterministicBombardShip()}
+	s.Fleet().Ships = []Ship{deterministicBombardShip()}
 
 	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
 	if !ok {
@@ -383,7 +383,7 @@ func retaliationTestSetup(t *testing.T, buildings map[string]bool, ships []Ship)
 	t.Helper()
 	s, starIdx := newFleetAtAIHomeSession(t)
 	s.RuleProfile = gamedata.RuleProfile{BombardmentVolleys: 0, BombardmentBuildingBonusHits: 0}
-	s.Ships = ships
+	s.Fleet().Ships = ships
 	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
 	if !ok {
 		t.Fatal("應找得到 AI 母星的殖民地模型")
@@ -410,19 +410,19 @@ func TestBombardColony_RetaliationWithSurvivingStarBase(t *testing.T) {
 	if res.AttackerShipsLost != 1 {
 		t.Fatalf("固定種子下星基反擊 AttackerShipsLost 應為 1(單艦低 HP,星基 atk=4 一發應可擊沉),got %d", res.AttackerShipsLost)
 	}
-	if len(s.Ships) != 0 {
-		t.Fatalf("唯一一艘攻方艦被反擊擊沉後 s.Ships 應清空,got %d 艘", len(s.Ships))
+	if len(s.Fleet().Ships) != 0 {
+		t.Fatalf("唯一一艘攻方艦被反擊擊沉後 s.Fleet().Ships 應清空,got %d 艘", len(s.Fleet().Ships))
 	}
 }
 
 // TestBombardColony_NoRetaliationWithoutDefensiveBuildings 驗證:殖民地無任何防禦建築(本次
 // 轟炸把防禦建築全炸掉,或本來就沒有)時,完全不觸發反擊——DefenderRetaliated=false、
-// AttackerShipsLost=0,且 s.Ships 逐位元不變(回歸,見設計說明「無存活防禦建築時完全不呼叫
+// AttackerShipsLost=0,且 s.Fleet().Ships 逐位元不變(回歸,見設計說明「無存活防禦建築時完全不呼叫
 // 反擊解算」)。
 func TestBombardColony_NoRetaliationWithoutDefensiveBuildings(t *testing.T) {
 	ships := []Ship{deterministicBombardShip(), deterministicBombardShip()}
 	s, starIdx, _, _ := retaliationTestSetup(t, map[string]bool{}, ships)
-	beforeShips := append([]Ship(nil), s.Ships...)
+	beforeShips := append([]Ship(nil), s.Fleet().Ships...)
 
 	res := s.BombardColony(starIdx)
 	if !res.Ok {
@@ -434,12 +434,12 @@ func TestBombardColony_NoRetaliationWithoutDefensiveBuildings(t *testing.T) {
 	if res.AttackerShipsLost != 0 {
 		t.Fatalf("無反擊時 AttackerShipsLost 應為 0,got %d", res.AttackerShipsLost)
 	}
-	if len(s.Ships) != len(beforeShips) {
-		t.Fatalf("無反擊時 s.Ships 艘數不應變動,got %d want %d", len(s.Ships), len(beforeShips))
+	if len(s.Fleet().Ships) != len(beforeShips) {
+		t.Fatalf("無反擊時 s.Fleet().Ships 艘數不應變動,got %d want %d", len(s.Fleet().Ships), len(beforeShips))
 	}
 	for i := range beforeShips {
-		if !reflect.DeepEqual(s.Ships[i], beforeShips[i]) {
-			t.Fatalf("無反擊時 s.Ships[%d] 不應變動,got %+v want %+v", i, s.Ships[i], beforeShips[i])
+		if !reflect.DeepEqual(s.Fleet().Ships[i], beforeShips[i]) {
+			t.Fatalf("無反擊時 s.Fleet().Ships[%d] 不應變動,got %+v want %+v", i, s.Fleet().Ships[i], beforeShips[i])
 		}
 	}
 }
@@ -481,8 +481,8 @@ func TestBombardColony_StarFortressRetaliationStrongerThanStarBase(t *testing.T)
 func TestBombardColony_RetaliationClearsFleetCargoWhenFleetWiped(t *testing.T) {
 	s, starIdx, _, _ := retaliationTestSetup(t, map[string]bool{"星辰要塞": true}, []Ship{deterministicBombardShip()})
 	s.Turn = 3
-	s.FleetMarines = 5
-	s.FleetTanks = 2
+	s.Fleet().Marines = 5
+	s.Fleet().Tanks = 2
 
 	res := s.BombardColony(starIdx)
 	if !res.Ok {
@@ -491,13 +491,13 @@ func TestBombardColony_RetaliationClearsFleetCargoWhenFleetWiped(t *testing.T) {
 	if !res.DefenderRetaliated {
 		t.Fatalf("星辰要塞應觸發反擊,got DefenderRetaliated=false")
 	}
-	if len(s.Ships) != 0 {
-		t.Fatalf("測試前提:唯一一艘攻方艦應被星辰要塞反擊擊沉,got %d 艘存活(需要調整測試前提)", len(s.Ships))
+	if len(s.Fleet().Ships) != 0 {
+		t.Fatalf("測試前提:唯一一艘攻方艦應被星辰要塞反擊擊沉,got %d 艘存活(需要調整測試前提)", len(s.Fleet().Ships))
 	}
-	if s.FleetMarines != 0 {
-		t.Fatalf("艦隊清空後 FleetMarines 應歸 0,got %d", s.FleetMarines)
+	if s.Fleet().Marines != 0 {
+		t.Fatalf("艦隊清空後 FleetMarines 應歸 0,got %d", s.Fleet().Marines)
 	}
-	if s.FleetTanks != 0 {
-		t.Fatalf("艦隊清空後 FleetTanks 應歸 0,got %d", s.FleetTanks)
+	if s.Fleet().Tanks != 0 {
+		t.Fatalf("艦隊清空後 FleetTanks 應歸 0,got %d", s.Fleet().Tanks)
 	}
 }

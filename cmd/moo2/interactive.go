@@ -622,9 +622,9 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		if sess.SelectedStar >= 0 && sess.SelectedStar < len(sess.Stars) {
 			hits = append(hits, hitRegion{216, 330, 20, 16, "closestar"}) // 面板右上 CLOSE(✕),對齊原版 Star System 彈窗
 			switch {
-			case sess.FleetETA > 0:
+			case sess.Fleet().ETA > 0:
 				// 航行中,面板只顯示狀態文字,無按鈕。
-			case sess.SelectedStar == sess.FleetAtStar:
+			case sess.SelectedStar == sess.Fleet().AtStar:
 				switch {
 				case sess.SelectedStar == 0:
 					hits = append(hits, hitRegion{38, 402, 190, 20, "loadmarines"})
@@ -632,7 +632,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					// 敵殖民地:軌道轟炸恆可用(艦隊武器開火,不需陸戰隊);
 					// 發動地面入侵額外要求已載運陸戰隊,兩鈕不同列共存(402/424)。
 					hits = append(hits, hitRegion{38, 402, 190, 20, "bombard"})
-					if sess.FleetMarines > 0 {
+					if sess.Fleet().Marines > 0 {
 						hits = append(hits, hitRegion{38, 424, 190, 20, "invade"})
 					}
 				case sess.StarGuardedByMonster(sess.SelectedStar):
@@ -903,10 +903,10 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				// 左上角的星星與艦隊圖示。原版這格放的是數字,跟其他四格一樣,所以改成數字。
 				fnt.DrawCentered(dst, fmt.Sprintf("%d", rpSum), 579, 405, 12, infoCol)
 				// 艦隊位置標記(青色三角)+ 航行目的連線。
-				if sess.FleetAtStar >= 0 && sess.FleetAtStar < len(sess.Stars) {
-					fx, fy := starScreenPos(sess.Stars[sess.FleetAtStar])
-					if sess.FleetDestStar >= 0 && sess.FleetDestStar < len(sess.Stars) {
-						dx, dy := starScreenPos(sess.Stars[sess.FleetDestStar])
+				if sess.Fleet().AtStar >= 0 && sess.Fleet().AtStar < len(sess.Stars) {
+					fx, fy := starScreenPos(sess.Stars[sess.Fleet().AtStar])
+					if sess.Fleet().DestStar >= 0 && sess.Fleet().DestStar < len(sess.Stars) {
+						dx, dy := starScreenPos(sess.Stars[sess.Fleet().DestStar])
 						vector.StrokeLine(dst, float32(fx), float32(fy), float32(dx), float32(dy), 1, color.RGBA{80, 220, 220, 180}, false)
 					}
 					// 艦隊圖示:原版 `Draw_Ship_Icons_` 的帶旗色小艦艇(見 shipicon.go)。
@@ -947,10 +947,10 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					// 同系其他天體(氣態巨星/小行星帶)的完整摘要放在行星列表畫面——這個面板
 					// 只有 344~400 這四列的空間,402 起是操作鈕,再塞一列會壓到按鈕。
 					// 陸戰隊狀態行:艦隊目前載運數,選中母星時另顯示殖民地駐軍池數(唯一已知對映)。
-					marineLine := fmt.Sprintf(b.tr("艦隊陸戰隊 %d", "Fleet marines %d"), sess.FleetMarines)
+					marineLine := fmt.Sprintf(b.tr("艦隊陸戰隊 %d", "Fleet marines %d"), sess.Fleet().Marines)
 					if sess.SelectedStar == 0 && len(sess.PlayerColonyMarines) > 0 {
 						marineLine = fmt.Sprintf(b.tr("艦隊陸戰隊 %d／殖民地駐軍 %d", "Fleet marines %d / colony garrison %d"),
-							sess.FleetMarines, sess.PlayerColonyMarines[0])
+							sess.Fleet().Marines, sess.PlayerColonyMarines[0])
 					}
 					fnt.Draw(dst, marineLine, 38, 394, 11, color.RGBA{200, 220, 170, 255})
 					// 操作鈕/狀態(與 galaxy() 建 hits 時的判斷邏輯一致)。
@@ -959,30 +959,30 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{30, 55, 35, 235}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{110, 200, 140, 255}, false)
 						fnt.Draw(dst, b.lastActionMsg, 42, 415, 10, color.RGBA{225, 240, 225, 255})
-					case sess.FleetETA > 0:
-						fnt.Draw(dst, fmt.Sprintf(b.tr("艦隊航行中…剩 %d 回合", "Fleet in transit — %d turns left"), sess.FleetETA),
+					case sess.Fleet().ETA > 0:
+						fnt.Draw(dst, fmt.Sprintf(b.tr("艦隊航行中…剩 %d 回合", "Fleet in transit — %d turns left"), sess.Fleet().ETA),
 							38, 415, 11, color.RGBA{120, 200, 240, 255})
-					case sess.SelectedStar == sess.FleetAtStar && sess.SelectedStar == 0:
+					case sess.SelectedStar == sess.Fleet().AtStar && sess.SelectedStar == 0:
 						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{40, 70, 120, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{110, 160, 230, 255}, false)
 						fnt.Draw(dst, b.tr("▶ 載運陸戰隊", "▶ Load marines"), 46, 415, 12, color.RGBA{230, 235, 245, 255})
-					case sess.SelectedStar == sess.FleetAtStar && sess.Stars[sess.SelectedStar].Owner == 2:
+					case sess.SelectedStar == sess.Fleet().AtStar && sess.Stars[sess.SelectedStar].Owner == 2:
 						// 軌道轟炸恆可用(艦隊武器開火,不需陸戰隊),畫在 402 這列。
 						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{90, 60, 130, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{170, 140, 230, 255}, false)
 						fnt.Draw(dst, b.tr("▶ 軌道轟炸", "▶ Bombard"), 46, 415, 12, color.RGBA{240, 235, 250, 255})
 						// 發動地面入侵額外要求已載運陸戰隊,畫在下一列(424),與轟炸鈕並存。
-						if sess.FleetMarines > 0 {
+						if sess.Fleet().Marines > 0 {
 							vector.DrawFilledRect(dst, 38, 424, 190, 20, color.RGBA{120, 50, 40, 255}, false)
 							vector.StrokeRect(dst, 38, 424, 190, 20, 1, color.RGBA{230, 130, 110, 255}, false)
 							fnt.Draw(dst, b.tr("▶ 發動地面入侵", "▶ Invade"), 46, 437, 12, color.RGBA{245, 235, 230, 255})
 						}
-					case sess.SelectedStar == sess.FleetAtStar && sess.StarGuardedByMonster(sess.SelectedStar):
+					case sess.SelectedStar == sess.Fleet().AtStar && sess.StarGuardedByMonster(sess.SelectedStar):
 						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{110, 45, 60, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{230, 120, 140, 255}, false)
 						fnt.Draw(dst, b.tr("▶ 挑戰", "▶ Attack ")+sess.MonsterNameAtStar(sess.SelectedStar),
 							46, 415, 12, color.RGBA{250, 230, 235, 255})
-					case sess.SelectedStar == sess.FleetAtStar && sess.Stars[sess.SelectedStar].Owner == 0 &&
+					case sess.SelectedStar == sess.Fleet().AtStar && sess.Stars[sess.SelectedStar].Owner == 0 &&
 						(sess.FleetHasColonyShip() || (sess.FleetHasOutpostShip() && !sess.HasOutpostAt(sess.SelectedStar))):
 						// 兩鈕可並存(與 galaxy() 建 hits 的判斷同一套):有殖民船畫在 402,
 						// 前哨船接在下一列;只有前哨船時它自己佔 402。
@@ -998,7 +998,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 							vector.StrokeRect(dst, 38, row, 190, 20, 1, color.RGBA{140, 190, 230, 255}, false)
 							fnt.Draw(dst, b.tr("▶ 建立前哨站", "▶ Build outpost"), 46, float64(row)+13, 12, color.RGBA{230, 240, 250, 255})
 						}
-					case sess.SelectedStar == sess.FleetAtStar:
+					case sess.SelectedStar == sess.Fleet().AtStar:
 						fnt.Draw(dst, b.tr("艦隊已在此星", "Fleet is already here"), 38, 415, 11, color.RGBA{140, 200, 140, 255})
 					default:
 						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{40, 70, 120, 255}, false)
@@ -2550,7 +2550,8 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 		gold := color.RGBA{240, 220, 120, 255}
 		body := color.RGBA{206, 214, 232, 255}
 		y := 312.0
-		for _, sh := range b.session.Ships {
+		// 艦隊列表列的是**全帝國**的船(原版的 Fleets 畫面也是),不是目前選中那一支。
+		for _, sh := range b.session.AllShips() {
 			s.extras = append(s.extras,
 				extraText{x: 28, y: y, size: 13, text: sh.Name, col: gold},
 				extraText{x: 130, y: y, size: 12, text: sh.Class, col: body},
@@ -3577,14 +3578,16 @@ func (a *interactiveApp) Update() error {
 		// ① 艦艇損傷:輕傷/完好/重傷各一,琥珀與紅兩個顏色分支都要真的畫出來才算驗到。
 		// 開局艦隊都是 strength 1 的船(偵察艦/殖民船,最大血量 3),損傷刻度本來就只有
 		// 0/33/66% 三檔——這是艦級抽象戰鬥模型的必然,不是顯示精度問題。
-		for i := range a.gallerySession.Ships {
+		i := 0
+		a.gallerySession.EachShip(func(sh *shell.Ship) {
 			switch i % 3 {
 			case 0:
-				a.gallerySession.Ships[i].Damage = 1 // 輕傷 → 琥珀
+				sh.Damage = 1 // 輕傷 → 琥珀
 			case 2:
-				a.gallerySession.Ships[i].Damage = 99 // 重傷 → 紅(ShipDamage 會夾到「最大血量−1」)
+				sh.Damage = 99 // 重傷 → 紅(ShipDamage 會夾到「最大血量−1」)
 			}
-		}
+			i++
+		})
 		// ② 次元傳送門:安塔蘭王座廳的「發動終局反攻」要它才會亮起來(手冊 p.183)。
 		a.gallerySession.GrantDimensionalPortalForGallery()
 	}

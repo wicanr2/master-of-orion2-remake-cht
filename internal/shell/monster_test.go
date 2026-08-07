@@ -33,7 +33,7 @@ func newMonsterTestSession(t *testing.T, kind gamedata.SpaceMonster) (*GameSessi
 	}
 	st, _ := gamedata.MonsterStatsFor(kind)
 	s.Monsters = append(s.Monsters, MonsterGuard{StarIndex: target, Kind: kind, Structure: st.Structure})
-	s.FleetAtStar, s.FleetETA = target, 0
+	s.Fleet().AtStar, s.Fleet().ETA = target, 0
 	return s, target
 }
 
@@ -41,7 +41,7 @@ func newMonsterTestSession(t *testing.T, kind gamedata.SpaceMonster) (*GameSessi
 // system」。這條 gate 先前只寫在檔頭引文裡,沒有東西可擋。
 func TestMonsterBlocksColonizeAndOutpost(t *testing.T) {
 	s, target := newMonsterTestSession(t, gamedata.MonsterCrystal)
-	s.Ships = append(s.Ships, Ship{Class: ColonyShipClass}, Ship{Class: OutpostShipClass})
+	s.Fleet().Ships = append(s.Fleet().Ships, Ship{Class: ColonyShipClass}, Ship{Class: OutpostShipClass})
 
 	res := s.ColonizeStar(target)
 	if res.Ok {
@@ -63,7 +63,7 @@ func TestMonsterBlocksColonizeAndOutpost(t *testing.T) {
 func TestClearingMonsterUnblocksColonize(t *testing.T) {
 	s, target := newMonsterTestSession(t, gamedata.MonsterAmoeba)
 	// 給一支足以打贏的艦隊(變形蟲結構 60)。
-	s.Ships = []Ship{
+	s.Fleet().Ships = []Ship{
 		{Name: "戰艦一", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
 		{Name: "戰艦二", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
 		{Name: "戰艦三", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
@@ -79,7 +79,7 @@ func TestClearingMonsterUnblocksColonize(t *testing.T) {
 		t.Fatal("打贏了怪獸卻還在")
 	}
 	// 清場之後才把殖民船送進來——這正是手冊 p.62 描述的順序。
-	s.Ships = append(s.Ships, Ship{Class: ColonyShipClass})
+	s.Fleet().Ships = append(s.Fleet().Ships, Ship{Class: ColonyShipClass})
 	if c := s.ColonizeStar(target); !c.Ok {
 		t.Errorf("清除怪獸後應可拓殖,卻回 %q", c.Reason)
 	}
@@ -88,7 +88,7 @@ func TestClearingMonsterUnblocksColonize(t *testing.T) {
 // 打不贏時怪獸要留著剩餘結構,下次接續(不是每次都回滿血)。
 func TestMonsterKeepsDamageBetweenAttacks(t *testing.T) {
 	s, target := newMonsterTestSession(t, gamedata.MonsterGuardian) // 結構 300,一次打不完
-	s.Ships = []Ship{{Name: "偵察", Class: "偵察艦", Weapon: "無武裝", Armor: "無裝甲", Shield: "無護盾", Special: "無"}}
+	s.Fleet().Ships = []Ship{{Name: "偵察", Class: "偵察艦", Weapon: "無武裝", Armor: "無裝甲", Shield: "無護盾", Special: "無"}}
 
 	before := s.MonsterAtStar(target).Structure
 	res := s.AttackMonster(target)
@@ -110,13 +110,13 @@ func TestMonsterKeepsDamageBetweenAttacks(t *testing.T) {
 func TestAttackMonsterPreconditions(t *testing.T) {
 	s, target := newMonsterTestSession(t, gamedata.MonsterHydra)
 	// 艦隊不在該星。
-	s.FleetAtStar = (target + 1) % len(s.Stars)
+	s.Fleet().AtStar = (target + 1) % len(s.Stars)
 	if res := s.AttackMonster(target); res.Ok {
 		t.Error("艦隊不在該星不該能挑戰")
 	}
 	// 沒有怪獸的星。
 	s2 := NewDemoSession()
-	if res := s2.AttackMonster(s2.FleetAtStar); res.Ok {
+	if res := s2.AttackMonster(s2.Fleet().AtStar); res.Ok {
 		t.Error("沒有怪獸的星不該能挑戰")
 	}
 }

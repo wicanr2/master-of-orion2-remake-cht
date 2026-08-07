@@ -27,7 +27,7 @@ func seqRandN(vals ...int) func(int) int {
 // 表抄錯的徵狀很隱晦:星雲數只是「少一團」,畫面照樣合理。這裡把每檔的**上下界**都釘住。
 func TestNebulaCountMatchesOriginalTable(t *testing.T) {
 	cases := []struct {
-		size           int
+		size             int
 		wantMin, wantMax int
 	}{
 		{0, 0, 1}, // Random(2) − 1
@@ -156,15 +156,15 @@ func TestNebulaProbeNilClears(t *testing.T) {
 //	except for those on ships equipped with Hard Shields.」
 func TestNebulaShieldDisablesUnlessHardShield(t *testing.T) {
 	s := &GameSession{
-		Stars:       []Star{{}, {InNebula: true}},
-		FleetAtStar: 0,
+		Stars:  []Star{{}, {InNebula: true}},
+		Fleets: []Fleet{{AtStar: 0, DestStar: -1}},
 	}
 	// 不在星雲:護盾照常。
 	if got := s.nebulaShield(6, false); got != 6 {
 		t.Errorf("不在星雲時護盾應維持 6,實得 %d", got)
 	}
 	// 在星雲:沒有硬化護盾就歸零。
-	s.FleetAtStar = 1
+	s.Fleet().AtStar = 1
 	if got := s.nebulaShield(6, false); got != 0 {
 		t.Errorf("星雲中沒有硬化護盾,護盾應歸零,實得 %d", got)
 	}

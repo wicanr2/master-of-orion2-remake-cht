@@ -204,8 +204,8 @@ func TestColonizeRejectsNonHabitable(t *testing.T) {
 			ClimateID: gamedata.TERRAN, GravityID: gamedata.NORMAL_G,
 			MineralID: gamedata.ABUNDANT, SizeID: gamedata.MEDIUM_PLANET,
 		}
-		s.Ships = append(s.Ships, Ship{Class: ColonyShipClass})
-		s.FleetAtStar, s.FleetETA = target, 0
+		s.Fleet().Ships = append(s.Fleet().Ships, Ship{Class: ColonyShipClass})
+		s.Fleet().AtStar, s.Fleet().ETA = target, 0
 
 		res := s.ColonizeStar(target)
 		if res.Ok {

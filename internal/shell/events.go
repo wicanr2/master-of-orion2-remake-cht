@@ -133,13 +133,15 @@ func (s *GameSession) applyRandomEvent(ev gamedata.RandomEvent) (string, bool) {
 		return fmt.Sprintf("%s 發生劇烈地震,%d 百萬居民罹難", s.colonyLabel(i), lost), true
 
 	case 8: // 艦船爆炸:一艘軍艦離奇爆炸
-		if len(s.Ships) <= 1 {
+		// **打的是整個帝國**不是玩家目前選中的那一支艦隊——事件不看玩家的操作焦點。
+		if s.ShipCount() <= 1 {
 			return "", false // 只剩一艘就不炸,避免玩家瞬間失去全部艦隊
 		}
-		k := s.eventRand.Intn(len(s.Ships))
-		name := s.Ships[k].Name
-		s.Ships = append(s.Ships[:k], s.Ships[k+1:]...)
-		return fmt.Sprintf("軍艦「%s」離奇爆炸,調查仍在進行中", name), true
+		lost, ok := s.removeShipGlobal(s.eventRand.Intn(s.ShipCount()))
+		if !ok {
+			return "", false
+		}
+		return fmt.Sprintf("軍艦「%s」離奇爆炸,調查仍在進行中", lost.Name), true
 
 	case 10: // 工業意外:輻射污染,氣候惡化 + 人口損失
 		i, ok := s.pickColony()
@@ -167,18 +169,20 @@ func (s *GameSession) applyRandomEvent(ev gamedata.RandomEvent) (string, bool) {
 			s.colonyLabel(i), mineralDisplayName(from), mineralDisplayName(to)), true
 
 	case 13: // 艦船叛變:一艘艦倒戈給某個 AI
-		if len(s.Ships) <= 1 {
+		// 同上:叛變的是帝國裡的任何一艘,不限玩家目前選中的艦隊。
+		if s.ShipCount() <= 1 {
 			return "", false
 		}
 		j, ok := s.pickAI()
 		if !ok {
 			return "", false
 		}
-		k := s.eventRand.Intn(len(s.Ships))
-		name := s.Ships[k].Name
-		s.Ships = append(s.Ships[:k], s.Ships[k+1:]...)
+		lost, ok := s.removeShipGlobal(s.eventRand.Intn(s.ShipCount()))
+		if !ok {
+			return "", false
+		}
 		s.AIPlayers[j].FleetStrength += 10
-		return fmt.Sprintf("軍艦「%s」發生叛變,投奔%s", name, s.AIPlayers[j].Name), true
+		return fmt.Sprintf("軍艦「%s」發生叛變,投奔%s", lost.Name, s.AIPlayers[j].Name), true
 
 	case 15: // 海盜劫掠:國庫被偷
 		if s.Player.BC <= 0 {

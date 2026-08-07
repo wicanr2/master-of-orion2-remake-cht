@@ -17,7 +17,7 @@ func hotkeyBuilder(nStars int) *sceneBuilder {
 		sess.Stars[i].Explored = true
 	}
 	sess.SelectedStar = -1
-	sess.FleetAtStar = -1
+	sess.Fleet().AtStar = -1
 	b := &sceneBuilder{session: sess}
 	b.measure.from = -1
 	return b
