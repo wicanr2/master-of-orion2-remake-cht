@@ -11,10 +11,27 @@ package gamedata
 // 飛彈 Beam Defense(FTLlevel/Speed + MissileBonus)於本檔下方實作(MissileSpeed/
 // MissileWarheadBonus/MissileBeamDefense)。
 //
-// ⚠ 手冊此段自相矛盾:明列公式 Speed = BaseSpeed(12) + 2*(FTLlevel-1) + FastBonus(4)
-// 得 14/16/18/20/22/24/26(FTL 0-6),但同段附表 Speed 欄為 10/12/14/16/18/20/22。
-// 本檔以「明列公式」為準(手冊寫 "calculated as follows"),表格 Speed 欄推測為驅動本身
-// 速度(另一量)。此落差需日後對實機行為動態驗證;FTLlevel 對映與 MissileBonus 表無爭議。
+// ✅ **手冊那個「自相矛盾」2026-08-07 解掉了,而且兩邊都對**(gap report 第 82 項)。
+//
+// 原本的斷言是:明列公式 `12 + 2*(FTL-1) + 4` 得 14/16/…/26,但同段附表是 10/12/…/22,
+// 差 4;當時選了公式、並註明「需日後對實機行為動態驗證」。
+//
+// `Missile_Speed_` @ 0x3CD21 給出答案——**那個 +4 是有條件的**:
+//
+//	loc_3CE40:
+//	    test [ebp+var_3], 10h     ; ← 旗標 0x10
+//	    jz   short loc_3CE49
+//	    add  edx, 4               ; 只有旗標成立才 +4
+//
+// 旗標 0x10 是**飛彈的 Fast 改造**。所以:**手冊的表 = 沒有 Fast 改造的一般飛彈,
+// 手冊的公式 = 裝了 Fast 改造的**。兩者都對,只是條件不同——不是矛盾,是漏了條件。
+//
+// 而 remake 先前**無條件 +4**,等於每一枚飛彈都當成有 Fast 改造:Beam Defense 憑空高 20
+// (5×4),飛彈比原版難打下來。
+//
+// 反組譯同時推翻了另一件事:**基礎速度不是固定的 12**,而是依武器類型分檔
+// (見 MissileBaseSpeed)。12 只是其中一檔——正好是手冊拿來舉例的那一檔,
+// 所以手冊的表對「那一檔」是準的。
 
 // --- Weapons(手冊 p123):哪些武器能攻擊飛彈/魚雷 ---
 //
@@ -156,17 +173,100 @@ const (
 	MissileWarheadZeon      = 70  // Zeon Missile
 )
 
-// MissileSpeed 依 FTLlevel 回傳飛彈速度,採手冊明列公式:
+// MissileFastBonus 是 Fast 改造的速度加成(原版 `Missile_Speed_` 的 `add edx, 4`,
+// 由旗標 0x10 開關)。手冊把它寫進「明列公式」卻沒說它是有條件的——見檔頭。
+const MissileFastBonus = 4
+
+// MissileStandardBaseSpeed 是手冊拿來舉例的那一檔基礎速度。
 //
-//	Speed = BaseSpeed(12) + 2*(FTLlevel-1) + FastBonus(4)
+// 原版對武器類型 0x0E..0x11 回這個值(`loc_3CDB7: mov edx, 0Ch`)。手冊的附表
+// 10/12/14/16/18/20/22(FTL 0..6)就是 `12 + 2*(FTL−1)` —— 逐項吻合。
+const MissileStandardBaseSpeed = 12
+
+// MissileBaseSpeed 依**武器類型**回傳基礎速度(原版 `Missile_Speed_` @ 0x3CD21 的分支表)。
 //
-// (與手冊附表 Speed 欄有 +4 落差,見檔頭矛盾註解;此處以明列公式為準。)
-func MissileSpeed(ftlLevel int) int {
-	return 12 + 2*(ftlLevel-1) + 4
+//	類型        基礎  加 FTL 項?  玩家旗標成立時
+//	0x0E..0x11   12      是            —
+//	0x12/0x13    20      **否**        —
+//	0x1C          6      是            10
+//	0x1D          8      是            12
+//	0x1E          8      是            12
+//	0x1F         10      是            14
+//	0x28         24      **否**        —
+//	其餘          0      是            —
+//
+// `withFTL` 回 false 的兩檔(0x12/0x13 與 0x28)在原版是 `xor ecx, ecx` ——
+// **速度與驅動等級無關**。照抄;不知道那兩檔是什麼武器就不編名字。
+//
+// `boosted` 對應原版的 `[player+0x8BC] != 0`(某個玩家旗標,且只在 `bx < 8`,
+// 即真玩家而非怪獸/安塔蘭時才檢查)。那個旗標**還沒追出是什麼**,所以呼叫端目前一律傳 false
+// ——留一個誠實的參數,比把它寫死成「永遠沒有」再假裝完整好。
+func MissileBaseSpeed(weaponKind int, boosted bool) (base int, withFTL bool) {
+	switch {
+	case weaponKind >= 0x0E && weaponKind <= 0x11:
+		return MissileStandardBaseSpeed, true
+	case weaponKind == 0x12 || weaponKind == 0x13:
+		return 20, false
+	case weaponKind == 0x1C:
+		if boosted {
+			return 10, true
+		}
+		return 6, true
+	case weaponKind == 0x1D, weaponKind == 0x1E:
+		if boosted {
+			return 12, true
+		}
+		return 8, true
+	case weaponKind == 0x1F:
+		if boosted {
+			return 14, true
+		}
+		return 10, true
+	case weaponKind == 0x28:
+		return 24, false
+	}
+	return 0, true
 }
 
-// MissileBeamDefense 回傳飛彈的 Beam Defense = 5*Speed + warheadBonus。
+// MissileSpeed 依 FTLlevel 回傳**一般(未改造)**飛彈的速度。
+//
+//	Speed = 12 + 2*(FTLlevel − 1)
+//
+// 這正是手冊附表的 10/12/14/16/18/20/22(FTL 0..6)。Fast 改造的那 +4 見
+// `MissileSpeedFast` —— 先前無條件加,等於每枚飛彈都當成有改造。
+func MissileSpeed(ftlLevel int) int {
+	return MissileStandardBaseSpeed + 2*(ftlLevel-1)
+}
+
+// MissileSpeedFast 是裝了 Fast 改造的速度(= 手冊那條「明列公式」)。
+func MissileSpeedFast(ftlLevel int) int {
+	return MissileSpeed(ftlLevel) + MissileFastBonus
+}
+
+// MissileSpeedOf 是完整版:依武器類型、FTL 等級、Fast 改造算速度。
+//
+// 順序照原版:先取基礎值 → 加 FTL 項(該檔要加才加)→ 最後才加 Fast。
+func MissileSpeedOf(weaponKind, ftlLevel int, fast, boosted bool) int {
+	base, withFTL := MissileBaseSpeed(weaponKind, boosted)
+	speed := base
+	if withFTL {
+		speed += 2 * (ftlLevel - 1)
+	}
+	if fast {
+		speed += MissileFastBonus
+	}
+	return speed
+}
+
+// MissileBeamDefense 回傳**一般(未改造)**飛彈的 Beam Defense = 5*Speed + warheadBonus。
 // warheadBonus 用上方 MissileWarhead* 常數。
+//
+// ⚠ 先前這裡用的速度含無條件的 +4,結果每一枚飛彈的 Beam Defense 都憑空高 20 —— 比原版難打下來。
 func MissileBeamDefense(ftlLevel, warheadBonus int) int {
 	return 5*MissileSpeed(ftlLevel) + warheadBonus
+}
+
+// MissileBeamDefenseFast 是裝了 Fast 改造的版本。
+func MissileBeamDefenseFast(ftlLevel, warheadBonus int) int {
+	return 5*MissileSpeedFast(ftlLevel) + warheadBonus
 }

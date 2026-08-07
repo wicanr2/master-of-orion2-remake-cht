@@ -1430,6 +1430,30 @@ Star Fortress → Battlestation → Star Base,同一條升級鏈**最強的排�
 
 順帶把 `origBuildingID` 搬進 `internal/gamedata`:畫地表 sprite 與這份清單要靠同一份編號對照。
 
+## ★ 2026-08-07 飛彈速度:那個「手冊自相矛盾」不是矛盾(gap report 第 82 項)
+
+`missile.go` 的檔頭從移植那天起就寫著「手冊此段自相矛盾…**此落差需日後對實機行為動態驗證**」,
+而 `HONEST-STATUS.md` 把它列在「需原版 oracle 對照」。
+
+`Missile_Speed_` @ 0x3CD21 的最後三行解掉了,**不需要 oracle**:
+
+    test [ebp+var_3], 10h     ; 旗標 0x10 = Fast 改造
+    jz   short loc_3CE49
+    add  edx, 4               ; 只有旗標成立才 +4
+
+所以手冊的**附表 = 沒有 Fast 改造**、**明列公式 = 裝了 Fast 改造**,兩者都對,只是手冊
+沒說那個 FastBonus 是有條件的。remake 先前無條件 +4,等於每枚飛彈都預設有改造
+——Beam Defense 憑空高 20,飛彈比原版難打下來。
+
+同一支函式還推翻了「基礎速度固定 12」:依武器類型分 6/8/10/12/20/24 六檔,
+其中兩檔(0x12/0x13、0x28)`xor ecx, ecx` **不隨驅動等級變**(很容易漏抄,已釘測試)。
+
+**誠實留白**:`[player+0x8BC]` 那個讓 6→10/8→12/10→14 的玩家旗標還沒追出是什麼,
+`MissileBaseSpeed` 留一個 `boosted` 參數、呼叫端傳 false——留誠實的參數比假裝完整好。
+
+**教訓**:「手冊矛盾 → 選一個 → 待實機驗證」在文件裡放了很久,答案一直在執行檔裡。
+把它列進「需 oracle」是**分類錯誤**——它需要的是把靜態來源窮盡完。
+
 ## 工作方式(使用者定案)
 - go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)
 - **不用多代理 workflow**;翻譯一組一組慢慢做(單代理逐項,使用者可隨時審閱)
