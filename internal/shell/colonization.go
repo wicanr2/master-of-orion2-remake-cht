@@ -320,7 +320,7 @@ func (s *GameSession) newColonyFromPlanet(planetIdx int, gov gamedata.MoraleGove
 		PlanetGravity:        gravity,
 		MineralRichness:      mineral,
 		Climate:              climate,
-		MoralePercent:        colonyMoralePercent(gov, nil), // 新殖民地無任何建築,見檔頭§2
+		MoralePercent:        colonyMoralePercent(gov, nil, false), // 新殖民地無任何建築、無外族人口(自己拓殖的),見檔頭§2
 		// 金礦 +5 / 寶石礦 +10 BC/回合(手冊逐字)。SpecialIncome 是殖民地層的固定收入,
 		// 由 engine.RunEmpireTurn 併進帝國總收入。
 		SpecialIncome: gamedata.SpecialIncomePerTurn(special),

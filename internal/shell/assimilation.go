@@ -88,5 +88,8 @@ func (s *GameSession) advanceAssimilation() {
 		if c.UnassimilatedPop > c.Population {
 			c.UnassimilatedPop = c.Population
 		}
+		// 多種族士氣懲罰是「有沒有未同化人口」的函數,所以同化完最後一單位的那一刻
+		// 懲罰就該消失——不重算的話玩家會一直被扣到下次蓋建築為止。
+		s.recalcColonyMorale(i)
 	}
 }

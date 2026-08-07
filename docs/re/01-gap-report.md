@@ -5014,6 +5014,55 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     **沒有在這裡硬調數字去湊一條好看的曲線**——要修的是那兩個近似值,而那需要手冊或
     反組譯給出戰機的真實傷害,目前兩邊都沒有。已在接線處與測試裡各留一段說明。
 
+98. **把上一輪自己寫的兩條留白關掉**(2026-08-07)。
+
+    第 97 項的結尾特別強調「**有程式碼消費不等於完整還原**」,並列出仍有寫明的部分實作。
+    其中兩條在寫的當下就已經解得開了——擋住它們的東西是我自己前幾輪剛加上去的。
+
+    ### ① 多種族殖民地的 20% 士氣懲罰
+
+    `gamedata.MoraleMultiRacialPenalty(hasAlienManagementCenter)` **早就存在而且是死碼**。
+    它一直沒有呼叫端,理由寫在 `session.go` 的註解裡:「因 remake 無多種族人口追蹤,
+    目前一律不套用」。
+
+    第 96 項加上 `ColonyState.UnassimilatedPop` 之後,那個理由就不成立了:
+    **未同化人口 > 0 就是多種族殖民地**。接上去之後三件事同時成立:
+
+    - 攻下來的殖民地真的有代價(第 96 項寫的「機制在、後果還沒接」關掉了)
+    - 異族管理中心的**第二條**手冊效果生效(第一條是同化速率)
+    - 同化完最後一單位的那一刻懲罰消失——`advanceAssimilation` 每輪重算士氣,
+      不然玩家會一直被扣到下次蓋建築為止(有測試釘住)
+
+    ### ② 三面護盾的「Radiated 轉 Barren」
+
+    三段手冊敘述用詞略異但意思相同:
+
+    ```
+    Radiation Shield 「Radiated worlds become Barren as long as the shield remains in place」
+    Flux Shield      「The existence of a flux shield converts Radiated climates to Barren」
+    Barrier Shield   「This shield converts Radiated climates into Barren」
+    ```
+
+    `ColonyState.Climate` 早就在(地形改造那一輪加的),所以只要在建成時走既有的
+    `applyClimateChange`——那一支會連帶調整食物與人口上限,直接改 Climate 欄位不會。
+
+    **⚠ 一個刻意的偏離,寫明白**:輻射護盾那句是「**as long as the shield remains in
+    place**」——維持中而不是一次性。remake 接成一次性的,所以護盾被軌道轟炸摧毀之後
+    那顆星**不會**變回 Radiated。理由是 remake 的建築效果**沒有一個是可逆的**
+    (自動工廠被炸掉產能也不會退回去),為這一棟另建「效果可撤銷」的機制,
+    代價遠大於它修正的失真。**這是選擇,不是疏忽。**
+
+    ### 還沒接的那一條
+
+    屏障護盾的「biological weapons cannot enter the planet's atmosphere」——
+    remake 沒有「生物武器」這個分類,**沒接**。
+
+    ### 這一輪的形狀
+
+    沒有挖新的一手資料,做的是**回頭把自己標的留白逐條檢查一次**:
+    哪些是「真的缺前置」、哪些只是「當時缺、現在有了」。兩條屬於後者。
+    留白清單如果只增不減,它就會從「誠實記錄」退化成「免責聲明」。
+
 
 
 

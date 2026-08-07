@@ -114,3 +114,46 @@ func TestRepulsiveRaceSlowsAssimilationInSession(t *testing.T) {
 		t.Errorf("排斥種族應是兩倍回合:%d → %d", base, got)
 	}
 }
+
+// 未同化人口 = 多種族殖民地 → 20% 士氣懲罰(手冊 p.66-67),異族管理中心消除。
+//
+// 這條把第 96 項寫的那句「機制在、後果還沒接」關掉:同化現在真的有代價了。
+func TestUnassimilatedPopulationCostsMorale(t *testing.T) {
+	clean := colonyMoralePercent(gamedata.MoraleGovDictatorship, nil, false)
+	multi := colonyMoralePercent(gamedata.MoraleGovDictatorship, nil, true)
+	if multi != clean-20 {
+		t.Errorf("多種族殖民地應 −20 士氣:%d → %d", clean, multi)
+	}
+	// 異族管理中心消除它。
+	withCenter := colonyMoralePercent(gamedata.MoraleGovDictatorship,
+		map[string]bool{alienManagementCenterName: true}, true)
+	if withCenter != clean {
+		t.Errorf("有異族管理中心時懲罰應消失:一般 %d、多種族+建築 %d", clean, withCenter)
+	}
+}
+
+// 同化完最後一單位的那一刻,懲罰要跟著消失——不重算的話玩家會一直被扣。
+func TestMoralePenaltyLiftsWhenAssimilationFinishes(t *testing.T) {
+	s := NewDemoSession()
+	s.DisableEvents = true
+	s.Government = gamedata.MoraleGovDemocracy // 4 回合一單位
+	c := engine.ColonyState{Population: 1, PopMax: 8, PlanetGravity: gamedata.NORMAL_G}
+	markColonyConquered(&c)
+	s.PlayerColonies = append(s.PlayerColonies, c)
+	idx := len(s.PlayerColonies) - 1
+	for len(s.ColonyBuildings) < len(s.PlayerColonies) {
+		s.ColonyBuildings = append(s.ColonyBuildings, nil)
+	}
+	s.recalcColonyMorale(idx)
+	penalised := s.PlayerColonies[idx].MoralePercent
+
+	for i := 0; i < 4; i++ {
+		s.advanceAssimilation()
+	}
+	if s.PlayerColonies[idx].UnassimilatedPop != 0 {
+		t.Fatalf("4 回合後應同化完,未同化剩 %d", s.PlayerColonies[idx].UnassimilatedPop)
+	}
+	if got := s.PlayerColonies[idx].MoralePercent; got != penalised+20 {
+		t.Errorf("同化完之後 20 點懲罰應消失:%d → %d(期望 %d)", penalised, got, penalised+20)
+	}
+}

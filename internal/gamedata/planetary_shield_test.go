@@ -81,3 +81,31 @@ func TestPlanetaryShieldMaintenanceMatchesTheBuildingTable(t *testing.T) {
 		t.Fatalf("建築表裡應找到 %d 棟護盾,找到 %d 棟", len(want), found)
 	}
 }
+
+// 三面護盾都把 Radiated 變成 Barren(手冊三句一致),其他氣候不動。
+func TestPlanetaryShieldsConvertRadiatedToBarren(t *testing.T) {
+	for _, name := range []string{
+		BuildingPlanetaryRadiationShield,
+		BuildingPlanetaryFluxShield,
+		BuildingPlanetaryBarrierShield,
+	} {
+		b := map[string]bool{name: true}
+		if got := PlanetaryShieldEffectiveClimate(RADIATED, b); got != BARREN {
+			t.Errorf("%s 應把 Radiated 變成 Barren,得到 %d", name, got)
+		}
+	}
+	// 沒有護盾就不變。
+	if got := PlanetaryShieldEffectiveClimate(RADIATED, nil); got != RADIATED {
+		t.Errorf("沒有護盾時 Radiated 不該變,得到 %d", got)
+	}
+}
+
+// 只有 Radiated 這一階——手冊三句都只講 Radiated,別把它變成通用的氣候改造。
+func TestPlanetaryShieldsOnlyTouchRadiated(t *testing.T) {
+	b := map[string]bool{BuildingPlanetaryBarrierShield: true}
+	for _, c := range []PlanetClimate{TOXIC, BARREN, TUNDRA, DESERT, TERRAN, GAIA} {
+		if got := PlanetaryShieldEffectiveClimate(c, b); got != c {
+			t.Errorf("氣候 %d 不該被護盾改動,得到 %d", c, got)
+		}
+	}
+}

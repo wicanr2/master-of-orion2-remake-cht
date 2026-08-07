@@ -41,11 +41,29 @@ package gamedata
 // 三棟全中。維護費與減傷值出自手冊的同一段文字,而維護費又能對上執行檔的表
 // ——**那一段文字是可信的**,減傷值不是孤證。
 //
-// ============ 沒接的那兩件事 ============
+// ============ 氣候轉換(2026-08-07 補上)============
 //
-// 三棟都寫著「Radiated 氣候轉 Barren」,屏障護盾還多一句「生物武器無法進入大氣層」。
-// 前者要接殖民地的氣候欄位、後者要有生物武器這個分類,兩者都不在這一輪的範圍
-// ——**只接減傷,而且說明白只接了減傷**,不假裝這三棟已經完整。
+// 三棟的手冊敘述都有這一句,而且用詞略有差異但意思相同:
+//
+//	Radiation Shield 「**Radiated worlds become Barren** as long as the shield remains in place」
+//	Flux Shield      「The existence of a flux shield **converts Radiated climates to Barren**」
+//	Barrier Shield   「This shield **converts Radiated climates into Barren** by reducing solar radiation」
+//
+// ⚠ 輻射護盾那句寫的是 **as long as the shield remains in place**——「維持中」而不是
+// 「一次性改造」。**remake 接成一次性的**:建成時走既有的 `shell.applyClimateChange`
+// (與地形改造同一支),把 Climate 推到 BARREN 並連帶調整食物與人口上限。
+//
+// 差別在護盾**被軌道轟炸摧毀之後**:照手冊那顆星該變回 Radiated,remake 不會。
+// 這是刻意的選擇而不是疏忽——remake 的建築效果**沒有一個是可逆的**
+// (自動工廠被炸掉產能也不會退回去),為了這一棟另建一套「效果可撤銷」的機制,
+// 代價遠大於它修正的失真。**寫在這裡,不假裝已經照手冊做。**
+//
+// ⚠ 只有 **Radiated → Barren** 這一階。其他氣候不受影響——手冊三句都只講 Radiated。
+//
+// ============ 還沒接的那一件 ============
+//
+// 屏障護盾多一句「biological weapons cannot enter the planet's atmosphere」。
+// remake 沒有「生物武器」這個分類,**這條沒接**。
 
 // 行星護盾的每次攻擊減傷(GAME_MANUAL.pdf,見檔頭引文)。
 const (
@@ -87,4 +105,20 @@ func PlanetaryShieldedDamage(damage, reduction int) int {
 		return 0
 	}
 	return d
+}
+
+// PlanetaryShieldEffectiveClimate 回傳套用行星護盾之後,這個殖民地實際生效的氣候。
+//
+// 三面護盾任一存在都把 **Radiated 變成 Barren**(手冊三句一致,見檔頭)。其他氣候原樣回傳。
+//
+// 這支是**查詢用**(UI 顯示「這顆星實際是什麼氣候」);實際的狀態變更走
+// `shell.applyClimateChange`,見檔頭關於「一次性 vs 維持中」的說明。
+func PlanetaryShieldEffectiveClimate(climate PlanetClimate, buildings map[string]bool) PlanetClimate {
+	if climate != RADIATED {
+		return climate
+	}
+	if PlanetaryShieldReduction(buildings) > 0 {
+		return BARREN
+	}
+	return climate
 }

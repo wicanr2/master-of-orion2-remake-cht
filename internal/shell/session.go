@@ -1318,6 +1318,17 @@ func (s *GameSession) applyBuildingEffect(i int, name string) {
 		// 不接 FlatIndustry ——那個欄位在污染縮減之前併入 gross,接錯地方會讓這份產能
 		// 跟著產生污染,正好與手冊那句相反。接法見 engine.RunColonyTurn 的 recycled。
 		c.Recyclotron = true
+	case gamedata.BuildingPlanetaryRadiationShield, gamedata.BuildingPlanetaryFluxShield,
+		gamedata.BuildingPlanetaryBarrierShield:
+		// 三面護盾的共同效果:**Radiated 氣候轉 Barren**(手冊三句一致,見
+		// gamedata/planetary_shield.go)。減傷那一半不在這裡——它由 orbital_bombardment.go
+		// 在轟炸解算時讀 ColonyBuildings,不經 ColonyState。
+		//
+		// 走既有的 applyClimateChange(與地形改造同一支)才會連帶調整食物與人口上限;
+		// 直接改 Climate 欄位會讓那兩個數字停在舊氣候上。
+		if c.Climate == gamedata.RADIATED {
+			s.applyClimateChange(i, gamedata.BARREN)
+		}
 	case "行星重力產生器": // Planetary Gravity Generator p.104:重力正常化,消除 Low-G/Heavy-G 負面效果。
 		// 2026-07-11 已接線:engine.ColonyState.NormalizeGravity=true 時,colonyGravityPenaltyPercent
 		// (colony.go)強制把重力懲罰歸零,不論 PlanetGravity 是什麼——此旗標現在真的有效,不再是
@@ -2049,7 +2060,14 @@ var moraleGovByIndex = []gamedata.MoraleGovernmentType{
 //     尚未跟上」情形,見 colony-buildings.md)。
 //   - 首都淪陷懲罰 gamedata.MoraleCapitalCapturedPenalty:remake 沒有「首都被攻陷」這個狀態,
 //     TODO 待地面入侵系統擴充到「可攻佔玩家母星」後補上,現在不加。
-func colonyMoralePercent(gov gamedata.MoraleGovernmentType, buildings map[string]bool) int {
+//
+// multiRacial 為 true 時套用手冊的多種族殖民地 20% 士氣懲罰
+// (`gamedata.MoraleMultiRacialPenalty`,異族管理中心可消除)。
+//
+// 2026-08-07 接線:那支函式先前是死碼——remake 沒有「這個殖民地有沒有外族人口」可判斷。
+// 第 96 項加上 `ColonyState.UnassimilatedPop` 之後就有了:**未同化人口 > 0 就是多種族**。
+// 這也讓異族管理中心的第二條手冊效果真的生效(第一條是同化速率,見 assimilation.go)。
+func colonyMoralePercent(gov gamedata.MoraleGovernmentType, buildings map[string]bool, multiRacial bool) int {
 	hasBarracks := buildings["海軍陸戰隊營"] || buildings["裝甲營房"]
 	pct := gamedata.MoraleGovernmentBase(gov, hasBarracks)
 	if buildings["全息模擬艙"] {
@@ -2057,6 +2075,9 @@ func colonyMoralePercent(gov gamedata.MoraleGovernmentType, buildings map[string
 	}
 	if buildings["歡樂穹頂"] {
 		pct += gamedata.MoralePleasureDomeBonus
+	}
+	if multiRacial {
+		pct += gamedata.MoraleMultiRacialPenalty(buildings[alienManagementCenterName])
 	}
 	return pct
 }
@@ -2077,7 +2098,8 @@ func (s *GameSession) recalcColonyMorale(i int) {
 	if i < 0 || i >= len(s.PlayerColonies) {
 		return
 	}
-	s.PlayerColonies[i].MoralePercent = colonyMoralePercent(s.Government, s.buildingsFor(i))
+	s.PlayerColonies[i].MoralePercent = colonyMoralePercent(s.Government, s.buildingsFor(i),
+		s.PlayerColonies[i].UnassimilatedPop > 0)
 }
 
 // recalcAllColonyMorale 對所有玩家殖民地重算士氣(見 recalcColonyMorale)。
@@ -3612,7 +3634,8 @@ func playerHomeworldColony() engine.ColonyState {
 		// 見 gamedata.ResearchPerScientistNorm)。先前硬編 30 約 10x 過高,2026-07-12 校正。
 		ResearchPerScientist: gamedata.ResearchPerScientistNorm,
 		PlanetSize:           gamedata.MEDIUM_PLANET, // 原版 Sol III = Medium Terran(archive.org oracle)
-		MoralePercent:        colonyMoralePercent(gamedata.MoraleGovDictatorship, homeworldBuildings()),
+		// 母星是自己的人,沒有未同化的外族人口 → 不套多種族懲罰。
+		MoralePercent: colonyMoralePercent(gamedata.MoraleGovDictatorship, homeworldBuildings(), false),
 		// PlanetGravity 母星固定 Normal-G(手冊/homeworld-init.md 慣例基準,與 Terran/Abundant
 		// 同一組母星設定),無重力懲罰。engine.ColonyState.PlanetGravity 的 Go 零值恰好是
 		// gamedata.LOW_G(ordinal 0),必須明確賦值,不能依賴零值(見該欄位註解)。
