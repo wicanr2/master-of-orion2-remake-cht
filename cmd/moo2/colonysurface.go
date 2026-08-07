@@ -246,6 +246,7 @@ var origBuildingID = map[string]int{
 	"Robo Mining Plant":           36, // Robo Miner Plant
 	"Space Academy":               38, // Space Academy
 	"Spaceport":                   39, // Spaceport
+	"Stellar Converter":           42, // Stellar Converter(行星版,分類 0 → 畫在地表格點上)
 	"Star Base":                   40, // Star Base
 	"Star Fortress":               41, // Star Fortress
 	"Subterranean Farms":          43, // Subterranean Farms

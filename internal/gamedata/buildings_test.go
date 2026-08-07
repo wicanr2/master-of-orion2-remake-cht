@@ -2,10 +2,20 @@ package gamedata
 
 import "testing"
 
-// TestBuildingsCount 驗證手冊全表 35 建築 + 5 衛星 = 40 項,一項不多不少。
+// TestBuildingsCount 驗證表的筆數,一項不多不少。
+//
+// ⚠ 2026-08-07 從 40 改成 41,原因值得寫下來:先前的 40 是**手冊《The Big List》的記帳
+// 慣例**(35 建築 + 5 衛星),不是遊戲規則。手冊把恆星轉換器(行星版)放在單獨一節
+// (§十一,p.106)所以不計入 40;但原版建築表(`off_17EB3D`)裡它就是第 42 棟,
+// 和其他 47 棟完全同構——有成本(1000 PP)、有維護費(6 BC)、有分類(0 = 地表建築)。
+//
+// 也就是說「40」從一開始就不是原版的數字,只是抄手冊時連著記帳方式一起抄了。
+// 真正的上界是原版建築表的 48 棟;其餘 7 個編號不在這裡的理由各自不同,
+// 逐一列在 `docs/re/01-gap-report.md` 第 36 項(2 個自動給予、3 個是 SpecialActions、
+// 2 個仍缺)。改這個數字前先去看那一項。
 func TestBuildingsCount(t *testing.T) {
-	if got := len(Buildings); got != 40 {
-		t.Fatalf("Buildings 應有 40 筆(35 建築 + 5 衛星),got %d", got)
+	if got := len(Buildings); got != 41 {
+		t.Fatalf("Buildings 應有 41 筆(手冊 40 項 + 恆星轉換器),got %d", got)
 	}
 }
 

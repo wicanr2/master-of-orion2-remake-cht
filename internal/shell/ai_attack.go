@@ -354,6 +354,14 @@ func (s *GameSession) colonyDefense(ci int) int {
 	// 有建的殖民地防禦顯著提高。
 	if ci < len(s.ColonyBuildings) {
 		def += gamedata.CommandPointsFromBuildings(s.ColonyBuildings[ci]) * 10
+		// 恆星轉換器(行星版):手冊 p.106「400 傷 ×2,無視射程與防禦」。
+		//
+		// ⚠ 這是這批防禦建築裡**唯一有固定數字**的一棟,所以只有它接得進來。
+		// 飛彈基地與地面砲台手冊只給「佔 300 / 450 空間、裝當時最佳武器」的規則,
+		// 傷害隨科技現算,要等艦艇元件的空間模型就緒——那兩棟仍是記錄已建但不影響數值。
+		if s.ColonyBuildings[ci][gamedata.StellarConverterName] {
+			def += gamedata.StellarConverterDefense
+		}
 	}
 	return def
 }

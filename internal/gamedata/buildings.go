@@ -353,7 +353,38 @@ var Buildings = []Building{
 		PrereqTopic:    TOPIC_MULTIDIMENSIONAL_PHYSICS,
 		Effect:         "同系統內的艦隊可跨越次元,對安塔蘭人發動攻擊(終局戰觸發點)",
 	},
+	// ---- 混合型別:恆星轉換器(行星版) ----
+	//
+	// 手冊《The Big List》把它放在單獨一節(§十一,p.106),不計入「35 建築 + 5 衛星」那個
+	// 40 的計數——那是**手冊的記帳慣例**,不是遊戲規則:原版建築表(off_17EB3D)裡它就是
+	// 第 42 棟,和其他 47 棟完全同構(有成本、有維護費、有分類)。
+	//
+	// 2026-08-07 補上,兩個獨立來源對上才敢建模:
+	//   ① 手冊 p.106:「行星駐防版對目標造成 400 傷 ×2(雙側共 1600),無視射程與防禦」
+	//   ② 原版建築表第 42 列:成本 1000 PP、維護 6 BC、分類 0(地表建築)
+	//      —— 維護 6 與手冊那一欄逐項相符,兩邊對上才動。
+	//
+	// ⚠ 這是**行星駐防版**。手冊同段還講艦載系統版(裝在船上從軌道開火可直接摧毀整顆星球),
+	// 那是艦艇元件不是建築,不在這裡。
+	{
+		NameZH: "恆星轉換器", NameEN: "Stellar Converter",
+		Category: CategoryDefense, MaintenanceBC: 6,
+		ProductionCost: 1000, // 原版執行檔建築表(off_17EB3D + 8)
+		PrereqTopic:    TOPIC_TEMPORAL_PHYSICS,
+		Effect:         "行星駐防版對來襲艦隊造成 400 傷 ×2(雙側共 1600),無視射程與防禦",
+	},
 }
+
+// StellarConverterDefense 是恆星轉換器(行星版)在殖民地防禦解算裡的貢獻。
+//
+// 手冊 p.106 給的是「400 傷 ×2」——**這是這一批防禦建築裡唯一有固定數字的一棟**。
+// 飛彈基地與地面砲台手冊只給「佔 300 / 450 空間、裝當時最佳武器」的規則,傷害隨科技現算,
+// 要等艦艇元件的空間模型就緒才能算(見 docs/knowledge-base/manual-cht/02-buildings.md
+// 「駐軍上限公式」那段的註記),所以那兩棟仍未接進防禦解算。
+const StellarConverterDefense = 800
+
+// StellarConverterName 是恆星轉換器的中文名(供 shell 判斷殖民地有沒有這棟)。
+const StellarConverterName = "恆星轉換器"
 
 // BuildingByNameZH 依中文名找建築資料。
 func BuildingByNameZH(zh string) (Building, bool) {
