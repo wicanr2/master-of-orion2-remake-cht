@@ -115,6 +115,76 @@ func GroundTypeHitsDelta(unitType int) int {
 	return 0
 }
 
+// --- 加成塊(`Compute_Player_Ground_Combat_Bonuses_` @ 0xEC15C)---
+//
+// 那支函式產一個 **19 位元組**的加成塊,`Compute_Ground_Combat_Info_` 再從裡面取值。
+// 逐欄追下來,大多是「某個科技已知就給 +10」這種、對應手冊既有的加成表
+//(remake 的 `GroundArmorTechBonus` 等已經涵蓋),但有**兩條是手冊沒有、只有反組譯才知道**的:
+//
+// ============ 一、基礎耐受命中數是 1,某個科技讓它變 2 ============
+//
+//	[out+0x0C] = 1  if [player+0x8AA] != 0
+//	...
+//	耐受命中數 = [加成塊+0x0C] + 1        ; Compute_Ground_Combat_Info_
+//
+// 也就是**預設一下就死一個單位**,那個科技讓所有部隊都變成要兩下。
+//
+// ============ 二、地面戰的難度加成**不給玩家** ============
+//
+//	if ([player+0x28] == 100) [out+0x0F] = 0            ; 100 = 人類玩家的標記
+//	else                      [out+0x0F] = 難度 − 2
+//	; 而玩家編號 >= 8 的那一側(安塔蘭 / 怪獸)走另一條路徑:
+//	                          [out+0x0F] = 難度×2 − 4
+//
+// `[out+0x0F]` 被加進**所有部隊類型**的攻擊力(`var_4`)。所以:
+//
+//	人類玩家     +0
+//	AI 帝國      難度 − 2        (普通 = 0、不可能 = +2、教學 = −2)
+//	安塔蘭那側   難度×2 − 4      (**雙倍**)
+//
+// `[player+0x28] == 100` 這個「人類玩家標記」在 `Init_Player_Tech_` @ 0x5E55F 也出現過
+// (`cmp byte ptr [eax+28h], 64h`)——**同一個標記在兩支不相干的函式裡對得上**。
+//
+// ⚠ 其餘欄位(`[+5]`/`[+7]`/`[+9]` 那幾張表、`[+0x0B]`、`[+0x10]`)還沒逐欄對出意義,
+// 但它們對應的是手冊已經列出的那幾類加成,remake 已用手冊的表算過——不重複實作。
+
+// GroundBaseHitsToKill 回傳基礎耐受命中數(原版 `[加成塊+0x0C] + 1`)。
+//
+// 預設 1(一下死一個);`extraArmour` 是那個把所有部隊變成要兩下的科技
+// (`[player+0x8AA]`,還沒對出是哪一項,所以參數用中性的名字)。
+func GroundBaseHitsToKill(extraArmour bool) int {
+	if extraArmour {
+		return 2
+	}
+	return 1
+}
+
+// GroundCombatantKind 是加成塊那三條分支對應的三種參戰者。
+type GroundCombatantKind int
+
+const (
+	// GroundHumanPlayer 是人類玩家([player+0x28] == 100)。
+	GroundHumanPlayer GroundCombatantKind = iota
+	// GroundAIEmpire 是 AI 帝國(玩家編號 < 8 但不是人類)。
+	GroundAIEmpire
+	// GroundAntaranSide 是玩家編號 >= 8 的那一側(安塔蘭 / 怪獸)。
+	GroundAntaranSide
+)
+
+// GroundDifficultyBonus 回傳難度給的地面戰攻擊力加成(原版 `[加成塊+0x0F]`)。
+//
+// 難度索引同 `shell.Difficulties`(0 = 教學 … 2 = 普通 … 4 = 不可能),
+// 所以「普通」對 AI 是 0 ——**加成是以普通為基準往兩邊偏**,不是一律加成。
+func GroundDifficultyBonus(difficulty int, kind GroundCombatantKind) int {
+	switch kind {
+	case GroundHumanPlayer:
+		return 0
+	case GroundAntaranSide:
+		return difficulty*2 - 4
+	}
+	return difficulty - 2
+}
+
 // MilitiaPerPopulation 是「幾個人口單位出一個民兵」(原版 `Colony_N_Militia_` 的 `idiv 5`)。
 const MilitiaPerPopulation = 5
 

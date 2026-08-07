@@ -276,3 +276,50 @@ func TestMilitiaIsWeakerThanMarines(t *testing.T) {
 		t.Error("民兵應該挨打")
 	}
 }
+
+// --- 加成塊(Compute_Player_Ground_Combat_Bonuses_ @ 0xEC15C)---
+
+// ★ 地面戰的難度加成**不給人類玩家**,而安塔蘭那側拿雙倍。
+//
+// 這是手冊沒寫、只有反組譯才知道的一條:`[player+0x28] == 100`(人類玩家標記)時
+// 加成是 0,AI 是「難度 − 2」,玩家編號 >= 8 的那側是「難度×2 − 4」。
+func TestGroundDifficultyBonusSkipsTheHumanPlayer(t *testing.T) {
+	for diff := 0; diff <= 4; diff++ {
+		if got := GroundDifficultyBonus(diff, GroundHumanPlayer); got != 0 {
+			t.Errorf("難度 %d:人類玩家的加成應為 0,實得 %d", diff, got)
+		}
+		if got, want := GroundDifficultyBonus(diff, GroundAIEmpire), diff-2; got != want {
+			t.Errorf("難度 %d:AI 的加成應為 %d,實得 %d", diff, want, got)
+		}
+		if got, want := GroundDifficultyBonus(diff, GroundAntaranSide), diff*2-4; got != want {
+			t.Errorf("難度 %d:安塔蘭側的加成應為 %d,實得 %d", diff, want, got)
+		}
+	}
+	// 「普通」(索引 2)是基準:AI 與安塔蘭側都拿 0。
+	if GroundDifficultyBonus(2, GroundAIEmpire) != 0 || GroundDifficultyBonus(2, GroundAntaranSide) != 0 {
+		t.Error("普通難度應是基準(加成 0),不是「一律加成」")
+	}
+	// 安塔蘭側**恰好是 AI 的兩倍**——這是原版兩條分支的關係,不是巧合。
+	for diff := 0; diff <= 4; diff++ {
+		if GroundDifficultyBonus(diff, GroundAntaranSide) != 2*GroundDifficultyBonus(diff, GroundAIEmpire) {
+			t.Errorf("難度 %d:安塔蘭側應恰為 AI 的兩倍", diff)
+		}
+	}
+	// 教學要是負的、不可能要是正的——方向搞反的話遊戲會整個顛倒。
+	if GroundDifficultyBonus(0, GroundAIEmpire) >= 0 {
+		t.Error("教學難度下 AI 的地面戰加成應為負")
+	}
+	if GroundDifficultyBonus(4, GroundAIEmpire) <= 0 {
+		t.Error("不可能難度下 AI 的地面戰加成應為正")
+	}
+}
+
+// 基礎耐受命中數是 1,某個科技讓它變 2(原版 `[加成塊+0x0C] + 1`)。
+func TestGroundBaseHitsToKill(t *testing.T) {
+	if got := GroundBaseHitsToKill(false); got != 1 {
+		t.Errorf("預設應為 1(一下死一個),實得 %d", got)
+	}
+	if got := GroundBaseHitsToKill(true); got != 2 {
+		t.Errorf("有那個科技時應為 2,實得 %d", got)
+	}
+}

@@ -534,6 +534,10 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	// 「帝國全域清單當代理」同款近似紀律)。舊存檔 aiPlayer.Leaders 解碼為 nil 時
 	// commandoLeaderTier(nil)=0,安全降級為無加成。
 	defForce += gamedata.GroundCommandoDefenderForceBonus(commandoLeaderTier(aiPlayer.Leaders), s.RuleProfile.DefenderCommandoBonus)
+	// 難度加成:原版**只給 AI**,人類玩家拿 0(`Compute_Player_Ground_Combat_Bonuses_`
+	// @ 0xEC15C 的 `[player+0x28] == 100` 分支)。以「普通」為基準往兩邊偏。
+	// 攻方是人類玩家,所以 atkForce 那邊不加——那不是漏掉,是原版就沒有。
+	defForce += gamedata.GroundDifficultyBonus(s.Difficulty, gamedata.GroundAIEmpire)
 	defHits := gamedata.GroundMarineHitsToKill(false, hasPoweredArmorFor(aiPlayer.Player))
 	// 守方:陸戰隊 + **民兵**。原版的殖民地填三格(裝甲 / 陸戰隊 / 民兵,見
 	// `Compute_Colony_Ground_Combat_Info_` @ 0xED713 與手冊「your militia are also shown here」)。
