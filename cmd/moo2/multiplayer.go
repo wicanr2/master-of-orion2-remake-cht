@@ -326,10 +326,20 @@ func (s *multiplayerScreen) update(in shell.InputState) *origTransition {
 
 func (s *multiplayerScreen) click(act string) *origTransition {
 	switch act {
-	case "network", "modem", "nullmodem":
-		// 原版這三個真的能連線;remake 沒有網路層,說清楚而不是假裝可選。
-		s.msg = s.b.tr("本版只實作熱座(同機輪流)。連線對戰需要原版的 IPX / 數據機層。",
-			"Only hot seat is implemented. Network play needs the original IPX / modem layer.")
+	case "network":
+		// 傳輸層與鎖步協定已經有了(internal/netplay),但**連線流程的 UI 還沒做**
+		// (Join_Net / Choose_Net_Plyrs 那幾張)。點下去先給看等待畫面
+		// (原版 Net_Next_Turn,版面見 cmd/moo2/netnextturn.go),並說清楚現況——
+		// 比「點了跳一句沒實作」誠實,也比假裝連得上安全。
+		s.mode, s.msg = mpNetwork, s.b.tr(
+			"連線層已就緒(TCP + 鎖步),但連線流程的畫面還沒做。下面是對局中的等待畫面。",
+			"Transport is ready (TCP + lockstep) but the join flow screens are not built yet.")
+		return &origTransition{next: s.b.netNextTurnDemo()}
+	case "modem", "nullmodem":
+		// ⚠ 這兩個是**數據機與序列線**——那些硬體現在不存在,remake 走 TCP。
+		// 替不存在的硬體做設定畫面不是還原,是裝飾。
+		s.msg = s.b.tr("數據機 / 序列線在現在的機器上不存在;本版的連線走 TCP。",
+			"Modem / null-modem hardware no longer exists; this build uses TCP.")
 		return nil
 	case "hotseat":
 		if s.mode != mpHotseat {

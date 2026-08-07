@@ -3661,6 +3661,8 @@ type interactiveApp struct {
 	galleryConfirmTick int
 	// galleryFighterTick 是截圖廊在戰術戰鬥裡派出一隊戰機的 tick。
 	galleryFighterTick int
+	// galleryNetWaitTick 是截圖廊把畫面換成網路等待畫面的 tick。
+	galleryNetWaitTick int
 	galleryBuilder     *sceneBuilder
 	gallerySession     *shell.GameSession
 }
@@ -3677,6 +3679,9 @@ const galleryVictoryTick = 38
 // 的規則會被**完全修復**。先前注入在 t28 而 t29 按了結束回合,截出來一艘傷都沒有——
 // 那不是顯示壞了,是修復規則正常運作。
 const galleryFleetTick = 18
+
+// galleryNetWaitTick 是截圖廊在哪個 tick 換成網路等待畫面——取截圖(t96)的前一拍。
+const galleryNetWaitTick = 95
 
 // galleryFighterTick 是截圖廊在哪個 tick 於戰術戰鬥裡派出一隊戰機——取截圖(t66)的前一拍。
 //
@@ -3926,6 +3931,10 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		// 是/否確認框(原版 Confirmation_Box_)。同上,直接推上來。
 		idle, // t93: 由 galleryConfirmTick 換成確認框
 		idle, // t94: settle → 截圖 confirm
+
+		// 網路等待畫面(原版 Net_Next_Turn)。同上,直接推上來。
+		idle, // t95: 由 galleryNetWaitTick 換成等待畫面
+		idle, // t96: settle → 截圖 netwait
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -3960,6 +3969,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{90, "27_commandpoints.png"},
 		{92, "28_measure.png"},
 		{94, "29_confirm.png"},
+		{96, "30_netwait.png"},
 	}
 	return script, shots
 }
@@ -4169,6 +4179,10 @@ func (a *interactiveApp) Update() error {
 			a.cur = sc
 		}
 	}
+	// 截圖廊專用:網路等待畫面(原版 Net_Next_Turn)。
+	if a.galleryNetWaitTick > 0 && a.tick == a.galleryNetWaitTick && a.galleryBuilder != nil {
+		a.cur = a.galleryBuilder.netNextTurnDemo()
+	}
 	// 截圖廊專用:戰術戰鬥裡派一隊戰機出擊(見 galleryFighterTick 的說明)。
 	if a.galleryFighterTick > 0 && a.tick == a.galleryFighterTick {
 		if ts, ok := a.cur.(*tacticalScreen); ok && len(ts.player) > 1 {
@@ -4343,6 +4357,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.galleryMeasureTick = galleryMeasureTick
 		app.galleryConfirmTick = galleryConfirmTick
 		app.galleryFighterTick = galleryFighterTick
+		app.galleryNetWaitTick = galleryNetWaitTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,
