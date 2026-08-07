@@ -158,13 +158,42 @@ func applyTechTheft(ps *engine.PlayerState, opt spyStealOption) {
 // gamedata.SpyEffectiveThreshold 的定義)。目前只接上 SpySlotBonus——手冊 Spy Bonuses 表中
 // 唯一「有明確人數 → 加成對照表」的項目(見 gamedata/spy.go 檔頭)。
 //
-// 種族特性(SpyRaceTraitBonus)/科技(SpyTechnologyBonus)/政府(SpyGovernmentDefenseBonus,
-// 手冊本來就只給 Defense 欄,offense 無政府加成)三項現行 remake 無法從
-// AIOpponent/engine.PlayerState 推導出對應資料(無種族間諜特性強度資料、無逐科技模型可查是否
-// 擁有 spy.go 列的 5 項科技、AIOpponent 無政府型態欄位),一律回 0——TODO,待補上這些欄位後
-// 在此函式接上,不臆造數字。
-func spyAttackerBonus(spyCount int) int {
-	return gamedata.SpySlotBonus(spyCount)
+// ⚠ **2026-08-08(第 117 項)訂正過。** 這段原本寫著三項加成一律回 0,理由是
+// 「無種族間諜特性強度資料、**無逐科技模型可查是否擁有 spy.go 列的 5 項科技**、
+// AIOpponent 無政府型態欄位」。
+//
+// 中間那條**當時可能成立,現在不成立**:`groundEquipTechOwned` 已經是三個系統共用的
+// 判定(生物武器、地面裝備、進階政體),而那 5 項科技在 `enums.go` 都有常數。
+// 科技加成因此接上了,攻守兩側都算(手冊那張表兩欄同值)。
+//
+// 仍然回 0 的兩項,理由各自不同:
+//   - **種族間諜特性**:`enums.go` 的 `TRAIT_SPYING` 只標記「有沒有」,沒有 -3/+3/+6 的
+//     強度分級,而 `Races` 表也沒有這一欄。**資料不存在**,不是沒接。
+//   - **政府**:手冊只給 Defense 欄(攻擊方本來就沒有政府加成),所以這裡不需要它。
+//     防守側見 `spyDefenderBonus`。
+func spyAttackerBonus(ps engine.PlayerState, spyCount int) int {
+	return gamedata.SpySlotBonus(spyCount) + spyTechBonusFor(ps)
+}
+
+// spyTechBonusFor 加總這一方已擁有的間諜相關科技加成(手冊 Spy Bonuses 表的 Technology 列)。
+//
+// ⚠ **「加總」是這裡的讀法,手冊沒有明說。** 手冊列的是 5 項**互不相關**的科技
+// (神經掃描器、隱形衣、心靈學…),不是同一件事的三個階——取最佳的話,研究第二項就完全
+// 沒有意義。這與領袖技能那邊的處理刻意不同:那裡手冊明寫「Megawealth 與 Researcher 是
+// 累加的」,反面暗示其餘取最佳(見 gamedata/leader_skill_apply.go)。這裡沒有那句話。
+func spyTechBonusFor(ps engine.PlayerState) int {
+	total := 0
+	for _, tech := range []gamedata.Technology{
+		gamedata.TECH_NEURAL_SCANNER, gamedata.TECH_TELEPATHIC_TRAINING,
+		gamedata.TECH_CYBERSECURITY_LINK, gamedata.TECH_STEALTH_SUIT, gamedata.TECH_PSIONICS,
+	} {
+		topic, ok := gamedata.OrigTechTopic(tech)
+		if !ok || !groundEquipTechOwned(ps, topic, tech) {
+			continue
+		}
+		total += gamedata.SpyTechnologyBonus(tech)
+	}
+	return total
 }
 
 // spyDefenderBonus 算出「防守方(被偷科技的一方)」的 defender bonus(DB)。手冊區分 Spy
@@ -173,10 +202,29 @@ func spyAttackerBonus(spyCount int) int {
 // 「defenses against enemy spies are active...even with zero defending agents」描述的
 // 「零 Agent」情境,不是遺漏,是誠實反映目前的簡化狀態。
 //
-// TODO:接上 Agent 訓練系統後,DB 應改用 gamedata.SpySlotBonus(agentCount) + 種族/科技/
-// 政府加成(政府加成手冊只給 Defense 欄,屆時可直接用 gamedata.SpyGovernmentDefenseBonus)。
-func spyDefenderBonus() int {
-	return 0
+// TODO:接上 Agent 訓練系統後,`SpySlotBonus(agentCount)` 那一項要補進來。
+//
+// ⚠ **2026-08-08(第 117 項)起不再恆為 0。** Agent 人數那一項仍然沒有(上面那段仍成立),
+// 但科技與政府兩項已經接上:
+//   - **科技**:`spyTechBonusFor`,攻守兩側同一套(手冊那張表兩欄同值)。
+//   - **政府**:`gamedata.SpyGovernmentDefenseBonus`,手冊只給 Defense 欄。
+//     govBonus 由呼叫端算好傳入——**只有玩家有政府型態**,`AIOpponent` 沒有這個欄位
+//     (原版是 `[player+0x89F]`,見第 113 項),所以 AI 當防守方時呼叫端傳 0。
+//     那是資料模型的缺口,不是規則沒接。
+func spyDefenderBonus(ps engine.PlayerState, govBonus int) int {
+	return spyTechBonusFor(ps) + govBonus
+}
+
+// playerSpyGovernmentDefenseBonus 回傳玩家目前政府型態的防諜加成。
+//
+// 走 `assimilationGovernment()` 而不是直接看 `s.Government`:那支會把「研究出進階政體科技」
+// 算進去(邦聯/帝國/聯邦/銀河統一),而手冊的防諜表對基本型與進階型給的是**不同的值**
+// ——只看 s.Government 會讓研究出帝國的獨裁玩家永遠拿獨裁那一格。
+//
+// 兩個列舉的編號相同不是巧合:原版只有一個 `[player+0x89F]` 欄位(第 113 項),
+// Go 這邊分成好幾個列舉是歷史。`spy_government_test.go` 把這件事釘住。
+func (s *GameSession) playerSpyGovernmentDefenseBonus() int {
+	return gamedata.SpyGovernmentDefenseBonus(gamedata.SpyGovernmentType(s.assimilationGovernment()))
 }
 
 // spyVsSpyOutcome 是 SpyVsSpy(間諜互殺)判定結果。
@@ -228,9 +276,9 @@ type rollSource interface {
 }
 
 func spyStealAttempt(rng rollSource, attackerPS *engine.PlayerState, defenderPS engine.PlayerState,
-	spyCount int, attackerName, defenderName string) (messages []string, attackerSpyKilled bool) {
-	ab := spyAttackerBonus(spyCount)
-	db := spyDefenderBonus()
+	spyCount int, attackerName, defenderName string, defenderGovBonus int) (messages []string, attackerSpyKilled bool) {
+	ab := spyAttackerBonus(*attackerPS, spyCount)
+	db := spyDefenderBonus(defenderPS, defenderGovBonus)
 
 	e := gamedata.SpyEffectiveThreshold(gamedata.SpyThresholdSteal, db, ab)
 	p := gamedata.SpyRollChance(e)
@@ -275,7 +323,8 @@ func (s *GameSession) advanceEspionage() {
 
 		// 玩家 → AI:偷科技 + SpyVsSpy。
 		if s.PlayerSpies[i] > 0 {
-			msgs, killed := spyStealAttempt(s.spyRand, &s.Player, a.Player, s.PlayerSpies[i], "我方", a.Name)
+			// AI 當防守方:沒有政府型態欄位,所以政府加成傳 0(見 spyDefenderBonus)。
+			msgs, killed := spyStealAttempt(s.spyRand, &s.Player, a.Player, s.PlayerSpies[i], "我方", a.Name, 0)
 			s.LastEspionage = append(s.LastEspionage, msgs...)
 			if killed && s.PlayerSpies[i] > 0 {
 				s.PlayerSpies[i]--
@@ -284,7 +333,9 @@ func (s *GameSession) advanceEspionage() {
 
 		// AI → 玩家:偷科技 + SpyVsSpy(對稱處理;AI 已知科技集長期而言很小,見檔頭說明)。
 		if a.Spies > 0 {
-			msgs, killed := spyStealAttempt(s.spyRand, &a.Player, s.Player, a.Spies, a.Name, "我方")
+			// 玩家當防守方:政府加成算得出來。
+			msgs, killed := spyStealAttempt(s.spyRand, &a.Player, s.Player, a.Spies, a.Name, "我方",
+				s.playerSpyGovernmentDefenseBonus())
 			s.LastEspionage = append(s.LastEspionage, msgs...)
 			if killed && a.Spies > 0 {
 				a.Spies--

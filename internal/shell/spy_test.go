@@ -238,7 +238,7 @@ func TestSpyStealAttempt_SuccessAppliesTheft(t *testing.T) {
 	for seed := int64(1); seed <= 2000 && !found; seed++ {
 		attacker := clonePlayerState(attackerBase)
 		rng := rand.New(rand.NewSource(seed))
-		msgs, _ := spyStealAttempt(rng, &attacker, defender, spies, "我方", "AI")
+		msgs, _ := spyStealAttempt(rng, &attacker, defender, spies, "我方", "AI", 0)
 		if len(msgs) == 0 {
 			continue
 		}
@@ -270,7 +270,7 @@ func TestSpyStealAttempt_NoOptionsIsHarmless(t *testing.T) {
 		attacker := clonePlayerState(shared)
 		defender := clonePlayerState(shared)
 		rng := rand.New(rand.NewSource(seed))
-		spyStealAttempt(rng, &attacker, defender, spies, "我方", "AI")
+		spyStealAttempt(rng, &attacker, defender, spies, "我方", "AI", 0)
 		// 無論訊息是否非空,attacker 的已知科技集不應改變(shared 只有 TOPIC_STARTING_TECH,
 		// 沒有可偷項目)。
 		if len(attacker.CompletedTopics) != len(shared.CompletedTopics) {
