@@ -145,7 +145,7 @@
 > | ① 哪些函式**從來沒被執行過**(一局 300 回合的覆蓋率) | 領袖維護費、征服人口 3/4 產出 | **見底** |
 > | ② 哪些匯出常數**零消費** | 護盾減傷(五級錯四級) | **見底**(190 個,多數是原版列舉鏡像) |
 > | ③ 哪些參數**被餵固定值** | 種族特性整叢(第 129 項)、`apNegated`、`hefBonus`、`ftlLevel`(第 136 項) | **gamedata 匯出函式那一側幾乎見底**(剩 5 小項);⚠ **cmd/ 與 shell 內部函式沒掃過**——第 136 項就是在 cmd/ 撞到一個硬編的 `ftlLevel=1` |
-> | ④ 手冊有而 remake **沒抄的資料** | 武器傷害全表、裝甲倍率階梯、飛彈防禦家族 | **7 個元件**(第 133 項盤點 20 個 + 第 128 項的 p.127 特殊武器,第 134–140 項接掉 13 個)|
+> | ④ 手冊有而 remake **沒抄的資料** | 武器傷害全表、裝甲倍率階梯、飛彈防禦家族 | **6 個元件**(第 133 項盤點 20 個 + 第 128 項的 p.127 特殊武器,第 134–141 項接掉 14 個)|
 >
 > ③ 的掃描器寫在第 129 項:配對括號抽出每個 `gamedata.X(...)` 的引數,逐參數位置看是不是
 > 每個呼叫端都給同一個字面值。**跑一次就把整叢種族特性的洞挖出來**——那一叢先前
@@ -7683,3 +7683,59 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
         所以下一輪不會再有「建一個解三個」這種效率——剩下的要一個一個評估值不值得。
 
     截圖:25_shipdesign 的「特殊 1/28 → 1/31」(41 px)。
+
+141. **轟炸機庫:註解說四種,程式碼只有兩種**(2026-08-08)。
+
+    第 140 項末尾把預期調低了:剩下 6 個不共用機制,要一個一個評估。
+    第一個評下來是**最便宜的那個**——因為模型早就在。
+
+    ### 不一致就寫在型別的第一行
+
+    `shell.FighterKind` 的檔頭:
+
+        // FighterKind 是戰機型別(手冊 p.127 的**四種**)。
+        type FighterKind int
+
+        const (
+            FighterInterceptor FighterKind = iota
+            FighterHeavy
+        )
+
+    **註解說四種,底下兩個。** 而 `gamedata` 那一側:
+
+        CombatFighterBaseSpeed{Interceptor, AssaultShuttle, Bomber, HeavyFighter}  ← 四型都齊
+        FighterShots{Interceptor, Bomber, HeavyFighter, AssaultShuttle}            ← 四型都齊
+        FighterHits{Interceptor, HeavyFighter}                                     ← 只有兩型
+
+    **資料層的速度與射擊次數是四型齊的,血量只有兩型**——因為當時 shell 只實作了兩型。
+    **資料層跟著實作層缺,是一種很難發現的洞**:單看 gamedata 會以為「這一組本來就只有兩個」。
+
+    ### 轟炸機的數字是散文給的,不必對表
+
+    > Bombers are short-range fighters similar to Interceptors, except that these carry
+    > **one bomb**. Each bomber can attack either a planet **or a ship**. Bombers are
+    > installed and launched in **squadrons of 4**… They move at **speed 8** modified by
+    > your best drive and can take **4 damage** modified by your best armor.
+
+    速度 8、血量 4、出手 1 次——三個都在正文裡,不必碰那張欄位打散的表。
+    (速度與出手次數 gamedata 早就有;這一項補的是血量那一格。)
+
+    ### 一個看起來像不一致、其實不是的地方
+
+    **轟炸機的炸彈算得進艦隊戰,而艦載炸彈算不進去。**
+
+    第 126 項訂的規則是「艦載炸彈在艦隊戰完全不開火」,依據是手冊
+    「Bombs installed in a ship are only useful against **planetary** targets」。
+    而轟炸機那一條寫的是「Each bomber can attack either a planet **or a ship**」。
+
+    **載具不同,規則不同。** 兩句話是手冊自己分開寫的,不是我在調和矛盾。
+    測試把兩邊同時釘住,免得日後有人「順手統一」。
+
+    ### 突擊艇仍然沒有
+
+    第四型(Assault Shuttle)的用途是把陸戰隊送上敵艦,而**登艦戰機制不存在**(第 119 項)。
+    手冊也沒有給它血量(其他三型都有「can take N damage」那一句,它沒有)。
+    **加一個不會做任何事的型別只是把洞藏起來**——現在 `FighterKind` 有三個,
+    檔頭改寫成說明為什麼是三個而不是四個。
+
+    截圖:25_shipdesign 的「特殊 1/31 → 1/32」(16 px)。

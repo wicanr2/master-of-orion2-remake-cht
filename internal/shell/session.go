@@ -316,6 +316,10 @@ var (
 		{"重生程序", 150, 0, gamedata.TOPIC_ARTIFICIAL_LIFE, 0},                                         // 抽象(種族特性),proxy 待重設計
 		{"戰機庫", 90, 0, gamedata.TOPIC_ADVANCED_ENGINEERING, gamedata.TECH_FIGHTER_BAYS},             // 攔截機隊出擊4(手冊 GM p.127),ResolveBattle 加母艦戰力
 		{"重戰機庫", 160, 0, gamedata.TOPIC_SUPERSCALAR_CONSTRUCTION, gamedata.TECH_HEAVY_FIGHTER_BAYS}, // 重戰機隊出擊2、火力較強(手冊 GM p.127)
+		// 轟炸機庫(第 141 項):`gamedata` 的戰機速度與射擊次數**兩組都是四型都齊的**,
+		// 而 shell 只實作了兩型——連 FighterKind 的檔頭都寫著「手冊 p.127 的四種」。
+		// 主題取自執行檔(進階機器人學)。
+		{"轟炸機庫", 130, 0, gamedata.TOPIC_ADVANCED_ROBOTICS, gamedata.TECH_BOMBER_BAYS},
 		// 硬化護盾:與隱形裝置同屬 TOPIC_DISTORTION_FIELDS(techtree.go 的三選一)。
 		// 手冊兩處效果:每次攻擊額外減傷 3(gamedata.DamageHardShieldBonus,先前無元件載體
 		// 等於死碼)、以及**星雲中護盾仍然可用**(見 nebula.go)。
@@ -849,6 +853,10 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 			fatk, fhp := gamedata.FighterHeavyBayCombatContribution()
 			atk += fatk
 			hp += fhp
+		case "轟炸機庫":
+			fatk, fhp := gamedata.FighterBomberBayCombatContribution()
+			atk += fatk
+			hp += fhp
 		}
 		// 持久損傷(見 repair.go):受損的船帶著傷上陣,不再每場戰鬥都滿血。
 		if d := ShipDamage(sh); d > 0 {
@@ -1158,6 +1166,8 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			bay = true
 		case "重戰機庫":
 			bay, bayKind = true, FighterHeavy
+		case "轟炸機庫":
+			bay, bayKind = true, FighterBomber
 		}
 		player = append(player, CombatShip{
 			Name: sh.Name, HP: hullHP, MaxHP: hullHP, Attack: atk, Col: 1, Row: i,

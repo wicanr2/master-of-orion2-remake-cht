@@ -259,7 +259,16 @@ const (
 // 各型戰機的基礎血量(手冊 p.127 Hits 欄的下限,正文逐條印證:
 // 攔截機「can take 2 damage modified by your best armor」、重戰機「can take 5 damage」)。
 const (
-	FighterHitsInterceptor  = 2
+	FighterHitsInterceptor = 2
+	// FighterHitsBomber 手冊(Bomber Bays)逐字:「They move at speed 8 modified by your
+	// best drive and **can take 4 damage** modified by your best armor.」
+	// ⚠ 2026-08-08(第 141 項)補上。這一組常數先前只有攔截機與重戰機兩型,
+	// 而同一個檔案的**速度**與**射擊次數**兩組都是四型都有的——缺的只有血量這一格,
+	// 因為當時 shell 只實作了兩型。**資料層跟著實作層缺,是一種很難發現的洞。**
+	FighterHitsBomber = 4
+	// FighterHitsAssaultShuttle 手冊沒有給突擊艇的血量(表格那一列是 6-18 的區間值,
+	// 而正文沒有像其他三型那樣寫「can take N damage」)。**不臆造**——
+	// 突擊艇要等登艦戰機制(第 119 項)才有意義,到時候一起查。
 	FighterHitsHeavyFighter = 5
 )
 
@@ -301,4 +310,17 @@ func FighterBayCombatContribution() (atk, hp int) {
 func FighterHeavyBayCombatContribution() (atk, hp int) {
 	return FighterSquadronSize * FighterShotsHeavyFighter * (fighterBeamDamageApprox + fighterBombDamageApprox),
 		FighterSquadronSize * FighterHitsHeavyFighter
+}
+
+// FighterBomberBayCombatContribution 回傳一個**轟炸機**庫對母艦戰力的加成(攻擊, HP)。
+//
+// 轟炸機帶**一顆炸彈**、返航前只出手一次(手冊 Shots 欄 = 1) →
+// 攻擊 = 4 架 × 1 次 × 5 = 20;HP = 4 架 × 每架 4 = 16。
+//
+// ⚠ **炸彈在這裡算得進去,而艦載炸彈算不進去**(第 126 項:艦隊戰裡艦載炸彈完全不開火)。
+// 那不是不一致——手冊對兩者說的是不同的話:艦載炸彈「are only useful against planetary
+// targets」,而轟炸機「can attack **either a planet or a ship**」。**載具不同,規則不同。**
+func FighterBomberBayCombatContribution() (atk, hp int) {
+	return FighterSquadronSize * FighterShotsBomber * fighterBombDamageApprox,
+		FighterSquadronSize * FighterHitsBomber
 }

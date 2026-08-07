@@ -47,12 +47,30 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 //   - 轟炸機/突擊梭:前者要炸彈對行星的規則、後者要把陸戰隊送上敵艦,
 //     兩者各自依賴另一套系統。這一輪只做攔截機與重戰機(兩種純對艦戰機)。
 
-// FighterKind 是戰機型別(手冊 p.127 的四種)。
+// FighterKind 是戰機型別。
+//
+// 手冊 p.127 列了**四種**(攔截機 / 轟炸機 / 重戰機 / 突擊艇),這裡有**三種**
+// ——突擊艇沒有,理由見下方 FighterBomber 的註解(登艦戰機制不存在,而手冊也沒給它血量)。
+// 檔頭寫清楚「為什麼是三個」,因為先前這裡寫著「四種」而底下只有兩個,
+// **那種不一致沒有任何測試會抓到**(第 141 項)。
 type FighterKind int
 
 const (
 	FighterInterceptor FighterKind = iota
 	FighterHeavy
+	// FighterBomber 手冊(Bomber Bays):「Bombers are short-range fighters similar to
+	// Interceptors, except that these carry **one bomb**. Each bomber can attack either a
+	// planet **or a ship**. Bombers are installed and launched in squadrons of 4… They move
+	// at **speed 8** … and can take **4 damage**…」
+	//
+	// ⚠ 2026-08-08(第 141 項)補上。本型別的檔頭一直寫著「手冊 p.127 的**四種**」,
+	// 而底下只有兩個——`gamedata` 那邊的速度與射擊次數**兩組都是四型都齊的**,
+	// 缺的只有 shell 這一側的型別與血量常數。**註解說四種、程式碼只有兩種**,
+	// 這種不一致沒有任何測試會抓到。
+	//
+	// 突擊艇(Assault Shuttle)仍然沒有:它的用途是把陸戰隊送上敵艦,而**登艦戰機制
+	// 不存在**(第 119 項)。加一個不會做任何事的型別只是把洞藏起來。
+	FighterBomber
 )
 
 // FighterKindName 回傳中文型別名。
@@ -60,6 +78,8 @@ func FighterKindName(k FighterKind) string {
 	switch k {
 	case FighterHeavy:
 		return "重戰機"
+	case FighterBomber:
+		return "轟炸機"
 	default:
 		return "攔截機"
 	}
@@ -67,22 +87,31 @@ func FighterKindName(k FighterKind) string {
 
 // FighterBaseSpeed / FighterBaseHits / FighterShots 是各型的手冊真值(轉手 gamedata)。
 func FighterBaseSpeed(k FighterKind) int {
-	if k == FighterHeavy {
+	switch k {
+	case FighterHeavy:
 		return gamedata.CombatFighterBaseSpeedHeavyFighter
+	case FighterBomber:
+		return gamedata.CombatFighterBaseSpeedBomber
 	}
 	return gamedata.CombatFighterBaseSpeedInterceptor
 }
 
 func FighterBaseHits(k FighterKind) int {
-	if k == FighterHeavy {
+	switch k {
+	case FighterHeavy:
 		return gamedata.FighterHitsHeavyFighter
+	case FighterBomber:
+		return gamedata.FighterHitsBomber
 	}
 	return gamedata.FighterHitsInterceptor
 }
 
 func FighterShots(k FighterKind) int {
-	if k == FighterHeavy {
+	switch k {
+	case FighterHeavy:
 		return gamedata.FighterShotsHeavyFighter
+	case FighterBomber:
+		return gamedata.FighterShotsBomber
 	}
 	return gamedata.FighterShotsInterceptor
 }
