@@ -147,39 +147,39 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
 
 | 主選單(1.3/1.5 規則版本 + 中英切換) | 新遊戲設定(五欄,反組譯真值版面) |
 |---|---|
-| ![主選單](docs/screenshots/01_menu.png) | ![新遊戲設定](docs/screenshots/01b_newgame.png) |
+| ![主選單(1.3/1.5 規則版本 + 中英切換)](docs/screenshots/01_menu.png) | ![新遊戲設定(五欄,反組譯真值版面)](docs/screenshots/01b_newgame.png) |
 
 | 種族選擇(左肖像 + 右 2×7 網格,同原版) | 命名 / 旗色 |
 |---|---|
-| ![種族選擇](docs/screenshots/02_raceselect.png) | ![命名旗色](docs/screenshots/03_nameflag.png) |
+| ![種族選擇(左肖像 + 右 2×7 網格,同原版)](docs/screenshots/02_raceselect.png) | ![命名 / 旗色](docs/screenshots/03_nameflag.png) |
 
 | 星系主畫面 | 回合摘要 |
 |---|---|
 | ![星系主畫面](docs/screenshots/04_galaxy.png) | ![回合摘要](docs/screenshots/06_turnsummary.png) |
 
-| 殖民地畫面(原版 COLPUPS 框架) | 殖民地總覽 |
+| 殖民地畫面(原版 COLPUPS 框架 + 行星表面格點) | 建造視窗(原版 Build_Queue_Popup) |
 |---|---|
-| ![殖民地畫面](docs/screenshots/10_colonyscreen.png) | ![殖民地總覽](docs/screenshots/09_colonysummary.png) |
+| ![殖民地畫面(原版 COLPUPS 框架 + 行星表面格點)](docs/screenshots/10_colonyscreen.png) | ![建造視窗(原版 Build_Queue_Popup)](docs/screenshots/26_buildqueue.png) |
 
-| 行星列表 | 帝國資訊(歷史圖表 / 科技 / 種族 / 摘要 / 參考) |
+| 殖民地總覽 | 行星列表 |
 |---|---|
-| ![行星列表](docs/screenshots/12_planets.png) | ![帝國資訊](docs/screenshots/13_info.png) |
+| ![殖民地總覽](docs/screenshots/09_colonysummary.png) | ![行星列表](docs/screenshots/12_planets.png) |
 
-| 艦艇設計(六個艦體槽為原版的**不等距**版面) | 科技總覽 |
+| 帝國資訊(歷史圖表 / 科技 / 種族 / 摘要 / 參考) | 科技總覽 |
 |---|---|
-| ![艦艇設計](docs/screenshots/25_shipdesign.png) | ![科技總覽](docs/screenshots/14_info_tech.png) |
+| ![帝國資訊(歷史圖表 / 科技 / 種族 / 摘要 / 參考)](docs/screenshots/13_info.png) | ![科技總覽](docs/screenshots/14_info_tech.png) |
 
-| 外交使節 | 戰術戰鬥 |
+| 艦艇設計(六個艦體槽為原版的**不等距**版面) | 外交使節 |
 |---|---|
-| ![外交使節](docs/screenshots/15_diplomacy.png) | ![戰術戰鬥](docs/screenshots/16_tactical.png) |
+| ![艦艇設計(六個艦體槽為原版的**不等距**版面)](docs/screenshots/25_shipdesign.png) | ![外交使節](docs/screenshots/15_diplomacy.png) |
 
-| 地面戰 | 軌道轟炸 |
+| 戰術戰鬥 | 地面戰 |
 |---|---|
-| ![地面戰](docs/screenshots/17_groundcombat.png) | ![軌道轟炸](docs/screenshots/20_bombing.png) |
+| ![戰術戰鬥](docs/screenshots/16_tactical.png) | ![地面戰](docs/screenshots/17_groundcombat.png) |
 
-| 多人遊戲設定(熱座可玩) | |
+| 軌道轟炸 | 多人遊戲設定(熱座可玩) |
 |---|---|
-| ![多人遊戲設定](docs/screenshots/23_multiplayer.png) | |
+| ![軌道轟炸](docs/screenshots/20_bombing.png) | ![多人遊戲設定(熱座可玩)](docs/screenshots/23_multiplayer.png) |
 
 ### 英文模式
 

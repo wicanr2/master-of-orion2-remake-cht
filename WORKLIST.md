@@ -155,6 +155,13 @@
   `TranslucentIndexMin` / `HasTranslucent` / `ToRGBADropTranslucent`(= 跳過那條路徑),
   既有 `ToRGBA` 行為不變。**不能在解碼層一刀切當透明**:BEAMS 有 69% 是這種索引,
   丟掉光束就消失了。混色表在 BSS(執行期才建),產生它的程式碼還沒找到,不假造係數。
+- **殖民地畫面中段還給行星表面,建造佇列搬回原版彈出視窗**(gap report 第 30 項):
+  `cmd/moo2/buildqueue.go` = `Build_Queue_Popup_` @ 0xB4041(框架 COLBLDG.LBX#0,可建清單
+  x 13..184 / y 20+19i、佇列 7 格 x 207..458 / y 329+20i、六顆鈕座標全是反組譯真值);
+  入口是框架上那顆 CHANGE(原版它就是「換要蓋什麼」,先前畫成灰的沒接)。
+  中段改畫 `drawColonySurface`(格線 + 建築圖)。**擺放位置與原版不同**且在程式碼明寫——
+  原版擺法綁死在 PRNG,那還沒實作。地表底圖也還沒追到來源 LBX。
+  中文模式 17 張逐像素比對:只有殖民地畫面變了。
 - **兩個零值陷阱**(都加了回歸測試):`TechLevel` 零值 = 曲速前 → 舊存檔艦隊全凍住;
   `i18n.English` 是 `Lang` 的零值 → 忘了設 lang 的建構路徑會靜默變英文。
 

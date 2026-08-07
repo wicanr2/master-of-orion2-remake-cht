@@ -333,30 +333,31 @@ type sceneBuilder struct {
 	fnt               *uifont.Font // 內文用字型(zh 為混合:內文點陣、標題向量)
 	fntVec            *uifont.Font // 純向量 Noto(供主選單等要平滑的畫面;nil 時退回 fnt)
 	lang              i18n.Lang
-	session           *shell.GameSession   // 活的對局狀態(TURN 推進、畫面顯示即時資料)
-	herodataMercs     []shell.Leader       // HERODATA.LBX 解出的真英雄傭兵候選(快取;讀檔後重注入)
-	newGameSize       int                  // NEW GAME 選的星系大小索引(shell.GalaxySizes)
-	newGameDiff       int                  // NEW GAME 選的難度索引(shell.Difficulties)
-	newGameRace       int                  // NEW GAME 選的種族索引(shell.Races)
-	newGameSeed       int                  // 每次新遊戲遞增,讓星系種子變化
-	newGameAge        int                  // NEW GAME 選的星系年齡索引(shell.GalaxyAges)
-	newGameTech       int                  // NEW GAME 選的起始科技等級索引(shell.TechLevels)
-	newGameEmpires    int                  // NEW GAME 選的帝國總數(含玩家,shell.MinEmpires..MaxEmpires)
-	colChrome         *ebiten.Image        // 殖民地畫面的原版框架(COLPUPS.LBX#5,惰性解碼快取)
-	pendingHotseat    int                  // 多人設定畫面選的真人席位數;0/1 = 單人局(開局後由 applyHotseat 套用)
-	savePath          string               // remake 存檔路徑(每回合自動存;主選單 Load/Continue 讀)
-	designWeapon      int                  // 艦艇設計選的武器元件索引(shell.WeaponOptions)
-	designArmor       int                  // 裝甲元件索引(shell.ArmorOptions)
-	designShield      int                  // 護盾元件索引(shell.ShieldOptions)
-	designSpecial     int                  // 特殊元件索引(shell.SpecialOptions)
-	designMods        []string             // 目前設計勾選的武器改造(gamedata.WeaponModCode 字串;僅 beam 武器生效)
-	designMsg         string               // 艦艇設計畫面「空間不足,擋下建造」的提示訊息(切換元件/成功建造時清空)
-	lastActionMsg     string               // 星圖畫面「載運陸戰隊/發動地面入侵」的最近一次結果訊息(選新星時清空)
-	gameVersion       gamedata.GameVersion // 主選單選的規則版本(1.3/1.5);開局注入 session.RuleProfile
-	infoTab           int                  // INFO 畫面目前分頁(0=歷史圖表 1=科技總覽 2=種族統計 3=回合摘要 4=參考),見 infosubscreens.go
-	colonyIdx         int                  // 單一殖民地畫面目前管理哪個殖民地(索引 PlayerColonies),見 colonyscreen.go
-	colonyListTop     int                  // 單一殖民地畫面「可建項目」清單的捲動起點
-	infoHistoryMetric int                  // 歷史圖表目前指標(shell.HistoryMetric)
+	session           *shell.GameSession       // 活的對局狀態(TURN 推進、畫面顯示即時資料)
+	herodataMercs     []shell.Leader           // HERODATA.LBX 解出的真英雄傭兵候選(快取;讀檔後重注入)
+	newGameSize       int                      // NEW GAME 選的星系大小索引(shell.GalaxySizes)
+	newGameDiff       int                      // NEW GAME 選的難度索引(shell.Difficulties)
+	newGameRace       int                      // NEW GAME 選的種族索引(shell.Races)
+	newGameSeed       int                      // 每次新遊戲遞增,讓星系種子變化
+	newGameAge        int                      // NEW GAME 選的星系年齡索引(shell.GalaxyAges)
+	newGameTech       int                      // NEW GAME 選的起始科技等級索引(shell.TechLevels)
+	newGameEmpires    int                      // NEW GAME 選的帝國總數(含玩家,shell.MinEmpires..MaxEmpires)
+	colChrome         *ebiten.Image            // 殖民地畫面的原版框架(COLPUPS.LBX#5,惰性解碼快取)
+	colBldgCache      map[string]*ebiten.Image // 地表建築圖(BLDGn.LBX,惰性解碼快取)
+	pendingHotseat    int                      // 多人設定畫面選的真人席位數;0/1 = 單人局(開局後由 applyHotseat 套用)
+	savePath          string                   // remake 存檔路徑(每回合自動存;主選單 Load/Continue 讀)
+	designWeapon      int                      // 艦艇設計選的武器元件索引(shell.WeaponOptions)
+	designArmor       int                      // 裝甲元件索引(shell.ArmorOptions)
+	designShield      int                      // 護盾元件索引(shell.ShieldOptions)
+	designSpecial     int                      // 特殊元件索引(shell.SpecialOptions)
+	designMods        []string                 // 目前設計勾選的武器改造(gamedata.WeaponModCode 字串;僅 beam 武器生效)
+	designMsg         string                   // 艦艇設計畫面「空間不足,擋下建造」的提示訊息(切換元件/成功建造時清空)
+	lastActionMsg     string                   // 星圖畫面「載運陸戰隊/發動地面入侵」的最近一次結果訊息(選新星時清空)
+	gameVersion       gamedata.GameVersion     // 主選單選的規則版本(1.3/1.5);開局注入 session.RuleProfile
+	infoTab           int                      // INFO 畫面目前分頁(0=歷史圖表 1=科技總覽 2=種族統計 3=回合摘要 4=參考),見 infosubscreens.go
+	colonyIdx         int                      // 單一殖民地畫面目前管理哪個殖民地(索引 PlayerColonies),見 colonyscreen.go
+	colonyListTop     int                      // 單一殖民地畫面「可建項目」清單的捲動起點
+	infoHistoryMetric int                      // 歷史圖表目前指標(shell.HistoryMetric)
 }
 
 // profileForVersion 把主選單選的版本轉成對應 RuleProfile(開局注入 session)。
@@ -3027,8 +3028,10 @@ type interactiveApp struct {
 	galleryHotseatTick int
 	// galleryDesignTick 是截圖廊切到艦艇設計畫面的 tick。
 	galleryDesignTick int
-	galleryBuilder    *sceneBuilder
-	gallerySession    *shell.GameSession
+	// galleryBuildPopupTick 是截圖廊切到建造彈出視窗的 tick。
+	galleryBuildPopupTick int
+	galleryBuilder        *sceneBuilder
+	gallerySession        *shell.GameSession
 }
 
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
@@ -3082,6 +3085,9 @@ const galleryHotseatTick = 83
 // 這個畫面先前**從沒被截圖廊拍過**(要從艦隊列表點進去,而腳本沒走那一步),
 // 所以版面錯了也不會被發現——與 NEW GAME 同一個盲點。
 const galleryDesignTick = 85
+
+// galleryBuildPopupTick 是截圖廊在哪個 tick 切到建造彈出視窗——取截圖(t88)的前一拍。
+const galleryBuildPopupTick = 87
 
 // galleryShot 是「端到端過場截圖廊」腳本中,在某個絕對 tick 存一張圖的指令。
 type galleryShot struct {
@@ -3236,6 +3242,11 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 
 		idle, // t85: 由 galleryDesignTick 換成艦艇設計畫面
 		idle, // t86: settle → 截圖 shipdesign
+
+		// 建造彈出視窗(原版 Build_Queue_Popup_)。走正常路徑是殖民地畫面點 CHANGE,
+		// 但截圖廊此刻停在艦艇設計,直接推上來比重新導覽回殖民地可靠。
+		idle, // t87: 由 galleryBuildPopupTick 換成建造視窗
+		idle, // t88: settle → 截圖 buildqueue
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -3266,6 +3277,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{82, "23_multiplayer.png"},
 		{84, "24_hotseat.png"},
 		{86, "25_shipdesign.png"},
+		{88, "26_buildqueue.png"},
 	}
 	return script, shots
 }
@@ -3443,6 +3455,13 @@ func (a *interactiveApp) Update() error {
 			a.cur = sc
 		}
 	}
+	// 截圖廊專用:建造彈出視窗(走正常路徑是殖民地畫面點 CHANGE)。
+	if a.galleryBuildPopupTick > 0 && a.tick == a.galleryBuildPopupTick && a.galleryBuilder != nil {
+		a.galleryBuilder.colonyIdx = 0
+		if sc, err := a.galleryBuilder.buildQueuePopup(); err == nil {
+			a.cur = sc
+		}
+	}
 	if t := a.cur.update(a.pollInput()); t != nil {
 		if t.quit {
 			return ebiten.Termination
@@ -3574,6 +3593,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 		app.galleryMultiTick = galleryMultiTick
 		app.galleryHotseatTick = galleryHotseatTick
 		app.galleryDesignTick = galleryDesignTick
+		app.galleryBuildPopupTick = galleryBuildPopupTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,

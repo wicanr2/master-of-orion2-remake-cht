@@ -1,6 +1,15 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"image/color"
+	"sort"
+	"strconv"
+
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+)
 
 // colonysurface.go:殖民地畫面的**行星表面格點**(原版 module 74 的 `CR_To_XY_` 那一套)。
 //
@@ -240,4 +249,139 @@ func colonyBuildingSprite(origID, a, b int) (lbx string, asset int, ok bool) {
 	}
 	t := origID - 1
 	return fmt.Sprintf("bldg%d.lbx", t/10), (t%10)*36 + colonyBuildingSlot(a, b), true
+}
+
+// --- 以下是「畫出來」的部分:把上面那些真值接到殖民地畫面 ---
+
+// colonySurfacePlan 決定這個殖民地的 36 格各放什麼(原版建築編號,0 = 空)。
+//
+// ⚠ **哪一格放哪棟,remake 與原版不同,這裡誠實標明。**
+// 原版 `Make_Bldg_Array_For_Colony_` @ 0xBC30B 的作法是:
+// `Set_Random_Seed(colonyIdx, 0, 144)` 起手 → 逐棟 `Insert_Bldg_Into_Array_`,
+// 而那支對所有空格做**蓄水池抽樣**(`Random(++n) == 1`)→ 再 `Sort_Bldg_Array_Columns_`
+// 依建築分類做氣泡排序 → 最後一段隨機微調。也就是說擺法綁死在**原版的 PRNG**
+// (`Random_` @ 0x1247A0 / `Set_Random_Seed_` @ 0x124820)上,那還沒實作。
+//
+// 在 PRNG 到手之前,這裡用「依編號順序從近端往遠端填」——**幾何、圖檔、遮擋順序、
+// 半透明處理全是原版真值,只有落在哪一格是 remake 自己的**。不假裝這是原版擺法。
+//
+// 房屋那一段倒是照原版做的:數量 = 人口/3 + 1,外觀在 3 / 14 / 40 / 41 之間輪
+// (那四個是軌道衛星的編號——衛星不畫在地表,所以編號空著被借去當房屋,見檔頭)。
+func (b *sceneBuilder) colonySurfacePlan(idx int) map[[2]int]int {
+	plan := map[[2]int]int{}
+	if b.session == nil || idx < 0 || idx >= len(b.session.PlayerColonies) {
+		return plan
+	}
+	// 近端 → 遠端(colonySlotOrder 是遠→近,倒著走)。
+	free := make([][2]int, 0, len(colonySlotOrder))
+	for i := len(colonySlotOrder) - 1; i >= 0; i-- {
+		free = append(free, colonySlotOrder[i])
+	}
+	next := 0
+	put := func(id int) {
+		if next >= len(free) {
+			return
+		}
+		plan[free[next]] = id
+		next++
+	}
+
+	// 已建建築:依原版編號排序,讓同一組建築每次畫出來一樣(不隨 map 迭代順序跳動)。
+	var ids []int
+	if idx < len(b.session.ColonyBuildings) {
+		for zh := range b.session.ColonyBuildings[idx] {
+			bd, ok := gamedata.BuildingByNameZH(zh)
+			if !ok {
+				continue
+			}
+			if id, ok := origBuildingID[bd.NameEN]; ok {
+				ids = append(ids, id)
+			}
+		}
+	}
+	sort.Ints(ids)
+	for _, id := range ids {
+		if isOrbitalOnly(id) {
+			continue // 軌道衛星不畫在地表(原版靠建築表 +14 分類 == 7 篩掉)
+		}
+		put(id)
+	}
+
+	// 房屋:人口/3 + 1(原版 `Make_Bldg_Array_For_Colony_` 的迴圈上限)。
+	houses := b.session.PlayerColonies[idx].Population/3 + 1
+	for i := 0; i < houses; i++ {
+		put(colonyHouseStyles[(idx+i+1)%len(colonyHouseStyles)])
+	}
+	return plan
+}
+
+// colonyHouseStyles 是四種房屋外觀,借用軌道衛星的編號(見 colonySurfacePlan 註解)。
+// 對應 Artemis System Net / Dimensional Portal / Star Base / Star Fortress。
+var colonyHouseStyles = [4]int{3, 14, 40, 41}
+
+// isOrbitalOnly 回報這個編號是不是只存在於軌道(衛星),不畫在地表。
+func isOrbitalOnly(id int) bool {
+	for _, h := range colonyHouseStyles {
+		if id == h {
+			return true
+		}
+	}
+	return id == 8 // Battlestation
+}
+
+// drawColonySurface 畫殖民地畫面中段的行星表面:格線 + 建築。
+//
+// 畫的順序用 `colonySlotOrder`(遠 → 近),那是原版 `Add_Bldg_Fields_` 那張表的順序,
+// 也正是重疊建築要的畫家演算法次序。
+func (b *sceneBuilder) drawColonySurface(dst *ebiten.Image, idx int) {
+	plan := b.colonySurfacePlan(idx)
+
+	// 格線:原版這裡是地表底圖(還沒接,見 gap report 第 27 項),先用淡格線把
+	// 透視平面畫出來,免得建築看起來浮在半空。
+	grid := color.RGBA{56, 74, 56, 120}
+	for a := 0; a < colonyGridCells; a++ {
+		for bb := 0; bb < colonyGridCells; bb++ {
+			q := colonyCellQuad(a, bb)
+			for i := 0; i < 4; i++ {
+				j := (i + 1) % 4
+				vector.StrokeLine(dst, float32(q[i][0]), float32(q[i][1]),
+					float32(q[j][0]), float32(q[j][1]), 1, grid, false)
+			}
+		}
+	}
+
+	for _, cell := range colonySlotOrder {
+		id, ok := plan[cell]
+		if !ok || id == 0 {
+			continue
+		}
+		if im := b.colonyBuildingImage(id, cell[0], cell[1]); im != nil {
+			dst.DrawImage(im, &ebiten.DrawImageOptions{})
+		}
+	}
+}
+
+// colonyBuildingImage 取(建築編號, 格)對應的那張**已畫好位置**的 640×480 稀疏圖,
+// 貼 (0,0) 就對位(見檔頭)。半透明標記索引依原版 `Draw_No_Glass_` 丟掉,
+// 否則陰影會變成一塊洋紅(見 internal/lbx 的 TranslucentIndexMin)。
+func (b *sceneBuilder) colonyBuildingImage(id, a, bb int) *ebiten.Image {
+	lbxName, asset, ok := colonyBuildingSprite(id, a, bb)
+	if !ok {
+		return nil
+	}
+	key := lbxName + ":" + strconv.Itoa(asset)
+	if im, hit := b.colBldgCache[key]; hit {
+		return im
+	}
+	if b.colBldgCache == nil {
+		b.colBldgCache = map[string]*ebiten.Image{}
+	}
+	var img *ebiten.Image
+	if pal, err := decodeAsset(b.res, colChromePal, 0); err == nil && pal.Embedded != nil {
+		if im, err := decodeAsset(b.res, lbxName, asset); err == nil && len(im.Frames) > 0 {
+			img = ebiten.NewImageFromImage(im.Frames[0].ToRGBADropTranslucent(pal.Embedded, true))
+		}
+	}
+	b.colBldgCache[key] = img // 取不到也快取,避免每幀重試
+	return img
 }

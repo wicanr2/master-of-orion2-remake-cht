@@ -46,11 +46,16 @@ import (
 // 其餘量自同一張框架圖:上方資訊列 y 15..158、中段行星表面 y 159..423(透明)、
 // 右下 LEADERS y 424..449 / RETURN y 456..479,兩顆都在 x 551..637。
 //
-// ⚠ 誠實留白:中段(y 159..423)原版畫的是**行星表面 + 建築 sprite 依格點擺放**
-// (`Make_Bldg_Array_For_Colony_` / `Bldg_Coords_To_Screen_Coord_` / `Sort_Bldg_Array_Columns_`
-// 那一整套,配 COLBLDG.LBX 的建築圖)。remake 還沒有那個子系統,那塊改放建造佇列與
-// 可建清單——**這是 remake 自己的版面,不是原版的**。原版的建造佇列是獨立彈出視窗
-// (`Build_Queue_Popup_` @ 0xB4041,7 格 x 207..458、y 329+20i,座標同樣已到手)。
+// ⚠ 2026-08-07 把上面那段「誠實留白」做掉了。先前中段放的是建造佇列與可建清單,
+// 那是 **remake 自己的版面**;原版那一塊是**行星表面 + 建築依格點擺放**,佇列則是另外
+// 一張彈出視窗。現在:
+//   中段 → `drawColonySurface`(格點與建築圖全是原版真值,見 colonysurface.go)
+//   佇列 → `buildqueue.go`(`Build_Queue_Popup_` @ 0xB4041,座標同樣是反組譯真值)
+//   入口 → 框架上那顆 CHANGE(原版它就是「換要蓋什麼」),先前畫成灰的沒接功能。
+//
+// 順帶:行星表面**不是關在中段那個框裡**——`Draw_Colony_Screen_` 一開場就是
+// `C_Anims(1, 0, 639, 479)`,地表是整個 640×480 的底圖,資訊面板疊在它上面。
+// remake 目前只畫格線 + 建築,地表底圖的來源 LBX 還沒追到。
 
 const (
 	colScreenW = 640.0
@@ -80,19 +85,6 @@ const (
 	colChangeY, colChangeH   = 123, 20
 	colLeadersY, colLeadersH = 424, 26
 	colReturnY, colReturnH   = 456, 24
-
-	// --- remake 自己的中段版面(原版那裡是行星表面,見檔頭留白說明)---
-	colQueueX = 24.0
-	colQueueY = 186.0
-	colRowH   = 22.0
-	colQueueW = 280.0
-
-	colListTitleY = 168.0
-	colListX      = 330.0
-	colListPageY  = 186.0
-	colListY      = 214.0 // 可建清單起始 y
-	colListRows   = 9     // 一頁 9 列(9×22=198,底在 412,落在中段內)
-	colListW      = 280.0
 )
 
 var (
@@ -124,24 +116,11 @@ func (b *sceneBuilder) colonyScreen() (*overlayScreen, error) {
 			colJobX0, colJobY0 + i*colJobStep, colJobX1 - colJobX0, colJobStep - 2, act,
 		})
 	}
-	// 佇列 7 格:點一下移除該格。
-	for i := 0; i < shell.BuildQueueTotalSlots; i++ {
-		hits = append(hits, hitRegion{
-			int(colQueueX), int(colQueueY + float64(i)*colRowH), int(colQueueW), int(colRowH) - 2,
-			fmt.Sprintf("qdel%d", i),
-		})
-	}
-	// 可建清單:點一下排進佇列。
-	for i := 0; i < colListRows; i++ {
-		hits = append(hits, hitRegion{
-			int(colListX), int(colListY + float64(i)*colRowH), int(colListW), int(colRowH) - 2,
-			fmt.Sprintf("qadd%d", i),
-		})
-	}
-	hits = append(hits,
-		hitRegion{int(colListX), int(colListPageY), 60, 20, "listup"},
-		hitRegion{int(colListX) + 70, int(colListPageY), 60, 20, "listdown"},
-	)
+	// CHANGE:原版就是「換要蓋什麼」——點下去開建造彈出視窗(buildqueue.go)。
+	// 先前這顆是畫成灰的沒接功能,佇列被塞在中段;中段還給行星表面之後,它才有事做。
+	hits = append(hits, hitRegion{colChangeX, colChangeY, colChangeW, colChangeH, "build"})
+	// 中段的行星表面:點格子也開建造視窗(原版點空格是選建築槽,remake 還沒有那一層)。
+	hits = append(hits, hitRegion{0, colFieldY0, int(colScreenW), colFieldY1 - colFieldY0, "build"})
 
 	onAction := func(a string) *origTransition {
 		s := b.session
@@ -157,27 +136,12 @@ func (b *sceneBuilder) colonyScreen() (*overlayScreen, error) {
 			s.ShiftColonyJob(idx, "f", "w")
 		case a == "job_s":
 			s.ShiftColonyJob(idx, "w", "s")
-		case a == "listup":
-			b.colonyListTop -= colListRows
-			if b.colonyListTop < 0 {
-				b.colonyListTop = 0
+		case a == "build":
+			sc, err := b.buildQueuePopup()
+			if err != nil {
+				return nil
 			}
-		case a == "listdown":
-			opts := b.colonyBuildChoices()
-			if b.colonyListTop+colListRows < len(opts) {
-				b.colonyListTop += colListRows
-			}
-		case strings.HasPrefix(a, "qdel"):
-			var pos int
-			fmt.Sscanf(a, "qdel%d", &pos)
-			s.DequeueBuild(idx, pos)
-		case strings.HasPrefix(a, "qadd"):
-			var row int
-			fmt.Sscanf(a, "qadd%d", &row)
-			opts := b.colonyBuildChoices()
-			if i := b.colonyListTop + row; i >= 0 && i < len(opts) {
-				s.EnqueueBuild(idx, opts[i].Name, opts[i].Cost)
-			}
+			return &origTransition{next: sc}
 		default:
 			return nil
 		}
@@ -238,8 +202,7 @@ func (b *sceneBuilder) drawColonyScreen(dst *ebiten.Image, idx int) {
 	}
 
 	b.drawColonyTopBar(dst, idx, c)
-	b.drawColonyQueue(dst, idx)
-	b.drawColonyBuildList(dst)
+	b.drawColonySurface(dst, idx)
 
 	// 兩顆鈕的英文(LEADERS / RETURN)烘在框架圖上,照既有做法擦底疊中文。
 	drawBtn := func(y, h int, zh string) {
@@ -250,21 +213,26 @@ func (b *sceneBuilder) drawColonyScreen(dst *ebiten.Image, idx int) {
 	drawBtn(colLeadersY, colLeadersH, b.tr("領袖", "LEADERS"))
 	drawBtn(colReturnY, colReturnH, b.tr("返回", "RETURN"))
 
-	// CHANGE / BUY 也是烘在框架上的英文。兩顆在 remake **都還沒有對應功能**
-	// (原版 CHANGE 是換目前建造項、BUY 是花 BC 立即完工),所以照主選單 Continue /
-	// Load Game 無存檔時的既有做法:**不給熱區 + 字畫成灰的**,而不是留英文、
-	// 也不是給一顆點了沒反應的中文鈕。
+	// CHANGE / BUY 也是烘在框架上的英文。
+	// **CHANGE 已接上**(2026-08-07):原版它就是「換要蓋什麼」,中段還給行星表面之後
+	// 佇列搬進 buildqueue.go 那張彈出視窗,這顆正好是入口。
+	// BUY(花 BC 立即完工)仍未實作,沿用既有做法:不給熱區 + 字畫成灰的,
+	// 而不是留英文、也不是給一顆點了沒反應的中文鈕。
 	for _, btn := range []struct {
 		x, y, w, h int
 		zh         string
+		on         bool
 	}{
-		{colChangeX, colChangeY, colChangeW, colChangeH, b.tr("更換", "CHANGE")},
-		{colBuyX, colChangeY, colBuyW, colChangeH, b.tr("購買", "BUY")},
+		{colChangeX, colChangeY, colChangeW, colChangeH, b.tr("更換", "CHANGE"), true},
+		{colBuyX, colChangeY, colBuyW, colChangeH, b.tr("購買", "BUY"), false},
 	} {
+		face, ink := color.RGBA{112, 116, 120, 255}, color.RGBA{72, 74, 78, 255}
+		if btn.on { // CHANGE 接上建造視窗了,不再畫成灰的
+			face, ink = color.RGBA{74, 88, 74, 255}, color.RGBA{225, 240, 225, 255}
+		}
 		vector.DrawFilledRect(dst, float32(btn.x+3), float32(btn.y+3),
-			float32(btn.w-6), float32(btn.h-6), color.RGBA{112, 116, 120, 255}, false)
-		b.fnt.DrawCentered(dst, btn.zh, float64(btn.x+btn.w/2), float64(btn.y+btn.h/2), 11,
-			color.RGBA{72, 74, 78, 255})
+			float32(btn.w-6), float32(btn.h-6), face, false)
+		b.fnt.DrawCentered(dst, btn.zh, float64(btn.x+btn.w/2), float64(btn.y+btn.h/2), 11, ink)
 	}
 }
 
@@ -368,97 +336,5 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 		b.fnt.Draw(dst, j.label, float64(colJobX0+10), float64(y+6), 12, colTitleCol)
 		b.fnt.Draw(dst, fmt.Sprintf(b.tr("%d 人", "%d"), j.n), float64(colJobX0+70), float64(y+6), 12, colBodyCol)
 		b.fnt.Draw(dst, b.tr("點此 +1", "click +1"), float64(colJobX1-56), float64(y+7), 10, colDimCol)
-	}
-}
-
-// drawColonyQueue 畫右欄上半:7 格建造佇列(第 0 格是建造中,有進度條)。
-func (b *sceneBuilder) drawColonyQueue(dst *ebiten.Image, idx int) {
-	b.fnt.Draw(dst, fmt.Sprintf(b.tr("建造佇列(%d 格,點擊移除)", "Build queue (%d slots; click to remove)"),
-		shell.BuildQueueTotalSlots),
-		colQueueX, colListTitleY, 13, colTitleCol)
-
-	q := b.session.BuildQueueFor(idx)
-	for i := 0; i < shell.BuildQueueTotalSlots; i++ {
-		y := colQueueY + float64(i)*colRowH
-		bg := colSlotBg
-		if i == 0 {
-			bg = colCurBg // 建造中那格高亮
-		}
-		vector.DrawFilledRect(dst, float32(colQueueX), float32(y), float32(colQueueW), float32(colRowH)-2, bg, false)
-
-		if i >= len(q) || q[i].Name == "" {
-			b.fnt.Draw(dst, "—", colQueueX+8, y+4, 11, colDimCol)
-			continue
-		}
-		item := q[i]
-		label := item.Name
-		if i == 0 && item.Cost > 0 {
-			// 建造中:顯示進度與預估剩餘回合(用上一回合的實際投入速率推,不另立公式)。
-			label = fmt.Sprintf("%s  %d/%d", item.Name, item.Progress, item.Cost)
-			if eta := b.session.BuildETATurns(idx); eta > 0 {
-				label += fmt.Sprintf(b.tr("  約 %d 回合", "  ~%d turns"), eta)
-			}
-			// 進度條
-			w := float32(float64(colQueueW-4) * float64(item.Progress) / float64(item.Cost))
-			if w > float32(colQueueW-4) {
-				w = float32(colQueueW - 4)
-			}
-			vector.DrawFilledRect(dst, float32(colQueueX)+2, float32(y+colRowH)-6, w, 3, colOkCol, false)
-		} else if item.Cost > 0 {
-			label = fmt.Sprintf("%s  (%d PP)", item.Name, item.Cost)
-		}
-		b.fnt.Draw(dst, label, colQueueX+8, y+4, 11, colBodyCol)
-	}
-}
-
-// drawColonyBuildList 畫右欄下半:可建清單(分頁捲動),點一下排進佇列。
-func (b *sceneBuilder) drawColonyBuildList(dst *ebiten.Image) {
-	opts := b.colonyBuildChoices()
-	total := len(opts)
-	if b.colonyListTop >= total {
-		b.colonyListTop = 0
-	}
-	page := b.colonyListTop/colListRows + 1
-	pages := (total + colListRows - 1) / colListRows
-	if pages < 1 {
-		pages = 1
-	}
-
-	b.fnt.Draw(dst, fmt.Sprintf(b.tr("可建項目(%d/%d 頁,點擊排入)", "Available (page %d/%d; click to queue)"),
-		page, pages),
-		colListX, colListTitleY, 13, colTitleCol)
-	for i, lbl := range []string{b.tr("上一頁", "PREV"), b.tr("下一頁", "NEXT")} {
-		bx := colListX + float64(i)*70
-		vector.DrawFilledRect(dst, float32(bx), float32(colListPageY), 60, 20, colSlotBg, false)
-		vector.StrokeRect(dst, float32(bx), float32(colListPageY), 60, 20, 1, colPanelEdge, false)
-		b.fnt.DrawCentered(dst, lbl, bx+30, colListPageY+10, 11, colBodyCol)
-	}
-	if total == 0 {
-		// 開局科技少、可蓋的又都蓋了或已排進佇列時清單就是空的——說清楚,不要留一片空白讓人以為畫面壞了。
-		b.fnt.Draw(dst, b.tr("目前沒有可排入的項目", "Nothing available to queue"), colListX, colListY+4, 12, colDimCol)
-		b.fnt.Draw(dst, b.tr("(已建或已在佇列中的不重複列出;完成研究會解鎖更多)",
-			"(already built or queued items are hidden; research unlocks more)"),
-			colListX, colListY+24, 11, colDimCol)
-		return
-	}
-
-	for i := 0; i < colListRows; i++ {
-		y := colListY + float64(i)*colRowH
-		j := b.colonyListTop + i
-		if j >= total {
-			break
-		}
-		vector.DrawFilledRect(dst, float32(colListX), float32(y), float32(colListW), float32(colRowH)-2, colSlotBg, false)
-		o := opts[j]
-		txt := o.Name
-		if o.Cost > 0 {
-			txt = fmt.Sprintf("%s  (%d PP)", o.Name, o.Cost)
-		} else if o.Name == shell.TradeGoodsBuildName {
-			txt = o.Name + b.tr("  (工業轉現金)", "  (industry → cash)")
-		}
-		if _, isSpecial := gamedata.SpecialActionByNameZH(o.Name); isSpecial {
-			txt += b.tr("  ※可重複", "  * repeatable")
-		}
-		b.fnt.Draw(dst, txt, colListX+8, y+4, 11, colBodyCol)
 	}
 }
