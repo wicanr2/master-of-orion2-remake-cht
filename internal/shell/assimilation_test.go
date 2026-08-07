@@ -119,14 +119,14 @@ func TestRepulsiveRaceSlowsAssimilationInSession(t *testing.T) {
 //
 // 這條把第 96 項寫的那句「機制在、後果還沒接」關掉:同化現在真的有代價了。
 func TestUnassimilatedPopulationCostsMorale(t *testing.T) {
-	clean := colonyMoralePercent(gamedata.MoraleGovDictatorship, nil, false)
-	multi := colonyMoralePercent(gamedata.MoraleGovDictatorship, nil, true)
+	clean := colonyMoralePercent(gamedata.MoraleGovDictatorship, nil, false, 0)
+	multi := colonyMoralePercent(gamedata.MoraleGovDictatorship, nil, true, 0)
 	if multi != clean-20 {
 		t.Errorf("多種族殖民地應 −20 士氣:%d → %d", clean, multi)
 	}
 	// 異族管理中心消除它。
 	withCenter := colonyMoralePercent(gamedata.MoraleGovDictatorship,
-		map[string]bool{alienManagementCenterName: true}, true)
+		map[string]bool{alienManagementCenterName: true}, true, 0)
 	if withCenter != clean {
 		t.Errorf("有異族管理中心時懲罰應消失:一般 %d、多種族+建築 %d", clean, withCenter)
 	}

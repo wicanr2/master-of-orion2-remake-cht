@@ -69,7 +69,18 @@ type ColonyState struct {
 	// 所以它**不能**接成 FlatIndustry:那個欄位是在污染縮減之**前**併進 gross 的,
 	// 接錯地方會讓這份產能跟著產生污染,正好與手冊那句相反。接法見 colonyOutput。
 	Recyclotron bool
-	Housing     bool // 是否處於「住房」產能配置(啟用住房成長獎金 h)
+
+	// --- 「成就」科技的全帝國效果(2026-08-08 第 118 項,見 shell/achievements.go)---
+	//
+	// 這兩個由 shell 每回合依玩家科技重算(`syncAchievementColonyFields`),不是建築旗標
+	// ——成就是研究出來的,而研究結果會變(被偷、被交換),所以不能像建築那樣「完工時設一次」。
+
+	// NanoDisassemblers 是奈米分解者成就:行星的污染容忍值加倍。
+	NanoDisassemblers bool
+	// IndustryPerWorkerBonus 是微晶構築成就給**每個工業工人**的額外產能。
+	// 與 FlatIndustry 不同:那個是殖民地整體的固定值,這個要乘工人數。
+	IndustryPerWorkerBonus int
+	Housing                bool // 是否處於「住房」產能配置(啟用住房成長獎金 h)
 	// TradeGoods 是否處於「貿易品」建造佇列配置(shell.GameSession.syncTradeGoodsFlag 依玩家
 	// 建造選單同步)。true 時該殖民地當回合淨工業不蓋建築,改由 RunEmpireTurn 呼叫
 	// gamedata.TradeGoodsIncome 以 2:1(一般種族)/1:1(Fantastic Trader)換算成 BC,計入

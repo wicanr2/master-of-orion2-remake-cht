@@ -320,7 +320,7 @@ func (s *GameSession) newColonyFromPlanet(planetIdx int, gov gamedata.MoraleGove
 		PlanetGravity:        gravity,
 		MineralRichness:      mineral,
 		Climate:              climate,
-		MoralePercent:        colonyMoralePercent(gov, nil, false), // 新殖民地無任何建築、無外族人口(自己拓殖的),見檔頭§2
+		MoralePercent:        colonyMoralePercent(gov, nil, false, 0), // 新殖民地無任何建築、無外族人口(自己拓殖的),見檔頭§2
 		// 金礦 +5 / 寶石礦 +10 BC/回合(手冊逐字)。SpecialIncome 是殖民地層的固定收入,
 		// 由 engine.RunEmpireTurn 併進帝國總收入。
 		SpecialIncome: gamedata.SpecialIncomePerTurn(special),
@@ -341,7 +341,7 @@ func (s *GameSession) newColonyFromPlanet(planetIdx int, gov gamedata.MoraleGove
 // 理由)、FoodPerFarmer/IndustryPerWorker 依環境查表 + 玩家種族加成(Races[s.RaceIndex],比照
 // ApplyRace 對既有殖民地的加成邏輯——ApplyRace 只在新遊戲開局套一次,不會回頭套用到之後才建立
 // 的殖民地,故這裡手動疊加一次)、士氣依目前政府 + 無建築(colonyMoralePercent(s.Government,
-// nil))。append 進 PlayerColonies + 所有平行陣列(Builds/ColonyBuildings/PlayerColonyMarines/
+// nil, 0))。append 進 PlayerColonies + 所有平行陣列(Builds/ColonyBuildings/PlayerColonyMarines/
 // MarineBarracksAge/PlayerColonyTanks/ArmorBarracksAge/popAccum/PlayerColonyStars,padding 模式
 // 比照 InvadeColony 既有慣例),Star.Owner 轉 1,並從 s.Fleet().Ships 移除用掉的那艘殖民船。
 func (s *GameSession) ColonizeStar(starIdx int) ColonizationResult {

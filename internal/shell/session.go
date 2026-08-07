@@ -2157,8 +2157,9 @@ var moraleGovByIndex = []gamedata.MoraleGovernmentType{
 //  3. 歡樂穹頂(Pleasure Dome)已建 → +gamedata.MoralePleasureDomeBonus(+30,p.97-98)。
 //
 // 誠實列出「未套用」的手冊來源(不假裝精確,詳見呼叫端 ApplyGovernment/advanceBuilds 註解):
-//   - Virtual Reality Network(全帝國 +20%,p.97-98):手冊定性為「成就」而非一般建築,不在
-//     gamedata.Buildings 清單、remake 也無「成就」追蹤系統,無從得知是否擁有,故不套用。
+//   - ~~Virtual Reality Network(全帝國 +20%,p.97-98):remake 無「成就」追蹤系統~~
+//     ⚠ **2026-08-08(第 118 項)已接。** 那個理由不成立:「成就」在 MOO2 就是科技,
+//     而「有沒有研究出來」一直查得到。與心靈學(+10%,依政體)一起走 achievements.go。
 //   - 多種族懲罰 gamedata.MoraleMultiRacialPenalty:remake 的 ColonyState 沒有「殖民地人口是否
 //     含未同化外族血統」這個狀態(Population/Farmers/Workers/Scientists 只是職務數字,不分血統
 //     來源),故無法判斷是否該套用,保守視為「單一種族」一律不套用——異族管理中心已建/未建在
@@ -2173,9 +2174,10 @@ var moraleGovByIndex = []gamedata.MoraleGovernmentType{
 // 2026-08-07 接線:那支函式先前是死碼——remake 沒有「這個殖民地有沒有外族人口」可判斷。
 // 第 96 項加上 `ColonyState.UnassimilatedPop` 之後就有了:**未同化人口 > 0 就是多種族**。
 // 這也讓異族管理中心的第二條手冊效果真的生效(第一條是同化速率,見 assimilation.go)。
-func colonyMoralePercent(gov gamedata.MoraleGovernmentType, buildings map[string]bool, multiRacial bool) int {
+func colonyMoralePercent(gov gamedata.MoraleGovernmentType, buildings map[string]bool, multiRacial bool,
+	achievementPct int) int {
 	hasBarracks := buildings["海軍陸戰隊營"] || buildings["裝甲營房"]
-	pct := gamedata.MoraleGovernmentBase(gov, hasBarracks)
+	pct := gamedata.MoraleGovernmentBase(gov, hasBarracks) + achievementPct
 	if buildings["全息模擬艙"] {
 		pct += gamedata.MoraleHoloSimulatorBonus
 	}
@@ -2204,8 +2206,11 @@ func (s *GameSession) recalcColonyMorale(i int) {
 	if i < 0 || i >= len(s.PlayerColonies) {
 		return
 	}
-	s.PlayerColonies[i].MoralePercent = colonyMoralePercent(s.Government, s.buildingsFor(i),
-		s.PlayerColonies[i].UnassimilatedPop > 0)
+	// ⚠ 用**生效政體**不是 s.Government:手冊的士氣表對基本型與進階型給不同的值
+	// (帝國比獨裁多 +20%),傳基本型會讓研究出帝國的獨裁玩家永遠拿獨裁那一格。
+	gov := s.effectiveGovernment()
+	s.PlayerColonies[i].MoralePercent = colonyMoralePercent(gov, s.buildingsFor(i),
+		s.PlayerColonies[i].UnassimilatedPop > 0, achievementMoralePercent(s.Player, gov))
 }
 
 // recalcAllColonyMorale 對所有玩家殖民地重算士氣(見 recalcColonyMorale)。
@@ -3128,7 +3133,9 @@ func (s *GameSession) prepPlayerDerived() {
 	// 註解)。Profile15(現行預設)= 25000 = 套件級硬編值,no-op;Profile13 = 15000,真的改變
 	// Hyper-Advanced Lv1 研究成本。
 	s.Player.HyperAdvancedResearchCost = gamedata.HyperAdvancedCost(s.RuleProfile)
-	s.syncTradeGoodsFlag() // 依建造選單同步「貿易品」旗標,供 RunEmpireTurn 判斷是否換算收入
+	s.syncTradeGoodsFlag()          // 依建造選單同步「貿易品」旗標,供 RunEmpireTurn 判斷是否換算收入
+	s.syncAchievementColonyFields() // 成就科技的全帝國效果(污染容忍、每工人產能),見 achievements.go
+	s.recalcAllColonyMorale()       // 成就也影響士氣(VR 網路/心靈學),要在經濟結算之前重算
 }
 
 // EndTurn 推進一回合:先結算玩家帝國,再讓各 AI 對手自行決策並結算,回合數 +1。
@@ -3835,7 +3842,8 @@ func playerHomeworldColony() engine.ColonyState {
 		ResearchPerScientist: gamedata.ResearchPerScientistNorm,
 		PlanetSize:           gamedata.MEDIUM_PLANET, // 原版 Sol III = Medium Terran(archive.org oracle)
 		// 母星是自己的人,沒有未同化的外族人口 → 不套多種族懲罰。
-		MoralePercent: colonyMoralePercent(gamedata.MoraleGovDictatorship, homeworldBuildings(), false),
+		// 開局沒有任何成就科技,所以成就加成傳 0(見 achievements.go)。
+		MoralePercent: colonyMoralePercent(gamedata.MoraleGovDictatorship, homeworldBuildings(), false, 0),
 		// PlanetGravity 母星固定 Normal-G(手冊/homeworld-init.md 慣例基準,與 Terran/Abundant
 		// 同一組母星設定),無重力懲罰。engine.ColonyState.PlanetGravity 的 Go 零值恰好是
 		// gamedata.LOW_G(ordinal 0),必須明確賦值,不能依賴零值(見該欄位註解)。

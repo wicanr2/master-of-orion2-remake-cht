@@ -9,7 +9,7 @@ import (
 // TestColonyMoralePercentDictatorshipNoBarracks 驗證獨裁政府、無 Barracks 時士氣 = 手冊
 // -20%(gamedata.MoraleGovernmentBase 常數,p.21-22/p.165-167),不自行杜撰數字。
 func TestColonyMoralePercentDictatorshipNoBarracks(t *testing.T) {
-	got := colonyMoralePercent(gamedata.MoraleGovDictatorship, nil, false)
+	got := colonyMoralePercent(gamedata.MoraleGovDictatorship, nil, false, 0)
 	want := gamedata.MoraleGovernmentBase(gamedata.MoraleGovDictatorship, false)
 	if got != want {
 		t.Fatalf("獨裁無 Barracks 士氣應為 %d,實得 %d", want, got)
@@ -22,11 +22,11 @@ func TestColonyMoralePercentDictatorshipNoBarracks(t *testing.T) {
 // TestColonyMoralePercentBarracksCancelsPenalty 驗證海軍陸戰隊營/裝甲營房任一存在,皆可解除
 // 獨裁政府「無 Barracks -20%」懲罰(p.76-79)。
 func TestColonyMoralePercentBarracksCancelsPenalty(t *testing.T) {
-	marine := colonyMoralePercent(gamedata.MoraleGovDictatorship, map[string]bool{"海軍陸戰隊營": true}, false)
+	marine := colonyMoralePercent(gamedata.MoraleGovDictatorship, map[string]bool{"海軍陸戰隊營": true}, false, 0)
 	if marine != 0 {
 		t.Fatalf("有海軍陸戰隊營時獨裁士氣應歸零:實得 %d", marine)
 	}
-	armor := colonyMoralePercent(gamedata.MoraleGovDictatorship, map[string]bool{"裝甲營房": true}, false)
+	armor := colonyMoralePercent(gamedata.MoraleGovDictatorship, map[string]bool{"裝甲營房": true}, false, 0)
 	if armor != 0 {
 		t.Fatalf("有裝甲營房時獨裁士氣應歸零:實得 %d", armor)
 	}
@@ -35,18 +35,18 @@ func TestColonyMoralePercentBarracksCancelsPenalty(t *testing.T) {
 // TestColonyMoralePercentHoloSimulatorAndPleasureDomeStack 驗證全息模擬艙(+20)、歡樂穹頂
 // (+30)可疊加,且疊在政府基礎值之上。
 func TestColonyMoralePercentHoloSimulatorAndPleasureDomeStack(t *testing.T) {
-	base := colonyMoralePercent(gamedata.MoraleGovDictatorship, map[string]bool{"海軍陸戰隊營": true}, false)
+	base := colonyMoralePercent(gamedata.MoraleGovDictatorship, map[string]bool{"海軍陸戰隊營": true}, false, 0)
 
 	withHolo := colonyMoralePercent(gamedata.MoraleGovDictatorship, map[string]bool{
 		"海軍陸戰隊營": true, "全息模擬艙": true,
-	}, false)
+	}, false, 0)
 	if want := base + gamedata.MoraleHoloSimulatorBonus; withHolo != want {
 		t.Fatalf("全息模擬艙應 +%d:期望 %d,實得 %d", gamedata.MoraleHoloSimulatorBonus, want, withHolo)
 	}
 
 	withBoth := colonyMoralePercent(gamedata.MoraleGovDictatorship, map[string]bool{
 		"海軍陸戰隊營": true, "全息模擬艙": true, "歡樂穹頂": true,
-	}, false)
+	}, false, 0)
 	if want := base + gamedata.MoraleHoloSimulatorBonus + gamedata.MoralePleasureDomeBonus; withBoth != want {
 		t.Fatalf("全息模擬艙+歡樂穹頂應疊加:期望 %d,實得 %d", want, withBoth)
 	}
@@ -55,11 +55,11 @@ func TestColonyMoralePercentHoloSimulatorAndPleasureDomeStack(t *testing.T) {
 // TestColonyMoralePercentGovernmentDiffers 驗證統一/民主的政府基礎值為 0(手冊未提及基礎士氣
 // 效果),對照 gamedata.MoraleGovernmentBase 常數。
 func TestColonyMoralePercentGovernmentDiffers(t *testing.T) {
-	uni := colonyMoralePercent(gamedata.MoraleGovUnification, nil, false)
+	uni := colonyMoralePercent(gamedata.MoraleGovUnification, nil, false, 0)
 	if uni != 0 {
 		t.Fatalf("統一政府無 Barracks 士氣應為 0(手冊無基礎效果敘述):實得 %d", uni)
 	}
-	dem := colonyMoralePercent(gamedata.MoraleGovDemocracy, nil, false)
+	dem := colonyMoralePercent(gamedata.MoraleGovDemocracy, nil, false, 0)
 	if dem != 0 {
 		t.Fatalf("民主政府無 Barracks 士氣應為 0:實得 %d", dem)
 	}

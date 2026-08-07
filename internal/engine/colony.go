@@ -49,6 +49,9 @@ func colonyFood(cs ColonyState) (food, consumed, surplus int) {
 // 放到 grossIndustry 那一側會變成減產能——那是手冊那句話的反面。
 func colonyPollution(cs ColonyState, grossIndustry int) (pollutingProd, cleanupCost, netIndustry int) {
 	tolerance := gamedata.PollutionTolerance(cs.PlanetSize)
+	if cs.NanoDisassemblers {
+		tolerance = gamedata.PollutionToleranceWithNanoDisassemblers(cs.PlanetSize)
+	}
 	eighths := gamedata.PollutionEighths(cs.PollutionProcessor, cs.AtmosphericRenewer, cs.CoreWasteDump)
 	pollutingProd = gamedata.PollutionPollutingProduction(grossIndustry, eighths)
 	pollutingProd = gamedata.PollutionReducedByPercent(pollutingProd, cs.PollutionReductionPercent)
@@ -95,7 +98,8 @@ func RunColonyTurn(cs ColonyState) ColonyOutput {
 	// 未整合外星人只產出 3/4(手冊,見 gamedata 的 UncooperativeJobOutput)。
 	// 工業這一項要套「每工人至少 1 產能」的下限——3/4 會把礦產最差的 1 壓成 0。
 	gross := gamedata.GravityAdjustedProduction(
-		gamedata.UncooperativeJobOutput(cs.Workers, cs.IndustryPerWorker, cs.UnassimilatedPop, cs.Population, true),
+		gamedata.UncooperativeJobOutput(cs.Workers, cs.IndustryPerWorker+cs.IndustryPerWorkerBonus,
+			cs.UnassimilatedPop, cs.Population, true),
 		pct+cs.IndustryBonusPercent) + cs.FlatIndustry
 	pollutingProd, cleanupCost, netIndustry := colonyPollution(cs, gross)
 	// 再生反應爐(p.81)加在**污染縮減之後**:手冊明說這份產能不計入污染。
