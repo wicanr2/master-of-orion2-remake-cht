@@ -383,6 +383,10 @@ var (
 		{"強化船體", 90, 0, gamedata.TOPIC_ADVANCED_ENGINEERING, gamedata.TECH_REINFORCED_HULL},
 		{"多相護盾", 170, 0, gamedata.TOPIC_MULTIPHASED_PHYSICS, gamedata.TECH_MULTIPHASED_SHIELDS},
 		{"戰鬥掃描器", 120, 0, gamedata.TOPIC_TACHYON_PHYSICS, gamedata.TECH_BATTLE_SCANNER},
+		// 第 135 項:傷害鏈收成具名結構之後,這兩個就接得進去了
+		// (第 134 項把它們列在「要先重構」那一格)。
+		{"結構分析儀", 140, 0, gamedata.TOPIC_CYBERTRONICS, gamedata.TECH_STRUCTURAL_ANALYZER},
+		{"阿基里斯瞄準器", 200, 0, gamedata.TOPIC_MOLECULATRONICS, gamedata.TECH_ACHILLES_TARGETING_UNIT},
 	}
 )
 
@@ -640,6 +644,8 @@ type combatant struct {
 	hasAMR bool
 	// hasHEF 是這艘船裝了高能聚焦(手冊 p.87:光束傷害 +50%,不影響命中與距離衰減)。
 	hasHEF bool
+	// 攻方光束系統(第 135 項):高能聚焦 / 結構分析儀 / 阿基里斯瞄準器。
+	beamSystems BeamAttackerSystems
 	// apNegated 是這艘**被打的**船讓敵方穿甲失效(氙素裝甲 或 重裝甲系統,手冊各一句)。
 	apNegated bool
 	// 飛彈特殊防禦(手冊 p.123):裝了才擲骰,見 ResolveMissileShot 的 MissileDefenses。
@@ -717,8 +723,14 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 		default:
 			roll := rng.Intn(100) + 1
 			net := attackers[i].atk - d.def
-			shot = ResolveShotWithMods(net, attackers[i].wmin, attackers[i].wmax, 2, d.shield, d.armor, roll,
-				false, weaponModCodes(attackers[i].mods), hefBonusFor(attackers[i].hasHEF), d.apNegated)
+			shot = ResolveBeamShot(BeamShot{
+				NetAttack: net, WeaponMin: attackers[i].wmin, WeaponMax: attackers[i].wmax,
+				RangeSquares: 2, Roll: roll, Mods: weaponModCodes(attackers[i].mods),
+				Attacker: attackers[i].beamSystems,
+				Target: BeamTargetSystems{
+					ShieldReduction: d.shield, ArmorHP: d.armor, APNegated: d.apNegated,
+				},
+			})
 		}
 		if shot.Hit {
 			d.armor = shot.RemainingArmorHP
@@ -814,6 +826,7 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 			sizeClass:         shipSizeClass(sh.Class),
 			hasAMR:            sh.Special == antiMissileRocketName,
 			hasHEF:            sh.Special == highEnergyFocusName,
+			beamSystems:       shipBeamAttackerSystems(sh),
 			apNegated:         shipNegatesArmorPiercing(sh),
 			hasLightningField: shipHasLightningField(sh),
 			hasDisplacement:   shipHasDisplacementDevice(sh),
@@ -1020,6 +1033,8 @@ type CombatShip struct {
 	HasAMR            bool // 反飛彈火箭:射程內攔截
 	HasLightningField bool // 閃電場:每一枚來襲飛彈各 50% 直接摧毀
 	HasDisplacement   bool // 位移裝置:一律 30% 完全未命中
+	// BeamSystems 是這艘船的攻方光束系統(高能聚焦/結構分析儀/阿基里斯瞄準器)。
+	BeamSystems BeamAttackerSystems
 }
 
 // CombatSpriteForClass 依艦體等級回傳 CMBTSHP 色塊內 sprite 索引(見 docs/tech/cmbtshp-ship-sprites.md)。
@@ -1094,6 +1109,7 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			HasAMR:            sh.Special == antiMissileRocketName,
 			HasLightningField: shipHasLightningField(sh),
 			HasDisplacement:   shipHasDisplacementDevice(sh),
+			BeamSystems:       shipBeamAttackerSystems(sh),
 			SpriteIdx:         CombatSpriteForClass(sh.Class), // 色塊 0(玩家)
 			Bay:               bay, BayKind: bayKind,
 		})

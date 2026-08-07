@@ -103,6 +103,18 @@ func (s *GameSession) FleetResearchPoints() int {
 	return total
 }
 
+// shipBeamAttackerSystems 把這艘船的元件翻成光束射擊要用的攻方系統旗標。
+//
+// 一艘船只有一個 Special 槽,所以最多只會有一項為真——寫成一個函式而不是三個判斷,
+// 是為了讓「攻方有哪些系統」只有一個真相來源(與第 135 項把傷害鏈收成結構同一個理由)。
+func shipBeamAttackerSystems(sh Ship) BeamAttackerSystems {
+	return BeamAttackerSystems{
+		HEFBonus:           hefBonusFor(sh.Special == highEnergyFocusName),
+		StructuralAnalyzer: sh.Special == "結構分析儀",
+		AchillesUnit:       sh.Special == "阿基里斯瞄準器",
+	}
+}
+
 // ============ 這一輪**沒有**接的,與各自的理由 ============
 //
 //	戰鬥艙(Battle Pods)        「add equipment space without increasing the hull size」

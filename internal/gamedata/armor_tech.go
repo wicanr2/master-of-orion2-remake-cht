@@ -125,3 +125,9 @@ func ShipScoutLabResearch(class CombatShipClass) int {
 	}
 	return shipScoutLabResearch[class]
 }
+
+// ShipStructuralAnalyzerMultiplier 是結構分析儀對「已穿過護盾」的光束傷害的倍率。
+//
+// 手冊逐字(Structural Analyzer):「the damage done by beam weapons that penetrate an
+// enemy ship's shields is **doubled**.」
+const ShipStructuralAnalyzerMultiplier = 2

@@ -2043,9 +2043,16 @@ func (t *tacticalScreen) fireRound(target int) {
 		default:
 			roll := t.rng.Intn(100) + 1
 			net := s.Attack - enemy.Defense
-			shot = shell.ResolveShotWithMods(net, s.WeaponMin, s.WeaponMax, dist,
-				enemy.ShieldReduction, enemy.ArmorHP, roll, false,
-				shell.WeaponModCodesFromStrings(s.Mods), shell.HEFDamageBonus(s.HEF), enemy.APNegated)
+			shot = shell.ResolveBeamShot(shell.BeamShot{
+				NetAttack: net, WeaponMin: s.WeaponMin, WeaponMax: s.WeaponMax,
+				RangeSquares: dist, Roll: roll,
+				Mods:     shell.WeaponModCodesFromStrings(s.Mods),
+				Attacker: s.BeamSystems,
+				Target: shell.BeamTargetSystems{
+					ShieldReduction: enemy.ShieldReduction, ArmorHP: enemy.ArmorHP,
+					APNegated: enemy.APNegated,
+				},
+			})
 		}
 		if shot.Hit {
 			anyHit = true
