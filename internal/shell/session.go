@@ -207,16 +207,21 @@ var (
 	// 真科技樹無單一 TOPIC 可掛,暫掛簡化 proxy 主題、UnlockTech=TECH_NONE(走主題層級,標註待重設計)。
 	WeaponOptions = []Component{
 		{"無武裝", 0, 0, 0, 0},
-		{"雷射", 20, 4, gamedata.TOPIC_PHYSICS, gamedata.TECH_LASER_CANNON},       // ResearchAll(早期)
-		{"核飛彈", 30, 6, gamedata.TOPIC_CHEMISTRY, gamedata.TECH_NUCLEAR_MISSILE}, // ResearchAll(早期)
-		{"質量投射器", 40, 8, gamedata.TOPIC_ADVANCED_MAGNETISM, gamedata.TECH_MASS_DRIVER},
-		{"中子爆破槍", 60, 12, gamedata.TOPIC_NEUTRINO_PHYSICS, gamedata.TECH_NEUTRON_BLASTER}, // ✓ 值
-		{"核融合光束", 80, 16, gamedata.TOPIC_FUSION_PHYSICS, gamedata.TECH_FUSION_BEAM},
-		{"麥克萊特飛彈", 90, 17, gamedata.TOPIC_ADVANCED_CHEMISTRY, gamedata.TECH_MERCULITE_MISSILE},
-		{"高斯砲", 120, 18, gamedata.TOPIC_SUBSPACE_FIELDS, gamedata.TECH_GAUSS_CANNON}, // ✓ 值 戰鬥最大
-		{"相位砲", 160, 19, gamedata.TOPIC_MULTIPHASED_PHYSICS, gamedata.TECH_PHASOR},
-		{"電漿砲", 200, 20, gamedata.TOPIC_PLASMA_PHYSICS, gamedata.TECH_PLASMA_CANNON}, // ✓ 值 1.50
-		{"死光", 300, 25, gamedata.TOPIC_ARTIFICIAL_LIFE, 0},                           // 里程碑,proxy
+		// ⚠ 2026-08-08(第 123 項):Value(最大傷害)全部換成**手冊 p.124-125 的真值**。
+		// 先前是「依科技階遞增的單調估計」,而武器線本來就不是單調的——核融合光束在
+		// 舊估計裡比中子爆破槍強(16 > 12),手冊上它比中子爆破槍**弱**(6 vs 12)。
+		// 逐項出處與偏差幅度見 gamedata/weapon_damage.go。Cost 欄不動(那是 remake 的
+		// 生產成本尺度,與手冊的 Cost 欄不是同一個單位)。
+		{"雷射", 20, 4, gamedata.TOPIC_PHYSICS, gamedata.TECH_LASER_CANNON},                      // 手冊 1-4
+		{"核飛彈", 30, 8, gamedata.TOPIC_CHEMISTRY, gamedata.TECH_NUCLEAR_MISSILE},                // 手冊 8(先前 6)
+		{"質量投射器", 40, 6, gamedata.TOPIC_ADVANCED_MAGNETISM, gamedata.TECH_MASS_DRIVER},         // 手冊 6(先前 8)
+		{"中子爆破槍", 60, 12, gamedata.TOPIC_NEUTRINO_PHYSICS, gamedata.TECH_NEUTRON_BLASTER},      // 手冊 3-12
+		{"核融合光束", 80, 6, gamedata.TOPIC_FUSION_PHYSICS, gamedata.TECH_FUSION_BEAM},             // 手冊 2-6(先前 16)
+		{"麥克萊特飛彈", 90, 14, gamedata.TOPIC_ADVANCED_CHEMISTRY, gamedata.TECH_MERCULITE_MISSILE}, // 手冊 14(先前 17)
+		{"高斯砲", 120, 18, gamedata.TOPIC_SUBSPACE_FIELDS, gamedata.TECH_GAUSS_CANNON},           // 手冊 18
+		{"相位砲", 160, 20, gamedata.TOPIC_MULTIPHASED_PHYSICS, gamedata.TECH_PHASOR},             // 手冊 5-20(先前 19)
+		{"電漿砲", 200, 20, gamedata.TOPIC_PLASMA_PHYSICS, gamedata.TECH_PLASMA_CANNON},           // 手冊 4-20(1.50)
+		{"死光", 300, 100, gamedata.TOPIC_ARTIFICIAL_LIFE, 0},                                    // 手冊 50-100(先前 25)
 	}
 )
 
