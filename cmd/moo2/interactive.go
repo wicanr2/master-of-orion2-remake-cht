@@ -2536,6 +2536,8 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 	// 左下空白區(x<338, y 388-408)加一個「攻打安塔蘭」熱區(手冊三條勝利路徑之二,見
 	// internal/shell/antaran_victory.go)。點擊一律進安塔蘭王座廳(原版 Main_Antaran_Room),
 	// 發動與否在那裡決定;提示文字仍只在條件滿足時顯示,免得沒有傳送門就先誘導玩家點進去。
+	// fleetHits 由下面的名冊繪製迴圈填入(每個艦隊標頭一個),點下去切換操作中的艦隊。
+	var fleetHits []hitRegion
 	hits := []hitRegion{
 		{338, 50, 288, 300, "design"},
 		{20, 388, 260, 20, "assault"},
@@ -2547,6 +2549,15 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 		switch a {
 		case "design":
 			return b.goTo(b.shipDesign, "艦艇設計")
+		}
+		if strings.HasPrefix(a, "selfleet") && b.session != nil {
+			if n, err := strconv.Atoi(a[len("selfleet"):]); err == nil {
+				b.session.SelectFleet(n)
+				return b.goTo(b.fleet, "艦隊列表") // 重繪:換選中標記
+			}
+			return nil
+		}
+		switch a {
 		case "assault":
 			// 進安塔蘭王座廳(原版 Main_Antaran_Room),由那個畫面確認後才發動。
 			// 前置條件不滿足時照樣進得去——王座廳會逐條講明卡在哪,比「點了沒反應」清楚。
@@ -2577,28 +2588,57 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 艦隊名冊填進左下暗面板(艦名 + 艦體等級)。
+	// 艦隊名冊填進左下暗面板。
+	//
+	// ⚠ **這裡列的是「艦隊」不是「船」。** 先前攤平成一長串船名,那是單艦隊時代的殘留——
+	// 全帝國只有一支艦隊時,「列船」與「列艦隊」看起來一樣。多艦隊之後就不一樣了:
+	// 玩家需要看到哪幾艘在一起、停在哪、有沒有在航行,才能選要操作哪一支。
+	// (畫面標題是 FLEET OPERATIONS,不是 SHIP LIST。)
 	if b.session != nil {
 		gold := color.RGBA{240, 220, 120, 255}
 		body := color.RGBA{206, 214, 232, 255}
+		head := color.RGBA{150, 220, 200, 255}
+		sel := color.RGBA{250, 230, 140, 255}
 		y := 312.0
-		// 艦隊列表列的是**全帝國**的船(原版的 Fleets 畫面也是),不是目前選中那一支。
-		for _, sh := range b.session.AllShips() {
-			s.extras = append(s.extras,
-				extraText{x: 28, y: y, size: 13, text: sh.Name, col: gold},
-				extraText{x: 130, y: y, size: 12, text: sh.Class, col: body},
-			)
-			// 結構損傷(見 internal/shell/repair.go)。原版是在艦艇資訊面板用損壞色標示,
-			// remake 只有結構這一份損傷值,直接寫百分比;完好的船不畫,免得整排都是「損傷 0%」。
-			if d := shell.ShipDamagePercent(sh); d > 0 {
-				col := color.RGBA{235, 190, 90, 255} // 輕傷:琥珀
-				if d >= 50 {
-					col = color.RGBA{230, 110, 90, 255} // 重傷:紅
-				}
-				s.extras = append(s.extras,
-					extraText{x: 246, y: y, size: 12, text: fmt.Sprintf(b.tr("損傷 %d%%", "%d%% damaged"), d), col: col})
+		for fi := range b.session.Fleets {
+			f := &b.session.Fleets[fi]
+			// 艦隊標頭:選中標記 + 所在地 + 航行狀態。
+			mark := "  "
+			hc := head
+			if fi == b.session.SelectedFleet {
+				mark, hc = "▶ ", sel
 			}
-			y += 28
+			loc := b.tr("未知", "unknown")
+			if f.AtStar >= 0 && f.AtStar < len(b.session.Stars) {
+				loc = b.session.Stars[f.AtStar].Name
+			}
+			title := fmt.Sprintf(b.tr("%s第 %d 艦隊 — %s(%d 艘)", "%sFleet %d — %s (%d ships)"),
+				mark, fi+1, loc, len(f.Ships))
+			if f.DestStar >= 0 && f.DestStar < len(b.session.Stars) {
+				title += fmt.Sprintf(b.tr(" → %s,%d 回合", " → %s, %d turns"),
+					b.session.Stars[f.DestStar].Name, f.ETA)
+			}
+			s.extras = append(s.extras, extraText{x: 24, y: y, size: 12, text: title, col: hc})
+			fleetHits = append(fleetHits, hitRegion{20, int(y) - 12, 300, 16, fmt.Sprintf("selfleet%d", fi)})
+			y += 20
+			for _, sh := range f.Ships {
+				s.extras = append(s.extras,
+					extraText{x: 40, y: y, size: 12, text: sh.Name, col: gold},
+					extraText{x: 140, y: y, size: 11, text: sh.Class, col: body},
+				)
+				// 結構損傷(見 internal/shell/repair.go)。原版是在艦艇資訊面板用損壞色標示,
+				// remake 只有結構這一份損傷值,直接寫百分比;完好的船不畫,免得整排都是「損傷 0%」。
+				if d := shell.ShipDamagePercent(sh); d > 0 {
+					col := color.RGBA{235, 190, 90, 255} // 輕傷:琥珀
+					if d >= 50 {
+						col = color.RGBA{230, 110, 90, 255} // 重傷:紅
+					}
+					s.extras = append(s.extras,
+						extraText{x: 246, y: y, size: 11, text: fmt.Sprintf(b.tr("損傷 %d%%", "%d%% damaged"), d), col: col})
+				}
+				y += 18
+			}
+			y += 6
 		}
 		// 「攻打安塔蘭」提示(手冊三條勝利路徑之二):只在已建次元傳送門 + 艦隊非空時顯示,
 		// 對應上面 hits 的 "assault" 熱區(見 CanAssaultAntares)。點下去進王座廳,
@@ -2608,6 +2648,9 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 			s.extras = append(s.extras, extraText{x: 28, y: 402, size: 13, text: b.tr("攻打安塔蘭母星(點此進入王座廳)", "Assault the Antaran homeworld (click for the throne room)"), col: warn})
 		}
 	}
+	// 艦隊標頭的熱區要等名冊畫完才知道有幾個,所以最後補進去
+	// (loadOverlayScreen 已經把 hits 複製走了,直接接在 s.hits 後面)。
+	s.hits = append(s.hits, fleetHits...)
 	return s, nil
 }
 
