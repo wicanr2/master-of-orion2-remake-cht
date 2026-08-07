@@ -365,6 +365,9 @@ type sceneBuilder struct {
 	// (見 relocation.go)。兩者都是看的方式,不進存檔。
 	relocPick   relocatePickState
 	relocColors []color.RGBA
+	// shipPick 是艦隊列表上被勾選的船(索引是**目前選中艦隊內**的索引),供拆分用。
+	// 換艦隊時要清掉——索引換一支就沒意義了。
+	shipPick map[int]bool
 	// flashMsg / flashUntil 是星圖底緣的短暫訊息(F10 快速存檔的回報等,見 hotkeys.go)。
 	// flashUntil 用 animTick 計時,到了就不畫。
 	flashMsg          string
@@ -2557,9 +2560,32 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 		if strings.HasPrefix(a, "selfleet") && b.session != nil {
 			if n, err := strconv.Atoi(a[len("selfleet"):]); err == nil {
 				b.session.SelectFleet(n)
-				return b.goTo(b.fleet, "艦隊列表") // 重繪:換選中標記
+				b.shipPick = map[int]bool{} // 換艦隊 → 清掉選船(索引是艦隊內的,換一支就沒意義)
+				return b.goTo(b.fleet, "艦隊列表")
 			}
 			return nil
+		}
+		if strings.HasPrefix(a, "pickship") && b.session != nil {
+			if n, err := strconv.Atoi(a[len("pickship"):]); err == nil {
+				if b.shipPick == nil {
+					b.shipPick = map[int]bool{}
+				}
+				b.shipPick[n] = !b.shipPick[n]
+				return b.goTo(b.fleet, "艦隊列表")
+			}
+			return nil
+		}
+		if a == "splitfleet" && b.session != nil {
+			var picked []int
+			for si, on := range b.shipPick {
+				if on {
+					picked = append(picked, si)
+				}
+			}
+			if _, ok := b.session.SplitFleet(b.session.SelectedFleet, picked); ok {
+				b.shipPick = map[int]bool{}
+			}
+			return b.goTo(b.fleet, "艦隊列表")
 		}
 		switch a {
 		case "relocate":
@@ -2631,9 +2657,44 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 			s.extras = append(s.extras, extraText{x: 24, y: y, size: 12, text: title, col: hc})
 			fleetHits = append(fleetHits, hitRegion{20, int(y) - 12, 300, 16, fmt.Sprintf("selfleet%d", fi)})
 			y += 20
-			for _, sh := range f.Ships {
+			// 拆分入口:選了至少一艘、又不是全部時才出現。
+			//
+			// ⚠ 原版這個畫面的美術上**沒有 SPLIT 鈕**(烘著的是 ALL / RELOCATE / SCRAP /
+			// LEADERS / Support / Combat / RETURN)——原版是在右側艦艇格選船再下令。
+			// remake 的右側格還沒接上選取,所以先用左側名冊選 + 這一行當入口。
+			// **這是 remake 自己加的控制項**,追到原版怎麼下拆分令之後要換掉。
+			//
+			// 放在**標頭底下**而不是船清單之後:名冊往下長,放在後面會撞到 y=402 那行
+			// 「攻打安塔蘭母星」(第一版就是這樣疊在一起的)。
+			if fi == b.session.SelectedFleet {
+				n := 0
+				for si := range f.Ships {
+					if b.shipPick[si] {
+						n++
+					}
+				}
+				if n > 0 && n < len(f.Ships) {
+					s.extras = append(s.extras, extraText{x: 34, y: y, size: 11,
+						text: fmt.Sprintf(b.tr("▶ 把選中的 %d 艘拆成新艦隊", "▶ Split %d selected into a new fleet"), n),
+						col:  color.RGBA{150, 230, 180, 255}})
+					fleetHits = append(fleetHits, hitRegion{28, int(y) - 11, 296, 15, "splitfleet"})
+					y += 18
+				}
+			}
+			for si, sh := range f.Ships {
+				// 選船(供拆分用):只有目前操作中的艦隊可以選——拆分是對「這一支」做的。
+				mk := ""
+				nameCol := gold
+				if fi == b.session.SelectedFleet {
+					if b.shipPick[si] {
+						mk, nameCol = "✔ ", sel
+					} else {
+						mk = "· "
+					}
+					fleetHits = append(fleetHits, hitRegion{34, int(y) - 11, 290, 15, fmt.Sprintf("pickship%d", si)})
+				}
 				s.extras = append(s.extras,
-					extraText{x: 40, y: y, size: 12, text: sh.Name, col: gold},
+					extraText{x: 40, y: y, size: 12, text: mk + sh.Name, col: nameCol},
 					extraText{x: 140, y: y, size: 11, text: sh.Class, col: body},
 				)
 				// 結構損傷(見 internal/shell/repair.go)。原版是在艦艇資訊面板用損壞色標示,
@@ -3663,6 +3724,11 @@ func (a *interactiveApp) Update() error {
 			Over: true, Reason: engine.VictoryAntaran, Winner: "player", Turn: a.gallerySession.Turn,
 		}
 		a.gallerySession.AntaranHomeworldConquered = true
+	}
+	// 截圖廊專用:艦隊列表勾兩艘船,讓「拆成新艦隊」那一行出現在截圖裡
+	// (不勾就永遠看不到,那一層等於沒被驗到)。
+	if a.galleryFleetTick > 0 && a.tick == a.galleryFleetTick && a.galleryBuilder != nil {
+		a.galleryBuilder.shipPick = map[int]bool{0: true}
 	}
 	// 截圖廊專用:艦隊列表與安塔蘭王座廳的前置狀態(見 galleryFleetTick 的說明)。
 	// 與上面同一個理由——截圖驗證等不起真的打一場、也等不起研究到多維物理再蓋傳送門。

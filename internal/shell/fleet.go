@@ -157,3 +157,57 @@ func (s *GameSession) colonyStar(i int) int {
 	}
 	return s.PlayerColonyStars[i]
 }
+
+// ---- 分艦隊(原版 `Split_Stack_` @ 0x5D689)----
+//
+// 原版的「艦隊」叫 **ship stack**:`word_192248[stack]` 是頭一艘船的 id,
+// `word_1975D6[船 id×5]` 是「下一艘」的指標——**單向串列**。
+// `Split_Stack_` 收一組船 id,把它們從原本的串列摘下來、串成新的一個 stack,
+// 接在 stack 表的尾端(`word_199A02` 是目前的 stack 數)。
+//
+// 所以拆分的語意是:**選一組船,抽出來組成一支新艦隊**,位置不變。
+// remake 用切片而不是串列,但語意逐項對得上。
+
+// SplitFleet 把第 fleetIdx 支艦隊裡的 ships(艦隊內索引)抽出來組成新的一支。
+//
+// 回傳新艦隊的索引與是否成功。以下情況不動作:
+//   - 艦隊索引越界、沒有選任何船、選了全部(那不是拆分,是原地不動)
+//   - **艦隊正在航行**——remake 的航行是整段跳的,中途沒有位置,
+//     拆出來的那一半沒有可放的地方。這是 remake 移動模型的後果,不是原版規則。
+//
+// ⚠ 陸戰隊/戰車營**留在原艦隊**:remake 把它們建模成艦隊層級的數字(不綁定到特定的船),
+// 所以拆分時沒有「哪些跟著走」的依據。要改成逐船攜行得先讓運兵成為船的屬性。
+func (s *GameSession) SplitFleet(fleetIdx int, ships []int) (int, bool) {
+	s.ensureFleet()
+	if fleetIdx < 0 || fleetIdx >= len(s.Fleets) {
+		return -1, false
+	}
+	src := &s.Fleets[fleetIdx]
+	if src.DestStar >= 0 {
+		return -1, false // 航行中不能拆(見上方 ⚠)
+	}
+	// 去重 + 濾掉越界,順便算出「要留下的」。
+	take := map[int]bool{}
+	for _, i := range ships {
+		if i >= 0 && i < len(src.Ships) {
+			take[i] = true
+		}
+	}
+	if len(take) == 0 || len(take) == len(src.Ships) {
+		return -1, false
+	}
+	moved := make([]Ship, 0, len(take))
+	kept := make([]Ship, 0, len(src.Ships)-len(take))
+	for i, sh := range src.Ships {
+		if take[i] {
+			moved = append(moved, sh)
+		} else {
+			kept = append(kept, sh)
+		}
+	}
+	src.Ships = kept
+	f := NewFleet(src.AtStar)
+	f.Ships = moved
+	s.Fleets = append(s.Fleets, f)
+	return len(s.Fleets) - 1, true
+}

@@ -286,3 +286,82 @@ func TestSaveRoundTripKeepsEveryFleet(t *testing.T) {
 		t.Errorf("全帝國應仍有 5 艘,實得 %d", got.ShipCount())
 	}
 }
+
+// ---- 分艦隊(原版 Split_Stack_)----
+
+// TestSplitFleetMovesChosenShips:選中的船抽出來組成新的一支,位置不變。
+func TestSplitFleetMovesChosenShips(t *testing.T) {
+	s := twoFleetSession()
+	idx, ok := s.SplitFleet(1, []int{0, 2}) // 丙、戊
+	if !ok {
+		t.Fatal("應該拆得成")
+	}
+	if idx != 2 || len(s.Fleets) != 3 {
+		t.Fatalf("新艦隊應接在尾端(索引 2),實得 %d,共 %d 支", idx, len(s.Fleets))
+	}
+	nf := s.Fleets[idx]
+	if len(nf.Ships) != 2 || nf.Ships[0].Name != "丙" || nf.Ships[1].Name != "戊" {
+		t.Errorf("新艦隊應是丙+戊,實得 %v", nf.Ships)
+	}
+	if nf.AtStar != 3 {
+		t.Errorf("新艦隊位置應與原艦隊相同(星 3),實得 %d", nf.AtStar)
+	}
+	if nf.DestStar != -1 {
+		t.Errorf("新艦隊不該帶航行任務,實得 %d", nf.DestStar)
+	}
+	if len(s.Fleets[1].Ships) != 1 || s.Fleets[1].Ships[0].Name != "丁" {
+		t.Errorf("原艦隊應只剩丁,實得 %v", s.Fleets[1].Ships)
+	}
+	if s.ShipCount() != 5 {
+		t.Errorf("拆分不該改變全帝國艦數,實得 %d", s.ShipCount())
+	}
+}
+
+// TestSplitFleetRejectsDegenerateCases:沒選、全選、越界、航行中都不動作。
+//
+// 「全選」特別要擋:那不是拆分,是原地生一支空的舊艦隊 + 一支一樣的新艦隊。
+func TestSplitFleetRejectsDegenerateCases(t *testing.T) {
+	for _, c := range []struct {
+		name  string
+		fleet int
+		ships []int
+		prep  func(*GameSession)
+	}{
+		{"沒選任何船", 1, nil, nil},
+		{"選了全部", 1, []int{0, 1, 2}, nil},
+		{"索引全越界", 1, []int{9, 10}, nil},
+		{"艦隊索引越界", 9, []int{0}, nil},
+		{"航行中", 1, []int{0}, func(s *GameSession) { s.Fleets[1].DestStar, s.Fleets[1].ETA = 0, 2 }},
+	} {
+		s := twoFleetSession()
+		if c.prep != nil {
+			c.prep(s)
+		}
+		before := len(s.Fleets)
+		if _, ok := s.SplitFleet(c.fleet, c.ships); ok {
+			t.Errorf("%s:不該拆得成", c.name)
+		}
+		if len(s.Fleets) != before {
+			t.Errorf("%s:艦隊數不該變,%d → %d", c.name, before, len(s.Fleets))
+		}
+	}
+}
+
+// TestSplitFleetKeepsGroundTroopsWithOriginal 釘住一個**已知的簡化**。
+//
+// remake 把陸戰隊/戰車營建模成艦隊層級的數字,不綁定到特定的船,所以拆分時沒有
+// 「哪些跟著走」的依據——全部留在原艦隊。要改成逐船攜行得先讓運兵成為船的屬性。
+func TestSplitFleetKeepsGroundTroopsWithOriginal(t *testing.T) {
+	s := twoFleetSession()
+	s.Fleets[1].Marines, s.Fleets[1].Tanks = 6, 3
+	idx, ok := s.SplitFleet(1, []int{0})
+	if !ok {
+		t.Fatal("應該拆得成")
+	}
+	if s.Fleets[1].Marines != 6 || s.Fleets[1].Tanks != 3 {
+		t.Errorf("地面部隊應留在原艦隊,實得 (%d,%d)", s.Fleets[1].Marines, s.Fleets[1].Tanks)
+	}
+	if s.Fleets[idx].Marines != 0 || s.Fleets[idx].Tanks != 0 {
+		t.Errorf("新艦隊不該分到地面部隊,實得 (%d,%d)", s.Fleets[idx].Marines, s.Fleets[idx].Tanks)
+	}
+}
