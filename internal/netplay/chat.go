@@ -63,10 +63,24 @@ import (
 // 只發給 `[player+0x28] == 'd'` 的那些,封包型別 `edx = 27h`。
 // 那個 `27h = 39` 在 `sub_F5A9F` 的跳表註解裡對上了:`; jumptable 000F5AD4 case 39`
 // ——那個 case 正是呼叫 `Receive_Chat_Msg_` 的那一條。**送與收兩端各自指到同一個 39。**
-// GNN 走的是 case 43(`Send_GNN_Chat_Msg_` @ 0xDD42A)。
 //
 // remake 走 JSON over TCP,不需要數字 opcode,但把它記在這裡:
 // 之後若要和原版的封包對接,這是唯一的入口號碼。
+//
+// ============ ⚠ GNN 那一邊訂正過(2026-08-08,第 113 項)============
+//
+// 這裡原本寫「GNN 走的是 case 43(`Send_GNN_Chat_Msg_` @ 0xDD42A)」,而那句話
+// **把送訊端和收訊 case 湊成了一對,但它們不是同一個號碼**:
+//
+//	Send_GNN_Chat_Msg_ @ 0xDD42A: mov edx, 2Dh (45)   ; asm 315237
+//	收訊跳表 sub_F5A9F:            case 43 (0x2B) 才是「speaker 固定 8 呼叫 Receive_Chat_Msg_」
+//
+// 而那張 68 格的跳表**沒有 case 45**(實際存在的是 0..67 扣掉 4/45/49/51/53/54)。
+// 也就是說:一個 `Send_GNN_Chat_Msg_` 送出去的封包,在收端落到 default 被丟掉。
+//
+// ⚠ **不要把這句讀成「原版的 GNN 廣播是壞的」**——我核到的是「這條路徑上收發號碼對不起來」,
+// 沒有核 `sub_F6816` 是不是唯一的傳送出口、也沒有核有沒有第二個派送器。
+// 唯一能確定的是:先前那個 `0x2B` 是**收訊 case 號**,被當成送訊型別號記下來了。
 //
 // ============ 誠實留白 ============
 //
@@ -86,10 +100,14 @@ const (
 	// ChatGNNSpeaker 是「發話者編號到這裡以上算 GNN 新聞」的門檻(原版 `cmp ax, 8 / jge`)。
 	ChatGNNSpeaker = 8
 
-	// ChatOpcode / ChatGNNOpcode 是原版的封包型別號(見檔頭)。remake 用 KindChat,
-	// 這兩個數只在要和原版對接時才有意義。
-	ChatOpcode    = 0x27
-	ChatGNNOpcode = 0x2B
+	// ChatOpcode 是原版一般聊天的封包型別號(`Send_Chat_Msg_` 的 `edx = 27h`;
+	// 收訊跳表 case 39 對得上)。remake 用 KindChat,這個數只在要和原版對接時才有意義。
+	ChatOpcode = 0x27
+	// ChatGNNSendOpcode 是 `Send_GNN_Chat_Msg_` 實際送出的型別號(`edx = 2Dh`)。
+	// ChatGNNRecvCase 是收訊跳表裡「speaker 固定 8」那一格的 case 號。
+	// **兩者不相等**,而且跳表沒有 case 45——詳見檔頭的訂正段落。
+	ChatGNNSendOpcode = 0x2D
+	ChatGNNRecvCase   = 0x2B
 )
 
 // KindChat 是聊天訊息的種類。

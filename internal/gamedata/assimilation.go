@@ -45,6 +45,29 @@ package gamedata
 //   - 多種族殖民地的 **20% 士氣懲罰**(建築可消除)另外走士氣那條路,不在這一檔。
 
 // AssimilationGovernment 是同化速率表用的政體(含四個進階形式)。
+//
+// ============ 這個編號不是自己排的,執行檔驗證過 ============
+//
+// 下面的順序原本是照手冊表格排的(基本型 + 它的進階型交錯),**是 remake 自己的選擇**。
+// 2026-08-08(第 113 項)發現原版用的是同一組編號:`sub_E4204`(「取得某項科技」的
+// 效果套用函式)對四項政府科技各寫一個立即數進 `[player+0x89F]`:
+//
+//	techIdx 42 Confederation         → [player+0x89F] = 1   (asm 327016)
+//	techIdx 92 Imperium              → [player+0x89F] = 3   (asm 327006)
+//	techIdx 65 Federation            → [player+0x89F] = 5   (asm 327021)
+//	techIdx 77 Galactic Unification  → [player+0x89F] = 7   (asm 327011)
+//
+// 四項全中,一項不差。偶數是四個基本政體(封建/獨裁/民主/統一——正好是自訂種族
+// 那一欄能選的四個),奇數是它們各自的科技升級版,而 `值/2` 就是「哪一族」。
+//
+// 這同時**推翻了 `docs/re/calc-tech-value.md` 把 `[player+0x89F]` 記成「種族特性相關(猜)」**
+// ——那份文件當時寫「沒有查到寫入端」,而寫入端一直都在。
+//
+// 順帶:`lea esi, [eax+89Fh]` 與 `inc byte ptr [edx+eax+89Fh]` 顯示 0x89F 是**一段陣列的起點**
+// (到 0x8BE),政府只是第 0 格。其餘各格是什麼仍未解。
+//
+// ⚠ 不要重排這個列舉:重排會讓上面那組對照失效,而它是目前唯一把 remake 的政體編號
+// 釘在原版位元組上的東西(`government_orig_test.go`)。
 type AssimilationGovernment int
 
 const (
