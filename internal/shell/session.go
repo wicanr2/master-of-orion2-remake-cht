@@ -164,6 +164,13 @@ type Ship struct {
 	// 就是被擊沉——「自動修復」元件因此從加進來就沒有任何效果。見 repair.go。
 	// 舊存檔沒有這個欄位,JSON 解碼為 0 = 完好,回歸安全。
 	Damage int
+	// CrewXP 是艦員累積經驗(手冊 p.121)。**等級不另存**——由 CrewXP 推導
+	// (見 GameSession.shipCrewLevel)。兩個欄位遲早會不同步,一個不會。
+	//
+	// 太空學院「造出來的船起始等級 +1」就是把這個欄位設成那一級的門檻
+	// (gamedata.CrewXPForLevel),不是另開一個「起始等級」欄位。
+	// 舊存檔沒有這個欄位,JSON 解碼為 0 = 新兵,回歸安全。
+	CrewXP int
 }
 
 // Component 是一個艦艇元件(名稱 + 成本 + 效果值 + 解鎖科技)。
@@ -365,6 +372,9 @@ type BattleResult struct {
 	PlayerWon                 bool
 	PlayerLosses, EnemyLosses int
 	Log                       []string // 逐回合戰報
+	// CrewXPGained 是這一仗每艘倖存艦拿到的艦員經驗(手冊 p.121:被擊沉敵艦艦體等級
+	// 總和的一半,最少 1)。輸掉的仗是 0——手冊寫的是「Each battle **won**」。
+	CrewXPGained int
 }
 
 // removeWeakestShip 移除戰力最弱的一艘艦。
@@ -582,6 +592,10 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 		body := shipStrength(sh.Class)
 		atk := body + sh.WeaponAttack
 		atk += atk * s.RaceCombatPct / 100 // 種族戰鬥加成(姆瑞森+25、布拉西/阿爾卡里+15…)
+		// 艦員經驗(手冊 p.121 的 BA/BD 兩欄):老手打得準也閃得掉。
+		// 加在種族加成**之後**——那兩張表是直接的點數加成,不是百分比,所以不該被種族倍率放大。
+		crew := s.shipCrewLevel(sh)
+		atk += gamedata.ShipCrewOffenseBonus(crew)
 		hp := body * 3
 		// 戰機庫:出擊一隊戰機(手冊:中隊一律 4 架;返航前射擊次數攔截機 4、重戰機 2),
 		// 在艦級抽象結算中以母艦戰力加成承接整隊火力與血量。
@@ -622,8 +636,10 @@ func (s *GameSession) ResolveBattle(enemy string) BattleResult {
 		mult = Difficulties[s.Difficulty].Mult
 	}
 	var ef []combatant
+	var enemyStartStrengths []int
 	for _, st := range genEnemyFleet(s.Turn, mult) {
 		ef = append(ef, combatant{hp: st * 3, atk: st, def: st, wmin: st / 2, wmax: st, armor: st, shipIdx: -1})
+		enemyStartStrengths = append(enemyStartStrengths, st)
 	}
 	pf, pfIdx := s.mkPlayerCombatantsIndexed()
 
@@ -637,6 +653,12 @@ func (s *GameSession) ResolveBattle(enemy string) BattleResult {
 	res.PlayerLosses = res.PlayerStart - len(pf)
 	res.EnemyLosses = res.EnemyStart - len(ef)
 	res.PlayerWon = len(ef) == 0 || len(pf) >= len(ef)
+	// 艦員經驗(手冊 p.121):打贏才給,而且是**被擊沉**敵艦艦體等級總和的一半。
+	// 倖存的敵艦 atk 就是它的戰力值(genEnemyFleet 給的,戰鬥中不變),
+	// 用「開打前的多重集合 − 結束時的多重集合」還原出被擊沉的是哪些。
+	if res.PlayerWon {
+		res.CrewXPGained = s.awardBattleCrewXP(destroyedEnemySizeClasses(enemyStartStrengths, ef))
+	}
 	// 倖存艦的剩餘血量寫回持久損傷(見 repair.go)。battleVolley 會就地移除陣亡艦,
 	// 故 pf 剩下的是「倖存者、且保持原始相對順序」——與 pfIdx 的前綴對齊。
 	s.applySurvivorDamage(pf, pfIdx)
@@ -1063,8 +1085,13 @@ func (s *GameSession) BuildShipWithMods(class string, weapon, armor, shield, spe
 	}
 	// 艦艇設計畫面直接花錢造的船,進**目前操作中**的艦隊(玩家按下建造時手上就是那一支)。
 	f := s.Fleet()
+	// 艦員起始經驗:這條路徑是「艦艇設計畫面直接花錢造」,沒有指定殖民地
+	// ——太空學院是逐殖民地的建築,查不到是哪一座造的,所以走一般起始等級。
+	// ⚠ 這是 remake 的路徑限制(設計畫面沒有「在哪造」的概念),不是規則如此;
+	// 逐殖民地造艦那條路(deliverNewShip)有正確吃到學院加成。
 	f.Ships = append(f.Ships, Ship{Name: name, Class: class, Weapon: w.Name, Armor: a.Name, Shield: sh.Name,
-		Special: sp.Name, WeaponAttack: atk, BonusHP: a.Value + sh.Value, Mods: modsCopy})
+		Special: sp.Name, WeaponAttack: atk, BonusHP: a.Value + sh.Value, Mods: modsCopy,
+		CrewXP: s.newShipCrewXP(-1)})
 	return true
 }
 
@@ -2411,7 +2438,16 @@ type GameSession struct {
 	PlayerName     string // 玩家帝國/領袖名稱(新遊戲命名畫面設定)
 	FlagColor      int    // 玩家旗幟顏色索引(shell.FlagColors)
 	RaceCombatPct  int    // 種族戰鬥戰力百分點加成(供戰鬥使用)
-	raceGrowthPct  int    // 種族人口成長百分點加成(供 advancePopulation)
+	// RaceWarlord 是種族的「統帥」特質(手冊 p.26-27)。影響兩件事:
+	// 艦員經驗階梯整條往上平移一格(crew.go)、營房容量加倍(gamedata.Ground*BarracksCap)。
+	//
+	// ⚠ **目前沒有任何內建種族會設它**——十三經典種族的特質表(Races)還沒有特質欄位,
+	// 自訂種族的 Warlord pick 也還沒接。留這個欄位是為了讓那兩處共用同一個真相來源:
+	// 先前 ground_invasion.go / orbital_bombardment.go 有五處各自硬寫 `false`,
+	// 特質系統補上時要改五個地方而且很容易漏掉一個。
+	RaceWarlord bool
+
+	raceGrowthPct int // 種族人口成長百分點加成(供 advancePopulation)
 
 	// Government 是玩家目前政府型態(2026-07-11 接線,供 colonyMoralePercent 士氣計算用)。
 	// 由 ApplyGovernment 設定;新遊戲若從未呼叫 ApplyGovernment,預設見 NewDemoSession
@@ -2896,15 +2932,16 @@ func (s *GameSession) EndTurn() {
 	}
 	// 間諜結算須排在玩家與所有 AI 本回合研究都跑完之後(用最新的 CompletedTopics/ChosenTech
 	// 判定「對方已知、我方未知」的可偷科技清單),故緊接在上面的 AI 迴圈之後。
-	s.advanceEspionage()  // 玩家 ↔ AI 間諜行動(最小迴圈:偷科技 STEAL,見 spy.go)
-	s.advanceBuilds()     // 以本回合淨工業推進各殖民地建造
-	s.advanceResearch()   // 目前研究主題完成則自動推進到下一個未完成的元件解鎖主題
-	s.LastDiscovery = nil // 每回合先清掉上一回合的發現(與 advanceEvents 清 LastEvent 同一個節奏)
-	s.advanceFleet()      // 推進艦隊星間航行(ETA 遞減,抵達則標記探索 + 結算一次性發現)
-	s.advanceMarines()    // 各 Marine Barracks 殖民地依手冊公式補充陸戰隊駐軍(有上限)
-	s.advanceArmor()      // 各 Armor Barracks 殖民地依手冊公式補充戰車營駐軍(有上限,見 ground_invasion.go)
-	s.advancePopulation() // 累積各殖民地成長,達門檻則 +1 人口(回寫 Population)
-	s.advanceEvents()     // 觸發 MOO2 風格隨機事件(繁榮/瘟疫/海盜…),記於 LastEvent
+	s.advanceEspionage()      // 玩家 ↔ AI 間諜行動(最小迴圈:偷科技 STEAL,見 spy.go)
+	s.advanceBuilds()         // 以本回合淨工業推進各殖民地建造
+	s.advanceResearch()       // 目前研究主題完成則自動推進到下一個未完成的元件解鎖主題
+	s.LastDiscovery = nil     // 每回合先清掉上一回合的發現(與 advanceEvents 清 LastEvent 同一個節奏)
+	s.advanceFleet()          // 推進艦隊星間航行(ETA 遞減,抵達則標記探索 + 結算一次性發現)
+	s.advanceCrewExperience() // 艦員經驗:每回合 +1,停泊星系每有一座太空學院再 +1(見 crew.go)
+	s.advanceMarines()        // 各 Marine Barracks 殖民地依手冊公式補充陸戰隊駐軍(有上限)
+	s.advanceArmor()          // 各 Armor Barracks 殖民地依手冊公式補充戰車營駐軍(有上限,見 ground_invasion.go)
+	s.advancePopulation()     // 累積各殖民地成長,達門檻則 +1 人口(回寫 Population)
+	s.advanceEvents()         // 觸發 MOO2 風格隨機事件(繁榮/瘟疫/海盜…),記於 LastEvent
 	// 持續型事件(超新星倒數/時空異象/超空間獸)每回合推進一次,見 events_persistent.go。
 	// 它們的訊息接在 LastEvent 後面——一回合可能同時有「新抽到的事件」與「持續中的狀態」。
 	if msgs := s.advancePersistentEvents(); len(msgs) > 0 {

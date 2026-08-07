@@ -334,7 +334,7 @@ func (s *GameSession) advanceMarines() {
 		}
 		age := s.MarineBarracksAge[i]
 		c := s.PlayerColonies[i]
-		n := gamedata.GroundMarineBarracksUnits(age, c.Population, c.PopMax, false)
+		n := gamedata.GroundMarineBarracksUnits(age, c.Population, c.PopMax, s.RaceWarlord)
 		if n > s.PlayerColonyMarines[i] {
 			s.PlayerColonyMarines[i] = n
 		}
@@ -366,7 +366,7 @@ func (s *GameSession) advanceArmor() {
 		}
 		age := s.ArmorBarracksAge[i]
 		c := s.PlayerColonies[i]
-		n := gamedata.GroundArmorBarracksUnits(age, c.Population, c.PopMax, false)
+		n := gamedata.GroundArmorBarracksUnits(age, c.Population, c.PopMax, s.RaceWarlord)
 		if n > s.PlayerColonyTanks[i] {
 			s.PlayerColonyTanks[i] = n
 		}
@@ -591,7 +591,7 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	// ——再加一次就會變成 3 / 4。見 gap report 第 89 項的重建表。
 	atkHits[groundTypeTanks] = tankHits
 
-	defCount := gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population, colony.PopMax, false)
+	defCount := gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population, colony.PopMax, s.RaceWarlord)
 	defForce := aiMarineForce(*aiPlayer)
 	// 守方 Commando 領袖加成(#5,2026-07-11 已接線;ruleprofile.go RuleProfile.DefenderCommandoBonus):
 	// AIOpponent.Leaders(見該欄位註解)提供「AI 是否擁有 Commando 守將」的資料來源——

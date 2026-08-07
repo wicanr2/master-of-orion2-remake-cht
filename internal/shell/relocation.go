@@ -235,6 +235,11 @@ func (s *GameSession) RelocationLinks() []RelocationLink {
 // 而不是瞬間移動——手冊說的是 "ships being automatically relocated",那是一段航程,
 // 星圖上畫得出來的那條線就是它。
 func (s *GameSession) deliverNewShip(colony int, sh Ship) {
+	// 艦員起始經驗:太空學院讓該殖民地造的船起始等級 +1(手冊 p.97,見 crew.go)。
+	// 設在這裡而不是每個呼叫端各設一次——所有從殖民地造出來的船都走這條路。
+	if sh.CrewXP == 0 {
+		sh.CrewXP = s.newShipCrewXP(colony)
+	}
 	from := s.colonyStar(colony)
 	to := s.ColonyRelocation(colony)
 	if to == ColonyRelocationNone || from < 0 || to < 0 || from == to {

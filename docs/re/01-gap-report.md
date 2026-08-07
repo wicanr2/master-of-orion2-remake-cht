@@ -4793,9 +4793,87 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
 
     ### 建築表狀態
 
-    41 棟裡名字從未被程式碼消費的剩 **6 棟**:太空學院(艦員經驗值)、
-    異族管理中心(同化)、戰機基地(格子戰鬥的獨立戰機單位)、恆星轉換器,
-    以及先前已知的兩棟。
+95. **艦員經驗系統:三張加成表早就在,缺的是「經驗怎麼來」**(2026-08-07)。
+
+    上一項把太空學院列在「缺艦員經驗值子系統」。盤點之後發現 remake 的狀況很特別:
+    **加成表已經有三張,而且都對得上手冊**——
+
+    | 表 | 位置 | 手冊欄 |
+    |---|---|---|
+    | `shipCrewOffenseBonuses = {0,15,30,50,75}` | `formulas.go` | BA |
+    | `shipCrewDefenseBonuses = {0,15,30,50,75}` | `formulas.go` | BD |
+    | `MissileCrew* = 0,7,15,25,37` | `missile.go` | ME |
+
+    ——但**沒有任何一艘船有等級**。`shell.Ship` 沒有那個欄位,也沒有東西會讓它上升。
+    三張表唯一的呼叫端在「讀存檔的船」那條路徑上(`engine.ShipBeamAttackFromDesign`),
+    remake 自己造的船永遠是新兵。**表抄了、機制沒接。**
+
+    ### 手冊 p.121 那張表補完
+
+    第四條軌(Bo,登艦戰)先前沒人抄——因為 remake 還沒有登艦戰。這次補進來
+    (`{0,5,10,15,20}`),即使暫時沒有呼叫端:**缺一條軌會讓下次有人接登艦戰時
+    以為手冊沒給數字。**
+
+    ### 統帥種族不是「升級快」,是整條階梯平移
+
+    手冊那個星號:「This level is only attainable by crews in the service of a
+    **Warlord** race.」配上前面那句「All ship crews start out as green rookies
+    **unless** they're in service with a race that has the Warlord characteristic」
+    ——兩句話講的是同一件事:
+
+    ```
+    一般種族   Green(0) → Regular(50) → Veteran(150) → Elite(500) → ✗
+    統帥種族   ✗        → Regular(0)  → Veteran(50)  → Elite(150) → Ultra-Elite(500)
+    ```
+
+    所以兩張門檻表各有一個 **−1**(這個種族到不了這一級),而不是「一個很大的數」
+    ——「到不了」與「很難到」在規則上是兩件事。
+
+    ### 等級不存,只存經驗
+
+    `Ship` 只加了 `CrewXP` 一個欄位,等級一律由它現算。存兩個欄位遲早會不同步
+    (升級時忘了更新其中一個),存一個不會。太空學院的「起始等級 +1」因此也用經驗表達:
+    起始 `CrewXP` 設成那一級的門檻,而不是另開一個「起始等級」欄位。
+
+    ### 戰鬥經驗的三個限定詞
+
+    > equal to the **halved sum of size classes (1-6)** of **destroyed (not captured)**
+    > enemy ships (rounded down with a **minimum of 1**)
+
+    - **halved**:打小船升得慢(擊沉一艘巡防艦 1/2 = 0 → 保底 1)
+    - **destroyed not captured**:俘虜不算
+    - **minimum 1**:但**一艘都沒沉時是 0 而不是 1**——那個保底講的是「有擊沉」的情況,
+      把「贏了但一艘都沒沉」也給 1 是把保底條款擴大解釋
+
+    還原「被擊沉的是哪些」用的是多重集合相減:`battleVolley` 就地移除陣亡者,
+    呼叫端拿不到「誰死了」,但敵艦的 `atk` 就是戰力值、戰鬥中不變,
+    所以「開打前的清單 − 結束時的倖存者」就還原得出來——**不必為此改戰鬥迴圈的介面**。
+
+    remake 的 `shipStrength` 是 2 的冪(巡防 2、驅逐 4、巡洋 8、戰艦 16、泰坦 32、末日 64),
+    正好對上手冊的 size class 1–6。
+
+    ### 順帶收掉五個各自硬寫的 `false`
+
+    `gamedata.Ground*BarracksCap` 早就有 `warlord` 參數(統帥種族營房容量加倍),
+    但 shell 有**五處**各自硬寫 `false`。這次加的 `GameSession.RaceWarlord` 把它們統一
+    ——特質系統補上時只要改一個地方,而不是五個而且很容易漏掉一個。
+    (⚠ 目前沒有任何內建種族會設它,行為與先前完全相同。)
+
+    ### 誠實留白
+
+    - **只有玩家的船有艦員經驗。** AI 的艦隊在 remake 裡是每回合現生的戰力值
+      (`genEnemyFleet`),沒有持久的船,自然沒有可累積經驗的對象。
+    - 登艦戰加成有表沒有呼叫端(remake 還沒有登艦戰)。
+    - 手冊說經驗來自「turn **in space**」,而 remake 沒有「在港內 vs 在太空」的區別
+      ——所有船都在艦隊裡。目前的實作在 remake 的模型下等價,
+      但之後若加了船塢/駐港狀態,這裡要跟著改。
+    - 艦艇設計畫面直接造的船吃不到太空學院加成:那條路徑沒有「在哪造」的概念。
+      逐殖民地造艦那條路(`deliverNewShip`)是正確的。
+
+    ### 建築表狀態
+
+    41 棟裡名字從未被程式碼消費的剩 **5 棟**:異族管理中心(同化)、
+    戰機基地(格子戰鬥的獨立戰機單位)、恆星轉換器,以及先前已知的兩棟。
 
 
 

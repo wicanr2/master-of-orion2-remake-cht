@@ -364,7 +364,7 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 	// len(buildings)(本次轟炸「結束後」剩餘的建築數),與下面 defMarines 用「轟炸後」的
 	// colony.Population 同一種語意(顯示「打完這波,對方還剩多少防禦要打」)——AI 建築資料
 	// 2026-07-11 起已備妥,不再恆為 0;storedProduction 仍恆 false,見欄位註解的剩餘 TODO。
-	defMarines := gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population, colony.PopMax, false)
+	defMarines := gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population, colony.PopMax, s.RaceWarlord)
 	defMarineHits := gamedata.GroundMarineHitsToKill(false, hasPoweredArmorFor(aiPlayer.Player))
 	res.PlanetHitsRequired = gamedata.GroundPlanetTotalHits(len(buildings), false, colony.Population, 0, defMarines, defMarineHits, 0, 0)
 
