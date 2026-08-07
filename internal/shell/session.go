@@ -2241,7 +2241,53 @@ func (s *GameSession) applyStartingTech() {
 	for i := range s.AIPlayers {
 		grant(&s.AIPlayers[i].Player)
 	}
+	s.applyStartingRandomTech()
 	s.applyStartingBuildings()
+}
+
+// applyStartingRandomTech 發先進級開局多出來的那 19 個**隨機**主題
+// (gap report 第 80 項留下的缺口,結構見 gamedata/starting_random_tech.go)。
+//
+// 原版 `Init_Player_Tech_` 的主迴圈跑 1 / 6 / 25 次:前 6 次取固定表,
+// **第 7 次起改由 `sub_FD335` 隨機挑**。remake 先前只發那六個。
+//
+// 每挑一個就重算一次候選清單——原版每完成一個主題就解鎖它的後繼,所以這 19 個是
+// **沿著樹往上走**而不是從同一池子裡抽 19 次。`gamedata.AvailableTopics` 正好是
+// 「每個領域第一個尚未完成的主題」,與原版的狀態 2 同義(見第 91 項的雙向驗證)。
+//
+// 亂數用開局種子,玩家與每個 AI 各走一條獨立的流——同一顆種子重開會得到同樣的開局
+// (網路對戰與存讀檔的決定性要求,見 determinism.go)。
+func (s *GameSession) applyStartingRandomTech() {
+	extra := gamedata.StartingTopicRandomExtras(s.techLevel())
+	if extra <= 0 {
+		return
+	}
+	// 每回合研究點:開局那一刻還沒有回合跑過,取母星的初始研究產出——
+	// 那是最接近原版當下狀態的值(原版讀 [player+0xAC])。
+	rp := gamedata.ResearchPerScientistNorm
+	if len(s.PlayerColonies) > 0 {
+		if n := s.PlayerColonies[0].Scientists * s.PlayerColonies[0].ResearchPerScientist; n > 0 {
+			rp = n
+		}
+	}
+	grantRandom := func(ps *engine.PlayerState, seed int64) {
+		if ps.CompletedTopics == nil {
+			return
+		}
+		rng := newRandStream(seed)
+		for i := 0; i < extra; i++ {
+			avail := gamedata.AvailableTopics(ps.CompletedTopics)
+			t, ok := gamedata.StartingRandomTopicPick(avail, rp, rng.Intn)
+			if !ok {
+				return // 沒有候選了(整棵樹研究完),不硬塞
+			}
+			ps.CompletedTopics[t] = true
+		}
+	}
+	grantRandom(&s.Player, s.EventSeed*6364136223846793005+11)
+	for i := range s.AIPlayers {
+		grantRandom(&s.AIPlayers[i].Player, s.EventSeed*6364136223846793005+int64(i)*7919+101)
+	}
 }
 
 // applyStartingBuildings 依 TECH LEVEL 重發母星的開局建築。
