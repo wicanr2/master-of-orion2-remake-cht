@@ -50,7 +50,10 @@ func (s *GameSession) discoverSystemSpecials(starIdx int) *SystemDiscovery {
 	if starIdx < 0 || starIdx >= len(s.Planets) || starIdx >= len(s.Stars) {
 		return nil
 	}
-	p := &s.Planets[starIdx]
+	p := s.PlanetOf(starIdx)
+	if p == nil {
+		return nil
+	}
 	if p.SpecialSeen || p.NoPlanet {
 		return nil
 	}

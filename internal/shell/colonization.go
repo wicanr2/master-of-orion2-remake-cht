@@ -232,7 +232,7 @@ func (s *GameSession) newColonyFromStar(starIdx int, gov gamedata.MoraleGovernme
 	if starIdx < 0 || starIdx >= len(s.Planets) {
 		return engine.ColonyState{}, false, "無行星資料(不應發生)"
 	}
-	planet := s.Planets[starIdx]
+	planet, _ := s.PlanetDataAt(starIdx)
 
 	if planet.NoPlanet {
 		return engine.ColonyState{}, false, "這顆恆星沒有行星(黑洞)"
@@ -424,7 +424,7 @@ func (s *GameSession) consumeSpecialOnColonize(starIdx int) {
 	if starIdx < 0 || starIdx >= len(s.Planets) {
 		return
 	}
-	if gamedata.SpecialConsumedOnColonize(s.Planets[starIdx].SpecialID) {
-		s.Planets[starIdx].SpecialID = gamedata.NoSpecial
+	if p := s.PlanetOf(starIdx); p != nil && gamedata.SpecialConsumedOnColonize(p.SpecialID) {
+		p.SpecialID = gamedata.NoSpecial
 	}
 }

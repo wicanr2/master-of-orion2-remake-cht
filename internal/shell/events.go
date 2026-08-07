@@ -278,9 +278,9 @@ func (s *GameSession) pickAI() (int, bool) {
 
 // colonyLabel 回傳殖民地的顯示名(優先用所在行星名,取不到才用序號)。
 func (s *GameSession) colonyLabel(i int) string {
-	if star := s.PlayerColonyStarIndex(i); star >= 0 && star < len(s.Planets) {
-		if n := s.Planets[star].Name; n != "" {
-			return n
+	if star := s.PlayerColonyStarIndex(i); star >= 0 {
+		if p := s.PlanetOf(star); p != nil && p.Name != "" {
+			return p.Name
 		}
 	}
 	return fmt.Sprintf("殖民地 %d", i+1)
@@ -340,10 +340,11 @@ func (s *GameSession) shiftColonyMineral(delta int) (idx int, from, to gamedata.
 	cand := make([]int, 0, len(s.PlayerColonies))
 	for i := range s.PlayerColonies {
 		star := s.PlayerColonyStarIndex(i)
-		if star < 0 || star >= len(s.Planets) {
+		p := s.PlanetOf(star)
+		if p == nil {
 			continue
 		}
-		m := int(s.Planets[star].MineralID) + delta
+		m := int(p.MineralID) + delta
 		if m < int(gamedata.ULTRA_POOR) || m > int(gamedata.ULTRA_RICH) {
 			continue
 		}
@@ -354,13 +355,17 @@ func (s *GameSession) shiftColonyMineral(delta int) (idx int, from, to gamedata.
 	}
 	i := cand[s.eventRand.Intn(len(cand))]
 	star := s.PlayerColonyStarIndex(i)
-	from = s.Planets[star].MineralID
+	p := s.PlanetOf(star)
+	if p == nil {
+		return 0, 0, 0, false
+	}
+	from = p.MineralID
 	to = gamedata.PlanetMinerals(int(from) + delta)
-	s.Planets[star].MineralID = to
-	s.Planets[star].Mineral = mineralDisplayName(to)
+	p.MineralID = to
+	p.Mineral = mineralDisplayName(to)
 	// 重力也跟著礦產(密度)變——原版 _gravity_table 就是 [mineral][size]。
-	s.Planets[star].GravityID = gamedata.PlanetGravityFor(to, s.Planets[star].SizeID)
-	s.Planets[star].Gravity = gravityDisplayName(s.Planets[star].GravityID)
+	p.GravityID = gamedata.PlanetGravityFor(to, p.SizeID)
+	p.Gravity = gravityDisplayName(p.GravityID)
 	s.PlayerColonies[i].IndustryPerWorker = gamedata.MineralIndustryPerWorker(to)
 	return i, from, to, true
 }

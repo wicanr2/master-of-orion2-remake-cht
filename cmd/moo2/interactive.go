@@ -942,7 +942,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				}
 				// 選中星:顯示該星系行星資訊 + 派遣艦隊/載運陸戰隊/軌道轟炸/發動入侵按鈕(左下角面板)。
 				if sess.SelectedStar >= 0 && sess.SelectedStar < len(sess.Planets) {
-					p := sess.Planets[sess.SelectedStar]
+					p, _ := sess.PlanetDataAt(sess.SelectedStar)
 					// 面板高度 132(非原版 110):敵殖民地時軌道轟炸(402)/地面入侵(424)雙鈕
 					// 共存需多留一列,否則第二顆鈕會露出面板背景框之外。
 					vector.DrawFilledRect(dst, 28, 326, 210, 132, color.RGBA{10, 14, 30, 235}, false)

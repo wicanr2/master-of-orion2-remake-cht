@@ -272,14 +272,14 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 	// --- 左面板:殖民地名 + 行星環境 + 人口 ---
 	lx := float64(colPanelLX + 5)
 	name := fmt.Sprintf(b.tr("殖民地 %d", "Colony %d"), idx+1)
-	if star := sess.PlayerColonyStarIndex(idx); star >= 0 && star < len(sess.Planets) {
-		if pn := sess.Planets[star].Name; pn != "" {
-			name = pn
+	if star := sess.PlayerColonyStarIndex(idx); star >= 0 {
+		if p, ok := sess.PlanetDataAt(star); ok && p.Name != "" {
+			name = p.Name
 		}
 	}
 	b.fnt.Draw(dst, name, lx, float64(colPanelLY+6), 13, colTitleCol)
-	if star := sess.PlayerColonyStarIndex(idx); star >= 0 && star < len(sess.Planets) {
-		p := sess.Planets[star]
+	if star := sess.PlayerColonyStarIndex(idx); star >= 0 {
+		p, _ := sess.PlanetDataAt(star)
 		rows := []string{p.Climate, p.Size,
 			b.tr("礦產", "Minerals ") + p.Mineral, b.tr("重力", "Gravity ") + p.Gravity}
 		if sp := gamedata.PlanetSpecialName(p.SpecialID); sp != "" {

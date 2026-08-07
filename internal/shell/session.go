@@ -3091,7 +3091,7 @@ func (s *GameSession) aiPlanetValue(aiIdx, starIdx int) int {
 	if starIdx < 0 || starIdx >= len(s.Planets) {
 		return 0
 	}
-	p := s.Planets[starIdx]
+	p, _ := s.PlanetDataAt(starIdx)
 	if p.NoPlanet || p.Gen < planetGenVersion {
 		return 0
 	}
@@ -3225,7 +3225,7 @@ func (s *GameSession) aiPlanetBaseValue(starIdx int, obj gamedata.AIObjective) i
 	if starIdx < 0 || starIdx >= len(s.Planets) {
 		return 0
 	}
-	p := s.Planets[starIdx]
+	p, _ := s.PlanetDataAt(starIdx)
 	if p.NoPlanet || p.Gen < planetGenVersion || p.TypeID != gamedata.HABITABLE ||
 		!climateColonizable(p.ClimateID) {
 		return 0

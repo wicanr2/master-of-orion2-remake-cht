@@ -130,7 +130,7 @@ func (s *GameSession) BuildOutpost(starIdx int) OutpostResult {
 	if shipIdx < 0 {
 		return OutpostResult{Reason: "艦隊未載運前哨船"}
 	}
-	if starIdx < len(s.Planets) && s.Planets[starIdx].NoPlanet {
+	if p := s.PlanetOf(starIdx); p != nil && p.NoPlanet {
 		return OutpostResult{Reason: "該星系沒有可供建立前哨站的天體"}
 	}
 
@@ -183,7 +183,7 @@ func (s *GameSession) OutpostTargetHint(starIdx int) string {
 	if starIdx < 0 || starIdx >= len(s.Planets) {
 		return ""
 	}
-	p := s.Planets[starIdx]
+	p, _ := s.PlanetDataAt(starIdx)
 	if !planetSupportsOutpost(p) {
 		return "無天體可用"
 	}

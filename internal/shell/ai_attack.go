@@ -186,7 +186,9 @@ func (s *GameSession) aiColonyValue(ci int, obj gamedata.AIObjective) int {
 		Gravity:  c.PlanetGravity,
 	}
 	if star := s.PlayerColonyStarIndex(ci); star >= 0 && star < len(s.Planets) {
-		in.Special = int(s.Planets[star].SpecialID)
+		if p := s.PlanetOf(star); p != nil {
+			in.Special = int(p.SpecialID)
+		}
 	}
 	return gamedata.AIColonyValue(in, obj)
 }

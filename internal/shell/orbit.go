@@ -1,5 +1,7 @@
 package shell
 
+import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+
 // orbit.go:**一星多行星**的資料模型。
 //
 // remake 先前是 `Stars[i]` ↔ `Planets[i]` **一對一**——一顆星一顆行星。
@@ -35,17 +37,47 @@ const StarOrbits = 5
 // OrbitEmpty 是「這個軌道沒有行星」(原版的 −1)。
 const OrbitEmpty = -1
 
-// PlanetAt 回傳某顆星**第一個有行星的軌道**上那顆行星的索引(沒有回 −1)。
+// PlanetAt 回傳某顆星的**代表行星**索引(沒有回 −1)。
 //
-// 這是給「一顆星只看一顆行星」的舊呼叫端用的橋:一星一行星時它就是原本的 `Planets[star]`,
-// 多行星之後它是「主行星」。**新程式碼要處理整個星系時請用 `PlanetsAt`。**
+// 挑法與 `genPlanets` 原本的規則**逐字相同**:依軌道順序找第一顆一般行星(可殖民);
+// 整組都不宜居時才退而取第一個天體。
+//
+// **這是相容性支點**:一星一行星時它必須等於舊的 `Planets[star]`,
+// 否則所有舊呼叫端換過來都會位移。多行星之後它是「主行星」——
+// **新程式碼要處理整個星系時請用 `PlanetsAt`**,不要靠這一支。
 func (s *GameSession) PlanetAt(star int) int {
+	first := -1
 	for _, p := range s.OrbitsOf(star) {
-		if p != OrbitEmpty {
+		if p == OrbitEmpty {
+			continue
+		}
+		if first < 0 {
+			first = p
+		}
+		if p < len(s.Planets) && s.Planets[p].TypeID == gamedata.HABITABLE {
 			return p
 		}
 	}
-	return -1
+	return first
+}
+
+// PlanetOf 回傳某顆星的代表行星(**可寫指標**);沒有回 nil。
+//
+// 會改行星資料的呼叫端(隨機事件改礦產/氣候、拓殖消耗特殊物產、抵達時的一次性發現)用這一支。
+func (s *GameSession) PlanetOf(star int) *Planet {
+	i := s.PlanetAt(star)
+	if i < 0 || i >= len(s.Planets) {
+		return nil
+	}
+	return &s.Planets[i]
+}
+
+// PlanetDataAt 回傳某顆星代表行星的**複本**(沒有回零值 + false)。
+func (s *GameSession) PlanetDataAt(star int) (Planet, bool) {
+	if p := s.PlanetOf(star); p != nil {
+		return *p, true
+	}
+	return Planet{}, false
 }
 
 // PlanetsAt 回傳某顆星所有軌道上的行星索引(依軌道順序,略過空軌道)。

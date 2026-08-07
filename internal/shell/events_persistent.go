@@ -154,8 +154,10 @@ func (s *GameSession) stepSupernova(e *PersistentEvent) (bool, string) {
 	// are destroyed. All planets in the system become Radiated.」
 	lost := s.destroyColoniesAtStar(e.StarIndex)
 	if e.StarIndex >= 0 && e.StarIndex < len(s.Planets) {
-		s.Planets[e.StarIndex].ClimateID = gamedata.RADIATED
-		s.Planets[e.StarIndex].Climate = climateDisplayName(gamedata.RADIATED)
+		if p := s.PlanetOf(e.StarIndex); p != nil {
+			p.ClimateID = gamedata.RADIATED
+			p.Climate = climateDisplayName(gamedata.RADIATED)
+		}
 	}
 	return true, fmt.Sprintf("%s 的恆星爆發為超新星,%d 座殖民地全滅,整個星系化為輻射廢土",
 		s.starName(e.StarIndex), lost)
@@ -362,7 +364,7 @@ func (s *GameSession) spawnInvadingMonster(kind gamedata.SpaceMonster, minTurn i
 	// 挑一顆玩家看得到、還沒有怪獸的星(優先無主星:怪獸「入侵」而不是憑空出現在殖民地上)。
 	target := -1
 	for i := range s.Stars {
-		if s.StarGuardedByMonster(i) || (i < len(s.Planets) && s.Planets[i].NoPlanet) {
+		if p := s.PlanetOf(i); s.StarGuardedByMonster(i) || (p != nil && p.NoPlanet) {
 			continue
 		}
 		if s.Stars[i].Owner == 0 {

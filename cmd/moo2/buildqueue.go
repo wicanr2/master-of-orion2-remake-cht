@@ -223,9 +223,9 @@ func (s *buildQueueScreen) draw(dst *ebiten.Image) {
 
 	// 標題與提示畫在框架中段的透明區上緣。
 	name := fmt.Sprintf(b.tr("殖民地 %d", "Colony %d"), s.idx+1)
-	if star := sess.PlayerColonyStarIndex(s.idx); star >= 0 && star < len(sess.Planets) {
-		if pn := sess.Planets[star].Name; pn != "" {
-			name = pn
+	if star := sess.PlayerColonyStarIndex(s.idx); star >= 0 {
+		if p, ok := sess.PlanetDataAt(star); ok && p.Name != "" {
+			name = p.Name
 		}
 	}
 	// 標題與提示放在框架中段的透明區(y 130..300 那塊空的),不要壓到下方的佇列格。
