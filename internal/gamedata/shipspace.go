@@ -111,3 +111,24 @@ func SpecialSpace(hullSpace int, hasSpecial bool) int {
 	}
 	return sp
 }
+
+// ShipHullMarines 回傳各艦體等級可搭載的**陸戰隊單位數**(GAME_MANUAL.pdf p.121 的
+// 「Marines」欄:Frigate 5 / Destroyer 8 / Cruiser 12 / Battleship 20 / Titan 30 /
+// Doom Star 50)。
+//
+// ============ 這一欄與 Space 欄同一張表,可信度相同 ============
+//
+// 那張表的「Comp.」與「Drive」兩欄**逐格對上** openorion2 的 `computerHPTable` /
+// `driveHPTable`(見 docs/tech/ship-design-space.md 的交叉驗證),證實它與 openorion2 的
+// 唯讀查表是同一份原始資料的兩種呈現——所以同一張表的其他欄位可信度相同,不需要另外求證。
+//
+// ⚠ **不要把這個數字誤讀成「這艘船上有幾個陸戰隊」。** 它是**運力上限**;實際載了多少
+// 由呼叫端追蹤(shell 的 `Fleet().Marines`)。手冊那一欄講的是艦體能塞下多少單位。
+func ShipHullMarines(class CombatShipClass) int {
+	if class < 0 || int(class) >= len(shipHullMarinesTable) {
+		return 0
+	}
+	return shipHullMarinesTable[class]
+}
+
+var shipHullMarinesTable = [6]int{5, 8, 12, 20, 30, 50}

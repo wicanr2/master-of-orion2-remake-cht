@@ -288,9 +288,12 @@ func armorHPByName(name string) int {
 	return 0
 }
 
-// shieldReduceByName 依護盾元件名回傳「每發減傷」(戰鬥用)。
-// remake 由護盾階推導:無=0、第一級=2、第三級=4…第十級=10(精確 per-class 真值待逆向,
-// 見 docs/tech/gameplay-systems-status.md);讓 DamageAfterShield 的護盾機制生效。
+// shieldReduceByName 依護盾元件名回傳「每發減傷」(戰鬥用):無=0、第一級=1、第三級=3、
+// 第五級=5、第七級=7、第十級=10(手冊值,見 gamedata.ShieldReductionForTech)。
+//
+// ⚠ 這段註解原本寫著「remake 由護盾階推導:…第一級=2、第三級=4…**精確 per-class 真值待逆向**」。
+// 那句話有兩個問題,第 121 項一起修掉:推導出來的數字五級裡有四級是錯的,而**真值根本
+// 不需要逆向**——`gamedata.DamageShieldReductionClass*` 從手冊抄進來之後一直躺在那裡沒人用。
 func shieldReduceByName(name string) int {
 	for _, c := range ShieldOptions {
 		if c.Name == name {

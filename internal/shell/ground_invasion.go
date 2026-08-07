@@ -377,15 +377,32 @@ func (s *GameSession) advanceArmor() {
 
 // --- 運送(陸戰隊隨艦隊出征) ---
 
-// MarineTransportCapacity 估算玩家艦隊目前可載運的陸戰隊上限。
+// MarineTransportCapacity 回傳玩家艦隊目前可載運的陸戰隊上限,**逐艦依艦體等級**累加
+// (手冊 p.121 的 Marines 欄,見 gamedata.ShipHullMarines)。
 //
-// ⚠ 簡化待精修:本 remake 尚無獨立的「運輸艦」船體類別(ShipCost/shipStrength 的 Class
-// switch 沒有「運輸艦」這個 case),故無法像手冊那樣「每艘 Transport Ship 恰配 4 個 Marine
-// 單位」精算。以「艦隊現有艦數 × gamedata.GroundTransportShipMarineCapacity(手冊每艘運輸艦
-// 4 個單位的數字)」做為近似運力上限——不區分殖民船/偵察艦/戰鬥艦,所有艦一律視為「可搭載
-// 陸戰隊艙位」。待補上真正的運輸艦船體類型後,應改為只計數該類型艦。
+// ============ 原本的擋門理由問錯了問題 ============
+//
+// 這裡原本是 `len(Ships) * 4`,理由寫著:
+//
+//	⚠ 簡化待精修:本 remake 尚無獨立的「運輸艦」船體類別……故無法像手冊那樣
+//	「每艘 Transport Ship 恰配 4 個 Marine 單位」精算。
+//
+// 那個理由假設運力來自**一種專門的運輸艦**。但手冊 p.121 的艦艇設計表**每一種艦體等級
+// 都有一欄 Marines**(5/8/12/20/30/50)——運力是艦體本身的屬性,不是某個艦種的特權。
+// 而 remake 一直有艦體等級(`shipClassFromName`,那支函式本身就是為了查同一張表寫的)。
+//
+// 所以先前的效果是:**一支偵察艦隊與一支末日之星艦隊的登陸能力完全相同**,
+// 而手冊上兩者差 10 倍。
+//
+// ⚠ 誠實留白:偵察艦不在手冊那六個設計艦級裡(`shipClassFromName` 回 ok=false),
+// 沿用它既有的「以護衛艦近似」慣例——那是既有決定,不是這一項新引入的。
 func (s *GameSession) MarineTransportCapacity() int {
-	return len(s.Fleet().Ships) * gamedata.GroundTransportShipMarineCapacity
+	total := 0
+	for _, sh := range s.Fleet().Ships {
+		class, _ := shipClassFromName(sh.Class)
+		total += gamedata.ShipHullMarines(class)
+	}
+	return total
 }
 
 // LoadMarines 把玩家殖民地 colonyIdx 的 Marine Barracks 駐軍池部隊,載上隨艦隊出征的

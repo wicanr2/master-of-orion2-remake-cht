@@ -27,8 +27,13 @@
   (每回合雙方齊射;種族加成入攻擊;RNG 依回合種子可重現);移除死碼 `applyDamage`。
   → **兩條戰鬥解算路徑(格子戰術 + 快速艦隊)現都用真 MOO2 戰鬥公式。**
 - **護盾與裝甲已分離(2026-07-10)**:戰鬥時依元件名查表得裝甲 HP(`armorHPByName`)+ 護盾每發減傷
-  (`shieldReduceByName`,依護盾階 0/2/4/6/8/10),兩路徑套用,`DamageAfterShield` 護盾機制真正生效。
-- **仍待**:①球狀傷害/飛彈/戰機未接(地面戰已於 §1a/1c 接線完成);②護盾減傷精確 per-class 真值待逆向(現為階梯推導,
+  (`shieldReduceByName`),兩路徑套用,`DamageAfterShield` 護盾機制真正生效。
+  ⚠ **2026-08-08(第 121 項)訂正**:這裡原本寫「依護盾階 0/2/4/6/8/10」——那是清單索引 × 2,
+  **五級裡有四級偏高**。手冊值是 **0/1/3/5/7/10**(`gamedata.DamageShieldReductionClass*`,
+  已改由 `ShieldReductionForTech` 依科技查)。
+- **仍待**:①球狀傷害/飛彈/戰機未接(地面戰已於 §1a/1c 接線完成);~~②護盾減傷精確 per-class 真值待逆向~~
+  (⚠ **這一項作廢**:真值**不需要逆向**,手冊常數從抄進來就一直躺在 `gamedata/damage.go`,只是沒人用。
+  剩下的提示仍有效——
   **2026-07-11 提示**:`ship-design-space.md` §1 在手冊 p.121 表格額外挖到 Armor/Struct./Shield 三欄可能就是缺的
   ArmorHP/StructureHP/shipSize 查表,尚未核實接線,留給本項);③per-ship 攻防/傷害為 remake 由艦艇設計推導
   (空間格模型已完成,見 §3;精確值仍需軍官技能模型)。
