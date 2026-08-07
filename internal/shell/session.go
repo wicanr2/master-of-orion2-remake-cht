@@ -2577,6 +2577,10 @@ type GameSession struct {
 	// 預設開:原版新開一局是畫的(`sub_127E1` 初始化時寫 1)。
 	ShowRelocationLines bool
 	LastBattle          *BattleResult // 上一場戰鬥結果(供戰鬥結果畫面)
+	// LastLeaderUpkeep 是本回合實際扣掉的領袖維護費(見 leader_upkeep.go)。
+	// 不進存檔:它是「這一回合發生了什麼」的展示值,下一次 EndTurn 會重算。
+	LastLeaderUpkeep int `json:"-"`
+
 	// LastRebellions 是上一回合的叛亂檢定結果(供回合摘要;沒有事情發生時是 nil)。
 	// 不進存檔:它是「這一回合發生了什麼」的展示資料,重載存檔時本來就沒有上一回合。
 	LastRebellions []RebellionResult `json:"-"`
@@ -3152,13 +3156,14 @@ func (s *GameSession) EndTurn() {
 	}
 	// 間諜結算須排在玩家與所有 AI 本回合研究都跑完之後(用最新的 CompletedTopics/ChosenTech
 	// 判定「對方已知、我方未知」的可偷科技清單),故緊接在上面的 AI 迴圈之後。
-	s.advanceEspionage()      // 玩家 ↔ AI 間諜行動(最小迴圈:偷科技 STEAL,見 spy.go)
-	s.advanceBuilds()         // 以本回合淨工業推進各殖民地建造
-	s.advanceResearch()       // 目前研究主題完成則自動推進到下一個未完成的元件解鎖主題
-	s.LastDiscovery = nil     // 每回合先清掉上一回合的發現(與 advanceEvents 清 LastEvent 同一個節奏)
-	s.advanceFleet()          // 推進艦隊星間航行(ETA 遞減,抵達則標記探索 + 結算一次性發現)
-	s.advanceCrewExperience() // 艦員經驗:每回合 +1,停泊星系每有一座太空學院再 +1(見 crew.go)
-	s.advanceAssimilation()   // 征服人口同化:依政體 2–20 回合同化一單位(見 assimilation.go)
+	s.LastLeaderUpkeep = s.advanceLeaderUpkeep() // 領袖每回合維護費(見 leader_upkeep.go)
+	s.advanceEspionage()                         // 玩家 ↔ AI 間諜行動(最小迴圈:偷科技 STEAL,見 spy.go)
+	s.advanceBuilds()                            // 以本回合淨工業推進各殖民地建造
+	s.advanceResearch()                          // 目前研究主題完成則自動推進到下一個未完成的元件解鎖主題
+	s.LastDiscovery = nil                        // 每回合先清掉上一回合的發現(與 advanceEvents 清 LastEvent 同一個節奏)
+	s.advanceFleet()                             // 推進艦隊星間航行(ETA 遞減,抵達則標記探索 + 結算一次性發現)
+	s.advanceCrewExperience()                    // 艦員經驗:每回合 +1,停泊星系每有一座太空學院再 +1(見 crew.go)
+	s.advanceAssimilation()                      // 征服人口同化:依政體 2–20 回合同化一單位(見 assimilation.go)
 	// 叛亂檢定接在同化**之後**:同化先扣掉這一回合該同化的人口,剩下的才是有機會起事的。
 	// 反過來的話,一個「這回合剛好同化完最後一單位」的殖民地還會多擲一次骰。
 	s.LastRebellions = s.advanceRebellions() // 未同化人口叛亂(見 rebellion.go)

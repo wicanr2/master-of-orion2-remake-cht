@@ -6079,3 +6079,74 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     | 200 | **66** | **17** | **9** |
 
     截圖廊零位元組差異(截圖是第 1 回合的狀態,AI 研究還沒動)。
+
+115. **領袖永久免費——用覆蓋率找出來的**(2026-08-08)。
+
+    第 114 項是靠「這支函式有沒有呼叫端」找到的。那個問法有個明顯的盲點:
+    `ai.DecideResearchTopic` **有**呼叫端(`RemakeDecider.ResearchTopic`),
+    只是那個呼叫端自己也沒人叫。所以先做了兩輪掃描:
+
+    | 問法 | 結果 |
+    |---|---|
+    | 生產碼裡零次提及的函式 | 2 個(`bitBytes`、`homeworldBuildingsLegacy`)|
+    | 從 `cmd/` + 頂層宣告出發、傳遞閉包到不了的 | 一樣是那 2 個 |
+
+    **名字層級是乾淨的。** 但 114 那類洞不是「名字沒被提到」,是「**從來沒有執行過**」
+    ——所以換一個問法:跑一局 300 回合,量覆蓋率。
+
+    ```
+    go test -run TestZZLongGameForCoverage \
+      -coverpkg=./internal/shell,./internal/engine,./internal/gamedata -coverprofile=...
+    go tool cover -func=... | awk '$3=="0.0%"'
+    ```
+
+    539 支函式在一局自動跑完的對局裡一次都沒執行。**大多數是應該的**——
+    軌道轟炸、地面入侵、訓練間諜這些是玩家主動觸發的,自動迴圈不會碰。
+    所以真正的訊號不是「零覆蓋」,是「**零覆蓋 × 這件事應該自動發生**」。
+
+    ### 逐一看過之後,兩個判斷
+
+    **`engine.CheckVictory` 零覆蓋——但這不是洞。** 它是把三條勝利條件包在一起的便利函式,
+    而 shell 有自己的三條路徑(`advanceConquestVictory` 走 `CheckExtermination`、
+    `advanceCouncilElection`、`advanceAntaranVictory`),三支都每回合跑。
+    優先序一致性已有測試釘著(`antaran_victory_test.go`)。**留著它是個小陷阱**
+    (看起來權威、實際上不是被用的那個),但不影響玩法,這一輪不動它。
+
+    **`gamedata.LeaderMaintenanceCost` 零覆蓋——這個是洞。**
+
+    ### 領袖雇一次之後永久免費
+
+    這支從 openorion2 的 `GameState::leaderMaintenanceCost` 移植過來,有單元測試,
+    註解連 `LEADER_ID_LOKNAR` 那個不移植的硬編特例都交代了——**零個生產端呼叫**。
+
+    手冊在講「遇難領袖」事件時把這條規則講得很明白:
+
+    > In gratitude for the rescue, this leader joins your empire for **no hiring cost**.
+    > You are still expected to **pay maintenance**, however.
+
+    那句話之所以要特別寫,正是因為「免雇用費」與「免維護費」是兩件事。而 remake 的
+    `grantMaroonedLeader` 給的領袖,先前兩樣都免。
+
+    每位 `ceil(hireCost/100)`(下限 1),有 Megawealth 技能者免費。`hireCost` 走與
+    `MercHireCost` **同一條公式**——兩邊用不同基準的話,同一位領袖會出現
+    「雇用時算貴、維護時算便宜」這種對不起來的狀況。
+
+    ### 誠實留白
+
+    - **付不出來只是扣到 0,領袖不會離職。** 原版錢不夠會怎樣沒查到規則(手冊只說要付,
+      沒說不付的後果),不自己發明一個懲罰。
+    - **AI 不付。** `AIOpponent` 沒有 Leaders 欄位——不是漏掉,是那一整層還不存在。
+    - 判定 Megawealth 走 `leaderSkills` 那條既有路徑,不比對技能字串:標籤會被翻譯,
+      拿它當識別鍵在英文模式下查不到(`Leader.Skills` 檔頭記過這個坑)。
+
+    ### 一個差點寫錯的地方
+
+    國庫已經是負的時候不能再扣。`session.go` 對戰損 `bcLoss` 有一段註解記著同一個坑:
+    「BC 為負時若只判斷 `bcLoss > BC` 會把損失夾成負值,`BC -= bcLoss` 反而變成**加錢**」。
+    這裡直接沿用那個既有慣例,並有一條測試專門守「不該變多」。
+
+    ### 畫面
+
+    帝國摘要多一列「領袖薪餉」,單獨列不併進「維護支出」——那一列是**建築**維護,
+    來源不同,混在一起玩家就看不出「解雇一個領袖能省多少」。
+    截圖廊零位元組差異(新開一局沒有領袖,第 43 項起改成原版的雇用制)。

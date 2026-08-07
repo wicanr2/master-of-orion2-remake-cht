@@ -290,6 +290,9 @@ func (b *sceneBuilder) infoTurnSummary(s *overlayScreen) {
 		{b.tr("餘糧收入", "Food surplus"), fmt.Sprintf("%d BC", out.FoodSurplusRevenue)},
 		{b.tr("貿易品收入", "Trade goods"), fmt.Sprintf("%d BC", out.TradeGoodsRevenue)},
 		{b.tr("維護支出", "Maintenance"), fmt.Sprintf("%d BC", b.session.Player.Maintenance)},
+		// 領袖薪餉單獨一列,不併進「維護支出」——那一列是**建築**維護,兩者來源不同,
+		// 混在一起玩家就看不出「解雇一個領袖能省多少」。
+		{b.tr("領袖薪餉", "Leader upkeep"), fmt.Sprintf("%d BC", b.session.LeaderUpkeepTotal())},
 		{b.tr("指揮超支", "Command overrun"), fmt.Sprintf("%d BC", out.CommandOverflowCost)},
 		{b.tr("食物盈餘", "Food surplus"), fmt.Sprintf("%d", out.TotalFood)},
 		{b.tr("淨工業", "Net industry"), fmt.Sprintf("%d", out.TotalNetIndustry)},
