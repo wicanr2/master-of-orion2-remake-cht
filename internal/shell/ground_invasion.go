@@ -120,6 +120,48 @@ func groundArmorBonusFor(ps engine.PlayerState) int {
 	return 0
 }
 
+// groundRifleBonusFor 回傳玩家**最高階已知步槍**的地面戰加成。
+//
+// ⚠ 這一整條通道 remake 先前完全沒有(gap report 第 88 項):原版有
+// `Player_Best_Rifle_` @ 0xDC416,走訪 `word_14A88` 那張表由高到低找第一個已知的。
+// 上限差 30 點——後期科技全開時,先前的地面部隊比原版弱整整 30。
+//
+// 「取最高階」不是加總:原版那支函式一找到就回傳。
+func groundRifleBonusFor(ps engine.PlayerState) int {
+	ladder := gamedata.GroundRifleLadder()
+	for i := len(ladder) - 1; i >= 0; i-- {
+		tech := ladder[i]
+		topic, ok := groundRifleTopic(tech)
+		if !ok {
+			continue
+		}
+		if groundEquipTechOwned(ps, topic, tech) {
+			return gamedata.GroundRifleTechBonus(tech)
+		}
+	}
+	return 0
+}
+
+// groundRifleTopic 把步槍科技對到它所屬的研究主題(techtree.go 的 Choices)。
+//
+// 脈衝步槍在**起始科技**(field 0)裡,所以一律已知——它的加成本來就是 0,
+// 但保留在表上是為了讓「取最高階」的走訪有個底。
+func groundRifleTopic(tech gamedata.Technology) (gamedata.ResearchTopic, bool) {
+	switch tech {
+	case gamedata.TECH_PULSE_RIFLE:
+		return gamedata.TOPIC_STARTING_TECH, true
+	case gamedata.TECH_LASER_RIFLE:
+		return gamedata.TOPIC_PHYSICS, true
+	case gamedata.TECH_FUSION_RIFLE:
+		return gamedata.TOPIC_FUSION_PHYSICS, true
+	case gamedata.TECH_PHASOR_RIFLE:
+		return gamedata.TOPIC_MULTIPHASED_PHYSICS, true
+	case gamedata.TECH_PLASMA_RIFLE:
+		return gamedata.TOPIC_PLASMA_PHYSICS, true
+	}
+	return 0, false
+}
+
 // groundEquipTechOwned 判定地面裝備科技(Powered Armor / Anti-Grav Harness / Personal
 // Shield)是否已擁有。這三項手冊科技本 remake 的艦艇元件模型未收錄對應項(SpecialOptions
 // 無 Powered Armor 等元件),故不透過 ComponentUnlocked/艦艇元件查,改直接查
@@ -219,7 +261,8 @@ func groundEquipmentBonusFor(ps engine.PlayerState) int {
 // 未建模「特殊能力(Special Abilities)」選取(見 ApplyCustomRaceBonuses 註解),13 個標準
 // 種族也沒有一個具備 Subterranean/High-G,故無從套用,誠實留白而非臆測。
 func (s *GameSession) playerMarineForce() int {
-	force := groundArmorBonusFor(s.Player) + groundEquipmentBonusFor(s.Player) + gamedata.GroundRaceCombatBonus(groundRaceFor(s.RaceIndex))
+	force := groundArmorBonusFor(s.Player) + groundRifleBonusFor(s.Player) +
+		groundEquipmentBonusFor(s.Player) + gamedata.GroundRaceCombatBonus(groundRaceFor(s.RaceIndex))
 	if s.RaceIndex == raceIdxGnolam {
 		force = gamedata.GroundApplyLowGPenalty(force)
 	}
@@ -235,7 +278,8 @@ func (s *GameSession) hasPoweredArmor() bool {
 // 選擇,故只計裝甲/裝備科技加成,不套種族/Low-G/Subterranean(這些本來就只有極少數種族有
 // 明確數字,詳見 playerMarineForce)。
 func aiMarineForce(a AIOpponent) int {
-	return groundArmorBonusFor(a.Player) + groundEquipmentBonusFor(a.Player)
+	return groundArmorBonusFor(a.Player) + groundRifleBonusFor(a.Player) +
+		groundEquipmentBonusFor(a.Player)
 }
 
 // --- Marine Barracks 生成(EndTurn 每回合補充,見 GameSession.EndTurn 呼叫 advanceMarines) ---

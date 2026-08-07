@@ -1549,6 +1549,25 @@ Low-G(`[player+0x8A9]`)——而手冊明寫「High-G World and Low-G World are 
 
 **誠實留白**:`[player+0x8A7]` 看起來是種族地面戰加成,但**沒有直接證據**,不寫進程式碼。
 
+## ★ 2026-08-07 三張查表讀出來了(gap report 第 88 項)
+
+索引函式的符號名直接說了:`Player_Best_Armor_` / `Player_Best_Rifle_` /
+`Player_Best_Personal_Shield_`,三支都是「從表尾往前找第一個已知的科技」= **取最高階,不是加總**。
+
+先建 VA → 檔案位移的對照(用 `aMultigmLbx` 後面緊接的 `byte_17A061` 反推,delta = 0x7E694,
+再用另一個同名字串驗證落在 `;org 178000h` 之後 4 位元組),然後直接從 exe 讀表。
+
+**十二個科技 id 全部對上 remake 的 `Technology` 列舉**,而裝甲的上五項與個人護盾都與手冊
+逐字相同——這是「這三張表就是它們」的證明。
+
+**於是抓到兩個實質缺口**:①**鈦裝甲 +5 少了**(手冊沒列,而鈦裝甲開局就有 → 每個帝國、
+每一場地面戰都少 5 點);②**整條步槍通道 remake 完全沒有**(Pulse 0 / Laser 5 / Fusion 10 /
+Phasor 20 / Plasma 30,上限差 **30 點**)。兩者都已補上並接進玩家與 AI 的 force。
+
+**順帶訂正兩個「給誰」**:加成塊的三個科技旗標也解出來了——Anti-Grav Harness 給**所有類型**、
+**Battleoids 只給裝甲**(+10 攻 **+1 耐**,手冊只提 +10)、**動力裝甲只給陸戰隊**。
+remake 先前把後兩項都加給整支部隊。常數已記進 gamedata,分兵種的接線留下一輪。
+
 ## 工作方式(使用者定案)
 - go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)
 - **不用多代理 workflow**;翻譯一組一組慢慢做(單代理逐項,使用者可隨時審閱)

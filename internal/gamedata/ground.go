@@ -170,6 +170,23 @@ func GroundTankHitsToKill(highGRace bool) int {
 
 // --- 地面部隊戰力(combat strength / combat rating)加成表 ---
 
+// ✅ **2026-08-07:整張表從原版讀出來了,而且手冊的五項逐項吻合**(gap report 第 88 項)。
+//
+// `Player_Best_Armor_` @ 0xDC323 走訪的表在 `word_17F63E`(每列 15 位元組:+0 科技 id、
+// +3 加成),六列的科技 id 與 remake 的 `Technology` 列舉**完全對得上**:
+//
+//	187 TECH_TITANIUM_ARMOR    +5     ← 手冊沒列
+//	191 TECH_TRITANIUM_ARMOR   +10    ← 手冊:adds 10
+//	203 TECH_ZORTRIUM_ARMOR    +15    ← 手冊:adds 15
+//	117 TECH_NEUTRONIUM_ARMOR  +20    ← 手冊:adds 20
+//	  2 TECH_ADAMANTIUM_ARMOR  +25    ← 手冊:adds 25
+//	201 TECH_XENTRONIUM_ARMOR  +30    ← 手冊:+30
+//
+// 上面五項與手冊逐字相同——**這正是「這張表就是它」的證明**,而第六項(鈦裝甲 +5)
+// 是手冊沒寫的。鈦裝甲是開局就有的基礎裝甲,所以那 5 點是每個帝國、每一場地面戰都少的。
+//
+// 原版取的是「已知的裡面最高階那一項」(從表尾往前找第一個已知的),不是加總。
+//
 // GroundArmorTechBonus 依裝甲科技(TECH_TRITANIUM_ARMOR 等,enums.go)回傳其對「所有地面部隊
 // 戰力」的加成。手冊原文逐條:
 //
@@ -188,6 +205,10 @@ func GroundTankHitsToKill(highGRace bool) int {
 // (手冊逐條都是各自獨立描述最佳裝甲的加成,未提及疊加規則)。
 func GroundArmorTechBonus(tech Technology) int {
 	switch tech {
+	case TECH_TITANIUM_ARMOR:
+		// ⚠ 手冊**沒有**列這一項,是 2026-08-07 從原版的表讀出來的(見上方說明)。
+		// 鈦裝甲是開局就有的基礎裝甲,所以先前少的這 5 點是**每個帝國、每一場地面戰**都少的。
+		return 5
 	case TECH_TRITANIUM_ARMOR:
 		return 10
 	case TECH_ZORTRIUM_ARMOR:
@@ -225,9 +246,68 @@ func GroundEquipmentTechBonus(tech Technology) int {
 	}
 }
 
+// --- 步槍科技(`Player_Best_Rifle_` @ 0xDC416)---
+//
+// ⚠ **這一整條通道 remake 先前完全沒有**(gap report 第 88 項)。
+// 表在 `word_14A88`(每列 3 位元組:+0 科技 id、+2 加成),五列的科技 id 同樣完全對得上:
+//
+//	145 TECH_PULSE_RIFLE    +0     ← 開局就有的基礎步槍
+//	101 TECH_LASER_RIFLE    +5
+//	 73 TECH_FUSION_RIFLE   +10
+//	128 TECH_PHASOR_RIFLE   +20
+//	138 TECH_PLASMA_RIFLE   +30
+//
+// 十二個科技 id(裝甲 6 + 步槍 5 + 個人護盾 1)**全部**對上 remake 的列舉,
+// 而且裝甲那六項的加成與手冊逐字相同——不是巧合。
+//
+// 上限差 **30 點**:後期科技全開的帝國,remake 先前的地面部隊比原版弱整整 30。
+
+// GroundRifleTechBonus 依步槍科技回傳地面戰力加成(原版 `word_14A88` 的表)。
+//
+// 同裝甲:原版取「已知的裡面最高階那一項」,不是加總。
+func GroundRifleTechBonus(tech Technology) int {
+	switch tech {
+	case TECH_PULSE_RIFLE:
+		return 0
+	case TECH_LASER_RIFLE:
+		return 5
+	case TECH_FUSION_RIFLE:
+		return 10
+	case TECH_PHASOR_RIFLE:
+		return 20
+	case TECH_PLASMA_RIFLE:
+		return 30
+	}
+	return 0
+}
+
+// GroundRifleLadder 是步槍科技由低到高的順序(供「取最高階已知」用)。
+func GroundRifleLadder() []Technology {
+	return []Technology{
+		TECH_PULSE_RIFLE, TECH_LASER_RIFLE, TECH_FUSION_RIFLE,
+		TECH_PHASOR_RIFLE, TECH_PLASMA_RIFLE,
+	}
+}
+
 // GroundBattleoidCombatBonus 手冊 p.81(Battleoids):「Battleoids have a ground combat
 // rating 10 higher than a tank」。此為相對 Tank 的加成,非獨立疊加項。
+//
+// ✅ 2026-08-07 反組譯確認,並補上手冊沒說的部分:`Compute_Player_Ground_Combat_Bonuses_`
+// 對 `TECH_BATTLEOIDS`(id 24,`[player+0x12F]`)寫 `[out+1] = 10` 與 `[out+2] = 1`,
+// 而那兩欄只被**類型 0(裝甲)**的 case 讀走。也就是 Battleoids 是
+// **裝甲專屬的 +10 攻擊 + 1 耐受**,不是給整支部隊的。
 const GroundBattleoidCombatBonus = 10
+
+// GroundBattleoidExtraHits 是 Battleoids 給裝甲部隊的額外耐受命中數(原版 `[out+2] = 1`)。
+// 手冊只提了戰力 +10,沒提這一項。
+const GroundBattleoidExtraHits = 1
+
+// GroundPoweredArmorAppliesTo 記錄一件手冊沒說清楚的事:
+// `TECH_POWERED_ARMOR`(id 144,`[player+0x1A7]`)寫的是 `[out+3] = 10` / `[out+4] = 1`,
+// 而那兩欄只被**類型 1(陸戰隊)**的 case 讀走——動力裝甲是**陸戰隊專屬**的。
+// 對照之下 `TECH_ANTIGRAV_HARNESS`(id 9,`[player+0x120]`)寫的是 `[out+0]`,
+// 那一欄進的是**所有類型共用**的基礎(`var_C`)。
+const GroundPoweredArmorAppliesTo = GroundTypeMarines
 
 // GroundRace 手冊種族創建畫面中,對「Ground Combat」有明確數字加成/懲罰的種族。
 // enums.go 的 RaceTrait.TRAIT_GROUND_COMBAT 只標記「此特性存在」,不含正負與數值,

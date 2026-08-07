@@ -4313,3 +4313,75 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     (remake 的 `GroundRaceCombatBonus`:布拉西 +10 / 諾蘭姆 −10),但**沒有直接證據**
     指出那個位元組就是它——不寫進程式碼,只記在這裡。
     `[+5]`/`[+7]`/`[+9]` 三張查表與 `[+0x10]` 同樣仍未定義。
+
+88. **三張查表讀出來了——十二個科技 id 全部對上,而且 remake 少了一整條通道**(2026-08-07)。
+
+    ### 索引函式的符號名直接說了是什麼
+
+    | 函式 | 表 | 步幅 | 階數 |
+    |---|---|---|---|
+    | `Player_Best_Armor_` @ 0xDC323 | `word_17F63E` | 15 | 6 |
+    | `Player_Best_Rifle_` @ 0xDC416 | `word_14A88` | 3 | 5 |
+    | `Player_Best_Personal_Shield_` @ 0xDC449 | `word_14A9A` | 3 | 1 |
+
+    三支都是**從表尾往前找第一個已知的科技**(`[player + 科技 + 0x117] == 3`)——
+    也就是「取最高階」,不是加總。
+
+    ### 讀表的方法:先建 VA → 檔案位移的對照
+
+    `aMultigmLbx` 後面緊接著 `byte_17A061`,所以那個字串的 VA = `0x17A061 − 12`;
+    在 exe 裡搜 `"MULTIGM.LBX\0"` 得到檔案位移 `0x1F86E9` → **delta = 0x7E694**。
+    用另一個同名字串(`aMultigmLbx_0`)反推得 VA `0x178004`,落在 `;org 178000h` 之後 4 位元組
+    ——**對得上,delta 可信**。
+
+    ### 讀出來的三張表
+
+    ```
+    裝甲(word_17F63E,+0 科技 id、+3 加成)
+      187 TECH_TITANIUM_ARMOR    +5     ← 手冊沒列
+      191 TECH_TRITANIUM_ARMOR   +10    ← 手冊:adds 10
+      203 TECH_ZORTRIUM_ARMOR    +15    ← 手冊:adds 15
+      117 TECH_NEUTRONIUM_ARMOR  +20    ← 手冊:adds 20
+        2 TECH_ADAMANTIUM_ARMOR  +25    ← 手冊:adds 25
+      201 TECH_XENTRONIUM_ARMOR  +30    ← 手冊:+30
+
+    步槍(word_14A88,+0 科技 id、+2 加成)
+      145 TECH_PULSE_RIFLE       +0
+      101 TECH_LASER_RIFLE       +5
+       73 TECH_FUSION_RIFLE      +10
+      128 TECH_PHASOR_RIFLE      +20
+      138 TECH_PLASMA_RIFLE      +30
+
+    個人護盾(word_14A9A)
+      124 TECH_PERSONAL_SHIELD   +20    ← 手冊:by 20
+    ```
+
+    **十二個科技 id 全部對上 remake 的 `Technology` 列舉**,而裝甲那六項的上五項與手冊
+    逐字相同、個人護盾也與手冊相同——這不是巧合,是「這三張表就是它們」的證明。
+
+    ### 於是抓到兩個實質缺口
+
+    - **鈦裝甲 +5 少了**。手冊沒列基礎裝甲的地面加成,remake 就回 0。
+      鈦裝甲是**開局就有的**,所以那 5 點是每個帝國、每一場地面戰都少的。
+    - **整條步槍通道 remake 完全沒有**。上限差 **30 點**——後期科技全開的帝國,
+      remake 的地面部隊比原版弱整整 30。已補 `GroundRifleTechBonus` + `groundRifleBonusFor`
+      並接進玩家與 AI 的 force。
+
+    ### 順帶把兩個「給誰」訂正了
+
+    加成塊的另外三個科技旗標也解出來了(`[player + 科技 + 0x117]`,減去 0x117 就是科技 id):
+
+    | 位址 | 科技 id | 科技 | 寫進哪一欄 | 被誰讀走 |
+    |---|---|---|---|---|
+    | `[player+0x120]` | 9 | `TECH_ANTIGRAV_HARNESS` | `[out+0]` | **所有類型**共用的基礎 |
+    | `[player+0x12F]` | 24 | `TECH_BATTLEOIDS` | `[out+1]`/`[out+2]` | **只有類型 0(裝甲)** |
+    | `[player+0x1A7]` | 144 | `TECH_POWERED_ARMOR` | `[out+3]`/`[out+4]` | **只有類型 1(陸戰隊)** |
+
+    也就是 Battleoids 是**裝甲專屬**的 +10 攻擊 **+1 耐受**(手冊只提了 +10),
+    而動力裝甲是**陸戰隊專屬**的。remake 先前把這兩項都加給整支部隊。
+    常數與依據已記進 `gamedata`(`GroundBattleoidExtraHits`、`GroundPoweredArmorAppliesTo`),
+    **分兵種的接線留給下一輪**——這一輪先把「少了 35 點」補回來。
+
+    ### 誠實留白
+
+    `[player+0x8A7]`(有號,加進所有類型)與 `[+0x10]` 仍未定名。

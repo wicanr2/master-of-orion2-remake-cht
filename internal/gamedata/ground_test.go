@@ -117,21 +117,73 @@ func TestGroundBattleoidHitsToKill(t *testing.T) {
 	}
 }
 
-// TestGroundArmorTechBonus 逐條核對手冊 p.90-92、p.114 的地面部隊戰力加成。
+// ★ TestGroundArmorTechBonus:整張表(原版 `word_17F63E`)+ 手冊 p.90-92、p.114。
+//
+// 2026-08-07 補上 `TECH_TITANIUM_ARMOR: 5` —— 手冊沒列,原版的表有。
+// 鈦裝甲是開局就有的,所以先前少的那 5 點是**每個帝國、每一場地面戰**都少的。
 func TestGroundArmorTechBonus(t *testing.T) {
 	cases := map[Technology]int{
-		TECH_TITANIUM_ARMOR:   0, // 手冊未列基礎裝甲的地面加成
+		TECH_TITANIUM_ARMOR:   5, // ← 原版 word_17F63E 列 1(手冊未列)
 		TECH_TRITANIUM_ARMOR:  10,
 		TECH_ZORTRIUM_ARMOR:   15,
 		TECH_NEUTRONIUM_ARMOR: 20,
 		TECH_ADAMANTIUM_ARMOR: 25,
 		TECH_XENTRONIUM_ARMOR: 30,
-		TECH_HEAVY_ARMOR:      0, // 艦用裝甲,手冊未提供地面加成
+		TECH_HEAVY_ARMOR:      0, // 艦用裝甲,不在那張表裡
 	}
 	for tech, want := range cases {
 		if got := GroundArmorTechBonus(tech); got != want {
 			t.Errorf("GroundArmorTechBonus(%d) = %d,預期 %d", tech, got, want)
 		}
+	}
+	// 階梯是等差 5:那個規律本身就是「整張表都對」的旁證。
+	ladder := []Technology{TECH_TITANIUM_ARMOR, TECH_TRITANIUM_ARMOR, TECH_ZORTRIUM_ARMOR,
+		TECH_NEUTRONIUM_ARMOR, TECH_ADAMANTIUM_ARMOR, TECH_XENTRONIUM_ARMOR}
+	for i := 1; i < len(ladder); i++ {
+		if GroundArmorTechBonus(ladder[i])-GroundArmorTechBonus(ladder[i-1]) != 5 {
+			t.Errorf("第 %d 階與前一階應相差 5", i)
+		}
+	}
+}
+
+// ★ TestGroundRifleTechBonus:整條步槍通道(原版 `word_14A88`),remake 先前完全沒有。
+func TestGroundRifleTechBonus(t *testing.T) {
+	cases := map[Technology]int{
+		TECH_PULSE_RIFLE:  0, // 開局就有的基礎步槍
+		TECH_LASER_RIFLE:  5,
+		TECH_FUSION_RIFLE: 10,
+		TECH_PHASOR_RIFLE: 20,
+		TECH_PLASMA_RIFLE: 30,
+		TECH_HEAVY_ARMOR:  0, // 不在那張表裡
+	}
+	for tech, want := range cases {
+		if got := GroundRifleTechBonus(tech); got != want {
+			t.Errorf("GroundRifleTechBonus(%d) = %d,預期 %d", tech, got, want)
+		}
+	}
+	// 階梯必須是遞增的,而且最高階 30 —— 與裝甲的上限相同。
+	ladder := GroundRifleLadder()
+	if len(ladder) != 5 {
+		t.Fatalf("步槍階梯應有 5 階,實得 %d", len(ladder))
+	}
+	for i := 1; i < len(ladder); i++ {
+		if GroundRifleTechBonus(ladder[i]) <= GroundRifleTechBonus(ladder[i-1]) {
+			t.Errorf("第 %d 階應高於前一階", i)
+		}
+	}
+	if GroundRifleTechBonus(ladder[len(ladder)-1]) != 30 {
+		t.Error("最高階步槍應為 +30")
+	}
+}
+
+// Battleoids 與 Powered Armor 是**分兵種**的,不是給整支部隊的(原版把它們寫進不同的欄位)。
+func TestBattleoidAndPoweredArmorAreTypeSpecific(t *testing.T) {
+	if GroundBattleoidExtraHits != 1 {
+		t.Errorf("Battleoids 給裝甲的額外耐受應為 1,實得 %d", GroundBattleoidExtraHits)
+	}
+	// 原版 [out+1]/[out+2] 只被類型 0 讀走、[out+3]/[out+4] 只被類型 1 讀走。
+	if GroundPoweredArmorAppliesTo != GroundTypeMarines {
+		t.Error("動力裝甲是陸戰隊專屬(原版 [out+3]/[out+4] 只被類型 1 的 case 讀走)")
 	}
 }
 
