@@ -510,3 +510,35 @@ func TestColonySatellitePositionsMatchOriginal(t *testing.T) {
 		t.Errorf("第 8 顆 x = %d 應該整個在畫布右外", x)
 	}
 }
+
+// TestColonySurfacePlanExcludesOneShotTransformations 釘住一個**查證過的否定結論**:
+// 一次性改造(地形改造 / Gaia 轉化 / 土壤改良 / 人造行星)完成後**不佔地表格子**。
+//
+// 這不是推測。原版 `sub_13FD9`(建築完工結算)裡,「把旗標記進
+// `byte[colony + 0x136 + id]`」這一步是**有條件**的:區域變數預設 1,而**恰好四個**分支
+// 把它清成 0。那四個分支做的事一看就認得:改氣候、Terran→Gaia、改礦產、
+// 以及寫入整組行星欄位(人造行星)——正好對應四個一次性編號 17/37/44/48。
+//
+// 旗標既然沒被設起來,`Make_Bldg_Array_For_Colony_` 那個讀旗標陣列的迴圈就不會擺它們。
+//
+// remake 天然就是對的(SpecialActions 不在 `gamedata.Buildings` 裡,`origBuildingID`
+// 因此查不到它們),這支測試是把那個「天然正確」釘住——哪天有人「順手」把一次性項目
+// 加進建築表,地表就會冒出四棟原版沒有的房子。
+func TestColonySurfacePlanExcludesOneShotTransformations(t *testing.T) {
+	oneShot := map[int]string{17: "Gaia 轉化", 37: "土壤改良", 44: "地形改造", 48: "人造行星"}
+	for id, name := range oneShot {
+		for en, got := range origBuildingID {
+			if got == id {
+				t.Errorf("編號 %d(%s)是一次性改造,不該出現在 origBuildingID(對到了 %q)", id, name, en)
+			}
+		}
+	}
+	b := newSurfaceTestBuilder(t)
+	for i := range b.session.PlayerColonies {
+		for cell, id := range b.colonySurfacePlan(i) {
+			if name, bad := oneShot[id]; bad {
+				t.Errorf("殖民地 %d 格 %v 放了一次性改造 %d(%s)", i, cell, id, name)
+			}
+		}
+	}
+}
