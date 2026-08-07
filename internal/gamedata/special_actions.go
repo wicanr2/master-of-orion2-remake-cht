@@ -86,17 +86,17 @@ var SpecialActions = []SpecialAction{
 	{
 		NameZH: TerraformActionName, NameEN: "Terraforming",
 		PrereqTopic:    TOPIC_GENETIC_MUTATIONS,
-		ProductionCost: 260, EstimatedCost: true, // 見檔頭「建造成本缺口」說明,非手冊實據
+		ProductionCost: 250, // 原版執行檔建築表(編號 44)
 	},
 	{
 		NameZH: GaiaTransformationActionName, NameEN: "Gaia Transformation",
 		PrereqTopic:    TOPIC_TRANS_GENETICS,
-		ProductionCost: 900, EstimatedCost: true, // 見檔頭「建造成本缺口」說明,非手冊實據
+		ProductionCost: 500, // 原版執行檔建築表(編號 17)
 	},
 	{
 		NameZH: SoilEnrichmentActionName, NameEN: "Soil Enrichment",
 		PrereqTopic:    TOPIC_ADVANCED_BIOLOGY,
-		ProductionCost: 150, EstimatedCost: true, // 見檔頭「建造成本缺口」說明,非手冊實據
+		ProductionCost: 120, // 原版執行檔建築表(編號 37)
 	},
 	{
 		NameZH: FreighterFleetActionName, NameEN: "Freighter Fleet",

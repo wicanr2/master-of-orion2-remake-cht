@@ -113,29 +113,39 @@ func TestBuildingsMaintenanceSampleAgainstManual(t *testing.T) {
 	}
 }
 
-// TestArmorBarracksCostIsManualSourced 驗證唯一有手冊實據的建造成本(150 PP)標記正確。
-func TestArmorBarracksCostIsManualSourced(t *testing.T) {
-	b, ok := BuildingByNameZH("裝甲營房")
-	if !ok {
-		t.Fatal("找不到裝甲營房")
+// TestBuildingCostsMatchOriginalTable 抽驗建造成本已換成原版執行檔建築表的真值。
+//
+// 先前這兩支測試驗的是相反的事:「裝甲營房是唯一有實據的 150 PP」「其餘一律標
+// EstimatedCost=true」。2026-08-07 把 `off_17EB3D` 那張表抽出來之後,全部 40 項都有真值,
+// `EstimatedCost` 欄位也拿掉了——測試跟著改成驗真值,不是把舊斷言留著當歷史。
+//
+// 這裡挑的五筆都是**舊估計值錯很多**的,錯回去會立刻被抓到。
+func TestBuildingCostsMatchOriginalTable(t *testing.T) {
+	want := map[string]int{
+		"裝甲營房":   150,  // 舊值也是 150(唯一有 modding 範例佐證的那筆)
+		"核心廢料場":  200,  // 舊估計 550
+		"食物複製機":  200,  // 舊估計 460
+		"歡樂穹頂":   250,  // 舊估計 800
+		"星辰要塞":   2500, // 舊估計 800——差最多的一筆
+		"行星屏障護盾": 500,  // 舊估計 1200
+		"研究實驗室":  60,
 	}
-	if b.ProductionCost != 150 {
-		t.Fatalf("裝甲營房建造成本應為手冊實據 150 PP,got %d", b.ProductionCost)
-	}
-	if b.EstimatedCost {
-		t.Fatal("裝甲營房是唯一有手冊實據的建造成本,EstimatedCost 應為 false")
-	}
-}
-
-// TestOtherCostsAreMarkedEstimated 抽樣驗證其餘建築的 PP 成本誠實標記為估計值。
-func TestOtherCostsAreMarkedEstimated(t *testing.T) {
-	for _, zh := range []string{"研究實驗室", "自動工廠", "星基", "生態圈", "行星屏障護盾"} {
+	for zh, pp := range want {
 		b, ok := BuildingByNameZH(zh)
 		if !ok {
 			t.Fatalf("找不到建築 %s", zh)
 		}
-		if !b.EstimatedCost {
-			t.Fatalf("%s 應標記 EstimatedCost=true(手冊未給實據)", zh)
+		if b.ProductionCost != pp {
+			t.Errorf("%s 建造成本 = %d,原版表為 %d", zh, b.ProductionCost, pp)
+		}
+	}
+}
+
+// TestNoBuildingHasZeroCost:全 40 項都要有成本。抽表時漏一筆會變成 0 PP(瞬間蓋好)。
+func TestNoBuildingHasZeroCost(t *testing.T) {
+	for _, b := range Buildings {
+		if b.ProductionCost <= 0 {
+			t.Errorf("%s(%s)建造成本為 %d", b.NameZH, b.NameEN, b.ProductionCost)
 		}
 	}
 }

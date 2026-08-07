@@ -71,7 +71,7 @@ func TestResolveGroundBattle_DoubleUnitsWinsMoreAtEqualForce(t *testing.T) {
 }
 
 // TestResolveGroundBattle_ZeroDefenderUnitsAttackerWinsImmediately 邊界:守方一開始就
-//没有存活單位,攻方應直接獲勝,且不應消耗 rng(Rounds == 0)。
+// 没有存活單位,攻方應直接獲勝,且不應消耗 rng(Rounds == 0)。
 func TestResolveGroundBattle_ZeroDefenderUnitsAttackerWinsImmediately(t *testing.T) {
 	atk := NewGroundForce(3, 1, 0, false)
 	def := GroundForce{Units: nil, Force: 999, Defending: true} // force 再高,0 單位也無法防守

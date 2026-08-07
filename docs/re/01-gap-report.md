@@ -925,3 +925,60 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     **畫面還沒改**,剩兩件事擋著:①上面那兩項(擺放規則、陰影混色);②remake 現在把建造佇列
     放在中段,而原版那裡是地表、佇列是獨立彈出視窗 `Build_Queue_Popup_` @ 0xB4041
     (7 格 x 207..458、y 329+20i,座標已到手)——要上地表得先把佇列搬進那個視窗。
+
+28. **原版建築表挖出來:所有「估計的」建造成本換成真值**(2026-08-07)。
+
+    第 27 項在追建築 sprite 時,`Real_Building_Name_` @ 0xBB40D 只有兩行——
+    `imul eax, 13h` + `mov eax, off_17EB3D[eax]`——就指出資料段裡有一張**49 筆、每筆 19
+    位元組**的建築表。抽出來的欄位:
+
+    | 位移 | 型別 | 內容 |
+    |---:|---|---|
+    | +0 | dword | 名稱指標(全表同值,執行期才填)|
+    | +4 | word | 建築編號(自身索引)|
+    | +6 | word | 前置科技索引 |
+    | +8 | dword | **建造成本 PP** |
+    | +12 | word | **維護費 BC/turn** |
+    | +14 | byte | 分類(**7 = 軌道衛星**)|
+
+    ### 怎麼確定 +8 是 PP、+12 是維護費(不是用猜的)
+
+    - Armor Barracks 的 +8 = **150**,正好是 remake 先前**唯一**有實據的那筆
+      (`MANUAL_150.html` modding 範例)。
+    - +12 與 remake 從手冊逐條抄的維護費 **40/40 全中**。那 40 個值是獨立來源,
+      能全中代表欄位判讀**與**手寫的「remake 建築 ↔ 原版編號」對照表都對。
+    - +14 = 7 的那五筆正好是 Artemis System Net / Battlestation / Dimensional Portal /
+      Star Base / Star Fortress —— 也就是全部的軌道衛星,而
+      `Make_Bldg_Array_For_Colony_` 就是用這個欄位把衛星排除在地表格點外。
+
+    ### 舊估計值錯得不小
+
+    | 建築 | 舊估計 | 原版真值 |
+    |---|---:|---:|
+    | 星辰要塞 | 800 | **2500** |
+    | 行星屏障護盾 | 1200 | 500 |
+    | 歡樂穹頂 | 800 | 250 |
+    | 核心廢料場 | 550 | 200 |
+    | 深層核心礦坑 | 550 | 250 |
+    | 食物複製機 | 460 | 200 |
+    | 銀河網路 | 650 | 250 |
+
+    `internal/gamedata/buildings.go` 的 `EstimatedCost` 欄位整個拿掉了——40 項全是真值,
+    留著那個旗標只會誤導。`special_actions.go` 裡能對到編號的三項(地形改造 250、
+    蓋亞轉化 500、土壤改良 120)一併換成真值;運輸艦隊/殖民船/前哨船仍是估計值
+    (原版的艦艇造價由艦體 + 元件逐項算,不在這張表裡),旗標保留。
+
+    ### 順帶:地表擺放規則也讀完了(但還缺 PRNG)
+
+    - `Make_Bldg_Array_For_Colony_` @ 0xBC30B:`Set_Random_Seed(colonyIdx, 0, 144)` →
+      **同一個殖民地的擺法是固定的**;依編號順序逐棟 `Insert_Bldg_Into_Array`,
+      分類 7 的丟去衛星清單;再依 `人口/3 + 1` 補「房屋」;最後 `Sort_Bldg_Array_Columns_`
+      依 +14 分類做氣泡排序,再跑一段隨機微調。
+    - `Insert_Bldg_Into_Array_` @ 0xBC05E:對所有空格做**蓄水池抽樣**(`Random(++n) == 1`),
+      滿了才叫 `Find_Replacement_Slot_For_Building_` 挑最低優先的格子擠掉。
+    - **房屋是借用衛星的編號畫的**:`-3` 依 `(colonyIdx + 房屋數 + 1) % 4` 存成
+      3 / 14 / 40 / 41(Artemis / Dimensional Portal / Star Base / Star Fortress)。
+      衛星本來就不畫在地表,編號空著,於是拿來當四種房屋外觀——
+      montage 裡型別 2/13/39/40 確實是小房子而不是衛星,對得上。
+    - **卡住的點**:擺法要完全重現得先實作原版的 `Random_` @ 0x1247A0 /
+      `Set_Random_Seed_` @ 0x124820。那是下一步,不是阻塞。
