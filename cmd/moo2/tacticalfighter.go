@@ -69,10 +69,12 @@ func (t *tacticalScreen) canLaunchFrom(idx int) bool {
 // launchFrom 讓第 idx 艘我方艦派出一隊戰機。
 func (t *tacticalScreen) launchFrom(idx int) {
 	s := t.player[idx]
-	// FTL 階與裝甲級數:remake 的艦艇設計還沒有把「目前最佳引擎/裝甲」餵進戰鬥層
-	// (見 CombatShip 的欄位清單),先用最保守的 1 / 0 —— 也就是手冊公式在
-	// 「剛研究出 FTL、鈦裝甲」時的值。等那兩項接上來,這裡換成真值即可。
-	t.squads = append(t.squads, shell.NewFighterSquadron(s.BayKind, false, idx, s.Col, s.Row, 1, 0))
+	// ⚠ 2026-08-08(第 136 項):上一版寫著「remake 的艦艇設計還沒有把『目前最佳引擎/裝甲』
+	// 餵進戰鬥層,先用最保守的 1 / 0…等那兩項接上來,這裡換成真值即可」——**接上來了**。
+	// 那個硬編的 1 讓所有戰機不論科技多高都跑得一樣慢,而且第 129 項的參數掃描器
+	// (只掃 gamedata.X(...))看不到它,因為它在 cmd/ 這一側。
+	t.squads = append(t.squads, shell.NewFighterSquadron(
+		s.BayKind, false, idx, s.Col, s.Row, s.DriveLevel, s.ArmorLevelAboveTitanium))
 	t.log = fmt.Sprintf(t.b.tr("%s 派出一隊%s(%d 架)", "%s launches a %s squadron (%d craft)"),
 		s.Name, shell.FighterKindName(s.BayKind), t.squads[len(t.squads)-1].Alive)
 }

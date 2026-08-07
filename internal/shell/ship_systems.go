@@ -103,6 +103,25 @@ func (s *GameSession) FleetResearchPoints() int {
 	return total
 }
 
+// armorLevelAboveTitanium 回傳這件裝甲比鈦裝甲高幾級(鈦 = 0)。
+//
+// 戰機 HP 用它——手冊那張戰機表的註腳:「*** base hit points are modified by **2 times
+// armor level above Titanium**」。等級序就是 ArmorOptions 的排列(鈦→三鈦→佐特→中子素→
+// 精金→氙素),與 gamedata.ArmorStructurePercent 那條階梯同一個順序。
+func armorLevelAboveTitanium(name string) int {
+	level := 0
+	for _, c := range ArmorOptions {
+		if c.UnlockTech == gamedata.TECH_NONE {
+			continue // 「無裝甲」那一列不算級
+		}
+		if c.Name == name {
+			return level
+		}
+		level++
+	}
+	return 0
+}
+
 // shipBeamAttackerSystems 把這艘船的元件翻成光束射擊要用的攻方系統旗標。
 //
 // 一艘船只有一個 Special 槽,所以最多只會有一項為真——寫成一個函式而不是三個判斷,

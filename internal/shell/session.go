@@ -387,6 +387,9 @@ var (
 		// (第 134 項把它們列在「要先重構」那一格)。
 		{"結構分析儀", 140, 0, gamedata.TOPIC_CYBERTRONICS, gamedata.TECH_STRUCTURAL_ANALYZER},
 		{"阿基里斯瞄準器", 200, 0, gamedata.TOPIC_MOLECULATRONICS, gamedata.TECH_ACHILLES_TARGETING_UNIT},
+		// 增強引擎(第 136 項):手冊「increase the combat speed of a ship by +5」。
+		// 第 134 項把它列在「機制不存在」那一格——戰鬥速度模型建起來之後就成立了。
+		{"增強引擎", 100, 0, gamedata.TOPIC_ADVANCED_FUSION, gamedata.TECH_AUGMENTED_ENGINES},
 	}
 )
 
@@ -646,6 +649,8 @@ type combatant struct {
 	hasHEF bool
 	// 攻方光束系統(第 135 項):高能聚焦 / 結構分析儀 / 阿基里斯瞄準器。
 	beamSystems BeamAttackerSystems
+	// initiative 是手冊的主動權(Beam Attack + 10×戰鬥速度),決定齊射次序。
+	initiative int
 	// apNegated 是這艘**被打的**船讓敵方穿甲失效(氙素裝甲 或 重裝甲系統,手冊各一句)。
 	apNegated bool
 	// 飛彈特殊防禦(手冊 p.123):裝了才擲骰,見 ResolveMissileShot 的 MissileDefenses。
@@ -667,6 +672,10 @@ type combatant struct {
 // 回傳本輪擊沉的 defender 數。移除陣亡艦。
 func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand) int {
 	before := len(*defenders)
+	// 主動權排序(第 136 項):手冊「smaller ships should move before bigger, slower ones」。
+	// 先前是艦隊清單順序,等於「先造的先打」——與速度完全無關。
+	// 就地排序沒有問題:呼叫端每次都重新建構戰列(mkPlayerCombatantsIndexed / genEnemyFleet)。
+	sortByInitiative(attackers)
 	for i := range attackers {
 		ti := -1
 		for j := range *defenders {
@@ -827,6 +836,7 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 			hasAMR:            sh.Special == antiMissileRocketName,
 			hasHEF:            sh.Special == highEnergyFocusName,
 			beamSystems:       shipBeamAttackerSystems(sh),
+			initiative:        gamedata.CombatInitiative(atk, s.shipCombatSpeed(sh)),
 			apNegated:         shipNegatesArmorPiercing(sh),
 			hasLightningField: shipHasLightningField(sh),
 			hasDisplacement:   shipHasDisplacementDevice(sh),
@@ -1035,6 +1045,15 @@ type CombatShip struct {
 	HasDisplacement   bool // 位移裝置:一律 30% 完全未命中
 	// BeamSystems 是這艘船的攻方光束系統(高能聚焦/結構分析儀/阿基里斯瞄準器)。
 	BeamSystems BeamAttackerSystems
+	// DriveLevel 是玩家目前的引擎階(1..6)。戰機速度與飛彈速度都吃它
+	// ——先前 cmd/moo2 那一側硬編成 1(見 drive_level.go 檔頭)。
+	DriveLevel int
+	// ArmorLevelAboveTitanium 是裝甲比鈦裝甲高幾級(戰機 HP 用,手冊註腳
+	// 「base hit points are modified by 2 times armor level above Titanium」)。
+	ArmorLevelAboveTitanium int
+	// CombatSpeed / Initiative 見 gamedata/combat_speed.go(執行檔一手表 + 手冊公式)。
+	CombatSpeed int
+	Initiative  int
 }
 
 // CombatSpriteForClass 依艦體等級回傳 CMBTSHP 色塊內 sprite 索引(見 docs/tech/cmbtshp-ship-sprites.md)。
@@ -1106,12 +1125,16 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			APNegated: shipNegatesArmorPiercing(sh),
 			MissileEvasion: gamedata.ShipCrewMissileEvasionBonus(s.shipCrewLevel(sh)) +
 				s.helmsmanEvasionBonus() + shipMissileEvasionBonus(sh),
-			HasAMR:            sh.Special == antiMissileRocketName,
-			HasLightningField: shipHasLightningField(sh),
-			HasDisplacement:   shipHasDisplacementDevice(sh),
-			BeamSystems:       shipBeamAttackerSystems(sh),
-			SpriteIdx:         CombatSpriteForClass(sh.Class), // 色塊 0(玩家)
-			Bay:               bay, BayKind: bayKind,
+			HasAMR:                  sh.Special == antiMissileRocketName,
+			HasLightningField:       shipHasLightningField(sh),
+			HasDisplacement:         shipHasDisplacementDevice(sh),
+			BeamSystems:             shipBeamAttackerSystems(sh),
+			DriveLevel:              s.driveLevel(),
+			ArmorLevelAboveTitanium: armorLevelAboveTitanium(sh.Armor),
+			CombatSpeed:             s.shipCombatSpeed(sh),
+			Initiative:              gamedata.CombatInitiative(atk, s.shipCombatSpeed(sh)),
+			SpriteIdx:               CombatSpriteForClass(sh.Class), // 色塊 0(玩家)
+			Bay:                     bay, BayKind: bayKind,
 		})
 	}
 	mult := 1.0
