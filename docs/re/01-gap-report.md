@@ -982,3 +982,47 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
       montage 裡型別 2/13/39/40 確實是小房子而不是衛星,對得上。
     - **卡住的點**:擺法要完全重現得先實作原版的 `Random_` @ 0x1247A0 /
       `Set_Random_Seed_` @ 0x124820。那是下一步,不是阻塞。
+
+29. **半透明標記索引:index >= 0xF0 從來不是顏色**(2026-08-07)。
+
+    第 27 項留下的「陰影是洋紅」問題,追下去發現不只是陰影,而是 remake 一直誤解了
+    一整類像素。原版的通用繪圖常式(module 168)對 **來源索引 >= 0xF0 的像素從不直接寫進
+    畫面**,兩條路徑各有做法,由 `Draw_Bldg_CR_` @ 0xBB469 依 `byte_182ACA` 二選一:
+
+    | 路徑 | 內圈 | 對 >= 0xF0 的處理 |
+    |---|---|---|
+    | `Draw_` @ 0x12A478 | `sub_12ACA4` | `dst = blendTable[(src << 8) + dst]` —— 混色查表 |
+    | `Draw_No_Glass_` @ 0x129FF9 | `sub_12AAA1` | `cmp eax, 0F0h / jge` → **整個像素跳過** |
+
+    也就是說 240..255 是**十六種半透明標記**(陰影、光束輝光、玻璃罩…),不是十六個顏色。
+
+    ### 用量:不能一律當透明
+
+    掃過玩家資料夾全部 LBX:
+
+    | LBX | >= 0xF0 的像素占比 |
+    |---|---:|
+    | SPHERSFX | 100% |
+    | BEAMS | 69% |
+    | LOGO | 39% |
+    | CMBTSFX | 35% |
+    | COLONY | 27% |
+    | MAINMENU | 13% / RACESEL | 13% |
+    | BLDG0..4 | 7–11% |
+
+    光束本來就是疊在星空上的半透明輝光——一律當透明會讓武器整個消失。**要不要丟由
+    呼叫端依畫面決定**,不能在解碼層一刀切。
+
+    ### 落地與還缺的
+
+    `internal/lbx/image.go` 加了 `TranslucentIndexMin = 0xF0`、`Frame.HasTranslucent()`
+    與 `Frame.ToRGBADropTranslucent()`(= `Draw_No_Glass_` 那條路徑,底下沒東西可混色時
+    這是原版唯一適用的那條,不是近似)。既有的 `ToRGBA` 行為不變,不動到現有畫面。
+
+    **混色表 `byte_1AB358` 在 BSS,執行期才建,不在執行檔裡**;產生它的程式碼還沒找到
+    (寫入是透過指標,`.asm` 裡搜不到直接寫這個符號的指令)。openorion2 也沒解掉,
+    `galaxy.cpp` 留著 `FIXME: analyze original game and calculate better shadow palette`。
+    在找到之前不假造混色係數。
+
+    ⚠ 順手學到的:預覽時我用「RGB 等於 (108,48,108) 就丟掉」做快速合成,結果**還有幾塊
+    洋紅沒清掉**——因為 241..255 各自對到不同顏色。這正好反證了要**用索引判斷、不是用顏色**。

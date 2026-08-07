@@ -3,6 +3,7 @@ package lbx
 import (
 	"bytes"
 	"encoding/binary"
+	"image/color"
 	"os"
 	"testing"
 )
@@ -176,4 +177,40 @@ func TestDecodeRealImages(t *testing.T) {
 		ok++
 	}
 	t.Logf("%s:%d/%d 個資產解碼為影像", path, ok, a.Count())
+}
+
+// TestTranslucentMarkerIndices 驗證「半透明標記索引」的處理(見 image.go 的
+// TranslucentIndexMin 註解:原版對 index >= 0xF0 從不直接寫進畫面)。
+//
+// 用合成資料而不是真資產:repo 不含版權 .lbx,測試不能依賴玩家自備檔案。
+func TestTranslucentMarkerIndices(t *testing.T) {
+	// 2×1 未壓縮影像:左像素一般色 index 5、右像素半透明標記 index 0xF0。
+	data := buildImageAsset(2, 1, 0, flagNoCompress, nil, []byte{5, 0xF0})
+	im, err := DecodeImage(data)
+	if err != nil {
+		t.Fatalf("解碼失敗:%v", err)
+	}
+	fr := im.Frames[0]
+	if !fr.HasTranslucent() {
+		t.Error("這一幀有 index 0xF0,HasTranslucent 應為 true")
+	}
+
+	var pal Palette
+	pal[5] = color.RGBA{10, 20, 30, 255}
+	pal[0xF0] = color.RGBA{108, 48, 108, 255} // 建築圖陰影實際用的那個洋紅
+
+	// 預設路徑(現況):標記索引仍會被當顏色畫出來——光束/特效目前靠這個才看得見。
+	plain := fr.ToRGBA(&pal, false)
+	if plain.Pix[4*1+3] != 0xff {
+		t.Error("ToRGBA 目前應保留標記像素(否則光束會整個消失)")
+	}
+
+	// 丟棄路徑(原版 Draw_No_Glass_):標記像素完全不寫。
+	dropped := fr.ToRGBADropTranslucent(&pal, false)
+	if dropped.Pix[4*0+3] != 0xff {
+		t.Error("一般像素不該被丟掉")
+	}
+	if dropped.Pix[4*1+3] != 0 {
+		t.Errorf("標記像素應為透明,實得 alpha=%d", dropped.Pix[4*1+3])
+	}
 }

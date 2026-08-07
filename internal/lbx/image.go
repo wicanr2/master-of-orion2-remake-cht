@@ -204,6 +204,52 @@ func (im *Image) decodeFrame(d []byte) (*Frame, error) {
 	return fr, nil
 }
 
+// TranslucentIndexMin 是「半透明標記」調色盤索引的下界。
+//
+// 原版的通用繪圖常式對 **index >= 0xF0 的來源像素從不直接寫進畫面**,兩條路徑各有做法
+// (兩者都在 module 168,由 `Draw_Bldg_CR_` @ 0xBB469 依 `byte_182ACA` 二選一):
+//
+//	`Draw_` @ 0x12A478 → 內圈 `sub_12ACA4`:
+//	    cmp eax, 0F0h / jl 直接複製
+//	    否則 dst = blendTable[(src << 8) + dst]     ← 混色查表
+//	`Draw_No_Glass_` @ 0x129FF9 → 內圈 `sub_12AAA1`:
+//	    cmp eax, 0F0h / jge **跳過這個像素**(什麼都不寫)
+//
+// 也就是說 240..255 不是顏色,是**十六種半透明標記**(陰影、光束輝光、玻璃罩…)。
+// remake 先前把它們當一般顏色上色,建築圖的陰影因此變成一塊 (108,48,108) 的洋紅。
+//
+// ⚠ 混色表 `byte_1AB358` 在 BSS(執行期才建),**不在執行檔裡**,產生它的程式碼還沒找到;
+// openorion2 也沒解掉(`galaxy.cpp` 留著 "FIXME: analyze original game and calculate better
+// shadow palette")。所以目前只實作得起「跳過」那條路徑,不假造混色係數。
+//
+// 全遊戲用量:BEAMS.LBX 69% 的像素是這種索引(光束本來就是疊在星空上的半透明輝光)、
+// SPHERSFX 100%、CMBTSFX 35%、MAINMENU 13%、RACESEL 13%、BLDG* 約 7–11%。
+// **所以不能一律當透明**——那會讓光束整個消失。要不要丟由呼叫端依畫面決定。
+const TranslucentIndexMin = 0xF0
+
+// HasTranslucent 回報這一幀有沒有用到半透明標記索引。
+func (fr *Frame) HasTranslucent() bool {
+	for i, idx := range fr.Index {
+		if fr.Written[i] && idx >= TranslucentIndexMin {
+			return true
+		}
+	}
+	return false
+}
+
+// ToRGBADropTranslucent 等同 ToRGBA,但**把半透明標記索引整個丟掉**(視為透明)——
+// 也就是原版 `Draw_No_Glass_` 那條路徑。底下沒有東西可混色時(remake 目前的殖民地
+// 建築圖就是),這是原版兩條路徑裡唯一適用的那條,不是近似。
+func (fr *Frame) ToRGBADropTranslucent(pal *Palette, keyColor bool) *image.RGBA {
+	img := fr.ToRGBA(pal, keyColor)
+	for i, idx := range fr.Index {
+		if fr.Written[i] && idx >= TranslucentIndexMin {
+			img.Pix[4*i+0], img.Pix[4*i+1], img.Pix[4*i+2], img.Pix[4*i+3] = 0, 0, 0, 0
+		}
+	}
+	return img
+}
+
 // ToRGBA 用給定調色盤把幀上色成 *image.RGBA。keyColor 為 true 時,index 0 視為透明;
 // 未寫入的像素(RLE 跳過)一律透明。
 func (fr *Frame) ToRGBA(pal *Palette, keyColor bool) *image.RGBA {
