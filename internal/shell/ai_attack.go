@@ -350,15 +350,23 @@ func (s *GameSession) colonyDefense(ci int) int {
 	if ci < len(s.PlayerColonyTanks) {
 		def += s.PlayerColonyTanks[ci] * 3
 	}
-	// 軌道防禦建築:直接沿用指揮點數那張表的三級(星基/戰鬥站/星辰要塞),
-	// 有建的殖民地防禦顯著提高。
+	// 防禦建築:與軌道轟炸的反擊**共用同一套推導**(`retaliationAttackers`)。
+	//
+	// ⚠ 這裡原本是 `CommandPointsFromBuildings(...) * 10` —— 一個自編的係數,而且只認
+	// 星基/戰鬥星/星辰要塞三級,**飛彈基地與地面砲台完全不算**。那不是「模型還沒建好」:
+	// `gamedata/satellite.go` 的 space 預算模型早就存在(飛彈基地 300 / 地面砲台 450 都是
+	// 手冊 p.78 / p.81 的確認值),只是當初沒接到這條路徑上。
+	//
+	// 改用 `retaliationAttackers` 之後三件事一起對上:
+	//   ① 反擊戰力隨**已解鎖的武器科技**成長,不再是寫死的 10/20/30
+	//   ② 飛彈基地與地面砲台真的有用了
+	//   ③ 1.3/1.5 的 beam arc-cost 差異(`RuleProfile`)自動吃到,不必再各寫一份
 	if ci < len(s.ColonyBuildings) {
-		def += gamedata.CommandPointsFromBuildings(s.ColonyBuildings[ci]) * 10
+		for _, c := range retaliationAttackers(s.ColonyBuildings[ci], s.Player, s.RuleProfile) {
+			def += c.atk
+		}
 		// 恆星轉換器(行星版):手冊 p.106「400 傷 ×2,無視射程與防禦」。
-		//
-		// ⚠ 這是這批防禦建築裡**唯一有固定數字**的一棟,所以只有它接得進來。
-		// 飛彈基地與地面砲台手冊只給「佔 300 / 450 空間、裝當時最佳武器」的規則,
-		// 傷害隨科技現算,要等艦艇元件的空間模型就緒——那兩棟仍是記錄已建但不影響數值。
+		// 它不走 space 預算那條路——手冊直接給了固定傷害,不隨武器科技變。
 		if s.ColonyBuildings[ci][gamedata.StellarConverterName] {
 			def += gamedata.StellarConverterDefense
 		}

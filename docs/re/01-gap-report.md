@@ -1537,3 +1537,45 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     飛彈基地與地面砲台手冊只給「佔 300 / 450 空間、裝當時最佳武器」的**規則**,
     傷害隨科技現算,沒有艦艇元件的空間模型算不出固定值。恆星轉換器是這批裡唯一給固定數字的,
     所以只有它接得進來。
+
+38. **飛彈基地/地面砲台其實早就算得出來——是接線漏了,不是模型缺了**(2026-08-07,第 37 項的訂正)。
+
+    第 37 項寫「飛彈基地與地面砲台手冊只給規則、傷害隨科技現算,**沒有艦艇元件的空間模型
+    算不出固定值**」。**那句話是錯的。** 模型早就在:
+
+    - `gamedata/satellite.go`:`MissileBaseSpace = 300`(手冊 p.78 確認值)、
+      `GroundBatterySpace = 450`(p.81 確認值)、`SatelliteWeaponFitCount`、
+      `SatelliteBeamSpaceWithArc`、`SatelliteStrengthScale`
+    - `shell.retaliationAttackers` @ `orbital_bombardment.go`:已經用它算軌道轟炸的反擊,
+      而且**連飛彈基地與地面砲台都已經支援**
+
+    真正的缺口是 **`colonyDefense`(AI 突襲的防禦解算)沒接上這套**,它用的是
+    `CommandPointsFromBuildings × 10` —— 一個自編係數,而且只認星基/戰鬥站/星辰要塞三級。
+
+    ### ⚠ 順帶挖出一個自相矛盾:同一座星基在兩個地方值不同的分數
+
+    | 路徑 | 星基值多少 |
+    |---|---|
+    | `colonyDefense`(舊)| `1 × 10` = **10** —— 比一艘巡洋艦(`shipStrength` 8)還強 |
+    | `retaliationAttackers` | 依 space 預算推導 = **3–4** ≈ 驅逐艦 tier |
+
+    而 `satellite.go` 的校準註解**明講**星基 ≈ 驅逐艦 tier(4)、戰鬥站 ≈ 巡洋艦 tier(8)。
+    也就是說舊的 `×10` 與專案自己的校準文件互相打臉,**而且兩邊都測得綠**——
+    因為沒有任何測試同時看這兩條路徑。現在有了(`TestColonyDefenceUsesSpaceBudgetModel`)。
+
+    ### 改完之後
+
+    `colonyDefense` 改用 `retaliationAttackers` 的 atk 加總,三件事一起對上:
+    ① 反擊戰力隨已解鎖的武器科技成長,不再是寫死的 10/20/30;
+    ② 飛彈基地與地面砲台真的有用了;
+    ③ 1.3/1.5 的 beam arc-cost 差異(`RuleProfile`)自動吃到,不必再各寫一份。
+
+    ### 一個測試前提被正確地推翻了
+
+    `TestAIRaidRepelledByFleetAtStar` 有一段自我守衛(「測試前提不成立:願打門檻 X 已高於
+    母星防禦 Y」),改完之後它**觸發了**:兩艘巡洋艦(16)配一座光禿禿的星基,防禦 19,
+    而 AI 的願打門檻是 16×125% + 1 = 21 → AI 會贏。
+
+    **那是正確的結果,不是 bug。** 這個測試守的是「把艦隊擺對地方有意義」,不是「星基很強」,
+    所以把測試裡的母星升級成戰鬥站(真的有投資防禦的樣子),而不是把模型改回去遷就測試。
+    那段自我守衛就是設計來在平衡變動時**要人做決定**的,它正常運作了。

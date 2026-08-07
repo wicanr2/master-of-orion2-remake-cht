@@ -59,3 +59,60 @@ func TestStellarConverterIsInBuildingTable(t *testing.T) {
 		t.Errorf("前置 = %v,want TOPIC_TEMPORAL_PHYSICS(手冊 Temporal Physics 15000)", b.PrereqTopic)
 	}
 }
+
+// TestColonyDefenceUsesSpaceBudgetModel:殖民地防禦要用**與軌道轟炸反擊同一套**推導,
+// 不是自編係數。
+//
+// ⚠ 這條擋的是一個實際存在過的自相矛盾:`colonyDefense` 先前用
+// `CommandPointsFromBuildings × 10`,星基因此值 10——比一艘巡洋艦(shipStrength 8)還強,
+// 而 `gamedata/satellite.go` 的校準明講星基 ≈ 驅逐艦 tier(4)。同一個東西在兩個地方
+// 值不同的分數,而且兩邊都測得綠。
+func TestColonyDefenceUsesSpaceBudgetModel(t *testing.T) {
+	s := NewDemoSession()
+	if len(s.PlayerColonies) == 0 {
+		t.Skip("沒有殖民地")
+	}
+	for len(s.ColonyBuildings) < len(s.PlayerColonies) {
+		s.ColonyBuildings = append(s.ColonyBuildings, map[string]bool{})
+	}
+	if s.ColonyBuildings[0] == nil {
+		s.ColonyBuildings[0] = map[string]bool{}
+	}
+	// 艦隊不在場,才量得到純建築的貢獻。
+	s.FleetAtStar, s.FleetETA = -1, 0
+
+	base := s.colonyDefense(0)
+	for _, name := range []string{"星基", "戰鬥站", "星辰要塞", "飛彈基地", "地面砲台"} {
+		delete(s.ColonyBuildings[0], name)
+	}
+	bare := s.colonyDefense(0)
+
+	// 三級軌道基地:取代不疊加,而且火力遞增。
+	prev := 0
+	for _, name := range []string{"星基", "戰鬥站", "星辰要塞"} {
+		for _, n2 := range []string{"星基", "戰鬥站", "星辰要塞"} {
+			delete(s.ColonyBuildings[0], n2)
+		}
+		s.ColonyBuildings[0][name] = true
+		got := s.colonyDefense(0) - bare
+		if got <= prev {
+			t.Errorf("%s 的防禦貢獻 %d 沒有比前一級(%d)高——三級應該遞增", name, got, prev)
+		}
+		prev = got
+	}
+
+	// **飛彈基地與地面砲台先前完全不算**,這是這次接線的重點。
+	for _, n2 := range []string{"星基", "戰鬥站", "星辰要塞"} {
+		delete(s.ColonyBuildings[0], n2)
+	}
+	for _, name := range []string{"飛彈基地", "地面砲台"} {
+		delete(s.ColonyBuildings[0], name)
+		before := s.colonyDefense(0)
+		s.ColonyBuildings[0][name] = true
+		if after := s.colonyDefense(0); after <= before {
+			t.Errorf("%s 對防禦沒有貢獻(%d → %d)——手冊 p.78/p.81 給了確認的 space 預算,不該是擺設",
+				name, before, after)
+		}
+	}
+	_ = base
+}
