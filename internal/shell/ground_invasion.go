@@ -8,7 +8,8 @@ import (
 )
 
 // ground_invasion.go:地面戰入侵流程的「模型 + 流程」殼層(shell)——把 gamedata 已備妥的
-// 解算式(ResolveGroundBattle)與加成表(GroundArmorTechBonus 等)接到活的對局狀態:
+// 解算式(2026-08-07 起用原版的 ResolveGroundCombatOrig)與加成表(GroundArmorTechBonus 等)
+// 接到活的對局狀態:
 // 陸戰隊生成(Marine Barracks)→隨艦隊運送(LoadMarines)→抵達敵方殖民地觸發入侵
 // (InvadeColony)→勝則佔領(星 Owner 轉移 + 殖民地過戶)。
 //
@@ -427,24 +428,22 @@ type GroundInvasionResult struct {
 //
 // 任一條件不足回傳 Ok=false + Reason,不消耗任何狀態、不呼叫 rng。
 //
-// 解算組雙方 gamedata.GroundForce:
+// 解算組雙方 gamedata.GroundSide(2026-08-07 換成**原版的資料結構**,見下)。
 //
-//   - 攻方:FleetMarines 個陸戰隊單位 + FleetTanks 個戰車營單位混編。force 統一套用
-//     playerMarineForce()(裝甲/裝備/種族加成,對整支部隊一視同仁——本 remake 的
-//     GroundForce.Force 本來就是「side 級」單一加成,不分兵種,見 ground_battle.go 設計),
-//     若持有 Battleoids 再疊加 tankForceBonusFor 的相對加成,再疊加 Commando 領袖加成(見
-//     commandoLeaderTier + gamedata.GroundCommandoAttackerForceBonus,2026-07-11,#5/#6)。
+//   - 攻方:陸戰隊 = 類型 0、戰車營 = 類型 1。原版的一方就是「四種部隊,一種打完換下一種」
+//     (`Ground_Combat_Round_` @ 0xEC4FE,見 gamedata/ground_battle_orig.go),
+//     與先前「合併陣列、陸戰隊在前」的意圖相同,只是換成原版的形狀。
+//     force 套用 playerMarineForce()(裝甲/裝備/種族加成),持有 Battleoids 再疊
+//     tankForceBonusFor,再疊 Commando 領袖加成。
 //     hits-to-kill 陸戰隊/戰車營分開算(GroundMarineHitsToKill / tankHitsToKillFor)。
 //
-//     ⚠ 單位排序(無把握的接法,已選定但列出讓 L.CY 定案):合併後的 Units 陣列「陸戰隊在前、
-//     戰車營在後」——這不是敘事上的「誰當前鋒」選擇(手冊未提供地面戰隊形資訊),而是技術上
-//     唯一能在戰後把 res.AttackerSurvived(單一總數)準確拆回「陸戰隊存活數 / 戰車營存活數」
-//     的排法:ResolveGroundBattle 的規則是「最前面存活單位先受創」,即單位嚴格按索引順序陣亡
-//     (index 0 全滅後才輪到 index 1),故存活者必是原始順序的「後段」;把戰車營放在後段,
-//     戰後只需 tanksSurvived=min(total存活,戰車營原始數量) 即可還原分兵種存活數,不需更動
-//     gamedata 層的 GroundUnit/GroundForce 結構(該結構本身無兵種標記欄位)。若未來要精確
-//     模擬「戰車在前掩護陸戰隊」的戰術隊形,需要先幫 GroundUnit 加兵種欄位,超出本輪死碼
-//     串接範圍。
+//     ⚠ 先前這裡有一整段在解釋「為什麼把戰車營排在陣列尾端」——那個限制**已經消失**:
+//     原版的結構逐類型記數量,戰後直接讀 `Count[類型]` 就是各兵種的真實存活數,
+//     不必再用 `min(總存活, 戰車原始數)` 推算。那段說明連同它的 TODO 一併移除。
+//
+//     ⚠ 仍在的留白:原版**每種部隊各有一個攻擊力**(`[side + type*2 + 2]`),
+//     那張表還沒追出來,所以兩種目前都填同一個 atkForce。填同值 = 維持現行數字,
+//     而且把差異留在一個看得見的地方(見呼叫處的註解)。
 //
 //   - 守方:兵力簡化為 gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population,
 //     colony.PopMax, false)——AI 未追蹤各殖民地 Marine Barracks 是否已建成/已運作幾回合
@@ -509,10 +508,17 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	// 合併陸戰隊+戰車營單位:Force 只借用 marineUnits/tankUnits 建構出來的 Units,side 級的
 	// atkForce 已在上面算好,故建構單位時 force 參數傳 0(NewGroundForce 的 force 只是塞進
 	// GroundForce.Force 欄位,這裡改在合併後的 atk struct 上設一次即可,避免混淆)。
-	marineUnits := gamedata.NewGroundForce(s.Fleet().Marines, marineHits, 0, false).Units
-	tankUnits := gamedata.NewGroundForce(tankCount, tankHits, 0, false).Units
-	atkUnits := append(append([]gamedata.GroundUnit{}, marineUnits...), tankUnits...)
-	atk := gamedata.GroundForce{Units: atkUnits, Force: atkForce, Defending: false}
+	// 攻方分兩種部隊:陸戰隊 = 類型 0、戰車營 = 類型 1(原版是「一種打完換下一種」,
+	// 與先前「戰車營排在合併陣列尾端」的意圖相同,只是換成原版的資料結構)。
+	//
+	// ⚠ 兩種的攻擊力目前都填 atkForce ——**原版是逐類型各有一個值**(`[side + type*2 + 2]`),
+	// 但那張表還沒追出來。填同一個值等於維持現行數字,並把差異留在一個看得見的地方;
+	// 追到之後只要改這兩行。
+	var atkStrength, atkCounts, atkHits [gamedata.GroundUnitTypes]int
+	atkStrength[groundTypeMarines], atkCounts[groundTypeMarines], atkHits[groundTypeMarines] =
+		atkForce, s.Fleet().Marines, marineHits
+	atkStrength[groundTypeTanks], atkCounts[groundTypeTanks], atkHits[groundTypeTanks] =
+		atkForce, tankCount, tankHits
 
 	defCount := gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population, colony.PopMax, false)
 	defForce := aiMarineForce(*aiPlayer)
@@ -524,19 +530,22 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	// commandoLeaderTier(nil)=0,安全降級為無加成。
 	defForce += gamedata.GroundCommandoDefenderForceBonus(commandoLeaderTier(aiPlayer.Leaders), s.RuleProfile.DefenderCommandoBonus)
 	defHits := gamedata.GroundMarineHitsToKill(false, hasPoweredArmorFor(aiPlayer.Player))
-	def := gamedata.NewGroundForce(defCount, defHits, defForce, true)
+	var defStrength, defCounts, defHitsArr [gamedata.GroundUnitTypes]int
+	defStrength[groundTypeMarines], defCounts[groundTypeMarines], defHitsArr[groundTypeMarines] =
+		defForce, defCount, defHits
 
 	rng := rand.New(rand.NewSource(int64(s.Turn)*2654435761 + int64(starIdx)*97 + 555))
-	res := gamedata.ResolveGroundBattle(atk, def, rng)
+	// 換成原版的解算(`Ground_Combat_Round_` @ 0xEC4FE,見 gamedata/ground_battle_orig.go)。
+	// 先前用的是一代 1oom 的結構,與二代有三處實質差異,最要緊的是**平手時雙方都挨打**。
+	// 擲骰用 `rng.Intn`([0,100))對應原版的 `Random_`;先前是 `Intn(100)+1`。
+	atkSide := gamedata.NewGroundSide(atkStrength, atkCounts, atkHits)
+	defSide := gamedata.NewGroundSide(defStrength, defCounts, defHitsArr)
+	res := gamedata.ResolveGroundCombatOrig(atkSide, defSide, rng.Intn, 0)
 
-	// 拆回陸戰隊/戰車營各自存活數:見上方函式註解「單位排序」——戰車營排在合併陣列尾端,
-	// 故戰後存活者必優先含括戰車營(死亡按原始順序發生),tanksSurvived 最多不超過原始戰車營
-	// 數量,剩下的存活數才輪到陸戰隊。
-	tanksSurvived := res.AttackerSurvived
-	if tanksSurvived > tankCount {
-		tanksSurvived = tankCount
-	}
-	marinesSurvived := res.AttackerSurvived - tanksSurvived
+	// 拆回陸戰隊/戰車營各自存活數——現在是**逐類型的真實剩餘數**,
+	// 不再是先前那個「戰車排在尾端所以先算給戰車」的推算。
+	marinesSurvived := atkSide.Count[groundTypeMarines]
+	tanksSurvived := atkSide.Count[groundTypeTanks]
 
 	out := GroundInvasionResult{
 		Ok: true, AttackerWon: res.AttackerWon,

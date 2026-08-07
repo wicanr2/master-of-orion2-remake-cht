@@ -2,6 +2,12 @@ package gamedata
 
 import "math/rand"
 
+// ⚠ **2026-08-07:正式的解算已改用 `ground_battle_orig.go`**(原版
+// `Ground_Combat_Round_` @ 0xEC4FE)。本檔的 `ResolveGroundBattle` 是**一代(1oom)的結構**,
+// 與二代有三處實質差異(最要緊的是平手時原版雙方都挨打,這裡只有攻方)。
+// 保留是因為加成表(`GroundArmorTechBonus` 等)與 `GroundForce` builder 仍在用,
+// 而且它是那三處差異的對照組——**新的解算不要再從這裡分支**。
+//
 // 地面戰鬥「解算式」(Resolve),對應 docs/tech/ground-combat-algorithm.md 的
 // 「★ 解算式定案(2026-07-10)」:
 //

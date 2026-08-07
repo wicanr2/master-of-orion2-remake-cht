@@ -748,3 +748,52 @@ func TestInvadeColony_CommandoLeaderImprovesWinRate(t *testing.T) {
 	}
 	t.Logf("無指揮官勝率=%.2f 有指揮官勝率=%.2f", withoutCommando, withCommando)
 }
+
+// --- 2026-08-07:換成原版解算之後的護欄 ---
+
+// 分兵種存活數要**逐類型精確**,不再是「min(總存活, 戰車原始數)」的推算。
+//
+// 造一場攻方壓倒性的戰鬥:守方全滅、攻方一個都沒死,兩種兵應該原數奉還。
+func TestInvasionSplitsSurvivorsPerUnitType(t *testing.T) {
+	var st, ct, hk [gamedata.GroundUnitTypes]int
+	st[0], ct[0], hk[0] = 90, 4, 1 // 陸戰隊
+	st[1], ct[1], hk[1] = 90, 3, 1 // 戰車營
+	atk := gamedata.NewGroundSide(st, ct, hk)
+
+	var dst, dct, dhk [gamedata.GroundUnitTypes]int
+	dst[0], dct[0], dhk[0] = 0, 2, 1
+	def := gamedata.NewGroundSide(dst, dct, dhk)
+
+	res := gamedata.ResolveGroundCombatOrig(atk, def, func(int) int { return 0 }, 0)
+	if !res.AttackerWon {
+		t.Fatalf("攻擊力 90 vs 0 應攻方勝:%+v", res)
+	}
+	if atk.Count[0] != 4 || atk.Count[1] != 3 {
+		t.Errorf("攻方一個都不該死:陸戰隊 %d(應 4)、戰車營 %d(應 3)", atk.Count[0], atk.Count[1])
+	}
+}
+
+// 陸戰隊先死光才輪到戰車營——原版是「一種打完換下一種」。
+func TestInvasionMarinesDieBeforeTanks(t *testing.T) {
+	var st, ct, hk [gamedata.GroundUnitTypes]int
+	st[0], ct[0], hk[0] = 0, 2, 1 // 陸戰隊:攻擊力 0,必輸
+	st[1], ct[1], hk[1] = 0, 2, 1 // 戰車營
+	atk := gamedata.NewGroundSide(st, ct, hk)
+
+	var dst, dct, dhk [gamedata.GroundUnitTypes]int
+	dst[0], dct[0], dhk[0] = 90, 99, 1
+	def := gamedata.NewGroundSide(dst, dct, dhk)
+
+	roll := func(int) int { return 0 }
+	gamedata.GroundCombatRound(atk, def, roll)
+	gamedata.GroundCombatRound(atk, def, roll)
+	if atk.Count[0] != 0 {
+		t.Errorf("兩回合後陸戰隊該死光,實得 %d", atk.Count[0])
+	}
+	if atk.Count[1] != 2 {
+		t.Errorf("戰車營此時不該有損失,實得 %d", atk.Count[1])
+	}
+	if atk.CurType != 1 {
+		t.Errorf("應已換到戰車營(類型 1),實得 %d", atk.CurType)
+	}
+}
