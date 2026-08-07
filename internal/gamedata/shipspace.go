@@ -105,6 +105,10 @@ var WeaponSpaceByName = map[string]int{
 	"融合彈":  7,  // Fusion Bomb
 	"反物質彈": 7,  // Anti-Matter Bomb
 	"中子彈":  10, // Neutronium Bomb
+
+	// 球形武器(第 127 項,手冊 p.127 確認值)。
+	"脈衝星":   50, // Pulsar
+	"空間壓縮器": 50, // Spatial Compressor
 }
 
 // SpecialSpaceEstimatePercent 是「特殊系統佔空間 = 艦體總空間的 X%」的估計係數。

@@ -6751,3 +6751,55 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
 
     `25_shipdesign.png` 差 49 個像素:「武器 3/19」→「武器 4/23」——總數 +4(四種炸彈),
     已解鎖 +1(示範玩家本來就有核分裂那個主題)。裁圖看過才重錄。
+
+127. **球形武器:一整條戰鬥解算分支,零武器掛載**(2026-08-08)。
+
+    `weapon_kind.go` 的檔頭寫著:
+
+    > 因此 spherical 分支目前**沒有任何武器掛載**,`ResolveSphericalShot` 只提供已測試的
+    > 解算函式待未來新增球形武器元件時串接。
+
+    `ResolveSphericalShot` 的函式註解也重複了一次同樣的話。**整條解算路徑是死碼**
+    ——連 `battleVolley` 的 `case WeaponKindSpherical:` 那一段都從來沒有執行過。
+
+    手冊 p.126「Notes on Spherical Damage」明列的球形武器是四項:
+    Pulsar、Plasma Flux、Spatial Compressor、Engine Explosion。其中
+
+    - **電漿通量**是海鰻怪獸專屬,不是可造艦元件;
+    - **引擎爆炸**是船被打爆時的事件,不是武器;
+
+    所以掛得上的是**脈衝星**與**空間壓縮器**兩項——而它們的數值就在 p.127 那張表上。
+
+    ### 「per size class of target」需要目標的艦體等級
+
+    手冊給脈衝星的傷害是「1-24 **per size class of target**」、空間壓縮器是
+    「4-32 structural hits」。前者要知道**被打的那艘船有多大**——而 `combatant` 先前
+    沒有艦體等級這個欄位(它只有 `shipStrength` 換算出來的戰力點)。補上 `sizeClass`,
+    直接複用既有的 `shipClassFromName`。
+
+    ⚠ **「級數」取 index+1 是讀法,不是手冊字面。** 手冊沒有列出級數的數字,只給了艦體
+    名稱的順序;取 index 會讓護衛艦那一級乘 0(打護衛艦零傷害),那顯然不是規則。
+    有一條測試專門守住「最小艦體也吃得到傷害」。
+
+    ### 只有一項豁免護盾與裝甲
+
+    手冊只在**空間壓縮器**那一格寫了「does all damage to **structure only**, ignoring
+    shields and armor」;脈衝星沒有那一句。所以豁免是**逐武器**的,不是整個球形類別的屬性
+    ——`ResolveSphericalShot` 早就把它做成參數(`bypassShieldAndArmor`),先前沒有呼叫端
+    去決定該傳什麼。
+
+    測試一正一反:壓縮器對厚甲目標的總結構傷應高於脈衝星;而脈衝星/雷射/核彈/死光
+    都不該豁免。
+
+    ### 第 124 項的閘門第二次抓到東西
+
+    加完元件跑測試,`TestEveryWeaponHasManualDamageSpaceAndTopic` 立刻紅:
+    「脈衝星 沒有手冊傷害值 / 沒有佔格值」。兩張表都忘了加。
+
+    這是那條測試連續第二輪抓到真的疏漏(上一輪是第 126 項的兩個錯主題)。
+    **新增武器要同時進三張表**這件事,靠註解提醒無效,靠測試才擋得住。
+
+    ### 截圖廊
+
+    `25_shipdesign.png` 差 10 個像素:「武器 4/23」→「武器 4/25」——總數 +2,
+    已解鎖不變(示範玩家還沒有翹曲力場/氙素科技)。

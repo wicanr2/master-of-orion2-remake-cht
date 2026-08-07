@@ -245,6 +245,11 @@ var (
 		{"融合彈", 90, 24, gamedata.TOPIC_ADVANCED_FUSION, gamedata.TECH_FUSION_BOMB},
 		{"反物質彈", 180, 40, gamedata.TOPIC_ANTIMATTER_FISSION, gamedata.TECH_ANTIMATTER_BOMB},
 		{"中子彈", 240, 60, gamedata.TOPIC_INTERPHASED_FISSION, gamedata.TECH_NEUTRONIUM_BOMB},
+
+		// 球形武器(第 127 項,手冊 p.126 的球形清單 + p.127 的數值表)。
+		// 先前 `WeaponKindSpherical` 這條解算分支**掛不到任何武器**——整段是死碼。
+		{"脈衝星", 200, 24, gamedata.TOPIC_WARP_FIELDS, gamedata.TECH_PULSAR},
+		{"空間壓縮器", 260, 32, gamedata.TOPIC_XENON_TECHNOLOGY, gamedata.TECH_SPATIAL_COMPRESSOR},
 	}
 )
 
@@ -555,6 +560,12 @@ type combatant struct {
 	// 這正是「戰後把剩餘血量寫回正確那艘船」需要的東西(先前用外部平行陣列會在有人陣亡後錯位)。
 	shipIdx int
 	kind    WeaponKind
+	// weaponName 是攻方武器的元件名——球形武器要靠它判「是不是空間壓縮器」
+	// (只有那一項手冊明講豁免護盾與裝甲)。
+	weaponName string
+	// sizeClass 是這艘船的艦體等級。球形武器的傷害「per size class of target」要用它
+	// ——見 battleVolley 的球形分支。
+	sizeClass gamedata.CombatShipClass
 	// hasAMR 是這艘船裝了反飛彈火箭(手冊 p.127:攔截來襲飛彈)。
 	// 與 missileEvasion 一樣只在**它是防守方**時有意義。
 	hasAMR bool
@@ -570,7 +581,7 @@ type combatant struct {
 // battleVolley 讓每個存活 attacker 對第一個存活 defender 射一發(固定近距 range=2),
 // 依 attacker 的武器類型分流真戰鬥公式:beam 沿用 ResolveShot(不動,回歸測試見
 // combat_weapon_kind_test.go);missile 改用 ResolveMissileShot(躲避/AMR 攔截);
-// spherical 改用 ResolveSphericalShot(現行武器表暫無球形武器掛載,分支保留供未來串接)。
+// spherical 改用 ResolveSphericalShot(第 127 項起真的有武器掛載:脈衝星/空間壓縮器)。
 // 回傳本輪擊沉的 defender 數。移除陣亡艦。
 func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand) int {
 	before := len(*defenders)
@@ -609,7 +620,17 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 				r = rng.Intn(span + 1)
 			}
 			aggD := gamedata.DamageSphericalRoll(attackers[i].wmin, r, 100)
-			shot = ResolveSphericalShot(aggD, d.shield, d.armor, false, false)
+			// 手冊 p.127 把脈衝星與空間壓縮器的傷害寫成「**per size class of target**」
+			// ——同一發打大船比打小船痛。
+			//
+			// ⚠ **「級數」取 index+1 是讀法,不是手冊字面。** 手冊沒列出級數的數字,只給了
+			// 艦體名稱的順序;取 index 會讓護衛艦那一級乘 0(打護衛艦零傷害),那顯然不是
+			// 規則,所以是 index+1(護衛艦 1 … 末日之星 6)。標在這裡,不假裝它是抄來的。
+			aggD *= int(d.sizeClass) + 1
+			// 空間壓縮器手冊明講「does all damage to structure only, ignoring shields
+			// and armor」;脈衝星沒有那一句,所以只有前者豁免。
+			shot = ResolveSphericalShot(aggD, d.shield, d.armor, false,
+				weaponBypassesShieldAndArmor(attackers[i].weaponName))
 		default:
 			roll := rng.Intn(100) + 1
 			net := attackers[i].atk - d.def
@@ -695,7 +716,8 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 			wmin: atk / 2, wmax: atk,
 			shield: s.nebulaShield(shieldReduceByName(sh.Shield), shipHasHardShield(sh)),
 			armor:  armorHPByName(sh.Armor),
-			kind:   weaponKindByName(sh.Weapon), mods: sh.Mods,
+			kind:   weaponKindByName(sh.Weapon), weaponName: sh.Weapon, mods: sh.Mods,
+			sizeClass:      shipSizeClass(sh.Class),
 			hasAMR:         sh.Special == antiMissileRocketName,
 			missileEvasion: gamedata.ShipCrewMissileEvasionBonus(crew) + s.helmsmanEvasionBonus(),
 			autoRepair:     shipHasAutoRepair(sh), shipIdx: shipIdx})

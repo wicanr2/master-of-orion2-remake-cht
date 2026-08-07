@@ -75,6 +75,17 @@ var bombWeaponDamage = map[string]WeaponDamageRange{
 	"中子彈":  {10, 60}, // Neutronium Bomb 10-60
 }
 
+// sphericalWeaponDamage 是手冊 p.126 明列的球形武器裡、remake 掛得上的那兩項
+// (p.127 的數值表)。
+//
+// ⚠ 這兩項的傷害手冊寫的是「**per size class of target**」——表裡放的是**單一級數**的
+// 基準值,乘上目標艦體級數是呼叫端的事(見 shell 的 battleVolley 球形分支)。
+// 手冊球形清單裡的另外兩項不在這裡:電漿通量是海鰻怪獸專屬、引擎爆炸不是可裝載武器。
+var sphericalWeaponDamage = map[string]WeaponDamageRange{
+	"脈衝星":   {1, 24}, // Pulsar 1-24 per size class
+	"空間壓縮器": {4, 32}, // Spatial Compressor 4-32 structural hits
+}
+
 // missileWeaponDamage 是手冊 p.125 的 MISSILE 表(固定傷害,飛彈「never miss」但會被攔截/干擾)。
 var missileWeaponDamage = map[string]WeaponDamageRange{
 	"核飛彈":    {8, 8},   // Nuclear Missile 8
@@ -93,6 +104,9 @@ func WeaponDamageByName(name string) (WeaponDamageRange, bool) {
 	if d, ok := missileWeaponDamage[name]; ok {
 		return d, true
 	}
-	d, ok := bombWeaponDamage[name]
+	if d, ok := bombWeaponDamage[name]; ok {
+		return d, true
+	}
+	d, ok := sphericalWeaponDamage[name]
 	return d, ok
 }

@@ -1,5 +1,7 @@
 package shell
 
+import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+
 // weapon_kind.go:武器戰鬥解算路徑分類(beam / missile / spherical)。
 //
 // 分類依據優先順序:①WeaponOptions(session.go)裡的武器名是否對應手冊明確的飛彈/球形
@@ -37,6 +39,11 @@ const (
 // weaponKindByName 依 Component.Name(WeaponOptions 的武器名)分類戰鬥解算路徑。
 func weaponKindByName(name string) WeaponKind {
 	switch name {
+	case "脈衝星", spatialCompressorName:
+		// 手冊 p.126「Notes on Spherical Damage」明列的球形武器是 Pulsar、Plasma Flux、
+		// Spatial Compressor、Engine Explosion。remake 掛得上的是前後這兩項——
+		// 電漿通量是海鰻怪獸專屬、引擎爆炸不是可裝載武器。
+		return WeaponKindSpherical
 	case "核彈", "融合彈", "反物質彈", "中子彈":
 		// 執行檔的 category 表把這四項全歸在 **category 19(炸彈)**(第 111 項解出的
 		// enum 語意),與手冊 p.126 的 BOMB 表列的正好是同一批——兩個獨立來源同意。
@@ -56,3 +63,21 @@ func weaponKindByName(name string) WeaponKind {
 // 抽成常數而不是散在各處寫字串字面值:`shipHasAutoRepair` 那一族先前就是這樣做的,
 // 而字串比對打錯字不會編譯錯誤——只會安靜地永遠不成立。
 const antiMissileRocketName = "反飛彈火箭"
+
+// spatialCompressorName 是空間壓縮器元件名(手冊唯一明講豁免護盾與裝甲的球形武器)。
+const spatialCompressorName = "空間壓縮器"
+
+// weaponBypassesShieldAndArmor 回報這項武器是否直接打結構、無視護盾與裝甲。
+//
+// 手冊只有空間壓縮器那一項寫著「does all damage to **structure only**, ignoring shields
+// and armor」;脈衝星與其他球形武器都沒有那一句,所以**不要**推廣到整個球形類別。
+func weaponBypassesShieldAndArmor(name string) bool { return name == spatialCompressorName }
+
+// shipSizeClass 回傳艦體等級(球形武器的「per size class of target」要用)。
+//
+// 直接複用 shipClassFromName 的既有對照;它對不在手冊六級表裡的艦體(偵察艦)
+// 回護衛艦近似,那是既有決定。
+func shipSizeClass(class string) gamedata.CombatShipClass {
+	c, _ := shipClassFromName(class)
+	return c
+}
