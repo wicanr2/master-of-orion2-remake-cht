@@ -1568,6 +1568,23 @@ Phasor 20 / Plasma 30,上限差 **30 點**)。兩者都已補上並接進玩家�
 **Battleoids 只給裝甲**(+10 攻 **+1 耐**,手冊只提 +10)、**動力裝甲只給陸戰隊**。
 remake 先前把後兩項都加給整支部隊。常數已記進 gamedata,分兵種的接線留下一輪。
 
+## ★ 2026-08-07 分兵種接線 + 四個 hits 數字被重建出來(gap report 第 89 項)
+
+上一項留的分兵種接線接完了,而且過程中發現**手冊列的四個 hits 值可以完全由反組譯的加法
+結構重建**:陸戰隊 1 = 基礎 1 + 類型 1 的 0;+動力裝甲 2 = 1 + `[out+4]`;戰車營 2 = 1 +
+類型 0 的 1;機械戰士 3 = 1 + 1 + `[out+2]`。**四個獨立的手冊數字,由三個獨立的反組譯欄位
+加出來**——這種吻合不會來自誤讀。落成 `TestManualHitValuesReconstructFromTheOriginalStructure`。
+
+**於是也發現一個算兩次的坑**:`tankHitsToKillFor` 回的是手冊的**成品值**,而第 84 項接上的
+`GroundTypeHitsDelta` 是**組成的一部分**,兩個一起用會變成 3 / 4。已改成只用成品值。
+
+**分兵種接線**:Powered Armor 只給陸戰隊、Battleoids 只給裝甲(先前兩項都加給整支部隊);
+Anti-Grav Harness 與 Personal Shield 留在共用那份。
+
+**順帶消掉一個「為了繞過錯誤而存在」的守門**:舊的 `tankForceBonusFor` 有個「0 輛戰車不給」
+的判斷——那個守門存在的理由正是加成被加進整側的 force,而那本身就是錯的。
+加成落到戰車那一格之後,沒有戰車時那格本來就是空的。**修好根因,補丁自己掉下來。**
+
 ## 工作方式(使用者定案)
 - go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)
 - **不用多代理 workflow**;翻譯一組一組慢慢做(單代理逐項,使用者可隨時審閱)

@@ -228,25 +228,40 @@ func commandoLeaderTier(leaders []Leader) int {
 	return best
 }
 
-// tankForceBonusFor 回傳 tankCount 輛戰車若已升級 Battleoids,對整個地面戰 force 額外貢獻的
-// 加成(手冊 p.81:「a ground combat rating 10 higher than a tank」,GroundBattleoidCombatBonus)。
-// 只在 tankCount>0 時套用——0 輛戰車的一方不該白拿這個加成(該加成描述的是「戰車營升級
-// Battleoid 後」的相對戰力,無戰車時無意義)。
-func tankForceBonusFor(ps engine.PlayerState, tankCount int) int {
-	if tankCount > 0 && hasBattleoidsFor(ps) {
+// groundMarineOnlyBonusFor 是**只有陸戰隊**拿得到的裝備加成(原版 `[out+3]`,
+// 只被類型 1 的 case 讀走)。目前只有動力裝甲。
+func groundMarineOnlyBonusFor(ps engine.PlayerState) int {
+	if hasPoweredArmorFor(ps) {
+		return gamedata.GroundEquipmentTechBonus(gamedata.TECH_POWERED_ARMOR)
+	}
+	return 0
+}
+
+// groundTankOnlyBonusFor 是**只有裝甲/戰車營**拿得到的加成(原版 `[out+1]`,
+// 只被類型 0 的 case 讀走)。目前只有 Battleoids。
+//
+// ⚠ 2026-08-07 由 `tankForceBonusFor`(加進整側的 force)改成分兵種。
+// 先前戰車營一有 Battleoids,連陸戰隊都跟著 +10;現在只有戰車營拿。
+// 「tankCount > 0 才給」那個守門也不需要了——它加在戰車那一格上,沒有戰車時那格本來就是空的。
+func groundTankOnlyBonusFor(ps engine.PlayerState) int {
+	if hasBattleoidsFor(ps) {
 		return gamedata.GroundBattleoidCombatBonus
 	}
 	return 0
 }
 
-// groundEquipmentBonusFor 加總 ps 已擁有的地面裝備科技加成。三項(Powered Armor/Anti-Grav
-// Harness/Personal Shield)是各自獨立的裝備(非同一裝甲槽的互斥升級,不同於 ArmorOptions),
-// 手冊逐條描述皆為各自加成,故加總而非取最高。
+// groundEquipmentBonusFor 加總 ps 的**全兵種共用**地面裝備加成。
+//
+// ⚠ **2026-08-07 訂正:動力裝甲不在這裡了。** 原版把三項裝備寫進加成塊的不同欄位,
+// 而那些欄位被不同的部隊類型讀走(gap report 第 88 項):
+//
+//	TECH_ANTIGRAV_HARNESS  → [out+0]        所有類型共用   ← 留在這個函式
+//	TECH_PERSONAL_SHIELD   → [out+7]/[out+8] 所有類型共用   ← 留在這個函式(走「取最高階」通道)
+//	TECH_POWERED_ARMOR     → [out+3]/[out+4] **只有陸戰隊**  ← 搬到 groundMarineOnlyBonusFor
+//
+// remake 先前把動力裝甲加給整支部隊,等於戰車營也白拿那 10 點。
 func groundEquipmentBonusFor(ps engine.PlayerState) int {
 	bonus := 0
-	if hasPoweredArmorFor(ps) {
-		bonus += gamedata.GroundEquipmentTechBonus(gamedata.TECH_POWERED_ARMOR)
-	}
 	if groundEquipTechOwned(ps, gamedata.TOPIC_GRAVITIC_FIELDS, gamedata.TECH_ANTIGRAV_HARNESS) {
 		bonus += gamedata.GroundEquipmentTechBonus(gamedata.TECH_ANTIGRAV_HARNESS)
 	}
@@ -543,7 +558,9 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	}
 
 	tankCount := s.Fleet().Tanks
-	atkForce := s.playerMarineForce() + tankForceBonusFor(s.Player, tankCount)
+	// atkForce 是**全兵種共用**的基礎;分兵種的加成在下面各自疊(見 groundMarineOnlyBonusFor /
+	// groundTankOnlyBonusFor)。先前這裡把 Battleoids 的 +10 加進共用基礎,陸戰隊也跟著白拿。
+	atkForce := s.playerMarineForce()
 	// Commando 領袖加成(#5/#6,2026-07-11,見 commandoLeaderTier 註解的近似說明):兩版攻方
 	// 倍率相同(非差異項),不需要查 RuleProfile。
 	atkForce += gamedata.GroundCommandoAttackerForceBonus(commandoLeaderTier(s.Leaders))
@@ -562,12 +579,17 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	// ⚠ 原版那兩個「科技加成」欄位(加成塊 +1/+3、+2/+4)還沒對出意義,不含在調整量裡
 	// ——回一個「差不多」的值會讓日後追出真值時看不出哪裡被污染過。
 	var atkStrength, atkCounts, atkHits [gamedata.GroundUnitTypes]int
-	atkStrength[groundTypeMarines] = atkForce + gamedata.GroundTypeStrengthDelta(groundTypeMarines)
+	atkStrength[groundTypeMarines] = atkForce +
+		gamedata.GroundTypeStrengthDelta(groundTypeMarines) + groundMarineOnlyBonusFor(s.Player)
 	atkCounts[groundTypeMarines] = s.Fleet().Marines
-	atkHits[groundTypeMarines] = marineHits + gamedata.GroundTypeHitsDelta(groundTypeMarines)
-	atkStrength[groundTypeTanks] = atkForce + gamedata.GroundTypeStrengthDelta(groundTypeTanks)
+	atkHits[groundTypeMarines] = marineHits
+	atkStrength[groundTypeTanks] = atkForce +
+		gamedata.GroundTypeStrengthDelta(groundTypeTanks) + groundTankOnlyBonusFor(s.Player)
 	atkCounts[groundTypeTanks] = tankCount
-	atkHits[groundTypeTanks] = tankHits + gamedata.GroundTypeHitsDelta(groundTypeTanks)
+	// ⚠ 這裡**不再**另加 GroundTypeHitsDelta:`tankHitsToKillFor` 已經是手冊的成品值
+	// (戰車 2、Battleoid 3),而那兩個數正好等於「基礎 1 + 類型 0 的 +1 (+ Battleoids 的 +1)」
+	// ——再加一次就會變成 3 / 4。見 gap report 第 89 項的重建表。
+	atkHits[groundTypeTanks] = tankHits
 
 	defCount := gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population, colony.PopMax, false)
 	defForce := aiMarineForce(*aiPlayer)
@@ -592,13 +614,12 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	var defStrength, defCounts, defHitsArr [gamedata.GroundUnitTypes]int
 	defStrength[groundTypeMarines] = defForce + gamedata.GroundTypeStrengthDelta(groundTypeMarines)
 	defCounts[groundTypeMarines] = defCount
-	defHitsArr[groundTypeMarines] = defHits + gamedata.GroundTypeHitsDelta(groundTypeMarines)
+	defHitsArr[groundTypeMarines] = defHits
 	militiaCount := gamedata.ColonyMilitiaUnits(colony.Population)
 	defStrength[gamedata.GroundTypeMilitia] = defForce +
 		gamedata.GroundTypeStrengthDelta(gamedata.GroundTypeMilitia)
 	defCounts[gamedata.GroundTypeMilitia] = militiaCount
-	defHitsArr[gamedata.GroundTypeMilitia] = defHits +
-		gamedata.GroundTypeHitsDelta(gamedata.GroundTypeMilitia)
+	defHitsArr[gamedata.GroundTypeMilitia] = defHits
 
 	rng := rand.New(rand.NewSource(int64(s.Turn)*2654435761 + int64(starIdx)*97 + 555))
 	// 換成原版的解算(`Ground_Combat_Round_` @ 0xEC4FE,見 gamedata/ground_battle_orig.go)。

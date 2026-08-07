@@ -415,21 +415,70 @@ func TestTankHitsToKillFor_BattleoidsUpgrade(t *testing.T) {
 	}
 }
 
-// TestTankForceBonusFor_OnlyWhenTanksPresent 驗證 Battleoid 的 +10 相對加成只在 tankCount>0
-// 時套用(0 輛戰車不該白拿加成)。
-func TestTankForceBonusFor_OnlyWhenTanksPresent(t *testing.T) {
+// ★ TestPerUnitTypeBonusesGoToTheRightType:Battleoids 只給裝甲、動力裝甲只給陸戰隊。
+//
+// 2026-08-07 改寫。舊測試(`TestTankForceBonusFor_OnlyWhenTanksPresent`)驗的是
+// 「0 輛戰車不該白拿 Battleoid 加成」——那個守門存在的理由是**加成被加進整側的 force**,
+// 而那本身就是錯的:原版把它寫進 `[out+1]`,只被類型 0(裝甲)的 case 讀走。
+// 現在加成落在戰車那一格上,沒有戰車時那格本來就是空的,守門自然不需要了。
+func TestPerUnitTypeBonusesGoToTheRightType(t *testing.T) {
 	s := NewDemoSession()
+	// 未研究:兩邊都沒有。
+	if got := groundTankOnlyBonusFor(s.Player); got != 0 {
+		t.Errorf("未研究 Battleoids 時裝甲不該有加成,實得 %d", got)
+	}
+	// 研究 Battleoids → 只有裝甲拿。
 	s.Player.CompletedTopics[gamedata.TOPIC_ASTRO_CONSTRUCTION] = true
-	if got := tankForceBonusFor(s.Player, 0); got != 0 {
-		t.Fatalf("0 輛戰車不應套用 Battleoid 加成,got %d", got)
+	if got := groundTankOnlyBonusFor(s.Player); got != gamedata.GroundBattleoidCombatBonus {
+		t.Errorf("裝甲應拿到 +%d,實得 %d", gamedata.GroundBattleoidCombatBonus, got)
 	}
-	if got := tankForceBonusFor(s.Player, 3); got != gamedata.GroundBattleoidCombatBonus {
-		t.Fatalf("有戰車且已升級 Battleoid,應套用 +%d 加成,got %d", gamedata.GroundBattleoidCombatBonus, got)
+	if got := groundMarineOnlyBonusFor(s.Player); got != 0 {
+		t.Errorf("Battleoids 不該給陸戰隊加成,實得 %d", got)
 	}
-	// 未升級 Battleoid 則即使有戰車也不套用。
+	// 研究動力裝甲 → 只有陸戰隊拿。
 	s2 := NewDemoSession()
-	if got := tankForceBonusFor(s2.Player, 3); got != 0 {
-		t.Fatalf("未升級 Battleoid,有戰車也不應套用加成,got %d", got)
+	s2.Player.CompletedTopics[gamedata.TOPIC_ROBOTICS] = true
+	if got := groundMarineOnlyBonusFor(s2.Player); got != gamedata.GroundEquipmentTechBonus(gamedata.TECH_POWERED_ARMOR) {
+		t.Errorf("陸戰隊應拿到動力裝甲加成,實得 %d", got)
+	}
+	if got := groundTankOnlyBonusFor(s2.Player); got != 0 {
+		t.Errorf("動力裝甲不該給裝甲部隊加成,實得 %d", got)
+	}
+	// 共用的那一份**不含**這兩項——否則會被加兩次。
+	shared := groundEquipmentBonusFor(s2.Player)
+	if shared != 0 {
+		t.Errorf("只研究了動力裝甲時,共用裝備加成應為 0(動力裝甲已搬去分兵種),實得 %d", shared)
+	}
+}
+
+// ★ 手冊列的四個 hits 數字,全部由反組譯的加法結構重建出來。
+//
+// 這條是整個地面戰模型正確性的最強證據:手冊只給了四個成品值,而反組譯給的是
+// 「基礎 + 分類型 + 分科技」的加法;兩邊算出來要一模一樣。
+func TestManualHitValuesReconstructFromTheOriginalStructure(t *testing.T) {
+	base := gamedata.GroundBaseHitsToKill(false) // [加成塊+0x0C] + 1 = 1
+	cases := []struct {
+		name string
+		got  int
+		want int
+	}{
+		{"陸戰隊", base + gamedata.GroundTypeHitsDelta(gamedata.GroundTypeMarines),
+			gamedata.GroundMarineHitsToKill(false, false)},
+		{"陸戰隊+動力裝甲", base + gamedata.GroundTypeHitsDelta(gamedata.GroundTypeMarines) + gamedata.GroundPoweredArmorExtraHit,
+			gamedata.GroundMarineHitsToKill(false, true)},
+		{"戰車營", base + gamedata.GroundTypeHitsDelta(gamedata.GroundTypeArmor),
+			gamedata.GroundTankHitsToKill(false)},
+		{"機械戰士", base + gamedata.GroundTypeHitsDelta(gamedata.GroundTypeArmor) + gamedata.GroundBattleoidExtraHits,
+			gamedata.GroundBattleoidHitsToKill},
+	}
+	for _, c := range cases {
+		if c.got != c.want {
+			t.Errorf("%s:反組譯結構重建出 %d,手冊值是 %d", c.name, c.got, c.want)
+		}
+	}
+	// High-G 把基礎抬成 2 → 全類型各 +1。
+	if gamedata.GroundBaseHitsToKill(true) != base+gamedata.GroundHighGRaceExtraHit {
+		t.Error("High-G 應讓基礎耐受 +1")
 	}
 }
 
