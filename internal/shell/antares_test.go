@@ -91,3 +91,51 @@ func TestAntaresDefenseReducesDamage(t *testing.T) {
 	}
 	t.Logf("BC 損失:無防禦 %d、有防禦 %d", undefended, defended)
 }
+
+// 安塔蘭母星防禦艦隊的組成是反組譯真值(`_n_max_antaran_def_ships` = {0,0,3,2,7,0,0,0,0}),
+// 不再是「6 艘同級」的保守預設。
+//
+// 這一支釘住**數量與分層**(那是真值);艦體尺寸→remake 戰力階梯的對照是推論,
+// 所以只驗相對關係,不驗絕對數字。
+func TestAntaranHomeFleetMatchesTheDisassembledComposition(t *testing.T) {
+	fleet := antaranHomeFleetDefense
+	// 12 艘戰艦 + 1 座星際要塞。
+	if len(fleet) != antaranDefLargeCount+antaranDefHugeCount+antaranDefTitanCount+1 {
+		t.Fatalf("應是 3+2+7 艘 + 1 座要塞 = 13 個防禦單位,得到 %d", len(fleet))
+	}
+	// 分層:三種戰力值,而且數量比是 3:2:7。
+	count := map[int]int{}
+	for _, st := range fleet {
+		count[st]++
+	}
+	titan := shipStrength("末日之星")
+	// 末日之星那一格 = 7 艘 Harbinger + 1 座要塞(要塞用同等戰力當代理)。
+	if got, want := count[titan], antaranDefTitanCount+1; got != want {
+		t.Errorf("最高階應有 %d 個(7 艘 Harbinger + 1 座要塞),得到 %d", want, got)
+	}
+	if got := count[shipStrength("泰坦")]; got != antaranDefHugeCount {
+		t.Errorf("Huge 級應有 %d 艘,得到 %d", antaranDefHugeCount, got)
+	}
+	if got := count[shipStrength("戰艦")]; got != antaranDefLargeCount {
+		t.Errorf("Large 級應有 %d 艘,得到 %d", antaranDefLargeCount, got)
+	}
+	// 相對關係:Harbinger 最多(7),而且比另外兩級加起來還多——這是那張表最顯眼的形狀,
+	// 抄反了(例如 7/2/3)這裡會抓到。
+	if antaranDefTitanCount <= antaranDefLargeCount+antaranDefHugeCount {
+		t.Errorf("Titan 級(%d)應多於 Large+Huge(%d)",
+			antaranDefTitanCount, antaranDefLargeCount+antaranDefHugeCount)
+	}
+}
+
+// 換成真值之後艦隊變強了——先前是 6×64 = 384,現在是 3×16+2×32+8×64 = 624。
+// 這一支確認「終局一戰」沒有因為改組成而變簡單。
+func TestAntaranHomeFleetIsStrongerThanTheOldPlaceholder(t *testing.T) {
+	total := 0
+	for _, st := range antaranHomeFleetDefense {
+		total += st
+	}
+	const oldPlaceholder = 6 * 64
+	if total <= oldPlaceholder {
+		t.Errorf("真值組成的總戰力 %d 不該低於先前的保守預設 %d", total, oldPlaceholder)
+	}
+}

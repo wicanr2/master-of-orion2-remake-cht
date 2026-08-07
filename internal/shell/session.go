@@ -2388,6 +2388,23 @@ func (s *GameSession) applyStartingRandomTech() {
 				return // 沒有候選了(整棵樹研究完),不硬塞
 			}
 			ps.CompletedTopics[t] = true
+			// ⚠ 2026-08-08(第 108 項)補上**粒度**:原版 `Choose_Tech_Application_`
+			// 挑的是一個**科技應用**,不是整個主題(見 gamedata/starting_random_tech.go
+			// 檔尾那段的反組譯證據)。只標 CompletedTopics 而不做抉擇,
+			// `componentUnlockedFor` 會把那個主題底下的抉擇**全部**解鎖
+			// ——先進級開局因此拿到原版的兩到三倍。
+			//
+			// ResearchAll 的主題(手冊明說研究完三項全拿)回 false,維持全解鎖。
+			if tech, chose := gamedata.StartingRandomApplicationPick(t, rng.Intn); chose {
+				if ps.ChosenTech == nil {
+					ps.ChosenTech = map[gamedata.ResearchTopic]gamedata.Technology{}
+				}
+				if ps.ExplicitChoice == nil {
+					ps.ExplicitChoice = map[gamedata.ResearchTopic]bool{}
+				}
+				ps.ChosenTech[t] = tech
+				ps.ExplicitChoice[t] = true
+			}
 		}
 	}
 	grantRandom(&s.Player, s.EventSeed*6364136223846793005+11)

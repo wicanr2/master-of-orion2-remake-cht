@@ -25,19 +25,79 @@ import (
 // TOPIC_MULTIDIMENSIONAL_PHYSICS,見 docs/tech/colony-buildings.md 第三節)——本檔只補「建成後
 // 解鎖反攻」這段流程,不重新定義建築資料。
 
-// antaranHomeFleetDefense 是安塔蘭母星防禦艦隊的戰力組成(remake 保守預設)。
+// antaranHomeFleetDefense 是安塔蘭母星防禦艦隊的戰力組成。
 //
-// ⚠ 誠實聲明(手冊/openorion2 皆無精確數字):`GAME_MANUAL.pdf`「Winning」小節只用「the
-// awe-inspiring Antarans」定性描述母星防禦強度,全文搜尋未見任何具體艦隊組成或戰力數字;
-// openorion2(`docs/tech/rules-implementation-audit.md` 第 10 項已記載)對 victory/winner 相關
-// 邏輯全 repo 零命中,自然也沒有母星防禦艦隊的資料可抄。
+// ============ 2026-08-08(第 108 項):從「保守預設」換成反組譯真值 ============
 //
-// 保守預設:6 艘「末日之星」等級戰力(shipStrength("末日之星")==64,MOO2 六級艦體中最高等級,
-// 見 session.go shipStrength),合計戰力 384——確保玩家不能用隨手一支小艦隊反攻,呼應手冊
-// 「awe-inspiring」的定性描述,同時仍是「打得贏」的固定值(不是無限强的裝飾性數字):玩家投入
-// 同等量級的末日之星艦隊即可一戰。**這是 remake 保守預設,非手冊或 openorion2 給出的精確值**,
-// 待考證(見 docs/tech/victory-conditions.md TODO)。
-var antaranHomeFleetDefense = []int{64, 64, 64, 64, 64, 64}
+// 這裡原本是 `{64, 64, 64, 64, 64, 64}`——六艘同級,註解寫著「手冊/openorion2 皆無精確數字,
+// remake 保守預設,待考證」。**兩件事都被推翻了:數字有,而且組成根本不是同級的。**
+//
+// `Load_Antaran_Defense_Fleet_` @ 0x4D141(整支只有 77 bytes):
+//
+//	if word_199182 < 1: word_199182 = 1     ; 第 5 格(最大艦)強制至少 1
+//	for bx = 0..4:                           ; ★ 五種艦體尺寸
+//	    while cx < word_19917A[bx*2]:        ; ★ 每種尺寸的數量
+//	        Load_Combat_Antaran_Ship_(...)
+//	Load_Antaran_Star_Fortress_()            ; ★ 外加一座星際要塞
+//
+// 數量的上限來自靜態表 `_n_max_antaran_def_ships`(`byte_181746` @ 0x181746),
+// 逐位元組解出來是 **{0, 0, 3, 2, 7, 0, 0, 0, 0}**:
+//
+//	| 索引 | 艦體尺寸 | 上限 |
+//	|---|---|---|
+//	| 0 | Small(Raider) | **0——永遠不造** |
+//	| 1 | Medium(Marauder) | **0——永遠不造** |
+//	| 2 | Large(Intruder) | 3 |
+//	| 3 | Huge(Interdictor) | 2 |
+//	| 4 | Titan(Harbinger) | 7 |
+//
+// 合計 **12 艘 + 1 座星際要塞**。難度**不改變組成**,只改變累積速度與逐艦裝甲加成。
+//
+// ⚠ **艦體尺寸的對照是推論,不是查表。** 原版的五級(Small/Medium/Large/Huge/Titan)
+// 與 remake 的六級戰力階梯(shipStrength)沒有現成的對照表。這裡取「相對順序保持不變、
+// 最大的安塔蘭艦對到 remake 最頂端」:Large→戰艦(16)、Huge→泰坦(32)、Titan→末日之星(64)。
+// 合計 3×16 + 2×32 + 7×64 = 560。**這一層是 remake 的映射選擇**,數量與分層是真值。
+//
+// ⚠ **這是「養滿之後」的上限。** 原版的數量是執行期累積的(`word_19917A` 是 BSS,
+// 載入時為 0),`Build_Antaran_Defensive_Ships_` 逐步補到上限;開局就打過去理論上只會遇到
+// 保底的 1 艘 Harbinger + 要塞。remake 沒有安塔蘭的資源累積模型,取**上限**
+// ——那是「終局一戰」該有的樣子,也與先前那個固定值的用意一致。
+//
+// 詳細推導見 `docs/re/antaran-defense-fleet.md`。
+var antaranHomeFleetDefense = buildAntaranHomeFleetDefense()
+
+// 安塔蘭母星防禦艦隊各尺寸的上限(原版 `_n_max_antaran_def_ships`,逐位元組解出)。
+const (
+	antaranDefLargeCount = 3 // Intruder
+	antaranDefHugeCount  = 2 // Interdictor
+	antaranDefTitanCount = 7 // Harbinger
+)
+
+// buildAntaranHomeFleetDefense 依上表組出防禦方的逐艦戰力,外加那座星際要塞。
+//
+// 星際要塞用 remake 既有的軌道防禦換算(`gamedata.StarFortressSpace`,與軌道轟炸那條
+// 共用同一把尺,不另立係數)——原版是 `Load_Antaran_Star_Fortress_` @ 0x4D18E 載入的
+// 一整套設計,remake 沒有那個粒度。
+func buildAntaranHomeFleetDefense() []int {
+	out := make([]int, 0, antaranDefLargeCount+antaranDefHugeCount+antaranDefTitanCount+1)
+	for i := 0; i < antaranDefLargeCount; i++ {
+		out = append(out, shipStrength("戰艦"))
+	}
+	for i := 0; i < antaranDefHugeCount; i++ {
+		out = append(out, shipStrength("泰坦"))
+	}
+	for i := 0; i < antaranDefTitanCount; i++ {
+		out = append(out, shipStrength("末日之星"))
+	}
+	// 星際要塞:remake 沒有「安塔蘭要塞」的設計資料,取**一艘末日之星的等量戰力**當代理。
+	//
+	// ⚠ 這是 remake 的代理值,不是原版數字。理由:`gamedata.StarFortressSpace = 1200`
+	// 那個常數自己的註解就寫著「【近似】比照 ShipHullSpace(Doom Star)」——
+	// 既然 remake 對星際要塞的既有建模就是「比照末日之星」,這裡沿用同一個近似,
+	// 不另立第二套換算(兩套近似會漂開)。
+	out = append(out, shipStrength("末日之星"))
+	return out
+}
 
 // dimensionalPortalBuildingName 是次元傳送門在 s.ColonyBuildings 去重 map 裡的 key
 // (gamedata.Buildings 裡該項的 NameZH,見 buildings.go)。
@@ -74,7 +134,7 @@ func (s *GameSession) CanAssaultAntares() bool {
 //   - 玩家艦隊非空(手冊「select a fleet in the same system as the portal」的最小化對應)。
 //
 // 戰鬥沿用 ResolveBattle 同款 battleVolley 逐回合解算(每回合雙方齊射,最多 6 回合),防禦方
-// 戰力用 antaranHomeFleetDefense 保守預設。與 ResolveBattle 不同:這是「終局一戰」,PlayerWon
+// 戰力用 antaranHomeFleetDefense(反組譯真值的組成,見該變數註解)。與 ResolveBattle 不同:這是「終局一戰」,PlayerWon
 // 要求防禦方**全滅**(len(defenders)==0),不是 ResolveBattle 那種「艦數比較多也算贏」的寬鬆
 // 判定——手冊原文「Once you defeat the awe-inspiring Antarans」語意是徹底擊敗,不是打退。
 //
@@ -144,7 +204,8 @@ func (s *GameSession) advanceAntaranVictory() {
 }
 
 // AntaranDefenseStrength 回傳安塔蘭母星防禦艦隊的總戰力(供安塔蘭房間畫面顯示戰力對比)。
-// 值來自 antaranHomeFleetDefense——那是 remake 的保守預設,不是手冊或 openorion2 的精確值,
+// 值來自 antaranHomeFleetDefense——**組成(3 Large / 2 Huge / 7 Titan + 1 要塞)是反組譯真值**,
+// 艦體尺寸對到 remake 戰力階梯那一層是推論,
 // 理由見該變數的註解。
 func AntaranDefenseStrength() int {
 	n := 0
