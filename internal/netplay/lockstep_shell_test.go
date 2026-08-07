@@ -7,6 +7,7 @@ package netplay_test
 // 外部測試套件正是放這種測試的地方——它同時 import 兩邊,而不會讓生產程式碼耦合。
 
 import (
+	"bytes"
 	"io"
 	"net"
 	"sync"
@@ -16,27 +17,16 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
 
-// applyCommands 是這支測試用的最小指令解譯器。
+// toPlayerCommands 把線上的 netplay.Command 轉成規則層的 shell.PlayerCommand。
 //
-// ⚠ 真正的解譯器還沒寫(那要跟 UI 的每一顆按鈕對上)。這裡只解三條,
-// 目的是證明「指令經過傳輸層送過去、兩邊照同樣順序套用、狀態指紋一致」這條鏈是通的。
-func applyCommands(s *shell.GameSession, cmds []netplay.Command) {
+// 兩邊的欄位形狀刻意一樣,但**型別分開**:傳輸層不該 import 規則層(見 frame.go 檔頭),
+// 所以轉換發生在同時認識兩層的地方——正式對局裡是 cmd/moo2(組裝端),這裡是測試。
+func toPlayerCommands(cmds []netplay.Command) []shell.PlayerCommand {
+	out := make([]shell.PlayerCommand, 0, len(cmds))
 	for _, c := range cmds {
-		switch c.Name {
-		case "send_fleet":
-			if len(c.Args) == 1 {
-				s.SendFleet(c.Args[0])
-			}
-		case "enqueue_build":
-			if len(c.Args) == 2 {
-				s.EnqueueBuild(c.Args[0], c.Text, c.Args[1])
-			}
-		case "set_relocation":
-			if len(c.Args) == 2 {
-				s.SetColonyRelocation(c.Args[0], c.Args[1])
-			}
-		}
+		out = append(out, shell.PlayerCommand{Name: c.Name, Args: c.Args, Text: c.Text})
 	}
+	return out
 }
 
 // TestTwoPeersStayInSyncOverAPipe:兩個對等端各自跑一份 GameSession,
@@ -60,11 +50,15 @@ func TestTwoPeersStayInSyncOverAPipe(t *testing.T) {
 	cmdsFor := func(player, turn int) []netplay.Command {
 		switch {
 		case turn == 2 && player == 0:
-			return []netplay.Command{{Name: "enqueue_build", Args: []int{0, 60}, Text: "住宅"}}
+			return []netplay.Command{{Name: shell.CmdEnqueueBuild, Args: []int{0, 60}, Text: "住宅"}}
 		case turn == 4 && player == 1:
-			return []netplay.Command{{Name: "set_relocation", Args: []int{0, 3}}}
+			return []netplay.Command{{Name: shell.CmdSetRelocation, Args: []int{0, 3}}}
 		case turn == 6 && player == 0:
-			return []netplay.Command{{Name: "send_fleet", Args: []int{1}}}
+			return []netplay.Command{{Name: shell.CmdSendFleet, Args: []int{1}}}
+		case turn == 8 && player == 1:
+			return []netplay.Command{{Name: shell.CmdCycleTaxRate}}
+		case turn == 10 && player == 0:
+			return []netplay.Command{{Name: shell.CmdShiftJob, Args: []int{0}, Text: "農夫>工人"}}
 		}
 		return nil
 	}
@@ -115,7 +109,10 @@ func TestTwoPeersStayInSyncOverAPipe(t *testing.T) {
 				errs[id] = errDesync(d)
 				return
 			}
-			applyCommands(s, tb.Commands())
+			if err := s.ApplyPlayerCommands(toPlayerCommands(tb.Commands())); err != nil {
+				errs[id] = err // 不認得的指令 = 兩邊版本不同,停下來
+				return
+			}
 			s.EndTurn()
 
 			mu.Lock()
@@ -151,3 +148,41 @@ func TestTwoPeersStayInSyncOverAPipe(t *testing.T) {
 type errDesync string
 
 func (e errDesync) Error() string { return string(e) }
+
+// TestUnknownCommandOverTheWireIsRejected:對面送來一條這邊不認得的指令時,
+// 必須**停下來**而不是跳過。
+//
+// 跳過在鎖步裡是最糟的處理:一邊套用了、另一邊沒有,而且沒有人會知道——
+// 幾十回合之後才以「你的畫面跟我不一樣」爆出來。
+func TestUnknownCommandOverTheWireIsRejected(t *testing.T) {
+	s := shell.NewDemoSession()
+	err := s.ApplyPlayerCommands(toPlayerCommands([]netplay.Command{
+		{Name: shell.CmdCycleTaxRate},
+		{Name: "未來版本才有的指令"},
+	}))
+	if err == nil {
+		t.Fatal("不認得的指令應該讓整批停下來")
+	}
+}
+
+// 傳輸層的指令名就是規則層那份清單——兩邊漂掉的話,網路對戰會出現
+// 「這個操作在單機做得到、連線就不會同步過去」的靜默缺口。
+func TestEveryPlayerCommandCanTravel(t *testing.T) {
+	s := shell.NewDemoSession()
+	for _, name := range shell.PlayerCommandNames() {
+		var buf bytes.Buffer
+		if err := netplay.WriteFrame(&buf, netplay.Message{
+			Kind: netplay.KindTurnDone, Player: 0, Turn: 1,
+			Commands: []netplay.Command{{Name: name}},
+		}); err != nil {
+			t.Fatalf("%q 送不出去:%v", name, err)
+		}
+		var m netplay.Message
+		if err := netplay.ReadFrame(&buf, &m); err != nil {
+			t.Fatalf("%q 讀不回來:%v", name, err)
+		}
+		if err := s.ApplyPlayerCommands(toPlayerCommands(m.Commands)); err != nil {
+			t.Errorf("%q 過了線之後規則層不認得:%v", name, err)
+		}
+	}
+}
