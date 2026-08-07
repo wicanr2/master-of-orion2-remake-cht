@@ -789,6 +789,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			// 每幀算一次可見性(#13 輕量戰爭迷霧),避免 drawStarmap 逐星重算。
 			// 星圖底:純黑 + 原版 `Draw_Paralax_` 的三層星空(見 starbg.go)。
 			b.drawStarmapBackground(dst)
+			b.drawNebulae(dst, sess.Nebulae) // 背景地形,壓在星星之下
 			drawStarmap(b, dst, fnt, sess.Stars, sess.SelectedStar, sess.VisibleStars())
 			if fnt != nil {
 				// 狀態數字畫進原版右側資訊格(openorion2 galaxy.cpp:1552-1588 硬編位置,
@@ -983,6 +984,12 @@ func drawStarmap(b *sceneBuilder, dst *ebiten.Image, fnt *uifont.Font, stars []s
 		// 選中星:黃色高亮環。
 		if i == selected {
 			vector.StrokeCircle(dst, x, y, r+6, 2, color.RGBA{255, 240, 120, 255}, true)
+		}
+		// 星雲內:淡紫虛環。原版沒有這個標示(玩家用肉眼看星壓在雲上),但星雲圖被壓成
+		// 半透明後邊界不明顯,而「在不在星雲內」直接決定打起來有沒有護盾——
+		// 看不出來的規則等於沒有規則。見 cmd/moo2/nebula.go。
+		if st.InNebula {
+			vector.StrokeCircle(dst, x, y, r+8, 1, nebulaStarTint, true)
 		}
 		// 擁有環:我方藍綠、敵方紅。
 		switch st.Owner {
@@ -1826,7 +1833,8 @@ func (t *tacticalScreen) fireRound(target int) {
 			roll := t.rng.Intn(100) + 1
 			net := es.Attack - t.player[wi].Defense
 			shot := shell.ResolveShot(net, es.WeaponMin, es.WeaponMax, dist,
-				t.player[wi].ShieldReduction, t.player[wi].ArmorHP, roll, false, false)
+				t.player[wi].ShieldReduction, t.player[wi].ArmorHP, roll,
+				t.player[wi].HardShield, false)
 			if shot.Hit {
 				t.player[wi].ArmorHP = shot.RemainingArmorHP
 				t.player[wi].HP -= shot.DamageToStructure
@@ -3642,6 +3650,7 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 	b.skipCutscenes = shot != "" || galleryDir != "" // 見該欄位註解
 	// 傭兵候選池改用原版 HERODATA.LBX 真英雄(解析失敗自動退回內建策展名單,不擋遊戲);快取一份
 	// 供新局/讀檔後重新注入(SetupNewGame 保留注入池,LoadSession 建新 session 需重注)。
+	b.applyNebulaStarFlags(b.session) // demo 局也要有星雲旗標,見 cmd/moo2/nebula.go
 	b.herodataMercs = loadHerodataMercs(b, res)
 	if len(b.herodataMercs) > 0 {
 		b.session.SetMercCandidates(b.herodataMercs)

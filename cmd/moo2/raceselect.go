@@ -199,6 +199,9 @@ func (s *raceSelectScreen) applyAndStart() {
 	b.newGameSeed++
 	b.session.SetupNewGame(shell.GalaxySizes[b.newGameSize].Stars, int64(b.newGameSeed*7919+42), b.newGameOpponents())
 	b.session.SetRuleProfile(profileForVersion(b.gameVersion)) // 主選單選的 1.3/1.5 規則版本
+	// 星雲的「在星雲內」旗標要讀星雲圖的遮罩,規則層碰不到資產,所以在這裡算好灌回去。
+	// 星雲與星的位置之後都不會變,算一次就夠(見 cmd/moo2/nebula.go)。
+	b.applyNebulaStarFlags(b.session)
 	if r.shellIdx >= 0 {
 		b.newGameRace = r.shellIdx
 		b.session.ApplyRace(r.shellIdx) // Custom(-1)暫不套加成,待點數畫面

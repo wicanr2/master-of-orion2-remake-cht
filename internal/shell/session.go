@@ -122,6 +122,12 @@ type Star struct {
 	// ⚠ 舊存檔沒有這個欄位,零值是 0 而不是 -1 —— 那會讓每顆星都宣稱與星 0 有蟲洞。
 	// 讀檔路徑一律走 `normalizeWormholes`(見 persist.go)。
 	Wormhole int
+	// InNebula 是「這顆星落在星雲內」。對應原版星球結構 +0x6F
+	// (`Initialize_Star_In_Nebula_Info_` @ 0xEBA96 逐星寫入),也是 `internal/save`
+	// 既有的 `Star.InNebula` 欄位。判定要讀星雲圖的遮罩,見 nebula.go。
+	//
+	// 零值 false 是安全的(= 不在星雲內),舊存檔不需要修補。
+	InNebula bool
 }
 
 // Ship 是一艘艦艇(供艦隊畫面);Weapon/Armor/Shield/Special 為掛載的元件。
@@ -224,6 +230,12 @@ var (
 		{"重生程序", 150, 0, gamedata.TOPIC_ARTIFICIAL_LIFE, 0},                                         // 抽象(種族特性),proxy 待重設計
 		{"戰機庫", 90, 0, gamedata.TOPIC_ADVANCED_ENGINEERING, gamedata.TECH_FIGHTER_BAYS},             // 攔截機隊出擊4(手冊 GM p.127),ResolveBattle 加母艦戰力
 		{"重戰機庫", 160, 0, gamedata.TOPIC_SUPERSCALAR_CONSTRUCTION, gamedata.TECH_HEAVY_FIGHTER_BAYS}, // 重戰機隊出擊2、火力較強(手冊 GM p.127)
+		// 硬化護盾:與隱形裝置同屬 TOPIC_DISTORTION_FIELDS(techtree.go 的三選一)。
+		// 手冊兩處效果:每次攻擊額外減傷 3(gamedata.DamageHardShieldBonus,先前無元件載體
+		// 等於死碼)、以及**星雲中護盾仍然可用**(見 nebula.go)。
+		// ⚠ 成本 100 沿用同主題的隱形裝置,是 remake 值不是原版真值——本表其餘成本同樣是
+		// remake 值(見表頭那幾筆的「proxy 待重設計」註記)。
+		{"硬化護盾", 100, gamedata.DamageHardShieldBonus, gamedata.TOPIC_DISTORTION_FIELDS, gamedata.TECH_HARD_SHIELDS},
 	}
 )
 
@@ -566,8 +578,9 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 			}
 		}
 		out = append(out, combatant{hp: hp, maxHP: shipMaxHP(sh), atk: atk, def: body, wmin: atk / 2, wmax: atk,
-			shield: shieldReduceByName(sh.Shield), armor: armorHPByName(sh.Armor),
-			kind: weaponKindByName(sh.Weapon), mods: sh.Mods,
+			shield: s.nebulaShield(shieldReduceByName(sh.Shield), shipHasHardShield(sh)),
+			armor:  armorHPByName(sh.Armor),
+			kind:   weaponKindByName(sh.Weapon), mods: sh.Mods,
 			autoRepair: shipHasAutoRepair(sh), shipIdx: shipIdx})
 		idx = append(idx, shipIdx)
 	}
@@ -732,6 +745,7 @@ type CombatShip struct {
 	WeaponMin       int        // 單發最小傷害
 	WeaponMax       int        // 單發最大傷害
 	ShieldReduction int        // 護盾每發減傷
+	HardShield      bool       // 硬化護盾(額外減傷 + 星雲中護盾仍可用,見 nebula.go)
 	ArmorHP         int        // 裝甲 HP(結構外的緩衝,先耗盡才傷結構)
 	Kind            WeaponKind // 武器戰鬥解算路徑(beam/missile/spherical,見 weapon_kind.go);
 	// 敵方艦(genEnemyFleet)無個別武器設計資料,一律留零值 WeaponKindBeam(既有簡化)。
@@ -791,8 +805,10 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 		player = append(player, CombatShip{
 			Name: sh.Name, HP: body * 3, MaxHP: body * 3, Attack: atk, Col: 1, Row: i,
 			Defense: body, WeaponMin: atk / 2, WeaponMax: atk,
-			ShieldReduction: shieldReduceByName(sh.Shield), ArmorHP: armorHPByName(sh.Armor),
-			Kind: weaponKindByName(sh.Weapon), Mods: sh.Mods,
+			ShieldReduction: s.nebulaShield(shieldReduceByName(sh.Shield), shipHasHardShield(sh)),
+			HardShield:      shipHasHardShield(sh),
+			ArmorHP:         armorHPByName(sh.Armor),
+			Kind:            weaponKindByName(sh.Weapon), Mods: sh.Mods,
 			SpriteIdx: CombatSpriteForClass(sh.Class), // 色塊 0(玩家)
 		})
 	}
@@ -2000,6 +2016,10 @@ func (s *GameSession) SetupNewGame(stars int, seed int64, numAI int) {
 	// 母星(玩家的星 0 + 各 AI 的)不可當端點,與原版一致(見 wormhole.go)。
 	whRand := rand.New(rand.NewSource(seed + 3))
 	genWormholes(s.Stars, demoHomeStarSet(aiHomeStars), whRand.Intn)
+	// 星雲同樣用獨立亂數流(seed+4),理由同上。銀河大小 → 星雲數的對應表見 nebula.go;
+	// remake 的星數不是原版的「小/中/大/巨大」四檔,這裡用星數換算過去。
+	s.Nebulae = genNebulae(galaxySizeClass(len(s.Stars)), demoHomeStarSet(aiHomeStars),
+		s.Stars, rand.New(rand.NewSource(seed+4)))
 	s.SelectedStar = -1
 	s.AIPlayers = buildDemoAIOpponents(aiHomeStars, s.Difficulty, seed)
 	s.PlayerSpies = make([]int, len(s.AIPlayers)) // 平行 AIPlayers,重置為全新對手的間諜數(開局皆 0)
@@ -2119,6 +2139,7 @@ type GameSession struct {
 	LastDiscovery     *SystemDiscovery
 	LastPlayerOutput  engine.EmpireOutput // 上一回合玩家結算(供畫面顯示)
 	Stars             []Star              // 星系圖
+	Nebulae           []Nebula            // 星雲(星圖地形,影響戰鬥護盾;見 nebula.go)
 	Planets           []Planet            // 行星列表
 	Leaders           []Leader            // 已雇用的軍官/領袖名單(Leader Pool)
 	MercPool          []Leader            // 目前上門可雇用的傭兵領袖(手冊 p.134,見 advanceMercOffers/HireMerc)
@@ -3411,6 +3432,9 @@ func NewDemoSession() *GameSession {
 	galaxy[0].Explored = true                                                           // 母星初始已探索
 	// 蟲洞用獨立亂數流(45),與 SetupNewGame 同構——demo 局也要有,否則截圖廊/測試看不到這一層。
 	genWormholes(galaxy, demoHomeStarSet(aiHomeStars), rand.New(rand.NewSource(45)).Intn)
+	// 星雲同理:demo 局也要有,否則截圖廊/測試看不到這一層。
+	demoNebulae := genNebulae(galaxySizeClass(len(galaxy)), demoHomeStarSet(aiHomeStars),
+		galaxy, rand.New(rand.NewSource(46)))
 
 	aiPlayers := buildDemoAIOpponents(aiHomeStars, 1, 42) // demo 固定難度 1 / seed 42(可重現)
 
@@ -3424,6 +3448,7 @@ func NewDemoSession() *GameSession {
 		AIPlayers:         aiPlayers,
 		PlayerSpies:       make([]int, len(aiPlayers)), // 玩家對每個 AI 對手的間諜數,平行 AIPlayers,開局皆 0(見欄位/spy.go ensurePlayerSpies 註解)
 		Stars:             galaxy,
+		Nebulae:           demoNebulae,
 		Planets:           genPlanets(galaxy, rand.New(rand.NewSource(43)), galaxyAgeSetting, demoHomeStarSet(aiHomeStars)),
 		// Monsters 在下面 session 建好後補上——genMonsters 會就地修改 Planets(手冊 p.60:
 		// 有怪獸的星系一定另有一個特殊物產),不能在同一個複合字面值裡引用尚未建立的欄位。

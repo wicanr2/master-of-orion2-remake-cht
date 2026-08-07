@@ -126,7 +126,7 @@
 |---|---|---|
 | **網路 / 數據機 / 序列埠多人** | 整塊子系統 | 9 個畫面 + 傳輸層 + 決定性化。熱座已可玩 |
 | **`Command_Points` 專屬畫面** | 畫面 | 原版有獨立畫面,remake 只在星圖右欄顯示一個數字 |
-| 星圖 4 層:星雲 / 遷移連線 / 星門 / 外交燈號 | 資料模型 | 蟲洞那一層已於第 35 項打通,路線可複製 |
+| 星圖 3 層:遷移連線 / 星門 / 外交燈號 | 資料模型 | 蟲洞(第 35 項)、星雲(第 44 項)已打通,路線可複製 |
 | 建築 18 Galactic Currency Exchange、48 Artificial Planet | 資料 | 真值已抽出(第 36 項),缺的是效果來源 |
 | 殖民地地表:擺放的最後一段抖動、植被層 | 細節 | 道路已補(第 41 項);抖動沒補則道路位置對不上原版 |
 
@@ -1892,3 +1892,72 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
 
     尺寸是在**產生**階段就要用的(它進位置公式),而地表是每幀重算的,而 `decodeAsset`
     自己沒有快取 —— 不處理就變成每幀重解最多 72 張 LBX。加了 `colVegSizeCache`。
+
+44. **星雲:星圖 4 層裡的第 1 層,而且是有規則的地形不是裝飾**(2026-08-07)。
+
+    `internal/shell/nebula.go`(規則)+ `cmd/moo2/nebula.go`(圖與判定),
+    護欄 `nebula_test.go`。第 32 項列的星圖 4 層,做掉第 1 層。
+
+    ### 星雲是地形
+
+    GAME_MANUAL.pdf 星圖那一節:
+
+    > Ships traveling through a nebula are reduced in speed to 1 parsec per turn.
+    > More importantly, the fierce ionization prevents deflector shields from
+    > functioning without Hard Shields technology.
+
+    戰鬥那一節(p.158)再講一次:「if combat takes place in a nebula, all shields become
+    inoperative, except for those on ships equipped with Hard Shields.」
+
+    ### 判定:遮罩像素 > 5(反組譯與手冊互相印證)
+
+    `Point_Is_In_Nebula_N_` @ 0xEB9C8 拿 `(點 − 星雲原點) / 3` 去索引星雲圖的**調色盤索引值**,
+    `> 5` 才算在裡面。patch 1.5 手冊逐字寫了同一件事:「a star is considered "in nebula" if the
+    respective pixel value of the nebula picture is greater than 5」,還補充「deep in a Nebula a
+    few dark pixels can be present causing a star at such a location to be considered "not in
+    nebula"」—— **這個判定本身就有小破洞,那是原版行為**。
+
+    每顆星的結果存在星球結構 +0x6F(`Initialize_Star_In_Nebula_Info_` @ 0xEBA96),
+    也就是 `internal/save` 既有的 `Star.InNebula` 欄位。
+
+    ### 數量與圖
+
+    `Generate_Number_Of_Nebulas_` @ 0x8C4D3 是四路跳表:小 `Random(2)−1`、中 `Random(2)`、
+    大 `Random(3)`、巨 `Random(3)+1`。上限 4 與 `internal/save` 從存檔格式反推的
+    `maxNebulas = 4` 一致 —— 兩邊獨立對上。
+
+    圖在 **STARBG.LBX**(和星空層同檔):0..5 是 640×480 的星空層,6 起每 4 張一組
+    (一組 = 同一團的 4 個縮放等級),全檔 54 張 → (54−6)/4 = **12 種**。
+
+    ### 順帶:激活了兩段構不到的碼
+
+    `gamedata.DamageHardShieldBonus`(手冊「額外減傷 3」)先前**沒有元件載體**,等於死碼。
+    這一輪把「硬化護盾」加進 `SpecialOptions`,掛在與隱形裝置同一個研究主題
+    (`TOPIC_DISTORTION_FIELDS`,techtree.go 的三選一,`TECH_HARD_SHIELDS`)。
+    同時戰術戰鬥的還擊路徑先前寫死 `hardShield = false`,一併接上。
+
+    ### ⚠ 兩個踩過的錯,都寫進測試
+
+    - **檔位換算**:第一版自己拿原版四檔的星數(20/36/54/71)取中點當界線。
+      但 remake 的 `GalaxySizes`(12/24/36/48)**本身就是那四檔**,結果「中型」被判成檔位 0
+      (星雲數有一半機率是 0)、「巨型」被判成檔位 2。徵狀是**開局星圖常常一團星雲都沒有**,
+      而那看起來完全合理。改成直接查 `GalaxySizes` 取索引,
+      `TestGalaxySizeClassMapsGameOptions` 釘住。
+    - **調色盤鏈**:第一版沿用殖民地畫面的鏈(含殖民地框架盤),整團星雲畫成**鮮紅色**。
+      STARBG 沒有內嵌調色盤、顏色全由鏈決定,星圖該用的是星空層那條 `buffer0.lbx#0`。
+
+    找這兩個都不是靠讀碼,是**加一行 `println` 量出來的**:第一次量到
+    `drawNebulae n= 0`(所以問題在產生不在繪製),修完再量才看到紅色那張。
+
+    ### ⚠ 沒做的:移動懲罰
+
+    「reduced in speed to 1 parsec per turn」需要一個「原本幾 parsec/turn」的基準,
+    而 remake 的星圖移動是 `ETA = ceil(距離 × 8)` 這種**沒有單艦速度模型**的算法,
+    沒有可換算的基準,硬套就是自己編一個倍率。**留著不做**。
+    領袖技能 Navigator(「ignore the movement restrictions caused by nebulae and black holes」)
+    與 Warp Field Interdictor 建築(「人造星雲場,半徑 3 秒差距」)都卡在同一個前置上。
+
+    ### ⚠ 位置不是原版真值
+
+    原版星雲座標在銀河座標系(遮罩是它的 1/3 解析度),remake 的星圖是自有模型、座標正規化,
+    兩邊接不起來(與蟲洞同一個情況)。這裡在正規化空間隨機擺並避開母星。

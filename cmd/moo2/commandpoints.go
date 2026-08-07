@@ -87,6 +87,7 @@ func (s *commandPointsScreen) draw(dst *ebiten.Image) {
 	// 背景:原版掛的是 `Draw_Mini_Main_Screen_`,remake 沒有迷你星圖這個變體,
 	// 用同一張星圖(星空底 + 星球)當背景——語意一致:視窗浮在星圖上。
 	b.drawStarmapBackground(dst)
+	b.drawNebulae(dst, sess.Nebulae)
 	drawStarmap(b, dst, b.fnt, sess.Stars, sess.SelectedStar, sess.VisibleStars())
 
 	// 文字視窗。
