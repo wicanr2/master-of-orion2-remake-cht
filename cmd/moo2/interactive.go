@@ -404,6 +404,11 @@ type sceneBuilder struct {
 	// 放在 sceneBuilder 上是因為它們要活過畫面切換——連線不能隨畫面被 GC 掉。
 	netLobby *netplay.Lobby
 	netConn  net.Conn
+	// netMe 是本方在名冊裡的玩家編號(主機恆為 0,客戶端由主機指派)。
+	netMe int
+	// netSess 是對局期間的訊息幫浦(見 internal/netplay/session.go)。
+	// 由 netSession() 在第一次需要時才建——大廳階段還在收人,那時候建會漏掉後來的人。
+	netSess *netplay.Session
 	// netAnnouncer / netBrowser 是區網探索的兩端(見 internal/netplay/discovery.go)。
 	// 同樣要活過畫面切換:廣播停了別人就看不到這場對局。
 	netAnnouncer *netplay.Announcer

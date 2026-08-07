@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"net"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -103,6 +104,32 @@ type netNextTurnScreen struct {
 	// chat 是聊天記錄,typing 是還沒送出的那一行。
 	chat   netplay.ChatLog
 	typing string
+
+	// sess 是對局的連線幫浦。**可以是 nil**——單機開這張畫面(截圖廊、示範)時就是 nil,
+	// 那時候聊天列仍然能打字,只是話不會離開本機。
+	sess *netplay.Session
+}
+
+// attach 把連線幫浦接上這張畫面。sess 為 nil 時等同不接。
+func (s *netNextTurnScreen) attach(sess *netplay.Session) { s.sess = sess }
+
+// pumpChat 把幫浦這一幀收到的聊天訊息倒進記錄。
+//
+// **在 Update 這一條線上做**,不是在讀取 goroutine 裡——狀態變更的時機要與封包抵達的
+// 時間點無關(見 netplay/session.go 檔頭)。
+//
+// 非聊天的訊息(turn_done / desync)這張畫面不處理,原樣丟掉:回合表的推進在別處,
+// 在這裡順手動它會讓同一件事有兩個入口。
+func (s *netNextTurnScreen) pumpChat() {
+	if s.sess == nil {
+		return
+	}
+	for _, m := range s.sess.Poll() {
+		if m.Kind != netplay.KindChat {
+			continue
+		}
+		s.chat.Append(m.Player, m.Text)
+	}
 }
 
 // speakerName 回傳某位發話者要顯示的名字(GNN 不用名字)。
@@ -115,9 +142,11 @@ func (s *netNextTurnScreen) speakerName(speaker int) string {
 
 // sendChat 把 typing 那一行送出去。
 //
-// ⚠ 目前**只加進本機記錄**:鎖步的 `netplay.Table` 收的是回合指令,聊天不該塞進那條線
-// ——聊天是隨時可送的,而回合表一回合只收一則。真的接上連線時,這裡再多一個
-// `WriteFrame(conn, netplay.ChatMessage(...))`,`ChatLog` 這一端不必動。
+// 聊天**不走鎖步的回合表**:`netplay.Table` 收的是回合指令,一回合只收一則,而聊天是
+// 隨時可送的。兩者共用同一條 TCP 連線,但在協定上是各自獨立的訊息種類。
+//
+// 本機記錄是**立刻**加的,不等封包繞一圈回來——打完 Enter 就該看到自己那一行。
+// 幫浦那一端也因此刻意不把自己送出的訊息回填進收訊佇列(見 Session.Send)。
 func (s *netNextTurnScreen) sendChat() {
 	m := netplay.ChatMessage(s.me, s.typing)
 	s.typing = ""
@@ -125,6 +154,11 @@ func (s *netNextTurnScreen) sendChat() {
 		return // 原版按 Enter 但沒打字也是什麼都不做(`cmp byte_1AAC54, 0 / jz`)
 	}
 	s.chat.Append(m.Player, m.Text)
+	if s.sess != nil {
+		// 送不出去(線斷了)不打斷輸入:字已經在自己的記錄裡,而斷線本身由
+		// Session.Err 那條線回報,不在這裡多開一個錯誤路徑。
+		_ = s.sess.Send(m)
+	}
 }
 
 // typeChatRunes 把字元加進輸入行,超過原版上限就丟掉(同 inputbox 的作法)。
@@ -152,6 +186,7 @@ func (s *netNextTurnScreen) backspaceChat() {
 // netNextTurn 建等待畫面。table 為 nil 時畫成「沒有進行中的網路對局」。
 func (b *sceneBuilder) netNextTurn(table *netplay.Table, names []string, me int) *netNextTurnScreen {
 	s := &netNextTurnScreen{b: b, table: table, names: names, me: me}
+	s.attach(b.netSession())
 	s.bg = b.multigmImage(mpBGAsset, false)
 	s.mid = b.multigmImage(nntMidAsset, true)
 	s.bottom = b.multigmImage(nntBottomAsset, true)
@@ -177,6 +212,7 @@ func (s *netNextTurnScreen) bannerFrame() *ebiten.Image {
 
 func (s *netNextTurnScreen) update(in shell.InputState) *origTransition {
 	s.tick++
+	s.pumpChat()
 	// 聊天列:原版這張畫面唯一能做的事就是打字給對手看(`Chat_Box_Input_Loop_` @ 0xF55A4)。
 	s.typeChatRunes(ebiten.AppendInputChars(nil))
 	if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
@@ -193,6 +229,10 @@ func (s *netNextTurnScreen) update(in shell.InputState) *origTransition {
 		if err != nil {
 			return nil // 建不起來就留在原畫面,不要把玩家丟到黑畫面
 		}
+		// 離開等待畫面等於退出這一局:幫浦連同它的讀取 goroutine 一起收掉,
+		// 不然每開一次網路對局就多留一條在背景讀已經沒人看的連線。
+		s.b.closeNetSession()
+		s.sess = nil
 		return &origTransition{next: sc}
 	}
 	return nil
@@ -383,4 +423,55 @@ func (b *sceneBuilder) netNextTurnDemo() *netNextTurnScreen {
 	}
 	s.chat.Append(0, b.tr("再給我一回合。", "One more turn."))
 	return s
+}
+
+// netSession 回傳這一局的訊息幫浦,第一次呼叫時才建。
+//
+// **為什麼是延遲建立**:大廳階段還在收人(`startNetLobby` 的背景 goroutine),
+// 那時候建會漏掉後來加入的玩家。等到真的要等回合時,名冊已經定了。
+//
+// ⚠ 誠實限制:幫浦建好之後**再加入的人不會被納進來**。remake 的對局在開打後不收人,
+// 所以現階段碰不到;真要支援中途加入,這裡要改成可增減連線。
+//
+// 沒有任何連線(單機、截圖廊)時回 nil——呼叫端都容忍 nil。
+func (b *sceneBuilder) netSession() *netplay.Session {
+	if b.netSess != nil {
+		return b.netSess
+	}
+	switch {
+	case b.netLobby != nil:
+		// 主機端:名冊上除了自己以外的每個人各一條連線,而且要轉發
+		// (星狀拓樸下客戶端之間沒有連線,見 netplay/session.go 檔頭)。
+		conns := map[int]net.Conn{}
+		for _, p := range b.netLobby.Roster().Players {
+			if p.ID == b.netMe {
+				continue
+			}
+			if c := b.netLobby.Conn(p.ID); c != nil {
+				conns[p.ID] = c
+			}
+		}
+		if len(conns) == 0 {
+			return nil // 還沒有人加入——不要建一個空幫浦擋住之後真的建得起來的那次
+		}
+		b.netSess = netplay.NewSession(b.netMe, true, conns)
+	case b.netConn != nil:
+		// 客戶端:只有一條連線(對主機),不轉發。
+		b.netSess = netplay.NewSession(b.netMe, false, map[int]net.Conn{0: b.netConn})
+	default:
+		return nil
+	}
+	return b.netSess
+}
+
+// closeNetSession 收掉幫浦(連同它的讀取 goroutine)。可重複呼叫。
+//
+// 底層的 net.Conn 也會一起關掉——`Session.Close` 關的就是傳進去的那些連線。
+func (b *sceneBuilder) closeNetSession() {
+	if b.netSess == nil {
+		return
+	}
+	_ = b.netSess.Close()
+	b.netSess = nil
+	b.netConn = nil
 }

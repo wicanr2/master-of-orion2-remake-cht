@@ -292,6 +292,7 @@ func (b *sceneBuilder) startNetLobby(name string) (origScreen, error) {
 		return nil, err
 	}
 	b.netLobby = lb
+	b.netMe = 0 // 主機恆為名冊上的第 0 位
 	// 一併廣播,否則區網上的人看不到這場對局(原版靠 IPX 的服務公告,
 	// TCP 沒有那個能力——見 internal/netplay/discovery.go)。
 	gameName := name
@@ -354,6 +355,7 @@ func (b *sceneBuilder) joinNetGame(g netplay.Game) (origScreen, error) {
 		return nil, err
 	}
 	b.netConn = conn
+	b.netMe = me // 主機指派的編號——聊天要靠它標「這句是誰說的」
 	return b.chooseNetPlayers(roster, me, false, g.Addr), nil
 }
 
