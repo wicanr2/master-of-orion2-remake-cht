@@ -71,7 +71,7 @@
 | 8 | ~~**`Colony_Landing` / `Colony_Combat` / `Colony_Bombing`**~~ | 中 | ✅ 2026-08-07 全部已建(`cmd/moo2/groundcombat.go`、`cmd/moo2/bombing.go`),版面座標取自反組譯(見下方第 15、18 項)|
 | 9 | ~~**`Main_Antaran_Room`**~~ | 中 | ✅ 2026-08-07 已建(`cmd/moo2/antaranroom.go`),用原版 `antaroom.LBX` 資產 1(55 幀累積)當背景;留白:原版是推鏡動畫,remake 取最終定格 |
 | 10 | ~~**`Hall_Of_Fame` / `Hi_Score`**~~ | 低 | ✅ 2026-08-07 已建(`cmd/moo2/hiscore.go` + `gamedata/score.go`),八項計分係數全來自反組譯 module 60 |
-| 11 | **`Smack`** | 低 | Smacker 過場影片播放 |
+| 11 | ~~**`Smack`**~~ | 低 | ✅ 已建(`cmd/moo2/cutscene.go` + `internal/smk`,真的解 Smacker,不是靜態圖)|
 | 12 | 多人連線 11 個畫面 | — | ✅ `MP_Setup`(`cmd/moo2/multiplayer.go`)與 `Hotseat`(`cmd/moo2/hotseat.go`)2026-08-07 已建,版面座標取自反組譯(見下方第 20 項)。其餘 `Join_Net`/`Modem_Setup`/`NullModem_Setup`/`Choose_Net_Plyrs`/`Choose_Multi_Net_Game`/`Generic_Net_Info`/`SendGet_Net_Info`/`Net_Next_Turn`/`Wait_For_*` 需要網路層,未做 |
 
 ### A-3 remake 有、原版無獨立畫面
@@ -87,31 +87,50 @@
 
 | 原版模組 | 函式數 | 代表符號 | remake 對應 | 落差 |
 |---|---|---|---|---|
-| 74 | 106 | `N_Colonies_And_Outposts_At_Star_`、`N_Bldgs_` | `internal/shell` 散落 | 原版有**前哨站(Outpost)**概念,remake 無 |
+| 74 | 106 | `N_Colonies_And_Outposts_At_Star_`、`N_Bldgs_` | `internal/shell`(含 `outpost.go`)| ✅ 前哨站已建(2026-08-06),可升級成殖民地 |
 | 48 | 86 | `Absolute_Location_`、`Contact_With_One_Colony_` | `shell/colonization.go` | 星圖拓樸/接觸判定較簡化 |
 | **102** | **84** | `_minerals_per_mine`、`_climate_maintenance_modifiers`、`Colony_Officer_` | `gamedata/colony.go` 等 | **殖民地經濟核心**,權威數值全在此 |
 | 14 | 83 | `Diplomacy_Screen_`、`Get_Main_Repulsive_Diplomacy_Choices_` | `cmd/moo2` diplomacy | 原版有完整外交選項樹 |
 | 47 | 80 | `Design_Name_`、`Build_Saved_Ship_Array_` | `shell/shipnames.go` | |
-| **122** | **73** | `Record_History_`、`Bill_Init_`、`Is_Ignoring_` | **無** | **歷史記錄系統**(History Graph 資料源) |
+| **122** | **73** | `Record_History_`、`Bill_Init_`、`Is_Ignoring_` | `shell/history.go` | ✅ 已建,`infoHistory` 的國力折線圖由它供資料 |
 | 141 | 71 | `Load_Font_File_`、`Get_String_Width_` | `internal/uifont` | |
 | 28 | 67 | `Get_Ship_Combat_Bonuses_`、`Init_Ship_Designs_` | `gamedata/combat.go` | |
 | 58 | 67 | `Load_Officer_Picture_`、`Assert_Marooned_Leaders_` | `shell` 領袖 | 原版有 marooned leader 機制 |
 | **15** | **71** | `Init_Events_`、`Check_For_Event_` | `shell/events.go` | 事件清單已對齊原版 36 種(16 種已實作,其餘缺子系統,見 `gamedata/events.go`) |
 | **27** | **56** | `Init_Diplomatic_Relations_`、`Diplomacy_Growth_`、`Change_Relations_` | `internal/diplomacy` | 原版關係演化更完整 |
-| 20 | 54 | `Apply_Internal_Damage_`、`Repair_Combat_Ship_` | `gamedata/damage.go` | 原版有**內部艙損/維修** |
+| 20 | 54 | `Apply_Internal_Damage_`、`Repair_Combat_Ship_` | `gamedata/damage.go` + `shell/repair.go` | ✅ 艦艇損傷與修復已建(手冊 p.80/82 + `Repair_Ships_At_Colonies_` 錨定)|
 | 18 | 40 | `Safe_To_Fire_Sphere_Weapon_`、`Ai_Self_Destruct_Check_` | `shell/weapon_kind.go` | 原版戰鬥 AI 較深 |
 | 19 | 42 | `Refresh_Combat_Screen_Full_` | `tacticalCombat` | |
 | 65 | 37 | `Draw_Generic_Beam_`、`Draw_Ship_Burst_` | 戰鬥特效 | remake 特效較簡 |
 | 138/314/316 | 141 | `Set_Music_File_`、AIL/Miles 驅動 | `internal/audio` | remake 直接播 PCM(已證等價) |
 | 112/293 | 117 | Netmox / Hayes Modem | 無 | 多人連線 |
 
-**最大的系統級缺口(A 級硬證)**:
-1. **歷史記錄系統**(module 122,73 函式)——remake 完全沒有,History Graph 因此做不出來。
-2. ~~事件系統~~ → **2026-08-06 已對齊**:36 種事件表 + GNN 快報畫面,16 種已可忠實結算。
-   剩餘 20 種缺的是各自的子系統(太空怪獸實體、超新星、時空異象、曲速漏斗…),已逐項記在
-   `gamedata.RandomEvents` 的 `Needs` 欄。
-3. **前哨站(Outpost)**——原版到處都是 `..._And_Outposts_...`,remake 只有殖民地。
-4. **艙損/維修**(module 20)——`Apply_Internal_Damage_`、`Repair_Combat_Ship_`。
+### ⚠ 「最大的系統級缺口」那份清單**四條全部已經做掉了**(2026-08-07 逐條核實)
+
+這一節原本列了四大缺口,並且被後續每一輪的摘要反覆引用。逐條 grep 之後:
+
+| 原本的斷言 | 現況 | 證據 |
+|---|---|---|
+| ①**歷史記錄系統**——remake 完全沒有,History Graph 做不出來 | ✅ 已建 | `internal/shell/history.go`(6 個函式)+ `cmd/moo2` 的 `infoHistory` 折線圖 |
+| ②事件系統 | ✅ 2026-08-06 已對齊 | 36 種事件表 + GNN 快報畫面;剩餘 20 種缺的是各自的子系統,逐項記在 `gamedata.RandomEvents` 的 `Needs` 欄 |
+| ③**前哨站(Outpost)**——remake 只有殖民地 | ✅ 已建 | `internal/shell/outpost.go`(9 個函式)+ 進存檔 + 進熱座席位 + 可被 `consumeOutpostForColony` 升級成殖民地 |
+| ④**艙損/維修**(module 20)| ✅ 已建 | `internal/shell/repair.go`(11 個函式),手冊 p.80/82/25 逐字 + `Repair_Ships_At_Colonies_` @ 0x580F5 雙重錨定 |
+
+**教訓與第 38 項同一條**:斷言一旦寫進文件就會被當成現況引用,而程式碼會往前走、文件不會。
+下結論前先 grep —— 這一整節的四條斷言,每一條都只要一次 `ls` 就能推翻。
+(規則出處:`rulebook/63-truth-in-code-not-stale-markers.md`、CLAUDE.md「每一輪盤點、清除錯誤斷言」。)
+
+### 核實過後,真正還缺的(2026-08-07)
+
+| 缺口 | 性質 | 備註 |
+|---|---|---|
+| **網路 / 數據機 / 序列埠多人** | 整塊子系統 | 9 個畫面 + 傳輸層 + 決定性化。熱座已可玩 |
+| **`Command_Points` 專屬畫面** | 畫面 | 原版有獨立畫面,remake 只在星圖右欄顯示一個數字 |
+| 星圖 4 層:星雲 / 遷移連線 / 星門 / 外交燈號 | 資料模型 | 蟲洞那一層已於第 35 項打通,路線可複製 |
+| 建築 18 Galactic Currency Exchange、48 Artificial Planet | 資料 | 真值已抽出(第 36 項),缺的是效果來源 |
+| 殖民地地表的道路、擺放的最後一段微調 | 細節 | 見第 31 項 |
+
+⚠ 這份清單同樣會過期。**引用前先 grep**,別把它當成永久事實。
 
 ---
 
@@ -1579,3 +1598,36 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     **那是正確的結果,不是 bug。** 這個測試守的是「把艦隊擺對地方有意義」,不是「星基很強」,
     所以把測試裡的母星升級成戰鬥站(真的有投資防禦的樣子),而不是把模型改回去遷就測試。
     那段自我守衛就是設計來在平衡變動時**要人做決定**的,它正常運作了。
+
+39. **盤點:「最大的系統級缺口」那四條全部已經做掉了**(2026-08-07)。
+
+    第 38 項的教訓是「**別編一個做不到的理由,先 grep**」。這一項把同一把尺對準文件自己:
+    Part B 那份「最大的系統級缺口(A 級硬證)」清單,逐條核實之後**四條全中**——全部已完成。
+
+    | 原本的斷言 | 一次 `ls` 就推翻 |
+    |---|---|
+    | 歷史記錄系統「remake 完全沒有」 | `internal/shell/history.go`(6 函式)+ `infoHistory` 折線圖 |
+    | 前哨站「remake 只有殖民地」 | `internal/shell/outpost.go`(9 函式),進存檔、進熱座、可升級成殖民地 |
+    | 艙損/維修 | `internal/shell/repair.go`(11 函式),手冊 p.80/82/25 + `Repair_Ships_At_Colonies_` 雙錨定 |
+    | (事件系統早已標記完成) | — |
+
+    Part A-2 的 `Smack`(Smacker 過場)同樣是過期的:`cmd/moo2/cutscene.go` + `internal/smk`
+    **真的在解 Smacker**,不是靜態圖。
+
+    ### 為什麼這件事重要,而不只是「更新一下文件」
+
+    這四條被後續**每一輪的摘要反覆引用**當成現況,包括我自己寫的。文件裡的斷言一旦成形就會
+    被當事實傳遞,而程式碼會往前走、文件不會 —— 於是「還缺什麼」的判斷整個偏掉,
+    優先序也跟著偏。這正是 `rulebook/63-truth-in-code-not-stale-markers.md` 講的東西,
+    也是 CLAUDE.md 要求「每一輪盤點、清除錯誤斷言」的理由。
+
+    ### 這一輪也驗過、確認**不是**問題的
+
+    - `cmd/moo2/diploview.go` 的 `diploRelationRows` 是寫死的 Klackon/Psilon/Silicoid 三筆。
+      看起來像「外交畫面沒接真資料」,實際上那是 `-shot` 旗標的**獨立示範模式**
+      (`main.go` 的 `runDiploView`),遊戲內的外交走 `b.diplomacy()`。**不是 bug。**
+
+    ### 核實過後真正還缺的
+
+    寫在 Part B 那一節的表裡(網路多人、`Command_Points` 專屬畫面、星圖 4 層、2 棟建築、
+    地表道路與擺放微調)。⚠ 那份清單同樣會過期,**引用前先 grep**。

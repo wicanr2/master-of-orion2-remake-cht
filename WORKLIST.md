@@ -544,6 +544,21 @@
 - [ ] 熱座席位補齊玩家側系統:接管過來的 `AIOpponent` 沒有建造佇列 / 領袖 / 間諜 / 前哨站,
   第 2 席之後起步時這些是空的(見 `seatFromAI` 註解)。
 
+## ★ 2026-08-07 盤點:gap report 的「最大系統級缺口」四條全部已完成
+
+逐條 grep 之後發現 `docs/re/01-gap-report.md` Part B 的四大缺口清單**整份過期**——
+歷史記錄系統(`shell/history.go`)、前哨站(`shell/outpost.go`)、艙損/維修
+(`shell/repair.go`)全都已經建好,事件系統早就標記完成。Part A-2 的 Smacker 過場
+(`cmd/moo2/cutscene.go` + `internal/smk`)同樣是過期的。
+
+**為什麼重要**:這四條被後續每一輪的摘要當成現況反覆引用,於是「還缺什麼」的判斷
+整個偏掉。文件裡的斷言一旦成形就會被當事實傳遞,而程式碼會往前走、文件不會。
+細節與訂正後的清單見 gap report 第 39 項。
+
+核實過後真正還缺的:網路多人(整塊)、`Command_Points` 專屬畫面、星圖 4 層
+(星雲/遷移連線/星門/外交燈號,卡資料模型)、2 棟建築(真值已抽出,缺效果來源)、
+殖民地地表的道路與擺放微調。
+
 ## 工作方式(使用者定案)
 - go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)
 - **不用多代理 workflow**;翻譯一組一組慢慢做(單代理逐項,使用者可隨時審閱)
