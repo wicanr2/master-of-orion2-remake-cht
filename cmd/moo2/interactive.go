@@ -979,8 +979,25 @@ func drawStarmap(b *sceneBuilder, dst *ebiten.Image, fnt *uifont.Font, stars []s
 		if sprite == 0 {
 			vector.DrawFilledCircle(dst, x, y, r, col, true)
 		}
+		// 星名:原版 `Print_A_Star_Name_` @ 0x87768 是**置中在星球正下方**,而且會夾在
+		// 星圖框內(x 22..527)——remake 先前畫在星球右側,長名字會直接壓出框外。
+		//
+		//	x = 星球中心 − 字寬/2      ; sub_12066F 量寬再減半
+		//	y = 星球中心 + sprite 半徑  ; var_14 + 邊長/2 − 大小
+		//	夾擠:x >= 22、x + 字寬 <= 527
+		//
+		// 原版還會依縮放換字型樣式(`Zoom_Level_Font_Style_`)並加描邊
+		// (`Set_Outline_Color(2)`),remake 的 CJK 字型沒有對應的樣式表,只做位置。
 		if fnt != nil && st.Name != "" {
-			fnt.Draw(dst, st.Name, float64(x)+float64(r)+3, float64(y)-2, 11, color.RGBA{170, 185, 210, 255})
+			nw, _ := fnt.Measure(st.Name, 11)
+			nx := float64(x) - nw/2
+			if nx < starVX0 {
+				nx = starVX0
+			}
+			if nx+nw > starVX1 {
+				nx = starVX1 - nw
+			}
+			fnt.Draw(dst, st.Name, nx, float64(y)+float64(r), 11, color.RGBA{170, 185, 210, 255})
 		}
 	}
 }

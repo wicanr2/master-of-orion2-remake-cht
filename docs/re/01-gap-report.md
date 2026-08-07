@@ -1211,7 +1211,7 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     | 2 | `Draw_Relocation_Links_` | 0x85320 | ❌ |
     | 3 | `Draw_Stars_` → 逐星 `Draw_A_Star_` | 0x85550 / 0x83B02 | ✅ sprite 已接(第 34 項);閃爍動畫未做 |
     | 4 | `Draw_A_Gate_Icon_`(迴圈) | 0x83741 | ❌ |
-    | 5 | `Print_Star_Names_` | 0x88CB7 | ⚠ 簡化 |
+    | 5 | `Print_Star_Names_` | 0x88CB7 | ⚠ 位置已對齊(第 34 項);字型樣式/描邊未做 |
     | 6 | `Draw_Black_Holes_` | 0x83BF9 | ❌ |
     | 7 | `Draw_Ship_Icons_` | 0xA070F | ✅ 本項 |
     | 8 | `Print_Main_Screen_Data_` | 0x87BAE | ⚠ 簡化(右欄五格數字)|
@@ -1367,3 +1367,18 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     - 星球的 **5 幀閃爍動畫**沒做,只取第 0 幀(同艦隊圖示的 8 幀)。
     - 黑洞在原版是 `Draw_Black_Holes_` @ 0x83BF9 的**獨立迴圈**(黑洞是星球以外的地圖物件),
       remake 把它當光譜 6 的星球一起畫。圖是對的,但**阻擋航線**那套(`Star.blackHoleBlocks`)沒有。
+
+    ### 星名位置(`Print_A_Star_Name_` @ 0x87768,併入第 34 項)
+
+    原版是**置中在星球正下方**並夾在星圖框內,remake 先前畫在星球右側,長名字直接壓出框外:
+
+    ```
+    x = 星球中心 − 字寬/2          ; sub_12066F 量寬再減半
+    y = 星球中心 + sprite 邊長/2 − 大小
+    夾擠:x >= 0x16(22)、x + 字寬 <= 0x20F(527)   ← 與視差層的裁切區同一組數字
+    ```
+
+    ⚠ 顏色不是依擁有者:`sub_7A440` 的真名是 `Zoom_Level_Font_Style_`,選的是**縮放對應的
+    字型樣式**(縮得越遠字越小),再加 `Set_Outline_Color(2)` 的描邊。
+    (`FONT_COLOR_PLAYER_*` 那 5 階×8 色是別處在用,不是星名。)
+    remake 的 CJK 字型沒有對應的樣式表,只搬了位置與夾擠。
