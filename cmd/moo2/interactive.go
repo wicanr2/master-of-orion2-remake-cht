@@ -3100,8 +3100,12 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			return b.goTo(b.shipDesign, "艦艇設計")
 		}
 		if zh, ok := hullZH[a]; ok && b.session != nil {
-			// 建造前驗證空間:超出艦體空間上限(shell.ShipDesignFitsWithMods)就擋下,留在設計畫面提示,不扣款不造艦。
-			if !shell.ShipDesignFitsWithMods(zh, b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods) {
+			// 建造前驗證空間:超出艦體空間上限就擋下,留在設計畫面提示,不扣款不造艦。
+			// 走 session 版(b.session.DesignFitsWithMods)而不是套件級的 ShipDesignFitsWithMods
+			// ——**可用空間會隨科技變動**:巨型通量器 ×125/100(手冊 +25%,執行檔
+			// Total_Design_Space_ 0x6E81F 是 imul 125 / idiv 100)。套件級那個沒有 GameSession
+			// 可查,一律當成沒研究出來。
+			if !b.session.DesignFitsWithMods(zh, b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods) {
 				b.designMsg = fmt.Sprintf(b.tr("空間不足,無法建造%s(目前元件+改造超出艦體空間上限)",
 					"%s does not fit — components plus mods exceed the hull space limit"),
 					shipClassLabel(b.lang, zh))
@@ -3198,7 +3202,12 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		badCol := color.RGBA{230, 90, 90, 255}
 		for i, cl := range classes {
 			used := shell.ShipDesignSpaceUsedWithMods(cl, b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods)
+			// 總空間同樣要含巨型通量器加成,否則顯示的「已用／總」會與 onAction 的建造判斷不一致
+			// ——兩邊本來就共用同一份判斷,這裡改一邊就要改另一邊。
 			totalSp := gamedata.ShipHullSpace(gamedata.CombatShipClass(i))
+			if b.session != nil {
+				totalSp = b.session.HullSpaceFor(cl)
+			}
 			fits := used <= totalSp
 			txt := fmt.Sprintf(b.tr("%s 空間:%d／%d", "%s space %d/%d"), shipClassLabel(b.lang, cl), used, totalSp)
 			col := okCol

@@ -404,6 +404,19 @@ var (
 		// 行動次數家族(第 70 項(陀螺去穩器)):三個元件卡在同一個缺失機制「一回合開幾次火」,
 		// 建一次就一次解三個。冷卻的讀法見 gamedata/shots_per_round.go
 		// ——手冊的 unused 是「完全沒開火」,不是「沒有連射」。
+		// 戰鬥艙:手冊「add equipment space without increasing the hull size」。
+		// 舊擋門理由是「remake 沒有逐元件佔格的造艦模型」——那句**當初就寫錯**,
+		// gamedata.ShipHullSpace + shell.ShipDesignSpaceUsed 一直都在。真正缺的是那個
+		// 「加多少空間」的數字,而手冊從頭到尾沒給。
+		//
+		// 現在有了:原版特殊裝置表的空間欄是**負數**,而且剛好是艦體空間的一半
+		// (docs/tech/special-device-table.md)。成本同樣走那張表(依艦級 20..2500),
+		// 所以這一列的 Cost 欄留 0——它不會被 DesignCostWithMods 讀到。
+		//
+		// ⚠ remake 只有一個特殊系統槽,所以裝了戰鬥艙就裝不了別的。原版是多槽,
+		// 戰鬥艙的用法是「騰出空間給其他系統」;在 remake 它換來的是**更大的武器**。
+		// 這是單槽模型的必然後果,不是抄錯。
+		{"戰鬥艙", 0, 0, gamedata.TOPIC_CAPSULE_CONSTRUCTION, gamedata.TECH_BATTLE_PODS},
 		{"快速飛彈架", 120, 0, gamedata.TOPIC_SERVO_MECHANICS, gamedata.TECH_FAST_MISSILE_RACKS},
 		{"超載電容", 160, 0, gamedata.TOPIC_HYPER_DIMENSIONAL_FISSION, gamedata.TECH_HYPERX_CAPACITORS},
 		{"時間扭曲加速器", 250, 0, gamedata.TOPIC_TEMPORAL_PHYSICS, gamedata.TECH_TIME_WARP_FACILITATOR},
@@ -1349,13 +1362,17 @@ func ShipDesignSpaceUsedWithMods(class string, weapon, armor, shield, special in
 	w := pick(WeaponOptions, weapon)
 	sp := pick(SpecialOptions, special)
 	classID, _ := shipClassFromName(class)
-	hullSpace := gamedata.ShipHullSpace(classID)
 	base := gamedata.WeaponSpaceByName[w.Name]
 	used := base
 	if len(mods) > 0 && WeaponIsBeam(w.Name) {
 		used = gamedata.WeaponSpaceWithMods(base, weaponModCodes(mods))
 	}
-	used += gamedata.SpecialSpace(hullSpace, sp.Name != "" && sp.Name != "無")
+	// 特殊系統佔格改讀**原版表的真值**(依艦級,見 special_device_map.go)。
+	// 先前走 gamedata.SpecialSpace 的 5% 估計——那個估計的註解自己就寫著「這不是手冊數字」。
+	//
+	// ⚠ 這裡可能是**負值**(戰鬥艙):手冊「add equipment space without increasing the
+	// hull size」在原版就是做成負佔格。加上去讓總和變小是對的,不要在這裡夾成 0。
+	used += specialDeviceSpaceFor(sp.Name, classID)
 	return used
 }
 
@@ -1388,8 +1405,13 @@ func DesignCostWithMods(class string, weapon, armor, shield, special int, mods [
 	if len(mods) > 0 && WeaponIsBeam(w.Name) {
 		weaponCost = gamedata.WeaponCostWithMods(w.Cost, weaponModCodes(mods))
 	}
+	// 特殊系統成本改讀**原版表的真值**(依艦級,見 special_device_map.go)。原版的成本
+	// 隨艦體等級變動——同一套系統裝在末日之星上比裝在巡防艦上貴一個數量級,
+	// 而 Component.Cost 是單一數字。對不上原版表的幾項仍走 Component.Cost。
+	classID, _ := shipClassFromName(class)
 	return ShipCost(class) + weaponCost + pick(ArmorOptions, armor).Cost +
-		pick(ShieldOptions, shield).Cost + pick(SpecialOptions, special).Cost
+		pick(ShieldOptions, shield).Cost +
+		specialDeviceCostFor(pick(SpecialOptions, special), classID)
 }
 
 // BuildShip 造一艘指定艦體 + 全元件(武器/裝甲/護盾/特殊)的艦:扣國庫總成本,加入艦隊。
