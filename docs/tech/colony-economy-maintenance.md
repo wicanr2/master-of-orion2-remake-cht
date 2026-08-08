@@ -72,38 +72,16 @@ Population=8。若沿用舊的 Farmers=3/Workers=4,新 FoodPerFarmer=2 只夠 3�
 
 單看這張表,`0 ≥ 0`,字面上符合「可持續」的門檻。但這只是**沒有任何隨機事件發生**時的靜態快照。
 
-### 2.2 動態實測:零緩衝經濟撞上既有饑荒-鎖死機制,保證破產
+### 2.2 饑荒-鎖死的歸因鏈
 
-> **本節的實測軌跡是 2026-07-11 修復前的行為,留作歸因鏈的紀錄,不是現況。**
-> 缺的那個係數(帝國基礎指揮評等供給 = 5)已用真存檔 `SAVE10.GAM` 反推補上,
-> 300 回合探針的 BC 最低點從 −3710 改善到約 −51,測試門檻 `bcCrashFloor300Turns = -400`。
-> 歸因鏈本身仍然正確(零緩衝 → 事件扣人口 → 農夫歸零 → 饑荒鎖死),
-> 而第 4 點那條也仍然成立:**沒有任何機制把既有的工人/科學家重新指派回農夫**
-> (`session.go` 只會把**新增**人口在「會缺糧就配農夫」的規則下指派)。
+零緩衝經濟 → 隨機事件扣人口 → 農夫歸零 → `colonyGrowth` 在食物赤字時回 0 → 人口成長永久停擺。
 
-用固定 `EventSeed=42`(`TestRandomEventsFireAndBounded`/`TestAntaresRaidsScheduleAndEscalate`
-既有測試用的同一顆種子)實際跑 100~300 回合(用暫時性 debug test,未進版控),觀察到:
+**這條鏈的最後一環仍然成立**:本專案**沒有任何機制把既有的工人/科學家重新指派回農夫**
+(`session.go` 只會把**新增**人口在「會缺糧就配農夫」的規則下指派)。
 
-1. 隨機事件(瘟疫/隕石)與安塔蘭入侵都會扣殖民地人口,扣除順序（`losePop`/`advanceAntares`現有邏輯)
-   是「扣人數最多的職務」,**不保證留下至少 1 個農夫**。
-2. 一旦連續幾次事件把 Population 打到只剩 1 人,而那 1 人剛好是科學家(不是農夫)——
-   Food=0,FoodConsumed=1,FoodSurplus=-1,`Starving=true`。
-3. `internal/engine/colony.go` 的 `colonyGrowth`:「饑荒時（`foodSurplus<0`)不套用成長公式,回 0」
-   ——這個回合起,人口成長**永久停擺**,因為食物赤字不會自己恢復(沒有農夫,永遠 0 食物)。
-4. 本專案**沒有任何機制**把工人/科學家重新指派回農夫(`ShiftColonyJob` 是玩家手動 UI 操作,
-   AI/自動流程不會做這件事)。於是殖民地卡死在 Workers=0 → NetIndustry=0 → TaxRevenue=0,
-   而建築維護費(3 BC)仍然每回合照扣——**BC 保證單調遞減至負值**,以固定種子重現、非機率僥倖
-   （已用 debug trace 逐回合列印驗證,見下方數字節錄)。
-
-實測節錄(玩家母星,`s.Ships=nil`,`EventSeed=42`,忠實 yield 已接上時的軌跡):
-
-```
-turn=50  F=2 W=0 S=1 pop=3   (瘟疫+安塔蘭同回合,人口被打到剩3)
-turn=53  F=1 W=0 S=1 pop=2   (隕石又扣1)
-turn=54  F=0 W=0 S=1 pop=1   (瘟疫再扣1,農夫歸零——饑荒鎖死起點)
-turn=55~101: NetInd=0, TaxRev=0, Maint=3, NetBC=-3 每回合,BC 持續走負
-turn=77: BC=-3(跌破0)
-```
+⚠ 觸發這條鏈的零緩衝已修掉(帝國基礎指揮評等供給 = 5,用真存檔 `SAVE10.GAM` 反推)。
+現行門檻:`bcCrashFloor80Turns = -40`、`bcCrashFloor300Turns = -400`
+——查現值一律 `grep -n "const bcCrashFloor"`,不要引用文件。
 
 ### 2.3 結論與判斷
 
