@@ -181,10 +181,23 @@ func TacticalEffectiveSpeed(sh CombatShip) int {
 // 手冊:「An immobilized ship receives an **additional −20 Ship Defense** penalty」。
 // 只有**完全定住**才扣——被拖慢但還能動的不扣(手冊那句的主詞是 immobilized)。
 func TacticalEffectiveDefense(sh CombatShip) int {
+	return TacticalEffectiveDefenseAtRound(sh, 1)
+}
+
+// TacticalEffectiveDefenseAtRound 同上,但把**匿蹤**算進去——它要知道現在是第幾回合,
+// 因為相位匿蹤過了 10 回合就降級成隱形裝置(見 cloak.go)。
+//
+// 保留無回合參數的舊入口是為了既有呼叫端與測試;那條路等於「第 1 回合」,而相位匿蹤在
+// 第 1 回合本來就打不到(CloakUntargetable),所以兩者不會給出矛盾的答案。
+func TacticalEffectiveDefenseAtRound(sh CombatShip, round int) int {
 	def := sh.Defense
 	if gamedata.TractorIsImmobilized(sh.SizeClass, sh.HeldByTractors) {
 		def += gamedata.TractorImmobilizedDefensePenalty
 	}
+	// 隱形裝置:手冊「as long as the ship does not attack, it has an +80 bonus to its
+	// defense against beam weapons」。加在防禦側而不是攻方的命中側,是因為手冊寫的是
+	// defense——這樣飛彈那條路徑不會誤吃到它(飛彈另有 50% 未命中,見 MissileDefenses)。
+	def += CloakBeamDefenseBonus(sh, round)
 	if def < 0 {
 		def = 0
 	}

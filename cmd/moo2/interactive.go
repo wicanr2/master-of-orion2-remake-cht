@@ -2037,6 +2037,14 @@ func (t *tacticalScreen) fireRound(target int) {
 	anyHit := false
 	firedMissile := false // 首艘開火艦是否為飛彈類(決定開火音效)
 	firedAny := false
+	// 相位匿蹤:手冊「While cloaked, the ship **cannot be attacked**」。與停滯力場同一個形狀
+	// (兩者都是「這一發根本沒有目標」),但原因相反——那個是被定住,這個是自己躲起來。
+	// 回合數用 t.round+1:t.round 要到本次開火結算完才會 ++。
+	if shell.CloakUntargetable(t.enemy[target], t.round+1) {
+		t.log = fmt.Sprintf(t.b.tr("%s 相位匿蹤中,任何武器都鎖定不了它",
+			"%s is phase-cloaked — nothing can target it"), t.enemy[target].Name)
+		return
+	}
 	if t.enemy[target].InStasis {
 		// 手冊(Stasis Field):「cannot … **or be affected by any weapon**. It is
 		// effectively removed from battle entirely.」——只做「不能動」會讓它變成活靶,
@@ -2056,8 +2064,24 @@ func (t *tacticalScreen) fireRound(target int) {
 		}
 		// 行動次數(第 70 項(陀螺去穩器)):超載電容/快速飛彈架/時間扭曲加速器可以再打一次。
 		// 沒有這些系統的船 shots==1,整段行為與先前逐位元相同。
+		// 能量吸收器:先把儲能射出去(自動命中)。手冊「A cloaked ship will **not** decloak
+		// from firing its stored energy」——所以這一發在 CloakOnFire 之前,而且不設 Fired。
+		if s.StoredEnergy > 0 {
+			dispRoll := 0
+			if t.enemy[target].HasDisplacement {
+				dispRoll = t.rng.Intn(100) + 1
+			}
+			er := shell.EnergyAbsorberRelease(s, &t.enemy[target], dist, dispRoll)
+			if er.Hit {
+				anyHit = true
+				t.enemy[target].ArmorHP = er.RemainingArmorHP
+				t.enemy[target].HP -= er.DamageToStructure
+				pAtk += er.DamageToStructure
+			}
+		}
 		shots := shell.TacticalShotsThisRound(*s)
-		s.Fired = true // 開過火 → 這一回合結束時不會充能(手冊的 unused 是「完全沒開火」)
+		s.Fired = true       // 開過火 → 這一回合結束時不會充能(手冊的 unused 是「完全沒開火」)
+		shell.CloakOnFire(s) // 隱形在開火**當下**失效,不是下一回合
 		for shot := 0; shot < shots; shot++ {
 			firing++
 			if !firedAny {
@@ -2083,6 +2107,10 @@ func (t *tacticalScreen) fireRound(target int) {
 				if enemy.HasDisplacement {
 					mdef.HasDisplacement, mdef.DisplacementRoll = true, t.rng.Intn(100)+1
 				}
+				// 匿蹤:手冊「missiles and torpedoes have a 50% chance to miss」。
+				if c := shell.CloakMissileMissChance(*enemy, t.round+1); c > 0 {
+					mdef.CloakMissChance, mdef.CloakRoll = c, t.rng.Intn(100)+1
+				}
 				// ⚠ 第 71 項:第五個引數(攻方掃描器抵銷)先前恆為 0、倒數第二個
 				// (目標的硬化護盾)恆為 false。兩個都有真值,只是沒人回頭填。
 				shot = shell.ResolveMissileShot(enemy.HasAMR, dist, amrRoll, enemy.MissileEvasion,
@@ -2099,7 +2127,7 @@ func (t *tacticalScreen) fireRound(target int) {
 					enemy.HardShield, false)
 			default:
 				roll := t.rng.Intn(100) + 1
-				net := s.Attack - shell.TacticalEffectiveDefense(*enemy)
+				net := s.Attack - shell.TacticalEffectiveDefenseAtRound(*enemy, t.round+1)
 				shot = shell.ResolveBeamShot(shell.BeamShot{
 					NetAttack: net, WeaponMin: s.WeaponMin, WeaponMax: s.WeaponMax,
 					RangeSquares: dist, Roll: roll,
@@ -2108,11 +2136,16 @@ func (t *tacticalScreen) fireRound(target int) {
 					Target: shell.BeamTargetSystems{
 						ShieldReduction: enemy.ShieldReduction, ArmorHP: enemy.ArmorHP,
 						APNegated: enemy.APNegated,
+						// ⚠ 2026-08-08:HardShield 先前**沒有填**——快速結算那一側同一個漏。
+						// 「Resolve* 有這個參數」不等於「呼叫端有填」。
+						HardShield: enemy.HardShield,
 					},
 				})
 			}
 			if shot.Hit {
 				anyHit = true
+				// 能量吸收器:轉存 1/4「抵達這艘船」的潛在傷害(見 gamedata.EnergyAbsorberStored)。
+				shell.EnergyAbsorberAbsorb(enemy, s.WeaponMax)
 				enemy.ArmorHP = shot.RemainingArmorHP
 				enemy.HP -= shot.DamageToStructure
 				pAtk += shot.DamageToStructure

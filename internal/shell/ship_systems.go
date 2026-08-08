@@ -183,6 +183,9 @@ func TacticalAdvanceCharge(ships []CombatShip) {
 		} else {
 			sh.Charged = gamedata.ShotsRecharge(sh.Fired)
 		}
+		// 匿蹤與充能讀**同一份還沒被清掉的 Fired**(手冊兩邊都是「一整回合沒開火」),
+		// 所以放在這裡而不是另外開一個迴圈——清除順序一錯就會差一回合。
+		CloakAdvanceRound(sh)
 		sh.Fired = false
 	}
 }
@@ -196,6 +199,7 @@ func shipBeamAttackerSystems(sh Ship) BeamAttackerSystems {
 		HEFBonus:           hefBonusFor(sh.Special == highEnergyFocusName),
 		StructuralAnalyzer: sh.Special == "結構分析儀",
 		AchillesUnit:       sh.Special == "阿基里斯瞄準器",
+		Rangemaster:        sh.Special == rangemasterName,
 	}
 }
 
@@ -205,7 +209,11 @@ func shipBeamAttackerSystems(sh Ship) BeamAttackerSystems {
 // (增強引擎 / 時間扭曲加速器 / 結構分析儀 / 阿基里斯瞄準器 / 超載電容 / 快速飛彈架 / 轟炸機庫),
 // 理由卻還留在這裡——**這份清單自己就是它警告的那種東西**。每次接掉一項就要回來刪一行。
 //
-// --- A. 真的還擋著(缺前置系統,不是缺數字)---
+// --- 還沒接的三個,與各自的理由(2026-08-08 重寫)---
+//
+// B 那一格清空了:能量吸收器 / 戰鬥艙 / 相位匿蹤 / 測距瞄準器 / 隱形裝置五項這一輪全部接完
+// (見 cloak.go、energy_absorber.go、special_device_map.go)。**做完一項就回來刪那一行**
+// ——這份清單上一版有 12 項,其中 7 項早就接掉了,而沒有任何機制會提醒你。
 //
 //	保安站(Security Stations)   「+20 to the combat rolls of the Marines defending against
 //	                            enemy boarding parties」——**登艦戰不存在**(第 60 項(打得準也閃得掉))
@@ -214,27 +222,5 @@ func shipBeamAttackerSystems(sh Ship) BeamAttackerSystems {
 //	                            是抽象戰力、沒有地圖座標(見 detection.go 檔頭),玩家自己的艦隊
 //	                            對玩家永遠可見。**沒有「敵方看得到我的艦隊」這件事可以隱藏。**
 //
-// --- B. 擋門理由已經過期或本來就錯(下一輪的料)---
-//
-//	能量吸收器(Energy Absorber) 「One-quarter of all the potential damage … is diverted to and
-//	                            stored … can fire this stored energy … automatically hitting it
-//	                            (unless the target has a Displacement Device)」。
-//	                            舊理由「需儲能狀態」——**第 70 項(陀螺去穩器)已經建了跨回合的
-//	                            Charged/Fired 狀態**,同一個地方加一個 StoredEnergy 就行;
-//	                            位移裝置也在(第 68 項(元件盤點+飛彈防禦))。理由過期。
-//	戰鬥艙(Battle Pods)        「add equipment space without increasing the hull size」。
-//	                            舊理由「remake 沒有逐元件佔格的造艦模型」——**那是錯的**:
-//	                            gamedata.ShipHullSpace + shell.ShipDesignSpaceUsed 都在。
-//	相位匿蹤(Phasing Cloak)     「While cloaked, the ship cannot be attacked. After 10 turns in
-//	                            combat … it functions just like a Cloaking Device until the end
-//	                            of that combat」。舊理由「需戰鬥可見性」——其實只需要
-//	                            **不可被選為目標**這一個旗標 + 回合數(t.round 已經有了)。
-//	測距瞄準器(Rangemaster)     「reducing the absolute range … to one-third of the actual range.
-//	                            Note that the dissipation of damage potential is not affected」。
-//	                            舊理由「快速結算固定 range=2」只對一半——**格子戰術傳的是真距離
-//	                            dist**。⚠ 這一項先前根本不在任何缺口名單上(第 68 項(元件盤點+飛彈防禦)的盤點漏了)。
-//	隱形裝置(Cloaking Device)   ⚠ **已經在 SpecialOptions 裡,但整份程式碼沒有任何地方讀它**
-//	                            ——裝得上、花得了錢、不做任何事。手冊給了完整規則:未攻擊時
-//	                            +80 光束防禦、飛彈與魚雷 50% 未命中;一旦開火就失去;要整整
-//	                            一回合沒開火才能重新隱形(**那正是第 70 項(陀螺去穩器) Fired 的語意**)。
-//	                            「元件表有」與「效果有接」是兩件事,先前沒有任何盤點分得出來。
+// 三個共通點:缺的是**前置系統**(登艦戰、護盾分面、敵方艦隊的地圖表示),不是缺數字。
+// 這與 B 那一格的五項是完全不同的狀況——那五項缺的一直只是「有沒有人回頭查」。

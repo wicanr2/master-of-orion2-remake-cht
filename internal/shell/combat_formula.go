@@ -113,6 +113,12 @@ type BeamAttackerSystems struct {
 	// 「negates the Armor **Piercing abilities** of enemy weapons」——字面涵蓋
 	// 「無視裝甲」這個能力,所以這裡採「會被抵銷」的讀法。標在這裡,不假裝手冊講了。
 	AchillesUnit bool
+	// Rangemaster 是測距瞄準器。手冊逐字:「reducing the absolute range (which is used to
+	// compute accuracy and to hit penalties) to one-third of the actual range. Note that
+	// the **dissipation of damage potential is not affected** by this system.」
+	//
+	// 那兩句話在程式裡是兩個不同的位置——射程等級要算兩次(見 ResolveBeamShot)。
+	Rangemaster bool
 }
 
 // BeamTargetSystems 是**目標方**艦上會影響這一發的系統與狀態。
@@ -133,8 +139,15 @@ func ResolveBeamShot(in BeamShot) ShotResult {
 	hardShield, apNegated := in.Target.HardShield, in.Target.APNegated
 	hefBonus := in.Attacker.HEFBonus
 	netAttack := netAttackBase + gamedata.WeaponModNetAttackBonus(mods)
+	// 射程等級算**兩次**:一次給命中判定、一次給傷害衰減。
+	// 沒有測距瞄準器時兩者相同(hitSquares == rangeSquares),整段與先前逐位元一致。
+	hitSquares := rangeSquares
+	if in.Attacker.Rangemaster {
+		hitSquares = gamedata.RangemasterRangeSquares(rangeSquares)
+	}
+	hitLevel := gamedata.CombatRangeLevelForBeamMods(hitSquares, mods)
 	level := gamedata.CombatRangeLevelForBeamMods(rangeSquares, mods)
-	penalty := gamedata.CombatRangeLevelPenalty(level)
+	penalty := gamedata.CombatRangeLevelPenalty(hitLevel)
 	pdBonus := gamedata.WeaponModPDBonus(mods)
 	threshold := gamedata.CombatHitThreshold(penalty, pdBonus)
 
@@ -230,6 +243,11 @@ type MissileDefenses struct {
 	LightningRoll     int  // 1..100
 	HasDisplacement   bool // 位移裝置:一律 30% 完全未命中
 	DisplacementRoll  int  // 1..100
+	// CloakMissChance 是目標**此刻隱形**造成的未命中機率(隱形裝置 50%,未隱形傳 0)。
+	// 手冊把它與 +80 光束防禦並列成兩種武器各自的規則,所以做成獨立的一道,
+	// 而不是加進 defenderEvasionBonus——加進去會與干擾器/慣性穩定器那一族互相汙染。
+	CloakMissChance int
+	CloakRoll       int // 1..100(CloakMissChance > 0 時才擲)
 }
 
 func ResolveMissileShot(
@@ -259,6 +277,12 @@ func ResolveMissileShot(
 	}
 	if jamRoll > hitChance {
 		return ShotResult{Hit: false, RemainingArmorHP: armorHP} // 被干擾/閃避
+	}
+	// 匿蹤:手冊「missiles and torpedoes have a 50% chance to miss」。排在閃避之後、
+	// 位移裝置之前——手冊把匿蹤與位移裝置寫在同一組(都是「躲過去」而不是「打下來」),
+	// 而位移裝置那句有「regardless of any other equipment or situation」,所以它在最後。
+	if def.CloakMissChance > 0 && def.CloakRoll <= def.CloakMissChance {
+		return ShotResult{Hit: false, RemainingArmorHP: armorHP}
 	}
 	// 位移裝置在**最後面**:手冊說它「不論其他裝備或情況」一律 30% 完全未命中,
 	// 而且與匿蹤同組、明寫是在 MIRV 分裂「之後」判定——那個順序表示它躲的是彈頭,

@@ -417,6 +417,16 @@ var (
 		// 戰鬥艙的用法是「騰出空間給其他系統」;在 remake 它換來的是**更大的武器**。
 		// 這是單槽模型的必然後果,不是抄錯。
 		{"戰鬥艙", 0, 0, gamedata.TOPIC_CAPSULE_CONSTRUCTION, gamedata.TECH_BATTLE_PODS},
+		// --- 匿蹤家族 + 測距瞄準器 + 能量吸收器(見 cloak.go / energy_absorber.go)---
+		// 這四項先前都在「擋門理由已經過期或本來就錯」那一格,共通點是**手冊給了確切數字**,
+		// 而缺的機制其實都已經建好了(Fired、不可被選為目標、真實格距離、跨回合狀態)。
+		// 成本走原版特殊裝置表(依艦級),所以 Cost 欄留 0。
+		//
+		// ⚠ 隱形裝置本來就在這張表的最上面一段——那一列從加進來那天起就**沒有任何程式碼讀它**
+		// (第 72 項(元件表有≠效果有接))。這一輪補的是效果,不是元件。
+		{"能量吸收器", 0, 0, gamedata.TOPIC_HIGH_ENERGY_DISTRIBUTION, gamedata.TECH_ENERGY_ABSORBER},
+		{"測距瞄準器", 0, 0, gamedata.TOPIC_ARTIFICIAL_CONSCIOUSNESS, gamedata.TECH_RANGEMASTER_UNIT},
+		{"相位匿蹤", 0, 0, gamedata.TOPIC_TEMPORAL_FIELDS, gamedata.TECH_PHASING_CLOAK},
 		{"快速飛彈架", 120, 0, gamedata.TOPIC_SERVO_MECHANICS, gamedata.TECH_FAST_MISSILE_RACKS},
 		{"超載電容", 160, 0, gamedata.TOPIC_HYPER_DIMENSIONAL_FISSION, gamedata.TECH_HYPERX_CAPACITORS},
 		{"時間扭曲加速器", 250, 0, gamedata.TOPIC_TEMPORAL_PHYSICS, gamedata.TECH_TIME_WARP_FACILITATOR},
@@ -703,6 +713,17 @@ type combatant struct {
 	// battleVolley 會套用(見 WeaponIsBeam 判斷),敵方艦隊(genEnemyFleet)沒有個別武器
 	// 設計,一律 nil(既有簡化,非本輪引入)。
 	mods []string
+	// --- 匿蹤與能量吸收器(見 cloak.go / energy_absorber.go)---
+	//
+	// ⚠ 快速結算沒有「回合」的概念(見 shots 欄的說明),所以匿蹤在這裡只有**一次性**的
+	// 語意:開場隱形,一旦開火就永久失效——「停火一整回合重新隱形」需要跨回合狀態,
+	// 那是格子戰術才有的東西。相位匿蹤的 10 回合降級同理,在這裡一律當成還沒降級。
+	// 這是既有簡化的延伸,不是漏抄。
+	cloakKind CloakKind
+	cloaked   bool
+	// energyAbsorber / storedEnergy:被打時轉存 1/4 潛在傷害,下一次開火自動命中射出。
+	energyAbsorber bool
+	storedEnergy   int
 }
 
 // battleVolley 讓每個存活 attacker 對第一個存活 defender 射一發(固定近距 range=2),
@@ -743,15 +764,26 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 func battleShot(atk *combatant, defenders *[]combatant, rng *rand.Rand) {
 	ti := -1
 	for j := range *defenders {
-		if (*defenders)[j].hp > 0 {
+		// 相位匿蹤:手冊「While cloaked, the ship **cannot be attacked**」——不是難打中,
+		// 是根本選不到。所以它排在存活判定旁邊,不是後面的命中判定裡。
+		// (快速結算沒有回合,一律當成還沒過 10 回合的降級門檻,見 combatant.cloakKind。)
+		if (*defenders)[j].hp > 0 && !((*defenders)[j].cloaked && (*defenders)[j].cloakKind == CloakPhasing) {
 			ti = j
 			break
 		}
 	}
 	if ti < 0 {
-		return // 敵方全滅,這一發沒有目標
+		return // 敵方全滅(或全部躲在相位匿蹤裡),這一發沒有目標
 	}
 	d := &(*defenders)[ti]
+	// 儲能先射(手冊:自動命中,而且**射儲能不會解除隱形**,所以在 atk.cloaked 之前)。
+	// 沒有儲能就完全不動 RNG,既有戰鬥逐位元不變。
+	if atk.storedEnergy > 0 {
+		releaseStoredEnergyQuick(atk, d, rng)
+		if d.hp <= 0 {
+			return
+		}
+	}
 	var shot ShotResult
 	switch atk.kind {
 	case WeaponKindBomb:
@@ -770,6 +802,10 @@ func battleShot(atk *combatant, defenders *[]combatant, rng *rand.Rand) {
 		}
 		if d.hasDisplacement {
 			mdef.HasDisplacement, mdef.DisplacementRoll = true, rng.Intn(100)+1
+		}
+		// 匿蹤:手冊「missiles and torpedoes have a 50% chance to miss」。同款「裝了才擲骰」。
+		if c := quickCloakMissChance(d); c > 0 {
+			mdef.CloakMissChance, mdef.CloakRoll = c, rng.Intn(100)+1
 		}
 		// ⚠ 2026-08-08:上一版註解寫「那句話對 ECM 干擾器/慣性穩定器仍成立」
 		// ——第 68 項(元件盤點+飛彈防禦)把那一整族補進 SpecialOptions 了,`missileEvasion` 現在吃得到。
@@ -799,20 +835,72 @@ func battleShot(atk *combatant, defenders *[]combatant, rng *rand.Rand) {
 			weaponBypassesShieldAndArmor(atk.weaponName))
 	default:
 		roll := rng.Intn(100) + 1
-		net := atk.atk - d.def
+		// 隱形裝置:+80 光束防禦(手冊那句的主詞是 defense,所以加在守方而非扣攻方命中)。
+		net := atk.atk - (d.def + quickCloakBeamDefense(d))
 		shot = ResolveBeamShot(BeamShot{
 			NetAttack: net, WeaponMin: atk.wmin, WeaponMax: atk.wmax,
 			RangeSquares: 2, Roll: roll, Mods: weaponModCodes(atk.mods),
 			Attacker: atk.beamSystems,
 			Target: BeamTargetSystems{
 				ShieldReduction: d.shield, ArmorHP: d.armor, APNegated: d.apNegated,
+				// ⚠ 2026-08-08:HardShield 先前**沒有填**。第 71 項(探針③內部函式)補了飛彈與球形
+				// 兩條路徑,而 combatant.hardShield 的註解卻寫著「三條路徑都要吃到,
+				// 之前只有光束路徑接了」——事實相反:光束是唯一沒接的那一條。
+				// 「Resolve* 有這個參數」不等於「呼叫端有填」,而那個結構欄位有預設零值,
+				// 所以漏填不會編譯失敗、也不會有任何測試紅——直到有人逐欄看過去。
+				HardShield: d.hardShield,
 			},
 		})
 	}
 	if shot.Hit {
+		// 能量吸收器:轉存 1/4「抵達這艘船」的傷害。取扣盾前的值(見
+		// gamedata.EnergyAbsorberStored 對 reaches / penetrates 兩個詞的說明);
+		// 這裡拿得到的是扣完盾甲的結構傷害,所以用射前的潛在值反推不了——
+		// **改用武器上限**,那正是「潛在傷害」在 remake 這條路徑上最接近的量。
+		if d.energyAbsorber {
+			d.storedEnergy += gamedata.EnergyAbsorberStored(atk.wmax)
+		}
 		d.armor = shot.RemainingArmorHP
 		d.hp -= shot.DamageToStructure
 	}
+	// 開火即解除隱形(手冊:是開火當下,不是下一回合)。快速結算沒有回合,所以這是永久的
+	// ——見 combatant.cloakKind 的說明。
+	atk.cloaked = false
+}
+
+// quickCloakBeamDefense / quickCloakMissChance 是快速結算這一側的匿蹤查詢。
+//
+// 與格子戰術共用同一組手冊常數,但**不共用函式**:那邊的 CloakBeamDefenseBonus 吃的是
+// CombatShip 與回合數,而快速結算既沒有 CombatShip 也沒有回合。硬要共用得先造一個
+// 中介型別,那比兩個三行函式貴。
+func quickCloakBeamDefense(c *combatant) int {
+	if !c.cloaked || c.cloakKind == CloakNone {
+		return 0
+	}
+	return gamedata.ShipCloakingDeviceBeamDefense
+}
+
+func quickCloakMissChance(c *combatant) int {
+	if !c.cloaked || c.cloakKind == CloakNone {
+		return 0
+	}
+	return gamedata.ShipCloakingDeviceMissileMissChance
+}
+
+// releaseStoredEnergyQuick 是能量吸收器在快速結算這一側的發射:自動命中,除非目標有位移裝置;
+// 傷害照光束的距離衰減表打折(快速結算固定 range=2,對應 level 1 → 衰減 0)。
+func releaseStoredEnergyQuick(atk *combatant, d *combatant, rng *rand.Rand) {
+	stored := atk.storedEnergy
+	atk.storedEnergy = 0
+	if d.hasDisplacement && rng.Intn(100)+1 <= gamedata.MissileDisplacementDeviceMissChance {
+		return
+	}
+	level := gamedata.CombatRangeLevel(2)
+	dmg := stored * (100 - gamedata.DamageDissipationPenalty(level)) / 100
+	dmg = gamedata.DamageAfterShield(dmg, d.shield, d.hardShield, false)
+	_, toStruct, remArmor := gamedata.DamageApplyArmor(dmg, d.armor, false, d.apNegated)
+	d.armor = remArmor
+	d.hp -= toStruct
 }
 
 // mkPlayerCombatants 把玩家目前艦隊(s.Ships)轉成 []combatant,供快速艦隊戰鬥解算共用——
@@ -910,7 +998,9 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 			scannerJamReduction: bestPlayerScannerJamReduction(s.Player),
 			missileEvasion: gamedata.ShipCrewMissileEvasionBonus(crew) + s.helmsmanEvasionBonus() +
 				shipMissileEvasionBonus(sh),
-			autoRepair: shipHasAutoRepair(sh), shipIdx: shipIdx})
+			cloakKind: shipCloakKind(sh), cloaked: shipCloakKind(sh) != CloakNone,
+			energyAbsorber: sh.Special == energyAbsorberName,
+			autoRepair:     shipHasAutoRepair(sh), shipIdx: shipIdx})
 		idx = append(idx, shipIdx)
 	}
 	return out, idx
@@ -1137,6 +1227,12 @@ type CombatShip struct {
 	ShotsKind gamedata.ShotsPerRoundKind // 超載電容 / 快速飛彈架 / 時間扭曲加速器
 	Charged   bool                       // 上一回合完全沒開火 → 這一回合可以連射
 	Fired     bool                       // 這一回合開過火(回合結束時決定下一回合的 Charged)
+	// --- 匿蹤(見 cloak.go)---
+	CloakKind CloakKind // 隱形裝置 / 相位匿蹤 / 無
+	Cloaked   bool      // 此刻是否隱形(開場為真,開火即失效,停火一整回合恢復)
+	// --- 能量吸收器(見 energy_absorber.go)---
+	EnergyAbsorber bool // 這艘船帶能量吸收器:被打時轉存 1/4 潛在傷害
+	StoredEnergy   int  // 目前存著的能量(下一次開火時自動命中射出)
 }
 
 // CombatSpriteForClass 依艦體等級回傳 CMBTSHP 色塊內 sprite 索引(見 docs/tech/cmbtshp-ship-sprites.md)。
@@ -1222,6 +1318,9 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			HasStasisField:          sh.Special == stasisFieldName,
 			ScannerJamReduction:     bestPlayerScannerJamReduction(s.Player),
 			ShotsKind:               shipShotsKind(sh),
+			CloakKind:               shipCloakKind(sh),
+			Cloaked:                 shipCloakKind(sh) != CloakNone, // 開場隱形(手冊沒有「要先充能」)
+			EnergyAbsorber:          sh.Special == energyAbsorberName,
 			Charged:                 true, // 開場滿電(手冊沒有「第一回合不能連射」的限制)
 			Initiative:              gamedata.CombatInitiative(atk, s.shipCombatSpeed(sh)),
 			SpriteIdx:               CombatSpriteForClass(sh.Class), // 色塊 0(玩家)

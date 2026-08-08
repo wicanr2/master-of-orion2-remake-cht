@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"math/rand"
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
@@ -108,5 +109,39 @@ func TestHardShieldOtherManualEffects(t *testing.T) {
 	// 星雲內:沒有硬化護盾的船護盾歸零,有的不受影響。
 	if !shipHasHardShield(Ship{Special: "硬化護盾"}) {
 		t.Error("元件名比對應認得硬化護盾")
+	}
+}
+
+// TestHardShieldReachesBeamCallSites 是**呼叫端**的回歸,不是公式的。
+//
+// ⚠ 2026-08-08 抓到的漏:`ResolveBeamShot` 從第 68 項(元件盤點+飛彈防禦)起就有 `Target.HardShield`,
+// 而兩條戰鬥路徑的光束分支**都沒有填它**——`BeamTargetSystems` 是結構,漏填一個欄位
+// 拿到的是零值,不會編譯失敗、也不會有任何測試紅。上面那幾條測試都直接呼叫
+// `ResolveBeamShot` 並自己填 `HardShield: true`,所以驗的是公式,驗不到呼叫端。
+//
+// combatant.hardShield 的註解當時甚至寫著「三條路徑都要吃到,之前只有光束路徑接了」
+// ——事實相反,光束是唯一沒接的那一條。
+//
+// 這條測試走 battleShot(快速結算的真正入口),同一顆種子、同一批船,只差硬化護盾。
+func TestHardShieldReachesBeamCallSites(t *testing.T) {
+	mk := func(hard bool) ([]combatant, []combatant) {
+		atk := []combatant{{hp: 100, atk: 200, def: 0, wmin: 40, wmax: 40,
+			kind: WeaponKindBeam, shots: 1}}
+		def := []combatant{{hp: 1000, atk: 0, def: 0, wmin: 0, wmax: 0,
+			kind: WeaponKindBeam, shots: 1, shield: 5, hardShield: hard, shipIdx: -1}}
+		return atk, def
+	}
+	run := func(hard bool) int {
+		a, d := mk(hard)
+		rng := rand.New(rand.NewSource(20260808))
+		battleShot(&a[0], &d, rng)
+		return 1000 - d[0].hp
+	}
+	soft, hardDmg := run(false), run(true)
+	if soft == 0 {
+		t.Fatal("測試前提不成立:這一發應該命中")
+	}
+	if want := soft - gamedata.DamageHardShieldBonus; hardDmg != want {
+		t.Errorf("快速結算的光束路徑沒有吃到硬化護盾:%d → %d(期望 %d)", soft, hardDmg, want)
 	}
 }
