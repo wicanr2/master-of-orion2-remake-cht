@@ -186,8 +186,6 @@ func main() {
 	raceMode := flag.Bool("race-viewer", false, "種族統計畫面模式")
 	gameMode := flag.Bool("game", false, "還原原版互動遊戲(原版主選單→導覽各原版畫面,全繁中;有 -shot 則腳本驗證)")
 	gameGallery := flag.String("gamegallery", "", "headless 導覽腳本:依序點擊主選單→新遊戲→星系主畫面→殖民地/研究/外交/戰鬥,各到達畫面存一張圖到此目錄(需 -game;優先於 -shot)")
-	playMode := flag.Bool("play", false, "可玩遊戲殼(互動;有 -shot 則跑腳本驗證並截圖)")
-	playRecord := flag.String("play-record", "", "錄製模式:scripted playthrough 逐幀存圖到此目錄(供 gameplay footage)")
 	colonyMode := flag.Bool("colony-viewer", false, "殖民地摘要畫面模式")
 	diploMode := flag.Bool("diplo-viewer", false, "外交關係畫面模式")
 	tsvPath := flag.String("tsv", "", "譯表 TSV(留空用該畫面預設)")
@@ -323,37 +321,6 @@ func main() {
 			}
 		}
 		if err := runInteractive(dirs, langID, fnt, fntVec, script, *shot, *frames, *gameGallery); err != nil {
-			fatal(err)
-		}
-		return
-	}
-
-	// 可玩遊戲殼:互動主選單→遊戲畫面→結束回合。headless(-shot)時跑內建腳本驗證互動。
-	if *playMode {
-		fnt, err := loadFont(*fontPath, langID)
-		if err != nil {
-			fatal(fmt.Errorf("載入字型: %w", err))
-		}
-		// 錄製模式:跑豐富 playthrough 逐幀存圖(gameplay footage)。
-		if *playRecord != "" {
-			script := recordPlaythrough()
-			if err := runPlay(fnt, "", 0, script, *playRecord, len(script)+2); err != nil {
-				fatal(err)
-			}
-			return
-		}
-		var script []shell.InputState
-		if *shot != "" {
-			// 腳本 playthrough:新遊戲→管理殖民地→調工人×2→調科學家 → 截圖驗證互動 gameplay。
-			script = []shell.InputState{
-				{MouseX: 320, MouseY: 218, ClickReleased: true}, // 新遊戲 → 遊戲畫面
-				{MouseX: 315, MouseY: 438, ClickReleased: true}, // 管理殖民地 → 殖民地畫面
-				{MouseX: 365, MouseY: 185, ClickReleased: true}, // 工人 ▲
-				{MouseX: 365, MouseY: 185, ClickReleased: true}, // 工人 ▲
-				{MouseX: 365, MouseY: 225, ClickReleased: true}, // 科學家 ▲
-			}
-		}
-		if err := runPlay(fnt, *shot, *frames, script, "", 0); err != nil {
 			fatal(err)
 		}
 		return

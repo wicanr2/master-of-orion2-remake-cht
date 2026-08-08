@@ -52,8 +52,6 @@ var langGapExemptCalls = map[string]bool{
 // 整檔豁免。**每一筆都要寫理由**——這裡是唯一可以「不補而不算缺口」的出口,
 // 不寫理由就等於把缺口藏起來。
 var langGapExemptFiles = map[string]string{
-	// -play 是已淘汰的簡約殼,不是主遊戲畫面;主遊戲走 -game。
-	"play.go": "已淘汰的 -play 簡約殼",
 	// 全是 CLI 旗標說明(`-h` 印在終端機)與視窗標題,不是遊戲畫面上的字。
 	"main.go": "CLI 旗標說明與視窗標題",
 }
