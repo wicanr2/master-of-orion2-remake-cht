@@ -676,6 +676,13 @@ type combatant struct {
 	// 飛彈特殊防禦(手冊 p.123):裝了才擲骰,見 ResolveMissileShot 的 MissileDefenses。
 	hasLightningField bool
 	hasDisplacement   bool
+	// hardShield 是這艘**被打的**船裝了硬化護盾。手冊那句的主詞是「each enemy attack」
+	// ——不分武器類型,所以三條射擊路徑(光束/飛彈/球形)都要吃到。
+	// 第 142 項之前只有光束路徑接了,飛彈與球形一律傳 false。
+	hardShield bool
+	// scannerJamReduction 是這艘**開火的**船抵銷目標飛彈閃避的點數(迅子 20 / 中子 40)。
+	// 帝國級(掃描科技無逐艦元件),敵方艦隊無科技資料故為 0。
+	scannerJamReduction int
 	// missileEvasion 是這艘船的飛彈閃避加成(手冊 ME 欄 + 舵手技能)。
 	// 只有當**它是防守方**時才有意義;敵方艦隊無逐艦資料,一律 0(既有簡化)。
 	missileEvasion int
@@ -753,8 +760,12 @@ func battleShot(atk *combatant, defenders *[]combatant, rng *rand.Rand) {
 		}
 		// ⚠ 2026-08-08:上一版註解寫「那句話對 ECM 干擾器/慣性穩定器仍成立」
 		// ——第 133 項把那一整族補進 SpecialOptions 了,`missileEvasion` 現在吃得到。
-		shot = ResolveMissileShot(d.hasAMR, 2, amrRoll, d.missileEvasion, 0, false, jamRoll,
-			atk.wmax, d.shield, d.armor, false, mdef)
+		// ⚠ 2026-08-08(第 142 項):倒數第二個引數先前恆為 false(硬化護盾),
+		// 第五個引數恆為 0(攻方掃描器)。兩者現在都有真值來源——手冊各自寫得很清楚,
+		// 只是這兩個參數位置從加進來那天起就沒有人回頭填。
+		shot = ResolveMissileShot(d.hasAMR, 2, amrRoll, d.missileEvasion,
+			atk.scannerJamReduction, false, jamRoll,
+			atk.wmax, d.shield, d.armor, d.hardShield, mdef)
 	case WeaponKindSpherical:
 		span := atk.wmax - atk.wmin
 		r := 0
@@ -771,7 +782,7 @@ func battleShot(atk *combatant, defenders *[]combatant, rng *rand.Rand) {
 		aggD *= int(d.sizeClass) + 1
 		// 空間壓縮器手冊明講「does all damage to structure only, ignoring shields
 		// and armor」;脈衝星沒有那一句,所以只有前者豁免。
-		shot = ResolveSphericalShot(aggD, d.shield, d.armor, false,
+		shot = ResolveSphericalShot(aggD, d.shield, d.armor, d.hardShield,
 			weaponBypassesShieldAndArmor(atk.weaponName))
 	default:
 		roll := rng.Intn(100) + 1
@@ -879,9 +890,11 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 			shots: gamedata.ShotsThisRound(shipShotsKind(sh),
 				weaponKindByName(sh.Weapon) == WeaponKindBeam,
 				weaponKindByName(sh.Weapon) == WeaponKindMissile, true),
-			apNegated:         shipNegatesArmorPiercing(sh),
-			hasLightningField: shipHasLightningField(sh),
-			hasDisplacement:   shipHasDisplacementDevice(sh),
+			apNegated:           shipNegatesArmorPiercing(sh),
+			hasLightningField:   shipHasLightningField(sh),
+			hasDisplacement:     shipHasDisplacementDevice(sh),
+			hardShield:          shipHasHardShield(sh),
+			scannerJamReduction: bestPlayerScannerJamReduction(s.Player),
 			missileEvasion: gamedata.ShipCrewMissileEvasionBonus(crew) + s.helmsmanEvasionBonus() +
 				shipMissileEvasionBonus(sh),
 			autoRepair: shipHasAutoRepair(sh), shipIdx: shipIdx})
@@ -1085,6 +1098,9 @@ type CombatShip struct {
 	HasAMR            bool // 反飛彈火箭:射程內攔截
 	HasLightningField bool // 閃電場:每一枚來襲飛彈各 50% 直接摧毀
 	HasDisplacement   bool // 位移裝置:一律 30% 完全未命中
+	// ScannerJamReduction 是這艘船**開火時**抵銷目標飛彈閃避的點數(迅子 20 / 中子 40,
+	// 手冊那兩個條目的最後一句)。與 MissileEvasion 相對:一個是防守方的躲、一個是攻擊方的破。
+	ScannerJamReduction int
 	// BeamSystems 是這艘船的攻方光束系統(高能聚焦/結構分析儀/阿基里斯瞄準器)。
 	BeamSystems BeamAttackerSystems
 	// DriveLevel 是玩家目前的引擎階(1..6)。戰機速度與飛彈速度都吃它
@@ -1191,6 +1207,7 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			SizeClass:               shipSizeClass(sh.Class),
 			TractorBeams:            boolToInt(sh.Special == tractorBeamName),
 			HasStasisField:          sh.Special == stasisFieldName,
+			ScannerJamReduction:     bestPlayerScannerJamReduction(s.Player),
 			ShotsKind:               shipShotsKind(sh),
 			Charged:                 true, // 開場滿電(手冊沒有「第一回合不能連射」的限制)
 			Initiative:              gamedata.CombatInitiative(atk, s.shipCombatSpeed(sh)),

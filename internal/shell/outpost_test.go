@@ -110,8 +110,8 @@ func TestOutpostExtendsDetection(t *testing.T) {
 		[4]float64{0.9, 0.9, 0, 0},  // 遠方的前哨站所在星
 		[4]float64{0.93, 0.9, 0, 0}, // 緊鄰前哨站、離母星很遠的星
 	)
-	without := playerDetectionVisible(stars, []int{0}, -1, []map[string]bool{{}}, 2, 0, nil)
-	with := playerDetectionVisible(stars, []int{0}, -1, []map[string]bool{{}}, 2, 0, []int{1})
+	without := playerDetectionVisible(stars, []int{0}, nil, []map[string]bool{{}}, 2, 0, nil)
+	with := playerDetectionVisible(stars, []int{0}, nil, []map[string]bool{{}}, 2, 0, []int{1})
 
 	if without[2] {
 		t.Fatal("測試前提不成立:沒有前哨站時星 2 就已經看得到")

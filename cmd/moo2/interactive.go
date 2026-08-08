@@ -2083,8 +2083,11 @@ func (t *tacticalScreen) fireRound(target int) {
 				if enemy.HasDisplacement {
 					mdef.HasDisplacement, mdef.DisplacementRoll = true, t.rng.Intn(100)+1
 				}
-				shot = shell.ResolveMissileShot(enemy.HasAMR, dist, amrRoll, enemy.MissileEvasion, 0, false, jamRoll,
-					s.WeaponMax, enemy.ShieldReduction, enemy.ArmorHP, false, mdef)
+				// ⚠ 第 142 項:第五個引數(攻方掃描器抵銷)先前恆為 0、倒數第二個
+				// (目標的硬化護盾)恆為 false。兩個都有真值,只是沒人回頭填。
+				shot = shell.ResolveMissileShot(enemy.HasAMR, dist, amrRoll, enemy.MissileEvasion,
+					s.ScannerJamReduction, false, jamRoll,
+					s.WeaponMax, enemy.ShieldReduction, enemy.ArmorHP, enemy.HardShield, mdef)
 			case shell.WeaponKindSpherical:
 				span := s.WeaponMax - s.WeaponMin
 				r := 0
@@ -2092,7 +2095,8 @@ func (t *tacticalScreen) fireRound(target int) {
 					r = t.rng.Intn(span + 1)
 				}
 				aggD := gamedata.DamageSphericalRoll(s.WeaponMin, r, 100)
-				shot = shell.ResolveSphericalShot(aggD, enemy.ShieldReduction, enemy.ArmorHP, false, false)
+				shot = shell.ResolveSphericalShot(aggD, enemy.ShieldReduction, enemy.ArmorHP,
+					enemy.HardShield, false)
 			default:
 				roll := t.rng.Intn(100) + 1
 				net := s.Attack - shell.TacticalEffectiveDefense(*enemy)

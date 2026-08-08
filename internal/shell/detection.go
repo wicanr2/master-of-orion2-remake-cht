@@ -32,10 +32,29 @@ func bestPlayerScannerParsec(ps engine.PlayerState) int {
 	return gamedata.ScannerRangeParsec(hasSpace, hasNeutron, hasTachyon)
 }
 
-// detectionSource 是一個偵測源(殖民地或艦隊所在星)在星圖上的位置與其軌道基地加成。
+// bestPlayerScannerJamReduction 回傳玩家最佳掃描科技對敵方飛彈閃避的抵銷點數
+// (MissileJamChance 的 attackerScannerBonus)。判定規則與 bestPlayerScannerParsec 完全相同,
+// 只是查另一張表——**同一個科技的第二個效果**(手冊迅子/中子條目的最後一句)。
+//
+// ⚠ 建模取捨,不假裝是逐字還原:手冊寫的是「Tachyon Scanners **installed in ships**」,
+// 也就是逐艦裝載;本 remake 的掃描科技沒有對應的可造艦元件(整套走「研究出來即全域生效」,
+// 見 bestPlayerScannerParsec 的註解),所以這裡也照同一個模型算成帝國級。
+// 要改成逐艦,得先有掃描器元件槽,那是另一件事。
+func bestPlayerScannerJamReduction(ps engine.PlayerState) int {
+	hasSpace := groundEquipTechOwned(ps, gamedata.TOPIC_PHYSICS, gamedata.TECH_SPACE_SCANNER)
+	hasNeutron := groundEquipTechOwned(ps, gamedata.TOPIC_NEUTRINO_PHYSICS, gamedata.TECH_NEUTRON_SCANNER)
+	hasTachyon := groundEquipTechOwned(ps, gamedata.TOPIC_TACHYON_PHYSICS, gamedata.TECH_TACHYON_SCANNER)
+	return gamedata.ScannerMissileEvasionReduction(hasSpace, hasNeutron, hasTachyon)
+}
+
+// detectionSource 是一個偵測源(殖民地、前哨站或艦隊所在星)在星圖上的位置與其**額外加成**。
 type detectionSource struct {
-	starIdx       int
-	orbitalParsec int // 軌道基地(星基/戰鬥站/星辰要塞)偵測加成,艦隊沒有軌道基地故為 0
+	starIdx int
+	// bonusParsec 是這個偵測源在帝國基礎掃描範圍之上的額外 parsec。兩種來源:
+	//   - 殖民地:軌道基地(星基/戰鬥站/星辰要塞),見 gamedata.OrbitalScannerBonusParsec
+	//   - 艦隊:艦上的戰鬥掃描器(手冊「scanning range 2 parsecs greater … outside of combat」)
+	// 前哨站兩者皆無,故為 0。
+	bonusParsec int
 }
 
 // playerDetectionVisible 是 GameSession.VisibleStars 的純函式核心,抽出來方便單元測試(不依賴
@@ -49,29 +68,34 @@ type detectionSource struct {
 // scannerParsec 是玩家目前最佳掃描科技的偵測範圍(呼叫端先用 bestPlayerScannerParsec 算好),
 // versionBonusParsec 是這局遊戲版本規則的偵測加成(RuleProfile.SensorRangeVersionBonusParsec,
 // #13:1.5 比 1.3 多 +1 parsec)。
-func playerDetectionVisible(stars []Star, playerColonyStars []int, fleetAtStar int, colonyBuildings []map[string]bool, scannerParsec, versionBonusParsec int, outpostStars []int) []bool {
+func playerDetectionVisible(stars []Star, playerColonyStars []int, fleetSources []detectionSource, colonyBuildings []map[string]bool, scannerParsec, versionBonusParsec int, outpostStars []int) []bool {
 	visible := make([]bool, len(stars))
 
-	// 蒐集本局所有玩家偵測源:各殖民地所在星(含軌道基地加成)+ 艦隊目前所在星(無軌道加成)。
+	// 蒐集本局所有玩家偵測源:各殖民地所在星(含軌道基地加成)+ 每支艦隊所在星 + 前哨站。
 	var sources []detectionSource
 	for i, idx := range playerColonyStars {
 		if idx < 0 || idx >= len(stars) {
 			continue // PlayerColonyStars 可能有 -1 padding(見該欄位註解),略過未知星索引
 		}
-		orbitalParsec := 0
+		bonus := 0
 		if i < len(colonyBuildings) {
-			orbitalParsec = gamedata.OrbitalScannerBonusParsec(colonyBuildings[i])
+			bonus = gamedata.OrbitalScannerBonusParsec(colonyBuildings[i])
 		}
-		sources = append(sources, detectionSource{starIdx: idx, orbitalParsec: orbitalParsec})
+		sources = append(sources, detectionSource{starIdx: idx, bonusParsec: bonus})
 	}
-	if fleetAtStar >= 0 && fleetAtStar < len(stars) {
-		sources = append(sources, detectionSource{starIdx: fleetAtStar, orbitalParsec: 0})
+	// ⚠ 2026-08-08(第 142 項)修正:這裡原本只收「**目前選中的那一支**」艦隊
+	// (`s.Fleet().AtStar`)。多艦隊模型上線後那就變成 bug——切換選中的艦隊會改變戰爭迷霧,
+	// 而「選中哪一支」是選單狀態,不該影響遊戲規則。現在每支艦隊都是偵測源。
+	for _, src := range fleetSources {
+		if src.starIdx >= 0 && src.starIdx < len(stars) {
+			sources = append(sources, src)
+		}
 	}
 	// 前哨站是掃描站(手冊 p.119「These outposts act as scanning stations」),與殖民地一樣
-	// 是常駐偵測源;它沒有軌道基地,故無 orbital 加成。
+	// 是常駐偵測源;它沒有軌道基地也沒有艦上元件,故無加成。
 	for _, idx := range outpostStars {
 		if idx >= 0 && idx < len(stars) {
-			sources = append(sources, detectionSource{starIdx: idx, orbitalParsec: 0})
+			sources = append(sources, detectionSource{starIdx: idx, bonusParsec: 0})
 		}
 	}
 
@@ -81,7 +105,7 @@ func playerDetectionVisible(stars []Star, playerColonyStars []int, fleetAtStar i
 			continue
 		}
 		for _, src := range sources {
-			rangeNorm := gamedata.DetectionRangeNormalized(scannerParsec, src.orbitalParsec, versionBonusParsec)
+			rangeNorm := gamedata.DetectionRangeNormalized(scannerParsec, src.bonusParsec, versionBonusParsec)
 			origin := stars[src.starIdx]
 			if math.Hypot(origin.X-st.X, origin.Y-st.Y) <= rangeNorm {
 				visible[i] = true
@@ -96,8 +120,32 @@ func playerDetectionVisible(stars []Star, playerColonyStars []int, fleetAtStar i
 // cmd/moo2 的 drawStarmap 決定 fog 繪製,一次算好整個星圖再逐星查表,避免逐星重算。
 func (s *GameSession) VisibleStars() []bool {
 	scannerParsec := bestPlayerScannerParsec(s.Player)
-	return playerDetectionVisible(s.Stars, s.PlayerColonyStars, s.Fleet().AtStar, s.ColonyBuildings,
+	return playerDetectionVisible(s.Stars, s.PlayerColonyStars, s.fleetDetectionSources(), s.ColonyBuildings,
 		scannerParsec, s.RuleProfile.SensorRangeVersionBonusParsec, s.outpostStarIndices())
+}
+
+// fleetDetectionSources 把**每一支**艦隊變成一個偵測源,額外加成取該艦隊裡最好的艦上掃描器。
+//
+// 「取最好的一個而不是加總」與軌道基地同慣例(星辰要塞取代戰鬥站,不疊加):裝了三台戰鬥掃描器
+// 的艦隊不會看得比裝一台遠——手冊那句的主詞是「ships equipped with Battle Scanners」,
+// 講的是**這艘船**的掃描範圍,不是艦隊的疊加。
+func (s *GameSession) fleetDetectionSources() []detectionSource {
+	out := make([]detectionSource, 0, len(s.Fleets))
+	for i := range s.Fleets {
+		f := &s.Fleets[i]
+		if f.AtStar < 0 {
+			continue
+		}
+		bonus := 0
+		for _, sh := range f.Ships {
+			if sh.Special == battleScannerName {
+				bonus = gamedata.ShipBattleScannerScanParsecBonus
+				break
+			}
+		}
+		out = append(out, detectionSource{starIdx: f.AtStar, bonusParsec: bonus})
+	}
+	return out
 }
 
 // starVisible 是 VisibleStars 對單一星索引的便利包裝(主要供測試/未來零星呼叫端使用;

@@ -1,10 +1,12 @@
 // Package gamedata:偵測/掃描範圍模型(diff 全量表 #13——掃描/偵測距離)。
 //
-// ⚠ 全面近似(誠實標註):原版 MOO2 手冊只定性描述「掃描科技越高階看得越遠」「星基/戰鬥站/
-// 星辰要塞可增加偵測範圍」,並未公開逐科技的 parsec 數字;openorion2(本專案參考基底)是純
-// 渲染殼,零掃描/雷達邏輯可援引(見 rulebook 62 靜態反追溯源——查無來源即誠實標近似,不假造
-// 成精確值)。本檔數值全部是「為了讓 remake 有可玩的戰爭迷霧效果」自訂的近似值,調參目標是
-// 「開局母星區可見數顆星、遠星入霧」,不是逐科技逐字重現原版數字。
+// ⚠ 2026-08-08(第 142 項)訂正:這裡原本寫著「手冊只定性描述『掃描科技越高階看得越遠』,
+// 並未公開逐科技的 parsec 數字」——**那句話是錯的,不是過期的**。手冊三個掃描科技的條目
+// 各自明寫了自己的 parsec 值(空間 2 / 迅子 4 / 中子 6),就在同一份 PDF 裡。
+// 而且順序也寫反了:原本的近似值把迅子當成最高階(8),手冊說**中子(6)才比迅子(4)遠**。
+// 「查不到所以標近似」是誠實的做法,前提是**真的查過**。
+//
+// 仍屬近似的部分(手冊確實沒給):軌道基地(星基/戰鬥站/星辰要塞)的加成,見下方常數註解。
 package gamedata
 
 // ParsecToNormalized 是「原版 parsec」→ remake 星圖正規化座標(0..1)的換算常數。
@@ -20,31 +22,88 @@ package gamedata
 // 覺得這圈太大/太小,改這個常數即可,不必動偵測邏輯本身。
 const ParsecToNormalized = 1.0 / 10.0
 
-// 掃描科技偵測範圍(parsec,【近似】遞增序):手冊只講「越高階掃描看越遠」的定性順序
-// (Space Scanner < Neutron Scanner < Tachyon Scanner),無法查到具體 parsec 值,故本專案採
-// 「基礎 2、每升一階 +2」的簡單遞增近似,不是手冊數字。
+// 掃描科技偵測範圍(parsec):**手冊逐字**,三個條目各自寫在自己那一段裡。
+//
+//   - Space Scanner:「The standard scanner can detect a Frigate class ship at a range of
+//     **2 parsecs**.」
+//   - Tachyon Scanner:「These scanners have a base detection range (for Frigates) of
+//     **4 parsecs**.」
+//   - Neutron Scanner:「These scanners have a base detection range (for Frigates) of
+//     **6 parsecs**.」
+//
+// ⚠ 空間掃描儀 = 2 = 基礎值,所以它對範圍其實**沒有加成**——手冊叫它「the standard
+// scanner」,它就是基準本身。這看起來像抄錯,不是:TOPIC_PHYSICS 是 ResearchAll 主題
+// (開局幾乎立刻拿到),把它當基準與手冊的敘述一致。
+//
+// ⚠ 手冊同一段還給了「被偵測方的艦體越大越早被看到」的修正(驅逐艦 +1、巡洋艦 +2、
+// 戰艦 +3、泰坦 +4、末日之星 +5)。**本 remake 不實作那一條**,因為它修正的是「看不看得到
+// 某支艦隊」,而本專案的偵測只決定「看不看得到某顆星」(AI 艦隊是抽象戰力,沒有地圖座標,
+// 見 shell/detection.go 檔頭)。缺的是前置系統,不是這個數字。
 const (
-	scannerRangeBase    = 2 // 無任何掃描科技(開局預設)
-	scannerRangeSpace   = 4 // TECH_SPACE_SCANNER
-	scannerRangeNeutron = 6 // TECH_NEUTRON_SCANNER
-	scannerRangeTachyon = 8 // TECH_TACHYON_SCANNER
+	scannerRangeBase    = 2 // 無任何掃描科技(開局預設,與 standard scanner 同值)
+	scannerRangeSpace   = 2 // TECH_SPACE_SCANNER —— 手冊「2 parsecs」
+	scannerRangeTachyon = 4 // TECH_TACHYON_SCANNER —— 手冊「4 parsecs」
+	scannerRangeNeutron = 6 // TECH_NEUTRON_SCANNER —— 手冊「6 parsecs」
 )
 
-// ScannerRangeParsec 依已解鎖的掃描科技,回傳偵測範圍(parsec)。取已解鎖科技中最高階者;
-// 三項都未解鎖則回傳基礎值。呼叫端(internal/shell)負責用既有「元件/科技解鎖」判定規則
-// (componentUnlockedFor 同款模式)算出 hasSpace/hasNeutron/hasTachyon,本函式只管查表,
-// 不碰任何 CompletedTopics/ExplicitChoice 細節。
+// 掃描科技對敵方飛彈閃避的抵銷(點):**手冊逐字**,寫在迅子/中子兩個條目的最後一句。
+//
+//   - Tachyon Scanner:「…also reduce the effectiveness of enemy missile jamming systems,
+//     lowering the target's Missile Evasion by **20 points**.」
+//   - Neutron Scanner:同句,「by **40 points**」。
+//   - Space Scanner:**沒有這一句**,故為 0(不是漏抄)。
+//
+// 手冊 p.123 的干擾機率範例也用了這組數字:「攻擊方 Tachyon Scanner 已知加成 20」
+// → P = [(87)−20]/2 = 33%(見 MissileJamChance 的註解)。兩處互相印證。
+const (
+	scannerJamReductionSpace   = 0
+	scannerJamReductionTachyon = 20
+	scannerJamReductionNeutron = 40
+)
+
+// ShipBattleScannerScanParsecBonus 戰鬥掃描器**在戰鬥之外**的第二個效果。
+//
+// 手冊(Battle Scanner)整段兩句話:「The scanner increases the ship's chance to hit with
+// beam weapons by 50. Furthermore, ships equipped with Battle Scanners have a scanning range
+// **2 parsecs greater** when in normal or hyperspace (**outside of combat**).」
+//
+// ⚠ 第 134 項接了第一句,漏了第二句——而且還寫了一條測試(TestBattleScannerRaisesOnlyAccuracy)
+// 把「只加命中」釘住。**測試釘住的是我當時的理解,不是手冊。** 這與第 133 項慣性穩定器
+// (同樣是一個元件兩個效果、只接了一半)是同一個坑,連續兩項都踩。
+const ShipBattleScannerScanParsecBonus = 2
+
+// ScannerRangeParsec 依已解鎖的掃描科技,回傳偵測範圍(parsec)。
+//
+// 取已解鎖科技中**範圍最大**者(不是「最高階」——手冊的中子比迅子遠,先前那版按科技樹階序
+// 挑,結果研究出迅子反而覆蓋掉更遠的中子)。三項都未解鎖則回傳基礎值。呼叫端
+// (internal/shell)負責用既有「元件/科技解鎖」判定規則算出 hasSpace/hasNeutron/hasTachyon。
 func ScannerRangeParsec(hasSpace, hasNeutron, hasTachyon bool) int {
-	switch {
-	case hasTachyon:
-		return scannerRangeTachyon
-	case hasNeutron:
-		return scannerRangeNeutron
-	case hasSpace:
-		return scannerRangeSpace
-	default:
-		return scannerRangeBase
+	best := scannerRangeBase
+	for _, c := range []struct {
+		owned bool
+		val   int
+	}{{hasSpace, scannerRangeSpace}, {hasTachyon, scannerRangeTachyon}, {hasNeutron, scannerRangeNeutron}} {
+		if c.owned && c.val > best {
+			best = c.val
+		}
 	}
+	return best
+}
+
+// ScannerMissileEvasionReduction 依已解鎖的掃描科技,回傳「攻方掃描器抵銷目標飛彈閃避」的點數
+// (MissileJamChance 的 attackerScannerBonus)。同樣取**抵銷最多**者,理由同上。
+func ScannerMissileEvasionReduction(hasSpace, hasNeutron, hasTachyon bool) int {
+	best := 0
+	for _, c := range []struct {
+		owned bool
+		val   int
+	}{{hasSpace, scannerJamReductionSpace}, {hasTachyon, scannerJamReductionTachyon},
+		{hasNeutron, scannerJamReductionNeutron}} {
+		if c.owned && c.val > best {
+			best = c.val
+		}
+	}
+	return best
 }
 
 // 軌道基地掃描加成(parsec,【近似】):手冊定性描述軌道基地(星基/戰鬥站/星辰要塞)會增加

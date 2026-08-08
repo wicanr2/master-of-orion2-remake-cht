@@ -45,7 +45,7 @@ func shipBeamDefenseBonus(sh Ship) int {
 // 手冊(Battle Scanner):「The scanner increases the ship's chance to hit with beam
 // weapons by **50**.」與 `gamedata.BeamOffense` 的 battleScanner 分支同值。
 func shipBeamOffenseBonus(sh Ship) int {
-	if sh.Special == "戰鬥掃描器" {
+	if sh.Special == battleScannerName {
 		return gamedata.ShipBattleScannerBeamOffense
 	}
 	return 0
@@ -126,6 +126,9 @@ func armorLevelAboveTitanium(name string) int {
 const (
 	tractorBeamName = "牽引光束"
 	stasisFieldName = "停滯力場"
+	// battleScannerName 的第二個效果(戰鬥之外 +2 parsec 掃描)在 shell/detection.go
+	// ——第 134 項接了手冊那段的第一句就收工,第 142 項才補上第二句。
+	battleScannerName = "戰鬥掃描器"
 )
 
 // boolToInt 把「有沒有裝」換成束數。一艘船只有一個 Special 槽,所以最多一束

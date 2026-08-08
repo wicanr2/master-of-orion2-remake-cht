@@ -40,8 +40,12 @@ func TestInertialStabilizerGivesBothBonuses(t *testing.T) {
 	}
 }
 
-// 戰鬥掃描器:+50 命中,而且**不動**閃避與結構。
-func TestBattleScannerRaisesOnlyAccuracy(t *testing.T) {
+// 戰鬥掃描器在**戰鬥裡**:+50 命中,而且不動閃避與結構。
+//
+// ⚠ 這條測試原本叫 TestBattleScannerRaisesOnlyAccuracy——那個「Only」是錯的。
+// 手冊那一段有兩句話,第二句是「掃描範圍 +2 parsec(戰鬥之外)」,第 142 項才補上。
+// **測試名稱裡的「只」是一種斷言**,而這一條斷的是我當時的理解,不是手冊。
+func TestBattleScannerRaisesAccuracyInCombat(t *testing.T) {
 	plain, scan := mkLast(t, ""), mkLast(t, "戰鬥掃描器")
 	if got := scan.atk - plain.atk; got != gamedata.ShipBattleScannerBeamOffense {
 		t.Errorf("命中應 +%d,得到 %+d", gamedata.ShipBattleScannerBeamOffense, got)

@@ -33,7 +33,7 @@ func TestPlayerDetectionVisible_HomeworldAndRange(t *testing.T) {
 	const scannerParsec = 2                  // 未解鎖任何掃描科技(基礎值)
 	const versionBonus = 0
 
-	visible := playerDetectionVisible(stars, playerColonyStars, 0, colonyBuildings, scannerParsec, versionBonus, nil)
+	visible := playerDetectionVisible(stars, playerColonyStars, []detectionSource{{starIdx: 0}}, colonyBuildings, scannerParsec, versionBonus, nil)
 
 	if !visible[0] {
 		t.Error("星 0(母星,Owner=1)應可見")
@@ -53,7 +53,7 @@ func TestPlayerDetectionVisible_ExploredAlwaysVisible(t *testing.T) {
 		[4]float64{0.5, 0.5, 1, 0},   // 母星
 		[4]float64{0.95, 0.95, 0, 1}, // 遠星,無主但已探索(Explored=true)
 	)
-	visible := playerDetectionVisible(stars, []int{0}, 0, []map[string]bool{{}}, 2, 0, nil)
+	visible := playerDetectionVisible(stars, []int{0}, []detectionSource{{starIdx: 0}}, []map[string]bool{{}}, 2, 0, nil)
 
 	if !visible[1] {
 		t.Error("已探索星(Explored=true)無論距離都應恆可見")
@@ -77,8 +77,8 @@ func TestPlayerDetectionVisible_VersionDiff(t *testing.T) {
 	p13 := gamedata.Profile13()
 	p15 := gamedata.Profile15()
 
-	visible13 := playerDetectionVisible(stars, []int{0}, 0, colonyBuildings, scannerParsec, p13.SensorRangeVersionBonusParsec, nil)
-	visible15 := playerDetectionVisible(stars, []int{0}, 0, colonyBuildings, scannerParsec, p15.SensorRangeVersionBonusParsec, nil)
+	visible13 := playerDetectionVisible(stars, []int{0}, []detectionSource{{starIdx: 0}}, colonyBuildings, scannerParsec, p13.SensorRangeVersionBonusParsec, nil)
+	visible15 := playerDetectionVisible(stars, []int{0}, []detectionSource{{starIdx: 0}}, colonyBuildings, scannerParsec, p15.SensorRangeVersionBonusParsec, nil)
 
 	if visible13[1] {
 		t.Error("Profile13(無 #13 修正)在此距離不應看到邊界星")
@@ -118,8 +118,8 @@ func TestPlayerDetectionVisible_OrbitalBonus(t *testing.T) {
 	const scannerParsec = 2
 	const versionBonus = 0
 
-	visibleStarBase := playerDetectionVisible(stars, []int{0}, 0, []map[string]bool{{"星基": true}}, scannerParsec, versionBonus, nil)
-	visibleFortress := playerDetectionVisible(stars, []int{0}, 0, []map[string]bool{{"星辰要塞": true}}, scannerParsec, versionBonus, nil)
+	visibleStarBase := playerDetectionVisible(stars, []int{0}, []detectionSource{{starIdx: 0}}, []map[string]bool{{"星基": true}}, scannerParsec, versionBonus, nil)
+	visibleFortress := playerDetectionVisible(stars, []int{0}, []detectionSource{{starIdx: 0}}, []map[string]bool{{"星辰要塞": true}}, scannerParsec, versionBonus, nil)
 
 	if visibleStarBase[1] {
 		t.Error("只有星基的殖民地,在此距離不應看到邊界星")
@@ -138,7 +138,7 @@ func TestPlayerDetectionVisible_FleetSource(t *testing.T) {
 		[4]float64{0.95, 0.9, 0, 0}, // 距艦隊很近、距母星很遠的星
 	)
 	// 母星附近沒有任何殖民地能看到星 2,只有艦隊移動過去才能揭示它。
-	visible := playerDetectionVisible(stars, []int{0}, 1, []map[string]bool{{}}, 2, 0, nil)
+	visible := playerDetectionVisible(stars, []int{0}, []detectionSource{{starIdx: 1}}, []map[string]bool{{}}, 2, 0, nil)
 
 	if !visible[1] {
 		t.Error("艦隊當前所在星本身應可見(星圖上正在待著的星)")

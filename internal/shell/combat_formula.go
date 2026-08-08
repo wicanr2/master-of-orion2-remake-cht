@@ -202,8 +202,15 @@ func ResolveBeamShot(in BeamShot) ShotResult {
 //     MissileInertialNullifier/MissileShipDefenseRacialBonus/MissileCrew*/
 //     MissileHelmsmanEvasionBonus)。現行 remake 的艦艇設計/軍官系統尚未提供這些元件,
 //     呼叫端目前一律傳 0(TODO,待補上後從實際裝載/軍官推導)。
-//   - attackerScannerBonus/hasECCM:同理,現行 remake 未提供攻方掃描器(Scanner)、飛彈
-//     ECCM 元件,呼叫端一律傳 0/false(TODO)。
+//   - attackerScannerBonus:⚠ 2026-08-08(第 142 項)訂正。這裡原本寫著「現行 remake 未提供
+//     攻方掃描器(Scanner)…呼叫端一律傳 0(TODO)」——**那句話從一開始就不對**。手冊指的
+//     「best known scanner bonus of the attacker」是**掃描科技**(迅子 −20、中子 −40,各自寫在
+//     自己的條目裡),不是某個可造艦元件;而那三個掃描科技從 detection.go 建起來那天就在
+//     remake 裡了(bestPlayerScannerParsec 讀的正是它們)。缺的不是前置系統,是沒有人把
+//     同一個科技的第二個效果查出來。現在走 bestPlayerScannerJamReduction。
+//   - hasECCM:仍為 false。ECCM 是**飛彈的改造**(手冊 Weapon Mods 附錄),而 remake 的
+//     mod 層只對光束武器開放(見 weapon_mods.go 檔頭)——這一條是真的擋在前置系統後面,
+//     不是漏查。
 //     以上四項在「無任何裝備」時退化為手冊「若目標無任何閃避能力,預設100%命中」
 //     (gamedata.MissileDefaultHitChance)——這是手冊本身的基準情境,不是臆造值,恰好與
 //     現行武器/元件表(尚無任何閃避裝備)的現況一致。
