@@ -1027,7 +1027,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 							sess.Fleet().Marines, sess.PlayerColonyMarines[0])
 					}
 					// 艦員等級接在同一行:這是玩家唯一看得到艦員經驗的地方(remake 沒有逐艦
-					// 資訊面板),而那個等級直接影響命中、防禦與飛彈閃避(見第 60 項(艦員防禦))。
+					// 資訊面板),而那個等級直接影響命中、防禦與飛彈閃避(見第 60 項(打得準也閃得掉))。
 					// 取艦隊裡**最低**的那一艘——戰力由最弱的那條線決定。
 					if lv, toNext, ok := sess.FleetCrewSummary(); ok {
 						marineLine += fmt.Sprintf(b.tr("／艦員 %s", " / crew %s"), shell.ShipCrewLevelName(lv))
@@ -3031,7 +3031,7 @@ const (
 //	底部三顆鈕(`sub_1151B0`,引數是三個熱鍵字串 `aLb` / `+2` / `+4`):
 //	    (374, 443) / (461, 443) / (547, 443)
 //
-// ⚠ 尚未套用、但座標已到手(記在 docs/re/01-gap-report.md 第 5 項(新遊戲設定畫面)):
+// ⚠ 尚未套用、但座標已到手(記在 docs/re/01-gap-report.md 第 5 項(NEW GAME 設定畫面)):
 //   - 已裝元件清單列:x 55..68、y = 169 + 13i(`imul eax, esi, 0Dh` / `add eax, 0A9h`)
 //   - 右上兩個資訊面板:(437..627, 56..95) 與 (437..627, 97..123)
 //     remake 現在把元件選擇列排在 x 300..600,與原版這兩個面板的位置不同;

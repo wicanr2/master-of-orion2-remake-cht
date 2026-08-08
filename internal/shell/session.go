@@ -226,7 +226,7 @@ var (
 		// ⚠ 2026-08-08(第 64 項(武器傷害真表))補上手冊有、remake 沒有的八項。
 		//
 		// 傷害/佔格取自手冊 p.124-125;**研究主題取自執行檔**(`gamedata.OrigTechTopic`,
-		// 第 49 項(安塔蘭艦隊+科技估值)那張 211/212 對得上的表)——不是照科技名猜的,有測試逐項核對。
+		// 第 49 項(安塔蘭防禦艦隊)那張 211/212 對得上的表)——不是照科技名猜的,有測試逐項核對。
 		//
 		// Cost 是 remake 的生產成本尺度(與手冊的 Cost 欄不同單位,見第 64 項(武器傷害真表)),
 		// 依手冊成本的**相對名次**插在既有鄰居之間——**那是 remake 的選擇,不是手冊值**。
@@ -838,7 +838,7 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 		// 加在種族加成**之後**——那兩張表是直接的點數加成,不是百分比,所以不該被種族倍率放大。
 		crew := s.shipCrewLevel(sh)
 		atk += gamedata.ShipCrewOffenseBonus(crew)
-		// ⚠ 2026-08-08(第 60 項(艦員防禦)):上面那句註解說「打得準**也閃得掉**」,
+		// ⚠ 2026-08-08(第 60 項(打得準也閃得掉)):上面那句註解說「打得準**也閃得掉**」,
 		// 但先前只加了 BA(攻擊)那一欄,BD(防禦)那一欄從來沒加過——`def` 只有艦體值。
 		// 手冊 p.121 的兩欄是分開的兩個加成,`engine.BeamDefense` 也是這樣算的
 		// (openorion2 `Ship::beamDefense` 末項),只是 shell 這條路徑沒有走它。
@@ -2733,7 +2733,7 @@ func (s *GameSession) applyStartingTech() {
 }
 
 // applyStartingRandomTech 發先進級開局多出來的那 19 個**隨機**主題
-// (gap report 第 30 項(科技等級第二效果)留下的缺口,結構見 gamedata/starting_random_tech.go)。
+// (gap report 第 30 項(TECH LEVEL 第二效果)留下的缺口,結構見 gamedata/starting_random_tech.go)。
 //
 // 原版 `Init_Player_Tech_` 的主迴圈跑 1 / 6 / 25 次:前 6 次取固定表,
 // **第 7 次起改由 `sub_FD335` 隨機挑**。remake 先前只發那六個。
@@ -2769,7 +2769,7 @@ func (s *GameSession) applyStartingRandomTech() {
 				return // 沒有候選了(整棵樹研究完),不硬塞
 			}
 			ps.CompletedTopics[t] = true
-			// ⚠ 2026-08-08(第 49 項(安塔蘭艦隊+科技估值))補上**粒度**:原版 `Choose_Tech_Application_`
+			// ⚠ 2026-08-08(第 49 項(安塔蘭防禦艦隊))補上**粒度**:原版 `Choose_Tech_Application_`
 			// 挑的是一個**科技應用**,不是整個主題(見 gamedata/starting_random_tech.go
 			// 檔尾那段的反組譯證據)。只標 CompletedTopics 而不做抉擇,
 			// `componentUnlockedFor` 會把那個主題底下的抉擇**全部**解鎖

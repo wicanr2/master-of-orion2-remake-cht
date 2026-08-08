@@ -95,7 +95,7 @@ func TestHardShieldReachesBothCombatPaths(t *testing.T) {
 //   - 「allow ships to use their shields inside a nebula」→ 已做(nebula.go 的 nebulaShield)
 //   - 「provide immunity to shield-piercing weapons」→ 已做(DamageAfterShield 的 shieldPiercing 分支)
 //   - 「prevent enemies from using Transporters to send over Marines」→ **傳送器不存在**,
-//     擋在登艦戰系統後面(第 60 項(艦員防禦)),不是漏抄
+//     擋在登艦戰系統後面(第 60 項(打得準也閃得掉)),不是漏抄
 func TestHardShieldOtherManualEffects(t *testing.T) {
 	// 護盾穿透武器對硬化護盾無效。
 	const dmg, shield = 40, 10

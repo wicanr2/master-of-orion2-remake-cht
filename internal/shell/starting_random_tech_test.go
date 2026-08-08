@@ -8,7 +8,7 @@ import (
 
 // 先進級開局應該有 25 個主題(六個固定 + 十九個隨機),不是只有六個。
 //
-// 這是 gap report 第 30 項(科技等級第二效果)留下的缺口:原版主迴圈跑 1 / 6 / 25 次,
+// 這是 gap report 第 30 項(TECH LEVEL 第二效果)留下的缺口:原版主迴圈跑 1 / 6 / 25 次,
 // 前 6 次取固定表、第 7 次起隨機挑。
 func TestAdvancedTechLevelGrantsTwentyFiveTopics(t *testing.T) {
 	for _, tc := range []struct {

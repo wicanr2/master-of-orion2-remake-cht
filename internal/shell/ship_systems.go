@@ -208,7 +208,7 @@ func shipBeamAttackerSystems(sh Ship) BeamAttackerSystems {
 // --- A. 真的還擋著(缺前置系統,不是缺數字)---
 //
 //	保安站(Security Stations)   「+20 to the combat rolls of the Marines defending against
-//	                            enemy boarding parties」——**登艦戰不存在**(第 60 項(艦員防禦))
+//	                            enemy boarding parties」——**登艦戰不存在**(第 60 項(打得準也閃得掉))
 //	傳送器(Transporters)        同上,而且還需要護盾分面
 //	匿蹤力場(Stealth Field)     「completely invisible on the Galaxy Map」——remake 的 AI 艦隊
 //	                            是抽象戰力、沒有地圖座標(見 detection.go 檔頭),玩家自己的艦隊

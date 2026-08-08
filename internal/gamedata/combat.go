@@ -268,7 +268,7 @@ const (
 	FighterHitsBomber = 4
 	// FighterHitsAssaultShuttle 手冊沒有給突擊艇的血量(表格那一列是 6-18 的區間值,
 	// 而正文沒有像其他三型那樣寫「can take N damage」)。**不臆造**——
-	// 突擊艇要等登艦戰機制(第 60 項(艦員防禦))才有意義,到時候一起查。
+	// 突擊艇要等登艦戰機制(第 60 項(打得準也閃得掉))才有意義,到時候一起查。
 	FighterHitsHeavyFighter = 5
 )
 
