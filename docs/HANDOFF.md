@@ -1,6 +1,10 @@
 # 交接文件（給接手的 Claude / 開發者）
 
 > 這份是「重啟 session 後第一個要讀的檔」。目的:讓全新的 Claude 5 分鐘內接手,不重犯前一輪的錯。
+> ⚠ **2026-08-08:本文標的是 2026-07-12 的暫停點,已被大量後續工作超越**——
+> 現況只以 `WORKLIST.md` 頂端的剩餘工作表與 `docs/re/01-gap-report.md` 的活表為準。
+> 下面「下週繼續」那幾項多已完成或前提已變。
+>
 > 最後更新:2026-07-12。搭配讀:[`HONEST-STATUS.md`](HONEST-STATUS.md)(現況真相)、根目錄 `CLAUDE.md`(專案目標)、`WORKLIST.md`(細項)、`PLAN.md`(階段)、`docs/tech/*`(各系統文件)。
 
 ## ⏸ 下週繼續(2026-07-12 暫停點,先讀這段)
@@ -89,7 +93,12 @@ docker images:`moo2-ebiten`(CGO+X11+xvfb,已存在)、`golang:1.25-bookworm`(純
 
 > 每項的驗收 = **對原版實測比對**,不是加一個系統+測試綠。做之前先 Read `HONEST-STATUS.md`。
 
-### 優先 1 — 音樂 / 音效 ✅ 已完成(2026-07-12 使用者確認;僅曲目↔場景精確身分待人耳定案)
+### 優先 1 — 音樂 / 音效 ✅ 已完成(2026-07-12 使用者確認)
+
+> ⚠ **2026-08-08:「僅曲目↔場景精確身分待人耳定案」這句已作廢。** 不需要人耳——
+> 場景→曲目是執行檔裡的立即數,三個音樂入口全部解出(gap-report 第 147 項)。
+> 而且**主選單與星圖在原版是每次隨機三選一**(`Play_Background_Music_` = `clock()%3+1`),
+> 「哪一首」這個問法本身就錯了。
 > ⚠ **翻案**:MOO2 **沒有 XMI/MIDI 音樂**。全部音樂/音效是 LBX 內的 22050Hz 8-bit PCM WAV,原封播即與原版 bit-identical,**不需 SoundFont/OPL 合成**。定案見 `docs/tech/audio-format.md`。
 - [x] 格式逆向 + ebiten 音訊整合(`internal/audio`)+ 主選單 BGM(STREAMHD)+ 按鈕音效(BUTTON1),`cmd/moo2/audiohook.go`;單元/真檔測試綠。
 - [~] **曲目/UI 事件對應待對原版聆聽定案**:BGM 暫用 clips[0]、點擊暫用 BUTTON1(哪條是主選單主題、哪個 BUTTONx 對哪類按鈕,需 oracle)。
@@ -103,7 +112,13 @@ docker images:`moo2-ebiten`(CGO+X11+xvfb,已存在)、`golang:1.25-bookworm`(純
 - [x] 真母星初始狀態(手冊忠實 Average 開局:人口職務模型 + 起始 BC 依 SAVE10 oracle + 無開局領袖忠實雇用制 + 種族錢優勢),取代 demo colonies。
 - [~] **殘留(校準非重建)**:turn-1 少數數值待 playtest 定案(如科學家分配 科3 vs 原版可能科4);屬對齊,非缺畫面/流程。
 
-### 優先 3 — 按鍵 / 熱區逐畫面像素對齊 ✅ 已做到 oracle 上限(2026-07-12)
+### 優先 3 — 按鍵 / 熱區逐畫面像素對齊 ✅ 已完成(2026-08-07 用執行檔立即數走完)
+
+> ⚠ **2026-08-08 訂正:「已做到 oracle 上限」是 2026-07-12 的錯誤結論。**
+> 當時的「上限」指的是 openorion2 的 `initWidgets`,而 openorion2 缺很多畫面
+> (colony/races/newgame/shipDesign/地面戰/安塔蘭廳都沒有),於是那些畫面被判成
+> 「沒有真值可用」。**反組譯全都有。** 2026-08-07 把待重挖名單清空,
+> 剩下的不是座標沒挖而是子系統沒做。**openorion2 沒有 ≠ 沒有真值。**
 - [x] 逐畫面比對 openorion2 `initWidgets` 硬編 `createWidget` 真值 vs remake 現行座標,把有真值卻用 PIL/估計的補齊:menu(本就 0px)、planets(補第8列 + 修 -1px 漂移)、research(右欄標籤)、fleet(Combat/RETURN/SCRAP 標籤)、officer(領袖槽距 + HIRE)、info(五列選單 + tech 熱區)。方法:派 subagent 逐畫面對碼、Opus 核實後套用。
 - [~] **openorion2 這條線到頂了,但不是「沒有真值可用」**:colony/races/newgame/shipDesign 在 openorion2 是 STUB 或無對應 view。
   ⚠ **2026-08-07 翻案**:原本這裡寫「要再精確只能靠原版截圖(本專案不採)」——**錯的,而且是會擋死後續工作的錯**。

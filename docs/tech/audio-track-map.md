@@ -147,15 +147,15 @@ Steam《Master of Orion: Soundtrack & Score》(App 468020,2016 重製版,同一�
 
 ## 待辦
 
-- [ ] 對原版/dump 聆聽,定案 STREAMHD 20 條的曲名與場景(第五節仍為中/低信心推定)。
+- [x] ~~對原版/dump 聆聽,定案 STREAMHD 20 條的曲名與場景~~ **2026-08-08:不需要聆聽**——場景→曲目由 `Play_Streaming_Music_` 的呼叫端立即數直接給出(第 147 項)。仍未定的只有「曲名」(那是命名,不影響行為)。
 - [ ] 定案 STREAM 8 長版各自曲名(可與 STREAMHD 同名長版對照)。
-- [ ] 決定遊戲各場景用 STREAM(長版)或 STREAMHD(完整集):主選單、星系圖、各種族外交、戰鬥。
+- [x] ~~決定遊戲各場景用 STREAM 或 STREAMHD~~ **2026-08-08:原版自己決定好了**——單一編號空間,≤100 走 STREAM、>100 走 STREAMHD;主選單/星圖走 `Play_Background_Music_`(STREAM 1/2/3 **隨機**,不是固定一首),戰術戰鬥走 `Play_Combat_Music_`(STREAM 4/5/6 隨機)。
 - [ ] SOUND 各 BUTTONx 的實際 UI 用途區分。
 - [x] 外交「壞關係」音樂已取得呼叫點硬證(`Get_Random(3)+13` → track 13/14/15 三選一,見第七節);「好關係」音樂證實為逐族資料表驅動,尚未取得資料表本身數值。
 - [ ] 若能取得 khinsider/VGMdb 的可讀頁面(目前 403),或找到 STREAMHD 逐條播放對照表,回填第 5.4 節的「哪個配對=哪一族」。
 - [ ] 追出寫入 `_diplomacy_good_music`/`_diplomacy_bad_music` 的無名函式(obj1+0x9082 一帶)本身的呼叫點,確認觸發時機(目前只知其被跳到,未知誰呼叫它)。
 - [ ] 追出 empire 記錄(stride 0xea9=3753 bytes,base 於全域指標 `ds:0x1ff98`)offset+0x25 欄位的「逐族預設值」靜態表,才能把 `_diplomacy_good_music` 從公式(`該族記錄.byte[0x25]+1`)落到每族的實際 track index。
-- [ ] `Play_Background_Music_`(obj1+0x1484f)/`Play_Combat_Music_`(obj1+0x1496c)在全檔案找不到任何呼叫點/絕對位址參照(見第七節 7.4)——若後續要接著查,建議先排除「這兩個函式在這個 build 是死碼」的假設(如:對照 `ORION95.EXE`/其他 patch 版本的同名符號是否同樣零引用)。
+- [x] ~~`Play_Background_Music_`/`Play_Combat_Music_` 全檔案零引用~~ **2026-08-08 已解**:位址算錯 `0x10000`(object base),真址 `0x2484F`/`0x2496C`,共 15 + 1 個呼叫端。
 
 ## 七、第三輪(2026-07-10):反組譯呼叫點硬證
 
@@ -237,7 +237,22 @@ Steam《Master of Orion: Soundtrack & Score》(App 468020,2016 重製版,同一�
 - **外交「壞關係」音樂 = `Get_Random(3) + 13` → track 13、14 或 15 三選一(均勻亂數)。** 高信心,無歧義,可直接寫入常數。
 - **外交「好關係」音樂 = 該族 empire 記錄 offset `0x25` 欄位 + 1。** 這是**逐族資料驅動**,不是單一常數;本輪未能追出該欄位的靜態預設值表(欄位在**執行期配置**的 empire 記錄裡,其初始值理論上來自一張「各族預設資料」的靜態表,但本輪未定位到該表——列入待辦)。**確定的結論是**:原版外交音樂本來就不是單一曲目,而是依「目前跟該族關係好/壞」動態切換,且「好關係」進一步依種族不同而不同。
 
-### 7.5 `Play_Background_Music_` / `Play_Combat_Music_`:撞牆,誠實記錄(未解)
+### 7.5 ~~`Play_Background_Music_` / `Play_Combat_Music_`:撞牆,誠實記錄(未解)~~ → **2026-08-08 已解,本節結論是錯的**
+
+> ⚠ **本節下面那三段掃描與「死碼」判定全部作廢。** 真正的位址是 `0x2484F` 與 `0x2496C`,
+> 而本節查的是 `0x1484f` / `0x1496c`——**差 `0x10000`,object base 沒加**
+> (`symbols_fixed.tsv` 第一筆 `___begtext = 0x10003` 就寫著)。
+> `Play_Background_Music_` 有 **15 個呼叫端**。
+>
+> - `Play_Background_Music_` @ `0x2484F` = `clock() % 3 + 1` → **STREAM 1/2/3 隨機**
+> - `Play_Combat_Music_` @ `0x2496C` = `clock() % 3 + 4` → **STREAM 4/5/6 隨機**,只有 `Tactical_Combat_` 叫它
+> - `Play_Streaming_Music_` @ `0x24677`(本節原本沒認出來)= 指定曲目,
+>   **編號 ≤ 100 → STREAM 索引;> 100 → STREAMHD 索引 = 編號 − 100**
+>
+> 完整的場景→曲目表見 `docs/re/01-gap-report.md` 第 147 項。
+> **教訓**:三種掃描全部零命中時,先做正對照(拿已知一定被呼叫的函式跑同一套),
+> 而不是把零命中解讀成「它是死碼」。以下保留原文只為了記錄當時怎麼推的。
+
 
 依 `rulebook/62` SOP,對這兩個位址跑了三種不同角度的反向溯源,全部零命中(非「查一次沒有就放棄」):
 

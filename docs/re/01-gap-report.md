@@ -8050,3 +8050,72 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     **清理錯誤斷言的過程本身會製造錯誤斷言**(第 145 項的表頭統計就是現成的例子)。
 
     無程式碼改動,截圖無差異。
+
+147. **音樂曲目↔場景:不需要人耳,執行檔全寫著**(2026-08-08)。
+
+    使用者:「音樂曲目可以從反組譯得知,目前有 ida_pro 了,這一點從記憶內改掉避免又混亂。」
+
+    ### 上一輪的結論是錯的,而且錯法很典型
+
+    `docs/tech/audio-track-map.md` §7.5 寫著「撞牆,誠實記錄(未解)」:
+
+    > `Play_Background_Music_`(obj1+0x1484f)/ `Play_Combat_Music_`(obj1+0x1496c)
+    > …三種角度的反向溯源全部零命中…最貼近的解讀是**這個 build 裡是死碼/未接線的舊函式**
+
+    實際位址是 **`0x2484F`** 與 **`0x2496C`**。差 **`0x10000`**——**object base 沒加**。
+    (`symbols_fixed.tsv` 第一筆 `___begtext = 0x10003` 就寫在那裡。)
+    `Play_Background_Music_` 有 **15 個呼叫端**,一個死碼都不是。
+
+    上一輪為了證明「零命中」做了三種掃描(逐 byte 掃 `E8` CALL、掃 4-byte 小端絕對位址、
+    掃 LE fixup 表),每一種都很用力——**而全部都在錯的位址上找**。
+    **正對照本來會當場抓到**:拿一個已知一定被呼叫的函式跑同一套掃描,零命中就知道查法壞了。
+    (規則出處:`~/diagnosis-notes/docs/02-query-returned-empty/`。)
+
+    另一個放大器是**掃 `.asm` 文字而不是查資料庫**。IDA 的 kb 第一條就寫著這個
+    (`~/.claude/knowledge-base/retro/ida-pro-9.4.md`「最重要的一課」)。這一輪改用
+    `.i64` + 除錯符號表,20 個呼叫端**每一個都直接對到具名畫面函式**,不必反推。
+
+    ### 三個音樂入口(全部具名)
+
+    | 函式 | 行為 |
+    |---|---|
+    | `Play_Streaming_Music_` @ `0x24677` | 指定曲目。**編號 ≤ 100 → `STREAM.LBX` 索引 = 編號;> 100 → `STREAMHD.LBX` 索引 = 編號 − 100**(單一編號空間) |
+    | `Play_Background_Music_` @ `0x2484F` | `clock() % 3 + 1` → **STREAM 1 / 2 / 3 隨機** |
+    | `Play_Combat_Music_` @ `0x2496C` | `clock() % 3 + 4` → **STREAM 4 / 5 / 6 隨機** |
+
+    `Play_Streaming_Music_` 的 `edx`(下一首)有兩個哨兵值:`-1` = 沒有下一首;
+    `-2` = 播完接**隨機 STREAM 1..3**(與 `Play_Background_Music_` 同一組)。
+
+    ### 場景 → 曲目(逐呼叫端的立即數,一手)
+
+    | 場景(除錯符號真名) | 曲目 |
+    |---|---|
+    | `Main_Antaran_Room_Screen_` / `Draw_…` | STREAMHD **#20** |
+    | `Main_Council_Screen_` / `Draw_…` / `Draw_Council_Player_Voted_Winner_` | STREAMHD **#19** |
+    | `Start_Main_Event_` / `Draw_Event_Screen_` | STREAMHD **#18** |
+    | `Science_Room_` / `_Tech_Select_` | STREAMHD **#17**,播完接隨機 STREAM 1..3 |
+    | `Design_Screen_` / `Draw_Design_Screen_` / `Draw_Generic_Replacement_Box_` | STREAM **#8** |
+    | `Colony_Combat_Screen_` | STREAM **#10** |
+    | `Draw_Diplomacy_Synch_Mode_` | STREAMHD **#`word_19AA44`**(逐族/依關係動態,見上一輪 §7.4 解出的 good/bad 規則) |
+    | `Tactical_Combat_` | `Play_Combat_Music_` → STREAM 4/5/6 隨機 |
+    | `main__0`、外交、議會、安塔蘭廳、艦艇設計、殖民地戰鬥、事件檢查… | `Play_Background_Music_` → STREAM 1/2/3 隨機 |
+
+    **「主選單放哪一首」這個問題本身問錯了**——原版主選單走 `Play_Background_Music_`,
+    是 STREAM 1/2/3 每次隨機。remake 若固定一首,那是與原版不同的行為,不是「還沒定案」。
+
+    ### 順帶:戰機基地 10 回合整補的擋門也升級了
+
+    WORKLIST 的 F 項寫著「證據不足,不是工時不足」,下一步建議是「去反組譯找戰機基地的
+    per-colony 中隊計數欄位」。查了:`Fighter_Garrison_Strength_` @ `0x5F64C`
+    **從帝國記錄當場算**(`imul edx, 0EA9h` + `dword_197F98` 取該帝國記錄,
+    再讀 `[eax+0x16A]` / `[eax+0x136]` 兩個科技旗標),**沒有逐殖民地的中隊存量**。
+
+    所以 remake 現行做法(`fighterGarrisonTierFor` 只看科技)**與原版一致**。
+    這一項從「證據不足」變成「**已查證:原版這裡也是導出值**」——擋門理由換了,
+    結論不變(不做那個 10 回合計時器),但現在有正面證據而不是找不到。
+
+    ### 還沒做的
+
+    `Calc_Tech_Value_` 階段 C–K 這一輪**沒有動**。不假裝兩項都查完了。
+
+    無程式碼改動(本項是 RE 結論與文件訂正),截圖無差異。
