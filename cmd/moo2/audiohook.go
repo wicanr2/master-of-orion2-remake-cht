@@ -59,10 +59,25 @@ var (
 // `_diplomacy_bad_music = Get_Random(3) + 13`(見 docs/tech/audio-track-map.md §7)。
 //
 // 那三個是 **STREAMHD 的編號**,所以在單一編號空間裡是 113/114/115。
-//
-// 「關係好」那一側是 `該族 empire 記錄 offset 0x25 + 1`——逐族資料驅動,那張逐族靜態表
-// 還沒追出來,所以外交一律走「關係差」這一組。**這是已知的缺,不是定案。**
 var bgmDiploBadPool = [3]int{113, 114, 115}
+
+// diploGoodMusicTrack 回傳「關係好」時該族的外交曲目編號。
+//
+// 反組譯給的公式是 `_diplomacy_good_music = 該族 empire 記錄 [+0x25] + 1`。
+// 上一輪把它記成「逐族資料驅動,那張逐族靜態表還沒追出來」——**那張表不存在**:
+// `sub_12983`(帝國建立)顯示 `[+0x25]` 就是**種族索引**本身,由
+// `Random_(13,1)` 從 13 族裡挑到不重複再寫進去,接著用同一個索引查
+// `dword_192630[idx*4]` 取種族名字串。所以公式就是字面上的「種族索引 + 1」,
+// 沒有中間表。
+//
+// raceIdx 用 `diplomatRaceIndex`(0..12,原版字母序,已對 RACESEL/DIPLOMAT 逐族核實),
+// 那正好與 `[+0x25]` 是同一套編號。
+func diploGoodMusicTrack(raceIdx int) int {
+	if raceIdx < 0 || raceIdx > 12 {
+		return bgmDiploBadPool[0] // 認不出來的族(自訂種族)退回關係差那一組
+	}
+	return 100 + raceIdx + 1
+}
 
 var (
 	theMixer *moo2audio.Mixer
@@ -96,8 +111,46 @@ func playBackgroundMusic() { playSceneBGM(backgroundMusicTracks[rand.Intn(3)]) }
 // 原版只有 `Tactical_Combat_` 呼叫它——戰鬥音樂是獨立的一組,不是背景樂的延續。
 func playCombatMusic() { playSceneBGM(combatMusicTracks[rand.Intn(3)]) }
 
-// playDiplomacyMusic 播外交音樂。目前一律走「關係差」那一組(見 bgmDiploBadPool 的說明)。
-func playDiplomacyMusic() { playSceneBGM(bgmDiploBadPool[rand.Intn(len(bgmDiploBadPool))]) }
+// playSceneBGMOnce 播一首**不迴圈**的曲子;播完由 tickBGM 接上隨機 STREAM 1..3。
+//
+// 對應 `Play_Streaming_Music_` 的 `edx = −2` 哨兵(第 78 項(音樂接線))。原版只有科學室走這條。
+func playSceneBGMOnce(track int) {
+	c := musicByTrack[track]
+	if theMixer == nil || c == nil || track == curBGM {
+		return
+	}
+	if err := theMixer.PlayBGMOnce(c); err == nil {
+		curBGM = track
+	}
+}
+
+// tickBGM 每幀檢查單次播放的曲子是不是播完了,播完就接隨機 STREAM 1..3。
+//
+// 由互動主迴圈呼叫(interactiveApp.Update)。headless / 沒有音訊裝置時 theMixer 為 nil,
+// 整個函式是 no-op。
+func tickBGM() {
+	if theMixer == nil || !theMixer.BGMFinished() {
+		return
+	}
+	curBGM = -1 // 這樣接下來擲到同一首也會真的重播
+	playBackgroundMusic()
+}
+
+// playDiplomacyMusic 播外交音樂:關係好走該族的專屬曲,關係差走三選一。
+//
+// 原版的 `Start_Diplomacy_Music_` 搭配 `_diplomacy_good_music` / `_diplomacy_bad_music`
+// 兩個變數,依「當下與該族的關係」切換——那是這個函式兩個分支的來源,不是 remake 自創的。
+//
+// ⚠ **「好/壞」的門檻是 remake 的**:原版用什麼條件切換這兩個變數還沒追出來
+// (那是 `Start_Diplomacy_Music_` 的呼叫端,不是這兩個變數的賦值處)。
+// 這裡用關係分數 >= 0 當分界,是 remake 的讀法。
+func playDiplomacyMusic(raceIdx, relation int) {
+	if relation >= 0 {
+		playSceneBGM(diploGoodMusicTrack(raceIdx))
+		return
+	}
+	playSceneBGM(bgmDiploBadPool[rand.Intn(len(bgmDiploBadPool))])
+}
 
 // loadMusicLBX 把一個音樂 LBX 的曲目併進 musicByTrack,鍵加上 base 偏移
 // (STREAM base=0、STREAMHD base=100,即原版的單一編號空間)。

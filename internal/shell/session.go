@@ -1439,6 +1439,19 @@ func (s *GameSession) ApplyCombatOutcome(enemy string, playerStart, enemyStart i
 //
 // 註:目前戰鬥為單一通用敵艦隊(genEnemyFleet),此名稱純顯示標籤,不綁定特定 AI 的實艦;
 // 待「多 AI 目標選擇 UI」接上後改為玩家實際交戰的對手(見 remaining-work-roadmap 節 B)。
+// RelationToPlayer 依對手名回傳它對玩家的關係分數(−40..40);查無回 0。
+//
+// 供外交畫面挑背景音樂用(原版 `Start_Diplomacy_Music_` 依關係好壞切換 good/bad 兩首,
+// 見 cmd/moo2/audiohook.go 的 playDiplomacyMusic)。
+func (s *GameSession) RelationToPlayer(enemy string) int {
+	for i := range s.AIPlayers {
+		if s.AIPlayers[i].Name == enemy {
+			return s.AIPlayers[i].Relation
+		}
+	}
+	return 0
+}
+
 func (s *GameSession) PrimaryEnemyName() string {
 	if len(s.AIPlayers) == 0 {
 		return "敵軍"

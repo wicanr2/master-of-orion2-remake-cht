@@ -99,3 +99,27 @@ func TestBackgroundAndCombatMusicAreDisjoint(t *testing.T) {
 		}
 	}
 }
+
+// TestDiploGoodMusicTrack 「關係好」的外交曲 = 該族的種族索引 + 1(STREAMHD 1..13)。
+//
+// 公式來自反組譯:`_diplomacy_good_music = 該族 empire 記錄 [+0x25] + 1`,而
+// `sub_12983`(帝國建立)證實 `[+0x25]` 就是**種族索引**——上一輪記成「逐族靜態表」
+// 的那張表不存在。
+func TestDiploGoodMusicTrack(t *testing.T) {
+	for raceIdx := 0; raceIdx <= 12; raceIdx++ {
+		got := diploGoodMusicTrack(raceIdx)
+		if want := 100 + raceIdx + 1; got != want {
+			t.Errorf("種族 %d 的關係好曲目=%d,期望 %d", raceIdx, got, want)
+		}
+		if !trackExists(got) {
+			t.Errorf("種族 %d 的曲目編號 %d 在玩家資料夾裡沒有對應 entry", raceIdx, got)
+		}
+	}
+	// 自訂種族(認不出來)退回關係差那一組,而不是回一個不存在的編號。
+	if got := diploGoodMusicTrack(-1); got != bgmDiploBadPool[0] {
+		t.Errorf("未知種族應退回 %d,實得 %d", bgmDiploBadPool[0], got)
+	}
+	if got := diploGoodMusicTrack(13); got != bgmDiploBadPool[0] {
+		t.Errorf("越界種族索引應退回 %d,實得 %d", bgmDiploBadPool[0], got)
+	}
+}

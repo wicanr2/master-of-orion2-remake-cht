@@ -1807,7 +1807,8 @@ func (b *sceneBuilder) diplomacy() (origScreen, error) {
 	if b.session == nil {
 		return nil, fmt.Errorf("無對局")
 	}
-	playDiplomacyMusic()
+	primary := b.session.PrimaryEnemyName()
+	playDiplomacyMusic(diplomatRaceIndex(primary), b.session.RelationToPlayer(primary))
 	return newDiplomacyScreen(b), nil
 }
 
@@ -1818,7 +1819,12 @@ func (b *sceneBuilder) diplomacyWith(enemy string) (origScreen, error) {
 	if b.session == nil {
 		return nil, fmt.Errorf("無對局")
 	}
-	playDiplomacyMusic()
+	// 是**那位**對手來敲門,所以曲子也要是那一族的(不是主要對手的)。
+	who := enemy
+	if who == "" {
+		who = b.session.PrimaryEnemyName()
+	}
+	playDiplomacyMusic(diplomatRaceIndex(who), b.session.RelationToPlayer(who))
 	d := newDiplomacyScreen(b)
 	if enemy != "" {
 		d.enemy = enemy
@@ -3555,10 +3561,9 @@ func currentAreaTopic(session *shell.GameSession, areaIdx int) (topic gamedata.R
 // 改為即時算出該領域「目前應研究的主題」(currentAreaTopic,依 techtree 固定順序取第一個
 // 未完成主題)並把中文名 + RP 成本疊字顯示在領域框內,點擊即設定為該真主題(而非寫死值)。
 func (b *sceneBuilder) research() (*overlayScreen, error) {
-	// Science_Room_ / _Tech_Select_ → STREAMHD #17。原版播完會接隨機 STREAM 1..3
-	// (Play_Streaming_Music_ 的 edx = −2 哨兵);remake 的 Mixer 沒有「播完接下一首」
-	// 這個機制,所以只播第一首——**已知缺口**,不是抄漏。
-	playSceneBGM(trackScienceRoom)
+	// Science_Room_ / _Tech_Select_ → STREAMHD #17,**播完接隨機 STREAM 1..3**
+	// (Play_Streaming_Music_ 的 edx = −2 哨兵)。接的那一步在 tickBGM。
+	playSceneBGMOnce(trackScienceRoom)
 	// 8 個研究領域為點擊熱區(bg 局部座標;涵蓋整塊面板)→ 設定該領域目前主題 → 回星系。
 	hits := []hitRegion{
 		{16, 32, 208, 98, "Construction"}, {242, 32, 214, 98, "Power"},
@@ -4297,6 +4302,9 @@ func (a *interactiveApp) pollInput() shell.InputState {
 
 func (a *interactiveApp) Update() error {
 	a.tick++
+	// 單次播放的曲子(科學室)播完要接隨機 STREAM 1..3——原版 Play_Streaming_Music_ 的
+	// −2 哨兵。放在最前面:它與畫面狀態無關,而且 headless 時是 no-op。
+	tickBGM()
 	if a.b != nil {
 		a.b.animTick = a.tick // 動畫計數(黑洞旋渦等),見 starsprite.go
 	}

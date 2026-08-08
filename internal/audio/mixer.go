@@ -15,10 +15,13 @@ type Mixer struct {
 	ctx  *ebiaudio.Context
 	rate int
 
-	bgm    *ebiaudio.Player
-	sfx    map[string]*ebiaudio.Player
-	bgmVol float64
-	sfxVol float64
+	bgm *ebiaudio.Player
+	// bgmOnce 標記目前這首是**單次播放**(PlayBGMOnce)。迴圈播放的曲子不會結束,
+	// 所以 BGMFinished 必須先看這個旗標,否則「還沒開始播」會被誤判成「播完了」。
+	bgmOnce bool
+	sfx     map[string]*ebiaudio.Player
+	bgmVol  float64
+	sfxVol  float64
 }
 
 // NewMixer 以指定取樣率建立 audio context(MOO2 音訊統一 22050 Hz)。
@@ -44,6 +47,7 @@ func (m *Mixer) PlayBGM(c *Clip) error {
 	}
 	loop := ebiaudio.NewInfiniteLoop(bytes.NewReader(c.PCM), int64(len(c.PCM)))
 	p, err := m.ctx.NewPlayer(loop)
+	m.bgmOnce = false
 	if err != nil {
 		return fmt.Errorf("audio: 建立 BGM player: %w", err)
 	}
@@ -51,6 +55,38 @@ func (m *Mixer) PlayBGM(c *Clip) error {
 	m.bgm = p
 	p.Play()
 	return nil
+}
+
+// PlayBGMOnce 播一首**不迴圈**的音樂。
+//
+// 用途是原版 `Play_Streaming_Music_` 的 `edx = −2` 哨兵:「這首播完接隨機 STREAM 1..3」。
+// 科學室(STREAMHD #17)是唯一走這條的畫面(第 78 項(音樂接線))。
+// 呼叫端要自己輪詢 BGMFinished 才知道該接下一首。
+func (m *Mixer) PlayBGMOnce(c *Clip) error {
+	if c == nil || len(c.PCM) == 0 {
+		return fmt.Errorf("audio: 空音樂 Clip")
+	}
+	if m.bgm != nil {
+		m.bgm.Pause()
+		m.bgm = nil
+	}
+	p, err := m.ctx.NewPlayer(bytes.NewReader(c.PCM))
+	if err != nil {
+		return fmt.Errorf("audio: 建立 BGM player: %w", err)
+	}
+	p.SetVolume(m.bgmVol)
+	m.bgm = p
+	m.bgmOnce = true
+	p.Play()
+	return nil
+}
+
+// BGMFinished 回報「上一首是單次播放,而且已經播完了」。
+//
+// 迴圈播放的曲子永遠回 false —— 它不會結束。沒有 BGM 在放時也回 false
+// (那是「還沒開始」不是「播完了」,呼叫端不該因此接下一首)。
+func (m *Mixer) BGMFinished() bool {
+	return m.bgmOnce && m.bgm != nil && !m.bgm.IsPlaying()
 }
 
 // StopBGM 停止背景音樂。
