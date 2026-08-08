@@ -1439,6 +1439,35 @@ func (s *GameSession) ApplyCombatOutcome(enemy string, playerStart, enemyStart i
 //
 // 註:目前戰鬥為單一通用敵艦隊(genEnemyFleet),此名稱純顯示標籤,不綁定特定 AI 的實艦;
 // 待「多 AI 目標選擇 UI」接上後改為玩家實際交戰的對手(見 remaining-work-roadmap 節 B)。
+// localName 把原版的英文專有名詞(星名、艦名)翻成當前語言。
+//
+// ⚠ **翻譯發生在「取名的那一刻」,不是顯示的那一刻。** 兩者的差別在存檔:
+// 前者讓存檔裡直接是玩家看到的那個字串,後者會讓存檔存英文而顯示時再翻。
+// 選前者的理由有兩個——
+//
+//  1. **中文模式的輸出與這一輪之前逐位元相同**(畫廊 34 張比對是證據)。
+//     如果改成顯示時翻,存檔內容會變,狀態指紋會變,而那個變動沒有任何遊戲意義。
+//  2. 星名與艦名在遊戲裡會被玩家改(艦隊改名)、會進戰報字串、會進網路封包——
+//     那些地方沒有一個知道「這個字串是不是可翻的專有名詞」。存成最終字串最單純。
+//
+// TranslateName 為 nil(預設)時是恆等函式,也就是**英文**。`internal/shell` 因此
+// 不需要 import i18n:由 cmd/moo2 在建立對局時注入(見 sceneBuilder)。
+// nameTranslator 回傳這一局實際生效的專有名詞翻譯器(逐局覆寫優先於行程層預設)。
+func (s *GameSession) nameTranslator() func(string) string {
+	if s.TranslateName != nil {
+		return s.TranslateName
+	}
+	return defaultNameTranslator
+}
+
+func (s *GameSession) localName(en string) string {
+	tr := s.nameTranslator()
+	if tr == nil {
+		return en
+	}
+	return tr(en)
+}
+
 // RelationToPlayer 依對手名回傳它對玩家的關係分數(−40..40);查無回 0。
 //
 // 供外交畫面挑背景音樂用(原版 `Start_Diplomacy_Music_` 依關係好壞切換 good/bad 兩首,
@@ -1622,7 +1651,9 @@ func (s *GameSession) BuildShipWithMods(class string, weapon, armor, shield, spe
 		return false
 	}
 	s.Player.BC -= cost
-	name := shipNamePool[s.ShipCount()%len(shipNamePool)] // 全帝國計數,不然分艦隊後會撞名
+	// 全帝國計數,不然分艦隊後會撞名。池子存英文原文,這裡翻成當前語言
+	// ——**翻譯發生在造艦當下**,所以存檔裡的艦名就是玩家看到的那個語言(見 localName)。
+	name := s.localName(shipNamePool[s.ShipCount()%len(shipNamePool)])
 	atk := w.Value
 	if sp.Name == "戰鬥電腦" {
 		atk += sp.Value
@@ -2872,7 +2903,7 @@ func (s *GameSession) RegenGalaxy(n int, seed int64) {
 // numAI<=0 時 buildDemoAIOpponents 收到空的 aiHomeStars 會回傳空 slice,退化為無 AI;呼叫端應傳
 // >=1。
 func (s *GameSession) SetupNewGame(stars int, seed int64, numAI int) {
-	galaxy, aiHomeStars := genGalaxy(stars, seed, numAI, s.galaxyAge())
+	galaxy, aiHomeStars := genGalaxy(stars, seed, numAI, s.galaxyAge(), s.nameTranslator())
 	galaxy[0].Explored = true // 母星初始已探索(與 NewDemoSession 一致)
 	s.Stars = galaxy
 	// 行星生成用獨立的亂數流(seed+1),讓「同一 seed 的星圖佈局」不受行星骰表的抽取次數影響——
@@ -3071,7 +3102,8 @@ func aiHomeStarIndices(n, aiHomes int) []int {
 // 單一權威來源直接回傳)。
 // 星名取自原版 STARNAME.LBX asset1 的 829 條隨機星名池(randomStarNamePool,見
 // internal/shell/starnames.go),829 遠大於任何星系大小上限(最大 48 星),不需 fallback。
-func genGalaxy(n int, seed int64, aiHomes int, age gamedata.GalaxyAge) ([]Star, []int) {
+// nameTr 把星名池的英文原文翻成當前語言(nil = 不翻,即英文);見 GameSession.localName。
+func genGalaxy(n int, seed int64, aiHomes int, age gamedata.GalaxyAge, nameTr func(string) string) ([]Star, []int) {
 	r := rand.New(rand.NewSource(seed))
 	cols := int(math.Ceil(math.Sqrt(float64(n))))
 	rows := (n + cols - 1) / cols
@@ -3082,7 +3114,13 @@ func genGalaxy(n int, seed int64, aiHomes int, age gamedata.GalaxyAge) ([]Star, 
 		aiSet[x] = true
 	}
 	idx := 0
-	names := append([]string(nil), randomStarNamePool...)
+	names := make([]string, len(randomStarNamePool))
+	for i, en := range randomStarNamePool {
+		names[i] = en // 池子存英文原文
+		if nameTr != nil {
+			names[i] = nameTr(en) // 生成時翻(見 GameSession.localName 的說明)
+		}
+	}
 	r.Shuffle(len(names), func(i, j int) { names[i], names[j] = names[j], names[i] })
 	for gy := 0; gy < rows && idx < n; gy++ {
 		for gx := 0; gx < cols && idx < n; gx++ {
@@ -3117,6 +3155,13 @@ func genGalaxy(n int, seed int64, aiHomes int, age gamedata.GalaxyAge) ([]Star, 
 
 // GameSession 是一局進行中的遊戲狀態。玩家操作改變狀態,EndTurn 推進一回合(結算玩家 + 各 AI)。
 type GameSession struct {
+	// TranslateName 把原版英文專有名詞(星名/艦名)翻成當前語言;nil = 不翻(英文)。
+	//
+	// **不進存檔**(小寫欄位會被 json 略過?不會——所以這裡靠 save 那一側的白名單,
+	// 見 internal/save)。它是行程層的注入點,由 cmd/moo2 在建立對局時設定,
+	// 讓 internal/shell 不必 import i18n。用法見 localName。
+	TranslateName func(string) string `json:"-"`
+
 	Turn           int
 	Player         engine.PlayerState
 	PlayerColonies []engine.ColonyState
@@ -4674,11 +4719,23 @@ func buildDemoAIOpponents(aiHomeStars []int, difficulty int, seed int64) []AIOpp
 	return aiPlayers
 }
 
+// defaultNameTranslator 是行程層的專有名詞翻譯器(星名/艦名),由 cmd/moo2 在啟動時
+// 用 SetNameTranslator 注入。nil = 不翻(英文)。
+//
+// ⚠ **為什麼是套件級變數而不是參數**:`NewDemoSession` 有十來個呼叫端(測試、探針、
+// 截圖廊、網路對局),而語言在整個行程裡只設定一次。改簽名的成本遠高於它換來的東西。
+// 每一局仍可用 `GameSession.TranslateName` 覆寫。
+var defaultNameTranslator func(string) string
+
+// SetNameTranslator 設定行程層的專有名詞翻譯器。cmd/moo2 在載入譯表之後呼叫一次。
+func SetNameTranslator(fn func(string) string) { defaultNameTranslator = fn }
+
 func NewDemoSession() *GameSession {
 	const galaxyStars = 24
 	const numAIOpponents = 3
-	galaxy, aiHomeStars := genGalaxy(galaxyStars, 42, numAIOpponents, galaxyAgeSetting) // 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
-	galaxy[0].Explored = true                                                           // 母星初始已探索
+	// 程序化星系(24 星,固定種子=可重現;正式版種子隨新遊戲)
+	galaxy, aiHomeStars := genGalaxy(galaxyStars, 42, numAIOpponents, galaxyAgeSetting, defaultNameTranslator)
+	galaxy[0].Explored = true // 母星初始已探索
 	// 蟲洞用獨立亂數流(45),與 SetupNewGame 同構——demo 局也要有,否則截圖廊/測試看不到這一層。
 	genWormholes(galaxy, demoHomeStarSet(aiHomeStars), rand.New(rand.NewSource(45)).Intn)
 	// 星雲同理:demo 局也要有,否則截圖廊/測試看不到這一層。

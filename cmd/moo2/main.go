@@ -200,6 +200,10 @@ func main() {
 	if *lang == "en" {
 		langID = i18n.English
 	}
+	// 專有名詞(原版 829 條星名 + 672 條艦名)在 internal/shell 裡存的是**英文原文**;
+	// 中文由這個注入的翻譯器在**取名當下**翻(第 84 項(名稱池雙語化))。
+	// 一定要在任何 NewDemoSession / SetupNewGame 之前設好——星名是在銀河生成時定案的。
+	installNameTranslator(langID)
 
 	// 音訊抽取模式:headless,把原版音樂/音效原封抽成 .wav 到指定目錄,
 	// 供人耳試聽、建立曲目/音效對應表(不開視窗,不需字型/i18n)。
