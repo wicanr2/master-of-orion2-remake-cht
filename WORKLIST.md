@@ -18,14 +18,19 @@
 > 種族選擇左右擺反、艦艇設計六個艦體槽不等距)。詳見 `docs/re/01-gap-report.md`。
 >
 > 可勾選工作清單,對應 `PLAN.md` 階段。允許擴充(CLAUDE.md)。完整性優先:不預先砍項;卡關記錄方法換路,不寫「暫緩/低投報」。
-> 圖例:`[ ]` 待辦 `[~]` 進行中 `[x]` 完成(⚠ 多為自製系統的完成,非原版對齊)。
+> 圖例:`[ ]` 待辦 `[~]` 進行中 `[x]` 完成(⚠ 多為自製系統的完成,非原版對齊)
+> `[-]` **作廢**(方向已改,不是漏做——留著只會讓人以為架構有缺)。
 
 ## ★ 剩餘工作(2026-08-08 重新盤點,使用者要求)
 
-> **這一段是唯一該看的剩餘工作表。** 底下各 Phase 的方框橫跨數十輪,已不可靠——
-> 那 32 個 `[ ]` 裡多數在後續輪次做掉了(例如「OCR 掃描版手冊附錄」在第 123 項用可抽文字的
-> patch 1.5 PDF 解決、「決定性化 + lockstep」在第 72–79 項整塊完成),**保留只為了時序,
-> 不是現況**。要判斷某項做了沒,`grep` 程式碼,不要讀方框。
+> **這一段是唯一該看的剩餘工作表。**
+>
+> ⚠ **2026-08-08 已逐條追認**:底下各 Phase 的 42 個未完成方框(32 個 `[ ]` + 10 個 `[~]`)
+> 全部對程式碼查證過,判定寫在**各條自己那一行**(不在別處另寫一份——那正是斷言殘留的來源)。
+> 結果:**已完成 19、作廢 5、部分 9、仍開 9**(合計 42)。
+> 「已完成」多數是斷言過期(例如「各子畫面 RETURN 用全螢幕返回」——實際有逐畫面精確熱區;
+> 「只剩載存檔畫面沒做」——`loadgame.go` 早就在,過場截圖廊第 70 拍就是它)。
+> 「作廢」是方向改了(直繪架構不移植 openorion2 的 Screen 抽象層與 widget 樹)。
 >
 > ⚠ 再下面那張 A–AO 表**不是待辦**,是這一整輪的**已完成日誌**(40 列裡 38 列 ✅)。
 > 它先前掛在「剩餘工作清冊」這個標題下,標題與內容已經對不上很久了。
@@ -73,7 +78,14 @@
 | **英文模式的引擎層** | `internal/` 有 2,188 條寫死中文,1,501 條是星名/艦名池(原版英文池的譯本,接得回來),**剩約 690 條是引擎產生的顯示字串**。正解不是把 `tr()` 灑進引擎,是讓引擎回鍵值、UI 端繪字。UI 層的缺口已經是 0(棘輪 16,全是偵測器分不出來的東西)|
 | **資產分版(1.31 vs 1.5)** | 目前只分規則值,LBX/資料未分版 |
 | **打包路徑** | `cmd/moo2` 需要可覆寫 assets/i18n 路徑(或 `go:embed`),讓 macOS `.app` 不必 launcher script 繞路 |
-| CMBTSFX 爆炸/光束特效 | 選配的視覺增強 |
+| **淘汰 `-play` 簡約殼** | 旗標仍在 `main.go:189`,連帶 `colonyview.go` 等一批畫面是死碼。⚠ `HONEST-STATUS` 稱它「已淘汰」指的是**不再是主路徑**,不是程式碼已移除 |
+| **字型子集 + `go:embed`** | 全 repo 無 `go:embed`,字型仍 runtime 掛載。與上一列打包路徑是同一件事 |
+| 種族關係的 SABOTAGE / HIDE 兩顆鈕 | 三顆任務鈕只做了一顆——**手冊對破壞與隱匿沒有規則可依**(理由寫在 `racesspy.go:62`),屬證據不足那一類 |
+| 熱座:指定**哪幾個**帝國是真人 | 現在是「把最後 N−1 個 AI 轉成真人」,原版是在設定階段逐一標記 |
+| 熱座:席位補齊玩家側系統 | `seatFromAI` 的註解自己寫著——`AIOpponent` 比玩家側薄,轉過來的建造佇列/領袖/間諜/前哨站是空的 |
+| CMBTSFX 爆炸/光束特效 | 選配的視覺增強,目前只在註解裡被提到 |
+| 繪字描邊/陰影 | 逐字斷行已完成(`uifont/wrap.go`),描邊/陰影仍無;條目自己已把它降為次要 |
+| hover highlight 與原版一致 | 觀感項,目前是細框提示 |
 | 音樂曲目↔場景的人耳定案 | 需要使用者對原版聆聽比對 |
 
 ### 五、網路多人的留白(刻意不做,不是缺口)
@@ -195,7 +207,7 @@ internal/shell/orbital_bombardment.go:218
 - [x] **音樂曲目↔場景定案**(task 13):三輪對原版確認到靜態溯源極限——外交樂**反組譯硬證**(Orion2.exe `_diplomacy_bad_music=Get_Random(3)+13` → track 13/14/15);menu/galaxy/combat 因對應 Play 函式在 DOS build 為死碼,維持時長啟發式(誠實標)。
 - [x] **地面戰係數**(task 14):RE 定案用一代 1oom `game_ground_kill`(d100+force)+ 二代加成表/hits-to-kill;`ResolveGroundBattle` 實作+確定性測試綠。剩 UI 入侵接線(歸 task 16)。
 - [x] **真母星初始狀態**(task 15):Average 忠實開局實作(單一母星、Marine Barracks+Star Base、起始科技對 tech.cpp 驗證、建築數公式、1 Colony+2 Scout)+ 測試綠。
-- [~] **核心 gameplay 還原**(task 16):逐塊自驅中(見下)。
+- [~] **核心 gameplay 還原**(task 16):逐塊自驅中(見下)。  ⚠ **2026-08-08 追認:傘狀項,活表仍有殘量(手冊忠實化 3 真擋 + 5 待做),保留。**
 
 **task 16 分塊進度(2026-07-10,使用者授權自主排序):**
 - [x] 殖民地建築 5→40 棟入 `gamedata/buildings.go` + 前置科技 gating(`colony-buildings.md`)
@@ -205,7 +217,7 @@ internal/shell/orbital_bombardment.go:218
 - [x] 修 AI 艦隊投資整數捨去 bug(餘數池,FleetStrength 正確成長)+ AI 接忠實 yield
 - [x] 地面戰「模型 + 流程」shell 層接線(task 16 續):陸戰隊生成(Marine Barracks 依手冊公式補充,`advanceMarines`)、載運(`LoadMarines`,運力=艦數×手冊每艘 4 的近似,無獨立運輸艦船體類別,標簡化)、入侵解算(`GameSession.InvadeColony`,組 `gamedata.GroundForce` 接 `ResolveGroundBattle`,rng 依回合+星索引種子化可重現)、勝負後續(星 Owner 轉移 + 殖民地過戶/AI 端移除,`internal/shell/ground_invasion.go` + `ground_invasion_test.go`)。剩 UI 繪製/操作介面未做(不碰 interactive.go,歸後續 task)。
 - [x] 地面戰補完:裝甲營房戰車 + 軌道轟炸接線(task 16 續,2026-07-11):`gamedata/ground.go` 原本零呼叫端的 `GroundArmorBarracksUnits`/`GroundArmorBarracksCap`/`GroundTankHitsToKill`/`GroundBombHitsFromDamage`/`GroundPlanetTotalHits` 全部接進活對局。**戰車生成**:`advanceArmor`(比照 `advanceMarines`,新增 `PlayerColonyTanks`/`ArmorBarracksAge` 平行陣列,已接進 `EndTurn`)+ `LoadTanks`(與 `LoadMarines` 共用同一個 `MarineTransportCapacity()` 運力池,標簡化)+ `InvadeColony` 攻方 `GroundForce` 混編陸戰隊+戰車(合併順序「陸戰隊在前、戰車在後」,技術原因是靠 `ResolveGroundBattle`「前排先陣亡」規則從單一 `AttackerSurvived` 總數精確拆回兩個兵種各自存活數,不需改動 `gamedata.GroundUnit` 結構);已研究 Battleoids(`TOPIC_ASTRO_CONSTRUCTION`)則戰車固定 3 hits(`GroundBattleoidHitsToKill`)+ 額外 +10 force(`GroundBattleoidCombatBonus`,僅戰車數>0 時套用)。守方戰車 TODO 未接(AI 無 `ColonyBuildings` 追蹤,無從得知是否已建裝甲營房,不臆測)。**軌道轟炸**:新增 `internal/shell/orbital_bombardment.go`,`GameSession.BombardColony(starIdx)` 引擎函式(手冊 p.129,10 輪齊射模擬 `fleetBombardDamage` 重用既有 `ResolveShot`/`ResolveMissileShot` → `GroundBombHitsFromDamage` 換算 hits → 直接扣減殖民地人口,夾在 0)。範圍限制(誠實標註,非杜撰):只扣人口,不扣建築/儲存生產/駐軍(AI 無對應持久資料可扣);轟炸不佔領殖民地(手冊:入侵才佔領);光束/魚雷減半、電腦命中加成、行星護盾在轟炸/戰術戰鬥層本身都還沒有獨立函式,沿用既有 `ResolveShot` 未套用這兩項(TODO);UI 觸發僅引擎層函式,`interactive.go` 未接對應按鈕(誠實延後)。測試:`ground_invasion_test.go`(戰車生成/上限/共用運力/Battleoid/入侵混編拆解/勝率提升對照組)+ `orbital_bombardment_test.go`(前置條件/確定性/人口扣減鏈用保證命中滿傷艦隊手算驗證/不佔領)全綠。詳見 `docs/tech/ground-combat-algorithm.md`「2026-07-11 裝甲營房戰車 + 軌道轟炸接線」節。
-- [~] 艦艇設計(空間格):shell/gamedata 層已完成(2026-07-11,`gamedata/shipspace.go` + `session.go` `ShipDesignSpaceUsed`/`ShipDesignFits`,手冊 p.121/124-127 確認值,見 `docs/tech/ship-design-space.md`);仍待武器改裝(mod)佔格接線 + Design Dock UI 繪製。（飛彈/球狀傷害已於下方戰鬥公式分流任務接線,與本項無關)
+- [x] 艦艇設計(空間格):shell/gamedata 層已完成(2026-07-11,`gamedata/shipspace.go` + `session.go` `ShipDesignSpaceUsed`/`ShipDesignFits`,手冊 p.121/124-127 確認值,見 `docs/tech/ship-design-space.md`);仍待武器改裝(mod)佔格接線 + Design Dock UI 繪製。（飛彈/球狀傷害已於下方戰鬥公式分流任務接線,與本項無關)  ⚠ **2026-08-08 追認:武器改造佔格已於 task#36 接線(`ShipDesignSpaceUsedWithMods`),此條的待辦部分已完成。**
 - [x] 戰鬥公式依武器類型分流(**2026-07-11**):飛彈躲避/AMR 攔截/球狀傷害的公式其實先前就已移植自手冊(`gamedata/missile.go`/`gamedata/damage.go`,有測試),只是戰鬥解算(`cmd/moo2/interactive.go` `fireRound`、`internal/shell/session.go` `battleVolley`)全部武器都走 beam 邏輯(`shell.ResolveShot`),飛彈(核飛彈/麥克萊特飛彈)被當 beam 打。這輪修正:新增 `internal/shell/weapon_kind.go` 依武器名分類 beam/missile/spherical(核對手冊「Notes on Spherical Damage」確認死光不是球狀武器,是一般光束武器且是 `DamageForHit` 手冊 worked example 出處,現行武器表也沒有任何真正的球狀武器);新增 `shell.ResolveMissileShot`(AMR 攔截 + Jam Chance 躲避)、`shell.ResolveSphericalShot`(已測試但暫無武器掛載,備妥待未來新增);`fireRound`/`battleVolley` 依 `CombatShip.Kind`/`combatant.kind` 分流,beam 行為不變(回歸測試)。詳見 `docs/tech/tactical-combat-weapon-kinds.md`。
 - [x] AI 財政赤字修正:職務保底(MinWorkersForSolvency/DecideColonyJobsSolvent,只 Scientific 挪 1 人)+ 順修 AI 職務回寫 bug;AI BC 從發散(-217)改收斂有界(48),測試綠(見 ai-fiscal-solvency.md)
 - [x] TradeGoodsIncome 接線(2026-07-11):貿易品是建造佇列選項(非第四種職務配置,原判斷是誤判)——建造選單新增「貿易品」、`engine.ColonyState.TradeGoods` + `syncTradeGoodsFlag`、`RunEmpireTurn` 接上 2:1 換算(`EmpireOutput.TradeGoodsRevenue`);Fantastic Trader 仍 TODO。見 `docs/tech/gameplay-systems-status.md` §2
@@ -451,21 +463,21 @@ internal/shell/orbital_bombardment.go:218
 - [x] docker + xvfb 截圖流程打通 — docker/Dockerfile.ebiten(CGO+X11+GL+xvfb)+ scripts/screenshot.sh(ReadPixels 存 PNG,不依賴 WM)
 - [x] ★ 顏色視覺驗證:MAINMENU 資產 21 於 ebiten 渲染出完整正確主選單(640×480)
 - [x] 確認 MOO2 為 640×480(非 320×200);修正 kickoff 假設
-- [ ] 實作 `Screen` 對應:registerTexture/drawTexture/fillRect/setClipRegion(抽介面,目前為直繪骨架)
-- [ ] 滑鼠事件(cursor + 按鍵),補鍵盤
-- [ ] 資產快取(避免每幀 NewImageFromImage)
+- [-] 實作 `Screen` 對應:registerTexture/drawTexture/fillRect/setClipRegion(抽介面,目前為直繪骨架)  ⚠ **2026-08-08 **作廢**:這是 openorion2 移植期的構想。remake 走**直繪**(cmd/moo2 共 49 處 `DrawImage`),沒有也不需要 Screen 抽象層。留著只會讓人以為架構有缺。**
+- [x] 滑鼠事件(cursor + 按鍵),補鍵盤  ⚠ **2026-08-08 追認:滑鼠與鍵盤全面在用(`inpututil`),整個 `-game` 靠它跑。**
+- [x] 資產快取(避免每幀 NewImageFromImage)  ⚠ **2026-08-08 追認:已有快取(`overlay.go` / `multiplayer.go`)。**
 - [x] ★ 里程碑 M2:載存檔 → 繪製星系圖(cmd/moo2 -save;SAVE10.GAM 的 36 星依座標/光譜/大小 + 星名 + 星雲,資料驅動)
-- [ ] 星圖換真實星球 sprite(GALAXY.LBX asset 148,依 spectralClass×size)+ 星空背景(STARBG.LBX)
+- [x] 星圖換真實星球 sprite(GALAXY.LBX asset 148,依 spectralClass×size)+ 星空背景(STARBG.LBX)  ⚠ **2026-08-08 追認:`starsprite.go` 用 GALAXY.LBX 0x94(148)+ 星空/星雲已接(`nebula.go`、`starbg_test.go`)。**
 
 ## Phase 3 — UI 框架 + 文字系統 + 主選單(做法見 `08` playbook)
-- [ ] gui widget 樹翻譯(Toggle/Choice/ScrollBar/Label/Composite + ViewStack)
-- [ ] callback → Go closure/interface
+- [-] gui widget 樹翻譯(Toggle/Choice/ScrollBar/Label/Composite + ViewStack)  ⚠ **2026-08-08 **作廢**:同上,直繪架構不移植 openorion2 的 widget 樹。**
+- [-] callback → Go closure/interface  ⚠ **2026-08-08 **作廢**:同上,沒有 callback 需要轉。**
 - [x] CJK 渲染:`internal/uifont`(ebiten text/v2,依尺寸快取 face)+ Measure。**2026-07-11 升級為混合字型**:zh 內文用 `bitmapfont/v4 FaceTC` 點陣(<18px)、標題用 Noto 向量(≥18px);en 純 Noto。見 `docs/tech/pixel-font-decision.md`
 - [x] 顯示層覆蓋 i18n:`internal/i18n`(TSV 英文即 key + 查無 fallback + TranslateFormat)+ 測試
 - [x] [HARD] 只翻顯示層,不動資料層(i18n 設計即如此)
 - [x] 字型:NotoSansCJK-Regular.ttc 經 Go opentype.ParseCollection 驗證可解析+量測中文(★ [HARD] 相容檢查通過);galaxy 標題已渲染繁中
-- [ ] 繪字描邊/陰影版 + 逐字斷行(目前基本 Draw/Measure;混合字型上線後標題走平滑 Noto、內文點陣暗底可讀,描邊需求降為次要,待「字疊亮星點」處再補)
-- [ ] 字型子集 pyftsubset(docker)+ go:embed 內嵌(待譯文集齊;目前用完整 .ttc runtime 掛載)
+- [~] 繪字描邊/陰影版 + 逐字斷行(目前基本 Draw/Measure;混合字型上線後標題走平滑 Noto、內文點陣暗底可讀,描邊需求降為次要,待「字疊亮星點」處再補)  ⚠ **2026-08-08 追認:**逐字斷行已完成**(`internal/uifont/wrap.go`);描邊/陰影仍無(`font.go` 只有 Draw/DrawCentered/Measure),條目自己也已把它降為次要。**
+- [ ] 字型子集 pyftsubset(docker)+ go:embed 內嵌(待譯文集齊;目前用完整 .ttc runtime 掛載)  ⚠ **2026-08-08 追認:**仍開**。全 repo 無 `go:embed`,字型仍是 runtime 掛載。與下方「assets 路徑可覆寫」是同一件打包的事。**
 - [x] 主選單中文化 + 截圖校對(cmd/moo2 -menu:擦底疊字六按鈕繼續/載入遊戲/…;before/after 見 docs/reference-screens.md)
 - [x] 主選單:語言 中/英 runtime 切換(2026-08-07,`cmd/moo2/interactive.go` 的 `toggleLang`)
       ——先前只有啟動旗標 `-lang`,進了遊戲換不掉,不符 `CLAUDE.md` 那條需求
@@ -476,14 +488,14 @@ internal/shell/orbital_bombardment.go:218
       順帶修掉兩個中文模式看不出來的 bug(RACESEL#33 標題橫幅從沒被畫過、
       `diplomatRaceIndex` 與艦體名各有一份會漂移的重複對照表)。
       護欄:`lang_gap_test.go`(go/ast 棘輪,只能往下調)+ `lang_coverage_test.go`(漏填英文欄)。
-- [ ] **英文模式覆蓋率(引擎層)**:`internal/` 仍有約 690 條引擎產生的中文顯示字串
+- [ ] **英文模式覆蓋率(引擎層)**:`internal/` 仍有約 690 條引擎產生的中文顯示字串  ⚠ **2026-08-08 追認:**仍開**。`internal/` 2,188 條寫死中文,1,501 條是星名(829)+ 艦名(672)池,其餘約 690 條是引擎產生的顯示字串。UI 層缺口已是 0(棘輪 16)。**
       (`session.go` 228、`gamedata/buildings.go` 83、`colonization.go` 61、`events.go` 44…),
       外加星名池 829 + 艦名池 672(原版英文原文在原始資料裡,接得回來)。
       症狀:英文模式下星名、建築名、行星屬性值、熱座席位名仍是中文。
       正解是讓引擎回鍵值、UI 端繪字,不是把 `tr()` 灑進引擎。
       逐檔清單、量法與收尾原則見 `docs/HONEST-STATUS.md`「英文模式覆蓋率」
 - [x] 主選單:版本 1.3/1.5 選擇框架(`toggleVersion`,左下角)
-- [ ] 按鈕垂直置中微調(目前略偏上)+ hover 狀態中文
+- [~] 按鈕垂直置中微調(目前略偏上)+ hover 狀態中文  ⚠ **2026-08-08 追認:hover 機制在(`interactive.go` 的 `hover` 欄位);垂直置中屬觀感微調,需人眼。**
 
 ## Phase 4 — 畫面重建 + 完整中文化(做法見 `08` playbook)
 - [x] 原版畫面對照組(`docs/reference-screens.md`:主選單/行星列表/建造,英文原貌 + 翻譯清單)
@@ -492,7 +504,7 @@ internal/shell/orbital_bombardment.go:218
 - [x] LBX 字串資源解析 + dumper(`internal/lbx/strings.go` + `cmd/lbxstrings`);TECHNAME 560 條科技名 dump 成功
 - [x] **科技/元件名譯表完整(`assets/i18n/tech.tsv`:419 條唯一全翻)** — 研究主題/領域、武器/裝甲/護盾/引擎/電腦、建築、艦種、武器改造(含縮寫);覆蓋驗證 419/419 無遺漏
 - [x] i18n TSV 守護測試(載入所有 assets/i18n/*.tsv + 佔位符一致性)
-- [~] 擦底疊字改善(fill 加高;darkest 採樣反而過暗已還原)。「顯示篩選」寬粗英文仍微透,需整圖替換或更寬擦除(降級 todo)
+- [~] 擦底疊字改善(fill 加高;darkest 採樣反而過暗已還原)。「顯示篩選」寬粗英文仍微透,需整圖替換或更寬擦除(降級 todo)  ⚠ **2026-08-08 追認:觀感微調,保留。**
 - [x] 其餘字串源逐一 dump + 翻(2026-07-11 盤點:多數已完成,見 assets/i18n/):科技描述 techdesc.tsv(83)、種族 races/raceinfo.tsv、事件 event.tsv(98)、外交 diplo.tsv(780)、help.tsv(704)、母星名 starname.tsv、技能 skilldesc.tsv、estrings(585)/rstring(178)/antaran、艦名 shipname.tsv(535,同日稍後完成,見下方獨立項)、隨機星名 starname-random.tsv(829,同日稍後完成,見下方獨立項)
 - [x] **★ 調色盤鏈解鎖(關鍵)**:對照 openorion2 `gfx.cpp Image::load` 破解「無內嵌調色盤畫面」上色機制(基底提供圖 + 本圖部分內嵌疊加);實作 `cmd/moo2/interactive.go` `resolvePalette`;研究選擇(TECHSEL,借 SCIENCE 調色盤)完整渲染驗證。見 `docs/tech/palette-chain.md`
 - [x] 依 `palette-chain.md` 對照表逐畫面上色——機制是 `resolvePalette` + `paletteChain`,各畫面都在用。剩 COLGCBT(地面戰 sprite)的來源未定案,見 `cmd/moo2/groundcombat.go` 檔頭
@@ -513,7 +525,7 @@ internal/shell/orbital_bombardment.go:218
 - [x] 科技總覽中文化(星曆/歷史圖表/科技總覽/種族統計/回合摘要/參考資料/返回)
 - [x] 擦底採樣穩健化:samplePlate 左緣帶+上下橫帶眾數;背景均勻畫面(info)改 overlayScreen.eraseColor 強制底色
 - [x] galaxy 工具列 GAME 標題已翻(→遊戲)+ ZOOM 已翻(→縮放)(2026-07-10);行星/艦隊個別按鈕邊緣極微殘(紋理按鈕固有)為長尾
-- [ ] 各子畫面 RETURN 按鈕精確熱區(目前暫用全螢幕返回)
+- [x] 各子畫面 RETURN 按鈕精確熱區(目前暫用全螢幕返回)  ⚠ **2026-08-08 追認:**斷言已過期**。`interactive.go` 有逐畫面的 RETURN 精確熱區(如 `{582,452,52,20}`、`{536,432,82,22}`、`{556,430,84,28}`),不是全螢幕返回。**
 - [x] 科技總覽「科技總覽」列可點進研究選擇畫面(其餘選單項待接)
 - [x] 殖民地總覽畫面(COLSUM.LBX 0)接入 COLONIES 按鈕 + 完整中文化
 - [x] 種族關係畫面(RACES.LBX 0)接入 RACES 按鈕 + 中文化(種族關係/會晤/報告/宣戰/忽略/加成/返回)
@@ -527,7 +539,7 @@ internal/shell/orbital_bombardment.go:218
   `GameSession.CouncilStatus()` 誠實呈現議會是否已成立/目前票數/是否已分出勝負或待玩家回應
 - [x] 已探測定位背景(remain-scan,待接入):讀取存檔 LOADSAVE.LBX#11(空存檔格)、外交 DIPLOMAT.LBX#29(有雜訊待查)
 - [x] **存檔/讀檔(remake 自身格式)**:GameSession JSON 序列化(shell/persist.go),AI Decider 以性格重建、含未匯出遊戲狀態;每回合自動存檔(UserConfigDir),主選單「載入遊戲/繼續」讀回續玩。測試 TestSaveLoadRoundTrip(Turn/BC/種族/星系/艦隊/建造/AI 一致且可續跑)
-- [ ] 細修:NEW GAME 開關列/標題微殘、種族關係 ESPIONAGE/SABOTAGE/HIDE(24 標籤)未翻、各畫面按鈕精確熱區
+- [~] 細修:NEW GAME 開關列/標題微殘、種族關係 ESPIONAGE/SABOTAGE/HIDE(24 標籤)未翻、各畫面按鈕精確熱區  ⚠ **2026-08-08 追認:ESPIONAGE/SABOTAGE/HIDE 三顆任務鈕**只做了一顆**(第 110 項:破壞與隱匿手冊無規則可依,`racesspy.go:62` 寫明理由);其餘細修屬觀感。**
 - [x] **★ 核心遊戲迴圈第一步**:GameSession 接進 -game;TURN 按鈕呼叫 session.EndTurn()
   (結算帝國經濟 + AI 對手決策),星系畫面即時顯示星曆(3500 起,每回合+1年)+ 國庫 BC
   (overlayScreen.extras 動態文字機制)。驗證:TURN×2 → 星曆 3500→3502、國庫 100→106
@@ -539,7 +551,7 @@ internal/shell/orbital_bombardment.go:218
 - [x] 造船系統:艦艇設計點艦體等級→BuildShip 加艦到 session→艦隊顯示新艦(第二個互動系統)
 - [x] 單一殖民地管理:殖民地總覽點職務欄→ShiftColonyJob 重分配人口(影響下回合經濟);造船改扣國庫 BC(戰力×20)
 - [x] 建造佇列:殖民地總覽建造欄可點選建築(住宅/工廠/研究實驗室/星港),結束回合以淨工業累積建造,完成回合摘要通知
-- [ ] colony 名稱改用真星名;4 列表畫面接真存檔/生成資料
+- [-] colony 名稱改用真星名;4 列表畫面接真存檔/生成資料  ⚠ **2026-08-08 **作廢**:`colonyview.go` 是已死的 `-play` 簡約殼的畫面(全 repo 只剩一處註解引用它)。`-game` 的殖民地畫面走 `colonyscreen.go`,資料來自 session。併入下方「淘汰 `-play`」一條處理。**
 - [x] 星圖互動:點星→黃色高亮環+左下角行星資訊面板(名/氣候/大小/重力/礦產)+ 派遣艦隊鈕(星間航行)
 - [x] 程序化星系生成:genGalaxy(種子亂數,抖動網格佈 24 星,隨機光譜/大小/洗牌星名,玩家/AI 母星)取代固定佈局
 - [x] 星系大小接 NEW GAME 設定:GALAXY SIZE 框可點選(小型12/中型24/大型36/巨型48星),ACCEPT 依選定大小 RegenGalaxy
@@ -551,21 +563,21 @@ internal/shell/orbital_bombardment.go:218
 - [x] 完整艦艇元件系統:武器/裝甲/護盾/特殊四類元件(各含成本+效果係數),設計畫面循環選擇+顯示總價;建造套用(裝甲/護盾→HP、武器/戰鬥電腦→攻擊)
 - [x] 元件解鎖綁研究科技:各進階元件標記所需 gamedata 研究主題,未完成研究則鎖住(循環跳過),設計畫面顯示已解鎖數;研究→解鎖元件→造艦系統打通
 - [x] 元件品項擴充:29 個 MOO2 真實元件(武器11:雷射→死光/裝甲7:鈦→氙素/護盾6:第一~第十級/特殊5),真譯名(tech.tsv)+ 遞增係數 + 各綁研究科技門檻
-- [~] 元件係數對齊:武器 Value 改真「最大傷害」,錨定 patch 1.5 官方確認值(中子爆破槍12/高斯砲18/電漿砲20);其餘標注單調估計。provenance + 阻塞點(完整表僅存於掃描版手冊,需 OCR;且係數版本相依)記於 docs/tech/component-values.md
-- [ ] 精確全表:OCR 掃描版手冊附錄 或 逆向私有 gamedata 武器表;建版本專屬 profile(1.3/1.5 數值分版)
+- [x] 元件係數對齊:武器 Value 改真「最大傷害」,錨定 patch 1.5 官方確認值(中子爆破槍12/高斯砲18/電漿砲20);其餘標注單調估計。provenance + 阻塞點(完整表僅存於掃描版手冊,需 OCR;且係數版本相依)記於 docs/tech/component-values.md  ⚠ **2026-08-08 追認:**「需 OCR」是假阻塞**。第 123/124 項用可抽文字的 patch 1.5 PDF p.124-127 拿到全表,18 把武器全部換成真值。**
+- [~] 精確全表:OCR 掃描版手冊附錄 或 逆向私有 gamedata 武器表;建版本專屬 profile(1.3/1.5 數值分版)  ⚠ **2026-08-08 追認:前半(精確全表)**已完成**,見上;後半的**規則值分版**已有(`RuleProfile`),**資產分版仍開**(見下方同名條目)。**
 - [x] **研究自動推進 → 動態解鎖迴圈**:目前主題完成後自動推進到下一個未完成元件主題(researchQueue 依成本遞增),玩數回合便逐步解鎖進階元件。測試 TestResearchUnlockLoopOverTurns 驗證 40 回合解鎖 7→15、完成 6 主題
 - [x] 新遊戲種族選擇:NEW GAME 設定畫面加種族選擇框(13 經典種族循環選,顯示名+特性),ACCEPT 套 ApplyRace 起始加成(工業/研究/食物/成長/國庫/戰鬥百分點,對齊各族招牌特性)。測試 TestApplyRaceBonuses/SakkraGrowthFaster/MrrshanCombatBonus
-- [ ] hover highlight 與原版一致(目前為細框提示)
-- [ ] 淘汰自製簡約殼(`-play`):方向不符「與原版一模一樣」,改以原版 overlay 畫面 + 既有回合引擎(internal/engine)重建可玩迴圈
+- [ ] hover highlight 與原版一致(目前為細框提示)  ⚠ **2026-08-08 追認:**仍開**,觀感項。**
+- [ ] 淘汰自製簡約殼(`-play`):方向不符「與原版一模一樣」,改以原版 overlay 畫面 + 既有回合引擎(internal/engine)重建可玩迴圈  ⚠ **2026-08-08 追認:**仍開**。`-play` 旗標仍在 `main.go:189`。⚠ `docs/HONEST-STATUS.md` 稱它「已淘汰」——那是指**不再是主路徑**,不是指程式碼已移除,兩者別混。**
 - [x] ~~補齊需全域調色盤鏈的畫面到對照組~~ 這些畫面在遊戲裡早就跑起來了;`docs/reference-screens.md` 的靜態對照組收錄落後於實作,已在該文標明
-- [ ] **[HARD] 開工先做:窮舉所有文字源(LBX 各類 + Go hardcode),各寫 dumper,用引擎自己 reader dump 精確 key**
-- [~] 逐畫面重建:主選單/星系圖/行星清單/殖民地/科技研究/艦隊/軍官/種族資訊/對話框皆已建;**只剩「載存檔」畫面**(LOADSAVE.LBX 全 repo 零引用,主選單 Continue/Load 目前無存檔選單——原版 oracle 對照的 issue #2 仍開著)
-- [ ] IMGLOG 探查模式:記錄 `(lbx,index)` 對照畫面 UI(盤點烘字按鈕/標籤用)
-- [ ] 烘進 gfx 的英文:擦底疊字(cht_label 模式)or 整圖替換(image_override 模式)
+- [x] **[HARD] 開工先做:窮舉所有文字源(LBX 各類 + Go hardcode),各寫 dumper,用引擎自己 reader dump 精確 key**  ⚠ **2026-08-08 追認:dumper 已齊(`cmd/lbxdump`、`cmd/lbxstrings`、`cmd/lbxinfo`),24 份 TSV 共 5,046 條由此而來。**
+- [x] 逐畫面重建:主選單/星系圖/行星清單/殖民地/科技研究/艦隊/軍官/種族資訊/對話框皆已建;**只剩「載存檔」畫面**(LOADSAVE.LBX 全 repo 零引用,主選單 Continue/Load 目前無存檔選單——原版 oracle 對照的 issue #2 仍開著)  ⚠ **2026-08-08 追認:**斷言已過期**。載存檔畫面在 `cmd/moo2/loadgame.go`,過場截圖廊第 70 拍就是它(`18_loadgame.png`)。**
+- [-] IMGLOG 探查模式:記錄 `(lbx,index)` 對照畫面 UI(盤點烘字按鈕/標籤用)  ⚠ **2026-08-08 **作廢**:烘字已由 `overlay.go` 做完,這個盤點工具沒有消費端了。**
+- [x] 烘進 gfx 的英文:擦底疊字(cht_label 模式)or 整圖替換(image_override 模式)  ⚠ **2026-08-08 追認:`cmd/moo2/overlay.go` 已實作擦底疊字。**
 - [x] LBX 字串譯文表:科技名/描述、種族、事件、外交、星名、help、技能、殖民地、議會、選單等 22 個逐源分檔 TSV 已完成(assets/i18n/*.tsv);艦名池(2026-07-11 補完,shipname.tsv)、隨機星名池(2026-07-11 補完,starname-random.tsv)均已落地,四個專有名詞池全數定案
-- [ ] 組合字串走 `TranslateFormat` 翻模板字面(佔位符數/序中英一致)
-- [ ] 專有名詞術語表 + 「中文(英文)」小字控制碼(統一譯名,對齊 moo1/mom 經驗)
-- [ ] 每畫面 xvfb + xdotool 導航 + import 截圖校對(破版/溢出/缺字/置中)
+- [x] 組合字串走 `TranslateFormat` 翻模板字面(佔位符數/序中英一致)  ⚠ **2026-08-08 追認:`internal/i18n` 有 `TranslateFormat`(含測試)。**
+- [~] 專有名詞術語表 + 「中文(英文)」小字控制碼(統一譯名,對齊 moo1/mom 經驗)  ⚠ **2026-08-08 追認:24 份 TSV 本身就是譯名的單一來源;獨立術語表由 2026-08-08 新建的 `CONTEXT.md` 部分承接(它收的是**專案內部術語**,不是遊戲專有名詞)。「中文(英文)」小字控制碼仍未做。**
+- [x] 每畫面 xvfb + xdotool 導航 + import 截圖校對(破版/溢出/缺字/置中)  ⚠ **2026-08-08 追認:`scripts/screenshot.sh` + `-gamegallery`(34 張)已是常規驗收流程。**
 
 ## Phase 5 — Gameplay 引擎重建
 - [x] 回合結算主迴圈(engine.RunEmpireTurn:殖民地經濟聚合+稅收+國庫+研究推進)
@@ -578,12 +590,12 @@ internal/shell/orbital_bombardment.go:218
 - [x] 指揮評等開局死亡螺旋 regression 修復(**2026-07-11**,同日接線後發現):上一項漏算了帝國基礎指揮評等供給,誤判「開局-20BC/回合」為忠實機制。用真實存檔 `SAVE10.GAM`(`/home/anr2/moo2-private-build/gamedata/mastori2/SAVE10.GAM`)oracle 反推(rulebook 62/64):5 個活躍玩家(不同種族)各持 1 殖民地,`CommandPoints` 讀到 6(其中 1 名玩家=8);比對已建成軌道衛星,讀到 6 的玩家只建星基(6-1=5),讀到 8 的玩家建星辰要塞(8-3=5)——5 個不同種族玩家一致反推基礎值 5,與種族/政府無關。新增 `gamedata.CommandPointsBase=5`(`income.go`,含完整 oracle 推導註解),`shell.GameSession.totalCommandPointsSupply()` 在逐殖民地建築供給之外每帝國加這一次(非逐殖民地)。修復後開局供給=5+1(星基)=6≥3(需求),不再超支;20 回合探針軌跡:BC 從第 2 回合 101 穩定爬升至第 21 回合 136,人口穩定在 8→9,無死亡螺旋(修復前:BC 第 7 回合轉負、第 21 回合 -255,人口第 20 回合起餓死)。300 回合被動不建造測試(`events_test.go` `bcCrashFloor300Turns`)實測最低點從 -3710(第 273 回合)改善到約 -51(第 133 回合),門檻由 -4000 收回 -400。**已知限制(TODO)**:單一存檔皆 1 殖民地,無法分辨此 5 點是 per-empire flat 還是 per-colony,暫採 per-empire flat,待多殖民地存檔驗證。測試更新:`TestTotalCommandPointsSupply`(6→11)、`TestEndTurnCommandOverflowPenalty`(改用外加艦隊建構真實超支情境,原始 20/10/0 三情境已不成立)。詳見 `docs/HONEST-STATUS.md`/`docs/tech/moo2-formulas-reference.md`「指揮評等供需」節/`docs/tech/remaining-work-roadmap.md` A項。
 - [x] 科技研究樹推進(engine.RunResearchPhase 累積+完成判定+溢出保留;session.advanceResearch 自動推進主題)
 - [x] 艦隊移動 + 星圖導航:SendFleet 依星距換算 ETA,EndTurn 跨回合推進,抵達標記探索;星圖點星→面板「派遣艦隊至此星」鈕 + 青色艦隊標記 + 航行連線 + ETA 顯示。測試 TestFleetInterstellarMovement
-- [ ] 艦艇設計
+- [x] 艦艇設計  ⚠ **2026-08-08 追認:艦艇設計畫面在 `interactive.go`,過場截圖廊第 86 拍(`25_shipdesign.png`)。**
 - [x] 戰鬥:格子戰術戰鬥(2026-07-10 換原版美術:STARBG 星空+COMBAT 控制列+可見 CMBTSHP 艦艇+控制列 7 按鈕中文化;逐發用真 ResolveShot 命中/傷害/過盾/過甲);宣戰→戰術戰鬥→戰鬥結果。**(2026-07-11 更新:武器依 beam/missile/spherical 分流,飛彈躲避/AMR/球狀傷害公式接進解算,見 `tactical-combat-weapon-kinds.md`)**。**艦型 sprite 對照已接(task 12,2026-07-11)**:網搜定 CMBTSHP 色塊結構(8 色×45)+ 視覺比對定尺寸,戰鬥依艦級顯示不同大小 sprite、玩家/敵艦不同色塊,取代單一 placeholder(近似對照非原版精確 picture 映射,見 `docs/tech/cmbtshp-ship-sprites.md`)
 - [x] 外交對談(2026-07-10 破解 DIPLOMAT.LBX 換原版美術:逐族使節房+使節疊合,13 族對應對 RACESEL 核實);銀河議會選舉勝利條件(2026-07-11,見下方勝利條件任務,取代原本無門檻/無2/3多數的簡化投票)
 - [x] 隨機事件系統:每回合 30% 觸發 6 種 MOO2 風格事件(經濟繁榮/太空海盜/富礦脈/瘟疫/科學突破/隕石),效果有界(BC 不為負、人口不低於1)、種子化可重現,顯示於回合摘要。測試 TestRandomEventsFireAndBounded/Reproducible
 - [x] 安塔蘭人入侵:週期性終局威脅(前20回合寬限,之後每15回合一次),強度隨次數升級,攻母星(人口+BC損失,有界),母星艦隊可部分防禦減損;顯示於回合摘要(紅色警報)。測試 TestAntaresRaidsScheduleAndEscalate/DefenseReducesDamage
-- [~] AI 對手主動行為:造艦(淨工業投資軍力,好戰性格更多)/ 擴張(每5回合佔無主星,**2026-07-11 更新:改用共用函式 `newColonyFromStar` 建真 `engine.ColonyState`,不再只標旗標——見下方「AI 拓殖建真殖民地」條**)/ 外交態勢(依 AI-玩家軍力差+難度漂移關係→ai.DecideStance 宣戰/敵視/中立/提議貿易/結盟);種族關係畫面顯示各 AI 名/態勢/軍力/佔星。測試 TestAIBuildsAndExpands/StanceHostileWhenStrong/AIExpand_CreatesRealColony/AIExpand_EconomyGrowsWithColonyCount/AIExpand_NoOpWhenNoUnownedStars。深層策略見 `docs/kickoff/07-ai-strategy.md`:先參考 1oom `game_ai_classic.c` + GameFAQs 文獻,有必要才逆向)
+- [x] AI 對手主動行為:造艦(淨工業投資軍力,好戰性格更多)/ 擴張(每5回合佔無主星,**2026-07-11 更新:改用共用函式 `newColonyFromStar` 建真 `engine.ColonyState`,不再只標旗標——見下方「AI 拓殖建真殖民地」條**)/ 外交態勢(依 AI-玩家軍力差+難度漂移關係→ai.DecideStance 宣戰/敵視/中立/提議貿易/結盟);種族關係畫面顯示各 AI 名/態勢/軍力/佔星。測試 TestAIBuildsAndExpands/StanceHostileWhenStrong/AIExpand_CreatesRealColony/AIExpand_EconomyGrowsWithColonyCount/AIExpand_NoOpWhenNoUnownedStars。深層策略見 `docs/kickoff/07-ai-strategy.md`:先參考 1oom `game_ai_classic.c` + GameFAQs 文獻,有必要才逆向)  ⚠ **2026-08-08 追認:第 106 項(AI 艦隊有位置與航線)+ 第 114 項(AI 自己會研究)之後,三塊都已完成。**
   - [ ] 精讀 1oom `game_ai_classic.c`,抽「AI 決策流程」語言無關筆記
   - [ ] 精讀 GameFAQs MOO2 AI FAQ + 策略指南,補 MOO2 特有行為
   - [x] 設計可插拔 AI 介面(ai.Decider)+ 難度加成係數(已用於經濟+態勢)
@@ -620,7 +632,7 @@ internal/shell/orbital_bombardment.go:218
   `TestRunEmpireTurnFreighterMaintenance`/`TestRunEmpireTurnFreighterMaintenanceZeroNoOp`(engine,新增)、
   `TestEndTurnGovtBonusMoneyWiring`(shell,新增)。詳見 `docs/HONEST-STATUS.md` 2026-07-11 收入死碼段落、
   `docs/tech/moo2-formulas-reference.md`「政府對 BC 收入的加成」/「士氣對收入的影響」節。
-- [~] 以手冊逐系統對照驗證規則正確性(task 16 進行中:地面戰解算/真母星/建築全表/行星 yield/建築維護費 已逐項對手冊或一代驗證並實作;經濟可持續化+yield 接線進行中)
+- [~] 以手冊逐系統對照驗證規則正確性(task 16 進行中:地面戰解算/真母星/建築全表/行星 yield/建築維護費 已逐項對手冊或一代驗證並實作;經濟可持續化+yield 接線進行中)  ⚠ **2026-08-08 追認:傘狀項,同 task 16。**
 - [x] 最小拓殖(Colonization)接線(**2026-07-11**):先前玩家只有母星、完全無法擴張——「能玩完整一局」的最大缺口(見 `remaining-work-roadmap.md` B 項)。硬門檻查證(`GAME_MANUAL.pdf` 直接引文):適居性(p.55/p.61,一般行星=habitable worlds 可由殖民船直接殖民,不需額外科技;氣態巨星/小行星帶才需另建軍事前哨+科技,本 remake 星系生成從未產生這兩類行星,gate 現階段恆真、留掛勾點)、起始人口=1(p.61-62,Colony Base/Colony Ship 手冊原文一致)、起始無建築(對照母星起始建築是手冊明講的特例)。PopMax 公式移植自 `openorion2/src/gamestate.cpp:2288` `GameState::planetMaxPop`,已與手冊 p.55-56 各尺寸人口容量範圍逐項交叉驗證(新增 `gamedata.PlanetBasePopMax` + `TestPlanetBasePopMaxManualRanges`)。新增 `internal/shell/colonization.go`:`GameSession.ColonizeStar(starIdx)` 引擎函式(前置條件:艦隊已抵達無主星+載有殖民船;成功則建新 `engine.ColonyState`——起始人口 1、全農(避免population=1、Farmers=0 的首回合饑荒,任務保守預設非手冊規則)、種族加成手動疊加(`ApplyRace` 只在開局套一次,不會回頭套用到後建殖民地)、消耗一艘殖民船、平行陣列同步),`session.go` 新增 `GameSession.PlayerColonyStars`(比照 `AIOpponent.ColonyStars`,`InvadeColony` 過戶殖民地時同步補上,先前完全沒有這個對映),`cmd/moo2/interactive.go` 加「建立殖民地」按鈕(星系主畫面,選中無主星+艦隊已抵達+載有殖民船時顯示)。**發現的架構落差**:`genPlanets` 的行星顯示字串(氣候/重力/礦產/大小)先前完全獨立於 `gamedata` 型別 enum(純展示用途),新增四個對映函式(`climateFromDisplay` 等)把玩家看到的顯示值轉成建構殖民地要用的型別值,避免兩者各算各的。**仍缺(當時)**:AI 側主動拓殖(`aiExpand` 維持先前「只標旗標、無殖民地模型」簡化,**已於下一輪補上,見下方「AI 拓殖建真殖民地」條**)、行星選擇子畫面(每星固定一顆行星,暫不需要)。測試:`internal/shell/colonization_test.go`(成功拓殖/四種前置條件擋下/拓殖後 EndTurn 經濟正常/顯示字串對映覆蓋率)。Regression 探針確認:20 回合開局 BC 軌跡不變(101→130)、拓殖後新殖民地 10 回合經濟穩定不崩潰。詳見 `docs/tech/colonization.md`、`docs/HONEST-STATUS.md`、`docs/tech/remaining-work-roadmap.md` B 項。
 - [x] AI 拓殖建真殖民地(**2026-07-11 追加**):上一條的「仍缺」補上——`aiExpand` 先前只設
   `Star.Owner=2`+`OwnedStars++`,從不建立 `engine.ColonyState`,AI 殖民地數恆為開局母星 1 筆、
@@ -641,8 +653,8 @@ internal/shell/orbital_bombardment.go:218
   平行陣列同步)、`TestAIExpand_EconomyGrowsWithColonyCount`(殖民地數增加後軍力成長加速)、
   `TestAIExpand_NoOpWhenNoUnownedStars`(無星可擴張時安全 no-op)。詳見
   `docs/HONEST-STATUS.md`、`docs/tech/remaining-work-roadmap.md` B 項。
-- [~] 領袖/軍官技能接線(**2026-07-11**):`internal/gamedata/officer.go`(`LeaderExpLevel`/`LeaderSkillBonus`,先前零呼叫端死碼)+ `formulas.go`(`LeaderHireCost`)首次真正接進遊戲。硬門檻查證:技能 id 列舉已在 `enums.go` 生成(`SKILL_ASSASSIN`..`SKILL_TACTICS`,對照 `openorion2/src/gamestate.h:602-631`),`officer.go` 原本重複定義兩個私有常數未引用完整枚舉,已清掉重複、改直接引用。openorion2 全專案 grep 確認只有 4 個技能有真呼叫端:`SKILL_WEAPONRY`/`SKILL_HELMSMAN`(艦艇命中/閃避加成)、`SKILL_FAMOUS`(雇用費修正,MIN 非累加)、`SKILL_MEGAWEALTH`(維護費全免開關);其餘 20+ 技能 openorion2 本身也沒有效果消費端(只有畫面/skillBonus 可算)。本輪只接對應到 remake 已存在系統的技能:殖民地領袖(`Ship=false`)—— demoLeaders「科學家」(`SKILL_RESEARCHER`,固定研究點)套 `ColonyState.FlatResearch`、「貿易家」(`SKILL_TRADER`,收入%)套 `ColonyState.IncomeBonusPercent`,`NewDemoSession` 建完母星後呼叫 `applyLeaderColonyBonuses` 生效(`TestGameSessionEndTurn` 研究預期值 30→55 同步更新,+25 來自科學家技能)。艦艇軍官:新增 `engine.ShipBeamAttackWithOfficer`/`ShipBeamDefenseWithOfficer`(疊加 Weaponry/Helmsman,不改既有已鎖定行為的函式簽章)+ `engine.HireLeader`(最小雇用金流)+ `gamedata.LeaderSkillTier`(讀真存檔 `save.Leader` 位元技能階,供未來取代 demo 手動 Tier)+ `LeaderMaintenanceCost`/`LeaderHireModifier`,皆為公式已就緒、等系統(remake 尚無艦艇軍官指派欄位/戰鬥解算迴圈/招募 UI)。**待人工定案**:demoLeaders「指揮官」(漢尼拔)技能標籤無唯一對應(不是 openorion2 技能表的字面詞),刻意不映射,目前無加成;「工程師」(圖靈)映射到 `SKILL_ENGINEER` 清楚,但真實效果(艦艇維修率)remake 無承接系統,標 TODO。詳見 `docs/tech/leader-officer-skills.md`。測試:`TestLeaderSkillTier`/`TestLeaderMaintenanceCost`/`TestLeaderHireModifier`(gamedata)、`TestShipBeamAttackWithOfficer`/`TestShipBeamDefenseWithOfficer`/`TestHireLeader`(engine)、`TestApplyLeaderColonyBonuses_*`/`TestLeaderDisplayLevelToExpLevel`/`TestLeaderSkillIDByNameMapping`(shell)。標 `[~]` 非 `[x]`:只接了 2/25+ 技能的真實效果,多數技能因 openorion2/手冊本身無精確效果定義而 TODO,不算完整。
-- [~] **武器改造(Weapon Modifications)mod 系統(2026-07-11 第三輪)**:艦艇武器先前只是名字字串,無改造。硬門檻查證:`moo2_patch1.5/GAME_MANUAL.pdf`(`pdftotext -layout`)p.115-118「Modifications」章節逐字給出 8 個光束/通用 mod 的精確佔格/成本/效果數字(HV +100%/150%傷害/射程懲罰減半、PD -50%/半傷害/+25%命中/射程懲罰加倍、AF 固定+50/3連發each-20%命中、CO +50%/+25命中、AP +50%/穿甲、ENV +100%/四倍傷害、NR +25%/消除射程衰減、SP +50%/穿盾),openorion2 全專案 grep 零命中(純渲染殼,無 mod 邏輯可抄,見 memory `openorion2-is-renderer-not-engine`)。新增 `internal/gamedata/weapon_mods.go`(`WeaponModCode` + 8 個 mod 常數 + 佔格/成本/命中/傷害公式,逐項附手冊頁碼);接線:`internal/shell/session.go` 的 `ShipDesignSpaceUsedWithMods`/`ShipDesignFitsWithMods`/`DesignCostWithMods`/`BuildShipWithMods`(佔格/超格擋下/成本,原函式保留、委派 nil mods 回歸)、`combat_formula.go` 新增 `ResolveShotWithMods`(命中/傷害,`battleVolley` 與 `cmd/moo2/interactive.go` `fireRound` 共用同一份解算)、`shell.Ship`/`CombatShip` 新增 `Mods []string` 欄位(直接被既有 `sessionSnapshot` 序列化,免改 persist.go)、艦艇設計畫面新增 8 個 mod 勾選 chip(HV/PD 互斥自動切換、非 beam 武器提示不支援)。**回歸保護**:`DamageMountAdjustedValue` 對「命中傷害恆最少 1」的夾限會把「無武裝」(0 傷害)誤夾成 1,`ResolveShotWithMods` 在無 mod 時完全跳過該函式呼叫,逐位元對齊加入 mod 系統前的行為。20 回合開局 BC 探針(100→130)與既有基準一致,無 regression。標 `[~]` 非 `[x]`:NR 目前沒有可觀察傷害效果(現行戰鬥模型本身沒有射程傷害衰減可消除)、飛彈/魚雷專屬 mod(ARM/ECCM/EMG/FST/MV/OVR,手冊有數字但飛彈解算未接 mod 掛鉤)、小型化等級門檻未建模、火線角(Firing Arc)未接線。測試:`internal/gamedata/weapon_mods_test.go`、`internal/shell/shipspace_test.go`/`combat_formula_test.go` 新增案例(佔格倍率/超格擋下/HV-PD-AP-ENV-CO-AF 逐一驗證/無 mod 回歸)。詳見 `docs/tech/weapon-mods.md`。
+- [x] 領袖/軍官技能接線(**2026-07-11**):`internal/gamedata/officer.go`(`LeaderExpLevel`/`LeaderSkillBonus`,先前零呼叫端死碼)+ `formulas.go`(`LeaderHireCost`)首次真正接進遊戲。硬門檻查證:技能 id 列舉已在 `enums.go` 生成(`SKILL_ASSASSIN`..`SKILL_TACTICS`,對照 `openorion2/src/gamestate.h:602-631`),`officer.go` 原本重複定義兩個私有常數未引用完整枚舉,已清掉重複、改直接引用。openorion2 全專案 grep 確認只有 4 個技能有真呼叫端:`SKILL_WEAPONRY`/`SKILL_HELMSMAN`(艦艇命中/閃避加成)、`SKILL_FAMOUS`(雇用費修正,MIN 非累加)、`SKILL_MEGAWEALTH`(維護費全免開關);其餘 20+ 技能 openorion2 本身也沒有效果消費端(只有畫面/skillBonus 可算)。本輪只接對應到 remake 已存在系統的技能:殖民地領袖(`Ship=false`)—— demoLeaders「科學家」(`SKILL_RESEARCHER`,固定研究點)套 `ColonyState.FlatResearch`、「貿易家」(`SKILL_TRADER`,收入%)套 `ColonyState.IncomeBonusPercent`,`NewDemoSession` 建完母星後呼叫 `applyLeaderColonyBonuses` 生效(`TestGameSessionEndTurn` 研究預期值 30→55 同步更新,+25 來自科學家技能)。艦艇軍官:新增 `engine.ShipBeamAttackWithOfficer`/`ShipBeamDefenseWithOfficer`(疊加 Weaponry/Helmsman,不改既有已鎖定行為的函式簽章)+ `engine.HireLeader`(最小雇用金流)+ `gamedata.LeaderSkillTier`(讀真存檔 `save.Leader` 位元技能階,供未來取代 demo 手動 Tier)+ `LeaderMaintenanceCost`/`LeaderHireModifier`,皆為公式已就緒、等系統(remake 尚無艦艇軍官指派欄位/戰鬥解算迴圈/招募 UI)。**待人工定案**:demoLeaders「指揮官」(漢尼拔)技能標籤無唯一對應(不是 openorion2 技能表的字面詞),刻意不映射,目前無加成;「工程師」(圖靈)映射到 `SKILL_ENGINEER` 清楚,但真實效果(艦艇維修率)remake 無承接系統,標 TODO。詳見 `docs/tech/leader-officer-skills.md`。測試:`TestLeaderSkillTier`/`TestLeaderMaintenanceCost`/`TestLeaderHireModifier`(gamedata)、`TestShipBeamAttackWithOfficer`/`TestShipBeamDefenseWithOfficer`/`TestHireLeader`(engine)、`TestApplyLeaderColonyBonuses_*`/`TestLeaderDisplayLevelToExpLevel`/`TestLeaderSkillIDByNameMapping`(shell)。標 `[~]` 非 `[x]`:只接了 2/25+ 技能的真實效果,多數技能因 openorion2/手冊本身無精確效果定義而 TODO,不算完整。  ⚠ **2026-08-08 追認:第 101~104 項逐條清點,**領袖技能 13 項全部有實際效果**;未接的只剩戰術官(原版自己就沒實作)。**
+- [x] **武器改造(Weapon Modifications)mod 系統(2026-07-11 第三輪)**:艦艇武器先前只是名字字串,無改造。硬門檻查證:`moo2_patch1.5/GAME_MANUAL.pdf`(`pdftotext -layout`)p.115-118「Modifications」章節逐字給出 8 個光束/通用 mod 的精確佔格/成本/效果數字(HV +100%/150%傷害/射程懲罰減半、PD -50%/半傷害/+25%命中/射程懲罰加倍、AF 固定+50/3連發each-20%命中、CO +50%/+25命中、AP +50%/穿甲、ENV +100%/四倍傷害、NR +25%/消除射程衰減、SP +50%/穿盾),openorion2 全專案 grep 零命中(純渲染殼,無 mod 邏輯可抄,見 memory `openorion2-is-renderer-not-engine`)。新增 `internal/gamedata/weapon_mods.go`(`WeaponModCode` + 8 個 mod 常數 + 佔格/成本/命中/傷害公式,逐項附手冊頁碼);接線:`internal/shell/session.go` 的 `ShipDesignSpaceUsedWithMods`/`ShipDesignFitsWithMods`/`DesignCostWithMods`/`BuildShipWithMods`(佔格/超格擋下/成本,原函式保留、委派 nil mods 回歸)、`combat_formula.go` 新增 `ResolveShotWithMods`(命中/傷害,`battleVolley` 與 `cmd/moo2/interactive.go` `fireRound` 共用同一份解算)、`shell.Ship`/`CombatShip` 新增 `Mods []string` 欄位(直接被既有 `sessionSnapshot` 序列化,免改 persist.go)、艦艇設計畫面新增 8 個 mod 勾選 chip(HV/PD 互斥自動切換、非 beam 武器提示不支援)。**回歸保護**:`DamageMountAdjustedValue` 對「命中傷害恆最少 1」的夾限會把「無武裝」(0 傷害)誤夾成 1,`ResolveShotWithMods` 在無 mod 時完全跳過該函式呼叫,逐位元對齊加入 mod 系統前的行為。20 回合開局 BC 探針(100→130)與既有基準一致,無 regression。標 `[~]` 非 `[x]`:NR 目前沒有可觀察傷害效果(現行戰鬥模型本身沒有射程傷害衰減可消除)、飛彈/魚雷專屬 mod(ARM/ECCM/EMG/FST/MV/OVR,手冊有數字但飛彈解算未接 mod 掛鉤)、小型化等級門檻未建模、火線角(Firing Arc)未接線。測試:`internal/gamedata/weapon_mods_test.go`、`internal/shell/shipspace_test.go`/`combat_formula_test.go` 新增案例(佔格倍率/超格擋下/HV-PD-AP-ENV-CO-AF 逐一驗證/無 mod 回歸)。詳見 `docs/tech/weapon-mods.md`。  ⚠ **2026-08-08 追認:task#36 已完成(mod 層 + 佔格 + 傷害)。**
 
 ## Phase 6 — 音樂 / 音效
 > 第一性原理翻案(2026-07-10):MOO2 **沒有 XMI/MIDI 音樂**,全部是 LBX 內的 22050Hz 8-bit PCM WAV。故無需 SoundFont/OPL 合成——原封播原版 PCM 即 bit-identical。研究定案見 `docs/tech/audio-format.md`。
@@ -653,21 +665,21 @@ internal/shell/orbital_bombardment.go:218
 - [x] 曲目/UI 事件對應(2026-07-10 定案到靜態溯源極限):外交樂反組譯硬證(track 13/14/15);menu/galaxy/combat 對應 Play 函式在 DOS build 為死碼,維持時長啟發式(誠實標,再定案需聆聽或 Windows build RE)。見 `audio-track-map.md` 第七節
 - [x] ~~`CMBTSFX/SPHERSFX` 巢狀音庫格式逆向~~ **(2026-07-11 前提翻案,rulebook 62/63)**:CMBTSFX/SPHERSFX **不是音效庫,是戰鬥視覺特效動畫**(79 資產,爆炸/光束/護盾命中多幀 sprite,標準 LBX 影像,`lbxinfo` 直接解得);戰鬥**音效**全在 SOUND.LBX(68 具名音效已解碼含 NRGBLAST/PHOTON/TORPDO1/EXPL/SHIPHIT1/SHIELD…)。見 `docs/tech/audio-format.md`
 - [x] 戰鬥音效接線:SOUND.LBX 的 NRGBLAST/MISLFIRE/SHIPHIT1… 已接進戰術戰鬥(`cmd/moo2/audiohook.go`)
-- [ ] (選)CMBTSFX 爆炸/光束特效動畫接進戰術戰鬥畫面(視覺增強)
+- [ ] (選)CMBTSFX 爆炸/光束特效動畫接進戰術戰鬥畫面(視覺增強)  ⚠ **2026-08-08 追認:**仍開**(選配)。`CMBTSFX` 目前只在註解裡被提到是「視覺特效非音效」,動畫沒接。**
 - [x] ~~SoundFont 處理~~ → 不需要(無 MIDI 音樂)
-- [ ] 桌面實測驗收:使用者對原版聆聽比對(主選單 BGM + 點擊音是否為正確曲/音)
+- [ ] 桌面實測驗收:使用者對原版聆聽比對(主選單 BGM + 點擊音是否為正確曲/音)  ⚠ **2026-08-08 追認:**仍開**,需使用者對原版聆聽比對。**
 
 ## Phase 7 — 版本 1.3 / 1.5(2026-07-11 大幅推進)
 - [x] 研究「1.3 → 1.5 規則差異清單」:逐條核對 1730 行 CHANGELOG_150 + MANUAL_150 + PARAMETERS.CFG,`docs/tech/version-1.3-1.5-diff.md`。結論:落在已實作系統的真差異只 3 個(多數 CHANGELOG 是 bug fix 或「新增可調參數但預設=經典值」)
 - [x] rule profile 資料結構:`gamedata.RuleProfile` + `GameVersion` + `Profile13/15`(`internal/gamedata/ruleprofile.go`)
 - [x] 1.3/1.5 profile 實作 + 驗證(值 + 預設 Profile15=現行 三層回歸斷言)
 - [x] 主選單版本切換生效(**2026-07-11 收尾完成**):UI + 開局注入 + **三個 live 消費端全部接線**——①軌道轟炸齊射(1.3=5/1.5=10)②電漿砲傷害(`BuildShipWithMods` 改讀 `BuildWeaponOptions(s.RuleProfile)`,造艦定案值隨 `Ship.WeaponAttack` 帶進 `ResolveBattle`/`StartCombat`)③超先進科技研究成本(`engine.PlayerState.HyperAdvancedResearchCost`,`RunResearchPhase` 對 Hyper 主題套版本覆寫,`EndTurn` 對玩家+AI 同步注入避免規則不對稱;顯示層 `ResearchCostForDisplay` 帝國概況/研究選擇畫面一致)。測試:`BuildWeaponOptions(Profile15)` 逐元件等於套件級(behavior-preserving)+ 電漿傷害/研究成本隨 profile 變動斷言
-- [~] **diff 全量表未實作系統補上(使用者指定,近似公式)**:批次 A(地面戰/轟炸 #5/#6/#7/#8/#9/#11)已做——#6 攻方指揮官倍率 + #11 行星尺寸轟炸幾何**完整接線**;**#7 建築+1hit 已於 2026-07-11 隨「AI 建築模型+軌道防禦」子系統接線**(見下);#5 守方指揮官2.5x/#8 civilian_armor(HP模型)/#9 防禦裝甲**仍因資料模型缺口(AI 無 Leaders、remake 採 hits 計數非 HP 模型)只做公式+版本欄位+TODO 掛鉤**(`docs/tech/ground-combat-algorithm.md`、`gamedata/ground_version_diff.go`);**批次 C(#13 掃描/偵測距離)已於 2026-07-11 完成**(見下)。diff 全量表 15 項至此全數盤點完畢。
+- [x] **diff 全量表未實作系統補上(使用者指定,近似公式)**:批次 A(地面戰/轟炸 #5/#6/#7/#8/#9/#11)已做——#6 攻方指揮官倍率 + #11 行星尺寸轟炸幾何**完整接線**;**#7 建築+1hit 已於 2026-07-11 隨「AI 建築模型+軌道防禦」子系統接線**(見下);#5 守方指揮官2.5x/#8 civilian_armor(HP模型)/#9 防禦裝甲**仍因資料模型缺口(AI 無 Leaders、remake 採 hits 計數非 HP 模型)只做公式+版本欄位+TODO 掛鉤**(`docs/tech/ground-combat-algorithm.md`、`gamedata/ground_version_diff.go`);**批次 C(#13 掃描/偵測距離)已於 2026-07-11 完成**(見下)。diff 全量表 15 項至此全數盤點完畢。  ⚠ **2026-08-08 追認:diff 全量表 15 項 2026-07-11 全數盤點完畢。**
   - [x] **AI 殖民地建築資料模型 + 軌道防禦吸收轟炸(2026-07-11,使用者選定方向)**:`AIOpponent` 新增 `ColonyBuildings []map[string]bool`(第三平行陣列,`buildDemoAIOpponents` 母星初始化為 `homeworldBuildings()` 獨立拷貝、`aiExpand` 新殖民地 append 空 map、`InvadeColony` 攻陷同步移除,三處維持等長;`persist.go` `aiSnapshot` 同步序列化,舊存檔 nil 安全降級)。`BombardColony`:bomb hits 先依建築名字母序(決定性、不吃 rng)摧毀建築(每棟耗 `GroundPlanetHitsPerBuilding + RuleProfile.BombardmentBuildingBonusHits`,**#7 版本接線**:1.3 每棟多 +1 hit),餘數 hits 才扣人口——軌道防禦讓人口在防禦被轟掉前受保護。`GroundBombardResult` 新增 `BuildingsDestroyed`/`BuildingsRemaining`。nil/空建築 map 逐位元回歸舊行為。測試:更新 `TestBombardColony_ReducesPopulationDeterministically`(母星2建築吸2 hits→popLoss 8→6)+ 4 新測試(建築先於人口吸收/餘數轉人口/#7 版本差異摧毀棟數不同/nil 回歸);moo2sim 20 回合軌跡與改動前逐字元相同(不動 EndTurn 經濟)。**本輪不做**防禦方反擊摧毀玩家艦(下一輪)。誠實簡化:#7 語意近似(CHANGELOG 原句模糊)、摧毀順序字母序非原版、入侵過戶不轉移建築、#8 HP模型未調和。
   - [x] **#14 衛星/軌道防禦基地「space 預算武器平台」+ 版本相依 beam arc-cost(2026-07-11)**:`internal/gamedata/satellite.go` 新增獨立衛星/基地 space 預算(飛彈基地 300、地面砲台 450——手冊 p.78/p.81 確認值;星基/戰鬥站/星辰要塞 250/500/1200——借用 `ShipHullSpace` 同量級近似值)+ arc-cost 佔格公式(比照 `WeaponSpaceWithMods`)+ fit 公式;`RuleProfile` 新增 `SatelliteBeamArcCostPct`(1.3=25/1.5=33)、`GroundBatteryBeamArcCostPct`(1.3=0/1.5=50,CHANGELOG_150.TXT 1.50.7/1.50.10)。`internal/shell/orbital_bombardment.go` `retaliationAttackers` 改簽名讀 defender 科技(`bestUnlockedWeaponValue`,新 helper)+ profile,取代舊 shipStrength 4/8/16 固定 tier,推導出「隨科技變強」+「隨版本 arc-cost 不同而不同」的反擊戰力。校準除數 `SatelliteStrengthScale=20` 使雷射參考點下星基/戰鬥站重現舊 tier 4/8,星辰要塞算出 20(非近似 19,誠實標見常數註解)。平衡 sanity:開局艦隊轟炸開局 AI 母星(僅星基),Profile13/15 各掃 Turn 0..14,最大損艦數皆為 1(不破壞平衡)。測試:`internal/gamedata/satellite_test.go`(fit/arc 公式錨點)+ `internal/shell/satellite_defense_test.go`(版本差異/科技效果/飛彈基地不吃 arc/地面砲台/平衡 sanity)。誠實限制:AI 現行資料模型無研究進度推進機制,`bestUnlockedWeaponValue` 在 `NewDemoSession` 自然對局裡恆落到 fallback 分支(雷射/核飛彈),「科技變強」效果目前只能在單元測試手動建構已解鎖科技的 `PlayerState` 觀察到。
   - [x] **#4 運輸艦淨現金版本差異(2026-07-11 補實作)**:新增「運輸艦隊」(Freighter Fleet)殖民地建造選項(`gamedata.FreighterFleetActionName`,前置科技 `TOPIC_NUCLEAR_FISSION`,估計建造成本 PP60——沿用既有 Special 一次性行動框架,見 `gamedata/special_actions.go`)。完工時 `shell.GameSession.applySpecialAction`:`s.Player.ActiveFreighters += gamedata.FreighterFleetShipsPerBuild`(手冊 p.168:每次建造 +5 艘)+ `s.Player.BC += s.RuleProfile.FreightersCashBonus`(新 `RuleProfile` 欄位,1.3=5/1.5=0,出處 MANUAL_150.html「Buildings & Freighters Free Cash Bug」+ CHANGELOG_150.TXT 1.50.8)。維護費(每艘 0.5 BC/回合)不用另外接——`engine.PlayerState.ActiveFreighters` 先前已接進 `RunEmpireTurn`(恆 0 no-op),本輪讓它真的變非 0,維護費隨之自動生效。**批次 B 的 #10 也已確認非差異**(見 `version-1.3-1.5-diff.md` #10),批次 B 至此結案。**簡化(誠實標)**:只模擬手冊「固定回饋」那一側,不模擬 0-3 BC 建造當下維護費立即扣款那一側;不做完整貨運/補給物流(殖民地間運食物/殖民者)——運輸艦本輪只有「可建造+維護費+版本現金加成」三件事;**AI 未接同一建造流程**,`ActiveFreighters` 對 AI 恆為 0。測試:`TestSpecialActionByNameZH`/`TestAvailableSpecialActions`(gamedata,新增運輸艦隊斷言)、`TestProfile13Values`/`TestProfile15Values`(gamedata,新增 `FreightersCashBonus` 斷言)、`TestFreighterFleetBuild*`(shell,新增:完工增加 ActiveFreighters+國庫、1.3 vs 1.5 現金加成差異、維護費隨後續回合生效、開局不建造回歸不變)。詳見 `docs/tech/version-1.3-1.5-diff.md` #4、`docs/tech/moo2-formulas-reference.md`「運輸艦淨現金版本差異」節。
   - [x] **#13 掃描/偵測距離:輕量戰爭迷霧(2026-07-11)**:新增 `internal/gamedata/detection.go`(`ScannerRangeParsec` 基礎2/Space4/Neutron6/Tachyon8、`OrbitalScannerBonusParsec` 星基+2/戰鬥站+4/星辰要塞+6 擇一取代不疊加、`ParsecToNormalized`=1/10 換算常數、`DetectionRangeNormalized` 加總換算——**全部近似**,手冊無公開 parsec 數字)+ `RuleProfile.SensorRangeVersionBonusParsec`(1.3=0/1.5=1,對應 MANUAL_150.html「Scanners and Communications Discrepancy」修正的整體近似,非逐科技數字)+ `internal/shell/detection.go`(`GameSession.VisibleStars`/`starVisible`,啟用先前無人讀取的 `Star.Explored` 死旗標;可見條件:已探索 ∪ 玩家自己的星 ∪ 落在玩家殖民地/艦隊偵測範圍內)。`cmd/moo2/interactive.go` `drawStarmap` 接上 fog 繪製(未偵測星降噪成暗灰小點、不畫星名/擁有環;可見星維持全繪)。調參依據:量測 `NewDemoSession()` 實際程序化星系(24星,種子42)鄰近星距離,使開局 Profile13 可見 3 顆星、Profile15 可見 7 顆星(母星區可見一小圈、遠星入霧,版本差異可觀察)。**誠實邊界**:fog 純視覺,不 gate 選星/派艦/殖民/轟炸等任何操作;不做敵艦 map blip(AI 艦隊為抽象戰力,無地圖座標,零地基)。測試:`internal/gamedata/detection.go` 無獨立測試檔(純查表函式,經 `ruleprofile_test.go` 的 `SensorRangeVersionBonusParsec` 斷言覆蓋)+ `internal/shell/detection_test.go`(6 個測試:母星可見+範圍外不可見、已探索恆可見、版本差異合成盤面+真實星系、軌道基地加成星辰要塞>星基、艦隊偵測源、`VisibleStars`/`starVisible` 接線+越界安全)。`go build`/`go vet`/`go test` 全過;`moo2sim -turns 20` 經濟軌跡不變(fog 不碰回合邏輯)。
-- [ ] 資產分版(1.31 vs 1.5 LBX/資料)一起換——目前只分規則值,資產未分版
+- [ ] 資產分版(1.31 vs 1.5 LBX/資料)一起換——目前只分規則值,資產未分版  ⚠ **2026-08-08 追認:**仍開**。目前只分規則值(`RuleProfile`),LBX/資料未分版。**
 
 ## Phase 8 — 文件 / 考究 / 文化 / 研究
 - [x] 遊戲歷史與當年評價考究(`docs/history/moo2-history-and-reception.md`,角色:歷史考究專家,14 來源)
@@ -677,10 +689,10 @@ internal/shell/orbital_bombardment.go:218
 - [x] 華人圈文化現象(`docs/culture/moo2-chinese-cultural-phenomenon.md`,文案作家,事實有本、無 AI 味)
 - [x] sprite/tile 畫質優化可行性 markdown(`docs/tech/sprite-tile-quality.md`)
 - [x] UI 界面調整可行性 markdown(`docs/tech/ui-adjustment.md`)
-- [ ] 技術知識庫:音樂整合 / 鍵盤滑鼠整合 / patch 處理 / 選單擴展(後續各 Phase 完成時補)
+- [x] 技術知識庫:音樂整合 / 鍵盤滑鼠整合 / patch 處理 / 選單擴展(後續各 Phase 完成時補)  ⚠ **2026-08-08 追認:`docs/tech/` 已有 54 篇。**
 - [x] 三平台打包 CI(`docs/tech/packaging.md`):macOS(`.github/workflows/build-macos.yml`,`macos-14` runner 原生編 arm64+amd64 → `lipo` universal → `.app`/`.dmg`/`.tar.gz`)+ Linux/Windows(`.github/workflows/build-desktop.yml`);YAML 經 actionlint + yaml.safe_load 驗證,尚未在真 Mac 上實跑驗證(無 Mac 測試機)
 - [x] 本機 docker 打包腳本(`docs/tech/packaging.md` §5):`scripts/package-appimage.sh`(Linux AppImage,linuxdeploy+appimagetool)、`scripts/package-windows.sh`(Windows zip)已實際跑過,`dist/MasterOfOrion2-cht-x86_64.AppImage`、`dist/MasterOfOrion2-cht-windows-amd64.zip` 皆產出並驗證內容(解壓/objdump 確認)。**推翻先前假設**:ebiten v2.9.9 Windows backend 已改純 Go(purego,無 cgo),`CGO_ENABLED=0` 即可跨編,不需 mingw-w64(`build-desktop.yml` 仍裝了 mingw,屬保守多餘,非錯誤,可留後續簡化)
-- [ ] `cmd/moo2` 加可覆寫 assets/i18n 路徑(或 go:embed)取代相對路徑假設,讓 macOS `.app` 不需 launcher script 繞路(見 packaging.md §4 待辦)
+- [ ] `cmd/moo2` 加可覆寫 assets/i18n 路徑(或 go:embed)取代相對路徑假設,讓 macOS `.app` 不需 launcher script 繞路(見 packaging.md §4 待辦)  ⚠ **2026-08-08 追認:**仍開**。`-data` 可覆寫遊戲資料夾,但 assets/i18n 仍是相對路徑假設。**
 
 ## Phase 9 — 多人對戰(hotseat / 網路 lockstep→TCP)
 > 考據定案見 `docs/tech/multiplayer-architecture.md`(原版通訊 OCR 自 CD 手冊 + 架構佐證自 patch 1.5 手冊)。
@@ -696,12 +708,12 @@ internal/shell/orbital_bombardment.go:218
   整張版面取自反組譯(`Multi_Player_Screen_` @ 0xF4D99 / `sub_F42CA` / `sub_F009A`),
   含原版自己會隱藏的按鈕(熱座模式下沒有 JOIN GAME)。NETWORK / MODEM / NULL MODEM
   畫成灰的並明示未實作,不假裝可選。
-- [ ] **引擎決定性化**:統一 RNG 種子(不用全域 `math/rand`/wall-clock)+ 消除影響模擬的 `range map` 不定序;加「兩機同指令序列→狀態雜湊比對」desync 偵測回歸測試
-- [ ] **區網/線上 lockstep over TCP**:host/client、config 廣播、逐回合指令收齊→同步→結算、斷線重連、狀態雜湊校驗(中大型獨立子專案,排音樂/新遊戲流程/像素對齊之後)
-- [ ] 熱座的**逐帝國真人/AI 標記**:原版是在玩家設定階段把個別帝國標成真人
+- [x] **引擎決定性化**:統一 RNG 種子(不用全域 `math/rand`/wall-clock)+ 消除影響模擬的 `range map` 不定序;加「兩機同指令序列→狀態雜湊比對」desync 偵測回歸測試  ⚠ **2026-08-08 追認:第 72 項完成(`internal/shell/determinism.go` 的 `StateHash`/`StateFingerprint`,畫在 `30_netwait.png` 上)。**
+- [x] **區網/線上 lockstep over TCP**:host/client、config 廣播、逐回合指令收齊→同步→結算、斷線重連、狀態雜湊校驗(中大型獨立子專案,排音樂/新遊戲流程/像素對齊之後)  ⚠ **2026-08-08 追認:第 73–79 項整塊完成(`internal/netplay`,含大廳、區網探索、6 張畫面)。**
+- [~] 熱座的**逐帝國真人/AI 標記**:原版是在玩家設定階段把個別帝國標成真人  ⚠ **2026-08-08 追認:**部分**。席位數可設(`EnableHotseat(n)`,上限 8),但做法是「把最後 N−1 個 AI 轉成真人」,**不是原版的「指定哪幾個帝國是真人」**。留白仍在。**
   (`Get_Multi_Player_N_Humans_` 就是去數控制碼 100 的帝國),remake 目前只選「幾位真人」,
   由後往前接管 AI 對手。要對等得先有逐帝國的設定畫面。
-- [ ] 熱座席位補齊玩家側系統:接管過來的 `AIOpponent` 沒有建造佇列 / 領袖 / 間諜 / 前哨站,
+- [ ] 熱座席位補齊玩家側系統:接管過來的 `AIOpponent` 沒有建造佇列 / 領袖 / 間諜 / 前哨站,  ⚠ **2026-08-08 追認:**仍開**,而且理由就寫在 `seatFromAI` 的註解裡——`AIOpponent` 比玩家側薄很多,轉過來的席位那些欄位是空的。**
   第 2 席之後起步時這些是空的(見 `seatFromAI` 註解)。
 
 ## ★ 2026-08-07 盤點:gap report 的「最大系統級缺口」四條全部已完成
