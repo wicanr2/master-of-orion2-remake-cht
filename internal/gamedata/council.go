@@ -24,7 +24,7 @@ package gamedata
 // 本身在本 remake 尚未實作(無回合計分/歷史圖表),CouncilWinScoreBonus 只是預先记下的
 // 權威值,供未來計分系統落地時直接引用,不代表計分已接線。
 //
-// docs/tech/rules-implementation-audit.md 第 3 項(殖民地/事件畫面)記載「openorion2 對 victory/winner/
+// docs/tech/rules-implementation-audit.md 第 10 項記載「openorion2 對 victory/winner/
 // win_condition/gameOver 全 repo零命中」——該文件通篇分析對象是 openorion2(C++ 參考專案)
 // 本身,不是本 remake(Go)的程式碼庫,這條記錄至今仍然成立,沒有過期,不要誤讀成「本 remake
 // 也沒有勝利條件」。
