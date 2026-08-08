@@ -1,0 +1,540 @@
+# 艦名池譯表(SHIPNAME.LBX asset0)。英文原文即 key。
+# 來源:原版 672 條艦名(含重複,見 docs/tech/proper-noun-strategy.md 艦名節);本表為去重後 535 條唯一英文名。
+# 翻譯方案(2026-07-11 落地):基底詞意譯(鳥類/軍武詞查中文既定慣用譯名,純虛構複合詞按字面意譯保持簡短威武感)
+# + 羅馬數字流水號原樣保留、與基底詞空格分隔(如 Falcon II -> 獵鷹 II),不轉阿拉伯數字、不加「號」。
+# 重複的英文名(如結尾一批 Avenger)一律譯為相同中文。實際採用池見 internal/shell/shipnames.go。
+Anaconda	森蚺
+Annihilator	殲滅者
+Armageddon	末日
+Asteriod	小行星
+Avenger	復仇者
+Backsword	單刃劍
+Balista	弩炮
+Barracuda I	梭魚 I
+Barracuda II	梭魚 II
+Barracuda III	梭魚 III
+Barracuda IV	梭魚 IV
+Barracuda V	梭魚 V
+Barracuda VI	梭魚 VI
+Barracuda VII	梭魚 VII
+Barracuda VIII	梭魚 VIII
+Biter	咬噬者
+Blackhawk	黑鷹
+Bloodfoot	血足
+Boa I	蚺蛇 I
+Boa II	蚺蛇 II
+Boa III	蚺蛇 III
+Boa IV	蚺蛇 IV
+Boa V	蚺蛇 V
+Boa VI	蚺蛇 VI
+Bobcat I	短尾貓 I
+Bobcat II	短尾貓 II
+Bobcat III	短尾貓 III
+Bobcat IV	短尾貓 IV
+Bobcat V	短尾貓 V
+Bobcat VI	短尾貓 VI
+Bobcat VII	短尾貓 VII
+Bobcat VIII	短尾貓 VIII
+Bola	流星索
+Cannonade	炮擊
+Carraca	卡拉克帆船
+Catapult	投石機
+Cave Bear	洞熊
+Chameleon	變色龍
+Cheetah	獵豹
+Cinqueda	秦克達劍
+Claw I	利爪 I
+Claw II	利爪 II
+Claw III	利爪 III
+Claymore	闊刃大劍
+Cobra I	眼鏡蛇 I
+Cobra II	眼鏡蛇 II
+Cobra III	眼鏡蛇 III
+Cobra IV	眼鏡蛇 IV
+Cobra V	眼鏡蛇 V
+Cobra VI	眼鏡蛇 VI
+Cobra VII	眼鏡蛇 VII
+Cobra VIII	眼鏡蛇 VIII
+Comet I	彗星 I
+Comet II	彗星 II
+Comet III	彗星 III
+Comet IV	彗星 IV
+Comet V	彗星 V
+Comet VI	彗星 VI
+Condor	神鷹
+Coral Snake	珊瑚蛇
+Corona I	日冕 I
+Corona II	日冕 II
+Corona III	日冕 III
+Corona IV	日冕 IV
+Corona V	日冕 V
+Corona VI	日冕 VI
+Corona VII	日冕 VII
+Corona VIII	日冕 VIII
+Corsair	海盜
+Corvette	護衛艦
+Corvette I	護衛艦 I
+Corvette II	護衛艦 II
+Corvette III	護衛艦 III
+Corvette IV	護衛艦 IV
+Corvette V	護衛艦 V
+Corvette VI	護衛艦 VI
+Corvette VII	護衛艦 VII
+Corvette VIII	護衛艦 VIII
+Courageous	無畏者
+Courier I	信差 I
+Courier II	信差 II
+Courier III	信差 III
+Courier IV	信差 IV
+Courier V	信差 V
+Courier VI	信差 VI
+Courier VII	信差 VII
+Courier VIII	信差 VIII
+Coyote I	郊狼 I
+Coyote II	郊狼 II
+Coyote III	郊狼 III
+Coyote IV	郊狼 IV
+Coyote V	郊狼 V
+Coyote VI	郊狼 VI
+Coyote VII	郊狼 VII
+Crusader	十字軍
+Cub	幼獸
+Cutlass	彎刀
+Dagger	匕首
+Dark Blade	暗刃
+Defiler	褻瀆者
+Demon	惡魔
+Destructor I	毀滅者 I
+Destructor II	毀滅者 II
+Destructor III	毀滅者 III
+Destructor IV	毀滅者 IV
+Destructor V	毀滅者 V
+Destructor VI	毀滅者 VI
+Destructor VII	毀滅者 VII
+Destructor VIII	毀滅者 VIII
+Devastator I	破壞者 I
+Devastator II	破壞者 II
+Devastator III	破壞者 III
+Devastator IV	破壞者 IV
+Devastator V	破壞者 V
+Devastator VI	破壞者 VI
+Devastator VII	破壞者 VII
+Devastator VIII	破壞者 VIII
+Dirk	德克短劍
+Dragon	巨龍
+Draken	龍式
+Dreadnought	無畏艦
+Dreadwing I	懼翼 I
+Dreadwing II	懼翼 II
+Dreadwing III	懼翼 III
+Dreadwing IV	懼翼 IV
+Dreadwing V	懼翼 V
+Dreadwing VI	懼翼 VI
+Dreadwing VII	懼翼 VII
+Dreadwing VIII	懼翼 VIII
+Escort I	護航艦 I
+Escort II	護航艦 II
+Escort III	護航艦 III
+Escort IV	護航艦 IV
+Escort V	護航艦 V
+Escort VI	護航艦 VI
+Escort VII	護航艦 VII
+Escort VIII	護航艦 VIII
+Etendard	軍旗
+Excaliber	王者之劍
+Falcata	法爾卡塔劍
+Falchard	法爾雄劍
+Falcon I	獵鷹 I
+Falcon II	獵鷹 II
+Falcon III	獵鷹 III
+Falcon IV	獵鷹 IV
+Falcon V	獵鷹 V
+Falcon VI	獵鷹 VI
+Falcon VII	獵鷹 VII
+Fang	獠牙
+Fighter I	戰鬥機 I
+Fighter II	戰鬥機 II
+Fighter III	戰鬥機 III
+Fighter IV	戰鬥機 IV
+Fighter V	戰鬥機 V
+Fighter VI	戰鬥機 VI
+Fighter VII	戰鬥機 VII
+Fighter VIII	戰鬥機 VIII
+Fisher	魚鷹
+Flail	連枷
+Foe Render	裂敵者
+Fury I	狂怒 I
+Fury II	狂怒 II
+Fury III	狂怒 III
+Fury IV	狂怒 IV
+Fury V	狂怒 V
+Fury VI	狂怒 VI
+Fury VII	狂怒 VII
+Fury VIII	狂怒 VIII
+Gatherer I	採集者 I
+Gatherer II	採集者 II
+Gatherer III	採集者 III
+Gatherer IV	採集者 IV
+Gatherer V	採集者 V
+Gatherer VI	採集者 VI
+Gatherer VII	採集者 VII
+Gatherer VIII	採集者 VIII
+Gila I	毒蜥 I
+Gila II	毒蜥 II
+Gila III	毒蜥 III
+Gladius	羅馬短劍
+Goblin I	哥布林 I
+Goblin II	哥布林 II
+Goblin III	哥布林 III
+Goblin IV	哥布林 IV
+Goblin V	哥布林 V
+Goblin VI	哥布林 VI
+Goblin VII	哥布林 VII
+Goblin VIII	哥布林 VIII
+Goshawk	蒼鷹
+Gremlin I	搗蛋精靈 I
+Gremlin II	搗蛋精靈 II
+Gremlin III	搗蛋精靈 III
+Gremlin IV	搗蛋精靈 IV
+Gremlin V	搗蛋精靈 V
+Gremlin VI	搗蛋精靈 VI
+Gremlin VII	搗蛋精靈 VII
+Gremlin VIII	搗蛋精靈 VIII
+Griffin I	獅鷲 I
+Griffin II	獅鷲 II
+Griffin III	獅鷲 III
+Griffin IV	獅鷲 IV
+Griffin V	獅鷲 V
+Griffin VI	獅鷲 VI
+Griffin VII	獅鷲 VII
+Griffin VIII	獅鷲 VIII
+Gripen	鷹獅
+GrizzlyBear	灰熊
+Guardian	守護者
+Halberd	戟
+Harbinger	先驅
+Harrier	鷂
+Hatsutaka	初鷹
+Hawk I	鷹 I
+Hawk II	鷹 II
+Hawk III	鷹 III
+Hellcat	地獄貓
+Helldiver	地獄俯衝者
+Hornet I	大黃蜂 I
+Hornet II	大黃蜂 II
+Hornet III	大黃蜂 III
+Hornet IV	大黃蜂 IV
+Hornet V	大黃蜂 V
+Hornet VI	大黃蜂 VI
+Hornet VII	大黃蜂 VII
+Hornet VIII	大黃蜂 VIII
+Iguana	鬣蜥
+Infidel	異教徒
+Intangible	無形者
+Interceptor	攔截機
+Interdictor	阻截者
+Intruder	入侵者
+Invincible	無敵者
+Jaguar	美洲虎
+Karabela	卡拉貝拉軍刀
+Katana	武士刀
+Katar	卡塔爾刺拳劍
+King Cobra I	眼鏡王蛇 I
+King Cobra II	眼鏡王蛇 II
+King Cobra III	眼鏡王蛇 III
+King Cobra IV	眼鏡王蛇 IV
+King Cobra V	眼鏡王蛇 V
+King Cobra VI	眼鏡王蛇 VI
+King Cobra VII	眼鏡王蛇 VII
+King Cobra VIII	眼鏡王蛇 VIII
+King Snake	王蛇
+Knight	騎士
+Kodiak	科迪亞克熊
+Kracon	克拉肯
+Kris	克力士劍
+Lark	雲雀
+Lightning I	閃電 I
+Lightning II	閃電 II
+Lightning III	閃電 III
+Lightning IV	閃電 IV
+Lightning V	閃電 V
+Lightning VI	閃電 VI
+Lightning VII	閃電 VII
+Lightning VIII	閃電 VIII
+Locaber	洛哈伯戰斧
+Lynx I	猞猁 I
+Lynx II	猞猁 II
+Lynx III	猞猁 III
+Lynx IV	猞猁 IV
+Lynx V	猞猁 V
+Lynx VI	猞猁 VI
+Lynx VII	猞猁 VII
+Lynx VIII	猞猁 VIII
+Mace	釘頭錘
+Main Gauche	左手劍
+Malvosin	惡鄰
+Manta I	魔鬼魚 I
+Manta II	魔鬼魚 II
+Manta III	魔鬼魚 III
+Manta IV	魔鬼魚 IV
+Manta V	魔鬼魚 V
+Manta VI	魔鬼魚 VI
+Manta VII	魔鬼魚 VII
+Manta VIII	魔鬼魚 VIII
+Marauder	劫掠者
+Menace	威脅者
+Messenger	信使
+Meteor	流星
+Mirage	幻影
+Monitor	巨蜥
+Morey I	海鱔 I
+Morey II	海鱔 II
+Morey III	海鱔 III
+Morey IV	海鱔 IV
+Morey V	海鱔 V
+Morey VI	海鱔 VI
+Morey VII	海鱔 VII
+Morey VIII	海鱔 VIII
+Mustang	野馬
+Nemesis	復仇女神
+Nexus I	樞紐 I
+Nexus II	樞紐 II
+Nexus III	樞紐 III
+Nexus IV	樞紐 IV
+Nexus V	樞紐 V
+Nexus VI	樞紐 VI
+Nexus VII	樞紐 VII
+Nexus VIII	樞紐 VIII
+Nova	新星
+Nymph	寧芙
+Oasis	綠洲
+Ogre I	食人魔 I
+Ogre II	食人魔 II
+Ogre III	食人魔 III
+Ogre IV	食人魔 IV
+Ogre V	食人魔 V
+Ogre VI	食人魔 VI
+Ogre VII	食人魔 VII
+Ogre VIII	食人魔 VIII
+Omnipotent	全能者
+Orca	虎鯨
+Overseer	監督者
+Paladin	聖騎士
+Panda	熊貓
+Panther I	黑豹 I
+Panther II	黑豹 II
+Panther III	黑豹 III
+Panther IV	黑豹 IV
+Panther V	黑豹 V
+Panther VI	黑豹 VI
+Panther VII	黑豹 VII
+Panther VIII	黑豹 VIII
+Pegasus	天馬
+Peregrine	游隼
+Phantom	鬼怪
+Phoenix	鳳凰
+Pike	長矛
+Pikemaul	矛錘
+Pin Feather	針羽
+Piranha I	食人魚 I
+Piranha II	食人魚 II
+Piranha III	食人魚 III
+Piranha IV	食人魚 IV
+Piranha V	食人魚 V
+Piranha VI	食人魚 VI
+Piranha VII	食人魚 VII
+Piranha VIII	食人魚 VIII
+Prophet	先知
+Python	蟒蛇
+Quetzicoatl	羽蛇神
+Rafale	陣風
+Raider	掠奪者
+Rapier	銳劍
+Ravager I	蹂躪者 I
+Ravager II	蹂躪者 II
+Ravager III	蹂躪者 III
+Ravager IV	蹂躪者 IV
+Ravager V	蹂躪者 V
+Ravager VI	蹂躪者 VI
+Ravager VII	蹂躪者 VII
+Ravager VIII	蹂躪者 VIII
+Red Wing	紅翼
+Relentless	不懈者
+Roc	大鵬
+Sabre	軍刀
+Sabretooth	劍齒虎
+Sage	賢者
+Scimitar	彎月刀
+Scorpion I	蠍子 I
+Scorpion II	蠍子 II
+Scorpion III	蠍子 III
+Scorpion IV	蠍子 IV
+Scorpion V	蠍子 V
+Scorpion VI	蠍子 VI
+Scorpion VII	蠍子 VII
+Scorpion VIII	蠍子 VIII
+Seeker I	探索者 I
+Seeker II	探索者 II
+Seeker III	探索者 III
+Seeker IV	探索者 IV
+Seeker V	探索者 V
+Seeker VI	探索者 VI
+Seeker VII	探索者 VII
+Seeker VIII	探索者 VIII
+Seibe Bow	塞貝弓
+Seraphin	熾天使
+Shark	鯊魚
+Sharpbeak	利喙
+Shurikin	手裡劍
+Skein Dbuh	斯基安杜夫刀
+Skyhawk	天鷹
+Soarer	翱翔者
+Sparrow I	麻雀 I
+Spider I	蜘蛛 I
+Spider II	蜘蛛 II
+Spider III	蜘蛛 III
+Spider IV	蜘蛛 IV
+Spider V	蜘蛛 V
+Spider VI	蜘蛛 VI
+Spider VII	蜘蛛 VII
+Spider VIII	蜘蛛 VIII
+Spitfire	噴火
+Sprite I	精靈 I
+Sprite II	精靈 II
+Sprite III	精靈 III
+Sprite IV	精靈 IV
+Sprite V	精靈 V
+Sprite VI	精靈 VI
+Sprite VII	精靈 VII
+StarStreak I	星曳 I
+StarStreak II	星曳 II
+StarStreak III	星曳 III
+StarStreak IV	星曳 IV
+StarStreak V	星曳 V
+StarStreak VI	星曳 VI
+StarStreak VII	星曳 VII
+StarStreak VIII	星曳 VIII
+Starling	椋鳥
+Stiletto	斯蒂雷托
+Stingray I	魟魚 I
+Stingray II	魟魚 II
+Stingray III	魟魚 III
+Stingray IV	魟魚 IV
+Stingray V	魟魚 V
+Stingray VI	魟魚 VI
+Stingray VII	魟魚 VII
+Stingray VIII	魟魚 VIII
+Striker	打擊者
+Sun Fire I	日焰 I
+Sun Fire II	日焰 II
+Sun Fire III	日焰 III
+Sun Fire IV	日焰 IV
+Sun Fire V	日焰 V
+Sun Fire VI	日焰 VI
+Sun Fire VII	日焰 VII
+Sun Fire VIII	日焰 VIII
+Swiftpaw	疾爪
+Swiftwing	疾翼
+Tachi	太刀
+Tarantula	狼蛛
+Thrush	畫眉
+Thunder I	雷霆 I
+Thunder II	雷霆 II
+Thunder III	雷霆 III
+Thunder IV	雷霆 IV
+Thunder V	雷霆 V
+Thunder VI	雷霆 VI
+Thunder VII	雷霆 VII
+Thunder VIII	雷霆 VIII
+Thunderbolt	雷電
+Tormentor I	折磨者 I
+Tormentor II	折磨者 II
+Tormentor III	折磨者 III
+Tormentor IV	折磨者 IV
+Tormentor V	折磨者 V
+Tormentor VI	折磨者 VI
+Tormentor VII	折磨者 VII
+Tormentor VIII	折磨者 VIII
+Tornado I	龍捲風 I
+Tornado II	龍捲風 II
+Tornado III	龍捲風 III
+Tornado IV	龍捲風 IV
+Tornado V	龍捲風 V
+Tornado VI	龍捲風 VI
+Tornado VII	龍捲風 VII
+Tornado VIII	龍捲風 VIII
+Trebuchet	投石車
+Troll I	巨魔 I
+Troll II	巨魔 II
+Troll III	巨魔 III
+Troll IV	巨魔 IV
+Troll V	巨魔 V
+Troll VI	巨魔 VI
+Troll VII	巨魔 VII
+Troll VIII	巨魔 VIII
+Ursus	巨熊
+Venom	毒液
+Violator	侵犯者
+Viper I	蝮蛇 I
+Viper II	蝮蛇 II
+Viper III	蝮蛇 III
+Viper IV	蝮蛇 IV
+Viper V	蝮蛇 V
+Viper VI	蝮蛇 VI
+Viper VII	蝮蛇 VII
+Viper VIII	蝮蛇 VIII
+War Eagle	戰鷹
+War Hammer	戰鎚
+War Ship I	戰艦 I
+War Ship II	戰艦 II
+War Ship III	戰艦 III
+War Ship IV	戰艦 IV
+War Ship V	戰艦 V
+War Ship VI	戰艦 VI
+War Ship VII	戰艦 VII
+War Ship VIII	戰艦 VIII
+Warbear I	戰熊 I
+Warbear II	戰熊 II
+Warbear III	戰熊 III
+Warbear IV	戰熊 IV
+Warbear V	戰熊 V
+Warcat I	戰貓 I
+Warcat II	戰貓 II
+Warcat III	戰貓 III
+Warcat IV	戰貓 IV
+Warcat V	戰貓 V
+Warcat VI	戰貓 VI
+Warcat VII	戰貓 VII
+Warcat VIII	戰貓 VIII
+Wasp I	黃蜂 I
+Wasp II	黃蜂 II
+Wasp III	黃蜂 III
+Wasp IV	黃蜂 IV
+Wasp V	黃蜂 V
+Wasp VI	黃蜂 VI
+Wasp VII	黃蜂 VII
+Wasp VIII	黃蜂 VIII
+Widow I	寡婦 I
+Widow II	寡婦 II
+Widow III	寡婦 III
+Widow IV	寡婦 IV
+Widow V	寡婦 V
+Widow VI	寡婦 VI
+Widow VII	寡婦 VII
+Widow VIII	寡婦 VIII
+Wildcat	野貓
+Wolf I	狼 I
+Wolf II	狼 II
+Wolf III	狼 III
+Wolf IV	狼 IV
+Wolf V	狼 V
+Wolf VI	狼 VI
+Wolf VII	狼 VII
+Wolverine I	狼獾 I
+Wolverine II	狼獾 II
+Wolverine III	狼獾 III
+Wolverine IV	狼獾 IV
+Wolverine V	狼獾 V
+Wolverine VI	狼獾 VI
+Wolverine VII	狼獾 VII
+Wyvern	飛龍

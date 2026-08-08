@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -116,7 +115,7 @@ func runOverlay(dirs []string, lbxName string, assetID int, lang i18n.Lang, fnt 
 	rgba := im.Frames[0].ToRGBA(im.Embedded, im.KeyColor())
 
 	cat := i18n.New(lang)
-	if f, err := os.Open(tsvPath); err == nil {
+	if f, err := OpenI18NTSV(tsvPath); err == nil {
 		defer f.Close()
 		if _, err := cat.LoadTSV(f); err != nil {
 			return err

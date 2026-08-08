@@ -1,0 +1,19 @@
+# 行星列表畫面譯表(第 2 組)。英文原文即 key。
+# 欄位標題
+Planet	行星	欄位標題
+Climate	氣候	欄位/排序
+Gravity	重力	欄位
+Minerals	礦產	欄位/排序
+Size	大小	欄位/排序
+# 排序 / 篩選區
+Sort Priority	排序優先	標題
+Display Restrictions	顯示篩選	標題
+No Enemy Presence	無敵蹤	篩選:附近無敵軍
+Normal Gravity	正常重力	篩選
+Non-Hostile Environment	適居環境	篩選
+Mineral Abundance	礦產豐富	篩選
+Planets In Range	射程內	篩選
+# 動作按鈕
+Send Colony Ship	派殖民船	按鈕
+Send Outpost Ship	派前哨船	按鈕
+Return	返回	按鈕

@@ -308,7 +308,7 @@ func loadOverlayScreen(res *assets.Resolver, lbxName string, assetID int, lang i
 	rgba := im.Frames[0].ToRGBA(pal, im.KeyColor())
 
 	cat := i18n.New(lang)
-	if f, err := os.Open(tsvPath); err == nil {
+	if f, err := OpenI18NTSV(tsvPath); err == nil {
 		defer f.Close()
 		if _, err := cat.LoadTSV(f); err != nil {
 			return nil, err
@@ -576,7 +576,7 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 	if menuFont == nil {
 		menuFont = b.fnt
 	}
-	s, err := loadOverlayScreen(b.res, "mainmenu.lbx", 21, b.lang, menuFont, "assets/i18n/menu.tsv",
+	s, err := loadOverlayScreen(b.res, "mainmenu.lbx", 21, b.lang, menuFont, "menu.tsv",
 		menuOverlays, color.RGBA{104, 224, 96, 255}, 15, hits, onAction, nil)
 	if err != nil {
 		return nil, err
@@ -908,7 +908,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		{458, 443, 74, 14, "Info", 12},
 		{544, 448, 90, 15, "Turn", 12},
 	}
-	s, err := loadOverlayScreen(b.res, "buffer0.lbx", 0, b.lang, b.fnt, "assets/i18n/menu.tsv",
+	s, err := loadOverlayScreen(b.res, "buffer0.lbx", 0, b.lang, b.fnt, "menu.tsv",
 		overlays, color.RGBA{210, 216, 230, 255}, 12, hits, onAction, nil)
 	if err != nil {
 		return nil, err
@@ -1443,7 +1443,7 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 		{550, 452, 28, 18, "BC", 0},
 		{582, 452, 52, 20, "RETURN", 0},
 	}
-	s, err := loadOverlayScreen(b.res, "colsum.lbx", 0, b.lang, b.fnt, "assets/i18n/colony.tsv",
+	s, err := loadOverlayScreen(b.res, "colsum.lbx", 0, b.lang, b.fnt, "colony.tsv",
 		overlays, color.RGBA{210, 216, 230, 255}, 13, hits, onAction, nil)
 	if err != nil {
 		return nil, err
@@ -1630,7 +1630,7 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 		{438, 442, 90, 18, "IGNORE", 11},
 		{536, 432, 82, 22, "RETURN", 0},
 	}
-	s, err := loadOverlayScreen(b.res, "races.lbx", 0, b.lang, b.fnt, "assets/i18n/diplo.tsv",
+	s, err := loadOverlayScreen(b.res, "races.lbx", 0, b.lang, b.fnt, "diplo.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction, nil)
 	if err != nil {
 		return nil, err
@@ -2405,7 +2405,7 @@ func (b *sceneBuilder) battleResult() (*overlayScreen, error) {
 		{88, 14, 204, 22, "戰鬥結果", 0},
 		{158, 324, 64, 18, "CLOSE", 0},
 	}
-	s, err := loadOverlayScreen(b.res, "turnsum.lbx", 0, b.lang, b.fnt, "assets/i18n/misc.tsv",
+	s, err := loadOverlayScreen(b.res, "turnsum.lbx", 0, b.lang, b.fnt, "misc.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"buffer0.lbx", 0}})
 	if err != nil {
@@ -2467,7 +2467,7 @@ func (b *sceneBuilder) council() (*overlayScreen, error) {
 			return b.goTo(b.races, "種族關係")
 		}
 	}
-	s, err := loadOverlayScreen(b.res, "council.lbx", 1, b.lang, b.fnt, "assets/i18n/misc.tsv",
+	s, err := loadOverlayScreen(b.res, "council.lbx", 1, b.lang, b.fnt, "misc.tsv",
 		nil, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"council.lbx", 0}})
 	if err != nil {
@@ -2749,7 +2749,7 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 		{100, 385, 95, 20, "CANCEL", 0}, // 101..192 × 386..401
 		{419, 386, 94, 22, "ACCEPT", 0}, // 420..510 × 388..407
 	}
-	s, err := loadOverlayScreen(b.res, "newgame.lbx", 28, b.lang, b.fnt, "assets/i18n/menu.tsv",
+	s, err := loadOverlayScreen(b.res, "newgame.lbx", 28, b.lang, b.fnt, "menu.tsv",
 		overlays, color.RGBA{210, 216, 230, 255}, 13, hits, onAction,
 		paletteChain{{"raceopt.lbx", 4}, {"newgame.lbx", 1}})
 	if err != nil {
@@ -2922,7 +2922,7 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 		{487, 435, 60, 19, "Combat", 0},
 		{556, 430, 84, 28, "RETURN", 0},
 	}
-	s, err := loadOverlayScreen(b.res, "fleet.lbx", 0, b.lang, b.fnt, "assets/i18n/menu.tsv",
+	s, err := loadOverlayScreen(b.res, "fleet.lbx", 0, b.lang, b.fnt, "menu.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"buffer0.lbx", 0}, {"fleet.lbx", 111}})
 	if err != nil {
@@ -3169,7 +3169,7 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 	for i, name := range []string{"Clear", "Cancel", "Build"} {
 		overlays = append(overlays, labelRect{dsBtnX[i], dsBtnY, dsBtnW, dsBtnH, name, 0})
 	}
-	s, err := loadOverlayScreen(b.res, "design.lbx", 0, b.lang, b.fnt, "assets/i18n/tech.tsv",
+	s, err := loadOverlayScreen(b.res, "design.lbx", 0, b.lang, b.fnt, "tech.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"buffer0.lbx", 0}})
 	if err != nil {
@@ -3338,7 +3338,7 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 		return nil
 	}
 	overlays := officerOverlays()
-	s, err := loadOverlayScreen(b.res, "officer.lbx", 0, b.lang, b.fnt, "assets/i18n/officer.tsv",
+	s, err := loadOverlayScreen(b.res, "officer.lbx", 0, b.lang, b.fnt, "officer.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"buffer0.lbx", 0}})
 	if err != nil {
@@ -3449,7 +3449,7 @@ func (b *sceneBuilder) info() (*overlayScreen, error) {
 		{21, 154, 164, 18, "Reference", 0},
 		{535, 434, 84, 22, "RETURN", 0},
 	}
-	s, err := loadOverlayScreen(b.res, "info.lbx", 0, b.lang, b.fnt, "assets/i18n/misc.tsv",
+	s, err := loadOverlayScreen(b.res, "info.lbx", 0, b.lang, b.fnt, "misc.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"info.lbx", 1}})
 	if err != nil {
@@ -3473,7 +3473,7 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 		{88, 14, 204, 22, "TURN SUMMARY", 0},
 		{158, 324, 64, 18, "CLOSE", 0},
 	}
-	s, err := loadOverlayScreen(b.res, "turnsum.lbx", 0, b.lang, b.fnt, "assets/i18n/misc.tsv",
+	s, err := loadOverlayScreen(b.res, "turnsum.lbx", 0, b.lang, b.fnt, "misc.tsv",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"buffer0.lbx", 0}})
 	if err != nil {
@@ -3593,7 +3593,7 @@ func (b *sceneBuilder) research() (*overlayScreen, error) {
 		{22, 343, 128, 18, "Physics", 0},
 		{248, 343, 124, 18, "Force Fields", 0},
 	}
-	s, err := loadOverlayScreen(b.res, "techsel.lbx", 0, b.lang, b.fnt, "assets/i18n/tech.tsv",
+	s, err := loadOverlayScreen(b.res, "techsel.lbx", 0, b.lang, b.fnt, "tech.tsv",
 		overlays, color.RGBA{210, 216, 230, 255}, 13, hits, onAction,
 		paletteChain{{"science.lbx", 0}})
 	if err != nil {
@@ -3715,7 +3715,7 @@ func (b *sceneBuilder) planets() (*overlayScreen, error) {
 		}
 		return nil
 	}
-	s, err := loadOverlayScreen(b.res, "plntsum.lbx", 0, b.lang, b.fnt, "assets/i18n/planets.tsv",
+	s, err := loadOverlayScreen(b.res, "plntsum.lbx", 0, b.lang, b.fnt, "planets.tsv",
 		planetsOverlays, color.RGBA{206, 218, 240, 255}, 14, hits, onAction, nil)
 	if err != nil {
 		return nil, err

@@ -7,7 +7,6 @@ package main
 
 import (
 	"image/color"
-	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -36,7 +35,7 @@ func (b *sceneBuilder) researchChoice(onDone func() (*overlayScreen, error)) (or
 		s.bg = ebiten.NewImageFromImage(im.Frames[0].ToRGBA(im.Embedded, im.KeyColor()))
 	}
 	s.cat = i18n.New(b.lang)
-	if f, err := os.Open("assets/i18n/tech.tsv"); err == nil {
+	if f, err := OpenI18NTSV("tech.tsv"); err == nil {
 		defer f.Close()
 		_, _ = s.cat.LoadTSV(f)
 	}

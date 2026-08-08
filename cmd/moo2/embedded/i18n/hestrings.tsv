@@ -1,0 +1,396 @@
+# help/提示訊息(HESTRNGS.LBX,loadStrings offset 6,395 條)。英文原文即 key,%s/%d 佔位符同順序,\n 保留。Sonnet 平行翻譯 + Opus 驗證。
+Titan Construction Tech is required to build TITAN class ships	建造TITAN級戰艦需要泰坦建造技術(Titan Construction Tech)	設計
+Doom Star Construction Tech is required to build DOOM STAR class ships	建造DOOM STAR級戰艦需要末日星建造技術(Doom Star Construction Tech)	設計
+You need to build a Star Base or a Star Fortress before you can build LARGE class ships	建造LARGE級戰艦前,你需要先建造星際基地(Star Base)或星際要塞(Star Fortress)	設計
+You need to build a Star Base or a Star Fortress before you can build HUGE class ships	建造HUGE級戰艦前,你需要先建造星際基地(Star Base)或星際要塞(Star Fortress)	設計
+You need to build a Star Base or a Star Fortress before you can build TITAN class ships	建造TITAN級戰艦前,你需要先建造星際基地(Star Base)或星際要塞(Star Fortress)	設計
+You need to build a Star Base or a Star Fortress before you can build DOOM STAR class ships	建造DOOM STAR級戰艦前,你需要先建造星際基地(Star Base)或星際要塞(Star Fortress)	設計
+Your current design is too big to fit into a SMALL class ship	你目前的設計太大,無法容納於SMALL級船體	設計
+Your current design is too big to fit into a MEDIUM class ship	你目前的設計太大,無法容納於MEDIUM級船體	設計
+Your current design is too big to fit into a LARGE class ship	你目前的設計太大,無法容納於LARGE級船體	設計
+Your current design is too big to fit into a HUGE class ship	你目前的設計太大,無法容納於HUGE級船體	設計
+Your current design is too big to fit into a TITAN class ship	你目前的設計太大,無法容納於TITAN級船體	設計
+Your current design is too big to fit into a DOOM STAR class ship	你目前的設計太大,無法容納於DOOM STAR級船體	設計
+You may not change hull sizes while refitting a ship	在改裝艦艇時,不可變更船體大小	設計
+Since %s cannot build %s size ships, you may not change hull sizes	由於%s無法建造%s級船艦,因此不可變更船體大小	設計
+The blue-white stars are the hottest of all the stars, emitting extreme amounts of solar radiation. The blue-white star is likely to have planets that will be mineral rich, but totally unsuitable for supporting life.	藍白色恆星是所有恆星中最炙熱的,會釋放出極大量的太陽輻射。藍白色恆星周圍的行星通常礦產豐富,但完全不適合維持生命。	恆星
+White stars have a fair chance of having planets. If present, these planets  will be high in mineral resources, but can barely support life.	白色恆星擁有行星的機率尚可。若存在行星,這些行星礦產資源豐富,但幾乎無法維持生命。	恆星
+Yellow stars are the same spectral class as our sun. The yellow star will quite frequently have planets with moderate mineral resources and a good  environment for supporting life.	黃色恆星與我們的太陽屬於同一光譜等級。黃色恆星經常擁有礦產資源適中、且宜居環境良好的行星。	恆星
+Orange stars will frequently have planets with the best chance of being habitable, but tend to be poor in mineral resources.	橙色恆星常擁有最適合居住的行星,但礦產資源往往貧乏。	恆星
+Red stars are the dimmest, coolest stars. The have a poor chance of having planets. If planets do exist, they will have minimal environments and extremely poor mineral resources.	紅色恆星是最暗淡、最寒冷的恆星,擁有行星的機率很低。若真有行星存在,環境也會極為惡劣,礦產資源極度匱乏。	恆星
+Brown stars are really cool! They're so cool that astronomers throughout the galaxy have been unable to put their majestic beauty into words. Perhaps after another millenium of study, our vocabulary will have been increased  sufficiently to describe these bundles of joy!	棕色恆星真的很酷!它們酷到讓銀河系中的天文學家都難以用言語形容其壯麗之美。或許再經過千年的研究,我們的詞彙量才足以描述這些令人愉悅的天體!	恆星
+Black holes are ancient stars that have collapsed into a minor fraction of  their original size. So powerful are the effects of a black hole, that no  ship may pass within two parsecs.	黑洞是古老恆星塌縮至原本體積一小部分後形成的天體。黑洞的力量極為強大,以致沒有任何船艦能通過其周圍兩秒差距(parsec)的範圍。	恆星
+The High Council has found evidence that %s, the highest %s, has CHEATED!!!  Deal with this in a manner that befits the custom for your culture.	最高議會發現證據顯示,%s——最高的%s——竟然作弊了!!!請依貴文化的慣例來處置此事。	作弊
+Although your score is high enough to be considered amoung the greatest to  play Master Of Orion II, the High Council has decided to strip you of all  glory and accomplishment, hoping you will not CHEAT in the future!	儘管你的分數高到足以躋身《銀河霸主II》史上最強玩家之列,最高議會仍決定剝奪你所有的榮耀與成就,希望你日後不再作弊!	作弊
+NO NEW WEAPONS CAN BE ADDED	無法再加裝新武器	設計
+NO NEW SPECIAL SYSTEMS CAN BE ADDED	無法再加裝新特殊系統	設計
+NOT ENOUGH SPACE TO ADD WEAPON	空間不足,無法加裝武器	設計
+NOT ENOUGH SPACE TO ADD SPECIAL SYSTEM	空間不足,無法加裝特殊系統	設計
+Has your opponent pressed the JOIN GAME button?	你的對手是否已按下「加入遊戲」(JOIN GAME)按鈕?	多人
+PLAY MASTER OF ORION II ONLINE	線上遊玩《銀河霸主II》	多人
+Combatting computerized Klackons is fine and dandy, but fighting  head-to-head with other humans on the Total Entertainment Network is the ultimate test of cosmic conquest. To play on TEN, you need to install  the TEN software. Go to the TEN folder in your Master of Orion directory \n\n (default installation: c:\\program files\\microprose\\orion2\\TEN) \n\n and run the SETUP.EXE program. \n\n	與電腦操控的克拉肯人(Klackons)對戰固然有趣,但在「Total Entertainment Network」上與真人正面交鋒才是宇宙征服的終極考驗。若要在TEN上遊玩,你需要安裝TEN軟體。請前往你「銀河霸主」目錄下的TEN資料夾\n\n(預設安裝路徑:c:\\program files\\microprose\\orion2\\TEN)\n\n並執行SETUP.EXE程式。\n\n	多人
+This will guide you through the TEN installation process.  After  installation, use the installed shortcut or double-click on the TEN.EXE  icon to launch TEN! \n\n ENJOY MASTER OF ORION II ON TEN!!	這將引導你完成TEN的安裝流程。安裝完成後,使用安裝好的捷徑或直接雙擊TEN.EXE圖示即可啟動TEN!\n\n盡情享受在TEN上遊玩《銀河霸主II》吧!!	多人
+Option disabled during multi-player games	多人遊戲進行中,此選項已停用	多人
+A Black Hole blocks movement	黑洞阻擋了移動	移動
+One or more ships does not have enough fuel to reach the destination	有一艘或多艘船艦的燃料不足,無法抵達目的地	移動
+One or more ships chosen is immobile	選取的船艦中有一艘或多艘無法移動	移動
+Ship movement is not allowed during a hyperspace flux	超空間亂流期間不允許船艦移動	移動
+After destroying the Guardian, you find an abandoned warship that was once commanded by the Last Orion, Loknar. On board Loknar's ship,  you find knowledge of the following technology:\n\n	摧毀守護者後,你發現一艘廢棄的戰艦,曾由最後一位歐利安人洛克納(Loknar)指揮。在洛克納的船上,你發現了以下技術的知識:\n\n	劇情
+After destroying the Guardian, you rescue a mighty warship piloted by Loknar, the famous Antaran hunter. Loknar has agreed to share his knowledge of the following  technology:\n\n	摧毀守護者後,你救出了一艘由著名的安塔蘭獵人洛克納(Loknar)駕駛的強大戰艦。洛克納同意與你分享以下技術的知識:\n\n	劇情
+MAGNIFICIENT!!! You have achieved the HIGHEST score to date! Let it be known  that there are none better than %s, grandest champion of Master Of Orion II,  Battle At Antares!	太驚人了!!!你創下了至今最高的分數!從此世人皆知,無人能出%s之右,乃《銀河霸主II:安塔瑞斯之戰》史上最偉大的冠軍!	勝利
+Well done! %s is truly one of the best to ever play Master Of Orion II,  Battle At Antares!	做得好!%s確實是史上最頂尖的《銀河霸主II:安塔瑞斯之戰》玩家之一!	勝利
+Computer Type	電腦類型	介面
+Bonus To Hit	命中加成	介面
+Cost	費用	介面
+Init Bonus	先攻加成	介面
+No Computer	無電腦	介面
+Weapon Name	武器名稱	介面
+Dam	傷害	介面
+Space	空間	介面
+Notes	備註	介面
+No Weapon	無武器	介面
+Shield Type	護盾類型	介面
+Base Cost	基礎費用	介面
+Base Space	基礎空間	介面
+No Shield	無護盾	介面
+System	系統	介面
+Description	說明	介面
+No Special	無特殊系統	介面
+Insufficient space to add a %s modification, short by %d	空間不足,無法加裝%s改裝,尚缺%d	設計
+%d more miniaturization level needed in %s to add %s	還需再提升%d級微型化(於%s),才能加裝%s	設計
+%d more miniaturization levels needed in %s to add %s	還需再提升%d級微型化(於%s),才能加裝%s	設計
+HEAVY MOUNT modification is mutually exclusive with POINT DEFENSE	「重型裝架」(HEAVY MOUNT)改裝與「近迫防禦」(POINT DEFENSE)互斥	設計
+POINT DEFENSE modification is mutually exclusive with HEAVY MOUNT	「近迫防禦」(POINT DEFENSE)改裝與「重型裝架」(HEAVY MOUNT)互斥	設計
+EMMISIONS GUIDANCE TECH is needed to add this modification	需要「發射導引技術」(EMMISIONS GUIDANCE TECH)才能加裝此改裝	設計
+%s is not allowed on %s	%s不允許用於%s	設計
+%s may only be added once for each ship design	每個船艦設計中,%s僅能加裝一次	設計
+You may have only one %s on each ship	每艘船艦僅能配備一個%s	設計
+You cannot place %s %s and %s %s on the same ship	你不能在同一艘船艦上同時配置%s %s與%s %s	設計
+Beam weapons must have at least one arc	光束武器至少需要一個射界	設計
+Insufficient space to add a weapon	空間不足,無法加裝武器	設計
+Full	全向	介面
+Forward Extended	前方延伸	介面
+Back Extended	後方延伸	介面
+Rear	後方	介面
+360	360度	介面
+Insufficient space to add a %s arc	空間不足,無法加裝%s射界	設計
+Insufficient space to add a size %d rack	空間不足,無法加裝大小為%d的彈藥架	設計
+Not enough room in current design for %s	目前設計中沒有足夠空間容納%s	設計
+You have not chosen a weapon!	你尚未選擇武器!	設計
+%ss have built-in 360 arc capability	%s具備內建360度射界能力	設計
+You may not upgrade the ship's computer.	你不可升級此船艦的電腦。	設計
+You may not place shields on a ship with a Damper Field	裝有阻尼力場(Damper Field)的船艦不可加裝護盾	設計
+You may not upgrade the ship's shield.	你不可升級此船艦的護盾。	設計
+Remove %s from ship design?	是否要從船艦設計中移除%s?	設計
+^ %d combat speed	^ 戰鬥速度%d	設計
+^ %d structure points	^ 結構點%d	設計
+^ %d armor points	^ 裝甲點%d	設計
+^ no strength	^ 無強度	設計
+^ no damage points blocked	^ 無可格擋傷害點	設計
+^ %d strength	^ 強度%d	設計
+^ %d damage points blocked	^ 可格擋傷害點%d	設計
+^ %d beam attack	^ 光束攻擊%d	設計
+Beam Defense	光束防禦	介面
+Missile Evasion	飛彈迴避	介面
+Weapon Type	武器類型	介面
+Damage	傷害	介面
+Arc	射界	介面
+Modifications	改裝	介面
+Special System	特殊系統	介面
+Space Available	可用空間	介面
+no modifications	無改裝	介面
+special	特殊	介面
+%s Fleet	%s艦隊	移動
+Orbiting %s	環繞%s軌道	移動
+Destination: Antares	目的地:安塔瑞斯	移動
+%d turn to %s	%d回合抵達%s	移動
+%d turns to %s	%d回合抵達%s	移動
+ETA %d turn	預計%d回合抵達	移動
+ETA %d turns	預計%d回合抵達	移動
+Black Hole in-between	途中有黑洞	移動
+Immobile Fleet	無法移動的艦隊	移動
+%d parsec to %s	%d秒差距至%s	移動
+%d parsecs to %s	%d秒差距至%s	移動
+black hole blocks range	黑洞阻擋航道	移動
+%d parsec%s	%d秒差距%s	移動
+hyperspace flux	超空間亂流	移動
+After scrapping %s, you have mastered the following technology:\n	拆解%s後,你已掌握以下技術:\n	移動
+%s cannot receive orders	%s無法接收指令	移動
+All Star Relocations have been cancelled	所有恆星遷徙已取消	移動
+All Ships will be relocated to %s	所有船艦將遷往%s	移動
+You may not send a fleet to a black hole!	你不可將艦隊派往黑洞!	移動
+You have no officers to assign!	你沒有可指派的軍官!	移動
+This ship is not at a %s colony. You will receive no credit and will be unable to plunder any technology. Do you still want to scrap?	這艘船艦不在%s殖民地。你將不會獲得任何點數,也無法掠奪任何科技。仍要報廢嗎?	移動
+This ship is not at an %s colony. You will receive no credit and will be unable to plunder any technology. Do you still want to scrap?	這艘船艦不在%s殖民地。你將不會獲得任何點數,也無法掠奪任何科技。仍要報廢嗎?	移動
+These ships are not at a %s colony. You will receive no credit and will be unable to plunder any technology. Do you still want to scrap?	這些船艦不在%s殖民地。你將不會獲得任何點數,也無法掠奪任何科技。仍要報廢嗎?	移動
+These ships are not at an %s colony. You will receive no credit and will be unable to plunder any technology. Do you still want to scrap?	這些船艦不在%s殖民地。你將不會獲得任何點數,也無法掠奪任何科技。仍要報廢嗎?	移動
+If you scrap %s, %s will be moved to the officer pool. Okay?	若報廢%s,%s將被移往軍官儲備池。確定嗎?	移動
+Scrapping ships aborted	已取消報廢船艦	移動
+Scrapping this ship will yield %d bcs, Okay?	報廢這艘船艦將可獲得%d BC(信用點),確定嗎?	移動
+Scrapping these ships will yield %d bcs, Okay?	報廢這些船艦將可獲得%d BC(信用點),確定嗎?	移動
+A black hole blocks normal movement from %s to %s	黑洞阻擋了從%s到%s的正常航道	移動
+You may not relocate ships to a black hole!	你不可將船艦遷往黑洞!	移動
+You may not relocate ships from a black hole!	你不可將船艦從黑洞遷出!	移動
+You may not relocate ships to undiscovered stars	你不可將船艦遷往未探索的恆星系	移動
+You may not relocate ships from undiscovered stars	你不可將船艦從未探索的恆星系遷出	移動
+%s is guarded by a Space %s, Do you still wish to relocate ships %s there?	%s由太空%s駐守,你仍要將船艦遷往%s嗎?	移動
+You do not have a colony on %s	你在%s沒有殖民地	移動
+Ship relocation from %s is canceled	已取消從%s遷出船艦	移動
+Green Crew	新兵船員	介面
+Regular Crew	一般船員	介面
+Veteran Crew	老練船員	介面
+Elite Crew	精銳船員	介面
+Ultra Elite Crew	超精銳船員	介面
+Too many ships in list	清單中的船艦數量過多	移動
+%s is out of range	%s超出範圍	移動
+That system is out of range	該星系超出範圍	移動
+%s (%s, %d turn)	%s(%s,%d回合)	移動
+%s (%s, %d turns)	%s(%s,%d回合)	移動
+unexplored	未探索	移動
+Front	前方	介面
+Right	右方	介面
+Back	後方	介面
+Left	左方	介面
+Beam OCV:	光束進攻值(OCV):	介面
+Beam DCV:	光束防禦值(DCV):	介面
+Destination, %s	目的地:%s	介面
+Destination, Unexplored star	目的地:未探索恆星	介面
+Weapons:	武器:	介面
+Specials:	特殊裝備:	介面
+None	無	介面
+Prime	首星	介面
+Placing home worlds ...	配置母星中...	提示
+Start the game with only one Human-controlled player?	以單一玩家(人類)模式開始遊戲?	提示
+Start the game with %d Human-controlled %s and %d Computer-controlled %s?	以%d位真人玩家(%s)與%d位電腦玩家(%s)開始遊戲?	提示
+player	玩家	介面
+players	玩家	介面
+End Of Turn Summary	回合結束總覽	選項
+End Of Turn Wait	回合結束等待	選項
+Enemy Moves	敵方行動	選項
+Expanding Help	展開說明	選項
+Auto Select Ships	自動選擇船艦	選項
+Animations	動畫效果	選項
+Auto Select Colony	自動選擇殖民地	選項
+Show Relocation Lines	顯示遷徙路線	選項
+Show GNN Report	顯示GNN新聞報導	選項
+Auto Delete Trade Goods / Housing	自動刪除貿易貨品/住房	選項
+Auto Save Game	自動存檔	選項
+Show Only Serious Turn Summary Reports	僅顯示重要回合總覽報告	選項
+SAVE%d.GAM does not exist	SAVE%d.GAM檔案不存在	存檔
+SAVE%d.GAM is invalid!	SAVE%d.GAM檔案無效!	存檔
+SAVE%d.GAM is a multi-player game. You must load this game from the MULTI-PLAYER options menu	SAVE%d.GAM是多人遊戲存檔。你必須從「多人遊戲」選項選單中載入此存檔	存檔
+You may not load MULTI PLAYER games from this menu	你不可從此選單載入多人遊戲存檔	存檔
+Loaded SAVE%d.GAM	已載入SAVE%d.GAM	存檔
+SAVE%d.GAM was not loaded	未載入SAVE%d.GAM	存檔
+Game %d was not loaded	未載入第%d號遊戲	存檔
+Save Game function disabled	存檔功能已停用	存檔
+Do you wish to abandon this game and start a new one?	是否要放棄此遊戲並開始新遊戲?	存檔
+Do you wish to leave Master Of Orion II?	是否要離開《銀河霸主II》?	存檔
+colony	殖民地	介面
+colonies	殖民地	介面
+Jan	一月	介面
+Feb	二月	介面
+Mar	三月	介面
+Apr	四月	介面
+May	五月	介面
+Jun	六月	介面
+Jul	七月	介面
+Aug	八月	介面
+Sep	九月	介面
+Oct	10月	日期
+Nov	11月	日期
+Dec	12月	日期
+Stardate:	星曆:	提示
+(( save %d ))	((存檔 %d))	提示
+Save game %d? \n"%s"	儲存遊戲 %d?\n"%s"	提示
+Load game %d? \n"%s"	讀取遊戲 %d?\n"%s"	提示
+File Animation not open	動畫檔案未開啟	錯誤
+You have tried to CONTINUE a multi-player game. Use the MULTI PLAYER option from the main menu to continue this game	你嘗試「繼續」一場多人遊戲。請從主選單使用「多人遊戲」選項來繼續這場遊戲	多人
+You have tried to LOAD a multi-player game. Use the MULTI PLAYER option from the main menu to continue this game.	你嘗試「讀取」一場多人遊戲。請從主選單使用「多人遊戲」選項來繼續這場遊戲。	多人
+You have set only one star relocation	你只設定了一次恆星遷移	提示
+You have not set any star relocations	你尚未設定任何恆星遷移	提示
+GAME SAVED	遊戲已儲存	提示
+Save Game function disabled	儲存遊戲功能已停用	提示
+Use the FORCE, Luke  (omniscience on)	使用原力吧,路克(全知模式開啟)	作弊
+You have chosen POORLY! (omniscience off)	你的選擇不太明智!(全知模式關閉)	作弊
+%s has been given a gift of %d bcs	%s獲得了%d點星際幣的餽贈	提示
+%s will be known	%s將為人所知	提示
+%s is an outpost planet	%s是一顆前哨行星	提示
+Stardate: %d.%d	星曆:%d.%d	提示
+%s, %s ruler, seeks an audience!	%s,%s的統治者,請求會晤!	外交
+%d new technology applications are now known.	現已習得%d項新科技應用。	提示
+All new ships built will be sent to %s	所有新建造的艦艇將被派往%s	提示
+Master of Orion ][ bids you a good day!	《銀河霸主 II》祝你有美好的一天!	提示
+You do not have any freighters to scrap!	你沒有任何貨船可以報廢!	錯誤
+space flux	空間亂流	提示
+%d turn	%d回合	提示
+%d turns	%d回合	提示
+No transport ships selected	未選擇任何運輸船	錯誤
+Send %d ship to attack Antares?	派遣%d艘艦艇攻擊安塔瑞斯?	提示
+Send %d ships to attack Antares?	派遣%d艘艦艇攻擊安塔瑞斯?	提示
+No ships selected	未選擇任何艦艇	錯誤
+ON	開	提示
+OFF	關	提示
+%s, stardate %d.%d	%s,星曆%d.%d	提示
+blocked by black hole	被黑洞阻擋	提示
+%d parsecs	%d秒差距	提示
+All freighters are currently in use. You may not scrap any at this time.	所有貨船目前都在使用中。此時你無法報廢任何貨船。	錯誤
+Choose the number of freighters to scrap:	選擇要報廢的貨船數量:	提示
+You have %d surplus %s, scrapping %d %s will leave you short. Ok?	你有%d艘剩餘的%s,報廢%d艘%s將導致不足。確定嗎?	提示
+Scrapping %d %s	正在報廢%d艘%s	提示
+freighter	貨船	提示
+freighters	貨船	提示
+Generating Universe ...	正在生成宇宙……	提示
+Galaxy Map	銀河地圖	提示
+No multi-player saved games found	找不到多人遊戲存檔	多人
+Ready to start a network game?	準備開始一場網路遊戲?	多人
+Auto Detect	自動偵測	提示
+TONE	音頻撥號	提示
+PULSE	脈衝撥號	提示
+%d human has joined the game...	%d名玩家已加入遊戲……	多人
+%d humans have joined the game...	%d名玩家已加入遊戲……	多人
+%d of %d humans completed race setup	%d/%d名玩家已完成種族設定	多人
+%s, %s, Score %s	%s,%s,分數%s	提示
+Save %d is not a valid mutli-player saved game	存檔%d不是有效的多人遊戲存檔	多人
+Enter Net Game Name	輸入網路遊戲名稱	多人
+%s is already a game name, choose another	%s這個遊戲名稱已被使用,請另選一個	多人
+Enter Star Name	輸入恆星名稱	提示
+Enter Home Star Name	輸入母星名稱	提示
+%d Outpost,	%d座前哨站,	提示
+%d Outposts,	%d座前哨站,	提示
+%d Transport,	%d艘運輸船,	提示
+%d Transports,	%d艘運輸船,	提示
+%d Colony Ship,	%d艘殖民船,	提示
+%d Colony Ships,	%d艘殖民船,	提示
+to hire	聘僱	提示
+maint	維護	提示
+  no	  否	提示
+Officer Pool	軍官儲備庫	提示
+(Unassigned)	(未指派)	提示
+For Hire (%d)	待聘(%d)	提示
+For Hire	待聘	提示
+Officer queue full for player %d, no WAITING officers found. See off?.log	玩家%d的軍官佇列已滿,找不到等待中的軍官。詳見 off?.log	錯誤
+, the	,那位	提示
+%s is in the Officer Pool!	%s在軍官儲備庫中!	提示
+%s does not have a location!	%s沒有所在位置!	錯誤
+%s is located on %s which is currently being refitted at %s	%s位於%s,該艦艇目前正在%s進行改裝	提示
+%s cannot be located!	找不到%s的位置!	錯誤
+Transfering display to the fleet containing %s	正在將畫面切換至%s所在的艦隊	提示
+Transfering display to the %s star system	正在將畫面切換至%s星系	提示
+You may not assign %s to an enemy ship!	你不能將%s指派到敵方艦艇!	錯誤
+It will take %d turns for %s to arrive on %s, okay?	%s需要%d回合才能抵達%s,確定嗎?	提示
+Assign %s to %s?	將%s指派給%s?	提示
+%s, in route to %s, will be reassigned to the pool, ok?	正前往%s的%s,將被重新指派回儲備庫,確定嗎?	提示
+%s, currently on %s, will be reassigned to the pool, ok?	目前位於%s的%s,將被重新指派回儲備庫,確定嗎?	提示
+Choose hero to assign to %s	選擇要指派給%s的英雄	提示
+%s is already in use!	%s已經在使用中!	提示
+You cannot have %s as you have too many COLONY officers	你不能擁有%s,因為你的殖民軍官已經太多	提示
+You cannot have %s as you have too many SHIP officers	你不能擁有%s,因為你的艦艇軍官已經太多	提示
+%s is in %s's hiring queue!	%s在%s的聘僱佇列中!	提示
+%d bcs and %d bc/turn	%d星際幣及每回合%d星際幣	提示
+%s is already in your service!	%s已經在為你效力!	提示
+You have %d BC in your treasury and %s costs %d to hire	你的國庫有%d星際幣,聘僱%s需要%d星際幣	提示
+%s will cost %d bcs initially and %d bc per turn, Hire?	聘僱%s需要%d星際幣的初始費用及每回合%d星際幣,要聘僱嗎?	提示
+%s will cost %d bcs initially and %d bcs per turn, Hire?	聘僱%s需要%d星際幣的初始費用及每回合%d星際幣,要聘僱嗎?	提示
+Dismiss %s?	解僱%s?	提示
+%s must be hired before a duty can be assigned!	必須先聘僱%s才能指派職務!	錯誤
+You cannot assign %s to %s	你不能將%s指派給%s	錯誤
+%d bcs, no maintenance	%d星際幣,無需維護費	提示
+SKILL	技能	提示
+You may not place %s in the Officer pool	你不能將%s放入軍官儲備庫	錯誤
+You may not place leaders on non-combat ships	你不能將領袖指派到非戰鬥艦艇上	錯誤
+%s cannot be put into service!	%s無法投入服務!	錯誤
+Colonies are not accessible during REPORTS phase	在「報告」階段無法存取殖民地	提示
+ETA: %d	預計抵達:%d	提示
+SPACE %s	太空 %s	提示
+%s Fleet:	%s艦隊:	提示
+Make %s available to %s?	讓%s提供給%s使用?	提示
+eta %d	預計抵達%d	提示
+You already have one Colony ship going to %s, send another?	你已經有一艘殖民船正前往%s,要再派一艘嗎?	提示
+You already have one Outpost ship going to %s, send another?	你已經有一艘前哨船正前往%s,要再派一艘嗎?	提示
+Colony	殖民地	提示
+Outpost	前哨站	提示
+%s already has a course set for %s	%s已經設定了前往%s的航線	提示
+%s has set a course for %s, should I re-route it to %s?	%s已設定前往%s的航線,是否要改道前往%s?	提示
+%s has set a course, should I re-route it to %s?	%s已設定航線,是否要改道前往%s?	提示
+%s is guarded by a %s, Do you still wish to send an Outpost ship there	%s由%s駐守,你仍要派遣前哨船前往那裡嗎	提示
+%s is guarded by a %s, Do you still wish to send a Colony ship there	%s由%s駐守,你仍要派遣殖民船前往那裡嗎	提示
+%s has a course laid for %s, ETA %d turn	%s已規劃前往%s的航線,預計%d回合抵達	提示
+%s has a course laid for %s, ETA %d turns	%s已規劃前往%s的航線,預計%d回合抵達	提示
+Ship movement is not allowed during a hyperspace flux	超空間亂流期間不允許艦艇移動	提示
+Artifacts	遺跡	提示
+%d Food	%d食物	提示
+-%d%% prod	-%d%%生產力	提示
+%d max pop	最大人口%d	提示
+Black hole blocks travel to %s	黑洞阻擋了前往%s的航行	提示
+Black Hole	黑洞	恆星
+cannot reach	無法抵達	提示
+star system unreachable	星系無法抵達	提示
+out of range	超出範圍	提示
+You are unable to un-do move orders for the Colony ship heading toward %s.	你無法撤銷正前往%s的殖民船的移動指令。	提示
+You are unable to un-do move orders for the Outpost ship heading toward %s.	你無法撤銷正前往%s的前哨船的移動指令。	提示
+eta, %d turn,	預計抵達,%d回合,	提示
+eta, %d turns,	預計抵達,%d回合,	提示
+Colony ship heading toward %s will be re-routed to %s, %s okay?	正前往%s的殖民船將改道前往%s,%s確定嗎?	提示
+Outpost ship heading toward %s will be re-routed to %s, %s okay?	正前往%s的前哨船將改道前往%s,%s確定嗎?	提示
+No planets in the %s star system are in the list	%s星系中沒有行星列在清單中	提示
+%d turn to	%d回合抵達	提示
+%d turns to	%d回合抵達	提示
+%d prod/worker	每名工人%d生產力	提示
+Defeating Antaran Homeworld	擊敗安塔蘭母星	提示
+%d Captured Colonist	俘獲%d名殖民者	提示
+%d Captured Colonists	俘獲%d名殖民者	提示
+Won Council Vote	贏得議會表決	提示
+Total Score	總分	提示
+Players Eliminated	遭淘汰的玩家	提示
+%d Player Eliminated	%d名玩家遭淘汰	提示
+%d Players Eliminated	%d名玩家遭淘汰	提示
+Captured Orion	攻佔獵戶座	提示
+%d Population	人口%d	提示
+Technology	科技	提示
+Time (%d turns)	時間(%d回合)	提示
+Gas Giant (uninhabitable)	氣態巨行星(不適居)	提示
+Asteroid (uninhabitable)	小行星(不適居)	提示
+ Outpost)	 前哨站)	提示
+%d max pop	最大人口%d	提示
+%s Fleet	%s艦隊	提示
+%2d Colony ship	%2d艘殖民船	提示
+%2d Colony ships	%2d艘殖民船	提示
+%2d Outpost ship	%2d艘前哨船	提示
+%2d Outpost ships	%2d艘前哨船	提示
+%2d Transport ship	%2d艘運輸船	提示
+%2d Transport ships	%2d艘運輸船	提示
+Star System %s	%s星系	提示
+Star System Unexplored	未探索的星系	提示
+Wormhole links %s	蟲洞連結%s	提示
+Stable Wormhole	穩定蟲洞	提示
+bonus	加成	提示
+penalty	懲罰	提示
+Max Population	最大人口	提示
+Food per farmer	每名農夫食物產量	提示
+Industry per worker	每名工人工業產量	提示
+Research per scientist	每名科學家研究產量	提示
+No maintenance bonus	無維護費加成	提示
+Maintenance	維護費	提示
+No worker bonus	無工人加成	提示
+Worker	工人	提示
+Colony Info for %s	%s殖民地資訊	提示
+Star Gate	星際之門	提示
+Jump Gate	跳躍之門	提示
+Artemis Net (	阿提米絲網(	提示
+Dimensional Portal (	次元傳送門(	提示
+%d %s ships (%d non-combat)	%d艘%s艦艇(%d艘非戰鬥)	提示
+^ %d parsecs/turn	^ 每回合%d秒差距	提示
+Add New Weapon	新增武器	設計
+Add New Special System	新增特殊系統	設計
+%d / %d pop	%d / %d人口	提示
+, the	,那位	提示
+Breakthrough	突破	提示
+... empty slot ...	……空欄位……	設計
+Cost	花費	提示
+Ship Initiative	艦艇先攻值	提示
+none	無	提示
+Maintenance Bonus	維護費加成	提示
+Maintenance Penalty	維護費懲罰	提示
+Worker Bonus	工人加成	提示
+Worker Penalty	工人懲罰	提示

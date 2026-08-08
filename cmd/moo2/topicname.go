@@ -8,7 +8,6 @@ package main
 // 回合摘要 / 研究抉擇三個顯示端都能翻,不必各自 os.Open tech.tsv、也不必到處傳 catalog。
 
 import (
-	"os"
 	"sync"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
@@ -23,7 +22,7 @@ var (
 func techCatalog(lang i18n.Lang) *i18n.Catalog {
 	techCatOnce.Do(func() {
 		techCatZh = i18n.New(i18n.Traditional)
-		if f, err := os.Open("assets/i18n/tech.tsv"); err == nil {
+		if f, err := OpenI18NTSV("tech.tsv"); err == nil {
 			_, _ = techCatZh.LoadTSV(f)
 			f.Close()
 		}

@@ -190,7 +190,11 @@ func main() {
 	diploMode := flag.Bool("diplo-viewer", false, "外交關係畫面模式")
 	tsvPath := flag.String("tsv", "", "譯表 TSV(留空用該畫面預設)")
 	lang := flag.String("lang", "zh", "語言:zh(繁中)或 en(英文)")
+	// 譯表預設**烘在執行檔裡**(見 embedassets.go),所以從任何目錄跑都找得到。
+	// 這個旗標是開發用的覆寫:改譯表不必重編。
+	i18nDir := flag.String("i18n", "", "譯表目錄(留空 = 用烘進執行檔的那份)")
 	flag.Parse()
+	i18nOverrideDir = *i18nDir // 讓散在各處的 OpenI18NTSV 也吃得到 -i18n(見 embedassets.go)
 
 	langID := i18n.Traditional
 	if *lang == "en" {
@@ -225,7 +229,7 @@ func main() {
 		if *menuMode {
 			tsv := *tsvPath
 			if tsv == "" {
-				tsv = "assets/i18n/menu.tsv"
+				tsv = "menu.tsv"
 			}
 			// 主選單用純向量 Noto(平滑,與 -game 主選單一致);zh 未帶 -font 時退回混合字型。
 			menuFont := fnt
@@ -236,7 +240,7 @@ func main() {
 		} else {
 			tsv := *tsvPath
 			if tsv == "" {
-				tsv = "assets/i18n/planets.tsv"
+				tsv = "planets.tsv"
 			}
 			err = runPlanets(dirs, langID, fnt, tsv, *shot, *frames)
 		}
@@ -257,7 +261,7 @@ func main() {
 			fatal(fmt.Errorf("載入字型: %w", err))
 		}
 		reg := i18n.NewRegistry(langID)
-		if _, err := reg.LoadFS(os.DirFS("assets/i18n"), "."); err != nil {
+		if _, err := reg.LoadFS(i18nFS(*i18nDir)); err != nil {
 			fatal(fmt.Errorf("載入譯表: %w", err))
 		}
 		dirs := strings.Split(*dataDirs, ",")
@@ -284,7 +288,7 @@ func main() {
 			fatal(fmt.Errorf("載入字型: %w", err))
 		}
 		reg := i18n.NewRegistry(langID)
-		if _, err := reg.LoadFS(os.DirFS("assets/i18n"), "."); err != nil {
+		if _, err := reg.LoadFS(i18nFS(*i18nDir)); err != nil {
 			fatal(fmt.Errorf("載入譯表: %w", err))
 		}
 		dirs := strings.Split(*dataDirs, ",")
@@ -333,7 +337,7 @@ func main() {
 			fatal(fmt.Errorf("載入字型: %w", err))
 		}
 		reg := i18n.NewRegistry(langID)
-		if _, err := reg.LoadFS(os.DirFS("assets/i18n"), "."); err != nil {
+		if _, err := reg.LoadFS(i18nFS(*i18nDir)); err != nil {
 			fatal(fmt.Errorf("載入譯表: %w", err))
 		}
 		if err := runRaceInfo(langID, fnt, reg, *shot, *frames); err != nil {
@@ -349,7 +353,7 @@ func main() {
 			fatal(fmt.Errorf("載入字型: %w", err))
 		}
 		reg := i18n.NewRegistry(langID)
-		if _, err := reg.LoadFS(os.DirFS("assets/i18n"), "."); err != nil {
+		if _, err := reg.LoadFS(i18nFS(*i18nDir)); err != nil {
 			fatal(fmt.Errorf("載入譯表: %w", err))
 		}
 		if err := runColonyView(langID, fnt, reg, *shot, *frames); err != nil {
@@ -365,7 +369,7 @@ func main() {
 			fatal(fmt.Errorf("載入字型: %w", err))
 		}
 		reg := i18n.NewRegistry(langID)
-		if _, err := reg.LoadFS(os.DirFS("assets/i18n"), "."); err != nil {
+		if _, err := reg.LoadFS(i18nFS(*i18nDir)); err != nil {
 			fatal(fmt.Errorf("載入譯表: %w", err))
 		}
 		if err := runDiploView(langID, fnt, reg, *shot, *frames); err != nil {

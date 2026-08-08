@@ -1,0 +1,178 @@
+# 殖民經濟摘要 + 回合報告訊息(RSTRING0.LBX,loadStrings offset 4,177 條)。英文原文即 key。完整翻譯。
+There's a space anomaly!	出現空間異常!	報告
+ (no barracks)	 (無兵營)	標籤
+Unification has no morale.	統一政體沒有士氣。	標籤
+Government Morale	政府士氣	摘要
+No Capital	無首都	標籤
+Mixed Races	混合種族	標籤
+Bonus	加成	摘要
+Leader Bonus	領袖加成	摘要
+Total Morale	總士氣	摘要
+Morale Summary	士氣摘要	摘要
+Produced By Farmers	農民生產	摘要
+Aquatic Bonus	水棲加成	摘要
+Native Bonus	原住民加成	摘要
+Android Bonus	機器人加成	摘要
+Base	基礎	摘要
+Gravity Penalty	重力懲罰	摘要
+Conquered Penalty	征服懲罰	摘要
+Blockaded	遭封鎖	摘要
+Morale Bonus	士氣加成	摘要
+Morale Penalty	士氣懲罰	摘要
+Government Bonus	政府加成	摘要
+Government Penalty	政府懲罰	摘要
+Total Food Produced	食物總產	摘要
+Food Summary	食物摘要	摘要
+Produced By Workers	工人生產	摘要
+ Used	 已使用	摘要
+Pollution Penalty	污染懲罰	摘要
+replicated to %d food	複製為 %d 食物	摘要
+Taxed	徵稅	摘要
+Total Industry Produced	工業總產	摘要
+Industry Summary	工業摘要	摘要
+Produced By Scientists	科學家生產	摘要
+Artifacts Bonus	遺物加成	摘要
+Intelligence Bonus	智力加成	摘要
+Total Research Produced	研究總產	摘要
+Research Summary	研究摘要	摘要
+Taxes Collected	徵得稅收	摘要
+Special Income	特殊收入	摘要
+Trade Goods	貿易品	摘要
+Taxed from industry	自工業徵稅	摘要
+Total Income	總收入	摘要
+BC Summary	星幣摘要	摘要
+starting command points	起始指揮點	摘要
+%d from %d star bases\n	%d 來自 %d 座星際基地\n	摘要
+%d from 1 star base\n	來自 1 座星際基地 %d\n	摘要
+%d from %d battlestations\n	%d 來自 %d 座戰鬥站\n	摘要
+%d from 1 battlestation\n	來自 1 座戰鬥站 %d\n	摘要
+%d from %d fortresses\n	%d 來自 %d 座要塞\n	摘要
+%d from 1 fortress\n	來自 1 座要塞 %d\n	摘要
+from Warlord ability	來自軍閥能力	摘要
+from Imperium government	來自帝國政體	摘要
+total command points	總指揮點	摘要
+%d from 1 %s\n	%d 來自 1 艘 %s\n	摘要
+%d from %d %s\n	%d 來自 %d 艘 %s\n	摘要
+%d from 1 noncombat ship\n	來自 1 艘非戰鬥船艦 %d\n	摘要
+%d from %d noncombat ships\n	%d 來自 %d 艘非戰鬥船艦\n	摘要
+total command point used	已使用指揮點	摘要
+total command points used	已使用指揮點	摘要
+Ship maintenance costs	船艦維護費	摘要
+Command Summary	指揮摘要	摘要
+Defender only has noncombat ships, which are destroyed.	防禦方只剩非戰鬥船艦,已被摧毀。	報告
+You have the following treaties:	你已簽訂下列條約:	外交
+Trade treaty	貿易條約	外交
+Research treaty	研究條約	外交
+Receiving tribute	收取貢金	外交
+Do you really wish to risk a war?	你真的想冒著開戰的風險嗎?	確認
+Outpost destroyed	前哨站被摧毀	報告
+Colony seized by mind control!	殖民地遭精神控制奪取!	報告
+%s attacks you at %s.	%s 在 %s 攻擊你。	報告
+Combat is reported between %s & %s.	%s 與 %s 之間傳出戰鬥。	報告
+native	原住民	標籤
+%s & %s declare an alliance.	%s 與 %s 宣布結盟。	報告
+%s & %s declare war.	%s 與 %s 宣戰。	報告
+Your treasury was only %d BC, with a net income of %d BC.	你的國庫只剩 %d 星幣,淨收入為 %d 星幣。	報告
+%s ship %s (cost %d BC) lost, out of range at %s.	%s 的船艦 %s(造價 %d 星幣)因超出航程於 %s 損失。	報告
+%s ship %s (cost %d BC) scrapped at %s, received %d BC.	%s 的船艦 %s(造價 %d 星幣)於 %s 拆解,獲得 %d 星幣。	報告
+%s ship %s (cost %d BC) scrapped in hyperspace.	%s 的船艦 %s(造價 %d 星幣)於超空間中拆解。	報告
+colony	殖民地	標籤
+outpost	前哨站	標籤
+Lost %s at %s due to %s.	失去 %s 於 %s,肇因於 %s。	報告
+  %s killed.	  %s 陣亡。	報告
+Scrapped %s at %s for %d BC.	拆解 %s 於 %s,獲得 %d 星幣。	報告
+%s finished construction: %s.	%s 完成建造:%s。	報告
+%s christened a new ship, the %s.	%s 為一艘新船艦命名:%s。	報告
+%s refitted a ship, the %s.	%s 改裝了一艘船艦:%s。	報告
+%s finished training a new spy.	%s 完成培訓一名新間諜。	報告
+%s built an Android Farmer.	%s 建造了一名機器人農民。	報告
+%s built an Android Worker.	%s 建造了一名機器人工人。	報告
+%s built an Android Scientist.	%s 建造了一名機器人科學家。	報告
+%s built a freighter fleet.	%s 建造了一支貨船隊。	報告
+  Next in queue was %s.	  佇列中的下一項是 %s。	報告
+  Autobuild %s next.	  自動建造下一項:%s。	報告
+Annihilated the last conquered %s on %s.	殲滅了最後被征服的 %s(位於 %s)。	報告
+Assimilated the last conquered %s on %s.	同化了最後被征服的 %s(位於 %s)。	報告
+%s had starvation (short %d food).	%s 發生饑荒(短缺 %d 食物)。	報告
+%s had starvation (short %d industry).	%s 發生短缺(短缺 %d 工業)。	報告
+%s had starvation (short %d food, %d industry).	%s 發生短缺(短缺 %d 食物、%d 工業)。	報告
+%d settler arrived at %s.	%d 名移民抵達 %s。	報告
+%d settlers arrived at %s.	%d 名移民抵達 %s。	報告
+  All were killed by blockade.	  全數死於封鎖。	報告
+  %d was killed by population limit.	  %d 名因人口上限而死亡。	報告
+  %d were killed by population limit.	  %d 名因人口上限而死亡。	報告
+The plague on %s continues.	%s 的瘟疫持續。	報告
+The lust-crazed population boom on %s continues.	%s 狂熱的人口爆炸持續。	報告
+A comet still threatens %s.	一顆彗星仍威脅著 %s。	報告
+%d of your rebels liberated %s, losing %d in the fighting!	你有 %d 名叛軍解放了 %s,在戰鬥中損失 %d 名!	報告
+%d of your rebels died gloriously on %s!	你有 %d 名叛軍在 %s 光榮犧牲!	報告
+%d %s rebel liberated %s from you, losing %d in the fighting!	%d 名 %s 叛軍自你手中解放了 %s,在戰鬥中損失 %d 名!	報告
+%d %s rebels liberated %s from you, losing %d in the fighting!	%d 名 %s 叛軍自你手中解放了 %s,在戰鬥中損失 %d 名!	報告
+You suppressed %d %s rebel on %s!	你鎮壓了 %d 名 %s 叛軍(位於 %s)!	報告
+You suppressed %d %s rebels on %s!	你鎮壓了 %d 名 %s 叛軍(位於 %s)!	報告
+%s would produce an Android, but there's no more room!	%s 本可生產一名機器人,但已無空間!	報告
+%s produced an Android, causing death of a %s!	%s 生產了一名機器人,導致一名 %s 死亡!	報告
+A hyperspace flux prevents ships from entering hyperspace.	超空間亂流阻止船艦進入超空間。	報告
+The hyperspace beast still lurks.	超空間巨獸仍潛伏著。	報告
+The hyperspace beast ate your ship %s enroute to %s.	超空間巨獸在你的船艦 %s 前往 %s 途中將其吞噬。	報告
+The hyperspace beast ate a %s ship.	超空間巨獸吞噬了一艘 %s 的船艦。	報告
+A spy sent against %s was lost.	派往對付 %s 的一名間諜損失了。	報告
+A defending spy was killed.	一名防禦間諜被殺。	報告
+%d defending spies were killed.	%d 名防禦間諜被殺。	報告
+Enemy artemis net at %s attacked your arriving fleet.	%s 的敵方阿提米斯網攻擊了你抵達的艦隊。	報告
+Enemy artemis net at %s killed a ship with leader.	%s 的敵方阿提米斯網擊殺了一艘載有領袖的船艦。	報告
+%d ship was killed retreating from %s.	%d 艘船艦在自 %s 撤退時被擊殺。	報告
+%d ships were killed retreating from %s.	%d 艘船艦在自 %s 撤退時被擊殺。	報告
+defending spy	防禦間諜	標籤
+spy sent against %s	派往對付 %s 的間諜	標籤
+%s assassinated a %s %s.	%s 暗殺了一名 %s %s。	報告
+A %s was mysteriously assassinated.	一名 %s 遭神祕暗殺。	報告
+There is a spacetime anomaly at %s.	%s 出現時空異常。	報告
+The %s and %s empires are now at war.	%s 與 %s 帝國現已交戰。	報告
+The %s and %s empires are now at peace.	%s 與 %s 帝國現已議和。	報告
+The %s and %s empires have formed an alliance.	%s 與 %s 帝國已結為同盟。	報告
+The %s and %s empires have signed a nonaggression pact.	%s 與 %s 帝國已簽訂互不侵犯條約。	報告
+The peace treaty between the %s and %s empires has expired.	%s 與 %s 帝國之間的和平條約已到期。	報告
+A young space eel was spawned at %s.	一隻幼年太空巨鰻於 %s 誕生。	報告
+A space eel devoured its young at %s.	一隻太空巨鰻在 %s 吞食了自己的幼體。	報告
+Your explorers discovered the technological secrets of %s among the ancient ruins.	你的探險者在古代遺跡中發現了 %s 的科技祕密。	報告
+Citizens demand a stadium.  And more cream of celery soup.	市民要求一座體育場。還要更多芹菜奶油濃湯。	報告
+We had to dismiss %s since we're broke!	由於我們破產,不得不解雇 %s!	報告
+You have no dimensional portal.	你沒有次元傳送門。	報告
+A hyperspace flux prevents movement.	超空間亂流阻止移動。	報告
+No colony was accessible.	沒有可存取的殖民地。	報告
+  %d leaders were killed.	  %d 名領袖被殺。	報告
+  %s was killed.	  %s 被殺。	報告
+  %s escaped to your leader pool.	  %s 逃回你的領袖庫。	報告
+  %s escaped to another ship in the group.	  %s 逃往隊伍中的另一艘船艦。	報告
+mass killing	大規模屠殺	標籤
+bombardment	轟炸	標籤
+Stellar Converter	恆星轉換器	標籤
+all people dead	全數人口死亡	標籤
+modem disk file error	數據機磁碟檔案錯誤	錯誤
+modem diff buffer error	數據機差異緩衝錯誤	錯誤
+Incompatible program versions (host %s, you %s)	程式版本不相容(主機 %s,你 %s)	錯誤
+only 1 host allowed	僅允許 1 名主機	錯誤
+net send error!	網路傳送錯誤!	錯誤
+lost net user!	失去網路使用者!	錯誤
+sending chunk %d of %d\n	正在傳送第 %d / %d 區塊\n	網路
+The ambassador left before you arrived.\n	大使在你抵達前離開了。\n	外交
+Can't try DOS net game under Windows	無法在 Windows 下嘗試 DOS 網路遊戲	錯誤
+Comm failure	通訊失敗	錯誤
+Game is full (or nonexistent)	遊戲已滿(或不存在)	錯誤
+Receiving chunk %d of %d	正在接收第 %d / %d 區塊	網路
+Answering failed	接聽失敗	錯誤
+Sorry, no more player slots available in that game!	抱歉,該遊戲已無可用的玩家名額!	網路
+Dialing failed	撥號失敗	錯誤
+Really begin game? (AI will take over unpicked human slots)	確定開始遊戲?(AI 將接管未選的人類名額)	確認
+Really start with only 1 player?	確定只用 1 名玩家開始?	確認
+waiting ...	等待中 ...	網路
+have %d of %d chunks\n	已有 %d / %d 區塊\n	網路
+Your spy steals %s from the %s.	你的間諜竊取了 %s,來自 %s。	報告
+Your spy destroys the %s %s on %s.	你的間諜摧毀了 %s %s(位於 %s)。	報告
+  You framed the %s.\n	  你嫁禍給了 %s。\n	報告
+%s spy steals %s.	%s 的間諜竊取了 %s。	報告
+%s spy destroys the %s on %s.	%s 的間諜摧毀了 %s(位於 %s)。	報告
+Really trash your colony base for %dBC?	確定拆除殖民基地換取 %d 星幣?	確認
+Colonize the preselected planet of %s?	殖民預選的行星 %s?	確認
+Build outpost on the preselected planet of %s?	在預選的行星 %s 上建造前哨站?	確認
