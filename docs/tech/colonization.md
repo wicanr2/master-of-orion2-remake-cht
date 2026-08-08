@@ -30,7 +30,7 @@ p.50 節錄(Advanced Colonization Techniques 一類科技的效果描述):
 真正殖民地)、一般固態行星(「habitable worlds」,殖民船可直接殖民,不需額外科技,只要求系統內
 無敵艦/怪物)。
 
-**本 remake 現況(2026-08-08 訂正)**:星系生成**已經是一星多行星、三種星體類型**了。
+**本 remake 現況**:星系生成**已經是一星多行星、三種星體類型**了。
 `genPlanets`(`internal/shell/session.go`)逐衛星擲骰決定類型
 (`gamedata.RollSatelliteType`),`order := []gamedata.PlanetType{HABITABLE, GAS_GIANT, ASTEROIDS}`
 在兩處明確列出三種;`:1752` 的註解也寫著「氣態巨星/小行星帶不能直接殖民」。

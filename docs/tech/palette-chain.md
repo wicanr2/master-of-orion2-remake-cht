@@ -45,8 +45,7 @@ for i in [im.PalStart, im.PalStart+im.PalCount):
 rgba := im.Frames[0].ToRGBA(&merged, im.KeyColor())
 ```
 
-已實作於 `cmd/moo2/interactive.go`:~~`paletteProvider`~~ `paletteChain`(2026-08-08 訂正:程式碼裡沒有
-`paletteProvider` 這個識別字,正確型別名是 `paletteChain`,見本文件第 22 行與 `interactive.go:248`)
+已實作於 `cmd/moo2/interactive.go`:型別是 `paletteChain`(`interactive.go:248`)
 + `resolvePalette()`;`loadOverlayScreen(..., prov)` 走此鏈。
 
 ## 驗證

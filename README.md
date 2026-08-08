@@ -129,13 +129,9 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
 - Linux AppImage / Windows(純 Go 跨編)/ macOS(CI)三平台打包(見 [`docs/tech/packaging.md`](docs/tech/packaging.md))
 
 **仍在進行 / 仍缺**(不是「能不能玩」的阻塞,是「像不像原版」的差距)
-- 艦艇設計畫面右上兩格的內容欄位(⚠ 2026-08-08 訂正:同段原本一併列著「殖民地畫面中段的行星表面 +
-  建築 sprite 擺放」並說兩者都卡在幾何表——**行星表面那一半已解**,7×7 角點表與建築編號→圖檔算式
-  都從執行檔抽出來了,見 `cmd/moo2/colonysurface.go`)
+- 艦艇設計畫面右上兩格的內容欄位
 - 英文模式:UI 層已雙語,引擎產生的字串(星名/建築名/行星屬性)仍是中文
-- 完整 spy / leader / diplomacy UI(⚠ 2026-08-08 訂正:原本這一列還寫著「戰機/航母」與「多 AI
-  對手的目標選擇為索引順序」——**兩者都已完成**:戰機中隊在戰術格子上有獨立單位、
-  AI 目標選擇走原版的 `AIEnemyColonyValue` 估值)
+- 完整 spy / leader / diplomacy UI
 - 手冊忠實化的殘量:8 個艦載元件,其中 3 個缺前置系統、5 個可做
   (見 [`WORKLIST.md`](WORKLIST.md) 頂端的剩餘工作表)
 - 武器改造(mod)系統的飛彈專屬 mod、小型化等級門檻、火線角

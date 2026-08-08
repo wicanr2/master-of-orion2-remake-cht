@@ -1124,12 +1124,11 @@ MANUAL_150.html「Reduced by Range」表用 Phasor(base 5-20)、Mauler(base 100-
 依 `docs/tech/rules-implementation-audit.md` 與 `docs/tech/game-logic-port.md` 的盤點,以下系統 openorion2 完全沒有可複用的邏輯(連 UI 殼常常都沒有),需要完全依手冊從零設計。
 **本表描述的是 openorion2(唯讀參考碼)有沒有邏輯可抄,不是 remake 現況**——remake 現況見下方「remake 現況」欄與 `docs/HONEST-STATUS.md`。
 
-> ⚠ 2026-08-08 訂正:下表「外交」「回合編排」「勝利條件」三列的「備註」原本只描述
-> openorion2 現況,字面容易讀成 remake 也缺這些系統。實際查證(見各列後補的「remake 現況」註記):
-> `internal/engine/game.go` 有 `func RunGameTurn`、`internal/engine/empire.go` 有
-> `func RunEmpireTurn`、`internal/engine/colony.go` 有 `func RunColonyTurn`,回合結算函式確實存在;
-> `internal/diplomacy/relations.go` 有完整 17 級關係系統 + `cmd/moo2/diploview.go` 外交畫面;
-> 三條勝利路徑(殲滅/議會票選/安塔蘭母星反攻)已全部接線,見 `docs/tech/victory-conditions.md`。
+> **本表描述的是 openorion2 有沒有邏輯可抄,不是 remake 現況。** 「外交」「回合編排」
+> 「勝利條件」三列的備註容易被讀成 remake 也缺這些系統——實際上 `internal/engine/game.go`
+> 有 `RunGameTurn`、`empire.go` 有 `RunEmpireTurn`、`colony.go` 有 `RunColonyTurn`;
+> `internal/diplomacy/relations.go` 有 17 級關係系統 + `cmd/moo2/diploview.go` 外交畫面。
+> 各列後面有「remake 現況」註記。
 
 | 系統 | 狀態 | 備註 |
 |---|---|---|
@@ -1142,7 +1141,7 @@ MANUAL_150.html「Reduced by Range」表用 Phasor(base 5-20)、Mauler(base 100-
 | 回合編排(把上述公式串成回合) | 待補(指 openorion2) | `researchProgress`/`experience` 等欄位全 repo 除建構子外從未被賦值,openorion2 裡無回合結算函式存在。**remake 現況**:`internal/engine/game.go` 的 `RunGameTurn`、`internal/engine/empire.go` 的 `RunEmpireTurn`、`internal/engine/colony.go` 的 `RunColonyTurn` 已存在,並非「無回合結算函式存在」 |
 | RNG(命中/間諜/閃避擲骰) | 待補 | 各公式已給出「決定性機率/門檻」,但實際擲骰與可重現的 RNG(含 seed 管理、存檔是否存 RNG 狀態)尚未設計 |
 | 星系/星圖生成 | 未見 | 星系形狀/星星分布/行星屬性/特殊天體的隨機生成演算法要整個重寫 |
-| 種族特性效果套用 | ~~僅列舉常量~~ **已接** | ⚠ **2026-08-08 追認:已過期。** 第 129 項從 RACESTUF.LBX + 執行檔換算表挖出全 13 族的一手特性表,第 130 項把布林特性(統帥/惹人厭/寬容/神級商人/魅力)也接上,生產/戰鬥/成長三邊都吃得到 |
+| 種族特性效果套用 | **已接** | 第 129 項從 RACESTUF.LBX + 執行檔換算表挖出全 13 族的一手特性表;第 130 項把布林特性(統帥/惹人厭/寬容/神級商人/魅力)也接上。生產/戰鬥/成長三邊都吃得到 |
 | 勝利條件 | 未見(指 openorion2) | 三種勝利路徑(殲滅/票選/次元傳送門攻陷 Antares)與計分公式在 openorion2 裡全無。**remake 現況**:三條路徑已全部接線(3/3),見 `docs/tech/victory-conditions.md` |
 | Antaran/Orion 事件 | 僅美術資源 | 隨機襲擊、守護者遭遇戰、次元傳送門終局戰觸發鏈全無邏輯 |
 

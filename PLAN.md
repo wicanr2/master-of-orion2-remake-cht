@@ -27,15 +27,13 @@
 
 ### Phase 2 — ebiten backend + 最小可跑里程碑 ⭐
 - 依賴:Phase 1。**第一個可交付里程碑**:開視窗 → 讀玩家正版 .lbx → 載入存檔 → 顯示星系圖。
-- ~~實作滿足 openorion2 `Screen` 抽象介面的 ebiten backend~~ ⚠ **2026-08-08:方向已改。**
-  實際做法是**直繪**(`cmd/moo2` 共 49 處 `DrawImage`),沒有抽象層。繪圖 + 滑鼠 + 鍵盤都已完成。
+- ebiten backend(繪圖 + 滑鼠 + 鍵盤)——**直繪**,不做 openorion2 的 `Screen` 抽象層(`cmd/moo2` 共 49 處 `DrawImage`)。已完成。
 - docker + xvfb 截圖流程打通。
 
 ### Phase 3 — UI 框架 + 文字系統 + 主選單(版本/語言選擇)
 > 中文化技術路線採 mom 已驗證 playbook,見 `08-mom-ebiten-cht-playbook.md`。
 - 依賴:Phase 2。
-- ~~`gui.cpp` widget 樹翻譯成 Go(callback → closure)。~~ ⚠ **2026-08-08:方向已改,沒有執行。**
-  每個畫面自己畫、自己判熱區(`hitRegion`),沒有 retained-mode widget 樹,也就沒有 callback 要轉。
+- UI 架構:每個畫面自己畫、自己判熱區(`hitRegion`)。**不移植 `gui.cpp` 的 retained-mode widget 樹**,也就沒有 callback 要轉成 closure。
 - 全新文字系統:supersample 4× CJK glyph + 顯示層覆蓋 i18n(英文原文即 key,中/英 runtime 切換)。
 - 字型:先 Noto Sans TC 打通,像素字型待驗 Go 解析後 A/B(見 `04`)。
 - 主選單加「版本 1.3/1.5」「語言 中/英」選擇框架。

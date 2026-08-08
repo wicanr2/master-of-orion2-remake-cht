@@ -147,15 +147,17 @@ Steam《Master of Orion: Soundtrack & Score》(App 468020,2016 重製版,同一�
 
 ## 待辦
 
-- [x] ~~對原版/dump 聆聽,定案 STREAMHD 20 條的曲名與場景~~ **2026-08-08:不需要聆聽**——場景→曲目由 `Play_Streaming_Music_` 的呼叫端立即數直接給出(第 147 項)。仍未定的只有「曲名」(那是命名,不影響行為)。
+- [x] **STREAMHD 20 條的場景已定案**——由 `Play_Streaming_Music_` 呼叫端的立即數直接給出(第 147 項)。仍未定的只有「曲名」(那是命名,不影響行為)。
 - [ ] 定案 STREAM 8 長版各自曲名(可與 STREAMHD 同名長版對照)。
-- [x] ~~決定遊戲各場景用 STREAM 或 STREAMHD~~ **2026-08-08:原版自己決定好了**——單一編號空間,≤100 走 STREAM、>100 走 STREAMHD;主選單/星圖走 `Play_Background_Music_`(STREAM 1/2/3 **隨機**,不是固定一首),戰術戰鬥走 `Play_Combat_Music_`(STREAM 4/5/6 隨機)。
+- [x] **各場景用 STREAM 還是 STREAMHD:原版自己決定好了**——單一編號空間,≤100 走 STREAM、>100 走 STREAMHD;主選單/星圖走 `Play_Background_Music_`(STREAM 1/2/3 **隨機**,不是固定一首),戰術戰鬥走 `Play_Combat_Music_`(STREAM 4/5/6 隨機)。
 - [ ] SOUND 各 BUTTONx 的實際 UI 用途區分。
 - [x] 外交「壞關係」音樂已取得呼叫點硬證(`Get_Random(3)+13` → track 13/14/15 三選一,見第七節);「好關係」音樂證實為逐族資料表驅動,尚未取得資料表本身數值。
 - [ ] 若能取得 khinsider/VGMdb 的可讀頁面(目前 403),或找到 STREAMHD 逐條播放對照表,回填第 5.4 節的「哪個配對=哪一族」。
-- [ ] 追出寫入 `_diplomacy_good_music`/`_diplomacy_bad_music` 的無名函式(obj1+0x9082 一帶)本身的呼叫點,確認觸發時機(目前只知其被跳到,未知誰呼叫它)。
+- [ ] 追出寫入 `_diplomacy_good_music`/`_diplomacy_bad_music` 的無名函式本身的呼叫點,確認觸發時機。
+      ⚠ **位址要用 IDA 資料庫的線性位址,不是除錯表的 `obj1+` 偏移**——兩者差 `0x10000`(object base),
+      這個坑讓第二輪把 `Play_Background_Music_` 誤判成死碼(見 §7.5)。`obj1+0x9082` → 線性 `0x19082`。
 - [ ] 追出 empire 記錄(stride 0xea9=3753 bytes,base 於全域指標 `ds:0x1ff98`)offset+0x25 欄位的「逐族預設值」靜態表,才能把 `_diplomacy_good_music` 從公式(`該族記錄.byte[0x25]+1`)落到每族的實際 track index。
-- [x] ~~`Play_Background_Music_`/`Play_Combat_Music_` 全檔案零引用~~ **2026-08-08 已解**:位址算錯 `0x10000`(object base),真址 `0x2484F`/`0x2496C`,共 15 + 1 個呼叫端。
+- [x] **`Play_Background_Music_` / `Play_Combat_Music_` 的呼叫端已找到**:先前判「零引用」是位址少加 `0x10000`(object base),真址 `0x2484F` / `0x2496C`,共 15 + 1 個呼叫端。
 
 ## 七、第三輪(2026-07-10):反組譯呼叫點硬證
 
@@ -237,27 +239,20 @@ Steam《Master of Orion: Soundtrack & Score》(App 468020,2016 重製版,同一�
 - **外交「壞關係」音樂 = `Get_Random(3) + 13` → track 13、14 或 15 三選一(均勻亂數)。** 高信心,無歧義,可直接寫入常數。
 - **外交「好關係」音樂 = 該族 empire 記錄 offset `0x25` 欄位 + 1。** 這是**逐族資料驅動**,不是單一常數;本輪未能追出該欄位的靜態預設值表(欄位在**執行期配置**的 empire 記錄裡,其初始值理論上來自一張「各族預設資料」的靜態表,但本輪未定位到該表——列入待辦)。**確定的結論是**:原版外交音樂本來就不是單一曲目,而是依「目前跟該族關係好/壞」動態切換,且「好關係」進一步依種族不同而不同。
 
-### 7.5 ~~`Play_Background_Music_` / `Play_Combat_Music_`:撞牆,誠實記錄(未解)~~ → **2026-08-08 已解,本節結論是錯的**
+### 7.5 三個音樂入口(2026-08-08 用 `.i64` + 除錯符號表解出)
 
-> ⚠ **本節下面那三段掃描與「死碼」判定全部作廢。** 真正的位址是 `0x2484F` 與 `0x2496C`,
-> 而本節查的是 `0x1484f` / `0x1496c`——**差 `0x10000`,object base 沒加**
-> (`symbols_fixed.tsv` 第一筆 `___begtext = 0x10003` 就寫著)。
-> `Play_Background_Music_` 有 **15 個呼叫端**。
->
-> - `Play_Background_Music_` @ `0x2484F` = `clock() % 3 + 1` → **STREAM 1/2/3 隨機**
-> - `Play_Combat_Music_` @ `0x2496C` = `clock() % 3 + 4` → **STREAM 4/5/6 隨機**,只有 `Tactical_Combat_` 叫它
-> - `Play_Streaming_Music_` @ `0x24677`(本節原本沒認出來)= 指定曲目,
->   **編號 ≤ 100 → STREAM 索引;> 100 → STREAMHD 索引 = 編號 − 100**
->
-> 完整的場景→曲目表見 `docs/re/01-gap-report.md` 第 147 項。
-> **教訓**:三種掃描全部零命中時,先做正對照(拿已知一定被呼叫的函式跑同一套),
-> 而不是把零命中解讀成「它是死碼」。以下保留原文只為了記錄當時怎麼推的。
+| 函式 | 行為 |
+|---|---|
+| `Play_Streaming_Music_` @ `0x24677` | 指定曲目。**編號 ≤ 100 → `STREAM.LBX` 索引;> 100 → `STREAMHD.LBX` 索引 = 編號 − 100**(單一編號空間) |
+| `Play_Background_Music_` @ `0x2484F` | `clock() % 3 + 1` → **STREAM 1 / 2 / 3 隨機**,15 個呼叫端(主選單、外交、議會、安塔蘭廳、艦艇設計、殖民地戰鬥…) |
+| `Play_Combat_Music_` @ `0x2496C` | `clock() % 3 + 4` → **STREAM 4 / 5 / 6 隨機**,只有 `Tactical_Combat_` 叫它 |
 
+`Play_Streaming_Music_` 的「下一首」參數:`-1` = 無;`-2` = 播完接隨機 STREAM 1..3。
 
-依 `rulebook/62` SOP,對這兩個位址跑了三種不同角度的反向溯源,全部零命中(非「查一次沒有就放棄」):
+完整的場景→曲目表見 `docs/re/01-gap-report.md` 第 147 項。
 
-1. **直接呼叫掃描**:353 頁 code object(1,445,888 bytes)逐 byte 掃 `E8`(CALL rel32),計算目的位址——**沒有任何一處**目的地等於 `0x1484f` 或 `0x1496c`。
-2. **絕對位址參照掃描**:全檔案(2,644,842 bytes)搜尋這兩個值以 4-byte 小端出現(涵蓋「物件內偏移」與「object base + 偏移」兩種可能編碼)——**除了除錯符號表本身那一筆,沒有任何其他出現**(不論在程式碼或資料區)。
-3. **Fixup(重定位)表掃描**:LE 內部 fixup record table(相對 header 偏移 `0xca9` 到 `0x6c328`,約 610KB)搜尋「目標 object=1、偏移=這兩個值」的重定位項——同樣零命中(用已知確定成立的 `Start_Diplomacy_Music_` 真正位址 `0xd0f0` 反測,亦零命中,證實 near-call 不需要 fixup,這條路本來就測不到 near-call 目標,方法論本身沒有問題,只是再次確認「這兩個函式沒有被任何靜態可見的方式引用」)。
-
-**判讀**:這兩個函式在 `Orion2.exe`(DOS 版)這個 build 裡,找不到任何靜態可達的呼叫點或位址參照——最貼近的解讀是**這個 build 裡是死碼/未接線的舊函式**(可能被其他不透過這兩個具名函式的機制取代),而不是「格式解不開」或「要動態才知道」。**不排除**其他可能性(如 self-modifying code、`ORION95.EXE`/其他 patch 版本裡仍有引用),但本輪證據不支持任何一種能繼續往下查的靜態路徑,故如實記錄撞牆於此,不強行歸因。`bgmMenu`/`bgmGalaxy`/`bgmCombat` 三個場景常數**維持第二輪的時長啟發式**,未升級。
+> **方法教訓**(這一段比曲目表更值得留):第二輪曾對 `0x1484f` / `0x1496c` 跑了三種掃描
+> (逐 byte 掃 `E8` CALL、掃 4-byte 絕對位址、掃 LE fixup 表)全部零命中,據此判定
+> 「這個 build 裡是死碼」。**位址少加了 `0x10000`(object base)**,三種掃描都在錯的地方找。
+> 零命中時先做**正對照**——拿一個已知一定被呼叫的函式跑同一套掃描,零命中就知道查法壞了。
+> 另一個放大器是掃 `.asm` 文字而不是查 IDA 資料庫的 xref 圖。

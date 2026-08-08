@@ -74,12 +74,11 @@ Population=8。若沿用舊的 Farmers=3/Workers=4,新 FoodPerFarmer=2 只夠 3�
 
 ### 2.2 動態實測:零緩衝經濟撞上既有饑荒-鎖死機制,保證破產
 
-> ⚠ **2026-08-08 追認:本節的實測軌跡是 2026-07-11 修復**之前**的行為,不是現況。**
-> 缺的那個係數(帝國基礎指揮評等供給 = 5)後來用真存檔 `SAVE10.GAM` 反推補上,
-> 300 回合探針的 BC 最低點從 −3710 改善到約 −51,測試門檻也從 −4000 收回
-> `bcCrashFloor300Turns = -400`。
-> 本節保留是因為**歸因鏈本身仍然正確**(零緩衝 → 事件扣人口 → 農夫歸零 → 饑荒鎖死),
-> 而且第 4 點那條仍然成立:**沒有任何機制把既有的工人/科學家重新指派回農夫**
+> **本節的實測軌跡是 2026-07-11 修復前的行為,留作歸因鏈的紀錄,不是現況。**
+> 缺的那個係數(帝國基礎指揮評等供給 = 5)已用真存檔 `SAVE10.GAM` 反推補上,
+> 300 回合探針的 BC 最低點從 −3710 改善到約 −51,測試門檻 `bcCrashFloor300Turns = -400`。
+> 歸因鏈本身仍然正確(零緩衝 → 事件扣人口 → 農夫歸零 → 饑荒鎖死),
+> 而第 4 點那條也仍然成立:**沒有任何機制把既有的工人/科學家重新指派回農夫**
 > (`session.go` 只會把**新增**人口在「會缺糧就配農夫」的規則下指派)。
 
 用固定 `EventSeed=42`(`TestRandomEventsFireAndBounded`/`TestAntaresRaidsScheduleAndEscalate`
@@ -272,13 +271,10 @@ FoodSurplus=0、NetBC=0)。動態實測顯示,配合 6.1+6.2 兩項機制,經濟
   不依賴絕對 BC 是否為負)。
 - `TestAntaresRaidsScheduleAndEscalate`、`TestRandomEventsFireAndBounded`:**斷言已更新**
   ——原本「BC 絕不為負」改成「BC 不會失控式無下限崩潰」(具名常數
-  `bcCrashFloor80Turns=-20`/`bcCrashFloor300Turns=-150`,均以 §6.5 實測數字為基準,留有餘裕
-  但仍能抓到未來若真的壞掉、無下限崩潰的迴歸)。
-  > ⚠ 2026-08-08 訂正:上面的 `-20`/`-150` 是本輪(第二輪)當時的數值,後續改動已放寬。
-  > 現況(`grep -n "const bcCrashFloor" internal/shell/antares_test.go internal/shell/events_test.go`):
-  > `bcCrashFloor80Turns = -40`(`internal/shell/antares_test.go:20`)、
-  > `bcCrashFloor300Turns = -400`(`internal/shell/events_test.go:27`),
-  > 兩者都比本節記載的門檻寬鬆一倍以上,具體是哪次改動放寬未查證。
+  `bcCrashFloor80Turns` / `bcCrashFloor300Turns`,以實測數字為基準,留有餘裕但仍能抓到
+  未來若真的壞掉、無下限崩潰的迴歸)。**現行門檻**:`bcCrashFloor80Turns = -40`
+  (`internal/shell/antares_test.go:20`)、`bcCrashFloor300Turns = -400`
+  (`internal/shell/events_test.go:27`)——查現值一律 `grep -n "const bcCrashFloor"`,不要引用文件。
   人口下限(`Population<1` 即失敗)、入侵排程/
   升級、事件觸發次數等其餘斷言**全部維持原樣未動**——驗證的是機制與趨勢沒有壞掉,不是硬湊
   出一個新的「通過用」數字。兩處測試都在註解裡完整寫明新值來自忠實 yield + 建築維護費 + 食物

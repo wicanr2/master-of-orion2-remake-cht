@@ -38,9 +38,8 @@ assets.Resolver.OpenLBX → lbx.DecodeImage → Frame.ToRGBA(palette,keycolor)
 
 ## 6. 待續(2026-08-08 逐條追認,已無待續)
 
-- ~~把 openorion2 `Screen` 介面以 ebiten 實作(registerTexture/drawTexture/fillRect/clip)。~~
-  **方向已改,不做**:remake 走直繪(`cmd/moo2` 共 49 處 `DrawImage`),沒有也不需要抽象層。
-  這一條與 `gui.cpp` widget 樹移植是同一個構想,都停在 kick-off 階段沒有執行。
-- ~~星圖換真實 sprite + STARBG 星空背景。~~ **已完成**:`cmd/moo2/starsprite.go`(GALAXY.LBX 0x94)
-  + `nebula.go` / `starbg_test.go`。
-- ~~資產快取。~~ **已完成**:`overlay.go` / `multiplayer.go`。
+- [x] 星圖真實 sprite + STARBG 星空背景:`cmd/moo2/starsprite.go`(GALAXY.LBX 0x94)+ `nebula.go`。
+- [x] 資產快取:`overlay.go` / `multiplayer.go`。
+
+remake 的繪圖架構是**直繪**(`cmd/moo2` 共 49 處 `DrawImage`),不做 openorion2 的 `Screen`
+抽象層,也不移植 `gui.cpp` 的 widget 樹——每個畫面自己畫、自己判熱區(`hitRegion`)。

@@ -114,11 +114,10 @@ docker images:`moo2-ebiten`(CGO+X11+xvfb,已存在)、`golang:1.25-bookworm`(純
 
 ### 優先 3 — 按鍵 / 熱區逐畫面像素對齊 ✅ 已完成(2026-08-07 用執行檔立即數走完)
 
-> ⚠ **2026-08-08 訂正:「已做到 oracle 上限」是 2026-07-12 的錯誤結論。**
-> 當時的「上限」指的是 openorion2 的 `initWidgets`,而 openorion2 缺很多畫面
-> (colony/races/newgame/shipDesign/地面戰/安塔蘭廳都沒有),於是那些畫面被判成
-> 「沒有真值可用」。**反組譯全都有。** 2026-08-07 把待重挖名單清空,
-> 剩下的不是座標沒挖而是子系統沒做。**openorion2 沒有 ≠ 沒有真值。**
+> 座標一手來源是**執行檔反組譯的立即數**;openorion2 的 `initWidgets` 是次級來源,
+> 而且它缺很多畫面(colony/races/newgame/shipDesign/地面戰/安塔蘭廳都沒有)。
+> **openorion2 沒有 ≠ 沒有真值** —— 反組譯全都有。
+> 2026-08-07 待重挖名單已清空,剩下的不是座標沒挖而是子系統沒做。
 - [x] 逐畫面比對 openorion2 `initWidgets` 硬編 `createWidget` 真值 vs remake 現行座標,把有真值卻用 PIL/估計的補齊:menu(本就 0px)、planets(補第8列 + 修 -1px 漂移)、research(右欄標籤)、fleet(Combat/RETURN/SCRAP 標籤)、officer(領袖槽距 + HIRE)、info(五列選單 + tech 熱區)。方法:派 subagent 逐畫面對碼、Opus 核實後套用。
 - [~] **openorion2 這條線到頂了,但不是「沒有真值可用」**:colony/races/newgame/shipDesign 在 openorion2 是 STUB 或無對應 view。
   ⚠ **2026-08-07 翻案**:原本這裡寫「要再精確只能靠原版截圖(本專案不採)」——**錯的,而且是會擋死後續工作的錯**。

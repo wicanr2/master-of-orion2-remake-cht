@@ -96,7 +96,7 @@ to 50%"),不可迴避地改成更高——會失去忠實性,且不改變「NetI
 maintenanceBC` 三個參數(`RemakeDecider.ColonyJobs` 委派給 `DecideColonyJobsSolvent`);
 `engine.ApplyAIEconomy` 呼叫端補上 `cs.IndustryPerWorker, cs.MoralePercent, ps.Maintenance`。
 `maintenanceBC<=0` 時保底邏輯完全不介入(等同呼叫舊版 `DecideColonyJobs`),不影響任何
-~~`Maintenance` 尚未接線的~~ ⚠ **2026-08-08 追認:已接線**(`internal/engine/ai.go:19` 把 `ps.Maintenance` 傳進 `decider.ColonyJobs`)。以下是當時的既有測試案例(`TestApplyAIEconomy`/`TestRunAIEmpireTurn` 的
+**已接線**(`internal/engine/ai.go:19` 把 `ps.Maintenance` 傳進 `decider.ColonyJobs`)。以下是當時的既有測試案例(`TestApplyAIEconomy`/`TestRunAIEmpireTurn` 的
 `PlayerState` 都沒設 `Maintenance`,預設零值 0,行為與改動前逐位元組相同)。
 
 ### 3.4 母星實際數字驗算

@@ -16,11 +16,10 @@
 
 `cmd/moo2` 目前所有畫面(`main.go`、`galaxy.go`、`help.go`、`colonyview.go`、`raceinfo.go`、`diploview.go`、`overlay.go`)一致採 **640×480 原尺寸邏輯座標**,`Layout()` 直接回傳 640×480,`ebiten.SetWindowSize` 也設為同尺寸——**目前沒有畫布級/全域放大或縮放邏輯**(`Layout()` 本身無 `GeoM.Scale`、無自訂 `Filter`,解碼出的 `image.RGBA` 直接 `ebiten.NewImageFromImage` 後 1:1 blit)。
 
-> ⚠ 2026-08-08 訂正:上一句原寫「目前完全沒有內部放大或縮放邏輯(無 `GeoM.Scale`、無自訂 `Filter`)」,
-> 字面已過期——之後陸續加了**局部**縮放:`cmd/moo2/cutscene.go:71-76` 過場動畫依 `s.scale` 縮放、
-> `cmd/moo2/interactive.go:2112,2115` 戰術戰鬥艦艇 sprite 依格高等比縮小、`internal/uifont/font.go:109,133`
-> 點陣字 2× 整數放大(`FilterNearest`)。**核心結論仍成立**:這些都是局部/單一元件的縮放,
-> 沒有本節討論的「畫布級/顯示級整體放大」(即 `Layout()` 回傳值本身仍固定 640×480,不隨視窗縮放)。
+> **局部縮放是有的**:`cmd/moo2/cutscene.go:71-76` 過場動畫依 `s.scale` 縮放、
+> `cmd/moo2/interactive.go:2112,2115` 戰術戰鬥艦艇 sprite 依格高等比縮小、
+> `internal/uifont/font.go:109` 點陣字 2× 整數放大(`FilterNearest`)。
+> **核心結論仍成立**:這些都是局部/單一元件的縮放,不是整體畫面的放大管線。
 
 這與 `docs/tech/cjk-screen-rendering.md`、`internal/uifont/font.go` 的既有結論一致:MOO2 原生解析度已經是 640×480,中文字用 `text/v2` 向量字型在原尺寸直接 rasterize,**不需要**像 320×200 那類遊戲先拉高內部畫布才有空間畫 24×24 點陣字(`rulebook/81-retro-cjk-hires-canvas.md` 的典型情境在此不成立,見第 3 節說明為何仍相關)。
 
