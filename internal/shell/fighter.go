@@ -68,9 +68,18 @@ const (
 	// 缺的只有 shell 這一側的型別與血量常數。**註解說四種、程式碼只有兩種**,
 	// 這種不一致沒有任何測試會抓到。
 	//
-	// 突擊艇(Assault Shuttle)仍然沒有:它的用途是把陸戰隊送上敵艦,而**登艦戰機制
-	// 不存在**(第 60 項(打得準也閃得掉))。加一個不會做任何事的型別只是把洞藏起來。
 	FighterBomber
+	// FighterAssaultShuttle 手冊(Assault Shuttles):「Assault Shuttles are fighters (like
+	// the Interceptors) that carry **1 Marine unit**. … installed and launched in
+	// **squadrons of 4**. Each shuttle moves at **speed 6** modified by your best drive and
+	// can take **3 damage** modified by your best armor. Once launched, Assault Shuttles fly
+	// to the target ship and drop off their Marines, which board and attempt capture.」
+	//
+	// ⚠ 2026-08-08(第 80 項(登艦戰))補上。這裡先前寫著「突擊艇仍然沒有:登艦戰機制不存在,
+	// 加一個不會做任何事的型別只是把洞藏起來」——**那句話是對的,而且它現在過期了**:
+	// 登艦戰在 boarding.go 建好了。手冊那句「like the Interceptors」把它歸進戰機家族,
+	// 所以它走同一套 FighterSquadron,只是抵達目標時做的是登艦而不是開火。
+	FighterAssaultShuttle
 )
 
 // FighterKindName 回傳中文型別名。
@@ -80,6 +89,8 @@ func FighterKindName(k FighterKind) string {
 		return "重戰機"
 	case FighterBomber:
 		return "轟炸機"
+	case FighterAssaultShuttle:
+		return "突擊艇"
 	default:
 		return "攔截機"
 	}
@@ -92,6 +103,9 @@ func FighterBaseSpeed(k FighterKind) int {
 		return gamedata.CombatFighterBaseSpeedHeavyFighter
 	case FighterBomber:
 		return gamedata.CombatFighterBaseSpeedBomber
+	case FighterAssaultShuttle:
+		// 手冊「moves at speed 6 modified by your best drive」。
+		return gamedata.AssaultShuttleBaseSpeed
 	}
 	return gamedata.CombatFighterBaseSpeedInterceptor
 }
@@ -102,6 +116,9 @@ func FighterBaseHits(k FighterKind) int {
 		return gamedata.FighterHitsHeavyFighter
 	case FighterBomber:
 		return gamedata.FighterHitsBomber
+	case FighterAssaultShuttle:
+		// 手冊「can take 3 damage modified by your best armor」。
+		return gamedata.AssaultShuttleBaseHits
 	}
 	return gamedata.FighterHitsInterceptor
 }
@@ -112,6 +129,10 @@ func FighterShots(k FighterKind) int {
 		return gamedata.FighterShotsHeavyFighter
 	case FighterBomber:
 		return gamedata.FighterShotsBomber
+	case FighterAssaultShuttle:
+		// 突擊艇不開火——它飛到目標旁邊放下陸戰隊就沒事了(手冊:「drop off their
+		// Marines … unpiloted shuttles are set adrift」)。0 = 抵達即用完。
+		return 0
 	}
 	return gamedata.FighterShotsInterceptor
 }

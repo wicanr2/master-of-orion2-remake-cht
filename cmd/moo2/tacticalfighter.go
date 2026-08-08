@@ -6,6 +6,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
 
@@ -124,6 +125,15 @@ func (t *tacticalScreen) advanceSquadrons() (damage int) {
 		e := &t.enemy[target]
 		if !f.StepToward(e.Col, e.Row) {
 			continue // 這回合只飛得到一半
+		}
+		// 突擊艇(第 80 項(登艦戰)):抵達目標時**放下陸戰隊**,不開火。
+		// 手冊:「Once launched, Assault Shuttles fly to the target ship and drop off their
+		// Marines, which board and attempt capture. After the marines are dropped,
+		// unpiloted shuttles are set adrift to be picked up after the battle.」
+		// ——所以放完人這一隊就結束了(Alive 歸零),不是返航補給再來一次。
+		if f.Kind == shell.FighterAssaultShuttle {
+			t.resolveShuttleBoarding(f, e)
+			continue
 		}
 		// 貼身開火:一輪 = 隊裡每架各開一次火。護盾照扣(戰機不是無視護盾的),
 		// 但不走 ResolveShot 的命中判定——手冊說戰機是 point-blank 開火的,
@@ -252,4 +262,43 @@ func (t *tacticalScreen) squadronStatusLine() string {
 		return ""
 	}
 	return fmt.Sprintf(t.b.tr("戰機:%d 隊 %d 架在場", "Fighters: %d squadrons, %d craft"), n, craft)
+}
+
+// resolveShuttleBoarding 是突擊艇抵達目標時的登艦結算(第 80 項(登艦戰))。
+//
+// 手冊:「Marines on Assault Shuttles **always try to capture** the target ship.」
+// ——沒有突襲那個選項,突襲是傳送器那一側的用法。
+//
+// ⚠ **奪船在 remake 只表現成「那艘船退出戰鬥」**。手冊說奪船之後還要贏下整場戰鬥才留得住
+// (心靈感應種族除外),真的把船搬到玩家艦隊要動戰後結算與艦隊清單。這是**建模取捨**,
+// 即時效果是對的(那艘船不再開火),長期歸屬沒做。
+func (t *tacticalScreen) resolveShuttleBoarding(f *shell.FighterSquadron, e *shell.CombatShip) {
+	party := shell.BoardingParty{
+		Intent:     shell.BoardingCapture,
+		Marines:    f.Alive * gamedata.AssaultShuttleMarinesEach,
+		Strength:   t.player[f.Carrier].Attack,
+		HitsToKill: gamedata.GroundBaseHitsToKill(false),
+	}
+	def := shell.BoardingDefense{
+		Marines: e.Marines, Strength: e.Defense,
+		HitsToKill:       gamedata.GroundBaseHitsToKill(false),
+		SecurityStations: e.SecurityStations,
+	}
+	res := shell.ResolveBoarding(party, def, func(n int) int {
+		if n <= 0 {
+			return 0
+		}
+		return t.rng.Intn(n)
+	})
+	e.Marines = res.DefenderSurvived
+	f.Alive = 0 // 放完人,艇就漂在那裡了
+	if res.Captured {
+		e.HP = 0
+		e.Captured = true
+		t.log = fmt.Sprintf(t.b.tr("登艦成功:%s 的守軍全滅,該艦被奪下",
+			"Boarded: %s's crew is wiped out — the ship is taken"), e.Name)
+		return
+	}
+	t.log = fmt.Sprintf(t.b.tr("登艦失敗:%s 還剩 %d 隊守軍",
+		"Boarding repelled: %s still has %d marine units"), e.Name, res.DefenderSurvived)
 }

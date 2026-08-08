@@ -417,6 +417,12 @@ var (
 		// 戰鬥艙的用法是「騰出空間給其他系統」;在 remake 它換來的是**更大的武器**。
 		// 這是單槽模型的必然後果,不是抄錯。
 		{"戰鬥艙", 0, 0, gamedata.TOPIC_CAPSULE_CONSTRUCTION, gamedata.TECH_BATTLE_PODS},
+		// --- 登艦戰家族(第 80 項(登艦戰),見 boarding.go)---
+		// 手冊把登艦戰的解算方式直接指回地面戰,而那套解算器早就在了——缺的從來不是公式。
+		// 傳送器**仍然不在這張表上**:它的前置是「面向攻擊方的護盾已被打穿」,
+		// 而 remake 的護盾是每發固定減傷,既沒有分面也不會崩(理由寫在 boarding.go 檔頭)。
+		{"突擊艇", 0, 0, gamedata.TOPIC_ADVANCED_ENGINEERING, gamedata.TECH_ASSAULT_SHUTTLES},
+		{"保安站", 0, 0, gamedata.TOPIC_POSITRONICS, gamedata.TECH_SECURITY_STATIONS},
 		// --- 匿蹤家族 + 測距瞄準器 + 能量吸收器(見 cloak.go / energy_absorber.go)---
 		// 這四項先前都在「擋門理由已經過期或本來就錯」那一格,共通點是**手冊給了確切數字**,
 		// 而缺的機制其實都已經建好了(Fired、不可被選為目標、真實格距離、跨回合狀態)。
@@ -724,6 +730,14 @@ type combatant struct {
 	// energyAbsorber / storedEnergy:被打時轉存 1/4 潛在傷害,下一次開火自動命中射出。
 	energyAbsorber bool
 	storedEnergy   int
+	// --- 登艦戰(見 boarding.go)---
+	marines          int
+	securityStations bool
+	assaultShuttles  bool
+	// boarded 是「這艘船這場戰鬥已經派過登艦隊了」。手冊:突擊艇是**一次性**的
+	// (「unpiloted shuttles are set adrift to be picked up after the battle」),
+	// 快速結算沒有回合,所以一場一次。
+	boarded bool
 }
 
 // battleVolley 讓每個存活 attacker 對第一個存活 defender 射一發(固定近距 range=2),
@@ -776,6 +790,17 @@ func battleShot(atk *combatant, defenders *[]combatant, rng *rand.Rand) {
 		return // 敵方全滅(或全部躲在相位匿蹤裡),這一發沒有目標
 	}
 	d := &(*defenders)[ti]
+	// 突擊艇(第 80 項(登艦戰)):手冊「Marines on Assault Shuttles **always try to capture**
+	// the target ship」——所以快速結算這一側固定是奪船,沒有突襲那個選項。
+	// 一場戰鬥一次(手冊:突擊艇是一次性的,放完人就漂在那裡)。
+	// 沒裝就完全不動 RNG,既有戰鬥逐位元不變。
+	if atk.assaultShuttles && !atk.boarded && d.marines > 0 {
+		atk.boarded = true
+		quickBoardingAttempt(atk, d, rng)
+		if d.hp <= 0 {
+			return
+		}
+	}
 	// 儲能先射(手冊:自動命中,而且**射儲能不會解除隱形**,所以在 atk.cloaked 之前)。
 	// 沒有儲能就完全不動 RNG,既有戰鬥逐位元不變。
 	if atk.storedEnergy > 0 {
@@ -866,6 +891,37 @@ func battleShot(atk *combatant, defenders *[]combatant, rng *rand.Rand) {
 	// 開火即解除隱形(手冊:是開火當下,不是下一回合)。快速結算沒有回合,所以這是永久的
 	// ——見 combatant.cloakKind 的說明。
 	atk.cloaked = false
+}
+
+// quickBoardingAttempt 是快速結算這一側的登艦:一隊突擊艇(4 架 × 1 個陸戰隊單位)
+// 飛過去奪船。
+//
+// ⚠ **奪到船在 remake 只表現成「那艘船退出戰鬥」**,不是真的換手。手冊說奪船之後還要
+// 贏下整場戰鬥才留得住(心靈感應種族除外),而快速結算連「戰鬥結束時誰還在」都只用
+// 存活數判定——真的把船搬到對面陣營要動戰後結算與艦隊清單兩處。這是**建模取捨**,
+// 標在這裡:奪船的即時效果是正確的(那艘船不再開火),長期歸屬沒做。
+func quickBoardingAttempt(atk *combatant, d *combatant, rng *rand.Rand) {
+	party := BoardingParty{
+		Intent:     BoardingCapture,
+		Marines:    gamedata.FighterSquadronSize * gamedata.AssaultShuttleMarinesEach,
+		Strength:   atk.atk,
+		HitsToKill: gamedata.GroundBaseHitsToKill(false),
+	}
+	def := BoardingDefense{
+		Marines: d.marines, Strength: d.def,
+		HitsToKill:       gamedata.GroundBaseHitsToKill(false),
+		SecurityStations: d.securityStations,
+	}
+	res := ResolveBoarding(party, def, func(n int) int {
+		if n <= 0 {
+			return 0
+		}
+		return rng.Intn(n)
+	})
+	d.marines = res.DefenderSurvived
+	if res.Captured {
+		d.hp = 0 // 守軍全滅 → 這艘船這場戰鬥打完了
+	}
 }
 
 // quickCloakBeamDefense / quickCloakMissChance 是快速結算這一側的匿蹤查詢。
@@ -998,7 +1054,9 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 			scannerJamReduction: bestPlayerScannerJamReduction(s.Player),
 			missileEvasion: gamedata.ShipCrewMissileEvasionBonus(crew) + s.helmsmanEvasionBonus() +
 				shipMissileEvasionBonus(sh),
-			cloakKind: shipCloakKind(sh), cloaked: shipCloakKind(sh) != CloakNone,
+			marines: ShipMarineComplement(sh), securityStations: shipHasSecurityStations(sh),
+			assaultShuttles: shipHasAssaultShuttles(sh),
+			cloakKind:       shipCloakKind(sh), cloaked: shipCloakKind(sh) != CloakNone,
 			energyAbsorber: sh.Special == energyAbsorberName,
 			autoRepair:     shipHasAutoRepair(sh), shipIdx: shipIdx})
 		idx = append(idx, shipIdx)
@@ -1233,6 +1291,16 @@ type CombatShip struct {
 	// --- 能量吸收器(見 energy_absorber.go)---
 	EnergyAbsorber bool // 這艘船帶能量吸收器:被打時轉存 1/4 潛在傷害
 	StoredEnergy   int  // 目前存著的能量(下一次開火時自動命中射出)
+	// --- 登艦戰(見 boarding.go)---
+	Marines          int  // 艦上陸戰隊單位數(手冊 p.121 的 Marines 欄,部隊艙翻倍)
+	SecurityStations bool // 保安站:守方陸戰隊 +20
+	AssaultShuttles  bool // 突擊艇:可以派登艦隊出去
+	// SystemsDisabled 是被突襲拆掉的內部系統數(手冊:突襲不傷結構,只拆系統)。
+	// >0 的船特殊系統失效——remake 一艘船只有一個特殊系統槽,所以第一下就拆光了。
+	SystemsDisabled int
+	// Captured 是「這艘船已經被對方奪走」。手冊:奪船之後**還要贏下這場戰鬥**才留得住
+	// (除非是心靈感應種族),所以這裡只記狀態,歸屬要等戰鬥結束才定案。
+	Captured bool
 }
 
 // CombatSpriteForClass 依艦體等級回傳 CMBTSHP 色塊內 sprite 索引(見 docs/tech/cmbtshp-ship-sprites.md)。
@@ -1293,6 +1361,10 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			bay, bayKind = true, FighterHeavy
 		case "轟炸機庫":
 			bay, bayKind = true, FighterBomber
+		case assaultShuttleName:
+			// 突擊艇走同一套中隊機制(手冊:「fighters (like the Interceptors)」),
+			// 差別在抵達目標時做的是登艦而不是開火(見 tacticalfighter.go)。
+			bay, bayKind = true, FighterAssaultShuttle
 		}
 		player = append(player, CombatShip{
 			Name: sh.Name, HP: hullHP, MaxHP: hullHP, Attack: atk, Col: 1, Row: i,
@@ -1321,6 +1393,9 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			CloakKind:               shipCloakKind(sh),
 			Cloaked:                 shipCloakKind(sh) != CloakNone, // 開場隱形(手冊沒有「要先充能」)
 			EnergyAbsorber:          sh.Special == energyAbsorberName,
+			Marines:                 ShipMarineComplement(sh),
+			SecurityStations:        shipHasSecurityStations(sh),
+			AssaultShuttles:         shipHasAssaultShuttles(sh),
 			Charged:                 true, // 開場滿電(手冊沒有「第一回合不能連射」的限制)
 			Initiative:              gamedata.CombatInitiative(atk, s.shipCombatSpeed(sh)),
 			SpriteIdx:               CombatSpriteForClass(sh.Class), // 色塊 0(玩家)
@@ -1471,7 +1546,7 @@ func ShipDesignSpaceUsedWithMods(class string, weapon, armor, shield, special in
 	//
 	// ⚠ 這裡可能是**負值**(戰鬥艙):手冊「add equipment space without increasing the
 	// hull size」在原版就是做成負佔格。加上去讓總和變小是對的,不要在這裡夾成 0。
-	used += specialDeviceSpaceFor(sp.Name, classID)
+	used += specialDeviceSpaceFor(sp, classID)
 	return used
 }
 

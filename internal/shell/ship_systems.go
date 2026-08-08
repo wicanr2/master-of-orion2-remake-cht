@@ -209,18 +209,19 @@ func shipBeamAttackerSystems(sh Ship) BeamAttackerSystems {
 // (增強引擎 / 時間扭曲加速器 / 結構分析儀 / 阿基里斯瞄準器 / 超載電容 / 快速飛彈架 / 轟炸機庫),
 // 理由卻還留在這裡——**這份清單自己就是它警告的那種東西**。每次接掉一項就要回來刪一行。
 //
-// --- 還沒接的三個,與各自的理由(2026-08-08 重寫)---
+// --- 還沒接的**一個**,與它的理由(2026-08-08 第 80 項(登艦戰)重寫)---
 //
-// B 那一格清空了:能量吸收器 / 戰鬥艙 / 相位匿蹤 / 測距瞄準器 / 隱形裝置五項這一輪全部接完
-// (見 cloak.go、energy_absorber.go、special_device_map.go)。**做完一項就回來刪那一行**
-// ——這份清單上一版有 12 項,其中 7 項早就接掉了,而沒有任何機制會提醒你。
+// 上一版這裡有三項。登艦戰建好之後(boarding.go)保安站與突擊艇都接了,只剩:
 //
-//	保安站(Security Stations)   「+20 to the combat rolls of the Marines defending against
-//	                            enemy boarding parties」——**登艦戰不存在**(第 60 項(打得準也閃得掉))
-//	傳送器(Transporters)        同上,而且還需要護盾分面
-//	匿蹤力場(Stealth Field)     「completely invisible on the Galaxy Map」——remake 的 AI 艦隊
-//	                            是抽象戰力、沒有地圖座標(見 detection.go 檔頭),玩家自己的艦隊
-//	                            對玩家永遠可見。**沒有「敵方看得到我的艦隊」這件事可以隱藏。**
+//	傳送器(Transporters)  手冊:「send Marines onto an enemy ship from a range of 12 squares
+//	                      **— if the shield facing the attacking ship is disabled**」。
+//	                      擋門不是射程(12 格,常數已在 gamedata),是**護盾要能崩**:
+//	                      remake 的護盾是每發固定減傷,既沒有分面也沒有「被打穿」這個狀態。
+//	                      ⚠ 這與「登艦戰不存在」是**不同**的擋門理由——上一版把兩者混寫成
+//	                      「同上,而且還需要護盾分面」,於是登艦戰建好之後看起來像整項都解了。
 //
-// 三個共通點:缺的是**前置系統**(登艦戰、護盾分面、敵方艦隊的地圖表示),不是缺數字。
-// 這與 B 那一格的五項是完全不同的狀況——那五項缺的一直只是「有沒有人回頭查」。
+// 匿蹤力場(Stealth Field)這一項**移出這份清單**:它的擋門理由是「AI 艦隊沒有地圖座標」,
+// 而第 47 項(AI艦隊移動)之後 AI 艦隊有 FleetStar 了。**但重查之後結論不變、理由變了**:
+// AI 的出兵決策讀的是玩家**殖民地**,從來不讀玩家艦隊位置(見 ai_fleet.go 的
+// aiLaunchRaidFleet)。所以「在星圖上對敵方隱形」在 remake 仍然沒有消費端——
+// 缺的是「AI 會不會攔截玩家艦隊」這件事,不是座標。

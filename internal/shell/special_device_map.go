@@ -40,6 +40,7 @@ var specialDeviceByName = map[string]gamedata.SpecialDevices{
 	"能量吸收器":   gamedata.SPEC_ENERGY_ABSORBER,
 	"測距瞄準器":   gamedata.SPEC_RANGEMASTER_UNIT,
 	"相位匿蹤":    gamedata.SPEC_PHASING_CLOAK,
+	"保安站":     gamedata.SPEC_SECURITY_STATIONS,
 	"重生程序":    gamedata.SPEC_REGENERATION,
 	"強化船體":    gamedata.SPEC_REINFORCED_HULL,
 	"偵察實驗室":   gamedata.SPEC_SCOUT_LAB,
@@ -53,13 +54,19 @@ var specialDeviceByName = map[string]gamedata.SpecialDevices{
 //
 // 對得上原版表的走真值(**可能是負數**,見戰鬥艙);對不上的退回舊的 5% 估計,
 // 讓那幾項的行為與這一輪之前逐位元相同。
-func specialDeviceSpaceFor(name string, class gamedata.CombatShipClass) int {
-	if name == "" || name == "無" {
+func specialDeviceSpaceFor(c Component, class gamedata.CombatShipClass) int {
+	if c.Name == "" || c.Name == "無" {
 		return 0
 	}
-	if dev, ok := specialDeviceByName[name]; ok {
+	if dev, ok := specialDeviceByName[c.Name]; ok {
 		return gamedata.SpecialDeviceSpace(dev, class)
 	}
+	// 退路①:原版把它歸在**武器表**(牽引光束/停滯力場/反飛彈火箭/戰機艙/突擊艇)。
+	// 那張表的佔格是**單一數字**(不隨艦級變動),與特殊裝置表不同——武器在原版就是這樣。
+	if w, ok := gamedata.OrigWeaponByTech(c.UnlockTech); ok {
+		return w.Size
+	}
+	// 退路②:原版根本沒有這一項(戰鬥電腦)。維持舊的 5% 估計。
 	return gamedata.SpecialSpace(gamedata.ShipHullSpace(class), true)
 }
 
@@ -73,6 +80,9 @@ func specialDeviceCostFor(c Component, class gamedata.CombatShipClass) int {
 	if dev, ok := specialDeviceByName[c.Name]; ok {
 		return gamedata.SpecialDeviceCost(dev, class)
 	}
+	// ⚠ 武器表的**成本**不走這條退路。理由見 gamedata/weapon_table.go 檔頭:
+	// 執行檔的武器成本尺度與 remake 差約四倍,而艦體成本的方向相反,只換一邊會壞平衡。
+	// 佔格沒有這個問題(佔格與艦體空間是同一個尺度,而艦體空間已經是原版真值)。
 	return c.Cost
 }
 
