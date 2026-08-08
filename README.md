@@ -129,11 +129,15 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
 - Linux AppImage / Windows(純 Go 跨編)/ macOS(CI)三平台打包(見 [`docs/tech/packaging.md`](docs/tech/packaging.md))
 
 **仍在進行 / 仍缺**(不是「能不能玩」的阻塞,是「像不像原版」的差距)
-- 兩個**子系統**(不是座標沒挖):殖民地畫面中段的行星表面 + 建築 sprite 擺放、艦艇設計右上兩格的
-  內容欄位——兩者都卡在執行檔裡烘死的幾何表尚未抽出,見 [`docs/re/01-gap-report.md`](docs/re/01-gap-report.md)
-- 母星初始狀態的數值校準(流程本身已對齊原版:版本→難度/星系→14 族肖像→自訂點數→命名旗色)
+- 艦艇設計畫面右上兩格的內容欄位(⚠ 2026-08-08 訂正:同段原本一併列著「殖民地畫面中段的行星表面 +
+  建築 sprite 擺放」並說兩者都卡在幾何表——**行星表面那一半已解**,7×7 角點表與建築編號→圖檔算式
+  都從執行檔抽出來了,見 `cmd/moo2/colonysurface.go`)
 - 英文模式:UI 層已雙語,引擎產生的字串(星名/建築名/行星屬性)仍是中文
-- 戰機/航母、完整 spy/leader/diplomacy UI、多 AI 對手的目標選擇策略(目前為索引順序,非距離/資源導向)
+- 完整 spy / leader / diplomacy UI(⚠ 2026-08-08 訂正:原本這一列還寫著「戰機/航母」與「多 AI
+  對手的目標選擇為索引順序」——**兩者都已完成**:戰機中隊在戰術格子上有獨立單位、
+  AI 目標選擇走原版的 `AIEnemyColonyValue` 估值)
+- 手冊忠實化的殘量:8 個艦載元件,其中 3 個缺前置系統、5 個可做
+  (見 [`WORKLIST.md`](WORKLIST.md) 頂端的剩餘工作表)
 - 武器改造(mod)系統的飛彈專屬 mod、小型化等級門檻、火線角
 - 音樂曲目↔場景的最終聽感比對(現用時長啟發式/反組譯佐證,非逐曲聆聽定案)
 - 數據機 / 序列埠直連:**明確不做**(那兩種硬體已經不存在)。熱座與**網路對戰(lockstep over TCP)都已可玩**——大廳配號、廣播種子、UDP 區網探索、6 張畫面、聊天列都接線了(見 [`docs/tech/multiplayer-architecture.md`](docs/tech/multiplayer-architecture.md))
