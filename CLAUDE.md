@@ -3,9 +3,13 @@
 > ⚠ **接手先讀 [`CONTEXT.md`](CONTEXT.md)(共用詞彙)+ [`docs/HANDOFF.md`](docs/HANDOFF.md)
 > + [`docs/HONEST-STATUS.md`](docs/HONEST-STATUS.md)。**
 >
-> **現況的唯一活來源是 [`docs/re/01-gap-report.md`](docs/re/01-gap-report.md) 末尾的「真正還缺的」表。**
+> **現況的唯一活來源是 [`WORKLIST.md`](WORKLIST.md) 頂端的「剩餘工作」表。**
 > 這裡不複製那份清單——複製出來的每一份都會過期,而過期的斷言會被當成現況引用。
-> 下結論說「X 做了 / 沒做」之前先 `grep`。
+> 下結論說「X 做了 / 沒做」之前先 `grep` 程式碼,不要讀文件。
+>
+> [`docs/re/01-gap-report.md`](docs/re/01-gap-report.md) **不是現況**,它是兩樣別的東西:
+> **RE 硬資料**(196 個位址、131 列表格——全 repo 最貴的內容)與**工程日誌**
+> (每一項怎麼被找到的、當初怎麼推錯的)。其餘所有文件只留現況;錯誤推導的全文只留在那裡。
 >
 > **三個已知會被誤引的過期錨點:**
 > - 「還原度 20%」是 2026-07-04 **接原版美術之前**的快照,不是現況。

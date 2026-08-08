@@ -2,7 +2,7 @@
 
 > ⚠ **2026-08-08:本文是專案起始期(kick-off)的評估,底下的「下一步 / 待辦」清單是**
 > **當時的計畫,不是現況。** docker + xvfb 與 mom playbook 兩條已完成;`Screen` 抽象層與 widget 樹兩條**方向已改,不做**(見本文開頭的訂正)。
-> **現況只以 `WORKLIST.md` 頂端的剩餘工作表與 `docs/re/01-gap-report.md` 的活表為準。**
+> **現況只以 `WORKLIST.md` 頂端的剩餘工作表為準**(`docs/re/01-gap-report.md` 是 RE 資料與工程日誌,不是現況)。
 
 > 把 openorion2(C++/SDL2)的架構映射到 go/ebiten。依據見 `01-openorion2-assessment.md`。
 > 註:CLAUDE.md 列的 go/ebiten 參考 `~/master-of-magic` 本機不存在,本文以 openorion2 架構 + ebiten 官方模型推導,待補該參考後回填實戰心得。

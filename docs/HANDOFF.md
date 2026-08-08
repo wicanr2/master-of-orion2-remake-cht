@@ -2,7 +2,7 @@
 
 > 這份是「重啟 session 後第一個要讀的檔」。目的:讓全新的 Claude 5 分鐘內接手,不重犯前一輪的錯。
 > ⚠ **2026-08-08:本文標的是 2026-07-12 的暫停點,已被大量後續工作超越**——
-> 現況只以 `WORKLIST.md` 頂端的剩餘工作表與 `docs/re/01-gap-report.md` 的活表為準。
+> 現況只以 `WORKLIST.md` 頂端的剩餘工作表為準(`docs/re/01-gap-report.md` 是 RE 資料與工程日誌,不是現況)。
 > 下面「下週繼續」那幾項多已完成或前提已變。
 >
 > 最後更新:2026-07-12。搭配讀:[`HONEST-STATUS.md`](HONEST-STATUS.md)(現況真相)、根目錄 `CLAUDE.md`(專案目標)、`WORKLIST.md`(細項)、`PLAN.md`(階段)、`docs/tech/*`(各系統文件)。
