@@ -96,7 +96,12 @@ var missileWeaponDamage = map[string]WeaponDamageRange{
 	"麥克萊特飛彈": {14, 14}, // Merculite Missile 14
 	"脈衝飛彈":   {20, 20}, // Pulson Missile 20
 	"氙素飛彈":   {30, 30}, // Zeon Missile 30
-	"質子魚雷":   {25, 25}, // Proton/A-M Torpedo 25
+	// ⚠ 2026-08-08(第 79 項(武器表與艦體表))訂正:先前是 `{25, 25}`,註解寫「Proton/A-M Torpedo 25」
+	// ——**25 是 A-M Torpedo 的傷害**。手冊 p.125 那張表在 PDF 抽取後欄位是打散的
+	// (`A-M Torpedo / 20 / 30 / 25 / Proton Torpedo / 40 / Plasma Torpedo / 120`),
+	// 當初把相鄰那一格讀成了質子魚雷。執行檔武器表逐格給出:A-M 20格25傷、質子 30格40傷、
+	// 電漿 40格120傷——與手冊那幾個數字一一對上,只是欄位歸屬相反。
+	"質子魚雷": {40, 40}, // Proton Torpedo 40
 }
 
 // WeaponDamageByName 回傳某武器元件的手冊傷害範圍;不在表上回 ok=false

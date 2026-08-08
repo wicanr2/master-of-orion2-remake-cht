@@ -232,7 +232,7 @@ var (
 		// 依手冊成本的**相對名次**插在既有鄰居之間——**那是 remake 的選擇,不是手冊值**。
 		{"離子脈衝砲", 100, 10, gamedata.TOPIC_ION_FISSION, gamedata.TECH_ION_PULSE_CANNON},
 		{"引力波束", 140, 15, gamedata.TOPIC_ARTIFICIAL_GRAVITY, gamedata.TECH_GRAVITON_BEAM},
-		{"質子魚雷", 150, 25, gamedata.TOPIC_HYPER_DIMENSIONAL_FISSION, gamedata.TECH_PROTON_TORPEDOES},
+		{"質子魚雷", 150, 40, gamedata.TOPIC_HYPER_DIMENSIONAL_FISSION, gamedata.TECH_PROTON_TORPEDOES}, // 手冊 40(先前 25 是 A-M 魚雷那一格,第 79 項(武器表與艦體表)訂正)
 		{"脈衝飛彈", 170, 20, gamedata.TOPIC_MOLECULAR_COMPRESSION, gamedata.TECH_PULSON_MISSILE},
 		{"氙素飛彈", 220, 30, gamedata.TOPIC_MOLECULAR_MANIPULATION, gamedata.TECH_ZEON_MISSILE},
 		{"干擾者", 260, 40, gamedata.TOPIC_MULTIDIMENSIONAL_PHYSICS, gamedata.TECH_DISRUPTER_CANNON},

@@ -98,7 +98,7 @@ var WeaponSpaceByName = map[string]int{
 	"粒子束":   15, // Particle Beam,p.124 確認值
 	"脈衝飛彈":  10, // Pulson Missile,估計(彈架 10/20/30/35/40,取最小 x2,同核飛彈)
 	"氙素飛彈":  10, // Zeon Missile,估計(同上)
-	"質子魚雷":  20, // Proton Torpedo,p.125 確認值(魚雷不分彈架)
+	"質子魚雷":  30, // Proton Torpedo,p.125 確認值(第 79 項(武器表與艦體表)訂正:先前 20 是 A-M Torpedo 那一格)
 
 	// 炸彈(第 64 項(武器傷害真表),手冊 p.126 確認值)。
 	"核彈":   5,  // Nuclear Bomb
