@@ -199,24 +199,42 @@ func shipBeamAttackerSystems(sh Ship) BeamAttackerSystems {
 	}
 }
 
-// ============ 這一輪**沒有**接的,與各自的理由 ============
+// ============ 手冊有、remake 還沒接的元件,與各自的理由 ============
 //
-//	戰鬥艙(Battle Pods)        「add equipment space without increasing the hull size」
-//	                            ——remake 沒有逐元件佔格的造艦模型,加了不影響任何東西
+// ⚠ 2026-08-08(第 143 項)整份重寫。上一版列了 12 項,其中**七項在第 134–141 項已經接掉了**
+// (增強引擎 / 時間扭曲加速器 / 結構分析儀 / 阿基里斯瞄準器 / 超載電容 / 快速飛彈架 / 轟炸機庫),
+// 理由卻還留在這裡——**這份清單自己就是它警告的那種東西**。每次接掉一項就要回來刪一行。
+//
+// --- A. 真的還擋著(缺前置系統,不是缺數字)---
+//
 //	保安站(Security Stations)   「+20 to the combat rolls of the Marines defending against
-//	                            enemy boarding parties」——**登艦戰機制不存在**(第 119 項)
-//	增強引擎(Augmented Engines) 「+5 combat speed」——**戰鬥速度模型不存在**(第 128 項)
-//	時間扭曲加速器               「an additional round of activity」——同上,需要回合結構
-//	測距瞄準器(Rangemaster)     「reducing the absolute range to one-third」——remake 的
-//	                            快速結算固定 range=2,只有格子戰術有真距離;接了會讓兩條路
-//	                            不一致,而那正是第 131–133 項一直在防的事
-//	結構分析儀 / 阿基里斯瞄準器   都要動 `ResolveShotWithMods` 的傷害鏈(過盾後加倍 /
-//	                            光束一律無視裝甲)。該函式的參數已經排到第 11 個,
-//	                            再加下去該先把攻方/守方系統各收成一個結構——那是重構,
-//	                            不該夾在資料項裡做
-//	匿蹤力場 / 相位匿蹤          需要「艦艇可見性」與「不可被攻擊」狀態,remake 沒有
-//	超載電容 / 快速飛彈架        「一回合開兩次火」需要回合內的射擊次數模型
-//	轟炸機庫                    需要戰機中隊模型的轟炸分支(戰機庫已有,轟炸機沒有)
-//	能量吸收器                  「吸收 1/4 傷害並可回射」需要儲能狀態
-//	傳送器                      需要護盾分面(同第 128 項的電漿網)
-//	多相護盾以外的護盾系
+//	                            enemy boarding parties」——**登艦戰不存在**(第 119 項)
+//	傳送器(Transporters)        同上,而且還需要護盾分面
+//	匿蹤力場(Stealth Field)     「completely invisible on the Galaxy Map」——remake 的 AI 艦隊
+//	                            是抽象戰力、沒有地圖座標(見 detection.go 檔頭),玩家自己的艦隊
+//	                            對玩家永遠可見。**沒有「敵方看得到我的艦隊」這件事可以隱藏。**
+//
+// --- B. 擋門理由已經過期或本來就錯(下一輪的料)---
+//
+//	能量吸收器(Energy Absorber) 「One-quarter of all the potential damage … is diverted to and
+//	                            stored … can fire this stored energy … automatically hitting it
+//	                            (unless the target has a Displacement Device)」。
+//	                            舊理由「需儲能狀態」——**第 140 項已經建了跨回合的
+//	                            Charged/Fired 狀態**,同一個地方加一個 StoredEnergy 就行;
+//	                            位移裝置也在(第 133 項)。理由過期。
+//	戰鬥艙(Battle Pods)        「add equipment space without increasing the hull size」。
+//	                            舊理由「remake 沒有逐元件佔格的造艦模型」——**那是錯的**:
+//	                            gamedata.ShipHullSpace + shell.ShipDesignSpaceUsed 都在。
+//	相位匿蹤(Phasing Cloak)     「While cloaked, the ship cannot be attacked. After 10 turns in
+//	                            combat … it functions just like a Cloaking Device until the end
+//	                            of that combat」。舊理由「需戰鬥可見性」——其實只需要
+//	                            **不可被選為目標**這一個旗標 + 回合數(t.round 已經有了)。
+//	測距瞄準器(Rangemaster)     「reducing the absolute range … to one-third of the actual range.
+//	                            Note that the dissipation of damage potential is not affected」。
+//	                            舊理由「快速結算固定 range=2」只對一半——**格子戰術傳的是真距離
+//	                            dist**。⚠ 這一項先前根本不在任何缺口名單上(第 133 項的盤點漏了)。
+//	隱形裝置(Cloaking Device)   ⚠ **已經在 SpecialOptions 裡,但整份程式碼沒有任何地方讀它**
+//	                            ——裝得上、花得了錢、不做任何事。手冊給了完整規則:未攻擊時
+//	                            +80 光束防禦、飛彈與魚雷 50% 未命中;一旦開火就失去;要整整
+//	                            一回合沒開火才能重新隱形(**那正是第 140 項 Fired 的語意**)。
+//	                            「元件表有」與「效果有接」是兩件事,先前沒有任何盤點分得出來。
