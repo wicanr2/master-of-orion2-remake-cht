@@ -25,13 +25,13 @@ import (
 // 是另一種東西。而「有沒有研究出來」remake 一直查得到——`groundEquipTechOwned` 已經是
 // 四個系統共用的判定(生物武器、地面裝備、進階政體、間諜科技加成)。
 //
-// 這是第 59 項同一個形狀:**擋門理由當時成立,之後沒有人回頭看**。
+// 這是第 58 項(間諜三項加成)同一個形狀:**擋門理由當時成立,之後沒有人回頭看**。
 //
 // ============ 誠實留白 ============
 //
 //   - **只接查得到出處的四條。** 手冊還有別的成就(如恆星轉換器那類),沒有數字的不接。
 //   - **AI 對手也吃這些效果**,因為判定只看 `engine.PlayerState`,AI 也有一份。
-//     這是對的:成就是科技,AI 研究得出來就該生效(AI 從第 56 項起才真的會研究)。
+//     這是對的:成就是科技,AI 研究得出來就該生效(AI 從第 55 項(AI自己研究)起才真的會研究)。
 
 // achievementTechs 是本檔會查的成就科技(供測試列舉,順序即檢查順序)。
 var achievementTechs = []gamedata.Technology{
@@ -88,7 +88,7 @@ func hasNanoDisassemblers(ps engine.PlayerState) bool {
 // 銀河統一的產出加成是統一的兩倍),所以凡是查政體表的地方都該用這一支。
 //
 // 與 `assimilationGovernment()` 是同一組編號的兩種型別——原版只有一個 `[player+0x89F]`
-// (第 55 項),Go 這邊分成三個列舉是歷史,轉型是安全的(`spy_bonus_test.go` 釘住)。
+// (第 54 項(三個寫入端)),Go 這邊分成三個列舉是歷史,轉型是安全的(`spy_bonus_test.go` 釘住)。
 func (s *GameSession) effectiveGovernment() gamedata.MoraleGovernmentType {
 	return gamedata.MoraleGovernmentType(s.assimilationGovernment())
 }

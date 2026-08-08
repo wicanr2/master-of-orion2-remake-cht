@@ -11,7 +11,7 @@ import (
 // 手冊逐字:「This reduces the damage of **each enemy attack** — by 3 points — regardless of
 // whether or not the shield in that quarter has collapsed.」
 //
-// ⚠ 第 72 項之前只有光束路徑吃得到,飛彈與球形武器的呼叫端一律傳 false
+// ⚠ 第 71 項(探針③內部函式)之前只有光束路徑吃得到,飛彈與球形武器的呼叫端一律傳 false
 // ——不是有意的簡化,是那兩個參數位置從加進來那天起就沒人回頭填。
 func TestHardShieldReducesEveryKindOfAttack(t *testing.T) {
 	const wmax, shield, armor = 40, 5, 0
@@ -95,7 +95,7 @@ func TestHardShieldReachesBothCombatPaths(t *testing.T) {
 //   - 「allow ships to use their shields inside a nebula」→ 已做(nebula.go 的 nebulaShield)
 //   - 「provide immunity to shield-piercing weapons」→ 已做(DamageAfterShield 的 shieldPiercing 分支)
 //   - 「prevent enemies from using Transporters to send over Marines」→ **傳送器不存在**,
-//     擋在登艦戰系統後面(第 61 項),不是漏抄
+//     擋在登艦戰系統後面(第 60 項(艦員防禦)),不是漏抄
 func TestHardShieldOtherManualEffects(t *testing.T) {
 	// 護盾穿透武器對硬化護盾無效。
 	const dmg, shield = 40, 10

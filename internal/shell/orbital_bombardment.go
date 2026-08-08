@@ -84,7 +84,7 @@ type GroundBombardResult struct {
 	PopulationLost int
 	RemainingHits  int // 扣完建築+人口後剩餘、未消耗掉的 hits(通常應為 0;殖民地人口歸零時會 > 0)
 
-	// BioWeaponKills 是**生物武器**額外殺掉的人口(手冊 p.99,第 53 項接的)。
+	// BioWeaponKills 是**生物武器**額外殺掉的人口(手冊 p.99,第 52 項(生物武器分類)接的)。
 	// 已含在 PopulationLost 裡,獨立記一份是為了讓「這幾個人是被孢子殺的」看得出來
 	// ——屏障護盾把這一項擋成 0 而其他傷害照常,兩者混在一起就看不出護盾有沒有生效。
 	BioWeaponKills int
@@ -248,7 +248,7 @@ func fighterGarrisonTierFor(defender engine.PlayerState) gamedata.FighterGarriso
 	//
 	// ⚠ 兩個科技**不在同一個主題**:轟炸機艙在 TOPIC_ADVANCED_ROBOTICS(11)、
 	// 重戰機艙在 TOPIC_SUPERSCALAR_CONSTRUCTION(42)。這是寫這段時猜錯、被
-	// 第 38 項挖出來的一手科技表(`gamedata.OrigTechTopic`)當場抓到的
+	// 第 37 項(研究樹一手驗證)挖出來的一手科技表(`gamedata.OrigTechTopic`)當場抓到的
 	// ——原本兩個都寫 ADVANCED_ROBOTICS,重戰機那一檔會永遠進不去。
 	switch {
 	case groundEquipTechOwned(defender, gamedata.TOPIC_SUPERSCALAR_CONSTRUCTION, gamedata.TECH_HEAVY_FIGHTER_BAYS):
@@ -384,7 +384,7 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 	res.PopulationLost = popLoss
 	res.RemainingHits = remainingHits - popLoss
 
-	// --- 生物武器(手冊 p.99;第 53 項接上)---
+	// --- 生物武器(手冊 p.99;第 52 項(生物武器分類)接上)---
 	//
 	// 「invading ships must introduce them into the target planet's atmosphere **by orbital
 	// bombardment**. Each spore pod launched has a 10% chance to kill one unit of colonist

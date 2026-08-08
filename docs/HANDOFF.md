@@ -96,7 +96,7 @@ docker images:`moo2-ebiten`(CGO+X11+xvfb,已存在)、`golang:1.25-bookworm`(純
 ### 優先 1 — 音樂 / 音效 ✅ 已完成(2026-07-12 使用者確認)
 
 > ⚠ **2026-08-08:「僅曲目↔場景精確身分待人耳定案」這句已作廢。** 不需要人耳——
-> 場景→曲目是執行檔裡的立即數,三個音樂入口全部解出(gap-report 第 74 項)。
+> 場景→曲目是執行檔裡的立即數,三個音樂入口全部解出(gap-report 第 73 項(音樂場景表))。
 > 而且**主選單與星圖在原版是每次隨機三選一**(`Play_Background_Music_` = `clock()%3+1`),
 > 「哪一首」這個問法本身就錯了。
 > ⚠ **翻案**:MOO2 **沒有 XMI/MIDI 音樂**。全部音樂/音效是 LBX 內的 22050Hz 8-bit PCM WAV,原封播即與原版 bit-identical,**不需 SoundFont/OPL 合成**。定案見 `docs/tech/audio-format.md`。
@@ -127,11 +127,11 @@ docker images:`moo2-ebiten`(CGO+X11+xvfb,已存在)、`golang:1.25-bookworm`(純
   **凡是 openorion2 沒有的畫面,先去反組譯挖 `Print_Centered_` / `Darken_Fill_` / 貼圖呼叫的立即數,別退回估計值。**
   **2026-08-07 第二個實例:NEW GAME 設定畫面**(`sub_CCE2E` 建 widget + `sub_CCC3D` 畫值圖 + LBX 資產數,
   三個來源互證),連帶抓出「左下那個框在原版是 PLAYERS 不是 RACE」這個真的還原錯誤,見
-  `docs/re/01-gap-report.md` 第 6 項。**newgame 這一項可以從「仍待重挖」的名單移除了。**
+  `docs/re/01-gap-report.md` 第 5 項(新遊戲設定畫面)。**newgame 這一項可以從「仍待重挖」的名單移除了。**
   **同日第三個實例:殖民地畫面**——`Add_Job_Field_For_` @ 0xBCB4B 給職業欄座標,框架美術是
-  **COLPUPS.LBX#5**(不是 COLONY.LBX),見第 7 項。**colony 也可以移除了。**同日第四個實例:**種族選擇畫面**(`Race_Selection_Screen_` @ 0x5C510
+  **COLPUPS.LBX#5**(不是 COLONY.LBX),見第 6 項(殖民地畫面框架)。**colony 也可以移除了。**同日第四個實例:**種族選擇畫面**(`Race_Selection_Screen_` @ 0x5C510
   的 2×7 建鈕迴圈 + `Draw_Race_Selection_Screen_` 的肖像位置 + RACESEL 資產尺寸三方互證),
-  順便修掉「左右擺反」這個還原錯誤,見第 6 項。**shipDesign 同日也做完(六格不等距,見第 6 項)——這份名單清空了。**
+  順便修掉「左右擺反」這個還原錯誤,見第 5 項(新遊戲設定畫面)。**shipDesign 同日也做完(六格不等距,見第 5 項(新遊戲設定畫面))——這份名單清空了。**
   剩下的不是「座標沒挖」而是「子系統沒做」,見 gap report 末尾的進度表。
   battleResult/council/turnSummary 是結果/摘要顯示畫面,維持「點任意處返回」(合理 UX,使用者確認不動)。
 

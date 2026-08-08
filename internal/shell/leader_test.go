@@ -89,7 +89,7 @@ func TestLeaderDisplayLevelToExpLevel(t *testing.T) {
 
 // 舊路徑(只有中文標籤的 demo 領袖)仍要能解出技能 id。
 //
-// 2026-08-08(第 46 項)改寫:原本這支釘的是「指揮官刻意未收錄」,而那個斷言本身是錯的
+// 2026-08-08(第 45 項(領袖技能))改寫:原本這支釘的是「指揮官刻意未收錄」,而那個斷言本身是錯的
 // ——「指揮官」是 SKILL_COMMANDO 的譯名,只是它的消費端在地面戰而不是殖民地經濟。
 // 現在標籤表在 gamedata(27 個技能全收),「有沒有效果」改由 applyLeaderColonyBonuses
 // 的 switch 決定,兩件事分開。

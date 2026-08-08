@@ -105,7 +105,7 @@ var SpecialActions = []SpecialAction{
 	{
 		NameZH: ArtificialPlanetActionName, NameEN: "Artificial Planet Construction",
 		PrereqTopic:    TOPIC_ADVANCED_MANUFACTURING,
-		ProductionCost: 800, // 原版執行檔建築表(編號 48,見 gap report 第 12 項的全表)
+		ProductionCost: 800, // 原版執行檔建築表(編號 48,見 gap report 第 11 項(48棟建築盤點)的全表)
 	},
 	{
 		NameZH: FreighterFleetActionName, NameEN: "Freighter Fleet",

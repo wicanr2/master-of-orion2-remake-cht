@@ -147,7 +147,7 @@ Steam《Master of Orion: Soundtrack & Score》(App 468020,2016 重製版,同一�
 
 ## 待辦
 
-- [x] **STREAMHD 20 條的場景已定案**——由 `Play_Streaming_Music_` 呼叫端的立即數直接給出(第 74 項)。仍未定的只有「曲名」(那是命名,不影響行為)。
+- [x] **STREAMHD 20 條的場景已定案**——由 `Play_Streaming_Music_` 呼叫端的立即數直接給出(第 73 項(音樂場景表))。仍未定的只有「曲名」(那是命名,不影響行為)。
 - [ ] 定案 STREAM 8 長版各自曲名(可與 STREAMHD 同名長版對照)。
 - [x] **各場景用 STREAM 還是 STREAMHD:原版自己決定好了**——單一編號空間,≤100 走 STREAM、>100 走 STREAMHD;主選單/星圖走 `Play_Background_Music_`(STREAM 1/2/3 **隨機**,不是固定一首),戰術戰鬥走 `Play_Combat_Music_`(STREAM 4/5/6 隨機)。
 - [ ] SOUND 各 BUTTONx 的實際 UI 用途區分。
@@ -249,7 +249,7 @@ Steam《Master of Orion: Soundtrack & Score》(App 468020,2016 重製版,同一�
 
 `Play_Streaming_Music_` 的「下一首」參數:`-1` = 無;`-2` = 播完接隨機 STREAM 1..3。
 
-完整的場景→曲目表見 `docs/re/01-gap-report.md` 第 74 項。
+完整的場景→曲目表見 `docs/re/01-gap-report.md` 第 73 項(音樂場景表)。
 
 > **方法教訓**(這一段比曲目表更值得留):第二輪曾對 `0x1484f` / `0x1496c` 跑了三種掃描
 > (逐 byte 掃 `E8` CALL、掃 4-byte 絕對位址、掃 LE fixup 表)全部零命中,據此判定

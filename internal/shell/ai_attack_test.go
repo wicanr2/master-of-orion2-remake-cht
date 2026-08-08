@@ -31,7 +31,7 @@ func newRaidTestSession(t *testing.T) *GameSession {
 
 // parkAIFleetsAtPlayerColony 把所有 AI 艦隊直接放到玩家殖民地 0 的上空(靜止)。
 //
-// 2026-08-08 第 48 項之後 AI 有位置了,突襲的前提是「艦隊**抵達**目標」而不是「想打」。
+// 2026-08-08 第 47 項(AI艦隊移動)之後 AI 有位置了,突襲的前提是「艦隊**抵達**目標」而不是「想打」。
 // 只驗結算後果(損失界限/擊退/間隔)的測試用這個把航程跳過去,
 // 免得每一支都要先跑十幾回合等艦隊飛到。
 func parkAIFleetsAtPlayerColony(s *GameSession) {
@@ -52,7 +52,7 @@ func aiFleetLaunched(s *GameSession) bool {
 	return false
 }
 
-// ⚠ 這四個「守門」測試在第 48 項之後驗的是**出發那一端**(aiLaunchRaidFleet),
+// ⚠ 這四個「守門」測試在第 47 項(AI艦隊移動)之後驗的是**出發那一端**(aiLaunchRaidFleet),
 // 不是結算端。理由:守門條件跟著艦隊模型搬到了出發時刻,若還是只呼叫 advanceAIRaids,
 // 這幾支會因為「艦隊本來就不在目標上」而**假綠**——測不到任何東西卻一路通過。
 func TestAIRaidGracePeriod(t *testing.T) {

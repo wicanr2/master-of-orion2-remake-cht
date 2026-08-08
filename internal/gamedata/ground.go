@@ -170,7 +170,7 @@ func GroundTankHitsToKill(highGRace bool) int {
 
 // --- 地面部隊戰力(combat strength / combat rating)加成表 ---
 
-// ✅ **2026-08-07:整張表從原版讀出來了,而且手冊的五項逐項吻合**(gap report 第 36 項)。
+// ✅ **2026-08-07:整張表從原版讀出來了,而且手冊的五項逐項吻合**(gap report 第 35 項(三張查表))。
 //
 // `Player_Best_Armor_` @ 0xDC323 走訪的表在 `word_17F63E`(每列 15 位元組:+0 科技 id、
 // +3 加成),六列的科技 id 與 remake 的 `Technology` 列舉**完全對得上**:
@@ -248,7 +248,7 @@ func GroundEquipmentTechBonus(tech Technology) int {
 
 // --- 步槍科技(`Player_Best_Rifle_` @ 0xDC416)---
 //
-// ⚠ **這一整條通道 remake 先前完全沒有**(gap report 第 36 項)。
+// ⚠ **這一整條通道 remake 先前完全沒有**(gap report 第 35 項(三張查表))。
 // 表在 `word_14A88`(每列 3 位元組:+0 科技 id、+2 加成),五列的科技 id 同樣完全對得上:
 //
 //	145 TECH_PULSE_RIFLE    +0     ← 開局就有的基礎步槍
@@ -312,7 +312,7 @@ const GroundPoweredArmorAppliesTo = GroundTypeMarines
 // --- 種族地面戰加成:改由 gamedata.OrigRaceTrait(race, TRAIT_GROUND_COMBAT) 提供 ---
 //
 // 這裡原本有一個 `GroundRace` 列舉與 `GroundRaceCombatBonus`,把「手冊有明確數字的種族」
-// 硬編成三格(Bulrathi +10 / Gnolam −10 / 其他 0)。2026-08-08(第 66 項)拆掉,原因有二:
+// 硬編成三格(Bulrathi +10 / Gnolam −10 / 其他 0)。2026-08-08(第 65 項(種族特性31格))拆掉,原因有二:
 //
 //	① **一手表出現了。** `RACESTUF.LBX` asset 7 有全部 13 族的特性陣列,
 //	   不必再靠「手冊有沒有寫數字」來決定哪幾族查得到。

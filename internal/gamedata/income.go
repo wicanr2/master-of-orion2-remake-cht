@@ -245,7 +245,7 @@ func IncomeGovtMoneyBonusPercent(gov MoraleGovernmentType) int {
 //	 all colonies (from all sources) by 50%."
 //
 // ⚠ **它被歸類錯過一次。** 原版建築表裡編號 18 有成本 250 PP、維護 3 BC,而 gap report
-// 第 12 項用「維護費 0 = 一次性」這條自訂啟發式把它判成「常駐建築」。手冊直接說它是
+// 第 11 項(48棟建築盤點)用「維護費 0 = 一次性」這條自訂啟發式把它判成「常駐建築」。手冊直接說它是
 // **Achievement**——與躍遷門/星際之門同類,研究完成即生效、不必建造。
 // **一手來源(手冊寫效果)贏自訂的推論規則。**
 const IncomeGalacticCurrencyExchangePercent = 50

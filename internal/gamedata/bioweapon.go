@@ -9,7 +9,7 @@ package gamedata
 //	屏障護盾多一句「biological weapons cannot enter the planet's atmosphere」。
 //	remake 沒有「生物武器」這個分類,**這條沒接**。
 //
-// 缺的是**分類**,不是規則。而那個分類 2026-08-08(第 53 項)從執行檔挖出來了:
+// 缺的是**分類**,不是規則。而那個分類 2026-08-08(第 52 項(生物武器分類))從執行檔挖出來了:
 // `Calc_Tech_Value_` 用的 category 表裡,**category 20 就是生物武器**,成員恰好兩個
 // ——`Bio-Terminator` 與 `Death Spores`(見 orig_tech_value_tables.go 的 enum 語意表)。
 //

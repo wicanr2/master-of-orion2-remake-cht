@@ -138,7 +138,7 @@ func DriveLevelForTech(tech Technology) int {
 	return 0
 }
 
-// --- 原版戰術棋盤尺寸(第 70 項,一手)---
+// --- 原版戰術棋盤尺寸(第 69 項(戰鬥速度與引擎階),一手)---
 //
 // `Assign_Combat_Grids_`(0x46CC8)開頭把整張格點清成 0xFFFF:
 //

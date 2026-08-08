@@ -50,7 +50,7 @@ func TestBooleanTraitsAreNotRunThroughTheLevelTable(t *testing.T) {
 	}
 }
 
-// 政體(特性 0)也不換算,而且用的是與其他三個政體列舉同一套編號(第 55 項)。
+// 政體(特性 0)也不換算,而且用的是與其他三個政體列舉同一套編號(第 54 項(三個寫入端))。
 func TestGovernmentTraitIsRawAndSharesTheEnum(t *testing.T) {
 	// 手冊逐字:「The Alkari government is a Dictatorship.」
 	if got := OrigRaceTrait(0, TRAIT_GOVERNMENT); got != int(MoraleGovDictatorship) {

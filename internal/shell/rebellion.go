@@ -9,7 +9,7 @@ import (
 
 // rebellion.go:**被征服人口的叛亂**——同化計時器的另一半。
 //
-// 第 41 項接了同化,但那個檔的檔頭自己寫著:
+// 第 40 項(同化系統)接了同化,但那個檔的檔頭自己寫著:
 //
 //	未同化人口目前沒有負面效果 … 叛亂系統根本不存在。所以現在同化只是一個會走完的計時器
 //	——**機制在、後果還沒接**。
@@ -269,7 +269,7 @@ func (s *GameSession) revertColonyToOldRuler(i, aiIdx int) bool {
 // refreshStarOwnerAfterLoss 在玩家失去一個殖民地之後更新那顆星的歸屬。
 //
 // **只在這顆星上再也沒有玩家殖民地時才翻面**——同星系多殖民地打開之後
-// (第 25/25 項),一個星系可能還有玩家的另一個殖民地。與 InvadeColony 的同款判斷一致。
+// (第 24/24 項),一個星系可能還有玩家的另一個殖民地。與 InvadeColony 的同款判斷一致。
 //
 // 呼叫時 removePlayerColony 已經跑過,所以掃的是移除後的陣列。
 func (s *GameSession) refreshStarOwnerAfterLoss(_ int, starIdx int) {

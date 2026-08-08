@@ -194,7 +194,7 @@ func PollutionReducedByPercent(pollutingProd, reductionPercent int) int {
 	return pollutingProd * (100 - reductionPercent) / 100
 }
 
-// ============ 未整合外星人的 3/4 產出(2026-08-08 第 58 項接上)============
+// ============ 未整合外星人的 3/4 產出(2026-08-08 第 57 項(征服人口產出)接上)============
 //
 // 手冊(GAME_MANUAL.pdf,Population 一節)講被征服殖民地上的「Aliens」圖示:
 //

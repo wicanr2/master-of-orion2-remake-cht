@@ -27,7 +27,7 @@ package shell
 //
 // 兩件事:① 新造的艦會**自動**被送往集結點;② 那條線有**顯示開關**
 // (原版 `byte_199BE4`,手冊那組 ALT+Fn 設定裡的一項——⚠ 是不是 F6 沒有確認,
-//  見 gap report 第 23 項對 PDF 邊欄標籤的保留)。
+//  見 gap report 第 22 項(黑洞動畫)對 PDF 邊欄標籤的保留)。
 
 // ColonyRelocationNone 是「沒有設定集結點」(原版的 −1)。
 const ColonyRelocationNone = -1
@@ -265,7 +265,7 @@ func (s *GameSession) deliverNewShip(colony int, sh Ship) {
 
 // ---- 一次改全部(原版 `Set_All_Star_Relocations_` @ 0x785EC / `Clear_All_Star_Relocations_` @ 0x77BB1)----
 //
-// 艦隊列表上的 **ALL**(remake 譯「全部」)鈕多半就是這一對(第 24 項記下的推測)。
+// 艦隊列表上的 **ALL**(remake 譯「全部」)鈕多半就是這一對(第 23 項(多艦隊模型)記下的推測)。
 
 // SetAllStarRelocations 把**已經有集結點**的殖民地全部改送到同一顆星。
 //

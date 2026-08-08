@@ -2,7 +2,7 @@ package shell
 
 import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 
-// ship_systems.go:第 69 項盤點出來的「仍缺、可做」那一桶,先接數字最硬的幾個。
+// ship_systems.go:第 68 項(元件盤點+飛彈防禦)盤點出來的「仍缺、可做」那一桶,先接數字最硬的幾個。
 //
 // ============ 選擇標準 ============
 //
@@ -13,14 +13,14 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 //
 // 沒接的與理由寫在檔尾,不是漏掉。
 //
-// ============ 順便修一個第 69 項的缺失 ============
+// ============ 順便修一個第 68 項(元件盤點+飛彈防禦)的缺失 ============
 //
 // 慣性穩定器的手冊原文是:
 //
 //	The result is a **+50 addition to the ship's beam defense**, **+25 to the ship's
 //	missile evasion**, and a halving of the movement cost for turning the ship in place.
 //
-// 第 69 項只接了 +25 那一半——當時是從 `gamedata/missile.go` 那一側找元件的,
+// 第 68 項(元件盤點+飛彈防禦)只接了 +25 那一半——當時是從 `gamedata/missile.go` 那一側找元件的,
 // 而那個檔案只收飛彈相關的常數,`MissileInertialStabilizer = 25` 看起來就是它的全部效果。
 // **從單一檔案回推元件效果會漏東西**;正解是回去讀手冊那一條的全文。
 // (`gamedata.BeamDefense` 其實早就有 `inertialStabilizer` 參數並且加 50,只是 shell
@@ -122,12 +122,12 @@ func armorLevelAboveTitanium(name string) int {
 	return 0
 }
 
-// 狀態類武器的元件名(第 70 項)。
+// 狀態類武器的元件名(第 69 項(戰鬥速度與引擎階))。
 const (
 	tractorBeamName = "牽引光束"
 	stasisFieldName = "停滯力場"
 	// battleScannerName 的第二個效果(戰鬥之外 +2 parsec 掃描)在 shell/detection.go
-	// ——第 69 項接了手冊那段的第一句就收工,第 72 項才補上第二句。
+	// ——第 68 項(元件盤點+飛彈防禦)接了手冊那段的第一句就收工,第 71 項(探針③內部函式)才補上第二句。
 	battleScannerName = "戰鬥掃描器"
 )
 
@@ -141,7 +141,7 @@ func boolToInt(b bool) int {
 	return 0
 }
 
-// 行動次數家族的元件名(第 71 項)。
+// 行動次數家族的元件名(第 70 項(陀螺去穩器))。
 const (
 	fastMissileRacksName    = "快速飛彈架"
 	hyperXCapacitorsName    = "超載電容"
@@ -161,10 +161,10 @@ func shipShotsKind(sh Ship) gamedata.ShotsPerRoundKind {
 	return gamedata.ShotsNormal
 }
 
-// TacticalShotsThisRound 回傳這艘船在格子戰術裡這一回合能開幾次火(第 71 項)。
+// TacticalShotsThisRound 回傳這艘船在格子戰術裡這一回合能開幾次火(第 70 項(陀螺去穩器))。
 func TacticalShotsThisRound(sh CombatShip) int {
 	if sh.InStasis {
-		return 0 // 被停滯力場定住:不能開火(第 70 項)
+		return 0 // 被停滯力場定住:不能開火(第 69 項(戰鬥速度與引擎階))
 	}
 	beam := sh.Kind == WeaponKindBeam
 	missile := sh.Kind == WeaponKindMissile
@@ -190,7 +190,7 @@ func TacticalAdvanceCharge(ships []CombatShip) {
 // shipBeamAttackerSystems 把這艘船的元件翻成光束射擊要用的攻方系統旗標。
 //
 // 一艘船只有一個 Special 槽,所以最多只會有一項為真——寫成一個函式而不是三個判斷,
-// 是為了讓「攻方有哪些系統」只有一個真相來源(與第 69 項把傷害鏈收成結構同一個理由)。
+// 是為了讓「攻方有哪些系統」只有一個真相來源(與第 68 項(元件盤點+飛彈防禦)把傷害鏈收成結構同一個理由)。
 func shipBeamAttackerSystems(sh Ship) BeamAttackerSystems {
 	return BeamAttackerSystems{
 		HEFBonus:           hefBonusFor(sh.Special == highEnergyFocusName),
@@ -201,14 +201,14 @@ func shipBeamAttackerSystems(sh Ship) BeamAttackerSystems {
 
 // ============ 手冊有、remake 還沒接的元件,與各自的理由 ============
 //
-// ⚠ 2026-08-08(第 73 項)整份重寫。上一版列了 12 項,其中**七項在第 69–71 項已經接掉了**
+// ⚠ 2026-08-08(第 72 項(元件表有≠效果有接))整份重寫。上一版列了 12 項,其中**七項在第 68–70 項已經接掉了**
 // (增強引擎 / 時間扭曲加速器 / 結構分析儀 / 阿基里斯瞄準器 / 超載電容 / 快速飛彈架 / 轟炸機庫),
 // 理由卻還留在這裡——**這份清單自己就是它警告的那種東西**。每次接掉一項就要回來刪一行。
 //
 // --- A. 真的還擋著(缺前置系統,不是缺數字)---
 //
 //	保安站(Security Stations)   「+20 to the combat rolls of the Marines defending against
-//	                            enemy boarding parties」——**登艦戰不存在**(第 61 項)
+//	                            enemy boarding parties」——**登艦戰不存在**(第 60 項(艦員防禦))
 //	傳送器(Transporters)        同上,而且還需要護盾分面
 //	匿蹤力場(Stealth Field)     「completely invisible on the Galaxy Map」——remake 的 AI 艦隊
 //	                            是抽象戰力、沒有地圖座標(見 detection.go 檔頭),玩家自己的艦隊
@@ -219,9 +219,9 @@ func shipBeamAttackerSystems(sh Ship) BeamAttackerSystems {
 //	能量吸收器(Energy Absorber) 「One-quarter of all the potential damage … is diverted to and
 //	                            stored … can fire this stored energy … automatically hitting it
 //	                            (unless the target has a Displacement Device)」。
-//	                            舊理由「需儲能狀態」——**第 71 項已經建了跨回合的
+//	                            舊理由「需儲能狀態」——**第 70 項(陀螺去穩器)已經建了跨回合的
 //	                            Charged/Fired 狀態**,同一個地方加一個 StoredEnergy 就行;
-//	                            位移裝置也在(第 69 項)。理由過期。
+//	                            位移裝置也在(第 68 項(元件盤點+飛彈防禦))。理由過期。
 //	戰鬥艙(Battle Pods)        「add equipment space without increasing the hull size」。
 //	                            舊理由「remake 沒有逐元件佔格的造艦模型」——**那是錯的**:
 //	                            gamedata.ShipHullSpace + shell.ShipDesignSpaceUsed 都在。
@@ -232,9 +232,9 @@ func shipBeamAttackerSystems(sh Ship) BeamAttackerSystems {
 //	測距瞄準器(Rangemaster)     「reducing the absolute range … to one-third of the actual range.
 //	                            Note that the dissipation of damage potential is not affected」。
 //	                            舊理由「快速結算固定 range=2」只對一半——**格子戰術傳的是真距離
-//	                            dist**。⚠ 這一項先前根本不在任何缺口名單上(第 69 項的盤點漏了)。
+//	                            dist**。⚠ 這一項先前根本不在任何缺口名單上(第 68 項(元件盤點+飛彈防禦)的盤點漏了)。
 //	隱形裝置(Cloaking Device)   ⚠ **已經在 SpecialOptions 裡,但整份程式碼沒有任何地方讀它**
 //	                            ——裝得上、花得了錢、不做任何事。手冊給了完整規則:未攻擊時
 //	                            +80 光束防禦、飛彈與魚雷 50% 未命中;一旦開火就失去;要整整
-//	                            一回合沒開火才能重新隱形(**那正是第 71 項 Fired 的語意**)。
+//	                            一回合沒開火才能重新隱形(**那正是第 70 項(陀螺去穩器) Fired 的語意**)。
 //	                            「元件表有」與「效果有接」是兩件事,先前沒有任何盤點分得出來。

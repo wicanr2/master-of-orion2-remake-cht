@@ -340,7 +340,7 @@ type sceneBuilder struct {
 	// skipCutscenes:headless 驗證與截圖廊要跳過流程中的過場影片——那些腳本是逐 tick
 	// 數出來的,插一段會一直往前播的影片會整串偏掉。截圖廊另外用 tick 注入單獨截過場。
 	skipCutscenes bool
-	// officerScroll 是軍官清單的捲動位移(第 51 項加的上下箭頭)。
+	// officerScroll 是軍官清單的捲動位移(第 50 項(軍官畫面座標)加的上下箭頭)。
 	// 原版那兩顆鈕的座標一直都在(`_officer_up_button_seg` / `_officer_dn_button_seg`),
 	// 只是 remake 先前沒接——所以清單超過四列就看不到後面的人。
 	officerScroll   int
@@ -1027,7 +1027,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 							sess.Fleet().Marines, sess.PlayerColonyMarines[0])
 					}
 					// 艦員等級接在同一行:這是玩家唯一看得到艦員經驗的地方(remake 沒有逐艦
-					// 資訊面板),而那個等級直接影響命中、防禦與飛彈閃避(見第 61 項)。
+					// 資訊面板),而那個等級直接影響命中、防禦與飛彈閃避(見第 60 項(艦員防禦))。
 					// 取艦隊裡**最低**的那一艘——戰力由最弱的那條線決定。
 					if lv, toNext, ok := sess.FleetCrewSummary(); ok {
 						marineLine += fmt.Sprintf(b.tr("／艦員 %s", " / crew %s"), shell.ShipCrewLevelName(lv))
@@ -1854,7 +1854,7 @@ type tacticalScreen struct {
 	shipSprites    map[int]*ebiten.Image // CMBTSHP 資產索引 → 已解碼 sprite(nil=載入失敗,亦快取)
 	// squads 是場上的戰機中隊(見 tacticalfighter.go / internal/shell/fighter.go)。
 	squads []shell.FighterSquadron
-	// moveLeft 是各我方艦這一回合剩餘的移動格數(第 70 項)。每回合重置為
+	// moveLeft 是各我方艦這一回合剩餘的移動格數(第 69 項(戰鬥速度與引擎階))。每回合重置為
 	// shell.TacticalMoveSquares(艦的戰鬥速度)。
 	moveLeft []int
 }
@@ -1910,7 +1910,7 @@ func newTacticalScreen(b *sceneBuilder) *tacticalScreen {
 	p, e := b.session.StartCombat(b.session.PrimaryEnemyName())
 	// 戰鬥 RNG 依當前回合數種子:同一局同一回合的戰鬥可重現(不引入 wall-clock 不確定性)。
 	seed := int64(b.session.Turn*2654435761 + 1013904223)
-	// 開場先算一次狀態效果,否則第一回合的移動力會用未受牽引的速度(第 70 項)。
+	// 開場先算一次狀態效果,否則第一回合的移動力會用未受牽引的速度(第 69 項(戰鬥速度與引擎階))。
 	shell.ApplyTacticalStatusEffects(p, e)
 	return &tacticalScreen{b: b, fnt: b.fnt, player: p, enemy: e, sel: -1,
 		log: b.tr("點我方艦選取→點空格移動;點敵艦→射程內我艦開火",
@@ -1922,11 +1922,11 @@ func newTacticalScreen(b *sceneBuilder) *tacticalScreen {
 		moveLeft: freshMoveBudgets(p)}
 }
 
-// freshMoveBudgets 依各艦的戰鬥速度算出這一回合的移動格數(第 70 項)。
+// freshMoveBudgets 依各艦的戰鬥速度算出這一回合的移動格數(第 69 項(戰鬥速度與引擎階))。
 func freshMoveBudgets(ships []shell.CombatShip) []int {
 	out := make([]int, len(ships))
 	for i, sh := range ships {
-		// 用**實際**速度:被牽引光束拖慢或被停滯力場定住的船走不了那麼遠(第 70 項)。
+		// 用**實際**速度:被牽引光束拖慢或被停滯力場定住的船走不了那麼遠(第 69 項(戰鬥速度與引擎階))。
 		out[i] = shell.TacticalMoveSquares(shell.TacticalEffectiveSpeed(sh))
 	}
 	return out
@@ -2001,7 +2001,7 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 	}
 	if t.sel >= 0 && t.sel < len(t.player) { // 點空格 → 移動選中艦(受戰鬥速度限制)
 		sh := &t.player[t.sel]
-		// ⚠ 2026-08-08(第 70 項):先前這裡是**瞬移**——點任何空格都能到,沒有距離限制。
+		// ⚠ 2026-08-08(第 69 項(戰鬥速度與引擎階)):先前這裡是**瞬移**——點任何空格都能到,沒有距離限制。
 		// 現在照原版走戰鬥速度:一回合能走幾格見 shell.TacticalMoveSquares
 		// (原版棋盤 81×68 vs remake 8×6,比例尺約 1:10)。
 		//
@@ -2054,7 +2054,7 @@ func (t *tacticalScreen) fireRound(target int) {
 		if dist > fireRange {
 			continue
 		}
-		// 行動次數(第 71 項):超載電容/快速飛彈架/時間扭曲加速器可以再打一次。
+		// 行動次數(第 70 項(陀螺去穩器)):超載電容/快速飛彈架/時間扭曲加速器可以再打一次。
 		// 沒有這些系統的船 shots==1,整段行為與先前逐位元相同。
 		shots := shell.TacticalShotsThisRound(*s)
 		s.Fired = true // 開過火 → 這一回合結束時不會充能(手冊的 unused 是「完全沒開火」)
@@ -2071,7 +2071,7 @@ func (t *tacticalScreen) fireRound(target int) {
 				amrRoll := t.rng.Intn(100) + 1
 				jamRoll := t.rng.Intn(100) + 1
 				// ⚠ 2026-08-08:上一版寫著「hasAMR/evasion 加成現行皆無對應可造艦元件,
-				// 保守傳 0/false」——第 65 項補了反飛彈火箭、第 69 項補了干擾器/慣性穩定器/
+				// 保守傳 0/false」——第 64 項(武器傷害真表)補了反飛彈火箭、第 68 項(元件盤點+飛彈防禦)補了干擾器/慣性穩定器/
 				// 閃電場/位移裝置,四項現在都查得到。dist 是實際格距離(比 battleVolley
 				// 固定 range=2 更忠實)。
 				//
@@ -2083,7 +2083,7 @@ func (t *tacticalScreen) fireRound(target int) {
 				if enemy.HasDisplacement {
 					mdef.HasDisplacement, mdef.DisplacementRoll = true, t.rng.Intn(100)+1
 				}
-				// ⚠ 第 72 項:第五個引數(攻方掃描器抵銷)先前恆為 0、倒數第二個
+				// ⚠ 第 71 項:第五個引數(攻方掃描器抵銷)先前恆為 0、倒數第二個
 				// (目標的硬化護盾)恆為 false。兩個都有真值,只是沒人回頭填。
 				shot = shell.ResolveMissileShot(enemy.HasAMR, dist, amrRoll, enemy.MissileEvasion,
 					s.ScannerJamReduction, false, jamRoll,
@@ -2156,7 +2156,7 @@ func (t *tacticalScreen) fireRound(target int) {
 		for i := range t.enemy {
 			es := &t.enemy[i]
 			if es.InStasis || t.player[wi].InStasis {
-				continue // 被定住的不能打,也不能被打(第 70 項)
+				continue // 被定住的不能打,也不能被打(第 69 項(戰鬥速度與引擎階))
 			}
 			dist := abs(es.Col-t.player[wi].Col) + abs(es.Row-t.player[wi].Row)
 			if dist > fireRange {
@@ -2184,14 +2184,14 @@ func (t *tacticalScreen) fireRound(target int) {
 		}
 	}
 	t.player = palive
-	// 充能推進(第 71 項):依這一回合有沒有開過火,決定下一回合能不能連射。
+	// 充能推進(第 70 項(陀螺去穩器)):依這一回合有沒有開過火,決定下一回合能不能連射。
 	// 放在狀態重算旁邊——兩者都是「回合交界」的處理。
 	shell.TacticalAdvanceCharge(t.player)
 	shell.TacticalAdvanceCharge(t.enemy)
-	// 狀態效果每回合重算(第 70 項):產生源被打掉、或目標飛出射程,效果就該消失。
+	// 狀態效果每回合重算(第 69 項(戰鬥速度與引擎階)):產生源被打掉、或目標飛出射程,效果就該消失。
 	// 必須在**移動力重置之前**——移動力是依實際速度算的,而實際速度吃這些狀態。
 	shell.ApplyTacticalStatusEffects(t.player, t.enemy)
-	// ⚠ 移動力重置**必須在戰損壓縮之後**(第 70 項)。放在 round++ 那裡的話,
+	// ⚠ 移動力重置**必須在戰損壓縮之後**(第 69 項(戰鬥速度與引擎階))。放在 round++ 那裡的話,
 	// 下面這個 palive 壓縮會把 t.player 縮短並讓索引往前移,而 moveLeft 還停在舊長度
 	// ——選中第 3 艘卻讀到第 5 艘的移動力,而且陣列還會越界。
 	t.moveLeft = freshMoveBudgets(t.player)
@@ -3031,7 +3031,7 @@ const (
 //	底部三顆鈕(`sub_1151B0`,引數是三個熱鍵字串 `aLb` / `+2` / `+4`):
 //	    (374, 443) / (461, 443) / (547, 443)
 //
-// ⚠ 尚未套用、但座標已到手(記在 docs/re/01-gap-report.md 第 6 項):
+// ⚠ 尚未套用、但座標已到手(記在 docs/re/01-gap-report.md 第 5 項(新遊戲設定畫面)):
 //   - 已裝元件清單列:x 55..68、y = 169 + 13i(`imul eax, esi, 0Dh` / `add eax, 0A9h`)
 //   - 右上兩個資訊面板:(437..627, 56..95) 與 (437..627, 97..123)
 //     remake 現在把元件選擇列排在 x 300..600,與原版這兩個面板的位置不同;
@@ -3245,7 +3245,7 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 // officer 建原版軍官列表畫面(OFFICER.LBX 資產 0)。座標經 PIL 量測
 // (screens-scan/officer_leaderlist.png):頁籤列 y=12-32,按鈕列 y=440-462。
 func (b *sceneBuilder) officer() (*overlayScreen, error) {
-	// ⚠ 2026-08-08(第 51 項)座標來源升級:openorion2 → **原版執行檔的立即數**。
+	// ⚠ 2026-08-08(第 50 項(軍官畫面座標))座標來源升級:openorion2 → **原版執行檔的立即數**。
 	//
 	// `Add_Officer_Screen_Fields_` @ 0x9264E 逐欄位讀出來的值,與先前照 openorion2
 	// `officer.cpp` 抄的差了幾像素——依專案的來源優先序(**反組譯立即數 > openorion2**),
@@ -3294,7 +3294,7 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 領袖名單填進左側槽位。槽中心來自**執行檔立即數**(第 51 項):
+	// 領袖名單填進左側槽位。槽中心來自**執行檔立即數**(第 50 項(軍官畫面座標)):
 	// `Add_Officer_Screen_Fields_` 的清單迴圈建立四列熱區,y 範圍 34–142 / 143–251 /
 	// 252–360 / 361–469——列起點 34、高 108、**列距 109**,中心即 88/197/306/415。
 	//
@@ -3989,7 +3989,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		idle,            // t5: settle
 		idle,            // t6: settle → 截圖 raceselect
 		// t7: 種族選擇——**點種族鈕即確認**(原版沒有 ACCEPT,見 raceselect.go 檔頭)。
-		// 人類是清單第 2 項 → 第 0 欄第 5 列 → x 351..474、y 330..375。
+		// 人類是清單第 2 項(一星多行星缺口) → 第 0 欄第 5 列 → x 351..474、y 330..375。
 		// (先前這裡點的是 (540,451) 的「接受」鈕,2026-08-07 版面改成原版的 2×7 網格後
 		//  那個座標什麼都不會命中,腳本會卡在種族畫面、後面每一張都截錯。)
 		click(410, 350), // t7: 種族選擇「人類」→ 命名/旗色

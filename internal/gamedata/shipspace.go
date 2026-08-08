@@ -90,7 +90,7 @@ var WeaponSpaceByName = map[string]int{
 	// 見 docs/tech/component-values.md 的版本相依記錄)
 	"死光": 30, // Death Ray,p.124 確認值
 
-	// 第 65 項補上的八項,同表 p.124-125。
+	// 第 64 項(武器傷害真表)補上的八項,同表 p.124-125。
 	"離子脈衝砲": 30, // Ion Pulse Cannon,p.124 確認值
 	"引力波束":  15, // Graviton Beam,p.124 確認值
 	"干擾者":   20, // Disrupter,p.124 確認值
@@ -100,17 +100,17 @@ var WeaponSpaceByName = map[string]int{
 	"氙素飛彈":  10, // Zeon Missile,估計(同上)
 	"質子魚雷":  20, // Proton Torpedo,p.125 確認值(魚雷不分彈架)
 
-	// 炸彈(第 65 項,手冊 p.126 確認值)。
+	// 炸彈(第 64 項(武器傷害真表),手冊 p.126 確認值)。
 	"核彈":   5,  // Nuclear Bomb
 	"融合彈":  7,  // Fusion Bomb
 	"反物質彈": 7,  // Anti-Matter Bomb
 	"中子彈":  10, // Neutronium Bomb
 
-	// 球形武器(第 65 項,手冊 p.127 確認值)。
+	// 球形武器(第 64 項(武器傷害真表),手冊 p.127 確認值)。
 	"脈衝星":   50, // Pulsar
 	"空間壓縮器": 50, // Spatial Compressor
 
-	// 陀螺去穩器(第 71 項,手冊特殊武器表的 Size 欄)。
+	// 陀螺去穩器(第 70 項(陀螺去穩器),手冊特殊武器表的 Size 欄)。
 	//
 	// ⚠ 那張表在 PDF 抽取後欄位是打散的:五個武器名/效果先出來,接著才是 Size 欄的
 	// 五個數字 `20 75 30 50 40`(反飛彈火箭 / 陀螺去穩器 / 牽引光束 / 脈衝星 / 電漿網)。

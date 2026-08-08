@@ -121,7 +121,7 @@ func TestRepulsiveRaceSlowsAssimilationInSession(t *testing.T) {
 
 // 未同化人口 = 多種族殖民地 → 20% 士氣懲罰(手冊 p.66-67),異族管理中心消除。
 //
-// 這條把第 41 項寫的那句「機制在、後果還沒接」關掉:同化現在真的有代價了。
+// 這條把第 40 項(同化系統)寫的那句「機制在、後果還沒接」關掉:同化現在真的有代價了。
 func TestUnassimilatedPopulationCostsMorale(t *testing.T) {
 	clean := colonyMoralePercent(gamedata.MoraleGovDictatorship, nil, false, 0)
 	multi := colonyMoralePercent(gamedata.MoraleGovDictatorship, nil, true, 0)

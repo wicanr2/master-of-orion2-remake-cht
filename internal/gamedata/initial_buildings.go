@@ -25,7 +25,7 @@ package gamedata
 //
 // 手冊說「Pre-warp and Average Tech games only start with **Marine Barracks and a Star Base**
 // because no other techs are Known that are also in the default initial buildings list」。
-// 拿這份清單 × 第 31 項挖到的六個開局主題 × remake 自己的建築前置表跑一遍:
+// 拿這份清單 × 第 30 項(科技等級第二效果)挖到的六個開局主題 × remake 自己的建築前置表跑一遍:
 // 清單裡科技條件成立的**正好只有 `Star Base`(40)與 `Marine Barracks`(22)兩棟**。
 //
 // 清單本身、開局主題表、建築前置表、手冊那句話——四個獨立來源互相對上,不是巧合。

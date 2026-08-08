@@ -69,9 +69,9 @@ func (t *tacticalScreen) canLaunchFrom(idx int) bool {
 // launchFrom 讓第 idx 艘我方艦派出一隊戰機。
 func (t *tacticalScreen) launchFrom(idx int) {
 	s := t.player[idx]
-	// ⚠ 2026-08-08(第 70 項):上一版寫著「remake 的艦艇設計還沒有把『目前最佳引擎/裝甲』
+	// ⚠ 2026-08-08(第 69 項(戰鬥速度與引擎階)):上一版寫著「remake 的艦艇設計還沒有把『目前最佳引擎/裝甲』
 	// 餵進戰鬥層,先用最保守的 1 / 0…等那兩項接上來,這裡換成真值即可」——**接上來了**。
-	// 那個硬編的 1 讓所有戰機不論科技多高都跑得一樣慢,而且第 66 項的參數掃描器
+	// 那個硬編的 1 讓所有戰機不論科技多高都跑得一樣慢,而且第 65 項(種族特性31格)的參數掃描器
 	// (只掃 gamedata.X(...))看不到它,因為它在 cmd/ 這一側。
 	t.squads = append(t.squads, shell.NewFighterSquadron(
 		s.BayKind, false, idx, s.Col, s.Row, s.DriveLevel, s.ArmorLevelAboveTitanium))

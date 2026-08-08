@@ -17,7 +17,7 @@
 
 ## 一、Starting Civilization(起始文明等級,p.13)
 
-`GAME_MANUAL.pdf` p.13「Starting Civilization」原文四級(Galactic Setup 畫面的第 2 項設定):
+`GAME_MANUAL.pdf` p.13「Starting Civilization」原文四級(Galactic Setup 畫面的第 2 項(一星多行星缺口)設定):
 
 | 等級 | 手冊原文摘要 | 殖民地數 | 科技 | 艦隊 |
 |---|---|---|---|---|

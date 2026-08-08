@@ -8,7 +8,7 @@ package gamedata
 //
 // ============ 解碼怎麼驗的 ============
 //
-// 表③(tech-item 記錄)的 topic 欄與 repo 裡既有的 `OrigTechTopicTable`(第 38 項抽的)
+// 表③(tech-item 記錄)的 topic 欄與 repo 裡既有的 `OrigTechTopicTable`(第 37 項(研究樹一手驗證)抽的)
 // **逐筆比對:211/212 吻合**。這不是「調到吻合」——過程中先撞出 41 筆錯誤,查出原因是
 // IDA 的顯示慣例(4-byte 欄位的數值只要巧合等於某個已知位址,就會顯示成
 // `offset labelname[+N]` 而不是十六進位常數,即使那 4 bytes 語意上根本不是指標),
@@ -96,7 +96,7 @@ func TechCategoryWeight(tech Technology) int {
 	return TechCategoryDefaultMultiplier[c]
 }
 
-// ============ category enum 的語意(2026-08-08 第 53 項)============
+// ============ category enum 的語意(2026-08-08 第 52 項(生物武器分類))============
 //
 // `docs/re/calc-tech-value.md` 的「誠實留白」第 1 條寫著:
 //

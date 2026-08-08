@@ -8,7 +8,7 @@ import (
 
 // 每一項武器都要有:手冊傷害、手冊佔格、執行檔查得到的研究主題。
 //
-// 這條是第 65 項補完武器表之後的完整性閘門——**新增一項卻漏了其中一張表**
+// 這條是第 64 項(武器傷害真表)補完武器表之後的完整性閘門——**新增一項卻漏了其中一張表**
 // 是最容易發生的事,而漏掉佔格會讓設計驗證靜默放行(查不到回 0 = 不佔空間)。
 func TestEveryWeaponHasManualDamageSpaceAndTopic(t *testing.T) {
 	for _, c := range WeaponOptions {
@@ -36,7 +36,7 @@ func TestEveryWeaponHasManualDamageSpaceAndTopic(t *testing.T) {
 	}
 }
 
-// 元件表的最大傷害 == 手冊值(涵蓋第 65 項新增的八項)。
+// 元件表的最大傷害 == 手冊值(涵蓋第 64 項(武器傷害真表)新增的八項)。
 func TestAllWeaponValuesMatchTheManualIncludingNewOnes(t *testing.T) {
 	for _, c := range WeaponOptions {
 		want, ok := gamedata.WeaponDamageByName(c.Name)

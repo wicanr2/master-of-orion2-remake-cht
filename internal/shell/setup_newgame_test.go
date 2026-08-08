@@ -41,7 +41,7 @@ func TestSetupNewGameRebuildsGalaxyAndAI(t *testing.T) {
 		t.Fatalf("新星系星 0 應仍是玩家母星(Owner==1),got %d", s.Stars[0].Owner)
 	}
 
-	// ⚠ Planets **不再與 Stars 平行**(2026-08-07 第 25 項:每顆星 1..5 個天體各佔一條軌道)。
+	// ⚠ Planets **不再與 Stars 平行**(2026-08-07 第 24 項:每顆星 1..5 個天體各佔一條軌道)。
 	// 這裡改驗真正的不變量:每顆星都挑得到代表行星。
 	if len(s.Planets) < len(s.Stars) {
 		t.Fatalf("行星數不該少於星數(每顆星至少一個天體),got %d vs %d", len(s.Planets), len(s.Stars))

@@ -72,7 +72,7 @@ func StartingTopicCount(techLevel int) int {
 // StartingTopics 回傳某個 TECH LEVEL 開局送的主題清單。
 //
 // ⚠ 只回**固定表**的部分。原版超過 6 個之後是 `sub_FD335` 逐個隨機挑。
-// 那一段 2026-08-07(第 44 項)接上了,在 `starting_random_tech.go`
+// 那一段 2026-08-07(第 43 項(先進級開局主題))接上了,在 `starting_random_tech.go`
 // ——這支仍然只回固定表,隨機那一半由 `shell.applyStartingRandomTech` 另外發。
 // 兩者的數量關係由 `StartingTopicRandomExtras` 表示。
 func StartingTopics(techLevel int) []ResearchTopic {
@@ -93,7 +93,7 @@ func StartingTopics(techLevel int) []ResearchTopic {
 // 這個函式原本的理由是「把缺口變成一個看得見的數字」:先進開局照原版應該再隨機拿 19 個,
 // 而 remake 當時沒送。
 //
-// **2026-08-07(第 44 項)那 19 個接上了**,所以它現在的角色變成「還要再發幾個」
+// **2026-08-07(第 43 項(先進級開局主題))那 19 個接上了**,所以它現在的角色變成「還要再發幾個」
 // ——`shell.applyStartingRandomTech` 直接用這個數字當迴圈次數。
 func StartingTopicRandomExtras(techLevel int) int {
 	n := StartingTopicCount(techLevel) - len(StartingTopicOrder)

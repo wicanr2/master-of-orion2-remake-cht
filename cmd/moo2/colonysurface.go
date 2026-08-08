@@ -12,7 +12,7 @@ import (
 //
 // ============ 這一塊先前被判定為「卡住」,卡的原因是找錯了 ============
 //
-// `docs/re/01-gap-report.md` 第 9 項原本寫:格點→螢幕座標是「烘在資料段的幾何表,
+// `docs/re/01-gap-report.md` 第 8 項(行星表面調查)原本寫:格點→螢幕座標是「烘在資料段的幾何表,
 // 沒有公式可抄」,所以「要做這一塊得先把那幾張表從執行檔的資料段抽出來」,並把它列為
 // 獨立工程。**表確實是烘死的,但它就在反組譯的資料段裡,直接讀得到**——下面那 49 個
 // 座標點就是抽出來的結果。真正的教訓是:發現「這是查表不是公式」時,下一步是**去讀那張表**,
@@ -373,7 +373,7 @@ const origCapitolID = 9
 // **母星有國會大廈,其餘殖民地有拓殖基地**,兩者都是拓殖時自動給予、不可建造的實體建築。
 //
 // 與 Capitol 同一個坑:先前因為「不在建造表裡」就連地表也漏掉了。
-// 分類 0(地表建築)、成本 200 PP、維護 0 —— 真值見 `docs/re/01-gap-report.md` 第 12 項那張表,
+// 分類 0(地表建築)、成本 200 PP、維護 0 —— 真值見 `docs/re/01-gap-report.md` 第 11 項(48棟建築盤點)那張表,
 // 該項對它的註記就是「拓殖時自動」。
 const origColonyBaseID = 11
 
@@ -640,7 +640,7 @@ func (b *sceneBuilder) drawColonyTerrain(dst *ebiten.Image, idx int) {
 // colonyScreenImage 解一張殖民地畫面用的圖並快取。
 //
 // 調色盤走「chain 當基底 + 該圖自己的內嵌範圍」:PLANETS 每張只帶 80 色,缺的要基底補,
-// 否則熔岩裂縫會變成一片洋紅(⚠ 與第 9 項那次的洋紅**不同原因**——那次是 index ≥ 0xF0)。
+// 否則熔岩裂縫會變成一片洋紅(⚠ 與第 8 項(行星表面調查)那次的洋紅**不同原因**——那次是 index ≥ 0xF0)。
 // COLONY.LBX 的衛星圖完全沒有內嵌盤,整組都得靠 chain。
 func (b *sceneBuilder) colonyScreenImage(lbxName string, asset int, chain paletteChain) *ebiten.Image {
 	if b.res == nil {

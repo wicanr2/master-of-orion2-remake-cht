@@ -8,7 +8,7 @@ import (
 
 // 先進級開局應該有 25 個主題(六個固定 + 十九個隨機),不是只有六個。
 //
-// 這是 gap report 第 31 項留下的缺口:原版主迴圈跑 1 / 6 / 25 次,
+// 這是 gap report 第 30 項(科技等級第二效果)留下的缺口:原版主迴圈跑 1 / 6 / 25 次,
 // 前 6 次取固定表、第 7 次起隨機挑。
 func TestAdvancedTechLevelGrantsTwentyFiveTopics(t *testing.T) {
 	for _, tc := range []struct {
@@ -24,7 +24,7 @@ func TestAdvancedTechLevelGrantsTwentyFiveTopics(t *testing.T) {
 		s.TechLevel, s.TechLevelSet = tc.level, true
 		s.applyStartingTech()
 		// ⚠ 扣掉 TOPIC_STARTING_TECH:那是母星一律有的「開局科技容器」
-		// (原版 nxt[0]==0 的自環主題,見第 38 項),不算在 1 / 6 / 25 這個計數裡。
+		// (原版 nxt[0]==0 的自環主題,見第 37 項(研究樹一手驗證)),不算在 1 / 6 / 25 這個計數裡。
 		got := 0
 		for t0 := range s.Player.CompletedTopics {
 			if t0 != gamedata.TOPIC_STARTING_TECH {

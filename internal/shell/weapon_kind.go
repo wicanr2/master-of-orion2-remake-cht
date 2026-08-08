@@ -28,7 +28,7 @@ const (
 	WeaponKindBeam WeaponKind = iota
 	WeaponKindMissile
 	WeaponKindSpherical
-	// WeaponKindBomb 是**只能打行星**的炸彈(第 65 項)。
+	// WeaponKindBomb 是**只能打行星**的炸彈(第 64 項(武器傷害真表))。
 	//
 	// 手冊 p.126 逐字:「Bombs installed in a ship are only useful against **planetary
 	// targets**」——所以它不是「傷害比較低的光束」,是**在艦隊戰裡完全沒有作用**。
@@ -45,11 +45,11 @@ func weaponKindByName(name string) WeaponKind {
 		// 電漿通量是海鰻怪獸專屬、引擎爆炸不是可裝載武器。
 		return WeaponKindSpherical
 	case "核彈", "融合彈", "反物質彈", "中子彈":
-		// 執行檔的 category 表把這四項全歸在 **category 19(炸彈)**(第 53 項解出的
+		// 執行檔的 category 表把這四項全歸在 **category 19(炸彈)**(第 52 項(生物武器分類)解出的
 		// enum 語意),與手冊 p.126 的 BOMB 表列的正好是同一批——兩個獨立來源同意。
 		return WeaponKindBomb
 	case "核飛彈", "麥克萊特飛彈", "脈衝飛彈", "氙素飛彈", "質子魚雷":
-		// 第 65 項補的三項與既有兩項同類:執行檔的 category 表把它們全歸在
+		// 第 64 項(武器傷害真表)補的三項與既有兩項同類:執行檔的 category 表把它們全歸在
 		// **category 21(飛彈/魚雷)**,與手冊 p.125 的 MISSILE 表一致——
 		// 兩個獨立來源同意,不是照名字裡有「飛彈」兩個字分的。
 		return WeaponKindMissile
@@ -70,7 +70,7 @@ const spatialCompressorName = "空間壓縮器"
 // gyroDestabilizerName 是陀螺去穩器元件名。
 //
 // 它不在手冊 p.126 的球形武器清單上,但**兩個定義性特徵都有**:傷害依目標級數相乘、
-// 完全豁免護盾與裝甲。第 65 項當時把它擋在外面,理由是「光束路徑沒有 per size class
+// 完全豁免護盾與裝甲。第 64 項(武器傷害真表)當時把它擋在外面,理由是「光束路徑沒有 per size class
 // 這個乘數」——那句話對,而正確的解法不是替光束加一個乘數,是**認出它其實是球形家族**。
 const gyroDestabilizerName = "陀螺去穩器"
 

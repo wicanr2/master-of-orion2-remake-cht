@@ -114,7 +114,7 @@ func TestBomberBombsCountAgainstShipsButShipBombsDoNot(t *testing.T) {
 	if fatk <= 0 {
 		t.Error("轟炸機對艦攻擊應為正(手冊:can attack either a planet **or a ship**)")
 	}
-	// 反面:艦載炸彈在艦隊戰完全不開火(第 65 項),那條規則不該被這一項動到。
+	// 反面:艦載炸彈在艦隊戰完全不開火(第 64 項(武器傷害真表)),那條規則不該被這一項動到。
 	if weaponKindByName("核彈") != WeaponKindBomb {
 		t.Error("核彈仍應是艦載炸彈類別")
 	}

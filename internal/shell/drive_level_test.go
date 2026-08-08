@@ -121,7 +121,7 @@ func TestCombatSpeedBonusesStack(t *testing.T) {
 	}
 }
 
-// 崔拉里安(跨維度)的船真的比較快——第 66 項挖出的種族特性在這裡有了第二個消費端。
+// 崔拉里安(跨維度)的船真的比較快——第 65 項(種族特性31格)挖出的種族特性在這裡有了第二個消費端。
 func TestTransDimensionalRaceShipsAreFaster(t *testing.T) {
 	human := NewDemoSession()
 	human.ApplyRace(raceIndexByEnName(t, "Humans"))

@@ -2,7 +2,7 @@ package shell
 
 // route.go:星圖航線(艦隊從 A 到 B 沿路會碰到什麼)。
 //
-// 第 17 項把距離與航速換成秒差距之後,還有三條手冊規則卡在同一個前置:
+// 第 16 項(秒差距模型)把距離與航速換成秒差距之後,還有三條手冊規則卡在同一個前置:
 // **「艦隊沿路經過哪些東西」**。先前的星圖是「兩點直接算 ETA」,根本沒有「沿路」這個概念。
 //
 //	黑洞    「No ship can safely pass within 2 parsecs of a black hole
@@ -170,7 +170,7 @@ func routeNebulaSamples(parsecs float64) int {
 // RouteCrossesNebula 回傳這條航線是否**穿過**星雲(不只是兩端在不在雲裡)。
 //
 // 手冊的字是「Ships traveling **through** a nebula」,所以兩端都在雲外、直線穿過去的情況
-// 一樣算。這是第 17 項那個近似(只看起訖點)的正解。
+// 一樣算。這是第 16 項(秒差距模型)那個近似(只看起訖點)的正解。
 func (s *GameSession) RouteCrossesNebula(from, to int) bool {
 	if !s.routeEndpointsValid(from, to) {
 		return false

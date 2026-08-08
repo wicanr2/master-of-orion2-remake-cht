@@ -59,7 +59,7 @@ Conditions」摘要,**與上述無版本差異**)額外補了計分公式一節,
 
 ## 2. openorion2 沒有可抄的邏輯(這是從零設計)
 
-`docs/tech/rules-implementation-audit.md` 第 4 項(2026-07-03 盤點)記載「openorion2 對
+`docs/tech/rules-implementation-audit.md` 第 3 項(2026-07-03 盤點)記載「openorion2 對
 `victory|winner|win_condition|gameOver` 全 repo(C++ 參考專案本身)零命中」——這條記錄分析的是
 **openorion2**,不是本 remake,至今仍然成立、沒有過期。也就是說,勝利條件這整個機制在
 openorion2 裡確實連影子都沒有,只能依手冊從零設計,沒有既有 C++ 邏輯可對照。
@@ -192,7 +192,7 @@ Dimensional Portal 沿用同一套既有機制即可正確 gate,不需要額外�
 **⚠ 誠實聲明(母星防禦艦隊戰力,手冊/openorion2 均無精確數字)**:`GAME_MANUAL.pdf`「Winning」
 小節全文搜尋「Antaran」的 60 餘處出現,只有「the awe-inspiring Antarans」這句定性描述,沒有任何
 具體的母星防禦艦隊組成或戰力數字(第 1 節手冊逐字引用已完整收錄相關段落,沒有遺漏)。
-`openorion2`(`docs/tech/rules-implementation-audit.md` 第 4 項已記載)對 victory/winner 相關邏輯
+`openorion2`(`docs/tech/rules-implementation-audit.md` 第 3 項(殖民地/事件畫面)已記載)對 victory/winner 相關邏輯
 全 repo 零命中,自然也沒有母星防禦艦隊的資料可抄——這是從零設計的部分,不是查漏。
 
 保守預設(`antaranHomeFleetDefense`,`internal/shell/antaran_victory.go`):**6 艘「末日之星」等級

@@ -54,8 +54,8 @@ func TestNeutronBeatsTachyonOnBothTables(t *testing.T) {
 
 // 戰鬥掃描器的**第二個效果**:戰鬥之外掃描範圍 +2 parsec。
 //
-// ⚠ 第 69 項只接了手冊那段的第一句(命中 +50),還寫了一條測試把「只加命中」釘住。
-// 一個元件兩個效果、只接一半——與第 69 項慣性穩定器同一個坑,連續兩項都踩。
+// ⚠ 第 68 項(元件盤點+飛彈防禦)只接了手冊那段的第一句(命中 +50),還寫了一條測試把「只加命中」釘住。
+// 一個元件兩個效果、只接一半——與第 68 項(元件盤點+飛彈防禦)慣性穩定器同一個坑,連續兩項都踩。
 func TestBattleScannerExtendsScanningRange(t *testing.T) {
 	mk := func(special string) []detectionSource {
 		s := NewDemoSession()

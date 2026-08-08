@@ -4,7 +4,7 @@ package gamedata
 //
 // ============ 為什麼三個一起做 ============
 //
-// 第 69 項那一桶剩下的元件裡,有三個卡在**同一個**缺失機制:
+// 第 68 項(元件盤點+飛彈防禦)那一桶剩下的元件裡,有三個卡在**同一個**缺失機制:
 //
 //	超載電容      allows a ship's **beam weapons** to fire **twice in a single turn**
 //	快速飛彈架    allow a ship to fire **two volleys of missiles** in a single turn

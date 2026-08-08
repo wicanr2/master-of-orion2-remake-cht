@@ -15,7 +15,7 @@ import (
 //
 //	shell.NewFighterSquadron(s.BayKind, false, idx, s.Col, s.Row, **1**, 0)
 //
-// **硬編成 1。** 它在 `cmd/moo2/tacticalfighter.go`,所以第 66 項那個
+// **硬編成 1。** 它在 `cmd/moo2/tacticalfighter.go`,所以第 65 項(種族特性31格)那個
 // 「哪些 gamedata 參數被餵固定值」的掃描器(只掃 `gamedata.X(...)`)看不到它
 // ——**掃描器的盲區也要記帳**,不然「已經掃過了」會變成另一句過期的擋門理由。
 //
@@ -71,7 +71,7 @@ func sortByInitiative(cs []combatant) {
 	sort.SliceStable(cs, func(i, j int) bool { return cs[i].initiative > cs[j].initiative })
 }
 
-// --- 戰術棋盤比例尺(第 70 項)---
+// --- 戰術棋盤比例尺(第 69 項(戰鬥速度與引擎階))---
 //
 // remake 的戰術棋盤是 **8 × 6**,原版是 **81 × 68**(見 gamedata.CombatGridColumns,
 // 從 `Assign_Combat_Grids_` 的清空迴圈界限挖出來)。兩邊差約 **10 倍**:
@@ -113,7 +113,7 @@ func TacticalMoveSquares(combatSpeed int) int {
 	return n
 }
 
-// TacticalRangeSquares 把原版棋盤的格數換算成 remake 盤面的格數(第 70 項)。
+// TacticalRangeSquares 把原版棋盤的格數換算成 remake 盤面的格數(第 69 項(戰鬥速度與引擎階))。
 //
 // 與 TacticalMoveSquares 同一個比例尺(1:10),但**向上取整**:手冊的短射程
 // (停滯力場 3 格)向下取整會變成 0,那等於這個武器不存在。向上取整之後
@@ -133,7 +133,7 @@ func TacticalRangeSquares(origSquares int) int {
 	return n
 }
 
-// ApplyTacticalStatusEffects 依雙方位置重算「誰被牽引、誰被定住」(第 70 項)。
+// ApplyTacticalStatusEffects 依雙方位置重算「誰被牽引、誰被定住」(第 69 項(戰鬥速度與引擎階))。
 //
 // **每回合重算,不累積。** 手冊把兩者都描述成**持續的場**而不是打出去的一發:
 //
@@ -144,7 +144,7 @@ func TacticalRangeSquares(origSquares int) int {
 // 所以每回合從零重算才是對的:產生源被打掉、或目標飛出射程,效果就該消失。
 // 累加的話會出現「產生源早就沒了,目標還定在那裡」。
 //
-// dist 用曼哈頓距離,與射程/移動同一個度量(理由見第 70 項)。
+// dist 用曼哈頓距離,與射程/移動同一個度量(理由見第 69 項(戰鬥速度與引擎階))。
 func ApplyTacticalStatusEffects(a, b []CombatShip) {
 	apply := func(targets, sources []CombatShip) {
 		for i := range targets {

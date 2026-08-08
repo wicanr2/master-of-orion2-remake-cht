@@ -8,7 +8,7 @@ import (
 )
 
 // 兩個貿易家不該加兩份——手冊只有 Megawealth 與 Researcher 可累加。
-// 這是 remake 先前的實際行為,第 46 項修掉。
+// 這是 remake 先前的實際行為,第 45 項(領袖技能)修掉。
 func TestTwoTradersDoNotStack(t *testing.T) {
 	one := engine.ColonyState{}
 	applyLeaderColonyBonuses([]Leader{{Name: "甲", Skill: "貿易家", Level: 3, Ship: false, Tier: 1}}, &one)
@@ -115,7 +115,7 @@ func TestTwoInstructorsDoNotStack(t *testing.T) {
 	}
 }
 
-// 三個分項百分比技能各自落在自己的欄位(第 46 項)。
+// 三個分項百分比技能各自落在自己的欄位(第 45 項(領袖技能))。
 func TestPerCategoryLeaderSkillsLandInTheirOwnFields(t *testing.T) {
 	for _, tc := range []struct {
 		skill string

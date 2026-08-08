@@ -55,7 +55,7 @@ var beamWeaponDamage = map[string]WeaponDamageRange{
 	"電漿砲":   {4, 20},   // Plasma Cannon 4-20(1.50;1.31 為 6-30,由 RuleProfile 覆寫)
 	"死光":    {50, 100}, // Death Ray 50-100
 
-	// 第 65 項補上的光束項(手冊 p.124 同一張表)。
+	// 第 64 項(武器傷害真表)補上的光束項(手冊 p.124 同一張表)。
 	"離子脈衝砲": {2, 10},    // Ion Pulse Cannon 2-10
 	"引力波束":  {3, 15},    // Graviton Beam 3-15
 	"干擾者":   {40, 40},   // Disrupter 40(固定值)
@@ -66,7 +66,7 @@ var beamWeaponDamage = map[string]WeaponDamageRange{
 // bombWeaponDamage 是手冊 p.126 的 BOMB 表。**炸彈只能打行星**(見 shell 的 WeaponKindBomb)。
 //
 // ⚠ 手冊同表還有死亡孢子(10%)與生物滅絕者(20%),它們給的是**殺人口的百分比**不是傷害,
-// 而且第 53 項已經用另一條路徑(科技擁有 → 轟炸時擲骰殺人口)接好了。**不要**把它們
+// 而且第 52 項(生物武器分類)已經用另一條路徑(科技擁有 → 轟炸時擲骰殺人口)接好了。**不要**把它們
 // 也加進元件表——那會讓同一條規則生效兩次。
 var bombWeaponDamage = map[string]WeaponDamageRange{
 	"核彈":   {3, 12},  // Nuclear Bomb 3-12
@@ -84,7 +84,7 @@ var bombWeaponDamage = map[string]WeaponDamageRange{
 var sphericalWeaponDamage = map[string]WeaponDamageRange{
 	"脈衝星":   {1, 24}, // Pulsar 1-24 per size class
 	"空間壓縮器": {4, 32}, // Spatial Compressor 4-32 structural hits
-	// 陀螺去穩器(第 71 項):手冊「causes **1–4 points of structural damage multiplied by
+	// 陀螺去穩器(第 70 項(陀螺去穩器)):手冊「causes **1–4 points of structural damage multiplied by
 	// the size class of the ship**. **Shields and armor offer no protection** and are not
 	// damaged.」——依級數乘 + 豁免盾甲,兩個特徵都與球形家族相同,所以走同一條路。
 	"陀螺去穩器": {1, 4},

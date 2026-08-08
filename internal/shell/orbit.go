@@ -54,7 +54,7 @@ func (s *GameSession) PlanetAt(star int) int {
 // 生成階段用(genMonsters 要在星系剛生出來時挑代表行星)。
 //
 // 兩邊共用同一支,是為了不讓「代表行星怎麼挑」出現第二份實作——
-// 那兩份一旦漂開,徵狀是資料錯位而不是崩潰(見第 25 項)。
+// 那兩份一旦漂開,徵狀是資料錯位而不是崩潰(見第 24 項(軌道資料層))。
 func representativePlanet(stars []Star, planets []Planet, star int) int {
 	if star < 0 || star >= len(stars) {
 		return -1
