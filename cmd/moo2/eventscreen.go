@@ -120,12 +120,22 @@ func (b *sceneBuilder) drawEventReport(dst *ebiten.Image) {
 	}
 	// 先鋪一層暗遮罩:快報是疊在回合摘要背景上的彈窗,不遮的話底下的「TURN SUMMARY」
 	// 標題與 CLOSE 鈕會從面板外露出來,跟快報的「繼續」鈕互相干擾。
-	vector.DrawFilledRect(dst, 0, 0, 640, 480, color.RGBA{0, 0, 0, 205}, false)
-	vector.DrawFilledRect(dst, evPanelX, evPanelY, evPanelW, evPanelH, evPanelBg, false)
+	// ⚠ 遮罩必須**完全不透明**。快報面板只蓋住畫面中段,而底下那張 TURNSUM 視窗的標題列
+	// 烘著 `TURN SUMMARY`、底部烘著 `CLOSE` ——半透明遮罩(原本 205)會讓這兩個英文字樣
+	// 從面板上下方透出來。這是**英文外洩**,不是美觀取捨。
+	//
+	// 為什麼不改成疊中文標題:overlayScreen 的擦底疊字跑在 postDraw **之前**,疊上去的中文
+	// 一樣會被這層遮罩蓋掉。而這個畫面本來就不是像素對齊原版的(見檔頭),所以直接讓
+	// 快報面板獨自浮在黑底上,反而是一致的做法。
+	//
+	// 底圖仍然載 turnsum.lbx:它提供這個場景的熱區/轉場骨架(見下方 offset 修正那段),
+	// 只是視覺上被完全遮住。
+	fillPanel(dst, 0, 0, 640, 480, color.RGBA{0, 0, 0, 255}, false)
+	fillPanel(dst, evPanelX, evPanelY, evPanelW, evPanelH, evPanelBg, false)
 	vector.StrokeRect(dst, evPanelX, evPanelY, evPanelW, evPanelH, 2, edge, false)
 
 	// 台標列(原版 EVENTMSG 前 8 條就是這種 GNN 開場白)。
-	vector.DrawFilledRect(dst, evPanelX, evPanelY, evPanelW, 26, color.RGBA{18, 30, 60, 255}, false)
+	fillPanel(dst, evPanelX, evPanelY, evPanelW, 26, color.RGBA{18, 30, 60, 255}, false)
 	b.fnt.Draw(dst, rep.header, evPanelX+12, evPanelY+6, 13, evBrandCol)
 
 	// 事件名 + 好壞標記(對應原版 _event_good_array)。
@@ -140,7 +150,7 @@ func (b *sceneBuilder) drawEventReport(dst *ebiten.Image) {
 	}
 
 	// 確認鈕
-	vector.DrawFilledRect(dst, 270, 372, 100, 24, evButtonBg, false)
+	fillPanel(dst, 270, 372, 100, 24, evButtonBg, false)
 	vector.StrokeRect(dst, 270, 372, 100, 24, 1, edge, false)
 	b.fnt.DrawCentered(dst, b.tr("繼續", "CONTINUE"), 320, 384, 13, evBodyCol)
 }

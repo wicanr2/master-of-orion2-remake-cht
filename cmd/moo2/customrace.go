@@ -228,7 +228,7 @@ func (s *customRaceScreen) applyAndStart() {
 func (s *customRaceScreen) draw(dst *ebiten.Image) {
 	dst.Fill(color.RGBA{0, 0, 0, 255})
 	if s.bg != nil {
-		dst.DrawImage(s.bg, nil)
+		drawPanelImage(dst, s.bg, nil)
 	}
 	if s.fnt == nil {
 		return
@@ -254,7 +254,7 @@ func (s *customRaceScreen) draw(dst *ebiten.Image) {
 		if i == s.hoverCat {
 			bgc = color.RGBA{40, 56, 84, 210}
 		}
-		vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h), bgc, false)
+		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), bgc, false)
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1, color.RGBA{90, 120, 170, 255}, false)
 		o := c.opts[c.sel]
 		s.fnt.Draw(dst, s.b.tr(c.name, c.nameEn), float64(x+8), float64(y)+float64(h)/2-8, 13, body)
@@ -275,7 +275,7 @@ func (s *customRaceScreen) draw(dst *ebiten.Image) {
 		if i == s.hoverSpc {
 			bgc = color.RGBA{48, 60, 84, 210}
 		}
-		vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h), bgc, false)
+		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), bgc, false)
 		bord := color.RGBA{90, 120, 170, 255}
 		if sp.on {
 			bord = green
@@ -296,7 +296,7 @@ func (s *customRaceScreen) draw(dst *ebiten.Image) {
 	// 底部按鈕。
 	drawBtn := func(rect func() (int, int, int, int), label string, accent color.RGBA, enabled bool) {
 		x, y, w, h := rect()
-		vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{34, 34, 44, 255}, false)
+		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{34, 34, 44, 255}, false)
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, accent, false)
 		lc := body
 		if !enabled {

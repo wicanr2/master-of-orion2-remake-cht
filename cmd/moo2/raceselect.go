@@ -211,7 +211,7 @@ func (s *raceSelectScreen) applyAndStart() {
 func (s *raceSelectScreen) draw(dst *ebiten.Image) {
 	dst.Fill(color.RGBA{0, 0, 0, 255})
 	if s.bg != nil {
-		dst.DrawImage(s.bg, nil)
+		drawPanelImage(dst, s.bg, nil)
 	}
 	if s.fnt == nil {
 		return
@@ -226,7 +226,7 @@ func (s *raceSelectScreen) draw(dst *ebiten.Image) {
 	if p := s.portrait(r.portrait); p != nil {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(rsPortX), float64(rsPortY))
-		dst.DrawImage(p, op)
+		drawPanelImage(dst, p, op)
 	}
 
 	// 標題橫幅(資產 33 @ 366,52):**先畫原版那張**。
@@ -235,11 +235,11 @@ func (s *raceSelectScreen) draw(dst *ebiten.Image) {
 	if im := s.raceButton(rsTitleAsset, 0); im != nil {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(rsTitleX, rsTitleY)
-		dst.DrawImage(im, op)
+		drawPanelImage(dst, im, op)
 	}
 	// 上疊中文。**英文模式不擦不疊**:原版美術上本來就是英文標題。
 	if s.b.lang == i18n.Traditional {
-		vector.DrawFilledRect(dst, rsTitleX, rsTitleY, rsTitleW, rsTitleH,
+		fillPanel(dst, rsTitleX, rsTitleY, rsTitleW, rsTitleH,
 			color.RGBA{26, 28, 34, 255}, false)
 		s.fnt.DrawCentered(dst, "選擇你的種族",
 			float64(rsTitleX+rsTitleW/2), float64(rsTitleY+rsTitleH/2), 16, gold)
@@ -256,10 +256,10 @@ func (s *raceSelectScreen) draw(dst *ebiten.Image) {
 		if im := s.raceButton(e.portrait-14, frame); im != nil { // 肖像 15+i ↔ 按鈕 1+i
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Translate(float64(x), float64(y))
-			dst.DrawImage(im, op)
+			drawPanelImage(dst, im, op)
 		} else {
 			// 取不到按鈕圖時的退路:自繪一格,畫面仍可用。
-			vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h),
+			fillPanel(dst, float32(x), float32(y), float32(w), float32(h),
 				color.RGBA{34, 38, 48, 255}, false)
 		}
 		// 擦掉烘在按鈕上的英文族名再疊中文(上下左右各留 4px 保住浮雕邊框)。
@@ -271,7 +271,7 @@ func (s *raceSelectScreen) draw(dst *ebiten.Image) {
 		if i == s.sel {
 			face = color.RGBA{70, 66, 58, 255}
 		}
-		vector.DrawFilledRect(dst, float32(x+4), float32(y+4), float32(w-8), float32(h-8), face, false)
+		fillPanel(dst, float32(x+4), float32(y+4), float32(w-8), float32(h-8), face, false)
 		col := body
 		if i == s.sel {
 			col = gold
@@ -300,7 +300,7 @@ func (s *raceSelectScreen) draw(dst *ebiten.Image) {
 	}
 
 	// 取消(remake 自己加的,原版只綁 ESC,見 cancelRect 註解)。
-	vector.DrawFilledRect(dst, float32(cx), float32(cy), float32(cw), float32(ch),
+	fillPanel(dst, float32(cx), float32(cy), float32(cw), float32(ch),
 		color.RGBA{34, 34, 44, 255}, false)
 	vector.StrokeRect(dst, float32(cx), float32(cy), float32(cw), float32(ch), 1.5,
 		color.RGBA{160, 140, 100, 255}, false)

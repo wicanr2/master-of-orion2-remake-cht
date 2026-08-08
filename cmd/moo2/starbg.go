@@ -37,7 +37,6 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 const (
@@ -78,7 +77,7 @@ var starBGFill = color.RGBA{6, 6, 16, 255}
 
 // drawStarmapBackground 鋪星圖底:先純黑,再疊三層星空(取不到資產就只有純黑)。
 func (b *sceneBuilder) drawStarmapBackground(dst *ebiten.Image) {
-	vector.DrawFilledRect(dst, starVX0, starVY0, starVX1-starVX0, starVY1-starVY0, starBGFill, false)
+	fillPanel(dst, starVX0, starVY0, starVX1-starVX0, starVY1-starVY0, starBGFill, false)
 	clip, ok := dst.SubImage(image.Rect(starVX0, starVY0, starVX1, starVY1)).(*ebiten.Image)
 	if !ok {
 		return

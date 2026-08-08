@@ -125,7 +125,7 @@ func (s *cutsceneScreen) draw(dst *ebiten.Image) {
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Scale(float64(s.scale), float64(s.scale))
 	op.GeoM.Translate(float64(s.offX), float64(s.offY))
-	dst.DrawImage(s.canvas, op)
+	drawPanelImage(dst, s.canvas, op)
 	if s.fnt != nil {
 		s.fnt.DrawCentered(dst, s.b.tr("點擊跳過", "click to skip"), 320, 468, 11, color.RGBA{130, 140, 150, 255})
 	}

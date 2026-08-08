@@ -198,7 +198,7 @@ func drawTroops(dst *ebiten.Image, sp *ebiten.Image, n, baseX, startIdx int, fli
 			op.GeoM.Translate(float64(w), 0)
 		}
 		op.GeoM.Translate(float64(x-w/2), float64(footY-h))
-		dst.DrawImage(sp, op)
+		drawPanelImage(dst, sp, op)
 	}
 }
 
@@ -206,12 +206,12 @@ func drawTroops(dst *ebiten.Image, sp *ebiten.Image, n, baseX, startIdx int, fli
 func (g *groundCombatScreen) drawSidePanel(dst *ebiten.Image, panelX, textX, dx0, dx1 int, lines []string, col color.RGBA) {
 	// Darken_Fill_:原版是把地表壓暗,不是塗一塊不透明底。remake 沒有地表層,
 	// 用半透明黑達成同樣的「壓暗」語意(底下是純色時效果等同深色塊)。
-	vector.DrawFilledRect(dst, float32(dx0), gcDarkenY0, float32(dx1-dx0), gcDarkenY1-gcDarkenY0,
+	fillPanel(dst, float32(dx0), gcDarkenY0, float32(dx1-dx0), gcDarkenY1-gcDarkenY0,
 		color.RGBA{0, 0, 0, 150}, false)
 	if g.panel != nil {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(panelX), gcPanelY)
-		dst.DrawImage(g.panel, op)
+		drawPanelImage(dst, g.panel, op)
 	} else {
 		vector.StrokeRect(dst, float32(panelX), gcPanelY, gcPanelW, gcPanelH, 1.5,
 			color.RGBA{140, 150, 130, 255}, false)
@@ -277,7 +277,7 @@ func (g *groundCombatScreen) draw(dst *ebiten.Image) {
 	g.fnt.DrawCentered(dst, outcome, 319, 208, 15, outCol)
 
 	cx, cy, cw, ch := g.contRect()
-	vector.DrawFilledRect(dst, float32(cx), float32(cy), float32(cw), float32(ch), color.RGBA{38, 44, 34, 255}, false)
+	fillPanel(dst, float32(cx), float32(cy), float32(cw), float32(ch), color.RGBA{38, 44, 34, 255}, false)
 	vector.StrokeRect(dst, float32(cx), float32(cy), float32(cw), float32(ch), 1.5, color.RGBA{150, 170, 130, 255}, false)
 	g.fnt.DrawCentered(dst, g.b.tr("繼續", "CONTINUE"), float64(cx+cw/2), float64(cy+ch/2), 14, body)
 }

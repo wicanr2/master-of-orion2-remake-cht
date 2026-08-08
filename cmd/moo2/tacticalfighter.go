@@ -215,7 +215,7 @@ func (t *tacticalScreen) drawSquadrons(dst *ebiten.Image) {
 		cx, cy, cw, ch := cellRect(f.Col, f.Row)
 		x, y := float32(cx+cw-26), float32(cy+ch-20)
 		col := squadColor(f.Kind)
-		vector.DrawFilledRect(dst, x, y, 24, 16, color.RGBA{10, 14, 24, 220}, false)
+		fillPanel(dst, x, y, 24, 16, color.RGBA{10, 14, 24, 220}, false)
 		vector.StrokeRect(dst, x, y, 24, 16, 1, col, false)
 		if t.fnt == nil {
 			continue
@@ -237,7 +237,7 @@ func (t *tacticalScreen) drawLaunchButton(dst *ebiten.Image) {
 		return
 	}
 	x, y, w, h := launchRect()
-	vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h),
+	fillPanel(dst, float32(x), float32(y), float32(w), float32(h),
 		color.RGBA{30, 60, 80, 235}, false)
 	vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1,
 		color.RGBA{120, 220, 235, 255}, false)

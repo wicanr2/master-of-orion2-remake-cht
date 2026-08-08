@@ -4,7 +4,6 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
@@ -164,7 +163,7 @@ func (s *confirmScreen) draw(dst *ebiten.Image) {
 	if s.bg != nil {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(confirmBoxX, confirmBoxY)
-		dst.DrawImage(s.bg, op)
+		drawPanelImage(dst, s.bg, op)
 	}
 	mx, my := ebiten.CursorPosition()
 	drawBtn := func(img, hi *ebiten.Image, x, y int) {
@@ -177,7 +176,7 @@ func (s *confirmScreen) draw(dst *ebiten.Image) {
 		}
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(x), float64(y))
-		dst.DrawImage(use, op)
+		drawPanelImage(dst, use, op)
 	}
 	drawBtn(s.yes, s.yesHi, confirmYesX, confirmYesY)
 	drawBtn(s.no, s.noHi, confirmNoX, confirmNoY)
@@ -190,7 +189,7 @@ func (s *confirmScreen) draw(dst *ebiten.Image) {
 	if s.b.lang == i18n.Traditional {
 		ink := color.RGBA{235, 240, 250, 255}
 		label := func(txt string, x, y int, face color.RGBA) {
-			vector.DrawFilledRect(dst, float32(x+4), float32(y+4),
+			fillPanel(dst, float32(x+4), float32(y+4),
 				float32(confirmBtnW-8), float32(confirmBtnH-8), face, false)
 			s.b.fnt.DrawCentered(dst, txt, float64(x+confirmBtnW/2), float64(y+confirmBtnH/2)+4, 12, ink)
 		}

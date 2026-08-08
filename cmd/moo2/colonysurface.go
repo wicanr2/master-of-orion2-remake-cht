@@ -568,7 +568,7 @@ func (b *sceneBuilder) drawColonyBuildings(dst *ebiten.Image, surf colonySurface
 			continue
 		}
 		if im := b.colonyBuildingImage(id, cell[0], cell[1]); im != nil {
-			dst.DrawImage(im, &ebiten.DrawImageOptions{})
+			drawPanelImage(dst, im, &ebiten.DrawImageOptions{})
 		}
 	}
 }
@@ -620,7 +620,7 @@ func colonyTerrainVariant(planet int) int {
 // 原版地表上**沒有格線**,格點是隱形的)。
 func (b *sceneBuilder) drawColonyTerrain(dst *ebiten.Image, idx int) {
 	if im := b.colonyScreenImage(colTerrainSkyLBX, colTerrainSkyAsset, colonyBasePalette); im != nil {
-		dst.DrawImage(im, &ebiten.DrawImageOptions{})
+		drawPanelImage(dst, im, &ebiten.DrawImageOptions{})
 	}
 	sess := b.session
 	if sess == nil || idx < 0 || idx >= len(sess.PlayerColonies) {
@@ -633,7 +633,7 @@ func (b *sceneBuilder) drawColonyTerrain(dst *ebiten.Image, idx int) {
 	// 變體種子用**行星**索引:同一個星系的兩個殖民地用星索引會長得一模一樣。
 	asset := climate*colTerrainVariants + colonyTerrainVariant(sess.ColonyPlanetIndex(idx))
 	if im := b.colonyScreenImage(colTerrainLBX, asset, colonyBasePalette); im != nil {
-		dst.DrawImage(im, &ebiten.DrawImageOptions{})
+		drawPanelImage(dst, im, &ebiten.DrawImageOptions{})
 	}
 }
 
@@ -776,7 +776,7 @@ func (b *sceneBuilder) drawColonySatellites(dst *ebiten.Image, idx int) {
 		}
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(x), colonySatY)
-		dst.DrawImage(im, op)
+		drawPanelImage(dst, im, op)
 	}
 }
 

@@ -154,7 +154,7 @@ func impactPoint(i int) (float32, float32) {
 func (s *bombingScreen) draw(dst *ebiten.Image) {
 	dst.Fill(color.RGBA{6, 8, 12, 255})
 	if s.grid != nil {
-		dst.DrawImage(s.grid, nil)
+		drawPanelImage(dst, s.grid, nil)
 	}
 	if s.fnt == nil {
 		return
@@ -179,7 +179,7 @@ func (s *bombingScreen) draw(dst *ebiten.Image) {
 	}
 
 	// 戰報。壓一條半透明深色條,格線底上直接寫字看不清。
-	vector.DrawFilledRect(dst, 0, 60, moo2ScreenW, 118, color.RGBA{6, 4, 8, 180}, false)
+	fillPanel(dst, 0, 60, moo2ScreenW, 118, color.RGBA{6, 4, 8, 180}, false)
 	y := 82.0
 	line := func(text string, col color.RGBA) {
 		s.fnt.DrawCentered(dst, text, 320, y, 14, col)
@@ -208,7 +208,7 @@ func (s *bombingScreen) draw(dst *ebiten.Image) {
 	}
 
 	cx, cy, cw, ch := s.contRect()
-	vector.DrawFilledRect(dst, float32(cx), float32(cy), float32(cw), float32(ch), color.RGBA{34, 30, 40, 235}, false)
+	fillPanel(dst, float32(cx), float32(cy), float32(cw), float32(ch), color.RGBA{34, 30, 40, 235}, false)
 	vector.StrokeRect(dst, float32(cx), float32(cy), float32(cw), float32(ch), 1.5, color.RGBA{150, 140, 170, 255}, false)
 	s.fnt.DrawCentered(dst, s.b.tr("繼續", "CONTINUE"), float64(cx+cw/2), float64(cy+ch/2), 14, body)
 }

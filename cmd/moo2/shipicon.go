@@ -114,6 +114,6 @@ func (b *sceneBuilder) drawShipIconAt(dst *ebiten.Image, flag, cx, cy int) bool 
 	w, h := im.Bounds().Dx(), im.Bounds().Dy()
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(float64(cx-w/2), float64(cy-h/2))
-	dst.DrawImage(im, op)
+	drawPanelImage(dst, im, op)
 	return true
 }

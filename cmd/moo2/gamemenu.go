@@ -201,7 +201,7 @@ func (s *gameMenuScreen) draw(dst *ebiten.Image) {
 	if s.bg != nil {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(s.winX), float64(s.winY))
-		dst.DrawImage(s.bg, op)
+		drawPanelImage(dst, s.bg, op)
 	}
 	if s.fnt == nil {
 		return
@@ -212,7 +212,7 @@ func (s *gameMenuScreen) draw(dst *ebiten.Image) {
 		if s.btnImg[i] != nil {
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Translate(float64(x), float64(y))
-			dst.DrawImage(s.btnImg[i], op)
+			drawPanelImage(dst, s.btnImg[i], op)
 		}
 		// 英文烘在鈕上,擦底疊中文(同 loadgame.go 的做法)。
 		// 英文模式跳過:GAME.LBX 那六顆鈕上本來就是 SAVE GAME / LOAD GAME / …。
@@ -220,14 +220,14 @@ func (s *gameMenuScreen) draw(dst *ebiten.Image) {
 			continue
 		}
 		if s.btnFace[i].A > 0 {
-			vector.DrawFilledRect(dst, float32(x+3), float32(y+3), float32(w-6), float32(h-6),
+			fillPanel(dst, float32(x+3), float32(y+3), float32(w-6), float32(h-6),
 				s.btnFace[i], false)
 		}
 		s.fnt.DrawCentered(dst, btn.label, float64(x+w/2), float64(y+h/2), 12, body)
 	}
 	if s.showSettings && s.b.session != nil {
 		x, y, w, h := s.settingsRowRect()
-		vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h),
+		fillPanel(dst, float32(x), float32(y), float32(w), float32(h),
 			color.RGBA{28, 36, 52, 235}, false)
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1,
 			color.RGBA{110, 150, 190, 255}, false)

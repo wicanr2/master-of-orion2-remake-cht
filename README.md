@@ -55,7 +55,8 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
   → ToRGBA → ebiten.NewImageFromImage → DrawImage → 截圖(ReadPixels)
 ```
 
-上方主選單截圖即此管線的實際輸出。過程中確認 MOO2 畫面為 **640×480**。
+上方主選單截圖即此管線的實際輸出。過程中確認 MOO2 畫面為 **640×480** —— 那是 remake 的版面座標系;
+螢幕輸出預設放大到 1280×960(見「畫面預覽」開頭)。
 
 **資料驅動星圖(M2 里程碑)+ 繁體中文渲染**:載入原版存檔 `SAVE10.GAM`,解析出星系並即時繪製 —— 每顆星依真實座標定位、依光譜類上色、依大小定尺寸,標出真實星名,星雲數與存檔一致;標題以自建的 CJK 文字系統(NotoSansCJK + ebiten text/v2)渲染成繁體中文。
 
@@ -144,6 +145,9 @@ assets.Resolver → OpenLBX → DecodeImage → 內嵌調色盤 → RLE 解碼
 
 以下皆為 `-gamegallery` headless 導覽拍下的**本專案 ebiten renderer 實際輸出**(讀取玩家正版 LBX 資產渲染,非原版截圖翻拍)。
 版面座標優先取自**原版執行檔的反組譯立即數**,openorion2 沒有實作的畫面也一樣(見 [`docs/re/01-gap-report.md`](docs/re/01-gap-report.md))。
+
+尺寸是 **1280×960**:版面座標仍然是原版的 640×480,美術以 nearest 整數倍放大(像素不糊),
+中文則以 2× 字級**在最終解析度重新柵格化**——不是把小字放大。`-uiscale 1` 可切回 640×480。
 
 | 主選單(1.3/1.5 規則版本 + 中英切換) | 新遊戲設定(五欄,反組譯真值版面) |
 |---|---|

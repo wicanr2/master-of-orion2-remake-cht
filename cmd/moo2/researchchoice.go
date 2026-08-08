@@ -79,7 +79,7 @@ func (s *researchChoiceScreen) update(in shell.InputState) *origTransition {
 func (s *researchChoiceScreen) draw(dst *ebiten.Image) {
 	dst.Fill(color.RGBA{0, 0, 0, 255})
 	if s.bg != nil {
-		dst.DrawImage(s.bg, nil)
+		drawPanelImage(dst, s.bg, nil)
 	}
 	if s.fnt == nil {
 		return
@@ -102,7 +102,7 @@ func (s *researchChoiceScreen) draw(dst *ebiten.Image) {
 			bgc = color.RGBA{44, 60, 90, 230}
 			bord = gold
 		}
-		vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h), bgc, false)
+		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), bgc, false)
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, bord, false)
 		s.fnt.DrawCentered(dst, s.techZh(t), float64(x+w/2), float64(y+h/2), 16, body)
 	}

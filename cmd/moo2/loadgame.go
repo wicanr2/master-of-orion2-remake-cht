@@ -263,7 +263,7 @@ func (s *loadGameScreen) draw(dst *ebiten.Image) {
 	if s.bg != nil {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(s.winX), float64(s.winY))
-		dst.DrawImage(s.bg, op)
+		drawPanelImage(dst, s.bg, op)
 	}
 	if s.fnt == nil {
 		return
@@ -320,7 +320,7 @@ func (s *loadGameScreen) draw(dst *ebiten.Image) {
 		if icon != nil {
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Translate(float64(s.winX+loadSlotIconX), ty+loadSlotIconDY)
-			dst.DrawImage(icon, op)
+			drawPanelImage(dst, icon, op)
 		}
 	}
 
@@ -328,13 +328,13 @@ func (s *loadGameScreen) draw(dst *ebiten.Image) {
 		x, y, _, _ := s.loadRect()
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(x), float64(y))
-		dst.DrawImage(s.loadBtn, op)
+		drawPanelImage(dst, s.loadBtn, op)
 	}
 	if s.cancelBtn != nil {
 		x, y, _, _ := s.cancelRect()
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(x), float64(y))
-		dst.DrawImage(s.cancelBtn, op)
+		drawPanelImage(dst, s.cancelBtn, op)
 	}
 	// 兩顆鈕的英文(LOAD / CANCEL)烘在圖上,照既有做法擦底疊中文:先用採樣到的面色
 	// 填掉文字帶(上下左右各留 3px 保住浮雕邊框),再疊中文。
@@ -343,7 +343,7 @@ func (s *loadGameScreen) draw(dst *ebiten.Image) {
 			return // 英文模式露原版鈕上烘的 LOAD / SAVE / CANCEL
 		}
 		if face.A > 0 {
-			vector.DrawFilledRect(dst, float32(x+3), float32(y+3), float32(w-6), float32(h-6), face, false)
+			fillPanel(dst, float32(x+3), float32(y+3), float32(w-6), float32(h-6), face, false)
 		}
 		s.fnt.DrawCentered(dst, zh, float64(x+w/2), float64(y+h/2), 13, body)
 	}

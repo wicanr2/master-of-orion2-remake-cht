@@ -40,7 +40,6 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
@@ -157,7 +156,7 @@ func (s *buildQueueScreen) draw(dst *ebiten.Image) {
 	// 原版是把這張疊在殖民地畫面上;remake 沒有「保留下層」的機制,先鋪深色底。
 	dst.Fill(color.RGBA{10, 12, 20, 255})
 	if s.chrome != nil {
-		dst.DrawImage(s.chrome, &ebiten.DrawImageOptions{})
+		drawPanelImage(dst, s.chrome, &ebiten.DrawImageOptions{})
 	}
 
 	gold := color.RGBA{240, 220, 120, 255}
@@ -216,7 +215,7 @@ func (s *buildQueueScreen) draw(dst *ebiten.Image) {
 		if bt.act == "" { // remake 未接:畫成灰的,不假裝可按
 			face, ink = color.RGBA{104, 106, 110, 255}, color.RGBA{68, 70, 74, 255}
 		}
-		vector.DrawFilledRect(dst, float32(bt.x+3), float32(bt.y+3),
+		fillPanel(dst, float32(bt.x+3), float32(bt.y+3),
 			float32(bt.w-6), float32(bt.h-6), face, false)
 		b.fnt.DrawCentered(dst, bt.zh, float64(bt.x+bt.w/2), float64(bt.y+bt.h/2), 11, ink)
 	}

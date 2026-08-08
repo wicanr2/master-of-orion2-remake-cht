@@ -64,8 +64,8 @@ func (b *sceneBuilder) drawHiScore(dst *ebiten.Image) {
 	if won {
 		edge = color.RGBA{240, 220, 120, 255}
 	}
-	vector.DrawFilledRect(dst, 0, 0, 640, 480, color.RGBA{0, 0, 0, 210}, false)
-	vector.DrawFilledRect(dst, hsPanelX, hsPanelY, hsPanelW, hsPanelH, color.RGBA{10, 14, 30, 245}, false)
+	fillPanel(dst, 0, 0, 640, 480, color.RGBA{0, 0, 0, 210}, false)
+	fillPanel(dst, hsPanelX, hsPanelY, hsPanelW, hsPanelH, color.RGBA{10, 14, 30, 245}, false)
 	vector.StrokeRect(dst, hsPanelX, hsPanelY, hsPanelW, hsPanelH, 2, edge, false)
 
 	title := b.tr("帝國殞落", "YOUR EMPIRE HAS FALLEN")
@@ -108,7 +108,7 @@ func (b *sceneBuilder) drawHiScore(dst *ebiten.Image) {
 		y += size + 10
 	}
 
-	vector.DrawFilledRect(dst, 270, 388, 100, 24, color.RGBA{30, 40, 70, 255}, false)
+	fillPanel(dst, 270, 388, 100, 24, color.RGBA{30, 40, 70, 255}, false)
 	vector.StrokeRect(dst, 270, 388, 100, 24, 1, edge, false)
 	b.fnt.DrawCentered(dst, b.tr("繼續", "CONTINUE"), 320, 400, 13, color.RGBA{220, 228, 242, 255})
 }

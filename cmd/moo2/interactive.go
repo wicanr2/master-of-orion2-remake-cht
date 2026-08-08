@@ -38,6 +38,22 @@ import (
 
 const moo2ScreenW, moo2ScreenH = 640, 480
 
+// uiScale 是**內部畫布**相對於 640×480 邏輯座標的倍率(第 86 項(hi-res 畫布))。
+//
+// `rulebook/81`:老遊戲做 CJK 中文化不要縮字,要拉高內部畫布——美術用 nearest 整數倍
+// 放大保持銳利,文字用足夠的字級畫在放大後的畫布上。
+//
+// remake 的畫布本來就是 640×480(原版美術的原生解析),所以「拉高」是指再往上 2×
+// 到 1280×960:CJK 從 10–13px 變成 20–26px,而美術一個像素都不糊。
+//
+// ⚠ **所有畫面的座標仍然是 640×480 邏輯座標,一行都沒改。** 縮放發生在
+// `interactiveApp.drawScene`:畫面照舊畫進 640 離屏,文字被錄下來(uifont/record.go),
+// 離屏 nearest 放大 2× 之後再用 2× 字級重播文字。
+//
+// `-uiscale 1` 回到舊路徑(完全不走離屏與錄製),與這一輪之前**逐位元相同**——
+// 畫廊的回歸驗證就是這樣做的。
+var uiScale = 2.0
+
 // origTransition 是原版畫面切換指令。
 type origTransition struct {
 	next origScreen
@@ -137,7 +153,7 @@ func (s *overlayScreen) draw(dst *ebiten.Image) {
 	}
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(float64(s.offsetX), float64(s.offsetY))
-	dst.DrawImage(s.bg, op)
+	drawPanelImage(dst, s.bg, op)
 	ox, oy := float64(s.offsetX), float64(s.offsetY)
 	if s.cat.Lang() == i18n.Traditional {
 		for _, b := range s.overlays {
@@ -150,7 +166,7 @@ func (s *overlayScreen) draw(dst *ebiten.Image) {
 			// 基準內縮左右各3、上下各2;eraseInsetX/Y 再各邊多縮,保留浮雕框(見欄位註解)。
 			ex := 3 + s.eraseInsetX
 			ey := 2 + s.eraseInsetY
-			vector.DrawFilledRect(dst, float32(float64(b.x+ex)+ox), float32(float64(b.y+ey)+oy),
+			fillPanel(dst, float32(float64(b.x+ex)+ox), float32(float64(b.y+ey)+oy),
 				float32(b.w-2*ex), float32(b.h-2*ey), plate, false)
 			// 疊中文(同 overlay.go)。
 			size := b.size
@@ -897,15 +913,19 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		return nil
 	}
 	// 工具列標籤擦底疊字(x 為按鈕中心對齊,y 中心經 PIL 量測:一般列 450、TURN 455)。
+	// ⚠ 底部工具列七格的 y/h 是**擦底板**的範圍,不是按鈕範圍(按鈕熱區在上面的 hits)。
+	// 原本 y=443/h=14 → 擦到 445..455,而烘進美術的 `COLONIES`/`PLANETS`/… 上緣在 440,
+	// 所以**每一格的英文都露出上面 5 列**。1× 就有這個瑕疵,只是 2× 之後一眼就看得到。
+	// 改成 438/19 → 擦 440..455,上不吃到按鈕的浮雕上緣(在 435)。
 	overlays := []labelRect{
-		{13, 443, 71, 14, "Colonies", 12},
-		{88, 443, 71, 14, "Planets", 12},
+		{13, 438, 71, 19, "Colonies", 12},
+		{88, 438, 71, 19, "Planets", 12},
 		{254, 1, 88, 19, "Game", 13}, // 頂部標題列烘進的 GAME
-		{163, 443, 71, 14, "Fleets", 12},
-		{235, 443, 74, 14, "Zoom", 12},
-		{308, 443, 74, 14, "Leaders", 12},
-		{383, 443, 74, 14, "Races", 12},
-		{458, 443, 74, 14, "Info", 12},
+		{163, 438, 71, 19, "Fleets", 12},
+		{235, 438, 74, 19, "Zoom", 12},
+		{308, 438, 74, 19, "Leaders", 12},
+		{383, 438, 74, 19, "Races", 12},
+		{458, 438, 74, 19, "Info", 12},
 		{544, 448, 90, 15, "Turn", 12},
 	}
 	s, err := loadOverlayScreen(b.res, "buffer0.lbx", 0, b.lang, b.fnt, "menu.tsv",
@@ -986,7 +1006,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					// 艦隊圖示:原版 `Draw_Ship_Icons_` 的帶旗色小艦艇(見 shipicon.go)。
 					// 取不到資產才退回舊的青色方塊——那是佔位,不是原版的東西。
 					if !b.drawShipIconAt(dst, sess.FlagColor, fx, fy) {
-						vector.DrawFilledRect(dst, float32(fx-4), float32(fy-4), 8, 8, color.RGBA{80, 240, 240, 255}, false)
+						fillPanel(dst, float32(fx-4), float32(fy-4), 8, 8, color.RGBA{80, 240, 240, 255}, false)
 					}
 				}
 				// 選中星:顯示該星系行星資訊 + 派遣艦隊/載運陸戰隊/軌道轟炸/發動入侵按鈕(左下角面板)。
@@ -994,7 +1014,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					p, _ := sess.PlanetDataAt(sess.SelectedStar)
 					// 面板高度 132(非原版 110):敵殖民地時軌道轟炸(402)/地面入侵(424)雙鈕
 					// 共存需多留一列,否則第二顆鈕會露出面板背景框之外。
-					vector.DrawFilledRect(dst, 28, 326, 210, 132, color.RGBA{10, 14, 30, 235}, false)
+					fillPanel(dst, 28, 326, 210, 132, color.RGBA{10, 14, 30, 235}, false)
 					vector.StrokeRect(dst, 28, 326, 210, 132, 1, color.RGBA{90, 130, 200, 255}, false)
 					fnt.Draw(dst, p.Name, 38, 344, 14, color.RGBA{240, 220, 120, 255})
 					// 右上 CLOSE 鈕(✕),對齊上方 "closestar" 熱區與原版彈窗 CLOSE(issue #6)。
@@ -1039,29 +1059,29 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					// 操作鈕/狀態(與 galaxy() 建 hits 時的判斷邏輯一致)。
 					switch {
 					case b.lastActionMsg != "":
-						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{30, 55, 35, 235}, false)
+						fillPanel(dst, 38, 402, 190, 20, color.RGBA{30, 55, 35, 235}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{110, 200, 140, 255}, false)
 						fnt.Draw(dst, b.lastActionMsg, 42, 415, 10, color.RGBA{225, 240, 225, 255})
 					case sess.Fleet().ETA > 0:
 						fnt.Draw(dst, fmt.Sprintf(b.tr("艦隊航行中…剩 %d 回合", "Fleet in transit — %d turns left"), sess.Fleet().ETA),
 							38, 415, 11, color.RGBA{120, 200, 240, 255})
 					case sess.SelectedStar == sess.Fleet().AtStar && sess.SelectedStar == 0:
-						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{40, 70, 120, 255}, false)
+						fillPanel(dst, 38, 402, 190, 20, color.RGBA{40, 70, 120, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{110, 160, 230, 255}, false)
 						fnt.Draw(dst, b.tr("▶ 載運陸戰隊", "▶ Load marines"), 46, 415, 12, color.RGBA{230, 235, 245, 255})
 					case sess.SelectedStar == sess.Fleet().AtStar && sess.Stars[sess.SelectedStar].Owner == 2:
 						// 軌道轟炸恆可用(艦隊武器開火,不需陸戰隊),畫在 402 這列。
-						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{90, 60, 130, 255}, false)
+						fillPanel(dst, 38, 402, 190, 20, color.RGBA{90, 60, 130, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{170, 140, 230, 255}, false)
 						fnt.Draw(dst, b.tr("▶ 軌道轟炸", "▶ Bombard"), 46, 415, 12, color.RGBA{240, 235, 250, 255})
 						// 發動地面入侵額外要求已載運陸戰隊,畫在下一列(424),與轟炸鈕並存。
 						if sess.Fleet().Marines > 0 {
-							vector.DrawFilledRect(dst, 38, 424, 190, 20, color.RGBA{120, 50, 40, 255}, false)
+							fillPanel(dst, 38, 424, 190, 20, color.RGBA{120, 50, 40, 255}, false)
 							vector.StrokeRect(dst, 38, 424, 190, 20, 1, color.RGBA{230, 130, 110, 255}, false)
 							fnt.Draw(dst, b.tr("▶ 發動地面入侵", "▶ Invade"), 46, 437, 12, color.RGBA{245, 235, 230, 255})
 						}
 					case sess.SelectedStar == sess.Fleet().AtStar && sess.StarGuardedByMonster(sess.SelectedStar):
-						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{110, 45, 60, 255}, false)
+						fillPanel(dst, 38, 402, 190, 20, color.RGBA{110, 45, 60, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{230, 120, 140, 255}, false)
 						fnt.Draw(dst, b.tr("▶ 挑戰", "▶ Attack ")+sess.MonsterNameAtStar(sess.SelectedStar),
 							46, 415, 12, color.RGBA{250, 230, 235, 255})
@@ -1080,21 +1100,21 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 							if r.planet >= 0 && r.planet < len(sess.Planets) {
 								label += "：" + sess.Planets[r.planet].Name
 							}
-							vector.DrawFilledRect(dst, 38, row, 190, 20, face, false)
+							fillPanel(dst, 38, row, 190, 20, face, false)
 							vector.StrokeRect(dst, 38, row, 190, 20, 1, edge, false)
 							fnt.Draw(dst, truncateToWidth(fnt, label, 12, 182), 46, float64(row)+13, 12, ink)
 						}
 					case sess.SelectedStar == sess.Fleet().AtStar:
 						fnt.Draw(dst, b.tr("艦隊已在此星", "Fleet is already here"), 38, 415, 11, color.RGBA{140, 200, 140, 255})
 					default:
-						vector.DrawFilledRect(dst, 38, 402, 190, 20, color.RGBA{40, 70, 120, 255}, false)
+						fillPanel(dst, 38, 402, 190, 20, color.RGBA{40, 70, 120, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{110, 160, 230, 255}, false)
 						fnt.Draw(dst, b.tr("▶ 派遣艦隊至此星", "▶ Send fleet here"), 46, 415, 12, color.RGBA{230, 235, 245, 255})
 					}
 					// 集結點鈕(第二列):選中的是自己的殖民地才有。標題直接寫出目前設到哪,
 					// 不然玩家看不出「有沒有設」——那正是這個功能最容易被忽略的地方。
 					if ci := colonyIndexAtStar(sess, sess.SelectedStar); ci >= 0 {
-						vector.DrawFilledRect(dst, 38, 424, 190, 20, color.RGBA{45, 95, 85, 255}, false)
+						fillPanel(dst, 38, 424, 190, 20, color.RGBA{45, 95, 85, 255}, false)
 						vector.StrokeRect(dst, 38, 424, 190, 20, 1, color.RGBA{120, 200, 180, 255}, false)
 						label := b.tr("▶ 設定集結點", "▶ Set rally point")
 						if to := sess.ColonyRelocation(ci); to >= 0 && to < len(sess.Stars) {
@@ -1433,15 +1453,25 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 		{236, 10, 128, 20, "WORKERS", 0},
 		{376, 10, 128, 20, "SCIENTISTS", 0},
 		{512, 10, 118, 20, "BUILDING", 0},
-		{8, 452, 62, 20, "SORT", 0},
-		{78, 452, 66, 18, "Name", 0},
-		{150, 452, 92, 18, "Population", 0},
-		{248, 452, 54, 18, "Food", 0},
-		{306, 452, 74, 18, "Industry", 0},
-		{384, 452, 74, 18, "Science", 0},
-		{462, 452, 88, 18, "Producing", 0},
-		{550, 452, 28, 18, "BC", 0},
-		{582, 452, 52, 20, "RETURN", 0},
+		// ⚠ 底部排序列這一整排原本**整體偏右**:每一格的擦底板都蓋在英文的右半邊,
+		// 於是每個中文標籤左邊都掛著一小截沒擦掉的英文(`P`、`IOC`、`R`、`e`…),
+		// 而「返回」更誇張——板在 585..631,`RETURN` 其實在 552..594,等於完全沒蓋到。
+		//
+		// 下面的值是**在英文模式跑同一張畫廊圖**(擦底整段不畫)之後掃亮字得到的:
+		// SORT 23..74、Name 99..130、Population 148..208、Food 228..253、Industry 269..316、
+		// Science 334..382、Producing 402..467、BC 489..504、RETURN 552..594(暗紅字,另量)。
+		// 每一格的板都涵蓋對應區段,且板中心對齊英文中心(中文才不會左右歪)。
+		{20, 450, 58, 22, "SORT", 0},
+		// 七格**刻意互相重疊**(擦底板 91..514 連續無縫):留縫的話英文抗鋸齒的邊緣像素
+		// 會從縫裡露出來,變成每個標籤旁邊的小雜點。板色都採自同一條深藍長條,重疊無害。
+		{88, 450, 55, 22, "Name", 0},
+		{136, 450, 84, 22, "Population", 0},
+		{214, 450, 54, 22, "Food", 0},
+		{258, 450, 70, 22, "Industry", 0},
+		{322, 450, 72, 22, "Science", 0},
+		{388, 450, 94, 22, "Producing", 0},
+		{475, 450, 42, 22, "BC", 0},
+		{538, 447, 76, 22, "RETURN", 0},
 	}
 	s, err := loadOverlayScreen(b.res, "colsum.lbx", 0, b.lang, b.fnt, "colony.tsv",
 		overlays, color.RGBA{210, 216, 230, 255}, 13, hits, onAction, nil)
@@ -1778,7 +1808,7 @@ func (d *diplomacyScreen) update(in shell.InputState) *origTransition {
 func (d *diplomacyScreen) draw(dst *ebiten.Image) {
 	dst.Fill(color.RGBA{12, 10, 22, 255})
 	if d.room != nil { // 原版議事廳背景
-		dst.DrawImage(d.room, nil)
+		drawPanelImage(dst, d.room, nil)
 	}
 	gold := color.RGBA{240, 220, 120, 255}
 	body := color.RGBA{235, 232, 245, 255}
@@ -1786,18 +1816,18 @@ func (d *diplomacyScreen) draw(dst *ebiten.Image) {
 		return
 	}
 	// 上方標題 + 使節台詞(疊半透明深色條增可讀性)。
-	vector.DrawFilledRect(dst, 0, 44, moo2ScreenW, 92, color.RGBA{8, 6, 14, 180}, false)
+	fillPanel(dst, 0, 44, moo2ScreenW, 92, color.RGBA{8, 6, 14, 180}, false)
 	d.fnt.DrawCentered(dst, d.b.tr("外交對談", "AUDIENCE"), 320, 62, 20, gold)
 	d.fnt.DrawCentered(dst, d.enemy+d.b.tr(" 使節", " Emissary"), 320, 96, 14, color.RGBA{235, 150, 140, 255})
 	d.fnt.DrawCentered(dst, d.response, 320, 124, 14, body)
 	for i, o := range d.opts {
 		x, y, w, h := d.optRect(i)
-		vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{34, 30, 54, 255}, false)
+		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{34, 30, 54, 255}, false)
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, color.RGBA{110, 90, 160, 255}, false)
 		d.fnt.DrawCentered(dst, o.label, float64(x+w/2), float64(y+h/2), 15, body)
 	}
 	bx, by, bw, bh := d.backRect[0], d.backRect[1], d.backRect[2], d.backRect[3]
-	vector.DrawFilledRect(dst, float32(bx), float32(by), float32(bw), float32(bh), color.RGBA{40, 34, 30, 255}, false)
+	fillPanel(dst, float32(bx), float32(by), float32(bw), float32(bh), color.RGBA{40, 34, 30, 255}, false)
 	vector.StrokeRect(dst, float32(bx), float32(by), float32(bw), float32(bh), 1.5, color.RGBA{160, 140, 100, 255}, false)
 	d.fnt.DrawCentered(dst, d.b.tr("結束對談", "END AUDIENCE"), float64(bx+bw/2), float64(by+bh/2), 15, body)
 }
@@ -2283,9 +2313,9 @@ func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base co
 			op.GeoM.Scale(sc, sc)
 			op.GeoM.Translate(iconX, float64(iconTop))
 		}
-		dst.DrawImage(sprite, op)
+		drawPanelImage(dst, sprite, op)
 	} else {
-		vector.DrawFilledRect(dst, float32(x), float32(iconTop), float32(w), float32(iconH), color.RGBA{base.R / 3, base.G / 3, base.B / 3, 255}, false)
+		fillPanel(dst, float32(x), float32(iconTop), float32(w), float32(iconH), color.RGBA{base.R / 3, base.G / 3, base.B / 3, 255}, false)
 	}
 	sw := float32(1.5)
 	sc := base
@@ -2297,7 +2327,7 @@ func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base co
 	// 注意 uifont.Font.Draw 的 (x,y) 是文字「左上角」基準(非 baseline),故這裡從帶子頂端
 	// 往下留 1px 起畫,讓字身整個落在 labelH 高度內,不溢出到下方圖示區(先前 y+labelH-2
 	// 誤當 baseline 用,實際會把字往下推到圖示範圍,疊字 bug 未修好,端到端截圖二次查出)。
-	vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(labelH), color.RGBA{0, 0, 0, 150}, false)
+	fillPanel(dst, float32(x), float32(y), float32(w), float32(labelH), color.RGBA{0, 0, 0, 150}, false)
 	if t.fnt != nil {
 		t.fnt.Draw(dst, s.Name, float64(x)+3, float64(y)+1, 10, color.RGBA{235, 240, 250, 255})
 	}
@@ -2305,14 +2335,14 @@ func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base co
 	if frac < 0 {
 		frac = 0
 	}
-	vector.DrawFilledRect(dst, float32(x)+5, float32(y)+float32(h)-8, float32(w-10), 4, color.RGBA{40, 40, 40, 255}, false)
-	vector.DrawFilledRect(dst, float32(x)+5, float32(y)+float32(h)-8, (float32(w-10))*frac, 4, base, false)
+	fillPanel(dst, float32(x)+5, float32(y)+float32(h)-8, float32(w-10), 4, color.RGBA{40, 40, 40, 255}, false)
+	fillPanel(dst, float32(x)+5, float32(y)+float32(h)-8, (float32(w-10))*frac, 4, base, false)
 }
 
 func (t *tacticalScreen) draw(dst *ebiten.Image) {
 	dst.Fill(color.RGBA{0, 0, 0, 255}) // 純黑太空底;STARBG 未寫入處透明,疊上後黑底透出即原版構圖
 	if t.bg != nil {
-		dst.DrawImage(t.bg, nil)
+		drawPanelImage(dst, t.bg, nil)
 	} else {
 		dst.Fill(color.RGBA{6, 6, 16, 255}) // fallback:原本深藍純色底
 	}
@@ -2342,7 +2372,7 @@ func (t *tacticalScreen) draw(dst *ebiten.Image) {
 	if t.bar != nil {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(0, float64(moo2ScreenH-129))
-		dst.DrawImage(t.bar, op)
+		drawPanelImage(dst, t.bar, op)
 		// 控制列烘進的英文按鈕疊中文(CLAUDE.md:button 也要中文化)。
 		// 英文模式跳過:COMBAT.LBX#0 上本來就是 AUTO / SCAN / BOARD / RETREAT / …。
 		if t.b.lang == i18n.Traditional {
@@ -2369,11 +2399,22 @@ var barButtonsCHT = []struct {
 	label  string
 	orig   string
 }{
-	{302, 378, "自動", "AUTO"}, {373, 378, "掃描", "SCAN"},
-	{302, 402, "登船", "BOARD"}, {373, 402, "撤退", "RETREAT"},
-	{302, 433, "等待", "WAIT"}, {373, 433, "完成", "DONE"},
-	{337, 461, "選項", "OPTIONS"},
+	{300, 374, "自動", "AUTO"}, {365, 374, "掃描", "SCAN"},
+	{300, 401, "登船", "BOARD"}, {365, 401, "撤退", "RETREAT"},
+	{300, 428, "等待", "WAIT"}, {365, 428, "完成", "DONE"},
+	{334, 455, "選項", "OPTIONS"},
 }
+
+// 座標來源:**英文模式跑同一張畫廊圖**(擦底整段不畫,COMBAT.LBX#0 的按鈕直接露出來),
+// 再掃浮雕亮邊定出六顆鈕的矩形:左欄 x 274..327、右欄 x 338..391(各寬 54),
+// 三列 y 365..383 / 392..410 / 419..438,OPTIONS 在 x 300..367 / y 447..462。
+//
+// 先前的值是照中文截圖目測的,右欄整欄偏右 9px、列也偏下 3~5px —— 擦底板一邊露出按鈕的
+// 灰邊、另一邊蓋到旁邊的星空。**用蓋著英文的截圖去量英文的位置**本來就量不準,
+// 英文模式那張才是原版美術本身。
+
+// barButtonPlate 是擦底板相對按鈕中心的尺寸。按鈕本體 54×18,板取 52×16 留住浮雕邊框。
+const barButtonPlateW, barButtonPlateH = 52, 16
 
 // drawBarLabelsCHT 在原版控制列的英文按鈕上疊深色底 + 中文字,蓋掉烘進的英文。
 func (t *tacticalScreen) drawBarLabelsCHT(dst *ebiten.Image) {
@@ -2381,9 +2422,9 @@ func (t *tacticalScreen) drawBarLabelsCHT(dst *ebiten.Image) {
 		return
 	}
 	for _, b := range barButtonsCHT {
-		x, y := float32(b.cx-27), float32(b.cy-10)
-		vector.DrawFilledRect(dst, x, y, 54, 20, color.RGBA{40, 44, 54, 255}, false)
-		vector.StrokeRect(dst, x, y, 54, 20, 1, color.RGBA{120, 130, 150, 255}, false)
+		x, y := float32(b.cx-barButtonPlateW/2), float32(b.cy-barButtonPlateH/2)
+		fillPanel(dst, x, y, barButtonPlateW, barButtonPlateH, color.RGBA{40, 44, 54, 255}, false)
+		vector.StrokeRect(dst, x, y, barButtonPlateW, barButtonPlateH, 1, color.RGBA{120, 130, 150, 255}, false)
 		t.fnt.DrawCentered(dst, b.label, float64(b.cx), float64(b.cy), 13, color.RGBA{225, 230, 240, 255})
 	}
 }
@@ -2764,7 +2805,7 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 			if im := pics[st.asset0+st.idx(b)]; im != nil {
 				op := &ebiten.DrawImageOptions{}
 				op.GeoM.Translate(float64(x+(ngBoxW-ngPicW)/2), float64(y))
-				dst.DrawImage(im, op)
+				drawPanelImage(dst, im, op)
 			}
 			if b.fnt == nil {
 				continue
@@ -3111,7 +3152,8 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 	modHits := make([]hitRegion, len(shell.WeaponModOptions))
 	for i := range shell.WeaponModOptions {
 		r := designModChipRect(i)
-		modHits[i] = hitRegion{int(r.x), int(r.y) - 2, int(r.w), 18, fmt.Sprintf("mod:%d", i)}
+		// 高度跟著 rowStep(15):寫死 18 會讓相鄰兩列的熱區重疊 3px,點在交界處會中到上一列。
+		modHits[i] = hitRegion{int(r.x), int(r.y) - 2, int(r.w), 15, fmt.Sprintf("mod:%d", i)}
 	}
 	hits = append(modHits, hits...)
 	onAction := func(a string) *origTransition {
@@ -3212,7 +3254,10 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			{b.tr("特殊", "Special"), sp, ""},
 		}
 		for i, r := range rows {
-			y := float64(69 + i*24)
+			// 面板內高只有 55..149(量自背景圖:上邊框 51/53、下邊框 151/153),四列
+			// 用 69+24i 排的話末列(「特殊」)畫到 153,**剛好被下邊框切掉一半**。
+			// 改成 60+22i → 60/82/104/126,末列墨水收在 140,離下邊框還有 9px。
+			y := float64(60 + i*22)
 			s.extras = append(s.extras,
 				// ⚠ 分隔符用 ASCII 冒號,不用 `▸`(U+25B8)。中文模式走 bitmapfont 點陣路徑有這個字,
 				// **英文模式走純向量字沒有**,畫出來是豆腐框——同一個字串在兩種語言下走不同字型,
@@ -3236,7 +3281,9 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		s.extras = append(s.extras,
 			extraText{x: 305, y: 168, size: 12, text: fmt.Sprintf(b.tr("%s總價 %d BC", "%s total %d BC"),
 				shipClassLabel(b.lang, designHull), total), col: color.RGBA{170, 220, 180, 255}},
-			extraText{x: 12, y: 460, size: 12,
+			// 左下第一個框的內緣量測值:x 19..140、y 441..465(邊框 141/142 與 440/466)。
+			// 原本寫 (12,460) 在框**外面**,壓在左邊框與下邊框的交角上。
+			extraText{x: 24, y: 447, size: 12,
 				text: fmt.Sprintf(b.tr("國庫 %d BC", "Treasury %d BC"), b.session.Player.BC), col: gold})
 
 		// 「已解鎖」這一行**依實際量測折行**,不是硬塞成一行。
@@ -3880,6 +3927,11 @@ type interactiveApp struct {
 	saved    bool
 	scale    int // 目前視窗放大倍率(1~4)
 
+	// hi-res 畫布(第 86 項(hi-res 畫布)):off 是 640×480 的離屏,rec 收集這一幀的文字繪製。
+	// uiScale==1 時兩者都不建立,整條路徑不走。
+	off *ebiten.Image
+	rec *uifont.Recorder
+
 	audio *moo2audio.Mixer // 持有音訊 Mixer,避免 player 被 GC(headless 為 nil)
 
 	// 過場截圖廊(-gamegallery):script 為導覽腳本,galleryShots 指定在哪個絕對 tick
@@ -4312,7 +4364,14 @@ func (a *interactiveApp) setScale(s int) {
 		return
 	}
 	a.scale = s
-	ebiten.SetWindowSize(moo2ScreenW*s, moo2ScreenH*s)
+	// 視窗尺寸以**邏輯**尺寸為單位(+/- 縮放的體感不變);內部畫布是 uiScale 倍,
+	// 所以視窗至少要有 uiScale 倍大,否則 1280×960 的內容縮進小視窗會**比放大前更糊**
+	// (縮小取樣),等於白做。
+	w, h := moo2ScreenW*s, moo2ScreenH*s
+	if cw, ch := canvasSize(); w < cw {
+		w, h = cw, ch
+	}
+	ebiten.SetWindowSize(w, h)
 }
 
 func (a *interactiveApp) pollInput() shell.InputState {
@@ -4330,7 +4389,10 @@ func (a *interactiveApp) pollInput() shell.InputState {
 		}
 		return in
 	}
+	// ⚠ `CursorPosition` 回的是 **Layout 空間**(hi-res 時是 1280×960),而所有命中區都是
+	// 640×480 邏輯座標——除不回去的話滑鼠會偏一倍。這是 rulebook/81 明列的踩雷之一。
 	x, y := ebiten.CursorPosition()
+	x, y = int(float64(x)/uiScale), int(float64(y)/uiScale)
 	return shell.InputState{
 		MouseX: x, MouseY: y,
 		ClickReleased: inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft),
@@ -4564,8 +4626,11 @@ func (a *interactiveApp) Update() error {
 		// 排程完全解耦:避免負載下 ebiten 跳 Draw、把多張錯過的 shot 批次補在
 		// 同一幀(舊寫法會讓 04_galaxy 抓到 colony 內容 → 重複幀 bug)。
 		for a.galleryDone < len(a.galleryShots) && a.tick >= a.galleryShots[a.galleryDone].tick {
-			off := ebiten.NewImage(moo2ScreenW, moo2ScreenH)
-			a.cur.draw(off)
+			// ⚠ 這裡要走 drawScene 而不是 cur.draw:**截圖是 remake 唯一的驗收管道**,
+			// 繞過合成的話畫廊拍到的永遠是 640 的舊畫面,hi-res 改了也看不出來
+			// ——這正是第 86 項(hi-res 畫布)第一次以為「Layout 沒生效」的真正原因。
+			off := ebiten.NewImage(canvasSize())
+			a.drawScene(off)
 			path := filepath.Join(a.galleryDir, a.galleryShots[a.galleryDone].name)
 			if err := saveScreenshot(off, path); err != nil {
 				fmt.Println("截圖失敗:", path, err)
@@ -4592,7 +4657,7 @@ func (a *interactiveApp) Update() error {
 }
 
 func (a *interactiveApp) Draw(dst *ebiten.Image) {
-	a.cur.draw(dst)
+	a.drawScene(dst)
 	if a.galleryDir != "" {
 		for a.galleryDone < len(a.galleryShots) && a.tick >= a.galleryShots[a.galleryDone].tick {
 			path := filepath.Join(a.galleryDir, a.galleryShots[a.galleryDone].name)
@@ -4613,7 +4678,44 @@ func (a *interactiveApp) Draw(dst *ebiten.Image) {
 	}
 }
 
-func (a *interactiveApp) Layout(int, int) (int, int) { return moo2ScreenW, moo2ScreenH }
+// drawScene 把當前畫面畫到 dst。
+//
+// uiScale==1:直接畫(與 hi-res 畫布之前完全相同的路徑)。
+// uiScale>1:畫面進 640 離屏、文字改用錄製,離屏 nearest 放大之後把文字以 2× 重播
+// ——**美術是銳利的整數倍放大,文字是在最終解析度重新柵格化的**(見 uifont/record.go)。
+func (a *interactiveApp) drawScene(dst *ebiten.Image) {
+	if uiScale <= 1 {
+		a.cur.draw(dst)
+		return
+	}
+	if a.off == nil {
+		a.off = ebiten.NewImage(moo2ScreenW, moo2ScreenH)
+		a.rec = &uifont.Recorder{}
+	}
+	a.off.Clear()
+	a.rec.Reset()
+	// flush:把離屏這一段美術貼上去 → 重播這一段的文字 → **清空離屏**,讓下一段只帶新畫的東西。
+	// 清空是關鍵:離屏背景不透明,重貼整張會把剛畫好的字洗掉(見 uifont/record.go 的屏障說明)。
+	flush := func() {
+		op := &ebiten.DrawImageOptions{Filter: ebiten.FilterNearest} // pixel art 不能雙線性
+		op.GeoM.Scale(uiScale, uiScale)
+		dst.DrawImage(a.off, op)
+		a.rec.Replay(dst, uiScale)
+		a.rec.Reset()
+		a.off.Clear()
+	}
+	uifont.SetFlushHook(flush)
+	uifont.StartRecording(a.rec)
+	a.cur.draw(a.off)
+	uifont.StopRecording()
+	uifont.SetFlushHook(nil)
+	flush()
+}
+
+// canvasSize 是內部畫布(= Layout 空間、也是截圖的實際尺寸)。
+func canvasSize() (int, int) { return int(moo2ScreenW * uiScale), int(moo2ScreenH * uiScale) }
+
+func (a *interactiveApp) Layout(int, int) (int, int) { return canvasSize() }
 
 // runInteractive 啟動「還原原版」的互動遊戲。script/shot 非空時為 headless 驗證;
 // galleryDir 非空時為「端到端過場截圖廊」模式(見 buildGalleryScript),優先於 script/shot。
@@ -4701,7 +4803,11 @@ func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
 	if shot == "" && script == nil {
 		app.audio = initAudio(res)
 	}
-	ebiten.SetWindowSize(moo2ScreenW*scale, moo2ScreenH*scale)
+	winW, winH := moo2ScreenW*scale, moo2ScreenH*scale
+	if cw, ch := canvasSize(); winW < cw {
+		winW, winH = cw, ch
+	}
+	ebiten.SetWindowSize(winW, winH)
 	ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled) // 允許拖曳邊框縮放
 	ebiten.SetWindowTitle("Master of Orion II — 繁體中文化 (remake)｜+/- 縮放  F11 全螢幕")
 	return ebiten.RunGame(app)
@@ -4747,11 +4853,12 @@ func designModChipRect(i int) struct{ x, y, w float64 } {
 		x0      = 305.0 // 與同一面板其他文字的左緣一致
 		right   = 632.0 // 畫布右緣留 8px
 		rows    = 4
-		rowStep = 16.0
-		// y0=370:標題在 352(高 11px,到 363),所以第一列從 370 起才不會疊到標題;
-		// 4 列 × 16 = 64px,末列在 418 起、428 收尾,與面板下緣(約 432)留白。
+		rowStep = 15.0
+		// 面板下邊框量在 y=431。舊值 y0=370/step=16 讓末列畫到 428,**貼著邊框**,
+		// 2× 畫布上看得出來被切。改 366/15 → 366/381/396/411,末列墨水收在 424。
+		// 標題在 352(高 11px,到 363),366 起不會疊到標題。
 		// 先前 4 欄 × 22px 兩列的版面在英文下會疊字,改 2 欄 4 列之後行高才收得緊。
-		y0 = 370.0
+		y0 = 366.0
 	)
 	colW := (right - x0) / 2
 	return struct{ x, y, w float64 }{

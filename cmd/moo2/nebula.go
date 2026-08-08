@@ -91,7 +91,7 @@ func (b *sceneBuilder) drawNebulae(dst *ebiten.Image, nebulae []shell.Nebula) {
 		// ⚠ 這是 remake 的呈現選擇——原版走的是自己的貼圖模式,沒有解出來。
 		op.ColorScale.ScaleAlpha(0.75)
 		op.GeoM.Translate(x, y)
-		dst.DrawImage(im, op)
+		drawPanelImage(dst, im, op)
 	}
 }
 

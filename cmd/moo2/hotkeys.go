@@ -262,7 +262,7 @@ func (b *sceneBuilder) drawFlash(dst *ebiten.Image) {
 	}
 	w, _ := b.fnt.Measure(b.flashMsg, 11)
 	const cx, cy = 340, 412 // 星圖視窗(20..527)偏右的底緣,不壓到左下角面板
-	vector.DrawFilledRect(dst, float32(cx)-float32(w)/2-6, cy-11, float32(w)+12, 16,
+	fillPanel(dst, float32(cx)-float32(w)/2-6, cy-11, float32(w)+12, 16,
 		color.RGBA{12, 18, 34, 225}, false)
 	b.fnt.DrawCentered(dst, b.flashMsg, cx, cy, 11, color.RGBA{225, 240, 220, 255})
 }

@@ -91,7 +91,7 @@ func (s *commandPointsScreen) draw(dst *ebiten.Image) {
 	drawStarmap(b, dst, b.fnt, sess.Stars, sess.SelectedStar, sess.VisibleStars())
 
 	// 文字視窗。
-	vector.DrawFilledRect(dst, cpPanelX, cpPanelY, cpPanelW, cpPanelH,
+	fillPanel(dst, cpPanelX, cpPanelY, cpPanelW, cpPanelH,
 		color.RGBA{10, 14, 30, 238}, false)
 	vector.StrokeRect(dst, cpPanelX, cpPanelY, cpPanelW, cpPanelH, 1,
 		color.RGBA{90, 130, 200, 255}, false)

@@ -204,7 +204,7 @@ func (b *sceneBuilder) drawColonyRoads(dst *ebiten.Image, roads colonyRoadMap) {
 				continue
 			}
 			if im := b.colonyScreenImage(colRoadsLBX, asset, colonyBasePalette); im != nil {
-				dst.DrawImage(im, &ebiten.DrawImageOptions{})
+				drawPanelImage(dst, im, &ebiten.DrawImageOptions{})
 			}
 		}
 	}

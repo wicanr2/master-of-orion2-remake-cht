@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/netplay"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
@@ -167,7 +166,7 @@ func (s *chooseNetPlayersScreen) draw(dst *ebiten.Image) {
 		}
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(x), float64(y))
-		dst.DrawImage(im, op)
+		drawPanelImage(dst, im, op)
 	}
 	blit(s.bg, 0, 0)
 
@@ -196,7 +195,7 @@ func (s *chooseNetPlayersScreen) draw(dst *ebiten.Image) {
 	dim := color.RGBA{150, 162, 185, 255}
 
 	if s.b.lang == i18n.Traditional {
-		vector.DrawFilledRect(dst, float32(winX+120), float32(winY+22), 240, 26,
+		fillPanel(dst, float32(winX+120), float32(winY+22), 240, 26,
 			color.RGBA{26, 30, 38, 255}, false)
 		s.b.fnt.DrawCentered(dst, "連線玩家", float64(winX+cnpBannerW/2), float64(winY)+40, 18, gold)
 	}
@@ -227,7 +226,7 @@ func (s *chooseNetPlayersScreen) draw(dst *ebiten.Image) {
 	seed := fmt.Sprintf(s.b.tr("種子 %d(由主機決定並廣播)", "Seed %d (chosen and broadcast by the host)"),
 		s.roster.Seed)
 	y1, y2 := cnpInfoBaselines(winY, rows)
-	vector.DrawFilledRect(dst, float32(winX+8), float32(y1-13), float32(cnpBannerW-16), float32(y2-y1+18),
+	fillPanel(dst, float32(winX+8), float32(y1-13), float32(cnpBannerW-16), float32(y2-y1+18),
 		color.RGBA{10, 12, 18, 235}, false)
 	s.b.fnt.Draw(dst, hint, float64(winX+16), float64(y1), 12, body)
 	s.b.fnt.Draw(dst, seed, float64(winX+16), float64(y2), 11, dim)

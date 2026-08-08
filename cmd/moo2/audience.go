@@ -85,7 +85,7 @@ func (b *sceneBuilder) drawAudienceLights(dst *ebiten.Image) {
 		if x < 0 {
 			break // 排到左邊界外就不畫了(對手數超過版面能放的)
 		}
-		vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h),
+		fillPanel(dst, float32(x), float32(y), float32(w), float32(h),
 			audienceReasonColor(reason), false)
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1,
 			color.RGBA{230, 220, 180, 255}, false)

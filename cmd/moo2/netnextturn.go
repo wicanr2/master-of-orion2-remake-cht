@@ -259,7 +259,7 @@ func (s *netNextTurnScreen) draw(dst *ebiten.Image) {
 		}
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(x), float64(y))
-		dst.DrawImage(im, op)
+		drawPanelImage(dst, im, op)
 	}
 	blit(s.bg, 0, 0)
 	blit(s.bannerFrame(), nntX, nntBannerY)
@@ -275,7 +275,7 @@ func (s *netNextTurnScreen) draw(dst *ebiten.Image) {
 	// 標題:原版的標題帶烘著 "NETWORK PLAYERS",中文模式先擦一塊再疊字
 	// (不擦的話兩層字疊在一起,那是 loadgame/gamemenu/confirmbox 都處理過的同一件事)。
 	if s.b.lang == i18n.Traditional {
-		vector.DrawFilledRect(dst, 170, float64Rect(nntBannerY+12), 300, 26,
+		fillPanel(dst, 170, float64Rect(nntBannerY+12), 300, 26,
 			color.RGBA{26, 30, 38, 255}, false)
 		s.b.fnt.DrawCentered(dst, "等待其他玩家", 320, float64(nntBannerY)+30, 18, gold)
 	}
@@ -330,7 +330,7 @@ func (s *netNextTurnScreen) draw(dst *ebiten.Image) {
 	// 分岔警告:鎖步一旦分岔,繼續玩只會讓兩邊差得更遠,所以蓋在聊天記錄上面也要講。
 	if s.table != nil {
 		if d := s.table.Desync(); d != "" {
-			vector.DrawFilledRect(dst, nntX+16, nntBotY+137, 598, 44, color.RGBA{70, 16, 20, 235}, false)
+			fillPanel(dst, nntX+16, nntBotY+137, 598, 44, color.RGBA{70, 16, 20, 235}, false)
 			vector.StrokeRect(dst, nntX+16, nntBotY+137, 598, 44, 1, color.RGBA{230, 110, 110, 255}, false)
 			s.b.fnt.Draw(dst, s.b.tr("⚠ 狀態分岔——對局已不同步,請停止", "⚠ Desync — the game is out of sync, stop"),
 				nntX+26, float64(nntBotY)+157, 13, color.RGBA{250, 190, 180, 255})
@@ -339,7 +339,7 @@ func (s *netNextTurnScreen) draw(dst *ebiten.Image) {
 	}
 
 	// 輸入列(原版 y=430、高 0x11,前綴同樣是 `"(%s)  "` 配本方玩家名)。
-	vector.DrawFilledRect(dst, nntX+16, nntInputY, 598, nntInputH, color.RGBA{18, 24, 38, 220}, false)
+	fillPanel(dst, nntX+16, nntInputY, 598, nntInputH, color.RGBA{18, 24, 38, 220}, false)
 	caret := ""
 	if (s.tick/30)%2 == 0 {
 		caret = "_"

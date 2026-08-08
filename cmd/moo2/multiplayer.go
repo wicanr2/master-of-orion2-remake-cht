@@ -6,7 +6,6 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
@@ -401,12 +400,12 @@ func (s *multiplayerScreen) click(act string) *origTransition {
 func (s *multiplayerScreen) draw(dst *ebiten.Image) {
 	dst.Fill(color.RGBA{6, 8, 14, 255})
 	if s.bg != nil {
-		dst.DrawImage(s.bg, &ebiten.DrawImageOptions{})
+		drawPanelImage(dst, s.bg, &ebiten.DrawImageOptions{})
 	}
 	if s.panel != nil {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(s.panX), float64(s.panY))
-		dst.DrawImage(s.panel, op)
+		drawPanelImage(dst, s.panel, op)
 	}
 	if s.fnt == nil {
 		return
@@ -422,7 +421,7 @@ func (s *multiplayerScreen) draw(dst *ebiten.Image) {
 		if im := s.frameImage(btn.asset, frame); im != nil {
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Translate(float64(x), float64(y))
-			dst.DrawImage(im, op)
+			drawPanelImage(dst, im, op)
 		}
 		// 擦掉烘在圖上的英文再疊中文(上下左右各留 3px 保住浮雕邊框)。
 		// 英文模式整段跳過:原版按鈕上烘的就是 NETWORK / MODEM / …,露出來比用 Noto
@@ -431,7 +430,7 @@ func (s *multiplayerScreen) draw(dst *ebiten.Image) {
 			continue
 		}
 		if face, ok := s.frameFace(btn.asset, frame); ok {
-			vector.DrawFilledRect(dst, float32(x+3), float32(y+3), float32(w-6), float32(h-6), face, false)
+			fillPanel(dst, float32(x+3), float32(y+3), float32(w-6), float32(h-6), face, false)
 		}
 		label := btn.zh
 		col := mpLabelNormal
@@ -451,7 +450,7 @@ func (s *multiplayerScreen) draw(dst *ebiten.Image) {
 	// 底色從標題帶自身採樣(左緣往內 8px),不用猜的常數——面板調色盤換了也不會露餡。
 	tx, ty, tw, th := s.panX+30, s.panY+16, s.panW-60, 24
 	if s.b.lang == i18n.Traditional { // 英文模式露原版烘在面板上的標題
-		vector.DrawFilledRect(dst, float32(tx), float32(ty), float32(tw), float32(th), s.titleFace, false)
+		fillPanel(dst, float32(tx), float32(ty), float32(tw), float32(th), s.titleFace, false)
 		s.fnt.DrawCentered(dst, "多人遊戲設定",
 			float64(s.panX+s.panW/2), float64(ty+th/2), 16, sel)
 	}

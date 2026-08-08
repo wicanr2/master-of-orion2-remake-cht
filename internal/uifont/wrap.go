@@ -140,6 +140,7 @@ func wrapSegment(measure func(string) float64, s string, maxWidth float64) []str
 	if len(lines) == 0 {
 		lines = append(lines, "")
 	}
+	lines = applyKinsoku(measure, lines, maxWidth)
 	return lines
 }
 
@@ -163,6 +164,56 @@ func WrapText(measure func(string) float64, s string, maxWidth float64) []string
 		out = append(out, wrapSegment(measure, seg, maxWidth)...)
 	}
 	return out
+}
+
+// ============ 避頭尾(kinsoku) ============
+//
+// 純粹按寬度折行會把標點丟到不該去的位置。實際撞到的一例:種族選擇畫面的
+// 「外交手腕高明,雇用領袖較廉(民主政體)」折成
+//
+//	外交手腕高明,雇用領袖較廉(
+//	民主政體)
+//
+// —— 開括號孤零零留在行尾。中文排版的規矩是**開括號不能在行尾、收尾標點不能在行首**。
+
+// kinsokuNoLineEnd 是不得出現在行尾的字元(開括號、開引號)。
+const kinsokuNoLineEnd = `([{（「『【《〈〔｛［“‘`
+
+// kinsokuNoLineStart 是不得出現在行首的字元(收括號、句讀、後綴符號)。
+const kinsokuNoLineStart = `)]}）」』】》〉〕｝］,.，。、;:;:!?！?…‧・”’%％`
+
+// applyKinsoku 對已折好的行做兩種最小修正:
+//
+//	① 行尾是開括號 → 把它推到下一行行首(**一定安全**,那一行只會變短)
+//	② 行首是收尾標點 → 把上一行最後一個字推下來墊在它前面,**且只在推完仍放得下時才做**
+//	   (放不下就維持原樣——寧可標點在行首,也不要撐破面板)
+//
+// 只掃一遍。連續多個標點的極端情況修不完全,但不會越修越糟。
+func applyKinsoku(measure func(string) float64, lines []string, maxWidth float64) []string {
+	if len(lines) < 2 {
+		return lines
+	}
+	for i := 0; i+1 < len(lines); i++ {
+		cur := []rune(lines[i])
+		if len(cur) > 1 && strings.ContainsRune(kinsokuNoLineEnd, cur[len(cur)-1]) {
+			lines[i] = string(cur[:len(cur)-1])
+			lines[i+1] = string(cur[len(cur)-1]) + lines[i+1]
+		}
+	}
+	for i := 0; i+1 < len(lines); i++ {
+		next := []rune(lines[i+1])
+		cur := []rune(lines[i])
+		if len(next) == 0 || len(cur) < 2 || !strings.ContainsRune(kinsokuNoLineStart, next[0]) {
+			continue
+		}
+		moved := string(cur[len(cur)-1]) + lines[i+1]
+		if measure(moved) > maxWidth {
+			continue
+		}
+		lines[i] = string(cur[:len(cur)-1])
+		lines[i+1] = moved
+	}
+	return lines
 }
 
 // Wrap 是便利方法:用本字型在 size 字級下的實際量測折行。

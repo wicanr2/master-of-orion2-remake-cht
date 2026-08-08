@@ -101,7 +101,7 @@ func (s *nameFlagScreen) update(in shell.InputState) *origTransition {
 func (s *nameFlagScreen) draw(dst *ebiten.Image) {
 	dst.Fill(color.RGBA{0, 0, 0, 255})
 	if s.bg != nil {
-		dst.DrawImage(s.bg, nil)
+		drawPanelImage(dst, s.bg, nil)
 	}
 	if s.fnt == nil {
 		return
@@ -113,7 +113,7 @@ func (s *nameFlagScreen) draw(dst *ebiten.Image) {
 
 	// 名稱輸入框。
 	bx, by, bw, bh := 170, 140, 300, 40
-	vector.DrawFilledRect(dst, float32(bx), float32(by), float32(bw), float32(bh), color.RGBA{20, 26, 40, 220}, false)
+	fillPanel(dst, float32(bx), float32(by), float32(bw), float32(bh), color.RGBA{20, 26, 40, 220}, false)
 	vector.StrokeRect(dst, float32(bx), float32(by), float32(bw), float32(bh), 1.5, color.RGBA{110, 150, 210, 255}, false)
 	name := string(s.name) + "_" // 尾端游標
 	s.fnt.DrawCentered(dst, name, float64(bx+bw/2), float64(by+bh/2), 18, body)
@@ -124,7 +124,7 @@ func (s *nameFlagScreen) draw(dst *ebiten.Image) {
 	s.fnt.DrawCentered(dst, s.b.tr("選擇旗幟顏色", "CHOOSE YOUR BANNER COLOR"), 320, 232, 13, gold)
 	for i, fc := range shell.FlagColors {
 		x, y, w, h := s.flagRect(i)
-		vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{fc.R, fc.G, fc.B, 255}, false)
+		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{fc.R, fc.G, fc.B, 255}, false)
 		bw2 := float32(1.5)
 		bord := color.RGBA{80, 90, 110, 255}
 		if i == s.flagSel {
@@ -142,7 +142,7 @@ func (s *nameFlagScreen) draw(dst *ebiten.Image) {
 
 	drawBtn := func(rect func() (int, int, int, int), label string, accent color.RGBA) {
 		x, y, w, h := rect()
-		vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{34, 34, 44, 255}, false)
+		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{34, 34, 44, 255}, false)
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, accent, false)
 		s.fnt.DrawCentered(dst, label, float64(x+w/2), float64(y+h/2), 14, body)
 	}

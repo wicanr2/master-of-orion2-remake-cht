@@ -248,6 +248,6 @@ func (b *sceneBuilder) drawColonyVeggiesAt(dst *ebiten.Image, veg colonyVeggieMa
 		}
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(v.x), float64(v.y))
-		dst.DrawImage(im, op)
+		drawPanelImage(dst, im, op)
 	}
 }

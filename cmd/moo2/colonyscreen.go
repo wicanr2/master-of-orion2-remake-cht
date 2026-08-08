@@ -201,13 +201,13 @@ func (b *sceneBuilder) drawColonyScreen(dst *ebiten.Image, idx int) {
 	sess := b.session
 	c := sess.PlayerColonies[idx]
 
-	vector.DrawFilledRect(dst, 0, 0, colScreenW, colScreenH, colPanelBg, false)
+	fillPanel(dst, 0, 0, colScreenW, colScreenH, colPanelBg, false)
 	b.drawColonyTerrain(dst, idx)
 	// 道路夾在地形與框架之間,和原版 `Draw_Colony_Screen_` 的呼叫序一致。
 	surf := b.colonySurfaceLayout(idx)
 	b.drawColonyRoads(dst, surf.roads)
 	if im := b.colonyChrome(); im != nil {
-		dst.DrawImage(im, &ebiten.DrawImageOptions{})
+		drawPanelImage(dst, im, &ebiten.DrawImageOptions{})
 	}
 	b.drawColonyBuildings(dst, surf)
 	b.drawColonySatellites(dst, idx)
@@ -215,7 +215,7 @@ func (b *sceneBuilder) drawColonyScreen(dst *ebiten.Image, idx int) {
 
 	// 兩顆鈕的英文(LEADERS / RETURN)烘在框架圖上,照既有做法擦底疊中文。
 	drawBtn := func(y, h int, zh string) {
-		vector.DrawFilledRect(dst, float32(colBtnX+3), float32(y+3),
+		fillPanel(dst, float32(colBtnX+3), float32(y+3),
 			float32(colBtnW-6), float32(h-6), color.RGBA{72, 76, 84, 255}, false)
 		b.fnt.DrawCentered(dst, zh, float64(colBtnX+colBtnW/2), float64(y+h/2), 12, colBodyCol)
 	}
@@ -239,7 +239,7 @@ func (b *sceneBuilder) drawColonyScreen(dst *ebiten.Image, idx int) {
 		if btn.on { // CHANGE 接上建造視窗了,不再畫成灰的
 			face, ink = color.RGBA{74, 88, 74, 255}, color.RGBA{225, 240, 225, 255}
 		}
-		vector.DrawFilledRect(dst, float32(btn.x+3), float32(btn.y+3),
+		fillPanel(dst, float32(btn.x+3), float32(btn.y+3),
 			float32(btn.w-6), float32(btn.h-6), face, false)
 		b.fnt.DrawCentered(dst, btn.zh, float64(btn.x+btn.w/2), float64(btn.y+btn.h/2), 11, ink)
 	}
@@ -342,7 +342,7 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 		{b.tr("科學家", "Scientists"), c.Scientists}}
 	for i, j := range jobs {
 		y := colJobY0 + i*colJobStep
-		vector.DrawFilledRect(dst, float32(colJobX0), float32(y),
+		fillPanel(dst, float32(colJobX0), float32(y),
 			float32(colJobX1-colJobX0), float32(colJobStep-4), colSlotBg, false)
 		vector.StrokeRect(dst, float32(colJobX0), float32(y),
 			float32(colJobX1-colJobX0), float32(colJobStep-4), 1, colPanelEdge, false)

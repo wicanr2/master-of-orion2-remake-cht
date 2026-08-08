@@ -5,7 +5,6 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/netplay"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
@@ -229,7 +228,7 @@ func (s *netInfoScreen) draw(dst *ebiten.Image) {
 	dst.Fill(color.RGBA{6, 8, 14, 255})
 	if s.bg != nil {
 		op := &ebiten.DrawImageOptions{}
-		dst.DrawImage(s.bg, op)
+		drawPanelImage(dst, s.bg, op)
 	}
 	im := s.frame()
 	if im == nil {
@@ -239,14 +238,14 @@ func (s *netInfoScreen) draw(dst *ebiten.Image) {
 	winX, winY := netInfoWindow(w, h)
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(float64(winX), float64(winY))
-	dst.DrawImage(im, op)
+	drawPanelImage(dst, im, op)
 
 	if s.b.fnt == nil {
 		return
 	}
 	// 原版把字烘在圖上,中文得擦底疊字。擦底的左緣取 STATUS 欄的內緣(量的,+98)
 	// ——再往左就把 "STATUS" 那個標籤也擦掉了,而它是美術的一部分。
-	vector.DrawFilledRect(dst, float32(winX+98), float32(winY+h/2-16), float32(w-98-24), 30,
+	fillPanel(dst, float32(winX+98), float32(winY+h/2-16), float32(w-98-24), 30,
 		color.RGBA{14, 16, 22, 240}, false)
 	s.b.fnt.DrawCentered(dst, s.b.netInfoCaption(s.state),
 		float64(winX+w/2), float64(winY+h/2)+6, 16, color.RGBA{240, 220, 120, 255})
@@ -263,7 +262,7 @@ func (s *netInfoScreen) draw(dst *ebiten.Image) {
 			return
 		}
 		bx, by := winX+netInfoStartBtnX, winY+netInfoStartBtnY
-		vector.DrawFilledRect(dst, float32(bx+4), float32(by+4),
+		fillPanel(dst, float32(bx+4), float32(by+4),
 			float32(netInfoStartBtnW-8), float32(netInfoStartBtnH-8),
 			color.RGBA{58, 58, 52, 255}, false)
 		s.b.fnt.DrawCentered(dst, s.b.tr("開始連線對局", "START NET GAME"),

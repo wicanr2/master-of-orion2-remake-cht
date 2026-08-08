@@ -6,7 +6,6 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
@@ -250,7 +249,7 @@ func (s *inputBoxScreen) draw(dst *ebiten.Image) {
 		}
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(x), float64(y))
-		dst.DrawImage(im, op)
+		drawPanelImage(dst, im, op)
 	}
 	blit(s.box, s.x, s.y)
 	okImg := s.ok
@@ -270,7 +269,7 @@ func (s *inputBoxScreen) draw(dst *ebiten.Image) {
 		color.RGBA{240, 220, 120, 255})
 
 	fx, fy, fw, fh := inboxFieldRect(s.x, s.y)
-	vector.DrawFilledRect(dst, float32(fx), float32(fy), float32(fw), float32(fh),
+	fillPanel(dst, float32(fx), float32(fy), float32(fw), float32(fh),
 		color.RGBA{12, 14, 20, 255}, false)
 	const textSize = 14
 	txt := string(s.text)
@@ -287,7 +286,7 @@ func (s *inputBoxScreen) draw(dst *ebiten.Image) {
 	// (同 confirmbox 的 YES/NO,`confirmBtnFace` 那支取面色的 helper 通用,這裡直接用)。
 	if s.b.lang == i18n.Traditional {
 		f := confirmBtnFace(okImg)
-		vector.DrawFilledRect(dst, float32(bx+5), float32(by+5),
+		fillPanel(dst, float32(bx+5), float32(by+5),
 			float32(bw-10), float32(inboxOKH-10), f, false)
 	}
 	s.b.fnt.DrawCentered(dst, s.b.tr("確定", "ACCEPT"), float64(bx+bw/2), float64(by)+7, 14,

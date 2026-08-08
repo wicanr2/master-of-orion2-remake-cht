@@ -155,3 +155,36 @@ func TestWrapText_NoWordSplit(t *testing.T) {
 		}
 	}
 }
+
+// TestKinsokuOpenBracketNotAtLineEnd 開括號不得留在行尾(種族選擇畫面實際撞到的那個)。
+func TestKinsokuOpenBracketNotAtLineEnd(t *testing.T) {
+	// 等寬假量測:每個 rune 算 1。上限取 14 —— 前 13 字加上「(」剛好 14,自然折行會把
+	// 開括號**留在行尾**(上限 13 反而會自己避開,那樣測不到東西)。
+	m := func(s string) float64 { return float64(len([]rune(s))) }
+	got := WrapText(m, "外交手腕高明,雇用領袖較廉(民主政體)", 14)
+	if len(got) < 2 {
+		t.Fatalf("應該折成兩行以上,實得 %q", got)
+	}
+	for i, ln := range got[:len(got)-1] {
+		r := []rune(ln)
+		if len(r) > 0 && strings.ContainsRune(kinsokuNoLineEnd, r[len(r)-1]) {
+			t.Errorf("第 %d 行以開括號結尾:%q(全部:%q)", i, ln, got)
+		}
+	}
+}
+
+// TestKinsokuClosingPunctNotAtLineStart 收尾標點不該獨自出現在行首。
+func TestKinsokuClosingPunctNotAtLineStart(t *testing.T) {
+	// 上限 13:前 13 字剛好斷在句號**之前**,句號會落到下一行行首。
+	m := func(s string) float64 { return float64(len([]rune(s))) }
+	got := WrapText(m, "第一段文字第二段文字第三段。後面還有", 13)
+	for i, ln := range got {
+		if i == 0 {
+			continue
+		}
+		r := []rune(ln)
+		if len(r) > 0 && strings.ContainsRune(kinsokuNoLineStart, r[0]) {
+			t.Errorf("第 %d 行以收尾標點開頭:%q(全部:%q)", i, ln, got)
+		}
+	}
+}

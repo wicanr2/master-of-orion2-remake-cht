@@ -102,7 +102,18 @@ func (f *Font) Face(size float64) text.Face {
 }
 
 // Draw 在 (x,y) 以左上為基準畫一段文字。
+//
+// 錄製模式(hi-res 畫布,見 record.go)下**只記錄不繪製**,由 Recorder.Replay 以 2× 重畫。
 func (f *Font) Draw(dst *ebiten.Image, s string, x, y, size float64, c color.Color) {
+	if activeRecorder != nil {
+		activeRecorder.ops = append(activeRecorder.ops, textOp{font: f, s: s, x: x, y: y, size: size, c: c})
+		return
+	}
+	f.drawNow(dst, s, x, y, size, c)
+}
+
+// drawNow 是 Draw 的實作(繞過錄製,供 Recorder.Replay 用)。
+func (f *Font) drawNow(dst *ebiten.Image, s string, x, y, size float64, c color.Color) {
 	if f.useBitmap(size) {
 		sc := float64(f.scaleFor(size))
 		op := &text.DrawOptions{}
@@ -125,6 +136,16 @@ func (f *Font) Draw(dst *ebiten.Image, s string, x, y, size float64, c color.Col
 
 // DrawCentered 以 (cx,cy) 為中心水平+垂直置中畫一段文字(用 text/v2 對齊,免手算)。
 func (f *Font) DrawCentered(dst *ebiten.Image, s string, cx, cy, size float64, c color.Color) {
+	if activeRecorder != nil {
+		activeRecorder.ops = append(activeRecorder.ops,
+			textOp{font: f, s: s, x: cx, y: cy, size: size, c: c, centered: true})
+		return
+	}
+	f.drawCenteredNow(dst, s, cx, cy, size, c)
+}
+
+// drawCenteredNow 是 DrawCentered 的實作(繞過錄製)。
+func (f *Font) drawCenteredNow(dst *ebiten.Image, s string, cx, cy, size float64, c color.Color) {
 	if f.useBitmap(size) {
 		sc := float64(f.scaleFor(size))
 		op := &text.DrawOptions{}

@@ -65,6 +65,16 @@ func saveScreenshot(img *ebiten.Image, path string) error {
 	b := img.Bounds()
 	rgba := image.NewRGBA(b)
 	img.ReadPixels(rgba.Pix)
+	// ⚠ **壓到不透明黑再存**。畫面上沒畫到的地方 alpha 是 0,而玩家在螢幕上看到的是**黑**;
+	// 存成帶 alpha 的 PNG 的話,每一個檢視器都會把它疊到白底,原版底圖裡的透明區(例如
+	// 殖民地總覽下排第三格,原版在那裡貼縮圖)就變成一大塊刺眼白噪點——**截圖是這個專案
+	// 的驗收管道,截圖說謊比畫面有洞更貴**。
+	for i := 0; i < len(rgba.Pix); i += 4 {
+		if a := rgba.Pix[i+3]; a != 0xFF {
+			// 已是 premultiplied alpha(ebiten 的格式),所以「疊在黑底上」就是保留 RGB。
+			rgba.Pix[i+3] = 0xFF
+		}
+	}
 	f, err := os.Create(path)
 	if err != nil {
 		return err
@@ -193,8 +203,14 @@ func main() {
 	// 譯表預設**烘在執行檔裡**(見 embedassets.go),所以從任何目錄跑都找得到。
 	// 這個旗標是開發用的覆寫:改譯表不必重編。
 	i18nDir := flag.String("i18n", "", "譯表目錄(留空 = 用烘進執行檔的那份)")
+	// hi-res 內部畫布倍率(第 86 項(hi-res 畫布)):2 = 1280×960(CJK 才有足夠字級),
+	// 1 = 回到 640×480 的舊行為(**逐位元回歸驗證用**,見 interactive.go 的 uiScale)。
+	uiScaleFlag := flag.Float64("uiscale", 2, "內部畫布倍率(2=hi-res,1=原版 640×480)")
 	flag.Parse()
 	i18nOverrideDir = *i18nDir // 讓散在各處的 OpenI18NTSV 也吃得到 -i18n(見 embedassets.go)
+	if *uiScaleFlag >= 1 {
+		uiScale = *uiScaleFlag
+	}
 
 	langID := i18n.Traditional
 	if *lang == "en" {

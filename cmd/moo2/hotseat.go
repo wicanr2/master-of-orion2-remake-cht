@@ -83,7 +83,7 @@ func (h *hotseatScreen) draw(dst *ebiten.Image) {
 		return
 	}
 	x, y, w, hh := h.winRect()
-	vector.DrawFilledRect(dst, float32(x), float32(y), float32(w), float32(hh), color.RGBA{22, 26, 38, 255}, false)
+	fillPanel(dst, float32(x), float32(y), float32(w), float32(hh), color.RGBA{22, 26, 38, 255}, false)
 	vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(hh), 2, color.RGBA{150, 165, 200, 255}, false)
 
 	gold := color.RGBA{240, 220, 120, 255}
@@ -104,7 +104,7 @@ func (h *hotseatScreen) draw(dst *ebiten.Image) {
 	}
 
 	bx, by, bw, bh := h.okRect()
-	vector.DrawFilledRect(dst, float32(bx), float32(by), float32(bw), float32(bh), color.RGBA{40, 48, 66, 255}, false)
+	fillPanel(dst, float32(bx), float32(by), float32(bw), float32(bh), color.RGBA{40, 48, 66, 255}, false)
 	vector.StrokeRect(dst, float32(bx), float32(by), float32(bw), float32(bh), 1.5, color.RGBA{150, 165, 200, 255}, false)
 	h.fnt.DrawCentered(dst, h.b.tr("接手", "TAKE OVER"), float64(bx+bw/2), float64(by+bh/2), 15, body)
 }

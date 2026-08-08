@@ -107,7 +107,7 @@ func (a *antaranRoomScreen) update(in shell.InputState) *origTransition {
 func (a *antaranRoomScreen) draw(dst *ebiten.Image) {
 	dst.Fill(color.RGBA{10, 6, 4, 255})
 	if a.room != nil {
-		dst.DrawImage(a.room, nil)
+		drawPanelImage(dst, a.room, nil)
 	}
 	if a.fnt == nil {
 		return
@@ -117,13 +117,13 @@ func (a *antaranRoomScreen) draw(dst *ebiten.Image) {
 	warn := color.RGBA{235, 140, 110, 255}
 
 	// 標題帶:背景是滿版美術,文字直接疊上去會看不清,壓一條半透明深色。
-	vector.DrawFilledRect(dst, 0, 24, moo2ScreenW, 74, color.RGBA{6, 4, 2, 175}, false)
+	fillPanel(dst, 0, 24, moo2ScreenW, 74, color.RGBA{6, 4, 2, 175}, false)
 	a.fnt.DrawCentered(dst, a.b.tr("安塔蘭王座廳", "THE ANTARAN THRONE ROOM"), 320, 46, 22, gold)
 	a.fnt.DrawCentered(dst, a.b.tr("次元傳送門的彼端,安塔蘭統治者在等著。",
 		"Beyond the dimensional gate, the Antaran overlords are waiting."), 320, 78, 14, body)
 
 	// 戰力對比:同一套 playerMilitary,與實際結算用的數字一致。
-	vector.DrawFilledRect(dst, 0, 300, moo2ScreenW, 76, color.RGBA{6, 4, 2, 175}, false)
+	fillPanel(dst, 0, 300, moo2ScreenW, 76, color.RGBA{6, 4, 2, 175}, false)
 	a.fnt.DrawCentered(dst,
 		fmt.Sprintf(a.b.tr("安塔蘭母星防禦艦隊:%d 艘,總戰力 %d", "Antaran home fleet: %d ships, %d combat power"),
 			a.theirCount, a.theirPower), 320, 320, 14, warn)
@@ -144,7 +144,7 @@ func (a *antaranRoomScreen) draw(dst *ebiten.Image) {
 	if !enabled {
 		face, edge = color.RGBA{34, 30, 28, 235}, color.RGBA{96, 88, 80, 255}
 	}
-	vector.DrawFilledRect(dst, float32(ax), float32(ay), float32(aw), float32(ah), face, false)
+	fillPanel(dst, float32(ax), float32(ay), float32(aw), float32(ah), face, false)
 	vector.StrokeRect(dst, float32(ax), float32(ay), float32(aw), float32(ah), 1.5, edge, false)
 	lab, labCol := a.b.tr("發動終局反攻", "LAUNCH THE FINAL ASSAULT"), body
 	if !enabled {
@@ -152,12 +152,12 @@ func (a *antaranRoomScreen) draw(dst *ebiten.Image) {
 	}
 	a.fnt.DrawCentered(dst, lab, float64(ax+aw/2), float64(ay+ah/2), 16, labCol)
 
-	vector.DrawFilledRect(dst, float32(rx), float32(ry), float32(rw), float32(rh), color.RGBA{34, 30, 44, 235}, false)
+	fillPanel(dst, float32(rx), float32(ry), float32(rw), float32(rh), color.RGBA{34, 30, 44, 235}, false)
 	vector.StrokeRect(dst, float32(rx), float32(ry), float32(rw), float32(rh), 1.5, color.RGBA{140, 130, 170, 255}, false)
 	a.fnt.DrawCentered(dst, a.b.tr("撤退", "WITHDRAW"), float64(rx+rw/2), float64(ry+rh/2), 16, body)
 
 	if !enabled {
-		vector.DrawFilledRect(dst, 0, 448, moo2ScreenW, 26, color.RGBA{6, 4, 2, 190}, false)
+		fillPanel(dst, 0, 448, moo2ScreenW, 26, color.RGBA{6, 4, 2, 190}, false)
 		a.fnt.DrawCentered(dst, a.b.tr("無法發動:", "Cannot launch: ")+a.blockReason, 320, 461, 12, warn)
 	}
 }

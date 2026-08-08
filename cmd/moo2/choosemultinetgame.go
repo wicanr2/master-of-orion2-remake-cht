@@ -227,7 +227,7 @@ func (s *chooseMultiNetGameScreen) draw(dst *ebiten.Image) {
 		}
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(x), float64(y))
-		dst.DrawImage(im, op)
+		drawPanelImage(dst, im, op)
 	}
 	blit(s.bg, 0, 0)
 	winX, winY := cmngWindow()
@@ -242,7 +242,7 @@ func (s *chooseMultiNetGameScreen) draw(dst *ebiten.Image) {
 	dim := color.RGBA{140, 150, 172, 255}
 
 	// 標題:原版烘的是 "JOIN NETWORK GAME SETUP",中文要擦底疊上去。
-	vector.DrawFilledRect(dst, float32(winX+86), float32(winY+26), 308, 26,
+	fillPanel(dst, float32(winX+86), float32(winY+26), 308, 26,
 		color.RGBA{24, 27, 34, 255}, false)
 	s.b.fnt.DrawCentered(dst, s.b.tr("選擇要加入的對局", "Choose a network game"),
 		float64(winX+cmngPanelW/2), float64(winY)+30, 16, gold)
@@ -283,7 +283,7 @@ func (s *chooseMultiNetGameScreen) draw(dst *ebiten.Image) {
 
 	// 底下那顆鈕的位置是反組譯真值(欄位左上角);寬高是量的,原版沒有給。
 	bx, by := winX+cmngBtnX, winY+cmngBtnY
-	vector.DrawFilledRect(dst, float32(bx-2), float32(by-4),
+	fillPanel(dst, float32(bx-2), float32(by-4),
 		float32(cmngBtnW), float32(cmngBtnH), color.RGBA{150, 148, 138, 255}, false)
 	s.b.fnt.DrawCentered(dst, s.b.tr("返回", "CANCEL"),
 		float64(bx-2+cmngBtnW/2), float64(by)-1, 13, color.RGBA{28, 28, 24, 255})
