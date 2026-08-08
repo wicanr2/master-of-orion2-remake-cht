@@ -1,8 +1,11 @@
 # MOO2 音訊曲目/音效對應表
 
 > 目的:把 `STREAM.LBX` / `STREAMHD.LBX`(音樂)與 `SOUND.LBX`(音效)的 entry,對應到「這是哪首曲/哪個 UI 事件」,供遊戲各場景選對背景音樂與音效。
-> 日期:2026-07-10(第二輪,不需人耳聆聽,改用資料+文獻交叉推定)。搭配讀:[`audio-format.md`](audio-format.md)(格式)。
-> **驗收原則(鐵律)**:曲名↔entry 的最終對應**必須對原版聆聽確認**。本檔嚴格區分「已驗證(指紋比對)」與「推定(待聆聽)」,不把推理當已對齊(記取專案 `rulebook/65` 教訓)。第二輪把「推定」的證據等級拉高(EXE 架構事實 + 官方曲名慣例 + 本機時長實測),但**仍非曲名級確證**——見第六節「定案表」逐格信心標註。
+> 日期:2026-08-08(第四輪,場景對應改用反組譯立即數並接進 remake)。搭配讀:[`audio-format.md`](audio-format.md)(格式)。
+> **證據等級**:「場景播哪一首」是**執行檔的立即數**(第三節),一手證據,remake 已照它接線。
+> 「這一條叫什麼名字」仍未定案,需要人耳——但那是命名,不影響行為(第六節)。
+> ⚠ 本檔第五節保留 2026-07-10 那一輪的**結構性**結論(戰鬥音樂獨立分派、外交依關係切換、
+> STREAMHD 有配對曲),它們與第三節一致;那一輪的**逐場景猜測值**已刪除,因為第三節推翻了它們。
 
 ## 一、已驗證:STREAM.LBX 的 8 條 = 官方原聲帶(byte-size 指紋)
 
@@ -37,19 +40,51 @@ Battle 1 · Battle 2 · Battle 3          ← 戰鬥
 - **`STREAMHD.LBX`(20 條,較短 13–42s)= 完整具名音樂集**(含每個種族的外交主題)。
 - **`STREAM.LBX`(8 條,較長 42–136s)= 精選/長版**(官方 OST 收錄的就是這組)。
 
-## 三、推定對應(第一輪,★待聆聽確認,勿當定案)
+## 三、場景 → 曲目:反組譯直接讀出來的(remake 已接線)
 
-假設 `STREAMHD.LBX` 的 entry 順序 = last.fm 曲目順序(**未證**):
+**場景播哪一首不是推定,是執行檔裡的立即數**(第 73 項(音樂場景表))。曲**名**仍未定案,但那是命名,不影響行為。
 
-| STREAMHD entry | 時長 | 推定曲名 | 用於場景(推定) |
-|---|---|---|---|
-| streamhd_01 | 38.54s | Theme 1 | **主選單/標題** |
-| streamhd_02 | 19.17s | Theme 2 | 星系圖/一般 |
-| streamhd_03 | 42.66s | Theme 3 | 一般 |
-| streamhd_04..17 | 19–24s | 各種族主題(Psilon/Meklar/…) | 對應種族外交畫面 |
-| streamhd_18..20 | 15–21s | Battle 1/2/3 | 戰鬥 |
+三個入口:
 
-> ⚠ 上表**每一列都是待驗證假設**(2026-07-10 第一輪產物)。streamhd_01 是否真為「Theme 1 主選單曲」、各種族順序是否吻合,**都要對原版聆聽或逐條試聽 dump 檔才能定案**。第二輪(見第五節)用資料+文獻交叉推定把部分項目的證據等級拉高,但曲名級身分仍未證實。
+| 函式 | 位址 | 行為 |
+|---|---|---|
+| `Play_Streaming_Music_` | `0x24677` | 指定曲目。**編號 ≤100 → `STREAM.LBX` 的 entry;>100 → `STREAMHD.LBX` 的 entry(索引 = 編號 − 100)** |
+| `Play_Background_Music_` | `0x2484F` | `clock() % 3 + 1` → **STREAM 1/2/3 隨機**(15 個呼叫端) |
+| `Play_Combat_Music_` | `0x2496C` | `clock() % 3 + 4` → **STREAM 4/5/6 隨機**(只有 `Tactical_Combat_` 呼叫) |
+
+`Play_Streaming_Music_` 的「下一首」參數有兩個哨兵值:`-1` = 沒有下一首;`-2` = 播完接隨機 STREAM 1..3。
+
+| 場景(除錯符號真名) | 曲目編號 | remake 落點 |
+|---|---|---|
+| `main__0` / 主選單、星圖、多數畫面 | `Play_Background_Music_` → STREAM 1/2/3 隨機 | `playBackgroundMusic()` |
+| `Tactical_Combat_` | `Play_Combat_Music_` → STREAM 4/5/6 隨機 | `playCombatMusic()` |
+| `Science_Room_` / `_Tech_Select_` | STREAMHD **#17**(播完接隨機 STREAM 1..3) | `research()` |
+| `Start_Main_Event_` / `Draw_Event_Screen_` | STREAMHD **#18** | `eventScreen()` |
+| `Main_Council_Screen_` | STREAMHD **#19** | `council()` |
+| `Main_Antaran_Room_Screen_` | STREAMHD **#20** | `antaranRoom()` |
+| `Design_Screen_` / `Draw_Design_Screen_` | STREAM **#8** | `shipDesign()` |
+| `Colony_Combat_Screen_` | STREAM **#10** | `newGroundCombatScreen()` |
+| `Draw_Diplomacy_Synch_Mode_` | STREAMHD **#`word_19AA44`**(逐族/依關係動態) | `playDiplomacyMusic()`,見第七節 |
+
+### 一道事後才發現的交叉驗證
+
+實測玩家資料夾(`LoadMusic` 的回傳值):
+
+```
+stream.lbx   count=11 可用=8  entryIDs=[1 2 3 4 5 6 8 10]
+streamhd.lbx count=21 可用=20 entryIDs=[1..20]
+```
+
+反組譯點名的 STREAM 曲目是 **1/2/3**(背景)、**4/5/6**(戰鬥)、**8**(艦艇設計)、**10**(殖民地戰鬥)
+——**正好就是這八個存在的槽**,而它從來沒點過的 **7 與 9**,正是那兩個非 WAV 的空槽。
+若編號指的是「第幾條 WAV」而不是 entry id,這個吻合不會成立。
+
+### remake 這一側的兩個已知差異
+
+- **科學室播完不接下一首。** 原版的 `-2` 哨兵會在 STREAMHD #17 播完之後接隨機 STREAM 1..3;
+  remake 的 Mixer 沒有「播完接下一首」這個機制,所以只播第一首。
+- **外交只有「關係差」那一組。** 「關係好」是 `該族 empire 記錄 offset 0x25 + 1`,
+  那張逐族靜態表還沒追出來(見待辦)。
 
 ## 四、SOUND.LBX 音效(名稱已知,語意用途待確認)
 
@@ -120,30 +155,27 @@ Steam《Master of Orion: Soundtrack & Score》(App 468020,2016 重製版,同一�
 
 > ⚠ **這是本檔自產的推論訊號,不是外部 oracle**(對應 `rulebook/65` 的告誡)。時長相近不等於「同一首歌的兩個版本」,也不能反推是哪一族、哪個場景——只能當「STREAMHD 內部確有配對結構」的弱佐證,不可當「某 entry = 某族/某場景」的證據使用。
 
-### 5.5 定案表(2026-07-10 第二輪)
+### 5.5 這一路推到哪裡為止
 
-| 場景 | 目前值(clip idx) | 依據 | 信心 |
-|---|---|---|---|
-| 主選單/標題(`bgmMenu`) | 0(entry1,38.54s)**不變** | entry 1 為首條、屬「長曲」群(38–43s),契合原聲帶慣例「Theme 1 開場」;無新證據推翻 | 中 |
-| 星系圖/一般經營(`bgmGalaxy`) | 2(entry3,42.66s)**改自 1** | 原值 entry2(19.17s)落在「中長曲群」(疑似種族主題時長區間),不合長時間迴圈播放的一般場景樂;entry3 屬獨立長曲(與 entry8 同 42.66s 成對,但本身可單獨當一般場景樂用) | 低(時長分群推論,非曲名確證) |
-| 外交(`bgmDiplo`) | 3(entry4,24.05s)**不變** | 落在「中長曲群」(19–24s,疑似種族主題區間);5.2/5.3 已證實外交音樂本應依關係好壞切換,目前仍是單一常數,是**簡化實作**而非曲目選錯——好壞分支未做,列入待辦 | 中(場景分類有架構佐證;曲目身分未證) |
-| 戰鬥(`bgmCombat`) | 16(entry17,14.61s)**改自 17** | 原值 entry18(21.32s)與 entry13(21.32s)精確同長,較像落入「配對曲池」而非獨立戰鬥曲;entry17(14.61s)無配對夥伴、短促,較符合 `Play_Combat_Music_` 獨立分派、短迴圈的直覺 | 低(時長分群推論,非曲名確證) |
-| 勝利/失敗、安塔蘭 | 未指定 | 查無 openorion2/EXE 字串/文獻對應這兩個場景的專屬曲目函式或曲名;`Play_Streaming_Music_1H`、`Set_Music_For_Game_Popup_` 等字串顯示可能走「彈出視窗音樂」而非獨立 BGM 軌,但無法定位到具體 entry | 低(維持未指定,不硬猜) |
-| 各族專屬外交曲(Psilon/Meklar/…) | 未細分(仍共用 `bgmDiplo`) | 5.4 的 6 組配對訊號支持「STREAMHD 內有多族配對曲」存在,但無法反推「entry X = 哪一族」;沒有可靠索引可查 | 低(結構存在,身分未知) |
+5.1–5.4 建立的是**結構**:戰鬥音樂是獨立分派、外交音樂依關係好壞切換、STREAMHD 內確有配對曲。
+這些結論到今天仍然成立,而且與第三節反組譯讀出來的東西一致。
 
-**結論**:menu/diplo 維持原推定值(有時長輪廓/架構佐證,無新證據推翻);galaxy/combat 各改了一個索引(時長分群推論支持,仍非曲名確證)。四項皆非「聽過確認」等級——**驗收仍需第六節的人耳試聽**,本節只把「先猜哪個」的依據從純 last.fm 播放量排序,提升到「EXE 架構事實 + 官方曲名慣例 + 本機時長分群」三路交叉,誠實地說,confidence 仍多為中/低。
+**但「哪個場景播哪一條」不必再從時長推**——第三節的立即數直接給了答案,
+而那條路推出來的結果與時長分群的猜測**並不相同**(例如主選單根本不是固定曲,是 STREAM 1/2/3 隨機)。
+留這一節是因為它的結構性結論仍在用;逐場景的猜測值已刪。
 
-## 六、如何驗收(給使用者/後續)
+## 六、還需要人耳的是什麼
 
-1. 抽出全部音檔到可試聽目錄:
-   ```bash
-   docker run --rm -v "$PWD:/src" -v "$PWD/.docker-cache/go:/go" \
-     -v /home/anr2/moo2-private-build/gamedata/mastori2:/data:ro -w /src moo2-ebiten \
-     bash -c 'go build -buildvcs=false -o /tmp/m ./cmd/moo2 && xvfb-run -a /tmp/m -audiodump /out -data /data'
-   # 或桌面直接跑 AppImage 後用 -audiodump 到家目錄
-   ```
-2. 用播放器聽 `streamhd_01..20` 與 `stream_01..10`,把「哪條是主選單曲、哪條是戰鬥曲、各種族主題」回填第五節的定案表,把推定改成已驗證。
-3. 聽 `sound_034_BUTTON1` 等,確認 UI 點擊音選得對。
+**場景對應不需要**(第三節,反組譯的立即數)。仍需要聆聽的只有**曲名**——「streamhd_04 是不是 Psilon 主題」這一類,而那不影響任何行為。
+
+要試聽的話,抽檔指令:
+
+```bash
+docker run --rm --log-opt max-size=10m --log-opt max-file=3 \
+  -v "$PWD:/src" -v "$PWD/.docker-cache/go:/go" \
+  -v /home/anr2/moo2-private-build/gamedata/mastori2:/data:ro -w /src moo2-ebiten \
+  bash -c 'go build -buildvcs=false -o /tmp/m ./cmd/moo2 && xvfb-run -a /tmp/m -audiodump /out -data /data'
+```
 
 ## 待辦
 

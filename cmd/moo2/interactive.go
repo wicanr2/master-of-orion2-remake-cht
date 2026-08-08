@@ -478,7 +478,7 @@ func savePathFor() string { return shell.SaveSlotPath(saveDirFor(), shell.AutoSa
 
 // menu 建原版主選單畫面。按鈕熱區用 menuOverlays 的座標(按鈕即標籤)。
 func (b *sceneBuilder) menu() (*overlayScreen, error) {
-	playSceneBGM(bgmMenu)
+	playBackgroundMusic() // 原版主選單走 Play_Background_Music_:STREAM 1/2/3 每次重擲
 	// 無存檔時 Continue / Load Game **停用**:不給熱區(點了不動作)+ 標籤畫成灰的。
 	// 這是 2026-07-12 archive.org 原版 oracle 對照的 issue #2 結論——原版那兩顆本來就是
 	// 灰階不可按,remake 先前是「可按但靜默無反應」,玩家會以為壞了。
@@ -632,7 +632,7 @@ func (b *sceneBuilder) backHit(dest func() (*overlayScreen, error), name string)
 // galaxy 建原版星系主畫面(遊戲主樞紐,BUFFER0.LBX 資產 0)。底部工具列導覽到各畫面
 // (座標取自 openorion2 galaxy.cpp GalaxyView::initWidgets)。
 func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
-	playSceneBGM(bgmGalaxy)
+	playBackgroundMusic() // 星圖同樣走 Play_Background_Music_(第 73 項(音樂場景表))
 	hits := []hitRegion{
 		{15, 430, 67, 44, "colonies"},
 		{90, 430, 67, 44, "planets"},
@@ -1807,7 +1807,7 @@ func (b *sceneBuilder) diplomacy() (origScreen, error) {
 	if b.session == nil {
 		return nil, fmt.Errorf("無對局")
 	}
-	playSceneBGM(bgmDiplo)
+	playDiplomacyMusic()
 	return newDiplomacyScreen(b), nil
 }
 
@@ -1818,7 +1818,7 @@ func (b *sceneBuilder) diplomacyWith(enemy string) (origScreen, error) {
 	if b.session == nil {
 		return nil, fmt.Errorf("無對局")
 	}
-	playSceneBGM(bgmDiplo)
+	playDiplomacyMusic()
 	d := newDiplomacyScreen(b)
 	if enemy != "" {
 		d.enemy = enemy
@@ -2384,7 +2384,7 @@ func (t *tacticalScreen) drawBarLabelsCHT(dst *ebiten.Image) {
 
 // tacticalCombat 進入格子戰術戰鬥畫面。
 func (b *sceneBuilder) tacticalCombat() (origScreen, error) {
-	playSceneBGM(bgmCombat)
+	playCombatMusic() // Tactical_Combat_ 是唯一呼叫 Play_Combat_Music_ 的地方
 	if b.session == nil {
 		return nil, fmt.Errorf("無對局")
 	}
@@ -2436,6 +2436,7 @@ func (b *sceneBuilder) battleResult() (*overlayScreen, error) {
 // council 建原版銀河議會畫面(COUNCIL.LBX 資產 1,調色盤鏈 COUNCIL#0)。3D 議事廳,
 // 無烘字,疊「銀河議會」標題;點畫面返回種族關係。
 func (b *sceneBuilder) council() (*overlayScreen, error) {
+	playSceneBGM(trackCouncil) // Main_Council_Screen_ → STREAMHD #19(第 73 項(音樂場景表))
 	// 有待回應選舉(AI 當選)時,改用「接受/拒絕」熱區——手冊:議會無法強迫玩家接受決議
 	// (RespondToCouncilElection)。其餘狀態下整頁點擊返回種族關係(backHit)。原版議會是 3D
 	// 議事廳、無內建 accept/reject 按鈕藝術,故此處以可點擊文字提示補上互動,不偽造浮雕按鈕框
@@ -3072,6 +3073,7 @@ const (
 //
 // 點艦體等級 → 建造該艦加入艦隊 → 回艦隊;點他處 → 返回艦隊。
 func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
+	playSceneBGM(trackShipDesign) // Design_Screen_ → STREAM #8
 	// 原版艦體名 → shell 的中文 key。由既有的兩份表建,不再手寫第三份對照
 	// (三份表遲早會漂移;順序本來就一致,見 shipClassZH 註解)。
 	hullZH := make(map[string]string, len(dsHullOrder))
@@ -3553,6 +3555,10 @@ func currentAreaTopic(session *shell.GameSession, areaIdx int) (topic gamedata.R
 // 改為即時算出該領域「目前應研究的主題」(currentAreaTopic,依 techtree 固定順序取第一個
 // 未完成主題)並把中文名 + RP 成本疊字顯示在領域框內,點擊即設定為該真主題(而非寫死值)。
 func (b *sceneBuilder) research() (*overlayScreen, error) {
+	// Science_Room_ / _Tech_Select_ → STREAMHD #17。原版播完會接隨機 STREAM 1..3
+	// (Play_Streaming_Music_ 的 edx = −2 哨兵);remake 的 Mixer 沒有「播完接下一首」
+	// 這個機制,所以只播第一首——**已知缺口**,不是抄漏。
+	playSceneBGM(trackScienceRoom)
 	// 8 個研究領域為點擊熱區(bg 局部座標;涵蓋整塊面板)→ 設定該領域目前主題 → 回星系。
 	hits := []hitRegion{
 		{16, 32, 208, 98, "Construction"}, {242, 32, 214, 98, "Power"},

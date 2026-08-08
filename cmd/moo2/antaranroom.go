@@ -164,6 +164,7 @@ func (a *antaranRoomScreen) draw(dst *ebiten.Image) {
 
 // antaranRoom 進入安塔蘭王座廳。
 func (b *sceneBuilder) antaranRoom() (origScreen, error) {
+	playSceneBGM(trackAntaranRoom) // Main_Antaran_Room_Screen_ → STREAMHD #20
 	if b.session == nil {
 		return nil, fmt.Errorf("無對局")
 	}

@@ -76,6 +76,7 @@ func (b *sceneBuilder) currentReport() *reportPanel {
 
 // eventScreen 建快報畫面。內容取自 currentReport();沒有可播的就直接回回合摘要。
 func (b *sceneBuilder) eventScreen() (*overlayScreen, error) {
+	playSceneBGM(trackEventScreen) // Start_Main_Event_ / Draw_Event_Screen_ → STREAMHD #18
 	if b.currentReport() == nil {
 		return b.turnSummary()
 	}

@@ -156,6 +156,7 @@ type groundCombatScreen struct {
 }
 
 func newGroundCombatScreen(b *sceneBuilder, res shell.GroundInvasionResult) *groundCombatScreen {
+	playSceneBGM(trackColonyCombat) // Colony_Combat_Screen_ → STREAM #10(第 73 項(音樂場景表))
 	return &groundCombatScreen{
 		b: b, fnt: b.fnt, res: res,
 		panel:     loadGroundSprite(b.res, gcbtFrameAsset),
