@@ -538,3 +538,9 @@ Wolverine V	狼獾 V
 Wolverine VI	狼獾 VI
 Wolverine VII	狼獾 VII
 Wyvern	飛龍
+# --- 以下 3 條不在原版 672 條裡:remake 自訂的開局艦隊名 ---
+# 原版從艦名池隨機抽,而 homeworldShips() 沒有 rng 可用(見 internal/shell/session.go)。
+# 標在這裡而不是混進上面,是為了讓「哪些是原版的」這件事仍然查得出來。
+Pathfinder	拓荒號
+Vanguard I	先驅一號
+Vanguard II	先驅二號

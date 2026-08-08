@@ -245,3 +245,25 @@ func TestShipBoardingAttackShuttlesAreOneWay(t *testing.T) {
 		t.Errorf("突擊艇送出一個中隊(4)之後艦上應剩 16,實得 %d", att.Marines)
 	}
 }
+
+// TestHomeworldShipNamesAreEnglishOriginals 開局那三艘的名字要存**英文原文**,
+// 中文由翻譯器在建艦當下產生——否則英文模式的艦隊畫面會永遠掛著中文艦名。
+//
+// 這是第 84 項(名稱池雙語化)的同一條原則:名稱是資料,語言是呈現。
+// (放在 boarding_test.go 是因為登艦戰是這一輪同時做的;shell 沒有專屬的命名測試檔。)
+func TestHomeworldShipNamesAreEnglishOriginals(t *testing.T) {
+	raw := homeworldShips(nil) // nil 翻譯器 = 拿到未翻譯的原文
+	want := []string{"Pathfinder", "Vanguard I", "Vanguard II"}
+	for i, sh := range raw {
+		if sh.Name != want[i] {
+			t.Errorf("第 %d 艘的原文名 = %q,期望 %q", i, sh.Name, want[i])
+		}
+	}
+	// 翻譯器接上去之後要真的變中文(這條才是「有沒有接線」)。
+	zh := homeworldShips(func(en string) string {
+		return map[string]string{"Pathfinder": "拓荒號", "Vanguard I": "先驅一號", "Vanguard II": "先驅二號"}[en]
+	})
+	if zh[0].Name != "拓荒號" {
+		t.Errorf("接上翻譯器後第 0 艘 = %q,期望「拓荒號」", zh[0].Name)
+	}
+}

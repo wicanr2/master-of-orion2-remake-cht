@@ -512,11 +512,22 @@ func (s *GameSession) NextUnlockedComponent(opts []Component, cur int) int {
 //     故 remake 目前只給這 3 艘,不臆測補齊。
 //
 // 三艘均為空武裝(殖民船/偵察艦在原版本就不具備武器容量,非本 remake 遺漏)。
-func homeworldShips() []Ship {
+//
+// ⚠ **艦名存英文原文,中文由注入的翻譯器在建艦當下翻**(同第 84 項(名稱池雙語化)的星名/艦名池)。
+// 先前這三個名字是硬編中文,所以英文模式的艦隊畫面上永遠掛著「拓荒號 / 先驅一二號」。
+// 三個名字本身是 remake 自訂的(原版從艦名池抽,而這裡沒有 rng 可用),譯表在
+// `assets/i18n/shipname.tsv` 尾端獨立標記。
+func homeworldShips(tr func(string) string) []Ship {
+	local := func(en string) string {
+		if tr == nil {
+			return en
+		}
+		return tr(en)
+	}
 	return []Ship{
-		{Name: "拓荒號", Class: "殖民船", Weapon: "無武裝", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
-		{Name: "先驅一號", Class: "偵察艦", Weapon: "無武裝", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
-		{Name: "先驅二號", Class: "偵察艦", Weapon: "無武裝", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
+		{Name: local("Pathfinder"), Class: "殖民船", Weapon: "無武裝", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
+		{Name: local("Vanguard I"), Class: "偵察艦", Weapon: "無武裝", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
+		{Name: local("Vanguard II"), Class: "偵察艦", Weapon: "無武裝", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
 	}
 }
 
@@ -4774,7 +4785,7 @@ func NewDemoSession() *GameSession {
 		// demoLeaders()/applyLeaderColonyBonuses 保留供未來「傭兵招募流程」實作後 seed 用(TODO)。
 		Leaders: nil,
 		// 開局一支艦隊,停在母星(星 0),沒有航行任務(見 fleet.go)。
-		Fleets: []Fleet{{Ships: homeworldShips(), AtStar: 0, DestStar: -1}},
+		Fleets: []Fleet{{Ships: homeworldShips(defaultNameTranslator), AtStar: 0, DestStar: -1}},
 		// 母星開局預設建造「貿易品」:archive.org 線上原版實測(2026-07-12 oracle)讀到 Sol III
 		// 的 BUILDING 欄就是「Trade Goods」,右下 Income +12 BC——remake 先前開局是「不建造」、
 		// 收支 +0,是母星開局態沒對齊的一環(見 docs/tech/oracle-comparison-20260712.md)。

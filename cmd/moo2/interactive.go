@@ -1350,7 +1350,22 @@ func shipClassLabel(lang i18n.Lang, zhKey string) string {
 			return dsHullOrder[i]
 		}
 	}
+	if en, ok := supportClassEN[zhKey]; ok {
+		return en
+	}
 	return zhKey
+}
+
+// supportClassEN 是**支援艦**的艦級英文名(手冊 p.119 明列的三種 + 運輸艦)。
+//
+// 六個戰鬥艦體在 dsHullOrder 裡,這四個不在——而開局艦隊全是支援艦,所以英文模式的
+// 艦隊畫面先前整欄掛著「殖民船 / 偵察艦」。⚠ 與 shipClassZH 同理:**左邊那一欄是查表 key**
+// (`shell.ShipCost`/`isSupportShipClass` 都拿它比對),不能換成英文。
+var supportClassEN = map[string]string{
+	"殖民船": "Colony Ship",
+	"偵察艦": "Scout",
+	"前哨船": "Outpost Ship",
+	"運輸艦": "Freighter",
 }
 
 // truncateToWidth 把 s 截到在 fnt/size 下量測寬度不超過 maxW,超過則去尾加「…」。
@@ -3062,7 +3077,7 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 				}
 				s.extras = append(s.extras,
 					extraText{x: 40, y: y, size: 12, text: mk + sh.Name, col: nameCol},
-					extraText{x: 140, y: y, size: 11, text: sh.Class, col: body},
+					extraText{x: 140, y: y, size: 11, text: shipClassLabel(b.lang, sh.Class), col: body},
 				)
 				// 結構損傷(見 internal/shell/repair.go)。原版是在艦艇資訊面板用損壞色標示,
 				// remake 只有結構這一份損傷值,直接寫百分比;完好的船不畫,免得整排都是「損傷 0%」。
