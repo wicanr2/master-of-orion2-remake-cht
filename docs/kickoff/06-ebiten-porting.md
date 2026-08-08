@@ -1,7 +1,17 @@
 # ebiten 移植策略(kick-off)
 
+> ⚠ **2026-08-08:本文是專案起始期(kick-off)的評估,底下的「下一步 / 待辦」清單是**
+> **當時的計畫,不是現況。** docker + xvfb 與 mom playbook 兩條已完成;`Screen` 抽象層與 widget 樹兩條**方向已改,不做**(見本文開頭的訂正)。
+> **現況只以 `WORKLIST.md` 頂端的剩餘工作表與 `docs/re/01-gap-report.md` 的活表為準。**
+
 > 把 openorion2(C++/SDL2)的架構映射到 go/ebiten。依據見 `01-openorion2-assessment.md`。
 > 註:CLAUDE.md 列的 go/ebiten 參考 `~/master-of-magic` 本機不存在,本文以 openorion2 架構 + ebiten 官方模型推導,待補該參考後回填實戰心得。
+>
+> ⚠ **2026-08-08:本文是 kick-off 當時的推導,其中兩條後來沒有執行,也不打算執行**——
+> 「實作滿足 `Screen` 介面的 ebitenScreen」與「`gui.cpp` widget 樹翻譯成 Go」。
+> remake 最後走的是**直繪 + 逐畫面 `hitRegion`**(`cmd/moo2` 共 49 處 `DrawImage`),
+> 沒有抽象層、沒有 retained-mode widget 樹、也就沒有 callback 要轉成 closure。
+> **本文其餘的對映表仍然有效**(事件輪詢 → `Update()` 讀 `inpututil`、LBX 解碼、調色盤鏈等)。
 
 ## 1. 兩個框架的核心模型對映
 

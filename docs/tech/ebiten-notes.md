@@ -36,8 +36,11 @@ assets.Resolver.OpenLBX → lbx.DecodeImage → Frame.ToRGBA(palette,keycolor)
 - 星名以 `ebitenutil.DebugPrintAt`(英文,CJK 待 Phase 3)、星雲以 `vector.DrawFilledCircle`。
 - 驗證:SAVE10.GAM 的 36 星(Orion/Altair/Sssla…)位置/顏色正確、星雲數=2 與存檔一致 → 存檔解析 × 繪製全鏈路成立。
 
-## 6. 待續
+## 6. 待續(2026-08-08 逐條追認,已無待續)
 
-- [ ] 把 openorion2 `Screen` 介面以 ebiten 實作(registerTexture/drawTexture/fillRect/clip)。
-- [ ] 星圖換真實 sprite(GALAXY.LBX asset 148,依 spectralClass×zoom×size)+ STARBG 星空背景。
-- [ ] 資產快取(避免每幀 NewImageFromImage)。
+- ~~把 openorion2 `Screen` 介面以 ebiten 實作(registerTexture/drawTexture/fillRect/clip)。~~
+  **方向已改,不做**:remake 走直繪(`cmd/moo2` 共 49 處 `DrawImage`),沒有也不需要抽象層。
+  這一條與 `gui.cpp` widget 樹移植是同一個構想,都停在 kick-off 階段沒有執行。
+- ~~星圖換真實 sprite + STARBG 星空背景。~~ **已完成**:`cmd/moo2/starsprite.go`(GALAXY.LBX 0x94)
+  + `nebula.go` / `starbg_test.go`。
+- ~~資產快取。~~ **已完成**:`overlay.go` / `multiplayer.go`。

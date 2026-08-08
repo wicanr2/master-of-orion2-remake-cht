@@ -1,5 +1,9 @@
 # LBX 資產與 patch 1.3 / 1.5 處理(kick-off)
 
+> ⚠ **2026-08-08:本文是專案起始期(kick-off)的評估,底下的「下一步 / 待辦」清單是**
+> **當時的計畫,不是現況。** 四條全部完成:`internal/lbx` 解碼器、`-data` 逗號串多目錄的覆蓋順序、`docs/tech/version-1.3-1.5-diff.md`、`gamedata.RuleProfile`。
+> **現況只以 `WORKLIST.md` 頂端的剩餘工作表與 `docs/re/01-gap-report.md` 的活表為準。**
+
 > 回答 CLAUDE.md 兩件事:①「patch 如何處理」②「主選單可選版本 1.3 / 1.5」的架構。
 > LBX 解析細節見 `01-openorion2-assessment.md` §1。本文聚焦資料來源與版本策略。
 

@@ -1,5 +1,9 @@
 # 按鈕中文化(kick-off)—— 避免重蹈覆轍
 
+> ⚠ **2026-08-08:本文是專案起始期(kick-off)的評估,底下的「下一步 / 待辦」清單是**
+> **當時的計畫,不是現況。** 按鈕清單化已由 24 份 TSV(5,046 條)取代;`gui.cpp` 按鈕 widget 那條**方向已改**——remake 直繪 + 逐畫面 `hitRegion`,沒有 widget 系統。
+> **現況只以 `WORKLIST.md` 頂端的剩餘工作表與 `docs/re/01-gap-report.md` 的活表為準。**
+
 > CLAUDE.md 特別要求:「按鈕的中文化一定要參考先前的專案經驗,避免重蹈覆轍」。
 > 前作原文:`~/master-of-orion/docs/CJK-DEV-NOTES.md` §3 烘字 SOP、§4 踩雷、速查表。
 

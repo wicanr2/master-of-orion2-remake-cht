@@ -18,8 +18,7 @@
 > 種族選擇左右擺反、艦艇設計六個艦體槽不等距)。詳見 `docs/re/01-gap-report.md`。
 >
 > 可勾選工作清單,對應 `PLAN.md` 階段。允許擴充(CLAUDE.md)。完整性優先:不預先砍項;卡關記錄方法換路,不寫「暫緩/低投報」。
-> 圖例:`[ ]` 待辦 `[~]` 進行中 `[x]` 完成(⚠ 多為自製系統的完成,非原版對齊)
-> `[-]` **作廢**(方向已改,不是漏做——留著只會讓人以為架構有缺)。
+> 圖例:`[ ]` 待辦 `[~]` 進行中 `[x]` 完成(⚠ 多為自製系統的完成,非原版對齊)。
 
 ## ★ 剩餘工作(2026-08-08 重新盤點,使用者要求)
 
@@ -27,10 +26,16 @@
 >
 > ⚠ **2026-08-08 已逐條追認**:底下各 Phase 的 42 個未完成方框(32 個 `[ ]` + 10 個 `[~]`)
 > 全部對程式碼查證過,判定寫在**各條自己那一行**(不在別處另寫一份——那正是斷言殘留的來源)。
-> 結果:**已完成 19、作廢 5、部分 9、仍開 9**(合計 42)。
-> 「已完成」多數是斷言過期(例如「各子畫面 RETURN 用全螢幕返回」——實際有逐畫面精確熱區;
-> 「只剩載存檔畫面沒做」——`loadgame.go` 早就在,過場截圖廊第 70 拍就是它)。
-> 「作廢」是方向改了(直繪架構不移植 openorion2 的 Screen 抽象層與 widget 樹)。
+> 結果:**已完成 19、方向已改直接刪除 5、部分 9、仍開 9**(合計 42)。
+>
+> 「已完成」多數是斷言過期,而且**本文裡那句假斷言也一併劃掉**(`~~刪節線~~`)——
+> 只在後面加註記不夠,前面那句話還是會被讀到。例如「各子畫面 RETURN 用全螢幕返回」
+> (實際有逐畫面精確熱區)、「只剩載存檔畫面沒做」(`loadgame.go` 早就在,截圖廊第 70 拍)。
+>
+> 刪掉的 5 條是**方向已改、不是漏做**:Screen 抽象層 / widget 樹 / callback 轉換是
+> openorion2 移植期的構想,remake 走直繪(49 處 `DrawImage`);IMGLOG 盤點工具的消費端
+> (烘字)已由 `overlay.go` 做完;`colonyview.go` 屬於已死的 `-play` 殼。
+> **留著會讓人以為架構有缺**,所以不留註記、直接移除。
 >
 > ⚠ 再下面那張 A–AO 表**不是待辦**,是這一整輪的**已完成日誌**(40 列裡 38 列 ✅)。
 > 它先前掛在「剩餘工作清冊」這個標題下,標題與內容已經對不上很久了。
@@ -463,15 +468,12 @@ internal/shell/orbital_bombardment.go:218
 - [x] docker + xvfb 截圖流程打通 — docker/Dockerfile.ebiten(CGO+X11+GL+xvfb)+ scripts/screenshot.sh(ReadPixels 存 PNG,不依賴 WM)
 - [x] ★ 顏色視覺驗證:MAINMENU 資產 21 於 ebiten 渲染出完整正確主選單(640×480)
 - [x] 確認 MOO2 為 640×480(非 320×200);修正 kickoff 假設
-- [-] 實作 `Screen` 對應:registerTexture/drawTexture/fillRect/setClipRegion(抽介面,目前為直繪骨架)  ⚠ **2026-08-08 **作廢**:這是 openorion2 移植期的構想。remake 走**直繪**(cmd/moo2 共 49 處 `DrawImage`),沒有也不需要 Screen 抽象層。留著只會讓人以為架構有缺。**
 - [x] 滑鼠事件(cursor + 按鍵),補鍵盤  ⚠ **2026-08-08 追認:滑鼠與鍵盤全面在用(`inpututil`),整個 `-game` 靠它跑。**
 - [x] 資產快取(避免每幀 NewImageFromImage)  ⚠ **2026-08-08 追認:已有快取(`overlay.go` / `multiplayer.go`)。**
 - [x] ★ 里程碑 M2:載存檔 → 繪製星系圖(cmd/moo2 -save;SAVE10.GAM 的 36 星依座標/光譜/大小 + 星名 + 星雲,資料驅動)
 - [x] 星圖換真實星球 sprite(GALAXY.LBX asset 148,依 spectralClass×size)+ 星空背景(STARBG.LBX)  ⚠ **2026-08-08 追認:`starsprite.go` 用 GALAXY.LBX 0x94(148)+ 星空/星雲已接(`nebula.go`、`starbg_test.go`)。**
 
 ## Phase 3 — UI 框架 + 文字系統 + 主選單(做法見 `08` playbook)
-- [-] gui widget 樹翻譯(Toggle/Choice/ScrollBar/Label/Composite + ViewStack)  ⚠ **2026-08-08 **作廢**:同上,直繪架構不移植 openorion2 的 widget 樹。**
-- [-] callback → Go closure/interface  ⚠ **2026-08-08 **作廢**:同上,沒有 callback 需要轉。**
 - [x] CJK 渲染:`internal/uifont`(ebiten text/v2,依尺寸快取 face)+ Measure。**2026-07-11 升級為混合字型**:zh 內文用 `bitmapfont/v4 FaceTC` 點陣(<18px)、標題用 Noto 向量(≥18px);en 純 Noto。見 `docs/tech/pixel-font-decision.md`
 - [x] 顯示層覆蓋 i18n:`internal/i18n`(TSV 英文即 key + 查無 fallback + TranslateFormat)+ 測試
 - [x] [HARD] 只翻顯示層,不動資料層(i18n 設計即如此)
@@ -525,7 +527,7 @@ internal/shell/orbital_bombardment.go:218
 - [x] 科技總覽中文化(星曆/歷史圖表/科技總覽/種族統計/回合摘要/參考資料/返回)
 - [x] 擦底採樣穩健化:samplePlate 左緣帶+上下橫帶眾數;背景均勻畫面(info)改 overlayScreen.eraseColor 強制底色
 - [x] galaxy 工具列 GAME 標題已翻(→遊戲)+ ZOOM 已翻(→縮放)(2026-07-10);行星/艦隊個別按鈕邊緣極微殘(紋理按鈕固有)為長尾
-- [x] 各子畫面 RETURN 按鈕精確熱區(目前暫用全螢幕返回)  ⚠ **2026-08-08 追認:**斷言已過期**。`interactive.go` 有逐畫面的 RETURN 精確熱區(如 `{582,452,52,20}`、`{536,432,82,22}`、`{556,430,84,28}`),不是全螢幕返回。**
+- [x] 各子畫面 RETURN 按鈕精確熱區 ~~(目前暫用全螢幕返回)~~  ⚠ **2026-08-08 追認:**斷言已過期**。`interactive.go` 有逐畫面的 RETURN 精確熱區(如 `{582,452,52,20}`、`{536,432,82,22}`、`{556,430,84,28}`),不是全螢幕返回。**
 - [x] 科技總覽「科技總覽」列可點進研究選擇畫面(其餘選單項待接)
 - [x] 殖民地總覽畫面(COLSUM.LBX 0)接入 COLONIES 按鈕 + 完整中文化
 - [x] 種族關係畫面(RACES.LBX 0)接入 RACES 按鈕 + 中文化(種族關係/會晤/報告/宣戰/忽略/加成/返回)
@@ -551,7 +553,6 @@ internal/shell/orbital_bombardment.go:218
 - [x] 造船系統:艦艇設計點艦體等級→BuildShip 加艦到 session→艦隊顯示新艦(第二個互動系統)
 - [x] 單一殖民地管理:殖民地總覽點職務欄→ShiftColonyJob 重分配人口(影響下回合經濟);造船改扣國庫 BC(戰力×20)
 - [x] 建造佇列:殖民地總覽建造欄可點選建築(住宅/工廠/研究實驗室/星港),結束回合以淨工業累積建造,完成回合摘要通知
-- [-] colony 名稱改用真星名;4 列表畫面接真存檔/生成資料  ⚠ **2026-08-08 **作廢**:`colonyview.go` 是已死的 `-play` 簡約殼的畫面(全 repo 只剩一處註解引用它)。`-game` 的殖民地畫面走 `colonyscreen.go`,資料來自 session。併入下方「淘汰 `-play`」一條處理。**
 - [x] 星圖互動:點星→黃色高亮環+左下角行星資訊面板(名/氣候/大小/重力/礦產)+ 派遣艦隊鈕(星間航行)
 - [x] 程序化星系生成:genGalaxy(種子亂數,抖動網格佈 24 星,隨機光譜/大小/洗牌星名,玩家/AI 母星)取代固定佈局
 - [x] 星系大小接 NEW GAME 設定:GALAXY SIZE 框可點選(小型12/中型24/大型36/巨型48星),ACCEPT 依選定大小 RegenGalaxy
@@ -563,16 +564,15 @@ internal/shell/orbital_bombardment.go:218
 - [x] 完整艦艇元件系統:武器/裝甲/護盾/特殊四類元件(各含成本+效果係數),設計畫面循環選擇+顯示總價;建造套用(裝甲/護盾→HP、武器/戰鬥電腦→攻擊)
 - [x] 元件解鎖綁研究科技:各進階元件標記所需 gamedata 研究主題,未完成研究則鎖住(循環跳過),設計畫面顯示已解鎖數;研究→解鎖元件→造艦系統打通
 - [x] 元件品項擴充:29 個 MOO2 真實元件(武器11:雷射→死光/裝甲7:鈦→氙素/護盾6:第一~第十級/特殊5),真譯名(tech.tsv)+ 遞增係數 + 各綁研究科技門檻
-- [x] 元件係數對齊:武器 Value 改真「最大傷害」,錨定 patch 1.5 官方確認值(中子爆破槍12/高斯砲18/電漿砲20);其餘標注單調估計。provenance + 阻塞點(完整表僅存於掃描版手冊,需 OCR;且係數版本相依)記於 docs/tech/component-values.md  ⚠ **2026-08-08 追認:**「需 OCR」是假阻塞**。第 123/124 項用可抽文字的 patch 1.5 PDF p.124-127 拿到全表,18 把武器全部換成真值。**
-- [~] 精確全表:OCR 掃描版手冊附錄 或 逆向私有 gamedata 武器表;建版本專屬 profile(1.3/1.5 數值分版)  ⚠ **2026-08-08 追認:前半(精確全表)**已完成**,見上;後半的**規則值分版**已有(`RuleProfile`),**資產分版仍開**(見下方同名條目)。**
+- [x] 元件係數對齊:武器 Value 改真「最大傷害」,錨定 patch 1.5 官方確認值(中子爆破槍12/高斯砲18/電漿砲20);其餘標注單調估計。provenance 記於 docs/tech/component-values.md;~~阻塞點(完整表僅存於掃描版手冊,需 OCR)~~  ⚠ **2026-08-08 追認:**「需 OCR」是假阻塞**。第 123/124 項用可抽文字的 patch 1.5 PDF p.124-127 拿到全表,18 把武器全部換成真值。**
+- [~] 精確全表:~~OCR 掃描版手冊附錄 或 逆向私有 gamedata 武器表~~;建版本專屬 profile(1.3/1.5 數值分版)  ⚠ **2026-08-08 追認:前半(精確全表)**已完成**,見上;後半的**規則值分版**已有(`RuleProfile`),**資產分版仍開**(見下方同名條目)。**
 - [x] **研究自動推進 → 動態解鎖迴圈**:目前主題完成後自動推進到下一個未完成元件主題(researchQueue 依成本遞增),玩數回合便逐步解鎖進階元件。測試 TestResearchUnlockLoopOverTurns 驗證 40 回合解鎖 7→15、完成 6 主題
 - [x] 新遊戲種族選擇:NEW GAME 設定畫面加種族選擇框(13 經典種族循環選,顯示名+特性),ACCEPT 套 ApplyRace 起始加成(工業/研究/食物/成長/國庫/戰鬥百分點,對齊各族招牌特性)。測試 TestApplyRaceBonuses/SakkraGrowthFaster/MrrshanCombatBonus
 - [ ] hover highlight 與原版一致(目前為細框提示)  ⚠ **2026-08-08 追認:**仍開**,觀感項。**
 - [ ] 淘汰自製簡約殼(`-play`):方向不符「與原版一模一樣」,改以原版 overlay 畫面 + 既有回合引擎(internal/engine)重建可玩迴圈  ⚠ **2026-08-08 追認:**仍開**。`-play` 旗標仍在 `main.go:189`。⚠ `docs/HONEST-STATUS.md` 稱它「已淘汰」——那是指**不再是主路徑**,不是指程式碼已移除,兩者別混。**
 - [x] ~~補齊需全域調色盤鏈的畫面到對照組~~ 這些畫面在遊戲裡早就跑起來了;`docs/reference-screens.md` 的靜態對照組收錄落後於實作,已在該文標明
 - [x] **[HARD] 開工先做:窮舉所有文字源(LBX 各類 + Go hardcode),各寫 dumper,用引擎自己 reader dump 精確 key**  ⚠ **2026-08-08 追認:dumper 已齊(`cmd/lbxdump`、`cmd/lbxstrings`、`cmd/lbxinfo`),24 份 TSV 共 5,046 條由此而來。**
-- [x] 逐畫面重建:主選單/星系圖/行星清單/殖民地/科技研究/艦隊/軍官/種族資訊/對話框皆已建;**只剩「載存檔」畫面**(LOADSAVE.LBX 全 repo 零引用,主選單 Continue/Load 目前無存檔選單——原版 oracle 對照的 issue #2 仍開著)  ⚠ **2026-08-08 追認:**斷言已過期**。載存檔畫面在 `cmd/moo2/loadgame.go`,過場截圖廊第 70 拍就是它(`18_loadgame.png`)。**
-- [-] IMGLOG 探查模式:記錄 `(lbx,index)` 對照畫面 UI(盤點烘字按鈕/標籤用)  ⚠ **2026-08-08 **作廢**:烘字已由 `overlay.go` 做完,這個盤點工具沒有消費端了。**
+- [x] 逐畫面重建:主選單/星系圖/行星清單/殖民地/科技研究/艦隊/軍官/種族資訊/對話框皆已建;~~只剩「載存檔」畫面(LOADSAVE.LBX 全 repo 零引用,主選單 Continue/Load 目前無存檔選單)~~  ⚠ **2026-08-08 追認:**斷言已過期**。載存檔畫面在 `cmd/moo2/loadgame.go`,過場截圖廊第 70 拍就是它(`18_loadgame.png`)。**
 - [x] 烘進 gfx 的英文:擦底疊字(cht_label 模式)or 整圖替換(image_override 模式)  ⚠ **2026-08-08 追認:`cmd/moo2/overlay.go` 已實作擦底疊字。**
 - [x] LBX 字串譯文表:科技名/描述、種族、事件、外交、星名、help、技能、殖民地、議會、選單等 22 個逐源分檔 TSV 已完成(assets/i18n/*.tsv);艦名池(2026-07-11 補完,shipname.tsv)、隨機星名池(2026-07-11 補完,starname-random.tsv)均已落地,四個專有名詞池全數定案
 - [x] 組合字串走 `TranslateFormat` 翻模板字面(佔位符數/序中英一致)  ⚠ **2026-08-08 追認:`internal/i18n` 有 `TranslateFormat`(含測試)。**

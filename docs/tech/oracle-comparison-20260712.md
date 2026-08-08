@@ -16,10 +16,10 @@
 | 項目 | 原版 | remake | 判定 |
 |---|---|---|---|
 | 六按鈕 | CONTINUE / LOAD GAME / NEW GAME / MULTI PLAYER / HALL OF FAME / QUIT GAME | 同六項(座標 0px 對齊 mainmenu.cpp) | ✅ 相符 |
-| **無存檔時 CONTINUE/LOAD GAME** | **灰階停用**(反白只有 NEW GAME 起) | 目前點 Continue 靜默無反應(issue #2) | ❌ **應對齊**:無存檔時 Continue/Load 要 disable |
+| **無存檔時 CONTINUE/LOAD GAME** | **灰階停用**(反白只有 NEW GAME 起) | 同(不給熱區 + 標籤畫成暗綠);Load Game 開十格存檔選單 | ✅ **2026-08-07 已對齊**(issue #2 結案,見文末) |
 | 版本切換 1.3/1.5 | 原版無(單版) | remake 自建鈕 | remake 加值,保留 |
 
-**→ issue #2 結論**:原版 Continue 無存檔時**本來就不能按**(灰階)。remake 應:①無存檔時 Continue/Load 顯示為停用、不可點;②Load Game 點下去開「存檔選擇畫面」(原版 Load Game Window)。使用者「點繼續沒出現選存檔」是因為 remake 沒 disable、也沒存檔選單。
+**→ issue #2 結論**:原版 Continue 無存檔時**本來就不能按**(灰階)。remake 應:①無存檔時 Continue/Load 顯示為停用、不可點;②Load Game 點下去開「存檔選擇畫面」(原版 Load Game Window)。~~使用者「點繼續沒出現選存檔」是因為 remake 沒 disable、也沒存檔選單。~~(**已修**,見下)
 
 > ✅ **2026-08-07 兩項都已完成**:無存檔時 Continue / Load Game 不給熱區 + 標籤畫成暗綠;Load Game 開十格存檔選單(`cmd/moo2/loadgame.go`,座標取自 openorion2 `LoadGameWindow`)。
 
