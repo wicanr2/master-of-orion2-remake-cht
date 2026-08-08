@@ -224,6 +224,35 @@ func TestEnglishModeGapDoesNotGrow(t *testing.T) {
 			return true
 		})
 
+		// **map 字面值的 key 是查表用的,不會被畫出來。**
+		//
+		// ⚠ 這一條是 2026-08-08(第 85 項(元件名英文))補的:偵測器先前把
+		// `map[string]string{"無": "None", …}` 的中文 key 算成缺口,而那正是它現有假陽性的
+		// 一大類(見檔頭「16 條全是偵測器分不出來的東西」——查表 key 就是其中一種)。
+		// 只豁免 **map 型別**的 key:陣列/結構的字面值元素仍然要數,那些真的會被畫。
+		ast.Inspect(f, func(n ast.Node) bool {
+			cl, ok := n.(*ast.CompositeLit)
+			if !ok {
+				return true
+			}
+			if _, isMap := cl.Type.(*ast.MapType); !isMap {
+				return true
+			}
+			for _, el := range cl.Elts {
+				kv, ok := el.(*ast.KeyValueExpr)
+				if !ok {
+					continue
+				}
+				ast.Inspect(kv.Key, func(m ast.Node) bool {
+					if lit, ok := m.(*ast.BasicLit); ok {
+						exempt[lit] = true
+					}
+					return true
+				})
+			}
+			return true
+		})
+
 		ast.Inspect(f, func(n ast.Node) bool {
 			lit, ok := n.(*ast.BasicLit)
 			if !ok || lit.Kind != token.STRING || exempt[ast.Node(lit)] {

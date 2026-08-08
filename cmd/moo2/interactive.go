@@ -3097,15 +3097,23 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		hitRegion{300, 82, 300, 22, "armor"},
 		hitRegion{300, 106, 300, 22, "shield"},
 		hitRegion{300, 130, 300, 22, "special"},
-		// 武器改造(mod)勾選:8 個 chip,兩排各 4 個,順序對齊 shell.WeaponModOptions
-		// (HV/PD/AF/CO 第一排,AP/ENV/NR/SP 第二排)。只對 beam 武器生效(見 onAction
-		// 的 WeaponIsBeam 判斷),非 beam 武器仍顯示熱區但點擊不生效(避免熱區位移)。
-		hitRegion{305, 368, 76, 18, "mod:0"}, hitRegion{385, 368, 76, 18, "mod:1"},
-		hitRegion{465, 368, 76, 18, "mod:2"}, hitRegion{545, 368, 76, 18, "mod:3"},
-		hitRegion{305, 390, 76, 18, "mod:4"}, hitRegion{385, 390, 76, 18, "mod:5"},
-		hitRegion{465, 390, 76, 18, "mod:6"}, hitRegion{545, 390, 76, 18, "mod:7"},
 		hitRegion{0, 0, moo2ScreenW, moo2ScreenH, "back"},
 	)
+	// 武器改造(mod)勾選:8 個 chip,順序對齊 shell.WeaponModOptions。只對 beam 武器生效
+	// (見 onAction 的 WeaponIsBeam 判斷),非 beam 武器仍顯示熱區但點擊不生效(避免熱區位移)。
+	//
+	// ⚠ 熱區與繪製**共用 designModChipRect**。先前是兩份寫死的座標(這裡 8 列、繪製那邊
+	// 一列 modChipX),兩份遲早漂移;而且都是 4 欄 × 76px —— **英文標籤塞不下**
+	// (`No Range Dissipation (NR)` 在 size 10 就超過 76px),畫出來疊在一起。
+	// 改成 2 欄 × 4 列,欄寬從畫布右緣算出來。
+	//
+	// ⚠ **熱區要插在整頁 back 之前**——命中判定取第一個中的,back 蓋住整個畫面。
+	modHits := make([]hitRegion, len(shell.WeaponModOptions))
+	for i := range shell.WeaponModOptions {
+		r := designModChipRect(i)
+		modHits[i] = hitRegion{int(r.x), int(r.y) - 2, int(r.w), 18, fmt.Sprintf("mod:%d", i)}
+	}
+	hits = append(modHits, hits...)
 	onAction := func(a string) *origTransition {
 		switch a { // 循環只跳到「已研究解鎖」的元件
 		case "weapon":
@@ -3206,7 +3214,11 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		for i, r := range rows {
 			y := float64(69 + i*24)
 			s.extras = append(s.extras,
-				extraText{x: 305, y: y, size: 12, text: r.label + " ▸ " + r.c.Name, col: gold},
+				// ⚠ 分隔符用 ASCII 冒號,不用 `▸`(U+25B8)。中文模式走 bitmapfont 點陣路徑有這個字,
+				// **英文模式走純向量字沒有**,畫出來是豆腐框——同一個字串在兩種語言下走不同字型,
+				// 而只看中文截圖永遠看不到。挑字元的原則:兩條字型路徑都保證有的才用。
+				extraText{x: 305, y: y, size: 12,
+					text: r.label + ": " + componentLabel(b.lang, r.c), col: gold},
 				extraText{x: 470, y: y, size: 11, text: fmt.Sprintf("%s %dBC", r.eff, r.c.Cost), col: color.RGBA{200, 208, 225, 255}})
 		}
 		const designHull = "巡洋艦" // shell 的 key(見 shipClassZH 註解)
@@ -3224,21 +3236,38 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		s.extras = append(s.extras,
 			extraText{x: 305, y: 168, size: 12, text: fmt.Sprintf(b.tr("%s總價 %d BC", "%s total %d BC"),
 				shipClassLabel(b.lang, designHull), total), col: color.RGBA{170, 220, 180, 255}},
-			extraText{x: 305, y: 190, size: 11, text: fmt.Sprintf(b.tr(
-				"已解鎖 武器%d/%d 裝甲%d/%d 護盾%d/%d 特殊%d/%d(研究科技解鎖進階元件)",
-				"Unlocked: weapons %d/%d armor %d/%d shields %d/%d special %d/%d (research unlocks more)"),
-				cnt(shell.WeaponOptions), len(shell.WeaponOptions), cnt(shell.ArmorOptions), len(shell.ArmorOptions),
-				cnt(shell.ShieldOptions), len(shell.ShieldOptions), cnt(shell.SpecialOptions), len(shell.SpecialOptions)),
-				col: color.RGBA{170, 200, 240, 255}},
 			extraText{x: 12, y: 460, size: 12,
 				text: fmt.Sprintf(b.tr("國庫 %d BC", "Treasury %d BC"), b.session.Player.BC), col: gold})
+
+		// 「已解鎖」這一行**依實際量測折行**,不是硬塞成一行。
+		//
+		// ⚠ 先前是單行寫死在 x=305:中文版尾巴「(研究科技解鎖進階元件)」被畫布右緣切掉,
+		// 英文版更長。**這種缺口截圖看得到、測試看不到**——沒有任何測試在量文字寬度。
+		// 這一段之後每加一個元件字串都會更長(特殊系統這一輪就從 32 個變成 38 個),
+		// 所以修法不能是「把字改短」,要真的折行。
+		const dsTextX, dsTextRight = 305.0, 632.0
+		unlockLines := b.fnt.Wrap(fmt.Sprintf(b.tr(
+			"已解鎖 武器%d/%d 裝甲%d/%d 護盾%d/%d 特殊%d/%d(研究科技解鎖進階元件)",
+			"Unlocked: weapons %d/%d armor %d/%d shields %d/%d special %d/%d (research unlocks more)"),
+			cnt(shell.WeaponOptions), len(shell.WeaponOptions), cnt(shell.ArmorOptions), len(shell.ArmorOptions),
+			cnt(shell.ShieldOptions), len(shell.ShieldOptions), cnt(shell.SpecialOptions), len(shell.SpecialOptions)),
+			11, dsTextRight-dsTextX)
+		for i, ln := range unlockLines {
+			s.extras = append(s.extras, extraText{x: dsTextX, y: 186 + float64(i)*14, size: 11,
+				text: ln, col: color.RGBA{170, 200, 240, 255}})
+		}
 
 		// 空間預算/已用(依目前選定元件即時計算):逐艦體列出「空間:已用／總」,超格轉紅並標
 		// 「空間不足」。點艦體列建造時,onAction 用同一份 shell.ShipDesignFits 判斷擋下建造
 		// (不扣款、不入艦隊),designMsg 顯示擋下提示——顯示與建造驗證共用同一份判斷,不會不一致。
-		spaceHeaderY := 208.0
-		s.extras = append(s.extras, extraText{x: 305, y: spaceHeaderY, size: 12,
+		// ⚠ 六列單欄 17px 間距會**壓到面板下緣的分隔線**(末日之星那一列直接掉進下一格)。
+		// 改成 **3 列 × 2 欄**:同樣六筆,高度從 102px 降到 45px,整塊留在面板內。
+		// 欄寬 163px 是量出來的(dsTextRight−dsTextX 的一半),不是猜的。
+		spaceHeaderY := 186 + float64(len(unlockLines))*14
+		s.extras = append(s.extras, extraText{x: dsTextX, y: spaceHeaderY, size: 12,
 			text: b.tr("各艦體空間(依目前元件):", "Space per hull (with current components):"), col: gold})
+		const dsSpaceRows = 3
+		dsSpaceColW := (dsTextRight - dsTextX) / 2
 		okCol := color.RGBA{170, 220, 180, 255}
 		badCol := color.RGBA{230, 90, 90, 255}
 		for i, cl := range classes {
@@ -3256,11 +3285,19 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 				txt += b.tr("(空間不足)", " (over capacity)")
 				col = badCol
 			}
-			s.extras = append(s.extras, extraText{x: 305, y: spaceHeaderY + 17 + float64(i*17), size: 11, text: txt, col: col})
+			s.extras = append(s.extras, extraText{
+				x:    dsTextX + float64(i/dsSpaceRows)*dsSpaceColW,
+				y:    spaceHeaderY + 16 + float64(i%dsSpaceRows)*15,
+				size: 11, text: txt, col: col})
 		}
 		if b.designMsg != "" {
-			s.extras = append(s.extras, extraText{x: 305, y: spaceHeaderY + 17 + float64(len(classes)*17) + 8, size: 12,
-				text: b.designMsg, col: badCol})
+			// 兩欄之後這塊只有 3 列高;訊息接在它下面,並且**也折行**
+			// ——「空間不足,無法建造末日之星(目前元件+改造超出艦體空間上限)」比一行長。
+			msgY := spaceHeaderY + 16 + dsSpaceRows*15 + 6
+			for i, ln := range b.fnt.Wrap(b.designMsg, 12, dsTextRight-dsTextX) {
+				s.extras = append(s.extras, extraText{x: dsTextX, y: msgY + float64(i)*15, size: 12,
+					text: ln, col: badCol})
+			}
 		}
 
 		// 武器改造(mod)勾選 chip:8 個,順序對齊 shell.WeaponModOptions 與上方 onAction 的
@@ -3277,16 +3314,17 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		s.extras = append(s.extras, extraText{x: 305, y: modHeaderY, size: 11, text: modHeaderTxt, col: gold})
 		activeCol := color.RGBA{240, 220, 120, 255}
 		inactiveCol := color.RGBA{150, 155, 165, 255}
-		modChipX := []float64{305, 385, 465, 545}
 		for i, mod := range shell.WeaponModOptions {
-			row := i / 4
-			chipX := modChipX[i%4]
-			y := modHeaderY + 16 + float64(row*22)
+			r := designModChipRect(i) // 與熱區同一份座標
 			chipCol := inactiveCol
 			if shell.HasWeaponMod(b.designMods, mod) {
 				chipCol = activeCol
 			}
-			s.extras = append(s.extras, extraText{x: chipX, y: y, size: 10, text: shell.WeaponModLabelZH(mod), col: chipCol})
+			modLabel := shell.WeaponModLabelZH(mod)
+			if b.lang == i18n.English {
+				modLabel = shell.WeaponModLabelEN(mod)
+			}
+			s.extras = append(s.extras, extraText{x: r.x, y: r.y, size: 10, text: modLabel, col: chipCol})
 		}
 	}
 	return s, nil
@@ -4695,4 +4733,30 @@ func (b *sceneBuilder) newGameOpponents() int {
 		n = shell.MaxEmpires - 1
 	}
 	return n
+}
+
+// designModChipRect 回傳艦艇設計畫面第 i 個武器改造晶片的位置與可用寬度。
+//
+// **熱區與繪製共用這一份**——先前是兩份寫死的座標表,那是會漂移的重複。
+//
+// 版面:2 欄 × 4 列。欄數不是 4 而是 2,因為**英文標籤比中文長得多**
+// (`No Range Dissipation (NR)` vs `無射程衰減(NR)`),4 欄放不下會疊字。
+// 2 欄各 163px,在 size 10 下容得下最長的那個。
+func designModChipRect(i int) struct{ x, y, w float64 } {
+	const (
+		x0      = 305.0 // 與同一面板其他文字的左緣一致
+		right   = 632.0 // 畫布右緣留 8px
+		rows    = 4
+		rowStep = 16.0
+		// y0=370:標題在 352(高 11px,到 363),所以第一列從 370 起才不會疊到標題;
+		// 4 列 × 16 = 64px,末列在 418 起、428 收尾,與面板下緣(約 432)留白。
+		// 先前 4 欄 × 22px 兩列的版面在英文下會疊字,改 2 欄 4 列之後行高才收得緊。
+		y0 = 370.0
+	)
+	colW := (right - x0) / 2
+	return struct{ x, y, w float64 }{
+		x: x0 + float64(i/rows)*colW,
+		y: y0 + float64(i%rows)*rowStep,
+		w: colW,
+	}
 }

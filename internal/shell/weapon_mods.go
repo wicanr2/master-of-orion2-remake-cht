@@ -34,9 +34,33 @@ var weaponModLabelZH = map[gamedata.WeaponModCode]string{
 	gamedata.ModShieldPiercing:     "穿盾(SP)",
 }
 
+// weaponModLabelEN 是同一組改造的**英文顯示名**(手冊 p.115 的 Weapon Mods 附錄用語)。
+//
+// ⚠ 2026-08-08(第 85 項(元件名英文))補。先前只有中文那一份,而艦艇設計畫面在英文模式下
+// 照樣畫中文——那不是漏 `tr()`,是**這一側只有中文資料**,補 `tr()` 補不到。
+// 括號裡的縮寫兩種語言相同(手冊本來就用 HV/PD/AF/CO/AP/ENV/NR/SP)。
+var weaponModLabelEN = map[gamedata.WeaponModCode]string{
+	gamedata.ModHeavyMount:         "Heavy Mount (HV)",
+	gamedata.ModPointDefense:       "Point Defense (PD)",
+	gamedata.ModAutoFire:           "Auto-Fire (AF)",
+	gamedata.ModContinuousFire:     "Continuous Fire (CO)",
+	gamedata.ModArmorPiercing:      "Armor Piercing (AP)",
+	gamedata.ModEnveloping:         "Enveloping (ENV)",
+	gamedata.ModNoRangeDissipation: "No Range Dissipation (NR)",
+	gamedata.ModShieldPiercing:     "Shield Piercing (SP)",
+}
+
 // WeaponModLabelZH 回傳武器改造代碼的中文顯示名;查無回代碼本身(不應發生,防禦性寫法)。
 func WeaponModLabelZH(mod gamedata.WeaponModCode) string {
 	if s, ok := weaponModLabelZH[mod]; ok {
+		return s
+	}
+	return string(mod)
+}
+
+// WeaponModLabelEN 回傳武器改造代碼的英文顯示名;查無回代碼本身。
+func WeaponModLabelEN(mod gamedata.WeaponModCode) string {
+	if s, ok := weaponModLabelEN[mod]; ok {
 		return s
 	}
 	return string(mod)

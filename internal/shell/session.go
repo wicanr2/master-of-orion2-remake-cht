@@ -221,7 +221,16 @@ var (
 		{"高斯砲", 120, 18, gamedata.TOPIC_SUBSPACE_FIELDS, gamedata.TECH_GAUSS_CANNON},           // 手冊 18
 		{"相位砲", 160, 20, gamedata.TOPIC_MULTIPHASED_PHYSICS, gamedata.TECH_PHASOR},             // 手冊 5-20(先前 19)
 		{"電漿砲", 200, 20, gamedata.TOPIC_PLASMA_PHYSICS, gamedata.TECH_PLASMA_CANNON},           // 手冊 4-20(1.50)
-		{"死光", 300, 100, gamedata.TOPIC_ARTIFICIAL_LIFE, 0},                                    // 手冊 50-100(先前 25)
+		// 死光:⚠ **`UnlockTech` 先前是 0,主題掛在人造生命** —— 兩個都不對。
+		// 執行檔的武器表給 `TECH_DEATH_RAY`(47),而手冊把它放在「Xenon Technologies」那一節,
+		// 與氙素裝甲同一節。這一格是英文顯示名的測試抓到的(UnlockTech=0 就推導不出英文名)。
+		//
+		// ⚠ **仍未解決的忠實度問題**:手冊那一節開頭寫著「only known to the enigmatic Antarans
+		// (and Orions) and **cannot be discovered via the normal course of research**」——
+		// 也就是死光與氙素裝甲在原版**不能靠研究拿到**,要從安塔蘭/獵戶座手上奪。
+		// remake 現在把 TOPIC_XENON_TECHNOLOGY 當成一般可研究主題(氙素裝甲那一列也是),
+		// 那是**既有的偏差**,不是這一行引入的。要修得動科技樹的可研究集合,列進待辦。
+		{"死光", 300, 100, gamedata.TOPIC_XENON_TECHNOLOGY, gamedata.TECH_DEATH_RAY}, // 手冊 50-100
 
 		// ⚠ 2026-08-08(第 64 項(武器傷害真表))補上手冊有、remake 沒有的八項。
 		//
