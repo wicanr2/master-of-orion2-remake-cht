@@ -1142,7 +1142,7 @@ MANUAL_150.html「Reduced by Range」表用 Phasor(base 5-20)、Mauler(base 100-
 | 回合編排(把上述公式串成回合) | 待補(指 openorion2) | `researchProgress`/`experience` 等欄位全 repo 除建構子外從未被賦值,openorion2 裡無回合結算函式存在。**remake 現況**:`internal/engine/game.go` 的 `RunGameTurn`、`internal/engine/empire.go` 的 `RunEmpireTurn`、`internal/engine/colony.go` 的 `RunColonyTurn` 已存在,並非「無回合結算函式存在」 |
 | RNG(命中/間諜/閃避擲骰) | 待補 | 各公式已給出「決定性機率/門檻」,但實際擲骰與可重現的 RNG(含 seed 管理、存檔是否存 RNG 狀態)尚未設計 |
 | 星系/星圖生成 | 未見 | 星系形狀/星星分布/行星屬性/特殊天體的隨機生成演算法要整個重寫 |
-| 種族特性效果套用 | 僅列舉常量 | `RaceTrait` 32 項有列舉與唯讀顯示,但沒有任何函式把特性數值套進生產/戰鬥/成長公式(因為這些公式所在系統本身當時就沒有實作) |
+| 種族特性效果套用 | ~~僅列舉常量~~ **已接** | ⚠ **2026-08-08 追認:已過期。** 第 129 項從 RACESTUF.LBX + 執行檔換算表挖出全 13 族的一手特性表,第 130 項把布林特性(統帥/惹人厭/寬容/神級商人/魅力)也接上,生產/戰鬥/成長三邊都吃得到 |
 | 勝利條件 | 未見(指 openorion2) | 三種勝利路徑(殲滅/票選/次元傳送門攻陷 Antares)與計分公式在 openorion2 裡全無。**remake 現況**:三條路徑已全部接線(3/3),見 `docs/tech/victory-conditions.md` |
 | Antaran/Orion 事件 | 僅美術資源 | 隨機襲擊、守護者遭遇戰、次元傳送門終局戰觸發鏈全無邏輯 |
 

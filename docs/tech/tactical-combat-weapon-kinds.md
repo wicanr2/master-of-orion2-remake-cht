@@ -25,7 +25,7 @@
 | 麥克萊特飛彈 | missile | 對應同表的 `MissileWarheadMerculite`(+15) |
 | 其餘(雷射/質量投射器/中子爆破槍/核融合光束/高斯砲/相位砲/電漿砲/死光/無武裝) | beam | 手冊未列為飛彈或球形武器 |
 
-`WeaponOptions` 目前**沒有任何武器分類到 spherical**。這點特別核對過手冊
+~~`WeaponOptions` 目前沒有任何武器分類到 spherical。~~ ⚠ **2026-08-08 追認:已過期**——第 127 項補上脈衝星/空間壓縮器、第 139 項補上陀螺去穩器,三把都走 `WeaponKindSpherical`。以下這點特別核對過手冊
 「Notes on Spherical Damage > Spherical Weapons」(p126)明列的球形武器清單:
 
 - Pulsar(2-24/size class,6 格半徑)

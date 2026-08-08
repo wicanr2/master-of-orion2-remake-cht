@@ -2761,7 +2761,7 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
 
     - 原版是「(星, 玩家)」而 remake 是「第 i 個殖民地」——對玩家等價,
       但 **AI 的遷移設定沒有建模**(AI 沒有逐星的艦隊位置)。
-    - 顯示開關 `ShowRelocationLines` 已建,但**還沒有 UI 可以切**
+    - ~~顯示開關 `ShowRelocationLines` 已建,但**還沒有 UI 可以切**~~ ⚠ **2026-08-08 追認:已過期**——第 65 項接進遊戲選單(`cmd/moo2/gamemenu.go:175`)
       (原版在設定畫面,對應手冊那組 ALT+Fn ——⚠ 哪一個鍵仍未確認,見第 54 項)。
 
 ---
@@ -6207,7 +6207,9 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
 
     - **付不出來只是扣到 0,領袖不會離職。** 原版錢不夠會怎樣沒查到規則(手冊只說要付,
       沒說不付的後果),不自己發明一個懲罰。
-    - **AI 不付。** `AIOpponent` 沒有 Leaders 欄位——不是漏掉,是那一整層還不存在。
+    - ~~**AI 不付。** `AIOpponent` 沒有 Leaders 欄位——不是漏掉,是那一整層還不存在。~~
+      ⚠ **2026-08-08 追認:`AIOpponent` 現在有 `Leaders` 欄位了**(版本 diff #5「守方指揮官 2.5x」
+      蓋的 AI 領袖最小模型)。**維護費仍未對 AI 收**,但理由變成「沒接」而不是「那一層不存在」。
     - 判定 Megawealth 走 `leaderSkills` 那條既有路徑,不比對技能字串:標籤會被翻譯,
       拿它當識別鍵在英文模式下查不到(`Leader.Skills` 檔頭記過這個坑)。
 
@@ -8003,5 +8005,48 @@ remake 的新遊戲流程順序與此一致;`Main_Screen_ → Do_Colony_Screen_`
     24 份 TSV、`SpecialOptions` 32 項、`docs/tech` 54 篇、棘輪 16——**逐項相符**。
     (上一輪我在 WORKLIST 表頭寫的統計 21/6/8/7 是錯的,當場修成 19/5/9/9。
     **在清理錯誤斷言的同一次提交裡新造一個錯誤斷言**,本身就是這件事有多容易發生的證據。)
+
+    無程式碼改動,截圖無差異。
+
+146. **第三次 review:改用掃描器,不再靠「我記得要查什麼」**(2026-08-08)。
+
+    第 144、145 項都是我先想到「哪裡可能有問題」再去查。那有個明顯的上限:
+    **想不到的就查不到**。這一輪換方法。
+
+    ### 掃描器
+
+    兩段式,都在暫存區跑完就丟:
+
+    1. 掃全部 markdown,抓同時含**否定性斷言關鍵詞**(尚未 / 仍未 / 零呼叫 / 不存在 /
+       沒有任何 …)與**反引號裡的程式碼識別字**的行 → 434 條候選。
+    2. 把所有非測試 Go 檔讀進記憶體,數每個識別字的引用次數。
+       **「斷言說沒接、而識別字被引用 ≥3 次」= 可疑** → 103 條。
+
+    人只需要看第二段的排序結果。這與第 129/142 項的探針 ③ 同一個想法:
+    **把「哪裡可能有問題」變成可計算的,而不是靠回想。**
+
+    ### 抓到九條,而且都是我前兩輪想不到的
+
+    | 檔案 | 假斷言 | 事實 |
+    |---|---|---|
+    | `tactical-combat-weapon-kinds.md` | 「`WeaponOptions` 沒有任何武器分類到 spherical」 | 第 127/139 項補了三把 |
+    | `01-gap-report.md` | 「`ShowRelocationLines` 已建但還沒有 UI 可以切」 | 第 65 項接進遊戲選單 |
+    | `01-gap-report.md` | 「`AIOpponent` 沒有 Leaders 欄位——那一整層還不存在」 | 有了;維護費仍未對 AI 收,但理由變成「沒接」 |
+    | `WORKLIST.md` | 「AI 一個星系只會有一個殖民地」 | `aiExpansionCandidates` 含自己已有殖民地的星系 |
+    | `WORKLIST.md` | 「沒有任何一艘船有艦員等級,`shell.Ship` 沒那個欄位」 | `Ship.CrewXP` 在,第 119 項接上攻防兩側 |
+    | `moo2-formulas-reference.md` | 「`RaceTrait` 沒有任何函式把數值套進公式」 | 第 129/130 項全接 |
+    | `ai-fiscal-solvency.md` | 「`Maintenance` 尚未接線」 | `engine/ai.go:19` 傳進 `decider.ColonyJobs` |
+    | `spy-system.md` | 「`interactive.go` 未接間諜畫面/按鈕」 | 第 110 項接進種族關係畫面 |
+    | `colony-economy-maintenance.md` §2.2 | 「BC 保證單調遞減至負值」 | 2026-07-11 修掉,300 回合最低點 −3710 → −51 |
+
+    ### 也抓到自己不該動的
+
+    掃描器把 `gameplay-systems-status.md` 的「AI 無 `ColonyBuildings` 追蹤」「`AIOpponent`
+    無種族欄位」也列成可疑,查下去**兩條都仍然成立**(`AIOpponent` 的欄位清單裡確實沒有)。
+    `ai-decision-modes.md` 的「`ModeOriginal` 仍回傳 `RemakeDecider`」同樣仍然成立(還掛著 TODO)。
+
+    **這比抓到假斷言更值得記**:掃描器只負責縮小範圍,判定仍然要逐條看程式碼。
+    要是照著清單「順手都改掉」,就會把三條正確的斷言改錯——
+    **清理錯誤斷言的過程本身會製造錯誤斷言**(第 145 項的表頭統計就是現成的例子)。
 
     無程式碼改動,截圖無差異。
