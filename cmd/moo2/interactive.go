@@ -1893,6 +1893,8 @@ type tacticalScreen struct {
 	// moveLeft 是各我方艦這一回合剩餘的移動格數(第 69 項(戰鬥速度與引擎階))。每回合重置為
 	// shell.TacticalMoveSquares(艦的戰鬥速度)。
 	moveLeft []int
+	// mode 是控制列切出來的點擊模式(掃描 / 登艦);見 tacticalbar.go。
+	mode tacticalMode
 }
 
 // loadCombatBG 載入戰場星空背景(STARBG.LBX#0,640×480),借 COMBAT.LBX#11 調色盤。
@@ -2015,6 +2017,14 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 		t.b.session.ApplyCombatOutcome(t.b.session.PrimaryEnemyName(), t.pStart, t.eStart, survivors, t.won)
 		return t.b.goTo(t.b.battleResult, "戰鬥結果")
 	}
+	// 底部控制列(自動/掃描/登船/撤退/等待/完成/選項)。**放在棋盤判定之前**:控制列在
+	// y≥365,與棋盤不重疊,但先判定可以讓「按鈕能按」這件事不依賴棋盤範圍算得對不對。
+	if t.bar != nil {
+		if i := barButtonHit(in.MouseX, in.MouseY); i >= 0 {
+			t.handleBarButton(i)
+			return nil
+		}
+	}
 	// 出擊鈕在格線右側(⚠ 不是原版版面,見 tacticalfighter.go launchRect 註解)。
 	if lx, ly, lw, lh := launchRect(); t.canLaunchFrom(t.sel) && hitBox(in.MouseX, in.MouseY, lx, ly, lw, lh) {
 		if clickSound != nil {
@@ -2031,8 +2041,15 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 		t.sel = pi
 		return nil
 	}
-	if ei := shipAt(t.enemy, col, row); ei >= 0 { // 點敵艦 → 射程內我艦開火
-		t.fireRound(ei)
+	if ei := shipAt(t.enemy, col, row); ei >= 0 { // 點敵艦 → 依模式:開火 / 掃描 / 登艦
+		switch t.mode {
+		case tacticalModeScan:
+			t.log = t.scanEnemy(ei)
+		case tacticalModeBoard:
+			t.boardEnemy(ei)
+		default:
+			t.fireRound(ei)
+		}
 		return nil
 	}
 	if t.sel >= 0 && t.sel < len(t.player) { // 點空格 → 移動選中艦(受戰鬥速度限制)
@@ -2381,6 +2398,11 @@ func (t *tacticalScreen) draw(dst *ebiten.Image) {
 		logY = 343 // log 移到控制列上方星空,不壓按鈕
 	}
 	if t.fnt != nil {
+		if hint := t.modeHint(); hint != "" {
+			// 模式提示壓在 log 上方:進了掃描/登艦模式之後,點敵艦的效果完全不同,
+			// **畫面上必須看得出來現在是哪個模式**,否則玩家會以為開火壞了。
+			t.fnt.DrawCentered(dst, hint, 320, logY-36, 12, color.RGBA{250, 210, 120, 255})
+		}
 		t.fnt.DrawCentered(dst, t.log, 320, logY, 14, color.RGBA{214, 220, 235, 255})
 		if line := t.squadronStatusLine(); line != "" {
 			t.fnt.DrawCentered(dst, line, 320, logY-18, 12, color.RGBA{140, 220, 235, 255})

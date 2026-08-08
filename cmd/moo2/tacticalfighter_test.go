@@ -142,3 +142,33 @@ func TestSelectAllFromPartialSelectionSelectsEverything(t *testing.T) {
 		}
 	}
 }
+
+// TestTacticalBarButtonsAreClickable 控制列七顆鈕**每一顆都要點得到**。
+//
+// 這條測的是第 87 項(控制列熱區)那個缺口:七顆鈕中文化做完了、熱區一個都沒有,
+// 畫面上看起來能點、點下去什麼都不會發生。**「按鈕長得對」與「按鈕能按」是兩件事**,
+// 而截圖只能證明前者——所以這件事只能用測試守。
+func TestTacticalBarButtonsAreClickable(t *testing.T) {
+	for i, b := range barButtonsCHT {
+		if got := barButtonHit(b.cx, b.cy); got != i {
+			t.Errorf("點 %s(%s)的正中央命中第 %d 顆,期望第 %d 顆", b.label, b.orig, got, i)
+		}
+	}
+	// 控制列以外不該中(棋盤區在 y<365)。
+	if got := barButtonHit(320, 200); got != -1 {
+		t.Errorf("棋盤中央(320,200)不該命中控制列,實得 %d", got)
+	}
+}
+
+// TestTacticalBarButtonsDoNotOverlap 相鄰按鈕的熱區不可重疊(重疊會讓其中一顆永遠點不到)。
+func TestTacticalBarButtonsDoNotOverlap(t *testing.T) {
+	for i := range barButtonsCHT {
+		for j := i + 1; j < len(barButtonsCHT); j++ {
+			a, b := barButtonsCHT[i], barButtonsCHT[j]
+			if abs(a.cx-b.cx) < 54 && abs(a.cy-b.cy) < 18 {
+				t.Errorf("%s 與 %s 的熱區重疊(中心相距 %d,%d)",
+					a.label, b.label, abs(a.cx-b.cx), abs(a.cy-b.cy))
+			}
+		}
+	}
+}

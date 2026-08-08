@@ -184,3 +184,64 @@ func TestQuickBoardingHappensOnce(t *testing.T) {
 		t.Errorf("第二次不該再登艦一次:%d → %d", afterFirst, def[0].marines)
 	}
 }
+
+// TestShipBoardingReach 突擊艇不必貼身,沒有的必須相鄰(傳送器仍擋在護盾模型後面)。
+func TestShipBoardingReach(t *testing.T) {
+	shuttle := CombatShip{AssaultShuttles: true}
+	plain := CombatShip{}
+	for _, d := range []int{1, 3, 8} {
+		if !ShipBoardingReach(shuttle, d) {
+			t.Errorf("有突擊艇在 %d 格應該登得了", d)
+		}
+	}
+	if !ShipBoardingReach(plain, 1) {
+		t.Error("沒有突擊艇但貼身,應該登得了")
+	}
+	if ShipBoardingReach(plain, 2) {
+		t.Error("沒有突擊艇又不貼身,不該登得了")
+	}
+}
+
+// TestShipBoardingPartySize 突擊艇一次只送一個中隊(4 人),貼身登艦傾巢而出。
+func TestShipBoardingPartySize(t *testing.T) {
+	if got := ShipBoardingPartySize(CombatShip{Marines: 20, AssaultShuttles: true}); got != 4 {
+		t.Errorf("突擊艇一次送 %d 個單位,期望 4(中隊 4 架 × 每架 1 人)", got)
+	}
+	if got := ShipBoardingPartySize(CombatShip{Marines: 3, AssaultShuttles: true}); got != 3 {
+		t.Errorf("艦上只有 3 人時送 %d,不該超過實際人數", got)
+	}
+	if got := ShipBoardingPartySize(CombatShip{Marines: 20}); got != 20 {
+		t.Errorf("貼身登艦送 %d,期望全員 20", got)
+	}
+}
+
+// TestShipBoardingAttackUpdatesBothSides 解算要就地改雙方人數,奪船要立旗標。
+//
+// 用壓倒性兵力對零守軍,結果是確定的——這測的是**接線**(誰的欄位有被改到),
+// 不是機率(那由 ResolveBoarding 自己的測試涵蓋)。
+func TestShipBoardingAttackUpdatesBothSides(t *testing.T) {
+	s := NewDemoSession()
+	att := CombatShip{Name: "我艦", Marines: 20}
+	def := CombatShip{Name: "敵艦", Marines: 1}
+	res := s.ShipBoardingAttack(&att, &def, BoardingCapture, fixedRoll(99))
+	if !res.Captured || !def.Captured {
+		t.Fatalf("20 打 1 應該奪船:res=%+v def.Captured=%v", res, def.Captured)
+	}
+	if def.Marines != 0 {
+		t.Errorf("奪船後守軍應歸零,實得 %d", def.Marines)
+	}
+	if att.Marines > 20 {
+		t.Errorf("攻方人數只會減不會增,實得 %d", att.Marines)
+	}
+}
+
+// TestShipBoardingAttackShuttlesAreOneWay 突擊艇送出去的人不會回來。
+func TestShipBoardingAttackShuttlesAreOneWay(t *testing.T) {
+	s := NewDemoSession()
+	att := CombatShip{Name: "我艦", Marines: 20, AssaultShuttles: true}
+	def := CombatShip{Name: "敵艦", Marines: 1}
+	s.ShipBoardingAttack(&att, &def, BoardingCapture, fixedRoll(99))
+	if att.Marines != 16 {
+		t.Errorf("突擊艇送出一個中隊(4)之後艦上應剩 16,實得 %d", att.Marines)
+	}
+}

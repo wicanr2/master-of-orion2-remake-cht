@@ -142,3 +142,74 @@ func ShipMarineComplement(sh Ship) int {
 	}
 	return n
 }
+
+// ============ 戰術畫面上的登艦 ============
+
+// ShipBoardingReach 是一艘船能不能登上某距離外的敵艦。
+//
+// 手冊給兩條投送路徑,各自的前置不同:
+//   - **突擊艇**:飛過去放人,不要求貼身(中隊速度 6,實務上一回合到得了)。
+//   - **傳送器**:12 格內直接傳送,但要求「面向攻擊方的護盾**已被打穿**」——remake 的護盾
+//     是每發固定減傷,既沒有分面也沒有崩潰狀態,所以**這條仍然擋著**(見 gamedata/boarding.go)。
+//
+// 兩者都沒有的船只能貼身(相鄰格)登艦。⚠ 這一條**是 remake 的補充,手冊沒有**:
+// 手冊只講突擊艇與傳送器。標在這裡,不假裝是原版規則。
+func ShipBoardingReach(att CombatShip, distance int) bool {
+	if att.AssaultShuttles {
+		return true
+	}
+	return distance <= 1
+}
+
+// ShipBoardingPartySize 是這艘船這一次能派出去的陸戰隊單位數。
+//
+// 突擊艇是一個中隊 4 架、每架載 1 個單位,所以上限是 4;貼身登艦則傾巢而出。
+// 兩者都不會超過艦上實際人數。
+func ShipBoardingPartySize(att CombatShip) int {
+	n := att.Marines
+	if att.AssaultShuttles {
+		if cap := gamedata.FighterSquadronSize * gamedata.AssaultShuttleMarinesEach; cap < n {
+			n = cap
+		}
+	}
+	return n
+}
+
+// ShipBoardingAttack 解一次戰術畫面上的登艦,並就地更新雙方的陸戰隊人數與奪船旗標。
+//
+// 戰力用的是**地面戰那一套**(手冊:「fight it out in the same way as ground troops do」),
+// 所以攻方直接吃玩家的陸戰隊戰力(種族特性 + 領袖 + 動力裝甲)。
+//
+// ⚠ 守方用**同一個基礎值**:敵艦(genEnemyFleet)沒有種族/領袖/科技資料,與 CombatShip 上
+// Mods/HardShield 一律留零值是同款既有簡化。守方唯一的差異來自保安站的 +20(手冊逐字)。
+// 這是誠實標記的近似,不是查出來的真值。
+func (s *GameSession) ShipBoardingAttack(att, def *CombatShip, intent BoardingIntent, roll gamedata.GroundRoll) BoardingResult {
+	sent := ShipBoardingPartySize(*att)
+	if sent <= 0 {
+		return BoardingResult{DefenderSurvived: def.Marines}
+	}
+	force := s.playerMarineForce()
+	atkHits := gamedata.GroundMarineHitsToKill(s.raceHasTrait(gamedata.TRAIT_HIGH_G), s.hasPoweredArmor())
+	res := ResolveBoarding(
+		BoardingParty{Intent: intent, Marines: sent, Strength: force, HitsToKill: atkHits},
+		BoardingDefense{Marines: def.Marines, Strength: force,
+			HitsToKill:       gamedata.GroundMarineHitsToKill(false, false),
+			SecurityStations: def.SecurityStations},
+		roll)
+
+	def.Marines = res.DefenderSurvived
+	def.SystemsDisabled += res.SystemsDestroyed
+	// 突擊艇是單程的:陣亡的回不來,倖存的也留在對方船上。貼身登艦則倖存者算回自己船上。
+	if att.AssaultShuttles {
+		att.Marines -= sent
+	} else {
+		att.Marines += res.AttackerSurvived - sent
+	}
+	if att.Marines < 0 {
+		att.Marines = 0
+	}
+	if res.Captured {
+		def.Captured = true
+	}
+	return res
+}
