@@ -83,7 +83,7 @@ func playerDetectionVisible(stars []Star, playerColonyStars []int, fleetSources 
 		}
 		sources = append(sources, detectionSource{starIdx: idx, bonusParsec: bonus})
 	}
-	// ⚠ 2026-08-08(第 142 項)修正:這裡原本只收「**目前選中的那一支**」艦隊
+	// ⚠ 2026-08-08(第 72 項)修正:這裡原本只收「**目前選中的那一支**」艦隊
 	// (`s.Fleet().AtStar`)。多艦隊模型上線後那就變成 bug——切換選中的艦隊會改變戰爭迷霧,
 	// 而「選中哪一支」是選單狀態,不該影響遊戲規則。現在每支艦隊都是偵測源。
 	for _, src := range fleetSources {

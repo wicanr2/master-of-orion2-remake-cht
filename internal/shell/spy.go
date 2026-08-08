@@ -158,7 +158,7 @@ func applyTechTheft(ps *engine.PlayerState, opt spyStealOption) {
 // gamedata.SpyEffectiveThreshold 的定義)。目前只接上 SpySlotBonus——手冊 Spy Bonuses 表中
 // 唯一「有明確人數 → 加成對照表」的項目(見 gamedata/spy.go 檔頭)。
 //
-// ⚠ **2026-08-08(第 117 項)訂正過。** 這段原本寫著三項加成一律回 0,理由是
+// ⚠ **2026-08-08(第 59 項)訂正過。** 這段原本寫著三項加成一律回 0,理由是
 // 「無種族間諜特性強度資料、**無逐科技模型可查是否擁有 spy.go 列的 5 項科技**、
 // AIOpponent 無政府型態欄位」。
 //
@@ -204,12 +204,12 @@ func spyTechBonusFor(ps engine.PlayerState) int {
 //
 // TODO:接上 Agent 訓練系統後,`SpySlotBonus(agentCount)` 那一項要補進來。
 //
-// ⚠ **2026-08-08(第 117 項)起不再恆為 0。** Agent 人數那一項仍然沒有(上面那段仍成立),
+// ⚠ **2026-08-08(第 59 項)起不再恆為 0。** Agent 人數那一項仍然沒有(上面那段仍成立),
 // 但科技與政府兩項已經接上:
 //   - **科技**:`spyTechBonusFor`,攻守兩側同一套(手冊那張表兩欄同值)。
 //   - **政府**:`gamedata.SpyGovernmentDefenseBonus`,手冊只給 Defense 欄。
 //     govBonus 由呼叫端算好傳入——**只有玩家有政府型態**,`AIOpponent` 沒有這個欄位
-//     (原版是 `[player+0x89F]`,見第 113 項),所以 AI 當防守方時呼叫端傳 0。
+//     (原版是 `[player+0x89F]`,見第 55 項),所以 AI 當防守方時呼叫端傳 0。
 //     那是資料模型的缺口,不是規則沒接。
 func spyDefenderBonus(ps engine.PlayerState, govBonus, raceBonus int) int {
 	return spyTechBonusFor(ps) + govBonus + raceBonus
@@ -221,7 +221,7 @@ func spyDefenderBonus(ps engine.PlayerState, govBonus, raceBonus int) int {
 // 算進去(邦聯/帝國/聯邦/銀河統一),而手冊的防諜表對基本型與進階型給的是**不同的值**
 // ——只看 s.Government 會讓研究出帝國的獨裁玩家永遠拿獨裁那一格。
 //
-// 兩個列舉的編號相同不是巧合:原版只有一個 `[player+0x89F]` 欄位(第 113 項),
+// 兩個列舉的編號相同不是巧合:原版只有一個 `[player+0x89F]` 欄位(第 55 項),
 // Go 這邊分成好幾個列舉是歷史。`spy_government_test.go` 把這件事釘住。
 func (s *GameSession) playerSpyGovernmentDefenseBonus() int {
 	return gamedata.SpyGovernmentDefenseBonus(gamedata.SpyGovernmentType(s.assimilationGovernment()))

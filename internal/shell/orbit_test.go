@@ -39,7 +39,7 @@ func TestEmptyOrbitsIsMinusOneNotZero(t *testing.T) {
 // TestEveryOrbitEntryIsAValidDistinctPlanet:軌道表要指到真的行星,而且不能有兩格指同一顆。
 //
 // 這條先前叫 `...HasExactlyOneOccupiedOrbit`,釘的是「每顆星只放一顆行星」這個階段性限制,
-// 註解裡寫明「升格之後這條會紅,那時候該改的是測試」。升格做完了(第 63 項),所以改了。
+// 註解裡寫明「升格之後這條會紅,那時候該改的是測試」。升格做完了(第 25 項),所以改了。
 func TestEveryOrbitEntryIsAValidDistinctPlanet(t *testing.T) {
 	s := NewDemoSession()
 	seen := map[int]int{} // 行星索引 → 是哪顆星的

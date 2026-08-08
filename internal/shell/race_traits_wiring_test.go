@@ -8,7 +8,7 @@ import (
 
 // shell.Races 的每一格數值都必須等於 gamedata 那張一手表——這張表不准手改。
 //
-// 這是第 129 項的主要防線:先前那七個自編數字錯了八族,而**沒有任何測試會紅**,
+// 這是第 66 項的主要防線:先前那七個自編數字錯了八族,而**沒有任何測試會紅**,
 // 因為每個數字都只有它自己那條斷言在守。改成逐族對照一手表之後,任何一格漂掉都會紅。
 func TestEveryRaceMatchesTheOriginalTraitTable(t *testing.T) {
 	if len(Races) != gamedata.OrigRaceCount {

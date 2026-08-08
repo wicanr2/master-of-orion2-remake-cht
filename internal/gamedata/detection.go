@@ -1,6 +1,6 @@
 // Package gamedata:偵測/掃描範圍模型(diff 全量表 #13——掃描/偵測距離)。
 //
-// ⚠ 2026-08-08(第 142 項)訂正:這裡原本寫著「手冊只定性描述『掃描科技越高階看得越遠』,
+// ⚠ 2026-08-08(第 72 項)訂正:這裡原本寫著「手冊只定性描述『掃描科技越高階看得越遠』,
 // 並未公開逐科技的 parsec 數字」——**那句話是錯的,不是過期的**。手冊三個掃描科技的條目
 // 各自明寫了自己的 parsec 值(空間 2 / 迅子 4 / 中子 6),就在同一份 PDF 裡。
 // 而且順序也寫反了:原本的近似值把迅子當成最高階(8),手冊說**中子(6)才比迅子(4)遠**。
@@ -67,8 +67,8 @@ const (
 // beam weapons by 50. Furthermore, ships equipped with Battle Scanners have a scanning range
 // **2 parsecs greater** when in normal or hyperspace (**outside of combat**).」
 //
-// ⚠ 第 134 項接了第一句,漏了第二句——而且還寫了一條測試(TestBattleScannerRaisesOnlyAccuracy)
-// 把「只加命中」釘住。**測試釘住的是我當時的理解,不是手冊。** 這與第 133 項慣性穩定器
+// ⚠ 第 69 項接了第一句,漏了第二句——而且還寫了一條測試(TestBattleScannerRaisesOnlyAccuracy)
+// 把「只加命中」釘住。**測試釘住的是我當時的理解,不是手冊。** 這與第 69 項慣性穩定器
 // (同樣是一個元件兩個效果、只接了一半)是同一個坑,連續兩項都踩。
 const ShipBattleScannerScanParsecBonus = 2
 

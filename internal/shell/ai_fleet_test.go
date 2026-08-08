@@ -35,7 +35,7 @@ func TestAIFleetStartsAtItsHomeworld(t *testing.T) {
 
 // 突襲不再是瞬移的:艦隊要**先飛過去**,抵達那一回合才打得到。
 //
-// 這是第 106 項的核心行為改變,也是玩家「看得到它來」的依據。
+// 這是第 48 項的核心行為改變,也是玩家「看得到它來」的依據。
 func TestAIRaidRequiresTheFleetToArriveFirst(t *testing.T) {
 	s := newRaidTestSession(t)
 	s.advanceAIFleets() // 初始化位置 + 決定出兵
@@ -75,7 +75,7 @@ func TestAIRaidRequiresTheFleetToArriveFirst(t *testing.T) {
 
 // 停在原地的艦隊**不能每回合都打**。
 //
-// 這一條守的是第 106 項差點引入的一個真 bug:願打門檻(態勢/軍力/性格)搬到了出發那一刻
+// 這一條守的是第 48 項差點引入的一個真 bug:願打門檻(態勢/軍力/性格)搬到了出發那一刻
 // 之後,結算端若不保留間隔守門,一支抵達後就停著不動的艦隊會每一回合結算一次突襲。
 func TestParkedAIFleetDoesNotRaidEveryTurn(t *testing.T) {
 	s := newRaidTestSession(t)
@@ -96,7 +96,7 @@ func TestParkedAIFleetDoesNotRaidEveryTurn(t *testing.T) {
 	}
 }
 
-// 阿提米絲系統網現在打得到 AI 了——這條缺口從第 94 項記到第 106 項。
+// 阿提米絲系統網現在打得到 AI 了——這條缺口從第 39 項記到第 48 項。
 func TestArtemisNetNowHitsArrivingAIFleets(t *testing.T) {
 	s := newRaidTestSession(t)
 	s.advanceAIFleets() // 初始化位置

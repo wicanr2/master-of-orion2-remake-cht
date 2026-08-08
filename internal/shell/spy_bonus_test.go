@@ -89,7 +89,7 @@ func TestPlayerSpyGovernmentBonusFollowsTheAdvancedForm(t *testing.T) {
 	}
 }
 
-// 三個政體列舉的編號必須一致——原版只有一個 `[player+0x89F]`(第 113 項)。
+// 三個政體列舉的編號必須一致——原版只有一個 `[player+0x89F]`(第 55 項)。
 //
 // Go 這邊分成 Assimilation / Morale / Spy 三個列舉是歷史,不是原版有三套編號。
 // 少了這條,其中一個被重排時另外兩個不會有任何反應,而政府防諜加成會安靜地查錯格。

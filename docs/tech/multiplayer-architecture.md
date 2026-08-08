@@ -97,5 +97,5 @@ Mutation-on-battle-turn desync),可反推原版網路架構為:
 > (文件 commit `db4fbb7` 2026-08-07 03:49,五個 netplay 功能 commit 是同日 20:12–23:11)。
 > **文件斷言會過期,程式碼才是唯一真相** —— 判斷某項做了沒,`grep` 程式碼。
 - 熱座本身的已知不對稱(非當前席位的結算時點、勝負判定只對當前席位跑)見
-  `docs/re/01-gap-report.md` 第 20 項。
+  `docs/re/01-gap-report.md` 第 4 項。
 - 對應 WORKLIST「Phase 9 — 多人對戰」。

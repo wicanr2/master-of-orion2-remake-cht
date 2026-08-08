@@ -43,7 +43,7 @@ type ColonyState struct {
 	//
 	// AssimilationProgress 是「朝下一個單位累積了幾回合」。兩個欄位都由
 	// shell.advanceAssimilation 推進;engine 的經濟結算不直接讀它們——多種族人口的
-	// 20% 士氣懲罰走 shell.colonyMoralePercent 折成 MoralePercent(第 98 項接的)。
+	// 20% 士氣懲罰走 shell.colonyMoralePercent 折成 MoralePercent(第 43 項接的)。
 	UnassimilatedPop     int
 	AssimilationProgress int
 
@@ -70,7 +70,7 @@ type ColonyState struct {
 	// 接錯地方會讓這份產能跟著產生污染,正好與手冊那句相反。接法見 colonyOutput。
 	Recyclotron bool
 
-	// --- 「成就」科技的全帝國效果(2026-08-08 第 118 項,見 shell/achievements.go)---
+	// --- 「成就」科技的全帝國效果(2026-08-08 第 60 項,見 shell/achievements.go)---
 	//
 	// 這兩個由 shell 每回合依玩家科技重算(`syncAchievementColonyFields`),不是建築旗標
 	// ——成就是研究出來的,而研究結果會變(被偷、被交換),所以不能像建築那樣「完工時設一次」。
@@ -229,9 +229,9 @@ type PlayerState struct {
 	// FantasticTrader 是「神級商人」種族特性(諾蘭姆)。影響兩筆帝國收入:
 	// 貿易品 1:1 換 BC(一般種族 2:1)、餘糧每單位 1 BC(一般種族 0.5)。
 	//
-	// ⚠ 2026-08-08(第 130 項)。RunEmpireTurn 先前對這兩處硬傳 `false`,理由寫在
+	// ⚠ 2026-08-08(第 66 項)。RunEmpireTurn 先前對這兩處硬傳 `false`,理由寫在
 	// empire.go:「ColonyState 目前沒有追蹤『Fantastic Trader』這個種族特質的欄位
-	// (無可推導模型),TODO 待種族特質系統補上後再接。」——第 129 項把特質表接進來了。
+	// (無可推導模型),TODO 待種族特質系統補上後再接。」——第 66 項把特質表接進來了。
 	//
 	// 放在 PlayerState 不是 ColonyState:它是**帝國層**特性,每個殖民地都一樣;
 	// 放進殖民地會變成 N 份可以不一致的真相。

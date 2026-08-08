@@ -4,7 +4,7 @@ package gamedata
 //
 // ============ 一則撤回 ============
 //
-// 這一輪稍早(第 123 項一帶)曾經寫下並據以停手的一句話:
+// 這一輪稍早(第 65 項一帶)曾經寫下並據以停手的一句話:
 //
 //	裝甲科技的倍率**手冊與 openorion2 都沒有**,所以 armorHPByName 的值不動。
 //
@@ -93,7 +93,7 @@ func ArmorNegatesArmorPiercing(tech Technology) bool {
 	return tech == TECH_XENTRONIUM_ARMOR
 }
 
-// --- 艦載系統的固定加成(手冊逐句,第 134 項)---
+// --- 艦載系統的固定加成(手冊逐句,第 69 項)---
 
 const (
 	// ShipInertialStabilizerBeamDefense 手冊(Inertial Stabilizer):「a +50 addition to the

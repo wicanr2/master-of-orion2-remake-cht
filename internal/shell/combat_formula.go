@@ -73,9 +73,9 @@ func ResolveShotWithMods(netAttackBase, weaponMin, weaponMax, rangeSquares, shie
 //
 // ============ 為什麼把參數收成結構 ============
 //
-// `ResolveShotWithMods` 的位置參數在第 131/132 項之後排到了 **11 個**,而第 133 項盤點出來
+// `ResolveShotWithMods` 的位置參數在第 67/68 項之後排到了 **11 個**,而第 69 項盤點出來
 // 還有兩個手冊系統要接進同一條鏈(結構分析儀:過盾傷害加倍;阿基里斯瞄準器:光束一律
-// 無視裝甲)。第 134 項當時的判斷是:
+// 無視裝甲)。第 69 項當時的判斷是:
 //
 //	再加下去該先把攻方/守方系統各收成一個結構——**那是重構,不該夾在資料項裡做**
 //
@@ -195,14 +195,14 @@ func ResolveBeamShot(in BeamShot) ShotResult {
 //   - hasAMR/amrRangeSquares:目標艦是否裝有反飛彈火箭(Anti-Missile Rockets)、與其
 //     距離(格,→ gamedata.MissileAMRRangeIndex →命中率)。
 //     ⚠ 2026-08-08:這裡原本寫著「現行 remake 的 SpecialOptions 尚未提供『反飛彈火箭』
-//     這個可造艦元件,呼叫端目前一律傳 hasAMR=false」——**第 125 項已經把該元件補上了**,
+//     這個可造艦元件,呼叫端目前一律傳 hasAMR=false」——**第 65 項已經把該元件補上了**,
 //     呼叫端也改成依目標艦是否裝載決定。註解比程式碼晚了三項才更新。
 //   - defenderEvasionBonus:目標的飛彈閃避加成加總(ECM Jammer/Stabilizer/種族/艦員/
 //     統帥,各項手冊固定數值見 missile.go 的 MissileJammer*/MissileInertialStabilizer/
 //     MissileInertialNullifier/MissileShipDefenseRacialBonus/MissileCrew*/
 //     MissileHelmsmanEvasionBonus)。現行 remake 的艦艇設計/軍官系統尚未提供這些元件,
 //     呼叫端目前一律傳 0(TODO,待補上後從實際裝載/軍官推導)。
-//   - attackerScannerBonus:⚠ 2026-08-08(第 142 項)訂正。這裡原本寫著「現行 remake 未提供
+//   - attackerScannerBonus:⚠ 2026-08-08(第 72 項)訂正。這裡原本寫著「現行 remake 未提供
 //     攻方掃描器(Scanner)…呼叫端一律傳 0(TODO)」——**那句話從一開始就不對**。手冊指的
 //     「best known scanner bonus of the attacker」是**掃描科技**(迅子 −20、中子 −40,各自寫在
 //     自己的條目裡),不是某個可造艦元件;而那三個掃描科技從 detection.go 建起來那天就在

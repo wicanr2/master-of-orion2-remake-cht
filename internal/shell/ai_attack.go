@@ -236,7 +236,7 @@ func (s *GameSession) aiRaid(i int) *AIRaidReport {
 	if i < 0 || i >= len(s.AIPlayers) {
 		return nil
 	}
-	// ⚠ 2026-08-08(第 106 項)突襲的前提從「想打」改成「**打得到**」。
+	// ⚠ 2026-08-08(第 48 項)突襲的前提從「想打」改成「**打得到**」。
 	//
 	// 先前這裡是 `aiRaidWilling(i)` + `aiRaidTarget(i)`——想打誰就直接結算誰,
 	// AI 艦隊憑空出現在目標上空。現在 AI 有位置了(見 ai_fleet.go),

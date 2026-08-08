@@ -1,7 +1,7 @@
 # 戰鬥解算依武器類型分流:beam / missile / spherical
 
 > 日期:2026-07-11(狀態欄 2026-08-08 更新)。狀態:beam / missile / spherical **三條路徑都已接線並有回歸測試**;
-> 球形武器有三把(脈衝星、空間壓縮器、陀螺去穩器,第 127/139 項)。
+> 球形武器有三把(脈衝星、空間壓縮器、陀螺去穩器,第 65/71 項)。
 
 ## 一、問題:公式早就移植了,但戰鬥解算沒用
 
@@ -26,7 +26,7 @@
 | 麥克萊特飛彈 | missile | 對應同表的 `MissileWarheadMerculite`(+15) |
 | 其餘(雷射/質量投射器/中子爆破槍/核融合光束/高斯砲/相位砲/電漿砲/死光/無武裝) | beam | 手冊未列為飛彈或球形武器 |
 
-`WeaponOptions` 的球形武器是脈衝星、空間壓縮器(第 127 項)與陀螺去穩器(第 139 項),三把都走 `WeaponKindSpherical`。這點特別核對過手冊
+`WeaponOptions` 的球形武器是脈衝星、空間壓縮器(第 65 項)與陀螺去穩器(第 71 項),三把都走 `WeaponKindSpherical`。這點特別核對過手冊
 「Notes on Spherical Damage > Spherical Weapons」(p126)明列的球形武器清單:
 
 - Pulsar(2-24/size class,6 格半徑)

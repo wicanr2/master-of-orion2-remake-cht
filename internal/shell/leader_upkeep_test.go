@@ -13,7 +13,7 @@ import (
 func TestLeadersCostMoneyEveryTurn(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
-	// 新開一局**沒有領袖**(第 43 項改成原版的雇用制,不再自帶),所以要自己放幾位。
+	// 新開一局**沒有領袖**(第 15 項改成原版的雇用制,不再自帶),所以要自己放幾位。
 	s.Leaders = demoLeaders()
 	cost := s.LeaderUpkeepTotal()
 	if cost <= 0 {
@@ -87,7 +87,7 @@ func TestUpkeepTracksHireCost(t *testing.T) {
 // ——「BC 為負時若只判斷 bcLoss > BC 會把損失夾成負值,`BC -= bcLoss` 反而變成加錢」。
 func TestUpkeepNeverGoesNegativeOrPaysBack(t *testing.T) {
 	s := NewDemoSession()
-	// 新開一局**沒有領袖**(第 43 項改成原版的雇用制,不再自帶),所以要自己放幾位。
+	// 新開一局**沒有領袖**(第 15 項改成原版的雇用制,不再自帶),所以要自己放幾位。
 	s.Leaders = demoLeaders()
 	s.Player.BC = 1
 	s.advanceLeaderUpkeep()
@@ -109,7 +109,7 @@ func TestUpkeepNeverGoesNegativeOrPaysBack(t *testing.T) {
 func TestEndTurnChargesLeaderUpkeep(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
-	// 新開一局**沒有領袖**(第 43 項改成原版的雇用制,不再自帶),所以要自己放幾位。
+	// 新開一局**沒有領袖**(第 15 項改成原版的雇用制,不再自帶),所以要自己放幾位。
 	s.Leaders = demoLeaders()
 	s.Player.BC = 100000 // 拉高,免得被其他收支淹沒
 	s.EndTurn()

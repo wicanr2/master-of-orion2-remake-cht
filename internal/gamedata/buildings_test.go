@@ -11,7 +11,7 @@ import "testing"
 //
 // 也就是說「40」從一開始就不是原版的數字,只是抄手冊時連著記帳方式一起抄了。
 // 真正的上界是原版建築表的 48 棟;其餘 7 個編號不在這裡的理由各自不同,
-// 逐一列在 `docs/re/01-gap-report.md` 第 36 項(2 個自動給予、3 個是 SpecialActions、
+// 逐一列在 `docs/re/01-gap-report.md` 第 12 項(2 個自動給予、3 個是 SpecialActions、
 // 2 個仍缺)。改這個數字前先去看那一項。
 func TestBuildingsCount(t *testing.T) {
 	if got := len(Buildings); got != 41 {

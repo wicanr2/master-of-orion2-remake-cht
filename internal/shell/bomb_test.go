@@ -89,12 +89,12 @@ func TestBombRosterIsComplete(t *testing.T) {
 	}
 }
 
-// 生物武器**不該**進元件表——第 111 項已用另一條路徑(科技擁有 → 轟炸擲骰)接好了,
+// 生物武器**不該**進元件表——第 53 項已用另一條路徑(科技擁有 → 轟炸擲骰)接好了,
 // 加進來會讓同一條規則生效兩次。
 func TestBioWeaponsStayOutOfTheComponentRoster(t *testing.T) {
 	for _, c := range WeaponOptions {
 		if c.Name == "死亡孢子" || c.Name == "生物滅絕者" {
-			t.Errorf("%s 不該進武器元件表(第 111 項已走科技擁有那條路徑)", c.Name)
+			t.Errorf("%s 不該進武器元件表(第 53 項已走科技擁有那條路徑)", c.Name)
 		}
 	}
 }

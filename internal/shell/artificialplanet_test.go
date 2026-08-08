@@ -88,7 +88,7 @@ func TestArtificialPlanetResultIsFixed(t *testing.T) {
 
 // TestArtificialPlanetNeedsMaterial 釘住手冊的前置條件。
 //
-// ⚠ 這一條同時訂正了 remake 先前的假設:gap report 第 61 項寫著「人造行星按定義是在既有
+// ⚠ 這一條同時訂正了 remake 先前的假設:gap report 第 25 項寫著「人造行星按定義是在既有
 // 星系裡**再多**一顆世界」,於是把它列為「要有空軌道才蓋得了」。手冊說的不是那樣——
 // 它是把**既有的**氣態巨星/小行星帶組裝成行星,那顆天體本來就佔著軌道。
 // 所以「五個軌道全滿但有氣態巨星」是**可以蓋**的。

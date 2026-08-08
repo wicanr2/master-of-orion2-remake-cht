@@ -68,7 +68,7 @@ func genMonsters(stars []Star, planets []Planet, r *rand.Rand, homeStars map[int
 		if homeStars[i] || stars[i].Owner != 0 {
 			continue
 		}
-		// ⚠ 不能寫 `planets[i]` ——`Planets` 自 2026-08-07(第 63 項)起**不再與 Stars 平行**,
+		// ⚠ 不能寫 `planets[i]` ——`Planets` 自 2026-08-07(第 25 項)起**不再與 Stars 平行**,
 		// 一顆星有 1..5 個天體。要挑代表行星請走 representativePlanet(唯一那一份實作)。
 		if p := representativePlanet(stars, planets, i); p >= 0 && planets[p].NoPlanet {
 			continue

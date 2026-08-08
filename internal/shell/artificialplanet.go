@@ -10,7 +10,7 @@ package shell
 //  **Barren, Normal G, and mineral Abundant**. **Gas giants make Huge worlds, and asteroid
 //  belts make Large ones.**」
 //
-// ⚠ **這推翻了 remake 先前的假設。** gap report 第 61 項寫著「人造行星按定義是在既有星系裡
+// ⚠ **這推翻了 remake 先前的假設。** gap report 第 25 項寫著「人造行星按定義是在既有星系裡
 // **再多**一顆世界」,於是把它列為「要有空軌道才蓋得了」。手冊說的不是那樣——
 // 它是把**既有的**氣態巨星或小行星帶「assemble」成行星,那顆天體本來就佔著一條軌道。
 // 所以前置條件是「同星系有氣態巨星或小行星帶」,不是「有空軌道」。

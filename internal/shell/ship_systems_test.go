@@ -20,7 +20,7 @@ func mkLast(t *testing.T, special string) combatant {
 	return cs[len(cs)-1]
 }
 
-// ⚠ 第 133 項的缺失:慣性穩定器手冊給了**兩個**加成,當時只接了飛彈閃避那一半。
+// ⚠ 第 69 項的缺失:慣性穩定器手冊給了**兩個**加成,當時只接了飛彈閃避那一半。
 //
 // 這條測試同時釘住兩半,免得日後又只補一邊。
 func TestInertialStabilizerGivesBothBonuses(t *testing.T) {
@@ -29,7 +29,7 @@ func TestInertialStabilizerGivesBothBonuses(t *testing.T) {
 		t.Errorf("飛彈閃避應 +%d,得到 %+d", gamedata.MissileInertialStabilizer, got)
 	}
 	if got := stab.def - plain.def; got != gamedata.ShipInertialStabilizerBeamDefense {
-		t.Errorf("光束閃避應 +%d,得到 %+d(這正是第 133 項漏掉的那一半)",
+		t.Errorf("光束閃避應 +%d,得到 %+d(這正是第 69 項漏掉的那一半)",
 			gamedata.ShipInertialStabilizerBeamDefense, got)
 	}
 	// 慣性抵消器兩項都更高。
@@ -43,7 +43,7 @@ func TestInertialStabilizerGivesBothBonuses(t *testing.T) {
 // 戰鬥掃描器在**戰鬥裡**:+50 命中,而且不動閃避與結構。
 //
 // ⚠ 這條測試原本叫 TestBattleScannerRaisesOnlyAccuracy——那個「Only」是錯的。
-// 手冊那一段有兩句話,第二句是「掃描範圍 +2 parsec(戰鬥之外)」,第 142 項才補上。
+// 手冊那一段有兩句話,第二句是「掃描範圍 +2 parsec(戰鬥之外)」,第 72 項才補上。
 // **測試名稱裡的「只」是一種斷言**,而這一條斷的是我當時的理解,不是手冊。
 func TestBattleScannerRaisesAccuracyInCombat(t *testing.T) {
 	plain, scan := mkLast(t, ""), mkLast(t, "戰鬥掃描器")

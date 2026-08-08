@@ -33,7 +33,7 @@ type AIOpponent struct {
 	StanceName  string // 目前對玩家態勢(中文;由 ai.DecideStance 推得)
 	OwnedStars  int    // 已擴張佔領的星數(含母星)
 
-	// --- AI 主力艦隊在星圖上的位置(2026-08-08 第 106 項)---
+	// --- AI 主力艦隊在星圖上的位置(2026-08-08 第 48 項)---
 	//
 	// 先前 AI 沒有位置,突襲是瞬移的:玩家看不到它來、阿提米絲水雷也打不到它。
 	// 現在它會從所在的星飛到目標,抵達才動手。見 ai_fleet.go。
@@ -207,7 +207,7 @@ var (
 	// 真科技樹無單一 TOPIC 可掛,暫掛簡化 proxy 主題、UnlockTech=TECH_NONE(走主題層級,標註待重設計)。
 	WeaponOptions = []Component{
 		{"無武裝", 0, 0, 0, 0},
-		// ⚠ 2026-08-08(第 123 項):Value(最大傷害)全部換成**手冊 p.124-125 的真值**。
+		// ⚠ 2026-08-08(第 65 項):Value(最大傷害)全部換成**手冊 p.124-125 的真值**。
 		// 先前是「依科技階遞增的單調估計」,而武器線本來就不是單調的——核融合光束在
 		// 舊估計裡比中子爆破槍強(16 > 12),手冊上它比中子爆破槍**弱**(6 vs 12)。
 		// 逐項出處與偏差幅度見 gamedata/weapon_damage.go。Cost 欄不動(那是 remake 的
@@ -223,12 +223,12 @@ var (
 		{"電漿砲", 200, 20, gamedata.TOPIC_PLASMA_PHYSICS, gamedata.TECH_PLASMA_CANNON},           // 手冊 4-20(1.50)
 		{"死光", 300, 100, gamedata.TOPIC_ARTIFICIAL_LIFE, 0},                                    // 手冊 50-100(先前 25)
 
-		// ⚠ 2026-08-08(第 124 項)補上手冊有、remake 沒有的八項。
+		// ⚠ 2026-08-08(第 65 項)補上手冊有、remake 沒有的八項。
 		//
 		// 傷害/佔格取自手冊 p.124-125;**研究主題取自執行檔**(`gamedata.OrigTechTopic`,
-		// 第 108 項那張 211/212 對得上的表)——不是照科技名猜的,有測試逐項核對。
+		// 第 50 項那張 211/212 對得上的表)——不是照科技名猜的,有測試逐項核對。
 		//
-		// Cost 是 remake 的生產成本尺度(與手冊的 Cost 欄不同單位,見第 123 項),
+		// Cost 是 remake 的生產成本尺度(與手冊的 Cost 欄不同單位,見第 65 項),
 		// 依手冊成本的**相對名次**插在既有鄰居之間——**那是 remake 的選擇,不是手冊值**。
 		{"離子脈衝砲", 100, 10, gamedata.TOPIC_ION_FISSION, gamedata.TECH_ION_PULSE_CANNON},
 		{"引力波束", 140, 15, gamedata.TOPIC_ARTIFICIAL_GRAVITY, gamedata.TECH_GRAVITON_BEAM},
@@ -239,18 +239,18 @@ var (
 		{"粒子束", 280, 30, gamedata.TOPIC_XENON_TECHNOLOGY, gamedata.TECH_PARTICLE_BEAM},
 		{"重錘裝置", 340, 100, gamedata.TOPIC_HYPER_DIMENSIONAL_PHYSICS, gamedata.TECH_MAULER_DEVICE},
 
-		// 炸彈(第 126 項,手冊 p.126 的 BOMB 表)。**只能打行星**——見 WeaponKindBomb。
+		// 炸彈(第 65 項,手冊 p.126 的 BOMB 表)。**只能打行星**——見 WeaponKindBomb。
 		// 主題同樣取自執行檔;四項的執行檔 category 都是 19(炸彈),與手冊分類一致。
 		{"核彈", 40, 12, gamedata.TOPIC_NUCLEAR_FISSION, gamedata.TECH_NUCLEAR_BOMB},
 		{"融合彈", 90, 24, gamedata.TOPIC_ADVANCED_FUSION, gamedata.TECH_FUSION_BOMB},
 		{"反物質彈", 180, 40, gamedata.TOPIC_ANTIMATTER_FISSION, gamedata.TECH_ANTIMATTER_BOMB},
 		{"中子彈", 240, 60, gamedata.TOPIC_INTERPHASED_FISSION, gamedata.TECH_NEUTRONIUM_BOMB},
 
-		// 球形武器(第 127 項,手冊 p.126 的球形清單 + p.127 的數值表)。
+		// 球形武器(第 65 項,手冊 p.126 的球形清單 + p.127 的數值表)。
 		// 先前 `WeaponKindSpherical` 這條解算分支**掛不到任何武器**——整段是死碼。
 		{"脈衝星", 200, 24, gamedata.TOPIC_WARP_FIELDS, gamedata.TECH_PULSAR},
 		{"空間壓縮器", 260, 32, gamedata.TOPIC_XENON_TECHNOLOGY, gamedata.TECH_SPATIAL_COMPRESSOR},
-		// 陀螺去穩器(第 139 項):第 128 項判定「資料齊但光束路徑沒有 per size class 乘數」
+		// 陀螺去穩器(第 71 項):第 65 項判定「資料齊但光束路徑沒有 per size class 乘數」
 		// ——正解不是替光束加乘數,是認出它其實屬球形家族(依級數乘 + 豁免盾甲兩個特徵都有)。
 		{"陀螺去穩器", 180, 4, gamedata.TOPIC_GRAVITIC_FIELDS, gamedata.TECH_GYRO_DESTABILIZER},
 	}
@@ -282,7 +282,7 @@ func BuildWeaponOptions(p gamedata.RuleProfile) []Component {
 var (
 	// ArmorOptions 的 Value(裝甲 HP)= 基準單位 × `gamedata.ArmorStructurePercent`。
 	//
-	// ⚠ 2026-08-08(第 132 項)由自編值 10/20/35/55/80/120 改成手冊階梯
+	// ⚠ 2026-08-08(第 68 項)由自編值 10/20/35/55/80/120 改成手冊階梯
 	// 100/200/400/600/800/1000%(見 gamedata/armor_tech.go 的逐句出處與那則撤回)。
 	// **階梯是一手的,基準單位 10 是 remake 值**——原版沒有獨立的「裝甲池」,
 	// 裝甲科技決定的是艦艇結構點數,兩池是 remake 的抽象。
@@ -316,7 +316,7 @@ var (
 		{"重生程序", 150, 0, gamedata.TOPIC_ARTIFICIAL_LIFE, 0},                                         // 抽象(種族特性),proxy 待重設計
 		{"戰機庫", 90, 0, gamedata.TOPIC_ADVANCED_ENGINEERING, gamedata.TECH_FIGHTER_BAYS},             // 攔截機隊出擊4(手冊 GM p.127),ResolveBattle 加母艦戰力
 		{"重戰機庫", 160, 0, gamedata.TOPIC_SUPERSCALAR_CONSTRUCTION, gamedata.TECH_HEAVY_FIGHTER_BAYS}, // 重戰機隊出擊2、火力較強(手冊 GM p.127)
-		// 轟炸機庫(第 141 項):`gamedata` 的戰機速度與射擊次數**兩組都是四型都齊的**,
+		// 轟炸機庫(第 71 項):`gamedata` 的戰機速度與射擊次數**兩組都是四型都齊的**,
 		// 而 shell 只實作了兩型——連 FighterKind 的檔頭都寫著「手冊 p.127 的四種」。
 		// 主題取自執行檔(進階機器人學)。
 		{"轟炸機庫", 130, 0, gamedata.TOPIC_ADVANCED_ROBOTICS, gamedata.TECH_BOMBER_BAYS},
@@ -326,13 +326,13 @@ var (
 		// ⚠ 成本 100 沿用同主題的隱形裝置,是 remake 值不是原版真值——本表其餘成本同樣是
 		// remake 值(見表頭那幾筆的「proxy 待重設計」註記)。
 		{"硬化護盾", 100, gamedata.DamageHardShieldBonus, gamedata.TOPIC_DISTORTION_FIELDS, gamedata.TECH_HARD_SHIELDS},
-		// 反飛彈火箭(第 125 項):`ResolveMissileShot` 的 hasAMR 參數從寫出來就恆傳 false,
+		// 反飛彈火箭(第 65 項):`ResolveMissileShot` 的 hasAMR 參數從寫出來就恆傳 false,
 		// 理由是「現行 remake 的 SpecialOptions 尚未提供這個可造艦元件」——那句話對,
 		// 而這一行就是把它補上。研究主題取自執行檔(`OrigTechTopic` → 進階工程),
 		// 執行檔的 category 也是 28(反飛彈/干擾),與手冊 p.127 的分類一致。
 		// Value 留 0:AMR 不加攻防,它的效果是攔截(見 battleVolley 的 hasAMR 分支)。
 		{"反飛彈火箭", 70, 0, gamedata.TOPIC_ADVANCED_ENGINEERING, gamedata.TECH_ANTIMISSILE_ROCKETS},
-		// 高能聚焦(第 131 項):`gamedata.DamageMountBonusHEF = 50` 與 `DamageMountAdjustedValue`
+		// 高能聚焦(第 67 項):`gamedata.DamageMountBonusHEF = 50` 與 `DamageMountAdjustedValue`
 		// 的 hefBonus 參數從寫出來就沒有生產端——因為 **HEF 在手冊裡是「系統」不是武器改造**
 		// (`High Energy Focus (System)`),而系統要進這張表才裝得上,於是兩個呼叫端一路傳 0。
 		//
@@ -347,7 +347,7 @@ var (
 		// (RACESTUF 那條路只有種族資料)。取值參考同屬中後期系統的硬化護盾(100)與
 		// 反飛彈火箭(70)。與本表其餘元件同一種標記方式。
 		{"高能聚焦", 90, 0, gamedata.TOPIC_HIGH_ENERGY_DISTRIBUTION, gamedata.TECH_HIGH_ENERGY_FOCUS},
-		// 重裝甲(第 132 項):與高能聚焦同一個形狀——手冊寫的是「Heavy Armor **(System)**」,
+		// 重裝甲(第 68 項):與高能聚焦同一個形狀——手冊寫的是「Heavy Armor **(System)**」,
 		// 系統要進這張表才裝得上,而它先前不在,於是兩個效果都沒有落點:
 		//
 		//	Installing Heavy Armor **triples** the amount of damage the ship's armor can
@@ -358,21 +358,21 @@ var (
 		// 主題取自執行檔的 tech→topic 表(進階建設,與自動化工廠/行星飛彈基地三選一)。
 		// ⚠ 成本 110 是 remake 值,理由同高能聚焦。
 		{"重裝甲", 110, 0, gamedata.TOPIC_ADVANCED_CONSTRUCTION, gamedata.TECH_HEAVY_ARMOR},
-		// --- 飛彈防禦系統家族(第 133 項)---
+		// --- 飛彈防禦系統家族(第 69 項)---
 		//
 		// `gamedata/missile.go` 把手冊 p.123「Special Defensive Systems」與「Missile Evasion」
 		// 整段搬進來了:干擾器三型、慣性穩定/抵消、閃電場、位移裝置,**每一個都有精確數字**。
 		// 而 `ResolveMissileShot` 的 `defenderEvasionBonus` 一直只吃得到艦員經驗與舵手技能
 		// ——那七個常數一個生產端都沒有,因為**這些系統從來不在元件清單上**。
 		//
-		// 這是第 131/132 項同一個形狀的第三次:手冊的 System 沒進 SpecialOptions。
+		// 這是第 67/68 項同一個形狀的第三次:手冊的 System 沒進 SpecialOptions。
 		// 這次不是一個一個撞到的——把手冊所有 `(System)`/`(Ship)` 條目對四張元件表做了
-		// 完整性盤點,一次撈出來(盤點結果見 docs/re/01-gap-report.md 第 133 項)。
+		// 完整性盤點,一次撈出來(盤點結果見 docs/re/01-gap-report.md 第 69 項)。
 		//
 		// 主題全部取自執行檔的 tech→topic 表(`OrigTechTopic`),不是猜的。
 		// ⚠ 成本一律是 remake 值(理由同高能聚焦/重裝甲),依主題先後遞增排。
 		// ⚠ **慣性抵消器與位移裝置同屬 Transwarp Fields(71),是三選一裡的兩個選項**
-		// ——研究時只能挑一個,與微晶構築/奈米分解者同款(第 118 項)。
+		// ——研究時只能挑一個,與微晶構築/奈米分解者同款(第 60 項)。
 		{"電子干擾器", 80, 0, gamedata.TOPIC_ADVANCED_MAGNETISM, gamedata.TECH_ECM_JAMMER},
 		{"慣性穩定器", 100, 0, gamedata.TOPIC_GRAVITIC_FIELDS, gamedata.TECH_INERTIAL_STABILIZER},
 		{"廣域干擾器", 130, 0, gamedata.TOPIC_QUANTUM_FIELDS, gamedata.TECH_WIDE_AREA_JAMMER},
@@ -383,25 +383,25 @@ var (
 		// 部隊艙:`gamedata.GroundTroopPodsMultiplier = 2`(手冊 p.79「doubling the number of
 		// Marines on board a ship」)同樣零生產端,同樣是因為元件不存在。
 		{"部隊艙", 70, 0, gamedata.TOPIC_CAPSULE_CONSTRUCTION, gamedata.TECH_TROOP_PODS},
-		// --- 第 134 項:第 133 項盤點出來那 20 個裡,數字最硬、且 remake 已有承接位置的五個 ---
+		// --- 第 69 項:第 69 項盤點出來那 20 個裡,數字最硬、且 remake 已有承接位置的五個 ---
 		// 主題同樣全部取自執行檔的 tech→topic 表;成本一律 remake 值。
 		// 沒接的十幾個與各自的理由寫在 ship_systems.go 檔尾。
 		{"偵察實驗室", 60, 0, gamedata.TOPIC_ARTIFICIAL_INTELLIGENCE, gamedata.TECH_SCOUT_LAB},
 		{"強化船體", 90, 0, gamedata.TOPIC_ADVANCED_ENGINEERING, gamedata.TECH_REINFORCED_HULL},
 		{"多相護盾", 170, 0, gamedata.TOPIC_MULTIPHASED_PHYSICS, gamedata.TECH_MULTIPHASED_SHIELDS},
 		{"戰鬥掃描器", 120, 0, gamedata.TOPIC_TACHYON_PHYSICS, gamedata.TECH_BATTLE_SCANNER},
-		// 第 135 項:傷害鏈收成具名結構之後,這兩個就接得進去了
-		// (第 134 項把它們列在「要先重構」那一格)。
+		// 第 69 項:傷害鏈收成具名結構之後,這兩個就接得進去了
+		// (第 69 項把它們列在「要先重構」那一格)。
 		{"結構分析儀", 140, 0, gamedata.TOPIC_CYBERTRONICS, gamedata.TECH_STRUCTURAL_ANALYZER},
 		{"阿基里斯瞄準器", 200, 0, gamedata.TOPIC_MOLECULATRONICS, gamedata.TECH_ACHILLES_TARGETING_UNIT},
-		// 增強引擎(第 136 項):手冊「increase the combat speed of a ship by +5」。
-		// 第 134 項把它列在「機制不存在」那一格——戰鬥速度模型建起來之後就成立了。
+		// 增強引擎(第 70 項):手冊「increase the combat speed of a ship by +5」。
+		// 第 69 項把它列在「機制不存在」那一格——戰鬥速度模型建起來之後就成立了。
 		{"增強引擎", 100, 0, gamedata.TOPIC_ADVANCED_FUSION, gamedata.TECH_AUGMENTED_ENGINES},
-		// 狀態類武器(第 138 項):第 128 項判定它們「卡在機制」——牽引光束要戰鬥速度模型
-		// (第 136 項)、停滯力場要「這一輪不能動」的狀態。兩塊都建好了,現在接得上。
+		// 狀態類武器(第 70 項):第 65 項判定它們「卡在機制」——牽引光束要戰鬥速度模型
+		// (第 70 項)、停滯力場要「這一輪不能動」的狀態。兩塊都建好了,現在接得上。
 		{"牽引光束", 130, 0, gamedata.TOPIC_ARTIFICIAL_GRAVITY, gamedata.TECH_TRACTOR_BEAM},
 		{"停滯力場", 190, 0, gamedata.TOPIC_DISTORTION_FIELDS, gamedata.TECH_STASIS_FIELD},
-		// 行動次數家族(第 140 項):三個元件卡在同一個缺失機制「一回合開幾次火」,
+		// 行動次數家族(第 71 項):三個元件卡在同一個缺失機制「一回合開幾次火」,
 		// 建一次就一次解三個。冷卻的讀法見 gamedata/shots_per_round.go
 		// ——手冊的 unused 是「完全沒開火」,不是「沒有連射」。
 		{"快速飛彈架", 120, 0, gamedata.TOPIC_SERVO_MECHANICS, gamedata.TECH_FAST_MISSILE_RACKS},
@@ -424,12 +424,12 @@ func armorHPByName(name string) int {
 // 第五級=5、第七級=7、第十級=10(手冊值,見 gamedata.ShieldReductionForTech)。
 //
 // ⚠ 這段註解原本寫著「remake 由護盾階推導:…第一級=2、第三級=4…**精確 per-class 真值待逆向**」。
-// 那句話有兩個問題,第 121 項一起修掉:推導出來的數字五級裡有四級是錯的,而**真值根本
+// 那句話有兩個問題,第 63 項一起修掉:推導出來的數字五級裡有四級是錯的,而**真值根本
 // 不需要逆向**——`gamedata.DamageShieldReductionClass*` 從手冊抄進來之後一直躺在那裡沒人用。
 func shieldReduceByName(name string) int {
 	for _, c := range ShieldOptions {
 		if c.Name == name {
-			// ⚠ 2026-08-08(第 121 項):這裡原本回 `i * 2`(清單索引 × 2),
+			// ⚠ 2026-08-08(第 63 項):這裡原本回 `i * 2`(清單索引 × 2),
 			// 五級裡有四級與手冊不符而且一律偏高(1/3/5/7/10 被算成 2/4/6/8/10)。
 			// 手冊值改由 gamedata.ShieldReductionForTech 依**科技**查——名稱會被翻譯、
 			// 清單順序一改索引就跑掉,那正是原本那個算法出問題的地方。
@@ -664,11 +664,11 @@ type combatant struct {
 	hasAMR bool
 	// hasHEF 是這艘船裝了高能聚焦(手冊 p.87:光束傷害 +50%,不影響命中與距離衰減)。
 	hasHEF bool
-	// 攻方光束系統(第 135 項):高能聚焦 / 結構分析儀 / 阿基里斯瞄準器。
+	// 攻方光束系統(第 69 項):高能聚焦 / 結構分析儀 / 阿基里斯瞄準器。
 	beamSystems BeamAttackerSystems
 	// initiative 是手冊的主動權(Beam Attack + 10×戰鬥速度),決定齊射次序。
 	initiative int
-	// shots 是這一發齊射裡這艘船開幾次火(第 140 項)。快速結算沒有跨回合狀態,
+	// shots 是這一發齊射裡這艘船開幾次火(第 71 項)。快速結算沒有跨回合狀態,
 	// 所以充能一律視為滿——**這是刻意的簡化**:快速結算本來就沒有「上一回合」的概念。
 	shots int
 	// apNegated 是這艘**被打的**船讓敵方穿甲失效(氙素裝甲 或 重裝甲系統,手冊各一句)。
@@ -678,7 +678,7 @@ type combatant struct {
 	hasDisplacement   bool
 	// hardShield 是這艘**被打的**船裝了硬化護盾。手冊那句的主詞是「each enemy attack」
 	// ——不分武器類型,所以三條射擊路徑(光束/飛彈/球形)都要吃到。
-	// 第 142 項之前只有光束路徑接了,飛彈與球形一律傳 false。
+	// 第 72 項之前只有光束路徑接了,飛彈與球形一律傳 false。
 	hardShield bool
 	// scannerJamReduction 是這艘**開火的**船抵銷目標飛彈閃避的點數(迅子 20 / 中子 40)。
 	// 帝國級(掃描科技無逐艦元件),敵方艦隊無科技資料故為 0。
@@ -695,16 +695,16 @@ type combatant struct {
 // battleVolley 讓每個存活 attacker 對第一個存活 defender 射一發(固定近距 range=2),
 // 依 attacker 的武器類型分流真戰鬥公式:beam 沿用 ResolveShot(不動,回歸測試見
 // combat_weapon_kind_test.go);missile 改用 ResolveMissileShot(躲避/AMR 攔截);
-// spherical 改用 ResolveSphericalShot(第 127 項起真的有武器掛載:脈衝星/空間壓縮器)。
+// spherical 改用 ResolveSphericalShot(第 65 項起真的有武器掛載:脈衝星/空間壓縮器)。
 // 回傳本輪擊沉的 defender 數。移除陣亡艦。
 func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand) int {
 	before := len(*defenders)
-	// 主動權排序(第 136 項):手冊「smaller ships should move before bigger, slower ones」。
+	// 主動權排序(第 70 項):手冊「smaller ships should move before bigger, slower ones」。
 	// 先前是艦隊清單順序,等於「先造的先打」——與速度完全無關。
 	// 就地排序沒有問題:呼叫端每次都重新建構戰列(mkPlayerCombatantsIndexed / genEnemyFleet)。
 	sortByInitiative(attackers)
 	for i := range attackers {
-		// 行動次數(第 140 項):超載電容/快速飛彈架/時間扭曲加速器可以再打一次。
+		// 行動次數(第 71 項):超載電容/快速飛彈架/時間扭曲加速器可以再打一次。
 		// 沒有這些系統的船 shots==1,迴圈只跑一圈——**RNG 消耗與先前逐位元相同**。
 		// ⚠ shots 為 0 的話(零值)這艘船會完全不開火,所以下面夾在至少 1。
 		nshots := attackers[i].shots
@@ -725,7 +725,7 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 	return before - len(*defenders)
 }
 
-// battleShot 是 battleVolley 裡「一艘船打一發」的那一段(第 140 項從迴圈裡抽出來,
+// battleShot 是 battleVolley 裡「一艘船打一發」的那一段(第 71 項從迴圈裡抽出來,
 // 讓連射系統可以重複呼叫)。抽出來的過程沒有改任何判定,只是把 `attackers[i]` 換成參數。
 func battleShot(atk *combatant, defenders *[]combatant, rng *rand.Rand) {
 	ti := -1
@@ -749,7 +749,7 @@ func battleShot(atk *combatant, defenders *[]combatant, rng *rand.Rand) {
 	case WeaponKindMissile:
 		amrRoll := rng.Intn(100) + 1
 		jamRoll := rng.Intn(100) + 1
-		// 特殊防禦裝置(第 133 項):**裝了才擲骰**,沒裝就完全不動 RNG
+		// 特殊防禦裝置(第 69 項):**裝了才擲骰**,沒裝就完全不動 RNG
 		// ——這樣既有存檔/探針的戰鬥結果逐位元不變(同炸彈分支的處理)。
 		var mdef MissileDefenses
 		if d.hasLightningField {
@@ -759,8 +759,8 @@ func battleShot(atk *combatant, defenders *[]combatant, rng *rand.Rand) {
 			mdef.HasDisplacement, mdef.DisplacementRoll = true, rng.Intn(100)+1
 		}
 		// ⚠ 2026-08-08:上一版註解寫「那句話對 ECM 干擾器/慣性穩定器仍成立」
-		// ——第 133 項把那一整族補進 SpecialOptions 了,`missileEvasion` 現在吃得到。
-		// ⚠ 2026-08-08(第 142 項):倒數第二個引數先前恆為 false(硬化護盾),
+		// ——第 69 項把那一整族補進 SpecialOptions 了,`missileEvasion` 現在吃得到。
+		// ⚠ 2026-08-08(第 72 項):倒數第二個引數先前恆為 false(硬化護盾),
 		// 第五個引數恆為 0(攻方掃描器)。兩者現在都有真值來源——手冊各自寫得很清楚,
 		// 只是這兩個參數位置從加進來那天起就沒有人回頭填。
 		shot = ResolveMissileShot(d.hasAMR, 2, amrRoll, d.missileEvasion,
@@ -831,14 +831,14 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 		body := shipStrength(sh.Class)
 		atk := body + sh.WeaponAttack
 		atk += atk * s.RaceCombatPct / 100 // 種族戰鬥加成(姆瑞森艦攻+50、埃雷里安+20…)
-		// 戰鬥掃描器(第 134 項):手冊「increases the ship's chance to hit with beam weapons
+		// 戰鬥掃描器(第 69 項):手冊「increases the ship's chance to hit with beam weapons
 		// by 50」——**點數加成**,所以加在種族百分比之後(理由同下面的艦員加成)。
 		atk += shipBeamOffenseBonus(sh)
 		// 艦員經驗(手冊 p.121 的 BA/BD 兩欄):老手打得準也閃得掉。
 		// 加在種族加成**之後**——那兩張表是直接的點數加成,不是百分比,所以不該被種族倍率放大。
 		crew := s.shipCrewLevel(sh)
 		atk += gamedata.ShipCrewOffenseBonus(crew)
-		// ⚠ 2026-08-08(第 119 項):上面那句註解說「打得準**也閃得掉**」,
+		// ⚠ 2026-08-08(第 61 項):上面那句註解說「打得準**也閃得掉**」,
 		// 但先前只加了 BA(攻擊)那一欄,BD(防禦)那一欄從來沒加過——`def` 只有艦體值。
 		// 手冊 p.121 的兩欄是分開的兩個加成,`engine.BeamDefense` 也是這樣算的
 		// (openorion2 `Ship::beamDefense` 末項),只是 shell 這條路徑沒有走它。
@@ -846,7 +846,7 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 		// 種族艦艇**防禦**加成(阿爾卡里 +50、埃雷里安 +25)。與攻擊側對稱:
 		// 套在艦體值上、在艦員點數加成之前——理由同上,那兩欄是點數不是百分比。
 		defBody := body + body*s.RaceShipDefPct/100
-		// 慣性穩定器/抵消器(第 134 項,補第 133 項漏掉的那一半):手冊那一條同時給
+		// 慣性穩定器/抵消器(第 69 項,補第 69 項漏掉的那一半):手冊那一條同時給
 		// 「+50 beam defense」與「+25 missile evasion」,先前只接了後者。
 		defBody += shipBeamDefenseBonus(sh)
 		// 強化船體:手冊「triples the amount of structural damage a ship can sustain」。
@@ -967,7 +967,7 @@ func (s *GameSession) applySurvivorDamage(survivors []combatant, _ []int) {
 // raceDiploBonusPct 回傳目前種族的外交加成百分比。魅力非凡 +50%(手冊 p.15「Humans
 // gain a 50% bonus to their diplomatic efforts」)。
 //
-// ⚠ 2026-08-08(第 130 項)由 `s.RaceIndex == 0 // 人類` 改成查特性。
+// ⚠ 2026-08-08(第 66 項)由 `s.RaceIndex == 0 // 人類` 改成查特性。
 // 硬比索引在兩個方向上都會錯:`Races` 重排一次就指到別族;而自訂種族選了魅力非凡
 // 也永遠拿不到——先前的註解把後者標成「pick 尚未追蹤」,現在追蹤得到了
 // (自訂種族仍拿不到,但那是因為點數畫面還沒把 pick 寫進特性,不是因為查不到)。
@@ -1093,7 +1093,7 @@ type CombatShip struct {
 	// APNegated 是這艘船讓敵方穿甲失效(氙素裝甲 或 重裝甲系統)。
 	APNegated bool
 	// 飛彈防禦(手冊 p.123)。先前格子戰術這一側一律傳 0/false,註解寫著
-	// 「現行皆無對應可造艦元件」——第 125/133 項把那些元件都補上了。
+	// 「現行皆無對應可造艦元件」——第 65/69 項把那些元件都補上了。
 	MissileEvasion    int  // 艦員經驗 + 舵手技能 + 干擾器/慣性穩定器
 	HasAMR            bool // 反飛彈火箭:射程內攔截
 	HasLightningField bool // 閃電場:每一枚來襲飛彈各 50% 直接摧毀
@@ -1114,13 +1114,13 @@ type CombatShip struct {
 	Initiative  int
 	// SizeClass 是艦體級數(0=巡防艦 … 5=末日之星),牽引光束依它算需要幾束才定得住。
 	SizeClass gamedata.CombatShipClass
-	// --- 狀態類武器:投射能力(第 138 項)---
+	// --- 狀態類武器:投射能力(第 70 項)---
 	TractorBeams   int  // 這艘船投射幾束牽引光束(裝了 = 1)
 	HasStasisField bool // 這艘船帶停滯力場產生器
 	// --- 狀態類武器:承受中的效果(每回合重算,不存檔)---
 	HeldByTractors int  // 身上有幾束敵方牽引光束
 	InStasis       bool // 被停滯力場定住:不能動、不能開火、**也不能被打**
-	// --- 行動次數(第 140 項)---
+	// --- 行動次數(第 71 項)---
 	ShotsKind gamedata.ShotsPerRoundKind // 超載電容 / 快速飛彈架 / 時間扭曲加速器
 	Charged   bool                       // 上一回合完全沒開火 → 這一回合可以連射
 	Fired     bool                       // 這一回合開過火(回合結束時決定下一回合的 Charged)
@@ -1698,20 +1698,20 @@ func (s *GameSession) applyBuildingEffect(i int, name string) {
 		//   - 異族管理中心:⚠ **這裡原本寫著「士氣計算路徑已預留(colonyMoralePercent 讀取
 		//     此建築名)」——那句是假的。** 2026-08-07 查證:那個建築名在整個 repo 裡只出現在
 		//     資料表與註解裡,`colonyMoralePercent` 從來沒讀過它。
-		//     真正接上的是**同化速率**(第 96 項,見 assimilation.go):手冊「1 per 2 turns,
+		//     真正接上的是**同化速率**(第 41 項,見 assimilation.go):手冊「1 per 2 turns,
 		//     regardless of government」,對統一政體等於十倍速。
 		//     手冊另外那兩條(消除多種族 20% 士氣懲罰、叛亂機率減半)仍未接——
 		//     remake 沒有多種族人口對士氣的路徑,也沒有叛亂系統。
 		// 海軍陸戰隊營本來就有獨立的陸戰隊召兵系統(ground_invasion.go),現在額外貢獻
 		// hasBarracks,兩個系統各自獨立生效,互不影響。
 		//
-		// 2026-08-07(gap report 第 92/93 項)這段清單縮短了六棟:
+		// 2026-08-07(gap report 第 39/39 項)這段清單縮短了六棟:
 		// **自動實驗室**(+30 研究點)、**再生反應爐**(每單位人口 +1 產能且不計污染)、
 		// **食物複製機**(饑荒時 2:1 換食物 + 1 BC/食物)已在上面的 switch 建模;
 		// **行星輻射/通量/屏障護盾**改由 orbital_bombardment.go 在轟炸解算時讀
 		// s.ColonyBuildings(gamedata.PlanetaryShieldReduction),不經 ColonyState。
 		//
-		// 2026-08-07(第 94–96 項)又縮短三棟,而且都不經 ColonyState:
+		// 2026-08-07(第 39–41 項)又縮短三棟,而且都不經 ColonyState:
 		// **阿提米絲系統網**(artemis.go,艦隊進入敵方星系時結算水雷)、
 		// **太空學院**(crew.go,起始艦員等級 +1 與同星系每回合 +1 經驗)、
 		// **異族管理中心**(assimilation.go,同化速率固定 2 回合不分政體)。
@@ -1942,14 +1942,14 @@ func leaderSkillTier(l Leader, skillID int) int {
 
 // 技能標籤 → id 的對照表已搬到 `gamedata.LeaderSkillIDByZH`(27 個技能全收,名字來自
 // GAME_MANUAL.pdf p.135-137)。這裡原本有一張只收 10 項的 `leaderSkillIDByName`,
-// 2026-08-08(第 103 項)拿掉,理由有三個:
+// 2026-08-08(第 46 項)拿掉,理由有三個:
 //
 //  1. **標籤不能當識別鍵。** 它會被翻譯——英文模式下 `Skill` 存的是 "Scientist",
 //     查表查不到,**所有領袖加成當場全部失效**,而畫面上看不出任何異狀。
 //     現在識別鍵是 `Leader.Skills` 裡的技能 id,標籤只負責顯示。
 //  2. **「這個技能存在」與「remake 有沒有接」是兩件事。** 舊表用「收不收進表裡」
 //     兼表兩者,於是那段註解要一直維護一份「沒收的技能與理由」清單——而它已經過期了
-//     (農業官/勞工官/科學官在第 102 項就接上了,註解卻還寫著沒收)。
+//     (農業官/勞工官/科學官在第 46 項就接上了,註解卻還寫著沒收)。
 //     現在前者查 gamedata 的全表,後者看 `applyLeaderColonyBonuses` 的 switch 有沒有 case。
 //  3. 一位真英雄本來就可能同時有好幾項技能,一個字串只放得下一個。
 //
@@ -1979,14 +1979,14 @@ func leaderDisplayLevelToExpLevel(level int) int {
 // 不臆造欄位。目前接了 9 項(科學家/貿易家/財務官/心靈導師/醫官/農業官/勞工官/科學官/環保官);
 // 教官、工程師、指揮官、領航員有 id 但落在別的系統,見下方註解。
 //
-// ⚠ 2026-08-07(第 101 項)修掉一個一直在的錯:**加成不是每個領袖都疊一份**。
+// ⚠ 2026-08-07(第 46 項)修掉一個一直在的錯:**加成不是每個領袖都疊一份**。
 //
 // 手冊 p.137「Applicability」:「The effects of the **Megawealth and Researcher** abilities
 // are **cumulative**, but **the rest are not** … the leader with the **best applicable
 // bonus**」。remake 先前是無條件 `+=`——兩個貿易家就加兩份,而原版只算最強的那一個。
 // 合成規則收在 `gamedata.LeaderSkillCombine`。
 //
-// ⚠ 2026-08-08(第 103 項)改成逐**技能**跑而不是逐領袖跑一次:一位真英雄可能同時有
+// ⚠ 2026-08-08(第 46 項)改成逐**技能**跑而不是逐領袖跑一次:一位真英雄可能同時有
 // 好幾項技能(HERODATA 的技能欄位是每技能 2 bit 的 tier,不是一個人一項技能)。
 func applyLeaderColonyBonuses(leaders []Leader, colony *engine.ColonyState) {
 	// 先依技能分組收集,再依「累加 vs 取最佳」合成——不能邊走邊加。
@@ -2016,7 +2016,7 @@ func applyLeaderColonyBonuses(leaders []Leader, colony *engine.ColonyState) {
 		case int(gamedata.SKILL_MEDICINE):
 			colony.GrowthBonusSum += bonus // 成長百分點,與種族/科技加成同一把尺
 		case int(gamedata.SKILL_FARMING_LEADER):
-			colony.FoodBonusPercent += bonus // 分項百分比(2026-08-07 第 102 項加的欄位)
+			colony.FoodBonusPercent += bonus // 分項百分比(2026-08-07 第 46 項加的欄位)
 		case int(gamedata.SKILL_LABOR_LEADER):
 			colony.IndustryBonusPercent += bonus
 		case int(gamedata.SKILL_SCIENCE_LEADER):
@@ -2093,7 +2093,7 @@ type Planet struct {
 	// restorePlanetIDs 一律回填 HABITABLE(舊生成器本來就只產一般行星)。
 	TypeID gamedata.PlanetType
 
-	// SystemBodies 是**已淘汰的欄位**(2026-08-07,第 63 項)。
+	// SystemBodies 是**已淘汰的欄位**(2026-08-07,第 25 項)。
 	//
 	// 它原本是一星一行星時代的折衷:代表行星只有一顆,其餘天體記在這裡供顯示用。
 	// 而它自己的註解就在擔心「兩份資料要同步的老問題」——現在同系天體是**真正的
@@ -2162,7 +2162,7 @@ func genPlanets(stars []Star, r, bodyRand *rand.Rand, age gamedata.GalaxyAge, ho
 	// 軌道表(見 orbit.go):每顆星 5 個軌道,預設全空。
 	//
 	// **同系的每一個天體都是真正的 `Planet` 條目**,各佔一條軌道——`Planets` 因此
-	// 不再與 `Stars` 平行(所有呼叫端已於第 62 項改走存取器)。
+	// 不再與 `Stars` 平行(所有呼叫端已於第 25 項改走存取器)。
 	//
 	// ⚠ 非代表天體用**獨立的亂數流** `bodyRand`,理由與 genPlanets/genMonsters/genWormholes
 	// 各自一條流完全一樣:多骰幾次不能讓**後面每一顆星**的代表行星跟著漂掉。
@@ -2289,7 +2289,7 @@ func genPlanets(stars []Star, r, bodyRand *rand.Rand, age gamedata.GalaxyAge, ho
 
 // SystemCompositionText 回傳「同一恆星系裡除了代表行星以外還有什麼」的摘要字串
 // (如「同系:氣態巨星×2、小行星帶」);沒有其他天體回空字串。供星系資訊面板顯示。
-// ⚠ **已淘汰**:這一支看的是 `Planet.SystemBodies`,而那個欄位自 2026-08-07(第 63 項)
+// ⚠ **已淘汰**:這一支看的是 `Planet.SystemBodies`,而那個欄位自 2026-08-07(第 25 項)
 // 起不再被填——同系天體現在是真正的 `Planet` 條目,掛在軌道表上。
 // 新程式碼請用 `GameSession.SystemCompositionText(星)`。
 // 這一支留著只為了讀得回舊存檔的顯示(舊檔的 SystemBodies 仍在 JSON 裡)。
@@ -2534,7 +2534,7 @@ var moraleGovByIndex = []gamedata.MoraleGovernmentType{
 //
 // 誠實列出「未套用」的手冊來源(不假裝精確,詳見呼叫端 ApplyGovernment/advanceBuilds 註解):
 //   - ~~Virtual Reality Network(全帝國 +20%,p.97-98):remake 無「成就」追蹤系統~~
-//     ⚠ **2026-08-08(第 118 項)已接。** 那個理由不成立:「成就」在 MOO2 就是科技,
+//     ⚠ **2026-08-08(第 60 項)已接。** 那個理由不成立:「成就」在 MOO2 就是科技,
 //     而「有沒有研究出來」一直查得到。與心靈學(+10%,依政體)一起走 achievements.go。
 //   - 多種族懲罰 gamedata.MoraleMultiRacialPenalty:remake 的 ColonyState 沒有「殖民地人口是否
 //     含未同化外族血統」這個狀態(Population/Farmers/Workers/Scientists 只是職務數字,不分血統
@@ -2548,7 +2548,7 @@ var moraleGovByIndex = []gamedata.MoraleGovernmentType{
 // (`gamedata.MoraleMultiRacialPenalty`,異族管理中心可消除)。
 //
 // 2026-08-07 接線:那支函式先前是死碼——remake 沒有「這個殖民地有沒有外族人口」可判斷。
-// 第 96 項加上 `ColonyState.UnassimilatedPop` 之後就有了:**未同化人口 > 0 就是多種族**。
+// 第 41 項加上 `ColonyState.UnassimilatedPop` 之後就有了:**未同化人口 > 0 就是多種族**。
 // 這也讓異族管理中心的第二條手冊效果真的生效(第一條是同化速率,見 assimilation.go)。
 func colonyMoralePercent(gov gamedata.MoraleGovernmentType, buildings map[string]bool, multiRacial bool,
 	achievementPct int) int {
@@ -2733,14 +2733,14 @@ func (s *GameSession) applyStartingTech() {
 }
 
 // applyStartingRandomTech 發先進級開局多出來的那 19 個**隨機**主題
-// (gap report 第 80 項留下的缺口,結構見 gamedata/starting_random_tech.go)。
+// (gap report 第 31 項留下的缺口,結構見 gamedata/starting_random_tech.go)。
 //
 // 原版 `Init_Player_Tech_` 的主迴圈跑 1 / 6 / 25 次:前 6 次取固定表,
 // **第 7 次起改由 `sub_FD335` 隨機挑**。remake 先前只發那六個。
 //
 // 每挑一個就重算一次候選清單——原版每完成一個主題就解鎖它的後繼,所以這 19 個是
 // **沿著樹往上走**而不是從同一池子裡抽 19 次。`gamedata.AvailableTopics` 正好是
-// 「每個領域第一個尚未完成的主題」,與原版的狀態 2 同義(見第 91 項的雙向驗證)。
+// 「每個領域第一個尚未完成的主題」,與原版的狀態 2 同義(見第 38 項的雙向驗證)。
 //
 // 亂數用開局種子,玩家與每個 AI 各走一條獨立的流——同一顆種子重開會得到同樣的開局
 // (網路對戰與存讀檔的決定性要求,見 determinism.go)。
@@ -2769,7 +2769,7 @@ func (s *GameSession) applyStartingRandomTech() {
 				return // 沒有候選了(整棵樹研究完),不硬塞
 			}
 			ps.CompletedTopics[t] = true
-			// ⚠ 2026-08-08(第 108 項)補上**粒度**:原版 `Choose_Tech_Application_`
+			// ⚠ 2026-08-08(第 50 項)補上**粒度**:原版 `Choose_Tech_Application_`
 			// 挑的是一個**科技應用**,不是整個主題(見 gamedata/starting_random_tech.go
 			// 檔尾那段的反組譯證據)。只標 CompletedTopics 而不做抉擇,
 			// `componentUnlockedFor` 會把那個主題底下的抉擇**全部**解鎖
@@ -2803,7 +2803,7 @@ func (s *GameSession) applyStartingRandomTech() {
 // 只動母星(索引 0):其他殖民地是玩家自己拓的,不歸開局規則管。
 func (s *GameSession) applyStartingBuildings() {
 	// 讀**玩家實際知道的主題**而不是再算一次固定表:先進級的 19 個隨機主題
-	// (第 99 項)也要算進去,否則母星永遠只蓋得出兩棟(見 homeworldBuildingsForKnown)。
+	// (第 44 項)也要算進去,否則母星永遠只蓋得出兩棟(見 homeworldBuildingsForKnown)。
 	known := s.Player.CompletedTopics
 	if known == nil {
 		known = map[gamedata.ResearchTopic]bool{gamedata.TOPIC_STARTING_TECH: true}
@@ -4318,11 +4318,11 @@ func homeworldBuildingsFor(techLevel, pop int) map[string]bool {
 
 // homeworldBuildingsForKnown 同上,但直接吃**這位玩家實際知道的主題集合**。
 //
-// 2026-08-07(第 100 項):第 99 項把先進級的 19 個隨機主題發出去之後,
+// 2026-08-07(第 45 項):第 44 項把先進級的 19 個隨機主題發出去之後,
 // `homeworldBuildingsFor` 那條路就不夠用了——它從固定表現算科技集合,
 // **看不到那 19 個**,所以先進級的母星仍然只蓋得出兩棟(手冊說先進級上限是 9 棟)。
 //
-// 這正是第 81 項寫的那條依賴鏈:開局建築取決於開局知道哪些科技。
+// 這正是第 32 項寫的那條依賴鏈:開局建築取決於開局知道哪些科技。
 // 上游補齊了,下游就得跟著讀真正的集合,而不是再算一次固定表。
 func homeworldBuildingsForKnown(techLevel, pop int, known map[gamedata.ResearchTopic]bool) map[string]bool {
 	n := StartingBuildingCount(pop, gamedata.InitialBuildingCap(techLevel))

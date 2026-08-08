@@ -44,7 +44,7 @@ package gamedata
 //
 //   - **只有 13 個內建種族。** 自訂種族(Custom)走點數畫面自己組,不在這張表上。
 //   - **政體(特性 0)的編號**與 `MoraleGovernmentType` / `AssimilationGovernment` /
-//     `SpyGovernmentType` 同一套(第 113 項:原版只有一個 `[player+0x89F]`)。
+//     `SpyGovernmentType` 同一套(第 55 項:原版只有一個 `[player+0x89F]`)。
 //   - 特性 31(貧瘠母星)在列舉裡有,但陣列只有 31 格(0..30),原版放不下它。
 //     不替它捏一格。
 

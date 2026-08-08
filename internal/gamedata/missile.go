@@ -11,7 +11,7 @@ package gamedata
 // 飛彈 Beam Defense(FTLlevel/Speed + MissileBonus)於本檔下方實作(MissileSpeed/
 // MissileWarheadBonus/MissileBeamDefense)。
 //
-// ✅ **手冊那個「自相矛盾」2026-08-07 解掉了,而且兩邊都對**(gap report 第 82 項)。
+// ✅ **手冊那個「自相矛盾」2026-08-07 解掉了,而且兩邊都對**(gap report 第 33 項)。
 //
 // 原本的斷言是:明列公式 `12 + 2*(FTL-1) + 4` 得 14/16/…/26,但同段附表是 10/12/…/22,
 // 差 4;當時選了公式、並註明「需日後對實機行為動態驗證」。

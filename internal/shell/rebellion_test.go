@@ -241,8 +241,8 @@ func TestRebellionWithoutAKnownOldRulerDoesNotCrash(t *testing.T) {
 
 // 「這個殖民地是從誰手上打下來的」這兩個欄位不該影響經濟結算。
 //
-// ⚠ 2026-08-08(第 116 項)改寫過。原本這條測的是 `markColonyConquered` 整支——
-// 而那支同時設 `UnassimilatedPop`。第 116 項把手冊那條「未整合外星人只產出 3/4」接上去
+// ⚠ 2026-08-08(第 58 項)改寫過。原本這條測的是 `markColonyConquered` 整支——
+// 而那支同時設 `UnassimilatedPop`。第 58 項把手冊那條「未整合外星人只產出 3/4」接上去
 // 之後,`UnassimilatedPop` **本來就該**改變經濟結算,所以原本那個斷言反而變成錯的。
 //
 // 這裡把兩件事拆開:記帳用的 `ConqueredFrom`/`ConqueredFromKnown` 仍然不該有經濟效果,

@@ -145,7 +145,7 @@ func TestDisplacementDeviceMissesRegardlessOfEverythingElse(t *testing.T) {
 
 // 沒裝特殊防禦時**一顆骰都不擲**——否則整條亂數流位移,既有戰鬥結果全部改變。
 //
-// ⚠ 這是第 126 項炸彈分支學到的那一課:用 RNG 流位置驗,不是用「傷害是 0」推論。
+// ⚠ 這是第 65 項炸彈分支學到的那一課:用 RNG 流位置驗,不是用「傷害是 0」推論。
 func TestNoDefenseSystemConsumesNoExtraDice(t *testing.T) {
 	s := NewDemoSession()
 	s.Fleet().Ships = append(s.Fleet().Ships, Ship{

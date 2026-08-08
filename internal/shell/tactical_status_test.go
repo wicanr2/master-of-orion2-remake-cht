@@ -205,7 +205,7 @@ func TestStatusWeaponsReachTheTacticalShip(t *testing.T) {
 
 // 陀螺去穩器走球形路徑:依級數乘、豁免盾甲。
 //
-// 第 128 項把它擋在外面,理由是「光束路徑沒有 per size class 這個乘數」——那句話對,
+// 第 65 項把它擋在外面,理由是「光束路徑沒有 per size class 這個乘數」——那句話對,
 // 而正解不是替光束加乘數,是**認出它其實是球形家族**(兩個定義性特徵都有)。
 func TestGyroDestabilizerIsSpherical(t *testing.T) {
 	if got := weaponKindByName(gyroDestabilizerName); got != WeaponKindSpherical {

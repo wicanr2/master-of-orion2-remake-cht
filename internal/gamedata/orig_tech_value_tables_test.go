@@ -2,7 +2,7 @@ package gamedata
 
 import "testing"
 
-// 表③的 topic 欄與第 91 項抽的 OrigTechTopicTable 逐筆比對——這是解碼正確性的主要證據。
+// 表③的 topic 欄與第 38 項抽的 OrigTechTopicTable 逐筆比對——這是解碼正確性的主要證據。
 //
 // **211/212**,唯一不吻合的是 techIdx=29(見檔頭)。這支測試把「吻合率」本身釘住:
 // 哪天有人「順手把 29 改成 70」讓它變 212/212,這裡會失敗並提醒那是在對答案,不是在解碼。

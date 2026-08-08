@@ -100,7 +100,7 @@ func groundArmorBonusFor(ps engine.PlayerState) int {
 
 // groundRifleBonusFor 回傳玩家**最高階已知步槍**的地面戰加成。
 //
-// ⚠ 這一整條通道 remake 先前完全沒有(gap report 第 88 項):原版有
+// ⚠ 這一整條通道 remake 先前完全沒有(gap report 第 36 項):原版有
 // `Player_Best_Rifle_` @ 0xDC416,走訪 `word_14A88` 那張表由高到低找第一個已知的。
 // 上限差 30 點——後期科技全開時,先前的地面部隊比原版弱整整 30。
 //
@@ -184,7 +184,7 @@ func tankHitsToKillFor(ps engine.PlayerState, highG bool) int {
 // commandoLeaderTier 掃描 leaders 找出擁有 Commando 技能(gamedata.SKILL_COMMANDO,
 // 手冊 p.135)的最高技能階(0 無/1 一般/2 進階)。找不到回傳 0(=無 Commando 領袖,無加成)。
 //
-// ⚠ 2026-08-08(第 103 項)從比對中文標籤 `l.Skill == "指揮官"` 改成比對技能 id。
+// ⚠ 2026-08-08(第 46 項)從比對中文標籤 `l.Skill == "指揮官"` 改成比對技能 id。
 // 那個比法錯得很安靜:HERODATA 的**艦艇軍官一律被標成「指揮官」**(那是類別通稱,
 // 不是 Commando 的譯名),於是每一位雇來的艦艇軍官都拿到了地面戰加成;
 // 反過來在英文模式下標籤是 "Commander",一個都對不上,加成整個消失。
@@ -234,7 +234,7 @@ func groundTankOnlyBonusFor(ps engine.PlayerState) int {
 // groundEquipmentBonusFor 加總 ps 的**全兵種共用**地面裝備加成。
 //
 // ⚠ **2026-08-07 訂正:動力裝甲不在這裡了。** 原版把三項裝備寫進加成塊的不同欄位,
-// 而那些欄位被不同的部隊類型讀走(gap report 第 88 項):
+// 而那些欄位被不同的部隊類型讀走(gap report 第 36 項):
 //
 //	TECH_ANTIGRAV_HARNESS  → [out+0]        所有類型共用   ← 留在這個函式
 //	TECH_PERSONAL_SHIELD   → [out+7]/[out+8] 所有類型共用   ← 留在這個函式(走「取最高階」通道)
@@ -254,7 +254,7 @@ func groundEquipmentBonusFor(ps engine.PlayerState) int {
 
 // playerMarineForce 回傳玩家陸戰隊單位的 force 加成(裝甲科技 + 裝備科技 + 種族特性)。
 //
-// ⚠ **2026-08-08 兩處訂正(第 129 項,種族特性表接線)。**
+// ⚠ **2026-08-08 兩處訂正(第 66 項,種族特性表接線)。**
 //
 // ① 先前的檔頭寫著:
 //
@@ -413,7 +413,7 @@ func (s *GameSession) MarineTransportCapacity() int {
 	for _, sh := range s.Fleet().Ships {
 		class, _ := shipClassFromName(sh.Class)
 		n := gamedata.ShipHullMarines(class)
-		// 部隊艙(第 133 項):手冊 p.79「doubling the number of Marines on board a ship」。
+		// 部隊艙(第 69 項):手冊 p.79「doubling the number of Marines on board a ship」。
 		// `gamedata.GroundTroopPodsMultiplier` 從寫出來就零生產端,因為元件不存在。
 		// 乘在**逐艦**而不是總數上——只有裝了的那艘翻倍,這才是手冊講的「on board a ship」。
 		if shipHasTroopPods(sh) {
@@ -625,7 +625,7 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	atkCounts[groundTypeTanks] = tankCount
 	// ⚠ 這裡**不再**另加 GroundTypeHitsDelta:`tankHitsToKillFor` 已經是手冊的成品值
 	// (戰車 2、Battleoid 3),而那兩個數正好等於「基礎 1 + 類型 0 的 +1 (+ Battleoids 的 +1)」
-	// ——再加一次就會變成 3 / 4。見 gap report 第 89 項的重建表。
+	// ——再加一次就會變成 3 / 4。見 gap report 第 34 項的重建表。
 	atkHits[groundTypeTanks] = tankHits
 
 	defCount := gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population, colony.PopMax, s.RaceWarlord())
@@ -745,7 +745,7 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 			aiPlayer.ColonyBuildings = append(aiPlayer.ColonyBuildings[:colonyIdx], aiPlayer.ColonyBuildings[colonyIdx+1:]...)
 		}
 		// ⚠ 星的歸屬只在**這顆星上再也沒有敵方殖民地**時才翻面。同星系多殖民地打開之後
-		// (第 66/67 項),一個星系可能有這個 AI 的兩個殖民地;打下一個就把整顆星判給玩家,
+		// (第 25/25 項),一個星系可能有這個 AI 的兩個殖民地;打下一個就把整顆星判給玩家,
 		// 會讓另一個殖民地變成「站在玩家星系裡的敵軍」,而且星圖顏色與可入侵性都對不上。
 		stillEnemy := false
 		for _, st := range aiPlayer.ColonyStars {

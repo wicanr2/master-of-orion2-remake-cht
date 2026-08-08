@@ -37,8 +37,8 @@ p.50 節錄(Advanced Colonization Techniques 一類科技的效果描述):
 
 > ⚠ 這一整段原本寫「每顆星固定生成一顆一般行星,**從未生成氣態巨星或小行星帶**…
 > `genPlanets` 完全沒有使用 `PlanetType`」——**那是多星體改版之前的快照,已被推翻**
-> (WORKLIST 第 51 項「一星多行星第二階段:SystemBodies 升格成真正的行星」)。
-> 發現於 2026-08-08 的文件稽核,見 `docs/re/doc-audit-20260808.md` 第 4 項。
+> (WORKLIST 第 21 項「一星多行星第二階段:SystemBodies 升格成真正的行星」)。
+> 發現於 2026-08-08 的文件稽核,見 `docs/re/doc-audit-20260808.md` 第 2 項。
 >
 > §1.1 與 §3 這兩段的細節尚未逐條重寫,**在重寫之前不要引用本文對「現況」的描述**
 > ——右半邊的手冊引文與規則考據仍然有效,過期的是「remake 做到哪」那幾句。
@@ -139,7 +139,7 @@ size=LARGE(3)、climate=TERRAN(climateFactor=80)得 `(4*5*80+50)/100=16`,非 20�
   修飾項)未套用——本 remake 沒有種族特性追蹤系統(見 `custom-race-picks.md`),留白。
 - 氣態巨星/小行星帶科技 gate(§1.1)無實際案例可測,是未來若補上這兩類行星才會啟用的掛勾點。
 - ~~不支援「同系統多顆行星、選擇殖民哪一顆」——本 remake 每星固定一顆行星~~
-  **已推翻(2026-08-08)**:一星多行星已實作(WORKLIST 第 51 項)。這一條的理由不成立,
+  **已推翻(2026-08-08)**:一星多行星已實作(WORKLIST 第 21 項)。這一條的理由不成立,
   現況請 grep `genPlanets` / `RollSatelliteType` / `ColonizePlanet`。
 - `PlayerColonyStars` 是本次新增欄位,若讀取舊版(本次修改前)存檔,JSON 反序列化會得到 nil
   slice——下一次 `ColonizeStar`/`InvadeColony` 呼叫時會自動 padding 補齊(見兩處程式碼的

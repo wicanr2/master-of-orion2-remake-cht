@@ -75,9 +75,9 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		// 赤字倒扣 BC」的敘述,IncomeFoodSurplusRevenue 若傳負數字面上會算出負值,故由呼叫端
 		// 夾在正盈餘才呼叫,避免雙重懲罰)。
 		//
-		// ⚠ 2026-08-08(第 130 項):fantasticTrader 先前硬傳 `false`,註解寫著「ColonyState
+		// ⚠ 2026-08-08(第 66 項):fantasticTrader 先前硬傳 `false`,註解寫著「ColonyState
 		// 目前沒有追蹤這個種族特質的欄位(無可推導模型),TODO 待種族特質系統補上後再接」。
-		// 特質系統(第 129 項)補上了,改讀 ps.FantasticTrader(諾蘭姆:每單位 1 BC 而非 0.5)。
+		// 特質系統(第 66 項)補上了,改讀 ps.FantasticTrader(諾蘭姆:每單位 1 BC 而非 0.5)。
 		foodRev := 0
 		if co.FoodSurplus > 0 {
 			foodRev = gamedata.IncomeFoodSurplusRevenue(co.FoodSurplus, ps.FantasticTrader)
@@ -142,7 +142,7 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		subtotal := out.TaxRevenue + out.FoodSurplusRevenue + out.TradeGoodsRevenue
 		out.TaxRevenue += gamedata.IncomeApplyGalacticCurrencyExchange(subtotal) - subtotal
 	}
-	// 偵察實驗室的艦隊研究(第 134 項)併進總研究。加在 TotalResearch 上而不是另開一條:
+	// 偵察實驗室的艦隊研究(第 69 項)併進總研究。加在 TotalResearch 上而不是另開一條:
 	// 研究階段只有一個投入口,分開會讓「研究完成」的判定要看兩個地方。
 	out.TotalResearch += ps.FleetResearch
 	out.Player, out.ResearchDone = RunResearchPhase(ps, out.TotalResearch)

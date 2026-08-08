@@ -85,7 +85,7 @@ func TestTimeWarpHasNoCooldown(t *testing.T) {
 	}
 }
 
-// 被停滯力場定住的船一次都不能開(第 138 項與這一項的交界)。
+// 被停滯力場定住的船一次都不能開(第 70 項與這一項的交界)。
 func TestStasisOverridesDoubleFire(t *testing.T) {
 	sh := CombatShip{Kind: WeaponKindBeam, Charged: true, ShotsKind: gamedata.ShotsDoubleAny, InStasis: true}
 	if got := TacticalShotsThisRound(sh); got != 0 {
