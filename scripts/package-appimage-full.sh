@@ -2,18 +2,18 @@
 # 完整本機測試版 AppImage:自帶【遊戲資料子集 + i18n 譯表 + CJK 字型 + 自訂 AppRun】,
 # 啟動即進中文 -game,免下 -data。
 #
-# ⚠ 產出含版權遊戲資料,僅供【本機自用測試】,dist/ 已 gitignore,絕不入 repo/散布。
+# ⚠ 產出含版權遊戲資料,僅供【本機自用測試】,dist-all/ 已 gitignore,絕不入 repo/散布。
 #   版權隔離:committed 的 package-appimage.sh 維持不含資料;本檔為本機 full build。
 #
 # 用法: MOO2_DATA=<遊戲資料夾> MOO2_FONT=<CJK字型.ttc> scripts/package-appimage-full.sh
 #   預設 MOO2_DATA=/home/anr2/moo2-private-build/gamedata/mastori2
 #        MOO2_FONT=/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc(OFL,可再散布)
-# 產出: dist/MasterOfOrion2-cht-full-x86_64.AppImage
+# 產出: dist-all/MasterOfOrion2-cht-full-x86_64.AppImage
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 IMAGE="moo2-ebiten"
-DIST_DIR="${REPO_ROOT}/dist"
+DIST_DIR="${REPO_ROOT}/dist-all"
 TOOLS_CACHE="${REPO_ROOT}/.docker-cache/appimage-tools"
 APP_NAME="MasterOfOrion2-cht-full"
 DATA_DIR="${MOO2_DATA:-/home/anr2/moo2-private-build/gamedata/mastori2}"

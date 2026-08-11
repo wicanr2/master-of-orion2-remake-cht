@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Docker 內可重跑的 MOO2 remake 推廣片流程。
-# 用法：make_promo.sh <截圖目錄> <音樂檔或 -> <輸出 mp4>
+# Docker 內可重跑的靜態文案卡輔助素材流程。
+# 用法：make_promo.sh <截圖目錄> <音樂檔或 -> <dist-all/promo/輸出.mp4>
+#
+# 這不是正式推廣片的輸出路徑；正式版本必須以
+# scripts/capture_promo_gameplay.sh 錄取實際可遊玩的遊戲流程。此腳本只保留給
+# 標題卡、社群縮圖或可替換的輔助素材，不能把截圖串接冒充成實機遊玩影片。
 #
 # 音樂檔應由使用者提供並確認發布權。傳入 - 時輸出無聲預覽，避免把
 # 私有原版音訊誤帶進公開 Release。

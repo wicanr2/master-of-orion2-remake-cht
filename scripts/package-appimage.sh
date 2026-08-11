@@ -3,7 +3,7 @@
 # Linux x86_64 AppImage。全程在 moo2-ebiten docker image 內執行(CLAUDE.md [HARD]:編譯走 docker)。
 #
 # 用法: scripts/package-appimage.sh
-# 產出: dist/MasterOfOrion2-cht-x86_64.AppImage
+# 產出: dist-all/MasterOfOrion2-cht-x86_64.AppImage
 #
 # 做法:
 #   1. 容器內用 go build(CGO_ENABLED=1,繼承 Dockerfile.ebiten)編出 moo2 + moo2sim。
@@ -19,7 +19,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 IMAGE="moo2-ebiten"
-DIST_DIR="${REPO_ROOT}/dist"
+DIST_DIR="${REPO_ROOT}/dist-all"
 TOOLS_CACHE="${REPO_ROOT}/.docker-cache/appimage-tools"
 APP_NAME="MasterOfOrion2-cht"
 

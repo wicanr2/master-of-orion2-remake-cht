@@ -3,7 +3,7 @@
 # 全程在 docker 內執行(CLAUDE.md [HARD]:編譯走 docker)。
 #
 # 用法: scripts/package-windows.sh
-# 產出: dist/MasterOfOrion2-cht-windows-amd64.zip
+# 產出: dist-all/MasterOfOrion2-cht-windows-amd64.zip
 #
 # 實測記錄(2026-07-03,ebiten v2.9.9):
 #   原本預期跟 macOS 一樣「ebiten Windows backend 是 CGO,需要 mingw-w64」,
@@ -22,7 +22,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 IMAGE="golang:1.25-bookworm"
-DIST_DIR="${REPO_ROOT}/dist"
+DIST_DIR="${REPO_ROOT}/dist-all"
 APP_NAME="MasterOfOrion2-cht"
 STAGE_SUBDIR="${APP_NAME}-windows-amd64"
 

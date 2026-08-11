@@ -63,9 +63,12 @@
   不以會共用 Go 切片（slice）底層陣列的內部 `snapshot().restore()` 假裝兩台獨立機器。建造與改裝畫面的
   可變長標題、訊息與艦名均已截斷或折行，35 張 Docker 畫廊啟動抽樣通過，代表圖為
   `docs/screenshots/26_buildqueue.png`。
-- [ ] **最終公開包與發行閘門（打包）**：上述玩家可見問題完成後，重新建立 Linux／Windows／macOS
-  公開包、驗證 `PUBLIC-SHA256SUMS`、解壓啟動 smoke，並再次確認公開產物不含原版 `.LBX`、音樂、音效或
-  未授權字型。帶使用者私有資料的完整版只保留本機驗收用途。
+- [x] **最終公開包與發行閘門（2026-08-12，打包）**：Linux AppImage、Windows amd64 ZIP、macOS
+  universal tar.gz 已由同一份最新程式碼離線重建，`dist-all/PUBLIC-SHA256SUMS` 已重算並逐檔驗證。
+  Linux 以外掛合法資料／字型實際跑過 Docker + Xvfb 的 `-game -promo-demo -noaudio` 導覽；Windows
+  ZIP 通過 CRC、根目錄、PE GUI／console 格式檢查；macOS `.app` 通過 tar 結構、啟動器語法與
+  `lipo` 的 `x86_64`／`arm64` 檢查。三包均確認不含原版 `.LBX`、音樂、音效或私有字型；真 Windows／
+  macOS 主機執行仍不宣稱已驗收。帶使用者私有資料的完整版只保留本機驗收用途。
 
 ##### 需要外部裝置才能完成的驗收
 
@@ -77,7 +80,7 @@
 - [x] **一次 20 回合開局經濟／士氣探針（2026-08-10）**：固定無事件開局 BC 50→264（首回合結算後 58）、人口 8→11、士氣 0% 全程、食物輸出 0→1、工業 6→8、研究 6 維持；沒有負食物或人口死亡螺旋。本輪只記錄體感基線，不擅自改收入公式；測試為 `internal/shell/economy_20_turn_test.go`。
 - [x] **本輪 gameplay polish（2026-08-11）**：外交 `FoodForCredits`／`ResearchExchange` 特殊貿易已有回合收益與存檔狀態；AI→玩家 `SABOTAGE` 會依 remake 性格政策選任務並讀取玩家建築池；食物複製機補上半食物／半 BC 計算與跨回合 BC 餘數保存（強推論，不冒充原版碎片付款已證實）；原版 `RawStatus=4` 的 `+0x37`／30 門檻已接成領袖清理路徑；IDA 追回活動 Trader 的 raw 經驗分桶、tier 1/2 `×10/×15` 最大加成，並接入 GAM／demo fallback 的貿易目標；本輪再接 `CMBTSHP` 固定 tick 近似、事件／爆炸 strategic consumer、SABOTAGE raw slot helper 對齊／結構化分數／Agent 實際扣除與領袖 ETA callback 近似。原版 CMBTSHP clock、score table 上游填值與 raw callback 設計／帝國欄位仍是非阻塞 oracle 差異，詳見 [`docs/re/remake-consumer-closure-20260811.md`](docs/re/remake-consumer-closure-20260811.md)。
 - [x] **議會／安塔蘭視覺收尾（2026-08-11）**：`COUNCIL.LBX#1` 10 幀與 `ANTAROOM.LBX#1` 55 幀已由原版資產逐幀累積並接入播放；`CMBTSHP` 已接原版 `45*playerColor+rawPicture` 圖片映射，並以移動後固定 tick 播放近似 timer，靜止後不自行旋轉。原版 timer 仍標未知。畫面尺寸、雜湊、外部截圖與未宣稱項目見 [`docs/re/visual-oracle-20260811.md`](docs/re/visual-oracle-20260811.md)。
-- [x] **本輪 polish 後重新打包與錄製影片（2026-08-11）**：Docker 依最新工作樹重建 Linux 完整 AppImage（97,434,104 bytes）、Windows amd64 完整 ZIP（100,661,428 bytes）與 macOS universal 完整 tar.gz（108,752,832 bytes；`x86_64`／`arm64`），三者均含使用者私有資料子集與 CJK 字型；最新 35 張畫廊重新抽樣後，選 12 張與正版 `STREAM.LBX` 抽取曲重錄 72 秒 H.264/AAC 預覽（4,807,495 bytes、1280×720、48 kHz stereo）。新版分鏡包含標題卡、功能敘事、版面輪換、字幕與 CTA；`dist/SHA256SUMS` 已更新並驗證三平台包／影片。完整版僅限相應授權的本機測試，影片權利限制見 `dist/promo/README.md`。
+- [x] **本機完整版與實機推廣片（2026-08-12）**：`dist-all/` 集中保留三個僅供本機驗收的完整包（含使用者私有資料子集與 CJK 字型，不可公開散布）；其 SHA-256 核對檔列於 `dist-all/SHA256SUMS`。同目錄的正式預覽片已取代舊截圖拼接：封裝後 AppImage 在 Docker + Xvfb 以 `-game -promo-demo -noaudio` 即時跑過新局、種族、星圖、殖民地、科技、外交與戰術流程，再合成 60 秒 H.264/AAC、1280×720、48 kHz stereo 本機預覽。逐時間點抽幀確認畫面隨流程改變；原版 `STREAM.LBX` 配樂只在錄影後混入，故影片仍不可當作可公開散布素材。錄製與權利邊界見 `scripts/capture_promo_gameplay.sh` 與 `dist-all/promo/README.md`。
 - [x] **音訊文件同步（2026-08-11）**：`docs/tech/audio-track-map.md` 已移除「外交音樂是單一 `bgmDiplo` 常數」的過期敘述，改記逐族好曲、壞曲池與原版門檻未知；IDA Pro 靜態證據見 [`docs/re/oracle-static-ida-20260811.md`](docs/re/oracle-static-ida-20260811.md)。
 - [x] **多人網路最低可玩鏈與可選可靠性（2026-08-11）**：保留原版決定性 lockstep、以 TCP 取代已失效的 IPX／數據機／序列／TEN。`cmd/moo2` 已從大廳名冊接到主機共同新局（設定／種子／席位快照廣播）、客戶端套用同一快照、玩家指令依席位與玩家編號收集／重播、`turn_done` → `turn_ready` 兩階段回合結算，以及 `NetworkStateHash` 不一致時失敗即關閉；另已加入 resume token 重連、心跳／逾時／重連寬限、challenge-HMAC 身份驗證與可選 TLS 1.3。`MOO2_NET_AUTH` 開啟共享密碼 proof，`MOO2_NET_TLS=1` 開啟加密；NAT 穿透仍需外部 relay 或 UPnP，沒有冒稱內建解法。驗證包含 `internal/netplay` loopback TCP／TLS／重連抽樣、`internal/shell` 快照／席位重播與 UI 指紋正規化，以及 Docker + Xvfb `cmd/moo2` 目標測試。`netNextTurn` 仍是畫廊示範，正式流程使用 `networkWaitScreen`。
 - [x] **可選 AI-to-AI 強化（2026-08-11）**：AI 星選的行星價值／距離模型與議會兩候選人／第三方搖擺票已完成；現在另有可保存、可重播的 AI 彼此戰爭、停戰／互不侵犯／同盟、貿易／研究協議，以及抽象艦隊攻擊最高人口殖民地的戰鬥／佔領解算。這是 remake 模型，不冒充原版逐艦 blueprint；細節見 [`docs/tech/ai-to-ai.md`](docs/tech/ai-to-ai.md)。
@@ -859,7 +862,7 @@ internal/shell/orbital_bombardment.go:218
 - [x] UI 界面調整可行性 markdown(`docs/tech/ui-adjustment.md`)
 - [x] `docs/tech/` 已有 54 篇
 - [x] 三平台打包 CI(`docs/tech/packaging.md`):macOS(`.github/workflows/build-macos.yml`,`macos-14` runner 原生編 arm64+amd64 → `lipo` universal → `.app`/`.dmg`/`.tar.gz`)+ Linux/Windows(`.github/workflows/build-desktop.yml`);YAML 經 actionlint + yaml.safe_load 驗證,尚未在真 Mac 上實跑驗證(無 Mac 測試機)
-- [x] 本機 docker 打包腳本(`docs/tech/packaging.md` §5):`scripts/package-appimage.sh`(Linux AppImage,linuxdeploy+appimagetool)、`scripts/package-windows.sh`(Windows zip)已實際跑過,`dist/MasterOfOrion2-cht-x86_64.AppImage`、`dist/MasterOfOrion2-cht-windows-amd64.zip` 皆產出並驗證內容(解壓/objdump 確認)。**推翻先前假設**:ebiten v2.9.9 Windows backend 已改純 Go(purego,無 cgo),`CGO_ENABLED=0` 即可跨編,不需 mingw-w64(`build-desktop.yml` 仍裝了 mingw,屬保守多餘,非錯誤,可留後續簡化)
+- [x] 本機 Docker 打包腳本（`docs/tech/packaging.md` §5）：`scripts/package-appimage.sh`（Linux AppImage、linuxdeploy+appimagetool）、`scripts/package-windows.sh`（Windows zip）已實際跑過，公開產物統一寫入 `dist-all/MasterOfOrion2-cht-x86_64.AppImage`、`dist-all/MasterOfOrion2-cht-windows-amd64.zip`，並驗證內容（解壓／objdump 確認）。**推翻先前假設**：ebiten v2.9.9 Windows backend 已改純 Go（purego，無 cgo），`CGO_ENABLED=0` 即可跨編，不需 mingw-w64（`build-desktop.yml` 仍裝了 mingw，屬保守多餘，非錯誤，可留後續簡化）。
 - [x] `cmd/moo2` 譯表改 `go:embed` 內嵌 + `-i18n <dir>` 開發覆寫(2026-08-08 第 83 項),相對路徑假設已移除,從任意目錄跑實測通過
 
 ## Phase 9 — 多人對戰(hotseat / 網路 lockstep→TCP)

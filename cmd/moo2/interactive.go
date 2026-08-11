@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -4923,6 +4924,13 @@ type interactiveApp struct {
 	saved    bool
 	scale    int // 目前視窗放大倍率(1~4)
 
+	// promoSteps 是實機推廣錄影專用的「真實時間」導覽。不能重用 script：script
+	// 每個 Update 都前進一格，在 Xvfb 的實際 TPS 低於 60 時會把幾秒停留拉成數十秒。
+	promoSteps       []promoDemoStep
+	promoStepIndex   int
+	promoStepAt      time.Time
+	promoStepStarted bool
+
 	// hi-res 畫布(第 86 項(hi-res 畫布)):off 是 640×480 的離屏,rec 收集這一幀的文字繪製。
 	// uiScale==1 時兩者都不建立,整條路徑不走。
 	off *ebiten.Image
@@ -4981,6 +4989,13 @@ type interactiveApp struct {
 	galleryInputBoxTick int
 	galleryBuilder      *sceneBuilder
 	gallerySession      *shell.GameSession
+}
+
+// promoDemoStep 的 hold 是送出 input 之後、下一個 input 前要保留的實際牆鐘時間。
+// 這讓錄影節奏不依賴 Xvfb／軟體 OpenGL 的即時 TPS。
+type promoDemoStep struct {
+	input shell.InputState
+	hold  time.Duration
 }
 
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
@@ -5331,6 +5346,51 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 	return script, shots
 }
 
+// buildPromoDemoSteps 是給實機推廣錄影用的可重播導覽。它只使用正常玩家介面可達的
+// 點擊：主選單、新局、種族、星圖、殖民地、科技、外交與戰術。不同於 buildGalleryScript，
+// 它不建立示範存檔、不推入地面戰／多人等展示畫面，也不輸出 PNG。
+//
+// 每段停留時間以牆鐘時間計算，避免不同 Docker/Xvfb 更新率改變導覽節奏。
+// interactiveApp 仍是正常的 ebiten.Game，因此錄影捕捉的是即時渲染、轉場與實際 UI
+// 狀態，而不是投影片或預先輸出的圖檔。
+func buildPromoDemoSteps() []promoDemoStep {
+	idle := shell.InputState{}
+	click := func(x, y int) shell.InputState {
+		return shell.InputState{MouseX: x, MouseY: y, ClickReleased: true}
+	}
+	var steps []promoDemoStep
+	hold := func(seconds int) {
+		steps = append(steps, promoDemoStep{input: idle, hold: time.Duration(seconds) * time.Second})
+	}
+	action := func(x, y, secondsAfter int) {
+		steps = append(steps, promoDemoStep{input: click(x, y), hold: time.Duration(secondsAfter) * time.Second})
+	}
+
+	// 主選單 → 新局 → 種族 → 命名 → 星圖。
+	hold(2)
+	action(491, 228, 3) // NEW GAME
+	action(486, 405, 3) // NEW GAME ACCEPT
+	action(410, 350, 3) // 人類種族
+	action(540, 454, 4) // 命名／旗色 ACCEPT
+
+	// 正常星圖入口：殖民地，再回星圖；科技，再回星圖。
+	action(48, 452, 3)  // COLONIES
+	action(50, 47, 4)   // 第一個殖民地
+	action(590, 459, 2) // 殖民地 RETURN
+	action(608, 462, 3) // 殖民地總覽 RETURN
+	action(495, 452, 3) // INFO
+	action(21, 80, 4)   // 科技頁
+	action(535, 434, 2) // INFO RETURN
+
+	// 正常種族關係 → 外交對談 → 宣戰 → 戰術戰鬥。最後多留一段，讓戰術畫面
+	// 的船艦與背景動畫可被完整錄到。
+	action(420, 452, 3)  // RACES
+	action(483, 428, 4)  // REPORT
+	action(320, 437, 2)  // 結束對談
+	action(388, 448, 15) // DECLARE WAR
+	return steps
+}
+
 // handleWindowKeys 處理縮放/全螢幕快捷鍵:+/- 調整放大倍率(1~4)、F11 或 F 切換全螢幕。
 func (a *interactiveApp) handleWindowKeys() {
 	if inpututil.IsKeyJustPressed(ebiten.KeyF11) || inpututil.IsKeyJustPressed(ebiten.KeyF) {
@@ -5385,6 +5445,20 @@ func (a *interactiveApp) pollInput() shell.InputState {
 		}
 		return in
 	}
+	if a.promoSteps != nil {
+		now := time.Now()
+		if !a.promoStepStarted {
+			a.promoStepStarted = true
+			a.promoStepAt = now
+		}
+		if a.promoStepIndex >= len(a.promoSteps) || now.Before(a.promoStepAt) {
+			return shell.InputState{}
+		}
+		step := a.promoSteps[a.promoStepIndex]
+		a.promoStepIndex++
+		a.promoStepAt = now.Add(step.hold)
+		return step.input
+	}
 	// ⚠ `CursorPosition` 回的是 **Layout 空間**(hi-res 時是 1280×960),而所有命中區都是
 	// 640×480 邏輯座標——除不回去的話滑鼠會偏一倍。這是 rulebook/81 明列的踩雷之一。
 	x, y := ebiten.CursorPosition()
@@ -5405,7 +5479,7 @@ func (a *interactiveApp) Update() error {
 	if a.b != nil {
 		a.b.animTick = a.tick // 動畫計數(黑洞旋渦等),見 starsprite.go
 	}
-	if a.script == nil { // 互動模式才處理視窗快捷鍵(headless 略過)
+	if a.script == nil && a.promoSteps == nil { // 互動模式才處理視窗快捷鍵(headless／推廣導覽略過)
 		a.handleWindowKeys()
 	}
 	// 截圖廊專用:到了指定 tick 把對局設成已分出勝負,好讓導覽腳本走得到最終得分畫面
@@ -5717,7 +5791,7 @@ func (a *interactiveApp) Layout(int, int) (int, int) { return canvasSize() }
 // runInteractive 啟動「還原原版」的互動遊戲。script/shot 非空時為 headless 驗證;
 // galleryDir 非空時為「端到端過場截圖廊」模式(見 buildGalleryScript),優先於 script/shot。
 func runInteractive(versionAssets versionAssetDirs, initial gamedata.GameVersion, lang i18n.Lang, fnt, fntVec *uifont.Font,
-	script []shell.InputState, shot string, frames int, galleryDir string) error {
+	script []shell.InputState, shot string, frames int, galleryDir string, noAudio, promoDemo bool) error {
 
 	if lang == i18n.Traditional && fnt == nil {
 		return fmt.Errorf("中文模式需以 -font 指定 CJK 字型")
@@ -5733,7 +5807,7 @@ func runInteractive(versionAssets versionAssetDirs, initial gamedata.GameVersion
 	b := &sceneBuilder{res: res, versionAssets: versionAssets, fnt: fnt, fntVec: fntVec, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: newGameDiffDefault,
 		newGameAge: newGameAgeDefault, newGameTech: newGameTechDefault, newGameEmpires: 1 + shell.DefaultOpponents, designWeapon: 1, savePath: savePathFor(), gameVersion: initial,
 		planetPick: -1} // −1 = 行星列表還沒選任何一列(0 是行星 0 的索引,不能當「沒選」)
-	b.skipCutscenes = shot != "" || galleryDir != "" // 見該欄位註解
+	b.skipCutscenes = shot != "" || galleryDir != "" || promoDemo // 見該欄位註解
 	// 傭兵候選池改用原版 HERODATA.LBX 真英雄(解析失敗自動退回內建策展名單,不擋遊戲);快取一份
 	// 供新局/讀檔後重新注入(SetupNewGame 保留注入池,LoadSession 建新 session 需重注)。
 	b.applyNebulaStarFlags(b.session) // demo 局也要有星雲旗標,見 cmd/moo2/nebula.go
@@ -5747,6 +5821,10 @@ func runInteractive(versionAssets versionAssetDirs, initial gamedata.GameVersion
 	}
 
 	var shots []galleryShot
+	var promoSteps []promoDemoStep
+	if promoDemo {
+		promoSteps = buildPromoDemoSteps()
+	}
 	if galleryDir != "" {
 		if err := os.MkdirAll(galleryDir, 0o755); err != nil {
 			return fmt.Errorf("建立過場截圖目錄 %q: %w", galleryDir, err)
@@ -5771,7 +5849,7 @@ func runInteractive(versionAssets versionAssetDirs, initial gamedata.GameVersion
 			start = sc
 		}
 	}
-	app := &interactiveApp{cur: start, script: script, shotPath: shot, frames: frames, scale: scale,
+	app := &interactiveApp{cur: start, script: script, promoSteps: promoSteps, shotPath: shot, frames: frames, scale: scale,
 		galleryDir: galleryDir, galleryShots: shots, b: b}
 	if galleryDir != "" {
 		app.gallerySession = b.session
@@ -5800,8 +5878,9 @@ func runInteractive(versionAssets versionAssetDirs, initial gamedata.GameVersion
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,
-	// 且截圖驗證不需要聲音。音訊初始化失敗不致命。
-	if shot == "" && script == nil {
+	// 且截圖驗證不需要聲音。-noaudio 讓實機畫面錄製能在沒有 ALSA 裝置的 Docker
+	// 裡執行；它只停用 runtime mixer，不改變遊戲規則或素材解碼。
+	if shot == "" && script == nil && !noAudio {
 		app.audio = initAudio(res)
 	}
 	winW, winH := moo2ScreenW*scale, moo2ScreenH*scale

@@ -23,8 +23,9 @@ game_data/
 *.out
 vendor/
 
-# 打包產物(AppImage/zip/dmg 等,見 scripts/package-*.sh + docs/tech/packaging.md)
+# 打包產物與推廣影片(AppImage/zip/dmg/mp4 等,見 scripts/package-*.sh + docs/tech/packaging.md)
 /dist/
+/dist-all/
 
 # ── 一般雜項 ────────────────────────────────────────────
 .DS_Store

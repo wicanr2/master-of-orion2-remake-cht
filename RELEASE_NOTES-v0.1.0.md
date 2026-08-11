@@ -1,18 +1,18 @@
 # v0.1.0 — 繁體中文 remake alpha
 
-日期：2026-08-11
+日期：2026-08-12
 
-這是第一個可公開下載的 alpha 發行候選。核心 remake 已串接成可玩的多帝國 4X 迴圈，並包含
+這是準備上傳的 alpha 發行候選。核心 remake 已串接成可玩的多帝國 4X 迴圈，並包含
 繁體中文介面、殖民／研究／造艦／戰鬥／外交、AI 選星與議會票、多人 TCP／熱座最低可玩鏈，以及
 Linux、Windows、macOS 的公開包。
 
 ## 下載與驗證
 
-Release assets：
+預定 Release assets：
 
-- `MasterOfOrion2-cht-x86_64.AppImage`（Linux amd64，9,378,296 bytes）
-- `MasterOfOrion2-cht-windows-amd64.zip`（Windows amd64，18,133,442 bytes）
-- `MasterOfOrion2-cht-macos-universal.tar.gz`（macOS `arm64`／`x86_64`，17,140,001 bytes）
+- `MasterOfOrion2-cht-x86_64.AppImage`（Linux amd64，9,206,264 bytes）
+- `MasterOfOrion2-cht-windows-amd64.zip`（Windows amd64，9,079,910 bytes）
+- `MasterOfOrion2-cht-macos-universal.tar.gz`（macOS `arm64`／`x86_64`，17,200,105 bytes）
 - `PUBLIC-SHA256SUMS`
 
 下載後可執行：
@@ -38,5 +38,6 @@ sha256sum -c PUBLIC-SHA256SUMS
 ## 素材與影片權利
 
 公開 Release 不包含任何原版 `.LBX`、`STREAM`／`STREAMHD`、音效或私有字型。使用者授權資料
-產出的 72 秒、有原版 `STREAM.LBX` 音樂的推廣片只保留於本機預覽，未放入公開 Release；若要公開
-散布影片，請先替換為已取得發布權的配樂。
+產出的 60 秒實機遊玩推廣片只保留於本機預覽，未放入公開 Release；其畫面由封裝後 AppImage 在
+Docker + Xvfb 走新局、種族、星圖、殖民地、科技、外交與戰術流程即時錄得，但配樂仍是原版
+`STREAM.LBX`，若要公開散布影片，請先替換為已取得發布權的配樂。
