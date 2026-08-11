@@ -46,6 +46,7 @@
 - [x] 文字欄寬 polish：共用 `labelRect`／`extraText` 截斷與折行已套用主要長文字面板；Docker + Xvfb 產出 35 張 1280×960 畫廊並抽查外交、艦艇設計、輸入框、種族、戰術、熱座，README 與 `docs/PLAYTEST-2026-08-10.md` 已同步。
 - [x] **遊戲內文字版面與發行畫廊回歸（2026-08-11，視覺）**：主選單語言／規則標籤收進 196px 安全欄寬；完整包資料缺少 `COMBAT.LBX` 時改繪同座標、可點擊的戰術後備控制列，不再讓訊息落入按鈕區。Docker + Xvfb 以內建 `-gamegallery` 導覽（固定展示種子 `20260807`、640×480 邏輯／1280×960 輸出）產出 35/35 張；抽查 `01_menu`、`02_raceselect`、`16_tactical`、`25_shipdesign`、`31_netroster`，文字未越框。此為 remake 的狀態畫面驗收，不宣稱原版逐像素對照；`docs/screenshots/` 與 README 代表畫面已換成同一批輸出。
 - [x] **TCP 多人正式入口與缺資產備援（2026-08-11）**：`NETWORK`／`JOIN GAME` 不再被誤畫為未實作；數據機、序列線、`COMM INFO` 與 TEN 維持灰色且熱區不處理。`NetworkStateHash` 會先正規化每台機器本地的作用中席位，避免主機席位 0 與客戶端席位 1 套用同一快照就誤報分岔。完整資料包缺 `MULTIGM.LBX` 時，改以原版已證實的 482×335 面板與按鈕熱區繪製可讀備援，避免多人頁塌到左上；README 的 `23_multiplayer.png` 已換成此輸出。Docker 抽樣包含實際 `NETWORK`／`START NEW GAME` 名稱彈窗、TCP 加入、共同開局、第一回合 `turn_done` → `turn_ready`，另跑 `internal/netplay` 全包（含斷線、重連、心跳）與 35/35 畫廊，抽查多人頁；不宣稱已做人類跨 NAT 實機驗收。
+- [x] **人口成長回寫定點測試（2026-08-11）**：`TestPopulationGrowthWriteback` 已改驗真正不變量：人口 8→12 且不超過上限，農／工／科職務總和必須等於人口，新增者至少進入一種職務。舊「工人必增」斷言與既有 `assignNewColonist` 的缺糧保護衝突；實際固定開局會把 4 位新增人口改派農夫（4/2/2→8/2/2），不是寫回失敗。人口上限測試亦通過。
 
 #### 真正仍會影響 remake 交付的工作
 
@@ -54,8 +55,6 @@
 - [ ] **殖民地生產控制補齊或明確降級（實作／範圍）**：`BUY` 仍是灰色，建造視窗的 `AUTO BUILD`、
   `REFIT`、`REPEAT BUILD` 仍會顯示「未實作」。若目標是完整重製，應完成它們的資料、回合、存檔與
   UI 路徑；若決定不納入公開版，需在遊戲與 README／誠實現況中明確標成未支援，不能只留下灰鈕。
-- [ ] **人口成長回寫定點測試（驗證）**：`TestPopulationGrowthWriteback` 已知會因新人口沒有分配到工人
-  而失敗。先以最小 fixture 重現並修正或明確調整斷言；在結果可解釋前，不得把全套測試寫成全綠。
 - [ ] **最終公開包與發行閘門（打包）**：上述玩家可見問題完成後，重新建立 Linux／Windows／macOS
   公開包、驗證 `PUBLIC-SHA256SUMS`、解壓啟動 smoke，並再次確認公開產物不含原版 `.LBX`、音樂、音效或
   未授權字型。帶使用者私有資料的完整版只保留本機驗收用途。
@@ -97,7 +96,7 @@
 - 每次資料或 UI 修改只跑 Docker 目標測試、`go build`、`-gamegallery` 與代表畫面抽查；使用者已明示不要求完整遊戲測試。
 - 任何原版差異必須標成「已證實／強推論／假說／未知」，沒有 `VESA.COM` 就不能把靜態近似升格成 runtime parity。
 - 本區完成後才回寫對應文件；`docs/HONEST-STATUS.md`、`docs/tech/remaining-work-roadmap.md` 若出現舊敘述，先以本區為交接依據，下一輪再同步。
-- 本輪實際抽樣：`gamedata`／`engine` 食物複製機、`shell` 特殊貿易／AI SABOTAGE／領袖任期／地面戰、`cmd/moo2` Xvfb 單測與 35 張 `-gamegallery` 均通過；`TestPopulationGrowthWriteback` 仍因非本輪人口職務回寫路徑未把新人口分到工人而失敗，未把它隱藏成全包測試綠燈。
+- 本輪實際抽樣：`gamedata`／`engine` 食物複製機、`shell` 特殊貿易／AI SABOTAGE／領袖任期／地面戰、人口成長／上限、`cmd/moo2` Xvfb 單測與 35 張 `-gamegallery` 均通過；使用者已明示不要求把整個 `go test ./...` 包裝成全綠。
 
 ### 附錄一、手冊忠實化證據摘要（非待辦）
 

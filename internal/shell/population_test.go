@@ -10,7 +10,9 @@ func TestPopulationGrowthWriteback(t *testing.T) {
 		t.Fatal("需至少一個殖民地")
 	}
 	startPop := s.PlayerColonies[0].Population
+	startFarmers := s.PlayerColonies[0].Farmers
 	startWorkers := s.PlayerColonies[0].Workers
+	startScientists := s.PlayerColonies[0].Scientists
 	popMax := s.PlayerColonies[0].PopMax
 
 	// 跑足夠回合讓成長累加跨過門檻。
@@ -25,11 +27,21 @@ func TestPopulationGrowthWriteback(t *testing.T) {
 	if endPop > popMax {
 		t.Fatalf("人口 %d 超過上限 %d", endPop, popMax)
 	}
-	// 新人口應加到工人。
-	if s.PlayerColonies[0].Workers <= startWorkers {
-		t.Fatalf("新人口應分配為工人:起始 %d → %d", startWorkers, s.PlayerColonies[0].Workers)
+	end := s.PlayerColonies[0]
+	// 新人口一定要被指派職務。新增者會先試工人；若那會造成食物赤字，則依
+	// assignNewColonist 的保守原版近似改派農夫，不能把「工人必增」當作不變量。
+	assigned := end.Farmers + end.Workers + end.Scientists
+	if assigned != end.Population {
+		t.Fatalf("人口與職務數必須同步:人口 %d，農／工／科 %d/%d/%d",
+			end.Population, end.Farmers, end.Workers, end.Scientists)
 	}
-	t.Logf("殖民地0 人口 %d→%d(上限 %d),工人 %d→%d", startPop, endPop, popMax, startWorkers, s.PlayerColonies[0].Workers)
+	if end.Farmers <= startFarmers && end.Workers <= startWorkers && end.Scientists <= startScientists {
+		t.Fatalf("人口成長後至少一種職務必須增加:農 %d→%d、工 %d→%d、科 %d→%d",
+			startFarmers, end.Farmers, startWorkers, end.Workers, startScientists, end.Scientists)
+	}
+	t.Logf("殖民地0 人口 %d→%d(上限 %d),農／工／科 %d/%d/%d→%d/%d/%d",
+		startPop, endPop, popMax, startFarmers, startWorkers, startScientists,
+		end.Farmers, end.Workers, end.Scientists)
 }
 
 // TestPopulationCappedAtMax 驗證人口成長受 PopMax 硬上限。
