@@ -55,6 +55,20 @@ func TestTacticalDoneEndsRoundAfterLastShip(t *testing.T) {
 	}
 }
 
+// 完整包可能沒有攜帶 COMBAT.LBX；此時仍會畫 fallback 控制列，且按鈕必須真的接到
+// 戰術行為，不能退化成「看得到、點不到」。
+func TestTacticalFallbackControlBarAcceptsClick(t *testing.T) {
+	ts := mkTurnScreen()
+	if ts.bar != nil {
+		t.Fatal("測試前提應是不帶原版 COMBAT.LBX 控制列")
+	}
+	scan := barButtonsCHT[1]
+	ts.update(shell.InputState{MouseX: scan.cx, MouseY: scan.cy, ClickReleased: true})
+	if ts.mode != tacticalModeScan {
+		t.Fatalf("fallback 控制列的 SCAN 應切進掃描模式，得到 %d", ts.mode)
+	}
+}
+
 func TestTacticalManualFireOnlyUsesSelectedShip(t *testing.T) {
 	ts := mkTurnScreen()
 	before := ts.enemy[0].HP

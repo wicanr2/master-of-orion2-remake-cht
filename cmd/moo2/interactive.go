@@ -565,6 +565,16 @@ func savePathFor() string { return shell.SaveSlotPath(saveDirFor(), shell.AutoSa
 // menu 建原版主選單畫面。按鈕熱區用 menuOverlays 的座標(按鈕即標籤)。
 func (b *sceneBuilder) menu() (*overlayScreen, error) {
 	playBackgroundMusic() // 原版主選單走 Play_Background_Music_:STREAM 1/2/3 每次重擲
+	// 左下兩個設定開關的文字不能貼著畫布或底部裝飾邊。寬度以實際熱區扣掉左右
+	// 留白來限制；英文較長時寧可在語意完整的「切換」提示前截斷，也不越出框外。
+	const (
+		menuToggleHitX    = 12
+		menuToggleHitW    = 220
+		menuToggleLabelX  = 20
+		menuToggleLabelW  = 196
+		menuToggleTextY   = 436
+		menuToggleTextGap = 22
+	)
 	// 無存檔時 Continue / Load Game **停用**:不給熱區(點了不動作)+ 標籤畫成灰的。
 	// 這是 2026-07-12 archive.org 原版 oracle 對照的 issue #2 結論——原版那兩顆本來就是
 	// 灰階不可按,remake 先前是「可按但靜默無反應」,玩家會以為壞了。
@@ -579,10 +589,10 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 		hits = append(hits, hitRegion{o.x, o.y, o.w, o.h, o.enKey})
 	}
 	// 規則版本切換(CLAUDE.md:主選單選 1.3/1.5)——左下角熱區,點擊循環切換,開局注入 RuleProfile。
-	hits = append(hits, hitRegion{12, 450, 220, 22, "toggleVersion"})
+	hits = append(hits, hitRegion{menuToggleHitX, 450, menuToggleHitW, 22, "toggleVersion"})
 	// 語言切換(CLAUDE.md:「允許在主選單選擇中文/英文」)——擺在版本切換正上方。
 	// 先前語言只有啟動旗標 `-lang`,進了遊戲就換不掉,不符合這條需求。
-	hits = append(hits, hitRegion{12, 428, 220, 22, "toggleLang"})
+	hits = append(hits, hitRegion{menuToggleHitX, 428, menuToggleHitW, 22, "toggleLang"})
 	onAction := func(a string) *origTransition {
 		switch a {
 		case "toggleLang":
@@ -681,8 +691,10 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 	verLabel := fmt.Sprintf(b.tr("規則版本 %s(點此切換)", "Rules %s (click to switch)"),
 		versionShort(b.gameVersion))
 	s.extras = append(s.extras,
-		extraText{x: 16, y: 436, size: 13, text: langLabel, col: color.RGBA{150, 210, 150, 255}},
-		extraText{x: 16, y: 458, size: 13, text: verLabel, col: color.RGBA{150, 210, 150, 255}},
+		extraText{x: menuToggleLabelX, y: menuToggleTextY, size: 11, text: langLabel,
+			col: color.RGBA{150, 210, 150, 255}, maxW: menuToggleLabelW},
+		extraText{x: menuToggleLabelX, y: menuToggleTextY + menuToggleTextGap, size: 11, text: verLabel,
+			col: color.RGBA{150, 210, 150, 255}, maxW: menuToggleLabelW},
 	)
 	return s, nil
 }
@@ -2405,11 +2417,11 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 	}
 	// 底部控制列(自動/掃描/登船/撤退/等待/完成/選項)。**放在棋盤判定之前**:控制列在
 	// y≥365,與棋盤不重疊,但先判定可以讓「按鈕能按」這件事不依賴棋盤範圍算得對不對。
-	if t.bar != nil {
-		if i := barButtonHit(in.MouseX, in.MouseY); i >= 0 {
-			t.handleBarButton(i)
-			return nil
-		}
+	// COMBAT.LBX 缺席時會改畫本地 fallback 控制列；那不是裝飾，所以不可再把可點擊性
+	// 綁在原版美術是否載入成功。
+	if i := barButtonHit(in.MouseX, in.MouseY); i >= 0 {
+		t.handleBarButton(i)
+		return nil
 	}
 	// 出擊鈕在格線右側(⚠ 不是原版版面,見 tacticalfighter.go launchRect 註解)。
 	if lx, ly, lw, lh := launchRect(); t.canLaunchFrom(t.sel) && hitBox(in.MouseX, in.MouseY, lx, ly, lw, lh) {
@@ -3040,22 +3052,9 @@ func (t *tacticalScreen) draw(dst *ebiten.Image) {
 	t.drawCombatFX(dst)
 	t.drawSquadrons(dst) // 戰機畫在艦艇之上(它們是繞著目標飛的)
 	t.drawLaunchButton(dst)
-	logY := 452.0
-	if t.bar != nil {
-		op := &ebiten.DrawImageOptions{}
-		op.GeoM.Translate(0, float64(moo2ScreenH-129))
-		drawPanelImage(dst, t.bar, op)
-		// 控制列烘進的英文按鈕疊中文(CLAUDE.md:button 也要中文化)。
-		// 英文模式跳過:COMBAT.LBX#0 上本來就是 AUTO / SCAN / BOARD / RETREAT / …。
-		if t.b.lang == i18n.Traditional {
-			t.drawBarLabelsCHT(dst)
-		}
-		for _, b := range barButtonsCHT {
-			drawHoverBorder(dst, float32(b.cx-barButtonPlateW/2), float32(b.cy-barButtonPlateH/2),
-				barButtonPlateW, barButtonPlateH, pointInRect(t.hoverX, t.hoverY, b.cx-27, b.cy-9, 54, 18))
-		}
-		logY = 343 // log 移到控制列上方星空,不壓按鈕
-	}
+	t.drawCombatControlDeck(dst)
+	// 無論原版 COMBAT.LBX 是否存在，都保留控制列上方的訊息列，避免訊息落入按鈕區。
+	logY := 343.0
 	if t.fnt != nil {
 		if hint := t.modeHint(); hint != "" {
 			// 模式提示壓在 log 上方:進了掃描/登艦模式之後,點敵艦的效果完全不同,
@@ -3096,6 +3095,51 @@ var barButtonsCHT = []struct {
 
 // barButtonPlate 是擦底板相對按鈕中心的尺寸。按鈕本體 54×18,板取 52×16 留住浮雕邊框。
 const barButtonPlateW, barButtonPlateH = 52, 16
+
+// combatControlDeckY 是原版 COMBAT.LBX#0 控制列貼到 640×480 畫布時的頂緣。
+const combatControlDeckY = moo2ScreenH - 129
+
+// drawCombatControlDeck 畫出可操作的控制列。正版資料帶有 COMBAT.LBX 時保留原版美術；
+// 完整包若因資料裁切未帶此檔，則使用同座標的本地控制列，避免畫面與操作一起消失。
+func (t *tacticalScreen) drawCombatControlDeck(dst *ebiten.Image) {
+	if t.bar != nil {
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(0, float64(combatControlDeckY))
+		drawPanelImage(dst, t.bar, op)
+		// 控制列烘進的英文按鈕疊中文(CLAUDE.md:button 也要中文化)。
+		// 英文模式跳過:COMBAT.LBX#0 上本來就是 AUTO / SCAN / BOARD / RETREAT / …。
+		if t.b.lang == i18n.Traditional {
+			t.drawBarLabelsCHT(dst)
+		}
+	} else {
+		t.drawFallbackCombatBar(dst)
+	}
+	for _, b := range barButtonsCHT {
+		drawHoverBorder(dst, float32(b.cx-barButtonPlateW/2), float32(b.cy-barButtonPlateH/2),
+			barButtonPlateW, barButtonPlateH, pointInRect(t.hoverX, t.hoverY, b.cx-27, b.cy-9, 54, 18))
+	}
+}
+
+// drawFallbackCombatBar 是 COMBAT.LBX 未提供時的可用控制列。按鈕座標、熱區與原版
+// 資產路徑共用 barButtonsCHT，故日後補回資產也不會讓滑鼠位置或行為漂移。
+func (t *tacticalScreen) drawFallbackCombatBar(dst *ebiten.Image) {
+	fillPanel(dst, 0, combatControlDeckY, moo2ScreenW, 129, color.RGBA{12, 16, 28, 255}, false)
+	vector.StrokeRect(dst, 0, combatControlDeckY, moo2ScreenW, 129, 1, color.RGBA{91, 110, 146, 255}, false)
+	vector.StrokeLine(dst, 8, combatControlDeckY+5, moo2ScreenW-8, combatControlDeckY+5, 1, color.RGBA{44, 65, 99, 255}, false)
+	if t.fnt == nil {
+		return
+	}
+	for _, b := range barButtonsCHT {
+		x, y := float32(b.cx-27), float32(b.cy-9)
+		fillPanel(dst, x, y, 54, 18, color.RGBA{42, 48, 63, 255}, false)
+		vector.StrokeRect(dst, x, y, 54, 18, 1, color.RGBA{126, 141, 169, 255}, false)
+		label := b.label
+		if t.b.lang == i18n.English {
+			label = b.orig
+		}
+		t.fnt.DrawCentered(dst, label, float64(b.cx), float64(b.cy), 12, color.RGBA{225, 230, 240, 255})
+	}
+}
 
 // drawBarLabelsCHT 在原版控制列的英文按鈕上疊深色底 + 中文字,蓋掉烘進的英文。
 func (t *tacticalScreen) drawBarLabelsCHT(dst *ebiten.Image) {
