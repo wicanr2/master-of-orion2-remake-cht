@@ -47,13 +47,38 @@
 
 #### 真正仍會影響 remake 交付的工作
 
+##### 發行前的實作／視覺／驗證
+
+- [ ] **遊戲內文字版面與發行畫廊回歸（視覺）**：README 已撤下不合格截圖，這不能取代遊戲修正。以
+  `-gamegallery` 重新產生畫面並逐張抽樣，先修正已觀察到的 `01_menu.png` 左下語言／規則標籤裁切、
+  `16_tactical.png` 底部戰術訊息與控制列重疊、`25_shipdesign.png` 元件說明越界等；修正後才更新公開
+  畫廊與 README。每張比較都要記錄重製版、邏輯尺寸、狀態／seed，以及是否只是版面對照，不能把鄰近
+  狀態寫成逐像素原版對照。
+- [ ] **TCP 多人正式入口一致性（實作／玩家路徑）**：`cmd/moo2/multiplayer.go` 的
+  `implemented()` 目前仍把 `network`、`join` 畫成未實作，但 `click()` 已有主機／加入大廳的流程。
+  修正視覺 gate 與過期註解，只保留數據機／序列線／TEN 的停用；從乾淨主選單做一次主機與客戶端的
+  TCP 抽樣，驗證共同開局、席位、第一回合 `turn_done`／`turn_ready`、斷線訊息與存檔，不使用 debug
+  shortcut。這是 remake 可玩性問題，不是原版 IPX oracle。
+- [ ] **殖民地生產控制補齊或明確降級（實作／範圍）**：`BUY` 仍是灰色，建造視窗的 `AUTO BUILD`、
+  `REFIT`、`REPEAT BUILD` 仍會顯示「未實作」。若目標是完整重製，應完成它們的資料、回合、存檔與
+  UI 路徑；若決定不納入公開版，需在遊戲與 README／誠實現況中明確標成未支援，不能只留下灰鈕。
+- [ ] **人口成長回寫定點測試（驗證）**：`TestPopulationGrowthWriteback` 已知會因新人口沒有分配到工人
+  而失敗。先以最小 fixture 重現並修正或明確調整斷言；在結果可解釋前，不得把全套測試寫成全綠。
+- [ ] **最終公開包與發行閘門（打包）**：上述玩家可見問題完成後，重新建立 Linux／Windows／macOS
+  公開包、驗證 `PUBLIC-SHA256SUMS`、解壓啟動 smoke，並再次確認公開產物不含原版 `.LBX`、音樂、音效或
+  未授權字型。帶使用者私有資料的完整版只保留本機驗收用途。
+
+##### 需要外部裝置才能完成的驗收
+
+- [ ] **外部音訊驗收**：在有音訊輸出的桌面逐曲聽 `STREAM`／`STREAMHD` 與場景切換，確認音量與曲目；
+  Docker 的解碼、長度、峰值、非靜音檢查已完成，不能冒充人耳驗收。
+
 - [x] **captain／common 領袖技能消費端（2026-08-10）**：26 項技能已有至少一個 remake 消費端，包含 Assassin 的逐位行動、Diplomat 的有標註關係代理值、Famous 的明確雇用費折扣、Megawealth 的回合 BC／維護費、Operations 指揮點數、Spymaster／Telepath 間諜攻防、Galactic Lore 星圖／怪獸／安塔蘭、Ordnance／Security 兩條戰鬥路徑，以及 Fighter Pilot。Tactics 依手冊「This skill is not implemented」保留無效果；Famous 招募機率因沒有可證實的候選擲骰公式，沒有虛構固定機率。細節與測試見 `docs/tech/leader-officer-skills.md`。
 - [x] **英文模式安全 fallback（2026-08-10）**：未知自訂名稱、未知族群／艦艇／建造項目、熱座名稱等顯示值改走 ASCII 保留或通用英文 fallback，不改存檔 key；英文 `-gamegallery` 在 Docker + Xvfb 產生 35/35 張 PNG，抽查主選單、星圖、外交、艦艇設計、輸入框，沒有越界／panic／fatal／error。AST 英文棘輪維持 16 條可解釋例外；不把查表 key 全域翻譯。
 - [x] **一次 20 回合開局經濟／士氣探針（2026-08-10）**：固定無事件開局 BC 50→264（首回合結算後 58）、人口 8→11、士氣 0% 全程、食物輸出 0→1、工業 6→8、研究 6 維持；沒有負食物或人口死亡螺旋。本輪只記錄體感基線，不擅自改收入公式；測試為 `internal/shell/economy_20_turn_test.go`。
 - [x] **本輪 gameplay polish（2026-08-11）**：外交 `FoodForCredits`／`ResearchExchange` 特殊貿易已有回合收益與存檔狀態；AI→玩家 `SABOTAGE` 會依 remake 性格政策選任務並讀取玩家建築池；食物複製機補上半食物／半 BC 計算與跨回合 BC 餘數保存（強推論，不冒充原版碎片付款已證實）；原版 `RawStatus=4` 的 `+0x37`／30 門檻已接成領袖清理路徑；IDA 追回活動 Trader 的 raw 經驗分桶、tier 1/2 `×10/×15` 最大加成，並接入 GAM／demo fallback 的貿易目標；本輪再接 `CMBTSHP` 固定 tick 近似、事件／爆炸 strategic consumer、SABOTAGE raw slot helper 對齊／結構化分數／Agent 實際扣除與領袖 ETA callback 近似。原版 CMBTSHP clock、score table 上游填值與 raw callback 設計／帝國欄位仍是非阻塞 oracle 差異，詳見 [`docs/re/remake-consumer-closure-20260811.md`](docs/re/remake-consumer-closure-20260811.md)。
 - [x] **議會／安塔蘭視覺收尾（2026-08-11）**：`COUNCIL.LBX#1` 10 幀與 `ANTAROOM.LBX#1` 55 幀已由原版資產逐幀累積並接入播放；`CMBTSHP` 已接原版 `45*playerColor+rawPicture` 圖片映射，並以移動後固定 tick 播放近似 timer，靜止後不自行旋轉。原版 timer 仍標未知。畫面尺寸、雜湊、外部截圖與未宣稱項目見 [`docs/re/visual-oracle-20260811.md`](docs/re/visual-oracle-20260811.md)。
 - [x] **本輪 polish 後重新打包與錄製影片（2026-08-11）**：Docker 依最新工作樹重建 Linux 完整 AppImage（97,434,104 bytes）、Windows amd64 完整 ZIP（100,661,428 bytes）與 macOS universal 完整 tar.gz（108,752,832 bytes；`x86_64`／`arm64`），三者均含使用者私有資料子集與 CJK 字型；最新 35 張畫廊重新抽樣後，選 12 張與正版 `STREAM.LBX` 抽取曲重錄 72 秒 H.264/AAC 預覽（4,807,495 bytes、1280×720、48 kHz stereo）。新版分鏡包含標題卡、功能敘事、版面輪換、字幕與 CTA；`dist/SHA256SUMS` 已更新並驗證三平台包／影片。完整版僅限相應授權的本機測試，影片權利限制見 `dist/promo/README.md`。
-- [ ] **外部音訊驗收**：在有音訊輸出的桌面逐曲聽 `STREAM`／`STREAMHD` 與場景切換，確認音量與曲目；Docker 的解碼、長度、峰值、非靜音檢查已完成，不能冒充人耳驗收。
 - [x] **音訊文件同步（2026-08-11）**：`docs/tech/audio-track-map.md` 已移除「外交音樂是單一 `bgmDiplo` 常數」的過期敘述，改記逐族好曲、壞曲池與原版門檻未知；IDA Pro 靜態證據見 [`docs/re/oracle-static-ida-20260811.md`](docs/re/oracle-static-ida-20260811.md)。
 - [x] **多人網路最低可玩鏈與可選可靠性（2026-08-11）**：保留原版決定性 lockstep、以 TCP 取代已失效的 IPX／數據機／序列／TEN。`cmd/moo2` 已從大廳名冊接到主機共同新局（設定／種子／席位快照廣播）、客戶端套用同一快照、玩家指令依席位與玩家編號收集／重播、`turn_done` → `turn_ready` 兩階段回合結算，以及 `NetworkStateHash` 不一致時失敗即關閉；另已加入 resume token 重連、心跳／逾時／重連寬限、challenge-HMAC 身份驗證與可選 TLS 1.3。`MOO2_NET_AUTH` 開啟共享密碼 proof，`MOO2_NET_TLS=1` 開啟加密；NAT 穿透仍需外部 relay 或 UPnP，沒有冒稱內建解法。驗證包含 `internal/netplay` loopback TCP／TLS／重連抽樣、`internal/shell` 快照／席位重播與 UI 指紋正規化，以及 Docker + Xvfb `cmd/moo2` 目標測試。`netNextTurn` 仍是畫廊示範，正式流程使用 `networkWaitScreen`。
 - [x] **可選 AI-to-AI 強化（2026-08-11）**：AI 星選的行星價值／距離模型與議會兩候選人／第三方搖擺票已完成；現在另有可保存、可重播的 AI 彼此戰爭、停戰／互不侵犯／同盟、貿易／研究協議，以及抽象艦隊攻擊最高人口殖民地的戰鬥／佔領解算。這是 remake 模型，不冒充原版逐艦 blueprint；細節見 [`docs/tech/ai-to-ai.md`](docs/tech/ai-to-ai.md)。
