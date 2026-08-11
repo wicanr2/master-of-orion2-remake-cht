@@ -45,16 +45,12 @@
 - [x] 客製種族 22 項選項與心靈感應、幸運、全知、匿蹤艦等消費端；`hover` 外框、`CMBTSFX` 多幀特效、`STREAM`／`STREAMHD` 音樂與音效接線。
 - [x] 文字欄寬 polish：共用 `labelRect`／`extraText` 截斷與折行已套用主要長文字面板；Docker + Xvfb 產出 35 張 1280×960 畫廊並抽查外交、艦艇設計、輸入框、種族、戰術、熱座，README 與 `docs/PLAYTEST-2026-08-10.md` 已同步。
 - [x] **遊戲內文字版面與發行畫廊回歸（2026-08-11，視覺）**：主選單語言／規則標籤收進 196px 安全欄寬；完整包資料缺少 `COMBAT.LBX` 時改繪同座標、可點擊的戰術後備控制列，不再讓訊息落入按鈕區。Docker + Xvfb 以內建 `-gamegallery` 導覽（固定展示種子 `20260807`、640×480 邏輯／1280×960 輸出）產出 35/35 張；抽查 `01_menu`、`02_raceselect`、`16_tactical`、`25_shipdesign`、`31_netroster`，文字未越框。此為 remake 的狀態畫面驗收，不宣稱原版逐像素對照；`docs/screenshots/` 與 README 代表畫面已換成同一批輸出。
+- [x] **TCP 多人正式入口與缺資產備援（2026-08-11）**：`NETWORK`／`JOIN GAME` 不再被誤畫為未實作；數據機、序列線、`COMM INFO` 與 TEN 維持灰色且熱區不處理。`NetworkStateHash` 會先正規化每台機器本地的作用中席位，避免主機席位 0 與客戶端席位 1 套用同一快照就誤報分岔。完整資料包缺 `MULTIGM.LBX` 時，改以原版已證實的 482×335 面板與按鈕熱區繪製可讀備援，避免多人頁塌到左上；README 的 `23_multiplayer.png` 已換成此輸出。Docker 抽樣包含實際 `NETWORK`／`START NEW GAME` 名稱彈窗、TCP 加入、共同開局、第一回合 `turn_done` → `turn_ready`，另跑 `internal/netplay` 全包（含斷線、重連、心跳）與 35/35 畫廊，抽查多人頁；不宣稱已做人類跨 NAT 實機驗收。
 
 #### 真正仍會影響 remake 交付的工作
 
 ##### 發行前的實作／視覺／驗證
 
-- [ ] **TCP 多人正式入口一致性（實作／玩家路徑）**：`cmd/moo2/multiplayer.go` 的
-  `implemented()` 目前仍把 `network`、`join` 畫成未實作，但 `click()` 已有主機／加入大廳的流程。
-  修正視覺 gate 與過期註解，只保留數據機／序列線／TEN 的停用；從乾淨主選單做一次主機與客戶端的
-  TCP 抽樣，驗證共同開局、席位、第一回合 `turn_done`／`turn_ready`、斷線訊息與存檔，不使用 debug
-  shortcut。這是 remake 可玩性問題，不是原版 IPX oracle。
 - [ ] **殖民地生產控制補齊或明確降級（實作／範圍）**：`BUY` 仍是灰色，建造視窗的 `AUTO BUILD`、
   `REFIT`、`REPEAT BUILD` 仍會顯示「未實作」。若目標是完整重製，應完成它們的資料、回合、存檔與
   UI 路徑；若決定不納入公開版，需在遊戲與 README／誠實現況中明確標成未支援，不能只留下灰鈕。

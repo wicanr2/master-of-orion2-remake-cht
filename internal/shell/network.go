@@ -41,7 +41,19 @@ func (s *GameSession) NetworkStateHash() string {
 	if s == nil {
 		return ""
 	}
-	snap := s.snapshot()
+	// 網路對局會讓每台機器載入自己的真人席位：頂層 Player/Colonies 是
+	// ActiveSeat 的活資料，而同一份資料也保存在 Seats[ActiveSeat]。若直接
+	// 雜湊 snapshot，主機(席位 0)與客戶端(席位 1)即使剛套用同一份共同開局，
+	// 也會因為本地觀看席位不同而被誤判分岔。複製 session 後固定載入席位 0，
+	// 只做共識用的正規化，不改動呼叫端實際正在操作的席位。
+	consensus := *s
+	if s.HotseatEnabled() {
+		consensus.Seats = append([]seat(nil), s.Seats...)
+		if err := consensus.SetActiveSeat(0); err != nil {
+			return ""
+		}
+	}
+	snap := consensus.snapshot()
 	snap.SelectedStar = -1
 	snap.SelectedFleet = 0
 	snap.ShowRelocationLines = false

@@ -24,6 +24,11 @@ func TestNetworkSnapshotReplayAndUIHashNormalization(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// 主機與客戶端會各自停在自己的真人席位；這是本地操作上下文，不是
+	// 共識狀態。NetworkStateHash 必須先正規化它，否則共同開局就會誤報分岔。
+	if err := right.SetActiveSeat(1); err != nil {
+		t.Fatal(err)
+	}
 	left.SelectedStar, left.SelectedFleet, left.ShowRelocationLines = 3, 1, true
 	right.SelectedStar, right.SelectedFleet, right.ShowRelocationLines = 7, 0, false
 	if left.NetworkStateHash() != right.NetworkStateHash() {

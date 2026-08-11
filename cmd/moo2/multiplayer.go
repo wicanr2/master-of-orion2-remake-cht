@@ -6,6 +6,7 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
@@ -49,8 +50,8 @@ import (
 //
 // ============ 誠實留白 ============
 //
-//	NETWORK / MODEM / NULL MODEM 在 remake 沒有對應能力(沒有 IPX、沒有數據機)。
-//	點下去會說明「本版未實作」,而不是假裝可選再在後面某處失敗。
+//	NETWORK 已由 TCP 大廳取代失效的 IPX；START NEW GAME 建主機、JOIN GAME 進探索／加入流程。
+//	MODEM / NULL MODEM / COMM INFO / TEN 是已淘汰硬體或服務，維持停用而不假裝可用。
 //	熱座的席位模型見 internal/shell/hotseat.go、交接畫面見 cmd/moo2/hotseat.go。
 
 const (
@@ -150,31 +151,36 @@ const maxHotseatSeats = shell.MaxHotseatSeats
 func newMultiplayerScreen(b *sceneBuilder) *multiplayerScreen {
 	s := &multiplayerScreen{b: b, fnt: b.fnt, mode: mpHotseat, humans: 2,
 		imgs: map[int][]*ebiten.Image{}, faces: map[int][]color.RGBA{}}
+	// 即使完整資料包沒有 MULTIGM.LBX，也要保留原版已知的面板幾何，讓 TCP
+	// 入口可見、可點；不能在背景資產讀取失敗時提早返回，否則所有熱區都會
+	// 塌回左上角。
+	s.panW, s.panH = 482, 335 // MULTIGM.LBX#1 的已證實尺寸
+	s.titleFace = color.RGBA{58, 60, 56, 255}
 	// 背景自帶調色盤,面板與各按鈕都借它上色。
 	prov, err := decodeAsset(b.res, mpLBX, mpBGAsset)
-	if err != nil || prov.Embedded == nil || len(prov.Frames) == 0 {
-		return s
+	if err == nil && prov.Embedded != nil && len(prov.Frames) > 0 {
+		s.bg = ebiten.NewImageFromImage(prov.Frames[0].ToRGBA(prov.Embedded, false))
 	}
-	s.bg = ebiten.NewImageFromImage(prov.Frames[0].ToRGBA(prov.Embedded, false))
-	s.titleFace = color.RGBA{58, 60, 56, 255} // 取不到面板時的保守深灰
-	if im, err := decodeAsset(b.res, mpLBX, mpPanAsset); err == nil && len(im.Frames) > 0 {
-		rgba := im.Frames[0].ToRGBA(prov.Embedded, false)
-		s.panel = ebiten.NewImageFromImage(rgba)
-		bb := rgba.Bounds()
-		s.panW, s.panH = bb.Dx(), bb.Dy()
-		// 標題帶底色:切出標題列那一條(y 16..40、左右各留 30px)再取眾數,理由同 dominantFace。
-		if s.panW > 80 && s.panH > 40 {
-			strip := rgba.SubImage(image.Rect(bb.Min.X+30, bb.Min.Y+16, bb.Max.X-30, bb.Min.Y+40))
-			if sub, ok := strip.(*image.RGBA); ok {
-				s.titleFace = dominantFace(sub)
+	if err == nil && prov.Embedded != nil {
+		if im, err := decodeAsset(b.res, mpLBX, mpPanAsset); err == nil && len(im.Frames) > 0 {
+			rgba := im.Frames[0].ToRGBA(prov.Embedded, false)
+			s.panel = ebiten.NewImageFromImage(rgba)
+			bb := rgba.Bounds()
+			s.panW, s.panH = bb.Dx(), bb.Dy()
+			// 標題帶底色:切出標題列那一條(y 16..40、左右各留 30px)再取眾數,理由同 dominantFace。
+			if s.panW > 80 && s.panH > 40 {
+				strip := rgba.SubImage(image.Rect(bb.Min.X+30, bb.Min.Y+16, bb.Max.X-30, bb.Min.Y+40))
+				if sub, ok := strip.(*image.RGBA); ok {
+					s.titleFace = dominantFace(sub)
+				}
 			}
 		}
 	}
 	// 面板置中(原版對面板尺寸算 (640−w)/2、(480−h)/2)。
-	if s.panW == 0 {
-		s.panW, s.panH = 482, 335 // 取不到面板時的退路尺寸(實測 multigm.lbx#1)
-	}
 	s.panX, s.panY = (moo2ScreenW-s.panW)/2, (moo2ScreenH-s.panH)/2
+	if err != nil || prov.Embedded == nil {
+		return s
+	}
 	for _, btn := range mpButtons {
 		im, err := decodeAsset(b.res, mpLBX, btn.asset)
 		if err != nil || len(im.Frames) == 0 {
@@ -187,6 +193,24 @@ func newMultiplayerScreen(b *sceneBuilder) *multiplayerScreen {
 		}
 	}
 	return s
+}
+
+// drawFallbackMultiplayerButton 在 MULTIGM.LBX 缺失時保留同一組原版熱區的可讀按鈕。
+// 這不是原版像素的替代宣稱；它只讓合法裁切資料包仍能使用 TCP／熱座入口。
+func drawFallbackMultiplayerButton(dst *ebiten.Image, x, y, w, h, frame int) color.RGBA {
+	face := color.RGBA{42, 48, 63, 255}
+	border := color.RGBA{126, 141, 169, 255}
+	switch frame {
+	case mpFrameSelected:
+		face = color.RGBA{65, 48, 22, 255}
+		border = color.RGBA{244, 160, 32, 255}
+	case mpFrameDisabled:
+		face = color.RGBA{28, 32, 42, 255}
+		border = color.RGBA{67, 75, 91, 255}
+	}
+	fillPanel(dst, float32(x), float32(y), float32(w), float32(h), face, false)
+	vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1, border, false)
+	return face
 }
 
 // dominantFace 取一張按鈕圖的「面色」——**整個內部**(四邊各扣 3px 浮雕邊框)出現最多次的顏色。
@@ -237,7 +261,7 @@ func dominantFace(img *image.RGBA) color.RGBA {
 
 // frameFor 決定某顆鈕現在該用哪一個狀態幀。
 func (s *multiplayerScreen) frameFor(act string) int {
-	if act == "hotseat" && s.mode == mpHotseat {
+	if (act == "hotseat" && s.mode == mpHotseat) || (act == "network" && s.mode == mpNetwork) {
 		return mpFrameSelected
 	}
 	if !s.enabled(act) || !s.implemented(act) {
@@ -280,7 +304,7 @@ func (s *multiplayerScreen) btnRect(btn mpButton) (int, int, int, int) {
 	return s.panX + btn.dx, s.panY + btn.dy, w, h
 }
 
-// enabled 回傳這顆鈕在目前模式下能不能點。
+// enabled 回傳這顆鈕在目前模式下能不能點；implemented 則另外處理已淘汰的傳輸方式。
 //
 // ⚠ 「不能點」不等於「不畫」:原版的面板美術(資產 1)本來就把八顆鈕都畫死在圖上,
 // `sub_F009A` 只是**不建 widget**(把 id 設成 0FC18h)。所以熱座模式下 JOIN GAME
@@ -292,7 +316,7 @@ func (s *multiplayerScreen) enabled(act string) bool {
 	case "comm":
 		return s.mode == mpModem || s.mode == mpNullModem
 	case "network", "modem", "nullmodem", "ten":
-		return true // 可以點,點了會說明本版沒有網路層
+		return true
 	}
 	return true
 }
@@ -300,7 +324,7 @@ func (s *multiplayerScreen) enabled(act string) bool {
 // implemented 回傳這個動作在 remake 有沒有真的實作(沒有的畫成灰的)。
 func (s *multiplayerScreen) implemented(act string) bool {
 	switch act {
-	case "network", "modem", "nullmodem", "join", "comm", "ten":
+	case "modem", "nullmodem", "comm", "ten":
 		return false
 	}
 	return true
@@ -311,7 +335,7 @@ func (s *multiplayerScreen) update(in shell.InputState) *origTransition {
 		return nil
 	}
 	for _, btn := range mpButtons {
-		if !s.enabled(btn.act) {
+		if !s.enabled(btn.act) || !s.implemented(btn.act) {
 			continue
 		}
 		x, y, w, h := s.btnRect(btn)
@@ -328,9 +352,7 @@ func (s *multiplayerScreen) click(act string) *origTransition {
 	case "network":
 		// 選中「網路」;真正開/加入大廳走右欄的 START NEW GAME / JOIN GAME 兩顆鈕
 		// (原版也是這個分工:左欄選連線方式、右欄選要做什麼)。
-		s.mode, s.msg = mpNetwork, s.b.tr(
-			"網路對戰:右欄「開新遊戲」開大廳等人加入,「加入遊戲」連別人的大廳。",
-			"Network: use START NEW GAME to host a lobby, or JOIN GAME to connect.")
+		s.mode, s.msg = mpNetwork, ""
 		return nil
 	case "modem", "nullmodem":
 		// ⚠ 這兩個是**數據機與序列線**——那些硬體現在不存在,remake 走 TCP。
@@ -406,6 +428,15 @@ func (s *multiplayerScreen) draw(dst *ebiten.Image) {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(s.panX), float64(s.panY))
 		drawPanelImage(dst, s.panel, op)
+	} else {
+		// 資產包可能刻意未附帶原版 LBX；此時用安全的本地面板保住原版量得的
+		// 幾何與所有可操作鈕，避免「只剩文字、沒有熱區背景」的死畫面。
+		fillPanel(dst, float32(s.panX), float32(s.panY), float32(s.panW), float32(s.panH),
+			color.RGBA{18, 24, 40, 245}, false)
+		vector.StrokeRect(dst, float32(s.panX), float32(s.panY), float32(s.panW), float32(s.panH), 1,
+			color.RGBA{105, 126, 164, 255}, false)
+		fillPanel(dst, float32(s.panX+24), float32(s.panY+14), float32(s.panW-48), 28,
+			color.RGBA{32, 42, 68, 255}, false)
 	}
 	if s.fnt == nil {
 		return
@@ -418,27 +449,37 @@ func (s *multiplayerScreen) draw(dst *ebiten.Image) {
 		// (見 enabled 的說明)。狀態幀由 frameFor 決定,顏色跟著幀走。
 		x, y, w, h := s.btnRect(btn)
 		frame := s.frameFor(btn.act)
-		if im := s.frameImage(btn.asset, frame); im != nil {
+		im := s.frameImage(btn.asset, frame)
+		if im != nil {
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Translate(float64(x), float64(y))
 			drawPanelImage(dst, im, op)
+		} else {
+			drawFallbackMultiplayerButton(dst, x, y, w, h, frame)
 		}
 		// 擦掉烘在圖上的英文再疊中文(上下左右各留 3px 保住浮雕邊框)。
 		// 英文模式整段跳過:原版按鈕上烘的就是 NETWORK / MODEM / …,露出來比用 Noto
 		// 重畫一次更像原版(熱座席位數改由面板下方那行說明交代)。
-		if s.b.lang != i18n.Traditional {
+		if s.b.lang != i18n.Traditional && im != nil {
 			continue
 		}
 		if face, ok := s.frameFace(btn.asset, frame); ok {
 			fillPanel(dst, float32(x+3), float32(y+3), float32(w-6), float32(h-6), face, false)
 		}
 		label := btn.zh
+		if s.b.lang != i18n.Traditional {
+			label = btn.en
+		}
 		col := mpLabelNormal
 		switch frame {
 		case mpFrameSelected:
 			col = mpLabelSelected
 		case mpFrameDisabled:
 			col = mpLabelDisabled
+		}
+		if im == nil && frame == mpFrameNormal {
+			// 原版一般幀用深色烘字；本地備援鈕是深面，改用亮字才可讀。
+			col = color.RGBA{225, 230, 240, 255}
 		}
 		if btn.act == "hotseat" && s.mode == mpHotseat {
 			label = fmt.Sprintf("熱座 %d 人", s.humans)
@@ -457,8 +498,9 @@ func (s *multiplayerScreen) draw(dst *ebiten.Image) {
 
 	note := fmt.Sprintf(s.b.tr("熱座:%d 位真人輪流下令,其餘帝國仍由 AI 操作。",
 		"Hot seat: %d humans take turns; the remaining empires stay AI-controlled."), s.humans)
-	if s.mode != mpHotseat {
-		note = s.b.tr("本版只實作熱座。", "Only hot seat is implemented in this build.")
+	if s.mode == mpNetwork {
+		note = s.b.tr("TCP 網路:「開始新遊戲」建立大廳,「加入遊戲」尋找或連入對局。",
+			"TCP network: START NEW GAME hosts a lobby; JOIN GAME finds or joins one.")
 	}
 	s.fnt.DrawCentered(dst, note, 320, float64(s.panY+s.panH+16), 12, dim)
 	if s.msg != "" {
