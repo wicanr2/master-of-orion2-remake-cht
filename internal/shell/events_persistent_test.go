@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
@@ -27,6 +28,22 @@ func TestPersistentEventMinimumSixTurns(t *testing.T) {
 	}
 	if len(s.PersistentEvents) != 0 {
 		t.Error("500 回合後時空異象仍未結束,5% 機率沒有接上")
+	}
+}
+
+func TestPersistentEventReportsEnglishProgress(t *testing.T) {
+	s := NewDemoSession()
+	homeStar := s.PlayerColonyStarIndex(0)
+	s.LastPlayerOutput.Colonies = []engine.ColonyOutput{{Research: 1}}
+	s.PersistentEvents = []PersistentEvent{{
+		Kind: PersistentSupernova, StarIndex: homeStar, Countdown: 1, ResearchNeeded: 1,
+	}}
+	s.advancePersistentEvents()
+	if !strings.Contains(s.LastPersistentEventEN, "stabilized") {
+		t.Fatalf("持續事件應產生英文進度報告,got %q", s.LastPersistentEventEN)
+	}
+	if strings.Contains(s.LastPersistentEventEN, "星系") {
+		t.Fatalf("持續事件英文報告不應沿用中文星系字串,got %q", s.LastPersistentEventEN)
 	}
 }
 

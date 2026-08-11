@@ -23,9 +23,8 @@ import (
 //	——載入 antaroom.LBX **資產 0**;資產 1 是 640×480、55 幀的 delta 動畫(鏡頭推進到
 //	安塔蘭統治者面前),資產 0 是它的調色盤提供者(自身無法單獨成畫)。
 //
-//	remake 取「55 幀累積後的最終畫格」當靜態背景,與外交議事廳(DIPLOMAT#29,38 幀)
-//	同一個做法,見 internal/lbx.Image.AccumulatedRGBA。
-//	⚠ 留白:原版是把這 55 幀當推鏡動畫播出來的,remake 只呈現最終定格。
+//	remake 依原版順序把 55 幀 delta 畫格逐幀累積播放；最後一幀仍保留作動畫
+//	結束後的靜態 fallback。累積方法見 internal/lbx.Image.AccumulatedUpToRGBA。
 //
 // --- 規則來源 ---
 //
@@ -36,9 +35,9 @@ import (
 //
 //	結算沿用既有的 shell.AssaultAntares(不在這一層重算戰鬥)。
 
-// loadAntaranRoom 載入安塔蘭王座廳背景(antaroom.lbx 資產 1,以資產 0 為調色盤,55 幀累積)。
-// 任何一步失敗都回 nil——畫面會退回純色底,不因為缺美術而整個進不去。
-func loadAntaranRoom(res *assets.Resolver) *ebiten.Image {
+// loadAntaranRoomFrames 載入安塔蘭王座廳背景(antaroom.lbx 資產 1,以資產 0 為調色盤)
+// 的逐幀累積結果。任何一步失敗都回 nil——畫面會退回純色底,不因為缺美術而整個進不去。
+func loadAntaranRoomFrames(res *assets.Resolver) []*ebiten.Image {
 	prov, err := decodeAsset(res, "antaroom.lbx", 0)
 	if err != nil || prov.Embedded == nil {
 		return nil
@@ -47,7 +46,11 @@ func loadAntaranRoom(res *assets.Resolver) *ebiten.Image {
 	if err != nil || len(room.Frames) == 0 {
 		return nil
 	}
-	return ebiten.NewImageFromImage(room.AccumulatedRGBA(prov.Embedded))
+	frames := make([]*ebiten.Image, len(room.Frames))
+	for i := range room.Frames {
+		frames[i] = ebiten.NewImageFromImage(room.AccumulatedUpToRGBA(prov.Embedded, i, room.KeyColor()))
+	}
+	return frames
 }
 
 // antaranRoomScreen 是安塔蘭王座廳畫面。
@@ -55,6 +58,9 @@ type antaranRoomScreen struct {
 	b    *sceneBuilder
 	fnt  *uifont.Font
 	room *ebiten.Image
+	// roomFrames 是 55 幀 delta 動畫的累積畫面；room 保留最後一幀作 fallback。
+	roomFrames         []*ebiten.Image
+	animationStartTick int
 
 	blockReason string // 非空 = 現在不能發動(逐條講明卡在哪)
 	ourStrength int
@@ -63,8 +69,13 @@ type antaranRoomScreen struct {
 }
 
 func newAntaranRoomScreen(b *sceneBuilder) *antaranRoomScreen {
+	frames := loadAntaranRoomFrames(b.res)
+	var room *ebiten.Image
+	if len(frames) > 0 {
+		room = frames[len(frames)-1]
+	}
 	s := &antaranRoomScreen{
-		b: b, fnt: b.fnt, room: loadAntaranRoom(b.res),
+		b: b, fnt: b.fnt, room: room, roomFrames: frames, animationStartTick: b.animTick,
 		theirCount: shell.AntaranDefenseShipCount(),
 		theirPower: shell.AntaranDefenseStrength(),
 	}
@@ -106,8 +117,19 @@ func (a *antaranRoomScreen) update(in shell.InputState) *origTransition {
 
 func (a *antaranRoomScreen) draw(dst *ebiten.Image) {
 	dst.Fill(color.RGBA{10, 6, 4, 255})
-	if a.room != nil {
-		drawPanelImage(dst, a.room, nil)
+	room := a.room
+	if len(a.roomFrames) > 0 {
+		frame := (a.b.animTick - a.animationStartTick) / 3
+		if frame < 0 {
+			frame = 0
+		}
+		if frame >= len(a.roomFrames) {
+			frame = len(a.roomFrames) - 1
+		}
+		room = a.roomFrames[frame]
+	}
+	if room != nil {
+		drawPanelImage(dst, room, nil)
 	}
 	if a.fnt == nil {
 		return
@@ -118,24 +140,24 @@ func (a *antaranRoomScreen) draw(dst *ebiten.Image) {
 
 	// 標題帶:背景是滿版美術,文字直接疊上去會看不清,壓一條半透明深色。
 	fillPanel(dst, 0, 24, moo2ScreenW, 74, color.RGBA{6, 4, 2, 175}, false)
-	a.fnt.DrawCentered(dst, a.b.tr("安塔蘭王座廳", "THE ANTARAN THRONE ROOM"), 320, 46, 22, gold)
-	a.fnt.DrawCentered(dst, a.b.tr("次元傳送門的彼端,安塔蘭統治者在等著。",
-		"Beyond the dimensional gate, the Antaran overlords are waiting."), 320, 78, 14, body)
+	a.fnt.DrawCentered(dst, truncateToWidth(a.fnt, a.b.tr("安塔蘭王座廳", "THE ANTARAN THRONE ROOM"), 22, 600), 320, 46, 22, gold)
+	a.fnt.DrawCentered(dst, truncateToWidth(a.fnt, a.b.tr("次元傳送門的彼端,安塔蘭統治者在等著。",
+		"Beyond the dimensional gate, the Antaran overlords are waiting."), 14, 600), 320, 78, 14, body)
 
 	// 戰力對比:同一套 playerMilitary,與實際結算用的數字一致。
 	fillPanel(dst, 0, 300, moo2ScreenW, 76, color.RGBA{6, 4, 2, 175}, false)
-	a.fnt.DrawCentered(dst,
+	a.fnt.DrawCentered(dst, truncateToWidth(a.fnt,
 		fmt.Sprintf(a.b.tr("安塔蘭母星防禦艦隊:%d 艘,總戰力 %d", "Antaran home fleet: %d ships, %d combat power"),
-			a.theirCount, a.theirPower), 320, 320, 14, warn)
-	a.fnt.DrawCentered(dst,
-		fmt.Sprintf(a.b.tr("我方艦隊總戰力:%d", "Your fleet: %d combat power"), a.ourStrength), 320, 344, 14, body)
+			a.theirCount, a.theirPower), 14, 600), 320, 320, 14, warn)
+	a.fnt.DrawCentered(dst, truncateToWidth(a.fnt,
+		fmt.Sprintf(a.b.tr("我方艦隊總戰力:%d", "Your fleet: %d combat power"), a.ourStrength), 14, 600), 320, 344, 14, body)
 	odds, oddsCol := a.b.tr("勝算渺茫——這一戰要求對方全滅,帶不夠戰力等於送死",
 		"Long odds — this fight demands total annihilation; arriving under-armed is suicide"), warn
 	if a.ourStrength >= a.theirPower {
 		odds, oddsCol = a.b.tr("戰力已足以一戰", "Your fleet is strong enough to make the attempt"),
 			color.RGBA{150, 220, 150, 255}
 	}
-	a.fnt.DrawCentered(dst, odds, 320, 366, 12, oddsCol)
+	a.fnt.DrawCentered(dst, truncateToWidth(a.fnt, odds, 12, 600), 320, 366, 12, oddsCol)
 
 	ax, ay, aw, ah := a.assaultRect()
 	rx, ry, rw, rh := a.retreatRect()
@@ -150,15 +172,15 @@ func (a *antaranRoomScreen) draw(dst *ebiten.Image) {
 	if !enabled {
 		labCol = color.RGBA{150, 142, 132, 255}
 	}
-	a.fnt.DrawCentered(dst, lab, float64(ax+aw/2), float64(ay+ah/2), 16, labCol)
+	a.fnt.DrawCentered(dst, truncateToWidth(a.fnt, lab, 16, float64(aw-10)), float64(ax+aw/2), float64(ay+ah/2), 16, labCol)
 
 	fillPanel(dst, float32(rx), float32(ry), float32(rw), float32(rh), color.RGBA{34, 30, 44, 235}, false)
 	vector.StrokeRect(dst, float32(rx), float32(ry), float32(rw), float32(rh), 1.5, color.RGBA{140, 130, 170, 255}, false)
-	a.fnt.DrawCentered(dst, a.b.tr("撤退", "WITHDRAW"), float64(rx+rw/2), float64(ry+rh/2), 16, body)
+	a.fnt.DrawCentered(dst, truncateToWidth(a.fnt, a.b.tr("撤退", "WITHDRAW"), 16, float64(rw-10)), float64(rx+rw/2), float64(ry+rh/2), 16, body)
 
 	if !enabled {
 		fillPanel(dst, 0, 448, moo2ScreenW, 26, color.RGBA{6, 4, 2, 190}, false)
-		a.fnt.DrawCentered(dst, a.b.tr("無法發動:", "Cannot launch: ")+a.blockReason, 320, 461, 12, warn)
+		a.fnt.DrawCentered(dst, truncateToWidth(a.fnt, a.b.tr("無法發動:", "Cannot launch: ")+a.blockReason, 12, 600), 320, 461, 12, warn)
 	}
 }
 

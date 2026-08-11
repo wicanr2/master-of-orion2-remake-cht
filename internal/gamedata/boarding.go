@@ -2,7 +2,7 @@ package gamedata
 
 // boarding.go:登艦戰的手冊數值。
 //
-// 這是第 60 項(打得準也閃得掉)以來一直擋著三個元件(保安站 / 傳送器 / 突擊艇)的那個缺席機制。
+// 這是第 80 項(登艦戰)接上的三個元件(保安站 / 傳送器 / 突擊艇)共用規則。
 // 手冊把規則寫得很完整,而且**把解算方式直接指回地面戰**:
 //
 //	The Marines boarding the ship and those defending the ship fight it out **in the same
@@ -37,9 +37,8 @@ const (
 // 手冊逐字:「Transporters allow a ship to send Marines onto an enemy ship from a range of
 // **12 squares** — **if the shield facing the attacking ship is disabled**.」
 //
-// ⚠ **後半句是 remake 還做不到的部分**:護盾在 remake 是「每發固定減傷」,既沒有分面
-// 也不會被打穿(見 DamageAfterShield)。所以傳送器的前置不是「射程」而是**護盾要能崩**。
-// 這個常數先放著,等護盾模型有「崩潰」這個狀態再接。
+// 傳送器的前置不是「射程」而是**面向攻擊方的那面護盾已失效**。格子戰術目前由
+// shell.CombatShip 的四面容量承接；艦身旋轉與原版方向命名仍是未解的近似層。
 const TransporterRangeSquares = 12
 
 // TransporterBombRangeSquares 是傳送器對行星投彈的延伸射程。

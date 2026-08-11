@@ -39,6 +39,17 @@ func TestFoodReplicatorDoesNothingWithoutADeficit(t *testing.T) {
 	}
 }
 
+func TestFoodReplicatorConvertHalfPreservesCyberneticHalfFood(t *testing.T) {
+	foodHalf, spentHalf := FoodReplicatorConvertHalf(1, 2)
+	if foodHalf != 1 || spentHalf != 2 {
+		t.Fatalf("半食物缺口應換出 1 半食物並花 2 半產能,got %d / %d", foodHalf, spentHalf)
+	}
+	foodHalf, spentHalf = FoodReplicatorConvertHalf(5, 5)
+	if foodHalf != 2 || spentHalf != 4 {
+		t.Fatalf("半產能不足時應按 2 半產能/半食物夾住,got %d / %d", foodHalf, spentHalf)
+	}
+}
+
 // 維護費 10 BC:手冊與建築表(來自原版執行檔)兩個來源。
 // 順帶釘住「它是全表最貴」——那是這棟建築的平衡設計,被改小就失衡了。
 func TestFoodReplicatorMaintenanceIsTheHighestInTheTable(t *testing.T) {

@@ -3,6 +3,14 @@
 > 日期:2026-07-10。目的:逐系統標「已用 gamedata 真公式(忠實)/自編近似(待接)」,給下輪乾淨接手。
 > 原則:gamedata/ 的公式多已逐字轉寫自 openorion2 + 手冊(有測試),是**真值來源**;忠實化=把 shell/engine 的自編邏輯換成呼叫這些真公式。
 
+## 2026-08-11 收尾勘誤
+
+本文件保留歷史盤點；本輪已完成的 remake 消費端以新狀態覆蓋舊 TODO：CMBTSHP 移動後固定
+tick timer、事件／爆炸戰略損傷消費、SABOTAGE 的結構化 AB/DB 分數與 Agent 數量扣除、
+以及領袖 ETA 歸零時的殖民地計算 callback 近似均已接入。原版逐幀 timer、raw event score／
+爆炸 record 與完整 callback 仍是 oracle 差異，不再把它們寫成「remake 漏接」。
+程式／測試／證據邊界見 [`docs/re/remake-consumer-closure-20260811.md`](../re/remake-consumer-closure-20260811.md)。
+
 ## 已忠實(用 gamedata 真公式,可信)
 
 | 系統 | 位置 | 用到的真公式 |
@@ -31,7 +39,7 @@
   ⚠ **2026-08-08(第 62 項(護盾減傷))訂正**:這裡原本寫「依護盾階 0/2/4/6/8/10」——那是清單索引 × 2,
   **五級裡有四級偏高**。手冊值是 **0/1/3/5/7/10**(`gamedata.DamageShieldReductionClass*`,
   已改由 `ShieldReductionForTech` 依科技查)。
-- **仍待**:①球狀傷害/飛彈/戰機未接(地面戰已於 §1a/1c 接線完成);~~②護盾減傷精確 per-class 真值待逆向~~
+- **仍待**:①球狀／飛彈的部分精細路徑與敵方逐艦戰機設計；玩家戰機出擊／返航／最弱護盾面已接(地面戰已於 §1a/1c 接線完成);~~②護盾減傷精確 per-class 真值待逆向~~
   (⚠ **這一項作廢**:真值**不需要逆向**,手冊常數從抄進來就一直躺在 `gamedata/damage.go`,只是沒人用。
   剩下的提示仍有效——
   **2026-07-11 提示**:`ship-design-space.md` §1 在手冊 p.121 表格額外挖到 Armor/Struct./Shield 三欄可能就是缺的
@@ -41,9 +49,9 @@
 ### 1a. ★ 地面戰:已解算(2026-07-10 更新——推翻本節下方舊「故不做」結論)
 
 > **本節下方原判定「地面戰需逆向、硬編=違反鐵律、故不做」已被使用者 directive 推翻並解決。**
-> 使用者定案:手冊無 MOO2 解算式 → **沿用一代(1oom)`game_ground_kill` 公式**(d100+force 對決,明確無歧義)+ 二代手冊加成表/hits-to-kill。這**不是硬編臆造**,是有權威來源(1oom GPL 重製碼,逐位元組對齊原版)的忠實移植,符合鐵律。
-> 已實作:`internal/gamedata/ground_battle.go` `ResolveGroundBattle` + 確定性測試(force 高方勝率 0.96、雙倍兵力 0.92、對稱 ~0.49、無死迴圈)。詳見 `ground-combat-algorithm.md`「解算式定案」。
-> **2026-07-11 更新**:shell 層「模型 + 流程」接線已完成(見 §1c),**仍待**只剩 UI 繪製/操作介面(不碰 interactive.go,屬後續 task)。
+> 歷史相容方案:手冊無 MOO2 解算式時曾沿用一代(1oom)`game_ground_kill` 公式；2026-08-07 已由 IDA 靜態追回原版四類型／平手雙擊路徑，live path 改見下一行。這段歷史方案仍保留作 `ResolveGroundBattle` 對照，不代表目前入侵流程使用它。
+> 已實作:`internal/gamedata/ground_battle_orig.go` `ResolveGroundCombatOrig`（IDA 靜態追回 `Ground_Combat_Round_ @ 0xEC4FE`）並接入 `InvadeColony`；`ResolveGroundBattle` 保留作一代相容對照。確定性測試涵蓋平手雙方受擊、逐類型切換與回合終止；DOSBox 實機傷亡／亂數序列仍是低優先校準。詳見 `ground-combat-algorithm.md`。
+> **2026-08-11 更新**:shell 層「模型 + 流程」與 `COLGCBT.LBX` 畫面抽樣均已接線(見 §1c)；仍待的是 DOSBox 實機傷亡／亂數序列、AI 守方裝甲營與入侵後人口校準，屬低優先 runtime oracle。
 
 ### 1b. 飛彈/球狀傷害:仍需「演算法逆向」(2026-07-10 盤點;地面戰已移出,見 §1a/1c)
 - **飛彈**:gamedata `missile.go` 有 jam/AMR 命中/速度,但飛彈**飛行回合、點防攔截互動**的完整解算同樣超出手冊文字,需逆向。
@@ -51,7 +59,7 @@
 - **~~艦艇空間格~~ 已移出本節(2026-07-11)**:原本把「艦艇空間格」也歸類成「需逆向演算法」是誤判——真正原因是先前只查過 `original_game/…CD Manual.pdf`(掃描圖,抽字 0 字元)與 `MANUAL_150.html`(1.50 異動摘要,非完整手冊),沒注意到 `moo2_patch1.5/GAME_MANUAL.pdf` 是**可正常抽字的 188 頁完整文字版手冊**,Ship Design 章節(p.119-132)有完整的艦體空間表 + 武器佔格表,不需要任何逆向工程。詳見 `ship-design-space.md`。
 
 ### 1c. ★ 地面戰 shell 層接線:已完成(2026-07-11)
-- `internal/shell/ground_invasion.go`:陸戰隊生成(`advanceMarines`,接 `EndTurn`)→ 載運(`LoadMarines`,運力=艦數×手冊每艘 4 個單位的近似,無獨立運輸艦船體類別,標簡化)→ 入侵解算(`GameSession.InvadeColony`,組雙方 `gamedata.GroundForce` 接 `ResolveGroundBattle`,rng 依回合+星索引種子化可重現)→ 勝則星 Owner 轉移 + 殖民地過戶(AI 端移除)。
+- `internal/shell/ground_invasion.go`:陸戰隊生成(`advanceMarines`,接 `EndTurn`)→ 載運(`LoadMarines`,運力=艦數×手冊每艘 4 個單位的近似,無獨立運輸艦船體類別,標簡化)→ 入侵解算(`GameSession.InvadeColony`,組雙方 `gamedata.GroundSide` 接 `ResolveGroundCombatOrig`,rng 依回合+星索引種子化可重現)→ 勝則星 Owner 轉移 + 殖民地過戶(AI 端移除)。
 - Force 計算重用既有 `ComponentUnlocked`/`ArmorOptions` 元件解鎖判定推導裝甲科技加成,避免地面戰科技狀態與造艦科技狀態不同步;~~種族加成僅套用手冊有明確數字的 Bulrathi/Gnolam~~ → **2026-08-08(第 65 項(種族特性31格))改由 `gamedata.OrigRaceTraits` 全 13 族驅動**;同時修掉諾蘭姆低重力被扣兩次的 bug,並補上薩克拉的地底(守方 +10)與布拉西的高重力(多挨一下)。
 - 簡化項(標記待精修,不臆造):運輸艦運力近似、AI 守方兵力用「已運作 s.Turn 回合」近似(AI 無 ColonyBuildings 追蹤)、AI 側不套種族加成(AIOpponent 無種族欄位——那一整層還不存在,不是漏接)、入侵後保留人口以「守方存活戰鬥單位數」近似(手冊無精確公式)、可入侵範圍僅限 AI 開局母星(`aiExpand` 佔領的星未建殖民地模型)。
 - 測試:`ground_invasion_test.go`(強攻方/強守方勝率、前置條件檢查、可重現性、Marine Barracks 成長上限、載運上限)。
@@ -84,12 +92,12 @@
   `ActiveFreighters` 可變非 0,維護費隨之生效;AI 對手仍未接同一建造流程,對 AI 恆 0)。
 
 ### 3. 艦艇設計(空間格)
-- **(2026-07-11)shell/gamedata 層已完成**:`internal/gamedata/shipspace.go` 建了艦體總空間表(`ShipHullSpace`,手冊 p.121 確認值)+ 武器佔格表(`WeaponSpaceByName`,手冊 p.124 確認值);`internal/shell/session.go` 的 `ShipDesignSpaceUsed`/`ShipDesignFits` 接進四下拉模型驗證設計是否超格。細節、估計值標註(特殊系統佔格手冊無數字,5% 估計)、與「裝甲/護盾不佔空間」的手冊澄清見 `ship-design-space.md`。**仍待**:武器改裝(mod)對佔格的影響(手冊已有公式,未接線)、Design Dock 畫面 UI 繪製(不碰 `interactive.go`,歸後續 task)。
+- **(2026-08-09)設計／佔格層已接**:`internal/gamedata/shipspace.go` 建了艦體總空間表(`ShipHullSpace`,手冊 p.121 確認值)+ 武器佔格表(`WeaponSpaceByName`,手冊 p.124 確認值);`internal/shell/session.go` 的 `ShipDesignSpaceUsed`/`ShipDesignFits` 接進四下拉模型驗證設計是否超格。武器改裝(mod)與火線角的設計佔格／成本、UI 及保存已接；特殊系統未有手冊精確空間數字的估計值仍見 `ship-design-space.md`。**仍待**:火線角的戰術扇形命中消費端與小型化等級門檻。
 
 ### 4. 其他自編
 - `advancePopulation` 的 `popGrowthThreshold=300` 是 remake 調校值(存檔 pop_growth 未能乾淨反推,已在 session.go 標註 provenance)。
 - 隨機事件、安塔蘭、外交:多為簡化,`morale.go`/`ground.go` 等可漸進接。
-- **間諜(2026-07-11 更新)**:`gamedata/spy.go` 的機率公式已接上最小可玩迴圈(`internal/shell/spy.go`:`TrainSpy` + `advanceEspionage`,只做偷科技 STEAL,防禦 Agent/破壞 SABOTAGE/逐對手分配任務選單延後)。詳見 `docs/tech/spy-system.md`。
+- **間諜／外交(2026-08-11 更新)**:`gamedata/spy.go` 的機率公式已接上 STEAL/SABOTAGE/HIDE 可玩迴圈(`TrainSpy`、`PlayerSpyMissions`、`advanceEspionage`)，HIDE 套用 SpyVsSpy +20 並跳過偷科技；SABOTAGE 依原版 70 門檻與 `0x10130A`／`0x145EA` 清除 AI 殖民地的一棟已建建築，候選已改用原版 49 槽成本表（slot 9 跳過、權重讀 production cost +8）。AI → 玩家也依 personality 接上 SABOTAGE，會實際讀玩家建築池；這是 remake policy，不是原版完整 AI 策略。外交畫面已接和平／互不侵犯／同盟、貿易／研究協議、固定 5%／10% 週期納貢、終止、回合收益與存檔，原版政府倍率、神級商人 +50 個百分點與活動 Trader 經驗 bucket 的 tier 1/2 最大加成也已接。remake 端的 SABOTAGE 結構化 AB／DB／E、Agent 訓練／擊殺消費已接；原版 raw 完整分數／特殊槽位、一次性餽贈、特殊貿易 byte table／創造力係數、AI 防守 Agent/政體資料仍未知。詳見 `docs/tech/spy-system.md`、`docs/re/special-trade-sabotage-leader-eta-20260811.md` 與 `docs/RESEARCH-LOG.md`。
 - **議會/勝利條件:2026-07-11 已從「完全沒有」接上兩條路徑**(銀河議會選舉 2/3 超級多數、殲滅所有
   對手),沿用先前死碼的 `internal/engine/victory.go` + 新增 `gamedata/council.go`/`shell/council.go`。
   詳見獨立文件 `docs/tech/victory-conditions.md`(手冊逐字引用 + 資料模型限制 + TODO)。

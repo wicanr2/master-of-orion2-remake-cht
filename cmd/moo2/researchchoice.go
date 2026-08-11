@@ -88,11 +88,11 @@ func (s *researchChoiceScreen) draw(dst *ebiten.Image) {
 	body := color.RGBA{206, 218, 240, 255}
 	dim := color.RGBA{150, 160, 180, 255}
 
-	s.fnt.DrawCentered(dst, s.b.tr("研究突破:選擇要解鎖的科技", "BREAKTHROUGH — choose the technology to unlock"),
+	s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.b.tr("研究突破:選擇要解鎖的科技", "BREAKTHROUGH — choose the technology to unlock"), 18, 600),
 		320, 70, 18, gold)
 	topicName := topicNameZh(s.b.lang, s.topic)
-	s.fnt.DrawCentered(dst, s.b.tr("主題:"+topicName+"(僅能擇一,其餘放棄)",
-		"Field: "+topicName+" (pick one; the rest are forfeited)"), 320, 104, 12, dim)
+	s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.b.tr("主題:"+topicName+"(僅能擇一,其餘放棄)",
+		"Field: "+topicName+" (pick one; the rest are forfeited)"), 12, 600), 320, 104, 12, dim)
 
 	for i, t := range s.choices {
 		x, y, w, h := s.rowRect(i)
@@ -104,6 +104,6 @@ func (s *researchChoiceScreen) draw(dst *ebiten.Image) {
 		}
 		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), bgc, false)
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, bord, false)
-		s.fnt.DrawCentered(dst, s.techZh(t), float64(x+w/2), float64(y+h/2), 16, body)
+		s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.techZh(t), 16, float64(w-12)), float64(x+w/2), float64(y+h/2), 16, body)
 	}
 }

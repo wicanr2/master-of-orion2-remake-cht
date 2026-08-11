@@ -225,6 +225,10 @@ func (s *loadGameScreen) doSave() *origTransition {
 		return nil
 	}
 	path := s.slots[s.selected].Path
+	if s.slots[s.selected].NativeGAM {
+		// 原版 `.GAM` 只可作匯入來源；覆寫同一槽時另建 remake JSON。
+		path = shell.SaveSlotPath(saveDirFor(), s.selected)
+	}
 	if err := s.b.session.Save(path); err != nil {
 		fmt.Fprintln(os.Stderr, "存檔失敗:", err)
 		s.msg = s.b.tr("寫不進去(磁碟或權限問題)", "Could not write the file (disk or permissions).")
@@ -254,7 +258,13 @@ func (s *loadGameScreen) doLoad() *origTransition {
 		s.b.session.SetMercCandidates(s.b.herodataMercs) // 讀檔建的是新 session,重注入真英雄池
 	}
 	// 之後的自動存檔要寫回同一格,不然玩家讀了第 3 格、存檔卻跑去覆蓋自動存檔格。
-	s.b.savePath = s.slots[s.selected].Path
+	// 原版 `.GAM` 是唯讀匯入來源；讀入後的自動／手動存檔要落到同槽的
+	// remake JSON，不能沿用 `.GAM` 路徑覆寫原始存檔。
+	if s.slots[s.selected].NativeGAM {
+		s.b.savePath = shell.SaveSlotPath(saveDirFor(), s.selected)
+	} else {
+		s.b.savePath = s.slots[s.selected].Path
+	}
 	return s.b.goTo(s.b.galaxy, "星系主畫面")
 }
 

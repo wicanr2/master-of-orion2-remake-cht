@@ -40,7 +40,8 @@ import (
 //     (session.go recoverFromFamine 下回合才會修正回 farmer)。「全農」是任務指示明列的簡單
 //     保守預設之一,避免這個不必要的首回合饑荒瞬間,標記於此供 L.CY 檢視。
 //
-//  3. PopMax:gamedata.PlanetBasePopMax(size, climate),公式移植自 openorion2
+//  3. PopMax:一般族使用 gamedata.PlanetBasePopMax(size, climate);水生／環境耐受／穴居
+//     先套手冊明定的氣候對映與人口上限修正,基礎公式移植自 openorion2
 //     gamestate.cpp:2288 GameState::planetMaxPop,已與手冊 p.55-56 各尺寸人口範圍交叉驗證
 //     (見該函式註解逐項推導),非本檔案臆造。
 //
@@ -291,7 +292,10 @@ func (s *GameSession) newColonyFromPlanet(planetIdx int, gov gamedata.MoraleGove
 	// 原住民:殖民船帶來的 1 個人口單位之外,原版再加 3 個原住民人口單位(全部是農夫)。
 	startPop := colonizeStartPopulation + gamedata.SpecialExtraPopulationOnColonize(special)
 
-	foodPerFarmer := gamedata.ClimateFoodPerFarmer(climate) + foodBonus +
+	aquatic := s.raceHasTrait(gamedata.TRAIT_AQUATIC)
+	tolerant := s.raceHasTrait(gamedata.TRAIT_TOLERANT)
+	subterranean := s.raceHasTrait(gamedata.TRAIT_SUBTERRANEAN)
+	foodPerFarmer := gamedata.ClimateFoodPerFarmer(raceFoodClimate(climate, aquatic)) + foodBonus +
 		gamedata.SpecialFoodPerFarmerBonus(special) // 原住民:手冊「+2 food production advantage」
 	industryPerWorker := gamedata.MineralIndustryPerWorker(mineral) + indBonus
 	// 每科學家研究用銀河基準 3(gamedata.ResearchPerScientistNorm)。
@@ -304,7 +308,7 @@ func (s *GameSession) newColonyFromPlanet(planetIdx int, gov gamedata.MoraleGove
 		researchPerScientist = n + resBonus
 	}
 
-	popMax := gamedata.PlanetBasePopMax(size, climate)
+	popMax := racePopulationMax(size, climate, aquatic, tolerant, subterranean)
 	if popMax < startPop {
 		popMax = startPop // 保底:新殖民地的人口上限不能低於起始人口本身
 	}
@@ -320,7 +324,14 @@ func (s *GameSession) newColonyFromPlanet(planetIdx int, gov gamedata.MoraleGove
 		PlanetGravity:        gravity,
 		MineralRichness:      mineral,
 		Climate:              climate,
-		MoralePercent:        colonyMoralePercent(gov, nil, false, 0), // 新殖民地無任何建築、無外族人口(自己拓殖的),見檔頭§2
+		// 玩家新殖民地在建立當下就帶入種族布林特性,不必等下一個 EndTurn 才讓殖民地畫面
+		// 顯示正確的食物消耗/污染結果。AI 呼叫端會在下方另依 AI 自己的種族覆寫這兩欄。
+		Lithovore:     s.RaceLithovore(),
+		Cybernetic:    s.RaceCybernetic(),
+		TolerantRace:  s.RaceTolerant(),
+		Aquatic:       aquatic,
+		Subterranean:  subterranean,
+		MoralePercent: colonyMoralePercent(gov, nil, false, 0), // 新殖民地無任何建築、無外族人口(自己拓殖的),見檔頭§2
 		// 金礦 +5 / 寶石礦 +10 BC/回合(手冊逐字)。SpecialIncome 是殖民地層的固定收入,
 		// 由 engine.RunEmpireTurn 併進帝國總收入。
 		SpecialIncome: gamedata.SpecialIncomePerTurn(special),
@@ -345,6 +356,7 @@ func (s *GameSession) newColonyFromPlanet(planetIdx int, gov gamedata.MoraleGove
 // MarineBarracksAge/PlayerColonyTanks/ArmorBarracksAge/popAccum/PlayerColonyStars,padding 模式
 // 比照 InvadeColony 既有慣例),Star.Owner 轉 1,並從 s.Fleet().Ships 移除用掉的那艘殖民船。
 func (s *GameSession) ColonizeStar(starIdx int) ColonizationResult {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdColonizeStar, Args: []int{starIdx}})
 	p := s.FirstColonizablePlanet(starIdx)
 	if p < 0 && starIdx >= 0 && starIdx < len(s.Stars) {
 		// 挑不到可拓殖的行星時,仍走下面的完整檢查,好把**真正的原因**講出來
@@ -452,6 +464,7 @@ func (s *GameSession) ColonyIndexOnPlanet(planet int) int {
 //
 // 敵方(Owner==2)的星系仍然不能拓殖——那要打下來。
 func (s *GameSession) ColonizePlanet(planetIdx int) ColonizationResult {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdColonizePlanet, Args: []int{planetIdx}})
 	if planetIdx < 0 || planetIdx >= len(s.Planets) {
 		return ColonizationResult{Reason: "無效的行星索引"}
 	}

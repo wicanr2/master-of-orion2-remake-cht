@@ -244,7 +244,7 @@ func (s *chooseMultiNetGameScreen) draw(dst *ebiten.Image) {
 	// 標題:原版烘的是 "JOIN NETWORK GAME SETUP",中文要擦底疊上去。
 	fillPanel(dst, float32(winX+86), float32(winY+26), 308, 26,
 		color.RGBA{24, 27, 34, 255}, false)
-	s.b.fnt.DrawCentered(dst, s.b.tr("選擇要加入的對局", "Choose a network game"),
+	s.b.fnt.DrawCentered(dst, truncateToWidth(s.b.fnt, s.b.tr("選擇要加入的對局", "Choose a network game"), 16, 380),
 		float64(winX+cmngPanelW/2), float64(winY)+30, 16, gold)
 
 	const glyphH = 13
@@ -257,19 +257,19 @@ func (s *chooseMultiNetGameScreen) draw(dst *ebiten.Image) {
 			vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1, gold, false)
 			col = hot
 		}
-		s.b.fnt.Draw(dst, g.Name, float64(x+cmngTextDX),
+		s.b.fnt.Draw(dst, truncateToWidth(s.b.fnt, g.Name, glyphH, 110), float64(x+cmngTextDX),
 			float64(cmngTextTop(winY, i, glyphH)), glyphH, col)
-		s.b.fnt.Draw(dst, g.Addr, float64(x+cmngTextDX+120),
+		s.b.fnt.Draw(dst, truncateToWidth(s.b.fnt, g.Addr, 11, float64(w-cmngTextDX-162)), float64(x+cmngTextDX+120),
 			float64(cmngTextTop(winY, i, 11)), 11, dim)
 		s.b.fnt.Draw(dst, fmt.Sprintf("%d/%d", g.Players, g.Max),
 			float64(x+w-42), float64(cmngTextTop(winY, i, 11)), 11, dim)
 	}
 
 	if len(s.games) == 0 {
-		s.b.fnt.DrawCentered(dst, s.b.tr("區網上沒有偵測到對局", "No games found on the LAN"),
+		s.b.fnt.DrawCentered(dst, truncateToWidth(s.b.fnt, s.b.tr("區網上沒有偵測到對局", "No games found on the LAN"), 13, 380),
 			float64(winX+cmngPanelW/2), float64(winY+cmngRowFirst)+40, 13, dim)
 		s.b.fnt.DrawCentered(dst,
-			s.b.tr("主機端要先在多人設定按「開始新遊戲」", "The host must start a game first"),
+			truncateToWidth(s.b.fnt, s.b.tr("主機端要先在多人設定按「開始新遊戲」", "The host must start a game first"), 11, 380),
 			float64(winX+cmngPanelW/2), float64(winY+cmngRowFirst)+62, 11, dim)
 	}
 
@@ -278,17 +278,17 @@ func (s *chooseMultiNetGameScreen) draw(dst *ebiten.Image) {
 	// 所以擺在清單外面而不是塞進原版的版面裡。
 	dx, dy, dw, dh := cmngDirectRect(winX, winY)
 	vector.StrokeRect(dst, float32(dx), float32(dy), float32(dw), float32(dh), 1, dim, false)
-	s.b.fnt.DrawCentered(dst, s.b.tr("直接輸入位址", "Enter address"),
+	s.b.fnt.DrawCentered(dst, truncateToWidth(s.b.fnt, s.b.tr("直接輸入位址", "Enter address"), 12, float64(dw-10)),
 		float64(dx+dw/2), float64(dy)+5, 12, body)
 
 	// 底下那顆鈕的位置是反組譯真值(欄位左上角);寬高是量的,原版沒有給。
 	bx, by := winX+cmngBtnX, winY+cmngBtnY
 	fillPanel(dst, float32(bx-2), float32(by-4),
 		float32(cmngBtnW), float32(cmngBtnH), color.RGBA{150, 148, 138, 255}, false)
-	s.b.fnt.DrawCentered(dst, s.b.tr("返回", "CANCEL"),
+	s.b.fnt.DrawCentered(dst, truncateToWidth(s.b.fnt, s.b.tr("返回", "CANCEL"), 13, float64(cmngBtnW-10)),
 		float64(bx-2+cmngBtnW/2), float64(by)-1, 13, color.RGBA{28, 28, 24, 255})
 	if s.msg != "" {
-		s.b.fnt.DrawCentered(dst, s.msg, float64(winX+cmngPanelW/2),
+		s.b.fnt.DrawCentered(dst, truncateToWidth(s.b.fnt, s.msg, 12, float64(cmngPanelW-24)), float64(winX+cmngPanelW/2),
 			float64(by)-26, 12, color.RGBA{240, 170, 140, 255})
 	}
 }

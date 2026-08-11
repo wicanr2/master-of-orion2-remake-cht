@@ -878,3 +878,58 @@ func TestDefenderIncludesMilitia(t *testing.T) {
 		t.Error("民兵的攻擊力調整應為負(比陸戰隊弱)")
 	}
 }
+
+// TestAIArmorBarracksFeedsGroundDefense 驗證 AI 的裝甲營房不是只存在於建築 map：
+// 建成後會產生類型 0 的戰車營，並反映在入侵前的守方總兵力。
+func TestAIArmorBarracksFeedsGroundDefense(t *testing.T) {
+	withoutArmor, star := newFleetAtAIHomeSession(t)
+	withoutArmor.AIPlayers[0].Colonies[0].Population = 40
+	withoutArmor.AIPlayers[0].Colonies[0].PopMax = 40
+	withoutArmor.Fleet().Marines = 1
+	base := withoutArmor.InvadeColony(star)
+
+	withArmor, star := newFleetAtAIHomeSession(t)
+	withArmor.AIPlayers[0].Colonies[0].Population = 40
+	withArmor.AIPlayers[0].Colonies[0].PopMax = 40
+	withArmor.AIPlayers[0].ColonyBuildings[0][armorBarracksBuildingName] = true
+	advanceAIGroundForces(&withArmor.AIPlayers[0])
+	if withArmor.AIPlayers[0].ColonyTanks[0] != gamedata.GroundArmorBarracksInitialUnits {
+		t.Fatalf("AI 裝甲營房初始戰車營應為 %d,got %d", gamedata.GroundArmorBarracksInitialUnits, withArmor.AIPlayers[0].ColonyTanks[0])
+	}
+	withArmor.Fleet().Marines = 1
+	armored := withArmor.InvadeColony(star)
+	if !base.Ok || !armored.Ok {
+		t.Fatalf("兩次入侵前置條件都應成立: base=%+v armored=%+v", base, armored)
+	}
+	if armored.DefenderStart <= base.DefenderStart {
+		t.Fatalf("加入裝甲營房後守方兵力應增加:無裝甲=%d 有裝甲=%d", base.DefenderStart, armored.DefenderStart)
+	}
+}
+
+// TestInvadeColony_PreservesCapturedPopulation 驗證原版人口欄位與地面戰鬥單位欄位
+// 不混用：攻下殖民地後 Population 應保留原始值，未同化人口也應以該值開始。
+func TestInvadeColony_PreservesCapturedPopulation(t *testing.T) {
+	s, star := newFleetAtAIHomeSession(t)
+	ai := &s.AIPlayers[0]
+	ai.Colonies[0].Population = 20
+	ai.Colonies[0].PopMax = 40
+	originalPopulation := ai.Colonies[0].Population
+	s.Fleet().Marines = 200
+	res := s.InvadeColony(star)
+	if !res.Ok || !res.AttackerWon {
+		t.Fatalf("大量陸戰隊應攻下 AI 殖民地: %+v", res)
+	}
+	if len(s.PlayerColonies) < 2 {
+		t.Fatal("攻下殖民地後應新增玩家殖民地")
+	}
+	captured := s.PlayerColonies[len(s.PlayerColonies)-1]
+	if captured.Population != originalPopulation {
+		t.Fatalf("佔領後人口應保留 %d,got %d(DefenderSurvived=%d)", originalPopulation, captured.Population, res.DefenderSurvived)
+	}
+	if captured.UnassimilatedPop != originalPopulation {
+		t.Fatalf("佔領後未同化人口應為原始人口 %d,got %d", originalPopulation, captured.UnassimilatedPop)
+	}
+	if s.CapturedPop != originalPopulation {
+		t.Fatalf("CapturedPop 應累計原始俘虜人口 %d,got %d", originalPopulation, s.CapturedPop)
+	}
+}

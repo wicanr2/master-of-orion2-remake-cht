@@ -92,6 +92,7 @@ func (s *GameSession) PendingResearchChoice() (topic gamedata.ResearchTopic, cho
 
 // ChooseResearchTech 把目前待決主題改選為 tech(須為合法選項),回傳是否成功。
 func (s *GameSession) ChooseResearchTech(tech gamedata.Technology) bool {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdChooseResearch, Args: []int{int(tech)}})
 	ps, ok := engine.ApplyResearchChoice(s.Player, tech)
 	if ok {
 		s.Player = ps
@@ -110,6 +111,10 @@ func (s *GameSession) ChosenTechFor(topic gamedata.ResearchTopic) (gamedata.Tech
 
 // SetResearchTopic 切換玩家目前研究主題;若切到不同主題則歸零進度(換題重來)。
 func (s *GameSession) SetResearchTopic(t gamedata.ResearchTopic) {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdSetResearch, Args: []int{int(t)}})
+	if !gamedata.IsResearchableTopic(t) {
+		return
+	}
 	if s.Player.ResearchTopic == t {
 		return
 	}

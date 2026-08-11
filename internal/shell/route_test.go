@@ -80,11 +80,15 @@ func TestRouteBlackHoleIgnoresEndpoints(t *testing.T) {
 func TestRouteBlackHoleNavigatorExemption(t *testing.T) {
 	w, h := gamedata.GalaxyParsecSpan(1)
 	s := routeTestSession([][2]float64{{0, 0}, {12 / w, 0}})
+	s.Fleets = []Fleet{{Ships: []Ship{{Name: "測試艦"}}, AtStar: 0, DestStar: -1}}
 	s.Stars[2] = Star{X: 6 / w, Y: 1 / h, Spectral: blackHoleSpectral, Wormhole: -1}
 	if !s.RouteBlockedByBlackHole(0, 1) {
 		t.Fatal("前提不成立:這條航線本來就該被擋")
 	}
 	s.Leaders = append(s.Leaders, Leader{Name: "領航員", Skill: navigatorSkillLabel, Ship: true, Tier: 1})
+	if len(s.Fleet().Ships) == 0 || !s.AssignOfficerToShip(0, 0, len(s.Leaders)-1) {
+		t.Fatal("黑洞豁免測試需要先把領航員指派到艦艇")
+	}
 	if s.RouteBlockedByBlackHole(0, 1) {
 		t.Error("有艦艇領航員時不該被黑洞擋住(手冊括號那句)")
 	}

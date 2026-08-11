@@ -129,8 +129,12 @@ Fade_Music_Up / Down     Register_Music_Callback_  Play_Streaming_Music_1H
 三個可直接下結論的架構事實:
 
 1. **`Play_Combat_Music_` 與 `Play_Background_Music_` 是兩個獨立函式**——戰鬥音樂是專屬派發,不是背景樂的延伸或子集。支持「combat 應該選一條與一般場景曲截然不同的曲目」。
-2. **`Start_Diplomacy_Music_` 搭配 `_diplomacy_good_music` / `_diplomacy_bad_music` 兩個獨立變數**——外交畫面的音樂**依當下與該族關係好壞切換**,不是「每族固定一首」的單曲模型。目前 remake 用單一 `bgmDiplo` 常數是**簡化實作**,不是曲目選錯,而是好/壞分支尚未做(見「待辦」)。
+2. **`Start_Diplomacy_Music_` 搭配 `_diplomacy_good_music` / `_diplomacy_bad_music` 兩個獨立變數**——外交畫面的音樂**依當下與該族關係好壞切換**,不是「每族固定一首」的單曲模型。remake 現在已接上「逐族好關係曲目 + 壞關係曲池」；其中 `relation >= 0` 是 remake 的可見代理規則，原版真正的分支門檻仍列為 oracle 待確認，不能把代理規則寫成原版定論。
 3. `DIPLOMSE/DIPLOMSF/DIPLOMSG/DIPLOMSI/DIPLOMSP/DIPLOMSS.LBX` 經確認是外交**文字**的語言別(英/法/德/義/波/西),與種族無關,不要誤讀成「6 個外交場景」。
+
+本節的原版靜態 oracle 交叉檢查見
+[`docs/re/oracle-static-ida-20260811.md`](../re/oracle-static-ida-20260811.md)。該批次使用既有
+`Orion2.exe.i64`，保留 IDA 的 `sub_`／`word_` 原始定位；沒有把外部符號表名稱覆蓋進資料庫。
 
 （`ORION95.EXE` 為 PE32,無 COFF symbol table,對應不到函式位置,故用 DOS 版字串;兩者都在同一 gamedata 目錄,SETSOUND.EXE 內只有 MIDI 驅動設定字串,與曲目對應無關,亦排除。）
 
@@ -192,7 +196,7 @@ docker run --rm --log-opt max-size=10m --log-opt max-file=3 \
 - [x] 外交「壞關係」音樂已取得呼叫點硬證(`Get_Random(3)+13` → track 13/14/15 三選一,見第七節);「好關係」音樂證實為逐族資料表驅動,尚未取得資料表本身數值。
 - [ ] 若能取得 khinsider/VGMdb 的可讀頁面(目前 403),或找到 STREAMHD 逐條播放對照表,回填第 5.4 節的「哪個配對=哪一族」。
 - [x] **`_diplomacy_good_music` 的公式已解**:`該族種族索引 + 1`。`[帝國紀錄+0x25]` 是種族索引本身(`sub_12983` 帝國建立時 `Random_(13,1)` 挑到不重複再寫入,並用同一個索引查 `dword_192630[idx*4]` 取名字)。**先前記著的「逐族靜態表」不存在。**
-- [ ] 追出 `Start_Diplomacy_Music_` 的**呼叫端**,確認原版依什麼條件判定「關係好/壞」(remake 目前用關係分數 >= 0,是 remake 的讀法)。
+- [ ] 追出 `Start_Diplomacy_Music_` 的**呼叫端**,確認原版依什麼條件判定「關係好/壞」(remake 目前用關係分數 >= 0,是 remake 的代理規則；不是原版門檻)。
       ⚠ **位址要用 IDA 資料庫的線性位址,不是除錯表的 `obj1+` 偏移**——兩者差 `0x10000`(object base),
       這個坑讓第二輪把 `Play_Background_Music_` 誤判成死碼(見 §7.5)。`obj1+0x9082` → 線性 `0x19082`。
 - [x] ~~追 offset+0x25 的「逐族預設值」靜態表~~ **那張表不存在**:`+0x25` 就是種族索引(見上)。
@@ -240,43 +244,43 @@ docker run --rm --log-opt max-size=10m --log-opt max-file=3 \
 | `_diplomacy_fade_music_flag` | 2(data) | `0x22a38` | 順帶解出,用途未追 |
 | `_response_message` | 2(data) | `0x22a40` | **易混淆記錄**:夾在 good_music 和 current_music 之間,本輪一度誤猜是音樂變數,查完整符號表後證實是對話文字 ID,與音樂無關 |
 
-### 7.3 `Start_Diplomacy_Music_`:呼叫點與函式本體(高信心)
+### 7.3 `Start_Diplomacy_Music_`:位址勘誤與目前可證實範圍（2026-08-11）
 
-除錯表記載位址 `0xd0d5` 反組譯後開頭是 `adc eax,...`、`mov edx,1`……不像函式起點;往下 27 bytes 在 `0xd0f0` 才出現乾淨的 `push ebx;push ecx;push edx;push esi;push edi;enter 0x18,0`,且其正前方剛好是另一個函式的 `ret`——判斷 `0xd0f0` 才是真正進入點,`0xd0d5` 可能對應除錯表裡的其他標記(未進一步查明原因,不影響下面的呼叫點結論)。
+舊 ledger 把 object #1 `0xD0F0`（IDA 線性 `0x1D0F0`）標成
+`Start_Diplomacy_Music_` body；IDA Pro 9.4 直接開啟既有 `Orion2.exe.i64` 時，該位址只呈現
+短小 `sub_1D0F0`／未建立函式邊界，不能支持那個語意。這個舊地址與名稱保留在
+[`docs/re/oracle-static-ida-20260811.md`](../re/oracle-static-ida-20260811.md) 作為可追溯勘誤，
+不再當作新證據。
 
-用「掃全部 353 頁 code object 的每一個 byte、抓 `E8`(CALL rel32)、算目的位址」的暴力法(涵蓋所有對齊與非對齊情形),在整個 code object 裡**唯一一處**呼叫目的地等於 `0xd0f0`:
+目前 IDA 可直接回查的外交音樂賦值鏈位於 `sub_1B92E`（`0x1B92E`）的
+`0x1BD2B..0x1BD50`；逐族欄位、壞曲亂數與全域寫入請見下一節。好／壞切換的外交關係門檻
+仍沒有 `VESA.COM`／DOSBox runtime 證據，remake 的 `relation >= 0` 只是一個可見代理規則。
 
-- 呼叫點:object1 偏移 `0xa67`(`call 0xd0f0`),呼叫前**沒有任何引數設置**(前面是連續 4 個無參數呼叫:`call 0xc9f20; call 0xc10a4; call 0xd35d; call 0xd0f0; call 0x3dc7c`)——`Start_Diplomacy_Music_` 是 **void 函式**,不接收場景/種族參數。
+### 7.4 `_diplomacy_good_music` / `_diplomacy_bad_music` 的實際賦值（IDA Pro 直接回查）
 
-`Start_Diplomacy_Music_` 本體(`0xd0f0`–`0xd4d1`,以 `ret` 為界確認)是雙層迴圈掃過所有 empire 兩兩配對(迴圈上界 = `word ds:0x21998`,可能是「目前玩家數」),讀每個 empire 3753-byte(`0xea9`)記錄(base 指標在全域 `ds:0x1ff98`)裡偏移 `0x24`/`0x28` 的關係狀態欄位,偵測「關係翻轉」並更新配對記錄;函式本體內**沒有**直接寫入 `_diplomacy_good_music`/`_diplomacy_bad_music` 或呼叫 `Play_*` 系列函式。
-
-### 7.4 `_diplomacy_good_music` / `_diplomacy_bad_music` 的實際賦值(高信心,硬證)
-
-在 code object 裡搜尋所有直接寫入這兩個變數位址(`0x22a3c`/`0x22a46`)的指令,各找到**唯一一處**(皆在 object1 偏移 `0x9082`–`0x90c6` 一段無名函式內,與 `Start_Diplomacy_Music_` 相鄰但非同一函式;此函式本身在除錯表裡對應的符號名未查出):
+以 IDA 線性位址記錄可回查的最小資料流：
 
 ```asm
-; object1+0x908c .. +0x90a8   ── _diplomacy_good_music
-908c: movsx eax, di                    ; eax = 種族索引(來源:外層迴圈變數)
-908f: imul  eax, eax, 0xea9            ; eax = 種族索引 * 3753(該族記錄的 stride)
-9095: mov   edx, [ds:0x1ff98]          ; edx = empire 記錄陣列 base(全域指標)
-909b: movzx ax, byte [edx+eax+0x25]    ; ax  = 該族記錄.byte[0x25]   ← 逐族資料
-90a1: inc   eax                        ; ax += 1
-90a2: mov   ds:0x22a3c, ax             ; _diplomacy_good_music = 該族記錄.byte[0x25] + 1
-
-; object1+0x90ad .. +0x90c0   ── _diplomacy_bad_music
-90a8: mov   eax, 0x3                   ; eax = 3(Get_Random 的上界參數)
-90ad: mov   word ds:0x22a44, 0xffff    ; _diplomacy_current_music = 0xFFFF(重置為「無播放」哨兵值)
-90b6: call  0x111b10                   ; Get_Random(3) → eax = 0,1,2(均勻亂數,見下方驗證)
-90bb: add   eax, 0xd                   ; eax += 13
-90c0: mov   ds:0x22a46, ax             ; _diplomacy_bad_music = Get_Random(3) + 13
+; sub_1B92E / Diplomacy_Load_New_Ambassador
+1BD2B: movzx ax, byte ptr [edx+eax+25h] ; empire_base + 0xEA9*族索引 + 0x25
+1BD31: inc eax
+1BD32: mov word_19AA3C, ax              ; 外部 fixed ledger 標為 good_music
+1BD38: mov eax, 3
+1BD3D: mov word_19AA44, 0FFFFh          ; reset current sentinel
+1BD46: call sub_1247A0
+1BD4B: add eax, 0Dh
+1BD50: mov word_19AA46, ax              ; 外部 fixed ledger 標為 bad_music
 ```
 
-**`0x111b10` 驗證為標準亂數函式**:反組譯其本體看到 `0xFFFFFFFF / N` 拒絕取樣門檻計算,接著用乘數 `0x41C64E6D`(=1,103,515,245)、加數 `0x3039`(=12,345)——這正是經典 C 函式庫 `rand()` 的 LCG 常數(POSIX/minstd 慣用值),確認 `Get_Random(N)` 語意 = 回傳 `[0, N-1]` 均勻亂數。
+`sub_1247A0`（`0x1247A0`）內的拒絕取樣與 `0x41C64E6D`／`0x3039` LCG 讓
+`sub_1247A0(3)+13` 的範圍可靜態確認為 13、14、15。`symbols_fixed.tsv` 與 `symbols_full.tsv`
+對同一 raw 全域的別名不一致，所以仍保留 `word_19AA3C`、`word_19AA44`、`word_19AA46`；
+「good／current／bad」是外部符號索引的強推論，不是工具資料庫原始名稱。
 
-**結論(STREAMHD track index,0-based,對應 `musicClips[i]`)**:
-
-- **外交「壞關係」音樂 = `Get_Random(3) + 13` → track 13、14 或 15 三選一(均勻亂數)。** 高信心,無歧義,可直接寫入常數。
-- **外交「好關係」音樂 = 該族 empire 記錄 offset `0x25` 欄位 + 1。** 這是**逐族資料驅動**,不是單一常數;本輪未能追出該欄位的靜態預設值表(欄位在**執行期配置**的 empire 記錄裡,其初始值理論上來自一張「各族預設資料」的靜態表,但本輪未定位到該表——列入待辦)。**確定的結論是**:原版外交音樂本來就不是單一曲目,而是依「目前跟該族關係好/壞」動態切換,且「好關係」進一步依種族不同而不同。
+**結論**：原版外交音樂不是單一常數；好曲是逐族記錄欄位 + 1，壞曲是有界亂數 + 13。
+原版究竟以哪個外交關係門檻在好／壞間切換，仍需 `VESA.COM`／DOSBox 動態 oracle；remake
+使用 `relation >= 0` 是可見代理規則。完整輸入雜湊、工具版本與未知項目見
+[`docs/re/oracle-static-ida-20260811.md`](../re/oracle-static-ida-20260811.md)。
 
 ### 7.5 三個音樂入口(2026-08-08 用 `.i64` + 除錯符號表解出)
 

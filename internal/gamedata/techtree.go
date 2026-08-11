@@ -143,13 +143,23 @@ func AvailableTopics(completed map[ResearchTopic]bool) []ResearchTopic {
 	out := make([]ResearchTopic, 0, len(techtree))
 	for _, area := range techtree {
 		for _, t := range area {
-			if !completed[t] {
+			if IsResearchableTopic(t) && !completed[t] {
 				out = append(out, t)
 				break
 			}
 		}
 	}
 	return out
+}
+
+// IsResearchableTopic 回報主題是否能經由正常研究取得。
+//
+// TOPIC_STARTING_TECH 是開局內建狀態，不是研究項目；
+// TOPIC_XENON_TECHNOLOGY 則是原版只供 Antarans / Orions 持有的隱藏主題，
+// 手冊明載不能透過正常研究發現。兩者都必須排除在研究選單、AI 選題與自動推進之外。
+func IsResearchableTopic(t ResearchTopic) bool {
+	return t >= 0 && t < ResearchTopic(len(researchChoices)) &&
+		t != TOPIC_STARTING_TECH && t != TOPIC_XENON_TECHNOLOGY
 }
 
 // TechTree 回傳各研究領域的 ResearchTopic 清單,索引順序對應 enums.go 的 ResearchArea 常數

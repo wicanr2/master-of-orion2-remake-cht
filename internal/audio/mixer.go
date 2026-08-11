@@ -24,6 +24,13 @@ type Mixer struct {
 	sfxVol  float64
 }
 
+const (
+	// DefaultBGMVolume / DefaultSFXVolume 是目前 remake 的預設值。
+	// 音量本身沒有存檔格式需求；Mixer 生命週期涵蓋整個互動遊戲，因此切換畫面時保留。
+	DefaultBGMVolume = 0.6
+	DefaultSFXVolume = 0.9
+)
+
 // NewMixer 以指定取樣率建立 audio context(MOO2 音訊統一 22050 Hz)。
 // 一個行程只能有一個 context,故整個遊戲共用一個 Mixer。
 func NewMixer(sampleRate int) *Mixer {
@@ -31,8 +38,8 @@ func NewMixer(sampleRate int) *Mixer {
 		ctx:    ebiaudio.NewContext(sampleRate),
 		rate:   sampleRate,
 		sfx:    make(map[string]*ebiaudio.Player),
-		bgmVol: 0.6,
-		sfxVol: 0.9,
+		bgmVol: DefaultBGMVolume,
+		sfxVol: DefaultSFXVolume,
 	}
 }
 
@@ -117,8 +124,31 @@ func (m *Mixer) PlaySFX(name string) {
 	p.Play()
 }
 
-// SetVolumes 調整音樂/音效音量(0..1),即時套用到目前 BGM。
+// Volumes 回傳目前音樂與音效音量(0..1)。
+func (m *Mixer) Volumes() (bgm, sfx float64) {
+	if m == nil {
+		return DefaultBGMVolume, DefaultSFXVolume
+	}
+	return m.bgmVol, m.sfxVol
+}
+
+// ClampVolume 將 UI 或設定值夾在音訊播放器接受的 0..1 範圍。
+func ClampVolume(v float64) float64 {
+	if v < 0 {
+		return 0
+	}
+	if v > 1 {
+		return 1
+	}
+	return v
+}
+
+// SetVolumes 調整音樂/音效音量(0..1),即時套用到目前 BGM 與已註冊音效。
 func (m *Mixer) SetVolumes(bgm, sfx float64) {
+	if m == nil {
+		return
+	}
+	bgm, sfx = ClampVolume(bgm), ClampVolume(sfx)
 	m.bgmVol, m.sfxVol = bgm, sfx
 	if m.bgm != nil {
 		m.bgm.SetVolume(bgm)

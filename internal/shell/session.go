@@ -18,7 +18,14 @@ import (
 
 // AIOpponent 是一個由 AI 操控的對手帝國。
 type AIOpponent struct {
-	Name            string
+	Name string
+	// Color 是原版玩家記錄 +0x26 的 CMBTSHP 色塊索引；未知／舊存檔沿用
+	// demo 的相異色塊 fallback。ColorKnown 用來保留「raw color=0」這個合法值。
+	Color      int  `json:"color,omitempty"`
+	ColorKnown bool `json:"colorKnown,omitempty"`
+	// RaceIndex 是這個 AI 接管成真人時的種族索引。舊存檔缺欄位時為 0
+	// (人類),不影響原本只把 AI 當對手的路徑。
+	RaceIndex       int
 	Player          engine.PlayerState
 	Colonies        []engine.ColonyState
 	Decider         ai.Decider
@@ -31,7 +38,10 @@ type AIOpponent struct {
 	Personality ai.Personality
 	Relation    int    // 對玩家的外交關係分數(驅動 17 級 RelationLevel 與態勢)
 	StanceName  string // 目前對玩家態勢(中文;由 ai.DecideStance 推得)
-	OwnedStars  int    // 已擴張佔領的星數(含母星)
+	// Treaty 是玩家與這個 AI 的正式外交／經濟協議狀態。正式狀態與貿易、研究
+	// 旗標分開，對應原版 +0x627、+0x62F、+0x637 的資料形狀。
+	Treaty     TreatyState
+	OwnedStars int // 已擴張佔領的星數(含母星)
 
 	// --- AI 主力艦隊在星圖上的位置(2026-08-08 第 47 項(AI艦隊移動))---
 	//
@@ -44,12 +54,19 @@ type AIOpponent struct {
 	FleetPosSet   bool
 	FleetDestStar int // 只在 FleetETA > 0 時有意義
 	FleetETA      int // 0 = 靜止
+	// FleetTargetAI 是可選 AI 對 AI 戰爭的目標；FleetTargetAISet 避免舊存檔
+	// 的零值 0 被誤讀成「攻擊第 0 個 AI」。沒有目標時以 -1 表示。
+	FleetTargetAI    int
+	FleetTargetAISet bool
 
 	// Spies 是這個 AI 對手派來偷玩家科技的間諜數(見 spy.go advanceEspionage)。opt-in,
 	// 新對局預設 0(Go 零值恰好是想要的預設值,無零值陷阱)。AI 目前用簡單週期政策自動增加
 	// (見 advanceAI),不像玩家的 PlayerSpies 需要花 BC 呼叫 TrainSpy——AI 的訓練成本/BC
 	// 限制未建模,是誠實簡化而非疏漏(見 spy.go 檔頭說明)。
 	Spies int
+	// DefensiveAgents 是駐守本帝國、對所有來犯間諜共用的 Agent 數量。與
+	// Spies 分開，符合手冊 Spy(進攻)／Agent(防守) 的兩種 slot。
+	DefensiveAgents int
 
 	// LastRaidTurn 是這個 AI 上次對玩家發動突襲的回合(見 ai_attack.go),用來維持
 	// aiRaidInterval 的最短間隔。0 = 從未突襲(Go 零值即想要的預設值:第一次突襲最早
@@ -100,6 +117,19 @@ type AIOpponent struct {
 	// 行為與加這個欄位之前逐位元一致(hits 全部進人口,不會 panic)。
 	ColonyBuildings []map[string]bool
 
+	// ColonyMarines／ColonyTanks 是 AI 每座殖民地的駐軍池；後兩個平行陣列記錄兵營
+	// 已運作回合。它們對稱於玩家側的 PlayerColonyMarines／PlayerColonyTanks，讓
+	// AI 守方的 Armor Barracks 不再以「只看目前回合」猜測。舊存檔沒有這四欄時，
+	// 第一次使用會依現有建築以 age=0 建立安全的初始值；之後只依建築公式補充，
+	// 不會把已在戰鬥中損失的部隊憑空重算回來。
+	//
+	// 平行陣列同步點：buildDemoAIOpponents、aiExpand、transferAIColony、
+	// OfferStarGift、MindControlColony、InvadeColony 及 GAM 匯入／移除路徑。
+	ColonyMarines     []int
+	ColonyTanks       []int
+	MarineBarracksAge []int
+	ArmorBarracksAge  []int
+
 	// Leaders 是這個 AI 對手的領袖名單(欄位型別比照 GameSession.Leaders,同一個 shell.Leader
 	// struct)。2026-07-11 新增,唯一消費端目前是 InvadeColony 的守方 Commando 加成
 	// (commandoLeaderTier(aiPlayer.Leaders),見 ground_invasion.go)。
@@ -136,9 +166,10 @@ type Star struct {
 	X, Y     float64 // 0..1 正規化位置
 	Spectral int     // 0=藍 1=白 2=黃 3=橙 4=紅 5=棕 6=黑洞
 	Size     int     // 0=大 .. 3=小
-	Name     string
-	Owner    int  // 0=無主 1=玩家 2=AI
-	Explored bool // 艦隊是否曾抵達(已探索)
+	Name     string  // 目前語言的顯示名
+	NameEN   string  // 原版英文星名；供英文動態報告與存檔相容回退
+	Owner    int     // 0=無主 1=玩家 2=AI
+	Explored bool    // 艦隊是否曾抵達(已探索)
 	// Orbits 是這個星系 5 個軌道上的行星索引(OrbitEmpty = 空),對應原版
 	// `word[星×0x71 + 0x4A + 軌道×2]`。見 orbit.go(含「5 個軌道」的三個來源)。
 	//
@@ -167,9 +198,23 @@ type Ship struct {
 	Name                           string
 	Class                          string // 艦體等級(護衛艦/巡洋艦/戰艦…)
 	Weapon, Armor, Shield, Special string // 元件名
-	WeaponAttack, BonusHP          int    // 武器攻擊加成、裝甲+護盾 HP 加成
+	// CombatPicture 是原版艦艇記錄 +0xC4 的 raw picture 欄位。只有從 `.GAM`
+	// 或其他原版設計資料讀到它時才把 CombatPictureKnown 設為 true；零是合法
+	// picture，不能用零值本身判斷「未知」。
+	CombatPicture      int  `json:"combatPicture,omitempty"`
+	CombatPictureKnown bool `json:"combatPictureKnown,omitempty"`
+	// Arc 是目前單一武器掛載的火線角。零值代表舊 JSON 沒有這欄，讀取／戰鬥
+	// 邊界會依武器類型正規化；原版 save.ShipDesign.Weapons[i].Arc 是 uint8。
+	Arc gamedata.WeaponArc `json:"arc,omitempty"`
+	// OfficerName 是這艘船目前指派的艦艇軍官名稱;空字串=未指派。
+	// 原版 save.Ship 對應欄位是 int16 Officer;remake 同時保存 OfficerID，對應
+	// HERODATA／原版 `_leaders[]` 的 0..66 來源序號。名稱保留給舊 JSON 與人工編輯
+	// 的回退；指派與技能查詢見 officer_assignment.go。
+	OfficerName           string `json:"officer,omitempty"`
+	OfficerID             int    `json:"officer_id,omitempty"`
+	WeaponAttack, BonusHP int    // 武器攻擊加成、裝甲+護盾 HP 加成
 	// Mods 是掛載在 Weapon 上的武器改造(gamedata.WeaponModCode 字串,如 "HV"/"PD"),
-	// 只對 beam 武器生效(見 WeaponIsBeam / weapon_mods.go)。空切片/nil = 無改造(既有
+	// 只套用該武器類型支援的改造(見 WeaponModOptionsForWeapon)。空切片/nil = 無改造(既有
 	// 存檔沒有這個欄位,JSON 解碼會是 nil,行為與「無改造」完全一致,回歸安全)。
 	Mods []string
 	// Damage 是累積的結構損傷(0 = 完好)。remake 先前沒有艦艇損傷的概念——一艘船不是完好
@@ -241,12 +286,16 @@ var (
 		// 依手冊成本的**相對名次**插在既有鄰居之間——**那是 remake 的選擇,不是手冊值**。
 		{"離子脈衝砲", 100, 10, gamedata.TOPIC_ION_FISSION, gamedata.TECH_ION_PULSE_CANNON},
 		{"引力波束", 140, 15, gamedata.TOPIC_ARTIFICIAL_GRAVITY, gamedata.TECH_GRAVITON_BEAM},
-		{"質子魚雷", 150, 40, gamedata.TOPIC_HYPER_DIMENSIONAL_FISSION, gamedata.TECH_PROTON_TORPEDOES}, // 手冊 40(先前 25 是 A-M 魚雷那一格,第 79 項(武器表與艦體表)訂正)
+		{"質子魚雷", 150, 40, gamedata.TOPIC_HYPER_DIMENSIONAL_FISSION, gamedata.TECH_PROTON_TORPEDOES}, // 手冊 40
+		{"電漿魚雷", 360, 120, gamedata.TOPIC_INTERPHASED_FISSION, gamedata.TECH_PLASMA_TORPEDOES},      // 手冊 120;每格 −5,NR 可取消
 		{"脈衝飛彈", 170, 20, gamedata.TOPIC_MOLECULAR_COMPRESSION, gamedata.TECH_PULSON_MISSILE},
 		{"氙素飛彈", 220, 30, gamedata.TOPIC_MOLECULAR_MANIPULATION, gamedata.TECH_ZEON_MISSILE},
 		{"干擾者", 260, 40, gamedata.TOPIC_MULTIDIMENSIONAL_PHYSICS, gamedata.TECH_DISRUPTER_CANNON},
 		{"粒子束", 280, 30, gamedata.TOPIC_XENON_TECHNOLOGY, gamedata.TECH_PARTICLE_BEAM},
 		{"重錘裝置", 340, 100, gamedata.TOPIC_HYPER_DIMENSIONAL_PHYSICS, gamedata.TECH_MAULER_DEVICE},
+
+		// 魚雷三件組(手冊 p.125；傷害與佔格由 weapon_table.go 交叉核對)。
+		{"反物質魚雷", 130, 25, gamedata.TOPIC_ANTIMATTER_FISSION, gamedata.TECH_ANTIMATTER_TORPEDOES},
 
 		// 炸彈(第 64 項(武器傷害真表),手冊 p.126 的 BOMB 表)。**只能打行星**——見 WeaponKindBomb。
 		// 主題同樣取自執行檔;四項的執行檔 category 都是 19(炸彈),與手冊分類一致。
@@ -428,9 +477,9 @@ var (
 		{"戰鬥艙", 0, 0, gamedata.TOPIC_CAPSULE_CONSTRUCTION, gamedata.TECH_BATTLE_PODS},
 		// --- 登艦戰家族(第 80 項(登艦戰),見 boarding.go)---
 		// 手冊把登艦戰的解算方式直接指回地面戰,而那套解算器早就在了——缺的從來不是公式。
-		// 傳送器**仍然不在這張表上**:它的前置是「面向攻擊方的護盾已被打穿」,
-		// 而 remake 的護盾是每發固定減傷,既沒有分面也不會崩(理由寫在 boarding.go 檔頭)。
+		// 傳送器需要格子戰術的護盾分面狀態；命中鏈在 interactive.go 接上該面減傷與容量。
 		{"突擊艇", 0, 0, gamedata.TOPIC_ADVANCED_ENGINEERING, gamedata.TECH_ASSAULT_SHUTTLES},
+		{"傳送器", 0, 0, gamedata.TOPIC_MATTER_ENERGY_CONVERSION, gamedata.TECH_TRANSPORTERS},
 		{"保安站", 0, 0, gamedata.TOPIC_POSITRONICS, gamedata.TECH_SECURITY_STATIONS},
 		// --- 匿蹤家族 + 測距瞄準器 + 能量吸收器(見 cloak.go / energy_absorber.go)---
 		// 這四項先前都在「擋門理由已經過期或本來就錯」那一格,共通點是**手冊給了確切數字**,
@@ -735,8 +784,18 @@ type combatant struct {
 	// missileEvasion 是這艘船的飛彈閃避加成(手冊 ME 欄 + 舵手技能)。
 	// 只有當**它是防守方**時才有意義;敵方艦隊無逐艦資料,一律 0(既有簡化)。
 	missileEvasion int
-	// mods 是攻方武器改造(gamedata.WeaponModCode 字串);只有 kind==WeaponKindBeam 時
-	// battleVolley 會套用(見 WeaponIsBeam 判斷),敵方艦隊(genEnemyFleet)沒有個別武器
+	// missileFTLLevel 是這艘玩家艦在快速戰鬥中發射飛彈所用的引擎階，供 FST
+	// 的 Beam Defense 消費端使用。敵方抽象艦隊沒有逐艦飛彈設計，留 0。
+	missileFTLLevel int
+	// pointDefenseSpent 是本次快速齊射中該艦的 PD 自動攔截是否已使用；目前每艘
+	// 抽象艦只表現一支武器槽，回合開始時重置。
+	pointDefenseSpent bool
+	// pointDefenseInterceptionDamage 是原版 Weapon_In_Range 的攔截傷害餘數。
+	// 它跨同一場快速戰鬥保留，不能在每次 PD 射擊後丟掉；ARM 只改變每枚
+	// 飛彈所需的 durability，FST 則改變飛彈 Beam Defense，兩者都共用這條鏈。
+	pointDefenseInterceptionDamage int
+	// mods 是攻方武器改造(gamedata.WeaponModCode 字串);battleVolley 會依 weaponName
+	// 過濾並套用 beam/missile/torpedo 改造,敵方艦隊(genEnemyFleet)沒有個別武器
 	// 設計,一律 nil(既有簡化,非本輪引入)。
 	mods []string
 	// --- 匿蹤與能量吸收器(見 cloak.go / energy_absorber.go)---
@@ -753,6 +812,7 @@ type combatant struct {
 	// --- 登艦戰(見 boarding.go)---
 	marines          int
 	securityStations bool
+	securityBonus    int // 艦艇軍官 Security 給守方陸戰隊的固定戰力
 	assaultShuttles  bool
 	// boarded 是「這艘船這場戰鬥已經派過登艦隊了」。手冊:突擊艇是**一次性**的
 	// (「unpiloted shuttles are set adrift to be picked up after the battle」),
@@ -767,6 +827,9 @@ type combatant struct {
 // 回傳本輪擊沉的 defender 數。移除陣亡艦。
 func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand) int {
 	before := len(*defenders)
+	for i := range *defenders {
+		(*defenders)[i].pointDefenseSpent = false
+	}
 	// 主動權排序(第 69 項(戰鬥速度與引擎階)):手冊「smaller ships should move before bigger, slower ones」。
 	// 先前是艦隊清單順序,等於「先造的先打」——與速度完全無關。
 	// 就地排序沒有問題:呼叫端每次都重新建構戰列(mkPlayerCombatantsIndexed / genEnemyFleet)。
@@ -837,11 +900,37 @@ func battleShot(atk *combatant, defenders *[]combatant, rng *rand.Rand) {
 		// 所以連骰子都不擲(擲了會位移後面每一發的隨機序列,讓決定性測試無故變動)。
 		return
 	case WeaponKindMissile:
+		missileMods := WeaponModCodesForWeapon(atk.weaponName, atk.mods)
+		warheads := gamedata.WeaponModMissileWarheadCount(missileMods)
+		var mdef MissileDefenses
+		// PD 是防守方艦上的自動攔截武器；目前快速戰鬥每艘抽象艦只表現一個
+		// 武器槽，因此一個齊射中只消費一次。沒有可用 PD 時完全不擲這顆骰，
+		// 保持既有無 PD 戰鬥的 RNG 序列。
+		pdMods := WeaponModCodesForWeapon(d.weaponName, d.mods)
+		if !d.pointDefenseSpent && PointDefenseCanEngage(d.weaponName, atk.weaponName, pdMods) {
+			d.pointDefenseSpent = true
+			pd := ResolvePointDefenseIntercept(PointDefenseShot{
+				BeamWeaponName:            d.weaponName,
+				BeamAttack:                d.atk,
+				BeamDamageMax:             d.wmax,
+				BeamRangeSquares:          0, // 同格自動攔截(手冊 p.117)
+				BeamRoll:                  rng.Intn(100) + 1,
+				BeamSystems:               d.beamSystems,
+				BeamMods:                  pdMods,
+				MissileWeaponName:         atk.weaponName,
+				MissileFTLLevel:           atk.missileFTLLevel,
+				MissileMods:               missileMods,
+				CarriedInterceptionDamage: d.pointDefenseInterceptionDamage,
+			})
+			if pd.Fired {
+				mdef.InterceptedWarheads = pd.DestroyedWarheads
+				d.pointDefenseInterceptionDamage = pd.RemainingInterceptionDamage
+			}
+		}
 		amrRoll := rng.Intn(100) + 1
 		jamRoll := rng.Intn(100) + 1
 		// 特殊防禦裝置(第 68 項(元件盤點+飛彈防禦)):**裝了才擲骰**,沒裝就完全不動 RNG
 		// ——這樣既有存檔/探針的戰鬥結果逐位元不變(同炸彈分支的處理)。
-		var mdef MissileDefenses
 		if d.hasLightningField {
 			mdef.HasLightningField, mdef.LightningRoll = true, rng.Intn(100)+1
 		}
@@ -852,14 +941,32 @@ func battleShot(atk *combatant, defenders *[]combatant, rng *rand.Rand) {
 		if c := quickCloakMissChance(d); c > 0 {
 			mdef.CloakMissChance, mdef.CloakRoll = c, rng.Intn(100)+1
 		}
+		if warheads > 1 {
+			mdef.JamRolls = []int{jamRoll}
+			if mdef.CloakMissChance > 0 {
+				mdef.CloakRolls = []int{mdef.CloakRoll}
+			}
+			if mdef.HasDisplacement {
+				mdef.DisplacementRolls = []int{mdef.DisplacementRoll}
+			}
+			for i := 1; i < warheads; i++ {
+				mdef.JamRolls = append(mdef.JamRolls, rng.Intn(100)+1)
+				if mdef.CloakMissChance > 0 {
+					mdef.CloakRolls = append(mdef.CloakRolls, rng.Intn(100)+1)
+				}
+				if mdef.HasDisplacement {
+					mdef.DisplacementRolls = append(mdef.DisplacementRolls, rng.Intn(100)+1)
+				}
+			}
+		}
 		// ⚠ 2026-08-08:上一版註解寫「那句話對 ECM 干擾器/慣性穩定器仍成立」
 		// ——第 68 項(元件盤點+飛彈防禦)把那一整族補進 SpecialOptions 了,`missileEvasion` 現在吃得到。
 		// ⚠ 2026-08-08(第 71 項(探針③內部函式)):倒數第二個引數先前恆為 false(硬化護盾),
 		// 第五個引數恆為 0(攻方掃描器)。兩者現在都有真值來源——手冊各自寫得很清楚,
 		// 只是這兩個參數位置從加進來那天起就沒有人回頭填。
-		shot = ResolveMissileShot(d.hasAMR, 2, amrRoll, d.missileEvasion,
+		shot = ResolveMissileShotWithMods(d.hasAMR, 2, amrRoll, d.missileEvasion,
 			atk.scannerJamReduction, false, jamRoll,
-			atk.wmax, d.shield, d.armor, d.hardShield, mdef)
+			atk.wmax, d.shield, d.armor, d.hardShield, mdef, atk.weaponName, missileMods)
 	case WeaponKindSpherical:
 		span := atk.wmax - atk.wmin
 		r := 0
@@ -884,7 +991,7 @@ func battleShot(atk *combatant, defenders *[]combatant, rng *rand.Rand) {
 		net := atk.atk - (d.def + quickCloakBeamDefense(d))
 		shot = ResolveBeamShot(BeamShot{
 			NetAttack: net, WeaponMin: atk.wmin, WeaponMax: atk.wmax,
-			RangeSquares: 2, Roll: roll, Mods: weaponModCodes(atk.mods),
+			RangeSquares: 2, Roll: roll, Mods: WeaponModCodesForWeapon(atk.weaponName, atk.mods),
 			Attacker: atk.beamSystems,
 			Target: BeamTargetSystems{
 				ShieldReduction: d.shield, ArmorHP: d.armor, APNegated: d.apNegated,
@@ -930,6 +1037,7 @@ func quickBoardingAttempt(atk *combatant, d *combatant, rng *rand.Rand) {
 	def := BoardingDefense{
 		Marines: d.marines, Strength: d.def,
 		HitsToKill:       gamedata.GroundBaseHitsToKill(false),
+		StrengthBonus:    d.securityBonus,
 		SecurityStations: d.securityStations,
 	}
 	res := ResolveBoarding(party, def, func(n int) int {
@@ -1006,7 +1114,8 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 			continue
 		}
 		body := shipStrength(sh.Class)
-		atk := body + sh.WeaponAttack
+		atk := body + sh.WeaponAttack + s.shipOfficerSkillBonus(sh, gamedata.SKILL_WEAPONRY)
+		ordnanceBonus := s.shipOfficerSkillBonus(sh, gamedata.SKILL_ORDNANCE)
 		atk += atk * s.RaceCombatPct / 100 // 種族戰鬥加成(姆瑞森艦攻+50、埃雷里安+20…)
 		// 戰鬥掃描器(第 68 項(元件盤點+飛彈防禦)):手冊「increases the ship's chance to hit with beam weapons
 		// by 50」——**點數加成**,所以加在種族百分比之後(理由同下面的艦員加成)。
@@ -1025,7 +1134,7 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 		defBody := body + body*s.RaceShipDefPct/100
 		// 慣性穩定器/抵消器(第 68 項(元件盤點+飛彈防禦),補第 68 項(元件盤點+飛彈防禦)漏掉的那一半):手冊那一條同時給
 		// 「+50 beam defense」與「+25 missile evasion」,先前只接了後者。
-		defBody += shipBeamDefenseBonus(sh)
+		defBody += shipBeamDefenseBonus(sh) + s.shipOfficerSkillBonus(sh, gamedata.SKILL_HELMSMAN)
 		// 強化船體:手冊「triples the amount of structural damage a ship can sustain」。
 		hp := body * 3 * shipStructureMultiplier(sh) / 100
 		// 戰機庫:出擊一隊戰機(手冊:中隊一律 4 架;返航前射擊次數攔截機 4、重戰機 2),
@@ -1054,7 +1163,7 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 			}
 		}
 		out = append(out, combatant{hp: hp, maxHP: shipMaxHP(sh), atk: atk, def: defBody + crewDef,
-			wmin: atk / 2, wmax: atk,
+			wmin: atk / 2, wmax: atk + ordnanceBonus,
 			shield: s.nebulaShield(shieldReduceByName(sh.Shield), shipHasHardShield(sh)) *
 				shipShieldMultiplier(sh) / 100, // 多相護盾:吸收量 +50%
 			armor: effectiveArmorHP(sh),
@@ -1072,9 +1181,11 @@ func (s *GameSession) mkPlayerCombatantsIndexed() ([]combatant, []int) {
 			hasDisplacement:     shipHasDisplacementDevice(sh),
 			hardShield:          shipHasHardShield(sh),
 			scannerJamReduction: bestPlayerScannerJamReduction(s.Player),
-			missileEvasion: gamedata.ShipCrewMissileEvasionBonus(crew) + s.helmsmanEvasionBonus() +
+			missileEvasion: gamedata.ShipCrewMissileEvasionBonus(crew) + s.shipOfficerMissileEvasionBonus(sh) +
 				shipMissileEvasionBonus(sh),
-			marines: ShipMarineComplement(sh), securityStations: shipHasSecurityStations(sh),
+			missileFTLLevel: s.driveLevel(),
+			marines:         ShipMarineComplement(sh), securityStations: shipHasSecurityStations(sh),
+			securityBonus:   s.shipOfficerSkillBonus(sh, gamedata.SKILL_SECURITY),
 			assaultShuttles: shipHasAssaultShuttles(sh),
 			cloakKind:       shipCloakKind(sh), cloaked: shipCloakKind(sh) != CloakNone,
 			energyAbsorber: sh.Special == energyAbsorberName,
@@ -1153,10 +1264,14 @@ func (s *GameSession) applySurvivorDamage(survivors []combatant, _ []int) {
 // 也永遠拿不到——先前的註解把後者標成「pick 尚未追蹤」,現在追蹤得到了
 // (自訂種族仍拿不到,但那是因為點數畫面還沒把 pick 寫進特性,不是因為查不到)。
 func (s *GameSession) raceDiploBonusPct() int {
+	bonus := 0
 	if s.RaceCharismatic() {
-		return 50
+		bonus += 50
 	}
-	return 0
+	if s.RaceTelepathic() {
+		bonus += 25
+	}
+	return bonus
 }
 
 // aiByDisplayName 依畫面顯示名找 AI 對手(模糊比對含 "AI (…)" 外殼);找不到退回主要對手
@@ -1196,44 +1311,128 @@ func (a *AIOpponent) adjustRelation(delta int) {
 	}
 }
 
-// DiplomacyResponse 處理玩家對某對手的外交動作(提議和平/貿易/威脅),**實際改變該 AI 的關係
-// 分數**(先前只回文字不改狀態),並回一句回應。和平/貿易改善關係、威脅惡化;改善量受種族外交
-// 加成放大(人類 Charismatic +50%,見 raceDiploBonusPct)。關係變化會反映到 races 畫面的態勢與
-// 議會投票傾向(RelationLevelForScore/DecideStance)。
+// DiplomacyResponse 處理玩家對某對手的外交動作，並把正式條約／貿易／研究
+// 協議寫入該 AI 的 Treaty 狀態。關係變化仍受種族外交加成放大(人類
+// Charismatic +50%,見 raceDiploBonusPct)，但條約收益由回合結算推進。
 func (s *GameSession) DiplomacyResponse(action, enemy string) string {
-	pPop, ePop := 0, 0
-	for _, c := range s.PlayerColonies {
-		pPop += c.Population
+	s.recordPlayerCommand(PlayerCommand{Name: CmdDiplomacy, Text: action + "\x00" + enemy})
+	ai := s.aiByDisplayName(enemy)
+	if ai == nil {
+		return ""
 	}
-	for _, a := range s.AIPlayers {
-		for _, c := range a.Colonies {
-			ePop += c.Population
-		}
+	pPop := populationOfColonies(s.PlayerColonies)
+	ePop := populationOfColonies(ai.Colonies)
+	minPop := pPop
+	if ePop < minPop {
+		minPop = ePop
 	}
 	pFleet := 0
 	for _, sh := range s.AllShips() { // 外交看的是**全帝國**軍力,不是眼前這一支
 		pFleet += shipStrength(sh.Class)
 	}
-	ai := s.aiByDisplayName(enemy)
-	diploPct := 100 + s.raceDiploBonusPct() // 人類 150、其餘 100
 	switch action {
 	case "peace":
-		if ai != nil {
-			ai.adjustRelation(15 * diploPct / 100) // 提議和平改善關係(Charismatic 放大)
+		if !ai.Treaty.startFormal(gamedata.DIPLO_PEACE) {
+			return enemy + ":目前已有正式條約,無需重複提議。"
 		}
+		ai.adjustRelation(s.diplomacyRelationGain(15)) // 提議和平改善關係(Charismatic／Diplomat 放大)
 		if pPop >= ePop {
 			return enemy + ":你們的實力我們敬佩,和平協議成立。(關係改善)"
 		}
 		return enemy + ":我們記下你的善意,但真正的和平言之過早。(關係略改善)"
 	case "trade":
-		if ai != nil {
-			ai.adjustRelation(10 * diploPct / 100)
+		if !ai.Treaty.startTrade(minPop) {
+			return enemy + ":貿易協議已經存在,無需重複簽署。"
 		}
+		ai.adjustRelation(s.diplomacyRelationGain(10))
 		return enemy + ":貿易協定成立,願雙方繁榮昌盛。(關係改善)"
-	case "threat":
-		if ai != nil {
-			ai.adjustRelation(-20)
+	case "research":
+		if !ai.Treaty.startResearch(minPop) {
+			return enemy + ":研究協議已經存在,無需重複簽署。"
 		}
+		ai.adjustRelation(s.diplomacyRelationGain(10))
+		return enemy + ":研究協定成立,願雙方共享知識。(關係改善)"
+	case "special_food":
+		if !ai.Treaty.startSpecialTrade(SpecialTradeFoodForCredits, minPop) {
+			return enemy + ":特殊貿易協議已經存在,無需重複簽署。"
+		}
+		ai.adjustRelation(s.diplomacyRelationGain(12))
+		return enemy + ":食物—現金特殊貿易成立,雙方共享穩定收益。(關係改善)"
+	case "special_research":
+		if !ai.Treaty.startSpecialTrade(SpecialTradeResearchExchange, minPop) {
+			return enemy + ":特殊貿易協議已經存在,無需重複簽署。"
+		}
+		ai.adjustRelation(s.diplomacyRelationGain(12))
+		return enemy + ":研究交換特殊貿易成立,雙方共享研究收益。(關係改善)"
+	case "nonaggression":
+		if !ai.Treaty.startFormal(gamedata.DIPLO_NON_AGGRESSION) {
+			return enemy + ":目前已有正式條約,無法重複簽署。"
+		}
+		ai.adjustRelation(s.diplomacyRelationGain(15))
+		return enemy + ":互不侵犯條約成立,雙方艦隊不得互相攻擊。(關係改善)"
+	case "alliance":
+		if !ai.Treaty.startFormal(gamedata.DIPLO_ALLIANCE) {
+			return enemy + ":目前已有正式條約,無法重複簽署。"
+		}
+		ai.adjustRelation(s.diplomacyRelationGain(30))
+		return enemy + ":同盟成立,雙方將共同守護彼此的疆域。(關係大幅改善)"
+	case "tribute_5":
+		if !ai.Treaty.startPlayerTribute(TributeFivePercent) {
+			return enemy + ":目前已有納貢條約,無法重複簽署。"
+		}
+		return enemy + ":我們接受每回合 5% 的納貢條約。"
+	case "tribute_10":
+		if !ai.Treaty.startPlayerTribute(TributeTenPercent) {
+			return enemy + ":目前已有納貢條約,無法重複簽署。"
+		}
+		return enemy + ":我們接受每回合 10% 的納貢條約。"
+	case "gift_cash":
+		return s.OfferCashGift(enemy, diplomacyCashGiftDefault)
+	case "gift_tech":
+		opts := spyStealOptions(ai.Player, s.Player)
+		if len(opts) == 0 {
+			return enemy + ":沒有可贈送且對方尚未掌握的科技。"
+		}
+		return s.OfferTechnologyGift(enemy, opts[0].Topic, opts[0].Tech)
+	case "gift_star":
+		for i, star := range s.PlayerColonyStars {
+			if star > 0 && star < len(s.Stars) && s.Stars[star].Owner == 1 {
+				return s.OfferStarGift(enemy, star)
+			}
+			_ = i
+		}
+		return enemy + ":沒有可贈送的非母星殖民地。"
+	case "break_trade":
+		if !ai.Treaty.endTrade() {
+			return enemy + ":目前沒有貿易條約可終止。"
+		}
+		ai.adjustRelation(-30)
+		return enemy + ":貿易條約已終止。(關係惡化)"
+	case "break_research":
+		if !ai.Treaty.endResearch() {
+			return enemy + ":目前沒有研究條約可終止。"
+		}
+		ai.adjustRelation(-30)
+		return enemy + ":研究條約已終止。(關係惡化)"
+	case "break_formal":
+		if !ai.Treaty.endFormal() {
+			return enemy + ":目前沒有正式條約可終止。"
+		}
+		ai.adjustRelation(-30)
+		return enemy + ":正式條約已終止。(關係惡化)"
+	case "break_tribute":
+		if !ai.Treaty.endTribute() {
+			return enemy + ":目前沒有納貢條約可終止。"
+		}
+		return enemy + ":納貢條約已終止。"
+	case "break_special":
+		if !ai.Treaty.endSpecialTrade() {
+			return enemy + ":目前沒有特殊貿易可終止。"
+		}
+		ai.adjustRelation(-20)
+		return enemy + ":特殊貿易已終止。(關係惡化)"
+	case "threat":
+		ai.adjustRelation(-20)
 		if pFleet >= 10 {
 			return enemy + ":……我們會記住這份侮辱。(關係惡化)"
 		}
@@ -1248,6 +1447,9 @@ type CombatShip struct {
 	HP, MaxHP int // 艦體結構 HP
 	Attack    int // Beam Attack(BA,命中判定用)
 	Col, Row  int // 格位(8 欄 × 6 列)
+	// Facing 是原版 combat record +0x23 的 16 向 heading。0=右、4=上、
+	// 8=左、12=下；移動時由 tactical UI 依移動向量更新。
+	Facing int
 	// 以下供 ResolveShot 真戰鬥公式使用(remake 由艦艇設計推導,見 StartCombat 註記)。
 	Defense         int        // 守方防禦(AF+BD),減 netAttack
 	WeaponMin       int        // 單發最小傷害
@@ -1257,15 +1459,24 @@ type CombatShip struct {
 	ArmorHP         int        // 裝甲 HP(結構外的緩衝,先耗盡才傷結構)
 	Kind            WeaponKind // 武器戰鬥解算路徑(beam/missile/spherical,見 weapon_kind.go);
 	// 敵方艦(genEnemyFleet)無個別武器設計資料,一律留零值 WeaponKindBeam(既有簡化)。
-	Mods []string // 武器改造(gamedata.WeaponModCode 字串);只對 Kind==WeaponKindBeam 生效。
-	// SpriteIdx 是 CMBTSHP.LBX 資產索引(含色塊偏移,45*色塊+艦級內索引),
-	// 供戰術戰鬥畫面依艦級挑不同大小 sprite。見 docs/tech/cmbtshp-ship-sprites.md。
+	WeaponName string             // 武器元件名；飛彈／魚雷改造需要用它區分適用性。
+	Mods       []string           // 武器改造(gamedata.WeaponModCode 字串);依 WeaponName 過濾後生效。
+	WeaponArc  gamedata.WeaponArc // 設計資料中的火線角；格子戰術依 Facing 套用方向遮罩。
+	// SpriteIdx 是 CMBTSHP.LBX 資產索引。原版標準艦艇的精確公式是
+	// 45*玩家顏色色塊 + raw picture(+0xC4)；未知 picture 才退回艦級尺寸代表值。
+	// 見 docs/tech/cmbtshp-ship-sprites.md。
 	SpriteIdx int
 	// Bay / BayKind:這艘船帶不帶戰機庫,以及是哪一型(見 fighter.go)。
 	// 格子戰術戰鬥用它決定「這艘船能不能派戰機出擊」;快速結算走的是另一條路
 	// (母艦戰力加成,見本函式下方的 Special 分支)。
 	Bay     bool
 	BayKind FighterKind
+	// 以下三項是由這艘艦載出的戰機中隊所用的 Beam Defense 加成。
+	// 種族／戰機飛行員的原版來源是帝國／參戰艦隊層級,因此由 StartCombat 先算好；
+	// Helmsman 保留欄位供 1.50 公式接線,目前沒有把未證實的原版呼叫端硬填進來。
+	FighterRacialDefenseBonus int
+	FighterPilotBonus         int
+	FighterHelmsmanBonus      int
 	// HEF 是這艘船裝了高能聚焦(光束傷害 +50%,手冊 p.87)。與 Mods 一樣只對 beam 生效,
 	// 但它是**系統**不是改造,所以另開一個欄位而不是塞進 Mods。
 	//
@@ -1279,6 +1490,12 @@ type CombatShip struct {
 	HasAMR            bool // 反飛彈火箭:射程內攔截
 	HasLightningField bool // 閃電場:每一枚來襲飛彈各 50% 直接摧毀
 	HasDisplacement   bool // 位移裝置:一律 30% 完全未命中
+	// PointDefenseSpent 是本回合 PD 自動攔截是否已使用；目前每個 CombatShip
+	// 只有一個武器槽，回合交界重置。它不會寫入存檔。
+	PointDefenseSpent bool
+	// PointDefenseInterceptionDamage 是 PD 攔截鏈跨回合保存的 quotient/remainder
+	// 餘數。每回合只重置 PointDefenseSpent，不重置這個值。
+	PointDefenseInterceptionDamage int
 	// ScannerJamReduction 是這艘船**開火時**抵銷目標飛彈閃避的點數(迅子 20 / 中子 40,
 	// 手冊那兩個條目的最後一句)。與 MissileEvasion 相對:一個是防守方的躲、一個是攻擊方的破。
 	ScannerJamReduction int
@@ -1314,16 +1531,104 @@ type CombatShip struct {
 	// --- 登艦戰(見 boarding.go)---
 	Marines          int  // 艦上陸戰隊單位數(手冊 p.121 的 Marines 欄,部隊艙翻倍)
 	SecurityStations bool // 保安站:守方陸戰隊 +20
+	SecurityBonus    int  // 艦艇軍官 Security 給守方陸戰隊的固定戰力
 	AssaultShuttles  bool // 突擊艇:可以派登艦隊出去
 	// SystemsDisabled 是被突襲拆掉的內部系統數(手冊:突襲不傷結構,只拆系統)。
 	// >0 的船特殊系統失效——remake 一艘船只有一個特殊系統槽,所以第一下就拆光了。
 	SystemsDisabled int
+	Transporters    bool // 傳送器:12 格內,但面向攻擊方的護盾失效且非硬化護盾
+	// 護盾分面(手冊 per facing;原版艦艇記錄四個連續值)。快速結算沒有 CombatShip
+	// 與格位，因此只由格子戰術消費。
+	ShieldFacingHP           [4]int
+	ShieldFacingsInitialized bool
 	// Captured 是「這艘船已經被對方奪走」。手冊:奪船之後**還要贏下這場戰鬥**才留得住
 	// (除非是心靈感應種族),所以這裡只記狀態,歸屬要等戰鬥結束才定案。
 	Captured bool
 }
 
-// CombatSpriteForClass 依艦體等級回傳 CMBTSHP 色塊內 sprite 索引(見 docs/tech/cmbtshp-ship-sprites.md)。
+const (
+	cmbtshpSpriteBlockSize = 45
+	cmbtshpPaletteHolder   = 44
+	cmbtshpMaxPicture      = 43
+	CMBTSHPFrameCount      = 20
+	// CMBTSHPFrameHoldTicks 與 CMBTSHPMotionFrameCount 是 remake 的顯示
+	// adapter，不是原版 timer 常數。原版靜態碼已證實 20 幀與 16 向 heading，
+	// 但沒有追回獨立 tick；這裡用固定 tick 讓移動動畫可重播，停止後不自行旋轉。
+	CMBTSHPFrameHoldTicks      = 4
+	CMBTSHPMotionFrameCount    = 4
+	CMBTSHPMotionDurationTicks = CMBTSHPFrameHoldTicks * CMBTSHPMotionFrameCount
+)
+
+// CMBTSHPSpriteIndex 是原版 sub_30062 @ 0x30062 的標準艦艇索引公式：
+// CMBTSHP.LBX[45*playerColor + rawShipPicture]。raw picture 44 是原版
+// monster.lbx sentinel，不屬於 CMBTSHP 的 44 張艦艇 sprite，因此回傳 false。
+// colorBlock 的有效範圍是原版玩家色 0..7；這裡保留 raw 範圍檢查，避免畫廊再次
+// 讀到 palette-holder 或越界資產。
+func CMBTSHPSpriteIndex(colorBlock, rawPicture int) (int, bool) {
+	if colorBlock < 0 || colorBlock >= 8 || rawPicture < 0 || rawPicture > cmbtshpMaxPicture {
+		return 0, false
+	}
+	return cmbtshpSpriteBlockSize*colorBlock + rawPicture, true
+}
+
+func normalizeCMBTSHPColor(colorBlock, fallback int) int {
+	if colorBlock >= 0 && colorBlock < 8 {
+		return colorBlock
+	}
+	if fallback >= 0 && fallback < 8 {
+		return fallback
+	}
+	return 0
+}
+
+// CMBTSHPFrameForHeading 將原版 combat record +0x23 的 16 向 heading 映到
+// CMBTSHP 每個資產的 20 個方向幀。原版 `Move_Ship @ 0x3F5F1`／
+// `Get_Facing @ 0x3F628` 已證實 heading 是 0..15；LBX 解碼已證實每個
+// CMBTSHP 資產有 20 幀。這個最近角度換算是 remake 的顯示 adapter，幀的
+// 原版繪製停留時間與四個未使用中間幀仍未由靜態碼單獨證實，因此不把它命名
+// 成原版 timer。
+func CMBTSHPFrameForHeading(heading int) int {
+	heading %= 16
+	if heading < 0 {
+		heading += 16
+	}
+	return (heading*CMBTSHPFrameCount + 8) / 16 % CMBTSHPFrameCount
+}
+
+// CMBTSHPFrameAtTick 是 CMBTSHP 的 remake 動畫消費端。
+//
+// moving=false 時維持原本的最近角度幀；moving=true 時以固定 hold tick 播放
+// [0,1,2,1] 的短掃掠，讓「移動中」有可見回饋。elapsedTicks 應從本次移動開始
+// 計算，負值會視為 0。這是可重播的近似，不把未知的原版 20-frame timer 冒充
+// 成已證實公式。
+func CMBTSHPFrameAtTick(heading, elapsedTicks int, moving bool) int {
+	base := CMBTSHPFrameForHeading(heading)
+	if !moving || elapsedTicks < 0 {
+		return base
+	}
+	phase := (elapsedTicks / CMBTSHPFrameHoldTicks) % CMBTSHPMotionFrameCount
+	offset := [...]int{0, 1, 2, 1}[phase]
+	return (base + offset) % CMBTSHPFrameCount
+}
+
+// CombatSpriteForShip 先使用原版 raw picture；舊 JSON／程序化 demo 沒有 raw
+// picture 時才使用可視覺辨識的艦級 fallback。這個 fallback 不是原版公式，僅是
+// 缺少輸入資料時的顯示降級。
+func CombatSpriteForShip(ship Ship, colorBlock int) int {
+	if ship.CombatPictureKnown {
+		if idx, ok := CMBTSHPSpriteIndex(colorBlock, ship.CombatPicture); ok {
+			return idx
+		}
+	}
+	if colorBlock < 0 || colorBlock >= 8 {
+		colorBlock = 0
+	}
+	return cmbtshpSpriteBlockSize*colorBlock + CombatSpriteForClass(ship.Class)
+}
+
+// CombatSpriteForClass 是 raw picture 未知時的艦級 fallback(不是原版精確
+// picture 對照)。保留它是為了舊 JSON、程序化 demo 與沒有 `.GAM` 設計欄位的
+// 敵方抽象艦隊仍有可辨識畫面。
 func CombatSpriteForClass(class string) int {
 	switch class {
 	case "驅逐艦":
@@ -1360,16 +1665,48 @@ func CombatSpriteForStrength(st int) int {
 	}
 }
 
+// enemyFighterTechnology 是 remake 抽象敵艦的最佳可用戰機科技。原版敵方逐艦藍圖
+// 尚未完整取回，因此只依回合穩定推進，確保敵方戰機速度／裝甲不會永遠停在起始階。
+func enemyFighterTechnology(turn int) (driveLevel, armorAboveTitanium int) {
+	driveLevel = 1 + turn/8
+	if driveLevel > gamedata.CombatSpeedDriveLevels {
+		driveLevel = gamedata.CombatSpeedDriveLevels
+	}
+	armorAboveTitanium = turn / 12
+	if armorAboveTitanium > 4 {
+		armorAboveTitanium = 4
+	}
+	return driveLevel, armorAboveTitanium
+}
+
+func (s *GameSession) enemyRaceShipDefenseBonus(enemy string) int {
+	for _, ai := range s.AIPlayers {
+		if stripAILabel(ai.Name) != enemy && ai.Name != enemy {
+			continue
+		}
+		if ai.RaceIndex >= 0 && ai.RaceIndex < len(Races) {
+			return Races[ai.RaceIndex].ShipDefPct
+		}
+	}
+	return 0
+}
+
 // StartCombat 依玩家艦隊 + 難度生成敵方,建立格子戰鬥雙方艦艇(HP=戰力×3、攻擊=戰力);
-// 玩家艦置左欄、敵方置右欄,依序排列。
+// 玩家艦置左欄、敵方置右欄,依序排列。敵方艦的戰機庫由
+// EnemyFighterProfileForStrength 建立，戰術畫面會用同一組 CombatShip 欄位出擊。
 func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip) {
 	// 由艦艇設計推導真戰鬥公式所需數值(remake 近似;精確值需艦體空間格 + 元件佔格 + 軍官技能):
 	//   結構 HP = 艦體×3;裝甲 HP = 設計 BonusHP;Beam Attack = 艦體 + 武器攻擊;
 	//   防禦 = 艦體(小艦=低戰力=低防,趨勢近原版);單發傷害 min=max/2、max=Attack;
-	//   護盾減傷暫 0(艦艇設計尚未把護盾與裝甲分離,見 gameplay-systems-status.md)。
+	//   護盾減傷與艦級分面容量由設計的護盾名稱推導,四面狀態另存於 CombatShip。
+	fighterPilotBonus := s.fighterPilotBonusForCombat()
 	for i, sh := range s.Fleet().Ships {
 		body := shipStrength(sh.Class)
-		atk := body + sh.WeaponAttack + shipBeamOffenseBonus(sh)
+		// 原版 GameState::shipBeamOffense 讀的是這艘船自己的 sptr->officer,
+		// 不是帝國內任一位艦艇軍官。Weaponry 是逐艦命中加成。
+		atk := body + sh.WeaponAttack + shipBeamOffenseBonus(sh) +
+			s.shipOfficerSkillBonus(sh, gamedata.SKILL_WEAPONRY)
+		ordnanceBonus := s.shipOfficerSkillBonus(sh, gamedata.SKILL_ORDNANCE)
 		hullHP := body * 3 * shipStructureMultiplier(sh) / 100
 		// 戰機庫 → 這艘船在格子戰場上能派中隊出擊(見 fighter.go)。同一個 Special 欄位
 		// 在快速結算裡是母艦戰力加成,兩條路徑讀同一份設計資料,不會各說各話。
@@ -1387,57 +1724,96 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			bay, bayKind = true, FighterAssaultShuttle
 		}
 		player = append(player, CombatShip{
-			Name: sh.Name, HP: hullHP, MaxHP: hullHP, Attack: atk, Col: 1, Row: i,
-			Defense: body + shipBeamDefenseBonus(sh), WeaponMin: atk / 2, WeaponMax: atk,
+			Name: sh.Name, HP: hullHP, MaxHP: hullHP, Attack: atk, Col: 1, Row: i, Facing: 0,
+			Defense: body + shipBeamDefenseBonus(sh) +
+				s.shipOfficerSkillBonus(sh, gamedata.SKILL_HELMSMAN), WeaponMin: atk / 2, WeaponMax: atk + ordnanceBonus,
 			ShieldReduction: s.nebulaShield(shieldReduceByName(sh.Shield), shipHasHardShield(sh)) *
 				shipShieldMultiplier(sh) / 100,
 			HardShield: shipHasHardShield(sh),
 			ArmorHP:    effectiveArmorHP(sh),
-			Kind:       weaponKindByName(sh.Weapon), Mods: sh.Mods,
+			Kind:       weaponKindByName(sh.Weapon), WeaponName: sh.Weapon, Mods: sh.Mods,
+			WeaponArc: NormalizeWeaponArc(sh.Weapon, sh.Arc),
 			HEF:       sh.Special == highEnergyFocusName,
 			APNegated: shipNegatesArmorPiercing(sh),
 			MissileEvasion: gamedata.ShipCrewMissileEvasionBonus(s.shipCrewLevel(sh)) +
-				s.helmsmanEvasionBonus() + shipMissileEvasionBonus(sh),
-			HasAMR:                  sh.Special == antiMissileRocketName,
-			HasLightningField:       shipHasLightningField(sh),
-			HasDisplacement:         shipHasDisplacementDevice(sh),
-			BeamSystems:             shipBeamAttackerSystems(sh),
-			DriveLevel:              s.driveLevel(),
-			ArmorLevelAboveTitanium: armorLevelAboveTitanium(sh.Armor),
-			CombatSpeed:             s.shipCombatSpeed(sh),
-			SizeClass:               shipSizeClass(sh.Class),
-			TractorBeams:            boolToInt(sh.Special == tractorBeamName),
-			HasStasisField:          sh.Special == stasisFieldName,
-			ScannerJamReduction:     bestPlayerScannerJamReduction(s.Player),
-			ShotsKind:               shipShotsKind(sh),
-			CloakKind:               shipCloakKind(sh),
-			Cloaked:                 shipCloakKind(sh) != CloakNone, // 開場隱形(手冊沒有「要先充能」)
-			EnergyAbsorber:          sh.Special == energyAbsorberName,
-			Marines:                 ShipMarineComplement(sh),
-			SecurityStations:        shipHasSecurityStations(sh),
-			AssaultShuttles:         shipHasAssaultShuttles(sh),
-			Charged:                 true, // 開場滿電(手冊沒有「第一回合不能連射」的限制)
-			Initiative:              gamedata.CombatInitiative(atk, s.shipCombatSpeed(sh)),
-			SpriteIdx:               CombatSpriteForClass(sh.Class), // 色塊 0(玩家)
-			Bay:                     bay, BayKind: bayKind,
+				s.shipOfficerMissileEvasionBonus(sh) + shipMissileEvasionBonus(sh),
+			HasAMR:                    sh.Special == antiMissileRocketName,
+			HasLightningField:         shipHasLightningField(sh),
+			HasDisplacement:           shipHasDisplacementDevice(sh),
+			BeamSystems:               shipBeamAttackerSystems(sh),
+			DriveLevel:                s.driveLevel(),
+			ArmorLevelAboveTitanium:   armorLevelAboveTitanium(sh.Armor),
+			CombatSpeed:               s.shipCombatSpeed(sh),
+			SizeClass:                 shipSizeClass(sh.Class),
+			FighterRacialDefenseBonus: s.RaceShipDefPct,
+			FighterPilotBonus:         fighterPilotBonus,
+			TractorBeams:              boolToInt(sh.Special == tractorBeamName),
+			HasStasisField:            sh.Special == stasisFieldName,
+			ScannerJamReduction:       bestPlayerScannerJamReduction(s.Player),
+			ShotsKind:                 shipShotsKind(sh),
+			CloakKind:                 shipCloakKind(sh),
+			Cloaked:                   shipCloakKind(sh) != CloakNone, // 開場隱形(手冊沒有「要先充能」)
+			EnergyAbsorber:            sh.Special == energyAbsorberName,
+			Marines:                   ShipMarineComplement(sh),
+			SecurityStations:          shipHasSecurityStations(sh),
+			SecurityBonus:             s.shipOfficerSkillBonus(sh, gamedata.SKILL_SECURITY),
+			AssaultShuttles:           shipHasAssaultShuttles(sh),
+			Transporters:              shipHasTransporters(sh),
+			Charged:                   true, // 開場滿電(手冊沒有「第一回合不能連射」的限制)
+			Initiative:                gamedata.CombatInitiative(atk, s.shipCombatSpeed(sh)),
+			SpriteIdx:                 CombatSpriteForShip(sh, normalizeCMBTSHPColor(s.FlagColor, 0)),
+			Bay:                       bay, BayKind: bayKind,
 		})
+		player[len(player)-1].ensureShieldFacings()
 	}
 	mult := 1.0
 	if s.Difficulty >= 0 && s.Difficulty < len(Difficulties) {
 		mult = Difficulties[s.Difficulty].Mult
 	}
+	enemyShipDef := s.enemyRaceShipDefenseBonus(enemy)
+	enemyDrive, enemyArmor := enemyFighterTechnology(s.Turn)
+	enemyColor := 1
+	for _, ai := range s.AIPlayers {
+		if stripAILabel(ai.Name) == enemy || ai.Name == enemy {
+			if ai.ColorKnown {
+				enemyColor = normalizeCMBTSHPColor(ai.Color, 1)
+			}
+			break
+		}
+	}
 	for i, st := range genEnemyFleet(s.Turn, mult) {
-		enemyShips = append(enemyShips, CombatShip{
-			Name: fmt.Sprintf("%s艦%d", enemy, i+1), HP: st * 3, MaxHP: st * 3, Attack: st, Col: 6, Row: i,
-			Defense: st, WeaponMin: st / 2, WeaponMax: st, ShieldReduction: 0, ArmorHP: st,
-			SpriteIdx: 45 + CombatSpriteForStrength(st), // 色塊 1(敵艦,與玩家色塊區隔)
-		})
+		bayKind, hasBay := EnemyFighterProfileForStrength(st)
+		class := shipSizeClassFromStrength(st)
+		sizeClass := gamedata.CombatShipClass(class - 1)
+		combatSpeed := gamedata.ShipCombatSpeed(enemyDrive, sizeClass, false, false)
+		ship := CombatShip{
+			Name: fmt.Sprintf("%s艦%d", enemy, i+1), HP: st * 3, MaxHP: st * 3, Attack: st, Col: 6, Row: i % TacticalGridRows, Facing: 8,
+			Defense: st + st*enemyShipDef/100, WeaponMin: st / 2, WeaponMax: st, ShieldReduction: 0, ArmorHP: st,
+			Kind: WeaponKindBeam, WeaponName: "雷射", WeaponArc: gamedata.ARC_FWD,
+			DriveLevel: enemyDrive, ArmorLevelAboveTitanium: enemyArmor,
+			CombatSpeed: combatSpeed, Initiative: gamedata.CombatInitiative(st, combatSpeed), SizeClass: sizeClass,
+			FighterRacialDefenseBonus: enemyShipDef,
+			Bay:                       hasBay, BayKind: bayKind,
+			SpriteIdx: cmbtshpSpriteBlockSize*enemyColor + CombatSpriteForStrength(st),
+		}
+		enemyShips = append(enemyShips, ship)
 	}
 	return
 }
 
 // ApplyCombatOutcome 依格子戰鬥後存活的玩家艦名,更新艦隊(移除陣亡艦)+ 記錄結果供結果畫面。
 func (s *GameSession) ApplyCombatOutcome(enemy string, playerStart, enemyStart int, survivors map[string]bool, won bool) {
+	parts := make([]string, 0, len(survivors)+1)
+	parts = append(parts, enemy)
+	for name, alive := range survivors {
+		if alive {
+			parts = append(parts, name)
+		}
+	}
+	sort.Strings(parts[1:])
+	s.recordPlayerCommand(PlayerCommand{
+		Name: CmdCombatOutcome, Args: []int{playerStart, enemyStart, boolInt(won)}, Text: strings.Join(parts, "\x00"),
+	})
 	f := s.Fleet() // 戰鬥打的是**參戰的那一支**艦隊
 	kept := f.Ships[:0]
 	for _, sh := range f.Ships {
@@ -1589,20 +1965,26 @@ func ShipDesignSpaceUsed(class string, weapon, armor, shield, special int) int {
 
 // ShipDesignSpaceUsedWithMods 同 ShipDesignSpaceUsed,額外套用一組武器改造(mods,見
 // gamedata.WeaponModCode / docs/tech/weapon-mods.md)對武器佔格的影響
-// (gamedata.WeaponSpaceWithMods)。mods 只在武器是 beam 路徑時生效(WeaponIsBeam)——
-// 手冊的 HV/PD/AF/CO 明文只講 beam 武器,飛彈(核飛彈/麥克萊特飛彈)沒有這套 mod 掛鉤,
-// 對非 beam 武器傳 mods 會被忽略,不誤加空間。
+// (gamedata.WeaponSpaceWithMods)。先依武器類型過濾改造；不支援的歷史字串不誤加空間。
 func ShipDesignSpaceUsedWithMods(class string, weapon, armor, shield, special int, mods []string) int {
+	return ShipDesignSpaceUsedWithModsAndArc(class, weapon, armor, shield, special, mods, gamedata.ARC_FWD)
+}
+
+// ShipDesignSpaceUsedWithModsAndArc 在武器改造後再套用火線角佔格。
+// 舊入口固定用前向基準弧，保留既有呼叫端的數值回歸；艦艇設計畫面使用本入口。
+func ShipDesignSpaceUsedWithModsAndArc(class string, weapon, armor, shield, special int, mods []string, arc gamedata.WeaponArc) int {
 	_ = armor // 見上方註解:手冊行為上裝甲不佔空間,顯式忽略以避免「未使用參數」誤解成疏漏
 	_ = shield
 	w := pick(WeaponOptions, weapon)
 	sp := pick(SpecialOptions, special)
 	classID, _ := shipClassFromName(class)
 	base := gamedata.WeaponSpaceByName[w.Name]
-	used := base
-	if len(mods) > 0 && WeaponIsBeam(w.Name) {
-		used = gamedata.WeaponSpaceWithMods(base, weaponModCodes(mods))
+	weaponSpace := base
+	if len(mods) > 0 {
+		weaponSpace = gamedata.WeaponSpaceWithMods(base, WeaponModCodesForWeapon(w.Name, mods))
 	}
+	weaponSpace = gamedata.WeaponArcAdjustedValue(weaponSpace, NormalizeWeaponArc(w.Name, arc))
+	used := weaponSpace
 	// 特殊系統佔格改讀**原版表的真值**(依艦級,見 special_device_map.go)。
 	// 先前走 gamedata.SpecialSpace 的 5% 估計——那個估計的註解自己就寫著「這不是手冊數字」。
 	//
@@ -1623,9 +2005,14 @@ func ShipDesignFits(class string, weapon, armor, shield, special int) bool {
 // ShipDesignSpaceUsedWithMods)。掛 Heavy Mount/Enveloping 等增加佔格的 mod 可能讓原本
 // 塞得下的設計超格,藉此讓 UI/建造流程仍然擋下超格設計。
 func ShipDesignFitsWithMods(class string, weapon, armor, shield, special int, mods []string) bool {
+	return ShipDesignFitsWithModsAndArc(class, weapon, armor, shield, special, mods, gamedata.ARC_FWD)
+}
+
+// ShipDesignFitsWithModsAndArc 是含火線角的艦體空間判定。
+func ShipDesignFitsWithModsAndArc(class string, weapon, armor, shield, special int, mods []string, arc gamedata.WeaponArc) bool {
 	classID, _ := shipClassFromName(class)
 	hullSpace := gamedata.ShipHullSpace(classID)
-	return ShipDesignSpaceUsedWithMods(class, weapon, armor, shield, special, mods) <= hullSpace
+	return ShipDesignSpaceUsedWithModsAndArc(class, weapon, armor, shield, special, mods, arc) <= hullSpace
 }
 
 // DesignCost 回傳一組元件選擇(艦體 + 武器/裝甲/護盾/特殊)的總生產成本(無武器改造)。
@@ -1636,11 +2023,17 @@ func DesignCost(class string, weapon, armor, shield, special int) int {
 // DesignCostWithMods 同 DesignCost,套用武器改造對成本的影響(手冊「adds to the size AND
 // cost」,與佔格用同一套百分比,見 gamedata.WeaponCostWithMods)。
 func DesignCostWithMods(class string, weapon, armor, shield, special int, mods []string) int {
+	return DesignCostWithModsAndArc(class, weapon, armor, shield, special, mods, gamedata.ARC_FWD)
+}
+
+// DesignCostWithModsAndArc 是含火線角的艦艇總成本。
+func DesignCostWithModsAndArc(class string, weapon, armor, shield, special int, mods []string, arc gamedata.WeaponArc) int {
 	w := pick(WeaponOptions, weapon)
 	weaponCost := w.Cost
-	if len(mods) > 0 && WeaponIsBeam(w.Name) {
-		weaponCost = gamedata.WeaponCostWithMods(w.Cost, weaponModCodes(mods))
+	if len(mods) > 0 {
+		weaponCost = gamedata.WeaponCostWithMods(w.Cost, WeaponModCodesForWeapon(w.Name, mods))
 	}
+	weaponCost = gamedata.WeaponArcAdjustedValue(weaponCost, NormalizeWeaponArc(w.Name, arc))
 	// 特殊系統成本改讀**原版表的真值**(依艦級,見 special_device_map.go)。原版的成本
 	// 隨艦體等級變動——同一套系統裝在末日之星上比裝在巡防艦上貴一個數量級,
 	// 而 Component.Cost 是單一數字。對不上原版表的幾項仍走 Component.Cost。
@@ -1661,12 +2054,22 @@ func (s *GameSession) BuildShip(class string, weapon, armor, shield, special int
 // 但仍照玩家選擇存檔(不強制清空),避免玩家切換武器後 UI 狀態被意外抹除;佔格/傷害計算
 // 端(ShipDesignSpaceUsedWithMods / battleVolley)各自已用 WeaponIsBeam 判斷是否套用。
 func (s *GameSession) BuildShipWithMods(class string, weapon, armor, shield, special int, mods []string) bool {
+	return s.BuildShipWithModsAndArc(class, weapon, armor, shield, special, mods, gamedata.ARC_FWD)
+}
+
+// BuildShipWithModsAndArc 建造並保存一艘含火線角的艦艇。
+func (s *GameSession) BuildShipWithModsAndArc(class string, weapon, armor, shield, special int, mods []string, arc gamedata.WeaponArc) bool {
+	text := class + "\x00" + strings.Join(mods, "\x00")
+	s.recordPlayerCommand(PlayerCommand{
+		Name: CmdBuildShip, Args: []int{weapon, armor, shield, special, 0, int(arc)}, Text: text,
+	})
 	// 武器傷害(w.Value)吃這局遊戲的版本規則 profile(s.RuleProfile,見 BuildWeaponOptions 註解:
 	// 電漿砲 1.3=30/1.5=20,其餘元件與套件級 WeaponOptions 逐一相同)——造艦時真正掛上版本相依
 	// 傷害值,不再永遠是套件級硬編的 1.5 值。成本(DesignCostWithMods)不受影響:兩版電漿砲 Cost
 	// 相同,差異只在 Value,見 ruleprofile.go RuleProfile.PlasmaCannonMaxDamage 註解。
 	w, a, sh, sp := pick(BuildWeaponOptions(s.RuleProfile), weapon), pick(ArmorOptions, armor), pick(ShieldOptions, shield), pick(SpecialOptions, special)
-	cost := DesignCostWithMods(class, weapon, armor, shield, special, mods)
+	arc = NormalizeWeaponArc(w.Name, arc)
+	cost := DesignCostWithModsAndArc(class, weapon, armor, shield, special, mods, arc)
 	if s.Player.BC < cost {
 		return false
 	}
@@ -1690,6 +2093,7 @@ func (s *GameSession) BuildShipWithMods(class string, weapon, armor, shield, spe
 	// 逐殖民地造艦那條路(deliverNewShip)有正確吃到學院加成。
 	f.Ships = append(f.Ships, Ship{Name: name, Class: class, Weapon: w.Name, Armor: a.Name, Shield: sh.Name,
 		Special: sp.Name, WeaponAttack: atk, BonusHP: a.Value + sh.Value, Mods: modsCopy,
+		Arc:    arc,
 		CrewXP: s.newShipCrewXP(-1)})
 	return true
 }
@@ -1697,6 +2101,7 @@ func (s *GameSession) BuildShipWithMods(class string, weapon, armor, shield, spe
 // ShiftColonyJob 在某殖民地把 1 名人口從 from 職務移到 to(f=農夫 w=工人 s=科學家);
 // from 需有人。供殖民地人口重分配(影響下回合經濟)。
 func (s *GameSession) ShiftColonyJob(idx int, from, to string) {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdShiftJob, Args: []int{idx}, Text: from + ">" + to})
 	if idx < 0 || idx >= len(s.PlayerColonies) {
 		return
 	}
@@ -1725,9 +2130,10 @@ func (s *GameSession) ShiftColonyJob(idx int, from, to string) {
 
 // ColonyBuild 是某殖民地目前的建造項目。
 type ColonyBuild struct {
-	Name     string
-	Progress int
-	Cost     int
+	Name         string
+	Progress     int
+	ProgressHalf int // 半機械族建造進度的半單位餘數；舊存檔缺欄位時為 0
+	Cost         int
 }
 
 // TradeGoodsBuildName 是「貿易品」建造佇列選項的名稱。與空字串「不建造」同類——是佇列的
@@ -1761,9 +2167,9 @@ var buildOptions = allBuildOptions()
 // 同樣走殖民地建造佇列選單,見 gamedata/special_actions.go 檔頭說明。
 func allBuildOptions() []ColonyBuild {
 	out := make([]ColonyBuild, 0, len(gamedata.Buildings)+len(gamedata.SpecialActions)+2)
-	out = append(out, ColonyBuild{"", 0, 0})
-	out = append(out, ColonyBuild{TradeGoodsBuildName, 0, 0})
-	out = append(out, ColonyBuild{HousingBuildName, 0, 0})
+	out = append(out, ColonyBuild{Name: "", Progress: 0, Cost: 0})
+	out = append(out, ColonyBuild{Name: TradeGoodsBuildName, Progress: 0, Cost: 0})
+	out = append(out, ColonyBuild{Name: HousingBuildName, Progress: 0, Cost: 0})
 	for _, b := range gamedata.Buildings {
 		out = append(out, ColonyBuild{Name: b.NameZH, Progress: 0, Cost: b.ProductionCost})
 	}
@@ -1777,7 +2183,11 @@ func allBuildOptions() []ColonyBuild {
 // 兩個特殊選項恆在,不受前置科技限制)。地形改造/蓋亞轉化/土壤改良/運輸艦隊比照建築同款前置
 // 科技 gate(gamedata.AvailableSpecialActions),排在建築清單之後。
 func availableBuildOptions(completedTopics map[gamedata.ResearchTopic]bool) []ColonyBuild {
-	out := []ColonyBuild{{"", 0, 0}, {TradeGoodsBuildName, 0, 0}, {HousingBuildName, 0, 0}}
+	out := []ColonyBuild{
+		{Name: "", Progress: 0, Cost: 0},
+		{Name: TradeGoodsBuildName, Progress: 0, Cost: 0},
+		{Name: HousingBuildName, Progress: 0, Cost: 0},
+	}
 	for _, b := range gamedata.AvailableBuildings(completedTopics) {
 		out = append(out, ColonyBuild{Name: b.NameZH, Progress: 0, Cost: b.ProductionCost})
 	}
@@ -1820,6 +2230,7 @@ func StartingBuildingCount(pop, cap int) int {
 // CycleColonyBuild 循環切換某殖民地的建造項目(進度歸零)。選項依玩家目前已完成研究 gate
 // (availableBuildOptions):尚未解鎖前置科技的建築不會出現在循環清單中。
 func (s *GameSession) CycleColonyBuild(idx int) {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdCycleColonyBuild, Args: []int{idx}})
 	if idx < 0 || idx >= len(s.Builds) {
 		return
 	}
@@ -1999,17 +2410,30 @@ func (s *GameSession) advanceBuilds() {
 		if b.Name == "" || b.Cost == 0 {
 			continue
 		}
-		ind := 0
-		if i < len(s.LastPlayerOutput.Colonies) {
-			// 稅金與建造搶同一份生產(手冊 GAME_MANUAL.pdf p.37:「Every rise in the tax rate
-			// causes a corresponding drop in production」):稅率抽走 TaxRate% 的淨工業換 BC,剩下
-			// (100-TaxRate)% 才用於建造。先前建造吃完整 NetIndustry、稅又另抽一次=稅金變免費錢
-			// (非忠實),2026-07-12 校正扣掉稅金那份,使稅率成為真正的「更多錢 vs 更快建造」取捨。
-			netInd := s.LastPlayerOutput.Colonies[i].NetIndustry
-			ind = netInd * (100 - s.Player.TaxRate) / 100
+		if i >= len(s.LastPlayerOutput.Colonies) {
+			continue
 		}
-		b.Progress += ind
-		if b.Progress >= b.Cost {
+		// 稅金與建造搶同一份生產(手冊 GAME_MANUAL.pdf p.37:「Every rise in the tax rate
+		// causes a corresponding drop in production」):稅率抽走 TaxRate% 的淨工業換 BC,剩下
+		// (100-TaxRate)% 才用於建造。先前建造吃完整 NetIndustry、稅又另抽一次=稅金變免費錢
+		// (非忠實),2026-07-12 校正扣掉稅金那份,使稅率成為真正的「更多錢 vs 更快建造」取捨。
+		co := s.LastPlayerOutput.Colonies[i]
+		ind := co.NetIndustry * (100 - s.Player.TaxRate) / 100
+		complete := false
+		if co.Cybernetic {
+			// 半機械族每人口消耗半生產力；把該回合剩餘的奇數半單位
+			// 累進，避免每回合先除 2 而遺失建造進度。
+			indHalf := co.NetIndustryHalf * (100 - s.Player.TaxRate) / 100
+			progressHalf := b.Progress*2 + b.ProgressHalf + indHalf
+			b.Progress = progressHalf / 2
+			b.ProgressHalf = progressHalf % 2
+			complete = progressHalf >= b.Cost*2
+		} else {
+			b.Progress += ind
+			b.ProgressHalf = 0
+			complete = b.Progress >= b.Cost
+		}
+		if complete {
 			if i < len(s.ColonyBuildings) {
 				if _, isSpecial := gamedata.SpecialActionByNameZH(b.Name); isSpecial {
 					// Special 一次性行動(地形改造/蓋亞轉化/土壤改良/運輸艦隊):刻意不記入
@@ -2123,8 +2547,14 @@ func (s *GameSession) nextSupportShipName(class string) string {
 func (s *GameSession) applyClimateChange(i int, next gamedata.PlanetClimate) {
 	c := &s.PlayerColonies[i]
 	old := c.Climate
-	c.FoodPerFarmer += gamedata.ClimateFoodPerFarmer(next) - gamedata.ClimateFoodPerFarmer(old)
-	c.PopMax = gamedata.TerraformPopMaxAfterClimateChange(c.PopMax, old, next)
+	aquatic := s.raceHasTrait(gamedata.TRAIT_AQUATIC)
+	tolerant := s.raceHasTrait(gamedata.TRAIT_TOLERANT)
+	oldFoodClimate := raceFoodClimate(old, aquatic)
+	nextFoodClimate := raceFoodClimate(next, aquatic)
+	c.FoodPerFarmer += gamedata.ClimateFoodPerFarmer(nextFoodClimate) - gamedata.ClimateFoodPerFarmer(oldFoodClimate)
+	oldPopClimate := racePopulationClimate(old, aquatic, tolerant)
+	nextPopClimate := racePopulationClimate(next, aquatic, tolerant)
+	c.PopMax = gamedata.TerraformPopMaxAfterClimateChange(c.PopMax, oldPopClimate, nextPopClimate)
 	c.Climate = next
 }
 
@@ -2139,6 +2569,9 @@ type LeaderSkill struct {
 
 // Leader 是一名可雇用的軍官/領袖(供軍官列表)。
 type Leader struct {
+	// ID 是 HERODATA.LBX／原版 `_leaders[]` 的固定來源序號。0 也是有效 ID；JSON
+	// 不省略此欄，避免把第一位領袖誤當成「沒有 ID」。
+	ID    int `json:"id"`
 	Name  string
 	Skill string // 專長的**顯示**標籤(會隨語言翻譯,不可拿來當識別鍵——見 Skills)
 	Level int    // 顯示等級(1..5,對照 openorion2 MAX_LEADER_LEVELS=5 顯示慣例:1=最低、5=最高)。
@@ -2158,6 +2591,23 @@ type Leader struct {
 	//
 	// 為空時退回舊路徑(用 Skill 標籤反查單一技能),見 leaderSkills。
 	Skills []LeaderSkill `json:"skills,omitempty"`
+
+	// RawETA／RawStatus／RawLocation／RawPlayerIndex 是從原版 `.GAM` 59-byte
+	// 領袖記錄保留下來的原始欄位。它們不是由 remake 自己推導的「任期」：
+	// RawStatus=4 時，原版 `Deassign_Officer @ 0x934CF` 會每回合遞增 raw +0x37，
+	// 達 30 後交給 `Check_Officer_Fields @ 0x933F2` 清除；RawStatus=1 則每回合
+	// 遞減 raw +0x37，降到 0 且 RawLocation=1 時呼叫 `Colony_Calculation`。
+	// 最後一個回呼的完整 raw 重算仍未解出；remake 在 ETA 由 1→0 且 location=1
+	// 時，以 `applyLeaderETACallback` 重整已指派殖民地的衍生欄位／士氣，保留
+	// 領袖與任職，不宣稱這是原版所有 colony raw 欄位的逐值重建。
+	// RawExperience 是原版記錄 +0x24 的 u16。只有 GAM 匯入時才標記已知；舊
+	// JSON／demo 沒有這個欄位時，外交特殊貿易只使用顯示等級作保守 fallback。
+	RawExperience      int  `json:"rawExperience,omitempty"`
+	RawExperienceKnown bool `json:"rawExperienceKnown,omitempty"`
+	RawETA             int  `json:"rawEta,omitempty"`
+	RawStatus          int  `json:"rawStatus,omitempty"`
+	RawLocation        int  `json:"rawLocation,omitempty"`
+	RawPlayerIndex     int  `json:"rawPlayerIndex,omitempty"`
 }
 
 // demoLeaders 是示範領袖名單(固定;正式版由 HERODATA.LBX 真英雄資料填)。
@@ -2236,8 +2686,9 @@ func leaderDisplayLevelToExpLevel(level int) int {
 // 呼叫端傳 &session.PlayerColonies[0])。
 //
 // **哪些技能真的生效,看下面 switch 有沒有對應的 case**——沒有 case 的技能一律略過,
-// 不臆造欄位。目前接了 9 項(科學家/貿易家/財務官/心靈導師/醫官/農業官/勞工官/科學官/環保官);
-// 教官、工程師、指揮官、領航員有 id 但落在別的系統,見下方註解。
+// 不臆造欄位。目前殖民地欄位接 9 項(科學家/貿易家/財務官/心靈導師/醫官/農業官/勞工官/科學官/環保官);
+// 教官、工程師、指揮官、領航員，以及其餘 captain/common 技能落在其他消費端，見下方註解與
+// `leader_effects.go`。
 //
 // ⚠ 2026-08-07(第 45 項(領袖技能))修掉一個一直在的錯:**加成不是每個領袖都疊一份**。
 //
@@ -2692,6 +3143,7 @@ func (s *GameSession) ApplyRace(idx int) {
 	}
 	r := Races[idx]
 	s.RaceIndex = idx
+	s.CustomRaceTraits = 0
 	s.raceGrowthPct = r.GrowthPct
 	s.RaceCombatPct = r.CombatPct
 	s.RaceShipDefPct = r.ShipDefPct
@@ -2703,18 +3155,25 @@ func (s *GameSession) ApplyRace(idx int) {
 		s.PlayerColonies[i].FoodPerFarmer += r.FoodBonus
 		s.PlayerColonies[i].IncomePerPop += r.IncomePerPop // 種族「錢」特質(諾蘭姆每人+1BC/回合)
 	}
+	s.applyPlayerHomeworldRaceTraits(r)
 	s.Player.BC += r.StartBC
 }
 
-// ApplyCustomRaceBonuses 套用自訂種族(Custom Race)聚合出的數值加成。
+// ApplyCustomRaceBonuses 套用自訂種族(Custom Race)聚合出的數值加成與特殊能力。
 // 加成來自 docs/tech/custom-race-picks.md 的官方 patch 1.5 點數值(生產/成長/戰鬥/國庫)。
-// ⚠ 政府型態與特殊能力的深層效果(創造力科技解鎖、貿易奇才、心靈感應等)尚未模擬,
-// 目前只套用可對應到 Race 欄位的數值部分;其餘由 Custom 畫面記錄待後續實作。
-func (s *GameSession) ApplyCustomRaceBonuses(r Race) {
+// traits 保存客製畫面選到的布林能力；目前已有引擎公式的能力會直接由 raceHasTrait 讀取。
+// 尚未建模的能力也保留在同一個遮罩中，避免玩家存檔後失去選項語意。
+func (s *GameSession) ApplyCustomRaceBonuses(r Race, traits ...gamedata.RaceTrait) {
 	// ⚠ 自訂種族不在原版 13 族表上,RaceIndex 必須標成 −1。
 	// 不標的話它會停在預設的 0(人類),於是自訂種族會憑空拿到「魅力非凡」
 	// ——布林特性是由 RaceIndex 查的(見 raceOrigIdx),而 0 是一個合法索引。
 	s.RaceIndex = -1
+	s.CustomRaceTraits = 0
+	for _, t := range traits {
+		if t >= gamedata.TRAIT_LOW_G && t <= gamedata.TRAIT_POOR_HOMEWORLD {
+			s.CustomRaceTraits |= uint32(1) << uint(t)
+		}
+	}
 	s.raceGrowthPct = r.GrowthPct
 	s.RaceCombatPct = r.CombatPct
 	s.RaceShipDefPct = r.ShipDefPct
@@ -2726,7 +3185,30 @@ func (s *GameSession) ApplyCustomRaceBonuses(r Race) {
 		s.PlayerColonies[i].FoodPerFarmer += r.FoodBonus
 		s.PlayerColonies[i].IncomePerPop += r.IncomePerPop
 	}
+	s.applyPlayerHomeworldRaceTraits(r)
 	s.Player.BC += r.StartBC
+}
+
+// applyPlayerHomeworldRaceTraits 套用種族只影響母星的環境能力。
+// 呼叫點位於 ApplyRace/ApplyCustomRaceBonuses 的最後,此時 RaceIndex/CustomRaceTraits
+// 已完成,而政府乘數尚未套用,正好能用基礎值重新組合後交給 ApplyGovernment。
+func (s *GameSession) applyPlayerHomeworldRaceTraits(r Race) {
+	if len(s.PlayerColonies) == 0 {
+		return
+	}
+	var planet *Planet
+	if len(s.PlayerColonyPlanets) > 0 {
+		idx := s.PlayerColonyPlanets[0]
+		if idx >= 0 && idx < len(s.Planets) {
+			planet = &s.Planets[idx]
+		}
+	}
+	if planet == nil && len(s.Stars) > 0 {
+		if idx := s.PlanetAt(0); idx >= 0 && idx < len(s.Planets) {
+			planet = &s.Planets[idx]
+		}
+	}
+	applyHomeworldRaceTraits(&s.PlayerColonies[0], planet, r, s.raceHasTrait)
 }
 
 // FlagColors 是玩家旗幟顏色選項(原版新遊戲命名畫面選旗色)。
@@ -2942,8 +3424,9 @@ func (s *GameSession) SetupNewGame(stars int, seed int64, numAI int) {
 		s.Stars, rand.New(rand.NewSource(seed+4)))
 	s.SelectedStar = -1
 	s.AIPlayers = buildDemoAIOpponents(aiHomeStars, s.Difficulty, seed)
-	s.syncAIColonyPlanets()                       // 行星索引要等 Planets 生完才補得起來(見該函式)
-	s.PlayerSpies = make([]int, len(s.AIPlayers)) // 平行 AIPlayers,重置為全新對手的間諜數(開局皆 0)
+	s.syncAIColonyPlanets()                                    // 行星索引要等 Planets 生完才補得起來(見該函式)
+	s.PlayerSpies = make([]int, len(s.AIPlayers))              // 平行 AIPlayers,重置為全新對手的間諜數(開局皆 0)
+	s.PlayerSpyMissions = make([]SpyMission, len(s.AIPlayers)) // 零值 STEAL
 	s.PlayerColonyStars = []int{0}
 	s.Fleet().AtStar = 0
 	s.Fleet().DestStar = -1
@@ -3134,21 +3617,22 @@ func genGalaxy(n int, seed int64, aiHomes int, age gamedata.GalaxyAge, nameTr fu
 		aiSet[x] = true
 	}
 	idx := 0
-	names := make([]string, len(randomStarNamePool))
-	for i, en := range randomStarNamePool {
-		names[i] = en // 池子存英文原文
-		if nameTr != nil {
-			names[i] = nameTr(en) // 生成時翻(見 GameSession.localName 的說明)
-		}
-	}
-	r.Shuffle(len(names), func(i, j int) { names[i], names[j] = names[j], names[i] })
+	// 先洗英文原文，再由同一個原文產生目前語言的顯示名。這樣中文星名
+	// 不會覆蓋英文來源，動態事件報告才能在英文模式重建正確的星名。
+	namesEN := make([]string, len(randomStarNamePool))
+	copy(namesEN, randomStarNamePool)
+	r.Shuffle(len(namesEN), func(i, j int) { namesEN[i], namesEN[j] = namesEN[j], namesEN[i] })
 	for gy := 0; gy < rows && idx < n; gy++ {
 		for gx := 0; gx < cols && idx < n; gx++ {
 			x := (float64(gx) + 0.15 + r.Float64()*0.7) / float64(cols)
 			y := (float64(gy) + 0.15 + r.Float64()*0.7) / float64(rows)
-			nm := names[idx%len(names)]
-			if idx >= len(names) {
-				nm = fmt.Sprintf("%s-%d", nm, idx/len(names)+1)
+			nmEN := namesEN[idx%len(namesEN)]
+			if idx >= len(namesEN) {
+				nmEN = fmt.Sprintf("%s-%d", nmEN, idx/len(namesEN)+1)
+			}
+			nm := nmEN
+			if nameTr != nil {
+				nm = nameTr(nmEN)
 			}
 			owner := 0
 			if idx == 0 {
@@ -3166,7 +3650,7 @@ func genGalaxy(n int, seed int64, aiHomes int, age gamedata.GalaxyAge, nameTr fu
 				spectral = int(gamedata.Yellow)
 			}
 			// Star.Size 是星圖上的**視覺**大小(0=大..3=小),與行星大小無關,維持原本的均勻亂數。
-			stars = append(stars, Star{X: x, Y: y, Spectral: spectral, Size: r.Intn(4), Name: nm, Owner: owner, Wormhole: -1})
+			stars = append(stars, Star{X: x, Y: y, Spectral: spectral, Size: r.Intn(4), Name: nm, NameEN: nmEN, Owner: owner, Wormhole: -1})
 			idx++
 		}
 	}
@@ -3191,6 +3675,17 @@ type GameSession struct {
 	// 也有關係(依相對軍力漂移),使星系「活起來」並可支撐議會第三方搖擺票(見 advanceAIDiplomacy)。
 	// 對稱維護(i↔j 各記一半視角)。長度 = len(AIPlayers)。
 	AIRelations [][]int
+	// EnableAIVsAI 是 remake 的可選強化開關。新示範／新局開啟；舊存檔缺欄位
+	// 解為 false，避免在沒有快照資料時突然改變既有對局。
+	EnableAIVsAI bool
+	// AIWars / AIPolicies / AITrade / AIResearch 是 AI 彼此的正式外交狀態。
+	// 這是 remake 的抽象矩陣，不是原版存檔欄位；只在 EnableAIVsAI 時消費。
+	AIWars     [][]bool
+	AIPolicies [][]gamedata.ForeignPolicy
+	AITrade    [][]bool
+	AIResearch [][]bool
+	// LastAIAIBattle 是上一回合 AI 對 AI 抽象戰鬥的報告，不進存檔。
+	LastAIAIBattle *AIAIBattleReport `json:"-"`
 	// History 是逐回合的全帝國國力快照(原版 module 122 Record_History_ 的對應物,
 	// 供 INFO 的 History Graph 子畫面畫折線;見 history.go 檔頭)。
 	History []HistoryTurn
@@ -3211,9 +3706,12 @@ type GameSession struct {
 	Nebulae          []Nebula            // 星雲(星圖地形,影響戰鬥護盾;見 nebula.go)
 	// nebulaProbe 判定某個正規化座標是否落在星雲內。要讀星雲圖的遮罩,而本套件不碰資產,
 	// 所以由 cmd/moo2 用 SetNebulaProbe 裝進來。**未匯出 = 不進存檔**,讀檔後要重裝。
-	nebulaProbe       func(x, y float64) bool
-	Planets           []Planet // 行星列表
-	Leaders           []Leader // 已雇用的軍官/領袖名單(Leader Pool)
+	nebulaProbe func(x, y float64) bool
+	Planets     []Planet // 行星列表
+	Leaders     []Leader // 已雇用的軍官/領袖名單(Leader Pool)
+	// ColonyLeaderNames 與 PlayerColonies 平行，保存殖民地領袖的穩定名稱識別。
+	// 空字串表示未指派；完整技能仍由 Leaders 查回，避免存檔複製衍生資料。
+	ColonyLeaderNames []string
 	MercPool          []Leader // 目前上門可雇用的傭兵領袖(手冊 p.134,見 advanceMercOffers/HireMerc)
 	MercOfferedIdx    int      // 已釋出過的傭兵候選數(遞增指標,避免重複 offer 同一候選)
 	MercCandidatePool []Leader // 傭兵候選池(cmd 層由 HERODATA.LBX 真英雄注入,見 SetMercCandidates);nil=用內建策展名單
@@ -3276,14 +3774,21 @@ type GameSession struct {
 
 	// FleetTanks / PlayerColonyTanks / ArmorBarracksAge:裝甲營房(Armor Barracks)戰車營
 	// 駐軍系統,與上面三個 Marine 對應欄位對稱(見 advanceArmor/LoadTanks,ground_invasion.go)。
-	PlayerColonyTanks []int       // 各玩家殖民地 Armor Barracks 駐軍池(平行 PlayerColonies)
-	ArmorBarracksAge  []int       // 各玩家殖民地 Armor Barracks 已運作回合數(平行 PlayerColonies)
-	EventSeed         int64       // 隨機事件亂數種子(可重現;新遊戲遞增)
-	LastEvent         string      // 本回合觸發的隨機事件描述(空=無事件;供回合摘要)
-	DisableEvents     bool        // 關閉隨機事件(供確定性經濟測試隔離)
-	eventRand         *randStream // 事件亂數源(由 EventSeed 惰性建立;抽取次數會進存檔,見 randstream.go)
-	AntaresRaids      int         // 已發生的安塔蘭突襲次數(逐次升級強度)
-	LastAntares       string      // 本回合安塔蘭突襲描述(空=無;供回合摘要)
+	PlayerColonyTanks     []int       // 各玩家殖民地 Armor Barracks 駐軍池(平行 PlayerColonies)
+	ArmorBarracksAge      []int       // 各玩家殖民地 Armor Barracks 已運作回合數(平行 PlayerColonies)
+	EventSeed             int64       // 隨機事件亂數種子(可重現;新遊戲遞增)
+	LastEvent             string      // 本回合觸發的隨機事件描述(空=無事件;供回合摘要)
+	LastPersistentEventEN string      `json:"-"` // 持續事件英文播報(與 LastEvent 同回合,不進存檔)
+	DisableEvents         bool        // 關閉隨機事件(供確定性經濟測試隔離)
+	eventRand             *randStream // 事件亂數源(由 EventSeed 惰性建立;抽取次數會進存檔,見 randstream.go)
+	researchRand          *randStream // 研究選項亂數源(缺乏創造力;抽取次數會進存檔)
+	// commandRecorder 只記錄目前真人席位在本回合的玩家操作；AI 與世界結算時
+	// 由 commandReplayDepth 暫停記錄。它不進存檔，因為是傳輸層的行程狀態。
+	commandRecorder    func(PlayerCommand)
+	commandReplayDepth int
+	AntaresRaids       int    // 已發生的安塔蘭突襲次數(逐次升級強度)
+	LastAntares        string // 本回合安塔蘭突襲描述(空=無;供回合摘要)
+	LastAntaresEN      string // 同一安塔蘭突襲的英文描述(英文模式)
 	// Monsters 是星圖上守衛星系的太空怪獸(見 monster.go)。清空 = 全部已被清除。
 	Monsters []MonsterGuard
 
@@ -3303,15 +3808,18 @@ type GameSession struct {
 
 	// LastRaid / LastRaidReport 是本回合 AI 對玩家殖民地的突襲(見 ai_attack.go);
 	// 空/nil = 無。與 LastAntares 分開:安塔蘭人是週期腳本,AI 突襲是外交/軍備的後果。
-	LastRaid        string
-	LastRaidReport  *AIRaidReport
-	RaceIndex       int    // 玩家選定的種族(shell.Races 索引)
-	PlayerName      string // 玩家帝國/領袖名稱(新遊戲命名畫面設定)
-	FlagColor       int    // 玩家旗幟顏色索引(shell.FlagColors)
-	RaceCombatPct   int    // 種族**艦艇攻擊**百分點加成(原版 TRAIT_SHIP_ATTACK)
-	RaceShipDefPct  int    // 種族艦艇防禦百分點加成(原版 TRAIT_SHIP_DEFENSE)
-	RaceGroundBonus int    // 種族地面戰定值加成(原版 TRAIT_GROUND_COMBAT)
-	RaceSpyBonus    int    // 種族諜報定值加成(原版 TRAIT_SPYING)
+	LastRaid       string
+	LastRaidReport *AIRaidReport
+	RaceIndex      int // 玩家選定的種族(shell.Races 索引)
+	// CustomRaceTraits 是客製種族畫面所選的布林能力位元遮罩。零值代表沒有特殊能力；
+	// 舊存檔沒有此欄位時自然退回此語意。它與 RaceIndex=-1 一起表示客製種族。
+	CustomRaceTraits uint32
+	PlayerName       string // 玩家帝國/領袖名稱(新遊戲命名畫面設定)
+	FlagColor        int    // 玩家旗幟顏色索引(shell.FlagColors)
+	RaceCombatPct    int    // 種族**艦艇攻擊**百分點加成(原版 TRAIT_SHIP_ATTACK)
+	RaceShipDefPct   int    // 種族艦艇防禦百分點加成(原版 TRAIT_SHIP_DEFENSE)
+	RaceGroundBonus  int    // 種族地面戰定值加成(原版 TRAIT_GROUND_COMBAT)
+	RaceSpyBonus     int    // 種族諜報定值加成(原版 TRAIT_SPYING)
 
 	raceGrowthPct int // 種族人口成長百分點加成(供 advancePopulation)
 
@@ -3348,11 +3856,16 @@ type GameSession struct {
 	// s.Victory。Go 零值(false)即想要的預設值,無零值陷阱。
 	AntaranHomeworldConquered bool
 
-	// --- 間諜(見 spy.go,最小可玩迴圈:只做偷科技 STEAL,見該檔檔頭說明) ---
+	// --- 間諜(見 spy.go / spy_mission.go) ---
 	// PlayerSpies 是玩家派駐到 AIPlayers[i] 的間諜數(平行 AIPlayers)。opt-in,預設 0
 	// (Go 零值即想要的預設值)。玩家經 TrainSpy(idx) 花 BC 增加;逐對手分配已經是這個陣列
-	// 天然支援的結構,只是目前唯一一個 AI 對手時看不出差異。
-	PlayerSpies []int
+	// 天然支援的結構。PlayerSpyMissions 同樣平行保存 STEAL/SABOTAGE/HIDE 任務；
+	// SABOTAGE 的最小建築破壞結算已接入 spy.go。
+	PlayerSpies       []int
+	PlayerSpyMissions []SpyMission
+	// DefensiveAgents 是玩家帝國共用的防守 Agent 數量，與 PlayerSpies 的逐對手
+	// 進攻配置分開保存。
+	DefensiveAgents int
 
 	// Seats / ActiveSeat 是熱座多人(見 hotseat.go)。單人局 Seats 為 nil、ActiveSeat 為 0,
 	// 所有既有邏輯逐位元不變——熱座只在席位數 > 1 時才會動到任何東西。
@@ -3391,6 +3904,7 @@ const (
 // 且有戰力,視為部分防禦、減半損失。結果記於 LastAntares(供回合摘要)。可用 DisableEvents 關閉。
 func (s *GameSession) advanceAntares() {
 	s.LastAntares = ""
+	s.LastAntaresEN = ""
 	if s.DisableEvents {
 		return
 	}
@@ -3446,10 +3960,13 @@ func (s *GameSession) advanceAntares() {
 		}
 	}
 	tag := ""
+	tagEN := ""
 	if defended {
 		tag = "(母星艦隊部分擊退)"
+		tagEN = " (homeworld fleet partially repelled the attack)"
 	}
 	s.LastAntares = fmt.Sprintf("⚠ 安塔蘭人第 %d 次入侵%s:損失 %d BC + 母星人口", sev, tag, bcLoss)
+	s.LastAntaresEN = fmt.Sprintf("⚠ Antaran invasion #%d%s: %d BC and homeworld population lost", sev, tagEN, bcLoss)
 }
 
 // advanceEvents 每回合以固定機率觸發一個 MOO2 風格隨機事件並套用效果,結果記於 LastEvent
@@ -3462,6 +3979,7 @@ func (s *GameSession) advanceAntares() {
 // SendFleet 派遣玩家艦隊前往 dest 星:依兩星歐氏距離換算航行回合數(ETA),每回合 EndTurn
 // 遞減。dest 無效、與現址相同、或艦隊正航行中則忽略。回傳是否成功下令。
 func (s *GameSession) SendFleet(dest int) bool {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdSendFleet, Args: []int{dest}})
 	if dest < 0 || dest >= len(s.Stars) || dest == s.Fleet().AtStar || s.Fleet().ETA > 0 {
 		return false
 	}
@@ -3673,6 +4191,9 @@ func (s *GameSession) totalCommandPointsSupply() int {
 	for _, built := range s.ColonyBuildings {
 		total += gamedata.CommandPointsFromBuildings(built)
 	}
+	// Operations 是帝國層的 Command Rating 加成；與殖民地建築同樣只取
+	// 最佳的一位 common 領袖，不把同一技能重複疊加。
+	total += leaderEmpireSkillBonus(s.Leaders, gamedata.SKILL_OPERATIONS)
 	return total
 }
 
@@ -3778,11 +4299,26 @@ func (s *GameSession) prepPlayerDerived() {
 
 // EndTurn 推進一回合:先結算玩家帝國,再讓各 AI 對手自行決策並結算,回合數 +1。
 func (s *GameSession) EndTurn() {
+	// 協議狀態每個世界回合只推進一次；同一份結果稍後分別餵給玩家與對應 AI，
+	// 避免在兩個帝國的經濟結算中把協議進度推進兩次。
+	treatyYields := s.advanceTreaties()
+	playerTreatyBC, playerTreatyResearch := 0, 0
+	for _, y := range treatyYields {
+		playerTreatyBC += y.PlayerBC
+		playerTreatyResearch += y.PlayerResearch
+	}
+	s.Player.TreatyIncomeBC = playerTreatyBC
+	s.Player.TreatyResearch = playerTreatyResearch
 	s.prepPlayerDerived()
 	s.LastPlayerOutput = engine.RunEmpireTurn(s.Player, s.coloniesForTurn())
+	s.LastPlayerOutput.Player.TreatyIncomeBC = 0
+	s.LastPlayerOutput.Player.TreatyResearch = 0
 	s.Player = s.LastPlayerOutput.Player
+	s.applyPlayerResearchRaceTrait(s.LastPlayerOutput.ResearchDone)
 	s.recoverFromFamine() // 饑荒防死鎖:見函式註解;依本回合 Starving 結果修正下回合職務分配
+	aiGross := make([]int, len(s.AIPlayers))
 	for i := range s.AIPlayers {
+		s.syncAIRaceEngineFields(&s.AIPlayers[i])
 		// 分兩步而非直接呼叫 engine.RunAIEmpireTurn:ApplyAIEconomy 回傳的 colonies(職務
 		// 重新分配後的結果)必須寫回 s.AIPlayers[i].Colonies——先前直接用 RunAIEmpireTurn 時,
 		// 這個回傳值只在函式內部傳給 RunEmpireTurn 算完當回合經濟就丟棄,從未寫回存檔用的
@@ -3793,22 +4329,49 @@ func (s *GameSession) EndTurn() {
 		// 見該欄位註解),Hyper-Advanced 研究成本覆寫同樣要套用,否則 1.3 局裡 AI 仍會用 1.5 的
 		// 25000 成本研究,造成玩家/AI 規則不對稱。
 		s.AIPlayers[i].Player.HyperAdvancedResearchCost = gamedata.HyperAdvancedCost(s.RuleProfile)
+		if i < len(treatyYields) {
+			s.AIPlayers[i].Player.TreatyIncomeBC = treatyYields[i].AIBC
+			s.AIPlayers[i].Player.TreatyResearch = treatyYields[i].AIResearch
+		}
 		ps, colonies := engine.ApplyAIEconomy(s.AIPlayers[i].Player, s.AIPlayers[i].Colonies, s.AIPlayers[i].Decider)
 		s.AIPlayers[i].Colonies = colonies
 		out := engine.RunEmpireTurn(ps, colonies)
+		out.Player.TreatyIncomeBC = 0
+		out.Player.TreatyResearch = 0
 		s.AIPlayers[i].Player = out.Player
+		aiGross[i] = empireGrossBC(out)
+		s.applyAIResearchRaceTrait(&s.AIPlayers[i], out.ResearchDone)
+		// AI 人口／職務在 ApplyAIEconomy 後才是本回合的新值；兵營容量與每五回合
+		// 產出要吃這個回寫後的人口，再交給 advanceAI 進行擴張等行動。
+		advanceAIGroundForces(&s.AIPlayers[i])
 		s.advanceAI(i, out) // AI 主動行為:造艦 / 擴張 / 外交態勢
 	}
+	// 原版把納貢成本納入帝國經濟後才供外交／摘要讀取；這裡在雙方
+	// RunEmpireTurn 完成後一次移轉，避免玩家與 AI 看到半回合狀態。
+	// AI 的下一步決策從下一回合開始使用收到的國庫，維持現有回合順序。
+	s.applyTributeTransfers(empireGrossBC(s.LastPlayerOutput), aiGross)
 	// 間諜結算須排在玩家與所有 AI 本回合研究都跑完之後(用最新的 CompletedTopics/ChosenTech
 	// 判定「對方已知、我方未知」的可偷科技清單),故緊接在上面的 AI 迴圈之後。
+	bcBeforeLeaderEffects := s.Player.BC
+	s.advanceLeaderLimbo()                       // 原版 status=4 閒置記數達 30 後清除(見 leader_tenure.go)
 	s.LastLeaderUpkeep = s.advanceLeaderUpkeep() // 領袖每回合維護費(見 leader_upkeep.go)
-	s.advanceEspionage()                         // 玩家 ↔ AI 間諜行動(最小迴圈:偷科技 STEAL,見 spy.go)
-	s.advanceBuilds()                            // 以本回合淨工業推進各殖民地建造
-	s.advanceResearch()                          // 目前研究主題完成則自動推進到下一個未完成的元件解鎖主題
-	s.LastDiscovery = nil                        // 每回合先清掉上一回合的發現(與 advanceEvents 清 LastEvent 同一個節奏)
-	s.advanceFleet()                             // 推進艦隊星間航行(ETA 遞減,抵達則標記探索 + 結算一次性發現)
-	s.advanceCrewExperience()                    // 艦員經驗:每回合 +1,停泊星系每有一座太空學院再 +1(見 crew.go)
-	s.advanceAssimilation()                      // 征服人口同化:依政體 2–20 回合同化一單位(見 assimilation.go)
+	if wealth := leaderMegawealthBC(s.Leaders); wealth != 0 {
+		s.Player.BC += wealth
+	}
+	// 領袖維護費與 Megawealth 是帝國層現金變化；回填摘要，讓 NetBC 與
+	// 實際國庫保持一致。沒有領袖時差值為 0，維持舊開局序列。
+	s.LastPlayerOutput.NetBC += s.Player.BC - bcBeforeLeaderEffects
+	s.LastPlayerOutput.Player.BC = s.Player.BC
+	bcBeforeEspionage := s.Player.BC
+	s.advanceEspionage() // 玩家 ↔ AI 間諜行動(最小迴圈:偷科技 STEAL,見 spy.go)
+	s.LastPlayerOutput.NetBC += s.Player.BC - bcBeforeEspionage
+	s.LastPlayerOutput.Player.BC = s.Player.BC
+	s.advanceBuilds()         // 以本回合淨工業推進各殖民地建造
+	s.advanceResearch()       // 目前研究主題完成則自動推進到下一個未完成的元件解鎖主題
+	s.LastDiscovery = nil     // 每回合先清掉上一回合的發現(與 advanceEvents 清 LastEvent 同一個節奏)
+	s.advanceFleet()          // 推進艦隊星間航行(ETA 遞減,抵達則標記探索 + 結算一次性發現)
+	s.advanceCrewExperience() // 艦員經驗:每回合 +1,停泊星系每有一座太空學院再 +1(見 crew.go)
+	s.advanceAssimilation()   // 征服人口同化:依政體 2–20 回合同化一單位(見 assimilation.go)
 	// 叛亂檢定接在同化**之後**:同化先扣掉這一回合該同化的人口,剩下的才是有機會起事的。
 	// 反過來的話,一個「這回合剛好同化完最後一單位」的殖民地還會多擲一次骰。
 	s.LastRebellions = s.advanceRebellions() // 未同化人口叛亂(見 rebellion.go)
@@ -3961,8 +4524,13 @@ func (s *GameSession) advanceAI(i int, out engine.EmpireOutput) {
 	// advanceEspionage),上限比照手冊每對手 63 人(gamedata.SpySlotBonus 的夾範圍)。不像
 	// 玩家 TrainSpy 需要花 BC——AI 訓練成本/BC 限制目前無資料可推導,誠實簡化為免費週期政策
 	// (TODO:待有更細緻 AI 經濟模型後補上維護費/訓練成本)。
-	if s.Turn%6 == 0 && a.Spies < 63 {
+	if s.Turn%6 == 0 && a.Spies < spyMaxSlots {
 		a.Spies++
+	}
+	// 防守 Agent 與進攻 Spy 分開累積；這是 remake 的固定週期政策，舊存檔
+	// 的零值會從第 8 回合開始自然補上，不改變讀檔相容性。
+	if s.Turn%8 == 0 && a.DefensiveAgents < spyMaxSlots {
+		a.DefensiveAgents++
 	}
 
 	// 3) 外交態勢:AI 越強、難度越高,對玩家越敵對。
@@ -4050,6 +4618,9 @@ func (s *GameSession) advanceAIDiplomacy() {
 			s.AIRelations[i][j] = r
 		}
 	}
+	if s.EnableAIVsAI {
+		s.advanceAIAIDiplomacy()
+	}
 }
 
 // AIRelationName 回傳 AI i 對 AI j 的關係中文分級(供 races 畫面顯示);越界/無矩陣回「中立」。
@@ -4100,6 +4671,7 @@ var stanceNames = map[ai.Stance]string{
 // 天體(全是氣態巨星/小行星帶,或氣候不合)就 continue 找下一顆無主星,不 fallback 成只設旗標
 // (避免旗標與殖民地模型再度分裂)。找不到任何可擴張的無主星則整個 no-op。
 func (s *GameSession) aiExpand(i int) {
+	ensureAIGroundForceSlots(&s.AIPlayers[i])
 	// 擴張積極度依性格(原版 _personality_expansion_chance:冷酷 100、和平主義只有 30)。
 	// 先前所有 AI 一律每回合都嘗試擴張,擴張速度毫無性格差異。
 	if chance := ai.PersonalityExpansionChance(s.AIPlayers[i].Personality); chance < 100 {
@@ -4142,6 +4714,27 @@ func (s *GameSession) aiExpand(i int) {
 		if !ok {
 			continue
 		}
+		// newColonyFromPlanet 同時服務玩家與 AI;此處把共用建構器先帶入的玩家特性
+		// 改成該 AI 的原版種族特性,避免 AI 擴張殖民地誤套玩家種族。
+		aiRace := aiRaceIndex(s.AIPlayers[i])
+		if aiRace >= 0 && aiRace < len(Races) {
+			orig := Races[aiRace].OrigIdx
+			colony.TolerantRace = gamedata.OrigRaceHasTrait(orig, gamedata.TRAIT_TOLERANT)
+			colony.Lithovore = gamedata.OrigRaceHasTrait(orig, gamedata.TRAIT_LITHOVORE)
+			colony.Aquatic = gamedata.OrigRaceHasTrait(orig, gamedata.TRAIT_AQUATIC)
+			colony.Subterranean = gamedata.OrigRaceHasTrait(orig, gamedata.TRAIT_SUBTERRANEAN)
+			colony.FoodPerFarmer += gamedata.ClimateFoodPerFarmer(raceFoodClimate(colony.Climate, colony.Aquatic)) -
+				gamedata.ClimateFoodPerFarmer(colony.Climate)
+			colony.PopMax = racePopulationMax(colony.PlanetSize, colony.Climate, colony.Aquatic, colony.TolerantRace, colony.Subterranean)
+			if colony.PopMax < colony.Population {
+				colony.PopMax = colony.Population
+			}
+		} else {
+			colony.TolerantRace = false
+			colony.Lithovore = false
+			colony.Aquatic = false
+			colony.Subterranean = false
+		}
 		if s.Stars[idx].Owner == 0 {
 			// 只有「本來無主」才算多佔一顆星。在自己已有的星系裡再殖民一顆行星不會讓
 			// 版圖變大——OwnedStars 若跟著加,征服勝利的判定與外交評分都會被灌水。
@@ -4154,6 +4747,10 @@ func (s *GameSession) aiExpand(i int) {
 		// 欄位註解)——手冊只保證母星有星基,新拓殖星沒有,故新 AI 殖民地開局無建築可扣。
 		s.AIPlayers[i].ColonyBuildings = append(s.AIPlayers[i].ColonyBuildings, map[string]bool{})
 		s.AIPlayers[i].ColonyPlanets = append(s.AIPlayers[i].ColonyPlanets, planetIdx)
+		s.AIPlayers[i].ColonyMarines = append(s.AIPlayers[i].ColonyMarines, 0)
+		s.AIPlayers[i].ColonyTanks = append(s.AIPlayers[i].ColonyTanks, 0)
+		s.AIPlayers[i].MarineBarracksAge = append(s.AIPlayers[i].MarineBarracksAge, 0)
+		s.AIPlayers[i].ArmorBarracksAge = append(s.AIPlayers[i].ArmorBarracksAge, 0)
 		s.consumeSpecialOnColonize(planetIdx) // 原住民被 AI 併入人口後同樣從行星上消失(見 colonization.go)
 		return
 	}
@@ -4394,7 +4991,7 @@ func researchQueue() []gamedata.ResearchTopic {
 	var q []gamedata.ResearchTopic
 	for _, opts := range [][]Component{WeaponOptions, ArmorOptions, ShieldOptions, SpecialOptions} {
 		for _, c := range opts {
-			if c.Tech != gamedata.TOPIC_STARTING_TECH && !seen[c.Tech] {
+			if gamedata.IsResearchableTopic(c.Tech) && !seen[c.Tech] {
 				seen[c.Tech] = true
 				q = append(q, c.Tech)
 			}
@@ -4717,6 +5314,9 @@ func buildDemoAIOpponents(aiHomeStars []int, difficulty int, seed int64) []AIOpp
 		pers := pickAIPersonality(setup.raceEn, difficulty, pr)
 		aiPlayers = append(aiPlayers, AIOpponent{
 			Name:        setup.name,
+			Color:       (i + 1) % 8,
+			ColorKnown:  true,
+			RaceIndex:   raceIndexForEnglishName(setup.raceEn),
 			Player:      newHomeworldPlayerState(1),
 			Colonies:    []engine.ColonyState{playerHomeworldColony()}, // AI 同為 Average 起始單一母星,與玩家共用忠實 yield
 			ColonyStars: []int{aiHomeStars[i]},                         // 唯一有實際殖民地模型的星(見 AIOpponent.ColonyStars 註解)
@@ -4735,8 +5335,23 @@ func buildDemoAIOpponents(aiHomeStars []int, difficulty int, seed int64) []AIOpp
 			// 和平主義 +30、排外 -50……先前所有 AI 一律從 0 開始,性格毫無體感。
 			Relation: clampRelation(ai.PersonalityRelationModifier(pers) / 2),
 		})
+		// Marine Barracks 是 AI 母星的開局建築；以原版「初建立即最多 4 單位」
+		// 建立駐軍，而不是等第一次入侵時才用目前回合數倒推。其餘殖民地由
+		// aiExpand 追加空的平行 slot。
+		ensureAIGroundForceSlots(&aiPlayers[len(aiPlayers)-1])
 	}
 	return aiPlayers
+}
+
+// raceIndexForEnglishName 將 AI 建構表的英文種族鍵轉回玩家種族表索引。
+// 這是資料模型接線,不是新的種族判定來源;AIRACES.CFG 的性格表仍由 raceEn 驅動。
+func raceIndexForEnglishName(name string) int {
+	for i, r := range Races {
+		if r.EnName == name {
+			return i
+		}
+	}
+	return -1
 }
 
 // defaultNameTranslator 是行程層的專有名詞翻譯器(星名/艦名),由 cmd/moo2 在啟動時
@@ -4772,7 +5387,9 @@ func NewDemoSession() *GameSession {
 		PlayerColonyStars: []int{0},                       // 母星 = 星 0(見欄位註解)
 		Government:        gamedata.MoraleGovDictatorship, // 預設獨裁(自訂種族 0 點基準),見欄位註解的零值陷阱說明
 		AIPlayers:         aiPlayers,
-		PlayerSpies:       make([]int, len(aiPlayers)), // 玩家對每個 AI 對手的間諜數,平行 AIPlayers,開局皆 0(見欄位/spy.go ensurePlayerSpies 註解)
+		EnableAIVsAI:      true,                               // 新示範／新局啟用；舊存檔缺欄位仍維持關閉
+		PlayerSpies:       make([]int, len(aiPlayers)),        // 玩家對每個 AI 對手的間諜數,平行 AIPlayers,開局皆 0(見欄位/spy.go ensurePlayerSpies 註解)
+		PlayerSpyMissions: make([]SpyMission, len(aiPlayers)), // 零值 STEAL,與原本最小迴圈相容
 		Stars:             galaxy,
 		Nebulae:           demoNebulae,
 		Planets:           genPlanets(galaxy, rand.New(rand.NewSource(43)), rand.New(rand.NewSource(47)), galaxyAgeSetting, demoHomeStarSet(aiHomeStars)),
@@ -4799,6 +5416,8 @@ func NewDemoSession() *GameSession {
 	// 守衛怪獸(見 monster.go)。放在這裡而不是上面的複合字面值裡,因為 genMonsters 會就地
 	// 修改 session.Planets(手冊 p.60:有怪獸的星系一定另有一個特殊物產)。
 	session.Monsters = genMonsters(galaxy, session.Planets, rand.New(rand.NewSource(44)), demoHomeStarSet(aiHomeStars))
+	session.ensureAIRelations()
+	session.ensureAIAIState()
 	session.syncAIColonyPlanets()                                  // AI 殖民地的行星索引(見該函式)
 	session.Player.UsedCommandPoints = session.usedCommandPoints() // 依開局艦隊(homeworldShips)算實際需求,顯示與第一次 EndTurn 後一致
 	// 領袖技能接線(2026-07-11):把 Ship=false 的殖民地領袖(科學家/貿易家)技能套到母星。
@@ -4828,6 +5447,7 @@ func (s *GameSession) SetRuleProfile(p gamedata.RuleProfile) {
 // 預設 15)會進位到下一個 10 的倍數。稅率影響 advanceBuilds(建造吃 (100-稅率)% 工業)與
 // RunEmpireTurn(稅率% 工業換 BC),是「更多錢 vs 更快建造」的取捨。
 func (s *GameSession) CycleTaxRate() {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdCycleTaxRate})
 	next := (s.Player.TaxRate/gamedata.TaxRateStepPercent + 1) * gamedata.TaxRateStepPercent
 	if next > gamedata.TaxRateMaxPercent {
 		next = gamedata.TaxRateMinPercent
@@ -4874,7 +5494,7 @@ func (s *GameSession) advanceMercOffers() {
 // MercHireCost 回傳雇用某傭兵的一次性費用(gamedata.LeaderHireCost,依技能等級遞增)。
 func (s *GameSession) MercHireCost(ld Leader) int {
 	exp := leaderDisplayLevelToExpLevel(ld.Level)
-	return gamedata.LeaderHireCost(5, exp, 0) // skillValue 基準 5,modifier 0(無 Charismatic 折扣建模)
+	return gamedata.LeaderHireCost(5, exp, leaderFamousHireModifier(s.Leaders))
 }
 
 // leaderSlotsFull 回傳該類領袖(殖民地 Ship=false / 艦艇 Ship=true)是否已達上限 4
@@ -4889,13 +5509,16 @@ func (s *GameSession) leaderSlotsFull(ship bool) bool {
 	return n >= 4
 }
 
-// HireMerc 雇用 MercPool 的第一名傭兵(手冊 p.134:扣一次性雇用費、招入 Leader Pool)。BC 不足或
-// 對應領袖類別已滿(各 4 名)則不雇用、傭兵留在池中。回傳是否成功。
-func (s *GameSession) HireMerc() bool {
-	if len(s.MercPool) == 0 {
+// HireMercAt 雇用 MercPool 指定位置的傭兵(手冊 p.134:扣一次性雇用費、招入 Leader Pool)。
+// BC 不足或對應領袖類別已滿(各 4 名)則不雇用、傭兵留在池中。回傳是否成功。
+//
+// 索引而非名稱是這個畫面的暫時識別方式：同名英雄不應在 UI 層被猜成同一人，
+// 且 MercPool 的候選順序本身就是「待僱佇列」的可見順序。
+func (s *GameSession) hireMercAt(index int) bool {
+	if index < 0 || index >= len(s.MercPool) {
 		return false
 	}
-	ld := s.MercPool[0]
+	ld := s.MercPool[index]
 	if s.leaderSlotsFull(ld.Ship) {
 		return false
 	}
@@ -4904,7 +5527,8 @@ func (s *GameSession) HireMerc() bool {
 		return false // BC 不足
 	}
 	s.Player.BC = newBC
-	s.MercPool = s.MercPool[1:]
+	copy(s.MercPool[index:], s.MercPool[index+1:])
+	s.MercPool = s.MercPool[:len(s.MercPool)-1]
 	s.Leaders = append(s.Leaders, ld)
 	// 只套「新雇這一名」的殖民地加成——applyLeaderColonyBonuses 是 += 累加,不可對全名單重跑
 	// (會重複計算既有領袖),故傳單元素 slice(見該函式註解)。
@@ -4912,6 +5536,18 @@ func (s *GameSession) HireMerc() bool {
 		applyLeaderColonyBonuses([]Leader{ld}, &s.PlayerColonies[0])
 	}
 	return true
+}
+
+func (s *GameSession) HireMercAt(index int) bool {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdHireMercAt, Args: []int{index}})
+	return s.hireMercAt(index)
+}
+
+// HireMerc 保留舊的「雇用佇列首名」入口，供指令層與舊回放相容；新畫面用
+// HireMercAt 讓玩家可以依手冊的 HIRE 模式挑選指定候選。
+func (s *GameSession) HireMerc() bool {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdHireMerc})
+	return s.hireMercAt(0)
 }
 
 // SystemCompositionText 回傳「這個星系除了代表行星以外還有什麼」的摘要

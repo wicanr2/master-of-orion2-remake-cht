@@ -362,7 +362,7 @@ Barren **0** / Desert **1** / Tundra **1** / Ocean **2** / Swamp **2** / Arid **
 
 1. **不要**加任何 +2 母星食物加成、**不要**把 `climateFoodPerFarmer` 表 ×2、**不要**動 climate 枚舉——三者都會製造 bug。remake 的整數氣候表(Terran=2)本身**正確**。
 2. **真正該修的是存檔解析/稽核端**:`internal/save` dump 出的 `FoodPerFarmer` 是半單位,和整單位氣候表比較前應 `÷2`(或在欄位註明半單位語意)。此謎題本質是「audit 比對時的單位不一致」,非 gameplay 缺陷。
-3. **若** remake 要忠實重現 Meklar 半單位食物消費、Natives/種族分數加成的**進位規則**,則遊戲引擎內部食物帳本也宜改採「半單位整數」表示(對齊原版 `food_consumption_*` 全半單位),再於 UI 顯示時 ÷2。這是「要不要精確到 0.5 食物」的取捨,不影響「每農夫 base = 2」這個已確認事實。
+3. remake 已採用「半單位整數」表示 Cybernetic 的食物／生產消耗：`ColonyOutput` 保留 `*Half` 精確欄位，舊整數欄位供既有 UI 與相容存檔使用；帝國收入與建造進度讀精確欄位。食物複製機現在也走半單位轉換：半食物花 2 半產能，半 BC 付款以 `PlayerState.FoodReplicatorBCHalfRemainder` 跨回合累積，兩個半 BC 才扣 1 BC。這是與「half-unit 食物帳本 + 1 BC/完整食物」一致的**強推論**，原版 runtime 的碎單位付款時機仍未直接觀測。
 
 **信心度:高。** 一手來源為 openorion2 對原版存檔格式的逆向欄位定義(明文 `// in half-units`),與手冊 p.59 表、StrategyWiki/Fandom 的 Terran base=2 三方交叉一致,且同時無矛盾地解釋了「工業/研究為何沒跟著變 2x」。不需再取得 varied 存檔即可定案。
 
@@ -400,7 +400,7 @@ Barren **0** / Desert **1** / Tundra **1** / Ocean **2** / Swamp **2** / Arid **
 ### 7.3 每回合 / 殖民地
 | 原版行為 | 驗證點 |
 |---|---|
-| 🟢 每殖民者吃 1 食物;Lithovore 0、Cybernetic 0.5 | remake 食物消耗公式 |
+| 🟢 每殖民者吃 1 食物;Lithovore 0、Cybernetic 0.5 | remake 已接 Lithovore 0；Cybernetic 0.5 以半單位欄位接入食物、收入、建造與存檔 |
 | 🟢 剩食每 2 換 1 BC | remake 食物換錢比 |
 | 🟢 人口分農夫/工人/科學家三類,產出即時反映 | remake 殖民地畫面拖人是否即時改產出 |
 | 🟢 建築產出加算不佔人口 | remake 建築 bonus 疊加方式 |
@@ -410,7 +410,7 @@ Barren **0** / Desert **1** / Tundra **1** / Ocean **2** / Swamp **2** / Arid **
 ### 7.4 研究 / 造艦 / 戰鬥
 | 原版行為 | 驗證點 |
 |---|---|
-| 🟢 8 研究領域、非創造性每階 2–3 選 1、Creative 全拿 | remake 研究畫面的「擇一」機制與 Creative 差異 |
+| ✅ 8 研究領域、非創造性每階 2–3 選 1、Creative 全拿 | remake 研究完成邊界已依種族套用：一般種族由 UI 擇一、Uncreative 自動隨機擇一、Creative 全拿 |
 | 🟢 6 船體 Frigate→Doom Star,命令點隨船體升 | remake 船體種類與命令點 |
 | 🟢 戰鬥只在恆星系內、格子逐船 move+fire+done、行星/衛星算船 | remake 戰術戰鬥流程 |
 | 🟢 飛彈鎖定主目標一路飛、同船勿混 beam/missile | remake 飛彈/武器結算 |

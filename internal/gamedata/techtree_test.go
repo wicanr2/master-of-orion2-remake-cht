@@ -10,6 +10,20 @@ func TestTechResearchChoicesCount(t *testing.T) {
 	}
 }
 
+func TestXenonTechnologyIsNotNormallyResearchable(t *testing.T) {
+	if IsResearchableTopic(TOPIC_XENON_TECHNOLOGY) {
+		t.Fatal("TOPIC_XENON_TECHNOLOGY 不應能透過正常研究取得")
+	}
+	if IsResearchableTopic(TOPIC_STARTING_TECH) {
+		t.Fatal("TOPIC_STARTING_TECH 是開局狀態，不應列為研究項目")
+	}
+	for _, topic := range AvailableTopics(nil) {
+		if topic == TOPIC_XENON_TECHNOLOGY {
+			t.Fatal("AvailableTopics 不應回傳 TOPIC_XENON_TECHNOLOGY")
+		}
+	}
+}
+
 // TestTechResearchChoicesSpotCheck 抽查 researchChoices 是否逐字對齊
 // tech.cpp:169-305 的 research_choices[]。
 func TestTechResearchChoicesSpotCheck(t *testing.T) {

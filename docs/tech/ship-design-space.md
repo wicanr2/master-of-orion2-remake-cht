@@ -133,8 +133,12 @@ that won't fit are dimmed.」——證實武器佔格是**固定值**,與艦體�
 > 數字請以 `weapon-mods.md` 為準**。
 
 火線角(Firing Arc:Fwd Ext/Back Ext/360 Degree)是另一套獨立機制(手冊 p.127-128),與武器改造
-(mod)是平行、不互斥的兩件事(同一把武器可以同時選火線角 + mod)。本輪**不含**火線角接線
-(TODO,留待後續任務,見 `docs/tech/remaining-work-roadmap.md`)。
+(mod)是平行、不互斥的兩件事(同一把武器可以同時選火線角 + mod)。2026-08-09 已接入單武器
+重製模型：設計畫面循環選擇、`Ship.Arc` JSON 保存、佔格／成本與建造判定均已生效，且傳入
+兩條戰鬥建構路徑。原版 `Relative_Bearing @ 0x32AD1`、`Relative_Bearing_XY @ 0x32A20`、
+`Move_Ship @ 0x3F5F1` 與 `Ship_Can_Deploy_At @ 0x49043` 已證實格子戰術的 16 向朝向與
+扇形合法性；重製已接玩家／敵方格子射擊與移動轉向。快速結算沒有格位／朝向，仍不把
+抽象齊射的固定距離冒充成完整戰術火線；詳見 `docs/re/weapon-arcs.md`。
 
 ## 4. 特殊系統(Specials Area)佔格:手冊只有定性描述,無數字(誠實標「待查」)
 
@@ -203,4 +207,4 @@ Automatics,**不佔用**這個空間預算(玩家只能在 Automatics 區塊把�
   完整手冊文字版(§0 已說明原因),已於該文件更正,飛彈/球狀傷害仍歸「需 RE」不變。
 - `docs/tech/gameplay-systems-status.md` §3、`WORKLIST.md`、`docs/HANDOFF.md`、
   `docs/HONEST-STATUS.md` 的「艦艇設計(空間格)」相關條目已同步標記 shell/gamedata 層完成度,
-  UI 繪製仍待後續任務。
+  火線角／改造的最小 UI 已接；右上兩個原版資訊面板仍待後續任務。

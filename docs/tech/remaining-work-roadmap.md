@@ -1,4 +1,4 @@
-# 剩餘工作路線圖(2026-07-11,14 輪死碼接線後)
+# 剩餘工作路線圖(2026-08-10 收尾版；歷史決策菜單)
 
 > 目的:把「完整移植」剩餘工作,按**阻塞類型**分類、標依賴與建議順序,讓下一步只需一個決策就能啟動。
 > 這不是現況清單(現況見 `HONEST-STATUS.md`),是**決策賦能的排序菜單**。
@@ -11,15 +11,19 @@
 
 > **安塔蘭勝利路徑已接(2026-07-11 追加)**:次元傳送門建築(`gamedata.Buildings` 早已存在,
 > 本輪只補「建成後解鎖反攻」流程)+ `GameSession.AssaultAntares()`(戰鬥沿用 `ResolveBattle`
-> 同款 `battleVolley` 解算,防禦方戰力用保守預設,見下)+ `advanceAntaranVictory`(`EndTurn`
-> 偵測)。**母星防禦艦隊戰力手冊/openorion2 均無精確數字**(手冊只用「awe-inspiring」定性描述),
-> 保守預設為 6 艘末日之星等級戰力,待考證。詳見 `docs/tech/victory-conditions.md` 第 4 節。
+> 同款 `battleVolley` 解算,防禦方改用 2026-08-08 反組譯解出的 `Intruder ×3`／`Interdictor ×2`／
+> `Harbinger ×7`＋1 座星際要塞切片,並以 remake 的艦級／要塞代理消費)+ `advanceAntaranVictory`(`EndTurn`
+> 偵測)。**艦隊組成與標準艦非空武器槽已證實；精確總火力、要塞設計、艦級映射與即時戰鬥敵方武器
+> 消費仍有近似／未知**。詳見 `docs/re/antaran-defense-fleet.md` 與 `docs/tech/victory-conditions.md` 第 4 節。
 
-> **武器改造(mod)系統已接(2026-07-11 第三輪追加)**:手冊(`GAME_MANUAL.pdf` p.115-118)8 個
-> 光束/通用 mod(HV/PD/AF/CO/AP/ENV/NR/SP)逐字核對佔格/成本/命中/傷害數字,接進
-> `ShipDesignSpaceUsedWithMods`/`DesignCostWithMods`(佔格/成本)、`ResolveShotWithMods`(命中/
-> 傷害,`battleVolley` 快速結算與 `fireRound` 格鬥畫面共用)、艦艇設計畫面 8 個 mod 勾選 chip。
-> 無 mod 武器逐位元回歸不變。詳見 `docs/tech/weapon-mods.md`。
+> **武器改造(mod)系統已接(2026-08-09)**:手冊(`GAME_MANUAL.pdf` p.115-118)的 8 個
+> 光束/通用 mod 與 ECCM/EMG/MV/魚雷 ENV/OVR 已接進
+> `ShipDesignSpaceUsedWithMods`/`DesignCostWithMods`(佔格/成本)、`ResolveShotWithMods`／
+> `ResolveMissileShotWithMods`(命中/傷害,`battleVolley` 快速結算與 `fireRound` 格鬥畫面共用)、
+> 艦艇設計畫面依武器類型顯示適用改造 chip。MIRV 逐彈頭判定；無改造武器的舊入口回歸不變。
+> ARM/FST、魚雷 NR 與敵我戰機消費端已接入 remake 的設計／存檔／快速結算／格子戰術路徑；
+> 原版完整攔截器／AMR／逐艦戰機 blueprint 仍待證，raw `0x0800`／`0x1000` 的分級保留。詳見
+> `docs/tech/weapon-mods.md`。
 
 **關鍵洞察**:先前多輪誤判為「RE-gated 需 DOSBox」的東西,絕大多數是**前面 session 已移植進 `gamedata/` 卻沒接進遊戲迴圈的死碼**。接死碼(重力/士氣/勝利/飛彈/間諜…)是本 session 的主線,已挖到見底。
 
@@ -30,7 +34,7 @@
 ### A. 需你 playtest 驗證(先做,成本最低,解鎖 income 死碼)
 | 項目 | 說明 | 解鎖後 |
 |---|---|---|
-| **開局經濟平衡** | 本 session 數處改了開局狀態:士氣 +10→**0**(手冊忠實)、指揮點數(先前誤判**-20 BC/回合為忠實**,2026-07-11 同日已修復——用真實存檔 `SAVE10.GAM` oracle 反推補上帝國基礎供給 `gamedata.CommandPointsBase=5`,開局供給=5+1(星基)=6≥3(需求),不再超支,詳見 `docs/HONEST-STATUS.md`/`docs/tech/moo2-formulas-reference.md`「指揮評等供需」節)、領袖研究 **+25**(正 bonus 抵銷)。指揮點數這項死結已解,剩士氣 0 起跳+領袖 +25 這兩項待你 playtest 判斷是否偏苦 | 你回報「正常/太苦」→ 我接 income 死碼(政府 money bonus、morale 對收入的影響、貨運維護 `income.go`,均已移植) |
+| ~~**開局經濟平衡**~~ **已完成 headless 基線(2026-08-10)** | 本 session 數處改了開局狀態:士氣 +10→**0**(手冊忠實)、指揮點數(先前誤判**-20 BC/回合為忠實**,2026-07-11 同日已修復——用真實存檔 `SAVE10.GAM` oracle 反推補上帝國基礎供給 `gamedata.CommandPointsBase=5`,開局供給=5+1(星基)=6≥3(需求),不再超支)、20 回合固定無事件探針為 BC 50→264、人口 8→11、士氣 0% 全程、食物 0→1、工業 6→8、研究 6 維持 | 這是可重播的平衡基線，不是玩家主觀回報；若日後玩家認為太苦，再另開調校工作，不在本輪改收入公式 |
 
 > **income 死碼接線已完成(2026-07-11,同日稍後)**:政府 money 加成(Democracy/Federation)已接進
 > `RunEmpireTurn`,demo(Dictatorship)no-op;運輸艦維護費當時已接線但 remake 無 Freighter 艦種,
@@ -44,37 +48,36 @@
 ### B. 需你授權方向的基礎設施(大工程,選錯白做,故等你點)
 | 項目 | 依賴 | 自驅度 |
 |---|---|---|
-| **多 AI 對手 + 真星系拓殖** | **多 AI 對手數量已接**(2026-07-11:`NewDemoSession` 由 1 個 AI 擴為 3 個,各不同母星/種族名/`ai.Profile` 性格,議會門檻 `gamedata.CouncilMinExtantRaces` 真值可達、`advanceCouncil` generalize 為逐帝國計票,見 `docs/tech/victory-conditions.md`)。**拓殖部分已接**(2026-07-11:`shell.GameSession.ColonizeStar`,玩家可用殖民船在無主適居星建立新殖民地,起始人口/PopMax 公式對手冊+openorion2 核實,詳見 `docs/tech/colonization.md`)。**AI 側殖民地模型已接**(2026-07-11 追加:`aiExpand` 改用共用函式 `newColonyFromStar`,佔星時建真 `engine.ColonyState`,不再只標旗標——AI 經濟隨擴張成長,見 `docs/HONEST-STATUS.md` 同日追加段落) | 剩 **AI 選星策略**(現為星圖索引順序,非距離/資源導向)與 **AI 對 AI 互動**(3 個 AI 目前只各自獨立對玩家造艦/擴張/外交,彼此不打仗不外交,也沒有「候選人限定票數最高兩位+第三方外交搖擺票」的議會規則,需要先補 AI 對 AI 的關係模型)。給方向後可自驅 |
-| **戰機/航母系統** | 戰鬥基礎設施 | 解鎖 `combat.go` CombatFighter* 死碼 + 戰機庫建築。自驅度中 |
-| **艦艇軍官指派** | 需「軍官→艦艇」指派模型 | 解鎖 `ShipBeamAttackWithOfficer` 死碼(openorion2 `sptr->officer` 有對應)。小工程 |
-| **飛彈/魚雷專屬 mod(ARM/ECCM/EMG/FST/MV/OVR)** | 武器改造(光束 8 個 mod 已於 2026-07-11 接線,見下方新增段落) | 手冊 p.115-116 已有精確數字,待飛彈解算(`ResolveMissileShot`)先建 mod 掛鉤機制。小工程 |
-| **火線角(Firing Arc:Fwd Ext/Back Ext/360 Degree)** | 艦艇設計基礎設施 | 手冊 p.127-128 已有精確數字(+25%/+25%/+50%),與武器改造平行、獨立的機制,尚未接線。小工程 |
+| **多 AI 對手 + 真星系拓殖** | **多 AI 對手數量已接**(2026-07-11:`NewDemoSession` 由 1 個 AI 擴為 3 個,各不同母星/種族名/`ai.Profile` 性格,議會門檻 `gamedata.CouncilMinExtantRaces` 真值可達、`advanceCouncil` generalize 為逐帝國計票,見 `docs/tech/victory-conditions.md`)。**拓殖部分已接**(2026-07-11:`shell.GameSession.ColonizeStar`,玩家可用殖民船在無主適居星建立新殖民地,起始人口/PopMax 公式對手冊+openorion2 核實,詳見 `docs/tech/colonization.md`)。**AI 側殖民地模型已接**(`aiExpand` 使用共用 `newColonyFromStar`,佔星時建真 `engine.ColonyState`)。**2026-08-11 可選強化已接**：AI 選星讀行星價值／距離，議會讀 AI↔AI 關係做兩候選人與第三方搖擺票；`EnableAIVsAI` 另讓 AI 彼此依關係交戰、停戰／結盟、貿易／研究並以抽象艦隊佔領殖民地，詳見 `docs/tech/ai-to-ai.md` | remake 路徑已完成；原版逐艦 blueprint、正式 AI 接受門檻與外交細表仍是 oracle 差異 |
+| **戰機/航母系統** | 玩家／敵方中隊、突擊艇、最弱護盾面，以及 ID 31 第二組 `1..4 / 4..16 / 2..7`、`sub_3AD57 @ 0x3AD57` 的 1..100／95／40／`max-min+1` 式與相鄰 `sub_3AC20 @ 0x3AC20` 的直接插值式已分開接入；敵方五級 blueprint writer／非空武器槽與要塞四槽、`sub_6EE8E @ 0x6EE8E` 容量 divisor 中間式也已由同一輸入 IDA 追回 | 兩份 raw 函式外部名稱衝突、`sub_3DF8D` 部分 runtime 欄位、raw flag 正式玩法名稱、live tech 導出的當下數量與 DOSBox 逐值 oracle仍待補；remake 命中／傷害／要塞火力消費已完成有證據邊界 |
+| ~~**艦艇／殖民地領袖指派**~~ **已接(2026-08-10)** | `save.Ship.Officer`、艦隊／`LEADERS` 分頁、殖民地領袖任職／改派／解除／解雇與 JSON／熱座保存已接；同一輸入 IDA 已證實 `sub_10E2F`／`sub_1160B` 對 `dword_1930DC` 讀寫 `0x3B×0x43` 全局區塊；2026-08-11 新增原版 `.GAM` 匯入、RawExperience、活動 Trader 最大加成與 `RawStatus=4`／30 回合清理切片，並接 `RawETA=0` 的 `sub_E2AB1` 六槽鏈之玩家可感知殖民地計算近似 callback | `sub_E1D59`／`sub_DF8F0`／`sub_E2710` 的 raw 設計／帝國欄位仍是 oracle 差異 |
+| ~~**飛彈/魚雷專屬 mod(ARM/ECCM/EMG/FST/MV/OVR)**~~ **remake 已接** | ECCM/EMG/MV、魚雷 ENV/OVR/NR、ARM/FST PD 與兩條戰鬥路徑已接 | 只剩原版完整攔截器／AMR／戰機 oracle；不再是 remake 小工程 |
+| **火線角(Firing Arc:Fwd Ext/Back Ext/360 Degree)** | 設計／成本／保存與格子戰術方向切片已接；原版快速結算維持抽象模型 | 手冊 p.127-128 的 +25%/+25%/+50% 與原版 `Relative_Bearing`／`Move_Ship`／部署朝向已進 `Ship.Arc`、`CombatShip.Facing`、玩家／敵方格子射擊；`QGet_Target`／`Strategic_Combat` 快速 call graph 未讀取 arc。方向切片已結案，剩 sprite 幀號對照未知 |
 
 ### C. 需你定互動設計的 UI(引擎層多已備,缺玩法介面)
 | 項目 | 現況 |
 |---|---|
-| 完整間諜畫面 | 引擎最小迴圈已接(訓練→偷科技);缺逐對手分配/任務(STEAL/SABOTAGE/HIDE)選單。SABOTAGE 手冊無數值需先定 |
-| 完整領袖招募畫面 | 技能效果已接;缺招募池/指派 UI |
-| 完整外交畫面 | 關係核心已接;缺提案/條約/宣戰互動(畫面美術已重建,見 `diplomat-lbx-layout.md`) |
+| ~~完整間諜／外交畫面~~ **remake 核心已接** | RACES 內嵌訓練、逐對手 STEAL/SABOTAGE/HIDE、餽贈、特殊貿易、正式條約、貿易／研究、納貢、終止與回合收益均已接；AI→玩家 SABOTAGE 也已接 remake 性格政策與玩家建築池；原版 49 筆 SABOTAGE 建築成本表、raw slot helper、結構化 AB/DB 分數與 Agent 實際消費已接 | 原版兩張 score table 的上游填值、特殊槽位／防守策略、特殊貿易尚未對回的 raw 上游與 AI 接受門檻仍未知 |
+| ~~完整領袖招募／任職畫面~~ **remake 核心已接** | 艦艇 HIRE／POOL／DISMISS 與殖民地領袖 `LEADERS` 分頁均已接；原版 `.GAM` 全局領袖區塊讀寫、remake `ImportGAM` 與 `RawStatus=4`／30 回合清理均已接；`RawStatus=1` ETA 到期會刷新殖民地領袖增量與士氣 | `sub_E1D59`／`sub_DF8F0`／`sub_E2710` 的 raw 設計／帝國欄位與一般在職領袖旅行／任期逐值規則仍未知 |
+| ~~完整外交畫面~~ **remake 核心已接** | 關係、提案、餽贈、特殊貿易、協議、終止、存檔與英文模板均已接 | 原版精確表與 AI 門檻列為 oracle 差異 |
 
 ### D. 需外部 oracle(我無法自給)
 | 項目 | 需要 |
 |---|---|
-| 地面戰核心解算校驗 | `ResolveGroundBattle` 的 d100+force 沿用一代(1oom)借用結構,force 值用 MOO2 手冊表但結構未對 MOO2 實機核實 → **DOSBox oracle** |
-| 飛彈速度定案 | `missile.go` 手冊公式與附表自相矛盾 → **DOSBox oracle** |
-| 逐畫面按鍵像素對齊 | 熱區多為估計座標 → **原版截圖** |
-| 戰術艦型 sprite 對照(#12) | CMBTSHP 資產→艦級對照不在 openorion2 碼 → **DOSBox oracle** |
+| 地面戰核心解算校驗 | `InvadeColony` 已改走 IDA 靜態追回的 `ResolveGroundCombatOrig`／`Ground_Combat_Round_ @ 0xEC4FE`：四類型、原版 LCG adapter、當前類型、平手雙方受擊、AI 守方裝甲營、存活兵力回寫與 captured population 保留均有抽樣測試；仍待 DOSBox 實機逐場校驗 raw global seed 與戰後人口 consumer，列為低優先精修，不阻塞 remake 發行 |
+| 飛彈速度分支 | 既有 raw ledger 已記錄 FST `+4` 與 `0x12/0x13/0x14` 的分支；本輪 IDA Pro `.i64` 交叉檢查把外部名稱／object-offset 對應的衝突另列於 [`oracle-static-ida-20260811.md`](../re/oracle-static-ida-20260811.md)，不影響 remake 已完成的 FST 垂直切片；不再把它當成本輪 remake 阻塞 |
+| 逐畫面按鍵像素對齊 | 熱區多為估計座標 → **原版截圖**；議會／安塔蘭幀序已接，精確停留時間仍待 runtime 對照 |
+| 戰術艦型 sprite 對照(#12) | `CMBTSHP` 已接 IDA 證實的 `45*playerColor+rawPicture`（raw 0..43；44 為 sentinel）與 `.GAM` raw picture；remake 已接移動後固定 tick timer 近似；只剩原版 20 幀停留需 **DOSBox oracle** |
 
 ### E. 低價值精修(不急,列此備查)
-- 外交離散事件 `EventDelta`(現用軍力差漂移替代)、引擎爆炸連鎖傷害、alt-to-hit 命中變體。
+- 外交離散事件 `EventDelta`（已追回 `0x22D57` 極值排除／差平方權重與 `0x586D4` 0x200 反覆減半，但 remake 尚缺 raw event score record）、引擎爆炸連鎖傷害（已追回 `0x3868F`／`0x39985`／`0x40C2A`／`0x494A8` 純公式，remake strategic consumer 已接，原版 record／flag 下游仍未知）、alt-to-hit 命中變體；地面戰實機 global seed 校驗與事件 record 映射同列低優先精修。
 
-## 三、建議順序(投報比排序)
+## 三、建議順序(2026-08-10 收尾後)
 
-1. **你 playtest 開局平衡**(5 分鐘,零我方成本)→ 解鎖 income + 校準方向。
-2. **多 AI + 真星系拓殖**(最大「能玩一局」解鎖)——你給設計方向,我自驅建。
-3. 依你興趣:戰機/航母 或 飛彈 mod/火線角(安塔蘭勝利、光束武器改造 mod 已於 2026-07-11 接線,不再是待選項)。
-4. UI 畫面(間諜/領袖/外交)——你定互動玩法後我接引擎+最小 UI,逐步補全畫面。
-5. 待你安排 DOSBox oracle / 截圖 → 校驗地面戰·飛彈·像素對齊·sprite。
+1. **維持抽樣回歸**：新資料版本或 UI 改動後重跑四個高風險入口與 `-gamegallery`，不要求每輪完整遊戲測試。
+2. **可選原版 oracle**：IDA Pro 靜態批次已追回敵方五級 blueprint raw writer／槽位、`sub_3AD57` 戰機命中／傷害式、相鄰 `sub_3AC20` 直接插值式、要塞 raw flag／seed／容量 divisor、外交比較常數與 `.GAM` 全局 `0x3B×0x43` 讀寫對稱，並記錄於 [`oracle-static-ida-20260811.md`](../re/oracle-static-ida-20260811.md)；若取得可啟動的 `VESA.COM`／DOSBox 環境，再只補兩個 raw 函式的外部名稱解析、live tech／逐彈逐槽 runtime 值、ARM/FST raw bit 正式名稱、外交特殊表、任命／任期與逐值差異，不回頭挖與遊戲無關的反組譯內部功能。
+3. **外部音訊驗收**：在有音訊輸出的桌面逐曲聽 `STREAM`／`STREAMHD`，確認場景曲目與音量；Docker 技術檢查已完成。
+4. **發行維護**：重新產出 Linux／Windows 包，保留 macOS CI universal 產物並做雜湊驗證；不把正版 LBX、音樂或未授權字型放進套件。
 
 ## 四、我的工作模式(已驗證有效,續用)
 - 每塊帶**硬門檻**:先萃取手冊/openorion2 權威值,找到才建、找不到就停不准猜。

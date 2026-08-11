@@ -31,8 +31,15 @@ type ColonyState struct {
 
 	PlanetSize gamedata.PlanetSize // 決定污染容忍值
 
-	// 種族/建築旗標(影響污染與成長)。
+	// 種族/建築旗標(影響食物與污染)。
+	// Lithovore 是食岩特性:每人口不消耗食物,因此殖民地不會因食物赤字饑荒。
+	// Cybernetic 是半機械特性:每人口消耗半食物、另消耗半生產力；精確帳本在
+	// ColonyOutput 的 *Half 欄位,整數欄位則保留給既有 UI/存檔相容層。
+	Lithovore          bool
+	Cybernetic         bool
 	TolerantRace       bool // Tolerant 特性/矽晶:不需花產能清污染
+	Aquatic            bool // 水生:建立／改造殖民地時使用水生氣候對映
+	Subterranean       bool // 穴居:建立殖民地時人口上限 +2×星球大小
 	PollutionProcessor bool // 污染處理器
 	AtmosphericRenewer bool // 大氣更新器
 	CoreWasteDump      bool // 核心廢料場(完全消除污染)
@@ -270,6 +277,11 @@ type PlayerState struct {
 	UsedCommandPoints   int
 	ResearchTopic       gamedata.ResearchTopic // 目前研究中的主題
 	ResearchProgress    int                    // 目前主題已累積的研究點(RP)
+	// TreatyIncomeBC / TreatyResearch 是 shell 在回合開始前依正式貿易／研究協議
+	// 填入的帝國層級外部輸入。零值代表沒有協議，RunEmpireTurn 會把它們納入
+	// 同一個 BC／研究結算；shell 在結算後會清回零，不把一次性回合輸入當成持久收入。
+	TreatyIncomeBC int
+	TreatyResearch int
 	// CompletedTopics 記錄已完成的研究主題(避免重複)。
 	CompletedTopics map[gamedata.ResearchTopic]bool
 	// ChosenTech 記錄每個已完成主題「實際選定解鎖」的那一項科技(MOO2 每主題數科技抉擇)。
@@ -312,6 +324,10 @@ type PlayerState struct {
 	// 「接線先備妥、待補艦種追蹤即生效」的那個生效時刻。AI 對手(`AIOpponent`)未接同一個建造
 	// 佇列流程,本欄位對 AI 仍恆為 0,見該呼叫端(`shell.EndTurn`)AI 迴圈註解。
 	ActiveFreighters int
+	// FoodReplicatorBCHalfRemainder 是食物複製機半食物付款留下的半 BC 餘數。
+	// 0/1 都是合法值；每兩個半 BC 在下一次帝國結算時合併成 1 BC。
+	// 這是 remake 的精確帳本欄位，舊 JSON 缺欄位時零值安全。
+	FoodReplicatorBCHalfRemainder int `json:"foodReplicatorBCHalfRemainder,omitempty"`
 
 	// HyperAdvancedResearchCost 是版本規則 profile 對 Hyper-Advanced Lv1 研究(8 個共用同一
 	// 成本的 TOPIC_HYPER_* 主題,見 gamedata.IsHyperAdvancedTopic)的成本覆寫值,與
@@ -328,17 +344,29 @@ type PlayerState struct {
 // ColonyOutput 是一回合殖民地經濟結算結果。
 type ColonyOutput struct {
 	Food         int // 農業總產出
-	FoodConsumed int // 人口消耗(每人口單位 1)
-	FoodSurplus  int // Food - FoodConsumed(負值=饑荒,見 Starving)
-	Starving     bool
+	FoodConsumed int // 整數相容值；精確人口消耗見 FoodConsumedHalf
+	FoodSurplus  int // 半單位餘糧轉成的整數相容值(負值=饑荒,見 Starving)
+	// 半單位精確帳本。原版 food_consumption_* / industry_consumption_* 以半單位
+	// 儲存；整數欄位不能表達 Cybernetic 的人口奇數情況,所以 UI 相容值與公式值分開。
+	FoodHalf             int // Food × 2
+	FoodConsumedHalf     int // 實際食物消耗(一般=2×人口,Cybernetic=人口,Lithovore=0)
+	FoodSurplusHalf      int // FoodHalf - FoodConsumedHalf
+	IndustryConsumedHalf int // Cybernetic 每人口半生產力,一般為 0
+	NetIndustryHalf      int // 扣污染、再生反應爐與半生產力消耗後的淨工業 × 2
+	Starving             bool
 	// FoodReplicated 是食物複製機這回合用產能換出來的食物單位數(p.85)。
 	// 已計入 Food / FoodSurplus,且對應的產能已從 NetIndustry 扣掉;單獨曝露是因為
 	// 帝國層要用它乘 gamedata.FoodReplicatorBCPerFood 算 BC 成本。
-	FoodReplicated       int
-	GrossIndustry        int // 工人總工業產出(未扣污染清理)
-	PollutingProduction  int // 仍會產生污染的產能
-	PollutionCleanupCost int // 清理污染消耗的產能
-	NetIndustry          int // GrossIndustry - PollutionCleanupCost
-	Research             int // 科學家總研究產出
-	PopGrowth            int // 本回合人口成長(gamedata.ColonyGrowth 結果;饑荒時見備註)
+	FoodReplicated int
+	// FoodReplicatedHalf 是複製機本回合實際換出的半食物數；完整食物時為偶數。
+	FoodReplicatedHalf int
+	// FoodReplicatorCostHalfBC 是本殖民地本回合應付的半 BC，帝國層會跨回合累積。
+	FoodReplicatorCostHalfBC int
+	GrossIndustry            int  // 工人總工業產出(未扣污染清理)
+	PollutingProduction      int  // 仍會產生污染的產能
+	PollutionCleanupCost     int  // 清理污染消耗的產能
+	NetIndustry              int  // 半單位淨工業轉成的整數相容值
+	Research                 int  // 科學家總研究產出
+	PopGrowth                int  // 本回合人口成長(gamedata.ColonyGrowth 結果;饑荒時見備註)
+	Cybernetic               bool // 本回合是否使用半單位生產/食物帳本
 }

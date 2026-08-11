@@ -2,6 +2,7 @@ package shell
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
@@ -79,25 +80,29 @@ type seat struct {
 	SelectedFleet int
 	// ColonyRelocateTo 是這位玩家各殖民地的集結點(見 relocation.go)。
 	// ⚠ 它是**玩家側**狀態:漏了的話換人後下一位會繼承上一位的集結點設定。
-	ColonyRelocateTo []int
-	Leaders          []Leader
-	MercPool         []Leader
-	MercOfferedIdx   int
-	PlayerSpies      []int
-	Outposts         []Outpost
+	ColonyRelocateTo  []int
+	Leaders           []Leader
+	ColonyLeaderNames []string
+	MercPool          []Leader
+	MercOfferedIdx    int
+	PlayerSpies       []int
+	PlayerSpyMissions []SpyMission
+	DefensiveAgents   int
+	Outposts          []Outpost
 
 	SelectedStar int
 
-	RaceIndex       int
-	PlayerName      string
-	FlagColor       int
-	RaceCombatPct   int
-	RaceShipDefPct  int
-	RaceGroundBonus int
-	RaceSpyBonus    int
-	RaceGrowthPct   int
-	Government      gamedata.MoraleGovernmentType
-	CapturedPop     int
+	RaceIndex        int
+	CustomRaceTraits uint32
+	PlayerName       string
+	FlagColor        int
+	RaceCombatPct    int
+	RaceShipDefPct   int
+	RaceGroundBonus  int
+	RaceSpyBonus     int
+	RaceGrowthPct    int
+	Government       gamedata.MoraleGovernmentType
+	CapturedPop      int
 
 	// 以下是「上一回合發生在我身上的事」。它們看起來像顯示暫態,但在熱座裡必須隨席位走:
 	// 星系主畫面的產出數字、回合摘要的完工清單、事件快報、突襲/發現/戰鬥回報,都是
@@ -109,9 +114,11 @@ type seat struct {
 	LastPlayerOutput          engine.EmpireOutput
 	LastBuilt                 []string
 	LastEvent                 string
+	LastPersistentEventEN     string
 	LastEventReport           *EventReport
 	LastDiscovery             *SystemDiscovery
 	LastAntares               string
+	LastAntaresEN             string
 	LastRaid                  string
 	LastRaidReport            *AIRaidReport
 	LastEspionage             []string
@@ -128,20 +135,20 @@ func (s *GameSession) saveSeat() seat {
 		PlayerColonyMarines: s.PlayerColonyMarines, PlayerColonyTanks: s.PlayerColonyTanks,
 		MarineBarracksAge: s.MarineBarracksAge, ArmorBarracksAge: s.ArmorBarracksAge,
 		Builds: s.Builds, BuildQueue: s.BuildQueue, ColonyBuildings: s.ColonyBuildings,
-		PopAccum: s.popAccum, Leaders: s.Leaders,
+		PopAccum: s.popAccum, Leaders: s.Leaders, ColonyLeaderNames: s.ColonyLeaderNames,
 		MercPool: s.MercPool, MercOfferedIdx: s.MercOfferedIdx,
-		PlayerSpies: s.PlayerSpies, Outposts: s.Outposts,
+		PlayerSpies: s.PlayerSpies, PlayerSpyMissions: s.PlayerSpyMissions, DefensiveAgents: s.DefensiveAgents, Outposts: s.Outposts,
 		Fleets: s.Fleets, SelectedFleet: s.SelectedFleet, SelectedStar: s.SelectedStar,
 		ColonyRelocateTo: s.ColonyRelocateTo,
-		RaceIndex:        s.RaceIndex, PlayerName: s.PlayerName, FlagColor: s.FlagColor,
+		RaceIndex:        s.RaceIndex, CustomRaceTraits: s.CustomRaceTraits, PlayerName: s.PlayerName, FlagColor: s.FlagColor,
 		RaceCombatPct: s.RaceCombatPct, RaceGrowthPct: s.raceGrowthPct,
 		RaceShipDefPct: s.RaceShipDefPct, RaceGroundBonus: s.RaceGroundBonus,
 		RaceSpyBonus: s.RaceSpyBonus,
 		Government:   s.Government, CapturedPop: s.CapturedPop,
 
 		LastPlayerOutput: s.LastPlayerOutput, LastBuilt: s.LastBuilt,
-		LastEvent: s.LastEvent, LastEventReport: s.LastEventReport, LastDiscovery: s.LastDiscovery,
-		LastAntares: s.LastAntares, LastRaid: s.LastRaid, LastRaidReport: s.LastRaidReport,
+		LastEvent: s.LastEvent, LastPersistentEventEN: s.LastPersistentEventEN, LastEventReport: s.LastEventReport, LastDiscovery: s.LastDiscovery,
+		LastAntares: s.LastAntares, LastAntaresEN: s.LastAntaresEN, LastRaid: s.LastRaid, LastRaidReport: s.LastRaidReport,
 		LastEspionage: s.LastEspionage, LastBattle: s.LastBattle,
 		AntaresRaids: s.AntaresRaids, AntaranHomeworldConquered: s.AntaranHomeworldConquered,
 	}
@@ -154,21 +161,21 @@ func (s *GameSession) loadSeat(v seat) {
 	s.PlayerColonyMarines, s.PlayerColonyTanks = v.PlayerColonyMarines, v.PlayerColonyTanks
 	s.MarineBarracksAge, s.ArmorBarracksAge = v.MarineBarracksAge, v.ArmorBarracksAge
 	s.Builds, s.BuildQueue, s.ColonyBuildings = v.Builds, v.BuildQueue, v.ColonyBuildings
-	s.popAccum, s.Leaders = v.PopAccum, v.Leaders
+	s.popAccum, s.Leaders, s.ColonyLeaderNames = v.PopAccum, v.Leaders, v.ColonyLeaderNames
 	s.MercPool, s.MercOfferedIdx = v.MercPool, v.MercOfferedIdx
-	s.PlayerSpies, s.Outposts = v.PlayerSpies, v.Outposts
+	s.PlayerSpies, s.PlayerSpyMissions, s.DefensiveAgents, s.Outposts = v.PlayerSpies, v.PlayerSpyMissions, v.DefensiveAgents, v.Outposts
 	s.Fleets, s.SelectedFleet, s.SelectedStar = v.Fleets, v.SelectedFleet, v.SelectedStar
 	s.ColonyRelocateTo = v.ColonyRelocateTo
 	s.ensureFleet() // 席位可能是空的(舊存檔/新建席位),維持「至少一支艦隊」的不變量
-	s.RaceIndex, s.PlayerName, s.FlagColor = v.RaceIndex, v.PlayerName, v.FlagColor
+	s.RaceIndex, s.CustomRaceTraits, s.PlayerName, s.FlagColor = v.RaceIndex, v.CustomRaceTraits, v.PlayerName, v.FlagColor
 	s.RaceCombatPct, s.raceGrowthPct = v.RaceCombatPct, v.RaceGrowthPct
 	s.RaceShipDefPct, s.RaceGroundBonus = v.RaceShipDefPct, v.RaceGroundBonus
 	s.RaceSpyBonus = v.RaceSpyBonus
 	s.Government, s.CapturedPop = v.Government, v.CapturedPop
 
 	s.LastPlayerOutput, s.LastBuilt = v.LastPlayerOutput, v.LastBuilt
-	s.LastEvent, s.LastEventReport, s.LastDiscovery = v.LastEvent, v.LastEventReport, v.LastDiscovery
-	s.LastAntares, s.LastRaid, s.LastRaidReport = v.LastAntares, v.LastRaid, v.LastRaidReport
+	s.LastEvent, s.LastPersistentEventEN, s.LastEventReport, s.LastDiscovery = v.LastEvent, v.LastPersistentEventEN, v.LastEventReport, v.LastDiscovery
+	s.LastAntares, s.LastAntaresEN, s.LastRaid, s.LastRaidReport = v.LastAntares, v.LastAntaresEN, v.LastRaid, v.LastRaidReport
 	s.LastEspionage, s.LastBattle = v.LastEspionage, v.LastBattle
 	s.AntaresRaids, s.AntaranHomeworldConquered = v.AntaresRaids, v.AntaranHomeworldConquered
 }
@@ -229,39 +236,154 @@ func (s *GameSession) SetupHotseat(n int) int {
 		s.Seats, s.ActiveSeat = nil, 0
 		return 1
 	}
-	s.Seats = make([]seat, n)
-	s.Seats[0] = s.saveSeat()
-	// 其餘席位由後面的 AI 對手轉成真人:把該 AI 的帝國搬進席位,再從 AI 清單移除。
-	for i := 1; i < n; i++ {
-		ai := s.AIPlayers[len(s.AIPlayers)-1]
-		s.AIPlayers = s.AIPlayers[:len(s.AIPlayers)-1]
-		s.Seats[i] = seatFromAI(ai, i)
+	// 保留舊 API 的預設行為:從 AI 清單尾端接管,但實際搬運走統一的
+	// 明確索引路徑,避免兩套席位資料轉換逐漸分叉。
+	indices := make([]int, 0, n-1)
+	for i := len(s.AIPlayers) - 1; i >= 0 && len(indices) < n-1; i-- {
+		indices = append(indices, i)
+	}
+	return s.SetupHotseatWithAIIndices(indices)
+}
+
+// SetupHotseatWithAIIndices 讓指定的 AI 帝國依 indices 順序轉成真人席位。
+// indices 是呼叫前 AIPlayers 的索引;未被選中的 AI 保留為 AI,順序不變。
+// 第 0 席永遠是原本玩家,其後各席依 indices 建立。
+func (s *GameSession) SetupHotseatWithAIIndices(indices []int) int {
+	if len(indices) == 0 {
+		s.Seats, s.ActiveSeat = nil, 0
+		return 1
+	}
+
+	capSelected := len(indices)
+	if capSelected > MaxHotseatSeats-1 {
+		capSelected = MaxHotseatSeats - 1
+	}
+	selected := make([]int, 0, capSelected)
+	seen := make(map[int]bool, len(indices))
+	for _, idx := range indices {
+		if idx < 0 || idx >= len(s.AIPlayers) || seen[idx] || len(selected) >= MaxHotseatSeats-1 {
+			continue
+		}
+		seen[idx] = true
+		selected = append(selected, idx)
+	}
+	if len(selected) == 0 {
+		s.Seats, s.ActiveSeat = nil, 0
+		return 1
+	}
+
+	oldAI := append([]AIOpponent(nil), s.AIPlayers...)
+	oldSpies := append([]int(nil), s.PlayerSpies...)
+	oldSpyMissions := append([]SpyMission(nil), s.PlayerSpyMissions...)
+	oldRelations := s.AIRelations
+	oldWars := s.AIWars
+	oldPolicies := s.AIPolicies
+	oldTrade := s.AITrade
+	oldResearch := s.AIResearch
+
+	remaining := make([]AIOpponent, 0, len(oldAI)-len(selected))
+	remainingSpies := make([]int, 0, len(oldAI)-len(selected))
+	remainingSpyMissions := make([]SpyMission, 0, len(oldAI)-len(selected))
+	remainingOldIndices := make([]int, 0, len(oldAI)-len(selected))
+	for i, a := range oldAI {
+		if seen[i] {
+			continue
+		}
+		remaining = append(remaining, a)
+		remainingOldIndices = append(remainingOldIndices, i)
+		if i < len(oldSpies) {
+			remainingSpies = append(remainingSpies, oldSpies[i])
+		} else {
+			remainingSpies = append(remainingSpies, 0)
+		}
+		if i < len(oldSpyMissions) {
+			remainingSpyMissions = append(remainingSpyMissions, normalizedSpyMission(oldSpyMissions[i]))
+		} else {
+			remainingSpyMissions = append(remainingSpyMissions, SpyMissionSteal)
+		}
+	}
+
+	// PlayerSpies 是平行 AIPlayers 的欄位;選走幾個 AI 後,第 0 席也要同步
+	// 壓縮索引,否則下一回合會把間諜送到錯的對手。
+	first := s.saveSeat()
+	first.PlayerSpies = remainingSpies
+	first.PlayerSpyMissions = remainingSpyMissions
+
+	s.AIPlayers = remaining
+	s.PlayerSpies = remainingSpies
+	s.PlayerSpyMissions = remainingSpyMissions
+	s.AIRelations = filterAIRelations(oldRelations, remainingOldIndices)
+	s.AIWars = filterAIBoolMatrix(oldWars, remainingOldIndices)
+	s.AIPolicies = filterAIPolicyMatrix(oldPolicies, remainingOldIndices)
+	s.AITrade = filterAIBoolMatrix(oldTrade, remainingOldIndices)
+	s.AIResearch = filterAIBoolMatrix(oldResearch, remainingOldIndices)
+	s.Seats = make([]seat, len(selected)+1)
+	s.Seats[0] = first
+	for i, oldIdx := range selected {
+		s.Seats[i+1] = seatFromAI(oldAI[oldIdx], i+1, len(remaining))
 	}
 	s.ActiveSeat = 0
 	s.loadSeat(s.Seats[0])
-	return n
+	return len(s.Seats)
+}
+
+func filterAIRelations(rel [][]int, kept []int) [][]int {
+	if len(kept) == 0 || len(rel) == 0 {
+		return nil
+	}
+	out := make([][]int, len(kept))
+	for i, oldI := range kept {
+		out[i] = make([]int, len(kept))
+		for j, oldJ := range kept {
+			if oldI >= 0 && oldI < len(rel) && oldJ >= 0 && oldJ < len(rel[oldI]) {
+				out[i][j] = rel[oldI][oldJ]
+			}
+		}
+	}
+	return out
 }
 
 // seatFromAI 把一個 AI 對手的帝國轉成真人席位。
 //
-// ⚠ 誠實簡化:`AIOpponent` 是比玩家側薄很多的模型(沒有建造佇列、領袖、間諜、前哨站…),
-// 轉過來的席位那些欄位是空的——接手的真人從「有母星、有殖民地、有艦隊,但還沒開始
-// 蓋東西」的狀態起步。要完全對等得先把 AIOpponent 補成完整帝國,那是另一條線。
-func seatFromAI(ai AIOpponent, idx int) seat {
+// ⚠ 誠實簡化:`AIOpponent` 仍比玩家側薄(沒有玩家建造佇列、前哨站、傭兵池與對應的
+// 生產決策),因此這些欄位在接管席位中維持空值。已具備的領袖、母星建築、艦隊、殖民地
+// 平行陣列與玩家間諜欄位則在轉換時保留,接手的真人不是單純的空白帝國。
+func seatFromAI(ai AIOpponent, idx, remainingAICount int) seat {
+	raceIdx := aiRaceIndex(ai)
 	v := seat{
 		Player:              ai.Player,
-		PlayerColonies:      ai.Colonies,
+		PlayerColonies:      append([]engine.ColonyState(nil), ai.Colonies...),
 		PlayerColonyStars:   append([]int(nil), ai.ColonyStars...),
 		PlayerColonyPlanets: append([]int(nil), ai.ColonyPlanets...),
 		// 名字要去掉「AI (…)」外殼:接手的是真人,交接畫面寫「下一位:AI(布拉西人)」很怪。
 		// 保留種族名當帝國名,玩家自己知道接的是哪一族。
-		PlayerName: seatTakeoverName(idx, ai.Name),
-		// ⚠ AIOpponent 沒有 RaceIndex 欄位(它的種族只以名字與性格呈現),接手的席位
-		// 一律當人類(索引 0)。要對等得先讓 AIOpponent 記下自己是哪一族。
-		RaceIndex:    0,
-		FlagColor:    idx % len(FlagColors),
-		SelectedStar: -1,
-		Government:   gamedata.MoraleGovDictatorship,
+		PlayerName:        seatTakeoverName(idx, ai.Name),
+		RaceIndex:         raceIdx,
+		FlagColor:         idx % len(FlagColors),
+		SelectedStar:      -1,
+		Government:        gamedata.MoraleGovDictatorship,
+		Leaders:           append([]Leader(nil), ai.Leaders...),
+		PlayerSpies:       make([]int, remainingAICount),
+		PlayerSpyMissions: make([]SpyMission, remainingAICount),
+		DefensiveAgents:   ai.DefensiveAgents,
+	}
+	if len(ai.ColonyBuildings) > 0 {
+		v.ColonyBuildings = make([]map[string]bool, len(ai.ColonyBuildings))
+		for i, buildings := range ai.ColonyBuildings {
+			v.ColonyBuildings[i] = cloneBuildings(buildings)
+		}
+	}
+	if raceIdx >= 0 && raceIdx < len(Races) {
+		r := Races[raceIdx]
+		v.RaceCombatPct, v.RaceShipDefPct = r.CombatPct, r.ShipDefPct
+		v.RaceGroundBonus, v.RaceSpyBonus = r.GroundCombatBonus, r.SpyBonus
+		v.RaceGrowthPct = r.GrowthPct
+		for i := range v.PlayerColonies {
+			v.PlayerColonies[i].IndustryPerWorker += r.IndBonus
+			v.PlayerColonies[i].ResearchPerScientist += r.ResBonus
+			v.PlayerColonies[i].FoodPerFarmer += r.FoodBonus
+			v.PlayerColonies[i].IncomePerPop += r.IncomePerPop
+		}
 	}
 	home := -1
 	if len(ai.ColonyStars) > 0 {
@@ -272,13 +394,41 @@ func seatFromAI(ai AIOpponent, idx int) seat {
 	n := len(v.PlayerColonies)
 	v.Builds = make([]ColonyBuild, n)
 	v.BuildQueue = make([][]ColonyBuild, n)
-	v.ColonyBuildings = make([]map[string]bool, n)
+	if len(v.ColonyBuildings) != n {
+		buildings := make([]map[string]bool, n)
+		copy(buildings, v.ColonyBuildings[:minLen(len(v.ColonyBuildings), n)])
+		v.ColonyBuildings = buildings
+	}
 	v.PopAccum = make([]int, n)
 	v.PlayerColonyMarines = make([]int, n)
 	v.PlayerColonyTanks = make([]int, n)
 	v.MarineBarracksAge = make([]int, n)
 	v.ArmorBarracksAge = make([]int, n)
 	return v
+}
+
+func minLen(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// aiRaceIndex 優先使用新存檔的 RaceIndex;舊存檔沒有該欄位時,從既有 AI 名稱
+// 做一次相容回退。回退只辨識已知種族,未知名稱仍保持人類零值。
+func aiRaceIndex(ai AIOpponent) int {
+	if ai.RaceIndex != 0 {
+		if ai.RaceIndex >= 0 && ai.RaceIndex < len(Races) {
+			return ai.RaceIndex
+		}
+		return -1
+	}
+	for i, r := range Races {
+		if strings.Contains(ai.Name, r.Name) || strings.Contains(ai.Name, r.EnName) {
+			return i
+		}
+	}
+	return 0
 }
 
 // advanceIdleSeats 讓「不是當前這一席」的真人帝國也各自過完這一回合。

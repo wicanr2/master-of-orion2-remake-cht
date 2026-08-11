@@ -116,7 +116,7 @@ func TestShipMarineComplement(t *testing.T) {
 // TestBoardingComponentsReachCombatShip 兩個新元件要真的變成 CombatShip 上的旗標
 // ——「元件表有」不等於「效果有接」(第 72 項(元件表有≠效果有接))。
 func TestBoardingComponentsReachCombatShip(t *testing.T) {
-	for _, name := range []string{"突擊艇", "保安站"} {
+	for _, name := range []string{"突擊艇", "保安站", "傳送器"} {
 		s := NewDemoSession()
 		s.Fleet().Ships = append(s.Fleet().Ships, Ship{
 			Name: "測試艦", Class: "戰艦", Weapon: "雷射砲", Special: name})
@@ -133,6 +133,10 @@ func TestBoardingComponentsReachCombatShip(t *testing.T) {
 		case "保安站":
 			if !last.SecurityStations {
 				t.Error("保安站沒有接到格子戰術的 CombatShip 上")
+			}
+		case "傳送器":
+			if !last.Transporters {
+				t.Error("傳送器沒有接到格子戰術的 CombatShip 上")
 			}
 		}
 		cs, _ := s.mkPlayerCombatantsIndexed()
@@ -185,7 +189,7 @@ func TestQuickBoardingHappensOnce(t *testing.T) {
 	}
 }
 
-// TestShipBoardingReach 突擊艇不必貼身,沒有的必須相鄰(傳送器仍擋在護盾模型後面)。
+// TestShipBoardingReach 突擊艇不必貼身,沒有的必須相鄰。
 func TestShipBoardingReach(t *testing.T) {
 	shuttle := CombatShip{AssaultShuttles: true}
 	plain := CombatShip{}
@@ -199,6 +203,46 @@ func TestShipBoardingReach(t *testing.T) {
 	}
 	if ShipBoardingReach(plain, 2) {
 		t.Error("沒有突擊艇又不貼身,不該登得了")
+	}
+}
+
+// TestTransporterReachRequiresDisabledFacing 對照手冊「12 squares — if the shield
+// facing the attacking ship is disabled」與 Hard Shields 的例外。
+func TestTransporterReachRequiresDisabledFacing(t *testing.T) {
+	att := CombatShip{Name: "傳送艦", Transporters: true, Col: 0, Row: 0}
+	def := CombatShip{Name: "目標", ShieldReduction: gamedata.DamageShieldReductionClassI,
+		SizeClass: gamedata.SHIP_FRIGATE, Col: 6, Row: 0}
+	facing := ShieldFacingForShot(att, def)
+	def.EnsureShieldFacings()
+	if ShipBoardingReachAgainst(att, def, gamedata.TransporterRangeSquares) {
+		t.Fatal("護盾分面尚未擊穿時,12 格傳送器不應可登艦")
+	}
+	if got := def.ShieldFacingHP[facing]; got != gamedata.DamageShieldCapacityForShipClass(
+		gamedata.DamageShieldReductionClassI, gamedata.SHIP_FRIGATE) {
+		t.Fatalf("初始分面容量=%d,與手冊容量不符", got)
+	}
+	def.ApplyShieldDamage(facing, gamedata.DamageShieldCapacityForShipClass(
+		gamedata.DamageShieldReductionClassI, gamedata.SHIP_FRIGATE)-1)
+	if ShipBoardingReachAgainst(att, def, gamedata.TransporterRangeSquares) {
+		t.Fatal("分面尚餘 1 點時不應可傳送")
+	}
+	def.ApplyShieldDamage(facing, 1)
+	if !ShipBoardingReachAgainst(att, def, gamedata.TransporterRangeSquares) {
+		t.Fatal("面向攻擊方的分面歸零後,12 格內應可傳送")
+	}
+	if ShipBoardingReachAgainst(att, def, gamedata.TransporterRangeSquares+1) {
+		t.Fatal("超過 12 格不應可傳送")
+	}
+	hard := def
+	hard.HardShield = true
+	if ShipBoardingReachAgainst(att, hard, gamedata.TransporterRangeSquares) {
+		t.Fatal("硬化護盾即使分面歸零也應阻擋傳送器")
+	}
+	noShield := def
+	noShield.ShieldReduction = 0
+	noShield.ShieldFacingsInitialized = false
+	if !ShipBoardingReachAgainst(att, noShield, 6) {
+		t.Fatal("無護盾目標的指定分面應視為失效")
 	}
 }
 

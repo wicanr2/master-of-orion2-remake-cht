@@ -26,11 +26,12 @@ type Table struct {
 	players int
 	turn    int
 	got     map[int]Message
+	ready   map[int]Message
 }
 
 // NewTable 開一張回合表:players 是這一局的人類玩家數,turn 是目前回合。
 func NewTable(players, turn int) *Table {
-	return &Table{players: players, turn: turn, got: map[int]Message{}}
+	return &Table{players: players, turn: turn, got: map[int]Message{}, ready: map[int]Message{}}
 }
 
 // Turn 回傳目前回合。
@@ -49,6 +50,9 @@ func (t *Table) Add(m Message) error {
 	if m.Turn != t.turn {
 		return fmt.Errorf("netplay: 回合對不上(表在第 %d 回合,封包是第 %d 回合)", t.turn, m.Turn)
 	}
+	if t.players > 0 && (m.Player < 0 || m.Player >= t.players) {
+		return fmt.Errorf("netplay: turn_done 的玩家 %d 不在名冊內", m.Player)
+	}
 	if t.got == nil {
 		t.got = map[int]Message{}
 	}
@@ -57,6 +61,69 @@ func (t *Table) Add(m Message) error {
 	}
 	t.got[m.Player] = m
 	return nil
+}
+
+// CommandsFor 回傳指定玩家這一回合的指令副本。鎖步重播必須逐玩家切換
+// 作用中席位，不能只拿一個攤平後的清單，否則指令會套到錯的帝國。
+func (t *Table) CommandsFor(player int) []Command {
+	m, ok := t.got[player]
+	if !ok {
+		return nil
+	}
+	return append([]Command(nil), m.Commands...)
+}
+
+// AddReady 收下一則「全員指令已在本機重播完成」的狀態指紋。
+// 這是 TurnDone 之後的第二階段；只有所有玩家都算出同一個 hash 才能推進世界回合。
+func (t *Table) AddReady(m Message) error {
+	if m.Kind != KindTurnReady {
+		return fmt.Errorf("netplay: ready 表只收 turn_ready,收到 %q", m.Kind)
+	}
+	if m.Turn != t.turn {
+		return fmt.Errorf("netplay: ready 回合對不上(表在第 %d 回合,封包是第 %d 回合)", t.turn, m.Turn)
+	}
+	if m.Player < 0 || m.Player >= t.players {
+		return fmt.Errorf("netplay: turn_ready 的玩家 %d 不在名冊內", m.Player)
+	}
+	if t.ready == nil {
+		t.ready = map[int]Message{}
+	}
+	if _, dup := t.ready[m.Player]; dup {
+		return fmt.Errorf("netplay: 玩家 %d 這一回合送了兩次 turn_ready", m.Player)
+	}
+	t.ready[m.Player] = m
+	return nil
+}
+
+// ReadyComplete 回傳所有玩家是否都完成第二階段重播。
+func (t *Table) ReadyComplete() bool { return t.players > 0 && len(t.ready) == t.players }
+
+// ReadyDesync 比對第二階段重播後的狀態指紋。回傳空字串代表一致或尚未到齊。
+func (t *Table) ReadyDesync() string {
+	if !t.ReadyComplete() {
+		return ""
+	}
+	players := make([]int, 0, len(t.ready))
+	for p := range t.ready {
+		players = append(players, p)
+	}
+	sort.Ints(players)
+	ref, refPlayer := "", -1
+	for _, p := range players {
+		h := t.ready[p].StateHash
+		if h == "" {
+			return fmt.Sprintf("第 %d 回合玩家 %d 沒有回報重播後狀態指紋", t.turn, p)
+		}
+		if ref == "" {
+			ref, refPlayer = h, p
+			continue
+		}
+		if h != ref {
+			return fmt.Sprintf("第 %d 回合重播後狀態分岔:玩家 %d 是 %s,玩家 %d 是 %s",
+				t.turn, refPlayer, short(ref), p, short(h))
+		}
+	}
+	return ""
 }
 
 // Ready 回傳是不是全員到齊。

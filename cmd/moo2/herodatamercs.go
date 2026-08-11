@@ -70,6 +70,7 @@ func loadHerodataMercs(b *sceneBuilder, res *assets.Resolver) []shell.Leader {
 		}
 		skills := mercSkills(h)
 		out = append(out, shell.Leader{
+			ID:     h.ID,
 			Name:   h.Name,
 			Skill:  mercSkillLabel(b, h, skills),
 			Level:  lvl,

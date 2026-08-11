@@ -65,37 +65,45 @@ Mutation-on-battle-turn desync),可反推原版網路架構為:
 2. **map 迭代順序**:Go `map` 迭代隨機——任何影響模擬的 `range map` 都要改成排序後迭代或用 slice,
    否則各機結算順序不同 → desync。這正是 1.5 patch 修 desync 的同一類問題。
 
-## 4. 建議落地順序(投報比)
+## 4. 落地順序與完成界線
 
 1. **熱座(hotseat)**——多位真人同機,在回合迴圈裡同時/輪流下令。零網路、零決定性風險,原版列為
    多人一種,最忠實也最省。先做這個驗證「多人回合流程」本身。
 2. **引擎決定性化**——收斂 RNG(統一種子)+ map 迭代順序;加「兩機各跑同指令序列 → 狀態雜湊比對」
    的決定性回歸測試(desync 偵測器)。這是網路對戰的地基,且獨立於網路碼可先驗。
-3. **區網/線上 lockstep over TCP**——host/client、config 廣播、逐回合指令收齊→同步→結算、
-   斷線/重連處理、狀態雜湊校驗(偵測 desync)。中大型獨立子專案。
+3. **區網 lockstep over TCP**——host/client、config／快照廣播、逐回合指令收齊→依席位重播→
+   第二階段狀態指紋→結算。最低鏈已完成；可選的重連／心跳／身份驗證／TLS 1.3 也已接入，
+   NAT 穿透仍不是本專案內建能力。
 
-> 排序原則:1、2 可先做且低風險;3 是大工程,排在音樂/忠實新遊戲流程/像素對齊之後(見
-> `remaining-work-roadmap.md` 的阻塞分類——多人屬「需你授權方向的大工程」)。
+> 歷史排序保留作決策紀錄；目前 1–3 的區網最低鏈均已接入，下一輪只追公網可靠性或原版
+> oracle，不重新挖已完成的傳輸骨架。
 
 ## 5. 現況
 
-> ⚠ 本節原本寫「多人未接、主選單那顆按鈕沿用原版美術但無功能」。**2026-08-07 起不再成立**,
-> 已依程式碼現況重寫。本文其餘各節(考據 + 網路架構方向)未變。
+> 本節依 2026-08-10 生產呼叫圖重新盤點；本文其餘各節保留原版考據與「保留 lockstep、
+> 傳輸改 TCP」的架構決策。
 
 - **熱座已實作**(上表第 1 步):`internal/shell/hotseat.go`(席位交換模型)、
   `cmd/moo2/hotseat.go`(交接畫面)、`cmd/moo2/multiplayer.go`(原版 MULTI-PLAYER 設定畫面)。
   主選單的「多人對戰」接上了,版面座標全部取自反組譯(`Multi_Player_Screen_` @ 0xF4D99)。
   「結束回合」改成全員下完令才推進世界;席位進存檔。
-- **網路對戰已實作**(上表第 2、3 步,2026-08-07 20:00 之後那批 commit)——引擎決定性化
-  (`internal/shell/determinism.go` 的狀態指紋)與 lockstep over TCP 都完成了:
-  `internal/netplay/`(`lockstep.go` / `lobby.go` / `discovery.go` / `chat.go` /
-  `protocol.go` / `frame.go`,各有對應測試),`cmd/moo2` 側 6 張畫面 + 43 處呼叫端。
-  大廳配號、廣播種子、UDP 區網探索、每回合狀態指紋比對、聊天列都接上了。
-- **數據機 / 序列埠直連:明確不做**——那兩種硬體已經不存在,不是待辦。
+- **網路對戰最低可玩鏈已完成**：`cmd/moo2` 由大廳名冊進入主機共同新局；主機廣播設定／種子／
+  席位快照，客戶端套用同一快照。玩家狀態入口會記錄 `PlayerCommand`，每回合依序走
+  `turn_done` → 依玩家編號從共同基準重播 → `turn_ready`；`NetworkStateHash` 分歧、未知指令、
+  錯席位與重複封包都失敗即關閉。`networkWaitScreen` 是正式回合等待畫面，`netNextTurn` 仍只供畫廊示範。
+- **可選公網可靠性已接入**：`internal/netplay` 在每次連線先送一次性 challenge，非空
+  `MOO2_NET_AUTH` 時以 HMAC proof 驗證共享身份；`MOO2_NET_TLS=1` 時再套 TLS 1.3（預設為
+  記憶體內短期憑證，正式憑證可由 `LobbyOptions.TLSConfig` 注入）。第一次加入取得 resume token，
+  斷線後可在寬限期內恢復原玩家編號；Session 以 Ping/Pong、逾時與重連 callback 維持連線。
+  逾時後才會把對局標為失敗即關閉。
+- **仍未由本專案處理的部分**：NAT 穿透。跨網段公網部署要使用外部 relay 或 UPnP；這不是原版
+  IPX／數據機／序列／TEN 的恢復，也不能把區網 TCP 直連寫成 NAT 解法。
+- **數據機／序列埠／TEN 直連:明確不做**——硬體與服務已不存在，remake 走 TCP／熱座。
 
-> 這一段曾經寫著「網路未做」,而那是在 netplay 完成前寫的、之後沒有回頭更新
-> (文件 commit `db4fbb7` 2026-08-07 03:49,五個 netplay 功能 commit 是同日 20:12–23:11)。
-> **文件斷言會過期,程式碼才是唯一真相** —— 判斷某項做了沒,`grep` 程式碼。
+> 先前把「netplay 測試與畫面骨架完成」誤報成「網路對戰已可玩」；本輪已補上生產呼叫圖，並以
+> 兩個實際 process 的 loopback TCP 加上席位快照／指令重播測試驗證最低鏈，再以 TLS／HMAC／
+> resume／心跳測試驗證可選可靠性。這不等於跨網段 NAT 穿透或原版逐值 oracle 完成，也不恢復
+> 已失效的 IPX／數據機／序列／TEN。
 - 熱座本身的已知不對稱(非當前席位的結算時點、勝負判定只對當前席位跑)見
   `docs/re/01-gap-report.md` 第 3 項(Colony+Event 畫面)。
-- 對應 WORKLIST「Phase 9 — 多人對戰」。
+- 對應 WORKLIST「2026-08-10 盤點結論」的多人網路對局調整項。

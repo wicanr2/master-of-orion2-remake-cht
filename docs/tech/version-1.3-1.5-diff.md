@@ -226,10 +226,12 @@ func Profile15() RuleProfile {
 
 ## 7. 主選單「選版本」與 profile 的關係(範圍澄清)
 
-CLAUDE.md 要求「主選單選擇版本 1.3 or 1.5」——本檔的 `RuleProfile` 解決的是**選版本後,遊戲規則
-數值要跟著變**這一半;「主選單 UI 本身要有這個選項」是另一半(UI/流程層,不在本檔研究範圍,但
-握手位置很單純:新遊戲流程在建立 `GameSession` 前先決定 `GameVersion`,傳入
-`Profile13()`/`Profile15()` 其中之一)。兩者可分開排入 WORKLIST 的不同任務。
+CLAUDE.md 要求「主選單選擇版本 1.3 or 1.5」。`RuleProfile` 負責選版本後的規則數值；目前
+`cmd/moo2/interactive.go` 已提供主選單切換，`cmd/moo2/versionassets.go` 也把選擇接到
+兩套 LBX 搜尋路徑(`-data13`/`-data15`，未指定時回退共用 `-data`)。`auto` 會讀資料目錄的
+README 版本標記；現有私有資料可證實為 1.31，另以 `MOO2-1.50.26.zip` 的 `patch/150/lbx`
+實檔跑過兩版畫廊。這裡的版本差異不再只是規則 profile：資產路徑與 1.5 `NEWGAME.LBX`
+背景索引也已接線並驗證。
 
 ## 8. 來源清單
 

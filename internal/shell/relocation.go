@@ -170,6 +170,7 @@ func (s *GameSession) SetStarRelocation(from, to int) RelocateRefusal {
 // star 給 ColonyRelocationNone 或該殖民地自己所在的星 = 取消(新艦留在原地)。
 // 回傳是否有生效。
 func (s *GameSession) SetColonyRelocation(colony, star int) bool {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdSetRelocation, Args: []int{colony, star}})
 	if colony < 0 || colony >= len(s.PlayerColonies) {
 		return false
 	}
@@ -279,6 +280,7 @@ func (s *GameSession) deliverNewShip(colony int, sh Ship) {
 //
 // 回傳被改到幾個。
 func (s *GameSession) SetAllStarRelocations(to int) int {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdSetAllReloc, Args: []int{to}})
 	if to < 0 || to >= len(s.Stars) {
 		return 0
 	}
@@ -300,6 +302,7 @@ func (s *GameSession) SetAllStarRelocations(to int) int {
 
 // ClearAllStarRelocations 清掉所有集結點,回傳清掉幾個。
 func (s *GameSession) ClearAllStarRelocations() int {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdClearAllReloc})
 	n := 0
 	for i := range s.ColonyRelocateTo {
 		if s.ColonyRelocateTo[i] != ColonyRelocationNone {

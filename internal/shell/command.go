@@ -1,6 +1,12 @@
 package shell
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+	"strings"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+)
 
 // command.go:**玩家指令**——把「玩家按了哪顆鈕」變成一筆可序列化、可重播的資料。
 //
@@ -31,29 +37,54 @@ type PlayerCommand struct {
 // 指令名。用常數而不是散落的字串字面值——打錯字會在編譯期被抓到,
 // 而不是在對局跑了二十回合之後以「對面沒套用到」的形式出現。
 const (
-	CmdSendFleet       = "send_fleet"        // Args[0]=目的星
-	CmdSelectFleet     = "select_fleet"      // Args[0]=艦隊索引
-	CmdSplitFleet      = "split_fleet"       // Args[0]=艦隊索引, Args[1:]=要拆出去的艦艇索引
-	CmdColonizeStar    = "colonize_star"     // Args[0]=星
-	CmdColonizePlanet  = "colonize_planet"   // Args[0]=行星
-	CmdBuildOutpost    = "build_outpost"     // Args[0]=星
-	CmdOutpostOnPlanet = "outpost_on_planet" // Args[0]=行星
-	CmdLoadMarines     = "load_marines"      // Args[0]=殖民地
-	CmdLoadTanks       = "load_tanks"        // Args[0]=殖民地
-	CmdInvadeColony    = "invade_colony"     // Args[0]=星
-	CmdBombardColony   = "bombard_colony"    // Args[0]=星
-	CmdAttackMonster   = "attack_monster"    // Args[0]=星
-	CmdEnqueueBuild    = "enqueue_build"     // Args[0]=殖民地, Args[1]=成本, Text=項目名
-	CmdDequeueBuild    = "dequeue_build"     // Args[0]=殖民地, Args[1]=佇列位置
-	CmdShiftJob        = "shift_job"         // Args[0]=殖民地, Text="來源>目標"(見 shiftJobArgs)
-	CmdCycleTaxRate    = "cycle_tax_rate"    // 無參數
-	CmdSetRelocation   = "set_relocation"    // Args[0]=殖民地, Args[1]=目標星(−1=取消)
-	CmdSetStarReloc    = "set_star_reloc"    // Args[0]=起點星, Args[1]=終點星
-	CmdSetAllReloc     = "set_all_reloc"     // Args[0]=目標星
-	CmdClearAllReloc   = "clear_all_reloc"   // 無參數
-	CmdHireMerc        = "hire_merc"         // 無參數
-	CmdAssaultAntares  = "assault_antares"   // 無參數
-	CmdEndTurn         = "end_turn"          // 無參數(鎖步裡由協定層決定何時推進,這裡是單機/回放用)
+	CmdSendFleet            = "send_fleet"             // Args[0]=目的星
+	CmdSelectFleet          = "select_fleet"           // Args[0]=艦隊索引
+	CmdSplitFleet           = "split_fleet"            // Args[0]=艦隊索引, Args[1:]=要拆出去的艦艇索引
+	CmdColonizeStar         = "colonize_star"          // Args[0]=星
+	CmdColonizePlanet       = "colonize_planet"        // Args[0]=行星
+	CmdBuildOutpost         = "build_outpost"          // Args[0]=星
+	CmdOutpostOnPlanet      = "outpost_on_planet"      // Args[0]=行星
+	CmdLoadMarines          = "load_marines"           // Args[0]=殖民地
+	CmdLoadTanks            = "load_tanks"             // Args[0]=殖民地
+	CmdInvadeColony         = "invade_colony"          // Args[0]=星
+	CmdBombardColony        = "bombard_colony"         // Args[0]=星
+	CmdAttackMonster        = "attack_monster"         // Args[0]=星
+	CmdEnqueueBuild         = "enqueue_build"          // Args[0]=殖民地, Args[1]=成本, Text=項目名
+	CmdDequeueBuild         = "dequeue_build"          // Args[0]=殖民地, Args[1]=佇列位置
+	CmdShiftJob             = "shift_job"              // Args[0]=殖民地, Text="來源>目標"(見 shiftJobArgs)
+	CmdCycleTaxRate         = "cycle_tax_rate"         // 無參數
+	CmdSetRelocation        = "set_relocation"         // Args[0]=殖民地, Args[1]=目標星(−1=取消)
+	CmdSetStarReloc         = "set_star_reloc"         // Args[0]=起點星, Args[1]=終點星
+	CmdSetAllReloc          = "set_all_reloc"          // Args[0]=目標星
+	CmdClearAllReloc        = "clear_all_reloc"        // 無參數
+	CmdHireMerc             = "hire_merc"              // 無參數
+	CmdAssaultAntares       = "assault_antares"        // 無參數
+	CmdMindControl          = "mind_control"           // Args[0]=敵方星
+	CmdCycleColonyBuild     = "cycle_colony_build"     // Args[0]=殖民地
+	CmdTrainSpy             = "train_spy"              // Args[0]=AI 索引
+	CmdSetSpyMission        = "set_spy_mission"        // Args[0]=AI 索引, Args[1]=任務
+	CmdCycleSpyMission      = "cycle_spy_mission"      // Args[0]=AI 索引
+	CmdTrainAgent           = "train_agent"            // 無參數
+	CmdDismissAgent         = "dismiss_agent"          // 無參數
+	CmdSetResearch          = "set_research"           // Args[0]=研究主題
+	CmdChooseResearch       = "choose_research"        // Args[0]=科技
+	CmdDiplomacy            = "diplomacy"              // Text=action NUL enemy
+	CmdOfferCashGift        = "offer_cash_gift"        // Args[0]=金額, Text=enemy
+	CmdOfferTechGift        = "offer_tech_gift"        // Args[0]=主題, Args[1]=科技, Text=enemy
+	CmdOfferStarGift        = "offer_star_gift"        // Args[0]=星, Text=enemy
+	CmdClearAudience        = "clear_audience"         // Args[0]=AI 索引
+	CmdRespondCouncil       = "respond_council"        // Args[0]=1 接受 / 0 拒絕
+	CmdBuildShip            = "build_ship"             // Args[0:5]=元件, Args[5]=火線角, Text=艦體 NUL mods
+	CmdHireMercAt           = "hire_merc_at"           // Args[0]=傭兵索引
+	CmdAssignColonyLeader   = "assign_colony_leader"   // Args[0]=殖民地, Args[1]=領袖
+	CmdUnassignColonyLeader = "unassign_colony_leader" // Args[0]=殖民地
+	CmdAssignShipOfficer    = "assign_ship_officer"    // Args[0]=艦隊, Args[1]=艦, Args[2]=領袖
+	CmdUnassignShipOfficer  = "unassign_ship_officer"  // Args[0]=艦隊, Args[1]=艦
+	CmdReturnShipOfficer    = "return_ship_officer"    // Text=領袖名
+	CmdDismissColonyLeader  = "dismiss_colony_leader"  // Text=領袖名
+	CmdDismissShipOfficer   = "dismiss_ship_officer"   // Text=領袖名
+	CmdCombatOutcome        = "combat_outcome"         // Args[0]=我方起始, Args[1]=敵方起始, Args[2]=勝敗; Text=存活艦名
+	CmdEndTurn              = "end_turn"               // 無參數(鎖步裡由協定層決定何時推進,這裡是單機/回放用)
 )
 
 // PlayerCommandNames 回傳所有已知的指令名(排序過,供 UI/文件列表與測試比對)。
@@ -61,14 +92,22 @@ const (
 // ⚠ 這份清單就是「網路對戰目前支援到哪」的答案。UI 上做得到、但不在這張表裡的操作,
 // 在網路對戰時**不會同步過去**——所以新增 UI 動作時要一起補這裡,不是可選的收尾。
 func PlayerCommandNames() []string {
-	return []string{
-		CmdAssaultAntares, CmdAttackMonster, CmdBombardColony, CmdBuildOutpost,
-		CmdClearAllReloc, CmdColonizePlanet, CmdColonizeStar, CmdCycleTaxRate,
-		CmdDequeueBuild, CmdEndTurn, CmdEnqueueBuild, CmdHireMerc, CmdInvadeColony,
-		CmdLoadMarines, CmdLoadTanks, CmdOutpostOnPlanet, CmdSelectFleet,
-		CmdSendFleet, CmdSetAllReloc, CmdSetRelocation, CmdSetStarReloc,
-		CmdShiftJob, CmdSplitFleet,
+	names := []string{
+		CmdAssaultAntares, CmdAttackMonster, CmdAssignColonyLeader, CmdAssignShipOfficer,
+		CmdBombardColony, CmdBuildOutpost, CmdBuildShip, CmdChooseResearch,
+		CmdClearAllReloc, CmdClearAudience, CmdColonizePlanet, CmdColonizeStar,
+		CmdCombatOutcome, CmdCycleColonyBuild, CmdCycleSpyMission, CmdCycleTaxRate,
+		CmdDequeueBuild, CmdDismissAgent, CmdDismissColonyLeader, CmdDismissShipOfficer,
+		CmdDiplomacy, CmdEndTurn, CmdEnqueueBuild, CmdHireMerc, CmdHireMercAt,
+		CmdInvadeColony, CmdLoadMarines, CmdLoadTanks, CmdMindControl,
+		CmdOfferCashGift, CmdOfferStarGift, CmdOfferTechGift, CmdOutpostOnPlanet,
+		CmdRespondCouncil, CmdReturnShipOfficer, CmdSelectFleet, CmdSendFleet,
+		CmdSetAllReloc, CmdSetRelocation, CmdSetResearch, CmdSetSpyMission,
+		CmdSetStarReloc, CmdShiftJob, CmdSplitFleet, CmdTrainAgent, CmdTrainSpy,
+		CmdUnassignColonyLeader, CmdUnassignShipOfficer,
 	}
+	sort.Strings(names)
+	return names
 }
 
 // arg 取第 i 個參數;沒有就回 def。
@@ -136,6 +175,70 @@ func (s *GameSession) ApplyPlayerCommand(c PlayerCommand) error {
 		s.HireMerc()
 	case CmdAssaultAntares:
 		s.AssaultAntares()
+	case CmdMindControl:
+		s.MindControlColony(arg(c, 0, -1))
+	case CmdCycleColonyBuild:
+		s.CycleColonyBuild(arg(c, 0, -1))
+	case CmdTrainSpy:
+		s.TrainSpy(arg(c, 0, -1))
+	case CmdSetSpyMission:
+		s.SetSpyMission(arg(c, 0, -1), SpyMission(arg(c, 1, int(SpyMissionSteal))))
+	case CmdCycleSpyMission:
+		s.CycleSpyMission(arg(c, 0, -1))
+	case CmdTrainAgent:
+		s.TrainDefensiveAgent()
+	case CmdDismissAgent:
+		s.DismissDefensiveAgent()
+	case CmdSetResearch:
+		s.SetResearchTopic(gamedata.ResearchTopic(arg(c, 0, 0)))
+	case CmdChooseResearch:
+		s.ChooseResearchTech(gamedata.Technology(arg(c, 0, 0)))
+	case CmdDiplomacy:
+		action, enemy := splitCommandText(c.Text)
+		s.DiplomacyResponse(action, enemy)
+	case CmdOfferCashGift:
+		s.OfferCashGift(c.Text, arg(c, 0, 0))
+	case CmdOfferTechGift:
+		s.OfferTechnologyGift(c.Text, gamedata.ResearchTopic(arg(c, 0, 0)), gamedata.Technology(arg(c, 1, 0)))
+	case CmdOfferStarGift:
+		s.OfferStarGift(c.Text, arg(c, 0, -1))
+	case CmdClearAudience:
+		s.ClearAudienceRequest(arg(c, 0, -1))
+	case CmdRespondCouncil:
+		s.RespondToCouncilElection(arg(c, 0, 0) != 0)
+	case CmdBuildShip:
+		class, modsText := splitCommandText(c.Text)
+		s.BuildShipWithModsAndArc(class, arg(c, 0, 0), arg(c, 1, 0), arg(c, 2, 0), arg(c, 3, 0), splitNUL(modsText), gamedata.WeaponArc(arg(c, 5, int(gamedata.ARC_FWD))))
+	case CmdHireMercAt:
+		s.HireMercAt(arg(c, 0, -1))
+	case CmdAssignColonyLeader:
+		s.AssignLeaderToColony(arg(c, 0, -1), arg(c, 1, -1))
+	case CmdUnassignColonyLeader:
+		s.UnassignLeaderFromColony(arg(c, 0, -1))
+	case CmdAssignShipOfficer:
+		s.AssignOfficerToShip(arg(c, 0, -1), arg(c, 1, -1), arg(c, 2, -1))
+	case CmdUnassignShipOfficer:
+		s.UnassignOfficerFromShip(arg(c, 0, -1), arg(c, 1, -1))
+	case CmdReturnShipOfficer:
+		s.ReturnShipOfficerToPool(c.Text)
+	case CmdDismissColonyLeader:
+		s.DismissColonyLeader(c.Text)
+	case CmdDismissShipOfficer:
+		s.DismissShipOfficer(c.Text)
+	case CmdCombatOutcome:
+		parts := splitNUL(c.Text)
+		if len(parts) == 0 || parts[0] == "" {
+			// 清單／回放相容性測試會用零值指令探測每個名稱；真正的
+			// 戰鬥結果一定由 ApplyCombatOutcome 帶上敵方名稱。
+			return nil
+		}
+		survivors := make(map[string]bool, len(parts)-1)
+		for _, name := range parts[1:] {
+			if name != "" {
+				survivors[name] = true
+			}
+		}
+		s.ApplyCombatOutcome(parts[0], arg(c, 0, 0), arg(c, 1, 0), survivors, arg(c, 2, 0) != 0)
 	case CmdEndTurn:
 		s.EndTurn()
 	default:
@@ -148,6 +251,8 @@ func (s *GameSession) ApplyPlayerCommand(c PlayerCommand) error {
 //
 // 停下來而不是跳過:鎖步裡「跳過一條」等於兩邊從此不同步,而且不會有人發現。
 func (s *GameSession) ApplyPlayerCommands(cmds []PlayerCommand) error {
+	s.commandReplayDepth++
+	defer func() { s.commandReplayDepth-- }()
 	for i, c := range cmds {
 		if err := s.ApplyPlayerCommand(c); err != nil {
 			return fmt.Errorf("第 %d 條指令:%w", i, err)
@@ -155,6 +260,21 @@ func (s *GameSession) ApplyPlayerCommands(cmds []PlayerCommand) error {
 	}
 	return nil
 }
+
+// splitCommandText 解析以 NUL 分隔的字串欄位。玩家名稱、艦名與敵方名稱
+// 不會包含 NUL；其餘部分保留原樣，讓格式錯誤由規則或回合指紋揭露。
+func splitCommandText(text string) (string, string) {
+	parts := splitNUL(text)
+	if len(parts) == 0 {
+		return "", ""
+	}
+	if len(parts) == 1 {
+		return parts[0], ""
+	}
+	return parts[0], strings.Join(parts[1:], "\x00")
+}
+
+func splitNUL(text string) []string { return strings.Split(text, "\x00") }
 
 // shiftJobArgs 把 "農夫>工人" 拆成兩個職務名(`ShiftColonyJob` 收的是中文職務名)。
 //

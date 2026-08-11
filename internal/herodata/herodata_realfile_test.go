@@ -42,7 +42,10 @@ func TestParseRealHerodata(t *testing.T) {
 		t.Errorf("英雄數 = %d,預期 67", len(leaders))
 	}
 	named, ship, colony := 0, 0, 0
-	for _, l := range leaders {
+	for i, l := range leaders {
+		if l.ID != i {
+			t.Errorf("英雄 %d 的來源 ID = %d,預期與 HERODATA 記錄序號相同", i, l.ID)
+		}
 		if l.Name != "" {
 			named++
 		}

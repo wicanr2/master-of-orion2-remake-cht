@@ -90,13 +90,13 @@ func TestHardShieldReachesBothCombatPaths(t *testing.T) {
 	}
 }
 
-// 手冊同一段還有第三、第四個效果——一個已經做了、一個擋在缺席的系統後面。
+// 手冊同一段還有第三、第四個效果——一個已經做了、一個接在傳送器規則上。
 //
 // 釘住現況免得日後盤點時重算一次:
 //   - 「allow ships to use their shields inside a nebula」→ 已做(nebula.go 的 nebulaShield)
 //   - 「provide immunity to shield-piercing weapons」→ 已做(DamageAfterShield 的 shieldPiercing 分支)
-//   - 「prevent enemies from using Transporters to send over Marines」→ **傳送器不存在**,
-//     擋在登艦戰系統後面(第 60 項(打得準也閃得掉)),不是漏抄
+//   - 「prevent enemies from using Transporters to send over Marines」→
+//     `ShipBoardingReachAgainst` 會在硬化護盾存在時阻擋傳送器，即使該分面已失效。
 func TestHardShieldOtherManualEffects(t *testing.T) {
 	// 護盾穿透武器對硬化護盾無效。
 	const dmg, shield = 40, 10

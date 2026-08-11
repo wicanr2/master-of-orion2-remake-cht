@@ -1,4 +1,4 @@
-# 領袖/軍官技能系統(2026-07-11 接線,2026-08-08 修訂)
+# 領袖／軍官技能系統(2026-07-11 接線,2026-08-10 remake 收尾)
 
 > **本文第二、三節是一手資料(技能 id 編碼、加成公式、格式字串對照),仍然有效。**
 > 第四節以後是接線現況,已由第 45/45/45 項大幅改寫——2026-07-11 版本裡「只接三個技能」
@@ -95,7 +95,9 @@ Lore/Ordnance/Security/Navigator(移動力用途)在 openorion2 全專案 grep �
 > 那是把「openorion2 沒有消費端」誤讀成「沒有數字」。**數字一直都在**:加成值是
 > `baseSkillValues`(第二節那三行常數表),單位是 `skillFormatStrings`(第二節那張對照表)
 > ——兩者合起來就足以決定該技能接進 remake 的哪個欄位。缺的從來是**承接的子系統**,
-> 不是數字。第 45/45/45 項照這個判準接了 12 項(見第五節)。
+> 不是數字。2026-08-10 收尾後,26 項技能至少有一個 remake 消費端；唯一刻意不接的是
+> 手冊明說原版也未實作的 Tactics。Famous 的明確雇用費折扣已接,招募機率仍因缺少可證實的
+> 候選池／擲骰公式而不以固定週期冒充完成(見第六節)。
 > 真正「沒有數字」的只有戰術官,而那是因為**原版自己就沒實作**。
 
 ## 四、本輪建置範圍(只接對應到 remake 已存在系統的技能)
@@ -115,14 +117,13 @@ Lore/Ordnance/Security/Navigator(移動力用途)在 openorion2 全專案 grep �
 - `internal/engine/ship.go`:`ShipBeamAttackWithOfficer`/`ShipBeamDefenseWithOfficer`——在既有
   `ShipBeamAttackFromDesign`/`ShipBeamDefenseFromDesign`(已有測試鎖住既有行為,故不改簽章)之上
   疊加軍官 Weaponry/Helmsman 加成,對照 `shipBeamOffense`/`shipBeamDefense` 的疊加方式。
-  **⚠ remake 的 `shell.Ship` 目前沒有軍官指派欄位、也沒有任何戰鬥解算迴圈會呼叫這兩個新函式**——
-  這只是引擎層可用的公式,真正接進「玩家指派軍官上艦 → 戰鬥時生效」需要先有戰鬥畫面/艦艇軍官
-  指派 UI,這兩者 remake 都還沒有(見 `docs/HONEST-STATUS.md`)。屬於「公式已備妥,等系統」。
+  `shell.Ship.OfficerName`／`OfficerID` 現已提供逐艦來源；快速結算與格子戰術會讀同一份指派資料，
+  UI 路徑為艦隊畫面選船 → `LEADERS` → 點艦艇軍官列。
 - `internal/engine/leader.go`:`HireLeader(currentBC, cost int) (newBC int, ok bool)`——最小雇用
   金流機制(BC 夠不夠、扣款),供未來招募畫面呼叫。**領袖狀態轉換(ForHire→Working 等)不在本輪
   範圍**,`demoLeaders` 既有領袖視為已受雇,不需要走這個函式。
 
-### 4.3 shell 接線(現況,2026-08-08)
+### 4.3 shell 接線(現況,2026-08-10)
 
 **識別鍵是技能 id,不是中文標籤。** `shell.Leader` 帶 `Skills []LeaderSkill{ID, Tier}`,
 由 HERODATA 的技能位元解出(每技能 2 bit = 技能階,見第 45 項(領袖技能));`Skill` 那個字串只負責顯示,
@@ -137,12 +138,35 @@ Lore/Ordnance/Security/Navigator(移動力用途)在 openorion2 全專案 grep �
 `gamedata.LeaderSkillCombine` 合成(手冊 p.137:只有 Megawealth 與 Researcher 累加,
 其餘取最強那一位),最後由 switch 決定落在哪個 `ColonyState` 欄位。
 
-## 五、目前有實際效果的技能(共 13 項)
+艦艇軍官則由 `internal/shell/officer_assignment.go` 逐艦查詢：`AssignOfficerToShip` 會維持一位
+軍官只服務一艘船，`OfficerName` 空值代表未指派；`OfficerID` 對應原版 `_leaders[]` 序號，
+缺欄位時才以名稱回退。Weaponry／Helmsman、Navigator、Engineer
+各自從該船查詢，不再把帝國內任一艦艇軍官套到所有艦艇。JSON／熱座沿用既有 `Fleet` 保存，
+完整來源 ID 與限制見 `docs/re/officer-ids.md`；原版 `.GAM` 全局 `0x3B×0x43` 讀寫鏈已由
+IDA 靜態證實，但重製直接 importer 仍未實作。
+
+## 五、目前有實際效果的技能(26 項；另有 1 項依原版不實作)
 
 | 技能 | 落在 | 消費端 |
 |---|---|---|
+| 刺客 Assassin | 每回合逐位刺客、逐對手各擲一次防守 Agent 行動 | `advanceLeaderAssassinActions` |
+| 指揮官 Commando | 地面戰 force 加成 | `ground_invasion.go` `commandoLeaderTier` |
+| 外交官 Diplomat | 提案關係增益的可觀察代理值 | `diplomacyRelationGain`；不是原版獨立接受分數宣稱 |
+| 名人 Famous | 雇用費折扣取最強者 | `MercHireCost`；招募機率尚無證實模型 |
+| 巨富 Megawealth | 每回合固定 BC、領袖維護費免除 | `EndTurn`／`leader_upkeep.go` |
+| 後勤官 Operations | 帝國指揮點數供給 | `totalCommandPointsSupply` |
 | 科學家 Researcher | `FlatResearch`(固定點數,**累加型**) | `applyLeaderColonyBonuses` |
+| 間諜大師 Spymaster | 進攻方間諜加成 | `advanceEspionage` |
+| 心靈感應者 Telepath | 防守方 Agent 加成 | `advanceEspionage` |
 | 貿易家 Trader | `IncomeBonusPercent` | 同上 |
+| 工程師 Engineer | 被指派艦隊的船戰後完全修復(**打贏才有**) | `repair.go` `assignedEngineerTier` |
+| 戰機飛行員 Fighter Pilot | 參戰戰機命中／防禦資料 | `StartCombat`／`tacticalfighter.go` |
+| 銀河學者 Galactic Lore | 星圖立即揭露；太空怪獸／安塔蘭戰鬥加成 | `StarChartVisible`／`monster.go`／`antaran_victory.go` |
+| 舵手 Helmsman | 艦艇閃避與飛彈閃避 | `StartCombat`／`shipOfficerMissileEvasionBonus` |
+| 領航員 Navigator | 被指派艦隊航速 + 星雲/黑洞豁免 | `starlane.go` `FleetHasNavigator` |
+| 軍械官 Ordnance | 艦艇武器傷害上限加成 | `StartCombat`／`mkPlayerCombatantsIndexed` |
+| 保安官 Security | 登艦防守陸戰隊戰力 | `BoardingDefense`／`CombatShip.SecurityBonus` |
+| 武器官 Weaponry | 被指派艦艇光束命中 | `StartCombat`／`mkPlayerCombatantsIndexed` |
 | 財務官 Financial Leader | `IncomeBonusPercent` | 同上 |
 | 心靈導師 Spiritual Leader | `MoralePercent` | 同上 |
 | 醫官 Medicine | `GrowthBonusSum` | 同上 |
@@ -150,9 +174,6 @@ Lore/Ordnance/Security/Navigator(移動力用途)在 openorion2 全專案 grep �
 | 勞工官 Labor Leader | `IndustryBonusPercent` | 同上 |
 | 科學官 Science Leader | `ResearchBonusPercent` | 同上 |
 | 教官 Instructor | 艦員每回合經驗(固定點數) | `leaderInstructorXPBonus` / `crew.go` |
-| 工程師 Engineer | 戰後完全修復(**打贏才有**) | `repair.go` `engineerLeaderTier` |
-| 指揮官 Commando | 地面戰 force 加成 | `ground_invasion.go` `commandoLeaderTier` |
-| 領航員 Navigator | 艦隊航速 + 星雲/黑洞豁免 | `starlane.go` `FleetHasNavigator` |
 | 環保官 Environmentalist | `PollutionReductionPercent`(**正的減幅**) | `engine/colony.go` `colonyPollution` |
 
 > 2026-07-11 版本這一節寫的是「指揮官映射待人工定案,候選 SKILL_WEAPONRY /
@@ -165,11 +186,14 @@ Lore/Ordnance/Security/Navigator(移動力用途)在 openorion2 全專案 grep �
 
 - **戰術官 Tactics**:**原版自己就沒實作**——手冊那條的最後一句明寫
   「This skill is not implemented」。不做它與原版一致,不是缺口。
-- **刺客 / 外交官 / 間諜大師 / 心靈感應 / 名人 / 巨富 / 後勤官**:對應的子系統
-  (刺客擲骰、外交修正、反間諜、雇用費市場、維護費豁免、指揮點數)remake 沒有或未接。
-- **戰機飛行員 / 銀河學者 / 舵手 / 軍械官 / 保安官 / 武器官**:艦艇軍官指派 UI 與
-  逐艦戰鬥屬性都還沒有,`ShipBeamAttackWithOfficer` / `ShipBeamDefenseWithOfficer`
-  公式已備妥,等系統。
+- **Famous 的招募機率**：`skilldesc.tsv` 只證實「提高機率」與 `-60 BC` 費用單位，沒有
+  可回放的候選接受門檻、候選池刷新亂數或機率數字；因此 remake 只接有明確數值的費用折扣。
+  目前每 4 回合釋出候選是可重現的 remake 供應節奏，不應被寫成原版 Famous 機率。
+- **Diplomat 的原版精確接受門檻**：remake 沒有獨立外交點數欄位，現在把技能值映射到既有
+  關係增益，讓效果可玩且可測；這是有標註的可觀察代理值，不是原版 byte-level 門檻。
+
+其餘 captain/common 技能的 remake 消費端已完成；未來若補到 `VESA.COM` runtime，才追求
+Famous 機率、Diplomat 接受門檻與各技能逐值 oracle，不因這些未知回頭虛構公式。
 
 ## 七、測試
 
@@ -183,6 +207,9 @@ Lore/Ordnance/Security/Navigator(移動力用途)在 openorion2 全專案 grep �
 
 接線層:
 
+- `officer_assignment_test.go`:指派／改派／解除、逐艦 Weaponry／Helmsman 與 JSON round-trip；
+  `starlane_test.go`／`route_test.go`／`repair_test.go` 以真實指派驗證 Navigator／Engineer 消費端。
+
 - `internal/shell/leader_test.go`:標籤退回路徑、**id 勝過顯示標籤**(英文模式不會靜默失效)、
   一位領袖多項技能、進階階比一般階強 50%。
 - `internal/shell/leader_skill_test.go`:兩個貿易家不疊 vs 兩個科學家會疊(正對照)、
@@ -193,3 +220,9 @@ Lore/Ordnance/Security/Navigator(移動力用途)在 openorion2 全專案 grep �
 - `cmd/moo2/herodatamercs_test.go`:2 bit 解碼(含「舊遮罩 `1<<6` 指到的是 SKILL_FAMOUS」
   這條回歸鎖)、進階階讀得出來、specialSkills 依領袖類型解讀、一人多技能且專屬在前、
   標籤翻譯但 id 不變、**類別通稱不可撞到真技能譯名**。
+- `internal/shell/leader_effects_test.go`:Operations／Famous／Diplomat／Megawealth、
+  Assassin、Spymaster／Telepath、Galactic Lore 的星圖與戰鬥分離、Ordnance／Security
+  同時到達快速與格子戰術兩條路徑。
+- `internal/shell/officer_assignment_test.go`:Fighter Pilot 取參戰艦隊最高值並傳入戰機資料。
+- `internal/shell/economy_20_turn_test.go`:固定開局 20 回合 BC／人口／士氣／食物／工業／研究
+  探針，輸出供平衡體感與後續調校使用。

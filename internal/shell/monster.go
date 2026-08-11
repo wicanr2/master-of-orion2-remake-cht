@@ -129,6 +129,7 @@ type MonsterBattleResult struct {
 //     跳過命中判定
 //   - 打不完的話怪獸留著剩餘結構,下次再打接續(不會回血——手冊沒提怪獸會恢復)
 func (s *GameSession) AttackMonster(starIdx int) MonsterBattleResult {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdAttackMonster, Args: []int{starIdx}})
 	m := s.MonsterAtStar(starIdx)
 	if m == nil {
 		return MonsterBattleResult{Reason: "該星沒有怪獸"}
@@ -147,6 +148,7 @@ func (s *GameSession) AttackMonster(starIdx int) MonsterBattleResult {
 
 	res := MonsterBattleResult{Ok: true, Name: st.NameZH}
 	rng := rand.New(rand.NewSource(int64(s.Turn)*2654435761 + int64(starIdx)*7919 + 31))
+	galacticLoreBonus := s.galacticLoreCombatBonus()
 
 	// 六回合上限,與 ResolveBattle 一致(避免無限纏鬥)。
 	for round := 1; round <= 6 && m.Structure > 0 && len(pf) > 0; round++ {
@@ -156,6 +158,10 @@ func (s *GameSession) AttackMonster(starIdx int) MonsterBattleResult {
 			if c.wmax > c.wmin {
 				dmg += rng.Intn(c.wmax - c.wmin + 1)
 			}
+			// Galactic Lore 的 +5 是怪獸戰鬥唯一可觀察的「combat」欄位；
+			// 本 remake 的怪獸路徑沒有另擲 BA 命中骰，因此以每艘參戰艦
+			// 的固定齊射加成承接，避免技能只在星圖顯示上生效。
+			dmg += galacticLoreBonus
 			if dmg < 1 {
 				dmg = 1
 			}

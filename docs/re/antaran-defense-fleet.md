@@ -2,6 +2,16 @@
 
 > 來源:`Orion2.exe.asm`(反組譯清單,位於 `/home/anr2/moo2-private-build/re/`,版權資產,不進本 repo)
 > + `symbols_fixed.tsv`(原始符號表,提供函式/變數真名)。
+
+## 輸入與位址基準
+
+本檔目前採用的主輸入是 `Orion2.exe` SHA-256
+`7ae2ac2e5904ca330009af2827279d889906b0b9b7a8854c38eb707a56e955b5`、
+`Orion2.exe.i64` SHA-256
+`4a01791fcf877ed87a740a54748694ab34a02675e3117dac052aeaa3f883944e`；工具為 IDA Pro 9.4
+`idat`／Hex-Rays `9.4.0.260610`，位址是 IDA 線性位址。`symbols_fixed.tsv` 與
+`symbols_full.tsv` 在部分函式有衝突，故以 raw `sub_` 名稱、函式邊界與 writer 指令為主。
+本檔不以較舊 `ORION95.EXE` 對應的 `orion2_all.c` 作目前輸入主證據。
 > 本檔只放解讀結果與虛擬碼,組語行號全部對應反組譯清單,方便回頭核對。
 
 ## 結論摘要(先講重點)
@@ -271,6 +281,43 @@ var antaranShipCost = [9]byte{2, 5, 12, 30, 75, 0, 0, 0, 0}
 即防禦艦隊的損耗優先用「已經囤好但還沒出擊」的同型艦頂替,頂不了才等下一輪
 `Build_Antaran_Defensive_Ships_` 用資源池慢慢重建。
 
+## 4.5 2026-08-09 戰鬥 loader／compact design 位址勘誤
+
+本節保留先前研究紀錄的更正脈絡，不把不同用途的 loader 名稱與位址靜默覆寫成新說法。
+`Init_Ship_Designs`（raw `0x5514C`）的 jump table 與母星即時戰鬥 loader 是兩條平行路徑：
+
+- 即時戰鬥 loader 的已證實對照是 `sub_55738` = Intruder、`sub_55B12` = Interdictor、
+  `sub_55F67` = Harbinger；它們分別是 `Load_Combat_Antaran_Ship_` 的 Large、Huge、Titan 分支。
+- `func_names.txt` 對這一段有「`Load_Medium_Antaran_Design_`」等歷史標籤，不能單獨當成
+  語意證據；`Orion2.exe.asm` 的 `sub_4D10E` jump table、函式內 `aIntruder`／`aInterdictor`／
+  `aHarbinger` 交叉參照與實際 `sub_55738`／`sub_55B12`／`sub_55F67` 寫入內容，才是本表採用的
+  raw entry point 對照。原始標籤保留在 [`docs/re/weapon-mod-flags.md`](weapon-mod-flags.md)
+  所述的反組譯追溯規則中，不用改名掩蓋這個衝突。
+- compact strategic design 的 Large／Huge／Titan 分支是 `sub_559DC`／`sub_55E16`／`sub_562D6` 所在的
+  `Init_Ship_Designs` 分派區；其中 `sub_559DC` 對應 Intruder 的 ID 31 ×3，`sub_562D6` 對應
+  Harbinger 的 ID 31 ×6。`0x5565D` 與 `0x55E16` 不能再當成 Intruder／Harbinger 的即時戰鬥 loader 位址。
+- 因此本研究紀錄先前把 `0x5565D`／`0x55E16` 寫成兩艘即時戰鬥設計 loader 的段落，現在以本節
+  勘誤取代；原始行文仍留在版控歷史中，方便追查結論何時改變。
+- `OrigWeaponTable` 的 ID `31` = `WeaponCatFighterBay`；remake 的
+  `antaranDefenseUnit.CombatLoaderRaw`／`FighterBayWeaponID`／`FighterBayCount` 只保存這個已證實
+  的槽位 provenance 與快速戰鬥已有的戰機艙貢獻，不代表其餘安塔蘭武器槽已解出。
+
+### 已解出的標準戰鬥武器槽切片
+
+在標準艦的戰鬥記錄中，槽起點是 `dword_192864 + 313*ship + 0x52 + 0x0B*slot`；
+weapon ID 位於槽 `+0x00`、數量位於 `+0x02`、16 位元 raw flags 位於 `+0x04`。
+以下只列已由 `sub_55738`／`sub_55B12`／`sub_55F67` 直接寫入的非空槽：
+
+| 艦名 | raw loader | `(slot, weapon ID, quantity, raw flags)` | 消費狀態 |
+|---|---|---|---|
+| Intruder | `0x55738` | `(0,4,4,0)`、`(1,4,2,0x0002)`、`(2,24,5,0)`、`(3,13,2,0)`、`(4,31,3,0)` | ID／數量／flags 已保存；只有 ID 31 戰機艙接入既有快速戰鬥貢獻 |
+| Interdictor | `0x55B12` | `(0,4,6,0)`、`(1,4,2,0x0002)`、`(2,24,15,0)`、`(3,13,2,0)`、`(4,4,8,0x0004)`、`(5,11,2,0)` | ID／數量／flags 已保存；其他槽的精確火力未知 |
+| Harbinger | `0x55F67` | `(0,4,10,0)`、`(1,4,2,0x0002)`、`(2,24,20,0)`、`(3,13,3,0)`、`(4,4,15,0x0004)`、`(5,11,2,0x0002)`、`(6,37,1,0)`、`(7,31,6,0)` | ID／數量／flags 已保存；只有 ID 31 戰機艙接入既有快速戰鬥貢獻 |
+
+這張表是「資料切片」，不是敵方火力解算器：`raw flags` 的 bit 語意、weapon ID 的完整
+傷害／命中消費、敵方何時派出戰機與艦身方向仍未形成可重現規則，因此不把 ID 4／11／13／24／37
+直接換成 remake 的攻擊值。
+
 ---
 
 ## 5. 誠實留白(讀不出來 / 沒追到底的部分)
@@ -295,6 +342,23 @@ var antaranShipCost = [9]byte{2, 5, 12, 30, 75, 0, 0, 0, 0}
   但後面接一段依「總戰力值」按槽位容量比例分配傷害的演算法,**餵進這段分配算法的「總戰力值」
   (組語裡的 `di`)從哪裡算出來,沒有追回其源頭**——時間有限,這一段依任務指示屬於加分項,
   沒有勉強做完,留白。
+
+### 2026-08-11 remake 消費端接線勘誤
+
+上段保留的是「總戰力值來源未追回」的歷史結論；本輪沒有改寫它，而是把已直接讀到的
+武器槽先接入 remake 的終局齊射。`Load_Antaran_Star_Fortress_` (`sub_4D18E`) 的四個
+非空槽為：`(ID 11, seed 375, cap 99, raw flags 2)`、`(ID 4, seed 187, cap 198, 0)`、
+`(ID 4, seed 187, cap 198, 4)`、`(ID 4, seed 375, cap 99, 2)`。ID／槽距／seed／
+CapacityCap／raw flags 仍是**已證實**；`sub_6EE8E @ 0x6EE8E` 的 divisor 中間式已追回，
+但 live tech 導出的當下數量與 flags bit 正式名稱仍是**未知**，故程式保留 raw 欄位並
+在註解中標出推論邊界。
+
+`antaranWeaponFirepower` 現在將光束、魚雷、具直接傷害的特殊武器按 CapacityCap 的
+終局 full-cap policy 彙整到 `antaranDefenseCombatant.wmin/wmax`；獨立的
+`antaranFortressRuntimeQuantity` 已保留 seed／divisor／live tech bucket 的正確計算，
+待實際 runtime 狀態接入時才取代 full-cap policy。炸彈只對行星有效、戰機艙另走 Fighter Bays
+中隊模型，不重複計算。這完成「要塞有完整已追回槽位火力」的 remake 消費端，但不宣稱
+已追回原版總戰力分配演算法的所有中間欄位。
 - **`Load_Antaran_Ship_Design_`(0x5514C,`Deploy_Antaran_Ships_` 專用的「設計」版本,
   跟本文的「戰鬥艦」版本是兩套平行系統)只看了 Small 那個 chunk**(確認名稱同樣是
   "Raider"),Medium/Large/Huge/Titan 四個 chunk 沒有展開比對,也沒有搞清楚
@@ -303,3 +367,53 @@ var antaranShipCost = [9]byte{2, 5, 12, 30, 75, 0, 0, 0, 0}
 - **Interdictor(Huge)、Harbinger(Titan)的難度裝甲加成表**:確認程式碼形狀
   (`mov al, byte_199CB0` 接四路難度分支,與 Intruder 相同寫法)存在,但沒有逐位元組
   抄出實際加成數字,只有 Small/Medium/Large 三級有完整數字。
+
+## 2026-08-11 深度 IDA 勘誤：要塞 raw flag／容量 divisor／seed
+
+上方歷史段落保留「99／198 是容量代理」的中途結論；本節是同一份
+`Orion2.exe.i64`（SHA-256 `4a01791fcf877ed87a740a54748694ab34a02675e3117dac052aeaa3f883944e`）
+以 IDA Pro 9.4、IDA 線性位址重新追出的精確中間式。`sub_4D18E @ 0x4D18E` 在
+`[record+0x33]=6` 後，`0x4D1D9`／`0x4D21A` 使用 `word_17F642 + class*0x0F`
+的**直接 byte stride**；class 6 讀址是 `0x17F69C`，raw word `0x0384=900`。
+先前探針把 0x0F 當 word stride 而報出的 `0x17F6F6=0x19` 已由
+[`tools/ida/deep_fire_fortress.idc`](../../tools/ida/deep_fire_fortress.idc) 修正，不能再作
+要塞常數。
+
+本輸入的 raw 常數是 `word_180140=1200`、`word_180142=80`、`word_180144=120`、
+`word_180146=120`。loader 的設計欄位為：
+
+```text
+AA = 3 * (floor(900 * 120 / 100) + 120) = 3600
+C2 = 3 * (floor(900 * 120 / 100) + 120) = 3600
+P  = signed_div(signed_div(5 * 1200, 4), 2) = 750
+```
+
+四個非空槽在 `+0x52 + slot*0x0B` 的 ID／quantity／raw flags 為：
+
+| 槽 | ID | seed | raw `+0x04` | loader 上限／分割 |
+|---:|---:|---:|---:|---|
+| 0 | 11 | 375 | 2 | 99 |
+| 1 | 4 | 187 | 0 | 198；超過 99 會拆同 ID／同 raw 的下一槽 |
+| 2 | 4 | 187 | 4 | 198；超過 99 會拆同 ID／同 raw 的下一槽 |
+| 3 | 4 | 375 | 2 | 99 |
+
+`sub_6EE8E @ 0x6EE8E` 回傳的是 caller 用來除 seed 的 divisor，不是 live quantity。
+要塞 caller 傳 `EAX=word_19988E`、`EDX=ID`、`EBX=1`、`CX=1`、stack raw fortress
+flag `0` 與 slot raw `0/2/4`。對本四槽：`K=word_17F811[ID*0x1C]`，ID 4/11 分別
+是 15/30；`sub_6A636 @ 0x6A636` 使 raw 0/2/4 的第一百分比成 100/200/50，
+`sub_6A406 @ 0x6A406` 提供的第二個加成對這三種 raw 都是 0。`sub_6F11C @ 0x6F11C` 對 ID 4/11
+靜態回傳 B=1，`sub_6E70A @ 0x6E70A` 的 required-tech raw field 分別是 `0x7B`／
+`0x2F`，所以 T 仍取決於執行期科技資料。B=1 時 `sub_6E60E @ 0x6E60E` 的
+base 是 T=2→700、T=3→600、其他→400，最後為
+`floor((base*X+500)/1000)`，正值零結果夾成 1。
+
+因此在三個 T bucket 下的靜態重算例為：ID 4 的 `X(raw0/raw2/raw4)=15/30/7`，
+ID 11 raw2 的 X=60；slot 1 raw0 的 divisor `11/9/6`、數量 `17/20/31`，
+slot 2 raw4 的 divisor `5/4/3`、數量 `37/46/62`，slot 0 raw2 的 divisor
+`42/36/24`、數量 `8/10/15`。這些是公式範例，不是宣稱某個 runtime 開局必然值；
+`T`、合法 `word_19988E` 角色與 `sub_6D048` 的 live BSS 狀態仍需原版 runtime。
+
+**證據結論：** 四槽 ID、seed、raw flag、99／198 上限與容量 divisor 中間鏈為
+**已證實**；raw bit 的正式玩法名稱、live tech 導出的當下數量與逐值 DOSBox oracle
+為**未知／外部待驗**。remake 保留 raw 欄位並接入已追回直接火力，不把上限冒充 live
+數量，也不把 raw `4` 命名成 ARM/FST。

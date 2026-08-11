@@ -1,8 +1,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"image/color"
+	"net"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -84,6 +88,8 @@ type chooseNetPlayersScreen struct {
 	tick          int
 	// lobby 非 nil 時每幀重讀名冊(主機端;客戶端的名冊是連上時一次拿到的)。
 	lobby *netplay.Lobby
+	// msg 顯示共同開局或斷線錯誤；客戶端等待主機時不應因任意點擊跳回上一層。
+	msg string
 }
 
 // cnpWindow 依人數算出視窗左上角(見檔頭的算式)。
@@ -147,7 +153,26 @@ func (s *chooseNetPlayersScreen) update(in shell.InputState) *origTransition {
 	if s.lobby != nil {
 		s.roster = s.lobby.Roster() // 背景 goroutine 一直在收人,畫面每幀重讀
 	}
+	if s.b.netSess != nil && !s.hosting {
+		for _, m := range s.b.netSess.Poll() {
+			if m.Kind != netplay.KindGameStart {
+				continue
+			}
+			tr, err := s.b.acceptNetworkGame(m.Payload)
+			if err != nil {
+				s.msg = err.Error()
+				continue
+			}
+			return tr
+		}
+		if err := s.b.netSess.Err(); err != nil {
+			s.msg = s.b.tr("網路連線錯誤：", "Network error: ") + err.Error()
+		}
+	}
 	if !in.ClickReleased {
+		return nil
+	}
+	if s.b.netSess != nil && !s.hosting {
 		return nil
 	}
 	// remake 的大廳沒有「點列指派種族」(見檔頭),所以點任何地方都是離開。
@@ -215,7 +240,7 @@ func (s *chooseNetPlayersScreen) draw(dst *ebiten.Image) {
 			}
 		}
 		s.b.fnt.Draw(dst, fmt.Sprintf("%d.", i+1), float64(x-24), float64(y)+20, 13, dim)
-		s.b.fnt.Draw(dst, name, float64(x+8), float64(y)+20, 13, col)
+		s.b.fnt.Draw(dst, truncateToWidth(s.b.fnt, name, 13, float64(w-16)), float64(x+8), float64(y)+20, 13, col)
 		_ = w
 	}
 
@@ -228,8 +253,13 @@ func (s *chooseNetPlayersScreen) draw(dst *ebiten.Image) {
 	y1, y2 := cnpInfoBaselines(winY, rows)
 	fillPanel(dst, float32(winX+8), float32(y1-13), float32(cnpBannerW-16), float32(y2-y1+18),
 		color.RGBA{10, 12, 18, 235}, false)
-	s.b.fnt.Draw(dst, hint, float64(winX+16), float64(y1), 12, body)
-	s.b.fnt.Draw(dst, seed, float64(winX+16), float64(y2), 11, dim)
+	s.b.fnt.Draw(dst, truncateToWidth(s.b.fnt, hint, 12, float64(cnpBannerW-32)), float64(winX+16), float64(y1), 12, body)
+	if s.msg != "" {
+		s.b.fnt.Draw(dst, truncateToWidth(s.b.fnt, s.msg, 11, float64(cnpBannerW-32)),
+			float64(winX+16), float64(y2), 11, color.RGBA{235, 150, 140, 255})
+	} else {
+		s.b.fnt.Draw(dst, truncateToWidth(s.b.fnt, seed, 11, float64(cnpBannerW-32)), float64(winX+16), float64(y2), 11, dim)
+	}
 }
 
 // --- 大廳的開/加入(把 internal/netplay 的大廳接到畫面上)---
@@ -246,6 +276,43 @@ const netLobbyAddr = "0.0.0.0:24501"
 // 探索開不起來(埠被佔、沒有網路)時才退回這個位址,至少同一台機器上測得動。
 // 要打任意位址仍然需要文字輸入框——那是還沒做的一項,不是這裡偷懶。
 const netLobbyDialAddr = "127.0.0.1:24501"
+
+// configuredNetplayOptions 是可選的公網保護開關。預設仍維持區網 TCP 相容形狀；
+// 設定 MOO2_NET_AUTH 後啟用每次連線的 HMAC challenge，另以 MOO2_NET_TLS=1
+// 開啟 TLS 1.3。NAT 穿透不在這裡假裝解決，仍需外部 relay 或 UPnP。
+func configuredNetplayOptions() netplay.LobbyOptions {
+	return netplay.LobbyOptions{
+		AuthToken: os.Getenv("MOO2_NET_AUTH"),
+		EnableTLS: strings.EqualFold(os.Getenv("MOO2_NET_TLS"), "1") ||
+			strings.EqualFold(os.Getenv("MOO2_NET_TLS"), "true") ||
+			strings.EqualFold(os.Getenv("MOO2_NET_TLS"), "yes"),
+	}
+}
+
+// netSessionOptions 把客戶端的 resume identity 接到 Session 的重連 callback。
+// callback 不觸碰 sceneBuilder，避免 UI goroutine 與 socket goroutine 互相寫狀態。
+func (b *sceneBuilder) netSessionOptions() netplay.SessionOptions {
+	opts := netplay.DefaultSessionOptions()
+	if b.networkHost || b.netAddr == "" || b.netPlayerName == "" {
+		return opts
+	}
+	addr, name, joinOpts, me := b.netAddr, b.netPlayerName, b.netJoinOptions, b.netMe
+	opts.Reconnect = func(peerID int) (net.Conn, error) {
+		if peerID != 0 {
+			return nil, fmt.Errorf("netplay: 客戶端只允許重連主機 peer 0")
+		}
+		c, id, _, token, err := netplay.JoinWithOptions(addr, name, 3*time.Second, joinOpts)
+		if err != nil {
+			return nil, err
+		}
+		if id != me || token != joinOpts.ResumeToken {
+			_ = c.Close()
+			return nil, fmt.Errorf("netplay: 重連身份與原玩家不一致")
+		}
+		return c, nil
+	}
+	return opts
+}
 
 // hostNetLobby 先問對局名稱,再開大廳。
 //
@@ -286,12 +353,20 @@ func (b *sceneBuilder) startNetLobby(name string) (origScreen, error) {
 	if name == "" {
 		name = b.tr("主機玩家", "Host")
 	}
-	lb, err := netplay.Host(netLobbyAddr, name, seed)
+	netOpts := configuredNetplayOptions()
+	lb, err := netplay.HostWithOptions(netLobbyAddr, name, seed, netOpts)
 	if err != nil {
 		return nil, err
 	}
+	lb.SetMaxPlayers(cnpMaxRows)
 	b.netLobby = lb
+	b.netLobbyOpts = netOpts
+	b.netAddr = lb.Addr()
+	b.netPlayerName = name
 	b.netMe = 0 // 主機恆為名冊上的第 0 位
+	b.networkHost = true
+	b.networkPending = true
+	b.networkRoster = lb.Roster()
 	// 一併廣播,否則區網上的人看不到這場對局(原版靠 IPX 的服務公告,
 	// TCP 沒有那個能力——見 internal/netplay/discovery.go)。
 	gameName := name
@@ -304,14 +379,17 @@ func (b *sceneBuilder) startNetLobby(name string) (origScreen, error) {
 		b.netAnnouncer = an
 	}
 	go func() {
-		// 收到上限或大廳關掉為止。錯誤不往上拋——UI 端看得到的是「名冊有沒有多一個人」,
-		// 而 AcceptOne 的錯誤多半是「還沒有人來」的逾時。
-		for i := 1; i < cnpMaxRows; i++ {
+		// 大廳滿了時拒絕新玩家但繼續聽；開局後 SetReconnectOnly 會讓同一
+		// 條 accept loop 轉成只收 resume token，因此不會因為 StopAccepting
+		// 而丟失最後一個玩家的重連窗口。
+		for {
 			if _, err := lb.AcceptOne(0); err != nil {
+				if errors.Is(err, netplay.ErrLobbyFull) {
+					continue
+				}
 				return
 			}
-			// 人數變了要更新廣播內容,不然清單上永遠寫 1 人。
-			if b.netAnnouncer != nil {
+			if b.netAnnouncer != nil && !lb.ReconnectOnly() {
 				b.netAnnouncer.Update(netplay.Game{
 					Name: gameName, Addr: lb.Addr(),
 					Players: len(lb.Roster().Players), Max: cnpMaxRows,
@@ -324,6 +402,7 @@ func (b *sceneBuilder) startNetLobby(name string) (origScreen, error) {
 	// 點過去才是 `Choose_Net_Plyrs` 的名冊。照這個順序接。
 	wait := b.netInfo(netInfoWaitingForJoiners)
 	wait.lobby, wait.total, wait.hosting = lb, cnpMaxRows, true
+	wait.onStart = b.beginNetworkHostSetup
 	wait.onCancel = func() *origTransition {
 		sc := b.chooseNetPlayers(lb.Roster(), 0, true, lb.Addr())
 		sc.lobby = lb
@@ -349,12 +428,21 @@ func (b *sceneBuilder) joinNetGame(g netplay.Game) (origScreen, error) {
 	if b.session != nil && b.session.PlayerName != "" {
 		name = b.session.PlayerName
 	}
-	conn, me, roster, err := netplay.Join(g.Addr, name, 3*time.Second)
+	joinOpts := netplay.JoinOptions{LobbyOptions: configuredNetplayOptions()}
+	conn, me, roster, resume, err := netplay.JoinWithOptions(g.Addr, name, 3*time.Second, joinOpts)
 	if err != nil {
 		return nil, err
 	}
+	joinOpts.ResumeToken = resume
 	b.netConn = conn
+	b.netAddr = g.Addr
+	b.netPlayerName = name
+	b.netJoinOptions = joinOpts
 	b.netMe = me // 主機指派的編號——聊天要靠它標「這句是誰說的」
+	b.networkHost = false
+	b.networkPending = true
+	b.networkRoster = roster
+	b.netSess = netplay.NewSessionWithOptions(me, false, map[int]net.Conn{0: conn}, b.netSessionOptions())
 	return b.chooseNetPlayers(roster, me, false, g.Addr), nil
 }
 

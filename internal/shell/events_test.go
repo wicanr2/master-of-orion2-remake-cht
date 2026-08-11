@@ -3,6 +3,8 @@ package shell
 import (
 	"strings"
 	"testing"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
 // bcCrashFloor300Turns 是 TestRandomEventsFireAndBounded 300 回合內允許的 BC 下限。
@@ -25,6 +27,27 @@ import (
 // bcCrashFloor80Turns 的性質),終值約 +718。下限抓一個有餘裕(約 8 倍)但仍能抓到「數值算式
 // 跑飛」的門檻,不再用先前為掩蓋死亡螺旋而放寬的 -4000。
 const bcCrashFloor300Turns = -400
+
+func TestRandomEventKeepsBilingualReportPayload(t *testing.T) {
+	s := NewDemoSession()
+	ev := gamedata.RandomEventByID(6) // 富商捐獻：無目標依賴，適合固定驗證雙語結果
+	if ev == nil {
+		t.Fatal("找不到事件 6")
+	}
+	result, ok := s.applyRandomEventLocalized(*ev)
+	if !ok {
+		t.Fatal("事件 6 應能在示範對局結算")
+	}
+	if !strings.Contains(result.MessageEN, "donated") {
+		t.Errorf("英文事件內文不正確:%q", result.MessageEN)
+	}
+	if strings.Contains(result.MessageEN, "富商") || strings.Contains(result.MessageEN, "帝國") {
+		t.Errorf("英文事件內文仍含中文:%q", result.MessageEN)
+	}
+	if result.Message == result.MessageEN {
+		t.Errorf("中英文事件內文不應相同:%q", result.Message)
+	}
+}
 
 // TestRandomEventsFireAndBounded 驗證隨機事件會在多回合中觸發,殖民地人口不低於 1,且 BC
 // 不會失控式無下限崩潰(忠實經濟下人口被打到剩 1 的期間會短暫轉負,詳見 bcCrashFloor300Turns

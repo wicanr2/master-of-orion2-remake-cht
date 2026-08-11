@@ -141,6 +141,7 @@ type OutpostResult struct {
 // 成功:消耗一艘前哨船、記一筆 Outpost、把該星標成玩家所有(Owner=1)並標記已探索。
 // **不建立殖民地**——手冊「produces nothing」,前哨站沒有人口也沒有產出。
 func (s *GameSession) BuildOutpost(starIdx int) OutpostResult {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdBuildOutpost, Args: []int{starIdx}})
 	if starIdx < 0 || starIdx >= len(s.Stars) {
 		return OutpostResult{Reason: "星索引無效"}
 	}
@@ -171,6 +172,7 @@ func (s *GameSession) BuildOutpost(starIdx int) OutpostResult {
 // BuildOutpostOnPlanet 在指定的**行星**上建前哨站(行星列表畫面的「派遣前哨船」走這支)。
 // 前置條件與 BuildOutpost 相同,差別只在天體由呼叫端指定而不是自動挑。
 func (s *GameSession) BuildOutpostOnPlanet(planetIdx int) OutpostResult {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdOutpostOnPlanet, Args: []int{planetIdx}})
 	if planetIdx < 0 || planetIdx >= len(s.Planets) {
 		return OutpostResult{Reason: "行星索引無效"}
 	}

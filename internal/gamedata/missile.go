@@ -16,7 +16,8 @@ package gamedata
 // 原本的斷言是:明列公式 `12 + 2*(FTL-1) + 4` 得 14/16/…/26,但同段附表是 10/12/…/22,
 // 差 4;當時選了公式、並註明「需日後對實機行為動態驗證」。
 //
-// `Missile_Speed_` @ 0x3CD21 給出答案——**那個 +4 是有條件的**:
+// raw `sub_3CD21`（`func_names.txt` 原名 `Missile_Facing_`，舊匯出另稱
+// `Missile_Speed_`）給出答案——**那個 +4 是有條件的**:
 //
 //	loc_3CE40:
 //	    test [ebp+var_3], 10h     ; ← 旗標 0x10
@@ -183,11 +184,13 @@ const MissileFastBonus = 4
 // 10/12/14/16/18/20/22(FTL 0..6)就是 `12 + 2*(FTL−1)` —— 逐項吻合。
 const MissileStandardBaseSpeed = 12
 
-// MissileBaseSpeed 依**武器類型**回傳基礎速度(原版 `Missile_Speed_` @ 0x3CD21 的分支表)。
+// MissileBaseSpeed 依**武器類型**回傳基礎速度(原版 raw `sub_3CD21` @ 0x3CD21 的分支表；
+// 工具符號為 `Missile_Facing_`，舊匯出另稱 `Missile_Speed_`)。
 //
 //	類型        基礎  加 FTL 項?  玩家旗標成立時
 //	0x0E..0x11   12      是            —
 //	0x12/0x13    20      **否**        —
+//	0x14         24      **否**        —
 //	0x1C          6      是            10
 //	0x1D          8      是            12
 //	0x1E          8      是            12
@@ -195,8 +198,9 @@ const MissileStandardBaseSpeed = 12
 //	0x28         24      **否**        —
 //	其餘          0      是            —
 //
-// `withFTL` 回 false 的兩檔(0x12/0x13 與 0x28)在原版是 `xor ecx, ecx` ——
-// **速度與驅動等級無關**。照抄;不知道那兩檔是什麼武器就不編名字。
+// `withFTL` 回 false 的四種 raw kind(0x12/0x13/0x14 與 0x28)在原版是
+// `xor ecx, ecx` —— **速度與驅動等級無關**。照抄；不知道那些 raw kind 是
+// 什麼武器就不編名字。
 //
 // `boosted` 對應原版的 `[player+0x8BC] != 0`(某個玩家旗標,且只在 `bx < 8`,
 // 即真玩家而非怪獸/安塔蘭時才檢查)。那個旗標**還沒追出是什麼**,所以呼叫端目前一律傳 false
@@ -207,6 +211,11 @@ func MissileBaseSpeed(weaponKind int, boosted bool) (base int, withFTL bool) {
 		return MissileStandardBaseSpeed, true
 	case weaponKind == 0x12 || weaponKind == 0x13:
 		return 20, false
+	case weaponKind == 0x14:
+		// 原版 sub_3CD21 的獨立分支:24, v3=0,所以不加 FTL 項。
+		// 工具符號表將 0x3CD21 標成 Missile_Facing_;這裡保留 raw
+		// 函式定位，並以其已觀測的速度回傳語意使用，不改寫原始名稱。
+		return 24, false
 	case weaponKind == 0x1C:
 		if boosted {
 			return 10, true
@@ -269,4 +278,142 @@ func MissileBeamDefense(ftlLevel, warheadBonus int) int {
 // MissileBeamDefenseFast 是裝了 Fast 改造的版本。
 func MissileBeamDefenseFast(ftlLevel, warheadBonus int) int {
 	return 5*MissileSpeedFast(ftlLevel) + warheadBonus
+}
+
+// 原版 category 21 的標準飛彈 raw kind。0x0E..0x11 與 `Missile_Dcv` /
+// `Fighter_Ocv` @ 0x3E095/0x3DFE0 的四個 warhead branch 對上目前元件表；這些數值
+// 是反組譯定位，不是可任意重新編號的 remake enum。
+const (
+	MissileKindNuclear       = 0x0E
+	MissileKindMerculite     = 0x0F
+	MissileKindPulson        = 0x10
+	MissileKindZeon          = 0x11
+	MissileKindProtonTorpedo = 0x12
+	// 0x13 與 0x14 是原版武器表中另外兩種玩家魚雷。它們沿用
+	// Missile_Dcv 的魚雷分支，但不進一般飛彈 PD 攔截路徑。
+	MissileKindAntiMatterTorpedo = 0x13
+	MissileKindPlasmaTorpedo     = 0x14
+)
+
+// MissileRawFlagArmored 是 ARM 對應的 raw word bit。它是「強推論」：原版
+// `Missile_Dcv` @ 0x3E095 在 high-byte bit 0x08 成立時把攔截耐久加倍，並由
+// `Weapon_In_Range` @ 0x3A0B9 用同一耐久換算擊落數；尚未找到原始符號直接把該 bit
+// 命名為 ARM。
+const MissileRawFlagArmored uint16 = 0x0800
+
+// MissileRawFlagFast 是 FST 對應的 raw word bit。raw `sub_3CD21` @ 0x3CD21
+// 明確測試 high-byte bit 0x10 後加 4，故此 flag branch 為「已證實」。
+const MissileRawFlagFast uint16 = 0x1000
+
+// MissileWarheadBonusForKind 回傳 Beam Defense 表的 MissileBonus；目前只對四種
+// 標準飛彈提供已核對的 bonus，其他 raw kind 回 ok=false，不把未知魚雷／怪物武器
+// 的數值猜成玩家飛彈。
+func MissileWarheadBonusForKind(weaponKind int) (bonus int, ok bool) {
+	switch weaponKind {
+	case MissileKindNuclear:
+		return MissileWarheadNuclear, true
+	case MissileKindMerculite:
+		return MissileWarheadMerculite, true
+	case MissileKindPulson:
+		return MissileWarheadPulson, true
+	case MissileKindZeon:
+		return MissileWarheadZeon, true
+	default:
+		return 0, false
+	}
+}
+
+// TorpedoDamageAfterRange 套用魚雷的射程衰減。
+//
+// 手冊 p.125 的明確資料只有電漿魚雷：每飛行一格損失 5 點強度；NR
+// (No Range Dissipation) 取消這個衰減。反物質與質子魚雷在目前資料表中
+// 沒有同類的逐格扣值，因此維持固定傷害。負距離會以 0 格處理，傷害至少
+// 保留 1，避免命中後變成空傷害。
+func TorpedoDamageAfterRange(weaponName string, baseDamage, rangeSquares int, noRangeDissipation bool) int {
+	if baseDamage < 1 {
+		baseDamage = 1
+	}
+	if rangeSquares < 0 {
+		rangeSquares = 0
+	}
+	if weaponName == "電漿魚雷" && !noRangeDissipation {
+		baseDamage -= rangeSquares * 5
+		if baseDamage < 1 {
+			baseDamage = 1
+		}
+	}
+	return baseDamage
+}
+
+// MissileBeamDefenseOf 依原版 raw kind、FTL 與 raw flags 算標準飛彈的 Beam Defense。
+// `boosted` 保留 `MissileBaseSpeed` 對未知玩家旗標的誠實參數；目前 remake 呼叫端傳
+// false。非四種已核對玩家飛彈回 ok=false。
+func MissileBeamDefenseOf(weaponKind, ftlLevel int, rawFlags uint16, boosted bool) (defense int, ok bool) {
+	bonus, ok := MissileWarheadBonusForKind(weaponKind)
+	if !ok {
+		return 0, false
+	}
+	fast := rawFlags&MissileRawFlagFast != 0
+	return 5*MissileSpeedOf(weaponKind, ftlLevel, fast, boosted) + bonus, true
+}
+
+// MissileInterceptionDurability 是原版 `Missile_Dcv` @ 0x3E095 的可查證分支。
+// 對 0x1C..0x1F，computerAdjustmentPercent 對應原版 `Best_Computer` 讀出的
+// 技術調整值；玩家目前的快速戰鬥沒有逐艦飛彈攔截電腦資料，因此會傳 0。
+//
+// 這裡的 Dcv 是攔截鏈使用的「每一枚飛彈所需傷害」，不是飛彈命中艦體後的 HP。
+// 原版呼叫端 `Weapon_In_Range` @ 0x3A0B9 會以它分段換算擊落數。
+func MissileInterceptionDurability(weaponKind, computerAdjustmentPercent int) int {
+	switch weaponKind {
+	case MissileKindNuclear:
+		return 4
+	case MissileKindMerculite:
+		return 8
+	case MissileKindPulson:
+		return 12
+	case MissileKindZeon:
+		return 16
+	case 0x12, 0x13, 0x14:
+		return 5
+	case 0x1C:
+		return 6 * (computerAdjustmentPercent + 100) / 200
+	case 0x1D:
+		return 10 * (computerAdjustmentPercent + 100) / 200
+	case 0x1E:
+		return 8 * (computerAdjustmentPercent + 100) / 200
+	case 0x1F:
+		return 4 * (computerAdjustmentPercent + 100) / 200
+	case 0x28:
+		return 5
+	default:
+		return 0
+	}
+}
+
+// MissileInterceptionDurabilityForRawFlags 是同一 Dcv 分支的 raw flag 入口。
+// ARM 的倍增仍標成強推論，因為 bit 與手冊效果及攔截消費端完全吻合，但尚未有
+// 原始符號直接命名該 bit。
+func MissileInterceptionDurabilityForRawFlags(weaponKind, computerAdjustmentPercent int, rawFlags uint16) int {
+	durability := MissileInterceptionDurability(weaponKind, computerAdjustmentPercent)
+	if durability > 0 && rawFlags&MissileRawFlagArmored != 0 {
+		durability *= 2
+	}
+	return durability
+}
+
+// MissileWarheadsDestroyedByInterception 複現 `Weapon_In_Range` @ 0x3A0B9 的核心
+// quotient/remainder 行為。原版每次攔截先把本次傷害上限夾到一個 Dcv，再與 runtime
+// remainder 相加；因此一束攔截火力一次最多摧毀一枚，但餘數會帶到下一次。
+func MissileWarheadsDestroyedByInterception(interceptorDamage, carriedRemainder, durability int) (destroyed, remainder int) {
+	if durability <= 0 {
+		return 0, carriedRemainder
+	}
+	if interceptorDamage < 0 {
+		interceptorDamage = 0
+	}
+	if interceptorDamage > durability {
+		interceptorDamage = durability
+	}
+	total := interceptorDamage + carriedRemainder
+	return total / durability, total % durability
 }

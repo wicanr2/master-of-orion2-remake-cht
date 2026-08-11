@@ -53,6 +53,31 @@ func TestCurrentReportDiscoveryUsesScoutHeader(t *testing.T) {
 	}
 }
 
+func TestCurrentReportDiscoveryEnglishUsesBilingualPayload(t *testing.T) {
+	s := shell.NewDemoSession()
+	s.LastDiscovery = &shell.SystemDiscovery{
+		StarName:   "測試星",
+		StarNameEN: "Test",
+		Special:    gamedata.SpaceDebris,
+		Name:       "太空殘骸",
+		NameEN:     "Space Debris",
+		Message:    "勘查小隊在測試星星系裡找到太空殘骸,變賣所得 50 BC 已入國庫。",
+		MessageEN:  "The survey team found Space Debris in the Test system. The proceeds, 50 BC, have been added to the treasury.",
+		BCGained:   50,
+		ColonyIdx:  -1,
+	}
+	r := (&sceneBuilder{session: s, lang: i18n.English}).currentReport()
+	if r == nil {
+		t.Fatal("英文模式也應該要播星系發現快報")
+	}
+	if r.title != "Space Debris" || !strings.Contains(r.body, "Test system") {
+		t.Errorf("英文快報沒有使用雙語 payload: title=%q body=%q", r.title, r.body)
+	}
+	if strings.Contains(r.body, "勘查小隊") {
+		t.Errorf("英文快報仍外洩中文: %q", r.body)
+	}
+}
+
 // 兩者同時發生時先播隨機事件(全銀河新聞優先於自家回報),發現的內容仍留在回合摘要文字裡。
 func TestCurrentReportEventBeatsDiscovery(t *testing.T) {
 	s := shell.NewDemoSession()
@@ -64,6 +89,24 @@ func TestCurrentReportEventBeatsDiscovery(t *testing.T) {
 	}
 	if r.good {
 		t.Error("壞消息事件應標為紅框")
+	}
+}
+
+func TestCurrentReportEventEnglishUsesBilingualPayload(t *testing.T) {
+	s := shell.NewDemoSession()
+	s.LastEventReport = &shell.EventReport{
+		Name: "富商捐獻", NameEN: "Merchant Donation", Good: true,
+		Message: "一名富商向帝國捐獻了 51 BC", MessageEN: "A wealthy merchant donated 51 BC to the empire.",
+	}
+	r := (&sceneBuilder{session: s, lang: i18n.English}).currentReport()
+	if r == nil {
+		t.Fatal("英文模式也應該要播事件快報")
+	}
+	if r.title != "Merchant Donation" || !strings.Contains(r.body, "donated 51 BC") {
+		t.Errorf("英文事件快報沒有使用雙語 payload:title=%q body=%q", r.title, r.body)
+	}
+	if strings.Contains(r.body, "富商") {
+		t.Errorf("英文事件快報仍外洩中文:%q", r.body)
 	}
 }
 

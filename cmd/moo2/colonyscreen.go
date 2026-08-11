@@ -9,7 +9,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
-	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
 
@@ -128,7 +128,9 @@ func (b *sceneBuilder) colonyScreen() (*overlayScreen, error) {
 		case a == "return":
 			return b.goTo(b.colonySummary, "殖民地總覽")
 		case a == "leaders":
-			// 原版這顆是殖民地領袖指派;remake 的領袖畫面是全帝國一份(見 cmd/moo2 officer)。
+			// 原版這顆直接開殖民地領袖分頁；保留殖民地索引讓下一步指派有明確目標。
+			b.officerTab = 0
+			b.colonyIdx = idx
 			return b.goTo(b.officer, "軍官列表")
 		case a == "job_f":
 			s.ShiftColonyJob(idx, "w", "f")
@@ -278,11 +280,7 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 	}
 	b.fnt.Draw(dst, name, lx, float64(colPanelLY+6), 13, colTitleCol)
 	if p, ok := sess.ColonyPlanetData(idx); ok {
-		rows := []string{p.Climate, p.Size,
-			b.tr("礦產", "Minerals ") + p.Mineral, b.tr("重力", "Gravity ") + p.Gravity}
-		if sp := gamedata.PlanetSpecialName(p.SpecialID); sp != "" {
-			rows = append(rows, "★"+sp) // 特殊物產:金礦/寶石礦的收入、遠古文物的研究都靠它
-		}
+		rows := colonyPlanetRows(b.lang, p)
 		for i, r := range rows {
 			if i >= 5 {
 				break
@@ -326,7 +324,16 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 		b.fnt.Draw(dst, b.tr("(無)", "(none)"), mx, float64(colPanelMY+60), 10, colDimCol)
 	} else {
 		sort.Strings(names)
-		for i, ln := range b.fnt.Wrap(strings.Join(names, "、"), 10, float64(colPanelMW-14)) {
+		displayNames := names
+		separator := "、"
+		if b.lang != i18n.Traditional {
+			displayNames = make([]string, len(names))
+			for i, name := range names {
+				displayNames[i] = colonyBuildingLabel(b.lang, name)
+			}
+			separator = ", "
+		}
+		for i, ln := range b.fnt.Wrap(strings.Join(displayNames, separator), 10, float64(colPanelMW-14)) {
 			if i >= 4 {
 				break
 			}

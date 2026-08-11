@@ -5,6 +5,7 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/netplay"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
@@ -122,6 +123,38 @@ func (b *sceneBuilder) netInfoCaption(st netInfoState) string {
 	return ""
 }
 
+// netInfoTitle 是 MULTIGM.LBX 各狀態標題帶的中文翻譯。英文模式直接露原始
+// 烘字；中文模式擦掉同一條標題帶後再畫這裡的文字。
+func (b *sceneBuilder) netInfoTitle(st netInfoState) string {
+	switch st {
+	case netInfoWaitingForJoiners:
+		return b.tr("加入網路遊戲設定", "JOIN NETWORK GAME SETUP")
+	case netInfoJoining:
+		return b.tr("等待加入遊戲", "WAITING TO JOIN GAME")
+	case netInfoWaitRaceInfo:
+		return b.tr("接收種族設定", "RECEIVING RACE SETUPS")
+	case netInfoInitializing:
+		return b.tr("初始化網路", "INITIALIZING NETWORK")
+	case netInfoSendingData:
+		return b.tr("傳送遊戲資料", "SENDING GAME DATA")
+	case netInfoGeneratingMap:
+		return b.tr("產生星圖", "GENERATING MAP")
+	case netInfoGettingData:
+		return b.tr("接收遊戲資料", "RECEIVING GAME DATA")
+	}
+	return ""
+}
+
+// netInfoHasStatusLabel 是四張帶 STATUS 欄位的原始面板；另外三張只有標題帶。
+func netInfoHasStatusLabel(st netInfoState) bool {
+	switch st {
+	case netInfoWaitingForJoiners, netInfoWaitRaceInfo, netInfoSendingData, netInfoGettingData:
+		return true
+	default:
+		return false
+	}
+}
+
 // netInfoIsReceiving 對應原版的 `[win+0x10F]`:接收 = 1、傳送 = 0。
 // 這個旗標只影響進度數字的位置(見檔頭)。
 func netInfoIsReceiving(st netInfoState) bool { return st == netInfoGettingData }
@@ -167,6 +200,8 @@ type netInfoScreen struct {
 	joined, total, progress int
 	// onCancel 非 nil 時,點一下就走這條路(大廳可以放棄等待)。
 	onCancel func() *origTransition
+	// onStart 是主機按下 START NET GAME 後的共同開局入口。
+	onStart func() *origTransition
 	// hosting 決定要不要畫 START NET GAME 鈕——只有主機開得了局,
 	// 客戶端看到一顆按不動的鈕比沒有更糟。
 	hosting bool
@@ -214,6 +249,17 @@ func (s *netInfoScreen) update(in shell.InputState) *origTransition {
 	if !in.ClickReleased {
 		return nil
 	}
+	if s.state == netInfoWaitingForJoiners && s.hosting && s.onStart != nil {
+		w, h := 479, 150
+		if im := s.frame(); im != nil {
+			w, h = im.Bounds().Dx(), im.Bounds().Dy()
+		}
+		winX, winY := netInfoWindow(w, h)
+		if hitBox(in.MouseX, in.MouseY, winX+netInfoStartBtnX, winY+netInfoStartBtnY,
+			netInfoStartBtnW, netInfoStartBtnH) {
+			return s.onStart()
+		}
+	}
 	if s.onCancel != nil {
 		return s.onCancel()
 	}
@@ -243,12 +289,27 @@ func (s *netInfoScreen) draw(dst *ebiten.Image) {
 	if s.b.fnt == nil {
 		return
 	}
-	// 原版把字烘在圖上,中文得擦底疊字。擦底的左緣取 STATUS 欄的內緣(量的,+98)
-	// ——再往左就把 "STATUS" 那個標籤也擦掉了,而它是美術的一部分。
-	fillPanel(dst, float32(winX+98), float32(winY+h/2-16), float32(w-98-24), 30,
-		color.RGBA{14, 16, 22, 240}, false)
-	s.b.fnt.DrawCentered(dst, s.b.netInfoCaption(s.state),
-		float64(winX+w/2), float64(winY+h/2)+6, 16, color.RGBA{240, 220, 120, 255})
+	if s.b.lang == i18n.Traditional {
+		// 七張狀態資產共用同一條標題帶；左右留出金屬斜角，只擦中央烘字區。
+		fillPanel(dst, float32(winX+80), float32(winY+10), float32(w-160), 32,
+			color.RGBA{24, 27, 34, 255}, false)
+		s.b.fnt.DrawCentered(dst, truncateToWidth(s.b.fnt, s.b.netInfoTitle(s.state), 16, float64(w-168)),
+			float64(winX+w/2), float64(winY)+29, 16, color.RGBA{240, 220, 120, 255})
+	}
+	if s.b.lang == i18n.Traditional && netInfoHasStatusLabel(s.state) {
+		fillPanel(dst, float32(winX+25), float32(winY+h/2-16), 70, 30,
+			color.RGBA{14, 16, 22, 240}, false)
+		s.b.fnt.DrawCentered(dst, "狀態", float64(winX+60), float64(winY+h/2)+6,
+			13, color.RGBA{215, 222, 238, 255})
+	}
+	if netInfoHasStatusLabel(s.state) {
+		// 原版把字烘在圖上,中文得擦底疊字。擦底的左緣取 STATUS 欄的內緣(量的,+98)
+		// ——再往左就把欄位標籤也擦掉了,所以標籤與內容分兩塊處理。
+		fillPanel(dst, float32(winX+98), float32(winY+h/2-16), float32(w-98-24), 30,
+			color.RGBA{14, 16, 22, 240}, false)
+		s.b.fnt.DrawCentered(dst, truncateToWidth(s.b.fnt, s.b.netInfoCaption(s.state), 16, float64(w-122)),
+			float64(winX+w/2), float64(winY+h/2)+6, 16, color.RGBA{240, 220, 120, 255})
+	}
 
 	if s.state == netInfoWaitingForJoiners {
 		// 已加入人數畫在 STATUS 欄裡(說明文字右側)——原版沒有給這個欄位的座標,
@@ -265,7 +326,7 @@ func (s *netInfoScreen) draw(dst *ebiten.Image) {
 		fillPanel(dst, float32(bx+4), float32(by+4),
 			float32(netInfoStartBtnW-8), float32(netInfoStartBtnH-8),
 			color.RGBA{58, 58, 52, 255}, false)
-		s.b.fnt.DrawCentered(dst, s.b.tr("開始連線對局", "START NET GAME"),
+		s.b.fnt.DrawCentered(dst, truncateToWidth(s.b.fnt, s.b.tr("開始連線對局", "START NET GAME"), 13, float64(netInfoStartBtnW-10)),
 			float64(bx+netInfoStartBtnW/2), float64(by)+18, 13, color.RGBA{236, 232, 210, 255})
 	}
 	if netInfoHasProgress(s.state) {

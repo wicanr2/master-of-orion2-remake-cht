@@ -94,7 +94,7 @@ func (s *GameSession) routeEndpointsValid(from, to int) bool {
 //
 // ⚠ 起訖點本身是黑洞不算「擋住」——那是玩家自己選的目的地,擋的是**路過**。
 func (s *GameSession) RouteBlockedByBlackHole(from, to int) bool {
-	if !s.routeEndpointsValid(from, to) || s.FleetHasNavigator() {
+	if !s.routeEndpointsValid(from, to) || s.selectedFleetHasAssignedSkill(gamedata.SKILL_NAVIGATOR) {
 		return false
 	}
 	ax, ay := s.starParsecXY(from)

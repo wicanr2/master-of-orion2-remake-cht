@@ -5,10 +5,9 @@ package gamedata
 // 標題原文「Nearly every weapon could be enhanced in some way ... What follows is an
 // introduction to the potential modifications available for the weapons you can install in
 // your ships. ... each one adds to the size and cost of the weapon, and some are mutually
-// exclusive」)。本檔只收「本輪要接線」的 8 個光束/通用 mod(HV/PD/AF/CO/AP/ENV/NR/SP);
-// 飛彈/魚雷專屬 mod(ARM/ECCM/EMG/FST/MV/OVR、以及 NR 的魚雷版本「Not Reduced By Range」)
-// 手冊同樣給了精確數字,但 remake 的飛彈解算(missile.go/ResolveMissileShot)目前尚未有
-// mod 掛鉤機制,故不在此定義,留待飛彈 mod 任務時再移植(避免定義了卻無人使用的死碼)。
+// exclusive」)。本檔包含已接線的光束/通用與飛彈/魚雷改造。ARM/FST 的完整原版攔截器資料流仍
+// 有未解欄位，但本專案已把可由原始碼證實的 raw flag 與 remake 快速戰鬥消費端分開
+// 記錄；因此兩項改造可以進入資料層，並不代表所有原版戰術細節已經解完。
 //
 // 出處逐項核對(GAME_MANUAL.pdf p.115-118 原文摘錄,見各常數註解),配合 docs/tech/weapon-mods.md
 // 完整記錄。手冊「Modifications」章節與 shipspace.go 引用的「p.128 Design Dock」章節是同一件事的
@@ -68,7 +67,8 @@ const (
 	// weapon has undergone 1 level of miniaturization.」
 	//
 	// 2026-08-06 已接線:shell.ResolveShotWithMods 會依 range level 套 DamageDissipationPenalty,
-	// 帶 NR 時跳過。對應原版 Get_Beam_Weapon_Modifiers_ 的
+	// 帶 NR 時跳過。完整消費端是原版 `Get_Beam_Weapon_Modifiers_`(raw `sub_394F7`)，
+	// 其中再呼叫射程／命中輔助 `sub_39434`；對應該輔助所使用的
 	// `if (!(mods & 0x20) && !(weaponFlags & 0x04)) *damagePct += ranged_damage_penalty[range]`。
 	// (先前這裡記著「NR 沒有可觀察效果」,因為衰減本身還沒模擬——那個 TODO 已解。)
 	ModNoRangeDissipation WeaponModCode = "NR"
@@ -78,13 +78,29 @@ const (
 	// the weapon by 50% and is not applicable until the intended weapon has undergone 1 level
 	// of miniaturization.」
 	ModShieldPiercing WeaponModCode = "SP"
+	// ModMissileECCM 手冊 p.116：ECCM 使單一彈頭被干擾的機率減半。
+	ModMissileECCM WeaponModCode = "ECCM"
+	// ModEmissionsGuidance 手冊 p.116：命中護盾後繞過裝甲，直接傷害結構。
+	ModEmissionsGuidance WeaponModCode = "EMG"
+	// ModMIRV 手冊 p.116：一枚飛彈分成四枚完整彈頭；不適用於行星轟炸。
+	ModMIRV WeaponModCode = "MV"
+	// ModOverloadedTorpedo 手冊 p.116：魚雷整套過載，彈頭強度增加 50%。
+	ModOverloadedTorpedo WeaponModCode = "OVR"
+	// ModArmoredMissile 手冊 p.116：重裝飛彈，摧毀所需傷害加倍。
+	// 原版 raw flag 的 0x0800 對應是強推論：`Missile_Dcv` @ 0x3E095 的高位元
+	// 0x08 使攔截耐久加倍，而 `Weapon_In_Range` @ 0x3A0B9 會用該耐久計算擊落數。
+	ModArmoredMissile WeaponModCode = "ARM"
+	// ModFastMissile 手冊 p.116：快速飛彈；原版 raw `sub_3CD21` @ 0x3CD21
+	//（func_names.txt 原名 `Missile_Facing_`，舊匯出另稱 `Missile_Speed_`）
+	// 明確在 raw high-byte bit 0x10 成立時加 4 速度，故其 raw flag 對應已證實。
+	ModFastMissile WeaponModCode = "FST"
 )
 
 // WeaponModAutoFireFlatSpaceCost 见 ModAutoFire 註解:手冊原文「by 50」非「by 50%」,固定值。
 const WeaponModAutoFireFlatSpaceCost = 50
 
 // weaponModSpaceCostPercent 各 mod 對佔格/成本的百分比變動(正值=增加,負值=減少)。
-// ModAutoFire 不在此表(固定值,見 WeaponModAutoFireFlatSpaceCost),其餘 7 個逐一對應
+// ModAutoFire 不在此表(固定值,見 WeaponModAutoFireFlatSpaceCost),其餘百分比 mod 逐一對應
 // 上方常數註解引用的手冊百分比。
 var weaponModSpaceCostPercent = map[WeaponModCode]int{
 	ModHeavyMount:         100,
@@ -94,6 +110,12 @@ var weaponModSpaceCostPercent = map[WeaponModCode]int{
 	ModEnveloping:         100,
 	ModNoRangeDissipation: 25,
 	ModShieldPiercing:     50,
+	ModMissileECCM:        25,
+	ModEmissionsGuidance:  300, // ×4 size/cost
+	ModMIRV:               100,
+	ModOverloadedTorpedo:  50,
+	ModArmoredMissile:     25,
+	ModFastMissile:        25,
 }
 
 // WeaponModSpaceCostPercent 查表回傳 mod 對佔格/成本的百分比變動;ok=false 表示該 mod
@@ -232,7 +254,8 @@ func WeaponModArmorPiercing(mods []WeaponModCode) bool {
 // WeaponModNoRangeDissipation 回傳該組改造是否含 NR(No Range Dissipation)——
 // 有的話命中後的傷害不吃距離衰減。
 //
-// 對應原版 Get_Beam_Weapon_Modifiers_(sub_39434)的這一段:
+// 對應原版 `Get_Beam_Weapon_Modifiers_`(raw `sub_394F7`) 呼叫
+// `Get_Beam_Range_To_Hit_Bonus_`(raw `sub_39434`) 的這一段:
 //
 //	if (!(mods & 0x20) && !(weaponFlags & 0x04))
 //	    *damagePct += ranged_damage_penalty[range];
@@ -246,6 +269,70 @@ func WeaponModNoRangeDissipation(mods []WeaponModCode) bool {
 
 func WeaponModShieldPiercing(mods []WeaponModCode) bool {
 	return WeaponModHas(mods, ModShieldPiercing)
+}
+
+// WeaponModMissileWarheadCount 回傳這一輪飛彈攻擊要解算的彈頭數。
+// MIRV 的「四枚完整彈頭」不是把最後傷害粗暴乘四：每枚彈頭都要各自經過干擾、匿蹤與
+// 位移判定，呼叫端因此會逐彈頭提供骰子。沒有 MV 時維持單彈頭。
+func WeaponModMissileWarheadCount(mods []WeaponModCode) int {
+	if WeaponModHas(mods, ModMIRV) {
+		return 4
+	}
+	return 1
+}
+
+// WeaponModMissileDamageMultiplier 回傳單一彈頭的傷害倍率。
+// MV 的四枚彈頭由 WeaponModMissileWarheadCount 表達，不在這裡重複乘四；ENV 只在魚雷
+// 呼叫端通過適用性篩選後使用，OVR 也只對魚雷生效。
+func WeaponModMissileDamageMultiplier(mods []WeaponModCode, torpedo bool) int {
+	multiplier := 100
+	if torpedo && WeaponModHas(mods, ModOverloadedTorpedo) {
+		multiplier = multiplier * 150 / 100
+	}
+	if torpedo && WeaponModHas(mods, ModEnveloping) {
+		multiplier *= WeaponModEnvelopingDamageMultiplier
+	}
+	return multiplier
+}
+
+// WeaponModMissileECCM 回報飛彈是否具備 ECCM。保留成 gamedata helper，讓戰鬥解算端不必
+// 直接依賴字串代碼。
+func WeaponModMissileECCM(mods []WeaponModCode) bool {
+	return WeaponModHas(mods, ModMissileECCM)
+}
+
+// WeaponModMissileArmored 回報 ARM；其戰鬥效果由飛彈攔截器的
+// MissileInterceptionDurability 消費，不能當成命中後艦體傷害倍率。
+func WeaponModMissileArmored(mods []WeaponModCode) bool {
+	return WeaponModHas(mods, ModArmoredMissile)
+}
+
+// WeaponModMissileFast 回報 FST；其戰鬥效果是飛彈速度／Beam Defense 路徑的 +4，
+// 不是命中後傷害加成。
+func WeaponModMissileFast(mods []WeaponModCode) bool {
+	return WeaponModHas(mods, ModFastMissile)
+}
+
+// MissileRawFlagsForMods 將目前已知的飛彈改造對應到原版設計／runtime raw flags。
+//
+// ARM 的 0x0800 是「強推論」：手冊效果、`Missile_Dcv` 的 doubling branch 與
+// `Weapon_In_Range` 的攔截分段鏈相符，但原始程式沒有可讀的 ARM 符號可直接證明。
+// FST 的 0x1000 是「已證實」：`Missile_Speed_` 的 high-byte bit 0x10 直接控制 +4。
+func MissileRawFlagsForMods(mods []WeaponModCode) uint16 {
+	var flags uint16
+	if WeaponModMissileArmored(mods) {
+		flags |= MissileRawFlagArmored
+	}
+	if WeaponModMissileFast(mods) {
+		flags |= MissileRawFlagFast
+	}
+	return flags
+}
+
+// WeaponModMissileArmorPiercing 回報 EMG 是否應在扣除護盾後繞過裝甲。
+// 「直接傷害結構」是手冊對 EMG 的文字；它沒有宣稱穿過護盾，因此仍先走護盾吸收。
+func WeaponModMissileArmorPiercing(mods []WeaponModCode) bool {
+	return WeaponModHas(mods, ModEmissionsGuidance)
 }
 
 // ---- 射程等級(range level)選擇:HV 減半、PD 加倍、其餘用一般表 ----

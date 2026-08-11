@@ -41,11 +41,12 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 // 這一檔只放「一隊戰機在戰場上怎麼動、怎麼打、怎麼回家」的狀態機。
 //
 // ⚠ 沒有建模的部分,誠實列出:
-//   - 「always attack from the weakest shield facing」——remake 的護盾是單一數值
-//     (`CombatShip.ShieldReduction`),沒有四面分別的護盾,所以這條無處可套。
-//     等護盾分面做出來時,這裡是它的掛勾點。
-//   - 轟炸機/突擊梭:前者要炸彈對行星的規則、後者要把陸戰隊送上敵艦,
-//     兩者各自依賴另一套系統。這一輪只做攔截機與重戰機(兩種純對艦戰機)。
+//   - 「艦身旋轉」與原版方向名稱仍未解出；但戰機已依手冊接到
+//     `FighterDamageAtWeakestShield`，會選四面容量最低者並扣該面。
+//   - 一般敵方艦隊的原版逐艦藍圖仍沒有全部取回；因此 shell 以「抽象艦體戰力 →
+//     敵方戰機藍圖」的固定表建立出擊槽位。但一旦出擊，戰機已使用原版第二組
+//     傷害範圍與兩條 raw 傷害下游（見 fighter_attack.go）；未追回的是哪一艘敵艦帶哪個槽位，
+//     不是命中／傷害鏈本身。
 
 // FighterKind 是戰機型別。
 //
@@ -148,8 +149,10 @@ type FighterSquadron struct {
 	//
 	// ⚠ 索引型欄位的「沒有」必須是 −1 不是 0——0 是第一艘船。
 	Carrier int
-	Col     int
-	Row     int
+	// CarrierName 是跨艦隊戰損壓縮仍穩定的母艦識別；Carrier 只作目前陣列的快取索引。
+	CarrierName string
+	Col         int
+	Row         int
 	// Alive 是還剩幾架(0 = 整隊被打光)。HPEach 是每架目前的血量,
 	// 打起來是「一架一架掉」而不是整隊共用一條血條——手冊的血量是**每架**的。
 	Alive     int
@@ -159,8 +162,37 @@ type FighterSquadron struct {
 	// 歸零就返航(手冊:「fighters will attempt to return to their carrier once they are
 	// out of shots」)。
 	ShotsLeft int
-	Speed     int  // 每回合可移動的格數(CombatFighterSpeed)
-	Returning bool // 正在返航
+	Speed     int // 每回合可移動的格數(CombatFighterSpeed)
+	// 以下是這隊戰機被艦艇光束／PD 瞄準時使用的 Beam Defense 加成；
+	// 由出擊時的母艦 CombatShip 帶入，不把敵方未建模的艦隊資料臆造進來。
+	FighterRacialDefenseBonus int
+	FighterPilotBonus         int
+	FighterHelmsmanBonus      int
+	Returning                 bool // 正在返航
+	// TargetName 是目前的主要目標識別。手冊 p.157 說戰機會飛向主要目標，
+	// 只有主要目標失效、而且仍有可用射擊時才自動重選；因此呼叫端不可每回合
+	// 直接改追最近艦。戰術畫面中的敵艦名稱在一場戰鬥內唯一，足以跨過敵艦
+	// 陣列的戰損壓縮；空名稱則由呼叫端採保守的每回合選擇。
+	TargetName string
+}
+
+// EnemyFighterProfileForStrength 是 remake 對抽象敵艦戰力的固定戰機藍圖。
+// 原版 genEnemyFleet 的逐艦設計槽位尚未完整取回，不能把這張表當成反組譯真值；
+// 但表內每型戰機的規則仍完全走手冊數值，且輸入只依敵艦戰力，保證同一回合可重播。
+//
+// 戰力 8 起代表艦體有標準戰機庫；戰力 16 起使用重戰機庫；戰力 32 起使用轟炸機庫。
+// 小於 8 的偵察／輕型艦不帶戰機庫，避免低階敵艦憑空取得戰機火力。
+func EnemyFighterProfileForStrength(strength int) (kind FighterKind, hasBay bool) {
+	switch {
+	case strength >= 32:
+		return FighterBomber, true
+	case strength >= 16:
+		return FighterHeavy, true
+	case strength >= 8:
+		return FighterInterceptor, true
+	default:
+		return FighterInterceptor, false
+	}
 }
 
 // NewFighterSquadron 出擊一隊戰機。

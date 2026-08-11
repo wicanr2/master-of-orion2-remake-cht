@@ -37,7 +37,33 @@ const (
 	FoodReplicatorProductionPerFood = 2
 	// FoodReplicatorBCPerFood 是換 1 單位食物要花幾 BC(手冊 1 BC per food)。
 	FoodReplicatorBCPerFood = 1
+	// FoodReplicatorIndustryHalfPerHalfFood 是精確半單位帳本中，換出半單位食物
+	// 要花的半產能。1 個完整產能 = 2 個半產能；手冊的 2:1 因此是 2 半產能
+	// 換 1 半食物，也就是 2 完整產能換 1 完整食物。
+	FoodReplicatorIndustryHalfPerHalfFood = 2
+	// FoodReplicatorBCHalfPerHalfFood 是半食物的半 BC 成本。兩個半食物合成
+	// 一個完整食物，剛好回到手冊的 1 BC per food。
+	FoodReplicatorBCHalfPerHalfFood = 1
 )
+
+// FoodReplicatorConvertHalf 是 FoodReplicatorConvert 的精確版。
+//
+// deficitHalf 與 netIndustryHalf 都以「半單位」傳入。Cybernetic 的奇數人口
+// 可能留下半食物缺口；若這裡先除以 2，就會把那半單位錯誤捨掉。半單位成本
+// 是對手冊整數規格的最小延伸，並由帝國層累積半 BC，避免每回合無聲遺失。
+// 這條半 BC 行為屬**強推論**：手冊只明寫完整食物 1 BC，原版靜態資料未直接
+// 告知破碎單位的付款時機；實作選擇與存檔半單位帳本及 1 BC/food 保持一致。
+func FoodReplicatorConvertHalf(deficitHalf, netIndustryHalf int) (foodHalf, productionSpentHalf int) {
+	if deficitHalf <= 0 || netIndustryHalf <= 0 {
+		return 0, 0
+	}
+	affordable := netIndustryHalf / FoodReplicatorIndustryHalfPerHalfFood
+	foodHalf = deficitHalf
+	if foodHalf > affordable {
+		foodHalf = affordable
+	}
+	return foodHalf, foodHalf * FoodReplicatorIndustryHalfPerHalfFood
+}
 
 // FoodReplicatorConvert 算出這個殖民地這回合會把多少產能換成食物。
 //
@@ -51,6 +77,9 @@ func FoodReplicatorConvert(deficit, netIndustry int) (food, productionSpent int)
 	if deficit <= 0 || netIndustry <= 0 {
 		return 0, 0
 	}
+	// 舊 API 的契約是完整食物／完整產能；不能把奇數產能透過半單位
+	// 轉換折回來，否則既有呼叫端會看到花 7 產能換 3 食物而破壞 2:1
+	// 的整數相容規則。需要半單位時由 FoodReplicatorConvertHalf 直接處理。
 	affordable := netIndustry / FoodReplicatorProductionPerFood
 	food = deficit
 	if food > affordable {

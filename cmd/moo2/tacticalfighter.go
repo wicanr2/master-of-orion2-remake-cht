@@ -25,23 +25,9 @@ import (
 //   - 原版的戰機是**逐架**在格子上飛的動畫;remake 一隊一個 token,顯示剩幾架。
 //     手冊說「You cannot separate the fighters in a squadron」——一隊是一個指令單位,
 //     所以用一個 token 代表整隊不違反規則,只是視覺上比原版簡略。
-//   - 敵方不會派戰機:`genEnemyFleet` 產出的敵艦沒有設計資料(見 CombatShip.Kind 註解的
-//     同款簡化),沒有「這艘敵艦帶不帶戰機庫」可讀。不臆造一個。
-
-// 每架戰機一次射擊的近似傷害(同 gamedata 那兩個 approx 常數的立場:
-// 手冊給的是武裝**類型**不是固定數,實際傷害隨當局科技)。
-const (
-	fighterBeamHit = 3
-	fighterBombHit = 5
-)
-
-// fighterHitPerCraft 回傳一架這型戰機一次出手打多少(重戰機是一光束 + 一炸彈)。
-func fighterHitPerCraft(k shell.FighterKind) int {
-	if k == shell.FighterHeavy {
-		return fighterBeamHit + fighterBombHit
-	}
-	return fighterBeamHit
-}
+//   - 原版一般敵方的完整逐艦藍圖未全部取回；shell 以固定的戰力→戰機庫表建立敵方
+//     艦艇，這層完整消費該表。未知的是原版敵艦「哪一艘」帶哪個槽位，不是戰機中隊
+//     的移動、射擊、PD、受傷、返航等規則。
 
 // launchRect 是「出擊」鈕(選中的我方艦帶戰機庫時才畫)。
 //
@@ -74,22 +60,124 @@ func (t *tacticalScreen) launchFrom(idx int) {
 	// 餵進戰鬥層,先用最保守的 1 / 0…等那兩項接上來,這裡換成真值即可」——**接上來了**。
 	// 那個硬編的 1 讓所有戰機不論科技多高都跑得一樣慢,而且第 65 項(種族特性31格)的參數掃描器
 	// (只掃 gamedata.X(...))看不到它,因為它在 cmd/ 這一側。
-	t.squads = append(t.squads, shell.NewFighterSquadron(
-		s.BayKind, false, idx, s.Col, s.Row, s.DriveLevel, s.ArmorLevelAboveTitanium))
+	squadron := shell.NewFighterSquadron(
+		s.BayKind, false, idx, s.Col, s.Row, s.DriveLevel, s.ArmorLevelAboveTitanium)
+	squadron.CarrierName = s.Name
+	squadron.FighterRacialDefenseBonus = s.FighterRacialDefenseBonus
+	squadron.FighterPilotBonus = s.FighterPilotBonus
+	squadron.FighterHelmsmanBonus = s.FighterHelmsmanBonus
+	t.squads = append(t.squads, squadron)
 	t.log = fmt.Sprintf(t.b.tr("%s 派出一隊%s(%d 架)", "%s launches a %s squadron (%d craft)"),
-		s.Name, shell.FighterKindName(s.BayKind), t.squads[len(t.squads)-1].Alive)
+		s.Name, fighterKindLabel(t.b.lang, s.BayKind), t.squads[len(t.squads)-1].Alive)
+}
+
+// launchEnemySquadrons 依 StartCombat 已建立的敵艦戰機庫開場出擊。
+// 敵方沒有玩家的「點擊出擊」階段，故戰鬥開始時便把可用中隊放上棋盤；之後仍走
+// 完整的移動、接戰、PD、彈藥耗盡與返航鏈。
+func (t *tacticalScreen) launchEnemySquadrons() {
+	for i := range t.enemy {
+		s := t.enemy[i]
+		if !s.Bay {
+			continue
+		}
+		f := shell.NewFighterSquadron(s.BayKind, true, i, s.Col, s.Row,
+			s.DriveLevel, s.ArmorLevelAboveTitanium)
+		f.CarrierName = s.Name
+		f.FighterRacialDefenseBonus = s.FighterRacialDefenseBonus
+		f.FighterPilotBonus = s.FighterPilotBonus
+		f.FighterHelmsmanBonus = s.FighterHelmsmanBonus
+		t.squads = append(t.squads, f)
+	}
 }
 
 // nearestEnemyShip 回傳離 (col,row) 最近的敵艦索引;沒有敵艦回 −1。
 func (t *tacticalScreen) nearestEnemyShip(col, row int) int {
 	best, bestD := -1, 1<<30
 	for i, e := range t.enemy {
+		if e.HP <= 0 {
+			continue
+		}
 		d := abs(e.Col-col) + abs(e.Row-row)
 		if d < bestD {
 			best, bestD = i, d
 		}
 	}
 	return best
+}
+
+// fighterTarget 先維持仍有效的主要目標；只有它不存在或已失效才重選。
+//
+// 手冊 p.157：「If their primary target is no longer valid while they still have
+// shots available, fighters select a new target automatically.」原版的戰鬥目標
+// 評估也會排除戰機記錄，這裡因此只在目前尚未建模的敵方戰機之外搜尋敵艦。
+// 以名稱保存而不是陣列索引，避免敵艦被壓縮後把中隊錯接到另一艘船。
+func (t *tacticalScreen) fighterTarget(f *shell.FighterSquadron) int {
+	if f == nil {
+		return -1
+	}
+	targets := t.enemy
+	if f.Enemy {
+		targets = t.player
+	}
+	if f.TargetName != "" {
+		for i := range targets {
+			if targets[i].Name == f.TargetName && targets[i].HP > 0 {
+				return i
+			}
+		}
+	}
+	target := t.nearestEnemyShip(f.Col, f.Row)
+	if f.Enemy {
+		target = t.nearestPlayerShip(f.Col, f.Row)
+	}
+	if target >= 0 && targets[target].Name != "" {
+		f.TargetName = targets[target].Name
+	}
+	return target
+}
+
+func (t *tacticalScreen) nearestPlayerShip(col, row int) int {
+	best, bestD := -1, 1<<30
+	for i, p := range t.player {
+		if p.HP <= 0 {
+			continue
+		}
+		d := abs(p.Col-col) + abs(p.Row-row)
+		if d < bestD {
+			best, bestD = i, d
+		}
+	}
+	return best
+}
+
+func (t *tacticalScreen) carrierForSquadron(f *shell.FighterSquadron) *shell.CombatShip {
+	ships := t.player
+	if f.Enemy {
+		ships = t.enemy
+	}
+	if f.CarrierName != "" {
+		for i := range ships {
+			if ships[i].Name == f.CarrierName {
+				f.Carrier = i
+				return &ships[i]
+			}
+		}
+		f.Carrier = -1
+		return nil
+	}
+	if f.Carrier >= 0 && f.Carrier < len(ships) {
+		return &ships[f.Carrier]
+	}
+	return nil
+}
+
+func (t *tacticalScreen) refreshSquadronCarriers() {
+	for i := range t.squads {
+		if t.squads[i].CarrierName == "" {
+			continue
+		}
+		t.carrierForSquadron(&t.squads[i])
+	}
 }
 
 // advanceSquadrons 推進所有中隊一回合:返航的往母艦飛(到了就補給),
@@ -108,51 +196,136 @@ func (t *tacticalScreen) advanceSquadrons() (damage int) {
 		if f.Returning {
 			// 母艦沒了就回不去了——手冊沒寫這種情況,remake 讓它留在原地繼續飄
 			// (不憑空讓它消失,也不讓它變成無限彈藥的幽靈)。
-			if f.Carrier < 0 || f.Carrier >= len(t.player) {
+			carrier := t.carrierForSquadron(f)
+			if carrier == nil {
 				continue
 			}
-			c := t.player[f.Carrier]
-			if f.StepToward(c.Col, c.Row) {
+			if f.StepToward(carrier.Col, carrier.Row) {
 				f.Recover()
 				t.log = t.b.tr("戰機返航補給,可再次出擊", "Fighters recovered — ready to launch again")
 			}
 			continue
 		}
-		target := t.nearestEnemyShip(f.Col, f.Row)
+		target := t.fighterTarget(f)
 		if target < 0 {
 			continue
 		}
-		e := &t.enemy[target]
-		if !f.StepToward(e.Col, e.Row) {
+		targetShip := &t.enemy[target]
+		if f.Enemy {
+			targetShip = &t.player[target]
+		}
+		if !f.StepToward(targetShip.Col, targetShip.Row) {
 			continue // 這回合只飛得到一半
+		}
+		// 手冊 p.117:近迫防禦武器若本回合尚未開火,
+		// 必須在飛彈命中艦艇或戰機接戰前先開火。戰機不是飛彈彈頭,
+		// 所以走戰機 Beam Defense 公式與 FighterSquadron.TakeHit，
+		// 不把這次消費塞進 Missile_Dcv 的彈頭餘數鏈。
+		pdMods := shell.WeaponModCodesForWeapon(targetShip.WeaponName, targetShip.Mods)
+		if !targetShip.PointDefenseSpent && shell.PointDefenseCanFire(targetShip.WeaponName, pdMods) {
+			targetShip.PointDefenseSpent = true
+			beamRoll := 1
+			if t.rng != nil {
+				beamRoll = t.rng.Intn(100) + 1
+			}
+			// p.157 的完整式為 5*Speed + 種族 Ship Defense
+			// + Fighter Pilot + Helmsman。種族與 Fighter Pilot 已由
+			// StartCombat 依參戰艦隊證據帶入；Helmsman 的原版戰機呼叫端
+			// 尚未證實，因此保留明示的零值。
+			pd := shell.ResolvePointDefenseFighterShot(shell.PointDefenseFighterShot{
+				BeamWeaponName:   targetShip.WeaponName,
+				BeamAttack:       targetShip.Attack,
+				BeamDamageMax:    targetShip.WeaponMax,
+				BeamRangeSquares: 0, // 接戰前自動攔截，同格
+				BeamRoll:         beamRoll,
+				BeamSystems:      targetShip.BeamSystems,
+				BeamMods:         pdMods,
+				FighterBeamDefense: gamedata.CombatFighterBeamDefense(f.Speed,
+					f.FighterRacialDefenseBonus, f.FighterPilotBonus, f.FighterHelmsmanBonus),
+			})
+			if pd.Fired && pd.Hit {
+				f.TakeHit(pd.DamageToFighter)
+				if f.Dead() {
+					continue
+				}
+			}
 		}
 		// 突擊艇(第 80 項(登艦戰)):抵達目標時**放下陸戰隊**,不開火。
 		// 手冊:「Once launched, Assault Shuttles fly to the target ship and drop off their
 		// Marines, which board and attempt capture. After the marines are dropped,
 		// unpiloted shuttles are set adrift to be picked up after the battle.」
 		// ——所以放完人這一隊就結束了(Alive 歸零),不是返航補給再來一次。
-		if f.Kind == shell.FighterAssaultShuttle {
-			t.resolveShuttleBoarding(f, e)
+		if f.Kind == shell.FighterAssaultShuttle && !f.Enemy {
+			t.resolveShuttleBoarding(f, targetShip)
 			continue
 		}
-		// 貼身開火:一輪 = 隊裡每架各開一次火。護盾照扣(戰機不是無視護盾的),
-		// 但不走 ResolveShot 的命中判定——手冊說戰機是 point-blank 開火的,
-		// 而 remake 沒有「戰機命中率」的公式可抄,不臆造一個骰。
-		per := fighterHitPerCraft(f.Kind) - e.ShieldReduction
-		if per < 1 {
-			per = 1 // 護盾再厚也擋不到零(同艦砲的最低傷害立場)
+		// 貼身開火:一輪 = 隊裡每架各開一次火。這裡不是再用母艦武器
+		// 的固定 3/5 代理，而是依 raw 函式分流：一般戰機走
+		// sub_3AD57 @ 0x3AD57 的攻防差／40 門檻，轟炸機走相鄰的
+		// sub_3AC20 @ 0x3AC20 直接傷害插值；兩者最後都送入最弱護盾面
+		// → 裝甲 → 結構。原版每架都有自己的骰，不能把整隊壓成一發。
+		carrier := t.carrierForSquadron(f)
+		attack := 0
+		if carrier != nil {
+			attack = carrier.Attack
 		}
-		dmg := shell.FighterSquadronDamage(f.Alive, per)
-		if e.ArmorHP > 0 {
-			absorbed := dmg
-			if absorbed > e.ArmorHP {
-				absorbed = e.ArmorHP
+		rng, ok := gamedata.FighterDamageRangeForKind(int(f.Kind))
+		if !ok {
+			// 突擊艇在抵達時走登艦路徑；未知型別 fail-closed，仍消耗
+			// 本輪，避免零值戰機變成無限射擊的幽靈。
+			f.SpendShot()
+			continue
+		}
+		dmg := 0
+		for craft := 0; craft < f.Alive; craft++ {
+			roll := 100 // headless 測試沒有 RNG 時維持可觀測的命中路徑
+			if t.rng != nil {
+				roll = t.rng.Intn(100) + 1
 			}
-			e.ArmorHP -= absorbed
-			dmg -= absorbed
+			shotDamage := 0
+			if f.Kind == shell.FighterBomber {
+				// IDA 的 weapon ID 0x1E 是 Bomber Bays，呼叫端在
+				// sub_3D2DF 的 0x3D825 直接跳到 sub_3AC20；這裡只把
+				// 已證實的公式接到 remake Bomber profile，不替外部符號
+				// 索引解決名稱衝突。
+				bomb := shell.ResolveFighterBomb(shell.FighterBombInput{
+					DamageMin: rng.Min, DamageMax: rng.Max, Roll: roll,
+				})
+				shotDamage = bomb.Damage
+			} else {
+				shot := shell.ResolveFighterAttack(shell.FighterAttackInput{
+					Attack: attack, Defense: targetShip.Defense,
+					DamageMin: rng.Min, DamageMax: rng.Max, Roll: roll,
+				})
+				if !shot.Hit {
+					continue
+				}
+				shotDamage = shot.Damage
+			}
+			structure, _ := shell.FighterDamageAtWeakestShield(targetShip, 1, shotDamage)
+			if targetShip.ArmorHP > 0 {
+				absorbed := structure
+				if absorbed > targetShip.ArmorHP {
+					absorbed = targetShip.ArmorHP
+				}
+				targetShip.ArmorHP -= absorbed
+				structure -= absorbed
+			}
+			targetShip.HP -= structure
+			dmg += structure
+			if targetShip.HP <= 0 {
+				break
+			}
 		}
-		e.HP -= dmg
-		damage += dmg
+		if dmg > 0 {
+			t.spawnCombatFX(combatFXImpact, *targetShip)
+		}
+		if targetShip.HP <= 0 {
+			t.spawnCombatFX(combatFXExplosion, *targetShip)
+		}
+		if !f.Enemy {
+			damage += dmg
+		}
 		f.SpendShot()
 	}
 	return damage
@@ -168,8 +341,12 @@ func (t *tacticalScreen) enemyFiresAtSquadrons() (killed int) {
 		if f.Dead() {
 			continue
 		}
-		for j := range t.enemy {
-			e := t.enemy[j]
+		shooters := t.enemy
+		if f.Enemy {
+			shooters = t.player
+		}
+		for j := range shooters {
+			e := shooters[j]
 			if abs(e.Col-f.Col)+abs(e.Row-f.Row) > 1 {
 				continue // 只有貼身的敵艦打得到(戰機是繞著目標飛的)
 			}
@@ -241,6 +418,7 @@ func (t *tacticalScreen) drawLaunchButton(dst *ebiten.Image) {
 		color.RGBA{30, 60, 80, 235}, false)
 	vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1,
 		color.RGBA{120, 220, 235, 255}, false)
+	drawHoverBorder(dst, float32(x), float32(y), float32(w), float32(h), pointInRect(t.hoverX, t.hoverY, x, y, w, h))
 	label := t.b.tr("▶ 出擊", "▶ LAUNCH")
 	t.fnt.DrawCentered(dst, label, float64(x+w/2), float64(y+h/2)+4, 12, color.RGBA{225, 245, 250, 255})
 }
@@ -282,6 +460,7 @@ func (t *tacticalScreen) resolveShuttleBoarding(f *shell.FighterSquadron, e *she
 	def := shell.BoardingDefense{
 		Marines: e.Marines, Strength: e.Defense,
 		HitsToKill:       gamedata.GroundBaseHitsToKill(false),
+		StrengthBonus:    e.SecurityBonus,
 		SecurityStations: e.SecurityStations,
 	}
 	res := shell.ResolveBoarding(party, def, func(n int) int {
@@ -296,9 +475,9 @@ func (t *tacticalScreen) resolveShuttleBoarding(f *shell.FighterSquadron, e *she
 		e.HP = 0
 		e.Captured = true
 		t.log = fmt.Sprintf(t.b.tr("登艦成功:%s 的守軍全滅,該艦被奪下",
-			"Boarded: %s's crew is wiped out — the ship is taken"), e.Name)
+			"Boarded: %s's crew is wiped out — the ship is taken"), combatShipLabel(t.b.lang, t.b.session, e.Name))
 		return
 	}
 	t.log = fmt.Sprintf(t.b.tr("登艦失敗:%s 還剩 %d 隊守軍",
-		"Boarding repelled: %s still has %d marine units"), e.Name, res.DefenderSurvived)
+		"Boarding repelled: %s still has %d marine units"), combatShipLabel(t.b.lang, t.b.session, e.Name), res.DefenderSurvived)
 }

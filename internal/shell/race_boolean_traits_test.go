@@ -7,7 +7,7 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
-// 五個布林特性各自落在正確的種族身上(對一手表,不是對記憶)。
+// 布林特性各自落在正確的種族身上(對一手表,不是對記憶)。
 func TestBooleanTraitsLandOnTheRightRaces(t *testing.T) {
 	cases := []struct {
 		en   string
@@ -19,6 +19,8 @@ func TestBooleanTraitsLandOnTheRightRaces(t *testing.T) {
 		{"Silicoids", (*GameSession).RaceTolerant, "寬容"},
 		{"Humans", (*GameSession).RaceCharismatic, "魅力"},
 		{"Gnolams", (*GameSession).RaceFantasticTrader, "神級商人"},
+		{"Meklars", (*GameSession).RaceCybernetic, "半機械"},
+		{"Silicoids", (*GameSession).RaceLithovore, "食岩"},
 	}
 	for _, c := range cases {
 		s := NewDemoSession()
@@ -32,6 +34,42 @@ func TestBooleanTraitsLandOnTheRightRaces(t *testing.T) {
 		if c.has(other) {
 			t.Errorf("席隆不該有「%s」特性", c.name)
 		}
+	}
+}
+
+func TestEndTurnSyncsLithovoreIntoPlayerAndAIColonies(t *testing.T) {
+	s := NewDemoSession()
+	s.DisableEvents = true
+	s.ApplyRace(raceIndexByEnName(t, "Silicoids"))
+	s.EndTurn()
+	if !s.PlayerColonies[0].Lithovore {
+		t.Fatal("玩家食岩種族的殖民地應標記 Lithovore")
+	}
+
+	// AI 不經 ApplyRace,仍應由自己的 RaceIndex 在回合結算前同步。
+	s.AIPlayers[0].RaceIndex = raceIndexByEnName(t, "Silicoids")
+	s.EndTurn()
+	if !s.AIPlayers[0].Colonies[0].Lithovore {
+		t.Fatal("AI 食岩種族的殖民地應標記 Lithovore")
+	}
+}
+
+func TestEndTurnSyncsCyberneticIntoPlayerAndAIColonies(t *testing.T) {
+	s := NewDemoSession()
+	s.DisableEvents = true
+	s.ApplyRace(raceIndexByEnName(t, "Meklars"))
+	s.EndTurn()
+	if !s.PlayerColonies[0].Cybernetic {
+		t.Fatal("玩家半機械種族的殖民地應標記 Cybernetic")
+	}
+	if !s.LastPlayerOutput.Colonies[0].Cybernetic {
+		t.Fatal("半機械殖民地結算輸出應保留 Cybernetic 標記")
+	}
+
+	s.AIPlayers[0].RaceIndex = raceIndexByEnName(t, "Meklars")
+	s.EndTurn()
+	if !s.AIPlayers[0].Colonies[0].Cybernetic {
+		t.Fatal("AI 半機械種族的殖民地應標記 Cybernetic")
 	}
 }
 
@@ -151,5 +189,47 @@ func TestBooleanTraitsSurviveSaveLoad(t *testing.T) {
 	}
 	if got.raceOrigIdx() != s.raceOrigIdx() {
 		t.Errorf("種族編號應一致:%d vs %d", got.raceOrigIdx(), s.raceOrigIdx())
+	}
+}
+
+// 客製種族選到的特殊能力要走同一條特性查詢路徑,而且存讀檔後不能消失。
+// 這些能力各自已有引擎公式；本測試只驗「選項寫入／查詢／保存」,不把尚未建模的能力冒充成已完成。
+func TestCustomRaceTraitsReachExistingRulesAndSaveLoad(t *testing.T) {
+	s := NewDemoSession()
+	s.ApplyCustomRaceBonuses(Race{Name: "測試自訂", EnName: "Custom", OrigIdx: -1},
+		gamedata.TRAIT_LOW_G,
+		gamedata.TRAIT_SUBTERRANEAN,
+		gamedata.TRAIT_TRANS_DIMENSIONAL,
+		gamedata.TRAIT_REPULSIVE,
+		gamedata.TRAIT_CHARISMATIC,
+		gamedata.TRAIT_TOLERANT,
+		gamedata.TRAIT_FANTASTIC_TRADERS,
+		gamedata.TRAIT_WARLORD,
+	)
+
+	for _, has := range []struct {
+		name string
+		got  bool
+	}{
+		{"低重力", s.raceHasTrait(gamedata.TRAIT_LOW_G)},
+		{"穴居", s.raceHasTrait(gamedata.TRAIT_SUBTERRANEAN)},
+		{"跨維度", s.raceHasTrait(gamedata.TRAIT_TRANS_DIMENSIONAL)},
+		{"惹人厭", s.RaceRepulsive()},
+		{"魅力非凡", s.RaceCharismatic()},
+		{"環境耐受", s.RaceTolerant()},
+		{"貿易奇才", s.RaceFantasticTrader()},
+		{"戰爭領主", s.RaceWarlord()},
+	} {
+		if !has.got {
+			t.Errorf("客製種族應保留%s特性", has.name)
+		}
+	}
+
+	got := s.snapshot().restore()
+	if got.CustomRaceTraits != s.CustomRaceTraits {
+		t.Fatalf("客製種族特性遮罩存讀檔不一致: %08x vs %08x", got.CustomRaceTraits, s.CustomRaceTraits)
+	}
+	if !got.RaceRepulsive() || !got.RaceTolerant() || !got.RaceFantasticTrader() {
+		t.Error("存讀檔後客製種族的既有特性效果不應消失")
 	}
 }

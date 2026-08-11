@@ -32,15 +32,18 @@ import (
 
 // SystemDiscovery 是一次星系發現的結果(供回合摘要/報告畫面顯示)。
 type SystemDiscovery struct {
-	StarIndex int                    // 觸發的星索引
-	StarName  string                 // 星名(顯示用)
-	Special   gamedata.PlanetSpecial // 觸發的特殊物產
-	Name      string                 // 特殊物產中文名
-	Message   string                 // 已填好數字/名稱的敘述
-	BCGained  int                    // 一次性入袋的 BC(太空殘骸/海盜藏寶)
-	ColonyIdx int                    // 失散殖民地建成後的殖民地索引;-1 = 無
-	LeaderGot string                 // 免費領袖的名字;空 = 無
-	TechGot   string                 // 白送的科技主題名;空 = 無
+	StarIndex  int                    // 觸發的星索引
+	StarName   string                 // 星名(目前語言的顯示名)
+	StarNameEN string                 // 星名英文原文；舊存檔為空時回退 StarName
+	Special    gamedata.PlanetSpecial // 觸發的特殊物產
+	Name       string                 // 特殊物產中文名
+	NameEN     string                 // 特殊物產英文顯示名
+	Message    string                 // 已填好數字/名稱的中文敘述
+	MessageEN  string                 // 與 Message 使用同一組結算結果的英文敘述
+	BCGained   int                    // 一次性入袋的 BC(太空殘骸/海盜藏寶)
+	ColonyIdx  int                    // 失散殖民地建成後的殖民地索引;-1 = 無
+	LeaderGot  string                 // 免費領袖的名字;空 = 無
+	TechGot    string                 // 白送的科技主題名;空 = 無
 }
 
 // discoverSystemSpecials 結算玩家艦隊剛抵達的這顆星的一次性發現。
@@ -63,11 +66,17 @@ func (s *GameSession) discoverSystemSpecials(starIdx int) *SystemDiscovery {
 	p.SpecialSeen = true // 原版是把 Star.special 覆寫成訊息碼,效果相同:同一星系只觸發一次
 
 	d := &SystemDiscovery{
-		StarIndex: starIdx,
-		StarName:  s.Stars[starIdx].Name,
-		Special:   sp,
-		Name:      gamedata.PlanetSpecialName(sp),
-		ColonyIdx: -1,
+		StarIndex:  starIdx,
+		StarName:   s.Stars[starIdx].Name,
+		StarNameEN: s.Stars[starIdx].NameEN,
+		Special:    sp,
+		Name:       gamedata.PlanetSpecialName(sp),
+		NameEN:     gamedata.PlanetSpecialNameEN(sp),
+		ColonyIdx:  -1,
+	}
+	if d.StarNameEN == "" {
+		// 舊存檔沒有 NameEN；不要猜測中文星名，至少保留可讀的原欄位。
+		d.StarNameEN = d.StarName
 	}
 
 	switch {
@@ -76,15 +85,20 @@ func (s *GameSession) discoverSystemSpecials(starIdx int) *SystemDiscovery {
 		s.Player.BC += d.BCGained
 		d.Message = fmt.Sprintf("勘查小隊在 %s 星系裡找到%s,變賣所得 %d BC 已入國庫。",
 			d.StarName, d.Name, d.BCGained)
+		d.MessageEN = fmt.Sprintf("The survey team found %s in the %s system. The proceeds, %d BC, have been added to the treasury.",
+			d.NameEN, d.StarNameEN, d.BCGained)
 
 	case gamedata.SpecialFoundsSplinterColony(sp):
 		if idx, pop, ok := s.foundSplinterColony(starIdx); ok {
 			d.ColonyIdx = idx
 			d.Message = fmt.Sprintf("%s 星系裡有一支與帝國失聯多年的同胞殖民地,%d 單位人口重歸旗下。",
 				d.StarName, pop)
+			d.MessageEN = fmt.Sprintf("A colony of our lost kin was found in the %s system. %d population units have rejoined the empire.",
+				d.StarNameEN, pop)
 		} else {
 			// 該星已有歸屬或行星資料不可殖民 → 只留敘述,不硬塞一個殖民地。
 			d.Message = fmt.Sprintf("%s 星系傳來失散同胞的訊號,但當地已無法重建殖民地。", d.StarName)
+			d.MessageEN = fmt.Sprintf("A signal from our lost kin came from the %s system, but no colony can be rebuilt there.", d.StarNameEN)
 		}
 
 	case gamedata.SpecialGrantsFreeLeader(sp):
@@ -92,16 +106,22 @@ func (s *GameSession) discoverSystemSpecials(starIdx int) *SystemDiscovery {
 			d.LeaderGot = ld.Name
 			d.Message = fmt.Sprintf("一名受困在 %s 星系的傭兵領袖獲救,%s 為報答而加入帝國麾下。",
 				d.StarName, ld.Name)
+			d.MessageEN = fmt.Sprintf("A stranded mercenary leader was rescued in the %s system. %s has joined the empire in gratitude.",
+				d.StarNameEN, ld.Name)
 		} else {
 			d.Message = fmt.Sprintf("%s 星系裡救出一名受困的傭兵領袖,但帝國領袖席位已滿,對方另謀高就。", d.StarName)
+			d.MessageEN = fmt.Sprintf("A stranded mercenary leader was rescued in the %s system, but all leader positions are full.", d.StarNameEN)
 		}
 
 	case gamedata.SpecialGrantsFreeTech(sp):
 		if name, ok := s.grantArtifactTech(); ok {
 			d.TechGot = name
 			d.Message = fmt.Sprintf("%s 星系的遠古文物解析完成,帝國直接掌握了「%s」。", d.StarName, name)
+			d.MessageEN = fmt.Sprintf("The ancient artifacts in the %s system have been decoded. The empire now knows %s.",
+				d.StarNameEN, name)
 		} else {
 			d.Message = fmt.Sprintf("%s 星系發現遠古文物,但帝國已無可立即解析的研究主題。", d.StarName)
+			d.MessageEN = fmt.Sprintf("Ancient artifacts were found in the %s system, but the empire has no researchable topic available.", d.StarNameEN)
 		}
 
 	default:
@@ -209,6 +229,7 @@ func (s *GameSession) discoveryRoll(n int) int {
 // ColonizeStar 相同——那邊是 inline 展開的,這裡抽成函式給 discovery 共用)。
 func (s *GameSession) appendPlayerColony(colony engine.ColonyState, starIdx, planetIdx int) {
 	s.PlayerColonies = append(s.PlayerColonies, colony)
+	s.ensureColonyLeaderSlots()
 	s.Builds = append(s.Builds, ColonyBuild{})
 	for len(s.ColonyBuildings) < len(s.PlayerColonies) {
 		s.ColonyBuildings = append(s.ColonyBuildings, nil)

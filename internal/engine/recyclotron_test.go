@@ -144,3 +144,23 @@ func TestFoodReplicatorsIdleWhenThereIsSurplus(t *testing.T) {
 			off.NetIndustry, got.NetIndustry, off.FoodSurplus, got.FoodSurplus)
 	}
 }
+
+// Cybernetic 奇數人口會留下半食物缺口；複製機應能補半單位，而不是先截成零。
+func TestFoodReplicatorsCoverCyberneticHalfFood(t *testing.T) {
+	cs := ColonyState{
+		Population: 3, PopMax: 10, Farmers: 1, Workers: 1,
+		FoodPerFarmer: 1, IndustryPerWorker: 4, PlanetSize: 2,
+		PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT,
+		Cybernetic: true, FoodReplicators: true,
+	}
+	got := RunColonyTurn(cs)
+	if got.FoodSurplusHalf != 0 || got.Starving {
+		t.Fatalf("半食物複製後應剛好補平,got %+v", got)
+	}
+	if got.FoodReplicatedHalf != 1 || got.FoodReplicated != 0 {
+		t.Fatalf("應換出 1 半食物而非虛構 1 完整食物,got %+v", got)
+	}
+	if got.FoodReplicatorCostHalfBC != gamedata.FoodReplicatorBCHalfPerHalfFood {
+		t.Fatalf("半食物成本應為 1 半 BC,got %d", got.FoodReplicatorCostHalfBC)
+	}
+}

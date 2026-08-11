@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -17,6 +18,7 @@ const saveFormatVersion = 1
 // (ai.Profile,純 struct),讀檔時以 ai.NewRemakeDecider 重建。
 type aiSnapshot struct {
 	Name            string               `json:"name"`
+	RaceIndex       int                  `json:"raceIndex,omitempty"`
 	Player          engine.PlayerState   `json:"player"`
 	Colonies        []engine.ColonyState `json:"colonies"`
 	Profile         ai.Profile           `json:"profile"`
@@ -24,6 +26,7 @@ type aiSnapshot struct {
 	FleetInvestPool int                  `json:"fleetInvestPool"` // 造艦投資餘數池(見 session.go advanceAI)
 	Relation        int                  `json:"relation"`
 	StanceName      string               `json:"stanceName"`
+	Treaty          TreatyState          `json:"treaty,omitempty"`
 	OwnedStars      int                  `json:"ownedStars"`
 	// 會談請求(見 shell/audience.go)。舊存檔缺欄位解成 false/"" —— 正是「沒有請求」,
 	// 沒有零值陷阱。
@@ -32,8 +35,9 @@ type aiSnapshot struct {
 	ColonyStars    []int  `json:"colonyStars"` // 見 shell.AIOpponent.ColonyStars 註解
 	// ColonyPlanets 見 shell.AIOpponent.ColonyPlanets。舊存檔沒有 → nil,
 	// ColonyPlanetIndexOfAI 退回該星的代表行星,行為與加欄位前一致。
-	ColonyPlanets []int `json:"colonyPlanets,omitempty"`
-	Spies         int   `json:"spies"` // AI 派來偷玩家科技的間諜數,見 spy.go
+	ColonyPlanets   []int `json:"colonyPlanets,omitempty"`
+	Spies           int   `json:"spies"` // AI 派來偷玩家科技的間諜數,見 spy.go
+	DefensiveAgents int   `json:"defensiveAgents,omitempty"`
 	// Personality 是 AI 性格(見 shell.AIOpponent.Personality)。omitempty 不適用:
 	// 0 是合法值(排外),舊存檔缺欄位會解成 0——那與「排外」無法區分,屬已知的相容性折衷,
 	// 影響只是舊存檔的 AI 性格會一律變成排外,不會壞掉。
@@ -57,23 +61,26 @@ type aiSnapshot struct {
 	//
 	// 舊存檔沒有這四個欄位:解碼出 FleetPosSet=false,advanceAIFleets 下一回合會把位置
 	// 初始化到母星,行為與加欄位前一致(那時 AI 本來就沒有位置)。
-	FleetStar     int  `json:"fleetStar"`
-	FleetPosSet   bool `json:"fleetPosSet"`
-	FleetDestStar int  `json:"fleetDestStar"`
-	FleetETA      int  `json:"fleetETA"`
+	FleetStar        int  `json:"fleetStar"`
+	FleetPosSet      bool `json:"fleetPosSet"`
+	FleetDestStar    int  `json:"fleetDestStar"`
+	FleetETA         int  `json:"fleetETA"`
+	FleetTargetAI    int  `json:"fleetTargetAI,omitempty"`
+	FleetTargetAISet bool `json:"fleetTargetAISet,omitempty"`
 }
 
 // sessionSnapshot 是 GameSession 的完整可序列化狀態(排除純顯示的暫態:LastEvent/LastAntares
 // /LastBattle/LastPlayerOutput,它們下一回合會重算)。含未匯出的遊戲狀態(popAccum/raceGrowthPct)。
 type sessionSnapshot struct {
-	Version        int                  `json:"version"`
-	Turn           int                  `json:"turn"`
-	Player         engine.PlayerState   `json:"player"`
-	PlayerColonies []engine.ColonyState `json:"playerColonies"`
-	AIPlayers      []aiSnapshot         `json:"aiPlayers"`
-	Stars          []Star               `json:"stars"`
-	Planets        []Planet             `json:"planets"`
-	Leaders        []Leader             `json:"leaders"`
+	Version           int                  `json:"version"`
+	Turn              int                  `json:"turn"`
+	Player            engine.PlayerState   `json:"player"`
+	PlayerColonies    []engine.ColonyState `json:"playerColonies"`
+	AIPlayers         []aiSnapshot         `json:"aiPlayers"`
+	Stars             []Star               `json:"stars"`
+	Planets           []Planet             `json:"planets"`
+	Leaders           []Leader             `json:"leaders"`
+	ColonyLeaderNames []string             `json:"colonyLeaderNames,omitempty"`
 	// Fleets / SelectedFleet 是**多艦隊模型**(見 fleet.go)。
 	// omitempty:2026-08-07 之前的存檔沒有這兩個欄位,解碼成 nil,由 restore 從下面那組
 	// 舊欄位(Ships / FleetAtStar / …)組出唯一的一支艦隊。
@@ -121,13 +128,15 @@ type sessionSnapshot struct {
 	// 貨運現金加成全部歸零。主選單選的版本因此撐不過一次存讀檔。
 	// 舊存檔沒有這個欄位 → 0 = VersionClassic13,由 restore 重建成完整的 Profile13()。
 	RuleVersion gamedata.GameVersion `json:"ruleVersion"`
-	// 三條長壽命亂數流已經抽了幾次(見 randstream.go)。舊存檔沒有這三個欄位 → 0 →
+	// 四條長壽命亂數流已經抽了幾次(見 randstream.go)。舊存檔沒有這些欄位 → 0 →
 	// 讀回來的流從頭開始,行為與加欄位前一致。
-	EventDraws     int64 `json:"eventDraws,omitempty"`
-	DiscoveryDraws int64 `json:"discoveryDraws,omitempty"`
-	SpyDraws       int64 `json:"spyDraws,omitempty"`
-	AntaresRaids   int   `json:"antaresRaids"`
-	RaceIndex      int   `json:"raceIndex"`
+	EventDraws       int64  `json:"eventDraws,omitempty"`
+	DiscoveryDraws   int64  `json:"discoveryDraws,omitempty"`
+	SpyDraws         int64  `json:"spyDraws,omitempty"`
+	ResearchDraws    int64  `json:"researchDraws,omitempty"`
+	AntaresRaids     int    `json:"antaresRaids"`
+	RaceIndex        int    `json:"raceIndex"`
+	CustomRaceTraits uint32 `json:"customRaceTraits,omitempty"`
 	// PlayerName / FlagColor 是新遊戲「命名旗色」畫面設定的帝國名與旗色。
 	// ⚠ 這兩個欄位先前**完全沒有進存檔**——玩家取的帝國名與選的旗色一讀檔就消失,
 	// 換回預設值。2026-08-07 補上(存檔槽列表要顯示帝國名時才發現)。舊存檔沒有這兩個
@@ -166,6 +175,10 @@ type sessionSnapshot struct {
 	// LastEspionage(本回合諜報結算訊息)比照 LastEvent/LastAntares/LastBattle,是下回合會
 	// 重算的純顯示暫態,刻意不存檔。
 	PlayerSpies []int `json:"playerSpies"`
+	// PlayerSpyMissions 與 PlayerSpies 平行。舊存檔沒有此欄位時由
+	// ensurePlayerSpyMissions 補成 STEAL，保持舊的最小迴圈行為。
+	PlayerSpyMissions []SpyMission `json:"playerSpyMissions,omitempty"`
+	DefensiveAgents   int          `json:"defensiveAgents,omitempty"`
 
 	// MercPool/MercOfferedIdx 是傭兵領袖招募狀態(見 session.go advanceMercOffers/HireMerc)。
 	// omitempty:舊存檔無此欄位時解為零值(空池),讀檔後由 advanceMercOffers 自然補回,不破壞相容。
@@ -175,6 +188,12 @@ type sessionSnapshot struct {
 	// AIRelations 是 AI 對手彼此關係矩陣(見 GameSession.AIRelations)。omitempty:舊存檔無此欄位
 	// 解為 nil,ensureAIRelations 讀檔後自然補回,不破壞相容。
 	AIRelations [][]int `json:"aiRelations,omitempty"`
+	// AI 對 AI 強化狀態。全部 omitempty，舊存檔解出 nil/false 後保持舊規則。
+	EnableAIVsAI bool                       `json:"enableAIVsAI,omitempty"`
+	AIWars       [][]bool                   `json:"aiWars,omitempty"`
+	AIPolicies   [][]gamedata.ForeignPolicy `json:"aiPolicies,omitempty"`
+	AITrade      [][]bool                   `json:"aiTrade,omitempty"`
+	AIResearch   [][]bool                   `json:"aiResearch,omitempty"`
 
 	// History 是逐回合國力快照(見 shell/history.go)。omitempty:舊存檔無此欄位解為 nil,
 	// 之後每回合自然累積,不破壞相容(折線圖在累積足夠回合前只顯示提示)。
@@ -213,21 +232,23 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		if rd, ok := a.Decider.(*ai.RemakeDecider); ok {
 			prof = rd.Profile
 		}
-		ais[i] = aiSnapshot{Name: a.Name, Player: a.Player, Colonies: a.Colonies, Profile: prof,
+		ais[i] = aiSnapshot{Name: a.Name, RaceIndex: a.RaceIndex, Player: a.Player, Colonies: a.Colonies, Profile: prof,
 			FleetStrength: a.FleetStrength, FleetInvestPool: a.FleetInvestPool,
-			Relation: a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars,
+			Relation: a.Relation, StanceName: a.StanceName, Treaty: a.Treaty, OwnedStars: a.OwnedStars,
 			ColonyStars: a.ColonyStars, ColonyPlanets: a.ColonyPlanets,
 			Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
 			Leaders: a.Leaders, Personality: a.Personality, LastRaidTurn: a.LastRaidTurn,
 			WantsAudience: a.WantsAudience, AudienceReason: a.AudienceReason,
 			FleetStar: a.FleetStar, FleetPosSet: a.FleetPosSet,
-			FleetDestStar: a.FleetDestStar, FleetETA: a.FleetETA}
+			FleetDestStar: a.FleetDestStar, FleetETA: a.FleetETA,
+			FleetTargetAI: a.FleetTargetAI, FleetTargetAISet: a.FleetTargetAISet}
 	}
 	return sessionSnapshot{
 		Version: saveFormatVersion, Turn: s.Turn, Player: s.Player,
 		PlayerColonies: s.PlayerColonies, AIPlayers: ais,
 		Stars: s.Stars, Planets: s.Planets, Leaders: s.Leaders,
-		Fleets: s.Fleets, SelectedFleet: s.SelectedFleet,
+		ColonyLeaderNames: s.ColonyLeaderNames,
+		Fleets:            s.Fleets, SelectedFleet: s.SelectedFleet,
 		ColonyRelocateTo: s.ColonyRelocateTo, ShowRelocationLines: s.ShowRelocationLines,
 		SelectedStar: s.SelectedStar, Difficulty: s.Difficulty, Builds: s.Builds,
 		BuildQueue:       s.BuildQueue,
@@ -238,8 +259,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		PopAccum:         s.popAccum, ColonyBuild: s.ColonyBuildings, EventSeed: s.EventSeed,
 		RuleVersion: s.RuleProfile.Version,
 		EventDraws:  s.eventRand.Draws(), DiscoveryDraws: s.discoveryRand.Draws(),
-		SpyDraws:     s.spyRand.Draws(),
-		AntaresRaids: s.AntaresRaids, RaceIndex: s.RaceIndex,
+		SpyDraws: s.spyRand.Draws(), ResearchDraws: s.researchRand.Draws(),
+		AntaresRaids: s.AntaresRaids, RaceIndex: s.RaceIndex, CustomRaceTraits: s.CustomRaceTraits,
 		PlayerName: s.PlayerName, FlagColor: s.FlagColor,
 		RaceCombatPct: s.RaceCombatPct, RaceGrowthPct: s.raceGrowthPct,
 		RaceShipDefPct: s.RaceShipDefPct, RaceGroundBonus: s.RaceGroundBonus,
@@ -251,9 +272,16 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		CouncilMeetings: s.CouncilMeetings, LastCouncilTurn: s.lastCouncilTurn,
 		AntaranHomeworldConquered: s.AntaranHomeworldConquered,
 		PlayerSpies:               s.PlayerSpies,
+		PlayerSpyMissions:         s.PlayerSpyMissions,
+		DefensiveAgents:           s.DefensiveAgents,
 		MercPool:                  s.MercPool,
 		MercOfferedIdx:            s.MercOfferedIdx,
 		AIRelations:               s.AIRelations,
+		EnableAIVsAI:              s.EnableAIVsAI,
+		AIWars:                    s.AIWars,
+		AIPolicies:                s.AIPolicies,
+		AITrade:                   s.AITrade,
+		AIResearch:                s.AIResearch,
 		History:                   s.History,
 		Seats:                     seats,
 		ActiveSeat:                s.ActiveSeat,
@@ -264,23 +292,24 @@ func (s *GameSession) snapshot() sessionSnapshot {
 	}
 }
 
-// restore 由快照重建一個 GameSession(重建 AI Decider;三條亂數流由 EventSeed + 抽取次數
+// restore 由快照重建一個 GameSession(重建 AI Decider;四條亂數流由 EventSeed + 抽取次數
 // 快轉回原位,見 randstream.go —— 不快轉的話讀檔會把事件序列從頭重播一次)。
 func (snap sessionSnapshot) restore() *GameSession {
 	ais := make([]AIOpponent, len(snap.AIPlayers))
 	for i, a := range snap.AIPlayers {
 		ais[i] = AIOpponent{
-			Name: a.Name, Player: a.Player, Colonies: a.Colonies,
+			Name: a.Name, RaceIndex: a.RaceIndex, Player: a.Player, Colonies: a.Colonies,
 			Decider:         ai.NewRemakeDecider(a.Profile), // 由性格重建決策器
 			FleetStrength:   a.FleetStrength,
 			FleetInvestPool: a.FleetInvestPool,
-			Relation:        a.Relation, StanceName: a.StanceName, OwnedStars: a.OwnedStars,
+			Relation:        a.Relation, StanceName: a.StanceName, Treaty: a.Treaty, OwnedStars: a.OwnedStars,
 			ColonyStars: a.ColonyStars, ColonyPlanets: a.ColonyPlanets,
-			Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
+			Spies: a.Spies, DefensiveAgents: a.DefensiveAgents, ColonyBuildings: a.ColonyBuildings,
 			Leaders: a.Leaders, Personality: a.Personality, LastRaidTurn: a.LastRaidTurn,
 			WantsAudience: a.WantsAudience, AudienceReason: a.AudienceReason,
 			FleetStar: a.FleetStar, FleetPosSet: a.FleetPosSet,
 			FleetDestStar: a.FleetDestStar, FleetETA: a.FleetETA,
+			FleetTargetAI: a.FleetTargetAI, FleetTargetAISet: a.FleetTargetAISet,
 		}
 	}
 	restorePlanetIDs(snap.Planets)
@@ -297,7 +326,8 @@ func (snap sessionSnapshot) restore() *GameSession {
 	out := &GameSession{
 		Turn: snap.Turn, Player: snap.Player, PlayerColonies: snap.PlayerColonies,
 		AIPlayers: ais, Stars: snap.Stars, Planets: snap.Planets, Leaders: snap.Leaders,
-		Fleets: snap.restoredFleets(), SelectedFleet: snap.SelectedFleet,
+		ColonyLeaderNames: snap.ColonyLeaderNames,
+		Fleets:            snap.restoredFleets(), SelectedFleet: snap.SelectedFleet,
 		ColonyRelocateTo: snap.ColonyRelocateTo,
 		// ⚠ 舊存檔沒有這個欄位 → 解出 false,但原版預設是**開**。
 		// 用「有沒有 Fleets 欄位」判斷是不是舊檔(同 restoredFleets 的判準):
@@ -308,6 +338,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 		PersistentEvents: snap.PersistentEvents, CapturedPop: snap.CapturedPop,
 		popAccum: snap.PopAccum, ColonyBuildings: snap.ColonyBuild,
 		EventSeed: snap.EventSeed, AntaresRaids: snap.AntaresRaids, RaceIndex: snap.RaceIndex,
+		CustomRaceTraits: snap.CustomRaceTraits,
 		// 舊存檔沒有這兩個欄位 → 零值:PlayerName 空字串由 UI 自行退回預設顯示,
 		// FlagColor 0 正好是 FlagColors 的第一個顏色,兩者都是安全的降級。
 		PlayerName: snap.PlayerName, FlagColor: snap.FlagColor,
@@ -321,9 +352,16 @@ func (snap sessionSnapshot) restore() *GameSession {
 		CouncilMeetings: snap.CouncilMeetings, lastCouncilTurn: snap.LastCouncilTurn,
 		AntaranHomeworldConquered: snap.AntaranHomeworldConquered,
 		PlayerSpies:               snap.PlayerSpies,
+		PlayerSpyMissions:         snap.PlayerSpyMissions,
+		DefensiveAgents:           snap.DefensiveAgents,
 		MercPool:                  snap.MercPool,
 		MercOfferedIdx:            snap.MercOfferedIdx,
 		AIRelations:               snap.AIRelations,
+		EnableAIVsAI:              snap.EnableAIVsAI,
+		AIWars:                    snap.AIWars,
+		AIPolicies:                snap.AIPolicies,
+		AITrade:                   snap.AITrade,
+		AIResearch:                snap.AIResearch,
 		History:                   snap.History,
 		Seats:                     snap.Seats,
 		ActiveSeat:                snap.ActiveSeat,
@@ -344,6 +382,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 	out.discoveryRand = restoreRandStream(
 		snap.EventSeed*6364136223846793005+1442695040888963407, snap.DiscoveryDraws)
 	out.spyRand = restoreRandStream(snap.EventSeed*2654435761+7, snap.SpyDraws)
+	out.researchRand = restoreRandStream(snap.EventSeed*2654435761+13, snap.ResearchDraws)
 	return out
 }
 
@@ -409,6 +448,15 @@ func LoadSession(path string) (*GameSession, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("讀取存檔 %s: %w", path, err)
+	}
+	// 原版 .GAM 的第一個欄位是 little-endian GameConfig.version=0xE0；
+	// remake JSON 以 `{` 開頭，因此先以 magic 分流不會改變既有 JSON 相容性。
+	if len(data) >= 4 && binary.LittleEndian.Uint32(data[:4]) == 0xE0 {
+		session, _, importErr := ImportGAM(data)
+		if importErr != nil {
+			return nil, fmt.Errorf("解析原版 GAM: %w", importErr)
+		}
+		return session, nil
 	}
 	var snap sessionSnapshot
 	if err := json.Unmarshal(data, &snap); err != nil {

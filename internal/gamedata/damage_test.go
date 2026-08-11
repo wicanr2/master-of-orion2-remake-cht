@@ -156,6 +156,18 @@ func TestDamageShieldCapacity(t *testing.T) {
 	}
 }
 
+func TestDamageShieldCapacityForShipClass(t *testing.T) {
+	if got := DamageShieldCapacityForShipClass(DamageShieldReductionClassI, SHIP_FRIGATE); got != 5 {
+		t.Errorf("巡防艦 Class I 每面容量=%d,預期 5", got)
+	}
+	if got := DamageShieldCapacityForShipClass(DamageShieldReductionClassX, SHIP_DOOMSTAR); got != 300 {
+		t.Errorf("末日之星 Class X 每面容量=%d,預期 300", got)
+	}
+	if got := DamageShieldCapacityForShipClass(DamageShieldReductionClassI, CombatShipClass(-1)); got != 0 {
+		t.Errorf("非法艦體級數應回 0,得到 %d", got)
+	}
+}
+
 // TestDamageAfterShield 對照手冊各護盾等級「each attack reduced by N points of damage」,以及
 // Hard Shields 的額外 -3 與「immunity to shield-piercing weapons」規則。
 func TestDamageAfterShield(t *testing.T) {
@@ -175,6 +187,22 @@ func TestDamageAfterShield(t *testing.T) {
 		if got := DamageAfterShield(c.dmg, c.shieldReduction, c.hardShield, c.shieldPiercing); got != c.want {
 			t.Errorf("%s: DamageAfterShield(%d,%d,%v,%v) = %d,預期 %d",
 				c.name, c.dmg, c.shieldReduction, c.hardShield, c.shieldPiercing, got, c.want)
+		}
+	}
+}
+
+func TestDamageShieldAbsorbed(t *testing.T) {
+	cases := []struct {
+		raw, reduction, want int
+	}{
+		{40, DamageShieldReductionClassI, 1},
+		{2, DamageShieldReductionClassV, 2},
+		{0, DamageShieldReductionClassX, 0},
+		{40, 0, 0},
+	}
+	for _, c := range cases {
+		if got := DamageShieldAbsorbed(c.raw, c.reduction); got != c.want {
+			t.Errorf("DamageShieldAbsorbed(%d,%d)=%d,預期 %d", c.raw, c.reduction, got, c.want)
 		}
 	}
 }

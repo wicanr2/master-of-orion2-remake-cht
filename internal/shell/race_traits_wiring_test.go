@@ -270,7 +270,7 @@ func TestSpyRaceBonusReachesBothSides(t *testing.T) {
 // 自訂種族不會誤查到某一族的布林特性。
 //
 // `raceOrigIdx()` 對 RaceIndex 越界回 −1,而 `OrigRaceHasTrait` 對越界回 false
-// ——寧可少給也不要亂給(自訂種族的特殊能力目前只記錄不生效)。
+// ——未選特殊能力的客製種族不能誤查到任何原版或客製布林特性。
 func TestCustomRaceHasNoBooleanTraits(t *testing.T) {
 	s := NewDemoSession()
 	s.ApplyCustomRaceBonuses(Race{Name: "測試自訂", EnName: "Custom", OrigIdx: -1, IndBonus: 3})

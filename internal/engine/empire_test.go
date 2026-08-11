@@ -105,6 +105,27 @@ func TestRunEmpireTurnBC(t *testing.T) {
 	}
 }
 
+// TestRunEmpireTurnCyberneticHalfIncome 驗證帝國層收入讀精確半單位欄位，而不是先讀整數
+// NetIndustry/FoodSurplus 再把 22.5/7.5 截斷。
+func TestRunEmpireTurnCyberneticHalfIncome(t *testing.T) {
+	colonies := []ColonyState{{
+		Population: 5, PopMax: 20, Farmers: 5, Workers: 5,
+		FoodPerFarmer: 2, IndustryPerWorker: 5,
+		PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G,
+		MineralRichness: gamedata.ABUNDANT, TolerantRace: true,
+		Cybernetic: true, TradeGoods: true,
+	}}
+	out := RunEmpireTurn(PlayerState{TaxRate: 50, FantasticTrader: true}, colonies)
+	// 淨工業 45/2: 稅 11 BC、貿易品 22 BC；餘糧 15/2: Fantastic Trader 7 BC，
+	// 另有人頭基礎收入 5 BC。
+	if out.TotalFoodHalf != 15 || out.TotalNetIndustryHalf != 45 {
+		t.Fatalf("帝國半單位聚合錯誤: food=%d industry=%d", out.TotalFoodHalf, out.TotalNetIndustryHalf)
+	}
+	if out.TaxRevenue != 16 || out.FoodSurplusRevenue != 7 || out.TradeGoodsRevenue != 22 || out.NetBC != 45 {
+		t.Errorf("半單位收入錯誤:%+v", out)
+	}
+}
+
 // TestRunEmpireTurnCommandOverflow 驗證指揮評等(Command Rating)供給不足艦艇需求時,
 // 每回合每未覆蓋點扣 10 BC(GAME_MANUAL.pdf p.169,gamedata.IncomeCommandOverflowCost),
 // 並正確併入 NetBC/Player.BC,曝露在 EmpireOutput.CommandOverflowCost。
@@ -402,5 +423,24 @@ func TestGalacticCurrencyExchangeOffByDefault(t *testing.T) {
 	out2 := RunEmpireTurn(ps2, colonies)
 	if out.TaxRevenue != out2.TaxRevenue {
 		t.Error("同樣的輸入應得到同樣的收入")
+	}
+}
+
+// 兩回合各換出半食物時，第一回合只累積半 BC，第二回合才扣掉 1 BC。
+func TestRunEmpireTurnFoodReplicatorHalfBCCarries(t *testing.T) {
+	cs := ColonyState{
+		Population: 3, PopMax: 10, Farmers: 1, Workers: 1,
+		FoodPerFarmer: 1, IndustryPerWorker: 4, PlanetSize: 2,
+		PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT,
+		Cybernetic: true, FoodReplicators: true,
+	}
+	ps := PlayerState{}
+	first := RunEmpireTurn(ps, []ColonyState{cs})
+	if first.FoodReplicatorCostHalfBC != 1 || first.FoodReplicatorCost != 0 || first.Player.FoodReplicatorBCHalfRemainder != 1 {
+		t.Fatalf("第一回合應保存半 BC,got %+v", first)
+	}
+	second := RunEmpireTurn(first.Player, []ColonyState{cs})
+	if second.FoodReplicatorCostHalfBC != 1 || second.FoodReplicatorCost != 1 || second.Player.FoodReplicatorBCHalfRemainder != 0 {
+		t.Fatalf("第二回合應合併成 1 BC,got %+v", second)
 	}
 }

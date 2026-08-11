@@ -5,6 +5,7 @@ import (
 	"math/rand"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
 // 安塔蘭勝利(手冊三條勝利路徑之二)的 shell 層整合。權威規則來源見
@@ -25,7 +26,170 @@ import (
 // TOPIC_MULTIDIMENSIONAL_PHYSICS,見 docs/tech/colony-buildings.md 第三節)——本檔只補「建成後
 // 解鎖反攻」這段流程,不重新定義建築資料。
 
-// antaranHomeFleetDefense 是安塔蘭母星防禦艦隊的戰力組成。
+// antaranWeaponSlot 是原版安塔蘭即時戰鬥設計的一個已解出武器槽切片。
+// RawFlags 保留戰鬥記錄 +0x56 的原始 16 位元值；它的每個 bit 尚未命名，不能把它
+// 直接當成 ARM/FST/其他改造。
+type antaranWeaponSlot struct {
+	WeaponID int
+	// Quantity 是一般安塔蘭艦設計已讀到的槽位數量。星際要塞不把
+	// 99/198 填在這裡，避免把容量上限誤當成固定 runtime 數量。
+	Quantity int
+	// Seed／CapacityCap 僅用於星際要塞：loader 先寫 seed，之後由
+	// sub_6EE8E @ 0x6EE8E 的 divisor 與 live tech 分支算出 runtime quantity；
+	// CapacityCap 是 99/198 的上限／拆槽規則。
+	Seed        int
+	CapacityCap int
+	RawFlags    uint16
+}
+
+// antaranDefenseUnit 是安塔蘭母星防禦艦隊的一個防禦單位。
+//
+// Strength 是 remake 既有的戰力代理；OriginalName、CombatClass 與 Fortress 則保留
+// 原版載入器已證實的艦級資料。把艦級從單純整數拆出來很重要：球形武器的傷害會依
+// 目標艦體級數變化，不能讓終局戰所有安塔蘭艦都退化成零值 Frigate。
+type antaranDefenseUnit struct {
+	OriginalName string
+	Strength     int
+	CombatClass  gamedata.CombatShipClass
+	Fortress     bool
+	// CombatLoaderRaw 是原版即時戰鬥 loader 的 IDA 平面 raw 位址；它是證據索引，
+	// 不是檔案偏移，也不是重製引擎用來推導艦級的數值。
+	CombatLoaderRaw uint32
+	// FighterBayCount 是原版即時防禦設計中 ID 31(Fighter Bays) 的數量。
+	// FighterBayWeaponID 是原版武器表 ID；目前已證實的戰機艙是 ID 31。
+	// 標準戰機艙接進既有快速戰鬥戰機貢獻模型；要塞的直接武器槽則由
+	// antaranWeaponFirepower 接入終局齊射。其餘單艦的槽位仍保存 raw 資料，
+	// 不把未追回的敵艦下游消費端誤套進所有艦級。
+	FighterBayWeaponID int
+	FighterBayCount    int
+	WeaponSlots        []antaranWeaponSlot
+}
+
+// 下列槽位直接來自 `dword_192864 + 313*ship + 0x52 + 0x0B*slot`：
+// weapon ID 在 +0x00、數量在 +0x02、RawFlags 在 +0x04。它們是已知的設計資料，
+// 不是敵方即時命中／傷害公式；目前只使用 ID 31 的戰機艙貢獻。
+var antaranKnownWeaponSlots = map[string][]antaranWeaponSlot{
+	"Intruder": {
+		{WeaponID: 4, Quantity: 4, RawFlags: 0},
+		{WeaponID: 4, Quantity: 2, RawFlags: 2},
+		{WeaponID: 24, Quantity: 5, RawFlags: 0},
+		{WeaponID: 13, Quantity: 2, RawFlags: 0},
+		{WeaponID: 31, Quantity: 3, RawFlags: 0},
+	},
+	"Interdictor": {
+		{WeaponID: 4, Quantity: 6, RawFlags: 0},
+		{WeaponID: 4, Quantity: 2, RawFlags: 2},
+		{WeaponID: 24, Quantity: 15, RawFlags: 0},
+		{WeaponID: 13, Quantity: 2, RawFlags: 0},
+		{WeaponID: 4, Quantity: 8, RawFlags: 4},
+		{WeaponID: 11, Quantity: 2, RawFlags: 0},
+	},
+	"Harbinger": {
+		{WeaponID: 4, Quantity: 10, RawFlags: 0},
+		{WeaponID: 4, Quantity: 2, RawFlags: 2},
+		{WeaponID: 24, Quantity: 20, RawFlags: 0},
+		{WeaponID: 13, Quantity: 3, RawFlags: 0},
+		{WeaponID: 4, Quantity: 15, RawFlags: 4},
+		{WeaponID: 11, Quantity: 2, RawFlags: 2},
+		{WeaponID: 37, Quantity: 1, RawFlags: 0},
+		{WeaponID: 31, Quantity: 6, RawFlags: 0},
+	},
+}
+
+// antaranFortressSeedBase 是 `P` 的原始整數算式結果：
+// signed_div(signed_div(5*word_180140, 4), 2) = 750。
+const antaranFortressSeedBase = 750
+
+// antaranFortressWeaponSlots 是 `Load_Antaran_Star_Fortress_` @ 0x4D18E
+// 直接寫出的四個非空槽。ID／seed／raw flags／CapacityCap 為已證實；99/198
+// 是 loader 後段的容量上限與拆槽規則，不是固定 runtime 數量。完整的 flags
+// bit 名稱仍未知，因此不把它們改名成 ARM/FST。class 6 的 raw table power
+// 是 0x17F69C = 900；它是 loader 的設計欄位，不可誤當成舊探針報出的 25，
+// 也不在這裡與 remake 的 Doom Star Strength 代理混算。
+var antaranFortressWeaponSlots = []antaranWeaponSlot{
+	{WeaponID: 11, Seed: antaranFortressSeedBase / 2, CapacityCap: 99, RawFlags: 2},
+	{WeaponID: 4, Seed: antaranFortressSeedBase / 4, CapacityCap: 198, RawFlags: 0},
+	{WeaponID: 4, Seed: antaranFortressSeedBase / 4, CapacityCap: 198, RawFlags: 4},
+	{WeaponID: 4, Seed: antaranFortressSeedBase / 2, CapacityCap: 99, RawFlags: 2},
+}
+
+func antaranWeaponSlotsFor(name string) []antaranWeaponSlot {
+	// 每艘單位拿自己的 slice，避免未來某個戰鬥階段修改 runtime record 時污染證據範本。
+	return append([]antaranWeaponSlot(nil), antaranKnownWeaponSlots[name]...)
+}
+
+func antaranFortressSlots() []antaranWeaponSlot {
+	return append([]antaranWeaponSlot(nil), antaranFortressWeaponSlots...)
+}
+
+// antaranFortressDivisor 轉寫 sub_6EE8E @ 0x6EE8E 對要塞四槽的已追回中間鏈。
+// techTier 是 sub_6E70A 的 live tech 結果；目前只把已觀測的 T=2、T=3 與其他
+// bucket 分開，沒有把科技 byte 重新命名成未證實的玩法名稱。raw 0/2/4 是這四槽
+// 已證實的輸入；其他 raw flags 失敗即回 0，避免虛構百分比效果。
+func antaranFortressDivisor(weaponID int, rawFlags uint16, techTier int) int {
+	k := 0
+	switch weaponID {
+	case 4:
+		k = 15
+	case 11:
+		k = 30
+	default:
+		return 0
+	}
+
+	percent := 0
+	switch rawFlags {
+	case 0:
+		percent = 100
+	case 2:
+		percent = 200
+	case 4:
+		percent = 50
+	default:
+		return 0
+	}
+
+	// sub_6A636 @ 0x6A636 supplies the first percentage (100/200/50).
+	// sub_6A406 @ 0x6A406 is zero for raw 0/2/4, and the fortress CX=1
+	// branch contributes no modeExtra, so X reduces to K*percent/100.
+	x := k * percent / 100
+	base := 400
+	switch techTier {
+	case 2:
+		base = 700
+	case 3:
+		base = 600
+	}
+	divisor := (base*x + 500) / 1000
+	if divisor < 1 {
+		return 1
+	}
+	return divisor
+}
+
+// antaranFortressRuntimeQuantity 以 seed／raw flags／live tech bucket 計算一槽的
+// runtime quantity，最後才套用已證實的 99/198 CapacityCap。這個 helper 不直接
+// 改變目前終局快速戰鬥的 full-cap policy，讓沒有原版 live empire state 時仍維持
+// 可玩的終局規模；它為日後接入實際 tech state 保留正確的除法邊界。
+func antaranFortressRuntimeQuantity(slot antaranWeaponSlot, techTier int) int {
+	if slot.Seed <= 0 || slot.CapacityCap <= 0 {
+		return slot.Quantity
+	}
+	divisor := antaranFortressDivisor(slot.WeaponID, slot.RawFlags, techTier)
+	if divisor <= 0 {
+		return 0
+	}
+	quantity := slot.Seed / divisor
+	if quantity > slot.CapacityCap {
+		return slot.CapacityCap
+	}
+	if quantity < 0 {
+		return 0
+	}
+	return quantity
+}
+
+// antaranHomeFleetDefense 是安塔蘭母星防禦艦隊的戰力與艦級組成。
 //
 // ============ 2026-08-08(第 49 項(安塔蘭防禦艦隊)):從「保守預設」換成反組譯真值 ============
 //
@@ -78,25 +242,93 @@ const (
 // 星際要塞用 remake 既有的軌道防禦換算(`gamedata.StarFortressSpace`,與軌道轟炸那條
 // 共用同一把尺,不另立係數)——原版是 `Load_Antaran_Star_Fortress_` @ 0x4D18E 載入的
 // 一整套設計,remake 沒有那個粒度。
-func buildAntaranHomeFleetDefense() []int {
-	out := make([]int, 0, antaranDefLargeCount+antaranDefHugeCount+antaranDefTitanCount+1)
+func buildAntaranHomeFleetDefense() []antaranDefenseUnit {
+	out := make([]antaranDefenseUnit, 0, antaranDefLargeCount+antaranDefHugeCount+antaranDefTitanCount+1)
 	for i := 0; i < antaranDefLargeCount; i++ {
-		out = append(out, shipStrength("戰艦"))
+		out = append(out, antaranDefenseUnit{
+			OriginalName: "Intruder", Strength: shipStrength("戰艦"), CombatClass: gamedata.SHIP_BATTLESHIP,
+			CombatLoaderRaw: 0x55738, FighterBayWeaponID: 31, FighterBayCount: 3,
+			WeaponSlots: antaranWeaponSlotsFor("Intruder"),
+		})
 	}
 	for i := 0; i < antaranDefHugeCount; i++ {
-		out = append(out, shipStrength("泰坦"))
+		out = append(out, antaranDefenseUnit{
+			OriginalName: "Interdictor", Strength: shipStrength("泰坦"), CombatClass: gamedata.SHIP_TITAN,
+			CombatLoaderRaw: 0x55B12,
+			WeaponSlots:     antaranWeaponSlotsFor("Interdictor"),
+		})
 	}
 	for i := 0; i < antaranDefTitanCount; i++ {
-		out = append(out, shipStrength("末日之星"))
+		out = append(out, antaranDefenseUnit{
+			OriginalName: "Harbinger", Strength: shipStrength("末日之星"), CombatClass: gamedata.SHIP_DOOMSTAR,
+			CombatLoaderRaw: 0x55F67, FighterBayWeaponID: 31, FighterBayCount: 6,
+			WeaponSlots: antaranWeaponSlotsFor("Harbinger"),
+		})
 	}
-	// 星際要塞:remake 沒有「安塔蘭要塞」的設計資料,取**一艘末日之星的等量戰力**當代理。
-	//
-	// ⚠ 這是 remake 的代理值,不是原版數字。理由:`gamedata.StarFortressSpace = 1200`
-	// 那個常數自己的註解就寫著「【近似】比照 ShipHullSpace(Doom Star)」——
-	// 既然 remake 對星際要塞的既有建模就是「比照末日之星」,這裡沿用同一個近似,
-	// 不另立第二套換算(兩套近似會漂開)。
-	out = append(out, shipStrength("末日之星"))
+	// 星際要塞的艦體強度仍沿用 remake 的 Doom Star 尺度代理；但原版已追回
+	// 四個直接武器槽，這些槽會在 antaranDefenseCombatant 進入終局齊射，
+	// 不再把要塞當成只有一個 64 戰力的空殼。
+	out = append(out, antaranDefenseUnit{
+		OriginalName: "Star Fortress", Strength: shipStrength("末日之星"),
+		CombatClass: gamedata.SHIP_DOOMSTAR, Fortress: true, CombatLoaderRaw: 0x4D18E,
+		WeaponSlots: antaranFortressSlots(),
+	})
 	return out
+}
+
+// antaranWeaponFirepower 彙整一個安塔蘭設計對「艦艇」齊射可消費的直接火力。
+// 炸彈只對行星有效，戰機艙另走 Fighter Bay 狀態機，兩者不在這個總和重複計算。
+// 一般艦使用 raw Quantity；星際要塞目前採終局 full-cap policy，所以使用
+// CapacityCap，而不是假裝某個未知 live tech bucket 的 runtime quantity。raw flags
+// 的正式名稱尚未知，先保留原值但不擅自改變 OrigWeaponTable 的傷害範圍。
+func antaranWeaponFirepower(unit antaranDefenseUnit) (minDamage, maxDamage int) {
+	for _, slot := range unit.WeaponSlots {
+		quantity := slot.Quantity
+		if unit.Fortress && slot.CapacityCap > 0 {
+			quantity = slot.CapacityCap
+		}
+		if slot.WeaponID < 0 || slot.WeaponID >= len(gamedata.OrigWeaponTable) || quantity <= 0 {
+			continue
+		}
+		weapon := gamedata.OrigWeaponTable[slot.WeaponID]
+		switch weapon.Cat {
+		case gamedata.WeaponCatBomb, gamedata.WeaponCatFighterBay:
+			continue
+		}
+		minDamage += quantity * weapon.DamageMin
+		maxDamage += quantity * weapon.DamageMax
+	}
+	return minDamage, maxDamage
+}
+
+// antaranDefenseCombatant 把一艘已知安塔蘭防禦設計轉成現有快速戰鬥模型。
+// 艦體基礎仍沿用 remake 的 Strength 代理；已證實的標準戰機艙則沿用玩家快速
+// 戰鬥同一組「一艙戰機的攻擊／結構」消費端，避免另造一套敵方近似數字。
+func antaranDefenseCombatant(unit antaranDefenseUnit) combatant {
+	atk := unit.Strength
+	hp := unit.Strength * 3
+	if unit.FighterBayWeaponID == 31 && unit.FighterBayCount > 0 {
+		fighterAttack, fighterHP := gamedata.FighterBayCombatContribution()
+		atk += unit.FighterBayCount * fighterAttack
+		hp += unit.FighterBayCount * fighterHP
+	}
+	wmin, wmax := atk/2, atk
+	if unit.Fortress {
+		// 要塞的四槽已追回，讓它們真正進入 battleShot 的 wmin/wmax。
+		// atk 仍保留 Doom Star 艦體的命中基礎，再加直接火力的中位量，
+		// 避免把「傷害總和」誤當成單一 BA；這是快速戰鬥編排層的量綱映射，
+		// 不是對 raw +0x36／+0x52 欄位的重新命名。
+		weaponMin, weaponMax := antaranWeaponFirepower(unit)
+		if weaponMax > 0 {
+			wmin, wmax = weaponMin, weaponMax
+			atk += (weaponMin + weaponMax) / 2
+		}
+	}
+	return combatant{
+		hp: hp, atk: atk, def: unit.Strength,
+		wmin: wmin, wmax: wmax, armor: unit.Strength,
+		sizeClass: unit.CombatClass,
+	}
 }
 
 // dimensionalPortalBuildingName 是次元傳送門在 s.ColonyBuildings 去重 map 裡的 key
@@ -146,15 +378,17 @@ func (s *GameSession) CanAssaultAntares() bool {
 // 回傳 (BattleResult, ok)——ok=false 代表前置條件不滿足,BattleResult 為零值,呼叫端不應顯示
 // 戰鬥結果畫面。
 func (s *GameSession) AssaultAntares() (BattleResult, bool) {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdAssaultAntares})
 	if !s.CanAssaultAntares() {
 		return BattleResult{}, false
 	}
 
 	mkPlayer := func() []combatant {
 		var out []combatant
+		galacticLoreBonus := s.galacticLoreCombatBonus()
 		for _, sh := range s.Fleet().Ships {
 			body := shipStrength(sh.Class)
-			atk := body + sh.WeaponAttack
+			atk := body + sh.WeaponAttack + galacticLoreBonus
 			atk += atk * s.RaceCombatPct / 100 // 種族戰鬥加成,比照 ResolveBattle mkPlayer
 			out = append(out, combatant{hp: body * 3, atk: atk, def: body, wmin: atk / 2, wmax: atk,
 				shield: shieldReduceByName(sh.Shield), armor: armorHPByName(sh.Armor),
@@ -163,8 +397,8 @@ func (s *GameSession) AssaultAntares() (BattleResult, bool) {
 		return out
 	}
 	var df []combatant
-	for _, st := range antaranHomeFleetDefense {
-		df = append(df, combatant{hp: st * 3, atk: st, def: st, wmin: st / 2, wmax: st, armor: st})
+	for _, unit := range antaranHomeFleetDefense {
+		df = append(df, antaranDefenseCombatant(unit))
 	}
 	pf := mkPlayer()
 
@@ -209,8 +443,8 @@ func (s *GameSession) advanceAntaranVictory() {
 // 理由見該變數的註解。
 func AntaranDefenseStrength() int {
 	n := 0
-	for _, st := range antaranHomeFleetDefense {
-		n += st
+	for _, unit := range antaranHomeFleetDefense {
+		n += unit.Strength
 	}
 	return n
 }

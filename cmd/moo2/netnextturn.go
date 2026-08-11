@@ -454,10 +454,10 @@ func (b *sceneBuilder) netSession() *netplay.Session {
 		if len(conns) == 0 {
 			return nil // 還沒有人加入——不要建一個空幫浦擋住之後真的建得起來的那次
 		}
-		b.netSess = netplay.NewSession(b.netMe, true, conns)
+		b.netSess = netplay.NewSessionWithOptions(b.netMe, true, conns, b.netSessionOptions())
 	case b.netConn != nil:
 		// 客戶端:只有一條連線(對主機),不轉發。
-		b.netSess = netplay.NewSession(b.netMe, false, map[int]net.Conn{0: b.netConn})
+		b.netSess = netplay.NewSessionWithOptions(b.netMe, false, map[int]net.Conn{0: b.netConn}, b.netSessionOptions())
 	default:
 		return nil
 	}

@@ -38,6 +38,9 @@ const (
 
 // Leader 是 HERODATA.LBX 一筆英雄記錄(只保留 remake 用得到的欄位)。
 type Leader struct {
+	// ID 是 HERODATA／原版 GameState::_leaders[] 的固定來源序號(0..66)。
+	// 原版 save.Ship::officer 直接以這個序號索引 67 筆領袖；它不是顯示名稱。
+	ID            int
 	Name          string
 	Title         string
 	Type          uint8 // 0=艦艇軍官(commander/captain)、非 0=殖民地領袖(admin)
@@ -68,7 +71,9 @@ func Parse(data []byte) ([]Leader, error) {
 	}
 	out := make([]Leader, 0, count)
 	for i := 0; i < count; i++ {
-		out = append(out, parseRecord(data[4+i*rsize:4+(i+1)*rsize]))
+		leader := parseRecord(data[4+i*rsize : 4+(i+1)*rsize])
+		leader.ID = i
+		out = append(out, leader)
 	}
 	return out, nil
 }

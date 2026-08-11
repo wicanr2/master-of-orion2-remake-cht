@@ -2,8 +2,18 @@ package engine
 
 import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 
-// 每人口單位每回合消耗 1 食物(MOO2 標準)。
+// 每人口單位每回合消耗 1 食物(MOO2 標準)。精確帳本以半單位儲存。
 const foodPerPopulation = 1
+
+// floorHalfToWhole 是 UI/舊 API 的相容轉換。Go 對負數除法朝 0 截斷，饑荒的 -0.5
+// 若直接除 2 會變成 0、錯誤地看成不饑荒；這裡改成數學上的向下取整，保留負號。
+func floorHalfToWhole(half int) int {
+	whole := half / 2
+	if half < 0 && half%2 != 0 {
+		whole--
+	}
+	return whole
+}
 
 // colonyGravityPenaltyPercent 回傳本殖民地目前生效的重力懲罰百分點(0 或負值,GAME_MANUAL.pdf
 // p.58)。行星重力產生器(NormalizeGravity=true,p.104「正常化至 Normal-G,消除 Low-G/Heavy-G
@@ -30,15 +40,25 @@ func colonyGravityPenaltyPercent(cs ColonyState) int {
 // 捨去,結果會因套用順序不同而不同,但手冊沒有給任何「先重力後士氣」或反過來的根據)。這也與
 // ColonyState 既有慣例一致:多個百分比/固定加成先加總,再套一次公式(GrowthBonusSum、
 // IncomeBonusPercent 皆是同一模式)。
-func colonyFood(cs ColonyState) (food, consumed, surplus int) {
+func colonyFood(cs ColonyState) (food, consumed, surplus, foodHalf, consumedHalf, surplusHalf int) {
 	// FoodBonusPercent(農業官)與士氣/重力合併成單一百分點再套一次公式,
 	// 理由同上面那段註解:避免多次連續整數除法的複合誤差。
 	pct := cs.MoralePercent + colonyGravityPenaltyPercent(cs) + cs.FoodBonusPercent
 	food = gamedata.GravityAdjustedProduction(
 		gamedata.UncooperativeJobOutput(cs.Farmers, cs.FoodPerFarmer, cs.UnassimilatedPop, cs.Population, false),
 		pct) + cs.FlatFood
-	consumed = cs.Population * foodPerPopulation
-	return food, consumed, food - consumed
+	if !cs.Lithovore {
+		if cs.Cybernetic {
+			consumedHalf = cs.Population * foodPerPopulation
+		} else {
+			consumedHalf = cs.Population * foodPerPopulation * 2
+		}
+	}
+	foodHalf = food * 2
+	surplusHalf = foodHalf - consumedHalf
+	consumed = floorHalfToWhole(consumedHalf)
+	surplus = floorHalfToWhole(surplusHalf)
+	return food, consumed, surplus, foodHalf, consumedHalf, surplusHalf
 }
 
 // colonyPollution 依毛工業產出計算污染清理成本與淨工業。
@@ -84,7 +104,7 @@ func colonyGrowth(cs ColonyState, foodSurplus, netIndustry int) int {
 // RunColonyTurn 執行一個殖民地的一回合經濟結算,依 MOO2 順序:
 // 食物 → 工業 → 污染(縮減淨工業)→ 研究 → 人口成長。
 func RunColonyTurn(cs ColonyState) ColonyOutput {
-	food, consumed, surplus := colonyFood(cs)
+	food, consumed, surplus, foodHalf, consumedHalf, surplusHalf := colonyFood(cs)
 	// 工業與研究同樣經士氣+重力調整(手冊:每格士氣 ±10%、重力 -25%/-50% 套用於
 	// 食物/工業/研究三者,p.58/p.63)。FlatIndustry/FlatResearch(殖民地整體固定加成,見
 	// ColonyState 欄位註解)與調整後的 per-worker 產出分開相加,採與 colonyFood/FlatFood
@@ -112,16 +132,29 @@ func RunColonyTurn(cs ColonyState) ColonyOutput {
 		recycled = cs.Population
 		netIndustry += recycled
 	}
+	// Cybernetic 的另一半消耗是生產力。手冊只給「half production unit」；原版存檔的
+	// industry_consumption_* 也以半單位保存。這裡在污染清理與 Recyclotron 之後扣除，
+	// 因為兩者是殖民地產出／回收產出的獨立來源；「扣除點」是強推論，不宣稱為手冊逐字規則。
+	industryConsumedHalf := 0
+	if cs.Cybernetic {
+		industryConsumedHalf = cs.Population
+	}
+	netIndustryHalf := netIndustry*2 - industryConsumedHalf
+	netIndustry = floorHalfToWhole(netIndustryHalf)
 	// 食物複製機(p.85)在這裡:產能已經扣完污染、成長還沒算。
 	// 「as needed」= 只補缺口,所以盈餘為正時什麼都不做——那條漏掉會變成印鈔機
 	// (換滿食物 → 餘糧出售換 BC),見 gamedata/food_replicators.go。
-	replicated := 0
-	if cs.FoodReplicators && surplus < 0 {
-		spent := 0
-		replicated, spent = gamedata.FoodReplicatorConvert(-surplus, netIndustry)
-		food += replicated
-		surplus += replicated
-		netIndustry -= spent
+	// 這裡刻意用半單位入口，保留 Cybernetic 奇數人口的半食物缺口；舊版只換
+	// 完整食物會把 deficitHalf/2 朝 0 截斷，造成一個半單位永遠無法被複製機補上。
+	replicatedHalf, replicatorProductionHalf := 0, 0
+	if cs.FoodReplicators && surplusHalf < 0 {
+		replicatedHalf, replicatorProductionHalf = gamedata.FoodReplicatorConvertHalf(-surplusHalf, netIndustryHalf)
+		foodHalf += replicatedHalf
+		surplusHalf += replicatedHalf
+		netIndustryHalf -= replicatorProductionHalf
+		food = floorHalfToWhole(foodHalf)
+		surplus = floorHalfToWhole(surplusHalf)
+		netIndustry = floorHalfToWhole(netIndustryHalf)
 	}
 	research := gamedata.GravityAdjustedProduction(
 		gamedata.UncooperativeJobOutput(cs.Scientists, cs.ResearchPerScientist, cs.UnassimilatedPop, cs.Population, false),
@@ -129,16 +162,24 @@ func RunColonyTurn(cs ColonyState) ColonyOutput {
 	growth := colonyGrowth(cs, surplus, netIndustry)
 
 	return ColonyOutput{
-		Food:                 food,
-		FoodConsumed:         consumed,
-		FoodSurplus:          surplus,
-		Starving:             surplus < 0,
-		FoodReplicated:       replicated,
-		GrossIndustry:        gross + recycled,
-		PollutingProduction:  pollutingProd,
-		PollutionCleanupCost: cleanupCost,
-		NetIndustry:          netIndustry,
-		Research:             research,
-		PopGrowth:            growth,
+		Food:                     food,
+		FoodConsumed:             consumed,
+		FoodSurplus:              surplus,
+		FoodHalf:                 foodHalf,
+		FoodConsumedHalf:         consumedHalf,
+		FoodSurplusHalf:          surplusHalf,
+		IndustryConsumedHalf:     industryConsumedHalf,
+		NetIndustryHalf:          netIndustryHalf,
+		Starving:                 surplusHalf < 0,
+		FoodReplicated:           replicatedHalf / 2,
+		FoodReplicatedHalf:       replicatedHalf,
+		FoodReplicatorCostHalfBC: replicatedHalf * gamedata.FoodReplicatorBCHalfPerHalfFood,
+		GrossIndustry:            gross + recycled,
+		PollutingProduction:      pollutingProd,
+		PollutionCleanupCost:     cleanupCost,
+		NetIndustry:              netIndustry,
+		Research:                 research,
+		PopGrowth:                growth,
+		Cybernetic:               cs.Cybernetic,
 	}
 }

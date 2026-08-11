@@ -52,6 +52,25 @@ func TestFighterHitsArePerCraftAndScaleWithArmor(t *testing.T) {
 	}
 }
 
+func TestEnemyFighterProfileScalesByGeneratedHullStrength(t *testing.T) {
+	cases := []struct {
+		strength int
+		bay      bool
+		kind     FighterKind
+	}{
+		{2, false, FighterInterceptor},
+		{8, true, FighterInterceptor},
+		{16, true, FighterHeavy},
+		{32, true, FighterBomber},
+	}
+	for _, tc := range cases {
+		kind, bay := EnemyFighterProfileForStrength(tc.strength)
+		if kind != tc.kind || bay != tc.bay {
+			t.Errorf("戰力 %d 的敵方戰機藍圖=%v/%v,期望=%v/%v", tc.strength, kind, bay, tc.kind, tc.bay)
+		}
+	}
+}
+
 // 傷害是一架一架吃的:打光一架才溢到下一架(手冊的血量是每架的,不是整隊一條血條)。
 func TestDamageKillsCraftOneAtATime(t *testing.T) {
 	f := NewFighterSquadron(FighterInterceptor, false, 0, 0, 0, 1, 0) // 4 架 × 2 血

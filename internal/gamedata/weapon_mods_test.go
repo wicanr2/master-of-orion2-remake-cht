@@ -187,3 +187,32 @@ func TestWeaponModSpaceCostPercent_LookupTable(t *testing.T) {
 		t.Error("AF 是固定值不是百分比,WeaponModSpaceCostPercent 應回 ok=false")
 	}
 }
+
+func TestMissileWeaponModSpaceCostPercent(t *testing.T) {
+	cases := map[WeaponModCode]int{
+		ModMissileECCM:       25,
+		ModEmissionsGuidance: 300,
+		ModMIRV:              100,
+		ModOverloadedTorpedo: 50,
+	}
+	for mod, want := range cases {
+		if got, ok := WeaponModSpaceCostPercent(mod); !ok || got != want {
+			t.Errorf("WeaponModSpaceCostPercent(%s)=(%d,%v), want (%d,true)", mod, got, ok, want)
+		}
+	}
+}
+
+func TestMissileWeaponModHelpers(t *testing.T) {
+	if got := WeaponModMissileWarheadCount(nil); got != 1 {
+		t.Errorf("無 MV 彈頭數=%d, want 1", got)
+	}
+	if got := WeaponModMissileWarheadCount([]WeaponModCode{ModMIRV}); got != 4 {
+		t.Errorf("MV 彈頭數=%d, want 4", got)
+	}
+	if got := WeaponModMissileDamageMultiplier([]WeaponModCode{ModOverloadedTorpedo, ModEnveloping}, true); got != 600 {
+		t.Errorf("魚雷 OVR+ENV 倍率=%d, want 600%%", got)
+	}
+	if got := WeaponModMissileDamageMultiplier([]WeaponModCode{ModOverloadedTorpedo, ModEnveloping}, false); got != 100 {
+		t.Errorf("非魚雷 OVR+ENV 倍率=%d, want 100%%", got)
+	}
+}

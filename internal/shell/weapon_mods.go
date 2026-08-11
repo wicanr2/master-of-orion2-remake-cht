@@ -6,11 +6,8 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 // 轉換小工具。武器改造本體的手冊出處/佔格/傷害公式全在 gamedata/weapon_mods.go,本檔只是
 // 給 shell/UI 層用的薄封裝(選項清單、beam 判斷、切換邏輯),不重複定義任何數字。
 
-// WeaponModOptions 是艦艇設計畫面提供的可勾選武器改造清單。只收手冊裡對 beam 武器有精確
-// 數字、且本 remake 戰鬥解算(ResolveShotWithMods)已接線的 8 個 mod;飛彈專屬 mod
-// (ARM/ECCM/EMG/FST/MV,以及 NR 的魚雷版)手冊雖也有精確數字,但 remake 的飛彈解算
-// (ResolveMissileShot)尚無 mod 掛鉤機制,故不放進本清單,避免 UI 讓玩家選了卻沒效果的
-// mod(見 docs/tech/weapon-mods.md 的 TODO)。
+// WeaponModOptions 是光束武器在艦艇設計畫面提供的可勾選改造清單。飛彈/魚雷另由
+// WeaponModOptionsForWeapon 回傳適用清單，避免 UI 顯示「勾了卻不會生效」的改造。
 var WeaponModOptions = []gamedata.WeaponModCode{
 	gamedata.ModHeavyMount,
 	gamedata.ModPointDefense,
@@ -20,6 +17,33 @@ var WeaponModOptions = []gamedata.WeaponModCode{
 	gamedata.ModEnveloping,
 	gamedata.ModNoRangeDissipation,
 	gamedata.ModShieldPiercing,
+}
+
+// WeaponModOptionsForWeapon 回傳指定武器在目前 remake 解算器中可使用的改造。
+// ARM/FST 的原版完整戰術資料流仍有未知欄位，但目前已接上 raw flag、標準飛彈
+// Beam Defense／攔截耐久與快速戰鬥的 PD 垂直切片，因此不再把它們藏在造艦畫面之外。
+func WeaponModOptionsForWeapon(weaponName string) []gamedata.WeaponModCode {
+	if WeaponIsBeam(weaponName) {
+		return WeaponModOptions
+	}
+	if weaponKindByName(weaponName) != WeaponKindMissile {
+		return nil
+	}
+	options := []gamedata.WeaponModCode{
+		gamedata.ModArmoredMissile,
+		gamedata.ModFastMissile,
+		gamedata.ModMissileECCM,
+		gamedata.ModEmissionsGuidance,
+		gamedata.ModMIRV,
+	}
+	if WeaponIsTorpedo(weaponName) {
+		options = append(options,
+			gamedata.ModNoRangeDissipation,
+			gamedata.ModEnveloping,
+			gamedata.ModOverloadedTorpedo,
+		)
+	}
+	return options
 }
 
 // WeaponModLabelZH 是武器改造代碼的中文顯示名(艦艇設計畫面用)。
@@ -32,6 +56,12 @@ var weaponModLabelZH = map[gamedata.WeaponModCode]string{
 	gamedata.ModEnveloping:         "包覆式(ENV)",
 	gamedata.ModNoRangeDissipation: "無射程衰減(NR)",
 	gamedata.ModShieldPiercing:     "穿盾(SP)",
+	gamedata.ModMissileECCM:        "反反制電子(ECCM)",
+	gamedata.ModEmissionsGuidance:  "排放導引(EMG)",
+	gamedata.ModMIRV:               "多彈頭(MV)",
+	gamedata.ModArmoredMissile:     "重裝飛彈(ARM)",
+	gamedata.ModFastMissile:        "快速飛彈(FST)",
+	gamedata.ModOverloadedTorpedo:  "魚雷過載(OVR)",
 }
 
 // weaponModLabelEN 是同一組改造的**英文顯示名**(手冊 p.115 的 Weapon Mods 附錄用語)。
@@ -48,6 +78,12 @@ var weaponModLabelEN = map[gamedata.WeaponModCode]string{
 	gamedata.ModEnveloping:         "Enveloping (ENV)",
 	gamedata.ModNoRangeDissipation: "No Range Dissipation (NR)",
 	gamedata.ModShieldPiercing:     "Shield Piercing (SP)",
+	gamedata.ModMissileECCM:        "Electronic Counter-Countermeasures (ECCM)",
+	gamedata.ModEmissionsGuidance:  "Emissions Guidance (EMG)",
+	gamedata.ModMIRV:               "Multiple Independently Targetable Reentry Vehicle (MV)",
+	gamedata.ModArmoredMissile:     "Armored Missile (ARM)",
+	gamedata.ModFastMissile:        "Fast Missile (FST)",
+	gamedata.ModOverloadedTorpedo:  "Overloaded Torpedo (OVR)",
 }
 
 // WeaponModLabelZH 回傳武器改造代碼的中文顯示名;查無回代碼本身(不應發生,防禦性寫法)。
@@ -66,12 +102,88 @@ func WeaponModLabelEN(mod gamedata.WeaponModCode) string {
 	return string(mod)
 }
 
-// WeaponIsBeam 回傳武器元件名是否走 beam 戰鬥解算路徑(weapon_kind.go)。武器改造系統
-// 目前只對 beam 生效(手冊 HV/PD/AF/CO 明文只講 beam 武器;AP/ENV/NR/SP 手冊雖也適用
-// 魚雷,但本 remake 的飛彈路徑未接 mod 掛鉤,見 WeaponModOptions 註解),UI 與計算函式都靠
-// 這個判斷決定要不要套用 mods。
+// WeaponIsBeam 回傳武器元件名是否走 beam 戰鬥解算路徑(weapon_kind.go)。它只負責分類；
+// 武器改造的完整適用性由 WeaponModOptionsForWeapon 與 WeaponModCodesForWeapon 判斷。
 func WeaponIsBeam(name string) bool {
 	return weaponKindByName(name) == WeaponKindBeam
+}
+
+// WeaponIsTorpedo 回報武器是否是武器表中的三種玩家魚雷。
+func WeaponIsTorpedo(name string) bool {
+	switch name {
+	case "反物質魚雷", "質子魚雷", "電漿魚雷":
+		return true
+	default:
+		return false
+	}
+}
+
+// MissileRawWeaponKind 將玩家元件名對到原版 category 21 的 raw kind。
+// 四種標準飛彈對應 `Missile_Dcv` / `Fighter_Ocv` 的 0x0E..0x11 分支；質子魚雷的
+// 0x12 對應是強推論（它落在原版 0x12/0x13/0x14 的 Dcv=5 分支），魚雷不進目前
+// 的 PD 飛彈攔截路徑。
+func MissileRawWeaponKind(name string) (int, bool) {
+	switch name {
+	case "核飛彈":
+		return gamedata.MissileKindNuclear, true
+	case "麥克萊特飛彈":
+		return gamedata.MissileKindMerculite, true
+	case "脈衝飛彈":
+		return gamedata.MissileKindPulson, true
+	case "氙素飛彈":
+		return gamedata.MissileKindZeon, true
+	case "質子魚雷":
+		return gamedata.MissileKindProtonTorpedo, true
+	case "反物質魚雷":
+		return gamedata.MissileKindAntiMatterTorpedo, true
+	case "電漿魚雷":
+		return gamedata.MissileKindPlasmaTorpedo, true
+	default:
+		return 0, false
+	}
+}
+
+// WeaponModAppliesToWeapon 回報一個已序列化改造是否真的適用於指定武器。
+func WeaponModAppliesToWeapon(weaponName string, mod gamedata.WeaponModCode) bool {
+	for _, allowed := range WeaponModOptionsForWeapon(weaponName) {
+		if allowed == mod {
+			return true
+		}
+	}
+	return false
+}
+
+// WeaponModCodesForWeapon 將存檔字串轉成計算層代碼，並丟掉切換武器後殘留的舊改造。
+// 這個過濾既用於設計成本／佔格，也用於戰鬥，確保 JSON 裡的歷史資料不會繞過 UI
+// 直接改變一支不支援該改造的武器。
+func WeaponModCodesForWeapon(weaponName string, mods []string) []gamedata.WeaponModCode {
+	if len(mods) == 0 {
+		return nil
+	}
+	out := make([]gamedata.WeaponModCode, 0, len(mods))
+	for _, mod := range WeaponModCodesFromStrings(mods) {
+		if WeaponModAppliesToWeapon(weaponName, mod) {
+			out = append(out, mod)
+		}
+	}
+	return out
+}
+
+// FilterWeaponModsForWeapon 回傳仍適用於指定武器的存檔字串版本，供設計畫面切換武器時
+// 清理舊選擇；與 WeaponModCodesForWeapon 共用同一份適用性規則。
+func FilterWeaponModsForWeapon(weaponName string, mods []string) []string {
+	if len(mods) == 0 {
+		return nil
+	}
+	allowed := WeaponModCodesForWeapon(weaponName, mods)
+	if len(allowed) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(allowed))
+	for _, mod := range allowed {
+		out = append(out, string(mod))
+	}
+	return out
 }
 
 // ToggleWeaponMod 切換 mods 中是否含 mod,回傳新的切片(不修改原切片)。HV/PD 手冊明訂

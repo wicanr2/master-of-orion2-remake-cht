@@ -4,14 +4,20 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 
 // EmpireOutput 是一個帝國(玩家)一回合的結算結果:各殖民地經濟 + 帝國層級聚合 + 研究推進。
 type EmpireOutput struct {
-	Colonies           []ColonyOutput // 對應輸入 colonies 順序
-	TotalFood          int            // 各殖民地食物盈餘總和(可為負,饑荒殖民地拖累總和)
-	TotalNetIndustry   int            // 各殖民地淨工業總和
-	TotalResearch      int            // 各殖民地研究總和(投入研究進度)
-	TaxRevenue         int            // 各殖民地稅收 BC 總和
-	FoodSurplusRevenue int            // 各殖民地「餘糧出售」BC 總和(見下方 RunEmpireTurn 說明)
-	TradeGoodsRevenue  int            // 各「貿易品」殖民地淨工業換算 BC 總和(見下方 RunEmpireTurn 說明)
-	NetBC              int            // 本回合國庫淨變化(TaxRevenue + FoodSurplusRevenue + TradeGoodsRevenue − Maintenance − CommandOverflowCost − FreighterMaintenanceCost − FoodReplicatorCost)
+	Colonies             []ColonyOutput // 對應輸入 colonies 順序
+	TotalFood            int            // 各殖民地食物盈餘總和(可為負,饑荒殖民地拖累總和)
+	TotalNetIndustry     int            // 各殖民地淨工業總和
+	TotalFoodHalf        int            // 各殖民地精確半單位食物盈餘總和
+	TotalNetIndustryHalf int            // 各殖民地精確半單位淨工業總和
+	TotalResearch        int            // 各殖民地、艦隊與研究協議研究總和(投入研究進度)
+	TaxRevenue           int            // 各殖民地稅收 BC 總和
+	FoodSurplusRevenue   int            // 各殖民地「餘糧出售」BC 總和(見下方 RunEmpireTurn 說明)
+	TradeGoodsRevenue    int            // 各「貿易品」殖民地淨工業換算 BC 總和(見下方 RunEmpireTurn 說明)
+	NetBC                int            // 本回合國庫淨變化(含 TreatyIncomeBC，再扣維護／超支／運輸艦／複製機成本)
+	// TributeCost 是 shell 在雙方帝國經濟結算後依原版 +0x63F 納貢模式
+	// 扣除的本回合納貢成本。它不由 engine 自己推導，因為納貢是跨帝國的
+	// 關係資料；欄位放在輸出方便回合摘要與測試觀察。
+	TributeCost int
 	// CommandOverflowCost 指揮評等(Command Rating)供給不足艦艇需求時,每回合從收入額外扣除
 	// 的維護費(GAME_MANUAL.pdf p.169,gamedata.IncomeCommandOverflowCost)。已計入 NetBC,
 	// 這裡單獨曝露供測試/UI 顯示「這筆錢花在哪」,供≥需時為 0。
@@ -26,8 +32,16 @@ type EmpireOutput struct {
 	// GAME_MANUAL.pdf p.85)。已計入 NetBC,單獨曝露供測試/UI 顯示「這筆錢花在哪」。
 	// 沒有殖民地在饑荒(或都沒有這棟)時為 0。
 	FoodReplicatorCost int
-	Player             PlayerState // 研究推進 + BC 結算後的玩家狀態
-	ResearchDone       bool        // 本回合是否有研究主題完成
+	// FoodReplicatorCostHalfBC 是本回合所有殖民地複製機的精確半 BC 成本；
+	// FoodReplicatorCost 是加上 PlayerState.FoodReplicatorBCHalfRemainder 後
+	// 實際從國庫扣除的完整 BC。
+	FoodReplicatorCostHalfBC int
+	// TreatyIncomeBC / TreatyResearch 是 shell 依玩家與 AI 對手的協議狀態填入的
+	// 回合結果，供回合摘要與測試辨識協議收益；零值代表本回合沒有協議收益。
+	TreatyIncomeBC int
+	TreatyResearch int
+	Player         PlayerState // 研究推進 + BC 結算後的玩家狀態
+	ResearchDone   bool        // 本回合是否有研究主題完成
 }
 
 // RunEmpireTurn 編排一個帝國的一回合:
@@ -45,10 +59,12 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		co := RunColonyTurn(cs)
 		out.Colonies[i] = co
 		out.TotalFood += co.FoodSurplus
-		// 食物複製機的 BC 成本(手冊 1 BC per food)。換出來的食物與已扣掉的產能都在
-		// RunColonyTurn 處理完了,這裡只負責把錢算進帝國結算。
-		out.FoodReplicatorCost += co.FoodReplicated * gamedata.FoodReplicatorBCPerFood
+		out.TotalFoodHalf += co.FoodSurplusHalf
+		// 食物複製機的 BC 成本(手冊 1 BC per 完整食物)。半機械奇數人口
+		// 可能只換出半食物；先以半 BC 聚合，結尾再與跨回合餘數合併。
+		out.FoodReplicatorCostHalfBC += co.FoodReplicatorCostHalfBC
 		out.TotalNetIndustry += co.NetIndustry
+		out.TotalNetIndustryHalf += co.NetIndustryHalf
 		out.TotalResearch += co.Research
 		// 稅收:對各殖民地淨工業依帝國稅率抽稅(gamedata.IncomeTaxRevenue,1:1 換 BC)。
 		//
@@ -67,7 +83,7 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		// (income_test.go TestIncomeMoraleAdjustedProduction)保留,是驗證公式本身正確、供未來
 		// 若改為「income 獨立於已調整產出計算」的架構時使用,不是死碼。demo 母星 morale=0 時
 		// 這個決定本來就是 no-op,不影響探針驗證的 BC 軌跡。
-		tax := gamedata.IncomeTaxRevenue(co.NetIndustry, ps.TaxRate)
+		tax := gamedata.IncomeTaxRevenueHalf(co.NetIndustryHalf, ps.TaxRate)
 		// 餘糧收入(GAME_MANUAL.pdf p.25,見 gamedata/income.go IncomeFoodSurplusRevenue
 		// provenance):把「賣不完的食物」換成 BC,每單位 0.5 BC(無條件捨去)。只對正盈餘
 		// (co.FoodSurplus>0)計入——手冊只描述「出售剩餘糧食」這個收入來源,饑荒(負盈餘)
@@ -80,7 +96,7 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		// 特質系統(第 65 項(種族特性31格))補上了,改讀 ps.FantasticTrader(諾蘭姆:每單位 1 BC 而非 0.5)。
 		foodRev := 0
 		if co.FoodSurplus > 0 {
-			foodRev = gamedata.IncomeFoodSurplusRevenue(co.FoodSurplus, ps.FantasticTrader)
+			foodRev = gamedata.IncomeFoodSurplusRevenueHalf(co.FoodSurplusHalf, ps.FantasticTrader)
 		}
 		// 貿易品(Trade Goods)收入:貿易品是「建造佇列選項」(與 Housing 同類,見
 		// engine.ColonyState.Housing 的先例),不是獨立的產能分配職務——手冊(GAME_MANUAL.pdf
@@ -91,7 +107,7 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		// ps.FantasticTrader(諾蘭姆:1:1 而非 2:1)。
 		tradeRev := 0
 		if cs.TradeGoods {
-			tradeRev = gamedata.TradeGoodsIncome(co.NetIndustry, ps.FantasticTrader)
+			tradeRev = gamedata.TradeGoodsIncomeHalf(co.NetIndustryHalf, ps.FantasticTrader)
 		}
 		// IncomeBonusPercent(太空港 p.79 +50、行星證券交易所 p.93 +100,可疊加):手冊原文是
 		// 「該殖民地所有來源 BC 收入 +N%」——這裡在「逐殖民地」這層迴圈內,對這個殖民地當回合
@@ -144,8 +160,14 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 	}
 	// 偵察實驗室的艦隊研究(第 68 項(元件盤點+飛彈防禦))併進總研究。加在 TotalResearch 上而不是另開一條:
 	// 研究階段只有一個投入口,分開會讓「研究完成」的判定要看兩個地方。
-	out.TotalResearch += ps.FleetResearch
+	out.TreatyIncomeBC = ps.TreatyIncomeBC
+	out.TreatyResearch = ps.TreatyResearch
+	out.TotalResearch += ps.FleetResearch + ps.TreatyResearch
 	out.Player, out.ResearchDone = RunResearchPhase(ps, out.TotalResearch)
+	// 半 BC 不直接丟失：兩個半 BC 才從國庫扣 1 BC，餘數保存到下一回合。
+	pendingReplicatorHalfBC := ps.FoodReplicatorBCHalfRemainder + out.FoodReplicatorCostHalfBC
+	out.FoodReplicatorCost = pendingReplicatorHalfBC / 2
+	out.Player.FoodReplicatorBCHalfRemainder = pendingReplicatorHalfBC % 2
 	// 指揮評等(Command Rating)超支懲罰(GAME_MANUAL.pdf p.169:「For each rating point
 	// required by a ship that is not covered, 10 BCs come out of your income every turn.」)。
 	// uncovered 為負(供給 > 需求)時夾在 0,IncomeCommandOverflowCost 內部也會再夾一次
@@ -160,7 +182,7 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 	// 建造「運輸艦隊」後會非 0(見該欄位註解 2026-07-11(#4)追加接線段落),AI 對手仍恆 0。
 	out.FreighterMaintenanceCost = gamedata.IncomeFreighterMaintenanceCost(ps.ActiveFreighters)
 	// 國庫結算:稅收 + 餘糧收入 + 貿易品收入 - 維護費 - 指揮評等超支懲罰 - 運輸艦維護費。
-	out.NetBC = out.TaxRevenue + out.FoodSurplusRevenue + out.TradeGoodsRevenue - ps.Maintenance - out.CommandOverflowCost - out.FreighterMaintenanceCost - out.FoodReplicatorCost
+	out.NetBC = out.TaxRevenue + out.FoodSurplusRevenue + out.TradeGoodsRevenue + ps.TreatyIncomeBC - ps.Maintenance - out.CommandOverflowCost - out.FreighterMaintenanceCost - out.FoodReplicatorCost
 	out.Player.BC += out.NetBC
 	return out
 }

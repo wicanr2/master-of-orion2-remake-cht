@@ -84,6 +84,21 @@ func TestSpecialDiscoveryBC(t *testing.T) {
 	}
 }
 
+func TestPlanetSpecialEnglishDisplayNames(t *testing.T) {
+	if got := PlanetSpecialNameEN(SpaceDebris); got != "Space Debris" {
+		t.Errorf("太空殘骸英文名 = %q,want Space Debris", got)
+	}
+	if got := PlanetSpecialNameEN(AncientArtifacts); got != "Ancient Artifacts" {
+		t.Errorf("遠古文物英文名 = %q,want Ancient Artifacts", got)
+	}
+	if got := PlanetSpecialNameEN(NoSpecial); got != "" {
+		t.Errorf("無特殊物產英文名 = %q,want 空字串", got)
+	}
+	if got := PlanetSpecialNameEN(PlanetSpecial(99)); got != "" {
+		t.Errorf("越界特殊物產英文名 = %q,want 空字串", got)
+	}
+}
+
 // 反組譯 Make_New_Colony_Or_Outpost_:原住民分支寫 3 個額外人口單位,且只有它會被消耗。
 func TestSpecialColonizeEffects(t *testing.T) {
 	if NativePopulationUnits != 3 {

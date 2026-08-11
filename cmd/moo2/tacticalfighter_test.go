@@ -3,6 +3,7 @@ package main
 import (
 	"testing"
 
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
 
@@ -54,6 +55,91 @@ func TestSquadronFliesToTargetAndDealsDamage(t *testing.T) {
 	}
 }
 
+// 戰機接戰前,敵艦尚未使用過的 PD 應先開火(手冊 p.117),並能消耗戰機中隊。
+func TestPointDefenseFiresBeforeFighterEngagement(t *testing.T) {
+	ts := mkFighterScreen()
+	ts.enemy[0].WeaponName = "雷射"
+	ts.enemy[0].Mods = []string{string(gamedata.ModPointDefense)}
+	ts.enemy[0].Attack = 100
+	ts.enemy[0].WeaponMax = 8
+	ts.launchFrom(0)
+	before := ts.squads[0].Alive
+
+	ts.advanceSquadrons()
+	if !ts.enemy[0].PointDefenseSpent {
+		t.Fatal("戰機接戰前敵艦的 PD 應標記為本回合已使用")
+	}
+	if ts.squads[0].Alive >= before {
+		t.Fatalf("PD 命中後應先打掉至少一架戰機，接戰前後 %d→%d", before, ts.squads[0].Alive)
+	}
+}
+
+// 出擊時要把參戰艦隊算好的戰機 Beam Defense 加成帶進中隊，不能只留在 CombatShip。
+func TestLaunchCarriesFighterBeamDefenseBonuses(t *testing.T) {
+	ts := mkFighterScreen()
+	ts.player[0].FighterRacialDefenseBonus = 25
+	ts.player[0].FighterPilotBonus = 10
+	ts.player[0].FighterHelmsmanBonus = 5
+	ts.launchFrom(0)
+	if len(ts.squads) != 1 {
+		t.Fatalf("應建立一隊戰機，實得 %d 隊", len(ts.squads))
+	}
+	f := ts.squads[0]
+	if f.FighterRacialDefenseBonus != 25 || f.FighterPilotBonus != 10 || f.FighterHelmsmanBonus != 5 {
+		t.Fatalf("戰機 Beam Defense 加成未隨出擊帶入: %+v", f)
+	}
+	if got := gamedata.CombatFighterBeamDefense(f.Speed,
+		f.FighterRacialDefenseBonus, f.FighterPilotBonus, f.FighterHelmsmanBonus); got <= 5*f.Speed {
+		t.Fatalf("帶加成的戰機防禦應高於基礎 5*Speed，實得 %d", got)
+	}
+}
+
+// 主要目標仍有效時，中隊不應因另一艘艦變得更近就自動改追；
+// 手冊 p.157 只允許在主要目標失效後重選。
+func TestSquadronKeepsValidPrimaryTarget(t *testing.T) {
+	ts := mkFighterScreen()
+	ts.enemy = append(ts.enemy, shell.CombatShip{
+		Name: "近敵艦", HP: 100, MaxHP: 100, Col: 4, Row: 0,
+		WeaponMin: 1, WeaponMax: 1,
+	})
+	ts.launchFrom(0)
+	ts.advanceSquadrons()
+	if got := ts.squads[0].TargetName; got != "近敵艦" {
+		t.Fatalf("第一次出擊應鎖定最近的主要目標，得到 %q", got)
+	}
+
+	// 讓另一艘艦變成幾何上更近的目標；原本的「近敵艦」仍然存活。
+	ts.enemy[0].Col = 2
+	if got := ts.advanceSquadrons(); got <= 0 {
+		t.Fatal("主要目標仍有效時，第二輪仍應對它開火")
+	}
+	if got := ts.squads[0].TargetName; got != "近敵艦" {
+		t.Errorf("有效主要目標不應被最近距離改寫，得到 %q", got)
+	}
+}
+
+// 主要目標被摧毀後，中隊才會自動改鎖另一艘仍存活的敵艦。
+func TestSquadronRetargetsOnlyAfterPrimaryTargetDies(t *testing.T) {
+	ts := mkFighterScreen()
+	ts.enemy = append(ts.enemy, shell.CombatShip{
+		Name: "次要艦", HP: 100, MaxHP: 100, Col: 4, Row: 0,
+		WeaponMin: 1, WeaponMax: 1,
+	})
+	ts.launchFrom(0)
+	ts.advanceSquadrons()
+	if ts.squads[0].TargetName != "次要艦" {
+		t.Fatalf("前置條件:應先鎖定次要艦，得到 %q", ts.squads[0].TargetName)
+	}
+	ts.enemy[1].HP = 0
+	ts.enemy[0].Col = 4
+	if got := ts.advanceSquadrons(); got <= 0 {
+		t.Fatal("主要目標失效後應重選並開火")
+	}
+	if got := ts.squads[0].TargetName; got != "敵艦" {
+		t.Errorf("主要目標失效後應改鎖敵艦，得到 %q", got)
+	}
+}
+
 // 彈藥用盡就返航,回到母艦補給後可以再出擊。
 func TestSquadronReturnsThenCanLaunchAgain(t *testing.T) {
 	ts := mkFighterScreen()
@@ -92,6 +178,26 @@ func TestEnemyShootsDownAdjacentFighters(t *testing.T) {
 	ts.dropDeadSquadrons()
 	if len(ts.squads) != 0 {
 		t.Errorf("全滅的中隊應被移出場,實得 %d 隊", len(ts.squads))
+	}
+}
+
+func TestEnemySquadronFliesBackAndAttacksPlayerShip(t *testing.T) {
+	ts := &tacticalScreen{
+		b:      &sceneBuilder{},
+		player: []shell.CombatShip{{Name: "玩家艦", HP: 80, MaxHP: 80, Col: 1, Row: 0}},
+		enemy:  []shell.CombatShip{{Name: "敵母艦", HP: 100, MaxHP: 100, Col: 6, Row: 0, Bay: true, BayKind: shell.FighterInterceptor}},
+	}
+	ts.launchEnemySquadrons()
+	if len(ts.squads) != 1 || !ts.squads[0].Enemy {
+		t.Fatalf("敵方戰機庫應在開場建立一隊敵方中隊，實得 %+v", ts.squads)
+	}
+	before := ts.player[0].HP
+	ts.advanceSquadrons()
+	if ts.player[0].HP >= before {
+		t.Fatalf("敵方中隊接戰後應傷害玩家艦，血量 %d→%d", before, ts.player[0].HP)
+	}
+	if ts.squads[0].TargetName != "玩家艦" {
+		t.Errorf("敵方中隊主要目標應鎖定玩家艦，得到 %q", ts.squads[0].TargetName)
 	}
 }
 

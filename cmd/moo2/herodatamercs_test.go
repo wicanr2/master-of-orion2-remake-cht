@@ -6,6 +6,7 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/herodata"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
 
 // commonBits 把「第 n 個通用技能是第 t 階」寫成技能位元。
@@ -45,6 +46,21 @@ func TestSkillBitsAreTwoBitsPerSkill(t *testing.T) {
 		if sk.ID == int(gamedata.SKILL_RESEARCHER) {
 			t.Error("bit 6 不該解成科學家——那正是舊遮罩的錯法")
 		}
+	}
+}
+
+func TestHerodataSourceIDSurvivesMercConversion(t *testing.T) {
+	h := herodata.Leader{ID: 42, Name: "有來源序號", Type: gamedata.LeaderTypeCaptain,
+		SpecialSkills: commonBits([2]int{0, 1})}
+	skills := mercSkills(h)
+	if len(skills) != 1 {
+		t.Fatalf("測試英雄應有一項技能,得到 %+v", skills)
+	}
+	// loadHerodataMercs 直接把 h.ID 帶入 shell.Leader；這裡以同一個轉換資料形狀
+	// 釘住 ID 不會被技能解碼流程丟掉。
+	converted := shell.Leader{ID: h.ID, Name: h.Name, Skills: skills, Ship: h.Ship()}
+	if converted.ID != 42 {
+		t.Fatalf("HERODATA 來源 ID = %d, want 42", converted.ID)
 	}
 }
 

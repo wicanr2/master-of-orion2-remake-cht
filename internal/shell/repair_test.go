@@ -216,6 +216,9 @@ func TestEngineerFullyRepairsAfterAWonBattle(t *testing.T) {
 		s.Fleet().Ships = []Ship{
 			{Name: "傷艦", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "無", Damage: 9},
 		}
+		if !s.AssignOfficerToShip(0, 0, 0) {
+			t.Fatal("工程師測試需要先把軍官指派到艦艇")
+		}
 		return s
 	}
 
@@ -264,5 +267,19 @@ func TestAutoRepairStillWorksAfterALostBattle(t *testing.T) {
 	s.repairAfterBattle(false)
 	if d := s.Fleet().Ships[0].Damage; d != 0 {
 		t.Errorf("自動修復元件不看勝負,剩餘損傷 %d", d)
+	}
+}
+
+// 手冊 p.25:半機械化種族「after any combat, they repair their ships completely」。
+// 現有艦艇模型沒有逐系統損傷,但結構損傷的戰後全修復可直接驗證。
+func TestCyberneticRaceFullyRepairsAfterAnyBattle(t *testing.T) {
+	s := NewDemoSession()
+	s.ApplyCustomRaceBonuses(Race{Name: "半機械測試", EnName: "Cybernetic", OrigIdx: -1}, gamedata.TRAIT_CYBERNETIC)
+	s.Fleet().Ships = []Ship{
+		{Name: "受損艦", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "無", Damage: 9},
+	}
+	s.repairAfterBattle(false)
+	if got := s.Fleet().Ships[0].Damage; got != 0 {
+		t.Fatalf("半機械化種族戰敗後也應完全修復,剩餘損傷 %d", got)
 	}
 }

@@ -143,9 +143,9 @@ var (
 	// 也要看得出它是什麼。
 )
 
-// maxHotseatSeats 是這個 UI 能選到的最大真人數:一位玩家 + 每個 AI 對手各一席
-// (`SetupHotseat` 就是把 AI 帝國換成真人,見 internal/shell/hotseat.go)。
-const maxHotseatSeats = 1 + shell.DefaultOpponents
+// maxHotseatSeats 是這個 UI 能選到的最大真人數。NEW GAME 的 PLAYERS
+// 會在不足時自動補到相同帝國數,實際上限沿用原版八席。
+const maxHotseatSeats = shell.MaxHotseatSeats
 
 func newMultiplayerScreen(b *sceneBuilder) *multiplayerScreen {
 	s := &multiplayerScreen{b: b, fnt: b.fnt, mode: mpHotseat, humans: 2,

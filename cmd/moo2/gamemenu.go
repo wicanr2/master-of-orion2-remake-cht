@@ -1,10 +1,12 @@
 package main
 
 import (
+	"image"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	moo2audio "github.com/wicanr2/master-of-orion2-remake-cht/internal/audio"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
@@ -29,8 +31,8 @@ import (
 //
 // 按鈕座標相對視窗左上,與 `LoadGameWindow` 同一套慣例。
 //
-// ⚠ 誠實留白:原版這個視窗中段有 Music / Sound Fx 兩條音量滑桿(背景圖上畫得很清楚),
-// remake 的音訊層目前沒有音量控制介面,滑桿不畫也不接——畫一條拖不動的滑桿比沒有更糟。
+// 音量條:原始 GAME.LBX 資產 7 是 155×12 的音量條貼圖;手冊說明按下後可拖曳,
+// 且靠左會關閉音量。remake 以同一條貼圖做動態裁切,把音訊層的即時音量接回這個視窗。
 //
 // SETTINGS **2026-08-07 起接了一項**:原版是一整個設定畫面(手冊那組 ALT+Fn 開關),
 // remake 還沒有那個畫面,但已經有一個真的開關——**遷移連線的顯示**(原版 `byte_199BE4`,
@@ -43,9 +45,15 @@ const (
 	gameMenuPalLBX  = "buffer0.lbx"
 	gameMenuPalAsst = 0
 
-	gameMenuBGAsset = 0
-	gameMenuWinX    = 144
-	gameMenuWinY    = 25
+	gameMenuBGAsset     = 0
+	gameMenuSliderAsset = 7
+	gameMenuWinX        = 144
+	gameMenuWinY        = 25
+	gameMenuSliderX     = 61
+	gameMenuSliderW     = 155
+	gameMenuSliderH     = 12
+	gameMenuMusicY      = 170
+	gameMenuSFXY        = 195
 )
 
 // gameMenuButton 是視窗上的一顆鈕:相對視窗左上的座標 + 精靈資產 + 中文字 + 動作。
@@ -72,12 +80,16 @@ type gameMenuScreen struct {
 	fnt *uifont.Font
 
 	bg                     *ebiten.Image
+	slider                 *ebiten.Image
 	btnImg                 []*ebiten.Image
 	btnFace                []color.RGBA
 	winX, winY, winW, winH int
 	// showSettings 是「設定」鈕展開的那一列(目前只有遷移連線開關,見 settingsRowRect ⚠)。
 	showSettings bool
 	msg          string
+	musicVolume  float64
+	sfxVolume    float64
+	dragSlider   int // 0=Music, 1=Sound Fx, -1=沒有拖曳
 }
 
 // gameMenuImage 取 game.lbx 的某資產(調色盤借 buffer0#0,同星系主畫面那條鏈),
@@ -104,8 +116,13 @@ func (b *sceneBuilder) gameMenuImage(assetID int, keyColor bool) (*ebiten.Image,
 }
 
 func newGameMenuScreen(b *sceneBuilder) *gameMenuScreen {
-	s := &gameMenuScreen{b: b, fnt: b.fnt}
+	musicVolume, sfxVolume := moo2audio.DefaultBGMVolume, moo2audio.DefaultSFXVolume
+	if theMixer != nil {
+		musicVolume, sfxVolume = theMixer.Volumes()
+	}
+	s := &gameMenuScreen{b: b, fnt: b.fnt, musicVolume: musicVolume, sfxVolume: sfxVolume, dragSlider: -1}
 	s.bg, _ = b.gameMenuImage(gameMenuBGAsset, false)
+	s.slider, _ = b.gameMenuImage(gameMenuSliderAsset, true)
 	s.winX, s.winY = gameMenuWinX, gameMenuWinY
 	s.winW, s.winH = 276, 376 // 取不到背景時的退路
 	if s.bg != nil {
@@ -129,7 +146,60 @@ func (s *gameMenuScreen) btnRect(i int) (int, int, int, int) {
 	return s.winX + gameMenuButtons[i].x, s.winY + gameMenuButtons[i].y, w, h
 }
 
+func (s *gameMenuScreen) sliderRect(which int) (int, int, int, int) {
+	y := gameMenuMusicY
+	if which == 1 {
+		y = gameMenuSFXY
+	}
+	return s.winX + gameMenuSliderX, s.winY + y, gameMenuSliderW, gameMenuSliderH
+}
+
+func sliderVolumeAt(mouseX, x, w int) float64 {
+	if mouseX <= x {
+		return 0
+	}
+	if mouseX >= x+w-1 {
+		return 1
+	}
+	return moo2audio.ClampVolume(float64(mouseX-x) / float64(w-1))
+}
+
+func (s *gameMenuScreen) setSlider(which, mouseX int) {
+	x, _, w, _ := s.sliderRect(which)
+	v := sliderVolumeAt(mouseX, x, w)
+	if which == 0 {
+		s.musicVolume = v
+	} else {
+		s.sfxVolume = v
+	}
+	if theMixer != nil {
+		theMixer.SetVolumes(s.musicVolume, s.sfxVolume)
+	}
+}
+
 func (s *gameMenuScreen) update(in shell.InputState) *origTransition {
+	// 先處理音量條。實際滑鼠按住時每幀更新;測試/截圖腳本只送 ClickReleased
+	// 也能以單次點擊設定位置。
+	if s.dragSlider >= 0 {
+		if in.MouseDown || in.ClickReleased {
+			s.setSlider(s.dragSlider, in.MouseX)
+		}
+		if in.ClickReleased {
+			s.dragSlider = -1
+		}
+		return nil
+	}
+	for i := 0; i < 2; i++ {
+		x, y, w, h := s.sliderRect(i)
+		if !hitRect(in, x, y, w, h) || (!in.MouseDown && !in.ClickReleased) {
+			continue
+		}
+		s.setSlider(i, in.MouseX)
+		if in.MouseDown {
+			s.dragSlider = i
+		}
+		return nil
+	}
 	if !in.ClickReleased {
 		return nil
 	}
@@ -178,6 +248,26 @@ func (s *gameMenuScreen) update(in shell.InputState) *origTransition {
 	return nil
 }
 
+// drawVolumeSlider 擦掉背景圖中固定的音量條,再以原始資產 7 裁出目前音量。
+// 這樣英文模式保留原版標籤,中文模式則可同時覆蓋烘進去的英文標籤。
+func (s *gameMenuScreen) drawVolumeSlider(dst *ebiten.Image, which int, volume float64) {
+	x, y, w, h := s.sliderRect(which)
+	fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{0, 0, 0, 255}, false)
+	filled := int(moo2audio.ClampVolume(volume) * float64(w))
+	if filled > 0 && s.slider != nil {
+		if filled > w {
+			filled = w
+		}
+		part := s.slider.SubImage(image.Rect(0, 0, filled, h)).(*ebiten.Image)
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(x), float64(y))
+		drawPanelImage(dst, part, op)
+		return
+	}
+	vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1,
+		color.RGBA{100, 130, 180, 255}, false)
+}
+
 // settingsRowRect 是設定列的螢幕矩形(視窗底下、按鈕列之下)。
 //
 // ⚠ 這**不是原版版面**:原版有一整個設定畫面,那些開關在那裡。
@@ -206,6 +296,21 @@ func (s *gameMenuScreen) draw(dst *ebiten.Image) {
 	if s.fnt == nil {
 		return
 	}
+	if s.b.lang == i18n.Traditional {
+		// 標籤是背景圖烘字,只在中文模式擦掉;黑底正是原始音量面板的底色。
+		fillPanel(dst, float32(s.winX+gameMenuSliderX-2), float32(s.winY+132), 170, 31,
+			color.RGBA{0, 0, 0, 255}, false)
+		// Sound Fx 的原版字樣位在第二條滑桿下方;多擦一點垂直範圍，避免英文殘影
+		// 從點陣字的下緣漏出來，同時仍留在中央黑色面板內。
+		fillPanel(dst, float32(s.winX+gameMenuSliderX-2), float32(s.winY+209), 170, 58,
+			color.RGBA{0, 0, 0, 255}, false)
+		s.fnt.Draw(dst, "音樂", float64(s.winX+gameMenuSliderX), float64(s.winY+136), 18,
+			color.RGBA{190, 198, 214, 255})
+		s.fnt.Draw(dst, "音效", float64(s.winX+gameMenuSliderX), float64(s.winY+213), 18,
+			color.RGBA{190, 198, 214, 255})
+	}
+	s.drawVolumeSlider(dst, 0, s.musicVolume)
+	s.drawVolumeSlider(dst, 1, s.sfxVolume)
 	body := color.RGBA{212, 220, 236, 255}
 	for i, btn := range gameMenuButtons {
 		x, y, w, h := s.btnRect(i)

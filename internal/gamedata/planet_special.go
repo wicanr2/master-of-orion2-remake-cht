@@ -52,12 +52,27 @@ var planetSpecialNames = [12]string{
 	"原住民", "失散殖民地", "受困英雄", "異常", "遠古文物", "獵戶座",
 }
 
+// planetSpecialNamesEN 是一次性發現與資料面板使用的英文顯示名。
+// 這是顯示資料，不是規則查詢鍵；規則仍以 PlanetSpecial enum 判定。
+var planetSpecialNamesEN = [12]string{
+	"", "Anomaly", "Space Debris", "Pirate Cache", "Gold Deposits", "Gem Deposits",
+	"Natives", "Splinter Colony", "Lost Hero", "Anomaly", "Ancient Artifacts", "Orion",
+}
+
 // PlanetSpecialName 回傳中文顯示名;無特殊物產回空字串。
 func PlanetSpecialName(s PlanetSpecial) string {
 	if s < 0 || int(s) >= len(planetSpecialNames) {
 		return ""
 	}
 	return planetSpecialNames[s]
+}
+
+// PlanetSpecialNameEN 回傳英文顯示名；無特殊物產或代碼越界回空字串。
+func PlanetSpecialNameEN(s PlanetSpecial) string {
+	if s < 0 || int(s) >= len(planetSpecialNamesEN) {
+		return ""
+	}
+	return planetSpecialNamesEN[s]
 }
 
 // PlanetSpecialWeight 回傳該特殊物產的出現權重(%)。

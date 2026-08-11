@@ -8,22 +8,21 @@
 `internal/gamedata/missile.go`(飛彈防禦/AMR/彈頭 Beam Defense,逐字移植手冊 patch1.5
 `MANUAL_150.html` p117-125)與 `internal/gamedata/damage.go` 的 `DamageSpherical*`(球形武器
 傷害,移植自「Notes on Spherical Damage」p126)都**已經有實作、有測試**(`missile_test.go`/
-`damage_test.go`)。但實際戰鬥解算——`cmd/moo2/interactive.go` 的 `tacticalScreen.fireRound`
-與 `internal/shell/session.go` 的 `battleVolley`——對**所有武器**都呼叫同一個 beam 邏輯
-`shell.ResolveShot`(`internal/shell/combat_formula.go`)。結果:飛彈武器(如「麥克萊特飛彈」,
-`session.go` `WeaponOptions`)被當成普通光束打,飛彈躲避/AMR 攔截從未生效;`docs/HONEST-STATUS.md`
-先前也把這寫成「仍待:飛彈躲避、球狀傷害(需 DOSBox oracle)」——這是**誤植**,已於本輪修正
-(rule 63:不留錯誤斷言佔位)。
+`damage_test.go`)。目前 `cmd/moo2/interactive.go` 的 `tacticalScreen.fireRound` 與
+`internal/shell/session.go` 的 `battleVolley` 已依 beam／missile／spherical／bomb 分流；
+飛彈走 `ResolveMissileShotWithMods`，含躲避、AMR、MIRV 與改造；球形與炸彈也不再落入普通
+光束路徑。這裡保留未完成的敵方逐艦武器設計與原版全攔截器路徑，不把分流本身寫成全戰鬥等價。
 
 ## 二、武器類型分類(`internal/shell/weapon_kind.go`)
 
-`WeaponKind`(`WeaponKindBeam`/`WeaponKindMissile`/`WeaponKindSpherical`)依 `Component.Name`
-(`WeaponOptions`,`session.go`)分類,`weaponKindByName` 只有兩條規則:
+`WeaponKind`(`WeaponKindBeam`/`WeaponKindMissile`/`WeaponKindSpherical`/`WeaponKindBomb`)依
+`Component.Name`(`WeaponOptions`,`session.go`)分類；查不到的武器才保守落回 beam:
 
 | 武器名 | 分類 | 依據 |
 |---|---|---|
-| 核飛彈 | missile | 對應手冊 Missile/MissileBonus 表(p120)的 `MissileWarheadNuclear`(-10) |
-| 麥克萊特飛彈 | missile | 對應同表的 `MissileWarheadMerculite`(+15) |
+| 核飛彈／麥克萊特飛彈／脈衝飛彈／氙素飛彈／質子魚雷 | missile | 執行檔 category 21 與手冊 Missile 表(p120-125)；標準四種對應 `MissileWarhead*`，魚雷另走魚雷傷害模型 |
+| 核彈／融合彈／反物質彈／中子彈 | bomb | 執行檔 category 19 與手冊 Bomb 表(p126)；只能打行星，不作艦對艦 beam |
+| 脈衝星／空間壓縮器／陀螺去穩器 | spherical | 手冊 p126 球形武器與目前 `WeaponOptions`；各自遵守 size class／結構直傷例外 |
 | 其餘(雷射/質量投射器/中子爆破槍/核融合光束/高斯砲/相位砲/電漿砲/死光/無武裝) | beam | 手冊未列為飛彈或球形武器 |
 
 `WeaponOptions` 的球形武器是脈衝星、空間壓縮器(第 64 項(武器傷害真表))與陀螺去穩器(第 70 項(陀螺去穩器)),三把都走 `WeaponKindSpherical`。這點特別核對過手冊
@@ -38,9 +37,8 @@
 舉例球狀武器,但核對手冊原文後,死光是**一般光束武器**——而且正是 `damage.go`
 `DamageForHit`(「Different Min-Max Damage」)兩個 worked example 的出處(`damage_test.go`
 `TestDamageForHit` 逐字複現手冊算式),把死光改分類成 spherical 會直接與已核對的手冊數字矛盾。
-`WeaponOptions` 裡也沒有恆星轉換器(Stellar Converter)這個元件。**故 spherical 分支目前無任何
-實際武器掛載**,`shell.ResolveSphericalShot` 是備妥、已測試、等未來新增球形武器元件時串接的函式,
-不是死碼副本。
+`WeaponOptions` 裡也沒有恆星轉換器(Stellar Converter)這個元件；因此 spherical 目前只接上
+三個可裝載元件，Plasma Flux／Engine Explosion 等怪物／特殊路徑仍不在玩家設計表。
 
 ## 三、beam(不動)
 
@@ -50,7 +48,7 @@
 `TestBattleVolleyDispatchByWeaponKind` 的 beam 分支(新增,證明極端劣勢 net attack 下 30 個
 seed 至少出現一次未命中,行為與改動前一致)。
 
-## 四、missile(新接線:`shell.ResolveMissileShot`)
+## 四、missile(新接線:`shell.ResolveMissileShotWithMods`)
 
 流程對應手冊「Notes on Missile Defenses > Missile Evasion」(p123)+
 「Notes on Anti-Missile Rockets」(p125),兩個階段是**獨立事件**,呼叫端要各擲一顆獨立
@@ -59,14 +57,14 @@ seed 至少出現一次未命中,行為與改動前一致)。
 1. **AMR 攔截**(`hasAMR`/`amrRangeSquares`/`amrRoll`):若目標裝有反飛彈火箭,依
    `gamedata.MissileAMRChanceToHit(gamedata.MissileAMRRangeIndex(距離))` 判定整枚飛彈被
    擊落(不進入下一階段、不造成傷害)。**現行 remake 的 `SpecialOptions` 沒有「反飛彈火箭」
-   這個可造艦元件**,呼叫端(`fireRound`/`battleVolley`)目前一律傳 `hasAMR=false`——
-   這不是漏做,是誠實反映現行元件表沒有 AMR,待補上該元件後改用其解鎖狀態決定。
+   這個可造艦元件**,呼叫端(`fireRound`/`battleVolley`)現在依目標艦的 `HasAMR` 與距離傳入，
+   只在裝載反飛彈火箭時消費 AMR 骰；沒有裝載時不動 RNG。
 2. **Jam Chance 躲避**(`defenderEvasionBonus`/`attackerScannerBonus`/`hasECCM`/`jamRoll`):
    `gamedata.MissileJamChance` 算出幹擾機率,`gamedata.MissileDefaultHitChance`(100)減去它
    得命中率。四個組成閃避加成的來源——ECM Jammer/Stabilizer 系列、種族 Ship Defense、艦員
-   經驗、統帥(Helmsman)——**現行 remake 的艦艇設計與軍官系統都沒有建模**,呼叫端一律傳 0。
-   這退化成手冊本身講的基準情境「若目標無任何閃避能力,預設100%命中」,不是臆造值,只是恰好
-   對應現況(無裝備)。
+   經驗、統帥(Helmsman)——現行 remake 已由 `CombatShip.MissileEvasion`、種族／艦員／逐艦
+   Helmsman 與裝置資料組合；攻方掃描器則由 `ScannerJamReduction` 傳入。沒有裝備時仍退化成
+   手冊本身講的基準情境「若目標無任何閃避能力,預設100%命中」。
 3. **命中後傷害**:手冊只給「listed」固定傷害值(如「Nuclear Missile Damage lowered from
    8 to 6」),沒有給像 beam 命中裕度那樣的內插公式,故命中後傷害直接用武器的
    `WeaponMax`(不套用 beam 專用、需要 net-attack/hit-threshold 的

@@ -2,8 +2,10 @@ package shell
 
 import (
 	"math/rand"
+	"strings"
 	"testing"
 
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
@@ -32,6 +34,196 @@ func clonePlayerState(ps engine.PlayerState) engine.PlayerState {
 		}
 	}
 	return out
+}
+
+// fixedSpyRollSource 讓 SABOTAGE 測試可以分開固定「成功骰」與「建築權重抽選」；
+// 不是遊戲中的新 RNG，只是 rollSource 的測試替身。
+type fixedSpyRollSource struct {
+	floatValue float64
+	intValue   int
+}
+
+func (r fixedSpyRollSource) Float64() float64 { return r.floatValue }
+
+func (r fixedSpyRollSource) Intn(n int) int {
+	if n <= 0 {
+		panic("fixedSpyRollSource.Intn called with non-positive bound")
+	}
+	if r.intValue < 0 {
+		return 0
+	}
+	return r.intValue % n
+}
+
+func TestSabotageRandomBuildingUsesStableCostWeightedCandidates(t *testing.T) {
+	buildings := []map[string]bool{
+		{"研究實驗室": true}, // ProductionCost=60,原版 ID 35
+		{"星辰要塞": true},  // ProductionCost=2500,原版 ID 41
+	}
+	if colony, name, ok := sabotageRandomBuilding(fixedSpyRollSource{intValue: 0}, buildings); !ok || colony != 0 || name != "研究實驗室" {
+		t.Fatalf("權重池起點應選第 1 殖民地的研究實驗室,got (%d,%q,%v)", colony, name, ok)
+	}
+	// 第一次抽選已移除它；第二次重建池，讓 60 這個邊界確實驗證 60/2500 權重。
+	buildings[0] = map[string]bool{"研究實驗室": true}
+	if colony, name, ok := sabotageRandomBuilding(fixedSpyRollSource{intValue: 60}, buildings); !ok || colony != 1 || name != "星辰要塞" {
+		t.Fatalf("跨過 60 點權重後應選第 2 殖民地的星辰要塞,got (%d,%q,%v)", colony, name, ok)
+	}
+}
+
+func TestSabotageRandomBuildingWithoutKnownCandidatesIsNoOp(t *testing.T) {
+	buildings := []map[string]bool{{"未知建築槽": true}}
+	if colony, name, ok := sabotageRandomBuilding(fixedSpyRollSource{intValue: 0}, buildings); ok || colony != 0 || name != "" {
+		t.Fatalf("未知建築槽不應進入可破壞池,got (%d,%q,%v)", colony, name, ok)
+	}
+	if !buildings[0]["未知建築槽"] {
+		t.Fatal("沒有可識別候選時不應改動原 map")
+	}
+}
+
+func TestSpyMissionAttemptSabotageRemovesSelectedBuilding(t *testing.T) {
+	attacker := engine.PlayerState{
+		CompletedTopics: map[gamedata.ResearchTopic]bool{gamedata.TOPIC_STARTING_TECH: true},
+	}
+	defender := engine.PlayerState{}
+	buildings := []map[string]bool{{"研究實驗室": true}}
+	msgs, killed := spyMissionAttemptWithBuildings(fixedSpyRollSource{floatValue: 0, intValue: 0},
+		SpyMissionSabotage, &attacker, defender, 63, "我方", "AI", 0, 0, 0, buildings)
+	if killed {
+		t.Fatal("基準 SABOTAGE 測試不應擊殺攻方間諜")
+	}
+	if buildings[0]["研究實驗室"] {
+		t.Fatal("SABOTAGE 成功後應移除被選建築")
+	}
+	if len(msgs) == 0 || !strings.Contains(msgs[0], "破壞了研究實驗室") {
+		t.Fatalf("SABOTAGE 應留下建築破壞訊息,got %v", msgs)
+	}
+}
+
+func TestSpyMissionAttemptSabotageFailureLeavesBuildings(t *testing.T) {
+	attacker := engine.PlayerState{
+		CompletedTopics: map[gamedata.ResearchTopic]bool{gamedata.TOPIC_STARTING_TECH: true},
+	}
+	defender := engine.PlayerState{}
+	buildings := []map[string]bool{{"研究實驗室": true}}
+	spyMissionAttemptWithBuildings(fixedSpyRollSource{floatValue: 1, intValue: 0},
+		SpyMissionSabotage, &attacker, defender, 63, "我方", "AI", 0, 0, 0, buildings)
+	if !buildings[0]["研究實驗室"] {
+		t.Fatal("SABOTAGE 失敗時不應移除建築")
+	}
+}
+
+func TestSabotageScoreIncludesSpyAgentAndFactionComponents(t *testing.T) {
+	score := calculateSpyMissionScore(SpyMissionSabotage, engine.PlayerState{}, engine.PlayerState{},
+		12, 8, 10, 7, 6)
+	if score.BaseThreshold != gamedata.SpyThresholdSabotage {
+		t.Fatalf("SABOTAGE 基礎門檻=%d,want %d", score.BaseThreshold, gamedata.SpyThresholdSabotage)
+	}
+	if score.AttackerSlotBonus != gamedata.SpySlotBonus(12) || score.DefenderAgentSlotBonus != gamedata.SpySlotBonus(8) {
+		t.Fatalf("Spy／Agent slot bonus 未進完整分數:%+v", score)
+	}
+	if score.AttackerBonus != 23 || score.DefenderBonus != 29 || score.EffectiveThreshold != 76 {
+		t.Fatalf("SABOTAGE AB/DB/E 組成錯誤:%+v", score)
+	}
+	if score.SuccessChance != gamedata.SpyRollChance(score.EffectiveThreshold) {
+		t.Fatalf("SABOTAGE 成功率未由 E 推導:%+v", score)
+	}
+}
+
+func TestSpyMissionResultConsumesDefenderAgent(t *testing.T) {
+	attacker := engine.PlayerState{}
+	result := spyMissionAttemptWithAgentsResult(fixedSpyRollSource{floatValue: 1}, SpyMissionHide,
+		&attacker, engine.PlayerState{}, 1, "我方", "AI", 0, 100, 0, 1, nil)
+	if !result.DefenderAgentKilled {
+		t.Fatalf("跨過 Spy vs Spy +80 時應回報 Agent 被擊殺:%+v", result)
+	}
+	if result.Score.DefenderAgents != 1 || result.Score.AttackerBonus != 102 {
+		t.Fatalf("Agent／攻方分數未保留在結果:%+v", result.Score)
+	}
+}
+
+func TestAdvanceEspionageConsumesAIDefensiveAgent(t *testing.T) {
+	s := NewDemoSession()
+	s.PlayerSpies = []int{63}
+	s.PlayerSpyMissions = make([]SpyMission, len(s.AIPlayers))
+	s.PlayerSpyMissions[0] = SpyMissionHide
+	s.AIPlayers[0].DefensiveAgents = 1
+	// 只為跨過 Spy vs Spy 的測試門檻；測試的是 advanceEspionage 的實際
+	// Agent 回寫，不是重新主張原版種族加成數字。
+	s.RaceSpyBonus = 100
+	s.spyRand = newRandStream(1)
+
+	s.advanceEspionage()
+
+	if s.AIPlayers[0].DefensiveAgents != 0 {
+		t.Fatalf("advanceEspionage 成功擊殺 Agent 後應消費 1 個,got %d", s.AIPlayers[0].DefensiveAgents)
+	}
+	if len(s.LastEspionage) == 0 || !strings.Contains(strings.Join(s.LastEspionage, " "), "防守 Agent") {
+		t.Fatalf("Agent 消費應留下事件摘要,got %v", s.LastEspionage)
+	}
+}
+
+func TestTrainAndDismissDefensiveAgent(t *testing.T) {
+	s := NewDemoSession()
+	before := s.Player.BC
+	if !s.TrainDefensiveAgent() {
+		t.Fatal("BC 足夠時應能訓練防守 Agent")
+	}
+	if s.DefensiveAgents != 1 || s.Player.BC != before-spyTrainCostBC {
+		t.Fatalf("訓練 Agent 未正確消費:%d BC,agents=%d", s.Player.BC, s.DefensiveAgents)
+	}
+	if !s.DismissDefensiveAgent() || s.DefensiveAgents != 0 {
+		t.Fatalf("解除 Agent 應將數量降回 0,got %d", s.DefensiveAgents)
+	}
+}
+
+func TestAdvanceEspionageSabotageUsesAIBuildingState(t *testing.T) {
+	found := false
+	for seed := int64(1); seed <= 200; seed++ {
+		s := NewDemoSession()
+		s.PlayerSpies = []int{63}
+		s.PlayerSpyMissions = make([]SpyMission, len(s.AIPlayers))
+		s.PlayerSpyMissions[0] = SpyMissionSabotage
+		s.AIPlayers[0].ColonyBuildings = []map[string]bool{{"研究實驗室": true}}
+		s.spyRand = newRandStream(seed)
+		s.advanceEspionage()
+		if !s.AIPlayers[0].ColonyBuildings[0]["研究實驗室"] {
+			found = true
+			if len(s.LastEspionage) == 0 || !strings.Contains(s.LastEspionage[0], "破壞了研究實驗室") {
+				t.Fatalf("SABOTAGE 已移除建築但摘要沒有破壞訊息,seed=%d,got %v", seed, s.LastEspionage)
+			}
+			break
+		}
+	}
+	if !found {
+		t.Fatal("200 個間諜亂數種子內都沒有重現 SABOTAGE 建築破壞,可能未接到 advanceEspionage")
+	}
+}
+
+func TestAdvanceEspionageAISabotageUsesRuthlessPolicyAndPlayerBuildings(t *testing.T) {
+	for _, personality := range []ai.Personality{
+		ai.PersonalityXenophobic, ai.PersonalityRuthless, ai.PersonalityAggressive,
+	} {
+		found := false
+		for seed := int64(1); seed <= 200; seed++ {
+			s := NewDemoSession()
+			s.AIPlayers[0].Personality = personality
+			s.AIPlayers[0].Spies = 63
+			s.ColonyBuildings = []map[string]bool{{"研究實驗室": true}}
+			s.spyRand = newRandStream(seed)
+			s.advanceEspionage()
+			if !s.ColonyBuildings[0]["研究實驗室"] {
+				found = true
+				if len(s.LastEspionage) == 0 || !strings.Contains(s.LastEspionage[0], "破壞了研究實驗室") {
+					t.Fatalf("AI SABOTAGE 已移除建築但摘要沒有破壞訊息,personality=%v seed=%d got %v",
+						personality, seed, s.LastEspionage)
+				}
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("personality=%v 的 AI 在 200 個種子內未重現 SABOTAGE,可能未接入玩家建築池", personality)
+		}
+	}
 }
 
 // --- spyStealOptions / psKnowsTech / applyTechTheft(純函式,不涉及 rng) ---

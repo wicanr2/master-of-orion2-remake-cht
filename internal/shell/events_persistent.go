@@ -2,6 +2,7 @@ package shell
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
@@ -69,49 +70,57 @@ type PersistentEvent struct {
 
 // advancePersistentEvents 每回合推進所有進行中的持續型事件,回傳要顯示的訊息。
 func (s *GameSession) advancePersistentEvents() []string {
+	s.LastPersistentEventEN = ""
 	if len(s.PersistentEvents) == 0 {
 		return nil
 	}
-	var msgs []string
+	var msgs, msgsEN []string
 	kept := s.PersistentEvents[:0]
 	for i := range s.PersistentEvents {
 		e := &s.PersistentEvents[i]
 		e.Turns++
-		done, msg := s.stepPersistentEvent(e)
+		done, msg, msgEN := s.stepPersistentEvent(e)
 		if msg != "" {
 			msgs = append(msgs, msg)
+		}
+		if msgEN != "" {
+			msgsEN = append(msgsEN, msgEN)
 		}
 		if !done {
 			kept = append(kept, *e)
 		}
 	}
 	s.PersistentEvents = kept
+	s.LastPersistentEventEN = strings.Join(msgsEN, "|")
 	return msgs
 }
 
-// stepPersistentEvent 推進單一持續型事件一回合,回傳 (是否結束, 訊息)。
-func (s *GameSession) stepPersistentEvent(e *PersistentEvent) (bool, string) {
+// stepPersistentEvent 推進單一持續型事件一回合,回傳 (是否結束, 中文訊息, 英文訊息)。
+func (s *GameSession) stepPersistentEvent(e *PersistentEvent) (bool, string, string) {
 	switch e.Kind {
 	case PersistentSupernova:
 		return s.stepSupernova(e)
 	case PersistentStasis:
 		// 凍結本身的效果在 EndTurn 的產出結算裡(見 StarInStasis);這裡只管什麼時候結束。
 		if s.persistentEventEnds(e) {
-			return true, fmt.Sprintf("%s 星系的時空異象消散,殖民地恢復運作", s.starName(e.StarIndex))
+			return true,
+				fmt.Sprintf("%s 星系的時空異象消散,殖民地恢復運作", s.starName(e.StarIndex)),
+				fmt.Sprintf("The space-time anomaly in the %s system dissipated; colonies resume operations.", s.starNameEN(e.StarIndex))
 		}
-		return false, ""
+		return false, "", ""
 	case PersistentWarpBeast:
-		msg := s.warpBeastStrike()
+		msg, msgEN := s.warpBeastStrikeReport()
 		if s.persistentEventEnds(e) {
 			end := "超空間獸遁入異次元,航道恢復安全"
+			endEN := "The warp beast slipped back into another dimension; the space lanes are safe again."
 			if msg != "" {
-				return true, msg + ";" + end
+				return true, msg + ";" + end, msgEN + " " + endEN
 			}
-			return true, end
+			return true, end, endEN
 		}
-		return false, msg
+		return false, msg, msgEN
 	}
-	return true, ""
+	return true, "", ""
 }
 
 // persistentEventEnds 依手冊 p.181「六回合之後每回合 5% 機率結束」判定。
@@ -129,7 +138,7 @@ func (s *GameSession) persistentEventEnds(e *PersistentEvent) bool {
 // will discover the solution one turn too late.」——也就是**預設剛好差一點**,玩家必須
 // 額外投入研究才救得回來。remake 據此把 ResearchNeeded 設成「該系統自然產出 × (倒數+1)」,
 // 讓「什麼都不做就是差一回合」這個手冊描述的張力成立。
-func (s *GameSession) stepSupernova(e *PersistentEvent) (bool, string) {
+func (s *GameSession) stepSupernova(e *PersistentEvent) (bool, string, string) {
 	// 該星系殖民地本回合的研究產出全部投入搶救。
 	gained := 0
 	for i, star := range s.PlayerColonyStars {
@@ -142,12 +151,14 @@ func (s *GameSession) stepSupernova(e *PersistentEvent) (bool, string) {
 	e.Countdown--
 
 	if e.ResearchDone >= e.ResearchNeeded {
-		return true, fmt.Sprintf("%s 星系的科學家搶在爆炸前穩定了恆星核心,超新星危機解除",
-			s.starName(e.StarIndex))
+		return true,
+			fmt.Sprintf("%s 星系的科學家搶在爆炸前穩定了恆星核心,超新星危機解除", s.starName(e.StarIndex)),
+			fmt.Sprintf("Scientists in the %s system stabilized the stellar core before detonation; the supernova crisis is over.", s.starNameEN(e.StarIndex))
 	}
 	if e.Countdown > 0 {
-		return false, fmt.Sprintf("%s 星系恆星不穩定,倒數 %d 回合(搶救進度 %d/%d)",
-			s.starName(e.StarIndex), e.Countdown, e.ResearchDone, e.ResearchNeeded)
+		return false,
+			fmt.Sprintf("%s 星系恆星不穩定,倒數 %d 回合(搶救進度 %d/%d", s.starName(e.StarIndex), e.Countdown, e.ResearchDone, e.ResearchNeeded),
+			fmt.Sprintf("The star in the %s system is unstable; %d turns remain (rescue progress %d/%d).", s.starNameEN(e.StarIndex), e.Countdown, e.ResearchDone, e.ResearchNeeded)
 	}
 
 	// 倒數歸零且沒救回來:手冊「all of the system's inhabitants are killed and all colonies
@@ -159,26 +170,33 @@ func (s *GameSession) stepSupernova(e *PersistentEvent) (bool, string) {
 			p.Climate = climateDisplayName(gamedata.RADIATED)
 		}
 	}
-	return true, fmt.Sprintf("%s 的恆星爆發為超新星,%d 座殖民地全滅,整個星系化為輻射廢土",
-		s.starName(e.StarIndex), lost)
+	return true,
+		fmt.Sprintf("%s 的恆星爆發為超新星,%d 座殖民地全滅,整個星系化為輻射廢土", s.starName(e.StarIndex), lost),
+		fmt.Sprintf("The star in the %s system went supernova; %d colonies were destroyed and the system became a radioactive wasteland.", s.starNameEN(e.StarIndex), lost)
 }
 
 // warpBeastStrike 讓超空間獸對「正在航行的艦隊」出手:有機率拖走一艘船。
 // 手冊只說「there is a random chance」沒給數字——這個機率是 remake 值。
 func (s *GameSession) warpBeastStrike() string {
+	msg, _ := s.warpBeastStrikeReport()
+	return msg
+}
+
+func (s *GameSession) warpBeastStrikeReport() (string, string) {
 	if s.Fleet().ETA <= 0 || len(s.Fleet().Ships) == 0 {
-		return "" // 沒有艦隊在星際航行中,野獸這回合抓不到東西
+		return "", "" // 沒有艦隊在星際航行中,野獸這回合抓不到東西
 	}
 	const warpBeastStrikePercent = 20 // ⚠ remake 值:手冊只說「random chance」
 	if s.eventRoll(100) > warpBeastStrikePercent {
-		return ""
+		return "", ""
 	}
 	lost := s.Fleet().Ships[len(s.Fleet().Ships)-1].Name
 	s.removeWeakestShip()
 	if lost == "" {
 		lost = "一艘艦艇"
 	}
-	return fmt.Sprintf("航行中的艦隊被超空間獸扯進異次元,失去了「%s」", lost)
+	return fmt.Sprintf("航行中的艦隊被超空間獸扯進異次元,失去了「%s」", lost),
+		"A ship in transit was dragged into another dimension by the warp beast and destroyed."
 }
 
 // StarInStasis 回傳該星是否處於時空異象的凍結狀態(供產出結算跳過)。
@@ -264,12 +282,25 @@ func (s *GameSession) removePlayerColony(i int) {
 	if cut(len(s.PlayerColonyPlanets)) {
 		s.PlayerColonyPlanets = append(s.PlayerColonyPlanets[:i], s.PlayerColonyPlanets[i+1:]...)
 	}
+	if cut(len(s.ColonyLeaderNames)) {
+		s.ColonyLeaderNames = append(s.ColonyLeaderNames[:i], s.ColonyLeaderNames[i+1:]...)
+	}
 }
 
 // starName 回傳星名(越界回「未知星系」)。
 func (s *GameSession) starName(idx int) string {
 	if idx < 0 || idx >= len(s.Stars) {
 		return "未知星系"
+	}
+	return s.Stars[idx].Name
+}
+
+func (s *GameSession) starNameEN(idx int) string {
+	if idx < 0 || idx >= len(s.Stars) {
+		return "an unknown system"
+	}
+	if s.Stars[idx].NameEN != "" {
+		return s.Stars[idx].NameEN
 	}
 	return s.Stars[idx].Name
 }

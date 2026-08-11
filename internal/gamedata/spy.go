@@ -16,8 +16,8 @@ package gamedata
 // 手冊原文(Spy Bonuses):「The first five spies add 2 points each, and spies 6 to 10 add 1
 // point each. Subsequently, each pair of spies adds 1 point to the bonus. So with spy 11 the
 // bonus is still +15 while spy 12 brings it up to +16. The maximum bonus is +41 for 62 or 63
-// spies.」spyCount 超出 [0,63] 會夾在範圍內(手冊:「You can train up to 63 defensive agents
-// and 63 spies per opponent」)。
+// spies.」這一輪 IDA Pro 也在 `sub_101483 @ 0x101483` 直接證實同一條三段式 helper；
+// `SpySlotBonus` 只另外做 remake 的 [0,63] 安全夾限。
 func SpySlotBonus(spyCount int) int {
 	if spyCount < 0 {
 		spyCount = 0
@@ -25,14 +25,7 @@ func SpySlotBonus(spyCount int) int {
 	if spyCount > 63 {
 		spyCount = 63
 	}
-	switch {
-	case spyCount <= 5:
-		return 2 * spyCount
-	case spyCount <= 10:
-		return 10 + (spyCount - 5)
-	default:
-		return 15 + (spyCount-10)/2
-	}
+	return OriginalSpyScoreHelper(spyCount)
 }
 
 // SpyGovernmentType 政府型態,僅用於 SpyGovernmentDefenseBonus 查表。

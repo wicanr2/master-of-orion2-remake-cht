@@ -304,6 +304,7 @@ func fighterGarrisonTierFor(defender engine.PlayerState) gamedata.FighterGarriso
 // rng 種子巧合撞在一起),同一回合對同一顆星重複呼叫必得到相同結果(建築摧毀順序本身不吃 rng,
 // 見上方「分配順序」)。
 func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdBombardColony, Args: []int{starIdx}})
 	if starIdx < 0 || starIdx >= len(s.Stars) {
 		return GroundBombardResult{Reason: "無效的星索引"}
 	}

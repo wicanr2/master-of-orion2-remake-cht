@@ -7,7 +7,7 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 // ============ 第 65 項(種族特性31格)留下的那半 ============
 //
 // 第 65 項(種族特性31格)挖出了原版 13 族的 31 格特性表,並把**數值型**那 9 格(農業/工業/科研/金錢/
-// 人口/艦攻/艦防/地面戰/諜報)接了進去。布林那 21 格當時只做到「查得到」。
+// 人口/艦攻/艦防/地面戰/諜報)接了進去。布林那 21 格先做到「查得到」,再逐條接已有消費端。
 //
 // 這一項接的是「查得到之後怎麼用」。四條規則**全部早就寫好了**,缺的一直只是
 // 「這一族到底有沒有這個特性」:
@@ -21,7 +21,10 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 // 把理由寫得很清楚:「**目前沒有任何內建種族會設它**——十三經典種族的特質表還沒有特質欄位」。
 // 那句話在寫下的當天是對的;第 65 項(種族特性31格)之後就不對了。
 //
-// ============ 為什麼是每回合重算,不是開局設一次 ============
+// 客製種族的布林選項另由 GameSession.CustomRaceTraits 保存；這不是原版 13 族的衍生副本,
+// 而是玩家在點數畫面做出的選擇。已有公式仍統一走 raceHasTrait,因此內建與客製不會各有一套規則。
+//
+// ============ 為什麼內建種族是每回合重算,不是開局設一次 ============
 //
 // 比照第 59 項(成就科技效果)的成就同步:重算是冪等的,所以順序與呼叫次數都不影響結果,
 // **而且舊存檔讀進來會自動補齊**——`RaceOrigIdx` 是新欄位,舊存檔解碼成 0(阿爾卡里),
@@ -29,15 +32,14 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 //
 // ⚠ 更前面一版曾經把種族編號與五個布林旗標**存起來**,那是錯的:舊存檔沒有那些欄位
 // 會解出零值(種族編號 0 = 阿爾卡里,整個查錯族),存讀往返的狀態指紋也對不上。
-// 現在一律由 `RaceIndex`(本來就存)算,見 raceOrigIdx。
+// 內建種族一律由 `RaceIndex`(本來就存)算,見 raceOrigIdx；客製種族則由選項遮罩本身查詢。
 //
 // ============ 誠實留白 ============
 //
-//   - **魅力(TRAIT_CHARISMATIC)仍然不生效。** 現在查得到人類有它了,但手冊只寫
-//     「assimilate conquered colonists **easily**」,沒給數字。查得到 ≠ 知道加多少。
-//   - **其餘布林特性(水棲/食岩/半機械/創造力/幸運/全知/匿蹤艦/跨維度/母星品質)未接。**
-//     它們要的是 remake 還沒有的機制(星球適居度模型、科技樹分支、偵測模型、母星生成),
-//     不是「忘了接」。逐項狀態見 docs/re/01-gap-report.md 第 65 項(種族特性31格)。
+//   - **魅力的同化加速仍然不生效。** 外交 +50% 已由 session.raceDiploBonusPct 接線；
+//     手冊只寫同化「easily」,沒給數字,所以同化部分不臆造。
+//   - **跨維度/母星品質仍受現有星球生成模型限制。** 幸運、全知、匿蹤艦、心靈感應
+//     已在事件、星圖偵測、外交／諜報與殖民地行動入口接線；跨維度與母星品質不在本輪。
 
 // raceOrigIdx 回傳玩家種族在 gamedata 那張一手表上的編號;自訂種族回 −1。
 //
@@ -45,7 +47,8 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 // 舊存檔沒有這個欄位會解出 0(= 阿爾卡里,整個查錯族)、存讀往返的狀態指紋對不上、
 // 熱座席位換人時多一個要記得抄的欄位。`RaceIndex` 本來就存了,由它算就全部消失。
 //
-// 這也是 `rulebook/70-deep-modules` 的一般原則:**衍生狀態不該有第二個真相來源。**
+// 客製種族的選項不在原版 13 族表內,所以由 GameSession.CustomRaceTraits 保存；
+// 這是選項本身的真實來源，不是把原版衍生特性複製成第二份。
 func (s *GameSession) raceOrigIdx() int {
 	if s.RaceIndex < 0 || s.RaceIndex >= len(Races) {
 		return -1 // 自訂種族:走點數畫面自己組,不在原版 13 族表上
@@ -53,27 +56,88 @@ func (s *GameSession) raceOrigIdx() int {
 	return Races[s.RaceIndex].OrigIdx
 }
 
-// RaceWarlord 回報是否為統帥種族(姆瑞森)。
+// RaceWarlord 回報是否為統帥種族(姆瑞森或客製選項)。
 //
 // 影響艦員經驗階梯(整條往上平移一格)與營房容量(加倍)。
 func (s *GameSession) RaceWarlord() bool { return s.raceHasTrait(gamedata.TRAIT_WARLORD) }
 
-// RaceRepulsive 回報是否為惹人厭種族(矽基):同化速度減半。
+// RaceRepulsive 回報是否為惹人厭種族(矽基或客製選項):同化速度減半。
 func (s *GameSession) RaceRepulsive() bool { return s.raceHasTrait(gamedata.TRAIT_REPULSIVE) }
 
-// RaceCharismatic 回報是否為魅力種族(人類)。
-//
-// ⚠ **查得到但還不生效**:手冊只說「assimilate conquered colonists **easily**」,沒給數字。
-// 見 gamedata/assimilation.go 的誠實留白——「查得到這一族有沒有」與「有了要加多少」
-// 是兩個問題,第 65/65 項解掉的是前者。
+// RaceCharismatic 回報是否為魅力種族(人類或客製選項)。外交 +50% 已有明確手冊數字並接線；
+// 同化「easily」沒有數字,所以同化部分仍不臆造。
 func (s *GameSession) RaceCharismatic() bool { return s.raceHasTrait(gamedata.TRAIT_CHARISMATIC) }
 
-// RaceTolerant 回報是否為寬容種族(矽基):不必花產能清污染。
+// RaceTolerant 回報是否為寬容種族(矽基或客製選項):不必花產能清污染。
 func (s *GameSession) RaceTolerant() bool { return s.raceHasTrait(gamedata.TRAIT_TOLERANT) }
 
-// RaceFantasticTrader 回報是否為神級商人種族(諾蘭姆)。
+// RaceFantasticTrader 回報是否為神級商人種族(諾蘭姆或客製選項)。
 func (s *GameSession) RaceFantasticTrader() bool {
 	return s.raceHasTrait(gamedata.TRAIT_FANTASTIC_TRADERS)
+}
+
+// RaceCybernetic 回報是否為半機械化種族(梅克拉或客製選項)。
+// 殖民地半單位食物／生產帳本與每場戰鬥後完全修復均已接線；逐系統損傷的
+// 10%／5% 回合修復仍需更細的艦艇損傷模型。
+func (s *GameSession) RaceCybernetic() bool { return s.raceHasTrait(gamedata.TRAIT_CYBERNETIC) }
+
+// RaceLithovore 回報是否為食岩種族(矽基或客製選項)。
+// 引擎層以 ColonyState.Lithovore 實作每人口 0 食物消耗與免農業饑荒。
+func (s *GameSession) RaceLithovore() bool { return s.raceHasTrait(gamedata.TRAIT_LITHOVORE) }
+
+// RaceCreative 回報是否為富創造力種族。研究完成時會讓該領域保持「未明確
+// 抉擇」狀態,由既有科技門檻解鎖該領域全部應用。
+func (s *GameSession) RaceCreative() bool { return s.raceHasTrait(gamedata.TRAIT_CREATIVE) }
+
+// RaceUncreative 回報是否為缺乏創造力種族。研究完成時會由研究亂數流自動擇一,
+// 不顯示一般種族的玩家待決畫面。
+func (s *GameSession) RaceUncreative() bool { return s.raceHasTrait(gamedata.TRAIT_UNCREATIVE) }
+
+// RaceTelepathic 回報是否為心靈感應種族。除外交／諜報加成外，會解鎖
+// cruiser 以上艦艇的殖民地心靈控制行動。
+func (s *GameSession) RaceTelepathic() bool { return s.raceHasTrait(gamedata.TRAIT_TELEPATHIC) }
+
+// RaceLucky 回報是否為幸運種族。幸運種族不會抽到已實作的壞事件；好事件池
+// 的機率自然提高，與原版「no random disasters / greater chance good events」一致。
+func (s *GameSession) RaceLucky() bool { return s.raceHasTrait(gamedata.TRAIT_LUCKY) }
+
+// RaceOmniscience 回報是否為全知種族。星圖會在開局直接揭露所有星球資料，
+// 並讓敵方艦隊的可見性不受匿蹤遮蔽。
+func (s *GameSession) RaceOmniscience() bool { return s.raceHasTrait(gamedata.TRAIT_OMNISCIENCE) }
+
+// RaceStealthyShips 回報是否為匿蹤艦種族。對目前的抽象 AI 艦隊模型，效果
+// 先落在「玩家艦隊不成為 AI 偵測目標」的明確 API；戰術戰鬥本身不加成。
+func (s *GameSession) RaceStealthyShips() bool { return s.raceHasTrait(gamedata.TRAIT_STEALTHY_SHIPS) }
+
+func aiRaceHasTrait(a AIOpponent, t gamedata.RaceTrait) bool {
+	idx := aiRaceIndex(a)
+	if idx < 0 || idx >= len(Races) {
+		return false
+	}
+	return gamedata.OrigRaceHasTrait(Races[idx].OrigIdx, t)
+}
+
+// aiRaceSpyBonus 回傳 AI 原版種族的諜報加成。AI 沒有客製種族遮罩，故只從
+// RaceIndex／舊存檔名稱回填的 Races 表讀取；未知種族安全退回 0。
+func aiRaceSpyBonus(a AIOpponent) int {
+	idx := aiRaceIndex(a)
+	if idx < 0 || idx >= len(Races) {
+		return 0
+	}
+	return Races[idx].SpyBonus + boolTraitBonus(aiRaceHasTrait(a, gamedata.TRAIT_TELEPATHIC), gamedata.SpyTelepathicRaceBonus)
+}
+
+func boolTraitBonus(active bool, value int) int {
+	if active {
+		return value
+	}
+	return 0
+}
+
+// raceSpyBonusForActions 是玩家每次間諜行動使用的完整種族池：既有的
+// TRAIT_SPYING 數值加成加上心靈感應手冊明列的 +10%。
+func (s *GameSession) raceSpyBonusForActions() int {
+	return s.RaceSpyBonus + boolTraitBonus(s.RaceTelepathic(), gamedata.SpyTelepathicRaceBonus)
 }
 
 // syncRaceEngineFields 把種族布林特性推進引擎層(引擎不認識 shell 的種族表)。
@@ -86,7 +150,40 @@ func (s *GameSession) syncRaceEngineFields() {
 	// 存一份下來遲早不同步。與這裡的種族旗標同一個理由,所以搭同一班車。
 	s.Player.FleetResearch = s.FleetResearchPoints()
 	tolerant := s.RaceTolerant()
+	lithovore := s.RaceLithovore()
+	cybernetic := s.RaceCybernetic()
+	aquatic := s.raceHasTrait(gamedata.TRAIT_AQUATIC)
+	subterranean := s.raceHasTrait(gamedata.TRAIT_SUBTERRANEAN)
 	for i := range s.PlayerColonies {
 		s.PlayerColonies[i].TolerantRace = tolerant
+		s.PlayerColonies[i].Lithovore = lithovore
+		s.PlayerColonies[i].Cybernetic = cybernetic
+		s.PlayerColonies[i].Aquatic = aquatic
+		s.PlayerColonies[i].Subterranean = subterranean
+	}
+}
+
+// syncAIRaceEngineFields 把內建 AI 種族也同步到引擎層。
+// AIOpponent 沒有客製種族遮罩,只需由 RaceIndex/舊存檔名稱回填的索引查原版特性表。
+func (s *GameSession) syncAIRaceEngineFields(a *AIOpponent) {
+	if a == nil {
+		return
+	}
+	idx := aiRaceIndex(*a)
+	tolerant, lithovore, cybernetic, aquatic, subterranean := false, false, false, false, false
+	if idx >= 0 && idx < len(Races) {
+		orig := Races[idx].OrigIdx
+		tolerant = gamedata.OrigRaceHasTrait(orig, gamedata.TRAIT_TOLERANT)
+		lithovore = gamedata.OrigRaceHasTrait(orig, gamedata.TRAIT_LITHOVORE)
+		cybernetic = gamedata.OrigRaceHasTrait(orig, gamedata.TRAIT_CYBERNETIC)
+		aquatic = gamedata.OrigRaceHasTrait(orig, gamedata.TRAIT_AQUATIC)
+		subterranean = gamedata.OrigRaceHasTrait(orig, gamedata.TRAIT_SUBTERRANEAN)
+	}
+	for i := range a.Colonies {
+		a.Colonies[i].TolerantRace = tolerant
+		a.Colonies[i].Lithovore = lithovore
+		a.Colonies[i].Cybernetic = cybernetic
+		a.Colonies[i].Aquatic = aquatic
+		a.Colonies[i].Subterranean = subterranean
 	}
 }

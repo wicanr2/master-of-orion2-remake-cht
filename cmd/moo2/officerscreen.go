@@ -53,8 +53,12 @@ func officerOverlays() []labelRect {
 // **完全沒有**——所以清單超過四列就看不到後面的人。寬高未查,取與其他按鈕同量級的 20×20。
 func officerHitRegions() []hitRegion {
 	return []hitRegion{
+		{9, 11, 133, 20, "colonyTab"},
+		{156, 11, 124, 20, "shipTab"},
 		{313 + 3*officerButtonSpacing, officerButtonY, 80, 20, "Return"},
 		{313, officerButtonY, 68, 20, "hire"},
+		{313 + officerButtonSpacing, officerButtonY, 69, 20, "pool"},
+		{313 + 2*officerButtonSpacing, officerButtonY, 74, 20, "dismiss"},
 		{613, 22, 20, 20, "scrollUp"},
 		{613, 170, 20, 20, "scrollDown"},
 	}
@@ -77,4 +81,52 @@ func officerRowCenters() []float64 {
 		out[i] = float64(first + i*pitch)
 	}
 	return out
+}
+
+// officerRowPrefix 只用文字標出目前的管理選取項。
+// 原版亮框的繪製控制碼尚未從資產／執行檔資料中解出，先保留可見且不改底圖的提示。
+func officerRowPrefix(selected bool, unselected string) string {
+	if selected {
+		return "▶ "
+	}
+	return unselected
+}
+
+// officerTargetShip 取得軍官畫面的指派目標。
+//
+// 艦隊畫面點擊艦艇列會留下 shipPick;選了多艘時取最低索引,保證結果可重現。
+// 沒有勾選時退回目前艦隊第一艘,讓「艦隊 → LEADERS → 點軍官」仍是可完成的正常路徑。
+func (b *sceneBuilder) officerTargetShip() (fleetIndex, shipIndex int, ok bool) {
+	if b.session == nil || b.session.SelectedFleet < 0 || b.session.SelectedFleet >= len(b.session.Fleets) {
+		return -1, -1, false
+	}
+	fleetIndex = b.session.SelectedFleet
+	f := &b.session.Fleets[fleetIndex]
+	for i := range f.Ships {
+		if b.shipPick != nil && b.shipPick[i] {
+			return fleetIndex, i, true
+		}
+	}
+	if len(f.Ships) == 0 {
+		return -1, -1, false
+	}
+	return fleetIndex, 0, true
+}
+
+// officerTargetColony 取得殖民地領袖畫面的指派目標。從殖民地畫面進入時保留
+// b.colonyIdx；從星圖／全域軍官畫面進入時退回選中星，再退回母星。
+func (b *sceneBuilder) officerTargetColony() (int, bool) {
+	if b.session == nil {
+		return -1, false
+	}
+	if b.colonyIdx >= 0 && b.colonyIdx < len(b.session.PlayerColonies) {
+		return b.colonyIdx, true
+	}
+	if idx := colonyIndexAtStar(b.session, b.session.SelectedStar); idx >= 0 {
+		return idx, true
+	}
+	if len(b.session.PlayerColonies) > 0 {
+		return 0, true
+	}
+	return -1, false
 }

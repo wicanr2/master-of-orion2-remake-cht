@@ -56,6 +56,24 @@ func TestAvailableResearchTopicsOffersOnlyTheHeadOfEachArea(t *testing.T) {
 	}
 }
 
+func TestResearchQueueExcludesXenonTechnology(t *testing.T) {
+	for _, topic := range researchQueue() {
+		if topic == gamedata.TOPIC_XENON_TECHNOLOGY {
+			t.Fatal("researchQueue 不應把 Xenon Technologies 排入正常研究")
+		}
+	}
+}
+
+func TestSetResearchTopicRejectsUnresearchableTopic(t *testing.T) {
+	s := NewDemoSession()
+	beforeTopic, beforeProgress := s.Player.ResearchTopic, s.Player.ResearchProgress
+	s.SetResearchTopic(gamedata.TOPIC_XENON_TECHNOLOGY)
+	if s.Player.ResearchTopic != beforeTopic || s.Player.ResearchProgress != beforeProgress {
+		t.Fatalf("不可研究主題不應改變研究狀態: topic %v→%v progress %d→%d",
+			beforeTopic, s.Player.ResearchTopic, beforeProgress, s.Player.ResearchProgress)
+	}
+}
+
 func TestResearchTopicName_ReturnsEnglishKey(t *testing.T) {
 	// ResearchTopicName 現回英文顯示名(= tech.tsv 的 i18n key),中文由顯示層翻。
 	if got := ResearchTopicName(gamedata.TOPIC_STARTING_TECH); got != "Starting Tech" {

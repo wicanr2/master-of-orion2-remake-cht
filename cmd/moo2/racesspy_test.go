@@ -82,3 +82,71 @@ func TestRacesSpyActionRoundTrips(t *testing.T) {
 		}
 	}
 }
+
+func TestRacesSpyMissionActionsAndRegions(t *testing.T) {
+	for i := 0; i < racesMaxRows; i++ {
+		got, ok := racesSpyMissionActionIndex(racesSpyMissionAction(i))
+		if !ok || got != i {
+			t.Fatalf("第 %d 個任務動作 round-trip 失敗:得到 (%d,%v)", i, got, ok)
+		}
+	}
+	regions := racesSpyMissionHitRegions(racesMaxRows)
+	if len(regions) != racesMaxRows {
+		t.Fatalf("任務熱區數量 = %d,預期 %d", len(regions), racesMaxRows)
+	}
+	for i, region := range regions {
+		want := racesSpyAnchors[i][1] + racesSpyMissionYOffset
+		if region.x != racesSpyAnchors[i][0] || region.y != want {
+			t.Errorf("第 %d 個任務熱區 = (%d,%d),預期 (%d,%d)",
+				i, region.x, region.y, racesSpyAnchors[i][0], want)
+		}
+	}
+	for _, action := range []string{"spy0", "spymission", "spymissionX", "spymission99", "report"} {
+		if _, ok := racesSpyMissionActionIndex(action); ok {
+			t.Errorf("%q 不應被判成合法任務動作", action)
+		}
+	}
+}
+
+func TestRacesDiplomacyActionsAndRegions(t *testing.T) {
+	for i := 0; i < racesMaxRows; i++ {
+		got, ok := racesDiplomacyActionIndex(racesDiplomacyAction(i))
+		if !ok || got != i {
+			t.Fatalf("第 %d 個外交動作 round-trip 失敗:得到 (%d,%v)", i, got, ok)
+		}
+	}
+	regions := racesDiplomacyHitRegions(racesMaxRows)
+	if len(regions) != racesMaxRows {
+		t.Fatalf("外交熱區數量 = %d,預期 %d", len(regions), racesMaxRows)
+	}
+	for i, region := range regions {
+		wantX := 20
+		wantW := racesDiplomacyRowW
+		if i >= 4 {
+			wantX = 440
+			wantW = racesDiplomacyRightRowW
+		}
+		if region.x != wantX || region.y != racesRelationBars[i][1] ||
+			region.w != wantW || region.h != racesDiplomacyRowH {
+			t.Errorf("第 %d 個外交熱區 = %+v,座標或尺寸不符", i, region)
+		}
+	}
+	for _, action := range []string{"report", "racediplomacy", "racediplomacyX", "racediplomacy99", "spy0"} {
+		if _, ok := racesDiplomacyActionIndex(action); ok {
+			t.Errorf("%q 不應被判成合法外交動作", action)
+		}
+	}
+}
+
+func TestRacesAgentControlsAreExplicitAndSeparated(t *testing.T) {
+	regions := racesAgentHitRegions()
+	if len(regions) != 2 {
+		t.Fatalf("防守 Agent 應有訓練／解除兩個熱區,得到 %d", len(regions))
+	}
+	if regions[0].action != racesAgentTrainAction() || regions[1].action != racesAgentDismissAction() {
+		t.Fatalf("防守 Agent 動作=%q/%q", regions[0].action, regions[1].action)
+	}
+	if regions[0].x+racesAgentW > regions[1].x {
+		t.Fatal("防守 Agent 兩個熱區不應互相重疊")
+	}
+}

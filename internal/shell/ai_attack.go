@@ -52,15 +52,18 @@ const (
 
 // AIRaidReport 是一次 AI 突襲的結果(供回合摘要顯示)。
 type AIRaidReport struct {
-	AIName    string // 發動突襲的 AI 顯示名
-	StarName  string // 被襲星名
-	ColonyIdx int    // 被襲殖民地索引
-	Repelled  bool   // 玩家是否擊退
-	PopLost   int    // 人口損失
-	BCLost    int    // 國庫損失
-	Building  string // 被摧毀的建築(空 = 無)
-	FleetLost int    // 玩家艦隊在防禦中損失的戰力(擊退時 AI 的損失)
-	Message   string // 已填好數字的敘述
+	AIName     string // 發動突襲的 AI 顯示名
+	AINameEN   string // 英文模式的 AI 名稱
+	StarName   string // 被襲星名
+	StarNameEN string // 英文模式的星名
+	ColonyIdx  int    // 被襲殖民地索引
+	Repelled   bool   // 玩家是否擊退
+	PopLost    int    // 人口損失
+	BCLost     int    // 國庫損失
+	Building   string // 被摧毀的建築(空 = 無)
+	FleetLost  int    // 玩家艦隊在防禦中損失的戰力(擊退時 AI 的損失)
+	Message    string // 已填好數字的敘述
+	MessageEN  string // 同一結果的英文敘述
 }
 
 // advanceAIRaids 每回合檢查所有 AI 對手是否對玩家發動突襲,結果寫進 LastRaid/LastRaidReport。
@@ -83,6 +86,9 @@ func (s *GameSession) advanceAIRaids() {
 // aiRaidWilling 回傳第 i 個 AI 這回合是否願意且有能力發動突襲。
 func (s *GameSession) aiRaidWilling(i int) bool {
 	a := &s.AIPlayers[i]
+	if a.Treaty.BlocksOffensive() {
+		return false // 和平／互不侵犯／同盟均不得對玩家發動攻勢
+	}
 	if a.StanceName != stanceNames[ai.StanceWar] {
 		return false // 只有已經進入戰爭態勢的 AI 才動手
 	}
@@ -150,6 +156,16 @@ func (s *GameSession) aiRaidTarget(i int) int {
 // 原版是 ForeignPolicy 六級(無/互不侵犯/同盟/和平/有限戰爭/戰爭)。兩套不是同一個維度,
 // 這裡取語意最接近的對映——**對映本身是 remake 的**,原版的態勢↔外交狀態關係另有機制。
 func aiForeignPolicyFor(a *AIOpponent) gamedata.AIForeignPolicy {
+	if a != nil {
+		switch a.Treaty.FormalPolicy {
+		case gamedata.DIPLO_NON_AGGRESSION:
+			return gamedata.DiploNonAggression
+		case gamedata.DIPLO_ALLIANCE:
+			return gamedata.DiploAlliance
+		case gamedata.DIPLO_PEACE:
+			return gamedata.DiploPeace
+		}
+	}
 	switch a.StanceName {
 	case stanceNames[ai.StanceWar]:
 		// 關係已經觸底(-30 以下)視為原版那一檔更極端的狀態:目標估值完全站在受害者立場。
@@ -260,10 +276,20 @@ func (s *GameSession) aiRaid(i int) *AIRaidReport {
 	a.LastRaidTurn = s.Turn
 
 	starName := "未知星系"
+	starNameEN := starName
 	if star := s.PlayerColonyStarIndex(ci); star >= 0 && star < len(s.Stars) {
 		starName = s.Stars[star].Name
+		starNameEN = s.Stars[star].NameEN
+		if starNameEN == "" {
+			starNameEN = starName
+		}
 	}
-	rep := &AIRaidReport{AIName: a.Name, StarName: starName, ColonyIdx: ci}
+	aiNameEN := a.Name
+	if raceIdx := aiRaceIndex(*a); raceIdx >= 0 && raceIdx < len(Races) {
+		aiNameEN = Races[raceIdx].EnName
+	}
+	rep := &AIRaidReport{AIName: a.Name, AINameEN: aiNameEN, StarName: starName,
+		StarNameEN: starNameEN, ColonyIdx: ci}
 
 	attack := a.FleetStrength
 	defense := s.colonyDefense(ci)
@@ -281,6 +307,8 @@ func (s *GameSession) aiRaid(i int) *AIRaidReport {
 		rep.Repelled = true
 		rep.FleetLost = loss
 		rep.Message = fmt.Sprintf("⚔ %s 突襲 %s,遭防禦部隊擊退,對方損失 %d 戰力", a.Name, starName, loss)
+		rep.MessageEN = fmt.Sprintf("⚔ %s raided %s but was repelled by the defense forces, losing %d fleet strength",
+			aiNameEN, starNameEN, loss)
 		s.LastRaid = rep.Message
 		return rep
 	}
@@ -346,6 +374,14 @@ func (s *GameSession) aiRaid(i int) *AIRaidReport {
 		parts += fmt.Sprintf(";防禦部隊使對方折損 %d 戰力", rep.FleetLost)
 	}
 	rep.Message = fmt.Sprintf("⚔ %s 突襲 %s:%s", a.Name, starName, parts)
+	partsEN := fmt.Sprintf("Population -%d, treasury -%d BC", rep.PopLost, rep.BCLost)
+	if rep.Building != "" {
+		partsEN += fmt.Sprintf("; %s was destroyed", rep.Building)
+	}
+	if rep.FleetLost > 0 {
+		partsEN += fmt.Sprintf("; the defending force cost them %d fleet strength", rep.FleetLost)
+	}
+	rep.MessageEN = fmt.Sprintf("⚔ %s raided %s: %s", aiNameEN, starNameEN, partsEN)
 	s.LastRaid = rep.Message
 	return rep
 }

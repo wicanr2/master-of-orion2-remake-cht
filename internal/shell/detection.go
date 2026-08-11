@@ -119,9 +119,56 @@ func playerDetectionVisible(stars []Star, playerColonyStars []int, fleetSources 
 // VisibleStars 回傳這局遊戲目前每顆星是否對玩家可見(等長 []bool,索引對應 s.Stars)。供
 // cmd/moo2 的 drawStarmap 決定 fog 繪製,一次算好整個星圖再逐星查表,避免逐星重算。
 func (s *GameSession) VisibleStars() []bool {
+	if s.RaceOmniscience() {
+		visible := make([]bool, len(s.Stars))
+		for i := range visible {
+			visible[i] = true
+		}
+		return visible
+	}
 	scannerParsec := bestPlayerScannerParsec(s.Player)
 	return playerDetectionVisible(s.Stars, s.PlayerColonyStars, s.fleetDetectionSources(), s.ColonyBuildings,
 		scannerParsec, s.RuleProfile.SensorRangeVersionBonusParsec, s.outpostStarIndices())
+}
+
+// EnemyFleetVisibleToPlayer 回報玩家是否能在目前 remake 的抽象模型中看見
+// AI 的主力艦隊。全知直接看見；其餘情況沿用該 AI 艦隊所在星的星圖可見性。
+// AI 艦隊目前沒有獨立的長距離 blip 座標，故不假裝提供逐艦傳感器精度。
+func (s *GameSession) EnemyFleetVisibleToPlayer(aiIdx int) bool {
+	if s == nil || aiIdx < 0 || aiIdx >= len(s.AIPlayers) {
+		return false
+	}
+	if s.RaceOmniscience() {
+		return true
+	}
+	starIdx := aiFleetStar(s.AIPlayers[aiIdx])
+	if starIdx < 0 || starIdx >= len(s.Stars) {
+		return false
+	}
+	visible := s.VisibleStars()
+	return starIdx < len(visible) && visible[starIdx]
+}
+
+// PlayerFleetVisibleToAI 回報 AI 是否能偵測玩家艦隊。匿蹤艦在目前 AI
+// 沒有獨立傳感器掃描器的抽象模型中採保守的完全遮蔽；一般艦隊只要與某個
+// AI 主力艦隊同星就被視為接觸。這個 API 供外交／突襲與未來 blip UI 共用。
+func (s *GameSession) PlayerFleetVisibleToAI(aiIdx int) bool {
+	if s == nil || aiIdx < 0 || aiIdx >= len(s.AIPlayers) {
+		return false
+	}
+	if s.RaceStealthyShips() {
+		return false
+	}
+	aiStar := aiFleetStar(s.AIPlayers[aiIdx])
+	if aiStar < 0 {
+		return false
+	}
+	for _, fleet := range s.Fleets {
+		if fleet.AtStar == aiStar && fleet.ETA == 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // fleetDetectionSources 把**每一支**艦隊變成一個偵測源,額外加成取該艦隊裡最好的艦上掃描器。

@@ -3,15 +3,16 @@ package gamedata
 // ground_battle_orig.go:**原版的地面戰解算**(`Ground_Combat_Round_` @ 0xEC4FE +
 // `Resolve_Ground_Combat_` @ 0xEC601)。
 //
-// ============ 為什麼要重做一次 ============
+// ============ 為什麼要保留獨立原版路徑 ============
 //
-// `ground_battle.go` 的檔頭寫著:
+// `ground_battle.go` 的檔頭仍保留一代相容解算:
 //
 //	解算結構取自一代(1oom)game_ground.c 的 game_ground_kill
 //
-// 而 `docs/HONEST-STATUS.md` 把它列成「force 值用 MOO2 手冊表,但**結構本身未對 MOO2 實機核實**」。
-// 2026-08-07 反組譯把結構挖出來了,而且與一代那套**有三處實質差異**——不是風格差異,
+// 2026-08-07 反組譯已把原版結構挖出來,而且與一代那套**有三處實質差異**——不是風格差異,
 // 是會改變勝負機率的差異。
+// `InvadeColony` 使用本檔的 `ResolveGroundCombatOrig`;尚未完成的是 DOSBox 實機的逐場
+// 傷亡／亂數序列校準，以及 AI 守方裝甲營與入侵後人口等資料缺口，不是靜態解算未接線。
 //
 // ============ 原版的一方是 26 個位元組 ============
 //

@@ -1,166 +1,146 @@
-# 交接文件（給接手的 Claude / 開發者）
+# 交接文件
 
-> 這份是「重啟 session 後第一個要讀的檔」。目的:讓全新的 Claude 5 分鐘內接手,不重犯前一輪的錯。
-> ⚠ **2026-08-08:本文標的是 2026-07-12 的暫停點,已被大量後續工作超越**——
-> 現況只以 `WORKLIST.md` 頂端的剩餘工作表為準(`docs/re/01-gap-report.md` 是 RE 資料與工程日誌,不是現況)。
-> 下面「下週繼續」那幾項多已完成或前提已變。
->
-> 最後更新:2026-07-12。搭配讀:[`HONEST-STATUS.md`](HONEST-STATUS.md)(現況真相)、根目錄 `CLAUDE.md`(專案目標)、`WORKLIST.md`(細項)、`PLAN.md`(階段)、`docs/tech/*`(各系統文件)。
+## 2026-08-11 發行候選與收尾抽樣
 
-## ⏸ 下週繼續(2026-07-12 暫停點,先讀這段)
+- 依使用者要求，本輪採抽樣驗證，不重跑 `go test ./...` 全套；測試員 A 的 remake
+  抽樣以 Docker + Xvfb 產生 35 張 `-gamegallery` PNG，退出碼 0、最小檔案
+  `39,409` bytes、全部為 `1000:1000`，涵蓋主選單、新局、種族／命名、星系／回合、
+  艦隊／殖民地、外交、戰術、存檔／載入、艦艇設計與輸入框。
+- 測試員 B 的原版 DOSBox／正版資料對照已完成，報告見 [`docs/PLAYTEST-2026-08-10.md`](PLAYTEST-2026-08-10.md)：
+  動態啟動被缺少 `VESA.COM` 阻塞，成功部分限於 `MAINMENU`／`NEWGAME`／`STARBG`／`COMBAT`／
+  `CMBTSHP` 等正版 LBX 靜態解碼；原版無法取得的畫面或規則只記為阻塞，不以 remake 截圖推論。
+- 兩位遊戲測試代理的保守可玩度報告見 [`docs/GAME-TEST-REPORT-2026-08-11.md`](GAME-TEST-REPORT-2026-08-11.md)：
+  remake 暫定 70／100；客製種族完整開局、RACES 間諜、LEADERS 管理、魚雷 NR 距離效果、20 回合
+  體感與 `.GAM` fixture 仍待新鮮玩家路徑證據。測試員 B 收束前沒有重跑新命令，因此不把舊產物
+  冒充目前工作樹的多人／包裝驗證。
+- 三平台完整版本機測試包已備妥：`MasterOfOrion2-cht-full-x86_64.AppImage`、
+  `MasterOfOrion2-cht-full-windows-amd64.zip` 與 `MasterOfOrion2-cht-full-macos-universal.tar.gz`
+  均由本輪 Docker 依最新程式碼建立；macOS universal 的 `moo2`／`moo2sim` 由 osxcross
+  `lipo` 驗證含 `arm64`／`x86_64` 兩 slice。雜湊見 `dist/SHA256SUMS`；完整版包含使用者私有
+  資料子集、原版音訊與 CJK 字型，不可視為可公開散布包。
+- 公開 Release candidate 三平台包已另行建立，不含原版資料／音訊／字型；檔名、大小與雜湊見
+  [`RELEASE_NOTES-v0.1.0.md`](../RELEASE_NOTES-v0.1.0.md)、`docs/tech/packaging.md` §5.4 與
+  `dist/PUBLIC-SHA256SUMS`。公開包的 Windows／Linux 可執行檔由目前工作樹重建，macOS 使用已由
+  osxcross `lipo` 驗證的 universal binaries 組成，未宣稱真機執行。
+- 推廣影片：`dist/promo/master-of-orion-2-remake-trailer.mp4`，含 12 張 remake 畫面、
+  標題／功能字幕／版面輪換／CTA，H.264／AAC、1280×720、72 秒；背景音樂取自使用者正版
+  資料的 `STREAM.LBX`，權利限制見 `dist/promo/README.md`，不可把影片或原版音樂當作可自由
+  再散布素材；可重跑流程為 `scripts/make_promo.sh`。
 
-使用者 GUI 實測 + archive.org 線上原版 oracle 對照後,發現 headless 探針看不到的整合 bug。**接手前先讀 `issues/20260712-issues.md`(使用者原始 issue)+ `docs/tech/oracle-comparison-20260712.md`(逐畫面原版對照 + 修復計畫)**。
-- **oracle 方法(2026-08-07 更新)**:使用者指示逐畫面實測**非必要**;真要對原版核對就用 **DOSBox**,不再用 archive.org 線上版。順序是先窮盡靜態來源(執行檔反組譯的立即數 > 手冊行文 > openorion2 原始碼 > LBX 資產尺寸交叉驗證),靜態不夠才提 DOSBox。下面這段是舊作法的紀錄,結論仍有效。
-- **已修(本次)**:打包補音樂/herodata、回合鈕→「結束回合」、#6 星系視窗加 CLOSE、#5 info 分頁不誤跳 + 研究選擇改點星系右側研究框。已重打包 `dist/…-full…AppImage`。
-- **翻案(非 bug,別「修」)**:開局領袖槽空 + POOL 停用、Continue 無存檔灰階——原版也這樣。
-- **下週最高價值批 = 母星開局態校準**:oracle 釘死原版 Sol III = 農4/工2/科2、礦產 Abundant、開局建 Trade Goods(→+12 收入)、真星名;remake 現為 4/1/3、普通礦、無建造、+0。**會動經濟,照紀律改一項驗一項 + 跑 60 回合探針**(見記憶 `moo2-save10-oracle-economy-calibration`)。之後 #3 事件黃框、#2 存檔選單。
+## 2026-08-11 本輪 gameplay／視覺增補
 
-## 0. 先認清現況(最重要)
+### 本輪新增（CMBTSHP／爆炸／SABOTAGE／領袖 ETA）
 
-**本專案不自評「還原度 %」**——任何百分比都是寫下當日的快照,不是現況。定性描述:可玩的多帝國 4X 迴圈,使用者排的四個優先項(音樂/音效、忠實新遊戲流程、按鍵像素對齊、gameplay 子系統)都已完成。**剩餘工作只看 [`WORKLIST.md`](../WORKLIST.md) 頂端的活表**;這份文件底下的段落是逐輪紀錄,不是現況。**「完全跟原版一樣」仍是多輪工程,對齊度須由使用者對原版實測重評——勿用測試綠/新增系統自評。**
+- `CMBTSHPFrameAtTick` 與 tactical `shipMotionStart` 已接線：移動後播放固定 4 tick/frame、
+  `[0,1,2,1]` 短掃掠，16 tick 後回固定朝向幀。這是 remake 近似，不宣稱原版 timer。
+- 事件 8 已呼叫 `resolveStrategicShipExplosion`，主艦仍受「至少留一艘」護欄；oracle 的
+  `Random(201)+74`、20 點連鎖與 `OriginalExplosionDamageConsumer` 會對最多三艘倖存艦寫入
+  尺度化 `Ship.Damage`。raw fleet／colony record 未命名部分仍保留未知。
+- `spyMissionScore` 明列 SABOTAGE 的 AB／DB／有效門檻與成功率來源；IDA 同時確認
+  `sub_101483 @ 0x101483` 的 raw slot helper、`sub_1014A4 @ 0x1014A4` 的 packed
+  relationship byte／score table 讀取位置／門檻分支；Agent 上限、訓練／解除、AI 週期補充
+  與 Spy-vs-Spy 實際扣除均已接線，remake 以 AB／DB／E 完成可重播近似。
+- `RawStatus=1` 的 ETA `1→0` 且 location=1 會呼叫 `applyLeaderETACallback`，重整已指派
+  殖民地領袖增量、刷新所有殖民地士氣但保留任職；IDA 已確認 `sub_E2AB1`→
+  `sub_E1D59`／`sub_DF8F0`／`sub_E2710` raw callback 鏈，raw 設計／帝國欄位逐值 parity
+  仍是 oracle 差異。
+- 對應說明與抽樣命令見 [`docs/re/remake-consumer-closure-20260811.md`](re/remake-consumer-closure-20260811.md)。
 
-**2026-07-10 這輪的實質進展(全真值驅動、無自編數值謊報)**:
-- **音樂**:翻案 MOO2 無 XMI/MIDI——音樂/音效是 LBX 內 PCM WAV(`STREAM/STREAMHD/SOUND.LBX`),原封播即 bit-identical;已整合 ebiten 音訊 + 主選單/星系/外交/戰鬥場景 BGM + 按鈕音效 + `-audiodump` 工具。曲目↔場景配置已「先用我的判斷、待聆聽微調」(改常數即可)。見 `docs/tech/audio-format.md`、`audio-track-map.md`。
-- **新遊戲流程**:原版畫面鏈從無到有——主選單→星系設定→**獨立種族選擇(RACESEL 真肖像)→自訂種族點數(官方 patch1.5 config 真值)→命名旗色**→進遊戲。見 `docs/tech/newgame-flow.md`、`custom-race-picks.md`。
-- **研究/科技系統(首個完整忠實 gameplay 系統)**:真 RP 成本 + **每主題數科技間抉擇 UI(真中文名)** + **抉擇決定艦艇元件解鎖**。見 `docs/tech/research-system-status.md`、`component-tech-mapping.md`。
-- **戰鬥系統**:格子戰術 + 快速結算兩路徑都接 gamedata 真公式(命中/傷害/過盾/過甲)+ 護盾裝甲分離。見 `docs/tech/gameplay-systems-status.md`。
-- **殖民地經濟**:盤點確認核心已接 gamedata 真公式(產出/污染/成長/稅收)。
+- 外交 `FoodForCredits`／`ResearchExchange` 特殊貿易已有回合收益與存檔狀態；IDA 另追回活動 Trader 的政府／神級商人／經驗 bucket／tier 1/2 最大加成，並接入 GAM raw experience 與舊 demo fallback。AI→玩家 `SABOTAGE` 依 remake 性格政策選任務並實際讀玩家建築池；49 筆原版建築成本表、slot 9 skip、`+8` 權重與 raw slot helper 已接，結構化 AB／DB／E 與防守 Agent 消費也已接。這些是 remake 主流程，不冒充原版兩張 score table 的上游填值、特殊 raw 上游、完整 raw 分數或防守策略。
+- 食物複製機已在半機械族半食物帳本上補足半食物／半 BC 轉換，半 BC 以 `PlayerState.FoodReplicatorBCHalfRemainder` 跨回合保存；這是手冊與 half-unit 資料形狀支持的強推論，碎片付款時機仍未知。
+- 原版 `RawStatus=4` 的 `+0x37`／30 門檻已接入領袖清理：解除殖民地／艦艇指派並移出人才池；一般在職領袖 ETA 的 remake callback 近似已接，`sub_E2AB1` 六槽與三個下游 raw 函式已由 IDA 確認，完整 raw 任命／任期／設計欄位逐值仍保留 oracle 留白。
+- `COUNCIL.LBX#1` 的 10 幀與 `ANTAROOM.LBX#1` 的 55 幀已由原版資產逐幀播放；`CMBTSHP` 已使用 `45*color+rawPicture` 精確圖片映射，移動後 timer 以 remake 固定 tick 近似接線。地面戰實機 seed、事件 record／漂移與原版爆炸 raw 下游見 [`docs/re/visual-oracle-20260811.md`](re/visual-oracle-20260811.md)。
+- 地面戰靜態 oracle 抽樣：`internal/gamedata` 的 LCG／平手雙方受擊／逐類型切換／終止測試，以及 `internal/shell` 的入侵勝率、可重現性、AI 裝甲營、守方兵種回寫與 captured population 保留測試均通過；這不取代尚缺的 DOSBox 實機 global seed 與戰後人口 consumer 校準。
+- 本輪 Docker 抽樣：`internal/gamedata`／`internal/engine` 的食物複製機測試通過；`internal/shell` 的 AI SABOTAGE 與兩個領袖任期測試通過。`TestPopulationGrowthWriteback` 仍在非本輪人口寫回路徑失敗（新人口未分配成工人），因此不把本輪抽樣寫成全包測試綠燈。
+- 本輪已在 Docker 重建 Linux 完整 AppImage（97,434,104 bytes）、Windows amd64 完整 ZIP（100,661,428 bytes）與 macOS universal tar.gz（108,752,832 bytes）；Linux 完整包實際啟動 `-gamegallery` 產生 35/35 張 PNG。推廣影片以本輪新畫廊抽樣 12 張重錄為 4,807,495 bytes、72 秒、1280×720；`dist/SHA256SUMS` 已更新並驗證四項產物／影片。完整版含使用者私有資料子集與原版音訊，權利限制見 `dist/promo/README.md`。
 
-**前一輪最大的錯(仍是鐵律):用「單元測試綠 + 新增自製系統」謊報進度。** 這輪守住:每個係數標來源(openorion2/官方 config/手冊)、推定標「待確認」、需 oracle 的不自編、不做低值 theater。**接手後鐵律:還原度用「對原版實測比對」評估,不看測試綠。**
+## 目前狀態
 
-## 0b. 剩餘工作(2026-07-10,分「需 oracle」與「可自驅」)
+- 目標：完成 `Master of Orion II` 的跨平台 Go／Ebiten 重製與繁體中文化。
+- 分支：`main`。
+- 最近已知 HEAD：`e48ac3edee415cebd9d44c81dd549147f4587249`。
+- 工作樹：刻意保留大量未提交使用者／代理變更；不要 reset、checkout 或清理。
+- 原始資料：只讀於 `/home/anr2/moo2-private-build/`，不可加入 repo。
+- 容器：最近一輪一次性 Docker 容器已清理；沒有名稱符合 `moo2` 的專案容器殘留，建置 image `moo2-ebiten:latest` 保留供重現。
 
-- **需要使用者 oracle**(我無法替代):① 曲目↔場景定案(聽 `~/moo2-audio-dump`)② 真母星初始(DOSBox 開局第 1 回合 `.GAM` 存檔)③ 地面戰/飛彈**精確解算校準**(DOSBox 實測;演算法已社群逆向,見 `ground-combat-algorithm.md`,但傷亡式有歧義待校準)。
-- **可自驅**:① 自繪畫面重建成原版佈局(diplomacy 使節動畫 + tactical 戰場,見 `screen-rebuild-plan.md`)
-  ② **逐畫面座標對齊:一手來源是反組譯**(`Print_Centered_` @ 0x1210FD、`Darken_Fill_` @ 0x1298DE 等繪製
-  呼叫的立即數就是真值);openorion2 `initWidgets` 是次要來源(它自己缺很多畫面);渲染原版美術量測是
-  最後手段。③ 其他系統逐一接 gamedata 真公式。
+## 本輪已驗證
 
-## 1. 環境 / 路徑(這台機器)
+### 2026-08-11 GAM／戰機／要塞補充
 
-| 項目 | 位置 |
-|---|---|
-| 工作目錄 | `/home/anr2/moo2` |
-| GitHub repo(只放碼+文件+譯文,無版權資產) | `github.com/wicanr2/master-of-orion2-remake-cht`(分支 `main`) |
-| 私有遊戲資料(玩家正版,**絕不入 repo**) | `/home/anr2/moo2-private-build/gamedata/mastori2`(324M 全套;`-game` 只用 ~18 個 LBX) |
-| CJK 字型(Noto,OFL 可散布) | `/home/anr2/moo2-private-build/fonts/NotoSansCJK-Regular.ttc`(或 `/usr/share/fonts/opentype/noto/`) |
-| 手冊 | `moo2_patch1.5/MANUAL_150.html`(**有文字**,patch 1.5 變更日誌+部分數值)、`moo2_patch1.5/GAME_MANUAL.pdf`、`original_game/…CD Manual.pdf`(**掃描圖,無文字,需 OCR**) |
-| C++ 參考(**只有渲染,無遊戲引擎**) | `openorion2/src/`(對照解碼/座標用,不含戰鬥/AI/數值) |
-| 1oom(MOO1 AI 參考) | 見記憶 `ebiten-cht-reference-paths` |
+- `.GAM` 已不再只有 `internal/save` 唯讀解析：`internal/shell` 新增 `ImportGAM`／`LoadGAMSession`，`LoadSession` 看到 little-endian `0xE0` 會自動分流。星系、行星、殖民地／前哨站、玩家／AI、外交旗標、67 筆領袖、艦隊、建築與建造佇列會轉入 remake 工作階段；研究完成 byte、special bit、原版任命／任期下游保留報告式未知。
+- 戰機命中／傷害已完成有證據邊界的消費端：ID 31 第二組 `1..4 / 4..16 / 2..7`，`sub_3AD57 @ 0x3AD57` 的攻防修正／`roll <=95`／40 命中門檻，以及相鄰 `sub_3AC20 @ 0x3AC20` 的直接插值式，均由 `internal/gamedata/fighter_damage.go`／`internal/shell/fighter_attack.go` 分開接到逐架最弱護盾／裝甲／結構鏈。未完成的是原版 raw record 逐彈參數與 raw flag 正式命名，不是 remake 的命中／傷害消費流程。
+- 星際要塞已接入 `sub_4D18E @ 0x4D18E` 追回的四個非空武器槽 seed／cap／raw：`(11,375,99,2)`、`(4,187,198,0)`、`(4,187,198,4)`、`(4,375,99,2)`；光束／魚雷／直接傷害特殊武器進入 `AssaultAntares` 齊射，炸彈／戰機艙分流。`sub_6EE8E` divisor、raw 2/4 百分比與 live tech 分支已記錄；快速戰鬥使用 full-cap policy，不把 99/198 宣稱成固定 runtime 數量。
 
-## 2. 建置 / 測試 / 執行(一律 docker,[HARD])
+- 多人網路最低可玩鏈已完成：主機由大廳名冊建立共同新局並廣播設定／種子／席位快照，
+  客戶端套用同一快照；玩家操作入口會記錄可序列化 `PlayerCommand`，每回合以
+  `turn_done` 收集、依玩家編號從共同基準重播，再以 `turn_ready` 與
+  `NetworkStateHash` 驗證；未知指令、錯席位、重複封包或分歧均失敗即關閉。
+  `internal/netplay` 另有 resume token、心跳／寬限、challenge-HMAC 與可選 TLS 1.3，
+  `MOO2_NET_AUTH`／`MOO2_NET_TLS=1` 控制；NAT 穿透仍需外部 relay 或 UPnP。已有兩個實際程序的
+  loopback TCP 與 resilience 抽樣，`internal/shell` 有快照／席位重播與 UI 指紋正規化測試，
+  `cmd/moo2` 另以 Docker + Xvfb 通過目標測試。原版 IPX／數據機／序列／TEN 不恢復。
+- 飛彈／魚雷改造：ECCM、EMG、MIRV、魚雷 ENV／OVR，以及 ARM/FST 的 raw flag／攔截垂直切片，已接入設計、存檔、快速結算與格子戰術；魚雷 NR 的射程衰減已取消，保留原版精確 oracle 為差異追蹤，不再列為 remake 漏接。
+- 艦艇軍官管理：艦隊畫面選船後按 `LEADERS`，點艦艇軍官列可指派／改派，再點同一列解除；`HIRE` 可挑指定候選，`POOL` 回人才庫，`DISMISS` 解雇艦艇軍官；`Ship.OfficerName` 與原版 `_leaders[]` 來源序號 `Ship.OfficerID` 會保存，Weaponry／Helmsman／Navigator／Engineer 均讀逐艦欄位。舊 JSON 沒有 ID 時仍以名稱回退。IDA 已證實原版 `sub_10E2F`／`sub_1160B` 對 `dword_1930DC` 直接讀寫 `0x3B×0x43` 全局記錄；remake 的 `ImportGAM`／`LoadGAMSession` 已完成原生存檔匯入，載入畫面可探測同槽 `SAVE*.GAM` 並另存 JSON，任命／任期下游規則仍未追回。
+- 火線角切片：設計畫面可循環選擇 FWD／FWD EXT／BACK EXT／BACK／360；`Ship.Arc` 會保存，+25%／+25%／+50% 會進入佔格、成本與建造判定。原版 `Relative_Bearing`／`Move_Ship`／部署函式已證實 16 向朝向，格子戰術玩家／敵方射擊與移動轉向已接；快速結算的原版 call graph 不消費射界，維持抽象戰鬥，詳見 `docs/re/weapon-arcs.md`。
+- 戰術戰機：玩家中隊已可出擊、貼身攻擊、被敵艦射擊、返航補給；本輪接上手冊要求的最弱護盾分面、主要目標鎖定（目標失效才重選）、戰機接戰前先消費近迫防禦（PD），以及參戰種族 Ship Defense／Fighter Pilot 加成。IDA 現已追回敵方五級 blueprint writer 與非空武器槽；ID 31 的 Interceptor／Heavy／Bomber 傷害範圍、`sub_3AD57` 命中式與 `sub_3AC20` 直接插值式已分開接入逐架護盾／裝甲／結構下游。完整 raw record 逐彈參數仍是差異，不宣稱逐值 runtime 對齊。
+- 安塔蘭終局防禦：原版已證實的 `Intruder ×3`／`Interdictor ×2`／`Harbinger ×7`／星際要塞已保存為具名艦級；三個實際防禦艦的完整非空 raw weapon ID／數量／flags 已同步，並修正 Interdictor／Harbinger 第 4 槽 `raw flags=0x0004`。Intruder 的 3 個、Harbinger 的 6 個標準 `Fighter Bays` 與星際要塞四個直接火力槽已接入終局快速戰鬥，`AssaultAntares` 會把尺寸傳入球形武器的目標級數消費端；要塞 class 6=`0x17F69C=900`、P=750、seed／raw／cap 與 `sub_6EE8E` divisor 已記錄，99/198 不是固定 runtime 數量；raw bit 正式語意與 live tech 當下數量仍未知。
+- 反組譯證據衛生：新增 [`docs/re/weapon-mod-flags.md`](re/weapon-mod-flags.md)，保存 `Orion2.exe`／`.asm`／`.i64`／`orion2_all.c` 雜湊、IDA Pro 9.4 與 IDA 位址基準；把完整光束改造 caller 校正為 `sub_394F7`，`sub_39434` 明確標成射程輔助。安塔蘭戰鬥 loader 也訂正為 `sub_55738`／`sub_55B12`／`sub_55F67`，重製模型以 raw 位址、標準艦非空 weapon ID／數量／raw flags 與 ID 31 戰機艙測試鎖定；ARM/FST 的垂直切片已接，但仍未被誤列為原版全路徑等價。
+- 戰機逆向增補：`sub_3C892`／`sub_3CD21`／`sub_3DFE0` 的 FST runtime 速度下游、`sub_2A46A` 排除戰機記錄的目標評估，以及 raw `sub_3AC20`／`sub_3AD57` 呼叫鏈已加入 [`docs/re/weapon-mod-flags.md`](re/weapon-mod-flags.md)；重製只接入有證據的主要目標鎖定與兩條傷害公式，沒有新增敵方抽象艦隊的虛構戰機。
+- 間諜／逐對手外交：RACES 內嵌區可訓練並逐對手保存 STEAL/SABOTAGE/HIDE；HIDE 每回合跳過偷科技、套用 SpyVsSpy +20；SABOTAGE 已依原版 raw `0x1014A4` 的 70 門檻與 `0x10130A`／`0x145EA` 建築旗標清除接入玩家 → AI 路徑，候選按原版建造成本加權，remake 的結構化 AB／DB／E 與防守 Agent 消費已接。外交畫面可提議／終止和平、互不侵犯、同盟、貿易、研究、固定 5%／10% 週期納貢，以及 `贈送 10 BC` 的現金餽贈玩家切片；現金餽贈核心函式接受任意正整數，國庫轉移方向與不足邊界已測試。協議進度與納貢轉移會進 BC／研究並保存。IDA 已追回外交評分桶 `-75/-50/0` 與回應分支 `-100/-50/-25/0`、特殊路徑 `-150/-75/0`；完整 AI end-to-end 接受表、一次性科技／星系餽贈、特殊貿易表／創造力係數與 AI 防守 Agent／政體資料仍是原版 oracle 留白，詳見 [`docs/re/diplomacy-gifts.md`](re/diplomacy-gifts.md)。
+- 本輪依使用者要求採抽樣，不宣稱 `go test ./...` 全套通過；抽樣 gamedata／shell 測試通過。完整 suite 仍有既有 `TestPopulationGrowthWriteback`（人口分配工人預期差異）失敗，未把它誤算成本輪地面戰／外交回歸。
+- `go build -buildvcs=false -o /tmp/moo2-remake-final ./cmd/moo2`：Docker 退出碼 0，產物 UID/GID `1000:1000`。
+- 歷史基線（2026-08-09）曾在 Docker + Xvfb 完成全套測試與建置：`go test -buildvcs=false ./...`、`go build -buildvcs=false -o /tmp/moo2-arm-fst-final ./cmd/moo2`，退出碼 0；本輪依使用者要求改採抽樣，不重跑全套。乾淨映像缺少鎖定模組時只開放一次受限網路容器補依賴，測試與建置仍在容器內完成。
+- `git diff --check`：通過。
+- 翻譯掃描：Docker 讀取 24 份 TSV 得 5,049 筆、1 筆刻意保留的 `BC`。
+- 私有遊戲資料唯讀掛載的正常 `-game -shot` 成功，輸出 PNG `148,252` bytes；同一輪 `-game -gamegallery` 產生 35 張非空 PNG（最小 4,043 bytes），含 `18_loadgame.png` 存檔／讀檔、`16_tactical.png` 戰術與 `25_shipdesign.png` 艦艇設計畫面；本輪未逐張人工審查。
+- 本輪在 Docker + Xvfb 以私有資料唯讀掛載重跑 `-game -gamegallery`：35 張 PNG、最小 39,409 bytes，輸出目錄與檔案均為 `1000:1000`；戰機防禦加成切片未改動畫面流程，畫廊正常收尾。
+- 領袖技能收尾：26/27 項技能已有 remake 消費端；Tactics 依原版不實作，Famous 招募機率與 Diplomat 獨立接受門檻保留明確 oracle 留白。新增效果已由 `internal/shell/leader_effects_test.go` 及既有 Fighter Pilot／軍官測試抽樣護欄。
+- AI-to-AI 可選強化：`EnableAIVsAI` 開啟後，AI 彼此會依 `AIRelations` 形成戰爭、停戰／互不侵犯／同盟、貿易／研究協議，並以抽象艦隊攻擊最高人口殖民地；AI 選星與議會第三方搖擺票已接入。此模型保存於 JSON，但不冒充原版逐艦 blueprint，細節見 [`docs/tech/ai-to-ai.md`](tech/ai-to-ai.md)。
+- IDA Pro 靜態 oracle：使用同一份 `Orion2.exe.i64`、IDA Pro 9.4、非破壞性 IDC 探針確認音樂分派與外交音樂賦值鏈，並追回敵方五級 blueprint raw writer／槽位、`sub_3AD57` 的戰機 1..100／95／40／插值／下游式、相鄰 `sub_3AC20` 的直接插值式、要塞 raw flag／seed／容量 divisor 中間鏈、外交精確比較常數、`.GAM` 全局 `0x3B×0x43` 讀寫對稱。兩份外部符號名稱一律保留 `sub_3AC20`／`sub_3AD57` raw 位址；live raw record 輸入、要塞 raw bit 正式語意與 live tech 導出的數量仍是非阻塞差異；class table 的直接 byte stride 勘誤與證據分級見 [`docs/re/oracle-static-ida-20260811.md`](re/oracle-static-ida-20260811.md)。
+- IDA Pro 靜態 oracle：除既有戰機／要塞／外交／`.GAM` 證據外，本輪追加地面戰 `0xEC4FE`、事件 `0x22D57`／`0x586D4`、爆炸 `0x3868F`／`0x39985`／`0x40C2A`／`0x494A8`、CMBTSHP `0x30062`／`0x3F5F1`／`0x3F628`，活動 Trader `0x101BA4`／`0x94951`／`0x93D4B`，以及 SABOTAGE `0x1014A4`／`0x101483`／`0x1026CF`／`0x1026F1`／`0x10278D`、領袖 callback `0x934CF`／`0xE2AB1`／`0xE1D59`／`0xDF8F0`／`0xE2710`。兩份外部符號名稱一律保留 raw 位址；CMBTSHP timer、score table 上游填值、raw event record、爆炸 strategic consumer、raw callback 設計／帝國欄位與 live raw input 仍是非阻塞差異，詳見 [`docs/re/oracle-static-ida-20260811.md`](re/oracle-static-ida-20260811.md)。
+- 英文模式收尾：`englishSafeFallback` 只改顯示值、不改查表 key；英文畫廊 35/35 張通過，抽看主選單、星圖、外交、艦艇設計、輸入框無越界字串。代表圖已同步 `docs/screenshots/en/` 與 `README.md`。
+- 20 回合開局探針：無事件固定開局 BC 50→264、人口 8→11、士氣 0% 全程、食物輸出 0→1、工業 6→8、研究 6 維持；只作平衡基線，不冒充玩家主觀體感。
+- 本輪 Docker 清理稽核：沒有名稱符合 `moo2` 的執行中／已停止專案容器；一個兩週前、無專案標籤的 dangling image 未碰觸，以免清理其他工作。
 
-> **用 `scripts/` 底下的腳本,別手打 `docker run`**——手打容易漏掉 `--log-opt max-size/max-file`
-> (daemon 預設的 json-file 沒有 rotation,曾把 log 長到幾百 GB)。
+## 證據入口
 
-```bash
-scripts/build.sh                      # 純 Go 套件編譯(CGO=0)
-scripts/test.sh ./internal/shell/     # 純 Go 單元測試;不給參數則跑預設清單
-scripts/test-ebiten.sh ./cmd/moo2/    # 需 CGO/X11 的套件(cmd/moo2、internal/uifont)
-scripts/screenshot.sh <遊戲夾> out.png -- -lbx fleet.lbx -asset 0   # 單張畫面截圖
+| 主題 | 入口 | 說明 |
+|---|---|---|
+| 唯一活工作表 | [`WORKLIST.md`](../WORKLIST.md) | 目前剩餘工作，不要依賴歷史方框 |
+| 誠實現況 | [`HONEST-STATUS.md`](HONEST-STATUS.md) | 已接、近似、未知 |
+| 逆向工程日誌 | [`docs/re/01-gap-report.md`](re/01-gap-report.md) | 位址、資料表與編號歷史，不是活工作表 |
+| 研究帳本 | [`RESEARCH-LOG.md`](RESEARCH-LOG.md) | 本輪規則與證據分級 |
+| 武器／飛彈反組譯索引 | [`docs/re/weapon-mod-flags.md`](re/weapon-mod-flags.md) | `sub_394F7`／`sub_39434`、`sub_3CD21`、`sub_3E095`／`sub_3A0B9`、ARM/FST 證據分級 |
+| 安塔蘭艦隊反組譯 | [`docs/re/antaran-defense-fleet.md`](re/antaran-defense-fleet.md) | 防禦艦級、戰鬥 loader 與 compact design 位址勘誤 |
+| 重製計畫 | [`REMAKE-PLAN.md`](REMAKE-PLAN.md) | 架構、垂直切片與剩餘交付 |
+| 驗證矩陣 | [`VERIFICATION-MATRIX.md`](VERIFICATION-MATRIX.md) | 測試、原版 oracle、畫廊與玩家路徑狀態 |
 
-# headless 跑 -game 並截圖驗證(對原版比對的唯一自動化手段)
-DATA=/home/anr2/moo2-private-build/gamedata/mastori2
-FONT=/home/anr2/moo2-private-build/fonts/NotoSansCJK-Regular.ttc
-docker run --rm -v "$PWD:/src" -v "$PWD/.docker-cache/go:/go" -v "$DATA:/data:ro" -v "$FONT:/font.ttc:ro" \
-  -w /src moo2-ebiten bash -c \
-  'go build -buildvcs=false -o /tmp/moo2 ./cmd/moo2 && xvfb-run -a /tmp/moo2 -game -data /data -lang zh -font /font.ttc -shot /src/out.png -frames 6'
-# 然後用 Read 工具看 out.png,和原版對照(原版可用 DOSBox/openorion2 截圖)
+## 下一個精確動作
 
-# 完整本機測試 AppImage(自帶資料/字型,免 -data;產物在 dist/,gitignore)
-bash scripts/package-appimage-full.sh
-```
+1. 發行前改用不含原版資料／音樂的公開 release 包，並於有音訊輸出的桌面逐曲確認
+   `STREAM`／`STREAMHD` 的音色與場景切換；本輪本機完整版與影片不直接作公開散布。
+2. 公網部署若需要跨 NAT，配置外部 relay 或 UPnP；本專案目前只負責 TCP、身份驗證、TLS、心跳與重連。
+3. 只在取得可啟動 `VESA.COM` 的原版 runtime 後，才補 `sub_3AC20`／`sub_3AD57` 相鄰函式的外部名稱解析、live tech／逐彈逐槽數值、外交特殊表與原版逐值 oracle；靜態 Fire／要塞公式已完成，不重新深挖與玩家行為無關的反組譯內部功能。
 
-docker images:`moo2-ebiten`(CGO+X11+xvfb,已存在)、`golang:1.25-bookworm`(純 Go)。
+## 不要重做
 
-## 3. 程式碼地圖:哪些是真的、哪些是自製
+> **本輪勘誤**：上方較早的交接句仍把「敵方戰機下游命中／傷害、要塞完整火力、原生
+> `.GAM` importer」列成未完成；它們已由本輪補充接線。現在只剩 `sub_3AC20`／`sub_3AD57`
+> 相鄰函式的外部名稱／live 逐彈輸入、要塞 raw flags 正式名稱／live 數量、外交特殊表
+> 與原版任命／任期等 oracle 差異；靜態中間式已寫入證據文件。
 
-**扎實(有逆向/驗證基礎,可信可留)**
-- `internal/lbx/`:LBX 解碼(容器/RLE/多幀 delta/調色盤鏈)。對照 openorion2 逐位元組驗證。
-- `internal/save/`:原版存檔唯讀解析(SAVE10.GAM 全區段,有回歸護欄)。
-- `internal/gamedata/`:少數真手冊公式(人口成長 colony.go、研究成本表)。**其他很多是估計。**
-- `cmd/moo2/*.go`:各原版畫面載入真 LBX 美術 + 擦底疊字中文化(數量會變動,以 `grep -c '^func (b \*sceneBuilder) ' cmd/moo2/*.go` 為準,別在文件裡寫死)。畫面像原版。
-- `assets/i18n/*.tsv`:UI 譯表(數百條)。
+- 不要把 `openorion2` 當成遊戲引擎；它主要是渲染／資產參考。
+- 不要用測試綠或新功能數量宣稱原版還原度。
+- 不要在主機執行遊戲、Go 測試、Python、DOSBox、Xvfb 或 GUI。
+- 不要把 ARM/FST 的 remake 垂直切片寫成原版全路徑等價；魚雷 NR、心靈感應／幸運／全知／匿蹤艦等仍未證實項目也不可寫成完成。
+- 不要清理整個 dirty worktree；所有既有變更都視為使用者資產。
 
-**自製 / 不忠實(當心,別信它的測試綠)**
-- `internal/shell/session.go`:回合系統(經濟/研究/艦隊/人口/建築/事件/安塔蘭/種族/AI)。**大量係數是自編 remake 近似值**(程式碼註解自己標了「remake 調校值」)。與原版規則差距極大。
-- `internal/shell/persist.go`:remake 自身 JSON 存檔(非原版 .GAM)。
-- 各 `*_test.go`:只證明自製邏輯自洽,**不證明對齊原版**。
+## 2026-08-11 Fire／要塞深度追查交接
 
-架構配方見記憶 `moo2-game-interactive-architecture`(但那是「畫面導覽器」架構,不是忠實引擎)。
-
-## 4. 接手 worklist(依「對玩家體驗的影響」排序,不是好做程度)
-
-> 每項的驗收 = **對原版實測比對**,不是加一個系統+測試綠。做之前先 Read `HONEST-STATUS.md`。
-
-### 優先 1 — 音樂 / 音效 ✅ 已完成(2026-07-12 使用者確認)
-
-> ⚠ **2026-08-08:「僅曲目↔場景精確身分待人耳定案」這句已作廢。** 不需要人耳——
-> 場景→曲目是執行檔裡的立即數,三個音樂入口全部解出(gap-report 第 73 項(音樂場景表))。
-> 而且**主選單與星圖在原版是每次隨機三選一**(`Play_Background_Music_` = `clock()%3+1`),
-> 「哪一首」這個問法本身就錯了。
-> ⚠ **翻案**:MOO2 **沒有 XMI/MIDI 音樂**。全部音樂/音效是 LBX 內的 22050Hz 8-bit PCM WAV,原封播即與原版 bit-identical,**不需 SoundFont/OPL 合成**。定案見 `docs/tech/audio-format.md`。
-- [x] 格式逆向 + ebiten 音訊整合(`internal/audio`)+ 主選單 BGM(STREAMHD)+ 按鈕音效(BUTTON1),`cmd/moo2/audiohook.go`;單元/真檔測試綠。
-- [~] **曲目/UI 事件對應待對原版聆聽定案**:BGM 暫用 clips[0]、點擊暫用 BUTTON1(哪條是主選單主題、哪個 BUTTONx 對哪類按鈕,需 oracle)。
-- [x] 星系/戰鬥/外交各場景 BGM 對應已接線(`playSceneBGM` 於 menu/galaxy/diplo/combat 切換,見 `interactive.go`);外交曲有反組譯硬證。
-- [x] ~~`CMBTSFX/SPHERSFX` 音庫逆向~~ **無此需求**:2026-07-12 byte 級驗證裁定兩者為 LBX **影像庫**(戰鬥視覺特效非音效);戰鬥音效全在 `SOUND.LBX`,已接進戰術戰鬥。
-- [ ] 桌面實測驗收(headless 停用音訊,聽感只能桌面驗);曲目↔場景精確身分仍待人耳最終定案。
-
-### 優先 2 — 忠實的新遊戲流程 ✅ 已完成(2026-07-12 使用者確認)
-- [x] 獨立**種族選擇畫面**:14 族肖像(RACESEL.LBX 真肖像)+ 自訂種族點數(官方 patch1.5 config 真值);已從設定畫面拆成真畫面(`b.raceSelect`)。
-- [x] 版本選擇(1.3/1.5)→ 難度/星系大小 → 種族選擇 → 命名/旗色 → 進遊戲,原版流程鏈完整(`interactive.go`,見 `docs/tech/newgame-flow.md`)。
-- [x] 真母星初始狀態(手冊忠實 Average 開局:人口職務模型 + 起始 BC 依 SAVE10 oracle + 無開局領袖忠實雇用制 + 種族錢優勢),取代 demo colonies。
-- [~] **殘留(校準非重建)**:turn-1 少數數值待 playtest 定案(如科學家分配 科3 vs 原版可能科4);屬對齊,非缺畫面/流程。
-
-### 優先 3 — 按鍵 / 熱區逐畫面像素對齊 ✅ 已完成(2026-08-07 用執行檔立即數走完)
-
-> 座標一手來源是**執行檔反組譯的立即數**;openorion2 的 `initWidgets` 是次級來源,
-> 而且它缺很多畫面(colony/races/newgame/shipDesign/地面戰/安塔蘭廳都沒有)。
-> **openorion2 沒有 ≠ 沒有真值** —— 反組譯全都有。
-> 2026-08-07 待重挖名單已清空,剩下的不是座標沒挖而是子系統沒做。
-- [x] 逐畫面比對 openorion2 `initWidgets` 硬編 `createWidget` 真值 vs remake 現行座標,把有真值卻用 PIL/估計的補齊:menu(本就 0px)、planets(補第8列 + 修 -1px 漂移)、research(右欄標籤)、fleet(Combat/RETURN/SCRAP 標籤)、officer(領袖槽距 + HIRE)、info(五列選單 + tech 熱區)。方法:派 subagent 逐畫面對碼、Opus 核實後套用。
-- [~] **openorion2 這條線到頂了,但不是「沒有真值可用」**:colony/races/newgame/shipDesign 在 openorion2 是 STUB 或無對應 view。
-  ⚠ **2026-08-07 翻案**:原本這裡寫「要再精確只能靠原版截圖(本專案不採)」——**錯的,而且是會擋死後續工作的錯**。
-  真正的一手座標在**原版執行檔的反組譯**裡,openorion2 有沒有實作完全不相干。當天做地面戰畫面時,openorion2
-  對它零命中,而反組譯直接給出全部座標:`sub_B8BC7`/`sub_B8C8B`(兩側面板貼圖點、`Darken_Fill_` 矩形、
-  文字置中 x、列高)、`sub_B88B2` + 常數 `dword_B6CDE`(部隊落點公式與兩側基準 X)。
-  **凡是 openorion2 沒有的畫面,先去反組譯挖 `Print_Centered_` / `Darken_Fill_` / 貼圖呼叫的立即數,別退回估計值。**
-  **2026-08-07 第二個實例:NEW GAME 設定畫面**(`sub_CCE2E` 建 widget + `sub_CCC3D` 畫值圖 + LBX 資產數,
-  三個來源互證),連帶抓出「左下那個框在原版是 PLAYERS 不是 RACE」這個真的還原錯誤,見
-  `docs/re/01-gap-report.md` 第 5 項(NEW GAME 設定畫面)。**newgame 這一項可以從「仍待重挖」的名單移除了。**
-  **同日第三個實例:殖民地畫面**——`Add_Job_Field_For_` @ 0xBCB4B 給職業欄座標,框架美術是
-  **COLPUPS.LBX#5**(不是 COLONY.LBX),見第 6 項(殖民地畫面框架)。**colony 也可以移除了。**同日第四個實例:**種族選擇畫面**(`Race_Selection_Screen_` @ 0x5C510
-  的 2×7 建鈕迴圈 + `Draw_Race_Selection_Screen_` 的肖像位置 + RACESEL 資產尺寸三方互證),
-  順便修掉「左右擺反」這個還原錯誤,見第 5 項(NEW GAME 設定畫面)。**shipDesign 同日也做完(六格不等距,見第 5 項(NEW GAME 設定畫面))——這份名單清空了。**
-  剩下的不是「座標沒挖」而是「子系統沒做」,見 gap report 末尾的進度表。
-  battleResult/council/turnSummary 是結果/摘要顯示畫面,維持「點任意處返回」(合理 UX,使用者確認不動)。
-
-### 優先 4 — 忠實 gameplay 規則(主體工作量,對應 PLAN「從零重建引擎」軌)
-
-> ⚠ 這一節的勾選狀態原本停在 2026-07-10,與同一份文件 §0 的「研究系統是首個完整忠實 gameplay 系統」
-> 以及 `HONEST-STATUS.md` 的「④ gameplay 子系統全接」互相矛盾。2026-08-07 依程式碼現況訂正。
-
-- [x] 殖民地:建築全表 + 污染/食物/貿易真公式(`docs/tech/colony-buildings.md`、`colony-economy-maintenance.md`)。
-      ⚠ **格子地形 + 每格產出未做**——remake 的殖民地是「職務人數 × 每人產出」模型,不是原版的逐格地形。
-- [x] 科技樹:每主題在數科技間**抉擇** + 真 RP 成本表(`docs/tech/research-system-status.md`)。
-- [x] 戰鬥:命中/傷害/射程/防禦/飛彈躲避/球狀傷害/地面戰皆已接 gamedata 真公式;
-      艦艇損傷與修復 2026-08-07 補上(`internal/shell/repair.go`)。
-- [~] 艦艇設計:艦體空間格 + 每元件佔格 + 改造 mod 佔格已完成;Design Dock 的原版繪製仍待。
-- [~] 把 session.go 裡自編的近似係數逐一換成手冊/逆向真值——**持續進行中**,每輪的成果記在
-      `docs/re/01-gap-report.md`。剩餘的自編值都已在程式碼註解標明來源等級。
-
-## 5. 鐵律(接手必守)
-
-1. **驗收看原版實測,不看測試綠**(前一輪的教訓,記憶 `moo2-fidelity-20pct-not-test-green`)。
-2. 編譯/測試**一律 docker**([HARD]);Python 用 docker uv.venv。
-3. **版權資產絕不入 repo**:遊戲 LBX/存檔只在 `/home/anr2/moo2-private-build/`;`.gitignore` 已擋;`dist/` 已 ignore。
-4. **不臆造數值**:每個係數標來源;查不到就說查不到(見 `docs/tech/component-values.md` 的 provenance 做法),不憑印象填。第一性原理查手冊/逆向。
-5. 預設繁體中文;commit message 結尾加 `Co-Authored-By:` 署名(型號依當時 session 的環境設定,別照抄舊值)。
-6. 每輪 push 到 `main`;每輪盤點新文件與 worklist/audit 有無衝突,清掉過期斷言(rule 63)。
-7. 機械工作(翻譯/移植/打包)可派便宜 subagent;但**還原度判斷要對原版實測**,別只信 subagent 回報(記憶 `moo2-cheap-subagent-division`)。
-
-## 6. 怎麼接續這個 Claude session
-
-- 記憶自動載入:`~/.claude/projects/-home-anr2-moo2/memory/MEMORY.md`(索引)。關鍵:`moo2-fidelity-20pct-not-test-green`、`moo2-game-interactive-architecture`、`openorion2-is-renderer-not-engine`、`ebiten-cht-reference-paths`。
-- 若要在**別台機器**接續同一對話(`claude -r`),用 `dev-setup-bundle` skill 打包(含 `claude-session/`)。同機重啟不需要,直接讀本檔即可。
-- 最近進度:`git log --oneline -15`。(**不要在文件裡寫死 HEAD**——寫下的那一刻就開始過期。)
+- `sub_3AC20 @ 0x3AC20` 與 `sub_3AD57 @ 0x3AD57` 的外部名稱索引互相衝突，交接一律保留 raw 位址。
+- `sub_3AD57` 的 `RawFlags & 4` 分支不可達；其命中／傷害式、隨機 helper 與
+  `sub_39985`／`sub_3A0B9` 下游已證實。`sub_3DF8D` 的部分 runtime 欄位仍不命名。
+- `sub_4D18E` 的 class 6 直接讀址是 `0x17F69C=900`（0x0F byte stride），不是舊探針誤算的
+  `0x17F6F6=25`；四槽 seed、raw `0/2/4` 百分比、`sub_6EE8E` divisor 與 `99/198`
+  上限／拆槽已證實。`T=sub_6E70A(...)` 仍是 live tech 輸入，不能把 caps 當 live quantity。
+- 完整 raw 指令、輸入雜湊、工具版本與證據等級集中在 [`oracle-static-ida-20260811.md`](re/oracle-static-ida-20260811.md)。

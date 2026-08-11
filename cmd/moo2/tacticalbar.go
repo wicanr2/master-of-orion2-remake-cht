@@ -23,11 +23,11 @@ import (
 //	掃描  ✅ 手冊「Scan gives you information about an enemy ship」→ 進掃描模式,點敵艦看資料
 //	登船  ✅ 手冊的登艦戰(第 80 項),接 shell.ResolveBoarding
 //	撤退  ✅ 保留倖存艦離場,判定為未勝
-//	等待  ❌ **remake 沒有逐艦行動順序**(射擊是全艦隊同時結算),「移到順序最後」無處可去
-//	完成  ❌ 同上:沒有「這艘船這回合行動完畢」這個狀態
+//	等待  ✅ 將目前艦移到本回合未行動艦之後
+//	完成  ✅ 結束目前艦的行動；全部完成後才結算敵方回擊
 //	選項  ❌ 原版開的是設定畫面,remake 還沒有那個畫面(見 gamemenu.go 的 SETTINGS 註解)
 //
-// 後三顆**點下去會說明為什麼沒有反應**。空按鈕與會解釋自己的按鈕,對玩家是不同的東西。
+// 尚未完成的選項按鈕會說明為什麼沒有反應；其餘按鈕都接到實際戰鬥狀態。
 
 // tacticalMode 是控制列切換出來的點擊模式。
 type tacticalMode int
@@ -73,14 +73,13 @@ func (t *tacticalScreen) handleBarButton(idx int) bool {
 				"Board mode: select your ship, then click an adjacent enemy (click BOARD again to cancel)"))
 	case "RETREAT":
 		t.retreat()
-	case "WAIT", "DONE":
-		// 誠實留白:remake 的射擊是全艦隊同時結算,沒有逐艦行動順序,
-		// 「等待(移到順序最後)」與「完成(這艘船行動完畢)」都沒有落點。
-		t.log = t.b.tr("remake 的一回合是全艦隊同時結算,沒有逐艦行動順序——等待/完成沒有對應行為",
-			"This remake resolves the whole fleet at once; there is no per-ship turn order, so WAIT/DONE do nothing")
+	case "WAIT":
+		t.waitSelectedAction()
+	case "DONE":
+		t.finishSelectedAction()
 	case "OPTIONS":
-		t.log = t.b.tr("remake 還沒有原版的設定畫面(音量/開關),見遊戲選單",
-			"The original settings screen (volume, toggles) is not built yet — see the game menu")
+		t.log = t.b.tr("完整的原版設定畫面尚未完成;音量可在遊戲選單調整",
+			"The full original settings screen is not built yet; adjust volume in the game menu")
 	default:
 		return false
 	}
@@ -172,7 +171,7 @@ func (t *tacticalScreen) scanEnemy(idx int) string {
 	e := t.enemy[idx]
 	return fmt.Sprintf(t.b.tr("%s:結構 %d/%d 裝甲 %d 攻擊 %d 防禦 %d 傷害 %d-%d 護盾減 %d 陸戰隊 %d",
 		"%s: structure %d/%d, armor %d, attack %d, defense %d, damage %d-%d, shields -%d, marines %d"),
-		e.Name, e.HP, e.MaxHP, e.ArmorHP, e.Attack, e.Defense, e.WeaponMin, e.WeaponMax,
+		combatShipLabel(t.b.lang, t.b.session, e.Name), e.HP, e.MaxHP, e.ArmorHP, e.Attack, e.Defense, e.WeaponMin, e.WeaponMax,
 		e.ShieldReduction, e.Marines)
 }
 
@@ -188,16 +187,16 @@ func (t *tacticalScreen) boardEnemy(idx int) {
 	att := &t.player[t.sel]
 	def := &t.enemy[idx]
 	dist := abs(att.Col-def.Col) + abs(att.Row-def.Row)
-	if !shell.ShipBoardingReach(*att, dist) {
-		t.log = t.b.tr("沒有突擊艇的船必須移動到相鄰格才能登艦",
-			"Without Assault Shuttles you must move adjacent to board")
+	if !shell.ShipBoardingReachAgainst(*att, *def, dist) {
+		t.log = t.b.tr("登艦條件不符:請移到相鄰格,或用傳送器在 12 格內擊穿面向護盾",
+			"Boarding unavailable: move adjacent, or use Transporters within 12 squares after dropping the facing shield")
 		return
 	}
 	if shell.ShipBoardingPartySize(*att) <= 0 {
 		t.log = fmt.Sprintf(t.b.tr("%s 艦上沒有陸戰隊可以派", "%s has no marines to send"), att.Name)
 		return
 	}
-	attName, defName := att.Name, def.Name
+	attName, defName := att.Name, combatShipLabel(t.b.lang, t.b.session, def.Name)
 	res := t.b.session.ShipBoardingAttack(att, def, shell.BoardingCapture, func(n int) int {
 		if n <= 0 {
 			return 0

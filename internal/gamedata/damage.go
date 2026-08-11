@@ -194,6 +194,16 @@ func DamageShieldCapacity(shieldReduction, shipSize int) int {
 	return 5 * shieldReduction * shipSize
 }
 
+// DamageShieldCapacityForShipClass 回傳指定艦體級數每一護盾分面的初始容量。
+// 手冊以 1..6 稱呼六種艦體的 size class；本專案的 CombatShipClass 以 0..5
+// 索引同一張表，所以要加一後才是手冊的 ship size。
+func DamageShieldCapacityForShipClass(shieldReduction int, class CombatShipClass) int {
+	if class < SHIP_FRIGATE || class > SHIP_DOOMSTAR {
+		return 0
+	}
+	return DamageShieldCapacity(shieldReduction, int(class)+1)
+}
+
 // DamageHardShieldBonus 手冊原文(Hard Shields (System)):「This reduces the damage of each
 // enemy attack — by 3 points — regardless of whether or not the shield in that quarter has
 // collapsed.」與 Class 護盾的減傷值相加(見 DamageAfterShield),且「Hard Shields ... provide
@@ -220,6 +230,19 @@ func DamageAfterShield(dmg, shieldReduction int, hardShield, shieldPiercing bool
 		remaining = 0
 	}
 	return remaining
+}
+
+// DamageShieldAbsorbed 回傳一般護盾從一發命中容量中實際吸收的數值。
+// Hard Shields 的額外 −3 是獨立減傷，不應消耗一般護盾分面容量；Shield Piercing
+// 由呼叫端在這個函式之外判定並傳 0。容量代表「吸收的傷害」，不是整發原始傷害。
+func DamageShieldAbsorbed(rawDamage, shieldReduction int) int {
+	if rawDamage <= 0 || shieldReduction <= 0 {
+		return 0
+	}
+	if rawDamage < shieldReduction {
+		return rawDamage
+	}
+	return shieldReduction
 }
 
 // ---- 裝甲穿透(Armor Piercing, AP mod) ----

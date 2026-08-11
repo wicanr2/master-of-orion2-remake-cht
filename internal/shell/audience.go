@@ -81,6 +81,7 @@ func (s *GameSession) AudienceRequests() []int {
 
 // ClearAudienceRequest 清掉某位對手的請求(玩家進了外交畫面就算談過了)。
 func (s *GameSession) ClearAudienceRequest(idx int) {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdClearAudience, Args: []int{idx}})
 	if idx < 0 || idx >= len(s.AIPlayers) {
 		return
 	}

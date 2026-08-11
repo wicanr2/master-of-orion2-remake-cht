@@ -33,6 +33,9 @@ func TestResolveShot(t *testing.T) {
 	if lo.DamageToStructure > hi.DamageToStructure {
 		t.Fatalf("護盾應減傷:無盾 %d 應 >= 有盾 %d", hi.DamageToStructure, lo.DamageToStructure)
 	}
+	if lo.ShieldDamage != 15 {
+		t.Fatalf("一般護盾每發只應扣實際吸收量 15,got %d", lo.ShieldDamage)
+	}
 }
 
 // TestResolveMissileShotAMRIntercept 驗證 AMR(反飛彈火箭)攔截分支:命中率查
@@ -99,8 +102,9 @@ func TestResolveMissileShotDamageThroughShieldArmor(t *testing.T) {
 		t.Fatalf("應命中")
 	}
 	// 20 傷害 - 護盾 5 = 15;裝甲 10 只能扛 10,溢出 5 打結構。
-	if r.DamageToStructure != 5 || r.RemainingArmorHP != 0 {
-		t.Fatalf("DamageToStructure=%d RemainingArmorHP=%d,預期 5/0", r.DamageToStructure, r.RemainingArmorHP)
+	if r.DamageToStructure != 5 || r.RemainingArmorHP != 0 || r.ShieldDamage != 5 {
+		t.Fatalf("DamageToStructure=%d RemainingArmorHP=%d ShieldDamage=%d,預期 5/0/5",
+			r.DamageToStructure, r.RemainingArmorHP, r.ShieldDamage)
 	}
 }
 
@@ -126,9 +130,9 @@ func TestResolveMissileVsBeamDivergence(t *testing.T) {
 // (bypassShieldAndArmor=true)與「最低傷害 1」的夾限。
 func TestResolveSphericalShot(t *testing.T) {
 	r := ResolveSphericalShot(20 /*aggD*/, 5 /*shield*/, 10 /*armor*/, false, false)
-	if !r.Hit || r.DamageToStructure != 5 || r.RemainingArmorHP != 0 {
-		t.Fatalf("got Hit=%v DamageToStructure=%d RemainingArmorHP=%d,預期 true/5/0",
-			r.Hit, r.DamageToStructure, r.RemainingArmorHP)
+	if !r.Hit || r.DamageToStructure != 5 || r.RemainingArmorHP != 0 || r.ShieldDamage != 5 {
+		t.Fatalf("got Hit=%v DamageToStructure=%d RemainingArmorHP=%d ShieldDamage=%d,預期 true/5/0/5",
+			r.Hit, r.DamageToStructure, r.RemainingArmorHP, r.ShieldDamage)
 	}
 
 	bypass := ResolveSphericalShot(20, 5, 10, false, true)
@@ -349,7 +353,8 @@ func TestBattleVolleyDispatchByWeaponKind(t *testing.T) {
 
 // TestResolveShotDamageDissipatesWithRange 驗證命中後的傷害會隨距離衰減。
 //
-// 對應原版 Get_Beam_Weapon_Modifiers_(sub_39434)的
+// 對應原版 `Get_Beam_Weapon_Modifiers_`(raw `sub_394F7`) 內呼叫
+// `Get_Beam_Range_To_Hit_Bonus_`(raw `sub_39434`) 的
 // `if (!NR && !immune) *damagePct += ranged_damage_penalty[range]`。
 // remake 在 2026-08-06 之前完全沒接這一段:同一發雷射在 1 格與 23 格外傷害一樣,
 // 「靠近射擊」在戰術上沒有意義。

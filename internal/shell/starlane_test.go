@@ -186,8 +186,11 @@ func TestNavigatorIgnoresNebula(t *testing.T) {
 	slowed := s.FleetETATo(0, dest)
 
 	s.Leaders = append(s.Leaders, Leader{Name: "測試領航員", Skill: navigatorSkillLabel, Level: 3, Ship: true, Tier: 1})
+	if len(s.Fleet().Ships) == 0 || !s.AssignOfficerToShip(0, 0, len(s.Leaders)-1) {
+		t.Fatal("領航員測試需要先把軍官指派到艦艇")
+	}
 	if !s.FleetHasNavigator() {
-		t.Fatal("加了艦艇領航員之後 FleetHasNavigator 應為 true")
+		t.Fatal("指派艦艇領航員之後 FleetHasNavigator 應為 true")
 	}
 	withNav := s.FleetETATo(0, dest)
 	if withNav >= slowed {

@@ -60,10 +60,14 @@ openorion2 galaxy 用 `STARBG#3` 當背景,palette = `_gui->palette()`(全域 GU
 - 戰鬥:STARBG 星空 + COMBAT 原版控制列 + 中文艦名/提示 ✓
 - ⚠ **CPU 教訓**:截圖廊初版沒有終止保護 + 存圖用 `tick==目標`(精確相等),ebiten Update/Draw 解耦會跳幀漏存 → **永不終止的 render loop 空轉燒 CPU**(兩個容器各卡 17–20 分)。已修:存圖改 `tick>=目標`、Update 超過末 tick+3 硬性終止;跑時容器內外雙 `timeout`。**教訓:headless GUI 迴圈必設硬性終止 + timeout**(rulebook 35)。
 
-### Phase 2 進行中(2026-07-10)
+### Phase 2 進行中(2026-07-10；2026-08-11 oracle 更新)
 - ✅ **控制列按鈕中文化**:7 個實際控制按鈕(AUTO→自動/SCAN→掃描/BOARD→登船/RETREAT→撤退/WAIT→等待/DONE→完成/OPTIONS→選項)已疊深色底+中文蓋掉烘進英文(`drawBarLabelsCHT` + `barButtonsCHT` 座標表,於實際截圖逐像素量測)。log 移到控制列上方星空避免壓按鈕。截圖驗證對齊乾淨。
 - ⏳ 未使用清單面板的 WEAPONS/SPECIALS 欄位標頭刻意略過(remake 未顯示武器清單);若之後接上武器列表再中文化。
-- ⏳ 艦艇 sprite 仍全共用 CMBTSHP#30(可見佔位);per 艦型/尺寸完整對照待做。
+- ✅ **艦艇 sprite raw 圖片映射**：`CMBTSHP` 的資產索引已由 IDA `sub_30062 @ 0x30062` 證實為
+  `45*playerColor+rawPicture`；`rawPicture 0..43`、`44` 為 sentinel。remake 已優先讀
+  `ShipDesign.Picture`／原版 raw picture，未知值才走 class fallback；這不是以網路截圖猜出的
+  近似表。20 幀的朝向映射已接最近角度 adapter；原版 timer 仍未知，remake 已在移動後以
+  固定 tick 播放短掃掠，詳見 `docs/tech/cmbtshp-ship-sprites.md`。
 
 ### Phase 1 遺留(後續)
 - ⚠ **艦艇 sprite 太暗看不見**:CMBTSHP#0 是小型深色戰機(疊灰底可見輪廓,疊黑星空幾乎隱形)。sprite 載入/縮放/翻轉管線已通(debug 確認 t.ship 非 nil、59×60、20 幀),但 #0 不適合當佔位。Phase 2 需挑「較大/較亮」或按實際艦型選 sprite,並考慮加選取高亮/描邊讓艦艇在星空上可讀。現況艦艇仍主要靠標籤方框+艦名辨識(功能正常)。
@@ -75,14 +79,16 @@ openorion2 galaxy 用 `STARBG#3` 當背景,palette = `_gui->palette()`(全域 GU
 
 1. **背景**:載 STARBG#0(或依星域選 0–5),cross-LBX 借 COMBAT#11 palette,640×480 鋪底,取代 `dst.Fill` 星空。
 2. **控制列**:COMBAT#0(640×129)貼底部(y≈351),取代自繪 log 列;文字/按鈕疊其上。
-3. **艦艇**:CMBTSHP sprite(59×60)取代彩色 token;先用 frame0(朝向後續再依移動向量選 20 幀之一)。艦型→asset index 對應待查(先固定一款示範)。
+3. **艦艇**:CMBTSHP sprite(59×60)取代彩色 token;渲染時依 raw picture 與玩家色套用
+   `45*playerColor+rawPicture`，frame 仍以 nearest-angle adapter 顯示；20 幀實際 timer／原版
+   每幀停留時間待 runtime oracle。
 4. **保留**:命中/傷害/過盾/過甲真公式(`combat_formula.go`、`ResolveShot`)、回合制流程、RNG 種子。
 
 **驗證**:headless `-game` 導覽到戰鬥截圖,對照原版戰鬥畫面構圖(背景+底列+艦艇)。palette 借對則艦艇/背景色彩連貫,借錯全畫面雜點(同 DIPLOMAT 配對律教訓,見 `diplomat-lbx-layout.md`)。
 
 ## 四、待查(RE 後續)
-- CMBTSHP 艦型/尺寸/種族 → asset index 的對應表(360 個)。
-- 20 幀朝向的角度對應(哪一幀對哪個航向)。
+- 20 幀朝向的角度對應（哪一幀對哪個航向）與動畫 timer；目前只確定原版讀取
+  `raw +0x23` 的 16 向 heading，remake 使用可回歸的最近角度轉接。
 - STARBG 6 張背景是否依星域/星球類型選用。
 
 ## 追記(2026-07-11):CMBTSHP vs ships.lbx —— #12 艦型對照為何 RE-gated
@@ -91,8 +97,7 @@ openorion2 galaxy 用 `STARBG#3` 當背景,palette = `_gui->palette()`(全域 GU
 
 - **openorion2 完全不使用 CMBTSHP.LBX**(全 `src/*.cpp` grep 零命中)。它的艦艇 sprite 來自 **`ships.lbx`**(`ships.cpp` `SHIPSPRITE_ARCHIVE`),索引公式 `ships.cpp:112-114`:`ships.lbx[玩家色 × (MAX_SHIP_SPRITES+1=50) + ship.picture]`,配玩家色調色盤;`ship.picture`(0-48,`MAX_SHIP_SPRITES=49`)存在存檔 ShipDesign(remake `internal/save` 已解析 `Picture uint8`)。特殊 sprite:ANTARAN=0/GUARDIAN=7/MONSTER=8/MINIMONSTER=20。
 - **但 `ships.lbx` 的 `_shipimg` 在 openorion2 是否用於戰術戰鬥畫面,無法從碼確認**;而 **CMBTSHP.LBX 資產 0 有 20 幀**(旋轉動畫),與「戰術戰鬥中艦艇會朝不同方向」的需求吻合——強烈暗示 **CMBTSHP 才是 DOS 原版戰術戰鬥的艦 sprite**,`ships.lbx` 可能是星系/艦隊/設計畫面的靜態小圖。故 remake 現行選 CMBTSHP 疊戰場**很可能是對的**,不應貿然改成 ships.lbx。
-- **#12(艦級 → CMBTSHP 資產索引)已解,不需要 DOSBox oracle。**
+- **#12(CMBTSHP raw picture → 資產索引)已解,不需要 DOSBox oracle。**
   作法見 [`cmbtshp-ship-sprites.md`](cmbtshp-ship-sprites.md):`CombatSpriteForClass` /
   `CombatSpriteForStrength`(`internal/shell/session.go`)與 `loadCombatShipByIdx`
   (`cmd/moo2/interactive.go`)依艦級/戰力分色塊選 sprite 索引。
-

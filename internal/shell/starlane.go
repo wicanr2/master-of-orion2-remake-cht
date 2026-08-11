@@ -65,12 +65,7 @@ const navigatorSkillLabel = "領航員"
 // ⚠ 只認**艦艇軍官**(`Ship == true`)——手冊那句是「a fleet … the ship contains an officer」,
 // 殖民地領袖不隨艦隊走。
 func (s *GameSession) FleetHasNavigator() bool {
-	for _, l := range s.Leaders {
-		if l.Ship && leaderSkillTier(l, int(gamedata.SKILL_NAVIGATOR)) > 0 {
-			return true
-		}
-	}
-	return false
+	return s.selectedFleetHasAssignedSkill(gamedata.SKILL_NAVIGATOR)
 }
 
 // FleetSpeedParsecs 回傳艦隊目前的每回合秒差距(還沒套星雲/干擾場的懲罰)。
@@ -93,7 +88,8 @@ func (s *GameSession) FleetSpeedParsecs() int {
 	if sp <= 0 {
 		return 0
 	}
-	if s.FleetHasNavigator() {
+	// 導航員的速度加成屬於這支艦隊;不能因帝國另一支艦隊有軍官就一起加速。
+	if s.selectedFleetHasAssignedSkill(gamedata.SKILL_NAVIGATOR) {
 		sp++
 	}
 	return sp
@@ -146,7 +142,7 @@ func (s *GameSession) fleetSpeedForTrip(from, to int) int {
 	if s.RouteInterdicted(from, to) {
 		return gamedata.InterdictorSpeed
 	}
-	if s.FleetHasNavigator() {
+	if s.selectedFleetHasAssignedSkill(gamedata.SKILL_NAVIGATOR) {
 		return sp
 	}
 	if s.RouteCrossesNebula(from, to) {

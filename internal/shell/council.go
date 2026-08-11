@@ -460,6 +460,7 @@ func VictoryReasonLabel(r engine.VictoryCondition) string {
 //
 // PendingCouncilElection==nil 時呼叫視為無操作(沒有待決選舉可回應)。
 func (s *GameSession) RespondToCouncilElection(accept bool) {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdRespondCouncil, Args: []int{boolInt(accept)}})
 	if s.PendingCouncilElection == nil {
 		return
 	}

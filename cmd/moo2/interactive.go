@@ -92,11 +92,16 @@ type overlayScreen struct {
 	// 目前只有星圖接了(見 cmd/moo2/hotkeys.go)。
 	onHotkey         func(code string) *origTransition
 	hover            string
-	offsetX, offsetY int         // 背景圖在 640×480 畫布上的置中偏移(小於全螢幕的視窗畫面用)
-	eraseColor       *color.RGBA // 非 nil 時強制用此色擦底(背景均勻的畫面用,勝過採樣猜測)
-	eraseInsetX      int         // 擦底框在基準(左右各3px)之外「再往內縮」的水平量(每邊);0=不變
-	eraseInsetY      int         // 擦底框在基準(上下各2px)之外「再往內縮」的垂直量(每邊);0=不變
-	plateFace        bool        // true=擦底色改採按鈕面色(浮雕按鈕列用,見 samplePlate faceSample)
+	offsetX, offsetY int // 背景圖在 640×480 畫布上的置中偏移(小於全螢幕的視窗畫面用)
+	// animFrames 是少數原版 overlay 的 delta 動畫(目前議會)；nil 代表靜態背景。
+	// animTick 由 sceneBuilder 提供，使用函式避免把場景計數複製成不會更新的值。
+	animFrames         []*ebiten.Image
+	animTick           func() int
+	animationStartTick int
+	eraseColor         *color.RGBA // 非 nil 時強制用此色擦底(背景均勻的畫面用,勝過採樣猜測)
+	eraseInsetX        int         // 擦底框在基準(左右各3px)之外「再往內縮」的水平量(每邊);0=不變
+	eraseInsetY        int         // 擦底框在基準(上下各2px)之外「再往內縮」的垂直量(每邊);0=不變
+	plateFace          bool        // true=擦底色改採按鈕面色(浮雕按鈕列用,見 samplePlate faceSample)
 	// eraseInset 用途:浮雕按鈕的上下/左右斜邊會被擦底塊蓋掉 → 加內縮只擦中間文字帶,保留浮雕框
 	// (仍蓋掉烘進的英文,因英文置中於文字帶內);plateFace 則讓擦底色貼合按鈕面,兩者可併用。
 	// labelColorFor 以 enKey 覆寫個別標籤的顏色(空 = 全部用 labelColor)。
@@ -115,6 +120,8 @@ type extraText struct {
 	text  string
 	col   color.RGBA
 	align int // 0=靠左,1=置中
+	// maxW > 0 時，繪製前依實際欄寬省略，避免動態文字穿出面板。
+	maxW float64
 }
 
 func (s *overlayScreen) update(in shell.InputState) *origTransition {
@@ -151,9 +158,20 @@ func (s *overlayScreen) draw(dst *ebiten.Image) {
 	if s.offsetX != 0 || s.offsetY != 0 {
 		dst.Fill(color.RGBA{0, 0, 0, 255}) // 小於全螢幕的視窗:底填黑再置中
 	}
+	bg := s.bg
+	if len(s.animFrames) > 0 && s.animTick != nil {
+		frame := (s.animTick() - s.animationStartTick) / 3
+		if frame < 0 {
+			frame = 0
+		}
+		if frame >= len(s.animFrames) {
+			frame = len(s.animFrames) - 1
+		}
+		bg = s.animFrames[frame]
+	}
 	op := &ebiten.DrawImageOptions{}
 	op.GeoM.Translate(float64(s.offsetX), float64(s.offsetY))
-	drawPanelImage(dst, s.bg, op)
+	drawPanelImage(dst, bg, op)
 	ox, oy := float64(s.offsetX), float64(s.offsetY)
 	if s.cat.Lang() == i18n.Traditional {
 		for _, b := range s.overlays {
@@ -178,6 +196,7 @@ func (s *overlayScreen) draw(dst *ebiten.Image) {
 			if c, ok := s.labelColorFor[b.enKey]; ok { // 停用的選項畫成灰的
 				lc = c
 			}
+			zh = truncateToWidth(s.font, zh, size, float64(b.w-8))
 			s.font.DrawCentered(dst, zh, float64(b.x)+float64(b.w)/2+ox, float64(b.y)+float64(b.h)/2+oy, size, lc)
 		}
 	}
@@ -192,10 +211,19 @@ func (s *overlayScreen) draw(dst *ebiten.Image) {
 	}
 	// 即時動態文字(星曆、國庫…)。
 	for _, e := range s.extras {
+		text := e.text
+		maxW := e.maxW
+		if maxW <= 0 && e.align == 1 {
+			// 置中文字沒有自己的面板欄位時，至少不能穿出 640px 畫布。
+			maxW = moo2ScreenW - 16
+		}
+		if maxW > 0 {
+			text = truncateToWidth(s.font, text, e.size, maxW)
+		}
 		if e.align == 1 {
-			s.font.DrawCentered(dst, e.text, e.x+ox, e.y+oy, e.size, e.col)
+			s.font.DrawCentered(dst, text, e.x+ox, e.y+oy, e.size, e.col)
 		} else {
-			s.font.Draw(dst, e.text, e.x+ox, e.y+oy, e.size, e.col)
+			s.font.Draw(dst, text, e.x+ox, e.y+oy, e.size, e.col)
 		}
 	}
 	if s.postDraw != nil {
@@ -350,6 +378,27 @@ func loadOverlayScreen(res *assets.Resolver, lbxName string, assetID int, lang i
 	}, nil
 }
 
+// loadOverlayAnimationFrames 載入少數 overlay 的原版 delta 動畫。與靜態 overlay
+// 共用調色盤鏈，但不把多幀畫面全部疊成一張：每個可見 frame 都是從 0 累積到 n，
+// 才能保留 delta 幀沒有重寫的像素。呼叫端只對已確認有動畫的畫面使用，避免把
+// 不明旗標的所有 LBX 背景一律改變語意。
+func loadOverlayAnimationFrames(res *assets.Resolver, lbxName string, assetID int,
+	chain paletteChain) ([]*ebiten.Image, error) {
+	im, err := decodeAsset(res, lbxName, assetID)
+	if err != nil {
+		return nil, err
+	}
+	pal, err := resolvePalette(res, im, chain)
+	if err != nil {
+		return nil, err
+	}
+	frames := make([]*ebiten.Image, len(im.Frames))
+	for i := range im.Frames {
+		frames[i] = ebiten.NewImageFromImage(im.AccumulatedUpToRGBA(pal, i, im.KeyColor()))
+	}
+	return frames, nil
+}
+
 // --- sceneBuilder:依需求建構各原版畫面(共用 resolver/字型/語言)---
 
 type sceneBuilder struct {
@@ -359,23 +408,29 @@ type sceneBuilder struct {
 	// officerScroll 是軍官清單的捲動位移(第 50 項(軍官畫面座標)加的上下箭頭)。
 	// 原版那兩顆鈕的座標一直都在(`_officer_up_button_seg` / `_officer_dn_button_seg`),
 	// 只是 remake 先前沒接——所以清單超過四列就看不到後面的人。
-	officerScroll   int
-	res             *assets.Resolver
-	fnt             *uifont.Font // 內文用字型(zh 為混合:內文點陣、標題向量)
-	fntVec          *uifont.Font // 純向量 Noto(供主選單等要平滑的畫面;nil 時退回 fnt)
-	lang            i18n.Lang
-	session         *shell.GameSession       // 活的對局狀態(TURN 推進、畫面顯示即時資料)
-	herodataMercs   []shell.Leader           // HERODATA.LBX 解出的真英雄傭兵候選(快取;讀檔後重注入)
-	newGameSize     int                      // NEW GAME 選的星系大小索引(shell.GalaxySizes)
-	newGameDiff     int                      // NEW GAME 選的難度索引(shell.Difficulties)
-	newGameRace     int                      // NEW GAME 選的種族索引(shell.Races)
-	newGameSeed     int                      // 每次新遊戲遞增,讓星系種子變化
-	newGameAge      int                      // NEW GAME 選的星系年齡索引(shell.GalaxyAges)
-	newGameTech     int                      // NEW GAME 選的起始科技等級索引(shell.TechLevels)
-	newGameEmpires  int                      // NEW GAME 選的帝國總數(含玩家,shell.MinEmpires..MaxEmpires)
-	colChrome       *ebiten.Image            // 殖民地畫面的原版框架(COLPUPS.LBX#5,惰性解碼快取)
-	colBldgCache    map[string]*ebiten.Image // 地表建築圖(BLDGn.LBX,惰性解碼快取)
-	colVegSizeCache map[int][2]int           // COLVEGGI 資產的寬高;地表每幀重算,不快取會每幀重解 LBX
+	officerTab         int // 0=殖民地領袖、1=艦艇軍官
+	officerScroll      int
+	officerSelected    int
+	officerSelectedSet bool
+	officerHireMode    bool
+	officerMsg         string // 軍官管理操作的回饋,隨畫面切換保留到下一次操作
+	res                *assets.Resolver
+	versionAssets      versionAssetDirs // 主選單選版本時切換的兩套 LBX 搜尋路徑
+	fnt                *uifont.Font     // 內文用字型(zh 為混合:內文點陣、標題向量)
+	fntVec             *uifont.Font     // 純向量 Noto(供主選單等要平滑的畫面;nil 時退回 fnt)
+	lang               i18n.Lang
+	session            *shell.GameSession       // 活的對局狀態(TURN 推進、畫面顯示即時資料)
+	herodataMercs      []shell.Leader           // HERODATA.LBX 解出的真英雄傭兵候選(快取;讀檔後重注入)
+	newGameSize        int                      // NEW GAME 選的星系大小索引(shell.GalaxySizes)
+	newGameDiff        int                      // NEW GAME 選的難度索引(shell.Difficulties)
+	newGameRace        int                      // NEW GAME 選的種族索引(shell.Races)
+	newGameSeed        int                      // 每次新遊戲遞增,讓星系種子變化
+	newGameAge         int                      // NEW GAME 選的星系年齡索引(shell.GalaxyAges)
+	newGameTech        int                      // NEW GAME 選的起始科技等級索引(shell.TechLevels)
+	newGameEmpires     int                      // NEW GAME 選的帝國總數(含玩家,shell.MinEmpires..MaxEmpires)
+	colChrome          *ebiten.Image            // 殖民地畫面的原版框架(COLPUPS.LBX#5,惰性解碼快取)
+	colBldgCache       map[string]*ebiten.Image // 地表建築圖(BLDGn.LBX,惰性解碼快取)
+	colVegSizeCache    map[int][2]int           // COLVEGGI 資產的寬高;地表每幀重算,不快取會每幀重解 LBX
 	// animTick 是動畫用的重畫計數(由 interactiveApp.Update 每幀同步過來)。
 	// 原版的動畫是「每次重畫推進一次計數」,remake 把「一次重畫」對應成一個 ebiten 幀,
 	// 見 starsprite.go 黑洞那段的 ⚠。
@@ -395,13 +450,15 @@ type sceneBuilder struct {
 	flashMsg          string
 	flashUntil        int
 	nebMaskCache      map[int]*nebulaMask  // 星雲遮罩;派遣時沿航線取樣上百次,不快取會重解上百次 LBX
-	pendingHotseat    int                  // 多人設定畫面選的真人席位數;0/1 = 單人局(開局後由 applyHotseat 套用)
+	pendingHotseat    int                  // 多人設定畫面選的真人席位數;0/1 = 單人局
+	pendingHotseatAI  []int                // 新局生成後由選帝國畫面指定的 AIPlayers 索引
 	savePath          string               // remake 存檔路徑(每回合自動存;主選單 Load/Continue 讀)
 	designWeapon      int                  // 艦艇設計選的武器元件索引(shell.WeaponOptions)
 	designArmor       int                  // 裝甲元件索引(shell.ArmorOptions)
 	designShield      int                  // 護盾元件索引(shell.ShieldOptions)
 	designSpecial     int                  // 特殊元件索引(shell.SpecialOptions)
 	designMods        []string             // 目前設計勾選的武器改造(gamedata.WeaponModCode 字串;僅 beam 武器生效)
+	designArc         gamedata.WeaponArc   // 目前設計武器火線角(原版 WeaponArc)
 	designMsg         string               // 艦艇設計畫面「空間不足,擋下建造」的提示訊息(切換元件/成功建造時清空)
 	lastActionMsg     string               // 星圖畫面「載運陸戰隊/發動地面入侵」的最近一次結果訊息(選新星時清空)
 	gameVersion       gamedata.GameVersion // 主選單選的規則版本(1.3/1.5);開局注入 session.RuleProfile
@@ -420,11 +477,24 @@ type sceneBuilder struct {
 	// 放在 sceneBuilder 上是因為它們要活過畫面切換——連線不能隨畫面被 GC 掉。
 	netLobby *netplay.Lobby
 	netConn  net.Conn
+	// netAddr / netPlayerName / netJoinOptions 讓客戶端在 socket 斷線後用同一
+	// 個身份重連；resume token 只存在記憶體，不寫入遊戲存檔。
+	netAddr        string
+	netPlayerName  string
+	netJoinOptions netplay.JoinOptions
+	netLobbyOpts   netplay.LobbyOptions
 	// netMe 是本方在名冊裡的玩家編號(主機恆為 0,客戶端由主機指派)。
 	netMe int
 	// netSess 是對局期間的訊息幫浦(見 internal/netplay/session.go)。
 	// 由 netSession() 在第一次需要時才建——大廳階段還在收人,那時候建會漏掉後來的人。
 	netSess *netplay.Session
+	// networkHost / networkPending 表示這一局正在走 TCP 網路共同開局流程。
+	// 它們與 pendingHotseat 分開，避免主機在新遊戲設定中被誤當成本機熱座。
+	networkHost    bool
+	networkPending bool
+	networkRoster  netplay.Roster
+	networkTurn    *networkTurnState
+	networkError   string
 	// netAnnouncer / netBrowser 是區網探索的兩端(見 internal/netplay/discovery.go)。
 	// 同樣要活過畫面切換:廣播停了別人就看不到這場對局。
 	netAnnouncer *netplay.Announcer
@@ -526,10 +596,14 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 			}
 			return b.goTo(b.menu, "主選單")
 		case "toggleVersion":
-			if b.gameVersion == gamedata.VersionClassic13 {
-				b.gameVersion = gamedata.VersionCommunity15
-			} else {
-				b.gameVersion = gamedata.VersionClassic13
+			next := gamedata.VersionCommunity15
+			if b.gameVersion == gamedata.VersionCommunity15 {
+				next = gamedata.VersionClassic13
+			}
+			if err := b.selectGameVersion(next); err != nil {
+				// 沒有該版正版資料時留在原畫面，不讓規則標籤與實際資產版本分離。
+				fmt.Fprintln(os.Stderr, "切換遊戲版本:", err)
+				return nil
 			}
 			return b.goTo(b.menu, "主選單") // 重繪以更新版本顯示
 		case "Quit Game":
@@ -537,6 +611,7 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 		case "New Game":
 			// 新遊戲:先進原版 NEW GAME 設定畫面(難度/星系/玩家…),ACCEPT 後進星系主畫面。
 			b.pendingHotseat = 0 // 單人局(從多人設定畫面進來的才會帶席位數)
+			b.pendingHotseatAI = nil
 			return b.goTo(b.newGameSetup, "新遊戲設定")
 		case "Multi Player":
 			// 原版 MULTI-PLAYER GAME SET UP(見 cmd/moo2/multiplayer.go)。
@@ -705,6 +780,9 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					if sess.Fleet().Marines > 0 {
 						hits = append(hits, hitRegion{38, 424, 190, 20, "invade"})
 					}
+					if sess.RaceTelepathic() {
+						hits = append(hits, hitRegion{38, 446, 190, 20, "mindcontrol"})
+					}
 				case sess.StarGuardedByMonster(sess.SelectedStar):
 					// 怪獸盤據:唯一能做的是打它(手冊 p.62:清場之後才能進駐)。
 					hits = append(hits, hitRegion{38, 402, 190, 20, "attackmonster"})
@@ -851,6 +929,15 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			}
 			return &origTransition{next: sc}
 		}
+		if a == "mindcontrol" && b.session != nil {
+			res := b.session.MindControlColony(b.session.SelectedStar)
+			if !res.Ok {
+				b.lastActionMsg = res.Reason
+				return b.goTo(b.galaxy, "星系主畫面")
+			}
+			b.lastActionMsg = b.tr("心靈控制成功：殖民地人口已完全同化", "Mind control succeeded: the colony population is fully assimilated")
+			return b.goTo(b.galaxy, "星系主畫面")
+		}
 		if a == "colonize" && b.session != nil {
 			res := b.session.ColonizeStar(b.session.SelectedStar)
 			if !res.Ok {
@@ -896,6 +983,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		case "fleets":
 			return b.goTo(b.fleet, "艦隊列表")
 		case "leaders":
+			b.officerTab = 0
 			return b.goTo(b.officer, "軍官列表")
 		case "info":
 			return b.goTo(b.info, "科技總覽")
@@ -959,7 +1047,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			b.drawNebulae(dst, sess.Nebulae) // 背景地形,壓在星星之下
 			// 遷移連線是原版圖層順序的第 2 層(星星是第 3 層),所以畫在星星之下。
 			b.drawRelocationLinks(dst)
-			vis := sess.VisibleStars()
+			vis := sess.StarChartVisible()
 			drawStarmap(b, dst, fnt, sess.Stars, sess.SelectedStar, vis)
 			b.drawGateIcons(dst, vis)             // 狀態標示,蓋在星星之上
 			b.drawAudienceLights(dst)             // 會談請求燈(星圖上緣,原版 y=5、由右往左)
@@ -1024,7 +1112,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					if mon := sess.MonsterNameAtStar(sess.SelectedStar); mon != "" {
 						nameW, _ := fnt.Measure(p.Name, 14)
 						fnt.Draw(dst, "☠"+mon, 38+nameW+10, 346, 11, color.RGBA{240, 130, 150, 255})
-					} else if sp := gamedata.PlanetSpecialName(p.SpecialID); sp != "" {
+					} else if sp := planetSpecialLabel(b.lang, p.SpecialID); sp != "" {
 						nameW, _ := fnt.Measure(p.Name, 14)
 						spW, _ := fnt.Measure("★"+sp, 11)
 						// 星名很長時往左推,確保不會壓到右上角的 ✕(x=220)。
@@ -1034,9 +1122,10 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 						}
 						fnt.Draw(dst, "★"+sp, sx, 346, 11, color.RGBA{250, 200, 100, 255})
 					}
-					fnt.Draw(dst, fmt.Sprintf(b.tr("氣候 %s ／ 大小 %s", "Climate %s / Size %s"), p.Climate, p.Size),
+					climate, gravity, minerals, size := planetEnvironmentLabels(b.lang, p)
+					fnt.Draw(dst, fmt.Sprintf(b.tr("氣候 %s ／ 大小 %s", "Climate %s / Size %s"), climate, size),
 						38, 362, 11, color.RGBA{210, 216, 230, 255})
-					fnt.Draw(dst, fmt.Sprintf(b.tr("重力 %s ／ 礦產 %s", "Gravity %s / Minerals %s"), p.Gravity, p.Mineral),
+					fnt.Draw(dst, fmt.Sprintf(b.tr("重力 %s ／ 礦產 %s", "Gravity %s / Minerals %s"), gravity, minerals),
 						38, 378, 11, color.RGBA{210, 216, 230, 255})
 					// 同系其他天體(氣態巨星/小行星帶)的完整摘要放在行星列表畫面——這個面板
 					// 只有 344~400 這四列的空間,402 起是操作鈕,再塞一列會壓到按鈕。
@@ -1079,6 +1168,11 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 							fillPanel(dst, 38, 424, 190, 20, color.RGBA{120, 50, 40, 255}, false)
 							vector.StrokeRect(dst, 38, 424, 190, 20, 1, color.RGBA{230, 130, 110, 255}, false)
 							fnt.Draw(dst, b.tr("▶ 發動地面入侵", "▶ Invade"), 46, 437, 12, color.RGBA{245, 235, 230, 255})
+						}
+						if sess.RaceTelepathic() {
+							fillPanel(dst, 38, 446, 190, 20, color.RGBA{55, 95, 125, 255}, false)
+							vector.StrokeRect(dst, 38, 446, 190, 20, 1, color.RGBA{120, 210, 235, 255}, false)
+							fnt.Draw(dst, b.tr("▶ 心靈控制", "▶ Mind control"), 46, 459, 12, color.RGBA{230, 250, 255, 255})
 						}
 					case sess.SelectedStar == sess.Fleet().AtStar && sess.StarGuardedByMonster(sess.SelectedStar):
 						fillPanel(dst, 38, 402, 190, 20, color.RGBA{110, 45, 60, 255}, false)
@@ -1515,7 +1609,7 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 			bt := "—"
 			if i < len(b.session.Builds) && b.session.Builds[i].Name != "" {
 				bd := b.session.Builds[i]
-				bt = fmt.Sprintf("%s %d/%d", bd.Name, bd.Progress, bd.Cost)
+				bt = fmt.Sprintf("%s %d/%d", buildItemLabel(b.lang, bd.Name), bd.Progress, bd.Cost)
 			}
 			if n := b.session.BuildQueueBacklogLen(i); n > 0 {
 				bt += fmt.Sprintf(" +%d", n) // 佇列還排著 n 項(原版 7 格 BUILD QUEUE)
@@ -1530,7 +1624,14 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 				sort.Strings(names)
 				// 依「建造」欄寬截斷,避免長建築清單溢出 cell 框、撞出畫面右緣
 				// (點陣字最小 12px,小字撐大更易超框;BUILDING 欄 x512 寬118,留邊取 110)。
-				lbl := truncateToWidth(b.fnt, b.tr("已建:", "Built: ")+strings.Join(names, b.tr("、", ", ")), 10, 110)
+				displayNames := names
+				if b.lang != i18n.Traditional {
+					displayNames = make([]string, len(names))
+					for j, name := range names {
+						displayNames[j] = colonyBuildingLabel(b.lang, name)
+					}
+				}
+				lbl := truncateToWidth(b.fnt, b.tr("已建:", "Built: ")+strings.Join(displayNames, b.tr("、", ", ")), 10, 110)
 				s.extras = append(s.extras, extraText{x: 571, y: y + 13, size: 10, text: lbl, col: color.RGBA{150, 200, 150, 255}, align: 1})
 			}
 		}
@@ -1638,6 +1739,15 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 	}
 	// 每個已接觸種族一顆「派間諜」鈕,座標是**執行檔立即數**(見 racesSpyAnchors)。
 	hits = append(hits, racesSpyHitRegions(b.aiCount())...)
+	// Sabotage 左右順序尚未由原版反組譯證實；這個熱區是 remake 明確標籤的
+	// STEAL/SABOTAGE/HIDE 循環，不冒充原版三顆鈕的未解語意。
+	hits = append(hits, racesSpyMissionHitRegions(b.aiCount())...)
+	// 每個已顯示 AI 列都可直接進入該對手的外交對談；這是 remake 的明確逐對手
+	// 入口，原版單列 REPORT 的選取語意仍保持未知。
+	hits = append(hits, racesDiplomacyHitRegions(b.aiCount())...)
+	// 防守 Agent 與進攻間諜分開管理；這兩個控制項讓已接上的 Agent slot
+	// 真正能由玩家調整，而不是只存在於資料層。
+	hits = append(hits, racesAgentHitRegions()...)
 	onAction := func(a string) *origTransition {
 		switch a {
 		case "audience":
@@ -1656,12 +1766,39 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 				return nil
 			}
 			return &origTransition{next: sc}
+		case "trainagent":
+			if b.session != nil {
+				b.session.TrainDefensiveAgent()
+			}
+			return b.goTo(b.races, "種族關係")
+		case "dismissagent":
+			if b.session != nil {
+				b.session.DismissDefensiveAgent()
+			}
+			return b.goTo(b.races, "種族關係")
 		}
 		if idx, ok := racesSpyActionIndex(a); ok {
 			if b.session != nil {
 				b.session.TrainSpy(idx) // BC 不足時無作用(見 shell.TrainSpy)
 			}
 			return b.goTo(b.races, "種族關係")
+		}
+		if idx, ok := racesSpyMissionActionIndex(a); ok {
+			if b.session != nil {
+				b.session.CycleSpyMission(idx)
+			}
+			return b.goTo(b.races, "種族關係")
+		}
+		if idx, ok := racesDiplomacyActionIndex(a); ok {
+			if b.session == nil || idx < 0 || idx >= len(b.session.AIPlayers) {
+				return nil
+			}
+			sc, err := b.diplomacyWith(b.session.AIPlayers[idx].Name)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, "外交:", err)
+				return nil
+			}
+			return &origTransition{next: sc}
 		}
 		return b.goTo(b.galaxy, "星系主畫面")
 	}
@@ -1691,10 +1828,16 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 			}
 			// 列位置改用**執行檔立即數**(`_race_bar` @ 0x18400D),不再是等距 62px 的自編排版。
 			y := float64(racesRelationBars[i][1])
+			textX := 40.0
+			columnW := 250.0
+			if i >= 4 {
+				textX = 463.0
+				columnW = 165.0
+			}
 			s.extras = append(s.extras,
-				extraText{x: 40, y: y, size: 15, text: a.Name, col: gold},
-				extraText{x: 40, y: y + 20, size: 12, text: fmt.Sprintf(b.tr("對你:%s ／ 軍力 %d ／ 佔領 %d 星", "Toward you: %s / power %d / %d systems"),
-					a.StanceName, a.FleetStrength, a.OwnedStars), col: body},
+				extraText{x: textX, y: y, size: 15, text: aiEmpireLabel(b.lang, a), col: gold, maxW: columnW},
+				extraText{x: textX, y: y + 20, size: 12, text: fmt.Sprintf(b.tr("對你:%s ／ 軍力 %d ／ 佔領 %d 星", "Toward you: %s / power %d / %d systems"),
+					a.StanceName, a.FleetStrength, a.OwnedStars), col: body, maxW: columnW},
 			)
 			// AI 之間的外交關係(活星系;支撐議會第三方搖擺)。
 			rel := ""
@@ -1705,11 +1848,14 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 				if rel != "" {
 					rel += "、"
 				}
-				rel += fmt.Sprintf("%s:%s", b.session.AIPlayers[j].Name, b.session.AIRelationName(i, j))
+				rel += fmt.Sprintf("%s:%s", aiEmpireLabel(b.lang, b.session.AIPlayers[j]), b.session.AIRelationName(i, j))
 			}
 			if rel != "" {
-				s.extras = append(s.extras, extraText{x: 40, y: y + 38, size: 10, text: b.tr("對他國 ", "Toward others: ") + rel, col: dim})
+				s.extras = append(s.extras, extraText{x: textX, y: y + 38, size: 10, text: b.tr("對他國 ", "Toward others: ") + rel, col: dim, maxW: columnW})
 			}
+			s.extras = append(s.extras, extraText{x: textX, y: y + 54, size: 10,
+				text: b.tr("點此與此國對談", "click row to talk to this empire"),
+				col:  color.RGBA{180, 200, 220, 255}, maxW: columnW})
 			// 「派間諜」鈕的標籤(座標同熱區)。
 			spies := 0
 			if i < len(b.session.PlayerSpies) {
@@ -1718,8 +1864,26 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 			btn := racesSpyAnchors[i]
 			s.extras = append(s.extras, extraText{x: float64(btn[0]) + 2, y: float64(btn[1]) + 12, size: 11,
 				text: fmt.Sprintf(b.tr("派間諜(%d)", "send spy (%d)"), spies),
-				col:  color.RGBA{150, 220, 160, 255}})
+				col:  color.RGBA{150, 220, 160, 255}, maxW: float64(racesSpyButtonW - 6)})
+			mission := b.session.SpyMissionFor(i)
+			s.extras = append(s.extras, extraText{
+				x: float64(btn[0]) + 2, y: float64(btn[1]) + racesSpyMissionYOffset + 13, size: 10,
+				text: b.tr("任務:"+shell.SpyMissionLabel(mission, false),
+					"mission: "+shell.SpyMissionLabel(mission, true)),
+				col: color.RGBA{220, 190, 120, 255}, maxW: float64(racesSpyButtonW - 6)})
 		}
+		agents := b.session.DefensiveAgents
+		s.extras = append(s.extras,
+			extraText{x: racesAgentTrainX, y: 402, size: 11,
+				text: fmt.Sprintf(b.tr("防守 Agent：%d（BC %d）", "Defensive agents: %d (BC %d)"), agents, b.session.Player.BC),
+				col:  color.RGBA{235, 215, 145, 255}, maxW: 220},
+			extraText{x: racesAgentTrainX + 2, y: racesAgentY + 14, size: 10,
+				text: b.tr("訓練 Agent（30 BC）", "Train agent (30 BC)"),
+				col:  color.RGBA{150, 220, 160, 255}, maxW: float64(racesAgentW - 6)},
+			extraText{x: racesAgentDismissX + 2, y: racesAgentY + 14, size: 10,
+				text: b.tr("解除 Agent", "Dismiss agent"),
+				col:  color.RGBA{220, 180, 160, 255}, maxW: float64(racesAgentW - 6)},
+		)
 	}
 	return s, nil
 }
@@ -1773,16 +1937,19 @@ func loadDiplomatScene(res *assets.Resolver, r int) *ebiten.Image {
 	return scene
 }
 
+type diplomacyOption struct {
+	label, action string
+}
+
 type diplomacyScreen struct {
-	b        *sceneBuilder
-	fnt      *uifont.Font
-	enemy    string
-	response string
-	room     *ebiten.Image // 原版 DIPLOMAT 使節房 + 使節疊合
-	opts     []struct {
-		label, action string
-	}
-	backRect [4]int
+	b              *sceneBuilder
+	fnt            *uifont.Font
+	enemy          string
+	response       string
+	room           *ebiten.Image // 原版 DIPLOMAT 使節房 + 使節疊合
+	opts           []diplomacyOption
+	backRect       [4]int
+	hoverX, hoverY int
 }
 
 func newDiplomacyScreen(b *sceneBuilder) *diplomacyScreen {
@@ -1790,24 +1957,71 @@ func newDiplomacyScreen(b *sceneBuilder) *diplomacyScreen {
 	// 態勢/議會;取不到 session 時退回示範名。
 	enemy := b.tr("薩克拉", "Sakkra") // 取不到 session 時的示範名
 	if b.session != nil {
-		enemy = b.session.PrimaryEnemyName()
+		enemy = enemyDisplayName(b.lang, b.session, b.session.PrimaryEnemyName())
 	}
 	return &diplomacyScreen{b: b, fnt: b.fnt, enemy: enemy, room: loadDiplomatScene(b.res, diplomatRaceIndex(enemy)),
 		response: enemy + b.tr("使節:人類,你有何提議?", " emissary: Human, what do you propose?"),
-		opts: []struct{ label, action string }{
-			{"提議和平", "peace"}, {"提議貿易", "trade"}, {"威脅恫嚇", "threat"},
+		opts: []diplomacyOption{
+			{b.tr("提議和平", "Propose Peace"), "peace"},
+			{b.tr("提議貿易", "Propose Trade"), "trade"},
+			{b.tr("提議研究", "Propose Research"), "research"},
+			{b.tr("提議互不侵犯", "Propose Non-Aggression"), "nonaggression"},
+			{b.tr("提議同盟", "Propose Alliance"), "alliance"},
+			{b.tr("威脅恫嚇", "Threaten"), "threat"},
+			{b.tr("給予 5% 進貢", "Offer 5% Tribute"), "tribute_5"},
+			{b.tr("給予 10% 進貢", "Offer 10% Tribute"), "tribute_10"},
+			{b.tr("贈送 10 BC", "Gift 10 BC"), "gift_cash"},
+			{b.tr("特殊貿易：食物換現金", "Special Trade: Food for Credits"), "special_food"},
+			{b.tr("特殊貿易：研究交換", "Special Trade: Research Exchange"), "special_research"},
+			{b.tr("贈送一項科技", "Gift a Technology"), "gift_tech"},
+			{b.tr("贈送一座殖民地", "Gift a Colony"), "gift_star"},
 		},
-		backRect: [4]int{250, 420, 140, 34}}
+		backRect: [4]int{250, 430, 140, 34}}
 }
 
-func (d *diplomacyScreen) optRect(i int) (x, y, w, h int) { return 190, 150 + i*54, 260, 40 }
+func (d *diplomacyScreen) optRect(i int) (x, y, w, h int) {
+	return 16 + (i%3)*208, 190 + (i/3)*42, 192, 34
+}
+
+func (d *diplomacyScreen) breakOptions() []diplomacyOption {
+	state := d.b.session.TreatyFor(d.enemy)
+	options := make([]diplomacyOption, 0, 3)
+	if state.TradeActive {
+		options = append(options, diplomacyOption{d.b.tr("終止貿易", "End Trade"), "break_trade"})
+	}
+	if state.ResearchActive {
+		options = append(options, diplomacyOption{d.b.tr("終止研究", "End Research"), "break_research"})
+	}
+	if state.FormalPolicy != gamedata.DIPLO_NONE {
+		options = append(options, diplomacyOption{d.b.tr("終止正式條約", "End Formal Treaty"), "break_formal"})
+	}
+	if state.PlayerTribute != shell.TributeNone || state.AITribute != shell.TributeNone {
+		options = append(options, diplomacyOption{d.b.tr("終止進貢", "End Tribute"), "break_tribute"})
+	}
+	if state.SpecialTrade.Active {
+		options = append(options, diplomacyOption{d.b.tr("終止特殊貿易", "End Special Trade"), "break_special"})
+	}
+	return options
+}
+
+func (d *diplomacyScreen) breakRect(i int) (x, y, w, h int) {
+	return 20 + i*155, 376, 140, 26
+}
 
 func (d *diplomacyScreen) update(in shell.InputState) *origTransition {
+	d.hoverX, d.hoverY = in.MouseX, in.MouseY
 	if !in.ClickReleased {
 		return nil
 	}
 	for i, o := range d.opts {
 		x, y, w, h := d.optRect(i)
+		if in.MouseX >= x && in.MouseX < x+w && in.MouseY >= y && in.MouseY < y+h {
+			d.response = d.b.session.DiplomacyResponse(o.action, d.enemy)
+			return nil
+		}
+	}
+	for i, o := range d.breakOptions() {
+		x, y, w, h := d.breakRect(i)
 		if in.MouseX >= x && in.MouseX < x+w && in.MouseY >= y && in.MouseY < y+h {
 			d.response = d.b.session.DiplomacyResponse(o.action, d.enemy)
 			return nil
@@ -1833,18 +2047,40 @@ func (d *diplomacyScreen) draw(dst *ebiten.Image) {
 	// 上方標題 + 使節台詞(疊半透明深色條增可讀性)。
 	fillPanel(dst, 0, 44, moo2ScreenW, 92, color.RGBA{8, 6, 14, 180}, false)
 	d.fnt.DrawCentered(dst, d.b.tr("外交對談", "AUDIENCE"), 320, 62, 20, gold)
-	d.fnt.DrawCentered(dst, d.enemy+d.b.tr(" 使節", " Emissary"), 320, 96, 14, color.RGBA{235, 150, 140, 255})
-	d.fnt.DrawCentered(dst, d.response, 320, 124, 14, body)
+	d.fnt.DrawCentered(dst, truncateToWidth(d.fnt, d.enemy+d.b.tr(" 使節", " Emissary"), 14, 560), 320, 96, 14, color.RGBA{235, 150, 140, 255})
+	responseLines := d.fnt.Wrap(d.response, 14, 560)
+	if len(responseLines) > 2 {
+		responseLines = responseLines[:2]
+		responseLines[1] = truncateToWidth(d.fnt, responseLines[1], 14, 560)
+	}
+	for i, line := range responseLines {
+		y := 124.0
+		if len(responseLines) > 1 {
+			y = 116 + float64(i)*16
+		}
+		d.fnt.DrawCentered(dst, line, 320, y, 14, body)
+	}
+	state := d.b.session.TreatyFor(d.enemy)
+	d.fnt.DrawCentered(dst, truncateToWidth(d.fnt, d.b.tr("目前協議：", "Current agreements: ")+shell.TreatySummary(state, d.b.lang != i18n.Traditional), 13, 560), 320, 164, 13, gold)
 	for i, o := range d.opts {
 		x, y, w, h := d.optRect(i)
 		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{34, 30, 54, 255}, false)
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, color.RGBA{110, 90, 160, 255}, false)
-		d.fnt.DrawCentered(dst, o.label, float64(x+w/2), float64(y+h/2), 15, body)
+		drawHoverBorder(dst, float32(x), float32(y), float32(w), float32(h), pointInRect(d.hoverX, d.hoverY, x, y, w, h))
+		d.fnt.DrawCentered(dst, truncateToWidth(d.fnt, o.label, 15, float64(w-12)), float64(x+w/2), float64(y+h/2), 15, body)
+	}
+	for i, o := range d.breakOptions() {
+		x, y, w, h := d.breakRect(i)
+		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{52, 30, 30, 255}, false)
+		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, color.RGBA{170, 100, 90, 255}, false)
+		drawHoverBorder(dst, float32(x), float32(y), float32(w), float32(h), pointInRect(d.hoverX, d.hoverY, x, y, w, h))
+		d.fnt.DrawCentered(dst, truncateToWidth(d.fnt, o.label, 13, float64(w-12)), float64(x+w/2), float64(y+h/2), 13, body)
 	}
 	bx, by, bw, bh := d.backRect[0], d.backRect[1], d.backRect[2], d.backRect[3]
 	fillPanel(dst, float32(bx), float32(by), float32(bw), float32(bh), color.RGBA{40, 34, 30, 255}, false)
 	vector.StrokeRect(dst, float32(bx), float32(by), float32(bw), float32(bh), 1.5, color.RGBA{160, 140, 100, 255}, false)
-	d.fnt.DrawCentered(dst, d.b.tr("結束對談", "END AUDIENCE"), float64(bx+bw/2), float64(by+bh/2), 15, body)
+	drawHoverBorder(dst, float32(bx), float32(by), float32(bw), float32(bh), pointInRect(d.hoverX, d.hoverY, bx, by, bw, bh))
+	d.fnt.DrawCentered(dst, truncateToWidth(d.fnt, d.b.tr("結束對談", "END AUDIENCE"), 15, float64(bw-12)), float64(bx+bw/2), float64(by+bh/2), 15, body)
 }
 
 // diplomacy 進入外交對談畫面(對象是主要對手)。
@@ -1872,9 +2108,9 @@ func (b *sceneBuilder) diplomacyWith(enemy string) (origScreen, error) {
 	playDiplomacyMusic(diplomatRaceIndex(who), b.session.RelationToPlayer(who))
 	d := newDiplomacyScreen(b)
 	if enemy != "" {
-		d.enemy = enemy
+		d.enemy = enemyDisplayName(b.lang, b.session, enemy)
 		d.room = loadDiplomatScene(b.res, diplomatRaceIndex(enemy))
-		d.response = enemy + b.tr("使節:人類,你有何提議?", " emissary: Human, what do you propose?")
+		d.response = d.enemy + b.tr("使節:人類,你有何提議?", " emissary: Human, what do you propose?")
 	}
 	return d, nil
 }
@@ -1903,13 +2139,27 @@ type tacticalScreen struct {
 	bar            *ebiten.Image
 	res            *assets.Resolver      // 供 shipSprite 延遲載入各艦級 sprite
 	shipSprites    map[int]*ebiten.Image // CMBTSHP 資產索引 → 已解碼 sprite(nil=載入失敗,亦快取)
+	// shipMotionStart 記錄本次移動開始的 remake tick；key 包含敵我側與艦名，
+	// 讓同名艦也不會共用動畫狀態。原版 timer 未由靜態碼追回，這是固定、可重播
+	// 的 CMBTSHP 顯示 adapter。
+	shipMotionStart map[string]int
 	// squads 是場上的戰機中隊(見 tacticalfighter.go / internal/shell/fighter.go)。
 	squads []shell.FighterSquadron
+	// combatFX 是 CMBTSFX.LBX 的可選多幀視覺特效；fx 是場上尚未播完的實例。
+	combatFX map[int]combatFXSequence
+	fx       []combatFXInstance
+	tick     int
 	// moveLeft 是各我方艦這一回合剩餘的移動格數(第 69 項(戰鬥速度與引擎階))。每回合重置為
 	// shell.TacticalMoveSquares(艦的戰鬥速度)。
 	moveLeft []int
+	// acted / waited 是逐艦行動佇列。原版控制列的 WAIT/DONE 不是裝飾：WAIT 把本艦
+	// 放到本回合尚未行動艦之後，DONE 則結束本艦行動；所有艦完成後才結算敵方回擊。
+	// 這兩張表只屬於戰術畫面，不進存檔；艦艇陣列被戰損壓縮時會一併重建。
+	acted  []bool
+	waited []bool
 	// mode 是控制列切出來的點擊模式(掃描 / 登艦);見 tacticalbar.go。
-	mode tacticalMode
+	mode           tacticalMode
+	hoverX, hoverY int
 }
 
 // loadCombatBG 載入戰場星空背景(STARBG.LBX#0,640×480),借 COMBAT.LBX#11 調色盤。
@@ -1941,12 +2191,20 @@ func loadCombatBar(res *assets.Resolver) *ebiten.Image {
 	return ebiten.NewImageFromImage(im.Frames[0].ToRGBA(prov.Embedded, im.KeyColor()))
 }
 
-// loadCombatShipByIdx 載入 CMBTSHP.LBX 第 idx 個艦艇 sprite(frame0),用其所屬色塊的
+// loadCombatShipByIdx 載入 CMBTSHP.LBX 第 idx 個艦艇 sprite 的 frame0,用其所屬色塊的
 // palette-holder(索引 45*(idx/45)+44,內嵌調色盤)上色。見 docs/tech/cmbtshp-ship-sprites.md。
 // keyColor 用資產自身旗標(CMBTSHP flags=0x0000 → false):艦體外圍透明來自未寫入的
 // RLE 像素(ToRGBA 一律留透明),而艦體本身含 index-0 深色像素須保留——先前誤設
 // keyColor=true 會把 index-0 艦體也判成透明,導致 sprite 幾乎全消失(端到端截圖查出)。
 func loadCombatShipByIdx(res *assets.Resolver, idx int) *ebiten.Image {
+	return loadCombatShipByIdxFrame(res, idx, 0)
+}
+
+// loadCombatShipByIdxFrame 取 CMBTSHP 每個資產的方向幀。LBX 解碼抽樣確認
+// CMBTSHP 每個資產有 20 幀；shell.CMBTSHPFrameForHeading 將 raw 16 向 heading
+// 換成最近角度。幀停留的原版 timer 尚未知，tactical 使用 shell 的固定 tick
+// adapter：只在艦艇剛移動後播放短掃掠，停止後固定在朝向幀。
+func loadCombatShipByIdxFrame(res *assets.Resolver, idx, frame int) *ebiten.Image {
 	palIdx := (idx/45)*45 + 44
 	prov, err := decodeAsset(res, "cmbtshp.lbx", palIdx)
 	if err != nil || prov.Embedded == nil {
@@ -1956,7 +2214,10 @@ func loadCombatShipByIdx(res *assets.Resolver, idx int) *ebiten.Image {
 	if err != nil || len(im.Frames) == 0 {
 		return nil
 	}
-	return ebiten.NewImageFromImage(im.Frames[0].ToRGBA(prov.Embedded, im.KeyColor()))
+	if frame < 0 || frame >= len(im.Frames) {
+		frame = 0
+	}
+	return ebiten.NewImageFromImage(im.Frames[frame].ToRGBA(prov.Embedded, im.KeyColor()))
 }
 
 func newTacticalScreen(b *sceneBuilder) *tacticalScreen {
@@ -1965,14 +2226,91 @@ func newTacticalScreen(b *sceneBuilder) *tacticalScreen {
 	seed := int64(b.session.Turn*2654435761 + 1013904223)
 	// 開場先算一次狀態效果,否則第一回合的移動力會用未受牽引的速度(第 69 項(戰鬥速度與引擎階))。
 	shell.ApplyTacticalStatusEffects(p, e)
-	return &tacticalScreen{b: b, fnt: b.fnt, player: p, enemy: e, sel: -1,
-		log: b.tr("點我方艦選取→點空格移動;點敵艦→射程內我艦開火",
-			"Click your ship to select, an empty cell to move, an enemy to fire"),
+	t := &tacticalScreen{b: b, fnt: b.fnt, player: p, enemy: e, sel: firstReadyShip(p),
+		log: b.tr("選取我方艦→移動或開火;完成一艦後才輪到下一艦",
+			"Select a ship to move or fire; finish each ship before the next"),
 		pStart: len(p), eStart: len(e),
 		rng: rand.New(rand.NewSource(seed)),
 		bg:  loadCombatBG(b.res), bar: loadCombatBar(b.res),
-		res: b.res, shipSprites: map[int]*ebiten.Image{},
-		moveLeft: freshMoveBudgets(p)}
+		res: b.res, shipSprites: map[int]*ebiten.Image{}, shipMotionStart: map[string]int{}, combatFX: loadCombatFX(b.res),
+		moveLeft: freshMoveBudgets(p), acted: make([]bool, len(p)), waited: make([]bool, len(p))}
+	t.launchEnemySquadrons()
+	return t
+}
+
+func firstReadyShip(ships []shell.CombatShip) int {
+	if len(ships) == 0 {
+		return -1
+	}
+	return 0
+}
+
+// ensureActionQueue 兼容舊測試與未經 newTacticalScreen 建構的戰術狀態。
+func (t *tacticalScreen) ensureActionQueue() {
+	if len(t.acted) != len(t.player) {
+		t.acted = make([]bool, len(t.player))
+	}
+	if len(t.waited) != len(t.player) {
+		t.waited = make([]bool, len(t.player))
+	}
+}
+
+// nextActionableShip 優先找未等待的艦；若本輪其餘艦都已 WAIT，才讓等待中的艦
+// 重新成為目前行動者。這正是 WAIT 的「移到佇列末端」，而不是跳過整回合。
+func (t *tacticalScreen) nextActionableShip() int {
+	t.ensureActionQueue()
+	for pass := 0; pass < 2; pass++ {
+		for i := range t.player {
+			if t.acted[i] || (pass == 0 && t.waited[i]) {
+				continue
+			}
+			return i
+		}
+	}
+	return -1
+}
+
+func (t *tacticalScreen) allShipsActed() bool {
+	t.ensureActionQueue()
+	for i := range t.player {
+		if !t.acted[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// finishSelectedAction 將目前艦標成 DONE，若它是本回合最後一艘，便進入回合交界。
+func (t *tacticalScreen) finishSelectedAction() {
+	t.ensureActionQueue()
+	if t.sel < 0 || t.sel >= len(t.player) || t.acted[t.sel] {
+		return
+	}
+	name := t.player[t.sel].Name
+	t.acted[t.sel] = true
+	t.waited[t.sel] = false
+	if t.allShipsActed() {
+		t.finishRound(0, 0, false, false, 0)
+		return
+	}
+	t.sel = t.nextActionableShip()
+	t.log = fmt.Sprintf(t.b.tr("%s 完成行動,輪到下一艦", "%s is done; next ship"), name)
+}
+
+func (t *tacticalScreen) waitSelectedAction() {
+	t.ensureActionQueue()
+	if t.sel < 0 || t.sel >= len(t.player) || t.acted[t.sel] {
+		return
+	}
+	name := t.player[t.sel].Name
+	t.waited[t.sel] = true
+	next := t.nextActionableShip()
+	if next == t.sel {
+		t.log = t.b.tr("目前沒有其他未行動艦;再按完成或直接開火", "No other ship is ready; press DONE or fire")
+		return
+	}
+	t.sel = next
+	t.log = fmt.Sprintf(t.b.tr("%s 等待,輪到下一艦", "%s waits; next ship"), name)
 }
 
 // freshMoveBudgets 依各艦的戰鬥速度算出這一回合的移動格數(第 69 項(戰鬥速度與引擎階))。
@@ -1985,13 +2323,42 @@ func freshMoveBudgets(ships []shell.CombatShip) []int {
 	return out
 }
 
-// shipSprite 依 CMBTSHP 資產索引取(並快取)已解碼 sprite,避免每幀重解。
-func (t *tacticalScreen) shipSprite(idx int) *ebiten.Image {
-	if im, ok := t.shipSprites[idx]; ok {
+func tacticalShipMotionKey(s shell.CombatShip, enemy bool) string {
+	return fmt.Sprintf("%t:%s:%d", enemy, s.Name, s.SpriteIdx)
+}
+
+func (t *tacticalScreen) markShipMotion(s shell.CombatShip, enemy bool) {
+	if t.shipMotionStart == nil {
+		t.shipMotionStart = map[string]int{}
+	}
+	t.shipMotionStart[tacticalShipMotionKey(s, enemy)] = t.tick
+}
+
+func (t *tacticalScreen) shipMotionElapsed(s shell.CombatShip, enemy bool) (int, bool) {
+	if t.shipMotionStart == nil {
+		return 0, false
+	}
+	start, ok := t.shipMotionStart[tacticalShipMotionKey(s, enemy)]
+	if !ok {
+		return 0, false
+	}
+	elapsed := t.tick - start
+	if elapsed < 0 || elapsed >= shell.CMBTSHPMotionDurationTicks {
+		return 0, false
+	}
+	return elapsed, true
+}
+
+// shipSprite 依 CMBTSHP 資產索引、raw heading 與移動 timer 取(並快取)已解碼
+// sprite，避免每幀重解。moving=true 時 elapsed 是本次移動開始後的 tick。
+func (t *tacticalScreen) shipSprite(idx, heading, elapsed int, moving bool) *ebiten.Image {
+	frame := shell.CMBTSHPFrameAtTick(heading, elapsed, moving)
+	cacheKey := idx*shell.CMBTSHPFrameCount + frame
+	if im, ok := t.shipSprites[cacheKey]; ok {
 		return im
 	}
-	im := loadCombatShipByIdx(t.res, idx)
-	t.shipSprites[idx] = im // 允許 nil(載入失敗),快取避免每幀重試
+	im := loadCombatShipByIdxFrame(t.res, idx, frame)
+	t.shipSprites[cacheKey] = im // 允許 nil(載入失敗),快取避免每幀重試
 	return im
 }
 
@@ -2021,9 +2388,13 @@ func abs(n int) int {
 }
 
 func (t *tacticalScreen) update(in shell.InputState) *origTransition {
+	t.tick++
+	t.pruneCombatFX()
+	t.hoverX, t.hoverY = in.MouseX, in.MouseY
 	if !in.ClickReleased {
 		return nil
 	}
+	t.ensureActionQueue()
 	if t.over { // 戰後點擊 → 套用結果 → 戰鬥結果畫面
 		survivors := map[string]bool{}
 		for _, s := range t.player {
@@ -2053,6 +2424,14 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 		return nil
 	}
 	if pi := shipAt(t.player, col, row); pi >= 0 { // 點我方艦 → 選取
+		if pi < len(t.acted) && t.acted[pi] {
+			t.log = fmt.Sprintf(t.b.tr("%s 本回合已完成,請選另一艘艦", "%s has already finished this round; select another ship"), t.player[pi].Name)
+			return nil
+		}
+		if pi < len(t.waited) && t.waited[pi] && t.nextActionableShip() != pi {
+			t.log = t.b.tr("這艘艦已選擇等待,請先完成其他未行動艦", "This ship is waiting; finish the other ready ships first")
+			return nil
+		}
 		t.sel = pi
 		return nil
 	}
@@ -2063,11 +2442,11 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 		case tacticalModeBoard:
 			t.boardEnemy(ei)
 		default:
-			t.fireRound(ei)
+			t.fireSelectedShip(ei)
 		}
 		return nil
 	}
-	if t.sel >= 0 && t.sel < len(t.player) { // 點空格 → 移動選中艦(受戰鬥速度限制)
+	if t.sel >= 0 && t.sel < len(t.player) && !t.acted[t.sel] { // 點空格 → 移動選中艦(受戰鬥速度限制)
 		sh := &t.player[t.sel]
 		// ⚠ 2026-08-08(第 69 項(戰鬥速度與引擎階)):先前這裡是**瞬移**——點任何空格都能到,沒有距離限制。
 		// 現在照原版走戰鬥速度:一回合能走幾格見 shell.TacticalMoveSquares
@@ -2085,17 +2464,65 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 				"%s has %d movement left this round (needs %d)"), sh.Name, budget, need)
 			return nil
 		}
+		sh.Facing = gamedata.CombatFacingForVector(col-sh.Col, row-sh.Row)
 		sh.Col, sh.Row = col, row
 		if t.sel < len(t.moveLeft) {
 			t.moveLeft[t.sel] = budget - need
 		}
+		t.markShipMotion(*sh, false)
 		t.log = fmt.Sprintf(t.b.tr("%s 移動到 (%d,%d),剩 %d 格", "%s moves to (%d,%d), %d left"),
 			sh.Name, col, row, t.moveLeft[t.sel])
 	}
 	return nil
 }
 
+// fireRound 保留給「自動」路徑：一次讓所有尚未摧毀的我方艦開火，再完成回合。
+// 手動點敵艦走 fireSelectedShip，讓 WAIT/DONE 有真正的逐艦落點。
 func (t *tacticalScreen) fireRound(target int) {
+	actors := make([]int, len(t.player))
+	for i := range actors {
+		actors[i] = i
+	}
+	t.fireRoundForActors(target, actors, true)
+}
+
+func (t *tacticalScreen) fireSelectedShip(target int) {
+	t.ensureActionQueue()
+	if t.sel < 0 || t.sel >= len(t.player) || t.acted[t.sel] || (t.waited[t.sel] && t.nextActionableShip() != t.sel) {
+		t.sel = t.nextActionableShip()
+	}
+	if t.sel < 0 || t.sel >= len(t.player) {
+		t.log = t.b.tr("本回合沒有可行動的我方艦", "No player ship is ready this round")
+		return
+	}
+	actor := t.sel
+	last := true
+	for i := range t.player {
+		if i != actor && !t.acted[i] {
+			last = false
+			break
+		}
+	}
+	if !t.fireRoundForActors(target, []int{actor}, last) {
+		return
+	}
+	if last {
+		// fireRoundForActors 已完成回合交界並重建佇列。
+		return
+	}
+	t.acted[actor] = true
+	t.waited[actor] = false
+	if !last && !t.over {
+		t.sel = t.nextActionableShip()
+	}
+}
+
+// fireRoundForActors 讓指定艦開火。endRound=false 時只結算這艦的攻擊，敵方與戰機
+// 留到本回合最後一艦完成時才處理；endRound=true 則接上完整回合交界。
+func (t *tacticalScreen) fireRoundForActors(target int, actors []int, endRound bool) bool {
+	if target < 0 || target >= len(t.enemy) {
+		return false
+	}
 	tc, tr := t.enemy[target].Col, t.enemy[target].Row
 	// 射程內我艦逐一依武器類型分流真戰鬥公式:beam(ResolveShot,不動)/missile
 	// (ResolveMissileShot,躲避+AMR 攔截)/spherical(ResolveSphericalShot,現行武器表
@@ -2103,6 +2530,8 @@ func (t *tacticalScreen) fireRound(target int) {
 	preCount := len(t.enemy) // 用來判斷本回合是否有敵艦被擊毀(播爆炸音效)
 	pAtk, firing := 0, 0
 	anyHit := false
+	inRange := false
+	arcBlocked := false
 	firedMissile := false // 首艘開火艦是否為飛彈類(決定開火音效)
 	firedAny := false
 	// 相位匿蹤:手冊「While cloaked, the ship **cannot be attacked**」。與停滯力場同一個形狀
@@ -2110,26 +2539,36 @@ func (t *tacticalScreen) fireRound(target int) {
 	// 回合數用 t.round+1:t.round 要到本次開火結算完才會 ++。
 	if shell.CloakUntargetable(t.enemy[target], t.round+1) {
 		t.log = fmt.Sprintf(t.b.tr("%s 相位匿蹤中,任何武器都鎖定不了它",
-			"%s is phase-cloaked — nothing can target it"), t.enemy[target].Name)
-		return
+			"%s is phase-cloaked — nothing can target it"),
+			combatShipLabel(t.b.lang, t.b.session, t.enemy[target].Name))
+		return false
 	}
 	if t.enemy[target].InStasis {
 		// 手冊(Stasis Field):「cannot … **or be affected by any weapon**. It is
 		// effectively removed from battle entirely.」——只做「不能動」會讓它變成活靶,
 		// 那是相反的效果。
 		t.log = fmt.Sprintf(t.b.tr("%s 被停滯力場封住,任何武器都打不到它",
-			"%s is held in a stasis field — no weapon can affect it"), t.enemy[target].Name)
-		return
+			"%s is held in a stasis field — no weapon can affect it"),
+			combatShipLabel(t.b.lang, t.b.session, t.enemy[target].Name))
+		return false
 	}
-	for i := range t.player {
+	for _, i := range actors {
+		if i < 0 || i >= len(t.player) {
+			continue
+		}
 		s := &t.player[i]
 		if s.InStasis {
 			continue // 被定住的船不能開火
 		}
+		enemy := &t.enemy[target]
 		dist := abs(s.Col-tc) + abs(s.Row-tr)
 		if dist > fireRange {
 			continue
 		}
+		inRange = true
+		facing := shell.ShieldFacingForShot(*s, *enemy)
+		enemy.EnsureShieldFacings()
+		shieldReduction := enemy.ShieldReductionForFacing(facing)
 		// 行動次數(第 70 項(陀螺去穩器)):超載電容/快速飛彈架/時間扭曲加速器可以再打一次。
 		// 沒有這些系統的船 shots==1,整段行為與先前逐位元相同。
 		// 能量吸收器:先把儲能射出去(自動命中)。手冊「A cloaked ship will **not** decloak
@@ -2139,13 +2578,21 @@ func (t *tacticalScreen) fireRound(target int) {
 			if t.enemy[target].HasDisplacement {
 				dispRoll = t.rng.Intn(100) + 1
 			}
-			er := shell.EnergyAbsorberRelease(s, &t.enemy[target], dist, dispRoll)
+			er := shell.EnergyAbsorberReleaseAtFacing(s, enemy, dist, dispRoll, shieldReduction)
 			if er.Hit {
 				anyHit = true
-				t.enemy[target].ArmorHP = er.RemainingArmorHP
-				t.enemy[target].HP -= er.DamageToStructure
+				enemy.ApplyShieldDamage(facing, er.ShieldDamage)
+				enemy.ArmorHP = er.RemainingArmorHP
+				enemy.HP -= er.DamageToStructure
 				pAtk += er.DamageToStructure
 			}
+		}
+		// 原版在每個武器槽的攻擊端以 Relative_Bearing 遮罩檢查射界。
+		// 儲能屬於前置特殊武器，已依原版呼叫順序先釋放；正常武器則必須
+		// 同時滿足射程與目前 Facing 的方向弧，且被射界擋住時不消費骰子／彈藥。
+		if !shell.WeaponArcAllowsCombatShot(*s, *enemy) {
+			arcBlocked = true
+			continue
 		}
 		shots := shell.TacticalShotsThisRound(*s)
 		s.Fired = true       // 開過火 → 這一回合結束時不會充能(手冊的 unused 是「完全沒開火」)
@@ -2156,10 +2603,37 @@ func (t *tacticalScreen) fireRound(target int) {
 				firedAny = true
 				firedMissile = s.Kind == shell.WeaponKindMissile
 			}
-			enemy := &t.enemy[target]
+			facing = shell.ShieldFacingForShot(*s, *enemy)
+			shieldReduction = enemy.ShieldReductionForFacing(facing)
 			var shot shell.ShotResult
 			switch s.Kind {
 			case shell.WeaponKindMissile:
+				missileMods := shell.WeaponModCodesForWeapon(s.WeaponName, s.Mods)
+				warheads := gamedata.WeaponModMissileWarheadCount(missileMods)
+				var mdef shell.MissileDefenses
+				// 點防禦是防守方的同格自動攔截；一個 CombatShip 目前只有一個
+				// 武器槽，所以每回合只消費一次。沒有 PD 時不擲額外 RNG。
+				pdMods := shell.WeaponModCodesForWeapon(enemy.WeaponName, enemy.Mods)
+				if !enemy.PointDefenseSpent && shell.PointDefenseCanEngage(enemy.WeaponName, s.WeaponName, pdMods) {
+					enemy.PointDefenseSpent = true
+					pd := shell.ResolvePointDefenseIntercept(shell.PointDefenseShot{
+						BeamWeaponName:            enemy.WeaponName,
+						BeamAttack:                enemy.Attack,
+						BeamDamageMax:             enemy.WeaponMax,
+						BeamRangeSquares:          0, // 同格自動攔截(手冊 p.117)
+						BeamRoll:                  t.rng.Intn(100) + 1,
+						BeamSystems:               enemy.BeamSystems,
+						BeamMods:                  pdMods,
+						MissileWeaponName:         s.WeaponName,
+						MissileFTLLevel:           s.DriveLevel,
+						MissileMods:               missileMods,
+						CarriedInterceptionDamage: enemy.PointDefenseInterceptionDamage,
+					})
+					if pd.Fired {
+						mdef.InterceptedWarheads = pd.DestroyedWarheads
+						enemy.PointDefenseInterceptionDamage = pd.RemainingInterceptionDamage
+					}
+				}
 				amrRoll := t.rng.Intn(100) + 1
 				jamRoll := t.rng.Intn(100) + 1
 				// ⚠ 2026-08-08:上一版寫著「hasAMR/evasion 加成現行皆無對應可造艦元件,
@@ -2168,7 +2642,6 @@ func (t *tacticalScreen) fireRound(target int) {
 				// 固定 range=2 更忠實)。
 				//
 				// 特殊防禦**裝了才擲骰**:沒裝就不動 t.rng,既有戰鬥逐位元不變。
-				var mdef shell.MissileDefenses
 				if enemy.HasLightningField {
 					mdef.HasLightningField, mdef.LightningRoll = true, t.rng.Intn(100)+1
 				}
@@ -2179,11 +2652,30 @@ func (t *tacticalScreen) fireRound(target int) {
 				if c := shell.CloakMissileMissChance(*enemy, t.round+1); c > 0 {
 					mdef.CloakMissChance, mdef.CloakRoll = c, t.rng.Intn(100)+1
 				}
+				if warheads > 1 {
+					mdef.JamRolls = []int{jamRoll}
+					if mdef.CloakMissChance > 0 {
+						mdef.CloakRolls = []int{mdef.CloakRoll}
+					}
+					if mdef.HasDisplacement {
+						mdef.DisplacementRolls = []int{mdef.DisplacementRoll}
+					}
+					for i := 1; i < warheads; i++ {
+						mdef.JamRolls = append(mdef.JamRolls, t.rng.Intn(100)+1)
+						if mdef.CloakMissChance > 0 {
+							mdef.CloakRolls = append(mdef.CloakRolls, t.rng.Intn(100)+1)
+						}
+						if mdef.HasDisplacement {
+							mdef.DisplacementRolls = append(mdef.DisplacementRolls, t.rng.Intn(100)+1)
+						}
+					}
+				}
 				// ⚠ 第 71 項:第五個引數(攻方掃描器抵銷)先前恆為 0、倒數第二個
 				// (目標的硬化護盾)恆為 false。兩個都有真值,只是沒人回頭填。
-				shot = shell.ResolveMissileShot(enemy.HasAMR, dist, amrRoll, enemy.MissileEvasion,
+				shot = shell.ResolveMissileShotWithMods(enemy.HasAMR, dist, amrRoll, enemy.MissileEvasion,
 					s.ScannerJamReduction, false, jamRoll,
-					s.WeaponMax, enemy.ShieldReduction, enemy.ArmorHP, enemy.HardShield, mdef)
+					s.WeaponMax, shieldReduction, enemy.ArmorHP, enemy.HardShield, mdef,
+					s.WeaponName, missileMods)
 			case shell.WeaponKindSpherical:
 				span := s.WeaponMax - s.WeaponMin
 				r := 0
@@ -2191,7 +2683,7 @@ func (t *tacticalScreen) fireRound(target int) {
 					r = t.rng.Intn(span + 1)
 				}
 				aggD := gamedata.DamageSphericalRoll(s.WeaponMin, r, 100)
-				shot = shell.ResolveSphericalShot(aggD, enemy.ShieldReduction, enemy.ArmorHP,
+				shot = shell.ResolveSphericalShot(aggD, shieldReduction, enemy.ArmorHP,
 					enemy.HardShield, false)
 			default:
 				roll := t.rng.Intn(100) + 1
@@ -2199,10 +2691,10 @@ func (t *tacticalScreen) fireRound(target int) {
 				shot = shell.ResolveBeamShot(shell.BeamShot{
 					NetAttack: net, WeaponMin: s.WeaponMin, WeaponMax: s.WeaponMax,
 					RangeSquares: dist, Roll: roll,
-					Mods:     shell.WeaponModCodesFromStrings(s.Mods),
+					Mods:     shell.WeaponModCodesForWeapon(s.WeaponName, s.Mods),
 					Attacker: s.BeamSystems,
 					Target: shell.BeamTargetSystems{
-						ShieldReduction: enemy.ShieldReduction, ArmorHP: enemy.ArmorHP,
+						ShieldReduction: shieldReduction, ArmorHP: enemy.ArmorHP,
 						APNegated: enemy.APNegated,
 						// ⚠ 2026-08-08:HardShield 先前**沒有填**——快速結算那一側同一個漏。
 						// 「Resolve* 有這個參數」不等於「呼叫端有填」。
@@ -2212,6 +2704,8 @@ func (t *tacticalScreen) fireRound(target int) {
 			}
 			if shot.Hit {
 				anyHit = true
+				t.spawnCombatFX(combatFXImpact, *enemy)
+				enemy.ApplyShieldDamage(facing, shot.ShieldDamage)
 				// 能量吸收器:轉存 1/4「抵達這艘船」的潛在傷害(見 gamedata.EnergyAbsorberStored)。
 				shell.EnergyAbsorberAbsorb(enemy, s.WeaponMax)
 				enemy.ArmorHP = shot.RemainingArmorHP
@@ -2220,10 +2714,46 @@ func (t *tacticalScreen) fireRound(target int) {
 			}
 		}
 	}
-	if firing == 0 {
-		t.log = t.b.tr("目標超出射程,移動艦艇靠近再開火", "Target out of range — move closer before firing")
-		return
+	if target >= 0 && target < len(t.enemy) && t.enemy[target].HP <= 0 {
+		t.spawnCombatFX(combatFXExplosion, t.enemy[target])
 	}
+	if firing == 0 {
+		if inRange && arcBlocked {
+			t.log = t.b.tr("目標在射程內,但不在目前武器射界;轉向或移動後再開火",
+				"Target is in range but outside the weapon arc — turn or move before firing")
+		} else {
+			t.log = t.b.tr("目標超出射程,移動艦艇靠近再開火", "Target out of range — move closer before firing")
+		}
+		return false
+	}
+	if !endRound {
+		alive := t.enemy[:0]
+		for _, s := range t.enemy {
+			if s.HP > 0 {
+				alive = append(alive, s)
+			}
+		}
+		t.enemy = alive
+		t.refreshSquadronCarriers()
+		playSFX(fireSFX(firedMissile))
+		if len(t.enemy) < preCount {
+			playSFX(sfxExplode)
+		} else if anyHit {
+			playSFX(sfxHit)
+		}
+		name := t.b.tr("我方艦", "player ship")
+		if len(actors) > 0 && actors[0] >= 0 && actors[0] < len(t.player) {
+			name = t.player[actors[0]].Name
+		}
+		t.log = fmt.Sprintf(t.b.tr("%s 完成行動:造成 %d 傷害;輪到下一艦", "%s finished: %d damage; next ship"), name, pAtk)
+		if len(t.enemy) == 0 {
+			t.over, t.won, t.log = true, true, t.b.tr("★ 敵艦隊全滅,勝利!點擊繼續",
+				"★ Enemy fleet destroyed — victory! Click to continue")
+		}
+		return true
+	}
+	return t.finishRound(preCount, pAtk, firedMissile, anyHit, firing)
+	/* unreachable legacy full-fleet finalizer retained only as audit reference
 	t.round++
 	// 戰機中隊與艦砲同一回合行動:先飛+開火,再讓貼身的敵艦還擊它們。
 	fDmg := t.advanceSquadrons()
@@ -2272,6 +2802,7 @@ func (t *tacticalScreen) fireRound(target int) {
 				t.player[wi].ShieldReduction, t.player[wi].ArmorHP, roll,
 				t.player[wi].HardShield, false)
 			if shot.Hit {
+				t.spawnCombatFX(combatFXImpact, t.player[wi])
 				t.player[wi].ArmorHP = shot.RemainingArmorHP
 				t.player[wi].HP -= shot.DamageToStructure
 				eAtk += shot.DamageToStructure
@@ -2296,8 +2827,10 @@ func (t *tacticalScreen) fireRound(target int) {
 	// 下面這個 palive 壓縮會把 t.player 縮短並讓索引往前移,而 moveLeft 還停在舊長度
 	// ——選中第 3 艘卻讀到第 5 艘的移動力,而且陣列還會越界。
 	t.moveLeft = freshMoveBudgets(t.player)
+	t.acted = make([]bool, len(t.player))
+	t.waited = make([]bool, len(t.player))
 	if t.sel >= len(t.player) {
-		t.sel = -1
+		t.sel = firstReadyShip(t.player)
 	}
 	t.log = fmt.Sprintf(t.b.tr("第 %d 回合:%d 艦齊射 %d ／ 敵方還擊 %d",
 		"Round %d: %d ships deal %d / enemy returns %d"), t.round, firing, pAtk, eAtk)
@@ -2312,6 +2845,107 @@ func (t *tacticalScreen) fireRound(target int) {
 		t.over, t.won, t.log = true, false, t.b.tr("✗ 我方艦隊全滅,敗北。點擊繼續",
 			"✗ Your fleet is destroyed — defeat. Click to continue")
 	}
+	return true
+	*/
+}
+
+// finishRound 結算回合交界：戰機、敵方還擊、充能、狀態與下一回合行動佇列。
+func (t *tacticalScreen) finishRound(preCount, pAtk int, firedMissile, anyHit bool, firing int) bool {
+	t.round++
+	fDmg := t.advanceSquadrons()
+	pAtk += fDmg
+	fLost := t.enemyFiresAtSquadrons()
+	t.dropDeadSquadrons()
+	alive := t.enemy[:0]
+	for _, s := range t.enemy {
+		if s.HP > 0 {
+			alive = append(alive, s)
+		}
+	}
+	t.enemy = alive
+	if firing > 0 {
+		playSFX(fireSFX(firedMissile))
+		if len(t.enemy) < preCount {
+			playSFX(sfxExplode)
+		} else if anyHit {
+			playSFX(sfxHit)
+		}
+	}
+
+	// 敵方還擊我方最脆弱艦(同樣走真戰鬥公式,每艦一發)。
+	eAtk := 0
+	if len(t.player) > 0 && len(t.enemy) > 0 {
+		wi := 0
+		for i := range t.player {
+			if t.player[i].HP < t.player[wi].HP {
+				wi = i
+			}
+		}
+		for i := range t.enemy {
+			es := &t.enemy[i]
+			if es.InStasis || t.player[wi].InStasis {
+				continue
+			}
+			dist := abs(es.Col-t.player[wi].Col) + abs(es.Row-t.player[wi].Row)
+			if dist > fireRange {
+				continue
+			}
+			if !shell.WeaponArcAllowsCombatShot(*es, t.player[wi]) {
+				continue
+			}
+			roll := t.rng.Intn(100) + 1
+			net := es.Attack - shell.TacticalEffectiveDefense(t.player[wi])
+			shot := shell.ResolveShot(net, es.WeaponMin, es.WeaponMax, dist,
+				t.player[wi].ShieldReduction, t.player[wi].ArmorHP, roll,
+				t.player[wi].HardShield, false)
+			if shot.Hit {
+				t.spawnCombatFX(combatFXImpact, t.player[wi])
+				t.player[wi].ArmorHP = shot.RemainingArmorHP
+				t.player[wi].HP -= shot.DamageToStructure
+				eAtk += shot.DamageToStructure
+			}
+		}
+	}
+
+	palive := t.player[:0]
+	for _, s := range t.player {
+		if s.HP > 0 {
+			palive = append(palive, s)
+		}
+	}
+	t.player = palive
+	t.refreshSquadronCarriers()
+	shell.TacticalAdvanceCharge(t.player)
+	shell.TacticalAdvanceCharge(t.enemy)
+	for i := range t.player {
+		t.player[i].PointDefenseSpent = false
+	}
+	for i := range t.enemy {
+		t.enemy[i].PointDefenseSpent = false
+	}
+	shell.ApplyTacticalStatusEffects(t.player, t.enemy)
+	t.moveLeft = freshMoveBudgets(t.player)
+	t.acted = make([]bool, len(t.player))
+	t.waited = make([]bool, len(t.player))
+	t.sel = firstReadyShip(t.player)
+	if firing > 0 {
+		t.log = fmt.Sprintf(t.b.tr("第 %d 回合:%d 艦齊射 %d ／ 敵方還擊 %d",
+			"Round %d: %d ships deal %d / enemy returns %d"), t.round, firing, pAtk, eAtk)
+	} else {
+		t.log = fmt.Sprintf(t.b.tr("第 %d 回合完成 ／ 敵方還擊 %d",
+			"Round %d complete / enemy returns %d"), t.round, eAtk)
+	}
+	if fDmg > 0 || fLost > 0 {
+		t.log += fmt.Sprintf(t.b.tr("(戰機造成 %d,折損 %d 架)", " (fighters deal %d, %d lost)"), fDmg, fLost)
+	}
+	if len(t.enemy) == 0 {
+		t.over, t.won, t.log = true, true, t.b.tr("★ 敵艦隊全滅,勝利!點擊繼續",
+			"★ Enemy fleet destroyed — victory! Click to continue")
+	} else if len(t.player) == 0 {
+		t.over, t.won, t.log = true, false, t.b.tr("✗ 我方艦隊全滅,敗北。點擊繼續",
+			"✗ Your fleet is destroyed — defeat. Click to continue")
+	}
+	return true
 }
 
 // drawShip 畫單艘艦:依 s.SpriteIdx 取該艦級的 CMBTSHP sprite 就縮放貼原版艦圖
@@ -2331,7 +2965,8 @@ func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base co
 	if iconH < 4 {
 		iconH = 4
 	}
-	if sprite := t.shipSprite(s.SpriteIdx); sprite != nil {
+	elapsed, moving := t.shipMotionElapsed(s, enemy)
+	if sprite := t.shipSprite(s.SpriteIdx, s.Facing, elapsed, moving); sprite != nil {
 		sb := sprite.Bounds()
 		sw0, sh0 := float64(sb.Dx()), float64(sb.Dy())
 		sc := float64(iconH) / sh0 // 依縮小後的圖示高度等比縮放(不再頂滿整格)
@@ -2361,7 +2996,11 @@ func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base co
 	// 誤當 baseline 用,實際會把字往下推到圖示範圍,疊字 bug 未修好,端到端截圖二次查出)。
 	fillPanel(dst, float32(x), float32(y), float32(w), float32(labelH), color.RGBA{0, 0, 0, 150}, false)
 	if t.fnt != nil {
-		t.fnt.Draw(dst, s.Name, float64(x)+3, float64(y)+1, 10, color.RGBA{235, 240, 250, 255})
+		name := s.Name
+		if enemy {
+			name = combatShipLabel(t.b.lang, t.b.session, name)
+		}
+		t.fnt.Draw(dst, truncateToWidth(t.fnt, name, 10, float64(w-6)), float64(x)+3, float64(y)+1, 10, color.RGBA{235, 240, 250, 255})
 	}
 	frac := float32(s.HP) / float32(s.MaxHP)
 	if frac < 0 {
@@ -2390,7 +3029,7 @@ func (t *tacticalScreen) draw(dst *ebiten.Image) {
 	}
 	gold := color.RGBA{240, 220, 120, 255}
 	if t.fnt != nil {
-		t.fnt.DrawCentered(dst, t.b.tr("戰術戰鬥", "TACTICAL COMBAT"), 320, 34, 20, gold)
+		t.fnt.DrawCentered(dst, truncateToWidth(t.fnt, t.b.tr("戰術戰鬥", "TACTICAL COMBAT"), 20, 600), 320, 34, 20, gold)
 	}
 	for i, s := range t.player {
 		t.drawShip(dst, s, color.RGBA{90, 220, 170, 255}, i == t.sel, false)
@@ -2398,6 +3037,7 @@ func (t *tacticalScreen) draw(dst *ebiten.Image) {
 	for _, s := range t.enemy {
 		t.drawShip(dst, s, color.RGBA{235, 110, 100, 255}, false, true)
 	}
+	t.drawCombatFX(dst)
 	t.drawSquadrons(dst) // 戰機畫在艦艇之上(它們是繞著目標飛的)
 	t.drawLaunchButton(dst)
 	logY := 452.0
@@ -2410,17 +3050,21 @@ func (t *tacticalScreen) draw(dst *ebiten.Image) {
 		if t.b.lang == i18n.Traditional {
 			t.drawBarLabelsCHT(dst)
 		}
+		for _, b := range barButtonsCHT {
+			drawHoverBorder(dst, float32(b.cx-barButtonPlateW/2), float32(b.cy-barButtonPlateH/2),
+				barButtonPlateW, barButtonPlateH, pointInRect(t.hoverX, t.hoverY, b.cx-27, b.cy-9, 54, 18))
+		}
 		logY = 343 // log 移到控制列上方星空,不壓按鈕
 	}
 	if t.fnt != nil {
 		if hint := t.modeHint(); hint != "" {
 			// 模式提示壓在 log 上方:進了掃描/登艦模式之後,點敵艦的效果完全不同,
 			// **畫面上必須看得出來現在是哪個模式**,否則玩家會以為開火壞了。
-			t.fnt.DrawCentered(dst, hint, 320, logY-36, 12, color.RGBA{250, 210, 120, 255})
+			t.fnt.DrawCentered(dst, truncateToWidth(t.fnt, hint, 12, 600), 320, logY-36, 12, color.RGBA{250, 210, 120, 255})
 		}
-		t.fnt.DrawCentered(dst, t.log, 320, logY, 14, color.RGBA{214, 220, 235, 255})
+		t.fnt.DrawCentered(dst, truncateToWidth(t.fnt, t.log, 14, 600), 320, logY, 14, color.RGBA{214, 220, 235, 255})
 		if line := t.squadronStatusLine(); line != "" {
-			t.fnt.DrawCentered(dst, line, 320, logY-18, 12, color.RGBA{140, 220, 235, 255})
+			t.fnt.DrawCentered(dst, truncateToWidth(t.fnt, line, 12, 600), 320, logY-18, 12, color.RGBA{140, 220, 235, 255})
 		}
 	}
 }
@@ -2550,6 +3194,14 @@ func (b *sceneBuilder) council() (*overlayScreen, error) {
 		paletteChain{{"council.lbx", 0}})
 	if err != nil {
 		return nil, err
+	}
+	// COUNCIL.LBX#1 是 640×480、10 幀的 delta 動畫；逐幀累積播放後停在最後一幀。
+	// 失敗時保留 loadOverlayScreen 的 frame 0 靜態 fallback，不讓美術缺失阻塞議會玩法。
+	if frames, ferr := loadOverlayAnimationFrames(b.res, "council.lbx", 1,
+		paletteChain{{"council.lbx", 0}}); ferr == nil && len(frames) > 1 {
+		s.animFrames = frames
+		s.animTick = func() int { return b.animTick }
+		s.animationStartTick = b.animTick
 	}
 	if b.fnt != nil {
 		gold := color.RGBA{240, 220, 120, 255}
@@ -2725,7 +3377,7 @@ var ngSettings = []ngSetting{
 		n:     func(b *sceneBuilder) int { return len(shell.Difficulties) },
 		idx:   func(b *sceneBuilder) int { return b.newGameDiff },
 		set:   func(b *sceneBuilder, i int) { b.newGameDiff = i },
-		label: func(b *sceneBuilder) string { return shell.Difficulties[b.newGameDiff].Name },
+		label: func(b *sceneBuilder) string { return newGameDifficultyLabel(b.lang, b.newGameDiff) },
 	},
 	{
 		act: "size", col: 1, row: 0, asset0: 9,
@@ -2734,7 +3386,8 @@ var ngSettings = []ngSetting{
 		set: func(b *sceneBuilder, i int) { b.newGameSize = i },
 		label: func(b *sceneBuilder) string {
 			gs := shell.GalaxySizes[b.newGameSize]
-			return fmt.Sprintf(b.tr("%s %d 星", "%s  %d stars"), gs.Name, gs.Stars)
+			return fmt.Sprintf(b.tr("%s %d 星", "%s  %d stars"),
+				newGameGalaxySizeLabel(b.lang, b.newGameSize), gs.Stars)
 		},
 	},
 	{
@@ -2742,7 +3395,7 @@ var ngSettings = []ngSetting{
 		n:     func(b *sceneBuilder) int { return len(shell.GalaxyAges) },
 		idx:   func(b *sceneBuilder) int { return b.newGameAge },
 		set:   func(b *sceneBuilder, i int) { b.newGameAge = i },
-		label: func(b *sceneBuilder) string { return shell.GalaxyAges[b.newGameAge].Name },
+		label: func(b *sceneBuilder) string { return newGameGalaxyAgeLabel(b.lang, b.newGameAge) },
 	},
 	{
 		act: "players", col: 0, row: 1, asset0: 13,
@@ -2758,7 +3411,7 @@ var ngSettings = []ngSetting{
 		n:     func(b *sceneBuilder) int { return len(shell.TechLevels) },
 		idx:   func(b *sceneBuilder) int { return b.newGameTech },
 		set:   func(b *sceneBuilder, i int) { b.newGameTech = i },
-		label: func(b *sceneBuilder) string { return shell.TechLevels[b.newGameTech].Name },
+		label: func(b *sceneBuilder) string { return newGameTechLevelLabel(b.lang, b.newGameTech) },
 	},
 }
 
@@ -2773,8 +3426,46 @@ func ngStripRect(s ngSetting) (int, int, int, int) {
 		ngStripW, ngStripH
 }
 
-// newGameSetup 建原版新遊戲設定畫面(NEWGAME.LBX 資產 28,調色盤鏈 RACEOPT#4→NEWGAME#1)。
-// ACCEPT 進種族選擇;CANCEL 回主選單。版面來源見上方檔頭區塊。
+// newGameBackgroundAsset 回傳兩版 NEWGAME.LBX 的滿版設定背景資產。
+// 1.31 只有 30 張資產,滿版背景在 #28；1.50.26 多了三張設定圖,背景順延到 #31。
+func newGameBackgroundAsset(v gamedata.GameVersion) int {
+	if v == gamedata.VersionCommunity15 {
+		return 31
+	}
+	return 28
+}
+
+// newGameBackgroundAssetForCount 以實際封存檔資產數修正版本標籤與資料目錄
+// 不一致的情況。使用者可能以 -version 1.5 指向仍只有 1.31 資產的共用目錄；
+// 這時 #31 不存在，但兩版都共有的 #28 仍是正確且可顯示的設定背景。
+// 若連 #28 都不存在，保留原候選索引，讓呼叫端回報真正的資料錯誤。
+func newGameBackgroundAssetForCount(v gamedata.GameVersion, assetCount int) int {
+	candidate := newGameBackgroundAsset(v)
+	if candidate >= 0 && candidate < assetCount {
+		return candidate
+	}
+	if 28 >= 0 && 28 < assetCount {
+		return 28
+	}
+	return candidate
+}
+
+// newGameBackgroundAssetForResolver 只用封存檔 header 的資產數做防呆，不會
+// 預先解碼整張背景。真正 1.5 資料仍使用 #31；只有 #31 不存在時才回退 #28。
+func newGameBackgroundAssetForResolver(res *assets.Resolver, v gamedata.GameVersion) int {
+	candidate := newGameBackgroundAsset(v)
+	if res == nil {
+		return candidate
+	}
+	arch, err := res.OpenLBX("newgame.lbx")
+	if err != nil {
+		return candidate
+	}
+	return newGameBackgroundAssetForCount(v, arch.Count())
+}
+
+// newGameSetup 建原版新遊戲設定畫面(兩版 NEWGAME.LBX 的滿版背景,調色盤鏈
+// RACEOPT#4→NEWGAME#1)。ACCEPT 進種族選擇;CANCEL 回主選單。版面來源見上方檔頭區塊。
 func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 	hits := make([]hitRegion, 0, len(ngSettings)*2+2)
 	for _, st := range ngSettings {
@@ -2796,6 +3487,15 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 			return b.goTo(b.newGameSetup, "新遊戲設定")
 		}
 		if a == "accept" {
+			// 熱座每一席都要接管一個帝國。若玩家在多人畫面選的真人數
+			// 超過 NEW GAME 目前的帝國數,自動把帝國數補到足夠,避免之後
+			// 選帝國畫面只能悄悄少開席位。
+			if b.pendingHotseat > b.newGameEmpires {
+				b.newGameEmpires = b.pendingHotseat
+			}
+			if b.networkPending && len(b.networkRoster.Players) > b.newGameEmpires {
+				b.newGameEmpires = len(b.networkRoster.Players)
+			}
 			// 原版流程:星系設定 → Accept →【獨立種族選擇畫面】(不在此直接開局)。
 			sc, err := b.raceSelect()
 			if err != nil {
@@ -2827,7 +3527,7 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 		{100, 385, 95, 20, "CANCEL", 0}, // 101..192 × 386..401
 		{419, 386, 94, 22, "ACCEPT", 0}, // 420..510 × 388..407
 	}
-	s, err := loadOverlayScreen(b.res, "newgame.lbx", 28, b.lang, b.fnt, "menu.tsv",
+	s, err := loadOverlayScreen(b.res, "newgame.lbx", newGameBackgroundAssetForResolver(b.res, b.gameVersion), b.lang, b.fnt, "menu.tsv",
 		overlays, color.RGBA{210, 216, 230, 255}, 13, hits, onAction,
 		paletteChain{{"raceopt.lbx", 4}, {"newgame.lbx", 1}})
 	if err != nil {
@@ -2888,6 +3588,8 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 		// RELOCATE(remake 譯「調動」)——手冊逐字:「You set up your Relocation orders on the
 		// Fleet Operations console.」**這才是原版的入口**,座標同下面 overlays 的標籤框。
 		{440, 384, 93, 18, "relocate"},
+		// LEADERS 以目前艦隊列表中勾選的船作為指派目標;未勾選時由軍官畫面取第一艘。
+		{342, 430, 78, 28, "leaders"},
 		// ALL(remake 譯「全部」)—— **全選/全不選這支艦隊的艦艇**,不是集結點。
 		//
 		// ⚠ 2026-08-07 訂正:先前把它接成 `Set_All_Star_Relocations_`,那是**推測**且推錯了。
@@ -2921,6 +3623,10 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 		switch a {
 		case "design":
 			return b.goTo(b.shipDesign, "艦艇設計")
+		case "leaders":
+			b.officerMsg = ""
+			b.officerTab = 1
+			return b.goTo(b.officer, "軍官列表")
 		}
 		if strings.HasPrefix(a, "selfleet") && b.session != nil {
 			if n, err := strconv.Atoi(a[len("selfleet"):]); err == nil {
@@ -3175,10 +3881,11 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		hitRegion{300, 82, 300, 22, "armor"},
 		hitRegion{300, 106, 300, 22, "shield"},
 		hitRegion{300, 130, 300, 22, "special"},
+		hitRegion{300, 151, 300, 17, "arc"}, // 火線角(點擊循環；飛彈固定 360)
 		hitRegion{0, 0, moo2ScreenW, moo2ScreenH, "back"},
 	)
-	// 武器改造(mod)勾選:8 個 chip,順序對齊 shell.WeaponModOptions。只對 beam 武器生效
-	// (見 onAction 的 WeaponIsBeam 判斷),非 beam 武器仍顯示熱區但點擊不生效(避免熱區位移)。
+	// 武器改造(mod)勾選:依目前武器顯示已接線且適用的 chip。飛彈／魚雷不再顯示光束專用
+	// 改造，避免玩家勾選一個只會增加成本卻不會進入戰鬥公式的選項。
 	//
 	// ⚠ 熱區與繪製**共用 designModChipRect**。先前是兩份寫死的座標(這裡 8 列、繪製那邊
 	// 一列 modChipX),兩份遲早漂移;而且都是 4 欄 × 76px —— **英文標籤塞不下**
@@ -3186,8 +3893,12 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 	// 改成 2 欄 × 4 列,欄寬從畫布右緣算出來。
 	//
 	// ⚠ **熱區要插在整頁 back 之前**——命中判定取第一個中的,back 蓋住整個畫面。
-	modHits := make([]hitRegion, len(shell.WeaponModOptions))
-	for i := range shell.WeaponModOptions {
+	weaponName := shell.WeaponOptions[b.designWeapon].Name
+	b.designArc = shell.NormalizeWeaponArc(weaponName, b.designArc)
+	designArc := b.designArc
+	modOptions := shell.WeaponModOptionsForWeapon(weaponName)
+	modHits := make([]hitRegion, len(modOptions))
+	for i := range modOptions {
 		r := designModChipRect(i)
 		// 高度跟著 rowStep(15):寫死 18 會讓相鄰兩列的熱區重疊 3px,點在交界處會中到上一列。
 		modHits[i] = hitRegion{int(r.x), int(r.y) - 2, int(r.w), 15, fmt.Sprintf("mod:%d", i)}
@@ -3197,6 +3908,8 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		switch a { // 循環只跳到「已研究解鎖」的元件
 		case "weapon":
 			b.designWeapon = b.session.NextUnlockedComponent(shell.WeaponOptions, b.designWeapon)
+			b.designMods = shell.FilterWeaponModsForWeapon(shell.WeaponOptions[b.designWeapon].Name, b.designMods)
+			b.designArc = shell.DefaultWeaponArc(shell.WeaponOptions[b.designWeapon].Name)
 			b.designMsg = "" // 換元件可能改變空間是否超格,清掉舊的建造提示避免誤導
 			return b.goTo(b.shipDesign, "艦艇設計")
 		case "armor":
@@ -3211,19 +3924,17 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			b.designSpecial = b.session.NextUnlockedComponent(shell.SpecialOptions, b.designSpecial)
 			b.designMsg = ""
 			return b.goTo(b.shipDesign, "艦艇設計")
+		case "arc":
+			b.designArc = shell.CycleWeaponArc(weaponName, b.designArc)
+			b.designMsg = ""
+			return b.goTo(b.shipDesign, "艦艇設計")
 		}
 		if strings.HasPrefix(a, "mod:") {
-			// mods 只對 beam 武器有意義(手冊 HV/PD/AF/CO 明文只講 beam,見
-			// shell.WeaponIsBeam);非 beam 武器(核飛彈/麥克萊特飛彈)點擊不生效,
-			// 避免玩家對飛彈掛上不會被套用的改造造成誤導。
-			w := shell.WeaponOptions[b.designWeapon]
-			if shell.WeaponIsBeam(w.Name) {
-				var idx int
-				fmt.Sscanf(a, "mod:%d", &idx)
-				if idx >= 0 && idx < len(shell.WeaponModOptions) {
-					b.designMods = shell.ToggleWeaponMod(b.designMods, shell.WeaponModOptions[idx])
-					b.designMsg = ""
-				}
+			var idx int
+			fmt.Sscanf(a, "mod:%d", &idx)
+			if idx >= 0 && idx < len(modOptions) {
+				b.designMods = shell.ToggleWeaponMod(b.designMods, modOptions[idx])
+				b.designMsg = ""
 			}
 			return b.goTo(b.shipDesign, "艦艇設計")
 		}
@@ -3233,14 +3944,14 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			// ——**可用空間會隨科技變動**:巨型通量器 ×125/100(手冊 +25%,執行檔
 			// Total_Design_Space_ 0x6E81F 是 imul 125 / idiv 100)。套件級那個沒有 GameSession
 			// 可查,一律當成沒研究出來。
-			if !b.session.DesignFitsWithMods(zh, b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods) {
+			if !b.session.DesignFitsWithModsAndArc(zh, b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods, designArc) {
 				b.designMsg = fmt.Sprintf(b.tr("空間不足,無法建造%s(目前元件+改造超出艦體空間上限)",
 					"%s does not fit — components plus mods exceed the hull space limit"),
 					shipClassLabel(b.lang, zh))
 				return b.goTo(b.shipDesign, "艦艇設計")
 			}
 			b.designMsg = ""
-			b.session.BuildShipWithMods(zh, b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods)
+			b.session.BuildShipWithModsAndArc(zh, b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods, designArc)
 			return b.goTo(b.fleet, "艦隊列表")
 		}
 		return b.goTo(b.fleet, "艦隊列表")
@@ -3300,11 +4011,19 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 				// **英文模式走純向量字沒有**,畫出來是豆腐框——同一個字串在兩種語言下走不同字型,
 				// 而只看中文截圖永遠看不到。挑字元的原則:兩條字型路徑都保證有的才用。
 				extraText{x: 305, y: y, size: 12,
-					text: r.label + ": " + componentLabel(b.lang, r.c), col: gold},
-				extraText{x: 470, y: y, size: 11, text: fmt.Sprintf("%s %dBC", r.eff, r.c.Cost), col: color.RGBA{200, 208, 225, 255}})
+					text: r.label + ": " + componentLabel(b.lang, r.c), col: gold, maxW: 157},
+				extraText{x: 470, y: y, size: 11, text: fmt.Sprintf("%s %dBC", r.eff, r.c.Cost), col: color.RGBA{200, 208, 225, 255}, maxW: 162})
 		}
+		arcPercent := gamedata.WeaponArcCostPercent(designArc)
+		arcLabel := shell.WeaponArcLabelZH(designArc)
+		if b.lang == i18n.English {
+			arcLabel = shell.WeaponArcLabelEN(designArc)
+		}
+		s.extras = append(s.extras, extraText{x: 305, y: 148, size: 10,
+			text: fmt.Sprintf(b.tr("火線角: %s (+%d%%佔格/成本)", "Weapon arc: %s (+%d%% space/cost)"), arcLabel, arcPercent),
+			col:  color.RGBA{190, 205, 235, 255}, maxW: 327})
 		const designHull = "巡洋艦" // shell 的 key(見 shipClassZH 註解)
-		total := shell.DesignCostWithMods(designHull, b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods)
+		total := shell.DesignCostWithModsAndArc(designHull, b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods, designArc)
 		// 各類已解鎖元件數(需研究對應科技解鎖進階元件)。
 		cnt := func(opts []shell.Component) int {
 			n := 0
@@ -3317,7 +4036,7 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		}
 		s.extras = append(s.extras,
 			extraText{x: 305, y: 168, size: 12, text: fmt.Sprintf(b.tr("%s總價 %d BC", "%s total %d BC"),
-				shipClassLabel(b.lang, designHull), total), col: color.RGBA{170, 220, 180, 255}},
+				shipClassLabel(b.lang, designHull), total), col: color.RGBA{170, 220, 180, 255}, maxW: 327},
 			// 左下第一個框的內緣量測值:x 19..140、y 441..465(邊框 141/142 與 440/466)。
 			// 原本寫 (12,460) 在框**外面**,壓在左邊框與下邊框的交角上。
 			extraText{x: 24, y: 447, size: 12,
@@ -3349,13 +4068,13 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		// 欄寬 163px 是量出來的(dsTextRight−dsTextX 的一半),不是猜的。
 		spaceHeaderY := 186 + float64(len(unlockLines))*14
 		s.extras = append(s.extras, extraText{x: dsTextX, y: spaceHeaderY, size: 12,
-			text: b.tr("各艦體空間(依目前元件):", "Space per hull (with current components):"), col: gold})
+			text: b.tr("各艦體空間(依目前元件):", "Space per hull (with current components):"), col: gold, maxW: dsTextRight - dsTextX})
 		const dsSpaceRows = 3
 		dsSpaceColW := (dsTextRight - dsTextX) / 2
 		okCol := color.RGBA{170, 220, 180, 255}
 		badCol := color.RGBA{230, 90, 90, 255}
 		for i, cl := range classes {
-			used := shell.ShipDesignSpaceUsedWithMods(cl, b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods)
+			used := shell.ShipDesignSpaceUsedWithModsAndArc(cl, b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods, designArc)
 			// 總空間同樣要含巨型通量器加成,否則顯示的「已用／總」會與 onAction 的建造判斷不一致
 			// ——兩邊本來就共用同一份判斷,這裡改一邊就要改另一邊。
 			totalSp := gamedata.ShipHullSpace(gamedata.CombatShipClass(i))
@@ -3372,7 +4091,7 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			s.extras = append(s.extras, extraText{
 				x:    dsTextX + float64(i/dsSpaceRows)*dsSpaceColW,
 				y:    spaceHeaderY + 16 + float64(i%dsSpaceRows)*15,
-				size: 11, text: txt, col: col})
+				size: 11, text: txt, col: col, maxW: dsSpaceColW - 6})
 		}
 		if b.designMsg != "" {
 			// 兩欄之後這塊只有 3 列高;訊息接在它下面,並且**也折行**
@@ -3384,21 +4103,18 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			}
 		}
 
-		// 武器改造(mod)勾選 chip:8 個,順序對齊 shell.WeaponModOptions 與上方 onAction 的
-		// mod:0..7 熱區。已勾選轉金色高亮,未勾選灰色;非 beam 武器(核飛彈/麥克萊特飛彈)
-		// 整排標「(僅光束武器適用)」提示,不隱藏熱區(避免版面跳動),點擊也不會生效
-		// (onAction 已用 WeaponIsBeam 擋掉)。
+		// 武器改造(mod)勾選 chip:順序對齊上方 modOptions 與 mod:0..N 熱區。已勾選
+		// 轉金色高亮,未勾選灰色；只有目前武器適用的改造會出現在這裡。
 		modHeaderY := 352.0
-		isBeam := shell.WeaponIsBeam(w.Name)
-		modHeaderTxt := b.tr("武器改造(點擊切換,HV/PD 互斥):", "Weapon mods (click to toggle; HV/PD exclusive):")
-		if !isBeam {
-			modHeaderTxt = b.tr("武器改造(僅光束武器適用,此武器不支援):",
-				"Weapon mods (beam weapons only; this weapon does not support them):")
+		modHeaderTxt := b.tr("武器改造(點擊切換,適用項目):", "Weapon mods (click to toggle; applicable mods):")
+		if len(modOptions) == 0 {
+			modHeaderTxt = b.tr("武器改造(此武器沒有已接線的適用項目):",
+				"Weapon mods (no connected mods apply to this weapon):")
 		}
-		s.extras = append(s.extras, extraText{x: 305, y: modHeaderY, size: 11, text: modHeaderTxt, col: gold})
+		s.extras = append(s.extras, extraText{x: 305, y: modHeaderY, size: 11, text: modHeaderTxt, col: gold, maxW: dsTextRight - dsTextX})
 		activeCol := color.RGBA{240, 220, 120, 255}
 		inactiveCol := color.RGBA{150, 155, 165, 255}
-		for i, mod := range shell.WeaponModOptions {
+		for i, mod := range modOptions {
 			r := designModChipRect(i) // 與熱區同一份座標
 			chipCol := inactiveCol
 			if shell.HasWeaponMod(b.designMods, mod) {
@@ -3408,7 +4124,7 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			if b.lang == i18n.English {
 				modLabel = shell.WeaponModLabelEN(mod)
 			}
-			s.extras = append(s.extras, extraText{x: r.x, y: r.y, size: 10, text: modLabel, col: chipCol})
+			s.extras = append(s.extras, extraText{x: r.x, y: r.y, size: 10, text: modLabel, col: chipCol, maxW: r.w - 6})
 		}
 	}
 	return s, nil
@@ -3439,11 +4155,144 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 	//
 	// RETURN 那一格先前還自相矛盾:熱區在 538(對的)、疊字標籤在 540。一併對齊。
 	hits := officerHitRegions()
+	// 清單列是可操作熱區:從艦隊畫面先勾選目標船,再點這裡的艦艇軍官列即可指派／改派。
+	for row, y := range officerRowCenters() {
+		hits = append(hits, hitRegion{20, int(y) - 54, 280, 108, fmt.Sprintf("officerRow%d", row)})
+	}
 	onAction := func(a string) *origTransition {
 		switch a {
+		case "colonyTab":
+			b.officerTab, b.officerScroll, b.officerSelectedSet = 0, 0, false
+			return b.goTo(b.officer, "軍官列表")
+		case "shipTab":
+			b.officerTab, b.officerScroll, b.officerSelectedSet = 1, 0, false
+			return b.goTo(b.officer, "軍官列表")
+		}
+		if strings.HasPrefix(a, "officerRow") && b.session != nil {
+			row, err := strconv.Atoi(a[len("officerRow"):])
+			if err != nil || row < 0 || row >= len(officerRowCenters()) {
+				return nil
+			}
+			rosterCount := len(b.session.Leaders) + len(b.session.MercPool)
+			entry := b.officerScroll + row
+			if entry < 0 || entry >= rosterCount {
+				return b.goTo(b.officer, "軍官列表")
+			}
+			b.officerSelected = entry
+			b.officerSelectedSet = true
+			if b.officerHireMode && entry < len(b.session.Leaders) {
+				b.officerMsg = b.tr("雇用模式請點選綠色的待僱候選人。", "HIRE mode only accepts green hiring candidates.")
+				return b.goTo(b.officer, "軍官列表")
+			}
+			// 待雇傭兵尚未進 Leader Pool,不能提前指派。
+			if entry >= len(b.session.Leaders) {
+				if b.officerHireMode {
+					mercIndex := entry - len(b.session.Leaders)
+					ld := b.session.MercPool[mercIndex]
+					if b.session.HireMercAt(mercIndex) {
+						b.officerHireMode = false
+						b.officerSelected = len(b.session.Leaders) - 1
+						b.officerSelectedSet = true
+						b.officerMsg = fmt.Sprintf(b.tr("已雇用 %s，已放入人才庫。", "%s was hired into the Officer Pool."), ld.Name)
+					} else {
+						b.officerMsg = b.tr("目前 BC 或該類軍官名額不足，無法雇用。", "Not enough BC or room for this type of officer.")
+					}
+					return b.goTo(b.officer, "軍官列表")
+				}
+				b.officerMsg = b.tr("請先按 HIRE 雇用這位傭兵。", "Hire this mercenary with HIRE first.")
+				return b.goTo(b.officer, "軍官列表")
+			}
+			ld := b.session.Leaders[entry]
+			if b.officerTab == 0 {
+				if ld.Ship {
+					b.officerMsg = b.tr("這位是艦艇軍官，請切到艦艇軍官分頁。", "This is a ship officer; switch to the Ship Officers tab.")
+					return b.goTo(b.officer, "軍官列表")
+				}
+				colonyIndex, ok := b.officerTargetColony()
+				if !ok {
+					b.officerMsg = b.tr("目前沒有可指派的殖民地。", "There is no colony to assign.")
+					return b.goTo(b.officer, "軍官列表")
+				}
+				if current, assigned := b.session.ColonyLeaderFor(colonyIndex); assigned && current.Name == ld.Name {
+					b.session.UnassignLeaderFromColony(colonyIndex)
+					b.officerMsg = fmt.Sprintf(b.tr("已解除 %s 的殖民地任職。", "%s was removed from the colony."), ld.Name)
+				} else if b.session.AssignLeaderToColony(colonyIndex, entry) {
+					b.officerMsg = fmt.Sprintf(b.tr("已將 %s 指派到殖民地 #%d。", "%s assigned to colony #%d."), ld.Name, colonyIndex+1)
+				} else {
+					b.officerMsg = b.tr("這位領袖無法指派到殖民地。", "This leader cannot be assigned to a colony.")
+				}
+				return b.goTo(b.officer, "軍官列表")
+			}
+			if !ld.Ship {
+				b.officerMsg = b.tr("殖民地領袖不能指派到艦艇。", "Colony leaders cannot be assigned to ships.")
+				return b.goTo(b.officer, "軍官列表")
+			}
+			fleetIndex, shipIndex, ok := b.officerTargetShip()
+			if !ok {
+				b.officerMsg = b.tr("目前艦隊沒有可指派的艦艇。", "The selected fleet has no ship to assign.")
+				return b.goTo(b.officer, "軍官列表")
+			}
+			ship := &b.session.Fleets[fleetIndex].Ships[shipIndex]
+			if ship.OfficerName == ld.Name {
+				b.session.UnassignOfficerFromShip(fleetIndex, shipIndex)
+				b.officerMsg = fmt.Sprintf(b.tr("已解除 %s 在第 %d 艦的指派。", "%s was removed from ship %d."), ld.Name, shipIndex+1)
+			} else if b.session.AssignOfficerToShip(fleetIndex, shipIndex, entry) {
+				b.officerMsg = fmt.Sprintf(b.tr("已將 %s 指派到第 %d 艦。", "%s assigned to ship %d."), ld.Name, shipIndex+1)
+			} else {
+				b.officerMsg = b.tr("這位領袖無法指派到艦艇。", "This leader cannot be assigned to a ship.")
+			}
+			return b.goTo(b.officer, "軍官列表")
+		}
+		switch a {
 		case "hire":
-			if b.session != nil {
-				b.session.HireMerc() // 雇用池首名傭兵(BC不足/滿員則無作用),手冊 p.134
+			b.officerHireMode = !b.officerHireMode
+			if b.officerHireMode {
+				b.officerMsg = b.tr("雇用模式：請點選綠色候選人。", "HIRE mode: select a green candidate.")
+			} else {
+				b.officerMsg = b.tr("已離開雇用模式。", "HIRE mode ended.")
+			}
+			return b.goTo(b.officer, "軍官列表")
+		case "pool":
+			if b.session == nil || !b.officerSelectedSet || b.officerSelected < 0 || b.officerSelected >= len(b.session.Leaders) {
+				b.officerMsg = b.tr("請先點選已雇用的艦艇軍官。", "Select a hired ship officer first.")
+				return b.goTo(b.officer, "軍官列表")
+			}
+			ld := b.session.Leaders[b.officerSelected]
+			if b.officerTab == 0 {
+				if colonyIndex, ok := b.session.AssignedColonyForLeader(ld.Name); ok {
+					b.session.UnassignLeaderFromColony(colonyIndex)
+					b.officerMsg = fmt.Sprintf(b.tr("已將 %s 撤回人才庫。", "%s returned to the leader pool."), ld.Name)
+				} else {
+					b.officerMsg = b.tr("這位領袖目前沒有殖民地任職。", "This leader is not assigned to a colony.")
+				}
+				return b.goTo(b.officer, "軍官列表")
+			}
+			if b.session.ReturnShipOfficerToPool(ld.Name) {
+				b.officerMsg = fmt.Sprintf(b.tr("已將 %s 送回軍官人才庫。", "%s returned to the Officer Pool."), ld.Name)
+			} else {
+				b.officerMsg = b.tr("只有艦艇軍官可以送回人才庫。", "Only ship officers can return to the Officer Pool.")
+			}
+			return b.goTo(b.officer, "軍官列表")
+		case "dismiss":
+			if b.session == nil || !b.officerSelectedSet || b.officerSelected < 0 || b.officerSelected >= len(b.session.Leaders) {
+				b.officerMsg = b.tr("請先點選要解雇的艦艇軍官。", "Select a ship officer to dismiss first.")
+				return b.goTo(b.officer, "軍官列表")
+			}
+			ld := b.session.Leaders[b.officerSelected]
+			if b.officerTab == 0 {
+				if b.session.DismissColonyLeader(ld.Name) {
+					b.officerSelectedSet = false
+					b.officerMsg = fmt.Sprintf(b.tr("已解雇殖民地領袖 %s。", "Colony leader %s was dismissed."), ld.Name)
+				} else {
+					b.officerMsg = b.tr("只有殖民地領袖可以在此分頁解雇。", "Only colony leaders can be dismissed from this tab.")
+				}
+				return b.goTo(b.officer, "軍官列表")
+			}
+			if b.session.DismissShipOfficer(ld.Name) {
+				b.officerSelectedSet = false
+				b.officerMsg = fmt.Sprintf(b.tr("已解雇 %s。", "%s was dismissed."), ld.Name)
+			} else {
+				b.officerMsg = b.tr("殖民地領袖目前不能從這個艦艇頁面解雇。", "Colony leaders cannot be dismissed from the ship page.")
 			}
 			return b.goTo(b.officer, "軍官列表")
 		case "scrollUp":
@@ -3455,6 +4304,7 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 			b.officerScroll++
 			return b.goTo(b.officer, "軍官列表")
 		case "Return":
+			b.officerHireMode = false
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
 		return nil
@@ -3480,6 +4330,29 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 		body := color.RGBA{206, 214, 232, 255}
 		hireCol := color.RGBA{150, 220, 160, 255} // 可雇用傭兵用綠色標示
 		rowY := officerRowCenters()
+		if b.officerTab == 0 {
+			if colonyIndex, ok := b.officerTargetColony(); ok {
+				s.extras = append(s.extras, extraText{x: 300, y: 52, size: 11,
+					text: fmt.Sprintf(b.tr("目標:殖民地 #%d(點殖民地畫面的領袖鈕)", "Target: colony #%d (opened from Colony Leaders)"), colonyIndex+1), col: body, maxW: 327})
+			} else {
+				s.extras = append(s.extras, extraText{x: 300, y: 52, size: 11,
+					text: b.tr("目標:目前沒有殖民地", "Target: no colony available"), col: body, maxW: 327})
+			}
+		} else if fleetIndex, shipIndex, ok := b.officerTargetShip(); ok {
+			sh := b.session.Fleets[fleetIndex].Ships[shipIndex]
+			s.extras = append(s.extras, extraText{x: 300, y: 52, size: 11,
+				text: fmt.Sprintf(b.tr("目標:第 %d 艦 %s(點艦艇列選取)", "Target: ship %d %s (select a ship in Fleet)"), shipIndex+1, sh.Name), col: body, maxW: 327})
+		} else {
+			s.extras = append(s.extras, extraText{x: 300, y: 52, size: 11,
+				text: b.tr("目標:目前艦隊沒有艦艇", "Target: selected fleet has no ships"), col: body, maxW: 327})
+		}
+		if b.officerMsg != "" {
+			s.extras = append(s.extras, extraText{x: 300, y: 68, size: 11, text: b.officerMsg, col: gold, maxW: 327})
+		}
+		if b.officerHireMode {
+			s.extras = append(s.extras, extraText{x: 300, y: 84, size: 11,
+				text: b.tr("HIRE 模式：點綠色候選人", "HIRE mode: click a green candidate"), col: hireCol, maxW: 327})
+		}
 		// 捲動:把「已雇用領袖 + 待雇傭兵」當成一份連續清單,捲動位移就是跳過前 n 筆。
 		// 夾在 [0, 總筆數-1]——捲過頭會變成一片空白,那看起來像壞掉而不是捲到底。
 		roster := make([]shell.Leader, 0, len(b.session.Leaders)+len(b.session.MercPool))
@@ -3497,27 +4370,43 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 			ld, y := roster[k], rowY[row]
 			if k >= mercFrom {
 				s.extras = append(s.extras,
-					extraText{x: 95, y: y - 12, size: 15, text: "◆ " + ld.Name, col: hireCol},
+					extraText{x: 95, y: y - 12, size: 15, text: officerRowPrefix(b.officerSelectedSet && b.officerSelected == k, "◆ ") + ld.Name, col: hireCol, maxW: 195},
 					extraText{x: 95, y: y + 12, size: 12, text: fmt.Sprintf(b.tr("%s ｜ Lv %d ｜ 雇用費 %d BC", "%s | Lv %d | hire %d BC"),
-						ld.Skill, ld.Level, b.session.MercHireCost(ld)), col: hireCol},
+						ld.Skill, ld.Level, b.session.MercHireCost(ld)), col: hireCol, maxW: 195},
 				)
 				continue
 			}
 			s.extras = append(s.extras,
-				extraText{x: 95, y: y - 12, size: 15, text: ld.Name, col: gold},
-				extraText{x: 95, y: y + 12, size: 12, text: fmt.Sprintf(b.tr("%s ｜ Lv %d", "%s | Lv %d"), ld.Skill, ld.Level), col: body},
+				extraText{x: 95, y: y - 12, size: 15, text: officerRowPrefix(b.officerSelectedSet && b.officerSelected == k, "") + ld.Name, col: gold, maxW: 195},
+				extraText{x: 95, y: y + 12, size: 12, text: fmt.Sprintf(b.tr("%s ｜ Lv %d", "%s | Lv %d"), ld.Skill, ld.Level), col: body, maxW: 195},
 			)
+			if b.officerTab == 0 {
+				if ci, ok := b.session.AssignedColonyForLeader(ld.Name); ok {
+					s.extras = append(s.extras, extraText{x: 330, y: y + 10, size: 11,
+						text: fmt.Sprintf(b.tr("已派殖民地 #%d", "Colony %d"), ci+1), col: color.RGBA{170, 220, 190, 255}, maxW: 302})
+				} else if !ld.Ship {
+					s.extras = append(s.extras, extraText{x: 330, y: y + 10, size: 11,
+						text: b.tr("未指派(點此派任)", "Unassigned (click to assign)"), col: body, maxW: 302})
+				}
+			} else if fi, si, ok := b.session.AssignedShipForOfficer(ld.Name); ok {
+				s.extras = append(s.extras, extraText{x: 330, y: y + 10, size: 11,
+					text: fmt.Sprintf(b.tr("已派第 %d 艦", "Ship %d"), si+1), col: color.RGBA{170, 220, 190, 255}, maxW: 302})
+				_ = fi // fleet index is used by the assignment query, ship label is enough here
+			} else if ld.Ship {
+				s.extras = append(s.extras, extraText{x: 330, y: y + 10, size: 11,
+					text: b.tr("未指派(點此派任)", "Unassigned (click to assign)"), col: body, maxW: 302})
+			}
 		}
 		// 捲到看得見的範圍之外時,標明還有幾筆——不然玩家不知道清單還有下文。
 		if rest := len(roster) - b.officerScroll - len(rowY); rest > 0 {
 			s.extras = append(s.extras, extraText{x: 95, y: rowY[len(rowY)-1] + 30, size: 11,
 				text: fmt.Sprintf(b.tr("(還有 %d 位,按右上下箭頭捲動)", "(%d more; scroll with the arrows)"), rest),
-				col:  body})
+				col:  body, maxW: 195})
 		}
 		// 池空且無領袖時,提示傭兵會不定期上門(手冊 p.134)。
 		if len(b.session.Leaders) == 0 && len(b.session.MercPool) == 0 {
 			s.extras = append(s.extras, extraText{x: 95, y: rowY[0], size: 13, text: b.tr("(傭兵領袖會不定期上門,屆時按 HIRE 雇用)",
-				"(mercenary leaders turn up from time to time; press HIRE when they do)"), col: body})
+				"(mercenary leaders turn up from time to time; press HIRE when they do)"), col: body, maxW: 500})
 		}
 	}
 	return s, nil
@@ -3625,14 +4514,35 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 13, text: "★ " + msg, col: color.RGBA{120, 220, 140, 255}})
 			yy += 22
 		}
-		// 隨機事件(繁榮/瘟疫/海盜…)。
-		if b.session.LastEvent != "" {
-			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 14, text: "◆ " + b.session.LastEvent, col: color.RGBA{240, 190, 110, 255}})
-			yy += 24
+		// 隨機事件(繁榮/瘟疫/海盜…)。英文模式讀結構化雙語報告，
+		// 不直接把引擎保留給繁中回合摘要的 LastEvent 當成英文顯示字串。
+		eventMsg := b.session.LastEvent
+		if b.lang != i18n.Traditional && b.session.LastEventReport != nil && b.session.LastEventReport.MessageEN != "" {
+			eventMsg = b.session.LastEventReport.MessageEN
+		}
+		if b.lang != i18n.Traditional && b.session.LastPersistentEventEN != "" {
+			if eventMsg != "" {
+				eventMsg += " | "
+			}
+			eventMsg += b.session.LastPersistentEventEN
+		}
+		if eventMsg != "" {
+			lines := []string{"◆ " + eventMsg}
+			if b.fnt != nil {
+				lines = b.fnt.Wrap(lines[0], 12, 320)
+			}
+			for i, line := range lines {
+				s.extras = append(s.extras, extraText{x: 40, y: yy + float64(i)*19, size: 13, text: line, col: color.RGBA{240, 190, 110, 255}})
+			}
+			yy += float64(len(lines)) * 19
 		}
 		// 安塔蘭人入侵警報(紅色醒目)。
 		if b.session.LastAntares != "" {
-			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 14, text: b.session.LastAntares, col: color.RGBA{240, 110, 90, 255}})
+			antaresMsg := b.session.LastAntares
+			if b.lang != i18n.Traditional && b.session.LastAntaresEN != "" {
+				antaresMsg = b.session.LastAntaresEN
+			}
+			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 14, text: antaresMsg, col: color.RGBA{240, 110, 90, 255}})
 			yy += 24
 		}
 		// AI 對手突襲警報(見 shell/ai_attack.go)。擊退用綠字、被打用紅字,
@@ -3642,7 +4552,11 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 			if b.session.LastRaidReport != nil && b.session.LastRaidReport.Repelled {
 				col = color.RGBA{130, 220, 150, 255}
 			}
-			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 14, text: b.session.LastRaid, col: col})
+			raidMsg := b.session.LastRaid
+			if b.lang != i18n.Traditional && b.session.LastRaidReport != nil && b.session.LastRaidReport.MessageEN != "" {
+				raidMsg = b.session.LastRaidReport.MessageEN
+			}
+			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 14, text: raidMsg, col: col})
 			yy += 24
 		}
 	}
@@ -3761,7 +4675,7 @@ func (b *sceneBuilder) visiblePlanets() []int {
 	if b.session == nil {
 		return nil
 	}
-	vis := b.session.VisibleStars()
+	vis := b.session.StarChartVisible()
 	out := make([]int, 0, len(b.session.Planets))
 	for i := range b.session.Stars {
 		if i < len(vis) && !vis[i] {
@@ -3849,6 +4763,7 @@ func (b *sceneBuilder) planets() (*overlayScreen, error) {
 		for i := 0; i < planetListRows && top+i < len(list); i++ {
 			pi := list[top+i]
 			p := b.session.Planets[pi]
+			climate, gravity, minerals, size := planetEnvironmentLabels(b.lang, p)
 			y := planetListRowY[i]
 			col := body
 			if pi == b.planetPick {
@@ -3857,10 +4772,10 @@ func (b *sceneBuilder) planets() (*overlayScreen, error) {
 			s.extras = append(s.extras,
 				// 行星名欄寬 78(標題列 {18,14,78,18});長名字要截,否則會溢出欄框。
 				extraText{x: cx.name, y: y, size: 12, text: truncateToWidth(b.fnt, p.Name, 12, 74), col: col, align: 1},
-				extraText{x: cx.cli, y: y, size: 12, text: p.Climate, col: col, align: 1},
-				extraText{x: cx.grv, y: y, size: 12, text: p.Gravity, col: col, align: 1},
-				extraText{x: cx.min, y: y, size: 12, text: p.Mineral, col: col, align: 1},
-				extraText{x: cx.siz, y: y, size: 12, text: p.Size, col: col, align: 1},
+				extraText{x: cx.cli, y: y, size: 12, text: climate, col: col, align: 1},
+				extraText{x: cx.grv, y: y, size: 12, text: gravity, col: col, align: 1},
+				extraText{x: cx.min, y: y, size: 12, text: minerals, col: col, align: 1},
+				extraText{x: cx.siz, y: y, size: 12, text: size, col: col, align: 1},
 			)
 			// 兩項原版有、remake 先前完全沒顯示的資訊,各自塞進對應欄位格子的第二行
 			// (格高 50,主文字置中,y+11 這一行還在格內)。
@@ -3872,7 +4787,7 @@ func (b *sceneBuilder) planets() (*overlayScreen, error) {
 			// 星名 + 該星系天體數:多天體之後「這顆行星屬於哪個星系」不再能從行星名推出來。
 			if star >= 0 {
 				line := b.session.Stars[star].Name
-				if n := b.session.SystemBodyCountText(star); n != "" {
+				if n := systemBodyCountLabel(b.lang, b.session, star); n != "" {
 					line += " " + n
 				}
 				// 欄寬 78(標題列 {18,14,78,18}),超出會往左溢到欄框外——截掉。
@@ -3887,7 +4802,7 @@ func (b *sceneBuilder) planets() (*overlayScreen, error) {
 				s.extras = append(s.extras, extraText{x: cx.siz, y: y + 11, size: 9,
 					text: b.tr("● 前哨站", "● outpost"), col: color.RGBA{150, 195, 235, 255}, align: 1})
 			}
-			if sp := gamedata.PlanetSpecialName(p.SpecialID); sp != "" {
+			if sp := planetSpecialLabel(b.lang, p.SpecialID); sp != "" {
 				s.extras = append(s.extras, extraText{x: cx.min, y: y + 11, size: 9, text: "★" + sp, col: sub, align: 1})
 			}
 		}
@@ -4433,6 +5348,7 @@ func (a *interactiveApp) pollInput() shell.InputState {
 	return shell.InputState{
 		MouseX: x, MouseY: y,
 		ClickReleased: inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft),
+		MouseDown:     ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft),
 		Hotkey:        pollHotkey(),
 	}
 }
@@ -4756,18 +5672,22 @@ func (a *interactiveApp) Layout(int, int) (int, int) { return canvasSize() }
 
 // runInteractive 啟動「還原原版」的互動遊戲。script/shot 非空時為 headless 驗證;
 // galleryDir 非空時為「端到端過場截圖廊」模式(見 buildGalleryScript),優先於 script/shot。
-func runInteractive(dirs []string, lang i18n.Lang, fnt, fntVec *uifont.Font,
+func runInteractive(versionAssets versionAssetDirs, initial gamedata.GameVersion, lang i18n.Lang, fnt, fntVec *uifont.Font,
 	script []shell.InputState, shot string, frames int, galleryDir string) error {
 
 	if lang == i18n.Traditional && fnt == nil {
 		return fmt.Errorf("中文模式需以 -font 指定 CJK 字型")
 	}
+	dirs, ok := versionAssets.forVersion(initial)
+	if !ok {
+		return fmt.Errorf("未提供初始版本 %s 的遊戲資料", versionShort(initial))
+	}
 	res, err := assets.NewResolver(dirs...)
 	if err != nil {
 		return err
 	}
-	b := &sceneBuilder{res: res, fnt: fnt, fntVec: fntVec, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: newGameDiffDefault,
-		newGameAge: newGameAgeDefault, newGameTech: newGameTechDefault, newGameEmpires: 1 + shell.DefaultOpponents, designWeapon: 1, savePath: savePathFor(), gameVersion: gamedata.VersionCommunity15,
+	b := &sceneBuilder{res: res, versionAssets: versionAssets, fnt: fnt, fntVec: fntVec, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: newGameDiffDefault,
+		newGameAge: newGameAgeDefault, newGameTech: newGameTechDefault, newGameEmpires: 1 + shell.DefaultOpponents, designWeapon: 1, savePath: savePathFor(), gameVersion: initial,
 		planetPick: -1} // −1 = 行星列表還沒選任何一列(0 是行星 0 的索引,不能當「沒選」)
 	b.skipCutscenes = shot != "" || galleryDir != "" // 見該欄位註解
 	// 傭兵候選池改用原版 HERODATA.LBX 真英雄(解析失敗自動退回內建策展名單,不擋遊戲);快取一份

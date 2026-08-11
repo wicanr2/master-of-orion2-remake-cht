@@ -21,9 +21,9 @@ import (
 //	findSavedGames():檔名格式 "SAVE%u.GAM"(`tmp != 2 || c != 'm' || slot < 1 || slot > 10`
 //	                 的解析檢查反推出來的),槽號從 1 起算
 //
-// remake 沿用同一個規格:10 個槽、第 10 個是自動存檔。檔名用 remake 自己的 JSON 格式
-// (`save1.json`..`save9.json` + `save.json`),不是原版 `.GAM`——原版格式由 internal/save
-// **唯讀**解析,寫回原版格式不在範圍內。
+// remake 沿用同一個規格:10 個槽、第 10 個是自動存檔。remake 自己的 JSON 檔名為
+// (`save1.json`..`save9.json` + `save.json`)；若槽位沒有 JSON，載入畫面也會以同槽的
+// `SAVE1.GAM`..`SAVE10.GAM` 作為唯讀原版匯入來源。原版 `.GAM` 不會被 remake 寫回。
 //
 // `save.json` 這個既有檔名刻意保留給自動存檔槽,舊存檔不會因為這次改動而消失。
 
@@ -50,13 +50,14 @@ const AutoSaveSlot = SaveSlotCount - 1
 
 // SaveSlotInfo 是一個槽的摘要(供載入畫面逐列顯示)。
 type SaveSlotInfo struct {
-	Slot     int // 0-based
-	Path     string
-	Exists   bool
-	Auto     bool   // 是否為自動存檔槽
-	Turn     int    // 存檔當時的回合
-	Stardate string // 由回合換算的星曆(原版列表顯示星曆,見 HSTR_SAVESLOT_STARDATE)
-	Empire   string // 玩家帝國/領袖名
+	Slot      int // 0-based
+	Path      string
+	Exists    bool
+	Auto      bool   // 是否為自動存檔槽
+	NativeGAM bool   // 是否由原版 .GAM 匯入；讀取後另存會轉成 remake JSON
+	Turn      int    // 存檔當時的回合
+	Stardate  string // 由回合換算的星曆(原版列表顯示星曆,見 HSTR_SAVESLOT_STARDATE)
+	Empire    string // 玩家帝國/領袖名
 	// Hotseat 是這個存檔是不是熱座局(原版存檔header的 `multiplayer` 欄位,
 	// openorion2 `MultiplayerType`;載入視窗右側依此畫不同圖示)。
 	Hotseat bool
@@ -92,22 +93,55 @@ type saveSlotPeek struct {
 func ReadSaveSlot(dir string, slot int) SaveSlotInfo {
 	info := SaveSlotInfo{Slot: slot, Path: SaveSlotPath(dir, slot), Auto: slot == AutoSaveSlot}
 	data, err := os.ReadFile(info.Path)
-	if err != nil {
-		return info
+	if err == nil {
+		var p saveSlotPeek
+		if json.Unmarshal(data, &p) == nil && p.Version == saveFormatVersion {
+			info.Exists = true
+			info.Turn = p.Turn
+			info.Stardate = StardateForTurn(p.Turn)
+			info.Empire = p.PlayerName
+			info.Hotseat = len(p.Seats) > 1
+			if st, err := os.Stat(info.Path); err == nil {
+				info.Modified = st.ModTime()
+			}
+			return info
+		}
 	}
-	var p saveSlotPeek
-	if err := json.Unmarshal(data, &p); err != nil || p.Version != saveFormatVersion {
+
+	// JSON 優先；只有 JSON 不存在／版本不符時才探測同槽的原版檔，避免同一槽
+	// 中已有 remake 存檔卻被舊資料覆蓋顯示。GAM 只匯入，不在這裡寫回。
+	for _, path := range originalGAMSlotPaths(dir, slot) {
+		if _, err := os.Stat(path); err != nil {
+			continue
+		}
+		session, report, err := LoadGAMSession(path)
+		if err != nil || session == nil {
+			continue
+		}
+		info.Path = path
+		info.Exists = true
+		info.NativeGAM = true
+		info.Turn = report.Turn
+		info.Stardate = fmt.Sprintf("%d", report.Stardate/10)
+		info.Empire = session.PlayerName
+		if st, err := os.Stat(path); err == nil {
+			info.Modified = st.ModTime()
+		}
 		return info
-	}
-	info.Exists = true
-	info.Turn = p.Turn
-	info.Stardate = StardateForTurn(p.Turn)
-	info.Empire = p.PlayerName
-	info.Hotseat = len(p.Seats) > 1
-	if st, err := os.Stat(info.Path); err == nil {
-		info.Modified = st.ModTime()
 	}
 	return info
+}
+
+// originalGAMSlotPaths 回傳常見的 Windows／DOS 檔名大小寫變體。Linux 版若使用者
+// 把原始檔直接放進 saves 目錄，也不應因副檔名大小寫而失去匯入入口。
+func originalGAMSlotPaths(dir string, slot int) []string {
+	n := slot + 1
+	return []string{
+		filepath.Join(dir, fmt.Sprintf("SAVE%d.GAM", n)),
+		filepath.Join(dir, fmt.Sprintf("save%d.GAM", n)),
+		filepath.Join(dir, fmt.Sprintf("SAVE%d.gam", n)),
+		filepath.Join(dir, fmt.Sprintf("save%d.gam", n)),
+	}
 }
 
 // ReadSaveSlots 讀取全部槽的摘要(索引即槽號)。

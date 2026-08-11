@@ -374,7 +374,7 @@ remake:`gamedata.CouncilEligible` / `CouncilVotes` + `engine.CheckHighCouncil`(2
 
 ### 9.3 安塔蘭勝利(Antaran Victory,手冊 p.183 / p.106)
 
-研究並建造**次元傳送門(Dimensional Portal)**,派艦隊經傳送門進入次元空間、擊敗安塔蘭母艦隊,其餘種族即臣服。**若開局關閉「安塔蘭入侵」則此路徑不可用**。remake:`internal/shell/antaran_victory.go`(母艦隊戰力為保守預設,手冊/openorion2 均無精確數字)。
+研究並建造**次元傳送門(Dimensional Portal)**,派艦隊經傳送門進入次元空間、擊敗安塔蘭母艦隊,其餘種族即臣服。**若開局關閉「安塔蘭入侵」則此路徑不可用**。remake:`internal/shell/antaran_victory.go` 已保存原版反組譯解出的 `Intruder ×3`／`Interdictor ×2`／`Harbinger ×7`＋星際要塞組成與標準艦槽位；艦級映射、要塞完整設計與敵方精確火力仍是近似／未知，見 `docs/re/antaran-defense-fleet.md`。
 
 > 計分系統(Score Calculation):`MANUAL_150.html` 給出完整計分公式(時間/人口/科技/殲滅/Guardian/Antares/議會各項獎勵,如議會勝 +100 分),但 remake 尚無計分/歷史圖表,僅預先記錄權威值。
 

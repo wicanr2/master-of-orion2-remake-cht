@@ -6,6 +6,7 @@
 //
 //	moo2 -data <遊戲資料夾>[,<patch 資料夾>...] [-lbx mainmenu.lbx] [-asset 21]
 //	     [-shot out.png] [-frames 3]   # headless:跑 N 幀後存截圖並結束
+//	moo2 -game -data13 <1.31 路徑> -data15 <1.5 路徑> [-version auto|1.3|1.5]
 package main
 
 import (
@@ -175,6 +176,8 @@ func wavSeconds(wav []byte) float64 {
 
 func main() {
 	dataDirs := flag.String("data", "", "遊戲資料夾,可用逗號串多個(前者優先,如 patch,base)")
+	data13Dirs := flag.String("data13", "", "官方 1.31 遊戲資料/patch 搜尋路徑(可用逗號串多個)")
+	data15Dirs := flag.String("data15", "", "社群 1.5 遊戲資料/patch 搜尋路徑(可用逗號串多個)")
 	lbxName := flag.String("lbx", "mainmenu.lbx", "背景所在的 .lbx")
 	assetID := flag.Int("asset", 21, "背景資產 index")
 	palAsset := flag.Int("palasset", -1, "調色盤提供資產 index(該 lbx 內;目標資產無內嵌調色盤時用)")
@@ -200,6 +203,7 @@ func main() {
 	diploMode := flag.Bool("diplo-viewer", false, "外交關係畫面模式")
 	tsvPath := flag.String("tsv", "", "譯表 TSV(留空用該畫面預設)")
 	lang := flag.String("lang", "zh", "語言:zh(繁中)或 en(英文)")
+	versionFlag := flag.String("version", "auto", "-game 初始版本:auto、1.3 或 1.5(主選單仍可切換)")
 	// 譯表預設**烘在執行檔裡**(見 embedassets.go),所以從任何目錄跑都找得到。
 	// 這個旗標是開發用的覆寫:改譯表不必重編。
 	i18nDir := flag.String("i18n", "", "譯表目錄(留空 = 用烘進執行檔的那份)")
@@ -321,8 +325,8 @@ func main() {
 	// 還原原版互動遊戲:原版主選單(真 LBX 美術)→ 點選單導覽到各原版畫面,全繁中。
 	// 這是專案主目標「用 go/ebiten 還原原版 MOO2 + 中文化」的骨幹。headless(-shot)時腳本驗證導覽。
 	if *gameMode {
-		if *dataDirs == "" {
-			fmt.Fprintln(os.Stderr, "需指定 -data <遊戲資料夾>")
+		if strings.TrimSpace(*dataDirs) == "" && strings.TrimSpace(*data13Dirs) == "" && strings.TrimSpace(*data15Dirs) == "" {
+			fmt.Fprintln(os.Stderr, "需指定 -data、-data13 或 -data15 遊戲資料夾")
 			os.Exit(2)
 		}
 		fnt, err := loadFont(*fontPath, langID)
@@ -334,7 +338,10 @@ func main() {
 		if err != nil {
 			fatal(fmt.Errorf("載入向量字型: %w", err))
 		}
-		dirs := strings.Split(*dataDirs, ",")
+		versionAssets, initialVersion, err := buildGameVersionAssets(*dataDirs, *data13Dirs, *data15Dirs, *versionFlag)
+		if err != nil {
+			fatal(err)
+		}
 		var script []shell.InputState
 		if *shot != "" && *gameGallery == "" {
 			// headless 驗證:主選單新遊戲(491,228)→ 星系設定 → Accept(486,405)
@@ -344,7 +351,7 @@ func main() {
 				{MouseX: 486, MouseY: 405, ClickReleased: true},
 			}
 		}
-		if err := runInteractive(dirs, langID, fnt, fntVec, script, *shot, *frames, *gameGallery); err != nil {
+		if err := runInteractive(versionAssets, initialVersion, langID, fnt, fntVec, script, *shot, *frames, *gameGallery); err != nil {
 			fatal(err)
 		}
 		return

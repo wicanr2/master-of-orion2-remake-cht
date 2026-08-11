@@ -2,7 +2,7 @@ package shell
 
 import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 
-// boarding.go:登艦戰。第 60 項(打得準也閃得掉)以來擋著三個元件的那個缺席機制。
+// boarding.go:登艦戰。第 80 項(登艦戰)把三個元件接到同一套規則。
 //
 // ============ 為什麼現在做得了 ============
 //
@@ -18,9 +18,7 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 //
 //	突擊艇  ✅ 本檔 + fighter.go 的 FighterAssaultShuttle
 //	保安站  ✅ 守方 +20(手冊逐字)
-//	傳送器  ❌ **仍然擋著**,而且擋門理由這次講清楚了:手冊的前置是「面向攻擊方的護盾
-//	          **已經被打穿**」,而 remake 的護盾是每發固定減傷,**既沒有分面也不會崩**。
-//	          缺的不是射程(那是 12 格,常數已經在 gamedata),是護盾要有「崩潰」這個狀態。
+//	傳送器  ✅ 護盾分面與 12 格前置已接；硬化護盾仍會阻擋傳送器。
 
 // BoardingIntent 是登艦的目的。手冊把這兩種寫成玩家在 Board 按鈕之後的選擇。
 type BoardingIntent int
@@ -50,6 +48,9 @@ type BoardingDefense struct {
 	Marines    int
 	Strength   int
 	HitsToKill int
+	// StrengthBonus 是領袖等額外規則給守方陸戰隊的固定戰力。保安站的 +20
+	// 仍由 SecurityStations 另算，避免把元件與軍官效果混成同一個旗標。
+	StrengthBonus int
 	// SecurityStations 是保安站:手冊「add 20 to the combat rolls of the Marines defending」。
 	SecurityStations bool
 }
@@ -90,7 +91,7 @@ func ResolveBoarding(p BoardingParty, d BoardingDefense, roll gamedata.GroundRol
 		s[0], c[0], h[0] = strength, count, hits
 		return gamedata.NewGroundSide(s, c, h)
 	}
-	defStrength := d.Strength
+	defStrength := d.Strength + d.StrengthBonus
 	if d.SecurityStations {
 		defStrength += gamedata.ShipSecurityStationsDefenseBonus
 	}
@@ -124,6 +125,7 @@ const (
 // shipHasSecurityStations / shipHasAssaultShuttles / shipHasTransporters 是元件比對。
 func shipHasSecurityStations(sh Ship) bool { return sh.Special == securityStationsName }
 func shipHasAssaultShuttles(sh Ship) bool  { return sh.Special == assaultShuttleName }
+func shipHasTransporters(sh Ship) bool     { return sh.Special == transportersName }
 
 // ShipMarineComplement 回傳這艘船上的陸戰隊單位數。
 //
@@ -145,12 +147,13 @@ func ShipMarineComplement(sh Ship) int {
 
 // ============ 戰術畫面上的登艦 ============
 
-// ShipBoardingReach 是一艘船能不能登上某距離外的敵艦。
+// ShipBoardingReach 是相容舊呼叫端的無目標版本；它只保留突擊艇與貼身規則。
+// 有目標時請用 ShipBoardingReachAgainst，才能判斷傳送器的護盾分面。
 //
 // 手冊給兩條投送路徑,各自的前置不同:
 //   - **突擊艇**:飛過去放人,不要求貼身(中隊速度 6,實務上一回合到得了)。
-//   - **傳送器**:12 格內直接傳送,但要求「面向攻擊方的護盾**已被打穿**」——remake 的護盾
-//     是每發固定減傷,既沒有分面也沒有崩潰狀態,所以**這條仍然擋著**(見 gamedata/boarding.go)。
+//   - **傳送器**:12 格內直接傳送,但要求「面向攻擊方的護盾**已被打穿**」；硬化護盾
+//     仍然阻擋傳送器(見 gamedata/boarding.go)。
 //
 // 兩者都沒有的船只能貼身(相鄰格)登艦。⚠ 這一條**是 remake 的補充,手冊沒有**:
 // 手冊只講突擊艇與傳送器。標在這裡,不假裝是原版規則。
@@ -159,6 +162,23 @@ func ShipBoardingReach(att CombatShip, distance int) bool {
 		return true
 	}
 	return distance <= 1
+}
+
+// ShipBoardingReachAgainst 是手冊的登艦射程判定。
+// 傳送器要求 12 格內、面向攻擊方的護盾已失效；硬化護盾即使分面歸零仍會阻擋。
+// 相鄰格則沿用 remake 既有的貼身登艦補充規則。
+func ShipBoardingReachAgainst(att, def CombatShip, distance int) bool {
+	if att.AssaultShuttles {
+		return true
+	}
+	if distance <= 1 {
+		return true
+	}
+	if !att.Transporters || distance > gamedata.TransporterRangeSquares || def.HardShield {
+		return false
+	}
+	facing := ShieldFacingForShot(att, def)
+	return def.ShieldFacingDown(facing)
 }
 
 // ShipBoardingPartySize 是這艘船這一次能派出去的陸戰隊單位數。
@@ -194,6 +214,7 @@ func (s *GameSession) ShipBoardingAttack(att, def *CombatShip, intent BoardingIn
 		BoardingParty{Intent: intent, Marines: sent, Strength: force, HitsToKill: atkHits},
 		BoardingDefense{Marines: def.Marines, Strength: force,
 			HitsToKill:       gamedata.GroundMarineHitsToKill(false, false),
+			StrengthBonus:    def.SecurityBonus,
 			SecurityStations: def.SecurityStations},
 		roll)
 

@@ -78,4 +78,4 @@
       **不需要**:第 64/64 項已從可抽文字的 patch 1.5 PDF 拿到全表(18 把武器)。
 - [x] ~~建立版本專屬 profile(1.3 vs 1.5),數值分版存放~~
       **規則值已分版**(`internal/gamedata/ruleprofile.go` 的 `RuleProfile`)。
-      ⚠ **仍開的是資產分版**(LBX/資料未分版),記在 `WORKLIST.md` 剩餘工作表第四節。
+      **1.31／1.5 實體 LBX 回歸已完成**；`cmd/moo2` 的 `-data13/-data15` 路徑與主選單切換架構，以及 1.5 `NEWGAME.LBX` 背景資產索引差異，都已由雙版本畫廊驗證。

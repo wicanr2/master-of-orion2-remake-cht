@@ -55,6 +55,16 @@ func EnergyAbsorberAbsorb(sh *CombatShip, potentialDamage int) {
 //
 // displacementRoll 只在目標有位移裝置時才會被讀(**沒裝就不要擲**,否則整條亂數流位移)。
 func EnergyAbsorberRelease(sh *CombatShip, tgt *CombatShip, rangeSquares int, displacementRoll int) ShotResult {
+	return energyAbsorberRelease(sh, tgt, rangeSquares, displacementRoll, tgt.ShieldReduction)
+}
+
+// EnergyAbsorberReleaseAtFacing 是格子戰術在知道攻擊方向後的入口；保留上面的
+// 舊入口供純規則測試與其他呼叫端使用。
+func EnergyAbsorberReleaseAtFacing(sh *CombatShip, tgt *CombatShip, rangeSquares, displacementRoll, shieldReduction int) ShotResult {
+	return energyAbsorberRelease(sh, tgt, rangeSquares, displacementRoll, shieldReduction)
+}
+
+func energyAbsorberRelease(sh *CombatShip, tgt *CombatShip, rangeSquares int, displacementRoll int, shieldReduction int) ShotResult {
 	stored := sh.StoredEnergy
 	sh.StoredEnergy = 0
 	if stored <= 0 {
@@ -65,7 +75,8 @@ func EnergyAbsorberRelease(sh *CombatShip, tgt *CombatShip, rangeSquares int, di
 	}
 	level := gamedata.CombatRangeLevel(rangeSquares)
 	dmg := stored * (100 - gamedata.DamageDissipationPenalty(level)) / 100
-	dmg = gamedata.DamageAfterShield(dmg, tgt.ShieldReduction, tgt.HardShield, false)
+	shieldDamage := gamedata.DamageShieldAbsorbed(dmg, shieldReduction)
+	dmg = gamedata.DamageAfterShield(dmg, shieldReduction, tgt.HardShield, false)
 	_, toStruct, remArmor := gamedata.DamageApplyArmor(dmg, tgt.ArmorHP, false, tgt.APNegated)
-	return ShotResult{Hit: true, DamageToStructure: toStruct, RemainingArmorHP: remArmor}
+	return ShotResult{Hit: true, DamageToStructure: toStruct, RemainingArmorHP: remArmor, ShieldDamage: shieldDamage}
 }

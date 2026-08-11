@@ -59,6 +59,46 @@ func TestRunColonyTurnStarving(t *testing.T) {
 	}
 }
 
+func TestRunColonyTurnLithovoreNeedsNoFood(t *testing.T) {
+	// 手冊規則:食岩族不需要食物。即使沒有農夫,也不饑荒且仍可正常成長。
+	cs := ColonyState{
+		Population: 10, PopMax: 20, Workers: 6, Scientists: 4,
+		FoodPerFarmer: 3, IndustryPerWorker: 5, ResearchPerScientist: 4,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT,
+		Lithovore: true,
+	}
+	got := RunColonyTurn(cs)
+	if got.Food != 0 || got.FoodConsumed != 0 || got.FoodSurplus != 0 || got.Starving {
+		t.Fatalf("食岩族應免食物消耗與饑荒,得到 %+v", got)
+	}
+	if got.PopGrowth == 0 {
+		t.Fatal("食岩族在沒有食物時仍應能依正常人口公式成長")
+	}
+}
+
+// TestRunColonyTurnCyberneticUsesHalfLedger 驗證手冊所述「每人口半食物、另以半生產力補足」
+// 不是把 0.5 直接截成 0，而是落在可持久追蹤的半單位帳本。整數欄位只作既有 UI 相容值。
+func TestRunColonyTurnCyberneticUsesHalfLedger(t *testing.T) {
+	cs := ColonyState{
+		Population: 5, PopMax: 20, Farmers: 5, Workers: 5,
+		FoodPerFarmer: 2, IndustryPerWorker: 5,
+		PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G,
+		MineralRichness: gamedata.ABUNDANT, TolerantRace: true, Cybernetic: true,
+	}
+	got := RunColonyTurn(cs)
+	// 食物產出 10 = 20 半單位；半機械人口消耗 5 半單位，餘 15 半單位。
+	if got.FoodHalf != 20 || got.FoodConsumedHalf != 5 || got.FoodSurplusHalf != 15 {
+		t.Fatalf("半機械食物帳本錯誤:%+v", got)
+	}
+	if got.FoodConsumed != 2 || got.FoodSurplus != 7 || got.Starving {
+		t.Errorf("整數相容食物欄位錯誤:%+v", got)
+	}
+	// 毛/淨工業 25；扣掉 5 個半單位後是 45 半單位 = 22.5。
+	if got.IndustryConsumedHalf != 5 || got.NetIndustryHalf != 45 || got.NetIndustry != 22 {
+		t.Errorf("半機械生產帳本錯誤:%+v", got)
+	}
+}
+
 func TestRunColonyTurnTolerantRace(t *testing.T) {
 	// Tolerant 種族:清理成本 0,淨工業 = 毛工業。
 	cs := ColonyState{

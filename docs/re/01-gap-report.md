@@ -599,7 +599,11 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
         文字 +0x0E/+0x46)但**底圖是自繪的**——原版底圖來自 `dword_19B874` 指向的已載入影像,
         ③非當前席位的帝國在 `EndTurn` 最後才結算(當前席位在 AI 決策之前、其餘在之後),
         或全滅不會結束對局——要補得先讓勝負判定吃「哪一位玩家」而不是隱含的 `s.Player`;
-        ⑤真人席位是從 AI 對手**接管**過來的,而 `AIOpponent` 比玩家側薄(沒有建造佇列、領袖、
+        ⑤真人席位是從 AI 對手**接管**過來的。這一輪已補上 `RaceIndex` 與明確
+        `SetupHotseatWithAIIndices`:熱座畫面會逐一勾選要接管的帝國,未選中的 AI 與 AI 關係矩陣
+        保留,玩家間諜欄位依剩餘 AI 重排;席位轉換也保留種族產出/戰鬥加成、領袖、母星建築、
+        艦隊與殖民地平行陣列。`AIOpponent` 仍比玩家側薄(沒有建造佇列、前哨站、傭兵池,
+        也沒有可直接轉成玩家建造佇列的 AI 生產決策),這些欄位接管後維持空值,是目前明列的模型差異。
 
 4. **地面戰解算**(`Resolve_Ground_Combat_` / `Ground_Combat_Round_`)→ 取代目前沿用一代 1oom 的借用結構。
 
@@ -1795,8 +1799,8 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     | 「Fighters have a 50% chance to avoid … spherical weapon」 | `FighterAvoidsSpherical(roll)` |
     | 「(Interceptors) can take 2 damage … (Heavy) can take 5 damage」 | 血量是**每架**的,傷害一架一架吃(不是整隊一條血條) |
     | 「base hit points are modified by 2 times armor level above Titanium」 | `FighterHitsWithArmor` |
-    - **「always attack from the weakest shield facing」**:remake 的護盾是單一數值
-      (`CombatShip.ShieldReduction`),沒有四面分別的護盾,這條無處可套。
+    - **「always attack from the weakest shield facing」**:`CombatShip` 已保存四面護盾容量,
+      但戰機自動尋找最弱面與艦身旋轉仍未接入;一般艦艇命中鏈已能按來向選面。
     - **轟炸機 / 突擊梭**:前者要炸彈對行星的規則、後者要把陸戰隊送上敵艦,各自依賴另一套系統。
     - **敵方不會派戰機**:`genEnemyFleet` 產出的敵艦沒有設計資料,讀不到「帶不帶戰機庫」。
     - **FTL 階 / 裝甲級**:艦艇設計還沒把「目前最佳引擎/裝甲」餵進戰鬥層,出擊時先傳 1 / 0
@@ -1831,6 +1835,12 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
 
 
 ## 四、網路多人整塊(2026-08-07)
+
+> **2026-08-10 現況勘誤**：本節是 2026-08-07 的施工日誌；其中「網路多人到此結案」只
+> 描述傳輸／畫面／測試骨架完成，不代表正式 `cmd/moo2` 對局可玩。生產呼叫圖目前仍缺
+> 名冊→共同開局、席位映射、全玩家操作指令收集、真正回合結算與分岔停機。原版 IPX／
+> 數據機／序列／TEN 不恢復，依 `docs/tech/multiplayer-architecture.md` 決策改走 TCP
+> lockstep；目前待辦以 `WORKLIST.md` 2026-08-10 盤點結論為準。
 
 29. **決定性化——網路多人的地基,順手抓出兩個存檔 bug**(2026-08-07)。
 
@@ -3365,8 +3375,10 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
         `engine.PlayerState.FantasticTrader` 與 `engine.ColonyState.TolerantRace`,
         在 `EndTurn` 開頭與成就同步(第 59 項(成就科技效果))並列,冪等。
           - **魅力非凡在同化那一側仍不生效。** 現在查得到人類有它了,但手冊只說
-          - **自訂種族的 pick 尚未寫進特性。** 點數畫面目前只記錄數值型加成,
-          - **其餘布林特性(水棲/食岩/半機械/創造力/幸運/全知/匿蹤艦/跨維度/母星品質)未接。**
+          - **自訂種族的 pick 尚未寫進特性。**（歷史狀態；已由第 95 項修正，現在以
+            `CustomRaceTraits` 保存客製選項。）
+          - **其餘布林特性(幸運/全知/匿蹤艦/跨維度/母星品質)未接。** 水棲、食岩與創造力／缺乏創造力已在後續項目接入可證實的規則。
+            這句仍成立的部分是深層消費端未接，不是選項沒有保存。
 
 66. **高能聚焦:規則寫好了,但那個東西**裝不上**(2026-08-08)。
 
@@ -4027,8 +4039,8 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
 
 80. **登艦戰:手冊自己說了要復用哪套解算器**(2026-08-08)。
 
-    第 60 項(打得準也閃得掉)以來,保安站 / 傳送器 / 突擊艇三項的擋門理由都是「登艦戰不存在」。
-    而手冊把解算方式**直接指回地面戰**:
+    第 80 項(登艦戰)把保安站 / 傳送器 / 突擊艇三項接入共用規則;手冊把解算方式
+    **直接指回地面戰**:
 
     > The Marines boarding the ship and those defending the ship fight it out
     > **in the same way as ground troops do when a colony is invaded**.
@@ -4049,14 +4061,15 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     (每一下 1~2 個)。手冊那句「smaller systems are more likely to be destroyed」在 remake
     沒有落點——一艘船只有一個特殊系統槽,沒有大小不同的一堆系統可以挑。只做了一半,標明。
 
-    ### 傳送器仍然擋著,而擋門理由與先前寫的不一樣
+    ### 傳送器:分面護盾與硬化護盾例外已接
 
-    上一版寫「同上,而且還需要護盾分面」——**把兩個理由混寫成一個**,於是登艦戰建好之後
-    看起來像整項都解了。實際上手冊的前置是「面向攻擊方的護盾**已經被打穿**」,
-    而 remake 的護盾是每發固定減傷,**既沒有分面也沒有「崩潰」這個狀態**。
-    缺的不是射程(12 格,常數已經抄進 gamedata),是護盾要能崩。
+    手冊的前置是「面向攻擊方的護盾**已經被打穿**」,射程是 **12 格**。目前
+    `CombatShip` 保存四面護盾容量,武器命中依來向扣除對應分面,`ShipBoardingReachAgainst`
+    在 12 格內檢查該面是否失效；硬化護盾仍會阻擋傳送器。這條鏈有單元測試覆蓋完整容量、
+    最後一點傷害、超出 12 格與硬化護盾例外。
 
-    **教訓**:擋門理由寫成「同上」會把兩件不同的事綁在一起,前一件解掉時後一件會被順手當成解了。
+    分面索引採固定世界座標四向近似；原版艦身旋轉、方向命名與戰機自動尋找最弱面仍保持
+    未解，不把這層近似宣稱成原版座標對應。
 
     ### 匿蹤力場:擋門理由過期了,但結論不變
 
@@ -4381,10 +4394,14 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     | 掃描 | 手冊「Scan gives you information about an enemy ship」→ 切模式,點敵艦看資料 |
     | 登船 | 接第 80 項(登艦戰)。解算放 `shell.GameSession.ShipBoardingAttack`,畫面層只做選取/距離/戰報 |
     | 撤退 | 倖存艦離場、判定未勝(走既有的 over/won → `ApplyCombatOutcome`) |
-    | 等待 / 完成 | ❌ 需要「逐艦行動順序」,而 remake 的射擊是**全艦隊同時結算**,無處可落 |
+    | ~~等待 / 完成~~ → **已完成**(2026-08-09) | `tacticalScreen` 建立逐艦行動佇列；WAIT 將未行動艦移到佇列尾端，DONE 結束目前艦，最後一艦才結算戰機與敵方回擊；手動開火只作用於選中艦 |
     | 選項 | ❌ 原版開的是設定畫面,remake 還沒有那個畫面 |
 
-    後三顆**點下去會說明自己為什麼沒有反應**。空按鈕與會解釋自己的按鈕,對玩家是不同的東西。
+    原本的「後三顆點下去會說明自己為什麼沒有反應」只剩選項鈕成立；等待/完成已改為真正改變逐艦行動狀態。
+
+2026-08-09 接線：`tacticalScreen` 新增 `acted` / `waited` 行動表。手動開火改走
+`fireSelectedShip`，非最後一艦只結算該艦攻擊；最後一艦或 DONE 才進入回合交界，執行戰機、敵方回擊、充能、狀態與移動力重置。
+`cmd/moo2/tacticalturn_test.go` 以正對照釘住 WAIT 佇列、DONE 回合交界與「未選艦不得跟著開火」。
 
     ### 守這個缺口只能靠測試
 
@@ -4415,3 +4432,251 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     測試守的是**接線**而不是字串:`homeworldShips(nil)` 要拿到英文原文,接上翻譯器要變中文。
     只驗前者的話,「存了英文但沒人翻」也會過。
 
+89. **英文引擎層：威脅與持續事件播報**(2026-08-09)。
+
+    第 88 項只收掉艦隊名與支援艦艦級,但回合摘要仍有幾條由 `internal/shell` 直接組出的
+    中文敘述。這一輪沒有把查表 key 全域替換,而是沿報告資料結構補雙語欄位，避免
+    `special_device_map`、`weapon_damage`、`shipspace` 這類內部 key 被翻壞。
+
+    - `AIRaidReport.MessageEN`：AI 突襲的擊退／突破結果保留 AI 種族英文名與星名，
+      並由回合摘要與 INFO 畫面在英文模式選用。
+    - `GameSession.LastAntaresEN`：安塔蘭突襲警報補英文模板，熱座席位快照同步保存顯示暫態。
+    - `LastPersistentEventEN`：超新星倒數／解除／爆發、時空異象消散、超空間獸航道訊息
+      補英文進度；事件 19–28 的怪獸／持續事件初始報告不再只顯示 `A ... event has been reported.`。
+
+    驗證：`TestAIRaid*`、`TestAntares*`、`TestPersistentEventReportsEnglishProgress`，以及
+    全套 Docker + Xvfb `go test ./...`；中文模板仍保留原欄位，不改動中文畫廊路徑。
+
+90. **1.31／1.5 資產路徑與主選單版本切換接線**(2026-08-09)。
+
+    原本 `GameVersion` 只影響 `RuleProfile`；`assets.Resolver` 雖然支援多層覆蓋，卻沒有
+    依主選單版本選不同的資料根。這會讓畫面標籤顯示 1.5、規則套 1.5，實際仍讀 1.31
+    的 LBX，屬於靜默混版。
+
+    `cmd/moo2/versionassets.go` 新增兩版路徑描述與 `auto` 判定：`-data13`、`-data15`
+    各自可用逗號串 `patch,base`，未指定的欄位才回退共用 `-data`；沒有另一版專用路徑時
+    不會把已指定的 1.31 目錄偽裝成 1.5。`auto` 會讀資料目錄的 `README.TXT` 版本標記，
+    找不到標記才沿用 1.5 預設。`sceneBuilder.selectGameVersion` 在主選單切換時重建
+    `assets.Resolver`，並清除會攜帶舊版 LBX 的快取；缺少資產時留在原版本。
+
+    私有驗證輸入：`/home/anr2/moo2-private-build/gamedata/mastori2/README.TXT` 明載
+    `Version 1.31`，`ORION95.EXE` 內也有同一版本字串；1.5 輸入為工作區外掛入的
+    `moo2_patch1.5/MOO2-1.50.26.zip`，只讀掛載並在一次性 Docker `/tmp` 解出，未進 repo。
+    `versionassets_test.go` 驗證共用回退、禁止跨版本偽裝、README auto 判定，以及切換後
+    解析器真的讀到另一版本目錄。雙版本各跑 35 張 Docker + Xvfb 畫廊；第一次回歸發現
+    1.5 `NEWGAME.LBX` 資產數由 30 增為 33，滿版背景由 #28 順延到 #31，已由
+    `newGameBackgroundAsset` 依 `GameVersion` 選取並以測試釘住。修正後兩版 `NEW GAME`
+    與後續種族選擇畫面皆完整可見。
+
+91. **英文模式：殖民地行星／建築與歷史圖表資料顯示**(2026-08-09)。
+
+    英文畫廊的殖民地管理畫面仍把 `Planet.Climate`、`Mineral`、`Size`、`Gravity` 與
+    `ColonyBuildingNames` 的中文 key 直接畫出；INFO 歷史圖表也直接畫
+    `HistoryMetricName` 與 `HistoryEmpireNames`。這些不是規則缺口，而是 UI 顯示層漏接雙語資料。
+
+    `cmd/moo2/englishlabels.go` 新增集中轉換：新生成行星(`Gen>0`)讀既有 enum ID，舊存檔則對
+    保留的中文字串反查 `climateNames`／`mineralNames`／`planetSizeNames`／`gravityNames`；
+    建築與 Special action 分別查 `gamedata.BuildingByNameZH`、`SpecialActionByNameZH` 的
+    `NameEN`。繁中路徑仍沿用原字串與 `、` 排版，不改中文畫面；未知舊值不猜翻譯。
+    歷史圖表英文指標使用 `Population`／`Treasury`／`Fleet Strength`，玩家圖例為 `You`，
+    AI 優先讀已保存的 `RaceIndex`，舊存檔才以名稱反查種族英文名。
+
+    `englishlabels_test.go` 釘住新生成行星 ID、特殊物產、建築／Special action、歷史指標、
+    新舊 AI 圖例，以及繁中不被改寫。完整 Docker + Xvfb `go test ./...` 與建置通過；目前
+    最新程式以真正 1.31 資料跑英文畫廊 35 張、以 1.5 ZIP 的 8 個覆蓋 LBX 跑英文畫廊 35 張，
+    關鍵殖民地／歷史畫面已目視檢查。
+
+92. **英文模式：NEW GAME 設定值列**(2026-08-09)。
+
+    1.5 實體資產英文畫廊檢查時，`NEW GAME` 的五個自繪值列仍直接取
+    `shell.Difficulties`、`GalaxySizes`、`GalaxyAges`、`TechLevels` 的中文 `Name`，
+    所以會出現「普通／中型／一般」；帝國數量本來已由 `b.tr` 正確顯示。
+
+    `englishlabels.go` 新增難度(Tutor/Easy/Average/Hard/Impossible)、星系大小、年齡、
+    起始科技等級的英文對照；設定索引與 shell 中文資料不變，繁中仍取原 `Name`。測試釘住
+    兩種語言的預設值與繁中不變。完整 Docker + Xvfb 測試與建置通過；1.31／1.5 英文畫廊各
+    35 張，另跑 1.31 繁中畫廊 35 張，值列已分別目視確認。這個修正與 91 項同樣只改顯示層，
+    不改遊戲規則。
+
+93. **英文模式：殖民地總覽與行星列表窄欄摘要**(2026-08-09)。
+
+    1.5 英文畫廊的 `09_colonysummary.png` 仍顯示中文 `貿易品`／`Built` 清單；
+    `12_planets.png` 的氣候、重力、礦產、大小與特殊物產列也仍直接露出中文。前一輪
+    已處理共用環境列，本輪把殖民地總覽的目前建造／已建項目與行星列表接到同一組顯示層
+    轉換；舊存檔未知值仍保留原文，不猜翻譯。星名下方的「同系還有 N 個天體」另由
+    `PlanetsAt` 的數量產生英文窄欄 `N more`，不解析 shell 的中文短字串。
+
+    `englishlabels_test.go` 覆蓋建造項目與多天體摘要的中英對照及繁中不變。最後一輪
+    Docker + Xvfb `go test -buildvcs=false ./...`、建置通過；修正後以 1.5 patch 的 8 個
+    LBX 覆蓋檔跑完整 35 張英文畫廊，`12_planets.png` 已目視確認 `Ogka 1 more`／
+    `Joseki 3 more` 不再被截成半句，也沒有中文殘留。
+
+94. **英文模式：外交、戰術與熱座直接顯示名稱**(2026-08-09)。
+
+    1.31／1.5 英文畫廊檢查又抓到三處規則層中文 key 被自繪畫面直接畫出：外交使節與
+    三顆提議鈕、戰術敵艦／戰機型別與熱座交接的 AI 接管席位。規則與存檔資料不改；
+    `aiEmpireEnglishName`、`enemyDisplayName`、`combatShipLabel`、`fighterKindLabel`、
+    `hotseatNameLabel` 集中負責最後一刻轉換，並順手讓種族關係資訊面板的 AI 圖例使用
+    同一條顯示路徑。
+
+    `EnglishDisplayLabels` 測試鎖定 Psilons／Sakkra Ship、Interceptor、Bulrathi 席位與
+    繁中原樣回傳。1.31、1.5 英文畫廊及 1.31 繁中畫廊各 35 張已成功產生；英文
+    `15_diplomacy.png`、`16_tactical.png`、`24_hotseat.png` 與繁中外交畫面已目視確認。
+這只收掉實際畫廊抓出的顯示層缺口，不宣稱 `internal/` 所有動態敘述已完成英文化。
+
+## 95. 客製種族特殊能力資料鏈（2026-08-09）
+
+`cmd/moo2/customrace.go` 原本只把生產／成長／艦攻等數值聚合進 `shell.Race`；特殊能力
+雖然能在畫面上勾選，開局後沒有任何持久來源，因此連已經存在於引擎的低／高重力、穴居、
+戰爭領主、跨維度、魅力、惹人厭、寬容、貿易奇才公式都不會看到客製選項。
+
+新增 `GameSession.CustomRaceTraits` 位元遮罩，`ApplyCustomRaceBonuses` 接收客製畫面選到的
+`gamedata.RaceTrait`，`raceHasTrait` 在 `RaceIndex=-1` 時讀取該遮罩；同一欄位已加入
+`sessionSnapshot` 與熱座 `seat` 的存取。舊存檔缺欄位時零值代表「沒有客製特殊能力」，不會
+把客製種族誤認成阿爾卡里或人類。
+
+這輪只把**已有消費端與公式**的能力標為生效；大型／富礦／貧礦母星、水生、幸運等選項當時只保存語意，
+沒有假造尚不存在的星球、科技或事件模型。創造力／缺乏創造力已由第 100 項補上研究完成規則。對照測試
+`TestCustomRaceTraitsReachExistingRulesAndSaveLoad` 與 `TestSeatRoundTripKeepsEveryField`。
+
+## 96. 客製種族艦防／地面戰／諜報 picks（2026-08-09）
+
+官方 `custom-race-picks.md` 主表本來就有 Ship Defense（−20／+25／+50）、Ground Combat
+（−10／+10／+20）與 Spying（−10／+10／+20）三組數值 picks，但 `defaultPickCats` 只提供
+艦艇攻擊；因此不是公式缺證，而是畫面與 `Race` 欄位漏接。
+
+補上三組互斥循環選項，並讓四組 combat 類別依名稱分別寫入 `RaceCombatPct`、`RaceShipDefPct`、
+`RaceGroundBonus`、`RaceSpyBonus`。`TestCustomRaceNumericCombatPickCategoriesReachSeparateRaceFields`
+以官方中間正向檔鎖定四欄不串線；畫面總類別數與特殊能力清單也由
+`TestCustomRaceSpecialsCarryTraitsAndFitLogicalCanvas` 保護。
+
+## 97. 客製種族官方特殊能力清單與半機械化修復（2026-08-09）
+
+`custom-race-picks.md` 的官方主表列出 22 項特殊能力；客製畫面原先只列 16 項，遺漏遺物母星、
+半機械化、食岩、心靈感應、全知與匿蹤艦。畫面改成兩欄完整提供 22 項，並新增半機械化／食岩
+互斥組；所有選項仍透過 `CustomRaceTraits` 保存，不把尚未建模的深層效果誤標為完成。
+
+手冊 p.25 明確寫出半機械化種族「after any combat, they repair their ships completely」。
+現有艦艇模型已有戰後修復入口，因此 `repairAfterBattle` 會讓半機械化種族在勝敗兩種結果後
+完全修復；逐系統 10%／5% 回合修復仍需要獨立的內部損傷模型。`TestCyberneticRaceFullyRepairsAfterAnyBattle`
+鎖定戰敗後也修復的正對照。
+
+## 98. 食岩族殖民地食物消耗（2026-08-09）
+
+手冊與既有遊戲考據明確區分三種食物消耗：一般人口每回合 1、食岩族 0、半機械族 0.5。
+本輪把可在現有整數食物帳本中無歧義表達的食岩族規則接入 `engine.ColonyState.Lithovore`：
+`RunColonyTurn` 不再扣人口食物、不標饑荒；AI 會把誤分配的農夫轉回工人；玩家與 AI 的新殖民地、
+回合種族同步與 remake JSON 存檔均保留這個旗標。`TestRunColonyTurnLithovoreNeedsNoFood`、
+`TestEndTurnSyncsLithovoreIntoPlayerAndAIColonies` 與存讀檔測試覆蓋此垂直切片。
+
+半機械族的 0.5 食物／0.5 生產消耗已在後續垂直切片接入：`ColonyOutput` 新增半單位精確帳本，
+帝國稅收／餘糧／貿易品收入、建造進度與 ETA 讀取精確值，舊整數欄位與 JSON 存檔保持相容。食物
+複製機仍只換完整食物單位；半 BC 付款規則沒有原版證據，刻意保留為開放問題。
+
+## 101. 半機械族半單位食物／生產帳本（2026-08-09）
+
+手冊 help.tsv line 459 明確寫出半機械族每人口消耗半食物、以半生產單位補足；openorion2 的
+`food_consumption_*` 與 `industry_consumption_*` 欄位也明確標示為 half-units。`engine.ColonyState`
+新增 `Cybernetic`，`RunColonyTurn` 產生 `FoodHalf`／`FoodConsumedHalf`／`FoodSurplusHalf`／
+`IndustryConsumedHalf`／`NetIndustryHalf`；整數欄位保留顯示與舊資料相容用途。
+
+帝國收入改讀半單位換算，玩家與 AI 的種族同步會寫入旗標；玩家建造進度與 ETA 使用 `ProgressHalf`
+累積奇數餘數，session snapshot 也保存新欄位。測試覆蓋奇數人口、收入、建造累積、玩家／AI 同步與
+存讀檔。半機械生產消耗在污染清理與再生反應爐之後扣除，是依「獨立消費帳本」的強推論，尚非手冊
+逐字證實；複製機的半 BC 付款規則仍未知。
+
+## 99. 客製種族母星與環境人口規則（2026-08-09）
+
+手冊 `help.tsv` 的 Cost[1]/[2]/[-1]/[3] 明確給出大型母星、富礦母星、貧礦母星與遺物母星
+的效果；Cost[5]/[6]/[10] 也明確給出水生、穴居與環境耐受的食物／人口／污染規則。本輪新增
+`race_homeworld.go` 作為單一對映層：
+
+- 玩家套用內建或客製種族時，母星的大小、礦產、每科學家 +2 遺物研究與殖民地欄位同步更新。
+- 新殖民地把水生 Tundra→Terran、Swamp→Ocean、Terran→Gaia 對映到食物與人口上限；環境耐受
+  以 Terran 計人口上限且沿用免污染；穴居加 `+2×(size+1)` 最大人口。
+- `ColonyState` 保存 `Aquatic`／`Subterranean` 旗標，玩家／AI 新殖民地與地形改造沿用同一組查表。
+
+AI 母星仍保留既有「無完整種族環境初始化」的模型差異；本輪只把其新擴張殖民地與回合經濟接上，
+避免改寫既有 AI 母星資料而破壞目前有證據的轟炸／經濟基準。
+
+## 100. 創造力／缺乏創造力研究完成規則（2026-08-09）
+
+手冊 `help.tsv` 明確寫出 Creative 會取得研究領域內全部應用，Uncreative 則在每個領域
+隨機取得一項，且兩者互斥。既有研究引擎已經保留 `ResearchAll`、多選主題與
+`ExplicitChoice` 的資料語意，本輪只在主題完成邊界接入種族規則：
+
+- Creative 清除 `PendingChoice`，保留未明確抉擇的主題層級解鎖，因此該領域所有科技應用都能通過既有門檻。
+- Uncreative 以獨立、可存檔的 `researchRand` 自動選一項並寫入 `ChosenTech`／`ExplicitChoice`，不再把玩家送進一般擇一畫面。
+- 玩家與 AI 都走同一個純規則 helper；存檔保存亂數抽取次數，避免讀檔後重複或分岔研究選項。
+
+覆蓋測試為 `TestCreativeResearchUnlocksEveryApplicationWithoutPendingChoice`、
+`TestUncreativeResearchRandomlyChoosesOneApplication` 與完整 `internal/shell` 測試；
+這不包含尚未建模的心靈感應、幸運、全知、匿蹤艦等其他種族深層能力。
+
+## 102. 飛彈／魚雷改造垂直切片（2026-08-09）
+
+手冊 `GAME_MANUAL.pdf` p.115-116 已給出 ECCM、EMG、MIRV、魚雷 ENV 與 OVR 的改造效果；
+本輪不把只有資料、沒有消費端的 ARM/FST 列為完成。新增 `ResolveMissileShotWithMods`，
+保留 `ResolveMissileShot` 舊入口作為無改造相容包裝：
+
+- ECCM 透過既有 `MissileJamChance` 將干擾機率減半；EMG 先扣護盾，再以穿甲旗標直接傷害結構。
+- MIRV 以四枚彈頭逐一套用干擾、匿蹤與位移判定；AMR 命中只減少一枚彈頭，不把結果粗暴乘四。
+- 魚雷 ENV 使用既有四倍命中傷害管線，OVR 將彈頭強度乘 150%；`Ship.Mods` 已接入設計成本／
+  佔格、快速結算、格子戰術與設計 UI，且按武器類型過濾歷史殘留代碼。
+
+證據分級：ECCM/MV/OVR 為**已證實（手冊）**；EMG 的「直接結構」與現有「先扣盾後過甲」
+資料管線相接為**強推論**；魚雷四分面視覺／容量仍是**模型近似**。ARM「摧毀所需傷害×2」
+與 FST「提高飛彈 Beam Defense」分別缺少現行攔截器／飛彈防禦消費端，魚雷 NR 缺少射程衰減
+模型，三者維持**未知／待接線**。測試為 `internal/gamedata/weapon_mods_test.go`、
+`internal/shell/missile_mods_test.go`；Docker + Xvfb 完整測試及 `cmd/moo2` 建置通過。
+
+## 103. 艦艇軍官由全域近似改為逐艦指派（2026-08-09）
+
+原版存檔的 `Ship` 結構在 `internal/save/entities.go:436-473` 對應一個 `int16 Officer` 欄位；
+`openorion2/src/gamestate.cpp:2365-2405` 的 `shipBeamOffense`／`shipBeamDefense` 也只有在
+`sptr->officer >= 0` 時加上 Weaponry／Helmsman。先前 remake 只有 `GameSession.Leaders` 的
+全帝國清單，因而出現「雇了艦艇軍官就每艘船都吃加成」的模型缺口；`ShipBeamAttackWithOfficer`
+與 `ShipBeamDefenseWithOfficer` 雖有公式，沒有玩家可操作的資料來源。
+
+本輪新增 `Ship.OfficerName`（空字串即未指派）與 `AssignOfficerToShip`／解除／查詢 helper：
+
+- 艦隊畫面先選船，按 `LEADERS` 進軍官畫面；點艦艇軍官列可指派／改派，再點同一列解除。
+- 改派先清除同一軍官在全帝國其他船的欄位；殖民地領袖與待雇傭兵不能提前上船。
+- 快速結算與格子戰術的 Weaponry／Helmsman、星際航行 Navigator、戰後 Engineer 都讀逐艦
+  指派；`Ship` 被拆到新艦隊時欄位隨船移動，熱座與 JSON snapshot 走既有保存路徑。
+- 重製 JSON 使用名稱而非原版數字英雄 ID，這是明示的重製模型設計，不宣稱與 `.GAM` 位元格式
+  相同；舊存檔缺欄位時視為未指派。原版 UI `Check_Officer_Fields_` 尚未完整反組譯，故畫面
+  的列點選行為是可玩重製 UI，不把其座標語意升格成原版證據。
+
+驗證：`internal/shell/officer_assignment_test.go` 固定檢查單艘生效、改派移除舊船效果、
+殖民地領袖拒絕、JSON round-trip；並以 Navigator／Engineer／黑洞路徑回歸測試驗證既有消費端。
+
+**勘誤（2026-08-09）**：上段的「使用名稱而非原版數字英雄 ID」是當時切片完成時的
+快照，現在已由 `gamestate.cpp:1724-1725,1870-1871,2372-2401` 追回固定
+`_leaders[0..66]` 索引鏈；`HERODATA`、`shell.Leader.ID` 與 `Ship.OfficerID` 已保存
+該來源序號。名稱仍保留作舊 JSON 回退；這輪仍未擴張成原版 `.GAM` 全局匯入。
+完整追溯見 `docs/re/officer-ids.md`。
+
+## 104. 食物複製機半食物／半 BC（2026-08-11）
+
+前文「複製機仍只換完整食物、半 BC 未知」是 2026-08-09 的歷史狀態，現已由程式
+接線取代，但不把它誤寫成原版手冊逐字證實：
+
+- `gamedata.FoodReplicatorConvertHalf` 以 half-food／half-industry 計算：每半食物
+  花 2 半產能，完整食物仍等於手冊的 2 產能；因此 Cybernetic 奇數人口的半食物
+  缺口不會先被 `/2` 捨掉。
+- `ColonyOutput.FoodReplicatedHalf` 與 `FoodReplicatorCostHalfBC` 暴露精確值，
+  `PlayerState.FoodReplicatorBCHalfRemainder` 跨回合保存；每兩個半 BC 才從帝國
+  國庫扣 1 BC。這是依原版 half-unit 食物帳本與手冊 1 BC／完整食物的**強推論**，
+  原版沒有直接給出碎單位付款時機。
+- 回歸護欄為 `TestFoodReplicatorConvertHalfPreservesCyberneticHalfFood`、
+  `TestFoodReplicatorsCoverCyberneticHalfFood` 與
+  `TestRunEmpireTurnFoodReplicatorHalfBCCarries`。
+
+## 105. 低優先視覺／runtime oracle 收斂（2026-08-11）
+
+`COUNCIL.LBX#1` 的 640×480／10 幀與 `ANTAROOM.LBX#1` 的 640×480／55 幀已由
+隔離 `lbxdump` 結構探針確認，議會與安塔蘭畫面現在都逐幀累積播放；逐像素／逐幀
+對照契約與網路參考連結見 `docs/re/visual-oracle-20260811.md`。`CMBTSHP` 艦型
+索引仍維持視覺近似，地面戰實機傷亡、事件漂移與爆炸連鎖不因靜態畫面通過而升格
+為完成。

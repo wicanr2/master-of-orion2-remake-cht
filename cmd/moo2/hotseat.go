@@ -91,43 +91,55 @@ func (h *hotseatScreen) draw(dst *ebiten.Image) {
 	dim := color.RGBA{140, 150, 170, 255}
 
 	cx := float64(x + w/2)
-	h.fnt.DrawCentered(dst, h.b.tr("換人接手", "PASS THE KEYBOARD"), cx, float64(y+30), 18, gold)
+	h.fnt.DrawCentered(dst, truncateToWidth(h.fnt, h.b.tr("換人接手", "PASS THE KEYBOARD"), 18, float64(w-20)), cx, float64(y+30), 18, gold)
 	// 原版的文字錨點:視窗左上 +14 / +70。
 	tx := float64(x + hotseatTextDX)
 	ty := float64(y + hotseatTextDY)
-	h.fnt.Draw(dst, h.b.tr("下一位:", "Next: ")+h.name, tx, ty, 14, body)
-	h.fnt.Draw(dst, fmt.Sprintf(h.b.tr("(席位 %d / %d)", "(seat %d of %d)"), h.seat+1, h.total), tx, ty+20, 11, dim)
-	h.fnt.Draw(dst, h.b.tr("請把鍵盤交給這位玩家,確認之後再按「接手」。",
-		"Pass the keyboard, then press TAKE OVER."), tx, ty+44, 13, dim)
+	h.fnt.Draw(dst, truncateToWidth(h.fnt, h.b.tr("下一位:", "Next: ")+hotseatNameLabel(h.b.lang, h.name), 14, float64(w-hotseatTextDX-14)), tx, ty, 14, body)
+	h.fnt.Draw(dst, truncateToWidth(h.fnt, fmt.Sprintf(h.b.tr("(席位 %d / %d)", "(seat %d of %d)"), h.seat+1, h.total), 11, float64(w-hotseatTextDX-14)), tx, ty+20, 11, dim)
+	h.fnt.Draw(dst, truncateToWidth(h.fnt, h.b.tr("請把鍵盤交給這位玩家,確認之後再按「接手」。",
+		"Pass the keyboard, then press TAKE OVER."), 13, float64(w-hotseatTextDX-14)), tx, ty+44, 13, dim)
 	if h.note != "" {
-		h.fnt.Draw(dst, h.note, tx, ty+68, 12, color.RGBA{200, 180, 110, 255})
+		h.fnt.Draw(dst, truncateToWidth(h.fnt, h.note, 12, float64(w-hotseatTextDX-14)), tx, ty+68, 12, color.RGBA{200, 180, 110, 255})
 	}
 
 	bx, by, bw, bh := h.okRect()
 	fillPanel(dst, float32(bx), float32(by), float32(bw), float32(bh), color.RGBA{40, 48, 66, 255}, false)
 	vector.StrokeRect(dst, float32(bx), float32(by), float32(bw), float32(bh), 1.5, color.RGBA{150, 165, 200, 255}, false)
-	h.fnt.DrawCentered(dst, h.b.tr("接手", "TAKE OVER"), float64(bx+bw/2), float64(by+bh/2), 15, body)
+	h.fnt.DrawCentered(dst, truncateToWidth(h.fnt, h.b.tr("接手", "TAKE OVER"), 15, float64(bw-10)), float64(bx+bw/2), float64(by+bh/2), 15, body)
 }
 
-// applyPendingHotseat 在新遊戲流程走完後,把多人設定畫面選的席位數套用到這一局。
-// 沒選過(0/1)就什麼都不做,單人局一切照舊。
+// applyPendingHotseat 在新遊戲流程走完後,把多人設定畫面選的席位數與
+// 選帝國畫面指定的 AI 索引套用到這一局。沒選過(0/1)就什麼都不做。
 func (b *sceneBuilder) applyPendingHotseat() {
 	if b.session == nil || b.pendingHotseat <= 1 {
 		return
 	}
-	got := b.session.SetupHotseat(b.pendingHotseat)
+	got := 0
+	if b.pendingHotseatAI != nil {
+		got = b.session.SetupHotseatWithAIIndices(b.pendingHotseatAI)
+	} else {
+		got = b.session.SetupHotseat(b.pendingHotseat)
+	}
 	if got < b.pendingHotseat {
 		// 席位被可接管的 AI 對手數壓下來了,說一聲而不是默默少開一席。
 		fmt.Fprintf(os.Stderr, "熱座:要求 %d 席,實際只開得出 %d 席(受 AI 對手數限制)\n",
 			b.pendingHotseat, got)
 	}
 	b.pendingHotseat = 0
+	b.pendingHotseatAI = nil
 }
 
-// advanceWorldTurn 真的推進一回合:結算 + 自動存檔 + 依結果決定接下來要看哪個畫面
-// (研究抉擇 → 結局過場 → 事件快報 → 回合摘要,原版順序)。
+// advanceWorldTurn 真的推進一回合:先結算，再共用後續畫面流程。
 func (b *sceneBuilder) advanceWorldTurn() *origTransition {
 	b.session.EndTurn()
+	return b.finishResolvedTurn()
+}
+
+// finishResolvedTurn 處理已經完成 EndTurn 的後半段:自動存檔、研究抉擇、
+// 結局／事件／回合摘要。網路鎖步在所有玩家重播同一批指令後只呼叫一次
+// EndTurn，接著也必須走完全相同的原版畫面順序。
+func (b *sceneBuilder) finishResolvedTurn() *origTransition {
 	if b.savePath != "" { // 每回合自動存檔(持久化對局)
 		if err := b.session.Save(b.savePath); err != nil {
 			fmt.Fprintln(os.Stderr, "自動存檔失敗:", err)
@@ -168,6 +180,9 @@ func (b *sceneBuilder) advanceWorldTurn() *origTransition {
 func (b *sceneBuilder) endTurnPressed() *origTransition {
 	if b.session == nil {
 		return nil
+	}
+	if b.networkTurn != nil {
+		return b.submitNetworkTurn()
 	}
 	if !b.session.HotseatEnabled() {
 		return b.advanceWorldTurn()

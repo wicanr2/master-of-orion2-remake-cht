@@ -5,6 +5,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 )
 
 // 事件畫面(原版 `Event_Screen_` / `Draw_Event_Screen_` / `Event_Fade_In_`,module 15)。
@@ -63,13 +64,31 @@ func (b *sceneBuilder) currentReport() *reportPanel {
 		if r.Good {
 			tag = b.tr("喜訊", "GOOD NEWS")
 		}
+		title, body := r.Name, r.Message
+		if b.lang != i18n.Traditional {
+			if r.NameEN != "" {
+				title = r.NameEN
+			}
+			if r.MessageEN != "" {
+				body = r.MessageEN
+			}
+		}
 		return &reportPanel{header: b.tr(evGNNHeader, evGNNHeaderEn),
-			title: r.Name, tag: tag, body: r.Message, good: r.Good}
+			title: title, tag: tag, body: body, good: r.Good}
 	}
 	if d := b.session.LastDiscovery; d != nil {
 		// 星系發現一律是好消息(原版這五種特殊物產沒有負面的)。
+		title, body := d.Name, d.Message
+		if b.lang != i18n.Traditional {
+			if d.NameEN != "" {
+				title = d.NameEN
+			}
+			if d.MessageEN != "" {
+				body = d.MessageEN
+			}
+		}
 		return &reportPanel{header: b.tr(evScoutHeader, evScoutHeaderEn),
-			title: d.Name, tag: b.tr("發現", "DISCOVERY"), body: d.Message, good: true}
+			title: title, tag: b.tr("發現", "DISCOVERY"), body: body, good: true}
 	}
 	return nil
 }
@@ -136,10 +155,10 @@ func (b *sceneBuilder) drawEventReport(dst *ebiten.Image) {
 
 	// 台標列(原版 EVENTMSG 前 8 條就是這種 GNN 開場白)。
 	fillPanel(dst, evPanelX, evPanelY, evPanelW, 26, color.RGBA{18, 30, 60, 255}, false)
-	b.fnt.Draw(dst, rep.header, evPanelX+12, evPanelY+6, 13, evBrandCol)
+	b.fnt.Draw(dst, truncateToWidth(b.fnt, rep.header, 13, evPanelW-24), evPanelX+12, evPanelY+6, 13, evBrandCol)
 
 	// 事件名 + 好壞標記(對應原版 _event_good_array)。
-	b.fnt.Draw(dst, "【"+rep.tag+"】"+rep.title, evPanelX+16, evPanelY+42, 15, evTitleCol)
+	b.fnt.Draw(dst, truncateToWidth(b.fnt, "【"+rep.tag+"】"+rep.title, 15, evPanelW-32), evPanelX+16, evPanelY+42, 15, evTitleCol)
 
 	// 快報內文(自動換行)。
 	for i, ln := range b.fnt.Wrap(rep.body, 13, evPanelW-32) {
@@ -152,5 +171,5 @@ func (b *sceneBuilder) drawEventReport(dst *ebiten.Image) {
 	// 確認鈕
 	fillPanel(dst, 270, 372, 100, 24, evButtonBg, false)
 	vector.StrokeRect(dst, 270, 372, 100, 24, 1, edge, false)
-	b.fnt.DrawCentered(dst, b.tr("繼續", "CONTINUE"), 320, 384, 13, evBodyCol)
+	b.fnt.DrawCentered(dst, truncateToWidth(b.fnt, b.tr("繼續", "CONTINUE"), 13, 88), 320, 384, 13, evBodyCol)
 }

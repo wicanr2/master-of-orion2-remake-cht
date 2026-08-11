@@ -156,6 +156,13 @@ func IncomeTaxRevenue(totalIndustry, taxRatePercent int) int {
 	return totalIndustry * taxRatePercent * TaxConversionNumerator / (100 * TaxConversionDenominator)
 }
 
+// IncomeTaxRevenueHalf 是半單位工業帳本的稅收換算。totalIndustryHalf 以「半個工業單位」
+// 計，稅率仍按完整工業單位的 1:1 換算，結果以整數 BC 無條件捨去。一般種族傳入
+// 2*IncomeTaxRevenue 的原始工業時，結果與舊 API 完全相同；Cybernetic 才會用到奇數半單位。
+func IncomeTaxRevenueHalf(totalIndustryHalf, taxRatePercent int) int {
+	return totalIndustryHalf * taxRatePercent * TaxConversionNumerator / (200 * TaxConversionDenominator)
+}
+
 // IncomeTaxRemainingIndustry 稅率扣除後,實際留給殖民地建造用的產能
 // (GAME_MANUAL.pdf p.168:"if your tax rate is an astronomical 50%, fully half your production
 // potential goes toward taxes. Only the remaining half is available for building.")。
@@ -173,6 +180,15 @@ func TradeGoodsIncome(industryAllocated int, fantasticTrader bool) int {
 	return industryAllocated * TradeGoodsConversionNumerator / TradeGoodsConversionDenominator
 }
 
+// TradeGoodsIncomeHalf 是半單位工業帳本的貿易品換算。一般種族 2:1、Fantastic Trader 1:1，
+// 仍以整數 BC 無條件捨去。
+func TradeGoodsIncomeHalf(industryAllocatedHalf int, fantasticTrader bool) int {
+	if fantasticTrader {
+		return industryAllocatedHalf * TradeGoodsFantasticTraderConversionNumerator / (2 * TradeGoodsFantasticTraderConversionDenominator)
+	}
+	return industryAllocatedHalf * TradeGoodsConversionNumerator / (2 * TradeGoodsConversionDenominator)
+}
+
 // IncomeFoodSurplusRevenue 出售剩餘糧食換得的 BC。一般種族每單位換 0.5 BC,Fantastic Trader
 // 每單位換 1 BC(GAME_MANUAL.pdf p.25)。手冊沒有明講 0.5 BC 是否無條件捨去,但同一份文件
 // (MANUAL_150.html 1.31/1.40/1.50 行為比較表)在描述類似的半 BC 換算(運輸艦短缺維護費)時
@@ -182,6 +198,15 @@ func IncomeFoodSurplusRevenue(surplusFoodUnits int, fantasticTrader bool) int {
 		return surplusFoodUnits * IncomeFoodSurplusFantasticTraderPerUnitBC
 	}
 	return surplusFoodUnits * IncomeFoodSurplusNumerator / IncomeFoodSurplusDenominator
+}
+
+// IncomeFoodSurplusRevenueHalf 是半單位食物帳本的餘糧收入換算。一般種族每完整食物
+// 0.5 BC、Fantastic Trader 每完整食物 1 BC；BC 維持整數無條件捨去。
+func IncomeFoodSurplusRevenueHalf(surplusFoodHalf int, fantasticTrader bool) int {
+	if fantasticTrader {
+		return surplusFoodHalf * IncomeFoodSurplusFantasticTraderPerUnitBC / 2
+	}
+	return surplusFoodHalf * IncomeFoodSurplusNumerator / (2 * IncomeFoodSurplusDenominator)
 }
 
 // IncomeCommandOverflowCost 指揮評等不足時,每回合從收入扣除的維護費

@@ -264,7 +264,7 @@ func (s *inputBoxScreen) draw(dst *ebiten.Image) {
 	}
 	// 標題:水平置中於彈窗寬、垂直置中於 54 px 的標題帶(原版就是這樣算的)。
 	const titleSize = 15
-	s.b.fnt.DrawCentered(dst, s.title, float64(s.x+inboxBoxW/2),
+	s.b.fnt.DrawCentered(dst, truncateToWidth(s.b.fnt, s.title, titleSize, inboxBoxW-20), float64(s.x+inboxBoxW/2),
 		float64(s.y+inboxTitleDY+(inboxTitleH-titleSize)/2), titleSize,
 		color.RGBA{240, 220, 120, 255})
 
@@ -272,7 +272,7 @@ func (s *inputBoxScreen) draw(dst *ebiten.Image) {
 	fillPanel(dst, float32(fx), float32(fy), float32(fw), float32(fh),
 		color.RGBA{12, 14, 20, 255}, false)
 	const textSize = 14
-	txt := string(s.text)
+	txt := truncateToWidth(s.b.fnt, string(s.text), textSize, float64(fw-18))
 	s.b.fnt.Draw(dst, txt, float64(fx+6), float64(fy+(fh-textSize)/2), textSize,
 		color.RGBA{225, 230, 244, 255})
 	// 游標:半個週期顯示。畫在字尾——量字寬要走字型層,這裡用 DrawCentered 的
@@ -293,7 +293,7 @@ func (s *inputBoxScreen) draw(dst *ebiten.Image) {
 		color.RGBA{28, 28, 24, 255})
 	// 提示行擺在鈕**下方**:擺在 inboxBoxH−30 會壓在鈕上,截圖看出來的。
 	s.b.fnt.DrawCentered(dst,
-		s.b.tr("Enter 確定  ·  Esc 取消", "Enter = accept  ·  Esc = cancel"),
+		truncateToWidth(s.b.fnt, s.b.tr("Enter 確定  ·  Esc 取消", "Enter = accept  ·  Esc = cancel"), 11, inboxBoxW-20),
 		float64(s.x+inboxBoxW/2), float64(by+inboxOKH+4), 11,
 		color.RGBA{150, 162, 185, 255})
 }

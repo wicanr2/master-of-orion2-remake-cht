@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
+)
 
 // 軍官畫面的座標在第 50 項(軍官畫面座標)從 openorion2 換成**原版執行檔的立即數**。
 //
@@ -103,5 +107,45 @@ func TestOfficerHitsAndOverlaysAgree(t *testing.T) {
 		if h.x != o[0] || h.y != o[1] {
 			t.Errorf("%s 的熱區 (%d,%d) 與疊字 %v 不一致", pair[0], h.x, h.y, o)
 		}
+	}
+}
+
+func TestOfficerManagementButtonsHaveExecutableAlignedRegions(t *testing.T) {
+	want := map[string]string{
+		"POOL":    "pool",
+		"DISMISS": "dismiss",
+	}
+	for _, o := range officerOverlays() {
+		action, ok := want[o.enKey]
+		if !ok {
+			continue
+		}
+		found := false
+		for _, h := range officerHitRegions() {
+			if h.action == action {
+				if h.x != o.x || h.y != o.y {
+					t.Errorf("%s 的熱區 (%d,%d) 與疊字 (%d,%d) 不一致", o.enKey, h.x, h.y, o.x, o.y)
+				}
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("找不到 %s 的管理熱區", o.enKey)
+		}
+	}
+}
+
+func TestOfficerTargetShipUsesSelectedFleetShip(t *testing.T) {
+	s := shell.NewDemoSession()
+	s.Fleets = []shell.Fleet{{Ships: []shell.Ship{{Name: "甲"}, {Name: "乙"}}, AtStar: 0, DestStar: -1}}
+	b := &sceneBuilder{session: s, shipPick: map[int]bool{1: true}}
+	fi, si, ok := b.officerTargetShip()
+	if !ok || fi != 0 || si != 1 {
+		t.Fatalf("應以艦隊畫面勾選的第 2 艘為指派目標: fleet=%d ship=%d ok=%v", fi, si, ok)
+	}
+	b.shipPick = nil
+	_, si, ok = b.officerTargetShip()
+	if !ok || si != 0 {
+		t.Fatalf("未勾選時應退回目前艦隊第一艘: ship=%d ok=%v", si, ok)
 	}
 }

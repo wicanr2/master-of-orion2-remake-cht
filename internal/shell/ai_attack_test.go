@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
@@ -136,6 +137,12 @@ func TestAIRaidHappensAndBoundsLosses(t *testing.T) {
 		t.Fatal("條件全部滿足時應該發生突襲")
 	}
 	rep := s.LastRaidReport
+	if rep.MessageEN == "" || !strings.Contains(rep.MessageEN, "raided") {
+		t.Errorf("AI 突襲報告應有英文模板,got %q", rep.MessageEN)
+	}
+	if strings.Contains(rep.MessageEN, "突襲") || strings.Contains(rep.MessageEN, "星系") {
+		t.Errorf("AI 突襲英文報告仍含中文模板字串:%q", rep.MessageEN)
+	}
 	if rep.Repelled {
 		t.Fatalf("玩家無艦隊、無駐軍時不該擊退 400 戰力的突襲:%s", rep.Message)
 	}

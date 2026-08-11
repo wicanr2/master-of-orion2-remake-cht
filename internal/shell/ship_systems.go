@@ -209,16 +209,10 @@ func shipBeamAttackerSystems(sh Ship) BeamAttackerSystems {
 // (增強引擎 / 時間扭曲加速器 / 結構分析儀 / 阿基里斯瞄準器 / 超載電容 / 快速飛彈架 / 轟炸機庫),
 // 理由卻還留在這裡——**這份清單自己就是它警告的那種東西**。每次接掉一項就要回來刪一行。
 //
-// --- 還沒接的**一個**,與它的理由(2026-08-08 第 80 項(登艦戰)重寫)---
+// --- 登艦戰元件的接線狀態 ---
 //
-// 上一版這裡有三項。登艦戰建好之後(boarding.go)保安站與突擊艇都接了,只剩:
-//
-//	傳送器(Transporters)  手冊:「send Marines onto an enemy ship from a range of 12 squares
-//	                      **— if the shield facing the attacking ship is disabled**」。
-//	                      擋門不是射程(12 格,常數已在 gamedata),是**護盾要能崩**:
-//	                      remake 的護盾是每發固定減傷,既沒有分面也沒有「被打穿」這個狀態。
-//	                      ⚠ 這與「登艦戰不存在」是**不同**的擋門理由——上一版把兩者混寫成
-//	                      「同上,而且還需要護盾分面」,於是登艦戰建好之後看起來像整項都解了。
+// 保安站、突擊艇與傳送器都已接入元件表；傳送器的護盾分面容量由
+// gamedata.DamageShieldCapacityForShipClass 初始化，硬化護盾仍阻擋傳送器。
 //
 // 匿蹤力場(Stealth Field)這一項**移出這份清單**:它的擋門理由是「AI 艦隊沒有地圖座標」,
 // 而第 47 項(AI艦隊移動)之後 AI 艦隊有 FleetStar 了。**但重查之後結論不變、理由變了**:

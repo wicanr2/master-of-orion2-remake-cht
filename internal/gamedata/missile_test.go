@@ -93,7 +93,7 @@ func TestMissileAMREndToEnd(t *testing.T) {
 //
 // 這支測試 2026-08-07 改寫。先前它測的是手冊的「明列公式」(含無條件 +4),
 // 並在註解裡寫「表格與公式有落差,此處測公式」——等於把一個未解的矛盾釘成了規格。
-// `Missile_Speed_` @ 0x3CD21 顯示那個 +4 是 **Fast 改造**的旗標 0x10 才加的,
+// raw `sub_3CD21` @ 0x3CD21 顯示那個 +4 是 **Fast 改造**的旗標 0x10 才加的,
 // 所以**表才是一般飛彈的值**,公式是改造後的值。
 func TestMissileSpeedMatchesTheManualTable(t *testing.T) {
 	// 手冊附表 Speed 欄,FTL 0..6。
@@ -111,7 +111,8 @@ func TestMissileSpeedMatchesTheManualTable(t *testing.T) {
 	}
 }
 
-// 基礎速度依武器類型分檔(原版 Missile_Speed_ 的分支表),而且有兩檔**不加 FTL 項**。
+// 基礎速度依原版 sub_3CD21(工具符號: Missile_Facing_) 的分支表,
+// 而且有三檔**不加 FTL 項**。
 func TestMissileBaseSpeedMatchesTheOriginalBranches(t *testing.T) {
 	for _, c := range []struct {
 		kind        int
@@ -121,6 +122,7 @@ func TestMissileBaseSpeedMatchesTheOriginalBranches(t *testing.T) {
 	}{
 		{0x0E, false, 12, true}, {0x11, false, 12, true},
 		{0x12, false, 20, false}, {0x13, false, 20, false},
+		{0x14, false, 24, false},
 		{0x1C, false, 6, true}, {0x1C, true, 10, true},
 		{0x1D, false, 8, true}, {0x1D, true, 12, true},
 		{0x1E, false, 8, true}, {0x1E, true, 12, true},
@@ -134,8 +136,9 @@ func TestMissileBaseSpeedMatchesTheOriginalBranches(t *testing.T) {
 				c.kind, c.boosted, base, withFTL, c.wantBase, c.wantWithFTL)
 		}
 	}
-	// 那兩檔**不隨驅動等級變**——這是原版 `xor ecx, ecx` 的意思,很容易漏抄。
-	for _, kind := range []int{0x12, 0x28} {
+	// 這四種 raw kind **不隨驅動等級變**——這是原版 `xor ecx, ecx` 的意思,
+	// 很容易漏抄。
+	for _, kind := range []int{0x12, 0x13, 0x14, 0x28} {
 		if MissileSpeedOf(kind, 0, false, false) != MissileSpeedOf(kind, 6, false, false) {
 			t.Errorf("類型 0x%X 的速度不該隨 FTL 等級變", kind)
 		}
@@ -168,5 +171,43 @@ func TestMissileBeamDefense(t *testing.T) {
 	if MissileBeamDefenseFast(MissileFTLNuclear, MissileWarheadNuclear)-
 		MissileBeamDefense(MissileFTLNuclear, MissileWarheadNuclear) != 5*MissileFastBonus {
 		t.Error("Fast 版本與一般版本應正好差 5×4 = 20")
+	}
+}
+
+func TestMissileRawFlagsAndInterceptionDurability(t *testing.T) {
+	plain := MissileRawFlagsForMods(nil)
+	armFast := MissileRawFlagsForMods([]WeaponModCode{ModArmoredMissile, ModFastMissile})
+	if plain != 0 || armFast != MissileRawFlagArmored|MissileRawFlagFast {
+		t.Fatalf("ARM/FST raw flags=(0x%X,0x%X), want (0x0,0x%X)", plain, armFast,
+			MissileRawFlagArmored|MissileRawFlagFast)
+	}
+	if got := MissileInterceptionDurability(MissileKindNuclear, 0); got != 4 {
+		t.Errorf("核飛彈 Dcv=%d, want 4", got)
+	}
+	if got := MissileInterceptionDurabilityForRawFlags(MissileKindNuclear, 0, armFast); got != 8 {
+		t.Errorf("ARM 核飛彈 Dcv=%d, want 8", got)
+	}
+	if got := MissileInterceptionDurabilityForRawFlags(MissileKindNuclear, 0, MissileRawFlagFast); got != 4 {
+		t.Errorf("只有 FST 的核飛彈 Dcv=%d, want 4", got)
+	}
+	plainDefense, ok := MissileBeamDefenseOf(MissileKindNuclear, MissileFTLNuclear, plain, false)
+	if !ok || plainDefense != 50 {
+		t.Errorf("普通核飛彈 Beam Defense=(%d,%v), want (50,true)", plainDefense, ok)
+	}
+	fastDefense, ok := MissileBeamDefenseOf(MissileKindNuclear, MissileFTLNuclear, armFast, false)
+	if !ok || fastDefense != 70 {
+		t.Errorf("FST 核飛彈 Beam Defense=(%d,%v), want (70,true)", fastDefense, ok)
+	}
+}
+
+func TestMissileWarheadsDestroyedByInterceptionUsesCappedDamageAndRemainder(t *testing.T) {
+	if destroyed, remainder := MissileWarheadsDestroyedByInterception(20, 0, 4); destroyed != 1 || remainder != 0 {
+		t.Errorf("單次攔截傷害 20/Dcv 4=(%d,%d), want (1,0)", destroyed, remainder)
+	}
+	if destroyed, remainder := MissileWarheadsDestroyedByInterception(2, 3, 4); destroyed != 1 || remainder != 1 {
+		t.Errorf("帶餘數攔截=(%d,%d), want (1,1)", destroyed, remainder)
+	}
+	if destroyed, remainder := MissileWarheadsDestroyedByInterception(10, 0, 0); destroyed != 0 || remainder != 0 {
+		t.Errorf("未知 Dcv 攔截=(%d,%d), want (0,0)", destroyed, remainder)
 	}
 }

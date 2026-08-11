@@ -7,19 +7,20 @@
 - **真科技樹資料**:`internal/gamedata/techtree.go` 的 `researchChoices[83]` 逐字轉寫自 openorion2 `tech.cpp:169–305`,含每個 `ResearchTopic` 的**真 RP 成本**、可選科技清單(`Choices`)、`ResearchAll` 旗標。公開 accessor `gamedata.ResearchChoiceFor(topic)`。
 - **真成本已接入**:`shell.ResearchCost(t)` 直接取 `ResearchChoiceFor(t).Cost`;`engine/research.go` 的 `RunResearchPhase` 用真成本判定完成,並**保留溢出 RP 結轉**下一主題。→ 研究「要花多少點」已對齊原版。
 
-## 尚缺的核心機制:每主題「抉擇一項科技」
+## 核心機制:每主題「抉擇一項科技」
 
-原版 MOO2:完成一個研究主題後,若該主題 `ResearchAll=false`,玩家要在 `Choices` 的數個科技中**選一項**解鎖(其餘永久放棄,除非 Creative 特性);`ResearchAll=true` 才全解。這是 MOO2 招牌取捨,`HONEST-STATUS.md` 亦點名為缺口。
+原版 MOO2:完成一個研究主題後,若該主題 `ResearchAll=false`,一般種族要在 `Choices` 的數個科技中**選一項**解鎖(其餘永久放棄);Creative 會全解,Uncreative 則隨機取得一項;`ResearchAll=true` 本來就全解。這是 MOO2 招牌取捨。
 
-現況(不忠實):
-- `engine/research.go:9–11` 註明「只回答主題是否完成,**不選擇** Choices 中哪一項」。
-- `shell.ComponentUnlocked`(session.go:102)以 **`CompletedTopics[topic]`**(主題層級)判解鎖 → 等於**一次解鎖該主題全部選項**,無取捨。
+目前狀態（共同基礎模型）:
+- `engine/research.go` 保留純研究結算與一般種族的待決資料結構；`shell.applyResearchRaceTrait` 再依 Creative／Uncreative 套用完成邊界規則。
+- `shell.ComponentUnlocked` 以 `ExplicitChoice` 區分一般種族明確擇一與 Creative／預設主題層級全解。
 
 ## 執行計畫與進度
 
 1. ✅ **模型層(engine)完成**(2026-07-10,非破壞、有測試):
    - `PlayerState` 加 `ChosenTech map[ResearchTopic]Technology`、`PendingChoice`、`HasPendingChoice`。
    - `RunResearchPhase` 完成主題時 `recordCompletion`:ResearchAll/單選直接記;**多選預設記第一項並開 PendingChoice**(不阻塞回合,玩家可改選)。
+   - `shell.applyResearchRaceTrait` 在完成邊界接上種族差異:Creative 清除待決並保留「未明確抉擇＝領域全解」語意;Uncreative 由可存檔研究亂數流自動擇一並標記 `ExplicitChoice`。
    - `engine.ApplyResearchChoice(ps, tech)` 驗證合法選項後改選、清待決。
    - shell:`PendingResearchChoice()` / `ChooseResearchTech(tech)` / `ChosenTechFor(topic)`。
    - 測試:`internal/engine/research_choice_test.go`、`internal/shell/research_choice_test.go`(多選預設+改選+非法拒絕+ResearchAll 不待決)。
@@ -53,6 +54,12 @@
 
 **目前狀態總結(2026-07-10)**:研究「每主題數科技間抉擇」**三步全部完成**——真成本 + 真選項抉擇 UI + 抉擇反映到元件解鎖。玩家研究一個主題、選定一項科技後,只有該科技對應的艦艇元件解鎖(明確抉擇),AI/預設維持主題層級不回歸。剩餘小尾巴:戰鬥電腦/重生程序/里程碑科技(死光/氙素裝甲)等元件的資料模型重設計(`Component.Tech` 目前只支援單一 ResearchTopic,無法表達電腦研究鏈/里程碑/種族特性語意)。
 
+## 2026-08-09 種族研究差異接線
+
+玩家與 AI 現在共用同一個研究完成 helper：Creative 不進擇一畫面而取得該領域全部應用；Uncreative
+使用獨立且可存檔的研究亂數流自動取得一項。一般種族仍保留原本的研究選擇 UI。`ResearchDraws`
+會隨 session snapshot 保存，避免存讀檔後重新抽到另一項。
+
 ## 驗收
 
 - 完成一主題後,只有**被選的**科技對應元件解鎖(其餘不解),對照原版行為。
@@ -62,4 +69,4 @@
 ## 注意
 
 - `session.go:866` 事件「科學突破 +150 RP」是隨機事件加成(合理),非主線成本,保留。
-- 種族 Creative/Uncreative 特性影響「解全部/只解一項」——待特性系統一併處理(見 `custom-race-picks.md`)。
+- 種族 Creative/Uncreative 特性影響「解全部/只解一項」已接入；研究亂數流的位置也隨存檔保存。

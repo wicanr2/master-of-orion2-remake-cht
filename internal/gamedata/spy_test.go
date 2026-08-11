@@ -33,6 +33,26 @@ func TestSpySlotBonus(t *testing.T) {
 	}
 }
 
+func TestOriginalSpyRawPackingAndScoreHelper(t *testing.T) {
+	for count := 0; count <= 63; count++ {
+		for mode := 0; mode <= 3; mode++ {
+			raw := PackOriginalSpyRelationship(count, mode)
+			if got := OriginalSpyRelationshipCount(raw); got != count {
+				t.Fatalf("raw count round-trip(%d,%d)=%d", count, mode, got)
+			}
+			if got := OriginalSpyRelationshipMode(raw); got != mode {
+				t.Fatalf("raw mode round-trip(%d,%d)=%d", count, mode, got)
+			}
+		}
+		if got, want := SpySlotBonus(count), OriginalSpyScoreHelper(count); got != want {
+			t.Fatalf("SpySlotBonus(%d)=%d,IDA sub_101483 helper=%d", count, got, want)
+		}
+	}
+	if got := PackOriginalSpyRelationship(999, 99); got != 0xFF {
+		t.Fatalf("raw packed fixture should clamp to 0xFF,got 0x%02X", got)
+	}
+}
+
 func TestSpyGovernmentDefenseBonus(t *testing.T) {
 	cases := map[SpyGovernmentType]int{
 		SpyGovFeudalism:           0,

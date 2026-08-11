@@ -7,6 +7,9 @@ package shell
 type InputState struct {
 	MouseX, MouseY int
 	ClickReleased  bool
+	// MouseDown 表示左鍵在本幀持續按住。與 ClickReleased 分開，供音量條等
+	// 需要按住拖曳的控制項使用；規則層仍不依賴 ebiten 的按鍵型別。
+	MouseDown bool
 	// Hotkey 是這一幀剛按下的快捷鍵名(如 "F1"、"F9"),沒有按就是空字串。
 	// 同樣是邊緣觸發:按住不會連發。
 	//

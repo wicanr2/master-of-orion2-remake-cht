@@ -177,8 +177,9 @@ Dimensional Portal 沿用同一套既有機制即可正確 gate,不需要額外�
   + 已建傳送門 + 艦隊非空,四條件皆滿足才允許反攻。UI 用它決定是否顯示按鈕,`AssaultAntares` 內部
   也呼叫它做同一份判斷(避免兩處邏輯分岔)。
 - `AssaultAntares()`:前置條件不滿足 → `ok=false`,不消耗艦隊、不觸發戰鬥。滿足 → 解算戰鬥:
-  沿用 `ResolveBattle` 同款 `battleVolley` 逐回合齊射解算(最多 6 回合),防禦方戰力用
-  `antaranHomeFleetDefense` 保守預設(見下)。**與 `ResolveBattle` 不同**:`ResolveBattle` 的
+  沿用 `ResolveBattle` 同款 `battleVolley` 逐回合齊射解算(最多 6 回合),防禦方使用
+  `antaranHomeFleetDefense` 的反組譯艦級組成與已知戰機艙貢獻；艦級階梯與要塞仍是 remake 代理。
+  **與 `ResolveBattle` 不同**:`ResolveBattle` 的
   `PlayerWon` 只要求「艦數比敵方多或敵方全滅」,`AssaultAntares` 要求防禦方**全滅**才算
   `PlayerWon`——手冊「Once you defeat the awe-inspiring Antarans」語意是徹底擊敗,不是打退,終局
   一戰用更嚴格的判定合理。戰勝 → `s.AntaranHomeworldConquered=true`;戰敗 → 套用艦隊損失
@@ -189,13 +190,19 @@ Dimensional Portal 沿用同一套既有機制即可正確 gate,不需要額外�
   `advanceConquestVictory`(殲滅)之後、`advanceCouncil`(議會)之前——與 `engine.CheckVictory`
   文件記載的「滅絕 → 安塔蘭 → 議會」優先序一致(見 `internal/engine/victory.go` 該函式註解)。
 
-**⚠ 誠實聲明(母星防禦艦隊戰力,手冊/openorion2 均無精確數字)**:`GAME_MANUAL.pdf`「Winning」
+> **2026-08-09 勘誤（本段舊值保留作歷史快照）**：`docs/re/antaran-defense-fleet.md` 已從
+> `Orion2.exe` 反組譯解出防禦上限 `{0,0,3,2,7,0,0,0,0}`，即 `Intruder ×3`、`Interdictor ×2`、
+> `Harbinger ×7`，另加一座星際要塞；標準艦的非空 weapon ID／數量／raw flags 也已建立索引。
+> 因此下面「6 艘末日之星」不再是當前實作或當前研究結論；目前仍未知的是 remake 艦級映射、
+> 要塞完整設計、難度裝甲的完整對應與敵方即時武器傷害消費。
+
+**⚠ 歷史快照（已由上方勘誤取代；母星防禦艦隊戰力,手冊/openorion2 當時未找到精確數字）**:`GAME_MANUAL.pdf`「Winning」
 小節全文搜尋「Antaran」的 60 餘處出現,只有「the awe-inspiring Antarans」這句定性描述,沒有任何
 具體的母星防禦艦隊組成或戰力數字(第 1 節手冊逐字引用已完整收錄相關段落,沒有遺漏)。
 `openorion2`(`docs/tech/rules-implementation-audit.md` 第 10 項已記載)對 victory/winner 相關邏輯
 全 repo 零命中,自然也沒有母星防禦艦隊的資料可抄——這是從零設計的部分,不是查漏。
 
-保守預設(`antaranHomeFleetDefense`,`internal/shell/antaran_victory.go`):**6 艘「末日之星」等級
+歷史保守預設(`antaranHomeFleetDefense`,`internal/shell/antaran_victory.go`):**6 艘「末日之星」等級
 戰力(`shipStrength("末日之星")==64`,MOO2 六級艦體中最高等級)**,合計戰力 384。理由:確保玩家
 不能用隨手一支小艦隊反攻(呼應「awe-inspiring」的定性描述),但仍是「打得贏」的固定值,不是無限強
 的裝飾性數字——玩家投入同等量級的末日之星艦隊(測試驗證 8 艘可穩定取勝)即可一戰。**這是 remake
@@ -213,22 +220,19 @@ Dimensional Portal 沿用同一套既有機制即可正確 gate,不需要額外�
 
 ## 5. 資料模型限制(重要,誠實標注)
 
-**2026-07-11 更新:`NewDemoSession` 已由 1 個 AI 對手擴為 3 個**(多帝國競爭骨架,見
-`docs/HONEST-STATUS.md` 同日段落),場上存續帝國數上限變成「玩家 + 3 AI」= 4。這解除了下面第 1 點
-(門檻永遠不可達),但第 2 點(候選人/第三方搖擺票規則的簡化)仍未完整實作:
+**2026-08-11 更新:`NewDemoSession` 維持 3 個 AI 對手，並已補上 AI↔AI 關係矩陣**(多帝國競爭骨架與
+可選 AI-to-AI 戰爭／外交見 `docs/tech/ai-to-ai.md`),場上存續帝國數上限變成「玩家 + 3 AI」= 4。
+成立門檻與候選人／第三方搖擺票的 remake 模型現在都已接入；原版精確接受門檻仍是 oracle 差異:
 
 1. **成立門檻「≥3 存續種族」現在真的可達成。** `councilMinExtantRacesOverride`(先前的 shell 層
    資料模型限制近似覆寫值,固定為 2)**已移除**,`councilEligible` 直接引用手冊字面值常數
    `gamedata.CouncilMinExtantRaces`(=3)——玩家 + 3 個 AI 對手共 4 個帝國,只要其中至少 3 個仍存續
    (各自至少 1 個殖民地)就滿足門檻,不再需要 remake 近似值。
-2. **「兩位候選人由票數最高者出線」與「其餘種族依外交關係決定投給哪位候選人」這條規則仍是簡化版。**
-   手冊原文是「先選出票數最高的兩位候選人,其餘種族依外交關係把票投給其中一位」——這需要「第三方
-   帝國依對兩位候選人的外交關係分配搖擺票」的模型,`AIOpponent.Relation` 目前只記錄「對玩家」的
-   關係分數,沒有 AI 對 AI 的關係,做不出真正的搖擺票分配。`advanceCouncil` 因此採取一個與此規則
-   在「沒有搖擺票」情境下等價的簡化讀法:不特別挑兩位候選人,而是每個帝國(玩家或某個 AI)各自
-   的票數都直接跟全體總票數比 2/3——這個簡化在 N=3 AI 下已經比先前「玩家 vs 單一 AI 二元計票」更
-   貼近手冊「每個帝國各自被分配票數、各自可能達標」的語意,但仍未實作「候選人只能是票數最高兩位」
-   與「第三方外交搖擺票」這兩個子規則,列 TODO(見下方第 6 節)。
+2. **候選人／搖擺票的 remake 接線已完成，但門檻是 remake 代理值。** `tallyCouncil` 先以基礎票數
+   穩定排序取前兩位候選人，再由其餘帝國依 `AIRelations`（玩家↔AI 與 AI↔AI）選較友好的一方；
+   兩邊都低於 `councilSwingVoteMinRelation = 8` 時棄權，票數仍進 2/3 分母。這正是手冊描述的
+   資料流，且 `internal/shell/council_test.go`／AI 關係測試有抽樣護欄；`8` 與相關外交接受數值不是
+   已由原版 runtime 證實的常數。
 
 `councilInterval = 8`(議會重開間隔)是 remake 排程選擇,手冊完全沒有給這個數字,只從外交台詞證實
 議會確實會反覆召開;與 `antaresInterval`(15 回合,安塔蘭突襲)同數量級但較短,理由是議會需要「半數
@@ -242,8 +246,9 @@ Dimensional Portal 沿用同一套既有機制即可正確 gate,不需要額外�
 > 仍未做的子項目(不阻塞「能不能贏這條路徑」,是精修/深化):
 > - **「艦隊與傳送門同星系」的精確前置**:remake 簡化為「帝國內任一殖民地已建成即滿足」,見 4.4
 >   節誠實聲明,需要 remake 的星際航行模型先支援「建築所在星系 ↔ 艦隊所在星系」的可達性比對。
-> - **母星防禦艦隊戰力的精確數字**:手冊/openorion2 均無來源,目前是保守預設(6 艘末日之星等級),
->   若未來找到權威依據應更新,見 4.4 節「誠實聲明」段落。
+> - **母星防禦艦隊的完整戰鬥對齊**:艦隊上限、艦級名稱、標準艦非空武器槽與 ID 31 戰機艙已由
+>   `docs/re/antaran-defense-fleet.md` 證實；仍缺 remake 艦級映射、要塞完整設計、難度裝甲完整表、
+>   敵方即時武器／戰機命中傷害與敵方出擊政策。
 > - **安塔蘭母星本身的星圖呈現**:remake 把反攻建模成「一場戰鬥」而非「星圖上一個可航行的目的地
 >   + 母星星球」,手冊原文暗示是實際的星際航行(travelling to the Antaran homeworld)。
 > - **歐瑞恩守護者(Orion Guardian)**:與安塔蘭母星是手冊裡兩個不同的終局戰(Score 小節分別提到
@@ -254,13 +259,11 @@ Dimensional Portal 沿用同一套既有機制即可正確 gate,不需要額外�
   只是預先記錄的權威值。
 - **議會選舉結束畫面 + accept/reject 互動 UI**:目前只有文字狀態,沒有原版議會 3D 場景的投票動畫、
   沒有結束畫面(勝利/落敗的專屬畫面),`RespondToCouncilElection` 也還沒有 UI 熱區可以觸發。
-- **候選人限定「票數最高兩位」+ 第三方外交搖擺票**:見上「資料模型限制」第 2 點——`NewDemoSession`
-  已建 3 個 AI 對手(前置的多 AI 對手支援已完成),但「只有票數最高兩位帝國夠格當候選人、其餘帝國
-  依外交關係分票」這條規則仍未實作,需要先幫 `AIOpponent` 補上「AI 對 AI」的外交關係模型(目前
-  `Relation` 只有「對玩家」一個方向)。
-- **AI 對 AI 的戰爭/外交互動**:3 個 AI 對手目前只會各自獨立對玩家造艦/擴張/態勢漂移,彼此之間沒有
-  戰爭、外交、搶星衝突——`aiExpand` 每個 AI 各自從星圖索引 0 開始找無主星,雖然不會重複佔領(已佔
-  的星會被跳過),但也不會互相攻打對方的殖民地。完整 N-way AI 互動超出本輪任務範圍,列 TODO。
+- **候選人限定「票數最高兩位」+ 第三方外交搖擺票**:remake 已接入 `tallyCouncil` 與 AI↔AI
+  `AIRelations`；剩下的是原版精確外交門檻與特殊表 oracle，不是 remake 漏接。
+- **AI 對 AI 的戰爭／外交互動**:可選 `EnableAIVsAI` 已接入正式政策矩陣、貿易／研究資源交換與
+  抽象艦隊攻擊／殖民地轉移；戰鬥仍沒有原版逐艦 blueprint，因此只稱 remake 抽象模型，詳見
+  `docs/tech/ai-to-ai.md`。
 
 ## 7. 測試
 
@@ -276,9 +279,9 @@ Dimensional Portal 沿用同一套既有機制即可正確 gate,不需要額外�
   AI 對手不誤判殲滅勝利。
 - `internal/engine/victory_test.go`(既有,2026-07-03):`CheckExtermination`/`CheckHighCouncil`/
   `CheckAntaranVictory`/`CheckVictory` 純函式門檻邊界。
-- `internal/shell/antaran_victory_test.go`(2026-07-11 第二輪新增):`CanAssaultAntares` 前置條件
+- `internal/shell/antaran_victory_test.go`(2026-07-11 第二輪新增；當時戰力說明為歷史快照):`CanAssaultAntares` 前置條件
   (無傳送門/艦隊為空/`DisableEvents` 皆擋下)、`AssaultAntares` 前置不滿足時不消耗艦隊不觸發戰鬥、
-  弱艦隊戰敗不誤判勝利(且正確記錄 `LastBattle`)、強艦隊(8 艘末日之星 vs 保守預設 6 艘)戰勝後
+  弱艦隊戰敗不誤判勝利(且正確記錄 `LastBattle`)、強艦隊戰勝反組譯組成的防禦代理後
   `AntaranHomeworldConquered=true`,`advanceAntaranVictory` 隨後正確設定
   `Victory={Over:true, Reason:VictoryAntaran, Winner:"player"}`、殲滅與安塔蘭同時達成時
   `EndTurn` 呼叫順序確保殲滅優先(對齊 `engine.CheckVictory` 文件記載的優先序)。

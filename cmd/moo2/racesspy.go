@@ -50,7 +50,25 @@ var racesRelationBars = [racesMaxRows][2]int{
 // 取 68×20(與軍官畫面 HIRE 鈕同量級)是 **remake 的選擇,不是真值**。
 const racesSpyButtonW, racesSpyButtonH = 68, 20
 
-// ============ 只做「說得出意思」的那一顆 ============
+// racesSpyMissionYOffset 是 remake 在原版任務鈕列下方加上的「切換任務」熱區。
+// 原版三顆任務鈕的左右語意尚未由反組譯確認，故不把任何一顆原版位置硬解成
+// 特定任務；這個小型明確標籤控制依序切換已接上的 STEAL/SABOTAGE/HIDE。
+const racesSpyMissionYOffset = 23
+
+// 防守 Agent 是 RACES 畫面上進攻間諜之外的第二條管理線。座標放在左下方
+// 的空白區，不覆蓋原版外交按鈕或七列種族資料；尺寸是 remake 控制項尺寸。
+const (
+	racesAgentTrainX, racesAgentDismissX  = 20, 128
+	racesAgentY, racesAgentW, racesAgentH = 414, 100, 20
+)
+
+// racesDiplomacyRowW / racesDiplomacyRowH 是 remake 在每個已顯示 AI 名稱列上的
+// 「對談」熱區。原版 RACES 的列資料與關係滑桿座標已知，但單列 REPORT 選取語意
+// 未由反組譯完整追出；因此這是明確標籤的 remake 入口，不冒充原版欄位。
+const racesDiplomacyRowW, racesDiplomacyRowH = 90, 38
+const racesDiplomacyRightRowW = 180
+
+// ============ 只做「說得出意思」的明確控制 ============
 //
 // ⚠ 原版每個種族有**三顆**任務鈕(錨點 x 偏移 0 / +76 / +149)。反組譯只看得出
 // 「同一列建三顆」,**沒有查到哪一顆對應哪個任務**——`Adjust_Spy_Mission_Data_` 只看到
@@ -58,9 +76,9 @@ const racesSpyButtonW, racesSpyButtonH = 68, 20
 //
 // 手冊的書寫順序是 Espionage→Sabotage→Hide,但**書寫順序不保證等於 UI 由左到右的順序**。
 //
-// 所以這裡**只做最左邊那一顆**,而且只掛 remake 真的有模型的那一件事(派間諜偷科技,
-// 見 internal/shell/spy.go——破壞與隱匿都沒有規則可依)。另外兩顆的座標記在 docs/re 裡
-// 等順序查明。**畫一顆意思說不出來的按鈕比不畫更糟**:玩家點下去不知道會發生什麼。
+// 所以這裡不把三個未解座標硬對應到任務，而是在原版任務鈕列下提供一個明確標籤的
+// remake 控制；三種任務的最小結算規則見 internal/shell/spy.go。原版左右順序仍記在
+// docs/re 研究紀錄裡等待新證據，不影響這個可讀的 remake 入口。
 
 // racesSpyAction 是第 i 個種族那顆「派間諜」鈕的動作字串。
 func racesSpyAction(i int) string { return "spy" + strconv.Itoa(i) }
@@ -86,6 +104,83 @@ func racesSpyHitRegions(n int) []hitRegion {
 	for i := 0; i < n; i++ {
 		a := racesSpyAnchors[i]
 		out = append(out, hitRegion{a[0], a[1], racesSpyButtonW, racesSpyButtonH, racesSpyAction(i)})
+	}
+	return out
+}
+
+// racesSpyMissionAction 是種族關係畫面中循環切換 STEAL/SABOTAGE/HIDE 的 remake 操作。
+func racesSpyMissionAction(i int) string { return "spymission" + strconv.Itoa(i) }
+
+// racesSpyMissionActionIndex 把切換任務動作解回種族索引。
+func racesSpyMissionActionIndex(action string) (int, bool) {
+	const prefix = "spymission"
+	if !strings.HasPrefix(action, prefix) {
+		return 0, false
+	}
+	i, err := strconv.Atoi(strings.TrimPrefix(action, prefix))
+	if err != nil || i < 0 || i >= racesMaxRows {
+		return 0, false
+	}
+	return i, true
+}
+
+// racesSpyMissionHitRegions 回傳前 n 個種族的 remake 任務切換熱區。
+func racesSpyMissionHitRegions(n int) []hitRegion {
+	if n > racesMaxRows {
+		n = racesMaxRows
+	}
+	out := make([]hitRegion, 0, n)
+	for i := 0; i < n; i++ {
+		a := racesSpyAnchors[i]
+		out = append(out, hitRegion{
+			a[0], a[1] + racesSpyMissionYOffset, racesSpyButtonW, racesSpyButtonH,
+			racesSpyMissionAction(i),
+		})
+	}
+	return out
+}
+
+func racesAgentTrainAction() string   { return "trainagent" }
+func racesAgentDismissAction() string { return "dismissagent" }
+
+func racesAgentHitRegions() []hitRegion {
+	return []hitRegion{
+		{racesAgentTrainX, racesAgentY, racesAgentW, racesAgentH, racesAgentTrainAction()},
+		{racesAgentDismissX, racesAgentY, racesAgentW, racesAgentH, racesAgentDismissAction()},
+	}
+}
+
+// racesDiplomacyAction 是 RACES 畫面逐對手進入外交對談的 remake 操作。
+func racesDiplomacyAction(i int) string { return "racediplomacy" + strconv.Itoa(i) }
+
+// racesDiplomacyActionIndex 把逐對手外交動作解回種族索引。
+func racesDiplomacyActionIndex(action string) (int, bool) {
+	const prefix = "racediplomacy"
+	if !strings.HasPrefix(action, prefix) {
+		return 0, false
+	}
+	i, err := strconv.Atoi(strings.TrimPrefix(action, prefix))
+	if err != nil || i < 0 || i >= racesMaxRows {
+		return 0, false
+	}
+	return i, true
+}
+
+// racesDiplomacyHitRegions 回傳前 n 個種族列的逐對手外交熱區。
+func racesDiplomacyHitRegions(n int) []hitRegion {
+	if n > racesMaxRows {
+		n = racesMaxRows
+	}
+	out := make([]hitRegion, 0, n)
+	for i := 0; i < n; i++ {
+		bar := racesRelationBars[i]
+		x := 20
+		w := racesDiplomacyRowW
+		if i >= 4 {
+			x = 440
+			w = racesDiplomacyRightRowW
+		}
+		out = append(out, hitRegion{x, bar[1], w, racesDiplomacyRowH, racesDiplomacyAction(i)})
 	}
 	return out
 }

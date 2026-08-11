@@ -49,6 +49,7 @@ func (s *GameSession) BuildQueueFor(i int) []ColonyBuild {
 // 當前沒有建造中的項目時直接成為當前項,否則排到隊尾。
 // 佇列已滿(含當前項共 BuildQueueTotalSlots 格)回 false。
 func (s *GameSession) EnqueueBuild(i int, name string, cost int) bool {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdEnqueueBuild, Args: []int{i, cost}, Text: name})
 	if i < 0 || i >= len(s.Builds) || name == "" {
 		return false
 	}
@@ -79,6 +80,7 @@ func (s *GameSession) SetCurrentBuild(i int, name string, cost int) {
 // DequeueBuild 移除殖民地 i 佇列中第 pos 格的項目(pos 以 BuildQueueFor 的索引為準:
 // 0 = 當前建造中)。移除當前項時由後續項遞補;pos 越界時無動作。回傳是否真的移除了東西。
 func (s *GameSession) DequeueBuild(i, pos int) bool {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdDequeueBuild, Args: []int{i, pos}})
 	if i < 0 || i >= len(s.Builds) || pos < 0 {
 		return false
 	}
@@ -190,13 +192,22 @@ func (s *GameSession) BuildETATurns(idx int) int {
 		return 0
 	}
 	b := s.Builds[idx]
-	if b.Name == "" || b.Cost <= 0 || b.Progress >= b.Cost {
+	if b.Name == "" || b.Cost <= 0 || b.Progress*2+b.ProgressHalf >= b.Cost*2 {
 		return 0
 	}
 	if idx >= len(s.LastPlayerOutput.Colonies) {
 		return 0
 	}
-	perTurn := s.LastPlayerOutput.Colonies[idx].NetIndustry * (100 - s.Player.TaxRate) / 100
+	co := s.LastPlayerOutput.Colonies[idx]
+	if co.Cybernetic {
+		perTurnHalf := co.NetIndustryHalf * (100 - s.Player.TaxRate) / 100
+		if perTurnHalf <= 0 {
+			return 0
+		}
+		remainHalf := b.Cost*2 - (b.Progress*2 + b.ProgressHalf)
+		return (remainHalf + perTurnHalf - 1) / perTurnHalf
+	}
+	perTurn := co.NetIndustry * (100 - s.Player.TaxRate) / 100
 	if perTurn <= 0 {
 		return 0
 	}

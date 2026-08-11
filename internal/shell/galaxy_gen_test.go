@@ -8,6 +8,22 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
+func TestGalaxyKeepsEnglishStarNameAlongsideLocalizedDisplayName(t *testing.T) {
+	localized, _ := genGalaxy(24, 77, 3, galaxyAgeSetting, func(string) string { return "中文星名" })
+	english, _ := genGalaxy(24, 77, 3, galaxyAgeSetting, nil)
+	for i := range localized {
+		if localized[i].Name == "" || localized[i].NameEN == "" {
+			t.Fatalf("星 %d 缺少顯示名或英文原名:%+v", i, localized[i])
+		}
+		if localized[i].Name != "中文星名" {
+			t.Errorf("星 %d 顯示名未套用注入翻譯器:%q", i, localized[i].Name)
+		}
+		if localized[i].NameEN != english[i].Name || english[i].NameEN != english[i].Name {
+			t.Errorf("星 %d 英文原名不穩定: localized=%q english=%q", i, localized[i].NameEN, english[i].Name)
+		}
+	}
+}
+
 // TestGalaxyGenerationDistribution 是星圖生成的分布回歸測試。
 //
 // 為什麼要有:2026-08-06 以前 remake 用 rand.Intn(7) 均勻擲光譜、把光譜當氣候索引,

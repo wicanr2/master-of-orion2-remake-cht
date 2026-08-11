@@ -20,11 +20,10 @@ openorion2 原始碼核對結果:`grep -rli "HeavyMount\|PointDefense\|AutoFire\
 (見 memory `openorion2-is-renderer-not-engine`),沒有任何武器 mod 邏輯可抄,本檔數字完全來自手冊
 文字 + 現有 `internal/gamedata/damage.go`/`combat.go` 已移植的 Hv/PD/HEF 公式框架。
 
-## 8 個已接線的 mod(手冊精確數字)
+## 已接線的 mod(手冊精確數字)
 
-只收「本輪要接線」的光束/通用 mod。飛彈/魚雷專屬 mod(ARM/ECCM/EMG/FST/MV/OVR、以及 NR 的魚雷版
-「Not Reduced By Range」)手冊同樣給了精確數字,但 remake 的飛彈解算(`missile.go`/
-`ResolveMissileShot`)目前尚未有 mod 掛鉤機制,故不接線,留待「飛彈 mod」任務(見文末 TODO)。
+光束/通用的 8 個 mod 已接線；2026-08-09 新增飛彈／魚雷解算掛鉤與 ARM/FST 的攔截垂直切片。設計畫面只列出目前武器
+適用且有消費端的改造，切換武器時也會清掉不適用的歷史選擇。
 
 | 代碼 | 名稱 | 手冊原文摘要(p.115-118) | 佔格/成本 | 效果 |
 |---|---|---|---|---|
@@ -34,8 +33,24 @@ openorion2 原始碼核對結果:`grep -rli "HeavyMount\|PointDefense\|AutoFire\
 | CO | Continuous Fire | 持續開火,+25 命中;需 1 級小型化 | +50% | netAttack +25 |
 | AP | Armor Piercing | 穿透除 Xentronium/Heavy Armor 外所有裝甲;需 1 級小型化 | +50% | `DamageApplyArmor` 的 `armorPiercing=true`(全額打結構) |
 | ENV | Enveloping | 同時打四面護盾,傷害四倍;需 2 級小型化 | +100% | 命中後傷害 `*4` |
-| NR | No Range Dissipation | 消除射程衰減;需 1 級小型化 | +25% | **未接效果**(見下方誠實記錄) |
+| NR | No Range Dissipation | 消除射程衰減;需 1 級小型化 | +25% | 光束路徑已接；魚雷固定傷害模型尚無射程衰減 |
 | SP | Shield Piercing | 完全忽略護盾(對行星護盾無效);需 1 級小型化 | +50% | `DamageAfterShield` 的 `shieldPiercing=true` |
+
+### 飛彈／魚雷改造本輪接線
+
+| 代碼 | 名稱 | 佔格/成本 | 已接效果 | 證據等級 |
+|---|---|---:|---|---|
+| ECCM | Electronic Counter-Countermeasures | +25% | 干擾機率減半；沿用手冊 p.123 的單彈頭公式 | 已證實(手冊) |
+| EMG | Emissions Guidance | ×4 | 先扣護盾，再繞過裝甲直接傷害結構 | 強推論(手冊文字＋既有傷害管線) |
+| MV | MIRV | +100% | 4 枚彈頭逐一判定干擾／匿蹤／位移；AMR 只摧毀其中 1 枚 | 已證實(手冊) |
+| ENV(魚雷) | Enveloping | +100% | 魚雷單發傷害 ×4；四分面容量模型仍以命中分面承接 | 已證實(手冊)＋模型近似 |
+| OVR(魚雷) | Overloaded | +50% | 魚雷彈頭強度 ×150% | 已證實(手冊) |
+| ARM | Armored Missile | +25% | raw `0x0800` 對應 `Missile_Dcv` 加倍（強推論）；PD 攔截所需傷害 ×2 | 手冊已知；raw／消費鏈強推論 |
+| FST | Fast Missile | +25% | raw `0x1000` 使標準飛彈速度 +4，進而提高 Beam Defense；PD 攔截已接 | 速度分支已證實；完整原版攔截鏈未知 |
+
+`ResolveMissileShot` 舊入口保留為無改造相容包裝；新路徑是
+`ResolveMissileShotWithMods`。MIRV 額外骰子存於 `MissileDefenses` 的逐彈頭切片，沒有
+MIRV 時沿用舊單骰欄位，因此非改造戰鬥的隨機序列不變。
 
 ### AF 的 +50 為什麼是固定值不是百分比
 
@@ -96,33 +111,31 @@ DOSBox 黑箱測試)需回頭修正。AF 的固定 +50 在百分比套用「之�
 逐位元相同(`combat_formula_test.go` 的 `TestResolveShotWithMods_NoModsMatchesLegacy` 涵蓋這個
 邊界情況)。
 
-## NR(No Range Dissipation)為什麼目前沒有可觀察效果
+## NR(No Range Dissipation)的目前狀態
 
-`internal/shell/combat_formula.go` 的 `ResolveShot`/`ResolveShotWithMods` 是既有簡化模型:
-射程(`rangeSquares`)只影響**命中門檻**(`CombatRangeLevelPenalty`),從不對 `weaponMin`/
-`weaponMax` 套用任何**傷害衰減**(`gamedata.DamageDissipationPenalty`/`DamageApplyDissipation`
-在 shell 層完全沒被呼叫)。NR 的手冊效果是「消除傷害隨距離衰減」——但這套簡化模型本來就沒有
-在模擬「傷害隨距離衰減」這件事,所以 NR 目前接了佔格/成本(佔格 UI 上會反映 +25%),但戰鬥傷害
-不會有任何變化。**這不是遺漏,是要消除的機制本身還沒被模擬**。待 shell 層導入射程傷害衰減後
-(有專門任務再做),NR 才有東西可以「消除」。
+光束路徑的射程傷害衰減已由 `ResolveShot`/`ResolveShotWithMods` 接入：
+`gamedata.DamageDissipationPenalty` 依 range level 對 `weaponMin`/`weaponMax` 套用原版表，
+帶 NR 時跳過該扣除；`combat_formula_test.go` 已驗證遠近傷害差異與 NR 的固定傷害結果。
+
+魚雷是另一條固定彈頭傷害路徑，目前沒有可證實的魚雷射程衰減模型，因此魚雷版 NR 不放入
+設計畫面，也不把光束的接線誤宣稱成魚雷規則完成。
 
 ## 資料模型與存檔
 
 - `shell.Ship` 新增 `Mods []string` 欄位(存 `gamedata.WeaponModCode` 字串,如 `"HV"`),直接
   被既有 `sessionSnapshot.Ships []Ship` 序列化,**不需要另外改 persist.go**——舊存檔沒有這個欄位,
   JSON 解碼會是 `nil`,行為與「無改造」完全一致(回歸安全)。
-- `shell.CombatShip` 同樣新增 `Mods []string`,供 `StartCombat`(建立戰術格鬥雙方)與 `fireRound`
-  (格鬥開火)使用。
-- `combatant`(`ResolveBattle`/`battleVolley` 快速結算用的內部型別)新增 `mods []string` 欄位,
-  由 `mkPlayer()` 從 `sh.Mods` 帶入;敵方艦隊(`genEnemyFleet`)沒有個別武器設計,一律 `nil`
+- `shell.CombatShip` 同樣新增 `WeaponName` 與 `Mods []string`,供 `StartCombat`(建立戰術格鬥雙方)
+  與 `fireRound`(格鬥開火)依武器類型過濾改造。
+- `combatant`(`ResolveBattle`/`battleVolley` 快速結算用的內部型別)保留 `weaponName` 與 `mods`
+  欄位，由 `mkPlayer()` 從 `sh` 帶入；敵方艦隊(`genEnemyFleet`)沒有個別武器設計，一律 `nil`
   (既有簡化,非本輪引入)。
 
 ## UI(艦艇設計畫面,`cmd/moo2/interactive.go` 的 `shipDesign`)
 
-8 個 mod 顯示成兩排各 4 個的 chip(HV/PD/AF/CO、AP/ENV/NR/SP),點擊切換(`shell.ToggleWeaponMod`);
-HV/PD 手冊明訂互斥,勾選其一自動移除另一個。已勾選 chip 轉金色高亮,未勾選灰色。非光束武器(核飛彈/
-麥克萊特飛彈)選中時,標題列改顯示「僅光束武器適用,此武器不支援」提示——熱區仍在但點擊不生效
-(`shell.WeaponIsBeam` 判斷),避免版面跳動同時不誤導玩家。空間/成本顯示即時反映
+光束武器顯示 8 個 mod；核飛彈／其他飛彈顯示 ARM/FST/ECCM/EMG/MV，質子魚雷再加 ENV/OVR。
+各自仍用兩欄 chip 版面，點擊切換(`shell.ToggleWeaponMod`)；HV/PD 手冊明訂互斥，勾選其一自動移除另一個。
+已勾選 chip 轉金色高亮，未勾選灰色。空間/成本顯示即時反映
 `ShipDesignSpaceUsedWithMods`/`DesignCostWithMods`,建造前用 `ShipDesignFitsWithMods` 擋下超格設計
 (同一份判斷,顯示與驗證不會不一致)。
 
@@ -131,29 +144,30 @@ UI 做到「可勾選 + 即時顯示 + 建造擋超格」這個最小可行版�
 - Chip 沒有滑鼠 hover 顯示手冊效果說明(如「+50% 傷害、-50% 射程懲罰」的文字提示)。
 - 沒有「小型化等級」門檻檢查(手冊部分 mod 要求「weapon has undergone N 級小型化」才能裝,
   現行 remake 沒有小型化系統本身,故沒有這個門檻,任何已解鎖武器都能直接掛任何 mod——比原版寬鬆)。
-- 火線角(Firing Arc:Fwd Ext/Back Ext/360 Degree,p.127-128)是平行、獨立於 mod 的機制,本輪
-  不包含。
+- 火線角(Firing Arc:Fwd Ext/Back Ext/360 Degree,p.127-128)是平行、獨立於 mod 的機制。
+  2026-08-09 已接入 `Ship.Arc` 的設計選擇、佔格／成本、JSON 與戰鬥資料傳遞；戰術扇形
+  格子戰術命中已與 `CombatShip.Facing`／原版 bearing mask 接線；原版快速結算的
+  `QGet_Target`／`Strategic_Combat` call graph 不消費射界，因此快速路徑沒有額外空間模型。
 
-## 未接線的飛彈/魚雷專屬 mod(TODO,標記待考證/待做,非本輪範圍)
+## 仍未完全還原的飛彈改造(TODO,標記待考證/待做)
 
-手冊 p.115-116 也給了這些精確數字,但 remake 的飛彈解算(`ResolveMissileShot`)本身沒有 mod
-掛鉤機制,故只記錄不接線,避免定義了卻無人使用的死碼:
+手冊 p.115-116 仍有精確數字；ARM/FST 已有 remake 的 PD 垂直切片，但原版完整攔截器
+資料流仍未完全追回。魚雷 NR 沒有可證實的射程衰減消費端，故不放進設計 UI：
 
 | 代碼 | 名稱 | 佔格/成本 | 效果(手冊摘要) |
 |---|---|---|---|
-| ARM | Heavily Armored(飛彈) | +25% | 摧毀所需傷害 ×2 |
-| ECCM | Electronic Counter-Counter-Measures | +25% | 干擾偏移機率減半 |
-| EMG | Emissions Guidance | **×4** | 命中護盾後繞過裝甲,直接傷驅動 |
-| FST | Fast Missile | +25% | 每回合多移動 4 格,對應提升防禦 |
-| MV | MIRV | +100% | 4 枚全額彈頭,傷害 ×4(不可用於行星轟炸) |
-| NR(魚雷版) | Not Reduced By Range | +25% | 魚雷版的「消除射程衰減」 |
-| OVR | Overloaded(魚雷) | +50%(整套系統) | 彈頭強度 +50% |
+| ARM | Heavily Armored(飛彈) | +25% | raw `0x0800` 使 `Missile_Dcv` 加倍（強推論）；remake PD 攔截已消費，原版所有攔截路徑仍未知 |
+| FST | Fast Missile | +25% | 原版 `sub_3CD21` 的旗標 `0x10` 使速度 +4；同一 raw 分支也確認 `0x14` 基礎速度 24 且不加 FTL；remake 標準飛彈 Beam Defense／PD 已接，完整原版攔截器 Beam Defense 消費鏈仍未證實 |
+| NR(魚雷版) | Not Reduced By Range | +25% | 魚雷版消除射程衰減；目前飛彈固定傷害模型沒有射程衰減消費端 |
 
 ## 測試
 
 - `internal/gamedata/weapon_mods_test.go`:佔格/成本百分比與固定值疊加、CO/AF netAttack 點數、
   PD 命中門檻加成、HV/PD 傷害調整端到端(透過既有 `DamageMountAdjustedValue`)、ENV 四倍、
-  AP/SP 旗標、HV/PD 射程等級表選擇。
+  AP/SP 旗標、HV/PD 射程等級表選擇、ECCM/EMG/MV/OVR/ARM/FST 的資料層與攔截公式。
+- `internal/shell/missile_mods_test.go`:ECCM、EMG、魚雷 OVR/ENV、MIRV 逐彈頭骰子、
+  PD 對標準飛彈攔截、ARM/FST raw flag、
+  武器適用性清單與舊入口回歸。
 - `internal/shell/shipspace_test.go`:`ShipDesignSpaceUsedWithMods`/`ShipDesignFitsWithMods`/
   `DesignCostWithMods` 無 mod 回歸一致、HV 佔格加倍、超格擋下、mods 對飛彈武器無效。
 - `internal/shell/combat_formula_test.go`:`ResolveShotWithMods` 無 mod 回歸一致(含 0 傷害邊界)、

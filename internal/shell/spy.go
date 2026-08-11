@@ -1,18 +1,22 @@
 // spy.go 是「間諜(Spying)最小可玩迴圈」的殼層(shell)膠合層:把 gamedata/spy.go 已備妥的
 // 機率公式(SpySlotBonus/SpyEffectiveThreshold/SpyRollChance/SpyVsSpy*,移植自手冊
-// MANUAL_150.html「Notes on Spying」)接到活的對局狀態——訓練間諜、每回合諜報結算(偷科技)、
-// SpyVsSpy 判定。範圍與依據見 docs/tech/spy-system.md,重點摘要:
+// MANUAL_150.html「Notes on Spying」)接到活的對局狀態——訓練間諜、逐對手任務、每回合
+// 諜報結算與 SpyVsSpy 判定。範圍與依據見 docs/tech/spy-system.md,重點摘要:
 //
-//   - 只做「偷科技(STEAL)」,不做破壞(SABOTAGE)——手冊(GAME_MANUAL.pdf p.174-175
-//     Espionage 段)只定性描述破壞效果「destroy some valuable piece of enemy property」,
-//     沒給破壞對象/數值規則,標 TODO 不臆測。
-//   - 逐對手分配 Espionage/Sabotage/Hide 任務選單延後,最小迴圈預設所有間諜對單一 AI 對手
-//     做 STEAL(PlayerSpies 陣列結構本身已支援逐對手分配,只是目前唯一一個 AI 對手看不出差異)。
-//   - 防禦方 Agent(手冊區分 Spy 攻擊 vs Agent 防守,各自累計 slot bonus)不獨立追蹤——
-//     用 DB=0,這正好對應手冊原文「defenses against enemy spies are active...even with zero
-//     defending agents」描述的「零 Agent」情境,不是遺漏。
-//   - 種族/科技/政府 bonus 現行無對應資料(AIOpponent 無種族/政府欄位、無逐科技模型可查是否
-//     擁有 spy.go 列的 5 項科技)→ 一律 0,見 spyAttackerBonus/spyDefenderBonus 註解,TODO。
+//   - 已做「偷科技(STEAL)」、「破壞(SABOTAGE)」與「隱匿(HIDE)」。HIDE 依手冊給的
+//     SpyVsSpy +20 結算,不走偷科技判定；SABOTAGE 依原版 `0x1014A4` 的 70 門檻，
+//     接到原版 `0x10130A` 已證實的「從殖民地已建建築中按建造成本加權抽一項並清除」
+//     行為。IDA 已追回 raw `sub_1014A4` 的 packed relationship byte、三段式 slot helper、
+//     亂數／兩張 score table 的使用位置與 70／90 分支；table 項目與上游欄位語意仍未命名，
+//     因此 remake 以可保存的 AB／DB／E 近似完成玩家可感知判定，不宣稱 raw score parity。
+//   - PlayerSpies 與 PlayerSpyMissions 逐 AI 對手平行保存、可存檔；原版三顆任務鈕的左右
+//     語意尚未由反組譯確認,所以 remake 以明確標籤的 STEAL/SABOTAGE/HIDE 循環控制呈現
+//     已證實的任務效果。
+//   - 防禦方 Agent(手冊區分 Spy 攻擊 vs Agent 防守,各自累計 slot bonus)由
+//     GameSession.DefensiveAgents / AIOpponent.DefensiveAgents 追蹤；成功的
+//     Spy-vs-Spy 擊殺會真正扣除一名 Agent，舊存檔缺欄位時退回 0。
+//   - SABOTAGE／STEAL 共用結構化 spyMissionScore，明列 slot、科技、政府、種族／
+//     領袖與有效門檻；原版未命名 raw score record 仍標為未知，不把近似輸入冒充原版欄位。
 //   - AI 的「已知科技」沿用既有 engine.PlayerState.CompletedTopics/ChosenTech——但 AI 目前
 //     只有初始研究主題會被 RunResearchPhase 完成,advanceResearch()(推進到下一個未完成
 //     主題)只接了玩家,AI 研究主題不會自動往下推進(既有限制,非本輪引入)。這代表 AI 可偷的
@@ -21,7 +25,9 @@ package shell
 
 import (
 	"fmt"
+	"sort"
 
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
@@ -33,6 +39,10 @@ import (
 // 「間諜」建造選項)。這裡直接用 BC 簡化訓練流程(逐殖民地建造佇列整合留待完整 UI),成本量級
 // 比照最低艦體(巡防艦 18 BC,見 session.go ShipCost)抓一個 remake 拍板值,不是手冊精確數字。
 const spyTrainCostBC = 30
+
+// spyMaxSlots 是手冊對每個對手的 Spies 與帝國共用 Defensive Agents 的上限。
+// 這個上限是資料規則；訓練成本與 AI 的週期政策仍是 remake 近似。
+const spyMaxSlots = 63
 
 // spyMaintenancePerSpyBC 每個已訓練間諜每回合的維護費(BC)。
 // engine.PlayerState.Maintenance 欄位註解已載明「間諜維護費本專案尚無可推導模型」——這裡給
@@ -49,6 +59,7 @@ const spyMaxTopic = gamedata.TOPIC_HYPER_SOCIOLOGY
 // TrainSpy 讓玩家花 spyTrainCostBC 訓練一名間諜派駐到 AIPlayers[targetIdx]。
 // BC 不足或 targetIdx 越界回 false(不扣款、不增加間諜數)。
 func (s *GameSession) TrainSpy(targetIdx int) bool {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdTrainSpy, Args: []int{targetIdx}})
 	if targetIdx < 0 || targetIdx >= len(s.AIPlayers) {
 		return false
 	}
@@ -56,8 +67,34 @@ func (s *GameSession) TrainSpy(targetIdx int) bool {
 		return false
 	}
 	s.ensurePlayerSpies()
+	if s.PlayerSpies[targetIdx] >= spyMaxSlots {
+		return false
+	}
 	s.Player.BC -= spyTrainCostBC
 	s.PlayerSpies[targetIdx]++
+	return true
+}
+
+// TrainDefensiveAgent 讓玩家花固定 BC 訓練一名帝國級防守 Agent。
+// 原版完整建造佇列成本仍未追回；這個 API 沿用 TrainSpy 的 remake 成本尺度，
+// 但把 Agent slot 與進攻間諜分開，讓防守加成真正進入每次任務結算。
+func (s *GameSession) TrainDefensiveAgent() bool {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdTrainAgent})
+	if s.Player.BC < spyTrainCostBC || s.DefensiveAgents >= spyMaxSlots {
+		return false
+	}
+	s.Player.BC -= spyTrainCostBC
+	s.DefensiveAgents++
+	return true
+}
+
+// DismissDefensiveAgent 解除一名防守 Agent，不退款。
+func (s *GameSession) DismissDefensiveAgent() bool {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdDismissAgent})
+	if s.DefensiveAgents <= 0 {
+		return false
+	}
+	s.DefensiveAgents--
 	return true
 }
 
@@ -67,6 +104,7 @@ func (s *GameSession) ensurePlayerSpies() {
 	for len(s.PlayerSpies) < len(s.AIPlayers) {
 		s.PlayerSpies = append(s.PlayerSpies, 0)
 	}
+	s.ensurePlayerSpyMissions()
 }
 
 // psKnowsTech 判定 ps 是否「知道」某個特定 Technology(隸屬 topic)。規則與
@@ -197,22 +235,18 @@ func spyTechBonusFor(ps engine.PlayerState) int {
 }
 
 // spyDefenderBonus 算出「防守方(被偷科技的一方)」的 defender bonus(DB)。手冊區分 Spy
-// (攻擊,逐對手指派)與 Agent(防守,不分對手、全體共用)兩種 slot,本 remake 目前完全沒有
-// 追蹤 Agent 數(逐對手分配任務選單延後,見檔頭說明),故 DB 固定為 0——這正好對應手冊原文
-// 「defenses against enemy spies are active...even with zero defending agents」描述的
-// 「零 Agent」情境,不是遺漏,是誠實反映目前的簡化狀態。
+// (攻擊,逐對手指派)與 Agent(防守,不分對手、全體共用)兩種 slot；公開的舊 wrapper
+// 保留 0 Agent 語意，實際任務一律走 spyDefenderBonusWithAgents／spyMissionScore。
 //
-// TODO:接上 Agent 訓練系統後,`SpySlotBonus(agentCount)` 那一項要補進來。
-//
-// ⚠ **2026-08-08(第 58 項(擋門理由過期三個月))起不再恆為 0。** Agent 人數那一項仍然沒有(上面那段仍成立),
-// 但科技與政府兩項已經接上:
+// ⚠ **2026-08-08(第 58 項(擋門理由過期三個月))起不再恆為 0。** Agent 人數、科技與政府
+// 都可接上:
 //   - **科技**:`spyTechBonusFor`,攻守兩側同一套(手冊那張表兩欄同值)。
 //   - **政府**:`gamedata.SpyGovernmentDefenseBonus`,手冊只給 Defense 欄。
 //     govBonus 由呼叫端算好傳入——**只有玩家有政府型態**,`AIOpponent` 沒有這個欄位
 //     (原版是 `[player+0x89F]`,見第 54 項(三個寫入端)),所以 AI 當防守方時呼叫端傳 0。
 //     那是資料模型的缺口,不是規則沒接。
 func spyDefenderBonus(ps engine.PlayerState, govBonus, raceBonus int) int {
-	return spyTechBonusFor(ps) + govBonus + raceBonus
+	return spyDefenderBonusWithAgents(ps, govBonus, raceBonus, 0)
 }
 
 // playerSpyGovernmentDefenseBonus 回傳玩家目前政府型態的防諜加成。
@@ -243,12 +277,10 @@ type spyVsSpyOutcome struct {
 // 門檻」的確定性判定,不臆造機率或 lucky roll 加成(手冊提到 lucky roll 也能在門檻內造成
 // 擊殺,此簡化模型不含,TODO)。
 //
-// 現行 remake 的 ab/db 只含 gamedata.SpySlotBonus(間諜數換算),不含種族/科技/政府加成
-// (spyAttackerBonus/spyDefenderBonus 已標 TODO 保守回 0)——SpySlotBonus 上限 41(63 名
-// 間諜),SpyVsSpyDefenderBonus(0)=20 為基準,即使 ab 拉滿 41 也只有 net=41-20=21,遠不到
-// ±80 門檻:透過目前正常遊戲流程幾乎不可能觸發擊殺,這是誠實反映「輔助加成未建置」的結果,
-// 不是 bug——之後接上種族/科技/政府 bonus 才會讓門檻可及。單元測試改用直接構造的 ab/db 數值
-// 驗證函式本身邏輯正確,不透過完整對局路徑(那條路徑目前確實走不到擊殺)。
+// 現行 remake 的 ab/db 含 SpySlotBonus 與已接上的科技、玩家政府、玩家種族間諜加成；
+// AI 的種族／政府與防守 Agent 數量仍沒有資料欄位,故對 AI 防守側相應部分傳 0。
+// 單元測試仍用直接構造的 ab/db 數值驗證 ±80 門檻與 HIDE +20,避免把目前簡化的
+// 正常遊戲數值誤當成原版完整 Agent 模型。
 func resolveSpyVsSpy(ab, db int, attackerHide bool) spyVsSpyOutcome {
 	attackerB := gamedata.SpyVsSpyAttackerBonus(ab, attackerHide)
 	defenderB := gamedata.SpyVsSpyDefenderBonus(db)
@@ -263,6 +295,84 @@ func resolveSpyVsSpy(ab, db int, attackerHide bool) spyVsSpyOutcome {
 	return out
 }
 
+// spySabotageCandidate 是原版 SABOTAGE 抽選池的一個可重現候選。
+//
+// 原版 `Steal_App` @ 0x10130A 逐殖民地掃描 49 個建築槽，使用原版建築表
+// `off_17EB3D` 每列 +8 的建造成本作為權重；Go 的 ColonyBuildings 是 map，不能直接
+// 依 map 迭代順序抽選，故保存原版編號並在抽選前排序。`OriginalID != 9` 是原版函式
+// `v6 != 9` 的已證實保留槽位；`OrigBuildingID` 的對照仍保留其原始定位，不在此改名。
+type spySabotageCandidate struct {
+	colonyIdx  int
+	originalID int
+	name       string
+	weight     int
+}
+
+// spySabotageCandidates 建立 SABOTAGE 的候選池。
+//
+// 已知中文建築名但尚未能對回原版 49 槽的 map key 會被保守略過；這避免把 remake
+// 特殊行動或未知槽位誤當成原版 `Steal_App` 可以清除的建築。這個保守轉譯是強推論，
+// 不代表原版未知槽位一定不能被破壞。
+func spySabotageCandidates(colonyBuildings []map[string]bool) []spySabotageCandidate {
+	var candidates []spySabotageCandidate
+	for colonyIdx, built := range colonyBuildings {
+		if len(built) == 0 {
+			continue
+		}
+		for _, building := range gamedata.Buildings {
+			if !built[building.NameZH] {
+				continue
+			}
+			originalID, ok := gamedata.OrigBuildingID[building.NameEN]
+			weight, weightOK := gamedata.OriginalBuildingProductionCost(originalID)
+			if !ok || !weightOK || originalID == 9 {
+				continue
+			}
+			candidates = append(candidates, spySabotageCandidate{
+				colonyIdx:  colonyIdx,
+				originalID: originalID,
+				name:       building.NameZH,
+				weight:     weight,
+			})
+		}
+	}
+	sort.Slice(candidates, func(i, j int) bool {
+		if candidates[i].colonyIdx != candidates[j].colonyIdx {
+			return candidates[i].colonyIdx < candidates[j].colonyIdx
+		}
+		if candidates[i].originalID != candidates[j].originalID {
+			return candidates[i].originalID < candidates[j].originalID
+		}
+		return candidates[i].name < candidates[j].name
+	})
+	return candidates
+}
+
+// sabotageRandomBuilding 依原版 SABOTAGE 的已證實資料結構選取並移除一棟建築。
+//
+// 原版 `0x10130A` 的 `toggle_flag(total)` 亂數細節尚未完全解出；此處只將已證實的
+// 建造成本權重映射到可保存、可測試的 Intn(total) 抽選。回傳殖民地索引、中文建築名
+// 與是否真的移除；沒有可破壞候選時不改任何 map。
+func sabotageRandomBuilding(rng rollSource, colonyBuildings []map[string]bool) (int, string, bool) {
+	candidates := spySabotageCandidates(colonyBuildings)
+	totalWeight := 0
+	for _, candidate := range candidates {
+		totalWeight += candidate.weight
+	}
+	if totalWeight <= 0 {
+		return 0, "", false
+	}
+	pick := rng.Intn(totalWeight)
+	for _, candidate := range candidates {
+		if pick < candidate.weight {
+			delete(colonyBuildings[candidate.colonyIdx], candidate.name)
+			return candidate.colonyIdx, candidate.name, true
+		}
+		pick -= candidate.weight
+	}
+	return 0, "", false
+}
+
 // spyStealAttempt 對單一方向(attacker 派 spyCount 個間諜偷 defender 的科技)跑一次 STEAL +
 // SpyVsSpy 判定,回傳要記進 LastEspionage 的訊息(可能 0~2 則)、attacker 間諜是否被擊殺、
 // 以及偷到的科技是否套用到了 *attackerPS(呼叫端已把 attackerPS 指到正確的 engine.PlayerState)。
@@ -275,37 +385,216 @@ type rollSource interface {
 	Float64() float64
 }
 
-func spyStealAttempt(rng rollSource, attackerPS *engine.PlayerState, defenderPS engine.PlayerState,
+func spyMissionAttempt(rng rollSource, mission SpyMission, attackerPS *engine.PlayerState, defenderPS engine.PlayerState,
 	spyCount int, attackerName, defenderName string,
 	defenderGovBonus, attackerRaceBonus, defenderRaceBonus int) (messages []string, attackerSpyKilled bool) {
-	ab := spyAttackerBonus(*attackerPS, spyCount, attackerRaceBonus)
-	db := spyDefenderBonus(defenderPS, defenderGovBonus, defenderRaceBonus)
+	return spyMissionAttemptWithBuildings(rng, mission, attackerPS, defenderPS, spyCount,
+		attackerName, defenderName, defenderGovBonus, attackerRaceBonus, defenderRaceBonus, nil)
+}
 
-	e := gamedata.SpyEffectiveThreshold(gamedata.SpyThresholdSteal, db, ab)
-	p := gamedata.SpyRollChance(e)
-	if rng.Float64() < p {
-		opts := spyStealOptions(*attackerPS, defenderPS)
-		if len(opts) == 0 {
-			messages = append(messages, fmt.Sprintf(
-				"%s 的間諜潛入 %s 得手,但對方已無%s尚未擁有的科技可偷", attackerName, defenderName, attackerName))
+// spyMissionResult 是一次任務的結算結果；DefenderAgentKilled 讓呼叫端能真正
+// 消費防守 Agent，而不是只在摘要顯示「擊殺」文字。
+type spyMissionResult struct {
+	Messages            []string
+	AttackerSpyKilled   bool
+	DefenderAgentKilled bool
+	Score               spyMissionScore
+}
+
+// spyMissionAttemptWithAgents 是含防守 Agent 數量的相容任務入口。保留舊回傳形狀，
+// 新的 runtime 走下方 result 版本取得完整分數與 Agent 消費結果。
+func spyMissionAttemptWithAgents(rng rollSource, mission SpyMission, attackerPS *engine.PlayerState, defenderPS engine.PlayerState,
+	spyCount int, attackerName, defenderName string,
+	defenderGovBonus, attackerRaceBonus, defenderRaceBonus, defenderAgents int,
+	defenderBuildings []map[string]bool) (messages []string, attackerSpyKilled bool) {
+	result := spyMissionAttemptWithAgentsResult(rng, mission, attackerPS, defenderPS, spyCount,
+		attackerName, defenderName, defenderGovBonus, attackerRaceBonus, defenderRaceBonus,
+		defenderAgents, defenderBuildings)
+	return result.Messages, result.AttackerSpyKilled
+}
+
+func spyMissionAttemptWithAgentsResult(rng rollSource, mission SpyMission, attackerPS *engine.PlayerState, defenderPS engine.PlayerState,
+	spyCount int, attackerName, defenderName string,
+	defenderGovBonus, attackerRaceBonus, defenderRaceBonus, defenderAgents int,
+	defenderBuildings []map[string]bool) spyMissionResult {
+	if attackerPS == nil {
+		return spyMissionResult{}
+	}
+	result := spyMissionResult{Score: calculateSpyMissionScore(mission, *attackerPS, defenderPS,
+		spyCount, defenderAgents, defenderGovBonus, attackerRaceBonus, defenderRaceBonus)}
+	mission = result.Score.Mission
+	if mission == SpyMissionHide {
+		result.Messages = append(result.Messages, fmt.Sprintf(
+			"%s 的間諜在 %s 執行隱匿任務", attackerName, defenderName))
+		outcome := resolveSpyVsSpy(result.Score.AttackerBonus, result.Score.DefenderBonus, true)
+		if outcome.AttackerKilled {
+			result.AttackerSpyKilled = true
+			result.Messages = append(result.Messages, fmt.Sprintf("%s 的一名間諜在 %s 被反間諜擊殺", attackerName, defenderName))
+		}
+		if outcome.DefenderKilled && defenderAgents > 0 {
+			result.DefenderAgentKilled = true
+			result.Messages = append(result.Messages, fmt.Sprintf(
+				"%s 的隱匿間諜在 %s 的 Spy vs Spy 判定中擊殺一名防守 Agent", attackerName, defenderName))
+		}
+		return result
+	}
+
+	if rng.Float64() < result.Score.SuccessChance {
+		if mission == SpyMissionSabotage {
+			colonyIdx, building, ok := sabotageRandomBuilding(rng, defenderBuildings)
+			if !ok {
+				result.Messages = append(result.Messages, fmt.Sprintf(
+					"%s 的間諜潛入 %s 得手,但沒有可破壞的已建建築", attackerName, defenderName))
+			} else {
+				result.Messages = append(result.Messages, fmt.Sprintf(
+					"%s 的間諜在 %s 的第 %d 殖民地破壞了%s", attackerName, defenderName, colonyIdx+1, building))
+			}
 		} else {
-			pick := opts[rng.Intn(len(opts))]
-			applyTechTheft(attackerPS, pick)
-			messages = append(messages, fmt.Sprintf(
-				"%s 的間諜從 %s 偷得科技:%s", attackerName, defenderName, gamedata.TechnologyName(pick.Tech)))
+			opts := spyStealOptions(*attackerPS, defenderPS)
+			if len(opts) == 0 {
+				result.Messages = append(result.Messages, fmt.Sprintf(
+					"%s 的間諜潛入 %s 得手,但對方已無%s尚未擁有的科技可偷", attackerName, defenderName, attackerName))
+			} else {
+				pick := opts[rng.Intn(len(opts))]
+				applyTechTheft(attackerPS, pick)
+				result.Messages = append(result.Messages, fmt.Sprintf(
+					"%s 的間諜從 %s 偷得科技:%s", attackerName, defenderName, gamedata.TechnologyName(pick.Tech)))
+			}
 		}
 	}
 
-	outcome := resolveSpyVsSpy(ab, db, false) // 最小迴圈:間諜恆執行 STEAL,不下 HIDE 指令
+	outcome := resolveSpyVsSpy(result.Score.AttackerBonus, result.Score.DefenderBonus, false)
 	if outcome.AttackerKilled {
-		attackerSpyKilled = true
-		messages = append(messages, fmt.Sprintf("%s 的一名間諜在 %s 被反間諜擊殺", attackerName, defenderName))
+		result.AttackerSpyKilled = true
+		result.Messages = append(result.Messages, fmt.Sprintf("%s 的一名間諜在 %s 被反間諜擊殺", attackerName, defenderName))
 	}
-	return messages, attackerSpyKilled
+	if outcome.DefenderKilled && defenderAgents > 0 {
+		result.DefenderAgentKilled = true
+		result.Messages = append(result.Messages, fmt.Sprintf("%s 的間諜在 %s 擊殺一名防守 Agent", attackerName, defenderName))
+	}
+	return result
 }
 
-// advanceEspionage 每回合結算玩家 ↔ 各 AI 對手之間的間諜行動(最小迴圈:只做 STEAL,見檔頭
-// 說明)。呼叫時機:EndTurn 已完成玩家與所有 AI 本回合的研究/經濟結算之後,讓「偷到的科技」
+// spyMissionAttemptWithBuildings 是可選殖民地建築狀態的任務結算。
+//
+// 保留不帶建築參數的 spyMissionAttempt，讓既有測試與 AI 的 STEAL 預設保持相容；玩家
+// 對 AI 的 SABOTAGE 呼叫端才傳入 defenderBuildings。SABOTAGE 的直接刪除效果已由原版
+// `Add_Building` @ 0x145EA 的 `buildingFlags = 0` 寫入證實，命中率沿用手冊公式與
+// 原版 `0x1014A4` 的 action threshold=70；raw score 的 table／亂數語意仍留在
+// oracle 層，remake 不為了補一個不可查證的欄位而改壞可重播的 AB／DB／E 模型。
+func spyMissionAttemptWithBuildings(rng rollSource, mission SpyMission, attackerPS *engine.PlayerState, defenderPS engine.PlayerState,
+	spyCount int, attackerName, defenderName string,
+	defenderGovBonus, attackerRaceBonus, defenderRaceBonus int,
+	defenderBuildings []map[string]bool) (messages []string, attackerSpyKilled bool) {
+	return spyMissionAttemptWithAgents(rng, mission, attackerPS, defenderPS, spyCount,
+		attackerName, defenderName, defenderGovBonus, attackerRaceBonus, defenderRaceBonus, 0, defenderBuildings)
+}
+
+// spyMissionAttemptWithBuildingsLegacy 是舊實作的名稱保留點，避免未來需要比較
+// 0 Agent 與有 Agent 的結果時把兩份任務 switch 再複製一次。
+func spyMissionAttemptWithBuildingsLegacy(rng rollSource, mission SpyMission, attackerPS *engine.PlayerState, defenderPS engine.PlayerState,
+	spyCount int, attackerName, defenderName string,
+	defenderGovBonus, attackerRaceBonus, defenderRaceBonus int,
+	defenderBuildings []map[string]bool) (messages []string, attackerSpyKilled bool) {
+	return spyMissionAttemptWithAgents(rng, mission, attackerPS, defenderPS, spyCount,
+		attackerName, defenderName, defenderGovBonus, attackerRaceBonus, defenderRaceBonus, 0, defenderBuildings)
+}
+
+// spyStealAttempt 保留原本測試與呼叫端的 STEAL 封裝。
+func spyStealAttempt(rng rollSource, attackerPS *engine.PlayerState, defenderPS engine.PlayerState,
+	spyCount int, attackerName, defenderName string,
+	defenderGovBonus, attackerRaceBonus, defenderRaceBonus int) (messages []string, attackerSpyKilled bool) {
+	return spyMissionAttempt(rng, SpyMissionSteal, attackerPS, defenderPS, spyCount,
+		attackerName, defenderName, defenderGovBonus, attackerRaceBonus, defenderRaceBonus)
+}
+
+func spyDefenderBonusWithAgents(ps engine.PlayerState, govBonus, raceBonus, agentCount int) int {
+	return gamedata.SpySlotBonus(agentCount) + spyTechBonusFor(ps) + govBonus + raceBonus
+}
+
+// spyMissionScore 是一次諜報／SABOTAGE 判定的完整分數拆解。
+//
+// 「完整」指目前 remake 已有資料模型能提供的全部輸入：攻方 Spies slot、攻方科技、
+// 攻方種族／領袖；守方 Agents slot、守方科技、政府、種族／領袖。raw `sub_1014A4`
+// 的 slot helper 已由 gamedata.OriginalSpyScoreHelper 對齊；兩張 raw table、隨機項目與
+// 上游 record 語意仍不具備可保存的 remake 欄位，所以這裡刻意保留「實際傳入的 bonus」
+// 命名，不把近似輸入冒充原版隱藏加分。
+type spyMissionScore struct {
+	Mission                 SpyMission
+	BaseThreshold           int
+	AttackerSpies           int
+	AttackerSlotBonus       int
+	AttackerTechnologyBonus int
+	AttackerRaceLeaderBonus int
+	AttackerBonus           int
+	DefenderAgents          int
+	DefenderAgentSlotBonus  int
+	DefenderTechnologyBonus int
+	DefenderGovernmentBonus int
+	DefenderRaceLeaderBonus int
+	DefenderBonus           int
+	EffectiveThreshold      int
+	SuccessChance           float64
+}
+
+func spyMissionBaseThreshold(mission SpyMission) int {
+	switch normalizedSpyMission(mission) {
+	case SpyMissionSabotage:
+		return gamedata.SpyThresholdSabotage
+	case SpyMissionSteal:
+		return gamedata.SpyThresholdSteal
+	default:
+		return 0
+	}
+}
+
+// calculateSpyMissionScore 把 AB／DB 的每一個來源攤平，再計算 E／p。
+// attackerRaceLeaderBonus 與 defenderRaceLeaderBonus 是呼叫端已合併的種族＋
+// 領袖 bonus；這樣可保留既有測試入口的相容簽名，同時讓 runtime 分數不再是黑箱。
+func calculateSpyMissionScore(mission SpyMission, attackerPS, defenderPS engine.PlayerState,
+	spyCount, defenderAgents, defenderGovBonus, attackerRaceLeaderBonus, defenderRaceLeaderBonus int) spyMissionScore {
+	mission = normalizedSpyMission(mission)
+	attackerSlot := gamedata.SpySlotBonus(spyCount)
+	attackerTech := spyTechBonusFor(attackerPS)
+	defenderSlot := gamedata.SpySlotBonus(defenderAgents)
+	defenderTech := spyTechBonusFor(defenderPS)
+	threshold := spyMissionBaseThreshold(mission)
+	score := spyMissionScore{
+		Mission: mission, BaseThreshold: threshold,
+		AttackerSpies: spyCount, AttackerSlotBonus: attackerSlot,
+		AttackerTechnologyBonus: attackerTech, AttackerRaceLeaderBonus: attackerRaceLeaderBonus,
+		DefenderAgents: defenderAgents, DefenderAgentSlotBonus: defenderSlot,
+		DefenderTechnologyBonus: defenderTech, DefenderGovernmentBonus: defenderGovBonus,
+		DefenderRaceLeaderBonus: defenderRaceLeaderBonus,
+	}
+	score.AttackerBonus = attackerSlot + attackerTech + attackerRaceLeaderBonus
+	score.DefenderBonus = defenderSlot + defenderTech + defenderGovBonus + defenderRaceLeaderBonus
+	if threshold > 0 {
+		score.EffectiveThreshold = gamedata.SpyEffectiveThreshold(threshold, score.DefenderBonus, score.AttackerBonus)
+		score.SuccessChance = gamedata.SpyRollChance(score.EffectiveThreshold)
+	}
+	return score
+}
+
+// aiSpyMission 是 remake 的 AI 任務政策：原版 AI 的完整間諜／防守策略尚未由
+// oracle 還原，所以只把已存在的 personality 差異接到可玩的任務效果，不宣稱這是
+// 原版逐格策略。冷酷、好戰、排外會優先破壞；反覆無常每回合交替；重信譽、和平與
+// 失信仍偷科技。
+func aiSpyMission(personality ai.Personality, turn int) SpyMission {
+	switch personality {
+	case ai.PersonalityXenophobic, ai.PersonalityRuthless, ai.PersonalityAggressive:
+		return SpyMissionSabotage
+	case ai.PersonalityErratic:
+		if turn%2 == 0 {
+			return SpyMissionSabotage
+		}
+	}
+	return SpyMissionSteal
+}
+
+// advanceEspionage 每回合結算玩家 ↔ 各 AI 對手之間的間諜行動。玩家側依
+// PlayerSpyMissions 執行 STEAL/SABOTAGE/HIDE；AI 依 aiSpyMission 選擇 STEAL 或 SABOTAGE。
+// 呼叫時機:EndTurn 已完成玩家與所有 AI 本回合的研究/經濟結算之後,讓「偷到的科技」
 // 判定用的是本回合最新的 CompletedTopics/ChosenTech(見 EndTurn 呼叫點註解)。
 func (s *GameSession) advanceEspionage() {
 	s.LastEspionage = nil
@@ -313,6 +602,9 @@ func (s *GameSession) advanceEspionage() {
 	if s.spyRand == nil {
 		s.spyRand = newRandStream(s.EventSeed*2654435761 + 7)
 	}
+	// 刺客是每位領袖各自擲一次的獨立行動，必須排在任務前，讓本回合
+	// 被刺殺的防守 Agent 立即影響後續的 Spy／Agent 判定。
+	s.advanceLeaderAssassinActions()
 
 	for i := range s.AIPlayers {
 		a := &s.AIPlayers[i]
@@ -322,26 +614,37 @@ func (s *GameSession) advanceEspionage() {
 			s.Player.BC -= s.PlayerSpies[i] * spyMaintenancePerSpyBC
 		}
 
-		// 玩家 → AI:偷科技 + SpyVsSpy。
+		// 玩家 → AI:依逐對手任務執行。
 		if s.PlayerSpies[i] > 0 {
-			// AI 當防守方:沒有政府型態欄位,所以政府加成傳 0(見 spyDefenderBonus);
-			// 種族加成同理傳 0——AIOpponent 沒有種族欄位,那一整層還不存在。
-			msgs, killed := spyStealAttempt(s.spyRand, &s.Player, a.Player, s.PlayerSpies[i], "我方", a.Name,
-				0, s.RaceSpyBonus, 0)
-			s.LastEspionage = append(s.LastEspionage, msgs...)
-			if killed && s.PlayerSpies[i] > 0 {
+			result := spyMissionAttemptWithAgentsResult(s.spyRand, s.SpyMissionFor(i), &s.Player, a.Player,
+				s.PlayerSpies[i], "我方", a.Name, 0,
+				s.raceSpyBonusForActions()+leaderEmpireSkillBonus(s.Leaders, gamedata.SKILL_SPYMASTER),
+				aiRaceSpyBonus(*a)+leaderEmpireSkillBonus(a.Leaders, gamedata.SKILL_TELEPATH),
+				a.DefensiveAgents, a.ColonyBuildings)
+			s.LastEspionage = append(s.LastEspionage, result.Messages...)
+			if result.AttackerSpyKilled && s.PlayerSpies[i] > 0 {
 				s.PlayerSpies[i]--
+			}
+			if result.DefenderAgentKilled && a.DefensiveAgents > 0 {
+				a.DefensiveAgents--
 			}
 		}
 
-		// AI → 玩家:偷科技 + SpyVsSpy(對稱處理;AI 已知科技集長期而言很小,見檔頭說明)。
+		// AI → 玩家:依性格執行 STEAL/SABOTAGE + SpyVsSpy(對稱處理;AI 已知科技集長期而言
+		// 很小,見檔頭說明)。玩家的 ColonyBuildings 是 SABOTAGE 的防守目標。
 		if a.Spies > 0 {
 			// 玩家當防守方:政府加成算得出來。
-			msgs, killed := spyStealAttempt(s.spyRand, &a.Player, s.Player, a.Spies, a.Name, "我方",
-				s.playerSpyGovernmentDefenseBonus(), 0, s.RaceSpyBonus)
-			s.LastEspionage = append(s.LastEspionage, msgs...)
-			if killed && a.Spies > 0 {
+			result := spyMissionAttemptWithAgentsResult(s.spyRand, aiSpyMission(a.Personality, s.Turn), &a.Player, s.Player, a.Spies, a.Name, "我方",
+				s.playerSpyGovernmentDefenseBonus(),
+				aiRaceSpyBonus(*a)+leaderEmpireSkillBonus(a.Leaders, gamedata.SKILL_SPYMASTER),
+				s.raceSpyBonusForActions()+leaderEmpireSkillBonus(s.Leaders, gamedata.SKILL_TELEPATH),
+				s.DefensiveAgents, s.ColonyBuildings)
+			s.LastEspionage = append(s.LastEspionage, result.Messages...)
+			if result.AttackerSpyKilled && a.Spies > 0 {
 				a.Spies--
+			}
+			if result.DefenderAgentKilled && s.DefensiveAgents > 0 {
+				s.DefensiveAgents--
 			}
 		}
 	}

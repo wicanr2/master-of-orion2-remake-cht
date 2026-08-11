@@ -47,6 +47,7 @@ var specialDeviceByName = map[string]gamedata.SpecialDevices{
 	"結構分析儀":   gamedata.SPEC_STRUCTURAL_ANALYZER,
 	"時間扭曲加速器": gamedata.SPEC_TIME_WARP_FACILITATOR,
 	"部隊艙":     gamedata.SPEC_TROOP_PODS,
+	"傳送器":     gamedata.SPEC_TRANSPORTERS,
 	"廣域干擾器":   gamedata.SPEC_WIDE_AREA_JAMMER,
 }
 
@@ -107,5 +108,12 @@ func (s *GameSession) HullSpaceFor(class string) int {
 // DesignFitsWithMods 同 ShipDesignFitsWithMods,但把巨型通量器的 +25% 可用空間算進去。
 func (s *GameSession) DesignFitsWithMods(class string, weapon, armor, shield, special int, mods []string) bool {
 	return ShipDesignSpaceUsedWithMods(class, weapon, armor, shield, special, mods) <=
+		s.HullSpaceFor(class)
+}
+
+// DesignFitsWithModsAndArc 是艦艇設計畫面的含火線角空間判定；可用艦體空間
+// 仍由本局科技狀態決定，與舊入口共用 HullSpaceFor。
+func (s *GameSession) DesignFitsWithModsAndArc(class string, weapon, armor, shield, special int, mods []string, arc gamedata.WeaponArc) bool {
+	return ShipDesignSpaceUsedWithModsAndArc(class, weapon, armor, shield, special, mods, arc) <=
 		s.HullSpaceFor(class)
 }

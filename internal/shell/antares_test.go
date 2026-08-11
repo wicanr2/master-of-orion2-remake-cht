@@ -1,6 +1,10 @@
 package shell
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+)
 
 // bcCrashFloor80Turns 是 TestAntaresRaidsScheduleAndEscalate 80 回合內允許的 BC 下限。
 //
@@ -32,6 +36,9 @@ func TestAntaresRaidsScheduleAndEscalate(t *testing.T) {
 		s.EndTurn()
 		if s.LastAntares != "" {
 			raidTurns = append(raidTurns, s.Turn)
+			if s.LastAntaresEN == "" {
+				t.Error("安塔蘭警報已有中文報告時也應有英文報告")
+			}
 		}
 		if s.Player.BC < bcCrashFloor80Turns {
 			t.Fatalf("BC 崩潰超出合理下限:%d(< %d)", s.Player.BC, bcCrashFloor80Turns)
@@ -105,8 +112,8 @@ func TestAntaranHomeFleetMatchesTheDisassembledComposition(t *testing.T) {
 	}
 	// 分層:三種戰力值,而且數量比是 3:2:7。
 	count := map[int]int{}
-	for _, st := range fleet {
-		count[st]++
+	for _, unit := range fleet {
+		count[unit.Strength]++
 	}
 	titan := shipStrength("末日之星")
 	// 末日之星那一格 = 7 艘 Harbinger + 1 座要塞(要塞用同等戰力當代理)。
@@ -125,14 +132,187 @@ func TestAntaranHomeFleetMatchesTheDisassembledComposition(t *testing.T) {
 		t.Errorf("Titan 級(%d)應多於 Large+Huge(%d)",
 			antaranDefTitanCount, antaranDefLargeCount+antaranDefHugeCount)
 	}
+
+	// 這些不是由 remake 戰力階梯反推的數字，而是原版
+	// Load_*_Antaran_Combat_Ship_ 的五級 loader 對應：Large/Huge/Titan。
+	classCount := map[gamedata.CombatShipClass]int{}
+	fortressCount := 0
+	for _, unit := range fleet {
+		classCount[unit.CombatClass]++
+		if unit.Fortress {
+			fortressCount++
+		}
+	}
+	if got := classCount[gamedata.SHIP_BATTLESHIP]; got != antaranDefLargeCount {
+		t.Errorf("Intruder 應保留為 Battleship 級,得到 %d", got)
+	}
+	if got := classCount[gamedata.SHIP_TITAN]; got != antaranDefHugeCount {
+		t.Errorf("Interdictor 應保留為 Titan 級,得到 %d", got)
+	}
+	if got := classCount[gamedata.SHIP_DOOMSTAR]; got != antaranDefTitanCount+1 {
+		t.Errorf("Harbinger+要塞 應保留為 Doom Star 級,得到 %d", got)
+	}
+	if fortressCount != 1 {
+		t.Errorf("應有且只有一座星際要塞,得到 %d", fortressCount)
+	}
+}
+
+// 原版即時戰鬥 loader `sub_55738`(Intruder) 與 `sub_55F67`(Harbinger)
+// 的戰鬥設計各自含有 ID 31 Fighter Bays，數量分別是 3 與 6；
+// `sub_55B12`(Interdictor) 沒有這個槽。
+func TestAntaranHomeFleetPreservesKnownFighterBayCounts(t *testing.T) {
+	type knownDesign struct {
+		loaderRaw uint32
+		weaponID  int
+		bays      int
+	}
+	want := map[string]knownDesign{
+		"Intruder":      {loaderRaw: 0x55738, weaponID: 31, bays: 3},
+		"Interdictor":   {loaderRaw: 0x55B12, bays: 0},
+		"Harbinger":     {loaderRaw: 0x55F67, weaponID: 31, bays: 6},
+		"Star Fortress": {loaderRaw: 0x4D18E, bays: 0},
+	}
+	for _, unit := range antaranHomeFleetDefense {
+		known := want[unit.OriginalName]
+		if unit.CombatLoaderRaw != known.loaderRaw {
+			t.Errorf("%s 的 combat loader raw 應為 0x%X,得到 0x%X", unit.OriginalName, known.loaderRaw, unit.CombatLoaderRaw)
+		}
+		if unit.FighterBayWeaponID != known.weaponID {
+			t.Errorf("%s 的 Fighter Bay weapon ID 應為 %d,得到 %d", unit.OriginalName, known.weaponID, unit.FighterBayWeaponID)
+		}
+		if unit.FighterBayCount != known.bays {
+			t.Errorf("%s 的已知 Fighter Bays 應為 %d,得到 %d", unit.OriginalName, known.bays, unit.FighterBayCount)
+		}
+	}
+}
+
+func TestAntaranHomeFleetPreservesKnownCombatWeaponSlots(t *testing.T) {
+	want := map[string][]antaranWeaponSlot{
+		"Intruder": {
+			{WeaponID: 4, Quantity: 4, RawFlags: 0}, {WeaponID: 4, Quantity: 2, RawFlags: 2},
+			{WeaponID: 24, Quantity: 5, RawFlags: 0}, {WeaponID: 13, Quantity: 2, RawFlags: 0},
+			{WeaponID: 31, Quantity: 3, RawFlags: 0},
+		},
+		"Interdictor": {
+			{WeaponID: 4, Quantity: 6, RawFlags: 0}, {WeaponID: 4, Quantity: 2, RawFlags: 2},
+			{WeaponID: 24, Quantity: 15, RawFlags: 0}, {WeaponID: 13, Quantity: 2, RawFlags: 0},
+			{WeaponID: 4, Quantity: 8, RawFlags: 4}, {WeaponID: 11, Quantity: 2, RawFlags: 0},
+		},
+		"Harbinger": {
+			{WeaponID: 4, Quantity: 10, RawFlags: 0}, {WeaponID: 4, Quantity: 2, RawFlags: 2},
+			{WeaponID: 24, Quantity: 20, RawFlags: 0}, {WeaponID: 13, Quantity: 3, RawFlags: 0},
+			{WeaponID: 4, Quantity: 15, RawFlags: 4}, {WeaponID: 11, Quantity: 2, RawFlags: 2},
+			{WeaponID: 37, Quantity: 1, RawFlags: 0}, {WeaponID: 31, Quantity: 6, RawFlags: 0},
+		},
+	}
+	for _, unit := range antaranHomeFleetDefense {
+		if unit.Fortress {
+			wantFortress := []antaranWeaponSlot{
+				{WeaponID: 11, Seed: 375, CapacityCap: 99, RawFlags: 2},
+				{WeaponID: 4, Seed: 187, CapacityCap: 198, RawFlags: 0},
+				{WeaponID: 4, Seed: 187, CapacityCap: 198, RawFlags: 4},
+				{WeaponID: 4, Seed: 375, CapacityCap: 99, RawFlags: 2},
+			}
+			if len(unit.WeaponSlots) != len(wantFortress) {
+				t.Errorf("星際要塞應保留 %d 個已解出的槽位，得到 %d", len(wantFortress), len(unit.WeaponSlots))
+				continue
+			}
+			for i := range wantFortress {
+				if unit.WeaponSlots[i] != wantFortress[i] {
+					t.Errorf("星際要塞 slot %d 應為 %#v，得到 %#v", i, wantFortress[i], unit.WeaponSlots[i])
+				}
+			}
+			continue
+		}
+		got := unit.WeaponSlots
+		wantSlots := want[unit.OriginalName]
+		if len(got) != len(wantSlots) {
+			t.Fatalf("%s 的已知武器槽數應為 %d,得到 %d", unit.OriginalName, len(wantSlots), len(got))
+		}
+		for i := range wantSlots {
+			if got[i] != wantSlots[i] {
+				t.Errorf("%s slot %d 應為 ID=%d qty=%d rawFlags=0x%X,得到 ID=%d qty=%d rawFlags=0x%X",
+					unit.OriginalName, i, wantSlots[i].WeaponID, wantSlots[i].Quantity, wantSlots[i].RawFlags,
+					got[i].WeaponID, got[i].Quantity, got[i].RawFlags)
+			}
+		}
+	}
+}
+
+func TestAntaranFortressDivisorAndRuntimeQuantity(t *testing.T) {
+	fortress := antaranFortressSlots()
+	cases := []struct {
+		name  string
+		slot  int
+		tech  int
+		div   int
+		count int
+	}{
+		{name: "death ray T2", slot: 0, tech: 2, div: 42, count: 8},
+		{name: "death ray T3", slot: 0, tech: 3, div: 36, count: 10},
+		{name: "particle raw0 other", slot: 1, tech: 0, div: 6, count: 31},
+		{name: "particle raw4 T2", slot: 2, tech: 2, div: 5, count: 37},
+	}
+	for _, tc := range cases {
+		slot := fortress[tc.slot]
+		if got := antaranFortressDivisor(slot.WeaponID, slot.RawFlags, tc.tech); got != tc.div {
+			t.Errorf("%s divisor=%d,want %d", tc.name, got, tc.div)
+		}
+		if got := antaranFortressRuntimeQuantity(slot, tc.tech); got != tc.count {
+			t.Errorf("%s runtime quantity=%d,want %d", tc.name, got, tc.count)
+		}
+	}
+	if got := antaranFortressDivisor(4, 0x10, 2); got != 0 {
+		t.Errorf("未知 raw flag 應 fail-closed，得到 divisor=%d", got)
+	}
+}
+
+func TestAntaranStarFortressFeedsAllDirectWeaponFirepower(t *testing.T) {
+	var fortress antaranDefenseUnit
+	for _, unit := range antaranHomeFleetDefense {
+		if unit.Fortress {
+			fortress = unit
+			break
+		}
+	}
+	minDamage, maxDamage := antaranWeaponFirepower(fortress)
+	if minDamage <= 0 || maxDamage <= minDamage {
+		t.Fatalf("星際要塞直接武器火力應進入齊射：%d..%d", minDamage, maxDamage)
+	}
+	combatant := antaranDefenseCombatant(fortress)
+	if combatant.wmin != minDamage || combatant.wmax != maxDamage {
+		t.Fatalf("要塞齊射應消費完整武器總和：combatant=%d..%d raw=%d..%d",
+			combatant.wmin, combatant.wmax, minDamage, maxDamage)
+	}
+	if combatant.atk <= fortress.Strength {
+		t.Fatalf("要塞 BA 應包含直接火力，得到 %d，基礎 %d", combatant.atk, fortress.Strength)
+	}
+}
+
+func TestAntaranFighterBaysUseTheExistingQuickBattleContribution(t *testing.T) {
+	unit := antaranDefenseUnit{
+		OriginalName:       "Intruder",
+		Strength:           shipStrength("戰艦"),
+		CombatClass:        gamedata.SHIP_BATTLESHIP,
+		FighterBayWeaponID: 31,
+		FighterBayCount:    3,
+	}
+	got := antaranDefenseCombatant(unit)
+	fighterAttack, fighterHP := gamedata.FighterBayCombatContribution()
+	if got.atk != unit.Strength+3*fighterAttack {
+		t.Fatalf("Intruder 的攻擊應含 3 艙戰機貢獻,得到 %d", got.atk)
+	}
+	if got.hp != unit.Strength*3+3*fighterHP {
+		t.Fatalf("Intruder 的結構應含 3 艙戰機貢獻,得到 %d", got.hp)
+	}
 }
 
 // 換成真值之後艦隊變強了——先前是 6×64 = 384,現在是 3×16+2×32+8×64 = 624。
 // 這一支確認「終局一戰」沒有因為改組成而變簡單。
 func TestAntaranHomeFleetIsStrongerThanTheOldPlaceholder(t *testing.T) {
 	total := 0
-	for _, st := range antaranHomeFleetDefense {
-		total += st
+	for _, unit := range antaranHomeFleetDefense {
+		total += unit.Strength
 	}
 	const oldPlaceholder = 6 * 64
 	if total <= oldPlaceholder {

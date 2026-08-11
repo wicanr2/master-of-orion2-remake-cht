@@ -77,6 +77,7 @@ func (s *GameSession) FleetAt(i int) *Fleet {
 
 // SelectFleet 把操作對象切到第 i 支艦隊(越界則不動)。
 func (s *GameSession) SelectFleet(i int) {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdSelectFleet, Args: []int{i}})
 	if i < 0 || i >= len(s.Fleets) {
 		return
 	}
@@ -178,6 +179,8 @@ func (s *GameSession) colonyStar(i int) int {
 // ⚠ 陸戰隊/戰車營**留在原艦隊**:remake 把它們建模成艦隊層級的數字(不綁定到特定的船),
 // 所以拆分時沒有「哪些跟著走」的依據。要改成逐船攜行得先讓運兵成為船的屬性。
 func (s *GameSession) SplitFleet(fleetIdx int, ships []int) (int, bool) {
+	args := append([]int{fleetIdx}, ships...)
+	s.recordPlayerCommand(PlayerCommand{Name: CmdSplitFleet, Args: args})
 	s.ensureFleet()
 	if fleetIdx < 0 || fleetIdx >= len(s.Fleets) {
 		return -1, false

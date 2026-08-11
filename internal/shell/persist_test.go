@@ -3,6 +3,8 @@ package shell
 import (
 	"path/filepath"
 	"testing"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
 // TestSaveLoadRoundTrip 驗證存檔→讀檔後對局狀態一致,且讀回的 AI 可續跑、事件/成長系統續行。
@@ -14,8 +16,21 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	for i := 0; i < 12; i++ {
 		s.EndTurn()
 	}
+	// 強制走一次 Uncreative 的多選研究完成，驗證研究亂數流位置也進存檔。
+	s.ApplyCustomRaceBonuses(Race{}, gamedata.TRAIT_UNCREATIVE)
+	topic := gamedata.TOPIC_ADVANCED_BIOLOGY
+	s.Player.ResearchTopic = topic
+	s.Player.ResearchProgress = gamedata.ResearchChoiceFor(topic).Cost
+	s.EndTurn()
+	if s.researchRand == nil || s.researchRand.Draws() == 0 {
+		t.Fatal("存檔前應已有研究亂數抽取")
+	}
 	s.SendFleet(5)
 	s.Builds[0] = ColonyBuild{Name: "自動工廠", Progress: 20, Cost: 60}
+	// 新增的殖民地種族旗標也必須跟著 remake 存檔保存,不能只在當回合衍生。
+	s.PlayerColonies[0].Lithovore = true
+	s.PlayerColonies[0].Cybernetic = true
+	s.Builds[0].ProgressHalf = 1
 
 	path := filepath.Join(t.TempDir(), "save.json")
 	if err := s.Save(path); err != nil {
@@ -47,11 +62,23 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 		got.PlayerColonies[0].Population != s.PlayerColonies[0].Population {
 		t.Errorf("殖民地人口不符:%d vs %d", got.PlayerColonies[0].Population, s.PlayerColonies[0].Population)
 	}
+	if !got.PlayerColonies[0].Lithovore {
+		t.Error("殖民地 Lithovore 旗標應在存讀檔後保留")
+	}
+	if !got.PlayerColonies[0].Cybernetic {
+		t.Error("殖民地 Cybernetic 旗標應在存讀檔後保留")
+	}
+	if got.researchRand == nil || got.researchRand.Draws() != s.researchRand.Draws() {
+		t.Errorf("研究亂數流位置未保留:%v vs %v", got.researchRand, s.researchRand)
+	}
 	if got.Fleet().DestStar != s.Fleet().DestStar || got.Fleet().ETA != s.Fleet().ETA {
 		t.Errorf("艦隊航行狀態不符")
 	}
 	if got.Builds[0].Name != s.Builds[0].Name || got.Builds[0].Progress != s.Builds[0].Progress {
 		t.Errorf("建造佇列不符")
+	}
+	if got.Builds[0].ProgressHalf != s.Builds[0].ProgressHalf {
+		t.Errorf("半單位建造進度不符:%d vs %d", got.Builds[0].ProgressHalf, s.Builds[0].ProgressHalf)
 	}
 	if len(got.AIPlayers) != len(s.AIPlayers) {
 		t.Fatalf("AI 數不符:%d vs %d", len(got.AIPlayers), len(s.AIPlayers))
@@ -65,7 +92,11 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	if got.Turn != s.Turn+1 {
 		t.Errorf("讀回對局續跑後 Turn 應 +1:%d", got.Turn)
 	}
-	t.Logf("存讀檔往返一致(Turn %d、BC %d、種族 %s、%d 星)", got.Turn-1, got.Player.BC, Races[got.RaceIndex].Name, len(got.Stars))
+	raceName := "客製種族"
+	if got.RaceIndex >= 0 && got.RaceIndex < len(Races) {
+		raceName = Races[got.RaceIndex].Name
+	}
+	t.Logf("存讀檔往返一致(Turn %d、BC %d、種族 %s、%d 星)", got.Turn-1, got.Player.BC, raceName, len(got.Stars))
 }
 
 // TestLoadRejectsMissing 驗證讀取不存在的檔回傳錯誤。

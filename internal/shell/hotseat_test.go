@@ -48,6 +48,39 @@ func TestHotseatTakesOverAIEmpires(t *testing.T) {
 	}
 }
 
+func TestHotseatCanSelectSpecificAIEmpires(t *testing.T) {
+	s := NewDemoSession()
+	if len(s.AIPlayers) < 3 {
+		t.Skip("需至少三個 AI 對手")
+	}
+	s.PlayerSpies = []int{11, 22, 33}
+	s.AIRelations = [][]int{{0, 1, 2}, {3, 0, 4}, {5, 6, 0}}
+	wantRemaining := s.AIPlayers[1].Name
+	wantRace := s.AIPlayers[0].RaceIndex
+	wantLeaderCount := len(s.AIPlayers[0].Leaders)
+	if got := s.SetupHotseatWithAIIndices([]int{0, 2}); got != 3 {
+		t.Fatalf("指定兩個 AI 後應有 3 席,got %d", got)
+	}
+	if len(s.AIPlayers) != 1 || s.AIPlayers[0].Name != wantRemaining {
+		t.Fatalf("未選中的 AI 應保留原順序,got %+v", s.AIPlayers)
+	}
+	if s.PlayerSpies[0] != 22 || len(s.Seats[1].PlayerSpies) != 1 {
+		t.Fatalf("玩家間諜欄位未依剩餘 AI 壓縮:top=%v seat=%v", s.PlayerSpies, s.Seats[1].PlayerSpies)
+	}
+	if s.Seats[1].RaceIndex != wantRace {
+		t.Errorf("第 1 個接管席位種族應保留為 %d,got %d", wantRace, s.Seats[1].RaceIndex)
+	}
+	if len(s.Seats[1].Leaders) != wantLeaderCount {
+		t.Errorf("接管席位領袖應保留,got %d,want %d", len(s.Seats[1].Leaders), wantLeaderCount)
+	}
+	if len(s.Seats[1].ColonyBuildings) == 0 || !s.Seats[1].ColonyBuildings[0]["星基"] {
+		t.Error("接管席位應保留 AI 母星星基資料")
+	}
+	if got := s.AIRelations; len(got) != 1 || len(got[0]) != 1 || got[0][0] != 0 {
+		t.Errorf("AI 關係矩陣應只保留未接管帝國,got %v", got)
+	}
+}
+
 func TestSeatSwapKeepsEmpiresSeparate(t *testing.T) {
 	s := NewDemoSession()
 	if len(s.AIPlayers) < 1 {

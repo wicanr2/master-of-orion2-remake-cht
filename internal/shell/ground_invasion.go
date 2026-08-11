@@ -1,8 +1,6 @@
 package shell
 
 import (
-	"math/rand"
-
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
@@ -294,6 +292,12 @@ func (s *GameSession) marineForceFor(defending bool) int {
 
 // raceHasTrait 回報玩家的種族有沒有某項布林特性(見 race_boolean_traits.go)。
 func (s *GameSession) raceHasTrait(t gamedata.RaceTrait) bool {
+	if s.raceOrigIdx() < 0 {
+		if t < gamedata.TRAIT_LOW_G || t > gamedata.TRAIT_POOR_HOMEWORLD {
+			return false
+		}
+		return s.CustomRaceTraits&(uint32(1)<<uint(t)) != 0
+	}
 	return gamedata.OrigRaceHasTrait(s.raceOrigIdx(), t)
 }
 
@@ -387,6 +391,100 @@ func (s *GameSession) advanceArmor() {
 	}
 }
 
+// ensureAIGroundForceSlots 建立／修補 AI 殖民地地面部隊的四個平行陣列。
+//
+// 新欄位加入前的存檔沒有這些資料；對缺少的 slot 只以目前建築和 age=0 的原版
+// 兵營初始公式建立一次，之後由 advanceAIGroundForces 以 max 回寫。這個「只對
+// 缺欄位初始化」很重要：若每次入侵前都重算，玩家打掉的 AI 守軍會在下一次檢查
+// 時復活，反而比原版更不忠實。
+func ensureAIGroundForceSlots(a *AIOpponent) {
+	n := len(a.Colonies)
+	for len(a.ColonyMarines) < n {
+		i := len(a.ColonyMarines)
+		age := 0
+		if i < len(a.MarineBarracksAge) {
+			age = a.MarineBarracksAge[i]
+		}
+		n := 0
+		if i < len(a.Colonies) && i < len(a.ColonyBuildings) && a.ColonyBuildings[i] != nil && a.ColonyBuildings[i][marineBarracksBuildingName] {
+			c := a.Colonies[i]
+			n = gamedata.GroundMarineBarracksUnits(age, c.Population, c.PopMax, aiRaceHasTrait(*a, gamedata.TRAIT_WARLORD))
+		}
+		a.ColonyMarines = append(a.ColonyMarines, n)
+	}
+	for len(a.ColonyTanks) < n {
+		i := len(a.ColonyTanks)
+		age := 0
+		if i < len(a.ArmorBarracksAge) {
+			age = a.ArmorBarracksAge[i]
+		}
+		n := 0
+		if i < len(a.Colonies) && i < len(a.ColonyBuildings) && a.ColonyBuildings[i] != nil && a.ColonyBuildings[i][armorBarracksBuildingName] {
+			c := a.Colonies[i]
+			n = gamedata.GroundArmorBarracksUnits(age, c.Population, c.PopMax, aiRaceHasTrait(*a, gamedata.TRAIT_WARLORD))
+		}
+		a.ColonyTanks = append(a.ColonyTanks, n)
+	}
+	for len(a.MarineBarracksAge) < n {
+		a.MarineBarracksAge = append(a.MarineBarracksAge, 0)
+	}
+	for len(a.ArmorBarracksAge) < n {
+		a.ArmorBarracksAge = append(a.ArmorBarracksAge, 0)
+	}
+	if len(a.ColonyMarines) > n {
+		a.ColonyMarines = a.ColonyMarines[:n]
+	}
+	if len(a.ColonyTanks) > n {
+		a.ColonyTanks = a.ColonyTanks[:n]
+	}
+	if len(a.MarineBarracksAge) > n {
+		a.MarineBarracksAge = a.MarineBarracksAge[:n]
+	}
+	if len(a.ArmorBarracksAge) > n {
+		a.ArmorBarracksAge = a.ArmorBarracksAge[:n]
+	}
+}
+
+// advanceAIGroundForces 讓 AI 的每座兵營依原版初始值／每五回合一單位／人口上限
+// 公式補充駐軍。它在 AI 經濟結算之後呼叫，讓當回合人口回寫先影響容量，再進入
+// 下一個玩家可觀察到的地面戰狀態。
+func advanceAIGroundForces(a *AIOpponent) {
+	ensureAIGroundForceSlots(a)
+	warlord := aiRaceHasTrait(*a, gamedata.TRAIT_WARLORD)
+	for i, c := range a.Colonies {
+		if i < len(a.ColonyBuildings) && a.ColonyBuildings[i] != nil && a.ColonyBuildings[i][marineBarracksBuildingName] {
+			n := gamedata.GroundMarineBarracksUnits(a.MarineBarracksAge[i], c.Population, c.PopMax, warlord)
+			if n > a.ColonyMarines[i] {
+				a.ColonyMarines[i] = n
+			}
+			a.MarineBarracksAge[i]++
+		}
+		if i < len(a.ColonyBuildings) && a.ColonyBuildings[i] != nil && a.ColonyBuildings[i][armorBarracksBuildingName] {
+			n := gamedata.GroundArmorBarracksUnits(a.ArmorBarracksAge[i], c.Population, c.PopMax, warlord)
+			if n > a.ColonyTanks[i] {
+				a.ColonyTanks[i] = n
+			}
+			a.ArmorBarracksAge[i]++
+		}
+	}
+}
+
+// removeAIGroundForceSlot 與 AI 殖民地的其他平行陣列一起移除一筆駐軍資料。
+func removeAIGroundForceSlot(a *AIOpponent, i int) {
+	if i < 0 {
+		return
+	}
+	cut := func(values *[]int) {
+		if i < len(*values) {
+			*values = append((*values)[:i], (*values)[i+1:]...)
+		}
+	}
+	cut(&a.ColonyMarines)
+	cut(&a.ColonyTanks)
+	cut(&a.MarineBarracksAge)
+	cut(&a.ArmorBarracksAge)
+}
+
 // --- 運送(陸戰隊隨艦隊出征) ---
 
 // MarineTransportCapacity 回傳玩家艦隊目前可載運的陸戰隊上限,**逐艦依艦體等級**累加
@@ -428,6 +526,7 @@ func (s *GameSession) MarineTransportCapacity() int {
 // FleetMarines,上限受 MarineTransportCapacity 節制(已載運的量不會被擠出)。
 // 回傳實際載運數(0 表示無可載運空間或該殖民地無駐軍)。
 func (s *GameSession) LoadMarines(colonyIdx int) int {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdLoadMarines, Args: []int{colonyIdx}})
 	if colonyIdx < 0 || colonyIdx >= len(s.PlayerColonyMarines) {
 		return 0
 	}
@@ -453,6 +552,7 @@ func (s *GameSession) LoadMarines(colonyIdx int) int {
 // (room 扣掉兩者已載運的量)——這是誠實的簡化,不是手冊原文規則,見 MarineTransportCapacity
 // 註解。回傳實際載運數(0 表示無可載運空間或該殖民地無駐軍)。
 func (s *GameSession) LoadTanks(colonyIdx int) int {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdLoadTanks, Args: []int{colonyIdx}})
 	if colonyIdx < 0 || colonyIdx >= len(s.PlayerColonyTanks) {
 		return 0
 	}
@@ -515,6 +615,103 @@ type GroundInvasionResult struct {
 	DefenderSurvived        int
 	Rounds                  int
 	StarCaptured            bool // 攻方勝且完成佔領星 + 殖民地過戶
+	MindControlled          bool // 心靈感應直接接管殖民地，人口已全部同化
+}
+
+// MindControlColony 是心靈感應種族的替代入侵行動。手冊明列：至少一艘
+// 巡洋艦以上艦艇在軌道上即可心靈控制殖民地，取得殖民地並立即同化全部人口；
+// 不消耗陸戰隊／戰車，也不進入地面戰。
+func (s *GameSession) MindControlColony(starIdx int) GroundInvasionResult {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdMindControl, Args: []int{starIdx}})
+	if !s.RaceTelepathic() {
+		return GroundInvasionResult{Reason: "只有心靈感應種族可以心靈控制殖民地"}
+	}
+	if starIdx < 0 || starIdx >= len(s.Stars) {
+		return GroundInvasionResult{Reason: "無效的星索引"}
+	}
+	if s.Fleet().AtStar != starIdx || s.Fleet().ETA != 0 {
+		return GroundInvasionResult{Reason: "艦隊尚未抵達該星"}
+	}
+	if s.Stars[starIdx].Owner != 2 {
+		return GroundInvasionResult{Reason: "該星不是敵方殖民地"}
+	}
+	cruiserOrLarger := false
+	for _, ship := range s.Fleet().Ships {
+		class, ok := shipClassFromName(ship.Class)
+		if ok && class >= gamedata.SHIP_CRUISER {
+			cruiserOrLarger = true
+			break
+		}
+	}
+	if !cruiserOrLarger {
+		return GroundInvasionResult{Reason: "需要至少一艘巡洋艦以上艦艇才能心靈控制"}
+	}
+	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
+	if !ok {
+		return GroundInvasionResult{Reason: "該星無可心靈控制的殖民地模型"}
+	}
+	aiPlayer := &s.AIPlayers[aiIdx]
+	ensureAIGroundForceSlots(aiPlayer)
+	captured := aiPlayer.Colonies[colonyIdx]
+	population := captured.Population
+	if population < 1 {
+		population = 1
+	}
+	captured.Population = population
+	captured.UnassimilatedPop = 0
+	captured.AssimilationProgress = 0
+	planet := -1
+	if colonyIdx < len(aiPlayer.ColonyPlanets) {
+		planet = aiPlayer.ColonyPlanets[colonyIdx]
+	}
+	if planet < 0 {
+		planet = s.PlanetAt(starIdx)
+	}
+	s.PlayerColonies = append(s.PlayerColonies, captured)
+	s.ensureColonyLeaderSlots()
+	s.Builds = append(s.Builds, ColonyBuild{})
+	s.ColonyBuildings = append(s.ColonyBuildings, nil)
+	s.PlayerColonyMarines = append(s.PlayerColonyMarines, 0)
+	s.MarineBarracksAge = append(s.MarineBarracksAge, 0)
+	s.PlayerColonyTanks = append(s.PlayerColonyTanks, 0)
+	s.ArmorBarracksAge = append(s.ArmorBarracksAge, 0)
+	s.popAccum = append(s.popAccum, 0)
+	for len(s.PlayerColonyStars) < len(s.PlayerColonies)-1 {
+		s.PlayerColonyStars = append(s.PlayerColonyStars, -1)
+	}
+	s.PlayerColonyStars = append(s.PlayerColonyStars, starIdx)
+	for len(s.PlayerColonyPlanets) < len(s.PlayerColonies)-1 {
+		s.PlayerColonyPlanets = append(s.PlayerColonyPlanets, -1)
+	}
+	s.PlayerColonyPlanets = append(s.PlayerColonyPlanets, planet)
+
+	aiPlayer.Colonies = append(aiPlayer.Colonies[:colonyIdx], aiPlayer.Colonies[colonyIdx+1:]...)
+	aiPlayer.ColonyStars = append(aiPlayer.ColonyStars[:colonyIdx], aiPlayer.ColonyStars[colonyIdx+1:]...)
+	if colonyIdx < len(aiPlayer.ColonyPlanets) {
+		aiPlayer.ColonyPlanets = append(aiPlayer.ColonyPlanets[:colonyIdx], aiPlayer.ColonyPlanets[colonyIdx+1:]...)
+	}
+	if colonyIdx < len(aiPlayer.ColonyBuildings) {
+		aiPlayer.ColonyBuildings = append(aiPlayer.ColonyBuildings[:colonyIdx], aiPlayer.ColonyBuildings[colonyIdx+1:]...)
+	}
+	removeAIGroundForceSlot(aiPlayer, colonyIdx)
+	stillEnemy := false
+	for _, st := range aiPlayer.ColonyStars {
+		if st == starIdx {
+			stillEnemy = true
+			break
+		}
+	}
+	if !stillEnemy {
+		s.Stars[starIdx].Owner = 1
+		if aiPlayer.OwnedStars > 0 {
+			aiPlayer.OwnedStars--
+		}
+	}
+	s.advanceConquestVictory()
+	return GroundInvasionResult{
+		Ok: true, AttackerWon: true, StarCaptured: !stillEnemy, MindControlled: true,
+		DefenderStart: population, DefenderSurvived: population, ColonyName: s.starName(starIdx),
+	}
 }
 
 // InvadeColony 嘗試對 starIdx 這顆星發動地面入侵。前置條件:
@@ -541,30 +738,27 @@ type GroundInvasionResult struct {
 //     那張表還沒追出來,所以兩種目前都填同一個 atkForce。填同值 = 維持現行數字,
 //     而且把差異留在一個看得見的地方(見呼叫處的註解)。
 //
-//   - 守方:兵力簡化為 gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population,
-//     colony.PopMax, false)——AI 未追蹤各殖民地 Marine Barracks 是否已建成/已運作幾回合
-//     (AI 無對應 ColonyBuildings 追蹤機制),以「已運作 s.Turn 回合」做近似(AI 母星開局
-//     即有 Marine Barracks,見 homeworldBuildings);force=aiMarineForce()。守方戰車營
-//     TODO 未接:AI 開局 homeworldBuildings() 本就沒有裝甲營房(只有海軍陸戰隊營+星基),
-//     且 AIOpponent 完全沒有 ColonyBuildings 追蹤機制可供判斷「AI 是否已建成裝甲營房」,
-//     沒有資料可誠實推導守方戰車數,故不臆測補上——這與 marine 側的近似不同,marine 側
-//     至少有「開局必有 Marine Barracks」這個已知事實撐腰,armor 側沒有對應事實。
+//   - 守方:使用 AIOpponent 每座殖民地的駐軍池與兵營 age。AI 舊存檔缺少新欄位時,
+//     ensureAIGroundForceSlots 只在第一次以現有建築的 age=0 初值補上；新局與每回合
+//     則由 advanceAIGroundForces 依原版兵營公式補充。因此 Marine Barracks 與 Armor
+//     Barracks 都是實際資料，不再以 s.Turn 猜測，也不會把戰損重算復原。
 //
 // rng 依「回合數 + 星索引」種子化(同 ResolveBattle/ResolveGroundBattle 呼叫慣例),同一回合
 // 對同一顆星重複輸入必得到相同結果,可重現。
 //
 // 攻方勝:星 Owner 轉 1;把該 AI 殖民地整筆過戶為玩家殖民地(PlayerColonies 新增一筆,
 // Builds/ColonyBuildings(玩家側,補 nil 佔位)/PlayerColonyMarines/MarineBarracksAge 同步補齊
-// 長度——⚠ 誠實簡化:AI 側若有實際建築(AIOpponent.ColonyBuildings)並不會轉移過戶,過戶後的
-// 玩家殖民地一律視為「無已完工建築」起算,非本輪範圍,見該欄位設計動機)、從
-// AIOpponent.Colonies/ColonyStars/ColonyBuildings 移除、雙方持有星數更新(AI.OwnedStars--;玩家由
-// PlayerOwnedStars() 即時算,Owner 已轉 1 故自動反映)。過戶殖民地人口簡化為「地面戰守方
-// 存活戰鬥單位數」(手冊 p.162-164 只有敘述性描述,無精確的「入侵後保留多少平民人口」公式,
-// 至少保留 1 人口,標簡化待精修)。
+// 長度——AI 側的原始建築仍依既有過戶近似不轉移,過戶後的玩家殖民地一律視為「無已完工
+// 建築」起算,非本輪範圍,見該欄位設計動機)、從 AIOpponent/Colony* 與 AI 駐軍平行陣列移除、
+// 雙方持有星數更新(AI.OwnedStars--;玩家由 PlayerOwnedStars() 即時算,Owner 已轉 1 故自動反映)。
+// 過戶殖民地保留原始 Population；原版靜態呼叫鏈 `Change_Colony_Ownership_ @ 0xED260`
+// → `Resolve_Invasion_Troops_ @ 0xECECA` 寫回的是入侵部隊欄位，不是人口欄位。守方戰鬥
+// 單位存活數只作結果摘要／守方駐軍回寫，不能當成俘虜人口。
 //
-// 攻方敗(含平手皆歸守方,見 ResolveGroundBattle):FleetMarines/FleetTanks 回寫為攻方存活數
+// 攻方敗(含無法佔領的平手／同時歸零情況皆歸守方,見 ResolveGroundCombatOrig):FleetMarines/FleetTanks 回寫為攻方存活數
 // (戰損),Owner 不變、殖民地不轉移。
 func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdInvadeColony, Args: []int{starIdx}})
 	if starIdx < 0 || starIdx >= len(s.Stars) {
 		return GroundInvasionResult{Reason: "無效的星索引"}
 	}
@@ -583,6 +777,7 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 		return GroundInvasionResult{Reason: "該星無可入侵的殖民地模型(簡化限制,見 AIOpponent.ColonyStars)"}
 	}
 	aiPlayer := &s.AIPlayers[aiIdx]
+	ensureAIGroundForceSlots(aiPlayer)
 	colony := aiPlayer.Colonies[colonyIdx]
 	// 被打下來的是**哪一顆行星**——AI 殖民地自 2026-08-07 起記得住(AIOpponent.ColonyPlanets)。
 	// 要在移除那筆之前先抄下來。舊存檔沒記(−1)時退回該星的代表行星。
@@ -628,7 +823,8 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	// ——再加一次就會變成 3 / 4。見 gap report 第 33 項(地面戰結構)的重建表。
 	atkHits[groundTypeTanks] = tankHits
 
-	defCount := gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population, colony.PopMax, s.RaceWarlord())
+	defMarines := aiPlayer.ColonyMarines[colonyIdx]
+	defTanks := aiPlayer.ColonyTanks[colonyIdx]
 	defForce := aiMarineForce(*aiPlayer)
 	// 守方 Commando 領袖加成(#5,2026-07-11 已接線;ruleprofile.go RuleProfile.DefenderCommandoBonus):
 	// AIOpponent.Leaders(見該欄位註解)提供「AI 是否擁有 Commando 守將」的資料來源——
@@ -641,16 +837,19 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	// @ 0xEC15C 的 `[player+0x28] == 100` 分支)。以「普通」為基準往兩邊偏。
 	// 攻方是人類玩家,所以 atkForce 那邊不加——那不是漏掉,是原版就沒有。
 	defForce += gamedata.GroundDifficultyBonus(s.Difficulty, gamedata.GroundAIEmpire)
-	defHits := gamedata.GroundMarineHitsToKill(false, hasPoweredArmorFor(aiPlayer.Player))
+	defHighG := aiRaceHasTrait(*aiPlayer, gamedata.TRAIT_HIGH_G)
+	defHits := gamedata.GroundMarineHitsToKill(defHighG, hasPoweredArmorFor(aiPlayer.Player))
 	// 守方:陸戰隊 + **民兵**。原版的殖民地填三格(裝甲 / 陸戰隊 / 民兵,見
 	// `Compute_Colony_Ground_Combat_Info_` @ 0xED713 與手冊「your militia are also shown here」)。
 	//
 	// 民兵 = ⌊人口 / 5⌋(原版 `Colony_N_Militia_` @ 0xEC61E),攻擊力比陸戰隊低 10。
-	// ⚠ **裝甲那一格仍留 0**:AI 沒有 ColonyBuildings 追蹤機制,無法判斷「AI 是否已建成
-	// 裝甲營房」——沒有資料可誠實推導守方戰車數,不臆測。留 0 = 少算守方,方向上對玩家有利。
+	// 裝甲營在類型 0，與原版的殖民地三格順序一致。
 	var defStrength, defCounts, defHitsArr [gamedata.GroundUnitTypes]int
+	defStrength[groundTypeTanks] = defForce + gamedata.GroundTypeStrengthDelta(groundTypeTanks) + groundTankOnlyBonusFor(aiPlayer.Player)
+	defCounts[groundTypeTanks] = defTanks
+	defHitsArr[groundTypeTanks] = tankHitsToKillFor(aiPlayer.Player, defHighG)
 	defStrength[groundTypeMarines] = defForce + gamedata.GroundTypeStrengthDelta(groundTypeMarines)
-	defCounts[groundTypeMarines] = defCount
+	defCounts[groundTypeMarines] = defMarines
 	defHitsArr[groundTypeMarines] = defHits
 	militiaCount := gamedata.ColonyMilitiaUnits(colony.Population)
 	defStrength[gamedata.GroundTypeMilitia] = defForce +
@@ -658,13 +857,18 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	defCounts[gamedata.GroundTypeMilitia] = militiaCount
 	defHitsArr[gamedata.GroundTypeMilitia] = defHits
 
-	rng := rand.New(rand.NewSource(int64(s.Turn)*2654435761 + int64(starIdx)*97 + 555))
+	// 原版 Random_ 是 1..n 的 32-bit LCG；Ground_Combat_Round_ 只比較兩個
+	// Random(100) 的大小，所以轉成 [0,100) 不改變命中／被命中的結果，但保留
+	// 原版 rejection sampling 與後續抽樣的 state 序列。seed 仍是 remake 的
+	// 回合／星索引穩定映射，尚未與原版全域 save seed 接軌，這個邊界在文件中保留。
+	origRand := gamedata.NewOrigRand(uint32(int64(s.Turn)*2654435761 + int64(starIdx)*97 + 555))
+	originalRoll := func(n int) int { return origRand.N(n) - 1 }
 	// 換成原版的解算(`Ground_Combat_Round_` @ 0xEC4FE,見 gamedata/ground_battle_orig.go)。
 	// 先前用的是一代 1oom 的結構,與二代有三處實質差異,最要緊的是**平手時雙方都挨打**。
-	// 擲骰用 `rng.Intn`([0,100))對應原版的 `Random_`;先前是 `Intn(100)+1`。
+	// 擲骰用 `originalRoll` 對應原版的 `Random_(100)`。
 	atkSide := gamedata.NewGroundSide(atkStrength, atkCounts, atkHits)
 	defSide := gamedata.NewGroundSide(defStrength, defCounts, defHitsArr)
-	res := gamedata.ResolveGroundCombatOrig(atkSide, defSide, rng.Intn, 0)
+	res := gamedata.ResolveGroundCombatOrig(atkSide, defSide, originalRoll, 0)
 
 	// 拆回陸戰隊/戰車營各自存活數——現在是**逐類型的真實剩餘數**,
 	// 不再是先前那個「戰車排在尾端所以先算給戰車」的推算。
@@ -674,24 +878,29 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	out := GroundInvasionResult{
 		Ok: true, AttackerWon: res.AttackerWon,
 		AttackerMarinesStart: s.Fleet().Marines, AttackerTanksStart: tankCount,
-		DefenderStart: defCount + militiaCount, ColonyName: s.starName(starIdx),
+		DefenderStart: defTanks + defMarines + militiaCount, ColonyName: s.starName(starIdx),
 		AttackerSurvived: res.AttackerSurvived, DefenderSurvived: res.DefenderSurvived,
 		AttackerMarinesSurvived: marinesSurvived, AttackerTanksSurvived: tanksSurvived,
 		Rounds: res.Rounds,
 	}
 	s.Fleet().Marines = marinesSurvived
 	s.Fleet().Tanks = tanksSurvived
+	// 原版戰後把守方各類型的剩餘部隊留在殖民地資料中；攻方失敗時下一次入侵
+	// 必須看到這次戰損。人口不是這個欄位，不能用 DefenderSurvived 覆蓋。
+	aiPlayer.ColonyMarines[colonyIdx] = defSide.Count[groundTypeMarines]
+	aiPlayer.ColonyTanks[colonyIdx] = defSide.Count[groundTypeTanks]
 
 	if res.AttackerWon {
 		captured := colony
-		captured.Population = res.DefenderSurvived // 簡化近似,見函式註解
-		if captured.Population < 1 {
-			captured.Population = 1
-		}
+		// `Resolve_Invasion_Troops @ 0xECECA` 寫回的是原始殖民地的入侵部隊欄位
+		// (上限由 `Invade @ 0xED59D` 決定)，不是人口欄位。靜態證據沒有支持「守方
+		// 戰鬥單位存活數 = 佔領後人口」，所以保留 captured.Population；markColonyConquered
+		// 會把同一批原人口記成未同化人口。
 		// 剛攻下來的殖民地整批是未同化的外族人口(手冊 p.21-24:依政體 2–20 回合
 		// 同化一單位)。見 assimilation.go——這是「征服打法」在規則層的成本。
 		markColonyConquered(&captured, aiIdx)
 		s.PlayerColonies = append(s.PlayerColonies, captured)
+		s.ensureColonyLeaderSlots()
 		s.Builds = append(s.Builds, ColonyBuild{})
 		for len(s.ColonyBuildings) < len(s.PlayerColonies) {
 			s.ColonyBuildings = append(s.ColonyBuildings, nil)
@@ -744,6 +953,7 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 		if colonyIdx < len(aiPlayer.ColonyBuildings) {
 			aiPlayer.ColonyBuildings = append(aiPlayer.ColonyBuildings[:colonyIdx], aiPlayer.ColonyBuildings[colonyIdx+1:]...)
 		}
+		removeAIGroundForceSlot(aiPlayer, colonyIdx)
 		// ⚠ 星的歸屬只在**這顆星上再也沒有敵方殖民地**時才翻面。同星系多殖民地打開之後
 		// (第 24/24 項),一個星系可能有這個 AI 的兩個殖民地;打下一個就把整顆星判給玩家,
 		// 會讓另一個殖民地變成「站在玩家星系裡的敵軍」,而且星圖顏色與可入侵性都對不上。

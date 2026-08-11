@@ -1,8 +1,24 @@
-# MOO2 地面戰解算演算法(社群逆向 + 已知歧義)
+# MOO2 地面戰解算演算法（原版靜態 oracle + 歷史社群對照）
 
-> 目的:記錄 MOO2 地面戰(入侵殖民地)的**解算演算法**,供實作 `ResolveGroundBattle` 用。
-> 日期:2026-07-10。方法:reference-before-reverse——手冊(GAME_MANUAL.pdf p.164)只給加成表與定性描述,**無解算式**;openorion2 只有 ground 的 tech-group/trait 引用(渲染殼,無解算)。故解算式取自**社群逆向**。
-> ✅ **2026-07-10 定案**:社群公式歧義**不採用**;依使用者 directive 改用**一代(1oom)`game_ground_kill` 的 d100+force 解算**(明確、無歧義、不需 DOSBox 校準)+ 二代手冊加成表。詳見下方「解算式定案」。加成表(手冊驗證)在 `internal/gamedata/ground.go`。
+> 目的:記錄 MOO2 地面戰(入侵殖民地)的**解算演算法**,供 `ResolveGroundCombatOrig` 與入侵流程回查。
+> 歷史起點:2026-07-10。方法:reference-before-reverse——手冊(GAME_MANUAL.pdf p.164)只給加成表與定性描述,**無解算式**;openorion2 只有 ground 的 tech-group/trait 引用(渲染殼,無解算)。2026-08-07 已以 IDA Pro 靜態追回 `Ground_Combat_Round_ @ 0xEC4FE`／`Resolve_Ground_Combat_ @ 0xEC601`，本文件下方的原版路徑以該證據為準。
+> ✅ **2026-07-10 的一代相容定案**仍保留作比較；**目前 live path（2026-08-11）**改由 `internal/gamedata/ground_battle_orig.go` 的原版四類型解算接入 `InvadeColony`，並以原版 32-bit LCG 的 rejection sampling 產生確定性 adapter stream。IDA 已確認 `Ground_Combat_Round_ @ 0xEC4FE` 的兩次 `Random(100)+currentType*2+2`、平手雙命中、AI 裝甲營／人口比例與入侵兵力回寫邊界；仍待的是 DOSBox 實機逐場傷亡／原始 global seed 校準，以及原版是否另有戰後人口 consumer，不是 remake 主流程未接。加成表(手冊驗證)在 `internal/gamedata/ground.go`。
+
+## 2026-08-11 原版靜態解算與 live path 邊界
+
+- `raw_0xEC4FE` 每個當前類型各擲一次攻方與守方 `Random(100)+currentType*2+2`；
+  `A<=B` 時攻方命中，`A>=B` 時守方命中，因此平手雙方同時受擊。`sub_1247A0`
+  的 LCG 已由 `gamedata.OrigRand` 保留 1-based 與 rejection sampling；`InvadeColony`
+  使用重製的 seed mapping 產生相同分支語意，但沒有冒充原版存檔 global seed。
+- `raw_0xED59D` 的守方兵力表會依殖民地 flag `+0x8BD` 選原值／半值並至少保留 1；
+  `raw_0xED674` 的裝甲營房上限則依同一 flag 選人口 `/4` 或 `/2` 並至少保留 1。
+  `raw_0xED713`／`raw_0xED260`／`raw_0xECECA` 形成卸載、佔領與守方兵力鏈；
+  `0xECECA` 直接寫的是殖民地地面部隊欄 `+0x130`，不是已證實的人口欄。
+- remake 因此保留守方 surviving marines/tanks、把 captured population 原值帶入新主人，
+  並將人口是否另由原版戰後 consumer 改寫列為未知；不以「剩餘地面單位」擅自覆蓋人口。
+
+這段是**已證實的靜態公式＋有界 remake 消費**，不是 DOSBox 實機逐骰 oracle。抽樣回歸
+見 `internal/gamedata/ground_battle_orig_test.go` 與 `internal/shell/ground_invasion_test.go`。
 
 ## 已忠實(gamedata,手冊驗證)
 
@@ -90,6 +106,11 @@
 **流程選擇**:入侵由玩家主動呼叫 `InvadeColony`(非艦隊一抵達就自動觸發),與既有架構一致——`SendFleet`/`BuildShip`/`ShiftColonyJob` 等所有玩家決策都是顯式呼叫,不是 `EndTurn` 自動觸發;也讓玩家能先觀察/多載陸戰隊再決定開打,貼近原版「艦隊指令選單」的操作語意。
 
 ## 2026-07-11 裝甲營房戰車 + 軌道轟炸接線
+
+> **2026-08-11 活路徑勘誤**：本節保留 2026-07-11 的歷史推導；目前 `InvadeColony` 已使用
+> `GroundSide`／`ResolveGroundCombatOrig`，不再依賴下方早期以 `ResolveGroundBattle` 總存活數拆兵種的近似。
+> 目前仍留在 oracle 表的是 AI 守方裝甲營、DOSBox 實機逐場傷亡／亂數序列與入侵後人口；這些不是本節
+> 歷史快照中的「UI 尚未做」或一代解算未接線。
 
 上一節「shell 層接線」只做了陸戰隊(Marine Barracks);`internal/gamedata/ground.go` 當時還有
 幾個零呼叫端的死碼:`GroundArmorBarracksUnits`/`GroundArmorBarracksCap`(裝甲營房生成戰車)、

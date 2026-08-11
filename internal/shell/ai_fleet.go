@@ -30,7 +30,8 @@ import (
 //   - **航線不判星雲/黑洞/干擾場。** 玩家那條路徑模型(第 16/17 項)吃這些懲罰,
 //     AI 目前只算直線秒差距 ÷ 速度。要接得先讓 AI 走同一套 `fleetSpeedForTrip`,
 //     而那支函式綁在 `s.Player` 上。
-//   - **只打玩家。** AI 之間不互相出兵——那需要 AI-vs-AI 的戰鬥解算,remake 沒有。
+//   - 預設仍可只打玩家；開啟 GameSession.EnableAIVsAI 後，AI 會依 AIWars 矩陣
+//     互相派出這支抽象艦隊。它不是逐艦 blueprint，精確原版資料仍列在 oracle-only。
 
 // aiFleetStar 回傳這個 AI 的主力艦隊目前所在的星。
 //
@@ -98,6 +99,9 @@ type AIFleetArrival struct {
 // 順序:先讓在途的往前走一格,再讓閒置的決定要不要出兵。**同一回合不會又出發又抵達**
 // ——出發那一回合 ETA 至少是 1,要下一回合才會遞減到 0。
 func (s *GameSession) advanceAIFleets() []AIFleetArrival {
+	if s.EnableAIVsAI {
+		s.ensureAIAIState()
+	}
 	var arrivals []AIFleetArrival
 	for i := range s.AIPlayers {
 		a := &s.AIPlayers[i]
@@ -114,11 +118,19 @@ func (s *GameSession) advanceAIFleets() []AIFleetArrival {
 			}
 			a.FleetStar = a.FleetDestStar
 			a.FleetDestStar = -1
+			targetAI := -1
+			if a.FleetTargetAISet {
+				targetAI = a.FleetTargetAI
+			}
+			a.FleetTargetAI, a.FleetTargetAISet = -1, false
 			arr := AIFleetArrival{AIName: a.Name, StarName: s.starName(a.FleetStar), StarIdx: a.FleetStar}
 			// 阿提米絲系統網:手冊「any enemy ship **entering** that system」
 			// ——進門的那一刻結算,與玩家那條同一個時點(見 session.go advanceFleet)。
 			arr.Mines = s.applyArtemisMinesToAIFleet(i, a.FleetStar)
 			arrivals = append(arrivals, arr)
+			if s.EnableAIVsAI && targetAI >= 0 && targetAI < len(s.AIPlayers) && targetAI != i {
+				s.LastAIAIBattle = s.resolveAIAIBattle(i, targetAI, a.FleetStar)
+			}
 			continue
 		}
 		s.aiLaunchRaidFleet(i)
@@ -133,6 +145,9 @@ func (s *GameSession) advanceAIFleets() []AIFleetArrival {
 // 只是把「決定打誰」與「實際打到」之間插進了一段航程。
 func (s *GameSession) aiLaunchRaidFleet(i int) {
 	if s.DisableEvents || s.Turn < aiRaidGraceTurns {
+		return
+	}
+	if s.EnableAIVsAI && s.aiLaunchAIFleet(i) {
 		return
 	}
 	a := &s.AIPlayers[i]
@@ -157,6 +172,7 @@ func (s *GameSession) aiLaunchRaidFleet(i int) {
 	}
 	a.FleetDestStar = dest
 	a.FleetETA = eta
+	a.FleetTargetAI, a.FleetTargetAISet = -1, false
 }
 
 // aiFleetAtPlayerColony 回傳這個 AI 的艦隊是否**停在**某個玩家殖民地上空

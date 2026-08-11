@@ -17,6 +17,12 @@ func ApplyAIEconomy(ps PlayerState, colonies []ColonyState, decider ai.Decider) 
 		// 把殖民地職務分配壓到連稅率上限都打平不了固定支出的程度,結構性赤字非原版行為,見
 		// docs/tech/ai-fiscal-solvency.md。
 		f, w, s := decider.ColonyJobs(cs.Population, cs.FoodPerFarmer, cs.IndustryPerWorker, cs.MoralePercent, ps.Maintenance)
+		if cs.Lithovore {
+			// 食岩族不需要農業。AI 決策器仍以一般殖民地介面回傳三種職務,
+			// 這裡把它可能分配的農夫轉回工人,避免 AI 明明不必種田卻浪費人口。
+			w += f
+			f = 0
+		}
 		cs.Farmers, cs.Workers, cs.Scientists = f, w, s
 		out[i] = cs
 	}

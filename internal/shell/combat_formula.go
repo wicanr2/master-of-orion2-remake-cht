@@ -12,6 +12,171 @@ type ShotResult struct {
 	Hit               bool
 	DamageToStructure int // 穿過盾與甲、實際打到艦體結構的傷害
 	RemainingArmorHP  int // 射擊後剩餘裝甲 HP
+	ShieldDamage      int // 命中後一般護盾實際吸收的傷害，用來扣除命中分面容量
+}
+
+// PointDefenseShot 是一發點防禦光束對來襲飛彈的解算輸入。
+//
+// 這是 remake 的共用垂直切片：原版 raw `sub_3AD57` @ 0x3AD57 →
+// `Weapon_In_Range` @ 0x3A0B9 → `Missile_Dcv` @ 0x3E095 的攔截鏈已被拆出，
+// 但原版艦艇 AI、每個 PD 槽的完整佈局仍未完全還原。`BeamAttack`／`BeamDamageMax`
+// 沿用目前 shell 的艦艇戰力近似，raw kind／flag 則保留原版定位。
+type PointDefenseShot struct {
+	BeamWeaponName            string
+	BeamAttack                int
+	BeamDamageMax             int
+	BeamRangeSquares          int
+	BeamRoll                  int
+	BeamSystems               BeamAttackerSystems
+	BeamMods                  []gamedata.WeaponModCode
+	MissileWeaponName         string
+	MissileFTLLevel           int
+	MissileMods               []gamedata.WeaponModCode
+	CarriedInterceptionDamage int
+}
+
+// PointDefenseResult 是點防禦攔截的可觀測結果。DestroyedWarheads 只表示攔截鏈
+// 摧毀的彈頭數，不是直接打到目標艦體的傷害。
+type PointDefenseResult struct {
+	Fired                       bool
+	Hit                         bool
+	DestroyedWarheads           int
+	RemainingInterceptionDamage int
+	MissileBeamDefense          int
+	InterceptionDurability      int
+}
+
+// PointDefenseFighterShot 是 PD 在戰機接戰前的單發輸入。
+//
+// 手冊 p.117 的順序是「飛彈命中艦艇或戰機接戰前,PD 若尚未開火就先開火」；
+// 戰機的 Beam Defense 則用 p.157 的獨立公式計算。這條路徑不把戰機誤當成
+// 飛彈彈頭，因此不套用 Missile_Dcv 的 quotient/remainder 消費；命中後傷害
+// 由呼叫端送入 FighterSquadron.TakeHit。
+type PointDefenseFighterShot struct {
+	BeamWeaponName     string
+	BeamAttack         int
+	BeamDamageMax      int
+	BeamRangeSquares   int
+	BeamRoll           int
+	BeamSystems        BeamAttackerSystems
+	BeamMods           []gamedata.WeaponModCode
+	FighterBeamDefense int
+}
+
+// PointDefenseFighterResult 是 PD 對戰機的一發結果。
+type PointDefenseFighterResult struct {
+	Fired              bool
+	Hit                bool
+	DamageToFighter    int
+	FighterBeamDefense int
+}
+
+// PointDefenseCanFire 回報一個武器槽是否具備 PD 自動開火資格。
+// 與來襲物分開抽出，讓飛彈與戰機共用「尚未開火」的觸發條件。
+func PointDefenseCanFire(beamWeaponName string, beamMods []gamedata.WeaponModCode) bool {
+	return WeaponIsBeam(beamWeaponName) && gamedata.WeaponModHas(beamMods, gamedata.ModPointDefense)
+}
+
+// PointDefenseCanEngage 回報目前資料模型是否能讓 PD 對指定來襲物開火。魚雷與
+// 尚未對到標準玩家飛彈 raw kind 的武器刻意排除；手冊明說魚雷不能被一般武器瞄準。
+func PointDefenseCanEngage(beamWeaponName, missileWeaponName string, beamMods []gamedata.WeaponModCode) bool {
+	if !PointDefenseCanFire(beamWeaponName, beamMods) {
+		return false
+	}
+	if WeaponIsTorpedo(missileWeaponName) {
+		return false
+	}
+	_, ok := MissileRawWeaponKind(missileWeaponName)
+	return ok
+}
+
+// ResolvePointDefenseFighterShot 解算 PD 在戰機接戰前的自動射擊。
+//
+// `FighterBeamDefense` 必須由呼叫端提供；目前戰術呼叫端已把參戰艦隊的種族
+// Ship Defense 與 Fighter Pilot 加成帶入，Helmsman 仍明示傳 0，因為原版 1.50
+// 對戰機接戰的完整呼叫端尚未追回。公式本身由 gamedata.CombatFighterBeamDefense
+// 保留，未來補齊 Helmsman 時不需要改動 PD 消費端。
+func ResolvePointDefenseFighterShot(in PointDefenseFighterShot) PointDefenseFighterResult {
+	if !PointDefenseCanFire(in.BeamWeaponName, in.BeamMods) {
+		return PointDefenseFighterResult{}
+	}
+	result := PointDefenseFighterResult{
+		Fired:              true,
+		FighterBeamDefense: in.FighterBeamDefense,
+	}
+	level := gamedata.CombatRangeLevelForBeamMods(in.BeamRangeSquares, in.BeamMods)
+	toHitPenalty := gamedata.CombatRangeLevelPenalty(level)
+	netAttack := in.BeamAttack + gamedata.WeaponModNetAttackBonus(in.BeamMods) - in.FighterBeamDefense
+	hitThreshold := gamedata.CombatHitThreshold(toHitPenalty, gamedata.WeaponModPDBonus(in.BeamMods))
+	if !gamedata.CombatClassicToHit(in.BeamRoll, netAttack, hitThreshold) {
+		return result
+	}
+
+	hvBonus, pdPenalty := gamedata.WeaponModDamageBonuses(in.BeamMods)
+	dissipation := 0
+	if !gamedata.WeaponModNoRangeDissipation(in.BeamMods) {
+		dissipation = gamedata.DamageDissipationPenalty(level)
+	}
+	damage := in.BeamDamageMax
+	if damage > 0 {
+		damage = gamedata.DamageMountAdjustedValue(damage, hvBonus,
+			in.BeamSystems.HEFBonus, pdPenalty, dissipation)
+	}
+	result.Hit = true
+	result.DamageToFighter = damage
+	return result
+}
+
+// ResolvePointDefenseIntercept 解算 PD 的「同格自動攔截」：依 Beam Defense 做
+// Classic to-hit，再以目前 PD 光束傷害潛力餵入原版 Dcv 的 quotient/remainder 鏈。
+// 精確的原版攔截器射擊順序與 AI 仍標為未完成；本函式不把這個垂直切片宣稱成完整
+// 戰術等價。
+func ResolvePointDefenseIntercept(in PointDefenseShot) PointDefenseResult {
+	if !PointDefenseCanEngage(in.BeamWeaponName, in.MissileWeaponName, in.BeamMods) {
+		return PointDefenseResult{}
+	}
+	rawKind, ok := MissileRawWeaponKind(in.MissileWeaponName)
+	if !ok {
+		return PointDefenseResult{}
+	}
+	ftlLevel := in.MissileFTLLevel
+	if ftlLevel <= 0 {
+		ftlLevel = 1
+	}
+	rawFlags := gamedata.MissileRawFlagsForMods(in.MissileMods)
+	missileDefense, ok := gamedata.MissileBeamDefenseOf(rawKind, ftlLevel, rawFlags, false)
+	if !ok {
+		return PointDefenseResult{}
+	}
+	durability := gamedata.MissileInterceptionDurabilityForRawFlags(rawKind, 0, rawFlags)
+	if durability <= 0 {
+		return PointDefenseResult{}
+	}
+	level := gamedata.CombatRangeLevelForBeamMods(in.BeamRangeSquares, in.BeamMods)
+	toHitPenalty := gamedata.CombatRangeLevelPenalty(level)
+	hitThreshold := gamedata.CombatHitThreshold(toHitPenalty, gamedata.WeaponModPDBonus(in.BeamMods))
+	netAttack := in.BeamAttack + gamedata.WeaponModNetAttackBonus(in.BeamMods) - missileDefense
+	result := PointDefenseResult{
+		Fired:                  true,
+		MissileBeamDefense:     missileDefense,
+		InterceptionDurability: durability,
+		// Weapon_In_Range 的 remainder 不是本次射擊的暫存值；攔截未命中時
+		// 仍要帶回下一次，否則 ARM 飛彈的耐久鏈會被無聲清零。
+		RemainingInterceptionDamage: in.CarriedInterceptionDamage,
+	}
+	if !gamedata.CombatClassicToHit(in.BeamRoll, netAttack, hitThreshold) {
+		return result
+	}
+	hvBonus, pdPenalty := gamedata.WeaponModDamageBonuses(in.BeamMods)
+	damageLevel := level
+	damage := gamedata.DamageMountAdjustedValue(in.BeamDamageMax, hvBonus,
+		in.BeamSystems.HEFBonus, pdPenalty, gamedata.DamageDissipationPenalty(damageLevel))
+	destroyed, remainder := gamedata.MissileWarheadsDestroyedByInterception(
+		damage, in.CarriedInterceptionDamage, durability)
+	result.Hit = true
+	result.DestroyedWarheads = destroyed
+	result.RemainingInterceptionDamage = remainder
+	return result
 }
 
 // ResolveShot 用 gamedata 真公式解算一次射擊(beam 武器路徑,不含 Point Defense/PD 掛載
@@ -157,15 +322,16 @@ func ResolveBeamShot(in BeamShot) ShotResult {
 
 	// 距離傷害衰減(dissipation):命中之後,傷害還要依 range level 打折。
 	//
-	// 對應原版 Get_Beam_Weapon_Modifiers_(sub_39434):
+	// 對應原版 `Get_Beam_Weapon_Modifiers_`(raw `sub_394F7`) 呼叫
+	// `Get_Beam_Range_To_Hit_Bonus_`(raw `sub_39434`):
 	//     if (!(mods & 0x20) && !(weaponFlags & 0x04))
 	//         *damagePct += ranged_damage_penalty[range];
-	// 即「除非帶 NR 改造、或武器天生免疫,否則一律套」。remake 先前完全沒接這一段
-	// (weapon_mods.go 的 ModNoRangeDissipation 註解記著這個 TODO),遠距離射擊的傷害
-	// 與貼臉一樣——NR 這個改造因此也一直沒有可觀察的效果。
+	// 即「除非帶 NR 改造、或武器天生免疫,否則一律套」。這段曾是 remake 的歷史缺口；
+	// 現在已接入 beam 路徑，遠距離射擊會依表扣除傷害，而 NR 會跳過該扣除。
 	//
 	// gamedata.damageDissipationPenaltyTable = {0,0,10,20,30,40,50,60,65} 與原版
-	// `_ranged_damage_penalty`(0x17D867)逐格相同,表本身早就對,缺的只是這裡的接線。
+	// `_ranged_damage_penalty`(0x17D867)逐格相同；魚雷仍沒有可證實的射程傷害模型，
+	// 所以魚雷版 NR 不能由這條 beam 路徑冒充完成。
 	dissipation := 0
 	if !gamedata.WeaponModNoRangeDissipation(mods) {
 		dissipation = gamedata.DamageDissipationPenalty(level)
@@ -183,6 +349,10 @@ func ResolveBeamShot(in BeamShot) ShotResult {
 
 	dmg := gamedata.DamageForHit(adjMin, adjMax, roll, netAttack, threshold)
 	dmg = gamedata.WeaponModEnvelopingMultiply(dmg, mods)
+	shieldDamage := gamedata.DamageShieldAbsorbed(dmg, shieldReduction)
+	if gamedata.WeaponModShieldPiercing(mods) {
+		shieldDamage = 0
+	}
 	dmg = gamedata.DamageAfterShield(dmg, shieldReduction, hardShield, gamedata.WeaponModShieldPiercing(mods))
 	// 結構分析儀:手冊「the damage done by beam weapons that **penetrate an enemy ship's
 	// shields** is doubled」——「penetrate the shields」是條件也是時機,所以加倍發生在
@@ -194,7 +364,7 @@ func ResolveBeamShot(in BeamShot) ShotResult {
 	// ——與 AP 改造走同一個開關(見 BeamAttackerSystems.AchillesUnit 對「會不會被抵銷」的說明)。
 	armorPiercing := gamedata.WeaponModArmorPiercing(mods) || in.Attacker.AchillesUnit
 	_, toStruct, remArmor := gamedata.DamageApplyArmor(dmg, armorHP, armorPiercing, apNegated)
-	return ShotResult{Hit: true, DamageToStructure: toStruct, RemainingArmorHP: remArmor}
+	return ShotResult{Hit: true, DamageToStructure: toStruct, RemainingArmorHP: remArmor, ShieldDamage: shieldDamage}
 }
 
 // ResolveMissileShot 用 gamedata missile.go 已移植公式,解算一發飛彈/魚雷攻擊,對應手冊
@@ -221,9 +391,8 @@ func ResolveBeamShot(in BeamShot) ShotResult {
 //     自己的條目裡),不是某個可造艦元件;而那三個掃描科技從 detection.go 建起來那天就在
 //     remake 裡了(bestPlayerScannerParsec 讀的正是它們)。缺的不是前置系統,是沒有人把
 //     同一個科技的第二個效果查出來。現在走 bestPlayerScannerJamReduction。
-//   - hasECCM:仍為 false。ECCM 是**飛彈的改造**(手冊 Weapon Mods 附錄),而 remake 的
-//     mod 層只對光束武器開放(見 weapon_mods.go 檔頭)——這一條是真的擋在前置系統後面,
-//     不是漏查。
+//   - hasECCM:舊入口仍可由呼叫端直接傳入；含改造的新入口
+//     ResolveMissileShotWithMods 會從 WeaponModCodesForWeapon 自動讀 ECCM。
 //     以上四項在「無任何裝備」時退化為手冊「若目標無任何閃避能力,預設100%命中」
 //     (gamedata.MissileDefaultHitChance)——這是手冊本身的基準情境,不是臆造值,恰好與
 //     現行武器/元件表(尚無任何閃避裝備)的現況一致。
@@ -231,7 +400,7 @@ func ResolveBeamShot(in BeamShot) ShotResult {
 //     Damage lowered from 8 to 6」),沒有給出像 beam 命中裕度那樣的內插公式,故不套用
 //     beam 專用的 gamedata.DamageForHit(那需要 net-attack/hit-threshold,是命中判定
 //     機制不同的 beam 概念,套用會混淆兩種機制);仍依手冊預設(只有掛 Shield
-//     Piercing/Armor Piercing mod 才豁免,本 remake 尚未對飛彈掛任何 mod)穿過護盾/裝甲。
+//     Piercing/Armor Piercing mod 才豁免；新入口會依 EMG 套用「先扣護盾、再繞過裝甲」。
 //
 // MissileDefenses 是目標艦的「特殊防禦裝置」與它們各自要用的骰(手冊 p.123)。
 //
@@ -248,6 +417,15 @@ type MissileDefenses struct {
 	// 而不是加進 defenderEvasionBonus——加進去會與干擾器/慣性穩定器那一族互相汙染。
 	CloakMissChance int
 	CloakRoll       int // 1..100(CloakMissChance > 0 時才擲)
+	// MIRV 每枚彈頭各自判定；沒有這些切片時，解算器會回退使用單一舊欄位，保留舊
+	// ResolveMissileShot 呼叫端的逐位元行為。
+	JamRolls          []int
+	CloakRolls        []int
+	DisplacementRolls []int
+	// InterceptedWarheads 是 PD／攔截機在進入飛彈命中判定前已摧毀的彈頭數。
+	// 它由呼叫端用 ResolvePointDefenseIntercept 填入；放在這裡讓 MIRV 與既有
+	// AMR／干擾／匿蹤逐彈頭流程共用同一個剩餘彈頭計數。
+	InterceptedWarheads int
 }
 
 func ResolveMissileShot(
@@ -256,17 +434,62 @@ func ResolveMissileShot(
 	weaponMax, shieldReduction, armorHP int, hardShield bool,
 	def MissileDefenses,
 ) ShotResult {
+	return ResolveMissileShotWithMods(hasAMR, amrRangeSquares, amrRoll,
+		defenderEvasionBonus, attackerScannerBonus, hasECCM, jamRoll,
+		weaponMax, shieldReduction, armorHP, hardShield, def, "", nil)
+}
+
+// ResolveMissileShotWithMods 是含飛彈／魚雷改造的解算入口。weaponName 只用來區分魚雷專屬
+// ENV/OVR；mods 應由 WeaponModCodesForWeapon 先過濾，但函式內也以類型條件再次保護，避免
+// 舊存檔或測試直接傳入不適用的代碼。
+//
+// 已接線規則：ECCM 的干擾機率減半、EMG 在護盾後繞過裝甲、MIRV 四枚彈頭逐枚判定、
+// 魚雷 ENV 四倍傷害與 OVR +50%，以及由 PD 垂直切片填入的 ARM/FST 攔截結果。
+func ResolveMissileShotWithMods(
+	hasAMR bool, amrRangeSquares, amrRoll int,
+	defenderEvasionBonus, attackerScannerBonus int, hasECCM bool, jamRoll int,
+	weaponMax, shieldReduction, armorHP int, hardShield bool,
+	def MissileDefenses, weaponName string, mods []gamedata.WeaponModCode,
+) ShotResult {
+	torpedo := WeaponIsTorpedo(weaponName)
+	if weaponKindByName(weaponName) != WeaponKindMissile {
+		mods = nil
+	}
+	// 這裡再做一次適用性過濾：ResolveMissileShotWithMods 是 shell 對外的公式 API，不能
+	// 假設所有呼叫者都經過設計畫面。
+	filtered := make([]gamedata.WeaponModCode, 0, len(mods))
+	for _, mod := range mods {
+		if WeaponModAppliesToWeapon(weaponName, mod) {
+			filtered = append(filtered, mod)
+		}
+	}
+	mods = filtered
+	warheads := gamedata.WeaponModMissileWarheadCount(mods)
+
 	// 閃電場在**最前面**:手冊說它「對每一枚試圖命中的飛彈」判定,而且明寫是在
 	// MIRV 分裂彈頭「之前」——那個順序表示它擋的是整枚飛彈,不是彈頭。
 	if def.HasLightningField && def.LightningRoll <= gamedata.MissileLightningFieldDestroyChance {
 		return ShotResult{Hit: false, RemainingArmorHP: armorHP}
 	}
+	if def.InterceptedWarheads > 0 {
+		if def.InterceptedWarheads >= warheads {
+			return ShotResult{Hit: false, RemainingArmorHP: armorHP}
+		}
+		warheads -= def.InterceptedWarheads
+	}
 	if hasAMR && amrRangeSquares <= gamedata.MissileAMRMaxRangeSquares {
 		if amrRoll <= gamedata.MissileAMRChanceToHit(gamedata.MissileAMRRangeIndex(amrRangeSquares)) {
-			return ShotResult{Hit: false, RemainingArmorHP: armorHP} // 被 AMR 擊落
+			// 手冊明定 AMR 命中只摧毀彈頭堆疊中的一枚；MIRV 的其餘彈頭仍可繼續。
+			warheads--
+			if warheads == 0 {
+				return ShotResult{Hit: false, RemainingArmorHP: armorHP} // 被 AMR 擊落
+			}
 		}
 	}
 
+	if gamedata.WeaponModMissileECCM(mods) {
+		hasECCM = true
+	}
 	jamChance := gamedata.MissileJamChance(defenderEvasionBonus, attackerScannerBonus, hasECCM)
 	hitChance := gamedata.MissileDefaultHitChance - jamChance
 	if hitChance > 100 {
@@ -275,25 +498,51 @@ func ResolveMissileShot(
 	if hitChance < 0 {
 		hitChance = 0
 	}
-	if jamRoll > hitChance {
-		return ShotResult{Hit: false, RemainingArmorHP: armorHP} // 被干擾/閃避
+	// AMR 已摧毀一枚彈頭時，warheads 是剩餘數；每個剩餘彈頭仍各自經過下列三個判定。
+	// 舊的單骰欄位是第 0 枚；MIRV 若呼叫端沒有提供切片，回退值可讓公式仍可測試且不
+	// 改變非 MIRV 舊路徑。
+	rollAt := func(rolls []int, idx, fallback int) int {
+		if idx >= 0 && idx < len(rolls) && rolls[idx] != 0 {
+			return rolls[idx]
+		}
+		return fallback
 	}
-	// 匿蹤:手冊「missiles and torpedoes have a 50% chance to miss」。排在閃避之後、
-	// 位移裝置之前——手冊把匿蹤與位移裝置寫在同一組(都是「躲過去」而不是「打下來」),
-	// 而位移裝置那句有「regardless of any other equipment or situation」,所以它在最後。
-	if def.CloakMissChance > 0 && def.CloakRoll <= def.CloakMissChance {
+	remainingArmor := armorHP
+	totalStructure, totalShield := 0, 0
+	damageMultiplier := gamedata.WeaponModMissileDamageMultiplier(mods, torpedo)
+	baseDamage := weaponMax
+	if torpedo {
+		baseDamage = gamedata.TorpedoDamageAfterRange(weaponName, baseDamage, amrRangeSquares,
+			gamedata.WeaponModNoRangeDissipation(mods))
+	}
+	damage := baseDamage * damageMultiplier / 100
+	armorPiercing := gamedata.WeaponModMissileArmorPiercing(mods)
+	hit := false
+	for i := 0; i < warheads; i++ {
+		if rollAt(def.JamRolls, i, jamRoll) > hitChance {
+			continue // 被干擾/閃避
+		}
+		// 匿蹤:手冊「missiles and torpedoes have a 50% chance to miss」。排在干擾之後、
+		// 位移裝置之前；MIRV 的每枚彈頭獨立判定。
+		if def.CloakMissChance > 0 && rollAt(def.CloakRolls, i, def.CloakRoll) <= def.CloakMissChance {
+			continue
+		}
+		// 位移裝置的「regardless of any other equipment or situation」判定在最後。
+		if def.HasDisplacement && rollAt(def.DisplacementRolls, i, def.DisplacementRoll) <= gamedata.MissileDisplacementDeviceMissChance {
+			continue
+		}
+		hit = true
+		dmg := gamedata.DamageAfterShield(damage, shieldReduction, hardShield, false)
+		totalShield += gamedata.DamageShieldAbsorbed(damage, shieldReduction)
+		_, toStruct, nextArmor := gamedata.DamageApplyArmor(dmg, remainingArmor, armorPiercing, false)
+		totalStructure += toStruct
+		remainingArmor = nextArmor
+	}
+	if !hit {
 		return ShotResult{Hit: false, RemainingArmorHP: armorHP}
 	}
-	// 位移裝置在**最後面**:手冊說它「不論其他裝備或情況」一律 30% 完全未命中,
-	// 而且與匿蹤同組、明寫是在 MIRV 分裂「之後」判定——那個順序表示它躲的是彈頭,
-	// 所以排在閃避判定之後、傷害結算之前。
-	if def.HasDisplacement && def.DisplacementRoll <= gamedata.MissileDisplacementDeviceMissChance {
-		return ShotResult{Hit: false, RemainingArmorHP: armorHP}
-	}
-
-	dmg := gamedata.DamageAfterShield(weaponMax, shieldReduction, hardShield, false)
-	_, toStruct, remArmor := gamedata.DamageApplyArmor(dmg, armorHP, false, false)
-	return ShotResult{Hit: true, DamageToStructure: toStruct, RemainingArmorHP: remArmor}
+	return ShotResult{Hit: true, DamageToStructure: totalStructure, RemainingArmorHP: remainingArmor,
+		ShieldDamage: totalShield}
 }
 
 // ResolveSphericalShot 用 gamedata damage.go 已移植的球形武器(Pulsar/Plasma
@@ -327,5 +576,6 @@ func ResolveSphericalShot(aggD, shieldReduction, armorHP int, hardShield, bypass
 	}
 	dmg := gamedata.DamageAfterShield(aggD, shieldReduction, hardShield, false)
 	_, toStruct, remArmor := gamedata.DamageApplyArmor(dmg, armorHP, false, false)
-	return ShotResult{Hit: true, DamageToStructure: toStruct, RemainingArmorHP: remArmor}
+	return ShotResult{Hit: true, DamageToStructure: toStruct, RemainingArmorHP: remArmor,
+		ShieldDamage: gamedata.DamageShieldAbsorbed(aggD, shieldReduction)}
 }

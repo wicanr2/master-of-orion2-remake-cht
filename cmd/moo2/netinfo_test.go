@@ -117,5 +117,18 @@ func TestEveryNetInfoStateHasACaption(t *testing.T) {
 		if b.netInfoCaption(st) == "" {
 			t.Errorf("狀態 %d 沒有說明文字", int(st))
 		}
+		if b.netInfoTitle(st) == "" {
+			t.Errorf("狀態 %d 沒有標題文字", int(st))
+		}
+	}
+}
+
+func TestNetInfoStatusLabelMatchesPanelAssets(t *testing.T) {
+	for _, st := range netInfoStates() {
+		want := st == netInfoWaitingForJoiners || st == netInfoWaitRaceInfo ||
+			st == netInfoSendingData || st == netInfoGettingData
+		if got := netInfoHasStatusLabel(st); got != want {
+			t.Errorf("狀態 %d 的 STATUS 欄 = %v, want %v", int(st), got, want)
+		}
 	}
 }

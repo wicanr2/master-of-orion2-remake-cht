@@ -25,7 +25,11 @@ type nameFlagScreen struct {
 
 // nameFlagScreen 建命名/旗色畫面;suggested 為預填帝國名。
 func (b *sceneBuilder) nameFlag(suggested string) origScreen {
-	s := &nameFlagScreen{b: b, fnt: b.fnt, name: []rune(suggested), flagSel: 0, hoverF: -1}
+	flagSel := 0
+	if b.session != nil && b.session.FlagColor >= 0 && b.session.FlagColor < len(shell.FlagColors) {
+		flagSel = b.session.FlagColor
+	}
+	s := &nameFlagScreen{b: b, fnt: b.fnt, name: []rune(suggested), flagSel: flagSel, hoverF: -1}
 	if im, err := decodeAsset(b.res, "raceopt.lbx", 0); err == nil && im.Embedded != nil {
 		s.bg = ebiten.NewImageFromImage(im.Frames[0].ToRGBA(im.Embedded, im.KeyColor()))
 	}
@@ -90,8 +94,18 @@ func (s *nameFlagScreen) update(in shell.InputState) *origTransition {
 			s.b.session.PlayerName = name
 			s.b.session.FlagColor = s.flagSel
 		}
-		// 熱座局:命名旗色是新遊戲流程的最後一步,席位要在這裡才建——`SetupHotseat`
-		// 會把「目前的玩家狀態」整組存成第 0 席,種族/名字/旗色都定案之後做才對。
+		if s.b.networkPending && s.b.networkHost {
+			return s.b.finishNetworkHostSetup()
+		}
+		// 熱座局先讓玩家在已生成的帝國清單中指定真人席位;席位要在命名/旗色
+		// 已定案後才建,但不能再默默接管最後幾個 AI。
+		if s.b.pendingHotseat > 1 {
+			next, err := s.b.hotseatEmpireSelect()
+			if err != nil {
+				return nil
+			}
+			return &origTransition{next: next}
+		}
 		s.b.applyPendingHotseat()
 		return s.b.goTo(s.b.galaxy, "星系主畫面")
 	}
@@ -109,15 +123,15 @@ func (s *nameFlagScreen) draw(dst *ebiten.Image) {
 	gold := color.RGBA{240, 220, 120, 255}
 	body := color.RGBA{206, 218, 240, 255}
 
-	s.fnt.DrawCentered(dst, s.b.tr("為你的帝國命名", "NAME YOUR EMPIRE"), 320, 70, 18, gold)
+	s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.b.tr("為你的帝國命名", "NAME YOUR EMPIRE"), 18, 600), 320, 70, 18, gold)
 
 	// 名稱輸入框。
 	bx, by, bw, bh := 170, 140, 300, 40
 	fillPanel(dst, float32(bx), float32(by), float32(bw), float32(bh), color.RGBA{20, 26, 40, 220}, false)
 	vector.StrokeRect(dst, float32(bx), float32(by), float32(bw), float32(bh), 1.5, color.RGBA{110, 150, 210, 255}, false)
-	name := string(s.name) + "_" // 尾端游標
+	name := truncateToWidth(s.fnt, string(s.name), 18, float64(bw-18)) + "_" // 尾端游標
 	s.fnt.DrawCentered(dst, name, float64(bx+bw/2), float64(by+bh/2), 18, body)
-	s.fnt.DrawCentered(dst, s.b.tr("(輸入名稱;可用鍵盤編輯)", "(type a name; the keyboard edits it)"),
+	s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.b.tr("(輸入名稱;可用鍵盤編輯)", "(type a name; the keyboard edits it)"), 11, 560),
 		320, 200, 11, color.RGBA{150, 160, 180, 255})
 
 	// 旗幟顏色。
@@ -137,14 +151,14 @@ func (s *nameFlagScreen) draw(dst *ebiten.Image) {
 	}
 	if s.flagSel >= 0 && s.flagSel < len(shell.FlagColors) {
 		fc := shell.FlagColors[s.flagSel]
-		s.fnt.DrawCentered(dst, s.b.tr("旗色:"+fc.Name, "Banner: "+fc.EnName), 320, 312, 13, body)
+		s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.b.tr("旗色:"+fc.Name, "Banner: "+fc.EnName), 13, 500), 320, 312, 13, body)
 	}
 
 	drawBtn := func(rect func() (int, int, int, int), label string, accent color.RGBA) {
 		x, y, w, h := rect()
 		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{34, 34, 44, 255}, false)
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, accent, false)
-		s.fnt.DrawCentered(dst, label, float64(x+w/2), float64(y+h/2), 14, body)
+		s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, label, 14, float64(w-10)), float64(x+w/2), float64(y+h/2), 14, body)
 	}
 	drawBtn(s.cancelRect, s.b.tr("返回", "BACK"), color.RGBA{160, 140, 100, 255})
 	drawBtn(s.acceptRect, s.b.tr("開始遊戲", "START GAME"), color.RGBA{120, 200, 130, 255})

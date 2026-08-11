@@ -1,61 +1,73 @@
-# CMBTSHP.LBX 戰鬥艦 sprite 結構與艦級對照(2026-07-11)
+# `CMBTSHP.LBX` 戰鬥艦 sprite 映射與幀序（2026-08-11）
 
-> 對應 WORKLIST task #12「艦型 sprite 完整對照」。方法:網路查證(社群文件)定結構 +
-> 視覺比對(解碼出的 sprite 挑大小)補尺寸層。**不需反組譯、不需 DOSBox oracle**——
-> 尺寸層用我方 lbxdump 解出的現成 sprite 目視挑選(rulebook 64 截圖式對照,以自產解碼輸出當 oracle)。
+這份文件只把原版執行檔直接讀出的欄位與資產結構標成「已證實」；沒有 raw
+picture 的 remake 舊 JSON／抽象敵艦才使用視覺 fallback。
 
-## 1. 結構(社群多方來源確證)
+## 已證實的資產結構與圖片索引
 
-`CMBTSHP.LBX` 共 **360 個資產**(59×60、各 20 幀動畫、無內嵌調色盤)。
+`CMBTSHP.LBX` 的 SHA-256 是
+`ae731ad1d7e09f6dcaa573d22291a7713af8897047b1bbd73e7d06e383f8bb1e`，共有 360 個
+資產，分成 8 個色塊、每塊 45 個資產。IDA Pro 9.4 對 `Orion2.exe.i64`
+（SHA-256 `4a01791fcf877ed87a740a54748694ab34a02675e3117dac052aeaa3f883944e`）的
+`sub_30062 @ 0x30062` 直接讀出：
 
-- **按「玩家顏色」分組,不是按「種族」**——同一設計圖對應玩家在遊戲裡選的 banner 顏色,
-  與所選種族無關。來源:
-  - karoltomala(Wolverine)逆向結論,經 Apolyton「The MOO2 LBX format explained」引用:
-    "ship design DOESN'T belong to RACE, but to COLOR you choose"。
-  - The Spriters Resource 把素材切成 **8 個色系 sheet**:Blue/Brown/Green/Grey/Orange/Purple/Red/Yellow。
-  - smuchadissertation「Master of Orion visual style」部落格:"each ship type is limited to the
-    faction colour and not the actual faction being played"(佐證)。
-- **8 色 × 45 = 360**(算術推導):每個色塊 45 個資產 = **44 張艦艇 sprite(索引 0..43)+ 1 張
-  palette-holder 小圖(索引 44)**。palette-holder 是 2×1 內嵌 32 色調色盤的佔位圖,提供該色塊上色用
-  (先前不帶 `--pal` 的 lbxdump 只解出這 8 張 = idx 44/89/134/179/224/269/314/359,正是各色塊界)。
-
-色塊 k(k=0..7)的資產配置:
-```
-sprite 索引  = 45*k + 0 .. 45*k + 43   (44 張艦艇)
-palette 索引 = 45*k + 44               (該色塊的調色盤 holder)
+```text
+asset = 45 * player_color + raw_ship_picture
 ```
 
-## 2. 艦級 → sprite 對照(視覺比對)
+其中 `player_color` 是玩家記錄 `+0x26` 的 0..7 色塊，`raw_ship_picture` 是艦艇
+記錄 `+0xC4` 的原始欄位。標準艦的合法 CMBTSHP 圖片為色塊內 0..43；索引 44
+（十六進位 `0x2C`）是原版進入 `MONSTER.LBX`／調色盤路徑的 sentinel，不能當作
+標準艦 sprite。每色塊最後一個資產因此是 palette-holder：
 
-社群**無人記錄**「同色 45 張裡各艦體尺寸對應哪張」(moo2mod「The Book」/ModdingWiki/LBX 工具皆無)。
-本專案用 `lbxdump --pal CMBTSHP.LBX:44 CMBTSHP.LBX <out>`(旗標須在位置參數前,否則 Go flag 不解析)
-解出色塊 0 的 44 張,拼成對照網格目視——**索引 0→43 大小單調遞增**(0-10 最小如巡防、33-43 最大填滿
-59×60 格)。挑 6 個跨全範圍、逐一放大確認單調變大者當各艦級代表:
+```text
+標準艦 sprite：45*k + 0 .. 45*k + 43
+palette-holder：45*k + 44
+```
 
-| 艦級(remake) | 色塊內索引 | 觀感 |
-|---|---|---|
-| 巡防艦 Frigate | 3 | 最小 |
-| 驅逐艦 Destroyer | 12 | 小 |
-| 巡洋艦 Cruiser | 20 | 中 |
-| 戰艦 Battleship | 28 | 中大(雙節結構) |
-| 泰坦 Titan | 36 | 大 |
-| 末日之星 Doom Star | 43 | 最大,填滿格 |
+這條公式已接到 `CMBTSHPSpriteIndex`、`.GAM` 匯入的 `Ship.CombatPicture` 與
+戰術 `StartCombat`。raw picture=0 也是合法圖片，不能以 Go 零值判定「未知」。
 
-> 這是**近似對照**(把 44 張視為約略尺寸序,取代表值),非「原版設計 picture 欄位的精確映射」——
-> 後者仍需實機。但足以讓戰術戰鬥畫面**依艦級顯示不同大小 sprite**,取代先前所有艦共用單一 placeholder
-> (CMBTSHP#30)。
+## 顏色與 fallback
 
-## 3. 接線方案
+玩家的真實 raw picture 直接套用上述公式；敵方若有 `.GAM` 藍圖與顏色欄位也走同一
+條公式。沒有 raw picture 的舊存檔、程序化 demo 或只有抽象戰力的敵艦，才使用
+`CombatSpriteForClass`／`CombatSpriteForStrength` 的小艦到大艦代表索引。代表索引
+（3、12、20、28、36、43）是**降級顯示**，不是原版艦級→picture 表，不能反向
+覆寫已匯入的 raw picture。
 
-- **玩家艦**用色塊 0(索引 0-43,palette holder 44);**敵艦**用另一色塊(如色塊 1,索引 45-88,
-  palette holder 89)以視覺區分敵我。各用自己色塊的 palette-holder 上色。
-- 艦級→索引用上表;`CombatShip` 需帶艦級或算好的 sprite 索引(玩家由 `sh.Class` 推,敵艦由
-  `genEnemyFleet` 戰力值反推近似艦級)。
-- sprite 依 `(色塊, 艦級)` 快取,避免每幀重解。
+## 幀與轉向
 
-## 4. 未決 / 誠實標註
+LBX 解碼抽樣確認每個 CMBTSHP 資產含 20 個 frame；這是資產格式事實。原版
+`sub_3F5F1 @ 0x3F5F1` 將幾何方向轉成 0..15 的 raw heading；
+`sub_3F628 @ 0x3F628` 讀艦艇記錄 `+0x23`，依最短方向把 heading 每次只改變
+`+1` 或 `-1`，再以 16 取餘。原版 loader `sub_30062 @ 0x30062` 確實使用
+`45*color + picture`，但本次靜態輸出沒有找到「20 個 frame 如何隨時間遞增」的
+獨立 timer／tick 常數，也沒有足夠證據把 20 frame 命名成 20 個方向。
 
-- 8 色的實際顏色順序(哪個索引段是 Blue/Red…)未逐一驗證,接線只需「兩個相異色塊」故不影響。
-- 艦級→索引為視覺近似;若日後有實機 oracle 可校正為原版精確 picture 映射。
-- 44 張的完整語意(是否 6 尺寸×N 設計、各尺寸幾張)未定論(社群軼事「6 設計/色/尺寸」數字對不上
-  360,未採信);本文只取「約略尺寸序」這個目視可靠的結論。
+因此 remake 的責任邊界是：
+
+- `CMBTSHPSpriteIndex` 是原版精確圖片映射；
+- `CMBTSHPFrameForHeading` 是 16 向 heading 到 20 frame 的最近角度顯示 adapter；
+- 戰術畫面在艦艇移動後以 `CMBTSHPFrameAtTick` 播放固定、可重播的短掃掠，停止後回到
+  `CMBTSHPFrameForHeading` 的固定幀；不以 wall-clock 讓靜止艦自行旋轉；
+- `CMBTSHPFrameHoldTicks=4`、`CMBTSHPMotionFrameCount=4` 與 `[0,1,2,1]` 是 remake
+  顯示近似。IDA 對 `sub_30062`／`sub_30631`／`sub_31F25`／`sub_3F628` 的深度窗口
+  沒有找到 frame counter、clock／timer 呼叫或中間幀停留常數；原版 frame timer 仍標為
+  未知，只有取得可啟動的原版 runtime（目前缺 `VESA.COM`）才值得逐值校正。
+
+2026-08-11 的 runtime 接線位於 `cmd/moo2/interactive.go`：點擊移動時記錄本次
+`shipMotionStart`，繪圖只在 `CMBTSHPMotionDurationTicks` 內消費 timer；這使 CMBTSHP
+動畫有玩法觸發點，同時不把近似 timer 誤報成原版已證實常數。
+
+這樣不會把「精確 picture 映射已完成」誤報成「精確動畫時序也已完成」。
+
+## 可回查證據
+
+- `tools/ida/late_oracle.idc`：非破壞式輸出 `0x30062`、`0x49F99`、`0x3F5F1`、
+  `0x3F628`；原始名稱、運算元、IDA 線性位址均保留。
+- `internal/shell/session.go`：`CMBTSHPSpriteIndex`、`CombatSpriteForShip`、
+  `CMBTSHPFrameForHeading`。
+- `cmd/moo2/interactive.go`：依色塊 palette-holder 與 frame cache 載入資產。
+- [`docs/re/oracle-static-ida-20260811.md`](../re/oracle-static-ida-20260811.md)：
+  輸入雜湊、工具版本、原始匯出與證據等級。

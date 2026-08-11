@@ -145,13 +145,14 @@ func TestFleetResearchReachesTheResearchPhase(t *testing.T) {
 	}
 }
 
-// 五個新元件的主題全部對得上執行檔。
+// 新增艦艇元件的主題全部對得上執行檔。
 func TestNewShipSystemsHaveRealTopics(t *testing.T) {
 	want := map[string]gamedata.Technology{
 		"偵察實驗室": gamedata.TECH_SCOUT_LAB,
 		"強化船體":  gamedata.TECH_REINFORCED_HULL,
 		"多相護盾":  gamedata.TECH_MULTIPHASED_SHIELDS,
 		"戰鬥掃描器": gamedata.TECH_BATTLE_SCANNER,
+		"傳送器":   gamedata.TECH_TRANSPORTERS,
 	}
 	have := map[string]Component{}
 	for _, c := range SpecialOptions {

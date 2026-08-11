@@ -101,7 +101,7 @@ func (b *sceneBuilder) infoHistory(s *overlayScreen) {
 
 	s.extras = append(s.extras, extraText{
 		x: infoPanelX + infoPanelW/2, y: infoPanelY + 36, size: 11,
-		text: b.tr("指標:", "Metric: ") + shell.HistoryMetricName(metric) +
+		text: b.tr("指標:", "Metric: ") + historyMetricLabel(b.lang, metric) +
 			b.tr("(點圖表切換)", " (click the chart to switch)"), col: body, align: 1,
 	})
 	if len(turns) < 2 {
@@ -124,7 +124,7 @@ func (b *sceneBuilder) infoHistory(s *overlayScreen) {
 			}
 		}
 	}
-	names := b.session.HistoryEmpireNames()
+	names := historyEmpireLabels(b.lang, b.session)
 	s.postDraw = func(dst *ebiten.Image) {
 		ox, oy := float64(s.offsetX), float64(s.offsetY)
 		// 座標軸
@@ -248,7 +248,7 @@ func (b *sceneBuilder) infoRaceStats(s *overlayScreen) {
 		}
 		col := empireLineColors[(i+1)%len(empireLineColors)]
 		s.extras = append(s.extras,
-			extraText{x: infoPanelX + 16, y: y, size: 11, text: a.Name, col: col},
+			extraText{x: infoPanelX + 16, y: y, size: 11, text: aiEmpireLabel(b.lang, *a), col: col},
 			extraText{x: infoPanelX + 150, y: y, size: 11, text: fmt.Sprintf("%d", len(a.Colonies)), col: body},
 			extraText{x: infoPanelX + 215, y: y, size: 11, text: fmt.Sprintf("%d", apop), col: body},
 			extraText{x: infoPanelX + 268, y: y, size: 11, text: fmt.Sprintf("%d", a.FleetStrength), col: body},
@@ -262,12 +262,12 @@ func (b *sceneBuilder) infoRaceStats(s *overlayScreen) {
 	s.extras = append(s.extras, extraText{x: infoPanelX + 16, y: y, size: 11, text: b.tr("AI 之間的關係", "Relations between AI empires"), col: gold})
 	y += 18
 	for i := range sess.AIPlayers {
-		line := sess.AIPlayers[i].Name + ":"
+		line := aiEmpireLabel(b.lang, sess.AIPlayers[i]) + ":"
 		for j := range sess.AIPlayers {
 			if i == j {
 				continue
 			}
-			line += fmt.Sprintf(" [%s %s]", sess.AIPlayers[j].Name, sess.AIRelationName(i, j))
+			line += fmt.Sprintf(" [%s %s]", aiEmpireLabel(b.lang, sess.AIPlayers[j]), sess.AIRelationName(i, j))
 		}
 		s.extras = append(s.extras, extraText{x: infoPanelX + 16, y: y, size: 10, text: line, col: body})
 		y += 15
@@ -307,7 +307,25 @@ func (b *sceneBuilder) infoTurnSummary(s *overlayScreen) {
 	}
 	// 本回合事件/戰報(原版事件有獨立畫面,remake 暫列於此)
 	y += 8
-	for _, msg := range []string{b.session.LastEvent, b.session.LastAntares, b.session.LastRaid, b.session.LastCouncil} {
+	eventMsg := b.session.LastEvent
+	if b.lang != i18n.Traditional && b.session.LastEventReport != nil && b.session.LastEventReport.MessageEN != "" {
+		eventMsg = b.session.LastEventReport.MessageEN
+	}
+	if b.lang != i18n.Traditional && b.session.LastPersistentEventEN != "" {
+		if eventMsg != "" {
+			eventMsg += " | "
+		}
+		eventMsg += b.session.LastPersistentEventEN
+	}
+	raidMsg := b.session.LastRaid
+	if b.lang != i18n.Traditional && b.session.LastRaidReport != nil && b.session.LastRaidReport.MessageEN != "" {
+		raidMsg = b.session.LastRaidReport.MessageEN
+	}
+	antaresMsg := b.session.LastAntares
+	if b.lang != i18n.Traditional && b.session.LastAntaresEN != "" {
+		antaresMsg = b.session.LastAntaresEN
+	}
+	for _, msg := range []string{eventMsg, antaresMsg, raidMsg, b.session.LastCouncil} {
 		if msg == "" {
 			continue
 		}

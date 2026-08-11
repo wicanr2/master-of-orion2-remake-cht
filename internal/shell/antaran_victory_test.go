@@ -105,12 +105,12 @@ func TestAssaultAntaresBlockedWhenEventsDisabled(t *testing.T) {
 	}
 }
 
-// TestAssaultAntaresWeakFleetLoses 驗證艦隊太弱(遠不如 antaranHomeFleetDefense 保守預設)時
+// TestAssaultAntaresWeakFleetLoses 驗證艦隊太弱(遠不如 antaranHomeFleetDefense)時
 // 戰敗,不誤判勝利,且套用了艦隊損失。
 func TestAssaultAntaresWeakFleetLoses(t *testing.T) {
 	s := NewDemoSession()
 	buildDimensionalPortal(s)
-	s.Fleet().Ships = []Ship{{Name: "偵察艦1", Class: "偵察艦"}} // 戰力遠不如 6 艘末日之星等級的防禦艦隊
+	s.Fleet().Ships = []Ship{{Name: "偵察艦1", Class: "偵察艦"}} // 戰力遠不如 13 個防禦單位
 
 	res, ok := s.AssaultAntares()
 
@@ -137,7 +137,7 @@ func TestAssaultAntaresWeakFleetLoses(t *testing.T) {
 func TestAssaultAntaresStrongFleetWinsAndVictoryDetected(t *testing.T) {
 	s := NewDemoSession()
 	buildDimensionalPortal(s)
-	s.Fleet().Ships = strongDoomStarFleet(8) // 8 艘末日之星,遠強於 antaranHomeFleetDefense(6 艘同級)
+	s.Fleet().Ships = strongDoomStarFleet(24) // 留足餘裕擊敗 13 個防禦單位及其已知戰機艙
 
 	res, ok := s.AssaultAntares()
 
@@ -145,7 +145,7 @@ func TestAssaultAntaresStrongFleetWinsAndVictoryDetected(t *testing.T) {
 		t.Fatalf("前置條件已滿足,AssaultAntares 應回傳 ok=true")
 	}
 	if !res.PlayerWon {
-		t.Fatalf("8 艘末日之星艦隊應能擊敗 antaranHomeFleetDefense(6 艘同級),log=%v", res.Log)
+		t.Fatalf("24 艘末日之星艦隊應能擊敗含已知戰機艙的安塔蘭防禦艦隊,log=%v", res.Log)
 	}
 	if !s.AntaranHomeworldConquered {
 		t.Fatalf("戰勝後應設定 AntaranHomeworldConquered=true")

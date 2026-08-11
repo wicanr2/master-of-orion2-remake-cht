@@ -55,8 +55,7 @@ const ShipDamageFloorHP = 1
 const AutoRepairPercentPerRound = 20
 
 // CyberneticRepairPercentPerRound 是機械化種族每回合修復的結構損傷比例(手冊 p.25:10%)。
-// ⚠ remake 目前沒有「機械化」種族特質欄位,這個常數尚無呼叫端——留著是為了讓手冊數字有地方
-// 記錄,並在種族特質系統補上時直接可用。
+// 目前只保留數值供未來逐系統損傷模型使用；現有艦艇抽象已接上手冊同段的戰後全修復。
 const CyberneticRepairPercentPerRound = 10
 
 // shipMaxHP 回傳一艘船未受損時的戰鬥血量(與 mkPlayerCombatants 的算法一致)。
@@ -145,11 +144,12 @@ func (s *GameSession) starIsPlayerBase(starIdx int) bool {
 	return s.HasOutpostAt(starIdx)
 }
 
-// repairAfterBattle 做戰後修復。三個觸發條件,任一成立就完全修復:
+// repairAfterBattle 做戰後修復。四個觸發條件,任一成立就完全修復:
 //
 //   - 裝有自動修復元件的船(手冊 p.82「completely repaired after every battle」)
 //   - 玩家已研究進階損害管制時的所有船(手冊 p.80)
 //   - 艦隊裡有 **Engineer 技能軍官**且**這場打贏了**(手冊 p.136,見下)
+//   - 半機械化種族的所有船(手冊 p.25「after any combat, they repair their ships completely」)
 //
 // won 只影響第三條。前兩條是裝備/科技的被動效果,手冊那兩句都沒有勝負條件,不加。
 //
@@ -168,15 +168,15 @@ func (s *GameSession) starIsPlayerBase(starIdx int) bool {
 //
 //   - **「has not retreated」沒有東西可以判。** remake 的戰鬥解算沒有撤退機制
 //     (勝負由雙方剩餘艦數決定,見 ResolveBattle),所以這個條件恆真。
-//   - **軍官沒有指派到艦隊。** `GameSession.Leaders` 是帝國全域清單,沒有「這位軍官在哪支
-//     艦隊」的欄位——與 commandoLeaderTier 同一個既有近似:帝國內有這位軍官就算數。
+//   - 原版的 Engineer 是指派到艦艇／艦隊才生效;目前已由 `Ship.OfficerName` 接上逐艦查詢。
 func (s *GameSession) repairAfterBattle(won bool) {
 	adc := s.playerHasAdvancedDamageControl()
-	eng := won && engineerLeaderTier(s.Leaders) > 0
+	eng := won && s.assignedEngineerTier(s.SelectedFleet) > 0
+	cybernetic := s.RaceCybernetic()
 	// 只修**參戰的那一支**——戰後修復是戰鬥的收尾,沒去打的艦隊不在其中。
 	f := s.Fleet()
 	for i := range f.Ships {
-		if adc || eng || shipHasAutoRepair(f.Ships[i]) {
+		if adc || eng || cybernetic || shipHasAutoRepair(f.Ships[i]) {
 			repairShipFull(&f.Ships[i])
 		}
 	}
