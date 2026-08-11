@@ -2128,12 +2128,31 @@ func (s *GameSession) ShiftColonyJob(idx int, from, to string) {
 // ——2026-07-11 取代這裡原本「票數=人口、較高者當選」的簡化版(無成立門檻、無2/3多數、
 // 未接勝利判定,對照 GAME_MANUAL.pdf p.183 手冊原文是錯誤示範,已移除)。
 
+// RefitJob 是一筆排入殖民地建造佇列的艦艇改裝工作。
+//
+// Source 保留在佇列裡而非艦隊中：這使艦艇在改裝期間不可出戰／移動，而且若玩家
+// 從佇列移除這筆工作，就能遵守原版手冊所述的「取消改裝會毀掉該艦」。Target 是
+// 已在排程當下凍結的目標設計，避免之後研究完成或調整設計畫面時讓同一存檔的
+// 改裝結果漂移。ReturnStar 是完工後回到軌道的星系；若原艦隊已離開，會在該星
+// 建立一支新艦隊而不是把船送到不相干的艦隊。
+//
+// 目標設計的選擇規則見 production_controls.go：原版允許從設計庫挑同艦體設計，
+// remake 目前沒有可持久化的設計庫，故採「目前已解鎖的自動最佳模板」近似。
+type RefitJob struct {
+	Source     Ship
+	Target     Ship
+	ReturnStar int
+}
+
 // ColonyBuild 是某殖民地目前的建造項目。
 type ColonyBuild struct {
 	Name         string
 	Progress     int
 	ProgressHalf int // 半機械族建造進度的半單位餘數；舊存檔缺欄位時為 0
 	Cost         int
+	// Refit 非 nil 時本項是艦艇改裝，而非同名建築。保留在 ColonyBuild 裡讓既有
+	// Builds / BuildQueue 的 JSON、熱座與網路指令都走同一條可保存佇列。
+	Refit *RefitJob
 }
 
 // TradeGoodsBuildName 是「貿易品」建造佇列選項的名稱。與空字串「不建造」同類——是佇列的
@@ -2402,12 +2421,25 @@ func (s *GameSession) applyBuildingEffect(i int, name string) {
 // 不會、也不應該疊加到這裡的建造進度。
 func (s *GameSession) advanceBuilds() {
 	s.LastBuilt = nil
+	s.ensureBuildQueue()
 	if s.ColonyBuildings == nil {
 		s.ColonyBuildings = make([]map[string]bool, len(s.PlayerColonies))
 	}
 	for i := range s.Builds {
 		b := &s.Builds[i]
-		if b.Name == "" || b.Cost == 0 {
+		if b.Name == "" {
+			continue
+		}
+		if b.Cost == 0 {
+			// 自動建造中的住宅在滿人口時，或貿易品在新設施解鎖後，會在這裡
+			// 重新挑選；手動選擇時 AutoBuild 為 false，仍維持原本的持續模式。
+			s.refreshAutoBuild(i)
+			continue
+		}
+		// BUY 會在按鈕當下把進度標滿，效果仍在 EndTurn 才完成。這個早退
+		// 不依賴 LastPlayerOutput，故即使剛讀檔還沒有上回合產出也不會卡住。
+		if colonyBuildComplete(*b) {
+			s.completeColonyBuild(i)
 			continue
 		}
 		if i >= len(s.LastPlayerOutput.Colonies) {
@@ -2434,30 +2466,56 @@ func (s *GameSession) advanceBuilds() {
 			complete = b.Progress >= b.Cost
 		}
 		if complete {
-			if i < len(s.ColonyBuildings) {
-				if _, isSpecial := gamedata.SpecialActionByNameZH(b.Name); isSpecial {
-					// Special 一次性行動(地形改造/蓋亞轉化/土壤改良/運輸艦隊):刻意不記入
-					// ColonyBuildings。手冊明講地形改造「可以套用好幾次」("You can terraform a
-					// planet several times"),運輸艦隊同樣可反覆建造(每次都再 +5 艘),若記入
-					// ColonyBuildings,第二次套用會被下面「已建過就不再套用效果」的 dedup 判斷
-					// 擋下,不符手冊——見 gamedata/special_actions.go 檔頭說明。
-					s.applySpecialAction(i, b.Name)
-				} else {
-					if s.ColonyBuildings[i] == nil {
-						s.ColonyBuildings[i] = make(map[string]bool)
-					}
-					if !s.ColonyBuildings[i][b.Name] {
-						s.ColonyBuildings[i][b.Name] = true
-						s.applyBuildingEffect(i, b.Name) // 首次完工才套用長期效果
-						s.recalcColonyMorale(i)          // 士氣建築(全息模擬艙/歡樂穹頂)或 Barracks 完工需重算士氣
-					}
-				}
-			}
-			s.LastBuilt = append(s.LastBuilt, fmt.Sprintf("殖民地 %d 完成建造:%s", i+1, b.Name))
-			*b = ColonyBuild{} // 完成清空
-			s.popNextBuild(i)  // 佇列有排隊項就自動接上(原版 7 格 BUILD QUEUE 行為)
+			s.completeColonyBuild(i)
 		}
 	}
+}
+
+func colonyBuildComplete(b ColonyBuild) bool {
+	return b.Cost > 0 && b.Progress*2+b.ProgressHalf >= b.Cost*2
+}
+
+// completeColonyBuild 套用一項已完成的佇列工作，再決定是重複、接下一格或交給
+// AUTO BUILD。改裝與一般建築共用這個出口，故 BUY、半機械族半單位與存檔回復
+// 都不會各自走出不同的完成規則。
+func (s *GameSession) completeColonyBuild(i int) {
+	if i < 0 || i >= len(s.Builds) {
+		return
+	}
+	b := s.Builds[i]
+	if b.Name == "" {
+		return
+	}
+	if b.Refit != nil {
+		s.completeRefitJob(*b.Refit)
+		s.LastBuilt = append(s.LastBuilt,
+			fmt.Sprintf("殖民地 %d 完成改裝:%s", i+1, b.Refit.Target.Name))
+	} else {
+		if i < len(s.ColonyBuildings) {
+			if _, isSpecial := gamedata.SpecialActionByNameZH(b.Name); isSpecial {
+				// Special 一次性行動(地形改造/蓋亞轉化/土壤改良/運輸艦隊):刻意不記入
+				// ColonyBuildings。手冊明講地形改造可套用好幾次，運輸艦隊同樣可反覆
+				// 建造；若記入集合，第二次會被一般建築的去重規則擋掉。
+				s.applySpecialAction(i, b.Name)
+			} else {
+				if s.ColonyBuildings[i] == nil {
+					s.ColonyBuildings[i] = make(map[string]bool)
+				}
+				if !s.ColonyBuildings[i][b.Name] {
+					s.ColonyBuildings[i][b.Name] = true
+					s.applyBuildingEffect(i, b.Name)
+					s.recalcColonyMorale(i)
+				}
+			}
+		}
+		s.LastBuilt = append(s.LastBuilt, fmt.Sprintf("殖民地 %d 完成建造:%s", i+1, b.Name))
+	}
+	if repeat := s.RepeatBuildFor(i); sameRepeatBuild(repeat, b) {
+		s.Builds[i] = ColonyBuild{Name: repeat.Name, Cost: repeat.Cost}
+		return
+	}
+	s.Builds[i] = ColonyBuild{}
+	s.popNextBuild(i)
 }
 
 // applySpecialAction 對殖民地 i 套用某個已完工的 Special 一次性行動(地形改造/蓋亞轉化/
@@ -3748,8 +3806,13 @@ type GameSession struct {
 	// 原版殖民地畫面的 BUILD QUEUE 是 7 格(反組譯 Add_Build_Queue_Fields_ 確認),
 	// 完工自動接下一項;remake 先前只有一格。見 buildqueue.go 檔頭。
 	BuildQueue [][]ColonyBuild
-	LastBuilt  []string // 上回合完成的建造(供回合摘要)
-	popAccum   []int    // 各殖民地人口成長累加值(達門檻則 +1 人口)
+	// AutoBuild / RepeatBuild 與 PlayerColonies 平行。AutoBuild 是 AUTO BUILD 的
+	// 開關；RepeatBuild 的零值表示未指定重複項目，非零值只允許可重複的 Special。
+	// 兩者由 ensureBuildQueue 與殖民地數對齊，因此舊存檔零值安全。
+	AutoBuild   []bool
+	RepeatBuild []ColonyBuild
+	LastBuilt   []string // 上回合完成的建造(供回合摘要)
+	popAccum    []int    // 各殖民地人口成長累加值(達門檻則 +1 人口)
 
 	// --- 地面戰入侵(見 ground_invasion.go) ---
 	PlayerColonyMarines []int             // 各玩家殖民地 Marine Barracks 駐軍池(平行 PlayerColonies)

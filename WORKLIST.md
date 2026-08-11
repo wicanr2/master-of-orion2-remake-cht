@@ -52,9 +52,17 @@
 
 ##### 發行前的實作／視覺／驗證
 
-- [ ] **殖民地生產控制補齊或明確降級（實作／範圍）**：`BUY` 仍是灰色，建造視窗的 `AUTO BUILD`、
-  `REFIT`、`REPEAT BUILD` 仍會顯示「未實作」。若目標是完整重製，應完成它們的資料、回合、存檔與
-  UI 路徑；若決定不納入公開版，需在遊戲與 README／誠實現況中明確標成未支援，不能只留下灰鈕。
+- [x] **殖民地生產控制（2026-08-11）**：`BUY` 依目前進度扣 BC、於 EndTurn 完成；`AUTO BUILD`
+  有明示的固定 remake 優先順序；`REPEAT BUILD` 可循環殖民船、前哨船、運輸艦隊與其他可重複
+  Special；`REFIT` 可選停泊同星系的戰鬥艦、檢查 Cruiser 以上的 Star Base 門檻、保存凍結的
+  自動最佳模板、完成後回到原星系，取消則依手冊報廢來源艦。所有狀態進 JSON／熱座／TCP 指令重播；
+  原版 BUY 中段價格、AUTO 判斷與設計庫選取明確標為強推論或 remake 近似，詳見
+  [殖民地生產控制](docs/tech/colony-production-controls.md)。
+  Docker 抽樣已通過 BUY 邊界／完成、AUTO 保存、REPEAT Special、REFIT 保存／門檻／完成／取消，
+  以及 UI 的 AUTO／REPEAT／REFIT 預覽；命令重播刻意走 `MarshalSnapshot`／`RestoreSnapshot`，
+  不以會共用 Go 切片（slice）底層陣列的內部 `snapshot().restore()` 假裝兩台獨立機器。建造與改裝畫面的
+  可變長標題、訊息與艦名均已截斷或折行，35 張 Docker 畫廊啟動抽樣通過，代表圖為
+  `docs/screenshots/26_buildqueue.png`。
 - [ ] **最終公開包與發行閘門（打包）**：上述玩家可見問題完成後，重新建立 Linux／Windows／macOS
   公開包、驗證 `PUBLIC-SHA256SUMS`、解壓啟動 smoke，並再次確認公開產物不含原版 `.LBX`、音樂、音效或
   未授權字型。帶使用者私有資料的完整版只保留本機驗收用途。

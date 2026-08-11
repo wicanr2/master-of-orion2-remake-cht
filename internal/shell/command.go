@@ -51,6 +51,10 @@ const (
 	CmdAttackMonster        = "attack_monster"         // Args[0]=星
 	CmdEnqueueBuild         = "enqueue_build"          // Args[0]=殖民地, Args[1]=成本, Text=項目名
 	CmdDequeueBuild         = "dequeue_build"          // Args[0]=殖民地, Args[1]=佇列位置
+	CmdBuyBuild             = "buy_build"              // Args[0]=殖民地
+	CmdSetAutoBuild         = "set_auto_build"         // Args[0]=殖民地, Args[1]=0/1
+	CmdSetRepeatBuild       = "set_repeat_build"       // Args[0]=殖民地, Args[1]=成本, Text=Special 名稱，空=清除
+	CmdQueueRefit           = "queue_refit"            // Args[0]=殖民地, Args[1]=艦隊, Args[2]=艦艇
 	CmdShiftJob             = "shift_job"              // Args[0]=殖民地, Text="來源>目標"(見 shiftJobArgs)
 	CmdCycleTaxRate         = "cycle_tax_rate"         // 無參數
 	CmdSetRelocation        = "set_relocation"         // Args[0]=殖民地, Args[1]=目標星(−1=取消)
@@ -94,16 +98,16 @@ const (
 func PlayerCommandNames() []string {
 	names := []string{
 		CmdAssaultAntares, CmdAttackMonster, CmdAssignColonyLeader, CmdAssignShipOfficer,
-		CmdBombardColony, CmdBuildOutpost, CmdBuildShip, CmdChooseResearch,
+		CmdBombardColony, CmdBuildOutpost, CmdBuildShip, CmdBuyBuild, CmdChooseResearch,
 		CmdClearAllReloc, CmdClearAudience, CmdColonizePlanet, CmdColonizeStar,
 		CmdCombatOutcome, CmdCycleColonyBuild, CmdCycleSpyMission, CmdCycleTaxRate,
 		CmdDequeueBuild, CmdDismissAgent, CmdDismissColonyLeader, CmdDismissShipOfficer,
 		CmdDiplomacy, CmdEndTurn, CmdEnqueueBuild, CmdHireMerc, CmdHireMercAt,
 		CmdInvadeColony, CmdLoadMarines, CmdLoadTanks, CmdMindControl,
 		CmdOfferCashGift, CmdOfferStarGift, CmdOfferTechGift, CmdOutpostOnPlanet,
-		CmdRespondCouncil, CmdReturnShipOfficer, CmdSelectFleet, CmdSendFleet,
+		CmdQueueRefit, CmdRespondCouncil, CmdReturnShipOfficer, CmdSelectFleet, CmdSendFleet,
 		CmdSetAllReloc, CmdSetRelocation, CmdSetResearch, CmdSetSpyMission,
-		CmdSetStarReloc, CmdShiftJob, CmdSplitFleet, CmdTrainAgent, CmdTrainSpy,
+		CmdSetAutoBuild, CmdSetRepeatBuild, CmdSetStarReloc, CmdShiftJob, CmdSplitFleet, CmdTrainAgent, CmdTrainSpy,
 		CmdUnassignColonyLeader, CmdUnassignShipOfficer,
 	}
 	sort.Strings(names)
@@ -158,6 +162,14 @@ func (s *GameSession) ApplyPlayerCommand(c PlayerCommand) error {
 		s.EnqueueBuild(arg(c, 0, -1), c.Text, arg(c, 1, 0))
 	case CmdDequeueBuild:
 		s.DequeueBuild(arg(c, 0, -1), arg(c, 1, -1))
+	case CmdBuyBuild:
+		s.BuyCurrentBuild(arg(c, 0, -1))
+	case CmdSetAutoBuild:
+		s.SetAutoBuild(arg(c, 0, -1), arg(c, 1, 0) != 0)
+	case CmdSetRepeatBuild:
+		s.SetRepeatBuild(arg(c, 0, -1), c.Text, arg(c, 1, 0))
+	case CmdQueueRefit:
+		_, _ = s.QueueRefit(arg(c, 0, -1), arg(c, 1, -1), arg(c, 2, -1))
 	case CmdShiftJob:
 		from, to := shiftJobArgs(c.Text)
 		s.ShiftColonyJob(arg(c, 0, -1), from, to)

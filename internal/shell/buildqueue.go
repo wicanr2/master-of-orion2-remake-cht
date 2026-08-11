@@ -29,6 +29,18 @@ func (s *GameSession) ensureBuildQueue() {
 	if len(s.BuildQueue) > len(s.PlayerColonies) {
 		s.BuildQueue = s.BuildQueue[:len(s.PlayerColonies)]
 	}
+	for len(s.AutoBuild) < len(s.PlayerColonies) {
+		s.AutoBuild = append(s.AutoBuild, false)
+	}
+	if len(s.AutoBuild) > len(s.PlayerColonies) {
+		s.AutoBuild = s.AutoBuild[:len(s.PlayerColonies)]
+	}
+	for len(s.RepeatBuild) < len(s.PlayerColonies) {
+		s.RepeatBuild = append(s.RepeatBuild, ColonyBuild{})
+	}
+	if len(s.RepeatBuild) > len(s.PlayerColonies) {
+		s.RepeatBuild = s.RepeatBuild[:len(s.PlayerColonies)]
+	}
 }
 
 // BuildQueueFor 回傳殖民地 i 的完整佇列顯示內容:第 0 項是當前建造中的項目,其後是排隊項。
@@ -37,6 +49,7 @@ func (s *GameSession) BuildQueueFor(i int) []ColonyBuild {
 	if i < 0 || i >= len(s.Builds) {
 		return nil
 	}
+	s.ensureBuildQueue()
 	out := make([]ColonyBuild, 0, BuildQueueTotalSlots)
 	out = append(out, s.Builds[i])
 	if i < len(s.BuildQueue) {
@@ -50,19 +63,7 @@ func (s *GameSession) BuildQueueFor(i int) []ColonyBuild {
 // 佇列已滿(含當前項共 BuildQueueTotalSlots 格)回 false。
 func (s *GameSession) EnqueueBuild(i int, name string, cost int) bool {
 	s.recordPlayerCommand(PlayerCommand{Name: CmdEnqueueBuild, Args: []int{i, cost}, Text: name})
-	if i < 0 || i >= len(s.Builds) || name == "" {
-		return false
-	}
-	s.ensureBuildQueue()
-	if s.Builds[i].Name == "" {
-		s.Builds[i] = ColonyBuild{Name: name, Cost: cost}
-		return true
-	}
-	if len(s.BuildQueue[i]) >= buildQueueBacklogMax {
-		return false
-	}
-	s.BuildQueue[i] = append(s.BuildQueue[i], ColonyBuild{Name: name, Cost: cost})
-	return true
+	return s.enqueueBuildValue(i, ColonyBuild{Name: name, Cost: cost})
 }
 
 // SetCurrentBuild 直接指定殖民地 i 當前建造項,不動後續佇列。
@@ -89,6 +90,8 @@ func (s *GameSession) DequeueBuild(i, pos int) bool {
 		if s.Builds[i].Name == "" {
 			return false
 		}
+		removed := s.Builds[i]
+		s.discardQueuedBuild(i, removed)
 		s.Builds[i] = ColonyBuild{}
 		s.popNextBuild(i)
 		return true
@@ -97,6 +100,7 @@ func (s *GameSession) DequeueBuild(i, pos int) bool {
 	if pos-1 >= len(q) {
 		return false
 	}
+	s.discardQueuedBuild(i, q[pos-1])
 	s.BuildQueue[i] = append(q[:pos-1], q[pos:]...)
 	return true
 }
@@ -109,6 +113,7 @@ func (s *GameSession) popNextBuild(i int) {
 		return
 	}
 	if i >= len(s.BuildQueue) || len(s.BuildQueue[i]) == 0 {
+		s.refreshAutoBuild(i)
 		return
 	}
 	next := s.BuildQueue[i][0]
@@ -116,16 +121,19 @@ func (s *GameSession) popNextBuild(i int) {
 
 	// 跳過已經蓋好的建築:排隊期間同一棟可能已由別的途徑完成(例如事件給予),
 	// 原版不會重複蓋。一路跳到找到還沒蓋的、或佇列空掉為止。
-	for next.Name != "" && s.buildAlreadyDone(i, next.Name) {
+	for next.Name != "" && next.Refit == nil && s.buildAlreadyDone(i, next.Name) {
 		if len(s.BuildQueue[i]) == 0 {
+			s.refreshAutoBuild(i)
 			return
 		}
 		next = s.BuildQueue[i][0]
 		s.BuildQueue[i] = s.BuildQueue[i][1:]
 	}
-	if next.Name != "" && !s.buildAlreadyDone(i, next.Name) {
+	if next.Name != "" && (next.Refit != nil || !s.buildAlreadyDone(i, next.Name)) {
 		s.Builds[i] = next
+		return
 	}
+	s.refreshAutoBuild(i)
 }
 
 // buildAlreadyDone 回傳殖民地 i 是否已經有這棟建築。

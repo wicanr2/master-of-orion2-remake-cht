@@ -103,7 +103,11 @@ type sessionSnapshot struct {
 	BuildQueue [][]ColonyBuild `json:"build_queue,omitempty"`
 	// Outposts 是玩家的軍事前哨站(見 outpost.go)。omitempty:2026-08-06 之前的存檔沒有
 	// 這個欄位,解碼成 nil = 「沒有前哨站」,語意正確。
-	Outposts []Outpost `json:"outposts,omitempty"`
+	// AutoBuild / RepeatBuild 是 AUTO BUILD 與 REPEAT BUILD 的玩家選擇；舊存檔
+	// 缺欄位時零值正好等於兩者皆關閉。
+	AutoBuild   []bool
+	RepeatBuild []ColonyBuild
+	Outposts    []Outpost `json:"outposts,omitempty"`
 	// Monsters 是星圖上的守衛怪獸(見 monster.go)。omitempty:舊存檔沒有這個欄位,
 	// 解碼成 nil = 「星圖上沒有怪獸」,與加這個系統之前的行為逐位元一致。
 	Monsters []MonsterGuard `json:"monsters,omitempty"`
@@ -219,6 +223,9 @@ type sessionSnapshot struct {
 
 // snapshot 擷取 GameSession 目前狀態成可序列化快照。
 func (s *GameSession) snapshot() sessionSnapshot {
+	// 新殖民地建立後，舊路徑可能尚未碰過建造 UI；在快照邊界對齊三組
+	// 平行生產欄位，確保存檔不會把零值 Auto/Repeat 留在錯誤殖民地位置。
+	s.ensureBuildQueue()
 	// 熱座:目前這一席的「活的」狀態放在頂層欄位(Player/PlayerColonies/…),
 	// Seats[ActiveSeat] 停在上次換人時的快照。存檔前先同步回去,否則讀檔會退回上一輪。
 	seats := s.Seats
@@ -252,6 +259,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		ColonyRelocateTo: s.ColonyRelocateTo, ShowRelocationLines: s.ShowRelocationLines,
 		SelectedStar: s.SelectedStar, Difficulty: s.Difficulty, Builds: s.Builds,
 		BuildQueue:       s.BuildQueue,
+		AutoBuild:        s.AutoBuild,
+		RepeatBuild:      s.RepeatBuild,
 		Outposts:         s.Outposts,
 		Monsters:         s.Monsters,
 		PersistentEvents: s.PersistentEvents,
@@ -334,7 +343,9 @@ func (snap sessionSnapshot) restore() *GameSession {
 		// 舊檔一律補成開,新檔照存的值。
 		ShowRelocationLines: len(snap.Fleets) == 0 || snap.ShowRelocationLines,
 		SelectedStar:        snap.SelectedStar, Difficulty: snap.Difficulty,
-		Builds: snap.Builds, BuildQueue: snap.BuildQueue, Outposts: snap.Outposts, Monsters: snap.Monsters,
+		Builds: snap.Builds, BuildQueue: snap.BuildQueue,
+		AutoBuild: snap.AutoBuild, RepeatBuild: snap.RepeatBuild,
+		Outposts: snap.Outposts, Monsters: snap.Monsters,
 		PersistentEvents: snap.PersistentEvents, CapturedPop: snap.CapturedPop,
 		popAccum: snap.PopAccum, ColonyBuildings: snap.ColonyBuild,
 		EventSeed: snap.EventSeed, AntaresRaids: snap.AntaresRaids, RaceIndex: snap.RaceIndex,
@@ -383,6 +394,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 		snap.EventSeed*6364136223846793005+1442695040888963407, snap.DiscoveryDraws)
 	out.spyRand = restoreRandStream(snap.EventSeed*2654435761+7, snap.SpyDraws)
 	out.researchRand = restoreRandStream(snap.EventSeed*2654435761+13, snap.ResearchDraws)
+	out.ensureBuildQueue()
 	return out
 }
 

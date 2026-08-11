@@ -31,9 +31,9 @@ package main
 //	     OK           (560, 447)   COLBLDG#5   61×19
 //	     (資產尺寸實測 lbxinfo,與座標相加都落在框架上那幾顆鈕的位置)
 //
-// ⚠ remake 沒接的:REFIT / DESIGN / REPEAT BUILD / Auto Build 四顆。原版的 REFIT 是艦艇
-// 改裝、DESIGN 跳艦艇設計、REPEAT BUILD 是重複建造旗標、Auto Build 是自動建造 toggle。
-// 這裡照原版位置畫出來但**畫成灰的**,不假裝可按——與多人設定畫面對未實作連線方式的處理一致。
+// remake 現已接上 REFIT、DESIGN、REPEAT BUILD 與 Auto Build：前者使用明示的
+// 自動最佳模板近似（見 refit.go），後兩者的狀態與指令會保存並可重播。原版未安全
+// 取得的「最佳」判斷不假稱精確；實際近似範圍見 docs/tech/colony-production-controls.md。
 
 import (
 	"fmt"
@@ -61,19 +61,19 @@ const (
 	bqQueueH             = 21
 )
 
-// bqButton 是框架上那六顆鈕:資產、位置、尺寸、有沒有接功能。
+// bqButton 是框架上那六顆鈕:資產、位置、尺寸與操作。
 type bqButton struct {
 	asset      int
 	x, y, w, h int
-	act        string // 空字串 = remake 未接,畫成灰的
+	act        string
 	zh, en     string
 }
 
 var bqButtons = []bqButton{
-	{2, 490, 342, 134, 22, "", "自動建造", "AUTO BUILD"},
-	{1, 492, 379, 62, 19, "", "改裝", "REFIT"},
+	{2, 490, 342, 134, 22, "auto", "自動建造", "AUTO BUILD"},
+	{1, 492, 379, 62, 19, "refit", "改裝", "REFIT"},
 	{3, 561, 379, 64, 19, "design", "設計", "DESIGN"},
-	{6, 503, 411, 113, 21, "", "重複建造", "REPEAT BUILD"},
+	{6, 503, 411, 113, 21, "repeat", "重複建造", "REPEAT BUILD"},
 	{4, 493, 447, 61, 19, "cancel", "取消", "CANCEL"},
 	{5, 560, 447, 61, 19, "ok", "確定", "OK"},
 }
@@ -83,6 +83,9 @@ type buildQueueScreen struct {
 	idx    int
 	chrome *ebiten.Image
 	msg    string
+	// repeatArmed 是玩家按下 REPEAT BUILD 後的下一次選取；可從左方清單或
+	// 下方既有佇列項目選擇，避免把原版的「再點一個目標」縮成隱藏預設。
+	repeatArmed bool
 }
 
 // buildQueuePopup 建造彈出視窗。操作的殖民地同 b.colonyIdx。
@@ -115,8 +118,34 @@ func (s *buildQueueScreen) update(in shell.InputState) *origTransition {
 			return b.goTo(b.colonyScreen, "殖民地")
 		case "design":
 			return b.goTo(b.shipDesign, "艦艇設計")
+		case "auto":
+			on := !sess.ColonyAutoBuild(s.idx)
+			sess.SetAutoBuild(s.idx, on)
+			if on {
+				s.msg = b.tr("已啟用自動建造（固定 remake 優先順序）",
+					"Auto Build enabled (fixed remake priority)")
+			} else {
+				s.msg = b.tr("已關閉自動建造", "Auto Build disabled")
+			}
+		case "refit":
+			sc, err := b.refitPopup(s.idx)
+			if err != nil {
+				s.msg = err.Error()
+				return nil
+			}
+			return &origTransition{next: sc}
+		case "repeat":
+			if active := sess.RepeatBuildFor(s.idx); active.Name != "" {
+				sess.SetRepeatBuild(s.idx, "", 0)
+				s.repeatArmed = false
+				s.msg = b.tr("已取消重複建造", "Repeat Build cancelled")
+			} else {
+				s.repeatArmed = true
+				s.msg = b.tr("請點左欄或佇列中的可重複 Special",
+					"Choose a repeatable Special from the list or queue")
+			}
 		default:
-			s.msg = b.tr("這顆原版有、remake 還沒接", "not implemented in this build yet")
+			s.msg = b.tr("這個操作目前不可用", "This action is unavailable")
 		}
 		return nil
 	}
@@ -126,6 +155,17 @@ func (s *buildQueueScreen) update(in shell.InputState) *origTransition {
 		if hitBox(in.MouseX, in.MouseY, bqQueueX0, bqQueueY0+i*bqQueueStep, bqQueueX1-bqQueueX0, bqQueueH) {
 			if clickSound != nil {
 				clickSound()
+			}
+			if s.repeatArmed {
+				q := sess.BuildQueueFor(s.idx)
+				if i >= len(q) || q[i].Name == "" || !sess.SetRepeatBuild(s.idx, q[i].Name, q[i].Cost) {
+					s.msg = b.tr("只能重複殖民船、前哨船、運輸艦隊或其他 Special",
+						"Only colony ships, outpost ships, freighters, and other Specials can repeat")
+					return nil
+				}
+				s.repeatArmed = false
+				s.msg = b.tr("已指定重複建造："+q[i].Name, "Repeat Build set")
+				return nil
 			}
 			sess.DequeueBuild(s.idx, i)
 			return nil
@@ -141,7 +181,17 @@ func (s *buildQueueScreen) update(in shell.InputState) *origTransition {
 			if clickSound != nil {
 				clickSound()
 			}
-			sess.EnqueueBuild(s.idx, opts[j].Name, opts[j].Cost)
+			if s.repeatArmed {
+				if sess.SetRepeatBuild(s.idx, opts[j].Name, opts[j].Cost) {
+					s.repeatArmed = false
+					s.msg = b.tr("已指定重複建造："+opts[j].Name, "Repeat Build set")
+				} else {
+					s.msg = b.tr("只能重複殖民船、前哨船、運輸艦隊或其他 Special",
+						"Only colony ships, outpost ships, freighters, and other Specials can repeat")
+				}
+			} else {
+				sess.EnqueueBuild(s.idx, opts[j].Name, opts[j].Cost)
+			}
 		}
 		return nil
 	}
@@ -193,8 +243,11 @@ func (s *buildQueueScreen) draw(dst *ebiten.Image) {
 		if i < len(q) && q[i].Name != "" {
 			col = body
 			label = q[i].Name
+			if q[i].Refit != nil {
+				label = b.tr("改裝：", "REFIT: ") + q[i].Refit.Source.Name
+			}
 			if i == 0 && q[i].Cost > 0 {
-				label = fmt.Sprintf("%s  %d/%d", q[i].Name, q[i].Progress, q[i].Cost)
+				label = fmt.Sprintf("%s  %d/%d", label, q[i].Progress, q[i].Cost)
 				if eta := sess.BuildETATurns(s.idx); eta > 0 {
 					label += fmt.Sprintf(b.tr("  約 %d 回合", "  ~%dt"), eta)
 				}
@@ -212,8 +265,11 @@ func (s *buildQueueScreen) draw(dst *ebiten.Image) {
 			continue
 		}
 		face, ink := color.RGBA{86, 88, 94, 255}, body
-		if bt.act == "" { // remake 未接:畫成灰的,不假裝可按
-			face, ink = color.RGBA{104, 106, 110, 255}, color.RGBA{68, 70, 74, 255}
+		if bt.act == "auto" && sess.ColonyAutoBuild(s.idx) {
+			face, ink = color.RGBA{62, 108, 78, 255}, color.RGBA{232, 250, 232, 255}
+		}
+		if bt.act == "repeat" && sess.RepeatBuildFor(s.idx).Name != "" {
+			face, ink = color.RGBA{118, 96, 52, 255}, color.RGBA{255, 242, 188, 255}
 		}
 		fillPanel(dst, float32(bt.x+3), float32(bt.y+3),
 			float32(bt.w-6), float32(bt.h-6), face, false)
@@ -226,10 +282,21 @@ func (s *buildQueueScreen) draw(dst *ebiten.Image) {
 		name = n
 	}
 	// 標題與提示放在框架中段的透明區(y 130..300 那塊空的),不要壓到下方的佇列格。
-	b.fnt.Draw(dst, name+b.tr(" ─ 建造", " ─ BUILD"), 210, 140, 14, gold)
+	b.fnt.Draw(dst, truncateToWidth(b.fnt, name+b.tr(" ─ 建造", " ─ BUILD"), 14, 250), 210, 140, 14, gold)
 	b.fnt.Draw(dst, b.tr("左欄點一下排入佇列;下方佇列點一下移除",
 		"click the left list to queue, a queue slot to remove"), 210, 162, 11, dim)
+	status := ""
+	if s.repeatArmed {
+		status = b.tr("REPEAT BUILD：請選目標", "REPEAT BUILD: choose a target")
+	} else if repeat := sess.RepeatBuildFor(s.idx); repeat.Name != "" {
+		status = b.tr("重複建造："+repeat.Name, "Repeat Build active")
+	} else if sess.ColonyAutoBuild(s.idx) {
+		status = b.tr("自動建造：啟用", "Auto Build: on")
+	}
+	if status != "" {
+		b.fnt.Draw(dst, truncateToWidth(b.fnt, status, 11, 250), 210, 180, 11, gold)
+	}
 	if s.msg != "" {
-		b.fnt.Draw(dst, s.msg, 210, 470, 11, color.RGBA{235, 160, 120, 255})
+		b.fnt.Draw(dst, truncateToWidth(b.fnt, s.msg, 11, 410), 210, 470, 11, color.RGBA{235, 160, 120, 255})
 	}
 }

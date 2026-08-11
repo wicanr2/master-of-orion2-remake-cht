@@ -72,6 +72,8 @@ type seat struct {
 	ArmorBarracksAge    []int
 	Builds              []ColonyBuild
 	BuildQueue          [][]ColonyBuild
+	AutoBuild           []bool
+	RepeatBuild         []ColonyBuild
 	ColonyBuildings     []map[string]bool
 	PopAccum            []int
 	// Fleets / SelectedFleet 是這位玩家的艦隊(多艦隊模型,見 fleet.go)。
@@ -134,8 +136,10 @@ func (s *GameSession) saveSeat() seat {
 		PlayerColonyPlanets: s.PlayerColonyPlanets,
 		PlayerColonyMarines: s.PlayerColonyMarines, PlayerColonyTanks: s.PlayerColonyTanks,
 		MarineBarracksAge: s.MarineBarracksAge, ArmorBarracksAge: s.ArmorBarracksAge,
-		Builds: s.Builds, BuildQueue: s.BuildQueue, ColonyBuildings: s.ColonyBuildings,
-		PopAccum: s.popAccum, Leaders: s.Leaders, ColonyLeaderNames: s.ColonyLeaderNames,
+		Builds: s.Builds, BuildQueue: s.BuildQueue,
+		AutoBuild: s.AutoBuild, RepeatBuild: s.RepeatBuild,
+		ColonyBuildings: s.ColonyBuildings,
+		PopAccum:        s.popAccum, Leaders: s.Leaders, ColonyLeaderNames: s.ColonyLeaderNames,
 		MercPool: s.MercPool, MercOfferedIdx: s.MercOfferedIdx,
 		PlayerSpies: s.PlayerSpies, PlayerSpyMissions: s.PlayerSpyMissions, DefensiveAgents: s.DefensiveAgents, Outposts: s.Outposts,
 		Fleets: s.Fleets, SelectedFleet: s.SelectedFleet, SelectedStar: s.SelectedStar,
@@ -160,13 +164,15 @@ func (s *GameSession) loadSeat(v seat) {
 	s.PlayerColonyPlanets = v.PlayerColonyPlanets
 	s.PlayerColonyMarines, s.PlayerColonyTanks = v.PlayerColonyMarines, v.PlayerColonyTanks
 	s.MarineBarracksAge, s.ArmorBarracksAge = v.MarineBarracksAge, v.ArmorBarracksAge
-	s.Builds, s.BuildQueue, s.ColonyBuildings = v.Builds, v.BuildQueue, v.ColonyBuildings
+	s.Builds, s.BuildQueue, s.AutoBuild, s.RepeatBuild, s.ColonyBuildings =
+		v.Builds, v.BuildQueue, v.AutoBuild, v.RepeatBuild, v.ColonyBuildings
 	s.popAccum, s.Leaders, s.ColonyLeaderNames = v.PopAccum, v.Leaders, v.ColonyLeaderNames
 	s.MercPool, s.MercOfferedIdx = v.MercPool, v.MercOfferedIdx
 	s.PlayerSpies, s.PlayerSpyMissions, s.DefensiveAgents, s.Outposts = v.PlayerSpies, v.PlayerSpyMissions, v.DefensiveAgents, v.Outposts
 	s.Fleets, s.SelectedFleet, s.SelectedStar = v.Fleets, v.SelectedFleet, v.SelectedStar
 	s.ColonyRelocateTo = v.ColonyRelocateTo
 	s.ensureFleet() // 席位可能是空的(舊存檔/新建席位),維持「至少一支艦隊」的不變量
+	s.ensureBuildQueue()
 	s.RaceIndex, s.CustomRaceTraits, s.PlayerName, s.FlagColor = v.RaceIndex, v.CustomRaceTraits, v.PlayerName, v.FlagColor
 	s.RaceCombatPct, s.raceGrowthPct = v.RaceCombatPct, v.RaceGrowthPct
 	s.RaceShipDefPct, s.RaceGroundBonus = v.RaceShipDefPct, v.RaceGroundBonus

@@ -79,7 +79,7 @@ const (
 	colJobStep         = 30
 
 	colBtnX, colBtnW = 551, 87
-	// CHANGE / BUY(量自框架圖,放大 4 倍比對 plate 邊緣)。remake 兩顆都還沒接功能。
+	// CHANGE / BUY(量自框架圖,放大 4 倍比對 plate 邊緣)。
 	colChangeX, colChangeW   = 519, 61
 	colBuyX, colBuyW         = 588, 40
 	colChangeY, colChangeH   = 123, 20
@@ -119,6 +119,10 @@ func (b *sceneBuilder) colonyScreen() (*overlayScreen, error) {
 	// CHANGE:原版就是「換要蓋什麼」——點下去開建造彈出視窗(buildqueue.go)。
 	// 先前這顆是畫成灰的沒接功能,佇列被塞在中段;中段還給行星表面之後,它才有事做。
 	hits = append(hits, hitRegion{colChangeX, colChangeY, colChangeW, colChangeH, "build"})
+	// BUY 只在有未完成、可買且國庫足夠的項目時建立熱區；停用狀態沒有假按鈕。
+	if b.session.CanBuyCurrentBuild(idx) {
+		hits = append(hits, hitRegion{colBuyX, colChangeY, colBuyW, colChangeH, "buy"})
+	}
 	// 中段的行星表面:點格子也開建造視窗(原版點空格是選建築槽,remake 還沒有那一層)。
 	hits = append(hits, hitRegion{0, colFieldY0, int(colScreenW), colFieldY1 - colFieldY0, "build"})
 
@@ -144,6 +148,10 @@ func (b *sceneBuilder) colonyScreen() (*overlayScreen, error) {
 				return nil
 			}
 			return &origTransition{next: sc}
+		case a == "buy":
+			if _, ok := s.BuyCurrentBuild(idx); ok {
+				return b.goTo(b.colonyScreen, "殖民地")
+			}
 		default:
 			return nil
 		}
@@ -227,15 +235,15 @@ func (b *sceneBuilder) drawColonyScreen(dst *ebiten.Image, idx int) {
 	// CHANGE / BUY 也是烘在框架上的英文。
 	// **CHANGE 已接上**(2026-08-07):原版它就是「換要蓋什麼」,中段還給行星表面之後
 	// 佇列搬進 buildqueue.go 那張彈出視窗,這顆正好是入口。
-	// BUY(花 BC 立即完工)仍未實作,沿用既有做法:不給熱區 + 字畫成灰的,
-	// 而不是留英文、也不是給一顆點了沒反應的中文鈕。
+	// BUY 會扣除依目前進度計算的 BC，並在本回合 EndTurn 完成項目；按鈕只在
+	// 國庫足夠時亮起，讓視覺狀態、熱區和規則端 CanBuyCurrentBuild 共用同一條判斷。
 	for _, btn := range []struct {
 		x, y, w, h int
 		zh         string
 		on         bool
 	}{
 		{colChangeX, colChangeY, colChangeW, colChangeH, b.tr("更換", "CHANGE"), true},
-		{colBuyX, colChangeY, colBuyW, colChangeH, b.tr("購買", "BUY"), false},
+		{colBuyX, colChangeY, colBuyW, colChangeH, b.tr("購買", "BUY"), sess.CanBuyCurrentBuild(idx)},
 	} {
 		face, ink := color.RGBA{112, 116, 120, 255}, color.RGBA{72, 74, 78, 255}
 		if btn.on { // CHANGE 接上建造視窗了,不再畫成灰的
