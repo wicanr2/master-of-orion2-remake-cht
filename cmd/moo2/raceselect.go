@@ -96,6 +96,16 @@ const (
 	rsTitleX, rsTitleY = 366, 52 // 標題橫幅(資產 33,219×29)
 	rsTitleW, rsTitleH = 219, 29
 	rsTitleAsset       = 33 // 0x21,Draw_Race_Selection_Screen_ 畫的標題橫幅
+
+	// 肖像下右側是 remake 補的種族能力資訊框。它不能跨到最下方機械飾板，
+	// 否則第二行描述會看起來像文字跑出對話框。
+	rsInfoX, rsInfoY = 180, 395
+	rsInfoW, rsInfoH = 164, 40
+
+	// 種族鈕的浮雕外框不能被中文字碰到：面板本身內縮 4px，文字安全帶再多留
+	// 2px。這個矩形是文字置中與截斷的唯一來源，避免日後只改一邊而把字移出按鈕。
+	rsButtonFaceInset = 4
+	rsButtonTextInset = 6
 )
 
 // raceSelect 建構種族選擇畫面。預設選「人類」(清單索引 5)。
@@ -126,6 +136,14 @@ func (s *raceSelectScreen) portrait(assetID int) *ebiten.Image {
 // rowRect 回傳第 i 顆種族鈕的矩形:2 欄 × 7 列,座標為反組譯真值(見檔頭)。
 func (s *raceSelectScreen) rowRect(i int) (x, y, w, h int) {
 	return rsBtnX0 + (i/rsBtnRows)*rsBtnColW, rsBtnY0 + (i%rsBtnRows)*rsBtnRowH, rsBtnW, rsBtnH
+}
+
+// rowTextRect 回傳種族按鈕內可安全放置譯文的內框。它與原版資產的按鈕外框完全分離，
+// 卻保持同一個整數像素中心，使點陣／向量字都不會因半像素位移而顯得模糊或偏移。
+func (s *raceSelectScreen) rowTextRect(i int) (x, y, w, h int) {
+	bx, by, bw, bh := s.rowRect(i)
+	return bx + rsButtonTextInset, by + rsButtonTextInset,
+		bw - 2*rsButtonTextInset, bh - 2*rsButtonTextInset
 }
 
 // cancelRect 是「取消」。原版這個畫面沒有可見的取消鈕,只綁 ESC;remake 沒有鍵盤路徑,
@@ -271,32 +289,37 @@ func (s *raceSelectScreen) draw(dst *ebiten.Image) {
 		if i == s.sel {
 			face = color.RGBA{70, 66, 58, 255}
 		}
-		fillPanel(dst, float32(x+4), float32(y+4), float32(w-8), float32(h-8), face, false)
+		fillPanel(dst, float32(x+rsButtonFaceInset), float32(y+rsButtonFaceInset),
+			float32(w-2*rsButtonFaceInset), float32(h-2*rsButtonFaceInset), face, false)
 		col := body
 		if i == s.sel {
 			col = gold
 		}
-		s.fnt.DrawCentered(dst, e.zh, float64(x+w/2), float64(y+h/2), 14, col)
+		tx, ty, tw, th := s.rowTextRect(i)
+		label := truncateToWidth(s.fnt, e.zh, 14, float64(tw))
+		s.fnt.DrawCentered(dst, label, float64(tx+tw/2), float64(ty+th/2), 14, col)
 	}
 
 	// 肖像下方那一條(y 395..438)放:左邊取消鈕、右邊族名 + 能力描述。
 	// ⚠ 這一區是 remake 自己的排版——原版這個畫面上沒有能力說明文字
 	// (`sub_103915(60,175,寬280)` 那個文字帶只在「該族已被別的玩家選走」的多人分支才畫)。
 	cx, cy, cw, ch := s.cancelRect()
-	tx := float64(cx + cw + 12 + (rsPortX+rsPortW-(cx+cw+12))/2)
-	s.fnt.DrawCentered(dst, s.b.tr(r.zh, r.en), tx, float64(cy+4), 14, gold)
-	descW := float64(rsPortX + rsPortW - (cx + cw + 12))
+	fillPanel(dst, rsInfoX, rsInfoY, rsInfoW, rsInfoH, color.RGBA{17, 29, 35, 255}, false)
+	vector.StrokeRect(dst, rsInfoX, rsInfoY, rsInfoW, rsInfoH, 1, color.RGBA{108, 130, 150, 255}, false)
+	infoX := float64(rsInfoX + rsInfoW/2)
+	s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.b.tr(r.zh, r.en), 12, rsInfoW-12), infoX, rsInfoY+9, 12, gold)
+	descW := float64(rsInfoW - 12)
 	if r.shellIdx >= 0 {
 		desc := s.b.tr(shell.Races[r.shellIdx].Desc, shell.Races[r.shellIdx].EnDesc)
-		for i, ln := range s.fnt.Wrap(desc, 10, descW) {
+		for i, ln := range s.fnt.Wrap(desc, 8, descW) {
 			if i >= 2 {
 				break
 			}
-			s.fnt.DrawCentered(dst, ln, tx, float64(cy+20+i*14), 10, body)
+			s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, ln, 8, descW), infoX, float64(rsInfoY+23+i*11), 8, body)
 		}
 	} else {
-		s.fnt.DrawCentered(dst, s.b.tr("自行分配種族點數", "Spend your own race picks"),
-			tx, float64(cy+20), 10, dim)
+		s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.b.tr("自行分配種族點數", "Spend your own race picks"), 8, descW),
+			infoX, rsInfoY+23, 8, dim)
 	}
 
 	// 取消(remake 自己加的,原版只綁 ESC,見 cancelRect 註解)。

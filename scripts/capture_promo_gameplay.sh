@@ -6,8 +6,8 @@ set -euo pipefail
 #
 # 用法：capture_promo_gameplay.sh <AppImage> <遊戲資料目錄> <CJK 字型> <音樂檔或 -> <輸出 mp4>
 #
-# 錄影本身是 Xvfb 中的實際遊玩流程：依序開新局、選種族、進星圖、檢視殖民地／
-# 科技／外交，再宣戰進入戰術戰鬥。遊戲用 -promo-demo 重播正常 UI 點擊；沒有把
+# 錄影本身是 Xvfb 中的實際遊玩流程：依序開新局、選種族、進星圖、調整殖民地人口、
+# 操作 RACES 間諜、外交，再宣戰進入戰術戰鬥。遊戲用 -promo-demo 重播正常 UI 點擊；沒有把
 # PNG 當作影片來源，也不使用 -gamegallery 的展示狀態注入。
 # 無音訊裝置的容器用程式的 -noaudio 錄畫面；若提供音樂，才在合成階段鋪上
 # 已獲發布權的音檔。傳入 - 會輸出無聲影片。
@@ -25,7 +25,9 @@ OUT_FILE=$5
 WIDTH=1280
 HEIGHT=960
 FPS=30
-CAPTURE_SECONDS=60
+# 60 秒正常 UI 導覽 + 1 秒收束；間諜與戰術段皆有實際狀態操作，
+# 不以長停留的靜態頁面湊時長。
+CAPTURE_SECONDS=61
 
 for required in "$APPIMAGE" "$FONT_FILE"; do
   [[ -f "$required" ]] || { echo "找不到必要檔案：$required" >&2; exit 1; }
@@ -60,7 +62,8 @@ XVFB_PID=$!
 sleep 1
 
 # -noaudio 是錄製環境專用；合成配樂與遊戲內音訊解碼保持分開，避免無 ALSA 裝置使
-# 實際遊玩畫面無法啟動。-promo-demo 只重播正常 UI 點擊，不會換入截圖廊專用狀態。
+# 實際遊玩畫面無法啟動。-promo-demo 只重播正常 UI 點擊，並由遊戲端畫出沿下一個
+# 熱區移動的導覽游標；它不會換入截圖廊專用狀態，也不使用預先輸出的圖檔。
 ./squashfs-root/AppRun -game -data "$DATA_DIR" -font "$FONT_FILE" -uiscale 2 -promo-demo -noaudio >"$GAME_LOG" 2>&1 &
 GAME_PID=$!
 

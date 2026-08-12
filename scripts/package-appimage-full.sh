@@ -25,7 +25,9 @@ FONT_FILE="${MOO2_FONT:-/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc}"
 # -game 實際載入的 LBX(取自 cmd/moo2 原始碼 grep;只打包需要的,避免 324M 全帶)。
 # 含音樂/音效(stream/streamhd/sound)與英雄資料(herodata)——本機 full build 不省體積,
 # 缺這幾個會導致「沒音樂 / 傭兵池空無人可雇」(2026-07-12 實測 issue #1/#4)。
-LBX_LIST="buffer0 colsum council design diplomat fleet help info mainmenu newgame officer plntsum raceopt races science stardb techsel turnsum game stream streamhd sound herodata"
+# `racesel` 是新局種族選擇畫面的肖像與按鈕圖；漏掉它會讓完整包的左側肖像變成
+# 空白格，即使 RACEOPT 背景與中文字仍可顯示。它與 RACEOPT 不是同一份資產。
+LBX_LIST="buffer0 colsum council design diplomat fleet help info mainmenu newgame officer plntsum raceopt races racesel science stardb techsel turnsum game stream streamhd sound herodata"
 
 mkdir -p "${DIST_DIR}" "${TOOLS_CACHE}" "${REPO_ROOT}/.docker-cache/go"
 

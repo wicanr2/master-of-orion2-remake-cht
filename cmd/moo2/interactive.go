@@ -109,6 +109,7 @@ type overlayScreen struct {
 	// 目前唯一的用途是把「停用」的選項畫成灰的——原版主選單無存檔時 Continue / Load Game
 	// 就是灰階不可按的(2026-07-12 archive.org oracle 對照 issue #2)。
 	labelColorFor map[string]color.RGBA
+	extraPanels   []extraPanel            // remake 動態控制的底板；先畫，避免譯文和底圖英文疊字
 	extras        []extraText             // 即時動態文字(星曆、國庫…),疊在背景+overlay 之上
 	postDraw      func(dst *ebiten.Image) // 任意額外繪製(如星圖),在最後呼叫
 	mx, my        int                     // 最近一次 update() 算出的滑鼠局部座標(扣掉置中偏移),供 postDraw 讀取做懸停偵測(如殖民地總覽 Planetary/Production Info)
@@ -123,6 +124,24 @@ type extraText struct {
 	align int // 0=靠左,1=置中
 	// maxW > 0 時，繪製前依實際欄寬省略，避免動態文字穿出面板。
 	maxW float64
+}
+
+// extraPanel 是與動態控制文字成對的可見內框。它只用於 remake 明確新增的控制，
+// 讓中文字有自己的可見邊界，且能在底圖烘有英文時先乾淨覆蓋。
+type extraPanel struct {
+	x, y, w, h int
+	fill       color.RGBA
+	border     color.RGBA
+}
+
+// centeredExtraTextInRect 建立必須完整落在可點擊按鈕內的動態文字。extraText 的一般
+// 座標是左上角，若直接把按鈕的 x+2／y+14 塞進去，CJK 字身會向下越過 20px 高的
+// 按鈕；所有按鈕內的動態文字都應改以中心座標繪製。
+func centeredExtraTextInRect(x, y, w, h int, size float64, text string, col color.RGBA) extraText {
+	return extraText{
+		x: float64(x) + float64(w)/2, y: float64(y) + float64(h)/2,
+		size: size, text: text, col: col, align: 1, maxW: float64(w - 6),
+	}
 }
 
 func (s *overlayScreen) update(in shell.InputState) *origTransition {
@@ -199,6 +218,14 @@ func (s *overlayScreen) draw(dst *ebiten.Image) {
 			}
 			zh = truncateToWidth(s.font, zh, size, float64(b.w-8))
 			s.font.DrawCentered(dst, zh, float64(b.x)+float64(b.w)/2+ox, float64(b.y)+float64(b.h)/2+oy, size, lc)
+		}
+	}
+	// 動態控制的底板必須在 hover 與文字之前畫；否則既遮不掉 LBX 內烘的英文，
+	// 也會把剛置中的文字再次蓋住。
+	for _, p := range s.extraPanels {
+		fillPanel(dst, float32(float64(p.x)+ox), float32(float64(p.y)+oy), float32(p.w), float32(p.h), p.fill, false)
+		if p.border.A != 0 {
+			vector.StrokeRect(dst, float32(float64(p.x)+ox), float32(float64(p.y)+oy), float32(p.w), float32(p.h), 1, p.border, false)
 		}
 	}
 	// hover 熱區以細框提示可點(互動回饋)。
@@ -1755,6 +1782,8 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 	// Sabotage 左右順序尚未由原版反組譯證實；這個熱區是 remake 明確標籤的
 	// STEAL/SABOTAGE/HIDE 循環，不冒充原版三顆鈕的未解語意。
 	hits = append(hits, racesSpyMissionHitRegions(b.aiCount())...)
+	// 第三個原生槽是 remake 的明確「隱匿」快捷鍵；不再留下英文 HIDE 或塞進下一列。
+	hits = append(hits, racesSpyHideHitRegions(b.aiCount())...)
 	// 每個已顯示 AI 列都可直接進入該對手的外交對談；這是 remake 的明確逐對手
 	// 入口，原版單列 REPORT 的選取語意仍保持未知。
 	hits = append(hits, racesDiplomacyHitRegions(b.aiCount())...)
@@ -1802,6 +1831,12 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 			}
 			return b.goTo(b.races, "種族關係")
 		}
+		if idx, ok := racesSpyHideActionIndex(a); ok {
+			if b.session != nil {
+				b.session.SetSpyMission(idx, shell.SpyMissionHide)
+			}
+			return b.goTo(b.races, "種族關係")
+		}
 		if idx, ok := racesDiplomacyActionIndex(a); ok {
 			if b.session == nil || idx < 0 || idx >= len(b.session.AIPlayers) {
 				return nil
@@ -1818,7 +1853,9 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 	// 座標經 PIL 量測(remain-scan/races_a0_f00.png)。
 	overlays := []labelRect{
 		{200, 14, 240, 22, "RACE RELATIONS", 0},
-		{338, 401, 104, 18, "BONUSES", 12},
+		// BONUSES 的原始標題帶在 y=365..385；舊的 y=401 是下方空白欄，
+		// 會同時留下英文標題又多畫一個漂浮的「加成」。
+		{338, 365, 104, 20, "BONUSES", 12},
 		{340, 424, 96, 18, "AUDIENCE", 11},
 		{340, 442, 96, 18, "DECLARE WAR", 10},
 		{438, 424, 90, 18, "REPORT", 11},
@@ -1835,6 +1872,23 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 		gold := color.RGBA{240, 220, 120, 255}
 		body := color.RGBA{210, 216, 230, 255}
 		dim := color.RGBA{170, 178, 195, 255}
+		controlFace := color.RGBA{22, 29, 42, 255}
+		dormantControlFace := color.RGBA{17, 22, 31, 255}
+		controlBorder := color.RGBA{92, 118, 150, 255}
+		// RACES.LBX 在所有七列都烘了英文按鈕字，即使該列尚無已接觸的帝國。
+		// 因此先為七列全數畫出對齊原生三槽的底板；未啟用列顏色較暗且不給熱區，
+		// 既不留下英文，也不誤導玩家可以點擊。
+		for i := 0; i < racesMaxRows; i++ {
+			face := dormantControlFace
+			if i < len(b.session.AIPlayers) {
+				face = controlFace
+			}
+			for slot := 0; slot < racesSpyButtonSlots; slot++ {
+				x, y, w, h := racesSpySlotRect(i, slot)
+				s.extraPanels = append(s.extraPanels, extraPanel{x: x + 1, y: y + 1, w: w - 2, h: h - 2,
+					fill: face, border: controlBorder})
+			}
+		}
 		for i, a := range b.session.AIPlayers {
 			if i >= racesMaxRows {
 				break // 版面只放得下 7 個(原版就是這個上限,見 racesSpyAnchors)
@@ -1869,33 +1923,42 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 			s.extras = append(s.extras, extraText{x: textX, y: y + 54, size: 10,
 				text: b.tr("點此與此國對談", "click row to talk to this empire"),
 				col:  color.RGBA{180, 200, 220, 255}, maxW: columnW})
-			// 「派間諜」鈕的標籤(座標同熱區)。
+			// 三個原生間諜槽各自有置中文字。底板已先覆蓋七列，過去會落入
+			// 下一列的 y+23 假按鈕已移除；繪製與命中共用 racesSpySlotRect。
 			spies := 0
 			if i < len(b.session.PlayerSpies) {
 				spies = b.session.PlayerSpies[i]
 			}
-			btn := racesSpyAnchors[i]
-			s.extras = append(s.extras, extraText{x: float64(btn[0]) + 2, y: float64(btn[1]) + 12, size: 11,
-				text: fmt.Sprintf(b.tr("派間諜(%d)", "send spy (%d)"), spies),
-				col:  color.RGBA{150, 220, 160, 255}, maxW: float64(racesSpyButtonW - 6)})
+			spyX, spyY, spyW, spyH := racesSpySlotRect(i, 0)
+			missionX, missionY, missionW, missionH := racesSpySlotRect(i, 1)
+			hideX, hideY, hideW, hideH := racesSpySlotRect(i, 2)
+			s.extras = append(s.extras, centeredExtraTextInRect(spyX, spyY, spyW, spyH, 10,
+				fmt.Sprintf(b.tr("增派 %d", "add %d"), spies), color.RGBA{150, 220, 160, 255}))
 			mission := b.session.SpyMissionFor(i)
-			s.extras = append(s.extras, extraText{
-				x: float64(btn[0]) + 2, y: float64(btn[1]) + racesSpyMissionYOffset + 13, size: 10,
-				text: b.tr("任務:"+shell.SpyMissionLabel(mission, false),
-					"mission: "+shell.SpyMissionLabel(mission, true)),
-				col: color.RGBA{220, 190, 120, 255}, maxW: float64(racesSpyButtonW - 6)})
+			s.extras = append(s.extras,
+				centeredExtraTextInRect(missionX, missionY, missionW, missionH, 10,
+					shell.SpyMissionLabel(mission, b.lang != i18n.Traditional), color.RGBA{220, 190, 120, 255}),
+				centeredExtraTextInRect(hideX, hideY, hideW, hideH, 10,
+					b.tr("隱匿", "HIDE"), color.RGBA{180, 200, 220, 255}),
+			)
 		}
 		agents := b.session.DefensiveAgents
+		s.extraPanels = append(s.extraPanels,
+			extraPanel{x: racesAgentStatusX, y: racesAgentStatusY, w: racesAgentStatusW, h: racesAgentStatusH,
+				fill: controlFace, border: controlBorder},
+			extraPanel{x: racesAgentTrainX + 1, y: racesAgentY + 1, w: racesAgentW - 2, h: racesAgentH - 2,
+				fill: controlFace, border: controlBorder},
+			extraPanel{x: racesAgentDismissX + 1, y: racesAgentY + 1, w: racesAgentW - 2, h: racesAgentH - 2,
+				fill: controlFace, border: controlBorder},
+		)
 		s.extras = append(s.extras,
-			extraText{x: racesAgentTrainX, y: 402, size: 11,
-				text: fmt.Sprintf(b.tr("防守 Agent：%d（BC %d）", "Defensive agents: %d (BC %d)"), agents, b.session.Player.BC),
-				col:  color.RGBA{235, 215, 145, 255}, maxW: 220},
-			extraText{x: racesAgentTrainX + 2, y: racesAgentY + 14, size: 10,
-				text: b.tr("訓練 Agent（30 BC）", "Train agent (30 BC)"),
-				col:  color.RGBA{150, 220, 160, 255}, maxW: float64(racesAgentW - 6)},
-			extraText{x: racesAgentDismissX + 2, y: racesAgentY + 14, size: 10,
-				text: b.tr("解除 Agent", "Dismiss agent"),
-				col:  color.RGBA{220, 180, 160, 255}, maxW: float64(racesAgentW - 6)},
+			centeredExtraTextInRect(racesAgentStatusX, racesAgentStatusY, racesAgentStatusW, racesAgentStatusH, 10,
+				fmt.Sprintf(b.tr("防諜特務 %d（BC %d）", "defense %d (BC %d)"), agents, b.session.Player.BC),
+				color.RGBA{235, 215, 145, 255}),
+			centeredExtraTextInRect(racesAgentTrainX, racesAgentY, racesAgentW, racesAgentH, 10,
+				b.tr("訓練（30 BC）", "TRAIN (30 BC)"), color.RGBA{150, 220, 160, 255}),
+			centeredExtraTextInRect(racesAgentDismissX, racesAgentY, racesAgentW, racesAgentH, 10,
+				b.tr("解散", "DISMISS"), color.RGBA{220, 180, 160, 255}),
 		)
 	}
 	return s, nil
@@ -2136,6 +2199,11 @@ const (
 	gcCols, gcRows = 8, 6
 	gcCW, gcCH     = 70, 55
 	fireRange      = 4 // 曼哈頓射程
+
+	// 標題和格線之間原本有一條 26px 留白；戰術訊息固定放在這裡，不能再壓到
+	// y=351 開始的 COMBAT 控制列。這組座標是 remake 的安全訊息帶，非原版宣稱。
+	tacticalMessageX, tacticalMessageY = 58, 48
+	tacticalMessageW, tacticalMessageH = 524, 18
 )
 
 type tacticalScreen struct {
@@ -3052,21 +3120,29 @@ func (t *tacticalScreen) draw(dst *ebiten.Image) {
 	}
 	t.drawCombatFX(dst)
 	t.drawSquadrons(dst) // 戰機畫在艦艇之上(它們是繞著目標飛的)
+	t.drawTacticalMessage(dst)
 	t.drawLaunchButton(dst)
 	t.drawCombatControlDeck(dst)
-	// 無論原版 COMBAT.LBX 是否存在，都保留控制列上方的訊息列，避免訊息落入按鈕區。
-	logY := 343.0
-	if t.fnt != nil {
-		if hint := t.modeHint(); hint != "" {
-			// 模式提示壓在 log 上方:進了掃描/登艦模式之後,點敵艦的效果完全不同,
-			// **畫面上必須看得出來現在是哪個模式**,否則玩家會以為開火壞了。
-			t.fnt.DrawCentered(dst, truncateToWidth(t.fnt, hint, 12, 600), 320, logY-36, 12, color.RGBA{250, 210, 120, 255})
-		}
-		t.fnt.DrawCentered(dst, truncateToWidth(t.fnt, t.log, 14, 600), 320, logY, 14, color.RGBA{214, 220, 235, 255})
-		if line := t.squadronStatusLine(); line != "" {
-			t.fnt.DrawCentered(dst, truncateToWidth(t.fnt, line, 12, 600), 320, logY-18, 12, color.RGBA{140, 220, 235, 255})
-		}
+}
+
+// drawTacticalMessage 把戰鬥提示限制在標題與格線中間的安全帶。舊版把文字中心放在
+// y=343，14px 字身會跨進 y=351 的控制列，造成訊息與按鈕重疊；這裡以固定面板與
+// 實際欄寬截斷保證不會越過格線或控制列。
+func (t *tacticalScreen) drawTacticalMessage(dst *ebiten.Image) {
+	if t.fnt == nil {
+		return
 	}
+	message := t.log
+	if hint := t.modeHint(); hint != "" {
+		message = hint + " · " + message
+	}
+	fillPanel(dst, tacticalMessageX, tacticalMessageY, tacticalMessageW, tacticalMessageH,
+		color.RGBA{5, 10, 20, 205}, false)
+	vector.StrokeRect(dst, tacticalMessageX, tacticalMessageY, tacticalMessageW, tacticalMessageH, 1,
+		color.RGBA{86, 106, 148, 210}, false)
+	t.fnt.DrawCentered(dst, truncateToWidth(t.fnt, message, 12, tacticalMessageW-12),
+		tacticalMessageX+tacticalMessageW/2, tacticalMessageY+tacticalMessageH/2, 12,
+		color.RGBA{214, 220, 235, 255})
 }
 
 // barButtonsCHT 是 COMBAT.LBX#0 控制列上各英文按鈕的螢幕中心座標 + 中文標籤。
@@ -4930,6 +5006,16 @@ type interactiveApp struct {
 	promoStepIndex   int
 	promoStepAt      time.Time
 	promoStepStarted bool
+	// promoCursor 是錄影導覽中的可見游標。它沿著下一個正常 UI 點擊平滑移動，讓錄影
+	// 呈現玩家正在操作，而不是停在一串靜態頁面；遊戲端仍只走原本的 hitRegion／戰術
+	// 點擊處理，沒有切入畫廊專用展示狀態。
+	promoCursorReady                    bool
+	promoCursorX, promoCursorY          float64
+	promoCursorFromX, promoCursorFromY  float64
+	promoCursorToX, promoCursorToY      float64
+	promoCursorMoveAt, promoCursorUntil time.Time
+	promoClickUntil                     time.Time
+	promoCursorHiddenUntil              time.Time
 
 	// hi-res 畫布(第 86 項(hi-res 畫布)):off 是 640×480 的離屏,rec 收集這一幀的文字繪製。
 	// uiScale==1 時兩者都不建立,整條路徑不走。
@@ -4994,8 +5080,63 @@ type interactiveApp struct {
 // promoDemoStep 的 hold 是送出 input 之後、下一個 input 前要保留的實際牆鐘時間。
 // 這讓錄影節奏不依賴 Xvfb／軟體 OpenGL 的即時 TPS。
 type promoDemoStep struct {
-	input shell.InputState
-	hold  time.Duration
+	input        shell.InputState
+	hold         time.Duration
+	cursorHidden time.Duration // 轉場後游標會穿過文字時，先隱藏至安全位置
+}
+
+func (a *interactiveApp) updatePromoCursor(now time.Time) {
+	if !a.promoCursorReady {
+		a.promoCursorReady = true
+		a.promoCursorX, a.promoCursorY = moo2ScreenW/2, moo2ScreenH/2
+		a.promoCursorFromX, a.promoCursorFromY = a.promoCursorX, a.promoCursorY
+		a.promoCursorToX, a.promoCursorToY = a.promoCursorX, a.promoCursorY
+		return
+	}
+	span := a.promoCursorUntil.Sub(a.promoCursorMoveAt)
+	if span <= 0 || !now.Before(a.promoCursorUntil) {
+		a.promoCursorX, a.promoCursorY = a.promoCursorToX, a.promoCursorToY
+		return
+	}
+	p := float64(now.Sub(a.promoCursorMoveAt)) / float64(span)
+	if p < 0 {
+		p = 0
+	}
+	// smoothstep：停在按鈕上的片刻比線性等速更接近人手移動，也能讓 hover 邊框可見。
+	p = p * p * (3 - 2*p)
+	a.promoCursorX = a.promoCursorFromX + (a.promoCursorToX-a.promoCursorFromX)*p
+	a.promoCursorY = a.promoCursorFromY + (a.promoCursorToY-a.promoCursorFromY)*p
+}
+
+func (a *interactiveApp) planPromoCursor(now, until time.Time) {
+	for i := a.promoStepIndex; i < len(a.promoSteps); i++ {
+		in := a.promoSteps[i].input
+		if !in.ClickReleased {
+			continue
+		}
+		a.updatePromoCursor(now)
+		a.promoCursorFromX, a.promoCursorFromY = a.promoCursorX, a.promoCursorY
+		a.promoCursorToX, a.promoCursorToY = float64(in.MouseX), float64(in.MouseY)
+		a.promoCursorMoveAt, a.promoCursorUntil = now, until
+		return
+	}
+}
+
+func (a *interactiveApp) drawPromoCursor(dst *ebiten.Image) {
+	if a.promoSteps == nil || !a.promoCursorReady || time.Now().Before(a.promoCursorHiddenUntil) {
+		return
+	}
+	scale := float32(uiScale)
+	x, y := float32(a.promoCursorX)*scale, float32(a.promoCursorY)*scale
+	ink := color.RGBA{250, 242, 190, 255}
+	shadow := color.RGBA{4, 8, 16, 220}
+	vector.DrawFilledCircle(dst, x, y, 3*scale, shadow, true)
+	vector.StrokeCircle(dst, x, y, 7*scale, 1.5*scale, ink, true)
+	vector.StrokeLine(dst, x-11*scale, y, x+11*scale, y, 1*scale, ink, true)
+	vector.StrokeLine(dst, x, y-11*scale, x, y+11*scale, 1*scale, ink, true)
+	if time.Now().Before(a.promoClickUntil) {
+		vector.StrokeCircle(dst, x, y, 13*scale, 2*scale, color.RGBA{255, 190, 90, 230}, true)
+	}
 }
 
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
@@ -5347,7 +5488,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 }
 
 // buildPromoDemoSteps 是給實機推廣錄影用的可重播導覽。它只使用正常玩家介面可達的
-// 點擊：主選單、新局、種族、星圖、殖民地、科技、外交與戰術。不同於 buildGalleryScript，
+// 點擊：主選單、新局、種族、星圖、殖民地人口調配、RACES 間諜、外交與戰術。不同於 buildGalleryScript，
 // 它不建立示範存檔、不推入地面戰／多人等展示畫面，也不輸出 PNG。
 //
 // 每段停留時間以牆鐘時間計算，避免不同 Docker/Xvfb 更新率改變導覽節奏。
@@ -5365,29 +5506,49 @@ func buildPromoDemoSteps() []promoDemoStep {
 	action := func(x, y, secondsAfter int) {
 		steps = append(steps, promoDemoStep{input: click(x, y), hold: time.Duration(secondsAfter) * time.Second})
 	}
+	actionWithCursorHide := func(x, y, secondsAfter int, hide time.Duration) {
+		steps = append(steps, promoDemoStep{
+			input: click(x, y), hold: time.Duration(secondsAfter) * time.Second, cursorHidden: hide,
+		})
+	}
 
-	// 主選單 → 新局 → 種族 → 命名 → 星圖。
-	hold(2)
-	action(491, 228, 3) // NEW GAME
-	action(486, 405, 3) // NEW GAME ACCEPT
-	action(410, 350, 3) // 人類種族
-	action(540, 454, 4) // 命名／旗色 ACCEPT
+	// 主選單 → 新局 → 種族 → 命名 → 星圖。每一段都預留給游標移向下一個
+	// 可操作元件的時間，而非讓單一畫面長時間像投影片般停住。
+	hold(2)             // 等 Xvfb 錄影器附著後再點 NEW GAME，避免片頭被截斷。
+	action(491, 228, 2) // NEW GAME
+	// 設定接受與開始遊戲都點在按鈕右側留白，導覽游標不會蓋住置中的中文標籤。
+	// 從設定頁的 ACCEPT 直接移往人類鈕會斜穿自訂種族；轉場後先隱藏游標，
+	// 直到它抵達人類鈕右下留白，避免把游標線誤看成文字偏移。
+	actionWithCursorHide(526, 398, 2, 1500*time.Millisecond) // NEW GAME ACCEPT
+	// 人類按鈕右下角的留白；後續移往「開始遊戲」時不會斜穿右欄的崔拉里安文字。
+	action(464, 370, 2) // 人類種族
+	action(578, 448, 3) // 命名／旗色 ACCEPT
 
-	// 正常星圖入口：殖民地，再回星圖；科技，再回星圖。
-	action(48, 452, 3)  // COLONIES
-	action(50, 47, 4)   // 第一個殖民地
-	action(590, 459, 2) // 殖民地 RETURN
-	action(608, 462, 3) // 殖民地總覽 RETURN
-	action(495, 452, 3) // INFO
-	action(21, 80, 4)   // 科技頁
-	action(535, 434, 2) // INFO RETURN
+	// 殖民地不只停留在畫面：實際把一名農夫調成工人，再返回星圖。
+	action(48, 452, 2)  // COLONIES
+	action(50, 47, 3)   // 第一個殖民地
+	action(410, 107, 2) // 工人欄：農夫 → 工人
+	action(590, 459, 1) // 殖民地 RETURN
+	action(608, 462, 2) // 殖民地總覽 RETURN
 
-	// 正常種族關係 → 外交對談 → 宣戰 → 戰術戰鬥。最後多留一段，讓戰術畫面
-	// 的船艦與背景動畫可被完整錄到。
-	action(420, 452, 3)  // RACES
-	action(483, 428, 4)  // REPORT
-	action(320, 437, 2)  // 結束對談
-	action(388, 448, 15) // DECLARE WAR
+	// 正常種族關係 → 實際調整間諜 → 外交對談 → 宣戰。這三次操作使影片
+	// 呈現的不是靜態 RACES 畫面，而是可見的數值／任務狀態變化。
+	action(420, 452, 2) // RACES
+	action(130, 135, 2) // 第一列：增派間諜（避開置中文字）
+	action(204, 135, 2) // 第一列：循環任務
+	action(276, 135, 2) // 第一列：設為隱匿
+	action(483, 428, 3) // REPORT
+	action(320, 437, 1) // 結束對談
+	action(388, 448, 2) // DECLARE WAR
+
+	// 戰術段落實際移動兩艘艦並各開一次火。每次都經由戰術棋盤的正常
+	// hitRegion／距離／射程／命中／特效路徑，不是狀態注入或預先輸出的畫格。
+	action(215, 97, 2)  // 第一艘艦前進一格
+	action(495, 97, 5)  // 對第一艘敵艦開火，保留命中／特效時間
+	action(145, 152, 1) // 選第二艘我方艦
+	action(215, 152, 2) // 第二艘艦前進一格
+	action(495, 152, 6) // 對第二艘敵艦開火；保留命中／爆炸特效
+	action(300, 374, 9) // AUTO：以同一戰術規則收束剩餘戰鬥
 	return steps
 }
 
@@ -5451,12 +5612,27 @@ func (a *interactiveApp) pollInput() shell.InputState {
 			a.promoStepStarted = true
 			a.promoStepAt = now
 		}
+		a.updatePromoCursor(now)
 		if a.promoStepIndex >= len(a.promoSteps) || now.Before(a.promoStepAt) {
+			// 導覽游標只負責可視化，不在移動途中餵給畫面 hover 判定。尤其種族選擇
+			// 是「滑過即預覽」，若把途中座標當真實滑鼠輸入，游標經過別顆族鈕時會把
+			// 已選定的人類文字換成別族的高亮，畫面看起來就像文字或按鈕跑位。
+			// 真正的 click 仍在下一個 step 經正常 hitRegion 傳入。
 			return shell.InputState{}
 		}
 		step := a.promoSteps[a.promoStepIndex]
 		a.promoStepIndex++
 		a.promoStepAt = now.Add(step.hold)
+		if step.cursorHidden > 0 {
+			a.promoCursorHiddenUntil = now.Add(step.cursorHidden)
+		}
+		if !step.input.ClickReleased {
+			a.planPromoCursor(now, a.promoStepAt)
+			return shell.InputState{}
+		}
+		a.promoCursorX, a.promoCursorY = float64(step.input.MouseX), float64(step.input.MouseY)
+		a.promoClickUntil = now.Add(180 * time.Millisecond)
+		a.planPromoCursor(now, a.promoStepAt)
 		return step.input
 	}
 	// ⚠ `CursorPosition` 回的是 **Layout 空間**(hi-res 時是 1280×960),而所有命中區都是
@@ -5729,6 +5905,8 @@ func (a *interactiveApp) Update() error {
 
 func (a *interactiveApp) Draw(dst *ebiten.Image) {
 	a.drawScene(dst)
+	// 推廣導覽的游標必須在 hi-res 畫布完成後才畫，避免被離屏縮放或文字錄製流程蓋掉。
+	a.drawPromoCursor(dst)
 	if a.galleryDir != "" {
 		for a.galleryDone < len(a.galleryShots) && a.tick >= a.galleryShots[a.galleryDone].tick {
 			path := filepath.Join(a.galleryDir, a.galleryShots[a.galleryDone].name)

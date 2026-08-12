@@ -69,16 +69,22 @@ stereo，音訊 `mean_volume=-19.2 dB`、`max_volume=-2.1 dB`，並抽查標題�
 
 上段的 72 秒影片是 2026-08-11 當時以畫廊畫格組成的歷史產物，不能再當作目前推廣片的證據。
 它已由 `dist-all/promo/master-of-orion-2-remake-trailer.mp4` 取代：封裝後 AppImage 在 Docker +
-Xvfb 以 `-game -promo-demo -noaudio` 即時執行新局、種族、星圖、殖民地、科技、`RACES`／外交與
-宣戰後戰術戰鬥；`TestPromoDemoStepsFollowNormalPlayableRoute` 亦確認這 15 個點擊與 60 秒停留
-時間的正常 UI 路徑。新版為 H.264／AAC、1280×720、30 fps、48 kHz stereo、60 秒，抽幀確認上述
-畫面依序出現，未使用 `-gamegallery`、PNG 或展示狀態注入。原版 `STREAM.LBX` 音樂只在錄影後混入，
-故仍僅限本機授權預覽，不能視為公開散布的完成版影片。
+Xvfb 以 `-game -promo-demo -noaudio` 即時執行新局、種族、命名旗色、星圖、殖民地人口調配、`RACES`
+間諜操作、外交與宣戰後戰術戰鬥。`TestPromoDemoStepsFollowNormalPlayableRoute` 確認 22 個正常 UI
+點擊與 60 秒 UI 路徑；錄製另保留 1 秒收束，成片為 H.264／AAC、1280×720、30 fps、48 kHz stereo、
+61 秒。抽幀確認上述畫面依序出現，未使用 `-gamegallery`、PNG 或展示狀態注入。
+
+本次對最初新局與種族畫面新增幾何抽樣：`TestRaceSelectTextPanelsRemainInsideTheirRects` 驗證每個
+種族標籤在實體按鈕面內、與按鈕共用整數像素中心；`TestPromoCursorInterpolatesDuringTheHold` 驗證
+新局轉場游標暫隱 1.5 秒，不會在種族標籤上造成視覺誤判。連同 RACES 間諜槽位、按鈕文字置中與
+戰術訊息帶的目標測試均已通過。完整 Linux 包亦重新以包內資料啟動，確認 23 個選定的 LBX（含
+`RACESEL.LBX`）及種族肖像正常載入，未見 panic 或 fatal。
 
 公開三平台包也完成 Docker 結構抽樣：Linux AppImage 可解包且為 x86-64，Windows ZIP 只含
 `moo2.exe`／`moo2sim.exe`／`assets/i18n`，macOS universal tar 的兩個 binaries 均由 `lipo`
 確認含 `arm64`／`x86_64`；三者均未找到 `.LBX`、`.ttc` 或 `.sf2`。這仍不是 Windows／macOS
-原生主機執行測試。
+原生主機執行測試。原版 `STREAM.LBX` 音樂只在錄影後混入，亦未做逐曲人耳驗收，故影片仍僅限本機
+授權預覽，不能視為公開散布的完成版影片。
 
 ## 分級與發行判定
 
@@ -89,4 +95,4 @@ Xvfb 以 `-game -promo-demo -noaudio` 即時執行新局、種族、星圖、殖
 
 目前可作為「可玩 alpha／release candidate 準備中」，不應寫成「完整遊戲測試通過」。公開 GitHub
 Release 仍必須排除使用者私有原版資料、原版音樂與 CJK 私有字型；本機完整版和含 `STREAM.LBX`
-音樂的 60 秒實機遊玩影片只作授權範圍內預覽。
+音樂的 61 秒實機遊玩影片只作授權範圍內預覽。

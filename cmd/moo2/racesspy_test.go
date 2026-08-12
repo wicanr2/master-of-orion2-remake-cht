@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"image/color"
+	"testing"
+)
 
 // 種族關係畫面的間諜區塊座標來自**執行檔的 .data 靜態表**,不是量圖。
 //
@@ -95,15 +98,48 @@ func TestRacesSpyMissionActionsAndRegions(t *testing.T) {
 		t.Fatalf("任務熱區數量 = %d,預期 %d", len(regions), racesMaxRows)
 	}
 	for i, region := range regions {
-		want := racesSpyAnchors[i][1] + racesSpyMissionYOffset
-		if region.x != racesSpyAnchors[i][0] || region.y != want {
-			t.Errorf("第 %d 個任務熱區 = (%d,%d),預期 (%d,%d)",
-				i, region.x, region.y, racesSpyAnchors[i][0], want)
+		wantX, wantY, wantW, wantH := racesSpySlotRect(i, 1)
+		if region.x != wantX || region.y != wantY || region.w != wantW || region.h != wantH {
+			t.Errorf("第 %d 個任務熱區 = %+v,預期 (%d,%d,%d,%d)",
+				i, region, wantX, wantY, wantW, wantH)
 		}
 	}
 	for _, action := range []string{"spy0", "spymission", "spymissionX", "spymission99", "report"} {
 		if _, ok := racesSpyMissionActionIndex(action); ok {
 			t.Errorf("%q 不應被判成合法任務動作", action)
+		}
+	}
+}
+
+func TestRacesSpySlotsStayInsideTheNativeButtonRow(t *testing.T) {
+	for i := 0; i < racesMaxRows; i++ {
+		prevRight := -1
+		for slot := 0; slot < racesSpyButtonSlots; slot++ {
+			x, y, w, h := racesSpySlotRect(i, slot)
+			if y != racesSpyAnchors[i][1] || h != racesSpyButtonH {
+				t.Fatalf("第 %d 列第 %d 槽不在原生按鈕列：(%d,%d,%d,%d)", i, slot, x, y, w, h)
+			}
+			if x < prevRight {
+				t.Fatalf("第 %d 列第 %d 槽與前一槽重疊：x=%d, previous right=%d", i, slot, x, prevRight)
+			}
+			prevRight = x + w
+		}
+	}
+}
+
+func TestRacesSpyHideActionsAndRegions(t *testing.T) {
+	for i := 0; i < racesMaxRows; i++ {
+		got, ok := racesSpyHideActionIndex(racesSpyHideAction(i))
+		if !ok || got != i {
+			t.Fatalf("第 %d 個隱匿動作 round-trip 失敗:得到 (%d,%v)", i, got, ok)
+		}
+	}
+	regions := racesSpyHideHitRegions(racesMaxRows)
+	for i, region := range regions {
+		wantX, wantY, wantW, wantH := racesSpySlotRect(i, 2)
+		if region.x != wantX || region.y != wantY || region.w != wantW || region.h != wantH {
+			t.Errorf("第 %d 個隱匿熱區 = %+v,預期 (%d,%d,%d,%d)",
+				i, region, wantX, wantY, wantW, wantH)
 		}
 	}
 }
@@ -148,5 +184,20 @@ func TestRacesAgentControlsAreExplicitAndSeparated(t *testing.T) {
 	}
 	if regions[0].x+racesAgentW > regions[1].x {
 		t.Fatal("防守 Agent 兩個熱區不應互相重疊")
+	}
+}
+
+func TestRacesActionTextCentersInsideItsClickableRect(t *testing.T) {
+	anchor := racesSpyAnchors[0]
+	spy := centeredExtraTextInRect(anchor[0], anchor[1], racesSpyButtonW, racesSpyButtonH, 11, "派間諜(0)", color.RGBA{})
+	if spy.align != 1 || spy.x != float64(anchor[0]+racesSpyButtonW/2) || spy.y != float64(anchor[1]+racesSpyButtonH/2) {
+		t.Fatalf("派間諜文字未置中於熱區：%+v", spy)
+	}
+	if spy.maxW != float64(racesSpyButtonW-6) {
+		t.Fatalf("派間諜文字最大寬度 = %.0f, want %d", spy.maxW, racesSpyButtonW-6)
+	}
+	train := centeredExtraTextInRect(racesAgentTrainX, racesAgentY, racesAgentW, racesAgentH, 10, "訓練 Agent（30 BC）", color.RGBA{})
+	if train.align != 1 || train.x != float64(racesAgentTrainX+racesAgentW/2) || train.y != float64(racesAgentY+racesAgentH/2) {
+		t.Fatalf("訓練 Agent 文字未置中於熱區：%+v", train)
 	}
 }

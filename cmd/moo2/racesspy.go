@@ -43,23 +43,35 @@ var racesRelationBars = [racesMaxRows][2]int{
 	{528, 49}, {528, 156}, {528, 261},
 }
 
-// racesSpyButtonW / racesSpyButtonH 是「派間諜」鈕的點擊範圍。
+// 每列有三個原版按鈕槽；錨點是第一槽，後兩槽的 x 偏移來自同一份執行檔靜態表。
 //
-// ⚠ **寬高不是查來的。** 執行檔那邊的寬高欄位是 LBX 資產控制碼、不是字面尺寸。
-// 已知的約束是三顆鈕的 x 偏移為 0 / +76 / +149,相鄰間距 76,所以單顆不會寬過那個數。
-// 取 68×20(與軍官畫面 HIRE 鈕同量級)是 **remake 的選擇,不是真值**。
-const racesSpyButtonW, racesSpyButtonH = 68, 20
+// ⚠ 寬高不是反組譯真值：執行檔欄位是 LBX 控制碼，不能當成字面尺寸。寬度依
+// RACES.LBX 畫面的可見槽位量測，最後一槽在左欄必須在中央立柱前收束。把控制
+// 文字放回這三槽，不能再往下加一列，否則會壓到下一個帝國資料列。
+const (
+	racesSpyButtonW, racesSpyButtonH = 68, 20
+	racesSpyButtonSlots              = 3
+)
 
-// racesSpyMissionYOffset 是 remake 在原版任務鈕列下方加上的「切換任務」熱區。
-// 原版三顆任務鈕的左右語意尚未由反組譯確認，故不把任何一顆原版位置硬解成
-// 特定任務；這個小型明確標籤控制依序切換已接上的 STEAL/SABOTAGE/HIDE。
-const racesSpyMissionYOffset = 23
+var (
+	racesSpySlotOffsets = [racesSpyButtonSlots]int{0, 76, 149}
+	racesSpySlotWidths  = [racesSpyButtonSlots]int{68, 68, 48}
+)
+
+// racesSpySlotRect 回傳第 i 個帝國列、第 slot 個原生按鈕槽的矩形。繪製與命中
+// 共用它，避免譯文位置再漂進下一列。
+func racesSpySlotRect(i, slot int) (x, y, w, h int) {
+	anchor := racesSpyAnchors[i]
+	return anchor[0] + racesSpySlotOffsets[slot], anchor[1], racesSpySlotWidths[slot], racesSpyButtonH
+}
 
 // 防守 Agent 是 RACES 畫面上進攻間諜之外的第二條管理線。座標放在左下方
 // 的空白區，不覆蓋原版外交按鈕或七列種族資料；尺寸是 remake 控制項尺寸。
 const (
 	racesAgentTrainX, racesAgentDismissX  = 20, 128
 	racesAgentY, racesAgentW, racesAgentH = 414, 100, 20
+	racesAgentStatusX, racesAgentStatusY  = 20, 396
+	racesAgentStatusW, racesAgentStatusH  = 208, 16
 )
 
 // racesDiplomacyRowW / racesDiplomacyRowH 是 remake 在每個已顯示 AI 名稱列上的
@@ -102,13 +114,14 @@ func racesSpyHitRegions(n int) []hitRegion {
 	}
 	out := make([]hitRegion, 0, n)
 	for i := 0; i < n; i++ {
-		a := racesSpyAnchors[i]
-		out = append(out, hitRegion{a[0], a[1], racesSpyButtonW, racesSpyButtonH, racesSpyAction(i)})
+		x, y, w, h := racesSpySlotRect(i, 0)
+		out = append(out, hitRegion{x, y, w, h, racesSpyAction(i)})
 	}
 	return out
 }
 
 // racesSpyMissionAction 是種族關係畫面中循環切換 STEAL/SABOTAGE/HIDE 的 remake 操作。
+// 它使用原生列的第二槽，而不是過去會壓到下一列的 y+23 假按鈕。
 func racesSpyMissionAction(i int) string { return "spymission" + strconv.Itoa(i) }
 
 // racesSpyMissionActionIndex 把切換任務動作解回種族索引。
@@ -124,18 +137,44 @@ func racesSpyMissionActionIndex(action string) (int, bool) {
 	return i, true
 }
 
-// racesSpyMissionHitRegions 回傳前 n 個種族的 remake 任務切換熱區。
+// racesSpyMissionHitRegions 回傳前 n 個種族的 remake 任務切換熱區(第二槽)。
 func racesSpyMissionHitRegions(n int) []hitRegion {
 	if n > racesMaxRows {
 		n = racesMaxRows
 	}
 	out := make([]hitRegion, 0, n)
 	for i := 0; i < n; i++ {
-		a := racesSpyAnchors[i]
-		out = append(out, hitRegion{
-			a[0], a[1] + racesSpyMissionYOffset, racesSpyButtonW, racesSpyButtonH,
-			racesSpyMissionAction(i),
-		})
+		x, y, w, h := racesSpySlotRect(i, 1)
+		out = append(out, hitRegion{x, y, w, h, racesSpyMissionAction(i)})
+	}
+	return out
+}
+
+// racesSpyHideAction 是第三槽的明確「隱匿」快捷鍵。這是 remake 的可讀控制，
+// 不把未完整追出的原版 callback 細節冒充為已證實行為。
+func racesSpyHideAction(i int) string { return "spyhide" + strconv.Itoa(i) }
+
+func racesSpyHideActionIndex(action string) (int, bool) {
+	const prefix = "spyhide"
+	if !strings.HasPrefix(action, prefix) {
+		return 0, false
+	}
+	i, err := strconv.Atoi(strings.TrimPrefix(action, prefix))
+	if err != nil || i < 0 || i >= racesMaxRows {
+		return 0, false
+	}
+	return i, true
+}
+
+// racesSpyHideHitRegions 回傳前 n 個種族的「隱匿」快捷鍵(第三槽)。
+func racesSpyHideHitRegions(n int) []hitRegion {
+	if n > racesMaxRows {
+		n = racesMaxRows
+	}
+	out := make([]hitRegion, 0, n)
+	for i := 0; i < n; i++ {
+		x, y, w, h := racesSpySlotRect(i, 2)
+		out = append(out, hitRegion{x, y, w, h, racesSpyHideAction(i)})
 	}
 	return out
 }

@@ -155,24 +155,24 @@ scripts/package-windows.sh    # → dist-all/MasterOfOrion2-cht-windows-amd64.zi
 
 | 公開產物 | 大小 | SHA-256 |
 |---|---:|---|
-| `MasterOfOrion2-cht-x86_64.AppImage` | 9,206,264 bytes | `4ea425f364c27d35a36cc0b7071f82f33ea41aa85063e2eaba4db7b9b0c3f5db` |
-| `MasterOfOrion2-cht-windows-amd64.zip` | 9,079,910 bytes | `8e4056fa72abaf3fb37d25a90202de258eb2b3625919a682788b977fad49b8c4` |
-| `MasterOfOrion2-cht-macos-universal.tar.gz` | 17,200,105 bytes | `8dd439f9547de27a2c5f1695f50b350ac1c86f045e297cd3a8515d54115d54f9` |
+| `MasterOfOrion2-cht-x86_64.AppImage` | 9,202,168 bytes | `7691efb145dbb6158a742716007b04e068488d7fdecc089bc3f07964982a1d32` |
+| `MasterOfOrion2-cht-windows-amd64.zip` | 9,045,616 bytes | `640ed58440aa9d620c879bc2b7a6114b3cce0b0a1fdb7637c163c74fde771731` |
+| `MasterOfOrion2-cht-macos-universal.tar.gz` | 17,206,727 bytes | `7a2b36cda1633134fc9d5d0b82094b283be1d25dd3e14fbe18db28f7a2cb38b5` |
 
 Linux AppImage 的 `moo2`／`moo2sim` 為 x86-64，並以外掛合法資料／字型實際跑過 Docker + Xvfb
 的互動導覽；Windows 為 amd64 PE 交叉編譯且 ZIP CRC 通過；macOS tar 內的 universal binaries 由
 osxcross `lipo` 確認含 `arm64`／`x86_64`。本輪沒有真 Windows 或真 macOS 主機執行，因此 Release
-notes 不宣稱原生平台實機驗收。含原版 `STREAM.LBX` 音樂的 60 秒實機推廣片只保留本機授權預覽，
+notes 不宣稱原生平台實機驗收。含原版 `STREAM.LBX` 音樂的 61 秒實機推廣片只保留本機授權預覽，
 不上傳公開 Release。
 
 ## 6. 本機完整版與 2026-08-12 影片驗證
 
 | 產物 | 本輪結果 |
 |---|---|
-| `dist-all/MasterOfOrion2-cht-full-x86_64.AppImage` | Docker 依本輪最新程式碼重建；ELF magic 正確；可從包內資料啟動 `-gamegallery` 產生 35/35 張 PNG；97,434,104 bytes；SHA-256 `d25a44e2d771bd6a184693797327af635232cf8a64fddf32a571dd9584e647ff` |
-| `dist-all/MasterOfOrion2-cht-full-windows-amd64.zip` | Docker 跨編；ZIP 根目錄正常，含 `moo2.exe`、`moo2sim.exe`、`run-full.bat`、CJK 字型、譯表、`STREAM`／`STREAMHD`；100,661,428 bytes；SHA-256 `c0644a0964162656844ee4bc674f3cf4da820cf812e74de39b2ceb3985bb1eeb` |
-| `dist-all/MasterOfOrion2-cht-full-macos-universal.tar.gz` | Docker + `u5cht/osxcross` 重建；`lipo` 顯示 `x86_64`／`arm64`，tar 含 `.app`、資料子集與字型；未做 Apple 正式簽署／真機執行；108,752,832 bytes；SHA-256 `34714bc637cfa08da8aa4c5c0dc5cb9f2e70de89de16658d356b2e224d0c3aa2` |
-| `dist-all/promo/master-of-orion-2-remake-trailer.mp4` | 封裝後 AppImage 的 Docker + Xvfb 即時互動錄影，走新局、種族、星圖、殖民地、科技、外交與戰術，不使用 `-gamegallery` 或 PNG；H.264/AAC、1280×720、30 fps、60 秒、48 kHz stereo；3,359,392 bytes；SHA-256 `a6ce608acaac7523d1e7a17c1bff11342bad7cd8c382f44ddaf7cde0eecbf8ab` |
+| `dist-all/MasterOfOrion2-cht-full-x86_64.AppImage` | Docker 依本輪最新程式碼重建；ELF magic 正確；從包內 23 個選定 LBX（含 `RACESEL.LBX`）啟動到種族選擇，肖像正常載入；98,159,096 bytes；SHA-256 `1a9c4f5a0580a0675ded9f9d1310054afd2decef36fab07977ae7ae4595e9e16` |
+| `dist-all/MasterOfOrion2-cht-full-windows-amd64.zip` | Docker 跨編；ZIP 根目錄正常，含 `moo2.exe`、`moo2sim.exe`、`run-full.bat`、23 個選定 LBX、CJK 字型、譯表、`STREAM`／`STREAMHD`；100,949,010 bytes；SHA-256 `bda8a2da63f8ffae226f9beb87d09ed83e282caa1af5b49552c37d975036bbef` |
+| `dist-all/MasterOfOrion2-cht-full-macos-universal.tar.gz` | Docker + `u5cht/osxcross` 重建；`lipo` 顯示 `x86_64`／`arm64`，tar 含 `.app`、23 個選定 LBX、資料子集與字型；未做 Apple 正式簽署／真機執行；109,630,541 bytes；SHA-256 `0a29203fa7b9a167978b797c7bfcabf7fac6fd5ec3deafd8d8932552076c5a26` |
+| `dist-all/promo/master-of-orion-2-remake-trailer.mp4` | 封裝後 AppImage 的 Docker + Xvfb 即時互動錄影，走新局、種族、命名旗色、星圖、殖民地人口調配、`RACES` 間諜、外交與戰術，不使用 `-gamegallery` 或 PNG；H.264/AAC、1280×720、30 fps、61 秒、48 kHz stereo；3,712,184 bytes；SHA-256 `ca9686ed571036cb1384be091aeeb53a3884a662a13fdb1c9507fc1edd1599f4` |
 | `dist-all/SHA256SUMS` | 已更新為三個本機完整版與實機影片；Docker `sha256sum` 驗證通過 |
 
 完整版刻意帶入使用者私有正版資料子集、原版音訊與 CJK 字型，僅供相應授權的本機測試；公開
