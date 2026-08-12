@@ -156,20 +156,33 @@ func TestRacesDiplomacyActionsAndRegions(t *testing.T) {
 		t.Fatalf("外交熱區數量 = %d,預期 %d", len(regions), racesMaxRows)
 	}
 	for i, region := range regions {
-		wantX := 20
-		wantW := racesDiplomacyRowW
-		if i >= 4 {
-			wantX = 440
-			wantW = racesDiplomacyRightRowW
-		}
-		if region.x != wantX || region.y != racesRelationBars[i][1] ||
-			region.w != wantW || region.h != racesDiplomacyRowH {
+		want := racesInfoRect(i)
+		if region.x != want.x || region.y != want.y || region.w != want.w || region.h != want.h {
 			t.Errorf("第 %d 個外交熱區 = %+v,座標或尺寸不符", i, region)
 		}
 	}
 	for _, action := range []string{"report", "racediplomacy", "racediplomacyX", "racediplomacy99", "spy0"} {
 		if _, ok := racesDiplomacyActionIndex(action); ok {
 			t.Errorf("%q 不應被判成合法外交動作", action)
+		}
+	}
+}
+
+func TestRacesInfoTextStopsBeforeSliderAndSpyButtons(t *testing.T) {
+	for i := 0; i < racesMaxRows; i++ {
+		r := racesInfoRect(i)
+		if r.x < 0 || r.y < 0 || r.x+r.w > racesRelationBars[i][0]-4 {
+			t.Fatalf("第 %d 列資訊框越過關係滑桿：(%d,%d,%d,%d),滑桿 x=%d", i, r.x, r.y, r.w, r.h, racesRelationBars[i][0])
+		}
+		if r.y+r.h > racesSpyAnchors[i][1]-4 {
+			t.Fatalf("第 %d 列資訊框越過間諜鈕：bottom=%d, spyY=%d", i, r.y+r.h, racesSpyAnchors[i][1])
+		}
+		for line := 0; line < 5; line++ {
+			lr := racesInfoLineRect(i, line)
+			if lr.x < r.x || lr.y < r.y || lr.x+lr.w > r.x+r.w || lr.y+lr.h > r.y+r.h {
+				t.Fatalf("第 %d 列第 %d 行安全框 (%d,%d,%d,%d) 超出資料區 (%d,%d,%d,%d)",
+					i, line, lr.x, lr.y, lr.w, lr.h, r.x, r.y, r.w, r.h)
+			}
 		}
 	}
 }

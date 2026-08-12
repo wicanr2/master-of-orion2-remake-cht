@@ -74,11 +74,46 @@ const (
 	racesAgentStatusW, racesAgentStatusH  = 208, 16
 )
 
-// racesDiplomacyRowW / racesDiplomacyRowH 是 remake 在每個已顯示 AI 名稱列上的
-// 「對談」熱區。原版 RACES 的列資料與關係滑桿座標已知，但單列 REPORT 選取語意
-// 未由反組譯完整追出；因此這是明確標籤的 remake 入口，不冒充原版欄位。
-const racesDiplomacyRowW, racesDiplomacyRowH = 90, 38
-const racesDiplomacyRightRowW = 180
+// racesInfoRect 是單一 AI 的資訊／對談安全區。左、右欄都必須在關係滑桿之前收束，
+// 下緣也停在第一顆間諜鈕之前；不能用「右欄比較空」而容許文字穿過滑桿。
+//
+// 資料區與關係滑桿的原始 x／y 仍由兩張執行檔靜態表提供。內縮 4px 是框線安全帶，
+// 不把擦底或字身壓到原版面板的浮雕邊緣。
+func racesInfoRect(i int) textSafeRect {
+	if i < 0 || i >= racesMaxRows {
+		return textSafeRect{}
+	}
+	x := 20
+	if i >= 4 {
+		x = 440
+	}
+	top := racesRelationBars[i][1]
+	right := racesRelationBars[i][0] - 4
+	bottom := racesSpyAnchors[i][1] - 4
+	return textSafeRect{x: x, y: top, w: right - x, h: bottom - top, insetX: 4, insetY: 0}
+}
+
+// racesInfoLineRect 把一列資訊切成固定五行。名稱、我方關係、軍力／星數、他國關係、
+// 對談提示各有自己的安全框；即使其他 AI 名稱很多，也不能推擠下一項或間諜控制列。
+func racesInfoLineRect(i, line int) textSafeRect {
+	r := racesInfoRect(i)
+	var y, h int
+	switch line {
+	case 0:
+		y, h = r.y+2, 13
+	case 1:
+		y, h = r.y+17, 10
+	case 2:
+		y, h = r.y+29, 10
+	case 3:
+		y, h = r.y+41, 9
+	case 4:
+		y, h = r.y+53, 9
+	default:
+		return textSafeRect{}
+	}
+	return textSafeRect{x: r.x, y: y, w: r.w, h: h, insetX: r.insetX}
+}
 
 // ============ 只做「說得出意思」的明確控制 ============
 //
@@ -212,14 +247,8 @@ func racesDiplomacyHitRegions(n int) []hitRegion {
 	}
 	out := make([]hitRegion, 0, n)
 	for i := 0; i < n; i++ {
-		bar := racesRelationBars[i]
-		x := 20
-		w := racesDiplomacyRowW
-		if i >= 4 {
-			x = 440
-			w = racesDiplomacyRightRowW
-		}
-		out = append(out, hitRegion{x, bar[1], w, racesDiplomacyRowH, racesDiplomacyAction(i)})
+		r := racesInfoRect(i)
+		out = append(out, hitRegion{r.x, r.y, r.w, r.h, racesDiplomacyAction(i)})
 	}
 	return out
 }

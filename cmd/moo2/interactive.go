@@ -138,10 +138,7 @@ type extraPanel struct {
 // 座標是左上角，若直接把按鈕的 x+2／y+14 塞進去，CJK 字身會向下越過 20px 高的
 // 按鈕；所有按鈕內的動態文字都應改以中心座標繪製。
 func centeredExtraTextInRect(x, y, w, h int, size float64, text string, col color.RGBA) extraText {
-	return extraText{
-		x: float64(x) + float64(w)/2, y: float64(y) + float64(h)/2,
-		size: size, text: text, col: col, align: 1, maxW: float64(w - 6),
-	}
+	return centeredExtraTextInSafeRect(textSafeRect{x: x, y: y, w: w, h: h, insetX: 3}, size, text, col)
 }
 
 func (s *overlayScreen) update(in shell.InputState) *origTransition {
@@ -1893,19 +1890,13 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 			if i >= racesMaxRows {
 				break // 版面只放得下 7 個(原版就是這個上限,見 racesSpyAnchors)
 			}
-			// 列位置改用**執行檔立即數**(`_race_bar` @ 0x18400D),不再是等距 62px 的自編排版。
-			y := float64(racesRelationBars[i][1])
-			textX := 40.0
-			columnW := 250.0
-			if i >= 4 {
-				textX = 463.0
-				columnW = 165.0
-			}
-			s.extras = append(s.extras,
-				extraText{x: textX, y: y, size: 15, text: aiEmpireLabel(b.lang, a), col: gold, maxW: columnW},
-				extraText{x: textX, y: y + 20, size: 12, text: fmt.Sprintf(b.tr("對你:%s ／ 軍力 %d ／ 佔領 %d 星", "Toward you: %s / power %d / %d systems"),
-					a.StanceName, a.FleetStrength, a.OwnedStars), col: body, maxW: columnW},
-			)
+			// 資訊文字與對談熱區共用 racesInfoRect：左、右欄都在關係滑桿及間諜鈕前
+			// 收束。過去左欄只寬 90px 卻給了 250px maxW，文字必然跨欄。
+			s.extras = append(s.extras, racesInfoLineRect(i, 0).leftExtras(b.fnt, aiEmpireLabel(b.lang, a), 11, gold)...)
+			s.extras = append(s.extras, racesInfoLineRect(i, 1).leftExtras(b.fnt,
+				fmt.Sprintf(b.tr("對你: %s", "You: %s"), a.StanceName), 10, body)...)
+			s.extras = append(s.extras, racesInfoLineRect(i, 2).leftExtras(b.fnt,
+				fmt.Sprintf(b.tr("軍 %d・星 %d", "P%d · S%d"), a.FleetStrength, a.OwnedStars), 10, body)...)
 			// AI 之間的外交關係(活星系;支撐議會第三方搖擺)。
 			rel := ""
 			for j := range b.session.AIPlayers {
@@ -1917,12 +1908,12 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 				}
 				rel += fmt.Sprintf("%s:%s", aiEmpireLabel(b.lang, b.session.AIPlayers[j]), b.session.AIRelationName(i, j))
 			}
-			if rel != "" {
-				s.extras = append(s.extras, extraText{x: textX, y: y + 38, size: 10, text: b.tr("對他國 ", "Toward others: ") + rel, col: dim, maxW: columnW})
+			if rel == "" {
+				rel = b.tr("無資料", "none")
 			}
-			s.extras = append(s.extras, extraText{x: textX, y: y + 54, size: 10,
-				text: b.tr("點此與此國對談", "click row to talk to this empire"),
-				col:  color.RGBA{180, 200, 220, 255}, maxW: columnW})
+			s.extras = append(s.extras, racesInfoLineRect(i, 3).leftExtras(b.fnt, b.tr("他國: ", "Others: ")+rel, 9, dim)...)
+			s.extras = append(s.extras, racesInfoLineRect(i, 4).leftExtras(b.fnt, b.tr("點此對談", "Click to talk"), 9,
+				color.RGBA{180, 200, 220, 255})...)
 			// 三個原生間諜槽各自有置中文字。底板已先覆蓋七列，過去會落入
 			// 下一列的 y+23 假按鈕已移除；繪製與命中共用 racesSpySlotRect。
 			spies := 0
@@ -1932,13 +1923,16 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 			spyX, spyY, spyW, spyH := racesSpySlotRect(i, 0)
 			missionX, missionY, missionW, missionH := racesSpySlotRect(i, 1)
 			hideX, hideY, hideW, hideH := racesSpySlotRect(i, 2)
-			s.extras = append(s.extras, centeredExtraTextInRect(spyX, spyY, spyW, spyH, 10,
+			spyRect := textSafeRect{x: spyX, y: spyY, w: spyW, h: spyH, insetX: 3, insetY: 2}
+			missionRect := textSafeRect{x: missionX, y: missionY, w: missionW, h: missionH, insetX: 3, insetY: 2}
+			hideRect := textSafeRect{x: hideX, y: hideY, w: hideW, h: hideH, insetX: 3, insetY: 2}
+			s.extras = append(s.extras, centeredExtraTextInSafeRect(spyRect, 10,
 				fmt.Sprintf(b.tr("增派 %d", "add %d"), spies), color.RGBA{150, 220, 160, 255}))
 			mission := b.session.SpyMissionFor(i)
 			s.extras = append(s.extras,
-				centeredExtraTextInRect(missionX, missionY, missionW, missionH, 10,
+				centeredExtraTextInSafeRect(missionRect, 10,
 					shell.SpyMissionLabel(mission, b.lang != i18n.Traditional), color.RGBA{220, 190, 120, 255}),
-				centeredExtraTextInRect(hideX, hideY, hideW, hideH, 10,
+				centeredExtraTextInSafeRect(hideRect, 10,
 					b.tr("隱匿", "HIDE"), color.RGBA{180, 200, 220, 255}),
 			)
 		}
@@ -3547,6 +3541,13 @@ func ngStripRect(s ngSetting) (int, int, int, int) {
 		ngStripW, ngStripH
 }
 
+// ngStripTextRect 是 NEW GAME 每條選擇器內的文字安全框。數值列與熱區相同，
+// 但文字保留浮雕邊框的安全帶；中心仍與原生選擇器完全相同。
+func ngStripTextRect(s ngSetting) textSafeRect {
+	x, y, w, h := ngStripRect(s)
+	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 5, insetY: 2}
+}
+
 // newGameBackgroundAsset 回傳兩版 NEWGAME.LBX 的滿版設定背景資產。
 // 1.31 只有 30 張資產,滿版背景在 #28；1.50.26 多了三張設定圖,背景順延到 #31。
 func newGameBackgroundAsset(v gamedata.GameVersion) int {
@@ -3668,8 +3669,7 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 			if b.fnt == nil {
 				continue
 			}
-			sx, sy, sw, sh := ngStripRect(st)
-			b.fnt.DrawCentered(dst, st.label(b), float64(sx+sw/2), float64(sy+sh/2), 12, gold)
+			ngStripTextRect(st).drawCentered(dst, b.fnt, st.label(b), 12, gold)
 		}
 	}
 	return s, nil

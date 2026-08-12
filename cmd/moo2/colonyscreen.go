@@ -99,6 +99,63 @@ var (
 	colWarnCol   = color.RGBA{235, 170, 110, 255}
 )
 
+// 以下安全框全由 COLPUPS.LBX#5 的三個內凹面板量得。動態字不能只有限寬：
+// 左欄的未同化提示會搶到底部人口列，中欄的建築清單也會搶到面板下緣，故一併限定高度。
+func colonyLeftTitleTextRect() textSafeRect {
+	return textSafeRect{x: colPanelLX + 5, y: colPanelLY + 6, w: colPanelLW - 10, h: 14}
+}
+
+func colonyLeftRowsTextRect(hasAssimilation bool) textSafeRect {
+	y := colPanelLY + 26
+	bottom := colPanelLY + colPanelLH - 20 // 人口列上方
+	if hasAssimilation {
+		bottom = colPanelLY + colPanelLH - 36 // 未同化列上方
+	}
+	return textSafeRect{x: colPanelLX + 5, y: y, w: colPanelLW - 10, h: bottom - y, lineH: 16}
+}
+
+func colonyAssimilationTextRect() textSafeRect {
+	return textSafeRect{x: colPanelLX + 5, y: colPanelLY + colPanelLH - 32, w: colPanelLW - 10, h: 12}
+}
+
+func colonyPopulationTextRect() textSafeRect {
+	return textSafeRect{x: colPanelLX + 5, y: colPanelLY + colPanelLH - 16, w: colPanelLW - 10, h: 12}
+}
+
+func colonyOutputTextRect(column, row int) textSafeRect {
+	x := colPanelMX + 6 + column*88
+	right := colPanelMX + colPanelMW - 6
+	if column == 0 {
+		right = colPanelMX + 6 + 80
+	}
+	return textSafeRect{x: x, y: colPanelMY + 6 + row*16, w: right - x, h: 13}
+}
+
+func colonyBuildingsTitleTextRect() textSafeRect {
+	return textSafeRect{x: colPanelMX + 6, y: colPanelMY + 44, w: colPanelMW - 12, h: 13}
+}
+
+func colonyBuildingsListTextRect() textSafeRect {
+	return textSafeRect{x: colPanelMX + 6, y: colPanelMY + 60, w: colPanelMW - 12,
+		h: colPanelMY + colPanelMH - 6 - (colPanelMY + 60), lineH: 14}
+}
+
+func colonyJobTextRect(row, field int) textSafeRect {
+	y := colJobY0 + row*colJobStep + 6
+	switch field {
+	case 0: // 職業名
+		return textSafeRect{x: colJobX0 + 10, y: y, w: 56, h: 14}
+	case 1: // 人數
+		return textSafeRect{x: colJobX0 + 70, y: y, w: 50, h: 14}
+	default: // 操作提示
+		return textSafeRect{x: colJobX1 - 56, y: y, w: 50, h: 14}
+	}
+}
+
+func colonyButtonTextRect(x, y, w, h int) textSafeRect {
+	return textSafeRect{x: x + 3, y: y + 3, w: w - 6, h: h - 6, insetX: 3, insetY: 2}
+}
+
 // colonyScreen 建單一殖民地畫面。操作的殖民地由 b.colonyIdx 指定。
 func (b *sceneBuilder) colonyScreen() (*overlayScreen, error) {
 	idx := b.colonyIdx
@@ -227,7 +284,7 @@ func (b *sceneBuilder) drawColonyScreen(dst *ebiten.Image, idx int) {
 	drawBtn := func(y, h int, zh string) {
 		fillPanel(dst, float32(colBtnX+3), float32(y+3),
 			float32(colBtnW-6), float32(h-6), color.RGBA{72, 76, 84, 255}, false)
-		b.fnt.DrawCentered(dst, zh, float64(colBtnX+colBtnW/2), float64(y+h/2), 12, colBodyCol)
+		colonyButtonTextRect(colBtnX, y, colBtnW, h).drawCentered(dst, b.fnt, zh, 12, colBodyCol)
 	}
 	drawBtn(colLeadersY, colLeadersH, b.tr("領袖", "LEADERS"))
 	drawBtn(colReturnY, colReturnH, b.tr("返回", "RETURN"))
@@ -251,7 +308,7 @@ func (b *sceneBuilder) drawColonyScreen(dst *ebiten.Image, idx int) {
 		}
 		fillPanel(dst, float32(btn.x+3), float32(btn.y+3),
 			float32(btn.w-6), float32(btn.h-6), face, false)
-		b.fnt.DrawCentered(dst, btn.zh, float64(btn.x+btn.w/2), float64(btn.y+btn.h/2), 11, ink)
+		colonyButtonTextRect(btn.x, btn.y, btn.w, btn.h).drawCentered(dst, b.fnt, btn.zh, 11, ink)
 	}
 }
 
@@ -280,30 +337,26 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 	sess := b.session
 
 	// --- 左面板:殖民地名 + 行星環境 + 人口 ---
-	lx := float64(colPanelLX + 5)
 	name := fmt.Sprintf(b.tr("殖民地 %d", "Colony %d"), idx+1)
 	// 名字取自**殖民地座落的行星**(同星系可以有多個殖民地,取星的代表行星會撞名)。
 	if n := sess.ColonyName(idx); n != "" {
 		name = n
 	}
-	b.fnt.Draw(dst, name, lx, float64(colPanelLY+6), 13, colTitleCol)
+	_, hasAssimilation := sess.AssimilationRemainingTurns(idx)
+	colonyLeftTitleTextRect().drawLeft(dst, b.fnt, name, 13, colTitleCol)
 	if p, ok := sess.ColonyPlanetData(idx); ok {
-		rows := colonyPlanetRows(b.lang, p)
-		for i, r := range rows {
-			if i >= 5 {
-				break
-			}
-			b.fnt.Draw(dst, r, lx, float64(colPanelLY+26+i*16), 10, colBodyCol)
-		}
+		colonyLeftRowsTextRect(hasAssimilation).drawLeft(dst, b.fnt,
+			strings.Join(colonyPlanetRows(b.lang, p), "\n"), 10, colBodyCol)
 	}
 	// 同化進度只在**真的有未同化人口**時才畫——沒有征服來的人口時這一行沒有意義,
 	// 而且那也讓沒被征服過的殖民地畫面保持原樣。
 	if turns, ok := sess.AssimilationRemainingTurns(idx); ok {
-		b.fnt.Draw(dst, fmt.Sprintf(b.tr("未同化 %d ／還需 %d 回合", "Unassimilated %d / %d turns"),
-			c.UnassimilatedPop, turns), lx, float64(colPanelLY+colPanelLH-32), 10, colWarnCol)
+		colonyAssimilationTextRect().drawLeft(dst, b.fnt,
+			fmt.Sprintf(b.tr("未同化 %d ／還需 %d 回合", "Unassimilated %d / %d turns"),
+				c.UnassimilatedPop, turns), 10, colWarnCol)
 	}
-	b.fnt.Draw(dst, fmt.Sprintf(b.tr("人口 %d/%d", "Pop %d/%d"), c.Population, c.PopMax),
-		lx, float64(colPanelLY+colPanelLH-16), 11, colOkCol)
+	colonyPopulationTextRect().drawLeft(dst, b.fnt,
+		fmt.Sprintf(b.tr("人口 %d/%d", "Pop %d/%d"), c.Population, c.PopMax), 11, colOkCol)
 
 	// --- 中面板:本回合產出 + 已建建築 ---
 	// 產出優先用上一回合的結算(與總覽同一份資料);第 1 回合還沒結算過就即時算一次,
@@ -314,22 +367,22 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 	} else {
 		co = engine.RunColonyTurn(c)
 	}
-	mx := float64(colPanelMX + 6)
 	foodCol := colOkCol
 	if co.FoodSurplus < 0 {
 		foodCol = colWarnCol
 	}
-	b.fnt.Draw(dst, fmt.Sprintf(b.tr("食物 %+d", "Food %+d"), co.FoodSurplus), mx, float64(colPanelMY+6), 11, foodCol)
-	b.fnt.Draw(dst, fmt.Sprintf(b.tr("工業 %d", "Ind %d"), co.NetIndustry), mx+88, float64(colPanelMY+6), 11, colBodyCol)
-	b.fnt.Draw(dst, fmt.Sprintf(b.tr("研究 %d", "Res %d"), co.Research), mx, float64(colPanelMY+22), 11, colBodyCol)
+	colonyOutputTextRect(0, 0).drawLeft(dst, b.fnt, fmt.Sprintf(b.tr("食物 %+d", "Food %+d"), co.FoodSurplus), 11, foodCol)
+	colonyOutputTextRect(1, 0).drawLeft(dst, b.fnt, fmt.Sprintf(b.tr("工業 %d", "Ind %d"), co.NetIndustry), 11, colBodyCol)
+	colonyOutputTextRect(0, 1).drawLeft(dst, b.fnt, fmt.Sprintf(b.tr("研究 %d", "Res %d"), co.Research), 11, colBodyCol)
 	// MoralePercent 是「對產出的百分點調整」(每格笑臉 +10、哭臉 -10),0 = 無加成也無懲罰,
 	// 不是「士氣只有 0 分」。標成「士氣修正」避免誤讀(見 engine.ColonyState.MoralePercent)。
-	b.fnt.Draw(dst, fmt.Sprintf(b.tr("士氣 %+d%%", "Morale %+d%%"), c.MoralePercent), mx+88, float64(colPanelMY+22), 11, colBodyCol)
+	colonyOutputTextRect(1, 1).drawLeft(dst, b.fnt,
+		fmt.Sprintf(b.tr("士氣 %+d%%", "Morale %+d%%"), c.MoralePercent), 11, colBodyCol)
 
-	b.fnt.Draw(dst, b.tr("已建建築", "Buildings"), mx, float64(colPanelMY+44), 11, colTitleCol)
+	colonyBuildingsTitleTextRect().drawLeft(dst, b.fnt, b.tr("已建建築", "Buildings"), 11, colTitleCol)
 	names := sess.ColonyBuildingNames(idx)
 	if len(names) == 0 {
-		b.fnt.Draw(dst, b.tr("(無)", "(none)"), mx, float64(colPanelMY+60), 10, colDimCol)
+		colonyBuildingsListTextRect().drawLeft(dst, b.fnt, b.tr("(無)", "(none)"), 10, colDimCol)
 	} else {
 		sort.Strings(names)
 		displayNames := names
@@ -341,12 +394,7 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 			}
 			separator = ", "
 		}
-		for i, ln := range b.fnt.Wrap(strings.Join(displayNames, separator), 10, float64(colPanelMW-14)) {
-			if i >= 4 {
-				break
-			}
-			b.fnt.Draw(dst, ln, mx, float64(colPanelMY+60+i*14), 10, colOkCol)
-		}
+		colonyBuildingsListTextRect().drawLeft(dst, b.fnt, strings.Join(displayNames, separator), 10, colOkCol)
 	}
 
 	// --- 右面板:職業分配三列(x/y 為反組譯真值)---
@@ -361,8 +409,8 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 			float32(colJobX1-colJobX0), float32(colJobStep-4), colSlotBg, false)
 		vector.StrokeRect(dst, float32(colJobX0), float32(y),
 			float32(colJobX1-colJobX0), float32(colJobStep-4), 1, colPanelEdge, false)
-		b.fnt.Draw(dst, j.label, float64(colJobX0+10), float64(y+6), 12, colTitleCol)
-		b.fnt.Draw(dst, fmt.Sprintf(b.tr("%d 人", "%d"), j.n), float64(colJobX0+70), float64(y+6), 12, colBodyCol)
-		b.fnt.Draw(dst, b.tr("點此 +1", "click +1"), float64(colJobX1-56), float64(y+7), 10, colDimCol)
+		colonyJobTextRect(i, 0).drawLeft(dst, b.fnt, j.label, 12, colTitleCol)
+		colonyJobTextRect(i, 1).drawLeft(dst, b.fnt, fmt.Sprintf(b.tr("%d 人", "%d"), j.n), 12, colBodyCol)
+		colonyJobTextRect(i, 2).drawLeft(dst, b.fnt, b.tr("點此 +1", "click +1"), 10, colDimCol)
 	}
 }
