@@ -757,6 +757,43 @@ func (b *sceneBuilder) backHit(dest func() (*overlayScreen, error), name string)
 		func(string) *origTransition { return b.goTo(dest, name) }
 }
 
+// 星圖選星資訊面板的文字安全框。面板與熱區都固定在 640×480 邏輯座標；文字框
+// 另外保留內縮，避免點陣字墨碰到右上 CLOSE 或下方操作鈕。
+const (
+	starPanelX, starPanelY = 28, 326
+	starPanelW, starPanelH = 210, 132
+	starPanelButtonX       = 38
+	starPanelButtonW       = 190
+)
+
+func starPanelNameTextRect() textSafeRect {
+	return textSafeRect{x: 38, y: 337, w: 120, h: 16, insetX: 0, insetY: 0}
+}
+
+func starPanelSpecialTextRect() textSafeRect {
+	return textSafeRect{x: 158, y: 337, w: 56, h: 16, insetX: 0, insetY: 0}
+}
+
+func starPanelCloseTextRect() textSafeRect {
+	return textSafeRect{x: 216, y: 337, w: 18, h: 17, insetX: 0, insetY: 1}
+}
+
+func starPanelEnvironmentTextRect(y int) textSafeRect {
+	return textSafeRect{x: 38, y: y, w: 190, h: 16, insetX: 0, insetY: 0}
+}
+
+func starPanelMarineTextRect() textSafeRect {
+	return textSafeRect{x: 38, y: 385, w: 190, h: 16, insetX: 0, insetY: 0}
+}
+
+func starPanelButtonTextRect(y int) textSafeRect {
+	return textSafeRect{x: starPanelButtonX, y: y, w: starPanelButtonW, h: 20, insetX: 8, insetY: 2}
+}
+
+func drawStarPanelText(dst *ebiten.Image, fnt *uifont.Font, r textSafeRect, text string, size float64, col color.Color) {
+	r.drawLeft(dst, fnt, text, size, col)
+}
+
 // galaxy 建原版星系主畫面(遊戲主樞紐,BUFFER0.LBX 資產 0)。底部工具列導覽到各畫面
 // (座標取自 openorion2 galaxy.cpp GalaxyView::initWidgets)。
 func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
@@ -1135,37 +1172,33 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					}
 				}
 				// 選中星:顯示該星系行星資訊 + 派遣艦隊/載運陸戰隊/軌道轟炸/發動入侵按鈕(左下角面板)。
+				// starPanelTextLayoutStart
 				if sess.SelectedStar >= 0 && sess.SelectedStar < len(sess.Planets) {
 					p, _ := sess.PlanetDataAt(sess.SelectedStar)
 					// 面板高度 132(非原版 110):敵殖民地時軌道轟炸(402)/地面入侵(424)雙鈕
 					// 共存需多留一列,否則第二顆鈕會露出面板背景框之外。
-					fillPanel(dst, 28, 326, 210, 132, color.RGBA{10, 14, 30, 235}, false)
-					vector.StrokeRect(dst, 28, 326, 210, 132, 1, color.RGBA{90, 130, 200, 255}, false)
-					fnt.Draw(dst, p.Name, 38, 344, 14, color.RGBA{240, 220, 120, 255})
+					fillPanel(dst, starPanelX, starPanelY, starPanelW, starPanelH, color.RGBA{10, 14, 30, 235}, false)
+					vector.StrokeRect(dst, starPanelX, starPanelY, starPanelW, starPanelH, 1, color.RGBA{90, 130, 200, 255}, false)
+					drawStarPanelText(dst, fnt, starPanelNameTextRect(), p.Name, 14, color.RGBA{240, 220, 120, 255})
 					// 右上 CLOSE 鈕(✕),對齊上方 "closestar" 熱區與原版彈窗 CLOSE(issue #6)。
-					fnt.Draw(dst, "✕", 220, 344, 14, color.RGBA{235, 150, 140, 255})
+					drawStarPanelText(dst, fnt, starPanelCloseTextRect(), "✕", 14, color.RGBA{235, 150, 140, 255})
 					// 行星特殊物產(金礦/寶石礦/原住民/遠古文物…)接在星名右邊,另用一色標出來——
-					// 這是「這顆星值不值得搶」的關鍵資訊,埋在下面兩行環境資料裡會被忽略。
+					// 這是「這顆星值不值得搶」的關鍵資訊。標題列左右分欄，
+					// 不讓長星名把它推過 CLOSE，也不讓兩者互相蓋字。
+					specialLabel := ""
+					specialColor := color.RGBA{250, 200, 100, 255}
 					if mon := sess.MonsterNameAtStar(sess.SelectedStar); mon != "" {
-						nameW, _ := fnt.Measure(p.Name, 14)
-						fnt.Draw(dst, "☠"+mon, 38+nameW+10, 346, 11, color.RGBA{240, 130, 150, 255})
+						specialLabel = "☠" + mon
+						specialColor = color.RGBA{240, 130, 150, 255}
 					} else if sp := planetSpecialLabel(b.lang, p.SpecialID); sp != "" {
-						nameW, _ := fnt.Measure(p.Name, 14)
-						spW, _ := fnt.Measure("★"+sp, 11)
-						// 星名很長時往左推,確保不會壓到右上角的 ✕(x=220)。
-						sx := 38 + nameW + 10
-						if sx+spW > 214 {
-							sx = 214 - spW
-						}
-						fnt.Draw(dst, "★"+sp, sx, 346, 11, color.RGBA{250, 200, 100, 255})
+						specialLabel = "★" + sp
 					}
+					drawStarPanelText(dst, fnt, starPanelSpecialTextRect(), specialLabel, 10, specialColor)
 					climate, gravity, minerals, size := planetEnvironmentLabels(b.lang, p)
-					fnt.Draw(dst, fmt.Sprintf(b.tr("氣候 %s ／ 大小 %s", "Climate %s / Size %s"), climate, size),
-						38, 362, 11, color.RGBA{210, 216, 230, 255})
-					fnt.Draw(dst, fmt.Sprintf(b.tr("重力 %s ／ 礦產 %s", "Gravity %s / Minerals %s"), gravity, minerals),
-						38, 378, 11, color.RGBA{210, 216, 230, 255})
+					drawStarPanelText(dst, fnt, starPanelEnvironmentTextRect(353), fmt.Sprintf(b.tr("氣候 %s ／ 大小 %s", "Climate %s / Size %s"), climate, size), 11, color.RGBA{210, 216, 230, 255})
+					drawStarPanelText(dst, fnt, starPanelEnvironmentTextRect(369), fmt.Sprintf(b.tr("重力 %s ／ 礦產 %s", "Gravity %s / Minerals %s"), gravity, minerals), 11, color.RGBA{210, 216, 230, 255})
 					// 同系其他天體(氣態巨星/小行星帶)的完整摘要放在行星列表畫面——這個面板
-					// 只有 344~400 這四列的空間,402 起是操作鈕,再塞一列會壓到按鈕。
+					// 只有 337~401 這四列的空間,402 起是操作鈕,再塞一列會壓到按鈕。
 					// 陸戰隊狀態行:艦隊目前載運數,選中母星時另顯示殖民地駐軍池數(唯一已知對映)。
 					marineLine := fmt.Sprintf(b.tr("艦隊陸戰隊 %d", "Fleet marines %d"), sess.Fleet().Marines)
 					if sess.SelectedStar == 0 && len(sess.PlayerColonyMarines) > 0 {
@@ -1181,41 +1214,39 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 							marineLine += fmt.Sprintf(b.tr("(再 %d 經驗升級)", " (%d xp to next)"), toNext)
 						}
 					}
-					fnt.Draw(dst, marineLine, 38, 394, 11, color.RGBA{200, 220, 170, 255})
+					drawStarPanelText(dst, fnt, starPanelMarineTextRect(), marineLine, 11, color.RGBA{200, 220, 170, 255})
 					// 操作鈕/狀態(與 galaxy() 建 hits 時的判斷邏輯一致)。
 					switch {
 					case b.lastActionMsg != "":
 						fillPanel(dst, 38, 402, 190, 20, color.RGBA{30, 55, 35, 235}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{110, 200, 140, 255}, false)
-						fnt.Draw(dst, b.lastActionMsg, 42, 415, 10, color.RGBA{225, 240, 225, 255})
+						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), b.lastActionMsg, 10, color.RGBA{225, 240, 225, 255})
 					case sess.Fleet().ETA > 0:
-						fnt.Draw(dst, fmt.Sprintf(b.tr("艦隊航行中…剩 %d 回合", "Fleet in transit — %d turns left"), sess.Fleet().ETA),
-							38, 415, 11, color.RGBA{120, 200, 240, 255})
+						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), fmt.Sprintf(b.tr("艦隊航行中…剩 %d 回合", "Fleet in transit — %d turns left"), sess.Fleet().ETA), 11, color.RGBA{120, 200, 240, 255})
 					case sess.SelectedStar == sess.Fleet().AtStar && sess.SelectedStar == 0:
 						fillPanel(dst, 38, 402, 190, 20, color.RGBA{40, 70, 120, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{110, 160, 230, 255}, false)
-						fnt.Draw(dst, b.tr("▶ 載運陸戰隊", "▶ Load marines"), 46, 415, 12, color.RGBA{230, 235, 245, 255})
+						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), b.tr("▶ 載運陸戰隊", "▶ Load marines"), 12, color.RGBA{230, 235, 245, 255})
 					case sess.SelectedStar == sess.Fleet().AtStar && sess.Stars[sess.SelectedStar].Owner == 2:
 						// 軌道轟炸恆可用(艦隊武器開火,不需陸戰隊),畫在 402 這列。
 						fillPanel(dst, 38, 402, 190, 20, color.RGBA{90, 60, 130, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{170, 140, 230, 255}, false)
-						fnt.Draw(dst, b.tr("▶ 軌道轟炸", "▶ Bombard"), 46, 415, 12, color.RGBA{240, 235, 250, 255})
+						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), b.tr("▶ 軌道轟炸", "▶ Bombard"), 12, color.RGBA{240, 235, 250, 255})
 						// 發動地面入侵額外要求已載運陸戰隊,畫在下一列(424),與轟炸鈕並存。
 						if sess.Fleet().Marines > 0 {
 							fillPanel(dst, 38, 424, 190, 20, color.RGBA{120, 50, 40, 255}, false)
 							vector.StrokeRect(dst, 38, 424, 190, 20, 1, color.RGBA{230, 130, 110, 255}, false)
-							fnt.Draw(dst, b.tr("▶ 發動地面入侵", "▶ Invade"), 46, 437, 12, color.RGBA{245, 235, 230, 255})
+							drawStarPanelText(dst, fnt, starPanelButtonTextRect(424), b.tr("▶ 發動地面入侵", "▶ Invade"), 12, color.RGBA{245, 235, 230, 255})
 						}
 						if sess.RaceTelepathic() {
 							fillPanel(dst, 38, 446, 190, 20, color.RGBA{55, 95, 125, 255}, false)
 							vector.StrokeRect(dst, 38, 446, 190, 20, 1, color.RGBA{120, 210, 235, 255}, false)
-							fnt.Draw(dst, b.tr("▶ 心靈控制", "▶ Mind control"), 46, 459, 12, color.RGBA{230, 250, 255, 255})
+							drawStarPanelText(dst, fnt, starPanelButtonTextRect(446), b.tr("▶ 心靈控制", "▶ Mind control"), 12, color.RGBA{230, 250, 255, 255})
 						}
 					case sess.SelectedStar == sess.Fleet().AtStar && sess.StarGuardedByMonster(sess.SelectedStar):
 						fillPanel(dst, 38, 402, 190, 20, color.RGBA{110, 45, 60, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{230, 120, 140, 255}, false)
-						fnt.Draw(dst, b.tr("▶ 挑戰", "▶ Attack ")+sess.MonsterNameAtStar(sess.SelectedStar),
-							46, 415, 12, color.RGBA{250, 230, 235, 255})
+						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), b.tr("▶ 挑戰", "▶ Attack ")+sess.MonsterNameAtStar(sess.SelectedStar), 12, color.RGBA{250, 230, 235, 255})
 					case sess.SelectedStar == sess.Fleet().AtStar && len(starPanelColonyRows(sess)) > 0:
 						// 與 galaxy() 建 hits 的判斷共用同一支 starPanelColonyRows,
 						// 免得「畫得出來卻點不到」或反過來。
@@ -1233,14 +1264,14 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 							}
 							fillPanel(dst, 38, row, 190, 20, face, false)
 							vector.StrokeRect(dst, 38, row, 190, 20, 1, edge, false)
-							fnt.Draw(dst, truncateToWidth(fnt, label, 12, 182), 46, float64(row)+13, 12, ink)
+							drawStarPanelText(dst, fnt, starPanelButtonTextRect(r.y), label, 12, ink)
 						}
 					case sess.SelectedStar == sess.Fleet().AtStar:
-						fnt.Draw(dst, b.tr("艦隊已在此星", "Fleet is already here"), 38, 415, 11, color.RGBA{140, 200, 140, 255})
+						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), b.tr("艦隊已在此星", "Fleet is already here"), 11, color.RGBA{140, 200, 140, 255})
 					default:
 						fillPanel(dst, 38, 402, 190, 20, color.RGBA{40, 70, 120, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{110, 160, 230, 255}, false)
-						fnt.Draw(dst, b.tr("▶ 派遣艦隊至此星", "▶ Send fleet here"), 46, 415, 12, color.RGBA{230, 235, 245, 255})
+						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), b.tr("▶ 派遣艦隊至此星", "▶ Send fleet here"), 12, color.RGBA{230, 235, 245, 255})
 					}
 					// 集結點鈕(第二列):選中的是自己的殖民地才有。標題直接寫出目前設到哪,
 					// 不然玩家看不出「有沒有設」——那正是這個功能最容易被忽略的地方。
@@ -1251,9 +1282,10 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 						if to := sess.ColonyRelocation(ci); to >= 0 && to < len(sess.Stars) {
 							label = b.tr("▶ 集結點:", "▶ Rally: ") + sess.Stars[to].Name
 						}
-						fnt.Draw(dst, label, 46, 437, 12, color.RGBA{225, 245, 240, 255})
+						drawStarPanelText(dst, fnt, starPanelButtonTextRect(424), label, 12, color.RGBA{225, 245, 240, 255})
 					}
 				}
+				// starPanelTextLayoutEnd
 			}
 		}
 	}
@@ -3548,6 +3580,27 @@ func ngStripTextRect(s ngSetting) textSafeRect {
 	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 5, insetY: 2}
 }
 
+// drawNewGameSettingLabel 是 NEW GAME 數值列唯一的文字繪製入口。
+// textSafeRect 已經限制寬度；這裡再檢查實際字型高度，避免日後換字型或字級
+// 後，置中文字伸出浮雕列。高度不符時採固定較小字級，再不適合就不畫，
+// 不以繪圖裁切掩蓋版面錯誤。
+func drawNewGameSettingLabel(dst *ebiten.Image, fnt *uifont.Font, r textSafeRect, label string, col color.Color) {
+	if fnt == nil || r.maxLines() == 0 {
+		return
+	}
+	for _, size := range []float64{12, 11, 10} {
+		clipped := r.clipped(fnt, label, size)
+		if clipped == "" {
+			return
+		}
+		_, measuredH := fnt.Measure(clipped, size)
+		if measuredH <= float64(r.h-2*r.insetY) {
+			r.drawCentered(dst, fnt, clipped, size, col)
+			return
+		}
+	}
+}
+
 // newGameBackgroundAsset 回傳兩版 NEWGAME.LBX 的滿版設定背景資產。
 // 1.31 只有 30 張資產,滿版背景在 #28；1.50.26 多了三張設定圖,背景順延到 #31。
 func newGameBackgroundAsset(v gamedata.GameVersion) int {
@@ -3669,7 +3722,7 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 			if b.fnt == nil {
 				continue
 			}
-			ngStripTextRect(st).drawCentered(dst, b.fnt, st.label(b), 12, gold)
+			drawNewGameSettingLabel(dst, b.fnt, ngStripTextRect(st), st.label(b), gold)
 		}
 	}
 	return s, nil
@@ -5006,9 +5059,10 @@ type interactiveApp struct {
 	promoStepIndex   int
 	promoStepAt      time.Time
 	promoStepStarted bool
-	// promoCursor 是錄影導覽中的可見游標。它沿著下一個正常 UI 點擊平滑移動，讓錄影
-	// 呈現玩家正在操作，而不是停在一串靜態頁面；遊戲端仍只走原本的 hitRegion／戰術
-	// 點擊處理，沒有切入畫廊專用展示狀態。
+	// promoCursor 是導覽預覽可選的可見游標。它沿著下一個正常 UI 點擊平滑移動；正式錄影
+	// 可用 -promo-hide-cursor 關閉，避免準星壓在 CJK 文字或按鈕上造成錯誤的跑版印象。
+	// 遊戲端仍只走原本的 hitRegion／戰術點擊處理，沒有切入畫廊專用展示狀態。
+	promoCursorVisible                  bool
 	promoCursorReady                    bool
 	promoCursorX, promoCursorY          float64
 	promoCursorFromX, promoCursorFromY  float64
@@ -5016,6 +5070,9 @@ type interactiveApp struct {
 	promoCursorMoveAt, promoCursorUntil time.Time
 	promoClickUntil                     time.Time
 	promoCursorHiddenUntil              time.Time
+	// promoCompletionLogged 防止流程末端每個 Update 都重複寫 log。錄製腳本以這一行
+	// 作為停止擷取的 checkpoint；只有戰鬥結果已實際寫回 session 才算完成。
+	promoCompletionLogged bool
 
 	// hi-res 畫布(第 86 項(hi-res 畫布)):off 是 640×480 的離屏,rec 收集這一幀的文字繪製。
 	// uiScale==1 時兩者都不建立,整條路徑不走。
@@ -5123,7 +5180,7 @@ func (a *interactiveApp) planPromoCursor(now, until time.Time) {
 }
 
 func (a *interactiveApp) drawPromoCursor(dst *ebiten.Image) {
-	if a.promoSteps == nil || !a.promoCursorReady || time.Now().Before(a.promoCursorHiddenUntil) {
+	if !a.promoCursorVisible || a.promoSteps == nil || !a.promoCursorReady || time.Now().Before(a.promoCursorHiddenUntil) {
 		return
 	}
 	scale := float32(uiScale)
@@ -5512,8 +5569,8 @@ func buildPromoDemoSteps() []promoDemoStep {
 		})
 	}
 
-	// 主選單 → 新局 → 種族 → 命名 → 星圖。每一段都預留給游標移向下一個
-	// 可操作元件的時間，而非讓單一畫面長時間像投影片般停住。
+	// 主選單 → 新局 → 種族 → 命名 → 星圖。每一段都預留給操作結果顯示，
+	// 而非讓單一畫面長時間像投影片般停住。
 	hold(2)             // 等 Xvfb 錄影器附著後再點 NEW GAME，避免片頭被截斷。
 	action(491, 228, 2) // NEW GAME
 	// 設定接受與開始遊戲都點在按鈕右側留白，導覽游標不會蓋住置中的中文標籤。
@@ -5541,15 +5598,36 @@ func buildPromoDemoSteps() []promoDemoStep {
 	action(320, 437, 1) // 結束對談
 	action(388, 448, 2) // DECLARE WAR
 
-	// 戰術段落實際移動兩艘艦並各開一次火。每次都經由戰術棋盤的正常
-	// hitRegion／距離／射程／命中／特效路徑，不是狀態注入或預先輸出的畫格。
-	action(215, 97, 2)  // 第一艘艦前進一格
-	action(495, 97, 5)  // 對第一艘敵艦開火，保留命中／特效時間
-	action(145, 152, 1) // 選第二艘我方艦
-	action(215, 152, 2) // 第二艘艦前進一格
-	action(495, 152, 6) // 對第二艘敵艦開火；保留命中／爆炸特效
-	action(300, 374, 9) // AUTO：以同一戰術規則收束剩餘戰鬥
+	// 戰術段落實際移動、開火、撤離與結算；每次都經由戰術棋盤的 hitRegion／距離／
+	// 射程／命中／特效與戰後回寫路徑，不是狀態注入或預先輸出的畫格。
+	action(215, 97, 3) // 拓荒號前進一格
+	action(495, 97, 7) // 對第一艘敵艦開火，保留命中／特效時間
+	// 開局小艦隊的先驅艦在本回合沒有移動力，敵方回合會在拓荒號失去掩護時立即還擊。
+	// 導覽因此展示玩家可隨時使用的撤離，而非假裝能以 AUTO 無限推進；下一步仍經過
+	// tacticalScreen 的 ApplyCombatOutcome 寫回 session，確保片尾是完整的正常玩家路徑。
+	action(365, 401, 3) // RETREAT
+	action(320, 245, 3) // 點擊套用戰果並進入戰鬥結果
+	action(190, 334, 9) // CLOSE：返回 RACES，片尾不停在負面戰報
 	return steps
+}
+
+// reportPromoCompletion 在所有導覽操作與最後一段停留均結束後寫出單一 checkpoint。
+// LastBattle 只能由 tacticalScreen 在戰鬥結束、玩家點擊離開後透過 ApplyCombatOutcome 建立；
+// 因此它證明錄影沒有在 AUTO 無射程、戰術中途或轉場途中被固定秒數截斷。
+func promoDemoResultReached(b *sceneBuilder) bool {
+	return b != nil && b.session != nil && b.session.LastBattle != nil
+}
+
+func (a *interactiveApp) reportPromoCompletion(now time.Time) {
+	if a.promoSteps == nil || a.promoCompletionLogged || a.promoStepIndex < len(a.promoSteps) || now.Before(a.promoStepAt) {
+		return
+	}
+	a.promoCompletionLogged = true
+	if !promoDemoResultReached(a.b) {
+		fmt.Fprintln(os.Stderr, "promo-demo: failed: tactical battle did not reach result")
+		return
+	}
+	fmt.Fprintln(os.Stderr, "promo-demo: complete")
 }
 
 // handleWindowKeys 處理縮放/全螢幕快捷鍵:+/- 調整放大倍率(1~4)、F11 或 F 切換全螢幕。
@@ -5613,7 +5691,11 @@ func (a *interactiveApp) pollInput() shell.InputState {
 			a.promoStepAt = now
 		}
 		a.updatePromoCursor(now)
-		if a.promoStepIndex >= len(a.promoSteps) || now.Before(a.promoStepAt) {
+		if a.promoStepIndex >= len(a.promoSteps) {
+			a.reportPromoCompletion(now)
+			return shell.InputState{}
+		}
+		if now.Before(a.promoStepAt) {
 			// 導覽游標只負責可視化，不在移動途中餵給畫面 hover 判定。尤其種族選擇
 			// 是「滑過即預覽」，若把途中座標當真實滑鼠輸入，游標經過別顆族鈕時會把
 			// 已選定的人類文字換成別族的高亮，畫面看起來就像文字或按鈕跑位。
@@ -5969,7 +6051,7 @@ func (a *interactiveApp) Layout(int, int) (int, int) { return canvasSize() }
 // runInteractive 啟動「還原原版」的互動遊戲。script/shot 非空時為 headless 驗證;
 // galleryDir 非空時為「端到端過場截圖廊」模式(見 buildGalleryScript),優先於 script/shot。
 func runInteractive(versionAssets versionAssetDirs, initial gamedata.GameVersion, lang i18n.Lang, fnt, fntVec *uifont.Font,
-	script []shell.InputState, shot string, frames int, galleryDir string, noAudio, promoDemo bool) error {
+	script []shell.InputState, shot string, frames int, galleryDir string, noAudio, promoDemo, promoHideCursor bool) error {
 
 	if lang == i18n.Traditional && fnt == nil {
 		return fmt.Errorf("中文模式需以 -font 指定 CJK 字型")
@@ -6027,7 +6109,7 @@ func runInteractive(versionAssets versionAssetDirs, initial gamedata.GameVersion
 			start = sc
 		}
 	}
-	app := &interactiveApp{cur: start, script: script, promoSteps: promoSteps, shotPath: shot, frames: frames, scale: scale,
+	app := &interactiveApp{cur: start, script: script, promoSteps: promoSteps, promoCursorVisible: promoDemo && !promoHideCursor, shotPath: shot, frames: frames, scale: scale,
 		galleryDir: galleryDir, galleryShots: shots, b: b}
 	if galleryDir != "" {
 		app.gallerySession = b.session

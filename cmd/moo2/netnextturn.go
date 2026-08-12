@@ -61,7 +61,8 @@ import (
 // choosenetplyrs.go、choosemultinetgame.go、netinfo.go、inputbox.go 做完。)
 
 const (
-	nntLBX = "multigm.lbx"
+	nntLBX    = "multigm.lbx"
+	nntPanelW = 630
 
 	nntBannerAsset = 42 // 630×48,10 幀動畫,自帶調色盤
 	nntMidAsset    = 43 // 630×179
@@ -87,6 +88,47 @@ const (
 	// 標題帶動畫:每幀停幾次重繪(同 starsprite.go 的黑洞,原版每次繪製推進一幀)。
 	nntBannerHold = 4
 )
+
+// 下列安全框由 MULTIGM 的 630×48／179／221 三塊面板與原版輸入列座標推得。
+// 聊天雖有 byte 上限，名字前綴與英文字寬仍可能超出面板；因此所有動態字都量像素寬度。
+func nntBannerTitleTextRect() textSafeRect {
+	return textSafeRect{x: 170, y: nntBannerY + 18, w: 300, h: 24, insetX: 4, insetY: 1}
+}
+
+func nntPlayerNameTextRect(row int) textSafeRect {
+	return textSafeRect{x: nntX + 56, y: nntRowFirst + row*nntRowStep, w: 232, h: 18}
+}
+
+func nntPlayerStatusTextRect(row int) textSafeRect {
+	return textSafeRect{x: nntX + 300, y: nntRowFirst + row*nntRowStep, w: 310, h: 18}
+}
+
+func nntTurnTextRect() textSafeRect {
+	return textSafeRect{x: nntX + 24, y: nntMidY + 142, w: 220, h: 16}
+}
+
+func nntFingerprintTextRect() textSafeRect {
+	return textSafeRect{x: nntX + 24, y: nntMidY + 162, w: nntPanelW - 48, h: 14}
+}
+
+func nntChatTextRect(row int) textSafeRect {
+	if row < 0 || row >= netplay.ChatLogMax {
+		return textSafeRect{}
+	}
+	return textSafeRect{x: nntChatX, y: nntChatFirst + row*netplay.ChatLineStep, w: nntPanelW - 40, h: netplay.ChatLineStep}
+}
+
+func nntDesyncTitleTextRect() textSafeRect {
+	return textSafeRect{x: nntX + 26, y: nntBotY + 148, w: 578, h: 14}
+}
+
+func nntDesyncDetailTextRect() textSafeRect {
+	return textSafeRect{x: nntX + 26, y: nntBotY + 164, w: 578, h: 13}
+}
+
+func nntInputTextRect() textSafeRect {
+	return textSafeRect{x: nntChatX, y: nntInputY, w: 582, h: nntInputH, insetY: 1}
+}
 
 // netNextTurnScreen 是等待其他玩家的畫面。
 type netNextTurnScreen struct {
@@ -277,7 +319,7 @@ func (s *netNextTurnScreen) draw(dst *ebiten.Image) {
 	if s.b.lang == i18n.Traditional {
 		fillPanel(dst, 170, float64Rect(nntBannerY+12), 300, 26,
 			color.RGBA{26, 30, 38, 255}, false)
-		s.b.fnt.DrawCentered(dst, "等待其他玩家", 320, float64(nntBannerY)+30, 18, gold)
+		nntBannerTitleTextRect().drawCentered(dst, s.b.fnt, "等待其他玩家", 18, gold)
 	}
 
 	turn := 0
@@ -296,20 +338,19 @@ func (s *netNextTurnScreen) draw(dst *ebiten.Image) {
 		if i == s.me {
 			name += s.b.tr("(你)", " (you)")
 		}
-		s.b.fnt.Draw(dst, name, nntX+56, float64(y), 13, body)
+		nntPlayerNameTextRect(i).drawLeft(dst, s.b.fnt, name, 13, body)
 		text, col := s.statusLine(i)
-		s.b.fnt.Draw(dst, text, nntX+300, float64(y), 13, col)
+		nntPlayerStatusTextRect(i).drawLeft(dst, s.b.fnt, text, 13, col)
 	}
 
 	// 回合數與狀態指紋放**中段面板下緣**:下段面板(資產 40)整塊是原版的聊天記錄區,
 	// 佔用它就得把聊天往別處挪,那就不是原版的版面了。
 	// 指紋擺在畫面上不是裝飾——分岔時兩邊念一下這八個字元就知道是不是同一個狀態,
 	// 不必先架 log 收集。
-	s.b.fnt.Draw(dst, fmt.Sprintf(s.b.tr("第 %d 回合", "Turn %d"), turn),
-		nntX+24, float64(nntMidY)+142, 14, gold)
+	nntTurnTextRect().drawLeft(dst, s.b.fnt, fmt.Sprintf(s.b.tr("第 %d 回合", "Turn %d"), turn), 14, gold)
 	if s.b.session != nil {
-		s.b.fnt.Draw(dst, s.b.tr("狀態指紋:", "State fingerprint: ")+s.b.session.StateFingerprint(),
-			nntX+24, float64(nntMidY)+162, 12, color.RGBA{170, 200, 230, 255})
+		nntFingerprintTextRect().drawLeft(dst, s.b.fnt,
+			s.b.tr("狀態指紋:", "State fingerprint: ")+s.b.session.StateFingerprint(), 12, color.RGBA{170, 200, 230, 255})
 	}
 
 	// 聊天記錄:下段面板由上而下 14 行,行距 12(見 internal/netplay/chat.go)。
@@ -323,8 +364,8 @@ func (s *netNextTurnScreen) draw(dst *ebiten.Image) {
 		if ln.IsGNN() {
 			col = gnn
 		}
-		s.b.fnt.Draw(dst, netplay.ChatPrefix(ln.Speaker, s.speakerName(ln.Speaker))+ln.Text,
-			nntChatX, float64(nntChatFirst+i*netplay.ChatLineStep), 11, col)
+		nntChatTextRect(i).drawLeft(dst, s.b.fnt,
+			netplay.ChatPrefix(ln.Speaker, s.speakerName(ln.Speaker))+ln.Text, 11, col)
 	}
 
 	// 分岔警告:鎖步一旦分岔,繼續玩只會讓兩邊差得更遠,所以蓋在聊天記錄上面也要講。
@@ -332,9 +373,9 @@ func (s *netNextTurnScreen) draw(dst *ebiten.Image) {
 		if d := s.table.Desync(); d != "" {
 			fillPanel(dst, nntX+16, nntBotY+137, 598, 44, color.RGBA{70, 16, 20, 235}, false)
 			vector.StrokeRect(dst, nntX+16, nntBotY+137, 598, 44, 1, color.RGBA{230, 110, 110, 255}, false)
-			s.b.fnt.Draw(dst, s.b.tr("⚠ 狀態分岔——對局已不同步,請停止", "⚠ Desync — the game is out of sync, stop"),
-				nntX+26, float64(nntBotY)+157, 13, color.RGBA{250, 190, 180, 255})
-			s.b.fnt.Draw(dst, d, nntX+26, float64(nntBotY)+175, 11, color.RGBA{240, 200, 195, 255})
+			nntDesyncTitleTextRect().drawLeft(dst, s.b.fnt,
+				s.b.tr("⚠ 狀態分岔——對局已不同步,請停止", "⚠ Desync — the game is out of sync, stop"), 13, color.RGBA{250, 190, 180, 255})
+			nntDesyncDetailTextRect().drawLeft(dst, s.b.fnt, d, 11, color.RGBA{240, 200, 195, 255})
 		}
 	}
 
@@ -344,8 +385,8 @@ func (s *netNextTurnScreen) draw(dst *ebiten.Image) {
 	if (s.tick/30)%2 == 0 {
 		caret = "_"
 	}
-	s.b.fnt.Draw(dst, netplay.ChatPrefix(s.me, s.speakerName(s.me))+s.typing+caret,
-		nntChatX, float64(nntInputY)+13, 11, color.RGBA{225, 232, 245, 255})
+	nntInputTextRect().drawLeft(dst, s.b.fnt,
+		netplay.ChatPrefix(s.me, s.speakerName(s.me))+s.typing+caret, 11, color.RGBA{225, 232, 245, 255})
 }
 
 // float64Rect 是 vector 那組 API 要 float32、而這一檔的座標常數是 int 的轉接。

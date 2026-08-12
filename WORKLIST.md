@@ -44,7 +44,7 @@
 - [x] `RACES` 間諜操作（訓練、`STEAL`／`SABOTAGE`／`HIDE`、防守 Agent）、外交餽贈／特殊貿易／條約／協議／納貢，以及艦艇與殖民地 `LEADERS` 的指派、改派、解除、僱用、解雇、存檔與熱座流程。
 - [x] 客製種族 22 項選項與心靈感應、幸運、全知、匿蹤艦等消費端；`hover` 外框、`CMBTSFX` 多幀特效、`STREAM`／`STREAMHD` 音樂與音效接線。
 - [x] 文字欄寬 polish：共用 `labelRect`／`extraText` 截斷與折行已套用主要長文字面板；Docker + Xvfb 產出 35 張 1280×960 畫廊並抽查外交、艦艇設計、輸入框、種族、戰術、熱座，README 與 `docs/PLAYTEST-2026-08-10.md` 已同步。
-- [x] **遊戲內文字版面與發行畫廊回歸（2026-08-12，視覺）**：主選單語言／規則標籤維持 196px 安全欄寬；完整包資料缺少 `COMBAT.LBX` 時仍改繪同座標、可點擊的戰術後備控制列。使用者提供的正常路徑截圖推翻了舊的「畫廊未越框」斷言後，新增共用 `textSafeRect`：`NEW GAME` 選擇器、種族按鈕、`RACES` 的 AI 資訊／對談列、殖民地的名稱／產出／建築／職業與按鈕文字，現在各自綁定實際面板的寬度、高度、行距、內縮與整數像素中心；超量內容會折行後省略，不跨入滑桿、下一列或按鈕。Docker + Xvfb 目標測試、35/35 `-gamegallery`，以及實際 `-promo-demo` 正常點擊路徑停在新局、種族、殖民地與 `RACES` 的截圖抽查均通過。此為 remake 視覺驗收，不宣稱原版逐像素對照。
+- [x] **遊戲內文字版面與發行畫廊回歸（2026-08-12，視覺）**：主選單語言／規則標籤維持 196px 安全欄寬；資料來源缺少 `COMBAT.LBX` 時仍改繪同座標、可點擊的戰術後備控制列。使用者提供的正常路徑截圖推翻了舊的「畫廊未越框」斷言後，新增共用 `textSafeRect`：`NEW GAME` 選擇器、種族按鈕、`RACES` 的 AI 資訊／對談列、殖民地的名稱／產出／建築／職業與按鈕文字，現在各自綁定實際面板的寬度、高度、行距、內縮與整數像素中心；超量內容會折行後省略，不跨入滑桿、下一列或按鈕。Docker + Xvfb 目標測試、35/35 `-gamegallery`，以及實際 `-promo-demo` 正常點擊路徑停在新局、種族、殖民地與 `RACES` 的截圖抽查均通過。此為 remake 視覺驗收，不宣稱原版逐像素對照。
 - [x] **TCP 多人正式入口與缺資產備援（2026-08-11）**：`NETWORK`／`JOIN GAME` 不再被誤畫為未實作；數據機、序列線、`COMM INFO` 與 TEN 維持灰色且熱區不處理。`NetworkStateHash` 會先正規化每台機器本地的作用中席位，避免主機席位 0 與客戶端席位 1 套用同一快照就誤報分岔。完整資料包缺 `MULTIGM.LBX` 時，改以原版已證實的 482×335 面板與按鈕熱區繪製可讀備援，避免多人頁塌到左上；README 的 `23_multiplayer.png` 已換成此輸出。Docker 抽樣包含實際 `NETWORK`／`START NEW GAME` 名稱彈窗、TCP 加入、共同開局、第一回合 `turn_done` → `turn_ready`，另跑 `internal/netplay` 全包（含斷線、重連、心跳）與 35/35 畫廊，抽查多人頁；不宣稱已做人類跨 NAT 實機驗收。
 - [x] **人口成長回寫定點測試（2026-08-11）**：`TestPopulationGrowthWriteback` 已改驗真正不變量：人口 8→12 且不超過上限，農／工／科職務總和必須等於人口，新增者至少進入一種職務。舊「工人必增」斷言與既有 `assignNewColonist` 的缺糧保護衝突；實際固定開局會把 4 位新增人口改派農夫（4/2/2→8/2/2），不是寫回失敗。人口上限測試亦通過。
 
@@ -52,6 +52,16 @@
 
 ##### 發行前的實作／視覺／驗證
 
+- [~] **全畫面動態文字安全框（2026-08-12，進行中）**：檢測與回歸流程已寫入
+  [文字版面非視覺檢測流程](docs/tech/text-layout-geometry-gate.md)。目前已把 `INFO` 五個子頁、
+  `netNextTurn`、是／否 `confirmbox`、文字輸入框、`HI SCORE`、星圖選取星球面板、`RACES`
+  間諜／外交卡片，以及 `NEW GAME` 選擇器值列改為由所屬面板或按鈕推導的 `textSafeRect`。
+  繁中、英文、玩家名稱、聊天室與多行訊息均以實際字型量測寬度、行數、內縮與相鄰控制項邊界；
+  單行內容會保留游標空間後截斷，多行內容會固定行數後省略。`CONFIRM.LBX` 缺席時現在畫原位
+  313×227 的不透明後備面板，讓星圖名稱不會穿過訊息。已為轉換檔案加 AST 直繪護欄；Docker +
+  Xvfb 目標測試與 35/35 `-gamegallery` 通過，並以正常玩家路徑抽看 `RACES`、輸入框、確認框、
+  新局選擇器與星圖面板。**尚未宣稱全庫安全**：其他靜態候選路徑仍須先找出文字擁有面板、補安全框
+  與幾何測試，不能以全域替換直繪呼叫冒充修正。
 - [x] **殖民地生產控制（2026-08-11）**：`BUY` 依目前進度扣 BC、於 EndTurn 完成；`AUTO BUILD`
   有明示的固定 remake 優先順序；`REPEAT BUILD` 可循環殖民船、前哨船、運輸艦隊與其他可重複
   Special；`REFIT` 可選停泊同星系的戰鬥艦、檢查 Cruiser 以上的 Star Base 門檻、保存凍結的
@@ -80,9 +90,9 @@
 - [x] **一次 20 回合開局經濟／士氣探針（2026-08-10）**：固定無事件開局 BC 50→264（首回合結算後 58）、人口 8→11、士氣 0% 全程、食物輸出 0→1、工業 6→8、研究 6 維持；沒有負食物或人口死亡螺旋。本輪只記錄體感基線，不擅自改收入公式；測試為 `internal/shell/economy_20_turn_test.go`。
 - [x] **本輪 gameplay polish（2026-08-11）**：外交 `FoodForCredits`／`ResearchExchange` 特殊貿易已有回合收益與存檔狀態；AI→玩家 `SABOTAGE` 會依 remake 性格政策選任務並讀取玩家建築池；食物複製機補上半食物／半 BC 計算與跨回合 BC 餘數保存（強推論，不冒充原版碎片付款已證實）；原版 `RawStatus=4` 的 `+0x37`／30 門檻已接成領袖清理路徑；IDA 追回活動 Trader 的 raw 經驗分桶、tier 1/2 `×10/×15` 最大加成，並接入 GAM／demo fallback 的貿易目標；本輪再接 `CMBTSHP` 固定 tick 近似、事件／爆炸 strategic consumer、SABOTAGE raw slot helper 對齊／結構化分數／Agent 實際扣除與領袖 ETA callback 近似。原版 CMBTSHP clock、score table 上游填值與 raw callback 設計／帝國欄位仍是非阻塞 oracle 差異，詳見 [`docs/re/remake-consumer-closure-20260811.md`](docs/re/remake-consumer-closure-20260811.md)。
 - [x] **議會／安塔蘭視覺收尾（2026-08-11）**：`COUNCIL.LBX#1` 10 幀與 `ANTAROOM.LBX#1` 55 幀已由原版資產逐幀累積並接入播放；`CMBTSHP` 已接原版 `45*playerColor+rawPicture` 圖片映射，並以移動後固定 tick 播放近似 timer，靜止後不自行旋轉。原版 timer 仍標未知。畫面尺寸、雜湊、外部截圖與未宣稱項目見 [`docs/re/visual-oracle-20260811.md`](docs/re/visual-oracle-20260811.md)。
-- [x] **本機完整版與實機推廣片（2026-08-12，UI 再收束）**：`dist-all/` 集中保留三個僅供本機驗收的完整包（含使用者私有資料子集與 CJK 字型，不可公開散布）；其 SHA-256 核對檔列於 `dist-all/SHA256SUMS`。完整版重新納入 `RACESEL.LBX`，共 23 個選定的 LBX，Linux 完整 AppImage 已在 Docker + Xvfb 從包內資料啟動並抽樣確認種族肖像。正式預覽片已取代舊截圖拼接：封裝後 AppImage 在 Docker + Xvfb 以 `-game -promo-demo -noaudio` 即時走過新局、種族、命名旗色、星圖、殖民地人口調配、`RACES` 間諜操作、外交與戰術；22 個正常 UI 點擊共 60 秒，另保留 1 秒收束，成片為 61 秒 H.264/AAC、1280×720、48 kHz stereo 本機預覽。新局與種族按鈕文字均以按鈕內安全區置中，轉場游標會暫隱 1.5 秒，避免遮住種族標籤；相關幾何與流程測試已抽樣通過。逐時間點抽幀確認畫面隨流程改變；原版 `STREAM.LBX` 配樂只在錄影後混入，未做逐曲人耳驗收，影片仍不可當作可公開散布素材。錄製與權利邊界見 `scripts/capture_promo_gameplay.sh` 與 `dist-all/promo/README.md`。
+- [x] **本機完整版與實機推廣片（2026-08-12，最終錄製）**：`dist-all/` 集中保留三個僅供本機驗收的完整包（含使用者私有資料子集與 CJK 字型，不可公開散布）；其 SHA-256 核對檔列於 `dist-all/SHA256SUMS`。三平台完整包均由本輪工作樹離線重建，採 55 個經靜態消費端與封裝後畫廊交叉確認的正常玩家路徑 LBX（含 `COMBAT`、`INBOX`、`MULTIGM`、`RACESEL`、`STREAM`／`STREAMHD`），不是把 373 個原版檔全塞入；Linux 完整 AppImage 已在 Docker + Xvfb 從包內資料啟動，Windows ZIP 的 CRC／PE／根目錄、macOS universal `.app` 的結構／`lipo` 與三包的 55 檔集合亦已抽樣驗證。正式預覽片已取代舊截圖拼接：封裝後 AppImage 在 Docker + Xvfb 以 `-game -promo-demo -promo-hide-cursor -noaudio` 即時走過新局、種族、命名旗色、星圖、殖民地人口調配、`RACES` 間諜操作、外交、戰術移動／射擊、撤離與戰果回寫後返回 `RACES`；21 個正常 UI 點擊共 60 秒，另保留 3 秒收束，成片為 63.4 秒 H.264/AAC、1280×720、48 kHz stereo 本機預覽。錄製若未收到 `LastBattle` 寫回的 `promo-demo: complete` 就拒絕輸出；新局與種族按鈕文字均以按鈕內安全區置中，導覽游標完全隱藏，避免遮住文字或製造錯誤對齊觀感。抽樣影格確認種族、命名、外交、戰術、戰果與返回畫面隨正常 UI 改變且未見文字越框；原版 `STREAM.LBX` 配樂只在錄影後混入，未做逐曲人耳驗收，影片仍不可當作可公開散布素材。錄製與權利邊界見 `scripts/capture_promo_gameplay.sh` 與 `dist-all/promo/README.md`。
 - [x] **音訊文件同步（2026-08-11）**：`docs/tech/audio-track-map.md` 已移除「外交音樂是單一 `bgmDiplo` 常數」的過期敘述，改記逐族好曲、壞曲池與原版門檻未知；IDA Pro 靜態證據見 [`docs/re/oracle-static-ida-20260811.md`](docs/re/oracle-static-ida-20260811.md)。
-- [x] **多人網路最低可玩鏈與可選可靠性（2026-08-11）**：保留原版決定性 lockstep、以 TCP 取代已失效的 IPX／數據機／序列／TEN。`cmd/moo2` 已從大廳名冊接到主機共同新局（設定／種子／席位快照廣播）、客戶端套用同一快照、玩家指令依席位與玩家編號收集／重播、`turn_done` → `turn_ready` 兩階段回合結算，以及 `NetworkStateHash` 不一致時失敗即關閉；另已加入 resume token 重連、心跳／逾時／重連寬限、challenge-HMAC 身份驗證與可選 TLS 1.3。`MOO2_NET_AUTH` 開啟共享密碼 proof，`MOO2_NET_TLS=1` 開啟加密；NAT 穿透仍需外部 relay 或 UPnP，沒有冒稱內建解法。驗證包含 `internal/netplay` loopback TCP／TLS／重連抽樣、`internal/shell` 快照／席位重播與 UI 指紋正規化，以及 Docker + Xvfb `cmd/moo2` 目標測試。`netNextTurn` 仍是畫廊示範，正式流程使用 `networkWaitScreen`。
+- [x] **多人網路最低可玩鏈與可選可靠性（2026-08-12）**：保留原版決定性 lockstep、以 TCP 取代已失效的 IPX／數據機／序列／TEN。`cmd/moo2` 已從大廳名冊接到主機共同新局（設定／種子／席位快照廣播）、客戶端套用同一快照、玩家指令依席位與玩家編號收集／重播、`turn_done` → `turn_ready` 兩階段回合結算，以及 `NetworkStateHash` 不一致時失敗即關閉；另已加入 resume token 重連、心跳／逾時／重連寬限、challenge-HMAC 身份驗證與可選 TLS 1.3。`MOO2_NET_AUTH` 開啟共享密碼 proof，`MOO2_NET_TLS=1` 開啟加密；NAT 穿透仍需外部 relay 或 UPnP，沒有冒稱內建解法。共同開局的非主機席位現在在建立時即初始化 `AutoBuild`／`RepeatBuild` 平行向量，避免只有客戶端切換該席位後出現 nil／空 slice 形狀差異而誤報分岔。驗證包含 `internal/netplay` loopback TCP／TLS／重連抽樣、`internal/shell` 快照／席位重播與 UI 指紋正規化，以及 Docker + Xvfb `cmd/moo2` 三次共同開局、首回合 lockstep 目標測試。`netNextTurn` 仍是畫廊示範，正式流程使用 `networkWaitScreen`。
 - [x] **可選 AI-to-AI 強化（2026-08-11）**：AI 星選的行星價值／距離模型與議會兩候選人／第三方搖擺票已完成；現在另有可保存、可重播的 AI 彼此戰爭、停戰／互不侵犯／同盟、貿易／研究協議，以及抽象艦隊攻擊最高人口殖民地的戰鬥／佔領解算。這是 remake 模型，不冒充原版逐艦 blueprint；細節見 [`docs/tech/ai-to-ai.md`](docs/tech/ai-to-ai.md)。
 - [x] **原版 `.GAM` 匯入（2026-08-11）**：`ImportGAM`／`LoadGAMSession` 已把原版 `.GAM` 轉成可玩的 remake 工作階段；`LoadSession` 依 little-endian `0xE0` magic 自動分流，載入畫面會探測同槽 `SAVE1.GAM`～`SAVE10.GAM`，匯入後另存為 remake JSON，不覆寫原始檔。星系、行星、殖民地／前哨站、玩家／AI、外交旗標、67 筆領袖、艦隊、建築與建造佇列均有對應；研究完成 byte、特殊槽 bit 與原版任命／任期下游維持報告式未知，不猜測。`SAVE10.GAM` 真檔抽樣已通過。
 - [x] **敵方戰機下游命中／傷害（2026-08-11）**：ID 31 第二組 `1..4 / 4..16 / 2..7` 與 `sub_3AD57 @ 0x3AD57` 的 1..100 隨機、`roll <= 95` 攻防修正、40 命中門檻、`max-min+1` 插值端點，以及相鄰 `sub_3AC20 @ 0x3AC20` 的直接插值式已分開接入；Bomber profile 走 `ResolveFighterBomb`，兩條結果都逐架進最弱護盾面／裝甲／結構消費。`RawFlags & 4` 的 sub3AD57 表面分支經可達性分析證實不可達；未追回的是攻方加成欄位完整語意、兩份外部索引函式名稱與 raw runtime 輸入，不再把固定 3/5 近似寫成原版值。

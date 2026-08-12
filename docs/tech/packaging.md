@@ -1,14 +1,14 @@
 # 跨平台打包
 
-> **最新收尾（2026-08-12）**：本輪在 Docker 內依最新工作樹產出 Linux 完整 AppImage、Windows
-> 完整 ZIP 與 macOS universal 完整 tar.gz；macOS 使用既有 `u5cht/osxcross` 的 macOS 15.5 SDK
-> 交叉編譯並以 `lipo` 驗證 `x86_64`／`arm64`。三份本機完整測試包、以封裝後 AppImage 即時錄得的
-> 實機遊玩推廣片與 `SHA256SUMS` 均已完成結構／雜湊驗證；完整包帶使用者私有資料子集，不是可公開散布的 release 包。
+> **最新收尾（2026-08-12）**：Docker 已依最新工作樹重建 Linux AppImage、Windows amd64 ZIP 與
+> macOS universal tar.gz 的公開版與本機完整測試版。公開包均不含原版資料、音訊或私有字型；完整包
+> 只供本機授權測試，帶 55 個經正常玩家路徑驗證的 LBX 與字型。所有 archive 都已重算 SHA-256；
+> Linux 完整 AppImage 實際走過 35/35 畫廊抽樣，Windows／macOS 只完成結構驗證，未冒稱原生實機驗收。
 
 > 記錄 `cmd/moo2`(ebiten GUI)與 `cmd/moo2sim`(純 Go headless 模擬器)的三平台打包做法,
 > 分兩條互補路徑:
 > - **CI(GitHub Actions)**:`.github/workflows/build-macos.yml`、`.github/workflows/build-desktop.yml`——macOS 必走(cgo + Apple SDK 限制),Linux/Windows 順便補一份雲端建置。
-> - **本機 Docker 路徑**(CLAUDE.md [HARD]:編譯走 docker):`scripts/package-appimage.sh`(公開 Linux AppImage)、`scripts/package-windows.sh`(公開 Windows zip)，以及本輪使用既有 `u5cht/osxcross` 的三平台完整版測試包——實際產出與驗證見 §5／§6。macOS 官方簽署／公證仍只能靠 CI；osxcross 只負責未簽署本機測試包。
+> - **本機 Docker 路徑**(CLAUDE.md [HARD]:編譯走 Docker)：六支 `package-*` 腳本分別產出公開與本機完整的 Linux、Windows、macOS 包；實際產出與驗證見 §5／§6。macOS 官方簽署／公證仍只能靠 CI 或真 Mac；osxcross 只負責未簽署的結構測試包。
 
 ## 0. 為什麼 macOS 要獨立一份 workflow
 
@@ -55,8 +55,9 @@ CLAUDE.md 規定「編譯一律走 docker」,本機(Linux dev box)用 `docker/Do
 
 > **修正(2026-07-03,實測)**:下面原本假設「跨編 Windows GUI 版需要 mingw-w64 + CGO_ENABLED=1」——這個假設**對 ebiten v2.9.9 不成立**,已用本機 docker 實測 + 核對原始碼推翻,詳見 §5.2。`build-desktop.yml` 目前仍裝 `egor-tensin/setup-mingw` 是保守作法(不影響正確性,只是多裝了用不到的工具鏈),之後可簡化成純 `CGO_ENABLED=0` 跨編、拿掉 mingw 安裝步驟,但這屬於 CI workflow 調整,不在本輪「本機 docker 打包腳本」授權範圍內,先記錄於此供下輪處理。
 
-- 需要 `mingw-w64` 交叉工具鏈(`x86_64-w64-mingw32-gcc`)且要正確餵給 `CC`,版本/ABI 對不齊容易產生連不動或執行期崩潰的 binary。
-- ebiten Windows backend 一樣是 CGO(win32 API),純 `GOOS=windows` 不開 CGO 會編出「能編但執行期立刻崩」或功能殘缺的版本。
+- 本專案鎖定的 ebiten Windows backend 已採純 Go／`purego` 路徑，公開與完整 Windows 包皆以
+  `GOOS=windows GOARCH=amd64 CGO_ENABLED=0` 建置；若日後升級 ebiten 改回 CGo 依賴，必須重新驗證
+  工具鏈，而不可沿用這個結論。
 
 `build-desktop.yml` 用 `windows-latest` runner 原生編(`egor-tensin/setup-mingw` 裝好 mingw-w64,`CGO_ENABLED=1`),繞開本機交叉編譯的組態地獄;`ubuntu-latest` 編 Linux 版則對齊 `Dockerfile.ebiten` 的套件清單(X11/OpenGL headers)。兩者都只是「CI 上補一份可下載的建置」,不影響本機 docker 開發流程。
 
@@ -80,11 +81,11 @@ CLAUDE.md 規定「編譯一律走 docker」,本機(Linux dev box)用 `docker/Do
 - **未做 Apple 正式簽署/公證(notarization)**:需要付費 Apple Developer 帳號,不在本專案範圍;玩家需自行 `xattr -dr com.apple.quarantine` 解除隔離。
 - **未實際在真 Mac 上跑過**(本機無 Mac 裝置):本輪 osxcross 已驗證兩 slice、bundle 與 tar 結構，但未在真 Mac 執行 Cocoa／Metal、Finder 啟動、音訊輸出或 Gatekeeper；workflow 的 `codesign`／`hdiutil` 實際行為仍要等 `macos-14` runner，對應 `retro-game-playtest` skill 精神——交叉編成功不等於玩家真機可玩。
 
-## 5. 本機 docker 打包腳本(Linux AppImage / Windows zip,實際跑過)
+## 5. 本機 Docker 打包腳本（三平台，實際跑過）
 
-跟 §1–§4 的 CI workflow 不同,這節記錄**本機可重跑、已實際執行並確認產物存在**的兩支 docker 化腳本:
-`scripts/package-appimage.sh`、`scripts/package-windows.sh`。兩者都遵守 CLAUDE.md [HARD](編譯走 docker),
-不裝系統套件、不污染本機環境。
+跟 §1–§4 的 CI workflow 不同，這節記錄**本機可重跑、已實際執行並確認產物存在**的六支 Docker 化腳本：
+`scripts/package-appimage*.sh`、`scripts/package-windows*.sh`、`scripts/package-macos*.sh`。它們都遵守
+CLAUDE.md 的 Docker-only 邊界，不裝主機套件、不開網路；可寫容器一律以目前使用者 UID/GID 產出檔案。
 
 ### 5.1 Linux AppImage(`scripts/package-appimage.sh`)
 
@@ -92,7 +93,9 @@ CLAUDE.md 規定「編譯一律走 docker」,本機(Linux dev box)用 `docker/Do
 
 1. `go build`(image 預設 `CGO_ENABLED=1`)編出 `cmd/moo2`(GUI)與 `cmd/moo2sim`(headless)兩個 Linux amd64 binary,放進 `AppDir/usr/bin/`。
 2. 組 `.desktop` + 佔位圖示(`scripts/gen-icon.go`,純 Go stdlib 畫一個深空藍配金環的圖,**不含任何版權遊戲美術**——原版素材依 `.gitignore` 一律不進 repo,圖示也不例外)。
-3. 下載 `linuxdeploy` + `appimagetool`(快取進 `.docker-cache/appimage-tools/`,避免每次重抓),兩者皆用 `--appimage-extract-and-run` 執行(容器內無 FUSE,不能直接跑 AppImage 本體)。
+3. 使用預先受控放入 `.docker-cache/appimage-tools/` 的離線 `linuxdeploy`、`appimagetool` 與
+   AppImage runtime；腳本拒絕缺件而不開網路下載。兩個工具皆用 `--appimage-extract-and-run` 執行
+   （容器內無 FUSE，不能直接跑 AppImage 本體）。
 4. `linuxdeploy --executable AppDir/usr/bin/moo2` 掃描 `moo2` 的 ELF 動態依賴,把非系統標配的庫(`libXau.so.6`/`libXdmcp.so.6`/`libbsd.so.0`/`libmd.so.0`)複製進 `AppDir/usr/lib/` 並設 rpath;`libX11.so.6`/`libGL` 等被 linuxdeploy 判定為「blacklisted」(視為目標系統一定有的基礎庫,不重複打包,這是 AppImage 官方建議的標準行為,避免驅動相關的 libGL 打包進去反而在異機衝突)。`moo2sim` 是純 Go 靜態連結(`ldd` 顯示 not dynamically linked),linuxdeploy 略過依賴掃描,但檔案本身仍留在 AppDir 內一起打包。
 5. `appimagetool` 打包成 `dist-all/MasterOfOrion2-cht-x86_64.AppImage`。
 
@@ -123,11 +126,13 @@ import table 裡)——與「傳統 cgo 連結 user32/gdi32/opengl32」的樣貌
 
 流程:
 
-1. `docker run golang:1.25-bookworm`(不需要 `moo2-ebiten` image,純 Go 跨編不需要 X11/OpenGL headers)。
+1. `docker run moo2-ebiten` 使用既有鎖版 Go 快取，以純 Go 交叉編譯 Windows 版本；不在封裝時下載
+   module 或在主機安裝工具鏈。
 2. `GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w -H=windowsgui"` 編 `moo2.exe`(`-H=windowsgui` 避免雙擊彈黑底主控台視窗)。
 3. 同環境變數編 `moo2sim.exe`(不加 `-H=windowsgui`,是 CLI 工具)。
 4. 附帶 `assets/i18n/`(自製譯文,無版權疑慮)。
-5. `zip` 打包成 `dist-all/MasterOfOrion2-cht-windows-amd64.zip`。
+5. 以標準函式庫 `scripts/zipdir.go` 原子建立
+   `dist-all/MasterOfOrion2-cht-windows-amd64.zip`；它拒絕符號連結與特殊檔，避免封裝混入工作樹外內容。
 
 **實測產出**(2026-07-03):`dist-all/MasterOfOrion2-cht-windows-amd64.zip`(4.8 MB),內含 `moo2.exe`(9.9 MB,GUI subsystem)、
 `moo2sim.exe`(1.9 MB,console subsystem)、`assets/i18n/*.tsv`。
@@ -141,11 +146,17 @@ Windows GUI**(沒有 Wine + 真的 Win32 訊息迴圈測試)。要驗證雙擊�
 ```bash
 scripts/package-appimage.sh   # → dist-all/MasterOfOrion2-cht-x86_64.AppImage
 scripts/package-windows.sh    # → dist-all/MasterOfOrion2-cht-windows-amd64.zip
+scripts/package-macos.sh      # → dist-all/MasterOfOrion2-cht-macos-universal.tar.gz
+
+# 僅限持有合法原版資料與字型時的本機驗收；絕不可公開散布。
+MOO2_DATA=/path/to/mastori2 MOO2_FONT=/path/to/font.ttc scripts/package-appimage-full.sh
+MOO2_DATA=/path/to/mastori2 MOO2_FONT=/path/to/font.ttc scripts/package-windows-full.sh
+MOO2_DATA=/path/to/mastori2 MOO2_FONT=/path/to/font.ttc scripts/package-macos-full.sh
 ```
 
-兩支腳本都是 idempotent(可重跑覆蓋),`dist-all/` 已加進 `.gitignore`(打包產物不入 repo,同原則見 §3 的
-「建立 Release 需另外授權」)。`.docker-cache/appimage-tools/` 快取 linuxdeploy/appimagetool 的下載,
-避免每次重跑都打一次 GitHub Releases。
+六支腳本都以暫存檔後原子更新產物，`dist-all/` 已加進 `.gitignore`（打包產物不入 repo，同原則見 §3 的
+「建立 Release 需另外授權」）。AppImage 腳本要求既有、受控的離線 `linuxdeploy`、`appimagetool` 與
+runtime 快取；不會在建置時開網路下載。
 
 ### 5.4 2026-08-12 公開 Release candidate
 
@@ -155,26 +166,27 @@ scripts/package-windows.sh    # → dist-all/MasterOfOrion2-cht-windows-amd64.zi
 
 | 公開產物 | 大小 | SHA-256 |
 |---|---:|---|
-| `MasterOfOrion2-cht-x86_64.AppImage` | 9,202,168 bytes | `7691efb145dbb6158a742716007b04e068488d7fdecc089bc3f07964982a1d32` |
-| `MasterOfOrion2-cht-windows-amd64.zip` | 9,045,616 bytes | `640ed58440aa9d620c879bc2b7a6114b3cce0b0a1fdb7637c163c74fde771731` |
-| `MasterOfOrion2-cht-macos-universal.tar.gz` | 17,206,727 bytes | `7a2b36cda1633134fc9d5d0b82094b283be1d25dd3e14fbe18db28f7a2cb38b5` |
+| `MasterOfOrion2-cht-x86_64.AppImage` | 9,214,456 bytes | `20a19fd16721cb13659083d157b4e942f646471f41a01a1b99e05a9579825f01` |
+| `MasterOfOrion2-cht-windows-amd64.zip` | 9,282,110 bytes | `44cd9770c5e736e3af1013fc74eabbadfcda1828e5b5d8c4bba1c8b9434ba9f3` |
+| `MasterOfOrion2-cht-macos-universal.tar.gz` | 17,226,315 bytes | `0e88feee4c9b4bafbcd29deb6f467cae4a242ef0e99c08b14f7eaffc46c2d3c3` |
 
-Linux AppImage 的 `moo2`／`moo2sim` 為 x86-64，並以外掛合法資料／字型實際跑過 Docker + Xvfb
-的互動導覽；Windows 為 amd64 PE 交叉編譯且 ZIP CRC 通過；macOS tar 內的 universal binaries 由
-osxcross `lipo` 確認含 `arm64`／`x86_64`。本輪沒有真 Windows 或真 macOS 主機執行，因此 Release
-notes 不宣稱原生平台實機驗收。含原版 `STREAM.LBX` 音樂的 61 秒實機推廣片只保留本機授權預覽，
-不上傳公開 Release。
+Linux AppImage 的 `moo2`／`moo2sim` 為 x86-64；Windows 為 amd64 PE 交叉編譯且 ZIP CRC 通過；
+macOS tar 內的 universal binaries 由 osxcross `lipo` 確認含 `arm64`／`x86_64`。三包都不含 `.LBX`、
+`STREAM`／`STREAMHD`、原版音效或私有字型。公開包只能在玩家自行提供合法資料與字型後使用；本輪
+沒有真 Windows 或真 macOS 主機執行，因此 Release notes 不宣稱原生平台實機驗收。含原版 `STREAM.LBX`
+音樂的 63.4 秒實機推廣片只保留本機授權預覽，不上傳公開 Release。
 
 ## 6. 本機完整版與 2026-08-12 影片驗證
 
 | 產物 | 本輪結果 |
 |---|---|
-| `dist-all/MasterOfOrion2-cht-full-x86_64.AppImage` | Docker 依本輪最新程式碼重建；ELF magic 正確；從包內 23 個選定 LBX（含 `RACESEL.LBX`）啟動到種族選擇，肖像正常載入；98,159,096 bytes；SHA-256 `1a9c4f5a0580a0675ded9f9d1310054afd2decef36fab07977ae7ae4595e9e16` |
-| `dist-all/MasterOfOrion2-cht-full-windows-amd64.zip` | Docker 跨編；ZIP 根目錄正常，含 `moo2.exe`、`moo2sim.exe`、`run-full.bat`、23 個選定 LBX、CJK 字型、譯表、`STREAM`／`STREAMHD`；100,949,010 bytes；SHA-256 `bda8a2da63f8ffae226f9beb87d09ed83e282caa1af5b49552c37d975036bbef` |
-| `dist-all/MasterOfOrion2-cht-full-macos-universal.tar.gz` | Docker + `u5cht/osxcross` 重建；`lipo` 顯示 `x86_64`／`arm64`，tar 含 `.app`、23 個選定 LBX、資料子集與字型；未做 Apple 正式簽署／真機執行；109,630,541 bytes；SHA-256 `0a29203fa7b9a167978b797c7bfcabf7fac6fd5ec3deafd8d8932552076c5a26` |
-| `dist-all/promo/master-of-orion-2-remake-trailer.mp4` | 封裝後 AppImage 的 Docker + Xvfb 即時互動錄影，走新局、種族、命名旗色、星圖、殖民地人口調配、`RACES` 間諜、外交與戰術，不使用 `-gamegallery` 或 PNG；H.264/AAC、1280×720、30 fps、61 秒、48 kHz stereo；3,712,184 bytes；SHA-256 `ca9686ed571036cb1384be091aeeb53a3884a662a13fdb1c9507fc1edd1599f4` |
+| `dist-all/MasterOfOrion2-cht-full-x86_64.AppImage` | Docker 依本輪最新程式碼重建；從包內 55 個正常玩家路徑 LBX 與字型實際啟動，35/35 畫廊含輸入框、多人頁與戰術畫面；152,508,920 bytes；SHA-256 `c67ebca3d6fb1808d395c359ff1aa926c41f0dd3891e7d35bb3807c95c647c88` |
+| `dist-all/MasterOfOrion2-cht-full-windows-amd64.zip` | Docker 跨編；ZIP CRC、`moo2.exe`／`moo2sim.exe` PE 格式與 `run-full.bat` 通過，含 55 個同源 LBX、字型與譯表；158,441,789 bytes；SHA-256 `f9c29d52f3711bf95d0cdc68d246f013edb3f854360e752fd840dbe98dce17c8` |
+| `dist-all/MasterOfOrion2-cht-full-macos-universal.tar.gz` | Docker + `u5cht/osxcross` 重建；`.app` 結構、啟動器、55 個同源 LBX、字型與 `x86_64`／`arm64` binary 通過；未做 Apple 正式簽署／真機執行；164,775,293 bytes；SHA-256 `305eb2ce5a3f1763e41a9e87a47e037e1d62fa33d159374a363f7104383952c9` |
+| `dist-all/promo/master-of-orion-2-remake-trailer.mp4` | 封裝後 AppImage 的 Docker + Xvfb 即時互動錄影，走新局、種族、命名旗色、星圖、殖民地人口調配、`RACES` 間諜、外交、戰術移動／射擊、撤離、戰果回寫與返回 `RACES`，不使用 `-gamegallery`、PNG 或展示狀態注入；遊戲端未寫回 `LastBattle` 時錄製會失敗即關閉。H.264/AAC、1280×720、30 fps、63.4 秒、48 kHz stereo；3,426,441 bytes；SHA-256 `1f939dd0599ee58c05411c6bdb8e1d57560b934ea9f7d3bdb0941b82d541f9e2` |
 | `dist-all/SHA256SUMS` | 已更新為三個本機完整版與實機影片；Docker `sha256sum` 驗證通過 |
 
-完整版刻意帶入使用者私有正版資料子集、原版音訊與 CJK 字型，僅供相應授權的本機測試；公開
-release 仍應使用不含原版資料／音樂的非完整版包。`STREAM`／`STREAMHD` 的解碼與封裝已驗證，
-逐曲人耳與真 Mac／Windows 執行仍不是本輪 Docker smoke check 的宣稱範圍。
+完整包刻意帶入使用者私有正版資料子集、原版音訊與 CJK 字型，僅供相應授權的本機測試；55 檔集合是
+「正常玩家路徑最小充分」資料，不是完整原版檔案鏡像。公開 release 仍應使用不含原版資料／音樂的
+非完整版包。`STREAM`／`STREAMHD` 的解碼與封裝已驗證，逐曲人耳與真 Mac／Windows 執行仍不是本輪
+Docker 抽樣的宣稱範圍。

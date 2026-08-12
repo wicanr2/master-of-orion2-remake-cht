@@ -3,12 +3,14 @@ package main
 import (
 	"testing"
 	"time"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
 
 func TestPromoDemoStepsFollowNormalPlayableRoute(t *testing.T) {
 	steps := buildPromoDemoSteps()
-	if len(steps) != 23 {
-		t.Fatalf("導覽步數 = %d, want 23", len(steps))
+	if len(steps) != 22 {
+		t.Fatalf("導覽步數 = %d, want 22", len(steps))
 	}
 	if first := steps[0]; first.input.ClickReleased || first.hold != 2*time.Second {
 		t.Fatalf("第一步 = %+v, want 2 秒主選單停留", first)
@@ -34,12 +36,11 @@ func TestPromoDemoStepsFollowNormalPlayableRoute(t *testing.T) {
 		{483, 428}, // REPORT
 		{320, 437}, // 結束對談
 		{388, 448}, // DECLARE WAR
-		{215, 97},  // 第一艘艦移動
+		{215, 97},  // 拓荒號移動
 		{495, 97},  // 第一艘敵艦
-		{145, 152}, // 第二艘我方艦
-		{215, 152}, // 第二艘艦移動
-		{495, 152}, // 第二艘敵艦
-		{300, 374}, // AUTO
+		{365, 401}, // RETREAT
+		{320, 245}, // 套用實際戰鬥結果
+		{190, 334}, // CLOSE：回到 RACES
 	}
 	var total time.Duration
 	for i, step := range steps {
@@ -77,6 +78,17 @@ func TestPromoCursorInterpolatesDuringTheHold(t *testing.T) {
 	a.updatePromoCursor(start.Add(3 * time.Second))
 	if a.promoCursorX != 200 || a.promoCursorY != 120 {
 		t.Fatalf("游標終點 = (%.1f,%.1f), want (200,120)", a.promoCursorX, a.promoCursorY)
+	}
+}
+
+func TestPromoDemoCompletionRequiresAppliedBattleResult(t *testing.T) {
+	b := &sceneBuilder{session: shell.NewDemoSession()}
+	if promoDemoResultReached(b) {
+		t.Fatal("未完成戰鬥不應回報推廣導覽完成")
+	}
+	b.session.LastBattle = &shell.BattleResult{}
+	if !promoDemoResultReached(b) {
+		t.Fatal("已寫回 LastBattle 應回報推廣導覽完成")
 	}
 }
 

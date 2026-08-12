@@ -68,6 +68,9 @@ func (r textSafeRect) lines(fnt *uifont.Font, text string, size float64) []strin
 // leftExtras 回傳已受雙軸限制的 overlay 動態文字。不要在 postDraw 裡自行組
 // extraText，否則只有限寬、沒有行數與高度的舊問題會再次出現。
 func (r textSafeRect) leftExtras(fnt *uifont.Font, text string, size float64, col color.RGBA) []extraText {
+	if fnt == nil {
+		return nil
+	}
 	lines := r.lines(fnt, text, size)
 	out := make([]extraText, 0, len(lines))
 	lineH := r.lineH
@@ -78,6 +81,33 @@ func (r textSafeRect) leftExtras(fnt *uifont.Font, text string, size float64, co
 		out = append(out, extraText{
 			x: float64(r.contentX()), y: float64(r.contentY() + i*lineH),
 			size: size, text: line, col: col, maxW: r.contentWidth(),
+		})
+	}
+	return out
+}
+
+// centeredExtras 是多行置中動態文字的安全版本。每一行都先由 lines 依相同的欄寬與
+// 高度政策收束，再以整塊內容區的中心等距排列；不可先 Wrap 後自行用 y+i*lineH 直畫。
+func (r textSafeRect) centeredExtras(fnt *uifont.Font, text string, size float64, col color.RGBA) []extraText {
+	if fnt == nil {
+		return nil
+	}
+	lines := r.lines(fnt, text, size)
+	if len(lines) == 0 {
+		return nil
+	}
+	lineH := r.lineH
+	if lineH <= 0 {
+		lineH = r.h - 2*r.insetY
+	}
+	contentH := r.h - 2*r.insetY
+	cy := float64(r.contentY()) + float64(contentH)/2
+	firstY := cy - float64(len(lines)-1)*float64(lineH)/2
+	out := make([]extraText, 0, len(lines))
+	for i, line := range lines {
+		out = append(out, extraText{
+			x: float64(r.x) + float64(r.w)/2, y: firstY + float64(i*lineH),
+			size: size, text: line, col: col, align: 1, maxW: r.contentWidth(),
 		})
 	}
 	return out
@@ -102,6 +132,14 @@ func (r textSafeRect) drawCentered(dst *ebiten.Image, fnt *uifont.Font, text str
 	}
 	fnt.DrawCentered(dst, r.clipped(fnt, text, size),
 		float64(r.x)+float64(r.w)/2, float64(r.y)+float64(r.h)/2, size, col)
+}
+
+// drawCenteredLines 是給自繪對話框使用的多行置中版本。它和 overlay 的 extras 共用
+// 完全相同的量測／截斷規則，避免 modal 畫面重建一套沒有高度上限的折行流程。
+func (r textSafeRect) drawCenteredLines(dst *ebiten.Image, fnt *uifont.Font, text string, size float64, col color.Color) {
+	for _, e := range r.centeredExtras(fnt, text, size, color.RGBAModel.Convert(col).(color.RGBA)) {
+		fnt.DrawCentered(dst, e.text, e.x, e.y, e.size, e.col)
+	}
 }
 
 // centeredExtraTextInSafeRect 是 overlay 動態按鈕的同款中心計算。外框／熱區與

@@ -4,6 +4,7 @@ import (
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
@@ -43,6 +44,8 @@ const (
 	confirmBoxAsset = 0
 	confirmBoxX     = 161
 	confirmBoxY     = 117
+	confirmBoxW     = 313
+	confirmBoxH     = 227
 
 	confirmYesAsset = 1
 	confirmYesX     = 235
@@ -61,7 +64,26 @@ const (
 	confirmTextMidY = 208
 	confirmTextSize = 12
 	confirmLineStep = 16
+	confirmTextH    = 126
 )
+
+// confirmMessageTextRect 保留原版量到的 224px 欄寬與 126px 可用高度。
+// remake 不模擬原版逐級縮字，而是固定字級、固定行距、超量後以省略號收束，確保不會壓到 YES/NO。
+func confirmMessageTextRect() textSafeRect {
+	return textSafeRect{
+		x: confirmTextX, y: confirmTextMidY - confirmTextH/2,
+		w: confirmTextW, h: confirmTextH, lineH: confirmLineStep,
+	}
+}
+
+// drawFallbackConfirmPanel 是 CONFIRM.LBX 缺席時的可見容器。它嚴格使用原版底框的
+// 座標與尺寸；深色不透明底同時是 hi-res 文字重播的 z 序屏障，避免星圖名稱穿過訊息。
+// 這是 remake 後備畫面，不宣稱為原版像素。
+func drawFallbackConfirmPanel(dst *ebiten.Image) {
+	fillPanel(dst, confirmBoxX, confirmBoxY, confirmBoxW, confirmBoxH, color.RGBA{16, 20, 32, 255}, false)
+	vector.StrokeRect(dst, confirmBoxX, confirmBoxY, confirmBoxW, confirmBoxH, 1, color.RGBA{130, 145, 176, 255}, false)
+	vector.StrokeRect(dst, confirmBoxX+3, confirmBoxY+3, confirmBoxW-6, confirmBoxH-6, 1, color.RGBA{44, 64, 94, 255}, false)
+}
 
 // confirmScreen 是一個是/否確認框,疊在 under 這個畫面上。
 //
@@ -164,6 +186,8 @@ func (s *confirmScreen) draw(dst *ebiten.Image) {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(confirmBoxX, confirmBoxY)
 		drawPanelImage(dst, s.bg, op)
+	} else {
+		drawFallbackConfirmPanel(dst)
 	}
 	mx, my := ebiten.CursorPosition()
 	drawBtn := func(img, hi *ebiten.Image, x, y int) {
@@ -196,10 +220,5 @@ func (s *confirmScreen) draw(dst *ebiten.Image) {
 		label("是", confirmYesX, confirmYesY, s.yesFace)
 		label("否", confirmNoX, confirmNoY, s.noFace)
 	}
-	lines := wrapToWidth(s.b.fnt, s.msg, confirmTextSize, confirmTextW)
-	top := float64(confirmTextMidY) - float64(len(lines)-1)*confirmLineStep/2
-	for i, ln := range lines {
-		s.b.fnt.DrawCentered(dst, ln, float64(confirmTextX+confirmTextW/2), top+float64(i*confirmLineStep),
-			confirmTextSize, color.RGBA{230, 224, 200, 255})
-	}
+	confirmMessageTextRect().drawCenteredLines(dst, s.b.fnt, s.msg, confirmTextSize, color.RGBA{230, 224, 200, 255})
 }

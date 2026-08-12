@@ -1,6 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"sort"
 	"testing"
 	"time"
 
@@ -99,6 +103,76 @@ func waitForMultiplayerTest(t *testing.T, what string, cond func() bool) {
 	t.Fatalf("等待%s逾時", what)
 }
 
+// canonicalSnapshotFieldsForTest 將兩端都暫時切到共同的 seat 0 再序列化，讓失敗訊息
+// 指向真正沒有收斂的存檔欄位，而非主客端本地作用中席位的預期差異。
+func canonicalSnapshotFieldsForTest(t *testing.T, left, right *shell.GameSession) []string {
+	t.Helper()
+	canonical := func(s *shell.GameSession) []byte {
+		active := s.ActiveSeat
+		if err := s.SetActiveSeat(0); err != nil {
+			t.Fatalf("切換共同席位：%v", err)
+		}
+		out, err := s.MarshalSnapshot()
+		if restoreErr := s.SetActiveSeat(active); restoreErr != nil {
+			t.Fatalf("還原本地席位：%v", restoreErr)
+		}
+		if err != nil {
+			t.Fatalf("序列化共同快照：%v", err)
+		}
+		return out
+	}
+	var a, b map[string]json.RawMessage
+	if err := json.Unmarshal(canonical(left), &a); err != nil {
+		t.Fatalf("解析主機共同快照：%v", err)
+	}
+	if err := json.Unmarshal(canonical(right), &b); err != nil {
+		t.Fatalf("解析客戶端共同快照：%v", err)
+	}
+	keys := make(map[string]bool, len(a)+len(b))
+	for key := range a {
+		keys[key] = true
+	}
+	for key := range b {
+		keys[key] = true
+	}
+	var different []string
+	for key := range keys {
+		if !bytes.Equal(a[key], b[key]) {
+			if key != "seats" {
+				different = append(different, key)
+				continue
+			}
+			var leftSeats, rightSeats []map[string]json.RawMessage
+			if err := json.Unmarshal(a[key], &leftSeats); err != nil {
+				t.Fatalf("解析主機席位快照：%v", err)
+			}
+			if err := json.Unmarshal(b[key], &rightSeats); err != nil {
+				t.Fatalf("解析客戶端席位快照：%v", err)
+			}
+			for i := 0; i < len(leftSeats) || i < len(rightSeats); i++ {
+				if i >= len(leftSeats) || i >= len(rightSeats) {
+					different = append(different, "seats.length")
+					break
+				}
+				seatKeys := make(map[string]bool, len(leftSeats[i])+len(rightSeats[i]))
+				for seatKey := range leftSeats[i] {
+					seatKeys[seatKey] = true
+				}
+				for seatKey := range rightSeats[i] {
+					seatKeys[seatKey] = true
+				}
+				for seatKey := range seatKeys {
+					if !bytes.Equal(leftSeats[i][seatKey], rightSeats[i][seatKey]) {
+						different = append(different, fmt.Sprintf("seats[%d].%s", i, seatKey))
+					}
+				}
+			}
+		}
+	}
+	sort.Strings(different)
+	return different
+}
+
 // 從多人設定的 NETWORK 鈕開始，穿過 START NEW GAME 的名稱彈窗，再由客戶端走實際
 // TCP 加入邏輯；接著驗共同快照與第一個空指令回合的 turn_done → turn_ready 鎖步。
 // 這條不用原版美術，故可在隔離的 loopback 容器穩定重現，但沒有跳過 UI callback 或
@@ -109,6 +183,10 @@ func TestMultiplayerTCPHostJoinAndFirstTurn(t *testing.T) {
 		lang:    i18n.Traditional,
 		session: shell.NewDemoSession(),
 	}
+	// runInteractive 會在進多人頁前替主機裝上星雲遮罩 probe；客戶端接受共同快照後也會
+	// 在 acceptNetworkGame 做同一件事。這個測試手動建立 sceneBuilder，必須補上相同啟動
+	// 前置，否則比較的不是同一條正常玩家路徑的共同狀態。
+	host.applyNebulaStarFlags(host.session)
 	defer host.closeNetwork()
 
 	menu := newMultiplayerScreen(host)
@@ -158,7 +236,8 @@ func TestMultiplayerTCPHostJoinAndFirstTurn(t *testing.T) {
 		return client.session != nil && !client.networkPending
 	})
 	if host.session.NetworkStateHash() != client.session.NetworkStateHash() {
-		t.Fatal("共同開局快照後主機與客戶端狀態指紋不同")
+		t.Fatalf("共同開局快照後主機與客戶端狀態指紋不同（共同席位快照差異：%v）",
+			canonicalSnapshotFieldsForTest(t, host.session, client.session))
 	}
 	if host.networkTurn == nil || client.networkTurn == nil {
 		t.Fatal("共同開局後雙方都應進入第一回合鎖步狀態")
@@ -184,6 +263,7 @@ func TestMultiplayerTCPHostJoinAndFirstTurn(t *testing.T) {
 		t.Fatalf("第一回合不應斷線或不同步：host=%q client=%q", host.networkError, client.networkError)
 	}
 	if host.session.NetworkStateHash() != client.session.NetworkStateHash() {
-		t.Fatal("第一回合結算後主機與客戶端狀態指紋不同")
+		t.Fatalf("第一回合結算後主機與客戶端狀態指紋不同（共同席位快照差異：%v）",
+			canonicalSnapshotFieldsForTest(t, host.session, client.session))
 	}
 }

@@ -100,19 +100,21 @@ func racesInfoLineRect(i, line int) textSafeRect {
 	var y, h int
 	switch line {
 	case 0:
-		y, h = r.y+2, 13
+		y, h = r.y+2, 16
 	case 1:
-		y, h = r.y+17, 10
+		y, h = r.y+17, 16
 	case 2:
-		y, h = r.y+29, 10
+		y, h = r.y+29, 16
 	case 3:
-		y, h = r.y+41, 9
+		y, h = r.y+41, 16
 	case 4:
-		y, h = r.y+53, 9
+		y, h = r.y+53, 16
 	default:
 		return textSafeRect{}
 	}
-	return textSafeRect{x: r.x, y: y, w: r.w, h: h, insetX: r.insetX}
+	// 每行保留 12px 的原生垂直間距；h=16 容納實際點陣字身，避免
+	// leftExtras 依安全框高度改變行距而把最後一行推入間諜按鈕。
+	return textSafeRect{x: r.x, y: y, w: r.w, h: h, insetX: r.insetX, lineH: 12}
 }
 
 // ============ 只做「說得出意思」的明確控制 ============

@@ -1,6 +1,9 @@
 package main
 
 import (
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
@@ -28,7 +31,50 @@ func TestNewGameSelectorTextUsesCenteredSafeRects(t *testing.T) {
 				if got, _ := fnt.Measure(label, 12); got > r.contentWidth() {
 					t.Fatalf("%s 的 %q 寬 %.0f 超出 %.0f", st.act, label, got, r.contentWidth())
 				}
+				if _, got := fnt.Measure(label, 12); got > float64(r.h-2*r.insetY) {
+					t.Fatalf("%s 的 %q 高度 %.0f 超出 %.0f", st.act, label, got, float64(r.h-2*r.insetY))
+				}
 			}
 		}
+	}
+}
+
+func TestNewGameSetupRoutesLabelsThroughBoundedDrawer(t *testing.T) {
+	fs := token.NewFileSet()
+	file, err := parser.ParseFile(fs, "interactive.go", nil, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var setup *ast.FuncDecl
+	for _, decl := range file.Decls {
+		fn, ok := decl.(*ast.FuncDecl)
+		if ok && fn.Name.Name == "newGameSetup" {
+			setup = fn
+			break
+		}
+	}
+	if setup == nil {
+		t.Fatal("找不到 newGameSetup")
+	}
+	seenBounded := false
+	ast.Inspect(setup.Body, func(n ast.Node) bool {
+		call, ok := n.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		switch fn := call.Fun.(type) {
+		case *ast.Ident:
+			if fn.Name == "drawNewGameSettingLabel" {
+				seenBounded = true
+			}
+		case *ast.SelectorExpr:
+			if fn.Sel.Name == "drawCentered" || fn.Sel.Name == "DrawCentered" {
+				t.Errorf("newGameSetup 不得繞過雙軸安全繪製器，直接呼叫 %s", fn.Sel.Name)
+			}
+		}
+		return true
+	})
+	if !seenBounded {
+		t.Fatal("newGameSetup 沒有使用 drawNewGameSettingLabel")
 	}
 }

@@ -400,6 +400,11 @@ func seatFromAI(ai AIOpponent, idx, remainingAICount int) seat {
 	n := len(v.PlayerColonies)
 	v.Builds = make([]ColonyBuild, n)
 	v.BuildQueue = make([][]ColonyBuild, n)
+	// 建造控制與殖民地平行。不能留 nil 等到某一台客戶端切到此席位才由
+	// ensureBuildQueue 補成空 slice：主機若尚未切換，兩端的共同快照就會出現
+	// nil / 空 slice 形狀差異而誤判 lockstep 分岔。
+	v.AutoBuild = make([]bool, n)
+	v.RepeatBuild = make([]ColonyBuild, n)
 	if len(v.ColonyBuildings) != n {
 		buildings := make([]map[string]bool, n)
 		copy(buildings, v.ColonyBuildings[:minLen(len(v.ColonyBuildings), n)])

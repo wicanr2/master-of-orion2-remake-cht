@@ -13,7 +13,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 IMAGE="moo2-ebiten"
-DIST_DIR="${REPO_ROOT}/dist-all"
+DIST_DIR="${MOO2_DIST_DIR:-${REPO_ROOT}/dist-all}"
 TOOLS_CACHE="${REPO_ROOT}/.docker-cache/appimage-tools"
 APP_NAME="MasterOfOrion2-cht-full"
 DATA_DIR="${MOO2_DATA:-/home/anr2/moo2-private-build/gamedata/mastori2}"
@@ -22,21 +22,36 @@ FONT_FILE="${MOO2_FONT:-/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc}"
 [ -d "${DATA_DIR}" ] || { echo "找不到遊戲資料夾: ${DATA_DIR}"; exit 1; }
 [ -f "${FONT_FILE}" ] || { echo "找不到字型: ${FONT_FILE}"; exit 1; }
 
-# -game 實際載入的 LBX(取自 cmd/moo2 原始碼 grep;只打包需要的,避免 324M 全帶)。
-# 含音樂/音效(stream/streamhd/sound)與英雄資料(herodata)——本機 full build 不省體積,
-# 缺這幾個會導致「沒音樂 / 傭兵池空無人可雇」(2026-07-12 實測 issue #1/#4)。
-# `racesel` 是新局種族選擇畫面的肖像與按鈕圖；漏掉它會讓完整包的左側肖像變成
-# 空白格，即使 RACEOPT 背景與中文字仍可顯示。它與 RACEOPT 不是同一份資產。
-LBX_LIST="buffer0 colsum council design diplomat fleet help info mainmenu newgame officer plntsum raceopt races racesel science stardb techsel turnsum game stream streamhd sound herodata"
+# 完整包帶 55 個**正常玩家路徑**會讀取的 LBX：由 cmd/moo2 靜態消費端與封裝後
+# 35 張畫廊交叉確認。它不是把 373 個原版檔全塞入，而是不允許 INPUT／MULTIGM／
+# COMBAT 等正常畫面悄悄降級成後備版。`stardb.lbx` 只在 resolver 測試作假檔，
+# 正版資料不存在，故刻意不列入。
+LBX_LIST="amebafin anatkfin antaroom anwinfin bldg0 bldg1 bldg2 bldg3 bldg4 bldg5 buffer0 cmbtsfx cmbtshp colbldg colgcbt colony colony2 colpups colroads colsum colveggi combat confirm council design dimtvfin diplomat fleet game genwinfn help herodata inbox info intro loserfin mainmenu multigm newgame officer orionfin planets plntdfin plntsum raceopt races racesel science sound starbg stream streamhd techsel turnsum wininfin"
 
-mkdir -p "${DIST_DIR}" "${TOOLS_CACHE}" "${REPO_ROOT}/.docker-cache/go"
+for required_dir in "${DIST_DIR}" "${TOOLS_CACHE}" "${REPO_ROOT}/.docker-cache/go"; do
+  if [[ ! -d "${required_dir}" ]]; then
+    echo "缺少既有目錄: ${required_dir}；拒絕在主機端自行建立。" >&2
+    exit 1
+  fi
+done
 
 if ! docker image inspect "${IMAGE}" >/dev/null 2>&1; then
-  docker build -t "${IMAGE}" -f "${REPO_ROOT}/docker/Dockerfile.ebiten" "${REPO_ROOT}"
+  echo "找不到既有打包映像: ${IMAGE}" >&2
+  echo "請先依 docker/Dockerfile.ebiten 準備可重現工具鏈；本腳本不會自行下載或另建映像。" >&2
+  exit 1
 fi
+for tool in linuxdeploy-x86_64.AppImage appimagetool-x86_64.AppImage runtime-x86_64; do
+  if [[ ! -x "${TOOLS_CACHE}/${tool}" ]]; then
+    echo "缺少離線 AppImage 工具快取: ${TOOLS_CACHE}/${tool}" >&2
+    echo "請以受控、明確授權的下載步驟補齊快取後重跑。" >&2
+    exit 1
+  fi
+done
 
-docker run --rm \
-  -v "${REPO_ROOT}:/src" \
+docker run --rm --network none --memory 4g --cpus 2 --pids-limit 256 \
+  -u "$(id -u):$(id -g)" \
+  -e GOPATH=/go -e GOMODCACHE=/go/pkg/mod -e GOCACHE=/go/build-cache \
+  -v "${REPO_ROOT}:/src:ro" \
   -v "${REPO_ROOT}/.docker-cache/go:/go" \
   -v "${TOOLS_CACHE}:/tools" \
   -v "${DIST_DIR}:/dist" \
@@ -47,12 +62,14 @@ docker run --rm \
   -e "LBX_LIST=${LBX_LIST}" \
   "${IMAGE}" \
   bash -eu -o pipefail -c '
+    export PATH=/usr/local/go/bin:$PATH
     APPDIR=/tmp/AppDir
     RES="${APPDIR}/usr/share/moo2"
 
-    echo "== [1/6] go build cmd/moo2 (CGO_ENABLED=${CGO_ENABLED}) =="
+    echo "== [1/6] go build cmd/moo2 + cmd/moo2sim (CGO_ENABLED=${CGO_ENABLED}) =="
     mkdir -p "${APPDIR}/usr/bin" "${RES}"
     go build -buildvcs=false -ldflags="-s -w" -o "${APPDIR}/usr/bin/moo2" ./cmd/moo2
+    go build -buildvcs=false -ldflags="-s -w" -o "${APPDIR}/usr/bin/moo2sim" ./cmd/moo2sim
 
     echo "== [2/6] 打包 i18n 譯表 + 字型 =="
     mkdir -p "${RES}/assets"
@@ -62,7 +79,9 @@ docker run --rm \
 
     echo "== [3/6] 打包遊戲資料子集(僅 -game 需要的 LBX,大小寫不敏感)=="
     mkdir -p "${RES}/gamedata"
+    expected_lbx=0
     for name in ${LBX_LIST}; do
+      expected_lbx=$((expected_lbx + 1))
       # 來源可能大小寫不一,逐一比對複製。
       found=""
       for cand in /gamedata/${name}.lbx /gamedata/${name}.LBX; do
@@ -70,14 +89,16 @@ docker run --rm \
       done
       if [ -z "$found" ]; then
         # 大小寫不敏感搜尋。
-        found="$(find /gamedata -maxdepth 1 -iname "${name}.lbx" | head -1 || true)"
+        found="$(find /gamedata -maxdepth 1 -type f -iname "${name}.lbx" -print -quit)"
       fi
-      if [ -n "$found" ]; then
-        cp "$found" "${RES}/gamedata/$(basename "$found" | tr "a-z" "A-Z")"
-      else
-        echo "   (略過缺檔: ${name}.lbx)"
-      fi
+      [ -n "$found" ] || { echo "缺少完整版必要資料: ${name}.lbx" >&2; exit 1; }
+      cp "$found" "${RES}/gamedata/$(basename "$found" | tr "a-z" "A-Z")"
     done
+    actual_lbx="$(find "${RES}/gamedata" -maxdepth 1 -type f -iname "*.lbx" | wc -l)"
+    [ "$actual_lbx" = "$expected_lbx" ] || {
+      echo "完整版 LBX 數量不符: 預期 $expected_lbx，實得 $actual_lbx" >&2
+      exit 1
+    }
     echo "   遊戲資料合計: $(du -sh "${RES}/gamedata" | cut -f1)"
 
     echo "== [4/6] .desktop + 佔位圖示(不含版權美術)=="
@@ -97,8 +118,8 @@ EOF
     echo "== [5/6] linuxdeploy 掃依賴(libGL/libX11 等)=="
     LD=/tools/linuxdeploy-x86_64.AppImage
     AT=/tools/appimagetool-x86_64.AppImage
-    [ -x "$LD" ] || { curl -sSL -o "$LD" https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage; chmod +x "$LD"; }
-    [ -x "$AT" ] || { curl -sSL -o "$AT" https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage; chmod +x "$AT"; }
+    RT=/tools/runtime-x86_64
+    [ -x "$LD" ] && [ -x "$AT" ] && [ -x "$RT" ]
     cd /tmp
     "$LD" --appimage-extract-and-run \
       --appdir "${APPDIR}" \
@@ -118,7 +139,10 @@ EOF
     chmod +x "${APPDIR}/AppRun"
 
     echo "== [6/6] appimagetool 打包 =="
-    "$AT" --appimage-extract-and-run "${APPDIR}" "/dist/${APP_NAME}-x86_64.AppImage"
+    OUT="/dist/.${APP_NAME}-x86_64.AppImage.tmp"
+    rm -f "$OUT"
+    "$AT" --appimage-extract-and-run --runtime-file "$RT" "${APPDIR}" "$OUT"
+    mv "$OUT" "/dist/${APP_NAME}-x86_64.AppImage"
   '
 
 echo "產出: ${DIST_DIR}/${APP_NAME}-x86_64.AppImage"

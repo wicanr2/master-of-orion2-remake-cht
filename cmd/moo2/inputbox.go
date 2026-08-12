@@ -8,6 +8,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
 
 // inputbox.go:原版的**文字輸入彈窗**(`Remapped_Input_Box_Popup_` @ 0x91BB4 →
@@ -91,6 +92,27 @@ const (
 // inboxFieldRect 回傳輸入欄的螢幕矩形。
 func inboxFieldRect(x, y int) (fx, fy, fw, fh int) {
 	return x + inboxFieldDX, y + inboxFieldDY, inboxFieldW, inboxFieldH
+}
+
+// inboxInputTextRect 是輸入文字的實際安全欄。保留原本 x+6 與 fw-18 的
+// 內縮，避免把游標或省略號畫到輸入欄右框；游標寬度由
+// inboxVisibleInputText 額外從這個欄位保留。
+func inboxInputTextRect(fx, fy, fw, fh int) textSafeRect {
+	return textSafeRect{x: fx + 6, y: fy, w: fw - 18, h: fh, insetY: 1, lineH: fh - 2}
+}
+
+// inboxVisibleInputText 量測「內容 + 游標」的完整可見寬度。不能先把內容
+// 截斷到整個欄寬再附加底線，因為底線會成為最後一個越框像素。
+func inboxVisibleInputText(fnt *uifont.Font, text string, size float64, r textSafeRect) string {
+	if fnt == nil || r.contentWidth() <= 0 {
+		return ""
+	}
+	caretW, _ := fnt.Measure("_", size)
+	contentW := r.contentWidth() - caretW
+	if contentW <= 0 {
+		return "_"
+	}
+	return truncateToWidth(fnt, text, size, contentW) + "_"
 }
 
 // inboxOKRect 回傳 OK 鈕的螢幕矩形。
@@ -272,15 +294,16 @@ func (s *inputBoxScreen) draw(dst *ebiten.Image) {
 	fillPanel(dst, float32(fx), float32(fy), float32(fw), float32(fh),
 		color.RGBA{12, 14, 20, 255}, false)
 	const textSize = 14
-	txt := truncateToWidth(s.b.fnt, string(s.text), textSize, float64(fw-18))
-	s.b.fnt.Draw(dst, txt, float64(fx+6), float64(fy+(fh-textSize)/2), textSize,
-		color.RGBA{225, 230, 244, 255})
+	inputRect := inboxInputTextRect(fx, fy, fw, fh)
+	txt := inputRect.clipped(s.b.fnt, string(s.text), textSize)
 	// 游標:半個週期顯示。畫在字尾——量字寬要走字型層,這裡用 DrawCentered 的
-	// 對稱作法拿不到寬度,所以改用「整串字 + 一個底線」的畫法。
+	// 對稱作法拿不到寬度,所以改用「整串字 + 一個底線」的畫法。可見時必須只畫
+	// 截短後的那一串；若先畫完整文字再疊縮短文字，被切掉的最後字不會自己消失。
 	if (s.tick/inboxCaretPeriod)%2 == 0 {
-		s.b.fnt.Draw(dst, txt+"_", float64(fx+6), float64(fy+(fh-textSize)/2), textSize,
-			color.RGBA{225, 230, 244, 255})
+		txt = inboxVisibleInputText(s.b.fnt, string(s.text), textSize, inputRect)
 	}
+	s.b.fnt.Draw(dst, txt, float64(inputRect.contentX()), float64(fy+(fh-textSize)/2), textSize,
+		color.RGBA{225, 230, 244, 255})
 
 	// OK 鈕的中文字要先把烘死的 "ACCEPT" 擦掉再疊——不擦就是兩層字疊在一起
 	// (同 confirmbox 的 YES/NO,`confirmBtnFace` 那支取面色的 helper 通用,這裡直接用)。

@@ -2,7 +2,10 @@ package main
 
 import (
 	"image/color"
+	"strings"
 	"testing"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
 
 // 種族關係畫面的間諜區塊座標來自**執行檔的 .data 靜態表**,不是量圖。
@@ -184,6 +187,39 @@ func TestRacesInfoTextStopsBeforeSliderAndSpyButtons(t *testing.T) {
 					i, line, lr.x, lr.y, lr.w, lr.h, r.x, r.y, r.w, r.h)
 			}
 		}
+	}
+}
+
+// 點陣字在 9–11px 請求下仍以完整 12px 字身繪製；每一行安全框必須容納
+// 實際字身，而不是只驗證資料框座標沒有越界。
+func TestRacesInfoTextSafeRectsContainBitmapGlyphs(t *testing.T) {
+	fnt := uifont.LoadBitmapTC()
+	samples := []struct {
+		line int
+		size float64
+		text string
+	}{
+		{0, 11, "AI（自訂長名稱）"},
+		{1, 10, "對你：非常友善"},
+		{2, 10, "軍 999・星 99"},
+		{3, 9, "他國：AI（自訂）非常友善"},
+		{4, 9, "點此對談 Click to talk"},
+	}
+	for _, sample := range samples {
+		for i := 0; i < racesMaxRows; i++ {
+			r := racesInfoLineRect(i, sample.line)
+			clipped := r.clipped(fnt, sample.text, sample.size)
+			w, h := fnt.Measure(clipped, sample.size)
+			if w > r.contentWidth() || h > float64(r.h-2*r.insetY) {
+				t.Fatalf("第 %d 列第 %d 行字身超出安全框：量測 %.1fx%.1f，內容 %.1fx%d，文字 %q",
+					i, sample.line, w, h, r.contentWidth(), r.h-2*r.insetY, clipped)
+			}
+		}
+	}
+	// 最長的外交關係摘要必須經過同一個安全框截斷，不能把原始字串直接交給 overlay。
+	r := racesInfoLineRect(0, 3)
+	if got := r.clipped(fnt, strings.Repeat("他國：AI：非常友善、", 20), 9); got == "" {
+		t.Fatal("外交關係摘要不應被整段吞掉")
 	}
 }
 

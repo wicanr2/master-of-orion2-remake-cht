@@ -2,7 +2,8 @@
 set -euo pipefail
 
 # 在 game-video Docker image 內錄製「真實互動」的 MOO2 remake 推廣片。
-# 外層必須以 --network none、有限資源、唯讀 AppImage／資料／字型掛載執行。
+# 外層必須以 --network none、有限資源、唯讀 AppImage／資料／字型掛載執行；非 root
+# 容器另須加上 --tmpfs /tmp/.X11-unix:rw,mode=1777，讓隔離的 Xvfb 可建立 socket。
 #
 # 用法：capture_promo_gameplay.sh <AppImage> <遊戲資料目錄> <CJK 字型> <音樂檔或 -> <輸出 mp4>
 #
@@ -10,7 +11,7 @@ set -euo pipefail
 # 操作 RACES 間諜、外交，再宣戰進入戰術戰鬥。遊戲用 -promo-demo 重播正常 UI 點擊；沒有把
 # PNG 當作影片來源，也不使用 -gamegallery 的展示狀態注入。
 # 無音訊裝置的容器用程式的 -noaudio 錄畫面；若提供音樂，才在合成階段鋪上
-# 已獲發布權的音檔。傳入 - 會輸出無聲影片。
+# 僅限本機預覽的音檔。傳入 - 會輸出無聲影片；未明確標示權利的音樂一律拒絕。
 
 if [[ $# -ne 5 ]]; then
   echo "用法：$0 <AppImage> <遊戲資料目錄> <CJK 字型> <音樂檔或 -> <輸出 mp4>" >&2
@@ -25,9 +26,8 @@ OUT_FILE=$5
 WIDTH=1280
 HEIGHT=960
 FPS=30
-# 60 秒正常 UI 導覽 + 1 秒收束；間諜與戰術段皆有實際狀態操作，
-# 不以長停留的靜態頁面湊時長。
-CAPTURE_SECONDS=61
+PROMO_DEADLINE_SECONDS=95
+PROMO_SETTLE_SECONDS=3
 
 for required in "$APPIMAGE" "$FONT_FILE"; do
   [[ -f "$required" ]] || { echo "找不到必要檔案：$required" >&2; exit 1; }
@@ -35,6 +35,10 @@ done
 [[ -d "$DATA_DIR" ]] || { echo "找不到遊戲資料目錄：$DATA_DIR" >&2; exit 1; }
 if [[ "$MUSIC_FILE" != "-" ]]; then
   [[ -f "$MUSIC_FILE" ]] || { echo "找不到音樂檔：$MUSIC_FILE" >&2; exit 1; }
+  [[ "${MOO2_PROMO_MUSIC_RIGHTS:-}" == "local-private-preview" ]] || {
+    echo "拒絕合成：非 '-' 音樂輸入必須設定 MOO2_PROMO_MUSIC_RIGHTS=local-private-preview；此片不可公開散布。" >&2
+    exit 1
+  }
 fi
 
 mkdir -p "$(dirname "$OUT_FILE")"
@@ -57,14 +61,15 @@ cd "$WORK_DIR"
 
 export DISPLAY=:99
 export LIBGL_ALWAYS_SOFTWARE=1
-Xvfb :99 -screen 0 "${WIDTH}x${HEIGHT}x24" -nolisten tcp >"$XVFB_LOG" 2>&1 &
+Xvfb :99 -screen 0 "${WIDTH}x${HEIGHT}x24" -nolisten tcp -ac >"$XVFB_LOG" 2>&1 &
 XVFB_PID=$!
 sleep 1
 
 # -noaudio 是錄製環境專用；合成配樂與遊戲內音訊解碼保持分開，避免無 ALSA 裝置使
 # 實際遊玩畫面無法啟動。-promo-demo 只重播正常 UI 點擊，並由遊戲端畫出沿下一個
-# 熱區移動的導覽游標；它不會換入截圖廊專用狀態，也不使用預先輸出的圖檔。
-./squashfs-root/AppRun -game -data "$DATA_DIR" -font "$FONT_FILE" -uiscale 2 -promo-demo -noaudio >"$GAME_LOG" 2>&1 &
+# 熱區移動的導覽游標；-promo-hide-cursor 讓游標不遮住文字與按鈕。
+# 它不會換入截圖廊專用狀態，也不使用預先輸出的圖檔。
+./squashfs-root/AppRun -game -data "$DATA_DIR" -font "$FONT_FILE" -uiscale 2 -promo-demo -promo-hide-cursor -noaudio >"$GAME_LOG" 2>&1 &
 GAME_PID=$!
 
 WINDOW_ID=""
@@ -79,12 +84,56 @@ xdotool windowfocus "$WINDOW_ID" 2>/dev/null || true
 
 ffmpeg -y -loglevel error \
   -f x11grab -video_size "${WIDTH}x${HEIGHT}" -framerate "$FPS" -draw_mouse 0 -i :99.0 \
-  -t "$CAPTURE_SECONDS" -threads 2 -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p -an \
+  -threads 2 -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p -an \
   "$RAW_VIDEO" &
 CAPTURE_PID=$!
 
-wait "$CAPTURE_PID"
+CAPTURE_START=$SECONDS
+while :; do
+  if ! kill -0 "$CAPTURE_PID" 2>/dev/null; then
+    echo "推廣片錄影程序提前結束，未完成流程。" >&2
+    cat "$GAME_LOG" >&2
+    exit 1
+  fi
+  if grep -Fq 'promo-demo: failed:' "$GAME_LOG"; then
+    echo "推廣片遊戲流程失敗：$(grep -F 'promo-demo: failed:' "$GAME_LOG" | tail -n 1)" >&2
+    exit 1
+  fi
+  if grep -Fq 'promo-demo: complete' "$GAME_LOG"; then
+    break
+  fi
+  if ! kill -0 "$GAME_PID" 2>/dev/null; then
+    echo "遊戲程序提前結束，未回報 promo-demo: complete。" >&2
+    cat "$GAME_LOG" >&2
+    exit 1
+  fi
+  if (( SECONDS - CAPTURE_START >= PROMO_DEADLINE_SECONDS )); then
+    echo "推廣片流程在 ${PROMO_DEADLINE_SECONDS} 秒期限內未完成，拒絕輸出半成品。" >&2
+    cat "$GAME_LOG" >&2
+    exit 1
+  fi
+  sleep 0.25
+done
+
+sleep "$PROMO_SETTLE_SECONDS"
+if ! kill -0 "$CAPTURE_PID" 2>/dev/null; then
+  echo "推廣片錄影程序在收束期間提前結束。" >&2
+  exit 1
+fi
+kill -INT "$CAPTURE_PID" 2>/dev/null || true
+capture_status=0
+wait "$CAPTURE_PID" || capture_status=$?
 CAPTURE_PID=""
+# 收到我們主動送出的 SIGINT 時，ffmpeg 會以 255 結束，但仍會正常寫完 MP4 索引。
+# 不可只看退出碼就丟掉已完成的影片；仍以可讀取的 raw MP4 作為失敗即關閉的依據。
+if [[ "$capture_status" -ne 0 && "$capture_status" -ne 255 ]]; then
+  echo "ffmpeg 錄影程序異常結束（status=${capture_status}）。" >&2
+  exit 1
+fi
+if ! ffprobe -v error -show_entries format=duration -of csv=p=0 "$RAW_VIDEO" >/dev/null; then
+  echo "ffmpeg 結束後 raw 推廣片不可讀取。" >&2
+  exit 1
+fi
 
 DURATION=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$RAW_VIDEO")
 FADE_OUT=$(awk -v d="$DURATION" 'BEGIN { printf "%.3f", d-3 }')
@@ -92,11 +141,11 @@ VIDEO_FILTER="[0:v]scale=960:720:flags=lanczos,pad=1280:720:160:0:color=0x07111f
 
 if [[ "$MUSIC_FILE" == "-" ]]; then
   ffmpeg -y -loglevel error -i "$RAW_VIDEO" -filter_complex "$VIDEO_FILTER" -map "[v]" \
-    -threads 2 -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p -movflags +faststart "$OUT_FILE"
+    -map_chapters -1 -map_metadata -1 -threads 2 -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p -movflags +faststart "$OUT_FILE"
 else
   ffmpeg -y -loglevel error -i "$RAW_VIDEO" -stream_loop -1 -i "$MUSIC_FILE" \
     -filter_complex "$VIDEO_FILTER;[1:a]aresample=48000,volume=0.72,atrim=0:${DURATION},afade=t=in:st=0:d=2,afade=t=out:st=${FADE_OUT}:d=3[a]" \
-    -map "[v]" -map "[a]" -threads 2 -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p \
+    -map "[v]" -map "[a]" -map_chapters -1 -map_metadata -1 -threads 2 -c:v libx264 -preset veryfast -crf 20 -pix_fmt yuv420p \
     -c:a aac -b:a 192k -ar 48000 -ac 2 -movflags +faststart "$OUT_FILE"
 fi
 

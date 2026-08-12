@@ -201,6 +201,7 @@ func main() {
 	gameGallery := flag.String("gamegallery", "", "headless 導覽腳本:依序點擊主選單→新遊戲→星系主畫面→殖民地/研究/外交/戰鬥,各到達畫面存一張圖到此目錄(需 -game;優先於 -shot)")
 	noAudio := flag.Bool("noaudio", false, "停用音訊裝置初始化(供 Docker/Xvfb 錄製等無音效輸出環境使用)")
 	promoDemo := flag.Bool("promo-demo", false, "播放可重播的實機推廣導覽(需 -game；不產生截圖、不中斷互動遊戲流程)")
+	promoHideCursor := flag.Bool("promo-hide-cursor", false, "推廣導覽錄製時隱藏導覽準星，避免遮住 UI 文字或按鈕(需 -promo-demo)")
 	colonyMode := flag.Bool("colony-viewer", false, "殖民地摘要畫面模式")
 	diploMode := flag.Bool("diplo-viewer", false, "外交關係畫面模式")
 	tsvPath := flag.String("tsv", "", "譯表 TSV(留空用該畫面預設)")
@@ -347,6 +348,9 @@ func main() {
 		if *promoDemo && *gameGallery != "" {
 			fatal(fmt.Errorf("-promo-demo 與 -gamegallery 不可同時使用"))
 		}
+		if *promoHideCursor && !*promoDemo {
+			fatal(fmt.Errorf("-promo-hide-cursor 需搭配 -promo-demo"))
+		}
 		var script []shell.InputState
 		if !*promoDemo && *shot != "" && *gameGallery == "" {
 			// headless 驗證:主選單新遊戲(491,228)→ 星系設定 → Accept(486,405)
@@ -356,7 +360,7 @@ func main() {
 				{MouseX: 486, MouseY: 405, ClickReleased: true},
 			}
 		}
-		if err := runInteractive(versionAssets, initialVersion, langID, fnt, fntVec, script, *shot, *frames, *gameGallery, *noAudio, *promoDemo); err != nil {
+		if err := runInteractive(versionAssets, initialVersion, langID, fnt, fntVec, script, *shot, *frames, *gameGallery, *noAudio, *promoDemo, *promoHideCursor); err != nil {
 			fatal(err)
 		}
 		return

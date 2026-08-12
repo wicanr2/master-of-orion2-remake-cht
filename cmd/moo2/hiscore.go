@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
 
 // hiscore.go:最終得分畫面(原版 Hi-Score / Hall of Fame,module 60 的
@@ -22,7 +23,60 @@ const (
 	hsPanelY = 60.0
 	hsPanelW = 460.0
 	hsPanelH = 360.0
+
+	hsTitleY      = 68
+	hsSummaryY    = 96
+	hsSummaryH    = 32
+	hsScoreTop    = 148
+	hsScoreBottom = 376 // 繼續按鈕 y=388，上方保留 12 px 緩衝。
+	hsScoreLabelX = 124
+	hsScoreLabelW = 280
+	hsScoreValueX = 458
+	hsScoreValueW = 58
+	hsContinueX   = 270
+	hsContinueY   = 388
+	hsContinueW   = 100
+	hsContinueH   = 24
 )
+
+func hiScoreTitleTextRect() textSafeRect {
+	return textSafeRect{x: int(hsPanelX), y: hsTitleY, w: int(hsPanelW), h: 32, insetX: 10, insetY: 1, lineH: 30}
+}
+
+func hiScoreSummaryTextRect() textSafeRect {
+	return textSafeRect{x: int(hsPanelX) + 20, y: hsSummaryY, w: int(hsPanelW) - 40, h: hsSummaryH, insetX: 4, insetY: 1, lineH: 30}
+}
+
+func hiScoreLabelTextRect(y, h int) textSafeRect {
+	return textSafeRect{x: hsScoreLabelX, y: y, w: hsScoreLabelW, h: h, insetX: 2, insetY: 1, lineH: h - 2}
+}
+
+func hiScoreValueTextRect(y, h int) textSafeRect {
+	return textSafeRect{x: hsScoreValueX, y: y, w: hsScoreValueW, h: h, insetX: 2, insetY: 1, lineH: h - 2}
+}
+
+// hiScoreRowY 以繼續按鈕前的明確底界限制列數。呼叫端可用它判斷
+// ScoreLines 是否超量，不能讓新增分項默默畫進按鈕或面板外。
+func hiScoreRowY(index int, total bool) (float64, bool) {
+	y := float64(hsScoreTop + index*24)
+	if total {
+		y += 10
+	}
+	rowH := 18
+	if total {
+		rowH = 24
+	}
+	return y, y+float64(rowH) <= float64(hsScoreBottom)
+}
+
+func hiScoreRightAlignedValue(fnt *uifont.Font, dst *ebiten.Image, r textSafeRect, value string, size float64, col color.Color) {
+	if fnt == nil {
+		return
+	}
+	value = r.clipped(fnt, value, size)
+	w, _ := fnt.Measure(value, size)
+	fnt.Draw(dst, value, float64(r.x+r.w-r.insetX)-w, float64(r.contentY()), size, col)
+}
 
 // hiScore 建最終得分畫面。對局尚未結束時直接回星系主畫面(不該從那裡進來)。
 func (b *sceneBuilder) hiScore() (*overlayScreen, error) {
@@ -72,7 +126,7 @@ func (b *sceneBuilder) drawHiScore(dst *ebiten.Image) {
 	if won {
 		title = b.tr("銀河霸主", "MASTER OF ORION")
 	}
-	b.fnt.DrawCentered(dst, title, 320, 84, 22, edge)
+	hiScoreTitleTextRect().drawCentered(dst, b.fnt, title, 22, edge)
 
 	// 勝負與方式。
 	reason := map[engine.VictoryCondition]string{
@@ -87,28 +141,33 @@ func (b *sceneBuilder) drawHiScore(dst *ebiten.Image) {
 	if !won {
 		line = fmt.Sprintf(b.tr("第 %d 回合・%s 取得勝利", "Turn %d — %s wins"), v.Turn, v.Winner)
 	}
-	b.fnt.DrawCentered(dst, line, 320, 112, 13, color.RGBA{200, 214, 232, 255})
+	hiScoreSummaryTextRect().drawCentered(dst, b.fnt, line, 13, color.RGBA{200, 214, 232, 255})
 
 	// 逐項得分(原版 Draw_*_Score_ 的分項順序)。
 	lines := b.session.ScoreLines()
-	y := 148.0
+	rowIndex := 0
 	for i, ln := range lines {
 		col := color.RGBA{206, 218, 240, 255}
 		size := 14.0
-		if i == len(lines)-1 { // 總分
+		isTotal := i == len(lines)-1
+		y, ok := hiScoreRowY(rowIndex, isTotal)
+		if !ok {
+			// ScoreLines 若日後擴充，明確停止在面板底界；不能撞繼續按鈕。
+			break
+		}
+		if isTotal { // 總分
 			vector.StrokeRect(dst, hsPanelX+28, float32(y)-6, hsPanelW-56, 1, 1, color.RGBA{90, 110, 150, 255}, false)
-			y += 10
 			col, size = edge, 18
 		}
-		b.fnt.Draw(dst, ln.Label, hsPanelX+34, y, size, col)
-		// 分數靠右對齊:uifont 沒有 DrawRight,量出寬度自己減(數字欄位對齊比左對齊好讀太多)。
+		labelRect := hiScoreLabelTextRect(int(y), int(size)+4)
+		b.fnt.Draw(dst, labelRect.clipped(b.fnt, ln.Label, size), float64(labelRect.contentX()), float64(labelRect.contentY()), size, col)
+		// 分數靠右對齊:uifont 沒有 DrawRight,但仍受獨立數值安全欄限制。
 		val := fmt.Sprintf("%d", ln.Value)
-		w, _ := b.fnt.Measure(val, size)
-		b.fnt.Draw(dst, val, hsPanelX+hsPanelW-34-w, y, size, col)
-		y += size + 10
+		hiScoreRightAlignedValue(b.fnt, dst, hiScoreValueTextRect(int(y), int(size)+4), val, size, col)
+		rowIndex++
 	}
 
-	fillPanel(dst, 270, 388, 100, 24, color.RGBA{30, 40, 70, 255}, false)
-	vector.StrokeRect(dst, 270, 388, 100, 24, 1, edge, false)
-	b.fnt.DrawCentered(dst, b.tr("繼續", "CONTINUE"), 320, 400, 13, color.RGBA{220, 228, 242, 255})
+	fillPanel(dst, hsContinueX, hsContinueY, hsContinueW, hsContinueH, color.RGBA{30, 40, 70, 255}, false)
+	vector.StrokeRect(dst, hsContinueX, hsContinueY, hsContinueW, hsContinueH, 1, edge, false)
+	textSafeRect{x: hsContinueX, y: hsContinueY, w: hsContinueW, h: hsContinueH, insetX: 5, insetY: 1, lineH: 20}.drawCentered(dst, b.fnt, b.tr("繼續", "CONTINUE"), 13, color.RGBA{220, 228, 242, 255})
 }

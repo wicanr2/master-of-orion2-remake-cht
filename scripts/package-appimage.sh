@@ -19,24 +19,41 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 IMAGE="moo2-ebiten"
-DIST_DIR="${REPO_ROOT}/dist-all"
+DIST_DIR="${MOO2_DIST_DIR:-${REPO_ROOT}/dist-all}"
 TOOLS_CACHE="${REPO_ROOT}/.docker-cache/appimage-tools"
 APP_NAME="MasterOfOrion2-cht"
 
-mkdir -p "${DIST_DIR}" "${TOOLS_CACHE}" "${REPO_ROOT}/.docker-cache/go"
+for required_dir in "${DIST_DIR}" "${TOOLS_CACHE}" "${REPO_ROOT}/.docker-cache/go"; do
+  if [[ ! -d "${required_dir}" ]]; then
+    echo "缺少既有目錄: ${required_dir}；拒絕在主機端自行建立。" >&2
+    exit 1
+  fi
+done
 
 if ! docker image inspect "${IMAGE}" >/dev/null 2>&1; then
-  docker build -t "${IMAGE}" -f "${REPO_ROOT}/docker/Dockerfile.ebiten" "${REPO_ROOT}"
+  echo "找不到既有打包映像: ${IMAGE}" >&2
+  echo "請先依 docker/Dockerfile.ebiten 準備可重現工具鏈；本腳本不會自行下載或另建映像。" >&2
+  exit 1
 fi
+for tool in linuxdeploy-x86_64.AppImage appimagetool-x86_64.AppImage runtime-x86_64; do
+  if [[ ! -x "${TOOLS_CACHE}/${tool}" ]]; then
+    echo "缺少離線 AppImage 工具快取: ${TOOLS_CACHE}/${tool}" >&2
+    echo "請以受控、明確授權的下載步驟補齊快取後重跑。" >&2
+    exit 1
+  fi
+done
 
-docker run --rm \
-  -v "${REPO_ROOT}:/src" \
+docker run --rm --network none --memory 4g --cpus 2 --pids-limit 256 \
+  -u "$(id -u):$(id -g)" \
+  -e GOPATH=/go -e GOMODCACHE=/go/pkg/mod -e GOCACHE=/go/build-cache \
+  -v "${REPO_ROOT}:/src:ro" \
   -v "${REPO_ROOT}/.docker-cache/go:/go" \
   -v "${TOOLS_CACHE}:/tools" \
   -v "${DIST_DIR}:/dist" \
   -w /src \
   "${IMAGE}" \
   bash -eu -o pipefail -c '
+    export PATH=/usr/local/go/bin:$PATH
     APP_NAME="'"${APP_NAME}"'"
     APPDIR=/tmp/AppDir
 
@@ -60,17 +77,11 @@ Categories=Game;StrategyGame;
 Terminal=false
 EOF
 
-    echo "== [3/5] 下載 linuxdeploy + appimagetool(快取)=="
+    echo "== [3/5] 使用已驗證的離線 AppImage 工具快取 =="
     LD=/tools/linuxdeploy-x86_64.AppImage
     AT=/tools/appimagetool-x86_64.AppImage
-    if [ ! -x "$LD" ]; then
-      curl -sSL -o "$LD" https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
-      chmod +x "$LD"
-    fi
-    if [ ! -x "$AT" ]; then
-      curl -sSL -o "$AT" https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
-      chmod +x "$AT"
-    fi
+    RT=/tools/runtime-x86_64
+    [ -x "$LD" ] && [ -x "$AT" ] && [ -x "$RT" ]
 
     echo "== [4/5] linuxdeploy 掃依賴(libGL/libX11 等)=="
     cd /tmp
@@ -83,7 +94,10 @@ EOF
     # linuxdeploy 的 --executable 只需指向會用到 GL/X11 的 moo2。
 
     echo "== [5/5] appimagetool 打包 =="
-    "$AT" --appimage-extract-and-run "${APPDIR}" "/dist/${APP_NAME}-x86_64.AppImage"
+    OUT="/dist/.${APP_NAME}-x86_64.AppImage.tmp"
+    rm -f "$OUT"
+    "$AT" --appimage-extract-and-run --runtime-file "$RT" "${APPDIR}" "$OUT"
+    mv "$OUT" "/dist/${APP_NAME}-x86_64.AppImage"
   '
 
 echo "產出: ${DIST_DIR}/${APP_NAME}-x86_64.AppImage"
