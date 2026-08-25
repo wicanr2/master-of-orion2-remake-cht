@@ -45,9 +45,8 @@ func TestWeaponDamageMatchesExe(t *testing.T) {
 // TestWeaponSpaceMatchesExe remake 的佔格表要等於執行檔的 Size。
 //
 // ⚠ **飛彈是例外,而且例外的理由這次才查清楚**:執行檔的飛彈 Size 是 **0**——佔格在
-// **彈架**上(手冊只給了彈架的 10/20/30/35/40),不在飛彈本體。remake 對四種飛彈估 10,
-// 那是建模取捨,不是抄自手冊也不是抄錯。這裡明列它們,免得日後有人「照執行檔訂正成 0」
-// ——那會讓飛彈完全不佔空間,比現在更失真。
+// **彈架**上。正常艦艇設計已依 Ammo 套 10/20/30/35/40；這裡只核對原始武器表的
+// Size=0，免得日後把本體 Size 與彈架值重複相加。
 func TestWeaponSpaceMatchesExe(t *testing.T) {
 	rackModelled := map[string]bool{
 		"核飛彈": true, "麥克萊特飛彈": true, "脈衝飛彈": true, "氙素飛彈": true,

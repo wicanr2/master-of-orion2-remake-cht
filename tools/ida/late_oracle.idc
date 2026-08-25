@@ -164,7 +164,7 @@ static main()
   dump(f, 0x23CED, "raw_0x23CED_Pick_Random_Officer", 600);
   dump(f, 0x23D44, "raw_0x23D44_Pick_Random_Ship", 600);
   dump(f, 0x23DA0, "raw_0x23DA0_Pick_Random_Colony_No_Outpost", 600);
-  dump(f, 0x23DFE, "raw_0x23DFE_Pick_Random_Colony_No_Capitol", 600);
+  dump(f, 0x23DFE, "raw_0x23DFE_event_colony_filter", 600);
   dump(f, 0x245C4, "raw_0x245C4_Determine_Lucky_Players_Events", 900);
   dump(f, 0x21371, "raw_0x21371_Event_Twiddle", 2200);
   dump(f, 0x2230A, "raw_0x2230A_Event_Get_Fleet_Strength", 900);
@@ -224,8 +224,9 @@ static main()
   dump(f, 0x101B3C, "raw_0x101B3C_Trade_Agreement_Base", 900);
   dump(f, 0x101C93, "raw_0x101C93_Trade_Agreement_Response", 1000);
   dump(f, 0x101CC5, "raw_0x101CC5_Research_Agreement_Response", 1000);
-  dump(f, 0x101EE3, "raw_0x101EE3_Process_Trade_And_Research_Agreements", 1800);
-  dump(f, 0x101F82, "raw_0x101F82_Start_Trade_Agreement", 1000);
+  dump(f, 0x101E77, "raw_0x101E77_Process_Trade_And_Research_Agreements", 1800);
+  dump(f, 0x101EE3, "raw_0x101EE3_Start_Trade_Agreement", 1800);
+  dump(f, 0x101F82, "raw_0x101F82_Start_Research_Agreement", 1000);
   dump(f, 0xDCC83, "raw_0xDCC83_AI_Agrees_To_Trade_Agreement", 1200);
   dump(f, 0x524C3, "raw_0x524C3_Advance_Trade_Value", 1000);
   dump(f, 0x524FB, "raw_0x524FB_Trade_Relation_Delta", 1000);
@@ -259,11 +260,12 @@ static main()
   dump(f, 0x957E3, "raw_0x957E3_Print_ETA_On_Officer_Picture", 700);
   dump(f, 0x97287, "raw_0x97287_Set_Officer_To_Player", 1000);
   dump(f, 0x9776C, "raw_0x9776C_Officer_Status_Ok", 700);
-  dump(f, 0x979A0, "raw_0x979A0_Chance_To_Hire_Hero", 900);
-  dump(f, 0x97AD4, "raw_0x97AD4_Random_Officer_Check", 1200);
+  dump(f, 0x979A0, "raw_0x979A0_Officer_Experience_Adjustment", 900);
+  dump(f, 0x97A66, "raw_0x97A66_Random_Officer_Check", 1200);
+  dump(f, 0x97AD4, "raw_0x97AD4_Officer_Offer_Writeback", 1200);
   dump(f, 0x97B2D, "raw_0x97B2D_Generate_Random_Officer", 1400);
-  dump(f, 0x97C64, "raw_0x97C64_Leader_Available_For_Hire", 1000);
-  dump(f, 0xD7662, "raw_0xD7662_Do_AI_Leaders", 1800);
+  dump(f, 0x97C64, "raw_0x97C64_Add_Officer_Experience", 1000);
+  dump(f, 0xD7439, "raw_0xD7439_Do_AI_Leaders", 1800);
   dump(f, 0xDCDAC, "raw_0xDCDAC_Handle_Leader_At_Lost_Colony", 900);
   dump(f, 0xE1FC7, "raw_0xE1FC7_Leader_At_Anomaly", 900);
 

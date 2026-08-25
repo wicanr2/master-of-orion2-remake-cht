@@ -25,8 +25,8 @@ import (
 // --- 反組譯 ---
 //
 //	Repair_Ships_At_Colonies_ @ 0x580F5 → 對符合條件的船呼叫 `Repair_Ship_Full_` @ 0x581F3。
-//	**是「完全修復」而不是逐回合慢慢修**;條件包含「船停在某顆星、而那顆星上有自己的殖民地」
-//	(那段 `imul edx, 71h`(恆星 stride)+ `sub_1276F0` 的查詢)。
+//	**是「完全修復」而不是逐回合慢慢修**；`Design.Type == COMBAT_SHIP`、Status、Star 與
+//	star record `+0x38` 的 owner bit 門檻見 docs/re/ship-repair-audit-20260824.md。
 //
 // --- 交叉驗證:openorion2 讀存檔的 `struct Ship`(gamestate.h:1268)---
 //
@@ -61,11 +61,11 @@ const CyberneticRepairPercentPerRound = 10
 // shipMaxHP 回傳一艘船未受損時的戰鬥血量(與 mkPlayerCombatants 的算法一致)。
 func shipMaxHP(sh Ship) int {
 	hp := shipStrength(sh.Class) * 3
-	switch sh.Special {
-	case "戰機庫":
+	if shipHasSpecial(sh, "戰機庫") {
 		_, fhp := gamedata.FighterBayCombatContribution()
 		hp += fhp
-	case "重戰機庫":
+	}
+	if shipHasSpecial(sh, "重戰機庫") {
 		_, fhp := gamedata.FighterHeavyBayCombatContribution()
 		hp += fhp
 	}
@@ -73,7 +73,7 @@ func shipMaxHP(sh Ship) int {
 }
 
 // shipHasAutoRepair 回傳該船是否裝有自動修復元件(手冊 p.82)。
-func shipHasAutoRepair(sh Ship) bool { return sh.Special == "自動修復" }
+func shipHasAutoRepair(sh Ship) bool { return shipHasSpecial(sh, "自動修復") }
 
 // playerHasAdvancedDamageControl 回傳玩家是否已研究進階損害管制(手冊 p.80:戰後完全修復)。
 //
@@ -108,8 +108,9 @@ func repairShipFull(sh *Ship) { sh.Damage = 0 }
 
 // advanceShipRepair 每回合結束時修復艦艇(原版 `Repair_Ships_At_Colonies_`)。
 //
-// 規則:艦隊停在「自己有殖民地或前哨站的星」就**完全修復**——原版就是直接呼叫
-// Repair_Ship_Full_,不是逐回合慢慢修。
+// 規則：戰鬥艦停在「自己有殖民地或前哨站的星」就**完全修復**——原版就是直接呼叫
+// Repair_Ship_Full_，不是逐回合慢慢修。殖民地／前哨站對 star owner bit 的精確寫入端
+// 尚未全部追回，目前兩者都是強推論；COMBAT_SHIP 門檻則由原始指令已證實。
 //
 // **逐艦隊各自判定**:多艦隊之後,停靠據點的那幾支修、在航行中的不修。
 // (先前 remake 只有一支艦隊,所以這裡只看那一支;現在的形狀才對得上原版
@@ -125,13 +126,19 @@ func (s *GameSession) advanceShipRepair() int {
 			continue // 航行中沒有港口可修;不是自己的據點也不行
 		}
 		for i := range fl.Ships {
-			if fl.Ships[i].Damage > 0 {
+			if shipEligibleForColonyRepair(fl.Ships[i]) && fl.Ships[i].Damage > 0 {
 				repairShipFull(&fl.Ships[i])
 				n++
 			}
 		}
 	}
 	return n
+}
+
+// shipEligibleForColonyRepair 對映原版 Ship.Design.Type == COMBAT_SHIP。remake 尚無 raw
+// Type 欄位，支援艦以 class 明確排除；未知／一般設計艦維持戰鬥艦語意。
+func shipEligibleForColonyRepair(sh Ship) bool {
+	return !isSupportShipClass(sh.Class)
 }
 
 // starIsPlayerBase 回傳該星是否為玩家的據點(有殖民地或前哨站)。

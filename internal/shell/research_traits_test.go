@@ -11,7 +11,7 @@ func completedResearchState(t *testing.T, topic gamedata.ResearchTopic) engine.P
 	t.Helper()
 	rc := gamedata.ResearchChoiceFor(topic)
 	ps := engine.PlayerState{ResearchTopic: topic}
-	got, done := engine.RunResearchPhase(ps, rc.Cost)
+	got, done := engine.RunResearchPhase(ps, rc.Cost+1)
 	if !done {
 		t.Fatalf("研究主題 %v 應完成", topic)
 	}
@@ -87,7 +87,7 @@ func TestEndTurnAppliesResearchTraitRules(t *testing.T) {
 	creative := NewDemoSession()
 	creative.ApplyCustomRaceBonuses(Race{}, gamedata.TRAIT_CREATIVE)
 	creative.Player.ResearchTopic = topic
-	creative.Player.ResearchProgress = rc.Cost
+	creative.Player.ResearchProgress = rc.Cost * 2
 	creative.EndTurn()
 	if creative.Player.HasPendingChoice {
 		t.Fatal("Creative 經 EndTurn 後不應進入一般擇一畫面")
@@ -101,7 +101,7 @@ func TestEndTurnAppliesResearchTraitRules(t *testing.T) {
 	uncreative := NewDemoSession()
 	uncreative.ApplyCustomRaceBonuses(Race{}, gamedata.TRAIT_UNCREATIVE)
 	uncreative.Player.ResearchTopic = topic
-	uncreative.Player.ResearchProgress = rc.Cost
+	uncreative.Player.ResearchProgress = rc.Cost * 2
 	uncreative.EndTurn()
 	if uncreative.Player.HasPendingChoice || !uncreative.Player.ExplicitChoice[topic] {
 		t.Fatal("Uncreative 經 EndTurn 後應自動完成且標記明確擇一")

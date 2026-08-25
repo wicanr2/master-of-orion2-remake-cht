@@ -33,28 +33,77 @@ func ColonyStateFromSave(c *save.Colony, planet *save.Planet) ColonyState {
 		pop = len(c.Colonists)
 	}
 	var farmers, workers, scientists int
+	var prisonerFarmers, prisonerWorkers, prisonerScientists int
+	groups := make([]PopulationGroup, 0)
+	groupBySlot := make(map[int]int)
 	for i := 0; i < pop; i++ {
+		slot := int(c.Colonists[i].Race)
+		gi, ok := groupBySlot[slot]
+		if !ok {
+			gi = len(groups)
+			groupBySlot[slot] = gi
+			growthPoints := 0
+			if slot >= 0 && slot < len(c.RacePopulation) {
+				growthPoints = int(c.RacePopulation[slot])
+			}
+			groups = append(groups, PopulationGroup{RaceSlot: slot, RaceSlotKnown: true, GrowthPoints: growthPoints})
+		}
+		g := &groups[gi]
+		prisoner := c.Colonists[i].Flags&uint32(gamedata.PRISONER) != 0
 		switch gamedata.ColonistJob(c.Colonists[i].Job) {
 		case gamedata.FARMER:
 			farmers++
+			g.Farmers++
+			if prisoner {
+				prisonerFarmers++
+				g.PrisonerFarmers++
+			}
 		case gamedata.WORKER:
 			workers++
+			g.Workers++
+			if prisoner {
+				prisonerWorkers++
+				g.PrisonerWorkers++
+			}
 		case gamedata.SCIENTIST:
 			scientists++
+			g.Scientists++
+			if prisoner {
+				prisonerScientists++
+				g.PrisonerScientists++
+			}
+		}
+	}
+	lastPopulationPoints := 0
+	if pop == 1 {
+		race := int(c.Colonists[0].Race)
+		if race >= 0 && race < len(c.RacePopulation) {
+			lastPopulationPoints = int(c.RacePopulation[race])
+		}
+		if lastPopulationPoints <= 0 {
+			lastPopulationPoints = 100
 		}
 	}
 	return ColonyState{
-		Population:           int(c.Population),
-		PopMax:               int(c.MaxPopulation),
-		Farmers:              farmers,
-		Workers:              workers,
-		Scientists:           scientists,
-		FoodPerFarmer:        int(c.FoodPerFarmer),
-		IndustryPerWorker:    int(c.IndustryPerWorker),
-		ResearchPerScientist: int(c.ResearchPerScientist),
-		PlanetSize:           gamedata.PlanetSize(planet.Size),
-		PlanetGravity:        gamedata.PlanetGravity(planet.Gravity),   // 見檔頭「行星重力」說明
-		MineralRichness:      gamedata.PlanetMinerals(planet.Minerals), // 見檔頭「礦產豐度」說明
+		Population:                      int(c.Population),
+		BombardmentLastPopulationPoints: lastPopulationPoints,
+		BombardmentBuildProgress:        int(c.BuildProgress),
+		PopMax:                          int(c.MaxPopulation),
+		Farmers:                         farmers,
+		Workers:                         workers,
+		Scientists:                      scientists,
+		PopulationGroups:                groups,
+		UnassimilatedPop:                prisonerFarmers + prisonerWorkers + prisonerScientists,
+		AssimilationProgress:            int(c.AssimilationProg),
+		UnassimilatedFarmers:            prisonerFarmers,
+		UnassimilatedWorkers:            prisonerWorkers,
+		UnassimilatedScientists:         prisonerScientists,
+		FoodPerFarmer:                   int(c.FoodPerFarmer),
+		IndustryPerWorker:               int(c.IndustryPerWorker),
+		ResearchPerScientist:            int(c.ResearchPerScientist),
+		PlanetSize:                      gamedata.PlanetSize(planet.Size),
+		PlanetGravity:                   gamedata.PlanetGravity(planet.Gravity),   // 見檔頭「行星重力」說明
+		MineralRichness:                 gamedata.PlanetMinerals(planet.Minerals), // 見檔頭「礦產豐度」說明
 		// Climate:save.Planet.Climate 同樣是直接從存檔二進位讀出的 uint8,與 gamedata.PlanetClimate
 		// 同源於 openorion2 gamestate.h 的同一組 enum ordinal(TOXIC=0..GAIA=9,見該檔
 		// `enum PlanetClimate` 定義),故可直接數值轉型,不需要字串映射表(比照上面 Gravity/

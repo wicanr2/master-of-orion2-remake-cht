@@ -45,30 +45,64 @@ func (t *tacticalScreen) canLaunchFrom(idx int) bool {
 	if idx < 0 || idx >= len(t.player) || !t.player[idx].Bay {
 		return false
 	}
-	for i := range t.squads {
-		if !t.squads[i].Enemy && t.squads[i].Carrier == idx && !t.squads[i].Dead() {
-			return false
+	for _, kind := range combatShipBays(t.player[idx]) {
+		active := false
+		for i := range t.squads {
+			if !t.squads[i].Enemy && t.squads[i].Carrier == idx && t.squads[i].Kind == kind && !t.squads[i].Dead() {
+				active = true
+				break
+			}
+		}
+		if !active {
+			return true
 		}
 	}
-	return true
+	return false
+}
+
+func combatShipBays(s shell.CombatShip) []shell.FighterKind {
+	if len(s.Bays) > 0 {
+		return s.Bays
+	}
+	if s.Bay {
+		return []shell.FighterKind{s.BayKind}
+	}
+	return nil
 }
 
 // launchFrom 讓第 idx 艘我方艦派出一隊戰機。
 func (t *tacticalScreen) launchFrom(idx int) {
 	s := t.player[idx]
+	kind, found := s.BayKind, false
+	for _, candidate := range combatShipBays(s) {
+		active := false
+		for i := range t.squads {
+			if !t.squads[i].Enemy && t.squads[i].Carrier == idx && t.squads[i].Kind == candidate && !t.squads[i].Dead() {
+				active = true
+				break
+			}
+		}
+		if !active {
+			kind, found = candidate, true
+			break
+		}
+	}
+	if !found {
+		return
+	}
 	// ⚠ 2026-08-08(第 69 項(戰鬥速度與引擎階)):上一版寫著「remake 的艦艇設計還沒有把『目前最佳引擎/裝甲』
 	// 餵進戰鬥層,先用最保守的 1 / 0…等那兩項接上來,這裡換成真值即可」——**接上來了**。
 	// 那個硬編的 1 讓所有戰機不論科技多高都跑得一樣慢,而且第 65 項(種族特性31格)的參數掃描器
 	// (只掃 gamedata.X(...))看不到它,因為它在 cmd/ 這一側。
 	squadron := shell.NewFighterSquadron(
-		s.BayKind, false, idx, s.Col, s.Row, s.DriveLevel, s.ArmorLevelAboveTitanium)
+		kind, false, idx, s.Col, s.Row, s.DriveLevel, s.ArmorLevelAboveTitanium)
 	squadron.CarrierName = s.Name
 	squadron.FighterRacialDefenseBonus = s.FighterRacialDefenseBonus
 	squadron.FighterPilotBonus = s.FighterPilotBonus
 	squadron.FighterHelmsmanBonus = s.FighterHelmsmanBonus
 	t.squads = append(t.squads, squadron)
 	t.log = fmt.Sprintf(t.b.tr("%s 派出一隊%s(%d 架)", "%s launches a %s squadron (%d craft)"),
-		s.Name, fighterKindLabel(t.b.lang, s.BayKind), t.squads[len(t.squads)-1].Alive)
+		s.Name, fighterKindLabel(t.b.lang, kind), t.squads[len(t.squads)-1].Alive)
 }
 
 // launchEnemySquadrons 依 StartCombat 已建立的敵艦戰機庫開場出擊。
@@ -80,13 +114,15 @@ func (t *tacticalScreen) launchEnemySquadrons() {
 		if !s.Bay {
 			continue
 		}
-		f := shell.NewFighterSquadron(s.BayKind, true, i, s.Col, s.Row,
-			s.DriveLevel, s.ArmorLevelAboveTitanium)
-		f.CarrierName = s.Name
-		f.FighterRacialDefenseBonus = s.FighterRacialDefenseBonus
-		f.FighterPilotBonus = s.FighterPilotBonus
-		f.FighterHelmsmanBonus = s.FighterHelmsmanBonus
-		t.squads = append(t.squads, f)
+		for _, kind := range combatShipBays(s) {
+			f := shell.NewFighterSquadron(kind, true, i, s.Col, s.Row,
+				s.DriveLevel, s.ArmorLevelAboveTitanium)
+			f.CarrierName = s.Name
+			f.FighterRacialDefenseBonus = s.FighterRacialDefenseBonus
+			f.FighterPilotBonus = s.FighterPilotBonus
+			f.FighterHelmsmanBonus = s.FighterHelmsmanBonus
+			t.squads = append(t.squads, f)
+		}
 	}
 }
 
@@ -221,34 +257,40 @@ func (t *tacticalScreen) advanceSquadrons() (damage int) {
 		// 必須在飛彈命中艦艇或戰機接戰前先開火。戰機不是飛彈彈頭,
 		// 所以走戰機 Beam Defense 公式與 FighterSquadron.TakeHit，
 		// 不把這次消費塞進 Missile_Dcv 的彈頭餘數鏈。
-		pdMods := shell.WeaponModCodesForWeapon(targetShip.WeaponName, targetShip.Mods)
-		if !targetShip.PointDefenseSpent && shell.PointDefenseCanFire(targetShip.WeaponName, pdMods) {
-			targetShip.PointDefenseSpent = true
-			beamRoll := 1
-			if t.rng != nil {
-				beamRoll = t.rng.Intn(100) + 1
-			}
-			// p.157 的完整式為 5*Speed + 種族 Ship Defense
-			// + Fighter Pilot + Helmsman。種族與 Fighter Pilot 已由
-			// StartCombat 依參戰艦隊證據帶入；Helmsman 的原版戰機呼叫端
-			// 尚未證實，因此保留明示的零值。
-			pd := shell.ResolvePointDefenseFighterShot(shell.PointDefenseFighterShot{
-				BeamWeaponName:   targetShip.WeaponName,
-				BeamAttack:       targetShip.Attack,
-				BeamDamageMax:    targetShip.WeaponMax,
-				BeamRangeSquares: 0, // 接戰前自動攔截，同格
-				BeamRoll:         beamRoll,
-				BeamSystems:      targetShip.BeamSystems,
-				BeamMods:         pdMods,
-				FighterBeamDefense: gamedata.CombatFighterBeamDefense(f.Speed,
-					f.FighterRacialDefenseBonus, f.FighterPilotBonus, f.FighterHelmsmanBonus),
-			})
-			if pd.Fired && pd.Hit {
-				f.TakeHit(pd.DamageToFighter)
-				if f.Dead() {
-					continue
+		// 自動 PD 依 typed 槽序處理，且刻意不讀 WeaponModes：原版說明明定
+		// 紅色關閉的 PD 仍會在飛彈／戰機接觸前開火。
+		for _, mount := range shell.AvailableTacticalPointDefenseMounts(targetShip) {
+			shell.MarkTacticalPointDefenseMountSpent(targetShip, mount.Slot)
+			for n := 0; n < mount.Count && !f.Dead(); n++ {
+				beamRoll := 1
+				if t.rng != nil {
+					beamRoll = t.rng.Intn(100) + 1
+				}
+				// p.157 的完整式為 5*Speed + 種族 Ship Defense
+				// + Fighter Pilot + Helmsman。種族與 Fighter Pilot 已由
+				// StartCombat 依參戰艦隊證據帶入；Helmsman 的原版戰機呼叫端
+				// 尚未證實，因此保留明示的零值。
+				pd := shell.ResolvePointDefenseFighterShot(shell.PointDefenseFighterShot{
+					BeamWeaponName:   mount.WeaponName,
+					BeamAttack:       targetShip.Attack,
+					BeamDamageMax:    mount.BeamDamageMax,
+					BeamRangeSquares: 0, // 接戰前自動攔截，同格
+					BeamRoll:         beamRoll,
+					BeamSystems:      targetShip.BeamSystems,
+					BeamMods:         mount.BeamMods,
+					FighterBeamDefense: gamedata.CombatFighterBeamDefense(f.Speed,
+						f.FighterRacialDefenseBonus, f.FighterPilotBonus, f.FighterHelmsmanBonus),
+				})
+				if pd.Fired && pd.Hit {
+					f.TakeHit(pd.DamageToFighter)
 				}
 			}
+			if f.Dead() {
+				break
+			}
+		}
+		if f.Dead() {
+			continue
 		}
 		// 突擊艇(第 80 項(登艦戰)):抵達目標時**放下陸戰隊**,不開火。
 		// 手冊:「Once launched, Assault Shuttles fly to the target ship and drop off their

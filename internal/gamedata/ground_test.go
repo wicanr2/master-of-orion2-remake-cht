@@ -297,6 +297,14 @@ func TestGroundBombHitsFromDamage(t *testing.T) {
 	}
 }
 
+func TestStrategicBombardmentHitsFromDamage(t *testing.T) {
+	for _, tc := range []struct{ damage, want int }{{-1, 0}, {0, 0}, {39, 0}, {40, 1}, {303, 7}, {30098, 752}} {
+		if got := StrategicBombardmentHitsFromDamage(tc.damage); got != tc.want {
+			t.Errorf("StrategicBombardmentHitsFromDamage(%d)=%d,want %d", tc.damage, got, tc.want)
+		}
+	}
+}
+
 // TestGroundMaxBombHitsPerFleet 手冊 MANUAL_150.html p.129 上限常數本身。
 func TestGroundMaxBombHitsPerFleet(t *testing.T) {
 	if GroundMaxBombHitsPerFleet != 320 {

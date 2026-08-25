@@ -88,6 +88,31 @@ func TestScoreLinesLastIsTotal(t *testing.T) {
 	}
 }
 
+func TestFinalScoreSumsRepeatedHyperAdvancedLevels(t *testing.T) {
+	s := NewDemoSession()
+	s.Player.HyperAdvancedLevels = map[gamedata.ResearchTopic]int{
+		gamedata.TOPIC_HYPER_PHYSICS: 3,
+		gamedata.TOPIC_HYPER_FIELDS:  2,
+	}
+	if got := s.hyperAdvancedLevels(); got != 5 {
+		t.Fatalf("Hyper 分數 consumer 應加總八個 level byte，得到 %d want 5", got)
+	}
+}
+
+func TestFinalScoreUsesUnusedRacePicksAndEvolutionaryMutation(t *testing.T) {
+	s := NewDemoSession()
+	s.SetCustomRaceUnusedPicks(5)
+	base := s.FinalScore()
+	if base.MultiplierPercent != 150 || base.Total != (base.RawTotal*150+50)/100 {
+		t.Fatalf("剩餘 5 Picks 應套 150%%:%+v", base)
+	}
+	grantTechnologyApplication(&s.Player, gamedata.TOPIC_TRANS_GENETICS, gamedata.TECH_EVOLUTIONARY_MUTATION)
+	evolved := s.FinalScore()
+	if evolved.MultiplierPercent != 190 || evolved.Total != (evolved.RawTotal*190+50)/100 {
+		t.Fatalf("Evolutionary Mutation 未消費 4 Picks 應再加 40%%:%+v", evolved)
+	}
+}
+
 // 星圖大小索引要跟著實際星數走(時間分與俘虜分都用它)。
 func TestGalaxySizeIndexTracksStarCount(t *testing.T) {
 	s := NewDemoSession()

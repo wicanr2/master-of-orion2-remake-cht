@@ -6,97 +6,164 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
-// bcCrashFloor80Turns 是 TestAntaresRaidsScheduleAndEscalate 80 回合內允許的 BC 下限。
-//
-// 忠實 yield 經濟(母星 Terran/Abundant,見 docs/tech/colony-economy-maintenance.md)下,
-// 建築維護費固定 3 BC/回合,但人口只剩 1 時,不論把僅存的 1 人配置成農夫或工人,收入都不到
-// 3 BC(食物盈餘出售 0.5 BC/單位、稅收 40%,單人口撐死賺 1~2 BC)——這不是本輪任何算式錯誤,
-// 而是「建築維護費不隨人口規模縮小」這個手冊本身就有的機制,在忠實(零緩衝)經濟下被誠實呈現
-// 出來:此測試刻意無艦隊防禦、吃滿安塔蘭入侵傷害,人口會被反覆打到剩 1(母星人口下限本身仍
-// 受下方斷言保護),因此本測試不再要求「BC 絕不為負」(那個假設建立在舊 placeholder 經濟
-// NetBC 穩定 +3/回合累積出的巨額緩衝上,忠實經濟沒有這個緩衝)。改驗證「BC 不會失控式無下限
-// 崩潰」——以本測試固定 EventSeed=42 的確定性軌跡實測,80 回合最低點在回合 43 觸底後回升
-// (2026-07-12 校正母星分配 農4/工1/科3 後為 -24,先前 農4/工3/科1 較高工業時為 -3;較忠實的
-// 低工業母星緩衝更薄故觸底更深,但仍有界且會恢復,非螺旋崩潰),這裡抓一個有餘裕但仍能抓到
-// 「異常擴大化」的下限。2026-07-12 再校正開局 BC 100→50(SAVE10 oracle)後,同軌跡最低點
-// 由 -24 降到 -31(回合43 觸底後仍回升至 -3、人口守 1;因 BC 低時買不起的支出會跳過而自限,
-// 非線性下移),故下限放寬到 -40 留餘裕,仍能抓真正的無下限螺旋。
-const bcCrashFloor80Turns = -40
-
-// TestAntaresRaidsScheduleAndEscalate 驗證安塔蘭入侵:前期寬限不觸發,達排程回合週期性觸發,
-// 次數遞增(升級),母星人口不低於 1,且 BC 不會失控式無下限崩潰(見 bcCrashFloor80Turns 註解:
-// 忠實經濟下人口被打到剩 1 時,單人口收入結構性不足以覆蓋建築維護費,短暫轉負是誠實的經濟後果,
-// 不是 bug)。
+// TestAntaresRaidsScheduleAndEscalate 釘住一般科技等級的第一個資源 pulse；原版不是
+// 固定第 20 回合、每 15 回合直接扣 BC／人口。
 func TestAntaresRaidsScheduleAndEscalate(t *testing.T) {
 	s := NewDemoSession()
-	s.Fleet().Ships = nil // 無艦隊防禦,吃滿傷害(方便觀察)
-
-	raidTurns := []int{}
-	for i := 0; i < 80; i++ {
-		s.EndTurn()
-		if s.LastAntares != "" {
-			raidTurns = append(raidTurns, s.Turn)
-			if s.LastAntaresEN == "" {
-				t.Error("安塔蘭警報已有中文報告時也應有英文報告")
-			}
-		}
-		if s.Player.BC < bcCrashFloor80Turns {
-			t.Fatalf("BC 崩潰超出合理下限:%d(< %d)", s.Player.BC, bcCrashFloor80Turns)
-		}
-		if s.PlayerColonies[0].Population < 1 {
-			t.Fatalf("母星人口 <1:%d", s.PlayerColonies[0].Population)
-		}
+	s.TechLevel, s.TechLevelSet = TechLevelDefault, true
+	for s.Turn = 1; s.Turn <= 124; s.Turn++ {
+		s.advanceAntares()
 	}
-	if len(raidTurns) < 2 {
-		t.Fatalf("80 回合內應有多次安塔蘭入侵,實得 %d 次:%v", len(raidTurns), raidTurns)
+	if s.AntaranInvasion.OffensiveResource != 0 || s.AntaranInvasion.DefensiveResource != 0 {
+		t.Fatalf("一般科技第 124 回合前不應有資源：%+v", s.AntaranInvasion)
 	}
-	// 首次不早於寬限回合。
-	if raidTurns[0] < antaresStartTurn {
-		t.Fatalf("首次入侵 %d 早於寬限 %d", raidTurns[0], antaresStartTurn)
+	s.Turn = 126 // elapsed=125：一般科技延遲 100 後的第一個 25 回合 pulse
+	s.advanceAntares()
+	if !s.AntaranInvasion.Initialized {
+		t.Fatal("安塔蘭全局狀態未初始化")
 	}
-	// 週期一致。
-	if raidTurns[1]-raidTurns[0] != antaresInterval {
-		t.Fatalf("入侵週期應為 %d,實得 %d", antaresInterval, raidTurns[1]-raidTurns[0])
+	if got := gamedata.OriginalAntaranWeightedStrength(s.AntaranInvasion.OffensiveShips, s.AntaranInvasion.Costs) +
+		s.AntaranInvasion.OffensiveResource; got == 0 {
+		t.Fatalf("第一個 pulse 應已投入攻擊資源或建艦：%+v", s.AntaranInvasion)
 	}
-	if s.AntaresRaids != len(raidTurns) {
-		t.Fatalf("AntaresRaids 計數 %d != 觸發次數 %d", s.AntaresRaids, len(raidTurns))
-	}
-	t.Logf("安塔蘭入侵回合:%v(共 %d 次)", raidTurns, s.AntaresRaids)
 }
 
-// TestAntaresDefenseReducesDamage 驗證母星有艦隊時損失較低。
+// TestAntaresDefenseReducesDamage 保留舊測試名稱以便歷史搜尋；現行斷言是抵達後必須
+// 進快速戰鬥，不能沿用舊腳本直接扣國庫。
 func TestAntaresDefenseReducesDamage(t *testing.T) {
-	run := func(withFleet bool) int {
-		s := NewDemoSession()
-		// 隔離變數:拿掉 AI 對手。這條測試量的是「安塔蘭入侵造成的 BC 損失」,但它其實是用
-		// 「該回合國庫的總變化」當代理值,任何其他也會扣 BC 的系統都會混進來。AI 突襲
-		// (2026-08-06 新增,見 ai_attack.go)正是這樣一個系統,而且它的發動條件**看玩家軍力**
-		// ——正好是這條測試在對照的那個變數,不隔離就會反向污染結果。
-		s.AIPlayers = nil
-		if !withFleet {
-			s.Fleet().Ships = nil
-		} else {
-			s.Fleet().Ships = []Ship{{Name: "衛戍艦", Class: "戰艦"}}
-			s.Fleet().AtStar = 0
-		}
-		startBC := 0
-		bcLoss := 0
-		for i := 0; i < 40; i++ {
-			before := s.Player.BC
-			s.EndTurn()
-			if s.LastAntares != "" {
-				bcLoss += before - s.Player.BC
-			}
-			_ = startBC
-		}
-		return bcLoss
+	s := NewDemoSession()
+	beforeBC := s.Player.BC
+	raid := AntaranRaidFleet{TargetKind: eventEmpirePlayer.String(), StarIndex: 0,
+		Ships: [5]int{1, 0, 0, 0, 0}}
+	s.resolveAntaranRaid(raid)
+	if s.Player.BC != beforeBC {
+		t.Fatalf("安塔蘭戰鬥不得沿用舊腳本直接扣 BC：%d → %d", beforeBC, s.Player.BC)
 	}
-	undefended := run(false)
-	defended := run(true)
-	if defended >= undefended {
-		t.Fatalf("有母星艦隊防禦應損失較少 BC:防禦 %d vs 無防禦 %d", defended, undefended)
+	if s.LastAntares == "" || s.LastAntaresEN == "" {
+		t.Fatal("抵達戰鬥應有雙語報告")
 	}
-	t.Logf("BC 損失:無防禦 %d、有防禦 %d", undefended, defended)
+}
+
+func TestAntaranInvasionStateSaveRoundTrip(t *testing.T) {
+	s := NewDemoSession()
+	s.AntaranInvasion = AntaranInvasionState{
+		Initialized: true, OffensiveResource: 7, DefensiveResource: 3,
+		OffensiveShips: [5]int{1, 2, 3, 0, 1}, DeployedShips: [5]int{0, 1, 1, 0, 1},
+		OffensiveMax: gamedata.AntaranOffensiveMax, DefensiveMax: gamedata.AntaranDefensiveMax,
+		Costs: gamedata.AntaranShipCosts, Readiness: 9,
+		Pending: []AntaranRaidFleet{{TargetKind: "ai", TargetIndex: 0, StarIndex: 1, ETA: 2,
+			Ships: [5]int{0, 0, 1, 0, 1}}},
+	}
+	path := t.TempDir() + "/antaran.json"
+	if err := s.Save(path); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadSession(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.AntaranInvasion.OffensiveResource != 7 || got.AntaranInvasion.Readiness != 9 ||
+		len(got.AntaranInvasion.Pending) != 1 || got.AntaranInvasion.Pending[0].ETA != 2 {
+		t.Fatalf("安塔蘭全局 record 往返遺失：%+v", got.AntaranInvasion)
+	}
+}
+
+func TestHotseatIdleSeatDoesNotAdvanceGlobalAntarans(t *testing.T) {
+	s := NewDemoSession()
+	if len(s.AIPlayers) < 1 || s.SetupHotseat(2) != 2 {
+		t.Skip("需要第二個熱座帝國")
+	}
+	s.initAntaranInvasionState()
+	s.AntaranInvasion.OffensiveResource = 17
+	s.AntaranInvasion.Readiness = 4
+	s.advanceSeatEmpire()
+	if s.AntaranInvasion.OffensiveResource != 17 || s.AntaranInvasion.Readiness != 4 {
+		t.Fatalf("席位私有結算不得重跑全局安塔蘭狀態：%+v", s.AntaranInvasion)
+	}
+}
+
+func TestAntaranLaunchDeploysAtMostFiveShips(t *testing.T) {
+	s := NewDemoSession()
+	s.AntaranInvasion = AntaranInvasionState{
+		Initialized: true, OffensiveShips: gamedata.AntaranOffensiveMax,
+		OffensiveMax: gamedata.AntaranOffensiveMax, DefensiveMax: gamedata.AntaranDefensiveMax,
+		Costs: gamedata.AntaranShipCosts, Readiness: 199,
+	}
+	if len(s.AIPlayers) == 0 || len(s.AIPlayers[0].Colonies) == 0 {
+		t.Skip("需要人口不同的第二帝國作目標")
+	}
+	s.AIPlayers[0].Colonies[0].Population = s.PlayerColonies[0].Population + 20
+	s.Turn = 2
+	s.advanceAntares()
+	if len(s.AntaranInvasion.Pending) != 1 {
+		t.Fatalf("readiness=199 應必定部署一支艦隊：%+v", s.AntaranInvasion)
+	}
+	n := 0
+	for _, count := range s.AntaranInvasion.Pending[0].Ships {
+		n += count
+	}
+	if n < 1 || n > 5 {
+		t.Fatalf("原版每次部署 1..5 艘，got %d：%v", n, s.AntaranInvasion.Pending[0].Ships)
+	}
+}
+
+func TestAntaranRaidCanTargetAI(t *testing.T) {
+	s := NewDemoSession()
+	if len(s.AIPlayers) == 0 || len(s.AIPlayers[0].ColonyStars) == 0 {
+		t.Skip("沒有 AI")
+	}
+	s.initAntaranInvasionState()
+	s.AIPlayers[0].FleetStrength = 100
+	before := s.AIPlayers[0].FleetStrength
+	s.resolveAntaranRaid(AntaranRaidFleet{TargetKind: eventEmpireAI.String(), TargetIndex: 0,
+		StarIndex: s.AIPlayers[0].ColonyStars[0], Ships: [5]int{0, 0, 1, 0, 0}})
+	if s.AIPlayers[0].FleetStrength >= before {
+		t.Fatalf("AI 目標應承受安塔蘭艦隊戰鬥損耗：%d → %d", before, s.AIPlayers[0].FleetStrength)
+	}
+	if s.LastAntares == "" || s.LastAntaresEN == "" {
+		t.Fatal("AI 戰鬥應有雙語報告")
+	}
+}
+
+func TestDestroyedAntaranRaidShipsReturnToNeitherPool(t *testing.T) {
+	s := NewDemoSession()
+	s.initAntaranInvasionState()
+	s.AntaranInvasion.OffensiveShips[0] = 1
+	s.AntaranInvasion.DeployedShips[0] = 1
+	s.AntaranInvasion.Pending = []AntaranRaidFleet{{
+		TargetKind: eventEmpirePlayer.String(), StarIndex: s.Fleet().AtStar, ETA: 1,
+		Ships: [5]int{1, 0, 0, 0, 0},
+	}}
+	// 確定性地讓守軍第一輪摧毀最低階安塔蘭艦；這條只驗證戰後資源池回寫，
+	// 不把目前的 combatant 戰力近似誤稱為原版精確 blueprint。
+	for i := range s.Fleet().Ships {
+		s.Fleet().Ships[i].WeaponAttack = 10000
+	}
+	s.advanceAntaranRaidFleets()
+	if got := s.AntaranInvasion.OffensiveShips[0]; got != 0 {
+		t.Fatalf("已摧毀的安塔蘭艦不得回到 offensive pool：%d", got)
+	}
+	if got := s.AntaranInvasion.DeployedShips[0]; got != 0 {
+		t.Fatalf("已摧毀的安塔蘭艦不得繼續算 deployed：%d", got)
+	}
+	if len(s.AntaranInvasion.Pending) != 0 {
+		t.Fatalf("已抵達的 pending fleet 應完成消費：%+v", s.AntaranInvasion.Pending)
+	}
+}
+
+func TestUndefendedAntaranRaidShipsRemainDeployed(t *testing.T) {
+	s := NewDemoSession()
+	s.initAntaranInvasionState()
+	s.AntaranInvasion.OffensiveShips[0] = 1
+	s.AntaranInvasion.DeployedShips[0] = 1
+	s.AntaranInvasion.Pending = []AntaranRaidFleet{{
+		TargetKind: eventEmpirePlayer.String(), StarIndex: -1, ETA: 1,
+		Ships: [5]int{1, 0, 0, 0, 0},
+	}}
+	s.advanceAntaranRaidFleets()
+	if s.AntaranInvasion.OffensiveShips[0] != 1 || s.AntaranInvasion.DeployedShips[0] != 1 {
+		t.Fatalf("未被摧毀的攻方不能憑抵達就消失：%+v", s.AntaranInvasion)
+	}
 }
 
 // 安塔蘭母星防禦艦隊的組成是反組譯真值(`_n_max_antaran_def_ships` = {0,0,3,2,7,0,0,0,0}),

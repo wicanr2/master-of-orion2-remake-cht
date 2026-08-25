@@ -84,8 +84,9 @@ that won't fit are dimmed.」——證實武器佔格是**固定值**,與艦體�
 | Proton Torpedo | 40 | **30** | 20 | 固定值 |
 | Plasma Torpedo | 120 | **40** | 75 | 固定值 |
 
-飛彈(Missile,非魚雷)的 Size 是「依彈架容量遞增的一組值」而非單一值——本專案簡化模型
-(`session.go` 尚未實作彈架容量選擇)取**最小彈架(x2 = 10)**當估計值。
+飛彈（Missile，非魚雷）的 Size 是依彈架容量遞增的一組值。正常艦艇設計已由
+`MissileRackBaseValue` 實作 2/5/10/15/20 發選擇；`WeaponSpaceByName` 的 10 僅是衛星／
+轟炸等沒有逐艦 loadout 消費端的 x2 代理值。
 
 ### 炸彈(Bomb,p.126)
 
@@ -118,7 +119,7 @@ that won't fit are dimmed.」——證實武器佔格是**固定值**,與艦體�
 
 `internal/gamedata/shipspace.go` 的 `WeaponSpaceByName` 對照本專案既有
 `internal/shell/session.go` `WeaponOptions` 的 10 個元件名,逐項標「確認值」或「估計」
-(飛彈類取最小彈架)。
+（飛彈類在單值代理消費端取最小彈架；艦艇設計不走此簡化）。
 
 ## 3. 武器改裝(Mods)對佔格的影響(已接線,2026-07-11)
 
@@ -186,7 +187,8 @@ Automatics,**不佔用**這個空間預算(玩家只能在 Automatics 區塊把�
 | 函式 | 位置 | 說明 |
 |---|---|---|
 | `ShipHullSpace(class CombatShipClass) int` | `gamedata/shipspace.go` | 艦體總空間(p.121 確認值) |
-| `WeaponSpaceByName map[string]int` | `gamedata/shipspace.go` | 各武器佔格(p.124 確認值 + 飛彈估計) |
+| `WeaponSpaceByName map[string]int` | `gamedata/shipspace.go` | 無逐艦 loadout 消費端的單值佔格；飛彈取 x2 代理值 |
+| `MissileRackBaseValue` | `gamedata/missile_rack.go` | 艦艇設計的 2/5/10/15/20 發成本／佔格 |
 | `SpecialSpaceEstimatePercent`、`SpecialSpace(hullSpace int, hasSpecial bool) int` | `gamedata/shipspace.go` | 特殊系統佔格估計模型(**非手冊數字**) |
 | `shipClassFromName(class string) (gamedata.CombatShipClass, bool)` | `shell/session.go` | 中文艦體名 → enum;偵察艦等非 Design 六級艦體近似 Frigate |
 | `ShipDesignSpaceUsed(class string, weapon, armor, shield, special int) int` | `shell/session.go` | 已用空間 = 武器佔格 + 特殊系統估計佔格(裝甲/護盾回報 0,見 §5) |

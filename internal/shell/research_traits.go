@@ -5,16 +5,16 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
-// applyResearchRaceTrait 把研究完成後的種族規則接在引擎完成邊界。
+// applyResearchRaceTrait 只處理舊存檔／直接 engine caller 未在研究前建立 application 的
+// 相容狀態。正常遊戲已由 preparePlayerResearchApplication／prepareAIResearchApplication
+// 在投入 RP 前套用種族規則。
 //
 // 原版手冊的語意是:
 //   - Creative:研究一個領域時拿到該領域全部應用。
 //   - Uncreative:每個領域只隨機拿一項應用。
 //
-// engine.RunResearchPhase 仍保留一般種族的純研究結果(多選主題先記第一項並掛
-// PendingChoice),所以這個函式只負責把種族規則轉成既有的 ChosenTech/
-// ExplicitChoice 表示法。未明確抉擇的完成主題在 componentUnlockedFor/psKnowsTech
-// 會視為該領域全解,正好是 Creative 所需的既有語意。
+// 若舊狀態突破後才掛 PendingChoice，這裡仍把它收斂成既有 ChosenTech／ExplicitChoice
+// 表示法，避免舊存檔永久卡住。
 //
 // choose 是外部注入的 [0,n) 選擇器。正常遊戲傳入可存檔的 researchRand.Intn;
 // 測試可傳入固定選擇,不在這裡偷偷建立不可重現的全域亂數。
@@ -62,6 +62,13 @@ func (s *GameSession) researchRandForTurn() *randStream {
 		s.researchRand = newRandStream(s.EventSeed*2654435761 + 13)
 	}
 	return s.researchRand
+}
+
+func (s *GameSession) researchBreakthroughRoll(max int) int {
+	if max <= 0 {
+		return 0
+	}
+	return s.researchRandForTurn().Intn(max) + 1
 }
 
 func (s *GameSession) applyPlayerResearchRaceTrait(researchDone bool) {

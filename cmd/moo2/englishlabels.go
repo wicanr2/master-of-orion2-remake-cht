@@ -143,10 +143,12 @@ func historyMetricLabel(lang i18n.Lang, metric shell.HistoryMetric) string {
 		return shell.HistoryMetricName(metric)
 	}
 	switch metric {
-	case shell.HistoryBC:
-		return "Treasury"
+	case shell.HistoryTechnology:
+		return "Technology"
 	case shell.HistoryFleet:
-		return "Fleet Strength"
+		return "Fleet"
+	case shell.HistoryBuildings:
+		return "Buildings"
 	default:
 		return "Population"
 	}

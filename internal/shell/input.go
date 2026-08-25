@@ -7,6 +7,8 @@ package shell
 type InputState struct {
 	MouseX, MouseY int
 	ClickReleased  bool
+	// RightClickReleased 是右鍵放開邊緣；戰術武器槽用它顯示單槽資訊。
+	RightClickReleased bool
 	// MouseDown 表示左鍵在本幀持續按住。與 ClickReleased 分開，供音量條等
 	// 需要按住拖曳的控制項使用；規則層仍不依賴 ebiten 的按鍵型別。
 	MouseDown bool

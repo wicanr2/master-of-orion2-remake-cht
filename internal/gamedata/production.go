@@ -205,10 +205,8 @@ func PollutionReducedByPercent(pollutingProd, reductionPercent int) int {
 //
 // 注意手冊寫的是「**produces**」——不限工業。所以食物、工業、研究三項都套。
 //
-// ⚠ **remake 沒有「哪些外星人在做哪個工作」的模型。** `ColonyState` 只有
-// `UnassimilatedPop`(還沒同化的征服人口總數)與三個職業人數,沒有交叉表。
-// 所以這裡按**人口比例**把外星人攤到各職業上(向下取整)——那是 remake 的建模選擇,
-// 不是手冊給的分配規則。手冊也沒說玩家能不能指定外星人的工作。
+// ColonyState 現已保存逐職務 prisoner 數；本檔的比例 helper 只供沒有新欄位的舊 JSON
+// 遷移 fallback。原版逐人口證據見 docs/re/colonist-prisoner-production-audit-20260825.md。
 //
 // 這一段同時把 `ProdWorkerOutput` 那條「每工人至少 1 產能」的下限接上了:
 // 先前礦產表最低就是 1(`mineralProductionTable = {1,2,3,5,8}`),下限**永遠不會生效**,
@@ -238,16 +236,29 @@ func UncooperativeAlienUnits(jobUnits, unassimilated, population int) int {
 // applyWorkerFloor 只有**工業**要傳 true:`ProdWorkerMinimum` 的手冊依據講的是
 // 「每個**工人**單位至少產出 1 產能」,沒有講農夫與科學家,所以不擅自套到那兩項。
 func UncooperativeJobOutput(jobUnits, perUnit, unassimilated, population int, applyWorkerFloor bool) int {
+	return UncooperativeJobOutputExact(jobUnits, perUnit,
+		UncooperativeAlienUnits(jobUnits, unassimilated, population), applyWorkerFloor)
+}
+
+// UncooperativeJobOutputExact 使用該職務內實際帶 PRISONER flag 的人口數計算。
+// 原版 sub_DE280 @ 0xDE280 先依 job bits 篩選，再對 [colonist+1]&4 的人口
+// 扣除 base*5/20；所以 prisoner 的每人產出正好是 3/4。
+func UncooperativeJobOutputExact(jobUnits, perUnit, prisoners int, applyWorkerFloor bool) int {
 	if jobUnits <= 0 || perUnit <= 0 {
 		return 0
 	}
-	aliens := UncooperativeAlienUnits(jobUnits, unassimilated, population)
-	if aliens == 0 {
+	if prisoners < 0 {
+		prisoners = 0
+	}
+	if prisoners > jobUnits {
+		prisoners = jobUnits
+	}
+	if prisoners == 0 {
 		return jobUnits * perUnit
 	}
 	alienPerUnit := ProdAlienWorkerOutput(perUnit)
 	if applyWorkerFloor {
 		alienPerUnit = ProdWorkerOutput(alienPerUnit)
 	}
-	return (jobUnits-aliens)*perUnit + aliens*alienPerUnit
+	return (jobUnits-prisoners)*perUnit + prisoners*alienPerUnit
 }

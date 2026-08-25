@@ -91,8 +91,13 @@ func TestBattlePodsAddsSpace(t *testing.T) {
 	if with >= none {
 		t.Errorf("裝了戰鬥艙的已用空間 %d 應該**小於**沒裝的 %d", with, none)
 	}
-	if want := none - gamedata.ShipHullSpace(gamedata.SHIP_BATTLESHIP)/2; with != want {
-		t.Errorf("戰艦裝戰鬥艙的已用空間=%d,期望 %d(少掉艦體空間的一半)", with, want)
+	// 原版表的 -125 仍會通過 sub_6E60E category1 level0 的
+	// (base*1000+500)/1000；IDIV 向零截斷後是 -124，不可用原始表值直接相減。
+	wantBonus := gamedata.WeaponSpaceAtMiniLevelForCategory(
+		gamedata.SpecialDeviceSpace(gamedata.SPEC_BATTLE_PODS, gamedata.SHIP_BATTLESHIP),
+		0, gamedata.MiniSpaceTorpedoOrSpecial)
+	if want := none + wantBonus; with != want {
+		t.Errorf("戰艦裝戰鬥艙的已用空間=%d,期望 %d(category1 level0)", with, want)
 	}
 }
 

@@ -50,12 +50,20 @@ func (s *GameSession) researchTopicsKnown() int {
 }
 
 // hyperAdvancedLevels 回傳玩家已達成的 Hyper-Advanced 等級數。
-// 原版掃玩家結構 +0x21C 起的 8 個位元組(8 個研究領域各一級);remake 用
-// gamedata.IsHyperAdvancedTopic 判定哪些已完成的主題屬於這一類,語意相同。
+// 原版掃玩家結構 +0x21C 起的 8 個位元組並加總；remake 直接加總同一八 topic 的
+// HyperAdvancedLevels。舊存檔缺 map 時，以 CompletedTopics 的每個 Hyper 布林補一級。
 func (s *GameSession) hyperAdvancedLevels() int {
 	n := 0
-	for t, done := range s.Player.CompletedTopics {
-		if done && gamedata.IsHyperAdvancedTopic(t) {
+	if s.Player.HyperAdvancedLevels != nil {
+		for topic, level := range s.Player.HyperAdvancedLevels {
+			if gamedata.IsHyperAdvancedTopic(topic) && level > 0 {
+				n += level
+			}
+		}
+		return n
+	}
+	for topic, done := range s.Player.CompletedTopics {
+		if done && gamedata.IsHyperAdvancedTopic(topic) {
 			n++
 		}
 	}
@@ -80,6 +88,15 @@ func (s *GameSession) racesEliminated() int {
 // FinalScore 算出玩家目前的最終得分(逐項 + 總分)。
 // 對局尚未結束時一樣可以呼叫——原版的 Hi-Score 畫面也是隨時算得出來的。
 func (s *GameSession) FinalScore() gamedata.ScoreBreakdown {
+	multiplier := s.ScoreBaseMultiplierPercent
+	if multiplier <= 0 {
+		multiplier = 100
+	}
+	// sub_58F4A 對 Evolutionary Mutation 的 known-state 額外加入 4 Picks；remake 尚無
+	// mutation 再選種族能力畫面，因此這四點目前全數保留。
+	if playerStateKnowsTech(s.Player, gamedata.TOPIC_TRANS_GENETICS, gamedata.TECH_EVOLUTIONARY_MUTATION) {
+		multiplier += 40
+	}
 	return gamedata.ComputeScore(gamedata.ScoreInput{
 		GalaxySizeIndex: s.galaxySizeIndex(),
 		// 種族數 = 玩家 + AI 對手(手冊:「the number of races involved in the struggle for
@@ -94,10 +111,19 @@ func (s *GameSession) FinalScore() gamedata.ScoreBreakdown {
 		HyperAdvancedLevels: s.hyperAdvancedLevels(),
 		RacesEliminated:     s.racesEliminated(),
 		// ⚠ remake 目前沒有獵戶座星系(第三梯項目),此項恆為 0——不是漏接,是那個系統還沒做。
-		OrionCaptured:  false,
-		CouncilVictory: s.Victory.Over && s.Victory.Reason == engine.VictoryHighCouncil && s.Victory.Winner == "player",
-		AntaranVictory: s.AntaranHomeworldConquered,
+		OrionCaptured:     false,
+		CouncilVictory:    s.Victory.Over && s.Victory.Reason == engine.VictoryHighCouncil && s.Victory.Winner == "player",
+		AntaranVictory:    s.AntaranHomeworldConquered,
+		MultiplierPercent: multiplier,
 	})
+}
+
+// SetCustomRaceUnusedPicks 保存自訂種族確認時尚未使用的 Picks，供原版最終分數倍率使用。
+func (s *GameSession) SetCustomRaceUnusedPicks(picks int) {
+	if picks < 0 {
+		picks = 0
+	}
+	s.ScoreBaseMultiplierPercent = 100 + picks*10
 }
 
 // ScoreLine 是 Hi-Score 畫面的一列(項目名 + 分數)。

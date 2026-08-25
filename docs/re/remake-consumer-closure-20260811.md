@@ -9,8 +9,8 @@ IDA 證據仍以 [`oracle-static-ida-20260811.md`](oracle-static-ida-20260811.md
 | 消費端 | remake 行為 | 證據邊界 |
 |---|---|---|
 | `CMBTSHP` timer | `CMBTSHPFrameAtTick` 以固定 4 tick/frame 播放 `[0,1,2,1]` 短掃掠；戰術艦移動時啟動，16 tick 後固定回最近朝向幀 | IDA 深度掃描 `sub_30062`／`sub_30631`／`sub_31F25`／`sub_3F628` 只找到資產載入、繪圖、輸入迴圈與 heading；未找到 frame counter 寫入或 timer 常數。20 幀、`45*color+rawPicture`、16 向 heading 已證實；timer 是可重播近似 |
-| 艦船爆炸事件 | 事件 8 呼叫 `resolveStrategicShipExplosion`：`Random(201)+74` 取主勢能、移除主艦、每步 `-20`，以 type/resistance consumer 對最多三艘倖存艦寫入 `Ship.Damage` | raw `0x3868F`／`0x39985`／`0x40C2A` 的純公式已證實；raw fleet／colony record 與 resistance 表未完整命名，`/20` 是 remake 尺度 adapter |
-| `SABOTAGE` 分數 | `spyMissionScore` 明列攻方 Spies slot／科技／種族＋領袖、守方 Agents slot／科技／政府／種族＋領袖，再計算 `E=T+DB-AB` 與 `p`；SABOTAGE 使用 `T=70` 與原版建造成本加權池。`SpySlotBonus` 已與 raw `sub_101483 @ 0x101483` 對齊 | `sub_1014A4 @ 0x1014A4` 的 packed relationship byte、兩張 raw table、亂數位置與 60／70／80／90／±80 分支已追回；兩張 table 是 runtime `0xFF` 初始化／上游填值，完整欄位語意與 `toggle_flag` 邊界仍是 oracle 差異。remake 以玩家可感知 AB／DB／E 近似完成，不宣稱 raw score parity |
+| 艦船爆炸事件 | 事件 8 依 `sub_23CED` 對目標帝國 active 艦艇做 reservoir sampling，只移除所選單艦；該艦軍官依 `sub_941C6` 一併死亡。玩家、熱座與 AI 共用此語意 | 事件 consumer `sub_206A2 @ 0x20AD7..0x20B61` 沒有呼叫戰鬥引擎爆炸鏈；證據見 `random-event-ship-explosion-audit-20260825.md` |
+| `SABOTAGE` 分數 | `spyMissionScore` 明列攻方 Spies slot／科技／種族＋領袖、守方 Agents slot／科技／政府／種族＋領袖，再計算 `E=T+DB-AB` 與 `p`；SABOTAGE 使用 `T=70` 與原版建造成本加權池。`SpySlotBonus` 已與 raw `sub_101483 @ 0x101483` 對齊 | 2026-08-25 已由 `sub_100A3E/sub_100A83` 閉合兩張 runtime 帝國攻防表；檔案初值 `0xFFFF` 不是 runtime 分數。packed relationship、亂數位置與 60／70／80／90／±80 分支已有證據；AI 任務／防守政策仍未閉合。 |
 | 防守 Agent | 玩家可訓練／解除 Agent（63 上限）；AI 依既有 remake 週期補充；Spy-vs-Spy 判定擊殺防守方時，runtime 會實際扣一名 Agent，雙向攻擊皆適用 | 手冊的 slot bonus／±80 門檻已接；訓練成本 30 BC、AI 週期是 remake 拍板值 |
 | 領袖 ETA callback | `RawStatus=1`、`RawETA:1→0`、`RawLocation=1` 觸發 `applyLeaderETACallback`：撤銷／重套領袖增量、刷新所有殖民地士氣；領袖保留，不把 ETA=0 誤解成解雇 | `sub_E2AB1 @ 0xE2AB1` 的六槽掃描與 `sub_E1D59`／`sub_DF8F0`／`sub_E2710` callback 鏈已由 IDA 證實；raw 設計／艦隊欄位無安全一對一模型，remake 採完整玩家可感知近似 |
 
@@ -24,10 +24,8 @@ IDA 證據仍以 [`oracle-static-ida-20260811.md`](oracle-static-ida-20260811.md
 
 ## 公式與安全護欄
 
-- 爆炸事件只在全帝國艦數大於 1 時移除主艦，避免一次事件把最後一艘艦直接清空。
-  次級傷害只寫入既有 `Ship.Damage`，不在 raw fleet／colony 欄位尚未對回時自行增加全滅規則。
-- `Ship.Damage` 的尺度化上限沿用 `shipMaxHP - ShipDamageFloorHP`；既有修復、戰鬥與靠港
-  修復路徑因此可以消費這份傷害，不需要另一套不可存檔的事件血量。
+- 事件 8 沒有保留最後一艘的安全護欄，也不修改倖存艦 `Ship.Damage`；只有被選艦與其
+  已指派軍官會被移除。`sub_3868F` 等戰鬥／殖民地爆炸公式不得混入此事件。
 - SABOTAGE 的 Agent 與進攻 Spy 是兩個獨立 slot；Agent 被擊殺後才從防守方數量扣除，
   不會誤扣進攻方 Spy，也不會只在新聞文字中顯示一個永遠不變的 Agent 數。
 - raw `sub_1026CF @ 0x1026CF` 讀取 `record + 0xE57 + otherEmpire` 的低 6 位，
@@ -47,7 +45,7 @@ IDA 證據仍以 [`oracle-static-ida-20260811.md`](oracle-static-ida-20260811.md
 均在既有 `pto2-remake-build:latest` Docker image 內執行，沒有在主機啟動 Go／Ebiten：
 
 - `go test ./internal/gamedata -run 'Original(Event|Explosion)' -count=1`：通過。
-- `go test ./internal/shell -run 'CMBTSHP|StrategicShipExplosion|Sabotage|SpyMissionResult|AdvanceEspionageConsumesAIDefensiveAgent|TrainAndDismissDefensiveAgent|AdvanceActiveLeaderETA' -count=1`：通過。
+- `go test ./internal/shell -run 'CMBTSHP|ShipExplosion|Sabotage|SpyMissionResult|AdvanceEspionageConsumesAIDefensiveAgent|TrainAndDismissDefensiveAgent|AdvanceActiveLeaderETA' -count=1`：通過。
 - 事件／間諜／領袖相鄰回歸抽樣：通過。
 - Docker `mm2-go:latest` + trap 管理的 Xvfb 執行 `go test ./cmd/moo2 -run '^$' -count=1`：退出碼 0；只做 UI package 編譯，不代表完整遊戲測試。
 

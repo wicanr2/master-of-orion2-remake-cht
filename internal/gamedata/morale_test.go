@@ -120,6 +120,21 @@ func TestMoraleUnificationProductionBonus(t *testing.T) {
 	}
 }
 
+func TestGovernmentJobProductionBonusRawTable(t *testing.T) {
+	wantResearch := []int{-50, -25, 0, 0, 50, 75, 0, 0}
+	for gov, want := range wantResearch {
+		if got := GovernmentJobProductionBonus(MoraleGovernmentType(gov), 2); got != want {
+			t.Errorf("政府 %d 研究修正=%d，期望 %d", gov, got, want)
+		}
+	}
+	if got := GovernmentJobProductionBonus(MoraleGovUnification, 0); got != 50 {
+		t.Errorf("統一食物修正=%d，期望 50", got)
+	}
+	if got := GovernmentJobProductionBonus(MoraleGovGalacticUnification, 1); got != 100 {
+		t.Errorf("銀河統一工業修正=%d，期望 100", got)
+	}
+}
+
 func TestMoraleBuildingBonusConstants(t *testing.T) {
 	// 手冊固定加成常數,直接對照原文數字。
 	if MoraleHoloSimulatorBonus != 20 {

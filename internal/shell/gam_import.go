@@ -79,37 +79,38 @@ func ImportGAM(data []byte) (*GameSession, GAMImportReport, error) {
 	}
 
 	session := &GameSession{
-		Turn:                report.Turn,
-		Stars:               importGAMStars(raw, report.HumanPlayer, &report),
-		Planets:             importGAMPlanets(raw, report.StarCount, &report),
-		SelectedStar:        -1,
-		Difficulty:          0,
-		EventSeed:           int64(raw.Config.Stardate)*1009 + int64(report.StarCount),
-		DisableEvents:       !raw.Config.RandomEvents,
-		ShowRelocationLines: raw.Config.ShowRelocationLines,
-		RuleProfile:         gamedata.Profile15(),
-		PlayerName:          raw.Players[report.HumanPlayer].Name,
-		FlagColor:           int(raw.Players[report.HumanPlayer].Color),
-		ColonyLeaderNames:   []string{},
-		PlayerColonies:      []engine.ColonyState{},
-		PlayerColonyStars:   []int{},
-		PlayerColonyPlanets: []int{},
-		PlayerColonyMarines: []int{},
-		PlayerColonyTanks:   []int{},
-		MarineBarracksAge:   []int{},
-		ArmorBarracksAge:    []int{},
-		ColonyBuildings:     []map[string]bool{},
-		Builds:              []ColonyBuild{},
-		BuildQueue:          [][]ColonyBuild{},
-		Outposts:            []Outpost{},
-		Leaders:             []Leader{},
-		AIPlayers:           []AIOpponent{},
-		PlayerSpies:         []int{},
-		PlayerSpyMissions:   []SpyMission{},
-		CustomRaceTraits:    0,
-		GalaxyAgeSet:        false,
-		TechLevelSet:        false,
-		AntaresRaids:        0,
+		Turn:                        report.Turn,
+		Stars:                       importGAMStars(raw, report.HumanPlayer, &report),
+		Planets:                     importGAMPlanets(raw, report.StarCount, &report),
+		SelectedStar:                -1,
+		Difficulty:                  0,
+		EventSeed:                   int64(raw.Config.Stardate)*1009 + int64(report.StarCount),
+		DisableEvents:               !raw.Config.RandomEvents,
+		ShowRelocationLines:         raw.Config.ShowRelocationLines,
+		RuleProfile:                 gamedata.Profile15(),
+		PlayerName:                  raw.Players[report.HumanPlayer].Name,
+		FlagColor:                   int(raw.Players[report.HumanPlayer].Color),
+		ColonyLeaderNames:           []string{},
+		PlayerColonies:              []engine.ColonyState{},
+		PlayerColonyStars:           []int{},
+		PlayerColonyPlanets:         []int{},
+		PlayerColonyMarines:         []int{},
+		PlayerColonyTanks:           []int{},
+		MarineBarracksAge:           []int{},
+		ArmorBarracksAge:            []int{},
+		ColonyBuildings:             []map[string]bool{},
+		Builds:                      []ColonyBuild{},
+		BuildQueue:                  [][]ColonyBuild{},
+		Outposts:                    []Outpost{},
+		Leaders:                     []Leader{},
+		AIPlayers:                   []AIOpponent{},
+		PlayerSpies:                 []int{},
+		PlayerSpyMissions:           []SpyMission{},
+		CustomRaceTraits:            0,
+		AssimilationProgressVersion: 1,
+		GalaxyAgeSet:                false,
+		TechLevelSet:                false,
+		AntaresRaids:                0,
 	}
 
 	importGAMPlayer(session, raw.Players[report.HumanPlayer], &report)
@@ -134,6 +135,10 @@ func ImportGAM(data []byte) (*GameSession, GAMImportReport, error) {
 		session.Fleets = []Fleet{NewFleet(importedHomeStar(session))}
 	}
 	session.SelectedFleet = 0
+	session.syncRaceEngineFields()
+	for i := range session.AIPlayers {
+		session.syncAIRaceEngineFields(&session.AIPlayers[i])
+	}
 
 	return session, report, nil
 }
@@ -385,7 +390,9 @@ func importGAMColonies(session *GameSession, raw *save.GameState, human int, rep
 			}
 			continue
 		}
-		session.PlayerColonies = append(session.PlayerColonies, engine.ColonyStateFromSave(colony, planet))
+		state := engine.ColonyStateFromSave(colony, planet)
+		applyGAMPopulationProfiles(&state, raw, owner)
+		session.PlayerColonies = append(session.PlayerColonies, state)
 		session.PlayerColonyStars = append(session.PlayerColonyStars, int(planet.Star))
 		session.PlayerColonyPlanets = append(session.PlayerColonyPlanets, planetIndex)
 		session.PlayerColonyMarines = append(session.PlayerColonyMarines, int(colony.Soldiers))
@@ -409,10 +416,11 @@ func importGAMOpponents(session *GameSession, raw *save.GameState, human int, re
 		}
 		personality := ai.Personality(raw.Players[i].Personality)
 		opp := AIOpponent{
-			Name:        raw.Players[i].Name,
-			Color:       int(raw.Players[i].Color),
-			ColorKnown:  true,
-			RaceIndex:   raceIndexForEnglishName(raw.Players[i].Race),
+			Name:               raw.Players[i].Name,
+			Color:              int(raw.Players[i].Color),
+			ColorKnown:         true,
+			RaceIndex:          raceIndexForEnglishName(raw.Players[i].Race),
+			PopulationRaceSlot: i, PopulationRaceSlotKnown: true,
 			Player:      importedPlayerState(&raw.Players[i]),
 			Personality: personality,
 			Decider:     ai.NewRemakeDecider(ai.ProfileForPersonality(personality)),
@@ -453,8 +461,9 @@ func importGAMOpponents(session *GameSession, raw *save.GameState, human int, re
 			continue
 		}
 		planet := &raw.Planets[planetIndex]
-		session.AIPlayers[aiIndex].Colonies = append(session.AIPlayers[aiIndex].Colonies,
-			engine.ColonyStateFromSave(colony, planet))
+		state := engine.ColonyStateFromSave(colony, planet)
+		applyGAMPopulationProfiles(&state, raw, owner)
+		session.AIPlayers[aiIndex].Colonies = append(session.AIPlayers[aiIndex].Colonies, state)
 		session.AIPlayers[aiIndex].ColonyStars = append(session.AIPlayers[aiIndex].ColonyStars, int(planet.Star))
 		session.AIPlayers[aiIndex].ColonyPlanets = append(session.AIPlayers[aiIndex].ColonyPlanets, planetIndex)
 		session.AIPlayers[aiIndex].ColonyBuildings = append(session.AIPlayers[aiIndex].ColonyBuildings,
@@ -486,6 +495,40 @@ func importGAMOpponents(session *GameSession, raw *save.GameState, human int, re
 		for rawIndex, aiIndex := range aiIndexByRaw {
 			session.PlayerSpies[aiIndex] = int(raw.Players[human].Spies[rawIndex])
 		}
+	}
+}
+
+func applyGAMPopulationProfiles(c *engine.ColonyState, raw *save.GameState, owner int) {
+	if c == nil || raw == nil || owner < 0 || owner >= len(raw.Players) {
+		return
+	}
+	ownerTraits := raw.Players[owner].Traits
+	c.OwnerFoodBonus = int(ownerTraits[gamedata.TRAIT_FARMING])
+	c.OwnerIndustryBonus = int(ownerTraits[gamedata.TRAIT_INDUSTRY])
+	c.OwnerResearchBonus = int(ownerTraits[gamedata.TRAIT_SCIENCE])
+	c.OwnerRaceProfileKnown = true
+	c.OwnerRaceSlot, c.OwnerRaceSlotKnown = owner, true
+	for i := range c.PopulationGroups {
+		g := &c.PopulationGroups[i]
+		if g.RaceSlot < 0 || g.RaceSlot >= len(raw.Players) {
+			if food, industry, research, immune, ok := gamedata.SpecialColonistProduction(g.RaceSlot); ok {
+				g.FoodBonus, g.IndustryBonus, g.ResearchBonus = food, industry, research
+				g.Gravity, g.GravityImmune, g.ProfileKnown = gamedata.NORMAL_G, immune, true
+			}
+			continue
+		}
+		traits := raw.Players[g.RaceSlot].Traits
+		g.FoodBonus = int(traits[gamedata.TRAIT_FARMING])
+		g.IndustryBonus = int(traits[gamedata.TRAIT_INDUSTRY])
+		g.ResearchBonus = int(traits[gamedata.TRAIT_SCIENCE])
+		g.Gravity = raceGravityForTraits(traits[gamedata.TRAIT_LOW_G] != 0, traits[gamedata.TRAIT_HIGH_G] != 0)
+		g.Aquatic = traits[gamedata.TRAIT_AQUATIC] != 0
+		g.Cybernetic = traits[gamedata.TRAIT_CYBERNETIC] != 0
+		g.Lithovore = traits[gamedata.TRAIT_LITHOVORE] != 0
+		g.Tolerant = traits[gamedata.TRAIT_TOLERANT] != 0
+		g.Subterranean = traits[gamedata.TRAIT_SUBTERRANEAN] != 0
+		g.GrowthBonusPercent = int(traits[gamedata.TRAIT_POPULATION])
+		g.ProfileKnown = true
 	}
 }
 
@@ -597,7 +640,11 @@ func importedHomeStar(session *GameSession) int {
 
 func importedShip(raw save.Ship, id int, report *GAMImportReport) Ship {
 	design := raw.Design
-	weaponName, weaponAttack, arc := importedWeapon(design, report)
+	mounts := importedWeaponMounts(design, report)
+	weaponName, weaponAttack, arc, weaponAmmo := "無武裝", 0, gamedata.ARC_MONSTER_360, 0
+	if len(mounts) > 0 {
+		weaponName, weaponAttack, arc, weaponAmmo = mounts[0].Name, mounts[0].Attack, mounts[0].Arc, mounts[0].Ammo
+	}
 	armor := "無裝甲"
 	if int(design.Armor) >= 0 && int(design.Armor) < len(ArmorOptions) {
 		armor = ArmorOptions[design.Armor].Name
@@ -606,14 +653,22 @@ func importedShip(raw save.Ship, id int, report *GAMImportReport) Ship {
 	if int(design.Shield) >= 0 && int(design.Shield) < len(ShieldOptions) {
 		shield = ShieldOptions[design.Shield].Name
 	}
-	special := importedSpecial(design, report)
+	specialIDs := importedSpecialIDs(design)
+	specials := importedSpecialMounts(design, specialIDs, report)
+	special := "無"
+	if len(specials) > 0 {
+		special = specials[0].Name
+	}
 	name := design.Name
 	if name == "" {
 		name = fmt.Sprintf("ORIGINAL SHIP %d", id+1)
 	}
 	return Ship{
 		Name: name, Class: importedShipClass(design), Weapon: weaponName,
+		RawType: gamedata.ShipType(design.Type), RawTypeKnown: true,
+		RawMission: raw.Mission, RawMissionKnown: true, ProductionCost: int(design.Cost),
 		Armor: armor, Shield: shield, Special: special, Arc: arc,
+		WeaponAmmo: weaponAmmo, WeaponMounts: mounts, SpecialIDs: specialIDs, Specials: specials,
 		CombatPicture: int(design.Picture), CombatPictureKnown: true,
 		OfficerID: int(raw.Officer), WeaponAttack: weaponAttack,
 		BonusHP: armorComponentValue(design.Armor) + shieldComponentValue(design.Shield),
@@ -651,7 +706,8 @@ func importedShipClass(design save.ShipDesign) string {
 	return "巡防艦"
 }
 
-func importedWeapon(design save.ShipDesign, report *GAMImportReport) (string, int, gamedata.WeaponArc) {
+func importedWeaponMounts(design save.ShipDesign, report *GAMImportReport) []ShipWeaponMount {
+	mounts := make([]ShipWeaponMount, 0, len(design.Weapons))
 	for _, raw := range design.Weapons {
 		if raw.Type < 0 || (raw.MaxCount == 0 && raw.WorkingCount == 0) {
 			continue
@@ -666,12 +722,12 @@ func importedWeapon(design save.ShipDesign, report *GAMImportReport) (string, in
 			report.Notes = append(report.Notes, fmt.Sprintf("艦艇武器槽含未知 raw ID %d；保留名稱但攻擊值設 0。", id))
 		}
 		arc := gamedata.WeaponArc(raw.Arc)
-		if raw.Arc > 15 {
-			arc = gamedata.ARC_MONSTER_360
-		}
-		return name, attack, arc
+		mounts = append(mounts, ShipWeaponMount{
+			RawType: id, Name: name, MaxCount: int(raw.MaxCount), WorkingCount: int(raw.WorkingCount),
+			Arc: arc, RawMods: raw.Mods, Ammo: int(raw.Ammo), Attack: attack,
+		})
 	}
-	return "無武裝", 0, gamedata.ARC_MONSTER_360
+	return mounts
 }
 
 func importedWeaponName(id int) string {
@@ -691,18 +747,30 @@ func importedWeaponName(id int) string {
 	return fmt.Sprintf("原版武器#%d", id)
 }
 
-func importedSpecial(design save.ShipDesign, report *GAMImportReport) string {
+func importedSpecialIDs(design save.ShipDesign) []int {
+	var ids []int
 	for byteIndex, raw := range design.Specials {
 		for bit := 0; bit < 8; bit++ {
 			if raw&(1<<uint(bit)) == 0 {
 				continue
 			}
 			id := byteIndex*8 + bit
-			report.Notes = append(report.Notes, fmt.Sprintf("艦艇 %q 的特殊槽 raw ID %d 已保留為顯示標籤；完整 special bit 消費端仍沿用原版欄位索引。", design.Name, id))
-			return fmt.Sprintf("原版特殊#%d", id)
+			ids = append(ids, id)
 		}
 	}
-	return "無"
+	return ids
+}
+
+func importedSpecialMounts(design save.ShipDesign, ids []int, report *GAMImportReport) []ShipSpecialMount {
+	mounts := make([]ShipSpecialMount, 0, len(ids))
+	for _, id := range ids {
+		name, known := specialNameForRawID(id)
+		if !known {
+			report.Notes = append(report.Notes, fmt.Sprintf("艦艇 %q 的特殊裝置 raw ID %d 未知；保留但不猜效果。", design.Name, id))
+		}
+		mounts = append(mounts, ShipSpecialMount{RawID: id, Name: name})
+	}
+	return mounts
 }
 
 func importedBuildingSet(colony *save.Colony, report *GAMImportReport) map[string]bool {

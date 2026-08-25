@@ -8,8 +8,7 @@ import (
 
 // 領袖每回合真的要付錢——這是這一項修的那個洞。
 //
-// `gamedata.LeaderMaintenanceCost` 寫好了、有測試,但**零個生產端呼叫**:
-// 一局跑 300 回合量覆蓋率是 0.0%。所以 remake 的領袖雇用一次之後永久免費。
+// 回歸保護：領袖維護費已接進 EndTurn 的單次帝國經濟結算；這裡另測純計費 helper。
 func TestLeadersCostMoneyEveryTurn(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
@@ -19,17 +18,6 @@ func TestLeadersCostMoneyEveryTurn(t *testing.T) {
 	if cost <= 0 {
 		t.Fatalf("有領袖就該有維護費,得到 %d", cost)
 	}
-
-	s.Player.BC = 10000
-	before := s.Player.BC
-	paid := s.advanceLeaderUpkeep()
-
-	if paid != cost {
-		t.Errorf("扣款額應為 %d,得到 %d", cost, paid)
-	}
-	if s.Player.BC != before-cost {
-		t.Errorf("國庫應從 %d 扣到 %d,得到 %d", before, before-cost, s.Player.BC)
-	}
 }
 
 // 正對照:一個領袖都沒有就不扣錢。
@@ -38,12 +26,8 @@ func TestLeadersCostMoneyEveryTurn(t *testing.T) {
 func TestNoLeadersNoUpkeep(t *testing.T) {
 	s := NewDemoSession()
 	s.Leaders = nil
-	s.Player.BC = 500
-	if got := s.advanceLeaderUpkeep(); got != 0 {
-		t.Errorf("沒有領袖不該扣錢,扣了 %d", got)
-	}
-	if s.Player.BC != 500 {
-		t.Errorf("國庫不該變動,得到 %d", s.Player.BC)
+	if got := s.LeaderUpkeepTotal(); got != 0 {
+		t.Errorf("沒有領袖不該有維護費,得到 %d", got)
 	}
 }
 
@@ -78,30 +62,6 @@ func TestUpkeepTracksHireCost(t *testing.T) {
 	}
 	if leaderUpkeepCost(high) < leaderUpkeepCost(low) {
 		t.Errorf("雇用費較高者維護費不該較低:%d vs %d", leaderUpkeepCost(high), leaderUpkeepCost(low))
-	}
-}
-
-// 付不出來時只扣到 0,不會把國庫扣成負的、也不會反向加錢。
-//
-// ⚠ 反向加錢不是假想的:session.go 對戰損 bcLoss 有一段註解記著同一個坑
-// ——「BC 為負時若只判斷 bcLoss > BC 會把損失夾成負值,`BC -= bcLoss` 反而變成加錢」。
-func TestUpkeepNeverGoesNegativeOrPaysBack(t *testing.T) {
-	s := NewDemoSession()
-	// 新開一局**沒有領袖**(第 14 項(地表道路)改成原版的雇用制,不再自帶),所以要自己放幾位。
-	s.Leaders = demoLeaders()
-	s.Player.BC = 1
-	s.advanceLeaderUpkeep()
-	if s.Player.BC < 0 {
-		t.Errorf("國庫不該被扣成負的,得到 %d", s.Player.BC)
-	}
-
-	s.Player.BC = -50
-	before := s.Player.BC
-	if got := s.advanceLeaderUpkeep(); got != 0 {
-		t.Errorf("國庫已經是負的就不該再扣,扣了 %d", got)
-	}
-	if s.Player.BC != before {
-		t.Errorf("國庫不該變動(尤其不該變多):%d → %d", before, s.Player.BC)
 	}
 }
 

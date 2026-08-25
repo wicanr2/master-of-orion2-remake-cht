@@ -123,9 +123,9 @@ const (
 )
 
 // shipHasSecurityStations / shipHasAssaultShuttles / shipHasTransporters 是元件比對。
-func shipHasSecurityStations(sh Ship) bool { return sh.Special == securityStationsName }
-func shipHasAssaultShuttles(sh Ship) bool  { return sh.Special == assaultShuttleName }
-func shipHasTransporters(sh Ship) bool     { return sh.Special == transportersName }
+func shipHasSecurityStations(sh Ship) bool { return shipHasSpecial(sh, securityStationsName) }
+func shipHasAssaultShuttles(sh Ship) bool  { return shipHasSpecial(sh, assaultShuttleName) }
+func shipHasTransporters(sh Ship) bool     { return shipHasSpecial(sh, transportersName) }
 
 // ShipMarineComplement 回傳這艘船上的陸戰隊單位數。
 //
@@ -198,22 +198,20 @@ func ShipBoardingPartySize(att CombatShip) int {
 // ShipBoardingAttack 解一次戰術畫面上的登艦,並就地更新雙方的陸戰隊人數與奪船旗標。
 //
 // 戰力用的是**地面戰那一套**(手冊:「fight it out in the same way as ground troops do」),
-// 所以攻方直接吃玩家的陸戰隊戰力(種族特性 + 領袖 + 動力裝甲)。
-//
-// ⚠ 守方用**同一個基礎值**:敵艦(genEnemyFleet)沒有種族/領袖/科技資料,與 CombatShip 上
-// Mods/HardShield 一律留零值是同款既有簡化。守方唯一的差異來自保安站的 +20(手冊逐字)。
-// 這是誠實標記的近似,不是查出來的真值。
+// 攻守方所屬帝國的陸戰隊、艦員 Bo 與艦隊領袖加成都已在 CombatShip 進場時固定，
+// 解算器不再把玩家資料錯套給 AI。
 func (s *GameSession) ShipBoardingAttack(att, def *CombatShip, intent BoardingIntent, roll gamedata.GroundRoll) BoardingResult {
 	sent := ShipBoardingPartySize(*att)
 	if sent <= 0 {
 		return BoardingResult{DefenderSurvived: def.Marines}
 	}
-	force := s.playerMarineForce()
-	atkHits := gamedata.GroundMarineHitsToKill(s.raceHasTrait(gamedata.TRAIT_HIGH_G), s.hasPoweredArmor())
 	res := ResolveBoarding(
-		BoardingParty{Intent: intent, Marines: sent, Strength: force, HitsToKill: atkHits},
-		BoardingDefense{Marines: def.Marines, Strength: force,
-			HitsToKill:       gamedata.GroundMarineHitsToKill(false, false),
+		BoardingParty{Intent: intent, Marines: sent,
+			Strength:   att.MarineStrength + att.BoardingBonus + att.CommandoBonus,
+			HitsToKill: att.MarineHitsToKill},
+		BoardingDefense{Marines: def.Marines,
+			Strength:         def.MarineStrength + def.BoardingBonus + def.CommandoBonus,
+			HitsToKill:       def.MarineHitsToKill,
 			StrengthBonus:    def.SecurityBonus,
 			SecurityStations: def.SecurityStations},
 		roll)

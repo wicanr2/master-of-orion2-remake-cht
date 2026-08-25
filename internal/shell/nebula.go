@@ -160,7 +160,7 @@ func (s *GameSession) CombatShieldsDisabled(starIdx int) bool {
 }
 
 // shipHasHardShield 回傳這艘船是否裝了硬化護盾(元件名比對,與 shipHasAutoRepair 同作法)。
-func shipHasHardShield(sh Ship) bool { return sh.Special == "硬化護盾" }
+func shipHasHardShield(sh Ship) bool { return shipHasSpecial(sh, "硬化護盾") }
 
 // nebulaShield 把護盾減傷套上星雲規則:戰鬥發生在星雲內的星系時,沒有硬化護盾的艦艇護盾歸零。
 //

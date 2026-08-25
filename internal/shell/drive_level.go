@@ -53,7 +53,7 @@ func (s *GameSession) shipCombatSpeed(sh Ship) int {
 		return 0
 	}
 	return gamedata.ShipCombatSpeed(s.driveLevel(), class,
-		sh.Special == augmentedEnginesName,
+		shipHasSpecial(sh, augmentedEnginesName),
 		s.raceHasTrait(gamedata.TRAIT_TRANS_DIMENSIONAL))
 }
 

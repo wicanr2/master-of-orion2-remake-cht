@@ -17,6 +17,10 @@ func deterministicBombardShip() Ship {
 	return Ship{Name: "測試艦", Class: "偵察艦", Weapon: "電漿砲", Armor: "無裝甲", Shield: "無護盾", Special: "無", WeaponAttack: 100}
 }
 
+func deterministicFortyDamageBombShip() Ship {
+	return Ship{Name: "測試炸彈艦", Class: "偵察艦", Weapon: "核彈", Armor: "無裝甲", Shield: "無護盾", Special: "無", WeaponAttack: 39}
+}
+
 // TestBombardColony_PreconditionsChecked 驗證前置條件缺一都會被擋下(Ok=false),且不消耗
 // 任何狀態,比照 TestInvadeColony_PreconditionsChecked 的既有模式。
 func TestBombardColony_PreconditionsChecked(t *testing.T) {
@@ -75,20 +79,10 @@ func TestBombardColony_UnmodeledExpansionStarRejected(t *testing.T) {
 }
 
 // TestBombardColony_ReducesPopulationDeterministically 用保證命中+固定滿傷的艦隊驗證整條
-// 轟炸換算鏈:10 輪 × 1 艦 × 101 傷害 = 1010 總傷害 → hits=gamedata.GroundBombHitsFromDamage
-// (1010)=10。
+// 轟炸換算鏈:原版三外圈 × 1 艦 × 101 傷害 = 303 總傷害 → hits=3。
 //
 // 2026-07-11 起 AI 母星有 ColonyBuildings(海軍陸戰隊營+星基共 2 棟,見 homeworldBuildings),
-// hits 先摧毀建築才扣人口(見 orbital_bombardment.go BombardColony「建築吸收」段落)——本測試
-// 用的是預設 Profile15(BombardmentBuildingBonusHits=0),每棟建築消耗 1 hit:
-//
-//	hits=10 → 摧毀 2 棟建築耗 2 hits → 餘 8 hits 才進人口
-//	popLoss = GroundBombardPopulationLoss(8, LARGE_PLANET) = 8*6/7(整數除法)= 6
-//	Population 8-6=2(未被扣光,建築確實吸收保護了部分人口——這正是本子系統要驗證的行為)
-//	RemainingHits(建築+人口都扣完後的餘數)= 8-6 = 2
-//
-// 舊版(無 ColonyBuildings 資料模型時)hits=10 直接全數進人口,popLoss=10*6/7=8=扣光,是本測試
-// 修改前的斷言;現在因為建築先吸收了 2 hits,人口損傷從 8 降到 6,不再全滅。
+// runtime 303/40 得 7 hits，再由 sub_DCEBD 候選池隨機分配到一般建築、駐軍與人口。
 func TestBombardColony_ReducesPopulationDeterministically(t *testing.T) {
 	s, starIdx := newFleetAtAIHomeSession(t)
 	s.RaceCombatPct = 0
@@ -112,38 +106,28 @@ func TestBombardColony_ReducesPopulationDeterministically(t *testing.T) {
 		t.Fatalf("前置條件應齊備,got Reason=%q", res.Reason)
 	}
 
-	const wantTotalDamage = 10 * 101 // 10 輪 × 1 艦 × 每發固定 101 傷害
+	const wantTotalDamage = 3 * 101
 	if res.TotalDamage != wantTotalDamage {
 		t.Fatalf("TotalDamage 應為固定值 %d(必中+滿傷,無 rng 不確定性),got %d", wantTotalDamage, res.TotalDamage)
 	}
-	wantHits := gamedata.GroundBombHitsFromDamage(wantTotalDamage)
-	if wantHits != 10 {
-		t.Fatalf("測試前提錯誤:預期 hits=10,got %d", wantHits)
+	wantHits := gamedata.StrategicBombardmentHitsFromDamage(wantTotalDamage)
+	if wantHits != 7 {
+		t.Fatalf("測試前提錯誤:預期 runtime hits=7,got %d", wantHits)
 	}
 	if res.Hits != wantHits {
 		t.Fatalf("Hits 應等於 GroundBombHitsFromDamage(TotalDamage)=%d,got %d", wantHits, res.Hits)
 	}
-	const wantBuildingsDestroyed = 2 // 2 棟建築各耗 1 hit(Profile15,BombardmentBuildingBonusHits=0)
-	if res.BuildingsDestroyed != wantBuildingsDestroyed {
-		t.Fatalf("BuildingsDestroyed 應為 %d(hits 足夠摧毀全部 2 棟建築),got %d", wantBuildingsDestroyed, res.BuildingsDestroyed)
+	if res.BuildingsDestroyed > 1 {
+		t.Fatalf("星基 raw 40 不在 sub_DCEBD 候選，兩棟中最多只能摧毀海軍陸戰隊營，got %d", res.BuildingsDestroyed)
 	}
-	if res.BuildingsRemaining != 0 {
-		t.Fatalf("BuildingsRemaining 應為 0(2 棟建築皆已摧毀),got %d", res.BuildingsRemaining)
+	if !s.AIPlayers[aiIdx].ColonyBuildings[colonyIdx]["星基"] {
+		t.Fatal("sub_DCEBD 排除 raw 40，星基不應由殖民地內部傷亡 helper 摧毀")
 	}
-	// 建築吸收後餘 8 hits → GroundBombardPopulationLoss(8, MEDIUM_PLANET)=8*6/6=8(Medium 是係數基準)
-	const wantPopulationLost = 8 // (2026-08-06:行星大小由 LARGE 校正為 MEDIUM——archive.org 原版實測 Sol III = Medium Terran,見 docs/tech/oracle-comparison-20260712.md;下列預期依同一條手冊公式在新大小下重算,非放寬斷言)
-	if res.PopulationLost != wantPopulationLost {
-		t.Fatalf("PopulationLost 應為 %d(建築先吸收 2 hits,餘 8 hits 才扣人口),got %d", wantPopulationLost, res.PopulationLost)
+	if got := s.AIPlayers[aiIdx].Colonies[colonyIdx].Population; got != startPop-res.PopulationLost {
+		t.Fatalf("人口寫回與結果不一致：got %d want %d", got, startPop-res.PopulationLost)
 	}
-	const wantRemainingHits = 0 // Medium:loss==hits,8 hits 全數化為人口損傷,無剩餘
-	if res.RemainingHits != wantRemainingHits {
-		t.Fatalf("RemainingHits 應為 %d,got %d", wantRemainingHits, res.RemainingHits)
-	}
-	if got := s.AIPlayers[aiIdx].Colonies[colonyIdx].Population; got != startPop-wantPopulationLost {
-		t.Fatalf("殖民地人口應扣減到 %d(建築吸收保護,未被扣光),got %d", startPop-wantPopulationLost, got)
-	}
-	if got := len(s.AIPlayers[aiIdx].ColonyBuildings[colonyIdx]); got != 0 {
-		t.Fatalf("AI 殖民地建築 map 應清空(2 棟皆已摧毀),got %d 棟", got)
+	if res.PopulationLost+res.MarinesLost+res.TanksLost+res.BuildingsDestroyed == 0 {
+		t.Fatalf("7 hits 應至少造成一類傷亡，got %+v", res)
 	}
 }
 
@@ -151,8 +135,8 @@ func TestBombardColony_ReducesPopulationDeterministically(t *testing.T) {
 // Population 也只會夾在 0,不會扣成負數。
 func TestBombardColony_PopulationNeverNegative(t *testing.T) {
 	s, starIdx := newFleetAtAIHomeSession(t)
-	// 3 艘保證滿傷艦艇,傷害遠超過母星人口(8)所需的 hits。
-	s.Fleet().Ships = []Ship{deterministicBombardShip(), deterministicBombardShip(), deterministicBombardShip()}
+	// 4 艘保證滿傷艦艇：三外圈共 12 hits，足以越過 2 棟建築與 8 人口。
+	s.Fleet().Ships = []Ship{deterministicBombardShip(), deterministicBombardShip(), deterministicBombardShip(), deterministicBombardShip()}
 
 	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
 	if !ok {
@@ -218,18 +202,30 @@ func TestFleetBombardDamage_NoShipsZeroDamage(t *testing.T) {
 	}
 }
 
+func TestFleetBombardDamage_StopsAfterOriginalThirtyThousandThreshold(t *testing.T) {
+	s := NewDemoSession()
+	s.RaceCombatPct = 0
+	s.RuleProfile = gamedata.RuleProfile{BombardmentBombAttacks: 400}
+	sh := deterministicBombardShip()
+	sh.Weapon = "核彈"
+	s.Fleet().Ships = []Ship{sh}
+	got := s.fleetBombardDamage(rand.New(rand.NewSource(1)), 0)
+	// 每發 101；原版在一次攻擊寫回後才比較 >30000，所以第一個越界值為 30098。
+	if got != 30098 {
+		t.Fatalf("30,000 門檻後應立即停止，got %d want 30098", got)
+	}
+}
+
 // --- 2026-07-11:AI 殖民地建築資料模型 + 軌道防禦建築吸收轟炸 新增測試 ---
 
-// TestBombardColony_BuildingAbsorbsBeforePopulation 驗證 hits 不足以打完建築時,建築先吸收、
-// 完全不扣人口(demonstrate「軌道防禦」保護人口的核心行為)。1 輪齊射(自訂 RuleProfile 只跑
-// 1 輪)、1 艘保證滿傷艦(101 傷害)→ TotalDamage=101 → hits=1。AI 母星有 2 棟建築(海軍陸戰隊
-// 營+星基),Profile15 語意(BombardmentBuildingBonusHits=0)每棟耗 1 hit,故這 1 hit 全部
-// 用來摧毀 1 棟建築,沒有餘數進人口。
+// TestBombardColony_BuildingAbsorbsBeforePopulation 的歷史名稱保留供測試定位；現行契約是
+// 固定種子下唯一可摧毀的一般建築被候選池抽中。40 傷害 → hits=1；星基 raw 40 不進池。
 func TestBombardColony_BuildingAbsorbsBeforePopulation(t *testing.T) {
 	s, starIdx := newFleetAtAIHomeSession(t)
 	s.RaceCombatPct = 0
-	s.RuleProfile = gamedata.RuleProfile{BombardmentVolleys: 1, BombardmentBuildingBonusHits: 0}
-	s.Fleet().Ships = []Ship{deterministicBombardShip()}
+	s.RuleProfile = gamedata.RuleProfile{BombardmentBombAttacks: 1, BombardmentBuildingBonusHits: 0}
+	sh := deterministicFortyDamageBombShip()
+	s.Fleet().Ships = []Ship{sh}
 
 	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
 	if !ok {
@@ -242,7 +238,7 @@ func TestBombardColony_BuildingAbsorbsBeforePopulation(t *testing.T) {
 		t.Fatalf("前置條件應齊備,got Reason=%q", res.Reason)
 	}
 	if res.Hits != 1 {
-		t.Fatalf("測試前提錯誤:預期 hits=1(101 傷害/100),got %d", res.Hits)
+		t.Fatalf("測試前提錯誤:預期 hits=1(40 raw / 40),got %d", res.Hits)
 	}
 	if res.BuildingsDestroyed != 1 {
 		t.Fatalf("BuildingsDestroyed 應為 1(1 hit 恰好摧毀 1 棟),got %d", res.BuildingsDestroyed)
@@ -258,15 +254,14 @@ func TestBombardColony_BuildingAbsorbsBeforePopulation(t *testing.T) {
 	}
 }
 
-// TestBombardColony_RemainingHitsAfterBuildingsGoToPopulation 驗證 hits 打完全部建築後,
-// 剩餘的 hits 才進人口損傷(順序:建築先、人口後)。4 輪齊射 × 1 艦 × 101 傷害 = 404 傷害 →
-// hits=4。2 棟建築各耗 1 hit(Profile15 語意)→ 摧毀 2 棟耗 2 hits,餘 2 hits → popLoss=
-// GroundBombardPopulationLoss(2, LARGE_PLANET)=2*6/7(整數除法)=1。
+// TestBombardColony_StrategicPoolWritesMultipleCasualtyKinds 驗證四點傷害交給隨機候選池，
+// 而非舊版「建築全部吸收完才扣人口」的錯誤兩階段模型。
 func TestBombardColony_RemainingHitsAfterBuildingsGoToPopulation(t *testing.T) {
 	s, starIdx := newFleetAtAIHomeSession(t)
 	s.RaceCombatPct = 0
-	s.RuleProfile = gamedata.RuleProfile{BombardmentVolleys: 4, BombardmentBuildingBonusHits: 0}
-	s.Fleet().Ships = []Ship{deterministicBombardShip()}
+	s.RuleProfile = gamedata.RuleProfile{BombardmentBombAttacks: 4, BombardmentBuildingBonusHits: 0}
+	sh := deterministicFortyDamageBombShip()
+	s.Fleet().Ships = []Ship{sh}
 
 	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
 	if !ok {
@@ -278,32 +273,61 @@ func TestBombardColony_RemainingHitsAfterBuildingsGoToPopulation(t *testing.T) {
 		t.Fatalf("前置條件應齊備,got Reason=%q", res.Reason)
 	}
 	if res.Hits != 4 {
-		t.Fatalf("測試前提錯誤:預期 hits=4(404 傷害/100),got %d", res.Hits)
+		t.Fatalf("測試前提錯誤:預期 hits=4(160 raw / 40),got %d", res.Hits)
 	}
-	if res.BuildingsDestroyed != 2 {
-		t.Fatalf("BuildingsDestroyed 應為 2(4 hits 足夠摧毀全部 2 棟),got %d", res.BuildingsDestroyed)
+	if res.BuildingsDestroyed > 1 {
+		t.Fatalf("兩棟中只有海軍陸戰隊營屬 sub_DCEBD 候選，got %d", res.BuildingsDestroyed)
 	}
-	const wantPopLoss = 2 // 餘 2 hits → GroundBombardPopulationLoss(2, MEDIUM_PLANET) = 2*6/6 = 2
-	if res.PopulationLost != wantPopLoss {
-		t.Fatalf("建築摧毀完後餘 hits 應扣人口 %d,got %d", wantPopLoss, res.PopulationLost)
+	if got := s.AIPlayers[aiIdx].Colonies[colonyIdx].Population; got != 8-res.PopulationLost {
+		t.Fatalf("殖民地人口寫回不一致：got %d want %d", got, 8-res.PopulationLost)
 	}
-	if got := s.AIPlayers[aiIdx].Colonies[colonyIdx].Population; got != 8-wantPopLoss {
-		t.Fatalf("殖民地人口應為 %d,got %d", 8-wantPopLoss, got)
+	if res.PopulationLost == 0 && res.MarinesLost == 0 && res.TanksLost == 0 && res.BuildingsDestroyed == 0 {
+		t.Fatalf("四點傷害不應完全沒有候選損失，got %+v", res)
 	}
 }
 
-// TestBombardColony_BombardmentBuildingBonusHits_VersionDifference 驗證 #7
-// (RuleProfile.BombardmentBuildingBonusHits)真的接線影響「同一批 hits 能摧毀幾棟建築」:
-// 1.3(bonus=1,每棟耗 2 hits)vs 1.5(bonus=0,每棟耗 1 hit)在完全相同的 hits 輸入下,摧毀
-// 的建築數不同——3 輪齊射 × 1 艦 × 101 傷害 = 303 傷害 → hits=3(兩個 profile 的
-// BombardmentVolleys 刻意設成相同值,只讓 BombardmentBuildingBonusHits 這個變數不同,分離
-// 出單一差異來源)。
+// TestBombardColony_PlanetHitsRequiredUsesOriginalColonyRecordFormula 驗證 shell 垂直接線：
+// 人口 8 + 士兵 4 + 戰車 2 + 海軍陸戰隊營 40；星基 raw ID 40 是獨立戰鬥者，不重複計入。
+func TestBombardColony_PlanetHitsRequiredUsesOriginalColonyRecordFormula(t *testing.T) {
+	s, starIdx := newFleetAtAIHomeSession(t)
+	s.RuleProfile = gamedata.RuleProfile{BombardmentBombAttacks: 0}
+	s.Fleet().Ships = []Ship{deterministicFortyDamageBombShip()}
+	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
+	if !ok {
+		t.Fatal("應找得到 AI 母星的殖民地模型")
+	}
+	s.AIPlayers[aiIdx].ColonyMarines[colonyIdx] = 4
+	s.AIPlayers[aiIdx].ColonyTanks[colonyIdx] = 2
+
+	res := s.BombardColony(starIdx)
+	if !res.Ok {
+		t.Fatalf("前置條件應齊備，got Reason=%q", res.Reason)
+	}
+	if res.TotalDamage != 0 || res.Hits != 0 {
+		t.Fatalf("攻擊當量 0 不應改變殖民地，damage=%d hits=%d", res.TotalDamage, res.Hits)
+	}
+	if res.PlanetHitsRequired != 54 {
+		t.Fatalf("PlanetHitsRequired 應為 8+4+2+40=54，got %d", res.PlanetHitsRequired)
+	}
+}
+
+// TestBombardColony_BombardmentBuildingBonusHits_VersionDifference 驗證 #7 真的接進候選成本：
+// 唯一候選建築在 1.5 花 1 hit、1.3 花 2 hits；同為 3 hits 時由 RemainingHits 分辨。
 func TestBombardColony_BombardmentBuildingBonusHits_VersionDifference(t *testing.T) {
 	build := func(bonus int) *GroundBombardResult {
 		s, starIdx := newFleetAtAIHomeSession(t)
 		s.RaceCombatPct = 0
-		s.RuleProfile = gamedata.RuleProfile{BombardmentVolleys: 3, BombardmentBuildingBonusHits: bonus}
-		s.Fleet().Ships = []Ship{deterministicBombardShip()}
+		s.RuleProfile = gamedata.RuleProfile{BombardmentBombAttacks: 3, BombardmentBuildingBonusHits: bonus}
+		aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
+		if !ok {
+			t.Fatal("應找得到 AI 母星")
+		}
+		s.AIPlayers[aiIdx].Colonies[colonyIdx].Population = 0
+		s.AIPlayers[aiIdx].ColonyMarines[colonyIdx] = 0
+		s.AIPlayers[aiIdx].ColonyTanks[colonyIdx] = 0
+		s.AIPlayers[aiIdx].ColonyBuildings[colonyIdx] = map[string]bool{"海軍陸戰隊營": true}
+		sh := deterministicFortyDamageBombShip()
+		s.Fleet().Ships = []Ship{sh}
 		res := s.BombardColony(starIdx)
 		return &res
 	}
@@ -311,24 +335,23 @@ func TestBombardColony_BombardmentBuildingBonusHits_VersionDifference(t *testing
 	res13 := build(1) // 1.3:每棟耗 2 hits(GroundPlanetHitsPerBuilding=1 + bonus 1)
 
 	if res15.Hits != 3 || res13.Hits != 3 {
-		t.Fatalf("測試前提錯誤:兩者 hits 應皆為 3(BombardmentVolleys 相同、只有 bonus 不同),got 1.5=%d 1.3=%d", res15.Hits, res13.Hits)
+		t.Fatalf("測試前提錯誤:兩者 hits 應皆為 3(BombardmentBombAttacks 相同、只有 bonus 不同),got 1.5=%d 1.3=%d", res15.Hits, res13.Hits)
 	}
-	if res15.BuildingsDestroyed != 2 {
-		t.Fatalf("1.5(bonus=0)hits=3 應摧毀 2 棟建築(3/1=3,但只有 2 棟可摧毀),got %d", res15.BuildingsDestroyed)
+	if res15.BuildingsDestroyed != 1 {
+		t.Fatalf("1.5(bonus=0)應以 1 hit 摧毀唯一候選建築，got %d", res15.BuildingsDestroyed)
 	}
 	if res13.BuildingsDestroyed != 1 {
-		t.Fatalf("1.3(bonus=1)hits=3 每棟耗 2 hits,只夠摧毀 1 棟(3/2=1,餘 1 hit 不夠摧毀第 2 棟),got %d", res13.BuildingsDestroyed)
+		t.Fatalf("1.3(bonus=1)有 3 hits，應以 2 hits 摧毀唯一候選建築，got %d", res13.BuildingsDestroyed)
 	}
-	if res15.BuildingsDestroyed == res13.BuildingsDestroyed {
-		t.Fatalf("同一批 hits(3)在 1.3/1.5 下應摧毀不同棟數的建築,got 皆為 %d(BombardmentBuildingBonusHits 未真正接線?)", res15.BuildingsDestroyed)
+	if res15.RemainingHits != 2 || res13.RemainingHits != 1 {
+		t.Fatalf("版本建築成本應反映在剩餘 hits：1.5=%d 1.3=%d", res15.RemainingHits, res13.RemainingHits)
 	}
 }
 
 // TestBombardColony_NilColonyBuildingsRegressionSafe 驗證 ColonyBuildings[colonyIdx]==nil
 // (模擬加入本欄位前的舊存檔解碼結果)時,行為與「加建築吸收機制之前」逐位元一致:hits 全部
-// 直接進人口損傷,不會 panic、不會誤判成有建築可摧毀。10 輪 × 1 艦 × 101 傷害 = 1010 →
-// hits=10 → popLoss=GroundBombardPopulationLoss(10, LARGE_PLANET)=10*6/7(整數除法)=8=扣光
-// (與加本子系統前的 TestBombardColony_ReducesPopulationDeterministically 舊斷言完全一致)。
+// 直接進人口損傷，不會 panic、不會誤判成有建築可摧毀。固定三外圈 × 101 傷害 = 303，
+// runtime 303/40 得 7 hits。
 func TestBombardColony_NilColonyBuildingsRegressionSafe(t *testing.T) {
 	s, starIdx := newFleetAtAIHomeSession(t)
 	s.RaceCombatPct = 0
@@ -339,6 +362,8 @@ func TestBombardColony_NilColonyBuildingsRegressionSafe(t *testing.T) {
 		t.Fatal("應找得到 AI 母星的殖民地模型")
 	}
 	s.AIPlayers[aiIdx].ColonyBuildings[colonyIdx] = nil // 模擬舊存檔沒有這個欄位的解碼結果
+	s.AIPlayers[aiIdx].ColonyMarines[colonyIdx] = 0
+	s.AIPlayers[aiIdx].ColonyTanks[colonyIdx] = 0
 
 	res := s.BombardColony(starIdx)
 	if !res.Ok {
@@ -350,17 +375,17 @@ func TestBombardColony_NilColonyBuildingsRegressionSafe(t *testing.T) {
 	if res.BuildingsRemaining != 0 {
 		t.Fatalf("nil 建築 map 的 BuildingsRemaining 應為 0,got %d", res.BuildingsRemaining)
 	}
-	if res.PopulationLost != 8 {
-		t.Fatalf("nil 建築時 hits 應全部進人口(回歸行為與加此機制前一致),PopulationLost 應為 8,got %d", res.PopulationLost)
+	if res.PopulationLost != 7 {
+		t.Fatalf("nil 建築時 runtime /40 產生的 7 hits 應全部進人口,got %d", res.PopulationLost)
 	}
-	if got := s.AIPlayers[aiIdx].Colonies[colonyIdx].Population; got != 0 {
-		t.Fatalf("人口應扣光到 0,got %d", got)
+	if got := s.AIPlayers[aiIdx].Colonies[colonyIdx].Population; got != 1 {
+		t.Fatalf("人口應由 8 降為 1,got %d", got)
 	}
 }
 
 // --- 2026-07-11:防禦方反擊(軌道基地/飛彈基地打玩家艦隊)新增測試 ---
 //
-// 這幾個測試刻意用 RuleProfile{BombardmentVolleys: 0} 讓 fleetBombardDamage 跑 0 輪
+// 這幾個測試把艦載武器改成炸彈，並令 BombardmentBombAttacks=0，使攻方傷害為零
 // (TotalDamage=0 → hits=0),確保「建築吸收」那段不會消耗任何 hits、不摧毀任何建築——
 // 這樣才能直接掌控 aiPlayer.ColonyBuildings[colonyIdx] 的內容,乾淨測試反擊本身的行為,
 // 不必和上面「建築吸收」的隨機組合糾纏在一起。
@@ -382,7 +407,10 @@ func TestBombardColony_NilColonyBuildingsRegressionSafe(t *testing.T) {
 func retaliationTestSetup(t *testing.T, buildings map[string]bool, ships []Ship) (*GameSession, int, int, int) {
 	t.Helper()
 	s, starIdx := newFleetAtAIHomeSession(t)
-	s.RuleProfile = gamedata.RuleProfile{BombardmentVolleys: 0, BombardmentBuildingBonusHits: 0}
+	s.RuleProfile = gamedata.RuleProfile{BombardmentBombAttacks: 0, BombardmentBuildingBonusHits: 0}
+	for i := range ships {
+		ships[i].Weapon = "核彈"
+	}
 	s.Fleet().Ships = ships
 	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
 	if !ok {
@@ -505,7 +533,7 @@ func TestBombardColony_RetaliationClearsFleetCargoWhenFleetWiped(t *testing.T) {
 // 行星護盾接線:三面護盾各自把**每一次攻擊**扣掉一個定值(手冊 −5 / −10 / −20)。
 //
 // 這裡沿用 deterministicBombardShip 那組必中滿傷的參數,所以總傷害是手算得出來的:
-// 10 輪 × 1 艦 × (101 − 減傷)。用總傷害驗而不是用 hits,是因為 hits 經過除以 100
+// 原版三外圈 × 1 艦 × (101 − 減傷)。用總傷害驗而不是只驗換算後的 hits，
 // 會把差異吃掉——那正好也是「接在總傷害而不是逐發」會犯的錯。
 func TestBombardColony_PlanetaryShieldsReduceDamagePerAttack(t *testing.T) {
 	for _, tc := range []struct {
@@ -529,15 +557,15 @@ func TestBombardColony_PlanetaryShieldsReduceDamagePerAttack(t *testing.T) {
 		if !res.Ok {
 			t.Fatalf("%s:前置條件應齊備,got Reason=%q", tc.building, res.Reason)
 		}
-		want := s.RuleProfile.BombardmentVolleys * (101 - tc.reduction)
+		want := 3 * (101 - tc.reduction)
 		if res.TotalDamage != want {
 			t.Errorf("%s:總傷害應為 %d 輪 × (101 − %d) = %d,得到 %d",
-				tc.building, s.RuleProfile.BombardmentVolleys, tc.reduction, want, res.TotalDamage)
+				tc.building, 3, tc.reduction, want, res.TotalDamage)
 		}
 	}
 }
 
-// 正對照:沒有護盾時仍是原來的 10 × 101。
+// 正對照:沒有護盾時是原版三外圈 × 101。
 // 少了這條,「護盾一律扣光」也會讓上面通過。
 func TestBombardColony_NoShieldKeepsFullDamage(t *testing.T) {
 	s, starIdx := newFleetAtAIHomeSession(t)
@@ -547,7 +575,7 @@ func TestBombardColony_NoShieldKeepsFullDamage(t *testing.T) {
 	if !res.Ok {
 		t.Fatalf("前置條件應齊備,got Reason=%q", res.Reason)
 	}
-	if want := s.RuleProfile.BombardmentVolleys * 101; res.TotalDamage != want {
+	if want := 3 * 101; res.TotalDamage != want {
 		t.Errorf("無護盾總傷害應為 %d,得到 %d", want, res.TotalDamage)
 	}
 }

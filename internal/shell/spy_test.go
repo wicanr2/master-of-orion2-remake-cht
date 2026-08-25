@@ -472,18 +472,30 @@ func TestSpyStealAttempt_NoOptionsIsHarmless(t *testing.T) {
 	}
 }
 
-// --- advanceEspionage(GameSession 整合:訓練 → 結算 → 維護費) ---
+// --- GameSession 整合：間諜維護費在帝國經濟階段一次結算 ---
 
-// TestAdvanceEspionage_Isolated 直接呼叫 advanceEspionage(不跑完整 EndTurn 經濟結算),隔離
-// 驗證維護費扣款金額精確等於 spyCount * spyMaintenancePerSpyBC。
+// TestAdvanceEspionage_Isolated 驗證派駐總數的分項計算，並確認 advanceEspionage 不會再
+// 重複扣款；實際扣款由 EndTurn 的 RunEmpireTurn 完成。
 func TestAdvanceEspionage_Isolated(t *testing.T) {
 	s := NewDemoSession()
 	s.PlayerSpies = []int{2}
 	before := s.Player.BC
+	if got, want := s.totalSpyMaintenance(), 2*spyMaintenancePerSpyBC; got != want {
+		t.Fatalf("間諜維護費 = %d,預期 %d", got, want)
+	}
 	s.advanceEspionage()
-	wantMaintenance := 2 * spyMaintenancePerSpyBC
-	if s.Player.BC != before-wantMaintenance {
-		t.Errorf("扣款後 BC = %d,預期 %d(維護費 %d)", s.Player.BC, before-wantMaintenance, wantMaintenance)
+	if s.Player.BC != before {
+		t.Errorf("間諜任務階段不應再次扣維護費，BC = %d,預期 %d", s.Player.BC, before)
+	}
+}
+
+func TestEndTurnChargesSpyMaintenanceInEmpireOutput(t *testing.T) {
+	s := NewDemoSession()
+	s.PlayerSpies = []int{2}
+	s.SetSpyMission(0, SpyMissionHide)
+	s.EndTurn()
+	if got, want := s.LastPlayerOutput.SpyMaintenanceCost, 2*spyMaintenancePerSpyBC; got != want {
+		t.Errorf("帝國結算的間諜維護費 = %d,預期 %d", got, want)
 	}
 }
 

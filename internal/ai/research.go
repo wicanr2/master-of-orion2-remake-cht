@@ -7,13 +7,12 @@
 // ⚠ **這段話原本寫的是「MOO2 官方手冊與社群逆向都未公開 AI 選研究主題的實際演算法」——
 // 那句 2026-08-08(第 54/55 項)之後不再成立**,已改寫成上面這樣。實際情況是:
 //
-//   - 原版**有**一個估值函式 `Calc_Tech_Value_` @ 0xFC845,規格已抄在
-//     `docs/re/calc-tech-value.md`(985 行,含完整常數表)。
+//   - 原版**有**一個估值函式 `Calc_Tech_Value_` @ 0xFC845，現行證據見
+//     `docs/re/starting-tech-application-audit-20260825.md`。
 //   - 但它估的是**科技應用項**(212 個 tech-item)不是**主題**(83 個),
 //     兩者不是同一個東西——它回答的是「這個科技對這個玩家值多少」,
 //     被科技外交/交換與 `Choose_Tech_Application_` 共用。
-//   - 而且它的核心幾段仍不可照抄:唯一把「主題等級」併進結果的那幾處(階段 I/J/K)
-//     全部乘在 `word_1AB1xx` 這組全域上,而那組的語意還沒解出來。
+//   - 人類開局與共用後段已閉合；AI 還差 personality／objective／theme、種族與政府分支。
 //
 // 所以「照抄原版」目前**只在應用項的抉擇那一步做得到**——見
 // `internal/shell/ai_research.go` 的 `aiPickApplication`,它用的是

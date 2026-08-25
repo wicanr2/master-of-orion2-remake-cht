@@ -1,13 +1,16 @@
 package engine
 
 import (
+	"bytes"
+	"encoding/json"
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
 func TestRunEmpireTurn(t *testing.T) {
-	// 兩個殖民地,研究總點推進到剛好完成 topic(1)(成本 400)。
+	// 兩個殖民地產出 400，既有進度 1，累積 401 形成最低 1% 突破率；
+	// RunEmpireTurn 的固定測試擲骰為 1，因此完成。
 	colonies := []ColonyState{
 		{Population: 10, PopMax: 20, Farmers: 4, Workers: 4, Scientists: 2,
 			FoodPerFarmer: 3, IndustryPerWorker: 5, ResearchPerScientist: 100,
@@ -16,7 +19,7 @@ func TestRunEmpireTurn(t *testing.T) {
 			FoodPerFarmer: 3, IndustryPerWorker: 5, ResearchPerScientist: 100,
 			PlanetSize: gamedata.SMALL_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT}, // 研究 200
 	}
-	ps := PlayerState{ResearchTopic: gamedata.ResearchTopic(1), ResearchProgress: 0} // cost 400
+	ps := PlayerState{ResearchTopic: gamedata.ResearchTopic(1), ResearchProgress: 1} // cost 400
 	out := RunEmpireTurn(ps, colonies)
 
 	if len(out.Colonies) != 2 {
@@ -25,7 +28,7 @@ func TestRunEmpireTurn(t *testing.T) {
 	if out.TotalResearch != 400 { // 200+200
 		t.Errorf("總研究 = %d,預期 400", out.TotalResearch)
 	}
-	if !out.ResearchDone { // 400>=400 完成
+	if !out.ResearchDone {
 		t.Error("研究應完成")
 	}
 	if !out.Player.CompletedTopics[gamedata.ResearchTopic(1)] {
@@ -55,7 +58,7 @@ func TestRunEmpireTurnResearchNotComplete(t *testing.T) {
 
 func TestRunEmpireTurnMultiTurnProgression(t *testing.T) {
 	// 多回合推進:同一組殖民地連跑數回合,把 output.Player 回饋為下回合輸入,
-	// 驗證研究進度跨回合累積,並在累積達成本(400)的那回合完成。
+	// 驗證研究進度跨回合累積，並在嚴格超過成本後依固定最低擲骰突破。
 	colonies := []ColonyState{
 		{Population: 6, PopMax: 20, Scientists: 3, ResearchPerScientist: 50,
 			PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT}, // 每回合研究 150
@@ -71,15 +74,15 @@ func TestRunEmpireTurnMultiTurnProgression(t *testing.T) {
 			break
 		}
 	}
-	// 回合1:150、回合2:300、回合3:450≥400 → 第 3 回合完成,溢出保留 50
+	// 回合1:150、回合2:300、回合3:450>400 → 12% 突破率，固定 roll=1 成功並清零。
 	if completedTurn != 3 {
 		t.Errorf("研究應於第 3 回合完成,實際第 %d 回合", completedTurn)
 	}
 	if !ps.CompletedTopics[gamedata.ResearchTopic(1)] {
 		t.Error("完成後 topic 1 應標記")
 	}
-	if ps.ResearchProgress != 50 { // 450-400 溢出
-		t.Errorf("完成後溢出進度 = %d,預期 50", ps.ResearchProgress)
+	if ps.ResearchProgress != 0 {
+		t.Errorf("突破後研究進度 = %d,預期清零", ps.ResearchProgress)
 	}
 }
 
@@ -102,6 +105,18 @@ func TestRunEmpireTurnBC(t *testing.T) {
 	}
 	if out.Player.BC != 112 { // 100 + 12
 		t.Errorf("國庫 = %d,預期 112", out.Player.BC)
+	}
+}
+
+func TestRunEmpireTurnSpyAndOfficerMaintenance(t *testing.T) {
+	ps := PlayerState{BC: 50, SpyMaintenance: 2, OfficerMaintenance: 3}
+	out := RunEmpireTurn(ps, nil)
+	if out.SpyMaintenanceCost != 2 || out.OfficerMaintenanceCost != 3 {
+		t.Fatalf("維護費分項 = spy %d / officer %d，預期 2 / 3",
+			out.SpyMaintenanceCost, out.OfficerMaintenanceCost)
+	}
+	if out.NetBC != -5 || out.Player.BC != 45 {
+		t.Fatalf("維護費應在單次帝國結算扣除：NetBC=%d BC=%d，預期 -5 / 45", out.NetBC, out.Player.BC)
 	}
 }
 
@@ -442,5 +457,44 @@ func TestRunEmpireTurnFoodReplicatorHalfBCCarries(t *testing.T) {
 	second := RunEmpireTurn(first.Player, []ColonyState{cs})
 	if second.FoodReplicatorCostHalfBC != 1 || second.FoodReplicatorCost != 1 || second.Player.FoodReplicatorBCHalfRemainder != 0 {
 		t.Fatalf("第二回合應合併成 1 BC,got %+v", second)
+	}
+}
+
+func TestRunEmpireTurnDivertedColonyResearchStaysInOutputButNotEmpireTotal(t *testing.T) {
+	base := ColonyState{
+		Population: 1, Scientists: 1, ResearchPerScientist: 4,
+		PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT,
+	}
+	diverted := base
+	diverted.ResearchDiverted = true
+	ps := PlayerState{ResearchTopic: gamedata.ResearchTopic(1)}
+
+	out := RunEmpireTurnWithResearchRoller(ps, []ColonyState{base, diverted}, nil)
+	if out.Colonies[0].Research <= 0 || out.Colonies[1].Research != out.Colonies[0].Research {
+		t.Fatalf("兩座殖民地輸出應保留相同 RP：%+v", out.Colonies)
+	}
+	if got, want := out.TotalResearch, out.Colonies[0].Research; got != want {
+		t.Fatalf("帝國一般研究只應收到未轉用殖民地 RP：got %d want %d", got, want)
+	}
+	if out.Player.ResearchProgress != out.TotalResearch {
+		t.Fatalf("研究進度應只增加一般研究總量：progress=%d total=%d", out.Player.ResearchProgress, out.TotalResearch)
+	}
+}
+
+func TestColonyResearchDivertedIsEphemeralAcrossJSON(t *testing.T) {
+	want := ColonyState{ResearchDiverted: true}
+	b, err := json.Marshal(want)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(b, []byte("ResearchDiverted")) || bytes.Contains(b, []byte("researchDiverted")) {
+		t.Fatalf("暫態事件輸入不得寫入存檔／多人快照：%s", b)
+	}
+	var got ColonyState
+	if err := json.Unmarshal(b, &got); err != nil {
+		t.Fatal(err)
+	}
+	if got.ResearchDiverted {
+		t.Fatal("載入後應由 PersistentEvents 重建，不得沿用 stale 暫態旗標")
 	}
 }

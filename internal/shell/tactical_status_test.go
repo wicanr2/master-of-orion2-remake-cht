@@ -114,7 +114,7 @@ func TestStatusEffectsAreRecomputedNotAccumulated(t *testing.T) {
 	}
 }
 
-// 多艘船的牽引光束可累加——remake 一艘船只有一個 Special 槽,所以只能靠數量。
+// 多艘船的牽引光束可累加；單艦同名特殊裝置由設計層去重。
 func TestMultipleShipsStackTractorBeams(t *testing.T) {
 	var mine []CombatShip
 	for i := 0; i < 6; i++ {

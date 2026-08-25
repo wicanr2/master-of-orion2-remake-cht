@@ -103,8 +103,8 @@ func TestSystemBodyCountLabel(t *testing.T) {
 }
 
 func TestHistoryLabelsEnglish(t *testing.T) {
-	if got := historyMetricLabel(i18n.English, shell.HistoryBC); got != "Treasury" {
-		t.Fatalf("BC 指標 = %q", got)
+	if got := historyMetricLabel(i18n.English, shell.HistoryTechnology); got != "Technology" {
+		t.Fatalf("科技指標 = %q", got)
 	}
 	s := &shell.GameSession{AIPlayers: []shell.AIOpponent{
 		{Name: "AI (Psilons)", RaceIndex: 1},

@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -78,7 +79,9 @@ const (
 	CmdOfferStarGift        = "offer_star_gift"        // Args[0]=星, Text=enemy
 	CmdClearAudience        = "clear_audience"         // Args[0]=AI 索引
 	CmdRespondCouncil       = "respond_council"        // Args[0]=1 接受 / 0 拒絕
-	CmdBuildShip            = "build_ship"             // Args[0:5]=元件, Args[5]=火線角, Text=艦體 NUL mods
+	CmdVoteCouncil          = "vote_council"           // Args[0]=0/1 候選人，2 棄權
+	CmdBuildShip            = "build_ship"             // Args[0:4]=元件, Args[4]=Ammo, Args[5]=火線角, Text=艦體 NUL mods
+	CmdBuildShipDesign      = "build_ship_design"      // Args[0]=hull；Text=完整 ShipBlueprint JSON
 	CmdHireMercAt           = "hire_merc_at"           // Args[0]=傭兵索引
 	CmdAssignColonyLeader   = "assign_colony_leader"   // Args[0]=殖民地, Args[1]=領袖
 	CmdUnassignColonyLeader = "unassign_colony_leader" // Args[0]=殖民地
@@ -88,6 +91,7 @@ const (
 	CmdDismissColonyLeader  = "dismiss_colony_leader"  // Text=領袖名
 	CmdDismissShipOfficer   = "dismiss_ship_officer"   // Text=領袖名
 	CmdCombatOutcome        = "combat_outcome"         // Args[0]=我方起始, Args[1]=敵方起始, Args[2]=勝敗; Text=存活艦名
+	CmdMonsterCombatOutcome = "monster_combat_outcome" // Args=星／起始數／勝敗／剩餘雙血池／個體數
 	CmdEndTurn              = "end_turn"               // 無參數(鎖步裡由協定層決定何時推進,這裡是單機/回放用)
 )
 
@@ -98,14 +102,14 @@ const (
 func PlayerCommandNames() []string {
 	names := []string{
 		CmdAssaultAntares, CmdAttackMonster, CmdAssignColonyLeader, CmdAssignShipOfficer,
-		CmdBombardColony, CmdBuildOutpost, CmdBuildShip, CmdBuyBuild, CmdChooseResearch,
+		CmdBombardColony, CmdBuildOutpost, CmdBuildShip, CmdBuildShipDesign, CmdBuyBuild, CmdChooseResearch,
 		CmdClearAllReloc, CmdClearAudience, CmdColonizePlanet, CmdColonizeStar,
-		CmdCombatOutcome, CmdCycleColonyBuild, CmdCycleSpyMission, CmdCycleTaxRate,
+		CmdCombatOutcome, CmdMonsterCombatOutcome, CmdCycleColonyBuild, CmdCycleSpyMission, CmdCycleTaxRate,
 		CmdDequeueBuild, CmdDismissAgent, CmdDismissColonyLeader, CmdDismissShipOfficer,
 		CmdDiplomacy, CmdEndTurn, CmdEnqueueBuild, CmdHireMerc, CmdHireMercAt,
 		CmdInvadeColony, CmdLoadMarines, CmdLoadTanks, CmdMindControl,
 		CmdOfferCashGift, CmdOfferStarGift, CmdOfferTechGift, CmdOutpostOnPlanet,
-		CmdQueueRefit, CmdRespondCouncil, CmdReturnShipOfficer, CmdSelectFleet, CmdSendFleet,
+		CmdQueueRefit, CmdRespondCouncil, CmdVoteCouncil, CmdReturnShipOfficer, CmdSelectFleet, CmdSendFleet,
 		CmdSetAllReloc, CmdSetRelocation, CmdSetResearch, CmdSetSpyMission,
 		CmdSetAutoBuild, CmdSetRepeatBuild, CmdSetStarReloc, CmdShiftJob, CmdSplitFleet, CmdTrainAgent, CmdTrainSpy,
 		CmdUnassignColonyLeader, CmdUnassignShipOfficer,
@@ -218,9 +222,20 @@ func (s *GameSession) ApplyPlayerCommand(c PlayerCommand) error {
 		s.ClearAudienceRequest(arg(c, 0, -1))
 	case CmdRespondCouncil:
 		s.RespondToCouncilElection(arg(c, 0, 0) != 0)
+	case CmdVoteCouncil:
+		s.RespondToCouncilVote(arg(c, 0, 2))
 	case CmdBuildShip:
 		class, modsText := splitCommandText(c.Text)
-		s.BuildShipWithModsAndArc(class, arg(c, 0, 0), arg(c, 1, 0), arg(c, 2, 0), arg(c, 3, 0), splitNUL(modsText), gamedata.WeaponArc(arg(c, 5, int(gamedata.ARC_FWD))))
+		weapon := arg(c, 0, 0)
+		weaponName := pick(WeaponOptions, weapon).Name
+		s.BuildShipWithLoadout(class, weapon, arg(c, 1, 0), arg(c, 2, 0), arg(c, 3, 0), splitNUL(modsText),
+			gamedata.WeaponArc(arg(c, 5, int(gamedata.ARC_FWD))),
+			arg(c, 4, NormalizeWeaponAmmo(weaponName, 0)))
+	case CmdBuildShipDesign:
+		var design ShipBlueprint
+		if err := json.Unmarshal([]byte(c.Text), &design); err == nil {
+			s.buildShipBlueprint(design)
+		}
 	case CmdHireMercAt:
 		s.HireMercAt(arg(c, 0, -1))
 	case CmdAssignColonyLeader:
@@ -245,12 +260,37 @@ func (s *GameSession) ApplyPlayerCommand(c PlayerCommand) error {
 			return nil
 		}
 		survivors := make(map[string]bool, len(parts)-1)
+		var enemySurvivors map[string]bool
+		enemyPart := false
 		for _, name := range parts[1:] {
+			if name == "\x01ENEMY" {
+				enemyPart = true
+				enemySurvivors = map[string]bool{}
+				continue
+			}
+			if name != "" {
+				if enemyPart {
+					enemySurvivors[name] = true
+				} else {
+					survivors[name] = true
+				}
+			}
+		}
+		if len(c.Args) > 3 {
+			s.ApplyCombatOutcomeWithEnemySurvivors(parts[0], arg(c, 0, 0), arg(c, 1, 0), survivors, enemySurvivors,
+				arg(c, 2, 0) != 0, arg(c, 3, 0))
+		} else {
+			s.ApplyCombatOutcomeWithEnemySurvivors(parts[0], arg(c, 0, 0), arg(c, 1, 0), survivors, enemySurvivors, arg(c, 2, 0) != 0)
+		}
+	case CmdMonsterCombatOutcome:
+		survivors := map[string]bool{}
+		for _, name := range splitNUL(c.Text) {
 			if name != "" {
 				survivors[name] = true
 			}
 		}
-		s.ApplyCombatOutcome(parts[0], arg(c, 0, 0), arg(c, 1, 0), survivors, arg(c, 2, 0) != 0)
+		s.applyMonsterTacticalOutcome(arg(c, 0, -1), arg(c, 1, 0), arg(c, 2, 0),
+			survivors, arg(c, 3, 0) != 0, arg(c, 4, 0), arg(c, 5, 0), arg(c, 6, 0), false)
 	case CmdEndTurn:
 		s.EndTurn()
 	default:

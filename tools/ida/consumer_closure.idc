@@ -204,7 +204,7 @@ static main()
   dump_target(f, 0x943A0, "raw_sub_943A0_Move_From_Limbo_To_Pool", 700, 20);
   dump_target(f, 0x9453C, "raw_sub_9453C_Move_Officer_To_Pool", 700, 20);
   dump_target(f, 0x97287, "raw_sub_97287_Set_Officer_To_Player", 700, 20);
-  dump_target(f, 0xD7662, "raw_sub_D7662_Do_AI_Leaders", 900, 20);
+  dump_target(f, 0xD7439, "raw_sub_D7439_Do_AI_Leaders", 900, 20);
   dump_target(f, 0xDCDAC, "raw_sub_DCDAC_Handle_Leader_At_Lost_Colony", 500, 20);
   dump_target(f, 0xE1FC7, "raw_sub_E1FC7_Leader_At_Anomaly", 500, 20);
   data_refs(f, 0x1930DC, "raw_global_0x1930DC_leader_records");

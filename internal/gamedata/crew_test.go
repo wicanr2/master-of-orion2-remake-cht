@@ -79,6 +79,20 @@ func TestCrewLevelForXPMatchesTheThresholds(t *testing.T) {
 	}
 }
 
+func TestCrewXPAfterTurnGainUsesOriginalFiveHundredCap(t *testing.T) {
+	for _, tc := range []struct{ current, gain, want int }{
+		{499, 1, 500},
+		{500, 1, 500},
+		{490, 25, 500},
+		{-10, 1, 1},
+		{100, -3, 100},
+	} {
+		if got := CrewXPAfterTurnGain(tc.current, tc.gain); got != tc.want {
+			t.Errorf("CrewXPAfterTurnGain(%d,%d)=%d，want %d", tc.current, tc.gain, got, tc.want)
+		}
+	}
+}
+
 // 距離下一級的進度,給 UI 用。
 func TestCrewXPToNextLevel(t *testing.T) {
 	if got := CrewXPToNextLevel(0, false); got != 50 {
@@ -115,16 +129,20 @@ func TestCrewBattleXPHalvesTheSumOfDestroyedSizeClasses(t *testing.T) {
 	}
 }
 
-// 一艘都沒擊沉時是 0 而不是 1:手冊的「minimum of 1」講的是「有擊沉」的情況,
-// 把「贏了但一艘都沒沉」也給 1 是把保底條款擴大解釋。
-func TestCrewBattleXPIsZeroWhenNothingWasDestroyed(t *testing.T) {
-	if got := CrewBattleXP(nil); got != 0 {
-		t.Errorf("沒擊沉任何船應是 0,得到 %d", got)
+// sub_4B184 先除二再強制最少 1，因此勝方即使零擊沉仍取得 1。
+func TestCrewBattleXPUsesOriginalMinimumWhenNothingWasDestroyed(t *testing.T) {
+	if got := CrewBattleXP(nil); got != 1 {
+		t.Errorf("沒擊沉任何船的勝方 recipient 應得 1,得到 %d", got)
 	}
-	if got := CrewBattleXP([]int{}); got != 0 {
-		t.Errorf("空清單應是 0,得到 %d", got)
+	if got := CrewBattleXP([]int{}); got != 1 {
+		t.Errorf("空清單應套原版最少 1,得到 %d", got)
 	}
-	if got := CrewBattleXP([]int{0, 0}); got != 0 {
-		t.Errorf("全是 0 的艦體等級應是 0,得到 %d", got)
+	if got := CrewBattleXP([]int{0, 0}); got != 1 {
+		t.Errorf("全是 0 的艦體等級應套原版最少 1,得到 %d", got)
+	}
+	for _, tc := range []struct{ sum, want int }{{0, 1}, {1, 1}, {2, 1}, {3, 1}, {4, 2}, {12, 6}} {
+		if got := CrewBattleXPFromDestroyedHullClassSum(tc.sum); got != tc.want {
+			t.Errorf("raw hull class sum %d: got %d, want %d", tc.sum, got, tc.want)
+		}
 	}
 }

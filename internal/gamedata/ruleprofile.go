@@ -41,8 +41,9 @@ type RuleProfile struct {
 	// 無法表示最小值差異——這是既有資料模型限制,非本 profile 遺漏。
 	PlasmaCannonMaxDamage int
 
-	// 軌道轟炸:fleetBombardDamage 模擬齊射的輪數。來源:CHANGELOG_150.TXT 1.50.9。
-	BombardmentVolleys int
+	// 軌道轟炸：炸彈武器的攻擊當量。CHANGELOG_150.TXT 1.50.9 只把 Bomb weapons
+	// 從 5 attacks 修正為 10，並未改變 Strategic_Bombardment_ 的固定三外圈。
+	BombardmentBombAttacks int
 
 	// 地面戰:防禦方 Commando 領袖加成倍率(套進 gamedata.GroundCommandoDefenderForceBonus 的
 	// defenderCommandoBonus 參數)。來源:MANUAL_150.html「A defending commando gives 2.5x the
@@ -51,23 +52,16 @@ type RuleProfile struct {
 	// 1.5=2.5(守方追平攻方,也套用 2.5x 加乘)。攻方倍率(GroundCommandoAttackerForceBonus)
 	// 兩版相同,非差異項,不進本欄位——見 ground_version_diff.go。
 	//
-	// ⚠ 現況(2026-07-11):gamedata 公式已實作+測試(見 ground_version_diff_test.go),但
-	// internal/shell 尚無 AI 對手的領袖資料模型(AIOpponent 無 Leaders 欄位),故
-	// InvadeColony 目前只接了攻方(玩家)commando 加成,守方這個欄位還沒有真正的呼叫端——見
-	// internal/shell/ground_invasion.go InvadeColony 註解的 TODO 掛鉤點。「真做了 gamedata
-	// 公式」與「shell 層已接線」是兩件事,誠實分開標記。
+	// 現況：公式與 InvadeColony 攻守兩端都已接；AI 的 Leaders 由動態 offer／任命鏈建立。
 	DefenderCommandoBonus float64
 
 	// 軌道轟炸:轟炸建築額外 +1 hit 的 bug 加成。來源:CHANGELOG_150.TXT 1.50.10「Undocumented
 	// +1 hit bonus for civilian buildings during bombardment removed.」1.3=1(有這個未記錄的
 	// bug 加成)、1.5=0(已移除)。
 	//
-	// 現況(2026-07-11 已接線):AIOpponent 新增 ColonyBuildings 欄位後,
-	// internal/shell/orbital_bombardment.go BombardColony 已把本欄位讀進「每棟建築消耗的
-	// hits = GroundPlanetHitsPerBuilding + BombardmentBuildingBonusHits」,實際影響轟炸摧毀
-	// 幾棟建築(1.3 每棟建築多 +1 hit 才摧毀、1.5 不加)。⚠ CHANGELOG 原句語意本身模糊(是建築
-	// 多吸一擊、還是建築多受一擊才被摧毀),本 remake 採「每棟建築在 1.3 需多 +1 hit 才摧毀」的
-	// 保守解讀,見 BombardColony 檔頭「建築吸收」段落的誠實標註,非手冊逐字驗證值。
+	// BombardColony 把本欄位讀進 sub_DCEBD 候選池的一般建築成本。⚠ 本份 IDA oracle
+	// 是 1.50；1.3 的 +1 仍只來自 CHANGELOG，remake 採「一般建築多需一點傷害」的
+	// 保守解讀，不把它冒稱 executable 已證實語意。
 	BombardmentBuildingBonusHits int
 
 	// 軌道防禦(#14,2026-07-11 補實作):衛星光束武器的 arc-cost 百分比,套進
@@ -117,9 +111,9 @@ func Profile13() RuleProfile {
 		Version:                       VersionClassic13,
 		HyperAdvancedLevel1Cost:       15000,
 		PlasmaCannonMaxDamage:         30,
-		BombardmentVolleys:            5,
+		BombardmentBombAttacks:        5,
 		DefenderCommandoBonus:         1.0, // 守方 Commando 無額外加乘(維持基準值 2/3)
-		BombardmentBuildingBonusHits:  1,   // 未記錄的 +1 hit bug(尚未接線,見欄位註解)
+		BombardmentBuildingBonusHits:  1,   // 未記錄的 +1 hit bug；接入一般建築候選成本
 		SatelliteBeamArcCostPct:       25,  // 衛星 arc-cost +25%(CHANGELOG_150.TXT 1.50.7 修正前的舊值)
 		GroundBatteryBeamArcCostPct:   0,   // 地面砲台無 arc-cost 懲罰
 		FreightersCashBonus:           5,   // 運輸艦隊完工固定回饋 5 BC(MANUAL_150.html Free Cash Bug 表)
@@ -135,13 +129,13 @@ func Profile15() RuleProfile {
 		Version:                       VersionCommunity15,
 		HyperAdvancedLevel1Cost:       25000, // = 現行 techtree.go 硬編值
 		PlasmaCannonMaxDamage:         20,    // = 現行 session.go 硬編值
-		BombardmentVolleys:            10,    // = 現行 orbital_bombardment.go 硬編值
-		DefenderCommandoBonus:         2.5,   // 守方追平攻方 2.5x 加乘
-		BombardmentBuildingBonusHits:  0,     // bug 已移除(尚未接線,見欄位註解)
-		SatelliteBeamArcCostPct:       33,    // 衛星 arc-cost 最終值 +33.3%(1.50.10),取整數
-		GroundBatteryBeamArcCostPct:   50,    // 地面砲台 arc-cost +50%(1.50.7)
-		FreightersCashBonus:           0,     // freighters_cash_bonus 出廠預設(CHANGELOG_150.TXT 1.50.8)
-		SensorRangeVersionBonusParsec: 1,     // 1.5 全面 +1 parsec 近似(#13,MANUAL_150.html)
+		BombardmentBombAttacks:        10,
+		DefenderCommandoBonus:         2.5, // 守方追平攻方 2.5x 加乘
+		BombardmentBuildingBonusHits:  0,   // bug 已移除；1.50 一般建築成本回到 1
+		SatelliteBeamArcCostPct:       33,  // 衛星 arc-cost 最終值 +33.3%(1.50.10),取整數
+		GroundBatteryBeamArcCostPct:   50,  // 地面砲台 arc-cost +50%(1.50.7)
+		FreightersCashBonus:           0,   // freighters_cash_bonus 出廠預設(CHANGELOG_150.TXT 1.50.8)
+		SensorRangeVersionBonusParsec: 1,   // 1.5 全面 +1 parsec 近似(#13,MANUAL_150.html)
 	}
 }
 
@@ -176,4 +170,13 @@ func IsHyperAdvancedTopic(topic ResearchTopic) bool {
 // 規則不對稱。顯示層見 internal/shell/research.go GameSession.ResearchCostForDisplay。
 func HyperAdvancedCost(p RuleProfile) int {
 	return p.HyperAdvancedLevel1Cost
+}
+
+// HyperAdvancedRepeatedCost 套用原版 Player_Research_Cost_ @ 0xE1E96：terminal topic 的
+// 基礎成本加上已完成 level byte ×10000。completedLevels 是「已完成級數」，第一級前為 0。
+func HyperAdvancedRepeatedCost(baseCost, completedLevels int) int {
+	if completedLevels < 0 {
+		completedLevels = 0
+	}
+	return baseCost + completedLevels*10000
 }

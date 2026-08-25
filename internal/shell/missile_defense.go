@@ -29,36 +29,34 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 //   - **廣域干擾器只給自己那一格(130)。** 手冊另有「對艦隊其餘船艦 +70,且不與其他
 //     jammer 疊加」——remake 的戰列是逐艦獨立的,沒有「艦隊層加成」這個概念,
 //     硬塞會變成每艘船各自加一次,那不是手冊講的東西。艦隊層加成留白。
-//   - **一艘船只有一個 Special 槽。** 原版可以同時裝干擾器與慣性穩定器,remake 不行
-//     ——這是既有的設計限制(見 Ship.Special),不是這一項引入的。
+//   - 多特殊裝置設計可同時裝干擾器與慣性系統；防禦公式取已安裝系統中的最佳值，
+//     不把不同來源直接相加。
 //   - **匿蹤裝置的 50% 未命中沒接。** `MissileCloakingDeviceMissChance` 手冊寫明
 //     「僅在裝置**啟動**時」,而 remake 沒有「啟動/未啟動」狀態。查得到 ≠ 用得上。
 
 // shipMissileEvasionBonus 回傳這艘船的元件提供的飛彈閃避加成。
 //
-// 取**最佳**不是加總:一艘船只有一個 Special 槽,本來就裝不了兩個;
-// 寫成 switch 是為了讓「哪個元件給多少」一眼看得出來,而不是把它藏進一張 map。
+// 取**最佳**不是加總：原版同類防禦系統不以簡單加法疊加；typed 多槽可能同時存在，
+// 因此逐項查詢後保留最高值。
 func shipMissileEvasionBonus(sh Ship) int {
-	switch sh.Special {
-	case "電子干擾器":
-		return gamedata.MissileJammerECM
-	case "多波電子干擾器":
-		return gamedata.MissileJammerMultiWave
-	case "廣域干擾器":
-		return gamedata.MissileJammerWideAreaSelf
-	case "慣性穩定器":
-		return gamedata.MissileInertialStabilizer
-	case "慣性抵消器":
-		return gamedata.MissileInertialNullifier
+	best := 0
+	for name, value := range map[string]int{
+		"電子干擾器": gamedata.MissileJammerECM, "多波電子干擾器": gamedata.MissileJammerMultiWave,
+		"廣域干擾器": gamedata.MissileJammerWideAreaSelf, "慣性穩定器": gamedata.MissileInertialStabilizer,
+		"慣性抵消器": gamedata.MissileInertialNullifier,
+	} {
+		if shipHasSpecial(sh, name) && value > best {
+			best = value
+		}
 	}
-	return 0
+	return best
 }
 
 // shipHasLightningField 回報這艘船裝了閃電場(每一枚來襲飛彈各 50% 直接摧毀)。
-func shipHasLightningField(sh Ship) bool { return sh.Special == "閃電場" }
+func shipHasLightningField(sh Ship) bool { return shipHasSpecial(sh, "閃電場") }
 
 // shipHasDisplacementDevice 回報這艘船裝了位移裝置(飛彈一律 30% 完全未命中)。
-func shipHasDisplacementDevice(sh Ship) bool { return sh.Special == "位移裝置" }
+func shipHasDisplacementDevice(sh Ship) bool { return shipHasSpecial(sh, "位移裝置") }
 
 // shipHasTroopPods 回報這艘船裝了部隊艙(陸戰隊運力加倍)。
-func shipHasTroopPods(sh Ship) bool { return sh.Special == "部隊艙" }
+func shipHasTroopPods(sh Ship) bool { return shipHasSpecial(sh, "部隊艙") }

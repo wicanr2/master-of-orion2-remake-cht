@@ -11,9 +11,40 @@ package engine
 
 import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 
+// PopulationGroup 是同一個原版 player slot 的殖民者聚合。RaceSlot 是當局帝國槽，
+// 不是十三族的 OrigIdx；8／9 保留給 Android／Natives。
+type PopulationGroup struct {
+	RaceSlot           int
+	RaceSlotKnown      bool
+	Farmers            int
+	Workers            int
+	Scientists         int
+	PrisonerFarmers    int
+	PrisonerWorkers    int
+	PrisonerScientists int
+	FoodBonus          int
+	IndustryBonus      int
+	ResearchBonus      int
+	Gravity            gamedata.PlanetGravity
+	GravityImmune      bool
+	Aquatic            bool
+	Cybernetic         bool
+	Lithovore          bool
+	Tolerant           bool
+	Subterranean       bool
+	GrowthBonusPercent int
+	GrowthPoints       int
+	ProfileKnown       bool
+}
+
 // ColonyState 是回合引擎操作的乾淨殖民地狀態(人口與產出以「單位」計)。
 type ColonyState struct {
 	Population int // 該殖民地目前總人口
+	// BombardmentLastPopulationPoints 對應 .GAM RacePopulation 的最後一名殖民者
+	// 百分之一人口點數；BombardmentBuildProgress 對應 raw +0x125。兩者只供原版
+	// sub_DCEBD 戰略轟炸傷亡寫回，零值由 resolver 安全解讀為 100／無進度。
+	BombardmentLastPopulationPoints int
+	BombardmentBuildProgress        int
 	// PopMax 人口上限(gamedata.MaxPopulation=42 為硬上限)。生態圈(Biospheres p.99,「星球
 	// 人口上限 +2 單位」)直接對這個欄位 += 2(shell.applyBuildingEffect),不另立
 	// PopMaxBonus 影子欄位——PopMax 本身就是 colonyGrowth/shell.advancePopulation 直接讀取
@@ -23,11 +54,22 @@ type ColonyState struct {
 	Farmers    int // 分配為農夫的人口數
 	Workers    int // 分配為工人的人口數
 	Scientists int // 分配為科學家的人口數
+	// PopulationGroups 完整時是逐 player slot 的人口真相；三職務總和必須等於 Population。
+	// 空或不完整只供舊 JSON 回退上方三個總數，不得視為混合種族 parity。
+	PopulationGroups []PopulationGroup `json:"populationGroups,omitempty"`
 
 	// 每單位產出率(存檔已依科技/種族/地形算好,引擎直接乘人數)。
 	FoodPerFarmer        int
 	IndustryPerWorker    int
 	ResearchPerScientist int
+	// Owner*Bonus 是已烘進上方三個快取率的所有者種族數值 trait。逐群產出先扣 owner，
+	// 再加入群組自己的 trait；Known 防止舊 JSON 零值被誤認為完整 profile。
+	OwnerFoodBonus        int
+	OwnerIndustryBonus    int
+	OwnerResearchBonus    int
+	OwnerRaceProfileKnown bool
+	OwnerRaceSlot         int
+	OwnerRaceSlotKnown    bool
 
 	PlanetSize gamedata.PlanetSize // 決定污染容忍值
 
@@ -48,11 +90,17 @@ type ColonyState struct {
 	// 攻下一個殖民地時等於當地全部人口,之後每隔幾回合減一(回合數依政體,見
 	// gamedata/assimilation.go)。0 = 全部是自己的子民(自己拓殖的殖民地一開始就是 0)。
 	//
-	// AssimilationProgress 是「朝下一個單位累積了幾回合」。兩個欄位都由
+	// AssimilationProgress 是「朝下一個單位累積的原版 0..239 raw 進度」。兩個欄位都由
 	// shell.advanceAssimilation 推進;engine 的經濟結算不直接讀它們——多種族人口的
 	// 20% 士氣懲罰走 shell.colonyMoralePercent 折成 MoralePercent(第 42 項(關掉兩條留白)接的)。
 	UnassimilatedPop     int
 	AssimilationProgress int
+	// Unassimilated* 保存未同化人口的實際職務分布。原版 packed Colonist 的
+	// PRISONER flag 是逐人口、逐職務消費；三欄總和等於 UnassimilatedPop 時，
+	// 產出使用精確分布。舊 JSON 沒有這三欄時，經濟層會回退舊比例模型。
+	UnassimilatedFarmers    int
+	UnassimilatedWorkers    int
+	UnassimilatedScientists int
 
 	// ConqueredFrom 是這個殖民地**被打下來之前**的主人(shell.AIPlayers 的索引);
 	// 叛亂成功時殖民地要還給它(手冊 p.165「the colony reverts back」)。
@@ -94,6 +142,10 @@ type ColonyState struct {
 	// EmpireOutput.TradeGoodsRevenue(GAME_MANUAL.pdf p.70)。「不累積建造進度」由呼叫端
 	// (shell.advanceBuilds)依建造項名稱處理,engine 層只負責換算收入。
 	TradeGoods bool
+	// ResearchDiverted 表示本回合研究產出被事件轉作他用（目前為超新星搶救）。
+	// RunColonyTurn 仍輸出完整 Research，只有帝國研究聚合略過；這是 shell 每回合由
+	// PersistentEvents 重建的暫態輸入，不寫入 JSON／多人快照。
+	ResearchDiverted bool `json:"-"`
 
 	// 成長獎金(百分點)之和:g 一般 + r 種族 + i AI + t 科技 + l + e(住房 h 由引擎計)。
 	GrowthBonusSum int
@@ -101,6 +153,11 @@ type ColonyState struct {
 	// MoralePercent 是淨士氣對產出的百分點調整(每格笑臉 +10、哭臉 -10;正負皆可)。
 	// 依手冊套用於食物/工業/研究(見 gamedata.MoraleProductionOutput)。
 	MoralePercent int
+	// Government*BonusPercent 對應原版 sub_DE280 的逐職務政體項。它們每回合由 shell
+	// 依目前生效政體重建，不能烘進每人口基礎率，否則改政體／取得進階政體會累乘或殘留。
+	GovernmentFoodBonusPercent     int
+	GovernmentIndustryBonusPercent int
+	GovernmentResearchBonusPercent int
 
 	// --- 殖民地整體「固定加成」欄位(與人數無關,對照 docs/tech/colony-buildings.md 逐項頁碼) ---
 	//
@@ -137,11 +194,7 @@ type ColonyState struct {
 	FlatResearch int // 殖民地研究整體固定加成(研究實驗室 p.94 +5、行星超級電腦 p.95 +10、銀河網路中心 p.98 +15)
 
 	// FlatGrowth 是複製中心(p.99)「人口成長 +0.1 單位/回合,直到達星球人口上限為止」的固定
-	// 成長點數。本 remake 的成長累加尺度(shell.popGrowthThreshold=300 代表 1 人口單位)本身
-	// 是調校值、非官方 1 人口=100,000 的精確换算(見 session.go popGrowthThreshold 註記),故
-	// 0.1 官方人口單位無法精確转成這個尺度的點數——呼叫端(shell.applyBuildingEffect)以
-	// 「popGrowthThreshold 的 1/10」設定本欄位,維持與既有成長門檻同一把尺,但仍是近似值,
-	// 非官方精確數字。
+	// 成長點數。官方 patch 1.50 手冊的標準值 +100k 對應 100 點；完整人口單位門檻為 1,000 點。
 	FlatGrowth int
 
 	// IncomeBonusPercent 是該殖民地「所有來源 BC 收入」加成百分比,可累加(太空港 p.79 +50、
@@ -171,11 +224,9 @@ type ColonyState struct {
 	// 驅動 colonyFood/RunColonyTurn 對 per-worker 產出套用的重力懲罰(見
 	// gamedata.GravityPenaltyPercent)。
 	//
-	// 種族自身的 Low-G/High-G 重力天賦(TRAIT_LOW_G 等,見 docs/tech/custom-race-picks.md)
-	// 尚未在 ColonyState 建模——RunColonyTurn 呼叫 GravityPenaltyPercent 時固定傳
-	// gamedata.NORMAL_G 當「種族重力」基準,懲罰值只反映「行星重力」單一因子,不含種族天賦
-	// 平移。這是 remake 建模簡化,非手冊本節文字直接依據(手冊本節只講行星重力對一般種族的
-	// 影響,見 planet_yield.go 檔頭大段註解的版本落差說明)。
+	// 種族自身的 Low-G/High-G 由下方 RaceGravity/RaceGravityKnown 建模；未知舊狀態回退
+	// Normal-G。完整 typed population groups 會逐 colonist slot 改讀各群 Gravity；此欄位
+	// 只保留 owner 快取與舊 JSON fallback。
 	//
 	// Go 零值陷阱:gamedata.LOW_G 的 ordinal 恰好是 0,與這個欄位「未設定」的零值相同——
 	// 任何建構 ColonyState 卻沒有明確設定本欄位的呼叫端,會被視為 Low-G(-25% 懲罰),而非
@@ -183,6 +234,11 @@ type ColonyState struct {
 	// cmd/moo2sim)在這次接線時都已明確補上 PlanetGravity(多半是 NORMAL_G),不依賴零值
 	// 隱含語意——新增呼叫端請比照辦理,別漏設這個欄位。
 	PlanetGravity gamedata.PlanetGravity
+	// RaceGravity 是目前所有者種族的重力適性。RaceGravityKnown 防止舊 JSON／
+	// 測試字面值的 Go 零值 0 被誤認為 Low-G；未知時按一般種族 Normal-G。
+	// 完整 typed population groups 會逐 colonist slot 查值；此欄位只供 owner／舊狀態 fallback。
+	RaceGravity      gamedata.PlanetGravity
+	RaceGravityKnown bool
 
 	// NormalizeGravity 對應行星重力產生器(p.104,手冊:「將星球重力正常化至 Normal-G,消除
 	// Low-G/Heavy-G 負面效果」)。true 時 RunColonyTurn 強制把重力懲罰歸零,即使
@@ -249,12 +305,11 @@ type PlayerState struct {
 	// 「艦隊研究要不要吃士氣/政體加成」的問題,那個問題手冊沒有答案。
 	// 由 shell.GameSession.FleetResearchPoints 每回合算好傳入(同 Maintenance 的輸入模式)。
 	FleetResearch int
-	// Maintenance 每回合總維護費,BC 結算時扣除。目前呼叫端(shell.GameSession.EndTurn)只
-	// 依實際已建成建築(gamedata.BuiltMaintenanceBC)加總計入;艦隊/間諜/軍官維護費本專案尚無
-	// 可推導的模型(未追蹤運輸艦數量等),未計入——TODO 待補,見 session.go
-	// totalBuildingMaintenance/newHomeworldPlayerState 的同款註記。此欄位本身仍是純粹輸入,
-	// 引擎層不關心維護費怎麼算出來。
-	Maintenance int
+	// Maintenance 是建築維護費；間諜與軍官保留獨立分項，RunEmpireTurn 在同一次
+	// 國庫結算中扣除，讓 UI／存檔可追查每筆來源。
+	Maintenance        int
+	SpyMaintenance     int
+	OfficerMaintenance int
 	// CommandPointsSupply / UsedCommandPoints 指揮評等(Command Rating)供需(GAME_MANUAL.pdf
 	// p.169)。與 Maintenance 同款輸入模式:引擎層不關心怎麼算出來,純粹接收呼叫端(通常是
 	// shell.GameSession.EndTurn,依實際已建成的軌道衛星 gamedata.CommandPointsFromBuildings +
@@ -270,25 +325,33 @@ type PlayerState struct {
 	// UsedCommandPoints:玩家目前所有艦艇(不含貨運艦隊 Freighter Fleet,手冊 p.168 明文排除)
 	// 依艦體等級加總的指揮評等需求(gamedata.ShipCommandCost)。
 	//
-	// 兩者預設值 0(呼叫端未設值時視為「供給/需求皆零」,即無超支懲罰)——AI 對手目前用
-	// FleetStrength 抽象戰力值,無逐艦清單可推導 UsedCommandPoints,暫不計算,是誠實的
-	// 「架構未跟上」而非漏算,見 RunEmpireTurn 註解。
+	// 兩者預設值 0（呼叫端未設值時視為供需皆零）。shell 會在玩家與 AI 的經濟結算前
+	// 依殖民地建築與持久實艦重算；engine 只消費正規化後的數值。
 	CommandPointsSupply int
 	UsedCommandPoints   int
 	ResearchTopic       gamedata.ResearchTopic // 目前研究中的主題
 	ResearchProgress    int                    // 目前主題已累積的研究點(RP)
+	// ResearchApplication 是原版 player+0x322 的 typed 對應：開始研究 topic 時已選定、
+	// 突破後才真正取得的科技應用。HasResearchApplication 區分合法零值與尚未選定。
+	ResearchApplication    gamedata.Technology
+	HasResearchApplication bool
 	// TreatyIncomeBC / TreatyResearch 是 shell 在回合開始前依正式貿易／研究協議
 	// 填入的帝國層級外部輸入。零值代表沒有協議，RunEmpireTurn 會把它們納入
 	// 同一個 BC／研究結算；shell 在結算後會清回零，不把一次性回合輸入當成持久收入。
 	TreatyIncomeBC int
 	TreatyResearch int
-	// CompletedTopics 記錄已完成的研究主題(避免重複)。
+	// CompletedTopics 記錄已完成的研究主題；Hyper 的重複次數另存 HyperAdvancedLevels。
 	CompletedTopics map[gamedata.ResearchTopic]bool
-	// ChosenTech 記錄每個已完成主題「實際選定解鎖」的那一項科技(MOO2 每主題數科技抉擇)。
-	// ResearchAll 主題會把全部 Choices 記入。多選主題完成時預設記第一項,玩家可經 UI 改選。
+	// HyperAdvancedLevels 是八個終端研究主題各自的重複完成次數。
+	HyperAdvancedLevels map[gamedata.ResearchTopic]int
+	// ChosenTech 記錄每個已完成主題「實際取得」的科技。尚在研究中的選項只能放在
+	// ResearchApplication，不能提早寫入此 map 而讓消費端誤判已解鎖。
 	ChosenTech map[gamedata.ResearchTopic]gamedata.Technology
-	// PendingChoice 為「剛完成、玩家可改選解鎖科技」的主題;HasPendingChoice 標記其有效
-	// (因 ResearchTopic 0 = 起始科技為合法值,不能用零值判斷)。
+	// GrantedTechs 保存不能表示成「某主題唯一選擇」的額外科技應用，例如原版在取得
+	// Battleoids 時連帶授予 Armor Barracks。舊 JSON 缺欄位時 nil 等同空集合。
+	GrantedTechs map[gamedata.Technology]bool `json:"grantedTechs,omitempty"`
+	// PendingChoice 是目前 topic 尚待玩家選 application 的 UI 狀態。讀取舊存檔時也可能
+	// 暫時代表舊版「突破後待改選」，ChooseResearchTech 會依 CompletedTopics 判別相容路徑。
 	PendingChoice    gamedata.ResearchTopic
 	HasPendingChoice bool
 	// ExplicitChoice 記錄哪些主題是玩家「明確抉擇」過的(非預設)。用於元件解鎖:
@@ -329,8 +392,9 @@ type PlayerState struct {
 	// 這是 remake 的精確帳本欄位，舊 JSON 缺欄位時零值安全。
 	FoodReplicatorBCHalfRemainder int `json:"foodReplicatorBCHalfRemainder,omitempty"`
 
-	// HyperAdvancedResearchCost 是版本規則 profile 對 Hyper-Advanced Lv1 研究(8 個共用同一
-	// 成本的 TOPIC_HYPER_* 主題,見 gamedata.IsHyperAdvancedTopic)的成本覆寫值,與
+	// HyperAdvancedResearchCost 是版本規則 profile 對 Hyper-Advanced 第一級研究(8 個共用同一
+	// 基礎成本的 TOPIC_HYPER_* 主題,見 gamedata.IsHyperAdvancedTopic)的覆寫值；研究結算再依
+	// Player_Research_Cost_ @ 0xE1E96 加上已完成 level×10000。它與
 	// CommandPointsSupply/GovtBonusMoneyPercent 同款輸入模式:引擎層不關心版本 profile 本身
 	// (不 import gamedata.RuleProfile 判斷邏輯),只接收呼叫端(shell.GameSession.EndTurn,依
 	// gamedata.HyperAdvancedCost(s.RuleProfile) 算好)傳入的數字。
@@ -362,11 +426,16 @@ type ColonyOutput struct {
 	FoodReplicatedHalf int
 	// FoodReplicatorCostHalfBC 是本殖民地本回合應付的半 BC，帝國層會跨回合累積。
 	FoodReplicatorCostHalfBC int
-	GrossIndustry            int  // 工人總工業產出(未扣污染清理)
-	PollutingProduction      int  // 仍會產生污染的產能
-	PollutionCleanupCost     int  // 清理污染消耗的產能
-	NetIndustry              int  // 半單位淨工業轉成的整數相容值
-	Research                 int  // 科學家總研究產出
-	PopGrowth                int  // 本回合人口成長(gamedata.ColonyGrowth 結果;饑荒時見備註)
-	Cybernetic               bool // 本回合是否使用半單位生產/食物帳本
+	GrossIndustry            int // 工人總工業產出(未扣污染清理)
+	PollutingProduction      int // 仍會產生污染的產能
+	PollutionCleanupCost     int // 清理污染消耗的產能
+	NetIndustry              int // 半單位淨工業轉成的整數相容值
+	Research                 int // 科學家總研究產出
+	PopGrowth                int // 本回合人口成長(gamedata.ColonyGrowth 結果;饑荒時見備註)
+	// PopulationGroupGrowth 與 ColonyState.PopulationGroups 同索引，供 shell 將成長累積到
+	// 正確 player slot。原版共有十個人口槽，固定陣列讓 ColonyOutput 保持可比較；Count=0
+	// 表示舊 JSON／群組不完整。
+	PopulationGroupGrowth      [gamedata.PopulationRaceSlots]int `json:"-"`
+	PopulationGroupGrowthCount int                               `json:"-"`
+	Cybernetic                 bool                              // 本回合是否使用半單位生產/食物帳本
 }

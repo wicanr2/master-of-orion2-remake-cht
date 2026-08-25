@@ -25,10 +25,10 @@ func TestWeaponSpaceWithMods_PointDefenseHalvesSpace(t *testing.T) {
 	}
 }
 
-func TestWeaponSpaceWithMods_AutoFireFlatBonus(t *testing.T) {
-	// 手冊:「increases the size and cost of the weapon by 50」(固定值,非百分比)。
-	if got := WeaponSpaceWithMods(10, []WeaponModCode{ModAutoFire}); got != 60 {
-		t.Errorf("AF 應固定 +50,got %d want 60", got)
+func TestWeaponSpaceWithMods_AutoFirePercentBonus(t *testing.T) {
+	// IDA 改造表 + Weapon_Space_：50 是百分比。
+	if got := WeaponSpaceWithMods(10, []WeaponModCode{ModAutoFire}); got != 15 {
+		t.Errorf("AF 應 +50%%,got %d want 15", got)
 	}
 }
 
@@ -51,11 +51,35 @@ func TestWeaponSpaceWithMods_EnvelopingAndNoRangeDissipation(t *testing.T) {
 }
 
 func TestWeaponSpaceWithMods_Stacking(t *testing.T) {
-	// AP(+50%) + CO(+50%) 加總一次套用 = +100%,再加 AF 固定 +50。
+	// regular mods 在原版先加總百分比再一次套用。
 	got := WeaponSpaceWithMods(20, []WeaponModCode{ModArmorPiercing, ModContinuousFire, ModAutoFire})
-	want := 20 + 20*100/100 + WeaponModAutoFireFlatSpaceCost // 20+20+50=90
+	want := 50 // +150%
 	if got != want {
 		t.Errorf("mod 疊加,got %d want %d", got, want)
+	}
+}
+
+func TestWeaponMiniaturizationLadders(t *testing.T) {
+	if got := WeaponCostAtMiniLevel(100, 2); got != 55 {
+		t.Fatalf("成本二級=%d want 55", got)
+	}
+	if got := WeaponCostAtMiniLevel(100, 8); got != 25 {
+		t.Fatalf("成本五級以上=%d want 25", got)
+	}
+	if got := WeaponSpaceAtMiniLevel(10, 2); got != 7 {
+		t.Fatalf("佔格二級四捨五入=%d want 7", got)
+	}
+	if got := WeaponSpaceAtMiniLevel(10, 8); got != 3 {
+		t.Fatalf("佔格五級以上=%d want 3", got)
+	}
+}
+
+func TestWeaponModMiniaturizationGates(t *testing.T) {
+	if WeaponModUnlockedAtLevel(ModAutoFire, 1) || !WeaponModUnlockedAtLevel(ModAutoFire, 2) {
+		t.Fatal("AF 應在二級微型化解鎖")
+	}
+	if !WeaponModUnlockedAtLevel(ModHeavyMount, 0) || WeaponModUnlockedAtLevel(ModNoRangeDissipation, 0) {
+		t.Fatal("HV 應立即可用，NR 應在一級解鎖")
 	}
 }
 
@@ -171,6 +195,7 @@ func TestWeaponModSpaceCostPercent_LookupTable(t *testing.T) {
 	cases := map[WeaponModCode]int{
 		ModHeavyMount:         100,
 		ModPointDefense:       -50,
+		ModAutoFire:           50,
 		ModContinuousFire:     50,
 		ModArmorPiercing:      50,
 		ModEnveloping:         100,
@@ -182,9 +207,6 @@ func TestWeaponModSpaceCostPercent_LookupTable(t *testing.T) {
 		if !ok || got != want {
 			t.Errorf("WeaponModSpaceCostPercent(%s)=%d,%v want %d,true", mod, got, ok, want)
 		}
-	}
-	if _, ok := WeaponModSpaceCostPercent(ModAutoFire); ok {
-		t.Error("AF 是固定值不是百分比,WeaponModSpaceCostPercent 應回 ok=false")
 	}
 }
 

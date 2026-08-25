@@ -1,7 +1,6 @@
 package main
 
-// researchchoice.go:MOO2 招牌「每主題數科技間抉擇」的玩家 UI。
-// 回合結束後,若剛完成的研究主題有多個可選科技(PendingResearchChoice),進此畫面選一項解鎖。
+// researchchoice.go:MOO2 招牌「開始研究前先選 application」的玩家 UI。
 // 資料為真值(gamedata.researchChoices);科技名經 TECHNAME/tech.tsv 中文化。
 // 版面合成近似,尚未對原版 SCIENCE.LBX 像素對齊。
 
@@ -65,7 +64,7 @@ func (s *researchChoiceScreen) update(in shell.InputState) *origTransition {
 	if !in.ClickReleased || s.hover < 0 {
 		return nil
 	}
-	// 選定該科技解鎖 → 繼續往回合摘要。
+	// 只選定突破後要取得的 application；尚未完成研究，不會在此提前解鎖。
 	s.b.session.ChooseResearchTech(s.choices[s.hover])
 	if clickSound != nil {
 		clickSound()
@@ -88,11 +87,11 @@ func (s *researchChoiceScreen) draw(dst *ebiten.Image) {
 	body := color.RGBA{206, 218, 240, 255}
 	dim := color.RGBA{150, 160, 180, 255}
 
-	s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.b.tr("研究突破:選擇要解鎖的科技", "BREAKTHROUGH — choose the technology to unlock"), 18, 600),
+	s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.b.tr("選擇研究應用", "CHOOSE RESEARCH APPLICATION"), 18, 600),
 		320, 70, 18, gold)
 	topicName := topicNameZh(s.b.lang, s.topic)
-	s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.b.tr("主題:"+topicName+"(僅能擇一,其餘放棄)",
-		"Field: "+topicName+" (pick one; the rest are forfeited)"), 12, 600), 320, 104, 12, dim)
+	s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.b.tr("主題:"+topicName+"(突破後取得所選科技)",
+		"Field: "+topicName+" (the selected technology is granted at breakthrough)"), 12, 600), 320, 104, 12, dim)
 
 	for i, t := range s.choices {
 		x, y, w, h := s.rowRect(i)

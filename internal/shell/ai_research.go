@@ -25,15 +25,8 @@ import (
 // 這件事在畫面上看不出來(沒有任何 UI 顯示 AI 在研究什麼),但它讓每一個「吃 AI 科技」的
 // 系統都凍在第 1 回合:軌道防禦挑得到的最佳武器、AI 艦隊的航速、AI 地面部隊的裝備。
 //
-// ============ 兩個洞,不是一個 ============
-//
-// 第二個洞在多選主題:`engine.recordCompletion` 對多選主題預設記第一項並掛起
-// `HasPendingChoice`,等玩家去選。**AI 從來沒有人去替它選**,所以它的
-// `HasPendingChoice` 永遠是 true,而 `ExplicitChoice` 永遠是空的。
-//
-// 而 `groundEquipTechOwned` 那組判定是「主題完成 + **沒有明確抉擇** → 視為擁有」——
-// 也就是說,AI 每完成一個三選一主題,實際上**三個都拿到了**。
-// 選出來反而是削弱 AI,但那才是規則。
+// 多選 application 也已從舊版「突破後 PendingChoice」改為研究開始前選定；
+// prepareAIResearchApplication 對映原版 sub_DC288 的 application→field 寫入順序。
 //
 // ============ 挑哪一項:用原版的 category 倍率 ============
 //
@@ -41,7 +34,7 @@ import (
 // 原版的 `Calc_Tech_Value_` 估的是**科技應用項**不是主題,而且它的核心那幾段仍卡在
 // `word_1AB1xx` 的語意上——見 `docs/re/calc-tech-value.md`)。
 //
-// 但主題完成後**選哪一個應用**,用的是原版的一手資料:`gamedata.TechCategoryWeight`
+// 一般 AI **開始研究前選哪一個應用**,使用原版的一手資料:`gamedata.TechCategoryWeight`
 // 就是 `Calc_Tech_Value_` 階段 B 給 `ecx` 的初始值(`byte_17D196[category*2]`),
 // 而那一段是該文件第 7 節明列的「風險遠低於其他階段、可以先照抄」的部分。
 //
@@ -58,12 +51,20 @@ func aiResearchCandidates(ps engine.PlayerState) []ai.ResearchCandidate {
 	out := make([]ai.ResearchCandidate, 0, len(tree))
 	for area, topics := range tree {
 		for _, t := range topics {
-			if ps.CompletedTopics[t] {
+			if ps.CompletedTopics[t] && !gamedata.IsHyperAdvancedTopic(t) {
 				continue
 			}
 			cost := gamedata.ResearchChoiceFor(t).Cost
-			if ps.HyperAdvancedResearchCost > 0 && gamedata.IsHyperAdvancedTopic(t) {
-				cost = ps.HyperAdvancedResearchCost
+			if gamedata.IsHyperAdvancedTopic(t) {
+				base := cost
+				if ps.HyperAdvancedResearchCost > 0 {
+					base = ps.HyperAdvancedResearchCost
+				}
+				level := ps.HyperAdvancedLevels[t]
+				if ps.HyperAdvancedLevels == nil && ps.CompletedTopics[t] {
+					level = 1
+				}
+				cost = gamedata.HyperAdvancedRepeatedCost(base, level)
 			}
 			out = append(out, ai.ResearchCandidate{TopicID: int(t), Cost: cost, AreaIndex: area})
 			break // 每個領域只有隊首那一個能選(見 AvailableTopics 註解:這是原版規則)
@@ -86,7 +87,7 @@ func aiPickApplication(choices []gamedata.Technology) (gamedata.Technology, bool
 	return best, found
 }
 
-// aiResolveResearchChoice 替 AI 決定剛完成的多選主題要拿哪一項。
+// aiResolveResearchChoice 只相容舊存檔中突破後仍掛著的多選主題。
 //
 // 沒有待決時什麼都不做。走 `engine.ApplyResearchChoice` 而不是自己寫 map——那支會一併
 // 設 `ExplicitChoice` 並清掉待決旗標,繞過它就會留下「選了但沒標明確抉擇」的半套狀態。
@@ -103,6 +104,37 @@ func aiResolveResearchChoice(ps engine.PlayerState) engine.PlayerState {
 	}
 	next, _ := engine.ApplyResearchChoice(ps, tech)
 	return next
+}
+
+// prepareAIResearchApplication 對映原版 sub_DC288：AI 在投入研究前先決定 application。
+func (s *GameSession) prepareAIResearchApplication(a *AIOpponent) {
+	if a == nil {
+		return
+	}
+	ps := &a.Player
+	choice := gamedata.ResearchChoiceFor(ps.ResearchTopic)
+	if ps.ResearchTopic == 0 || ps.CompletedTopics[ps.ResearchTopic] || len(choice.Choices) == 0 ||
+		choice.ResearchAll || aiRaceHasTrait(*a, gamedata.TRAIT_CREATIVE) {
+		ps.ResearchApplication = 0
+		ps.HasResearchApplication = false
+		ps.PendingChoice = 0
+		ps.HasPendingChoice = false
+		return
+	}
+	if ps.HasResearchApplication {
+		return
+	}
+	var tech gamedata.Technology
+	var ok bool
+	if aiRaceHasTrait(*a, gamedata.TRAIT_UNCREATIVE) {
+		tech = choice.Choices[s.researchRandForTurn().Intn(len(choice.Choices))]
+		ok = true
+	} else {
+		tech, ok = aiPickApplication(choice.Choices)
+	}
+	if next, selected := engine.SelectResearchApplication(*ps, ps.ResearchTopic, tech); ok && selected {
+		*ps = next
+	}
 }
 
 // advanceAIResearch 讓第 i 個 AI 對手:先處理待決的科技抉擇,再在目前主題已完成時挑下一個。
@@ -123,5 +155,8 @@ func (s *GameSession) advanceAIResearch(i int) {
 	}
 	if id := ai.DecideResearchTopic(cands, aiProfile(*a)); id >= 0 {
 		a.Player.ResearchTopic = gamedata.ResearchTopic(id)
+		a.Player.ResearchApplication = 0
+		a.Player.HasResearchApplication = false
+		s.prepareAIResearchApplication(a)
 	}
 }

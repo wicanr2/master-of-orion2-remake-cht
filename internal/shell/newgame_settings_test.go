@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
@@ -87,12 +88,29 @@ func TestDifficultyCountMatchesOriginal(t *testing.T) {
 	if len(Difficulties) != 5 {
 		t.Errorf("難度應為 5 級(原版 Tutor..Impossible),實得 %d", len(Difficulties))
 	}
-	// 倍率要遞增,否則「難度」這個詞就沒有意義。
-	for i := 1; i < len(Difficulties); i++ {
-		if Difficulties[i].Mult <= Difficulties[i-1].Mult {
-			t.Errorf("難度倍率應遞增:%s(%.2f)未大於 %s(%.2f)",
-				Difficulties[i].Name, Difficulties[i].Mult,
-				Difficulties[i-1].Name, Difficulties[i-1].Mult)
+	want := []string{"教學", "簡單", "普通", "困難", "不可能"}
+	for i := range want {
+		if Difficulties[i].Name != want[i] {
+			t.Errorf("難度索引 %d = %q，應為 %q", i, Difficulties[i].Name, want[i])
+		}
+	}
+}
+
+// 原版沒有一張通用浮點倍率同時縮放敵艦 blueprint 與外交關係。
+// 難度必須由各已證實 consumer 讀離散索引，不得在代理艦隊重新發明倍率。
+func TestEnemyFleetProxyHasNoDifficultyMultiplier(t *testing.T) {
+	want := genEnemyFleet(12)
+	for difficulty := range Difficulties {
+		s := NewDemoSession()
+		s.Difficulty = difficulty
+		got := genEnemyFleet(12)
+		if len(got) != len(want) {
+			t.Fatalf("難度 %d 改變了代理艦數：%d vs %d", difficulty, len(got), len(want))
+		}
+		for i := range want {
+			if got[i] != want[i] {
+				t.Errorf("難度 %d 不應直接縮放代理艦 %d：%d vs %d", difficulty, i, got[i], want[i])
+			}
 		}
 	}
 }
@@ -115,6 +133,53 @@ func TestNewGameSettingsSurviveSaveLoad(t *testing.T) {
 	}
 	if !got.TechLevelSet || got.TechLevel != 2 {
 		t.Errorf("科技等級沒還原:set=%v level=%d", got.TechLevelSet, got.TechLevel)
+	}
+}
+
+// 1.31 與 1.50 必須各自走完「開局→隨機科技應用→建築→存讀檔」。
+// 選單可切版本只是 UI 證據，不能代替這條垂直鏈。
+func TestAdvancedOpeningRoundTripsForBothRuleProfiles(t *testing.T) {
+	for _, profile := range []gamedata.RuleProfile{gamedata.Profile13(), gamedata.Profile15()} {
+		s := NewDemoSession()
+		s.SetRuleProfile(profile)
+		s.Difficulty = 4
+		s.TechLevel, s.TechLevelSet = 2, true
+		s.DisableEvents = true
+		s.SetupNewGame(24, 4242, 2)
+
+		completed := 0
+		for topic := range s.Player.CompletedTopics {
+			if topic != gamedata.TOPIC_STARTING_TECH {
+				completed++
+			}
+		}
+		if completed != 25 {
+			t.Fatalf("版本 %v 的先進開局應有 25 個主題，得到 %d", profile.Version, completed)
+		}
+		if len(s.ColonyBuildings) == 0 || len(s.ColonyBuildings[0]) == 0 {
+			t.Fatalf("版本 %v 的先進開局沒有建立母星建築", profile.Version)
+		}
+
+		path := t.TempDir() + "/advanced-opening.json"
+		if err := s.Save(path); err != nil {
+			t.Fatalf("版本 %v 存檔失敗：%v", profile.Version, err)
+		}
+		got, err := LoadSession(path)
+		if err != nil {
+			t.Fatalf("版本 %v 讀檔失敗：%v", profile.Version, err)
+		}
+		if got.RuleProfile != profile || got.Difficulty != 4 || !got.TechLevelSet || got.TechLevel != 2 {
+			t.Errorf("版本 %v 開局設定往返不符：profile=%v difficulty=%d tech=%d/%v",
+				profile.Version, got.RuleProfile.Version, got.Difficulty, got.TechLevel, got.TechLevelSet)
+		}
+		if !reflect.DeepEqual(got.Player.CompletedTopics, s.Player.CompletedTopics) ||
+			!reflect.DeepEqual(got.Player.ChosenTech, s.Player.ChosenTech) ||
+			!reflect.DeepEqual(got.Player.ExplicitChoice, s.Player.ExplicitChoice) {
+			t.Errorf("版本 %v 的開局科技／應用選擇在存讀檔後改變", profile.Version)
+		}
+		if !reflect.DeepEqual(got.ColonyBuildings, s.ColonyBuildings) {
+			t.Errorf("版本 %v 的母星建築在存讀檔後改變", profile.Version)
+		}
 	}
 }
 

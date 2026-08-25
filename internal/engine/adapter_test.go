@@ -14,6 +14,8 @@ func TestColonyStateFromSave(t *testing.T) {
 	c.FoodPerFarmer = 5
 	c.IndustryPerWorker = 6
 	c.ResearchPerScientist = 3
+	c.BuildProgress = 321
+	c.RacePopulation[0] = 456
 	// 工作分配:2 農夫、1 工人、1 科學家
 	c.Colonists[0].Job = uint8(gamedata.FARMER)
 	c.Colonists[1].Job = uint8(gamedata.FARMER)
@@ -35,16 +37,55 @@ func TestColonyStateFromSave(t *testing.T) {
 		cs.IndustryPerWorker != 6 || cs.ResearchPerScientist != 3 {
 		t.Errorf("欄位對映錯誤:%+v", cs)
 	}
+	if cs.BombardmentBuildProgress != 321 {
+		t.Errorf("轟炸建造進度對映錯誤：got %d want 321", cs.BombardmentBuildProgress)
+	}
 	if cs.PlanetSize != gamedata.MEDIUM_PLANET {
 		t.Errorf("行星尺寸 = %d,預期 MEDIUM", cs.PlanetSize)
 	}
 	if cs.PlanetGravity != gamedata.NORMAL_G {
 		t.Errorf("行星重力 = %d,預期 NORMAL_G", cs.PlanetGravity)
 	}
+	if len(cs.PopulationGroups) != 1 || cs.PopulationGroups[0].RaceSlot != 0 ||
+		cs.PopulationGroups[0].Farmers != 2 || cs.PopulationGroups[0].Workers != 1 ||
+		cs.PopulationGroups[0].Scientists != 1 || cs.PopulationGroups[0].GrowthPoints != 456 {
+		t.Errorf("packed colonist 群組對映錯誤：%+v", cs.PopulationGroups)
+	}
 	// 端到端:轉出的狀態能直接跑一回合
 	out := RunColonyTurn(cs)
 	if out.Food != 10 { // 2*5,Normal-G 無懲罰
 		t.Errorf("轉出後跑回合 Food = %d,預期 10", out.Food)
+	}
+}
+
+func TestColonyStateFromSaveLastPopulationPoints(t *testing.T) {
+	var c save.Colony
+	c.Population = 1
+	c.Colonists[0].Race = 3
+	c.RacePopulation[3] = 75
+	var pl save.Planet
+	cs := ColonyStateFromSave(&c, &pl)
+	if cs.BombardmentLastPopulationPoints != 75 {
+		t.Fatalf("最後人口點數應由該殖民者種族欄讀入，got %d want 75", cs.BombardmentLastPopulationPoints)
+	}
+}
+
+func TestColonyStateFromSavePreservesPrisonerJobs(t *testing.T) {
+	var c save.Colony
+	c.Population = 3
+	c.AssimilationProg = 17
+	c.Colonists[0].Job = uint8(gamedata.FARMER)
+	c.Colonists[0].Flags = uint32(gamedata.PRISONER)
+	c.Colonists[1].Job = uint8(gamedata.WORKER)
+	c.Colonists[2].Job = uint8(gamedata.SCIENTIST)
+	c.Colonists[2].Flags = uint32(gamedata.PRISONER)
+	cs := ColonyStateFromSave(&c, &save.Planet{})
+	if cs.UnassimilatedPop != 2 || cs.UnassimilatedFarmers != 1 ||
+		cs.UnassimilatedWorkers != 0 || cs.UnassimilatedScientists != 1 {
+		t.Fatalf("逐職務 prisoner 對映錯誤：%+v", cs)
+	}
+	if cs.AssimilationProgress != 17 {
+		t.Fatalf("同化進度 = %d，want 17", cs.AssimilationProgress)
 	}
 }
 

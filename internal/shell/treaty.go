@@ -151,7 +151,6 @@ func treatyResearchGovernmentPercent(gov gamedata.MoraleGovernmentType) int {
 
 // treatyTarget 是目前可由證據支持的最小目標模型。
 // 原版 sub_101B3C 先取雙方 +0x5A2/+0x5C4 的較小值再除以二；這裡以帝國
-
 // 總人口作為 remake 對應欄位。原版 sub_101BA4 對 +0x89F 的政府值套用
 // Democracy=150%、Federation=175%，再對 +0x8B7（特性 24，神級商人）
 // 加上 50 個百分點；sub_101CC5 則依政府值套用研究倍率。原版另外還會
@@ -172,25 +171,20 @@ func treatyTargetWithLeader(base int, government gamedata.MoraleGovernmentType, 
 	return base * pct / 100
 }
 
-// treatyApproach 對應原版協議處理器的五回合趨近方式；加入確定性的最小步進，
-// 避免小帝國因整數除法永遠停在目標前。
-func treatyApproach(current, target int) int {
-	if current == target {
-		return current
-	}
-	delta := (target - current) / 5
-	if delta == 0 {
-		if target > current {
-			delta = 1
-		} else {
-			delta = -1
-		}
-	}
-	next := current + delta
-	if target > current && next > target {
+// advanceAgreementValue 對應原版 sub_101D53／sub_101DE5。每回合增加的是
+// target/5，而不是「剩餘差距」的五分之一；餘數以一次 1..5 擲骰決定是否補 1。
+// current 已高於新 target 時會立即降到 target。roll5 只在 target%5 != 0 時呼叫。
+func advanceAgreementValue(current, target int, roll5 func() int) int {
+	if current >= target {
 		return target
 	}
-	if target < current && next < target {
+	step := target / 5
+	remainder := target % 5
+	if remainder != 0 && roll5 != nil && roll5() <= remainder {
+		step++
+	}
+	next := current + step
+	if next > target {
 		return target
 	}
 	return next
@@ -327,28 +321,23 @@ func (t TreatyState) BlocksOffensive() bool {
 	}
 }
 
-func (t *TreatyState) advance(minPopulation int, playerGovernment, aiGovernment gamedata.MoraleGovernmentType, playerFantasticTrader, aiFantasticTrader bool, playerLeaderBonus, aiLeaderBonus int) treatyYield {
+func (t *TreatyState) prepareAgreementValues(minPopulation int) {
 	base := treatyBase(minPopulation)
-	var y treatyYield
 	if t.TradeActive {
 		// 相容舊存檔中若只有旗標、沒有目前值，補上原版相同的負起點。
 		if t.TradeTurns == 0 && t.PlayerTradeValue == 0 && t.AITradeValue == 0 {
 			t.PlayerTradeValue, t.AITradeValue = -base, -base
 		}
-		t.PlayerTradeValue = treatyApproach(t.PlayerTradeValue, treatyTargetWithLeader(base, playerGovernment, playerFantasticTrader, true, playerLeaderBonus))
-		t.AITradeValue = treatyApproach(t.AITradeValue, treatyTargetWithLeader(base, aiGovernment, aiFantasticTrader, true, aiLeaderBonus))
-		t.TradeTurns++
-		y.PlayerBC, y.AIBC = t.PlayerTradeValue, t.AITradeValue
 	}
 	if t.ResearchActive {
 		if t.ResearchTurns == 0 && t.PlayerResearchValue == 0 && t.AIResearchValue == 0 {
 			t.PlayerResearchValue, t.AIResearchValue = -base, -base
 		}
-		t.PlayerResearchValue = treatyApproach(t.PlayerResearchValue, treatyTarget(base, playerGovernment, false, false))
-		t.AIResearchValue = treatyApproach(t.AIResearchValue, treatyTarget(base, aiGovernment, false, false))
-		t.ResearchTurns++
-		y.PlayerResearch, y.AIResearch = t.PlayerResearchValue, t.AIResearchValue
 	}
+}
+
+func (t *TreatyState) advanceSpecialTrade(base int) treatyYield {
+	var y treatyYield
 	if t.SpecialTrade.Active {
 		value := base / 4
 		if value < 1 {
@@ -426,7 +415,12 @@ func aiTreatyGovernment() gamedata.MoraleGovernmentType {
 // advanceTreaties 每個世界回合只推進一次所有玩家↔AI 協議。回傳切片與 AIPlayers
 // 同索引，讓同一份協議結果分別餵給兩個帝國的經濟結算，不會把共享狀態推進兩次。
 func (s *GameSession) advanceTreaties() []treatyYield {
+	return s.advanceTreatiesWithRoller(func() int { return s.agreementRandForTurn().Intn(5) + 1 })
+}
+
+func (s *GameSession) advanceTreatiesWithRoller(roll5 func() int) []treatyYield {
 	yields := make([]treatyYield, len(s.AIPlayers))
+	bases := make([]int, len(s.AIPlayers))
 	playerPopulation := populationOfColonies(s.PlayerColonies)
 	playerFantasticTrader := s.RaceFantasticTrader()
 	playerGovernment := s.effectiveGovernment()
@@ -439,9 +433,53 @@ func (s *GameSession) advanceTreaties() []treatyYield {
 		if aiPopulation < minPopulation {
 			minPopulation = aiPopulation
 		}
-		yields[i] = ai.Treaty.advance(minPopulation, playerGovernment, aiGovernment, playerFantasticTrader, aiHasFantasticTrader(*ai), playerLeaderBonus, tradeAgreementLeaderBonus(ai.Leaders, aiRaceHasTrait(*ai, gamedata.TRAIT_WARLORD)))
+		bases[i] = treatyBase(minPopulation)
+		ai.Treaty.prepareAgreementValues(minPopulation)
+	}
+	// sub_101E77 由高 player slot 往低 slot 掃描。玩家固定為 slot 0 時，
+	// 各 AI 方向會先由高索引往低索引結算，之後才輪到玩家方向。
+	for i := len(s.AIPlayers) - 1; i >= 0; i-- {
+		ai := &s.AIPlayers[i]
+		if ai.Treaty.TradeActive {
+			goal := treatyTargetWithLeader(bases[i], aiGovernment, aiHasFantasticTrader(*ai), true,
+				tradeAgreementLeaderBonus(ai.Leaders, aiRaceHasTrait(*ai, gamedata.TRAIT_WARLORD)))
+			ai.Treaty.AITradeValue = advanceAgreementValue(ai.Treaty.AITradeValue, goal, roll5)
+			yields[i].AIBC = ai.Treaty.AITradeValue
+		}
+		if ai.Treaty.ResearchActive {
+			goal := treatyTarget(bases[i], aiGovernment, false, false)
+			ai.Treaty.AIResearchValue = advanceAgreementValue(ai.Treaty.AIResearchValue, goal, roll5)
+			yields[i].AIResearch = ai.Treaty.AIResearchValue
+		}
+	}
+	for i := len(s.AIPlayers) - 1; i >= 0; i-- {
+		t := &s.AIPlayers[i].Treaty
+		if t.TradeActive {
+			goal := treatyTargetWithLeader(bases[i], playerGovernment, playerFantasticTrader, true, playerLeaderBonus)
+			t.PlayerTradeValue = advanceAgreementValue(t.PlayerTradeValue, goal, roll5)
+			yields[i].PlayerBC = t.PlayerTradeValue
+			t.TradeTurns++
+		}
+		if t.ResearchActive {
+			goal := treatyTarget(bases[i], playerGovernment, false, false)
+			t.PlayerResearchValue = advanceAgreementValue(t.PlayerResearchValue, goal, roll5)
+			yields[i].PlayerResearch = t.PlayerResearchValue
+			t.ResearchTurns++
+		}
+		special := t.advanceSpecialTrade(bases[i])
+		yields[i].PlayerBC += special.PlayerBC
+		yields[i].PlayerResearch += special.PlayerResearch
+		yields[i].AIBC += special.AIBC
+		yields[i].AIResearch += special.AIResearch
 	}
 	return yields
+}
+
+func (s *GameSession) agreementRandForTurn() *randStream {
+	if s.agreementRand == nil {
+		s.agreementRand = newRandStream(s.EventSeed*2654435761 + 29)
+	}
+	return s.agreementRand
 }
 
 // empireGrossBC 是納貢公式的 remake 對應欄位。原版 sub_E1FC7 讀取帝國

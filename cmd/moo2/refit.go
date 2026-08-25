@@ -164,11 +164,11 @@ func (s *refitScreen) draw(dst *ebiten.Image) {
 
 	fillPanel(dst, 28, 324, 584, 84, panel, false)
 	if job, err := s.selectedPreview(); err == nil {
-		cost := shell.RefitCostPP(job.Source, job.Target)
+		cost := b.session.RefitCostPPForPlayer(job.Source, job.Target)
 		b.fnt.Draw(dst, truncateToWidth(b.fnt, fmt.Sprintf(b.tr("來源：%s → 目標：%s（同艦體、自動最佳模板）",
 			"Source: %s → target: %s (same hull, automatic best template)"),
 			job.Source.Name, job.Target.Name), 12, 556), 38, 334, 12, gold)
-		detail := fmt.Sprintf(b.tr("武器 %s　裝甲 %s　護盾 %s　特殊 %s　改裝成本 %d PP",
+		detail := fmt.Sprintf(b.tr("武器 %s  裝甲 %s  護盾 %s  特殊 %s  改裝成本 %d PP",
 			"Weapon %s  Armor %s  Shield %s  Special %s  Refit cost %d PP"),
 			s.componentName(job.Target.Weapon), s.componentName(job.Target.Armor),
 			s.componentName(job.Target.Shield), s.componentName(job.Target.Special), cost)

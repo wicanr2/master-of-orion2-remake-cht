@@ -76,14 +76,15 @@ func ShipCommandCost(class CombatShipClass) int {
 //
 // 飛彈類(核飛彈/麥克萊特飛彈)手冊給的是「依彈架容量(x2/x5/x10/x15/x20)遞增的一組值」
 // (10/20/30/35/40,p.125「size and cost per rack size」),不是單一值;本專案簡化模型(session.go)
-// 未實作彈架容量選擇,取最小彈架(x2 = 10)當估計值,已於下表逐項標註「確認值」vs「估計」。
+// 艦艇設計正常路徑已由 MissileRackBaseValue 依 2/5/10/15/20 發選擇；這份舊式單值 map
+// 仍供衛星／轟炸等沒有逐艦 loadout 的消費端使用，故飛彈保留最小 x2=10 的代理值。
 var WeaponSpaceByName = map[string]int{
 	"雷射":     10, // Laser Cannon,p.124 確認值(手冊表列 Size=10)
-	"核飛彈":    10, // Nuclear Missile,估計(手冊實際為彈架 10/20/30/35/40,取最小彈架 x2)
+	"核飛彈":    10, // Nuclear Missile；非設計消費端的 x2 代理值
 	"質量投射器":  10, // Mass Driver,p.124 確認值
 	"中子爆破槍":  10, // Neutron Blaster,p.124 確認值
 	"核融合光束":  10, // Fusion Beam,p.124 確認值
-	"麥克萊特飛彈": 10, // Merculite Missile,估計(同核飛彈,取最小彈架 x2)
+	"麥克萊特飛彈": 10, // Merculite Missile；非設計消費端的 x2 代理值
 	"高斯砲":    10, // Gauss Cannon,p.124 確認值
 	"相位砲":    10, // Phasor,p.124 確認值
 	"電漿砲":    25, // Plasma Cannon,p.124 確認值(1.31/1.50 傷害係數不同但 Size 不受影響,
@@ -96,11 +97,11 @@ var WeaponSpaceByName = map[string]int{
 	"干擾者":   20, // Disrupter,p.124 確認值
 	"重錘裝置":  50, // Mauler Device,p.124 確認值
 	"粒子束":   15, // Particle Beam,p.124 確認值
-	"脈衝飛彈":  10, // Pulson Missile,估計(彈架 10/20/30/35/40,取最小 x2,同核飛彈)
+	"脈衝飛彈":  10, // Pulson Missile；非設計消費端的 x2 代理值
 	"氙素飛彈":  10, // Zeon Missile,估計(同上)
 	"反物質魚雷": 20, // Anti-Matter Torpedo,p.125 確認值
-	"質子魚雷":   30, // Proton Torpedo,p.125 確認值
-	"電漿魚雷":   40, // Plasma Torpedo,p.125 確認值
+	"質子魚雷":  30, // Proton Torpedo,p.125 確認值
+	"電漿魚雷":  40, // Plasma Torpedo,p.125 確認值
 
 	// 炸彈(第 64 項(武器傷害真表),手冊 p.126 確認值)。
 	"核彈":   5,  // Nuclear Bomb

@@ -39,6 +39,9 @@ func WeaponArcOptionsForWeapon(weaponName string) []gamedata.WeaponArc {
 // NormalizeWeaponArc 把舊 JSON 的零值、無效值或換武器後不適用的弧修正成合法值。
 // 這只負責資料邊界，不等同於戰術射擊方向判定。
 func NormalizeWeaponArc(weaponName string, arc gamedata.WeaponArc) gamedata.WeaponArc {
+	if arc == gamedata.ARC_MONSTER_360 {
+		return arc
+	}
 	options := WeaponArcOptionsForWeapon(weaponName)
 	for _, allowed := range options {
 		if arc == allowed {

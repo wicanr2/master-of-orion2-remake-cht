@@ -91,8 +91,8 @@ func TestScoreBonusOrderingMatchesManual(t *testing.T) {
 	}
 }
 
-// 總分 = 八項相加;拖太久導致時間分為大負數時不讓總分變負。
-func TestComputeScoreTotalAndFloor(t *testing.T) {
+// 原版先加總八項，再套種族倍率並以 +50/100 四捨五入；沒有自訂負分夾限。
+func TestComputeScoreTotalAndMultiplier(t *testing.T) {
 	in := ScoreInput{
 		GalaxySizeIndex: 1, RaceCount: 4, TurnsElapsed: 100,
 		Population: 30, CapturedPopulation: 6, ResearchTopicsKnown: 20,
@@ -101,16 +101,19 @@ func TestComputeScoreTotalAndFloor(t *testing.T) {
 	}
 	b := ComputeScore(in)
 	want := b.Time + b.Population + b.Captured + b.Technology + b.Elimination + b.Orion + b.Council + b.Antares
-	if b.Total != want {
-		t.Errorf("總分 %d 與各項相加 %d 不符", b.Total, want)
+	if b.RawTotal != want || b.Total != want || b.MultiplierPercent != 100 {
+		t.Errorf("100%% 總分分層錯誤:%+v, raw want %d", b, want)
 	}
 	if b.Orion != 100 || b.Council != 100 || b.Antares != 250 {
 		t.Errorf("一次性加分沒接上:%+v", b)
 	}
 
-	// 拖到天荒地老:時間分變成大負數,總分夾在 0。
+	scaled := ComputeScore(ScoreInput{Population: 101, MultiplierPercent: 150})
+	if scaled.RawTotal != 101 || scaled.Total != 152 {
+		t.Errorf("(101*150+50)/100 應四捨五入為 152,got %+v", scaled)
+	}
 	slow := ScoreInput{GalaxySizeIndex: 0, RaceCount: 2, TurnsElapsed: 100000, Population: 1}
-	if got := ComputeScore(slow).Total; got < 0 {
-		t.Errorf("總分不該為負,實得 %d", got)
+	if got := ComputeScore(slow).Total; got >= 0 {
+		t.Errorf("原版沒有負分 clamp,實得 %d", got)
 	}
 }

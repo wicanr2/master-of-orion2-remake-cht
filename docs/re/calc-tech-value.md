@@ -1,5 +1,11 @@
 # `Calc_Tech_Value_`(`sub_FC845` @ 0xFC845)規格文件
 
+> **現況入口（2026-08-25）**：本檔是歷史逐段抄錄，含已被 IDA 資料庫推翻的舊判讀；
+> 現行證據、推論分級與 remake 邊界一律以
+> [`starting-tech-application-audit-20260825.md`](starting-tech-application-audit-20260825.md) 為準。
+> 已閉合的人類／AI 開局應用估值與單次抽選規格見
+> [`../spec/starting-tech-application-selection.md`](../spec/starting-tech-application-selection.md)。
+
 > ⚠ **2026-08-08(第 54 項(三個寫入端))訂正:第 5 節與第 6.2/6.3 節的三個「沒有查到寫入端」是錯的。**
 > 寫入端都在,只是當初沒找到。已確立的部分:
 >
@@ -13,7 +19,7 @@
 > **但「哪一個是性格、哪一個是目標、哪一個是主題」沒有進一步證據**——名字是二手的,
 > 這裡只確定「三個各自從 6 / 4 / 7 個候選裡加權抽一個」。候選各自代表什麼仍未解。
 >
-> 下面第 5、6 節的原文保留不改,當作「當時卡在哪」的紀錄;**引用時以本段為準**。
+> 下方舊段落只供回查當時定位，不得作現況斷言。
 
 > 逐指令抄寫來源:`/home/anr2/moo2-private-build/re/Orion2.exe.asm` 第 365535–366520 行
 > (`sub_FC845 proc near` ... `sub_FC845 endp`,共 986 行,任務書標稱「985 行」)。
@@ -22,7 +28,8 @@
 
 呼叫端 `Choose_Tech_Application_`(`sub_FD335` @ 0xFD335,asm 366684–366978 行)用本函式算出的
 `weight` 乘上 `horizon ÷ turns` 當「加權隨機挑科技」的權重,詳見
-`internal/gamedata/starting_random_tech.go` 檔頭。remake 目前把 `weight` 一律當 1。
+現行 remake 已在 `starting_original_application.go` 接入人類／AI 開局估值、raw profile
+與應用級單次抽選；詳見 `ai-starting-tech-profile-audit-20260825.md`。
 
 ---
 

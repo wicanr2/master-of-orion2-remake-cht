@@ -70,15 +70,14 @@ func TestSetRuleProfile(t *testing.T) {
 	}
 }
 
-// TestFleetBombardDamage_VolleyCountFollowsRuleProfile 驗證 fleetBombardDamage 的齊射輪數
-// 讀 s.RuleProfile.BombardmentVolleys,而非寫死的 10。用「必中 + 固定滿傷」艦艇
-// (deterministicBombardShip,見 orbital_bombardment_test.go)排除 rng 不確定性:每輪傷害固定,
-// 故 Profile15(10 輪)的總傷害應為 Profile13(5 輪)的 2 倍。
-func TestFleetBombardDamage_VolleyCountFollowsRuleProfile(t *testing.T) {
+// TestFleetBombardDamage_BombAttackEquivalenceFollowsRuleProfile 驗證版本差異只作用於炸彈。
+func TestFleetBombardDamage_BombAttackEquivalenceFollowsRuleProfile(t *testing.T) {
 	build := func(p gamedata.RuleProfile) *GameSession {
 		s := NewDemoSession()
 		s.RuleProfile = p
-		s.Fleet().Ships = []Ship{deterministicBombardShip()}
+		sh := deterministicBombardShip()
+		sh.Weapon = "核彈"
+		s.Fleet().Ships = []Ship{sh}
 		return s
 	}
 
@@ -89,13 +88,24 @@ func TestFleetBombardDamage_VolleyCountFollowsRuleProfile(t *testing.T) {
 	dmg13 := s13.fleetBombardDamage(rand.New(rand.NewSource(1)), 0)
 
 	if dmg15 != 10*101 {
-		t.Fatalf("Profile15(10 輪) 總傷害 = %d,want %d(10 輪 * 每輪 101 固定滿傷)", dmg15, 10*101)
+		t.Fatalf("Profile15 炸彈 10 次當量總傷害 = %d,want %d", dmg15, 10*101)
 	}
 	if dmg13 != 5*101 {
-		t.Fatalf("Profile13(5 輪) 總傷害 = %d,want %d(5 輪 * 每輪 101 固定滿傷)", dmg13, 5*101)
+		t.Fatalf("Profile13 炸彈 5 次當量總傷害 = %d,want %d", dmg13, 5*101)
 	}
 	if dmg15 != 2*dmg13 {
-		t.Errorf("Profile15 總傷害應為 Profile13 的 2 倍(10 輪 vs 5 輪),got dmg15=%d dmg13=%d", dmg15, dmg13)
+		t.Errorf("Profile15 炸彈當量應為 Profile13 的 2 倍,got dmg15=%d dmg13=%d", dmg15, dmg13)
+	}
+}
+
+func TestFleetBombardDamage_NonBombAlwaysUsesThreeOriginalRounds(t *testing.T) {
+	for _, p := range []gamedata.RuleProfile{gamedata.Profile13(), gamedata.Profile15()} {
+		s := NewDemoSession()
+		s.RuleProfile = p
+		s.Fleet().Ships = []Ship{deterministicBombardShip()}
+		if got := s.fleetBombardDamage(rand.New(rand.NewSource(1)), 0); got != 3*101 {
+			t.Fatalf("非炸彈應固定三外圈，profile=%v got=%d want=%d", p.Version, got, 3*101)
+		}
 	}
 }
 
@@ -184,6 +194,14 @@ func TestResearchCostForDisplay_FollowsRuleProfile(t *testing.T) {
 	s15 := NewDemoSession()
 	if got := s15.ResearchCostForDisplay(hyperTopic); got != 25000 {
 		t.Errorf("Profile15 ResearchCostForDisplay(HYPER_BIOLOGY) = %d,want 25000", got)
+	}
+	s13.Player.HyperAdvancedLevels = map[gamedata.ResearchTopic]int{hyperTopic: 2}
+	s15.Player.HyperAdvancedLevels = map[gamedata.ResearchTopic]int{hyperTopic: 2}
+	if got := s13.ResearchCostForDisplay(hyperTopic); got != 35000 {
+		t.Errorf("Profile13 Hyper 第三級成本 = %d,want 35000", got)
+	}
+	if got := s15.ResearchCostForDisplay(hyperTopic); got != 45000 {
+		t.Errorf("Profile15 Hyper 第三級成本 = %d,want 45000", got)
 	}
 
 	// 非 Hyper 主題不受 profile 影響,應與套件級 ResearchCost 相同。

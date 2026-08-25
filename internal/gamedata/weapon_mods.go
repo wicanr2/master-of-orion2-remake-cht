@@ -38,9 +38,9 @@ const (
 	// modification increases the size and cost of the weapon by 50 and is not applicable until
 	// the intended weapon has undergone 2 levels of miniaturization.」
 	//
-	// 注意「by 50」不是「by 50%」——手冊其餘 mod 條目一律明寫「by X%」,唯獨 AF 這條寫
-	// 「by 50」(無 % 符號),與其餘百分比 mod 的措辭明顯不同,故本檔把 AF 佔格處理為
-	// 固定值 +50(非百分比),見 WeaponModAutoFireFlatSpaceCost。
+	// IDA `sub_6A406 @ 0x6A406` 以 raw bit 0x0080 對照 15-byte 改造表；該筆
+	// cost/space 皆為 50，並由 Weapon_Cost_/Weapon_Space_ 除以 100 套用。因此手冊
+	// 漏印的百分號不能解讀成固定 +50。
 	ModAutoFire WeaponModCode = "AF"
 	// ModContinuousFire 手冊原文(p.115):「CO: Continuous fire prevents a beam weapon from
 	// overheating as quickly, allowing it to fire over a longer duration. This gives the
@@ -96,15 +96,12 @@ const (
 	ModFastMissile WeaponModCode = "FST"
 )
 
-// WeaponModAutoFireFlatSpaceCost 见 ModAutoFire 註解:手冊原文「by 50」非「by 50%」,固定值。
-const WeaponModAutoFireFlatSpaceCost = 50
-
 // weaponModSpaceCostPercent 各 mod 對佔格/成本的百分比變動(正值=增加,負值=減少)。
-// ModAutoFire 不在此表(固定值,見 WeaponModAutoFireFlatSpaceCost),其餘百分比 mod 逐一對應
-// 上方常數註解引用的手冊百分比。
+// 數值由原版 `word_17FD15/word_17FD17` 的 15-byte 記錄表確認。
 var weaponModSpaceCostPercent = map[WeaponModCode]int{
 	ModHeavyMount:         100,
 	ModPointDefense:       -50,
+	ModAutoFire:           50,
 	ModContinuousFire:     50,
 	ModArmorPiercing:      50,
 	ModEnveloping:         100,
@@ -118,8 +115,29 @@ var weaponModSpaceCostPercent = map[WeaponModCode]int{
 	ModFastMissile:        25,
 }
 
+// weaponModRequiredMiniLevel 是原版 15-byte 改造記錄的門檻欄。0 表示武器剛解鎖即可用。
+var weaponModRequiredMiniLevel = map[WeaponModCode]int{
+	ModHeavyMount: 0, ModPointDefense: 0,
+	ModAutoFire: 2, ModContinuousFire: 1, ModArmorPiercing: 1,
+	ModEnveloping: 2, ModNoRangeDissipation: 1, ModShieldPiercing: 1,
+	ModMissileECCM: 1, ModEmissionsGuidance: 0, ModMIRV: 2,
+	ModOverloadedTorpedo: 1, ModArmoredMissile: 1, ModFastMissile: 1,
+}
+
+// WeaponModRequiredMiniLevel 回傳一項改造需要的武器微型化等級。
+func WeaponModRequiredMiniLevel(mod WeaponModCode) (int, bool) {
+	level, ok := weaponModRequiredMiniLevel[mod]
+	return level, ok
+}
+
+// WeaponModUnlockedAtLevel 回報改造是否已達原版微型化門檻。
+func WeaponModUnlockedAtLevel(mod WeaponModCode, level int) bool {
+	required, ok := WeaponModRequiredMiniLevel(mod)
+	return ok && level >= required
+}
+
 // WeaponModSpaceCostPercent 查表回傳 mod 對佔格/成本的百分比變動;ok=false 表示該 mod
-// 是固定值(目前只有 ModAutoFire)或不是已知 mod 代碼。
+// 不是已知 mod 代碼。
 func WeaponModSpaceCostPercent(mod WeaponModCode) (percent int, ok bool) {
 	p, ok := weaponModSpaceCostPercent[mod]
 	return p, ok
@@ -137,35 +155,55 @@ func WeaponModHas(mods []WeaponModCode, target WeaponModCode) bool {
 }
 
 // WeaponSpaceWithMods 依基礎佔格(如 WeaponSpaceByName 查到的值)套用一組 mod 的佔格變動,
-// 回傳套用後的佔格。百分比 mod 採「加總後一次套用」(對照 damage.go 的
-// DamageMountAdjustedValue 手冊明載的「Hv/PD/HEF interaction is not multiplicative but
-// additive」慣例);手冊本身沒有明講「同一武器同時掛多個 mod 時,佔格百分比是加總一次套用
-// 還是逐個連續複利套用」,本函式採加總一次套用是依現有 Hv/PD/HEF 傷害公式的既定慣例類推,
-// 不是手冊逐字數字,誠實標註於此(見 docs/tech/weapon-mods.md)。ModAutoFire 的固定 +50
-// 在百分比套用「之後」再相加(手冊明寫是固定值,不應被其他 mod 的百分比再放大)。
+// 回傳套用後的佔格。IDA 已證實原版分兩階段：先套 HV／PD，再加總其餘改造百分比套用；
+// AF 是第二階段的 +50%，不是固定值。
 // 結果最少 1(避免 0 或負值佔格)。
 func WeaponSpaceWithMods(baseSpace int, mods []WeaponModCode) int {
-	pctSum := 0
-	flat := 0
+	// 原版先由 sub_6A636 套 HV/PD，再由 sub_6A406 把其餘百分比相加後套用。
+	mountPct, regularPct := 0, 0
 	for _, m := range mods {
-		if p, ok := weaponModSpaceCostPercent[m]; ok {
-			pctSum += p
+		p, ok := weaponModSpaceCostPercent[m]
+		if !ok {
+			continue
 		}
-		if m == ModAutoFire {
-			flat += WeaponModAutoFireFlatSpaceCost
+		if m == ModHeavyMount || m == ModPointDefense {
+			mountPct += p
+		} else {
+			regularPct += p
 		}
 	}
-	space := baseSpace + baseSpace*pctSum/100 + flat
+	space := baseSpace * (100 + mountPct) / 100
+	space = space * (100 + regularPct) / 100
 	if space < 1 {
 		space = 1
 	}
 	return space
 }
 
-// WeaponCostWithMods 手冊原文「adds to the size AND cost」——同一套百分比/固定值同時套用在
+// WeaponCostWithMods 手冊原文「adds to the size AND cost」——同一套百分比同時套用在
 // 成本上,故直接重用 WeaponSpaceWithMods 的公式(對 baseCost 而非 baseSpace)。
 func WeaponCostWithMods(baseCost int, mods []WeaponModCode) int {
 	return WeaponSpaceWithMods(baseCost, mods)
+}
+
+// WeaponCostAtMiniLevel 對應 `sub_6B519 @ 0x6B519`。原版採截斷除法並保底 1。
+func WeaponCostAtMiniLevel(base, level int) int {
+	pct := [...]int{100, 75, 55, 40, 30}
+	p := 25
+	if level >= 0 && level < len(pct) {
+		p = pct[level]
+	}
+	value := base * p / 100
+	if value < 1 && base > 0 {
+		return 1
+	}
+	return value
+}
+
+// WeaponSpaceAtMiniLevel 對應 `sub_6E60E @ 0x6E60E` 的武器類別（raw category 0）。
+// 使用千分比並四捨五入；一般玩家可裝武器由 `sub_6F11C` 落在此類。
+func WeaponSpaceAtMiniLevel(base, level int) int {
+	return WeaponSpaceAtMiniLevelForCategory(base, level, MiniSpaceGeneral)
 }
 
 // ---- 命中率(to-hit)效果:CO/AF/PD 對 netAttack / hit_threshold 的貢獻 ----

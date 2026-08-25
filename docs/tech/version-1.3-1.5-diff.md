@@ -28,15 +28,15 @@
 |---|---|---|---|
 | 1 | 研究成本 Hyper-Advanced Lv1(15k/25k) | ✅ 完成 | `3eef521` 消費端接進 `engine.RunResearchPhase` + `EndTurn` 玩家/AI 注入 |
 | 2 | 電漿砲傷害(30/20) | ✅ 完成 | `3eef521` `BuildShipWithMods` 改讀 `BuildWeaponOptions(RuleProfile)`,隨 `Ship.WeaponAttack` 進戰鬥 |
-| 3 | 軌道轟炸齊射(5/10) | ✅ 完成 | `RuleProfile.BombardmentVolleys` 接 `fleetBombardDamage`(先前輪次) |
+| 3 | 軌道轟炸炸彈攻擊當量(5/10) | ✅ 完成 | `RuleProfile.BombardmentBombAttacks` 只作用於炸彈；IDA 證實整體外圈固定為 3 |
 | **4** | **運輸艦淨現金(freighters_cash_bonus)** | ✅ **完成**(2026-07-11) | 新增「運輸艦隊」建造選項(`gamedata.FreighterFleetActionName`,前置科技 `TOPIC_NUCLEAR_FISSION`)補上先前缺的「貨運艦建造事件追蹤」子系統。完工時 `shell.GameSession.applySpecialAction`:`s.Player.ActiveFreighters += gamedata.FreighterFleetShipsPerBuild`(手冊 p.168 每次 +5 艘)+ `s.Player.BC += s.RuleProfile.FreightersCashBonus`(新欄位,1.3=5/1.5=0)。**簡化**:只模擬手冊表格「固定回饋」那一側,不模擬 0-3 BC 建造當下維護費立即扣款那一側(金額小,1.40+ 已改下回合扣);AI 對手未接同一建造流程,`ActiveFreighters` 對 AI 仍恆 0 |
-| **5** | **防禦方指揮官 2.5x(defender commando)** | ✅ **完成** | `gamedata.GroundCommandoDefenderForceBonus` + `RuleProfile.DefenderCommandoBonus` 已接進 `InvadeColony` 守方(`internal/shell/ground_invasion.go`);前置的 AI 領袖資料模型(`AIOpponent.Leaders`)已補上,`buildDemoAIOpponents` 依種族性格開局固定指派(布拉西人 Tier2/姆瑞森人 Tier1/席隆人無)——**誠實近似**:非手冊逐字的隨機雇用機制,見 `session.go` `AIOpponent.Leaders`/`demoAIOpponentSetup.commandoTier` 欄位註解 |
+| **5** | **防禦方指揮官 2.5x(defender commando)** | ✅ **完成** | `gamedata.GroundCommandoDefenderForceBonus` + `RuleProfile.DefenderCommandoBonus` 已接進 `InvadeColony` 守方；AI 領袖現由 `Do_AI_Leaders_ @ 0xD7439` 的動態 offer／付費／任命鏈建立，不再依種族固定贈送 Commando，見 `docs/re/ai-leader-assignment-audit-20260825.md`。 |
 | 6 | commando 倍率門檻 | ✅ 非差異 | `PARAMETERS.CFG:2745-2753`「(default, classic)」,1.5 預設=1.3,無需做 |
 | **7** | **轟炸建築 +1hit(BombardmentBuildingBonusHits)** | ✅ **完成** | `b239f94` 隨 AI 建築模型接進 `BombardColony` 建築吸收(1.3 每棟 +1 hit);語意近似已標註 |
 | 8 | civilian_armor(100hp) | ✅ 非差異 | `PARAMETERS.CFG:1778-1786`,值兩版相同;remake 採 hits 計數模型非 HP 模型,兩者未調和(誠實標註) |
 | 9 | 防禦建築結構倍率(100) | ✅ 非差異 | `PARAMETERS.CFG:1772-1775` |
 | 10 | 研究突破隨機性 | ✅ 非差異 | `PARAMETERS.CFG:542-545`;remake 研究本就無「突破機率」建模 |
-| 11 | 行星尺寸轟炸分級(3-4-6-7-8) | ✅ 非差異 + 幾何已接線 | 1.5 系列內部自我修正回 classic;`GroundBombardPopulationLoss` 已用行星尺寸係數 |
+| 11 | 行星尺寸轟炸分級(3-4-6-7-8) | ✅ 非差異；不再誤接傷亡端 | 1.5 系列內部自我修正回 classic；IDA `sub_DCEBD` 傷亡回寫不讀行星尺寸，舊 `GroundBombardPopulationLoss` 近似已退出 runtime |
 | 12 | 起始偵察艦速度(10/12) | ✅ 等同 | remake `CombatSpeed()` 是統一公式=1.5 修正後行為;重現 1.3 的「自動 vs 手動設計不一致」bug 無意義 |
 | **13** | **掃描/偵測距離** | ✅ **完成**(2026-07-11) | 新增 `internal/gamedata/detection.go`(掃描科技/軌道基地 parsec 查表 + 換算)+ `internal/shell/detection.go`(`GameSession.VisibleStars`/`starVisible`,啟用先前無人讀取的 `Star.Explored` 死旗標)+ `RuleProfile.SensorRangeVersionBonusParsec`(1.3=0/1.5=1);`cmd/moo2/interactive.go` `drawStarmap` 接上輕量戰爭迷霧(未偵測星降噪點、不畫名/擁有環)。**全面近似**:parsec 數值、換算常數皆無原版來源,詳見下方 §1 第 13 列與 `detection.go` 檔頭。fog 純視覺,不 gate 任何操作;不做敵艦 map blip(AI 無地圖座標) |
 | **14** | **衛星/砲台佔格(beam arc cost)** | ✅ **完成**(2026-07-11) | `internal/gamedata/satellite.go` 把軌道基地/飛彈基地/地面砲台建模成「space 預算→塞入依科技解鎖的最佳武器」,beam 佔格套 `RuleProfile.SatelliteBeamArcCostPct`(1.3=25/1.5=33)、`GroundBatteryBeamArcCostPct`(1.3=0/1.5=50,CHANGELOG_150.TXT 1.50.7/1.50.10);`internal/shell/orbital_bombardment.go` `retaliationAttackers` 改用此模型取代舊 shipStrength 4/8/16 固定 tier。飛彈基地(300 space)/地面砲台(450 space)為手冊 p.78/p.81 確認值,星基/戰鬥站/星辰要塞(250/500/1200)是借用 ShipHullSpace 同量級的近似值;校準除數 `SatelliteStrengthScale=20` 使雷射參考點下星基/戰鬥站重現舊 tier 4/8,星辰要塞算出 20(非近似 19,見常數註解的誠實落差說明)。平衡 sanity(開局艦隊轟炸開局 AI 母星,Turn 0..14 掃描)兩版本最大損艦數皆為 1,見 `internal/shell/satellite_defense_test.go`。 |
@@ -61,7 +61,7 @@
 | 4 | 經濟(新造運輸艦淨現金) | 完工時**淨得 +2~5 BC**(0-3 BC 立即成本 + 固定 5 BC 補償,官方手冊原文承認此為 1.3 就有的「一律有淨利」quirk,非等到 1.40 才算 bug) | `freighters_cash_bonus` 出廠預設 **0**(1.50.8 起),淨得 0 BC | ✅ 是(2026-07-11 完成)——`gamedata.IncomeFreighterMaintenanceCost`(每回合 0.5 BC/艘持續維護費)先前已寫好;本輪補上「完工當下的一次性現金效果」:新增「運輸艦隊」建造選項(`gamedata.FreighterFleetActionName`),完工時 `s.Player.ActiveFreighters += gamedata.FreighterFleetShipsPerBuild`(+5 艘)+ `s.Player.BC += s.RuleProfile.FreightersCashBonus`(新欄位,1.3=5/1.5=0)。**簡化**:只模擬手冊表格的「固定回饋」那一側,不模擬 0-3 BC 建造當下維護費立即扣款那一側 | MANUAL_150.html「Buildings & Freighters Free Cash Bug」全段(1.31/1.40/1.50 三欄對照表)+ CHANGELOG 1.50.8「Changed freighters_cash_bonus default from 5 to 0 BC」 |
 | 5 | 地面戰:防禦方指揮官加成 | 防禦方 Commando 技能領袖**無**額外加成(僅攻方有 2.5x) | 新增:防禦方 Commando 領袖也給 **2.5x** 加成(攻方不變) | ✅ 是(2026-07-11 完成)——`gamedata.GroundCommandoDefenderForceBonus` + `RuleProfile.DefenderCommandoBonus` 已接進 `InvadeColony` 守方,前置的 `AIOpponent.Leaders` 資料模型(種族性格近似指派)已補齊 | MANUAL_150.html「Commando Leader: A defending commando gives 2.5x the regular commando bonus to ground troops, just like an attacking commando already gives in classic.」 |
 | 6 | 地面戰:commando 倍率門檻 | 攻方 5x/7.5x、守方 2x/3x(依技能等級) | **出廠預設不變**,只是新增 `ground_commando_attacker_x2`/`ground_commando_defender_x5` 讓玩家可調換 | ❌ 否(且屬確認非差異) | `PARAMETERS.CFG:2745-2753`「(default, classic)」逐條標註 |
-| 7 | 轟炸:建築 hits 加成 | 未記錄文件的 **+1 hit** bonus(bug) | 移除該 +1 bug | ❌ 否——本專案軌道轟炸只扣人口,不扣建築(見 `docs/tech/ground-combat-algorithm.md`「範圍限制」),此差異對本專案模型無作用 | CHANGELOG_150.TXT 1.50.10「Undocumented +1 hit bonus for civilian buildings during bombardment removed.」 |
+| 7 | 轟炸:建築 hits 加成 | 未記錄文件的 **+1 hit** bonus(bug) | 移除該 +1 bug | ✅ 已接 `BombardmentBuildingBonusHits`；精確上游語意仍待回查 | CHANGELOG_150.TXT 1.50.10「Undocumented +1 hit bonus for civilian buildings during bombardment removed.」 |
 | 8 | 轟炸:建築/人口裝甲值 | `civilian_armor`(非防禦建築/人口單位)= **100 hp**(所有裝甲等級皆同) | 出廠預設不變,只是暴露成可調參數 | ❌ 否(且屬確認非差異) | `PARAMETERS.CFG:1778-1786`「Default is 100 hp regardless of armor (classic).」 |
 | 9 | 地面戰:防禦建築結構倍率 | `ground_defense_armor_multiplier` = **100**(對應鈦裝甲等級 100 結構點) | 出廠預設不變 | ❌ 否(確認非差異) | `PARAMETERS.CFG:1772-1775`「Default is 100 ... (classic).」 |
 | 10 | 研究:突破隨機性 | `fixed_research_cost=0`(有隨機突破機率) | 出廠預設不變 | ❌ 否(確認非差異;本專案研究系統本來就沒模擬「突破機率」這件事,只有固定 RP 成本) | `PARAMETERS.CFG:542-545`「(default, classic)」 |
@@ -160,8 +160,8 @@ type RuleProfile struct {
 	// 無法表示最小值差異——這是既有資料模型限制,非本 profile 遺漏。
 	PlasmaCannonMaxDamage int
 
-	// 軌道轟炸:fleetBombardDamage 模擬齊射的輪數。來源:CHANGELOG_150.TXT 1.50.9。
-	BombardmentVolleys int
+	// 軌道轟炸：炸彈武器攻擊當量。來源:CHANGELOG_150.TXT 1.50.9。
+	BombardmentBombAttacks int
 }
 
 func Profile13() RuleProfile {
@@ -169,7 +169,7 @@ func Profile13() RuleProfile {
 		Version:                 VersionClassic13,
 		HyperAdvancedLevel1Cost: 15000,
 		PlasmaCannonMaxDamage:   30,
-		BombardmentVolleys:      5,
+		BombardmentBombAttacks:  5,
 	}
 }
 
@@ -178,7 +178,7 @@ func Profile15() RuleProfile {
 		Version:                 VersionCommunity15,
 		HyperAdvancedLevel1Cost: 25000, // = 現行 techtree.go 硬編值
 		PlasmaCannonMaxDamage:   20,    // = 現行 session.go 硬編值
-		BombardmentVolleys:      10,    // = 現行 orbital_bombardment.go 硬編值
+		BombardmentBombAttacks:  10,
 	}
 }
 ```
@@ -189,7 +189,7 @@ func Profile15() RuleProfile {
 |---|---|---|
 | `internal/gamedata/techtree.go` 8 個 `TOPIC_HYPER_*` 條目 | `Cost: 25000` 硬編 | `researchChoices` 這 8 條的 `Cost` 改成讀 `activeProfile.HyperAdvancedLevel1Cost`(需把 `researchChoices` 從套件級 `var` 改成依 profile 產生的函式,或在 `ResearchChoiceFor` 內對這 8 個 topic 特判覆寫) |
 | `internal/shell/session.go` `WeaponOptions` 電漿砲 | `{"電漿砲", 200, 20, ...}` 硬編 | 建構 `WeaponOptions` 時對電漿砲那一列的 `Value` 改讀 `activeProfile.PlasmaCannonMaxDamage`(`Component` 陣列從套件級 `var` 改成 `func BuildWeaponOptions(p RuleProfile) []Component`,呼叫端一次性建構,不必每次查表) |
-| `internal/shell/orbital_bombardment.go` `fleetBombardDamage` | `for round := 0; round < 10; round++` 硬編 | 迴圈上限改讀 `s.RuleProfile.BombardmentVolleys`(`GameSession` 需新增 `RuleProfile` 欄位,由 `NewDemoSession`/新遊戲流程注入) |
+| `internal/shell/orbital_bombardment.go` `fleetBombardDamage` | 舊版把 5／10 誤當所有武器輪數 | 外圈固定 3；只有炸彈讀 `s.RuleProfile.BombardmentBombAttacks` |
 
 `GameSession` 需要新增一個 `RuleProfile` 欄位(建構時由主選單選擇結果注入),這是唯一貫穿全專案的
 新增狀態;`RuleProfile` 本身應視為**唯讀設定**,遊戲開始後不可變(避免中途切版本造成存檔/平衡
@@ -209,7 +209,7 @@ func Profile15() RuleProfile {
 ## 6. 第一版最小分版建議(可直接排入 WORKLIST)
 
 **只做 §2 三個值**:`HyperAdvancedLevel1Cost`(15000/25000)、`PlasmaCannonMaxDamage`(30/20)、
-`BombardmentVolleys`(5/10)。理由:
+`BombardmentBombAttacks`(5/10)。理由:
 
 - 三者皆有官方文件逐字數字佐證(非社群逆向、非推測)。
 - 三者皆落在本專案「已在跑」的程式碼路徑上,接線成本低(見 §5.2,三處都是把硬編常數換成讀

@@ -2,28 +2,33 @@
 
 > 日期:2026-07-10。目的:精確記錄研究系統**已忠實**與**尚缺**的部分,並給下輪執行「每主題數科技間抉擇」的乾淨計畫。避免半套實作(專案鐵律:對齊原版、不急就章、不自編)。
 
-## 已忠實(可信,勿重做)
+## 已完成的 remake 資料與操作（不代表原版回合資料流已閉合）
 
 - **真科技樹資料**:`internal/gamedata/techtree.go` 的 `researchChoices[83]` 逐字轉寫自 openorion2 `tech.cpp:169–305`,含每個 `ResearchTopic` 的**真 RP 成本**、可選科技清單(`Choices`)、`ResearchAll` 旗標。公開 accessor `gamedata.ResearchChoiceFor(topic)`。
-- **真成本已接入**:`shell.ResearchCost(t)` 直接取 `ResearchChoiceFor(t).Cost`;`engine/research.go` 的 `RunResearchPhase` 用真成本判定完成,並**保留溢出 RP 結轉**下一主題。→ 研究「要花多少點」已對齊原版。
+- **成本與突破已接入**：`shell.ResearchCost(t)` 取 `ResearchChoiceFor(t).Cost`；
+  `engine/research.go` 依原版超額比例擲突破率。成功後進度清零，不再保留自編的溢出 RP。
 
 ## 核心機制:每主題「抉擇一項科技」
 
-原版 MOO2:完成一個研究主題後,若該主題 `ResearchAll=false`,一般種族要在 `Choices` 的數個科技中**選一項**解鎖(其餘永久放棄);Creative 會全解,Uncreative 則隨機取得一項;`ResearchAll=true` 本來就全解。這是 MOO2 招牌取捨。
+原版 MOO2 在開始研究 field 時便選定 application；突破時授予既有選項。若
+`ResearchAll=false`，一般種族在數項科技中擇一；Creative 突破時全解，Uncreative 在可選集合
+形成時隨機限縮成一項；`ResearchAll=true` 本來就全解。IDA 證據見
+[`../re/research-application-selection-audit-20260825.md`](../re/research-application-selection-audit-20260825.md)。
 
 目前狀態（共同基礎模型）:
-- `engine/research.go` 保留純研究結算與一般種族的待決資料結構；`shell.applyResearchRaceTrait` 再依 Creative／Uncreative 套用完成邊界規則。
+- `PlayerState.ResearchApplication` 保存研究中的 application；`ChosenTech` 只保存突破後真正取得的科技。
+- `shell.preparePlayerResearchApplication`／`prepareAIResearchApplication` 在投入 RP 前套用一般、Creative、Uncreative 分支。
 - `shell.ComponentUnlocked` 以 `ExplicitChoice` 區分一般種族明確擇一與 Creative／預設主題層級全解。
 
 ## 執行計畫與進度
 
 1. ✅ **模型層(engine)完成**(2026-07-10,非破壞、有測試):
-   - `PlayerState` 加 `ChosenTech map[ResearchTopic]Technology`、`PendingChoice`、`HasPendingChoice`。
-   - `RunResearchPhase` 完成主題時 `recordCompletion`:ResearchAll/單選直接記;**多選預設記第一項並開 PendingChoice**(不阻塞回合,玩家可改選)。
-   - `shell.applyResearchRaceTrait` 在完成邊界接上種族差異:Creative 清除待決並保留「未明確抉擇＝領域全解」語意;Uncreative 由可存檔研究亂數流自動擇一並標記 `ExplicitChoice`。
-   - `engine.ApplyResearchChoice(ps, tech)` 驗證合法選項後改選、清待決。
+   - `PlayerState` 以 `ResearchApplication`／`HasResearchApplication` 保存目前選項；`ChosenTech`、`ExplicitChoice` 僅表示已取得科技。
+   - `RunResearchPhase` 完成主題時授予研究前已選定項；舊存檔沒有此欄位時才開一次相容 PendingChoice。
+   - Creative 不需單選；Uncreative 由可存檔研究亂數流在研究開始時限縮為一項。
+   - `engine.SelectResearchApplication` 驗證選項但不解鎖；`ApplyResearchChoice` 只留作舊存檔相容。
    - shell:`PendingResearchChoice()` / `ChooseResearchTech(tech)` / `ChosenTechFor(topic)`。
-   - 測試:`internal/engine/research_choice_test.go`、`internal/shell/research_choice_test.go`(多選預設+改選+非法拒絕+ResearchAll 不待決)。
+   - 測試涵蓋研究前選擇、未突破不解鎖、突破授予、非法拒絕、ResearchAll 與存讀檔。
 2. ✅ **解鎖 gating 改科技層級完成**(2026-07-10,非破壞、有測試):
    - 元件↔真科技校正:依 `docs/tech/component-tech-mapping.md` 把各元件掛正確主題 + `UnlockTech`(真 Technology)。里程碑(死光/氙素裝甲)/抽象(戰鬥電腦/重生程序)元件 `UnlockTech=TECH_NONE`(proxy 主題,待重設計)。
    - `PlayerState.ExplicitChoice`:`ApplyResearchChoice` 標記玩家明確抉擇過的主題。
@@ -31,7 +36,9 @@
    - `researchQueue` 自元件 `.Tech` 蒐集主題,校正後深層主題自動納入研究、逐步解鎖(不永久鎖)。
    - 測試:`component_gating_test.go`(明確抉擇收斂/未抉擇主題層級);既有 `TestResearchUnlockLoopOverTurns` 續綠(非破壞)。
 
-   **→ 研究系統忠實化三步全部完成**:真成本 + 真選項抉擇 UI + 抉擇反映到元件解鎖。剩「戰鬥電腦/重生程序/里程碑科技」等資料模型層級的元件重設計(需 Component.Tech 支援里程碑語意),屬小尾巴。
+   **→ remake 的研究資料、抉擇 UI 與元件解鎖三步已接通。** 原版
+   `Check_For_Research_Breakthrough_ @ 0xE44E0` 的累積、突破 RNG、成功清零與完成入口已形成
+   IDA→規格→Go 垂直證據；殖民地完整研究產出與應用選擇時序仍是核心忠實度工作。
 
 <details><summary>校正發現(存查)</summary>
 
@@ -47,17 +54,20 @@
 
 3. ✅ **抉擇 UI 完成**(2026-07-10,可玩、headless 渲染驗證):
    - `gamedata/technames.go`:`Technology → 英文名`(203 條,對 tech.tsv 驗證;8 個 HYPER 填充項無名)。
-   - `cmd/moo2/researchchoice.go`:回合結束若 `PendingResearchChoice` 非空 → 抉擇畫面(RACEOPT 框 + 真科技選項,經 TECHNAME/tech.tsv 中文化);點選 → `ChooseResearchTech` → 回合摘要。
-   - 接線:`galaxy` 結束回合後偵測待決抉擇導向此畫面。
+   - `cmd/moo2/researchchoice.go`:點選研究 field 後若為多選，先進 application 選擇畫面；點選只設定目前 application，再回星系。
+   - 結束回合前也有待選閘門，避免尚未決定 application 就先推進世界。
    - 驗證:進階建築學 → 自動化工廠/重型裝甲/行星飛彈基地(真資料),end-to-end 流程跑通。
    - AI 目前用預設第一項(decider 依性格選為後續小改)。
 
-**目前狀態總結(2026-07-10)**:研究「每主題數科技間抉擇」**三步全部完成**——真成本 + 真選項抉擇 UI + 抉擇反映到元件解鎖。玩家研究一個主題、選定一項科技後,只有該科技對應的艦艇元件解鎖(明確抉擇),AI/預設維持主題層級不回歸。剩餘小尾巴:戰鬥電腦/重生程序/里程碑科技(死光/氙素裝甲)等元件的資料模型重設計(`Component.Tech` 目前只支援單一 ResearchTopic,無法表達電腦研究鏈/里程碑/種族特性語意)。
+**目前狀態總結（2026-08-25 重新稽核）**：玩家可完成主題、選科技並解鎖元件；研究突破已
+依原版改為嚴格超過成本後按超額比例擲骰，成功清零。研究 application 的玩家／AI 選擇時序、
+Creative／Uncreative 分支亦已由 IDA 閉合並接線；其餘殖民地人口修正與特殊科技 callback 列於
+[`../re/parity-matrix.tsv`](../re/parity-matrix.tsv)，不得再稱研究系統已忠實完成。
 
 ## 2026-08-09 種族研究差異接線
 
-玩家與 AI 現在共用同一個研究完成 helper：Creative 不進擇一畫面而取得該領域全部應用；Uncreative
-使用獨立且可存檔的研究亂數流自動取得一項。一般種族仍保留原本的研究選擇 UI。`ResearchDraws`
+玩家與 AI 在研究開始前套用同一組種族規則：Creative 不進擇一畫面而於突破時取得全部應用；Uncreative
+使用獨立且可存檔的研究亂數流預選一項。一般種族保留研究選擇 UI。`ResearchDraws`
 會隨 session snapshot 保存，避免存讀檔後重新抽到另一項。
 
 ## 驗收

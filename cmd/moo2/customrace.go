@@ -262,6 +262,7 @@ func (s *customRaceScreen) applyAndStart() {
 		}
 	}
 	b.session.ApplyCustomRaceBonuses(r, traits...)
+	b.session.SetCustomRaceUnusedPicks(s.remaining())
 	// 政府型態效果(僅已建模資源乘數;政府型態循環索引即 shell.Governments 索引)。
 	for _, c := range s.cats {
 		if c.nameEn == "Government" {

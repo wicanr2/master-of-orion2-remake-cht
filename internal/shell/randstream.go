@@ -4,7 +4,7 @@ import "math/rand"
 
 // randstream.go:**可存檔的亂數流**。
 //
-// remake 有三條長壽命的亂數流(事件、星系發現、間諜),它們與 `ground_invasion` /
+// remake 的事件、星系發現、間諜、研究、議會、人口死亡與外交協議使用長壽命亂數流；它們與 `ground_invasion` /
 // `monster` / `orbital_bombardment` 那種「每次用當下的回合數當種子」的一次性亂數不同——
 // 它們從開局一路抽到終局。
 //

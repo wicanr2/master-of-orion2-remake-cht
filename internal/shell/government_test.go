@@ -6,42 +6,29 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
-// TestApplyGovernment 驗證政府型態對已建模資源的乘數效果(手冊 p.20–23 明列百分比)。
+// TestApplyGovernment 驗證政體修正保持為每回合可重算欄位，不永久烘進基礎產出率。
 func TestApplyGovernment(t *testing.T) {
-	// 民主:研究 +50%。
 	s := NewDemoSession()
-	base := s.PlayerColonies[0].ResearchPerScientist
+	baseFood, baseIndustry, baseResearch := s.PlayerColonies[0].FoodPerFarmer,
+		s.PlayerColonies[0].IndustryPerWorker, s.PlayerColonies[0].ResearchPerScientist
 	s.ApplyGovernment(3) // 民主
-	if got, want := s.PlayerColonies[0].ResearchPerScientist, (base*3+1)/2; got != want {
-		t.Fatalf("民主研究應 ×1.5:%d → 期望 %d,得 %d", base, want, got)
+	if s.PlayerColonies[0].GovernmentResearchBonusPercent != 50 {
+		t.Fatalf("民主研究百分點=%d，期望 50", s.PlayerColonies[0].GovernmentResearchBonusPercent)
 	}
-
-	// 封建:研究減半。
-	s = NewDemoSession()
-	base = s.PlayerColonies[0].ResearchPerScientist
+	s.ApplyGovernment(3) // 重複套用不得累乘。
+	if c := s.PlayerColonies[0]; c.FoodPerFarmer != baseFood || c.IndustryPerWorker != baseIndustry ||
+		c.ResearchPerScientist != baseResearch {
+		t.Fatalf("政體不得改寫基礎率：food=%d/%d industry=%d/%d research=%d/%d",
+			c.FoodPerFarmer, baseFood, c.IndustryPerWorker, baseIndustry, c.ResearchPerScientist, baseResearch)
+	}
 	s.ApplyGovernment(1) // 封建
-	if got, want := s.PlayerColonies[0].ResearchPerScientist, base/2; got != want {
-		t.Fatalf("封建研究應減半:%d → 期望 %d,得 %d", base, want, got)
+	if s.PlayerColonies[0].GovernmentResearchBonusPercent != -50 {
+		t.Fatalf("封建研究百分點=%d，期望 -50", s.PlayerColonies[0].GovernmentResearchBonusPercent)
 	}
-
-	// 統一:食物 +50%、產能 +50%。
-	s = NewDemoSession()
-	bf := s.PlayerColonies[0].FoodPerFarmer
-	bi := s.PlayerColonies[0].IndustryPerWorker
 	s.ApplyGovernment(2) // 統一
-	if got, want := s.PlayerColonies[0].FoodPerFarmer, (bf*3+1)/2; got != want {
-		t.Fatalf("統一食物應 ×1.5:%d → 期望 %d,得 %d", bf, want, got)
-	}
-	if got, want := s.PlayerColonies[0].IndustryPerWorker, (bi*3+1)/2; got != want {
-		t.Fatalf("統一產能應 ×1.5:%d → 期望 %d,得 %d", bi, want, got)
-	}
-
-	// 獨裁:基準,研究不變。
-	s = NewDemoSession()
-	base = s.PlayerColonies[0].ResearchPerScientist
-	s.ApplyGovernment(0)
-	if got := s.PlayerColonies[0].ResearchPerScientist; got != base {
-		t.Fatalf("獨裁研究應不變:%d → %d", base, got)
+	if c := s.PlayerColonies[0]; c.GovernmentFoodBonusPercent != 50 ||
+		c.GovernmentIndustryBonusPercent != 50 || c.GovernmentResearchBonusPercent != 0 || c.MoralePercent != 0 {
+		t.Fatalf("統一政體欄位錯誤：%+v", c)
 	}
 }
 

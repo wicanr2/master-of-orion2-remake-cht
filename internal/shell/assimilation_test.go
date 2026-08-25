@@ -10,12 +10,16 @@ import (
 // 攻下的殖民地整批是未同化人口,之後每 N 回合同化一單位。
 func TestAssimilationCountsDownAfterConquest(t *testing.T) {
 	s := NewDemoSession()
+	s.ApplyCustomRaceBonuses(Race{OrigIdx: -1})
 	s.DisableEvents = true
 	s.Government = gamedata.MoraleGovDemocracy // 民主:4 回合一單位
-	c := engine.ColonyState{Population: 3, PopMax: 8, PlanetGravity: gamedata.NORMAL_G}
+	c := engine.ColonyState{Population: 3, Farmers: 1, Workers: 1, Scientists: 1, PopMax: 8, PlanetGravity: gamedata.NORMAL_G}
 	markColonyConquered(&c, -1)
 	if c.UnassimilatedPop != 3 {
 		t.Fatalf("剛攻下應整批是外族人口(3),得到 %d", c.UnassimilatedPop)
+	}
+	if c.UnassimilatedFarmers != 1 || c.UnassimilatedWorkers != 1 || c.UnassimilatedScientists != 1 {
+		t.Fatalf("征服應保存 prisoner 職務分布：%+v", c)
 	}
 	s.PlayerColonies = append(s.PlayerColonies, c)
 	idx := len(s.PlayerColonies) - 1
@@ -37,6 +41,9 @@ func TestAssimilationCountsDownAfterConquest(t *testing.T) {
 	if s.PlayerColonies[idx].UnassimilatedPop != 2 {
 		t.Errorf("第 4 回合應同化一單位(剩 2),得到 %d", s.PlayerColonies[idx].UnassimilatedPop)
 	}
+	if got := s.PlayerColonies[idx].UnassimilatedFarmers; got != 0 {
+		t.Errorf("固定同化順序應先清農夫 prisoner，got %d", got)
+	}
 	// 再 8 回合把剩下兩單位吃掉。
 	for i := 0; i < 8; i++ {
 		s.advanceAssimilation()
@@ -46,9 +53,22 @@ func TestAssimilationCountsDownAfterConquest(t *testing.T) {
 	}
 }
 
+func TestShiftColonyJobMovesPrisonerDistribution(t *testing.T) {
+	s := NewDemoSession()
+	c := &s.PlayerColonies[0]
+	c.Population, c.Farmers, c.Workers, c.Scientists = 2, 1, 1, 0
+	c.UnassimilatedPop, c.UnassimilatedFarmers = 1, 1
+	c.UnassimilatedWorkers, c.UnassimilatedScientists = 0, 0
+	s.ShiftColonyJob(0, "f", "w")
+	if c.UnassimilatedFarmers != 0 || c.UnassimilatedWorkers != 1 || c.UnassimilatedPop != 1 {
+		t.Fatalf("改派後 prisoner 分布失真：%+v", *c)
+	}
+}
+
 // 餘數留著繼續累,不是「每 N 回合歸零重來」——政體改變時不該吃掉已累積的進度。
 func TestAssimilationProgressCarriesOverAcrossRateChanges(t *testing.T) {
 	s := NewDemoSession()
+	s.ApplyCustomRaceBonuses(Race{OrigIdx: -1})
 	s.DisableEvents = true
 	s.Government = gamedata.MoraleGovUnification // 統一:20 回合
 	c := engine.ColonyState{Population: 2, PopMax: 8, PlanetGravity: gamedata.NORMAL_G}
@@ -61,20 +81,46 @@ func TestAssimilationProgressCarriesOverAcrossRateChanges(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		s.advanceAssimilation()
 	}
-	if s.PlayerColonies[idx].AssimilationProgress != 3 {
-		t.Fatalf("應累積 3 回合進度,得到 %d", s.PlayerColonies[idx].AssimilationProgress)
+	if s.PlayerColonies[idx].AssimilationProgress != 36 {
+		t.Fatalf("統一 3 回合應累積 36 raw 點,得到 %d", s.PlayerColonies[idx].AssimilationProgress)
 	}
-	// 蓋起異族管理中心 → 門檻變 2,累積的 3 回合立刻兌現一單位、餘 1。
+	// 蓋起異族管理中心只改之後每回合加入的 rate，不把既有 36 點重新解讀成 3 個快回合。
 	s.ColonyBuildings[idx] = map[string]bool{alienManagementCenterName: true}
-	s.advanceAssimilation() // 進度 4,門檻 2 → 同化兩單位
+	for i := 0; i < 4; i++ {
+		s.advanceAssimilation()
+	}
 	if got := s.PlayerColonies[idx].UnassimilatedPop; got != 0 {
-		t.Errorf("累積的進度應被沿用而不是歸零:未同化剩 %d", got)
+		t.Errorf("raw 餘數應被沿用而不是重解或歸零:未同化剩 %d", got)
+	}
+}
+
+func TestCharismaticRaceAcceleratesAssimilationInSession(t *testing.T) {
+	s := NewDemoSession()
+	s.Government = gamedata.MoraleGovDemocracy
+	s.ApplyCustomRaceBonuses(Race{OrigIdx: -1}, gamedata.TRAIT_CHARISMATIC)
+	if got := s.AssimilationTurnsFor(0); got != 2 {
+		t.Fatalf("魅力民主同化應 2 回合，got %d", got)
+	}
+}
+
+func TestLegacyAssimilationProgressMigratesToRawPoints(t *testing.T) {
+	s := NewDemoSession()
+	s.ApplyCustomRaceBonuses(Race{OrigIdx: -1})
+	s.Government = gamedata.MoraleGovUnification
+	s.AssimilationProgressVersion = 0
+	s.PlayerColonies[0].UnassimilatedPop = 1
+	s.PlayerColonies[0].AssimilationProgress = 3
+	s.ensureAssimilationProgressScale()
+	if s.AssimilationProgressVersion != 1 || s.PlayerColonies[0].AssimilationProgress != 36 {
+		t.Fatalf("舊 3 回合應轉成 36 raw 點，version/progress=%d/%d",
+			s.AssimilationProgressVersion, s.PlayerColonies[0].AssimilationProgress)
 	}
 }
 
 // 異族管理中心對統一政體是十倍速。
 func TestAlienManagementCenterOverridesGovernmentInSession(t *testing.T) {
 	s := NewDemoSession()
+	s.ApplyCustomRaceBonuses(Race{OrigIdx: -1})
 	s.Government = gamedata.MoraleGovUnification
 	for len(s.ColonyBuildings) < len(s.PlayerColonies) {
 		s.ColonyBuildings = append(s.ColonyBuildings, nil)
@@ -107,6 +153,7 @@ func TestAssimilationLeavesCleanColoniesAlone(t *testing.T) {
 // 排斥種族減半(整條路徑,不只 gamedata)。
 func TestRepulsiveRaceSlowsAssimilationInSession(t *testing.T) {
 	s := NewDemoSession()
+	s.ApplyCustomRaceBonuses(Race{OrigIdx: -1})
 	s.Government = gamedata.MoraleGovDemocracy
 	base := s.AssimilationTurnsFor(0)
 	s.ApplyRace(raceIndexByEnName(t, "Silicoids")) // 矽基是惹人厭種族
@@ -139,6 +186,7 @@ func TestUnassimilatedPopulationCostsMorale(t *testing.T) {
 // 同化完最後一單位的那一刻,懲罰要跟著消失——不重算的話玩家會一直被扣。
 func TestMoralePenaltyLiftsWhenAssimilationFinishes(t *testing.T) {
 	s := NewDemoSession()
+	s.ApplyCustomRaceBonuses(Race{OrigIdx: -1})
 	s.DisableEvents = true
 	s.Government = gamedata.MoraleGovDemocracy // 4 回合一單位
 	c := engine.ColonyState{Population: 1, PopMax: 8, PlanetGravity: gamedata.NORMAL_G}

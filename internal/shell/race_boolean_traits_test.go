@@ -233,3 +233,32 @@ func TestCustomRaceTraitsReachExistingRulesAndSaveLoad(t *testing.T) {
 		t.Error("存讀檔後客製種族的既有特性效果不應消失")
 	}
 }
+
+func TestCustomRaceGravityReachesColonyProduction(t *testing.T) {
+	s := NewDemoSession()
+	s.ApplyCustomRaceBonuses(Race{Name: "低重力測試", EnName: "Low-G Test", OrigIdx: -1},
+		gamedata.TRAIT_LOW_G)
+	c := &s.PlayerColonies[0]
+	c.PlanetGravity = gamedata.NORMAL_G
+	c.Farmers, c.Workers, c.Scientists = 1, 0, 0
+	c.Population, c.FoodPerFarmer = 1, 4
+	if !c.RaceGravityKnown || c.RaceGravity != gamedata.LOW_G {
+		t.Fatalf("客製 Low-G 未同步到殖民地：%+v", *c)
+	}
+	if got := engine.RunColonyTurn(*c).Food; got != 3 {
+		t.Fatalf("客製 Low-G 在 Normal-G 食物 = %d，want 3", got)
+	}
+	back := s.snapshot().restore()
+	if !back.PlayerColonies[0].RaceGravityKnown || back.PlayerColonies[0].RaceGravity != gamedata.LOW_G {
+		t.Fatal("RaceGravity 存讀檔後不應消失")
+	}
+}
+
+func TestAIRaceGravitySyncUsesOwnRace(t *testing.T) {
+	s := NewDemoSession()
+	a := AIOpponent{RaceIndex: raceIndexByEnName(t, "Bulrathi"), Colonies: []engine.ColonyState{{}}}
+	s.syncAIRaceEngineFields(&a)
+	if !a.Colonies[0].RaceGravityKnown || a.Colonies[0].RaceGravity != gamedata.HEAVY_G {
+		t.Fatalf("Bulrathi AI 應使用 High-G：%+v", a.Colonies[0])
+	}
+}

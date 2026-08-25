@@ -31,10 +31,10 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 // 對照 `gamedata.BeamDefense`(移植自 openorion2 `ShipDesign::beamDefense`):
 // 慣性抵消器 +100、慣性穩定器 +50。手冊的慣性穩定器條目也寫著同一個 +50。
 func shipBeamDefenseBonus(sh Ship) int {
-	switch sh.Special {
-	case "慣性抵消器":
+	switch {
+	case shipHasSpecial(sh, "慣性抵消器"):
 		return gamedata.ShipInertialNullifierBeamDefense
-	case "慣性穩定器":
+	case shipHasSpecial(sh, "慣性穩定器"):
 		return gamedata.ShipInertialStabilizerBeamDefense
 	}
 	return 0
@@ -45,7 +45,7 @@ func shipBeamDefenseBonus(sh Ship) int {
 // 手冊(Battle Scanner):「The scanner increases the ship's chance to hit with beam
 // weapons by **50**.」與 `gamedata.BeamOffense` 的 battleScanner 分支同值。
 func shipBeamOffenseBonus(sh Ship) int {
-	if sh.Special == battleScannerName {
+	if shipHasSpecial(sh, battleScannerName) {
 		return gamedata.ShipBattleScannerBeamOffense
 	}
 	return 0
@@ -60,7 +60,7 @@ func shipBeamOffenseBonus(sh Ship) int {
 // the amount of damage required to destroy it」——**引擎損毀不在 remake 的模型裡**,
 // 那一半不接(remake 的船不是完好就是被擊沉 + 一個累積損傷值,沒有逐系統損毀)。
 func shipStructureMultiplier(sh Ship) int {
-	if sh.Special == "強化船體" {
+	if shipHasSpecial(sh, "強化船體") {
 		return gamedata.ShipReinforcedHullStructurePercent
 	}
 	return 100
@@ -71,7 +71,7 @@ func shipStructureMultiplier(sh Ship) int {
 // 手冊(Multi-Phased Shields):「increasing the maximum amount of damage that they can
 // absorb by **50%**」。
 func shipShieldMultiplier(sh Ship) int {
-	if sh.Special == "多相護盾" {
+	if shipHasSpecial(sh, "多相護盾") {
 		return gamedata.ShipMultiPhasedShieldPercent
 	}
 	return 100
@@ -90,7 +90,7 @@ func (s *GameSession) FleetResearchPoints() int {
 	total := 0
 	for _, fl := range s.Fleets {
 		for _, sh := range fl.Ships {
-			if sh.Special != "偵察實驗室" {
+			if !shipHasSpecial(sh, "偵察實驗室") {
 				continue
 			}
 			class, ok := shipClassFromName(sh.Class)
@@ -131,9 +131,7 @@ const (
 	battleScannerName = "戰鬥掃描器"
 )
 
-// boolToInt 把「有沒有裝」換成束數。一艘船只有一個 Special 槽,所以最多一束
-// ——手冊講的「multiple Tractor Beams … cumulative」在 remake 只能靠**多艘船**達成,
-// 而那正好是原版最常見的用法(一群小船拖住一艘大船)。
+// boolToInt 把「有沒有裝」換成束數。特殊裝置槽會去重，單一設計最多裝一組同名系統。
 func boolToInt(b bool) int {
 	if b {
 		return 1
@@ -150,13 +148,13 @@ const (
 
 // shipShotsKind 回傳這艘船的「一回合多打一次」屬於哪一種。
 func shipShotsKind(sh Ship) gamedata.ShotsPerRoundKind {
-	switch sh.Special {
-	case hyperXCapacitorsName:
-		return gamedata.ShotsDoubleBeam
-	case fastMissileRacksName:
-		return gamedata.ShotsDoubleMissile
-	case timeWarpFacilitatorName:
+	switch {
+	case shipHasSpecial(sh, timeWarpFacilitatorName):
 		return gamedata.ShotsDoubleAny
+	case shipHasSpecial(sh, hyperXCapacitorsName):
+		return gamedata.ShotsDoubleBeam
+	case shipHasSpecial(sh, fastMissileRacksName):
+		return gamedata.ShotsDoubleMissile
 	}
 	return gamedata.ShotsNormal
 }
@@ -192,14 +190,13 @@ func TacticalAdvanceCharge(ships []CombatShip) {
 
 // shipBeamAttackerSystems 把這艘船的元件翻成光束射擊要用的攻方系統旗標。
 //
-// 一艘船只有一個 Special 槽,所以最多只會有一項為真——寫成一個函式而不是三個判斷,
-// 是為了讓「攻方有哪些系統」只有一個真相來源(與第 68 項(元件盤點+飛彈防禦)把傷害鏈收成結構同一個理由)。
+// 多槽設計允許各系統旗標同時生效；這裡是攻方系統的單一真相來源。
 func shipBeamAttackerSystems(sh Ship) BeamAttackerSystems {
 	return BeamAttackerSystems{
-		HEFBonus:           hefBonusFor(sh.Special == highEnergyFocusName),
-		StructuralAnalyzer: sh.Special == "結構分析儀",
-		AchillesUnit:       sh.Special == "阿基里斯瞄準器",
-		Rangemaster:        sh.Special == rangemasterName,
+		HEFBonus:           hefBonusFor(shipHasSpecial(sh, highEnergyFocusName)),
+		StructuralAnalyzer: shipHasSpecial(sh, "結構分析儀"),
+		AchillesUnit:       shipHasSpecial(sh, "阿基里斯瞄準器"),
+		Rangemaster:        shipHasSpecial(sh, rangemasterName),
 	}
 }
 

@@ -472,25 +472,30 @@ type sceneBuilder struct {
 	shipPick map[int]bool
 	// flashMsg / flashUntil 是星圖底緣的短暫訊息(F10 快速存檔的回報等,見 hotkeys.go)。
 	// flashUntil 用 animTick 計時,到了就不畫。
-	flashMsg          string
-	flashUntil        int
-	nebMaskCache      map[int]*nebulaMask  // 星雲遮罩;派遣時沿航線取樣上百次,不快取會重解上百次 LBX
-	pendingHotseat    int                  // 多人設定畫面選的真人席位數;0/1 = 單人局
-	pendingHotseatAI  []int                // 新局生成後由選帝國畫面指定的 AIPlayers 索引
-	savePath          string               // remake 存檔路徑(每回合自動存;主選單 Load/Continue 讀)
-	designWeapon      int                  // 艦艇設計選的武器元件索引(shell.WeaponOptions)
-	designArmor       int                  // 裝甲元件索引(shell.ArmorOptions)
-	designShield      int                  // 護盾元件索引(shell.ShieldOptions)
-	designSpecial     int                  // 特殊元件索引(shell.SpecialOptions)
-	designMods        []string             // 目前設計勾選的武器改造(gamedata.WeaponModCode 字串;僅 beam 武器生效)
-	designArc         gamedata.WeaponArc   // 目前設計武器火線角(原版 WeaponArc)
-	designMsg         string               // 艦艇設計畫面「空間不足,擋下建造」的提示訊息(切換元件/成功建造時清空)
-	lastActionMsg     string               // 星圖畫面「載運陸戰隊/發動地面入侵」的最近一次結果訊息(選新星時清空)
-	gameVersion       gamedata.GameVersion // 主選單選的規則版本(1.3/1.5);開局注入 session.RuleProfile
-	infoTab           int                  // INFO 畫面目前分頁(0=歷史圖表 1=科技總覽 2=種族統計 3=回合摘要 4=參考),見 infosubscreens.go
-	colonyIdx         int                  // 單一殖民地畫面目前管理哪個殖民地(索引 PlayerColonies),見 colonyscreen.go
-	colonyListTop     int                  // 單一殖民地畫面「可建項目」清單的捲動起點
-	infoHistoryMetric int                  // 歷史圖表目前指標(shell.HistoryMetric)
+	flashMsg           string
+	flashUntil         int
+	nebMaskCache       map[int]*nebulaMask  // 星雲遮罩;派遣時沿航線取樣上百次,不快取會重解上百次 LBX
+	pendingHotseat     int                  // 多人設定畫面選的真人席位數;0/1 = 單人局
+	pendingHotseatAI   []int                // 新局生成後由選帝國畫面指定的 AIPlayers 索引
+	savePath           string               // remake 存檔路徑(每回合自動存;主選單 Load/Continue 讀)
+	designWeapon       int                  // 艦艇設計選的武器元件索引(shell.WeaponOptions)
+	designArmor        int                  // 裝甲元件索引(shell.ArmorOptions)
+	designShield       int                  // 護盾元件索引(shell.ShieldOptions)
+	designSpecial      int                  // 特殊元件索引(shell.SpecialOptions)
+	designMods         []string             // 目前設計勾選的武器改造(gamedata.WeaponModCode 字串;僅 beam 武器生效)
+	designArc          gamedata.WeaponArc   // 目前設計武器火線角(原版 WeaponArc)
+	designAmmo         int                  // 標準飛彈彈架容量；其他武器由原版表固定
+	designMsg          string               // 艦艇設計畫面「空間不足,擋下建造」的提示訊息(切換元件/成功建造時清空)
+	designHull         int                  // 目前編輯的六艦體 blueprint 索引(0..5)
+	designMount        int                  // 目前編輯的武器槽索引(0..7)
+	designSpecialMount int                  // 目前編輯的特殊裝置槽索引(0..7)
+	designLoaded       bool                 // UI 是否已從 GameSession 的持久設計庫載入
+	lastActionMsg      string               // 星圖畫面「載運陸戰隊/發動地面入侵」的最近一次結果訊息(選新星時清空)
+	gameVersion        gamedata.GameVersion // 主選單選的規則版本(1.3/1.5);開局注入 session.RuleProfile
+	infoTab            int                  // INFO 畫面目前分頁(0=歷史圖表 1=科技總覽 2=種族統計 3=回合摘要 4=參考),見 infosubscreens.go
+	colonyIdx          int                  // 單一殖民地畫面目前管理哪個殖民地(索引 PlayerColonies),見 colonyscreen.go
+	colonyListTop      int                  // 單一殖民地畫面「可建項目」清單的捲動起點
+	infoHistoryMetric  int                  // 歷史圖表目前指標(shell.HistoryMetric)
 	// planetPick 是行星列表畫面選中的行星索引(−1 = 沒選)。原版那個畫面的
 	// SEND COLONY SHIP / SEND OUTPOST SHIP 兩顆鈕就是對著選中的那一列作用的。
 	planetPick int
@@ -1023,13 +1028,14 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
 		if a == "attackmonster" && b.session != nil {
-			res := b.session.AttackMonster(b.session.SelectedStar)
-			if !res.Ok {
-				b.lastActionMsg = res.Reason
-			} else {
-				b.lastActionMsg = res.Message
+			star := b.session.SelectedStar
+			p, e, reason := b.session.StartMonsterCombat(star)
+			if reason != "" {
+				b.lastActionMsg = reason
+				return b.goTo(b.galaxy, "星系主畫面")
 			}
-			return b.goTo(b.galaxy, "星系主畫面")
+			playCombatMusic()
+			return &origTransition{next: newTacticalScreenForShips(b, p, e, star)}
 		}
 		if a == "outpost" && b.session != nil {
 			res := b.session.BuildOutpost(b.session.SelectedStar)
@@ -2112,7 +2118,7 @@ func (d *diplomacyScreen) breakRect(i int) (x, y, w, h int) {
 
 func (d *diplomacyScreen) update(in shell.InputState) *origTransition {
 	d.hoverX, d.hoverY = in.MouseX, in.MouseY
-	if !in.ClickReleased {
+	if !in.ClickReleased && !in.RightClickReleased {
 		return nil
 	}
 	for i, o := range d.opts {
@@ -2267,6 +2273,13 @@ type tacticalScreen struct {
 	// mode 是控制列切出來的點擊模式(掃描 / 登艦);見 tacticalbar.go。
 	mode           tacticalMode
 	hoverX, hoverY int
+	// destroyedEnemyHullClassSum 只累加 HP 歸零且未 Captured 的敵艦 SizeClass+1；
+	// 戰後交給 shell 套 sub_4B184 的 XP consumer。
+	destroyedEnemyHullClassSum int
+	// mountDispatch 防止多槽派送遞迴再次展開；只存在本次同步呼叫堆疊。
+	mountDispatch bool
+	// monsterStar >=0 表示本場敵方是該星的 MonsterGuard；戰後走怪物雙血池回寫。
+	monsterStar int
 }
 
 // loadCombatBG 載入戰場星空背景(STARBG.LBX#0,640×480),借 COMBAT.LBX#11 調色盤。
@@ -2329,6 +2342,10 @@ func loadCombatShipByIdxFrame(res *assets.Resolver, idx, frame int) *ebiten.Imag
 
 func newTacticalScreen(b *sceneBuilder) *tacticalScreen {
 	p, e := b.session.StartCombat(b.session.PrimaryEnemyName())
+	return newTacticalScreenForShips(b, p, e, -1)
+}
+
+func newTacticalScreenForShips(b *sceneBuilder, p, e []shell.CombatShip, monsterStar int) *tacticalScreen {
 	// 戰鬥 RNG 依當前回合數種子:同一局同一回合的戰鬥可重現(不引入 wall-clock 不確定性)。
 	seed := int64(b.session.Turn*2654435761 + 1013904223)
 	// 開場先算一次狀態效果,否則第一回合的移動力會用未受牽引的速度(第 69 項(戰鬥速度與引擎階))。
@@ -2340,7 +2357,8 @@ func newTacticalScreen(b *sceneBuilder) *tacticalScreen {
 		rng: rand.New(rand.NewSource(seed)),
 		bg:  loadCombatBG(b.res), bar: loadCombatBar(b.res),
 		res: b.res, shipSprites: map[int]*ebiten.Image{}, shipMotionStart: map[string]int{}, combatFX: loadCombatFX(b.res),
-		moveLeft: freshMoveBudgets(p), acted: make([]bool, len(p)), waited: make([]bool, len(p))}
+		moveLeft: freshMoveBudgets(p), acted: make([]bool, len(p)), waited: make([]bool, len(p)),
+		monsterStar: monsterStar}
 	t.launchEnemySquadrons()
 	return t
 }
@@ -2498,7 +2516,7 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 	t.tick++
 	t.pruneCombatFX()
 	t.hoverX, t.hoverY = in.MouseX, in.MouseY
-	if !in.ClickReleased {
+	if !in.ClickReleased && !in.RightClickReleased {
 		return nil
 	}
 	t.ensureActionQueue()
@@ -2507,8 +2525,25 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 		for _, s := range t.player {
 			survivors[s.Name] = true
 		}
-		t.b.session.ApplyCombatOutcome(t.b.session.PrimaryEnemyName(), t.pStart, t.eStart, survivors, t.won)
+		enemySurvivors := map[string]bool{}
+		for _, s := range t.enemy {
+			enemySurvivors[s.Name] = true
+		}
+		if t.monsterStar >= 0 {
+			t.b.session.ApplyMonsterTacticalOutcome(t.monsterStar, t.pStart, t.eStart, survivors, t.enemy, t.won)
+		} else {
+			t.b.session.ApplyCombatOutcomeWithEnemySurvivors(t.b.session.PrimaryEnemyName(), t.pStart, t.eStart, survivors, enemySurvivors,
+				t.won, t.destroyedEnemyHullClassSum)
+		}
 		return t.b.goTo(t.b.battleResult, "戰鬥結果")
+	}
+	if slot := t.tacticalWeaponSlotAt(in.MouseX, in.MouseY); slot >= 0 {
+		if in.RightClickReleased {
+			t.describeSelectedWeapon(slot)
+		} else {
+			t.cycleSelectedWeaponMode(slot)
+		}
+		return nil
 	}
 	// 底部控制列(自動/掃描/登船/撤退/等待/完成/選項)。**放在棋盤判定之前**:控制列在
 	// y≥365,與棋盤不重疊,但先判定可以讓「按鈕能按」這件事不依賴棋盤範圍算得對不對。
@@ -2630,6 +2665,25 @@ func (t *tacticalScreen) fireRoundForActors(target int, actors []int, endRound b
 	if target < 0 || target >= len(t.enemy) {
 		return false
 	}
+	if !t.mountDispatch && t.hasMultiMountActor(actors) {
+		return t.fireMultiMountActors(target, actors, endRound)
+	}
+	if !t.mountDispatch {
+		t.ensureWeaponModes()
+		ready := actors[:0]
+		for _, actor := range actors {
+			if actor >= 0 && actor < len(t.player) && len(t.player[actor].WeaponModes) > 0 &&
+				t.player[actor].WeaponModes[0] == shell.TacticalWeaponReady {
+				ready = append(ready, actor)
+			}
+		}
+		actors = ready
+		if len(actors) == 0 {
+			t.log = t.b.tr("本艦沒有啟用的武器槽；點擊武器列切換狀態",
+				"This ship has no active weapon slots; click a weapon row to change status")
+			return false
+		}
+	}
 	tc, tr := t.enemy[target].Col, t.enemy[target].Row
 	// 射程內我艦逐一依武器類型分流真戰鬥公式:beam(ResolveShot,不動)/missile
 	// (ResolveMissileShot,躲避+AMR 攔截)/spherical(ResolveSphericalShot,現行武器表
@@ -2639,6 +2693,7 @@ func (t *tacticalScreen) fireRoundForActors(target int, actors []int, endRound b
 	anyHit := false
 	inRange := false
 	arcBlocked := false
+	ammoBlocked := false
 	firedMissile := false // 首艘開火艦是否為飛彈類(決定開火音效)
 	firedAny := false
 	// 相位匿蹤:手冊「While cloaked, the ship **cannot be attacked**」。與停滯力場同一個形狀
@@ -2702,6 +2757,15 @@ func (t *tacticalScreen) fireRoundForActors(target int, actors []int, endRound b
 			continue
 		}
 		shots := shell.TacticalShotsThisRound(*s)
+		if s.Kind == shell.WeaponKindMissile {
+			if s.WeaponAmmo <= 0 {
+				ammoBlocked = true
+				continue
+			}
+			if shots > s.WeaponAmmo {
+				shots = s.WeaponAmmo
+			}
+		}
 		s.Fired = true       // 開過火 → 這一回合結束時不會充能(手冊的 unused 是「完全沒開火」)
 		shell.CloakOnFire(s) // 隱形在開火**當下**失效,不是下一回合
 		for shot := 0; shot < shots; shot++ {
@@ -2715,32 +2779,12 @@ func (t *tacticalScreen) fireRoundForActors(target int, actors []int, endRound b
 			var shot shell.ShotResult
 			switch s.Kind {
 			case shell.WeaponKindMissile:
+				s.WeaponAmmo--
 				missileMods := shell.WeaponModCodesForWeapon(s.WeaponName, s.Mods)
 				warheads := gamedata.WeaponModMissileWarheadCount(missileMods)
 				var mdef shell.MissileDefenses
-				// 點防禦是防守方的同格自動攔截；一個 CombatShip 目前只有一個
-				// 武器槽，所以每回合只消費一次。沒有 PD 時不擲額外 RNG。
-				pdMods := shell.WeaponModCodesForWeapon(enemy.WeaponName, enemy.Mods)
-				if !enemy.PointDefenseSpent && shell.PointDefenseCanEngage(enemy.WeaponName, s.WeaponName, pdMods) {
-					enemy.PointDefenseSpent = true
-					pd := shell.ResolvePointDefenseIntercept(shell.PointDefenseShot{
-						BeamWeaponName:            enemy.WeaponName,
-						BeamAttack:                enemy.Attack,
-						BeamDamageMax:             enemy.WeaponMax,
-						BeamRangeSquares:          0, // 同格自動攔截(手冊 p.117)
-						BeamRoll:                  t.rng.Intn(100) + 1,
-						BeamSystems:               enemy.BeamSystems,
-						BeamMods:                  pdMods,
-						MissileWeaponName:         s.WeaponName,
-						MissileFTLLevel:           s.DriveLevel,
-						MissileMods:               missileMods,
-						CarriedInterceptionDamage: enemy.PointDefenseInterceptionDamage,
-					})
-					if pd.Fired {
-						mdef.InterceptedWarheads = pd.DestroyedWarheads
-						enemy.PointDefenseInterceptionDamage = pd.RemainingInterceptionDamage
-					}
-				}
+				mdef.InterceptedWarheads = t.resolveTacticalMissilePointDefense(
+					enemy, s.WeaponName, s.DriveLevel, missileMods)
 				amrRoll := t.rng.Intn(100) + 1
 				jamRoll := t.rng.Intn(100) + 1
 				// ⚠ 2026-08-08:上一版寫著「hasAMR/evasion 加成現行皆無對應可造艦元件,
@@ -2825,7 +2869,9 @@ func (t *tacticalScreen) fireRoundForActors(target int, actors []int, endRound b
 		t.spawnCombatFX(combatFXExplosion, t.enemy[target])
 	}
 	if firing == 0 {
-		if inRange && arcBlocked {
+		if ammoBlocked {
+			t.log = t.b.tr("飛彈／魚雷彈藥耗盡,本艦無法開火", "Missile/torpedo ammunition depleted — this ship cannot fire")
+		} else if inRange && arcBlocked {
 			t.log = t.b.tr("目標在射程內,但不在目前武器射界;轉向或移動後再開火",
 				"Target is in range but outside the weapon arc — turn or move before firing")
 		} else {
@@ -2834,19 +2880,15 @@ func (t *tacticalScreen) fireRoundForActors(target int, actors []int, endRound b
 		return false
 	}
 	if !endRound {
-		alive := t.enemy[:0]
-		for _, s := range t.enemy {
-			if s.HP > 0 {
-				alive = append(alive, s)
-			}
-		}
-		t.enemy = alive
+		t.compactEnemyCasualties()
 		t.refreshSquadronCarriers()
-		playSFX(fireSFX(firedMissile))
-		if len(t.enemy) < preCount {
-			playSFX(sfxExplode)
-		} else if anyHit {
-			playSFX(sfxHit)
+		if !t.mountDispatch {
+			playSFX(fireSFX(firedMissile))
+			if len(t.enemy) < preCount {
+				playSFX(sfxExplode)
+			} else if anyHit {
+				playSFX(sfxHit)
+			}
 		}
 		name := t.b.tr("我方艦", "player ship")
 		if len(actors) > 0 && actors[0] >= 0 && actors[0] < len(t.player) {
@@ -2867,13 +2909,7 @@ func (t *tacticalScreen) fireRoundForActors(target int, actors []int, endRound b
 	pAtk += fDmg
 	fLost := t.enemyFiresAtSquadrons()
 	t.dropDeadSquadrons()
-	alive := t.enemy[:0]
-	for _, s := range t.enemy {
-		if s.HP > 0 {
-			alive = append(alive, s)
-		}
-	}
-	t.enemy = alive
+	t.compactEnemyCasualties()
 	// 戰鬥音效(SOUND.LBX 現成音效,headless / 缺音效時閉包為 nil):開火(依武器類型)→
 	// 擊毀播爆炸、否則命中播命中音。見 audiohook.go sfx* 閉包。
 	playSFX(fireSFX(firedMissile))
@@ -2956,6 +2992,431 @@ func (t *tacticalScreen) fireRoundForActors(target int, actors []int, endRound b
 	*/
 }
 
+func (t *tacticalScreen) hasMultiMountActor(actors []int) bool {
+	for _, i := range actors {
+		if i < 0 || i >= len(t.player) {
+			continue
+		}
+		mounts := t.player[i].WeaponMounts
+		if len(mounts) > 1 {
+			return true
+		}
+		if len(mounts) == 1 && mounts[0].WorkingCount > 1 {
+			return true
+		}
+	}
+	return false
+}
+
+// fireMultiMountActors 以既有單槽戰術公式逐門派送，避免複製命中／護盾／點防禦公式。
+// 只有武器欄位暫時替換；Fired、Cloaked、StoredEnergy、目標戰損等艦級狀態原地保留。
+func (t *tacticalScreen) fireMultiMountActors(target int, actors []int, endRound bool) bool {
+	t.ensureWeaponModes()
+	preCount := len(t.enemy)
+	targetName := t.enemy[target].Name
+	beforeHP := 0
+	for i := range t.enemy {
+		beforeHP += t.enemy[i].HP
+	}
+	fired, firedMissile, enabled := 0, false, 0
+	t.mountDispatch = true
+	defer func() { t.mountDispatch = false }()
+
+	for _, actor := range actors {
+		if actor < 0 || actor >= len(t.player) {
+			continue
+		}
+		s := &t.player[actor]
+		if len(s.WeaponMounts) == 0 {
+			s.WeaponMounts = []shell.ShipWeaponMount{{RawType: -1, Name: s.WeaponName,
+				MaxCount: 1, WorkingCount: 1, Arc: s.WeaponArc, Mods: append([]string(nil), s.Mods...),
+				Ammo: s.WeaponAmmo, Attack: s.WeaponMax}}
+		}
+		actorFired := fired
+		origKind, origName := s.Kind, s.WeaponName
+		origMin, origMax := s.WeaponMin, s.WeaponMax
+		origArc, origAmmo, origMods := s.WeaponArc, s.WeaponAmmo, s.Mods
+		for mi := range s.WeaponMounts {
+			mount := &s.WeaponMounts[mi]
+			if mount.Name == "" || mount.WorkingCount <= 0 {
+				continue
+			}
+			if mi >= len(s.WeaponModes) || s.WeaponModes[mi] != shell.TacticalWeaponReady {
+				continue
+			}
+			enabled++
+			s.Kind = shell.WeaponKindForName(mount.Name)
+			s.WeaponName = mount.Name
+			s.WeaponArc = shell.NormalizeWeaponArc(mount.Name, mount.Arc)
+			s.WeaponAmmo = shell.NormalizeWeaponAmmo(mount.Name, mount.Ammo)
+			if mi == 0 {
+				s.WeaponMin, s.WeaponMax = origMin, origMax
+			} else {
+				s.WeaponMax = mount.Attack
+				if s.WeaponMax < 1 {
+					s.WeaponMax = origMax
+				}
+				s.WeaponMin = s.WeaponMax / 2
+			}
+			s.Mods = append([]string(nil), mount.Mods...)
+			if mi == 0 && len(s.Mods) == 0 {
+				s.Mods = origMods
+			}
+			for n := 0; n < mount.WorkingCount && target < len(t.enemy) && t.enemy[target].Name == targetName; n++ {
+				if t.fireRoundForActors(target, []int{actor}, false) {
+					if fired == 0 {
+						firedMissile = s.Kind == shell.WeaponKindMissile
+					}
+					fired++
+				}
+			}
+			mount.Ammo = s.WeaponAmmo
+		}
+		if fired > actorFired {
+			for mi := range s.WeaponModes {
+				if s.WeaponModes[mi] == shell.TacticalWeaponStandby {
+					s.WeaponModes[mi] = shell.TacticalWeaponReady
+				}
+			}
+		}
+		s.Kind, s.WeaponName = origKind, origName
+		s.WeaponMin, s.WeaponMax = origMin, origMax
+		s.WeaponArc, s.WeaponAmmo, s.Mods = origArc, origAmmo, origMods
+	}
+	if fired == 0 {
+		if enabled == 0 {
+			t.log = t.b.tr("本艦沒有啟用的武器槽；點擊武器列切換狀態",
+				"This ship has no active weapon slots; click a weapon row to change status")
+		}
+		return false
+	}
+	afterHP := 0
+	for i := range t.enemy {
+		afterHP += t.enemy[i].HP
+	}
+	damage := beforeHP - afterHP
+	if damage < 0 {
+		damage = 0
+	}
+	if !endRound {
+		playSFX(fireSFX(firedMissile))
+		if len(t.enemy) < preCount {
+			playSFX(sfxExplode)
+		}
+		t.log = fmt.Sprintf(t.b.tr("多槽齊射造成 %d 傷害；輪到下一艦", "Multi-mount volley deals %d damage; next ship"), damage)
+		return true
+	}
+	return t.finishRound(preCount, damage, firedMissile, damage > 0, fired)
+}
+
+// compactEnemyCasualties 移除無戰力敵艦並只累加真正擊沉者；登艦俘獲的艦不屬於
+// sub_4B184 的 destroyed hull-class accumulator。
+func (t *tacticalScreen) compactEnemyCasualties() {
+	alive := t.enemy[:0]
+	for _, ship := range t.enemy {
+		if ship.HP > 0 {
+			alive = append(alive, ship)
+			continue
+		}
+		if !ship.Captured {
+			t.destroyedEnemyHullClassSum += int(ship.SizeClass) + 1
+		}
+	}
+	t.enemy = alive
+}
+
+// resolveTacticalMissilePointDefense 讓防守艦所有本回合尚未使用的 typed PD 逐門
+// 迎擊同一批來襲彈頭。WeaponModes 刻意不在參數中：紅色關閉不影響自動 PD。
+func (t *tacticalScreen) resolveTacticalMissilePointDefense(
+	defender *shell.CombatShip,
+	missileName string,
+	missileFTLLevel int,
+	missileMods []gamedata.WeaponModCode,
+) int {
+	destroyed := 0
+	for _, mount := range shell.AvailableTacticalPointDefenseMounts(defender) {
+		shell.MarkTacticalPointDefenseMountSpent(defender, mount.Slot)
+		for n := 0; n < mount.Count; n++ {
+			if !shell.PointDefenseCanEngage(mount.WeaponName, missileName, mount.BeamMods) {
+				continue
+			}
+			pd := shell.ResolvePointDefenseIntercept(shell.PointDefenseShot{
+				BeamWeaponName:            mount.WeaponName,
+				BeamAttack:                defender.Attack,
+				BeamDamageMax:             mount.BeamDamageMax,
+				BeamRangeSquares:          0,
+				BeamRoll:                  t.rng.Intn(100) + 1,
+				BeamSystems:               defender.BeamSystems,
+				BeamMods:                  mount.BeamMods,
+				MissileWeaponName:         missileName,
+				MissileFTLLevel:           missileFTLLevel,
+				MissileMods:               missileMods,
+				CarriedInterceptionDamage: defender.PointDefenseInterceptionDamage,
+			})
+			if pd.Fired {
+				destroyed += pd.DestroyedWarheads
+				defender.PointDefenseInterceptionDamage = pd.RemainingInterceptionDamage
+			}
+		}
+	}
+	return destroyed
+}
+
+// enemyRetaliationDamage 讓一艘敵艦依自己的 typed 武器槽還擊。一般 genEnemyFleet
+// 仍是舊單槽光束代理，因此該路徑的骰數與公式不變；有逐槽資料的敵艦則能發射飛彈，
+// 使玩家艦的紅色 PD 例外有真正的來襲飛彈消費端。
+func (t *tacticalScreen) enemyRetaliationDamage(enemyIndex, playerIndex int) int {
+	if enemyIndex < 0 || enemyIndex >= len(t.enemy) ||
+		playerIndex < 0 || playerIndex >= len(t.player) {
+		return 0
+	}
+	attacker := &t.enemy[enemyIndex]
+	target := &t.player[playerIndex]
+	if attacker.InStasis || target.InStasis || target.HP <= 0 {
+		return 0
+	}
+	if len(attacker.WeaponMounts) == 0 {
+		if shell.IsPlasmaFluxName(attacker.WeaponName) {
+			if !shell.PlasmaFluxInRange(attacker.Col-target.Col, attacker.Row-target.Row) {
+				return 0
+			}
+			damage, _ := t.enemyPlasmaFluxShot(enemyIndex, attacker.WeaponMin, attacker.WeaponMax, 1)
+			return damage
+		}
+		ammo := attacker.WeaponAmmo
+		damage, fired := t.enemyWeaponShot(attacker, target, attacker.WeaponName,
+			attacker.Mods, attacker.WeaponArc, attacker.WeaponMin, attacker.WeaponMax,
+			&ammo)
+		if fired && attacker.Kind == shell.WeaponKindMissile {
+			attacker.WeaponAmmo = ammo
+		}
+		return damage
+	}
+	total := 0
+	for i := range attacker.WeaponMounts {
+		mount := &attacker.WeaponMounts[i]
+		if mount.Name == "" || mount.WorkingCount <= 0 || target.HP <= 0 {
+			continue
+		}
+		minDamage, maxDamage := mount.Attack/2, mount.Attack
+		if i == 0 {
+			minDamage, maxDamage = attacker.WeaponMin, attacker.WeaponMax
+		}
+		if maxDamage <= 0 {
+			maxDamage = attacker.WeaponMax
+			minDamage = maxDamage / 2
+		}
+		ammo := shell.NormalizeWeaponAmmo(mount.Name, mount.Ammo)
+		if shell.IsPlasmaFluxName(mount.Name) {
+			if shell.PlasmaFluxInRange(attacker.Col-target.Col, attacker.Row-target.Row) {
+				damage, _ := t.enemyPlasmaFluxShot(enemyIndex, minDamage, maxDamage, mount.WorkingCount)
+				total += damage
+			}
+			continue
+		}
+		for n := 0; n < mount.WorkingCount && target.HP > 0; n++ {
+			damage, fired := t.enemyWeaponShot(attacker, target, mount.Name,
+				mount.Mods, mount.Arc, minDamage, maxDamage, &ammo)
+			total += damage
+			if !fired && shell.WeaponKindForName(mount.Name) == shell.WeaponKindMissile {
+				break
+			}
+		}
+		mount.Ammo = ammo
+	}
+	return total
+}
+
+// enemyPlasmaFluxShot 對應 sub_ADE18 effect type 2：以射手為中心，同時傷害半徑內雙方艦艇。
+func (t *tacticalScreen) enemyPlasmaFluxShot(enemyIndex, weaponMin, weaponMax, count int) (damage int, fired bool) {
+	if enemyIndex < 0 || enemyIndex >= len(t.enemy) || count <= 0 {
+		return 0, false
+	}
+	attacker := &t.enemy[enemyIndex]
+	if attacker.HP <= 0 || attacker.InStasis {
+		return 0, false
+	}
+	base := 0
+	span := weaponMax - weaponMin
+	for i := 0; i < count; i++ {
+		rolled := weaponMin
+		if span > 0 {
+			rolled += t.rng.Intn(span + 1)
+		}
+		if rolled > 0 {
+			base += rolled
+		}
+	}
+	if base < 1 {
+		base = 1
+	}
+	apply := func(target *shell.CombatShip) {
+		if target == nil || target.HP <= 0 || target.InStasis {
+			return
+		}
+		dx, dy := target.Col-attacker.Col, target.Row-attacker.Row
+		attenuated := shell.PlasmaFluxAttenuatedDamage(base, dx, dy)
+		if attenuated == 0 {
+			return
+		}
+		rolled := shell.PlasmaFluxSizeDamage(attenuated, target.SizeClass, func(limit int) int {
+			return t.rng.Intn(limit) + 1
+		})
+		facing := shell.ShieldFacingForShot(*attacker, *target)
+		target.EnsureShieldFacings()
+		shot := shell.ResolveSphericalShot(rolled, target.ShieldReductionForFacing(facing),
+			target.ArmorHP, target.HardShield, false)
+		if !shot.Hit {
+			return
+		}
+		target.ApplyShieldDamage(facing, shot.ShieldDamage)
+		target.ArmorHP = shot.RemainingArmorHP
+		target.HP -= shot.DamageToStructure
+		damage += shot.DamageToStructure
+		t.spawnCombatFX(combatFXImpact, *target)
+	}
+	for i := range t.player {
+		apply(&t.player[i])
+	}
+	for i := range t.enemy {
+		if i != enemyIndex {
+			apply(&t.enemy[i])
+		}
+	}
+	for i := range t.squads {
+		squad := &t.squads[i]
+		if squad.Dead() {
+			continue
+		}
+		attenuated := shell.PlasmaFluxAttenuatedDamage(base,
+			squad.Col-attacker.Col, squad.Row-attacker.Row)
+		if attenuated == 0 {
+			continue
+		}
+		avoidRoll := t.rng.Intn(2) + 1
+		killed := shell.PlasmaFluxFighterCasualties(squad.Alive, squad.HPEach, attenuated, avoidRoll,
+			func(limit int) int { return t.rng.Intn(limit) + 1 })
+		if killed > squad.Alive {
+			killed = squad.Alive
+		}
+		squad.Alive -= killed
+		if squad.Alive <= 0 {
+			squad.Alive, squad.HPEach = 0, 0
+		}
+	}
+	return damage, true
+}
+
+func (t *tacticalScreen) enemyWeaponShot(
+	attacker, target *shell.CombatShip,
+	weaponName string,
+	rawMods []string,
+	arc gamedata.WeaponArc,
+	weaponMin, weaponMax int,
+	ammo *int,
+) (damage int, fired bool) {
+	dist := abs(attacker.Col-target.Col) + abs(attacker.Row-target.Row)
+	if dist > fireRange {
+		return 0, false
+	}
+	view := *attacker
+	view.WeaponName = weaponName
+	view.Kind = shell.WeaponKindForName(weaponName)
+	view.WeaponArc = shell.NormalizeWeaponArc(weaponName, arc)
+	if !shell.WeaponArcAllowsCombatShot(view, *target) {
+		return 0, false
+	}
+	kind := shell.WeaponKindForName(weaponName)
+	if kind == shell.WeaponKindBomb {
+		return 0, false
+	}
+	mods := shell.WeaponModCodesForWeapon(weaponName, rawMods)
+	facing := shell.ShieldFacingForShot(*attacker, *target)
+	target.EnsureShieldFacings()
+	shieldReduction := target.ShieldReductionForFacing(facing)
+	var shot shell.ShotResult
+	switch kind {
+	case shell.WeaponKindMissile:
+		if ammo == nil || *ammo <= 0 {
+			return 0, false
+		}
+		(*ammo)--
+		var defenses shell.MissileDefenses
+		defenses.InterceptedWarheads = t.resolveTacticalMissilePointDefense(
+			target, weaponName, attacker.DriveLevel, mods)
+		amrRoll := t.rng.Intn(100) + 1
+		jamRoll := t.rng.Intn(100) + 1
+		if target.HasLightningField {
+			defenses.HasLightningField = true
+			defenses.LightningRoll = t.rng.Intn(100) + 1
+		}
+		if target.HasDisplacement {
+			defenses.HasDisplacement = true
+			defenses.DisplacementRoll = t.rng.Intn(100) + 1
+		}
+		if chance := shell.CloakMissileMissChance(*target, t.round+1); chance > 0 {
+			defenses.CloakMissChance = chance
+			defenses.CloakRoll = t.rng.Intn(100) + 1
+		}
+		warheads := gamedata.WeaponModMissileWarheadCount(mods)
+		if warheads > 1 {
+			defenses.JamRolls = []int{jamRoll}
+			if defenses.CloakMissChance > 0 {
+				defenses.CloakRolls = []int{defenses.CloakRoll}
+			}
+			if defenses.HasDisplacement {
+				defenses.DisplacementRolls = []int{defenses.DisplacementRoll}
+			}
+			for i := 1; i < warheads; i++ {
+				defenses.JamRolls = append(defenses.JamRolls, t.rng.Intn(100)+1)
+				if defenses.CloakMissChance > 0 {
+					defenses.CloakRolls = append(defenses.CloakRolls, t.rng.Intn(100)+1)
+				}
+				if defenses.HasDisplacement {
+					defenses.DisplacementRolls = append(defenses.DisplacementRolls, t.rng.Intn(100)+1)
+				}
+			}
+		}
+		shot = shell.ResolveMissileShotWithMods(target.HasAMR, dist, amrRoll,
+			target.MissileEvasion, attacker.ScannerJamReduction, false, jamRoll,
+			weaponMax, shieldReduction, target.ArmorHP, target.HardShield,
+			defenses, weaponName, mods)
+	case shell.WeaponKindSpherical:
+		span := weaponMax - weaponMin
+		roll := 0
+		if span > 0 {
+			roll = t.rng.Intn(span + 1)
+		}
+		sphericalDamage := gamedata.DamageSphericalRoll(weaponMin, roll, 100)
+		shot = shell.ResolveSphericalShot(
+			sphericalDamage,
+			shieldReduction, target.ArmorHP, target.HardShield, false)
+	default:
+		if shell.IsCausticSlimeName(weaponName) {
+			span := weaponMax - weaponMin
+			strength := weaponMin
+			if span > 0 {
+				strength += t.rng.Intn(span + 1)
+			}
+			shell.AddCausticSlimeStrength(target, strength)
+			t.spawnCombatFX(combatFXImpact, *target)
+			return 0, true
+		}
+		shot = shell.ResolveShotWithMods(
+			attacker.Attack-shell.TacticalEffectiveDefense(*target),
+			weaponMin, weaponMax, dist, shieldReduction, target.ArmorHP,
+			t.rng.Intn(100)+1, target.HardShield, mods,
+			attacker.BeamSystems.HEFBonus, target.APNegated)
+	}
+	if shot.Hit {
+		t.spawnCombatFX(combatFXImpact, *target)
+		target.ApplyShieldDamage(facing, shot.ShieldDamage)
+		target.ArmorHP = shot.RemainingArmorHP
+		target.HP -= shot.DamageToStructure
+	}
+	return shot.DamageToStructure, true
+}
+
 // finishRound 結算回合交界：戰機、敵方還擊、充能、狀態與下一回合行動佇列。
 func (t *tacticalScreen) finishRound(preCount, pAtk int, firedMissile, anyHit bool, firing int) bool {
 	t.round++
@@ -2963,13 +3424,7 @@ func (t *tacticalScreen) finishRound(preCount, pAtk int, firedMissile, anyHit bo
 	pAtk += fDmg
 	fLost := t.enemyFiresAtSquadrons()
 	t.dropDeadSquadrons()
-	alive := t.enemy[:0]
-	for _, s := range t.enemy {
-		if s.HP > 0 {
-			alive = append(alive, s)
-		}
-	}
-	t.enemy = alive
+	t.compactEnemyCasualties()
 	if firing > 0 {
 		playSFX(fireSFX(firedMissile))
 		if len(t.enemy) < preCount {
@@ -2989,30 +3444,19 @@ func (t *tacticalScreen) finishRound(preCount, pAtk int, firedMissile, anyHit bo
 			}
 		}
 		for i := range t.enemy {
-			es := &t.enemy[i]
-			if es.InStasis || t.player[wi].InStasis {
-				continue
-			}
-			dist := abs(es.Col-t.player[wi].Col) + abs(es.Row-t.player[wi].Row)
-			if dist > fireRange {
-				continue
-			}
-			if !shell.WeaponArcAllowsCombatShot(*es, t.player[wi]) {
-				continue
-			}
-			roll := t.rng.Intn(100) + 1
-			net := es.Attack - shell.TacticalEffectiveDefense(t.player[wi])
-			shot := shell.ResolveShot(net, es.WeaponMin, es.WeaponMax, dist,
-				t.player[wi].ShieldReduction, t.player[wi].ArmorHP, roll,
-				t.player[wi].HardShield, false)
-			if shot.Hit {
-				t.spawnCombatFX(combatFXImpact, t.player[wi])
-				t.player[wi].ArmorHP = shot.RemainingArmorHP
-				t.player[wi].HP -= shot.DamageToStructure
-				eAtk += shot.DamageToStructure
+			eAtk += t.enemyRetaliationDamage(i, wi)
+			if t.player[wi].HP <= 0 {
+				break
 			}
 		}
 	}
+	for i := range t.player {
+		eAtk += shell.TickCausticSlime(&t.player[i])
+	}
+	for i := range t.enemy {
+		pAtk += shell.TickCausticSlime(&t.enemy[i])
+	}
+	t.compactEnemyCasualties()
 
 	palive := t.player[:0]
 	for _, s := range t.player {
@@ -3025,10 +3469,10 @@ func (t *tacticalScreen) finishRound(preCount, pAtk int, firedMissile, anyHit bo
 	shell.TacticalAdvanceCharge(t.player)
 	shell.TacticalAdvanceCharge(t.enemy)
 	for i := range t.player {
-		t.player[i].PointDefenseSpent = false
+		shell.ResetTacticalPointDefenseSpent(&t.player[i])
 	}
 	for i := range t.enemy {
-		t.enemy[i].PointDefenseSpent = false
+		shell.ResetTacticalPointDefenseSpent(&t.enemy[i])
 	}
 	shell.ApplyTacticalStatusEffects(t.player, t.enemy)
 	t.moveLeft = freshMoveBudgets(t.player)
@@ -3221,6 +3665,143 @@ func (t *tacticalScreen) drawCombatControlDeck(dst *ebiten.Image) {
 		drawHoverBorder(dst, float32(b.cx-barButtonPlateW/2), float32(b.cy-barButtonPlateH/2),
 			barButtonPlateW, barButtonPlateH, pointInRect(t.hoverX, t.hoverY, b.cx-27, b.cy-9, 54, 18))
 	}
+	t.drawTacticalWeaponPanel(dst)
+}
+
+const (
+	tacticalWeaponPanelX   = 12
+	tacticalWeaponPanelY   = 360
+	tacticalWeaponSlotW    = 124
+	tacticalWeaponSlotH    = 23
+	tacticalWeaponSlotGapX = 4
+)
+
+func tacticalWeaponSlotRect(i int) [4]int {
+	if i < 0 || i > 7 {
+		return [4]int{}
+	}
+	return [4]int{tacticalWeaponPanelX + (i/4)*(tacticalWeaponSlotW+tacticalWeaponSlotGapX),
+		tacticalWeaponPanelY + (i%4)*tacticalWeaponSlotH, tacticalWeaponSlotW, tacticalWeaponSlotH - 2}
+}
+
+func (t *tacticalScreen) ensureWeaponModes() {
+	for i := range t.player {
+		n := len(t.player[i].WeaponMounts)
+		if n == 0 {
+			n = 1
+		}
+		if len(t.player[i].WeaponModes) < n {
+			t.player[i].WeaponModes = append(t.player[i].WeaponModes, make([]shell.TacticalWeaponMode, n-len(t.player[i].WeaponModes))...)
+		} else if len(t.player[i].WeaponModes) > n {
+			t.player[i].WeaponModes = t.player[i].WeaponModes[:n]
+		}
+	}
+}
+
+func (t *tacticalScreen) tacticalWeaponSlotAt(x, y int) int {
+	t.ensureWeaponModes()
+	if t.sel < 0 || t.sel >= len(t.player) {
+		return -1
+	}
+	for i := range t.player[t.sel].WeaponModes {
+		r := tacticalWeaponSlotRect(i)
+		if hitBox(x, y, r[0], r[1], r[2], r[3]) {
+			return i
+		}
+	}
+	return -1
+}
+
+func (t *tacticalScreen) cycleSelectedWeaponMode(slot int) {
+	t.ensureWeaponModes()
+	if t.sel < 0 || t.sel >= len(t.player) || slot < 0 || slot >= len(t.player[t.sel].WeaponModes) {
+		return
+	}
+	mode := (t.player[t.sel].WeaponModes[slot] + 1) % 3
+	t.player[t.sel].WeaponModes[slot] = mode
+	labels := []string{
+		t.b.tr("可用", "ready"),
+		t.b.tr("待命一次", "standby once"),
+		t.b.tr("關閉", "off"),
+	}
+	label := labels[mode]
+	t.log = fmt.Sprintf(t.b.tr("武器槽 %d：%s", "Weapon slot %d: %s"), slot+1, label)
+}
+
+func (t *tacticalScreen) describeSelectedWeapon(slot int) {
+	if t.sel < 0 || t.sel >= len(t.player) {
+		return
+	}
+	ship := t.player[t.sel]
+	name, count, attack, ammo, arc := ship.WeaponName, 1, ship.WeaponMax, ship.WeaponAmmo, ship.WeaponArc
+	mods := ship.Mods
+	if slot >= 0 && slot < len(ship.WeaponMounts) {
+		mount := ship.WeaponMounts[slot]
+		name, count, attack, ammo, arc, mods = mount.Name, mount.WorkingCount, mount.Attack, mount.Ammo, mount.Arc, mount.Mods
+	}
+	arcLabel := shell.WeaponArcLabelZH(arc)
+	if t.b.lang == i18n.English {
+		arcLabel = shell.WeaponArcLabelEN(arc)
+	}
+	ammoLabel := t.b.tr("無限", "unlimited")
+	if ammo != 255 && ammo >= 0 {
+		ammoLabel = fmt.Sprintf("%d", ammo)
+	}
+	modLabel := "-"
+	if len(mods) > 0 {
+		modLabel = strings.Join(mods, "/")
+	}
+	t.log = fmt.Sprintf(t.b.tr("槽%d %s ×%d；傷害上限%d；射界%s；彈藥%s；改造%s",
+		"Slot %d %s ×%d; max damage %d; arc %s; ammo %s; mods %s"),
+		slot+1, tacticalWeaponDisplayName(t.b, name), count, attack, arcLabel, ammoLabel, modLabel)
+}
+
+func tacticalWeaponDisplayName(b *sceneBuilder, name string) string {
+	for _, c := range shell.WeaponOptions {
+		if c.Name == name {
+			return componentLabel(b.lang, c)
+		}
+	}
+	if name == "" {
+		return b.tr("武器", "Weapon")
+	}
+	return name
+}
+
+func (t *tacticalScreen) drawTacticalWeaponPanel(dst *ebiten.Image) {
+	if t.fnt == nil {
+		return
+	}
+	t.ensureWeaponModes()
+	if t.sel < 0 || t.sel >= len(t.player) {
+		return
+	}
+	ship := t.player[t.sel]
+	for i, mode := range ship.WeaponModes {
+		r := tacticalWeaponSlotRect(i)
+		name, count, ammo := ship.WeaponName, 1, ship.WeaponAmmo
+		if i < len(ship.WeaponMounts) {
+			mount := ship.WeaponMounts[i]
+			name, count, ammo = mount.Name, mount.WorkingCount, mount.Ammo
+		}
+		col := color.RGBA{100, 220, 130, 255}
+		status := t.b.tr("可用", "READY")
+		if mode == shell.TacticalWeaponStandby {
+			col, status = color.RGBA{235, 170, 70, 255}, t.b.tr("待命", "STANDBY")
+		} else if mode == shell.TacticalWeaponOff {
+			col, status = color.RGBA{225, 90, 85, 255}, t.b.tr("關閉", "OFF")
+		}
+		fillPanel(dst, float32(r[0]), float32(r[1]), float32(r[2]), float32(r[3]), color.RGBA{8, 13, 24, 225}, false)
+		vector.StrokeRect(dst, float32(r[0]), float32(r[1]), float32(r[2]), float32(r[3]), 1, col, false)
+		label := fmt.Sprintf("%d %s ×%d", i+1, tacticalWeaponDisplayName(t.b, name), count)
+		if ammo != 255 && ammo >= 0 {
+			label += fmt.Sprintf(" [%d]", ammo)
+		}
+		t.fnt.Draw(dst, truncateToWidth(t.fnt, label, 9, float64(r[2]-6)), float64(r[0]+3), float64(r[1]+2), 9, col)
+		t.fnt.Draw(dst, status, float64(r[0]+3), float64(r[1]+11), 8, col)
+		drawHoverBorder(dst, float32(r[0]), float32(r[1]), float32(r[2]), float32(r[3]),
+			pointInRect(t.hoverX, t.hoverY, r[0], r[1], r[2], r[3]))
+	}
 }
 
 // drawFallbackCombatBar 是 COMBAT.LBX 未提供時的可用控制列。按鈕座標、熱區與原版
@@ -3317,8 +3898,24 @@ func (b *sceneBuilder) council() (*overlayScreen, error) {
 	// 議事廳、無內建 accept/reject 按鈕藝術,故此處以可點擊文字提示補上互動,不偽造浮雕按鈕框
 	// (尊重「用原版 LBX、不自創按鈕藝術」;仍疊在原版 council.lbx 底圖上)。
 	pending := b.session != nil && b.session.CouncilStatus().Pending != nil
+	pendingVote := b.session != nil && b.session.CouncilStatus().PendingVote != nil
 	hits, onAction := b.backHit(b.races, "種族關係")
-	if pending {
+	if pendingVote {
+		hits = []hitRegion{{80, 370, 150, 40, "vote0"}, {245, 370, 150, 40, "vote1"}, {410, 370, 150, 40, "abstain"}, {0, 0, moo2ScreenW, moo2ScreenH, "back"}}
+		onAction = func(a string) *origTransition {
+			switch a {
+			case "vote0":
+				b.session.RespondToCouncilVote(0)
+			case "vote1":
+				b.session.RespondToCouncilVote(1)
+			case "abstain":
+				b.session.RespondToCouncilVote(2)
+			default:
+				return b.goTo(b.races, "種族關係")
+			}
+			return b.goTo(b.council, "銀河議會")
+		}
+	} else if pending {
 		hits = []hitRegion{
 			{120, 402, 400, 26, "accept"},
 			{120, 432, 400, 26, "reject"},
@@ -3388,6 +3985,14 @@ func (b *sceneBuilder) council() (*overlayScreen, error) {
 					extraText{x: moo2ScreenW / 2, y: 440, size: 18, text: b.tr("▶  拒絕接受(繼續遊戲,下屆再選)",
 						"▶  Refuse (play on; a new election follows)"), col: win, align: 1},
 				)
+				line1, line2 = "", ""
+			case v.PendingVote != nil:
+				p := v.PendingVote
+				s.extras = append(s.extras,
+					extraText{x: moo2ScreenW / 2, y: 300, size: 16, text: fmt.Sprintf(b.tr("第 %d 屆議會：請投下你的 %d 票", "Council election %d: cast your %d votes"), v.Meetings, p.PlayerBaseVotes), col: neutral, align: 1},
+					extraText{x: 155, y: 385, size: 16, text: p.CandidateName[0], col: gold, align: 1},
+					extraText{x: 320, y: 385, size: 16, text: p.CandidateName[1], col: gold, align: 1},
+					extraText{x: 485, y: 385, size: 16, text: b.tr("棄權", "ABSTAIN"), col: neutral, align: 1})
 				line1, line2 = "", ""
 			case !v.Eligible:
 				line1 = b.tr("銀河議會尚未成立", "The Galactic Council has not convened")
@@ -3567,9 +4172,13 @@ func ngBoxRect(s ngSetting) (int, int, int, int) {
 	return ngOriginX + ngBoxX0 + s.col*ngColStep, ngOriginY + ngBoxY0 + s.row*ngRowStep, ngBoxW, ngBoxH
 }
 
-// ngStripRect 回傳某設定的數值列(螢幕座標)。
+// ngStripRect 回傳某設定的數值列(640×480 畫布絕對座標)。
+//
+// 完整 NEWGAME 背景量得的可視數值列與對應 selector caller 坐標已是畫布座標；
+// 它和上方值圖的相對原點路徑不同，不能再加 ngOriginX/Y。先前把兩套座標系
+// 混在一起，讓數值列熱區與文字同步偏到右下，看起來像按鈕文字沒有置中。
 func ngStripRect(s ngSetting) (int, int, int, int) {
-	return ngOriginX + ngStripX0 + s.col*ngStripColStep, ngOriginY + ngStripY0 + s.row*ngStripRowStep,
+	return ngStripX0 + s.col*ngStripColStep, ngStripY0 + s.row*ngStripRowStep,
 		ngStripW, ngStripH
 }
 
@@ -4034,10 +4643,73 @@ const (
 //   - 右上兩個資訊面板:(437..627, 56..95) 與 (437..627, 97..123)
 //     remake 現在把元件選擇列排在 x 300..600,與原版這兩個面板的位置不同;
 //     要對齊得先確認那兩格在原版顯示什麼(尚未追到繪製端)。
-//
-// 點艦體等級 → 建造該艦加入艦隊 → 回艦隊;點他處 → 返回艦隊。
+func (b *sceneBuilder) loadShipDesign(hull int) bool {
+	if b.session == nil {
+		return false
+	}
+	design, ok := b.session.ShipDesign(hull)
+	if !ok {
+		return false
+	}
+	b.designHull = hull
+	if b.designMount < 0 || b.designMount >= len(design.WeaponMounts) {
+		b.designMount = 0
+	}
+	mount := design.WeaponMounts[b.designMount]
+	weapon, found := 0, false
+	for i, c := range shell.WeaponOptions {
+		if c.Name == mount.Name {
+			weapon, found = i, true
+			break
+		}
+	}
+	if !found {
+		weapon = design.Weapon // 未知 raw 武器只顯示相容槽；BUILD 仍由 shell fail-closed。
+	}
+	b.designWeapon, b.designArmor = weapon, design.Armor
+	b.designShield, b.designSpecial = design.Shield, design.Special
+	if len(design.Specials) > 0 {
+		if b.designSpecialMount < 0 || b.designSpecialMount >= len(design.Specials) {
+			b.designSpecialMount = 0
+		}
+		if idx, ok := shell.SpecialOptionIndex(design.Specials[b.designSpecialMount].Name); ok {
+			b.designSpecial = idx
+		}
+	}
+	b.designMods = append([]string(nil), mount.Mods...)
+	if b.designMount == 0 && len(b.designMods) == 0 {
+		b.designMods = append([]string(nil), design.Mods...)
+	}
+	b.designArc, b.designAmmo = mount.Arc, mount.Ammo
+	b.designLoaded = true
+	return true
+}
+
+func (b *sceneBuilder) saveShipDesign() bool {
+	if b.session == nil || !b.designLoaded {
+		return false
+	}
+	design, ok := b.session.ShipDesign(b.designHull)
+	if !ok {
+		return false
+	}
+	if !b.session.SetShipDesignMountLoadout(b.designHull, b.designMount, shell.AutoDesignLoadout{
+		Weapon: b.designWeapon, Armor: b.designArmor, Shield: b.designShield, Special: b.designSpecial,
+		Mods: append([]string(nil), b.designMods...), Arc: b.designArc, Ammo: b.designAmmo,
+		RawRole: design.RawRole,
+	}) {
+		return false
+	}
+	return b.session.SetShipDesignSpecialMount(b.designHull, b.designSpecialMount, b.designSpecial)
+}
+
+// 點艦體等級只切換持久設計；只有底部 BUILD 會依目前 blueprint 建造。
 func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 	playSceneBGM(trackShipDesign) // Design_Screen_ → STREAM #8
+	// 舊行為只保留一份巡洋艦暫態選擇；現在第一次進入時從 session 的六筆設計庫載入。
+	if b.session != nil && !b.designLoaded {
+		b.loadShipDesign(2) // 原本畫面預設巡洋艦；索引與 dsHullOrder 一致。
+	}
 	// 原版艦體名 → shell 的中文 key。由既有的兩份表建,不再手寫第三份對照
 	// (三份表遲早會漂移;順序本來就一致,見 shipClassZH 註解)。
 	hullZH := make(map[string]string, len(dsHullOrder))
@@ -4050,14 +4722,30 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		y0, y1 := dsHullY[i][0], dsHullY[i][1]
 		hits = append(hits, hitRegion{dsHullX0, y0, dsHullX1 - dsHullX0 + 1, y1 - y0 + 1, name})
 	}
+	for _, action := range []string{"specialprev", "specialnext", "specialadd", "specialdel"} {
+		r := designSpecialControlRect(action)
+		hits = append(hits, hitRegion{r[0], r[1], r[2], r[3], action})
+	}
 	hits = append(hits,
 		hitRegion{300, 58, 300, 22, "weapon"}, // 元件選擇(點擊各列循環)
 		hitRegion{300, 82, 300, 22, "armor"},
 		hitRegion{300, 106, 300, 22, "shield"},
 		hitRegion{300, 130, 300, 22, "special"},
-		hitRegion{300, 151, 300, 17, "arc"}, // 火線角(點擊循環；飛彈固定 360)
+		hitRegion{300, 151, 300, 17, "arc"},  // 火線角(點擊循環；飛彈固定 360)
+		hitRegion{300, 168, 300, 17, "ammo"}, // 標準飛彈彈架 2/5/10/15/20
+		hitRegion{dsBtnX[0], dsBtnY, dsBtnW, dsBtnH, "clear"},
+		hitRegion{dsBtnX[1], dsBtnY, dsBtnW, dsBtnH, "cancel"},
+		hitRegion{dsBtnX[2], dsBtnY, dsBtnW, dsBtnH, "build"},
 		hitRegion{0, 0, moo2ScreenW, moo2ScreenH, "back"},
 	)
+	for _, action := range []string{"mountadd", "mountdel", "mountdec", "mountinc"} {
+		r := designMountControlRect(action)
+		hits = append(hits, hitRegion{r[0], r[1], r[2], r[3], action})
+	}
+	for i := 0; i < 8; i++ {
+		r := designMountSlotRect(i)
+		hits = append(hits, hitRegion{r[0], r[1], r[2], r[3], fmt.Sprintf("mount:%d", i)})
+	}
 	// 武器改造(mod)勾選:依目前武器顯示已接線且適用的 chip。飛彈／魚雷不再顯示光束專用
 	// 改造，避免玩家勾選一個只會增加成本卻不會進入戰鬥公式的選項。
 	//
@@ -4071,6 +4759,9 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 	b.designArc = shell.NormalizeWeaponArc(weaponName, b.designArc)
 	designArc := b.designArc
 	modOptions := shell.WeaponModOptionsForWeapon(weaponName)
+	if b.session != nil {
+		modOptions = b.session.WeaponModOptionsForPlayer(b.designWeapon)
+	}
 	modHits := make([]hitRegion, len(modOptions))
 	for i := range modOptions {
 		r := designModChipRect(i)
@@ -4084,24 +4775,118 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			b.designWeapon = b.session.NextUnlockedComponent(shell.WeaponOptions, b.designWeapon)
 			b.designMods = shell.FilterWeaponModsForWeapon(shell.WeaponOptions[b.designWeapon].Name, b.designMods)
 			b.designArc = shell.DefaultWeaponArc(shell.WeaponOptions[b.designWeapon].Name)
+			b.designAmmo = shell.NormalizeWeaponAmmo(shell.WeaponOptions[b.designWeapon].Name, 0)
 			b.designMsg = "" // 換元件可能改變空間是否超格,清掉舊的建造提示避免誤導
+			b.saveShipDesign()
 			return b.goTo(b.shipDesign, "艦艇設計")
 		case "armor":
 			b.designArmor = b.session.NextUnlockedComponent(shell.ArmorOptions, b.designArmor)
 			b.designMsg = ""
+			b.saveShipDesign()
 			return b.goTo(b.shipDesign, "艦艇設計")
 		case "shield":
 			b.designShield = b.session.NextUnlockedComponent(shell.ShieldOptions, b.designShield)
 			b.designMsg = ""
+			b.saveShipDesign()
 			return b.goTo(b.shipDesign, "艦艇設計")
 		case "special":
-			b.designSpecial = b.session.NextUnlockedComponent(shell.SpecialOptions, b.designSpecial)
+			b.designSpecial = b.session.NextUnlockedSpecialForDesign(b.designHull, b.designSpecialMount, b.designSpecial)
 			b.designMsg = ""
+			b.saveShipDesign()
+			return b.goTo(b.shipDesign, "艦艇設計")
+		case "specialprev":
+			b.saveShipDesign()
+			design, _ := b.session.ShipDesign(b.designHull)
+			if b.designSpecialMount > 0 && b.designSpecialMount < len(design.Specials) {
+				b.designSpecialMount--
+				b.loadShipDesign(b.designHull)
+			}
+			return b.goTo(b.shipDesign, "艦艇設計")
+		case "specialnext":
+			b.saveShipDesign()
+			design, _ := b.session.ShipDesign(b.designHull)
+			if b.designSpecialMount+1 < len(design.Specials) {
+				b.designSpecialMount++
+				b.loadShipDesign(b.designHull)
+			}
+			return b.goTo(b.shipDesign, "艦艇設計")
+		case "specialadd":
+			b.saveShipDesign()
+			if idx, ok := b.session.AddShipDesignSpecialMount(b.designHull); ok {
+				b.designSpecialMount = idx
+				b.loadShipDesign(b.designHull)
+			}
+			return b.goTo(b.shipDesign, "艦艇設計")
+		case "specialdel":
+			b.saveShipDesign()
+			if b.session.RemoveShipDesignSpecialMount(b.designHull, b.designSpecialMount) {
+				if b.designSpecialMount > 0 {
+					b.designSpecialMount--
+				}
+				b.loadShipDesign(b.designHull)
+			}
 			return b.goTo(b.shipDesign, "艦艇設計")
 		case "arc":
 			b.designArc = shell.CycleWeaponArc(weaponName, b.designArc)
 			b.designMsg = ""
+			b.saveShipDesign()
 			return b.goTo(b.shipDesign, "艦艇設計")
+		case "ammo":
+			b.designAmmo = shell.CycleWeaponAmmo(weaponName, b.designAmmo)
+			b.designMsg = ""
+			b.saveShipDesign()
+			return b.goTo(b.shipDesign, "艦艇設計")
+		case "mountadd":
+			b.saveShipDesign()
+			if idx, ok := b.session.AddShipDesignMount(b.designHull, b.designMount); ok {
+				b.designMount = idx
+				b.loadShipDesign(b.designHull)
+			}
+			b.designMsg = ""
+			return b.goTo(b.shipDesign, "艦艇設計")
+		case "mountdel":
+			b.saveShipDesign()
+			if b.session.RemoveShipDesignMount(b.designHull, b.designMount) {
+				if b.designMount > 0 {
+					b.designMount--
+				}
+				b.loadShipDesign(b.designHull)
+			}
+			b.designMsg = ""
+			return b.goTo(b.shipDesign, "艦艇設計")
+		case "mountdec":
+			b.saveShipDesign()
+			b.session.AdjustShipDesignMountCount(b.designHull, b.designMount, -1)
+			b.loadShipDesign(b.designHull)
+			return b.goTo(b.shipDesign, "艦艇設計")
+		case "mountinc":
+			b.saveShipDesign()
+			b.session.AdjustShipDesignMountCount(b.designHull, b.designMount, 1)
+			b.loadShipDesign(b.designHull)
+			return b.goTo(b.shipDesign, "艦艇設計")
+		case "clear":
+			if b.session.ResetShipDesign(b.designHull) {
+				b.loadShipDesign(b.designHull)
+			}
+			b.designMsg = ""
+			return b.goTo(b.shipDesign, "艦艇設計")
+		case "cancel":
+			b.saveShipDesign()
+			return b.goTo(b.fleet, "艦隊列表")
+		case "build":
+			b.saveShipDesign()
+			design, _ := b.session.ShipDesign(b.designHull)
+			if !b.session.BlueprintDesignFits(design) {
+				b.designMsg = fmt.Sprintf(b.tr("空間不足,無法建造%s(目前元件+改造超出艦體空間上限)",
+					"%s does not fit — components plus mods exceed the hull space limit"), shipClassLabel(b.lang, design.Class))
+				return b.goTo(b.shipDesign, "艦艇設計")
+			}
+			if !b.session.BuildShipDesign(b.designHull) {
+				b.designMsg = b.tr("國庫不足，無法建造目前設計。", "Insufficient treasury for this design.")
+				return b.goTo(b.shipDesign, "艦艇設計")
+			}
+			b.designMsg = ""
+			return b.goTo(b.fleet, "艦隊列表")
 		}
 		if strings.HasPrefix(a, "mod:") {
 			var idx int
@@ -4109,25 +4894,35 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			if idx >= 0 && idx < len(modOptions) {
 				b.designMods = shell.ToggleWeaponMod(b.designMods, modOptions[idx])
 				b.designMsg = ""
+				b.saveShipDesign()
 			}
 			return b.goTo(b.shipDesign, "艦艇設計")
 		}
-		if zh, ok := hullZH[a]; ok && b.session != nil {
-			// 建造前驗證空間:超出艦體空間上限就擋下,留在設計畫面提示,不扣款不造艦。
-			// 走 session 版(b.session.DesignFitsWithMods)而不是套件級的 ShipDesignFitsWithMods
-			// ——**可用空間會隨科技變動**:巨型通量器 ×125/100(手冊 +25%,執行檔
-			// Total_Design_Space_ 0x6E81F 是 imul 125 / idiv 100)。套件級那個沒有 GameSession
-			// 可查,一律當成沒研究出來。
-			if !b.session.DesignFitsWithModsAndArc(zh, b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods, designArc) {
-				b.designMsg = fmt.Sprintf(b.tr("空間不足,無法建造%s(目前元件+改造超出艦體空間上限)",
-					"%s does not fit — components plus mods exceed the hull space limit"),
-					shipClassLabel(b.lang, zh))
-				return b.goTo(b.shipDesign, "艦艇設計")
+		if strings.HasPrefix(a, "mount:") {
+			var idx int
+			fmt.Sscanf(a, "mount:%d", &idx)
+			b.saveShipDesign()
+			design, _ := b.session.ShipDesign(b.designHull)
+			if idx >= 0 && idx < len(design.WeaponMounts) {
+				b.designMount = idx
+				b.loadShipDesign(b.designHull)
 			}
 			b.designMsg = ""
-			b.session.BuildShipWithModsAndArc(zh, b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods, designArc)
-			return b.goTo(b.fleet, "艦隊列表")
+			return b.goTo(b.shipDesign, "艦艇設計")
 		}
+		if _, ok := hullZH[a]; ok && b.session != nil {
+			b.saveShipDesign()
+			b.designMount = 0
+			for i, name := range dsHullOrder {
+				if a == name {
+					b.loadShipDesign(i)
+					break
+				}
+			}
+			b.designMsg = ""
+			return b.goTo(b.shipDesign, "艦艇設計")
+		}
+		b.saveShipDesign()
 		return b.goTo(b.fleet, "艦隊列表")
 	}
 	overlays := []labelRect{{255, 12, 320, 24, "Ship Design", 0}}
@@ -4151,6 +4946,13 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 	if b.fnt != nil && b.session != nil {
 		body := color.RGBA{210, 216, 230, 255}
 		classes := shipClassZH
+		// 原版六筆設計是可選列；用兩條字型路徑都有的 ASCII `>` 標出目前 blueprint，
+		// 避免玩家把「點列只切換設計」誤認成仍會立即造船。
+		if b.designHull >= 0 && b.designHull < len(dsHullY) {
+			y0, y1 := dsHullY[b.designHull][0], dsHullY[b.designHull][1]
+			s.extras = append(s.extras, extraText{x: dsHullX0 - 9, y: float64(y0+y1)/2 - 6,
+				size: 12, text: ">", col: color.RGBA{240, 220, 120, 255}})
+		}
 		// 價格跟著艦體槽的真實 y 走(dsHullY 不等距;先前照 60+17i 等距排,越往下偏越多,
 		// 最後一格會壓到下面的總價那一行)。
 		for i, cl := range classes {
@@ -4164,6 +4966,7 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		ar := shell.ArmorOptions[b.designArmor]
 		sd := shell.ShieldOptions[b.designShield]
 		sp := shell.SpecialOptions[b.designSpecial]
+		blueprint, _ := b.session.ShipDesign(b.designHull)
 		gold := color.RGBA{240, 220, 120, 255}
 		rows := []struct {
 			label string
@@ -4185,9 +4988,22 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 				// **英文模式走純向量字沒有**,畫出來是豆腐框——同一個字串在兩種語言下走不同字型,
 				// 而只看中文截圖永遠看不到。挑字元的原則:兩條字型路徑都保證有的才用。
 				extraText{x: 305, y: y, size: 12,
-					text: r.label + ": " + componentLabel(b.lang, r.c), col: gold, maxW: 157},
-				extraText{x: 470, y: y, size: 11, text: fmt.Sprintf("%s %dBC", r.eff, r.c.Cost), col: color.RGBA{200, 208, 225, 255}, maxW: 162})
+					text: r.label + ": " + componentLabel(b.lang, r.c), col: gold, maxW: 157})
+			if i < 3 {
+				s.extras = append(s.extras, extraText{x: 470, y: y, size: 11,
+					text: fmt.Sprintf("%s %dBC", r.eff, r.c.Cost), col: color.RGBA{200, 208, 225, 255}, maxW: 162})
+			}
 		}
+		for _, ctl := range []struct{ action, label string }{
+			{"specialprev", "<"}, {"specialnext", ">"}, {"specialadd", "+"}, {"specialdel", "-"},
+		} {
+			r := designSpecialControlRect(ctl.action)
+			s.extraPanels = append(s.extraPanels, extraPanel{x: r[0], y: r[1], w: r[2], h: r[3],
+				fill: color.RGBA{25, 31, 45, 255}, border: color.RGBA{105, 120, 145, 255}})
+			s.extras = append(s.extras, centeredExtraTextInRect(r[0], r[1], r[2], r[3], 9, ctl.label, body))
+		}
+		s.extras = append(s.extras, extraText{x: 470, y: 126, size: 9,
+			text: fmt.Sprintf("S %d/%d", b.designSpecialMount+1, len(blueprint.Specials)), col: body, maxW: 46})
 		arcPercent := gamedata.WeaponArcCostPercent(designArc)
 		arcLabel := shell.WeaponArcLabelZH(designArc)
 		if b.lang == i18n.English {
@@ -4196,8 +5012,15 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		s.extras = append(s.extras, extraText{x: 305, y: 148, size: 10,
 			text: fmt.Sprintf(b.tr("火線角: %s (+%d%%佔格/成本)", "Weapon arc: %s (+%d%% space/cost)"), arcLabel, arcPercent),
 			col:  color.RGBA{190, 205, 235, 255}, maxW: 327})
-		const designHull = "巡洋艦" // shell 的 key(見 shipClassZH 註解)
-		total := shell.DesignCostWithModsAndArc(designHull, b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods, designArc)
+		ammo := shell.NormalizeWeaponAmmo(w.Name, b.designAmmo)
+		ammoText := b.tr("彈藥: 固定", "Ammo: fixed")
+		if shell.WeaponUsesVariableMissileRack(w.Name) {
+			ammoText = fmt.Sprintf(b.tr("飛彈彈架: %d 發(點擊切換)", "Missile rack: %d shots (click to cycle)"), ammo)
+		}
+		s.extras = append(s.extras, extraText{x: 305, y: 162, size: 10, text: ammoText,
+			col: color.RGBA{190, 205, 235, 255}, maxW: 327})
+		designHull := shipClassZH[b.designHull] // shell 的 key(見 shipClassZH 註解)
+		total, totalKnown := b.session.BlueprintDesignCost(blueprint)
 		// 各類已解鎖元件數(需研究對應科技解鎖進階元件)。
 		cnt := func(opts []shell.Component) int {
 			n := 0
@@ -4208,9 +5031,41 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			}
 			return n
 		}
+		mountCount := 1
+		if b.designMount >= 0 && b.designMount < len(blueprint.WeaponMounts) {
+			mountCount = blueprint.WeaponMounts[b.designMount].MaxCount
+		}
+		for i := 0; i < 8; i++ {
+			r := designMountSlotRect(i)
+			x, y, w, h := r[0], r[1], r[2], r[3]
+			face := color.RGBA{25, 31, 45, 255}
+			if i == b.designMount {
+				face = color.RGBA{70, 58, 32, 255}
+			}
+			if i < len(blueprint.WeaponMounts) {
+				s.extraPanels = append(s.extraPanels, extraPanel{x: x, y: y, w: w, h: h, fill: face, border: color.RGBA{105, 120, 145, 255}})
+				s.extras = append(s.extras, centeredExtraTextInRect(x, y, w, h, 10, fmt.Sprintf("%d", i+1), body))
+			}
+		}
+		for _, ctl := range []struct {
+			action string
+			label  string
+		}{
+			{"mountadd", b.tr("新增", "ADD")}, {"mountdel", b.tr("刪除", "DEL")},
+			{"mountdec", "-"}, {"mountinc", "+"},
+		} {
+			r := designMountControlRect(ctl.action)
+			s.extraPanels = append(s.extraPanels, extraPanel{x: r[0], y: r[1], w: r[2], h: r[3],
+				fill: color.RGBA{25, 31, 45, 255}, border: color.RGBA{105, 120, 145, 255}})
+			s.extras = append(s.extras, centeredExtraTextInRect(r[0], r[1], r[2], r[3], 9, ctl.label, body))
+		}
+		totalText := fmt.Sprintf(b.tr("%s總價 %d BC；槽 %d/%d ×%d", "%s total %d BC; mount %d/%d ×%d"),
+			shipClassLabel(b.lang, designHull), total, b.designMount+1, len(blueprint.WeaponMounts), mountCount)
+		if !totalKnown {
+			totalText = b.tr("設計含未知原版裝備，無法安全計價／建造", "Unknown original equipment; cannot price or build safely")
+		}
 		s.extras = append(s.extras,
-			extraText{x: 305, y: 168, size: 12, text: fmt.Sprintf(b.tr("%s總價 %d BC", "%s total %d BC"),
-				shipClassLabel(b.lang, designHull), total), col: color.RGBA{170, 220, 180, 255}, maxW: 327},
+			extraText{x: 305, y: 222, size: 11, text: totalText, col: color.RGBA{170, 220, 180, 255}, maxW: 327},
 			// 左下第一個框的內緣量測值:x 19..140、y 441..465(邊框 141/142 與 440/466)。
 			// 原本寫 (12,460) 在框**外面**,壓在左邊框與下邊框的交角上。
 			extraText{x: 24, y: 447, size: 12,
@@ -4230,17 +5085,17 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			cnt(shell.ShieldOptions), len(shell.ShieldOptions), cnt(shell.SpecialOptions), len(shell.SpecialOptions)),
 			11, dsTextRight-dsTextX)
 		for i, ln := range unlockLines {
-			s.extras = append(s.extras, extraText{x: dsTextX, y: 186 + float64(i)*14, size: 11,
+			s.extras = append(s.extras, extraText{x: dsTextX, y: 240 + float64(i)*14, size: 11,
 				text: ln, col: color.RGBA{170, 200, 240, 255}})
 		}
 
 		// 空間預算/已用(依目前選定元件即時計算):逐艦體列出「空間:已用／總」,超格轉紅並標
-		// 「空間不足」。點艦體列建造時,onAction 用同一份 shell.ShipDesignFits 判斷擋下建造
-		// (不扣款、不入艦隊),designMsg 顯示擋下提示——顯示與建造驗證共用同一份判斷,不會不一致。
+		// 「空間不足」。底部 BUILD 用同一份 session 判斷擋下建造(不扣款、不入艦隊)，
+		// designMsg 顯示擋下提示——顯示與建造驗證共用同一份判斷，不會不一致。
 		// ⚠ 六列單欄 17px 間距會**壓到面板下緣的分隔線**(末日之星那一列直接掉進下一格)。
 		// 改成 **3 列 × 2 欄**:同樣六筆,高度從 102px 降到 45px,整塊留在面板內。
 		// 欄寬 163px 是量出來的(dsTextRight−dsTextX 的一半),不是猜的。
-		spaceHeaderY := 186 + float64(len(unlockLines))*14
+		spaceHeaderY := 240 + float64(len(unlockLines))*14
 		s.extras = append(s.extras, extraText{x: dsTextX, y: spaceHeaderY, size: 12,
 			text: b.tr("各艦體空間(依目前元件):", "Space per hull (with current components):"), col: gold, maxW: dsTextRight - dsTextX})
 		const dsSpaceRows = 3
@@ -4248,17 +5103,22 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		okCol := color.RGBA{170, 220, 180, 255}
 		badCol := color.RGBA{230, 90, 90, 255}
 		for i, cl := range classes {
-			used := shell.ShipDesignSpaceUsedWithModsAndArc(cl, b.designWeapon, b.designArmor, b.designShield, b.designSpecial, b.designMods, designArc)
+			candidate := blueprint
+			candidate.Class = cl
+			used, known := b.session.BlueprintDesignSpaceUsed(candidate)
 			// 總空間同樣要含巨型通量器加成,否則顯示的「已用／總」會與 onAction 的建造判斷不一致
 			// ——兩邊本來就共用同一份判斷,這裡改一邊就要改另一邊。
 			totalSp := gamedata.ShipHullSpace(gamedata.CombatShipClass(i))
 			if b.session != nil {
 				totalSp = b.session.HullSpaceFor(cl)
 			}
-			fits := used <= totalSp
+			fits := known && used <= totalSp
 			txt := fmt.Sprintf(b.tr("%s 空間:%d／%d", "%s space %d/%d"), shipClassLabel(b.lang, cl), used, totalSp)
 			col := okCol
-			if !fits {
+			if !known {
+				txt = fmt.Sprintf(b.tr("%s 空間:未知", "%s space: unknown"), shipClassLabel(b.lang, cl))
+				col = badCol
+			} else if !fits {
 				txt += b.tr("(空間不足)", " (over capacity)")
 				col = badCol
 			}
@@ -4602,7 +5462,7 @@ func (b *sceneBuilder) info() (*overlayScreen, error) {
 		{21, 102, 164, 24, "tab2"},        // Race Statistics
 		{21, 130, 164, 22, "tab3"},        // Turn Summary
 		{21, 152, 164, 22, "tab4"},        // Reference
-		{214, 96, 412, 268, "histmetric"}, // 歷史圖表區:點擊循環指標(人口/國庫/艦隊)
+		{214, 96, 412, 268, "histmetric"}, // 歷史圖表區：點擊循環艦隊／科技／人口／建築
 		{535, 434, 84, 22, "back"},
 	}
 	onAction := func(a string) *origTransition {
@@ -4614,7 +5474,7 @@ func (b *sceneBuilder) info() (*overlayScreen, error) {
 			return b.goTo(b.info, "情報") // 重繪切換子畫面
 		case "histmetric":
 			if b.infoTab == 0 { // 只有歷史圖表分頁才有意義
-				b.infoHistoryMetric = (b.infoHistoryMetric + 1) % 3
+				b.infoHistoryMetric = (b.infoHistoryMetric + 1) % 4
 				return b.goTo(b.info, "情報")
 			}
 		}
@@ -4680,6 +5540,35 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 				b.session.Player.BC, out.NetBC), col: body},
 		}
 		yy := 168.0
+		if len(b.session.LastBankruptcy) > 0 {
+			buildings, spies, leaders, recovered := 0, 0, 0, 0
+			for _, action := range b.session.LastBankruptcy {
+				recovered += action.RecoveredBC
+				switch action.Kind {
+				case shell.BankruptcySellBuilding:
+					buildings++
+				case shell.BankruptcyDismissSpy:
+					spies++
+				case shell.BankruptcyDismissLeader:
+					leaders++
+				}
+			}
+			msg := fmt.Sprintf(b.tr("◆ 財政危機：出售 %d 棟、裁撤 %d 名間諜、解雇 %d 位領袖，回收 %d BC",
+				"◆ Fiscal crisis: sold %d, dismissed %d spies and %d leaders; recovered %d BC"),
+				buildings, spies, leaders, recovered)
+			lines := []string{msg}
+			if b.fnt != nil {
+				lines = b.fnt.Wrap(msg, 12, 320)
+			}
+			if len(lines) > 2 {
+				lines = lines[:2]
+				lines[1] += "…"
+			}
+			for i, line := range lines {
+				s.extras = append(s.extras, extraText{x: 40, y: yy + float64(i)*19, size: 13, text: line, col: color.RGBA{240, 150, 100, 255}})
+			}
+			yy += float64(len(lines)) * 19
+		}
 		if out.ResearchDone {
 			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 14, text: b.tr("★ 完成一項研究!", "★ A research field is complete!"), col: color.RGBA{120, 220, 140, 255}})
 			yy += 24
@@ -4747,7 +5636,8 @@ var researchAreaOrder = map[string]int{
 // currentAreaTopic 回傳某研究領域「目前應研究的主題」:MOO2 原版機制是玩家選定領域、
 // 該領域依 techtree 固定順序逐一解鎖(非玩家自由挑選領域內個別主題,完成一項後才跳下一項,
 // 期間若有多科技可選走 researchChoiceScreen 另外決定),故此處回傳該領域第一個尚未完成的
-// 主題 + 其 RP 成本(gamedata.researchChoices 為權威來源)。done=true 表示整領域已研究完畢。
+// 主題 + 其 RP 成本。Hyper-Advanced 是可重複研究的終端主題，因此整條完成後仍回最後一項，
+// done=false；done 只保留給異常空領域。
 func currentAreaTopic(session *shell.GameSession, areaIdx int) (topic gamedata.ResearchTopic, cost int, done bool) {
 	topics := gamedata.TechTree()[areaIdx]
 	completed := session.Player.CompletedTopics
@@ -4758,6 +5648,9 @@ func currentAreaTopic(session *shell.GameSession, areaIdx int) (topic gamedata.R
 	}
 	if len(topics) > 0 {
 		last := topics[len(topics)-1]
+		if gamedata.IsHyperAdvancedTopic(last) {
+			return last, session.ResearchCostForDisplay(last), false
+		}
 		return last, session.ResearchCostForDisplay(last), true
 	}
 	return 0, 0, true
@@ -4784,7 +5677,12 @@ func (b *sceneBuilder) research() (*overlayScreen, error) {
 	onAction := func(a string) *origTransition {
 		if idx, ok := researchAreaOrder[a]; ok && b.session != nil {
 			if t, _, done := currentAreaTopic(b.session, idx); !done {
-				b.session.SetResearchTopic(t) // 實際設定研究主題,結束回合朝此累積
+				b.session.SetResearchTopic(t)
+				if _, _, pending := b.session.PendingResearchChoice(); pending {
+					if sc, err := b.researchChoice(b.galaxy); err == nil {
+						return &origTransition{next: sc}
+					}
+				}
 			}
 		}
 		return b.goTo(b.galaxy, "星系主畫面")
@@ -4820,13 +5718,24 @@ func (b *sceneBuilder) research() (*overlayScreen, error) {
 			}
 			t, cost, done := currentAreaTopic(b.session, idx)
 			label := fmt.Sprintf("%s ・ %d RP", topicNameZh(b.lang, t), cost)
+			if gamedata.IsHyperAdvancedTopic(t) {
+				level := b.session.Player.HyperAdvancedLevels[t]
+				if level == 0 && b.session.Player.CompletedTopics[t] {
+					level = 1 // 舊存檔尚未經下一次研究結算遷移
+				}
+				label = fmt.Sprintf(b.tr("%s 第%d級 ・ %d RP", "%s level %d ・ %d RP"),
+					topicNameZh(b.lang, t), level+1, cost)
+			}
 			col := body
 			if done {
 				label, col = b.tr("已完成本領域全部科技", "All technologies in this field are complete"), gold
 			}
 			cx := float64(h.x) + float64(h.w)/2
 			cy := float64(h.y) + 40 // 標題帶(高18)下方留白處置中
-			s.extras = append(s.extras, extraText{x: cx, y: cy, size: 12, text: label, col: col, align: 1})
+			s.extras = append(s.extras, extraText{
+				x: cx, y: cy, size: 12, text: label, col: col, align: 1,
+				maxW: float64(h.w - 12),
+			})
 		}
 	}
 	return s, nil
@@ -5723,9 +6632,10 @@ func (a *interactiveApp) pollInput() shell.InputState {
 	x, y = int(float64(x)/uiScale), int(float64(y)/uiScale)
 	return shell.InputState{
 		MouseX: x, MouseY: y,
-		ClickReleased: inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft),
-		MouseDown:     ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft),
-		Hotkey:        pollHotkey(),
+		ClickReleased:      inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft),
+		RightClickReleased: inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonRight),
+		MouseDown:          ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft),
+		Hotkey:             pollHotkey(),
 	}
 }
 
@@ -6065,7 +6975,7 @@ func runInteractive(versionAssets versionAssetDirs, initial gamedata.GameVersion
 		return err
 	}
 	b := &sceneBuilder{res: res, versionAssets: versionAssets, fnt: fnt, fntVec: fntVec, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: newGameDiffDefault,
-		newGameAge: newGameAgeDefault, newGameTech: newGameTechDefault, newGameEmpires: 1 + shell.DefaultOpponents, designWeapon: 1, savePath: savePathFor(), gameVersion: initial,
+		newGameAge: newGameAgeDefault, newGameTech: newGameTechDefault, newGameEmpires: 1 + shell.DefaultOpponents, designWeapon: 1, designAmmo: 5, savePath: savePathFor(), gameVersion: initial,
 		planetPick: -1} // −1 = 行星列表還沒選任何一列(0 是行星 0 的索引,不能當「沒選」)
 	b.skipCutscenes = shot != "" || galleryDir != "" || promoDemo // 見該欄位註解
 	// 傭兵候選池改用原版 HERODATA.LBX 真英雄(解析失敗自動退回內建策展名單,不擋遊戲);快取一份
@@ -6205,5 +7115,47 @@ func designModChipRect(i int) struct{ x, y, w float64 } {
 		x: x0 + float64(i/rows)*colW,
 		y: y0 + float64(i%rows)*rowStep,
 		w: colW,
+	}
+}
+
+// designMountSlotRect 與 designMountControlRect 是多槽 UI 的單一幾何來源；繪製、文字安全框與
+// hit region 都必須呼叫它們，避免再次出現按鈕文字與點擊區中心漂移。
+func designMountSlotRect(i int) [4]int {
+	if i < 0 {
+		i = 0
+	}
+	if i > 7 {
+		i = 7
+	}
+	return [4]int{305 + i*30, 180, 28, 18}
+}
+
+func designMountControlRect(action string) [4]int {
+	switch action {
+	case "mountadd":
+		return [4]int{548, 180, 40, 18}
+	case "mountdel":
+		return [4]int{590, 180, 40, 18}
+	case "mountdec":
+		return [4]int{548, 201, 40, 18}
+	case "mountinc":
+		return [4]int{590, 201, 40, 18}
+	default:
+		return [4]int{}
+	}
+}
+
+func designSpecialControlRect(action string) [4]int {
+	switch action {
+	case "specialprev":
+		return [4]int{520, 130, 25, 18}
+	case "specialnext":
+		return [4]int{547, 130, 25, 18}
+	case "specialadd":
+		return [4]int{574, 130, 25, 18}
+	case "specialdel":
+		return [4]int{601, 130, 25, 18}
+	default:
+		return [4]int{}
 	}
 }

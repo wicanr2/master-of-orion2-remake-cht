@@ -15,8 +15,8 @@ import (
 // ⚠ 本檔只算「可見與否」,純視覺用途——不 gate 任何操作(選星/派艦/殖民/轟炸皆不受影響,
 // 玩家仍可對著霧裡的星派艦探索)。真正的繪製改動在 cmd/moo2/interactive.go drawStarmap。
 //
-// ⚠ 不做敵艦 map blip:AI 艦隊在本 remake 是抽象戰力(AIOpponent.FleetStrength),沒有地圖
-// 座標,本輪偵測範圍只用來決定「玩家看不看得到某顆星」,不處理「看不看得到某支艦隊」。
+// AI 主力艦隊已有位置與實艦；本檔只處理玩家感測範圍。敵方 blip 的可見性與 UI 呈現
+// 尚未接線，本輪仍只決定「玩家看不看得到某顆星」，不判斷「看不看得到某支艦隊」。
 
 // bestPlayerScannerParsec 回傳玩家目前已解鎖的最佳掃描科技對應偵測範圍(parsec,見
 // gamedata.ScannerRangeParsec)。掃描科技本身無對應 Component(componentUnlockedFor 那套走
@@ -185,7 +185,7 @@ func (s *GameSession) fleetDetectionSources() []detectionSource {
 		}
 		bonus := 0
 		for _, sh := range f.Ships {
-			if sh.Special == battleScannerName {
+			if shipHasSpecial(sh, battleScannerName) {
 				bonus = gamedata.ShipBattleScannerScanParsecBonus
 				break
 			}

@@ -136,7 +136,7 @@ func (b *sceneBuilder) advanceWorldTurn() *origTransition {
 	return b.finishResolvedTurn()
 }
 
-// finishResolvedTurn 處理已經完成 EndTurn 的後半段:自動存檔、研究抉擇、
+// finishResolvedTurn 處理已經完成 EndTurn 的後半段:自動存檔、舊存檔研究抉擇相容、
 // 結局／事件／回合摘要。網路鎖步在所有玩家重播同一批指令後只呼叫一次
 // EndTurn，接著也必須走完全相同的原版畫面順序。
 func (b *sceneBuilder) finishResolvedTurn() *origTransition {
@@ -145,8 +145,7 @@ func (b *sceneBuilder) finishResolvedTurn() *origTransition {
 			fmt.Fprintln(os.Stderr, "自動存檔失敗:", err)
 		}
 	}
-	// 若本回合完成的研究主題有多科技可選 → 先進抉擇畫面(MOO2 每主題擇一),
-	// 選定後再顯示回合摘要。
+	// 新流程在投入 RP 前已選 application；這裡只接住舊存檔可能留下的突破後待決狀態。
 	if _, _, pending := b.session.PendingResearchChoice(); pending {
 		sc, err := b.researchChoice(b.turnSummary)
 		if err == nil {
@@ -180,6 +179,11 @@ func (b *sceneBuilder) finishResolvedTurn() *origTransition {
 func (b *sceneBuilder) endTurnPressed() *origTransition {
 	if b.session == nil {
 		return nil
+	}
+	if b.session.EnsurePlayerResearchApplication() {
+		if sc, err := b.researchChoice(b.galaxy); err == nil {
+			return &origTransition{next: sc}
+		}
 	}
 	if b.networkTurn != nil {
 		return b.submitNetworkTurn()

@@ -57,3 +57,17 @@ var OrigBuildingID = map[string]int{
 	"Weather Controller":          46, // Weather Controller
 	"Fighter Garrison":            47, // Fighter Garrison
 }
+
+// OriginalBuildingIDForName 將 remake 建築 map 使用的中文名，或既有英文手冊名，
+// 對回原版 raw building ID。無法映射時回傳 ok=false，不以表位置或字串相似度猜測。
+func OriginalBuildingIDForName(name string) (id int, ok bool) {
+	if id, ok = OrigBuildingID[name]; ok {
+		return id, true
+	}
+	building, ok := BuildingByNameZH(name)
+	if !ok {
+		return 0, false
+	}
+	id, ok = OrigBuildingID[building.NameEN]
+	return id, ok
+}

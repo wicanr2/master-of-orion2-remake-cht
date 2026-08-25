@@ -325,10 +325,9 @@ func MissileWarheadBonusForKind(weaponKind int) (bonus int, ok bool) {
 
 // TorpedoDamageAfterRange 套用魚雷的射程衰減。
 //
-// 手冊 p.125 的明確資料只有電漿魚雷：每飛行一格損失 5 點強度；NR
-// (No Range Dissipation) 取消這個衰減。反物質與質子魚雷在目前資料表中
-// 沒有同類的逐格扣值，因此維持固定傷害。負距離會以 0 格處理，傷害至少
-// 保留 1，避免命中後變成空傷害。
+// 電漿魚雷每格損失 5 點；Dragon Breath（ID 40）每格損失 15 點。後者由
+// sub_3D2DF 的 ID 分支直接證實。NR (No Range Dissipation) 取消衰減；反物質與
+// 質子魚雷沒有同類逐格扣值。負距離以 0 格處理，傷害至少保留 1。
 func TorpedoDamageAfterRange(weaponName string, baseDamage, rangeSquares int, noRangeDissipation bool) int {
 	if baseDamage < 1 {
 		baseDamage = 1
@@ -336,8 +335,15 @@ func TorpedoDamageAfterRange(weaponName string, baseDamage, rangeSquares int, no
 	if rangeSquares < 0 {
 		rangeSquares = 0
 	}
-	if weaponName == "電漿魚雷" && !noRangeDissipation {
-		baseDamage -= rangeSquares * 5
+	decay := 0
+	switch weaponName {
+	case "電漿魚雷":
+		decay = 5
+	case "巨龍吐息":
+		decay = 15
+	}
+	if decay > 0 && !noRangeDissipation {
+		baseDamage -= rangeSquares * decay
 		if baseDamage < 1 {
 			baseDamage = 1
 		}

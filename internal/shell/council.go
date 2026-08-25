@@ -22,15 +22,6 @@ import (
 // councilEligible 直接引用 gamedata.CouncilMinExtantRaces。舊有「固定只有 1 AI 故永遠死路徑」
 // 的說明不再成立,見下方 councilEligible/advanceCouncil。
 
-// councilInterval 是議會成立後、每屆選舉的間隔回合數。手冊沒有給出這個數字(見
-// gamedata/council.go 檔尾說明),只從外交台詞(assets/i18n/diplo.tsv「next meeting of the
-// Council」「your last Council vote」)得知議會確實會反覆召開。8 回合是 remake 排程選擇,
-// 與 antaresInterval(15回合,安塔蘭突襲)同數量級但較短,理由:議會選舉需要「半數銀河已殖民」
-// 這個較晚才達成的前置條件,若再疊加太長的重開間隔,一局遊戲可能只夠開 1-2 屆,體驗上很難
-// 感受到「反覆投票、外交態勢影響選情」這個手冊描述的機制。若之後找到手冊/社群逆向出的精確
-// 間隔值,應更新此常數。
-const councilInterval = 8
-
 // victoryReasonLabel 回傳 engine.VictoryCondition 的中文化描述,供回合摘要/畫面顯示
 // (engine 是純規則層,不放 UI 字串,故中文標籤放在 shell)。
 func victoryReasonLabel(r engine.VictoryCondition) string {
@@ -75,6 +66,18 @@ type CouncilElection struct {
 	EnemyName   string
 }
 
+// CouncilVotePending 保存原版 sub_1633C 的真人三選一畫面之前已完成的 AI 計票。
+// 候選索引沿用 -1=玩家、>=0=AIPlayers；Choice 由 RespondToCouncilVote 傳入 0/1/2。
+type CouncilVotePending struct {
+	Turn            int
+	CandidateIdx    [2]int
+	CandidateName   [2]string
+	CandidateVotes  [2]int
+	TotalVotes      int
+	PlayerBaseVotes int
+	Rows            []CouncilVoteRow
+}
+
 // settledStarFraction 回傳目前已殖民星數(Owner!=0)與銀河總星數,供
 // gamedata.CouncilEligible 的「半數銀河已殖民」條件使用。
 func (s *GameSession) settledStarFraction() (settled, total int) {
@@ -107,10 +110,7 @@ func (s *GameSession) extantRaceCount() int {
 // 個帝國上限,字面門檻可達,不再需要 remake 覆寫值)。
 func (s *GameSession) councilEligible() bool {
 	settled, total := s.settledStarFraction()
-	if total <= 0 {
-		return false
-	}
-	return settled*2 >= total && s.extantRaceCount() >= gamedata.CouncilMinExtantRaces
+	return gamedata.CouncilEligible(settled, total, s.extantRaceCount())
 }
 
 // playerPopulationTotal/aiPopulationTotal 回傳各自帝國殖民地人口加總,做為
@@ -171,11 +171,111 @@ func (s *GameSession) councilRelation(voter, target int) int {
 	return 0
 }
 
-// councilSwingVoteMinRelation 是搖擺票的棄權門檻:非候選帝國唯有對某候選人的外交關係達此值
-// (「友好」以上,對齊 AIRelationName 的 >=8 界線)才會把票投給它,否則棄權。手冊:議會中對兩位
-// 候選人都不夠友好的種族會棄權,棄權票計入 2/3 的分母卻不歸任何候選人——這正是選情膠著、反覆
-// 流會的來源(若強迫每票都投給某候選人,中立票會全湧向領先者,失真為「幾乎每屆都有人當選」)。
-const councilSwingVoteMinRelation = 8
+func (s *GameSession) ensureCouncilState() {
+	if s.councilRand == nil {
+		s.councilRand = newRandStream(s.EventSeed*2654435761 + 17)
+	}
+	n := 1 + len(s.AIPlayers)
+	if len(s.CouncilLastVotes) != n {
+		old := s.CouncilLastVotes
+		s.CouncilLastVotes = make([]int, n)
+		for i := range s.CouncilLastVotes {
+			s.CouncilLastVotes[i] = councilVoteAbstain
+		}
+		copy(s.CouncilLastVotes, old)
+	}
+}
+
+func (s *GameSession) councilPolicy(voter, target int) gamedata.ForeignPolicy {
+	if voter == -1 || target == -1 {
+		i := voter
+		if i == -1 {
+			i = target
+		}
+		if i >= 0 && i < len(s.AIPlayers) {
+			return s.AIPlayers[i].Treaty.FormalPolicy
+		}
+		return gamedata.DIPLO_NONE
+	}
+	if voter >= 0 && voter < len(s.AIPolicies) && target >= 0 && target < len(s.AIPolicies[voter]) {
+		return s.AIPolicies[voter][target]
+	}
+	return gamedata.DIPLO_NONE
+}
+
+func (s *GameSession) councilAgreement(voter, target int, research bool) bool {
+	if voter == -1 || target == -1 {
+		i := voter
+		if i == -1 {
+			i = target
+		}
+		if i < 0 || i >= len(s.AIPlayers) {
+			return false
+		}
+		if research {
+			return s.AIPlayers[i].Treaty.ResearchActive
+		}
+		return s.AIPlayers[i].Treaty.TradeActive
+	}
+	m := s.AITrade
+	if research {
+		m = s.AIResearch
+	}
+	return voter >= 0 && voter < len(m) && target >= 0 && target < len(m[voter]) && m[voter][target]
+}
+
+func (s *GameSession) councilTargetTraits(target int) (charismatic, repulsive, imperium bool) {
+	if target == -1 {
+		return s.RaceCharismatic(), s.RaceRepulsive(), s.effectiveGovernment() == gamedata.MoraleGovImperium
+	}
+	if target < 0 || target >= len(s.AIPlayers) {
+		return
+	}
+	r := s.AIPlayers[target].RaceIndex
+	return gamedata.OrigRaceTrait(r, gamedata.TRAIT_CHARISMATIC) != 0,
+		gamedata.OrigRaceTrait(r, gamedata.TRAIT_REPULSIVE) != 0,
+		gamedata.OrigRaceTrait(r, gamedata.TRAIT_GOVERNMENT) == int(gamedata.MoraleGovImperium)
+}
+
+// councilSupportsCandidate 對應 Vote_Check_ 已映射的消費端。四個尚未命名的 raw 情緒欄與
+// sub_78398 不用 Relation 猜填；因此這是流程精確、已映射分數精確的保守子集。
+func (s *GameSession) councilSupportsCandidate(voter, target, other int) bool {
+	p := s.councilPolicy(voter, target)
+	if p >= gamedata.DIPLO_LIMITED_WAR {
+		return false
+	}
+	score := 0
+	if p == gamedata.DIPLO_ALLIANCE {
+		score = 200
+	}
+	if s.councilPolicy(voter, other) >= gamedata.DIPLO_LIMITED_WAR {
+		score += 100
+	}
+	ch, rep, imp := s.councilTargetTraits(target)
+	if ch {
+		score += 40
+	}
+	if rep {
+		score -= 100
+	}
+	if imp {
+		score += 30
+	}
+	vi := voter + 1
+	if vi >= 0 && vi < len(s.CouncilLastVotes) && s.CouncilLastVotes[vi] == target {
+		score += 50
+	}
+	if p == gamedata.DIPLO_NON_AGGRESSION {
+		score += 50
+	}
+	if s.councilAgreement(voter, target, false) {
+		score += 25
+	}
+	if s.councilAgreement(voter, target, true) {
+		score += 25
+	}
+	return s.councilRand.Intn(200)+1 <= score
+}
 
 // councilTally 是一屆議會計票結果(手冊 GAME_MANUAL.pdf p.183「兩位候選人由票數最高者出線,
 // 其餘種族依外交關係決定投給哪位候選人」的忠實建模)。
@@ -204,17 +304,15 @@ const councilVoteAbstain = -2
 // tallyCouncil 忠實模擬一屆選舉:
 //  1. 每個帝國(玩家 + 各 AI)依人口算基礎票(gamedata.CouncilVotes)。
 //  2. 票數最高的兩位帝國出線為候選人(穩定排序,平手時保留原順序=玩家優先)。
-//  3. 其餘帝國(含玩家若非候選人)各自把「全部票數」投給外交關係較好、且達友好門檻
-//     (councilSwingVoteMinRelation)的那位候選人;對兩位都不夠友好則棄權(不投票,但票數仍計入
-//     分母 total)。無亂數,可決定性。
+//  3. 其餘 AI 對兩名候選人各做一次獨立 Vote_Check_；單邊通過才投票，雙真或雙假均棄權。
+//     玩家不在這裡自動代投，而是建立 CouncilVotePending 等待三選一。
 //  4. 候選人自身票數計入自己。
 //
-// 棄權建模見 councilSwingVoteMinRelation:分母固定為全體基礎票總和(含棄權者),故中立局勢下
-// 領先者難以單靠自身票達 2/3,選情會反覆流會,與手冊描述一致。玩家若非候選人,這裡自動依關係
-// 代投/棄權(advanceCouncil 在 EndTurn 內非互動呼叫);「玩家親自選票」屬 UI 互動功能,列為 TODO
-// (見 docs/HONEST-STATUS.md 議會章節)。
+// 分母固定為全體基礎票總和（含棄權者）。亂數來自獨立 councilRand，抽取位置進存檔；
+// 唯讀 CouncilBreakdown 只呈現已建立的待投票結果，不會提前擲骰。
 func (s *GameSession) tallyCouncil() councilTally {
 	s.ensureAIRelations()
+	s.ensureCouncilState()
 	emps := make([]empireVote, 0, 1+len(s.AIPlayers))
 	emps = append(emps, empireVote{idx: -1, name: "player", votes: gamedata.CouncilVotes(s.playerPopulationTotal())})
 	for i, a := range s.AIPlayers {
@@ -243,21 +341,25 @@ func (s *GameSession) tallyCouncil() councilTally {
 	rows = append(rows,
 		councilVoteRow{idx: ca.idx, name: ca.name, baseVotes: ca.votes, isCandidate: true, votedForIdx: ca.idx},
 		councilVoteRow{idx: cb.idx, name: cb.name, baseVotes: cb.votes, isCandidate: true, votedForIdx: cb.idx})
-	// 其餘帝國依外交關係把全部票投給偏好且達友好門檻的候選人;對兩位都不夠友好則棄權。
+	// 其餘 AI 對兩位候選人分別擲 Vote_Check_；真人留給 sub_1633C 對應的待投票狀態。
 	for k := 2; k < len(order); k++ {
 		e := emps[order[k]]
-		relA := s.councilRelation(e.idx, ca.idx)
-		relB := s.councilRelation(e.idx, cb.idx)
 		votedFor := councilVoteAbstain
+		if e.idx == -1 {
+			rows = append(rows, councilVoteRow{idx: e.idx, name: e.name, baseVotes: e.votes, votedForIdx: votedFor})
+			continue
+		}
+		a := s.councilSupportsCandidate(e.idx, ca.idx, cb.idx)
+		b := s.councilSupportsCandidate(e.idx, cb.idx, ca.idx)
 		switch {
-		case relA >= relB && relA >= councilSwingVoteMinRelation:
+		case a && !b:
 			votesA += e.votes
 			votedFor = ca.idx
-		case relB > relA && relB >= councilSwingVoteMinRelation:
+		case b && !a:
 			votesB += e.votes
 			votedFor = cb.idx
-			// 否則:對兩位候選人都不夠友好,棄權(不投票,票數仍在 total 分母內)。
 		}
+		s.CouncilLastVotes[e.idx+1] = votedFor
 		rows = append(rows, councilVoteRow{idx: e.idx, name: e.name, baseVotes: e.votes, votedForIdx: votedFor})
 	}
 	return councilTally{
@@ -269,75 +371,75 @@ func (s *GameSession) tallyCouncil() councilTally {
 // advanceCouncil 是 EndTurn 每回合呼叫的議會選舉狀態機:
 //  1. 遊戲已分出勝負、或議會尚未成立(councilEligible=false)、或上一屆選舉玩家還沒回應
 //     (PendingCouncilElection!=nil)→ 不開會。
-//  2. 距離上次開會不足 councilInterval 回合 → 不開會(首次成立後立刻召開第一屆,不用等)。
-//  3. 開會:呼叫 tallyCouncil 忠實計票(票數最高兩位帝國出線為候選人,其餘帝國依外交關係把票
-//     投給友好的候選人、對兩位都不夠友好則棄權),再依 engine.CheckHighCouncil 用「候選人得票 vs
-//     全體基礎票總和」判定是否達 2/3 多數(玩家候選人優先判定;只可能有一方達 2/3,門檻排他)。
-//     - 玩家(候選人)達標 → 立即勝利(手冊:當選者若是玩家,遊戲直接結束,不需要「接受」步驟)。
-//     - 某 AI(候選人)達標 → 記錄 PendingCouncilElection(EnemyName=該 AI),等 RespondToCouncilElection。
-//     - 無人達標 → 流會,下一屆再開(手冊描述議會反覆召開,見 diplo.tsv 台詞)。
+//  2. 原版最早第 25 回合召開；後續距離上次開會不足 25 回合 → 不開會。
+//  3. 開會:呼叫 tallyCouncil 完成候選人與 AI 選票，建立 PendingCouncilVote 等待真人三選一。
+//  4. RespondToCouncilVote 加入真人選票後才檢查 2/3；AI 當選再進既有接受／拒絕流程。
 //
-// 2026-07-12 由「每帝國各自票數獨立比 2/3」的簡化 generalize,升級為 tallyCouncil 的忠實搖擺票
-// 模型(兩位候選人 + 第三方依外交關係投票/棄權),見 tallyCouncil 與 councilSwingVoteMinRelation
-// 註解。此前的簡化(每帝國獨立比、不分候選人、無搖擺票)是「還沒有 AI 對 AI 關係矩陣」時的權宜
-// 讀法;AIRelations 建立後(見 session.go advanceAIDiplomacy),才有資料支撐手冊原文的搖擺票規則。
-// 舊測試斷言的「票數分散即流會」在忠實模型下仍成立——中立局勢下第三方棄權,分母含棄權票,領先者
-// 難單靠自身票達 2/3(見 multi_ai_test.go 的 NoneReachesMajority / NeutralAISAbstain 對照)。
+// 2026-08-24 依 Council_Votes_／Vote_Check_ 訂正：固定關係門檻與自動玩家選票均已移除。
 func (s *GameSession) advanceCouncil() {
 	s.LastCouncil = ""
-	if s.DisableEvents || s.Victory.Over || s.PendingCouncilElection != nil {
+	if s.DisableEvents || s.Victory.Over || s.PendingCouncilElection != nil || s.PendingCouncilVote != nil {
 		return
 	}
 	if !s.councilEligible() {
 		return
 	}
-	if s.CouncilMeetings > 0 && s.Turn-s.lastCouncilTurn < councilInterval {
+	if s.Turn < gamedata.CouncilFirstMeetingTurn {
+		return
+	}
+	if s.CouncilMeetings > 0 && s.Turn-s.lastCouncilTurn < gamedata.CouncilMeetingInterval {
 		return
 	}
 
 	tally := s.tallyCouncil()
 	s.CouncilMeetings++
 	s.lastCouncilTurn = s.Turn
-
-	// 玩家最終得票(候選人則含搖擺票,非候選人則為自身基礎票)供顯示/CouncilElection 記錄用。
-	playerVotes := gamedata.CouncilVotes(s.playerPopulationTotal())
-	for c := 0; c < 2; c++ {
-		if tally.candIdx[c] == -1 {
-			playerVotes = tally.candVotes[c]
-		}
-	}
-
-	// 逐候選人判定 2/3;玩家候選人優先判定(玩家自己當選直接勝利,不需 accept 步驟)。
-	// 只可能有一位達 2/3(門檻排他),故判定順序不影響結果,只影響玩家/AI 分支。
-	for c := 0; c < 2; c++ {
-		if !tally.valid || tally.candIdx[c] != -1 {
-			continue
-		}
-		if engine.CheckHighCouncil(tally.candVotes[c], tally.total) {
-			s.Victory = VictoryState{Over: true, Reason: engine.VictoryHighCouncil, Winner: "player", Turn: s.Turn}
-			s.LastCouncil = fmt.Sprintf("銀河議會第 %d 屆選舉:你以 %d/%d 票(達2/3多數)當選銀河領袖!",
-				s.CouncilMeetings, tally.candVotes[c], tally.total)
-			return
-		}
-	}
-	for c := 0; c < 2; c++ {
-		if !tally.valid || tally.candIdx[c] == -1 {
-			continue
-		}
-		if engine.CheckHighCouncil(tally.candVotes[c], tally.total) {
-			s.PendingCouncilElection = &CouncilElection{Turn: s.Turn, PlayerVotes: playerVotes,
-				EnemyVotes: tally.candVotes[c], TotalVotes: tally.total, EnemyName: tally.candName[c]}
-			s.LastCouncil = fmt.Sprintf("銀河議會第 %d 屆選舉:%s 以 %d/%d 票(達2/3多數)當選銀河領袖,尚待你回應是否接受",
-				s.CouncilMeetings, tally.candName[c], tally.candVotes[c], tally.total)
-			return
-		}
-	}
-	if tally.valid {
-		s.LastCouncil = fmt.Sprintf("銀河議會第 %d 屆選舉:候選人 %s（%d 票)、%s（%d 票)皆未達2/3多數,流會(全體 %d 票)",
-			s.CouncilMeetings, tally.candName[0], tally.candVotes[0], tally.candName[1], tally.candVotes[1], tally.total)
-	} else {
+	if !tally.valid {
 		s.LastCouncil = fmt.Sprintf("銀河議會第 %d 屆選舉:候選人不足,流會", s.CouncilMeetings)
+		return
 	}
+	rows := make([]CouncilVoteRow, 0, len(tally.rows))
+	for _, r := range tally.rows {
+		rows = append(rows, CouncilVoteRow{Name: s.councilDisplayName(r.idx), IsPlayer: r.idx == -1,
+			BaseVotes: r.baseVotes, IsCandidate: r.isCandidate,
+			Abstained: r.votedForIdx == councilVoteAbstain, VotedFor: s.councilDisplayName(r.votedForIdx)})
+	}
+	s.PendingCouncilVote = &CouncilVotePending{Turn: s.Turn, CandidateIdx: tally.candIdx,
+		CandidateName:  [2]string{s.councilDisplayName(tally.candIdx[0]), s.councilDisplayName(tally.candIdx[1])},
+		CandidateVotes: tally.candVotes, TotalVotes: tally.total,
+		PlayerBaseVotes: gamedata.CouncilVotes(s.playerPopulationTotal()), Rows: rows}
+	s.LastCouncil = fmt.Sprintf("銀河議會第 %d 屆選舉:請投票給 %s、%s，或棄權", s.CouncilMeetings,
+		s.PendingCouncilVote.CandidateName[0], s.PendingCouncilVote.CandidateName[1])
+}
+
+// RespondToCouncilVote 完成原版 sub_1633C 的三選一；choice 0/1 投候選人，2 表示棄權。
+func (s *GameSession) RespondToCouncilVote(choice int) {
+	s.recordPlayerCommand(PlayerCommand{Name: CmdVoteCouncil, Args: []int{choice}})
+	p := s.PendingCouncilVote
+	if p == nil || choice < 0 || choice > 2 {
+		return
+	}
+	if choice < 2 {
+		p.CandidateVotes[choice] += p.PlayerBaseVotes
+		s.CouncilLastVotes[0] = p.CandidateIdx[choice]
+	} else {
+		s.CouncilLastVotes[0] = councilVoteAbstain
+	}
+	s.PendingCouncilVote = nil
+	for c := 0; c < 2; c++ {
+		if !engine.CheckHighCouncil(p.CandidateVotes[c], p.TotalVotes) {
+			continue
+		}
+		if p.CandidateIdx[c] == -1 {
+			s.Victory = VictoryState{Over: true, Reason: engine.VictoryHighCouncil, Winner: "player", Turn: p.Turn}
+			s.LastCouncil = fmt.Sprintf("銀河議會第 %d 屆選舉:你以 %d/%d 票當選銀河領袖!", s.CouncilMeetings, p.CandidateVotes[c], p.TotalVotes)
+		} else {
+			s.PendingCouncilElection = &CouncilElection{Turn: p.Turn, PlayerVotes: p.PlayerBaseVotes, EnemyVotes: p.CandidateVotes[c], TotalVotes: p.TotalVotes, EnemyName: p.CandidateName[c]}
+			s.LastCouncil = fmt.Sprintf("銀河議會第 %d 屆選舉:%s 以 %d/%d 票當選，等待你接受或拒絕", s.CouncilMeetings, p.CandidateName[c], p.CandidateVotes[c], p.TotalVotes)
+		}
+		return
+	}
+	s.LastCouncil = fmt.Sprintf("銀河議會第 %d 屆選舉:%s（%d 票）、%s（%d 票）皆未達2/3，流會", s.CouncilMeetings, p.CandidateName[0], p.CandidateVotes[0], p.CandidateName[1], p.CandidateVotes[1])
 }
 
 // CouncilStatus 是議會目前狀態的唯讀快照,供 UI 呈現用(cmd/moo2 是 package main,無法直接讀
@@ -358,6 +460,7 @@ type CouncilStatus struct {
 	EnemyName   string
 	Meetings    int              // 已召開過的屆數
 	Pending     *CouncilElection // 非 nil = 有待玩家回應的選舉結果
+	PendingVote *CouncilVotePending
 	Victory     VictoryState
 }
 
@@ -376,7 +479,7 @@ func (s *GameSession) CouncilStatus() CouncilStatus {
 	ev := gamedata.CouncilVotes(s.aiPopulationTotal())
 	return CouncilStatus{
 		Eligible: s.councilEligible(), PlayerVotes: pv, EnemyVotes: ev, TotalVotes: pv + ev,
-		EnemyName: enemyName, Meetings: s.CouncilMeetings, Pending: s.PendingCouncilElection,
+		EnemyName: enemyName, Meetings: s.CouncilMeetings, Pending: s.PendingCouncilElection, PendingVote: s.PendingCouncilVote,
 		Victory: s.Victory,
 	}
 }
@@ -419,32 +522,12 @@ func (s *GameSession) councilDisplayName(idx int) string {
 // 開會;是否真的開會以 advanceCouncil 為準,同 CouncilStatus 的即時試算語意)。供議會畫面把搖擺票
 // 攤開呈現,取代舊的單行合計摘要。
 func (s *GameSession) CouncilBreakdown() CouncilBreakdown {
-	t := s.tallyCouncil()
-	if !t.valid {
-		return CouncilBreakdown{Total: t.total}
+	if p := s.PendingCouncilVote; p != nil {
+		return CouncilBreakdown{Valid: true, Rows: p.Rows, Candidates: p.CandidateName, CandVotes: p.CandidateVotes,
+			Total: p.TotalVotes, Threshold: (p.TotalVotes*2 + 2) / 3}
 	}
-	rows := make([]CouncilVoteRow, 0, len(t.rows))
-	for _, r := range t.rows {
-		row := CouncilVoteRow{
-			Name: s.councilDisplayName(r.idx), IsPlayer: r.idx == -1,
-			BaseVotes: r.baseVotes, IsCandidate: r.isCandidate,
-		}
-		switch {
-		case r.isCandidate:
-			row.VotedFor = s.councilDisplayName(r.idx) // 候選人投自己
-		case r.votedForIdx == councilVoteAbstain:
-			row.Abstained = true
-		default:
-			row.VotedFor = s.councilDisplayName(r.votedForIdx)
-		}
-		rows = append(rows, row)
-	}
-	return CouncilBreakdown{
-		Valid: true, Rows: rows,
-		Candidates: [2]string{s.councilDisplayName(t.candIdx[0]), s.councilDisplayName(t.candIdx[1])},
-		CandVotes:  t.candVotes, Total: t.total,
-		Threshold: (t.total*2 + 2) / 3, // ceil(total*2/3):達 2/3 所需票數
-	}
+	// Vote_Check_ 有亂數；沒有正在進行的選舉時不得為了畫面預覽提前擲骰。
+	return CouncilBreakdown{}
 }
 
 // VictoryReasonLabel 是 victoryReasonLabel 的匯出版本,供 cmd/moo2 顯示中文勝利路徑描述用。
@@ -456,7 +539,7 @@ func VictoryReasonLabel(r engine.VictoryCondition) string {
 // can force you to accept a decision you don't agree with」)。
 //
 //	accept=true  → 接受落敗,遊戲結束(Victory.Winner=當選 AI 名稱)。
-//	accept=false → 拒絕接受,不結束遊戲,清空待決狀態,下一屆(councilInterval 回合後)再開會。
+//	accept=false → 拒絕接受,不結束遊戲,清空待決狀態,下一屆 25 回合後再開會。
 //
 // PendingCouncilElection==nil 時呼叫視為無操作(沒有待決選舉可回應)。
 func (s *GameSession) RespondToCouncilElection(accept bool) {

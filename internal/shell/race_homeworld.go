@@ -9,19 +9,7 @@ import (
 // 手冊 p.23 明定水生族把 Tundra→Terran、Swamp→Ocean、Terran→Gaia;
 // 其餘氣候維持原值。這是「食物產出」對映,不改 Planet 上供玩家查看的原始氣候。
 func raceFoodClimate(climate gamedata.PlanetClimate, aquatic bool) gamedata.PlanetClimate {
-	if !aquatic {
-		return climate
-	}
-	switch climate {
-	case gamedata.TUNDRA:
-		return gamedata.TERRAN
-	case gamedata.SWAMP:
-		return gamedata.OCEAN
-	case gamedata.TERRAN:
-		return gamedata.GAIA
-	default:
-		return climate
-	}
+	return gamedata.RaceFoodClimate(climate, aquatic)
 }
 
 // racePopulationClimate 回傳種族實際用來查人口上限的氣候。

@@ -128,7 +128,15 @@ func colonyOutputTextRect(column, row int) textSafeRect {
 	if column == 0 {
 		right = colPanelMX + 6 + 80
 	}
-	return textSafeRect{x: x, y: colPanelMY + 6 + row*16, w: right - x, h: 13}
+	// 中面板的兩個可視 cell 不是 16px 等距：水平分隔線在 y=58，
+	// Buildings 標題列從 y=75 開始。FaceTC 在 runtime 的 11px 請求仍
+	// 會產生 16px 高的 bitmap glyph，因此列矩形必須把這個實際高度算進去：
+	// row 0 = [37,53)，row 1 = [59,75)。原先 row 1 的 [53,66) 會跨在線上。
+	rowY := [...]int{colPanelMY + 6, colPanelMY + 28}
+	if row < 0 || row >= len(rowY) {
+		return textSafeRect{}
+	}
+	return textSafeRect{x: x, y: rowY[row], w: right - x, h: 16}
 }
 
 func colonyBuildingsTitleTextRect() textSafeRect {

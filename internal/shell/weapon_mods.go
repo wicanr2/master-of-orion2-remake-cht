@@ -46,6 +46,31 @@ func WeaponModOptionsForWeapon(weaponName string) []gamedata.WeaponModCode {
 	return options
 }
 
+// WeaponModOptionsForWeaponAtLevel 只回傳已達原版微型化門檻的改造。
+func WeaponModOptionsForWeaponAtLevel(weaponName string, level int) []gamedata.WeaponModCode {
+	all := WeaponModOptionsForWeapon(weaponName)
+	out := make([]gamedata.WeaponModCode, 0, len(all))
+	for _, mod := range all {
+		if gamedata.WeaponModUnlockedAtLevel(mod, level) {
+			out = append(out, mod)
+		}
+	}
+	return out
+}
+
+func weaponMiniaturizationLevel(c Component, completed map[gamedata.ResearchTopic]bool, hyper map[gamedata.ResearchTopic]int) int {
+	if c.UnlockTech == gamedata.TECH_NONE {
+		return 0
+	}
+	return gamedata.WeaponMiniaturizationLevelWithHyper(c.UnlockTech, completed, hyper)
+}
+
+// WeaponModOptionsForPlayer 是造艦 UI 的科技狀態入口。
+func (s *GameSession) WeaponModOptionsForPlayer(weapon int) []gamedata.WeaponModCode {
+	c := pick(WeaponOptions, weapon)
+	return WeaponModOptionsForWeaponAtLevel(c.Name, weaponMiniaturizationLevel(c, s.Player.CompletedTopics, s.Player.HyperAdvancedLevels))
+}
+
 // WeaponModLabelZH 是武器改造代碼的中文顯示名(艦艇設計畫面用)。
 var weaponModLabelZH = map[gamedata.WeaponModCode]string{
 	gamedata.ModHeavyMount:         "重型平台(HV)",
@@ -108,10 +133,10 @@ func WeaponIsBeam(name string) bool {
 	return weaponKindByName(name) == WeaponKindBeam
 }
 
-// WeaponIsTorpedo 回報武器是否是武器表中的三種玩家魚雷。
+// WeaponIsTorpedo 回報武器是否是武器表中的玩家魚雷或怪物專用 raw type 40 魚雷。
 func WeaponIsTorpedo(name string) bool {
 	switch name {
-	case "反物質魚雷", "質子魚雷", "電漿魚雷":
+	case "反物質魚雷", "質子魚雷", "電漿魚雷", "巨龍吐息":
 		return true
 	default:
 		return false
@@ -164,6 +189,19 @@ func WeaponModCodesForWeapon(weaponName string, mods []string) []gamedata.Weapon
 	for _, mod := range WeaponModCodesFromStrings(mods) {
 		if WeaponModAppliesToWeapon(weaponName, mod) {
 			out = append(out, mod)
+		}
+	}
+	return out
+}
+
+func filterWeaponModsAtLevel(weaponName string, mods []string, level int) []string {
+	if len(mods) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(mods))
+	for _, mod := range WeaponModCodesForWeapon(weaponName, mods) {
+		if gamedata.WeaponModUnlockedAtLevel(mod, level) {
+			out = append(out, string(mod))
 		}
 	}
 	return out

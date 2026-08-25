@@ -66,7 +66,7 @@ of enemy property」的定性描述，但原版 `0x10130A` 的讀寫端已具體
 - SABOTAGE 使用已證實的 `T=70`，再由 `E=T+DB-AB` 與 `SpyRollChance(E)` 得到成功率；建築
   命中後仍使用 49 槽／slot 9 skip／`+8` 建造成本加權清除。
 
-這是「目前 remake 資料模型的完整分數」：`SpySlotBonus` 已呼叫與 raw
+這是原版兩張帝國攻防表加上逐對手 slot 的等價分層：`SpySlotBonus` 已呼叫與 raw
 `sub_101483 @ 0x101483` 相同的 helper，且 `T=70`、Agent 消費與 49 槽建築權重已接；
 不是宣稱原版兩張 score table 的上游填值與未命名 raw record 已逐欄還原。
 `TrainDefensiveAgent`／`DismissDefensiveAgent` 使用 63 上限；Spy-vs-Spy 判定擊殺防守方時，

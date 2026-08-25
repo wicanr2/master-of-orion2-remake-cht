@@ -44,6 +44,15 @@ func TestResolveMissileShotWithModsTorpedoDamage(t *testing.T) {
 	}
 }
 
+func TestDragonBreathAppliesOVRBeforeFifteenPerSquareDecay(t *testing.T) {
+	shot := ResolveMissileShotWithMods(false, 2, 1, 0, 0, false, 1,
+		300, 0, 0, false, MissileDefenses{}, "巨龍吐息",
+		[]gamedata.WeaponModCode{gamedata.ModOverloadedTorpedo})
+	if !shot.Hit || shot.DamageToStructure != 420 {
+		t.Fatalf("巨龍吐息兩格傷害=%d hit=%v，預期 (300*150%%)-30=420", shot.DamageToStructure, shot.Hit)
+	}
+}
+
 func TestResolveMissileShotWithModsMIRVRollsEachWarhead(t *testing.T) {
 	def := MissileDefenses{JamRolls: []int{1, 51, 1, 51}}
 	shot := ResolveMissileShotWithMods(false, 0, 1, 50, 0, false, 1,
@@ -189,4 +198,24 @@ func TestWeaponModOptionsForWeapon(t *testing.T) {
 			t.Fatalf("%s 應走魚雷/飛彈解算分類", name)
 		}
 	}
+}
+
+func TestWeaponModOptionsForWeaponAtLevel(t *testing.T) {
+	level0 := WeaponModOptionsForWeaponAtLevel("雷射", 0)
+	if !containsWeaponMod(level0, gamedata.ModHeavyMount) || containsWeaponMod(level0, gamedata.ModAutoFire) {
+		t.Fatalf("0 級光束改造門檻錯誤: %v", level0)
+	}
+	level2 := WeaponModOptionsForWeaponAtLevel("雷射", 2)
+	if !containsWeaponMod(level2, gamedata.ModAutoFire) || !containsWeaponMod(level2, gamedata.ModEnveloping) {
+		t.Fatalf("2 級應解鎖 AF/ENV: %v", level2)
+	}
+}
+
+func containsWeaponMod(mods []gamedata.WeaponModCode, want gamedata.WeaponModCode) bool {
+	for _, mod := range mods {
+		if mod == want {
+			return true
+		}
+	}
+	return false
 }

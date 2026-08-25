@@ -163,6 +163,27 @@ func MoraleUnificationProductionBonus(gov MoraleGovernmentType) int {
 	}
 }
 
+// GovernmentJobProductionBonus 回傳 sub_DE280 對三種職務套用的政體百分點。
+// job 0/1/2 分別是農夫、工人、科學家；回傳值直接與士氣、重力及領袖百分點相加。
+func GovernmentJobProductionBonus(gov MoraleGovernmentType, job int) int {
+	switch job {
+	case 0, 1:
+		return MoraleUnificationProductionBonus(gov)
+	case 2:
+		switch gov {
+		case MoraleGovFeudalism:
+			return -50
+		case MoraleGovConfederation:
+			return -25
+		case MoraleGovDemocracy:
+			return 50
+		case MoraleGovFederation:
+			return 75
+		}
+	}
+	return 0
+}
+
 // 手冊有描述但未給精確公式/數字,故不移植,呼叫端需要時再補查證:
 //   - Spiritual Leader(領袖 Administration Ability):「Raises the morale of all colonial
 //     populations in the system.」(p.137)——只有文字描述,無百分比或數值。

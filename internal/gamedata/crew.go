@@ -83,8 +83,28 @@ var crewXPThresholdsWarlord = [CrewLevelCount]int{-1, 0, 50, 150, 500}
 // CrewXPPerTurnInSpace 是「每回合在太空中」得到的經驗(手冊:1)。
 const CrewXPPerTurnInSpace = 1
 
+// CrewXPTurnMaximum 是 Do_All_Ships_XP_Check_／sub_149D5 @ 0x149D5 在每回合
+// CrewExp 寫回前套用的上限；raw word_17D186 @ 0x17D186 = 500。
+const CrewXPTurnMaximum = 500
+
 // CrewXPBattleMinimum 是打贏一場至少拿到的經驗(手冊:minimum of 1)。
 const CrewXPBattleMinimum = 1
+
+// CrewXPAfterTurnGain 套用原版每回合 XP consumer 的非負邊界與 500 上限。
+// 戰後獎勵屬另一條原版鏈，不使用本函式。
+func CrewXPAfterTurnGain(current, gain int) int {
+	if current < 0 {
+		current = 0
+	}
+	if gain < 0 {
+		gain = 0
+	}
+	current += gain
+	if current > CrewXPTurnMaximum {
+		return CrewXPTurnMaximum
+	}
+	return current
+}
 
 // SpaceAcademyStartingLevelBonus 是太空學院讓該殖民地造的船起始等級提高幾級(手冊 p.97:1)。
 const SpaceAcademyStartingLevelBonus = 1
@@ -189,13 +209,28 @@ func CrewXPForLevel(level int, warlord bool) int {
 	return crewXPThresholds[level]
 }
 
+// CrewBattleXPFromDestroyedHullClassSum 回傳打贏一場戰鬥時，每艘合格艦取得的經驗。
+//
+// sub_4B184 @ 0x4B184 先累加被摧毀敵艦的 1-based hull class，再於
+// 0x4B90C..0x4B919 除二並強制最少 1。即使總和是 0，勝方 recipient 仍得到 1；
+// caller 必須自行確保「確實有勝方且有 recipient」。這條直接 add Ship+0x72，不共用
+// 每回合 consumer 的 500 上限。
+func CrewBattleXPFromDestroyedHullClassSum(sum int) int {
+	if sum < 0 {
+		sum = 0
+	}
+	if xp := sum / 2; xp >= CrewXPBattleMinimum {
+		return xp
+	}
+	return CrewXPBattleMinimum
+}
+
 // CrewBattleXP 回傳打贏一場戰鬥得到的經驗。
 //
 // sizeClasses 是**被擊沉**(不含被俘)的敵艦艦體等級(1–6)。
 // 手冊:總和折半、無條件捨去、最少 1。
 //
-// 一艘都沒擊沉時回 0 而不是 1:手冊那個「minimum of 1」講的是「打贏而且有擊沉」
-// 的情況;把「贏了但一艘都沒沉」也給 1 是把保底條款擴大解釋。
+// 空清單仍回 1；這不是手冊延伸解讀，而是 sub_4B184 的原始 min-1 分支。
 func CrewBattleXP(sizeClasses []int) int {
 	sum := 0
 	for _, c := range sizeClasses {
@@ -203,11 +238,5 @@ func CrewBattleXP(sizeClasses []int) int {
 			sum += c
 		}
 	}
-	if sum == 0 {
-		return 0
-	}
-	if xp := sum / 2; xp >= CrewXPBattleMinimum {
-		return xp
-	}
-	return CrewXPBattleMinimum
+	return CrewBattleXPFromDestroyedHullClassSum(sum)
 }

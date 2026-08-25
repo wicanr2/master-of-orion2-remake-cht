@@ -4,10 +4,11 @@ import (
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
-// settleHalfGalaxy 把 s.Stars 前一半(含母星)標為玩家所有,滿足 councilEligible 的
-// 「半數銀河已殖民」條件,不動 AI 母星那顆(維持 owner=2)。供議會相關測試共用。
+// settleHalfGalaxy 把 s.Stars 前一半(含母星)標為玩家所有，並把測試時鐘放在首次議會前一回合；
+// 下一次 EndTurn 會進入 Turn 25。它不動 AI 母星那顆(維持 owner=2)。
 func settleHalfGalaxy(s *GameSession) {
 	need := (len(s.Stars) + 1) / 2
 	settled := 0
@@ -21,6 +22,9 @@ func settleHalfGalaxy(s *GameSession) {
 		}
 		s.Stars[i].Owner = 1
 		settled++
+	}
+	if s.Turn < gamedata.CouncilFirstMeetingTurn-1 {
+		s.Turn = gamedata.CouncilFirstMeetingTurn - 1
 	}
 }
 
@@ -40,21 +44,50 @@ func TestCouncilNotEligibleEarlyGame(t *testing.T) {
 	}
 }
 
-// TestCouncilEligibleAfterHalfSettled 驗證半數銀河殖民 + 2 個存續帝國(本 remake 資料模型
-// 覆寫門檻,見 councilMinExtantRacesOverride)後議會成立,且首次達成當回合立即開會(不用等
-// councilInterval)。
+// TestCouncilEligibleAfterHalfSettled 驗證殖民與帝國數達標後，仍須到原版第 25 回合才開會。
 func TestCouncilEligibleAfterHalfSettled(t *testing.T) {
 	s := NewDemoSession()
 	settleHalfGalaxy(s)
 	if !s.councilEligible() {
 		t.Fatalf("半數銀河已殖民且存續帝國數達標,議會應已成立")
 	}
-	s.EndTurn()
+	s.Turn = gamedata.CouncilFirstMeetingTurn - 2
+	s.EndTurn() // Turn 24
+	if s.CouncilMeetings != 0 {
+		t.Fatalf("Turn 24 即使成立也不應開會,got CouncilMeetings=%d", s.CouncilMeetings)
+	}
+	s.EndTurn() // Turn 25
 	if s.CouncilMeetings != 1 {
 		t.Fatalf("議會成立後應立即召開第 1 屆,got CouncilMeetings=%d", s.CouncilMeetings)
 	}
 	if s.LastCouncil == "" {
 		t.Fatalf("已開會應留下 LastCouncil 訊息")
+	}
+}
+
+func TestCouncilScheduleExactIntervalAndSnapshot(t *testing.T) {
+	s := NewDemoSession()
+	settleHalfGalaxy(s)
+	for i := range s.AIPlayers {
+		s.AIPlayers[i].Colonies[0].Population = s.PlayerColonies[0].Population
+	}
+	s.Turn = gamedata.CouncilFirstMeetingTurn
+	s.advanceCouncil()
+	if s.CouncilMeetings != 1 || s.lastCouncilTurn != gamedata.CouncilFirstMeetingTurn {
+		t.Fatalf("Turn 25 應召開第一屆並記錄日期,meetings=%d last=%d", s.CouncilMeetings, s.lastCouncilTurn)
+	}
+	s.RespondToCouncilVote(2)
+
+	s = s.snapshot().restore()
+	s.Turn = gamedata.CouncilFirstMeetingTurn + gamedata.CouncilMeetingInterval - 1
+	s.advanceCouncil()
+	if s.CouncilMeetings != 1 {
+		t.Fatalf("間隔 24 回合不應召開第二屆,got %d", s.CouncilMeetings)
+	}
+	s.Turn++
+	s.advanceCouncil()
+	if s.CouncilMeetings != 2 {
+		t.Fatalf("間隔 25 回合應召開第二屆,got %d", s.CouncilMeetings)
 	}
 }
 
@@ -67,6 +100,10 @@ func TestCouncilPlayerWinsBySupermajority(t *testing.T) {
 	s.AIPlayers[0].Colonies[0].Population = 1
 
 	s.EndTurn()
+	if s.PendingCouncilVote == nil {
+		t.Fatal("議會應等待玩家投票")
+	}
+	s.RespondToCouncilVote(0)
 
 	if !s.Victory.Over {
 		t.Fatalf("玩家人口壓倒性領先,應已達2/3多數當選")
@@ -85,7 +122,7 @@ func TestCouncilPlayerWinsBySupermajority(t *testing.T) {
 // TestCouncilEnemyWinsRequiresPlayerResponse 驗證 AI 達 2/3 多數時不會直接結束遊戲,而是
 // 留下 PendingCouncilElection 讓玩家用 RespondToCouncilElection 回應(手冊:「there's no way
 // the council can force you to accept a decision you don't agree with」)。拒絕後遊戲不結束,
-// 下一屆(councilInterval 回合後)可以再開會。
+// 下一屆在原版固定 25 回合後可以再開會。
 func TestCouncilEnemyWinsRequiresPlayerResponse(t *testing.T) {
 	s := NewDemoSession()
 	settleHalfGalaxy(s)
@@ -93,6 +130,10 @@ func TestCouncilEnemyWinsRequiresPlayerResponse(t *testing.T) {
 	s.AIPlayers[0].Colonies[0].Population = 100
 
 	s.EndTurn()
+	if s.PendingCouncilVote == nil {
+		t.Fatal("議會應等待玩家投票")
+	}
+	s.RespondToCouncilVote(2)
 
 	if s.Victory.Over {
 		t.Fatalf("AI當選不應自動結束遊戲,應等玩家回應")
@@ -111,9 +152,12 @@ func TestCouncilEnemyWinsRequiresPlayerResponse(t *testing.T) {
 		t.Fatalf("回應後 PendingCouncilElection 應清空")
 	}
 
-	// 再跑到下一屆(councilInterval 回合後),讓 AI 再次當選,這次接受。
-	for i := 0; i < councilInterval && !s.Victory.Over && s.PendingCouncilElection == nil; i++ {
+	// 再跑到下一屆(原版 25 回合後),讓 AI 再次當選,這次接受。
+	for i := 0; i < gamedata.CouncilMeetingInterval && !s.Victory.Over && s.PendingCouncilElection == nil; i++ {
 		s.EndTurn()
+		if s.PendingCouncilVote != nil {
+			s.RespondToCouncilVote(2)
+		}
 	}
 	if s.PendingCouncilElection == nil {
 		t.Fatalf("下一屆選舉應再度觸發(AI 人口仍壓倒性領先)")

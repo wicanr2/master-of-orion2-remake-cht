@@ -153,6 +153,89 @@ func TestBoardingComponentsReachCombatShip(t *testing.T) {
 	}
 }
 
+// TestBoardingBonusesReachBothCombatPaths 釘住 IDA 的垂直鏈：艦員 Bo、參戰艦隊
+// Commando/Security 最大值與所屬帝國陸戰隊資料，必須同時進入快速與格子戰術模型。
+func TestBoardingBonusesReachBothCombatPaths(t *testing.T) {
+	s := NewDemoSession()
+	s.Fleet().Ships = []Ship{
+		{Name: "甲艦", Class: "戰艦", Weapon: "雷射砲", OfficerName: "甲官",
+			CrewXP: gamedata.CrewXPForLevel(gamedata.CrewElite, false)},
+		{Name: "乙艦", Class: "巡洋艦", Weapon: "雷射砲", OfficerName: "乙官"},
+	}
+	s.Leaders = []Leader{
+		{Name: "甲官", Ship: true, Level: 1, Skills: []LeaderSkill{
+			{ID: int(gamedata.SKILL_COMMANDO), Tier: 1},
+			{ID: int(gamedata.SKILL_SECURITY), Tier: 1},
+		}},
+		{Name: "乙官", Ship: true, Level: 1, Skills: []LeaderSkill{
+			{ID: int(gamedata.SKILL_COMMANDO), Tier: 2},
+			{ID: int(gamedata.SKILL_SECURITY), Tier: 2},
+		}},
+		// 未指派的更強軍官不可污染參戰艦隊 max。
+		{Name: "池中官", Ship: true, Level: 5, Skills: []LeaderSkill{
+			{ID: int(gamedata.SKILL_COMMANDO), Tier: 2},
+			{ID: int(gamedata.SKILL_SECURITY), Tier: 2},
+		}},
+	}
+	wantCommando := gamedata.LeaderSkillBonus(int(gamedata.SKILL_COMMANDO), 2, 0)
+	wantSecurity := gamedata.LeaderSkillBonus(int(gamedata.SKILL_SECURITY), 2, 0)
+	wantBo := gamedata.ShipCrewBoardingBonus(gamedata.CrewElite)
+
+	quick, _ := s.mkPlayerCombatantsIndexed()
+	tactical, _ := s.StartCombat("不存在的測試敵人")
+	if len(quick) != 2 || len(tactical) != 2 {
+		t.Fatalf("參戰艦數錯誤：快速=%d 戰術=%d", len(quick), len(tactical))
+	}
+	if quick[0].commandoBonus != wantCommando || tactical[0].CommandoBonus != wantCommando {
+		t.Fatalf("Commando 應取參戰艦最高值 %d：快速=%d 戰術=%d",
+			wantCommando, quick[0].commandoBonus, tactical[0].CommandoBonus)
+	}
+	if quick[0].securityBonus != wantSecurity || tactical[0].SecurityBonus != wantSecurity {
+		t.Fatalf("Security 應取參戰艦最高值 %d：快速=%d 戰術=%d",
+			wantSecurity, quick[0].securityBonus, tactical[0].SecurityBonus)
+	}
+	if quick[0].boardingBonus != wantBo || tactical[0].BoardingBonus != wantBo {
+		t.Fatalf("Elite 艦員 Bo 應為 %d：快速=%d 戰術=%d",
+			wantBo, quick[0].boardingBonus, tactical[0].BoardingBonus)
+	}
+	if quick[0].marineStrength != s.playerMarineForce() || tactical[0].MarineStrength != s.playerMarineForce() {
+		t.Fatal("玩家陸戰隊 Strength 未一致送入兩條戰鬥路徑")
+	}
+}
+
+// TestAIBoardingUsesOwnRaceAndTech 防止舊錯誤近似回歸：AI 守方不能沿用玩家的
+// 陸戰隊 Strength/HitsToKill。
+func TestAIBoardingUsesOwnRaceAndTech(t *testing.T) {
+	s := NewDemoSession()
+	bulrathi := -1
+	for i, r := range Races {
+		if r.EnName == "Bulrathi" {
+			bulrathi = i
+			break
+		}
+	}
+	if bulrathi < 0 {
+		t.Fatal("找不到 Bulrathi 種族資料")
+	}
+	a := AIOpponent{RaceIndex: bulrathi, Player: s.Player,
+		Ships: []Ship{{Name: "AI 戰艦", Class: "戰艦", Weapon: "雷射砲"}}}
+	s.AIPlayers = []AIOpponent{a}
+	enemy := s.aiTacticalShips(0)
+	if len(enemy) != 1 {
+		t.Fatalf("AI 戰術艦數=%d", len(enemy))
+	}
+	if enemy[0].MarineStrength != aiMarineForce(a) {
+		t.Fatalf("AI MarineStrength=%d，期望自己的 %d", enemy[0].MarineStrength, aiMarineForce(a))
+	}
+	if enemy[0].MarineStrength == s.playerMarineForce() {
+		t.Fatalf("Bulrathi AI Strength=%d 不應與玩家 %d 相同", enemy[0].MarineStrength, s.playerMarineForce())
+	}
+	wantHits := gamedata.GroundMarineHitsToKill(true, hasPoweredArmorFor(a.Player))
+	if enemy[0].MarineHitsToKill != wantHits {
+		t.Fatalf("High-G AI HitsToKill=%d，期望 %d", enemy[0].MarineHitsToKill, wantHits)
+	}
+}
+
 // TestAssaultShuttleFighterStats 突擊艇的戰機三欄要是手冊值:速度 6、血量 3、不開火。
 func TestAssaultShuttleFighterStats(t *testing.T) {
 	if got := FighterBaseSpeed(FighterAssaultShuttle); got != gamedata.AssaultShuttleBaseSpeed {

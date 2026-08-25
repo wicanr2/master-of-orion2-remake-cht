@@ -106,7 +106,7 @@ func TestQueueRefitPersistsCompletesAndCancellationDestroysSource(t *testing.T) 
 	if got := s.ShipCount(); got != startShips {
 		t.Fatalf("改裝中來源艦應離開艦隊，原 %d 現 %d", startShips, got)
 	}
-	if s.Builds[0].Refit == nil || s.Builds[0].Cost != RefitCostPP(source, job.Target) {
+	if s.Builds[0].Refit == nil || s.Builds[0].Cost != s.RefitCostPPForPlayer(source, job.Target) {
 		t.Fatalf("改裝工作未正確寫入佇列：%+v", s.Builds[0])
 	}
 	restored := s.snapshot().restore()

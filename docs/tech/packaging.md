@@ -174,16 +174,16 @@ Linux AppImage 的 `moo2`／`moo2sim` 為 x86-64；Windows 為 amd64 PE 交叉�
 macOS tar 內的 universal binaries 由 osxcross `lipo` 確認含 `arm64`／`x86_64`。三包都不含 `.LBX`、
 `STREAM`／`STREAMHD`、原版音效或私有字型。公開包只能在玩家自行提供合法資料與字型後使用；本輪
 沒有真 Windows 或真 macOS 主機執行，因此 Release notes 不宣稱原生平台實機驗收。含原版 `STREAM.LBX`
-音樂的 63.4 秒實機推廣片只保留本機授權預覽，不上傳公開 Release。
+音樂的 72.8 秒實機推廣片只保留本機授權預覽，不上傳公開 Release。
 
 ## 6. 本機完整版與 2026-08-12 影片驗證
 
 | 產物 | 本輪結果 |
 |---|---|
-| `dist-all/MasterOfOrion2-cht-full-x86_64.AppImage` | Docker 依本輪最新程式碼重建；從包內 55 個正常玩家路徑 LBX 與字型實際啟動，35/35 畫廊含輸入框、多人頁與戰術畫面；152,508,920 bytes；SHA-256 `c67ebca3d6fb1808d395c359ff1aa926c41f0dd3891e7d35bb3807c95c647c88` |
-| `dist-all/MasterOfOrion2-cht-full-windows-amd64.zip` | Docker 跨編；ZIP CRC、`moo2.exe`／`moo2sim.exe` PE 格式與 `run-full.bat` 通過，含 55 個同源 LBX、字型與譯表；158,441,789 bytes；SHA-256 `f9c29d52f3711bf95d0cdc68d246f013edb3f854360e752fd840dbe98dce17c8` |
-| `dist-all/MasterOfOrion2-cht-full-macos-universal.tar.gz` | Docker + `u5cht/osxcross` 重建；`.app` 結構、啟動器、55 個同源 LBX、字型與 `x86_64`／`arm64` binary 通過；未做 Apple 正式簽署／真機執行；164,775,293 bytes；SHA-256 `305eb2ce5a3f1763e41a9e87a47e037e1d62fa33d159374a363f7104383952c9` |
-| `dist-all/promo/master-of-orion-2-remake-trailer.mp4` | 封裝後 AppImage 的 Docker + Xvfb 即時互動錄影，走新局、種族、命名旗色、星圖、殖民地人口調配、`RACES` 間諜、外交、戰術移動／射擊、撤離、戰果回寫與返回 `RACES`，不使用 `-gamegallery`、PNG 或展示狀態注入；遊戲端未寫回 `LastBattle` 時錄製會失敗即關閉。H.264/AAC、1280×720、30 fps、63.4 秒、48 kHz stereo；3,426,441 bytes；SHA-256 `1f939dd0599ee58c05411c6bdb8e1d57560b934ea9f7d3bdb0941b82d541f9e2` |
+| `dist-all/MasterOfOrion2-cht-full-x86_64.AppImage` | Docker 依本輪最新程式碼重建；從包內 55 個正常玩家路徑 LBX 與字型實際啟動，35/35 畫廊含輸入框、多人頁與戰術畫面；152,508,920 bytes；SHA-256 `7c53a7dc61ab74700b016dca24efb908652cc08c73e2494399368757b35c66d1` |
+| `dist-all/MasterOfOrion2-cht-full-windows-amd64.zip` | Docker 跨編；ZIP CRC、`moo2.exe`／`moo2sim.exe` PE 格式與 `run-full.bat` 通過，含 55 個同源 LBX、字型與譯表；158,441,841 bytes；SHA-256 `9937a7f3c83f46da45ae2498362f7c9c9f9aeca95b643a15cab8f53e3d539752` |
+| `dist-all/MasterOfOrion2-cht-full-macos-universal.tar.gz` | Docker + `u5cht/osxcross` 重建；`.app` 結構、啟動器、55 個同源 LBX、字型與 `x86_64`／`arm64` binary 通過；未做 Apple 正式簽署／真機執行；164,775,584 bytes；SHA-256 `557397c1ce8369e52894f3b26e9f6e7f966112a42a813c8e7b1a0070b20dd4c0` |
+| `dist-all/promo/master-of-orion-2-remake-trailer.mp4` | 封裝後 AppImage 的 Docker + Xvfb 即時互動錄影，走新局、種族、命名旗色、星圖、殖民地人口調配、`RACES` 間諜、外交、戰術移動／射擊、撤離、戰果回寫與返回 `RACES`，不使用 `-gamegallery` 或展示狀態注入；遊戲端未寫回 `LastBattle` 時錄製會失敗即關閉。後製只在實機畫面前後加入銀河戰略風片頭／片尾，章節提示位於 4:3 畫布外側欄，不遮蓋遊戲 UI。H.264/AAC、1280×720、30 fps、72.767 秒、48 kHz stereo；4,120,447 bytes；SHA-256 `003f8aec060fac7a299c326dddf9462b0a8105cd58844ac1cbe2511a288d524f` |
 | `dist-all/SHA256SUMS` | 已更新為三個本機完整版與實機影片；Docker `sha256sum` 驗證通過 |
 
 完整包刻意帶入使用者私有正版資料子集、原版音訊與 CJK 字型，僅供相應授權的本機測試；55 檔集合是

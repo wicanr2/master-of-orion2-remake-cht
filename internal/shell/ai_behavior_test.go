@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
@@ -84,8 +85,9 @@ func TestAIExpand_CreatesRealColony(t *testing.T) {
 }
 
 // TestAIExpand_EconomyGrowsWithColonyCount 驗證 aiExpand 建立的新殖民地會被下一次
-// engine.RunEmpireTurn 算進 AI 經濟——EndTurn 之後 AI 總淨工業/FleetStrength 應該因為擴張而
-// 比「維持單一母星」時成長更快(對照修前恆定為初始母星產出、線性軍力成長)。
+// engine.RunEmpireTurn 算進 AI 經濟——相同 20 回合下，有擴張者的累積造艦產出應高於
+// 被固定在單一母星的對照組。不能再比較前後十回合增量：接上種族重力後，新殖民地可能位於
+// 不適重力行星，且造艦交付會造成分段值，後十回合不保證嚴格大於前十回合。
 func TestAIExpand_EconomyGrowsWithColonyCount(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
@@ -95,24 +97,37 @@ func TestAIExpand_EconomyGrowsWithColonyCount(t *testing.T) {
 		s.AIPlayers[i].Personality = ai.PersonalityRuthless
 	}
 
-	for turn := 0; turn < 10; turn++ {
+	for turn := 0; turn < 20; turn++ {
 		s.EndTurn()
 	}
 	if len(s.AIPlayers[0].Colonies) <= 1 {
-		t.Fatalf("10 回合(含 2 次 aiExpand 時機:第5、10回合)後 AI 殖民地數應 >1,got %d", len(s.AIPlayers[0].Colonies))
+		t.Fatalf("20 回合後 AI 殖民地數應 >1,got %d", len(s.AIPlayers[0].Colonies))
 	}
-	fleetAfter10 := s.AIPlayers[0].FleetStrength
-
-	for turn := 0; turn < 10; turn++ {
-		s.EndTurn()
+	expandedProduction := s.AIPlayers[0].ShipBuildProgress
+	for _, sh := range s.AIPlayers[0].Ships {
+		expandedProduction += ShipCost(sh.Class)
 	}
-	fleetAfter20 := s.AIPlayers[0].FleetStrength
-	growthSecondDecade := fleetAfter20 - fleetAfter10
-	growthFirstDecade := fleetAfter10 // 起始 FleetStrength=0
 
-	if growthSecondDecade <= growthFirstDecade {
-		t.Fatalf("殖民地數增加後,AI 軍力成長速度應加快(第11-20回合成長 %d 應大於第1-10回合成長 %d)",
-			growthSecondDecade, growthFirstDecade)
+	control := NewDemoSession()
+	control.DisableEvents = true
+	for i := range control.AIPlayers {
+		control.AIPlayers[i].Personality = ai.PersonalityRuthless
+	}
+	// 封住所有無主星，只移除擴張這個變因；既有玩家／AI 母星與其重力保持相同。
+	for i := range control.Stars {
+		if control.Stars[i].Owner == 0 {
+			control.Stars[i].Owner = 1
+		}
+	}
+	for turn := 0; turn < 20; turn++ {
+		control.EndTurn()
+	}
+	controlProduction := control.AIPlayers[0].ShipBuildProgress
+	for _, sh := range control.AIPlayers[0].Ships {
+		controlProduction += ShipCost(sh.Class)
+	}
+	if expandedProduction <= controlProduction {
+		t.Fatalf("擴張 AI 的累積造艦產出 %d 應高於單母星對照組 %d", expandedProduction, controlProduction)
 	}
 }
 
@@ -141,9 +156,11 @@ func TestAIExpand_NoOpWhenNoUnownedStars(t *testing.T) {
 func TestAIStanceHostileWhenStrong(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
-	s.Fleet().Ships = nil                // 玩家無軍力
-	s.Difficulty = len(Difficulties) - 1 // 最高難度(倍率最高);用長度而非硬編索引,
-	// 免得 Difficulties 增刪選項時這個測試靜默改測到別的難度(2026-08-07 補 Tutor 就踩過)。
+	s.Fleet().Ships = nil // 玩家無軍力
+	for n := 0; n < 16; n++ {
+		s.AIPlayers[0].Ships = append(s.AIPlayers[0].Ships, Ship{Class: "泰坦", Name: fmt.Sprintf("測試泰坦%d", n)})
+	}
+	s.syncAIShipStrength(0)
 	for i := 0; i < 40; i++ {
 		s.EndTurn()
 	}

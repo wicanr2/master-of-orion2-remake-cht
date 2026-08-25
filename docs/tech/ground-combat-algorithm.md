@@ -83,7 +83,7 @@
 1. ✅ **已完成**(見 `internal/gamedata/ground_battle.go`):`ResolveGroundBattle(atk, def GroundForce, rng)`,一代解算 + 二代 hits-to-kill + 二代 force 加成表,確定性測試綠(`ground_battle_test.go`)。
 2. ✅ **已完成**(2026-07-11,`internal/shell/ground_invasion.go` + `ground_invasion_test.go`):陸戰隊生成 → 運送 → 觸發入侵 → 勝則轉移殖民地的「模型 + 流程」shell 層接線,細節見下方「2026-07-11 shell 層接線」一節。**尚未做**:UI 繪製/操作介面(不碰 interactive.go)、同化/滅絕選擇(手冊 p.164,本輪只做「整批過戶」的簡化版)。
 3. ✅ **已完成**:確定性單測驗「force 差/兵力比 → 勝率」符合社群經驗法則,見 `ground_battle_test.go` 與本輪新增的 `ground_invasion_test.go`(接了 shell 層模型後的端到端勝率測試)。
-4. ✅ **已完成**(2026-07-11,`internal/shell/orbital_bombardment.go` + `ground_invasion.go` 補完):裝甲營房戰車生成/載運/納入攻方 `GroundForce`(Battleoids 升級切換 hits-to-kill/force 加成)+ 軌道轟炸(10 輪齊射模擬 → hits → 扣人口),細節見下方「2026-07-11 裝甲營房戰車 + 軌道轟炸接線」一節。**同日稍後補上 UI 操作介面**(`cmd/moo2/interactive.go` galaxy() 新增「軌道轟炸」按鈕,與「發動地面入侵」雙鈕共存)。**尚未做**:守方戰車(AI 無 `ColonyBuildings` 追蹤,無資料可推導)、轟炸扣建築/儲存生產/駐軍(AI 無對應持久資料)、光束/魚雷減半與電腦命中加成套用到轟炸(戰術戰鬥層本身尚無這兩項的獨立函式)。
+4. ✅ **已完成**(2026-08-24 訂正):裝甲營房戰車生成/載運/納入攻方 `GroundForce` + 軌道轟炸已接線；轟炸外圈依 IDA `Strategic_Bombardment_ @ 0x4257E` 固定為 3，炸彈才依版本使用 5／10 次攻擊當量。UI 仍由星系畫面的「軌道轟炸」按鈕進入。尚未完成的逐武器數量、原版殖民地耐久與回寫限制見下節。
 
 ## 2026-07-11 shell 層接線(InvadeColony 流程)
 
@@ -160,39 +160,31 @@
 獨立動作**:轟炸只削弱/殺人口(不佔領),佔領仍要靠 `InvadeColony` 的陸戰隊/戰車入侵。新增
 `internal/shell/orbital_bombardment.go`:
 
-- `fleetBombardDamage(rng)`:依手冊「All remaining ships fire all weapons 10 times... total
-  damage is calculated from it」模擬 10 輪齊射,逐發解算重用既有戰術戰鬥公式(`ResolveShot`/
+- `fleetBombardDamage(rng)`:手冊的 10 turns 是估算介面敘述；IDA runtime 證實固定三外圈，
+  每圈逐發解算重用既有戰術戰鬥公式(`ResolveShot`/
   `ResolveMissileShot`,依 `weaponKindByName` 分流,同 `battleVolley` 的既有分流邏輯),目標從
-  「敵艦」換成「殖民地」,不模擬殖民地反擊(手冊本段只描述攻方輸出)。
-- `BombardColony(starIdx)`:`fleetBombardDamage` 總傷害 → `gamedata.GroundBombHitsFromDamage`
-  換算 hits → 依 Planet Hits 表「每整數人口 1 hit」直接扣減 `colony.Population`(夾在 0 以上)。
-  另用 `gamedata.GroundPlanetTotalHits` 算一個純供顯示參考的 `PlanetHitsRequired`(對應手冊 UI
-  「Estimated Bomb Hits」旁邊同時顯示的「Planet Hits」欄,讓玩家判斷這波轟炸夠不夠),**不**
-  用它去扣建築/駐軍(見下方範圍限制)。
+  「敵艦」換成「殖民地」；炸彈另讀版本 5／10 次攻擊當量。
+- `BombardColony(starIdx)`：總傷害依原版 runtime `/40` 換算，再依
+  `sub_DCEBD @ 0xDCEBD` 的單一隨機候選池回寫一般建築、陸戰隊、戰車、建造進度與人口。
+  `PlanetHitsRequired` 已改讀 `Get_Colony_Hits_ @ 0x42371` 的精確公式：人口 + 士兵 + 戰車 +
+  每棟非軌道建築 40；raw `8/40/41` 另建戰鬥者，不重複計入。
 
 **範圍限制(誠實標註,非杜撰真值,是既有 remake 資料模型限制,非本輪引入)**:
-1. **只扣人口,不扣建築/儲存生產/駐軍**——AI(`AIOpponent`)完全沒有 `ColonyBuildings`/儲存
-   生產/駐軍的持久資料可扣,扣了會是憑空生資料,故不做。這與「只做攻方戰車」是同一種誠實邊界:
-   有資料才接,沒資料不臆測。
-2. **手冊「Damage of beams and torpedoes is halved just like in tactical combat」與「A better
-   computer helps for beams here too」未套用**——不是轟炸專屬的遺漏,是戰術戰鬥層本身現在就
-   還沒有獨立的「光束/魚雷減半」或「電腦命中加成接線」函式(`ground.go` 檔尾原有 TODO 已載明),
-   本模擬只能沿用一般 `ResolveShot`,兩項都待戰術戰鬥層先補上才能真正對齊手冊轟炸公式。
-3. **行星護盾未建模**——`damage.go` 的 `DamageAfterShield` 明講「本函式只處理艦對艦,行星護盾
-   情境不適用」,remake 目前也沒有任何「行星防禦/護盾」資料欄位,故轟炸模擬視同殖民地護盾/
-   裝甲恆為 0(無防禦)。
-4. **人口歸零後的後續未定義**——手冊沒講「殖民地被轟炸到 0 人口」要不要摧毀殖民地/移除星系
+1. **獨立防禦戰鬥者的摧毀鏈仍未閉合**——`sub_E87D2`／`sub_DD2F2`／`sub_DCEBD`
+   的戰略殖民地內部傷亡已閉合；raw 8/9/26/27/40/41/42/47 被 helper 排除，仍需由各自
+   戰鬥者／結果分支解釋。既有防禦反擊是明示 remake 近似。
+2. **人口歸零後的後續未定義**——手冊沒講「殖民地被轟炸到 0 人口」要不要摧毀殖民地/移除星系
    Owner,本函式讓 `Population` 停在 0、殖民地本身仍存在於 `aiPlayer.Colonies`,不臆測補上
    摧毀邏輯(TODO,留給未來確認手冊或 openorion2 行為後再接)。
-5. **UI 已接**(2026-07-11 同日稍後補上)——`cmd/moo2/interactive.go` galaxy() 星系主畫面新增
+3. **UI 已接**(2026-07-11 同日稍後補上)——`cmd/moo2/interactive.go` galaxy() 星系主畫面新增
    `"bombard"` 熱區/按鈕(敵殖民地星恆可用,不需陸戰隊),與既有 `"invade"` 熱區共存,分居
    y=402/424 兩列(轟炸恆在上排,入侵需 `FleetMarines>0` 才出現在下排)。按鈕點擊直接呼叫
    `BombardColony`,依 `GroundBombardResult.Ok`/`Reason`/`PopulationLost` 顯示結果訊息。
 
 單測(`orbital_bombardment_test.go`):前置條件(無效星索引/艦隊未抵達/非敵方/無艦艇/無殖民地
 模型)、rng 種子化可重現、**用保證命中+固定滿傷的艦隊(atk=101≥99,`CombatClassicToHit`/
-`DamageForHit` 手冊「[2] BA+CO-AF-BD>=99 恆命中恆滿傷」分支)手算驗證整條換算鏈**(10 輪×1 艦
-×101 傷害=1010 總傷害→hits=10→母星預設人口 8 全數扣光→`RemainingHits`=2)、人口不會扣成負數、
+`DamageForHit` 手冊「[2] BA+CO-AF-BD>=99 恆命中恆滿傷」分支)手算驗證固定三外圈與 runtime
+`/40` 換算鏈、人口不會扣成負數、
 轟炸不佔領星/不增減 AI 殖民地筆數。
 
 ## 2026-07-11 版本差異補實作
@@ -201,17 +193,18 @@
 patch 1.3 vs 1.5 差異項)。新程式碼:`internal/gamedata/ground_version_diff.go`(公式)+
 `internal/gamedata/ground_version_diff_test.go`(測試);接線:`internal/shell/ground_invasion.go`
 (`commandoLeaderTier` + `InvadeColony` 攻方 force 疊加)、`internal/shell/orbital_bombardment.go`
-(`BombardColony` 改用 `gamedata.GroundBombardPopulationLoss`);`internal/gamedata/ruleprofile.go`
+(`BombardColony` 當時曾使用 `gamedata.GroundBombardPopulationLoss`，已被 2026-08-24 IDA
+證據推翻並退出 runtime);`internal/gamedata/ruleprofile.go`
 新增 2 欄位(`DefenderCommandoBonus`、`BombardmentBuildingBonusHits`)。逐項誠實記錄:
 
 | # | 項目 | 版本差異? | 實作程度 | 說明 |
 |---|---|---|---|---|
 | #6 | 指揮官(Commando)攻方倍率 | 否(兩版同) | **完整接線**(近似公式) | `GroundCommandoAttackerForceBonus(tier)`:tier1=5、tier≥2=7(2.5×3=7.5 捨去)。已接進 `InvadeColony` 的攻方 force(`commandoLeaderTier(s.Leaders)` 掃描帝國 Leaders 找 `Skill=="指揮官"` 的最高 Tier)。**近似**:①「regular commando bonus」基準值(2/3)手冊只給相對倍率,沒給獨立驗證的絕對數字,本檔直接當成最終加成點數;②remake 無「領袖指派到某次入侵」模型,用「帝國是否擁有 Commando 技能領袖」當代理條件,不論其 `Ship`/實際位置。單測:`TestGroundCommandoAttackerForceBonus`、`TestInvadeColony_CommandoLeaderImprovesWinRate`(實測無指揮官勝率 0.63→有指揮官 0.75,150 場)。 |
-| #5 | 防禦方 Commando 2.5x | **是** | **完整接線(2026-07-11 補完,近似公式)** | `RuleProfile.DefenderCommandoBonus`(1.3=1.0、1.5=2.5)套進 `GroundCommandoDefenderForceBonus(tier, bonus)`,已接進 `InvadeColony` 守方 force(`commandoLeaderTier(aiPlayer.Leaders)`)。前置的 AI 領袖資料模型已補上:`AIOpponent.Leaders`(比照玩家 `GameSession.Leaders`),`buildDemoAIOpponents` 依種族性格開局固定指派(布拉西人 Tier2/姆瑞森人 Tier1/席隆人無指揮官)。**近似(誠實標註)**:原版領袖是從英雄池隨機雇用、可陣亡替換的動態資源;remake 用「開局依種族性格固定指派、不隨遊戲成長」當代理,非手冊逐字機制,與 #6 攻方 `commandoLeaderTier` 的「帝國全域清單當代理」同款近似紀律。`persist.go` `aiSnapshot.Leaders` 已比照 `ColonyBuildings` 雙向序列化,舊存檔解碼為 nil 時 `commandoLeaderTier(nil)=0` 安全降級。單測:`TestBuildDemoAIOpponents_CommandoLeadersByRace`、`TestInvadeColony_DefenderCommandoLowersAttackerWinRate`(實測有守將勝率 0.47 < 無守將 0.59,150 場)、`TestInvadeColony_DefenderCommandoVersionDifference`(1.3 攻方勝率 0.53 > 1.5 攻方勝率 0.47,150 場;公式數值 tier2:1.3→3、1.5→7)、`TestInvadeColony_NoDefenderCommandoForPsilon`(無守將回歸)、`TestInvadeColony_NilAIPlayerLeadersSafeDegrade`(舊存檔安全降級)。 |
-| #7 | 轟炸建築 +1 hit(1.3 bug) | **是** | **僅 RuleProfile 欄位 + TODO 掛鉤** | `RuleProfile.BombardmentBuildingBonusHits`(1.3=1、1.5=0)。本 remake 軌道轟炸只扣人口不扣建築(AI 無 `ColonyBuildings` 持久資料可扣),無「建築 hit」概念可套用這個加成,故只加欄位 + `BombardColony` 內註解掛鉤點,無任何函式讀取它。 |
+| #5 | 防禦方 Commando 2.5x | **是** | **完整接線** | `RuleProfile.DefenderCommandoBonus`（1.3=1.0、1.5=2.5）套進 `InvadeColony` 守方 force。`AIOpponent.Leaders` 現由 `Do_AI_Leaders_ @ 0xD7439` 的動態 offer、技能 gate、付費與任命鏈建立；開局固定種族 Commando 代理已移除。艦艇／殖民地 raw 排序無一對一欄位處保留標註近似，見 `docs/re/ai-leader-assignment-audit-20260825.md`。測試包含動態 AI 領袖與既有 Commando 版本差異。 |
+| #7 | 轟炸建築 +1 hit(1.3 bug) | **是** | **已接線，語意近似** | `RuleProfile.BombardmentBuildingBonusHits`(1.3=1、1.5=0)會改變每棟建築消耗的 hits；CHANGELOG 上游語意仍未由原版資料流證實。 |
 | #8 | civilian_armor 100hp | 否(兩版同) | **常數鎖定,無消費端** | `gamedata.GroundCivilianArmorHP = 100`(PARAMETERS.CFG:1778-1786 逐字數字)。與 #7 同屬未建的「建築損傷模型」,先鎖定數字供未來引用。單測:`TestGroundCivilianArmorHP_LockedValue`(純數值鎖定)。 |
 | #9 | 地面防禦建築結構倍率 | 否(兩版同) | **常數鎖定,無消費端** | `gamedata.GroundDefenseArmorMultiplier = 100`(PARAMETERS.CFG:1772-1775)。remake 沒有「地面防禦建築」這個資料實體(`ColonyBuildings` 只是 `map[string]bool` 有/無旗標,無 HP/結構值欄位;AI 側連追蹤都沒有),無法真正套用,誠實標「掛鉤備妥、待防禦建築系統」。單測:`TestGroundDefenseArmorMultiplier_LockedValue`。 |
-| #11 | 轟炸行星尺寸幾何 3-4-6-7-8 | 否(1.5 系列中途改過又於 1.50.11 修回 classic,對 1.3 vs 最終 1.5 不構成差異) | **完整接線**(近似公式) | `GroundPlanetSizeBombardCoefficient(size)` 對照手冊/CHANGELOG 數字(Tiny=3/Small=4/Medium=6/Large=7/Huge=8);`GroundBombardPopulationLoss(hits, size) = hits×6/coef`(以 Medium 為基準 1:1,大行星較耐轟)。已接進 `BombardColony` 取代原本的 `popLoss := hits` 直接相等。**近似**:手冊只給尺寸係數本身,沒給「係數如何代入人口損傷公式」的精確算式(原版可能牽涉地圖網格/區域數,remake 沒有這層模型),本檔採「與係數成反比、Medium 基準」的最簡近似。**behavior-preserving 巧合**:母星預設 `LARGE_PLANET`(係數 7),既有測試 `TestBombardColony_ReducesPopulationDeterministically` 的 hits=10 算出 popLoss=8,與換公式前的舊行為(`popLoss==hits` 直接相等,10 被人口 8 封頂為 8)結果剛好一致,測試未變紅。單測:`TestBombardmentPlanetSizeScaling`(Tiny 24 > Small 18 > Medium 12 > Large 10 > Huge 9,hits=12)。 |
+| #11 | 轟炸行星尺寸幾何 3-4-6-7-8 | 否 | **數值保留、傷亡端已解除接線** | 手冊／CHANGELOG 的尺寸表仍保留供其他轟炸幾何研究；IDA `sub_DCEBD` 的候選與回寫不讀行星尺寸。舊 `hits×6/coef` 是沒有消費端證據的近似，已從 `BombardColony` 移除。 |
 
 **RuleProfile 新增欄位**(`internal/gamedata/ruleprofile.go`):
 - `DefenderCommandoBonus float64`(Profile13=1.0 / Profile15=2.5)
@@ -232,7 +225,7 @@ patch 1.3 vs 1.5 差異項)。新程式碼:`internal/gamedata/ground_version_dif
 - `AIOpponent` 新增 `Leaders []Leader` 欄位(`internal/shell/session.go`),型別比照
   `GameSession.Leaders`。`buildDemoAIOpponents` 依種族性格開局固定指派(布拉西人「體格強悍,
   地面戰加成」→ Tier2 進階指揮官;姆瑞森人「好戰善攻」→ Tier1 一般指揮官;席隆人「重研究」→
-  無指揮官),對應 `demoAIOpponentSetup` 新增的 `commandoTier` 欄位。
+  無指揮官）；舊版依 `demoAIOpponentSetup` 固定贈送的代理已於 2026-08-25 移除。
 - `ground_invasion.go` `InvadeColony` 守方 force 加上一行:
   `defForce += gamedata.GroundCommandoDefenderForceBonus(commandoLeaderTier(aiPlayer.Leaders), s.RuleProfile.DefenderCommandoBonus)`,
   取代原本的 TODO 留白註解。
@@ -241,7 +234,7 @@ patch 1.3 vs 1.5 差異項)。新程式碼:`internal/gamedata/ground_version_dif
 
 **誠實標註不變**:原版領袖是從英雄池隨機雇用、可陣亡替換的動態資源;remake 沒有 AI 英雄雇用/
 成長系統,這裡的「依種族性格開局固定指派」是可觀察、確定性的近似(入侵布拉西最難、姆瑞森次之、
-席隆無守方 commando 加成),不是手冊逐字的隨機雇用機制。AI 領袖清單建立後不隨遊戲成長變動。
+沒有動態聘到 Commando 的 AI 不會得到守方加成；AI 領袖清單會隨 offer、付費與任命回合鏈成長。
 
 **版本效果落地**:tier2 基準 3,1.3(`DefenderCommandoBonus=1.0`)→ `int(3*1.0)=3`;1.5
 (`=2.5`)→ `int(3*2.5)=7`。150 場模擬:入侵有 Tier2 守將的布拉西人母星,1.3 攻方勝率 0.53、

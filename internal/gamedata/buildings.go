@@ -209,14 +209,14 @@ var Buildings = []Building{
 		Category: CategoryResearch, MaintenanceBC: 1,
 		ProductionCost: 60, // 原版執行檔建築表(off_17EB3D + 8)
 		PrereqTopic:    TOPIC_OPTRONICS,
-		Effect:         "每個科學家人口 +1 研究點;另自動產生 5 研究點",
+		Effect:         "殖民地固定產生 5 研究點/回合",
 	},
 	{
 		NameZH: "行星超級電腦", NameEN: "Planetary Supercomputer",
 		Category: CategoryResearch, MaintenanceBC: 2,
 		ProductionCost: 150, // 原版執行檔建築表(off_17EB3D + 8)
 		PrereqTopic:    TOPIC_POSITRONICS,
-		Effect:         "每個科學家人口 +2 研究點,殖民地整體 +10 研究點",
+		Effect:         "殖民地固定產生 10 研究點/回合",
 	},
 	{
 		NameZH: "全息模擬艙", NameEN: "Holo Simulator",
@@ -237,7 +237,7 @@ var Buildings = []Building{
 		Category: CategoryResearch, MaintenanceBC: 3,
 		ProductionCost: 250, // 原版執行檔建築表(off_17EB3D + 8)
 		PrereqTopic:    TOPIC_GALACTIC_NETWORKING,
-		Effect:         "每個科學家人口 +3 研究點,殖民地整體 +15 研究點",
+		Effect:         "殖民地固定產生 15 研究點/回合",
 	},
 	{
 		NameZH: "歡樂穹頂", NameEN: "Pleasure Dome",

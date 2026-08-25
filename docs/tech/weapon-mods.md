@@ -29,7 +29,7 @@ openorion2 原始碼核對結果:`grep -rli "HeavyMount\|PointDefense\|AutoFire\
 |---|---|---|---|---|
 | HV | Heavy Mount | 大型平台版,150% 傷害;射程懲罰(命中+衰減)減半;與 PD 互斥 | **+100%** | `hvBonus=+50` 餵 `DamageMountAdjustedValue`;射程等級改用 `CombatRangeLevelHeavy`(halved) |
 | PD | Point Defense | 小型精簡版,半傷害;命中 +25%;射程懲罰(命中+衰減)加倍;與 HV 互斥 | **-50%**(減半) | `pdPenalty=+50`;`pdBonus=+25`(命中門檻);射程等級改用 `CombatRangeLevelPointDefense`(doubled) |
-| AF | Auto-Fire | 3 連發,每發 -20% 命中;需 2 級小型化 | **固定 +50**(非百分比,見下方說明) | netAttack(BA+CO-AF-BD)每次射擊 -20 |
+| AF | Auto-Fire | 3 連發,每發 -20% 命中;需 2 級小型化 | **+50%** | netAttack(BA+CO-AF-BD)每次射擊 -20 |
 | CO | Continuous Fire | 持續開火,+25 命中;需 1 級小型化 | +50% | netAttack +25 |
 | AP | Armor Piercing | 穿透除 Xentronium/Heavy Armor 外所有裝甲;需 1 級小型化 | +50% | `DamageApplyArmor` 的 `armorPiercing=true`(全額打結構) |
 | ENV | Enveloping | 同時打四面護盾,傷害四倍;需 2 級小型化 | +100% | 命中後傷害 `*4` |
@@ -52,12 +52,11 @@ openorion2 原始碼核對結果:`grep -rli "HeavyMount\|PointDefense\|AutoFire\
 `ResolveMissileShotWithMods`。MIRV 額外骰子存於 `MissileDefenses` 的逐彈頭切片，沒有
 MIRV 時沿用舊單骰欄位，因此非改造戰鬥的隨機序列不變。
 
-### AF 的 +50 為什麼是固定值不是百分比
+### AF 的 +50 是百分比（IDA 勘誤）
 
-手冊其餘 mod 條目一律明寫「by X%」,唯獨 AF 那句是「This modification increases the size and
-cost of the weapon by 50」——**沒有 % 符號**,與其他 7 個 mod 的措辭明顯不同。`ship-design-space.md`
-先前分析(未接線階段)已經注意到這個措辭差異並標註「固定值,非百分比」,本輪沿用同一結論
-(`gamedata.WeaponModAutoFireFlatSpaceCost = 50`),多重來源交叉一致。
+手冊的 AF 句子漏了 `%`，先前因此誤判為固定值。`sub_6A406 @ 0x6A406` 與 15-byte 改造表已
+直接推翻舊結論：AF 記錄的成本／佔格欄均為 50，而 `Weapon_Cost_`／`Weapon_Space_` 會除以
+100 套用，故為 +50%。完整證據見 `docs/re/weapon-cost-space-audit-20260824.md`。
 
 ### CO/AF/PD 的命中點數:手冊 + 社群逆向交叉核對
 
@@ -68,15 +67,10 @@ penalty to its accuracy」(有 % 符號,但整個 Beam Attack/Defense 系統本�
 「PD +25、Continuous Fire +25、Auto Fire -20」,與手冊逐字對照後採直接點數解讀:CO=+25、
 AF(每次射擊)=-20、PD=+25(套用在 `CombatHitThreshold` 的 `pdBonus` 參數,而非 netAttack)。
 
-## 佔格/成本疊加公式(誠實標註:非手冊逐字數字的部分)
+## 佔格/成本疊加公式
 
-`gamedata.WeaponSpaceWithMods(baseSpace, mods)`:百分比 mod **加總後一次套用**(如 AP+CO 都掛
-=+50%+50%=+100%,而非連續複利 1.5×1.5=1.25=+125%),對照 `damage.go` 的
-`DamageMountAdjustedValue` 手冊明載「Hv/PD/HEF interaction is not multiplicative but additive」
-慣例類推。**手冊本身沒有明講「同一武器同時掛多個 mod 時,佔格百分比是加總一次套用還是連續複利」**
-——這點類推自傷害公式的既定慣例,不是手冊逐字數字,若日後找到反證(如逆向遊戲存檔資料格式或
-DOSBox 黑箱測試)需回頭修正。AF 的固定 +50 在百分比套用「之後」再相加(手冊明寫是固定值,不應
-被其他 mod 的百分比再放大)。
+`gamedata.WeaponSpaceWithMods(baseSpace, mods)` 對應原版兩階段：`sub_6A636` 先套 HV／PD，
+`sub_6A406` 再把其餘改造百分比加總後套用。兩階段相乘；同一階段內不逐項複利。
 
 成本(Cost)手冊原文「adds to the size **and cost**」——同一套百分比同時套用在兩者,`WeaponCostWithMods`
 直接重用 `WeaponSpaceWithMods` 的公式(對 baseCost 而非 baseSpace)。

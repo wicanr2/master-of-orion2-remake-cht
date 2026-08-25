@@ -22,7 +22,7 @@ package gamedata
 // 四個進階政體(邦聯/帝國/聯邦/銀河統一)是基礎政體研究出來的升級版,
 // 所以這張表是「4 個基礎 + 4 個進階」而不是八個獨立選項。
 //
-// ============ 兩個修正項 ============
+// ============ 兩個修正項（IDA Pro 已閉合）============
 //
 //	排斥 Repulsive        「assimilate conquered colonists … at only **half** the normal rate」
 //	                       → 回合數 ×2
@@ -34,15 +34,12 @@ package gamedata
 // 蓋一座異族管理中心等於把同化速度變成十倍。一棟維護費 1 BC 的建築有這種效果,
 // 是因為統一政體的懲罰本來就設計成「你不該靠征服玩」。
 //
-// ============ 誠實留白 ============
+// `sub_E3456 @ 0xE3456` 證實原版保存的是 0..239 進度點：Charismatic 將每回合
+// 進度加倍；只有它不存在時 Repulsive 才把進度減半。完整證據見
+// docs/re/assimilation-race-traits-audit-20260825.md。
 //
-//   - **魅力 Charismatic 沒有數字。** 手冊只說「assimilate conquered colonists **easily**」,
-//     patch 1.5 的手冊也沒有補。所以這裡**不給它任何效果**,而不是憑感覺塞一個 ×0.5。
-//     `AssimilationTurns` 收了 charismatic 參數但目前不用它——留參數是為了讓找到數字的人
-//     知道該改哪裡,而不是讓人以為這條規則不存在。
-//   - 手冊還說異族管理中心「decreases the unrest of the unassimilated populations,
-//     **halving the chance of revolt**」。remake 沒有叛亂系統,**這條沒接**。
-//   - 多種族殖民地的 **20% 士氣懲罰**(建築可消除)另外走士氣那條路,不在這一檔。
+// 異族管理中心的叛亂機率減半已由 shell/rebellion.go 消費；多種族殖民地的
+// 20% 士氣懲罰（建築可消除）也另走士氣鏈，不在本純公式檔重複計算。
 
 // AssimilationGovernment 是同化速率表用的政體(含四個進階形式)。
 //
@@ -82,22 +79,38 @@ const (
 )
 
 // assimilationTurns 是逐政體同化一單位人口所需的回合數(手冊逐條,見檔頭表)。
-var assimilationTurns = [8]int{
-	8,  // 封建
-	4,  // 邦聯
-	8,  // 獨裁
-	4,  // 帝國
-	4,  // 民主
-	2,  // 聯邦
-	20, // 統一
-	15, // 銀河統一
+var assimilationRates = [8]int{
+	30, 60, 30, 60, 60, 120, 12, 16,
 }
+
+// AssimilationProgressThreshold 是原版 `0xE353E cmp ...,0F0h` 的逐人口門檻。
+const AssimilationProgressThreshold = 240
 
 // AssimilationCenterTurns 是異族管理中心給的固定速率(手冊:1 per 2 turns,不分政府)。
 const AssimilationCenterTurns = 2
 
 // AssimilationRepulsiveMultiplier 是排斥種族的倍率(手冊:only half the normal rate → 回合數 ×2)。
 const AssimilationRepulsiveMultiplier = 2
+
+// AssimilationRate 回傳每回合加入殖民地 raw 同化進度的點數。
+func AssimilationRate(gov AssimilationGovernment, hasCenter, repulsive, charismatic bool) int {
+	if gov < 0 || int(gov) >= len(assimilationRates) {
+		gov = AssimDictatorship
+	}
+	rate := assimilationRates[gov]
+	if hasCenter {
+		rate = AssimilationProgressThreshold / AssimilationCenterTurns
+	}
+	if charismatic {
+		rate *= 2
+	} else if repulsive {
+		rate /= 2
+	}
+	if rate < 1 {
+		return 1
+	}
+	return rate
+}
 
 // AssimilationTurns 回傳同化一單位征服人口需要幾回合。
 //
@@ -107,21 +120,8 @@ const AssimilationRepulsiveMultiplier = 2
 // ⚠ charismatic 目前**沒有效果**——手冊沒給數字(見檔頭誠實留白)。參數留著是為了
 // 標明「這條規則存在但缺數字」,找到數字的人改這一個函式就好。
 func AssimilationTurns(gov AssimilationGovernment, hasCenter, repulsive, charismatic bool) int {
-	turns := AssimilationCenterTurns
-	if !hasCenter {
-		if gov < 0 || int(gov) >= len(assimilationTurns) {
-			gov = AssimDictatorship // 未知政體退回獨裁(remake 的預設政體),不是回 0
-		}
-		turns = assimilationTurns[gov]
-	}
-	if repulsive {
-		turns *= AssimilationRepulsiveMultiplier
-	}
-	_ = charismatic // 見檔頭:手冊沒給數字,不臆造
-	if turns < 1 {
-		turns = 1
-	}
-	return turns
+	rate := AssimilationRate(gov, hasCenter, repulsive, charismatic)
+	return (AssimilationProgressThreshold + rate - 1) / rate
 }
 
 // AssimilationAdvancedForm 回傳基礎政體在「已研究出進階形式」時對應的政體。
@@ -142,13 +142,14 @@ func AssimilationAdvancedForm(base AssimilationGovernment) AssimilationGovernmen
 	return base
 }
 
-// AssimilationProgressNeeded 回傳同化 n 單位人口所需的總回合數。
-//
-// 抽出來是因為 UI 要顯示「這個殖民地還要幾回合才完全同化」——
-// 一個只在背景默默跑的機制對玩家等於不存在。
-func AssimilationProgressNeeded(unassimilated, turnsPerUnit int) int {
-	if unassimilated <= 0 || turnsPerUnit <= 0 {
+// AssimilationRemainingTurns 以原版 raw 進度計算全部剩餘人口 ETA。
+func AssimilationRemainingTurns(unassimilated, progress, rate int) int {
+	if unassimilated <= 0 || rate <= 0 {
 		return 0
 	}
-	return unassimilated * turnsPerUnit
+	points := unassimilated*AssimilationProgressThreshold - progress
+	if points <= 0 {
+		return 1
+	}
+	return (points + rate - 1) / rate
 }

@@ -91,7 +91,7 @@ decrement、status 4 的 30 回合清理與 GAM raw 欄位保存；`RawETA:1→0
 - `internal/shell/treaty.go`：活動 Trader 最大加成與協議目標。
 - `internal/shell/spy.go`：raw 49 槽 SABOTAGE 成本加權。
 - `internal/shell/leader_tenure.go`：ETA／limbo 門檻。
-- `internal/shell/strategic_explosion.go`：事件 8 的爆炸勢能／連鎖／Damage 近似消費。
+- `internal/shell/events_ship_explosion.go`：事件 8 的 reservoir 選艦、單艦移除與軍官死亡。
 - `internal/shell/spy.go`：`spyMissionScore`、Agent 訓練與 Spy-vs-Spy Agent 扣除。
 - `internal/gamedata/original_diplomacy_oracle_test.go`、
   `internal/gamedata/original_building_table_test.go`、

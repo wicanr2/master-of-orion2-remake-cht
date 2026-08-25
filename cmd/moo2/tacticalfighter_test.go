@@ -38,6 +38,19 @@ func TestOneSquadronPerBayAtATime(t *testing.T) {
 	}
 }
 
+func TestMultipleDistinctBaysLaunchOneSquadronEach(t *testing.T) {
+	ts := mkFighterScreen()
+	ts.player[0].Bays = []shell.FighterKind{shell.FighterInterceptor, shell.FighterHeavy}
+	ts.launchFrom(0)
+	if !ts.canLaunchFrom(0) {
+		t.Fatal("第一座機庫出擊後，第二座不同機庫仍應可出擊")
+	}
+	ts.launchFrom(0)
+	if ts.canLaunchFrom(0) || len(ts.squads) != 2 || ts.squads[0].Kind == ts.squads[1].Kind {
+		t.Fatalf("兩座機庫應各派一隊：%+v", ts.squads)
+	}
+}
+
 // 出擊後推進一回合:中隊要飛到敵艦旁邊並造成傷害(手冊:飛到目標身上 point-blank 開火)。
 func TestSquadronFliesToTargetAndDealsDamage(t *testing.T) {
 	ts := mkFighterScreen()
@@ -198,6 +211,40 @@ func TestEnemySquadronFliesBackAndAttacksPlayerShip(t *testing.T) {
 	}
 	if ts.squads[0].TargetName != "玩家艦" {
 		t.Errorf("敵方中隊主要目標應鎖定玩家艦，得到 %q", ts.squads[0].TargetName)
+	}
+}
+
+func TestSecondSlotPointDefenseFiresAtEnemyFighterWhileOff(t *testing.T) {
+	ts := &tacticalScreen{
+		b: &sceneBuilder{},
+		player: []shell.CombatShip{{
+			Name: "玩家艦", HP: 80, MaxHP: 80, Col: 1, Row: 0,
+			Attack: 100, WeaponName: "雷射", WeaponMax: 8,
+			WeaponMounts: []shell.ShipWeaponMount{
+				{Name: "雷射", WorkingCount: 1, Attack: 8},
+				{Name: "雷射", WorkingCount: 1, Attack: 20,
+					Mods: []string{string(gamedata.ModPointDefense)}},
+			},
+			WeaponModes: []shell.TacticalWeaponMode{
+				shell.TacticalWeaponReady, shell.TacticalWeaponOff,
+			},
+		}},
+		enemy: []shell.CombatShip{{
+			Name: "敵母艦", HP: 100, MaxHP: 100, Col: 6, Row: 0,
+			Bay: true, BayKind: shell.FighterInterceptor,
+		}},
+	}
+	ts.launchEnemySquadrons()
+	before := ts.squads[0].Alive
+	ts.advanceSquadrons()
+	if len(ts.player[0].PointDefenseSpentSlots) < 2 || !ts.player[0].PointDefenseSpentSlots[1] {
+		t.Fatalf("第二槽 PD 應在敵方戰機接戰前自動開火：%v", ts.player[0].PointDefenseSpentSlots)
+	}
+	if ts.player[0].WeaponModes[1] != shell.TacticalWeaponOff {
+		t.Fatalf("自動 PD 不得把紅色槽切回可用：%v", ts.player[0].WeaponModes)
+	}
+	if ts.squads[0].Alive >= before {
+		t.Fatalf("紅色第二槽 PD 應先傷害敵方中隊：%d→%d", before, ts.squads[0].Alive)
 	}
 }
 

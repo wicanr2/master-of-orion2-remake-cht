@@ -2,9 +2,9 @@ package gamedata
 
 // orig_tech_value_tables.go:`Calc_Tech_Value_` @ 0xFC845 用到的**三張靜態表**。
 //
-// 這三張表是原版 AI「這個科技對我值多少」的估值基礎(見 `docs/re/calc-tech-value.md`)。
-// 完整的估值函式有 985 行、依賴多個語意未定的玩家欄位,**沒有整段照抄**;
-// 這裡只收「解碼無歧義、而且 remake 用得到」的部分。
+// 這三張表是原版 AI「這個科技對我值多少」的估值基礎。
+// 2026-08-25 已用 IDA 閉合人類開局與共用後段；AI 仍有數個 raw 性格／目標／主題分支未完整接線。
+// 現行證據見 `docs/re/starting-tech-application-audit-20260825.md`。
 //
 // ============ 解碼怎麼驗的 ============
 //

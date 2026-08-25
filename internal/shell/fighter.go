@@ -50,10 +50,7 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 
 // FighterKind 是戰機型別。
 //
-// 手冊 p.127 列了**四種**(攔截機 / 轟炸機 / 重戰機 / 突擊艇),這裡有**三種**
-// ——突擊艇沒有,理由見下方 FighterBomber 的註解(登艦戰機制不存在,而手冊也沒給它血量)。
-// 檔頭寫清楚「為什麼是三個」,因為先前這裡寫著「四種」而底下只有兩個,
-// **那種不一致沒有任何測試會抓到**(第 70 項(陀螺去穩器))。
+// 手冊 p.127 的四種戰機均已建模：攔截機、重戰機、轟炸機與突擊艇。
 type FighterKind int
 
 const (
@@ -64,11 +61,6 @@ const (
 	// planet **or a ship**. Bombers are installed and launched in squadrons of 4… They move
 	// at **speed 8** … and can take **4 damage**…」
 	//
-	// ⚠ 2026-08-08(第 70 項(陀螺去穩器))補上。本型別的檔頭一直寫著「手冊 p.127 的**四種**」,
-	// 而底下只有兩個——`gamedata` 那邊的速度與射擊次數**兩組都是四型都齊的**,
-	// 缺的只有 shell 這一側的型別與血量常數。**註解說四種、程式碼只有兩種**,
-	// 這種不一致沒有任何測試會抓到。
-	//
 	FighterBomber
 	// FighterAssaultShuttle 手冊(Assault Shuttles):「Assault Shuttles are fighters (like
 	// the Interceptors) that carry **1 Marine unit**. … installed and launched in
@@ -76,10 +68,7 @@ const (
 	// can take **3 damage** modified by your best armor. Once launched, Assault Shuttles fly
 	// to the target ship and drop off their Marines, which board and attempt capture.」
 	//
-	// ⚠ 2026-08-08(第 80 項(登艦戰))補上。這裡先前寫著「突擊艇仍然沒有:登艦戰機制不存在,
-	// 加一個不會做任何事的型別只是把洞藏起來」——**那句話是對的,而且它現在過期了**:
-	// 登艦戰在 boarding.go 建好了。手冊那句「like the Interceptors」把它歸進戰機家族,
-	// 所以它走同一套 FighterSquadron,只是抵達目標時做的是登艦而不是開火。
+	// 突擊艇走 FighterSquadron 狀態機，抵達目標時由 boarding.go 執行登艦而非開火。
 	FighterAssaultShuttle
 )
 

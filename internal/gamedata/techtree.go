@@ -22,6 +22,15 @@ type ResearchChoice struct {
 	Choices     []Technology
 }
 
+// ResearchChoicesForTopic 回傳主題的應用清單副本，供 shell 建立原版逐應用已知集合。
+func ResearchChoicesForTopic(topic ResearchTopic) []Technology {
+	i := int(topic)
+	if i < 0 || i >= len(researchChoices) {
+		return nil
+	}
+	return append([]Technology(nil), researchChoices[i].Choices...)
+}
+
 // researchChoices 逐字轉寫自 tech.cpp:169-305 的 research_choices[MAX_RESEARCH_TOPICS] (83 列)。
 // 陣列索引即為 ResearchTopic 的整數值 (與 C 版 research_choices[topic] 存取方式一致)。
 var researchChoices = [83]ResearchChoice{
@@ -131,7 +140,7 @@ var techtree = [8][]ResearchTopic{
 }
 
 // AvailableTopics 回傳「現在可以研究的主題」:**每個研究領域各一個**,取該領域第一個
-// 尚未完成的主題。已經整條研究完的領域不出現。
+// 尚未完成的主題；領域走到底後，終端 Hyper-Advanced 主題仍可重複研究。
 //
 // 這就是原版的規則,不是簡化。原版的主題表 `word_17D90C` 每筆只有**一個**後繼
 // (`+0` 的 next),完成一個主題就把那一個標成可研究——換句話說每個領域是一條線,
@@ -143,7 +152,7 @@ func AvailableTopics(completed map[ResearchTopic]bool) []ResearchTopic {
 	out := make([]ResearchTopic, 0, len(techtree))
 	for _, area := range techtree {
 		for _, t := range area {
-			if IsResearchableTopic(t) && !completed[t] {
+			if IsResearchableTopic(t) && (!completed[t] || IsHyperAdvancedTopic(t)) {
 				out = append(out, t)
 				break
 			}

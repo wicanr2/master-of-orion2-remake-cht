@@ -24,11 +24,16 @@ func TestApplyRaceBonuses(t *testing.T) {
 	baseInd := s.PlayerColonies[0].IndustryPerWorker
 	baseFood := s.PlayerColonies[0].FoodPerFarmer
 	s.ApplyRace(idx("Klackons"))
-	if got := s.PlayerColonies[0].IndustryPerWorker; got != baseInd+1 {
-		t.Fatalf("克拉肯工業應 +1:%d → %d", baseInd, got)
+	wantInd := baseInd + 1
+	if got := s.PlayerColonies[0].IndustryPerWorker; got != wantInd {
+		t.Fatalf("克拉肯工業基礎特性 +1：%d → %d，期望 %d", baseInd, got, wantInd)
 	}
-	if got := s.PlayerColonies[0].FoodPerFarmer; got != baseFood+2 {
-		t.Fatalf("克拉肯農業應 +2:%d → %d", baseFood, got)
+	wantFood := baseFood + 2
+	if got := s.PlayerColonies[0].FoodPerFarmer; got != wantFood {
+		t.Fatalf("克拉肯農業基礎特性 +2：%d → %d，期望 %d", baseFood, got, wantFood)
+	}
+	if c := s.PlayerColonies[0]; c.GovernmentFoodBonusPercent != 50 || c.GovernmentIndustryBonusPercent != 50 {
+		t.Fatalf("克拉肯統一政體應分離保存 +50%% 食物／工業：%+v", c)
 	}
 
 	// 席隆:研究/科學家 +2(手冊 p.614「2 more than galactic norm」,norm3+2=5,對齊 SAVE10.GAM

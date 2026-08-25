@@ -48,6 +48,29 @@ func TestShipsFullyRepairAtOwnBase(t *testing.T) {
 	}
 }
 
+// IDA `sub_580F5 @ 0x580F5` 在 0x581B5 明確要求 Design.Type == COMBAT_SHIP。
+func TestSupportShipsDoNotUseCombatShipColonyRepair(t *testing.T) {
+	s := NewDemoSession()
+	s.Fleet().Ships = []Ship{
+		{Name: "戰鬥艦", Class: "戰艦", Damage: 7},
+		{Name: "殖民船", Class: ColonyShipClass, Damage: 7},
+		{Name: "前哨船", Class: OutpostShipClass, Damage: 7},
+	}
+	s.Fleet().AtStar, s.Fleet().ETA = s.PlayerColonyStarIndex(0), 0
+
+	if n := s.advanceShipRepair(); n != 1 {
+		t.Fatalf("只有戰鬥艦應進靠港完整修復，got %d want 1", n)
+	}
+	if s.Fleet().Ships[0].Damage != 0 {
+		t.Fatalf("戰鬥艦應完整修復，got damage %d", s.Fleet().Ships[0].Damage)
+	}
+	for _, i := range []int{1, 2} {
+		if s.Fleet().Ships[i].Damage != 7 {
+			t.Fatalf("支援艦 %q 不應進 COMBAT_SHIP 修復 consumer，got damage %d", s.Fleet().Ships[i].Name, s.Fleet().Ships[i].Damage)
+		}
+	}
+}
+
 // 不在自家據點就修不了(航行中、或停在別人的星)。
 func TestNoRepairAwayFromBase(t *testing.T) {
 	s := NewDemoSession()
@@ -140,9 +163,11 @@ func TestBattleLeavesSurvivorsDamaged(t *testing.T) {
 	s := NewDemoSession()
 	s.Turn = 40 // 敵方艦隊隨回合變強,確保打得起來
 	s.Fleet().Ships = []Ship{
-		{Name: "戰艦一", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
-		{Name: "戰艦二", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
-		{Name: "戰艦三", Class: "戰艦", Weapon: "死光", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
+		// 高耐久、低火力的 fixture 讓敵方有機會造成非致命傷，不依賴自編難度
+		// 倍率把敵艦屬性放大。
+		{Name: "泰坦一", Class: "泰坦", Weapon: "雷射", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
+		{Name: "泰坦二", Class: "泰坦", Weapon: "雷射", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
+		{Name: "泰坦三", Class: "泰坦", Weapon: "雷射", Armor: "無裝甲", Shield: "無護盾", Special: "無"},
 	}
 	// 跑多場(不同回合 = 不同亂數種子)。remake 的戰鬥是「集火第一艘」,所以只有
 	// 「戰鬥結束時正被集火的那艘」會帶傷回來——單場可能剛好是 0,多場一定有。

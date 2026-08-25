@@ -99,7 +99,7 @@ func TestSaveLoadRoundTripKeepsHash(t *testing.T) {
 // TestLoadedGameContinuesTheSameRandomStreams:存檔 → 讀檔 → 再跑 N 回合,
 // 必須與「不存檔直接跑 N 回合」得到同一個指紋。
 //
-// 這條先前**不成立**:三條長壽命亂數流(事件/星系發現/間諜)沒有把「抽到第幾個數」存進去,
+// 這條先前**不成立**：長壽命亂數流沒有把「抽到第幾個數」存進去，
 // 讀檔之後整條流從頭開始——存檔洗事件毫無成本,而且網路對戰時中途讀檔的那台會與其他人分岔。
 // 修法見 randstream.go(每次抽取恰好消耗一個原始值,所以「快轉 n 次」就只是丟掉 n 個值)。
 func TestLoadedGameContinuesTheSameRandomStreams(t *testing.T) {

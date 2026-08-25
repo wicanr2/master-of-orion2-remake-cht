@@ -172,8 +172,8 @@ func TestAIResearchCandidatesAreOnePerAreaWithTheRightIndex(t *testing.T) {
 	}
 }
 
-// 整棵科技樹研究完之後不會亂設主題,也不會 panic。
-func TestAIWithNothingLeftToResearchKeepsItsTopic(t *testing.T) {
+// 一般科技全完成後，八個 terminal Hyper 仍可重複研究，且成本包含自己的 level byte。
+func TestAIWithOrdinaryTreeCompleteChoosesRepeatedHyper(t *testing.T) {
 	s := NewDemoSession()
 	a := &s.AIPlayers[0]
 	for _, area := range gamedata.TechTree() {
@@ -181,10 +181,21 @@ func TestAIWithNothingLeftToResearchKeepsItsTopic(t *testing.T) {
 			a.Player.CompletedTopics[topic] = true
 		}
 	}
-	before := a.Player.ResearchTopic
-	s.advanceAIResearch(0) // 不該 panic
-	if a.Player.ResearchTopic != before {
-		t.Errorf("沒東西可研究時不該改主題:%v → %v", before, a.Player.ResearchTopic)
+	a.Player.HyperAdvancedResearchCost = 25000
+	a.Player.HyperAdvancedLevels = map[gamedata.ResearchTopic]int{gamedata.TOPIC_HYPER_PHYSICS: 2}
+	cands := aiResearchCandidates(a.Player)
+	if len(cands) != 8 {
+		t.Fatalf("一般科技完成後應保留八個 Hyper candidate，得到 %d", len(cands))
+	}
+	for _, c := range cands {
+		topic := gamedata.ResearchTopic(c.TopicID)
+		want := 25000
+		if topic == gamedata.TOPIC_HYPER_PHYSICS {
+			want = 45000
+		}
+		if c.Cost != want {
+			t.Errorf("Hyper %v candidate 成本=%d, want %d", topic, c.Cost, want)
+		}
 	}
 }
 

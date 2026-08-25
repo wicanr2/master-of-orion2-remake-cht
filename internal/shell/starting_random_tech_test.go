@@ -90,25 +90,37 @@ func TestStartingRandomTopicsAreDeterministic(t *testing.T) {
 }
 
 // 不同種子應該給出不同的開局——否則「隨機」是假的。
-func TestStartingRandomTopicsVaryWithSeed(t *testing.T) {
-	build := func(seed int64) map[gamedata.ResearchTopic]bool {
+func TestStartingRandomTechVariesWithSeed(t *testing.T) {
+	type result struct {
+		topics  map[gamedata.ResearchTopic]bool
+		choices map[gamedata.ResearchTopic]gamedata.Technology
+	}
+	build := func(seed int64) result {
 		s := NewDemoSession()
 		s.DisableEvents = true
 		s.TechLevel, s.TechLevelSet = 2, true
 		s.EventSeed = seed
 		s.applyStartingTech()
-		return s.Player.CompletedTopics
+		return result{s.Player.CompletedTopics, s.Player.ChosenTech}
 	}
 	a, b := build(1), build(999)
 	same := true
-	for k := range a {
-		if !b[k] {
+	for k := range a.topics {
+		if !b.topics[k] {
 			same = false
 			break
 		}
 	}
-	if same && len(a) == len(b) {
-		t.Error("不同種子給出完全一樣的開局——隨機挑選沒有真的用到種子")
+	if same && len(a.topics) == len(b.topics) {
+		for topic, tech := range a.choices {
+			if b.choices[topic] != tech {
+				same = false
+				break
+			}
+		}
+	}
+	if same && len(a.topics) == len(b.topics) {
+		t.Error("不同種子給出完全一樣的主題與科技應用——隨機挑選沒有真的用到種子")
 	}
 }
 
@@ -129,6 +141,14 @@ func TestPlayerAndAIGetIndependentRandomTopics(t *testing.T) {
 		}
 	}
 	if same {
-		t.Error("玩家與 AI 拿到完全一樣的開局主題——兩條流沒有分開")
+		for topic, tech := range s.Player.ChosenTech {
+			if s.AIPlayers[0].Player.ChosenTech[topic] != tech {
+				same = false
+				break
+			}
+		}
+	}
+	if same {
+		t.Error("玩家與 AI 拿到完全一樣的開局主題與應用——兩條流沒有分開")
 	}
 }

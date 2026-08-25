@@ -434,6 +434,7 @@ func (s *GameSession) advanceAntaranVictory() {
 	if !engine.CheckAntaranVictory(s.AntaranHomeworldConquered) {
 		return
 	}
+	s.queueAntaranDefeatBroadcast()
 	s.Victory = VictoryState{Over: true, Reason: engine.VictoryAntaran, Winner: "player", Turn: s.Turn}
 }
 

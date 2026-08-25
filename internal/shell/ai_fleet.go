@@ -22,11 +22,9 @@ import (
 //
 // ============ 誠實留白 ============
 //
-//   - **一個 AI 只有一支艦隊。** 玩家可以分/合多支(第 19 項(AI請求會談)),AI 沒有——它的軍力
-//     是單一的 `FleetStrength` 整數,不是艦艇清單。要給 AI 多艦隊得先給它艦艇模型。
-//   - **AI 艦隊沒有逐艦資料**,所以:艦員經驗(第 39 項(艦員經驗))拿不到、水雷的逐艦觸發率
-//     (依艦體等級 20–100%)也套不上——水雷對 AI 改成對**艦隊戰力**的整體折損,
-//     見 `applyArtemisMinesToAIFleet` 的說明。**這是近似,不是原版行為。**
+//   - **一個 AI 仍只有一支主力艦隊。** AI 已有逐艦清單與持久 blueprint，但尚未像玩家一樣
+//     分／合多支艦隊。
+//   - 水雷仍採主力艦隊戰力的整體折損，再回寫移除實艦；尚未逐艦擲原版 20–100% 觸發率。
 //   - **航線不判星雲/黑洞/干擾場。** 玩家那條路徑模型(第 16/17 項)吃這些懲罰,
 //     AI 目前只算直線秒差距 ÷ 速度。要接得先讓 AI 走同一套 `fleetSpeedForTrip`,
 //     而那支函式綁在 `s.Player` 上。
@@ -111,6 +109,9 @@ func (s *GameSession) advanceAIFleets() []AIFleetArrival {
 				a.FleetStar, a.FleetPosSet = home, true
 			}
 		}
+		if s.hyperspaceFluxActive() && !aiRaceHasTrait(*a, gamedata.TRAIT_TRANS_DIMENSIONAL) {
+			continue
+		}
 		if a.FleetETA > 0 {
 			a.FleetETA--
 			if a.FleetETA > 0 {
@@ -118,6 +119,7 @@ func (s *GameSession) advanceAIFleets() []AIFleetArrival {
 			}
 			a.FleetStar = a.FleetDestStar
 			a.FleetDestStar = -1
+			s.queueOrionDiscoveryBroadcast(eventEmpireTarget{kind: eventEmpireAI, index: i, alive: true}, a.FleetStar)
 			targetAI := -1
 			if a.FleetTargetAISet {
 				targetAI = a.FleetTargetAI
@@ -200,7 +202,7 @@ func (s *GameSession) aiFleetAtPlayerColony(i int) (colonyIdx int, ok bool) {
 // 現在 AI 會移動了,所以雷區對它生效。
 //
 // ⚠ **不是原版行為的逐艦模擬。** 原版是逐艦擲觸發率(依艦體等級 20–100%)、
-// 逐艦扣血;AI 在 remake 沒有艦艇清單,只有一個 `FleetStrength` 整數。所以這裡改成:
+// 逐艦扣血；remake 目前仍在高階航行事件以 `FleetStrength` 比例求損失，再移除實艦。所以這裡是:
 //
 //	雷數 = ArtemisMineCount(擲骰)           ← 與玩家那條同一支函式,同一個範圍
 //	每雷傷害 = ArtemisMineDamage(護盾等級 0)  ← AI 沒有護盾資料,一律當無護盾(對 AI 不利)
@@ -239,10 +241,10 @@ func (s *GameSession) applyArtemisMinesToAIFleet(i, starIdx int) *ArtemisStrike 
 	if lost > a.FleetStrength {
 		lost = a.FleetStrength
 	}
-	a.FleetStrength -= lost
+	s.reduceAIShipStrength(i, a.FleetStrength-lost)
 	return &ArtemisStrike{
 		StarName:    s.starName(starIdx),
-		ShipsHit:    1, // AI 只有「一支艦隊」這個粒度
+		ShipsHit:    1, // 高階水雷結算仍以主力艦隊的一次損失事件回報
 		TotalDamage: lost,
 	}
 }

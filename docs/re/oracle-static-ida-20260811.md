@@ -483,21 +483,20 @@ Hex-Rays 9.4.0.260610、IDA 線性位址與非破壞性 IDC。輸出為 static-o
 
 ### 事件漂移與候選權重
 
-- `raw_0x201F9` 對 20 個事件記錄槽逐槽檢查；沒有 active record 才呼叫
-  `sub_201A4`，不是可直接寫成每回合固定 30% 的證據。
-- `Determine_Event @ 0x22D57` 以候選帝國 raw score `word [empire+0xA6]` 建池：
-  好事件排除目前最高分，壞事件排除目前最低分，其餘權重為與該極值差值的平方；
+- `raw_0x201F9` 對 36 個事件記錄槽逐槽檢查；2026-08-25 後續控制流確認只有 36 槽全為
+  active 且星曆可被 20 整除時才呼叫 `sub_201A4`，舊「沒有 active record」解讀錯誤。
+- `sub_22D57 @ 0x22D57` 以候選帝國總人口 `word [empire+0xA6]` 建池；該欄由
+  `sub_E2710 @ 0xE2710` 累加有效殖民地人口 `+0x0A` 後寫入：
+  好事件排除目前最高人口，壞事件排除目前最低人口，其餘權重為與該極值差值的平方；
   `sub_230B6` 負責其他 eligibility。
 - `sub_586D4` 先加總正權重；只要總和 `>=0x200`，每輪將所有正權重整除 2，
   再用 `Random(total)` 做累積抽樣。`OriginalEventWeightedChoice` 與
   `OriginalEventVictimWeights` 已測試這兩段純公式。
 - `sub_21371` 是 36-case event dispatcher，使用 `byte_19ABA5[eax*9]` 與多個 raw
-  event record 欄位；remake 目前沒有 `+0xA6` score／20-slot record 的對等資料模型，
-  所以仍使用「已實作事件池」與明示為 remake 的機率入口。這是**未接 consumer**，
-  不是把 30% 宣稱為原版觸發率。
-- `sub_2230A` 另以 fleet strength、turn／`0x88B8` 與 difficulty bucket
-  `1/2, 2/3, 3/4, 4/5, 5/6` 後再 `Random(0x200)`；它只在事件需要艦隊強度的
-  下游成立，不能反推所有 36 事件的通用觸發率。
+  event record 欄位；remake 仍沒有完整 record lifecycle 與 AI／熱座目標效果回寫。
+- 2026-08-25 由完整 `sub_2230A` 控制流訂正：`1/2, 2/3, 3/4, 4/5, 5/6` 是一般事件
+  排程依難度套用於「距上次事件日期」的門檻，再與 `Random(0x200)` 比較，不是僅限艦隊
+  強度的下游。Go 已接此排程；證據見 `random-event-schedule-audit-20260825.md`。
 
 ### 爆炸連鎖與下游消費
 
@@ -568,9 +567,10 @@ Hex-Rays 9.4.0.260610、IDA 線性位址與非破壞性 IDC。輸出為 static-o
 
 - CMBTSHP：戰術畫面在移動輸入後使用固定 tick 的 `CMBTSHPFrameAtTick` 播放短掃掠，
   停止後固定在最近 heading 幀；不把這組 tick 宣稱成原版 timer。
-- 事件／爆炸：事件 8 呼叫 `resolveStrategicShipExplosion`，消費已證實的
-  `Random(201)+74`、20 點連鎖與 `sub_40C2A` 下游減傷，將尺度化結果寫入既有
-  `Ship.Damage`；raw fleet／colony record、resistance table 與 engine flag 仍保留未知。
+- 事件／爆炸已拆分：`sub_3868F`、`sub_39985`、`sub_40C2A` 是戰鬥／殖民地爆炸鏈；
+  事件 8 的 `sub_206A2 @ 0x20AD7..0x20B61` 不呼叫它們，而是由 `sub_23CED`
+  reservoir 選一艘、`sub_941C6` 處理死亡軍官、`sub_A163A` 移除單艦。remake 已依後者接線，
+  證據見 `random-event-ship-explosion-audit-20260825.md`。
 - SABOTAGE：`spyMissionScore` 明列 remake 可用的 AB／DB 每一項來源，使用 `T=70`、
   `E=T+DB-AB`、`SpyRollChance(E)`；低 6 位 raw count 的三段式 helper 已與
   `gamedata.OriginalSpyScoreHelper` 對齊，防守 Agent 的訓練、上限與被 Spy-vs-Spy

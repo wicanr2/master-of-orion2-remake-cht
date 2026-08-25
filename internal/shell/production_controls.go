@@ -331,6 +331,13 @@ func (s *GameSession) bestRefitTarget(source Ship) (Ship, bool) {
 			target.Armor = ArmorOptions[bestArmor].Name
 			target.Shield = ShieldOptions[bestShield].Name
 			target.Special = SpecialOptions[spi].Name
+			if len(target.Specials) == 0 {
+				target.Specials = []ShipSpecialMount{specialMountFromOption(spi)}
+			} else {
+				target.Specials = cloneSpecialMounts(target.Specials)
+				target.Specials[0] = specialMountFromOption(spi)
+			}
+			target.SpecialIDs = specialIDsFromMounts(target.Specials)
 			target.Mods = FilterWeaponModsForWeapon(target.Weapon, source.Mods)
 			target.Arc = NormalizeWeaponArc(target.Weapon, source.Arc)
 			target.WeaponAttack = weapons[wi].Value
@@ -353,7 +360,30 @@ func (s *GameSession) bestRefitTarget(source Ship) (Ship, bool) {
 func sameRefitEquipment(a, b Ship) bool {
 	return a.Class == b.Class && a.Weapon == b.Weapon && a.Armor == b.Armor &&
 		a.Shield == b.Shield && a.Special == b.Special && a.Arc == b.Arc &&
-		strings.Join(a.Mods, "\x00") == strings.Join(b.Mods, "\x00")
+		strings.Join(a.Mods, "\x00") == strings.Join(b.Mods, "\x00") &&
+		sameSpecialMounts(a.Specials, b.Specials)
+}
+
+func sameSpecialMounts(a, b []ShipSpecialMount) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func blueprintFromShip(sh Ship) ShipBlueprint {
+	return ShipBlueprint{
+		Class: sh.Class, Weapon: componentIndexByName(WeaponOptions, sh.Weapon),
+		Armor: componentIndexByName(ArmorOptions, sh.Armor), Shield: componentIndexByName(ShieldOptions, sh.Shield),
+		Special: componentIndexByName(SpecialOptions, sh.Special), Mods: append([]string(nil), sh.Mods...),
+		Arc: sh.Arc, Ammo: sh.WeaponAmmo, WeaponMounts: cloneWeaponMounts(sh.WeaponMounts),
+		SpecialIDs: append([]int(nil), sh.SpecialIDs...), Specials: cloneSpecialMounts(sh.Specials),
+	}
 }
 
 func shipProductionCost(sh Ship) int {
@@ -363,19 +393,38 @@ func shipProductionCost(sh Ship) int {
 	special := componentIndexByName(SpecialOptions, sh.Special)
 	mods := FilterWeaponModsForWeapon(sh.Weapon, sh.Mods)
 	arc := NormalizeWeaponArc(sh.Weapon, sh.Arc)
-	return DesignCostWithModsAndArc(sh.Class, weapon, armor, shield, special, mods, arc)
+	return DesignCostWithAmmo(sh.Class, weapon, armor, shield, special, mods, arc,
+		NormalizeWeaponAmmo(sh.Weapon, sh.WeaponAmmo))
+}
+
+func (s *GameSession) shipProductionCostWithTech(sh Ship) int {
+	cost, known := s.BlueprintDesignCost(blueprintFromShip(sh))
+	if !known {
+		return 0
+	}
+	return cost
+}
+
+func refitCostFromDesignCosts(class string, sourceCost, targetCost int) int {
+	cost := 2 * (targetCost - sourceCost)
+	minimum := ShipCost(class) / 4
+	if cost < minimum {
+		return minimum
+	}
+	return cost
 }
 
 // RefitCostPP 是手冊明示的改裝成本公式：max(2 * (新設計成本 - 舊設計成本),
 // floor(標準艦體成本 / 4))。本函式的輸入設計成本使用 remake 現有的元件成本模型，
 // 並把結果作為殖民地佇列的 PP 成本；「自動最佳模板」的選擇是近似，公式本身不是。
 func RefitCostPP(source, target Ship) int {
-	cost := 2 * (shipProductionCost(target) - shipProductionCost(source))
-	minimum := ShipCost(source.Class) / 4
-	if cost < minimum {
-		return minimum
-	}
-	return cost
+	return refitCostFromDesignCosts(source.Class, shipProductionCost(source), shipProductionCost(target))
+}
+
+// RefitCostPPForPlayer 使用本局科技與 Hyper 等級，讓預覽、排程及實際造艦共用微型化成本。
+func (s *GameSession) RefitCostPPForPlayer(source, target Ship) int {
+	return refitCostFromDesignCosts(source.Class,
+		s.shipProductionCostWithTech(source), s.shipProductionCostWithTech(target))
 }
 
 // PreviewRefit 在不改變狀態的前提下驗證一筆改裝並回傳凍結後的目標模板與成本。
@@ -417,7 +466,7 @@ func (s *GameSession) QueueRefit(colony, fleetIndex, shipIndex int) (RefitJob, e
 	if !s.canEnqueueBuild(colony) {
 		return RefitJob{}, fmt.Errorf("建造佇列已滿")
 	}
-	cost := RefitCostPP(job.Source, job.Target)
+	cost := s.RefitCostPPForPlayer(job.Source, job.Target)
 	f := &s.Fleets[fleetIndex]
 	source := f.Ships[shipIndex]
 	f.Ships = append(f.Ships[:shipIndex], f.Ships[shipIndex+1:]...)

@@ -448,7 +448,7 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
 
         | 規則 | 來源 |
         |---|---|
-        | 停在自家據點(殖民地/前哨站)→ **完全修復** | 反組譯 `Repair_Ships_At_Colonies_` @ 0x580F5 直接呼叫 `Repair_Ship_Full_` @ 0x581F3——是完全修復,不是逐回合慢慢修 |
+        | 戰鬥艦停在自家據點→ **完全修復** | `Repair_Ships_At_Colonies_` @ 0x580F5 直接呼叫 `Repair_Ship_Full_` @ 0x581F3；2026-08-24 IDAPython 補證 `Design.Type==COMBAT_SHIP`、Status／Star／owner bit 門檻。殖民地／前哨站對該 bit 的寫入端仍為強推論，見 `ship-repair-audit-20260824.md` |
         | 自動修復元件:戰鬥中每回合修 **20%** 結構損傷 | 手冊 p.82 逐字 |
         | 自動修復元件 / 進階損害管制:**戰後完全修復** | 手冊 p.82 / p.80 逐字 |
         | 機械化種族:戰鬥中 10%/回合(常數已備,無呼叫端) | 手冊 p.25 逐字;remake 沒有種族特質欄位可掛 |
@@ -2466,9 +2466,9 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     | Planetary Radiation Shield | reducing bombardment damage by 5 points | 5 | 1 BC | **1** |
     | Planetary Flux Shield | reduces all damage … by 10 points **per attack** | 10 | 3 BC | **3** |
     | Planetary Barrier Shield | reducing all damage … by 20 points **per attack** | 20 | 5 BC | **5** |
-    接在**逐發**傷害(`shot.DamageToStructure`)而不是總傷害。在 10 輪齊射下這兩個接法
-    差一個數量級,而且用 hits 驗測不出來——`GroundBombHitsFromDamage` 除以 100 會把差異吃掉。
-    所以測試釘的是 `TotalDamage`:10 輪 × (101 − 減傷),手算得出來。
+    接在**逐發**傷害(`shot.DamageToStructure`)而不是總傷害。多次攻擊下這兩個接法
+    差一個數量級；2026-08-24 已另由 IDA 證實 runtime 結果採除以 40，手冊除以 100 僅屬顯示估算。
+    所以測試釘的是 `TotalDamage`：原版固定三外圈中的每次攻擊都先套減傷，手算得出來。
     Radiation Shield already in existence」),所以 `PlanetaryShieldReduction` 取**最強的那一面**。
     第二句決定了接的位置。`FlatIndustry` 是在污染縮減之**前**併進 gross 的
     改成一個旗標,在 `RunColonyTurn` 的污染切分點之後才加。
@@ -2514,7 +2514,7 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
         - **只對玩家艦隊生效。** AI 沒有「艦隊移動到某顆星」的模型(它的攻擊是抽象解算的),
           ——AI 有真的艦隊移動時,`applyArtemisMines` 是它唯一的掛勾點。
 
-39. **艦員經驗系統:三張加成表早就在,缺的是「經驗怎麼來」**(2026-08-07)。
+39. **艦員經驗系統：2026-08-07 建模，2026-08-24 補齊每回合原版鏈**。
 
     上一項把太空學院列在「缺艦員經驗值子系統」。盤點之後發現 remake 的狀況很特別:
     **加成表已經有三張,而且都對得上手冊**——
@@ -2524,8 +2524,14 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     | `shipCrewOffenseBonuses = {0,15,30,50,75}` | `formulas.go` | BA |
     | `shipCrewDefenseBonuses = {0,15,30,50,75}` | `formulas.go` | BD |
     | `MissileCrew* = 0,7,15,25,37` | `missile.go` | ME |
-    ——但**沒有任何一艘船有等級**。`shell.Ship` 沒有那個欄位,也沒有東西會讓它上升。
-    三張表唯一的呼叫端在「讀存檔的船」那條路徑上(`engine.ShipBeamAttackFromDesign`),
+    2026-08-07 盤點當時尚無艦艇等級；其後已加入 `Ship.CrewXP`，三張表也已接到
+    `engine.ShipBeamAttackFromDesign` 等攻防消費端。2026-08-24 再以 IDA Pro 9.4 確認
+    `Do_All_Ships_XP_Check_ @ 0x14A27` 的每回合來源：固定掃描 500 筆、接受 `Status < 5`、
+    `Owner < 8`，每艦 +1、同星系每座己方太空學院 +1、取活動領袖最強 Instructor，結果
+    封頂 500；詳見 `ship-crew-xp-audit-20260824.md`。同日再閉合不同入口
+    `sub_4B184 @ 0x4B184`：戰後每艘 winner-side linked Ship 取得
+    `max(1, floor(被摧毀敵艦艦體級總和/2))`，直接寫 `Ship+0x72`，不套每回合 500 cap；
+    詳見 `ship-battle-crew-xp-audit-20260824.md`。
     ```
     一般種族   Green(0) → Regular(50) → Veteran(150) → Elite(500) → ✗
     統帥種族   ✗        → Regular(0)  → Veteran(50)  → Elite(150) → Ultra-Elite(500)
@@ -2534,7 +2540,8 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     起始 `CrewXP` 設成那一級的門檻,而不是另開一個「起始等級」欄位。
     - **halved**:打小船升得慢(擊沉一艘巡防艦 1/2 = 0 → 保底 1)
     - **destroyed not captured**:俘虜不算
-    - **minimum 1**:但**一艘都沒沉時是 0 而不是 1**——那個保底講的是「有擊沉」的情況,
+    - **minimum 1**：IDA `0x4B913..0x4B919` 證實總和為 0 時仍強制為 1；舊的
+      「零擊沉為 0」是手冊延伸解讀，已由 executable consumer 推翻。
     還原「被擊沉的是哪些」用的是多重集合相減:`battleVolley` 就地移除陣亡者,
     呼叫端拿不到「誰死了」,但敵艦的 `atk` 就是戰力值、戰鬥中不變,
     remake 的 `shipStrength` 是 2 的冪(巡防 2、驅逐 4、巡洋 8、戰艦 16、泰坦 32、末日 64),
@@ -2903,8 +2910,8 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     |---|---|---|
     | **20** | Bio-Terminator、Death Spores | 2 |
     列個生物武器清單」的差別。`TestBiologicalWeaponsAreExactlyCategory20` 把兩者釘在一起。
-    `BombardColony` 的流程是「算傷害 → 建築吸收(按建築名字母序拆)→ 扣人口」。
-    生物武器接在扣人口之後,若在那一步才查 `buildings` 有沒有屏障護盾,
+    `BombardColony` 現依 `sub_DCEBD` 在一般建築、駐軍、建造進度與人口間隨機分配傷亡。
+    生物武器接在一般傷亡之後；若到那一步才查 `buildings` 有沒有屏障護盾，
     不是規則。所以 `bioBlocked` 與 `shield` 一樣在吸收迴圈之前就取好。
     `TestBombard_BarrierShieldDestroyedThisTurnStillBlocks` 守這條,而且它是 PASS 不是
     - **一次轟炸投幾莢沒有真值。** 手冊說「每一個發射出去的孢子莢」,但沒說一次投幾莢,
@@ -3035,7 +3042,9 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     而 shell 有自己的三條路徑(`advanceConquestVictory` 走 `CheckExtermination`、
     `advanceCouncilElection`、`advanceAntaranVictory`),三支都每回合跑。
     優先序一致性已有測試釘著(`antaran_victory_test.go`)。**留著它是個小陷阱**
-    **`gamedata.LeaderMaintenanceCost` 零覆蓋——這個是洞。**
+    **歷史發現：`gamedata.LeaderMaintenanceCost` 曾是零覆蓋缺口。**
+    **2026-08-25 勘誤：已由 IDA Pro 閉合 `sub_94A9D @ 0x94A9D` 並接進單次帝國經濟結算；
+    下列文字保留用來說明缺口形成原因，不代表目前狀態。**
     註解連 `LEADER_ID_LOKNAR` 那個不移植的硬編特例都交代了——**零個生產端呼叫**。
     `grantMaroonedLeader` 給的領袖,先前兩樣都免。
     每位 `ceil(hireCost/100)`(下限 1),有 Megawealth 技能者免費。`hireCost` 走與
@@ -4011,7 +4020,9 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     ### 兩件手冊沒講而這張表講了的事
 
     - **飛彈本體的 Size 是 0**——佔格在彈架上(手冊只給了彈架的 10/20/30/35/40)。
-      remake 對四種飛彈估 10,那是建模取捨,既沒被證實也沒被推翻。
+      remake 當時對四種飛彈估 10，那是該輪尚未閉合彈架前的建模取捨。
+      **2026-08-24 勘誤**：後續 IDA 已證實 2/5/10/15/20 發映射 10/20/30/35/40，
+      正常艦艇設計與兩條戰鬥路徑均已接線；見 `missile-ammo-rack-audit-20260824.md`。
       ⚠ **不要「照執行檔訂正成 0」**,那會讓飛彈完全不佔空間,比現在更失真。
     - 編號 40..45 沒有解鎖科技,是安塔蘭/太空怪物專用武器。
 

@@ -165,8 +165,28 @@ func (s *GameSession) AssignedShipForOfficer(name string) (fleetIndex, shipIndex
 // shipOfficerSkillBonus 回傳「這艘船上的軍官」某技能值;未指派、殖民地領袖、
 // 已解雇軍官或沒有該技能皆為 0。
 func (s *GameSession) shipOfficerSkillBonus(sh Ship, skill gamedata.LeaderSkills) int {
-	l, ok := s.OfficerForShip(sh)
-	if !ok {
+	return officerSkillBonusForShip(s.Leaders, sh, skill)
+}
+
+// officerSkillBonusForShip 是可供玩家與 AI 共用的逐艦軍官查詢。原版艦戰技能只看
+// 已指派到參戰艦的軍官；名稱／ID 缺失或領袖不是艦艇軍官時一律回傳 0。
+func officerSkillBonusForShip(leaders []Leader, sh Ship, skill gamedata.LeaderSkills) int {
+	if sh.OfficerName == "" {
+		return 0
+	}
+	var l Leader
+	found := false
+	for _, candidate := range leaders {
+		if !candidate.Ship || candidate.Name != sh.OfficerName {
+			continue
+		}
+		if sh.OfficerID != 0 && candidate.ID != sh.OfficerID {
+			continue
+		}
+		l, found = candidate, true
+		break
+	}
+	if !found {
 		return 0
 	}
 	tier := leaderSkillTier(l, int(skill))
@@ -174,6 +194,21 @@ func (s *GameSession) shipOfficerSkillBonus(sh Ship, skill gamedata.LeaderSkills
 		return 0
 	}
 	return gamedata.LeaderSkillBonus(int(skill), tier, leaderDisplayLevelToExpLevel(l.Level))
+}
+
+// fleetOfficerSkillMax 回傳參戰艦上已指派軍官的指定技能最大值。IDA 的
+// Get_Fleet_*_Bonus 會排除無效戰鬥艦並取 max，不會把多位軍官相加。
+func fleetOfficerSkillMax(leaders []Leader, ships []Ship, skill gamedata.LeaderSkills) int {
+	best := 0
+	for _, sh := range ships {
+		if isSupportShipClass(sh.Class) {
+			continue
+		}
+		if bonus := officerSkillBonusForShip(leaders, sh, skill); bonus > best {
+			best = bonus
+		}
+	}
+	return best
 }
 
 func (s *GameSession) shipOfficerHasSkill(sh Ship, skill gamedata.LeaderSkills) bool {

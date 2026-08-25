@@ -87,6 +87,21 @@ var OrigTopicCost = [83]int{
 	15000, 15000, 15000,
 }
 
+// OrigTopicLevel 是主題記錄 `byte_17D91A[topic*0x17]`（record +14）的原始等級。
+// `Calc_Tech_Value_ @ 0xFC845` 以它索引 TechResearchLevelValues，並在同類科技
+// 邊際遞減與對手最佳類別比較中使用。資料由 IDA Pro 9.4 直接匯出 83 筆 record。
+var OrigTopicLevel = [83]int{
+	0, 5, 6, 3, 2, 4, 13, 4, 9, 4,
+	3, 10, 10, 10, 9, 5, 8, 13, 2, 8,
+	5, 4, 1, 2, 12, 11, 12, 9, 1, 1,
+	11, 3, 14, 13, 7, 8, 6, 12, 13, 14,
+	16, 7, 14, 8, 9, 7, 11, 8, 16, 14,
+	13, 13, 10, 10, 7, 1, 3, 1, 15, 12,
+	7, 13, 6, 7, 11, 9, 4, 12, 17, 17,
+	15, 15, 10, 6, 22, 18, 18, 18, 18, 18,
+	18, 18, 18,
+}
+
 // OrigTopicNext 是原版每個主題的「下一個主題」(完成本主題就把它標成可研究)。
 //
 // 0 在這裡有兩種意思:主題 0 自己是自環,其餘的 0 代表**鏈到此為止**
@@ -173,6 +188,50 @@ func OrigTechTopic(tech Technology) (ResearchTopic, bool) {
 		return 0, false
 	}
 	return ResearchTopic(t), true
+}
+
+// WeaponMiniaturizationLevel 依 `sub_6D048 @ 0x6D048` 計算科技微型化等級。
+// 原版從解鎖科技所屬主題的「下一個主題」開始計數，因此剛取得武器是 0 級；之後
+// 沿 OrigTopicNext 每連續完成一個主題加一級。舊入口在 Hyper topic 以 CompletedTopics
+// 的布林值相容為一級；正常 session 入口改用 WeaponMiniaturizationLevelWithHyper。
+func WeaponMiniaturizationLevel(tech Technology, completed map[ResearchTopic]bool) int {
+	return WeaponMiniaturizationLevelWithHyper(tech, completed, nil)
+}
+
+// WeaponMiniaturizationLevelWithHyper 對應 sub_6D048：遇到 75..82 不再當一般完成布林，
+// 而是直接加玩家該領域的 Hyper 重複等級 byte。
+func WeaponMiniaturizationLevelWithHyper(tech Technology, completed map[ResearchTopic]bool, hyper map[ResearchTopic]int) int {
+	topic, ok := OrigTechTopic(tech)
+	if !ok || completed == nil {
+		return 0
+	}
+	level := 0
+	seen := make(map[int]bool)
+	cur := int(topic)
+	for cur >= 0 && cur < len(OrigTopicNext) {
+		next := OrigTopicNext[cur]
+		if next == 0 || next == cur || seen[next] {
+			break
+		}
+		seen[next] = true
+		nextTopic := ResearchTopic(next)
+		if IsHyperAdvancedTopic(nextTopic) {
+			if hyper != nil {
+				if hyper[nextTopic] > 0 {
+					level += hyper[nextTopic]
+				}
+			} else if completed[nextTopic] {
+				level++
+			}
+			break
+		}
+		if !completed[nextTopic] {
+			break
+		}
+		level++
+		cur = next
+	}
+	return level
 }
 
 // OrigTopicIsSelfLoop 回報某個主題的 next 是否指向自己。

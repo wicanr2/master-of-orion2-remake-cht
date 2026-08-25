@@ -15,8 +15,8 @@ func TestProfile13Values(t *testing.T) {
 	if p.PlasmaCannonMaxDamage != 30 {
 		t.Errorf("PlasmaCannonMaxDamage = %d,want 30", p.PlasmaCannonMaxDamage)
 	}
-	if p.BombardmentVolleys != 5 {
-		t.Errorf("BombardmentVolleys = %d,want 5", p.BombardmentVolleys)
+	if p.BombardmentBombAttacks != 5 {
+		t.Errorf("BombardmentBombAttacks = %d,want 5", p.BombardmentBombAttacks)
 	}
 	if p.SatelliteBeamArcCostPct != 25 {
 		t.Errorf("SatelliteBeamArcCostPct = %d,want 25(#14,CHANGELOG_150.TXT 1.50.7 修正前舊值)", p.SatelliteBeamArcCostPct)
@@ -41,9 +41,9 @@ func TestProfile15Values(t *testing.T) {
 		t.Errorf("Version = %v,want VersionCommunity15", p.Version)
 	}
 
-	const wantHyperCost = 25000       // techtree.go 8 個 TOPIC_HYPER_* 的硬編 Cost
-	const wantPlasmaDamage = 20       // session.go 電漿砲 Component.Value 硬編值
-	const wantBombardmentVolleys = 10 // orbital_bombardment.go for round<10 的硬編上限
+	const wantHyperCost = 25000 // techtree.go 8 個 TOPIC_HYPER_* 的硬編 Cost
+	const wantPlasmaDamage = 20 // session.go 電漿砲 Component.Value 硬編值
+	const wantBombardmentBombAttacks = 10
 
 	if p.HyperAdvancedLevel1Cost != wantHyperCost {
 		t.Errorf("HyperAdvancedLevel1Cost = %d,want %d(=techtree.go 現行硬編值)", p.HyperAdvancedLevel1Cost, wantHyperCost)
@@ -51,8 +51,8 @@ func TestProfile15Values(t *testing.T) {
 	if p.PlasmaCannonMaxDamage != wantPlasmaDamage {
 		t.Errorf("PlasmaCannonMaxDamage = %d,want %d(=session.go 現行硬編值)", p.PlasmaCannonMaxDamage, wantPlasmaDamage)
 	}
-	if p.BombardmentVolleys != wantBombardmentVolleys {
-		t.Errorf("BombardmentVolleys = %d,want %d(=orbital_bombardment.go 現行硬編值)", p.BombardmentVolleys, wantBombardmentVolleys)
+	if p.BombardmentBombAttacks != wantBombardmentBombAttacks {
+		t.Errorf("BombardmentBombAttacks = %d,want %d", p.BombardmentBombAttacks, wantBombardmentBombAttacks)
 	}
 	if p.SatelliteBeamArcCostPct != 33 {
 		t.Errorf("SatelliteBeamArcCostPct = %d,want 33(#14,CHANGELOG_150.TXT 1.50.10 最終值 33.3%% 取整)", p.SatelliteBeamArcCostPct)
@@ -90,6 +90,20 @@ func TestHyperAdvancedCost(t *testing.T) {
 	}
 	if got := HyperAdvancedCost(Profile15()); got != 25000 {
 		t.Errorf("HyperAdvancedCost(Profile15()) = %d,want 25000", got)
+	}
+}
+
+func TestHyperAdvancedRepeatedCost(t *testing.T) {
+	for _, tc := range []struct {
+		base, level, want int
+	}{
+		{15000, 0, 15000}, {15000, 1, 25000}, {15000, 2, 35000},
+		{25000, 0, 25000}, {25000, 1, 35000}, {25000, 2, 45000},
+		{25000, -1, 25000},
+	} {
+		if got := HyperAdvancedRepeatedCost(tc.base, tc.level); got != tc.want {
+			t.Errorf("HyperAdvancedRepeatedCost(%d,%d)=%d, want %d", tc.base, tc.level, got, tc.want)
+		}
 	}
 }
 

@@ -42,7 +42,7 @@
 
 | 優先 | 交付物 | 必要證據 | 驗收門檻 | 狀態 |
 |---|---|---|---|---|
-| 1 | captain／common 領袖技能消費端 | `docs/tech/leader-officer-skills.md` 與各技能對應的 gameplay 子系統 | 逐技能接入或標成 remake 差異；管理 UI 不足以算完成 | **已完成 remake 消費端**：26 項有至少一個效果；Tactics 依原版不實作；Famous 招募機率仍是 oracle 留白 |
+| 1 | captain／common 領袖技能消費端 | `docs/tech/leader-officer-skills.md` 與各技能對應的 gameplay 子系統 | 逐技能接入或標成 remake 差異；管理 UI 不足以算完成 | **已完成 remake 消費端**：26 項有至少一個效果；Tactics 依原版不實作；Famous 招募機率已由 `sub_9781D` 補證並接線 |
 | 2 | 英文模式安全 fallback | 真正會顯示的引擎敘述、錯誤原因與自訂名稱 | 英文 `-gamegallery` 逐張抽查；不以內部查表 key grep 取代 | **已完成抽樣收尾**：35/35 英文畫廊，未知顯示值走安全 fallback |
 | 3 | 開局經濟平衡 playtest | 士氣 0 起跳、前 20 回合收入／人口／食物／工業／研究軌跡 | 抽樣探針記錄基線；未取得玩家主觀回報不改公式 | **已完成 headless 基線**：BC 50→264、人口 8→11、士氣 0% 全程，無死亡螺旋 |
 | 4 | 三平台發行維護 | 最新程式碼、Linux／Windows 腳本、macOS universal CI 產物 | 重建 Linux／Windows、驗證 macOS、更新雜湊與 release notes | 目前既有包需確認是否包含本輪 polish |

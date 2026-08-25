@@ -13,12 +13,26 @@ import (
 
 func TestNewGameSelectorTextUsesCenteredSafeRects(t *testing.T) {
 	fnt := uifont.LoadBitmapTC()
+	// 這些是由完整 NEWGAME 背景圖量出的可視數值列，不是由
+	// ngStripRect 自己推導出的期望值；測試因此能抓到座標系重複加原點。
+	wantStrips := map[string][4]int{
+		"diff":    {105, 204, 100, 20},
+		"size":    {261, 204, 100, 20},
+		"age":     {417, 204, 100, 20},
+		"players": {105, 349, 100, 20},
+		"tech":    {261, 349, 100, 20},
+	}
 	for _, lang := range []i18n.Lang{i18n.Traditional, i18n.English} {
 		b := &sceneBuilder{lang: lang, newGameDiff: newGameDiffDefault, newGameSize: 1,
 			newGameAge: newGameAgeDefault, newGameEmpires: shell.DefaultOpponents + 1, newGameTech: newGameTechDefault}
 		for _, st := range ngSettings {
 			r := ngStripTextRect(st)
 			x, y, w, h := ngStripRect(st)
+			want, ok := wantStrips[st.act]
+			if !ok || [4]int{x, y, w, h} != want {
+				t.Fatalf("%s 可視數值列 = (%d,%d,%d,%d)，want 量測矩形 (%d,%d,%d,%d)",
+					st.act, x, y, w, h, want[0], want[1], want[2], want[3])
+			}
 			if r.x < x || r.y < y || r.x+r.w > x+w || r.y+r.h > y+h {
 				t.Fatalf("%s 安全框 (%d,%d,%d,%d) 超出選擇器 (%d,%d,%d,%d)", st.act, r.x, r.y, r.w, r.h, x, y, w, h)
 			}

@@ -6,7 +6,7 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
-// TestResearchChoiceMultiOption:多選主題完成 → 預設第一項 + PendingChoice;可改選合法項。
+// TestResearchChoiceMultiOption 保留舊存檔沒有預選 application 時的相容分支。
 func TestResearchChoiceMultiOption(t *testing.T) {
 	// TOPIC_ADVANCED_CONSTRUCTION 成本 150,3 選項(工廠/重甲/行星飛彈基地)。
 	topic := gamedata.TOPIC_ADVANCED_CONSTRUCTION
@@ -15,7 +15,7 @@ func TestResearchChoiceMultiOption(t *testing.T) {
 		t.Fatalf("測試前提失效:%v 應為多選主題", topic)
 	}
 	ps := PlayerState{ResearchTopic: topic}
-	ps, done := RunResearchPhase(ps, ch.Cost) // 一次灌滿成本
+	ps, done := RunResearchPhase(ps, ch.Cost+1) // 超過成本且固定 roll=1，保證突破
 	if !done {
 		t.Fatalf("灌滿成本應完成主題")
 	}
@@ -39,6 +39,29 @@ func TestResearchChoiceMultiOption(t *testing.T) {
 	}
 }
 
+func TestResearchApplicationSelectedBeforeCompletion(t *testing.T) {
+	topic := gamedata.TOPIC_ADVANCED_CONSTRUCTION
+	choice := gamedata.ResearchChoiceFor(topic)
+	ps := PlayerState{ResearchTopic: topic}
+	selected, ok := SelectResearchApplication(ps, topic, choice.Choices[1])
+	if !ok {
+		t.Fatal("研究開始前選擇合法 application 應成功")
+	}
+	if selected.ChosenTech != nil || selected.CompletedTopics[topic] {
+		t.Fatal("尚未突破時不得提前解鎖所選 application")
+	}
+	completed, done := RunResearchPhase(selected, choice.Cost+1)
+	if !done {
+		t.Fatal("超過成本且 roll=1 應完成")
+	}
+	if got := completed.ChosenTech[topic]; got != choice.Choices[1] {
+		t.Fatalf("突破應授予研究前選定項：got=%v want=%v", got, choice.Choices[1])
+	}
+	if completed.HasPendingChoice || completed.HasResearchApplication {
+		t.Fatal("授予後不得留下目前 application 或待決旗標")
+	}
+}
+
 // TestResearchChoiceResearchAll:ResearchAll 主題完成不開待決(全解語意)。
 func TestResearchChoiceResearchAll(t *testing.T) {
 	// TOPIC_CHEMISTRY 成本 50,ResearchAll=true。
@@ -48,7 +71,7 @@ func TestResearchChoiceResearchAll(t *testing.T) {
 		t.Fatalf("測試前提失效:%v 應 ResearchAll", topic)
 	}
 	ps := PlayerState{ResearchTopic: topic}
-	ps, done := RunResearchPhase(ps, ch.Cost)
+	ps, done := RunResearchPhase(ps, ch.Cost+1)
 	if !done {
 		t.Fatalf("應完成")
 	}

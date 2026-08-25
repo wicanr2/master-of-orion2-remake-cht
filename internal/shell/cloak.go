@@ -34,11 +34,11 @@ const (
 
 // shipCloakKind 依元件名判斷這艘船的匿蹤系統。
 func shipCloakKind(sh Ship) CloakKind {
-	switch sh.Special {
-	case cloakingDeviceName:
-		return CloakDevice
-	case phasingCloakName:
+	if shipHasSpecial(sh, phasingCloakName) {
 		return CloakPhasing
+	}
+	if shipHasSpecial(sh, cloakingDeviceName) {
+		return CloakDevice
 	}
 	return CloakNone
 }

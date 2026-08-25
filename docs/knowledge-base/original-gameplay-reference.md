@@ -410,7 +410,7 @@ Barren **0** / Desert **1** / Tundra **1** / Ocean **2** / Swamp **2** / Arid **
 ### 7.4 研究 / 造艦 / 戰鬥
 | 原版行為 | 驗證點 |
 |---|---|
-| ✅ 8 研究領域、非創造性每階 2–3 選 1、Creative 全拿 | remake 研究完成邊界已依種族套用：一般種族由 UI 擇一、Uncreative 自動隨機擇一、Creative 全拿 |
+| ✅ 8 研究領域、非創造性每階 2–3 選 1、Creative 全拿 | remake 已依原版時序在投入研究前選定 application：一般種族由 UI 擇一、Uncreative 自動限縮一項、Creative 突破時全拿 |
 | 🟢 6 船體 Frigate→Doom Star,命令點隨船體升 | remake 船體種類與命令點 |
 | 🟢 戰鬥只在恆星系內、格子逐船 move+fire+done、行星/衛星算船 | remake 戰術戰鬥流程 |
 | 🟢 飛彈鎖定主目標一路飛、同船勿混 beam/missile | remake 飛彈/武器結算 |

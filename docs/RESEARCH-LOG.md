@@ -275,8 +275,9 @@ Hex-Rays `9.4.0.260610`、IDA 線性位址與非破壞性 IDC。結果不是 run
   rejection-sampling adapter，保留守方存活兵力與 captured population，不把未證實
   的人口 consumer 反推成公式。
 - 事件 `0x22D57` 的好／壞極值排除與差平方權重、`0x586D4` 的 `0x200` 反覆減半已
-  進純 oracle 測試；20-slot scheduler、raw score `+0xA6` 與 36-case dispatcher
-  尚未對回 remake record，因此 30% 仍明示為 remake 入口。
+  進純 oracle 測試；後續 2026-08-25 已證實 event record 為 36 槽、隨機候選為 0..28，
+  並以 `sub_2230A` 原版排程取代 30%。raw score `+0xA6`、全銀河目標與 36-case dispatcher
+  的完整 record consumer 仍未對回 remake。
 - 爆炸 `0x3868F`／`0x39985`／`0x40C2A`／`0x494A8` 的亂數範圍、每步減 20、type 7
   四分之一、resistance、engine potential 與 raw `0x14` 分支已進純 oracle；戰略
   `Ship.Damage` 與原版 record 的完整 consumer 尚未證實，不接錯欄位。

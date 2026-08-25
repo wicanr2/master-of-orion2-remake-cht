@@ -44,12 +44,19 @@ const spyTrainCostBC = 30
 // 這個上限是資料規則；訓練成本與 AI 的週期政策仍是 remake 近似。
 const spyMaxSlots = 63
 
-// spyMaintenancePerSpyBC 每個已訓練間諜每回合的維護費(BC)。
-// engine.PlayerState.Maintenance 欄位註解已載明「間諜維護費本專案尚無可推導模型」——這裡給
-// remake 佔位值,刻意不併入 totalBuildingMaintenance/Player.Maintenance(避免牽動既有經濟
-// 測試的既定假設),改在 advanceEspionage 直接從 BC 扣。預設 0 間諜時扣款為 0,不影響任何
-// 既有對局/測試。
+// spyMaintenancePerSpyBC 已由 Orion2.exe sub_1026CF @ 0x1026CF 與
+// Compute_Player_Maintenance_ @ 0xE25B0..0xE25CF 證實：每個目標槽取低 6 位的間諜數後加總。
 const spyMaintenancePerSpyBC = 1
+
+func (s *GameSession) totalSpyMaintenance() int {
+	total := 0
+	for _, spies := range s.PlayerSpies {
+		if spies > 0 {
+			total += spies * spyMaintenancePerSpyBC
+		}
+	}
+	return total
+}
 
 // spyMaxTopic 是 gamedata 研究主題的最大合法值(techtree.go researchChoices 陣列長度 83,
 // 索引 0..82;TOPIC_HYPER_SOCIOLOGY=82 是常數表最後一項)。spyStealOptions 用它當迴圈上界,
@@ -112,13 +119,7 @@ func (s *GameSession) ensurePlayerSpies() {
 // 但未明確抉擇 → 視為該主題全部選項皆解鎖;已明確抉擇 → 僅所選項),只是脫離「元件」語境,
 // 供間諜偷科技判定「對方已知、我方未知」時共用同一套主題/抉擇規則,不另立一套邏輯。
 func psKnowsTech(ps engine.PlayerState, topic gamedata.ResearchTopic, tech gamedata.Technology) bool {
-	if ps.CompletedTopics == nil || !ps.CompletedTopics[topic] {
-		return false
-	}
-	if ps.ExplicitChoice == nil || !ps.ExplicitChoice[topic] {
-		return true
-	}
-	return ps.ChosenTech != nil && ps.ChosenTech[topic] == tech
+	return playerStateKnowsTech(ps, topic, tech)
 }
 
 // spyStealOption 是一個「可偷」的科技候選:defender 已知、attacker 未知。
@@ -138,7 +139,7 @@ type spyStealOption struct {
 // 不是「科技」,略過。
 func spyStealOptions(attacker, defender engine.PlayerState) []spyStealOption {
 	var out []spyStealOption
-	if defender.CompletedTopics == nil {
+	if defender.CompletedTopics == nil && defender.GrantedTechs == nil {
 		return nil
 	}
 	for topic := gamedata.ResearchTopic(0); topic <= spyMaxTopic; topic++ {
@@ -165,31 +166,43 @@ func spyStealOptions(attacker, defender engine.PlayerState) []spyStealOption {
 			out = append(out, spyStealOption{Topic: topic, Tech: tech})
 		}
 	}
+	for tech, granted := range defender.GrantedTechs {
+		if !granted {
+			continue
+		}
+		topic, ok := gamedata.OrigTechTopic(tech)
+		if ok && !psKnowsTech(attacker, topic, tech) {
+			out = append(out, spyStealOption{Topic: topic, Tech: tech})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool {
+		if out[i].Topic != out[j].Topic {
+			return out[i].Topic < out[j].Topic
+		}
+		return out[i].Tech < out[j].Tech
+	})
+	if len(out) > 1 {
+		unique := out[:1]
+		for _, option := range out[1:] {
+			last := unique[len(unique)-1]
+			if option != last {
+				unique = append(unique, option)
+			}
+		}
+		out = unique
+	}
 	return out
 }
 
-// applyTechTheft 讓 attacker 偷到 opt 這項科技:標記該 Topic 為已完成、ChosenTech 記入偷到的
-// 那一項、並標記 ExplicitChoice=true。語意比照 engine.ApplyResearchChoice「明確抉擇」:偷來的
-// 只有那一項生效,不會像研究完成 ResearchAll/未明確抉擇主題時一樣讓同主題其餘選項也跟著解鎖
-// (componentUnlockedFor 的判定規則,見 ground_invasion.go)。
+// applyTechTheft 讓 attacker 偷到 opt 這項科技。首次取得該 Topic 時保存成主要明確選擇；
+// 若同主題已有另一項，改存 GrantedTechs 而不覆蓋舊科技。授予後共用原版特殊 callback。
 //
 // 已知限制(不修正,記錄於此):若 opt.Topic 剛好是 attacker 正在研究的 ResearchTopic,偷竊會
 // 直接把該主題標記完成,但不動 ResearchProgress——已經投入該主題的研究點數會變成「投給一個
 // 已經完成的主題」而無處可去,下回合 advanceResearch() 會把主題推進到下一項,那些點數就此浪費。
 // 這是最小迴圈的邊界情況,影響有限(只在偷到「正好在研究中」的科技時發生),故不在本輪額外處理。
 func applyTechTheft(ps *engine.PlayerState, opt spyStealOption) {
-	if ps.CompletedTopics == nil {
-		ps.CompletedTopics = make(map[gamedata.ResearchTopic]bool)
-	}
-	if ps.ChosenTech == nil {
-		ps.ChosenTech = make(map[gamedata.ResearchTopic]gamedata.Technology)
-	}
-	if ps.ExplicitChoice == nil {
-		ps.ExplicitChoice = make(map[gamedata.ResearchTopic]bool)
-	}
-	ps.CompletedTopics[opt.Topic] = true
-	ps.ChosenTech[opt.Topic] = opt.Tech
-	ps.ExplicitChoice[opt.Topic] = true
+	grantTechnologyApplication(ps, opt.Topic, opt.Tech)
 }
 
 // spyAttackerBonus 算出「攻擊方(派間諜出去偷科技的一方)」的 attacker bonus(AB,見
@@ -398,6 +411,7 @@ type spyMissionResult struct {
 	Messages            []string
 	AttackerSpyKilled   bool
 	DefenderAgentKilled bool
+	TechStolen          bool
 	Score               spyMissionScore
 }
 
@@ -457,6 +471,7 @@ func spyMissionAttemptWithAgentsResult(rng rollSource, mission SpyMission, attac
 			} else {
 				pick := opts[rng.Intn(len(opts))]
 				applyTechTheft(attackerPS, pick)
+				result.TechStolen = true
 				result.Messages = append(result.Messages, fmt.Sprintf(
 					"%s 的間諜從 %s 偷得科技:%s", attackerName, defenderName, gamedata.TechnologyName(pick.Tech)))
 			}
@@ -514,11 +529,9 @@ func spyDefenderBonusWithAgents(ps engine.PlayerState, govBonus, raceBonus, agen
 
 // spyMissionScore 是一次諜報／SABOTAGE 判定的完整分數拆解。
 //
-// 「完整」指目前 remake 已有資料模型能提供的全部輸入：攻方 Spies slot、攻方科技、
-// 攻方種族／領袖；守方 Agents slot、守方科技、政府、種族／領袖。raw `sub_1014A4`
-// 的 slot helper 已由 gamedata.OriginalSpyScoreHelper 對齊；兩張 raw table、隨機項目與
-// 上游 record 語意仍不具備可保存的 remake 欄位，所以這裡刻意保留「實際傳入的 bonus」
-// 命名，不把近似輸入冒充原版隱藏加分。
+// 原版 `sub_100A83` 先把科技、種族、心靈感應、最佳領袖與政府寫成每帝國攻防兩表；
+// `sub_1014A4` 再於逐對手任務加入 Spies／Agents slot helper。remake 不需要保存短命的
+// runtime 表，但此結構保留同一分層，讓每一項只計一次。
 type spyMissionScore struct {
 	Mission                 SpyMission
 	BaseThreshold           int
@@ -567,8 +580,12 @@ func calculateSpyMissionScore(mission SpyMission, attackerPS, defenderPS engine.
 		DefenderTechnologyBonus: defenderTech, DefenderGovernmentBonus: defenderGovBonus,
 		DefenderRaceLeaderBonus: defenderRaceLeaderBonus,
 	}
-	score.AttackerBonus = attackerSlot + attackerTech + attackerRaceLeaderBonus
-	score.DefenderBonus = defenderSlot + defenderTech + defenderGovBonus + defenderRaceLeaderBonus
+	// 呼叫端已把原版共同基底中的種族／心靈感應與最佳領袖壓成各方向 bonus；
+	// 透過同一個原版兩表 adapter 組合科技與政府，再於消費端加入 slot。
+	attackEmpire, _ := gamedata.OriginalSpyEmpireBonuses(attackerTech, attackerRaceLeaderBonus, 0, 0, 0, 0)
+	_, defenseEmpire := gamedata.OriginalSpyEmpireBonuses(defenderTech, defenderRaceLeaderBonus, 0, 0, 0, defenderGovBonus)
+	score.AttackerBonus = attackerSlot + attackEmpire
+	score.DefenderBonus = defenderSlot + defenseEmpire
 	if threshold > 0 {
 		score.EffectiveThreshold = gamedata.SpyEffectiveThreshold(threshold, score.DefenderBonus, score.AttackerBonus)
 		score.SuccessChance = gamedata.SpyRollChance(score.EffectiveThreshold)
@@ -609,11 +626,6 @@ func (s *GameSession) advanceEspionage() {
 	for i := range s.AIPlayers {
 		a := &s.AIPlayers[i]
 
-		// 間諜維護費:opt-in,預設 0 間諜時扣款為 0,不影響既有對局/測試(見 spyMaintenancePerSpyBC)。
-		if s.PlayerSpies[i] > 0 {
-			s.Player.BC -= s.PlayerSpies[i] * spyMaintenancePerSpyBC
-		}
-
 		// 玩家 → AI:依逐對手任務執行。
 		if s.PlayerSpies[i] > 0 {
 			result := spyMissionAttemptWithAgentsResult(s.spyRand, s.SpyMissionFor(i), &s.Player, a.Player,
@@ -627,6 +639,9 @@ func (s *GameSession) advanceEspionage() {
 			}
 			if result.DefenderAgentKilled && a.DefensiveAgents > 0 {
 				a.DefensiveAgents--
+			}
+			if result.TechStolen {
+				s.UpdatePlayerShipDesignsAfterTech()
 			}
 		}
 

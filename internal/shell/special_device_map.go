@@ -107,13 +107,56 @@ func (s *GameSession) HullSpaceFor(class string) int {
 
 // DesignFitsWithMods 同 ShipDesignFitsWithMods,但把巨型通量器的 +25% 可用空間算進去。
 func (s *GameSession) DesignFitsWithMods(class string, weapon, armor, shield, special int, mods []string) bool {
-	return ShipDesignSpaceUsedWithMods(class, weapon, armor, shield, special, mods) <=
-		s.HullSpaceFor(class)
+	return s.DesignFitsWithModsAndArc(class, weapon, armor, shield, special, mods, gamedata.ARC_FWD)
 }
 
 // DesignFitsWithModsAndArc 是艦艇設計畫面的含火線角空間判定；可用艦體空間
 // 仍由本局科技狀態決定，與舊入口共用 HullSpaceFor。
 func (s *GameSession) DesignFitsWithModsAndArc(class string, weapon, armor, shield, special int, mods []string, arc gamedata.WeaponArc) bool {
-	return ShipDesignSpaceUsedWithModsAndArc(class, weapon, armor, shield, special, mods, arc) <=
+	w := pick(WeaponOptions, weapon)
+	return s.DesignFitsWithLoadout(class, weapon, armor, shield, special, mods, arc,
+		NormalizeWeaponAmmo(w.Name, 0))
+}
+
+// DesignFitsWithLoadout 是含科技、火線角與彈架容量的正常玩家路徑判定。
+func (s *GameSession) DesignFitsWithLoadout(class string, weapon, armor, shield, special int, mods []string, arc gamedata.WeaponArc, ammo int) bool {
+	w := pick(WeaponOptions, weapon)
+	level := weaponMiniaturizationLevel(w, s.Player.CompletedTopics, s.Player.HyperAdvancedLevels)
+	sp := pick(SpecialOptions, special)
+	specialLevel := weaponMiniaturizationLevel(sp, s.Player.CompletedTopics, s.Player.HyperAdvancedLevels)
+	mods = filterWeaponModsAtLevel(w.Name, mods, level)
+	return shipDesignSpaceUsedWithMiniLevel(class, weapon, armor, shield, special, mods, arc, level, specialLevel, ammo) <=
 		s.HullSpaceFor(class)
+}
+
+// DesignSpaceUsedWithTech 是 UI 顯示使用的 session-aware 佔格入口。
+func (s *GameSession) DesignSpaceUsedWithTech(class string, weapon, armor, shield, special int, mods []string, arc gamedata.WeaponArc) int {
+	w := pick(WeaponOptions, weapon)
+	return s.DesignSpaceUsedWithLoadout(class, weapon, armor, shield, special, mods, arc,
+		NormalizeWeaponAmmo(w.Name, 0))
+}
+
+func (s *GameSession) DesignSpaceUsedWithLoadout(class string, weapon, armor, shield, special int, mods []string, arc gamedata.WeaponArc, ammo int) int {
+	w := pick(WeaponOptions, weapon)
+	level := weaponMiniaturizationLevel(w, s.Player.CompletedTopics, s.Player.HyperAdvancedLevels)
+	sp := pick(SpecialOptions, special)
+	specialLevel := weaponMiniaturizationLevel(sp, s.Player.CompletedTopics, s.Player.HyperAdvancedLevels)
+	return shipDesignSpaceUsedWithMiniLevel(class, weapon, armor, shield, special,
+		filterWeaponModsAtLevel(w.Name, mods, level), arc, level, specialLevel, ammo)
+}
+
+// DesignCostWithTech 是 UI／建造使用的 session-aware 成本入口。
+func (s *GameSession) DesignCostWithTech(class string, weapon, armor, shield, special int, mods []string, arc gamedata.WeaponArc) int {
+	w := pick(WeaponOptions, weapon)
+	return s.DesignCostWithLoadout(class, weapon, armor, shield, special, mods, arc,
+		NormalizeWeaponAmmo(w.Name, 0))
+}
+
+func (s *GameSession) DesignCostWithLoadout(class string, weapon, armor, shield, special int, mods []string, arc gamedata.WeaponArc, ammo int) int {
+	w := pick(WeaponOptions, weapon)
+	level := weaponMiniaturizationLevel(w, s.Player.CompletedTopics, s.Player.HyperAdvancedLevels)
+	sp := pick(SpecialOptions, special)
+	specialLevel := weaponMiniaturizationLevel(sp, s.Player.CompletedTopics, s.Player.HyperAdvancedLevels)
+	return designCostWithMiniLevel(class, weapon, armor, shield, special,
+		filterWeaponModsAtLevel(w.Name, mods, level), arc, level, specialLevel, ammo)
 }

@@ -2,7 +2,6 @@ package shell
 
 import (
 	"math/rand"
-	"sort"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
@@ -15,10 +14,8 @@ import (
 // cmd/moo2/interactive.go 的 galaxy() 星系主畫面接上「軌道轟炸」按鈕(2026-07-11,敵殖民地星
 // 恆可用,與「發動地面入侵」雙鈕共存,分居 y=402/424 兩列)。
 
-// fleetBombardDamage 依手冊「Estimated Bomb Hits」段落模擬玩家艦隊對殖民地做「s.RuleProfile.
-// BombardmentVolleys 輪齊射」(1.5 預設 10 輪、1.3 為 5 輪,見 gamedata.RuleProfile 與
-// docs/tech/version-1.3-1.5-diff.md §2),回傳累積造成的總傷害(尚未除以 100、尚未套用 320
-// 上限,由呼叫端接 gamedata.GroundBombHitsFromDamage)。
+// fleetBombardDamage 依 Strategic_Bombardment_ @ 0x4257E 固定執行三個外層攻擊回合。
+// patch 1.31／1.50 的 5／10 只套用炸彈攻擊當量，不再錯誤放大所有武器。
 //
 // 手冊原文:「All remaining ships fire all weapons 10 times, or as many times as there is
 // ammo in 10 turns... and total damage is calculated from it.」逐發解算沿用既有戰術戰鬥公式
@@ -28,7 +25,7 @@ import (
 //
 // 2026-08-07:**行星護盾接上了**。shieldReduction 是這個殖民地三面護盾裡最強那一面的
 // 每次攻擊減傷(gamedata.PlanetaryShieldReduction,手冊 −5 / −10 / −20)。接在**逐發**
-// 傷害那一行而不是總傷害——手冊寫的是「per attack」,在 10 輪齊射下兩個接法差一個數量級。
+// 傷害那一行而不是總傷害——手冊寫的是「per attack」，接在總和後只扣一次會失真。
 //
 // 已知簡化(誠實標註,非杜撰真值,是既有 remake 資料模型限制,非本函式引入):
 //   - 艦對艦意義下的「行星裝甲」仍是 0(damage.go DamageAfterShield 明講不處理行星情境);
@@ -38,33 +35,55 @@ import (
 //     或「電腦命中加成」函式接線(見 ground.go 檔尾 TODO),故本模擬未套用,直接沿用一般
 //     ResolveShot 命中/傷害公式——TODO,待戰術戰鬥層先補上這兩項才能真正對齊手冊轟炸公式。
 func (s *GameSession) fleetBombardDamage(rng *rand.Rand, shieldReduction int) int {
+	const (
+		strategicBombardmentRounds     = 3
+		strategicBombardmentDamageStop = 30000
+	)
 	total := 0
-	for round := 0; round < s.RuleProfile.BombardmentVolleys; round++ {
+	for round := 0; round < strategicBombardmentRounds; round++ {
 		for _, sh := range s.Fleet().Ships {
 			body := shipStrength(sh.Class)
 			atk := body + sh.WeaponAttack
 			atk += atk * s.RaceCombatPct / 100
 			wmin, wmax := atk/2, atk
-			var shot ShotResult
-			switch weaponKindByName(sh.Weapon) {
-			case WeaponKindMissile:
-				amrRoll := rng.Intn(100) + 1
-				jamRoll := rng.Intn(100) + 1
-				shot = ResolveMissileShot(false, 0, amrRoll, 0, 0, false, jamRoll, wmax, 0, 0, false, MissileDefenses{})
-			case WeaponKindSpherical:
-				span := wmax - wmin
-				r := 0
-				if span > 0 {
-					r = rng.Intn(span + 1)
+			kind := weaponKindByName(sh.Weapon)
+			shots := 1
+			if kind == WeaponKindBomb {
+				if round > 0 {
+					continue
 				}
-				aggD := gamedata.DamageSphericalRoll(wmin, r, 100)
-				shot = ResolveSphericalShot(aggD, 0, 0, false, false)
-			default:
-				roll := rng.Intn(100) + 1
-				shot = ResolveShot(atk, wmin, wmax, 2, 0, 0, roll, false, false)
+				shots = s.RuleProfile.BombardmentBombAttacks
+				if shots < 0 {
+					shots = 0
+				}
 			}
-			if shot.Hit {
-				total += gamedata.PlanetaryShieldedDamage(shot.DamageToStructure, shieldReduction)
+			for shotNo := 0; shotNo < shots; shotNo++ {
+				var shot ShotResult
+				switch kind {
+				case WeaponKindMissile:
+					amrRoll := rng.Intn(100) + 1
+					jamRoll := rng.Intn(100) + 1
+					shot = ResolveMissileShot(false, 0, amrRoll, 0, 0, false, jamRoll, wmax, 0, 0, false, MissileDefenses{})
+				case WeaponKindSpherical:
+					span := wmax - wmin
+					r := 0
+					if span > 0 {
+						r = rng.Intn(span + 1)
+					}
+					aggD := gamedata.DamageSphericalRoll(wmin, r, 100)
+					shot = ResolveSphericalShot(aggD, 0, 0, false, false)
+				case WeaponKindBomb:
+					shot = ShotResult{Hit: true, DamageToStructure: wmax}
+				default:
+					roll := rng.Intn(100) + 1
+					shot = ResolveShot(atk, wmin, wmax, 2, 0, 0, roll, false, false)
+				}
+				if shot.Hit {
+					total += gamedata.PlanetaryShieldedDamage(shot.DamageToStructure, shieldReduction)
+					if total > strategicBombardmentDamageStop {
+						return total
+					}
+				}
 			}
 		}
 	}
@@ -75,14 +94,15 @@ func (s *GameSession) fleetBombardDamage(rng *rand.Rand, shieldReduction int) in
 type GroundBombardResult struct {
 	Ok          bool   // 是否成功發動了一場轟炸解算(false = 前置條件不足,未開打)
 	Reason      string // Ok=false 時的原因
-	TotalDamage int    // RuleProfile.BombardmentVolleys 輪齊射總傷害(套用前見 fleetBombardDamage 註解的已知簡化)
-	Hits        int    // gamedata.GroundBombHitsFromDamage(TotalDamage),Estimated Bomb Hits
+	TotalDamage int    // 原版固定三外圈（炸彈另套 5／10 當量）的累積傷害
+	Hits        int    // gamedata.StrategicBombardmentHitsFromDamage(TotalDamage)，原版 runtime /40
 
-	// PopulationLost 實際扣減的殖民地人口單位數(1 hit = 1 人口單位,Planet Hits 表)。
-	// 2026-07-11 起:這裡的 hits 是「建築吸收後的餘數」,不是 Hits 原始值——見下方函式註解
-	// 「建築吸收」段落與 BuildingsDestroyed 欄位。
-	PopulationLost int
-	RemainingHits  int // 扣完建築+人口後剩餘、未消耗掉的 hits(通常應為 0;殖民地人口歸零時會 > 0)
+	// PopulationLost 是 sub_DCEBD 隨機候選池與後續生物武器實際扣掉的人口。
+	PopulationLost    int
+	RemainingHits     int // 扣完建築+人口後剩餘、未消耗掉的 hits(通常應為 0;殖民地人口歸零時會 > 0)
+	MarinesLost       int // sub_DCEBD 寫回的駐防陸戰隊損失
+	TanksLost         int // sub_DCEBD 寫回的駐防戰車損失
+	BuildProgressLost int // sub_DCEBD 結果 +0x43 對應的建造進度損失
 
 	// BioWeaponKills 是**生物武器**額外殺掉的人口(手冊 p.99,第 52 項(生物武器分類)接的)。
 	// 已含在 PopulationLost 裡,獨立記一份是為了讓「這幾個人是被孢子殺的」看得出來
@@ -113,16 +133,23 @@ type GroundBombardResult struct {
 	// PopulationBefore 是開炸前的殖民地人口,供畫面顯示「炸掉多少 / 原本多少」。
 	PopulationBefore int
 
-	// PlanetHitsRequired 是手冊「Planet Hits」表算出的「摧毀這個殖民地全部防禦所需 hits」
-	// 估計值(gamedata.GroundPlanetTotalHits),對應手冊 UI 上「Estimated Bomb Hits」旁邊
-	// 同時顯示的「Planet Hits」欄——純供顯示參考(讓玩家判斷這波轟炸夠不夠),不影響
-	// PopulationLost 的實際扣減(扣減邏輯見下方函式註解)。
-	//
-	// TODO 誠實限制:AI 側仍無「儲存生產」追蹤(storedProduction 恆 false)。建築數本身
-	// (2026-07-11 起 AIOpponent.ColonyBuildings 已備妥)已改用轟炸結束後的實際剩餘建築數,
-	// 不再恆 0——見下方函式賦值處。戰車營同理:AI 開局 homeworldBuildings() 沒有裝甲營房,也
-	// 無法追蹤是否後續建成,tanks 恆為 0。
+	// PlanetHitsRequired 是 Get_Colony_Hits_ @ 0x42371 已證實的轟炸後殖民地本體耐久：
+	// 人口 + 士兵 + 戰車 + 每棟非軌道建築 40。Battlestation／Star Base／Star Fortress
+	// 另有戰鬥者，不重複計入。它供 UI／測試檢視，不反向定義尚未追回的傷亡分配順序。
 	PlanetHitsRequired int
+}
+
+func originalColonyBuildingIDs(buildings map[string]bool) []int {
+	ids := make([]int, 0, len(buildings))
+	for name, active := range buildings {
+		if !active {
+			continue
+		}
+		if id, ok := gamedata.OriginalBuildingIDForName(name); ok {
+			ids = append(ids, id)
+		}
+	}
+	return ids
 }
 
 // retaliationAttackers 依「轟炸建築吸收階段之後仍存活」的防禦建築,組出防禦方反擊用的
@@ -268,27 +295,15 @@ func fighterGarrisonTierFor(defender engine.PlayerState) gamedata.FighterGarriso
 //
 // 任一條件不足回傳 Ok=false + Reason,不消耗任何狀態、不呼叫 rng。
 //
-// 解算:fleetBombardDamage 模擬 RuleProfile.BombardmentVolleys 輪齊射 →
-// gamedata.GroundBombHitsFromDamage 換算 hits → hits 先花在摧毀殖民地建築(見下方「建築吸收」
-// 段落)→ 建築吸收後的餘數 hits 才交給 gamedata.GroundBombardPopulationLoss 依行星尺寸係數
-// (#11,2026-07-11,非差異項)換算實際扣減的人口單位數(大行星較耐轟,近似公式見該函式註解)→
-// 扣減 colony.Population(夾在 0 以上)。
+// 解算:fleetBombardDamage 模擬原版固定三外圈（炸彈另套版本 5／10 次當量）→
+// gamedata.StrategicBombardmentHitsFromDamage 依原版 /40 換算 hits →
+// gamedata.ResolveStrategicColonyDamage 依 sub_DCEBD @ 0xDCEBD 的候選池，隨機回寫
+// 可摧毀建築、陸戰隊、戰車、建造進度與人口。
 //
-// 建築吸收(#7/#8 接線,2026-07-11):對應手冊 p.78「飛彈基地只能被軌道轟炸摧毀」+ #8
-// civilian building 轟炸裝甲 100hp——忠實模型是「bomb hits 先摧毀殖民地建築,餘數才扣人口」,
-// 軌道防禦讓殖民地人口在防禦被轟掉前受保護:
-//   - 每棟建築消耗的 hits = gamedata.GroundPlanetHitsPerBuilding + s.RuleProfile.
-//     BombardmentBuildingBonusHits(1.3 每棟建築多 +1 hit 才摧毀,CHANGELOG「Undocumented +1
-//     hit bonus for civilian buildings during bombardment removed」;1.5 已移除此 bug,見
-//     ruleprofile.go 欄位註解)。
-//     ⚠ 誠實標註:CHANGELOG 這句話本身語意模糊(是建築多吸一擊、還是建築多受一擊才被摧毀),
-//     本 remake 採「每棟建築在 1.3 需多 +1 hit 才摧毀」的保守解讀,非手冊逐字驗證值。
-//   - 分配順序:依建築名稱字母序(sort.Strings)固定摧毀,不用 rng——同一批建築、同一 hits
-//     輸入,摧毀結果永遠一樣,可重現。hits 不夠摧毀下一棟就停止(不會摧毀「一半」的建築)。
-//   - 被摧毀的建築從 aiPlayer.ColonyBuildings[colonyIdx] 刪除(map 是參考型別,直接
-//     mutate,不需要寫回)。
-//   - colony 無建築(nil/空 map)時,這段等同 no-op,全部 hits 直接進人口損傷——與加這個機制
-//     之前的行為逐位元一致(見 orbital_bombardment_test.go 既有測試)。
+// 傷亡分配由 IDA 已證實的 sub_DCEBD 候選池決定；一般建築、駐軍、建造進度與人口
+// 在同一個隨機池，不再使用舊版字母序建築吸收／行星尺寸人口近似。raw
+// 8/9/26/27/40/41/42/47 由其他戰鬥者或結果分支處理，因此不進本 helper。1.3 的
+// BombardmentBuildingBonusHits 仍是 CHANGELOG 語意近似，非本份 1.50 executable 證實值。
 //
 // ⚠ 範圍限制(誠實標註,非本函式應臆測補齊的部分):
 //   - 不扣「儲存生產」/駐軍——AI 沒有這些的持久資料可扣,扣了會是憑空生資料,故不做(建築已
@@ -332,58 +347,58 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 		buildings = aiPlayer.ColonyBuildings[colonyIdx]
 	}
 	shield := gamedata.PlanetaryShieldReduction(buildings)
-	// 生物武器擋不擋,同理要在建築吸收**之前**問。下面那段吸收迴圈會按字母序拆建築,
-	// 若等到孢子那一步才查 buildings,「屏障護盾擋不擋得住生物武器」就變成取決於
-	// 建築名的字母序有沒有先輪到它被拆——那是假的精確度,不是規則。
+	// 生物武器擋不擋必須在一般傷亡分配前取樣；屏障護盾即使同輪被抽中摧毀，
+	// 仍會擋住這一輪已開始投放的生物武器。
 	bioBlocked := gamedata.BiologicalWeaponBlocked(buildings)
 
 	rng := rand.New(rand.NewSource(int64(s.Turn)*2654435761 + int64(starIdx)*131 + 777))
 	totalDamage := s.fleetBombardDamage(rng, shield)
-	hits := gamedata.GroundBombHitsFromDamage(totalDamage)
+	hits := gamedata.StrategicBombardmentHitsFromDamage(totalDamage)
 
 	res := GroundBombardResult{Ok: true, TotalDamage: totalDamage, Hits: hits,
 		ColonyName: s.starName(starIdx), PopulationBefore: colony.Population}
 
-	// --- 建築吸收(#7/#8 接線,見函式檔頭「建築吸收」段落):hits 先花在摧毀建築 ---
-	remainingHits := hits
-	if len(buildings) > 0 {
-		hitsPerBuilding := gamedata.GroundPlanetHitsPerBuilding + s.RuleProfile.BombardmentBuildingBonusHits
-		if hitsPerBuilding < 1 {
-			hitsPerBuilding = 1 // 防禦性下限,避免 RuleProfile 誤設非正值造成除零/無限摧毀
-		}
-		// 固定優先序(依建築名稱字母序),不吃 rng,同一批建築+同一 hits 輸入摧毀結果必重現。
-		names := make([]string, 0, len(buildings))
-		for name := range buildings {
-			names = append(names, name)
-		}
-		sort.Strings(names)
-		for _, name := range names {
-			if remainingHits < hitsPerBuilding {
+	marines, tanks := 0, 0
+	if colonyIdx < len(aiPlayer.ColonyMarines) {
+		marines = aiPlayer.ColonyMarines[colonyIdx]
+	}
+	if colonyIdx < len(aiPlayer.ColonyTanks) {
+		tanks = aiPlayer.ColonyTanks[colonyIdx]
+	}
+	buildingCost := gamedata.GroundPlanetHitsPerBuilding + s.RuleProfile.BombardmentBuildingBonusHits
+	casualties := gamedata.ResolveStrategicColonyDamage(gamedata.StrategicColonyDamageState{
+		Population: colony.Population, LastPopulationPoints: colony.BombardmentLastPopulationPoints,
+		Marines: marines, Tanks: tanks, BuildProgress: colony.BombardmentBuildProgress,
+		RawBuildingIDs:  originalColonyBuildingIDs(buildings),
+		MarineHitCost:   gamedata.GroundMarineHitsToKill(aiRaceHasTrait(*aiPlayer, gamedata.TRAIT_HIGH_G), hasPoweredArmorFor(aiPlayer.Player)),
+		TankHitCost:     tankHitsToKillFor(aiPlayer.Player, aiRaceHasTrait(*aiPlayer, gamedata.TRAIT_HIGH_G)),
+		BuildingHitCost: buildingCost,
+	}, hits, rng.Intn)
+	colony.Population = casualties.State.Population
+	colony.BombardmentLastPopulationPoints = casualties.State.LastPopulationPoints
+	colony.BombardmentBuildProgress = casualties.State.BuildProgress
+	if colonyIdx < len(aiPlayer.ColonyMarines) {
+		aiPlayer.ColonyMarines[colonyIdx] = casualties.State.Marines
+	}
+	if colonyIdx < len(aiPlayer.ColonyTanks) {
+		aiPlayer.ColonyTanks[colonyIdx] = casualties.State.Tanks
+	}
+	for _, destroyedID := range casualties.DestroyedBuildingIDs {
+		for name, active := range buildings {
+			if id, ok := gamedata.OriginalBuildingIDForName(name); active && ok && id == destroyedID {
+				delete(buildings, name)
 				break
 			}
-			delete(buildings, name)
-			remainingHits -= hitsPerBuilding
-			res.BuildingsDestroyed++
 		}
 	}
+	normalizeColonyJobsAfterPopulationLoss(colony)
+	res.PopulationLost = casualties.PopulationLost
+	res.MarinesLost = casualties.MarinesLost
+	res.TanksLost = casualties.TanksLost
+	res.BuildProgressLost = casualties.BuildProgressLost
+	res.BuildingsDestroyed = len(casualties.DestroyedBuildingIDs)
 	res.BuildingsRemaining = len(buildings)
-
-	// 行星尺寸幾何(#11,2026-07-11,docs/tech/version-1.3-1.5-diff.md,非差異項——1.5 系列
-	// 中途曾改過又於 1.50.11 修回 classic 3-4-6-7-8,對 1.3 vs 最終 1.5 不構成差異):大行星
-	// 較耐轟,近似公式與已知限制見 gamedata.GroundBombardPopulationLoss 註解。colony 無建築時
-	// remainingHits==hits,母星預設 LARGE_PLANET(係數 7)時 hits=10 算出 popLoss=8,與加建築
-	// 吸收機制前的舊行為(popLoss=hits 直接相等)剛好一致(見 orbital_bombardment_test.go
-	// TestBombardColony_ nil 建築回歸測試)。
-	popLoss := gamedata.GroundBombardPopulationLoss(remainingHits, colony.PlanetSize)
-	if popLoss > colony.Population {
-		popLoss = colony.Population
-	}
-	if popLoss < 0 {
-		popLoss = 0
-	}
-	colony.Population -= popLoss
-	res.PopulationLost = popLoss
-	res.RemainingHits = remainingHits - popLoss
+	res.RemainingHits = casualties.DamageRemaining
 
 	// --- 生物武器(手冊 p.99;第 52 項(生物武器分類)接上)---
 	//
@@ -409,6 +424,7 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 			colony.Population -= kills
 			res.PopulationLost += kills
 			res.BioWeaponKills = kills
+			normalizeColonyJobsAfterPopulationLoss(colony)
 		}
 	}
 
@@ -446,13 +462,40 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 		}
 	}
 
-	// PlanetHitsRequired 純供顯示參考(見 GroundBombardResult 欄位註解):buildings 參數改用
-	// len(buildings)(本次轟炸「結束後」剩餘的建築數),與下面 defMarines 用「轟炸後」的
-	// colony.Population 同一種語意(顯示「打完這波,對方還剩多少防禦要打」)——AI 建築資料
-	// 2026-07-11 起已備妥,不再恆為 0;storedProduction 仍恆 false,見欄位註解的剩餘 TODO。
-	defMarines := gamedata.GroundMarineBarracksUnits(s.Turn, colony.Population, colony.PopMax, s.RaceWarlord())
-	defMarineHits := gamedata.GroundMarineHitsToKill(false, hasPoweredArmorFor(aiPlayer.Player))
-	res.PlanetHitsRequired = gamedata.GroundPlanetTotalHits(len(buildings), false, colony.Population, 0, defMarines, defMarineHits, 0, 0)
+	// 原版 Get_Colony_Hits_ 讀的是轟炸後仍在 Colony record 裡的實際人口、士兵、戰車與
+	// 建築旗標，不以人口重新推算兵營應有部隊。平行陣列由 normalizeAIColonyGroundForces
+	// 在各玩家路徑維持；舊存檔缺欄位時安全回退為 0。
+	marines, tanks = 0, 0
+	if colonyIdx < len(aiPlayer.ColonyMarines) {
+		marines = aiPlayer.ColonyMarines[colonyIdx]
+	}
+	if colonyIdx < len(aiPlayer.ColonyTanks) {
+		tanks = aiPlayer.ColonyTanks[colonyIdx]
+	}
+	res.PlanetHitsRequired = gamedata.OriginalColonyCombatHits(
+		colony.Population, marines, tanks, originalColonyBuildingIDs(buildings),
+	)
 
 	return res
+}
+
+func normalizeColonyJobsAfterPopulationLoss(colony *engine.ColonyState) {
+	if colony == nil {
+		return
+	}
+	for colony.Farmers+colony.Workers+colony.Scientists > colony.Population {
+		switch {
+		case colony.Workers >= colony.Farmers && colony.Workers >= colony.Scientists && colony.Workers > 0:
+			engine.RemovePopulationGroupUnit(colony, gamedata.WORKER)
+			colony.Workers--
+		case colony.Farmers >= colony.Scientists && colony.Farmers > 0:
+			engine.RemovePopulationGroupUnit(colony, gamedata.FARMER)
+			colony.Farmers--
+		case colony.Scientists > 0:
+			engine.RemovePopulationGroupUnit(colony, gamedata.SCIENTIST)
+			colony.Scientists--
+		default:
+			return
+		}
+	}
 }

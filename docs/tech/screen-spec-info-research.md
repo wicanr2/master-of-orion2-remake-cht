@@ -20,7 +20,7 @@ openorion2 對這兩類畫面的實作程度落差很大,先列出來,細節見�
 |---|---|---|
 | `RaceInfoWidget`(種族統計) | 完整 | 唯一內容完整的 `InfoView` 分頁 |
 | `TechReviewWidget`(科技總覽) | 完整 | 清單 + 說明 + 插圖都有接線 |
-| `HistoryGraphWidget`(歷史曲線圖) | **只有標題** | 只畫標題文字 + 兩個空框,無曲線圖繪製邏輯 |
+| `HistoryGraphWidget`(歷史曲線圖) | 已有可操作折線圖 | 現行資料模型仍待依 `Record_History_` 改為 Fleet／Technology／Population／Buildings 四項 350 格正規化 ring |
 | `TurnSummaryWidget`(回合摘要) | **只有標題** | 只畫標題文字 + 一個空框,無回合報告內容 |
 | `DocsWidget`(參考資料) | **只有標題** | 只畫標題文字 + 四個空框,未接百科內容 |
 | `ResearchSelectWindow`(研究領域選單) | 完整 | 8 大領域按鈕 + 各領域下一項可選科技 |

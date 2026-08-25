@@ -3,9 +3,10 @@ package gamedata
 // 原版隨機事件表(36 種)。
 //
 // 來源與驗證(2026-08-06):
-//   - 事件總數與好壞旗標:反組譯 `_event_good_array` @ 0x180E84(36 bytes,1=好事)
+//   - 隨機事件 0..28 的好壞旗標：`byte_180E84` @ 0x180E84（29 bytes，1=好事）；
+//     `sub_2230A @ 0x2230A` 以 `Random(0x1D)` 索引。29..35 是狀態播報，非隨機抽樣。
 //   - 事件內容:原版 EVENTMSG.LBX 從資產 8 起、**每個事件 4 條訊息變體**,
-//     (152-8)/4 = 36,與 `_event_good_array` 的長度完全吻合
+//     (152-8)/4 = 36，證實 EVENTMSG 總列數，不代表好壞旗標也是 36 bytes
 //   - 逐項交叉檢查:礦產發現=好、礦產枯竭=壞、人口暴增=好、瘟疫=壞、
 //     蟲洞=好、太空怪獸=壞……36 項全部自洽,兩個獨立來源互證
 //   - 事件子系統的函式清單見原版 module 15(71 個符號,含 Event_Check_Plague_ /
@@ -20,9 +21,9 @@ package gamedata
 
 // RandomEvent 是一種原版隨機事件。
 type RandomEvent struct {
-	ID   int    // 原版事件 id(0..35),同 _event_good_array 的索引
+	ID   int    // 原版事件／播報 id(0..35)；只有 0..28 索引隨機事件好壞表
 	Name string // 中文事件名(remake 自訂,原版無事件名字串,只有訊息)
-	Good bool   // 原版 _event_good_array:是否為好事
+	Good bool   // 0..28 來自原版好壞表；29..35 是播報分類，不參與隨機抽樣
 	// MsgBase 是該事件在 EVENTMSG.LBX 的第一條訊息資產索引;該事件佔用
 	// MsgBase..MsgBase+3 四個索引(部分為空字串,代表原版沒用到那個變體)。
 	MsgBase int
@@ -40,19 +41,19 @@ type RandomEvent struct {
 var RandomEvents = []RandomEvent{
 	{0, "古代遺骸科技", true, 8, true, "", false},
 	{1, "氣候改善", true, 12, true, "", false},
-	{2, "彗星來襲", false, 16, false, "彗星倒數與艦隊攔截判定", false},
+	{2, "彗星來襲", false, 16, true, "", false},
 	{3, "電腦病毒", false, 20, true, "", false},
 	{4, "外交暗殺", false, 24, true, "", false},
 	{5, "外交聯姻", true, 28, true, "", false},
 	{6, "富商捐獻", true, 32, true, "", false},
 	{7, "地震", false, 36, true, "", false},
 	{8, "艦船爆炸", false, 40, true, "", false},
-	{9, "超空間亂流", false, 44, false, "全銀河禁止航行的持續狀態", false},
+	{9, "超空間亂流", false, 44, true, "", false},
 	{10, "工業意外", false, 48, true, "", false},
 	{11, "礦產枯竭", false, 52, true, "", false},
 	{12, "礦產發現", true, 56, true, "", false},
 	{13, "艦船叛變", false, 60, true, "", false},
-	{14, "海盜活動", false, 64, false, "星系層級的持續海盜狀態與清剿", false},
+	{14, "海盜活動", false, 64, true, "", false},
 	{15, "海盜劫掠", false, 68, true, "", false},
 	{16, "瘟疫", false, 72, true, "", false},
 	{17, "人口暴增", true, 76, true, "", false},
@@ -60,20 +61,20 @@ var RandomEvents = []RandomEvent{
 	{19, "太空變形蟲", false, 84, true, "", false},
 	{20, "太空水晶", false, 88, true, "", false},
 	{21, "太空巨龍", false, 92, true, "", false},
-	{22, "太空鰻", false, 96, true, "近似:用盤據型怪獸代打「封鎖」,分裂與「不攻擊殖民地」未建模", false},
+	{22, "太空鰻", false, 96, true, "獨立事件怪獸與 30 回合分裂已接；owner 8 初始航行仍為近似", false},
 	{23, "太空九頭蛇", false, 100, true, "", false},
 	{24, "超新星", false, 104, true, "", false},
 	{25, "時空異象", false, 108, true, "", false},
 	{26, "超空間獸", false, 112, true, "", false},
-	{27, "曲速漏斗", false, 116, false, "艦隊受困與脫困判定", false},
+	{27, "曲速漏斗", false, 116, true, "", false},
 	{28, "蟲洞", true, 120, true, "", false},
 	{29, "帝國滅亡", true, 124, true, "", true},
 	{30, "帝國壯大", true, 128, true, "", true},
-	{31, "排行榜播報", true, 132, false, "GNN 定期排名播報(非隨機事件)", true},
-	{32, "發現獵戶座", true, 136, false, "獵戶座星系與守護者", true},
-	{33, "擊敗安塔蘭", true, 140, true, "", true},
-	{34, "帝國投降", true, 144, true, "", true},
-	{35, "叛軍同化", true, 148, false, "叛亂殖民地機制", true},
+	{31, "排行榜播報", true, 132, true, "", true},
+	{32, "發現獵戶座", true, 136, true, "", true},
+	{33, "擊敗安塔蘭", true, 140, true, "1.31 setter 已證實；remake 觸發端接安塔蘭勝利", true},
+	{34, "帝國投降", true, 144, true, "資產 consumer 已依 1.31 接線；自動觸發評分仍為明示近似", true},
+	{35, "殖民地叛亂", true, 148, true, "1.31 setter 已證實；remake 觸發端接殖民地實際易手", true},
 }
 
 // RandomEventByID 依原版事件 id 取事件定義;id 越界回 nil。

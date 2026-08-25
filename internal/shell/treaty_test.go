@@ -66,6 +66,72 @@ func TestTreatyTargetUsesExecutableGovernmentAndTraderModifiers(t *testing.T) {
 	}
 }
 
+func TestAgreementValueUsesExecutableGoalFifthAndRemainderRoll(t *testing.T) {
+	current := -10
+	for turn := 1; turn <= 10; turn++ {
+		current = advanceAgreementValue(current, 10, func() int {
+			t.Fatal("可整除 5 的目標不應抽亂數")
+			return 1
+		})
+		if turn == 5 && current != 0 {
+			t.Fatalf("第 5 回合應損益兩平，got %d", current)
+		}
+	}
+	if current != 10 {
+		t.Fatalf("第 10 回合應到目標 10，got %d", current)
+	}
+
+	rolls := 0
+	if got := advanceAgreementValue(0, 12, func() int { rolls++; return 2 }); got != 3 {
+		t.Fatalf("goal=12 且 roll=2 應增加 2+1，got %d", got)
+	}
+	if got := advanceAgreementValue(0, 12, func() int { rolls++; return 3 }); got != 2 {
+		t.Fatalf("goal=12 且 roll=3 應只增加 2，got %d", got)
+	}
+	if rolls != 2 {
+		t.Fatalf("非整除目標每次應恰抽一次，got %d", rolls)
+	}
+	if got := advanceAgreementValue(20, 7, func() int {
+		t.Fatal("目前值高於目標時不應抽亂數")
+		return 1
+	}); got != 7 {
+		t.Fatalf("目標下降時應立即降到 7，got %d", got)
+	}
+}
+
+func TestAgreementDirectionsFollowExecutableDescendingSlotOrder(t *testing.T) {
+	s := NewDemoSession()
+	s.AIPlayers = s.AIPlayers[:2]
+	s.PlayerColonies[0].Population = 14 // base=7，讓每次都需要 remainder roll。
+	for i := range s.AIPlayers {
+		s.AIPlayers[i].Colonies[0].Population = 14
+		t := &s.AIPlayers[i].Treaty
+		t.TradeActive, t.ResearchActive = true, true
+		t.TradeTurns, t.ResearchTurns = 1, 1
+		t.PlayerTradeValue, t.PlayerResearchValue = -100, -100
+		t.AITradeValue, t.AIResearchValue = -100, -100
+	}
+	// 順序應為 AI1 T/R、AI0 T/R、Player→AI1 T/R、Player→AI0 T/R。
+	rolls := []int{1, 1, 5, 5, 1, 5, 5, 1}
+	pos := 0
+	s.advanceTreatiesWithRoller(func() int {
+		roll := rolls[pos]
+		pos++
+		return roll
+	})
+	if pos != len(rolls) {
+		t.Fatalf("擲骰次數=%d，預期 %d", pos, len(rolls))
+	}
+	if got := s.AIPlayers[1].Treaty; got.AITradeValue != -98 || got.AIResearchValue != -98 ||
+		got.PlayerTradeValue != -98 || got.PlayerResearchValue != -99 {
+		t.Fatalf("AI1／玩家方向順序不符：%+v", got)
+	}
+	if got := s.AIPlayers[0].Treaty; got.AITradeValue != -99 || got.AIResearchValue != -99 ||
+		got.PlayerTradeValue != -99 || got.PlayerResearchValue != -98 {
+		t.Fatalf("AI0／玩家方向順序不符：%+v", got)
+	}
+}
+
 func TestTradeAgreementUsesBestActiveOriginalTraderLeaderBonus(t *testing.T) {
 	leaders := []Leader{
 		{Name: "已解除", Level: 5, RawStatus: originalLeaderLimboStatus, Skills: []LeaderSkill{{ID: int(gamedata.SKILL_TRADER), Tier: 2}}},

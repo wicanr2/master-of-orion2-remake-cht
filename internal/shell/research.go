@@ -20,7 +20,7 @@ type ResearchOption struct {
 }
 
 // AvailableResearchTopics 回傳這一刻真的可以選的研究主題:**8 個領域各一個**,
-// 取該領域第一個尚未完成的主題(整條研究完的領域不出現)。
+// 取該領域第一個尚未完成的主題；走到底後仍提供可重複的 Hyper-Advanced。
 //
 // ============ 這裡先前是一份手挑的清單 ============
 //
@@ -53,7 +53,7 @@ func AvailableResearchTopics(s *GameSession) []ResearchOption {
 }
 
 // ResearchCost 回傳主題完成所需研究點(RP),取自 gamedata。套件級純函式,不吃版本規則
-// profile——Hyper-Advanced Lv1 主題(gamedata.IsHyperAdvancedTopic)一律回套件級硬編值
+// profile——Hyper-Advanced 第一級主題(gamedata.IsHyperAdvancedTopic)一律回套件級硬編值
 // 25000(= 現行 Profile15 行為)。畫面需要顯示「這局(可能是 1.3)實際要花多少 RP」時改用
 // (*GameSession).ResearchCostForDisplay。
 func ResearchCost(t gamedata.ResearchTopic) int {
@@ -61,14 +61,21 @@ func ResearchCost(t gamedata.ResearchTopic) int {
 }
 
 // ResearchCostForDisplay 同 ResearchCost,但套用這局遊戲的版本規則 profile(s.RuleProfile)——
-// Hyper-Advanced Lv1 主題(8 個共用同一成本的 TOPIC_HYPER_*)改讀
-// gamedata.HyperAdvancedCost(s.RuleProfile) 覆寫(1.3=15000/1.5=25000),其餘主題與 ResearchCost
+// Hyper-Advanced 主題改讀 profile 基礎值，再依原版 Player_Research_Cost_ @ 0xE1E96
+// 加上已完成 level×10000。gamedata.HyperAdvancedCost(s.RuleProfile) 提供
+// 1.3=15000／1.5=25000 的基礎值，其餘主題與 ResearchCost
 // 相同。是 gamedata.HyperAdvancedCost 註解點名的「顯示層接線」:資料層(ruleprofile.go)已備妥,
 // 這裡接進研究選單/帝國概況畫面,讓玩家在 1.3 局裡看到的成本真的是 1.3 值,不是永遠顯示 1.5
 // 硬編值再讓實際結算(RunResearchPhase)用不同數字扣款的顯示/結算不一致。
 func (s *GameSession) ResearchCostForDisplay(t gamedata.ResearchTopic) int {
 	if gamedata.IsHyperAdvancedTopic(t) {
-		return gamedata.HyperAdvancedCost(s.RuleProfile)
+		level := 0
+		if s.Player.HyperAdvancedLevels != nil {
+			level = s.Player.HyperAdvancedLevels[t]
+		} else if s.Player.CompletedTopics[t] {
+			level = 1 // 尚未經研究結算遷移的舊 JSON
+		}
+		return gamedata.HyperAdvancedRepeatedCost(gamedata.HyperAdvancedCost(s.RuleProfile), level)
 	}
 	return gamedata.ResearchChoiceFor(t).Cost
 }
@@ -80,8 +87,8 @@ func ResearchTopicName(t gamedata.ResearchTopic) string {
 	return gamedata.TopicEnglishName(t)
 }
 
-// PendingResearchChoice 回傳玩家「剛完成、可改選解鎖科技」的主題與其可選科技清單。
-// ok=false 表示目前沒有待決抉擇。供研究抉擇 UI 使用(MOO2 每主題數科技間抉擇)。
+// PendingResearchChoice 回傳目前 topic 在投入研究前尚待選定的 application。
+// 舊存檔也可能帶有一次「突破後待改選」狀態，ChooseResearchTech 會相容處理。
 func (s *GameSession) PendingResearchChoice() (topic gamedata.ResearchTopic, choices []gamedata.Technology, ok bool) {
 	if !s.Player.HasPendingChoice {
 		return 0, nil, false
@@ -90,12 +97,25 @@ func (s *GameSession) PendingResearchChoice() (topic gamedata.ResearchTopic, cho
 	return t, gamedata.ResearchChoiceFor(t).Choices, true
 }
 
-// ChooseResearchTech 把目前待決主題改選為 tech(須為合法選項),回傳是否成功。
+// ChooseResearchTech 選定目前正在研究的 application；尚未突破時不得提前解鎖。
+// 若讀到舊存檔的已完成 PendingChoice，才走突破後改選相容路徑。
 func (s *GameSession) ChooseResearchTech(tech gamedata.Technology) bool {
 	s.recordPlayerCommand(PlayerCommand{Name: CmdChooseResearch, Args: []int{int(tech)}})
-	ps, ok := engine.ApplyResearchChoice(s.Player, tech)
+	legacyCompletedChoice := s.Player.HasPendingChoice && s.Player.CompletedTopics[s.Player.PendingChoice]
+	var (
+		ps engine.PlayerState
+		ok bool
+	)
+	if s.Player.HasPendingChoice && !s.Player.CompletedTopics[s.Player.PendingChoice] {
+		ps, ok = engine.SelectResearchApplication(s.Player, s.Player.PendingChoice, tech)
+	} else {
+		ps, ok = engine.ApplyResearchChoice(s.Player, tech)
+	}
 	if ok {
 		s.Player = ps
+		if legacyCompletedChoice {
+			s.UpdatePlayerShipDesignsAfterTech()
+		}
 	}
 	return ok
 }
@@ -116,8 +136,54 @@ func (s *GameSession) SetResearchTopic(t gamedata.ResearchTopic) {
 		return
 	}
 	if s.Player.ResearchTopic == t {
+		s.preparePlayerResearchApplication()
 		return
 	}
 	s.Player.ResearchTopic = t
 	s.Player.ResearchProgress = 0
+	s.Player.ResearchApplication = 0
+	s.Player.HasResearchApplication = false
+	s.Player.PendingChoice = 0
+	s.Player.HasPendingChoice = false
+	s.preparePlayerResearchApplication()
+}
+
+// EnsurePlayerResearchApplication 補齊新局／舊存檔可能尚未建立的目前 application。
+// 回傳 true 代表一般玩家必須先經 UI 選擇，呼叫端不可先推進世界回合。
+func (s *GameSession) EnsurePlayerResearchApplication() bool {
+	s.preparePlayerResearchApplication()
+	return s.Player.HasPendingChoice && !s.Player.CompletedTopics[s.Player.PendingChoice]
+}
+
+func (s *GameSession) preparePlayerResearchApplication() {
+	ps := &s.Player
+	choice := gamedata.ResearchChoiceFor(ps.ResearchTopic)
+	if ps.ResearchTopic == 0 || ps.CompletedTopics[ps.ResearchTopic] || len(choice.Choices) == 0 ||
+		choice.ResearchAll || s.RaceCreative() {
+		ps.ResearchApplication = 0
+		ps.HasResearchApplication = false
+		ps.PendingChoice = 0
+		ps.HasPendingChoice = false
+		return
+	}
+	if ps.HasResearchApplication {
+		return
+	}
+	if len(choice.Choices) == 1 {
+		next, ok := engine.SelectResearchApplication(*ps, ps.ResearchTopic, choice.Choices[0])
+		if ok {
+			*ps = next
+		}
+		return
+	}
+	if s.RaceUncreative() {
+		idx := s.researchRandForTurn().Intn(len(choice.Choices))
+		next, ok := engine.SelectResearchApplication(*ps, ps.ResearchTopic, choice.Choices[idx])
+		if ok {
+			*ps = next
+		}
+		return
+	}
+	ps.PendingChoice = ps.ResearchTopic
+	ps.HasPendingChoice = true
 }

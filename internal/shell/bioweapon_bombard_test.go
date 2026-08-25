@@ -120,8 +120,8 @@ func TestBombard_BarrierShieldBlocksBioWeaponEntirely(t *testing.T) {
 
 // 屏障護盾若在**這一次**轟炸中被拆掉,孢子仍然進不去。
 //
-// 這守的是實作上的一個陷阱:建築吸收迴圈按建築名字母序拆建築,若等到孢子那一步才查
-// buildings,「護盾擋不擋得住」就變成取決於字母序有沒有先輪到它——那是假的精確度。
+// 這守的是實作上的一個陷阱：一般傷亡候選池可能在同輪摧毀屏障護盾；若等到孢子那一步
+// 才查 buildings，這輪已開始的投放會被錯誤改判成未受阻擋。
 func TestBombard_BarrierShieldDestroyedThisTurnStillBlocks(t *testing.T) {
 	s, starIdx, _ := newBioBombardSession(t, 20)
 	giveBioWeapon(t, s, gamedata.TECH_BIOTERMINATOR)

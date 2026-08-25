@@ -416,12 +416,13 @@ const (
 	GroundPlanetHitsPerPopFraction      = 1
 )
 
-// GroundBombHitsFromDamage 依「模擬 10 輪齊射後的總傷害」換算成 Orbital Combat Selection
+// GroundBombHitsFromDamage 將呼叫端已完成的戰略轟炸總傷害換算成 Orbital Combat Selection
 // 視窗顯示的轟炸命中(hit)數。手冊原文(Estimated Bomb Hits):「All remaining ships fire all
 // weapons 10 times, or as many times as there is ammo in 10 turns... and total damage is
 // calculated from it. This damage is divided by 100 to get the displayed number... The
 // maximum number of bomb hits for the fleet in orbit is 320.」除以 100 用整數除法(捨去);
-// 傷害總和本身(含光束/魚雷減半、電腦加成、飛彈命中率等)不在本函式範圍內,由呼叫端算好
+// 這段是 UI 估算說明；IDA 已證實 runtime `Strategic_Bombardment_` 固定三外圈。傷害總和本身
+// (含光束/魚雷減半、電腦加成、飛彈命中率等)不在本函式範圍內,由呼叫端算好
 // totalDamage 後傳入。
 func GroundBombHitsFromDamage(totalDamage int) int {
 	if totalDamage < 0 {
@@ -432,6 +433,16 @@ func GroundBombHitsFromDamage(totalDamage int) int {
 		return GroundMaxBombHitsPerFleet
 	}
 	return hits
+}
+
+// StrategicBombardmentHitsFromDamage 對應 Strategic_Bombardment_ @ 0x4257E 的 runtime
+// 回傳：快速戰鬥記錄 +0x1F 的累積值以 signed integer 除以 40。caller sub_4267B 將 AX
+// 直接寫入轟炸結果 record +3，與手冊介面的 /100 Estimated Bomb Hits 是不同用途。
+func StrategicBombardmentHitsFromDamage(totalDamage int) int {
+	if totalDamage <= 0 {
+		return 0
+	}
+	return totalDamage / 40
 }
 
 // GroundPlanetTotalHits 依 Planet Hits 表加總防守方(建築/儲存生產/人口/部隊)需要承受的
@@ -459,7 +470,7 @@ func GroundPlanetTotalHits(buildings int, storedProductionPositive bool, fullPop
 //   + ruleprofile.go(RuleProfile.DefenderCommandoBonus)。⚠ 誠實範圍:「regular commando
 //   bonus」基準值本身(2/3)手冊只以相對倍率描述,本專案直接當成最終加成點數,屬近似而非手冊
 //   獨立驗證值;shell 層(internal/shell/ground_invasion.go)只接了攻方(玩家 Leaders 有資料),
-//   守方(AI 無 Leaders 模型)仍是掛鉤未接,詳見該檔案與 RuleProfile 欄位註解。
+//   玩家與 AI 都由各自的 Leaders 清單供應；AI 清單由動態 offer／任命回合鏈建立。
 // - AI Ground Troops Bonus(MANUAL_150.html:「During ground invasion, the AI troops
 //   bonus/penalty was listed but not added to the sum... this bonus/penalty did already
 //   apply to the actual combat resolve.」)只確認該加成存在且已生效,未列出依難度分級的精確

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
@@ -226,6 +227,11 @@ func (s *GameSession) suppressRebellion(i, rebels int) {
 	c.UnassimilatedPop -= lost
 	if c.UnassimilatedPop < 0 {
 		c.UnassimilatedPop = 0
+	}
+	normalizeColonyJobsAfterPopulationLoss(c)
+	if f, w, sci, ok := engine.PopulationGroupPrisoners(*c); ok {
+		c.UnassimilatedFarmers, c.UnassimilatedWorkers, c.UnassimilatedScientists = f, w, sci
+		c.UnassimilatedPop = f + w + sci
 	}
 	s.recalcColonyMorale(i)
 }

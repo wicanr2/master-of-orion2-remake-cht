@@ -50,6 +50,7 @@ const (
 	MonsterDragon                // 太空巨龍
 	MonsterHydra                 // 太空海德拉
 	MonsterCrystal               // 太空水晶
+	MonsterEel                   // 太空鰻（只供隨機事件，不進一般守衛怪獸池）
 )
 
 // MonsterStats 是一種怪獸的戰鬥數值。
@@ -66,8 +67,87 @@ type MonsterStats struct {
 	// ⚠ **remake 估值**:手冊只給武器傷害,沒有給怪獸的結構/裝甲數字。
 	// 這裡依「手冊描述的威脅等級」排序給值,標明非手冊實據。
 	Structure int
+	// Armor 是 Load_Combat_Ship_ 經 sub_58387 取得的怪物專用裝甲上限。
+	Armor int
 	// Estimated 標記 Structure 是估值(非手冊/反編實據),供文件與 UI 誠實呈現。
 	Estimated bool
+}
+
+// MonsterWeaponMount 是原版 99-byte ShipDesign 的一個非空武器槽。
+type MonsterWeaponMount struct {
+	WeaponID, Count, Arc, Mods, Ammo int
+}
+
+const (
+	MonsterWeaponModHeavyMount        = 0x0002
+	MonsterWeaponModPointDefense      = 0x0004
+	MonsterWeaponModOverloadedTorpedo = 0x4000
+)
+
+// MonsterWeaponDamageRange 套用事件怪物 loader 的已證實 HV／PD raw mask。
+// 其他 raw bit 原樣保存，但不在此猜測語意。
+func MonsterWeaponDamageRange(m MonsterWeaponMount) (minDamage, maxDamage int, ok bool) {
+	w, ok := OrigWeaponByID(m.WeaponID)
+	if !ok || w.DamageMax <= 0 || m.Count <= 0 {
+		return 0, 0, false
+	}
+	minDamage, maxDamage = w.DamageMin, w.DamageMax
+	if m.Mods&MonsterWeaponModPointDefense != 0 {
+		minDamage, maxDamage = minDamage/2, maxDamage/2
+	}
+	if m.Mods&MonsterWeaponModHeavyMount != 0 {
+		minDamage, maxDamage = minDamage*3/2, maxDamage*3/2
+	}
+	if minDamage < 1 {
+		minDamage = 1
+	}
+	if maxDamage < minDamage {
+		maxDamage = minDamage
+	}
+	return minDamage, maxDamage, true
+}
+
+// MonsterWeaponQuickDamageRange 回傳沒有格距離的快速結算傷害。原版 Dragon
+// loader 在 ID 40 寫入 OVR raw 0x4000；快速結算沒有飛行格數，因此採 OVR 的
+// 近距 +50%，而不虛構平均距離。格子戰術不得呼叫本函式，以免 typed OVR 重複套用。
+func MonsterWeaponQuickDamageRange(m MonsterWeaponMount) (minDamage, maxDamage int, ok bool) {
+	minDamage, maxDamage, ok = MonsterWeaponDamageRange(m)
+	if !ok {
+		return 0, 0, false
+	}
+	if m.Mods&MonsterWeaponModOverloadedTorpedo != 0 {
+		minDamage = minDamage * 150 / 100
+		maxDamage = maxDamage * 150 / 100
+	}
+	return minDamage, maxDamage, true
+}
+
+// MonsterWeaponAlwaysHits 是手冊逐字標成 always hits／always strikes 的怪物武器。
+func MonsterWeaponAlwaysHits(weaponID int) bool {
+	return weaponID == 40 || weaponID == 43
+}
+
+// MonsterBlueprint 保存事件怪物（raw owner/type 10..14）的精確設計欄位。
+// 結構與裝甲是戰鬥載入後的兩個不同池；Specials 為五個原始位元組。
+type MonsterBlueprint struct {
+	RawType, Size, Shield, Drive, Speed, Computer, ArmorType int
+	Specials                                                 [5]byte
+	Weapons                                                  []MonsterWeaponMount
+	Picture, BaseCombatSpeed, Structure, Armor               int
+}
+
+var monsterBlueprints = map[SpaceMonster]MonsterBlueprint{
+	MonsterAmoeba:  {RawType: 10, Size: 3, Drive: 2, Speed: 1, Computer: 2, Weapons: []MonsterWeaponMount{{45, 2, 15, 0, 0}, {23, 5, 15, 0, 10}}, Picture: 8, BaseCombatSpeed: 10, Structure: 50, Armor: 750},
+	MonsterCrystal: {RawType: 11, Size: 4, Drive: 4, Speed: 1, Computer: 5, Weapons: []MonsterWeaponMount{{42, 1, 15, 2, 0}, {26, 5, 15, 0, 10}}, Picture: 9, BaseCombatSpeed: 10, Structure: 80, Armor: 2500},
+	MonsterDragon:  {RawType: 12, Size: 4, Drive: 6, Speed: 1, Computer: 5, Weapons: []MonsterWeaponMount{{41, 20, 15, 4, 0}, {40, 1, 15, 0x4000, 0}}, Picture: 10, BaseCombatSpeed: 18, Structure: 80, Armor: 2500},
+	MonsterEel:     {RawType: 13, Size: 3, Drive: 6, Speed: 1, Computer: 4, Weapons: []MonsterWeaponMount{{44, 2, 15, 0, 0}}, Picture: 11, BaseCombatSpeed: 23, Structure: 50, Armor: 1000},
+	MonsterHydra:   {RawType: 14, Size: 4, Drive: 2, Speed: 1, Computer: 2, Weapons: []MonsterWeaponMount{{43, 5, 15, 2, 0}}, Picture: 12, BaseCombatSpeed: 6, Structure: 80, Armor: 1500},
+}
+
+// MonsterBlueprintFor 回傳原版事件怪物藍圖；守護者不屬於 raw type 10..14。
+func MonsterBlueprintFor(m SpaceMonster) (MonsterBlueprint, bool) {
+	b, ok := monsterBlueprints[m]
+	return b, ok
 }
 
 // monsterStats 五種怪獸的資料。傷害值來自手冊 p.114 逐字;Structure 是 remake 估值。
@@ -75,17 +155,24 @@ var monsterStats = map[SpaceMonster]MonsterStats{
 	MonsterAmoeba: {
 		NameZH: "太空變形蟲", NameEN: "Space Amoeba",
 		DamageMin: 25, DamageMax: 50, // Caustic Slime:25-50 點包覆傷害
-		Structure: 60, Estimated: true,
+		Structure: 50, Armor: 750,
 	},
 	MonsterCrystal: {
 		NameZH: "太空水晶", NameEN: "Space Crystal",
 		DamageMin: 40, DamageMax: 80, // Crystal Ray:40-80 點
-		Structure: 90, Estimated: true,
+		Structure: 80, Armor: 2500,
+	},
+	MonsterEel: {
+		NameZH: "太空鰻", NameEN: "Space Eel",
+		// 手冊 p.180 明定太空鰻不攻擊殖民地／前哨站；30 回合分裂鏈已由
+		// sub_DB8D8 閉合；owner 8 藍圖的結構／裝甲與武器槽已由 IDA 閉合。
+		DamageMin: 0, DamageMax: 0,
+		Structure: 50, Armor: 1000,
 	},
 	MonsterHydra: {
 		NameZH: "太空海德拉", NameEN: "Space Hydra",
 		DamageMin: 30, DamageMax: 60, AlwaysHits: true, // Plasma Breath:必中,上限 60
-		Structure: 80, Estimated: true,
+		Structure: 80, Armor: 1500,
 	},
 	MonsterDragon: {
 		NameZH: "太空巨龍", NameEN: "Space Dragon",
@@ -93,7 +180,7 @@ var monsterStats = map[SpaceMonster]MonsterStats{
 		// remake 的快速結算沒有格子距離,取龍焰在中距離的有效值當單發傷害上限,
 		// 下限取相位眼——這個折衷是 remake 的,手冊兩種武器都逐字列在上面。
 		DamageMin: 10, DamageMax: 150, AlwaysHits: true,
-		Structure: 120, Estimated: true,
+		Structure: 80, Armor: 2500,
 	},
 	MonsterGuardian: {
 		NameZH: "獵戶座守護者", NameEN: "Guardian",

@@ -377,25 +377,18 @@ func ResolveBeamShot(in BeamShot) ShotResult {
 // 參數對照手冊/missile.go 出處:
 //   - hasAMR/amrRangeSquares:目標艦是否裝有反飛彈火箭(Anti-Missile Rockets)、與其
 //     距離(格,→ gamedata.MissileAMRRangeIndex →命中率)。
-//     ⚠ 2026-08-08:這裡原本寫著「現行 remake 的 SpecialOptions 尚未提供『反飛彈火箭』
-//     這個可造艦元件,呼叫端目前一律傳 hasAMR=false」——**第 64 項(武器傷害真表)已經把該元件補上了**,
-//     呼叫端也改成依目標艦是否裝載決定。註解比程式碼晚了三項才更新。
+//     呼叫端由目標艦的實際裝載決定。
 //   - defenderEvasionBonus:目標的飛彈閃避加成加總(ECM Jammer/Stabilizer/種族/艦員/
 //     統帥,各項手冊固定數值見 missile.go 的 MissileJammer*/MissileInertialStabilizer/
 //     MissileInertialNullifier/MissileShipDefenseRacialBonus/MissileCrew*/
-//     MissileHelmsmanEvasionBonus)。現行 remake 的艦艇設計/軍官系統尚未提供這些元件,
-//     呼叫端目前一律傳 0(TODO,待補上後從實際裝載/軍官推導)。
-//   - attackerScannerBonus:⚠ 2026-08-08(第 71 項(探針③內部函式))訂正。這裡原本寫著「現行 remake 未提供
-//     攻方掃描器(Scanner)…呼叫端一律傳 0(TODO)」——**那句話從一開始就不對**。手冊指的
-//     「best known scanner bonus of the attacker」是**掃描科技**(迅子 −20、中子 −40,各自寫在
-//     自己的條目裡),不是某個可造艦元件;而那三個掃描科技從 detection.go 建起來那天就在
-//     remake 裡了(bestPlayerScannerParsec 讀的正是它們)。缺的不是前置系統,是沒有人把
-//     同一個科技的第二個效果查出來。現在走 bestPlayerScannerJamReduction。
+//     MissileHelmsmanEvasionBonus)。呼叫端由 ECM、慣性元件、種族、艦員與 Helmsman
+//     技能加總，並由 buildCombatant 寫入實際戰鬥單位。
+//   - attackerScannerBonus:攻方最佳掃描科技的干擾減免，由 bestPlayerScannerJamReduction 取得。
 //   - hasECCM:舊入口仍可由呼叫端直接傳入；含改造的新入口
 //     ResolveMissileShotWithMods 會從 WeaponModCodesForWeapon 自動讀 ECCM。
 //     以上四項在「無任何裝備」時退化為手冊「若目標無任何閃避能力,預設100%命中」
 //     (gamedata.MissileDefaultHitChance)——這是手冊本身的基準情境,不是臆造值,恰好與
-//     現行武器/元件表(尚無任何閃避裝備)的現況一致。
+//     無裝備基準情境一致。
 //   - weaponMax:飛彈命中後的傷害。手冊只列固定「listed」傷害值(如「Nuclear Missile
 //     Damage lowered from 8 to 6」),沒有給出像 beam 命中裕度那樣的內插公式,故不套用
 //     beam 專用的 gamedata.DamageForHit(那需要 net-attack/hit-threshold,是命中判定
@@ -510,12 +503,12 @@ func ResolveMissileShotWithMods(
 	remainingArmor := armorHP
 	totalStructure, totalShield := 0, 0
 	damageMultiplier := gamedata.WeaponModMissileDamageMultiplier(mods, torpedo)
-	baseDamage := weaponMax
+	baseDamage := weaponMax * damageMultiplier / 100
 	if torpedo {
 		baseDamage = gamedata.TorpedoDamageAfterRange(weaponName, baseDamage, amrRangeSquares,
 			gamedata.WeaponModNoRangeDissipation(mods))
 	}
-	damage := baseDamage * damageMultiplier / 100
+	damage := baseDamage
 	armorPiercing := gamedata.WeaponModMissileArmorPiercing(mods)
 	hit := false
 	for i := 0; i < warheads; i++ {
@@ -564,9 +557,9 @@ func ResolveMissileShotWithMods(
 // 豁免,故用 bypassShieldAndArmor 供 Spatial-Compressor 類武器啟用該豁免。
 // 手冊「minimum damage of 1 against ships」,aggD 不足 1 時夾為 1。
 //
-// 現行 WeaponOptions(session.go)沒有任何武器分類到 WeaponKindSpherical(見
-// weapon_kind.go 的核對說明),此函式目前無實際呼叫路徑會用到,只是先備好、有測試的解算
-// 函式,供未來新增球形武器元件時串接。
+// 現行玩家設計與事件怪物均有實際消費端；Plasma Flux 已由 sub_ADE18 閉合自己的
+// 範圍、距離衰減及尺寸雙擲值，先在 monster_special.go 算出合計傷害再送入本函式。
+// Caustic Slime 因為是跨回合四面狀態，也走 monster_special.go。
 func ResolveSphericalShot(aggD, shieldReduction, armorHP int, hardShield, bypassShieldAndArmor bool) ShotResult {
 	if aggD < 1 {
 		aggD = 1

@@ -11,6 +11,12 @@ const (
 	growthFactor1 = 2000 // FACTOR1(growth_formula_factor 預設)
 	housingFactor = 40   // FACTOR2(housing_formula_factor 預設)
 	MaxPopulation = 42   // 人口硬上限(patch 1.5)
+
+	// PopulationGrowthPointsPerUnit 是累積成一個遊戲人口單位所需的成長點數。
+	// 官方 patch 1.50 手冊把複製中心的 +100 設定值明列為 +100k；一個人口單位是
+	// 1,000k，因此門檻為 1,000 點。完整證據見 docs/re/population-growth-scale-audit-20260824.md。
+	PopulationGrowthPointsPerUnit = 1000
+	CloningCenterGrowthPoints     = 100
 )
 
 // ColonyBaseGrowth 回傳基礎成長率 a(未計獎金),手冊公式:

@@ -19,13 +19,13 @@ func componentUnlockedFor(ps engine.PlayerState, c Component) bool {
 	if c.Tech == gamedata.TOPIC_STARTING_TECH {
 		return true
 	}
-	if ps.CompletedTopics == nil || !ps.CompletedTopics[c.Tech] {
-		return false
+	if c.UnlockTech == gamedata.TECH_NONE {
+		return ps.CompletedTopics != nil && ps.CompletedTopics[c.Tech]
 	}
-	if c.UnlockTech == gamedata.TECH_NONE || ps.ExplicitChoice == nil || !ps.ExplicitChoice[c.Tech] {
+	if playerStateKnowsTech(ps, c.Tech, c.UnlockTech) {
 		return true
 	}
-	return ps.ChosenTech != nil && ps.ChosenTech[c.Tech] == c.UnlockTech
+	return false
 }
 
 // bestUnlockedWeaponValue 掃描 profile 版本規則下的武器清單(BuildWeaponOptions),在指定
@@ -40,15 +40,8 @@ func componentUnlockedFor(ps engine.PlayerState, c Component) bool {
 // 在「什麼都還沒解鎖」這個邊界情況下,合理的預設就是最基礎的雷射/核飛彈,不是 0 火力。ok 只
 // 作誠實旗標供測試/未來 UI 判斷「這是不是真解鎖出來的值」,不影響 value/space 的計算結果。
 //
-// ⚠ 誠實記錄(現況邊界,非本函式引入的問題):NewDemoSession 開局
-// (buildDemoAIOpponents→newHomeworldPlayerState)AI 的 CompletedTopics 全程只有
-// TOPIC_STARTING_TECH/TOPIC_ENGINEERING,不含任何武器科技主題(雷射所在的 TOPIC_PHYSICS
-// 等)——也就是說,demo 對局裡 AI 從頭到尾都會落到這條 fallback 分支(ok 恆為 false),不會
-// 真的解鎖到雷射/電漿砲,因為 AI 目前沒有研究進度推進機制(見 spy.go 唯一會寫入
-// CompletedTopics 的路徑)。這不是本函式的 bug,是既有 AI 資料模型的既定限制——「科技變強讓
-// 基地變強」這個設計效果因此在 demo 對局裡目前只能靠單元測試手動建構一個 CompletedTopics
-// 含 TOPIC_PLASMA_PHYSICS 的 PlayerState 驗證,無法在 NewDemoSession 的自然對局流程裡觀察到
-// (TODO,超出本輪範圍:AI 需要真正的研究進度推進機制才能讓這條路徑在正常遊戲裡被走到)。
+// ok=false 只代表目前沒有已解鎖的同類武器；AI 研究會由 advanceAIResearch
+// 在正常回合中推進 CompletedTopics，所以武器與軌道防禦戰力會隨對局進展提升。
 func bestUnlockedWeaponValue(ps engine.PlayerState, profile gamedata.RuleProfile, kind WeaponKind) (value, space int, ok bool) {
 	options := BuildWeaponOptions(profile)
 	bestValue, bestSpace := -1, 0
@@ -144,13 +137,7 @@ func groundRifleTopic(tech gamedata.Technology) (gamedata.ResearchTopic, bool) {
 // CompletedTopics/ExplicitChoice/ChosenTech——判定規則與 componentUnlockedFor 一致(主題
 // 完成、未明確抉擇 → 視為解鎖;已明確抉擇 → 需選中該科技),只是省去「元件」這層。
 func groundEquipTechOwned(ps engine.PlayerState, topic gamedata.ResearchTopic, tech gamedata.Technology) bool {
-	if ps.CompletedTopics == nil || !ps.CompletedTopics[topic] {
-		return false
-	}
-	if ps.ExplicitChoice == nil || !ps.ExplicitChoice[topic] {
-		return true
-	}
-	return ps.ChosenTech != nil && ps.ChosenTech[topic] == tech
+	return playerStateKnowsTech(ps, topic, tech)
 }
 
 // hasPoweredArmorFor 回傳 ps 是否已擁有 Powered Armor(TOPIC_ROBOTICS 抉擇),供
@@ -306,12 +293,18 @@ func (s *GameSession) hasPoweredArmor() bool {
 	return hasPoweredArmorFor(s.Player)
 }
 
-// aiMarineForce 回傳某 AI 對手陸戰隊單位的 force 加成。⚠ 簡化:AIOpponent 目前未追蹤種族
-// 選擇,故只計裝甲/裝備科技加成,不套種族/Low-G/Subterranean(這些本來就只有極少數種族有
-// 明確數字,詳見 playerMarineForce)。
+// aiMarineForce 回傳 AI 自己的陸戰隊 force：科技、種族 Ground Combat 與 Low-G
+// 都從該 AIOpponent 取得，不再沿用玩家數值。
 func aiMarineForce(a AIOpponent) int {
-	return groundArmorBonusFor(a.Player) + groundRifleBonusFor(a.Player) +
+	force := groundArmorBonusFor(a.Player) + groundRifleBonusFor(a.Player) +
 		groundEquipmentBonusFor(a.Player)
+	if idx := aiRaceIndex(a); idx >= 0 && idx < len(Races) {
+		force += Races[idx].GroundCombatBonus
+	}
+	if aiRaceHasTrait(a, gamedata.TRAIT_LOW_G) {
+		force = gamedata.GroundApplyLowGPenalty(force)
+	}
+	return force
 }
 
 // --- Marine Barracks 生成(EndTurn 每回合補充,見 GameSession.EndTurn 呼叫 advanceMarines) ---
@@ -660,6 +653,8 @@ func (s *GameSession) MindControlColony(starIdx int) GroundInvasionResult {
 	captured.Population = population
 	captured.UnassimilatedPop = 0
 	captured.AssimilationProgress = 0
+	captured.UnassimilatedFarmers, captured.UnassimilatedWorkers, captured.UnassimilatedScientists = 0, 0, 0
+	engine.ClearPopulationGroupPrisoners(&captured)
 	planet := -1
 	if colonyIdx < len(aiPlayer.ColonyPlanets) {
 		planet = aiPlayer.ColonyPlanets[colonyIdx]

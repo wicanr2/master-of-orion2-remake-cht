@@ -33,8 +33,8 @@ package gamedata
 //
 // ============ 兩件這張表講清楚、而手冊沒有的事 ============
 //
-//  1. **飛彈的 Size 是 0。** 手冊只給了彈架的 10/20/30/35/40,而 remake 先前對四種飛彈
-//     一律估 10。這張表說飛彈**本體**不佔格——佔格在彈架上,那是另一張表。
+//  1. **飛彈的 Size 是 0。** 飛彈本體不佔格；艦艇設計由 MissileRackBaseValue 套用
+//     2/5/10/15/20 發彈架的 10/20/30/35/40 成本與佔格。
 //     所以 remake 那個 10 既沒有被證實也沒有被推翻,它是**建模取捨**,標記已改。
 //  2. **編號 40..45 沒有解鎖科技。** 那六筆是安塔蘭/太空怪物專用武器(研究不到),
 //     remake 目前沒有它們,也不該有——玩家造不出來。
@@ -116,6 +116,14 @@ var OrigWeaponTable = []OrigWeapon{
 	{ID: 43, Tech: TECH_NONE, Cat: WeaponCatBeam, Ammo: 255, Size: 50, Cost: 75, DamageMin: 60, DamageMax: 60},
 	{ID: 44, Tech: TECH_NONE, Cat: WeaponCatSpecial, Ammo: 255, Size: 250, Cost: 100, DamageMin: 10, DamageMax: 40},
 	{ID: 45, Tech: TECH_NONE, Cat: WeaponCatSpecial, Ammo: 255, Size: 300, Cost: 100, DamageMin: 25, DamageMax: 50},
+}
+
+// OrigWeaponByID 依原版設計槽的武器編號查表；超界回 false。
+func OrigWeaponByID(id int) (OrigWeapon, bool) {
+	if id < 0 || id >= len(OrigWeaponTable) || OrigWeaponTable[id].ID != id {
+		return OrigWeapon{}, false
+	}
+	return OrigWeaponTable[id], true
 }
 
 // OrigWeaponByTech 依解鎖科技查原版武器紀錄;查無(或 TECH_NONE)回 (零值, false)。

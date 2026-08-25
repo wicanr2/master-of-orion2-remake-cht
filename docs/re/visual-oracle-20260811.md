@@ -52,4 +52,4 @@
 
 1. 原版議會／安塔蘭 10／55 幀的**時間曲線**尚未以 DOSBox／實機錄影逐幀量測；目前是資產幀序正確、時間比例可玩的 remake 實作。
 2. `CMBTSHP` 的**標準 raw picture 映射已由 `sub_30062 @ 0x30062` 證實**；沒有 raw picture 的抽象敵艦仍使用視覺 fallback。`sub_3F5F1`／`sub_3F628` 證實 16 向 heading 與最短 ±1 轉向，但 20 frame 的原版 timer／停留曲線仍待 runtime。
-3. 地面戰的兩次 `Random(100)` 比較、AI 駐軍裝甲／陸戰隊／民兵、戰後駐軍回寫與被俘人口保留已接入；`Determine_Event @ 0x22D57` 的極值排除／差平方權重、`sub_586D4 @ 0x586D4` 的反覆減半抽樣、`sub_3868F` 的爆炸 roll／20 點連鎖／引擎潛勢也已建立純 oracle。事件 raw score 來源、爆炸 `sub_39985` 的完整旗標／行星消費與原版全局 save seed 尚未映射，不把它們宣稱成完整 runtime parity。
+3. 地面戰的兩次 `Random(100)` 比較、AI 駐軍裝甲／陸戰隊／民兵、戰後駐軍回寫與被俘人口保留已接入；`sub_22D57 @ 0x22D57` 的總人口極值排除／差平方權重、`sub_586D4 @ 0x586D4` 的反覆減半抽樣也已建立純 oracle。`sub_3868F` 的爆炸 roll／20 點連鎖／引擎潛勢屬戰鬥／殖民地爆炸鏈，已證實不被隨機事件 8 呼叫；其 `sub_39985` 完整旗標／行星消費與原版全局 save seed尚未映射，不把它們宣稱成完整 runtime parity。

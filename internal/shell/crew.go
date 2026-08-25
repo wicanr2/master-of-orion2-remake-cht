@@ -17,11 +17,10 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 //
 // ============ 誠實留白 ============
 //
-//   - **只有玩家的船有艦員經驗。** AI 的艦隊在 remake 裡是每回合現生的戰力值
-//     (`genEnemyFleet`),沒有持久的船,自然沒有可以累積經驗的對象。
-//     這是 AI 模型的缺口,不是這個系統沒接。
-//   - 登艦戰加成(`ShipCrewBoardingBonus`)抄進 gamedata 了但**沒有呼叫端**:
-//     remake 還沒有登艦戰。抄它是為了讓下次有人接登艦戰時不必再翻一次手冊。
+//   - AI 的單一主力艦隊也走同一個每回合／太空學院／Instructor 累積；AI 尚未支援多艦隊，
+//     所有實艦共用主力艦隊所在星。
+//   - `ShipCrewBoardingBonus` 已接入快速與格子戰術登艦；攻守方各自使用所屬帝國的
+//     種族、科技、Commando／Security 艦隊最大值。
 //   - 手冊說經驗來自「turn **in space**」。remake 沒有「船在港內 vs 在太空」的區別
 //     ——所有船都在艦隊裡、艦隊永遠在某顆星上。所以這裡的實作是「每回合每艘船 +1」,
 //     與手冊在 remake 的模型下等價,但如果之後加了船塢/駐港狀態,這裡要跟著改。
@@ -91,7 +90,7 @@ func (s *GameSession) newShipCrewXP(colonyIdx int) int {
 	return xp
 }
 
-// advanceCrewExperience 每回合替所有船加經驗。
+// advanceCrewExperience 每回合替所有船加經驗，最後依原版 sub_149D5 夾到 500。
 //
 // 手冊 p.121:每回合在太空 +1;p.97:艦隊所在星系每有一座太空學院再 +1。
 func (s *GameSession) advanceCrewExperience() {
@@ -106,25 +105,53 @@ func (s *GameSession) advanceCrewExperience() {
 			gain += s.spaceAcademiesAt(f.AtStar) * gamedata.SpaceAcademyXPPerTurn
 		}
 		for j := range f.Ships {
-			f.Ships[j].CrewXP += gain
+			f.Ships[j].CrewXP = gamedata.CrewXPAfterTurnGain(f.Ships[j].CrewXP, gain)
+		}
+	}
+	for i := range s.AIPlayers {
+		a := &s.AIPlayers[i]
+		gain := gamedata.CrewXPPerTurnInSpace + leaderInstructorXPBonus(a.Leaders)
+		if a.FleetETA <= 0 {
+			star := aiFleetStar(*a)
+			for ci, colonyStar := range a.ColonyStars {
+				if colonyStar == star && ci < len(a.ColonyBuildings) && a.ColonyBuildings[ci][spaceAcademyName] {
+					gain += gamedata.SpaceAcademyXPPerTurn
+				}
+			}
+		}
+		for j := range a.Ships {
+			a.Ships[j].CrewXP = gamedata.CrewXPAfterTurnGain(a.Ships[j].CrewXP, gain)
 		}
 	}
 }
 
-// awardBattleCrewXP 把一場勝仗的經驗發給倖存的船。
+// awardBattleCrewXP 把一場勝仗的經驗發給指定的倖存參戰艦。
 //
-// destroyedSizeClasses 是被擊沉的敵艦艦體等級(1–6);換算見 gamedata.CrewBattleXP
-// (總和折半、捨去、最少 1)。輸掉的仗不給——手冊寫的是「Each battle **won**」。
-func (s *GameSession) awardBattleCrewXP(destroyedSizeClasses []int) int {
-	xp := gamedata.CrewBattleXP(destroyedSizeClasses)
-	if xp <= 0 {
+// destroyedHullClassSum 是被摧毀敵艦的 1-based 艦體級總和；eligible 使用 Fleet.Ships
+// 當下索引。sub_4B184 只寫 winner-side 且仍連到持久 Ship record 的 battle record，
+// 因此不能把沒有參戰的殖民船／前哨船也一起升級。
+func (s *GameSession) awardBattleCrewXP(destroyedHullClassSum int, eligible map[int]bool) int {
+	if len(eligible) == 0 {
 		return 0
 	}
+	xp := gamedata.CrewBattleXPFromDestroyedHullClassSum(destroyedHullClassSum)
 	f := s.Fleet()
 	for j := range f.Ships {
-		f.Ships[j].CrewXP += xp
+		if eligible[j] {
+			f.Ships[j].CrewXP += xp
+		}
 	}
 	return xp
+}
+
+func hullClassSum(classes []int) int {
+	sum := 0
+	for _, class := range classes {
+		if class > 0 {
+			sum += class
+		}
+	}
+	return sum
 }
 
 // shipSizeClassFromStrength 把 remake 的戰力值換回手冊的艦體等級(1–6)。

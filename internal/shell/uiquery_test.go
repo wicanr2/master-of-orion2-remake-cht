@@ -8,7 +8,7 @@ import (
 
 // 同化進度查得出來,而且**會隨回合遞減**。
 //
-// `gamedata.AssimilationProgressNeeded` 的檔頭寫著它是為了 UI 顯示而抽出來的
+// 同化 raw 進度的 ETA 必須由 UI 查詢路徑實際消費
 // ——「一個只在背景默默跑的機制對玩家等於不存在」。那支函式抽出來之後一直沒有呼叫端。
 func TestAssimilationRemainingTurnsCountsDown(t *testing.T) {
 	s := NewDemoSession()

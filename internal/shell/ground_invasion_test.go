@@ -604,11 +604,13 @@ func newFleetAtAISessionForAI(t *testing.T, aiIdx int) (*GameSession, int) {
 	return s, starIdx
 }
 
-// TestBuildDemoAIOpponents_CommandoLeadersByRace 驗證 buildDemoAIOpponents 依種族性格指派的
-// 開局固定 Commando 守將(#5,見 AIOpponent.Leaders 與 demoAIOpponentSetup.commandoTier 欄位
-// 註解的誠實近似說明):布拉西人(AIPlayers[2])Tier2、姆瑞森人(AIPlayers[1])Tier1、
-// 席隆人(AIPlayers[0])無指揮官領袖。
-func TestBuildDemoAIOpponents_CommandoLeadersByRace(t *testing.T) {
+func testAICommandoLeader(name string, tier int) []Leader {
+	return []Leader{{Name: name, Skill: "指揮官", Level: tier * 2,
+		Skills: []LeaderSkill{{ID: int(gamedata.SKILL_COMMANDO), Tier: tier}}}}
+}
+
+// 原版由逐回合英雄 offer 建立 AI 領袖；開局不得再依種族固定贈送 Commando。
+func TestBuildDemoAIOpponentsStartsWithoutInventedLeaders(t *testing.T) {
 	s := NewDemoSession()
 	if len(s.AIPlayers) != 3 {
 		t.Fatalf("預期 3 個 AI 對手,got %d", len(s.AIPlayers))
@@ -616,19 +618,18 @@ func TestBuildDemoAIOpponents_CommandoLeadersByRace(t *testing.T) {
 	cases := []struct {
 		idx      int
 		wantName string
-		wantTier int
 	}{
-		{0, "AI (席隆人)", 0},
-		{1, "AI (姆瑞森人)", 1},
-		{2, "AI (布拉西人)", 2},
+		{0, "AI (席隆人)"},
+		{1, "AI (姆瑞森人)"},
+		{2, "AI (布拉西人)"},
 	}
 	for _, c := range cases {
 		ai := s.AIPlayers[c.idx]
 		if ai.Name != c.wantName {
 			t.Fatalf("AIPlayers[%d].Name = %q,want %q", c.idx, ai.Name, c.wantName)
 		}
-		if got := commandoLeaderTier(ai.Leaders); got != c.wantTier {
-			t.Fatalf("%s 的 commandoLeaderTier = %d,want %d(Leaders=%+v)", c.wantName, got, c.wantTier, ai.Leaders)
+		if len(ai.Leaders) != 0 {
+			t.Fatalf("%s 開局不應憑空獲得領袖：%+v", c.wantName, ai.Leaders)
 		}
 	}
 }
@@ -649,6 +650,8 @@ func TestInvadeColony_DefenderCommandoLowersAttackerWinRate(t *testing.T) {
 			s.Leaders = nil // 排除攻方 commando 干擾
 			if clearDefenderLeaders {
 				s.AIPlayers[bulrathiIdx].Leaders = nil
+			} else {
+				s.AIPlayers[bulrathiIdx].Leaders = testAICommandoLeader("測試守將", 2)
 			}
 			res := s.InvadeColony(starIdx)
 			if !res.Ok {
@@ -683,6 +686,7 @@ func TestInvadeColony_DefenderCommandoVersionDifference(t *testing.T) {
 			s.Turn = i + 1
 			s.Fleet().Marines = 5
 			s.Leaders = nil // 排除攻方 commando 干擾,只看守方版本差異
+			s.AIPlayers[bulrathiIdx].Leaders = testAICommandoLeader("測試守將", 2)
 			s.RuleProfile = profile
 			res := s.InvadeColony(starIdx)
 			if !res.Ok {
@@ -710,8 +714,8 @@ func TestInvadeColony_DefenderCommandoVersionDifference(t *testing.T) {
 	}
 }
 
-// TestInvadeColony_NoDefenderCommandoForPsilon 驗證席隆人(AIPlayers[0],commandoTier=0,無指揮官
-// 領袖)入侵時守方無 Commando 加成(回歸行為與接線前一致):清空/保留其 Leaders(本來就是 nil)
+// TestInvadeColony_NoDefenderCommandoForPsilon 驗證沒有動態聘到指揮官的 AI
+// 入侵時守方無 Commando 加成：清空／保留其空 Leaders
 // 不應造成任何勝率差異。
 func TestInvadeColony_NoDefenderCommandoForPsilon(t *testing.T) {
 	const n = 100

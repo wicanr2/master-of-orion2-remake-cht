@@ -1,6 +1,9 @@
 package shell
 
-import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+import (
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+)
 
 // race_boolean_traits.go:把原版特性陣列裡的**布林特性**接進遊戲。
 //
@@ -36,8 +39,6 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 //
 // ============ 誠實留白 ============
 //
-//   - **魅力的同化加速仍然不生效。** 外交 +50% 已由 session.raceDiploBonusPct 接線；
-//     手冊只寫同化「easily」,沒給數字,所以同化部分不臆造。
 //   - **跨維度/母星品質仍受現有星球生成模型限制。** 幸運、全知、匿蹤艦、心靈感應
 //     已在事件、星圖偵測、外交／諜報與殖民地行動入口接線；跨維度與母星品質不在本輪。
 
@@ -64,8 +65,8 @@ func (s *GameSession) RaceWarlord() bool { return s.raceHasTrait(gamedata.TRAIT_
 // RaceRepulsive 回報是否為惹人厭種族(矽基或客製選項):同化速度減半。
 func (s *GameSession) RaceRepulsive() bool { return s.raceHasTrait(gamedata.TRAIT_REPULSIVE) }
 
-// RaceCharismatic 回報是否為魅力種族(人類或客製選項)。外交 +50% 已有明確手冊數字並接線；
-// 同化「easily」沒有數字,所以同化部分仍不臆造。
+// RaceCharismatic 回報是否為魅力種族(人類或客製選項)。外交 +50% 與原版
+// sub_E3456 證實的同化速率加倍均已接線。
 func (s *GameSession) RaceCharismatic() bool { return s.raceHasTrait(gamedata.TRAIT_CHARISMATIC) }
 
 // RaceTolerant 回報是否為寬容種族(矽基或客製選項):不必花產能清污染。
@@ -97,8 +98,8 @@ func (s *GameSession) RaceUncreative() bool { return s.raceHasTrait(gamedata.TRA
 // cruiser 以上艦艇的殖民地心靈控制行動。
 func (s *GameSession) RaceTelepathic() bool { return s.raceHasTrait(gamedata.TRAIT_TELEPATHIC) }
 
-// RaceLucky 回報是否為幸運種族。幸運種族不會抽到已實作的壞事件；好事件池
-// 的機率自然提高，與原版「no random disasters / greater chance good events」一致。
+// RaceLucky 回報是否為幸運種族。一般壞事件選中 Lucky 時取消；另有逐回合累積的
+// 額外好事件擲骰，見 events.go 與 docs/spec/lucky-events.md。
 func (s *GameSession) RaceLucky() bool { return s.raceHasTrait(gamedata.TRAIT_LUCKY) }
 
 // RaceOmniscience 回報是否為全知種族。星圖會在開局直接揭露所有星球資料，
@@ -134,6 +135,104 @@ func boolTraitBonus(active bool, value int) int {
 	return 0
 }
 
+func raceGravityForTraits(lowG, highG bool) gamedata.PlanetGravity {
+	if highG { // sub_DDF2C 先判 +0x8AA High-G，再判 +0x8A9 Low-G。
+		return gamedata.HEAVY_G
+	}
+	if lowG {
+		return gamedata.LOW_G
+	}
+	return gamedata.NORMAL_G
+}
+
+type colonistProductionProfile struct {
+	food, industry, research int
+	gravity                  gamedata.PlanetGravity
+	gravityImmune            bool
+	aquatic                  bool
+	cybernetic               bool
+	lithovore                bool
+	tolerant                 bool
+	subterranean             bool
+	growth                   int
+}
+
+func (s *GameSession) playerColonistProductionProfile() colonistProductionProfile {
+	p := colonistProductionProfile{gravity: raceGravityForTraits(
+		s.raceHasTrait(gamedata.TRAIT_LOW_G), s.raceHasTrait(gamedata.TRAIT_HIGH_G)),
+		aquatic: s.raceHasTrait(gamedata.TRAIT_AQUATIC), tolerant: s.RaceTolerant(),
+		cybernetic: s.RaceCybernetic(), lithovore: s.RaceLithovore(),
+		subterranean: s.raceHasTrait(gamedata.TRAIT_SUBTERRANEAN), growth: s.raceGrowthPct}
+	if s.RaceIndex >= 0 && s.RaceIndex < len(Races) {
+		r := Races[s.RaceIndex]
+		p.food, p.industry, p.research = r.FoodBonus, r.IndBonus, r.ResBonus
+	} else {
+		p.food = int(s.CustomRaceRuntimeTraits[gamedata.TRAIT_FARMING])
+		p.industry = int(s.CustomRaceRuntimeTraits[gamedata.TRAIT_INDUSTRY])
+		p.research = int(s.CustomRaceRuntimeTraits[gamedata.TRAIT_SCIENCE])
+	}
+	return p
+}
+
+func aiColonistProductionProfile(a AIOpponent) colonistProductionProfile {
+	p := colonistProductionProfile{gravity: gamedata.NORMAL_G}
+	idx := aiRaceIndex(a)
+	if idx < 0 || idx >= len(Races) {
+		return p
+	}
+	r := Races[idx]
+	p.food, p.industry, p.research = r.FoodBonus, r.IndBonus, r.ResBonus
+	p.gravity = raceGravityForTraits(aiRaceHasTrait(a, gamedata.TRAIT_LOW_G), aiRaceHasTrait(a, gamedata.TRAIT_HIGH_G))
+	p.aquatic = aiRaceHasTrait(a, gamedata.TRAIT_AQUATIC)
+	p.cybernetic = aiRaceHasTrait(a, gamedata.TRAIT_CYBERNETIC)
+	p.lithovore = aiRaceHasTrait(a, gamedata.TRAIT_LITHOVORE)
+	p.tolerant = aiRaceHasTrait(a, gamedata.TRAIT_TOLERANT)
+	p.subterranean = aiRaceHasTrait(a, gamedata.TRAIT_SUBTERRANEAN)
+	p.growth = r.GrowthPct
+	return p
+}
+
+func syncOwnerPopulationGroup(c *engine.ColonyState, slot int, slotKnown bool, p colonistProductionProfile, cacheAlreadyIncludesProfile bool) {
+	if c == nil {
+		return
+	}
+	if c.OwnerRaceProfileKnown {
+		c.FoodPerFarmer += p.food - c.OwnerFoodBonus
+		c.FoodPerFarmer += gamedata.ClimateFoodPerFarmer(gamedata.RaceFoodClimate(c.Climate, p.aquatic)) -
+			gamedata.ClimateFoodPerFarmer(gamedata.RaceFoodClimate(c.Climate, c.Aquatic))
+		c.IndustryPerWorker += p.industry - c.OwnerIndustryBonus
+		c.ResearchPerScientist += p.research - c.OwnerResearchBonus
+	} else if !cacheAlreadyIncludesProfile {
+		c.FoodPerFarmer += p.food
+		c.IndustryPerWorker += p.industry
+		c.ResearchPerScientist += p.research
+	}
+	c.OwnerFoodBonus, c.OwnerIndustryBonus, c.OwnerResearchBonus = p.food, p.industry, p.research
+	c.OwnerRaceProfileKnown = true
+	c.OwnerRaceSlot, c.OwnerRaceSlotKnown = slot, slotKnown
+	if len(c.PopulationGroups) == 0 && c.Farmers+c.Workers+c.Scientists == c.Population {
+		c.PopulationGroups = []engine.PopulationGroup{{
+			RaceSlot: slot, RaceSlotKnown: slotKnown, Farmers: c.Farmers, Workers: c.Workers, Scientists: c.Scientists,
+			PrisonerFarmers: c.UnassimilatedFarmers, PrisonerWorkers: c.UnassimilatedWorkers,
+			PrisonerScientists: c.UnassimilatedScientists, FoodBonus: p.food, IndustryBonus: p.industry,
+			ResearchBonus: p.research, Gravity: p.gravity, Aquatic: p.aquatic,
+			Cybernetic: p.cybernetic, Lithovore: p.lithovore, ProfileKnown: true,
+			GravityImmune: p.gravityImmune, Tolerant: p.tolerant, Subterranean: p.subterranean,
+			GrowthBonusPercent: p.growth,
+		}}
+	}
+	for i := range c.PopulationGroups {
+		g := &c.PopulationGroups[i]
+		if slotKnown && g.RaceSlotKnown && g.RaceSlot == slot {
+			g.FoodBonus, g.IndustryBonus, g.ResearchBonus = p.food, p.industry, p.research
+			g.Gravity, g.Aquatic, g.ProfileKnown = p.gravity, p.aquatic, true
+			g.Cybernetic, g.Lithovore = p.cybernetic, p.lithovore
+			g.GravityImmune, g.Tolerant, g.Subterranean = p.gravityImmune, p.tolerant, p.subterranean
+			g.GrowthBonusPercent = p.growth
+		}
+	}
+}
+
 // raceSpyBonusForActions 是玩家每次間諜行動使用的完整種族池：既有的
 // TRAIT_SPYING 數值加成加上心靈感應手冊明列的 +10%。
 func (s *GameSession) raceSpyBonusForActions() int {
@@ -154,12 +253,21 @@ func (s *GameSession) syncRaceEngineFields() {
 	cybernetic := s.RaceCybernetic()
 	aquatic := s.raceHasTrait(gamedata.TRAIT_AQUATIC)
 	subterranean := s.raceHasTrait(gamedata.TRAIT_SUBTERRANEAN)
+	raceGravity := raceGravityForTraits(s.raceHasTrait(gamedata.TRAIT_LOW_G), s.raceHasTrait(gamedata.TRAIT_HIGH_G))
+	profile := s.playerColonistProductionProfile()
 	for i := range s.PlayerColonies {
 		s.PlayerColonies[i].TolerantRace = tolerant
 		s.PlayerColonies[i].Lithovore = lithovore
 		s.PlayerColonies[i].Cybernetic = cybernetic
-		s.PlayerColonies[i].Aquatic = aquatic
 		s.PlayerColonies[i].Subterranean = subterranean
+		s.PlayerColonies[i].RaceGravity = raceGravity
+		s.PlayerColonies[i].RaceGravityKnown = true
+		slot, known := 0, true
+		if s.PlayerColonies[i].OwnerRaceSlotKnown {
+			slot = s.PlayerColonies[i].OwnerRaceSlot
+		}
+		syncOwnerPopulationGroup(&s.PlayerColonies[i], slot, known, profile, true)
+		s.PlayerColonies[i].Aquatic = aquatic
 	}
 }
 
@@ -171,6 +279,8 @@ func (s *GameSession) syncAIRaceEngineFields(a *AIOpponent) {
 	}
 	idx := aiRaceIndex(*a)
 	tolerant, lithovore, cybernetic, aquatic, subterranean := false, false, false, false, false
+	raceGravity := gamedata.NORMAL_G
+	profile := aiColonistProductionProfile(*a)
 	if idx >= 0 && idx < len(Races) {
 		orig := Races[idx].OrigIdx
 		tolerant = gamedata.OrigRaceHasTrait(orig, gamedata.TRAIT_TOLERANT)
@@ -178,12 +288,27 @@ func (s *GameSession) syncAIRaceEngineFields(a *AIOpponent) {
 		cybernetic = gamedata.OrigRaceHasTrait(orig, gamedata.TRAIT_CYBERNETIC)
 		aquatic = gamedata.OrigRaceHasTrait(orig, gamedata.TRAIT_AQUATIC)
 		subterranean = gamedata.OrigRaceHasTrait(orig, gamedata.TRAIT_SUBTERRANEAN)
+		raceGravity = raceGravityForTraits(
+			gamedata.OrigRaceHasTrait(orig, gamedata.TRAIT_LOW_G),
+			gamedata.OrigRaceHasTrait(orig, gamedata.TRAIT_HIGH_G))
 	}
 	for i := range a.Colonies {
 		a.Colonies[i].TolerantRace = tolerant
 		a.Colonies[i].Lithovore = lithovore
 		a.Colonies[i].Cybernetic = cybernetic
-		a.Colonies[i].Aquatic = aquatic
 		a.Colonies[i].Subterranean = subterranean
+		a.Colonies[i].RaceGravity = raceGravity
+		a.Colonies[i].RaceGravityKnown = true
+		slot, known := a.PopulationRaceSlot, a.PopulationRaceSlotKnown
+		if !known {
+			for j := range s.AIPlayers {
+				if &s.AIPlayers[j] == a {
+					slot, known = j+1, true
+					break
+				}
+			}
+		}
+		syncOwnerPopulationGroup(&a.Colonies[i], slot, known, profile, false)
+		a.Colonies[i].Aquatic = aquatic
 	}
 }

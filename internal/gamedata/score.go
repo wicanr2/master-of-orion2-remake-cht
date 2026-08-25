@@ -71,19 +71,24 @@ type ScoreInput struct {
 	OrionCaptured  bool
 	CouncilVictory bool
 	AntaranVictory bool
+	// MultiplierPercent 是 sub_58F4A 依未使用種族 Picks 算出的百分比；零值供舊呼叫端
+	// 安全回退 100。Evolutionary Mutation 尚未消費的 4 Picks 由 shell 層加入。
+	MultiplierPercent int
 }
 
 // ScoreBreakdown 是逐項得分(供 Hi-Score 畫面逐列顯示,原版的 `Draw_*_Score_` 也是逐項畫的)。
 type ScoreBreakdown struct {
-	Time        int
-	Population  int
-	Captured    int
-	Technology  int
-	Elimination int
-	Orion       int
-	Council     int
-	Antares     int
-	Total       int
+	Time              int
+	Population        int
+	Captured          int
+	Technology        int
+	Elimination       int
+	Orion             int
+	Council           int
+	Antares           int
+	RawTotal          int
+	MultiplierPercent int
+	Total             int
 }
 
 // ScoreTime 依原版 `Get_Time_Score_` 算時間分。
@@ -141,10 +146,14 @@ func ComputeScore(in ScoreInput) ScoreBreakdown {
 	if in.AntaranVictory {
 		b.Antares = ScoreAntaranVictory
 	}
-	b.Total = b.Time + b.Population + b.Captured + b.Technology + b.Elimination +
+	b.RawTotal = b.Time + b.Population + b.Captured + b.Technology + b.Elimination +
 		b.Orion + b.Council + b.Antares
-	if b.Total < 0 {
-		b.Total = 0 // 拖太久導致時間分為大負數時不讓總分變負(原版畫面也不顯示負分)
+	b.MultiplierPercent = in.MultiplierPercent
+	if b.MultiplierPercent <= 0 {
+		b.MultiplierPercent = 100
 	}
+	// Score orchestrator @ 0x9DAF8..0x9DB14：乘百分比、+50、再除 100。
+	// 不自行夾成零；原版此路徑沒有 clamp。
+	b.Total = (b.RawTotal*b.MultiplierPercent + 50) / 100
 	return b
 }

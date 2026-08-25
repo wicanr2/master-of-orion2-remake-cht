@@ -25,7 +25,14 @@
 > 原版完整攔截器／AMR／逐艦戰機 blueprint 仍待證，raw `0x0800`／`0x1000` 的分級保留。詳見
 > `docs/tech/weapon-mods.md`。
 
-**關鍵洞察**:先前多輪誤判為「RE-gated 需 DOSBox」的東西,絕大多數是**前面 session 已移植進 `gamedata/` 卻沒接進遊戲迴圈的死碼**。接死碼(重力/士氣/勝利/飛彈/間諜…)是本 session 的主線,已挖到見底。
+> **狀態警告（2026-08-12）**：本文件以下內容是舊工程路線圖，不再是原版忠實度的完成依據。
+> 「remake 消費端已接」與「原版玩法已對齊」曾被錯誤合併；最新現況以
+> [`../re/parity-re-audit-20260812.md`](../re/parity-re-audit-20260812.md)、
+> [`../re/parity-matrix.tsv`](../re/parity-matrix.tsv) 與 `WORKLIST.md` 頂端活表為準。
+
+**已被推翻的舊判斷**：先前把許多問題歸類為 `gamedata/` 死碼未接，並以接上 remake 消費端後
+宣稱「已挖到見底」。IDA Pro 重新抽樣證實，這種探針無法衡量原版 call graph 覆蓋，且議會、
+轟炸、外交與 AI 已存在直接模型差異，因此不得再作為原版 parity 證據。
 
 ## 二、剩餘工作:按阻塞類型分類
 
@@ -64,13 +71,13 @@
 ### D. 需外部 oracle(我無法自給)
 | 項目 | 需要 |
 |---|---|
-| 地面戰核心解算校驗 | `InvadeColony` 已改走 IDA 靜態追回的 `ResolveGroundCombatOrig`／`Ground_Combat_Round_ @ 0xEC4FE`：四類型、原版 LCG adapter、當前類型、平手雙方受擊、AI 守方裝甲營、存活兵力回寫與 captured population 保留均有抽樣測試；仍待 DOSBox 實機逐場校驗 raw global seed 與戰後人口 consumer，列為低優先精修，不阻塞 remake 發行 |
+| 地面戰核心解算校驗 | `InvadeColony` 已接一條有部分 IDA 證據的 remake 路徑；`Ground_Combat_Round_ @ 0xEC4FE` 的四類型、亂數、傷亡游標與兵力回寫仍須閉合 record layout、caller setup、AI 裝甲與戰後人口 consumer。這是核心 parity 工作，不再列為低優先或發行非阻塞項。 |
 | 飛彈速度分支 | 既有 raw ledger 已記錄 FST `+4` 與 `0x12/0x13/0x14` 的分支；本輪 IDA Pro `.i64` 交叉檢查把外部名稱／object-offset 對應的衝突另列於 [`oracle-static-ida-20260811.md`](../re/oracle-static-ida-20260811.md)，不影響 remake 已完成的 FST 垂直切片；不再把它當成本輪 remake 阻塞 |
 | 逐畫面按鍵像素對齊 | 熱區多為估計座標 → **原版截圖**；議會／安塔蘭幀序已接，精確停留時間仍待 runtime 對照 |
 | 戰術艦型 sprite 對照(#12) | `CMBTSHP` 已接 IDA 證實的 `45*playerColor+rawPicture`（raw 0..43；44 為 sentinel）與 `.GAM` raw picture；remake 已接移動後固定 tick timer 近似；只剩原版 20 幀停留需 **DOSBox oracle** |
 
 ### E. 低價值精修(不急,列此備查)
-- 外交離散事件 `EventDelta`（已追回 `0x22D57` 極值排除／差平方權重與 `0x586D4` 0x200 反覆減半，但 remake 尚缺 raw event score record）、引擎爆炸連鎖傷害（已追回 `0x3868F`／`0x39985`／`0x40C2A`／`0x494A8` 純公式，remake strategic consumer 已接，原版 record／flag 下游仍未知）、alt-to-hit 命中變體；地面戰實機 global seed 校驗與事件 record 映射同列低優先精修。
+- 外交離散事件 `EventDelta`（已追回 `0x22D57` 極值排除／差平方權重與 `0x586D4` 0x200 反覆減半，但 remake 尚缺 raw event score record）、戰鬥／殖民地引擎爆炸連鎖傷害（已追回 `0x3868F`／`0x39985`／`0x40C2A`／`0x494A8` 純公式，raw record／flag 下游仍未知；已證實與隨機事件 8 無關）、alt-to-hit 命中變體；地面戰實機 global seed 校驗與事件 record 映射同列低優先精修。
 
 ## 三、建議順序(2026-08-10 收尾後)
 

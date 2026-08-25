@@ -1,6 +1,10 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
+)
 
 func TestColonyTopTextSafeRectsStayInsideNativePanels(t *testing.T) {
 	inside := func(name string, r textSafeRect, x, y, w, h int) {
@@ -26,6 +30,46 @@ func TestColonyTopTextSafeRectsStayInsideNativePanels(t *testing.T) {
 	for row := 0; row < 2; row++ {
 		for column := 0; column < 2; column++ {
 			inside("產出", colonyOutputTextRect(column, row), colPanelMX, colPanelMY, colPanelMW, colPanelMH)
+		}
+	}
+	if got, want := colonyOutputTextRect(0, 0).y, 37; got != want {
+		t.Fatalf("產出 row0 起點 y=%d，want 可視 cell y=%d", got, want)
+	}
+	if got, want := colonyOutputTextRect(0, 1).y, 59; got != want {
+		t.Fatalf("產出 row1 起點 y=%d，want 分隔線下方 cell y=%d", got, want)
+	}
+	for row := 0; row < 2; row++ {
+		if got, want := colonyOutputTextRect(0, row).h, 16; got != want {
+			t.Fatalf("產出 row%d 高度=%d，want 能容納 runtime bitmap glyph 的 16px", row, got)
+		}
+	}
+	if got := colonyOutputTextRect(0, 0).y + colonyOutputTextRect(0, 0).h; got > 58 {
+		t.Fatalf("產出 row0 底端 y=%d 侵入水平分隔線 y=58", got)
+	}
+	if got := colonyOutputTextRect(0, 1).y; got <= 58 {
+		t.Fatalf("產出 row1 起點 y=%d 未留在水平分隔線下方", got)
+	}
+	if got, want := colonyOutputTextRect(1, 1).y+colonyOutputTextRect(1, 1).h, colonyBuildingsTitleTextRect().y; got > want {
+		t.Fatalf("產出 row1 底端 y=%d 壓到 Buildings 標題 y=%d", got, want)
+	}
+
+	// 以實際 bitmap 字型量測繁中與英文長值；寬度與高度都必須在各自
+	// 可視列矩形內，避免只以 maxWidth 讓字仍跨進分隔線或標題列。
+	fnt := uifont.LoadBitmapTC()
+	for _, tc := range []struct {
+		name string
+		r    textSafeRect
+		text string
+	}{
+		{"繁中 row0", colonyOutputTextRect(0, 0), "食物盈虧 %+d／每回合產出"},
+		{"英文 row1", colonyOutputTextRect(1, 1), "Research output +999"},
+	} {
+		for _, line := range tc.r.lines(fnt, tc.text, 11) {
+			w, h := fnt.Measure(line, 11)
+			if w > tc.r.contentWidth() || h > float64(tc.r.h-2*tc.r.insetY) {
+				t.Fatalf("%s 字墨尺寸 %.0fx%.0f 超出安全列 %dx%d：%q", tc.name, w, h,
+					tc.r.w-2*tc.r.insetX, tc.r.h-2*tc.r.insetY, line)
+			}
 		}
 	}
 	inside("建築標題", colonyBuildingsTitleTextRect(), colPanelMX, colPanelMY, colPanelMW, colPanelMH)

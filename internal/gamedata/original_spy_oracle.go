@@ -1,12 +1,13 @@
 package gamedata
 
-// original_spy_oracle.go 保存同一份 Orion2.exe.i64 由 IDA Pro 9.4 追回的
+// original_spy_oracle.go 保存 Orion2.exe 及其 IDA Pro 9.4 資料庫追回的
 // SABOTAGE／Spy-vs-Spy raw 低階形狀。這些函式只描述可直接從指令與 operand 證實的
 // 位元與算式，不把原版尚未命名的帝國欄位硬翻成遊戲語意。
 //
-// 證據輸入：Orion2.exe.i64 SHA-256
-// 4a01791fcf877ed87a740a54748694ab34a02675e3117dac052aeaa3f883944e，IDA Pro 9.4，
-// IDA 線性位址。原始位址與推論等級見 docs/re/oracle-static-ida-20260811.md。
+// 證據輸入：Orion2.exe SHA-256
+// 7ae2ac2e5904ca330009af2827279d889906b0b9b7a8854c38eb707a56e955b5，IDA Pro 9.4，
+// IDA 線性位址。資料庫本身不是行為輸入，故不再把舊資料庫雜湊誤寫成 EXE 雜湊。
+// 原始位址與推論等級見 docs/re/sabotage-score-upstream-audit-20260825.md。
 
 const (
 	// OriginalSpyRelationshipByteOffset 是每個 0xEA9 bytes 帝國記錄內的 raw 關係矩陣
@@ -18,6 +19,17 @@ const (
 	OriginalSpyScoreTableAAddress          = 0x1ACE78 // word_1ACE78
 	OriginalSpyScoreTableBAddress          = 0x1ACE7A // word_1ACE7A
 )
+
+// OriginalSpyEmpireBonuses 是 Compute_Spy_Bonuses_ @ 0x100A83 寫入兩張
+// 16-bit runtime 表格的精確算式。spyTraitBonus 是 player+0x8A8 的有號值；
+// telepathicLevel 是 player+0x8B8（通常 0/1）；techBonus 由 sub_100A3E 的五項科技
+// 產生。領袖參數必須先各自取最佳值，不能累加。派駐 Spies／Agents 的 slot bonus
+// 不屬於這兩張表，而由任務消費端另行加入。
+func OriginalSpyEmpireBonuses(techBonus, spyTraitBonus, telepathicLevel,
+	spyMasterBonus, telepathBonus, governmentDefenseBonus int) (attack, defense int) {
+	base := techBonus + spyTraitBonus + telepathicLevel*10
+	return base + spyMasterBonus, base + telepathBonus + governmentDefenseBonus
+}
 
 // OriginalSpyRelationshipCount 對應 sub_1026CF @ 0x1026CF 的 `& 0x3F`。
 // 這是 raw byte 的低 6 位數量，不替它命名成「Spy」或「Agent」，因為同一 byte

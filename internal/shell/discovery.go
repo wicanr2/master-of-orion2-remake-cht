@@ -159,7 +159,9 @@ func (s *GameSession) foundSplinterColony(starIdx int) (idx, pop int, ok bool) {
 	}
 	colony.Population = pop
 	colony.Farmers = pop // 原版這批人預設是農夫(可耕的星),與殖民船新殖民地同一個預設
+	colony.PopulationGroups = nil
 	s.appendPlayerColony(colony, starIdx, planetIdx)
+	s.syncRaceEngineFields()
 	s.Stars[starIdx].Owner = 1
 	return len(s.PlayerColonies) - 1, pop, true
 }
@@ -203,12 +205,14 @@ func (s *GameSession) grantArtifactTech() (string, bool) {
 			continue
 		}
 		s.Player.CompletedTopics[t] = true
+		applyResearchTopicGrantCallbacks(&s.Player, t)
 		got = append(got, gamedata.TopicEnglishName(t))
 	}
 	if len(got) == 0 {
 		return "", false
 	}
 	// 目前研究主題若正好被送掉了,順勢推進到下一個,避免研究卡在已完成的主題。
+	s.UpdatePlayerShipDesignsAfterTech()
 	s.advanceResearch()
 	return strings.Join(got, "、"), true
 }

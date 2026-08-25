@@ -28,6 +28,8 @@ type EmpireOutput struct {
 	// 2026-07-11(#4)追加接線段落)——本欄位隨之反映真實維護費;AI 對手未接該建造流程,
 	// ActiveFreighters 對 AI 仍恆為 0,本欄位對 AI 側仍是 no-op。
 	FreighterMaintenanceCost int
+	SpyMaintenanceCost       int
+	OfficerMaintenanceCost   int
 	// FoodReplicatorCost 是各殖民地食物複製機這回合的 BC 成本總和(每單位食物 1 BC,
 	// GAME_MANUAL.pdf p.85)。已計入 NetBC,單獨曝露供測試/UI 顯示「這筆錢花在哪」。
 	// 沒有殖民地在饑荒(或都沒有這棟)時為 0。
@@ -54,6 +56,12 @@ type EmpireOutput struct {
 // 「累積→回寫 Population」由上層 shell.GameSession.advancePopulation 以 remake 調校門檻處理
 // (見該處 provenance 註記),保持本引擎層公式純淨。國庫 BC 結算已於下方以稅收-維護費處理。
 func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
+	return RunEmpireTurnWithResearchRoller(ps, colonies, func(int) int { return 1 })
+}
+
+// RunEmpireTurnWithResearchRoller 與 RunEmpireTurn 相同，但把原版研究突破的 1..100 擲骰
+// 由上層注入。roller 只會在累積研究嚴格超過成本且本回合有正研究產出時被消費。
+func RunEmpireTurnWithResearchRoller(ps PlayerState, colonies []ColonyState, roller func(max int) int) EmpireOutput {
 	out := EmpireOutput{Colonies: make([]ColonyOutput, len(colonies))}
 	for i, cs := range colonies {
 		co := RunColonyTurn(cs)
@@ -65,7 +73,9 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 		out.FoodReplicatorCostHalfBC += co.FoodReplicatorCostHalfBC
 		out.TotalNetIndustry += co.NetIndustry
 		out.TotalNetIndustryHalf += co.NetIndustryHalf
-		out.TotalResearch += co.Research
+		if !cs.ResearchDiverted {
+			out.TotalResearch += co.Research
+		}
 		// 稅收:對各殖民地淨工業依帝國稅率抽稅(gamedata.IncomeTaxRevenue,1:1 換 BC)。
 		//
 		// 2026-07-11 決定不接 gamedata.IncomeMoraleAdjustedProduction 到這裡(或任何收入項目),
@@ -163,7 +173,7 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 	out.TreatyIncomeBC = ps.TreatyIncomeBC
 	out.TreatyResearch = ps.TreatyResearch
 	out.TotalResearch += ps.FleetResearch + ps.TreatyResearch
-	out.Player, out.ResearchDone = RunResearchPhase(ps, out.TotalResearch)
+	out.Player, out.ResearchDone = RunResearchPhaseWithRoller(ps, out.TotalResearch, roller)
 	// 半 BC 不直接丟失：兩個半 BC 才從國庫扣 1 BC，餘數保存到下一回合。
 	pendingReplicatorHalfBC := ps.FoodReplicatorBCHalfRemainder + out.FoodReplicatorCostHalfBC
 	out.FoodReplicatorCost = pendingReplicatorHalfBC / 2
@@ -178,11 +188,13 @@ func RunEmpireTurn(ps PlayerState, colonies []ColonyState) EmpireOutput {
 	}
 	out.CommandOverflowCost = gamedata.IncomeCommandOverflowCost(uncoveredCommandPoints)
 	// 運輸艦(Freighter)維護費(GAME_MANUAL.pdf p.169,gamedata.IncomeFreighterMaintenanceCost)。
-	// 獨立於 ps.Maintenance(只含已建建築維護費,見該欄位註解)。ps.ActiveFreighters 玩家側
+	// 獨立於 ps.Maintenance（建築分項）。ps.ActiveFreighters 玩家側
 	// 建造「運輸艦隊」後會非 0(見該欄位註解 2026-07-11(#4)追加接線段落),AI 對手仍恆 0。
 	out.FreighterMaintenanceCost = gamedata.IncomeFreighterMaintenanceCost(ps.ActiveFreighters)
+	out.SpyMaintenanceCost = ps.SpyMaintenance
+	out.OfficerMaintenanceCost = ps.OfficerMaintenance
 	// 國庫結算:稅收 + 餘糧收入 + 貿易品收入 - 維護費 - 指揮評等超支懲罰 - 運輸艦維護費。
-	out.NetBC = out.TaxRevenue + out.FoodSurplusRevenue + out.TradeGoodsRevenue + ps.TreatyIncomeBC - ps.Maintenance - out.CommandOverflowCost - out.FreighterMaintenanceCost - out.FoodReplicatorCost
+	out.NetBC = out.TaxRevenue + out.FoodSurplusRevenue + out.TradeGoodsRevenue + ps.TreatyIncomeBC - ps.Maintenance - out.CommandOverflowCost - out.FreighterMaintenanceCost - out.SpyMaintenanceCost - out.OfficerMaintenanceCost - out.FoodReplicatorCost
 	out.Player.BC += out.NetBC
 	return out
 }

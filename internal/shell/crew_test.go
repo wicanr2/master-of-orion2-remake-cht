@@ -24,6 +24,28 @@ func TestCrewGainsOneExperiencePerTurn(t *testing.T) {
 	}
 }
 
+func TestCrewTurnExperienceCapsAtOriginalFiveHundred(t *testing.T) {
+	s := NewDemoSession()
+	s.Fleet().Ships = []Ship{
+		{Name: "戰鬥艦", Class: "戰艦", CrewXP: 499},
+		{Name: "殖民船", Class: ColonyShipClass, CrewXP: 500},
+		{Name: "前哨船", Class: OutpostShipClass, CrewXP: 499},
+	}
+	s.Fleet().ETA = 3 // 排除學院，只驗基本 +1 與支援艦也進 XP consumer。
+	s.advanceCrewExperience()
+	for _, sh := range s.Fleet().Ships {
+		if sh.CrewXP != gamedata.CrewXPTurnMaximum {
+			t.Errorf("%s 回合 XP 應夾在 %d，got %d", sh.Name, gamedata.CrewXPTurnMaximum, sh.CrewXP)
+		}
+	}
+	s.advanceCrewExperience()
+	for _, sh := range s.Fleet().Ships {
+		if sh.CrewXP != gamedata.CrewXPTurnMaximum {
+			t.Errorf("%s 在上限後不應繼續成長，got %d", sh.Name, sh.CrewXP)
+		}
+	}
+}
+
 // 太空學院在同一星系時每回合多 +1(手冊 p.97)。
 func TestSpaceAcademyAddsOneExperiencePerTurnInTheSameSystem(t *testing.T) {
 	s := NewDemoSession()
@@ -137,20 +159,63 @@ func TestBattleCrewXPOnlyOnVictory(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
 	before := s.Fleet().Ships[0].CrewXP
-	got := s.awardBattleCrewXP([]int{6, 6}) // 兩艘末日之星 = 12,折半 6
+	got := s.awardBattleCrewXP(12, map[int]bool{0: true}) // 兩艘末日之星 = 12,折半 6
 	if got != 6 {
 		t.Errorf("擊沉兩艘末日之星應給 6 經驗,得到 %d", got)
 	}
 	if diff := s.Fleet().Ships[0].CrewXP - before; diff != 6 {
 		t.Errorf("倖存艦應加到 6 經驗,實際 +%d", diff)
 	}
-	// 一艘都沒擊沉 → 不加。
+	// 原版零擊沉仍套 min-1。
 	before2 := s.Fleet().Ships[0].CrewXP
-	if got := s.awardBattleCrewXP(nil); got != 0 {
-		t.Errorf("沒擊沉任何船應給 0,得到 %d", got)
+	if got := s.awardBattleCrewXP(0, map[int]bool{0: true}); got != 1 {
+		t.Errorf("沒擊沉任何船的勝方 recipient 應給 1,得到 %d", got)
 	}
-	if s.Fleet().Ships[0].CrewXP != before2 {
-		t.Error("沒擊沉任何船時經驗不該變")
+	if s.Fleet().Ships[0].CrewXP != before2+1 {
+		t.Error("沒擊沉任何船時仍應依原版加 1")
+	}
+	// 戰鬥寫入不套每回合 500 cap。
+	s.Fleet().Ships[0].CrewXP = 500
+	s.awardBattleCrewXP(2, map[int]bool{0: true})
+	if got := s.Fleet().Ships[0].CrewXP; got != 501 {
+		t.Errorf("戰鬥 XP 不應套每回合 500 cap,got %d", got)
+	}
+}
+
+func TestTacticalCombatOutcomeAwardsOnlySurvivingParticipantsAndReplays(t *testing.T) {
+	makeSession := func() *GameSession {
+		s := NewDemoSession()
+		s.Fleet().Ships = []Ship{
+			{Name: "陣亡巡防艦", Class: "巡防艦", CrewXP: 10},
+			{Name: "倖存戰艦", Class: "戰艦", CrewXP: 500},
+			{Name: "殖民船", Class: ColonyShipClass, CrewXP: 20},
+		}
+		return s
+	}
+
+	direct := makeSession()
+	var recorded []PlayerCommand
+	direct.SetCommandRecorder(func(c PlayerCommand) { recorded = append(recorded, c) })
+	direct.ApplyCombatOutcome("測試敵軍", 2, 2, map[string]bool{"倖存戰艦": true}, true, 4)
+	if len(direct.Fleet().Ships) != 1 || direct.Fleet().Ships[0].Name != "倖存戰艦" {
+		t.Fatalf("戰後應移除陣亡參戰艦及遭交戰的支援艦，got %+v", direct.Fleet().Ships)
+	}
+	if got := direct.Fleet().Ships[0].CrewXP; got != 502 {
+		t.Errorf("倖存戰艦應取得 4/2=2 且突破 500，got %d", got)
+	}
+	if direct.LastBattle == nil || direct.LastBattle.CrewXPGained != 2 || direct.LastBattle.PlayerLosses != 1 {
+		t.Fatalf("戰報應記 XP=2、損失=1，got %+v", direct.LastBattle)
+	}
+	if len(recorded) != 1 || len(recorded[0].Args) != 4 || recorded[0].Args[3] != 4 {
+		t.Fatalf("戰鬥 command 應記 destroyed hull-class sum=4，got %+v", recorded)
+	}
+
+	replayed := makeSession()
+	if err := replayed.ApplyPlayerCommands(recorded); err != nil {
+		t.Fatalf("重播戰鬥結果失敗：%v", err)
+	}
+	if got, want := replayed.StateHash(), direct.StateHash(); got != want {
+		t.Fatalf("戰鬥 XP command 重播後狀態不同：%s vs %s", got[:12], want[:12])
 	}
 }
 

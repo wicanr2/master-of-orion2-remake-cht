@@ -66,11 +66,11 @@ Computers → Biology → Physics → Force Fields)排列。「研究成本」�
 | 17 | Alien Management Center | 異族管理中心 | 社會 | Xeno Relations | 650(與 Xeno Psychology 同組) | 1 | 待查證 | 每 2 回合同化 1 單位被征服人口(不論政府);Charismatic/Repulsive 種族天賦會調整此基礎速率;消除多種族殖民地 -20% 士氣懲罰,並使未同化人口的叛亂機率減半 | 無 | p.92 |
 | 18 | Planetary Stock Exchange | 行星證券交易所 | 貿易 | Macro Economics | 1150(單一項目) | 2 | 待查證 | 該殖民地收入 +100% | 無 | p.93 |
 | 19 | Astro University | 太空大學 | 科研/生產 | Teaching Methods | 2000(單一項目) | 4 | 待查證 | 每單位受教育人口(農/工/科)額外 +1 對應產出(食物/產能/研究皆適用) | 無 | p.93 |
-| 20 | Research Laboratory | 研究實驗室 | 科研 | Optronics | 150(與 Dauntless Guidance System、Optronic Computer 同組) | 1 | 待查證 | 每個科學家人口 +1 研究點;另自動產生 5 研究點 | 無 | p.94 |
-| 21 | Planetary Supercomputer | 行星超級電腦 | 科研 | Positronics | 900(與 Holo Simulator、Positronic Computer 同組) | 2 | 待查證 | 每個科學家人口 +2 研究點,殖民地整體 +10 研究點 | 無 | p.95 |
+| 20 | Research Laboratory | 研究實驗室 | 科研 | Optronics | 150(與 Dauntless Guidance System、Optronic Computer 同組) | 1 | 待查證 | 殖民地固定 +5 研究點；IDA `sub_DFF74` 已證實不改每位科學家產出 | 無 | p.94 |
+| 21 | Planetary Supercomputer | 行星超級電腦 | 科研 | Positronics | 900(與 Holo Simulator、Positronic Computer 同組) | 2 | 待查證 | 殖民地固定 +10 研究點；IDA `sub_DFF74` 已證實不改每位科學家產出 | 無 | p.95 |
 | 22 | Holo Simulator | 全息模擬艙 | 士氣 | Positronics | 900(與上同組) | 1 | 待查證 | 殖民地士氣 +20% | 無 | p.96 |
 | 23 | Autolab | 自動實驗室 | 科研 | Cybertronics | 2750(與 Cybertronic Computer、Structural Analyzer 同組) | 3 | 待查證 | 全自動產生 30 研究點/回合(不依賴人口) | 無 | p.96 |
-| 24 | Galactic Cybernet | 銀河網路中心 | 科研 | Galactic Networking | 4500(與 Virtual Reality Network 同組) | 3 | 待查證 | 每個科學家人口 +3 研究點,殖民地整體 +15 研究點 | 無 | p.98 |
+| 24 | Galactic Cybernet | 銀河網路中心 | 科研 | Galactic Networking | 4500(與 Virtual Reality Network 同組) | 3 | 待查證 | 殖民地固定 +15 研究點；IDA `sub_DFF74` 已證實不改每位科學家產出 | 無 | p.98 |
 | 25 | Pleasure Dome | 歡樂穹頂 | 士氣 | Moleculartronics | 6000(與 Achilles Targeting Unit、Moleculartronic Computer 同組) | 3 | 待查證 | 殖民地士氣 +30% | 無 | p.98 |
 | 26 | Hydroponic Farm | 水耕農場 | 食物 | Astro Biology | 80(與 Biospheres 同組) | 2 | 待查證 | 殖民地食物產出 +2 | 無 | p.99 |
 | 27 | Biospheres | 生態圈 | 居住 | Astro Biology | 80(與上同組) | 1 | 待查證(社群來源:60 PP,低可信度) | 星球人口上限 +2 單位 | 無 | p.99 |
@@ -149,9 +149,9 @@ Computers → Biology → Physics → Force Fields)排列。「研究成本」�
 | 自動化工廠 | 每工人 +1(per-worker) + 殖民地固定 +5 | `IndustryPerWorker` + `FlatIndustry` |
 | 機器人採礦廠 | 每工人 +2 + 固定 +10 | `IndustryPerWorker` + `FlatIndustry` |
 | 深層核心礦場 | 每工人 +3 + 固定 +15 | `IndustryPerWorker` + `FlatIndustry` |
-| 研究實驗室 | 每科學家 +1 + 固定 +5 | `ResearchPerScientist` + `FlatResearch` |
-| 行星超級電腦 | 每科學家 +2 + 固定 +10 | `ResearchPerScientist` + `FlatResearch` |
-| 銀河網路中心 | 每科學家 +3 + 固定 +15 | `ResearchPerScientist` + `FlatResearch` |
+| 研究實驗室 | 固定 +5，與科學家人數無關 | `FlatResearch` |
+| 行星超級電腦 | 固定 +10，與科學家人數無關 | `FlatResearch` |
+| 銀河網路中心 | 固定 +15，與科學家人數無關 | `FlatResearch` |
 | 水耕農場 | 固定 +2(與農夫數無關) | `FlatFood` |
 | 地底農場 | 固定 +4(與農夫數無關) | `FlatFood` |
 | 氣候控制器 | 每農夫 +2(既有值本來就正確) | `FoodPerFarmer` |
@@ -159,9 +159,9 @@ Computers → Biology → Physics → Force Fields)排列。「研究成本」�
 | 太空港 | 該殖民地 BC 收入 +50%(逐殖民地精確套用,見 `RunEmpireTurn`) | `IncomeBonusPercent` |
 | 行星證券交易所 | 該殖民地 BC 收入 +100%(與太空港疊加) | `IncomeBonusPercent` |
 | 生態圈 | 星球人口上限 +2(直接疊加,無獨立 Bonus 影子欄位) | `PopMax` |
-| 複製中心 | 固定成長點/回合,直到達人口上限為止(remake 尺度換算,近似值非官方精確數字) | `FlatGrowth` |
+| 複製中心 | 固定 +100 成長點/回合，直到達人口上限；1,000 點新增一人口 | `FlatGrowth` |
 | 污染處理器 / 大氣更新器 / 核心廢料場 | 既有 bool 旗標(本次未動) | `PollutionProcessor`/`AtmosphericRenewer`/`CoreWasteDump` |
-| 行星重力產生器(p.104) | **2026-07-11 已接線**:`ColonyState` 新增 `PlanetGravity`(該殖民地行星重力)欄位,`colonyFood`/`RunColonyTurn` 對食物/工業/研究三種 per-worker 產出套用 `gamedata.GravityPenaltyPercent`/`GravityAdjustedProduction`(Low-G -25%、Heavy-G -50%,士氣與重力先加總成單一百分點再套一次公式,理由見 `internal/engine/colony.go` 註解)。`NormalizeGravity=true` 時懲罰強制歸零,旗標由 no-op 變成有效。種族 Low-G/High-G 重力天賦尚未建模,固定以 `gamedata.NORMAL_G` 當種族基準;固定加成(`FlatFood`/`FlatIndustry`/`FlatResearch`)不吃重力(remake 建模假設,見 engine 欄位/函式註解)。 | `PlanetGravity`+`NormalizeGravity` |
+| 行星重力產生器(p.104) | `ColonyState` 保存行星及 typed population groups 的逐 slot 重力；玩家、客製種族、AI、Android／Natives 與 `.GAM` 匯入均同步 profile，舊 JSON 未知才回退 owner Normal-G。`NormalizeGravity=true` 時食物／工業／研究的重力懲罰歸零；固定加成不吃重力仍是 remake 建模邊界。證據見 `docs/re/owner-race-gravity-production-audit-20260825.md` 與 `docs/re/mixed-race-colonist-production-audit-20260825.md`。 | `PlanetGravity`+`RaceGravity`+`PopulationGroups`+`NormalizeGravity` |
 | 士氣類(全息模擬艙 +20%、歡樂穹頂 +30%、海軍陸戰隊營/裝甲營房解除政府 Barracks 懲罰) | **2026-07-11 已接線**:`GameSession` 新增 `Government`(政府型態)欄位 + `colonyMoralePercent`(`internal/shell/session.go`)——政府基礎值(`gamedata.MoraleGovernmentBase`,依 Barracks 有無決定是否套 -20%)+ 已建士氣建築加成(`gamedata.MoraleHoloSimulatorBonus`/`MoralePleasureDomeBonus`),算出 `ColonyState.MoralePercent`,由 `RunColonyTurn`/`MoraleProductionOutput` 消費(食物/工業/研究各 ±10%/格)。呼叫時機:政府變更(`ApplyGovernment`)、建築完工(`advanceBuilds`→`recalcColonyMorale`)。**母星起始士氣因此從硬編 +10 訂正為 0**(獨裁 + 已建 Marine Barracks 抵消懲罰,無士氣建築加成,見 `playerHomeworldColony` 註解)。 | `MoralePercent`(經 `GameSession.Government`+`ColonyBuildings` 算出) |
 | 機器人工廠(p.82) | **2026-07-11 已接線**:比照 `PlanetGravity` 的接線手法(見上一列),`ColonyState` 新增獨立的 `MineralRichness` 欄位,保留建立殖民地當下的原始礦產豐度分類(不再從已烘進 `IndustryPerWorker` 的靜態費率事後反推)。`applyBuildingEffect` 依 `gamedata.ProdRoboticFactoryBonus(int(cs.MineralRichness))`(`internal/gamedata/production.go` 既有查表函式,索引與 `mineralProductionTable` 一致)查出手冊固定值——Ultra Poor+5/Poor+8/Abundant+10/Rich+15/Ultra Rich+20——加進 `FlatIndustry`;不動 `IndustryPerWorker`,避免與已烘進的礦產費率重複計算同一份豐度效果。存檔行星由 `ColonyStateFromSave` 讀 `save.Planet.Minerals`(與 `gamedata.PlanetMinerals` 同源 openorion2 enum ordinal,直接轉型),母星固定 Abundant(`playerHomeworldColony`)。 | `MineralRichness`+`FlatIndustry` |
 | 星基 / 戰鬥站 / 星辰要塞(指揮評等供給,p.79/82/83) | **2026-07-11 已接線**:先前只記錄「已建」(顯示用),+1/+2/+3 指揮評等(Command Rating)供給是死資訊。現由 `gamedata.CommandPointsFromBuildings(built map[string]bool) int`(`internal/gamedata/buildings.go`)查表——三者互斥取代(不疊加,取最高階),`shell.GameSession.totalCommandPointsSupply()` 逐殖民地加總,`EndTurn` 每回合寫入 `PlayerState.CommandPointsSupply`,交給 `engine.RunEmpireTurn` 對比玩家艦隊需求(`gamedata.ShipCommandCost`,見 `docs/tech/moo2-formulas-reference.md`「指揮評等供需」節)算超支懲罰。其餘敘述效果(掃描範圍加成、艦隊光束攻擊加成)仍未建模(掃描/戰鬥加成系統本身尚未建),誠實維持 TODO,不與指揮評等混為一談。 | `CommandPointsSupply`(經 `gamedata.CommandPointsFromBuildings`+`ColonyBuildings` 算出) |

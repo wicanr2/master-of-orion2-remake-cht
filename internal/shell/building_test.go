@@ -57,11 +57,8 @@ func TestBuildingLongTermEffect(t *testing.T) {
 	t.Logf("自動工廠:工業/工人 %d→%d(+1),固定工業 %d→%d(+5),不重複疊加", startIPW, afterIPW, startFlat, afterFlat)
 }
 
-// TestResearchLabEffect 驗證研究實驗室提升研究/科學家 +1,並使殖民地固定研究 +5。
-//
-// 2026-07-11 訂正:研究實驗室(Research Laboratory,GAME_MANUAL.pdf p.94)手冊原文是「每科學家
-// +1 研究點,另自動產生 5 研究點」,舊測試斷言 ResearchPerScientist +5 是把手冊的固定值錯當成
-// per-worker 值。現在分開建模:per-worker 訂正回 +1,固定值計入 FlatResearch。
+// TestResearchLabEffect 驗證研究實驗室只增加殖民地固定研究 +5，不改每位科學家的產出。
+// 原版 sub_DFE77 的研究人口基礎值不讀建築旗標；sub_DFF74 才依建築 ID 35 固定加 5。
 func TestResearchLabEffect(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
@@ -71,11 +68,44 @@ func TestResearchLabEffect(t *testing.T) {
 	for i := 0; i < 25 && s.Builds[0].Name != ""; i++ {
 		s.EndTurn()
 	}
-	if got := s.PlayerColonies[0].ResearchPerScientist; got != start+1 {
-		t.Fatalf("研究實驗室應使研究/科學家 +1(p.94):%d → %d", start, got)
+	if got := s.PlayerColonies[0].ResearchPerScientist; got != start {
+		t.Fatalf("研究實驗室不應改變研究/科學家:%d → %d", start, got)
 	}
 	if got := s.PlayerColonies[0].FlatResearch; got != startFlat+5 {
-		t.Fatalf("研究實驗室應使殖民地固定研究 +5(p.94):%d → %d", startFlat, got)
+		t.Fatalf("研究實驗室應使殖民地固定研究 +5:%d → %d", startFlat, got)
+	}
+}
+
+func TestResearchBuildingsUseFixedOutputOnly(t *testing.T) {
+	tests := []struct {
+		name string
+		want int
+	}{
+		{name: "研究實驗室", want: 5},
+		{name: "行星超級電腦", want: 10},
+		{name: "銀河網路中心", want: 15},
+		{name: "自動實驗室", want: 30},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := NewDemoSession()
+			beforePerScientist := s.PlayerColonies[0].ResearchPerScientist
+			beforeFlat := s.PlayerColonies[0].FlatResearch
+			s.applyBuildingEffect(0, tt.name)
+			if got := s.PlayerColonies[0].ResearchPerScientist; got != beforePerScientist {
+				t.Fatalf("%s 不應改變研究/科學家:%d → %d", tt.name, beforePerScientist, got)
+			}
+			if got := s.PlayerColonies[0].FlatResearch; got != beforeFlat+tt.want {
+				t.Fatalf("%s 固定研究=%d，預期 %d", tt.name, got, beforeFlat+tt.want)
+			}
+			s.removeBuildingEffect(0, tt.name)
+			if got := s.PlayerColonies[0].ResearchPerScientist; got != beforePerScientist {
+				t.Fatalf("拆除 %s 不應改變研究/科學家:%d → %d", tt.name, beforePerScientist, got)
+			}
+			if got := s.PlayerColonies[0].FlatResearch; got != beforeFlat {
+				t.Fatalf("拆除 %s 後固定研究=%d，預期回復 %d", tt.name, got, beforeFlat)
+			}
+		})
 	}
 }
 
@@ -151,8 +181,7 @@ func TestBiospheresRaisesPopMax(t *testing.T) {
 	}
 }
 
-// TestCloningCenterFlatGrowth 驗證複製中心(p.99「人口成長 +0.1 單位/回合」)換算成
-// FlatGrowth = popGrowthThreshold/10。
+// TestCloningCenterFlatGrowth 驗證複製中心(p.99「人口成長 +0.1 單位/回合」)為 +100 成長點。
 func TestCloningCenterFlatGrowth(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
@@ -160,8 +189,8 @@ func TestCloningCenterFlatGrowth(t *testing.T) {
 	for i := 0; i < 20 && s.Builds[0].Name != ""; i++ {
 		s.EndTurn()
 	}
-	if got := s.PlayerColonies[0].FlatGrowth; got != popGrowthThreshold/10 {
-		t.Fatalf("複製中心應使 FlatGrowth = %d,實得 %d", popGrowthThreshold/10, got)
+	if got := s.PlayerColonies[0].FlatGrowth; got != gamedata.CloningCenterGrowthPoints {
+		t.Fatalf("複製中心應使 FlatGrowth = %d,實得 %d", gamedata.CloningCenterGrowthPoints, got)
 	}
 }
 

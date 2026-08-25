@@ -96,8 +96,8 @@ Lore/Ordnance/Security/Navigator(移動力用途)在 openorion2 全專案 grep �
 > `baseSkillValues`(第二節那三行常數表),單位是 `skillFormatStrings`(第二節那張對照表)
 > ——兩者合起來就足以決定該技能接進 remake 的哪個欄位。缺的從來是**承接的子系統**,
 > 不是數字。2026-08-10 收尾後,26 項技能至少有一個 remake 消費端；唯一刻意不接的是
-> 手冊明說原版也未實作的 Tactics。Famous 的明確雇用費折扣已接,招募機率仍因缺少可證實的
-> 候選池／擲骰公式而不以固定週期冒充完成(見第六節)。
+> 手冊明說原版也未實作的 Tactics。Famous 的雇用費折扣與招募機率都已接；後者由
+> 2026-08-25 的 IDA 靜態資料流補證，不再沿用固定週期模型（見第六節）。
 > 真正「沒有數字」的只有戰術官,而那是因為**原版自己就沒實作**。
 
 ## 四、本輪建置範圍(只接對應到 remake 已存在系統的技能)
@@ -152,7 +152,7 @@ IDA 靜態證實，但重製直接 importer 仍未實作。
 | 刺客 Assassin | 每回合逐位刺客、逐對手各擲一次防守 Agent 行動 | `advanceLeaderAssassinActions` |
 | 指揮官 Commando | 地面戰 force 加成 | `ground_invasion.go` `commandoLeaderTier` |
 | 外交官 Diplomat | 提案關係增益的可觀察代理值 | `diplomacyRelationGain`；不是原版獨立接受分數宣稱 |
-| 名人 Famous | 雇用費折扣取最強者 | `MercHireCost`；招募機率尚無證實模型 |
+| 名人 Famous | 雇用費折扣取最強者；逐回合招募機率 | `MercHireCost`／`officerRecruitChance` |
 | 巨富 Megawealth | 每回合固定 BC、領袖維護費免除 | `EndTurn`／`leader_upkeep.go` |
 | 後勤官 Operations | 帝國指揮點數供給 | `totalCommandPointsSupply` |
 | 科學家 Researcher | `FlatResearch`(固定點數,**累加型**) | `applyLeaderColonyBonuses` |
@@ -186,14 +186,14 @@ IDA 靜態證實，但重製直接 importer 仍未實作。
 
 - **戰術官 Tactics**:**原版自己就沒實作**——手冊那條的最後一句明寫
   「This skill is not implemented」。不做它與原版一致,不是缺口。
-- **Famous 的招募機率**：`skilldesc.tsv` 只證實「提高機率」與 `-60 BC` 費用單位，沒有
-  可回放的候選接受門檻、候選池刷新亂數或機率數字；因此 remake 只接有明確數值的費用折扣。
-  目前每 4 回合釋出候選是可重現的 remake 供應節奏，不應被寫成原版 Famous 機率。
+- **Famous 的招募機率已補證**：`sub_9781D @ 0x9781D` 以 Famous 的兩個技能 bit
+  `0x40/0x80` 分別加入 `level+1` 與 `15*(level+1)/10`，再除以目前領袖總數加一。
+  候選 gate 與隨機前綴見 `docs/re/random-officer-recruitment-audit-20260825.md`。
 - **Diplomat 的原版精確接受門檻**：remake 沒有獨立外交點數欄位，現在把技能值映射到既有
   關係增益，讓效果可玩且可測；這是有標註的可觀察代理值，不是原版 byte-level 門檻。
 
 其餘 captain/common 技能的 remake 消費端已完成；未來若補到 `VESA.COM` runtime，才追求
-Famous 機率、Diplomat 接受門檻與各技能逐值 oracle，不因這些未知回頭虛構公式。
+Diplomat 接受門檻與其餘技能逐值 oracle，不因這些未知回頭虛構公式。
 
 ## 七、測試
 

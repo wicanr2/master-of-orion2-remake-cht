@@ -93,12 +93,12 @@ openorion2 裡確實連影子都沒有,只能依手冊從零設計,沒有既有 
 - `CouncilEligible(settledStars, totalStars, extantRaces int) bool`——議會成立判定,字面對應手冊
   「半數殖民」+「≥3 存續種族」兩條件。`CouncilMinExtantRaces = 3`(手冊字面值,保留給未來多 AI 對手
   擴充時直接還原)。
-- `CouncilVotes(population int) int`——人口→票數,採 **1:1 直接對應**(remake 近似;理由:手冊全篇
-  沒有出現任何其他「人口單位」換算除數,且遊戲內其他以人口為基礎的量——如計分公式「+1 point per
-  population unit」——同樣是 1:1 未縮放,是目前找不到更精確依據時最保守的讀法)。population<=0
-  回傳 0(帝國已滅亡,無票)。
-- `CouncilWinScoreBonus = 100`(MANUAL_150.html 權威值,預先記錄供未來計分系統使用,尚未接線——本
-  remake 完全沒有計分系統,Score Calculation 整章都不在本輪範圍)。
+- `CouncilVotes(population int) int`——人口→票數，採原版已證實的 **除以 10 後向上取整**；
+  `sub_15B90 @ 0x15B90` 的原始指令與唯一議會 caller／consumer 見
+  [`docs/re/parity-re-audit-20260812.md`](../re/parity-re-audit-20260812.md#議會票數)。
+  `population<=0` 回傳 0 是 remake 的輸入安全政策。
+- `CouncilWinScoreBonus = 100` 已接入最終分數；八項原版係數與剩餘 Picks 倍率的 IDA 證據見
+  `docs/re/history-score-audit-20260825.md`。
 - **2/3 超級多數門檻不重複實作**,直接沿用 `engine.CheckHighCouncil`;殲滅勝利同理沿用
   `engine.CheckExtermination`——避免兩套等價邏輯並存。
 
@@ -107,8 +107,9 @@ openorion2 裡確實連影子都沒有,只能依手冊從零設計,沒有既有 
 - `GameSession` 新增欄位:`Victory VictoryState`、`PendingCouncilElection *CouncilElection`、
   `LastCouncil string`、`CouncilMeetings int`、`lastCouncilTurn int`(存讀檔已同步,見
   `internal/shell/persist.go`)。
-- `advanceCouncil()`:`EndTurn` 每回合呼叫的狀態機。議會成立(`councilEligible`)、距上次開會滿
-  `councilInterval` 回合(首次成立立即開會,不用等)才開會;**逐帝國**(玩家 + 每個 AI 對手各自
+- `advanceCouncil()`:`EndTurn` 每回合呼叫的狀態機。議會成立(`councilEligible`)且相對回合至少
+  25 才能首次召開，後續每隔 25 回合再開；這組排程來自 `Check_For_Council_Meeting_ @ 0x168AF`
+  raw 指令，而非手冊猜值。**逐帝國**(玩家 + 每個 AI 對手各自
   獨立,2026-07-11 由「玩家 vs 單一 AI 二元計票」generalize 為 N 帝國)算 `gamedata.CouncilVotes
   (該帝國殖民地人口加總)`,2/3 門檻用全體(玩家+所有 AI)總票數,依 `engine.CheckHighCouncil` 逐一
   判定:
@@ -222,21 +223,20 @@ Dimensional Portal 沿用同一套既有機制即可正確 gate,不需要額外�
 
 **2026-08-11 更新:`NewDemoSession` 維持 3 個 AI 對手，並已補上 AI↔AI 關係矩陣**(多帝國競爭骨架與
 可選 AI-to-AI 戰爭／外交見 `docs/tech/ai-to-ai.md`),場上存續帝國數上限變成「玩家 + 3 AI」= 4。
-成立門檻與候選人／第三方搖擺票的 remake 模型現在都已接入；原版精確接受門檻仍是 oracle 差異:
+成立門檻、候選人、第三方投票與玩家三選一現在都已接入；未映射外交分數仍是 oracle 差異：
 
 1. **成立門檻「≥3 存續種族」現在真的可達成。** `councilMinExtantRacesOverride`(先前的 shell 層
    資料模型限制近似覆寫值,固定為 2)**已移除**,`councilEligible` 直接引用手冊字面值常數
    `gamedata.CouncilMinExtantRaces`(=3)——玩家 + 3 個 AI 對手共 4 個帝國,只要其中至少 3 個仍存續
    (各自至少 1 個殖民地)就滿足門檻,不再需要 remake 近似值。
-2. **候選人／搖擺票的 remake 接線已完成，但門檻是 remake 代理值。** `tallyCouncil` 先以基礎票數
-   穩定排序取前兩位候選人，再由其餘帝國依 `AIRelations`（玩家↔AI 與 AI↔AI）選較友好的一方；
-   兩邊都低於 `councilSwingVoteMinRelation = 8` 時棄權，票數仍進 2/3 分母。這正是手冊描述的
-   資料流，且 `internal/shell/council_test.go`／AI 關係測試有抽樣護欄；`8` 與相關外交接受數值不是
-   已由原版 runtime 證實的常數。
+2. **候選人／搖擺票流程已由 IDA 訂正。** `tallyCouncil` 取基礎票前兩名後，非候選 AI 對兩人
+   各做一次獨立 1..200 檢定；只有單邊通過才投該候選人，雙邊同時通過或同時失敗均棄權。
+   玩家由 `RespondToCouncilVote` 明確選候選人或棄權。固定 `councilSwingVoteMinRelation = 8`
+   已移除；可映射分數與剩餘 raw 欄位見
+   [`docs/re/council-voting-audit-20260824.md`](../re/council-voting-audit-20260824.md)。
 
-`councilInterval = 8`(議會重開間隔)是 remake 排程選擇,手冊完全沒有給這個數字,只從外交台詞證實
-議會確實會反覆召開;與 `antaresInterval`(15 回合,安塔蘭突襲)同數量級但較短,理由是議會需要「半數
-銀河已殖民」這個較晚才達成的前置條件,間隔太長會讓一局遊戲只夠開 1-2 屆。
+議會排程的原始位址、bytes、日曆換算、旗標與奇數星邊界見
+[`docs/re/council-schedule-audit-20260824.md`](../re/council-schedule-audit-20260824.md)。
 
 ## 6. TODO(誠實列出,不硬做)
 
@@ -254,8 +254,8 @@ Dimensional Portal 沿用同一套既有機制即可正確 gate,不需要額外�
 > - **歐瑞恩守護者(Orion Guardian)**:與安塔蘭母星是手冊裡兩個不同的終局戰(Score 小節分別提到
 >   「defeats the Guardian and captures Orion」與「defeats the Antarans at Antares」兩種點數獎勵),
 >   本輪只接安塔蘭母星這一條,歐瑞恩守護者仍完全沒有對應流程。
-- **計分系統(Score Calculation)**:manual/MANUAL_150.html 給了完整公式(時間分/人口分/科技分/
-  殲滅加分/Guardian/Antares/Council 各項獎勵),本 remake 完全沒有計分/歷史圖表,`CouncilWinScoreBonus`
+- **計分系統(Score Calculation)**:八項得分、議會／安塔蘭獎勵與種族倍率已有玩家可見 Hi-Score
+  消費端；INFO 歷史圖目前仍待改成原版四項 350 格正規化 ring。`CouncilWinScoreBonus`
   只是預先記錄的權威值。
 - **議會選舉結束畫面 + accept/reject 互動 UI**:目前只有文字狀態,沒有原版議會 3D 場景的投票動畫、
   沒有結束畫面(勝利/落敗的專屬畫面),`RespondToCouncilElection` 也還沒有 UI 熱區可以觸發。

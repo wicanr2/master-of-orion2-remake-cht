@@ -9,14 +9,16 @@
 > 定性描述見 [`docs/HONEST-STATUS.md`](docs/HONEST-STATUS.md)。
 > 下方大量 `[x]` 中,gameplay 子系統類仍須以「對原版實測」重評數值對齊度(rulebook 65),不因測試綠自評還原度。
 >
-> 使用者 2026-07-12 排的四個優先項(①音樂/音效 ②忠實新遊戲流程 ③按鍵像素對齊 ④gameplay 子系統)
-> **四項都已完成**。③ 的一手座標來源是**原版執行檔的反組譯立即數**,與 openorion2 有沒有實作
-> 那個畫面無關(優先序見 CONTEXT.md「來源優先序」)。
+> 音樂、可操作的新遊戲流程、主要畫面與 gameplay 子系統都有 remake 實作，但「有實作」不等於
+> 原版忠實完成。2026-08-12 IDA Pro 重新稽核在議會票數、議會排程與戰略轟炸找到直接反例；
+> 議會人口票數、召開排程與戰略轟炸三外圈／結果尺度已於 2026-08-24 修正；
+> 並確認外交／AI 等核心系統仍使用設計性重建。忠實度現況以
+> [`docs/re/parity-re-audit-20260812.md`](docs/re/parity-re-audit-20260812.md) 與下方活表為準。
 >
 > 可勾選工作清單,對應 `PLAN.md` 階段。允許擴充(CLAUDE.md)。完整性優先:不預先砍項;卡關記錄方法換路,不寫「暫緩/低投報」。
 > 圖例:`[ ]` 待辦 `[~]` 進行中 `[x]` 完成(⚠ 多為自製系統的完成,非原版對齊)。
 
-## ★ 剩餘工作(2026-08-12 文字安全框修正後盤點,使用者要求)
+## ★ 剩餘工作（2026-08-25 依 parity 矩陣與 source 重新核對）
 
 > **這一段是唯一該看的剩餘工作表。**
 >
@@ -29,26 +31,585 @@
 > - **「方向已改」與「漏做」要分開**:前者直接移除整條(留著會讓人以為架構有缺),
 >   後者留在表上並寫清楚擋在什麼後面。
 >
-> ⚠ 本檔只有下面的「2026-08-12 盤點結論」是目前待辦來源；其後的附錄與 A–AO/B* 表是
+> ⚠ 本檔只有下面的「2026-08-24 盤點結論」是目前待辦來源；其後的附錄與 A–AO/B* 表是
 > 證據／歷史紀錄，不要從其中的舊 `[ ]` 或「仍缺」敘述重新開工。
 
-### 2026-08-12 盤點結論（目前唯一待辦來源）
+### 2026-08-25 盤點結論（目前唯一待辦來源）
 
-> 範圍遵循使用者決策：remake 完成為主、採抽樣驗證、不深挖與遊戲無關的反組譯內部功能。
-> `[ ]` 只代表仍會影響交付，或必須取得外部證據才能下結論；不代表基本 4X 對局不可玩。
-> 原版 oracle 留白與 remake 功能缺口分開記，避免把「尚未證實」誤寫成「尚未實作」。
+> 範圍遵循使用者 2026-08-12 的新決策：重新以原版玩法忠實度為最高優先，採 IDA Pro
+> 追查原版玩家機制，再對回 Go／Ebitengine 的實際消費端；仍不深挖與遊戲玩法無關的內部功能。
+> `[ ]` 表示原版機制尚未形成可回查的垂直證據鏈，不代表目前基本 4X 對局不可玩。
+> 原版證據留白與 remake 功能缺口分開記，避免把「可玩」誤寫成「已忠實重製」。
 
-#### 已完成的 remake 收尾（不要重開）
+#### 原版忠實度重新稽核（最高優先）
+
+- [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`
+  已把本次錯判提煉成跨專案流程，涵蓋重新稽核觸發條件、具名符號限制、玩家機制證據矩陣、
+  IDA 深抽樣、自洽測試與原版 oracle 分級，以及 README／發行聲明閘門；知識路由與 IDA Docker
+  衛生條目已加入按需入口。MOO2 的公式與位址仍只留在本專案證據，不污染通用知識。
+- [~] **建立玩家機制—IDA—Go 證據矩陣**：第二輪已由 14 列擴充為 31 列；一次性 IDA Pro 9.4 已確認原版 5,397 個函式；內建
+  符號表有 4,201 個函式名稱，但名稱不等於資料流已研究。本輪高影響抽樣證實
+  `Calc_Council_Vote_ @ 0x15B90` 為 `ceil(population/10)`，Go 已於 2026-08-24 依 IDAPython
+  caller／consumer 證據修正；
+  `Check_For_Council_Meeting_ @ 0x168AF` 已有原版排程與門檻，Go 卻以手冊未寫為由自訂 8 回合；
+  `Strategic_Bombardment_ @ 0x4257E` 固定走三輪原版快速戰鬥鏈；Go 已於 2026-08-24 修正
+  原先的 5/10 全武器抽象模型，5/10 現只作用於炸彈攻擊當量。
+  第二輪另確認 `Next_Turn_Calc_` 含 55 個直接 call，事件、間諜、艦隊航行、殖民地完整回合、
+  研究突破、安塔蘭週期入侵與原版 AI 等此前未完整入矩陣；`Determine_Event_` 的一般排程已於
+  2026-08-25 閉合並取代 30% 自訂值；同日已接全局帝國目標與熱座／AI 基本回寫，並由
+  `sub_2230A`／`sub_206A2` 閉合富商捐獻的每 20 回合 100 BC 階梯，以及海盜劫掠的
+  國庫至少 100 BC、30..50% 向下取整公式；目前玩家、熱座與 AI 已共用同一消費端。
+  同日另由事件建立端 `0x229CC..0x229F7` 與消費端 `0x2091D..0x209B2` 閉合電腦病毒：
+  研究進度至少 10 RP 才適用，損失為 `min(progress, Random(50)+50)`；玩家、熱座與 AI
+  已共用同一可存檔亂數消費端。事件 0 古代科技亦由 `sub_58853` 的全銀河光束／護盾
+  application 選擇、事件 record 兩槽與 `sub_E4204` 雙授予 consumer 閉合；玩家、熱座與 AI
+  現在授予一至兩項明確科技並更新設計，不再自訂增加 RP。外交、殖民地與持續事件等 AI
+  複合效果仍未完整；事件 1 氣候改善已由 `sub_2310C`／`sub_23D44` 的 reservoir＋200 次
+  重試目標鏈與 `sub_206A2 @ 0x207AC..0x2083E` 消費端閉合：Toxic..Arid 可直接變 Terran，
+  玩家、熱座與 AI 會同步 colony／planet 並重算食物與容量，不再誤走一般 Terraforming 階梯。
+  事件 11／12 礦產亦已由 `sub_2325E`／`sub_232BB` 與 `sub_206A2` 閉合：枯竭只選
+  Ultra Rich 並作 `4→3`，發現作 `min(4, old+2)`；玩家、熱座與 AI 會同步 planet／colony
+  與每工人產能，且不再錯誤重算重力。枯竭抽選器的 `colony+0x13F==0` raw filter 因玩家語意
+  未知而保留為明示近似。
+  事件 17 人口暴增亦已由 `sub_2230A`、`sub_206A2`、`sub_23509` 與 `sub_E1839` 閉合：
+  不再一次性自訂 `+2` 人口，而是目標殖民地逐族成長加 100 百分點；前五個 active turn
+  不結束，第六回合起每回合 1/20，age > 20 強制結束。玩家、熱座與 AI 均走可存檔持續 record。
+  事件 16 瘟疫亦已由 `sub_23B64`、`sub_206A2`、`sub_234B8` 與 `sub_E1839` 閉合：不再
+  一次性自訂扣兩人口，而是逐族成長扣 200 百分點；初始治療需求為建立時殖民地 RP 乘上
+  `Random(8)+2×難度`，之後由實際研究產出逐回合清償。玩家、熱座與 AI 均接持續 record。
+  事件 7 地震亦已由 `sub_2230A`、`sub_238A8`、`sub_DD2F2` 與 `sub_DCEBD` 閉合：不再
+  固定自訂扣 1～2 人口並拆一棟，而是以
+  `max(1, (人口+raw 建築數)×(Random(3)+Random(2))/10)` 產生傷害，再由一般建築、
+  陸戰隊、戰車、建造進度與人口的共用戰略候選池分配。玩家、熱座與 AI 均回寫傷亡，
+  最後人口死亡會移除殖民地與平行陣列；`colony+0x13F` 目標 filter 與 packed colonist
+  死亡身分仍明標近似。
+  事件 10 工業事故亦已由 `sub_231B4`、`sub_23833`、`sub_DD13E`、`sub_DD2F2` 與
+  `sub_DCEBD` 閉合：環境耐受帝國直接免疫，只選 Barren..Gaia 殖民地；特殊命中數為
+  `人口×(Random(3)+Random(3))/10` 且可為 0，逐次排除 Android 人口並在人口／陸戰隊／
+  戰車間分配，最後仍固定結算 1 點一般戰略殖民地傷害。玩家、熱座與 AI 均已回寫人口群組、
+  駐軍、建築效果、建造進度與殖民地平行陣列；氣候不再被錯誤降級。typed 群組不保存原版
+  packed 順序，故只宣稱候選集合與分布對齊；`colony+0x13F` 仍明標未知。
+  事件 2 彗星亦已由 `sub_2230A`、`sub_206A2`、`sub_23B28`、`sub_23780` 與
+  `sub_DD2F2` 閉合：耐久為 `10×(Random(5)+10+難度)`、倒數為
+  `Random(5)+10-難度`；目標星系所有停泊艦艇不分 owner 逐艘貢獻 `艦體級+1`，撞擊時以
+  `max(1,(人口+raw 建築數)×(Random(3)+Random(3))/10)` 走共用戰略殖民地傷害鏈。
+  玩家、熱座與 AI 均有可存檔持續 record、攔截及撞擊回寫，不再因缺 case 永遠抽不到。
+  remake 以 ETA==0 對應 raw ship status 0；事件 14 海盜活動亦已由 `sub_2230A`、
+  `sub_23BEC`、`sub_2448F`、`sub_206A2`、`sub_23B28` 與 `sub_242FC` 閉合：初始強度依
+  同星系各帝國運輸船總數及五級難度換算，低於 5 不成立；每回合按剩餘強度百分比讓同星
+  帝國各損失一艘運輸船，再由所有 owner 的停泊艦艇以 `艦體級+1` 清剿。玩家、熱座與 AI
+  共用可存檔 record，並已補齊事件 2／16／17／25／14／24 的同星互斥。remake 以殖民地
+  presence 重建 raw `star+0x38` bitset；`colony+0x13F` 仍明標未知。
+  事件 9 超空間亂流亦已由 `sub_2230A`、`sub_206A2`、`sub_233FA` 及航行／AI callers
+  閉合：全銀河 record 建立時 age=0，第六次 consumer 起每回合 `1/20` 解除，age>20
+  強制結束；玩家、熱座與 AI 的既有航程及新派遣均會凍結，跨維度種族依 raw
+  `player+0x8BC` 分支免疫。record、雙語訊息與 JSON 往返已接；1.31／1.50 對彗星／怪獸
+  候選的亂流衝突方向有官方 changelog 差異，仍待版本 profile 閉合，不冒稱共同規則。
+  事件 18 秘密實驗亦已由 `sub_206A2 @ 0x20ECA..0x20F64`、`sub_E4410` 與
+  `sub_21371 @ 0x2171D..0x21730` 閉合：事件保存目標帝國目前研究 field、立即走既有
+  application／Creative／Hyper-Advanced 完成鏈，隨後清空研究進度與 field；玩家、熱座與
+  AI 均接科技 callback 及艦型更新。舊 `80 + Turn` RP 加值已移除，無 field 時不再捏造科技。
+  事件 8 艦船爆炸亦已由 `sub_23CED`、`sub_206A2 @ 0x20AD7..0x20B61`、
+  `sub_941C6` 與 `sub_A163A` 閉合：目標帝國 active 艦艇以 reservoir sampling 等機率選一艘，
+  只移除該艦；有指派軍官時軍官一併死亡。玩家、熱座與 AI 已接線，舊戰鬥引擎爆炸勢能、
+  三艘鄰艦傷害與「保留最後一艘」代理均已移除。
+  事件 13 艦艇叛變則由原始跳表與完整寫入端推翻舊 remake：1.31 建立端把只在事件
+  4／5、8、27 賦值的未初始化區域變數寫入 record，consumer 與新聞 dispatcher 均無 case 13
+  效果，事件模組亦沒有艦艇 owner 回寫 caller。現改為玩家、熱座與 AI 都只產生不具名播報，
+  不再自創選艦、移交 AI 或狀態變更；1.50 二進位未取得，該版本仍標未知。
+  事件 4／5 外交暗殺／聯姻亦已閉合：`sub_23B7D` 先在存活已接觸帝國間 reservoir 抽第二帝國，
+  caller 再要求正式狀態 4／5；抽到和平對象時候選直接失敗而不重抽。consumer 以 raw
+  `-100／+100` 呼叫 `Change_Relations_ @ 0x4E3B5`，套目前關係、actor 政體、第二帝國
+  Charismatic 與戰爭 `-25` 上限。Go 已移除自訂 `±12`，在原版 `-100..100` 尺度運算後投影回
+  `-40..40`，玩家／AI 與 AI／AI 對稱回寫均已接；熱座真人彼此外交矩陣仍是資料模型缺口。
+  事件 27 曲速漏斗亦已由 `sub_23CED`、`sub_2230A @ 0x22D2F`、
+  `sub_206A2 @ 0x212BE`、`sub_21371 @ 0x21902` 與完整
+  `Move_All_Ships_Toward_Stars_ @ 0xFFEEA` 閉合：1.31 保存均勻抽中的 active 艦艇索引，
+  第五年齡後每回合 `1/20` 脫困且 `age>20` 強制解除，但事件 consumer 與艦隊移動函式
+  都沒有停航回寫。Go 現以玩家／熱座／AI 報告型 persistent record 重製，不再把舊
+  「艦隊受困」文案誤讀成需要自行凍結 ETA；1.50 二進位未取得，該版本仍標未知。
+  證據與規格見
+  [`docs/re/random-event-bc-effects-audit-20260825.md`](docs/re/random-event-bc-effects-audit-20260825.md) 與
+  [`docs/spec/random-event-bc-effects.md`](docs/spec/random-event-bc-effects.md)、
+  [`docs/re/random-event-computer-virus-audit-20260825.md`](docs/re/random-event-computer-virus-audit-20260825.md) 與
+  [`docs/spec/random-event-computer-virus.md`](docs/spec/random-event-computer-virus.md)、
+  [`docs/re/random-event-ancient-tech-audit-20260825.md`](docs/re/random-event-ancient-tech-audit-20260825.md) 與
+  [`docs/spec/random-event-ancient-tech.md`](docs/spec/random-event-ancient-tech.md)、
+  [`docs/re/random-event-minerals-audit-20260825.md`](docs/re/random-event-minerals-audit-20260825.md) 與
+  [`docs/spec/random-event-minerals.md`](docs/spec/random-event-minerals.md)、
+  [`docs/re/random-event-population-boom-audit-20260825.md`](docs/re/random-event-population-boom-audit-20260825.md) 與
+  [`docs/spec/random-event-population-boom.md`](docs/spec/random-event-population-boom.md)、
+  [`docs/re/random-event-plague-audit-20260825.md`](docs/re/random-event-plague-audit-20260825.md) 與
+  [`docs/spec/random-event-plague.md`](docs/spec/random-event-plague.md)、
+  [`docs/re/random-event-earthquake-audit-20260825.md`](docs/re/random-event-earthquake-audit-20260825.md) 與
+  [`docs/spec/random-event-earthquake.md`](docs/spec/random-event-earthquake.md)、
+  [`docs/re/random-event-industrial-accident-audit-20260825.md`](docs/re/random-event-industrial-accident-audit-20260825.md) 與
+  [`docs/spec/random-event-industrial-accident.md`](docs/spec/random-event-industrial-accident.md)、
+  [`docs/re/random-event-comet-audit-20260825.md`](docs/re/random-event-comet-audit-20260825.md) 與
+  [`docs/spec/random-event-comet.md`](docs/spec/random-event-comet.md)、
+  [`docs/re/random-event-pirate-activity-audit-20260825.md`](docs/re/random-event-pirate-activity-audit-20260825.md) 與
+  [`docs/spec/random-event-pirate-activity.md`](docs/spec/random-event-pirate-activity.md)、
+  [`docs/re/random-event-hyperspace-flux-audit-20260825.md`](docs/re/random-event-hyperspace-flux-audit-20260825.md) 與
+  [`docs/spec/random-event-hyperspace-flux.md`](docs/spec/random-event-hyperspace-flux.md)、
+  [`docs/re/random-event-secret-experiment-audit-20260825.md`](docs/re/random-event-secret-experiment-audit-20260825.md) 與
+  [`docs/spec/random-event-secret-experiment.md`](docs/spec/random-event-secret-experiment.md)、
+  [`docs/re/random-event-ship-explosion-audit-20260825.md`](docs/re/random-event-ship-explosion-audit-20260825.md) 與
+  [`docs/spec/random-event-ship-explosion.md`](docs/spec/random-event-ship-explosion.md)、
+  [`docs/re/random-event-ship-mutiny-audit-20260825.md`](docs/re/random-event-ship-mutiny-audit-20260825.md) 與
+  [`docs/spec/random-event-ship-mutiny.md`](docs/spec/random-event-ship-mutiny.md)、
+  [`docs/re/random-event-diplomatic-incidents-audit-20260825.md`](docs/re/random-event-diplomatic-incidents-audit-20260825.md) 與
+  [`docs/spec/random-event-diplomatic-incidents.md`](docs/spec/random-event-diplomatic-incidents.md)、
+  [`docs/re/random-event-warp-funnel-audit-20260825.md`](docs/re/random-event-warp-funnel-audit-20260825.md) 與
+  [`docs/spec/random-event-warp-funnel.md`](docs/spec/random-event-warp-funnel.md)、
+  [`docs/re/random-event-climate-audit-20260825.md`](docs/re/random-event-climate-audit-20260825.md) 與
+  [`docs/spec/random-event-climate.md`](docs/spec/random-event-climate.md)；
+  安塔蘭的舊 20／15 直接傷害腳本已於 2026-08-25 移除；目前剩餘 owner 8 精確戰鬥 record
+  、殖民地固定防禦／戰後消費與中途座標限制另列於艦隊／安塔蘭條目。完整性審查見
+  [`docs/re/re-completeness-review-20260813.md`](docs/re/re-completeness-review-20260813.md)，第一輪公式反例見
+  [`docs/re/parity-re-audit-20260812.md`](docs/re/parity-re-audit-20260812.md)，
+  可機械搜尋的逐系統列見 [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv)。
+- [x] **清除現況文件與 source 過期斷言**（2026-08-24）：`docs/HONEST-STATUS.md` 與
+  `docs/tech/gameplay-systems-status.md` 已濃縮為目前可證實／近似／未知邊界，不再宣稱經濟、
+  兩條戰鬥路徑或全畫面已完全 parity；同步修正客製種族、AI 研究、飛彈防禦、突擊艇
+  與 AI 種族殖民的過期 source 註解。歷史翻案仍只保留於 `docs/re/01-gap-report.md` 與 Git。
+- [x] **新遊戲規則與開局忠實化**：2026-08-24 已重審 RE 並建立
+  [`docs/spec/newgame-opening-rules.md`](docs/spec/newgame-opening-rules.md)。開局建築已依原版優先表、
+  `3/5/9` 上限與 `min(ceil(2/3 population), cap)` 接線；先進級已執行固定六次加
+  十九次決定性選擇，並以科技應用粒度寫入 `ChosenTech`／`ExplicitChoice`；
+  1.31／1.50 開局與存讀檔各有垂直測試。已移除 `0.3/0.6/1.0/1.5/2.2` 通用浮點
+  倍率及其對敵艦代理與外交關係的不當縮放；難度仍由已證實的離散 helper 消費。
+  2026-08-25 已由 IDA Pro 閉合 `sub_FD335` 的應用級單次抽選與 `sub_FC845` 人類／共用估值鏈，
+  並接入玩家正常開局；同日再閉合 `sub_589D6` raw 6／4／7 加權初始化、
+  `sub_FC845` AI category／種族分支及 `sub_FD335` 難度門檻，AI 開局不再使用類別權重近似。
+  `sub_12983` 亦已證實先轉換種族特性 1..9，後呼叫 `sub_589D6`；特性 6 的
+  20／40 比較是原始 runtime 分支，現行 25／50 表不會觸發，不再列為時序矛盾。
+  正式 UI 原本在種族／政府之前發先進級科技的順序錯誤亦已修正：現在以一次性
+  pending 門在最終種族完成後重建開局研究，真人 raw4 也送入共用估值後段；
+  客製種族完整 31 格 runtime 特性已可經 JSON／熱座往返，內建種族政體不再全部誤用獨裁。
+  原版 AI 經濟／建造／常態研究主題／艦隊／外交的逐子系統難度分支分別留在 AI 與經濟
+  活表，不再重複阻擋開局條目，也不以新的通用倍率代替。新增證據見
+  [`docs/re/starting-tech-application-audit-20260825.md`](docs/re/starting-tech-application-audit-20260825.md)、
+  [`docs/re/ai-starting-tech-profile-audit-20260825.md`](docs/re/ai-starting-tech-profile-audit-20260825.md)，原開局審查見
+  [`docs/re/human-starting-tech-profile-audit-20260825.md`](docs/re/human-starting-tech-profile-audit-20260825.md)，
+  [`docs/re/newgame-opening-audit-20260824.md`](docs/re/newgame-opening-audit-20260824.md)。
+- [~] **回合、殖民地、研究與帝國經濟忠實化**：由 `Next_Turn_Calc_ @ 0x136B3` 固定 call graph
+  對回 `Apply_Colony_Pop_Growth_ @ 0xE2DCA`、`Do_Colony_Calculations_ @ 0xE2B31`、
+  `Apply_All_Colony_Changes_ @ 0xE3FDC`、`Colony_Research_Production_ @ 0xDFF74`、
+  `Check_For_Research_Breakthrough_ @ 0xE44E0`、`Compute_Player_Maintenance_ @ 0xE2000` 與
+  `Player_Maintenance_ @ 0xEE0B0`。需閉合人口職務／成長、食物、工業、污染、士氣、建造、
+  同化、研究進度／突破／溢出／Creative／Uncreative、建築／艦隊／間諜／領袖／指揮點維護、
+  負國庫及回寫順序。2026-08-24 已依 patch 1.50 官方手冊閉合人口點數尺度：每 1,000 點
+  兌換一人口、複製中心固定 +100 點，移除 `popGrowthThreshold=300` 調校值；999／1,000 邊界、
+  快照餘數、30 回合成長與上限測試均已通過。仍待 IDA 證據：1.31 常數、AI 難度項、
+  事件／職務重排與整體殖民地回寫順序。證據見
+  [`docs/re/population-growth-scale-audit-20260824.md`](docs/re/population-growth-scale-audit-20260824.md)，
+  規格見 [`docs/spec/population-growth-scale.md`](docs/spec/population-growth-scale.md)。
+  2026-08-25 已由 IDA Pro 閉合 `Compute_Player_Maintenance_` 的六分項與加總，並證實
+  `Player_Maintenance_` 是負國庫資產處分鏈而非另一套公式；間諜每名 1 BC、軍官維護費已
+  改在單次帝國經濟結算扣除，不再於後段重複／夾額扣款。納貢維持既有跨帝國轉帳以避免重扣。
+  同日再閉合三輪建築篩選、最低價值候選、半價退款、間諜裁撤與領袖解雇，已接入正常玩家／
+  熱座回合、可逆建築效果與回合摘要。後續勘誤確認 `sub_EDDF7` 是強制拆船而非放棄殖民地；
+  艦種、友軍星、mission `{0,3,7}`、呼叫順序與設計成本四分之一／零退款已接線。戰鬥艦最低
+  效能候選目前用 remake 戰力近似；`player+0x59D`／`sub_ED908` 已定位為 AI 晚期科技鏈的
+  四棟研究設施清理，只在重建完整 AI 經濟時再接，不列作玩家破產缺口。證據見
+  [`docs/re/player-maintenance-audit-20260825.md`](docs/re/player-maintenance-audit-20260825.md)，規格見
+  [`docs/spec/player-maintenance.md`](docs/spec/player-maintenance.md) 與
+  [`docs/spec/player-bankruptcy.md`](docs/spec/player-bankruptcy.md)。
+  2026-08-25 再由 `sub_DE280`／`sub_DE22C`／`sub_DDF2C` 閉合逐人口產出：raw bit 9 是
+  WORKING、raw bit 10 是 PRISONER，後者按實際職務逐人扣 `5/20`，不是按殖民地總人口比例
+  猜分。Go 已保存逐職務未同化人口，`.GAM` 可精確匯入，征服／改派／同化與 JSON 均可往返；
+  舊 JSON 才回退比例法。原版同化選哪一筆 packed colonist 仍是可重播近似，逐 race 基礎產出、
+  重力天賦及 loyalty 非產出消費端仍待後續切片。證據見
+  [`docs/re/colonist-prisoner-production-audit-20260825.md`](docs/re/colonist-prisoner-production-audit-20260825.md)，規格見
+  [`docs/spec/colonist-prisoner-production.md`](docs/spec/colonist-prisoner-production.md)。
+  同日亦由 `Check_For_Research_Breakthrough_ @ 0xE44E0` 閉合研究突破：累積值必須嚴格超過
+  成本，突破率為超額百分比 1..100，只有本回合正研究產出才擲 `Random(100)`；失敗保留全部
+  累積值，成功清零而不結轉溢出。Go 已接玩家、熱座與 AI 的可存檔研究亂數流。
+  `Colony_Research_Production_` 亦已閉合研究人口 dispatch 與四棟研究建築消費端：研究實驗室、
+  行星超級電腦、銀河網路中心、自動實驗室只固定增加 5／10／15／30 RP，不會再額外修改
+  每位科學家產出；舊手冊摘要造成的重複加成已修正，建造與破產拆除均有垂直測試。仍待
+  玩家 `sub_10DC12`、AI `sub_DC288`、Creative／Uncreative 選項形成與 `sub_E4410` 授予時序
+  已閉合並接線：application 在投入研究前選定，突破後才寫入已擁有科技。`sub_E4204` 的特殊
+  application 分支亦已稽核：Battleoids 連帶授予 Armor Barracks，並以額外科技集合保留同主題
+  原選擇；政府、星系遮罩、殖民地／玩家與曲速欄位則是原版 raw 快取重算，remake 沿用既有
+  動態消費端。玩家、AI、熱座、偷竊／餽贈、遺跡與開局授予均走共用 callback。逐人口產出方面，
+  2026-08-25 已由 `sub_DDF2C`／`sub_DDFD3` 證實重力碼 4／3／2 對應 100%／75%／50%，
+  並接上玩家、客製種族、AI、熱座與 `.GAM` 的所有者 Low-G／Normal-G／High-G；舊 JSON
+  未知安全回退 Normal-G，重力產生器仍優先歸零。2026-08-25 後續已補 typed population
+  groups：確認 packed 低四位是當局 player slot 而非十三族 OrigIdx，`.GAM` 依 slot/job/prisoner
+  聚合並注入各 player 的 `+0x8A1/+0x8A2/+0x8A3`、Low／High-G 與 Aquatic profile；引擎改為
+  逐群計算，改派、征服、同化、一般成長與玩家事件／轟炸傷亡會同步維持群組，JSON 可往返。
+  後續 IDA 已閉合 Android `+6/+3/+3`、Natives `+4/+0/+0` 與兩者重力免疫，並證實
+  `colony+0xC8[slot]` 逐槽成長率、`+0xB4[slot]` 逐槽累積池及 1,000 點新增相同 slot 人口；
+  玩家、AI、`.GAM` 與 JSON 均已接線。負成長亦已由 `sub_DEB4B`／`sub_DF546`／`sub_E1839`／
+  `sub_E2DCA` 閉合：Cybernetic／Lithovore／Android／Natives 逐族半單位消耗、資源供應優先序、
+  signed rate、最後一人保護、非農夫優先與 reservoir sampling 均接玩家／AI及可存檔亂數流；
+  所有負池會先完成刪除，再以 owner 固定第一、其餘正常玩家槽 Fisher–Yates 洗牌的順序處理
+  正成長，Android／Natives 不做自然正成長。AI 的 population player slot 現亦跨 JSON 保存；
+  舊檔優先從殖民地 owner slot 復原，避免讀檔後 active slot 數與人口亂數序列分歧。
+  typed groups 不保存原版 packed colonist 排列，故只宣稱候選集合與機率分布對齊；仍待未覆蓋的
+  低頻人口 mutation path，不把完整混居 parity 宣告完成。證據見
+  [`docs/re/owner-race-gravity-production-audit-20260825.md`](docs/re/owner-race-gravity-production-audit-20260825.md)，規格見
+  [`docs/spec/owner-race-gravity-production.md`](docs/spec/owner-race-gravity-production.md)、
+  [`docs/re/mixed-race-colonist-production-audit-20260825.md`](docs/re/mixed-race-colonist-production-audit-20260825.md) 與
+  [`docs/spec/mixed-race-colonist-production.md`](docs/spec/mixed-race-colonist-production.md)、
+  [`docs/spec/population-consumption-and-negative-growth.md`](docs/spec/population-consumption-and-negative-growth.md)。仍待其餘人口
+  忠誠／士氣／領袖產出分項。事件產出已先閉合一條高影響 consumer：`sub_E2710` 會保留
+  受事件殖民地自身 RP，卻不納入帝國研究聚合；超新星星系 RP 現只投入搶救，不再同時增加
+  一般研究。舊 `sub_23DFE = Pick_Random_Colony_No_Capitol` 名稱已由原始指令推翻，訂正為
+  event-colony filter；事件 raw type 2／6 完整 enum 仍留在事件系統整體 RE。證據見
+  [`docs/re/research-breakthrough-audit-20260825.md`](docs/re/research-breakthrough-audit-20260825.md)、
+  [`docs/re/colony-research-production-audit-20260825.md`](docs/re/colony-research-production-audit-20260825.md)、
+  [`docs/re/research-application-selection-audit-20260825.md`](docs/re/research-application-selection-audit-20260825.md)、
+  [`docs/re/research-application-callback-audit-20260825.md`](docs/re/research-application-callback-audit-20260825.md)、
+  [`docs/re/event-colony-research-diversion-audit-20260825.md`](docs/re/event-colony-research-diversion-audit-20260825.md)，規格見
+  [`docs/spec/research-breakthrough.md`](docs/spec/research-breakthrough.md) 與
+  [`docs/spec/colony-research-production.md`](docs/spec/colony-research-production.md) 與
+  [`docs/spec/research-application-selection.md`](docs/spec/research-application-selection.md)、
+  [`docs/spec/research-application-callbacks.md`](docs/spec/research-application-callbacks.md) 與
+  [`docs/spec/event-colony-research-diversion.md`](docs/spec/event-colony-research-diversion.md)。
+  2026-08-25 又由 `sub_DE280` 閉合政體／士氣／領袖的共同逐人口加總：統一兩級只對
+  食物與工業 `+50%／+100%` 並忽略一般士氣；封建／邦聯研究 `-50%／-25%`，民主／聯邦
+  `+50%／+75%`。Go 已移除永久烘入每人口率的累乘作法，改由玩家與 AI 每回合依生效政體
+  重建逐職務百分點；證據與規格見
+  [`docs/re/colony-government-output-audit-20260825.md`](docs/re/colony-government-output-audit-20260825.md) 與
+  [`docs/spec/colony-government-output.md`](docs/spec/colony-government-output.md)。AI 額外難度項仍留在 AI 經濟切片。
+- [~] **外交、間諜、領袖與 AI 忠實化**：重建 `Diplomacy_Test_ @ 0x53146`、
+  `Change_Relations_ @ 0x4E3B5`、`NPC_To_NPC_Treaty_Negotiations_ @ 0x2552D` 與原版間諜／領袖
+  回合鏈；另依 `Resolve_Spies_ @ 0x10192B`、`Compute_Spy_Bonuses_ @ 0x100A83`、
+  `Check_For_Officer_Level_ @ 0x92FDA`、`Decrement_Officer_ETA_ @ 0x934CF`、
+  `Random_Officer_Check_ @ 0x97A66` 與 `Process_Trade_And_Research_Agreements_ @ 0x101E77`
+  追回間諜成本／維護／Agent 傷亡、SABOTAGE 兩表上游、領袖經驗／ETA／招募／AI 任命、條約收益
+  成長與終止時序。2026-08-25 已閉合普通貿易／研究協議逐回合鏈與玩家隨機領袖招募，並勘誤相鄰符號：
+  `sub_101E77` 才是回合處理器，`sub_101EE3`／`sub_101F82` 分別建立貿易／研究協議。
+  current 每回合增加 goal/5，goal%5 才擲 `Random(5)` 補一點；達 goal 封頂，goal 下降時立即
+  下修。Go 已接 AI 高槽到低槽、再玩家高槽到低槽的方向順序、每方向 trade-before-research、
+  雙方經濟 consumer 與可存檔獨立亂數流。證據與規格見
+  [`docs/re/trade-research-agreement-turn-audit-20260825.md`](docs/re/trade-research-agreement-turn-audit-20260825.md) 與
+  [`docs/spec/trade-research-agreement-turns.md`](docs/spec/trade-research-agreement-turns.md)。2026-08-25 另由
+  `sub_100A3E/sub_100A83` 閉合 SABOTAGE 兩張帝國攻防表：五科技、諜報特性、心靈感應、
+  最佳 Spy Master／Telepath 與八格政府表均已接回既有 AB／DB 分層，派駐人數仍由
+  `sub_101483` 在消費端加入；證據與規格見
+  [`docs/re/sabotage-score-upstream-audit-20260825.md`](docs/re/sabotage-score-upstream-audit-20260825.md) 與
+  [`docs/spec/sabotage-score-upstream.md`](docs/spec/sabotage-score-upstream.md)。仍待
+  完整一般外交關係演化與 AI 戰爭／協議決策；事件 4／5 已有 `Change_Relations_` 的窄切片，
+  但不能代替其餘 28 個 caller。特殊貿易與 ETA
+  callback 仍是可玩 remake 模型，普通協議的 AI 政體也仍固定 Dictatorship。
+  領袖招募現依 `sub_97A66/sub_9781D/sub_97B2D` 每回合擲骰，包含前五回合門檻、
+  Charismatic／Repulsive、Famous 一般／進階加成、兩類四席與隨星曆開放的隨機候選前綴；
+  亂數流可隨存檔續接。證據與規格見
+  [`docs/re/random-officer-recruitment-audit-20260825.md`](docs/re/random-officer-recruitment-audit-20260825.md) 與
+  [`docs/spec/random-officer-recruitment.md`](docs/spec/random-officer-recruitment.md)。
+  AI 領袖任命也已依 `Do_AI_Leaders_ @ 0xD7439` 接上上一回合 offer、技能偏好 gate、
+  嚴格 `treasury > hireCost+50`、30 回合拒絕 cooldown、動態艦艇／殖民地任命與 JSON 往返；
+  舊 `0xD7662` 入口及依種族固定贈送 Commando 的代理已移除。raw 艦艇五欄與殖民地評分
+  沒有一對一表示處仍明標近似。證據與規格見
+  [`docs/re/ai-leader-assignment-audit-20260825.md`](docs/re/ai-leader-assignment-audit-20260825.md) 與
+  [`docs/spec/ai-leader-assignment.md`](docs/spec/ai-leader-assignment.md)。
+- [ ] **原版 AI 決策器忠實化**：`internal/ai.NewDecider(ModeOriginal, ...)` 目前仍回傳
+  `RemakeDecider` 並以 `ok=false` 告知 fallback；依 `Compute_AI_Data_ @ 0xD3D34`、
+  `Move_All_AI_ @ 0xDBB29`、`All_AI_Colonize_ @ 0xE67F6`、`All_AI_Tech_Select_ @ 0xDCA69`、
+  `Search_For_Battles_ @ 0xE9D62` 重建原版 state machine、難度作弊、殖民地職務與建造、研究／
+  應用選擇、艦隊目標與戰鬥決策；目前 `advanceAIResearch` 能正常研究，但主題選擇仍是 remake
+  啟發式，不能用「AI 會進步」替代原版 AI parity。
+- [ ] **艦隊、殖民、事件與安塔蘭忠實化**：重建 `Move_All_Ships_Toward_Stars_ @ 0xFFEEA`、
+  `Colonize_Planet_ @ 0xBB082`、`Compute_Blockades_ @ 0xE5097`、`Compute_Contacts_ @ 0xEB192`、
+  `Check_All_Rebellions_ @ 0xED44A`、`Determine_Event_ @ 0x2230A` 與
+  `Antaran_Invasion_Check_ @ 0x63D92`；需包含逐回合座標、截擊、合併／拆分、星雲／黑洞／
+  干擾器、殖民前置與起始狀態、封鎖／接觸、叛亂兵力／政府／士氣／易手、29 種隨機事件與
+  7 種狀態播報的目標／持續 record／效果，以及安塔蘭難度／時間／艦隊／目標／實際戰鬥。現在 ETA 航行與
+  部分事件複合效果仍有 remake 模型。一般事件排程已依
+  `sub_2230A` 接入前五次保護、五級 delta 公式、`Random(512)`、五候選與最早日期；
+  `sub_22D57` 的總人口來源、好／壞事件極值排除與差平方權重亦已由 IDA 閉合並寫成純規則測試。
+  全局排程、Lucky 全槽掃描、人口權重目標、熱座非目前席位回寫，以及 AI 的 BC／RP
+  一對一事件已接線；AI 殖民地／艦隊／外交與持續 record 等複合效果尚未閉合。
+  事件 19–23 怪獸入侵已由 `sub_2230A`、`sub_23BEC`、`sub_206A2`、`sub_A16BF` 與
+  `sub_A1A23` 閉合最早回合／亂流排除、受害帝國有效殖民星 reservoir sampling、五個獨立
+  loader 及 owner 8 航行入口。Go 已移除「第一顆無主星」與太空鰻借用變形蟲的舊代理，
+  玩家、非目前熱座席位與 AI 均可在自身殖民星建立正確種類並隨 JSON 保存。owner 8 首次航行
+  已由 `sub_A1762`、`sub_A1A23`、`sub_FF799`、`sub_EBE79`、`sub_EBB0C` 與 `sub_FFDDA`
+  閉合：戰略速度固定 1 parsec/turn，ETA 為出生點到目的星的無條件進位星距；Go 現以可存檔
+  `TransitETA` 推進，抵達前不盤據、不阻擋拓殖且不推進太空鰻 age。因 remake 不保存原版視窗
+  捲動 globals，出生邊界仍為銀河矩形近似；途中逐座標截擊仍待閉合。同星不同種類已由
+  `Search_For_Battles_` 的 owner/type side bit、`sub_E8194` side reservoir sampling 與
+  `sub_E84A5` 逐項消費閉合資料形狀；`sub_E8029` 已訂正為 side 選定後的對手選擇：
+  remake 現會列舉及顯示全部停泊群組，戰勝只移除本次第一個停泊群組，不再誤刪同目的星
+  航行 record。原版 RNG 屬全銀河自動戰鬥排程順序；玩家單次攻擊採穩定切片順序，以維持
+  鎖步重播及戰後 record 回寫一致，明標為介面轉接而非原版排程順序。
+  五種事件怪物藍圖已閉合 raw type、艦體、引擎、電腦、special bytes、武器槽、戰速、結構與
+  怪物專用裝甲；Go 的新生成怪物及太空鰻分裂已接雙血池。抵達後的殖民地戰鬥已由
+  `Search_For_Battles_`、`sub_E8029`、`Do_1_Combat_`、
+  `sub_E87D2`、`sub_4267B`、`Strategic_Bombardment_` 與 `sub_DD2F2` 閉合控制流：太空鰻
+  不攻擊，其餘怪物先進固定防禦戰，存活者固定三輪轟炸、總傷害 `/40` 後走共用殖民地傷亡池；
+  玩家、非目前熱座與 AI 均可回寫建築、駐軍、建造進度、人口及殖民地移除。武器 mods 的
+  `raw 0x0002/0x0004` 已由 `sub_2B9E3`／`sub_39434` 閉合為 HV／PD，快速怪物反擊現逐槽、
+  逐門消費原版武器表與 mount 數量，不再每回合只打一發推測傷害。ID 44 Plasma Flux 的
+  目標尺寸倍率，以及 ID 45 Caustic Slime 的可堆疊 `+0x43`、四面逐回合傷害與每回合減 5
+  已由 `sub_289C4`／`sub_ACF83`／`sub_4A5CE`／`sub_39985` 閉合並接入格子戰術；快速結算
+  對黏液採四面同回合近似。Dragon `0x4000` 已由改造表、category 2 分支及執行期 +50
+  傷害資料流閉合為 OVR；格子戰術先把基礎 300 加成至 450，再依 ID 40 每格扣 15，快速
+  結算採無格距離的近距 450。Plasma Flux 舊稱六格已由 `sub_3A82F`／`sub_ADE18` 與
+  CMBTSFX asset 6 勘誤為 96px（約 4.8 格）歐氏半徑；格子戰術現會聚合 mount 全部門數，
+  對雙方鄰艦套距離平方衰減及尺寸分段擲值，快速結算則以中心距離作用全艦隊。戰機中隊亦已
+  接原版整隊 50% 迴避與逐架 `25×衰減傷害/單架耐久` 傷亡；remake 沒有持久在途飛彈 record，
+  故飛彈受 Flux 傷害仍是資料模型限制。反擊選目標與固定防禦部分數值仍明標近似。正常星系「攻擊怪物」現會建立
+  原版藍圖的逐體 `CombatShip` 並進入格子戰術，戰後把存活怪物裝甲／結構加總回寫；結果另有
+  `monster_combat_outcome` 鎖步指令，重播不再遺失怪物戰損。太空鰻分裂已由
+  `sub_DB8D8 @ 0xDB8D8` 閉合：每艘停泊 type 13
+  怪獸各自累加 `ship+0x61`，恰好 30 時歸零，同星建立 age 0 新生鰻，全銀河 active 上限 4。
+  Go 以同星 `Count`、逐體 `EelAges` 與聚合結構接入正常 EndTurn、舊 JSON／多人快照及玩家回報；
+  新生個體不會在建立回合再次增齡。證據與規格見
+  [`docs/re/random-event-monsters-audit-20260825.md`](docs/re/random-event-monsters-audit-20260825.md) 與
+  [`docs/spec/random-event-monsters.md`](docs/spec/random-event-monsters.md)，航行追加證據見
+  [`docs/re/event-monster-route-audit-20260825.md`](docs/re/event-monster-route-audit-20260825.md) 與
+  [`docs/spec/event-monster-route.md`](docs/spec/event-monster-route.md)；戰後鏈見
+  [`docs/re/event-monster-colony-battle-audit-20260825.md`](docs/re/event-monster-colony-battle-audit-20260825.md) 與
+  [`docs/spec/event-monster-colony-battle.md`](docs/spec/event-monster-colony-battle.md)；藍圖見
+  [`docs/re/event-monster-blueprints-audit-20260825.md`](docs/re/event-monster-blueprints-audit-20260825.md) 與
+  [`docs/spec/event-monster-blueprints.md`](docs/spec/event-monster-blueprints.md)；武器 runtime 見
+  [`docs/re/event-monster-weapon-runtime-audit-20260825.md`](docs/re/event-monster-weapon-runtime-audit-20260825.md) 與
+  [`docs/spec/event-monster-weapon-runtime.md`](docs/spec/event-monster-weapon-runtime.md)；特殊武器見
+  [`docs/re/event-monster-special-runtime-audit-20260825.md`](docs/re/event-monster-special-runtime-audit-20260825.md) 與
+  [`docs/spec/event-monster-special-runtime.md`](docs/spec/event-monster-special-runtime.md)，Flux 深入證據與戰機規格見
+  [`docs/re/event-monster-plasma-flux-spread-audit-20260825.md`](docs/re/event-monster-plasma-flux-spread-audit-20260825.md)、
+  [`docs/spec/event-monster-plasma-flux-spread.md`](docs/spec/event-monster-plasma-flux-spread.md) 與
+  [`docs/spec/event-monster-plasma-flux-fighters.md`](docs/spec/event-monster-plasma-flux-fighters.md)；同星群組見
+  [`docs/re/event-monster-same-star-groups-audit-20260825.md`](docs/re/event-monster-same-star-groups-audit-20260825.md) 與
+  [`docs/spec/event-monster-same-star-groups.md`](docs/spec/event-monster-same-star-groups.md)；戰術入口見
+  [`docs/re/event-monster-tactical-entry-audit-20260825.md`](docs/re/event-monster-tactical-entry-audit-20260825.md) 與
+  [`docs/spec/event-monster-tactical-combat.md`](docs/spec/event-monster-tactical-combat.md)。
+  事件 24 超新星亦已由 `sub_23A5F`、`sub_2230A`、`sub_23B64`、`sub_206A2`、`sub_E2A70`
+  與 `sub_DCDAC` 閉合：目標改為全銀河星系 rejection sampling，倒數改為 1.31 的
+  `Random(5)+10-difficulty`，初始需求嚴格為建立時全星系 RP×倒數；每回合全 owner 殖民地
+  RP 只投入搶救，失敗時玩家、非目前熱座與 AI 同星殖民地及各自殖民行星均會移除／變
+  Radiated。舊 `×(倒數+1)`、均勻 6–14、目前玩家限定與單一代表行星代理均已移除。
+  `colony+0x13F` 語意及 1.50 倒數版本差仍未知。證據與規格見
+  [`docs/re/random-event-supernova-audit-20260825.md`](docs/re/random-event-supernova-audit-20260825.md) 與
+  [`docs/spec/random-event-supernova.md`](docs/spec/random-event-supernova.md)。
+  事件 25 時空異象已由 `Determine_Event_`、`sub_23BEC`、`sub_242FC`、`sub_206A2`、
+  `sub_23DFE` 與 `sub_E2710` 閉合受害帝國殖民星 reservoir sampling、同星互斥、age 0..4
+  不抽骰、age 5..20 的 `Random(20)==1` 與 age 21 強制解除。Go 已以 `Turns=-1` 對齊首個
+  active age，且只在 age>4 消耗事件亂數；玩家、非目前熱座、AI 及同星多 owner 的食物、
+  工業、研究與人口成長回合輸入均會凍結，原始殖民資料與事件 record 可存檔往返。
+  食物／工業／建造／維護／人口移動的原版 raw 欄位尚未逐項靜態閉合，現依官方手冊與共用
+  重算鏈實作；`colony+0x13F`、GNN state 同回合時序與 1.50 版本差仍未知。證據與規格見
+  [`docs/re/random-event-stasis-audit-20260825.md`](docs/re/random-event-stasis-audit-20260825.md) 與
+  [`docs/spec/random-event-stasis.md`](docs/spec/random-event-stasis.md)。
+  事件 26 超空間獸已由 `Determine_Event_`、`sub_206A2`、`sub_100618`、`sub_23CED`、
+  `sub_941C6` 與 `sub_8A4C4` 閉合：active 回合沒有舊 remake 自創的 20% 攻擊骰，而是從
+  record 指定帝國所有航行艦 reservoir sampling 一艘，處理後再以 `sub_22D57` 重抽下回合
+  帝國；age 5 起 `Random(20)==1`、age 21 強制解除，且解除判定先於刪艦。Go 已保存可存檔
+  `TargetKind/TargetIndex`，接通玩家多艦隊、非目前熱座與 AI，移除固定目前艦隊／最弱艦代理。
+  原版 0x81-byte ship 鏈首替換在 remake 的 `Fleet` 切片沒有同構中間狀態，現以玩家可見的
+  均勻刪除結果重製並明標資料模型近似；1.50 差異仍未知。證據與規格見
+  [`docs/re/random-event-warp-beast-audit-20260825.md`](docs/re/random-event-warp-beast-audit-20260825.md) 與
+  [`docs/spec/random-event-warp-beast.md`](docs/spec/random-event-warp-beast.md)。
+  事件 28 蟲洞已由 `Determine_Event_ @ 0x2230A`、`sub_100519 @ 0x100519` 與
+  `sub_FFDDA @ 0xFFDDA` 閉合：一般好事件目標帝國的非跨維度航行船按船 reservoir sampling，
+  抽船只用來定同位置／目的地群組，整支艦隊會在事件建立回合立即寫成抵達；record 保存實際
+  移動艦數與目的星供新聞。Go 已移除「目前選取艦隊 ETA=1」代理，改為按艦數權重選玩家多
+  艦隊並共用探索／水雷／發現抵達 consumer，非目前熱座與 AI 亦立即回寫位置；跨維度、空艦隊
+  與非法目的地會誠實拒絕。原版逐船座標中間值在 remake `Fleet` 模型沒有同構欄位，1.50 差異
+  仍未知。證據與規格見
+  [`docs/re/random-event-wormhole-audit-20260825.md`](docs/re/random-event-wormhole-audit-20260825.md) 與
+  [`docs/spec/random-event-wormhole.md`](docs/spec/random-event-wormhole.md)。
+  狀態播報 29–35 亦已由七個 setter、新聞 dispatcher 與觸發 caller 閉合 record 契約：帝國滅亡
+  依存活轉換、擴張採三階段殖民星門檻、排行榜限 elapsed > 50／議會前且每回合 1/40、Orion
+  由未探索特殊星抵達觸發。Go 已接玩家／熱座／AI 目標、同回合新聞佇列、JSON／多人快照，
+  並由實際安塔蘭勝利與殖民地叛亂結果建立 33／35；後兩者因 1.31 無直接 caller，明標為
+  觸發近似。事件 34 的舊斷言亦已由更深 IDA 稽核訂正：`sub_E4D06` 只寫 pending surrender，
+  `sub_E4DC9/sub_E4B5F` 才延後移交殖民地、前 83 項已知科技、國庫、貨運艦與解除任命的領袖，
+  並刪除投降者艦艇、清空外交／協議及改派可表示間諜。Go 已依此接 AI→AI、AI→玩家／熱座、
+  穩定 AI 索引、JSON／多人快照與事件 34；raw `+0x717` 及 `sub_27A3D` 完整接收者評分未定名，
+  自動觸發保留為正式戰爭＋壓倒性國力的明示近似。證據與規格見
+  [`docs/re/event-status-broadcasts-audit-20260825.md`](docs/re/event-status-broadcasts-audit-20260825.md) 與
+  [`docs/spec/event-status-broadcasts.md`](docs/spec/event-status-broadcasts.md)、
+  [`docs/re/empire-surrender-audit-20260825.md`](docs/re/empire-surrender-audit-20260825.md) 與
+  [`docs/spec/empire-surrender.md`](docs/spec/empire-surrender.md)。
+  安塔蘭週期入侵亦已由 `Antaran_Invasion_Check_ @ 0x63D92` 及其完整直接 helper 鏈閉合
+  科技等級 `200/100/0` 延遲、每 25 回合加速資源、難度 `100/150/200%`、攻守資源池、
+  `{2,5,12,30,75}` 成本、攻守艦上限、readiness 與 `Random(200)`、Lucky `/3` 帝國權重、
+  殖民星均勻抽樣及最多五艘部署。Go 已改為全局一次、可存檔 pending ETA 與快速戰鬥，
+  不再固定攻玩家母星或直接扣 BC／人口；owner 8 的逐座標航行、完整快速／戰術 battle record
+  、殖民地固定防禦及戰後消費仍是明示近似。已抵達艦隊現在會按快速戰鬥實際倖存數回寫
+  offensive／deployed pool，不再把抵達或出兵誤當成全數損失。證據與規格見
+  [`docs/re/antaran-periodic-invasion-audit-20260825.md`](docs/re/antaran-periodic-invasion-audit-20260825.md) 與
+  [`docs/spec/antaran-periodic-invasion.md`](docs/spec/antaran-periodic-invasion.md)。
+- [~] **戰鬥、地面戰、轟炸與防禦忠實化**：分別追快速結算與格子戰術，完成原版艦艇／武器 runtime
+  設計、戰機出擊與返航、`Fire_Fighter_Bomb_ @ 0x3AC20`、
+  `Fire_Fighter_Beam_ @ 0x3AD57`、`Ground_Combat_Round_ @ 0xEC4FE`、
+  `Strategic_Bombardment_ @ 0x4257E`、
+  `Fighter_Garrison_Strength_ @ 0x5F64C`、`Get_Colony_Hits_ @ 0x42371` 的欄位與回寫鏈。2026-08-24
+  已以 IDAPython 閉合 `Strategic_Bombardment_` 控制流：Go 外圈由錯誤的全武器 5／10 次改為原版
+  固定三次，5／10 限縮為炸彈攻擊當量，接上 >30,000 提前停止，並由 `sub_4267B` caller 證實
+  runtime 結果是 `/40` 後直接寫 record `+3`，已取代錯用手冊 UI `/100` 的結算；非炸彈兩版本相同、
+  炸彈版本差、逐擊護盾、停止門檻與 `/40` 邊界均有測試。仍待逐武器數量與快速戰鬥 record；
+  `Get_Colony_Hits_` 已閉合人口／士兵／戰車／非軌道建築的耐久公式並接入顯示值；
+  `sub_E87D2` → `sub_DD2F2 @ 0xDD2F2` → `sub_DCEBD @ 0xDCEBD` 的戰略殖民地內部
+  傷亡鏈亦已閉合並實作：一般建築、陸戰隊、戰車、建造進度與人口共用隨機候選池，
+  成本不足即停止，並保留最後人口 100 點與建造進度 tail-index 不對稱。仍待逐武器數量、
+  快速戰鬥 record，以及 `sub_DCEBD` 排除的八類獨立防禦戰鬥者摧毀鏈。證據見
+  [`docs/re/strategic-bombardment-audit-20260824.md`](docs/re/strategic-bombardment-audit-20260824.md)
+  [`docs/re/colony-hits-audit-20260824.md`](docs/re/colony-hits-audit-20260824.md) 與
+  [`docs/re/strategic-colony-casualties-audit-20260824.md`](docs/re/strategic-colony-casualties-audit-20260824.md)，規格見
+  [`docs/spec/strategic-bombardment.md`](docs/spec/strategic-bombardment.md) 與
+  [`docs/spec/colony-combat-hits.md`](docs/spec/colony-combat-hits.md) 與
+  [`docs/spec/strategic-colony-casualties.md`](docs/spec/strategic-colony-casualties.md)。
+- [ ] **艦船經驗、維修與艦艇設計忠實化**：依 `Do_All_Ships_XP_Check_ @ 0x14A27`、
+  `Repair_Ships_At_Colonies_ @ 0x580F5`、`Weapon_Cost_ @ 0x6EC74`、`Weapon_Space_ @ 0x6EE8E`、
+  `Auto_Design_Ship_ @ 0x616A5` 追回逐艦 XP、等級門檻、學院／領袖加成，以及科技小型化、
+  arc／mods 疊加、彈藥架、特殊裝置、艦體成本／空間與 AI 自動設計。2026-08-24 已閉合
+  `Repair_Ships_At_Colonies_` 與 `Repair_Ship_Full_ @ 0x581F3`：一般玩家僅
+  `COMBAT_SHIP`、靜止、合法 Star 且 star `+0x38` owner bit 成立者靠港完整修復；Go 已排除
+  殖民船／前哨船並保留殖民地／前哨站基地強推論。原版會恢復八武器槽並清除護盾、引擎、
+  電腦、特殊裝置、裝甲與結構損傷；remake 只有聚合 `Ship.Damage`，逐系統模型仍是明確缺口。
+  同日亦閉合 `Do_All_Ships_XP_Check_` 的每回合鏈：原版掃描 500 筆、接受 `Status < 5` 與
+  `Owner < 8`（包含支援艦），每回合增加 1、同星系每座己方太空學院再加 1，並取玩家活動
+  領袖中最強 Instructor 加成；結果上限 500。等級門檻為 50／150／500／1000，Warlord
+  將顯示等級提升一階且最高仍為 5。Go 已依此加入每回合 500 上限並保留支援艦消費端；
+  `sub_4B184 @ 0x4B184` 的戰後 XP 鏈亦已閉合：winner-side 且仍連到持久 Ship 的每艘艦
+  取得 `max(1, floor(被摧毀敵艦 1-based 艦體級總和/2))`，零擊沉仍為 1，俘獲不計入，
+  並直接加到 `Ship+0x72` 而不套每回合 500 上限。快速與格子戰術兩路徑均已接線；
+  快速結算改依 combatant 原始索引移除真實陣亡參戰艦，並依手冊 p.119 明確移除遭交戰的
+  支援艦；戰術 command 保存摧毀艦體級總和以維持重播一致。原版 battle record
+  `+0x24／+0x4B` 的完整 enum 與 AI 逐艦 XP
+  仍受現有資料模型限制。武器設計方面亦已由 IDA 閉合 `Weapon_Cost_`／`Weapon_Space_`：
+  成本微型化為 100／75／55／40／30／25%，一般武器佔格為 100／80／65／50／35／25%；
+  改造先套 HV／PD、再套其餘加總百分比，AF 已由錯誤固定 +50 訂正為 +50%。Go 已把後續
+  主題鏈等級接到造艦 UI、成本、佔格與建造時的改造門檻。飛彈彈架亦已由 IDA 閉合
+  2／5／10／15／20 發對應 10／20／30／35／40 的成本／佔格，並接到設計 UI、建造命令、
+  舊存檔回退、快速結算與格子戰術的逐發消耗。`sub_6F11C` 的三種佔格 category 與
+  `sub_6D048` 的八領域 Hyper 重複等級亦已閉合：一般武器、魚雷／特殊武器、固定不縮小
+  機庫／裝置分別套正確階梯，特殊裝置使用自己的科技等級，Hyper 可重複研究、存檔並影響
+  造艦與改裝。`Player_Research_Cost_ @ 0xE1E96` 與 `Promote_A_Hyper_Value_By_Field_ @ 0x10F919`
+  已閉合後續 Hyper 成本為版本基礎值加已完成 level×10000；玩家、AI、顯示與舊存檔遷移均已接線。
+  `Auto_Design_Ship_ @ 0x616A5` 的五個 caller、99-byte 六艦體設計庫、八類 switch、八武器槽／
+  八特殊槽上限及各類 missile／fighter／beam／bomb helper 已由 IDA 閉合；Go 已保存 raw role、
+  依科技建立合法單槽 loadout，並接到正常設計畫面的初始最佳裝備。runtime 與 JSON 快照已能
+  保存原版八個武器記錄及特殊裝置 raw ID；`.GAM` 匯入不再只取第一槽，且保留合法的
+  `ARC_360 = 16`。2026-08-24 已建立玩家側六艦體持久 `ShipBlueprint`：舊存檔依當前科技補齊，
+  元件修改、JSON、熱座與 TCP 快照均可往返；設計畫面改為點艦體只切換／保存 blueprint，只有
+  底部 BUILD 扣款造船，不再共用一份巡洋艦暫態選擇。同日再以 IDAPython 閉合
+  `Update_Player_Ship_Designs_ @ 0x57112`：真人戰術分支遍歷六筆設計，只更新最佳裝甲、曲速引擎、
+  FTL 速度與造價，保留玩家武器／特殊裝置；Go 已在研究完成、研究抉擇、間諜偷竊與遺跡科技
+  入口同步六筆裝甲，曲速與造價沿用既有即時計算，並以深複本測試鎖住其餘欄位不變。原版
+  `Update_Equipment_On_Ships_Being_Built_` 的 raw status 4／6 在 remake 沒有對等的未完工 ship record，
+  目前以交付時讀取最新設計／科技對映，僅屬資料模型近似。2026-08-24 多槽建造與快速結算
+  已形成第一條消費鏈：`BuildShipDesign` 深複製全部 `WeaponMounts`／`SpecialIDs` 到新艦，快速
+  結算保持單艦一份 HP／護盾／狀態，依槽序與 `WorkingCount` 逐發射擊，飛彈彈藥亦逐槽扣除。
+  格子戰術亦由 `StartCombat` 深複製多槽，僅在多槽／多門時進入逐槽派送，逐槽套名稱、類型、
+  射界、傷害與彈藥；單槽路徑與亂數順序維持不變，匿蹤、儲能、`Fired`、點防禦與戰損仍是
+  同一艘艦的狀態。同日完成多槽造價／空間與玩家編輯：艦體／自動設備／特殊只計一次，每槽
+  依武器、typed mods、微型化、射界、彈架求單門值後乘 1..99 數量；UI 可選八槽、增刪槽、
+  調數量並逐槽編輯武器／mods／射界／彈藥，顯示、合法性、扣款與完整 blueprint 重播命令共用
+  同一計算。未知 raw 武器或只有未解 `RawMods` 的槽採失敗即關閉，不免費建造。35 張 Docker +
+  Xvfb 畫廊已重跑並抽查 `25_shipdesign.png`，新增控制文字均在框內。2026-08-24 收尾再加入
+  typed `ShipSpecialMount` 八槽：`.GAM` raw ID 已知者轉受控名稱、未知者保留並失敗即關閉；
+  設計 UI 可切換／增刪特殊槽，成本、空間、JSON／多人快照與完整建造命令均保存。所有玩家玩法
+  消費端改走 `shipHasSpecial`，快速與格子戰術可同時套用多項攻防／速度／連射／偵測／研究／登艦
+  效果；多種機庫會各派一隊且快速結算各計一次。2026-08-25 已接格子戰術逐武器槽的可用／待命／關閉、狀態色、有界名稱／數量／彈藥回饋與右鍵明細；待命會略過下次同艦射擊後恢復，關閉持續保留。同日再以 `Load_Combat_Ship_ @ 0x4954A` 的八槽載入鏈閉合逐槽 PD：快速與格子戰術依槽序／工作數自動迎擊，紅色關閉仍會對飛彈／戰機開火，攔截餘數跨槽與回合保留；敵方 typed 飛彈還擊亦有消費端。證據見 `docs/re/tactical-weapon-status-audit-20260824.md` 與 `docs/re/tactical-point-defense-slots-audit-20260825.md`，規格見 `docs/spec/tactical-point-defense-slots.md`。仍待戰略模式與一般 AI blueprint／逐艦設計／建造；不可用殖民地
+  2026-08-25 再以 IDA caller 資料流證實 AI 初始 hull 0..5／role 0..5，科技更新只重建
+  hull 0..4；Go 已保存每個 AI 的六筆 blueprint、實艦與造艦進度，依 AI 自身科技設計，並接上
+  快速／格子戰術、戰損、存檔與網路狀態。事件 13 的「叛變移交艦艇」已由 1.31 IDA 證據
+  推翻並移除，不再列作 AI blueprint 消費端。`FleetStrength` 現為實艦衍生摘要；
+  AI 對 AI 與 raid 的高階比例結算會回寫移除實艦，單一主力艦隊亦接每回合／太空學院／
+  Instructor XP。仍待戰略模式、AI 多艦隊、原版精確 AI 生產評分與未解 raw mods，
+  不以目前可重現的最高可負擔 hull 政策冒稱原版 exact。
+  同日再由 `Crew_Boarding_Combat_Bonus_ @ 0x35CAD`、`Boarding_Action_Type_ @ 0x2C129`、
+  `Get_Fleet_Commando_Bonus_ @ 0x35FDA` 與 `Get_Fleet_Security_Bonus_ @ 0x360AA` 閉合登艦加成鏈：
+  攻守雙方各自消費艦員 Bo 與同 owner 有效參戰艦軍官的最高 Commando，守方另取最高 Security
+  及保安站 +20；Go 的快速／格子戰術已各自帶入玩家或 AI 的種族、科技、High-G、Powered Armor
+  與艦員資料，不再把玩家陸戰隊數值套給 AI。這一切片已對齊；其餘艦船設計待辦不受影響。
+  證據見 [`docs/re/ship-repair-audit-20260824.md`](docs/re/ship-repair-audit-20260824.md)，規格見
+  [`docs/spec/ship-colony-repair.md`](docs/spec/ship-colony-repair.md)；XP 證據與規格分別見
+  [`docs/re/ship-crew-xp-audit-20260824.md`](docs/re/ship-crew-xp-audit-20260824.md) 與
+  [`docs/spec/ship-crew-xp-turn.md`](docs/spec/ship-crew-xp-turn.md)；戰後 XP 見
+  [`docs/re/ship-battle-crew-xp-audit-20260824.md`](docs/re/ship-battle-crew-xp-audit-20260824.md) 與
+  [`docs/spec/ship-battle-crew-xp.md`](docs/spec/ship-battle-crew-xp.md)；武器設計見
+  [`docs/re/weapon-cost-space-audit-20260824.md`](docs/re/weapon-cost-space-audit-20260824.md) 與
+  [`docs/spec/weapon-cost-space-miniaturization.md`](docs/spec/weapon-cost-space-miniaturization.md)；飛彈彈架證據與規格見
+  [`docs/re/missile-ammo-rack-audit-20260824.md`](docs/re/missile-ammo-rack-audit-20260824.md) 與
+  [`docs/spec/missile-ammo-racks.md`](docs/spec/missile-ammo-racks.md)；分類／Hyper 證據與規格見
+  [`docs/re/weapon-mini-categories-hyper-audit-20260824.md`](docs/re/weapon-mini-categories-hyper-audit-20260824.md) 與
+  [`docs/spec/weapon-mini-categories-hyper.md`](docs/spec/weapon-mini-categories-hyper.md)；重複成本證據與規格見
+  [`docs/re/hyper-repeated-cost-audit-20260824.md`](docs/re/hyper-repeated-cost-audit-20260824.md) 與
+  [`docs/spec/hyper-repeated-cost.md`](docs/spec/hyper-repeated-cost.md)；自動設計證據與規格見
+  [`docs/re/auto-design-ship-audit-20260824.md`](docs/re/auto-design-ship-audit-20260824.md)、
+  [`docs/spec/auto-ship-design.md`](docs/spec/auto-ship-design.md) 與
+  [`docs/spec/multi-slot-ship-blueprint.md`](docs/spec/multi-slot-ship-blueprint.md)、
+  [`docs/spec/player-ship-design-library.md`](docs/spec/player-ship-design-library.md)、
+  [`docs/re/update-player-ship-designs-audit-20260824.md`](docs/re/update-player-ship-designs-audit-20260824.md) 與
+  [`docs/spec/update-player-ship-designs.md`](docs/spec/update-player-ship-designs.md)、
+  [`docs/spec/multi-slot-build-and-quick-combat.md`](docs/spec/multi-slot-build-and-quick-combat.md)、
+  [`docs/re/ai-ship-blueprint-build-audit-20260825.md`](docs/re/ai-ship-blueprint-build-audit-20260825.md) 與
+  [`docs/spec/ai-ship-blueprints-and-build.md`](docs/spec/ai-ship-blueprints-and-build.md)。目前部分特殊
+  元件成本、未解 raw mods、特殊裝置逐槽效果、戰略模式與 AI 精確生產評分仍是 remake 值、
+  固定政策或尚無完整證據。
+- [~] **議會與勝利條件忠實化**：`ceil(population/10)` 已依 `sub_15B90 @ 0x15B90` 原始指令、
+  唯一 caller 與票表／總票數 consumer 修正。2026-08-24 再以 IDAPython 閉合
+  `Check_For_Council_Meeting_ @ 0x168AF`：首次最早第 25 回合、後續固定間隔 25、至少 3 個
+  存續帝國，已殖民星數採 `trunc(total/2)`；`sub_15239 @ 0x15239` 證實第一次召開後寫旗標。
+  Go 已移除固定 8 回合與任意早期立即召開，加入 Turn 24/25、49/50、奇數星與快照往返測試。
+  證據見 [`docs/re/council-schedule-audit-20260824.md`](docs/re/council-schedule-audit-20260824.md)，
+  規格見 [`docs/spec/council-schedule.md`](docs/spec/council-schedule.md)。本輪另以
+  `Council_Votes_ @ 0x15EBC`、`Vote_Check_ @ 0x16021`、`sub_161E4 @ 0x161E4` 與
+  `sub_1633C @ 0x1633C` 閉合候選排序、AI 對兩候選人的獨立 1..200 檢定、雙通過／雙失敗棄權、
+  真人三選一、含棄權票的 2/3 分母與上屆選票保存；固定關係門檻已移除，議會亂數與待投票狀態
+  可存讀。正式政策、貿易／研究協定、Charismatic、Repulsive、Imperium 與上屆選票分數已接；
+  `+0x617/+0x6D7/+0x7EE/+0x827`、`sub_78398` 與高難度真人縮放仍待外交資料模型閉合，不以
+  `Relation` 重複猜填。證據見 [`docs/re/council-voting-audit-20260824.md`](docs/re/council-voting-audit-20260824.md)，
+  規格見 [`docs/spec/council-voting.md`](docs/spec/council-voting.md)。
+- [ ] **歷史、分數與客製種族效果忠實化**：依 `Record_History_ @ 0x10208A` 及最終分數消費端
+  追回欄位、取樣頻率、正規化、勝利加成與存檔；依 `Convert_Custom_Race_Flags_ @ 0x5BC24`
+  對 22 項選項逐能力追到原版經濟、外交、間諜、戰鬥、星圖、事件與 AI consumer。現在每項已有
+  至少一個 remake 消費端，只能證明選項不是裝飾品，不能宣稱效果與原版逐值／全路徑一致。
+  2026-08-25 已閉合八項最終分數 orchestrator、未使用 Picks／Evolutionary Mutation 倍率及
+  `(raw×percent+50)/100`，並移除無證據負分 clamp；倍率已接客製種族、JSON 與熱座。
+  同次 IDA 證實歷史圖是 Fleet／Technology／Population／Buildings 四項、350 格 ring 與動態
+  divisor 重縮放，推翻舊 400 筆 Population／BC／Fleet 模型；2026-08-25 已實作四項共同除數、
+  既有資料重縮放、350 筆上限、繁中／英文 UI、JSON 除數往返及不相容舊歷史清除。科技 raw
+  `player+0x224` 的 remake 對應採已完成主題／Hyper 成本累積，證據等級仍為強推論；本項剩餘
+  範圍是客製種族 22 項效果的原版逐值／全 consumer 閉合，不再重開歷史資料形狀。
+  2026-08-25 已由 `sub_E3456 @ 0xE3456` 閉合同化 raw 尺度：八政體 rate 為
+  `30/60/30/60/60/120/12/16`、門檻 240；Charismatic 進度加倍且優先於 Repulsive 減半，
+  異族管理中心的 120 基礎值也受兩者修正。Go 已改存 0..239 raw 餘數，修正政體／建築切換、
+  UI ETA 與舊 JSON 回合進度遷移；packed colonist 清除順序仍是可重播近似。
+  證據與規格見 [`docs/re/history-score-audit-20260825.md`](docs/re/history-score-audit-20260825.md) 與
+  [`docs/spec/final-score-multiplier.md`](docs/spec/final-score-multiplier.md) 與
+  [`docs/spec/history-ring.md`](docs/spec/history-ring.md)。
+  同化證據與規格見 [`docs/re/assimilation-race-traits-audit-20260825.md`](docs/re/assimilation-race-traits-audit-20260825.md) 與
+  [`docs/spec/assimilation-race-traits.md`](docs/spec/assimilation-race-traits.md)。同日 Lucky 事件亦由
+  `sub_245C4/sub_24511/sub_22D57/sub_2230A` 閉合：一般壞事件選中 Lucky 玩家時取消，不再把
+  一般事件池錯誤過濾成全好；逐回合計數器、四種設定除數、`Random(1000)` 門檻、相對第 50 回合
+  閘門、額外好事件池、JSON 與熱座往返均已接線。標準 remake 尚未分開暴露 Random Events／
+  Antaran Attacks，執行期採兩者皆開的原版除數 8。一般事件固定 30% 已由
+  `sub_2230A @ 0x2230A` 的前五次保護、五級 delta 公式、`Random(512)`、五次 0..28 候選與
+  事件最早日期取代；排程狀態可 JSON 往返。全局目標不再依熱座席位數重複排程，非目前席位
+  與 AI 基本 BC／RP 事件可寫回；其餘 AI 複合效果仍屬事件系統待閉合範圍。
+  Lucky 證據與規格見 [`docs/re/lucky-event-audit-20260825.md`](docs/re/lucky-event-audit-20260825.md) 與
+  [`docs/spec/lucky-events.md`](docs/spec/lucky-events.md)；一般排程見
+  [`docs/re/random-event-schedule-audit-20260825.md`](docs/re/random-event-schedule-audit-20260825.md) 與
+  [`docs/spec/random-event-schedule.md`](docs/spec/random-event-schedule.md)。全銀河目標的純權重亦已依
+  `sub_22D57` 閉合；全局目標索引、Lucky 第一成功槽、熱座非目前席位及 AI 基本 BC／RP 回寫
+  已接線，AI 殖民地／艦隊／外交與持續 record 等複合效果仍待閉合。證據與規格見
+  [`docs/re/random-event-target-audit-20260825.md`](docs/re/random-event-target-audit-20260825.md) 與
+  [`docs/spec/random-event-target-selection.md`](docs/spec/random-event-target-selection.md)。
+- [ ] **原版 parity 發行閘門**：在上述核心矩陣完成前，三平台包與推廣片只能稱「可玩 remake
+  預覽」，不能稱完整原版重製。測試需分開標示 remake 自洽、IDA 靜態證據、原版動態 oracle、
+  同狀態視覺與正常玩家路徑；綠色單元測試不得升格為原版一致。
+
+#### 已完成的 remake 工程能力（不代表原版玩法已對齊）
 
 - [x] `ARM/FST` 武器改造與兩條攔截鏈、PD 餘數保存；魚雷 `NR` 射程衰減取消；敵我戰機出擊、PD、最弱護盾面、命中／爆炸／返航模型已接入設計、存檔、快速結算與格子戰術。
 - [x] `RACES` 間諜操作（訓練、`STEAL`／`SABOTAGE`／`HIDE`、防守 Agent）、外交餽贈／特殊貿易／條約／協議／納貢，以及艦艇與殖民地 `LEADERS` 的指派、改派、解除、僱用、解雇、存檔與熱座流程。
 - [x] 客製種族 22 項選項與心靈感應、幸運、全知、匿蹤艦等消費端；`hover` 外框、`CMBTSFX` 多幀特效、`STREAM`／`STREAMHD` 音樂與音效接線。
 - [x] 文字欄寬 polish：共用 `labelRect`／`extraText` 截斷與折行已套用主要長文字面板；Docker + Xvfb 產出 35 張 1280×960 畫廊並抽查外交、艦艇設計、輸入框、種族、戰術、熱座，README 與 `docs/PLAYTEST-2026-08-10.md` 已同步。
 - [x] **遊戲內文字版面與發行畫廊回歸（2026-08-12，視覺）**：主選單語言／規則標籤維持 196px 安全欄寬；資料來源缺少 `COMBAT.LBX` 時仍改繪同座標、可點擊的戰術後備控制列。使用者提供的正常路徑截圖推翻了舊的「畫廊未越框」斷言後，新增共用 `textSafeRect`：`NEW GAME` 選擇器、種族按鈕、`RACES` 的 AI 資訊／對談列、殖民地的名稱／產出／建築／職業與按鈕文字，現在各自綁定實際面板的寬度、高度、行距、內縮與整數像素中心；超量內容會折行後省略，不跨入滑桿、下一列或按鈕。Docker + Xvfb 目標測試、35/35 `-gamegallery`，以及實際 `-promo-demo` 正常點擊路徑停在新局、種族、殖民地與 `RACES` 的截圖抽查均通過。此為 remake 視覺驗收，不宣稱原版逐像素對照。
+  2026-08-12 再依使用者實拍訂正兩個自洽但錯誤的幾何假設：`NEW GAME` 數值列先前重複加上 `(15,5)` 畫面原點，造成熱區與文字一起偏右下；現改用完整背景量得的可視列矩形。殖民地產出第二列先前從 `y=53` 起畫，16px 字墨跨在 `y=58` 分隔線上；現固定為 `[59,75)`，與第一列、分隔線及 `Buildings` 標題各自分離。回歸測試改讀獨立量測錨點與實際 bitmap 字墨高度，不再拿同一組錯誤常數互證。
 - [x] **TCP 多人正式入口與缺資產備援（2026-08-11）**：`NETWORK`／`JOIN GAME` 不再被誤畫為未實作；數據機、序列線、`COMM INFO` 與 TEN 維持灰色且熱區不處理。`NetworkStateHash` 會先正規化每台機器本地的作用中席位，避免主機席位 0 與客戶端席位 1 套用同一快照就誤報分岔。完整資料包缺 `MULTIGM.LBX` 時，改以原版已證實的 482×335 面板與按鈕熱區繪製可讀備援，避免多人頁塌到左上；README 的 `23_multiplayer.png` 已換成此輸出。Docker 抽樣包含實際 `NETWORK`／`START NEW GAME` 名稱彈窗、TCP 加入、共同開局、第一回合 `turn_done` → `turn_ready`，另跑 `internal/netplay` 全包（含斷線、重連、心跳）與 35/35 畫廊，抽查多人頁；不宣稱已做人類跨 NAT 實機驗收。
 - [x] **人口成長回寫定點測試（2026-08-11）**：`TestPopulationGrowthWriteback` 已改驗真正不變量：人口 8→12 且不超過上限，農／工／科職務總和必須等於人口，新增者至少進入一種職務。舊「工人必增」斷言與既有 `assignNewColonist` 的缺糧保護衝突；實際固定開局會把 4 位新增人口改派農夫（4/2/2→8/2/2），不是寫回失敗。人口上限測試亦通過。
 
-#### 真正仍會影響 remake 交付的工作
+#### 其他仍會影響 remake 工程交付的工作
 
 ##### 發行前的實作／視覺／驗證
 
@@ -73,41 +634,56 @@
   不以會共用 Go 切片（slice）底層陣列的內部 `snapshot().restore()` 假裝兩台獨立機器。建造與改裝畫面的
   可變長標題、訊息與艦名均已截斷或折行，35 張 Docker 畫廊啟動抽樣通過，代表圖為
   `docs/screenshots/26_buildqueue.png`。
-- [x] **最終公開包與發行閘門（2026-08-12，打包）**：Linux AppImage、Windows amd64 ZIP、macOS
+- [x] **目前可玩預覽包的打包工程驗證（2026-08-12）**：Linux AppImage、Windows amd64 ZIP、macOS
   universal tar.gz 已由同一份最新程式碼離線重建，`dist-all/PUBLIC-SHA256SUMS` 已重算並逐檔驗證。
   Linux 以外掛合法資料／字型實際跑過 Docker + Xvfb 的 `-game -promo-demo -noaudio` 導覽；Windows
   ZIP 通過 CRC、根目錄、PE GUI／console 格式檢查；macOS `.app` 通過 tar 結構、啟動器語法與
   `lipo` 的 `x86_64`／`arm64` 檢查。三包均確認不含原版 `.LBX`、音樂、音效或私有字型；真 Windows／
-  macOS 主機執行仍不宣稱已驗收。帶使用者私有資料的完整版只保留本機驗收用途。
+  macOS 主機執行仍不宣稱已驗收。帶使用者私有資料的完整版只保留本機驗收用途。這些產物是
+  可玩 remake 預覽，不通過上方「原版 parity 發行閘門」，不得沿用「完整原版重製」稱呼。
 
 ##### 需要外部裝置才能完成的驗收
 
 - [ ] **外部音訊驗收**：在有音訊輸出的桌面逐曲聽 `STREAM`／`STREAMHD` 與場景切換，確認音量與曲目；
   Docker 的解碼、長度、峰值、非靜音檢查已完成，不能冒充人耳驗收。
+- [ ] **最新工作樹重新打包、推廣片與平台真機驗收**：2026-08-12 的 `dist-all` 三平台包與推廣片
+  早於目前議會公式、文字版面及後續 source 變更，只能當歷史產物；所有發行 gate 完成後，以同一
+  `HEAD` 重新產生 Linux AppImage、Windows amd64 ZIP、macOS universal 包與實際玩家路徑推廣片，
+  更新雜湊／metadata，並在 Windows 與 macOS 真機各做啟動、資料路徑、音訊、輸入、存讀檔 smoke。
+  在原版 parity 發行閘門完成前，重建產物仍只能標為「可玩 remake 預覽」。
 
-- [x] **captain／common 領袖技能消費端（2026-08-10）**：26 項技能已有至少一個 remake 消費端，包含 Assassin 的逐位行動、Diplomat 的有標註關係代理值、Famous 的明確雇用費折扣、Megawealth 的回合 BC／維護費、Operations 指揮點數、Spymaster／Telepath 間諜攻防、Galactic Lore 星圖／怪獸／安塔蘭、Ordnance／Security 兩條戰鬥路徑，以及 Fighter Pilot。Tactics 依手冊「This skill is not implemented」保留無效果；Famous 招募機率因沒有可證實的候選擲骰公式，沒有虛構固定機率。細節與測試見 `docs/tech/leader-officer-skills.md`。
+- [x] **captain／common 領袖技能消費端（2026-08-10；招募機率 2026-08-25 補證）**：26 項技能已有至少一個 remake 消費端，包含 Assassin 的逐位行動、Diplomat 的有標註關係代理值、Famous 的雇用費折扣與逐回合招募機率、Megawealth 的回合 BC／維護費、Operations 指揮點數、Spymaster／Telepath 間諜攻防、Galactic Lore 星圖／怪獸／安塔蘭、Ordnance／Security 兩條戰鬥路徑，以及 Fighter Pilot。Tactics 依手冊「This skill is not implemented」保留無效果。細節與測試見 `docs/tech/leader-officer-skills.md`。
 - [x] **英文模式安全 fallback（2026-08-10）**：未知自訂名稱、未知族群／艦艇／建造項目、熱座名稱等顯示值改走 ASCII 保留或通用英文 fallback，不改存檔 key；英文 `-gamegallery` 在 Docker + Xvfb 產生 35/35 張 PNG，抽查主選單、星圖、外交、艦艇設計、輸入框，沒有越界／panic／fatal／error。AST 英文棘輪維持 16 條可解釋例外；不把查表 key 全域翻譯。
 - [x] **一次 20 回合開局經濟／士氣探針（2026-08-10）**：固定無事件開局 BC 50→264（首回合結算後 58）、人口 8→11、士氣 0% 全程、食物輸出 0→1、工業 6→8、研究 6 維持；沒有負食物或人口死亡螺旋。本輪只記錄體感基線，不擅自改收入公式；測試為 `internal/shell/economy_20_turn_test.go`。
-- [x] **本輪 gameplay polish（2026-08-11）**：外交 `FoodForCredits`／`ResearchExchange` 特殊貿易已有回合收益與存檔狀態；AI→玩家 `SABOTAGE` 會依 remake 性格政策選任務並讀取玩家建築池；食物複製機補上半食物／半 BC 計算與跨回合 BC 餘數保存（強推論，不冒充原版碎片付款已證實）；原版 `RawStatus=4` 的 `+0x37`／30 門檻已接成領袖清理路徑；IDA 追回活動 Trader 的 raw 經驗分桶、tier 1/2 `×10/×15` 最大加成，並接入 GAM／demo fallback 的貿易目標；本輪再接 `CMBTSHP` 固定 tick 近似、事件／爆炸 strategic consumer、SABOTAGE raw slot helper 對齊／結構化分數／Agent 實際扣除與領袖 ETA callback 近似。原版 CMBTSHP clock、score table 上游填值與 raw callback 設計／帝國欄位仍是非阻塞 oracle 差異，詳見 [`docs/re/remake-consumer-closure-20260811.md`](docs/re/remake-consumer-closure-20260811.md)。
+- [x] **本輪 remake gameplay polish（2026-08-11）**：外交 `FoodForCredits`／`ResearchExchange` 特殊貿易已有回合收益與存檔狀態；AI→玩家 `SABOTAGE` 會依 remake 性格政策選任務並讀取玩家建築池；食物複製機補上半食物／半 BC 計算與跨回合 BC 餘數保存（強推論，不冒充原版碎片付款已證實）；原版 `RawStatus=4` 的 `+0x37`／30 門檻已接成領袖清理路徑；IDA 追回活動 Trader 的 raw 經驗分桶、tier 1/2 `×10/×15` 最大加成，並接入 GAM／demo fallback 的貿易目標；本輪再接 `CMBTSHP` 固定 tick 近似、事件／爆炸 strategic consumer、SABOTAGE raw slot helper 對齊／結構化分數／Agent 實際扣除與領袖 ETA callback 近似。這些項目只證明可玩消費端存在；原版 CMBTSHP clock、score table 上游填值與 raw callback 設計／帝國欄位仍須併入核心 parity 矩陣，詳見 [`docs/re/remake-consumer-closure-20260811.md`](docs/re/remake-consumer-closure-20260811.md)。
 - [x] **議會／安塔蘭視覺收尾（2026-08-11）**：`COUNCIL.LBX#1` 10 幀與 `ANTAROOM.LBX#1` 55 幀已由原版資產逐幀累積並接入播放；`CMBTSHP` 已接原版 `45*playerColor+rawPicture` 圖片映射，並以移動後固定 tick 播放近似 timer，靜止後不自行旋轉。原版 timer 仍標未知。畫面尺寸、雜湊、外部截圖與未宣稱項目見 [`docs/re/visual-oracle-20260811.md`](docs/re/visual-oracle-20260811.md)。
-- [x] **本機完整版與實機推廣片（2026-08-12，最終錄製）**：`dist-all/` 集中保留三個僅供本機驗收的完整包（含使用者私有資料子集與 CJK 字型，不可公開散布）；其 SHA-256 核對檔列於 `dist-all/SHA256SUMS`。三平台完整包均由本輪工作樹離線重建，採 55 個經靜態消費端與封裝後畫廊交叉確認的正常玩家路徑 LBX（含 `COMBAT`、`INBOX`、`MULTIGM`、`RACESEL`、`STREAM`／`STREAMHD`），不是把 373 個原版檔全塞入；Linux 完整 AppImage 已在 Docker + Xvfb 從包內資料啟動，Windows ZIP 的 CRC／PE／根目錄、macOS universal `.app` 的結構／`lipo` 與三包的 55 檔集合亦已抽樣驗證。正式預覽片已取代舊截圖拼接：封裝後 AppImage 在 Docker + Xvfb 以 `-game -promo-demo -promo-hide-cursor -noaudio` 即時走過新局、種族、命名旗色、星圖、殖民地人口調配、`RACES` 間諜操作、外交、戰術移動／射擊、撤離與戰果回寫後返回 `RACES`；21 個正常 UI 點擊共 60 秒，另保留 3 秒收束，成片為 63.4 秒 H.264/AAC、1280×720、48 kHz stereo 本機預覽。錄製若未收到 `LastBattle` 寫回的 `promo-demo: complete` 就拒絕輸出；新局與種族按鈕文字均以按鈕內安全區置中，導覽游標完全隱藏，避免遮住文字或製造錯誤對齊觀感。抽樣影格確認種族、命名、外交、戰術、戰果與返回畫面隨正常 UI 改變且未見文字越框；原版 `STREAM.LBX` 配樂只在錄影後混入，未做逐曲人耳驗收，影片仍不可當作可公開散布素材。錄製與權利邊界見 `scripts/capture_promo_gameplay.sh` 與 `dist-all/promo/README.md`。
+- [x] **本機完整版與實機推廣片（2026-08-12，最終錄製與剪輯）**：`dist-all/` 集中保留三個僅供本機驗收的完整包（含使用者私有資料子集與 CJK 字型，不可公開散布）；其 SHA-256 核對檔列於 `dist-all/SHA256SUMS`。三平台完整包均由本輪工作樹離線重建，採 55 個經靜態消費端與封裝後畫廊交叉確認的正常玩家路徑 LBX（含 `COMBAT`、`INBOX`、`MULTIGM`、`RACESEL`、`STREAM`／`STREAMHD`），不是把 373 個原版檔全塞入；Linux 完整 AppImage 已在 Docker + Xvfb 從包內資料啟動，Windows ZIP 的 CRC／PE／根目錄、macOS universal `.app` 的結構／`lipo` 與三包的 55 檔集合亦已抽樣驗證。正式預覽片以封裝後 AppImage 在 Docker + Xvfb 走 `-game -promo-demo -promo-hide-cursor -noaudio`，經 21 個正常 UI 點擊實際完成新局、種族、命名旗色、星圖、殖民地人口調配、`RACES` 間諜操作、外交、戰術移動／射擊、撤離與戰果回寫後返回 `RACES`；不以截圖輪播冒充遊玩。依復古遊戲推廣片流程，另用 `scripts/make_live_promo.sh` 加入 4 秒銀河戰略風片頭、五個短暫章節識別與 5 秒片尾；章節框只佔 4:3 畫布外的左右側欄，不遮蓋遊戲 UI。成片為 72.767 秒 H.264/AAC、1280×720、30 fps、48 kHz stereo；完整解碼無警告，音量平均 -18.3 dB、峰值 -2.9 dB，七個代表影格確認片頭、五章實機與片尾文字均在安全框內。錄製若未收到 `LastBattle` 寫回的 `promo-demo: complete` 就拒絕輸出；新局與種族按鈕文字均以按鈕內安全區置中，導覽游標完全隱藏。原版 `STREAM.LBX` 配樂只在錄影後混入，未做逐曲人耳驗收，影片仍不可當作可公開散布素材。錄製、剪輯與權利邊界見 `scripts/capture_promo_gameplay.sh`、`scripts/make_live_promo.sh` 與 `dist-all/promo/README.md`。
 - [x] **音訊文件同步（2026-08-11）**：`docs/tech/audio-track-map.md` 已移除「外交音樂是單一 `bgmDiplo` 常數」的過期敘述，改記逐族好曲、壞曲池與原版門檻未知；IDA Pro 靜態證據見 [`docs/re/oracle-static-ida-20260811.md`](docs/re/oracle-static-ida-20260811.md)。
 - [x] **多人網路最低可玩鏈與可選可靠性（2026-08-12）**：保留原版決定性 lockstep、以 TCP 取代已失效的 IPX／數據機／序列／TEN。`cmd/moo2` 已從大廳名冊接到主機共同新局（設定／種子／席位快照廣播）、客戶端套用同一快照、玩家指令依席位與玩家編號收集／重播、`turn_done` → `turn_ready` 兩階段回合結算，以及 `NetworkStateHash` 不一致時失敗即關閉；另已加入 resume token 重連、心跳／逾時／重連寬限、challenge-HMAC 身份驗證與可選 TLS 1.3。`MOO2_NET_AUTH` 開啟共享密碼 proof，`MOO2_NET_TLS=1` 開啟加密；NAT 穿透仍需外部 relay 或 UPnP，沒有冒稱內建解法。共同開局的非主機席位現在在建立時即初始化 `AutoBuild`／`RepeatBuild` 平行向量，避免只有客戶端切換該席位後出現 nil／空 slice 形狀差異而誤報分岔。驗證包含 `internal/netplay` loopback TCP／TLS／重連抽樣、`internal/shell` 快照／席位重播與 UI 指紋正規化，以及 Docker + Xvfb `cmd/moo2` 三次共同開局、首回合 lockstep 目標測試。`netNextTurn` 仍是畫廊示範，正式流程使用 `networkWaitScreen`。
 - [x] **可選 AI-to-AI 強化（2026-08-11）**：AI 星選的行星價值／距離模型與議會兩候選人／第三方搖擺票已完成；現在另有可保存、可重播的 AI 彼此戰爭、停戰／互不侵犯／同盟、貿易／研究協議，以及抽象艦隊攻擊最高人口殖民地的戰鬥／佔領解算。這是 remake 模型，不冒充原版逐艦 blueprint；細節見 [`docs/tech/ai-to-ai.md`](docs/tech/ai-to-ai.md)。
-- [x] **原版 `.GAM` 匯入（2026-08-11）**：`ImportGAM`／`LoadGAMSession` 已把原版 `.GAM` 轉成可玩的 remake 工作階段；`LoadSession` 依 little-endian `0xE0` magic 自動分流，載入畫面會探測同槽 `SAVE1.GAM`～`SAVE10.GAM`，匯入後另存為 remake JSON，不覆寫原始檔。星系、行星、殖民地／前哨站、玩家／AI、外交旗標、67 筆領袖、艦隊、建築與建造佇列均有對應；研究完成 byte、特殊槽 bit 與原版任命／任期下游維持報告式未知，不猜測。`SAVE10.GAM` 真檔抽樣已通過。
+- [x] **原版 `.GAM` 匯入（2026-08-11；2026-08-24 多槽勘誤）**：`ImportGAM`／`LoadGAMSession` 已把原版 `.GAM` 轉成可玩的 remake 工作階段；`LoadSession` 依 little-endian `0xE0` magic 自動分流，載入畫面會探測同槽 `SAVE1.GAM`～`SAVE10.GAM`，匯入後另存為 remake JSON，不覆寫原始檔。星系、行星、殖民地／前哨站、玩家／AI、外交旗標、67 筆領袖、艦隊、建築與建造佇列均有對應；八個武器記錄與特殊裝置 bitset 現會完整保存及快照往返，不再靜默丟棄第一槽以外資料。研究完成 byte、特殊裝置 raw ID 的完整語意與原版任命／任期下游維持報告式未知，不猜測。`SAVE10.GAM` 真檔抽樣已通過。
 - [x] **敵方戰機下游命中／傷害（2026-08-11）**：ID 31 第二組 `1..4 / 4..16 / 2..7` 與 `sub_3AD57 @ 0x3AD57` 的 1..100 隨機、`roll <= 95` 攻防修正、40 命中門檻、`max-min+1` 插值端點，以及相鄰 `sub_3AC20 @ 0x3AC20` 的直接插值式已分開接入；Bomber profile 走 `ResolveFighterBomb`，兩條結果都逐架進最弱護盾面／裝甲／結構消費。`RawFlags & 4` 的 sub3AD57 表面分支經可達性分析證實不可達；未追回的是攻方加成欄位完整語意、兩份外部索引函式名稱與 raw runtime 輸入，不再把固定 3/5 近似寫成原版值。
 - [x] **星際要塞完整已追回火力（2026-08-11）**：`sub_4D18E @ 0x4D18E` 四個槽已保存為 seed／raw／cap `(375,2,99)`、`(187,0,198)`、`(187,4,198)`、`(375,2,99)` 並彙整進安塔蘭終局齊射；class 6 直接 byte stride 讀址 `0x17F69C=900`、`P=750`、`sub_6EE8E @ 0x6EE8E` divisor 中間算式、raw `2/4` 百分比表與 live tech 分支已由 IDA Pro 靜態追回。99/198 是容量上限與拆槽規則，不是固定 runtime 數量；快速戰鬥明示採 full-cap policy，raw flag 正式玩法名稱與 live tech 導出的當下數量仍是 oracle 差異，不阻塞 remake。
 
-#### 只在要追求「原版逐值／逐幀等價」時處理的 oracle
+#### 核心項目的證據限制（不另開重複待辦）
+
+> 下列內容只補充上方高優先項目的證據邊界，不是第二份工作清單；實際狀態與勾選只維護在上方
+> 忠實化項目及 `docs/re/parity-matrix.tsv`，避免同一工作完成後留下另一個未勾項。
 
 - [x] **IDA Pro 靜態 oracle 批次（2026-08-11）**：已用同一份 `Orion2.exe.i64`、IDA Pro 9.4 與非破壞性 IDC 探針確認 `STREAM`／`STREAMHD` 門檻、背景／戰鬥曲池、敵方五級 blueprint writer／非空武器槽、`sub_3AD57` 戰機命中／傷害式、相鄰 `sub_3AC20` 直接插值式、要塞 class 6／seed／raw flag／容量 divisor、外交評分桶與回應分支門檻，以及 `.GAM` `0x3B×0x43` 全局領袖區塊的讀寫對稱。結果與位址衝突、輸入雜湊、證據等級寫入 [`docs/re/oracle-static-ida-20260811.md`](docs/re/oracle-static-ida-20260811.md)；沒有把未知語意或外部符號表別名升格成事實。
-- [ ] 取得可啟動 `VESA.COM` 的 DOSBox runtime 後，才補 `sub_3AC20`／`sub_3AD57` 相鄰函式的外部名稱解析、live tech／逐彈逐槽 runtime 值、`ARM` raw bit 正式命名與原版 20 幀艦身 timer；敵方戰機兩條 raw 傷害式、星際要塞 remake 消費端、事件／爆炸 remake consumer 與 `CMBTSHP` 精確圖片映射已完成，剩下的是逐值動態 oracle，非阻塞。
-- [ ] 同一 oracle 批次仍可選核對外交尚未對回的特殊 raw 上游／創造力係數、原版兩張 `SABOTAGE` score table 的上游填值／防守策略，以及一般在職領袖 callback 的 raw 設計／帝國欄位逐值資料流；IDA 已完成 `sub_1014A4` packed byte／slot helper／亂數位置／門檻分支與 `sub_E2AB1`→`sub_E1D59`／`sub_DF8F0`／`sub_E2710` callback 鏈，remake 的結構化分數、Agent 消費與 ETA callback 近似已接。活動 Trader 的政府／神級商人／經驗 bucket／tier 1/2 最大加成已由 `sub_101BA4`／`sub_94951` 接入。食物複製機半食物／半 BC 已在 remake 接線，現只保留其「原版是否逐碎片付款」的證據留白。外交評分／回應比較常數及 `.GAM` 全局匯入鏈已由 IDA 靜態確認，完整 AI end-to-end 接受表仍未知。
-- [ ] 嚴格原版展示差異（議會／安塔蘭幀停留時間、原版 `CMBTSHP` 20 幀 timer、殖民地總覽下排第三格、文字描邊／陰影）只有在取得對應 runtime 證據後才排；地面戰已接入 `ResolveGroundCombatOrig` 的原版 LCG／AI 裝甲營／守方存活回寫與 captured population 保留，事件漂移與爆炸連鎖的 raw 純公式已測試，remake strategic consumer 也已接，現只保留原版 event record／raw 下游映射，現有 remake 可玩流程不以此阻塞發行。
+- 戰鬥項先以靜態 IDA 補 `sub_3AC20`／`sub_3AD57` runtime 參數、live tech、逐彈逐槽值、
+  `ARM` raw bit 與原版艦身 timer caller／consumer；靜態不足才用可啟動 `VESA.COM` 的 DOSBox 做
+  邊界實驗。敵方戰機傷害子式與要塞 remake consumer 已存在，但完整戰鬥 parity 尚未閉合。
+- 外交／間諜／領袖項仍需特殊 raw 上游／創造力係數、原版 AI 防守策略、一般在職領袖 callback
+  的 raw 設計／帝國欄位逐值資料流；SABOTAGE 兩張帝國攻防表的上游已閉合，但 Agent 訓練成本、
+  維護與 AI 任務政策仍是獨立的原版忠實度工作。
+- 嚴格展示差異包含議會／安塔蘭幀停留、原版 `CMBTSHP` 20 幀 timer、殖民地總覽下排第三格、
+  文字描邊／陰影；原版 event record、爆炸 raw 下游與全局 save seed 也仍屬對應核心項目的
+  證據限制，不能因 remake consumer 存在就升格為 runtime parity。
 
 #### 可選擴充與明確不做
 
-- AI 星選已使用行星價值／距離模型，`AIRelations`、兩候選人與第三方議會搖擺票已接；可選 AI-to-AI 實際戰爭／外交也已接入 `AIWars`／`AIPolicies`、抽象艦隊與存檔。原版逐艦 blueprint 與精確 AI 門檻仍是 oracle 差異，不重新開 remake 漏接迴圈。
+- AI 星選、`AIRelations`、兩候選人、第三方議會搖擺票、`AIWars`／`AIPolicies`、抽象艦隊與存檔是已完成的 remake 模型；它們不再被用作原版 AI／外交完成證據。原版 `NPC_To_NPC_Treaty_Negotiations_` 與議會投票鏈已列入最高優先 parity 工作。
 - TCP 多人最低可玩鏈之外的重連／心跳／加密／身份驗證已完成；NAT 穿透不是本專案內建功能，公網部署仍需外部 relay 或 UPnP，不能把它寫成已解決。
 - 不列入工作：`Calc_Tech_Value_` 尚無遊戲消費端的 C–K 候選語意、零消費的內部反組譯探針，以及其他與玩家行為無關的內部功能。除非新 gameplay 證據直接觸發，禁止為它們開新挖掘迴圈。
 - 不列入工作：數據機／序列埠／`Comm Info`／TEN 舊硬體或已停止服務；remake 的替代方案是 TCP／熱座。對局開打後中途加入也不列入最低可玩鏈，除非另立產品 scope。
@@ -203,7 +779,7 @@
 
 | 探針 | 殘量 |
 |---|---|
-| ① 零覆蓋函式 / ② 零消費常數 | **見底** |
+| ① 零覆蓋函式 / ② 零消費常數 | 這組探針只能找 remake 死碼，不能衡量原版 call graph 覆蓋；2026-08-12 起不再用「見底」宣稱 parity |
 | ③ 被餵固定值的參數 | **兩側都掃過了**(第 71 項(探針③內部函式))。gamedata 側剩 5 小項;內部函式側剩 4 條**已判定為正確**的 |
 | ④ 手冊有而沒抄的資料 | 見上面第一節 |
 | **新增:元件表有但沒有消費端** | 隱形裝置已接(第 77 項(元件表真值));剩 1 項已標註的代理(重生程序) |
@@ -226,7 +802,7 @@
 | ~~淘汰 `-play` 簡約殼~~ **已刪除**(2026-08-08 第 81 項(淘汰簡約殼)) | 448 行 + 兩個旗標 + main.go 的分支全部移除。⚠ 順帶訂正兩件事:`colonyview.go` **不是它的東西**(走 `-colony`,是與 `-lbx`/`-race` 同類的開發用檢視模式,留著);`transition`/`screen` 兩個型別雖然住在 `play.go`,卻是十來個檔案在用的,已拆到 `screen.go` |
 | **字型子集 + `go:embed`** | ⚠ **與上一列不是同一件事**(先前寫成同一件)。譯表已烘進去(第 83 項(打包路徑));**字型不能烘**——使用者自備的 TTC 授權不明,不能進 repo 也不能進執行檔(CLAUDE.md `[HARD]`)。真要做只能是「自製/開源字型的子集」,那是另一個題目 |
 | 種族關係的 SABOTAGE / HIDE 兩顆鈕 | HIDE 與 SABOTAGE 已接入逐對手任務、存檔與回合結算；SABOTAGE 依原版 `0x1014A4`／`0x10130A`／`0x145EA` 做 70 門檻的建築破壞，remake 的 AB／DB／E 與 Agent 消費已完成；原版三顆鈕左右語意與 raw 完整分數仍未知 |
-| ~~**客製種族特殊能力與數值 picks**~~ **remake 已接(2026-08-10)** | `CustomRaceTraits` 已接入官方 22 項選項、存檔／熱座與消費端；心靈感應、幸運、全知、匿蹤艦已接到外交、事件、能見度／偵測與戰鬥；艦艇防禦、地面戰、諜報三類數值 picks 也已寫入 `Race`。只剩食物複製機半 BC 規則的原版證據差異 |
+| ~~**客製種族特殊能力與數值 picks**~~ **remake 已接(2026-08-10)** | `CustomRaceTraits` 已接入官方 22 項選項、存檔／熱座與消費端；心靈感應、全知、匿蹤艦已接到外交、能見度／偵測與戰鬥；Lucky 的壞事件取消與額外好事件累積鏈、一般事件排程及帝國目標純權重已於 2026-08-25 依 IDA 修正。AI／熱座目標效果回寫仍依頂端活表列為未閉合。艦艇防禦、地面戰、諜報三類數值 picks 也已寫入 `Race`。完整逐能力 parity 仍以頂端活表為準。 |
 | ~~熱座:指定**哪幾個**帝國是真人~~ **已完成**(2026-08-09) | 新遊戲命名/旗色後加入指定清單，按選取的 `AIPlayers` 索引接管；未選中的 AI 保留，並以測試鎖定選取順序與 UI 互動 |
 | ~~熱座:席位補齊玩家側系統~~ **已完成核心轉換**(2026-08-09) | 接管席位保留種族加成、領袖、母星建築、艦隊、殖民地平行陣列與玩家間諜欄位；AI 模型本身沒有的建造佇列／前哨站／傭兵池仍以空值起步，列為誠實模型差異 |
 | ~~CMBTSFX 爆炸/光束特效~~ **已接(2026-08-10)** | `CMBTSFX.LBX` 多幀 delta 累積解碼、命中／爆炸序列與安全 fallback 已接戰術畫面；原版逐資產語意仍未知 |
@@ -294,7 +870,7 @@
 | N | **征服人口免費全額生產**(2026-08-08 第 57 項):手冊「each alien unit produces only three quarters」沒接,`ProdAlienWorkerOutput` 與 `ProdWorkerOutput` 都是零呼叫端。三項產出都套上,順帶讓「每工人至少 1 產能」的下限第一次真的生效 | 覆蓋率探針 + 手冊 | 主迴圈 ✅ |
 | O | **間諜三項手冊加成一支都沒接**(2026-08-08 第 58 項):`spy.go` 的擋門註解列了三個理由,逐條核對後**有一條已經過期**(逐科技模型早就有了)。科技加成接上攻守兩側、政府加成接上玩家側;種族特性強度與 AI 政府欄位仍缺,理由重寫 | 覆蓋率探針 + 手冊 | 主迴圈 ✅ |
 | P | **「成就」科技的全帝國效果四條都沒接**(2026-08-08 第 59 項):擋門理由是「remake 無成就追蹤系統」——而成就在 MOO2 就是科技。順帶修掉士氣傳基本政體而非進階政體的同款 bug | 覆蓋率探針 + 手冊 | 主迴圈 ✅ |
-| Q | **艦員經驗只加攻擊沒加防禦**(2026-08-08 第 60 項):註解寫「打得準也閃得掉」而程式只做前半;飛彈閃避恆傳 0 的六個來源裡有兩個現在算得出來(艦員/舵手)。登艦戰那一支仍不接——那個系統確實不存在,理由沒過期 | 覆蓋率探針 + 手冊 | 主迴圈 ✅ |
+| Q | **艦員經驗四條玩家可見加成軌已接**：BA／BD、飛彈閃避與 Bo 均有消費端；2026-08-25 再以 IDA 閉合 Bo、艦隊 Commando／Security 與雙方所屬帝國資料，快速與格子戰術各有測試 | 覆蓋率探針 + 手冊 + IDA | 主迴圈 ✅ |
 | R | **兩個為 UI 而寫的函式畫面沒用過**(2026-08-08 第 61 項):`AssimilationProgressNeeded` 與 `CrewXPToNextLevel` 的檔頭都寫著「為了讓玩家看得到」,而畫面從來沒呼叫過。同時完成 36 支零呼叫端函式的逐支分類——其餘都有正當理由 | 覆蓋率探針 | 主迴圈 ✅ |
 | S | **護盾減傷五級裡四級是錯的**(2026-08-08 第 62 項):`shieldReduceByName` 回「清單索引 × 2」,手冊值 1/3/5/7/10 被算成 2/4/6/8/10。改用科技當鍵查手冊常數。掃法從「零呼叫端的函式」擴到「零消費的匯出常數」(190 個,其餘多為原版列舉鏡像)| 常數消費掃描 + 手冊 | 主迴圈 ✅ |
 | T | **陸戰隊運力不分艦體一律每艘 4**(2026-08-08 第 63 項):手冊 p.121 每個艦體等級都有 Marines 欄(5/8/12/20/30/50),而 remake 一直有艦體等級。同族的 `armorHPByName`(缺裝甲科技倍率)與 `shipStrength`(明說是抽象)查過後不動 | 手冊 p.121(已交叉驗證) | 主迴圈 ✅ |
@@ -398,7 +974,7 @@ internal/shell/orbital_bombardment.go:218
 - [x] 經濟可持續化(玩家+AI 對稱):饑荒復原 + 食物盈餘收入(手冊 p.25)+ 玩家/AI 母星行星驅動 yields;300 回合自我修復、測試更新到忠實基準
 - [x] 修 AI 艦隊投資整數捨去 bug(餘數池,FleetStrength 正確成長)+ AI 接忠實 yield
 - [x] 地面戰「模型 + 流程」shell 層接線(task 16 續):陸戰隊生成(Marine Barracks 依手冊公式補充,`advanceMarines`)、載運(`LoadMarines`,運力=艦數×手冊每艘 4 的近似,無獨立運輸艦船體類別,標簡化)、入侵解算(`GameSession.InvadeColony`,組 `gamedata.GroundForce` 接 `ResolveGroundBattle`,rng 依回合+星索引種子化可重現)、勝負後續(星 Owner 轉移 + 殖民地過戶/AI 端移除,`internal/shell/ground_invasion.go` + `ground_invasion_test.go`)。剩 UI 繪製/操作介面未做(不碰 interactive.go,歸後續 task)。
-- [x] 地面戰補完:裝甲營房戰車 + 軌道轟炸接線(task 16 續,2026-07-11):`gamedata/ground.go` 原本零呼叫端的 `GroundArmorBarracksUnits`/`GroundArmorBarracksCap`/`GroundTankHitsToKill`/`GroundBombHitsFromDamage`/`GroundPlanetTotalHits` 全部接進活對局。**戰車生成**:`advanceArmor`(比照 `advanceMarines`,新增 `PlayerColonyTanks`/`ArmorBarracksAge` 平行陣列,已接進 `EndTurn`)+ `LoadTanks`(與 `LoadMarines` 共用同一個 `MarineTransportCapacity()` 運力池,標簡化)+ `InvadeColony` 攻方 `GroundForce` 混編陸戰隊+戰車(合併順序「陸戰隊在前、戰車在後」,技術原因是靠 `ResolveGroundBattle`「前排先陣亡」規則從單一 `AttackerSurvived` 總數精確拆回兩個兵種各自存活數,不需改動 `gamedata.GroundUnit` 結構);已研究 Battleoids(`TOPIC_ASTRO_CONSTRUCTION`)則戰車固定 3 hits(`GroundBattleoidHitsToKill`)+ 額外 +10 force(`GroundBattleoidCombatBonus`,僅戰車數>0 時套用)。守方戰車 TODO 未接(AI 無 `ColonyBuildings` 追蹤,無從得知是否已建裝甲營房,不臆測)。**軌道轟炸**:新增 `internal/shell/orbital_bombardment.go`,`GameSession.BombardColony(starIdx)` 引擎函式(手冊 p.129,10 輪齊射模擬 `fleetBombardDamage` 重用既有 `ResolveShot`/`ResolveMissileShot` → `GroundBombHitsFromDamage` 換算 hits → 直接扣減殖民地人口,夾在 0)。範圍限制(誠實標註,非杜撰):只扣人口,不扣建築/儲存生產/駐軍(AI 無對應持久資料可扣);轟炸不佔領殖民地(手冊:入侵才佔領);光束/魚雷減半、電腦命中加成、行星護盾在轟炸/戰術戰鬥層本身都還沒有獨立函式,沿用既有 `ResolveShot` 未套用這兩項(TODO);UI 觸發僅引擎層函式,`interactive.go` 未接對應按鈕(誠實延後)。測試:`ground_invasion_test.go`(戰車生成/上限/共用運力/Battleoid/入侵混編拆解/勝率提升對照組)+ `orbital_bombardment_test.go`(前置條件/確定性/人口扣減鏈用保證命中滿傷艦隊手算驗證/不佔領)全綠。詳見 `docs/tech/ground-combat-algorithm.md`「2026-07-11 裝甲營房戰車 + 軌道轟炸接線」節。
+- [x] 地面戰補完:裝甲營房戰車 + 軌道轟炸接線(task 16 續,2026-07-11；2026-08-24 勘誤):`gamedata/ground.go` 的裝甲營房、戰車與入侵鏈已接進活對局。**軌道轟炸**現依 IDA `sub_4257E @ 0x4257E` 採固定三外圈；1.3/1.5 的 5/10 只代表炸彈攻擊當量，累積傷害超過 30000 即停，runtime 結果由呼叫鏈證實除以 40。手冊的 10 次與除以 100 僅保留為顯示估算證據，不再描述 runtime。仍未精確還原的快速戰鬥武器數量與特殊武器鏈已留在頂端活表。
 - [x] 武器改造佔格已於 task#36 接線(`ShipDesignSpaceUsedWithMods`),此條的待辦部分已完成
 - [x] 戰鬥公式依武器類型分流(**2026-07-11**):飛彈躲避/AMR 攔截/球狀傷害的公式其實先前就已移植自手冊(`gamedata/missile.go`/`gamedata/damage.go`,有測試),只是戰鬥解算(`cmd/moo2/interactive.go` `fireRound`、`internal/shell/session.go` `battleVolley`)全部武器都走 beam 邏輯(`shell.ResolveShot`),飛彈(核飛彈/麥克萊特飛彈)被當 beam 打。這輪修正:新增 `internal/shell/weapon_kind.go` 依武器名分類 beam/missile/spherical(核對手冊「Notes on Spherical Damage」確認死光不是球狀武器,是一般光束武器且是 `DamageForHit` 手冊 worked example 出處,現行武器表也沒有任何真正的球狀武器);新增 `shell.ResolveMissileShot`(AMR 攔截 + Jam Chance 躲避)、`shell.ResolveSphericalShot`(已測試但暫無武器掛載,備妥待未來新增);`fireRound`/`battleVolley` 依 `CombatShip.Kind`/`combatant.kind` 分流,beam 行為不變(回歸測試)。詳見 `docs/tech/tactical-combat-weapon-kinds.md`。
 - [x] AI 財政赤字修正:職務保底(MinWorkersForSolvency/DecideColonyJobsSolvent,只 Scientific 挪 1 人)+ 順修 AI 職務回寫 bug;AI BC 從發散(-217)改收斂有界(48),測試綠(見 ai-fiscal-solvency.md)
@@ -760,22 +1336,25 @@ internal/shell/orbital_bombardment.go:218
 
 ## Phase 5 — Gameplay 引擎重建
 - [x] 回合結算主迴圈(engine.RunEmpireTurn:殖民地經濟聚合+稅收+國庫+研究推進)
-- [x] 殖民地經濟:食物/工業/研究/稅收/國庫已實作(engine);人口成長回寫 Population 已補(shell.advancePopulation 累加 PopGrowth 達門檻 +1 人口、新單位為工人、受 PopMax 上限;門檻為 remake 調校值,provenance 見 session.go 註記)。測試 TestPopulationGrowthWriteback/CappedAtMax
+- [x] 殖民地經濟:食物/工業/研究/稅收/國庫已實作(engine);人口成長回寫 Population 已補(shell.advancePopulation 累加 PopGrowth 達門檻 +1 人口、新單位依缺糧保護指派、受 PopMax 上限)。本歷史項目的舊 300 點調校門檻已於 2026-08-24 由官方 1.50 尺度 1,000 點取代；目前限制見頂端活表。測試 TestPopulationGrowthWriteback/CappedAtMax
 - [x] 建造佇列 + 建築長期效果:advanceBuilds 完工後套用永久產出加成,每殖民地每種只套一次(ColonyBuildings 去重);殖民地總覽顯示已建建築。**(2026-07-11 忠實化訂正)**先前把手冊「殖民地整體固定加成」揉進 per-worker 欄位湊數(自動工廠工業/工人+2、研究實驗室研究/科學家+5 等,小殖民地過度受益、大殖民地不足),現分開建模:per-worker 訂正回手冊值 + 新增 `FlatFood`/`FlatIndustry`/`FlatResearch`(固定加成)、`IncomeBonusPercent`(太空港+50%/證券交易所+100%,逐殖民地精確套用於 `RunEmpireTurn`)、`PopMax` 直接加成(生態圈+2)、`FlatGrowth`(複製中心)。機器人工廠(2026-07-11 已接線,見下)。共 18 棟已忠實建模數值,詳見 `docs/tech/colony-buildings.md` §6。測試 TestBuildingLongTermEffect/TestResearchLabEffect/TestSpaceportIncomeBonusPercent/TestBiospheresRaisesPopMax 等(engine+shell)
 - [x] 機器人工廠礦產豐度分級接線(p.82)**(2026-07-11)**:比照重力懲罰的接線手法(`4c2a26a`),`engine.ColonyState` 新增 `MineralRichness gamedata.PlanetMinerals` 欄位,獨立保留建立殖民地當下的原始礦產豐度分類(先前只烘進 `IndustryPerWorker` 靜態費率,事後拿不回原始分類)。零值陷阱處理:`gamedata.ULTRA_POOR` ordinal=0,故全部既有 `ColonyState{...}` 建構點(engine/shell 測試、`cmd/moo2sim`)皆已明確補上本欄位。`applyBuildingEffect` 的機器人工廠 case 依 `gamedata.ProdRoboticFactoryBonus(int(cs.MineralRichness))`(`internal/gamedata/production.go` 既有查表函式,索引與 `mineralProductionTable` 一致)查出手冊固定值(Ultra Poor+5/Poor+8/Abundant+10/Rich+15/Ultra Rich+20)加進 `FlatIndustry`,不動 `IndustryPerWorker`。存檔行星由 `ColonyStateFromSave` 讀 `save.Planet.Minerals`(與 `gamedata.PlanetMinerals` 同源 openorion2 enum ordinal,可直接轉型,同重力)。母星固定 Abundant。測試:`TestRoboticFactoryEffect`(母星 Abundant+10)、`TestRoboticFactoryEffectByMineralRichness`(五級分級逐一驗證,含 UltraPoor+5/Rich+15)(shell)。
 - [x] 重力懲罰接進生產管線(**2026-07-11**):`ColonyState` 新增 `PlanetGravity` 欄位,`colonyFood`/`RunColonyTurn` 對食物/工業/研究三種 per-worker 產出套用 `gamedata.GravityPenaltyPercent`(Low-G -25%、Heavy-G -50%;士氣+重力先加總成單一百分點再套一次 `GravityAdjustedProduction`,避免兩次連續整數除法的複合誤差,理由見 `internal/engine/colony.go` 註解)。行星重力產生器 `NormalizeGravity` 旗標由 no-op 變成真的會歸零懲罰。`ColonyStateFromSave`(存檔↔engine 橋接)同步接上 `save.Planet.Gravity`(與 `gamedata.PlanetGravity` 同源 openorion2 enum ordinal,直接轉型)。種族 Low-G/High-G 重力天賦未建模,固定以一般種族為基準;固定加成(Flat*)不吃重力。**已知現實限制**:本專案唯一的殖民地建構點(`NewDemoSession`/`playerHomeworldColony`)固定 Normal-G,尚無「開拓新殖民地」流程會產生 Low-G/Heavy-G 殖民地,故此接線在 demo session 暫不可見,主要對存檔載入模式(`RunGameTurn`)生效。測試 TestRunColonyTurnGravityHeavyPenalty/TestRunColonyTurnGravityNormalizeGravityCancelsPenalty/TestRunColonyTurnGravityNormalGNoPenalty/TestRunColonyTurnGravityAndMoraleCombinedPercent/TestColonyStateFromSaveGravityMapping(engine)
 - [x] 士氣(Morale)接進 MoralePercent(**2026-07-11**):`GameSession` 新增 `Government`(`gamedata.MoraleGovernmentType`)欄位,`ApplyGovernment` 記錄政府型態(`Governments` 索引→`moraleGovByIndex`,四選一映射到對應基礎政府,進階政府 Imperium/Confederation/Federation/Galactic Unification 不區分)。新函式 `colonyMoralePercent`(`internal/shell/session.go`)= `gamedata.MoraleGovernmentBase(gov, hasBarracks)`(手冊 -20%/無 Barracks)+ 全息模擬艙(`MoraleHoloSimulatorBonus`+20%)+ 歡樂穹頂(`MoralePleasureDomeBonus`+30%),依 `ColonyBuildings` 讀取已建建築;政府變更(`ApplyGovernment`)與建築完工(`advanceBuilds`→`recalcColonyMorale`)皆會重算。**母星起始 `MoralePercent` 從無據硬編 +10 訂正為忠實值 0**(獨裁 + 已建 Marine Barracks 抵消 -20% 懲罰,無士氣建築加成;見 `playerHomeworldColony` 註解,`TestGameSessionEndTurn` 已同步訂正預期值 33→30)。誠實未套用(手冊有但不假裝精確):多種族懲罰(`MoraleMultiRacialPenalty`,remake 不追蹤殖民地是否多種族,異族管理中心暫無可見效果)、首都淪陷懲罰(remake 無首都被攻陷狀態)、Virtual Reality Network(手冊定性為「成就」非建築,不在 `gamedata.Buildings`,remake 無成就系統)。測試 TestColonyMoralePercentDictatorshipNoBarracks/TestColonyMoralePercentBarracksCancelsPenalty/TestColonyMoralePercentHoloSimulatorAndPleasureDomeStack/TestColonyMoralePercentGovernmentDiffers/TestApplyGovernmentRecalculatesMorale/TestMoralePercentAffectsColonyProduction(shell)。詳見 `docs/tech/colony-buildings.md` §6.1 士氣列、`docs/HONEST-STATUS.md` 2026-07-11 追加段。
 - [x] 指揮評等(Command Rating)供需接線(**2026-07-11**):手冊 p.169「size class」公式(Frigate=1..Doom Star=6,`gamedata.ShipCommandCost`,以 Titan=5/Doom Star=6 兩處具體數字交叉驗證)+「每未覆蓋點 -10 BC」超支懲罰,先前 `gamedata.IncomeCommandOverflowCost` 是零呼叫端死碼。供給端:星基+1/戰鬥站+2/星辰要塞+3(三者取代不疊加,`gamedata.CommandPointsFromBuildings`)。`engine.PlayerState` 新增 `CommandPointsSupply`/`UsedCommandPoints` 欄位,`shell.GameSession.EndTurn` 每回合依實際已建成軌道衛星(`totalCommandPointsSupply`)與艦隊(`usedCommandPoints`)重算,`engine.RunEmpireTurn` 算超支併入 `NetBC`(新增 `EmpireOutput.CommandOverflowCost` 曝露懲罰金額)。當時誤判「開局母星 1 座星基(+1)vs 3 艘開局艦艇(需求3),缺口2點恆定-20BC/回合」為手冊忠實結果,實為**regression**(見下方同日修復項)。誠實未做(手冊有數字但架構未跟上,詳見 `docs/tech/moo2-formulas-reference.md`「指揮評等供需」節):通訊科技(Tachyon+1/Hyperspace+3,每軌道衛星)、Imperium 政府 +50%(本專案政府型態全域固定 Dictatorship,無 Imperium 狀態)、Operations 軍官技能(手冊無精確數字)、AI 對手(抽象 FleetStrength 無逐艦清單,供需維持零值無懲罰)。測試 TestShipCommandCost/TestShipCommandCostOutOfRange/TestCommandPointsFromBuildings(gamedata)、TestRunEmpireTurnCommandOverflow/TestRunEmpireTurnCommandSupplyCoversDemand(engine)、TestTotalCommandPointsSupply/TestUsedCommandPoints/TestUsedCommandPointsEmptyFleet/TestEndTurnCommandOverflowPenalty/TestUsedCommandPointsUsesGamedataTable(shell)。
 - [x] 指揮評等開局死亡螺旋 regression 修復(**2026-07-11**,同日接線後發現):上一項漏算了帝國基礎指揮評等供給,誤判「開局-20BC/回合」為忠實機制。用真實存檔 `SAVE10.GAM`(`/home/anr2/moo2-private-build/gamedata/mastori2/SAVE10.GAM`)oracle 反推(rulebook 62/64):5 個活躍玩家(不同種族)各持 1 殖民地,`CommandPoints` 讀到 6(其中 1 名玩家=8);比對已建成軌道衛星,讀到 6 的玩家只建星基(6-1=5),讀到 8 的玩家建星辰要塞(8-3=5)——5 個不同種族玩家一致反推基礎值 5,與種族/政府無關。新增 `gamedata.CommandPointsBase=5`(`income.go`,含完整 oracle 推導註解),`shell.GameSession.totalCommandPointsSupply()` 在逐殖民地建築供給之外每帝國加這一次(非逐殖民地)。修復後開局供給=5+1(星基)=6≥3(需求),不再超支;20 回合探針軌跡:BC 從第 2 回合 101 穩定爬升至第 21 回合 136,人口穩定在 8→9,無死亡螺旋(修復前:BC 第 7 回合轉負、第 21 回合 -255,人口第 20 回合起餓死)。300 回合被動不建造測試(`events_test.go` `bcCrashFloor300Turns`)實測最低點從 -3710(第 273 回合)改善到約 -51(第 133 回合),門檻由 -4000 收回 -400。**已知限制(TODO)**:單一存檔皆 1 殖民地,無法分辨此 5 點是 per-empire flat 還是 per-colony,暫採 per-empire flat,待多殖民地存檔驗證。測試更新:`TestTotalCommandPointsSupply`(6→11)、`TestEndTurnCommandOverflowPenalty`(改用外加艦隊建構真實超支情境,原始 20/10/0 三情境已不成立)。詳見 `docs/HONEST-STATUS.md`/`docs/tech/moo2-formulas-reference.md`「指揮評等供需」節/`docs/tech/remaining-work-roadmap.md` A項。
-- [x] 科技研究樹推進(engine.RunResearchPhase 累積+完成判定+溢出保留;session.advanceResearch 自動推進主題)
+- [x] 科技研究樹推進（`RunResearchPhaseWithRoller` 累積、超額突破率、成功清零；`session.advanceResearch` 自動推進主題）
 - [x] 艦隊移動 + 星圖導航:SendFleet 依星距換算 ETA,EndTurn 跨回合推進,抵達標記探索;星圖點星→面板「派遣艦隊至此星」鈕 + 青色艦隊標記 + 航行連線 + ETA 顯示。測試 TestFleetInterstellarMovement
 - [x] 艦艇設計畫面在 `interactive.go`,過場截圖廊第 86 拍(`25_shipdesign.png`)
 - [x] 戰鬥:格子戰術戰鬥(2026-07-10 換原版美術:STARBG 星空+COMBAT 控制列+可見 CMBTSHP 艦艇+控制列 7 按鈕中文化;逐發用真 ResolveShot 命中/傷害/過盾/過甲);宣戰→戰術戰鬥→戰鬥結果。**(2026-07-11 更新:武器依 beam/missile/spherical 分流,飛彈躲避/AMR/球狀傷害公式接進解算,見 `tactical-combat-weapon-kinds.md`)**。**艦型 sprite 對照已接(task 12,2026-07-11)**:網搜定 CMBTSHP 色塊結構(8 色×45)+ 視覺比對定尺寸,戰鬥依艦級顯示不同大小 sprite、玩家/敵艦不同色塊,取代單一 placeholder(近似對照非原版精確 picture 映射,見 `docs/tech/cmbtshp-ship-sprites.md`)
 - [x] 外交對談(2026-07-10 破解 DIPLOMAT.LBX 換原版美術:逐族使節房+使節疊合,13 族對應對 RACESEL 核實);銀河議會選舉勝利條件(2026-07-11,見下方勝利條件任務,取代原本無門檻/無2/3多數的簡化投票)
 - **2026-08-11 勘誤**：上一行戰鬥舊摘要的「網搜近似 picture 映射」已由 IDA `sub_30062 @ 0x30062` 取代為已證實的 `45*playerColor+rawPicture`（`rawPicture 0..43`）；原版 20 幀朝向 timer 仍未知，但 remake 已接移動後固定 tick 近似，詳見 `docs/tech/cmbtshp-ship-sprites.md` 與 `docs/re/remake-consumer-closure-20260811.md`。
-- [x] 隨機事件系統:每回合 30% 觸發 6 種 MOO2 風格事件(經濟繁榮/太空海盜/富礦脈/瘟疫/科學突破/隕石),效果有界(BC 不為負、人口不低於1)、種子化可重現,顯示於回合摘要。測試 TestRandomEventsFireAndBounded/Reproducible
+- [x] 隨機事件 remake 基礎系統：已實作事件具真實效果、種子化可重現並顯示於回合摘要；
+  舊 30%／6 種自編事件模型已被原版 0..28 候選與 `sub_2230A` 排程取代。未實作事件仍如實
+  消耗候選而不產生空播報；完整效果與全銀河目標以頂端活表為準。
 - [x] 安塔蘭人入侵:週期性終局威脅(前20回合寬限,之後每15回合一次),強度隨次數升級,攻母星(人口+BC損失,有界),母星艦隊可部分防禦減損;顯示於回合摘要(紅色警報)。測試 TestAntaresRaidsScheduleAndEscalate/DefenseReducesDamage
-- **2026-08-11 事件勘誤**：隨機事件舊摘要的 30% 是 remake 觸發器；原版 20-slot／加權漂移／record dispatcher 已另存純 oracle，尚未宣稱與此觸發器相同。
+- **事件排程現況**：2026-08-25 已以 IDA Pro 閉合並接入原版排程；事件 record、AI／熱座
+  全局目標及未實作效果仍分開標示，不以排程測試代替整體 parity。
 - [x] 第 47 項(AI艦隊移動)+ 第 55 項(AI 科技先前靠偷)之後,三塊都已完成
   - [ ] 精讀 1oom `game_ai_classic.c`,抽「AI 決策流程」語言無關筆記
   - [ ] 精讀 GameFAQs MOO2 AI FAQ + 策略指南,補 MOO2 特有行為
@@ -834,7 +1413,7 @@ internal/shell/orbital_bombardment.go:218
   平行陣列同步)、`TestAIExpand_EconomyGrowsWithColonyCount`(殖民地數增加後軍力成長加速)、
   `TestAIExpand_NoOpWhenNoUnownedStars`(無星可擴張時安全 no-op)。詳見
   `docs/HONEST-STATUS.md`、`docs/tech/remaining-work-roadmap.md` B 項。
-- [x] 第 45~45 項逐條清點,**領袖技能 26 項已有 remake 消費端**;Tactics 依原版自己未實作，Famous 招募機率與 Diplomat 接受門檻列為 oracle 留白
+- [x] 第 45~45 項逐條清點，**領袖技能 26 項已有 remake 消費端**；Tactics 依原版自己未實作，Famous 招募機率已補證，Diplomat 接受門檻仍為 oracle 留白
 - [x] task#36 已完成(mod 層 + 佔格 + 傷害)
 
 ## Phase 6 — 音樂 / 音效
@@ -854,9 +1433,9 @@ internal/shell/orbital_bombardment.go:218
 - [x] 研究「1.3 → 1.5 規則差異清單」:逐條核對 1730 行 CHANGELOG_150 + MANUAL_150 + PARAMETERS.CFG,`docs/tech/version-1.3-1.5-diff.md`。結論:落在已實作系統的真差異只 3 個(多數 CHANGELOG 是 bug fix 或「新增可調參數但預設=經典值」)
 - [x] rule profile 資料結構:`gamedata.RuleProfile` + `GameVersion` + `Profile13/15`(`internal/gamedata/ruleprofile.go`)
 - [x] 1.3/1.5 profile 實作 + 驗證(值 + 預設 Profile15=現行 三層回歸斷言)
-- [x] 主選單版本切換生效(**2026-07-11 收尾完成**):UI + 開局注入 + **三個 live 消費端全部接線**——①軌道轟炸齊射(1.3=5/1.5=10)②電漿砲傷害(`BuildShipWithMods` 改讀 `BuildWeaponOptions(s.RuleProfile)`,造艦定案值隨 `Ship.WeaponAttack` 帶進 `ResolveBattle`/`StartCombat`)③超先進科技研究成本(`engine.PlayerState.HyperAdvancedResearchCost`,`RunResearchPhase` 對 Hyper 主題套版本覆寫,`EndTurn` 對玩家+AI 同步注入避免規則不對稱;顯示層 `ResearchCostForDisplay` 帝國概況/研究選擇畫面一致)。測試:`BuildWeaponOptions(Profile15)` 逐元件等於套件級(behavior-preserving)+ 電漿傷害/研究成本隨 profile 變動斷言
+- [x] 主選單版本切換生效(**2026-07-11 收尾完成；2026-08-24 勘誤**):UI + 開局注入 + 三個 live 消費端全部接線——①軌道轟炸的炸彈攻擊當量(1.3=5/1.5=10；整體仍固定三外圈)②電漿砲傷害③超先進科技研究成本。
 - [x] diff 全量表 15 項 2026-07-11 全數盤點完畢
-  - [x] **AI 殖民地建築資料模型 + 軌道防禦吸收轟炸(2026-07-11,使用者選定方向)**:`AIOpponent` 新增 `ColonyBuildings []map[string]bool`(第三平行陣列,`buildDemoAIOpponents` 母星初始化為 `homeworldBuildings()` 獨立拷貝、`aiExpand` 新殖民地 append 空 map、`InvadeColony` 攻陷同步移除,三處維持等長;`persist.go` `aiSnapshot` 同步序列化,舊存檔 nil 安全降級)。`BombardColony`:bomb hits 先依建築名字母序(決定性、不吃 rng)摧毀建築(每棟耗 `GroundPlanetHitsPerBuilding + RuleProfile.BombardmentBuildingBonusHits`,**#7 版本接線**:1.3 每棟多 +1 hit),餘數 hits 才扣人口——軌道防禦讓人口在防禦被轟掉前受保護。`GroundBombardResult` 新增 `BuildingsDestroyed`/`BuildingsRemaining`。nil/空建築 map 逐位元回歸舊行為。測試:更新 `TestBombardColony_ReducesPopulationDeterministically`(母星2建築吸2 hits→popLoss 8→6)+ 4 新測試(建築先於人口吸收/餘數轉人口/#7 版本差異摧毀棟數不同/nil 回歸);moo2sim 20 回合軌跡與改動前逐字元相同(不動 EndTurn 經濟)。**本輪不做**防禦方反擊摧毀玩家艦(下一輪)。誠實簡化:#7 語意近似(CHANGELOG 原句模糊)、摧毀順序字母序非原版、入侵過戶不轉移建築、#8 HP模型未調和。
+  - [x] **AI 殖民地建築資料模型 + 戰略轟炸傷亡回寫(2026-07-11；2026-08-24 IDA 勘誤)**：`AIOpponent` 的建築、陸戰隊與戰車平行陣列均已持久化。舊版「按建築名字母序全部吸收，再依行星尺寸扣人口」已被 `sub_DCEBD @ 0xDCEBD` 直接反證並移除；現在以 raw building ID 48→1 建候選，排除 `{8,9,26,27,40,41,42,47}`，再混入每名陸戰隊、戰車、建造進度項與人口。抽中成本不足的單位即停止；寫回人口、駐軍、建造進度與建築 map，GAM adapter 同步保存 `BuildProgress` 與最後人口點數。1.3 建築 +1 hit 仍是 CHANGELOG 強推論；八類獨立防禦戰鬥者的精確摧毀鏈仍列在頂端活表。
   - [x] **#14 衛星/軌道防禦基地「space 預算武器平台」+ 版本相依 beam arc-cost(2026-07-11)**:`internal/gamedata/satellite.go` 新增獨立衛星/基地 space 預算(飛彈基地 300、地面砲台 450——手冊 p.78/p.81 確認值;星基/戰鬥站/星辰要塞 250/500/1200——借用 `ShipHullSpace` 同量級近似值)+ arc-cost 佔格公式(比照 `WeaponSpaceWithMods`)+ fit 公式;`RuleProfile` 新增 `SatelliteBeamArcCostPct`(1.3=25/1.5=33)、`GroundBatteryBeamArcCostPct`(1.3=0/1.5=50,CHANGELOG_150.TXT 1.50.7/1.50.10)。`internal/shell/orbital_bombardment.go` `retaliationAttackers` 改簽名讀 defender 科技(`bestUnlockedWeaponValue`,新 helper)+ profile,取代舊 shipStrength 4/8/16 固定 tier,推導出「隨科技變強」+「隨版本 arc-cost 不同而不同」的反擊戰力。校準除數 `SatelliteStrengthScale=20` 使雷射參考點下星基/戰鬥站重現舊 tier 4/8,星辰要塞算出 20(非近似 19,誠實標見常數註解)。平衡 sanity:開局艦隊轟炸開局 AI 母星(僅星基),Profile13/15 各掃 Turn 0..14,最大損艦數皆為 1(不破壞平衡)。測試:`internal/gamedata/satellite_test.go`(fit/arc 公式錨點)+ `internal/shell/satellite_defense_test.go`(版本差異/科技效果/飛彈基地不吃 arc/地面砲台/平衡 sanity)。誠實限制:AI 現行資料模型無研究進度推進機制,`bestUnlockedWeaponValue` 在 `NewDemoSession` 自然對局裡恆落到 fallback 分支(雷射/核飛彈),「科技變強」效果目前只能在單元測試手動建構已解鎖科技的 `PlayerState` 觀察到。
   - [x] **#4 運輸艦淨現金版本差異(2026-07-11 補實作)**:新增「運輸艦隊」(Freighter Fleet)殖民地建造選項(`gamedata.FreighterFleetActionName`,前置科技 `TOPIC_NUCLEAR_FISSION`,估計建造成本 PP60——沿用既有 Special 一次性行動框架,見 `gamedata/special_actions.go`)。完工時 `shell.GameSession.applySpecialAction`:`s.Player.ActiveFreighters += gamedata.FreighterFleetShipsPerBuild`(手冊 p.168:每次建造 +5 艘)+ `s.Player.BC += s.RuleProfile.FreightersCashBonus`(新 `RuleProfile` 欄位,1.3=5/1.5=0,出處 MANUAL_150.html「Buildings & Freighters Free Cash Bug」+ CHANGELOG_150.TXT 1.50.8)。維護費(每艘 0.5 BC/回合)不用另外接——`engine.PlayerState.ActiveFreighters` 先前已接進 `RunEmpireTurn`(恆 0 no-op),本輪讓它真的變非 0,維護費隨之自動生效。**批次 B 的 #10 也已確認非差異**(見 `version-1.3-1.5-diff.md` #10),批次 B 至此結案。**簡化(誠實標)**:只模擬手冊「固定回饋」那一側,不模擬 0-3 BC 建造當下維護費立即扣款那一側;不做完整貨運/補給物流(殖民地間運食物/殖民者)——運輸艦本輪只有「可建造+維護費+版本現金加成」三件事;**AI 未接同一建造流程**,`ActiveFreighters` 對 AI 恆為 0。測試:`TestSpecialActionByNameZH`/`TestAvailableSpecialActions`(gamedata,新增運輸艦隊斷言)、`TestProfile13Values`/`TestProfile15Values`(gamedata,新增 `FreightersCashBonus` 斷言)、`TestFreighterFleetBuild*`(shell,新增:完工增加 ActiveFreighters+國庫、1.3 vs 1.5 現金加成差異、維護費隨後續回合生效、開局不建造回歸不變)。詳見 `docs/tech/version-1.3-1.5-diff.md` #4、`docs/tech/moo2-formulas-reference.md`「運輸艦淨現金版本差異」節。
   - [x] **#13 掃描/偵測距離:輕量戰爭迷霧(2026-07-11)**:新增 `internal/gamedata/detection.go`(`ScannerRangeParsec` 基礎2/Space4/Neutron6/Tachyon8、`OrbitalScannerBonusParsec` 星基+2/戰鬥站+4/星辰要塞+6 擇一取代不疊加、`ParsecToNormalized`=1/10 換算常數、`DetectionRangeNormalized` 加總換算——**全部近似**,手冊無公開 parsec 數字)+ `RuleProfile.SensorRangeVersionBonusParsec`(1.3=0/1.5=1,對應 MANUAL_150.html「Scanners and Communications Discrepancy」修正的整體近似,非逐科技數字)+ `internal/shell/detection.go`(`GameSession.VisibleStars`/`starVisible`,啟用先前無人讀取的 `Star.Explored` 死旗標;可見條件:已探索 ∪ 玩家自己的星 ∪ 落在玩家殖民地/艦隊偵測範圍內)。`cmd/moo2/interactive.go` `drawStarmap` 接上 fog 繪製(未偵測星降噪成暗灰小點、不畫星名/擁有環;可見星維持全繪)。調參依據:量測 `NewDemoSession()` 實際程序化星系(24星,種子42)鄰近星距離,使開局 Profile13 可見 3 顆星、Profile15 可見 7 顆星(母星區可見一小圈、遠星入霧,版本差異可觀察)。**誠實邊界**:fog 純視覺,不 gate 選星/派艦/殖民/轟炸等任何操作;不做敵艦 map blip(AI 艦隊為抽象戰力,無地圖座標,零地基)。測試:`internal/gamedata/detection.go` 無獨立測試檔(純查表函式,經 `ruleprofile_test.go` 的 `SensorRangeVersionBonusParsec` 斷言覆蓋)+ `internal/shell/detection_test.go`(6 個測試:母星可見+範圍外不可見、已探索恆可見、版本差異合成盤面+真實星系、軌道基地加成星辰要塞>星基、艦隊偵測源、`VisibleStars`/`starVisible` 接線+越界安全)。`go build`/`go vet`/`go test` 全過;`moo2sim -turns 20` 經濟軌跡不變(fog 不碰回合邏輯)。
@@ -1984,8 +2563,8 @@ byte-diff 驗收對它們等於沒跑**。七張決定性的已補進版控;`18_
 **又撞到同一組六個主題**:`sub_FD2F9` 的六個硬編位址減 `0xC4` 正好是第 30 項(TECH LEVEL 第二效果)的六個開局主題
 ——第三個獨立來源,而且說明了角色:AI 的科技權重要等這六個全完成才啟用一般模式。
 
-**誠實留白**:`sub_FC845`(權重來源)**量到是 985 行**,結論與上一輪相同——不一次讀完照抄。
-先進級的 19 個隨機主題仍未接,但現在知道缺的是什麼:吃「成本 ÷ 每回合研究點」的加權隨機挑選器。
+**2026-08-25 勘誤**：這是當時以 asm 行數估計的舊結論。現行 IDA 證據為 655 條指令，
+先進級十九次應用級單次抽選與人類估值已接線；AI 完整估值仍待 RE。
 
 ## ★ 2026-08-07 三面行星護盾 + 自動實驗室 + 再生反應爐(gap report 第 38 項(行星護盾等三棟))
 
@@ -1995,8 +2574,8 @@ HONEST-STATUS 寫著「部分軍事/防禦建築(~13 棟,需艦隊駐防/軌道�
 
 **三面護盾**:手冊給 −5 / −10 / −20,而且維護費(1/3/5 BC)三棟全部對得上執行檔的建築表
 ——**減傷與維護費出自同一段文字**,所以那段可信,減傷不是孤證。
-「per attack」決定了接在**逐發**傷害而不是總傷害(10 輪齊射下差一個數量級),
-測試釘 `TotalDamage` = 10 × (101 − 減傷) 而不是 hits(除以 100 會把差異吃掉)。
+「per attack」決定了接在**逐發**傷害而不是總傷害（多次攻擊下差一個數量級），
+測試以 `TotalDamage` 釘住逐發減傷；runtime 命中換算現依 IDA 呼叫鏈採除以 40。
 手冊寫「取代」不是「疊加」,所以取最強那一面。
 
 **再生反應爐**:接對地方比接上去重要。手冊「不計入污染」那句決定了它**不能**接 `FlatIndustry`
@@ -2053,8 +2632,8 @@ Frigate 艦體上的設計,所以套 20%。建築表未被消費的剩 **6 棟**
 上一項把太空學院列在「缺艦員經驗值子系統」。盤點後發現 remake 的狀況很特別:**三張加成表
 已經有了而且都對得上手冊**(BA/BD 在 `formulas.go`、ME 在 `missile.go`),而且**接到船上了**——`Ship.CrewXP` 欄位在,等級由 `shipCrewLevel` 現算,新造艦依殖民地起始經驗;第 60 項(打得準也閃得掉)把它接上攻擊與防禦兩側。
 
-補上第四條軌(Bo 登艦戰 `{0,5,10,15,20}`),即使暫時沒有呼叫端:缺一條軌會讓下次有人接
-登艦戰時以為手冊沒給數字。
+第四條軌 Bo 登艦戰 `{0,5,10,15,20}` 已於 2026-08-25 由
+`Crew_Boarding_Combat_Bonus_ @ 0x35CAD` 再證實，並接入快速與格子戰術兩條路徑。
 
 **統帥種族不是「升級快」,是整條階梯平移**:一般種族 Green(0)→Regular(50)→Veteran(150)→
 Elite(500),統帥種族 Regular(0)→Veteran(50)→Elite(150)→Ultra-Elite(500)。兩張門檻表各有一個
@@ -2063,14 +2642,16 @@ Elite(500),統帥種族 Regular(0)→Veteran(50)→Elite(150)→Ultra-Elite(500)
 **等級不存,只存經驗**:`Ship` 只加 `CrewXP`,等級現算。太空學院的「起始等級 +1」也用經驗
 表達(起始 XP = 那一級的門檻),不另開欄位。
 
-**戰鬥經驗**:被擊沉敵艦艦體等級總和折半、捨去、最少 1;但**一艘都沒沉時是 0 而不是 1**。
-還原「被擊沉的是哪些」用多重集合相減(敵艦 atk 就是戰力值且戰鬥中不變)——不必改戰鬥迴圈介面。
+**戰鬥經驗**：`sub_4B184 @ 0x4B184` 證實被摧毀敵艦 1-based 艦體級總和折半、
+捨去、最少 1；即使一艘都沒沉仍為 1。快速結算以多重集合相減還原被擊沉艦，格子戰術
+則在 casualty 壓縮時排除 `Captured` 並累加艦體級；兩路徑都只寫回倖存參戰 Ship。
 
 **順帶收掉五個硬寫的 `false`**:`gamedata.Ground*BarracksCap` 的 `warlord` 參數在 shell 有五處
 各自硬寫 false,新增 `GameSession.RaceWarlord` 統一。目前沒有種族會設它,行為完全相同。
 
-**誠實留白**:只有玩家的船有經驗(AI 艦隊是現生的戰力值);登艦戰有表沒呼叫端;
-艦艇設計畫面直接造的船吃不到學院加成(那條路徑沒有「在哪造」的概念)。建築表未被消費的剩 **5 棟**。
+**現況邊界**：玩家與 AI 都已有持久實艦、每回合 XP 與登艦 Bo；艦艇設計畫面直接造的船
+吃不到學院加成，因該路徑沒有「在哪造」的位置資料。建築表未被消費的數量應另依現行程式盤點，
+不沿用本節的歷史快照。
 
 ## ★ 2026-08-07 征服人口的同化系統(gap report 第 40 項(同化系統))
 
@@ -2146,8 +2727,10 @@ Elite(500),統帥種族 Regular(0)→Veteran(50)→Elite(150)→Ultra-Elite(500)
 
 ## ★ 2026-08-07 先進級開局的 19 個隨機主題(gap report 第 43 項(先進級開局主題))
 
-這個缺口從第 30 項(TECH LEVEL 第二效果)就開著,第 88、91 兩次判斷「不照抄 `sub_FC845` 那 985 行」。
-這次換個問法:**擋住的到底是哪一部分?**
+> 2026-08-25 現況：本段是歷史實作紀錄；「985 行」與 weight=1 已被
+> `docs/re/starting-tech-application-audit-20260825.md` 推翻，現況只看頂端活表。
+
+這個缺口從第 30 項(TECH LEVEL 第二效果)就開著，當時尚未閉合 `sub_FC845`。
 
 `sub_FD335` 的評分是 `score = weight × horizon ÷ turns`,其中 **turns**(主題成本 ÷ 每回合
 研究點)、**horizon**(15 起跳,不夠就 ×3÷2)、**候選集合**(只取現在可研究的主題)、
@@ -2160,8 +2743,8 @@ Elite(500),統帥種族 Regular(0)→Veteran(50)→Elite(150)→Ultra-Elite(500)
 沒完成的」)、**偏好便宜的**、**決定性**(同種子同開局;玩家與每個 AI 各一條流)。
 第 37 項(研究樹一手驗證)的 `OrigTopicCost` 在這裡是燃料——沒那張表就只能用二手成本。
 
-**誠實留白**:weight 一律 1(AI 不會偏好「對它有用」的科技);`sub_FD335` 尾巴依
-`[player+0x28]` 的二次過濾**不照抄**(那個欄位沒查到寫入端,第 36 項(聊天列補完)也遇過同一個)。
+**當時留白（已由 2026-08-25 稽核取代）**：該版 weight 一律 1，且尚未找到
+`[player+0x28]` 寫入端；現行程式已接人類估值與應用級單次抽選，AI 完整估值仍待 RE。
 
 **寫測試時抓到一件事**:第一版斷言「先進級 25 個」實際拿到 26,差的正好是
 `TOPIC_STARTING_TECH`(第 37 項(研究樹一手驗證)認出來的自環容器主題)。不是程式錯,是斷言少算了一個已知的東西。
@@ -2267,7 +2850,7 @@ produces pollution」——1/2 × 1/4 = 1/8,**數字是相乘的**(手冊用的�
 但相加得不到 1/8,數字贏字面)。有一支測試把這條算術釘在 `PollutionEighths` 上。
 
 **領袖技能現況(2026-08-10):26 項有 remake 消費端。** 仍未接的只剩戰術官(原版自己就沒實作)；
-Famous 招募機率與 Diplomat 獨立接受門檻沒有可證實的 runtime 公式，**沒有一項是卡在「找不到入口」了**。
+Diplomat 獨立接受門檻仍沒有可證實的 runtime 公式；Famous 招募機率已由 `sub_9781D` 補證，**沒有一項是卡在「找不到入口」了**。
 
 ## 工作方式(使用者定案)
 - go/ebiten 參考路徑 = `~/master-of-maigc/repo`(魔法大帝繁中化,patch 疊 kazzmir/master-of-magic 引擎)

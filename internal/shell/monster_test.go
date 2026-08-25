@@ -169,12 +169,12 @@ func TestMonstersSurviveSaveLoad(t *testing.T) {
 	if m == nil {
 		t.Fatal("讀檔後怪獸不見了")
 	}
-	if m.Structure != 42 {
-		t.Errorf("讀檔後剩餘結構 %d,want 42", m.Structure)
+	if m.Structure != 42 || m.Kind != gamedata.MonsterDragon || m.StarIndex != target {
+		t.Errorf("讀檔後怪獸 record 遺失：%+v", m)
 	}
 }
 
-// 五種怪獸的資料表:名字有硬證(執行檔字串),傷害有手冊(p.114)。
+// 五種原星系怪獸資料表；事件專用太空鰻另由事件測試驗零攻擊定性。
 func TestMonsterStatsTable(t *testing.T) {
 	all := []gamedata.SpaceMonster{
 		gamedata.MonsterGuardian, gamedata.MonsterAmoeba, gamedata.MonsterDragon,
@@ -207,8 +207,22 @@ func TestMonsterStatsTable(t *testing.T) {
 	}
 	// 守衛星系的清單不含守護者(它只守獵戶座)。
 	for _, m := range gamedata.GuardStarMonsters {
-		if m == gamedata.MonsterGuardian {
-			t.Error("守護者不該出現在一般星系的守衛清單裡")
+		if m == gamedata.MonsterGuardian || m == gamedata.MonsterEel {
+			t.Error("守護者與事件專用太空鰻不該出現在一般星系守衛清單裡")
 		}
+	}
+}
+
+func TestMonsterArmorAbsorbsBeforeStructure(t *testing.T) {
+	s, target := newMonsterTestSession(t, gamedata.MonsterAmoeba)
+	s.Monsters = []MonsterGuard{{StarIndex: target, Kind: gamedata.MonsterAmoeba, Structure: 50, Armor: 750}}
+	before := s.Monsters[0]
+	res := s.AttackMonster(target)
+	if !res.Ok || s.MonsterAtStar(target) == nil {
+		t.Fatalf("應完成一場未擊殺怪物的戰鬥：%+v", res)
+	}
+	after := *s.MonsterAtStar(target)
+	if after.Armor >= before.Armor || after.Structure != before.Structure {
+		t.Fatalf("傷害應先由裝甲吸收：before=%+v after=%+v", before, after)
 	}
 }

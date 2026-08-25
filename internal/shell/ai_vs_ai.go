@@ -7,8 +7,8 @@ package shell
 // remake 模型：關係分數形成正式政策，貿易／研究協定每回合交換少量資源，
 // 戰爭則讓唯一的抽象 AI 艦隊飛往敵方殖民地並結算一場確定性戰鬥。
 //
-// 這不是宣稱還原原版逐艦藍圖：AI 目前仍沒有逐艦資料，因此戰鬥只消費
-// FleetStrength、殖民地人口與位置。原版精確 AI 戰鬥 blueprint 仍屬 oracle-only。
+// AI 現已有逐艦藍圖與實艦；本檔的 AI 對 AI 戰爭仍採 FleetStrength 比例結算，再把損失
+// 回寫為實艦移除。原版精確艦隊戰術與損失選艦仍屬未知，不冒稱逐艦戰鬥 oracle。
 
 import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 
@@ -251,13 +251,13 @@ func (s *GameSession) resolveAIAIBattle(attacker, defender, star int) *AIAIBattl
 	attackerLoss := maxInt(1, defenseStrength/aiAIAttackerLossDivisor)
 	defenderLoss := maxInt(1, attackStrength/aiAIDefenderLossDivisor)
 	if attackerWon {
-		a.FleetStrength = maxInt(0, attackStrength-attackerLoss)
-		d.FleetStrength = maxInt(0, d.FleetStrength-defenderLoss)
+		s.reduceAIShipStrength(attacker, attackStrength-attackerLoss)
+		s.reduceAIShipStrength(defender, d.FleetStrength-defenderLoss)
 		s.transferAIColony(attacker, defender, star)
 		a.FleetStar, a.FleetPosSet = star, true
 	} else {
-		a.FleetStrength = maxInt(0, attackStrength-attackerLoss)
-		d.FleetStrength = maxInt(0, d.FleetStrength-defenderLoss/2)
+		s.reduceAIShipStrength(attacker, attackStrength-attackerLoss)
+		s.reduceAIShipStrength(defender, d.FleetStrength-defenderLoss/2)
 		if len(a.ColonyStars) > 0 {
 			a.FleetStar, a.FleetPosSet = a.ColonyStars[0], true
 		}

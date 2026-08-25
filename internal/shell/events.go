@@ -13,9 +13,8 @@ import (
 // 名稱與效果都是自己想的。原版的事件清單、好壞旗標與訊息文字都在二進位與 EVENTMSG.LBX 裡,
 // 沒有理由繼續用自編版本(見 gamedata/events.go 的來源說明)。
 //
-// 只從 `gamedata.ImplementedRandomEvents()` 抽:那些是 remake 已有子系統可以忠實結算的。
-// 需要新機制的(太空怪獸、超新星、曲速漏斗…)照樣列在 gamedata 表裡,但不會被抽中——
-// 寧可事件種類少一點,也不要抽到一個「跳出訊息卻什麼都沒發生」的假事件。
+// 原版每次仍從 0..28 抽最多五個候選；尚未實作或當下不適用的 ID 會消耗候選後失敗，
+// 不先縮成 implemented pool，否則會改變其餘事件的相對機率。只有效果成功落地才播報。
 //
 // 訊息文字比照原版的 GNN 新聞快報語氣(原文見 EVENTMSG.LBX 資產 8+id*4);
 // remake 用自己的中文文案而非直譯,因為原版訊息帶 \x80..\x92 這一整套佔位符,
@@ -23,12 +22,19 @@ import (
 
 // EventReport 是一則已發生的事件,供 UI(事件畫面/回合摘要)顯示。
 type EventReport struct {
-	EventID   int    // gamedata.RandomEvent.ID
-	Name      string // 事件名(中文)
-	NameEN    string // 事件名(英文顯示)
-	Good      bool   // 原版 _event_good_array
-	Message   string // GNN 風格播報文字(已填入殖民地名/數字)
-	MessageEN string // 同一結算結果的英文播報文字
+	EventID     int    // gamedata.RandomEvent.ID
+	Name        string // 事件名(中文)
+	NameEN      string // 事件名(英文顯示)
+	Good        bool   // 原版 _event_good_array
+	Message     string // GNN 風格播報文字(已填入殖民地名/數字)
+	MessageEN   string // 同一結算結果的英文播報文字
+	TargetKind  string // player／seat／ai；空字串表示舊存檔或全局特殊事件
+	TargetIndex int    // seat／AI 的執行期索引；player 為 0
+	TargetName  string // 事件發生帝國的顯示名
+	// SecondaryTarget* 供事件 34 保存接收帝國；其他事件零值不改既有 JSON。
+	SecondaryTargetKind  string `json:"secondaryTargetKind,omitempty"`
+	SecondaryTargetIndex int    `json:"secondaryTargetIndex,omitempty"`
+	SecondaryTargetName  string `json:"secondaryTargetName,omitempty"`
 }
 
 // eventResult 是事件結算的雙語顯示結果。規則效果只在同一個 switch 裡執行一次，
@@ -37,11 +43,6 @@ type eventResult struct {
 	Message   string
 	MessageEN string
 }
-
-// eventChancePerTurn 是每回合觸發事件的機率。
-// 原版的觸發節奏在 Determine_Event_ 裡(還沒逐條反編),先沿用 remake 既有的 30%,
-// 標明這是 remake 值而非原版值,免得日後被當成考據結果。
-const eventChancePerTurn = 0.30
 
 // advanceEvents 擲一次隨機事件並結算。結果同時寫入 LastEvent(既有的回合摘要文字)
 // 與 LastEventReport(事件畫面用的結構化資料)。
@@ -54,46 +55,90 @@ func (s *GameSession) advanceEvents() {
 	if s.eventRand == nil {
 		s.eventRand = newRandStream(s.EventSeed*2654435761 + 1)
 	}
-	if s.eventRand.Float64() >= eventChancePerTurn {
+	elapsed := s.Turn - 1
+	if elapsed < 0 {
+		elapsed = 0
+	}
+	s.clearEventReportsForAllSeats()
+	luckyTarget, luckyForced := s.advanceAllLuckyEventCounters(elapsed)
+	generalDue := false
+	if !luckyForced && elapsed >= 50 && elapsed >= s.EventLastTurn {
+		threshold, attempts, ok := gamedata.OriginalEventScheduleThreshold(
+			elapsed-s.EventLastTurn, s.EventAttemptCounter, s.Difficulty)
+		if ok {
+			s.EventAttemptCounter = attempts
+			generalDue = gamedata.OriginalEventScheduleRollSucceeds(
+				threshold, s.eventRand.Intn(512)+1)
+		}
+	}
+	if !luckyForced && !generalDue {
 		return
 	}
-	pool := randomEventPoolForSession(s)
-	if len(pool) == 0 {
-		return
-	}
-	// 抽到「當下沒有適用對象」的事件(例如沒有艦隊時抽到艦船爆炸)就重抽,
-	// 最多試幾輪;全部不適用就這回合沒事件,不硬湊一個空事件出來。
-	for try := 0; try < 8; try++ {
-		ev := pool[s.eventRand.Intn(len(pool))]
-		if result, ok := s.applyRandomEventLocalized(ev); ok {
+	// 原版 sub_23563 與事件 31 分支位於 Determine_Event_ 尾端；用 defer 保證
+	// 成功事件與五候選全失敗兩條返回路徑都在效果亂數消費後才檢查狀態新聞。
+	defer s.advanceStatusGrowthAndRanking()
+	// 原版每次直接從 29 個 ID 抽候選，最多五次。未實作或不適用的事件也消耗
+	// 候選，不可先縮成可用池，否則會改變剩餘事件的相對機率與實際播報率。
+	for try := 0; try < 5; try++ {
+		ev := gamedata.RandomEventByID(s.eventRand.Intn(29))
+		if !eventCandidateAllowed(s, ev, luckyForced, elapsed) {
+			continue
+		}
+		target, ok := s.chooseEventEmpireTarget(*ev, luckyTarget, luckyForced)
+		if !ok {
+			continue
+		}
+		if result, ok := s.applyRandomEventLocalizedToTarget(*ev, target); ok {
+			// 事件 24 的 sub_23A5F 直接選全銀河殖民星，不走一般帝國 target；
+			// 報告要回填實際星系 owner，不能沿用為了進入全局 consumer 的目前玩家代理。
+			if ev.ID == 24 && len(s.PersistentEvents) > 0 {
+				if actual, found := s.eventEmpireTargetAtStar(s.PersistentEvents[len(s.PersistentEvents)-1].StarIndex); found {
+					target = actual
+				}
+			}
 			s.LastEvent = result.Message
-			s.LastEventReport = &EventReport{
+			report := &EventReport{
 				EventID: ev.ID, Name: ev.Name, NameEN: eventNameEN(ev.ID), Good: ev.Good,
 				Message: result.Message, MessageEN: result.MessageEN,
+				TargetKind: target.kind.String(), TargetIndex: target.index,
+				TargetName: s.eventEmpireTargetName(target),
 			}
+			s.LastEventReport = report
+			s.broadcastEventReport(report)
+			s.EventLastTurn = elapsed
+			s.EventAttemptCounter = 0
 			return
 		}
 	}
 }
 
-// randomEventPoolForSession 把種族的幸運效果放在抽樣入口，而不是在每個事件
-// switch 裡散落特判。這樣所有已實作的災害都會被排除，好事件的相對機率也會
-// 提升；沒有好事件時才保留一般池，避免自訂測試局卡死。
-func randomEventPoolForSession(s *GameSession) []gamedata.RandomEvent {
-	pool := gamedata.ImplementedRandomEvents()
+func eventCandidateAllowed(s *GameSession, ev *gamedata.RandomEvent, luckyForced bool, elapsed int) bool {
+	if s == nil || ev == nil || ev.Broadcast || !ev.Implemented ||
+		elapsed < gamedata.OriginalEventMinimumTurn(ev.ID) {
+		return false
+	}
+	// sub_2230A 對五個怪獸事件的最早日期分支都另呼叫 sub_233FA；亂流存在時
+	// 候選直接失敗。1.31 靜態證據見 random-event-monsters-audit-20260825.md。
+	if ev.ID >= 19 && ev.ID <= 23 && s.hasPersistentEvent(PersistentHyperspaceFlux, -1) {
+		return false
+	}
+	return ev.Good || (s.Difficulty != 0 && !luckyForced)
+}
+
+// advanceLuckyEventCounter 對應 sub_245C4/sub_24511。標準 remake 尚未分開暴露
+// Random Events 與 Antaran Attacks 設定，因此正常對局使用兩者皆開的原版除數 8。
+// 原版在第 50 回合前擲骰成功仍會先清零，故回傳值才套回合閘門。
+func (s *GameSession) advanceLuckyEventCounter(roll1Based int) bool {
 	if s == nil || !s.RaceLucky() {
-		return pool
+		return false
 	}
-	good := make([]gamedata.RandomEvent, 0, len(pool))
-	for _, ev := range pool {
-		if ev.Good {
-			good = append(good, ev)
-		}
+	s.LuckyEventCounter++
+	divisor := gamedata.OriginalLuckyEventDivisor(true, true)
+	if !gamedata.OriginalLuckyEventRollSucceeds(s.LuckyEventCounter, divisor, roll1Based) {
+		return false
 	}
-	if len(good) > 0 {
-		return good
-	}
-	return pool
+	s.LuckyEventCounter = 0
+	return s.Turn-1 >= 50
 }
 
 // applyRandomEvent 結算一個事件。回傳 ok=false 表示當下沒有適用對象(呼叫端會重抽)。
@@ -106,38 +151,44 @@ func (s *GameSession) applyRandomEvent(ev gamedata.RandomEvent) (string, bool) {
 func (s *GameSession) applyRandomEventLocalized(ev gamedata.RandomEvent) (eventResult, bool) {
 	switch ev.ID {
 	case 0: // 古代遺骸科技:考古隊在古船殘骸裡挖到科技
-		gain := 100 + s.Turn*2
-		s.Player.ResearchProgress += gain
+		applications := originalAncientTechApplications(s.Player, s.ancientTechEmpireStates())
+		names := grantAncientTechApplications(&s.Player, applications)
+		if len(names) == 0 {
+			return eventResult{}, false
+		}
+		s.UpdatePlayerShipDesignsAfterTech()
 		return eventResult{
-			Message:   fmt.Sprintf("考古隊在一艘古代異星船艦的殘骸中解出失落的科技,研究進度 +%d RP", gain),
-			MessageEN: fmt.Sprintf("Archaeologists recovered lost technology from the wreckage of an ancient alien ship. Research progress +%d RP.", gain),
+			Message:   fmt.Sprintf("考古隊從古代異星船艦殘骸中復原科技：%s", ancientTechNames(names)),
+			MessageEN: fmt.Sprintf("Archaeologists recovered technology from an ancient alien wreck: %s.", ancientTechNames(names)),
 		}, true
 
-	case 1: // 氣候改善:行星軸心偏移,氣候往 Terran 方向推進一級
-		i, ok := s.pickColony()
+	case 1: // 氣候改善:原版直接把 climate 0..7 的目標行星改成 Terran
+		i, before, ok := s.applyPlayerClimateEvent()
 		if !ok {
 			return eventResult{}, false
 		}
-		targets := gamedata.TerraformNextClimateOptions(s.PlayerColonies[i].Climate)
-		if len(targets) == 0 {
-			return eventResult{}, false // 已是 Terran/Gaia 或該氣候不可改造
-		}
-		before := s.PlayerColonies[i].Climate
-		s.applyClimateChange(i, targets[0])
 		return eventResult{
 			Message: fmt.Sprintf("%s 的行星軸心突然偏移,環境由 %s 改善為 %s,農民歡聲雷動",
-				s.colonyLabel(i), climateDisplayName(before), climateDisplayName(targets[0])),
+				s.colonyLabel(i), climateDisplayName(before), climateDisplayName(gamedata.TERRAN)),
 			MessageEN: fmt.Sprintf("The climate on the affected colony shifted from %s to %s. Its farmers celebrate.",
-				climateDisplayNameEN(before), climateDisplayNameEN(targets[0])),
+				climateDisplayNameEN(before), climateDisplayNameEN(gamedata.TERRAN)),
 		}, true
 
-	case 3: // 電腦病毒:研究中心電腦全面感染
-		if s.Player.ResearchProgress <= 0 {
+	case 2: // 彗星來襲：跨回合由目標星系停泊艦艇攔截，倒數歸零才撞擊
+		message, ok := s.startPlayerComet()
+		if !ok {
 			return eventResult{}, false
 		}
-		loss := s.Player.ResearchProgress / 3
-		if loss < 1 {
-			loss = s.Player.ResearchProgress
+		return eventResult{Message: message,
+			MessageEN: "A comet is approaching one of the empire's colonies. Ships stationed in the system have begun interception."}, true
+
+	case 3: // 電腦病毒:研究中心電腦全面感染
+		if s.Player.ResearchProgress < 10 {
+			return eventResult{}, false
+		}
+		loss, ok := gamedata.OriginalComputerVirusLoss(s.Player.ResearchProgress, s.eventRand.Intn(50)+1)
+		if !ok {
+			return eventResult{}, false
 		}
 		s.Player.ResearchProgress -= loss
 		return eventResult{
@@ -145,30 +196,14 @@ func (s *GameSession) applyRandomEventLocalized(ev gamedata.RandomEvent) (eventR
 			MessageEN: fmt.Sprintf("A computer virus infected the research network. The empire lost %d research progress.", loss),
 		}, true
 
-	case 4: // 外交暗殺:被抓到策劃暗殺,關係惡化
-		j, ok := s.pickAI()
-		if !ok {
-			return eventResult{}, false
-		}
-		s.adjustAIRelation(j, -12)
-		return eventResult{
-			Message:   fmt.Sprintf("一名外交官被查獲策劃暗殺%s高層,兩國關係惡化", s.AIPlayers[j].Name),
-			MessageEN: "A diplomat was caught plotting an assassination against a rival empire's leadership. Relations have worsened.",
-		}, true
-
-	case 5: // 外交聯姻:關係改善
-		j, ok := s.pickAI()
-		if !ok {
-			return eventResult{}, false
-		}
-		s.adjustAIRelation(j, +12)
-		return eventResult{
-			Message:   fmt.Sprintf("我方大使與%s軍方要員締結聯姻,兩國關係大幅改善", s.AIPlayers[j].Name),
-			MessageEN: "Our ambassador married into a rival empire's military leadership. Relations have greatly improved.",
-		}, true
+	case 4, 5: // 外交暗殺／聯姻：只在交戰帝國間成立，並走原版 Change_Relations_ 的事件切片
+		return s.applyDiplomaticIncident(ev.ID, eventEmpireTarget{kind: eventEmpirePlayer, index: 0})
 
 	case 6: // 富商捐獻
-		gain := 50 + s.Turn
+		gain, ok := gamedata.OriginalMerchantDonation(s.Turn - 1)
+		if !ok {
+			return eventResult{}, false
+		}
 		s.Player.BC += gain
 		return eventResult{
 			Message:   fmt.Sprintf("一名富商向帝國捐獻了 %d BC", gain),
@@ -176,61 +211,54 @@ func (s *GameSession) applyRandomEventLocalized(ev gamedata.RandomEvent) (eventR
 		}, true
 
 	case 7: // 地震:人口與建築受損
-		i, ok := s.pickColony()
-		if !ok || s.PlayerColonies[i].Population <= 1 {
-			return eventResult{}, false
-		}
-		lost := s.losePopulation(i, 1+s.eventRand.Intn(2))
-		bldg := s.destroyRandomBuilding(i)
-		if bldg != "" {
-			return eventResult{
-				Message: fmt.Sprintf("%s 發生劇烈地震,%d 百萬居民罹難,%s 毀於一旦",
-					s.colonyLabel(i), lost, bldg),
-				MessageEN: fmt.Sprintf("A violent earthquake struck a colony. %d million residents died and a building was destroyed.", lost),
-			}, true
-		}
-		return eventResult{
-			Message:   fmt.Sprintf("%s 發生劇烈地震,%d 百萬居民罹難", s.colonyLabel(i), lost),
-			MessageEN: fmt.Sprintf("A violent earthquake struck a colony. %d million residents died.", lost),
-		}, true
-
-	case 8: // 艦船爆炸:一艘軍艦離奇爆炸
-		// **打的是整個帝國**不是玩家目前選中的那一支艦隊——事件不看玩家的操作焦點。
-		if s.ShipCount() <= 1 {
-			return eventResult{}, false // 只剩一艘就不炸,避免玩家瞬間失去全部艦隊
-		}
-		impact, ok := s.resolveStrategicShipExplosion()
+		impact, ok := s.applyPlayerEarthquake()
 		if !ok {
 			return eventResult{}, false
 		}
-		collateral := ""
-		if len(impact.Collateral) > 0 {
-			collateral = fmt.Sprintf(",衝擊波使 %d 艘倖存艦受損", len(impact.Collateral))
-		}
 		return eventResult{
-			Message: fmt.Sprintf("軍艦「%s」離奇爆炸%s,調查仍在進行中", impact.Lost.Name, collateral),
-			MessageEN: fmt.Sprintf("The warship \"%s\" exploded mysteriously%s. The investigation continues.", impact.Lost.Name, func() string {
-				if len(impact.Collateral) == 0 {
-					return ""
-				}
-				return fmt.Sprintf("; the blast damaged %d surviving ships", len(impact.Collateral))
-			}()),
+			Message: fmt.Sprintf("%s 發生劇烈地震，%d 百萬居民罹難，%d 棟建築毀損",
+				impact.ColonyName, impact.PopulationLost, impact.BuildingsDestroyed),
+			MessageEN: fmt.Sprintf("A violent earthquake struck %s. %d million residents died and %d buildings were destroyed.",
+				impact.ColonyName, impact.PopulationLost, impact.BuildingsDestroyed),
 		}, true
 
-	case 10: // 工業意外:輻射污染,氣候惡化 + 人口損失
-		i, ok := s.pickColony()
-		if !ok || s.PlayerColonies[i].Population <= 1 {
+	case 8: // 艦船爆炸:一艘軍艦離奇爆炸
+		impact, ok := s.resolvePlayerShipExplosion()
+		if !ok {
 			return eventResult{}, false
 		}
-		lost := s.losePopulation(i, 2)
+		officerZH, officerEN := "", ""
+		if impact.OfficerName != "" {
+			officerZH = fmt.Sprintf("，艦長 %s 亦不幸罹難", impact.OfficerName)
+			officerEN = fmt.Sprintf("; Captain %s was also killed", impact.OfficerName)
+		}
 		return eventResult{
-			Message: fmt.Sprintf("%s 發生重大工業事故,輻射擴散全球,%d 百萬平民喪生",
-				s.colonyLabel(i), lost),
-			MessageEN: fmt.Sprintf("A major industrial accident spread radiation across a colony. %d million civilians died.", lost),
+			Message:   fmt.Sprintf("軍艦「%s」離奇爆炸%s，調查仍在進行中", impact.Lost.Name, officerZH),
+			MessageEN: fmt.Sprintf("The warship \"%s\" exploded mysteriously%s. The investigation continues.", impact.Lost.Name, officerEN),
 		}, true
 
-	case 11: // 礦產枯竭:礦產等級下降一級
-		i, from, to, ok := s.shiftColonyMineral(-1)
+	case 9: // 超空間亂流：全銀河非跨維度艦隊暫停航行
+		message, ok := s.startHyperspaceFlux()
+		if !ok {
+			return eventResult{}, false
+		}
+		return eventResult{Message: message,
+			MessageEN: "A hyperspace flux swept across the galaxy; interstellar travel has stalled for non-trans-dimensional fleets."}, true
+
+	case 10: // 工業事故：特殊人口／駐軍傷害後，再結算一點一般殖民地傷害
+		impact, ok := s.applyPlayerIndustrialAccident()
+		if !ok {
+			return eventResult{}, false
+		}
+		return eventResult{
+			Message: fmt.Sprintf("%s 發生重大工業事故，造成 %d 百萬居民、%d 支陸戰隊與 %d 支裝甲部隊傷亡，%d 棟建築毀損",
+				impact.ColonyName, impact.PopulationLost, impact.MarinesLost, impact.TanksLost, impact.BuildingsDestroyed),
+			MessageEN: fmt.Sprintf("A major industrial accident struck %s: %d million residents, %d marines, and %d armor units were lost; %d buildings were destroyed.",
+				impact.ColonyName, impact.PopulationLost, impact.MarinesLost, impact.TanksLost, impact.BuildingsDestroyed),
+		}, true
+
+	case 11: // 礦產枯竭:原版只挑 Ultra Rich，並降一級
+		i, from, to, ok := s.applyPlayerMineralEvent(11)
 		if !ok {
 			return eventResult{}, false
 		}
@@ -241,8 +269,8 @@ func (s *GameSession) applyRandomEventLocalized(ev gamedata.RandomEvent) (eventR
 				mineralDisplayNameEN(from), mineralDisplayNameEN(to)),
 		}, true
 
-	case 12: // 礦產發現:礦產等級上升一級
-		i, from, to, ok := s.shiftColonyMineral(+1)
+	case 12: // 礦產發現:原版上升兩級，上限 Ultra Rich
+		i, from, to, ok := s.applyPlayerMineralEvent(12)
 		if !ok {
 			return eventResult{}, false
 		}
@@ -253,32 +281,27 @@ func (s *GameSession) applyRandomEventLocalized(ev gamedata.RandomEvent) (eventR
 				mineralDisplayNameEN(from), mineralDisplayNameEN(to)),
 		}, true
 
-	case 13: // 艦船叛變:一艘艦倒戈給某個 AI
-		// 同上:叛變的是帝國裡的任何一艘,不限玩家目前選中的艦隊。
-		if s.ShipCount() <= 1 {
-			return eventResult{}, false
-		}
-		j, ok := s.pickAI()
-		if !ok {
-			return eventResult{}, false
-		}
-		lost, ok := s.removeShipGlobal(s.eventRand.Intn(s.ShipCount()))
-		if !ok {
-			return eventResult{}, false
-		}
-		s.AIPlayers[j].FleetStrength += 10
+	case 13: // 艦艇叛變：1.31 建立端留下未初始化欄位，consumer 沒有任何移交效果
 		return eventResult{
-			Message:   fmt.Sprintf("軍艦「%s」發生叛變,投奔%s", lost.Name, s.AIPlayers[j].Name),
-			MessageEN: "A warship mutinied and defected to a rival empire.",
+			Message:   "艦隊司令部收到一則未獲證實的艦艇叛變通報",
+			MessageEN: "Fleet Command received an unconfirmed report of a ship mutiny.",
 		}, true
 
-	case 15: // 海盜劫掠:國庫被偷
-		if s.Player.BC <= 0 {
+	case 14: // 海盜活動：跨回合破壞星系內帝國的運輸船，由停泊艦隊共同清剿
+		message, ok := s.startPlayerPirateActivity()
+		if !ok {
 			return eventResult{}, false
 		}
-		loss := 40
-		if loss > s.Player.BC {
-			loss = s.Player.BC
+		return eventResult{Message: message,
+			MessageEN: "Pirate activity erupted in one of the empire's systems. Stationed ships have begun suppression."}, true
+
+	case 15: // 海盜劫掠:國庫被偷
+		if s.Player.BC < 100 {
+			return eventResult{}, false
+		}
+		loss, ok := gamedata.OriginalPirateRaidLoss(s.Player.BC, s.eventRand.Intn(21)+1)
+		if !ok {
+			return eventResult{}, false
 		}
 		s.Player.BC -= loss
 		return eventResult{
@@ -286,51 +309,43 @@ func (s *GameSession) applyRandomEventLocalized(ev gamedata.RandomEvent) (eventR
 			MessageEN: fmt.Sprintf("Pirates raided the treasury and stole %d BC.", loss),
 		}, true
 
-	case 16: // 瘟疫:人口大量死亡
-		i, ok := s.pickColony()
-		if !ok || s.PlayerColonies[i].Population <= 1 {
-			return eventResult{}, false
-		}
-		lost := s.losePopulation(i, 2)
-		return eventResult{
-			Message: fmt.Sprintf("%s 爆發瘟疫,已有 %d 百萬居民死亡,全境進入隔離",
-				s.colonyLabel(i), lost),
-			MessageEN: fmt.Sprintf("A plague broke out in a colony. %d million residents died and the colony entered quarantine.", lost),
-		}, true
-
-	case 17: // 人口暴增:成長率倍增(remake 以一次性 +2 人口表達)
-		i, ok := s.pickColony()
+	case 16: // 瘟疫:持續負成長，研究完成後解除
+		i, need, ok := s.startPlayerPlague()
 		if !ok {
 			return eventResult{}, false
 		}
-		c := &s.PlayerColonies[i]
-		if c.Population >= c.PopMax {
+		return eventResult{
+			Message: fmt.Sprintf("%s 爆發瘟疫，人口成長急遽惡化；研究團隊需要累積 %d RP 研發疫苗",
+				s.colonyLabel(i), need),
+			MessageEN: fmt.Sprintf("A plague struck a colony. Its researchers need %d RP to develop a cure.", need),
+		}, true
+
+	case 17: // 人口暴增:持續型成長加成，而非一次性加人口
+		i, ok := s.startPlayerPopulationBoom()
+		if !ok {
 			return eventResult{}, false
 		}
-		gain := 2
-		if c.Population+gain > c.PopMax {
-			gain = c.PopMax - c.Population
-		}
-		c.Population += gain
-		for n := 0; n < gain; n++ {
-			s.assignNewColonist(i)
-		}
 		return eventResult{
-			Message:   fmt.Sprintf("%s 出現人口暴增,新生兒數量翻倍,人口 +%d", s.colonyLabel(i), gain),
-			MessageEN: fmt.Sprintf("A population boom doubled the number of births at a colony. Population +%d.", gain),
+			Message:   fmt.Sprintf("%s 出現人口暴增，新生兒數量翻倍；成長潮將持續數回合", s.colonyLabel(i)),
+			MessageEN: "A population boom doubled the number of births at a colony; the growth surge will continue for several turns.",
 		}, true
 
-	case 18: // 秘密實驗:高層機密實驗撞出新科技
-		gain := 80 + s.Turn
-		s.Player.ResearchProgress += gain
+	case 18: // 秘密實驗:立即完成目前研究 field，然後清空 field 與累積 RP
+		topic, completed := s.completePlayerSecretExperiment()
+		if !completed {
+			return eventResult{
+				Message:   "秘密實驗結束，但目前沒有可完成的研究領域",
+				MessageEN: "The secret experiment ended, but there was no active research field to complete.",
+			}, true
+		}
+		name := ResearchTopicName(topic)
 		return eventResult{
-			Message:   fmt.Sprintf("科學家在高層機密實驗中意外撞見新技術的關鍵,研究進度 +%d RP", gain),
-			MessageEN: fmt.Sprintf("Scientists found a breakthrough during a classified experiment. Research progress +%d RP.", gain),
+			Message:   fmt.Sprintf("科學家在秘密實驗中取得突破，立即完成研究領域：%s", name),
+			MessageEN: fmt.Sprintf("A secret experiment completed the research field: %s.", name),
 		}, true
 
-	// --- 太空怪獸入侵(19-23)。每種怪獸的**最早回合**由手冊 p.180-181 逐條給定,
-	//     照抄不臆改;怪獸實體與戰鬥見 monster.go。太空鰻在 remake 沒有獨立實體
-	//     (手冊:牠只封鎖不攻擊),用九頭蛇以外最接近「純擋路」的變形蟲代打並標明。---
+	// --- 太空怪獸入侵(19-23)。IDA sub_2230A/sub_23BEC 證實最早回合與受害帝國
+	//     殖民星 reservoir sampling；怪獸實體與戰鬥見 monster.go。---
 	case 19: // 太空變形蟲(手冊:≥100 回合)
 		message, ok := s.spawnInvadingMonster(gamedata.MonsterAmoeba, 100)
 		return wrapEventResult(s, ev, message, ok)
@@ -340,25 +355,25 @@ func (s *GameSession) applyRandomEventLocalized(ev gamedata.RandomEvent) (eventR
 	case 21: // 太空巨龍(手冊:≥300 回合)
 		message, ok := s.spawnInvadingMonster(gamedata.MonsterDragon, 300)
 		return wrapEventResult(s, ev, message, ok)
-	case 22: // 太空鰻(手冊:≥150 回合)。
-		// ⚠ remake 沒有太空鰻的獨立實體(手冊 p.180:牠「never attack colonies or outposts」、
-		// 只封鎖系統,且 30 回合後會分裂)。目前用一頭盤據星系的怪獸近似「封鎖」那一半,
-		// 分裂與「不攻擊」的差異尚未建模——標明,不假裝已經忠實。
-		message, ok := s.spawnInvadingMonster(gamedata.MonsterAmoeba, 150)
+	case 22: // 太空鰻(≥150 回合，原版 type 13 獨立 loader)
+		message, ok := s.spawnInvadingMonster(gamedata.MonsterEel, 150)
 		return wrapEventResult(s, ev, message, ok)
 	case 23: // 太空九頭蛇(手冊:≥250 回合)
 		message, ok := s.spawnInvadingMonster(gamedata.MonsterHydra, 250)
 		return wrapEventResult(s, ev, message, ok)
 
-	// --- 持續型事件(24-26、28),見 events_persistent.go ---
-	case 24: // 超新星(手冊:≥200 回合,倒數 6-14)
+	// --- 持續型事件(24-28),見 events_persistent.go ---
+	case 24: // 超新星（1.31：elapsed≥200，倒數 Random(5)+10-difficulty）
 		message, ok := s.startSupernova()
 		return wrapEventResult(s, ev, message, ok)
 	case 25: // 時空異象:整個星系凍結
 		message, ok := s.startStasis()
 		return wrapEventResult(s, ev, message, ok)
 	case 26: // 超空間獸:航行中的艦隊有機率損失艦艇
-		message, ok := s.startWarpBeast()
+		message, ok := s.startWarpBeast(eventEmpireTarget{kind: eventEmpirePlayer, index: 0, alive: true})
+		return wrapEventResult(s, ev, message, ok)
+	case 27: // 曲速漏斗：1.31 是帶目標艦索引的報告型 persistent event
+		message, ok := s.startWarpFunnel()
 		return wrapEventResult(s, ev, message, ok)
 	case 28: // 蟲洞:航行中的艦隊瞬間抵達
 		message, ok := s.applyWormhole()
@@ -376,6 +391,8 @@ func wrapEventResult(s *GameSession, ev gamedata.RandomEvent, message string, ok
 	messageEN := fmt.Sprintf("A %s event has been reported.", eventNameEN(ev.ID))
 	// 持續事件與怪獸入侵的英文播報包含實際目標與倒數等上下文。
 	switch ev.ID {
+	case 9:
+		messageEN = "A hyperspace flux swept across the galaxy; non-trans-dimensional fleets can no longer travel until it dissipates."
 	case 19, 20, 21, 22, 23:
 		if n := len(s.Monsters); n > 0 {
 			m := s.Monsters[n-1]
@@ -395,8 +412,10 @@ func wrapEventResult(s *GameSession, ev gamedata.RandomEvent, message string, ok
 		}
 	case 26:
 		messageEN = "A warp beast began roaming the space lanes; ships in transit may be dragged into another dimension."
+	case 27:
+		messageEN = "A warp funnel trapped one fleet in hyperspace. Its crews are attempting to break free."
 	case 28:
-		messageEN = "A wormhole appeared along the fleet's route and shortened the journey to one turn."
+		messageEN = "A wormhole appeared along the fleet's route and carried it immediately to its destination."
 	}
 	return eventResult{
 		Message:   message,
@@ -476,10 +495,13 @@ func (s *GameSession) losePopulation(i, n int) int {
 		lost++
 		switch {
 		case c.Workers >= c.Farmers && c.Workers >= c.Scientists && c.Workers > 0:
+			engine.RemovePopulationGroupUnit(c, gamedata.WORKER)
 			c.Workers--
 		case c.Farmers >= c.Scientists && c.Farmers > 0:
+			engine.RemovePopulationGroupUnit(c, gamedata.FARMER)
 			c.Farmers--
 		case c.Scientists > 0:
+			engine.RemovePopulationGroupUnit(c, gamedata.SCIENTIST)
 			c.Scientists--
 		}
 	}
@@ -487,7 +509,8 @@ func (s *GameSession) losePopulation(i, n int) int {
 }
 
 // destroyRandomBuilding 隨機摧毀殖民地 i 的一棟建築,回傳建築名(沒有可摧毀的回空字串)。
-// 首都不摧毀(原版 Pick_Random_Colony_No_Capitol_ 同樣把首都排除在事件目標外)。
+// 首都不屬一般 ColonyBuildings 槽；若舊匯入資料帶有同名 key，也不把帝國固有狀態當成
+// 可隨機摧毀建築。`sub_23DFE` 已證實是事件殖民地 filter，不再引用它作 No-Capitol 證據。
 func (s *GameSession) destroyRandomBuilding(i int) string {
 	if i < 0 || i >= len(s.ColonyBuildings) || len(s.ColonyBuildings[i]) == 0 {
 		return ""
@@ -509,58 +532,6 @@ func (s *GameSession) destroyRandomBuilding(i int) string {
 	delete(s.ColonyBuildings[i], pick)
 	s.recalcColonyMorale(i)
 	return pick
-}
-
-// shiftColonyMineral 把某個殖民地的礦產等級往 delta 方向移一級(±1),
-// 回傳殖民地索引與前後等級。沒有可移動的殖民地(都已到上下限)時回 ok=false。
-//
-// 礦產等級存在 Planets[star].MineralID(星圖行星資料),殖民地的每礦工工業
-// (IndustryPerWorker)由它推導,故兩者要一起更新才不會又出現「面板說豐富、產出卻沒變」。
-func (s *GameSession) shiftColonyMineral(delta int) (idx int, from, to gamedata.PlanetMinerals, ok bool) {
-	cand := make([]int, 0, len(s.PlayerColonies))
-	for i := range s.PlayerColonies {
-		p := s.ColonyPlanet(i)
-		if p == nil {
-			continue
-		}
-		m := int(p.MineralID) + delta
-		if m < int(gamedata.ULTRA_POOR) || m > int(gamedata.ULTRA_RICH) {
-			continue
-		}
-		cand = append(cand, i)
-	}
-	if len(cand) == 0 {
-		return 0, 0, 0, false
-	}
-	i := cand[s.eventRand.Intn(len(cand))]
-	p := s.ColonyPlanet(i)
-	if p == nil {
-		return 0, 0, 0, false
-	}
-	from = p.MineralID
-	to = gamedata.PlanetMinerals(int(from) + delta)
-	p.MineralID = to
-	p.Mineral = mineralDisplayName(to)
-	// 重力也跟著礦產(密度)變——原版 _gravity_table 就是 [mineral][size]。
-	p.GravityID = gamedata.PlanetGravityFor(to, p.SizeID)
-	p.Gravity = gravityDisplayName(p.GravityID)
-	s.PlayerColonies[i].IndustryPerWorker = gamedata.MineralIndustryPerWorker(to)
-	return i, from, to, true
-}
-
-// adjustAIRelation 調整玩家與 AI j 的關係分數(夾在既有的 -40..40 尺度內)。
-func (s *GameSession) adjustAIRelation(j, delta int) {
-	if j < 0 || j >= len(s.AIPlayers) {
-		return
-	}
-	r := s.AIPlayers[j].Relation + delta
-	if r > 40 {
-		r = 40
-	}
-	if r < -40 {
-		r = -40
-	}
-	s.AIPlayers[j].Relation = r
 }
 
 // 避免為了一次排序把 sort 匯入撒進整個檔案(events.go 只有這裡需要)。

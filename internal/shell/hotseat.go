@@ -80,6 +80,7 @@ type seat struct {
 	// 先前是 Ships + FleetAtStar/DestStar/ETA/Marines/Tanks 一組欄位。
 	Fleets        []Fleet
 	SelectedFleet int
+	ShipDesigns   []ShipBlueprint
 	// ColonyRelocateTo 是這位玩家各殖民地的集結點(見 relocation.go)。
 	// ⚠ 它是**玩家側**狀態:漏了的話換人後下一位會繼承上一位的集結點設定。
 	ColonyRelocateTo  []int
@@ -87,6 +88,7 @@ type seat struct {
 	ColonyLeaderNames []string
 	MercPool          []Leader
 	MercOfferedIdx    int
+	MercLastOfferTurn int
 	PlayerSpies       []int
 	PlayerSpyMissions []SpyMission
 	DefensiveAgents   int
@@ -94,24 +96,27 @@ type seat struct {
 
 	SelectedStar int
 
-	RaceIndex        int
-	CustomRaceTraits uint32
-	PlayerName       string
-	FlagColor        int
-	RaceCombatPct    int
-	RaceShipDefPct   int
-	RaceGroundBonus  int
-	RaceSpyBonus     int
-	RaceGrowthPct    int
-	Government       gamedata.MoraleGovernmentType
-	CapturedPop      int
+	RaceIndex                  int
+	CustomRaceTraits           uint32
+	CustomRaceRuntimeTraits    [gamedata.RaceTraitCount]int8
+	PlayerName                 string
+	FlagColor                  int
+	RaceCombatPct              int
+	RaceShipDefPct             int
+	RaceGroundBonus            int
+	RaceSpyBonus               int
+	RaceGrowthPct              int
+	Government                 gamedata.MoraleGovernmentType
+	CapturedPop                int
+	ScoreBaseMultiplierPercent int
+	LuckyEventCounter          int
 
 	// 以下是「上一回合發生在我身上的事」。它們看起來像顯示暫態,但在熱座裡必須隨席位走:
 	// 星系主畫面的產出數字、回合摘要的完工清單、事件快報、突襲/發現/戰鬥回報,都是
 	// **這個帝國的**回合結果。不隨席位走的話,換人後會看到上一位玩家的戰報。
 	//
 	// ⚠ 刻意**不**隨席位走的:`LastCouncil`(議會是全星系新聞,所有人看到同一則)、
-	// `Monsters` 與 `PersistentEvents`(怪獸守著哪顆星、超新星在倒數第幾回合,是星圖的
+	// `Monsters` 與 `PersistentEvents`(怪獸守著哪顆星、超新星倒數、人口暴增／瘟疫目標,是星圖的
 	// 狀態不是某個玩家的——跟著席位走會讓同一顆超新星每回合被倒數 N 次)。
 	LastPlayerOutput          engine.EmpireOutput
 	LastBuilt                 []string
@@ -124,6 +129,7 @@ type seat struct {
 	LastRaid                  string
 	LastRaidReport            *AIRaidReport
 	LastEspionage             []string
+	LastBankruptcy            []BankruptcyAction
 	LastBattle                *BattleResult
 	AntaresRaids              int
 	AntaranHomeworldConquered bool
@@ -140,20 +146,23 @@ func (s *GameSession) saveSeat() seat {
 		AutoBuild: s.AutoBuild, RepeatBuild: s.RepeatBuild,
 		ColonyBuildings: s.ColonyBuildings,
 		PopAccum:        s.popAccum, Leaders: s.Leaders, ColonyLeaderNames: s.ColonyLeaderNames,
-		MercPool: s.MercPool, MercOfferedIdx: s.MercOfferedIdx,
+		MercPool: s.MercPool, MercOfferedIdx: s.MercOfferedIdx, MercLastOfferTurn: s.MercLastOfferTurn,
 		PlayerSpies: s.PlayerSpies, PlayerSpyMissions: s.PlayerSpyMissions, DefensiveAgents: s.DefensiveAgents, Outposts: s.Outposts,
-		Fleets: s.Fleets, SelectedFleet: s.SelectedFleet, SelectedStar: s.SelectedStar,
+		Fleets: s.Fleets, SelectedFleet: s.SelectedFleet, ShipDesigns: s.ShipDesigns, SelectedStar: s.SelectedStar,
 		ColonyRelocateTo: s.ColonyRelocateTo,
-		RaceIndex:        s.RaceIndex, CustomRaceTraits: s.CustomRaceTraits, PlayerName: s.PlayerName, FlagColor: s.FlagColor,
+		RaceIndex:        s.RaceIndex, CustomRaceTraits: s.CustomRaceTraits,
+		CustomRaceRuntimeTraits: s.CustomRaceRuntimeTraits, PlayerName: s.PlayerName, FlagColor: s.FlagColor,
 		RaceCombatPct: s.RaceCombatPct, RaceGrowthPct: s.raceGrowthPct,
 		RaceShipDefPct: s.RaceShipDefPct, RaceGroundBonus: s.RaceGroundBonus,
 		RaceSpyBonus: s.RaceSpyBonus,
 		Government:   s.Government, CapturedPop: s.CapturedPop,
+		ScoreBaseMultiplierPercent: s.ScoreBaseMultiplierPercent,
+		LuckyEventCounter:          s.LuckyEventCounter,
 
 		LastPlayerOutput: s.LastPlayerOutput, LastBuilt: s.LastBuilt,
 		LastEvent: s.LastEvent, LastPersistentEventEN: s.LastPersistentEventEN, LastEventReport: s.LastEventReport, LastDiscovery: s.LastDiscovery,
 		LastAntares: s.LastAntares, LastAntaresEN: s.LastAntaresEN, LastRaid: s.LastRaid, LastRaidReport: s.LastRaidReport,
-		LastEspionage: s.LastEspionage, LastBattle: s.LastBattle,
+		LastEspionage: s.LastEspionage, LastBankruptcy: s.LastBankruptcy, LastBattle: s.LastBattle,
 		AntaresRaids: s.AntaresRaids, AntaranHomeworldConquered: s.AntaranHomeworldConquered,
 	}
 }
@@ -167,22 +176,25 @@ func (s *GameSession) loadSeat(v seat) {
 	s.Builds, s.BuildQueue, s.AutoBuild, s.RepeatBuild, s.ColonyBuildings =
 		v.Builds, v.BuildQueue, v.AutoBuild, v.RepeatBuild, v.ColonyBuildings
 	s.popAccum, s.Leaders, s.ColonyLeaderNames = v.PopAccum, v.Leaders, v.ColonyLeaderNames
-	s.MercPool, s.MercOfferedIdx = v.MercPool, v.MercOfferedIdx
+	s.MercPool, s.MercOfferedIdx, s.MercLastOfferTurn = v.MercPool, v.MercOfferedIdx, v.MercLastOfferTurn
 	s.PlayerSpies, s.PlayerSpyMissions, s.DefensiveAgents, s.Outposts = v.PlayerSpies, v.PlayerSpyMissions, v.DefensiveAgents, v.Outposts
-	s.Fleets, s.SelectedFleet, s.SelectedStar = v.Fleets, v.SelectedFleet, v.SelectedStar
+	s.Fleets, s.SelectedFleet, s.ShipDesigns, s.SelectedStar = v.Fleets, v.SelectedFleet, v.ShipDesigns, v.SelectedStar
 	s.ColonyRelocateTo = v.ColonyRelocateTo
 	s.ensureFleet() // 席位可能是空的(舊存檔/新建席位),維持「至少一支艦隊」的不變量
 	s.ensureBuildQueue()
-	s.RaceIndex, s.CustomRaceTraits, s.PlayerName, s.FlagColor = v.RaceIndex, v.CustomRaceTraits, v.PlayerName, v.FlagColor
+	s.RaceIndex, s.CustomRaceTraits, s.CustomRaceRuntimeTraits, s.PlayerName, s.FlagColor =
+		v.RaceIndex, v.CustomRaceTraits, v.CustomRaceRuntimeTraits, v.PlayerName, v.FlagColor
 	s.RaceCombatPct, s.raceGrowthPct = v.RaceCombatPct, v.RaceGrowthPct
 	s.RaceShipDefPct, s.RaceGroundBonus = v.RaceShipDefPct, v.RaceGroundBonus
 	s.RaceSpyBonus = v.RaceSpyBonus
 	s.Government, s.CapturedPop = v.Government, v.CapturedPop
+	s.ScoreBaseMultiplierPercent = v.ScoreBaseMultiplierPercent
+	s.LuckyEventCounter = v.LuckyEventCounter
 
 	s.LastPlayerOutput, s.LastBuilt = v.LastPlayerOutput, v.LastBuilt
 	s.LastEvent, s.LastPersistentEventEN, s.LastEventReport, s.LastDiscovery = v.LastEvent, v.LastPersistentEventEN, v.LastEventReport, v.LastDiscovery
 	s.LastAntares, s.LastAntaresEN, s.LastRaid, s.LastRaidReport = v.LastAntares, v.LastAntaresEN, v.LastRaid, v.LastRaidReport
-	s.LastEspionage, s.LastBattle = v.LastEspionage, v.LastBattle
+	s.LastEspionage, s.LastBankruptcy, s.LastBattle = v.LastEspionage, v.LastBankruptcy, v.LastBattle
 	s.AntaresRaids, s.AntaranHomeworldConquered = v.AntaresRaids, v.AntaranHomeworldConquered
 }
 
@@ -477,9 +489,17 @@ func (s *GameSession) advanceIdleSeats() {
 // 內容 = `EndTurn` 裡所有只動玩家自己的步驟,順序照抄(見 EndTurn 本體);
 // 世界側(AI 決策、回合數、議會、外交漂移、歷史快照)不在此。
 func (s *GameSession) advanceSeatEmpire() {
+	s.preparePlayerResearchApplication()
 	s.prepPlayerDerived()
-	s.LastPlayerOutput = engine.RunEmpireTurn(s.Player, s.coloniesForTurn())
+	s.LastPlayerOutput = engine.RunEmpireTurnWithResearchRoller(s.Player, s.coloniesForTurn(), s.researchBreakthroughRoll)
+	s.recordPlayerPlagueResearch(s.LastPlayerOutput)
 	s.Player = s.LastPlayerOutput.Player
+	s.resolvePlayerBankruptcy()
+	s.applyPlayerResearchRaceTrait(s.LastPlayerOutput.ResearchDone)
+	if s.LastPlayerOutput.ResearchDone {
+		applyResearchTopicGrantCallbacks(&s.Player, s.Player.ResearchTopic)
+		s.UpdatePlayerShipDesignsAfterTech()
+	}
 	s.recoverFromFamine()
 	s.advanceEspionage()
 	s.advanceBuilds()
@@ -489,11 +509,11 @@ func (s *GameSession) advanceSeatEmpire() {
 	s.advanceMarines()
 	s.advanceArmor()
 	s.advancePopulation()
-	s.advanceEvents()
 	s.advanceShipRepair()
-	s.advanceAntares()
 	s.advanceAIRaids()
-	s.advanceMercOffers()
+	// 其餘真人席位只產生自己的 offer；AI 決策、拒絕 cooldown 與 AI offer 是世界側，
+	// 只能由主 EndTurn 推進一次，否則會依熱座人數重複消費亂數與 cooldown。
+	s.advancePlayerMercOffer()
 }
 
 // AdvanceSeat 把控制權交給下一席。

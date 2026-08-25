@@ -84,14 +84,22 @@ func TestRepulsiveRacesAssimilateAtHalfRate(t *testing.T) {
 	}
 }
 
-// 魅力種族目前**沒有效果**——手冊沒給數字,不臆造。
-// 這條測試存在是為了把「刻意不做」與「忘了做」分開:哪天有人塞了一個猜的倍率,這裡會紅。
-func TestCharismaticHasNoQuantifiedEffectYet(t *testing.T) {
-	plain := AssimilationTurns(AssimDemocracy, false, false, false)
-	cha := AssimilationTurns(AssimDemocracy, false, false, true)
-	if cha != plain {
-		t.Errorf("手冊沒給魅力種族的同化數字,不該有效果:%d vs %d ——"+
-			"若已找到一手數字,連同 gamedata/assimilation.go 的誠實留白一起更新", plain, cha)
+func TestCharismaticDoublesOriginalAssimilationRate(t *testing.T) {
+	if got := AssimilationRate(AssimDemocracy, false, false, true); got != 120 {
+		t.Fatalf("魅力民主 rate = %d, want 120", got)
+	}
+	if got := AssimilationTurns(AssimGalacticUnification, false, false, true); got != 8 {
+		t.Fatalf("魅力銀河統一應 ceil(240/32)=8，got %d", got)
+	}
+	if got := AssimilationTurns(AssimUnification, true, false, true); got != 1 {
+		t.Fatalf("魅力＋異族管理中心應 1 回合，got %d", got)
+	}
+}
+
+func TestCharismaticPrecedesRepulsiveWhenBothFlagsExist(t *testing.T) {
+	got := AssimilationRate(AssimDemocracy, false, true, true)
+	if got != 120 {
+		t.Fatalf("兩旗標同存應只走魅力分支，rate=%d want 120", got)
 	}
 }
 
@@ -106,15 +114,8 @@ func TestUnknownGovernmentFallsBackInsteadOfZero(t *testing.T) {
 	}
 }
 
-// 同化 n 單位所需的總回合(供 UI 顯示)。
-func TestAssimilationProgressNeeded(t *testing.T) {
-	if got := AssimilationProgressNeeded(8, 20); got != 160 {
-		t.Errorf("統一政體同化 8 人口應要 160 回合,得到 %d", got)
-	}
-	if got := AssimilationProgressNeeded(0, 20); got != 0 {
-		t.Errorf("沒有外族人口應是 0,得到 %d", got)
-	}
-	if got := AssimilationProgressNeeded(5, 0); got != 0 {
-		t.Errorf("回合數 0 應回 0 而不是除以零,得到 %d", got)
+func TestAssimilationRemainingTurnsUsesRawProgress(t *testing.T) {
+	if got := AssimilationRemainingTurns(2, 36, 120); got != 4 {
+		t.Fatalf("2 人口、36/240、rate120 ETA=%d want 4", got)
 	}
 }

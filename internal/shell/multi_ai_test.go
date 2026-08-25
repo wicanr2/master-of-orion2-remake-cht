@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
 // TestNewDemoSessionBuildsThreeAIOpponents 驗證 2026-07-11 由 1 AI 擴為 3 AI 的骨架本身:
@@ -113,6 +114,10 @@ func TestCouncilNWayVotingSecondAIWins(t *testing.T) {
 	s.AIPlayers[2].Colonies[0].Population = 1
 
 	s.EndTurn()
+	if s.PendingCouncilVote == nil {
+		t.Fatal("議會應等待玩家投票")
+	}
+	s.RespondToCouncilVote(2)
 
 	if s.Victory.Over {
 		t.Fatalf("AI 當選不應自動結束遊戲,應等玩家回應,got Victory=%+v", s.Victory)
@@ -144,6 +149,10 @@ func TestCouncilNWayVotingNoneReachesMajorityWithThreeAI(t *testing.T) {
 	s.AIPlayers[2].Colonies[0].Population = 20
 
 	s.EndTurn()
+	if s.PendingCouncilVote == nil {
+		t.Fatal("議會應等待玩家投票")
+	}
+	s.RespondToCouncilVote(2)
 
 	if s.Victory.Over {
 		t.Fatalf("票數分散,任何一方都不到 2/3 多數,不應分出勝負,got Victory=%+v", s.Victory)
@@ -190,6 +199,10 @@ func TestAdvanceCouncilNWayLogicWorksAtManualMinimum(t *testing.T) {
 	s.AIPlayers[1].Colonies[0].Population = 100 // 第二個 AI 壓倒性領先
 
 	s.EndTurn()
+	if s.PendingCouncilVote == nil {
+		t.Fatal("議會應等待玩家投票")
+	}
+	s.RespondToCouncilVote(2)
 
 	if s.Victory.Over {
 		t.Fatalf("AI 當選不應自動結束遊戲,應等玩家回應")
@@ -209,7 +222,7 @@ func TestAdvanceCouncilNWayLogicWorksAtManualMinimum(t *testing.T) {
 }
 
 // TestCouncilSwingVotesElectFrontrunner 驗證忠實搖擺票機制:玩家是票數領先者但自身票不足 2/3,
-// 兩個對玩家友好(關係達 councilSwingVoteMinRelation)的 AI 把票投給玩家,推玩家越過 2/3 當選。
+// 兩個與玩家結盟的 AI 依 Vote_Check_ 的 200 分捷徑把票投給玩家,推玩家越過 2/3 當選。
 // 直接呼叫 advanceCouncil(不走 EndTurn),避免 advanceAI 每回合重算 AIOpponent.Relation 沖掉
 // 這裡刻意設定的友好關係——比照 TestConquestVictory* 直呼引擎函式的既有測試手法。
 //
@@ -224,10 +237,15 @@ func TestCouncilSwingVotesElectFrontrunner(t *testing.T) {
 	s.AIPlayers[1].Colonies[0].Population = 20
 	s.AIPlayers[2].Colonies[0].Population = 10
 	s.ensureAIRelations()
-	s.AIPlayers[1].Relation = 20 // AI1 對玩家友好
-	s.AIPlayers[2].Relation = 20 // AI2 對玩家友好
+	s.AIPlayers[1].Treaty.FormalPolicy = gamedata.DIPLO_ALLIANCE
+	s.AIPlayers[2].Treaty.FormalPolicy = gamedata.DIPLO_ALLIANCE
+	s.Turn = gamedata.CouncilFirstMeetingTurn
 
 	s.advanceCouncil()
+	if s.PendingCouncilVote == nil {
+		t.Fatal("議會應等待玩家投票")
+	}
+	s.RespondToCouncilVote(0)
 
 	if !s.Victory.Over {
 		t.Fatalf("友好 AI 的搖擺票應把玩家推過 2/3 當選,got Victory=%+v LastCouncil=%q", s.Victory, s.LastCouncil)
@@ -238,18 +256,22 @@ func TestCouncilSwingVotesElectFrontrunner(t *testing.T) {
 }
 
 // TestCouncilNeutralAISAbstainNoWinner 是上一個測試的對照組:同樣的人口分布(玩家 40 領先),
-// 但兩個搖擺 AI 對玩家「中立」(Relation=0,未達友好門檻)→ 依手冊棄權,不投給任一候選人 →
-// 玩家維持 40 票,達不到 2/3,流會。證明搖擺票的關鍵是「友好門檻」,不是「領先者自動吸走中立票」。
+// 但兩個搖擺 AI 沒有任何已映射加分 → 擲骰不通過並棄權。
 func TestCouncilNeutralAISAbstainNoWinner(t *testing.T) {
 	s := NewDemoSession()
 	settleHalfGalaxy(s)
+	s.Turn = gamedata.CouncilFirstMeetingTurn
 	s.PlayerColonies[0].Population = 40
 	s.AIPlayers[0].Colonies[0].Population = 30
 	s.AIPlayers[1].Colonies[0].Population = 20
 	s.AIPlayers[2].Colonies[0].Population = 10
-	s.ensureAIRelations() // 全部關係預設 0(中立),未達 councilSwingVoteMinRelation
+	s.ensureAIRelations() // 全部協定預設中立，沒有已映射的 Vote_Check_ 加分
 
 	s.advanceCouncil()
+	if s.PendingCouncilVote == nil {
+		t.Fatal("議會應等待玩家投票")
+	}
+	s.RespondToCouncilVote(2)
 
 	if s.Victory.Over {
 		t.Fatalf("中立 AI 應棄權,玩家 40 票達不到 2/3,不應分出勝負,got Victory=%+v", s.Victory)

@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
@@ -35,8 +36,8 @@ import (
 
 const (
 	// aiRaidGraceTurns 是開局寬限:這之前 AI 絕不突襲(remake 的平衡值,非原版數字)。
-	// 對照安塔蘭人的 antaresStartTurn=20——AI 突襲比安塔蘭人更早開始,因為它是可被外交
-	// 與軍備影響的常態壓力,不是終局腳本事件。
+	// 這是 AI 突襲自己的 remake 寬限；安塔蘭已改走原版科技延遲、資源、建艦與出兵鏈，
+	// 兩者不能再用固定起始回合互相比照。
 	aiRaidGraceTurns = 12
 	// aiRaidInterval 是同一個 AI 兩次突襲的最短間隔(回合)。remake 的節奏值,
 	// 依 300 回合探針調過:間隔 6 時三個 AI 同時開戰會變成「平均每 3.3 回合被打一次」、
@@ -300,10 +301,7 @@ func (s *GameSession) aiRaid(i int) *AIRaidReport {
 		if loss < 1 {
 			loss = 1
 		}
-		a.FleetStrength -= loss
-		if a.FleetStrength < 0 {
-			a.FleetStrength = 0
-		}
+		s.reduceAIShipStrength(i, a.FleetStrength-loss)
 		rep.Repelled = true
 		rep.FleetLost = loss
 		rep.Message = fmt.Sprintf("⚔ %s 突襲 %s,遭防禦部隊擊退,對方損失 %d 戰力", a.Name, starName, loss)
@@ -322,7 +320,7 @@ func (s *GameSession) aiRaid(i int) *AIRaidReport {
 		if attrition > a.FleetStrength {
 			attrition = a.FleetStrength
 		}
-		a.FleetStrength -= attrition
+		s.reduceAIShipStrength(i, a.FleetStrength-attrition)
 		rep.FleetLost = attrition
 	}
 	rep.PopLost = margin/100 + 1
@@ -340,10 +338,13 @@ func (s *GameSession) aiRaid(i int) *AIRaidReport {
 		c.Population--
 		switch {
 		case c.Workers > 0:
+			engine.RemovePopulationGroupUnit(c, gamedata.WORKER)
 			c.Workers--
 		case c.Farmers > 0:
+			engine.RemovePopulationGroupUnit(c, gamedata.FARMER)
 			c.Farmers--
 		case c.Scientists > 0:
+			engine.RemovePopulationGroupUnit(c, gamedata.SCIENTIST)
 			c.Scientists--
 		}
 	}

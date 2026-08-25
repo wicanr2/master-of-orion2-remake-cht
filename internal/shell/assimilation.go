@@ -52,9 +52,36 @@ func (s *GameSession) assimilationGovernment() gamedata.AssimilationGovernment {
 
 // AssimilationTurnsFor 回傳某個殖民地同化一單位人口要幾回合(供 UI 顯示)。
 func (s *GameSession) AssimilationTurnsFor(colonyIdx int) int {
-	hasCenter := colonyIdx >= 0 && colonyIdx < len(s.ColonyBuildings) &&
+	return gamedata.AssimilationTurns(s.assimilationGovernment(), s.hasAssimilationCenter(colonyIdx),
+		s.RaceRepulsive(), s.RaceCharismatic())
+}
+
+func (s *GameSession) hasAssimilationCenter(colonyIdx int) bool {
+	return colonyIdx >= 0 && colonyIdx < len(s.ColonyBuildings) &&
 		s.ColonyBuildings[colonyIdx][alienManagementCenterName]
-	return gamedata.AssimilationTurns(s.assimilationGovernment(), hasCenter, s.RaceRepulsive(), s.RaceCharismatic())
+}
+
+func (s *GameSession) assimilationRateFor(colonyIdx int) int {
+	return gamedata.AssimilationRate(s.assimilationGovernment(), s.hasAssimilationCenter(colonyIdx),
+		s.RaceRepulsive(), s.RaceCharismatic())
+}
+
+// ensureAssimilationProgressScale 把舊 JSON 的「累積回合」一次性轉成原版 0..239 點。
+func (s *GameSession) ensureAssimilationProgressScale() {
+	if s.AssimilationProgressVersion >= 1 {
+		return
+	}
+	for i := range s.PlayerColonies {
+		c := &s.PlayerColonies[i]
+		if c.AssimilationProgress <= 0 {
+			continue
+		}
+		c.AssimilationProgress *= s.assimilationRateFor(i)
+		if c.AssimilationProgress >= gamedata.AssimilationProgressThreshold {
+			c.AssimilationProgress = gamedata.AssimilationProgressThreshold - 1
+		}
+	}
+	s.AssimilationProgressVersion = 1
 }
 
 // alienManagementCenterName 是建築表裡的中文名(gamedata.Buildings 的 NameZH)。
@@ -64,30 +91,49 @@ const alienManagementCenterName = "異族管理中心"
 // ——叛亂成功時殖民地要還給它(手冊 p.165「the colony reverts back」,見 rebellion.go)。
 func markColonyConquered(c *engine.ColonyState, fromAI int) {
 	c.UnassimilatedPop = c.Population
+	c.UnassimilatedFarmers = c.Farmers
+	c.UnassimilatedWorkers = c.Workers
+	c.UnassimilatedScientists = c.Scientists
+	engine.MarkPopulationGroupsPrisoners(c)
 	c.AssimilationProgress = 0
 	c.ConqueredFrom, c.ConqueredFromKnown = fromAI, fromAI >= 0
 }
 
 // advanceAssimilation 每回合推進所有殖民地的同化。
 //
-// 一個殖民地累積滿「這個政體的回合數」就同化掉一單位人口,餘數留著繼續累
-// ——不是「每 N 回合歸零重來」,那會在政體改變時吃掉玩家已經累積的進度。
+// 一個殖民地累積滿原版 240 點就同化一單位人口，餘數留著繼續累；政體、建築或
+// 種族效果只改後續每回合加入的 rate，不重解既有 raw 點數。
 func (s *GameSession) advanceAssimilation() {
+	s.ensureAssimilationProgressScale()
 	for i := range s.PlayerColonies {
 		c := &s.PlayerColonies[i]
 		if c.UnassimilatedPop <= 0 {
 			c.AssimilationProgress = 0 // 沒有外族人口時不留殘值
 			continue
 		}
-		need := s.AssimilationTurnsFor(i)
-		c.AssimilationProgress++
-		for c.AssimilationProgress >= need && c.UnassimilatedPop > 0 {
-			c.AssimilationProgress -= need
+		rate := s.assimilationRateFor(i)
+		c.AssimilationProgress += rate
+		for c.AssimilationProgress >= gamedata.AssimilationProgressThreshold && c.UnassimilatedPop > 0 {
+			c.AssimilationProgress -= gamedata.AssimilationProgressThreshold
 			c.UnassimilatedPop--
+			engine.AssimilateOnePopulationGroup(c)
+			// 原版逐 packed colonist 清 PRISONER；目前 shell 沒保存人口順序，
+			// 以農夫→工人→科學家的固定順序維持可重播，職務總數仍精確。
+			switch {
+			case c.UnassimilatedFarmers > 0:
+				c.UnassimilatedFarmers--
+			case c.UnassimilatedWorkers > 0:
+				c.UnassimilatedWorkers--
+			case c.UnassimilatedScientists > 0:
+				c.UnassimilatedScientists--
+			}
 		}
 		// 人口被炸掉/餓死時未同化數不該超過總人口。
 		if c.UnassimilatedPop > c.Population {
 			c.UnassimilatedPop = c.Population
+		}
+		if c.UnassimilatedPop <= 0 {
+			c.AssimilationProgress = 0
 		}
 		// 多種族士氣懲罰是「有沒有未同化人口」的函數,所以同化完最後一單位的那一刻
 		// 懲罰就該消失——不重算的話玩家會一直被扣到下次蓋建築為止。
@@ -97,8 +143,7 @@ func (s *GameSession) advanceAssimilation() {
 
 // AssimilationRemainingTurns 回傳殖民地 i 把**剩下的**未同化人口全部同化完還要幾回合。
 //
-// ⚠ 這支的存在理由寫在 `gamedata.AssimilationProgressNeeded` 的檔頭上:
-// 「UI 要顯示『這個殖民地還要幾回合才完全同化』——一個只在背景默默跑的機制對玩家等於不存在」。
+// UI 顯示「這個殖民地還要幾回合才完全同化」，讓背景機制對玩家可見。
 // 那支函式抽出來之後**一直沒有呼叫端**,直到第 61 項(兩個函式畫面沒用過)。
 //
 // 已累積的進度要扣掉,否則玩家每一回合看到的數字都一樣,像是完全沒有在推進。
@@ -111,8 +156,8 @@ func (s *GameSession) AssimilationRemainingTurns(i int) (turns int, ok bool) {
 	if c.UnassimilatedPop <= 0 {
 		return 0, false
 	}
-	need := gamedata.AssimilationProgressNeeded(c.UnassimilatedPop, s.AssimilationTurnsFor(i))
-	need -= c.AssimilationProgress
+	need := gamedata.AssimilationRemainingTurns(c.UnassimilatedPop, c.AssimilationProgress,
+		s.assimilationRateFor(i))
 	if need < 1 {
 		need = 1 // 已經滿了但還沒結算——顯示「還有 1 回合」比顯示 0 誠實
 	}

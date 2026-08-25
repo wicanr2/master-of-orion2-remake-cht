@@ -225,8 +225,9 @@ type ColonizationResult struct {
 // gov 是套用士氣基準的政府型態:玩家傳 s.Government;AI 對手(AIOpponent)沒有 Government 欄位
 // ——政府型態未建模,aiExpand 傳 gamedata.MoraleGovDictatorship 當保守預設(與母星
 // playerHomeworldColony 的政府基準一致,理由見該函式)。
-// foodBonus/indBonus/resBonus 是種族環境加成:玩家傳 Races[s.RaceIndex] 對應值;AI 對手沒有種族
-// 加成模型可查(擴張出的新殖民地非母星,無種族資料來源),aiExpand 一律傳 0,不臆造。
+// foodBonus/indBonus/resBonus 是種族環境加成：玩家由 Races[s.RaceIndex] 取得。
+// aiExpand 尚未傳入這三個數值；但 AI 已有 RaceIndex，並在建立殖民地後補套
+// Aquatic、Tolerant、Subterranean 與 Lithovore 等已接線特性。三項數值加成仍是 parity 缺口。
 //
 // 回傳 ok=false 時 reason 說明原因(對映 ColonizeStar 既有的前置條件文字):starIdx 越界(不應
 // 發生)、氣候資料無法辨識(不應發生)、或該行星需額外科技才能殖民(氣態巨星/小行星帶,目前星系
@@ -320,10 +321,14 @@ func (s *GameSession) newColonyFromPlanet(planetIdx int, gov gamedata.MoraleGove
 		FoodPerFarmer:        foodPerFarmer,
 		IndustryPerWorker:    industryPerWorker,
 		ResearchPerScientist: researchPerScientist,
-		PlanetSize:           size,
-		PlanetGravity:        gravity,
-		MineralRichness:      mineral,
-		Climate:              climate,
+		OwnerFoodBonus:       foodBonus, OwnerIndustryBonus: indBonus, OwnerResearchBonus: resBonus,
+		OwnerRaceProfileKnown: true, OwnerRaceSlot: 0, OwnerRaceSlotKnown: true,
+		PlanetSize:       size,
+		PlanetGravity:    gravity,
+		RaceGravity:      raceGravityForTraits(s.raceHasTrait(gamedata.TRAIT_LOW_G), s.raceHasTrait(gamedata.TRAIT_HIGH_G)),
+		RaceGravityKnown: true,
+		MineralRichness:  mineral,
+		Climate:          climate,
 		// 玩家新殖民地在建立當下就帶入種族布林特性,不必等下一個 EndTurn 才讓殖民地畫面
 		// 顯示正確的食物消耗/污染結果。AI 呼叫端會在下方另依 AI 自己的種族覆寫這兩欄。
 		Lithovore:     s.RaceLithovore(),
@@ -335,6 +340,26 @@ func (s *GameSession) newColonyFromPlanet(planetIdx int, gov gamedata.MoraleGove
 		// 金礦 +5 / 寶石礦 +10 BC/回合(手冊逐字)。SpecialIncome 是殖民地層的固定收入,
 		// 由 engine.RunEmpireTurn 併進帝國總收入。
 		SpecialIncome: gamedata.SpecialIncomePerTurn(special),
+	}
+	ownerFarmers := startPop
+	if natives := gamedata.SpecialExtraPopulationOnColonize(special); natives > 0 && natives < startPop {
+		ownerFarmers -= natives
+		colony.PopulationGroups = []engine.PopulationGroup{
+			{RaceSlot: 0, RaceSlotKnown: true, Farmers: ownerFarmers, FoodBonus: foodBonus,
+				IndustryBonus: indBonus, ResearchBonus: resBonus, Gravity: colony.RaceGravity,
+				Aquatic: aquatic, Cybernetic: colony.Cybernetic, Lithovore: colony.Lithovore,
+				Tolerant: tolerant, Subterranean: subterranean,
+				GrowthBonusPercent: s.raceGrowthPct, ProfileKnown: true},
+			// slot 9 使用 sub_DEB4B/sub_DE0C6 已閉合的 Natives 固定 profile。
+			{RaceSlot: gamedata.NativeColonistSlot, RaceSlotKnown: true, Farmers: natives,
+				FoodBonus: 4, Gravity: gamedata.NORMAL_G, GravityImmune: true, ProfileKnown: true},
+		}
+	} else {
+		colony.PopulationGroups = []engine.PopulationGroup{{RaceSlot: 0, RaceSlotKnown: true,
+			Farmers: startPop, FoodBonus: foodBonus, IndustryBonus: indBonus, ResearchBonus: resBonus,
+			Gravity: colony.RaceGravity, Aquatic: aquatic, Cybernetic: colony.Cybernetic,
+			Lithovore: colony.Lithovore, Tolerant: tolerant, Subterranean: subterranean,
+			GrowthBonusPercent: s.raceGrowthPct, ProfileKnown: true}}
 	}
 	return colony, true, ""
 }

@@ -111,6 +111,185 @@ func TestRunColonyTurnTolerantRace(t *testing.T) {
 	}
 }
 
+func TestRunColonyTurnUsesExactPrisonerJobs(t *testing.T) {
+	base := ColonyState{
+		Population: 3, PopMax: 10, Farmers: 1, Workers: 1, Scientists: 1,
+		FoodPerFarmer: 4, IndustryPerWorker: 4, ResearchPerScientist: 4,
+		UnassimilatedPop: 1, PlanetSize: gamedata.MEDIUM_PLANET,
+		PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT,
+	}
+	farmer := base
+	farmer.UnassimilatedFarmers = 1
+	worker := base
+	worker.UnassimilatedWorkers = 1
+	if got := RunColonyTurn(farmer); got.Food != 3 || got.Research != 4 {
+		t.Fatalf("農夫 prisoner 只應降低食物：%+v", got)
+	}
+	if got := RunColonyTurn(worker); got.Food != 4 || got.GrossIndustry != 3 || got.Research != 4 {
+		t.Fatalf("工人 prisoner 只應降低工業：%+v", got)
+	}
+}
+
+func TestRunColonyTurnUsesKnownRaceGravity(t *testing.T) {
+	base := ColonyState{
+		Population: 2, PopMax: 10, Farmers: 2, FoodPerFarmer: 4,
+		PlanetGravity: gamedata.HEAVY_G, PlanetSize: gamedata.MEDIUM_PLANET,
+		MineralRichness: gamedata.ABUNDANT,
+	}
+	unknown := RunColonyTurn(base)
+	if unknown.Food != 4 { // 舊狀態未知 race gravity → Normal-G 在 Heavy-G 上 -50%。
+		t.Fatalf("未知種族重力 fallback 食物 = %d，want 4", unknown.Food)
+	}
+	high := base
+	high.RaceGravity, high.RaceGravityKnown = gamedata.HEAVY_G, true
+	if got := RunColonyTurn(high).Food; got != 8 {
+		t.Fatalf("High-G 種族在 Heavy-G 食物 = %d，want 8", got)
+	}
+	low := base
+	low.PlanetGravity = gamedata.NORMAL_G
+	low.RaceGravity, low.RaceGravityKnown = gamedata.LOW_G, true
+	if got := RunColonyTurn(low).Food; got != 6 {
+		t.Fatalf("Low-G 種族在 Normal-G 食物 = %d，want 6", got)
+	}
+}
+
+func TestRunColonyTurnGravityGeneratorOverridesRaceMismatch(t *testing.T) {
+	cs := ColonyState{
+		Population: 1, PopMax: 10, Workers: 1, IndustryPerWorker: 8,
+		PlanetGravity: gamedata.HEAVY_G, RaceGravity: gamedata.LOW_G, RaceGravityKnown: true,
+		NormalizeGravity: true, PlanetSize: gamedata.MEDIUM_PLANET, MineralRichness: gamedata.ABUNDANT,
+	}
+	if got := RunColonyTurn(cs).GrossIndustry; got != 8 {
+		t.Fatalf("重力產生器應消除 mismatch，毛工業 = %d，want 8", got)
+	}
+}
+
+func TestRunColonyTurnMixedRaceUsesEachGroupsGravity(t *testing.T) {
+	cs := ColonyState{
+		Population: 2, PopMax: 10, Workers: 2, IndustryPerWorker: 4,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.HEAVY_G,
+		OwnerRaceProfileKnown: true, OwnerRaceSlot: 0, OwnerRaceSlotKnown: true,
+		PopulationGroups: []PopulationGroup{
+			{RaceSlot: 0, RaceSlotKnown: true, Workers: 1, Gravity: gamedata.LOW_G, ProfileKnown: true},
+			{RaceSlot: 1, RaceSlotKnown: true, Workers: 1, Gravity: gamedata.HEAVY_G, ProfileKnown: true},
+		},
+	}
+	out := RunColonyTurn(cs)
+	if out.GrossIndustry != 6 { // Low-G:4×50%=2；High-G:4×100%=4。
+		t.Fatalf("混居逐群重力毛工業 = %d，want 6", out.GrossIndustry)
+	}
+	cs.NormalizeGravity = true
+	if got := RunColonyTurn(cs).GrossIndustry; got != 8 {
+		t.Fatalf("重力產生器應同時解除兩群懲罰，got %d want 8", got)
+	}
+}
+
+func TestRunColonyTurnMixedRaceKeepsScientistTrait(t *testing.T) {
+	cs := ColonyState{
+		Population: 2, PopMax: 10, Scientists: 2, ResearchPerScientist: 3,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G,
+		OwnerRaceProfileKnown: true, OwnerRaceSlot: 0, OwnerRaceSlotKnown: true,
+		PopulationGroups: []PopulationGroup{
+			{RaceSlot: 0, RaceSlotKnown: true, Scientists: 1, Gravity: gamedata.NORMAL_G, ProfileKnown: true},
+			{RaceSlot: 1, RaceSlotKnown: true, Scientists: 1, ResearchBonus: 2, Gravity: gamedata.NORMAL_G, ProfileKnown: true},
+		},
+	}
+	if got := RunColonyTurn(cs).Research; got != 8 {
+		t.Fatalf("一般 3 + 席隆 5 應為 8 RP，got %d", got)
+	}
+}
+
+func TestRunColonyTurnSpecialGroupsAndPerSlotGrowth(t *testing.T) {
+	cs := ColonyState{
+		Population: 4, PopMax: 20, Farmers: 2, Workers: 1, Scientists: 1,
+		FoodPerFarmer: 3, IndustryPerWorker: 2, ResearchPerScientist: 1,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.HEAVY_G,
+		OwnerRaceProfileKnown: true, OwnerRaceSlot: 0, OwnerRaceSlotKnown: true,
+		PopulationGroups: []PopulationGroup{
+			{RaceSlot: 0, RaceSlotKnown: true, Farmers: 1, Gravity: gamedata.HEAVY_G, ProfileKnown: true},
+			{RaceSlot: gamedata.AndroidColonistSlot, RaceSlotKnown: true, Workers: 1, Scientists: 1,
+				FoodBonus: 6, IndustryBonus: 3, ResearchBonus: 3, GravityImmune: true,
+				Gravity: gamedata.NORMAL_G, GrowthBonusPercent: 50, ProfileKnown: true},
+			{RaceSlot: gamedata.NativeColonistSlot, RaceSlotKnown: true, Farmers: 1,
+				FoodBonus: 4, GravityImmune: true, Gravity: gamedata.NORMAL_G, ProfileKnown: true},
+		},
+	}
+	out := RunColonyTurn(cs)
+	if out.Food != 10 || out.GrossIndustry != 5 || out.Research != 4 {
+		t.Fatalf("特殊人口產出 = 食物/工業/研究 %d/%d/%d，want 10/5/4", out.Food, out.GrossIndustry, out.Research)
+	}
+	if out.PopulationGroupGrowthCount != 3 {
+		t.Fatalf("逐槽成長數 = %d，want 3", out.PopulationGroupGrowthCount)
+	}
+	if out.PopulationGroupGrowth[0] <= 0 || out.PopulationGroupGrowth[1] != 0 || out.PopulationGroupGrowth[2] != 0 {
+		t.Fatalf("一般 slot 應自然成長，Android／Natives 不進正成長 pass，got %v", out.PopulationGroupGrowth)
+	}
+}
+
+func TestPopulationConsumptionAndShortageOriginalPriority(t *testing.T) {
+	cs := ColonyState{
+		Population: 4, PopMax: 20, Workers: 4,
+		OwnerRaceProfileKnown: true, OwnerRaceSlot: 0, OwnerRaceSlotKnown: true,
+		PopulationGroups: []PopulationGroup{
+			{RaceSlot: 0, RaceSlotKnown: true, Workers: 1, ProfileKnown: true},
+			{RaceSlot: 1, RaceSlotKnown: true, Workers: 1, Cybernetic: true, ProfileKnown: true},
+			{RaceSlot: gamedata.AndroidColonistSlot, RaceSlotKnown: true, Workers: 1, ProfileKnown: true},
+			{RaceSlot: gamedata.NativeColonistSlot, RaceSlotKnown: true, Workers: 1, ProfileKnown: true},
+		},
+	}
+	consumption := colonyPopulationConsumption(cs)
+	if consumption.foodTotal() != 5 || consumption.industryTotal() != 3 {
+		t.Fatalf("逐族半單位消耗 = food %d industry %d，want 5/3", consumption.foodTotal(), consumption.industryTotal())
+	}
+	// 2 半食物先供 owner；2 半工業必須先完整供 Android，外族 Cybernetic 仍短缺食物與工業。
+	rates := populationShortageGrowth(cs, consumption, 2, 2)
+	if rates[0] != 0 || rates[1] != -50 || rates[gamedata.AndroidColonistSlot] != 0 ||
+		rates[gamedata.NativeColonistSlot] != -50 {
+		t.Fatalf("原版短缺優先序 signed rates = %v，want slot0/1/8/9 = 0/-50/0/-50", rates)
+	}
+}
+
+func TestPopulationConsumptionCyberneticPrecedesLithovore(t *testing.T) {
+	cs := ColonyState{
+		Population: 1, PopMax: 10, Farmers: 1,
+		OwnerRaceProfileKnown: true, OwnerRaceSlot: 0, OwnerRaceSlotKnown: true,
+		PopulationGroups: []PopulationGroup{{RaceSlot: 0, RaceSlotKnown: true, Farmers: 1,
+			Cybernetic: true, Lithovore: true, ProfileKnown: true}},
+	}
+	got := colonyPopulationConsumption(cs)
+	if got.foodTotal() != 1 || got.industryTotal() != 1 {
+		t.Fatalf("Cybernetic+Lithovore 依原版分支應為 1 半食物 + 1 半工業，got %d/%d",
+			got.foodTotal(), got.industryTotal())
+	}
+}
+
+func TestRunColonyTurnSignedGrowthOffsetsPositiveGrowth(t *testing.T) {
+	cs := ColonyState{
+		Population: 2, PopMax: 20, Farmers: 2, FoodPerFarmer: 0,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G,
+		OwnerRaceProfileKnown: true, OwnerRaceSlot: 0, OwnerRaceSlotKnown: true,
+		PopulationGroups: []PopulationGroup{{RaceSlot: 0, RaceSlotKnown: true, Farmers: 2,
+			Gravity: gamedata.NORMAL_G, ProfileKnown: true}},
+	}
+	out := RunColonyTurn(cs)
+	base := gamedata.ColonyGrowth(gamedata.ColonyBaseGrowth(2, 2, 20), 0)
+	want := base - 100 // 4 個未滿足半食物 × -25。
+	if out.PopulationGroupGrowthCount != 1 || out.PopulationGroupGrowth[0] != want || out.PopGrowth != want {
+		t.Fatalf("signed 成長應為正成長 %d + 短缺 -100 = %d，got %+v", base, want, out)
+	}
+}
+
+func TestRunColonyTurnOldSavePrisonersFallbackToRatio(t *testing.T) {
+	cs := ColonyState{
+		Population: 4, PopMax: 10, Workers: 4, IndustryPerWorker: 4,
+		UnassimilatedPop: 2, PlanetSize: gamedata.MEDIUM_PLANET,
+		PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT,
+	}
+	if got := RunColonyTurn(cs).GrossIndustry; got != 14 {
+		t.Fatalf("舊存檔比例 fallback 毛工業 = %d，want 14", got)
+	}
+}
+
 // TestRunColonyTurnFlatFood 驗證 FlatFood(殖民地整體固定食物加成,如水耕農場 p.99 +2)
 // 與農夫數無關——1 農夫與 5 農夫的固定加成都應是同一個值,不像 per-farmer 欄位會隨人數放大。
 func TestRunColonyTurnFlatFood(t *testing.T) {
@@ -190,18 +369,18 @@ func TestRunColonyTurnPopMaxBonusRaisesGrowthCeiling(t *testing.T) {
 // 為止」)的 FlatGrowth:未滿人口上限時併入成長,達到上限後不再套用(即使欄位仍非 0)。
 func TestRunColonyTurnFlatGrowthUntilPopMax(t *testing.T) {
 	notFull := ColonyState{
-		Population: 10, PopMax: 20, FlatGrowth: 30,
+		Population: 10, PopMax: 20, FlatGrowth: gamedata.CloningCenterGrowthPoints,
 		Farmers: 10, FoodPerFarmer: 1, // 食物打平消耗,避免饑荒把成長歸零,隔離 FlatGrowth 單一變數
 		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT,
 	}
 	got := RunColonyTurn(notFull)
-	// base=sqrt(2000*10*10/20)=100,+FlatGrowth 30 = 130
-	if got.PopGrowth != 130 {
-		t.Errorf("未滿上限時 FlatGrowth 應併入成長:%d,預期 130", got.PopGrowth)
+	// base=sqrt(2000*10*10/20)=100,+FlatGrowth 100 = 200
+	if got.PopGrowth != 200 {
+		t.Errorf("未滿上限時 FlatGrowth 應併入成長:%d,預期 200", got.PopGrowth)
 	}
 
 	full := ColonyState{
-		Population: 20, PopMax: 20, FlatGrowth: 30,
+		Population: 20, PopMax: 20, FlatGrowth: gamedata.CloningCenterGrowthPoints,
 		Farmers: 20, FoodPerFarmer: 1,
 		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT,
 	}
@@ -230,9 +409,28 @@ func TestRunColonyTurnMorale(t *testing.T) {
 	}
 }
 
+func TestRunColonyTurnGovernmentJobBonuses(t *testing.T) {
+	base := ColonyState{Population: 6, PopMax: 20, Farmers: 2, Workers: 2, Scientists: 2,
+		FoodPerFarmer: 10, IndustryPerWorker: 10, ResearchPerScientist: 10,
+		PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G,
+		MineralRichness: gamedata.ABUNDANT, TolerantRace: true}
+	unity := base
+	unity.GovernmentFoodBonusPercent, unity.GovernmentIndustryBonusPercent = 50, 50
+	got := RunColonyTurn(unity)
+	if got.Food != 30 || got.GrossIndustry != 30 || got.Research != 20 {
+		t.Fatalf("統一只應提升食物／工業：food=%d industry=%d research=%d", got.Food, got.GrossIndustry, got.Research)
+	}
+	federation := base
+	federation.GovernmentResearchBonusPercent = 75
+	got = RunColonyTurn(federation)
+	if got.Food != 20 || got.GrossIndustry != 20 || got.Research != 35 {
+		t.Fatalf("聯邦只應提升研究：food=%d industry=%d research=%d", got.Food, got.GrossIndustry, got.Research)
+	}
+}
+
 // TestRunColonyTurnGravityHeavyPenalty 驗證 Heavy-G 行星(GAME_MANUAL.pdf p.58:「All three
 // types of production are reduced by 50%」)對食物/工業/研究三種 per-worker 產出都打對折,
-// 固定加成(此測試未設 Flat*,略)不受影響。種族重力天賦未建模,以 NORMAL_G 為基準
+// 固定加成（此測試未設 Flat*，略）不受影響；未提供種族重力時採 NORMAL_G 相容 fallback。
 // (見 colonyGravityPenaltyPercent 註解),故 HEAVY_G 行星懲罰 = gravityPenaltyTable[NORMAL_G][HEAVY_G] = -50。
 func TestRunColonyTurnGravityHeavyPenalty(t *testing.T) {
 	cs := ColonyState{
