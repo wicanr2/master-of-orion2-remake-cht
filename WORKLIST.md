@@ -372,6 +372,11 @@
   Standard／Deuterium／Iridium／Urridium／Thorium 航程為 4／6／9／12／255。兩式已接
   Ruthless、人口／budget、政府與交叉兵營 gate；正常唯一候選完工後由 AI 陸戰隊／戰車營
   補充 consumer 驗證。舊存檔若缺 fuel application 或外交／population-slot 對映，仍誠實走 fallback。
+  raw 23 Planetary Barrier Shield、raw 24 Planetary Flux Shield 與 raw 28 Planetary Radiation
+  Shield 亦已沿同一星系壓力 context 閉合 priority／ETA9 gate、四槽係數、Ruthless、budget，
+  以及 Radiation Shield 的 Radiated／Pacifist 加分。三棟可由正常唯一候選完工，會依序取代
+  低階護盾、同步 AI colony／planet 的 Radiated→Barren，並由既有軌道轟炸 consumer 讀取
+  每發 5／10／20 減傷；context 不完整時維持明示 fallback。
   其餘分數區域、
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
   state machine 亦待閉合。見

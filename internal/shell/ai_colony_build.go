@@ -172,36 +172,36 @@ func originalAIPrimaryPopulationCapacity(colony engine.ColonyState, built map[st
 }
 
 type originalAIBuildScoreContext struct {
-	lateTech               bool
-	priorityGate           bool
-	aquatic                bool
-	empireFoodBalanceHalf  int
-	colonyFoodHalf         int
-	colonyFoodHalfKnown    bool
-	pollutionCleanupCost   int
-	ownerLowGravity        bool
-	ownerHighGravity       bool
-	primaryPopCapacity     int
-	primaryPopCapKnown     bool
-	netIndustry            int
-	raceGrowthPercent      int
-	government             gamedata.MoraleGovernmentType
-	treasuryBefore         int
-	netBC                  int
-	barracksContextKnown   bool
-	reachTreatyNear        int
-	reachNoPolicyNear      int
-	reachWarNear           int
-	reachExtended          int
-	incomingOtherFleetETA9 bool
-	hostileAlienPopulation bool
-	armorBarracksBuilt     bool
-	marineBarracksBuilt    bool
+	lateTech                      bool
+	priorityGate                  bool
+	aquatic                       bool
+	empireFoodBalanceHalf         int
+	colonyFoodHalf                int
+	colonyFoodHalfKnown           bool
+	pollutionCleanupCost          int
+	ownerLowGravity               bool
+	ownerHighGravity              bool
+	primaryPopCapacity            int
+	primaryPopCapKnown            bool
+	netIndustry                   int
+	raceGrowthPercent             int
+	government                    gamedata.MoraleGovernmentType
+	treasuryBefore                int
+	netBC                         int
+	strategicPressureContextKnown bool
+	reachTreatyNear               int
+	reachNoPolicyNear             int
+	reachWarNear                  int
+	reachExtended                 int
+	incomingOtherFleetETA9        bool
+	hostileAlienPopulation        bool
+	armorBarracksBuilt            bool
+	marineBarracksBuilt           bool
 }
 
-// originalAIBarracksContext 是 raw 2／22 需要的 session-wide 暫態輸入；不進存檔。
+// originalAIStrategicPressureContext 是 raw 2／22／23／24／28 共用的 session-wide 暫態輸入；不進存檔。
 // score 公式本身可精確測試，而跨帝國航程由 GameSession 在候選建立前一次投影。
-type originalAIBarracksContext struct {
+type originalAIStrategicPressureContext struct {
 	known                  bool
 	reachTreatyNear        int
 	reachNoPolicyNear      int
@@ -280,11 +280,11 @@ func (s *GameSession) originalAIPolicyBetween(ownerAI, sourceSlot int) (gamedata
 	return gamedata.DIPLO_NONE, false, false
 }
 
-// originalAIBarracksContext 投影 sub_D3A68／sub_D3BA0、Compute_AI_Data_ cache+5 與
+// originalAIStrategicPressureContext 投影 sub_D3A68／sub_D3BA0、Compute_AI_Data_ cache+5 與
 // sub_CFF02 的 session-wide 輸入。任何 player-slot／外交矩陣缺口都令 known=false，
 // 讓 caller 回到明示 fallback，避免把舊存檔零值冒充原版精確狀態。
-func (s *GameSession) originalAIBarracksContext(aiIndex, colonyIndex int) originalAIBarracksContext {
-	ctx := originalAIBarracksContext{}
+func (s *GameSession) originalAIStrategicPressureContext(aiIndex, colonyIndex int) originalAIStrategicPressureContext {
+	ctx := originalAIStrategicPressureContext{}
 	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) || colonyIndex < 0 ||
 		colonyIndex >= len(s.AIPlayers[aiIndex].Colonies) || colonyIndex >= len(s.AIPlayers[aiIndex].ColonyStars) {
 		return ctx
@@ -321,7 +321,7 @@ func (s *GameSession) originalAIBarracksContext(aiIndex, colonyIndex int) origin
 
 	if len(s.PlayerColonies) > 0 {
 		if !classify(s.PlayerColonyStars, s.Player, owner.Treaty.FormalPolicy) {
-			return originalAIBarracksContext{}
+			return originalAIStrategicPressureContext{}
 		}
 	}
 	for i := range s.AIPlayers {
@@ -329,10 +329,10 @@ func (s *GameSession) originalAIBarracksContext(aiIndex, colonyIndex int) origin
 			continue
 		}
 		if aiIndex >= len(s.AIPolicies) || i >= len(s.AIPolicies[aiIndex]) {
-			return originalAIBarracksContext{}
+			return originalAIStrategicPressureContext{}
 		}
 		if !classify(s.AIPlayers[i].ColonyStars, s.AIPlayers[i].Player, s.AIPolicies[aiIndex][i]) {
-			return originalAIBarracksContext{}
+			return originalAIStrategicPressureContext{}
 		}
 	}
 
@@ -349,7 +349,7 @@ func (s *GameSession) originalAIBarracksContext(aiIndex, colonyIndex int) origin
 
 	colony := owner.Colonies[colonyIndex]
 	if !engine.PopulationGroupsComplete(colony) {
-		return originalAIBarracksContext{}
+		return originalAIStrategicPressureContext{}
 	}
 	for _, group := range colony.PopulationGroups {
 		if group.RaceSlot < 0 || group.RaceSlot >= 8 || group.RaceSlot == owner.PopulationRaceSlot ||
@@ -358,7 +358,7 @@ func (s *GameSession) originalAIBarracksContext(aiIndex, colonyIndex int) origin
 		}
 		policy, active, ok := s.originalAIPolicyBetween(aiIndex, group.RaceSlot)
 		if !ok {
-			return originalAIBarracksContext{}
+			return originalAIStrategicPressureContext{}
 		}
 		if !active {
 			continue
@@ -444,8 +444,32 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		ruthless = 1
 	}
 	switch rawID {
+	case 23, 24, 28: // 0xD03B5..0xD04B2：三種 Planetary Shield
+		if !ctx.strategicPressureContextKnown {
+			return 0, false
+		}
+		if ctx.priorityGate && !ctx.incomingOtherFleetETA9 {
+			return 0, true
+		}
+		incoming := 0
+		if ctx.incomingOtherFleetETA9 {
+			incoming = 1
+		}
+		score := 10*incoming + ctx.reachTreatyNear + 4*ctx.reachNoPolicyNear +
+			12*ctx.reachWarNear + 2*ctx.reachExtended
+		if rawID == 28 {
+			score = 10*incoming + 4*ctx.reachTreatyNear + 8*ctx.reachNoPolicyNear +
+				12*ctx.reachWarNear + 4*ctx.reachExtended
+		}
+		if score != 0 {
+			score += ruthless
+		}
+		if rawID == 28 && colony.Climate == gamedata.RADIATED {
+			score += 2 * pacifist
+		}
+		return score + originalAIBudgetFactor(ctx.treasuryBefore, ctx.netBC), true
 	case 2, 22: // 0xD02BF..0xD03B2：Armor Barracks／Marine Barracks
-		if !ctx.barracksContextKnown {
+		if !ctx.strategicPressureContextKnown {
 			return 0, false
 		}
 		budgetFactor := originalAIBudgetFactor(ctx.treasuryBefore, ctx.netBC)
@@ -739,7 +763,7 @@ func aiBuildingScore(b gamedata.Building, colony engine.ColonyState, out engine.
 	return score
 }
 
-func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOutput, difficulty, turn int, barracks ...originalAIBarracksContext) (ColonyBuild, bool) {
+func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOutput, difficulty, turn int, pressure ...originalAIStrategicPressureContext) (ColonyBuild, bool) {
 	if colony < 0 || colony >= len(a.Colonies) {
 		return ColonyBuild{}, false
 	}
@@ -775,14 +799,14 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 		armorBarracksBuilt:    built["裝甲營房"],
 		marineBarracksBuilt:   built["海軍陸戰隊營"],
 	}
-	if len(barracks) > 0 {
-		ctx.barracksContextKnown = barracks[0].known
-		ctx.reachTreatyNear = barracks[0].reachTreatyNear
-		ctx.reachNoPolicyNear = barracks[0].reachNoPolicyNear
-		ctx.reachWarNear = barracks[0].reachWarNear
-		ctx.reachExtended = barracks[0].reachExtended
-		ctx.incomingOtherFleetETA9 = barracks[0].incomingOtherFleetETA9
-		ctx.hostileAlienPopulation = barracks[0].hostileAlienPopulation
+	if len(pressure) > 0 {
+		ctx.strategicPressureContextKnown = pressure[0].known
+		ctx.reachTreatyNear = pressure[0].reachTreatyNear
+		ctx.reachNoPolicyNear = pressure[0].reachNoPolicyNear
+		ctx.reachWarNear = pressure[0].reachWarNear
+		ctx.reachExtended = pressure[0].reachExtended
+		ctx.incomingOtherFleetETA9 = pressure[0].incomingOtherFleetETA9
+		ctx.hostileAlienPopulation = pressure[0].hostileAlienPopulation
 	}
 	ctx.colonyFoodHalf, ctx.colonyFoodHalfKnown = originalAIColonyFoodHalf(a.Colonies[colony], built, known)
 	ctx.primaryPopCapacity, ctx.primaryPopCapKnown = originalAIPrimaryPopulationCapacity(a.Colonies[colony], built, known)
@@ -910,6 +934,33 @@ func applyAICompletedBuilding(c *engine.ColonyState, name string) {
 	}
 }
 
+// applyAICompletedPlanetaryShield 維持三面護盾的取代關係，並把手冊可見的
+// Radiated→Barren 效果同步到 AI colony 與全局 planet。逐發減傷由建築 map 的既有
+// 軌道轟炸 consumer 讀取，不在 ColonyState 重複保存數值。
+func (s *GameSession) applyAICompletedPlanetaryShield(aiIndex, colony int, name string, built map[string]bool) {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) || colony < 0 || colony >= len(s.AIPlayers[aiIndex].Colonies) {
+		return
+	}
+	switch name {
+	case gamedata.BuildingPlanetaryFluxShield:
+		delete(built, gamedata.BuildingPlanetaryRadiationShield)
+	case gamedata.BuildingPlanetaryBarrierShield:
+		delete(built, gamedata.BuildingPlanetaryRadiationShield)
+		delete(built, gamedata.BuildingPlanetaryFluxShield)
+	case gamedata.BuildingPlanetaryRadiationShield:
+	default:
+		return
+	}
+	a := &s.AIPlayers[aiIndex]
+	c := &a.Colonies[colony]
+	if c.Climate != gamedata.RADIATED {
+		return
+	}
+	applyClimateChangeToColony(c, gamedata.BARREN,
+		aiRaceHasTrait(*a, gamedata.TRAIT_AQUATIC), aiRaceHasTrait(*a, gamedata.TRAIT_TOLERANT))
+	syncPlanetClimate(s.aiColonyPlanet(aiIndex, colony), gamedata.BARREN)
+}
+
 // applyAICompletedSpecial 套用已閉合的 AI 一次性產品；成功時回傳 true，呼叫端不得把它
 // 寫入 ColonyBuildings。未知 Special 維持 false，避免以玩家近似路徑冒充原版 AI。
 func (s *GameSession) applyAICompletedSpecial(aiIndex, colony int, name string) bool {
@@ -966,7 +1017,7 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 		if build.Name == "" {
 			var ok bool
 			build, ok = chooseAIColonyBuilding(a, i, out, s.Difficulty, s.Turn,
-				s.originalAIBarracksContext(aiIndex, i))
+				s.originalAIStrategicPressureContext(aiIndex, i))
 			if !ok {
 				shipProduction += out.Colonies[i].NetIndustry
 				continue
@@ -985,6 +1036,7 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 				a.ColonyBuildings[i] = make(map[string]bool)
 			}
 			if !a.ColonyBuildings[i][build.Name] {
+				s.applyAICompletedPlanetaryShield(aiIndex, i, build.Name, a.ColonyBuildings[i])
 				a.ColonyBuildings[i][build.Name] = true
 				applyAICompletedBuilding(&a.Colonies[i], build.Name)
 			}

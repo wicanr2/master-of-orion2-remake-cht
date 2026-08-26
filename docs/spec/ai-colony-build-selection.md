@@ -97,6 +97,14 @@
    Barracks 未建且同一政府 gate 加 12、hostile alien population 加 3。燃料科技須先轉成
    原版 `player+0x324` 的 R 秒差距口徑；若 session-wide 外交、航程、艦隊或 population-slot
    對映不完整，這兩式必須回報非 exact 並走明示 fallback。
+   raw ID 23 Planetary Barrier Shield、raw ID 24 Planetary Flux Shield 與 raw ID 28
+   Planetary Radiation Shield 也消費同一份星系壓力 context。priority gate 成立且沒有其他
+   帝國 ETA=9 艦隊時為 0；否則 raw 23／24 的 pressure 是
+   `10×ETA9+條約+4×無政策+12×戰爭+2×延伸`，raw 28 是
+   `10×ETA9+4×條約+8×無政策+12×戰爭+4×延伸`。pressure 非零時加 `[Ruthless]`，
+   三式最後加 `budgetFactor`；只有 raw 28 在 Radiated 氣候另加 `2×[Pacifist]`。
+   完工必須保留互斥建築語意、把 Radiated colony／planet 同步轉成 Barren，並由實際軌道轟炸
+   的逐發減傷 consumer 驗證，不可只測建築旗標。
 5. 優先建築 gate 僅由已知科技 application、已建建築、殖民地礦產及 AI 生效政府組成：
    - Ultra Poor／Poor／Abundant 殖民地已知 Automated Factories 但未建 Automated Factory；或
    - Feudal／Confederation／Dictatorship／Imperium 已知但未建 Marine Barracks／Armor Barracks。
@@ -147,6 +155,9 @@
 - raw 2／22 要逐項測四個 reach count、其他帝國 ETA=9、Ruthless、兩個人口／budget gate、
   八種政府、交叉兵營旗標與 hostile alien population；正常唯一候選完工後，必須由既有
   駐軍回合鏈觀察 Marine／Tank 數量成長，不能只檢查建築 map。
+- raw 23／24／28 要測 priority gate 與 ETA9 的例外、四個 reach count、Ruthless、Pacifist／
+  Radiated 專屬加分及 budget factor；三棟均須以唯一正常候選完工，驗證 Radiated→Barren
+  colony／planet 同步，以及 5／10／20 的軌道轟炸逐發減傷。
 - 只完成多選主題但選了其他 application 時，不得觸發相應 Automated Factory／Barracks gate。
 - 精確分支與類別式 fallback 不可混稱同一證據等級。
 - 既有擴張測試以「建築＋造艦總投入」驗證新殖民地確實參與經濟，不再假設所有產出都是軍艦。

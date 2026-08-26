@@ -592,6 +592,13 @@ func TestAIFoodBuildingsCandidateAndCompletion(t *testing.T) {
 				a.ColonyBuildings[0][b.NameZH] = true
 			}
 			delete(a.ColonyBuildings[0], tt.name)
+			if tt.name == gamedata.BuildingPlanetaryFluxShield {
+				a.ColonyBuildings[0][gamedata.BuildingPlanetaryRadiationShield] = true
+			}
+			if tt.name == gamedata.BuildingPlanetaryBarrierShield {
+				a.ColonyBuildings[0][gamedata.BuildingPlanetaryRadiationShield] = true
+				a.ColonyBuildings[0][gamedata.BuildingPlanetaryFluxShield] = true
+			}
 			out := engine.EmpireOutput{Colonies: []engine.ColonyOutput{{NetIndustry: 1}}, Player: engine.PlayerState{BC: 100}}
 			build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1)
 			if !ok || build.Name != tt.name {
@@ -967,16 +974,16 @@ func TestAIOriginalBarracksScores(t *testing.T) {
 	}
 	colony := engine.ColonyState{Population: 3}
 	ctx := originalAIBuildScoreContext{
-		barracksContextKnown:   true,
-		reachTreatyNear:        1,
-		reachNoPolicyNear:      2,
-		reachWarNear:           3,
-		reachExtended:          4,
-		incomingOtherFleetETA9: true,
-		hostileAlienPopulation: true,
-		armorBarracksBuilt:     true,
-		marineBarracksBuilt:    true,
-		government:             gamedata.MoraleGovDemocracy,
+		strategicPressureContextKnown: true,
+		reachTreatyNear:               1,
+		reachNoPolicyNear:             2,
+		reachWarNear:                  3,
+		reachExtended:                 4,
+		incomingOtherFleetETA9:        true,
+		hostileAlienPopulation:        true,
+		armorBarracksBuilt:            true,
+		marineBarracksBuilt:           true,
+		government:                    gamedata.MoraleGovDemocracy,
 	}
 	if score, exact := originalAIExactBuildingScore(armor, colony, ai.PersonalityRuthless, ctx); !exact || score != 20 {
 		t.Fatalf("Armor Barracks 分數=(%d,%v)，want (20,true)", score, exact)
@@ -985,7 +992,7 @@ func TestAIOriginalBarracksScores(t *testing.T) {
 		t.Fatalf("Marine Barracks 分數=(%d,%v)，want (42,true)", score, exact)
 	}
 
-	ctx = originalAIBuildScoreContext{barracksContextKnown: true, government: gamedata.MoraleGovDictatorship}
+	ctx = originalAIBuildScoreContext{strategicPressureContextKnown: true, government: gamedata.MoraleGovDictatorship}
 	if score, exact := originalAIExactBuildingScore(armor, engine.ColonyState{Population: 2}, ai.PersonalityAggressive, ctx); !exact || score != 0 {
 		t.Fatalf("人口 2、無 budget 的 Armor gate=(%d,%v)，want (0,true)", score, exact)
 	}
@@ -997,7 +1004,7 @@ func TestAIOriginalBarracksScores(t *testing.T) {
 	if score, exact := originalAIExactBuildingScore(armor, engine.ColonyState{Population: 2}, ai.PersonalityAggressive, ctx); !exact || score != 6 {
 		t.Fatalf("正 budget 應通過 Armor 人口 gate 並取政府加分：(%d,%v)", score, exact)
 	}
-	ctx.barracksContextKnown = false
+	ctx.strategicPressureContextKnown = false
 	if _, exact := originalAIExactBuildingScore(armor, colony, ai.PersonalityRuthless, ctx); exact {
 		t.Fatal("缺 session-wide context 時不得冒稱 Armor Barracks exact")
 	}
@@ -1024,6 +1031,97 @@ func TestAIOriginalFuelRangeTable(t *testing.T) {
 	}
 	if _, ok := originalAIFuelRangeParsecs(engine.PlayerState{}); ok {
 		t.Fatal("沒有已知 fuel application 時不得擅自補 Standard Fuel Cells")
+	}
+}
+
+func TestAIOriginalPlanetaryShieldScores(t *testing.T) {
+	barrier, _ := gamedata.BuildingByNameZH(gamedata.BuildingPlanetaryBarrierShield)
+	flux, _ := gamedata.BuildingByNameZH(gamedata.BuildingPlanetaryFluxShield)
+	radiation, _ := gamedata.BuildingByNameZH(gamedata.BuildingPlanetaryRadiationShield)
+	ctx := originalAIBuildScoreContext{
+		strategicPressureContextKnown: true,
+		reachTreatyNear:               1,
+		reachNoPolicyNear:             2,
+		reachWarNear:                  3,
+		reachExtended:                 4,
+		incomingOtherFleetETA9:        true,
+	}
+	colony := engine.ColonyState{Climate: gamedata.RADIATED}
+	for _, b := range []gamedata.Building{barrier, flux} {
+		if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityRuthless, ctx); !exact || score != 64 {
+			t.Errorf("%s score=(%d,%v)，want (64,true)", b.NameZH, score, exact)
+		}
+	}
+	if score, exact := originalAIExactBuildingScore(radiation, colony, ai.PersonalityRuthless, ctx); !exact || score != 83 {
+		t.Fatalf("Radiation Shield pressure score=(%d,%v)，want (83,true)", score, exact)
+	}
+	ctx = originalAIBuildScoreContext{strategicPressureContextKnown: true, priorityGate: true}
+	if score, exact := originalAIExactBuildingScore(radiation, colony, ai.PersonalityPacifist, ctx); !exact || score != 0 {
+		t.Fatalf("priority gate 無 ETA9 應先歸零：(%d,%v)", score, exact)
+	}
+	ctx.priorityGate = false
+	if score, exact := originalAIExactBuildingScore(radiation, colony, ai.PersonalityPacifist, ctx); !exact || score != 2 {
+		t.Fatalf("Radiated Pacifist bonus=(%d,%v)，want (2,true)", score, exact)
+	}
+	ctx.treasuryBefore, ctx.netBC = 1500, 64
+	if score, exact := originalAIExactBuildingScore(barrier, colony, ai.PersonalityPacifist, ctx); !exact || score != 1 {
+		t.Fatalf("零 pressure 的 Barrier 應只取 budget factor：(%d,%v)", score, exact)
+	}
+}
+
+func TestAIPlanetaryShieldCandidateCompletionAndConsumers(t *testing.T) {
+	tests := []struct {
+		name      string
+		topic     gamedata.ResearchTopic
+		reduction int
+	}{
+		{gamedata.BuildingPlanetaryRadiationShield, gamedata.TOPIC_MAGNETO_GRAVITICS, 5},
+		{gamedata.BuildingPlanetaryFluxShield, gamedata.TOPIC_QUANTUM_FIELDS, 10},
+		{gamedata.BuildingPlanetaryBarrierShield, gamedata.TOPIC_TEMPORAL_FIELDS, 20},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := NewDemoSession()
+			s.ensureAIAIState()
+			a := &s.AIPlayers[0]
+			a.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{tt.topic: true}
+			a.Colonies[0].Climate = gamedata.RADIATED
+			if p := s.aiColonyPlanet(0, 0); p != nil {
+				syncPlanetClimate(p, gamedata.RADIATED)
+			}
+			a.ColonyBuildings[0] = make(map[string]bool)
+			for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
+				a.ColonyBuildings[0][b.NameZH] = true
+			}
+			delete(a.ColonyBuildings[0], tt.name)
+			out := engine.EmpireOutput{
+				Colonies: []engine.ColonyOutput{{NetIndustry: 600}},
+				Player:   engine.PlayerState{BC: 2001}, NetBC: 1,
+			}
+			build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1, s.originalAIStrategicPressureContext(0, 0))
+			if !ok || build.Name != tt.name {
+				t.Fatalf("唯一候選錯誤：build=%+v ok=%v", build, ok)
+			}
+			a.ColonyBuilds = map[int]ColonyBuild{aiColonyBuildKey(a, 0): {Name: tt.name, Cost: 1}}
+			s.advanceAIColonyBuilds(0, out)
+			if got := gamedata.PlanetaryShieldReduction(a.ColonyBuildings[0]); got != tt.reduction {
+				t.Fatalf("逐發轟炸減傷=%d，want %d；built=%v", got, tt.reduction, a.ColonyBuildings[0])
+			}
+			if tt.name != gamedata.BuildingPlanetaryRadiationShield &&
+				a.ColonyBuildings[0][gamedata.BuildingPlanetaryRadiationShield] {
+				t.Fatal("較高階護盾完工後仍殘留 Radiation Shield")
+			}
+			if tt.name == gamedata.BuildingPlanetaryBarrierShield &&
+				a.ColonyBuildings[0][gamedata.BuildingPlanetaryFluxShield] {
+				t.Fatal("Barrier Shield 完工後仍殘留 Flux Shield")
+			}
+			if a.Colonies[0].Climate != gamedata.BARREN {
+				t.Fatalf("AI colony 氣候=%v，want Barren", a.Colonies[0].Climate)
+			}
+			if p := s.aiColonyPlanet(0, 0); p != nil && p.ClimateID != gamedata.BARREN {
+				t.Fatalf("全局 planet 氣候=%v，want Barren", p.ClimateID)
+			}
+		})
 	}
 }
 
@@ -1057,7 +1155,7 @@ func TestAIBarracksCandidateCompletionAndGroundForceConsumer(t *testing.T) {
 			}
 			delete(a.ColonyBuildings[0], tt.building)
 			out := engine.EmpireOutput{Colonies: []engine.ColonyOutput{{NetIndustry: 200}}, Player: engine.PlayerState{BC: 2000}}
-			build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1, s.originalAIBarracksContext(0, 0))
+			build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1, s.originalAIStrategicPressureContext(0, 0))
 			if !ok || build.Name != tt.building {
 				t.Fatalf("唯一候選錯誤：build=%+v ok=%v", build, ok)
 			}

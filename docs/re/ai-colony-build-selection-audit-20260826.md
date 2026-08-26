@@ -560,3 +560,35 @@ raw 2 檢查 `colony+0x14C`（building 22），raw 22 檢查 `colony+0x138`（bu
 IDA 匯出 raw words 為 `167,4 / 51,6 / 98,9 / 194,12 / 184,255`；科技 ID 逐項對回受版控
 `gamedata.Technology`。因此 remake 可由實際已取得 application 精確重建 R；舊存檔若沒有任何
 可證明的 fuel application，必須讓 barracks context 失敗並走明示 fallback，不擅自補 Standard。
+
+## 第十六批：三種 Planetary Shield
+
+raw 23 Barrier Shield、raw 24 Flux Shield 與 raw 28 Radiation Shield 共用第十五批已閉合的
+`system×49 + 1 + owner×6` 四槽與 `colonyIndex×7 + 5` ETA=9 旗標。三個 jump-table entry
+及控制流為：
+
+| raw ID | entry → target | pressure formula |
+|---:|---|---|
+| 23 | `0xCFFBA 6b040d00 → 0xD046B` | `10×ETA9 + treatyNear + 4×noPolicyNear + 12×warNear + 2×extended` |
+| 24 | `0xCFFBE 26040d00 → 0xD0426` | 同 raw 23 |
+| 28 | `0xCFFCE b5030d00 → 0xD03B5` | `10×ETA9 + 4×treatyNear + 8×noPolicyNear + 12×warNear + 4×extended` |
+
+三式在共用 priority gate 成立且 ETA9 為 0 時直接零分；gate 未成立，或有 ETA9 時才進公式。
+pressure formula 非零時加 `[Ruthless]`，最後都加 `budgetFactor`。raw 28 另在
+`planet+8 == 1 @ 0xD0407..0xD0412` 時加 `2×[Pacifist]`；`planet+8` 已由氣候事件的唯一
+讀寫端與 enum 對映證實是 climate，raw 1 即 `RADIATED`。raw 23／24 不讀 climate 或 Pacifist。
+
+完整公式因此為：
+
+```text
+priorityGate && !incomingETA9 → 0
+score = pressureFormula
+score != 0 時 score += [Ruthless]
+raw 28 且 climate == RADIATED 時 score += 2×[Pacifist]
+score += budgetFactor
+```
+
+跳表 bytes、係數、priority／ETA gate、性格與氣候 consumer 均為**已證實**。remake 對映沿用
+第十五批已閉合的燃料航程、外交、星系座標與艦隊 ETA；session-wide context 不完整時仍回報
+非 exact。完工消費端分成兩條：建築 map 由軌道轟炸逐發讀取 `5／10／20` 減傷，三面護盾
+任一建成時若原氣候為 Radiated，typed colony 與全局 planet 均轉成 Barren。
