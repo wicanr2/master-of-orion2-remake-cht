@@ -200,6 +200,18 @@
   `07_fleet.png` 與 `29_confirm.png` 目視確認無重疊、越框或英文單字硬切。證據與規格見
   [`docs/re/relocation-player-text-audit-20260827.md`](docs/re/relocation-player-text-audit-20260827.md) 與
   [`docs/tech/relocation-external-text-spec.md`](docs/tech/relocation-external-text-spec.md)。
+  安塔蘭王座廳已完成第二十二個切片：`internal/shell` 的中文阻擋句改為 typed
+  `AntaranAssaultBlockReason`，標題、情境、戰力、勝算、按鈕、阻擋原因與轉場全部由
+  `ui.json` 供應；七個文字區均改走雙軸安全框，兩顆按鈕文字框與 190×44 熱區共用中心。
+  IDA Pro 9.4 證實原版 `sub_14AAC @ 0x14AAC..0x14BFD` 外層、`sub_14BFD` 繪製、
+  `sub_14C83` 的 `ANTAROOM.LBX` 載入及 `sub_14D7C` 的 `ANTARMSG.LBX` 訊息選擇；
+  外部符號名稱整組錯位，現以 raw 位址保留勘誤。原版滿版訊息與整張畫面輸入已證實，remake
+  戰力比較及兩顆按鈕仍明標介面 adapter。實際畫廊先抓到英文按鈕被省略為
+  `LAUNCH FINAL ASSA…`，現縮為完整 `FINAL ASSAULT` 並以測試禁止按鈕裁切；中英文畫廊各
+  35/35，兩種 `08_antaranroom.png` 目視確認未越框。舊 gap report 誤稱只取最終定格亦已清除；
+  現行 55 幀會依序播放，僅每 3 tick 一幀仍是 timing approximation。證據與規格見
+  [`docs/re/antaran-room-player-text-audit-20260827.md`](docs/re/antaran-room-player-text-audit-20260827.md) 與
+  [`docs/tech/antaran-room-external-text-spec.md`](docs/tech/antaran-room-external-text-spec.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與

@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/assets"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
@@ -62,7 +63,7 @@ type antaranRoomScreen struct {
 	roomFrames         []*ebiten.Image
 	animationStartTick int
 
-	blockReason string // 非空 = 現在不能發動(逐條講明卡在哪)
+	blockReason shell.AntaranAssaultBlockReason
 	ourStrength int
 	theirCount  int
 	theirPower  int
@@ -91,6 +92,49 @@ func newAntaranRoomScreen(b *sceneBuilder) *antaranRoomScreen {
 func (a *antaranRoomScreen) assaultRect() (int, int, int, int) { return 96, 396, 190, 44 }
 func (a *antaranRoomScreen) retreatRect() (int, int, int, int) { return 354, 396, 190, 44 }
 
+func antaranRoomTitleTextRect() textSafeRect {
+	return textSafeRect{x: 20, y: 24, w: 600, h: 36, insetX: 4}
+}
+
+func antaranRoomSubtitleTextRect() textSafeRect {
+	return textSafeRect{x: 20, y: 62, w: 600, h: 30, insetX: 4, insetY: 1}
+}
+
+func antaranRoomDefenseTextRect() textSafeRect {
+	return textSafeRect{x: 20, y: 304, w: 600, h: 20, insetX: 4, insetY: 1}
+}
+
+func antaranRoomPlayerPowerTextRect() textSafeRect {
+	return textSafeRect{x: 20, y: 328, w: 600, h: 20, insetX: 4, insetY: 1}
+}
+
+func antaranRoomOddsTextRect() textSafeRect {
+	return textSafeRect{x: 20, y: 352, w: 600, h: 20, insetX: 4, insetY: 1}
+}
+
+func antaranRoomButtonTextRect(x, y, w, h int) textSafeRect {
+	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 5, insetY: 2}
+}
+
+func antaranRoomBlockTextRect() textSafeRect {
+	return textSafeRect{x: 20, y: 450, w: 600, h: 22, insetX: 4, insetY: 1}
+}
+
+func antaranAssaultBlockText(lang i18n.Lang, reason shell.AntaranAssaultBlockReason) string {
+	switch reason {
+	case shell.AntaranAssaultGameOver:
+		return uiText(lang, "antaran.room.block.game_over")
+	case shell.AntaranAssaultEventsDisabled:
+		return uiText(lang, "antaran.room.block.events_disabled")
+	case shell.AntaranAssaultNoPortal:
+		return uiText(lang, "antaran.room.block.no_portal")
+	case shell.AntaranAssaultNoFleet:
+		return uiText(lang, "antaran.room.block.no_fleet")
+	default:
+		return ""
+	}
+}
+
 func hitRect(in shell.InputState, x, y, w, h int) bool {
 	return in.MouseX >= x && in.MouseX < x+w && in.MouseY >= y && in.MouseY < y+h
 }
@@ -100,14 +144,14 @@ func (a *antaranRoomScreen) update(in shell.InputState) *origTransition {
 		return nil
 	}
 	if x, y, w, h := a.retreatRect(); hitRect(in, x, y, w, h) {
-		return a.b.goTo(a.b.fleet, "艦隊列表")
+		return a.b.goTo(a.b.fleet, uiText(a.b.lang, "antaran.room.transition.fleet"))
 	}
 	if x, y, w, h := a.assaultRect(); hitRect(in, x, y, w, h) {
-		if a.blockReason != "" || a.b.session == nil {
+		if a.blockReason != shell.AntaranAssaultAllowed || a.b.session == nil {
 			return nil // 擋下的原因已經寫在畫面上,不用再彈訊息
 		}
 		if _, ok := a.b.session.AssaultAntares(); ok {
-			return a.b.goTo(a.b.battleResult, "戰鬥結果")
+			return a.b.goTo(a.b.battleResult, uiText(a.b.lang, "antaran.room.transition.battle"))
 		}
 		// 理論上 blockReason 為空就一定 ok;真的失敗就重算一次理由顯示出來,不靜默。
 		a.blockReason = a.b.session.AssaultAntaresBlockReason()
@@ -140,47 +184,46 @@ func (a *antaranRoomScreen) draw(dst *ebiten.Image) {
 
 	// 標題帶:背景是滿版美術,文字直接疊上去會看不清,壓一條半透明深色。
 	fillPanel(dst, 0, 24, moo2ScreenW, 74, color.RGBA{6, 4, 2, 175}, false)
-	a.fnt.DrawCentered(dst, truncateToWidth(a.fnt, a.b.tr("安塔蘭王座廳", "THE ANTARAN THRONE ROOM"), 22, 600), 320, 46, 22, gold)
-	a.fnt.DrawCentered(dst, truncateToWidth(a.fnt, a.b.tr("次元傳送門的彼端,安塔蘭統治者在等著。",
-		"Beyond the dimensional gate, the Antaran overlords are waiting."), 14, 600), 320, 78, 14, body)
+	antaranRoomTitleTextRect().drawCentered(dst, a.fnt, uiText(a.b.lang, "antaran.room.title"), 22, gold)
+	antaranRoomSubtitleTextRect().drawCentered(dst, a.fnt, uiText(a.b.lang, "antaran.room.subtitle"), 14, body)
 
 	// 戰力對比:同一套 playerMilitary,與實際結算用的數字一致。
 	fillPanel(dst, 0, 300, moo2ScreenW, 76, color.RGBA{6, 4, 2, 175}, false)
-	a.fnt.DrawCentered(dst, truncateToWidth(a.fnt,
-		fmt.Sprintf(a.b.tr("安塔蘭母星防禦艦隊:%d 艘,總戰力 %d", "Antaran home fleet: %d ships, %d combat power"),
-			a.theirCount, a.theirPower), 14, 600), 320, 320, 14, warn)
-	a.fnt.DrawCentered(dst, truncateToWidth(a.fnt,
-		fmt.Sprintf(a.b.tr("我方艦隊總戰力:%d", "Your fleet: %d combat power"), a.ourStrength), 14, 600), 320, 344, 14, body)
-	odds, oddsCol := a.b.tr("勝算渺茫——這一戰要求對方全滅,帶不夠戰力等於送死",
-		"Long odds — this fight demands total annihilation; arriving under-armed is suicide"), warn
+	antaranRoomDefenseTextRect().drawCentered(dst, a.fnt,
+		fmt.Sprintf(uiText(a.b.lang, "antaran.room.defense"), a.theirCount, a.theirPower), 14, warn)
+	antaranRoomPlayerPowerTextRect().drawCentered(dst, a.fnt,
+		fmt.Sprintf(uiText(a.b.lang, "antaran.room.player_power"), a.ourStrength), 14, body)
+	odds, oddsCol := uiText(a.b.lang, "antaran.room.odds.low"), warn
 	if a.ourStrength >= a.theirPower {
-		odds, oddsCol = a.b.tr("戰力已足以一戰", "Your fleet is strong enough to make the attempt"),
+		odds, oddsCol = uiText(a.b.lang, "antaran.room.odds.ready"),
 			color.RGBA{150, 220, 150, 255}
 	}
-	a.fnt.DrawCentered(dst, truncateToWidth(a.fnt, odds, 12, 600), 320, 366, 12, oddsCol)
+	antaranRoomOddsTextRect().drawCentered(dst, a.fnt, odds, 12, oddsCol)
 
 	ax, ay, aw, ah := a.assaultRect()
 	rx, ry, rw, rh := a.retreatRect()
-	enabled := a.blockReason == ""
+	enabled := a.blockReason == shell.AntaranAssaultAllowed
 	face, edge := color.RGBA{58, 20, 16, 235}, color.RGBA{190, 110, 70, 255}
 	if !enabled {
 		face, edge = color.RGBA{34, 30, 28, 235}, color.RGBA{96, 88, 80, 255}
 	}
 	fillPanel(dst, float32(ax), float32(ay), float32(aw), float32(ah), face, false)
 	vector.StrokeRect(dst, float32(ax), float32(ay), float32(aw), float32(ah), 1.5, edge, false)
-	lab, labCol := a.b.tr("發動終局反攻", "LAUNCH THE FINAL ASSAULT"), body
+	lab, labCol := uiText(a.b.lang, "antaran.room.button.assault"), body
 	if !enabled {
 		labCol = color.RGBA{150, 142, 132, 255}
 	}
-	a.fnt.DrawCentered(dst, truncateToWidth(a.fnt, lab, 16, float64(aw-10)), float64(ax+aw/2), float64(ay+ah/2), 16, labCol)
+	antaranRoomButtonTextRect(ax, ay, aw, ah).drawCentered(dst, a.fnt, lab, 16, labCol)
 
 	fillPanel(dst, float32(rx), float32(ry), float32(rw), float32(rh), color.RGBA{34, 30, 44, 235}, false)
 	vector.StrokeRect(dst, float32(rx), float32(ry), float32(rw), float32(rh), 1.5, color.RGBA{140, 130, 170, 255}, false)
-	a.fnt.DrawCentered(dst, truncateToWidth(a.fnt, a.b.tr("撤退", "WITHDRAW"), 16, float64(rw-10)), float64(rx+rw/2), float64(ry+rh/2), 16, body)
+	antaranRoomButtonTextRect(rx, ry, rw, rh).drawCentered(dst, a.fnt,
+		uiText(a.b.lang, "antaran.room.button.retreat"), 16, body)
 
 	if !enabled {
 		fillPanel(dst, 0, 448, moo2ScreenW, 26, color.RGBA{6, 4, 2, 190}, false)
-		a.fnt.DrawCentered(dst, truncateToWidth(a.fnt, a.b.tr("無法發動:", "Cannot launch: ")+a.blockReason, 12, 600), 320, 461, 12, warn)
+		antaranRoomBlockTextRect().drawCentered(dst, a.fnt,
+			uiText(a.b.lang, "antaran.room.block.prefix")+antaranAssaultBlockText(a.b.lang, a.blockReason), 12, warn)
 	}
 }
 

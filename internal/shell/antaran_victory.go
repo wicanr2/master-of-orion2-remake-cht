@@ -350,10 +350,21 @@ func (s *GameSession) hasDimensionalPortal() bool {
 	return false
 }
 
-// CanAssaultAntares 回傳「玩家現在是否能發起反攻安塔蘭母星」——供 UI 決定是否顯示/啟用按鈕,
-// 也是 AssaultAntares 內部檢查的匯出版本(判斷邏輯只寫一份,兩處共用)。
+// AntaranAssaultBlockReason 是終局反攻的 typed 前置阻擋原因；玩家文案由 UI catalog 組裝。
+type AntaranAssaultBlockReason uint8
+
+const (
+	AntaranAssaultAllowed AntaranAssaultBlockReason = iota
+	AntaranAssaultGameOver
+	AntaranAssaultEventsDisabled
+	AntaranAssaultNoPortal
+	AntaranAssaultNoFleet
+)
+
+// CanAssaultAntares 回傳玩家現在是否能發起反攻安塔蘭母星；與 AssaultAntares 共用同一
+// typed 前置條件，不另維護一份布林式。
 func (s *GameSession) CanAssaultAntares() bool {
-	return !s.Victory.Over && !s.DisableEvents && s.hasDimensionalPortal() && len(s.Fleet().Ships) > 0
+	return s.AssaultAntaresBlockReason() == AntaranAssaultAllowed
 }
 
 // AssaultAntares 解算「反攻安塔蘭母星」戰鬥(手冊三條勝利路徑之二)。
@@ -457,22 +468,21 @@ func AntaranDefenseShipCount() int { return len(antaranHomeFleetDefense) }
 // 與 AI 態勢判斷共用同一個 playerMilitary,避免畫面上顯示的數字跟實際結算用的不是同一套。
 func (s *GameSession) PlayerFleetStrength() int { return s.playerMilitary() }
 
-// AssaultAntaresBlockReason 回傳「為什麼現在不能發動終局反攻」;可以發動時回空字串。
-// CanAssaultAntares 只回 bool,玩家看不出卡在哪一條——把四個前置條件逐條講白。
-func (s *GameSession) AssaultAntaresBlockReason() string {
+// AssaultAntaresBlockReason 回傳終局反攻的 typed 前置條件；玩家句子留在 UI catalog。
+func (s *GameSession) AssaultAntaresBlockReason() AntaranAssaultBlockReason {
 	switch {
 	case s.Victory.Over:
-		return "對局已分出勝負"
+		return AntaranAssaultGameOver
 	case s.DisableEvents:
 		// 手冊 p.183:「This strategy is not available if you disabled Antaran Attacks
 		// when setting up your game.」
-		return "本局關閉了安塔蘭攻擊,此勝利路徑不可用"
+		return AntaranAssaultEventsDisabled
 	case !s.hasDimensionalPortal():
-		return "尚未建成「" + dimensionalPortalBuildingName + "」——沒有它到不了安塔蘭母星"
+		return AntaranAssaultNoPortal
 	case len(s.Fleet().Ships) == 0:
-		return "沒有艦隊可派"
+		return AntaranAssaultNoFleet
 	}
-	return ""
+	return AntaranAssaultAllowed
 }
 
 // GrantDimensionalPortalForGallery 直接把次元傳送門記進第一個殖民地的建築清單。

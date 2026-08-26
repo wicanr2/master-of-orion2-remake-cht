@@ -50,6 +50,26 @@ func TestCanAssaultAntaresRequiresPortalAndFleet(t *testing.T) {
 	}
 }
 
+func TestAntaranAssaultTypedBlockReasons(t *testing.T) {
+	s := NewDemoSession()
+	if got := s.AssaultAntaresBlockReason(); got != AntaranAssaultNoPortal {
+		t.Fatalf("缺傳送門應回 typed 原因，實得 %v", got)
+	}
+	s.GrantDimensionalPortalForGallery()
+	s.Fleet().Ships = nil
+	if got := s.AssaultAntaresBlockReason(); got != AntaranAssaultNoFleet {
+		t.Fatalf("無艦隊應回 typed 原因，實得 %v", got)
+	}
+	s.DisableEvents = true
+	if got := s.AssaultAntaresBlockReason(); got != AntaranAssaultEventsDisabled {
+		t.Fatalf("停用事件應優先回 typed 原因，實得 %v", got)
+	}
+	s.Victory.Over = true
+	if got := s.AssaultAntaresBlockReason(); got != AntaranAssaultGameOver {
+		t.Fatalf("對局結束應優先回 typed 原因，實得 %v", got)
+	}
+}
+
 // TestAssaultAntaresBlockedWithoutPortal 驗證沒有次元傳送門時 AssaultAntares 直接擋下,
 // 不消耗艦隊、不觸發戰鬥、不誤判勝利。
 func TestAssaultAntaresBlockedWithoutPortal(t *testing.T) {

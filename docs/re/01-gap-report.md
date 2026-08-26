@@ -156,7 +156,7 @@
 | 6 | ~~**`Reference_Main` / `_Category` / `_How_To`**~~ | 中 | ✅ 已建(`infoReference` + `cmd/moo2/inforeview.go`),remake 合成單一「參考資料」分頁而非 3 個子畫面 |
 | 7 | ~~**`Command_Points`**~~ | 中 | ✅ 2026-08-07 已建(`cmd/moo2/commandpoints.go`,原版 `Show_Command_Points_Screen_` @ 0x8BAB9),從星圖右欄第 2 格點進去 |
 | 8 | ~~**`Colony_Landing` / `Colony_Combat` / `Colony_Bombing`**~~ | 中 | ✅ 2026-08-07 全部已建(`cmd/moo2/groundcombat.go`、`cmd/moo2/bombing.go`),版面座標取自反組譯(見下方第 15、18 項)|
-| 9 | ~~**`Main_Antaran_Room`**~~ | 中 | ✅ 2026-08-07 已建(`cmd/moo2/antaranroom.go`),用原版 `antaroom.LBX` 資產 1(55 幀累積)當背景;留白:原版是推鏡動畫,remake 取最終定格 |
+| 9 | ~~**`Main_Antaran_Room`**~~ | 中 | ✅ `cmd/moo2/antaranroom.go` 會逐幀累積播放 `ANTAROOM.LBX#1` 的 55 幀；精確原版幀停留時間未知，現行每 3 tick 一幀為已標註近似 |
 | 10 | ~~**`Hall_Of_Fame` / `Hi_Score`**~~ | 低 | ✅ 2026-08-07 已建(`cmd/moo2/hiscore.go` + `gamedata/score.go`),八項計分係數全來自反組譯 module 60 |
 | 11 | ~~**`Smack`**~~ | 低 | ✅ 已建(`cmd/moo2/cutscene.go` + `internal/smk`,真的解 Smacker,不是靜態圖)|
 | 12 | 多人連線 11 個畫面 | — | ✅ `MP_Setup`(`cmd/moo2/multiplayer.go`)與 `Hotseat`(`cmd/moo2/hotseat.go`)2026-08-07 已建,版面座標取自反組譯(見下方第 3 項(Colony+Event 畫面))。`Net_Next_Turn`(第 29 項(決定性化))與 `Choose_Net_Plyrs`(第 29 項(決定性化))2026-08-07 已建。`Modem_Setup`/`NullModem_Setup`/`Comm Info` **不做**(硬體已不存在)。`Join_Net`/`Generic_Net_Info`/`SendGet_Net_Info` 是同一張畫面的不同狀態(第 29 項(決定性化)),`Choose_Multi_Net_Game` 見第 29 項(決定性化)。**11 張全部結案:8 做 / 3 不做** |
@@ -467,18 +467,17 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
         `combatant` 結構裡,過濾陣亡者時整個 struct 複製、索引跟著倖存者走。
 
 
-    ### ~~安塔蘭房間~~ → **已完成**(2026-08-07,`cmd/moo2/antaranroom.go`)。原本這條勝利路徑的
+    ### ~~安塔蘭房間~~ → **remake 已完成**（`cmd/moo2/antaranroom.go`）
 
+        `sub_14AAC @ 0x14AAC..0x14BFD` 是原版外層流程；`sub_14C83 @ 0x14C83..0x14D7C`
+        讀 `ANTAROOM.LBX`，正版 `#1` 是 640×480、55 幀動畫，`#0` 提供調色盤。remake 會依序
+        累積播放 55 幀，只有每 3 tick 一幀的停留時間仍是介面時序近似。
 
-        入口是艦隊列表左下角一行文字,點下去直接跳戰鬥結果——中間沒有確認、沒有戰力對比,
-        前置條件不滿足時更是「點了完全沒反應」(`CanAssaultAntares` 回 false,而畫面上毫無跡象)。
-
-        美術來源是反組譯 `sub_14C83`:`mov edx, 0 / mov eax, offset aAntaroomLbx / call sub_126B42`
-        ——載 `antaroom.LBX` **資產 0**。實際查下去,資產 0 是個小圖但**帶內嵌調色盤**,資產 1 才是
-        出得來,拿 `buffer0` 的色盤解會是一團彩色雜訊。累積成最終畫格的做法沿用外交議事廳
-        (`DIPLOMAT#29`,38 幀)那條已驗證的路徑(`lbx.Image.AccumulatedRGBA`)。
-        發動/撤退兩顆按鈕、以及**擋下時逐條講明卡在哪**(`AssaultAntaresBlockReason`:勝負已定 /
-        ⚠ 留白:原版把 55 幀當推鏡動畫播,remake 只呈現最終定格(`overlayScreen` 沒有動畫層,
+        `sub_14D7C @ 0x14D7C..0x14DE1` 從 `ANTARMSG.LBX` 選訊息，`sub_14BFD`
+        負責繪製；原版外層以整張畫面輸入欄等待玩家。remake 額外提供戰力比較、typed 阻擋原因、
+        發動與撤退兩顆按鈕，這些是已揭露的可用性 adapter，不宣稱原版有相同 widget。
+        玩家文案已全部移至 `assets/i18n/ui.json`；完整證據與符號位址勘誤見
+        `docs/re/antaran-room-player-text-audit-20260827.md`。
 
 
     ### ~~地面戰畫面~~ → **已完成**(2026-08-07,`cmd/moo2/groundcombat.go`)。這一項的價值不在
