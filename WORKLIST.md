@@ -351,6 +351,14 @@
   文案；無 UI 消費端的舊 `AttackMonster` 亦移除預先組好的中文 `Name`／`Message`，改留 typed
   怪獸種類與純數值戰果。這只封閉前置 gate 與文案分層，不重開傷亡公式、怪獸 blueprint 或
   即時動畫。其他尚未 typed 化的 shell 玩家訊息仍隨後續逐畫面盤點，不把本批誤稱全域完成。
+  銀河議會已完成第三十八個切片：標題、成立／勝負狀態、候選人與逐帝國投票列、玩家三選一、
+  接受／拒絕決議等固定句與格式模板均由 `ui.json` 供應，`council()` 不再呼叫 `tr`。三個
+  150×40 投票文字框及兩個 400×26 決議文字框由實際熱區推導並共用中心；標題、摘要與投票列
+  亦使用不相交的雙軸安全框。runtime 字型測試抓到舊 18px 決議字墨高 32px、超出 22px 內容框，
+  現降為 12px 並以雙語最長模板驗證。議會選舉公式與 10 幀資產鏈不因文案切片重新升格；精確
+  原版逐字與動畫停留時間仍維持未知。證據與規格見
+  [`docs/re/council-screen-text-audit-20260827.md`](docs/re/council-screen-text-audit-20260827.md) 與
+  [`docs/spec/council-screen-external-text.md`](docs/spec/council-screen-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

@@ -4074,9 +4074,7 @@ func (b *sceneBuilder) council() (*overlayScreen, error) {
 	}
 	if b.fnt != nil {
 		gold := color.RGBA{240, 220, 120, 255}
-		s.extras = []extraText{
-			{x: moo2ScreenW / 2, y: 30, size: 22, text: b.tr("銀河議會", "GALACTIC COUNCIL"), col: gold, align: 1},
-		}
+		s.extras = councilCentered(b.fnt, councilTitleTextRect(), uiText(b.lang, "council.title"), 22, gold)
 		if b.session != nil {
 			// 在原版 council.lbx 底圖上,誠實呈現 shell.GameSession 已算好的議會狀態(gamedata/
 			// council.go + shell/council.go,依 GAME_MANUAL.pdf p.183):是否已成立、逐帝國票數與
@@ -4090,82 +4088,70 @@ func (b *sceneBuilder) council() (*overlayScreen, error) {
 			var oc color.RGBA
 			switch {
 			case v.Victory.Over && v.Victory.Reason == engine.VictoryHighCouncil:
-				line1 = fmt.Sprintf(b.tr("已於第 %d 回合分出勝負(共召開 %d 屆選舉)",
-					"Decided on turn %d (after %d elections)"), v.Victory.Turn, v.Meetings)
+				line1 = fmt.Sprintf(uiText(b.lang, "council.victory.decided"), v.Victory.Turn, v.Meetings)
 				if v.Victory.Winner == "player" {
-					line2, oc = b.tr("★ 你已當選銀河領袖!", "★ You have been elected Galactic Leader!"), win
+					line2, oc = uiText(b.lang, "council.victory.player"), win
 				} else {
-					line2, oc = v.Victory.Winner+b.tr(" 已當選銀河領袖", " has been elected Galactic Leader"), lose
+					line2, oc = fmt.Sprintf(uiText(b.lang, "council.victory.enemy"), v.Victory.Winner), lose
 				}
 			case v.Pending != nil:
 				// 待回應選舉:顯示當選 AI + 兩個可點擊選項(接受落敗 / 拒絕接受繼續遊戲),
 				// 對應上方 pending 分支設定的 accept/reject 熱區。
-				s.extras = append(s.extras,
-					extraText{x: moo2ScreenW / 2, y: 300, size: 16, text: fmt.Sprintf(b.tr("第 %d 屆選舉:%s 以 %d/%d 票達2/3多數當選銀河領袖",
-						"Election %d: %s takes the 2/3 majority with %d/%d votes"),
-						v.Meetings, v.Pending.EnemyName, v.Pending.EnemyVotes, v.Pending.TotalVotes), col: lose, align: 1},
-					extraText{x: moo2ScreenW / 2, y: 330, size: 14, text: b.tr("議會無法強迫你接受不同意的決議(手冊 p.183)——請抉擇:",
-						"The council cannot force a decision on you (manual p.183) — choose:"), col: neutral, align: 1},
-					extraText{x: moo2ScreenW / 2, y: 410, size: 18, text: b.tr("▶  接受落敗結果(遊戲結束)", "▶  Accept the outcome (game over)"), col: lose, align: 1},
-					extraText{x: moo2ScreenW / 2, y: 440, size: 18, text: b.tr("▶  拒絕接受(繼續遊戲,下屆再選)",
-						"▶  Refuse (play on; a new election follows)"), col: win, align: 1},
-				)
+				s.extras = append(s.extras, councilCentered(b.fnt, councilSummaryTextRect(286, 34),
+					fmt.Sprintf(uiText(b.lang, "council.pending.winner"), v.Meetings, v.Pending.EnemyName, v.Pending.EnemyVotes, v.Pending.TotalVotes), 16, lose)...)
+				s.extras = append(s.extras, councilCentered(b.fnt, councilSummaryTextRect(320, 46),
+					uiText(b.lang, "council.pending.explanation"), 14, neutral)...)
+				s.extras = append(s.extras, councilCentered(b.fnt, councilDecisionTextRect(0), uiText(b.lang, "council.pending.accept"), 12, lose)...)
+				s.extras = append(s.extras, councilCentered(b.fnt, councilDecisionTextRect(1), uiText(b.lang, "council.pending.reject"), 12, win)...)
 				line1, line2 = "", ""
 			case v.PendingVote != nil:
 				p := v.PendingVote
-				s.extras = append(s.extras,
-					extraText{x: moo2ScreenW / 2, y: 300, size: 16, text: fmt.Sprintf(b.tr("第 %d 屆議會：請投下你的 %d 票", "Council election %d: cast your %d votes"), v.Meetings, p.PlayerBaseVotes), col: neutral, align: 1},
-					extraText{x: 155, y: 385, size: 16, text: p.CandidateName[0], col: gold, align: 1},
-					extraText{x: 320, y: 385, size: 16, text: p.CandidateName[1], col: gold, align: 1},
-					extraText{x: 485, y: 385, size: 16, text: b.tr("棄權", "ABSTAIN"), col: neutral, align: 1})
+				s.extras = append(s.extras, councilCentered(b.fnt, councilSummaryTextRect(286, 34),
+					fmt.Sprintf(uiText(b.lang, "council.vote.prompt"), v.Meetings, p.PlayerBaseVotes), 16, neutral)...)
+				s.extras = append(s.extras, councilCentered(b.fnt, councilVoteTextRect(0), p.CandidateName[0], 16, gold)...)
+				s.extras = append(s.extras, councilCentered(b.fnt, councilVoteTextRect(1), p.CandidateName[1], 16, gold)...)
+				s.extras = append(s.extras, councilCentered(b.fnt, councilVoteTextRect(2), uiText(b.lang, "council.vote.abstain"), 16, neutral)...)
 				line1, line2 = "", ""
 			case !v.Eligible:
-				line1 = b.tr("銀河議會尚未成立", "The Galactic Council has not convened")
-				line2, oc = b.tr("需半數銀河星系已殖民 + ≥2個存續帝國",
-					"Requires half the galaxy colonized and 2+ surviving empires"), neutral
+				line1 = uiText(b.lang, "council.status.not_convened")
+				line2, oc = uiText(b.lang, "council.status.requirements"), neutral
 			default:
-				line1 = fmt.Sprintf(b.tr("議會已成立(第 %d 屆待開)", "Council convened (election %d pending)"), v.Meetings+1)
-				line2, oc = b.tr("尚無一方達2/3多數", "No one holds a 2/3 majority yet"), neutral
+				line1 = fmt.Sprintf(uiText(b.lang, "council.status.convened"), v.Meetings+1)
+				line2, oc = uiText(b.lang, "council.status.no_majority"), neutral
 			}
 			// 逐帝國投票明細(僅在議會已成立且尚未分出勝負時攤開;其餘狀態沿用 line1/line2 摘要)。
 			if v.Eligible && !v.Victory.Over && v.Pending == nil {
 				bd := b.session.CouncilBreakdown()
 				if bd.Valid {
 					gold := color.RGBA{240, 220, 120, 255}
-					line1 = fmt.Sprintf(b.tr("第 %d 屆待開  候選人:%s／%s  達2/3需 %d／%d 票",
-						"Election %d pending  Candidates: %s / %s  2/3 needs %d of %d votes"),
+					line1 = fmt.Sprintf(uiText(b.lang, "council.breakdown.header"),
 						v.Meetings+1, bd.Candidates[0], bd.Candidates[1], bd.Threshold, bd.Total)
-					s.extras = append(s.extras,
-						extraText{x: moo2ScreenW / 2, y: 96, size: 13, text: line1, col: gold, align: 1})
+					s.extras = append(s.extras, councilCentered(b.fnt, councilSummaryTextRect(82, 30), line1, 13, gold)...)
 					y := 128.0
 					for _, r := range bd.Rows {
 						var suffix string
 						rc := neutral
 						switch {
 						case r.IsCandidate:
-							suffix, rc = b.tr("(候選人)", "(candidate)"), gold
+							suffix, rc = uiText(b.lang, "council.breakdown.candidate"), gold
 						case r.Abstained:
-							suffix, rc = b.tr("→ 棄權", "→ abstains"), lose
+							suffix, rc = uiText(b.lang, "council.breakdown.abstains"), lose
 						default:
-							suffix = b.tr("→ 投給 ", "→ votes for ") + r.VotedFor
+							suffix = fmt.Sprintf(uiText(b.lang, "council.breakdown.votes_for"), r.VotedFor)
 						}
-						txt := fmt.Sprintf(b.tr("%s  %d 票  %s", "%s  %d votes  %s"), r.Name, r.BaseVotes, suffix)
-						s.extras = append(s.extras,
-							extraText{x: moo2ScreenW / 2, y: y, size: 14, text: txt, col: rc, align: 1})
+						txt := fmt.Sprintf(uiText(b.lang, "council.breakdown.row"), r.Name, r.BaseVotes, suffix)
+						s.extras = append(s.extras, councilCentered(b.fnt, councilRowTextRect(int((y-128)/24)), txt, 14, rc)...)
 						y += 24
 					}
 					line1 = ""
-					line2, oc = b.tr("第三方帝國依外交關係投票或棄權(手冊 p.183)",
-						"Third-party empires vote or abstain by diplomatic standing (manual p.183)"), neutral
+					line2, oc = uiText(b.lang, "council.breakdown.explanation"), neutral
 				}
 			}
 			if line1 != "" {
-				s.extras = append(s.extras,
-					extraText{x: moo2ScreenW / 2, y: 418, size: 15, text: line1, col: neutral, align: 1})
+				s.extras = append(s.extras, councilCentered(b.fnt, councilSummaryTextRect(404, 28), line1, 15, neutral)...)
 			}
 			if line2 != "" {
-				s.extras = append(s.extras,
-					extraText{x: moo2ScreenW / 2, y: 444, size: 17, text: line2, col: oc, align: 1})
+				s.extras = append(s.extras, councilCentered(b.fnt, councilSummaryTextRect(432, 32), line2, 17, oc)...)
 			}
 		}
 	}
