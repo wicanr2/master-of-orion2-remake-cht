@@ -1703,10 +1703,13 @@ func (s *GameSession) DiplomacyResponse(action, enemy string) string {
 
 // CombatShip 是格子戰術戰鬥中的一艘艦(有 HP + 格位 + 真戰鬥公式所需的攻防/傷害/盾甲)。
 type CombatShip struct {
-	Name      string
-	HP, MaxHP int // 艦體結構 HP
-	Attack    int // Beam Attack(BA,命中判定用)
-	Col, Row  int // 格位(8 欄 × 6 列)
+	// TacticalID 是單一格子戰術內的暫態識別碼。戰損會壓縮切片，合併主動權佇列
+	// 必須以此重新定位艦艇；0 表示尚未由畫面指派，不進存檔或持久艦艇資料。
+	TacticalID int
+	Name       string
+	HP, MaxHP  int // 艦體結構 HP
+	Attack     int // Beam Attack(BA,命中判定用)
+	Col, Row   int // 格位(8 欄 × 6 列)
 	// Facing 是原版 combat record +0x23 的 16 向 heading。0=右、4=上、
 	// 8=左、12=下；移動時由 tactical UI 依移動向量更新。
 	Facing int

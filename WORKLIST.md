@@ -171,8 +171,9 @@
   `Update_Game_Settings_ @ 0x7F14C` 回寫及 `sub_127E1` 預設。remake 已接遷移線、自動存檔、
   結局動畫、回合摘要，以及 Auto Delete Trade Goods／Housing 的原版建造佇列確認／清除消費端。
   Ship Initiative 已由 IDA 證實開啟時合併排序、關閉時依陣營分批；remake 已接快速結算
-  敵我全域穩定排序、關閉時雙方分批、格子戰術同側順序與能量吸收器的一回合期限。格子戰術
-  開啟時仍缺敵我逐艦交錯，故本項維持進行中；規格與證據見
+  與格子戰術的敵我全域穩定排序、關閉時雙方分批、格子戰術 WAIT／DONE／AUTO，以及能量
+  吸收器的一回合期限。格子戰術使用單場暫態 ID，戰損壓縮後不會把待行動項錯接到另一艘船；
+  原版 seeking-missile 逐 tick 狀態維持非阻塞證據邊界。規格與證據見
   `docs/tech/ship-initiative-settings-spec.md`、`docs/re/game-menu-popup-ui-text-audit-20260826.md`。
   Enemy Moves、Expanding Help、Auto Select Ships／Colony、GNN 與 Serious Summary 尚須依各自玩家路徑閉合，
   不能因設定值可保存就宣稱生效。DOS／Win95 平台 API 內部維持既定停止線。

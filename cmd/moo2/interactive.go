@@ -2279,6 +2279,11 @@ type tacticalScreen struct {
 	// 這兩張表只屬於戰術畫面，不進存檔；艦艇陣列被戰損壓縮時會一併重建。
 	acted  []bool
 	waited []bool
+	// initiativeQueue 只在 Ship Initiative 開啟時使用；它保存單場暫態 ID，不能保存
+	// 會因戰損壓縮而失效的 player/enemy 切片索引。
+	initiativeQueue       []tacticalTurnAction
+	initiativePos         int
+	initiativeEnemyDamage int
 	// mode 是控制列切出來的點擊模式(掃描 / 登艦);見 tacticalbar.go。
 	mode           tacticalMode
 	hoverX, hoverY int
@@ -2370,7 +2375,8 @@ func newTacticalScreenForShips(b *sceneBuilder, p, e []shell.CombatShip, monster
 		monsterStar: monsterStar}
 	t.launchEnemySquadrons()
 	if b.session.EffectiveGameSettings().ShipInitiative {
-		t.sel = t.nextActionableShip()
+		t.resetInitiativeQueue()
+		t.advanceInitiativeQueue()
 	}
 	return t
 }
@@ -2396,21 +2402,15 @@ func (t *tacticalScreen) ensureActionQueue() {
 // 重新成為目前行動者。這正是 WAIT 的「移到佇列末端」，而不是跳過整回合。
 func (t *tacticalScreen) nextActionableShip() int {
 	t.ensureActionQueue()
+	if t.shipInitiativeEnabled() {
+		return t.currentInitiativePlayerIndex()
+	}
 	for pass := 0; pass < 2; pass++ {
-		best := -1
 		for i := range t.player {
 			if t.acted[i] || (pass == 0 && t.waited[i]) {
 				continue
 			}
-			if !t.b.session.EffectiveGameSettings().ShipInitiative {
-				return i
-			}
-			if best < 0 || t.player[i].Initiative > t.player[best].Initiative {
-				best = i
-			}
-		}
-		if best >= 0 {
-			return best
+			return i
 		}
 	}
 	return -1
@@ -2433,6 +2433,11 @@ func (t *tacticalScreen) finishSelectedAction() {
 		return
 	}
 	name := t.player[t.sel].Name
+	if t.shipInitiativeEnabled() {
+		actor := t.sel
+		t.completeInitiativePlayerAction(actor)
+		return
+	}
 	t.acted[t.sel] = true
 	t.waited[t.sel] = false
 	if t.allShipsActed() {
@@ -2449,6 +2454,10 @@ func (t *tacticalScreen) waitSelectedAction() {
 		return
 	}
 	name := t.player[t.sel].Name
+	if t.shipInitiativeEnabled() {
+		t.waitInitiativePlayerAction(t.sel)
+		return
+	}
 	t.waited[t.sel] = true
 	next := t.nextActionableShip()
 	if next == t.sel {
@@ -2587,6 +2596,9 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 		return nil
 	}
 	if pi := shipAt(t.player, col, row); pi >= 0 { // 點我方艦 → 選取
+		if t.shipInitiativeEnabled() && pi != t.currentInitiativePlayerIndex() {
+			return nil
+		}
 		if pi < len(t.acted) && t.acted[pi] {
 			t.log = fmt.Sprintf(t.b.tr("%s 本回合已完成,請選另一艘艦", "%s has already finished this round; select another ship"), t.player[pi].Name)
 			return nil
@@ -2651,6 +2663,18 @@ func (t *tacticalScreen) fireRound(target int) {
 
 func (t *tacticalScreen) fireSelectedShip(target int) {
 	t.ensureActionQueue()
+	if t.shipInitiativeEnabled() {
+		t.sel = t.currentInitiativePlayerIndex()
+		if t.sel < 0 || t.sel >= len(t.player) {
+			return
+		}
+		actor := t.sel
+		if !t.fireRoundForActors(target, []int{actor}, false) {
+			return
+		}
+		t.completeInitiativePlayerAction(actor)
+		return
+	}
 	if t.sel < 0 || t.sel >= len(t.player) || t.acted[t.sel] || (t.waited[t.sel] && t.nextActionableShip() != t.sel) {
 		t.sel = t.nextActionableShip()
 	}
@@ -3201,7 +3225,8 @@ func (t *tacticalScreen) enemyRetaliationDamage(enemyIndex, playerIndex int) int
 			if !shell.PlasmaFluxInRange(attacker.Col-target.Col, attacker.Row-target.Row) {
 				return 0
 			}
-			damage, _ := t.enemyPlasmaFluxShot(enemyIndex, attacker.WeaponMin, attacker.WeaponMax, 1)
+			damage, fired := t.enemyPlasmaFluxShot(enemyIndex, attacker.WeaponMin, attacker.WeaponMax, 1)
+			attacker.Fired = attacker.Fired || fired
 			return damage
 		}
 		ammo := attacker.WeaponAmmo
@@ -3211,9 +3236,11 @@ func (t *tacticalScreen) enemyRetaliationDamage(enemyIndex, playerIndex int) int
 		if fired && attacker.Kind == shell.WeaponKindMissile {
 			attacker.WeaponAmmo = ammo
 		}
+		attacker.Fired = attacker.Fired || fired
 		return damage
 	}
 	total := 0
+	firedAny := false
 	for i := range attacker.WeaponMounts {
 		mount := &attacker.WeaponMounts[i]
 		if mount.Name == "" || mount.WorkingCount <= 0 || target.HP <= 0 {
@@ -3230,8 +3257,9 @@ func (t *tacticalScreen) enemyRetaliationDamage(enemyIndex, playerIndex int) int
 		ammo := shell.NormalizeWeaponAmmo(mount.Name, mount.Ammo)
 		if shell.IsPlasmaFluxName(mount.Name) {
 			if shell.PlasmaFluxInRange(attacker.Col-target.Col, attacker.Row-target.Row) {
-				damage, _ := t.enemyPlasmaFluxShot(enemyIndex, minDamage, maxDamage, mount.WorkingCount)
+				damage, fired := t.enemyPlasmaFluxShot(enemyIndex, minDamage, maxDamage, mount.WorkingCount)
 				total += damage
+				firedAny = firedAny || fired
 			}
 			continue
 		}
@@ -3239,12 +3267,14 @@ func (t *tacticalScreen) enemyRetaliationDamage(enemyIndex, playerIndex int) int
 			damage, fired := t.enemyWeaponShot(attacker, target, mount.Name,
 				mount.Mods, mount.Arc, minDamage, maxDamage, &ammo)
 			total += damage
+			firedAny = firedAny || fired
 			if !fired && shell.WeaponKindForName(mount.Name) == shell.WeaponKindMissile {
 				break
 			}
 		}
 		mount.Ammo = ammo
 	}
+	attacker.Fired = attacker.Fired || firedAny
 	return total
 }
 
@@ -3440,6 +3470,7 @@ func (t *tacticalScreen) enemyWeaponShot(
 
 // finishRound 結算回合交界：戰機、敵方還擊、充能、狀態與下一回合行動佇列。
 func (t *tacticalScreen) finishRound(preCount, pAtk int, firedMissile, anyHit bool, firing int) bool {
+	initiative := t.shipInitiativeEnabled()
 	t.round++
 	fDmg := t.advanceSquadrons()
 	pAtk += fDmg
@@ -3456,8 +3487,8 @@ func (t *tacticalScreen) finishRound(preCount, pAtk int, firedMissile, anyHit bo
 	}
 
 	// 敵方還擊我方最脆弱艦(同樣走真戰鬥公式,每艦一發)。
-	eAtk := 0
-	if len(t.player) > 0 && len(t.enemy) > 0 {
+	eAtk := t.initiativeEnemyDamage
+	if !initiative && len(t.player) > 0 && len(t.enemy) > 0 {
 		wi := 0
 		for i := range t.player {
 			if t.player[i].HP < t.player[wi].HP {
@@ -3467,11 +3498,6 @@ func (t *tacticalScreen) finishRound(preCount, pAtk int, firedMissile, anyHit bo
 		enemyOrder := make([]int, len(t.enemy))
 		for i := range enemyOrder {
 			enemyOrder[i] = i
-		}
-		if t.b.session.EffectiveGameSettings().ShipInitiative {
-			sort.SliceStable(enemyOrder, func(i, j int) bool {
-				return t.enemy[enemyOrder[i]].Initiative > t.enemy[enemyOrder[j]].Initiative
-			})
 		}
 		for _, i := range enemyOrder {
 			eAtk += t.enemyRetaliationDamage(i, wi)
@@ -3496,7 +3522,7 @@ func (t *tacticalScreen) finishRound(preCount, pAtk int, firedMissile, anyHit bo
 	}
 	t.player = palive
 	t.refreshSquadronCarriers()
-	if !t.b.session.EffectiveGameSettings().ShipInitiative {
+	if !initiative {
 		shell.ExpireTacticalStoredEnergy(t.player)
 		shell.ExpireTacticalStoredEnergy(t.enemy)
 	}
@@ -3529,6 +3555,11 @@ func (t *tacticalScreen) finishRound(preCount, pAtk int, firedMissile, anyHit bo
 	} else if len(t.player) == 0 {
 		t.over, t.won, t.log = true, false, t.b.tr("✗ 我方艦隊全滅,敗北。點擊繼續",
 			"✗ Your fleet is destroyed — defeat. Click to continue")
+	}
+	t.initiativeEnemyDamage = 0
+	if initiative && !t.over {
+		t.resetInitiativeQueue()
+		t.advanceInitiativeQueue()
 	}
 	return true
 }

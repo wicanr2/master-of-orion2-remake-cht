@@ -120,6 +120,27 @@ func (t *tacticalScreen) retreat() {
 // 那就是一個永遠不結束的迴圈(headless 畫廊踩過同款空轉,見 CLAUDE.md 的界限紀律)。
 func (t *tacticalScreen) autoResolve() {
 	const maxRounds = 200
+	if t.shipInitiativeEnabled() {
+		// 合併主動權模式不能再呼叫「全體玩家艦齊射」的 fireRound；逐一消費目前
+		// 玩家行動，排在中間的敵艦由 advanceInitiativeQueue 自動執行。
+		for n := 0; n < maxRounds*max(1, len(t.player)+len(t.enemy)) && !t.over; n++ {
+			actor := t.currentInitiativePlayerIndex()
+			if actor < 0 {
+				t.advanceInitiativeQueue()
+				continue
+			}
+			target := t.nearestReachableEnemyForShip(actor)
+			if target < 0 {
+				t.finishSelectedAction()
+				continue
+			}
+			t.fireSelectedShip(target)
+		}
+		if !t.over {
+			t.log = uiText(t.b.lang, "tactical.auto.round_cap")
+		}
+		return
+	}
 	for n := 0; n < maxRounds && !t.over; n++ {
 		target := t.nearestReachableEnemy()
 		if target < 0 {
@@ -135,8 +156,27 @@ func (t *tacticalScreen) autoResolve() {
 		}
 	}
 	if !t.over {
-		t.log = t.b.tr("自動接管達到回合上限仍未分勝負", "Auto-resolve hit the round cap without a decision")
+		t.log = uiText(t.b.lang, "tactical.auto.round_cap")
 	}
+}
+
+func (t *tacticalScreen) nearestReachableEnemyForShip(playerIndex int) int {
+	if playerIndex < 0 || playerIndex >= len(t.player) || t.player[playerIndex].InStasis {
+		return -1
+	}
+	best := -1
+	for i := range t.enemy {
+		if t.enemy[i].InStasis || shell.CloakUntargetable(t.enemy[i], t.round+1) {
+			continue
+		}
+		if abs(t.player[playerIndex].Col-t.enemy[i].Col)+abs(t.player[playerIndex].Row-t.enemy[i].Row) > fireRange {
+			continue
+		}
+		if best < 0 || t.enemy[i].HP < t.enemy[best].HP {
+			best = i
+		}
+	}
+	return best
 }
 
 // nearestReachableEnemy 回傳「任一我方艦射程內、且血最少」的敵艦索引(-1 = 都打不到)。

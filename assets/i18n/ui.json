@@ -841,5 +841,6 @@
   {"key":"gamesettings.option.serious_turn_summary","english":"Show Only Serious Turn Summary Reports","value":"只顯示重要回合摘要","note":"原版字串資源 0xB1"},
   {"key":"gamesettings.option.ship_initiative","english":"Ship Initiative","value":"艦艇主動權","note":"原版字串資源 0x187"},
   {"key":"gamesettings.button.accept","english":"ACCEPT","value":"接受","note":"GAME.LBX#10 按鈕"},
-  {"key":"gamesettings.transition.galaxy","english":"Galaxy","value":"星系主畫面","note":"接受設定後返回星圖"}
+  {"key":"gamesettings.transition.galaxy","english":"Galaxy","value":"星系主畫面","note":"接受設定後返回星圖"},
+  {"key":"tactical.auto.round_cap","english":"Auto-resolve hit the round cap without a decision","value":"自動接管達到回合上限仍未分勝負","note":"格子戰術 AUTO 的有界停止訊息"}
 ]
