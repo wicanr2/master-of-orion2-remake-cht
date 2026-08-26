@@ -43,6 +43,14 @@ ROOTS = {
     "ship_initiative_next_ship": 0x455A4,
     "ship_initiative_sort_comparator": 0x42E9C,
     "ship_initiative_sort_score": 0x42E66,
+    "auto_select_ships_consumer_a": 0x70875,
+    "auto_select_ships_apply": 0x7229E,
+    "auto_select_ships_consumer_b": 0x8A216,
+    "auto_select_colony_consumer_a": 0x12479,
+    "auto_select_colony_consumer_b": 0x825A8,
+    "auto_select_colony_consumer_c": 0x86188,
+    "auto_select_colony_clear_a": 0x876DB,
+    "auto_select_colony_clear_b": 0x87720,
 }
 
 SETTING_GLOBALS = {

@@ -367,6 +367,26 @@ func (b *sceneBuilder) galleryConfirmMessage() string {
 
 // --- 艦隊列表的 ALL 鈕:全選 / 全不選(手冊 p.32 + p.47)---
 
+// initializeFleetShipSelection 依 Auto Select Ships 設定建立「新進入／新切換艦隊」的
+// 初始選取集合。呼叫端只可在 shipPick 尚未初始化時使用；空但非 nil 的 map 代表玩家已
+// 手動全不選，重繪畫面時不得再替玩家選回來。
+func (b *sceneBuilder) initializeFleetShipSelection() {
+	if b == nil || b.session == nil || b.shipPick != nil {
+		return
+	}
+	b.shipPick = map[int]bool{}
+	if !b.session.EffectiveGameSettings().AutoSelectShips {
+		return
+	}
+	f := b.session.Fleet()
+	if f == nil {
+		return
+	}
+	for i := range f.Ships {
+		b.shipPick[i] = true
+	}
+}
+
 // toggleSelectAllShips 全選這支艦隊的艦艇;已經全選就變成全不選。
 //
 // 手冊 p.47 逐字:「All: Selects all of the ships in the fleet to prepare to receive orders.

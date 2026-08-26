@@ -1070,6 +1070,9 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		case "planets":
 			return b.goTo(b.planets, "行星列表")
 		case "fleets":
+			// 原版 Auto Select Ships 只在新進入艦隊操作時初始化；nil 與玩家手動
+			// 全不選的空 map 必須分開，否則畫面重建會把取消選取吃掉。
+			b.shipPick = nil
 			return b.goTo(b.fleet, "艦隊列表")
 		case "leaders":
 			b.officerTab = 0
@@ -4418,6 +4421,7 @@ func (b *sceneBuilder) newGamePics() map[int]*ebiten.Image {
 // fleet 建原版艦隊列表畫面(FLEET.LBX 資產 0,三段調色盤鏈)。座標經 PIL 量測
 // (screens-scan/fleetlist.png):標題列 y=27,兩排按鈕列 y=394/443。
 func (b *sceneBuilder) fleet() (*overlayScreen, error) {
+	b.initializeFleetShipSelection()
 	// 點右側艦艇格 → 艦艇設計;右下 RETURN → 星系主畫面(精確熱區)。
 	// 左下空白區(x<338, y 388-408)加一個「攻打安塔蘭」熱區(手冊三條勝利路徑之二,見
 	// internal/shell/antaran_victory.go)。點擊一律進安塔蘭王座廳(原版 Main_Antaran_Room),
@@ -4473,7 +4477,7 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 		if strings.HasPrefix(a, "selfleet") && b.session != nil {
 			if n, err := strconv.Atoi(a[len("selfleet"):]); err == nil {
 				b.session.SelectFleet(n)
-				b.shipPick = map[int]bool{} // 換艦隊 → 清掉選船(索引是艦隊內的,換一支就沒意義)
+				b.shipPick = nil // 新艦隊用自己的索引，並由 Auto Select Ships 決定初始集合。
 				return b.goTo(b.fleet, "艦隊列表")
 			}
 			return nil
@@ -4496,7 +4500,7 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 				}
 			}
 			if _, ok := b.session.SplitFleet(b.session.SelectedFleet, picked); ok {
-				b.shipPick = map[int]bool{}
+				b.shipPick = nil // 艦數與索引已改變，依設定重建目前艦隊的初始集合。
 			}
 			return b.goTo(b.fleet, "艦隊列表")
 		}
@@ -4617,9 +4621,9 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 				nameCol := gold
 				if fi == b.session.SelectedFleet {
 					if b.shipPick[si] {
-						mk, nameCol = "✔ ", sel
+						mk, nameCol = uiText(b.lang, "fleet.selection.selected"), sel
 					} else {
-						mk = "· "
+						mk = uiText(b.lang, "fleet.selection.unselected")
 					}
 					fleetHits = append(fleetHits, hitRegion{34, int(y) - 11, 290, 15, fmt.Sprintf("pickship%d", si)})
 				}

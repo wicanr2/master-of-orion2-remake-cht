@@ -176,6 +176,11 @@
   未因外部化而失去加成。本批證據與規格見
   [`docs/re/leader-skill-display-text-audit-20260827.md`](docs/re/leader-skill-display-text-audit-20260827.md) 與
   [`docs/tech/leader-skill-external-text-spec.md`](docs/tech/leader-skill-external-text-spec.md)。
+  艦隊名冊選取標記已完成第十九個切片：實際畫廊抓到舊 `✔` 在 runtime 字型路徑成為缺字方框，
+  現改由 `ui.json` 提供同寬 ASCII `[x]／[ ]`，Go 只保存兩個語意鍵；正版中文畫廊重跑
+  35/35，`07_fleet.png` 三艘預設選取標記可辨識且未侵入艦名、艦級或損傷欄。證據與規格併入
+  [`docs/re/auto-select-ships-setting-audit-20260827.md`](docs/re/auto-select-ships-setting-audit-20260827.md) 與
+  [`docs/tech/auto-select-ships-setting-spec.md`](docs/tech/auto-select-ships-setting-spec.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
@@ -225,7 +230,10 @@
   吸收器的一回合期限。格子戰術使用單場暫態 ID，戰損壓縮後不會把待行動項錯接到另一艘船；
   原版 seeking-missile 逐 tick 狀態維持非阻塞證據邊界。規格與證據見
   `docs/tech/ship-initiative-settings-spec.md`、`docs/re/game-menu-popup-ui-text-audit-20260826.md`。
-  Enemy Moves、Expanding Help、Auto Select Ships／Colony、GNN 與 Serious Summary 尚須依各自玩家路徑閉合，
+  Auto Select Ships 已由 `byte_199BE1 @ 0x199BE1` 唯一玩法讀取端、`sub_70875 @ 0x70875`
+  與逐艦選取 writer `sub_7229E @ 0x7229E` 閉合：開啟時進入或切換艦隊會選取目前艦隊全部艦艇，
+  關閉時保持空集合；玩家全不選後重繪不會被強制選回，拆分後亦依新索引重建。
+  Enemy Moves、Expanding Help、Auto Select Colony、GNN 與 Serious Summary 尚須依各自玩家路徑閉合，
   不能因設定值可保存就宣稱生效。DOS／Win95 平台 API 內部維持既定停止線。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`
