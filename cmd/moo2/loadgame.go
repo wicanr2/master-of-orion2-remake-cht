@@ -62,13 +62,13 @@ const (
 	loadWinPalLBX   = "mainmenu.lbx"
 	loadWinPalAsset = 21 // ASSET_MENU_BACKGROUND(主選單背景提供調色盤)
 
-	loadBtnX, loadBtnY       = 37, 337
-	loadCanX, loadCanY       = 171, 338
-	loadCanW, loadCanH       = 68, 22
-	loadSlotX, loadSlotY0    = 22, 22
-	loadSlotW, loadSlotH     = 232, 27
-	loadSlotStep             = 31
-	loadSlotTextX, loadTextY = 32, 24 // 槽內第一行(存檔名)相對視窗左上的偏移
+	loadBtnX, loadBtnY    = 37, 337
+	loadCanX, loadCanY    = 171, 338
+	loadCanW, loadCanH    = 68, 22
+	loadSlotX, loadSlotY0 = 22, 22
+	loadSlotW, loadSlotH  = 232, 27
+	loadSlotStep          = 31
+	loadSlotTextX         = 32 // 槽內第一行(存檔名)相對視窗左上的 X 偏移
 
 	// 第二行:星曆在名稱正下方 14px,存檔時間在 x+122(openorion2 drawSlot:
 	// `smallfnt->renderText(_x + 32, y + 14, …)` 與 `(_x + 122, y + 14, …)`)。
@@ -183,6 +183,40 @@ func (s *loadGameScreen) cancelRect() (int, int, int, int) {
 	return s.winX + loadCanX, s.winY + loadCanY, loadCanW, loadCanH
 }
 
+func (s *loadGameScreen) slotTitleTextRect(i int) textSafeRect {
+	_, y, _, h := s.slotRect(i)
+	return textSafeRect{x: s.winX + loadSlotTextX, y: y + 2, w: loadSlotIconX - loadSlotTextX - 4, h: h - 2}
+}
+
+func (s *loadGameScreen) slotStardateTextRect(i int) textSafeRect {
+	_, y, _, h := s.slotRect(i)
+	return textSafeRect{x: s.winX + loadSlotTextX, y: y + loadSlotSubDY, w: loadSlotTimeX - loadSlotTextX - 2, h: h - loadSlotSubDY}
+}
+
+func (s *loadGameScreen) slotTimeTextRect(i int) textSafeRect {
+	_, y, _, h := s.slotRect(i)
+	return textSafeRect{x: s.winX + loadSlotTimeX, y: y + loadSlotSubDY, w: loadSlotIconX - loadSlotTimeX - 2, h: h - loadSlotSubDY}
+}
+
+func (s *loadGameScreen) actionTextRect() textSafeRect {
+	x, y, w, h := s.loadRect()
+	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 4, insetY: 2, lineH: h - 4}
+}
+
+func (s *loadGameScreen) cancelTextRect() textSafeRect {
+	x, y, w, h := s.cancelRect()
+	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 4, insetY: 2, lineH: h - 4}
+}
+
+func (s *loadGameScreen) messageTextRect() textSafeRect {
+	y := s.winY + s.winH
+	h := moo2ScreenH - y
+	if h > 32 {
+		h = 32
+	}
+	return textSafeRect{x: 8, y: y, w: moo2ScreenW - 16, h: h, insetX: 4, insetY: 1, lineH: h - 2}
+}
+
 func (s *loadGameScreen) update(in shell.InputState) *origTransition {
 	if !in.ClickReleased {
 		return nil
@@ -199,12 +233,11 @@ func (s *loadGameScreen) update(in shell.InputState) *origTransition {
 	for i := range s.slots {
 		if x, y, w, h := s.slotRect(i); hitRect(in, x, y, w, h) {
 			if s.mode == modeLoad && !s.slots[i].Exists {
-				s.msg = s.b.tr("這一格是空的", "That slot is empty.")
+				s.msg = uiText(s.b.lang, "loadsave.message.empty_slot")
 				return nil
 			}
 			if s.mode == modeSave && i == shell.AutoSaveSlot {
-				s.msg = s.b.tr("最後一格是自動存檔,不能手動覆寫",
-					"The last slot is the autosave; it cannot be overwritten by hand.")
+				s.msg = uiText(s.b.lang, "loadsave.message.autosave_readonly")
 				return nil
 			}
 			s.selected, s.msg = i, ""
@@ -217,11 +250,11 @@ func (s *loadGameScreen) update(in shell.InputState) *origTransition {
 // doSave 把目前對局寫進選定的槽。
 func (s *loadGameScreen) doSave() *origTransition {
 	if s.selected < 0 || s.selected >= len(s.slots) || s.selected == shell.AutoSaveSlot {
-		s.msg = s.b.tr("請先選一格(自動存檔格除外)", "Pick a slot first (not the autosave).")
+		s.msg = uiText(s.b.lang, "loadsave.message.pick_save_slot")
 		return nil
 	}
 	if s.b.session == nil {
-		s.msg = s.b.tr("目前沒有進行中的對局", "There is no game in progress.")
+		s.msg = uiText(s.b.lang, "loadsave.message.no_session")
 		return nil
 	}
 	path := s.slots[s.selected].Path
@@ -231,7 +264,7 @@ func (s *loadGameScreen) doSave() *origTransition {
 	}
 	if err := s.b.session.Save(path); err != nil {
 		fmt.Fprintln(os.Stderr, "存檔失敗:", err)
-		s.msg = s.b.tr("寫不進去(磁碟或權限問題)", "Could not write the file (disk or permissions).")
+		s.msg = uiText(s.b.lang, "loadsave.message.write_failed")
 		return nil
 	}
 	// 之後的自動存檔跟著寫到這一格,與讀檔後的行為一致。
@@ -242,14 +275,13 @@ func (s *loadGameScreen) doSave() *origTransition {
 // doLoad 讀取選定的槽並進星系主畫面。
 func (s *loadGameScreen) doLoad() *origTransition {
 	if s.selected < 0 || s.selected >= len(s.slots) || !s.slots[s.selected].Exists {
-		s.msg = s.b.tr("請先選一格有存檔的格子", "Pick a slot that has a saved game.")
+		s.msg = uiText(s.b.lang, "loadsave.message.pick_load_slot")
 		return nil
 	}
 	gs, err := shell.LoadSession(s.slots[s.selected].Path)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "讀檔失敗:", err)
-		s.msg = s.b.tr("這個存檔讀不起來(格式可能來自舊版本)",
-			"That save would not load (it may come from an older build).")
+		s.msg = uiText(s.b.lang, "loadsave.message.load_failed")
 		return nil
 	}
 	s.b.session = gs
@@ -265,7 +297,7 @@ func (s *loadGameScreen) doLoad() *origTransition {
 	} else {
 		s.b.savePath = s.slots[s.selected].Path
 	}
-	return s.b.goTo(s.b.galaxy, "星系主畫面")
+	return s.b.goTo(s.b.galaxy, uiText(s.b.lang, "loadsave.transition.galaxy"))
 }
 
 func (s *loadGameScreen) draw(dst *ebiten.Image) {
@@ -289,38 +321,35 @@ func (s *loadGameScreen) draw(dst *ebiten.Image) {
 			x, ry, w, h := s.slotRect(i)
 			vector.StrokeRect(dst, float32(x), float32(ry), float32(w), float32(h), 1, sel, false)
 		}
-		// 文字基準取自 openorion2 drawSlot:_x + 32、_y + 24 + 31*slot。
-		tx := float64(s.winX + loadSlotTextX)
-		ty := float64(s.winY + loadTextY + loadSlotStep*i)
 		if !sl.Exists {
-			label := s.b.tr("（空）", "(empty)")
+			label := uiText(s.b.lang, "loadsave.slot.empty")
 			if sl.Auto {
-				label = s.b.tr("（自動存檔：尚無）", "(autosave: none yet)")
+				label = uiText(s.b.lang, "loadsave.slot.autosave_empty")
 			}
 			c := dim
 			if s.mode == modeSave && i == s.selected {
 				c = sel // 存檔模式下空格是可選的
 			}
-			s.fnt.Draw(dst, label, tx, ty, 12, c)
+			s.slotTitleTextRect(i).drawLeft(dst, s.fnt, label, 12, c)
 			continue
 		}
 		name := sl.Empire
 		if name == "" {
-			name = s.b.tr("無名帝國", "Unnamed Empire") // 舊存檔沒存帝國名(見 persist.go 該欄位註解)
+			name = uiText(s.b.lang, "loadsave.slot.unnamed_empire") // 舊存檔沒存帝國名(見 persist.go 該欄位註解)
 		}
-		title := fmt.Sprintf("%d. %s", i+1, name)
+		title := fmt.Sprintf(uiText(s.b.lang, "loadsave.slot.numbered"), i+1, name)
 		if sl.Auto {
-			title = fmt.Sprintf(s.b.tr("自動  %s", "AUTO  %s"), name)
+			title = fmt.Sprintf(uiText(s.b.lang, "loadsave.slot.autosave"), name)
 		}
-		s.fnt.Draw(dst, title, tx, ty, 12, col)
+		s.slotTitleTextRect(i).drawLeft(dst, s.fnt, title, 12, col)
 		// 第二行:星曆在名稱正下方、存檔時間在 +122(原版 drawSlot 的兩個 renderText)。
-		s.fnt.Draw(dst, fmt.Sprintf(s.b.tr("星曆 %s", "Stardate %s"), sl.Stardate), tx, ty+loadSlotSubDY, 10, col)
+		s.slotStardateTextRect(i).drawLeft(dst, s.fnt,
+			fmt.Sprintf(uiText(s.b.lang, "loadsave.slot.stardate"), sl.Stardate), 10, col)
 		if !sl.Modified.IsZero() {
 			// 日期用兩位數年份(26/08/06):這一欄從 x+122 起,x+206 就是對局類型圖示,
 			// 只有 84px 可用。原版在這裡用的是 C 的 `%x`,在 C locale 同樣是兩位數年份的
 			// 八字元日期——寫完整年月日會壓到圖示上,那是版面本來就沒有的空間。
-			s.fnt.Draw(dst, sl.Modified.Format("06/01/02 15:04"),
-				float64(s.winX+loadSlotTimeX), ty+loadSlotSubDY, 10, col)
+			s.slotTimeTextRect(i).drawLeft(dst, s.fnt, sl.Modified.Format("06/01/02 15:04"), 7, col)
 		}
 		// 對局類型圖示:remake 只會是單人或熱座(網路/數據機沒做)。
 		icon := s.singleIcon
@@ -329,7 +358,8 @@ func (s *loadGameScreen) draw(dst *ebiten.Image) {
 		}
 		if icon != nil {
 			op := &ebiten.DrawImageOptions{}
-			op.GeoM.Translate(float64(s.winX+loadSlotIconX), ty+loadSlotIconDY)
+			_, slotY, _, _ := s.slotRect(i)
+			op.GeoM.Translate(float64(s.winX+loadSlotIconX), float64(slotY+loadSlotIconDY))
 			drawPanelImage(dst, icon, op)
 		}
 	}
@@ -348,41 +378,41 @@ func (s *loadGameScreen) draw(dst *ebiten.Image) {
 	}
 	// 兩顆鈕的英文(LOAD / CANCEL)烘在圖上,照既有做法擦底疊中文:先用採樣到的面色
 	// 填掉文字帶(上下左右各留 3px 保住浮雕邊框),再疊中文。
-	drawBtnLabel := func(x, y, w, h int, face color.RGBA, zh string) {
-		if s.b.lang != i18n.Traditional {
-			return // 英文模式露原版鈕上烘的 LOAD / SAVE / CANCEL
+	drawBtnLabel := func(r textSafeRect, face color.RGBA, text string, force bool) {
+		if s.b.lang != i18n.Traditional && !force {
+			return // 英文讀檔／取消模式露原版鈕上的 LOAD / CANCEL
 		}
 		if face.A > 0 {
-			fillPanel(dst, float32(x+3), float32(y+3), float32(w-6), float32(h-6), face, false)
+			fillPanel(dst, float32(r.x+3), float32(r.y+3), float32(r.w-6), float32(r.h-6), face, false)
+		} else {
+			fillPanel(dst, float32(r.x), float32(r.y), float32(r.w), float32(r.h), color.RGBA{52, 56, 68, 255}, false)
+			vector.StrokeRect(dst, float32(r.x), float32(r.y), float32(r.w), float32(r.h), 1, dim, false)
 		}
-		s.fnt.DrawCentered(dst, zh, float64(x+w/2), float64(y+h/2), 13, body)
+		r.drawCentered(dst, s.fnt, text, 13, body)
 	}
-	action := s.b.tr("載入", "LOAD")
+	action := uiText(s.b.lang, "loadsave.button.load")
 	if s.mode == modeSave {
-		action = s.b.tr("儲存", "SAVE")
+		action = uiText(s.b.lang, "loadsave.button.save")
 	}
-	lx, ly, lw, lh := s.loadRect()
-	drawBtnLabel(lx, ly, lw, lh, s.loadFace, action)
-	cx, cy, cw, ch := s.cancelRect()
-	drawBtnLabel(cx, cy, cw, ch, s.cancelFace, s.b.tr("取消", "CANCEL"))
+	drawBtnLabel(s.actionTextRect(), s.loadFace, action, s.loadBtn == nil || s.mode == modeSave)
+	drawBtnLabel(s.cancelTextRect(), s.cancelFace, uiText(s.b.lang, "loadsave.button.cancel"), s.cancelBtn == nil)
 
 	if s.msg != "" {
-		s.fnt.DrawCentered(dst, s.msg, 320, float64(s.winY+s.winH+14), 12,
-			color.RGBA{235, 160, 120, 255})
+		s.messageTextRect().drawCentered(dst, s.fnt, s.msg, 12, color.RGBA{235, 160, 120, 255})
 	}
 }
 
 // loadGame 從主選單進入載入遊戲視窗(取消回主選單)。
 func (b *sceneBuilder) loadGame() (origScreen, error) {
-	return newLoadGameScreen(b, modeLoad, b.menu, "主選單"), nil
+	return newLoadGameScreen(b, modeLoad, b.menu, uiText(b.lang, "loadsave.transition.menu")), nil
 }
 
 // loadGameInPlay 從遊戲中的「遊戲選單」進入載入視窗(取消回星系主畫面)。
 func (b *sceneBuilder) loadGameInPlay() (origScreen, error) {
-	return newLoadGameScreen(b, modeLoad, b.galaxy, "星系主畫面"), nil
+	return newLoadGameScreen(b, modeLoad, b.galaxy, uiText(b.lang, "loadsave.transition.galaxy")), nil
 }
 
 // saveGameInPlay 從遊戲中的「遊戲選單」進入儲存視窗(同一個視窗,見檔頭)。
 func (b *sceneBuilder) saveGameInPlay() (origScreen, error) {
-	return newLoadGameScreen(b, modeSave, b.galaxy, "星系主畫面"), nil
+	return newLoadGameScreen(b, modeSave, b.galaxy, uiText(b.lang, "loadsave.transition.galaxy")), nil
 }

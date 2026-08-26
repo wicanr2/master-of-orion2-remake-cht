@@ -21,6 +21,7 @@
 - [hi-score-external-text-spec.md](hi-score-external-text-spec.md) — 最終得分的原版 `SCORE.LBX` 背景、外部雙語文案、fallback 與雙軸安全框。
 - [ground-combat-external-text-spec.md](ground-combat-external-text-spec.md) — 地面戰戰報的外部雙語文案、原版面板座標、戰後定格近似與文字安全框。
 - [colony-bombing-external-text-spec.md](colony-bombing-external-text-spec.md) — 軌道轟炸戰報的外部雙語文案、四列安全框、守方旗色近似與缺資產 fallback。
+- [load-save-external-text-spec.md](load-save-external-text-spec.md) — 十格載入／儲存彈窗的外部雙語文案、三欄槽位安全框、烘字按鈕與缺資產 fallback。
 
 ## 待補(後續輪次)
 

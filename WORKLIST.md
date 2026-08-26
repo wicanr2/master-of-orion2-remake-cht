@@ -108,6 +108,16 @@
   同時推翻 `sub_B8EFB` 可證明轟炸背景精確換色的舊註解：其直接 caller 全在地面戰 loader；
   現行 `COLONY.LBX#8` 紫色三階映射已改標 remake 視覺近似，並由 typed `DefenderColor` 使用
   被轟炸方色彩，不再錯用攻方旗色。`COLONY.LBX#8` 原版直接 loader／palette 鏈仍是非阻塞留白。
+  載入／儲存遊戲彈窗已完成第十一個切片：槽位、錯誤、按鈕與轉場文案均由 `ui.json` 供應，
+  名稱、星曆、時間、訊息與兩顆按鈕改走雙軸安全框。IDA 證實 `sub_7E154` 儲存流程與
+  `sub_804B7` 主選單讀檔入口都共用 `sub_7F206` 繪製回呼；`sub_803D9` 依序載入
+  `GAME.LBX#20..26`，槽位 stride `0x25`、列距 `0x1F` 且固定十列。舊 gap report 同時寫
+  「已完成」與「只有載入」的矛盾敘述已清除。英文存檔模式現在會以 JSON 的 `SAVE` 覆蓋
+  `#21` 的 `LOAD` 烘字，缺資產時兩顆按鈕亦有自繪 fallback，不再消失。英文畫廊另實際抓到
+  未指定外部字型時 `sceneBuilder.fnt=nil` 會在高解析錄→放 panic；`loadFont` 現改用內建點陣字
+  作英文動態文案 fallback，原版烘字是否露出仍由各畫面控制，不再由全域 nil 字型決定。
+  正版繁中、缺 `GAME.LBX` fallback 與正版英文畫廊均完成 35 張；已目視抽查 `18_loadgame.png`，
+  三欄文字未侵入圖示，按鈕中心一致，過長日期依規格顯示省略號而不越框。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
@@ -129,7 +139,9 @@
   [`docs/re/ground-combat-screen-ui-text-audit-20260826.md`](docs/re/ground-combat-screen-ui-text-audit-20260826.md) 與
   [`docs/tech/ground-combat-external-text-spec.md`](docs/tech/ground-combat-external-text-spec.md)、
   [`docs/re/colony-bombing-screen-ui-audit-20260826.md`](docs/re/colony-bombing-screen-ui-audit-20260826.md) 與
-  [`docs/tech/colony-bombing-external-text-spec.md`](docs/tech/colony-bombing-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+  [`docs/tech/colony-bombing-external-text-spec.md`](docs/tech/colony-bombing-external-text-spec.md)、
+  [`docs/re/load-save-popup-ui-text-audit-20260826.md`](docs/re/load-save-popup-ui-text-audit-20260826.md) 與
+  [`docs/tech/load-save-external-text-spec.md`](docs/tech/load-save-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`
   已把本次錯判提煉成跨專案流程，涵蓋重新稽核觸發條件、具名符號限制、玩家機制證據矩陣、

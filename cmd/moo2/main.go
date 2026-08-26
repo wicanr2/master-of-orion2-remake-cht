@@ -513,7 +513,9 @@ func loadFontVector(path string) (*uifont.Font, error) {
 //   - zh:混合字型 —— 內文(<18px)走 bitmapfont FaceTC 點陣(銳利),標題(≥18px)走 Noto
 //     向量(平滑,避免點陣放大鋸齒)。需 -font 指向 Noto 才有向量分支;-font 為空時退回
 //     純點陣(LoadBitmapTC,標題也點陣但至少不 crash、能顯示中文)。
-//   - en/未指定:純向量 Noto;path 為空回 nil(不畫中文,行為與改動前一致)。
+//   - en/未指定:有 path 時使用純向量 Noto；path 為空時使用內建點陣字。
+//     玩家文案外部化後英文也有動態槽名、數值與錯誤訊息，不能再以 nil 表示「只露烘字」；
+//     是否保留原版烘字由各畫面的語言分支決定，不由整個 sceneBuilder 缺字型決定。
 func loadFont(path string, lang i18n.Lang) (*uifont.Font, error) {
 	if lang == i18n.Traditional {
 		vec, err := loadFontVector(path)
@@ -526,7 +528,14 @@ func loadFont(path string, lang i18n.Lang) (*uifont.Font, error) {
 		}
 		return vec.WithBitmapTC(18), nil
 	}
-	return loadFontVector(path)
+	vec, err := loadFontVector(path)
+	if err != nil {
+		return nil, err
+	}
+	if vec == nil {
+		return uifont.LoadBitmapTC(), nil
+	}
+	return vec, nil
 }
 
 func fatal(err error) {
