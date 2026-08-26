@@ -294,6 +294,16 @@
   證據與規格見
   [`docs/re/confirm-box-player-text-audit-20260827.md`](docs/re/confirm-box-player-text-audit-20260827.md) 與
   [`docs/spec/confirm-box-external-text.md`](docs/spec/confirm-box-external-text.md)。
+  星圖外交會談請求燈已完成第三十一個切片：四種來意 glyph 改由 `ui.json` 提供，
+  `audience.go` 不再呼叫 `tr` 或直接繪製字型；22×16 方塊的文字、面板與點擊熱區由同一矩形
+  推導，實際點陣 glyph 高 16px，故只保留 2px 水平內縮。IDA Pro 9.4 同輪推翻舊版面斷言：
+  `sub_83D06 @ 0x83D06..0x83DEA` 把第一盞燈的**左緣**放在 x=506，不是把右緣放在 506；
+  後續才按已畫數乘動畫物件 0 寬度往左移。遮罩由 `sub_FA795` 唯一讀取
+  `byte_1AB054`，逐帝國 race 索引、frame 遞增與 `+6` frame count 歸零均可回查原始 bytes。
+  原版逐種族動畫資產仍未知；現行旗色方塊、來意色與 glyph 是明標 adapter，AI 觸發政策也
+  維持既有近似，不因本輪版面與文案完成而升格。證據與規格見
+  [`docs/re/diplomacy-request-lights-audit-20260827.md`](docs/re/diplomacy-request-lights-audit-20260827.md) 與
+  [`docs/spec/diplomacy-request-light-external-text.md`](docs/spec/diplomacy-request-light-external-text.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與

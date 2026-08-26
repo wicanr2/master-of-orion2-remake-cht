@@ -1329,14 +1329,18 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     `Humans_Requesting_Diplomacy_` @ 0xFA795 整支只有 `mov al, byte_1AB054; retn` ——
     **一個位元遮罩,每位對手一個 bit**。版面在 `Draw_Diplomacy_Request_Lights_`:
     ```
-    x = 0x1FA − 已畫個數 × 圖寬      ; 506,由右往左
+    x = 0x1FA − 已畫個數 × 動畫 0 寬度 ; 第一盞左緣 506,由右往左
     y = 5                            ; 貼星圖上緣
     ```
-    兩個都是立即數。`TestAudienceLightLayoutMatchesOriginal` 直接釘住。
+    兩個都是立即數。2026-08-27 以 IDA Pro 9.4 複核後修正舊測試把 506 誤當「右緣」的
+    解釋；`0x83D8C` 直接把算出的 506 當圖片 x，因此第一盞左緣才是 506。動畫 frame 由
+    `byte_19C148[race]` 遞增並在物件 `+6` 歸零；完整證據見
+    `docs/re/diplomacy-request-lights-audit-20260827.md`。
     原版設那個 bit 的地方在 `sub_F5A9F` —— 一支約 30 路跳表的 AI 行動分派函式,觸發散在
     remake 改接在既有的 AI 模型上:**態勢改變時來敲門**。`ai.DecideStance` 的五級裡有三級
     第一版把來意直接寫成中文(「宣戰」「提議貿易」),被 `TestEnglishModeGapDoesNotGrow`
-    **規則層不該吐顯示字串**。改成代碼(`war`/`trade`/`alliance`),顯示文字留在 UI 層。
+    **規則層不該吐顯示字串**。改成代碼(`war`/`trade`/`alliance`),顯示 glyph 現由
+    `ui.json` 提供；旗色方塊、來意色與 glyph 都是明標的 remake adapter，不冒稱原版動畫。
     既有的 `stanceNames` 是中文,那是先前留下的;新欄位不再擴散這個作法。
 
 20. **訂正:「手冊全文搜尋零命中」是假陰性——PDF 的連字騙了我**(2026-08-07)。

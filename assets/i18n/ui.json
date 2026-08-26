@@ -1283,5 +1283,9 @@
   {"key":"hotseat.empire_select.error.no_session","english":"Hotseat empire selection has no active game","value":"熱座選帝國時沒有作用中的對局","note":"建立畫面的內部錯誤"},
   {"key":"hotseat.empire_select.error.too_few_seats","english":"Hotseat requires at least two human seats","value":"熱座真人席位數不足","note":"建立畫面的席位數錯誤"},
   {"key":"confirm.button.yes","english":"YES","value":"是","note":"CONFIRM.LBX#1；英文正版資產存在時保留烘字，缺資產時作後備"},
-  {"key":"confirm.button.no","english":"NO","value":"否","note":"CONFIRM.LBX#2；英文正版資產存在時保留烘字，缺資產時作後備"}
+  {"key":"confirm.button.no","english":"NO","value":"否","note":"CONFIRM.LBX#2；英文正版資產存在時保留烘字，缺資產時作後備"},
+  {"key":"audience.reason.war.glyph","english":"W","value":"戰","note":"remake 外交請求燈來意 glyph；原版使用逐種族動畫"},
+  {"key":"audience.reason.trade.glyph","english":"T","value":"貿","note":"remake 外交請求燈來意 glyph；原版使用逐種族動畫"},
+  {"key":"audience.reason.alliance.glyph","english":"A","value":"盟","note":"remake 外交請求燈來意 glyph；原版使用逐種族動畫"},
+  {"key":"audience.reason.unknown.glyph","english":"?","value":"談","note":"未知會談來意安全後備；remake adapter"}
 ]

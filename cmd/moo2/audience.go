@@ -8,10 +8,10 @@ package main
 //
 // 原版那支的排法很明確:
 //
-//	x = 0x1FA − 已畫的個數 × 圖寬     ; 0x1FA = 506
+//	x = 0x1FA − 已畫的個數 × 動畫 0 寬度 ; 0x1FA = 506
 //	y = 5
 //
-// 也就是**從 x=506 往左排、貼在星圖上緣**。先請求的在最右邊。
+// 也就是第一盞的**左緣**在 x=506，後續往左排、貼在星圖上緣。
 // 每個燈是該種族的逐格動畫(`byte_19C148[種族]` 是目前幀,播完循環)。
 //
 // ⚠ **圖不是原版的。** 原版用的是 per-race 動畫,指標存在 `dword_19C128[種族]`,
@@ -27,8 +27,8 @@ import (
 )
 
 const (
-	// audienceLightRightX 是最右邊那盞燈的右緣(原版 `mov edx, 1FAh`)。
-	audienceLightRightX = 506
+	// audienceLightFirstX 是第一盞燈的左緣(原版 `mov edx, 1FAh` 後直接當圖片 x)。
+	audienceLightFirstX = 506
 	// audienceLightY 是燈的上緣(原版 `mov edx, 5` 當 y 傳進繪製)。
 	audienceLightY = 5
 	// audienceLightW / audienceLightH 是 remake 的燈大小。原版的尺寸來自種族動畫本身,
@@ -41,20 +41,24 @@ const (
 //
 // 往左排,與原版 `x = 506 − n×寬` 同向。
 func audienceLightRect(n int) (x, y, w, h int) {
-	return audienceLightRightX - (n+1)*audienceLightW, audienceLightY, audienceLightW, audienceLightH
+	return audienceLightFirstX - n*audienceLightW, audienceLightY, audienceLightW, audienceLightH
 }
 
-// audienceReasonGlyph 把來意壓成一個字元,塞得進燈裡。
-func (b *sceneBuilder) audienceReasonGlyph(reason string) string {
+func audienceReasonGlyphKey(reason string) string {
 	switch reason {
 	case shell.AudienceReasonWar:
-		return b.tr("戰", "W")
+		return "audience.reason.war.glyph"
 	case shell.AudienceReasonTrade:
-		return b.tr("貿", "T")
+		return "audience.reason.trade.glyph"
 	case shell.AudienceReasonAlliance:
-		return b.tr("盟", "A")
+		return "audience.reason.alliance.glyph"
 	}
-	return b.tr("談", "?")
+	return "audience.reason.unknown.glyph"
+}
+
+func audienceLightTextRect(n int) textSafeRect {
+	x, y, w, h := audienceLightRect(n)
+	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 2}
 }
 
 // audienceReasonColor 依來意給燈的底色:宣戰紅、提議偏綠/藍。
@@ -89,8 +93,8 @@ func (b *sceneBuilder) drawAudienceLights(dst *ebiten.Image) {
 			audienceReasonColor(reason), false)
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1,
 			color.RGBA{230, 220, 180, 255}, false)
-		b.fnt.DrawCentered(dst, b.audienceReasonGlyph(reason),
-			float64(x+w/2), float64(y+h/2), 12, color.RGBA{245, 240, 230, 255})
+		audienceLightTextRect(n).drawCentered(dst, b.fnt,
+			uiText(b.lang, audienceReasonGlyphKey(reason)), 9, color.RGBA{245, 240, 230, 255})
 	}
 }
 
