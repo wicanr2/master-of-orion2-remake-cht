@@ -127,7 +127,7 @@
 |---|---|---|
 | `Main_Menu` | `menu` | ✅ 座標已對齊;2026-08-07 補上原版的「無存檔時 Continue / Load Game 灰階停用」|
 | `Mainmenu_Load_Game_Popup_` @ 0x804B7 / `Do_Save_Game_Popup_` @ 0x7E154 | `loadGame` / `saveGameInPlay` | ✅ 2026-08-07 已建(`cmd/moo2/loadgame.go`),十格存檔選單,存讀共用同一視窗 |
-| `GameMenuWindow`(遊戲中的「遊戲」選單)| `gameMenu` | ✅ 2026-08-07 已建(`cmd/moo2/gamemenu.go`),星系畫面頂端「遊戲」鈕先前是死的 |
+| `Do_Main_Game_Popup_` @ 0x7DD41 / `_Draw_Main_Game_Popup_` @ 0x7F701(遊戲中的「遊戲」選單)| `gameMenu` | ✅ 2026-08-07 已建(`cmd/moo2/gamemenu.go`),星系畫面頂端「遊戲」鈕先前是死的 |
 | `Newgame` | `newGameSetup` | ⚠ 原版底排是 **PLAYERS**(對手數),remake 誤作 RACE 入口 |
 | `Race_Selection` | `raceSelect` | ⚠ 版面左右相反(原版肖像左/2欄按鈕右) |
 | `Racial_Option` | `customRace` | 自訂種族點數 |
@@ -534,7 +534,8 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
         (`Set_Load_Game_Screen_Help_List_` @ 0x6F850 vs `Set_Save_Game_Screen_Help_List_` @ 0x6F865)
         順帶把 openorion2 的資產索引拿反組譯核了一次:`Load_Mainmenu_Load_Game_Popup_` @ 0x803D9
         `ASSET_LOAD_BACKGROUND`…`ASSET_LOAD_MODEM` 那一串。兩個獨立來源互相印證。
-        遊戲選單視窗(`GameMenuWindow`)的座標:視窗 **(144, 25)** ——硬編不是置中;
+        遊戲選單視窗(原版 `Do_Main_Game_Popup_` / openorion2 `MainMenuWindow`)的座標:
+        視窗 **(144, 25)** ——硬編不是置中;
         RETURN (151,307),精靈為 `game.lbx` 資產 1–6,背景資產 0,調色盤取 `buffer0.lbx` 資產 0。
 
 

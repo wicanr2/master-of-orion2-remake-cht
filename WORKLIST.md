@@ -126,6 +126,14 @@
   1 BC 的錯誤，現改讀 `gamedata.IncomeCommandOverflowCostPerPoint`，與引擎消費端共用契約。
   正版繁中、正版英文與缺 `GAME.LBX` fallback 畫廊均完成 35 張；已目視抽查
   `27_commandpoints.png`，三者標題、分欄數值與關閉提示都在面板內。
+  對局內遊戲選單已完成第十三個切片：六顆按鈕、音量標籤、遷移連線狀態、無存檔
+  訊息與轉場名均改由 `ui.json` 供應；按鈕、設定列與訊息列經雙軸安全框繪製。
+  英文正版資產保留按鈕烘字，繁中擦底疊字；缺 `GAME.LBX` 時則兩種語言都有自繪
+  視窗、按鈕、音量標籤與可用熱區。IDA 證實 `_Game_Popup_ @ 0x8012F` 四路分流、
+  `Do_Main_Game_Popup_ @ 0x7DD41`、`_Draw_Main_Game_Popup_ @ 0x7F701` 及
+  `Load_Game_Popup_Pictures_ @ 0x7EA5C` 的 `GAME.LBX#0..7` 連續載入鏈。
+  正版繁中、正版英文與缺 `GAME.LBX` fallback 畫廊均完成 35 張；已目視抽查
+  `19_gamemenu.png`，六顆按鈕的文字中心一致，兩個音量標籤可見且未越出中央面板。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
@@ -151,7 +159,16 @@
   [`docs/re/load-save-popup-ui-text-audit-20260826.md`](docs/re/load-save-popup-ui-text-audit-20260826.md) 與
   [`docs/tech/load-save-external-text-spec.md`](docs/tech/load-save-external-text-spec.md)、
   [`docs/re/command-points-screen-ui-text-audit-20260826.md`](docs/re/command-points-screen-ui-text-audit-20260826.md) 與
-  [`docs/tech/command-points-external-text-spec.md`](docs/tech/command-points-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+  [`docs/tech/command-points-external-text-spec.md`](docs/tech/command-points-external-text-spec.md)、
+  [`docs/re/game-menu-popup-ui-text-audit-20260826.md`](docs/re/game-menu-popup-ui-text-audit-20260826.md) 與
+  [`docs/tech/game-menu-external-text-spec.md`](docs/tech/game-menu-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+
+- [ ] **原版對局內 SETTINGS 分頁**：2026-08-26 IDA 已證實
+  `Do_Options_Game_Popup_ @ 0x7E00F..0x7E154` 與 `_Draw_Options_Game_Popup_ @ 0x7FA28..0x8011F`
+  由 `_Game_Popup_ @ 0x8012F` 的四路 switch 直接進入。現行 SETTINGS 只在主選單就地展開
+  「遷移連線」，是 remake 擴充，不是原版分頁。下一切片要追 `sub_7FA28` 的欄位、文字 ID、
+  熱區、設定位元與 `Update_Game_Settings_ @ 0x7F14C`回寫，再決定哪些玩家可見開關以現代
+  Ebitengine 契約實作；DOS／Win95 平台 API 內部維持既定停止線。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`
   已把本次錯判提煉成跨專案流程，涵蓋重新稽核觸發條件、具名符號限制、玩家機制證據矩陣、

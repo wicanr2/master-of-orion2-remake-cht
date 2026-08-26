@@ -808,5 +808,20 @@
   {"key":"commandpoints.label.used","english":"Total Command Points Used","value":"已使用","note":"原版 _total_command_point(s)_used_msg 對應欄位"},
   {"key":"commandpoints.label.net","english":"Net","value":"淨餘","note":"remake 供給減使用的摘要欄"},
   {"key":"commandpoints.penalty","english":"Over by %d points → −%d BC/turn","value":"超額 %d 點 → 每回合 −%d BC","note":"超額點數與每點 10 BC 的回合懲罰"},
-  {"key":"commandpoints.close","english":"click to close","value":"點一下關閉","note":"指揮點數視窗關閉提示"}
+  {"key":"commandpoints.close","english":"click to close","value":"點一下關閉","note":"指揮點數視窗關閉提示"},
+  {"key":"gamemenu.button.save","english":"SAVE GAME","value":"儲存遊戲","note":"GAME.LBX#1 烘字按鈕替換"},
+  {"key":"gamemenu.button.load","english":"LOAD GAME","value":"載入遊戲","note":"GAME.LBX#2 烘字按鈕替換"},
+  {"key":"gamemenu.button.new","english":"NEW GAME","value":"開新遊戲","note":"GAME.LBX#3 烘字按鈕替換"},
+  {"key":"gamemenu.button.quit","english":"QUIT GAME","value":"離開遊戲","note":"GAME.LBX#4 烘字按鈕替換"},
+  {"key":"gamemenu.button.settings","english":"SETTINGS","value":"設定","note":"GAME.LBX#5 烘字按鈕替換"},
+  {"key":"gamemenu.button.return","english":"RETURN","value":"返回","note":"GAME.LBX#6 烘字按鈕替換"},
+  {"key":"gamemenu.label.music","english":"Music","value":"音樂","note":"GAME.LBX#0 背景烘字音量標籤替換／fallback"},
+  {"key":"gamemenu.label.sound_fx","english":"Sound Fx","value":"音效","note":"GAME.LBX#0 背景烘字音量標籤替換／fallback"},
+  {"key":"gamemenu.setting.relocation_lines","english":"Relocation lines: %s","value":"遷移連線：%s","note":"remake 設定擴充；%s 為外部狀態文案"},
+  {"key":"gamemenu.state.on","english":"ON","value":"開","note":"設定開啟狀態"},
+  {"key":"gamemenu.state.off","english":"OFF","value":"關","note":"設定關閉狀態"},
+  {"key":"gamemenu.message.no_saves","english":"No saved games yet","value":"還沒有任何存檔","note":"載入按鈕無可用存檔時的訊息"},
+  {"key":"gamemenu.transition.galaxy","english":"Galaxy","value":"星系主畫面","note":"RETURN 返回星圖的轉場標籤"},
+  {"key":"gamemenu.transition.new_game","english":"New Game Setup","value":"新遊戲設定","note":"NEW GAME 轉場標籤"},
+  {"key":"gamemenu.transition.main_menu","english":"Main Menu","value":"主選單","note":"QUIT GAME 返回主選單的轉場標籤"}
 ]

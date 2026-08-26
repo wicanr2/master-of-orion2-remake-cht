@@ -6357,7 +6357,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		idle, // t69: 由 galleryLoadWinTick 寫示範存檔並換成載入視窗
 		idle, // t70: settle → 截圖 loadgame
 
-		// 遊戲選單視窗(原版 GameMenuWindow)。從星系主畫面點頂端「遊戲」鈕進得去,
+		// 遊戲選單視窗(原版 Do_Main_Game_Popup_ @ 0x7DD41)。從星系主畫面點頂端「遊戲」鈕進得去,
 		// 但截圖廊此刻停在載入視窗,直接推上來比重新導覽回星系可靠。
 		idle, // t71: 由 galleryGameMenuTick 換成遊戲選單
 		idle, // t72: settle → 截圖 gamemenu

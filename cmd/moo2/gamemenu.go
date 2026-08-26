@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 
@@ -12,12 +13,13 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
 
-// gamemenu.go:遊戲中的「遊戲」選單視窗(原版 `GameMenuWindow`)。
+// gamemenu.go:遊戲中的「遊戲」選單視窗(原版 `Do_Main_Game_Popup_`
+// @ 0x7DD41 / `_Draw_Main_Game_Popup_` @ 0x7F701)。
 //
 // 星系主畫面頂端那條「遊戲」按鈕先前是**死的**——畫得出來但點了沒事。它是原版通往
 // 存檔/讀檔/開新局/離開的唯一入口,少了它,玩家在遊戲中沒有任何辦法主動存檔。
 //
-// ============ 版面:openorion2 `GameMenuWindow`(它自己是從原版 RE 出來的)============
+// ============ 版面:openorion2 `MainMenuWindow`(它自己是從原版 RE 出來的)============
 //
 //	背景        game.lbx 資產 0,調色盤取 buffer0.lbx 資產 0(GALAXY_ARCHIVE / ASSET_GALAXY_GUI)
 //	視窗位置    (144, 25)  ← **硬編,不是置中**
@@ -39,7 +41,7 @@ import (
 // 見 internal/shell/relocation.go)。所以先把它就地展開在這個視窗裡。
 // ⚠ 那一列**不是原版版面**;建了設定畫面之後要搬過去。
 
-// 原版遊戲選單視窗的資產與座標(openorion2 galaxy.cpp GameMenuWindow)。
+// 原版遊戲選單視窗的資產與座標(openorion2 galaxy.cpp MainMenuWindow)。
 const (
 	gameMenuLBX     = "game.lbx"
 	gameMenuPalLBX  = "buffer0.lbx"
@@ -56,22 +58,22 @@ const (
 	gameMenuSFXY        = 195
 )
 
-// gameMenuButton 是視窗上的一顆鈕:相對視窗左上的座標 + 精靈資產 + 中文字 + 動作。
+// gameMenuButton 是視窗上的一顆鈕:相對視窗左上的座標 + 精靈資產 + 外部文案鍵 + 動作。
 type gameMenuButton struct {
-	x, y   int
-	asset  int
-	label  string
-	action string
+	x, y    int
+	asset   int
+	textKey string
+	action  string
 }
 
-// 六顆鈕的座標與資產全部來自 openorion2 `GameMenuWindow::initWidgets`。
+// 六顆鈕的座標與資產全部來自 openorion2 `MainMenuWindow::initWidgets`。
 var gameMenuButtons = []gameMenuButton{
-	{40, 43, 1, "儲存遊戲", "save"},
-	{147, 43, 2, "載入遊戲", "load"},
-	{40, 88, 3, "開新遊戲", "new"},
-	{147, 88, 4, "離開遊戲", "quit"},
-	{40, 307, 5, "設定", "settings"},
-	{151, 307, 6, "返回", "return"},
+	{40, 43, 1, "gamemenu.button.save", "save"},
+	{147, 43, 2, "gamemenu.button.load", "load"},
+	{40, 88, 3, "gamemenu.button.new", "new"},
+	{147, 88, 4, "gamemenu.button.quit", "quit"},
+	{40, 307, 5, "gamemenu.button.settings", "settings"},
+	{151, 307, 6, "gamemenu.button.return", "return"},
 }
 
 // gameMenuScreen 是遊戲中的「遊戲」選單視窗。
@@ -146,6 +148,33 @@ func (s *gameMenuScreen) btnRect(i int) (int, int, int, int) {
 	return s.winX + gameMenuButtons[i].x, s.winY + gameMenuButtons[i].y, w, h
 }
 
+func (s *gameMenuScreen) buttonTextRect(i int) textSafeRect {
+	x, y, w, h := s.btnRect(i)
+	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 4, insetY: 3}
+}
+
+func (s *gameMenuScreen) volumeLabelTextRect(which int) textSafeRect {
+	y := s.winY + 128
+	if which == 1 {
+		y = s.winY + 205
+	}
+	return textSafeRect{x: s.winX + gameMenuSliderX - 2, y: y, w: 170, h: 31, insetX: 2, insetY: 2}
+}
+
+func (s *gameMenuScreen) settingsRowTextRect() textSafeRect {
+	x, y, w, h := s.settingsRowRect()
+	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 4, insetY: 2}
+}
+
+func (s *gameMenuScreen) messageTextRect() textSafeRect {
+	y := s.winY + s.winH
+	h := moo2ScreenH - y
+	if h > 30 {
+		h = 30
+	}
+	return textSafeRect{x: s.winX, y: y, w: s.winW, h: h, insetX: 4, insetY: 2}
+}
+
 func (s *gameMenuScreen) sliderRect(which int) (int, int, int, int) {
 	y := gameMenuMusicY
 	if which == 1 {
@@ -210,7 +239,7 @@ func (s *gameMenuScreen) update(in shell.InputState) *origTransition {
 		}
 		switch btn.action {
 		case "return":
-			return s.b.goTo(s.b.galaxy, "星系主畫面")
+			return s.b.goTo(s.b.galaxy, uiText(s.b.lang, "gamemenu.transition.galaxy"))
 		case "save":
 			sc, err := s.b.saveGameInPlay()
 			if err == nil {
@@ -218,7 +247,7 @@ func (s *gameMenuScreen) update(in shell.InputState) *origTransition {
 			}
 		case "load":
 			if !shell.AnySaveExists(saveDirFor()) {
-				s.msg = s.b.tr("還沒有任何存檔", "No saved games yet")
+				s.msg = uiText(s.b.lang, "gamemenu.message.no_saves")
 				return nil
 			}
 			sc, err := s.b.loadGameInPlay()
@@ -226,9 +255,9 @@ func (s *gameMenuScreen) update(in shell.InputState) *origTransition {
 				return &origTransition{next: sc}
 			}
 		case "new":
-			return s.b.goTo(s.b.newGameSetup, "新遊戲設定")
+			return s.b.goTo(s.b.newGameSetup, uiText(s.b.lang, "gamemenu.transition.new_game"))
 		case "quit":
-			return s.b.goTo(s.b.menu, "主選單") // 原版是回主選單,不是直接關程式
+			return s.b.goTo(s.b.menu, uiText(s.b.lang, "gamemenu.transition.main_menu")) // 原版是回主選單,不是直接關程式
 		case "settings":
 			// 原版是一整個設定畫面(手冊那組 ALT+Fn 開關)。remake 還沒有那個畫面,
 			// 但**已經有一個真的開關**(遷移連線,原版 `byte_199BE4`),
@@ -278,11 +307,11 @@ func (s *gameMenuScreen) settingsRowRect() (int, int, int, int) {
 
 // settingsRowLabel 回傳設定列要顯示的字。
 func (s *gameMenuScreen) settingsRowLabel() string {
-	on := s.b.tr("開", "ON")
+	on := uiText(s.b.lang, "gamemenu.state.on")
 	if s.b.session == nil || !s.b.session.ShowRelocationLines {
-		on = s.b.tr("關", "OFF")
+		on = uiText(s.b.lang, "gamemenu.state.off")
 	}
-	return s.b.tr("遷移連線:", "Relocation lines: ") + on
+	return fmt.Sprintf(uiText(s.b.lang, "gamemenu.setting.relocation_lines"), on)
 }
 
 func (s *gameMenuScreen) draw(dst *ebiten.Image) {
@@ -292,23 +321,29 @@ func (s *gameMenuScreen) draw(dst *ebiten.Image) {
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(s.winX), float64(s.winY))
 		drawPanelImage(dst, s.bg, op)
+	} else {
+		fillPanel(dst, float32(s.winX), float32(s.winY), float32(s.winW), float32(s.winH),
+			color.RGBA{12, 18, 30, 250}, false)
+		vector.StrokeRect(dst, float32(s.winX), float32(s.winY), float32(s.winW), float32(s.winH), 1,
+			color.RGBA{90, 120, 170, 255}, false)
 	}
 	if s.fnt == nil {
 		return
 	}
-	if s.b.lang == i18n.Traditional {
-		// 標籤是背景圖烘字,只在中文模式擦掉;黑底正是原始音量面板的底色。
+	// 音量標籤改由 JSON 統一供應。原圖的 Sound Fx 是烘字,Music 則無法在現行圖上
+	// 穩定讀取;兩種語言都先擦底再疊字,避免一個欄位來自圖、另一個欄位消失。
+	if s.bg != nil {
+		// 黑底正是原始音量面板的底色。
 		fillPanel(dst, float32(s.winX+gameMenuSliderX-2), float32(s.winY+132), 170, 31,
 			color.RGBA{0, 0, 0, 255}, false)
 		// Sound Fx 的原版字樣位在第二條滑桿下方;多擦一點垂直範圍，避免英文殘影
 		// 從點陣字的下緣漏出來，同時仍留在中央黑色面板內。
 		fillPanel(dst, float32(s.winX+gameMenuSliderX-2), float32(s.winY+209), 170, 58,
 			color.RGBA{0, 0, 0, 255}, false)
-		s.fnt.Draw(dst, "音樂", float64(s.winX+gameMenuSliderX), float64(s.winY+136), 18,
-			color.RGBA{190, 198, 214, 255})
-		s.fnt.Draw(dst, "音效", float64(s.winX+gameMenuSliderX), float64(s.winY+213), 18,
-			color.RGBA{190, 198, 214, 255})
 	}
+	labelColor := color.RGBA{190, 198, 214, 255}
+	s.volumeLabelTextRect(0).drawLeft(dst, s.fnt, uiText(s.b.lang, "gamemenu.label.music"), 18, labelColor)
+	s.volumeLabelTextRect(1).drawLeft(dst, s.fnt, uiText(s.b.lang, "gamemenu.label.sound_fx"), 18, labelColor)
 	s.drawVolumeSlider(dst, 0, s.musicVolume)
 	s.drawVolumeSlider(dst, 1, s.sfxVolume)
 	body := color.RGBA{212, 220, 236, 255}
@@ -318,17 +353,21 @@ func (s *gameMenuScreen) draw(dst *ebiten.Image) {
 			op := &ebiten.DrawImageOptions{}
 			op.GeoM.Translate(float64(x), float64(y))
 			drawPanelImage(dst, s.btnImg[i], op)
+		} else {
+			fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{46, 52, 66, 255}, false)
+			vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1,
+				color.RGBA{110, 130, 170, 255}, false)
 		}
 		// 英文烘在鈕上,擦底疊中文(同 loadgame.go 的做法)。
 		// 英文模式跳過:GAME.LBX 那六顆鈕上本來就是 SAVE GAME / LOAD GAME / …。
-		if s.b.lang != i18n.Traditional {
+		if s.b.lang != i18n.Traditional && s.btnImg[i] != nil {
 			continue
 		}
 		if s.btnFace[i].A > 0 {
 			fillPanel(dst, float32(x+3), float32(y+3), float32(w-6), float32(h-6),
 				s.btnFace[i], false)
 		}
-		s.fnt.DrawCentered(dst, btn.label, float64(x+w/2), float64(y+h/2), 12, body)
+		s.buttonTextRect(i).drawCentered(dst, s.fnt, uiText(s.b.lang, btn.textKey), 12, body)
 	}
 	if s.showSettings && s.b.session != nil {
 		x, y, w, h := s.settingsRowRect()
@@ -336,12 +375,11 @@ func (s *gameMenuScreen) draw(dst *ebiten.Image) {
 			color.RGBA{28, 36, 52, 235}, false)
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1,
 			color.RGBA{110, 150, 190, 255}, false)
-		s.fnt.DrawCentered(dst, s.settingsRowLabel(), float64(x+w/2), float64(y+h/2)+4, 11,
+		s.settingsRowTextRect().drawCentered(dst, s.fnt, s.settingsRowLabel(), 11,
 			color.RGBA{200, 225, 240, 255})
 	}
 	if s.msg != "" {
-		s.fnt.DrawCentered(dst, s.msg, 320, float64(s.winY+s.winH+14), 12,
-			color.RGBA{235, 160, 120, 255})
+		s.messageTextRect().drawCentered(dst, s.fnt, s.msg, 12, color.RGBA{235, 160, 120, 255})
 	}
 }
 
