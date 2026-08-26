@@ -132,6 +132,9 @@ type GroundBombardResult struct {
 	ColonyName string
 	// PopulationBefore 是開炸前的殖民地人口,供畫面顯示「炸掉多少 / 原本多少」。
 	PopulationBefore int
+	// DefenderColor 是被轟炸帝國的原版 raw 色塊索引，供戰報資產做玩家色呈現。
+	// 這只傳遞 typed 狀態；軌道轟炸背景的精確換色表仍未由原版呼叫鏈證實。
+	DefenderColor int
 
 	// PlanetHitsRequired 是 Get_Colony_Hits_ @ 0x42371 已證實的轟炸後殖民地本體耐久：
 	// 人口 + 士兵 + 戰車 + 每棟非軌道建築 40。Battlestation／Star Base／Star Fortress
@@ -365,7 +368,7 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 	hits := gamedata.StrategicBombardmentHitsFromDamage(totalDamage)
 
 	res := GroundBombardResult{Ok: true, TotalDamage: totalDamage, Hits: hits,
-		ColonyName: s.starName(starIdx), PopulationBefore: colony.Population}
+		ColonyName: s.starName(starIdx), PopulationBefore: colony.Population, DefenderColor: aiPlayer.Color}
 
 	marines, tanks := 0, 0
 	if colonyIdx < len(aiPlayer.ColonyMarines) {

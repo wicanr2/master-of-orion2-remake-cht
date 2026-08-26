@@ -100,10 +100,14 @@ func TestBombardColony_ReducesPopulationDeterministically(t *testing.T) {
 	if startBuildings != 2 {
 		t.Fatalf("測試前提錯誤:預期 AI 母星開局有 2 棟建築(海軍陸戰隊營+星基),got %d", startBuildings)
 	}
+	s.AIPlayers[aiIdx].Color = 6
 
 	res := s.BombardColony(starIdx)
 	if !res.Ok {
 		t.Fatalf("前置條件應齊備,got Reason=%q", res.Reason)
+	}
+	if res.DefenderColor != 6 {
+		t.Fatalf("轟炸戰報應傳遞被轟炸方色彩 6，got %d", res.DefenderColor)
 	}
 
 	const wantTotalDamage = 3 * 101

@@ -101,6 +101,13 @@
   單位洋紅色 ramp 未替換；IDA 進一步證實 `sub_B8EFB` 依 raw color 對
   `0xC0..0xC7`／`0xE8..0xEB` 做兩張 index 表替換，現已逐值串到 typed
   `AttackerColor`／`DefenderColor`，`#21` 面板框則保留原色。palette provider 的原版精確來源仍未知。
+  軌道轟炸戰報已完成第十個切片：標題、四列戰果、按鈕、錯誤與轉場均由 `ui.json` 供應，
+  生物武器戰果取代一般人口列而不再留下會產生第五列的過期註解；標題、四列與按鈕全部改走
+  雙軸安全框。IDA 證實 `sub_B4D02` 是結果外層入口、`sub_B4800` 是逐幀繪製／推進回呼，
+  `sub_B4606` 的炸彈記錄 stride 為 `0x0F` 且未啟用炸彈只在 `Random_(5)==1` 時落下。
+  同時推翻 `sub_B8EFB` 可證明轟炸背景精確換色的舊註解：其直接 caller 全在地面戰 loader；
+  現行 `COLONY.LBX#8` 紫色三階映射已改標 remake 視覺近似，並由 typed `DefenderColor` 使用
+  被轟炸方色彩，不再錯用攻方旗色。`COLONY.LBX#8` 原版直接 loader／palette 鏈仍是非阻塞留白。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
@@ -120,7 +127,9 @@
   [`docs/re/hi-score-screen-ui-text-audit-20260826.md`](docs/re/hi-score-screen-ui-text-audit-20260826.md) 與
   [`docs/tech/hi-score-external-text-spec.md`](docs/tech/hi-score-external-text-spec.md)、
   [`docs/re/ground-combat-screen-ui-text-audit-20260826.md`](docs/re/ground-combat-screen-ui-text-audit-20260826.md) 與
-  [`docs/tech/ground-combat-external-text-spec.md`](docs/tech/ground-combat-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+  [`docs/tech/ground-combat-external-text-spec.md`](docs/tech/ground-combat-external-text-spec.md)、
+  [`docs/re/colony-bombing-screen-ui-audit-20260826.md`](docs/re/colony-bombing-screen-ui-audit-20260826.md) 與
+  [`docs/tech/colony-bombing-external-text-spec.md`](docs/tech/colony-bombing-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`
   已把本次錯判提煉成跨專案流程，涵蓋重新稽核觸發條件、具名符號限制、玩家機制證據矩陣、

@@ -6761,6 +6761,7 @@ func (a *interactiveApp) Update() error {
 		demo := shell.GroundBombardResult{
 			Ok: true, TotalDamage: 148, Hits: 7,
 			ColonyName:         uiText(a.galleryBuilder.lang, "gallery.colony.demo"),
+			DefenderColor:      3,
 			BuildingsDestroyed: 3, BuildingsRemaining: 5,
 			PopulationLost: 4, PopulationBefore: 12,
 			DefenderRetaliated: true, AttackerShipsLost: 1,

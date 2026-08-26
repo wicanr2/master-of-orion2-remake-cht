@@ -771,5 +771,16 @@
   {"key":"groundcombat.outcome.success","english":"Invasion successful","value":"入侵成功","note":"攻方勝利但未取得星系"},
   {"key":"groundcombat.outcome.captured","english":"Invasion successful — the system is yours","value":"入侵成功，已佔領此星","note":"攻方取得星系"},
   {"key":"groundcombat.button.continue","english":"CONTINUE","value":"繼續","note":"remake 戰後定格出口；原版完成後自動返回"},
-  {"key":"gallery.colony.demo","english":"Demo Colony","value":"示範殖民地","note":"畫廊固定地面戰／轟炸戰果的外部殖民地名稱"}
+  {"key":"gallery.colony.demo","english":"Demo Colony","value":"示範殖民地","note":"畫廊固定地面戰／轟炸戰果的外部殖民地名稱"},
+  {"key":"bombing.transition.galaxy","english":"Galaxy","value":"星系主畫面","note":"轟炸戰報返回星圖的轉場標籤"},
+  {"key":"bombing.error.no_session","english":"No active game","value":"目前沒有進行中的對局","note":"軌道轟炸缺少工作階段的安全錯誤"},
+  {"key":"bombing.title.default","english":"ORBITAL BOMBARDMENT","value":"軌道轟炸","note":"軌道轟炸一般標題"},
+  {"key":"bombing.title.colony","english":"ORBITAL BOMBARDMENT — %s","value":"軌道轟炸 ─ %s","note":"%s 為外部殖民地名稱"},
+  {"key":"bombing.report.salvo","english":"Salvo damage %d, est. %d hits","value":"齊射總傷害 %d，估計命中 %d 發","note":"remake 解算後的總傷害與命中數"},
+  {"key":"bombing.report.buildings","english":"%d buildings destroyed (%d still standing)","value":"摧毀建築 %d 座（尚存 %d 座）","note":"摧毀／剩餘建築數"},
+  {"key":"bombing.report.population","english":"%d population lost (was %d)","value":"人口損失 %d（轟炸前 %d）","note":"一般人口傷亡"},
+  {"key":"bombing.report.population_bio","english":"%d population lost (%d to bioweapons; was %d)","value":"人口損失 %d（生物武器 %d；轟炸前 %d）","note":"含生物武器的人口傷亡；取代一般人口列"},
+  {"key":"bombing.report.retaliated","english":"Orbital defenses returned fire; %d ships lost","value":"敵方軌道防禦反擊，我方損失 %d 艘","note":"守方反擊與攻方艦艇損失"},
+  {"key":"bombing.report.no_retaliation","english":"No orbital defenses survived; no return fire","value":"敵方無存活軌道防禦，未遭反擊","note":"未觸發守方反擊"},
+  {"key":"bombing.button.continue","english":"CONTINUE","value":"繼續","note":"remake 戰後定格出口；原版完成後自動返回"}
 ]
