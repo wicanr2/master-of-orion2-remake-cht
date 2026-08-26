@@ -392,6 +392,17 @@
   關閉。證據與規格見
   [`docs/re/fleet-operations-text-audit-20260827.md`](docs/re/fleet-operations-text-audit-20260827.md) 與
   [`docs/spec/fleet-operations-external-text.md`](docs/spec/fleet-operations-external-text.md)。
+  領袖／軍官管理已完成第四十三個切片：雇用、任命、撤回、解雇等操作回饋，目標提示、名冊
+  模板、任命狀態、空池提示、選取／候選標記與轉場名稱全部由 `ui.json` 供應；HERODATA 技能
+  顯示名則直接選取 `leader_skills.json` 資料，`officer()` 與相鄰技能顯示 helper 均不再呼叫
+  `tr`。頂部目標／回饋／雇用模式及四列姓名／技能／任命狀態已改用不重疊雙軸安全框；原本
+  畫在 y=445、會壓住 y=441 底部按鈕列的「還有 N 位」額外提示已移除，保留原版已證實的
+  上下捲動入口；HIRE 狀態由操作回饋呈現，不另畫會撞第一列任命狀態的常駐提示。雙語長領袖名、
+  艦名、技能名與最大測試數值已通過 runtime 字型 containment。
+  點名冊列立即任命仍是明標 remake adapter，未因文案切片升格為原版 `Check_Officer_Fields_`
+  精確控制流。證據與規格見
+  [`docs/re/officer-screen-text-layout-audit-20260827.md`](docs/re/officer-screen-text-layout-audit-20260827.md) 與
+  [`docs/spec/officer-screen-external-text.md`](docs/spec/officer-screen-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

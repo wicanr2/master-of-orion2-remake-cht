@@ -5309,10 +5309,10 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 		switch a {
 		case "colonyTab":
 			b.officerTab, b.officerScroll, b.officerSelectedSet = 0, 0, false
-			return b.goTo(b.officer, "軍官列表")
+			return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 		case "shipTab":
 			b.officerTab, b.officerScroll, b.officerSelectedSet = 1, 0, false
-			return b.goTo(b.officer, "軍官列表")
+			return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 		}
 		if strings.HasPrefix(a, "officerRow") && b.session != nil {
 			row, err := strconv.Atoi(a[len("officerRow"):])
@@ -5322,13 +5322,13 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 			rosterCount := len(b.session.Leaders) + len(b.session.MercPool)
 			entry := b.officerScroll + row
 			if entry < 0 || entry >= rosterCount {
-				return b.goTo(b.officer, "軍官列表")
+				return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 			}
 			b.officerSelected = entry
 			b.officerSelectedSet = true
 			if b.officerHireMode && entry < len(b.session.Leaders) {
-				b.officerMsg = b.tr("雇用模式請點選綠色的待僱候選人。", "HIRE mode only accepts green hiring candidates.")
-				return b.goTo(b.officer, "軍官列表")
+				b.officerMsg = uiText(b.lang, "officer.message.hire_existing")
+				return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 			}
 			// 待雇傭兵尚未進 Leader Pool,不能提前指派。
 			if entry >= len(b.session.Leaders) {
@@ -5339,119 +5339,119 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 						b.officerHireMode = false
 						b.officerSelected = len(b.session.Leaders) - 1
 						b.officerSelectedSet = true
-						b.officerMsg = fmt.Sprintf(b.tr("已雇用 %s，已放入人才庫。", "%s was hired into the Officer Pool."), ld.Name)
+						b.officerMsg = officerText(b.lang, "officer.message.hired", ld.Name)
 					} else {
-						b.officerMsg = b.tr("目前 BC 或該類軍官名額不足，無法雇用。", "Not enough BC or room for this type of officer.")
+						b.officerMsg = uiText(b.lang, "officer.message.hire_failed")
 					}
-					return b.goTo(b.officer, "軍官列表")
+					return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 				}
-				b.officerMsg = b.tr("請先按 HIRE 雇用這位傭兵。", "Hire this mercenary with HIRE first.")
-				return b.goTo(b.officer, "軍官列表")
+				b.officerMsg = uiText(b.lang, "officer.message.hire_first")
+				return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 			}
 			ld := b.session.Leaders[entry]
 			if b.officerTab == 0 {
 				if ld.Ship {
-					b.officerMsg = b.tr("這位是艦艇軍官，請切到艦艇軍官分頁。", "This is a ship officer; switch to the Ship Officers tab.")
-					return b.goTo(b.officer, "軍官列表")
+					b.officerMsg = uiText(b.lang, "officer.message.ship_wrong_tab")
+					return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 				}
 				colonyIndex, ok := b.officerTargetColony()
 				if !ok {
-					b.officerMsg = b.tr("目前沒有可指派的殖民地。", "There is no colony to assign.")
-					return b.goTo(b.officer, "軍官列表")
+					b.officerMsg = uiText(b.lang, "officer.message.no_colony")
+					return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 				}
 				if current, assigned := b.session.ColonyLeaderFor(colonyIndex); assigned && current.Name == ld.Name {
 					b.session.UnassignLeaderFromColony(colonyIndex)
-					b.officerMsg = fmt.Sprintf(b.tr("已解除 %s 的殖民地任職。", "%s was removed from the colony."), ld.Name)
+					b.officerMsg = officerText(b.lang, "officer.message.colony_unassigned", ld.Name)
 				} else if b.session.AssignLeaderToColony(colonyIndex, entry) {
-					b.officerMsg = fmt.Sprintf(b.tr("已將 %s 指派到殖民地 #%d。", "%s assigned to colony #%d."), ld.Name, colonyIndex+1)
+					b.officerMsg = officerText(b.lang, "officer.message.colony_assigned", ld.Name, colonyIndex+1)
 				} else {
-					b.officerMsg = b.tr("這位領袖無法指派到殖民地。", "This leader cannot be assigned to a colony.")
+					b.officerMsg = uiText(b.lang, "officer.message.colony_assign_failed")
 				}
-				return b.goTo(b.officer, "軍官列表")
+				return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 			}
 			if !ld.Ship {
-				b.officerMsg = b.tr("殖民地領袖不能指派到艦艇。", "Colony leaders cannot be assigned to ships.")
-				return b.goTo(b.officer, "軍官列表")
+				b.officerMsg = uiText(b.lang, "officer.message.colony_to_ship")
+				return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 			}
 			fleetIndex, shipIndex, ok := b.officerTargetShip()
 			if !ok {
-				b.officerMsg = b.tr("目前艦隊沒有可指派的艦艇。", "The selected fleet has no ship to assign.")
-				return b.goTo(b.officer, "軍官列表")
+				b.officerMsg = uiText(b.lang, "officer.message.no_ship")
+				return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 			}
 			ship := &b.session.Fleets[fleetIndex].Ships[shipIndex]
 			if ship.OfficerName == ld.Name {
 				b.session.UnassignOfficerFromShip(fleetIndex, shipIndex)
-				b.officerMsg = fmt.Sprintf(b.tr("已解除 %s 在第 %d 艦的指派。", "%s was removed from ship %d."), ld.Name, shipIndex+1)
+				b.officerMsg = officerText(b.lang, "officer.message.ship_unassigned", ld.Name, shipIndex+1)
 			} else if b.session.AssignOfficerToShip(fleetIndex, shipIndex, entry) {
-				b.officerMsg = fmt.Sprintf(b.tr("已將 %s 指派到第 %d 艦。", "%s assigned to ship %d."), ld.Name, shipIndex+1)
+				b.officerMsg = officerText(b.lang, "officer.message.ship_assigned", ld.Name, shipIndex+1)
 			} else {
-				b.officerMsg = b.tr("這位領袖無法指派到艦艇。", "This leader cannot be assigned to a ship.")
+				b.officerMsg = uiText(b.lang, "officer.message.ship_assign_failed")
 			}
-			return b.goTo(b.officer, "軍官列表")
+			return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 		}
 		switch a {
 		case "hire":
 			b.officerHireMode = !b.officerHireMode
 			if b.officerHireMode {
-				b.officerMsg = b.tr("雇用模式：請點選綠色候選人。", "HIRE mode: select a green candidate.")
+				b.officerMsg = uiText(b.lang, "officer.message.hire_mode_on")
 			} else {
-				b.officerMsg = b.tr("已離開雇用模式。", "HIRE mode ended.")
+				b.officerMsg = uiText(b.lang, "officer.message.hire_mode_off")
 			}
-			return b.goTo(b.officer, "軍官列表")
+			return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 		case "pool":
 			if b.session == nil || !b.officerSelectedSet || b.officerSelected < 0 || b.officerSelected >= len(b.session.Leaders) {
-				b.officerMsg = b.tr("請先點選已雇用的艦艇軍官。", "Select a hired ship officer first.")
-				return b.goTo(b.officer, "軍官列表")
+				b.officerMsg = uiText(b.lang, "officer.message.select_hired")
+				return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 			}
 			ld := b.session.Leaders[b.officerSelected]
 			if b.officerTab == 0 {
 				if colonyIndex, ok := b.session.AssignedColonyForLeader(ld.Name); ok {
 					b.session.UnassignLeaderFromColony(colonyIndex)
-					b.officerMsg = fmt.Sprintf(b.tr("已將 %s 撤回人才庫。", "%s returned to the leader pool."), ld.Name)
+					b.officerMsg = officerText(b.lang, "officer.message.returned_colony_pool", ld.Name)
 				} else {
-					b.officerMsg = b.tr("這位領袖目前沒有殖民地任職。", "This leader is not assigned to a colony.")
+					b.officerMsg = uiText(b.lang, "officer.message.colony_not_assigned")
 				}
-				return b.goTo(b.officer, "軍官列表")
+				return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 			}
 			if b.session.ReturnShipOfficerToPool(ld.Name) {
-				b.officerMsg = fmt.Sprintf(b.tr("已將 %s 送回軍官人才庫。", "%s returned to the Officer Pool."), ld.Name)
+				b.officerMsg = officerText(b.lang, "officer.message.returned_ship_pool", ld.Name)
 			} else {
-				b.officerMsg = b.tr("只有艦艇軍官可以送回人才庫。", "Only ship officers can return to the Officer Pool.")
+				b.officerMsg = uiText(b.lang, "officer.message.only_ship_pool")
 			}
-			return b.goTo(b.officer, "軍官列表")
+			return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 		case "dismiss":
 			if b.session == nil || !b.officerSelectedSet || b.officerSelected < 0 || b.officerSelected >= len(b.session.Leaders) {
-				b.officerMsg = b.tr("請先點選要解雇的艦艇軍官。", "Select a ship officer to dismiss first.")
-				return b.goTo(b.officer, "軍官列表")
+				b.officerMsg = uiText(b.lang, "officer.message.select_dismiss")
+				return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 			}
 			ld := b.session.Leaders[b.officerSelected]
 			if b.officerTab == 0 {
 				if b.session.DismissColonyLeader(ld.Name) {
 					b.officerSelectedSet = false
-					b.officerMsg = fmt.Sprintf(b.tr("已解雇殖民地領袖 %s。", "Colony leader %s was dismissed."), ld.Name)
+					b.officerMsg = officerText(b.lang, "officer.message.dismissed_colony", ld.Name)
 				} else {
-					b.officerMsg = b.tr("只有殖民地領袖可以在此分頁解雇。", "Only colony leaders can be dismissed from this tab.")
+					b.officerMsg = uiText(b.lang, "officer.message.only_colony_dismiss")
 				}
-				return b.goTo(b.officer, "軍官列表")
+				return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 			}
 			if b.session.DismissShipOfficer(ld.Name) {
 				b.officerSelectedSet = false
-				b.officerMsg = fmt.Sprintf(b.tr("已解雇 %s。", "%s was dismissed."), ld.Name)
+				b.officerMsg = officerText(b.lang, "officer.message.dismissed_ship", ld.Name)
 			} else {
-				b.officerMsg = b.tr("殖民地領袖目前不能從這個艦艇頁面解雇。", "Colony leaders cannot be dismissed from the ship page.")
+				b.officerMsg = uiText(b.lang, "officer.message.colony_dismiss_ship_tab")
 			}
-			return b.goTo(b.officer, "軍官列表")
+			return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 		case "scrollUp":
 			if b.officerScroll > 0 {
 				b.officerScroll--
 			}
-			return b.goTo(b.officer, "軍官列表")
+			return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 		case "scrollDown":
 			b.officerScroll++
-			return b.goTo(b.officer, "軍官列表")
+			return b.goTo(b.officer, uiText(b.lang, "officer.transition.screen"))
 		case "Return":
 			b.officerHireMode = false
-			return b.goTo(b.galaxy, "星系主畫面")
+			return b.goTo(b.galaxy, uiText(b.lang, "officer.transition.galaxy"))
 		}
 		return nil
 	}
@@ -5478,26 +5478,23 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 		rowY := officerRowCenters()
 		if b.officerTab == 0 {
 			if colonyIndex, ok := b.officerTargetColony(); ok {
-				s.extras = append(s.extras, extraText{x: 300, y: 52, size: 11,
-					text: fmt.Sprintf(b.tr("目標:殖民地 #%d(點殖民地畫面的領袖鈕)", "Target: colony #%d (opened from Colony Leaders)"), colonyIndex+1), col: body, maxW: 327})
+				s.extras = append(s.extras, officerTargetTextRect().leftExtras(b.fnt,
+					officerText(b.lang, "officer.target.colony", colonyIndex+1), officerDynamicFont, body)...)
 			} else {
-				s.extras = append(s.extras, extraText{x: 300, y: 52, size: 11,
-					text: b.tr("目標:目前沒有殖民地", "Target: no colony available"), col: body, maxW: 327})
+				s.extras = append(s.extras, officerTargetTextRect().leftExtras(b.fnt,
+					uiText(b.lang, "officer.target.no_colony"), officerDynamicFont, body)...)
 			}
 		} else if fleetIndex, shipIndex, ok := b.officerTargetShip(); ok {
 			sh := b.session.Fleets[fleetIndex].Ships[shipIndex]
-			s.extras = append(s.extras, extraText{x: 300, y: 52, size: 11,
-				text: fmt.Sprintf(b.tr("目標:第 %d 艦 %s(點艦艇列選取)", "Target: ship %d %s (select a ship in Fleet)"), shipIndex+1, sh.Name), col: body, maxW: 327})
+			s.extras = append(s.extras, officerTargetTextRect().leftExtras(b.fnt,
+				officerText(b.lang, "officer.target.ship", shipIndex+1, sh.Name), officerDynamicFont, body)...)
 		} else {
-			s.extras = append(s.extras, extraText{x: 300, y: 52, size: 11,
-				text: b.tr("目標:目前艦隊沒有艦艇", "Target: selected fleet has no ships"), col: body, maxW: 327})
+			s.extras = append(s.extras, officerTargetTextRect().leftExtras(b.fnt,
+				uiText(b.lang, "officer.target.no_ship"), officerDynamicFont, body)...)
 		}
 		if b.officerMsg != "" {
-			s.extras = append(s.extras, extraText{x: 300, y: 68, size: 11, text: b.officerMsg, col: gold, maxW: 327})
-		}
-		if b.officerHireMode {
-			s.extras = append(s.extras, extraText{x: 300, y: 84, size: 11,
-				text: b.tr("HIRE 模式：點綠色候選人", "HIRE mode: click a green candidate"), col: hireCol, maxW: 327})
+			s.extras = append(s.extras, officerMessageTextRect().leftExtras(b.fnt,
+				b.officerMsg, officerDynamicFont, gold)...)
 		}
 		// 捲動:把「已雇用領袖 + 待雇傭兵」當成一份連續清單,捲動位移就是跳過前 n 筆。
 		// 夾在 [0, 總筆數-1]——捲過頭會變成一片空白,那看起來像壞掉而不是捲到底。
@@ -5513,46 +5510,48 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 		}
 		// 從捲動位移開始填,一次填滿四列。已雇用的是金色,待雇傭兵是綠色 + 雇用費。
 		for row, k := 0, b.officerScroll; row < len(rowY) && k < len(roster); row, k = row+1, k+1 {
-			ld, y := roster[k], rowY[row]
+			ld := roster[k]
+			marker := ""
+			if b.officerSelectedSet && b.officerSelected == k {
+				marker = uiText(b.lang, "officer.marker.selected")
+			}
 			if k >= mercFrom {
-				s.extras = append(s.extras,
-					extraText{x: 95, y: y - 12, size: 15, text: officerRowPrefix(b.officerSelectedSet && b.officerSelected == k, "◆ ") + ld.Name, col: hireCol, maxW: 195},
-					extraText{x: 95, y: y + 12, size: 12, text: fmt.Sprintf(b.tr("%s ｜ Lv %d ｜ 雇用費 %d BC", "%s | Lv %d | hire %d BC"),
-						ld.Skill, ld.Level, b.session.MercHireCost(ld)), col: hireCol, maxW: 195},
-				)
+				if marker == "" {
+					marker = uiText(b.lang, "officer.marker.candidate")
+				}
+				s.extras = append(s.extras, officerNameTextRect(row).leftExtras(b.fnt,
+					marker+ld.Name, 12, hireCol)...)
+				s.extras = append(s.extras, officerSkillTextRect(row).leftExtras(b.fnt,
+					officerText(b.lang, "officer.roster.mercenary", ld.Skill, ld.Level,
+						b.session.MercHireCost(ld)), officerDynamicFont, hireCol)...)
 				continue
 			}
-			s.extras = append(s.extras,
-				extraText{x: 95, y: y - 12, size: 15, text: officerRowPrefix(b.officerSelectedSet && b.officerSelected == k, "") + ld.Name, col: gold, maxW: 195},
-				extraText{x: 95, y: y + 12, size: 12, text: fmt.Sprintf(b.tr("%s ｜ Lv %d", "%s | Lv %d"), ld.Skill, ld.Level), col: body, maxW: 195},
-			)
+			s.extras = append(s.extras, officerNameTextRect(row).leftExtras(b.fnt, marker+ld.Name, 12, gold)...)
+			s.extras = append(s.extras, officerSkillTextRect(row).leftExtras(b.fnt,
+				officerText(b.lang, "officer.roster.hired", ld.Skill, ld.Level), officerDynamicFont, body)...)
 			if b.officerTab == 0 {
 				if ci, ok := b.session.AssignedColonyForLeader(ld.Name); ok {
-					s.extras = append(s.extras, extraText{x: 330, y: y + 10, size: 11,
-						text: fmt.Sprintf(b.tr("已派殖民地 #%d", "Colony %d"), ci+1), col: color.RGBA{170, 220, 190, 255}, maxW: 302})
+					s.extras = append(s.extras, officerAssignmentTextRect(row).leftExtras(b.fnt,
+						officerText(b.lang, "officer.roster.assigned_colony", ci+1), officerDynamicFont,
+						color.RGBA{170, 220, 190, 255})...)
 				} else if !ld.Ship {
-					s.extras = append(s.extras, extraText{x: 330, y: y + 10, size: 11,
-						text: b.tr("未指派(點此派任)", "Unassigned (click to assign)"), col: body, maxW: 302})
+					s.extras = append(s.extras, officerAssignmentTextRect(row).leftExtras(b.fnt,
+						uiText(b.lang, "officer.roster.unassigned"), officerDynamicFont, body)...)
 				}
 			} else if fi, si, ok := b.session.AssignedShipForOfficer(ld.Name); ok {
-				s.extras = append(s.extras, extraText{x: 330, y: y + 10, size: 11,
-					text: fmt.Sprintf(b.tr("已派第 %d 艦", "Ship %d"), si+1), col: color.RGBA{170, 220, 190, 255}, maxW: 302})
+				s.extras = append(s.extras, officerAssignmentTextRect(row).leftExtras(b.fnt,
+					officerText(b.lang, "officer.roster.assigned_ship", si+1), officerDynamicFont,
+					color.RGBA{170, 220, 190, 255})...)
 				_ = fi // fleet index is used by the assignment query, ship label is enough here
 			} else if ld.Ship {
-				s.extras = append(s.extras, extraText{x: 330, y: y + 10, size: 11,
-					text: b.tr("未指派(點此派任)", "Unassigned (click to assign)"), col: body, maxW: 302})
+				s.extras = append(s.extras, officerAssignmentTextRect(row).leftExtras(b.fnt,
+					uiText(b.lang, "officer.roster.unassigned"), officerDynamicFont, body)...)
 			}
-		}
-		// 捲到看得見的範圍之外時,標明還有幾筆——不然玩家不知道清單還有下文。
-		if rest := len(roster) - b.officerScroll - len(rowY); rest > 0 {
-			s.extras = append(s.extras, extraText{x: 95, y: rowY[len(rowY)-1] + 30, size: 11,
-				text: fmt.Sprintf(b.tr("(還有 %d 位,按右上下箭頭捲動)", "(%d more; scroll with the arrows)"), rest),
-				col:  body, maxW: 195})
 		}
 		// 池空且無領袖時,提示傭兵會不定期上門(手冊 p.134)。
 		if len(b.session.Leaders) == 0 && len(b.session.MercPool) == 0 {
-			s.extras = append(s.extras, extraText{x: 95, y: rowY[0], size: 13, text: b.tr("(傭兵領袖會不定期上門,屆時按 HIRE 雇用)",
-				"(mercenary leaders turn up from time to time; press HIRE when they do)"), col: body, maxW: 500})
+			s.extras = append(s.extras, officerEmptyTextRect().centeredExtras(b.fnt,
+				uiText(b.lang, "officer.roster.empty"), 11, body)...)
 		}
 	}
 	return s, nil

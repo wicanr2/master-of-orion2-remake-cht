@@ -83,15 +83,6 @@ func officerRowCenters() []float64 {
 	return out
 }
 
-// officerRowPrefix 只用文字標出目前的管理選取項。
-// 原版亮框的繪製控制碼尚未從資產／執行檔資料中解出，先保留可見且不改底圖的提示。
-func officerRowPrefix(selected bool, unselected string) string {
-	if selected {
-		return "▶ "
-	}
-	return unselected
-}
-
 // officerTargetShip 取得軍官畫面的指派目標。
 //
 // 艦隊畫面點擊艦艇列會留下 shipPick;選了多艘時取最低索引,保證結果可重現。

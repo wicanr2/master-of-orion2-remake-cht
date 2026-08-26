@@ -6,6 +6,7 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/assets"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/herodata"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
 
@@ -131,7 +132,10 @@ func mercDisplayTier(skills []shell.LeaderSkill) int {
 func mercSkillLabel(b *sceneBuilder, h herodata.Leader, skills []shell.LeaderSkill) string {
 	if len(skills) > 0 {
 		if n, ok := gamedata.LeaderSkillName(skills[0].ID); ok {
-			return b.tr(n.ZH, n.EN)
+			if b.lang == i18n.English {
+				return n.EN
+			}
+			return n.ZH
 		}
 	}
 	if h.Ship() {
