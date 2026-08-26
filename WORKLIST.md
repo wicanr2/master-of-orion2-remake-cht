@@ -246,7 +246,13 @@
   marker 顯示；關閉時不畫，也不洩漏霧區目的地。線色與 timing 明標視覺近似；typed 查詢、
   純幾何、狀態指紋與正常畫廊均有測試。證據與規格見
   `docs/re/enemy-moves-setting-audit-20260827.md`、`docs/tech/enemy-moves-setting-spec.md`。
-  Expanding Help、GNN 與 Serious Summary 尚須依各自玩家路徑閉合，
+  Expanding Help 已由 `byte_199BE0 @ 0x199BE0` 的多個消費端與共同 renderer
+  `sub_83EFD @ 0x83EFD..0x84356` 閉合：原版開啟時以 10 步插值展開說明面板，關閉時立即顯示。
+  remake 的 SETTINGS 每列已接右鍵情境說明，依目前暫存設定選擇十步展開或立即顯示；標題與
+  本文全部位於 `assets/i18n/ui.json`，安全框換行與純幾何回歸測試已通過。這是正常玩家路徑的
+  介面轉接近似，不宣稱已逐一映射原版所有 help hotspot；證據與規格見
+  `docs/re/expanding-help-setting-audit-20260827.md`、`docs/tech/expanding-help-setting-spec.md`。
+  GNN 與 Serious Summary 尚須依各自玩家路徑閉合，
   不能因設定值可保存就宣稱生效。DOS／Win95 平台 API 內部維持既定停止線。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`

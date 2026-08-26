@@ -44,11 +44,15 @@ type gameSettingsScreen struct {
 	bg, accept *ebiten.Image
 	toggle     [2]*ebiten.Image
 	settings   shell.GameSettings
+	helpIndex  int
+	helpTick   int
+	helpX      int
+	helpY      int
 }
 
 func newGameSettingsScreen(b *sceneBuilder) *gameSettingsScreen {
 	s := &gameSettingsScreen{b: b, f: b.fnt, x: (moo2ScreenW - gameSettingsW) / 2,
-		y: (moo2ScreenH - gameSettingsH) / 2, settings: shell.DefaultGameSettings()}
+		y: (moo2ScreenH - gameSettingsH) / 2, settings: shell.DefaultGameSettings(), helpIndex: -1}
 	if b.session != nil {
 		s.settings = b.session.EffectiveGameSettings()
 	}
@@ -118,15 +122,30 @@ func (s *gameSettingsScreen) toggleOption(i int) {
 }
 
 func (s *gameSettingsScreen) update(in shell.InputState) *origTransition {
-	if !in.ClickReleased {
+	if s.helpIndex >= 0 && s.helpTick < 10 {
+		s.helpTick++
+	}
+	if !in.ClickReleased && !in.RightClickReleased {
 		return nil
 	}
 	for i := range gameSettingsKeys {
 		x, y, w, h := s.rowRect(i)
 		if hitRect(in, x, y, w, h) {
+			if in.RightClickReleased {
+				s.helpIndex, s.helpTick = i, 0
+				s.helpX, s.helpY = in.MouseX, in.MouseY
+				return nil
+			}
 			s.toggleOption(i)
 			return nil
 		}
+	}
+	if s.helpIndex >= 0 {
+		s.helpIndex = -1
+		return nil
+	}
+	if in.RightClickReleased {
+		return nil
 	}
 	x, y, w, h := s.acceptRect()
 	if hitRect(in, x, y, w, h) {
@@ -182,5 +201,49 @@ func (s *gameSettingsScreen) draw(dst *ebiten.Image) {
 	}
 	if s.b.lang == i18n.Traditional || s.accept == nil {
 		textSafeRect{x: x, y: y, w: w, h: h, insetX: 4, insetY: 2}.drawCentered(dst, s.f, uiText(s.b.lang, "gamesettings.button.accept"), 11, color.RGBA{232, 232, 238, 255})
+	}
+	s.drawHelp(dst)
+}
+
+type helpRect struct{ x, y, w, h int }
+
+func helpExpandRect(sourceX, sourceY int, target helpRect, tick int, expanding bool) helpRect {
+	if !expanding || tick >= 10 {
+		return target
+	}
+	if tick < 0 {
+		tick = 0
+	}
+	step := tick + 1
+	return helpRect{
+		x: sourceX + (target.x-sourceX)*step/10,
+		y: sourceY + (target.y-sourceY)*step/10,
+		w: target.w * step / 10,
+		h: target.h * step / 10,
+	}
+}
+
+func (s *gameSettingsScreen) drawHelp(dst *ebiten.Image) {
+	if s.helpIndex < 0 || s.helpIndex >= len(gameSettingsKeys) || s.f == nil {
+		return
+	}
+	target := helpRect{x: 76, y: 145, w: 488, h: 170}
+	r := helpExpandRect(s.helpX, s.helpY, target, s.helpTick, s.settings.ExpandingHelp)
+	fillPanel(dst, float32(r.x), float32(r.y), float32(r.w), float32(r.h), color.RGBA{8, 14, 28, 245}, false)
+	vector.StrokeRect(dst, float32(r.x), float32(r.y), float32(r.w), float32(r.h), 2, color.RGBA{112, 152, 210, 255}, false)
+	if s.settings.ExpandingHelp && s.helpTick < 10 {
+		return
+	}
+	key := gameSettingsKeys[s.helpIndex]
+	textSafeRect{x: target.x + 12, y: target.y + 10, w: target.w - 24, h: 25, insetX: 2, insetY: 2}.drawCentered(dst, s.f, uiText(s.b.lang, key), 15, color.RGBA{238, 218, 130, 255})
+	body := uiText(s.b.lang, key+".help")
+	lines := s.f.Wrap(body, 13, float64(target.w-36))
+	y := float64(target.y + 48)
+	for _, line := range lines {
+		if y+17 > float64(target.y+target.h-10) {
+			break
+		}
+		s.f.Draw(dst, line, float64(target.x+18), y, 13, color.RGBA{222, 228, 240, 255})
+		y += 18
 	}
 }

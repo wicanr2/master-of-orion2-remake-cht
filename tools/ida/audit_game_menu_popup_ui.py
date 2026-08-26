@@ -56,6 +56,14 @@ ROOTS = {
     "auto_select_colony_find_callee": 0x7862B,
     "auto_select_colony_route_callee": 0x8310E,
     "auto_select_colony_open_callee": 0x83669,
+    "expanding_help_consumer_a": 0x831B1,
+    "expanding_help_consumer_b": 0x83669,
+    "expanding_help_consumer_c": 0x8A6C2,
+    "expanding_help_consumer_d": 0x8A97A,
+    "expanding_help_consumer_e": 0x8B2DE,
+    "expanding_help_consumer_f": 0x8B7A5,
+    "expanding_help_consumer_g": 0xC702E,
+    "expanding_help_renderer": 0x83EFD,
 }
 
 SETTING_GLOBALS = {

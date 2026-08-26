@@ -899,5 +899,18 @@
   {"key":"leader.type.ship_officer","english":"Ship Officer","value":"艦長","note":"沒有技能時的 HERODATA 艦艇軍官類型通稱；不可與 Commando 技能混用"},
   {"key":"leader.type.administrator","english":"Administrator","value":"行政官","note":"沒有技能時的 HERODATA 殖民地領袖類型通稱"},
   {"key":"fleet.selection.selected","english":"[x] ","value":"[x] ","note":"艦隊名冊已選取艦艇；純 ASCII 避免 ✔ 在 runtime 字型 fallback 變成缺字方框"},
-  {"key":"fleet.selection.unselected","english":"[ ] ","value":"[ ] ","note":"艦隊名冊未選取艦艇；與 selected 使用同寬 ASCII 標記"}
+  {"key":"fleet.selection.unselected","english":"[ ] ","value":"[ ] ","note":"艦隊名冊未選取艦艇；與 selected 使用同寬 ASCII 標記"},
+  {"key":"gamesettings.option.end_turn_summary.help","english":"Show the turn summary after processing the turn.","value":"回合處理完成後顯示本回合摘要。","note":"SETTINGS 右鍵情境說明"},
+  {"key":"gamesettings.option.end_turn_wait.help","english":"Pause at the end of the turn before continuing.","value":"回合結束時先暫停，等待玩家繼續。","note":"SETTINGS 右鍵情境說明"},
+  {"key":"gamesettings.option.enemy_moves.help","english":"Show visible enemy fleets moving between known systems.","value":"顯示在已知星系之間航行、且未被戰爭迷霧遮蔽的敵方艦隊。","note":"SETTINGS 右鍵情境說明"},
+  {"key":"gamesettings.option.expanding_help.help","english":"Animate information panels as they expand. Turn this off to show them immediately.","value":"讓資訊說明框以展開動畫出現；關閉後會立即顯示完整說明框。","note":"SETTINGS 右鍵情境說明；IDA 證實為十步展開呈現"},
+  {"key":"gamesettings.option.auto_select_ships.help","english":"Select every ship when entering or switching fleets.","value":"進入或切換艦隊時，自動選取該艦隊的全部艦艇。","note":"SETTINGS 右鍵情境說明"},
+  {"key":"gamesettings.option.animations.help","english":"Play scene and interface animations.","value":"播放場景與介面動畫。","note":"SETTINGS 右鍵情境說明"},
+  {"key":"gamesettings.option.auto_select_colony.help","english":"Open your colony directly when selecting an owned colony star.","value":"選取我方殖民星時，直接開啟對應殖民地畫面。","note":"SETTINGS 右鍵情境說明"},
+  {"key":"gamesettings.option.show_relocation_lines.help","english":"Draw ship relocation routes on the galaxy map.","value":"在銀河星圖上繪出艦艇遷移航線。","note":"SETTINGS 右鍵情境說明"},
+  {"key":"gamesettings.option.show_gnn_report.help","english":"Show Galactic News Network reports when eligible news occurs.","value":"發生符合條件的銀河新聞時，顯示銀河新聞網報導。","note":"SETTINGS 右鍵情境說明"},
+  {"key":"gamesettings.option.auto_delete_trade_housing.help","english":"Remove Trade Goods or Housing from the queue after one completed turn.","value":"貿易商品或住宅完成一回合後，自動從建造佇列移除。","note":"SETTINGS 右鍵情境說明"},
+  {"key":"gamesettings.option.auto_save_game.help","english":"Save the current game automatically at the end of each turn.","value":"每回合結束時自動儲存目前對局。","note":"SETTINGS 右鍵情境說明"},
+  {"key":"gamesettings.option.serious_turn_summary.help","english":"Limit the turn summary to serious reports.","value":"回合摘要只顯示需要注意的重要報告。","note":"SETTINGS 右鍵情境說明"},
+  {"key":"gamesettings.option.ship_initiative.help","english":"Resolve combat actions by ship initiative instead of resolving each side as a block.","value":"依各艦主動權交錯處理戰鬥行動，而非讓雙方分批完成。","note":"SETTINGS 右鍵情境說明"}
 ]
