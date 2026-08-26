@@ -187,3 +187,59 @@ func TestGameSession_VisibleStars_Homeworld(t *testing.T) {
 		t.Errorf("Profile15 可見星數(%d)不應少於 Profile13(%d)", count15, count13)
 	}
 }
+
+func TestVisibleEnemyFleetMovesHonorsSettingVisibilityAndTransit(t *testing.T) {
+	s := &GameSession{
+		Stars: []Star{
+			{Explored: true, X: 0.1, Y: 0.2},
+			{Explored: true, X: 0.8, Y: 0.7},
+		},
+		AIPlayers: []AIOpponent{{
+			FleetPosSet: true, FleetStar: 0, FleetDestStar: 1, FleetETA: 3,
+		}},
+		RaceIndex: -1,
+	}
+
+	if got := s.VisibleEnemyFleetMoves(); len(got) != 0 {
+		t.Fatalf("Enemy Moves 預設關閉時不應回傳航線：%+v", got)
+	}
+	settings := s.EffectiveGameSettings()
+	settings.EnemyMoves = true
+	s.ApplyGameSettings(settings)
+	fingerprintBefore := s.StateFingerprint()
+	got := s.VisibleEnemyFleetMoves()
+	if len(got) != 1 || got[0] != (EnemyFleetMove{AIIndex: 0, FromStar: 0, ToStar: 1, ETA: 3}) {
+		t.Fatalf("設定開啟且兩端可見時應回傳 typed 航線：%+v", got)
+	}
+	if fingerprintAfter := s.StateFingerprint(); fingerprintAfter != fingerprintBefore {
+		t.Fatalf("純顯示查詢不得改動狀態指紋：%s → %s", fingerprintBefore, fingerprintAfter)
+	}
+
+	s.Stars[1].Explored = false
+	if got := s.VisibleEnemyFleetMoves(); len(got) != 0 {
+		t.Fatalf("目的地在霧區時不得由航線洩漏：%+v", got)
+	}
+	s.CustomRaceTraits = uint32(1) << uint(gamedata.TRAIT_OMNISCIENCE)
+	if got := s.VisibleEnemyFleetMoves(); len(got) != 1 {
+		t.Fatalf("全知應沿用全星圖可見契約：%+v", got)
+	}
+
+	s.AIPlayers[0].FleetETA = 0
+	if got := s.VisibleEnemyFleetMoves(); len(got) != 0 {
+		t.Fatalf("已抵達／停泊的艦隊不是 Enemy Moves 航線：%+v", got)
+	}
+}
+
+func TestVisibleEnemyFleetMovesRejectsInvalidRoute(t *testing.T) {
+	s := &GameSession{
+		Stars:     []Star{{Explored: true}},
+		AIPlayers: []AIOpponent{{FleetPosSet: true, FleetStar: 0, FleetDestStar: 9, FleetETA: 2}},
+		RaceIndex: -1,
+	}
+	settings := s.EffectiveGameSettings()
+	settings.EnemyMoves = true
+	s.ApplyGameSettings(settings)
+	if got := s.VisibleEnemyFleetMoves(); len(got) != 0 {
+		t.Fatalf("目的星越界時必須安全略過：%+v", got)
+	}
+}

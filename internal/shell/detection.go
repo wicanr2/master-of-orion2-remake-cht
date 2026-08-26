@@ -15,8 +15,8 @@ import (
 // ⚠ 本檔只算「可見與否」,純視覺用途——不 gate 任何操作(選星/派艦/殖民/轟炸皆不受影響,
 // 玩家仍可對著霧裡的星派艦探索)。真正的繪製改動在 cmd/moo2/interactive.go drawStarmap。
 //
-// AI 主力艦隊已有位置與實艦；本檔只處理玩家感測範圍。敵方 blip 的可見性與 UI 呈現
-// 尚未接線，本輪仍只決定「玩家看不看得到某顆星」，不判斷「看不看得到某支艦隊」。
+// AI 主力艦隊已有位置與實艦；本檔同時提供星圖使用的可見敵方航線 typed 查詢。
+// 查詢不改 AI 航行或偵測規則，只把已存在的可見狀態交給 UI。
 
 // bestPlayerScannerParsec 回傳玩家目前已解鎖的最佳掃描科技對應偵測範圍(parsec,見
 // gamedata.ScannerRangeParsec)。掃描科技本身無對應 Component(componentUnlockedFor 那套走
@@ -147,6 +147,40 @@ func (s *GameSession) EnemyFleetVisibleToPlayer(aiIdx int) bool {
 	}
 	visible := s.VisibleStars()
 	return starIdx < len(visible) && visible[starIdx]
+}
+
+// EnemyFleetMove 是目前可向玩家顯示的一支在途 AI 主力艦隊。
+// 只保存穩定索引與規則資料；顏色、線型及動畫 tick 屬 UI，不進存檔。
+type EnemyFleetMove struct {
+	AIIndex  int
+	FromStar int
+	ToStar   int
+	ETA      int
+}
+
+// VisibleEnemyFleetMoves 實作 SETTINGS 的 Enemy Moves 玩家可見契約。
+//
+// 原版 byte_199BDF 沒有已閉合的直接玩法 xref；help 只證實「允許看見敵方移動」。
+// remake 因而採保守顯示閘門：起點與目的地都必須在目前可見星圖內，避免由航線洩漏霧區。
+func (s *GameSession) VisibleEnemyFleetMoves() []EnemyFleetMove {
+	if s == nil || !s.EffectiveGameSettings().EnemyMoves {
+		return nil
+	}
+	visible := s.VisibleStars()
+	seen := func(star int) bool {
+		return star >= 0 && star < len(visible) && visible[star]
+	}
+	moves := make([]EnemyFleetMove, 0, len(s.AIPlayers))
+	for i, ai := range s.AIPlayers {
+		from, to := aiFleetStar(ai), ai.FleetDestStar
+		if ai.FleetETA <= 0 || from == to || !seen(from) || !seen(to) {
+			continue
+		}
+		moves = append(moves, EnemyFleetMove{
+			AIIndex: i, FromStar: from, ToStar: to, ETA: ai.FleetETA,
+		})
+	}
+	return moves
 }
 
 // PlayerFleetVisibleToAI 回報 AI 是否能偵測玩家艦隊。匿蹤艦在目前 AI

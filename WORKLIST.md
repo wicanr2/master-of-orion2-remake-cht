@@ -240,7 +240,13 @@
   映射為單一殖民地入口，明標介面轉接近似；證據與規格見
   `docs/re/auto-select-colony-setting-audit-20260827.md`、
   `docs/tech/auto-select-colony-setting-spec.md`。
-  Enemy Moves、Expanding Help、GNN 與 Serious Summary 尚須依各自玩家路徑閉合，
+  Enemy Moves 已由 `byte_199BDF @ 0x199BDF` 的完整直接 xref 稽核、原版 help 契約與兩個
+  敵方在途資料 consumer 釐清證據邊界：原版設定 byte 沒有已閉合的直接玩法讀取端，因此
+  remake 不臆造 AI 規則，只在開啟時把起點與目的地皆可見的在途 AI 艦隊以星圖航線及移動
+  marker 顯示；關閉時不畫，也不洩漏霧區目的地。線色與 timing 明標視覺近似；typed 查詢、
+  純幾何、狀態指紋與正常畫廊均有測試。證據與規格見
+  `docs/re/enemy-moves-setting-audit-20260827.md`、`docs/tech/enemy-moves-setting-spec.md`。
+  Expanding Help、GNN 與 Serious Summary 尚須依各自玩家路徑閉合，
   不能因設定值可保存就宣稱生效。DOS／Win95 平台 API 內部維持既定停止線。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`

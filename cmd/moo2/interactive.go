@@ -1341,6 +1341,9 @@ func starScreenPos(st shell.Star) (int, int) {
 func drawStarmap(b *sceneBuilder, dst *ebiten.Image, fnt *uifont.Font, stars []shell.Star, selected int, visible []bool) {
 	const vx0, vy0, vx1, vy1 = starVX0, starVY0, starVX1, starVY1
 	drawWormholeLinks(dst, stars, visible)
+	if b != nil && b.session != nil {
+		drawEnemyFleetMoves(dst, stars, b.session.VisibleEnemyFleetMoves(), b.animTick)
+	}
 	for i, st := range stars {
 		seen := visible == nil || (i < len(visible) && visible[i])
 
@@ -1405,6 +1408,44 @@ func drawStarmap(b *sceneBuilder, dst *ebiten.Image, fnt *uifont.Font, stars []s
 			fnt.Draw(dst, st.Name, nx, float64(y)+float64(r), 11, color.RGBA{170, 185, 210, 255})
 		}
 	}
+}
+
+// drawEnemyFleetMoves 把規則層已通過設定與霧區 gate 的敵方航線畫在星球下方。
+// 線色與 marker timing 是 remake 視覺近似；原版 byte_199BDF 的精確動畫 consumer 尚未知。
+func drawEnemyFleetMoves(dst *ebiten.Image, stars []shell.Star, moves []shell.EnemyFleetMove, tick int) {
+	if dst == nil {
+		return
+	}
+	lineColor := color.RGBA{235, 72, 64, 180}
+	markerColor := color.RGBA{255, 196, 96, 240}
+	for _, move := range moves {
+		x1, y1, x2, y2, mx, my, ok := enemyMoveGeometry(stars, move, tick)
+		if !ok {
+			continue
+		}
+		vector.StrokeLine(dst, x1, y1, x2, y2, 1, lineColor, true)
+		vector.DrawFilledCircle(dst, mx, my, 2, markerColor, true)
+	}
+}
+
+func enemyMoveGeometry(stars []shell.Star, move shell.EnemyFleetMove, tick int) (x1, y1, x2, y2, mx, my float32, ok bool) {
+	if move.FromStar < 0 || move.FromStar >= len(stars) || move.ToStar < 0 || move.ToStar >= len(stars) ||
+		move.FromStar == move.ToStar {
+		return 0, 0, 0, 0, 0, 0, false
+	}
+	from, to := stars[move.FromStar], stars[move.ToStar]
+	x1 = float32(starVX0) + float32(from.X)*(starVX1-starVX0)
+	y1 = float32(starVY0) + float32(from.Y)*(starVY1-starVY0)
+	x2 = float32(starVX0) + float32(to.X)*(starVX1-starVX0)
+	y2 = float32(starVY0) + float32(to.Y)*(starVY1-starVY0)
+	phase := tick + move.AIIndex*17
+	if phase < 0 {
+		phase = -phase
+	}
+	fraction := float32(phase%90) / 89
+	mx = x1 + (x2-x1)*fraction
+	my = y1 + (y2-y1)*fraction
+	return x1, y1, x2, y2, mx, my, true
 }
 
 // drawWormholeLinks 畫蟲洞連線(原版 `Draw_Wormhole_Links_` @ 0x85593,星圖的**第 1 層**
