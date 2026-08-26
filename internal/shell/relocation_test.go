@@ -1,7 +1,6 @@
 package shell
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
@@ -179,10 +178,10 @@ func TestRelocateFromMustBeOwnColony(t *testing.T) {
 	for i := range s.Stars {
 		s.Stars[i].Explored = true
 	}
-	if r := s.CanRelocateFrom(0); r != "" {
-		t.Errorf("星 0 是自己的殖民地,應可當起點,實得拒絕:%s", r)
+	if r := s.CanRelocateFrom(0); r != RelocateAllowed {
+		t.Errorf("星 0 是自己的殖民地,應可當起點,實得拒絕:%v", r)
 	}
-	if r := s.CanRelocateFrom(3); r == "" {
+	if r := s.CanRelocateFrom(3); r == RelocateAllowed {
 		t.Error("星 3 沒有自己的殖民地,不該能當起點")
 	}
 }
@@ -195,10 +194,10 @@ func TestRelocateRejectsBlackHoleBothEnds(t *testing.T) {
 	}
 	s.Stars[0].Spectral = 6 // 母星改成黑洞(只為驗規則)
 	s.Stars[2].Spectral = 6
-	if r := s.CanRelocateFrom(0); r == "" {
+	if r := s.CanRelocateFrom(0); r == RelocateAllowed {
 		t.Error("黑洞不該能當起點")
 	}
-	if r := s.CanRelocateTo(2); r == "" {
+	if r := s.CanRelocateTo(2); r == RelocateAllowed {
 		t.Error("黑洞不該能當終點")
 	}
 }
@@ -211,7 +210,7 @@ func TestRelocateRejectsUnexplored(t *testing.T) {
 	s := relocSession()
 	s.Stars[0].Explored = true
 	s.Stars[2].Explored = false
-	if r := s.CanRelocateTo(2); r == "" {
+	if r := s.CanRelocateTo(2); r == RelocateAllowed {
 		t.Error("沒探索過的星不該能當終點")
 	}
 }
@@ -222,15 +221,15 @@ func TestSetStarRelocationTwoStage(t *testing.T) {
 	for i := range s.Stars {
 		s.Stars[i].Explored = true
 	}
-	if r := s.SetStarRelocation(0, 3); r != "" {
-		t.Fatalf("星 0 → 星 3 應成功,實得:%s", r)
+	if r := s.SetStarRelocation(0, 3); r != RelocateAllowed {
+		t.Fatalf("星 0 → 星 3 應成功,實得:%v", r)
 	}
 	if got := s.ColonyRelocation(0); got != 3 {
 		t.Errorf("集結點應是 3,實得 %d", got)
 	}
 	// 起訖同一顆 = 取消(原版 Cancel_Star_Relocation_)。
-	if r := s.SetStarRelocation(0, 0); r != "" {
-		t.Fatalf("起訖同一顆應成功(語意是取消),實得:%s", r)
+	if r := s.SetStarRelocation(0, 0); r != RelocateAllowed {
+		t.Fatalf("起訖同一顆應成功(語意是取消),實得:%v", r)
 	}
 	if got := s.ColonyRelocation(0); got != ColonyRelocationNone {
 		t.Errorf("點回自己應取消,實得 %d", got)
@@ -303,7 +302,7 @@ func relocMonsterSession() *GameSession {
 		s.Stars[i].Explored = true
 	}
 	s.Stars[2].Name = "怪獸星"
-	s.Monsters = []MonsterGuard{{StarIndex: 2, Kind: 0, Structure: 100}}
+	s.Monsters = []MonsterGuard{{StarIndex: 2, Kind: 2, Structure: 100}}
 	return s
 }
 
@@ -311,7 +310,7 @@ func relocMonsterSession() *GameSession {
 func TestMonsterStarCannotBeRelocationOrigin(t *testing.T) {
 	s := relocMonsterSession()
 	s.PlayerColonyStars = []int{2, 4} // 把第一個殖民地搬到怪獸星上,好單獨驗這條規則
-	if r := s.CanRelocateFrom(2); r == "" {
+	if r := s.CanRelocateFrom(2); r == RelocateAllowed {
 		t.Error("怪獸盤據的星不該能當遷移起點")
 	}
 }
@@ -319,27 +318,19 @@ func TestMonsterStarCannotBeRelocationOrigin(t *testing.T) {
 // 怪獸盤據的星**可以**當終點,但要先問過玩家——這是原版 User_Box_(kind=1) 那一問。
 func TestMonsterStarAsDestinationAsksInsteadOfRefusing(t *testing.T) {
 	s := relocMonsterSession()
-	if r := s.CanRelocateTo(2); r != "" {
-		t.Errorf("怪獸不該讓終點被**拒絕**(原版是問一句),實得拒絕原因:%s", r)
+	if r := s.CanRelocateTo(2); r != RelocateAllowed {
+		t.Errorf("怪獸不該讓終點被**拒絕**(原版是問一句),實得拒絕原因:%v", r)
 	}
-	msg := s.RelocateToNeedsConfirm(2)
-	if msg == "" {
+	if !s.RelocateToNeedsConfirm(2) {
 		t.Fatal("怪獸盤據的終點應該要問一句")
 	}
-	// 原版那句話是 sprintf(訊息, 星, 怪獸名) —— 兩個參數都要出現在文字裡。
-	if !strings.Contains(msg, "怪獸星") {
-		t.Errorf("確認訊息應含星名,實得:%s", msg)
-	}
-	if name := s.MonsterNameAtStar(2); name != "" && !strings.Contains(msg, name) {
-		t.Errorf("確認訊息應含怪獸名 %q,實得:%s", name, msg)
-	}
 	// 沒有怪獸的星不該問。
-	if got := s.RelocateToNeedsConfirm(3); got != "" {
-		t.Errorf("沒有怪獸的終點不該問,實得:%s", got)
+	if s.RelocateToNeedsConfirm(3) {
+		t.Error("沒有怪獸的終點不該問")
 	}
 	// 問完說「是」就照設——確認不是拒絕。
-	if r := s.SetStarRelocation(0, 2); r != "" {
-		t.Errorf("玩家確認後應該設得起來,實得拒絕:%s", r)
+	if r := s.SetStarRelocation(0, 2); r != RelocateAllowed {
+		t.Errorf("玩家確認後應該設得起來,實得拒絕:%v", r)
 	}
 	if got := s.ColonyRelocation(0); got != 2 {
 		t.Errorf("集結點應設成 2,實得 %d", got)

@@ -972,8 +972,8 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			}
 			_ = ci
 			b.beginRelocatePickFrom(b.session.SelectedStar)
-			b.flash(b.tr("點一顆星當集結點(點自己就取消)", "Click a star as rally point (click itself to clear)"))
-			return b.goTo(b.galaxy, "星系主畫面")
+			b.flash(uiText(b.lang, "relocation.prompt.star_panel_target"))
+			return b.goTo(b.galaxy, uiText(b.lang, "relocation.transition.galaxy"))
 		}
 		if a == "dispatch" && b.session != nil {
 			// 派遣艦隊至選中星(航行由 EndTurn 推進)。曲速前開局沒有 FTL、出不了本星系,
@@ -1306,9 +1306,9 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					if ci := colonyIndexAtStar(sess, sess.SelectedStar); ci >= 0 {
 						fillPanel(dst, 38, 424, 190, 20, color.RGBA{45, 95, 85, 255}, false)
 						vector.StrokeRect(dst, 38, 424, 190, 20, 1, color.RGBA{120, 200, 180, 255}, false)
-						label := b.tr("▶ 設定集結點", "▶ Set rally point")
+						label := uiText(b.lang, "relocation.button.set")
 						if to := sess.ColonyRelocation(ci); to >= 0 && to < len(sess.Stars) {
-							label = b.tr("▶ 集結點:", "▶ Rally: ") + sess.Stars[to].Name
+							label = fmt.Sprintf(uiText(b.lang, "relocation.button.current"), sess.Stars[to].Name)
 						}
 						drawStarPanelText(dst, fnt, starPanelButtonTextRect(424), label, 12, color.RGBA{225, 245, 240, 255})
 					}
@@ -4562,23 +4562,22 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 			return b.goTo(b.fleet, "艦隊列表")
 		case "relocateall":
 			b.beginRelocateAll()
-			b.flash(b.tr("全部改送:點一顆星,把已經設過集結點的殖民地全部改送過去",
-				"RETARGET ALL: click a star to retarget every existing rally point"))
-			return b.goTo(b.galaxy, "星系主畫面")
+			b.flash(uiText(b.lang, "relocation.prompt.retarget_all"))
+			return b.goTo(b.galaxy, uiText(b.lang, "relocation.transition.galaxy"))
 		case "relocateclear":
 			n := b.session.ClearAllStarRelocations()
 			if n == 0 {
-				b.flash(b.tr("目前沒有任何集結點可清除", "No rally points to clear"))
+				b.flash(uiText(b.lang, "relocation.result.none_to_clear"))
 			} else {
-				b.flash(fmt.Sprintf(b.tr("已清除 %d 個集結點", "Cleared %d rally points"), n))
+				b.flash(fmt.Sprintf(uiText(b.lang, "relocation.result.cleared_count"), n))
 			}
-			return b.goTo(b.fleet, "艦隊列表")
+			return b.goTo(b.fleet, uiText(b.lang, "relocation.transition.fleet"))
 		case "relocate":
 			// 原版 `Star_Relocation_` 是兩段點選:先起點星(自己的殖民地)、再終點星。
 			// 回到星圖進第一段。
 			b.beginRelocatePick()
-			b.flash(b.tr("調動:先點一顆自己的殖民星當起點", "Relocate: click one of your colony stars first"))
-			return b.goTo(b.galaxy, "星系主畫面")
+			b.flash(uiText(b.lang, "relocation.prompt.choose_origin"))
+			return b.goTo(b.galaxy, uiText(b.lang, "relocation.transition.galaxy"))
 		case "assault":
 			// 進安塔蘭王座廳(原版 Main_Antaran_Room),由那個畫面確認後才發動。
 			// 前置條件不滿足時照樣進得去——王座廳會逐條講明卡在哪,比「點了沒反應」清楚。
@@ -4701,15 +4700,18 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 		// 發動與否在那裡決定——文案要講清楚是「進去看」而不是「按了就打」。
 		if b.session.CanAssaultAntares() {
 			warn := color.RGBA{235, 160, 90, 255}
-			s.extras = append(s.extras, extraText{x: 28, y: 402, size: 13, text: b.tr("攻打安塔蘭母星(點此進入王座廳)", "Assault the Antaran homeworld (click for the throne room)"), col: warn})
+			s.extras = append(s.extras, centeredExtraTextInSafeRect(
+				fleetAntaranEntryTextRect(), 13, uiText(b.lang, "fleet.antares.entry"), warn))
 		}
 		// ⚠ 兩個 remake 自加的集結點入口(原版是星圖上的鍵盤指令,見上方 hits 的註解)。
 		// 字前加「＋」與原版烘在美術上的鈕區隔開來——這個畫面沒有自繪框的機制,
 		// 標記只能靠文字本身。
 		mark := color.RGBA{190, 225, 215, 255}
 		s.extras = append(s.extras,
-			extraText{x: 26, y: 425, size: 11, text: b.tr("＋全部改送集結點", "+ Retarget all rally"), col: mark},
-			extraText{x: 174, y: 425, size: 11, text: b.tr("＋清除所有集結點", "+ Clear all rally"), col: mark})
+			centeredExtraTextInSafeRect(relocationRetargetAllTextRect(),
+				11, uiText(b.lang, "relocation.button.retarget_all"), mark),
+			centeredExtraTextInSafeRect(relocationClearAllTextRect(),
+				11, uiText(b.lang, "relocation.button.clear_all"), mark))
 	}
 	// 艦隊標頭的熱區要等名冊畫完才知道有幾個,所以最後補進去
 	// (loadOverlayScreen 已經把 hits 複製走了,直接接在 s.hits 後面)。

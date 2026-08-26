@@ -23,6 +23,7 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -162,6 +163,18 @@ type relocatePickState struct {
 	all bool
 }
 
+func relocationRetargetAllTextRect() textSafeRect {
+	return textSafeRect{x: 20, y: 412, w: 140, h: 18, insetX: 4, insetY: 1}
+}
+
+func relocationClearAllTextRect() textSafeRect {
+	return textSafeRect{x: 168, y: 412, w: 140, h: 18, insetX: 4, insetY: 1}
+}
+
+func fleetAntaranEntryTextRect() textSafeRect {
+	return textSafeRect{x: 20, y: 392, w: 288, h: 18, insetX: 4, insetY: 1}
+}
+
 // beginRelocatePick 從**起點**開始挑(艦隊列表的 RELOCATE 鈕走這條,同原版)。
 func (b *sceneBuilder) beginRelocatePick() {
 	b.relocPick.on, b.relocPick.from, b.relocPick.all = true, -1, false
@@ -180,6 +193,61 @@ func (b *sceneBuilder) beginRelocatePickFrom(star int) {
 	b.relocPick.on, b.relocPick.from = true, star
 }
 
+func relocationMonsterName(b *sceneBuilder, sess *shell.GameSession, star int) string {
+	if b == nil || sess == nil {
+		return ""
+	}
+	seen := map[int]bool{}
+	names := make([]string, 0, 1)
+	for _, monster := range sess.MonsterGroupsAtStar(star) {
+		kind := int(monster.Kind)
+		if seen[kind] {
+			continue
+		}
+		seen[kind] = true
+		names = append(names, uiText(b.lang, fmt.Sprintf("monster.name.%d", kind)))
+	}
+	return strings.Join(names, uiText(b.lang, "list.separator"))
+}
+
+func relocationRefusalText(b *sceneBuilder, sess *shell.GameSession, star int, refusal shell.RelocateRefusal) string {
+	if b == nil {
+		return ""
+	}
+	switch refusal {
+	case shell.RelocateInvalidStar:
+		return uiText(b.lang, "relocation.refusal.invalid_star")
+	case shell.RelocateBlackHoleOrigin:
+		return uiText(b.lang, "relocation.refusal.black_hole_origin")
+	case shell.RelocateBlackHoleTarget:
+		return uiText(b.lang, "relocation.refusal.black_hole_target")
+	case shell.RelocateUnexploredOrigin:
+		return uiText(b.lang, "relocation.refusal.unexplored_origin")
+	case shell.RelocateUnexploredTarget:
+		return uiText(b.lang, "relocation.refusal.unexplored_target")
+	case shell.RelocateMonsterOrigin:
+		return fmt.Sprintf(uiText(b.lang, "relocation.refusal.monster_origin"), relocationMonsterName(b, sess, star))
+	case shell.RelocateNoColony:
+		name := ""
+		if sess != nil && star >= 0 && star < len(sess.Stars) {
+			name = sess.Stars[star].Name
+		}
+		return fmt.Sprintf(uiText(b.lang, "relocation.refusal.no_colony"), name)
+	case shell.RelocateWriteFailed:
+		return uiText(b.lang, "relocation.refusal.write_failed")
+	default:
+		return ""
+	}
+}
+
+func relocationConfirmText(b *sceneBuilder, sess *shell.GameSession, star int) string {
+	if b == nil || sess == nil || star < 0 || star >= len(sess.Stars) {
+		return ""
+	}
+	return fmt.Sprintf(uiText(b.lang, "relocation.confirm.monster"),
+		sess.Stars[star].Name, relocationMonsterName(b, sess, star))
+}
+
 // relocatePickClickedStar 在挑集結點模式下吃掉一次點星,回傳是否已消化。
 func (b *sceneBuilder) relocatePickClickedStar(star int) bool {
 	if !b.relocPick.on || b.session == nil {
@@ -187,28 +255,26 @@ func (b *sceneBuilder) relocatePickClickedStar(star int) bool {
 	}
 	sess := b.session
 	if b.relocPick.all { // ALL:一次把已經有集結點的全部改送到這顆
-		if r := sess.CanRelocateTo(star); r != "" {
-			b.flash(b.tr(string(r), string(r)))
+		if r := sess.CanRelocateTo(star); r != shell.RelocateAllowed {
+			b.flash(relocationRefusalText(b, sess, star, r))
 			return true
 		}
 		n := sess.SetAllStarRelocations(star)
 		b.relocPick.on, b.relocPick.all = false, false
 		if n == 0 {
-			b.flash(b.tr("沒有任何殖民地設過集結點——ALL 只改已經設過的",
-				"No colony has a rally point — ALL only retargets existing ones"))
+			b.flash(uiText(b.lang, "relocation.result.no_existing"))
 		} else {
-			b.flash(fmt.Sprintf(b.tr("已把 %d 個集結點改到這裡", "Retargeted %d rally points here"), n))
+			b.flash(fmt.Sprintf(uiText(b.lang, "relocation.result.retargeted_count"), n))
 		}
 		return true
 	}
 	if b.relocPick.from < 0 { // 第一段:選起點
-		if r := sess.CanRelocateFrom(star); r != "" {
-			b.flash(b.tr(string(r), string(r)))
+		if r := sess.CanRelocateFrom(star); r != shell.RelocateAllowed {
+			b.flash(relocationRefusalText(b, sess, star, r))
 			return true // 仍算消化掉:這一下是模式的輸入,不該同時去選星
 		}
 		b.relocPick.from = star
-		b.flash(b.tr("起點已選——再點一顆星當集結點(點回自己就取消)",
-			"Origin set — now click the rally star (click it again to clear)"))
+		b.flash(uiText(b.lang, "relocation.prompt.origin_set"))
 		return true
 	}
 	// 第二段:選終點。
@@ -216,10 +282,10 @@ func (b *sceneBuilder) relocatePickClickedStar(star int) bool {
 	// 原版對「終點被怪獸盤據」是**問一句**不是拒絕(`Okay_To_Set_Relocate_Star_` 走
 	// `User_Box_(kind=1)`);玩家說是就照設。⚠ 上面的 ALL 分支沒有這一問——
 	// 原版的 `Set_All_Star_Relocations_` 是一支沒有任何驗證的迴圈,不替它加規則。
-	if msg := sess.RelocateToNeedsConfirm(star); msg != "" {
+	if sess.RelocateToNeedsConfirm(star) {
 		b.relocPick.on = false
 		b.pendingConfirm = &pendingConfirm{
-			msg: b.tr(msg, msg),
+			msg: relocationConfirmText(b, sess, star),
 			onYes: func() *origTransition {
 				b.applyRelocation(from, star)
 				return nil // 回到下層的星圖
@@ -227,17 +293,16 @@ func (b *sceneBuilder) relocatePickClickedStar(star int) bool {
 		}
 		return true
 	}
-	if r := sess.SetStarRelocation(from, star); r != "" {
-		b.flash(b.tr(string(r), string(r)))
+	if r := sess.SetStarRelocation(from, star); r != shell.RelocateAllowed {
+		b.flash(relocationRefusalText(b, sess, star, r))
 		return true
 	}
 	b.relocPick.on = false
 	ci := colonyIndexAtStar(sess, from)
 	if to := sess.ColonyRelocation(ci); to == shell.ColonyRelocationNone {
-		b.flash(b.tr("已取消集結點", "Relocation cleared"))
+		b.flash(uiText(b.lang, "relocation.result.cleared"))
 	} else {
-		b.flash(b.tr("集結點已設定——新造的艦會自動送過去",
-			"Relocation set — new ships will travel there"))
+		b.flash(uiText(b.lang, "relocation.result.set"))
 	}
 	return true
 }
@@ -248,17 +313,16 @@ func (b *sceneBuilder) applyRelocation(from, to int) {
 	if sess == nil {
 		return
 	}
-	if r := sess.SetStarRelocation(from, to); r != "" {
-		b.flash(b.tr(string(r), string(r)))
+	if r := sess.SetStarRelocation(from, to); r != shell.RelocateAllowed {
+		b.flash(relocationRefusalText(b, sess, to, r))
 		return
 	}
 	ci := colonyIndexAtStar(sess, from)
 	if t := sess.ColonyRelocation(ci); t == shell.ColonyRelocationNone {
-		b.flash(b.tr("已取消集結點", "Relocation cleared"))
+		b.flash(uiText(b.lang, "relocation.result.cleared"))
 		return
 	}
-	b.flash(b.tr("集結點已設定——新造的艦會自動送過去",
-		"Relocation set — new ships will travel there"))
+	b.flash(uiText(b.lang, "relocation.result.set"))
 }
 
 // colonyIndexAtStar 回傳玩家在某顆星的殖民地索引(沒有回 −1)。
@@ -356,13 +420,13 @@ func starPanelColonyRows(sess *shell.GameSession) []starPanelRow {
 func (b *sceneBuilder) galleryConfirmMessage() string {
 	if sess := b.session; sess != nil {
 		for i := range sess.Stars {
-			if msg := sess.RelocateToNeedsConfirm(i); msg != "" {
-				return msg
+			if sess.RelocateToNeedsConfirm(i) {
+				return relocationConfirmText(b, sess, i)
 			}
 		}
 	}
-	return b.tr("這個星系被太空怪獸盤據,送過去的艦艇會遭到攻擊。仍要把集結點設在那裡嗎?",
-		"That system is guarded by a space monster and ships sent there will be attacked. Set the rally point anyway?")
+	return fmt.Sprintf(uiText(b.lang, "relocation.confirm.monster"),
+		uiText(b.lang, "relocation.fallback.system"), uiText(b.lang, "relocation.fallback.monster"))
 }
 
 // --- 艦隊列表的 ALL 鈕:全選 / 全不選(手冊 p.32 + p.47)---

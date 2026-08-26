@@ -191,6 +191,15 @@
   OVER 文案是原版精確畫面，因此明標必要的同機隱私轉接設計。證據與規格見
   [`docs/re/hotseat-handoff-ui-audit-20260827.md`](docs/re/hotseat-handoff-ui-audit-20260827.md) 與
   [`docs/tech/hotseat-handoff-external-text-spec.md`](docs/tech/hotseat-handoff-external-text-spec.md)。
+  集結點／遷移流程已完成第二十一個切片：規則層改回傳 typed `RelocateRefusal` 與怪獸確認
+  布林值，不再保存中文句子；拒絕、提示、結果、按鈕、轉場、怪獸名與清單分隔符全部由
+  `ui.json` 供應。IDA Pro 9.4 確認 `sub_75035 @ 0x75035..0x75180` 的黑洞、探索、怪獸及
+  殖民地檢查，以及文字 ID `0x83..0x88` 的方向差異；精確原文未匯出，故 JSON 只標等義
+  介面轉接。艦隊列表兩個 140×18 入口改用獨立安全框；畫廊另抓到英文王座廳提示會壓到
+  下方入口，現一併外部化並放入不相交的 288×18 安全框。中英文畫廊各 35/35 通過，
+  `07_fleet.png` 與 `29_confirm.png` 目視確認無重疊、越框或英文單字硬切。證據與規格見
+  [`docs/re/relocation-player-text-audit-20260827.md`](docs/re/relocation-player-text-audit-20260827.md) 與
+  [`docs/tech/relocation-external-text-spec.md`](docs/tech/relocation-external-text-spec.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與

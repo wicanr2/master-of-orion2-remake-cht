@@ -78,29 +78,41 @@ const ColonyRelocationNone = -1
 //
 // 所以 remake 這邊**什麼都不用做**。要替 AI 加集結點會是加一條原版沒有的規則。
 
-// RelocateRefusal 是「這顆星不能當起點/終點」的原因(空字串 = 可以)。
-type RelocateRefusal string
+// RelocateRefusal 是「這顆星不能當起點／終點」的 typed 原因；玩家文案由 UI catalog 組裝。
+type RelocateRefusal uint8
 
-// CanRelocateFrom 檢查某顆星能不能當遷移起點,回傳不行的原因(空 = 可以)。
+const (
+	RelocateAllowed RelocateRefusal = iota
+	RelocateInvalidStar
+	RelocateBlackHoleOrigin
+	RelocateBlackHoleTarget
+	RelocateUnexploredOrigin
+	RelocateUnexploredTarget
+	RelocateMonsterOrigin
+	RelocateNoColony
+	RelocateWriteFailed
+)
+
+// CanRelocateFrom 檢查某顆星能不能當遷移起點，回傳 typed 原因。
 func (s *GameSession) CanRelocateFrom(star int) RelocateRefusal {
 	if star < 0 || star >= len(s.Stars) {
-		return "沒有這顆星"
+		return RelocateInvalidStar
 	}
 	if s.Stars[star].Spectral == blackHoleSpectral {
-		return "黑洞不能當遷移起點"
+		return RelocateBlackHoleOrigin
 	}
 	if !s.Stars[star].Explored {
-		return "還沒探索過這顆星"
+		return RelocateUnexploredOrigin
 	}
 	// 怪獸盤據的星當**起點**直接不行——原版連訊息都不出(`loc_7511B` 只把結果清 0)。
 	// remake 出一句話:靜默失敗在有滑鼠提示的介面裡只會讓玩家以為按鈕壞了。
 	if s.StarGuardedByMonster(star) {
-		return RelocateRefusal("那裡被" + s.MonsterNameAtStar(star) + "盤據,不能當遷移起點")
+		return RelocateMonsterOrigin
 	}
 	if colonyIndexAt(s, star) < 0 {
-		return "那裡沒有你的殖民地——遷移是從自己的殖民地送出去的"
+		return RelocateNoColony
 	}
-	return ""
+	return RelocateAllowed
 }
 
 // CanRelocateTo 檢查某顆星能不能當遷移終點,回傳不行的原因(空 = 可以)。
@@ -109,34 +121,29 @@ func (s *GameSession) CanRelocateFrom(star int) RelocateRefusal {
 // 見 RelocateToNeedsConfirm。
 func (s *GameSession) CanRelocateTo(star int) RelocateRefusal {
 	if star < 0 || star >= len(s.Stars) {
-		return "沒有這顆星"
+		return RelocateInvalidStar
 	}
 	if s.Stars[star].Spectral == blackHoleSpectral {
-		return "黑洞不能當遷移終點"
+		return RelocateBlackHoleTarget
 	}
 	if !s.Stars[star].Explored {
-		return "還沒探索過這顆星"
+		return RelocateUnexploredTarget
 	}
-	return ""
+	return RelocateAllowed
 }
 
-// RelocateToNeedsConfirm 回傳「設成這顆終點之前要先問玩家的那句話」;空字串 = 不用問。
+// RelocateToNeedsConfirm 回傳設成這顆終點前是否須先詢問玩家。
 //
 // 原版 `Okay_To_Set_Relocate_Star_` 的第 ③ 條:終點被怪獸盤據時
 // sprintf(訊息 0x87, 星名, 怪獸名) 之後跳 `User_Box_(kind=1)`(是/否)。
 // **它不是拒絕**——玩家說是就照設,新造的艦會一艘艘送進怪獸的嘴裡,那是玩家的選擇。
 //
-// ⚠ 訊息 0x87 的原文在 LBX 的字串表裡,remake 沒有逐字抄(那是遊戲文字不是規則);
-// 這裡用等義的中文,並保留「星名 + 怪獸名」這兩個原版會填進去的參數。
-func (s *GameSession) RelocateToNeedsConfirm(star int) string {
+// 星名、怪獸名與文句由 UI catalog 組裝，規則層只回傳條件。
+func (s *GameSession) RelocateToNeedsConfirm(star int) bool {
 	if star < 0 || star >= len(s.Stars) {
-		return ""
+		return false
 	}
-	if !s.StarGuardedByMonster(star) {
-		return ""
-	}
-	return s.Stars[star].Name + "被" + s.MonsterNameAtStar(star) +
-		"盤據,送過去的艦艇會遭到攻擊。仍要把集結點設在那裡嗎?"
+	return s.StarGuardedByMonster(star)
 }
 
 // colonyIndexAt 回傳玩家在某顆星的殖民地索引(沒有回 −1)。
@@ -153,16 +160,16 @@ func colonyIndexAt(s *GameSession, star int) int {
 //
 // 起訖同一顆 = 取消(原版 `Cancel_Star_Relocation_`)。回傳不行的原因(空 = 成功)。
 func (s *GameSession) SetStarRelocation(from, to int) RelocateRefusal {
-	if r := s.CanRelocateFrom(from); r != "" {
+	if r := s.CanRelocateFrom(from); r != RelocateAllowed {
 		return r
 	}
-	if r := s.CanRelocateTo(to); r != "" {
+	if r := s.CanRelocateTo(to); r != RelocateAllowed {
 		return r
 	}
 	if !s.SetColonyRelocation(colonyIndexAt(s, from), to) {
-		return "設定失敗"
+		return RelocateWriteFailed
 	}
-	return ""
+	return RelocateAllowed
 }
 
 // SetColonyRelocation 設定第 i 個殖民地的集結點。
