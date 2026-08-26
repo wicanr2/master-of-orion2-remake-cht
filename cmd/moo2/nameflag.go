@@ -5,6 +5,7 @@ package main
 // 版面為合成近似,尚未對原版截圖像素對齊。
 
 import (
+	"fmt"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -89,7 +90,7 @@ func (s *nameFlagScreen) update(in shell.InputState) *origTransition {
 		if s.b.session != nil {
 			name := string(s.name)
 			if name == "" {
-				name = s.b.tr("銀河帝國", "Galactic Empire")
+				name = uiText(s.b.lang, "nameflag.default_empire_name")
 			}
 			s.b.session.PlayerName = name
 			s.b.session.FlagColor = s.flagSel
@@ -123,7 +124,7 @@ func (s *nameFlagScreen) draw(dst *ebiten.Image) {
 	gold := color.RGBA{240, 220, 120, 255}
 	body := color.RGBA{206, 218, 240, 255}
 
-	s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.b.tr("為你的帝國命名", "NAME YOUR EMPIRE"), 18, 600), 320, 70, 18, gold)
+	s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, uiText(s.b.lang, "nameflag.title.name_empire"), 18, 600), 320, 70, 18, gold)
 
 	// 名稱輸入框。
 	bx, by, bw, bh := 170, 140, 300, 40
@@ -131,11 +132,11 @@ func (s *nameFlagScreen) draw(dst *ebiten.Image) {
 	vector.StrokeRect(dst, float32(bx), float32(by), float32(bw), float32(bh), 1.5, color.RGBA{110, 150, 210, 255}, false)
 	name := truncateToWidth(s.fnt, string(s.name), 18, float64(bw-18)) + "_" // 尾端游標
 	s.fnt.DrawCentered(dst, name, float64(bx+bw/2), float64(by+bh/2), 18, body)
-	s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.b.tr("(輸入名稱;可用鍵盤編輯)", "(type a name; the keyboard edits it)"), 11, 560),
+	s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, uiText(s.b.lang, "nameflag.hint.keyboard_edit"), 11, 560),
 		320, 200, 11, color.RGBA{150, 160, 180, 255})
 
 	// 旗幟顏色。
-	s.fnt.DrawCentered(dst, s.b.tr("選擇旗幟顏色", "CHOOSE YOUR BANNER COLOR"), 320, 232, 13, gold)
+	s.fnt.DrawCentered(dst, uiText(s.b.lang, "nameflag.title.banner_color"), 320, 232, 13, gold)
 	for i, fc := range shell.FlagColors {
 		x, y, w, h := s.flagRect(i)
 		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{fc.R, fc.G, fc.B, 255}, false)
@@ -151,7 +152,9 @@ func (s *nameFlagScreen) draw(dst *ebiten.Image) {
 	}
 	if s.flagSel >= 0 && s.flagSel < len(shell.FlagColors) {
 		fc := shell.FlagColors[s.flagSel]
-		s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.b.tr("旗色:"+fc.Name, "Banner: "+fc.EnName), 13, 500), 320, 312, 13, body)
+		colorName := uiText(s.b.lang, "nameflag.color."+fc.Key)
+		label := fmt.Sprintf(uiText(s.b.lang, "nameflag.label.banner"), colorName)
+		s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, label, 13, 500), 320, 312, 13, body)
 	}
 
 	drawBtn := func(rect func() (int, int, int, int), label string, accent color.RGBA) {
@@ -160,6 +163,6 @@ func (s *nameFlagScreen) draw(dst *ebiten.Image) {
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, accent, false)
 		s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, label, 14, float64(w-10)), float64(x+w/2), float64(y+h/2), 14, body)
 	}
-	drawBtn(s.cancelRect, s.b.tr("返回", "BACK"), color.RGBA{160, 140, 100, 255})
-	drawBtn(s.acceptRect, s.b.tr("開始遊戲", "START GAME"), color.RGBA{120, 200, 130, 255})
+	drawBtn(s.cancelRect, uiText(s.b.lang, "nameflag.button.back"), color.RGBA{160, 140, 100, 255})
+	drawBtn(s.acceptRect, uiText(s.b.lang, "nameflag.button.start"), color.RGBA{120, 200, 130, 255})
 }

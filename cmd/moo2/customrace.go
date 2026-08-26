@@ -32,7 +32,7 @@ type pickOpt struct {
 // pickCat 是一組互斥選項(循環選一),如「人口成長:無/差/佳/優」。
 type pickCat struct {
 	id      string // 規則層穩定 ID，不是玩家文案
-	textKey string // assets/i18n/ui.json 語意鍵
+	textKey string // ui.json 語意鍵
 	opts    []pickOpt
 	sel     int
 }

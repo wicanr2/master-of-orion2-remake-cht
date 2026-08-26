@@ -508,5 +508,95 @@
     "english": "Warlord",
     "value": "軍閥",
     "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "nameflag.default_empire_name",
+    "english": "Galactic Empire",
+    "value": "銀河帝國",
+    "note": "帝國名稱空白時的安全預設值"
+  },
+  {
+    "key": "nameflag.title.name_empire",
+    "english": "NAME YOUR EMPIRE",
+    "value": "為你的帝國命名",
+    "note": "命名畫面標題"
+  },
+  {
+    "key": "nameflag.hint.keyboard_edit",
+    "english": "(type a name; the keyboard edits it)",
+    "value": "（輸入名稱；可用鍵盤編輯）",
+    "note": "名稱輸入提示"
+  },
+  {
+    "key": "nameflag.title.banner_color",
+    "english": "CHOOSE YOUR BANNER COLOR",
+    "value": "選擇旗幟顏色",
+    "note": "旗色選擇標題"
+  },
+  {
+    "key": "nameflag.label.banner",
+    "english": "Banner: %s",
+    "value": "旗色：%s",
+    "note": "目前旗色標籤；%s 為外部旗色名稱"
+  },
+  {
+    "key": "nameflag.button.back",
+    "english": "BACK",
+    "value": "返回",
+    "note": "命名旗色畫面返回按鈕"
+  },
+  {
+    "key": "nameflag.button.start",
+    "english": "START GAME",
+    "value": "開始遊戲",
+    "note": "命名旗色畫面開始按鈕"
+  },
+  {
+    "key": "nameflag.color.red",
+    "english": "Red",
+    "value": "紅",
+    "note": "原版旗色索引 0"
+  },
+  {
+    "key": "nameflag.color.yellow",
+    "english": "Yellow",
+    "value": "黃",
+    "note": "原版旗色索引 1"
+  },
+  {
+    "key": "nameflag.color.green",
+    "english": "Green",
+    "value": "綠",
+    "note": "原版旗色索引 2"
+  },
+  {
+    "key": "nameflag.color.silver",
+    "english": "Silver",
+    "value": "銀",
+    "note": "原版旗色索引 3"
+  },
+  {
+    "key": "nameflag.color.blue",
+    "english": "Blue",
+    "value": "藍",
+    "note": "原版旗色索引 4"
+  },
+  {
+    "key": "nameflag.color.brown",
+    "english": "Brown",
+    "value": "棕",
+    "note": "原版旗色索引 5"
+  },
+  {
+    "key": "nameflag.color.purple",
+    "english": "Purple",
+    "value": "紫",
+    "note": "原版旗色索引 6"
+  },
+  {
+    "key": "nameflag.color.orange",
+    "english": "Orange",
+    "value": "橙",
+    "note": "原版旗色索引 7"
   }
 ]

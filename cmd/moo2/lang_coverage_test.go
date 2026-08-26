@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"testing"
 
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
 
@@ -42,11 +43,15 @@ func TestRacesHaveEnglishDesc(t *testing.T) {
 	}
 }
 
-// TestFlagColorsHaveEnglish:旗色名(命名畫面「Banner: Red」)。
-func TestFlagColorsHaveEnglish(t *testing.T) {
+// TestFlagColorsHaveLocalizedNames:旗色資料只保留穩定鍵，玩家文案由 ui.json 提供。
+func TestFlagColorsHaveLocalizedNames(t *testing.T) {
 	for i, fc := range shell.FlagColors {
-		if fc.EnName == "" || cjk.MatchString(fc.EnName) {
-			t.Errorf("shell.FlagColors[%d] %q:EnName=%q 不是英文", i, fc.Name, fc.EnName)
+		key := "nameflag.color." + fc.Key
+		if got := uiText(i18n.English, key); got == key || got == "" || cjk.MatchString(got) {
+			t.Errorf("shell.FlagColors[%d] %q 的英文外部文案無效:%q", i, fc.Key, got)
+		}
+		if got := uiText(i18n.Traditional, key); got == key || got == "" {
+			t.Errorf("shell.FlagColors[%d] %q 的中文外部文案無效:%q", i, fc.Key, got)
 		}
 	}
 }

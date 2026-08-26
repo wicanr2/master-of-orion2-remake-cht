@@ -3679,18 +3679,17 @@ func (s *GameSession) applyPlayerHomeworldRaceTraits(r Race) {
 //
 // RGB 取自 ① 的量測值(小圖的高光像素,略提亮以便在 UI 上辨識)。
 var FlagColors = []struct {
-	Name    string
-	EnName  string
+	Key     string
 	R, G, B uint8
 }{
-	{"紅", "Red", 200, 95, 90},
-	{"黃", "Yellow", 205, 185, 45},
-	{"綠", "Green", 90, 165, 70},
-	{"銀", "Silver", 195, 195, 205},
-	{"藍", "Blue", 145, 185, 220},
-	{"棕", "Brown", 200, 155, 110},
-	{"紫", "Purple", 200, 145, 195},
-	{"橙", "Orange", 225, 140, 45},
+	{"red", 200, 95, 90},
+	{"yellow", 205, 185, 45},
+	{"green", 90, 165, 70},
+	{"silver", 195, 195, 205},
+	{"blue", 145, 185, 220},
+	{"brown", 200, 155, 110},
+	{"purple", 200, 145, 195},
+	{"orange", 225, 140, 45},
 }
 
 // Governments 是自訂種族可選的政府型態(順序對應 customrace 政府型態循環選項)。

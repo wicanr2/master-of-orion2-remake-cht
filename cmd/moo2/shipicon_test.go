@@ -43,12 +43,12 @@ func TestShipIconAssetMatchesOriginal(t *testing.T) {
 // 兩個獨立來源:① BUFFER0.LBX 205/209/…/233 渲染出來量代表色;
 // ② openorion2 `src/gfx.h` 的 `FONT_COLOR_PLAYER_*`(RED/YELLOW/GREEN/SILVER/BLUE/BROWN/PURPLE/ORANGE)。
 func TestFlagColorsMatchOriginalOrder(t *testing.T) {
-	want := []string{"Red", "Yellow", "Green", "Silver", "Blue", "Brown", "Purple", "Orange"}
+	want := []string{"red", "yellow", "green", "silver", "blue", "brown", "purple", "orange"}
 	if len(shell.FlagColors) != len(want) {
 		t.Fatalf("旗色數 %d,want %d", len(shell.FlagColors), len(want))
 	}
 	for i, w := range want {
-		if got := shell.FlagColors[i].EnName; got != w {
+		if got := shell.FlagColors[i].Key; got != w {
 			t.Errorf("第 %d 色 = %q,want %q(原版旗色索引順序)", i, got, w)
 		}
 	}

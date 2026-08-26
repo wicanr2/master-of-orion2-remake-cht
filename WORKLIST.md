@@ -55,12 +55,17 @@
   靜態防回歸與雙語 catalog 測試。自訂種族亦完成第二個切片：正版 `RACESTUF.LBX` asset 0
   已推翻泛用 `None/Poor/Good/Great`，現依原版類別專屬數值字串顯示；規則分支只比較 typed ID，
   `customrace.go` 不再保存中英文玩家文案，並以 `textSafeRect` 約束標題、類別、選項、特殊能力、
-  成本與按鈕。其餘自繪畫面仍待逐批遷移；通用規格見
+  成本與按鈕。命名／旗色頁亦完成第三個切片：IDA 推翻 `Player_Name_ @ 0xE5E09` 是輸入畫面及
+  `Request_Banner_Color_ @ 0xFBEE1` 是單機旗色選單的舊符號解釋；旗色玩法資料現只保留穩定鍵、
+  索引與 RGB，標題、提示、按鈕、預設名及八色名稱皆由 `ui.json` 提供。原版兩畫面、真旗幟圖與
+  `RACEOPT.LBX#0` 錯誤背景仍是獨立忠實度缺口，尚未完成。其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
   [`docs/spec/netinfo-external-text.md`](docs/spec/netinfo-external-text.md)、
   [`docs/re/custom-race-ui-text-audit-20260826.md`](docs/re/custom-race-ui-text-audit-20260826.md) 與
-  [`docs/spec/custom-race-external-text.md`](docs/spec/custom-race-external-text.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+  [`docs/spec/custom-race-external-text.md`](docs/spec/custom-race-external-text.md)、
+  [`docs/re/name-banner-flow-audit-20260826.md`](docs/re/name-banner-flow-audit-20260826.md) 與
+  [`docs/tech/name-banner-external-text-spec.md`](docs/tech/name-banner-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`
   已把本次錯判提煉成跨專案流程，涵蓋重新稽核觸發條件、具名符號限制、玩家機制證據矩陣、
