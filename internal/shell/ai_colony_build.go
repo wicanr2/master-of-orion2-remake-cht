@@ -36,7 +36,23 @@ func aiOriginalLateTechReached(ps engine.PlayerState) bool {
 	return false
 }
 
-func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState, personality ai.Personality, lateTech bool) (int, bool) {
+// aiOriginalPriorityBuildingGate 對映 Colony_Building_Score_ @ 0xD010D..0xD019A。
+// 原版科技狀態表基址為 player+0x117，建築旗標基址為 colony+0x136；這三組科技／建築
+// offset 已逐項對回受版控 enum，不以名稱相似度猜測。
+func aiOriginalPriorityBuildingGate(colony engine.ColonyState, built map[string]bool, known map[gamedata.Technology]bool, government gamedata.MoraleGovernmentType) bool {
+	if colony.MineralRichness <= gamedata.ABUNDANT &&
+		known[gamedata.TECH_AUTOMATED_FACTORIES] && !built["自動工廠"] {
+		return true
+	}
+	// raw 政府碼 0..3 的 signed /2 皆 <=1：Feudal／Confederation／Dictatorship／Imperium。
+	if int(government)/2 > 1 {
+		return false
+	}
+	return known[gamedata.TECH_MARINE_BARRACKS] && !built["海軍陸戰隊營"] ||
+		known[gamedata.TECH_ARMOR_BARRACKS] && !built["裝甲營房"]
+}
+
+func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState, personality ai.Personality, lateTech, priorityGate bool) (int, bool) {
 	rawID, ok := gamedata.OriginalBuildingIDForName(b.NameZH)
 	if !ok {
 		return 0, false
@@ -45,13 +61,31 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 	if personality == ai.PersonalityHonorable {
 		honorable = 1
 	}
+	erratic := 0
+	if personality == ai.PersonalityErratic {
+		erratic = 1
+	}
 	switch rawID {
-	case 6, 19, 30, 35: // 0xD06B5／0xD07D2／0xD08D5／0xD092D：晚期科技後皆歸零。
-		if lateTech {
+	case 6: // 0xD06AD..0xD06CB：Autolab
+		if priorityGate || lateTech {
 			return 0, true
 		}
-		// 尚未進入晚期科技時，四式仍受未完成 typed 對映的共用 ah gate 影響。
-		return 0, false
+		return 11 + 4*erratic, true
+	case 19: // 0xD07CA..0xD07E4：Galactic Cybernet
+		if priorityGate || lateTech {
+			return 0, true
+		}
+		return 11, true
+	case 30: // 0xD08CD..0xD08E9：Planetary Supercomputer
+		if priorityGate || lateTech {
+			return 0, true
+		}
+		return 8 + 3*erratic, true
+	case 35: // 0xD0925..0xD0942：Research Laboratory
+		if priorityGate || lateTech {
+			return 0, true
+		}
+		return 5 + 2*erratic, true
 	case 4: // 0xD06A3：Astro University
 		return 5, true
 	case 7: // 0xD06D0：Automated Factory
@@ -67,8 +101,8 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 	}
 }
 
-func aiBuildingScore(b gamedata.Building, colony engine.ColonyState, out engine.ColonyOutput, personality ai.Personality, lateTech bool) int {
-	if score, exact := originalAIExactBuildingScore(b, colony, personality, lateTech); exact {
+func aiBuildingScore(b gamedata.Building, colony engine.ColonyState, out engine.ColonyOutput, personality ai.Personality, lateTech, priorityGate bool) int {
+	if score, exact := originalAIExactBuildingScore(b, colony, personality, lateTech, priorityGate); exact {
 		return score
 	}
 	score := 20
@@ -111,12 +145,14 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, out engine.ColonyOutput, 
 	}
 	var candidates []candidate
 	lateTech := aiOriginalLateTechReached(a.Player)
+	priorityGate := aiOriginalPriorityBuildingGate(a.Colonies[colony], built,
+		knownTechnologyApplications(a.Player), effectiveAIGovernment(a))
 	maxScore := 1 // raw Assign_Colony_New_Building_ 也把最大分數下限夾到 1。
 	for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
 		if built[b.NameZH] {
 			continue
 		}
-		score := aiBuildingScore(b, a.Colonies[colony], out, a.Personality, lateTech)
+		score := aiBuildingScore(b, a.Colonies[colony], out, a.Personality, lateTech, priorityGate)
 		if score > maxScore {
 			maxScore = score
 		}

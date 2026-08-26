@@ -76,7 +76,7 @@ little-endian dword；索引在 `0xD019F` 先減 1，因此 entry 0 對 raw buil
 不需要猜測新的欄位語意。五條路徑最後都直接進共同正值／1000 上限，不會經
 `0xD0414 add ebx,var_18` 的國庫亂數擾動。
 
-## 第二批：晚期科技狀態下的四棟研究設施
+## 第二批：四棟研究設施與共用優先建築 gate
 
 同一份非破壞性探針現會全資料庫掃描原始運算元中的 `player+0x59D`，並匯出函式、原始名稱、
 指令位址、bytes 與運算元。直接定位結果共 12 筆；唯一直接寫入是：
@@ -88,18 +88,37 @@ little-endian dword；索引在 `0xD019F` 先減 1，因此 entry 0 對 raw buil
 - raw 75..82 與 typed `TOPIC_HYPER_*` 一對一；remake 可由目前 Hyper field、已完成 Hyper field
   或已保存的 Hyper level 重建這個持續狀態，不需新增猜測欄位。
 
-`Colony_Building_Score_` 的四條直接 consumer 為：
+探針另對共用 `ah` gate 的六個 raw offset 匯出全資料庫直接運算元與同函式上下文。
+`sub_D58D4` 的成對科技／建築檢查提供可重算的雙基址對照：
 
-| raw ID | 建築 | consumer | 已證實的封閉子域 |
+| 科技 offset | `offset-0x117` | 科技 | 建築 offset | `offset-0x136` | 建築 |
+|---:|---:|---|---:|---:|---|
+| `player+0x12D` | 22 | Automated Factories | `colony+0x13D` | 7 | Automated Factory |
+| `player+0x17E` | 103 | Marine Barracks | `colony+0x14C` | 22 | Marine Barracks |
+| `player+0x125` | 14 | Armor Barracks | `colony+0x138` | 2 | Armor Barracks |
+
+三個科技 ID 與三個建築 ID 均逐項吻合受版控 enum；`sub_D58D4` 還有
+`player+0x1BB - 0x117 = TECH_SPACEPORT(164)` 對
+`colony+0x15D - 0x136 = BUILDING_SPACEPORT(39)` 的獨立同形交叉驗證。因此這不是由名稱猜測 offset。
+
+`sub_D0036 @ 0xD010D..0xD019A` 形成 `ah`：
+
+1. 殖民地沒有 Automated Factory、帝國已知 Automated Factories，且 `planet+0x0A <= 2`
+   （已證實的礦產等級 Ultra Poor／Poor／Abundant）時成立。
+2. `signed(player+0x89F)/2 <= 1`，亦即已證實政府碼中的 Feudal／Confederation／
+   Dictatorship／Imperium，且已知但尚未建造 Marine Barracks 或 Armor Barracks 時成立。
+
+四棟研究設施的完整公式因此可閉合：
+
+| raw ID | 建築 | consumer／正值指令 | typed 公式 |
 |---:|---|---|---|
-| 6 | 自動實驗室 | `cmp [edi+59Dh],0 @ 0xD06B5` | late-tech 非零時 score=0 |
-| 19 | 銀河網路中心 | `cmp [edi+59Dh],0 @ 0xD07D2` | late-tech 非零時 score=0 |
-| 30 | 行星超級電腦 | `cmp [edi+59Dh],0 @ 0xD08D5` | late-tech 非零時 score=0 |
-| 35 | 研究實驗室 | `cmp [edi+59Dh],0 @ 0xD092D` | late-tech 非零時 score=0 |
+| 6 | 自動實驗室 | `0xD06AD..0xD06CB` | priority gate 或 late-tech 時 0，否則 `11+4×[Erratic]` |
+| 19 | 銀河網路中心 | `0xD07CA..0xD07E4` | priority gate 或 late-tech 時 0，否則 `11` |
+| 30 | 行星超級電腦 | `0xD08CD..0xD08E9` | priority gate 或 late-tech 時 0，否則 `8+3×[Erratic]` |
+| 35 | 研究實驗室 | `0xD0925..0xD0942` | priority gate 或 late-tech 時 0，否則 `5+2×[Erratic]` |
 
-四條分支在 late-tech 非零時都直接跳到共同零分出口，因此不依賴仍未命名的 `ah` gate。
-late-tech 為零時，raw 6／19／30／35 各自的正值公式仍受 `ah` 影響；該區域繼續標為
-`unknown_pending_review`，不能因本輪封閉了零分半域就宣稱四個 case 全式完成。
+`var_3C` 由 `player+0x28 == 3` 建立；既有 AIRACES 證據把 raw 3 對到
+`PersonalityErratic`。四式不讀 `var_18`，所以不受國庫 PRNG 擾動。
 
 其餘未封閉區域會讀 alien／outpost 狀態、政府／性格其他碼、殖民地 packed 人口、帝國建築數、
 星球 owner／環境、事件與未解 player flags；在欄位寫入端與 typed 對映完成前維持

@@ -27,11 +27,11 @@ func TestOriginalAIExactBuildingScores(t *testing.T) {
 		if !ok {
 			t.Fatalf("測試建築不存在：%s", tt.name)
 		}
-		got, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic, false)
+		got, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic, false, false)
 		if !exact || got != tt.balanced {
 			t.Errorf("%s 一般性格分數=(%d,%v)，want (%d,true)", tt.name, got, exact, tt.balanced)
 		}
-		got, exact = originalAIExactBuildingScore(b, colony, ai.PersonalityHonorable, false)
+		got, exact = originalAIExactBuildingScore(b, colony, ai.PersonalityHonorable, false, false)
 		if !exact || got != tt.honorable {
 			t.Errorf("%s Honorable 分數=(%d,%v)，want (%d,true)", tt.name, got, exact, tt.honorable)
 		}
@@ -40,23 +40,79 @@ func TestOriginalAIExactBuildingScores(t *testing.T) {
 	if !ok {
 		t.Fatal("研究實驗室不存在")
 	}
-	if score, exact := originalAIExactBuildingScore(fallback, colony, ai.PersonalityHonorable, false); exact || score != 0 {
-		t.Fatalf("未閉合 case 不得冒稱 exact：score=%d exact=%v", score, exact)
+	if score, exact := originalAIExactBuildingScore(fallback, colony, ai.PersonalityHonorable, false, false); !exact || score != 5 {
+		t.Fatalf("研究實驗室完整公式：score=%d exact=%v，want 5,true", score, exact)
 	}
 }
 
-func TestOriginalAILateTechResearchBuildingScoresAreZero(t *testing.T) {
-	for _, name := range []string{"自動實驗室", "銀河網路中心", "行星超級電腦", "研究實驗室"} {
+func TestOriginalAIResearchBuildingScores(t *testing.T) {
+	tests := []struct {
+		name    string
+		normal  int
+		erratic int
+	}{
+		{"自動實驗室", 11, 15},
+		{"銀河網路中心", 11, 11},
+		{"行星超級電腦", 8, 11},
+		{"研究實驗室", 5, 7},
+	}
+	for _, tt := range tests {
+		name := tt.name
 		b, ok := gamedata.BuildingByNameZH(name)
 		if !ok {
 			t.Fatalf("測試建築不存在：%s", name)
 		}
-		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 9}, ai.PersonalityErratic, true); !exact || score != 0 {
+		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 9}, ai.PersonalityXenophobic, false, false); !exact || score != tt.normal {
+			t.Errorf("%s 一般分數=(%d,%v)，want (%d,true)", name, score, exact, tt.normal)
+		}
+		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 9}, ai.PersonalityErratic, false, false); !exact || score != tt.erratic {
+			t.Errorf("%s Erratic 分數=(%d,%v)，want (%d,true)", name, score, exact, tt.erratic)
+		}
+		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 9}, ai.PersonalityErratic, true, false); !exact || score != 0 {
 			t.Errorf("%s 晚期科技分數=(%d,%v)，want (0,true)", name, score, exact)
 		}
-		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 9}, ai.PersonalityErratic, false); exact || score != 0 {
-			t.Errorf("%s 晚期科技前仍受未知 ah gate，不能冒稱 exact：(%d,%v)", name, score, exact)
+		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 9}, ai.PersonalityErratic, false, true); !exact || score != 0 {
+			t.Errorf("%s 優先建築 gate 分數=(%d,%v)，want (0,true)", name, score, exact)
 		}
+	}
+}
+
+func TestAIOriginalPriorityBuildingGate(t *testing.T) {
+	known := map[gamedata.Technology]bool{gamedata.TECH_AUTOMATED_FACTORIES: true}
+	if !aiOriginalPriorityBuildingGate(engine.ColonyState{MineralRichness: gamedata.ABUNDANT}, nil, known, gamedata.MoraleGovDemocracy) {
+		t.Fatal("Abundant 且已知但未建 Automated Factory 應觸發優先 gate")
+	}
+	if aiOriginalPriorityBuildingGate(engine.ColonyState{MineralRichness: gamedata.RICH}, nil, known, gamedata.MoraleGovDictatorship) {
+		t.Fatal("Rich 超過原版 <=2 礦產邊界，不應觸發工廠 gate")
+	}
+	if aiOriginalPriorityBuildingGate(engine.ColonyState{MineralRichness: gamedata.POOR}, map[string]bool{"自動工廠": true}, known, gamedata.MoraleGovDictatorship) {
+		t.Fatal("已建 Automated Factory 不應再次觸發 gate")
+	}
+
+	known = map[gamedata.Technology]bool{gamedata.TECH_MARINE_BARRACKS: true}
+	if !aiOriginalPriorityBuildingGate(engine.ColonyState{MineralRichness: gamedata.RICH}, nil, known, gamedata.MoraleGovImperium) {
+		t.Fatal("Imperium 已知但未建 Marine Barracks 應觸發 gate")
+	}
+	if aiOriginalPriorityBuildingGate(engine.ColonyState{MineralRichness: gamedata.RICH}, nil, known, gamedata.MoraleGovDemocracy) {
+		t.Fatal("Democracy 不在 raw government/2 <=1 gate")
+	}
+	if aiOriginalPriorityBuildingGate(engine.ColonyState{MineralRichness: gamedata.RICH}, map[string]bool{"海軍陸戰隊營": true}, known, gamedata.MoraleGovFeudalism) {
+		t.Fatal("已建 Marine Barracks 不應再次觸發 gate")
+	}
+
+	ps := engine.PlayerState{
+		CompletedTopics: map[gamedata.ResearchTopic]bool{gamedata.TOPIC_ADVANCED_CONSTRUCTION: true},
+		ChosenTech:      map[gamedata.ResearchTopic]gamedata.Technology{gamedata.TOPIC_ADVANCED_CONSTRUCTION: gamedata.TECH_HEAVY_ARMOR},
+		ExplicitChoice:  map[gamedata.ResearchTopic]bool{gamedata.TOPIC_ADVANCED_CONSTRUCTION: true},
+	}
+	if aiOriginalPriorityBuildingGate(engine.ColonyState{MineralRichness: gamedata.POOR}, nil,
+		knownTechnologyApplications(ps), gamedata.MoraleGovDictatorship) {
+		t.Fatal("完成主題但明確選 Heavy Armor，不得誤認已知 Automated Factories")
+	}
+	ps.ChosenTech[gamedata.TOPIC_ADVANCED_CONSTRUCTION] = gamedata.TECH_AUTOMATED_FACTORIES
+	if !aiOriginalPriorityBuildingGate(engine.ColonyState{MineralRichness: gamedata.POOR}, nil,
+		knownTechnologyApplications(ps), gamedata.MoraleGovDictatorship) {
+		t.Fatal("明確選 Automated Factories 後應觸發工廠 gate")
 	}
 }
 

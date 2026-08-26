@@ -19,13 +19,17 @@
 3. 候選只含該 AI 科技已解鎖、且該殖民地尚未完成的 typed 建築。
 4. 候選套原版已證實的難度濾門與加權抽選形狀；typed 分數與亂數位置明標近似。
    raw ID 4、7、12、34、36 例外：使用 IDA 已閉合的完整精確公式；`player+0x28==4`
-   對應 `PersonalityHonorable`，人口取該殖民地 `Population`。raw ID 6、19、30、35 在 AI
-   已選中或完成任一 Hyper field 後使用已閉合的精確零分；late-tech 前仍因共用 `ah` gate
-   未完成 typed 對映而走明示 fallback，不能標成完整 case parity。
-5. 完工後寫入 `ColonyBuildings`，並把已建模的累積經濟效果寫回該 AI 的 `ColonyState`。
-6. 若沒有任何可建建築，該殖民地產能才交給既有 AI 艦艇產品轉接層；此轉接層不冒稱
+   對應 `PersonalityHonorable`，人口取該殖民地 `Population`。raw ID 6、19、30、35 使用
+   完整精確公式：AI 已選中／完成任一 Hyper field，或目前有原版優先建築 gate 時為 0；
+   否則分別為 `11+4×[Erratic]`、`11`、`8+3×[Erratic]`、`5+2×[Erratic]`。
+5. 優先建築 gate 僅由已知科技 application、已建建築、殖民地礦產及 AI 生效政府組成：
+   - Ultra Poor／Poor／Abundant 殖民地已知 Automated Factories 但未建 Automated Factory；或
+   - Feudal／Confederation／Dictatorship／Imperium 已知但未建 Marine Barracks／Armor Barracks。
+   科技主題完成但 application 未被授予，不得誤算成已知科技。
+6. 完工後寫入 `ColonyBuildings`，並把已建模的累積經濟效果寫回該 AI 的 `ColonyState`。
+7. 若沒有任何可建建築，該殖民地產能才交給既有 AI 艦艇產品轉接層；此轉接層不冒稱
    `sub_D10EE` 的完整戰鬥艦選擇器。
-7. 舊存檔缺少 `ColonyBuilds` 時視為尚無目前產品，下一回合依當時狀態決定性建立。
+8. 舊存檔缺少 `ColonyBuilds` 時視為尚無目前產品，下一回合依當時狀態決定性建立。
 
 ## 驗收
 
@@ -34,7 +38,8 @@
 - 無可建建築時，殖民地產能完整交給造艦轉接層。
 - 存檔／讀檔保存進行中的 AI 殖民地產品。
 - 五個完整閉合 raw ID 在一般與 Honorable 性格下逐式符合原版立即數公式。
-- raw 6／19／30／35 在目前研究、已完成主題或舊存檔 Hyper level 任一來源顯示已進入晚期
-  科技時皆為精確零分；晚期科技前必須回報 `exact=false` 並走 fallback。
+- raw 6／19／30／35 在一般與 Erratic 性格下符合完整正值公式；晚期科技與兩類優先建築
+  gate 的邊界皆精確歸零。
+- 只完成多選主題但選了其他 application 時，不得觸發相應 Automated Factory／Barracks gate。
 - 精確分支與類別式 fallback 不可混稱同一證據等級。
 - 既有擴張測試以「建築＋造艦總投入」驗證新殖民地確實參與經濟，不再假設所有產出都是軍艦。

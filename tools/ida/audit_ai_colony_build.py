@@ -43,22 +43,78 @@ ROOTS = {
 }
 
 
-def operand_mentions_player_late_tech(ea):
-    """保留 IDA 原始運算元，找出 player record +0x59D 的所有直接定位。"""
+TRACKED_RECORD_OFFSETS = {
+    "player_late_tech": 0x59D,
+    "shared_gate_125": 0x125,
+    "shared_gate_12d": 0x12D,
+    "shared_gate_17e": 0x17E,
+    "shared_gate_138": 0x138,
+    "shared_gate_13d": 0x13D,
+    "shared_gate_14c": 0x14C,
+}
+
+REVIEWED_OFFSET_SEMANTICS = {
+    "player_late_tech": {
+        "semantic": "player late-tech flag when research field >= 75",
+        "confidence": "confirmed_direct_write_and_consumers",
+    },
+    "shared_gate_125": {
+        "semantic": "base-dependent raw +0x125; player base maps technology 14 in D0036/D58D4",
+        "confidence": "confirmed_only_for_reviewed_base_context",
+    },
+    "shared_gate_12d": {
+        "semantic": "base-dependent raw +0x12D; player base maps technology 22 in D0036/D58D4",
+        "confidence": "confirmed_only_for_reviewed_base_context",
+    },
+    "shared_gate_17e": {
+        "semantic": "base-dependent raw +0x17E; player base maps technology 103 in D0036/D58D4",
+        "confidence": "confirmed_only_for_reviewed_base_context",
+    },
+    "shared_gate_138": {
+        "semantic": "base-dependent raw +0x138; colony base maps building 2 in D0036/D58D4",
+        "confidence": "confirmed_only_for_reviewed_base_context",
+    },
+    "shared_gate_13d": {
+        "semantic": "base-dependent raw +0x13D; colony base maps building 7 in D0036/D58D4",
+        "confidence": "confirmed_only_for_reviewed_base_context",
+    },
+    "shared_gate_14c": {
+        "semantic": "base-dependent raw +0x14C; colony base maps building 22 in D0036/D58D4",
+        "confidence": "confirmed_only_for_reviewed_base_context",
+    },
+}
+
+
+def operand_mentions_offset(ea, offset):
+    """只比對帶 `+offset` 的原始運算元，避免把立即數或絕對位址混入。"""
     operands = [idc.print_operand(ea, i) for i in range(2)]
     normalized = " ".join(operands).lower().replace("0x", "")
-    return "+59dh" in normalized or "+ 59dh" in normalized
+    needle = f"+{offset:x}h"
+    spaced = f"+ {offset:x}h"
+    return needle in normalized or spaced in normalized
 
 
-def direct_player_late_tech_refs():
+def instruction_context(fn_ea, ea, radius=6):
+    items = list(idautils.FuncItems(fn_ea))
+    try:
+        index = items.index(ea)
+    except ValueError:
+        return []
+    lo = max(0, index - radius)
+    hi = min(len(items), index + radius + 1)
+    return [instruction(item) for item in items[lo:hi]]
+
+
+def direct_record_offset_refs(offset):
     refs = []
     for fn_ea in idautils.Functions():
         for ea in idautils.FuncItems(fn_ea):
-            if operand_mentions_player_late_tech(ea):
+            if operand_mentions_offset(ea, offset):
                 refs.append({
                     "function_start": f"0x{fn_ea:X}",
                     "raw_name": ida_name.get_name(fn_ea) or "<unnamed>",
                     "instruction": instruction(ea),
+                    "context": instruction_context(fn_ea, ea),
                 })
     return refs
 
@@ -153,7 +209,16 @@ def main():
             "case_count": 47,
             "entries": score_switch,
         },
-        "direct_player_plus_0x59d_refs": direct_player_late_tech_refs(),
+        "direct_record_offset_refs": {
+            name: {
+                "offset": f"0x{offset:X}",
+                "reviewed_semantic": REVIEWED_OFFSET_SEMANTICS[name]["semantic"],
+                "confidence": REVIEWED_OFFSET_SEMANTICS[name]["confidence"],
+                "evidence_source": "docs/re/ai-colony-build-selection-audit-20260826.md",
+                "refs": direct_record_offset_refs(offset),
+            }
+            for name, offset in TRACKED_RECORD_OFFSETS.items()
+        },
         "roots": {name: function_record(ea) for name, ea in ROOTS.items()},
     }
     with open(os.environ["MOO2_IDA_OUTPUT"], "w", encoding="utf-8") as fh:
