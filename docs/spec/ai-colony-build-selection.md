@@ -71,6 +71,15 @@
    `3／6+[Pacifist]`，Normal-G 為 0。若髒資料同時有 High-G／Low-G，High-G 優先。此式不讀
    priority gate、budget factor、late-tech 或主要人口種族。完工必須寫入
    `NormalizeGravity`，並由既有逐人口產出路徑消費。
+   raw ID 29 Planetary Stock Exchange 與 raw ID 39 Spaceport 在 priority gate 時為 0，且
+   分別要求人口至少 5／3；通過後皆為
+   `floor((population+primaryPopulationCapacity+[Honorable])/3)`。raw ID 33 Recyclotron
+   不讀 priority gate，公式為
+   `floor((2×population+primaryPopulationCapacity)/3)+2×([primary non-Tolerant]+[Pacifist]+[Honorable])`。
+   `primaryPopulationCapacity` 必須由主要人口完整 profile、PlanetSize／Climate、Advanced City
+   Planning application 與 Biospheres 建築重建，不能直接把 owner 口徑的 `PopMax` 當成同義欄；
+   profile 不完整時回報非 exact。三棟完工都要由正常帝國結算消費：兩棟貿易建築改變該殖民地
+   BC 收入，再生反應爐增加不產生污染的人口產能。
 5. 優先建築 gate 僅由已知科技 application、已建建築、殖民地礦產及 AI 生效政府組成：
    - Ultra Poor／Poor／Abundant 殖民地已知 Automated Factories 但未建 Automated Factory；或
    - Feudal／Confederation／Dictatorship／Imperium 已知但未建 Marine Barracks／Armor Barracks。
@@ -113,6 +122,9 @@
 - raw 25 的一般／Low-G／High-G owner × 三種行星重力、一般／Pacifist、雙 trait 優先序與
   priority gate 不影響性逐格符合表格；唯一正常候選須走過逐殖民地產能、完工旗標與重力懲罰
   消費端，不能只測 `NormalizeGravity` 欄位被設為 true。
+- raw 29／39 要測人口門檻前後、priority gate、一般／Honorable 與主要外族人口容量；raw 33
+  要測 Tolerant、Pacifist、Honorable 各自的 `+2`、混合人口與 profile 不完整邊界。三棟皆以
+  唯一正常候選走過逐殖民地產能、完工旗標及帝國收入／無污染產能消費端。
 - 只完成多選主題但選了其他 application 時，不得觸發相應 Automated Factory／Barracks gate。
 - 精確分支與類別式 fallback 不可混稱同一證據等級。
 - 既有擴張測試以「建築＋造艦總投入」驗證新殖民地確實參與經濟，不再假設所有產出都是軍艦。

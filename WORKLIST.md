@@ -358,6 +358,10 @@
   raw 25 Planetary Gravity Generator 已依 owner 的 High-G 優先、Low-G／一般分支與行星
   `LOW_G=0／NORMAL_G=1／HEAVY_G=2` 閉合完整 `0／3／6+[Pacifist]` 表；不誤吃 priority
   gate。正常 AI 候選完工後的 `NormalizeGravity` 已由逐人口工業產出 consumer 驗證，不只測旗標。
+  raw 29 Planetary Stock Exchange、raw 39 Spaceport 與 raw 33 Recyclotron 亦已沿
+  `Compute_AI_Data_ cache+1 → sub_E0C1D → sub_E0A93 → sub_E0A18` 閉合主要人口容量；
+  現依人口門檻、priority gate、Honorable／Pacifist、主要人口 Tolerant 與完整容量公式計分。
+  三棟均可由正常唯一候選完工，並由該殖民地 BC 收入或不產生污染的人口產能 consumer 驗證。
   其餘分數區域、
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
   state machine 亦待閉合。見

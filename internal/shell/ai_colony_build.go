@@ -135,6 +135,40 @@ func originalAIPrimaryPopulationTolerant(colony engine.ColonyState) (bool, bool)
 	return false, false
 }
 
+// originalAIPrimaryPopulationCapacity 對映 Compute_AI_Data_ cache+1：sub_E0C1D 以主要
+// 人口種族、星球大小／氣候重建容量，再疊 Advanced City Planning +5 與 Biospheres +2。
+// ColonyState.PopMax 是 owner 口徑且可能含歷史烘入值，混合人口時不能直接代用。
+func originalAIPrimaryPopulationCapacity(colony engine.ColonyState, built map[string]bool, known map[gamedata.Technology]bool) (int, bool) {
+	slot, ok := originalAIPrimaryPopulationSlot(colony)
+	if !ok || !colony.OwnerRaceProfileKnown || colony.PlanetSize < gamedata.TINY_PLANET ||
+		colony.PlanetSize > gamedata.HUGE_PLANET || colony.Climate < gamedata.TOXIC || colony.Climate > gamedata.GAIA {
+		return 0, false
+	}
+	aquatic, tolerant, subterranean := colony.Aquatic, colony.TolerantRace, colony.Subterranean
+	if slot != colony.OwnerRaceSlot {
+		found := false
+		for _, group := range colony.PopulationGroups {
+			if group.RaceSlotKnown && group.ProfileKnown && group.RaceSlot == slot {
+				aquatic, tolerant, subterranean = group.Aquatic, group.Tolerant, group.Subterranean
+				found = true
+				break
+			}
+		}
+		if !found {
+			return 0, false
+		}
+	}
+	capacity := gamedata.PlanetBasePopMax(colony.PlanetSize, colony.Climate) +
+		gamedata.RacePopulationCapacityDelta(colony.PlanetSize, colony.Climate, aquatic, tolerant, subterranean)
+	if known[gamedata.TECH_ADVANCED_CITY_PLANNING] {
+		capacity += 5
+	}
+	if built["生態圈"] {
+		capacity += 2
+	}
+	return capacity, true
+}
+
 type originalAIBuildScoreContext struct {
 	lateTech              bool
 	priorityGate          bool
@@ -145,6 +179,8 @@ type originalAIBuildScoreContext struct {
 	pollutionCleanupCost  int
 	ownerLowGravity       bool
 	ownerHighGravity      bool
+	primaryPopCapacity    int
+	primaryPopCapKnown    bool
 	raceGrowthPercent     int
 	government            gamedata.MoraleGovernmentType
 	treasuryBefore        int
@@ -220,6 +256,31 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		pacifist = 1
 	}
 	switch rawID {
+	case 29, 39: // 0xD089C..0xD08C8／0xD09D0..0xD09ED：Stock Exchange／Spaceport
+		if !ctx.primaryPopCapKnown {
+			return 0, false
+		}
+		minimumPopulation := 5
+		if rawID == 39 {
+			minimumPopulation = 3
+		}
+		if ctx.priorityGate || colony.Population < minimumPopulation {
+			return 0, true
+		}
+		return (colony.Population + ctx.primaryPopCapacity + honorable) / 3, true
+	case 33: // 0xD08EE..0xD0913 → 0xD0991：Recyclotron
+		if !ctx.primaryPopCapKnown {
+			return 0, false
+		}
+		tolerant, known := originalAIPrimaryPopulationTolerant(colony)
+		if !known {
+			return 0, false
+		}
+		nonTolerant := 1
+		if tolerant {
+			nonTolerant = 0
+		}
+		return (2*colony.Population+ctx.primaryPopCapacity)/3 + 2*(nonTolerant+pacifist+honorable), true
 	case 25: // 0xD0844..0xD089A：Planetary Gravity Generator
 		// 原版先判 High-G；雙 trait 的髒資料不得被 Low-G 分支覆蓋。
 		if ctx.ownerHighGravity {
@@ -471,6 +532,7 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 		ownerHighGravity:      aiRaceHasTrait(*a, gamedata.TRAIT_HIGH_G),
 	}
 	ctx.colonyFoodHalf, ctx.colonyFoodHalfKnown = originalAIColonyFoodHalf(a.Colonies[colony], built, known)
+	ctx.primaryPopCapacity, ctx.primaryPopCapKnown = originalAIPrimaryPopulationCapacity(a.Colonies[colony], built, known)
 	maxScore := 1 // raw Assign_Colony_New_Building_ 也把最大分數下限夾到 1。
 	for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
 		if built[b.NameZH] {

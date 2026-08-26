@@ -750,6 +750,148 @@ func TestOriginalAIPlanetaryGravityGeneratorScore(t *testing.T) {
 	}
 }
 
+func TestOriginalAIPrimaryPopulationCapacity(t *testing.T) {
+	colony := engine.ColonyState{
+		Population: 5, Workers: 5, PlanetSize: gamedata.MEDIUM_PLANET, Climate: gamedata.TERRAN,
+		OwnerRaceSlot: 1, OwnerRaceSlotKnown: true, OwnerRaceProfileKnown: true,
+		PopulationGroups: []engine.PopulationGroup{
+			{RaceSlot: 1, RaceSlotKnown: true, ProfileKnown: true, Workers: 1},
+			{RaceSlot: 2, RaceSlotKnown: true, ProfileKnown: true, Workers: 4, Subterranean: true},
+		},
+	}
+	known := map[gamedata.Technology]bool{gamedata.TECH_ADVANCED_CITY_PLANNING: true}
+	capacity, ok := originalAIPrimaryPopulationCapacity(colony, map[string]bool{"生態圈": true}, known)
+	// Medium／Terran 基礎 12，主要外族 Subterranean +6，ACP +5，Biospheres +2。
+	if !ok || capacity != 25 {
+		t.Fatalf("主要外族人口容量=(%d,%v)，want (25,true)", capacity, ok)
+	}
+	colony.PopulationGroups = nil
+	if capacity, ok := originalAIPrimaryPopulationCapacity(colony, nil, nil); ok || capacity != 0 {
+		t.Fatalf("人口 profile 不完整不得冒稱容量 exact：capacity=%d known=%v", capacity, ok)
+	}
+}
+
+func TestOriginalAICommerceAndRecyclotronScores(t *testing.T) {
+	colony := engine.ColonyState{
+		Population: 5, Workers: 5, OwnerRaceSlot: 1, OwnerRaceSlotKnown: true, OwnerRaceProfileKnown: true,
+		PopulationGroups: []engine.PopulationGroup{{RaceSlot: 1, RaceSlotKnown: true, ProfileKnown: true, Workers: 5}},
+	}
+	stock, _ := gamedata.BuildingByNameZH("行星證券交易所")
+	spaceport, _ := gamedata.BuildingByNameZH("太空港")
+	recyclotron, _ := gamedata.BuildingByNameZH("再生反應爐")
+
+	ctx := originalAIBuildScoreContext{primaryPopCapacity: 21, primaryPopCapKnown: true}
+	if score, exact := originalAIExactBuildingScore(stock, colony, ai.PersonalityXenophobic, ctx); !exact || score != 8 {
+		t.Fatalf("證交所一般分數=(%d,%v)，want (8,true)", score, exact)
+	}
+	if score, exact := originalAIExactBuildingScore(stock, colony, ai.PersonalityHonorable, ctx); !exact || score != 9 {
+		t.Fatalf("證交所 Honorable 分數=(%d,%v)，want (9,true)", score, exact)
+	}
+	colony.Population = 4
+	if score, exact := originalAIExactBuildingScore(stock, colony, ai.PersonalityHonorable, ctx); !exact || score != 0 {
+		t.Fatalf("證交所人口 4 應被門檻阻擋：score=%d exact=%v", score, exact)
+	}
+	colony.Population = 3
+	ctx.primaryPopCapacity = 20
+	if score, exact := originalAIExactBuildingScore(spaceport, colony, ai.PersonalityXenophobic, ctx); !exact || score != 7 {
+		t.Fatalf("太空港一般分數=(%d,%v)，want (7,true)", score, exact)
+	}
+	if score, exact := originalAIExactBuildingScore(spaceport, colony, ai.PersonalityHonorable, ctx); !exact || score != 8 {
+		t.Fatalf("太空港 Honorable 分數=(%d,%v)，want (8,true)", score, exact)
+	}
+	ctx.priorityGate = true
+	if score, exact := originalAIExactBuildingScore(spaceport, colony, ai.PersonalityHonorable, ctx); !exact || score != 0 {
+		t.Fatalf("太空港 priority gate 應歸零：score=%d exact=%v", score, exact)
+	}
+
+	colony.Population = 6
+	colony.Workers = 6
+	colony.PopulationGroups[0].Workers = 6
+	ctx = originalAIBuildScoreContext{primaryPopCapacity: 18, primaryPopCapKnown: true, priorityGate: true}
+	if score, exact := originalAIExactBuildingScore(recyclotron, colony, ai.PersonalityXenophobic, ctx); !exact || score != 12 {
+		t.Fatalf("再生反應爐一般分數=(%d,%v)，want (12,true)", score, exact)
+	}
+	if score, exact := originalAIExactBuildingScore(recyclotron, colony, ai.PersonalityPacifist, ctx); !exact || score != 14 {
+		t.Fatalf("再生反應爐 Pacifist 應 +2：score=%d exact=%v", score, exact)
+	}
+	if score, exact := originalAIExactBuildingScore(recyclotron, colony, ai.PersonalityHonorable, ctx); !exact || score != 14 {
+		t.Fatalf("再生反應爐 Honorable 應 +2：score=%d exact=%v", score, exact)
+	}
+	colony.TolerantRace = true
+	colony.PopulationGroups[0].Tolerant = true
+	if score, exact := originalAIExactBuildingScore(recyclotron, colony, ai.PersonalityXenophobic, ctx); !exact || score != 10 {
+		t.Fatalf("主要人口 Tolerant 應少 2：score=%d exact=%v", score, exact)
+	}
+	ctx.primaryPopCapKnown = false
+	if score, exact := originalAIExactBuildingScore(recyclotron, colony, ai.PersonalityXenophobic, ctx); exact || score != 0 {
+		t.Fatalf("容量未知不得冒稱 exact：score=%d exact=%v", score, exact)
+	}
+}
+
+func TestAICommerceAndRecyclotronCandidateCompletionConsumers(t *testing.T) {
+	tests := []struct {
+		name  string
+		topic gamedata.ResearchTopic
+	}{
+		{"行星證券交易所", gamedata.TOPIC_MACRO_ECONOMICS},
+		{"太空港", gamedata.TOPIC_ASTRO_ENGINEERING},
+		{"再生反應爐", gamedata.TOPIC_ADVANCED_MANUFACTURING},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := NewDemoSession()
+			a := &s.AIPlayers[0]
+			a.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{tt.topic: true}
+			a.Colonies[0] = engine.ColonyState{
+				Population: 6, PopMax: 12, Workers: 6, IndustryPerWorker: 4,
+				PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G,
+				MineralRichness: gamedata.ABUNDANT, Climate: gamedata.TERRAN,
+				OwnerRaceSlot: 1, OwnerRaceSlotKnown: true, OwnerRaceProfileKnown: true,
+				PopulationGroups: []engine.PopulationGroup{{RaceSlot: 1, RaceSlotKnown: true, ProfileKnown: true, Workers: 6}},
+			}
+			a.ColonyBuildings[0] = make(map[string]bool)
+			for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
+				a.ColonyBuildings[0][b.NameZH] = true
+			}
+			delete(a.ColonyBuildings[0], tt.name)
+			capacity, capacityKnown := originalAIPrimaryPopulationCapacity(a.Colonies[0], a.ColonyBuildings[0], knownTechnologyApplications(a.Player))
+			target, found := gamedata.BuildingByNameZH(tt.name)
+			if !found {
+				t.Fatalf("測試建築不存在：%s", tt.name)
+			}
+			ctx := originalAIBuildScoreContext{primaryPopCapacity: capacity, primaryPopCapKnown: capacityKnown}
+			if score, exact := originalAIExactBuildingScore(target, a.Colonies[0], a.Personality, ctx); !exact || score <= 0 {
+				t.Fatalf("唯一候選前未走精確正分：score=%d exact=%v capacity=%d known=%v", score, exact, capacity, capacityKnown)
+			}
+			out := engine.EmpireOutput{Colonies: []engine.ColonyOutput{{NetIndustry: 20}}}
+			build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1)
+			if !ok || build.Name != tt.name {
+				t.Fatalf("唯一候選錯誤：build=%+v ok=%v", build, ok)
+			}
+			beforeColony := engine.RunColonyTurn(a.Colonies[0])
+			beforeEmpire := engine.RunEmpireTurn(engine.PlayerState{TaxRate: 50}, []engine.ColonyState{a.Colonies[0]})
+			key := aiColonyBuildKey(a, 0)
+			a.ColonyBuilds = map[int]ColonyBuild{key: {Name: tt.name, Cost: 1}}
+			s.advanceAIColonyBuilds(0, out)
+			if !a.ColonyBuildings[0][tt.name] {
+				t.Fatalf("完工未寫入建築旗標：%s", tt.name)
+			}
+			if tt.name == "再生反應爐" {
+				after := engine.RunColonyTurn(a.Colonies[0])
+				if after.NetIndustry-beforeColony.NetIndustry != a.Colonies[0].Population ||
+					after.PollutingProduction != beforeColony.PollutingProduction {
+					t.Fatalf("再生反應爐消費端錯誤：before=%+v after=%+v", beforeColony, after)
+				}
+				return
+			}
+			after := engine.RunEmpireTurn(engine.PlayerState{TaxRate: 50}, []engine.ColonyState{a.Colonies[0]})
+			if after.TaxRevenue <= beforeEmpire.TaxRevenue {
+				t.Fatalf("%s 完工後收入未增加：%d → %d", tt.name, beforeEmpire.TaxRevenue, after.TaxRevenue)
+			}
+		})
+	}
+}
+
 func TestAIPlanetaryGravityGeneratorCandidateCompletionAndConsumer(t *testing.T) {
 	s := NewDemoSession()
 	a := &s.AIPlayers[0]

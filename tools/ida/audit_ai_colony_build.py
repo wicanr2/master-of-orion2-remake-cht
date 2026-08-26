@@ -45,6 +45,8 @@ ROOTS = {
     "raw_Apply_Production": 0xE36DF,
     "raw_AI_Choose_Research": 0xDC288,
     "raw_AI_Empire_Output_Cache": 0xDF8F0,
+    "raw_Colony_Population_Capacity_Core": 0xE0A18,
+    "raw_Colony_Secondary_Base_Value": 0xE0A93,
     "raw_Colony_Food_Per_Farmer": 0xDE03E,
     "raw_Colony_Industry_Production": 0xDEE1B,
     "raw_Recompute_Colony_Output": 0xE1D59,

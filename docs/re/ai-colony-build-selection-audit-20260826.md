@@ -415,6 +415,47 @@ High-G，與該產出 consumer 的優先序一致。remake 候選端使用 AI ow
 `ColonyState.PlanetGravity`；完工寫入既有 `NormalizeGravity`，後續逐人口產出 consumer
 已另有垂直測試。以上跳表、分支、typed enum 對映與效果 consumer 均為**已證實**。
 
+## 第十三批：Planetary Stock Exchange、Recyclotron、Spaceport
+
+三個 case 都讀 `Compute_AI_Data_` 的 7-byte 殖民地快取 `cache+1`。本批不是由分數式反猜
+欄位名稱，而是沿唯一寫入端追回完整容量鏈：
+
+- `Compute_AI_Data_ @ 0xD3D34` 先在 `0xD4920` 呼叫 `sub_D2A08` 取得主要人口 player slot，
+  再把該 slot 放入 `dx`，於 `0xD492C` 呼叫 raw `sub_E0C1D @ 0xE0C1D`，最後在
+  `0xD4931 88 43 01` 把回傳 `al` 寫入 `cache+1`。
+- `sub_E0C1D @ 0xE0C1D..0xE0C6D` 讀 planet size、colony climate 與主要人口 slot，呼叫
+  `sub_E0A93 @ 0xE0A93`；接著在主要人口的 `player+0x11A == 3` 時加 5，並在
+  `colony+0x145 != 0` 時加 2。科技 application 基址是 `player+0x117`，所以 `+0x11A`
+  是 raw technology 3；受版控 enum 對回 `TECH_ADVANCED_CITY_PLANNING=3`。建築旗標基址是
+  `colony+0x136`，所以 `+0x145` 是 raw building 15 Biospheres。
+- `sub_E0A93 @ 0xE0A93..0xE0B4E` 以 `player+0x8B6`（trait 23 Tolerant）決定氣候係數
+  是否額外加 25 並夾到 100；以 `player+0x8AB`（trait 12 Aquatic）調整 Ocean／Swamp／
+  Terran／Gaia 等效氣候；再呼叫 `sub_E0A18 @ 0xE0A18`。最後若
+  `player+0x8AC`（trait 13 Subterranean）成立，加入 `2×(planetSize+1)`。
+- `sub_E0A18 @ 0xE0A18..0xE0A48` 的核心是
+  `(sizeBase×min(100, climateFactor+25×Tolerant)+50)/100`。`+50` 後做整數除法，與
+  `PlanetBasePopMax` 的四捨五入契約一致；Aquatic／Tolerant／Subterranean 的 typed 差額已由
+  `RacePopulationCapacityDelta` 表示。
+
+因此 `cache+1` 是**依主要人口種族計算的殖民地人口上限**，包含 Advanced City Planning
+`+5` 與 Biospheres `+2`。remake 不直接信任可能按 owner 烘入的 `ColonyState.PopMax`，而是由
+`PlanetSize`、`Climate`、主要人口完整 profile、已知科技 application 與已建建築重建；資料不完整
+時不得冒稱 exact。
+
+三個外層 entry 與公式如下：
+
+| raw ID | 建築 | entry bytes → target | 完整公式 |
+|---:|---|---|---|
+| 29 | Planetary Stock Exchange | `0xCFFD2 9c080d00 → 0xD089C` | priority gate 或人口 `<5` 時 0；否則 `floor((population+primaryPopCap+[Honorable])/3)` |
+| 33 | Recyclotron | `0xCFFE2 ee080d00 → 0xD08EE` | `floor((2×population+primaryPopCap)/3)+2×([primary non-Tolerant]+[Pacifist]+[Honorable])` |
+| 39 | Spaceport | `0xCFFFA d0090d00 → 0xD09D0` | priority gate 或人口 `<3` 時 0；否則 `floor((population+primaryPopCap+[Honorable])/3)` |
+
+raw 33 的共同尾端需特別保留：`0xD090D` 把 `var_4` 載入 `eax`，`0xD0911` 加入
+`Pacifist+Honorable`，跳到 `0xD0991` 後先 `add eax,eax`，才於 `0xD0993` 加進基礎分；所以
+三個旗標每個都是 `+2`，不是 `+1`。`var_4` 已在第十一批由唯一 cache 寫入鏈證實等於
+`[primary non-Tolerant]`。raw 29／39 讀 priority gate；raw 33 不讀。上述函式、立即數、
+跳表、容量寫入端與 trait／科技／建築 enum 對映均為**已證實**。
+
 其餘未封閉區域會讀 alien／outpost 狀態、政府／性格其他碼、其他殖民地 packed 人口用途、帝國建築數、
 星球 owner／環境、事件與未解 player flags；在欄位寫入端與 typed 對映完成前維持
 `unknown_pending_review`，由明示近似 fallback 處理。
