@@ -895,5 +895,7 @@
   {"key":"inputbox.title.host_address","english":"Enter host address","value":"輸入主機位址","note":"現代 TCP 直接連線 adapter 標題"},
   {"key":"inputbox.button.accept","english":"ACCEPT","value":"確定","note":"INBOX.LBX#1 烘字按鈕覆蓋與 fallback"},
   {"key":"inputbox.hint.accept_cancel","english":"Enter = accept · Esc = cancel","value":"Enter 確定 · Esc 取消","note":"現代鍵盤操作提示"},
-  {"key":"network.host.default_name","english":"Host","value":"主機玩家","note":"未指定玩家名時的多人主機預設名稱"}
+  {"key":"network.host.default_name","english":"Host","value":"主機玩家","note":"未指定玩家名時的多人主機預設名稱"},
+  {"key":"leader.type.ship_officer","english":"Ship Officer","value":"艦長","note":"沒有技能時的 HERODATA 艦艇軍官類型通稱；不可與 Commando 技能混用"},
+  {"key":"leader.type.administrator","english":"Administrator","value":"行政官","note":"沒有技能時的 HERODATA 殖民地領袖類型通稱"}
 ]

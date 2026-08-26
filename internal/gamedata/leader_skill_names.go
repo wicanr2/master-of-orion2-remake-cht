@@ -1,5 +1,10 @@
 package gamedata
 
+import (
+	_ "embed"
+	"encoding/json"
+)
+
 // leader_skill_names.go:27 個領袖技能的**名字**與**列舉順序**。
 //
 // ============ 為什麼需要這張表 ============
@@ -31,43 +36,45 @@ package gamedata
 
 // LeaderSkillNames 是一項技能的顯示名(中/英)。
 type LeaderSkillNames struct {
-	ZH string
-	EN string
+	Key string `json:"key"`
+	ZH  string `json:"zh"`
+	EN  string `json:"en"`
 }
 
-var leaderSkillNames = map[LeaderSkills]LeaderSkillNames{
-	// ---- General Abilities(COMMON_SKILLS_TYPE,手冊 p.135)----
-	SKILL_ASSASSIN:   {"刺客", "Assassin"},
-	SKILL_COMMANDO:   {"指揮官", "Commando"},
-	SKILL_DIPLOMAT:   {"外交官", "Diplomat"},
-	SKILL_FAMOUS:     {"名人", "Famous"},
-	SKILL_MEGAWEALTH: {"巨富", "Megawealth"},
-	SKILL_OPERATIONS: {"後勤官", "Operations"},
-	SKILL_RESEARCHER: {"科學家", "Researcher"},
-	SKILL_SPYMASTER:  {"間諜大師", "Spy Master"},
-	SKILL_TELEPATH:   {"心靈感應者", "Telepath"},
-	SKILL_TRADER:     {"貿易家", "Trader"},
+type leaderSkillTextEntry struct {
+	ID int `json:"id"`
+	LeaderSkillNames
+}
 
-	// ---- Command Abilities(CAPTAIN_SKILLS_TYPE,手冊 p.136)----
-	SKILL_ENGINEER:      {"工程師", "Engineer"},
-	SKILL_FIGHTER_PILOT: {"戰機飛行員", "Fighter Pilot"},
-	SKILL_GALACTIC_LORE: {"銀河學者", "Galactic Lore"},
-	SKILL_HELMSMAN:      {"舵手", "Helmsman"},
-	SKILL_NAVIGATOR:     {"領航員", "Navigator"},
-	SKILL_ORDNANCE:      {"軍械官", "Ordnance"},
-	SKILL_SECURITY:      {"保安官", "Security"},
-	SKILL_WEAPONRY:      {"武器官", "Weaponry"},
+//go:embed leader_skills.json
+var leaderSkillTextJSON []byte
 
-	// ---- Administration Abilities(ADMIN_SKILLS_TYPE,手冊 p.137)----
-	SKILL_ENVIRONMENTALIST: {"環保官", "Environmentalist"},
-	SKILL_FARMING_LEADER:   {"農業官", "Farming Leader"},
-	SKILL_FINANCIAL_LEADER: {"財務官", "Financial Leader"},
-	SKILL_INSTRUCTOR:       {"教官", "Instructor"},
-	SKILL_LABOR_LEADER:     {"勞工官", "Labor Leader"},
-	SKILL_MEDICINE:         {"醫官", "Medicine"},
-	SKILL_SCIENCE_LEADER:   {"科學官", "Science Leader"},
-	SKILL_SPIRITUAL_LEADER: {"心靈導師", "Spiritual Leader"},
-	SKILL_TACTICS:          {"戰術官", "Tactics"},
+// leaderSkillNames 的玩家可見內容由 leader_skills.json 載入；Go 只保留原版數字 id。
+// JSON 是隨程式嵌入的資料檔，因此封包不需要額外散落一份 runtime 相依檔。
+var leaderSkillNames = loadLeaderSkillNames()
+
+func loadLeaderSkillNames() map[LeaderSkills]LeaderSkillNames {
+	var entries []leaderSkillTextEntry
+	if err := json.Unmarshal(leaderSkillTextJSON, &entries); err != nil {
+		panic("invalid embedded leader_skills.json: " + err.Error())
+	}
+	out := make(map[LeaderSkills]LeaderSkillNames, len(entries))
+	keys := make(map[string]struct{}, len(entries))
+	for _, entry := range entries {
+		id := LeaderSkills(entry.ID)
+		if entry.Key == "" || entry.ZH == "" || entry.EN == "" {
+			panic("leader_skills.json contains an incomplete entry")
+		}
+		if _, duplicate := out[id]; duplicate {
+			panic("leader_skills.json contains a duplicate id")
+		}
+		if _, duplicate := keys[entry.Key]; duplicate {
+			panic("leader_skills.json contains a duplicate key")
+		}
+		out[id] = entry.LeaderSkillNames
+		keys[entry.Key] = struct{}{}
+	}
+	return out
 }
 
 // LeaderSkillName 依技能 id 回傳顯示名。id 不在表上時回 (零值, false)。

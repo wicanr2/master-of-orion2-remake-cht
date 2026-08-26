@@ -17,13 +17,14 @@ func TestEveryLeaderSkillHasAName(t *testing.T) {
 		t.Fatalf("enum 有 %d 個技能,名字表有 %d 個", len(all), len(leaderSkillNames))
 	}
 	seenZH := map[string]LeaderSkills{}
+	seenKeys := map[string]LeaderSkills{}
 	for _, id := range all {
 		n, ok := LeaderSkillName(int(id))
 		if !ok {
 			t.Errorf("技能 %#x 沒有名字", int(id))
 			continue
 		}
-		if n.ZH == "" || n.EN == "" {
+		if n.Key == "" || n.ZH == "" || n.EN == "" {
 			t.Errorf("技能 %#x 名字不完整:%+v", int(id), n)
 		}
 		if prev, dup := seenZH[n.ZH]; dup {
@@ -31,6 +32,10 @@ func TestEveryLeaderSkillHasAName(t *testing.T) {
 				n.ZH, int(prev), int(id))
 		}
 		seenZH[n.ZH] = id
+		if prev, dup := seenKeys[n.Key]; dup {
+			t.Errorf("文案鍵 %q 同時給了 %#x 與 %#x", n.Key, int(prev), int(id))
+		}
+		seenKeys[n.Key] = id
 	}
 }
 

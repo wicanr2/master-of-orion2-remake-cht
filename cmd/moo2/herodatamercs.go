@@ -135,7 +135,7 @@ func mercSkillLabel(b *sceneBuilder, h herodata.Leader, skills []shell.LeaderSki
 		}
 	}
 	if h.Ship() {
-		return b.tr("艦長", "Ship Officer")
+		return uiText(b.lang, "leader.type.ship_officer")
 	}
-	return b.tr("行政官", "Administrator")
+	return uiText(b.lang, "leader.type.administrator")
 }

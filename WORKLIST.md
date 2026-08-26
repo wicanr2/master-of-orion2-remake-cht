@@ -167,6 +167,15 @@
   caret 維持明標平台近似，不為 Win95 掃描碼 API 內部另開 RE。Docker + Xvfb 中文畫廊已重跑
   35/35；首次截圖證明按鈕下方提示仍壓到 `INBOX` 美術邊框，現移到輸入欄與按鈕間的 20px 空帶，
   第二次 `34_inputbox.png` 目視確認標題、內容、提示與 ACCEPT 均未互相侵入或超出彈窗。
+  領袖技能顯示資料已完成第十八個切片：27 個技能的原版數字 ID 與 2-bit 階級規則留在 Go，
+  穩定鍵、中英文名稱改由嵌入式 `internal/gamedata/leader_skills.json` 載入；缺欄、重複 ID 或
+  非法 JSON 會直接失敗，不再讓規則表同時承擔玩家文案。無技能領袖的艦長／行政官通稱亦移到
+  `ui.json`，避免再次與 Commando 技能標籤碰撞。IDA Pro 9.4 本輪以既有 `.i64` 可寫副本重跑
+  隨機領袖招募稽核，確認招募與技能效果仍由 typed ID／2-bit tier 驅動；英文技能名稱由手冊
+  p.135–137 錨定，繁中只標為 remake 顯示資料。舊中文存檔的標籤反查仍由同一份 JSON 提供，
+  未因外部化而失去加成。本批證據與規格見
+  [`docs/re/leader-skill-display-text-audit-20260827.md`](docs/re/leader-skill-display-text-audit-20260827.md) 與
+  [`docs/tech/leader-skill-external-text-spec.md`](docs/tech/leader-skill-external-text-spec.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
