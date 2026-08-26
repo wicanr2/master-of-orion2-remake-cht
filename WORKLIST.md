@@ -233,7 +233,14 @@
   Auto Select Ships 已由 `byte_199BE1 @ 0x199BE1` 唯一玩法讀取端、`sub_70875 @ 0x70875`
   與逐艦選取 writer `sub_7229E @ 0x7229E` 閉合：開啟時進入或切換艦隊會選取目前艦隊全部艦艇，
   關閉時保持空集合；玩家全不選後重繪不會被強制選回，拆分後亦依新索引重建。
-  Enemy Moves、Expanding Help、Auto Select Colony、GNN 與 Serious Summary 尚須依各自玩家路徑閉合，
+  Auto Select Colony 已由 `byte_199BE3 @ 0x199BE3`、星系索引重建
+  `sub_123CE @ 0x123CE`／`sub_7862B @ 0x7862B`、三條點選消費端，以及手動巡覽清除 writer
+  `sub_876DB @ 0x876DB`／`sub_87720 @ 0x87720` 閉合。remake 開啟時點我方殖民星會直接進入
+  對應殖民地畫面；F5／F6 明確手動巡覽會關閉此設定。原版星系內多圖示堆疊在 remake
+  映射為單一殖民地入口，明標介面轉接近似；證據與規格見
+  `docs/re/auto-select-colony-setting-audit-20260827.md`、
+  `docs/tech/auto-select-colony-setting-spec.md`。
+  Enemy Moves、Expanding Help、GNN 與 Serious Summary 尚須依各自玩家路徑閉合，
   不能因設定值可保存就宣稱生效。DOS／Win95 平台 API 內部維持既定停止線。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`

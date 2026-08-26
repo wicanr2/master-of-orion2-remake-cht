@@ -68,11 +68,17 @@ func TestMeasureEatsStarClick(t *testing.T) {
 func TestColonyHotkeyMovesSelection(t *testing.T) {
 	b := hotkeyBuilder(10)
 	b.session.PlayerColonyStars = []int{6, 2}
+	settings := b.session.EffectiveGameSettings()
+	settings.AutoSelectColony = true
+	b.session.ApplyGameSettings(settings)
 	if !b.handleGalaxyHotkey(shell.HotkeyNextColony) {
 		t.Fatal("有殖民地時 F5 應有作用")
 	}
 	if b.session.SelectedStar != 2 {
 		t.Errorf("F5 應選到索引最小的殖民星 2,實得 %d", b.session.SelectedStar)
+	}
+	if b.session.EffectiveGameSettings().AutoSelectColony {
+		t.Fatal("手動 F5 巡覽後應依原版關閉 Auto Select Colony")
 	}
 	b.handleGalaxyHotkey(shell.HotkeyNextColony)
 	if b.session.SelectedStar != 6 {
@@ -81,6 +87,42 @@ func TestColonyHotkeyMovesSelection(t *testing.T) {
 	b.handleGalaxyHotkey(shell.HotkeyPrevColony)
 	if b.session.SelectedStar != 2 {
 		t.Errorf("F6 應退回 2,實得 %d", b.session.SelectedStar)
+	}
+}
+
+func TestAutoSelectedColonyIndex(t *testing.T) {
+	b := hotkeyBuilder(8)
+	b.session.PlayerColonyStars = []int{6, 2}
+	settings := b.session.EffectiveGameSettings()
+	settings.AutoSelectColony = true
+	b.session.ApplyGameSettings(settings)
+
+	if got := autoSelectedColonyIndex(b.session, 2); got != 1 {
+		t.Fatalf("玩家殖民星 2 應映射到殖民地索引 1，實得 %d", got)
+	}
+	if got := autoSelectedColonyIndex(b.session, 4); got != -1 {
+		t.Fatalf("非玩家殖民星不應自動進入，實得 %d", got)
+	}
+	settings.AutoSelectColony = false
+	b.session.ApplyGameSettings(settings)
+	if got := autoSelectedColonyIndex(b.session, 2); got != -1 {
+		t.Fatalf("設定關閉時不應自動進入，實得 %d", got)
+	}
+	if got := autoSelectedColonyIndex(nil, 2); got != -1 {
+		t.Fatalf("nil session 應安全拒絕，實得 %d", got)
+	}
+}
+
+func TestColonyHotkeyWithoutTargetKeepsAutoSelect(t *testing.T) {
+	b := hotkeyBuilder(4)
+	settings := b.session.EffectiveGameSettings()
+	settings.AutoSelectColony = true
+	b.session.ApplyGameSettings(settings)
+	if b.handleGalaxyHotkey(shell.HotkeyNextColony) {
+		t.Fatal("沒有殖民地時 F5 不應成功")
+	}
+	if !b.session.EffectiveGameSettings().AutoSelectColony {
+		t.Fatal("沒有巡覽目標時不應清除 Auto Select Colony")
 	}
 }
 

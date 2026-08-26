@@ -911,6 +911,11 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 					b.session.SelectedStar = -1 // 再點同一顆星 → 取消選取(關閉資訊面板,issue #6)
 				} else {
 					b.session.SelectedStar = idx
+					if colony := autoSelectedColonyIndex(b.session, idx); colony >= 0 {
+						b.colonyIdx = colony
+						b.colonyListTop = 0
+						return b.goTo(b.colonyScreen, uiText(b.lang, "colony.transition.colony"))
+					}
 				}
 				b.lastActionMsg = ""             // 換選中星,清掉上一顆星的動作結果訊息
 				return b.goTo(b.galaxy, "星系主畫面") // 重繪顯示選中星資訊

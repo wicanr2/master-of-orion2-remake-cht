@@ -111,6 +111,11 @@ func (b *sceneBuilder) handleGalaxyHotkey(code string) bool {
 		if idx < 0 {
 			return false
 		}
+		// 原版 sub_876DB/sub_87720 的兩個手動前後巡覽 callback 會先清除
+		// byte_199BE3。玩家已明確接管選取後，不再讓自動選殖民地搶回焦點。
+		settings := sess.EffectiveGameSettings()
+		settings.AutoSelectColony = false
+		sess.ApplyGameSettings(settings)
 		sess.SelectedStar = idx
 		b.lastActionMsg = ""
 		return true
@@ -119,6 +124,15 @@ func (b *sceneBuilder) handleGalaxyHotkey(code string) bool {
 		return true
 	}
 	return false
+}
+
+// autoSelectedColonyIndex 把原版星系內「自動選取目前玩家殖民地圖示」映射到
+// remake 的單一殖民地畫面入口。原版證據與介面轉接邊界見對應 RE／spec。
+func autoSelectedColonyIndex(sess *shell.GameSession, star int) int {
+	if sess == nil || !sess.EffectiveGameSettings().AutoSelectColony {
+		return -1
+	}
+	return colonyIndexAtStar(sess, star)
 }
 
 // quickSave 是 F10:存回目前這一格,不問名字。
