@@ -42,8 +42,9 @@ func TestCurrentReportDiscoveryUsesScoutHeader(t *testing.T) {
 		t.Fatal("有星系發現時應該要播快報")
 	}
 	// 發現是自家勘查隊的回報,不是 GNN 新聞——台標列要不一樣。
-	if r.header != evScoutHeader {
-		t.Errorf("台標列 = %q,want %q", r.header, evScoutHeader)
+	wantHeader := uiText(i18n.Traditional, "event.header.survey")
+	if r.header != wantHeader {
+		t.Errorf("台標列 = %q,want %q", r.header, wantHeader)
 	}
 	if !r.good {
 		t.Error("原版這五種發現沒有負面的,應標為好消息(綠框)")
@@ -84,7 +85,7 @@ func TestCurrentReportEventBeatsDiscovery(t *testing.T) {
 	s.LastEventReport = &shell.EventReport{Name: "瘟疫", Good: false, Message: "疫病蔓延"}
 	s.LastDiscovery = &shell.SystemDiscovery{StarName: "測試星", Name: "海盜藏寶", Message: "找到藏寶", ColonyIdx: -1}
 	r := (&sceneBuilder{session: s, lang: i18n.Traditional}).currentReport()
-	if r == nil || r.header != evGNNHeader {
+	if r == nil || r.header != uiText(i18n.Traditional, "event.header.gnn") {
 		t.Fatalf("應優先播 GNN 事件快報,實得 %+v", r)
 	}
 	if r.good {
@@ -124,11 +125,13 @@ func TestCurrentReportHeaderFollowsLanguage(t *testing.T) {
 	if zh == nil || en == nil {
 		t.Fatal("兩種語言都該產出快報")
 	}
-	if zh.header != evGNNHeader {
-		t.Errorf("中文台標 = %q,want %q", zh.header, evGNNHeader)
+	wantZH := uiText(i18n.Traditional, "event.header.gnn")
+	wantEN := uiText(i18n.English, "event.header.gnn")
+	if zh.header != wantZH {
+		t.Errorf("中文台標 = %q,want %q", zh.header, wantZH)
 	}
-	if en.header != evGNNHeaderEn {
-		t.Errorf("英文台標 = %q,want %q", en.header, evGNNHeaderEn)
+	if en.header != wantEN {
+		t.Errorf("英文台標 = %q,want %q", en.header, wantEN)
 	}
 	if zh.tag == en.tag {
 		t.Errorf("標記也該跟著語言換,兩者都是 %q", zh.tag)

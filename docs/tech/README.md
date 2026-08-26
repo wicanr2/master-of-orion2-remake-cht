@@ -17,6 +17,7 @@
 - [colony-production-controls.md](colony-production-controls.md) — 殖民地 BUY、AUTO BUILD、REFIT、REPEAT BUILD 的手冊證據、remake 近似、保存與鎖步驗證邊界。
 - [build-queue-external-text-spec.md](build-queue-external-text-spec.md) — 建造佇列的外部雙語文案、原版烘字按鈕後備與雙軸文字安全框。
 - [colony-screen-external-text-spec.md](colony-screen-external-text-spec.md) — 殖民地主畫面的外部雙語文案、職業欄與按鈕雙軸安全框。
+- [event-screen-external-text-spec.md](event-screen-external-text-spec.md) — 事件／勘查快報的原版 GNN 資產、外部雙語文案、fallback 與雙軸安全框。
 
 ## 待補(後續輪次)
 

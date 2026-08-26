@@ -726,6 +726,14 @@
   {"key":"colony.job.hint","english":"click +1","value":"點此 +1","note":"remake 職業調整提示"},
   {"key":"colony.planet.minerals","english":"Minerals %s","value":"礦產%s","note":"%s 為 typed 礦產等級"},
   {"key":"colony.planet.gravity","english":"Gravity %s","value":"重力%s","note":"%s 為 typed 重力等級"},
-  {"key":"gallery.event.name","english":"Economic Boom","value":"經濟繁榮","note":"畫廊事件畫面固定報告；不進玩法規則"},
-  {"key":"gallery.event.message","english":"A wave of optimism has increased commerce throughout the empire.","value":"樂觀浪潮席捲帝國，各殖民地商業活動顯著成長。","note":"畫廊事件畫面固定報告；不進玩法規則"}
+  {"key":"gallery.event.name","english":"Ancient Technology","value":"古代遺骸科技","note":"畫廊事件 0 固定報告；只驗證版面與 ID+2 插圖，不進玩法規則"},
+  {"key":"gallery.event.message","english":"Explorers have recovered technological secrets from ancient ruins.","value":"探險隊從古代遺跡中發現了失落的科技祕密。","note":"畫廊事件 0 固定報告；只驗證版面與 ID+2 插圖，不進玩法規則"},
+  {"key":"event.transition.summary","english":"Turn Summary","value":"回合摘要","note":"事件快報結束後的轉場標籤"},
+  {"key":"event.header.gnn","english":"GALACTIC NEWS NETWORK — BULLETIN","value":"銀河新聞網 GNN ── 快報","note":"事件 fallback 台標"},
+  {"key":"event.header.survey","english":"IMPERIAL SURVEY REPORT","value":"帝國勘查回報","note":"星系特殊物產勘查台標"},
+  {"key":"event.tag.alert","english":"ALERT","value":"警訊","note":"負面事件標記"},
+  {"key":"event.tag.good_news","english":"GOOD NEWS","value":"喜訊","note":"正面事件標記"},
+  {"key":"event.tag.discovery","english":"DISCOVERY","value":"發現","note":"星系勘查標記"},
+  {"key":"event.title.format","english":"[%s] %s","value":"【%s】%s","note":"第一個 %s 為標記，第二個為報告標題"},
+  {"key":"event.button.continue","english":"CONTINUE","value":"繼續","note":"事件快報可見操作提示；原版整張畫面可點"}
 ]

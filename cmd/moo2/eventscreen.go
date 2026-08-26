@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/assets"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 )
 
@@ -18,29 +20,27 @@ import (
 //
 // remake 先前只有「回合摘要裡一行字」,事件發生跟沒發生一樣沒有存在感。
 //
-// 版面:remake 沒有原版 EVENTS.LBX 的主播圖版面資料,這裡疊在回合摘要背景上自繪
-// 快報面板。對齊的是**流程**(事件觸發 → 專屬播報畫面 → 回到回合摘要),不是像素。
+// 有 EVENTS.LBX 時使用原版 31 幀主播背景與 eventID+2 插圖；缺檔、解碼失敗、
+// 非原版事件 ID 或勘查回報則安全退回回合摘要背景上的自繪面板。
 
 const (
 	evPanelX = 60.0
 	evPanelY = 110.0
 	evPanelW = 520.0
 	evPanelH = 250.0
+
+	evArtworkX = 320.0
+	evArtworkY = 14.0
 )
 
 var (
-	evPanelBg     = color.RGBA{10, 14, 30, 245}
-	evGoodEdge    = color.RGBA{90, 190, 120, 255} // 好消息:綠框
-	evBadEdge     = color.RGBA{210, 110, 90, 255} // 壞消息:紅框
-	evTitleCol    = color.RGBA{240, 220, 120, 255}
-	evBodyCol     = color.RGBA{220, 228, 242, 255}
-	evBrandCol    = color.RGBA{120, 180, 240, 255}
-	evButtonBg    = color.RGBA{30, 40, 70, 255}
-	evGNNHeader   = "銀河新聞網 GNN ── 快報"
-	evGNNHeaderEn = "GALACTIC NEWS NETWORK ── BULLETIN"
-	// 星系發現不是 GNN 新聞,是自家勘查隊的回報,台標列另用一組字。
-	evScoutHeader   = "帝國勘查回報"
-	evScoutHeaderEn = "IMPERIAL SURVEY REPORT"
+	evPanelBg  = color.RGBA{10, 14, 30, 245}
+	evGoodEdge = color.RGBA{90, 190, 120, 255} // 好消息:綠框
+	evBadEdge  = color.RGBA{210, 110, 90, 255} // 壞消息:紅框
+	evTitleCol = color.RGBA{240, 220, 120, 255}
+	evBodyCol  = color.RGBA{220, 228, 242, 255}
+	evBrandCol = color.RGBA{120, 180, 240, 255}
+	evButtonBg = color.RGBA{30, 40, 70, 255}
 )
 
 // reportPanel 是快報面板要畫的內容(隨機事件與星系發現共用同一個版面)。
@@ -60,9 +60,9 @@ func (b *sceneBuilder) currentReport() *reportPanel {
 		return nil
 	}
 	if r := b.session.LastEventReport; r != nil {
-		tag := b.tr("警訊", "ALERT")
+		tag := uiText(b.lang, "event.tag.alert")
 		if r.Good {
-			tag = b.tr("喜訊", "GOOD NEWS")
+			tag = uiText(b.lang, "event.tag.good_news")
 		}
 		title, body := r.Name, r.Message
 		if b.lang != i18n.Traditional {
@@ -73,7 +73,7 @@ func (b *sceneBuilder) currentReport() *reportPanel {
 				body = r.MessageEN
 			}
 		}
-		return &reportPanel{header: b.tr(evGNNHeader, evGNNHeaderEn),
+		return &reportPanel{header: uiText(b.lang, "event.header.gnn"),
 			title: title, tag: tag, body: body, good: r.Good}
 	}
 	if d := b.session.LastDiscovery; d != nil {
@@ -87,10 +87,53 @@ func (b *sceneBuilder) currentReport() *reportPanel {
 				body = d.MessageEN
 			}
 		}
-		return &reportPanel{header: b.tr(evScoutHeader, evScoutHeaderEn),
-			title: title, tag: b.tr("發現", "DISCOVERY"), body: body, good: true}
+		return &reportPanel{header: uiText(b.lang, "event.header.survey"),
+			title: title, tag: uiText(b.lang, "event.tag.discovery"), body: body, good: true}
 	}
 	return nil
+}
+
+func eventHeaderTextRect() textSafeRect {
+	return textSafeRect{x: int(evPanelX), y: int(evPanelY), w: int(evPanelW), h: 26, insetX: 12, insetY: 2}
+}
+
+func eventTitleTextRect(original bool) textSafeRect {
+	if original {
+		return textSafeRect{x: 76, y: 258, w: 488, h: 24, insetX: 2, insetY: 1}
+	}
+	return textSafeRect{x: 76, y: 148, w: 488, h: 24, insetX: 2, insetY: 1}
+}
+
+func eventBodyTextRect(original bool) textSafeRect {
+	if original {
+		return textSafeRect{x: 76, y: 288, w: 488, h: 70, insetX: 2, insetY: 1, lineH: 17}
+	}
+	return textSafeRect{x: 76, y: 184, w: 488, h: 156, insetX: 2, insetY: 1, lineH: 20}
+}
+
+func eventButtonTextRect() textSafeRect {
+	return textSafeRect{x: 270, y: 372, w: 100, h: 24, insetX: 6, insetY: 1}
+}
+
+func eventArtworkAssetID(eventID, archiveCount int) (int, bool) {
+	assetID := eventID + 2
+	return assetID, eventID >= 0 && eventID < 36 && assetID >= 2 && assetID < archiveCount
+}
+
+func loadEventArtwork(res *assets.Resolver, eventID int) *ebiten.Image {
+	archive, err := res.OpenLBX("events.lbx")
+	if err != nil {
+		return nil
+	}
+	assetID, ok := eventArtworkAssetID(eventID, archive.Count())
+	if !ok {
+		return nil
+	}
+	im, err := decodeAsset(res, "events.lbx", assetID)
+	if err != nil || im.Embedded == nil || im.Width != 157 || im.Height != 125 || len(im.Frames) == 0 {
+		return nil
+	}
+	return ebiten.NewImageFromImage(im.Frames[0].ToRGBA(im.Embedded, im.KeyColor()))
 }
 
 // eventScreen 建快報畫面。內容取自 currentReport();沒有可播的就直接回回合摘要。
@@ -102,19 +145,42 @@ func (b *sceneBuilder) eventScreen() (*overlayScreen, error) {
 	hits := []hitRegion{{270, 372, 100, 24, "ok"}}
 	onAction := func(a string) *origTransition {
 		if a == "ok" {
-			return b.goTo(b.turnSummary, "回合摘要")
+			return b.goTo(b.turnSummary, uiText(b.lang, "event.transition.summary"))
 		}
 		return nil
 	}
 	// turnsum.lbx 資產 0 沒有內嵌調色盤,要跟 buffer0.lbx 借(與 tacticalCombat 同一個做法)。
 	// 少了這條 paletteChain 會載入失敗、goTo 回 nil,結果是「按下結束回合後畫面完全不動」——
 	// EndTurn 其實跑了(星曆與國庫都變了),只是轉場沒發生,看起來像按鈕壞掉。
-	s, err := loadOverlayScreen(b.res, "turnsum.lbx", 0, b.lang, b.fnt, "misc.json",
-		nil, evBodyCol, 13, hits, onAction, paletteChain{{"buffer0.lbx", 0}})
+	original := b.session != nil && b.session.LastEventReport != nil
+	var s *overlayScreen
+	var err error
+	if original {
+		s, err = loadOverlayScreen(b.res, "events.lbx", 1, b.lang, b.fnt, "misc.json",
+			nil, evBodyCol, 13, hits, onAction, paletteChain{{"events.lbx", 0}})
+	}
+	if s == nil || err != nil {
+		original = false
+		s, err = loadOverlayScreen(b.res, "turnsum.lbx", 0, b.lang, b.fnt, "misc.json",
+			nil, evBodyCol, 13, hits, onAction, paletteChain{{"buffer0.lbx", 0}})
+	}
 	if err != nil {
 		return nil, err
 	}
-	s.postDraw = func(dst *ebiten.Image) { b.drawEventReport(dst) }
+	if original {
+		if frames, frameErr := loadOverlayAnimationFrames(b.res, "events.lbx", 1,
+			paletteChain{{"events.lbx", 0}}); frameErr == nil && len(frames) > 0 {
+			s.animFrames = frames
+			s.animTick = func() int { return b.animTick }
+			s.animationStartTick = b.animTick
+		}
+	}
+	var artwork *ebiten.Image
+	if original && b.session != nil && b.session.LastEventReport != nil {
+		artwork = loadEventArtwork(b.res, b.session.LastEventReport.EventID)
+	}
+	s.postDraw = func(dst *ebiten.Image) { b.drawEventReport(dst, original, artwork) }
+	s.clickAnywhereAction = "ok"
 	// 快報面板畫在 640×480 螢幕座標(postDraw 拿到的是整張畫布),但熱區命中判定用的是
 	// **背景圖局部座標**(overlayScreen.update 會先扣掉置中偏移)。turnsum.lbx 的背景小於
 	// 全螢幕、會被置中,兩套座標因此差一個偏移量——不補這一段,「繼續」鈕看得到卻永遠點不到。
@@ -127,7 +193,7 @@ func (b *sceneBuilder) eventScreen() (*overlayScreen, error) {
 }
 
 // drawEventReport 畫快報面板(隨機事件 / 星系發現共用)。
-func (b *sceneBuilder) drawEventReport(dst *ebiten.Image) {
+func (b *sceneBuilder) drawEventReport(dst *ebiten.Image, original bool, artwork *ebiten.Image) {
 	rep := b.currentReport()
 	if b.fnt == nil || rep == nil {
 		return
@@ -137,7 +203,13 @@ func (b *sceneBuilder) drawEventReport(dst *ebiten.Image) {
 	if rep.good {
 		edge = evGoodEdge
 	}
-	// 先鋪一層暗遮罩:快報是疊在回合摘要背景上的彈窗,不遮的話底下的「TURN SUMMARY」
+	if original && artwork != nil {
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(evArtworkX, evArtworkY)
+		drawPanelImage(dst, artwork, op)
+	}
+
+	// fallback 先鋪一層暗遮罩:快報是疊在回合摘要背景上的彈窗,不遮的話底下的「TURN SUMMARY」
 	// 標題與 CLOSE 鈕會從面板外露出來,跟快報的「繼續」鈕互相干擾。
 	// ⚠ 遮罩必須**完全不透明**。快報面板只蓋住畫面中段,而底下那張 TURNSUM 視窗的標題列
 	// 烘著 `TURN SUMMARY`、底部烘著 `CLOSE` ——半透明遮罩(原本 205)會讓這兩個英文字樣
@@ -149,27 +221,23 @@ func (b *sceneBuilder) drawEventReport(dst *ebiten.Image) {
 	//
 	// 底圖仍然載 turnsum.lbx:它提供這個場景的熱區/轉場骨架(見下方 offset 修正那段),
 	// 只是視覺上被完全遮住。
-	fillPanel(dst, 0, 0, 640, 480, color.RGBA{0, 0, 0, 255}, false)
-	fillPanel(dst, evPanelX, evPanelY, evPanelW, evPanelH, evPanelBg, false)
-	vector.StrokeRect(dst, evPanelX, evPanelY, evPanelW, evPanelH, 2, edge, false)
-
-	// 台標列(原版 EVENTMSG 前 8 條就是這種 GNN 開場白)。
-	fillPanel(dst, evPanelX, evPanelY, evPanelW, 26, color.RGBA{18, 30, 60, 255}, false)
-	b.fnt.Draw(dst, truncateToWidth(b.fnt, rep.header, 13, evPanelW-24), evPanelX+12, evPanelY+6, 13, evBrandCol)
-
-	// 事件名 + 好壞標記(對應原版 _event_good_array)。
-	b.fnt.Draw(dst, truncateToWidth(b.fnt, "【"+rep.tag+"】"+rep.title, 15, evPanelW-32), evPanelX+16, evPanelY+42, 15, evTitleCol)
-
-	// 快報內文(自動換行)。
-	for i, ln := range b.fnt.Wrap(rep.body, 13, evPanelW-32) {
-		if i >= 8 {
-			break
-		}
-		b.fnt.Draw(dst, ln, evPanelX+16, evPanelY+76+float64(i)*20, 13, evBodyCol)
+	if original {
+		fillPanel(dst, 60, 248, 520, 120, color.RGBA{10, 14, 30, 218}, false)
+		vector.StrokeRect(dst, 60, 248, 520, 120, 2, edge, false)
+	} else {
+		fillPanel(dst, 0, 0, 640, 480, color.RGBA{0, 0, 0, 255}, false)
+		fillPanel(dst, evPanelX, evPanelY, evPanelW, evPanelH, evPanelBg, false)
+		vector.StrokeRect(dst, evPanelX, evPanelY, evPanelW, evPanelH, 2, edge, false)
+		fillPanel(dst, evPanelX, evPanelY, evPanelW, 26, color.RGBA{18, 30, 60, 255}, false)
+		eventHeaderTextRect().drawLeft(dst, b.fnt, rep.header, 13, evBrandCol)
 	}
+
+	title := fmt.Sprintf(uiText(b.lang, "event.title.format"), rep.tag, rep.title)
+	eventTitleTextRect(original).drawLeft(dst, b.fnt, title, 15, evTitleCol)
+	eventBodyTextRect(original).drawLeft(dst, b.fnt, rep.body, 13, evBodyCol)
 
 	// 確認鈕
 	fillPanel(dst, 270, 372, 100, 24, evButtonBg, false)
 	vector.StrokeRect(dst, 270, 372, 100, 24, 1, edge, false)
-	b.fnt.DrawCentered(dst, truncateToWidth(b.fnt, b.tr("繼續", "CONTINUE"), 13, 88), 320, 384, 13, evBodyCol)
+	eventButtonTextRect().drawCentered(dst, b.fnt, uiText(b.lang, "event.button.continue"), 13, evBodyCol)
 }

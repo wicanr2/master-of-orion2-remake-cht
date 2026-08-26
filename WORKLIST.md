@@ -75,6 +75,14 @@
   新局研究 application gate，正常第一回合存為回合摘要。原版一般事件至少第 50 回合才可能出現，
   事件圖改用外部 JSON 雙語固定戰報，只作版面驗證，不再把研究頁或第一回合誤標成事件。
   目視抽查事件、回合摘要、殖民地主畫面與最終得分，檔名與內容一致且文字未越框。
+  事件／勘查快報亦完成第七個切片：固定台標、好壞／發現標記、標題格式、按鈕與轉場改由
+  `ui.json` 供應，正文及按鈕均走雙軸安全框，且依原版接受整張 640×480 點擊。IDA 證實
+  `sub_2031D` 啟動、`sub_20538` 載入 `EVENTS.LBX#0/#1`、`sub_20460` 繪製，事件插圖由
+  相鄰 `sub_203CB` 取 `eventID+2`；`func_names.txt` 把四個名稱依序錯放到相鄰函式。
+  正版 `EVENTS.LBX` 已交叉驗證為 38 個資產，現優先播放 `#1` 的 31 幀累積動畫並於
+  `(320,14)` 疊 `#2..37` 的 36 張事件圖；缺檔、非法 ID 或勘查報告安全退回自繪面板。
+  正版資產與缺資產 fallback 兩套中文畫廊皆為 35/35，已目視抽查 `05_event.png` 的插圖、
+  台標、正文與按鈕安全框。動畫每 3 tick 一幀仍明標 remake timing approximation。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
@@ -88,7 +96,9 @@
   [`docs/re/build-queue-ui-text-audit-20260826.md`](docs/re/build-queue-ui-text-audit-20260826.md) 與
   [`docs/tech/build-queue-external-text-spec.md`](docs/tech/build-queue-external-text-spec.md)、
   [`docs/re/colony-screen-ui-text-audit-20260826.md`](docs/re/colony-screen-ui-text-audit-20260826.md) 與
-  [`docs/tech/colony-screen-external-text-spec.md`](docs/tech/colony-screen-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+  [`docs/tech/colony-screen-external-text-spec.md`](docs/tech/colony-screen-external-text-spec.md)、
+  [`docs/re/event-screen-ui-text-audit-20260826.md`](docs/re/event-screen-ui-text-audit-20260826.md) 與
+  [`docs/tech/event-screen-external-text-spec.md`](docs/tech/event-screen-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`
   已把本次錯判提煉成跨專案流程，涵蓋重新稽核觸發條件、具名符號限制、玩家機制證據矩陣、

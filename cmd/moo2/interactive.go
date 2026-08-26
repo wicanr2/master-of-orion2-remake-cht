@@ -89,6 +89,9 @@ type overlayScreen struct {
 	defSize    float64
 	hits       []hitRegion
 	onAction   func(action string) *origTransition
+	// clickAnywhereAction 讓原版以整張畫面作輸入欄的場景接受任意點擊，但不把
+	// 640×480 畫成 hover 外框。可見按鈕仍可留在 hits 作現代操作提示。
+	clickAnywhereAction string
 	// onHotkey 處理這個畫面的鍵盤快捷鍵(nil = 該畫面沒有快捷鍵)。
 	// 目前只有星圖接了(見 cmd/moo2/hotkeys.go)。
 	onHotkey         func(code string) *origTransition
@@ -166,6 +169,12 @@ func (s *overlayScreen) update(in shell.InputState) *origTransition {
 				}
 				return s.onAction(h.action)
 			}
+		}
+		if s.clickAnywhereAction != "" && s.onAction != nil {
+			if clickSound != nil {
+				clickSound()
+			}
+			return s.onAction(s.clickAnywhereAction)
 		}
 	}
 	return nil
@@ -6669,7 +6678,7 @@ func (a *interactiveApp) Update() error {
 	// 驗證事件視窗版面；不呼叫事件規則，也不修改對局經濟或殖民地狀態。
 	if a.galleryEventTick > 0 && a.tick == a.galleryEventTick && a.galleryBuilder != nil && a.gallerySession != nil {
 		a.gallerySession.LastEventReport = &shell.EventReport{
-			EventID:   -1,
+			EventID:   0,
 			Good:      true,
 			Name:      uiText(i18n.Traditional, "gallery.event.name"),
 			NameEN:    uiText(i18n.English, "gallery.event.name"),
