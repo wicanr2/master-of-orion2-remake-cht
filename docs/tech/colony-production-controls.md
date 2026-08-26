@@ -38,6 +38,16 @@ REFIT 的原版會從持久化設計庫挑同艦體設計。重製版目前沒�
 損傷與可相容的武器改造／火線角，只替換元件。這是透明的替代 UX，不是原版設計庫的
 聲稱。
 
+### IDA 定位勘誤（2026-08-27）
+
+`tools/ida/audit_refit_ui.py` 以 IDA Pro 9.4 唯讀重跑後，確認原版兩組 REFIT 外層候選為
+`sub_C187B @ 0xC187B..0xC19BA` 與 `sub_C20AF @ 0xC20AF..0xC221F`，各自呼叫相鄰的
+loader／draw 函式。外部符號對成本函式有衝突：`names.txt` 把 `Refit_Cost_` 放在短函式
+`sub_D108B @ 0xD108B..0xD10D2`，`func_names.txt` 則放在大型函式
+`sub_D10EE @ 0xD10EE..0xD2754`，而後者會呼叫前者。兩者不得再合併引用；函式名稱只供導覽，
+玩家可見公式仍以上述手冊契約與實際消費端為準。完整證據見
+`docs/re/refit-ui-text-audit-20260827.md`。
+
 REPEAT BUILD 在現行殖民地模型只接受可重複的 Special：殖民船、前哨船、運輸艦隊與
 地形行動。一般建築只會第一次產生長期效果，住宅與貿易品是持續模式，因此拒絕成為
 重複目標。這比讓一般建築花掉 PP 卻沒有第二次效果更誠實。
@@ -61,6 +71,7 @@ REPEAT BUILD 在現行殖民地模型只接受可重複的 Special：殖民船�
 - 規則抽樣：production_controls_test.go 驗證 BUY 邊界與 EndTurn、AUTO BUILD 保存、
   REPEAT Special、REFIT 保存／完成／取消報廢／Star Base 門檻。
 - UI 抽樣：cmd/moo2/production_controls_ui_test.go 驗證 AUTO／REPEAT 熱區與改裝預覽
-  走同一條 shell 規則。
+  走同一條 shell 規則；REFIT 固定文案與 typed 錯誤由 `ui.json` 供應，列表、預覽、按鈕與
+  底部錯誤列另有雙軸安全框及長字串測試。
 
 這一頁的未證實部分只保留作為 oracle 差異；不阻塞 remake 的殖民地生產流程。

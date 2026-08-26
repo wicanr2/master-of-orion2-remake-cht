@@ -246,6 +246,35 @@ type RefitCandidate struct {
 	Ship       Ship
 }
 
+// RefitErrorCode 是 REFIT 驗證的穩定技術錯誤碼。規則層不保存玩家語言句子；
+// UI 依語言從外部 catalog 顯示，鎖步與測試則可直接比較 Code。
+type RefitErrorCode string
+
+const (
+	RefitErrorNoColony       RefitErrorCode = "no_colony"
+	RefitErrorSelectShip     RefitErrorCode = "select_ship"
+	RefitErrorColonyMissing  RefitErrorCode = "colony_missing"
+	RefitErrorFleetMissing   RefitErrorCode = "fleet_missing"
+	RefitErrorFleetNotParked RefitErrorCode = "fleet_not_parked"
+	RefitErrorShipMissing    RefitErrorCode = "ship_missing"
+	RefitErrorFacility       RefitErrorCode = "facility_required"
+	RefitErrorNoUpgrade      RefitErrorCode = "no_upgrade"
+	RefitErrorQueueFull      RefitErrorCode = "queue_full"
+	RefitErrorEnqueueFailed  RefitErrorCode = "enqueue_failed"
+)
+
+type RefitError struct {
+	Code     RefitErrorCode
+	ShipName string
+}
+
+func (e *RefitError) Error() string {
+	if e == nil {
+		return "refit_error"
+	}
+	return "refit:" + string(e.Code)
+}
+
 // RefitCandidates 回傳停泊在該殖民地星系、未航行且屬於可設計戰鬥艦體的艦艇。
 func (s *GameSession) RefitCandidates(colony int) []RefitCandidate {
 	star := s.PlayerColonyStarIndex(colony)
@@ -435,26 +464,26 @@ func (s *GameSession) RefitCostPPForPlayer(source, target Ship) int {
 // 讓預覽與真正入列不會各自維護一份驗證規則。
 func (s *GameSession) PreviewRefit(colony, fleetIndex, shipIndex int) (RefitJob, error) {
 	if colony < 0 || colony >= len(s.PlayerColonies) {
-		return RefitJob{}, fmt.Errorf("殖民地不存在")
+		return RefitJob{}, &RefitError{Code: RefitErrorColonyMissing}
 	}
 	if fleetIndex < 0 || fleetIndex >= len(s.Fleets) {
-		return RefitJob{}, fmt.Errorf("艦隊不存在")
+		return RefitJob{}, &RefitError{Code: RefitErrorFleetMissing}
 	}
 	f := &s.Fleets[fleetIndex]
 	star := s.PlayerColonyStarIndex(colony)
 	if star < 0 || f.AtStar != star || f.ETA != 0 || f.DestStar >= 0 {
-		return RefitJob{}, fmt.Errorf("艦隊未停泊在該殖民地星系")
+		return RefitJob{}, &RefitError{Code: RefitErrorFleetNotParked}
 	}
 	if shipIndex < 0 || shipIndex >= len(f.Ships) {
-		return RefitJob{}, fmt.Errorf("艦艇不存在")
+		return RefitJob{}, &RefitError{Code: RefitErrorShipMissing}
 	}
 	source := f.Ships[shipIndex]
 	if !s.refitFacilityAllows(colony, source.Class) {
-		return RefitJob{}, fmt.Errorf("巡洋艦以上改裝需要星基或更高等級軌道基地")
+		return RefitJob{}, &RefitError{Code: RefitErrorFacility}
 	}
 	target, ok := s.bestRefitTarget(source)
 	if !ok {
-		return RefitJob{}, fmt.Errorf("%s 沒有可套用的同艦體升級", source.Name)
+		return RefitJob{}, &RefitError{Code: RefitErrorNoUpgrade, ShipName: source.Name}
 	}
 	return RefitJob{Source: source, Target: target, ReturnStar: star}, nil
 }
@@ -467,7 +496,7 @@ func (s *GameSession) QueueRefit(colony, fleetIndex, shipIndex int) (RefitJob, e
 		return RefitJob{}, err
 	}
 	if !s.canEnqueueBuild(colony) {
-		return RefitJob{}, fmt.Errorf("建造佇列已滿")
+		return RefitJob{}, &RefitError{Code: RefitErrorQueueFull}
 	}
 	cost := s.RefitCostPPForPlayer(job.Source, job.Target)
 	f := &s.Fleets[fleetIndex]
@@ -476,7 +505,7 @@ func (s *GameSession) QueueRefit(colony, fleetIndex, shipIndex int) (RefitJob, e
 	if !s.enqueueBuildValue(colony, ColonyBuild{Name: RefitBuildName, Cost: cost, Refit: &job}) {
 		// 理論上 canEnqueueBuild 已保證成功；萬一未來佇列規則變動，不能默默吃掉艦艇。
 		f.Ships = append(f.Ships, source)
-		return RefitJob{}, fmt.Errorf("建造佇列無法加入改裝工作")
+		return RefitJob{}, &RefitError{Code: RefitErrorEnqueueFailed}
 	}
 	return job, nil
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"image/color"
 
@@ -32,7 +33,7 @@ type refitScreen struct {
 
 func (b *sceneBuilder) refitPopup(colony int) (origScreen, error) {
 	if b.session == nil || colony < 0 || colony >= len(b.session.PlayerColonies) {
-		return nil, fmt.Errorf("無殖民地可改裝")
+		return nil, &shell.RefitError{Code: shell.RefitErrorNoColony}
 	}
 	return &refitScreen{b: b, colony: colony, selected: -1}, nil
 }
@@ -47,10 +48,63 @@ func (s *refitScreen) candidates() []shell.RefitCandidate {
 func (s *refitScreen) selectedPreview() (shell.RefitJob, error) {
 	candidates := s.candidates()
 	if s.selected < 0 || s.selected >= len(candidates) {
-		return shell.RefitJob{}, fmt.Errorf("請先選一艘停泊艦艇")
+		return shell.RefitJob{}, &shell.RefitError{Code: shell.RefitErrorSelectShip}
 	}
 	c := candidates[s.selected]
 	return s.b.session.PreviewRefit(s.colony, c.FleetIndex, c.ShipIndex)
+}
+
+func localizedRefitError(lang i18n.Lang, err error) string {
+	var refitErr *shell.RefitError
+	if !errors.As(err, &refitErr) || refitErr == nil {
+		return uiText(lang, "refit.error.unknown")
+	}
+	key := "refit.error." + string(refitErr.Code)
+	if refitErr.Code == shell.RefitErrorNoUpgrade {
+		return fmt.Sprintf(uiText(lang, key), refitErr.ShipName)
+	}
+	return uiText(lang, key)
+}
+
+func refitTitleTextRect() textSafeRect {
+	return textSafeRect{x: 24, y: 14, w: 592, h: 32, insetX: 4, lineH: 32}
+}
+
+func refitSubtitleTextRect() textSafeRect {
+	return textSafeRect{x: 24, y: 46, w: 592, h: 16, insetX: 4, lineH: 16}
+}
+
+func refitListTextRect(i int) textSafeRect {
+	return textSafeRect{x: refitListX, y: refitListY + i*refitListH, w: refitListW, h: refitListH - 2,
+		insetX: 6, insetY: 1, lineH: refitListH - 4}
+}
+
+func refitEmptyTextRect() textSafeRect {
+	return textSafeRect{x: 32, y: 180, w: 576, h: 32, insetX: 4, insetY: 2, lineH: 28}
+}
+
+func refitPreviewSourceTextRect() textSafeRect {
+	return textSafeRect{x: 38, y: 330, w: 556, h: 20, insetX: 2, insetY: 1, lineH: 18}
+}
+
+func refitPreviewDetailTextRect() textSafeRect {
+	return textSafeRect{x: 38, y: 352, w: 556, h: 34, insetX: 2, lineH: 16}
+}
+
+func refitPreviewWarningTextRect() textSafeRect {
+	return textSafeRect{x: 38, y: 388, w: 556, h: 16, insetX: 2, lineH: 16}
+}
+
+func refitPreviewPromptTextRect() textSafeRect {
+	return textSafeRect{x: 38, y: 348, w: 556, h: 24, insetX: 2, insetY: 1, lineH: 22}
+}
+
+func refitButtonTextRect(x int) textSafeRect {
+	return textSafeRect{x: x, y: refitQueueY, w: refitButtonW, h: 28, insetX: 4, insetY: 2, lineH: 24}
+}
+
+func refitMessageTextRect() textSafeRect {
+	return textSafeRect{x: 30, y: 458, w: 580, h: 20, insetX: 2, insetY: 1, lineH: 18}
 }
 
 func (s *refitScreen) update(in shell.InputState) *origTransition {
@@ -81,12 +135,12 @@ func (s *refitScreen) update(in shell.InputState) *origTransition {
 	if hitBox(in.MouseX, in.MouseY, refitQueueX, refitQueueY, refitButtonW, 28) {
 		job, err := s.selectedPreview()
 		if err != nil {
-			s.msg = err.Error()
+			s.msg = localizedRefitError(s.b.lang, err)
 			return nil
 		}
 		c := candidates[s.selected]
 		if _, err := s.b.session.QueueRefit(s.colony, c.FleetIndex, c.ShipIndex); err != nil {
-			s.msg = err.Error()
+			s.msg = localizedRefitError(s.b.lang, err)
 			return nil
 		}
 		if clickSound != nil {
@@ -134,10 +188,9 @@ func (s *refitScreen) draw(dst *ebiten.Image) {
 	warn := color.RGBA{240, 168, 116, 255}
 
 	dst.Fill(bg)
-	fillPanel(dst, 18, 18, 604, 44, panel, false)
-	b.fnt.DrawCentered(dst, b.tr("艦艇改裝", "SHIP REFIT"), 320, 30, 18, gold)
-	b.fnt.DrawCentered(dst, b.tr("選擇停泊於此殖民地星系的戰鬥艦", "Choose a combat ship parked in this colony system"),
-		320, 51, 11, dim)
+	fillPanel(dst, 18, 14, 604, 48, panel, false)
+	refitTitleTextRect().drawCentered(dst, b.fnt, uiText(b.lang, "refit.title"), 18, gold)
+	refitSubtitleTextRect().drawCentered(dst, b.fnt, uiText(b.lang, "refit.subtitle"), 11, dim)
 
 	candidates := s.candidates()
 	for i := 0; i < refitListRows; i++ {
@@ -150,52 +203,42 @@ func (s *refitScreen) draw(dst *ebiten.Image) {
 			continue
 		}
 		c := candidates[i]
-		label := fmt.Sprintf("%s  ·  %s  ·  %s/%s/%s/%s",
+		label := fmt.Sprintf(uiText(b.lang, "refit.candidate.summary"),
 			c.Ship.Name, shipClassLabel(b.lang, c.Ship.Class),
 			s.componentName(c.Ship.Weapon), s.componentName(c.Ship.Armor),
 			s.componentName(c.Ship.Shield), s.componentName(c.Ship.Special))
-		b.fnt.Draw(dst, truncateToWidth(b.fnt, label, 11, refitListW-12),
-			refitListX+6, float64(y+5), 11, body)
+		refitListTextRect(i).drawLeft(dst, b.fnt, label, 11, body)
 	}
 	if len(candidates) == 0 {
-		b.fnt.DrawCentered(dst, b.tr("這個星系沒有可改裝的停泊戰鬥艦",
-			"No stationary refittable combat ship in this system"), 320, 196, 13, warn)
+		refitEmptyTextRect().drawCentered(dst, b.fnt, uiText(b.lang, "refit.empty"), 13, warn)
 	}
 
 	fillPanel(dst, 28, 324, 584, 84, panel, false)
 	if job, err := s.selectedPreview(); err == nil {
 		cost := b.session.RefitCostPPForPlayer(job.Source, job.Target)
-		b.fnt.Draw(dst, truncateToWidth(b.fnt, fmt.Sprintf(b.tr("來源：%s → 目標：%s（同艦體、自動最佳模板）",
-			"Source: %s → target: %s (same hull, automatic best template)"),
-			job.Source.Name, job.Target.Name), 12, 556), 38, 334, 12, gold)
-		detail := fmt.Sprintf(b.tr("武器 %s  裝甲 %s  護盾 %s  特殊 %s  改裝成本 %d PP",
-			"Weapon %s  Armor %s  Shield %s  Special %s  Refit cost %d PP"),
+		refitPreviewSourceTextRect().drawLeft(dst, b.fnt,
+			fmt.Sprintf(uiText(b.lang, "refit.preview.source_target"), job.Source.Name, job.Target.Name), 12, gold)
+		detail := fmt.Sprintf(uiText(b.lang, "refit.preview.detail"),
 			s.componentName(job.Target.Weapon), s.componentName(job.Target.Armor),
 			s.componentName(job.Target.Shield), s.componentName(job.Target.Special), cost)
-		for i, line := range b.fnt.Wrap(detail, 11, 556) {
-			b.fnt.Draw(dst, line, 38, float64(355+i*14), 11, body)
-		}
-		b.fnt.Draw(dst, b.tr("改裝中艦艇不可使用；從建造佇列移除會報廢來源艦。",
-			"The ship is unavailable while refitting; removing the job scraps it."),
-			38, 391, 10, dim)
+		refitPreviewDetailTextRect().drawCenteredLines(dst, b.fnt, detail, 11, body)
+		refitPreviewWarningTextRect().drawLeft(dst, b.fnt, uiText(b.lang, "refit.preview.scrap_warning"), 10, dim)
 	} else {
-		b.fnt.Draw(dst, b.tr("請先選擇一艘可改裝戰鬥艦。",
-			"Select a refittable combat ship to preview the automatic template."),
-			38, 358, 12, dim)
+		refitPreviewPromptTextRect().drawLeft(dst, b.fnt, uiText(b.lang, "refit.preview.select_prompt"), 12, dim)
 	}
 
 	for _, button := range []struct {
-		x    int
-		text string
-		col  color.RGBA
+		x       int
+		textKey string
+		col     color.RGBA
 	}{
-		{refitQueueX, b.tr("排入改裝", "QUEUE REFIT"), ok},
-		{refitCancelX, b.tr("返回", "RETURN"), dim},
+		{refitQueueX, "refit.button.queue", ok},
+		{refitCancelX, "refit.button.return", dim},
 	} {
 		fillPanel(dst, float32(button.x), refitQueueY, refitButtonW, 28, button.col, false)
-		b.fnt.DrawCentered(dst, button.text, float64(button.x+refitButtonW/2), refitQueueY+6, 12, bg)
+		refitButtonTextRect(button.x).drawCentered(dst, b.fnt, uiText(b.lang, button.textKey), 12, bg)
 	}
 	if s.msg != "" {
-		b.fnt.Draw(dst, truncateToWidth(b.fnt, s.msg, 11, 580), 30, 466, 11, warn)
+		refitMessageTextRect().drawLeft(dst, b.fnt, s.msg, 11, warn)
 	}
 }

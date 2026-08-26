@@ -149,6 +149,14 @@
   `sub_E4410 @ 0xE4410` 是突破消費端；field 與 application 在研究開始前寫入。原版把選擇整合於
   `TECHSEL.LBX#0`，remake 的獨立 application 面板仍明標介面轉接近似；精確 row widget 與將
   adapter 合併回八領域畫面是獨立視覺忠實度缺口，不以本輪文案測試升格。
+  殖民地 REFIT 已完成第十六個切片：標題、副標題、候選列、預覽、報廢警告、按鈕與所有
+  玩家可見錯誤均由 `ui.json` 供應；規則層改回傳穩定 typed `RefitError`，不再保存中文錯誤句子，
+  未知錯誤亦有外部文案 fallback。所有欄位改走雙軸安全框，實際 bitmap font 測試另抓到 18px
+  標題字墨高 32px、會與舊副標題重疊，現保持標題中心不變並重分配 32+16px header。
+  IDA Pro 9.4 本輪證實兩組 REFIT popup／draw／loader 函式邊界，也推翻外部符號把
+  `sub_D108B @ 0xD108B..0xD10D2` 與 `sub_D10EE @ 0xD10EE..0xD2754` 都稱為
+  `Refit_Cost_` 的混用；後者會呼叫前者，兩者必須分開引用。remake 的單頁自動最佳模板仍是
+  已揭露的設計庫替代 UX，不因文案與版面完成而升格為原版兩階段 popup parity。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
@@ -180,7 +188,9 @@
   [`docs/re/tactical-control-bar-text-audit-20260826.md`](docs/re/tactical-control-bar-text-audit-20260826.md) 與
   [`docs/tech/tactical-control-bar-external-text-spec.md`](docs/tech/tactical-control-bar-external-text-spec.md)、
   [`docs/re/research-choice-ui-text-audit-20260826.md`](docs/re/research-choice-ui-text-audit-20260826.md) 與
-  [`docs/tech/research-choice-external-text-spec.md`](docs/tech/research-choice-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+  [`docs/tech/research-choice-external-text-spec.md`](docs/tech/research-choice-external-text-spec.md)、
+  [`docs/re/refit-ui-text-audit-20260827.md`](docs/re/refit-ui-text-audit-20260827.md) 與
+  [`docs/tech/refit-external-text-spec.md`](docs/tech/refit-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
 
 - [~] **原版對局內 SETTINGS 分頁**：2026-08-26 已完成原版 13 列畫面、資產、外部雙語文案、
   原版預設值、`.GAM` 匯入與 JSON 往返。IDA 證實
