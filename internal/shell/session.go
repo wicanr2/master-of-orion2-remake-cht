@@ -4936,6 +4936,7 @@ func (s *GameSession) EndTurn() {
 			s.AIPlayers[i].Player.TreatyResearch = treatyYields[i].AIResearch
 		}
 		ps, colonies := engine.ApplyAIEconomy(s.AIPlayers[i].Player, s.AIPlayers[i].Colonies, s.AIPlayers[i].Decider)
+		ps = applyAIDifficultyPlayerInputs(ps, s.Difficulty)
 		s.AIPlayers[i].Colonies = colonies
 		out := engine.RunEmpireTurnWithResearchRoller(ps, s.aiColoniesForTurn(i, colonies), s.researchBreakthroughRoll)
 		s.recordAIPlagueResearch(i, out)
@@ -6116,6 +6117,7 @@ func NewDemoSession() *GameSession {
 
 	session := &GameSession{
 		Turn:              1,
+		Difficulty:        1, // 與 buildDemoAIOpponents(..., 1, ...) 同一份示範局難度，避免零值誤套 Tutor。
 		Player:            newHomeworldPlayerState(gamedata.TOPIC_ADVANCED_CONSTRUCTION),
 		PlayerColonies:    []engine.ColonyState{playerHomeworldColony()},
 		ColonyBuildings:   []map[string]bool{homeworldBuildings()},

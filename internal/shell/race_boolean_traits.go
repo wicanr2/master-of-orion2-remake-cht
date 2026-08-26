@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
@@ -126,6 +127,17 @@ func aiRaceSpyBonus(a AIOpponent) int {
 		return 0
 	}
 	return Races[idx].SpyBonus + boolTraitBonus(aiRaceHasTrait(a, gamedata.TRAIT_TELEPATHIC), gamedata.SpyTelepathicRaceBonus)
+}
+
+// aiSpyEmpireBonus 在 AI 種族／心靈感應共同值上加入官方五級 Spy Bonus。
+// 官方表未拆攻守，remake 依共同帝國值同時供 AB／DB 消費；證據邊界見
+// docs/re/ai-spy-difficulty-audit-20260826.md。
+func aiSpyEmpireBonus(a AIOpponent, difficulty int) int {
+	bonus := aiRaceSpyBonus(a)
+	if d, ok := ai.AIDifficultyBonus(ai.Difficulty(difficulty)); ok {
+		bonus += d.SpyBonus
+	}
+	return bonus
 }
 
 func boolTraitBonus(active bool, value int) int {

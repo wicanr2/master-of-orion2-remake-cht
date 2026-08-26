@@ -149,6 +149,12 @@ type ColonyState struct {
 
 	// 成長獎金(百分點)之和:g 一般 + r 種族 + i AI + t 科技 + l + e(住房 h 由引擎計)。
 	GrowthBonusSum int
+	// AIDifficulty*Quarters 是官方 Generic AI bonuses 表的暫態每職務固定加值，單位 1/4。
+	// 只由 shell 的 AI 回合副本填入；玩家與持久殖民地維持零值。原版逐殖民地捨入順序尚未
+	// 由 IDA 閉合，因此此層採有文件的向下取整近似。
+	AIDifficultyFoodQuarters     int `json:"-"`
+	AIDifficultyIndustryQuarters int `json:"-"`
+	AIDifficultyResearchQuarters int `json:"-"`
 
 	// MoralePercent 是淨士氣對產出的百分點調整(每格笑臉 +10、哭臉 -10;正負皆可)。
 	// 依手冊套用於食物/工業/研究(見 gamedata.MoraleProductionOutput)。
@@ -329,8 +335,11 @@ type PlayerState struct {
 	// 依殖民地建築與持久實艦重算；engine 只消費正規化後的數值。
 	CommandPointsSupply int
 	UsedCommandPoints   int
-	ResearchTopic       gamedata.ResearchTopic // 目前研究中的主題
-	ResearchProgress    int                    // 目前主題已累積的研究點(RP)
+	// CommandOverflowCostPerPoint 是本回合每一點指揮赤字成本。<=0 使用玩家預設 10 BC；
+	// shell 對 AI 依官方五級難度表暫態覆寫，且不序列化。
+	CommandOverflowCostPerPoint int                    `json:"-"`
+	ResearchTopic               gamedata.ResearchTopic // 目前研究中的主題
+	ResearchProgress            int                    // 目前主題已累積的研究點(RP)
 	// ResearchApplication 是原版 player+0x322 的 typed 對應：開始研究 topic 時已選定、
 	// 突破後才真正取得的科技應用。HasResearchApplication 區分合法零值與尚未選定。
 	ResearchApplication    gamedata.Technology
@@ -391,6 +400,9 @@ type PlayerState struct {
 	// 0/1 都是合法值；每兩個半 BC 在下一次帝國結算時合併成 1 BC。
 	// 這是 remake 的精確帳本欄位，舊 JSON 缺欄位時零值安全。
 	FoodReplicatorBCHalfRemainder int `json:"foodReplicatorBCHalfRemainder,omitempty"`
+	// AIDifficultyIncomeQuartersPerPop 是 AI 每人口 BC 難度加值，單位 1/4 BC。
+	// shell 僅在本回合 AI PlayerState 副本設定；零值不影響玩家或舊存檔。
+	AIDifficultyIncomeQuartersPerPop int `json:"-"`
 
 	// HyperAdvancedResearchCost 是版本規則 profile 對 Hyper-Advanced 第一級研究(8 個共用同一
 	// 基礎成本的 TOPIC_HYPER_* 主題,見 gamedata.IsHyperAdvancedTopic)的覆寫值；研究結算再依

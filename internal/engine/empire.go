@@ -134,6 +134,7 @@ func RunEmpireTurnWithResearchRoller(ps PlayerState, colonies []ColonyState, rol
 			perCapitaHalf = 0
 		}
 		tax += cs.Population * perCapitaHalf / 2
+		tax += floorQuarterToWhole(cs.Population * ps.AIDifficultyIncomeQuartersPerPop)
 		// 行星特殊物產的固定收入(寶石礦 +10 / 金礦 +5,手冊逐字)。與人口無關,
 		// 但同屬「該殖民地的 BC 收入」,故計入小計、受 IncomeBonusPercent 加成。
 		if cs.SpecialIncome > 0 {
@@ -186,7 +187,11 @@ func RunEmpireTurnWithResearchRoller(ps PlayerState, colonies []ColonyState, rol
 	if uncoveredCommandPoints < 0 {
 		uncoveredCommandPoints = 0
 	}
-	out.CommandOverflowCost = gamedata.IncomeCommandOverflowCost(uncoveredCommandPoints)
+	commandCostPerPoint := ps.CommandOverflowCostPerPoint
+	if commandCostPerPoint <= 0 {
+		commandCostPerPoint = gamedata.IncomeCommandOverflowCostPerPoint
+	}
+	out.CommandOverflowCost = uncoveredCommandPoints * commandCostPerPoint
 	// 運輸艦(Freighter)維護費(GAME_MANUAL.pdf p.169,gamedata.IncomeFreighterMaintenanceCost)。
 	// 獨立於 ps.Maintenance（建築分項）。ps.ActiveFreighters 玩家側
 	// 建造「運輸艦隊」後會非 0(見該欄位註解 2026-07-11(#4)追加接線段落),AI 對手仍恆 0。

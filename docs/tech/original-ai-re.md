@@ -6,10 +6,11 @@
 「待逆向原版 AI」節點)累積考據材料,供玩家在主選單於「remake AI」與「original AI」間切換時,
 original 模式有真實依據可循,而不是 remake 啟發式的重貼標籤。
 
-**與 `internal/ai` 現況的關係**:目前 `internal/ai/{diplomacy,economy,military,research}.go` 是**設計性重建**
-(`ai-decision-modes.md` 明文標註「全部標【設計性重建,非原版】」),`ModeOriginal` 只是型別保留位、
-`NewDecider` 對它 fallback 回 remake 邏輯。本文件**不修改任何程式碼**,單純整理逆向/考據結果,
-讓未來實作 `OriginalDecider` 時有材料可用。
+**與 `internal/ai` 現況的關係**：`internal/ai/{diplomacy,economy,military,research}.go` 的決策器仍是
+設計性重建，`ModeOriginal` 仍 fallback；但本文件的五級 Generic AI bonuses 已於 2026-08-26
+透過 `aiColoniesForTurn`／`RunEmpireTurn` 接入 AI 的 Growth／Food／Prod／Res／BC 玩家路徑。
+接線證據、捨入限制與規格見 `docs/re/ai-difficulty-economy-audit-20260826.md` 及
+`docs/spec/ai-difficulty-economy.md`，不可再把整份本文視為「只有筆記、零程式消費端」。
 
 **鐵律(比照 `patch15-cfg-data-source.md` 的教訓)**:
 

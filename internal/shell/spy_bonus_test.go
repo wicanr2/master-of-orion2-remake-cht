@@ -3,6 +3,7 @@ package shell
 import (
 	"testing"
 
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
@@ -160,4 +161,33 @@ func containsSteal(msg string) bool {
 		}
 	}
 	return false
+}
+
+func TestAISpyDifficultyBonus(t *testing.T) {
+	s := NewDemoSession()
+	a := s.AIPlayers[0]
+	base := aiRaceSpyBonus(a)
+	if got := aiSpyEmpireBonus(a, int(ai.DifficultyTutor)); got != base-2 {
+		t.Fatalf("Tutor AI Spy Bonus：got %d want %d", got, base-2)
+	}
+	if got := aiSpyEmpireBonus(a, int(ai.DifficultyAverage)); got != base {
+		t.Fatalf("Average AI Spy Bonus 應為零：got %d want %d", got, base)
+	}
+	if got := aiSpyEmpireBonus(a, int(ai.DifficultyImpossible)); got != base+2 {
+		t.Fatalf("Impossible AI Spy Bonus：got %d want %d", got, base+2)
+	}
+	avgAttack := calculateSpyMissionScore(SpyMissionSteal, engine.PlayerState{}, engine.PlayerState{},
+		1, 1, 0, aiSpyEmpireBonus(a, int(ai.DifficultyAverage)), 0)
+	impAttack := calculateSpyMissionScore(SpyMissionSteal, engine.PlayerState{}, engine.PlayerState{},
+		1, 1, 0, aiSpyEmpireBonus(a, int(ai.DifficultyImpossible)), 0)
+	if impAttack.AttackerBonus != avgAttack.AttackerBonus+2 {
+		t.Fatalf("AI 作攻方時難度未進 AB：avg=%+v imp=%+v", avgAttack, impAttack)
+	}
+	avgDefense := calculateSpyMissionScore(SpyMissionSteal, engine.PlayerState{}, engine.PlayerState{},
+		1, 1, 0, 0, aiSpyEmpireBonus(a, int(ai.DifficultyAverage)))
+	impDefense := calculateSpyMissionScore(SpyMissionSteal, engine.PlayerState{}, engine.PlayerState{},
+		1, 1, 0, 0, aiSpyEmpireBonus(a, int(ai.DifficultyImpossible)))
+	if impDefense.DefenderBonus != avgDefense.DefenderBonus+2 {
+		t.Fatalf("AI 作守方時難度未進 DB：avg=%+v imp=%+v", avgDefense, impDefense)
+	}
 }

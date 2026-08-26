@@ -194,6 +194,20 @@ func TestRunEmpireTurnCommandSupplyCoversDemand(t *testing.T) {
 	}
 }
 
+func TestRunEmpireTurnAICommandDeficitOverride(t *testing.T) {
+	ps := PlayerState{BC: 100, CommandPointsSupply: 2, UsedCommandPoints: 5,
+		CommandOverflowCostPerPoint: 9}
+	out := RunEmpireTurn(ps, nil)
+	if out.CommandOverflowCost != 27 || out.NetBC != -27 || out.Player.BC != 73 {
+		t.Fatalf("Hard AI 指揮赤字成本應為 3×9：%+v", out)
+	}
+	ps.CommandPointsSupply = 5
+	out = RunEmpireTurn(ps, nil)
+	if out.CommandOverflowCost != 0 {
+		t.Fatalf("供需相等不得扣指揮赤字：%+v", out)
+	}
+}
+
 // TestRunEmpireTurnTradeGoods 驗證「貿易品」殖民地(cs.TradeGoods=true)的淨工業改以 2:1
 // 換算成 BC(gamedata.TradeGoodsIncome,一般種族、非 Fantastic Trader),計入
 // EmpireOutput.TradeGoodsRevenue 與 NetBC。
@@ -496,5 +510,38 @@ func TestColonyResearchDivertedIsEphemeralAcrossJSON(t *testing.T) {
 	}
 	if got.ResearchDiverted {
 		t.Fatal("載入後應由 PersistentEvents 重建，不得沿用 stale 暫態旗標")
+	}
+}
+
+func TestAIDifficultyEconomyQuarterBonuses(t *testing.T) {
+	base := ColonyState{
+		Population: 4, PopMax: 10, Farmers: 1, Workers: 1, Scientists: 2,
+		FoodPerFarmer: 2, IndustryPerWorker: 4, ResearchPerScientist: 3,
+		PlanetSize: gamedata.MEDIUM_PLANET, PlanetGravity: gamedata.NORMAL_G,
+		RaceGravity: gamedata.NORMAL_G, RaceGravityKnown: true,
+	}
+	plain := RunEmpireTurn(PlayerState{}, []ColonyState{base})
+	hardColony := base
+	hardColony.AIDifficultyFoodQuarters = 2
+	hardColony.AIDifficultyIndustryQuarters = 4
+	hardColony.AIDifficultyResearchQuarters = 4
+	hardColony.GrowthBonusSum = 3
+	hard := RunEmpireTurn(PlayerState{AIDifficultyIncomeQuartersPerPop: 2}, []ColonyState{hardColony})
+	if hard.Colonies[0].GrossIndustry != plain.Colonies[0].GrossIndustry+1 {
+		t.Fatalf("Hard 工業難度加值錯誤：plain=%d hard=%d", plain.Colonies[0].GrossIndustry, hard.Colonies[0].GrossIndustry)
+	}
+	if hard.Colonies[0].Research != plain.Colonies[0].Research+2 {
+		t.Fatalf("Hard 研究難度加值錯誤：plain=%d hard=%d", plain.Colonies[0].Research, hard.Colonies[0].Research)
+	}
+	if hard.TaxRevenue != plain.TaxRevenue+2 {
+		t.Fatalf("Hard BC 難度加值錯誤：plain=%d hard=%d", plain.TaxRevenue, hard.TaxRevenue)
+	}
+
+	tutor := base
+	tutor.AIDifficultyFoodQuarters = -1
+	tutorOut := RunColonyTurn(tutor)
+	plainColony := RunColonyTurn(base)
+	if tutorOut.Food != plainColony.Food-1 {
+		t.Fatalf("Tutor 單一農夫 -1/4 必須向下取整：plain=%d tutor=%d", plainColony.Food, tutorOut.Food)
 	}
 }

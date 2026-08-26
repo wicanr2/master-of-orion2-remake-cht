@@ -631,7 +631,7 @@ func (s *GameSession) advanceEspionage() {
 			result := spyMissionAttemptWithAgentsResult(s.spyRand, s.SpyMissionFor(i), &s.Player, a.Player,
 				s.PlayerSpies[i], "我方", a.Name, 0,
 				s.raceSpyBonusForActions()+leaderEmpireSkillBonus(s.Leaders, gamedata.SKILL_SPYMASTER),
-				aiRaceSpyBonus(*a)+leaderEmpireSkillBonus(a.Leaders, gamedata.SKILL_TELEPATH),
+				aiSpyEmpireBonus(*a, s.Difficulty)+leaderEmpireSkillBonus(a.Leaders, gamedata.SKILL_TELEPATH),
 				a.DefensiveAgents, a.ColonyBuildings)
 			s.LastEspionage = append(s.LastEspionage, result.Messages...)
 			if result.AttackerSpyKilled && s.PlayerSpies[i] > 0 {
@@ -651,7 +651,7 @@ func (s *GameSession) advanceEspionage() {
 			// 玩家當防守方:政府加成算得出來。
 			result := spyMissionAttemptWithAgentsResult(s.spyRand, aiSpyMission(a.Personality, s.Turn), &a.Player, s.Player, a.Spies, a.Name, "我方",
 				s.playerSpyGovernmentDefenseBonus(),
-				aiRaceSpyBonus(*a)+leaderEmpireSkillBonus(a.Leaders, gamedata.SKILL_SPYMASTER),
+				aiSpyEmpireBonus(*a, s.Difficulty)+leaderEmpireSkillBonus(a.Leaders, gamedata.SKILL_SPYMASTER),
 				s.raceSpyBonusForActions()+leaderEmpireSkillBonus(s.Leaders, gamedata.SKILL_TELEPATH),
 				s.DefensiveAgents, s.ColonyBuildings)
 			s.LastEspionage = append(s.LastEspionage, result.Messages...)

@@ -102,7 +102,8 @@ func TestAIPlagueUsesTransientTurnCopy(t *testing.T) {
 	base := s.AIPlayers[0].Colonies[0].GrowthBonusSum
 	s.PersistentEvents = []PersistentEvent{{Kind: PersistentPlague, PlanetIndex: planet, ResearchNeeded: 100}}
 	turn := s.aiColoniesForTurn(0, s.AIPlayers[0].Colonies)
-	if turn[0].GrowthBonusSum != base-200 || s.AIPlayers[0].Colonies[0].GrowthBonusSum != base {
+	// Demo 難度 1 另有官方 AI 成長 +1；瘟疫 -200 後暫態淨值為 base-199。
+	if turn[0].GrowthBonusSum != base-199 || s.AIPlayers[0].Colonies[0].GrowthBonusSum != base {
 		t.Fatalf("AI 瘟疫副本錯誤：turn=%d stored=%d", turn[0].GrowthBonusSum,
 			s.AIPlayers[0].Colonies[0].GrowthBonusSum)
 	}

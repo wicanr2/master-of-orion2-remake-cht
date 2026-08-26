@@ -22,6 +22,10 @@
 | `+0xC0` | 納貢 | `0xE25D1..0xE2615` 對有效關係呼叫 `sub_E1FC7` |
 | `+0xC2` | 軍官 | `0xE205A..0xE20A5` 對有效領袖呼叫 `sub_94A9D` |
 
+2026-08-26 接線勘誤：`+0xBC` 不再對 AI 固定乘玩家的 10 BC。官方 Generic AI bonuses 的
+五級成本 `12/11/10/9/8` 已由 `PlayerState.CommandOverflowCostPerPoint` 暫態傳入；玩家與舊狀態
+零值仍回退 10。規格見 `docs/spec/ai-command-deficit.md`。
+
 - `sub_1026CF @ 0x1026CF` 取玩家／目標槽 `+0xE57` 的低 6 位，故每位已派駐間諜為
   1 BC，最多 63；這也證實 remake 的槽上限。
 - `sub_94A9D @ 0x94A9D` 以雇用價加 99 後除 100、最低 1，免役條件回 0。現有

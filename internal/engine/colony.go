@@ -12,6 +12,14 @@ func floorHalfToWhole(half int) int {
 	return whole
 }
 
+func floorQuarterToWhole(quarters int) int {
+	whole := quarters / 4
+	if quarters < 0 && quarters%4 != 0 {
+		whole--
+	}
+	return whole
+}
+
 // colonyGravityPenaltyPercent 回傳本殖民地目前生效的重力懲罰百分點(0 或負值,GAME_MANUAL.pdf
 // p.58)。行星重力產生器(NormalizeGravity=true,p.104「正常化至 Normal-G,消除 Low-G/Heavy-G
 // 負面效果」)一律強制歸零,不論 PlanetGravity 是什麼。
@@ -209,6 +217,7 @@ func colonyFood(cs ColonyState, consumption populationConsumption) (food, consum
 			gamedata.UncooperativeJobOutputExact(cs.Farmers, cs.FoodPerFarmer, prisonerFarmers, false),
 			pct) + cs.FlatFood
 	}
+	food += floorQuarterToWhole(cs.Farmers * cs.AIDifficultyFoodQuarters)
 	consumedHalf = consumption.foodTotal()
 	foodHalf = food * 2
 	surplusHalf = foodHalf - consumedHalf
@@ -382,6 +391,7 @@ func RunColonyTurn(cs ColonyState) ColonyOutput {
 				prisonerWorkers, true),
 			pct+cs.IndustryBonusPercent+cs.GovernmentIndustryBonusPercent) + cs.FlatIndustry
 	}
+	gross += floorQuarterToWhole(cs.Workers * cs.AIDifficultyIndustryQuarters)
 	pollutingProd, cleanupCost, netIndustry := colonyPollution(cs, gross)
 	// 再生反應爐(p.81)加在**污染縮減之後**:手冊明說這份產能不計入污染。
 	// 每單位人口 +1,不分職業——所以是 Population 而不是 Workers。
@@ -427,6 +437,7 @@ func RunColonyTurn(cs ColonyState) ColonyOutput {
 			gamedata.UncooperativeJobOutputExact(cs.Scientists, cs.ResearchPerScientist, prisonerScientists, false),
 			pct+cs.ResearchBonusPercent+cs.GovernmentResearchBonusPercent) + cs.FlatResearch
 	}
+	research += floorQuarterToWhole(cs.Scientists * cs.AIDifficultyResearchQuarters)
 	shortageGrowth := populationShortageGrowth(cs, consumption, foodHalf, availableIndustryHalf)
 	growth, groupGrowth, groupGrowthCount := colonyGrowth(cs, surplus, netIndustry, shortageGrowth)
 

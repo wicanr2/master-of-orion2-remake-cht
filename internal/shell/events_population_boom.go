@@ -1,6 +1,9 @@
 package shell
 
-import "github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
+import (
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
+)
 
 func (s *GameSession) populationBoomTargetEligible(colonies []engine.ColonyState, planetAt func(int) int) (int, bool) {
 	if len(colonies) == 0 || planetAt == nil || s.eventRand == nil {
@@ -56,7 +59,9 @@ func (s *GameSession) aiColoniesForTurn(aiIndex int, colonies []engine.ColonySta
 		return colonies
 	}
 	a := &s.AIPlayers[aiIndex]
-	needsCopy := false
+	bonus, hasDifficultyBonus := ai.AIDifficultyBonus(ai.Difficulty(s.Difficulty))
+	needsCopy := hasDifficultyBonus && (bonus.GrowthPercent != 0 || bonus.FoodQuarters != 0 ||
+		bonus.ProdQuarters != 0 || bonus.ResQuarters != 0)
 	for i := range colonies {
 		star := -1
 		if i < len(a.ColonyStars) {
@@ -73,6 +78,12 @@ func (s *GameSession) aiColoniesForTurn(aiIndex int, colonies []engine.ColonySta
 	}
 	out := append([]engine.ColonyState(nil), colonies...)
 	for i := range out {
+		if hasDifficultyBonus {
+			out[i].GrowthBonusSum += bonus.GrowthPercent
+			out[i].AIDifficultyFoodQuarters = bonus.FoodQuarters
+			out[i].AIDifficultyIndustryQuarters = bonus.ProdQuarters
+			out[i].AIDifficultyResearchQuarters = bonus.ResQuarters
+		}
 		if i < len(a.ColonyStars) && s.StarInStasis(a.ColonyStars[i]) {
 			freezeColonyForStasis(&out[i])
 		}

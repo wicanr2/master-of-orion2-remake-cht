@@ -3,6 +3,7 @@ package shell
 import (
 	"testing"
 
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
@@ -76,8 +77,30 @@ func TestPopulationBoomAIUsesTransientTurnCopy(t *testing.T) {
 	base := s.AIPlayers[0].Colonies[0].GrowthBonusSum
 	s.PersistentEvents = []PersistentEvent{{Kind: PersistentPopulationBoom, PlanetIndex: s.AIPlayers[0].ColonyPlanets[0]}}
 	got := s.aiColoniesForTurn(0, s.AIPlayers[0].Colonies)
-	if got[0].GrowthBonusSum != base+100 || s.AIPlayers[0].Colonies[0].GrowthBonusSum != base {
+	// Demo 難度 1 另有官方 AI 成長 +1；事件本身再加 100，兩者同在暫態副本疊加。
+	if got[0].GrowthBonusSum != base+101 || s.AIPlayers[0].Colonies[0].GrowthBonusSum != base {
 		t.Fatalf("AI 回合副本錯誤：turn=%d stored=%d base=%d", got[0].GrowthBonusSum,
 			s.AIPlayers[0].Colonies[0].GrowthBonusSum, base)
+	}
+}
+
+func TestAIColoniesForTurnAddsDifficultyWithoutPersisting(t *testing.T) {
+	s := NewDemoSession()
+	s.Difficulty = int(ai.DifficultyHard)
+	base := s.AIPlayers[0].Colonies[0]
+	turn := s.aiColoniesForTurn(0, s.AIPlayers[0].Colonies)
+	if len(turn) == 0 {
+		t.Fatal("AI 殖民地副本為空")
+	}
+	if turn[0].GrowthBonusSum != base.GrowthBonusSum+3 ||
+		turn[0].AIDifficultyFoodQuarters != 2 ||
+		turn[0].AIDifficultyIndustryQuarters != 4 ||
+		turn[0].AIDifficultyResearchQuarters != 4 {
+		t.Fatalf("Hard AI 暫態加值錯誤：%+v", turn[0])
+	}
+	stored := s.AIPlayers[0].Colonies[0]
+	if stored.GrowthBonusSum != base.GrowthBonusSum || stored.AIDifficultyFoodQuarters != 0 ||
+		stored.AIDifficultyIndustryQuarters != 0 || stored.AIDifficultyResearchQuarters != 0 {
+		t.Fatalf("難度加值污染持久殖民地：before=%+v after=%+v", base, stored)
 	}
 }
