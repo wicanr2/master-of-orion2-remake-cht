@@ -609,6 +609,8 @@ type GroundInvasionResult struct {
 	Rounds                  int
 	StarCaptured            bool // 攻方勝且完成佔領星 + 殖民地過戶
 	MindControlled          bool // 心靈感應直接接管殖民地，人口已全部同化
+	AttackerColor           int  // 攻方帝國旗色，供 COLGCBT 玩家色 ramp 替換
+	DefenderColor           int  // 守方帝國旗色，供 COLGCBT 玩家色 ramp 替換
 }
 
 // MindControlColony 是心靈感應種族的替代入侵行動。手冊明列：至少一艘
@@ -879,7 +881,7 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 		DefenderStart: defTanks + defMarines + militiaCount, ColonyName: s.starName(starIdx),
 		AttackerSurvived: res.AttackerSurvived, DefenderSurvived: res.DefenderSurvived,
 		AttackerMarinesSurvived: marinesSurvived, AttackerTanksSurvived: tanksSurvived,
-		Rounds: res.Rounds,
+		Rounds: res.Rounds, AttackerColor: s.FlagColor, DefenderColor: aiPlayer.Color,
 	}
 	s.Fleet().Marines = marinesSurvived
 	s.Fleet().Tanks = tanksSurvived

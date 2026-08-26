@@ -142,6 +142,21 @@ func TestInvadeColony_Deterministic(t *testing.T) {
 	}
 }
 
+func TestInvadeColonyCarriesEmpireColorsToGroundCombatUI(t *testing.T) {
+	s, starIdx := newFleetAtAIHomeSession(t)
+	s.FlagColor = 6
+	s.AIPlayers[0].Color = 3
+	s.AIPlayers[0].ColorKnown = true
+	s.Fleet().Marines = 6
+	res := s.InvadeColony(starIdx)
+	if !res.Ok {
+		t.Fatalf("測試入侵未成立：%s", res.Reason)
+	}
+	if res.AttackerColor != 6 || res.DefenderColor != 3 {
+		t.Fatalf("地面戰旗色未隨 typed 戰果傳遞：攻方=%d 守方=%d", res.AttackerColor, res.DefenderColor)
+	}
+}
+
 // TestInvadeColony_PreconditionsChecked 驗證三個前置條件缺一都會被擋下(Ok=false),
 // 且不會誤動任何狀態。
 func TestInvadeColony_PreconditionsChecked(t *testing.T) {

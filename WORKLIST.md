@@ -91,6 +91,16 @@
   frame 與內嵌調色盤後使用原版機械框，缺檔才退回 `TURNSUM.LBX` 自繪面板；繁中只覆蓋烘字
   文字牌，英文保留原圖。正版與缺 `SCORE.LBX` 兩套畫廊皆為 35/35，已目視抽查九列、總分及
   全畫面點擊提示均在內容框內；`#1..14` race icon 的 writer／consumer 尚未閉合，未任意接入。
+  地面戰戰報已完成第九個切片：標題、攻守統計、三種戰果、按鈕、錯誤與轉場均由 `ui.json`
+  供應，固定畫廊殖民地名亦不再藏於 `interactive.go`；各列、標題、戰果與按鈕改走雙軸安全框。
+  IDA 同時推翻 `func_names.txt` 的 `Colony_Combat_Screen_ @ 0xB771D` 舊解釋：該函式只掃描
+  每側 40 筆、stride `0x19` 的單位記錄；完整設定／生命週期是
+  `sub_B7491 @ 0xB7491..0xB771D`，逐幀繪製與戰鬥推進是
+  `sub_B7289 @ 0xB7289..0xB7491`。原版即時戰鬥完成後自動返回，remake 一次性解算後的
+  定格與繼續按鈕維持明標近似。正版與缺 `COLGCBT.LBX` 兩套畫廊均為 35/35；人工抽查另發現
+  單位洋紅色 ramp 未替換；IDA 進一步證實 `sub_B8EFB` 依 raw color 對
+  `0xC0..0xC7`／`0xE8..0xEB` 做兩張 index 表替換，現已逐值串到 typed
+  `AttackerColor`／`DefenderColor`，`#21` 面板框則保留原色。palette provider 的原版精確來源仍未知。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
@@ -108,7 +118,9 @@
   [`docs/re/event-screen-ui-text-audit-20260826.md`](docs/re/event-screen-ui-text-audit-20260826.md) 與
   [`docs/tech/event-screen-external-text-spec.md`](docs/tech/event-screen-external-text-spec.md)、
   [`docs/re/hi-score-screen-ui-text-audit-20260826.md`](docs/re/hi-score-screen-ui-text-audit-20260826.md) 與
-  [`docs/tech/hi-score-external-text-spec.md`](docs/tech/hi-score-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+  [`docs/tech/hi-score-external-text-spec.md`](docs/tech/hi-score-external-text-spec.md)、
+  [`docs/re/ground-combat-screen-ui-text-audit-20260826.md`](docs/re/ground-combat-screen-ui-text-audit-20260826.md) 與
+  [`docs/tech/ground-combat-external-text-spec.md`](docs/tech/ground-combat-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`
   已把本次錯判提煉成跨專案流程，涵蓋重新稽核觸發條件、具名符號限制、玩家機制證據矩陣、

@@ -755,5 +755,21 @@
   {"key":"hiscore.score.council","english":"Council Victory","value":"議會勝利","note":"最終得分分項"},
   {"key":"hiscore.score.antares","english":"Antares Defeated","value":"擊敗安塔蘭","note":"最終得分分項"},
   {"key":"hiscore.score.total","english":"TOTAL SCORE","value":"總分","note":"最終得分總計"},
-  {"key":"hiscore.button.continue","english":"CLICK TO CONTINUE","value":"點擊任意處繼續","note":"原版整張畫面輸入欄的可見提示"}
+  {"key":"hiscore.button.continue","english":"CLICK TO CONTINUE","value":"點擊任意處繼續","note":"原版整張畫面輸入欄的可見提示"},
+  {"key":"groundcombat.transition.galaxy","english":"Galaxy","value":"星系主畫面","note":"戰後返回星圖的轉場標籤"},
+  {"key":"groundcombat.error.no_session","english":"No active game","value":"目前沒有進行中的對局","note":"地面戰缺少工作階段的安全錯誤"},
+  {"key":"groundcombat.title.default","english":"GROUND COMBAT","value":"地面戰","note":"地面戰一般標題"},
+  {"key":"groundcombat.title.colony","english":"GROUND COMBAT — %s","value":"地面戰 ─ %s","note":"%s 為外部殖民地名稱"},
+  {"key":"groundcombat.side.attacker","english":"ATTACKER","value":"攻方","note":"攻方兵力面板"},
+  {"key":"groundcombat.side.defender","english":"DEFENDER","value":"守方","note":"守方兵力面板"},
+  {"key":"groundcombat.attacker.marines","english":"Marines  %d → %d","value":"陸戰隊  %d → %d","note":"攻方陸戰隊開戰／存活數"},
+  {"key":"groundcombat.attacker.armor","english":"Armor  %d → %d","value":"裝甲營  %d → %d","note":"攻方裝甲部隊開戰／存活數"},
+  {"key":"groundcombat.attacker.survivors","english":"Survivors  %d","value":"存活合計  %d","note":"攻方存活合計"},
+  {"key":"groundcombat.defender.garrison","english":"Garrison  %d → %d","value":"守軍  %d → %d","note":"守方開戰／存活數"},
+  {"key":"groundcombat.defender.rounds","english":"%d rounds fought","value":"交戰  %d 回合","note":"地面戰解算回合數"},
+  {"key":"groundcombat.outcome.repelled","english":"Invasion repelled — the colony remains in enemy hands","value":"入侵失敗，殖民地仍在敵方手中","note":"攻方落敗戰果"},
+  {"key":"groundcombat.outcome.success","english":"Invasion successful","value":"入侵成功","note":"攻方勝利但未取得星系"},
+  {"key":"groundcombat.outcome.captured","english":"Invasion successful — the system is yours","value":"入侵成功，已佔領此星","note":"攻方取得星系"},
+  {"key":"groundcombat.button.continue","english":"CONTINUE","value":"繼續","note":"remake 戰後定格出口；原版完成後自動返回"},
+  {"key":"gallery.colony.demo","english":"Demo Colony","value":"示範殖民地","note":"畫廊固定地面戰／轟炸戰果的外部殖民地名稱"}
 ]

@@ -7,6 +7,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/assets"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/lbx"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
@@ -83,16 +84,14 @@ import (
 
 // 原版兵力面板座標(`sub_B8BC7` / `sub_B8C8B`)。
 const (
-	gcPanelW, gcPanelH = 261, 149 // COLGCBT 資產 21 的實際尺寸,同時是 Print_Troop_Totals_ 的除數
-	gcAtkPanelX        = 1        // 攻方面板貼圖左上
-	gcDefPanelX        = 378      // 守方面板貼圖左上
-	gcPanelY           = 40
-	gcAtkTextX         = 130 // 攻方面板文字 x
-	gcDefTextX         = 508 // 守方面板文字 x
-	gcTextY0           = 50  // 首列 y
-	gcTextRowH         = 12  // 列高。⚠ 原版是 11(sub_B8BC7 的 imul …, 0Bh);中文字高比原版
-	//                          單位元組字型高,11 會上下相黏,故 +1。這是 CJK 版面的必要偏離,
-	//                          唯一一處沒照抄原版數字的地方,標明。
+	gcPanelW, gcPanelH           = 261, 149 // COLGCBT 資產 21 的實際尺寸,同時是 Print_Troop_Totals_ 的除數
+	gcAtkPanelX                  = 1        // 攻方面板貼圖左上
+	gcDefPanelX                  = 378      // 守方面板貼圖左上
+	gcPanelY                     = 40
+	gcAtkTextX                   = 130      // 攻方面板文字 x
+	gcDefTextX                   = 508      // 守方面板文字 x
+	gcTextY0                     = 50       // 首列 y
+	gcTextRowH                   = 16       // 原版列距 11；runtime CJK 10px 字墨高為 16，故採不重疊安全列。
 	gcDarkenAtkX0, gcDarkenAtkX1 = 2, 259   // Darken_Fill_(sub_B8BC7)
 	gcDarkenDefX0, gcDarkenDefX1 = 379, 638 // Darken_Fill_(sub_B8C8B)
 	gcDarkenY0, gcDarkenY1       = 41, 184
@@ -121,8 +120,48 @@ const (
 // gcbtPaletteProvider 是 COLGCBT sprite 借用的調色盤來源(見檔頭「調色盤未定案」)。
 const gcbtPaletteProvider = "colbldg.lbx"
 
+// 兩張 raw index 表由 sub_B8EFB 的 byte_1828D3／byte_182913 匯出。
+var groundColorMapC0 = [8][8]uint8{
+	{0x92, 0xEC, 0xED, 0xEE, 0xEF, 0x96, 0x97, 0x98},
+	{0xDA, 0xDB, 0xDC, 0xD4, 0xDE, 0xDF, 0xE0, 0xE1},
+	{0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7},
+	{0x59, 0x5D, 0x61, 0x63, 0x65, 0x67, 0x69, 0x6C},
+	{0x70, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x87},
+	{0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7, 0xD8, 0xD9},
+	{0x79, 0x7A, 0x7B, 0x7C, 0x7C, 0x7D, 0x7E, 0x7F},
+	{0xB7, 0xB8, 0xB9, 0xBA, 0xBB, 0xBC, 0xBD, 0xBD},
+}
+
+var groundColorMapE8 = [8][4]uint8{
+	{0xEC, 0xED, 0xEE, 0xEF}, {0xDB, 0xDD, 0xDF, 0xE1},
+	{0xE8, 0xE8, 0xEA, 0xEB}, {0x56, 0x61, 0x67, 0x6B},
+	{0x72, 0x74, 0x76, 0x77}, {0xD3, 0xD5, 0xD6, 0xD8},
+	{0x79, 0x7B, 0x7D, 0x7F}, {0xB8, 0xB9, 0xBA, 0xBB},
+}
+
+// remapGroundPlayerIndexes 對應 sub_B8EFB 的兩段 palette-index 替換。raw color 2
+// 是 COLGCBT 原生色，原版會直接返回；其他顏色分別替換 C0..C7 與 E8..EB。
+func remapGroundPlayerIndexes(src *lbx.Frame, flag int) *lbx.Frame {
+	if src == nil || flag == 2 {
+		return src
+	}
+	if flag < 0 || flag >= len(groundColorMapC0) {
+		flag = 0
+	}
+	out := &lbx.Frame{W: src.W, H: src.H, Index: append([]uint8(nil), src.Index...), Written: append([]bool(nil), src.Written...)}
+	for i, idx := range out.Index {
+		switch {
+		case idx >= 0xC0 && idx <= 0xC7:
+			out.Index[i] = groundColorMapC0[flag][idx-0xC0]
+		case idx >= 0xE8 && idx <= 0xEB:
+			out.Index[i] = groundColorMapE8[flag][idx-0xE8]
+		}
+	}
+	return out
+}
+
 // loadGroundSprite 取 COLGCBT 某資產的首幀。任何一步失敗都回 nil,畫面退成純色方塊。
-func loadGroundSprite(res *assets.Resolver, assetID int) *ebiten.Image {
+func loadGroundSprite(res *assets.Resolver, assetID, flag int, replacePlayerColor bool) *ebiten.Image {
 	prov, err := decodeAsset(res, gcbtPaletteProvider, 0)
 	if err != nil || prov.Embedded == nil {
 		return nil
@@ -131,7 +170,12 @@ func loadGroundSprite(res *assets.Resolver, assetID int) *ebiten.Image {
 	if err != nil || len(im.Frames) == 0 {
 		return nil
 	}
-	return ebiten.NewImageFromImage(im.Frames[0].ToRGBA(prov.Embedded, true))
+	frame := im.Frames[0]
+	if replacePlayerColor {
+		frame = remapGroundPlayerIndexes(frame, flag)
+	}
+	rgba := frame.ToRGBA(prov.Embedded, true)
+	return ebiten.NewImageFromImage(rgba)
 }
 
 // spreadX / spreadY 是原版落點公式的**可重現版**:把 Random_(n) 換成由單位序號推出的固定值。
@@ -159,11 +203,11 @@ func newGroundCombatScreen(b *sceneBuilder, res shell.GroundInvasionResult) *gro
 	playSceneBGM(trackColonyCombat) // Colony_Combat_Screen_ → STREAM #10(第 73 項(音樂場景表))
 	return &groundCombatScreen{
 		b: b, fnt: b.fnt, res: res,
-		panel:     loadGroundSprite(b.res, gcbtFrameAsset),
-		marine:    loadGroundSprite(b.res, gcbtMarineAsset),
-		defMarine: loadGroundSprite(b.res, gcbtDefMarineAsset),
-		tank:      loadGroundSprite(b.res, gcbtTankAsset),
-		battleoid: loadGroundSprite(b.res, gcbtBattleoidAsset),
+		panel:     loadGroundSprite(b.res, gcbtFrameAsset, 0, false),
+		marine:    loadGroundSprite(b.res, gcbtMarineAsset, res.AttackerColor, true),
+		defMarine: loadGroundSprite(b.res, gcbtDefMarineAsset, res.DefenderColor, true),
+		tank:      loadGroundSprite(b.res, gcbtTankAsset, res.AttackerColor, true),
+		battleoid: loadGroundSprite(b.res, gcbtBattleoidAsset, res.AttackerColor, true),
 	}
 }
 
@@ -172,12 +216,30 @@ func newGroundCombatScreen(b *sceneBuilder, res shell.GroundInvasionResult) *gro
 // 不覆蓋任何原版元素。
 func (g *groundCombatScreen) contRect() (int, int, int, int) { return 265, 232, 110, 30 }
 
+func groundCombatTitleTextRect() textSafeRect {
+	return textSafeRect{x: 10, y: 5, w: 620, h: 26, insetX: 4, insetY: 1, lineH: 24}
+}
+
+func groundCombatSideTextRect(textX, row int) textSafeRect {
+	return textSafeRect{x: textX - 125, y: gcTextY0 - gcTextRowH/2 + row*gcTextRowH,
+		w: gcPanelW - 10, h: gcTextRowH, insetX: 2, lineH: gcTextRowH}
+}
+
+func groundCombatOutcomeTextRect() textSafeRect {
+	return textSafeRect{x: 40, y: 192, w: 560, h: 32, insetX: 5, insetY: 1, lineH: 30}
+}
+
+func (g *groundCombatScreen) continueTextRect() textSafeRect {
+	x, y, w, h := g.contRect()
+	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 5, insetY: 1, lineH: h - 2}
+}
+
 func (g *groundCombatScreen) update(in shell.InputState) *origTransition {
 	if !in.ClickReleased {
 		return nil
 	}
 	if x, y, w, h := g.contRect(); hitRect(in, x, y, w, h) {
-		return g.b.goTo(g.b.galaxy, "星系主畫面")
+		return g.b.goTo(g.b.galaxy, uiText(g.b.lang, "groundcombat.transition.galaxy"))
 	}
 	return nil
 }
@@ -217,7 +279,7 @@ func (g *groundCombatScreen) drawSidePanel(dst *ebiten.Image, panelX, textX, dx0
 			color.RGBA{140, 150, 130, 255}, false)
 	}
 	for i, ln := range lines {
-		g.fnt.DrawCentered(dst, ln, float64(textX), float64(gcTextY0+i*gcTextRowH), 10, col)
+		groundCombatSideTextRect(textX, i).drawCentered(dst, g.fnt, ln, 10, col)
 	}
 }
 
@@ -236,23 +298,23 @@ func (g *groundCombatScreen) draw(dst *ebiten.Image) {
 	// 那個 y 是文字**上緣**不是中心(當中心的話會被畫面上緣切掉),remake 的 DrawCentered
 	// 以中心對齊,故加半個字高。
 	const titleSize = 16
-	title := g.b.tr("地面戰", "GROUND COMBAT")
+	title := uiText(g.b.lang, "groundcombat.title.default")
 	if g.res.ColonyName != "" {
-		title += " — " + g.res.ColonyName
+		title = fmt.Sprintf(uiText(g.b.lang, "groundcombat.title.colony"), g.res.ColonyName)
 	}
-	g.fnt.DrawCentered(dst, title, 319, 10+titleSize/2, titleSize, gold)
+	groundCombatTitleTextRect().drawCentered(dst, g.fnt, title, titleSize, gold)
 
 	r := g.res
 	g.drawSidePanel(dst, gcAtkPanelX, gcAtkTextX, gcDarkenAtkX0, gcDarkenAtkX1, []string{
-		g.b.tr("攻方", "ATTACKER"),
-		fmt.Sprintf(g.b.tr("陸戰隊  %d → %d", "Marines  %d → %d"), r.AttackerMarinesStart, r.AttackerMarinesSurvived),
-		fmt.Sprintf(g.b.tr("戰車營  %d → %d", "Armor    %d → %d"), r.AttackerTanksStart, r.AttackerTanksSurvived),
-		fmt.Sprintf(g.b.tr("存活合計  %d", "Survivors  %d"), r.AttackerSurvived),
+		uiText(g.b.lang, "groundcombat.side.attacker"),
+		fmt.Sprintf(uiText(g.b.lang, "groundcombat.attacker.marines"), r.AttackerMarinesStart, r.AttackerMarinesSurvived),
+		fmt.Sprintf(uiText(g.b.lang, "groundcombat.attacker.armor"), r.AttackerTanksStart, r.AttackerTanksSurvived),
+		fmt.Sprintf(uiText(g.b.lang, "groundcombat.attacker.survivors"), r.AttackerSurvived),
 	}, atkCol)
 	g.drawSidePanel(dst, gcDefPanelX, gcDefTextX, gcDarkenDefX0, gcDarkenDefX1, []string{
-		g.b.tr("守方", "DEFENDER"),
-		fmt.Sprintf(g.b.tr("守軍  %d → %d", "Garrison  %d → %d"), r.DefenderStart, r.DefenderSurvived),
-		fmt.Sprintf(g.b.tr("交戰  %d 回合", "%d rounds fought"), r.Rounds),
+		uiText(g.b.lang, "groundcombat.side.defender"),
+		fmt.Sprintf(uiText(g.b.lang, "groundcombat.defender.garrison"), r.DefenderStart, r.DefenderSurvived),
+		fmt.Sprintf(uiText(g.b.lang, "groundcombat.defender.rounds"), r.Rounds),
 	}, defCol)
 
 	// 戰場:整個畫面。部隊落點用原版公式(見檔頭)。
@@ -266,26 +328,25 @@ func (g *groundCombatScreen) draw(dst *ebiten.Image) {
 	}
 	drawTroops(dst, g.defMarine, r.DefenderStart, gcDefBaseX, 7, true)
 
-	outcome, outCol := g.b.tr("入侵失敗,殖民地仍在敵方手中",
-		"Invasion repelled — the colony remains in enemy hands"), defCol
+	outcome, outCol := uiText(g.b.lang, "groundcombat.outcome.repelled"), defCol
 	if r.AttackerWon {
-		outcome, outCol = g.b.tr("入侵成功", "Invasion successful"), color.RGBA{160, 230, 160, 255}
+		outcome, outCol = uiText(g.b.lang, "groundcombat.outcome.success"), color.RGBA{160, 230, 160, 255}
 		if r.StarCaptured {
-			outcome = g.b.tr("入侵成功,已佔領此星", "Invasion successful — the system is yours")
+			outcome = uiText(g.b.lang, "groundcombat.outcome.captured")
 		}
 	}
-	g.fnt.DrawCentered(dst, outcome, 319, 208, 15, outCol)
+	groundCombatOutcomeTextRect().drawCentered(dst, g.fnt, outcome, 15, outCol)
 
 	cx, cy, cw, ch := g.contRect()
 	fillPanel(dst, float32(cx), float32(cy), float32(cw), float32(ch), color.RGBA{38, 44, 34, 255}, false)
 	vector.StrokeRect(dst, float32(cx), float32(cy), float32(cw), float32(ch), 1.5, color.RGBA{150, 170, 130, 255}, false)
-	g.fnt.DrawCentered(dst, g.b.tr("繼續", "CONTINUE"), float64(cx+cw/2), float64(cy+ch/2), 14, body)
+	g.continueTextRect().drawCentered(dst, g.fnt, uiText(g.b.lang, "groundcombat.button.continue"), 14, body)
 }
 
 // groundCombat 進入地面戰畫面。
 func (b *sceneBuilder) groundCombat(res shell.GroundInvasionResult) (origScreen, error) {
 	if b.session == nil {
-		return nil, fmt.Errorf("無對局")
+		return nil, fmt.Errorf("%s", uiText(b.lang, "groundcombat.error.no_session"))
 	}
 	return newGroundCombatScreen(b, res), nil
 }

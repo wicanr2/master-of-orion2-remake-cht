@@ -6719,11 +6719,11 @@ func (a *interactiveApp) Update() error {
 	if a.galleryGroundTick > 0 && a.tick == a.galleryGroundTick && a.galleryBuilder != nil {
 		demo := shell.GroundInvasionResult{
 			Ok: true, AttackerWon: true, StarCaptured: true,
-			ColonyName:           a.galleryBuilder.tr("示範殖民地", "Demo Colony"),
+			ColonyName:           uiText(a.galleryBuilder.lang, "gallery.colony.demo"),
 			AttackerMarinesStart: 6, AttackerTanksStart: 2, DefenderStart: 5,
 			AttackerSurvived:        5,
 			AttackerMarinesSurvived: 3, AttackerTanksSurvived: 2, DefenderSurvived: 0,
-			Rounds: 4,
+			Rounds: 4, AttackerColor: 6, DefenderColor: 3,
 		}
 		if sc, err := a.galleryBuilder.groundCombat(demo); err == nil {
 			a.cur = sc
@@ -6760,7 +6760,7 @@ func (a *interactiveApp) Update() error {
 	if a.galleryBombTick > 0 && a.tick == a.galleryBombTick && a.galleryBuilder != nil {
 		demo := shell.GroundBombardResult{
 			Ok: true, TotalDamage: 148, Hits: 7,
-			ColonyName:         a.galleryBuilder.tr("示範殖民地", "Demo Colony"),
+			ColonyName:         uiText(a.galleryBuilder.lang, "gallery.colony.demo"),
 			BuildingsDestroyed: 3, BuildingsRemaining: 5,
 			PopulationLost: 4, PopulationBefore: 12,
 			DefenderRetaliated: true, AttackerShipsLost: 1,

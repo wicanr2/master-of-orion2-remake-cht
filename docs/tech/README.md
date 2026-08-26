@@ -19,6 +19,7 @@
 - [colony-screen-external-text-spec.md](colony-screen-external-text-spec.md) — 殖民地主畫面的外部雙語文案、職業欄與按鈕雙軸安全框。
 - [event-screen-external-text-spec.md](event-screen-external-text-spec.md) — 事件／勘查快報的原版 GNN 資產、外部雙語文案、fallback 與雙軸安全框。
 - [hi-score-external-text-spec.md](hi-score-external-text-spec.md) — 最終得分的原版 `SCORE.LBX` 背景、外部雙語文案、fallback 與雙軸安全框。
+- [ground-combat-external-text-spec.md](ground-combat-external-text-spec.md) — 地面戰戰報的外部雙語文案、原版面板座標、戰後定格近似與文字安全框。
 
 ## 待補(後續輪次)
 
