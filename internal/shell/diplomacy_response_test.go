@@ -12,7 +12,7 @@ func TestDiplomacyResponseTargetsNamedOpponent(t *testing.T) {
 		before[i] = a.Relation
 	}
 	target := s.AIPlayers[1].Name
-	if got := s.DiplomacyResponse("trade", target); got == "" {
+	if got := s.DiplomacyResponse("trade", target); got.Code == "" {
 		t.Fatal("貿易提議應回傳外交回應")
 	}
 	want := clampRelation(before[1] + 10*(100+s.raceDiploBonusPct())/100)
@@ -38,8 +38,23 @@ func TestDiplomacyResponseActionsHaveBoundedEffects(t *testing.T) {
 	if s.AIPlayers[0].Relation != -40 {
 		t.Fatalf("威脅後關係不應低於下限,got %d", s.AIPlayers[0].Relation)
 	}
-	if got := s.DiplomacyResponse("unknown", target); got != "" {
-		t.Fatalf("未知外交動作應回空字串,got %q", got)
+	if got := s.DiplomacyResponse("unknown", target); got.Code != "" {
+		t.Fatalf("未知外交動作應回空字串,got %q", got.Code)
+	}
+}
+
+func TestDiplomacyResponseReturnsTypedCodes(t *testing.T) {
+	s := NewDemoSession()
+	target := s.AIPlayers[0].Name
+	if got := s.DiplomacyResponse("trade", target); got.Code != DiploResultTradeStarted || got.Enemy != target {
+		t.Fatalf("首次貿易結果=%+v，預期 typed trade_started", got)
+	}
+	if got := s.DiplomacyResponse("trade", target); got.Code != DiploResultTradeExists {
+		t.Fatalf("重複貿易結果=%+v，預期 typed trade_exists", got)
+	}
+	s.Player.BC = 4
+	if got := s.OfferCashGift(target, 10); got.Code != DiploResultCashInsufficient || got.Available != 4 || got.Amount != 10 {
+		t.Fatalf("現金不足結果未保存格式參數：%+v", got)
 	}
 }
 
@@ -50,7 +65,7 @@ func TestOfferCashGiftTransfersTreasuryAndImprovesRelation(t *testing.T) {
 	target.Player.BC = 7
 	target.Relation = 0
 
-	if got := s.OfferCashGift(target.Name, 10); got == "" {
+	if got := s.OfferCashGift(target.Name, 10); got.Code == "" {
 		t.Fatal("現金餽贈應回傳外交回應")
 	}
 	if s.Player.BC != 30 || target.Player.BC != 17 {
@@ -68,7 +83,7 @@ func TestOfferCashGiftRejectsInsufficientTreasuryWithoutMutation(t *testing.T) {
 	target.Player.BC = 7
 	target.Relation = -3
 
-	if got := s.OfferCashGift(target.Name, 10); got == "" {
+	if got := s.OfferCashGift(target.Name, 10); got.Code == "" {
 		t.Fatal("國庫不足仍應回傳外交錯誤訊息")
 	}
 	if s.Player.BC != 4 || target.Player.BC != 7 || target.Relation != -3 {

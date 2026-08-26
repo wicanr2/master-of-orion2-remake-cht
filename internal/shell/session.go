@@ -1574,11 +1574,11 @@ func (a *AIOpponent) adjustRelation(delta int) {
 // DiplomacyResponse 處理玩家對某對手的外交動作，並把正式條約／貿易／研究
 // 協議寫入該 AI 的 Treaty 狀態。關係變化仍受種族外交加成放大(人類
 // Charismatic +50%,見 raceDiploBonusPct)，但條約收益由回合結算推進。
-func (s *GameSession) DiplomacyResponse(action, enemy string) string {
+func (s *GameSession) DiplomacyResponse(action, enemy string) DiplomacyResult {
 	s.recordPlayerCommand(PlayerCommand{Name: CmdDiplomacy, Text: action + "\x00" + enemy})
 	ai := s.aiByDisplayName(enemy)
 	if ai == nil {
-		return ""
+		return DiplomacyResult{}
 	}
 	pPop := populationOfColonies(s.PlayerColonies)
 	ePop := populationOfColonies(ai.Colonies)
@@ -1593,65 +1593,65 @@ func (s *GameSession) DiplomacyResponse(action, enemy string) string {
 	switch action {
 	case "peace":
 		if !ai.Treaty.startFormal(gamedata.DIPLO_PEACE) {
-			return enemy + ":目前已有正式條約,無需重複提議。"
+			return diplomacyResult(DiploResultFormalExists, enemy)
 		}
 		ai.adjustRelation(s.diplomacyRelationGain(15)) // 提議和平改善關係(Charismatic／Diplomat 放大)
 		if pPop >= ePop {
-			return enemy + ":你們的實力我們敬佩,和平協議成立。(關係改善)"
+			return diplomacyResult(DiploResultPeaceStrong, enemy)
 		}
-		return enemy + ":我們記下你的善意,但真正的和平言之過早。(關係略改善)"
+		return diplomacyResult(DiploResultPeaceWeak, enemy)
 	case "trade":
 		if !ai.Treaty.startTrade(minPop) {
-			return enemy + ":貿易協議已經存在,無需重複簽署。"
+			return diplomacyResult(DiploResultTradeExists, enemy)
 		}
 		ai.adjustRelation(s.diplomacyRelationGain(10))
-		return enemy + ":貿易協定成立,願雙方繁榮昌盛。(關係改善)"
+		return diplomacyResult(DiploResultTradeStarted, enemy)
 	case "research":
 		if !ai.Treaty.startResearch(minPop) {
-			return enemy + ":研究協議已經存在,無需重複簽署。"
+			return diplomacyResult(DiploResultResearchExists, enemy)
 		}
 		ai.adjustRelation(s.diplomacyRelationGain(10))
-		return enemy + ":研究協定成立,願雙方共享知識。(關係改善)"
+		return diplomacyResult(DiploResultResearchStarted, enemy)
 	case "special_food":
 		if !ai.Treaty.startSpecialTrade(SpecialTradeFoodForCredits, minPop) {
-			return enemy + ":特殊貿易協議已經存在,無需重複簽署。"
+			return diplomacyResult(DiploResultSpecialExists, enemy)
 		}
 		ai.adjustRelation(s.diplomacyRelationGain(12))
-		return enemy + ":食物—現金特殊貿易成立,雙方共享穩定收益。(關係改善)"
+		return diplomacyResult(DiploResultSpecialFoodStarted, enemy)
 	case "special_research":
 		if !ai.Treaty.startSpecialTrade(SpecialTradeResearchExchange, minPop) {
-			return enemy + ":特殊貿易協議已經存在,無需重複簽署。"
+			return diplomacyResult(DiploResultSpecialExists, enemy)
 		}
 		ai.adjustRelation(s.diplomacyRelationGain(12))
-		return enemy + ":研究交換特殊貿易成立,雙方共享研究收益。(關係改善)"
+		return diplomacyResult(DiploResultSpecialResStarted, enemy)
 	case "nonaggression":
 		if !ai.Treaty.startFormal(gamedata.DIPLO_NON_AGGRESSION) {
-			return enemy + ":目前已有正式條約,無法重複簽署。"
+			return diplomacyResult(DiploResultFormalConflict, enemy)
 		}
 		ai.adjustRelation(s.diplomacyRelationGain(15))
-		return enemy + ":互不侵犯條約成立,雙方艦隊不得互相攻擊。(關係改善)"
+		return diplomacyResult(DiploResultNAPStarted, enemy)
 	case "alliance":
 		if !ai.Treaty.startFormal(gamedata.DIPLO_ALLIANCE) {
-			return enemy + ":目前已有正式條約,無法重複簽署。"
+			return diplomacyResult(DiploResultFormalConflict, enemy)
 		}
 		ai.adjustRelation(s.diplomacyRelationGain(30))
-		return enemy + ":同盟成立,雙方將共同守護彼此的疆域。(關係大幅改善)"
+		return diplomacyResult(DiploResultAllianceStarted, enemy)
 	case "tribute_5":
 		if !ai.Treaty.startPlayerTribute(TributeFivePercent) {
-			return enemy + ":目前已有納貢條約,無法重複簽署。"
+			return diplomacyResult(DiploResultTributeExists, enemy)
 		}
-		return enemy + ":我們接受每回合 5% 的納貢條約。"
+		return diplomacyResult(DiploResultTribute5Started, enemy)
 	case "tribute_10":
 		if !ai.Treaty.startPlayerTribute(TributeTenPercent) {
-			return enemy + ":目前已有納貢條約,無法重複簽署。"
+			return diplomacyResult(DiploResultTributeExists, enemy)
 		}
-		return enemy + ":我們接受每回合 10% 的納貢條約。"
+		return diplomacyResult(DiploResultTribute10Started, enemy)
 	case "gift_cash":
 		return s.OfferCashGift(enemy, diplomacyCashGiftDefault)
 	case "gift_tech":
 		opts := spyStealOptions(ai.Player, s.Player)
 		if len(opts) == 0 {
-			return enemy + ":沒有可贈送且對方尚未掌握的科技。"
+			return diplomacyResult(DiploResultNoGiftTech, enemy)
 		}
 		return s.OfferTechnologyGift(enemy, opts[0].Topic, opts[0].Tech)
 	case "gift_star":
@@ -1661,44 +1661,44 @@ func (s *GameSession) DiplomacyResponse(action, enemy string) string {
 			}
 			_ = i
 		}
-		return enemy + ":沒有可贈送的非母星殖民地。"
+		return diplomacyResult(DiploResultNoGiftStar, enemy)
 	case "break_trade":
 		if !ai.Treaty.endTrade() {
-			return enemy + ":目前沒有貿易條約可終止。"
+			return diplomacyResult(DiploResultNoTrade, enemy)
 		}
 		ai.adjustRelation(-30)
-		return enemy + ":貿易條約已終止。(關係惡化)"
+		return diplomacyResult(DiploResultTradeEnded, enemy)
 	case "break_research":
 		if !ai.Treaty.endResearch() {
-			return enemy + ":目前沒有研究條約可終止。"
+			return diplomacyResult(DiploResultNoResearch, enemy)
 		}
 		ai.adjustRelation(-30)
-		return enemy + ":研究條約已終止。(關係惡化)"
+		return diplomacyResult(DiploResultResearchEnded, enemy)
 	case "break_formal":
 		if !ai.Treaty.endFormal() {
-			return enemy + ":目前沒有正式條約可終止。"
+			return diplomacyResult(DiploResultNoFormal, enemy)
 		}
 		ai.adjustRelation(-30)
-		return enemy + ":正式條約已終止。(關係惡化)"
+		return diplomacyResult(DiploResultFormalEnded, enemy)
 	case "break_tribute":
 		if !ai.Treaty.endTribute() {
-			return enemy + ":目前沒有納貢條約可終止。"
+			return diplomacyResult(DiploResultNoTribute, enemy)
 		}
-		return enemy + ":納貢條約已終止。"
+		return diplomacyResult(DiploResultTributeEnded, enemy)
 	case "break_special":
 		if !ai.Treaty.endSpecialTrade() {
-			return enemy + ":目前沒有特殊貿易可終止。"
+			return diplomacyResult(DiploResultNoSpecial, enemy)
 		}
 		ai.adjustRelation(-20)
-		return enemy + ":特殊貿易已終止。(關係惡化)"
+		return diplomacyResult(DiploResultSpecialEnded, enemy)
 	case "threat":
 		ai.adjustRelation(-20)
 		if pFleet >= 10 {
-			return enemy + ":……我們會記住這份侮辱。(關係惡化)"
+			return diplomacyResult(DiploResultThreatStrong, enemy)
 		}
-		return enemy + ":就憑你們這點艦隊?可笑!(關係惡化)"
+		return diplomacyResult(DiploResultThreatWeak, enemy)
 	}
-	return ""
+	return DiplomacyResult{}
 }
 
 // CombatShip 是格子戰術戰鬥中的一艘艦(有 HP + 格位 + 真戰鬥公式所需的攻防/傷害/盾甲)。

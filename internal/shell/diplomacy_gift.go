@@ -1,8 +1,6 @@
 package shell
 
 import (
-	"fmt"
-
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
@@ -32,17 +30,17 @@ func diplomacyCashGiftRelationDelta() int {
 // 減去 word_19A192，並對對方國庫加上同額。本函式保留該資料流，並以
 // 玩家目前 BC 作為失敗即不變的邊界；關係接受／拒絕的完整原版判定仍
 // 未映射，這個最小切片視為玩家送出後成功。
-func (s *GameSession) OfferCashGift(enemy string, amount int) string {
+func (s *GameSession) OfferCashGift(enemy string, amount int) DiplomacyResult {
 	s.recordPlayerCommand(PlayerCommand{Name: CmdOfferCashGift, Args: []int{amount}, Text: enemy})
 	ai := s.aiByDisplayName(enemy)
 	if ai == nil {
-		return ""
+		return DiplomacyResult{}
 	}
 	if amount <= 0 {
-		return enemy + ":餽贈金額必須大於 0 BC。"
+		return diplomacyResult(DiploResultCashInvalid, enemy)
 	}
 	if s.Player.BC < amount {
-		return fmt.Sprintf("%s:國庫只有 %d BC，無法餽贈 %d BC。", enemy, s.Player.BC, amount)
+		return DiplomacyResult{Code: DiploResultCashInsufficient, Enemy: enemy, Available: s.Player.BC, Amount: amount}
 	}
 
 	s.Player.BC -= amount
@@ -53,23 +51,23 @@ func (s *GameSession) OfferCashGift(enemy string, amount int) string {
 		delta = 1
 	}
 	ai.adjustRelation(delta)
-	return fmt.Sprintf("%s:我們接受你贈送的 %d BC。(關係改善)", enemy, amount)
+	return DiplomacyResult{Code: DiploResultCashAccepted, Enemy: enemy, Amount: amount}
 }
 
 // OfferTechnologyGift 把玩家已知、對方未知的一項科技直接贈送給 AI。
 // 科技的主題／明確選擇狀態沿用間諜偷竊同一個 applyTechTheft 入口，避免
 // 「研究、偷竊、贈送」三條路徑留下不同的解鎖語意。
-func (s *GameSession) OfferTechnologyGift(enemy string, topic gamedata.ResearchTopic, tech gamedata.Technology) string {
+func (s *GameSession) OfferTechnologyGift(enemy string, topic gamedata.ResearchTopic, tech gamedata.Technology) DiplomacyResult {
 	s.recordPlayerCommand(PlayerCommand{Name: CmdOfferTechGift, Args: []int{int(topic), int(tech)}, Text: enemy})
 	ai := s.aiByDisplayName(enemy)
 	if ai == nil {
-		return ""
+		return DiplomacyResult{}
 	}
 	if !psKnowsTech(s.Player, topic, tech) {
-		return enemy + ":我方尚未掌握這項科技。"
+		return diplomacyResult(DiploResultTechUnknown, enemy)
 	}
 	if psKnowsTech(ai.Player, topic, tech) {
-		return enemy + ":對方已經知道這項科技。"
+		return diplomacyResult(DiploResultTechKnown, enemy)
 	}
 	applyTechTheft(&ai.Player, spyStealOption{Topic: topic, Tech: tech})
 	delta := s.diplomacyRelationGain(8)
@@ -77,23 +75,23 @@ func (s *GameSession) OfferTechnologyGift(enemy string, topic gamedata.ResearchT
 		delta = 1
 	}
 	ai.adjustRelation(delta)
-	return fmt.Sprintf("%s:我們接受你贈送的科技「%s」。(關係改善)", enemy, gamedata.TechnologyName(tech))
+	return DiplomacyResult{Code: DiploResultTechAccepted, Enemy: enemy, Detail: gamedata.TechnologyName(tech)}
 }
 
 // OfferStarGift 把玩家的一座非母星殖民地完整移交給指定 AI。這是一次性
 // 外交餽贈，不把人口標成征服人口；平行殖民地陣列沿用 removePlayerColony
 // 的維護契約，AI 端同步 ColonyStars／ColonyPlanets／ColonyBuildings。
-func (s *GameSession) OfferStarGift(enemy string, starIdx int) string {
+func (s *GameSession) OfferStarGift(enemy string, starIdx int) DiplomacyResult {
 	s.recordPlayerCommand(PlayerCommand{Name: CmdOfferStarGift, Args: []int{starIdx}, Text: enemy})
 	ai := s.aiByDisplayName(enemy)
 	if ai == nil {
-		return ""
+		return DiplomacyResult{}
 	}
 	if starIdx <= 0 || starIdx >= len(s.Stars) {
-		return enemy + ":母星或無效星系不可餽贈。"
+		return diplomacyResult(DiploResultStarInvalid, enemy)
 	}
 	if len(s.PlayerColonies) <= 1 {
-		return enemy + ":至少要保留一座殖民地。"
+		return diplomacyResult(DiploResultStarLastColony, enemy)
 	}
 	colonyIdx := -1
 	for i := range s.PlayerColonies {
@@ -103,11 +101,11 @@ func (s *GameSession) OfferStarGift(enemy string, starIdx int) string {
 		}
 	}
 	if colonyIdx < 0 || s.Stars[starIdx].Owner != 1 {
-		return enemy + ":這顆星不是我方可餽贈的殖民地。"
+		return diplomacyResult(DiploResultStarNotOwned, enemy)
 	}
 	for _, st := range ai.ColonyStars {
 		if st == starIdx {
-			return enemy + ":對方已經擁有這顆星的殖民地。"
+			return diplomacyResult(DiploResultStarAlreadyOwned, enemy)
 		}
 	}
 	captured := s.PlayerColonies[colonyIdx]
@@ -142,5 +140,5 @@ func (s *GameSession) OfferStarGift(enemy string, starIdx int) string {
 	s.Stars[starIdx].Owner = 2
 	ai.OwnedStars++
 	ai.adjustRelation(s.diplomacyRelationGain(12))
-	return fmt.Sprintf("%s:我方已餽贈殖民地「%s」。(關係改善)", enemy, s.starName(starIdx))
+	return DiplomacyResult{Code: DiploResultStarAccepted, Enemy: enemy, Detail: s.starName(starIdx)}
 }

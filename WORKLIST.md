@@ -329,10 +329,14 @@
   remake 三欄操作轉接明確分級；13 個提議、五種動態解約、標題、使節模板、協議摘要與離開
   按鈕均改由 `ui.json` 供應。`diplomacyOption` 只保存穩定文案鍵與規則 action，按鈕文字框由
   點擊熱區推導並經雙語最長字串測試；同時修正五種協議皆可終止時第五顆按鈕從 x=640
-  跑出畫布、解約列與最後一列提議重疊的舊版面。原版逐句提議分頁、完整回應動畫與熱區仍維持未知，
+  跑出畫布、解約列與最後一列提議重疊的舊版面。外交規則與三種餽贈亦不再直接組中文句子：
+  shell 回傳 typed `DiplomacyResultCode` 及金額／科技／殖民地參數，UI 才以
+  `diplomacy.response.*` 雙語 JSON 模板格式化，未知 code 安全 fallback。原版逐句提議分頁、
+  完整回應動畫與熱區仍維持未知，
   不因外部文案完成而升格。證據與規格見
   [`docs/re/diplomacy-audience-text-audit-20260827.md`](docs/re/diplomacy-audience-text-audit-20260827.md) 與
-  [`docs/spec/diplomacy-audience-external-text.md`](docs/spec/diplomacy-audience-external-text.md)。
+  [`docs/spec/diplomacy-audience-external-text.md`](docs/spec/diplomacy-audience-external-text.md)、
+  [`docs/spec/diplomacy-result-external-text.md`](docs/spec/diplomacy-result-external-text.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與

@@ -2202,14 +2202,14 @@ func (d *diplomacyScreen) update(in shell.InputState) *origTransition {
 	for i, o := range d.opts {
 		x, y, w, h := d.optRect(i)
 		if in.MouseX >= x && in.MouseX < x+w && in.MouseY >= y && in.MouseY < y+h {
-			d.response = d.b.session.DiplomacyResponse(o.action, d.enemy)
+			d.response = diplomacyResultText(d.b.lang, d.b.session.DiplomacyResponse(o.action, d.enemy))
 			return nil
 		}
 	}
 	for i, o := range d.breakOptions() {
 		x, y, w, h := d.breakRect(i)
 		if in.MouseX >= x && in.MouseX < x+w && in.MouseY >= y && in.MouseY < y+h {
-			d.response = d.b.session.DiplomacyResponse(o.action, d.enemy)
+			d.response = diplomacyResultText(d.b.lang, d.b.session.DiplomacyResponse(o.action, d.enemy))
 			return nil
 		}
 	}

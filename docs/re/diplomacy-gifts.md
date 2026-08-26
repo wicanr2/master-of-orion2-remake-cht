@@ -76,6 +76,9 @@ address-ledger 的歷史索引。本輪改以目前 `Orion2.exe.i64` 的 raw IDA
 
 - `GameSession.OfferCashGift(enemy, amount)` 保留已證實的國庫轉移方向，並以
   玩家目前 BC 作為失敗即不變的資源邊界。
+- 規則層現只回傳 typed `DiplomacyResult`；完整顯示句由
+  `assets/i18n/ui.json` 的 `diplomacy.response.*` 提供。這些中英文句子是 remake
+  等義轉接，不是由訊息 ID `0xA5..0xA9` 反推出的原版逐句原文。
 - 現有外交畫面提供 `贈送 10 BC`／`Gift 10 BC`，因目前畫面沒有可重用的
   數字輸入框；核心函式接受任意正整數，未來補輸入框時不需改交易模型。
 - `Relation +5`（再套用已存在的魅力外交倍率）是**強推論的正規化**，不是把

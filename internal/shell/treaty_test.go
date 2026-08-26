@@ -154,13 +154,13 @@ func TestTreatyStateKeepsFormalAndEconomicAgreementsSeparate(t *testing.T) {
 	s := NewDemoSession()
 	target := s.AIPlayers[0].Name
 
-	if got := s.DiplomacyResponse("trade", target); got == "" {
+	if got := s.DiplomacyResponse("trade", target); got.Code == "" {
 		t.Fatal("貿易提議應建立協議")
 	}
-	if got := s.DiplomacyResponse("research", target); got == "" {
+	if got := s.DiplomacyResponse("research", target); got.Code == "" {
 		t.Fatal("研究提議應建立協議")
 	}
-	if got := s.DiplomacyResponse("nonaggression", target); got == "" {
+	if got := s.DiplomacyResponse("nonaggression", target); got.Code == "" {
 		t.Fatal("互不侵犯提議應建立正式條約")
 	}
 
@@ -187,7 +187,7 @@ func TestTreatyStateKeepsFormalAndEconomicAgreementsSeparate(t *testing.T) {
 func TestTributeTreatyTransfersTreasuryAndCanEnd(t *testing.T) {
 	s := NewDemoSession()
 	target := s.AIPlayers[0].Name
-	if got := s.DiplomacyResponse("tribute_5", target); got == "" {
+	if got := s.DiplomacyResponse("tribute_5", target); got.Code == "" {
 		t.Fatal("5%% 納貢提議失敗")
 	}
 	state := s.TreatyFor(target)
@@ -206,7 +206,7 @@ func TestTributeTreatyTransfersTreasuryAndCanEnd(t *testing.T) {
 		t.Fatalf("納貢後玩家國庫與回合摘要不一致: BC=%d before=%d net=%d",
 			s.Player.BC, before, s.LastPlayerOutput.NetBC)
 	}
-	if got := s.DiplomacyResponse("break_tribute", target); got == "" {
+	if got := s.DiplomacyResponse("break_tribute", target); got.Code == "" {
 		t.Fatal("終止納貢失敗")
 	}
 	if state := s.TreatyFor(target); state.PlayerTribute != TributeNone || state.AITribute != TributeNone {
@@ -220,10 +220,10 @@ func TestTreatyIncomeAdvancesWithEmpireTurn(t *testing.T) {
 	// 固定雙方人口，讓測試只觀察協議進度，不依賴人口成長調校值。
 	s.PlayerColonies[0].Population = 8
 	s.AIPlayers[0].Colonies[0].Population = 8
-	if got := s.DiplomacyResponse("trade", target); got == "" {
+	if got := s.DiplomacyResponse("trade", target); got.Code == "" {
 		t.Fatal("貿易提議失敗")
 	}
-	if got := s.DiplomacyResponse("research", target); got == "" {
+	if got := s.DiplomacyResponse("research", target); got.Code == "" {
 		t.Fatal("研究提議失敗")
 	}
 	before := s.TreatyFor(target)
@@ -257,7 +257,7 @@ func TestSpecialTradeAdvancesBothKindsAndCanEnd(t *testing.T) {
 	s.DisableEvents = true
 	target := s.AIPlayers[0].Name
 
-	if got := s.DiplomacyResponse("special_food", target); got == "" {
+	if got := s.DiplomacyResponse("special_food", target); got.Code == "" {
 		t.Fatal("食物—現金特殊貿易提議失敗")
 	}
 	before := s.TreatyFor(target).SpecialTrade
@@ -273,13 +273,13 @@ func TestSpecialTradeAdvancesBothKindsAndCanEnd(t *testing.T) {
 		t.Fatalf("食物特殊貿易應產生 BC 收益: %+v", s.LastPlayerOutput)
 	}
 
-	if got := s.DiplomacyResponse("break_special", target); got == "" {
+	if got := s.DiplomacyResponse("break_special", target); got.Code == "" {
 		t.Fatal("終止食物特殊貿易失敗")
 	}
 	if state := s.TreatyFor(target).SpecialTrade; state.Active {
 		t.Fatalf("終止後特殊貿易仍 active: %+v", state)
 	}
-	if got := s.DiplomacyResponse("special_research", target); got == "" {
+	if got := s.DiplomacyResponse("special_research", target); got.Code == "" {
 		t.Fatal("研究交換特殊貿易提議失敗")
 	}
 	s.EndTurn()

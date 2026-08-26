@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
 
@@ -100,6 +101,63 @@ func TestDiplomacyAudienceLegacyFixedTextIsNotEmbedded(t *testing.T) {
 	} {
 		if strings.Contains(source, `"`+text+`"`) {
 			t.Errorf("interactive.go 仍內嵌外交對談固定文案 %q", text)
+		}
+	}
+}
+
+func TestDiplomacyResultCodesHaveExternalBilingualTemplates(t *testing.T) {
+	codes := []shell.DiplomacyResultCode{
+		shell.DiploResultFormalExists, shell.DiploResultPeaceStrong, shell.DiploResultPeaceWeak,
+		shell.DiploResultTradeExists, shell.DiploResultTradeStarted, shell.DiploResultResearchExists,
+		shell.DiploResultResearchStarted, shell.DiploResultSpecialExists, shell.DiploResultSpecialFoodStarted,
+		shell.DiploResultSpecialResStarted, shell.DiploResultFormalConflict, shell.DiploResultNAPStarted,
+		shell.DiploResultAllianceStarted, shell.DiploResultTributeExists, shell.DiploResultTribute5Started,
+		shell.DiploResultTribute10Started, shell.DiploResultNoGiftTech, shell.DiploResultNoGiftStar,
+		shell.DiploResultNoTrade, shell.DiploResultTradeEnded, shell.DiploResultNoResearch,
+		shell.DiploResultResearchEnded, shell.DiploResultNoFormal, shell.DiploResultFormalEnded,
+		shell.DiploResultNoTribute, shell.DiploResultTributeEnded, shell.DiploResultNoSpecial,
+		shell.DiploResultSpecialEnded, shell.DiploResultThreatStrong, shell.DiploResultThreatWeak,
+		shell.DiploResultCashInvalid, shell.DiploResultCashInsufficient, shell.DiploResultCashAccepted,
+		shell.DiploResultTechUnknown, shell.DiploResultTechKnown, shell.DiploResultTechAccepted,
+		shell.DiploResultStarInvalid, shell.DiploResultStarLastColony, shell.DiploResultStarNotOwned,
+		shell.DiploResultStarAlreadyOwned, shell.DiploResultStarAccepted,
+	}
+	for _, code := range codes {
+		key := "diplomacy.response." + string(code)
+		for _, lang := range []i18n.Lang{i18n.Traditional, i18n.English} {
+			template := uiText(lang, key)
+			if template == "" || template == key {
+				t.Fatalf("缺少外交結果外部文案 %s (%v)", key, lang)
+			}
+			result := shell.DiplomacyResult{Code: code, Enemy: "ALKARI", Amount: 10, Available: 4, Detail: "TECH"}
+			got := diplomacyResultText(lang, result)
+			if got == "" || strings.Contains(got, "%!") || strings.Contains(got, key) {
+				t.Errorf("外交結果格式化失敗 %s (%v)：%q", code, lang, got)
+			}
+		}
+	}
+	for _, lang := range []i18n.Lang{i18n.Traditional, i18n.English} {
+		got := diplomacyResultText(lang, shell.DiplomacyResult{Code: "not_registered", Enemy: "ALKARI"})
+		if got == "" || strings.Contains(got, "not_registered") || strings.Contains(got, "%!") {
+			t.Errorf("未知外交結果未安全 fallback (%v)：%q", lang, got)
+		}
+	}
+}
+
+func TestDiplomacyRuleFilesDoNotEmbedPlayerResponses(t *testing.T) {
+	for _, path := range []string{"../../internal/shell/session.go", "../../internal/shell/diplomacy_gift.go"} {
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		source := string(raw)
+		for _, phrase := range []string{
+			"貿易協定成立", "研究協定成立", "互不侵犯條約成立", "同盟成立",
+			"國庫只有 %d BC", "我們接受你贈送的", "至少要保留一座殖民地",
+		} {
+			if strings.Contains(source, phrase) {
+				t.Errorf("%s 仍內嵌玩家外交回應 %q", path, phrase)
+			}
 		}
 	}
 }
