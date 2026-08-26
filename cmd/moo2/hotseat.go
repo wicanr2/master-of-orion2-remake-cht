@@ -166,10 +166,10 @@ func (b *sceneBuilder) finishResolvedTurn() *origTransition {
 	}
 	// 本回合有隨機事件或星系發現 → 先播快報(原版事件有專屬畫面,不是回合摘要裡一行字,
 	// 見 eventscreen.go 檔頭),按「繼續」才進回合摘要。
-	if b.currentReport() != nil {
+	if b.shouldOpenReportScreen() {
 		return b.goTo(b.eventScreen, uiText(b.lang, "event.transition.report"))
 	}
-	if !settings.EndOfTurnSummary {
+	if !settings.EndOfTurnSummary && !b.shouldForceEventIntoSummary() {
 		return b.goTo(b.galaxy, uiText(b.lang, "gamesettings.transition.galaxy"))
 	}
 	return b.goTo(b.turnSummary, uiText(b.lang, "event.transition.summary"))

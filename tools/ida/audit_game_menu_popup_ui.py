@@ -64,6 +64,11 @@ ROOTS = {
     "expanding_help_consumer_f": 0x8B7A5,
     "expanding_help_consumer_g": 0xC702E,
     "expanding_help_renderer": 0x83EFD,
+    "show_gnn_consumer_a": 0x2027E,
+    "show_gnn_consumer_b": 0x21371,
+    "show_gnn_consumer_c": 0x21B6D,
+    "show_gnn_consumer_d": 0x8B17B,
+    "show_gnn_consumer_e": 0x8B956,
 }
 
 SETTING_GLOBALS = {

@@ -93,6 +93,39 @@ func TestCurrentReportEventBeatsDiscovery(t *testing.T) {
 	}
 }
 
+func TestCurrentReportGNNOffKeepsDiscoveryAndDefersEventToSummary(t *testing.T) {
+	s := shell.NewDemoSession()
+	settings := s.EffectiveGameSettings()
+	settings.ShowGNNReport = false
+	s.ApplyGameSettings(settings)
+	s.LastEventReport = &shell.EventReport{Name: "瘟疫", Good: false, Message: "疫病蔓延"}
+	s.LastDiscovery = &shell.SystemDiscovery{Name: "太空殘骸", Message: "找到殘骸", ColonyIdx: -1}
+	b := &sceneBuilder{session: s, lang: i18n.Traditional}
+	r := b.currentReport()
+	if r == nil || r.header != uiText(i18n.Traditional, "event.header.survey") {
+		t.Fatalf("關閉 GNN 後應略過事件畫面但保留勘查回報：%+v", r)
+	}
+	if !b.shouldForceEventIntoSummary() {
+		t.Fatal("關閉 GNN 後特殊事件必須強制留在一般回合摘要")
+	}
+}
+
+func TestCurrentReportGNNOffWithoutDiscoveryHasNoReportScreen(t *testing.T) {
+	s := shell.NewDemoSession()
+	settings := s.EffectiveGameSettings()
+	settings.ShowGNNReport = false
+	settings.EndOfTurnSummary = false
+	s.ApplyGameSettings(settings)
+	s.LastEventReport = &shell.EventReport{Name: "瘟疫", Good: false, Message: "疫病蔓延"}
+	b := &sceneBuilder{session: s, lang: i18n.Traditional}
+	if b.shouldOpenReportScreen() {
+		t.Fatal("關閉 GNN 後不應開啟 GNN 快報畫面")
+	}
+	if !b.shouldForceEventIntoSummary() {
+		t.Fatal("即使一般摘要選項關閉，特殊事件仍必須進摘要")
+	}
+}
+
 func TestCurrentReportEventEnglishUsesBilingualPayload(t *testing.T) {
 	s := shell.NewDemoSession()
 	s.LastEventReport = &shell.EventReport{

@@ -252,7 +252,13 @@
   本文全部位於 `assets/i18n/ui.json`，安全框換行與純幾何回歸測試已通過。這是正常玩家路徑的
   介面轉接近似，不宣稱已逐一映射原版所有 help hotspot；證據與規格見
   `docs/re/expanding-help-setting-audit-20260827.md`、`docs/tech/expanding-help-setting-spec.md`。
-  GNN 與 Serious Summary 尚須依各自玩家路徑閉合，
+  Show GNN Report 已由 `byte_199BE5 @ 0x199BE5`、事件 switch `sub_21371 @ 0x21371`、
+  文字組裝鏈 `sub_21B6D @ 0x21B6D` 與官方 help 契約閉合：開啟時以 GNN 畫面中斷報告，
+  關閉時略過主播畫面但仍把特殊事件列入一般回合摘要。remake 已依此修正結算後路由；即使
+  End Of Turn Summary 同時關閉，特殊事件也不會靜默消失。星系勘查是玩家自家回報，不受 GNN
+  選項抑制；同回合事件則保留於摘要。證據、規格與組合測試見
+  `docs/re/show-gnn-report-setting-audit-20260827.md`、`docs/tech/show-gnn-report-setting-spec.md`。
+  Serious Summary 尚須依玩家摘要篩選路徑閉合，
   不能因設定值可保存就宣稱生效。DOS／Win95 平台 API 內部維持既定停止線。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`

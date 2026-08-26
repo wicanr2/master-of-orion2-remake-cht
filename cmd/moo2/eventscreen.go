@@ -59,7 +59,7 @@ func (b *sceneBuilder) currentReport() *reportPanel {
 	if b.session == nil {
 		return nil
 	}
-	if r := b.session.LastEventReport; r != nil {
+	if r := b.session.LastEventReport; r != nil && b.session.EffectiveGameSettings().ShowGNNReport {
 		tag := uiText(b.lang, "event.tag.alert")
 		if r.Good {
 			tag = uiText(b.lang, "event.tag.good_news")
@@ -91,6 +91,19 @@ func (b *sceneBuilder) currentReport() *reportPanel {
 			title: title, tag: uiText(b.lang, "event.tag.discovery"), body: body, good: true}
 	}
 	return nil
+}
+
+// shouldOpenReportScreen 回報本回合是否有應獨立呈現的報告。特殊事件受 Show GNN Report
+// 控制；勘查是玩家自家回報，不屬於 GNN，因此不受該選項抑制。
+func (b *sceneBuilder) shouldOpenReportScreen() bool {
+	return b != nil && b.currentReport() != nil
+}
+
+// shouldForceEventIntoSummary 防止 Show GNN Report 與 End Of Turn Summary 同時關閉時
+// 靜默吞掉特殊事件。原版 help 明寫關閉 GNN 後仍由一般回合摘要通知。
+func (b *sceneBuilder) shouldForceEventIntoSummary() bool {
+	return b != nil && b.session != nil && b.session.LastEventReport != nil &&
+		!b.session.EffectiveGameSettings().ShowGNNReport
 }
 
 func eventHeaderTextRect() textSafeRect {
@@ -139,7 +152,7 @@ func loadEventArtwork(res *assets.Resolver, eventID int) *ebiten.Image {
 // eventScreen 建快報畫面。內容取自 currentReport();沒有可播的就直接回回合摘要。
 func (b *sceneBuilder) eventScreen() (*overlayScreen, error) {
 	playSceneBGM(trackEventScreen) // Start_Main_Event_ / Draw_Event_Screen_ → STREAMHD #18
-	if b.currentReport() == nil {
+	if !b.shouldOpenReportScreen() {
 		return b.turnSummary()
 	}
 	hits := []hitRegion{{270, 372, 100, 24, "ok"}}
