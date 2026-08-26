@@ -591,7 +591,8 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
         **連原版自己會隱藏的按鈕都照做**:`sub_F009A` 在選了 HOTSEAT 時把 JOIN GAME 的
         **熱座的席位模型**:原版帝國資料本來就是 `player[i]` 陣列(stride 0xEA9)+ 當前索引
         `word_19999C`,所以 `Save_Hotseat_Map_Info_` @ 0x88F5D **每席只存七個 word**(星圖視野)。
-        `Get_Multi_Player_N_Humans_` @ 0x121F0 則是去數 `player[i]` 裡控制碼為 100 的帝國
+        `Get_Multi_Player_N_Humans_` @ 0x121F0 則是去數 `player[i]` 裡控制碼為 100、且
+        `player[i]+0x24` 狀態為 0 的帝國
         ——「幾個真人」不是獨立設定,是「有幾個帝國被標成真人」。remake 的 `GameSession` 是單數
         欄位不是陣列,改成 `player[i]` 要動幾乎每個畫面,故走**席位交換**(`internal/shell/hotseat.go`):
         玩家側欄位整組進 `seat`,換人時存回目前席位、載入下一席。語意與 `player[current]` 等價。
@@ -605,7 +606,8 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
         或全滅不會結束對局——要補得先讓勝負判定吃「哪一位玩家」而不是隱含的 `s.Player`;
         ⑤真人席位是從 AI 對手**接管**過來的。這一輪已補上 `RaceIndex` 與明確
         `SetupHotseatWithAIIndices`:熱座畫面會逐一勾選要接管的帝國,未選中的 AI 與 AI 關係矩陣
-        保留,玩家間諜欄位依剩餘 AI 重排;席位轉換也保留種族產出/戰鬥加成、領袖、母星建築、
+        保留,玩家間諜欄位依剩餘 AI 重排;選擇清單本身是 remake adapter，固定雙語文案已移至
+        `assets/i18n/ui.json` 並由安全文字框限制。席位轉換也保留種族產出/戰鬥加成、領袖、母星建築、
         艦隊與殖民地平行陣列。`AIOpponent` 仍比玩家側薄(沒有建造佇列、前哨站、傭兵池,
         也沒有可直接轉成玩家建造佇列的 AI 生產決策),這些欄位接管後維持空值,是目前明列的模型差異。
 

@@ -24,11 +24,11 @@ type hotseatEmpireSelectScreen struct {
 
 func (b *sceneBuilder) hotseatEmpireSelect() (origScreen, error) {
 	if b.session == nil {
-		return nil, fmt.Errorf("熱座選帝國時沒有作用中的對局")
+		return nil, fmt.Errorf("%s", uiText(b.lang, "hotseat.empire_select.error.no_session"))
 	}
 	required := b.pendingHotseat - 1
 	if required < 1 {
-		return nil, fmt.Errorf("熱座真人席位數不足")
+		return nil, fmt.Errorf("%s", uiText(b.lang, "hotseat.empire_select.error.too_few_seats"))
 	}
 	if required > len(b.session.AIPlayers) {
 		// 這只應該發生在舊流程或外部測試手動注入設定時;降到可用席位
@@ -62,6 +62,33 @@ func (s *hotseatEmpireSelectScreen) acceptRect() (int, int, int, int) {
 
 func (s *hotseatEmpireSelectScreen) cancelRect() (int, int, int, int) {
 	return 40, 440, 130, 28
+}
+
+func hotseatEmpireTitleTextRect() textSafeRect {
+	return textSafeRect{x: 70, y: 30, w: 500, h: 32, insetX: 6, insetY: 2}
+}
+
+func hotseatEmpireInstructionTextRect() textSafeRect {
+	return textSafeRect{x: 50, y: 64, w: 540, h: 24, insetX: 6, insetY: 2}
+}
+
+func hotseatEmpireCountTextRect() textSafeRect {
+	return textSafeRect{x: 70, y: 88, w: 500, h: 20, insetX: 6, insetY: 1}
+}
+
+func (s *hotseatEmpireSelectScreen) markTextRect(i int) textSafeRect {
+	x, y, _, h := s.rowRect(i)
+	return textSafeRect{x: x + 10, y: y + 5, w: 42, h: h - 10, insetX: 3, insetY: 2}
+}
+
+func (s *hotseatEmpireSelectScreen) rowTextRect(i int) textSafeRect {
+	x, y, w, h := s.rowRect(i)
+	return textSafeRect{x: x + 58, y: y + 5, w: w - 70, h: h - 10, insetX: 3, insetY: 2}
+}
+
+func hotseatEmpireButtonTextRect(rect func() (int, int, int, int)) textSafeRect {
+	x, y, w, h := rect()
+	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 5, insetY: 3}
 }
 
 func (s *hotseatEmpireSelectScreen) selectedCount() int {
@@ -121,7 +148,7 @@ func (s *hotseatEmpireSelectScreen) update(in shell.InputState) *origTransition 
 		if clickSound != nil {
 			clickSound()
 		}
-		return s.b.goTo(s.b.galaxy, "星系主畫面")
+		return s.b.goTo(s.b.galaxy, uiText(s.b.lang, "hotseat.empire_select.transition.galaxy"))
 	}
 	return nil
 }
@@ -131,15 +158,15 @@ func (s *hotseatEmpireSelectScreen) aiLabel(i int) string {
 		return ""
 	}
 	ai := s.b.session.AIPlayers[i]
-	if ai.RaceIndex >= 0 && ai.RaceIndex < len(shell.Races) {
-		r := shell.Races[ai.RaceIndex]
-		name := r.Name
-		if s.b.lang != 0 {
-			name = r.EnName
+	if ai.RaceIndex >= 0 {
+		for _, race := range raceSelectList {
+			if race.shellIdx == ai.RaceIndex {
+				return fmt.Sprintf(uiText(s.b.lang, "hotseat.empire_select.row"), i+2,
+					raceSelectEntryText(s.b.lang, race, "name"))
+			}
 		}
-		return fmt.Sprintf(s.b.tr("帝國 %d：%s", "Empire %d: %s"), i+2, name)
 	}
-	return fmt.Sprintf(s.b.tr("帝國 %d：%s", "Empire %d: %s"), i+2, ai.Name)
+	return fmt.Sprintf(uiText(s.b.lang, "hotseat.empire_select.row"), i+2, ai.Name)
 }
 
 func (s *hotseatEmpireSelectScreen) draw(dst *ebiten.Image) {
@@ -151,13 +178,12 @@ func (s *hotseatEmpireSelectScreen) draw(dst *ebiten.Image) {
 	gold := color.RGBA{240, 220, 120, 255}
 	body := color.RGBA{216, 224, 240, 255}
 	dim := color.RGBA{150, 160, 180, 255}
-	s.fnt.DrawCentered(dst, s.b.tr("指定真人帝國", "CHOOSE HUMAN EMPIRES"), 320, 48, 19, gold)
-	s.fnt.DrawCentered(dst,
-		fmt.Sprintf(s.b.tr("請選 %d 個帝國給真人接手（玩家帝國之外）", "%d AI empires will be taken over by human players"), s.required),
-		320, 76, 13, body)
-	s.fnt.DrawCentered(dst,
-		fmt.Sprintf(s.b.tr("已選 %d / %d", "Selected %d / %d"), s.selectedCount(), s.required),
-		320, 96, 12, dim)
+	hotseatEmpireTitleTextRect().drawCentered(dst, s.fnt,
+		uiText(s.b.lang, "hotseat.empire_select.title"), 17, gold)
+	hotseatEmpireInstructionTextRect().drawCentered(dst, s.fnt,
+		fmt.Sprintf(uiText(s.b.lang, "hotseat.empire_select.instruction"), s.required), 12, body)
+	hotseatEmpireCountTextRect().drawCentered(dst, s.fnt,
+		fmt.Sprintf(uiText(s.b.lang, "hotseat.empire_select.selected"), s.selectedCount(), s.required), 11, dim)
 
 	for i := range s.selected {
 		x, y, w, h := s.rowRect(i)
@@ -172,24 +198,24 @@ func (s *hotseatEmpireSelectScreen) draw(dst *ebiten.Image) {
 		}
 		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), bg, false)
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, border, false)
-		mark := "[ ]"
+		mark := uiText(s.b.lang, "hotseat.empire_select.mark.off")
 		if s.selected[i] {
-			mark = "[X]"
+			mark = uiText(s.b.lang, "hotseat.empire_select.mark.on")
 		}
-		s.fnt.Draw(dst, mark, float64(x+14), float64(y+h/2-7), 14, border)
-		s.fnt.Draw(dst, s.aiLabel(i), float64(x+62), float64(y+h/2-7), 14, body)
+		s.markTextRect(i).drawCentered(dst, s.fnt, mark, 12, border)
+		s.rowTextRect(i).drawLeft(dst, s.fnt, s.aiLabel(i), 12, body)
 	}
 
 	drawButton := func(rect func() (int, int, int, int), label string, accent color.RGBA) {
 		x, y, w, h := rect()
 		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{28, 34, 48, 255}, false)
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, accent, false)
-		s.fnt.DrawCentered(dst, label, float64(x+w/2), float64(y+h/2), 14, body)
+		hotseatEmpireButtonTextRect(rect).drawCentered(dst, s.fnt, label, 12, body)
 	}
-	drawButton(s.cancelRect, s.b.tr("返回命名", "BACK TO NAME"), color.RGBA{160, 140, 100, 255})
+	drawButton(s.cancelRect, uiText(s.b.lang, "hotseat.empire_select.button.back"), color.RGBA{160, 140, 100, 255})
 	accent := color.RGBA{120, 200, 130, 255}
 	if s.selectedCount() != s.required {
 		accent = color.RGBA{90, 100, 110, 255}
 	}
-	drawButton(s.acceptRect, s.b.tr("開始遊戲", "START GAME"), accent)
+	drawButton(s.acceptRect, uiText(s.b.lang, "hotseat.empire_select.button.start"), accent)
 }

@@ -276,6 +276,14 @@
   [`docs/re/net-next-turn-player-text-audit-20260827.md`](docs/re/net-next-turn-player-text-audit-20260827.md) 與
   [`docs/tech/net-next-turn-external-text-spec.md`](docs/tech/net-next-turn-external-text-spec.md)、
   [`docs/tech/network-turn-wait-player-path-spec.md`](docs/tech/network-turn-wait-player-path-spec.md)。
+  熱座真人帝國選擇已完成第二十九個切片：標題、說明、選取數、列格式、勾選標記、按鈕、
+  轉場與建立錯誤均由 `ui.json` 供應，內建種族名複用 `race.select.race.*.name`；所有文字區
+  都改走雙軸安全框，列名及按鈕不再直接呼叫字型繪製。IDA Pro 9.4 同輪修正舊摘要：
+  `sub_121F0 @ 0x121F0..0x12227` 不是只檢查 `player+0x28 == 100`，還要求
+  `player+0x24 == 0` 才計入真人數。`+0x24` 精確欄名仍未知，保留 raw 偏移；現行選取清單
+  是 `GameSession` 單玩家模型所需的接管 adapter，不冒稱原版版面。證據與規格見
+  [`docs/re/hotseat-empire-selection-audit-20260827.md`](docs/re/hotseat-empire-selection-audit-20260827.md) 與
+  [`docs/spec/hotseat-empire-selection.md`](docs/spec/hotseat-empire-selection.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
@@ -1891,8 +1899,9 @@ internal/shell/orbital_bombardment.go:218
   畫成灰的並明示未實作,不假裝可選。
 - [x] 第 29 項(決定性化)完成(`internal/shell/determinism.go` 的 `StateHash`/`StateFingerprint`,畫在 `30_netwait.png` 上)
 - [x] 第 29–29 項整塊完成(`internal/netplay`,含大廳、區網探索、6 張畫面)
-- [x] **指定熱座帝國**(2026-08-09):`Get_Multi_Player_N_Humans_` 的語意已在 remake
-  的新遊戲流程落地——選帝國畫面逐一標記要接管的 `AIPlayers` 索引,由
+- [x] **指定熱座帝國**(2026-08-27 複核):`Get_Multi_Player_N_Humans_` 會計數控制碼
+  `+0x28 == 100` 且狀態 `+0x24 == 0` 的帝國；remake 語意已在新遊戲流程落地——選帝國畫面
+  逐一標記要接管的 `AIPlayers` 索引，固定文案由 JSON 供應且受安全框限制，由
   `SetupHotseatWithAIIndices` 建立席位;未選中的 AI 保留。
 - [x] **熱座席位核心資料轉換**(2026-08-09):接管席位保留種族加成、領袖、母星建築、艦隊、
   殖民地平行陣列與玩家間諜欄位,AI 關係矩陣同步壓縮。`AIOpponent` 沒有的建造佇列、

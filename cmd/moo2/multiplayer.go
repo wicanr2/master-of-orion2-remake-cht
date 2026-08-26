@@ -110,8 +110,8 @@ type multiplayerScreen struct {
 	fnt  *uifont.Font
 	mode mpMode
 	// humans 是熱座的真人席位數(2..maxHotseatSeats)。原版是在玩家設定階段逐個帝國
-	// 標成真人(`Get_Multi_Player_N_Humans_` @ 0x121F0 就是去數 `player[i]` 裡控制碼
-	// 為 100 的帝國),remake 沒有那個逐帝國的設定畫面,改成在 HOTSEAT 鈕上循環選人數
+	// 標成真人(`Get_Multi_Player_N_Humans_` @ 0x121F0 會數 `player[i]` 裡控制碼為 100、
+	// 且 +0x24 狀態為 0 的帝國),remake 沒有那個逐帝國的設定畫面,改成在 HOTSEAT 鈕上循環選人數
 	// ——語意相同(把 N 個帝國從 AI 換成真人),操作方式是 remake 自己的。
 	humans int
 	msg    string

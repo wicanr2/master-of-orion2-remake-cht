@@ -1270,5 +1270,16 @@
   {"key":"network.error.turn_state_missing","english":"Network turn state is missing","value":"網路回合狀態不存在","note":"回合基準快照缺失"},
   {"key":"network.error.stopped","english":"Network match stopped","value":"網路對局已中止","note":"空錯誤的安全後備"},
   {"key":"network.error.title","english":"GAME STOPPED","value":"對局已停止","note":"正式等待畫面錯誤標題"},
-  {"key":"network.error.return_hint","english":"Click to return to multiplayer setup","value":"點擊返回多人設定","note":"失敗即關閉後返回提示"}
+  {"key":"network.error.return_hint","english":"Click to return to multiplayer setup","value":"點擊返回多人設定","note":"失敗即關閉後返回提示"},
+  {"key":"hotseat.empire_select.title","english":"CHOOSE HUMAN EMPIRES","value":"指定真人帝國","note":"remake 熱座接管轉接畫面標題"},
+  {"key":"hotseat.empire_select.instruction","english":"Choose %d AI empires for human players to take over","value":"請選 %d 個帝國給真人接手（玩家帝國之外）","note":"%d 為玩家帝國以外的真人席位數"},
+  {"key":"hotseat.empire_select.selected","english":"Selected %d / %d","value":"已選 %d / %d","note":"依序為目前選取數與需求數"},
+  {"key":"hotseat.empire_select.row","english":"Empire %d: %s","value":"帝國 %d：%s","note":"依序為一基帝國編號與外部種族名稱或動態帝國名"},
+  {"key":"hotseat.empire_select.mark.off","english":"[ ]","value":"[ ]","note":"未選取標記"},
+  {"key":"hotseat.empire_select.mark.on","english":"[X]","value":"[X]","note":"已選取標記"},
+  {"key":"hotseat.empire_select.button.back","english":"BACK TO NAME","value":"返回命名","note":"返回名稱與旗色畫面"},
+  {"key":"hotseat.empire_select.button.start","english":"START GAME","value":"開始遊戲","note":"確認熱座接管名單"},
+  {"key":"hotseat.empire_select.transition.galaxy","english":"Galaxy","value":"星系主畫面","note":"確認後轉入星系"},
+  {"key":"hotseat.empire_select.error.no_session","english":"Hotseat empire selection has no active game","value":"熱座選帝國時沒有作用中的對局","note":"建立畫面的內部錯誤"},
+  {"key":"hotseat.empire_select.error.too_few_seats","english":"Hotseat requires at least two human seats","value":"熱座真人席位數不足","note":"建立畫面的席位數錯誤"}
 ]
