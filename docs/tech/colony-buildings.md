@@ -62,7 +62,7 @@ Computers → Biology → Physics → Force Fields)排列。「研究成本」�
 | 13 | Food Replicators | 食物複製機 | 食物 | Matter-Energy Conversion | 2750(與 Transporters 同組) | 10 | 待查證 | 可依需求將工業產能以 2:1 轉換成食物,每單位食物花費 1 BC | 無 | p.87 |
 | 14 | Pollution Processor | 污染處理器 | 環保 | Advanced Chemistry | 650(與 Merculite Missile 同組) | 1 | 待查證 | 可處理殖民地一半產能對應的污染,按比例降低污染量(手冊:「process the waste from fully half of the colony's production」) | 與 Atmospheric Renewer 效果疊加(合計 1/8 產能致污染);被 Core Waste Dump 取代 | p.90 |
 | 15 | Atmospheric Renewer | 大氣更新器 | 環保 | Molecular Compression | 1150(與 Iridium Fuel Cells、Pulson Missile 同組) | 3 | 待查證 | 消除四分之三工業產能造成的污染;與 Pollution Processor 同時存在時,合計只剩 1/8 產能致污染 | 與 Pollution Processor 疊加;被 Core Waste Dump 取代 | p.90 |
-| 16 | Space Academy | 太空學院 | 軍事 | Military Tactics | 150(單一項目) | 2 | 待查證 | 此殖民地建造的艦艇船員起始等級 +1 級(Green→Regular 等);同星系內每有一座 Space Academy,所有駐留艦艇船員每回合額外 +1 經驗 | 無 | p.92 |
+| 16 | Space Academy | 太空學院 | 軍事 | Military Tactics | 150(單一項目) | 2 | **100**（原版建築表） | 此殖民地建造的艦艇船員起始等級 +1 級(Green→Regular 等);同星系內每有一座 Space Academy,所有駐留艦艇船員每回合額外 +1 經驗 | 無 | p.92 |
 | 17 | Alien Management Center | 異族管理中心 | 社會 | Xeno Relations | 650(與 Xeno Psychology 同組) | 1 | 待查證 | 每 2 回合同化 1 單位被征服人口(不論政府);Charismatic/Repulsive 種族天賦會調整此基礎速率;消除多種族殖民地 -20% 士氣懲罰,並使未同化人口的叛亂機率減半 | 無 | p.92 |
 | 18 | Planetary Stock Exchange | 行星證券交易所 | 貿易 | Macro Economics | 1150(單一項目) | 2 | 待查證 | 該殖民地收入 +100% | 無 | p.93 |
 | 19 | Astro University | 太空大學 | 科研/生產 | Teaching Methods | 2000(單一項目) | 4 | 待查證 | 每單位受教育人口(農/工/科)額外 +1 對應產出(食物/產能/研究皆適用) | 無 | p.93 |
@@ -158,6 +158,7 @@ Computers → Biology → Physics → Force Fields)排列。「研究成本」�
 | 太空大學 | 每受教育人口(農/工/科)各 +1 | `FoodPerFarmer`+`IndustryPerWorker`+`ResearchPerScientist` |
 | 太空港 | 該殖民地 BC 收入 +50%(逐殖民地精確套用,見 `RunEmpireTurn`) | `IncomeBonusPercent` |
 | 行星證券交易所 | 該殖民地 BC 收入 +100%(與太空港疊加) | `IncomeBonusPercent` |
+| 太空學院 | 玩家逐殖民地交付的新艦起始等級 +1；玩家與 AI 停泊艦艇依同星系學院數每回合增加經驗。AI 匯總造艦尚無來源殖民地，故 AI 新艦起始等級仍是明示限制。AI 建造分數見 `docs/re/ai-colony-build-selection-audit-20260826.md` 第十四批。 | `ColonyBuildings["太空學院"]`+`CrewXP` |
 | 生態圈 | 星球人口上限 +2(直接疊加,無獨立 Bonus 影子欄位) | `PopMax` |
 | 複製中心 | 固定 +100 成長點/回合，直到達人口上限；1,000 點新增一人口 | `FlatGrowth` |
 | 污染處理器 / 大氣更新器 / 核心廢料場 | 既有 bool 旗標(本次未動) | `PollutionProcessor`/`AtmosphericRenewer`/`CoreWasteDump` |
@@ -174,7 +175,7 @@ Computers → Biology → Physics → Force Fields)排列。「研究成本」�
 |---|---|
 | 異族管理中心(p.92-93) | **部分接線,效果暫不可見**:`colonyMoralePercent` 的多種族懲罰(`gamedata.MoraleMultiRacialPenalty`)因 `ColonyState` 不追蹤「殖民地是否含未同化外族人口」而固定不套用,故此建築目前對士氣沒有可觀察差異;其「加速同化征服人口」效果同樣未建模(remake 無同化速率系統)。待多種族人口追蹤/同化系統落地後補上。 |
 | 食物複製機(p.85) | **已接線**：饑荒缺口以半食物單位補足，2 半產能換 1 半食物，半 BC 付款以 `PlayerState.FoodReplicatorBCHalfRemainder` 跨回合保存；支付碎片的原版 runtime 時機仍未知。 |
-| 軍事/防禦類(太空學院、飛彈基地、地面砲台、阿提米絲系統網、行星輻射/通量/屏障護盾、曲速力場干擾器、自動實驗室、再生反應爐) | 對應的艦隊駐防/軌道防禦/工業等系統本身尚未完整建模;等對應系統就緒後再回頭補建模。海軍陸戰隊營/裝甲營房的駐軍生成另見 `ground_invasion.go`(海軍陸戰隊營已建模,裝甲營房尚未)。星基/戰鬥站/星辰要塞的**指揮評等供給**已於上表(6.1)接線,但這三項的掃描範圍/艦隊光束攻擊加成敘述效果仍在本行 TODO 之列(掃描/戰鬥加成系統本身尚未建)。 |
+| 軍事/防禦類(飛彈基地、地面砲台、阿提米絲系統網、行星輻射/通量/屏障護盾、曲速力場干擾器) | 對應的艦隊駐防／軌道防禦系統仍未完整閉合。海軍陸戰隊營／裝甲營房的駐軍生成另見 `ground_invasion.go`。星基／戰鬥站／星辰要塞的指揮評等供給已於上表接線；其餘掃描與戰鬥效果仍依各自活表判定。 |
 
 ## 參考來源
 

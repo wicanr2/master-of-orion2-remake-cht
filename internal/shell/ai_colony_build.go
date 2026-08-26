@@ -181,6 +181,7 @@ type originalAIBuildScoreContext struct {
 	ownerHighGravity      bool
 	primaryPopCapacity    int
 	primaryPopCapKnown    bool
+	netIndustry           int
 	raceGrowthPercent     int
 	government            gamedata.MoraleGovernmentType
 	treasuryBefore        int
@@ -281,6 +282,19 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 			nonTolerant = 0
 		}
 		return (2*colony.Population+ctx.primaryPopCapacity)/3 + 2*(nonTolerant+pacifist+honorable), true
+	case 38: // 0xD099A..0xD09CB：Space Academy
+		rawNetIndustry := int(int16(ctx.netIndustry))
+		if ctx.priorityGate || rawNetIndustry < 17 && colony.Population < 5 &&
+			originalAIBudgetFactor(ctx.treasuryBefore, ctx.netBC) == 0 {
+			return 0, true
+		}
+		delta := rawNetIndustry - 15
+		// sub_134C92 以 unsigned compare 處理輸入；signed 負差值回 65535，
+		// 隨後被 Colony_Building_Score_ 的共同尾端夾成 1000。
+		if delta < 0 {
+			return 1000, true
+		}
+		return originalAIIntegerSqrt(delta), true
 	case 25: // 0xD0844..0xD089A：Planetary Gravity Generator
 		// 原版先判 High-G；雙 trait 的髒資料不得被 Low-G 分支覆蓋。
 		if ctx.ownerHighGravity {
@@ -527,6 +541,7 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 		government:            government,
 		treasuryBefore:        empireOut.Player.BC - empireOut.NetBC,
 		netBC:                 empireOut.NetBC,
+		netIndustry:           out.NetIndustry,
 		pollutionCleanupCost:  out.PollutionCleanupCost,
 		ownerLowGravity:       aiRaceHasTrait(*a, gamedata.TRAIT_LOW_G),
 		ownerHighGravity:      aiRaceHasTrait(*a, gamedata.TRAIT_HIGH_G),

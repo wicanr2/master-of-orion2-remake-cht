@@ -456,6 +456,43 @@ raw 33 的共同尾端需特別保留：`0xD090D` 把 `var_4` 載入 `eax`，`0x
 `[primary non-Tolerant]`。raw 29／39 讀 priority gate；raw 33 不讀。上述函式、立即數、
 跳表、容量寫入端與 trait／科技／建築 enum 對映均為**已證實**。
 
+## 第十四批：Space Academy
+
+raw 38 的外層 entry 是 `0xCFFF6 9a090d00 → 0xD099A`。完整控制流為：
+
+1. `test ah,ah @ 0xD099A`：priority gate 成立時零分。
+2. `cmp word ptr [colony+0xE9],11h @ 0xD09A2`：signed 淨工業至少 17 時直接進公式。
+3. 淨工業低於 17 時，人口至少 5 仍進公式；人口低於 5 則只有 `budgetFactor>0` 才進公式，
+   否則零分。
+4. 公式段以 `movsx eax,[colony+0xE9] @ 0xD09BC`、`sub eax,0Fh @ 0xD09C3` 建立
+   `netIndustry-15`，於 `0xD09C6` 呼叫 unsigned `sub_134C92` 整數平方根，再把結果當分數。
+   共用尾端仍把大於 1000 的值夾成 1000。
+
+`colony+0xE9` 的語意由寫入端與帝國消費端閉合：
+
+- `sub_DEE1B @ 0xDEE1B` 在無人口／特殊失效路徑先清零；正常路徑計算工人與固定工業，於
+  `0xDF0E2` 扣除清污成本後，在 `0xDF0F0` 寫入 signed word `colony+0xE9`。後段再於
+  `0xDF4A3／0xDF4D9` 扣除生產轉用，`0xDF4F6` 將最終值列入玩家可見產出明細。
+- `sub_E2710 @ 0xE27D3..0xE27DA` 逐殖民地以 `movsx` 讀 `+0xE9`，加進帝國工業總和；
+  `Apply_Production_ @ 0xE380E..0xE382A` 亦以它決定投入目前產品的產能。
+
+因此 typed 對映是本回合 `ColonyOutput.NetIndustry`，不是毛工業或清污成本。
+
+完整公式為：
+
+```text
+priority gate → 0
+netIndustry < 17 且 population < 5 且 budgetFactor == 0 → 0
+其餘 → min(1000, isqrt32(uint32(int16(netIndustry) - 15)))
+```
+
+這裡必須保留原版 unsigned 邊界。`sub_134C92 @ 0x134CAD..0x134CBD` 以 unsigned compare
+檢查高值，故合法 signed word 的負輸入會回 65535，隨後被分數尾端夾成 1000；例如通過人口／
+預算 gate 的 `netIndustry=14` 得 1000，`15` 得 0，`16` 得 1，`17` 得 1。這是不連續但已由
+原始指令證實的行為，不以 remake 直覺平滑。太空學院完工後的 AI 建築 map 已被艦員每回合
+經驗 consumer 讀取；AI 造艦目前仍是帝國匯總產能，無法指出來源殖民地，故「該殖民地新艦
+起始等級 +1」只在玩家逐殖民地交付鏈精確接線，AI 端維持已揭露的資料模型限制。
+
 其餘未封閉區域會讀 alien／outpost 狀態、政府／性格其他碼、其他殖民地 packed 人口用途、帝國建築數、
 星球 owner／環境、事件與未解 player flags；在欄位寫入端與 typed 對映完成前維持
 `unknown_pending_review`，由明示近似 fallback 處理。

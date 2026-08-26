@@ -80,6 +80,13 @@
    Planning application 與 Biospheres 建築重建，不能直接把 owner 口徑的 `PopMax` 當成同義欄；
    profile 不完整時回報非 exact。三棟完工都要由正常帝國結算消費：兩棟貿易建築改變該殖民地
    BC 收入，再生反應爐增加不產生污染的人口產能。
+   raw ID 38 Space Academy 在 priority gate 時為 0；其餘若淨工業低於 17、人口低於 5 且
+   `budgetFactor==0` 時為 0，否則取
+   `min(1000,isqrt32(uint32(int16(NetIndustry)-15)))`。`NetIndustry` 必須取本回合
+   `ColonyOutput.NetIndustry`，不可改用 GrossIndustry。負差值依原版 unsigned helper 產生
+   65535 後夾成 1000，不得平滑成 0。完工必須寫入 AI 殖民地建築 map，並由同星系 AI 艦艇
+   每回合經驗加成 consumer 驗證；AI 匯總造艦尚無來源殖民地，因此不宣稱 AI 新艦起始等級
+   已精確接線。
 5. 優先建築 gate 僅由已知科技 application、已建建築、殖民地礦產及 AI 生效政府組成：
    - Ultra Poor／Poor／Abundant 殖民地已知 Automated Factories 但未建 Automated Factory；或
    - Feudal／Confederation／Dictatorship／Imperium 已知但未建 Marine Barracks／Armor Barracks。
@@ -125,6 +132,8 @@
 - raw 29／39 要測人口門檻前後、priority gate、一般／Honorable 與主要外族人口容量；raw 33
   要測 Tolerant、Pacifist、Honorable 各自的 `+2`、混合人口與 profile 不完整邊界。三棟皆以
   唯一正常候選走過逐殖民地產能、完工旗標及帝國收入／無污染產能消費端。
+- raw 38 要測 priority gate、人口 4／5、budget factor 0／正值及淨工業 14／15／16／17 的
+  unsigned 不連續邊界；唯一正常候選完工後，停泊同星系的 AI 實艦每回合必須多得學院經驗。
 - 只完成多選主題但選了其他 application 時，不得觸發相應 Automated Factory／Barracks gate。
 - 精確分支與類別式 fallback 不可混稱同一證據等級。
 - 既有擴張測試以「建築＋造艦總投入」驗證新殖民地確實參與經濟，不再假設所有產出都是軍艦。

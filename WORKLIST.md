@@ -362,6 +362,10 @@
   `Compute_AI_Data_ cache+1 → sub_E0C1D → sub_E0A93 → sub_E0A18` 閉合主要人口容量；
   現依人口門檻、priority gate、Honorable／Pacifist、主要人口 Tolerant 與完整容量公式計分。
   三棟均可由正常唯一候選完工，並由該殖民地 BC 收入或不產生污染的人口產能 consumer 驗證。
+  raw 38 Space Academy 亦已由 `sub_DEE1B` 的淨工業寫入與 `sub_E2710` 帝國加總端閉合
+  `colony+0xE9`；現保留 17 工業／5 人口／budget gate、`netIndustry-15` unsigned 平方根及
+  1000 上限。正常 AI 候選完工後，同星系 AI 實艦每回合會取得學院經驗；AI 匯總造艦無來源
+  殖民地，故 AI 新艦起始等級仍是明示資料模型限制。
   其餘分數區域、
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
   state machine 亦待閉合。見

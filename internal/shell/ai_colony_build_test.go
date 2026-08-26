@@ -892,6 +892,70 @@ func TestAICommerceAndRecyclotronCandidateCompletionConsumers(t *testing.T) {
 	}
 }
 
+func TestOriginalAISpaceAcademyScore(t *testing.T) {
+	academy, ok := gamedata.BuildingByNameZH("太空學院")
+	if !ok {
+		t.Fatal("太空學院不存在")
+	}
+	tests := []struct {
+		name       string
+		population int
+		net        int
+		treasury   int
+		netBC      int
+		priority   bool
+		want       int
+	}{
+		{"低人口低產能無預算", 4, 14, 0, 0, false, 0},
+		{"低人口低產能有預算", 4, 14, 1500, 64, false, 1000},
+		{"人口門通過負差值", 5, 14, 0, 0, false, 1000},
+		{"差值零", 5, 15, 0, 0, false, 0},
+		{"差值一", 5, 16, 0, 0, false, 1},
+		{"產能門直接通過", 4, 17, 0, 0, false, 1},
+		{"priority gate", 5, 100, 1500, 6400, true, 0},
+	}
+	for _, tt := range tests {
+		ctx := originalAIBuildScoreContext{
+			netIndustry: tt.net, treasuryBefore: tt.treasury, netBC: tt.netBC, priorityGate: tt.priority,
+		}
+		score, exact := originalAIExactBuildingScore(academy, engine.ColonyState{Population: tt.population}, ai.PersonalityErratic, ctx)
+		if !exact || score != tt.want {
+			t.Errorf("%s 分數=(%d,%v)，want (%d,true)", tt.name, score, exact, tt.want)
+		}
+	}
+}
+
+func TestAISpaceAcademyCandidateCompletionAndCrewConsumer(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	a.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{gamedata.TOPIC_MILITARY_TACTICS: true}
+	a.Colonies[0].Population = 5
+	a.ColonyBuildings[0] = make(map[string]bool)
+	for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
+		a.ColonyBuildings[0][b.NameZH] = true
+	}
+	delete(a.ColonyBuildings[0], spaceAcademyName)
+	out := engine.EmpireOutput{Colonies: []engine.ColonyOutput{{NetIndustry: 17}}}
+	build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1)
+	if !ok || build.Name != spaceAcademyName {
+		t.Fatalf("唯一候選錯誤：build=%+v ok=%v", build, ok)
+	}
+	a.FleetStar = a.ColonyStars[0]
+	a.FleetPosSet = true
+	a.Ships = []Ship{{Name: "學院驗證艦", Class: "巡防艦"}}
+	key := aiColonyBuildKey(a, 0)
+	a.ColonyBuilds = map[int]ColonyBuild{key: {Name: spaceAcademyName, Cost: 1}}
+	s.advanceAIColonyBuilds(0, out)
+	if !a.ColonyBuildings[0][spaceAcademyName] {
+		t.Fatal("太空學院完工未寫入 AI 殖民地建築 map")
+	}
+	s.advanceCrewExperience()
+	want := gamedata.CrewXPPerTurnInSpace + gamedata.SpaceAcademyXPPerTurn
+	if got := a.Ships[0].CrewXP; got != want {
+		t.Fatalf("同星系 AI 艦艇經驗=%d，want %d", got, want)
+	}
+}
+
 func TestAIPlanetaryGravityGeneratorCandidateCompletionAndConsumer(t *testing.T) {
 	s := NewDemoSession()
 	a := &s.AIPlayers[0]

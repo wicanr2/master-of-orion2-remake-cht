@@ -59,6 +59,7 @@ ROOTS = {
 
 TRACKED_RECORD_OFFSETS = {
     "colony_pollution_word": 0x08,
+    "colony_raw_e9_word": 0xE9,
     "player_food_balance_word": 0xB0,
     "colony_food_output_byte": 0xDD,
     "player_cybernetic_trait": 0x8B0,
@@ -77,6 +78,10 @@ REVIEWED_OFFSET_SEMANTICS = {
     "colony_pollution_word": {
         "semantic": "base-dependent raw +0x08; colony base stores current pollution cleanup burden",
         "confidence": "confirmed_from_sub_DEE1B_write_and_industry_consumer",
+    },
+    "colony_raw_e9_word": {
+        "semantic": "colony-context signed word storing current net industry after pollution and downstream production diversions",
+        "confidence": "confirmed_from_sub_DEE1B_write_and_sub_E2710_empire_sum",
     },
     "player_food_balance_word": {
         "semantic": "base-dependent raw +0xB0; player base stores empire food production minus consumption",
