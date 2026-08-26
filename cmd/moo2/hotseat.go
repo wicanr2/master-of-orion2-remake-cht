@@ -140,7 +140,8 @@ func (b *sceneBuilder) advanceWorldTurn() *origTransition {
 // 結局／事件／回合摘要。網路鎖步在所有玩家重播同一批指令後只呼叫一次
 // EndTurn，接著也必須走完全相同的原版畫面順序。
 func (b *sceneBuilder) finishResolvedTurn() *origTransition {
-	if b.savePath != "" { // 每回合自動存檔(持久化對局)
+	settings := b.session.EffectiveGameSettings()
+	if settings.AutoSaveGame && b.savePath != "" { // SETTINGS 的 Auto Save Game 消費端
 		if err := b.session.Save(b.savePath); err != nil {
 			fmt.Fprintln(os.Stderr, "自動存檔失敗:", err)
 		}
@@ -156,7 +157,7 @@ func (b *sceneBuilder) finishResolvedTurn() *origTransition {
 	// 排在事件快報之前:遊戲都結束了,再播一則新聞快報只是擋路。
 	// 過場載不動就直接跳到最終得分——結局片不該擋住結算。
 	if b.session.Victory.Over {
-		if !b.skipCutscenes {
+		if settings.Animations && !b.skipCutscenes {
 			if sc := b.endingCutsceneFor(); sc != nil {
 				return &origTransition{next: sc}
 			}
@@ -166,9 +167,12 @@ func (b *sceneBuilder) finishResolvedTurn() *origTransition {
 	// 本回合有隨機事件或星系發現 → 先播快報(原版事件有專屬畫面,不是回合摘要裡一行字,
 	// 見 eventscreen.go 檔頭),按「繼續」才進回合摘要。
 	if b.currentReport() != nil {
-		return b.goTo(b.eventScreen, "事件快報")
+		return b.goTo(b.eventScreen, uiText(b.lang, "event.transition.report"))
 	}
-	return b.goTo(b.turnSummary, "回合摘要")
+	if !settings.EndOfTurnSummary {
+		return b.goTo(b.galaxy, uiText(b.lang, "gamesettings.transition.galaxy"))
+	}
+	return b.goTo(b.turnSummary, uiText(b.lang, "event.transition.summary"))
 }
 
 // endTurnPressed 是「結束回合」鈕的完整流程。

@@ -4404,7 +4404,10 @@ type GameSession struct {
 	// ShowRelocationLines 是星圖遷移連線的顯示開關(原版 `byte_199BE4`,手冊那組設定裡的一項)。
 	// 預設開:原版新開一局是畫的(`sub_127E1` 初始化時寫 1)。
 	ShowRelocationLines bool
-	LastBattle          *BattleResult // 上一場戰鬥結果(供戰鬥結果畫面)
+	// GameSettings 保存原版 SETTINGS 分頁的完整偏好；ShowRelocationLines 暫留作舊存檔與
+	// 現有星圖消費端的相容鏡像，所有新寫入應經 ApplyGameSettings。
+	GameSettings GameSettings
+	LastBattle   *BattleResult // 上一場戰鬥結果(供戰鬥結果畫面)
 	// LastLeaderUpkeep 是本回合實際扣掉的領袖維護費(見 leader_upkeep.go)。
 	// 不進存檔:它是「這一回合發生了什麼」的展示值,下一次 EndTurn 會重算。
 	LastLeaderUpkeep int `json:"-"`
@@ -6225,7 +6228,8 @@ func NewDemoSession() *GameSession {
 		Builds:              []ColonyBuild{{Name: TradeGoodsBuildName, Progress: 0, Cost: 0}},
 		SelectedStar:        -1,
 		ShowRelocationLines: true, // 原版預設開(`sub_127E1` 初始化寫 1)
-		EventSeed:           42,   // 隨機事件種子(可重現;正式新遊戲遞增)
+		GameSettings:        DefaultGameSettings(),
+		EventSeed:           42, // 隨機事件種子(可重現;正式新遊戲遞增)
 		RuleProfile:         gamedata.Profile15(),
 	}
 	// 守衛怪獸(見 monster.go)。放在這裡而不是上面的複合字面值裡,因為 genMonsters 會就地

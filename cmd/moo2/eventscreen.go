@@ -145,6 +145,9 @@ func (b *sceneBuilder) eventScreen() (*overlayScreen, error) {
 	hits := []hitRegion{{270, 372, 100, 24, "ok"}}
 	onAction := func(a string) *origTransition {
 		if a == "ok" {
+			if b.session != nil && !b.session.EffectiveGameSettings().EndOfTurnSummary {
+				return b.goTo(b.galaxy, uiText(b.lang, "gamesettings.transition.galaxy"))
+			}
 			return b.goTo(b.turnSummary, uiText(b.lang, "event.transition.summary"))
 		}
 		return nil

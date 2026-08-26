@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -17,7 +16,6 @@ func gameMenuTextKeys() []string {
 		"gamemenu.button.save", "gamemenu.button.load", "gamemenu.button.new",
 		"gamemenu.button.quit", "gamemenu.button.settings", "gamemenu.button.return",
 		"gamemenu.label.music", "gamemenu.label.sound_fx",
-		"gamemenu.setting.relocation_lines", "gamemenu.state.on", "gamemenu.state.off",
 		"gamemenu.message.no_saves", "gamemenu.transition.galaxy",
 		"gamemenu.transition.new_game", "gamemenu.transition.main_menu",
 	}
@@ -71,7 +69,7 @@ func TestGameMenuTextSafeRectsStayInsideOwners(t *testing.T) {
 			t.Fatalf("音量標籤 %d 超出視窗：%+v", i, r)
 		}
 	}
-	for name, r := range map[string]textSafeRect{"設定": s.settingsRowTextRect(), "訊息": s.messageTextRect()} {
+	for name, r := range map[string]textSafeRect{"訊息": s.messageTextRect()} {
 		if r.x < 0 || r.y < 0 || r.x+r.w > moo2ScreenW || r.y+r.h > moo2ScreenH {
 			t.Fatalf("%s 文字安全框超出畫面：%+v", name, r)
 		}
@@ -90,7 +88,6 @@ func TestGameMenuLongestExternalTextIsWidthBounded(t *testing.T) {
 		}{
 			{s.buttonTextRect(0), uiText(lang, "gamemenu.button.save"), 12},
 			{s.volumeLabelTextRect(1), uiText(lang, "gamemenu.label.sound_fx"), 18},
-			{s.settingsRowTextRect(), fmt.Sprintf(uiText(lang, "gamemenu.setting.relocation_lines"), uiText(lang, "gamemenu.state.off")), 11},
 			{s.messageTextRect(), uiText(lang, "gamemenu.message.no_saves"), 12},
 		}
 		for _, tc := range values {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 
@@ -36,10 +35,7 @@ import (
 // 音量條:原始 GAME.LBX 資產 7 是 155×12 的音量條貼圖;手冊說明按下後可拖曳,
 // 且靠左會關閉音量。remake 以同一條貼圖做動態裁切,把音訊層的即時音量接回這個視窗。
 //
-// SETTINGS **2026-08-07 起接了一項**:原版是一整個設定畫面(手冊那組 ALT+Fn 開關),
-// remake 還沒有那個畫面,但已經有一個真的開關——**遷移連線的顯示**(原版 `byte_199BE4`,
-// 見 internal/shell/relocation.go)。所以先把它就地展開在這個視窗裡。
-// ⚠ 那一列**不是原版版面**;建了設定畫面之後要搬過去。
+// SETTINGS 進入 gamesettings.go 的原版 13 列分頁；偏好由 shell.GameSettings 保存。
 
 // 原版遊戲選單視窗的資產與座標(openorion2 galaxy.cpp MainMenuWindow)。
 const (
@@ -86,12 +82,10 @@ type gameMenuScreen struct {
 	btnImg                 []*ebiten.Image
 	btnFace                []color.RGBA
 	winX, winY, winW, winH int
-	// showSettings 是「設定」鈕展開的那一列(目前只有遷移連線開關,見 settingsRowRect ⚠)。
-	showSettings bool
-	msg          string
-	musicVolume  float64
-	sfxVolume    float64
-	dragSlider   int // 0=Music, 1=Sound Fx, -1=沒有拖曳
+	msg                    string
+	musicVolume            float64
+	sfxVolume              float64
+	dragSlider             int // 0=Music, 1=Sound Fx, -1=沒有拖曳
 }
 
 // gameMenuImage 取 game.lbx 的某資產(調色盤借 buffer0#0,同星系主畫面那條鏈),
@@ -159,11 +153,6 @@ func (s *gameMenuScreen) volumeLabelTextRect(which int) textSafeRect {
 		y = s.winY + 205
 	}
 	return textSafeRect{x: s.winX + gameMenuSliderX - 2, y: y, w: 170, h: 31, insetX: 2, insetY: 2}
-}
-
-func (s *gameMenuScreen) settingsRowTextRect() textSafeRect {
-	x, y, w, h := s.settingsRowRect()
-	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 4, insetY: 2}
 }
 
 func (s *gameMenuScreen) messageTextRect() textSafeRect {
@@ -259,20 +248,9 @@ func (s *gameMenuScreen) update(in shell.InputState) *origTransition {
 		case "quit":
 			return s.b.goTo(s.b.menu, uiText(s.b.lang, "gamemenu.transition.main_menu")) // 原版是回主選單,不是直接關程式
 		case "settings":
-			// 原版是一整個設定畫面(手冊那組 ALT+Fn 開關)。remake 還沒有那個畫面,
-			// 但**已經有一個真的開關**(遷移連線,原版 `byte_199BE4`),
-			// 所以先把它就地放在這個視窗裡當第一個項目——見下方 settingsRowRect。
-			s.showSettings = !s.showSettings
-			s.msg = ""
+			return &origTransition{next: newGameSettingsScreen(s.b)}
 		}
 		return nil
-	}
-	// 設定列(展開時才在):目前只有一項——遷移連線的顯示開關。
-	if s.showSettings && s.b.session != nil {
-		x, y, w, h := s.settingsRowRect()
-		if hitRect(in, x, y, w, h) {
-			s.b.session.ShowRelocationLines = !s.b.session.ShowRelocationLines
-		}
 	}
 	return nil
 }
@@ -295,23 +273,6 @@ func (s *gameMenuScreen) drawVolumeSlider(dst *ebiten.Image, which int, volume f
 	}
 	vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1,
 		color.RGBA{100, 130, 180, 255}, false)
-}
-
-// settingsRowRect 是設定列的螢幕矩形(視窗底下、按鈕列之下)。
-//
-// ⚠ 這**不是原版版面**:原版有一整個設定畫面,那些開關在那裡。
-// remake 目前只有一個真的開關,先就地擺在遊戲選單裡——建了設定畫面之後要搬過去。
-func (s *gameMenuScreen) settingsRowRect() (int, int, int, int) {
-	return s.winX + 30, s.winY + 340, s.winW - 60, 18
-}
-
-// settingsRowLabel 回傳設定列要顯示的字。
-func (s *gameMenuScreen) settingsRowLabel() string {
-	on := uiText(s.b.lang, "gamemenu.state.on")
-	if s.b.session == nil || !s.b.session.ShowRelocationLines {
-		on = uiText(s.b.lang, "gamemenu.state.off")
-	}
-	return fmt.Sprintf(uiText(s.b.lang, "gamemenu.setting.relocation_lines"), on)
 }
 
 func (s *gameMenuScreen) draw(dst *ebiten.Image) {
@@ -368,15 +329,6 @@ func (s *gameMenuScreen) draw(dst *ebiten.Image) {
 				s.btnFace[i], false)
 		}
 		s.buttonTextRect(i).drawCentered(dst, s.fnt, uiText(s.b.lang, btn.textKey), 12, body)
-	}
-	if s.showSettings && s.b.session != nil {
-		x, y, w, h := s.settingsRowRect()
-		fillPanel(dst, float32(x), float32(y), float32(w), float32(h),
-			color.RGBA{28, 36, 52, 235}, false)
-		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1,
-			color.RGBA{110, 150, 190, 255}, false)
-		s.settingsRowTextRect().drawCentered(dst, s.fnt, s.settingsRowLabel(), 11,
-			color.RGBA{200, 225, 240, 255})
 	}
 	if s.msg != "" {
 		s.messageTextRect().drawCentered(dst, s.fnt, s.msg, 12, color.RGBA{235, 160, 120, 255})

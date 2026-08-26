@@ -16,6 +16,8 @@ import idc
 
 
 ROOTS = {
+    "set_default_game_settings_candidate": 0x127E1,
+    "write_game_settings_candidate": 0x12937,
     "do_main_game_popup_candidate": 0x7DD41,
     "do_options_game_popup_candidate": 0x7E00F,
     "load_game_popup_pictures_candidate": 0x7EA5C,
@@ -23,6 +25,8 @@ ROOTS = {
     "print_options_to_bitmap_candidate": 0x7EDB1,
     "draw_main_game_popup_candidate": 0x7F701,
     "draw_options_game_popup_candidate": 0x7FA28,
+    "set_current_game_option_flags_candidate": 0x7EFEF,
+    "update_game_settings_candidate": 0x7F14C,
     "game_popup_candidate": 0x8012F,
     "set_music_for_game_popup_candidate": 0x80892,
     "set_sound_for_game_popup_candidate": 0x80918,

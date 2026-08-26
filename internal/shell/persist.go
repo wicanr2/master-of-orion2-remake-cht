@@ -109,8 +109,9 @@ type sessionSnapshot struct {
 	// omitempty:舊存檔沒有 → nil = 每個殖民地都沒設定,語意正確。
 	// ⚠ ShowRelocationLines 反過來:舊存檔解出 false,但原版預設是**開**,
 	// 所以 restore 端要把「舊檔」補成 true(見 restore)。
-	ColonyRelocateTo    []int `json:"colonyRelocateTo,omitempty"`
-	ShowRelocationLines bool  `json:"showRelocationLines,omitempty"`
+	ColonyRelocateTo    []int        `json:"colonyRelocateTo,omitempty"`
+	ShowRelocationLines bool         `json:"showRelocationLines,omitempty"`
+	GameSettings        GameSettings `json:"gameSettings,omitempty"`
 	// ⚠ 以下到 FleetETA 為止是**舊格式,只讀不寫**:單艦隊時代的欄位。
 	// 新存檔一律寫 Fleets;留著是為了讀得回 2026-08-07 之前存的檔。
 	Ships        []Ship        `json:"ships,omitempty"`
@@ -312,6 +313,7 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		ColonyLeaderNames: s.ColonyLeaderNames,
 		Fleets:            s.Fleets, SelectedFleet: s.SelectedFleet, ShipDesigns: s.ShipDesigns,
 		ColonyRelocateTo: s.ColonyRelocateTo, ShowRelocationLines: s.ShowRelocationLines,
+		GameSettings: s.EffectiveGameSettings(),
 		SelectedStar: s.SelectedStar, Difficulty: s.Difficulty, Builds: s.Builds,
 		BuildQueue:                 s.BuildQueue,
 		AutoBuild:                  s.AutoBuild,
@@ -439,6 +441,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 		// 用「有沒有 Fleets 欄位」判斷是不是舊檔(同 restoredFleets 的判準):
 		// 舊檔一律補成開,新檔照存的值。
 		ShowRelocationLines: len(snap.Fleets) == 0 || snap.ShowRelocationLines,
+		GameSettings:        snap.GameSettings,
 		SelectedStar:        snap.SelectedStar, Difficulty: snap.Difficulty,
 		Builds: snap.Builds, BuildQueue: snap.BuildQueue,
 		AutoBuild: snap.AutoBuild, RepeatBuild: snap.RepeatBuild,
@@ -486,6 +489,13 @@ func (snap sessionSnapshot) restore() *GameSession {
 		GalaxyAgeSet:              snap.GalaxyAgeSet,
 		TechLevel:                 snap.TechLevel,
 		TechLevelSet:              snap.TechLevelSet,
+	}
+	if out.GameSettings.Version == 0 {
+		settings := DefaultGameSettings()
+		settings.ShowRelocationLines = out.ShowRelocationLines
+		out.ApplyGameSettings(settings)
+	} else {
+		out.ApplyGameSettings(out.GameSettings)
 	}
 	// 舊版 History 是人口／國庫／當回合研究／抽象艦力，不能改名冒充原版四環。
 	// HistoryScales 全零是舊格式的可靠世代標記；清除後由下一回合重新累積。
