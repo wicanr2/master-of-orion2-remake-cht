@@ -77,6 +77,26 @@ func TestOriginalAIResearchBuildingScores(t *testing.T) {
 	}
 }
 
+func TestOriginalAIBiospheresScore(t *testing.T) {
+	b, ok := gamedata.BuildingByNameZH("生態圈")
+	if !ok {
+		t.Fatal("測試建築不存在：生態圈")
+	}
+	colony := engine.ColonyState{Population: 9}
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic, false, false); !exact || score != 18 {
+		t.Fatalf("Biospheres 一般分數=(%d,%v)，want (18,true)", score, exact)
+	}
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, false, false); !exact || score != 19 {
+		t.Fatalf("Biospheres Pacifist 分數=(%d,%v)，want (19,true)", score, exact)
+	}
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, false, true); !exact || score != 0 {
+		t.Fatalf("Biospheres priority gate 分數=(%d,%v)，want (0,true)", score, exact)
+	}
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, true, false); !exact || score != 19 {
+		t.Fatalf("Biospheres 不讀 late-tech，分數=(%d,%v)，want (19,true)", score, exact)
+	}
+}
+
 func TestAIOriginalPriorityBuildingGate(t *testing.T) {
 	known := map[gamedata.Technology]bool{gamedata.TECH_AUTOMATED_FACTORIES: true}
 	if !aiOriginalPriorityBuildingGate(engine.ColonyState{MineralRichness: gamedata.ABUNDANT}, nil, known, gamedata.MoraleGovDemocracy) {

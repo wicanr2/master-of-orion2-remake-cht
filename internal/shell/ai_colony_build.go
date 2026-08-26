@@ -65,6 +65,10 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 	if personality == ai.PersonalityErratic {
 		erratic = 1
 	}
+	pacifist := 0
+	if personality == ai.PersonalityPacifist {
+		pacifist = 1
+	}
 	switch rawID {
 	case 6: // 0xD06AD..0xD06CB：Autolab
 		if priorityGate || lateTech {
@@ -92,6 +96,11 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		return colony.Population + 13 + 2*honorable, true
 	case 12: // 0xD0739：Deep Core Mine
 		return colony.Population + 12 + 4*honorable, true
+	case 15: // 0xD0784..0xD0792：Biospheres
+		if priorityGate {
+			return 0, true
+		}
+		return 18 + pacifist, true
 	case 34: // 0xD0918：Robotic Factory
 		return 12 + 2*honorable, true
 	case 36: // 0xD0947：Robo Mining Plant

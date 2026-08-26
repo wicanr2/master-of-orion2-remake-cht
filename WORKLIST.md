@@ -333,7 +333,8 @@
   跳表，raw 4／7／12／34／36 已改用人口與 Honorable 性格的完整原版精確分數；另由
   `sub_DC288 @ 0xDC2E8` 的唯一直接寫入與四個 consumer，先閉合 raw 6／19／30／35 的
   late-tech 零分；其後再由 `player+0x117+TechnologyID`、`colony+0x136+BuildingID`、礦產與
-  政府碼交叉閉合共用 priority gate，四棟研究設施現已使用完整正值／零值公式。其餘分數區域、
+  政府碼交叉閉合共用 priority gate，四棟研究設施現已使用完整正值／零值公式；raw 15
+  Biospheres 亦已閉合為 priority gate 時 0、否則 `18+[Pacifist]`。其餘分數區域、
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
   state machine 亦待閉合。見
   [`docs/re/ai-difficulty-economy-audit-20260826.md`](docs/re/ai-difficulty-economy-audit-20260826.md) 與

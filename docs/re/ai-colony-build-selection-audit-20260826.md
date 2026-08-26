@@ -120,6 +120,19 @@ little-endian dword；索引在 `0xD019F` 先減 1，因此 entry 0 對 raw buil
 `var_3C` 由 `player+0x28 == 3` 建立；既有 AIRACES 證據把 raw 3 對到
 `PersonalityErratic`。四式不讀 `var_18`，所以不受國庫 PRNG 擾動。
 
+## 第三批：Biospheres
+
+raw building ID 15 的 jump-table entry 位於 `0xCFF9A`，原始 bytes
+`84 07 0D 00` 直接指向 `loc_D0784 @ 0xD0784`：
+
+1. `test ah,ah @ 0xD0784`；共用 priority gate 成立時直接走共同零分出口。
+2. 否則 `mov ebx,var_1C @ 0xD078C`，再 `add ebx,12h @ 0xD078F`。
+3. `var_1C` 由 `player+0x28 == 5 @ 0xD006A..0xD0077` 建立；既有 AIRACES 對照把 raw 5
+   釘為 `PersonalityPacifist`。
+
+因此 Biospheres 的完整 typed 公式為：priority gate 時 `0`，否則
+`18 + [Pacifist]`。這條路徑不讀 late-tech、人口或 `var_18`，沒有額外 PRNG 或未解欄位。
+
 其餘未封閉區域會讀 alien／outpost 狀態、政府／性格其他碼、殖民地 packed 人口、帝國建築數、
 星球 owner／環境、事件與未解 player flags；在欄位寫入端與 typed 對映完成前維持
 `unknown_pending_review`，由明示近似 fallback 處理。
