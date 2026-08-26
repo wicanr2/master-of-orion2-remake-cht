@@ -19,6 +19,7 @@ import idc
 
 
 ROOTS = {
+    "raw_Next_Turn_Calc": 0x136B3,
     "raw_Colony_Building_Score": 0xD0036,
     "raw_Assign_Colony_New_Building": 0xD0B08,
     "raw_AI_Build_Dispatch": 0xD0D2F,
@@ -45,6 +46,8 @@ ROOTS = {
     "raw_AI_Choose_Research": 0xDC288,
     "raw_AI_Empire_Output_Cache": 0xDF8F0,
     "raw_Recompute_Player_Economy": 0xE2710,
+    "raw_Apply_Player_Economy": 0xE4F49,
+    "raw_Integer_Sqrt": 0x134C92,
 }
 
 

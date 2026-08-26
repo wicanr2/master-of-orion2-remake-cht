@@ -50,8 +50,9 @@ raw `sub_D2754 @ 0xD2754..0xD2783` 只在殖民地有效、有人口，且目前
   `Apply_Production_` 與上述 AI 指派鏈共同讀寫。
 - **已標註近似**：remake 已有 typed 建築分類、科技 gate 與殖民地輸出，但尚未一對一表示
   `sub_D0036` 使用的全部 raw 玩家／殖民地欄位；本輪只以 typed 類別與糧食／人口狀態重建分數。
-- **已標註近似**：原版共用 PRNG 的精確全局位置未閉合；remake 以回合與殖民地 key
-  決定性取樣，保存／讀取不會換產品。
+- **已標註近似**：原版建築候選加權抽選的共用 PRNG 精確全局位置未閉合；remake 以回合與
+  殖民地 key 決定性取樣，保存／讀取不會換產品。`sub_D0036` 內先前誤稱「國庫亂數」的
+  `sub_134C92` 已由完整函式解碼證實是整數平方根，不屬這項 PRNG 留白。
 - **未知**：`sub_D10EE` 中完整的帝國級建築、支援艦、戰鬥艦、改裝與購買配額；不可把
   本輪建築子鏈誤寫成完整原版 AI 生產 parity。
 
@@ -74,7 +75,7 @@ little-endian dword；索引在 `0xD019F` 先減 1，因此 entry 0 對 raw buil
 `var_2C` 由 `0xD007A..0xD0082` 的 `player+0x28 == 4` 建立。專案既有
 `ai.Personality` 已以 AIRACES／官方字串把 raw 4 對到 `PersonalityHonorable`，所以這五式
 不需要猜測新的欄位語意。五條路徑最後都直接進共同正值／1000 上限，不會經
-`0xD0414 add ebx,var_18` 的國庫亂數擾動。
+`0xD0414 add ebx,var_18` 的國庫／淨收入平方根因子。
 
 ## 第二批：四棟研究設施與共用優先建築 gate
 
@@ -118,7 +119,7 @@ little-endian dword；索引在 `0xD019F` 先減 1，因此 entry 0 對 raw buil
 | 35 | 研究實驗室 | `0xD0925..0xD0942` | priority gate 或 late-tech 時 0，否則 `5+2×[Erratic]` |
 
 `var_3C` 由 `player+0x28 == 3` 建立；既有 AIRACES 證據把 raw 3 對到
-`PersonalityErratic`。四式不讀 `var_18`，所以不受國庫 PRNG 擾動。
+`PersonalityErratic`。四式不讀 `var_18`，所以不受國庫／淨收入平方根因子影響。
 
 ## 第三批：Biospheres
 
@@ -131,7 +132,7 @@ raw building ID 15 的 jump-table entry 位於 `0xCFF9A`，原始 bytes
    釘為 `PersonalityPacifist`。
 
 因此 Biospheres 的完整 typed 公式為：priority gate 時 `0`，否則
-`18 + [Pacifist]`。這條路徑不讀 late-tech、人口或 `var_18`，沒有額外 PRNG 或未解欄位。
+`18 + [Pacifist]`。這條路徑不讀 late-tech、人口或 `var_18`，沒有額外平方根因子或未解欄位。
 
 ## 第四批：Food Replicators
 
@@ -153,6 +154,34 @@ raw building ID 16 的 jump-table case 位於 `0xD0797..0xD07BD`。其完整資�
 因此完整 typed 公式為：主要人口／owner profile 不完整時維持未知並走明示 fallback；
 資料完整且不是「主要人口 Lithovore、owner 非 Lithovore」時 `0`；成立時
 `4 + 4×[帝國食物盈餘<0] + [Pacifist]`。這條路徑不讀 priority gate 或 late-tech。
+
+## 第五批：Cloning Center 與 `var_18` 勘誤
+
+raw building ID 10 的 jump-table entry 位於 `0xCFF86`，原始 bytes
+`1c 07 0d 00` 指向 `0xD071C`。完整控制流為：
+
+1. `test ah,ah @ 0xD071C`：priority gate 成立時直接零分。
+2. `cmp byte ptr [edi+0x8A0],0 @ 0xD0724`：`+0x8A0 = +0x89F + trait index 1`；
+   受版控 RACESTUF 轉換表與 `.GAM Traits[31]` 已證實 index 1 是人口成長 runtime 百分點。
+   只有負成長時於 `0xD0731` 加 `[Pacifist]`。
+3. 兩條路徑均進 `0xD05B0`，加入 `floor(var_18/2)`。
+
+`var_18` 由函式前段 `0xD009B..0xD00BD` 建立：結算前國庫 `player+0x32 < 1500` 時為 0；
+否則把 signed word `player+0xB2` 以朝零截斷除以 64，傳入 raw
+`sub_134C92 @ 0x134C92..0x134D2D`，再於 `0xD0135..0xD0142` 夾到 10。
+完整指令顯示 `sub_134C92` 是 unsigned 32-bit 整數平方根，不是 PRNG；負商會命中
+`0x134CAD..0x134CBD` 的高值捷徑回傳 65535，之後同樣夾成 10。
+
+`player+0xB2` 已由 `sub_E2710 @ 0xE2A4B..0xE2A64` 與維護費稽核閉合為本回合淨 BC，
+`player+0x32` 是尚未加上該值的國庫。`Next_Turn_Calc_ @ 0x136B3` 於 `0x13715` 先呼叫
+AI 殖民地建造，直到 `0x13742` 才呼叫 raw `sub_E4F49` 套用本回合淨 BC；因此 remake
+以 `EmpireOutput.Player.BC-EmpireOutput.NetBC` 重建相同的結算前門檻。
+
+完整 typed 公式為：priority gate 時 `0`；否則
+`floor(budgetFactor/2) + [race growth < 0]×[Pacifist]`，其中
+`budgetFactor = 0`（結算前國庫 `<1500`），否則
+`min(10, isqrt32(uint32(trunc(int16(netBC)/64))))`。這裡的 `int16` 是原版 word 儲存契約，
+不是 remake 任意縮窄。
 
 其餘未封閉區域會讀 alien／outpost 狀態、政府／性格其他碼、其他殖民地 packed 人口用途、帝國建築數、
 星球 owner／環境、事件與未解 player flags；在欄位寫入端與 typed 對映完成前維持

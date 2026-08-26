@@ -115,7 +115,38 @@ func originalAIForeignLithovorePopulation(colony engine.ColonyState) (bool, bool
 	return primaryLithovore && !colony.Lithovore, true
 }
 
-func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState, personality ai.Personality, lateTech, priorityGate bool, empireFoodBalanceHalf int) (int, bool) {
+type originalAIBuildScoreContext struct {
+	lateTech              bool
+	priorityGate          bool
+	empireFoodBalanceHalf int
+	raceGrowthPercent     int
+	treasuryBefore        int
+	netBC                 int
+}
+
+// originalAIBudgetFactor 對映 Colony_Building_Score_ @ 0xD009B..0xD0142。
+// sub_134C92 是 unsigned 32-bit 整數平方根，不是亂數；原版 +0xB2 是 signed word，
+// 因此先以 int16 保留其儲存契約，再用 Go 的整數除法重現朝零截斷。
+func originalAIBudgetFactor(treasuryBefore, netBC int) int {
+	if treasuryBefore < 1500 {
+		return 0
+	}
+	q := int(int16(netBC)) / 64
+	// 負商轉成 uint32 後命中 sub_134C92 的高值捷徑並回傳 65535，隨後被夾成 10。
+	if q < 0 {
+		return 10
+	}
+	root := 0
+	for (root+1)*(root+1) <= q {
+		root++
+	}
+	if root > 10 {
+		return 10
+	}
+	return root
+}
+
+func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState, personality ai.Personality, ctx originalAIBuildScoreContext) (int, bool) {
 	rawID, ok := gamedata.OriginalBuildingIDForName(b.NameZH)
 	if !ok {
 		return 0, false
@@ -133,23 +164,32 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		pacifist = 1
 	}
 	switch rawID {
+	case 10: // 0xD071C..0xD0734：Cloning Center
+		if ctx.priorityGate {
+			return 0, true
+		}
+		score := originalAIBudgetFactor(ctx.treasuryBefore, ctx.netBC) / 2
+		if ctx.raceGrowthPercent < 0 {
+			score += pacifist
+		}
+		return score, true
 	case 6: // 0xD06AD..0xD06CB：Autolab
-		if priorityGate || lateTech {
+		if ctx.priorityGate || ctx.lateTech {
 			return 0, true
 		}
 		return 11 + 4*erratic, true
 	case 19: // 0xD07CA..0xD07E4：Galactic Cybernet
-		if priorityGate || lateTech {
+		if ctx.priorityGate || ctx.lateTech {
 			return 0, true
 		}
 		return 11, true
 	case 30: // 0xD08CD..0xD08E9：Planetary Supercomputer
-		if priorityGate || lateTech {
+		if ctx.priorityGate || ctx.lateTech {
 			return 0, true
 		}
 		return 8 + 3*erratic, true
 	case 35: // 0xD0925..0xD0942：Research Laboratory
-		if priorityGate || lateTech {
+		if ctx.priorityGate || ctx.lateTech {
 			return 0, true
 		}
 		return 5 + 2*erratic, true
@@ -160,7 +200,7 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 	case 12: // 0xD0739：Deep Core Mine
 		return colony.Population + 12 + 4*honorable, true
 	case 15: // 0xD0784..0xD0792：Biospheres
-		if priorityGate {
+		if ctx.priorityGate {
 			return 0, true
 		}
 		return 18 + pacifist, true
@@ -172,7 +212,7 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		if !foreignLithovore {
 			return 0, true
 		}
-		if empireFoodBalanceHalf < 0 {
+		if ctx.empireFoodBalanceHalf < 0 {
 			return 8 + pacifist, true
 		}
 		return 4 + pacifist, true
@@ -185,8 +225,8 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 	}
 }
 
-func aiBuildingScore(b gamedata.Building, colony engine.ColonyState, out engine.ColonyOutput, personality ai.Personality, lateTech, priorityGate bool, empireFoodBalanceHalf int) int {
-	if score, exact := originalAIExactBuildingScore(b, colony, personality, lateTech, priorityGate, empireFoodBalanceHalf); exact {
+func aiBuildingScore(b gamedata.Building, colony engine.ColonyState, out engine.ColonyOutput, personality ai.Personality, ctx originalAIBuildScoreContext) int {
+	if score, exact := originalAIExactBuildingScore(b, colony, personality, ctx); exact {
 		return score
 	}
 	score := 20
@@ -235,12 +275,19 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 	lateTech := aiOriginalLateTechReached(a.Player)
 	priorityGate := aiOriginalPriorityBuildingGate(a.Colonies[colony], built,
 		knownTechnologyApplications(a.Player), effectiveAIGovernment(a))
+	ctx := originalAIBuildScoreContext{
+		lateTech: lateTech, priorityGate: priorityGate,
+		empireFoodBalanceHalf: empireOut.TotalFoodHalf,
+		raceGrowthPercent:     aiColonistProductionProfile(*a).growth,
+		treasuryBefore:        empireOut.Player.BC - empireOut.NetBC,
+		netBC:                 empireOut.NetBC,
+	}
 	maxScore := 1 // raw Assign_Colony_New_Building_ 也把最大分數下限夾到 1。
 	for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
 		if built[b.NameZH] {
 			continue
 		}
-		score := aiBuildingScore(b, a.Colonies[colony], out, a.Personality, lateTech, priorityGate, empireOut.TotalFoodHalf)
+		score := aiBuildingScore(b, a.Colonies[colony], out, a.Personality, ctx)
 		if score > maxScore {
 			maxScore = score
 		}
