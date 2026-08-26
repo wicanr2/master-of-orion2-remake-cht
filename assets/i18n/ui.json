@@ -1235,5 +1235,21 @@
   {"key":"netroster.hint.hosting","english":"Waiting for players — address: %s","value":"等待其他玩家加入——位址：%s","note":"主機等待提示；%s 為監聽位址"},
   {"key":"netroster.seed","english":"Seed %d (chosen and broadcast by the host)","value":"種子 %d（由主機決定並廣播）","note":"共同開局種子"},
   {"key":"netroster.error.network","english":"Network error: %s","value":"網路連線錯誤：%s","note":"連線階段錯誤；%s 為底層原因"},
-  {"key":"netroster.default_player_name","english":"Player","value":"玩家","note":"沒有存檔玩家名時的後備名稱"}
+  {"key":"netroster.default_player_name","english":"Player","value":"玩家","note":"沒有存檔玩家名時的後備名稱"},
+  {"key":"netwait.title","english":"NETWORK PLAYERS","value":"等待其他玩家","note":"Net_Next_Turn 中文覆蓋標題；英文保留原圖"},
+  {"key":"netwait.status.no_game","english":"(no game)","value":"（無對局）","note":"沒有鎖步回合表"},
+  {"key":"netwait.status.waiting","english":"waiting…","value":"等待中…","note":"玩家尚未送出本回合"},
+  {"key":"netwait.status.ready","english":"ready","value":"已完成","note":"玩家已送出本回合"},
+  {"key":"netwait.player.you_suffix","english":" (you)","value":"（你）","note":"本機玩家名稱後綴"},
+  {"key":"netwait.turn","english":"Turn %d","value":"第 %d 回合","note":"%d 為鎖步回合編號"},
+  {"key":"netwait.fingerprint","english":"State fingerprint: %s","value":"狀態指紋：%s","note":"%s 為八字元狀態指紋；remake 診斷轉接"},
+  {"key":"netwait.desync.title","english":"Desync — the game is out of sync; stop","value":"狀態分岔——對局已不同步，請停止","note":"鎖步失敗即關閉警告"},
+  {"key":"netwait.chat.gnn_prefix","english":"( GNN )  ","value":"（GNN）  ","note":"原版 speaker >= 8 的聊天前綴；保留尾端兩格"},
+  {"key":"netwait.chat.player_prefix","english":"(%s)  ","value":"（%s）  ","note":"玩家聊天前綴；%s 為名冊名稱，保留尾端兩格"},
+  {"key":"netwait.chat.unknown_player","english":"#%d","value":"#%d","note":"名冊缺名時以 speaker 編號診斷"},
+  {"key":"netwait.chat.caret","english":"_","value":"＿","note":"聊天輸入游標"},
+  {"key":"netwait.demo.player","english":"Player","value":"玩家","note":"畫廊示範本機名稱"},
+  {"key":"netwait.demo.gnn","english":"The council convenes next turn.","value":"議會將於下回合開議。","note":"畫廊示範 GNN 訊息"},
+  {"key":"netwait.demo.other_player","english":"Done here, waiting on you.","value":"我這回合下完了，等你。","note":"畫廊示範遠端玩家訊息"},
+  {"key":"netwait.demo.local_player","english":"One more turn.","value":"再給我一回合。","note":"畫廊示範本機訊息"}
 ]

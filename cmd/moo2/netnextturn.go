@@ -92,7 +92,7 @@ const (
 // 下列安全框由 MULTIGM 的 630×48／179／221 三塊面板與原版輸入列座標推得。
 // 聊天雖有 byte 上限，名字前綴與英文字寬仍可能超出面板；因此所有動態字都量像素寬度。
 func nntBannerTitleTextRect() textSafeRect {
-	return textSafeRect{x: 170, y: nntBannerY + 18, w: 300, h: 24, insetX: 4, insetY: 1}
+	return textSafeRect{x: 170, y: nntBannerY + 12, w: 300, h: 26, insetX: 4, insetY: 1}
 }
 
 func nntPlayerNameTextRect(row int) textSafeRect {
@@ -108,7 +108,7 @@ func nntTurnTextRect() textSafeRect {
 }
 
 func nntFingerprintTextRect() textSafeRect {
-	return textSafeRect{x: nntX + 24, y: nntMidY + 162, w: nntPanelW - 48, h: 14}
+	return textSafeRect{x: nntX + 24, y: nntMidY + 162, w: nntPanelW - 48, h: 16}
 }
 
 func nntChatTextRect(row int) textSafeRect {
@@ -119,15 +119,15 @@ func nntChatTextRect(row int) textSafeRect {
 }
 
 func nntDesyncTitleTextRect() textSafeRect {
-	return textSafeRect{x: nntX + 26, y: nntBotY + 148, w: 578, h: 14}
+	return textSafeRect{x: nntX + 26, y: nntBotY + 148, w: 578, h: 16}
 }
 
 func nntDesyncDetailTextRect() textSafeRect {
-	return textSafeRect{x: nntX + 26, y: nntBotY + 164, w: 578, h: 13}
+	return textSafeRect{x: nntX + 26, y: nntBotY + 164, w: 578, h: 16}
 }
 
 func nntInputTextRect() textSafeRect {
-	return textSafeRect{x: nntChatX, y: nntInputY, w: 582, h: nntInputH, insetY: 1}
+	return textSafeRect{x: nntChatX, y: nntInputY, w: 582, h: nntInputH}
 }
 
 // netNextTurnScreen 是等待其他玩家的畫面。
@@ -283,14 +283,21 @@ func (s *netNextTurnScreen) update(in shell.InputState) *origTransition {
 // statusLine 回傳某位玩家的狀態文字。
 func (s *netNextTurnScreen) statusLine(player int) (string, color.RGBA) {
 	if s.table == nil {
-		return s.b.tr("(無對局)", "(no game)"), color.RGBA{140, 150, 170, 255}
+		return uiText(s.b.lang, "netwait.status.no_game"), color.RGBA{140, 150, 170, 255}
 	}
 	for _, m := range s.table.Missing() {
 		if m == player {
-			return s.b.tr("等待中…", "waiting…"), color.RGBA{235, 200, 120, 255}
+			return uiText(s.b.lang, "netwait.status.waiting"), color.RGBA{235, 200, 120, 255}
 		}
 	}
-	return s.b.tr("已完成", "ready"), color.RGBA{140, 225, 160, 255}
+	return uiText(s.b.lang, "netwait.status.ready"), color.RGBA{140, 225, 160, 255}
+}
+
+func (s *netNextTurnScreen) chatPrefix(speaker int) string {
+	return netplay.FormatChatPrefix(speaker, s.speakerName(speaker),
+		uiText(s.b.lang, "netwait.chat.gnn_prefix"),
+		uiText(s.b.lang, "netwait.chat.player_prefix"),
+		uiText(s.b.lang, "netwait.chat.unknown_player"))
 }
 
 func (s *netNextTurnScreen) draw(dst *ebiten.Image) {
@@ -319,7 +326,7 @@ func (s *netNextTurnScreen) draw(dst *ebiten.Image) {
 	if s.b.lang == i18n.Traditional {
 		fillPanel(dst, 170, float64Rect(nntBannerY+12), 300, 26,
 			color.RGBA{26, 30, 38, 255}, false)
-		nntBannerTitleTextRect().drawCentered(dst, s.b.fnt, "等待其他玩家", 18, gold)
+		nntBannerTitleTextRect().drawCentered(dst, s.b.fnt, uiText(s.b.lang, "netwait.title"), 14, gold)
 	}
 
 	turn := 0
@@ -336,7 +343,7 @@ func (s *netNextTurnScreen) draw(dst *ebiten.Image) {
 		blit(s.light, nntX+20, y-16)
 		name := s.names[i]
 		if i == s.me {
-			name += s.b.tr("(你)", " (you)")
+			name += uiText(s.b.lang, "netwait.player.you_suffix")
 		}
 		nntPlayerNameTextRect(i).drawLeft(dst, s.b.fnt, name, 13, body)
 		text, col := s.statusLine(i)
@@ -347,10 +354,10 @@ func (s *netNextTurnScreen) draw(dst *ebiten.Image) {
 	// 佔用它就得把聊天往別處挪,那就不是原版的版面了。
 	// 指紋擺在畫面上不是裝飾——分岔時兩邊念一下這八個字元就知道是不是同一個狀態,
 	// 不必先架 log 收集。
-	nntTurnTextRect().drawLeft(dst, s.b.fnt, fmt.Sprintf(s.b.tr("第 %d 回合", "Turn %d"), turn), 14, gold)
+	nntTurnTextRect().drawLeft(dst, s.b.fnt, fmt.Sprintf(uiText(s.b.lang, "netwait.turn"), turn), 14, gold)
 	if s.b.session != nil {
 		nntFingerprintTextRect().drawLeft(dst, s.b.fnt,
-			s.b.tr("狀態指紋:", "State fingerprint: ")+s.b.session.StateFingerprint(), 12, color.RGBA{170, 200, 230, 255})
+			fmt.Sprintf(uiText(s.b.lang, "netwait.fingerprint"), s.b.session.StateFingerprint()), 12, color.RGBA{170, 200, 230, 255})
 	}
 
 	// 聊天記錄:下段面板由上而下 14 行,行距 12(見 internal/netplay/chat.go)。
@@ -365,7 +372,7 @@ func (s *netNextTurnScreen) draw(dst *ebiten.Image) {
 			col = gnn
 		}
 		nntChatTextRect(i).drawLeft(dst, s.b.fnt,
-			netplay.ChatPrefix(ln.Speaker, s.speakerName(ln.Speaker))+ln.Text, 11, col)
+			s.chatPrefix(ln.Speaker)+ln.Text, 11, col)
 	}
 
 	// 分岔警告:鎖步一旦分岔,繼續玩只會讓兩邊差得更遠,所以蓋在聊天記錄上面也要講。
@@ -374,7 +381,7 @@ func (s *netNextTurnScreen) draw(dst *ebiten.Image) {
 			fillPanel(dst, nntX+16, nntBotY+137, 598, 44, color.RGBA{70, 16, 20, 235}, false)
 			vector.StrokeRect(dst, nntX+16, nntBotY+137, 598, 44, 1, color.RGBA{230, 110, 110, 255}, false)
 			nntDesyncTitleTextRect().drawLeft(dst, s.b.fnt,
-				s.b.tr("⚠ 狀態分岔——對局已不同步,請停止", "⚠ Desync — the game is out of sync, stop"), 13, color.RGBA{250, 190, 180, 255})
+				uiText(s.b.lang, "netwait.desync.title"), 13, color.RGBA{250, 190, 180, 255})
 			nntDesyncDetailTextRect().drawLeft(dst, s.b.fnt, d, 11, color.RGBA{240, 200, 195, 255})
 		}
 	}
@@ -383,10 +390,10 @@ func (s *netNextTurnScreen) draw(dst *ebiten.Image) {
 	fillPanel(dst, nntX+16, nntInputY, 598, nntInputH, color.RGBA{18, 24, 38, 220}, false)
 	caret := ""
 	if (s.tick/30)%2 == 0 {
-		caret = "_"
+		caret = uiText(s.b.lang, "netwait.chat.caret")
 	}
 	nntInputTextRect().drawLeft(dst, s.b.fnt,
-		netplay.ChatPrefix(s.me, s.speakerName(s.me))+s.typing+caret, 11, color.RGBA{225, 232, 245, 255})
+		s.chatPrefix(s.me)+s.typing+caret, 11, color.RGBA{225, 232, 245, 255})
 }
 
 // float64Rect 是 vector 那組 API 要 float32、而這一檔的座標常數是 int 的轉接。
@@ -429,10 +436,10 @@ func (b *sceneBuilder) multigmFrameWithKey(assetID, f int, keyColor bool) *ebite
 
 // netNextTurnDemo 建一張「示範用」的等待畫面:表格是即時建的,人名取目前對局的帝國名。
 //
-// ⚠ 它**不是**連上線的對局——連線流程的 UI 還沒做(見檔頭)。這張畫面存在的意義是
-// 版面與狀態顯示先做對:等連線流程接上來時,只要把這裡的 table 換成真的那一張即可。
+// ⚠ 它**不是**正式連線對局；正式回合等待走 networkWaitScreen。這個 adapter 只供畫廊
+// 驗證原版 Net_Next_Turn 的面板、聊天與狀態列版面。
 func (b *sceneBuilder) netNextTurnDemo() *netNextTurnScreen {
-	names := []string{b.tr("玩家", "Player")}
+	names := []string{uiText(b.lang, "netwait.demo.player")}
 	if b.session != nil {
 		if b.session.PlayerName != "" {
 			names[0] = b.session.PlayerName
@@ -458,11 +465,11 @@ func (b *sceneBuilder) netNextTurnDemo() *netNextTurnScreen {
 	s := b.netNextTurn(tb, names, 0)
 	// 聊天記錄先放三則,不然截圖廊那張下段面板是空的——看不出版面對不對。
 	// 兩種前綴各出現一次(玩家 / GNN),那是原版分兩路的地方。
-	s.chat.AppendGNN(b.tr("議會將於下回合開議。", "The council convenes next turn."))
+	s.chat.AppendGNN(uiText(b.lang, "netwait.demo.gnn"))
 	if len(names) > 1 {
-		s.chat.Append(1, b.tr("我這回合下完了,等你。", "Done here, waiting on you."))
+		s.chat.Append(1, uiText(b.lang, "netwait.demo.other_player"))
 	}
-	s.chat.Append(0, b.tr("再給我一回合。", "One more turn."))
+	s.chat.Append(0, uiText(b.lang, "netwait.demo.local_player"))
 	return s
 }
 

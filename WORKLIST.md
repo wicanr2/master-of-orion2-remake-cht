@@ -237,12 +237,6 @@
   [`docs/tech/multiplayer-setup-external-text-spec.md`](docs/tech/multiplayer-setup-external-text-spec.md)。
   區網對局選擇已完成第二十五個切片：標題、空清單兩列、直接位址、取消、兩種連線錯誤及
   三個畫廊示範對局名均由 `ui.json` 供應，`choosemultinetgame.go` 不再內嵌玩家文案或呼叫
-  字型直接繪製。連線玩家名冊亦完成下一個切片：標題、空席／主機／本機標記、列號模板、
-  等待提示、位址、共同種子、網路錯誤、預設玩家名與畫廊假資料均改由 `ui.json` 供應；
-  標題、列號、玩家名及兩行狀態分別套用雙軸安全框。舊文件所稱只能連本機的斷言已勘誤，
-  現行「直接輸入位址」是正常後備入口。原版逐列種族／顏色指派仍是獨立玩法缺口，未因
-  名冊文案與版面完成而升格。規格見
-  [`docs/tech/network-roster-external-text-spec.md`](docs/tech/network-roster-external-text-spec.md)。
   `tr`。十列各自拆成名稱／位址／人數三個不相交的雙軸安全框；標題、空清單、按鈕與訊息列
   亦改走安全框。英文有正版 `MULTIGM.LBX#41` 時保留 `JOIN NETWORK GAME SETUP` 烘字，
   繁中與缺 panel fallback 才重繪。IDA Pro 9.4 證實 `sub_F0C8E @ 0xF0C8E..0xF0E17`
@@ -256,6 +250,24 @@
   規格見
   [`docs/re/choose-multi-net-game-player-text-audit-20260827.md`](docs/re/choose-multi-net-game-player-text-audit-20260827.md) 與
   [`docs/tech/choose-multi-net-game-external-text-spec.md`](docs/tech/choose-multi-net-game-external-text-spec.md)。
+  連線玩家名冊已完成第二十六個切片：標題、空席／主機／本機標記、列號模板、等待提示、
+  位址、共同種子、網路錯誤、預設玩家名與畫廊假資料均改由 `ui.json` 供應；標題、列號、
+  玩家名及兩行狀態分別套用雙軸安全框。舊文件所稱只能連本機的斷言已清除，現行
+  「直接輸入位址」是正常後備入口。原版逐列種族／顏色指派仍是獨立玩法缺口，未因名冊
+  文案與版面完成而升格；規格見
+  [`docs/tech/network-roster-external-text-spec.md`](docs/tech/network-roster-external-text-spec.md)。
+  `Net_Next_Turn` 畫廊 adapter 已完成第二十七個切片：標題、三種玩家狀態、本機後綴、
+  回合／指紋格式、分岔警告、兩種聊天前綴、游標及畫廊訊息全由 `ui.json` 供應；
+  `internal/netplay` 只接受呼叫端外部格式，不再保存可見括號字串。IDA Pro 9.4 重跑確認
+  `sub_FC470 @ 0xFC470..0xFC6A5`、`sub_F3E42 @ 0xF3E42..0xF3FC6`、
+  `sub_EFCEA @ 0xEFCEA..0xEFE7A`、`sub_F1075 @ 0xF1075..0xF166E`、
+  `sub_F31BB @ 0xF31BB..0xF33AE` 與 `sub_F55A4 @ 0xF55A4..0xF5681`；輸入列
+  `0xBB／0x11`、玩家列步距 `0x19`、GNN speaker `8` 與聊天記錄 `+0x47C` 可回查，
+  第一列 y 仍維持近似。runtime 字型測試另抓到標題、指紋、分岔警告與輸入列舊框垂直不足，
+  現已依實際 glyph ink 修正；中英文畫廊各 35/35，兩種 `30_netwait.png` 目視無越框。
+  正式多人回合等待仍使用 `networkWaitScreen`，本切片不把畫廊 adapter 冒稱正式路徑；證據與規格見
+  [`docs/re/net-next-turn-player-text-audit-20260827.md`](docs/re/net-next-turn-player-text-audit-20260827.md) 與
+  [`docs/tech/net-next-turn-external-text-spec.md`](docs/tech/net-next-turn-external-text-spec.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與

@@ -198,18 +198,18 @@ func ChatTruncate(s string) string {
 	return strings.TrimSpace(s[:cut])
 }
 
-// ChatPrefix 回傳一則的前綴,格式照原版的兩個 sprintf。
+// FormatChatPrefix 依呼叫端提供的外部格式回傳一則前綴。
 //
 // name 為空時退回顯示發話者編號——不是編一個「玩家」出來:名字缺了是名冊沒同步,
 // 蓋掉它只會讓那個問題更難查。
-func ChatPrefix(speaker int, name string) string {
+func FormatChatPrefix(speaker int, name, gnnPrefix, playerFormat, unknownNameFormat string) string {
 	if speaker >= ChatGNNSpeaker {
-		return "( GNN )  "
+		return gnnPrefix
 	}
 	if name == "" {
-		name = fmt.Sprintf("#%d", speaker)
+		name = fmt.Sprintf(unknownNameFormat, speaker)
 	}
-	return "(" + name + ")  "
+	return fmt.Sprintf(playerFormat, name)
 }
 
 // ChatMessage 造一則要送出去的聊天訊息。

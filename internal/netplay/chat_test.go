@@ -92,16 +92,19 @@ func TestChatLogIgnoresEmptyMessages(t *testing.T) {
 
 // 發話者 >= 8 走 GNN 那一路,< 8 走玩家那一路——兩個 sprintf 的格式照抄。
 func TestChatPrefixMatchesTheOriginalFormats(t *testing.T) {
-	if got, want := ChatPrefix(ChatGNNSpeaker, "無所謂"), "( GNN )  "; got != want {
+	prefix := func(speaker int, name string) string {
+		return FormatChatPrefix(speaker, name, "( GNN )  ", "(%s)  ", "#%d")
+	}
+	if got, want := prefix(ChatGNNSpeaker, "無所謂"), "( GNN )  "; got != want {
 		t.Errorf("GNN 前綴應是 %q,得到 %q", want, got)
 	}
-	if got, want := ChatPrefix(ChatGNNSpeaker+3, ""), "( GNN )  "; got != want {
+	if got, want := prefix(ChatGNNSpeaker+3, ""), "( GNN )  "; got != want {
 		t.Errorf("超過門檻一律 GNN,應是 %q,得到 %q", want, got)
 	}
-	if got, want := ChatPrefix(0, "薩科拉"), "(薩科拉)  "; got != want {
+	if got, want := prefix(0, "薩科拉"), "(薩科拉)  "; got != want {
 		t.Errorf("玩家前綴應是 %q,得到 %q", want, got)
 	}
-	if !strings.HasSuffix(ChatPrefix(0, "a"), "  ") {
+	if !strings.HasSuffix(prefix(0, "a"), "  ") {
 		t.Error("前綴後面是**兩個**空格(原版格式字串在右括號後有兩格),不是一個")
 	}
 }

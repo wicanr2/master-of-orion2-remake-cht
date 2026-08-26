@@ -2402,10 +2402,13 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     發話者 ≥ 8  → "( GNN )  %s"   ; 括號內側各一格,固定色 byte_199F34 = 0x10
     ```
     UTF-8 切在半個中文字上會變亂碼。`ChatTruncate` 守住 80 byte 但截在 rune 邊界
-    - `Send_Chat_Msg_` 只發給 `[player+0x28] == 'd'` 的玩家。**沒查到那個欄位的寫入端**,
-    - 送出目前**只進本機記錄**:鎖步的 `netplay.Table` 一回合只收一則,聊天是隨時可送的,
-      `ChatLog` 這一端不必動。
+    - `Send_Chat_Msg_` 只發給 `[player+0x28] == 'd'` 的玩家；該原版欄位寫入端仍未閉合。
+    - remake 聊天不進鎖步 `netplay.Table`，但會透過獨立 `KindChat` 封包送到同一條 TCP
+      session；本機先立即寫入 `ChatLog`，遠端再由每幀 pump 收進記錄。
     - 玩家列的顏色仍是 remake 自訂的兩色,沒接 `Get_Net_Next_Turn_Player_Colors_` @ 0xF31BB
+    2026-08-27 以 IDA Pro 9.4 重跑資料庫副本，確認 `sub_FC470`、`sub_F3E42`、
+    `sub_EFCEA`、`sub_F1075`、`sub_F31BB`、`sub_F55A4` 邊界與 caller 鏈；完整輸入雜湊、
+    原始定位與推論分級見 `docs/re/net-next-turn-player-text-audit-20260827.md`。
     比對時發現 `docs/screenshots/` 只有 27 張,而 gallery 產 35 張——
 
 37. **整棵研究樹從二手轉寫升格成一手驗證過**(2026-08-07)。
