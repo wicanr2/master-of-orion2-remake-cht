@@ -997,7 +997,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		if a == "bombard" && b.session != nil {
 			res := b.session.BombardColony(b.session.SelectedStar)
 			if !res.Ok { // 前置條件不足:沒開炸,留在星系主畫面說明原因
-				b.lastActionMsg = res.Reason
+				b.lastActionMsg = bombardmentRefusalText(b.lang, res)
 				return b.goTo(b.galaxy, "星系主畫面")
 			}
 			// 真的炸了 → 進轟炸畫面(原版 Colony_Bombing_Screen_),見 cmd/moo2/bombing.go。
@@ -1011,7 +1011,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		if a == "invade" && b.session != nil {
 			res := b.session.InvadeColony(b.session.SelectedStar)
 			if !res.Ok { // 前置條件不足:沒開打,留在星系主畫面說明原因
-				b.lastActionMsg = res.Reason
+				b.lastActionMsg = invasionRefusalText(b.lang, res)
 				return b.goTo(b.galaxy, "星系主畫面")
 			}
 			// 真的打了一場 → 進地面戰畫面(原版 Colony_Combat),見 cmd/moo2/groundcombat.go。
@@ -1025,7 +1025,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		if a == "mindcontrol" && b.session != nil {
 			res := b.session.MindControlColony(b.session.SelectedStar)
 			if !res.Ok {
-				b.lastActionMsg = res.Reason
+				b.lastActionMsg = mindControlRefusalText(b.lang, res)
 				return b.goTo(b.galaxy, "星系主畫面")
 			}
 			b.lastActionMsg = uiText(b.lang, "galaxy.star_panel.result.mind_control")
@@ -1044,7 +1044,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			star := b.session.SelectedStar
 			p, e, reason := b.session.StartMonsterCombat(star)
 			if reason != "" {
-				b.lastActionMsg = reason
+				b.lastActionMsg = monsterCombatRefusalText(b.lang, reason)
 				return b.goTo(b.galaxy, "星系主畫面")
 			}
 			playCombatMusic()

@@ -49,21 +49,21 @@ func monsterCombatMounts(blueprint gamedata.MonsterBlueprint) []ShipWeaponMount 
 }
 
 // StartMonsterCombat 從事件怪物精確藍圖建立正常格子戰術雙方。
-func (s *GameSession) StartMonsterCombat(starIdx int) (player, monsters []CombatShip, reason string) {
+func (s *GameSession) StartMonsterCombat(starIdx int) (player, monsters []CombatShip, reason MonsterCombatRefusalCode) {
 	m := s.MonsterAtStar(starIdx)
 	if m == nil {
-		return nil, nil, "該星沒有怪獸"
+		return nil, nil, MonsterCombatNoMonster
 	}
 	if s.Fleet().AtStar != starIdx || s.Fleet().ETA != 0 {
-		return nil, nil, "艦隊尚未抵達該星"
+		return nil, nil, MonsterCombatFleetNotPresent
 	}
 	blueprint, ok := gamedata.MonsterBlueprintFor(m.Kind)
 	if !ok {
-		return nil, nil, "該怪獸尚無格子戰術藍圖"
+		return nil, nil, MonsterCombatNoBlueprint
 	}
 	player, _ = s.StartCombat("\x00monster-adapter")
 	if len(player) == 0 {
-		return nil, nil, "艦隊沒有可戰鬥的艦艇"
+		return nil, nil, MonsterCombatNoCombatShip
 	}
 	count := monsterGroupCount(m)
 	structure, armor := m.Structure, m.Armor
@@ -413,16 +413,27 @@ func genMonsters(stars []Star, planets []Planet, r *rand.Rand, homeStars map[int
 
 // MonsterBattleResult 是一次挑戰怪獸的結果。
 type MonsterBattleResult struct {
-	Ok             bool   // 是否真的發生戰鬥(false = 前置條件不足)
-	Reason         string // Ok=false 時的原因
-	Name           string // 怪獸中文名
-	Won            bool   // 玩家是否清除了怪獸
-	Damage         int    // 這次對怪獸造成的裝甲＋結構傷害
-	Remaining      int    // 怪獸剩餘結構(Won=true 時為 0)
-	RemainingArmor int    // 怪獸剩餘裝甲
-	ShipsLost      int    // 玩家損失艦艇數
-	Message        string // 已填好數字的敘述
+	Ok             bool                     // 是否真的發生戰鬥(false = 前置條件不足)
+	Reason         MonsterCombatRefusalCode // Ok=false 時的穩定原因碼
+	MonsterKind    gamedata.SpaceMonster    // UI 如需顯示名稱，必須由外部 catalog 轉譯
+	Won            bool                     // 玩家是否清除了怪獸
+	Damage         int                      // 這次對怪獸造成的裝甲＋結構傷害
+	Remaining      int                      // 怪獸剩餘結構(Won=true 時為 0)
+	RemainingArmor int                      // 怪獸剩餘裝甲
+	ShipsLost      int                      // 玩家損失艦艇數
 }
+
+type MonsterCombatRefusalCode string
+
+const (
+	MonsterCombatNoMonster       MonsterCombatRefusalCode = "no_monster"
+	MonsterCombatFleetNotPresent MonsterCombatRefusalCode = "fleet_not_present"
+	MonsterCombatNoBlueprint     MonsterCombatRefusalCode = "no_blueprint"
+	MonsterCombatNoCombatShip    MonsterCombatRefusalCode = "no_combat_ship"
+	MonsterCombatInvalidData     MonsterCombatRefusalCode = "invalid_data"
+)
+
+func (c MonsterCombatRefusalCode) String() string { return string(c) }
 
 // AttackMonster 讓停在該星的玩家艦隊挑戰守衛怪獸。
 //
@@ -436,21 +447,21 @@ func (s *GameSession) AttackMonster(starIdx int) MonsterBattleResult {
 	s.recordPlayerCommand(PlayerCommand{Name: CmdAttackMonster, Args: []int{starIdx}})
 	m := s.MonsterAtStar(starIdx)
 	if m == nil {
-		return MonsterBattleResult{Reason: "該星沒有怪獸"}
+		return MonsterBattleResult{Reason: MonsterCombatNoMonster}
 	}
 	if s.Fleet().AtStar != starIdx || s.Fleet().ETA != 0 {
-		return MonsterBattleResult{Reason: "艦隊尚未抵達該星"}
+		return MonsterBattleResult{Reason: MonsterCombatFleetNotPresent}
 	}
 	st, ok := gamedata.MonsterStatsFor(m.Kind)
 	if !ok {
-		return MonsterBattleResult{Reason: "怪獸資料不存在"}
+		return MonsterBattleResult{Reason: MonsterCombatInvalidData}
 	}
 	pf, pfIdx := s.mkPlayerCombatantsIndexed()
 	if len(pf) == 0 {
-		return MonsterBattleResult{Reason: "艦隊沒有可戰鬥的艦艇"}
+		return MonsterBattleResult{Reason: MonsterCombatNoCombatShip}
 	}
 
-	res := MonsterBattleResult{Ok: true, Name: st.NameZH}
+	res := MonsterBattleResult{Ok: true, MonsterKind: m.Kind}
 	rng := rand.New(rand.NewSource(int64(s.Turn)*2654435761 + int64(starIdx)*7919 + 31))
 	galacticLoreBonus := s.galacticLoreCombatBonus()
 
@@ -572,12 +583,6 @@ func (s *GameSession) AttackMonster(starIdx int) MonsterBattleResult {
 	}
 	s.repairAfterBattle(res.Won) // 自動修復/進階損害管制/工程師(手冊 p.80/p.82/p.136)
 
-	if res.Won {
-		res.Message = fmt.Sprintf("擊殺%s!該星系已可拓殖(我方損失 %d 艘)", res.Name, res.ShipsLost)
-	} else {
-		res.Message = fmt.Sprintf("%s仍盤據此地(已造成 %d 點傷害,剩餘裝甲 %d／結構 %d;我方損失 %d 艘)",
-			res.Name, res.Damage, res.RemainingArmor, res.Remaining, res.ShipsLost)
-	}
 	return res
 }
 
@@ -616,14 +621,4 @@ func (s *GameSession) removeMonsterAt(starIdx int) {
 			return
 		}
 	}
-}
-
-// monsterBlockReason 回傳「因為怪獸而不能在這顆星動作」的理由;沒有怪獸回空字串。
-// 手冊 p.62:殖民船只能在「all space monsters and enemy ships have been cleared from that
-// planet's system」之後才能建殖民地。前哨站比照——手冊沒有單獨豁免它,而怪獸就在那裡。
-func (s *GameSession) monsterBlockReason(starIdx int) string {
-	if m := s.MonsterAtStar(starIdx); m != nil {
-		return gamedata.MonsterNameZH(m.Kind) + "盤據此星系,必須先清除才能進駐"
-	}
-	return ""
 }

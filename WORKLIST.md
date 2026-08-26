@@ -346,8 +346,14 @@
   落在框內；雙語最長字串、格式模板與面板 containment 均有測試。拓殖／前哨站亦完成第三十六個
   切片：`internal/shell` 的自由中文 `Reason string` 已改成 typed 拒絕碼，怪獸與天體類別以
   enum 參數傳到 UI；星圖與行星列表只從 `ui.json` 組合雙語結果，行星列表相鄰的選取、派遣與
-  成功提示亦不再內嵌於 Go。轟炸／入侵／心靈控制及怪獸戰鬥等其他動態拒絕仍是後續 typed
-  結果切片，不在本輪誤稱完成。拓殖／前哨證據與規格見
+  成功提示亦不再內嵌於 Go。轟炸／入侵／心靈控制／怪獸戰術已完成第三十七個切片：三種結果
+  結構及 `StartMonsterCombat` 第三回傳值均改為 typed code，星圖只從 `ui.json` 取得雙語拒絕
+  文案；無 UI 消費端的舊 `AttackMonster` 亦移除預先組好的中文 `Name`／`Message`，改留 typed
+  怪獸種類與純數值戰果。這只封閉前置 gate 與文案分層，不重開傷亡公式、怪獸 blueprint 或
+  即時動畫。其他尚未 typed 化的 shell 玩家訊息仍隨後續逐畫面盤點，不把本批誤稱全域完成。
+  本批證據與規格見
+  [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
+  [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見
   [`docs/re/colonization-outpost-result-audit-20260827.md`](docs/re/colonization-outpost-result-audit-20260827.md) 與
   [`docs/tech/colonization-outpost-result-text-spec.md`](docs/tech/colonization-outpost-result-text-spec.md)；星圖證據與規格見
   [`docs/re/galaxy-star-panel-text-audit-20260827.md`](docs/re/galaxy-star-panel-text-audit-20260827.md) 與

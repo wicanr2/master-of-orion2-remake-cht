@@ -92,10 +92,10 @@ func (s *GameSession) fleetBombardDamage(rng *rand.Rand, shieldReduction int) in
 
 // GroundBombardResult 一次軌道轟炸嘗試的結果(供 UI/測試檢視)。
 type GroundBombardResult struct {
-	Ok          bool   // 是否成功發動了一場轟炸解算(false = 前置條件不足,未開打)
-	Reason      string // Ok=false 時的原因
-	TotalDamage int    // 原版固定三外圈（炸彈另套 5／10 當量）的累積傷害
-	Hits        int    // gamedata.StrategicBombardmentHitsFromDamage(TotalDamage)，原版 runtime /40
+	Ok          bool                   // 是否成功發動了一場轟炸解算(false = 前置條件不足,未開打)
+	Reason      BombardmentRefusalCode // Ok=false 時的穩定原因碼
+	TotalDamage int                    // 原版固定三外圈（炸彈另套 5／10 當量）的累積傷害
+	Hits        int                    // gamedata.StrategicBombardmentHitsFromDamage(TotalDamage)，原版 runtime /40
 
 	// PopulationLost 是 sub_DCEBD 隨機候選池與後續生物武器實際扣掉的人口。
 	PopulationLost    int
@@ -141,6 +141,18 @@ type GroundBombardResult struct {
 	// 另有戰鬥者，不重複計入。它供 UI／測試檢視，不反向定義尚未追回的傷亡分配順序。
 	PlanetHitsRequired int
 }
+
+type BombardmentRefusalCode string
+
+const (
+	BombardInvalidStar     BombardmentRefusalCode = "invalid_star"
+	BombardFleetNotPresent BombardmentRefusalCode = "fleet_not_present"
+	BombardNotEnemyColony  BombardmentRefusalCode = "not_enemy_colony"
+	BombardNoCombatShip    BombardmentRefusalCode = "no_combat_ship"
+	BombardNoColonyModel   BombardmentRefusalCode = "no_colony_model"
+)
+
+func (c BombardmentRefusalCode) String() string { return string(c) }
 
 func originalColonyBuildingIDs(buildings map[string]bool) []int {
 	ids := make([]int, 0, len(buildings))
@@ -333,21 +345,21 @@ func fighterGarrisonTierFor(defender engine.PlayerState) gamedata.FighterGarriso
 func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 	s.recordPlayerCommand(PlayerCommand{Name: CmdBombardColony, Args: []int{starIdx}})
 	if starIdx < 0 || starIdx >= len(s.Stars) {
-		return GroundBombardResult{Reason: "無效的星索引"}
+		return GroundBombardResult{Reason: BombardInvalidStar}
 	}
 	if s.Fleet().AtStar != starIdx || s.Fleet().ETA != 0 {
-		return GroundBombardResult{Reason: "艦隊尚未抵達該星"}
+		return GroundBombardResult{Reason: BombardFleetNotPresent}
 	}
 	star := &s.Stars[starIdx]
 	if star.Owner != 2 {
-		return GroundBombardResult{Reason: "該星不是敵方殖民地"}
+		return GroundBombardResult{Reason: BombardNotEnemyColony}
 	}
 	if len(s.Fleet().Ships) == 0 {
-		return GroundBombardResult{Reason: "艦隊沒有可轟炸的艦艇"}
+		return GroundBombardResult{Reason: BombardNoCombatShip}
 	}
 	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
 	if !ok {
-		return GroundBombardResult{Reason: "該星無可轟炸的殖民地模型(簡化限制,見 AIOpponent.ColonyStars)"}
+		return GroundBombardResult{Reason: BombardNoColonyModel}
 	}
 	aiPlayer := &s.AIPlayers[aiIdx]
 	colony := &aiPlayer.Colonies[colonyIdx]

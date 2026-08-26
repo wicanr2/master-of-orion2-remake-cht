@@ -595,16 +595,16 @@ func (s *GameSession) PlayerOwnedStars() int {
 
 // GroundInvasionResult 是一次入侵嘗試的結果(供 UI/測試檢視)。
 type GroundInvasionResult struct {
-	Ok                      bool   // 是否成功發動了一場入侵解算(false = 前置條件不足,未開打)
-	Reason                  string // Ok=false 時的原因(供 UI 提示;Ok=true 時為空字串)
-	AttackerWon             bool   // Ok=true 時才有意義
-	AttackerMarinesStart    int    // 開打前攻方陸戰隊數(供地面戰畫面顯示戰前/戰後對比)
-	AttackerTanksStart      int    // 開打前攻方戰車營數(同上)
-	DefenderStart           int    // 開打前守方兵力(同上)
-	ColonyName              string // 被入侵的星名(畫面標題用;engine.ColonyState 本身沒有名稱欄位)
-	AttackerSurvived        int    // 攻方存活總數(陸戰隊+戰車營,拆解見下兩欄)
-	AttackerMarinesSurvived int    // 攻方存活的陸戰隊數(AttackerSurvived 的子集,見 InvadeColony 拆解說明)
-	AttackerTanksSurvived   int    // 攻方存活的戰車營數(同上)
+	Ok                      bool                    // 是否成功發動了一場入侵解算(false = 前置條件不足,未開打)
+	Reason                  GroundActionRefusalCode // Ok=false 時的穩定原因碼
+	AttackerWon             bool                    // Ok=true 時才有意義
+	AttackerMarinesStart    int                     // 開打前攻方陸戰隊數(供地面戰畫面顯示戰前/戰後對比)
+	AttackerTanksStart      int                     // 開打前攻方戰車營數(同上)
+	DefenderStart           int                     // 開打前守方兵力(同上)
+	ColonyName              string                  // 被入侵的星名(畫面標題用;engine.ColonyState 本身沒有名稱欄位)
+	AttackerSurvived        int                     // 攻方存活總數(陸戰隊+戰車營,拆解見下兩欄)
+	AttackerMarinesSurvived int                     // 攻方存活的陸戰隊數(AttackerSurvived 的子集,見 InvadeColony 拆解說明)
+	AttackerTanksSurvived   int                     // 攻方存活的戰車營數(同上)
 	DefenderSurvived        int
 	Rounds                  int
 	StarCaptured            bool // 攻方勝且完成佔領星 + 殖民地過戶
@@ -613,22 +613,36 @@ type GroundInvasionResult struct {
 	DefenderColor           int  // 守方帝國旗色，供 COLGCBT 玩家色 ramp 替換
 }
 
+type GroundActionRefusalCode string
+
+const (
+	GroundRequiresTelepathy GroundActionRefusalCode = "requires_telepathy"
+	GroundInvalidStar       GroundActionRefusalCode = "invalid_star"
+	GroundFleetNotPresent   GroundActionRefusalCode = "fleet_not_present"
+	GroundNotEnemyColony    GroundActionRefusalCode = "not_enemy_colony"
+	GroundRequiresCruiser   GroundActionRefusalCode = "requires_cruiser"
+	GroundNoColonyModel     GroundActionRefusalCode = "no_colony_model"
+	GroundNoTroops          GroundActionRefusalCode = "no_troops"
+)
+
+func (c GroundActionRefusalCode) String() string { return string(c) }
+
 // MindControlColony 是心靈感應種族的替代入侵行動。手冊明列：至少一艘
 // 巡洋艦以上艦艇在軌道上即可心靈控制殖民地，取得殖民地並立即同化全部人口；
 // 不消耗陸戰隊／戰車，也不進入地面戰。
 func (s *GameSession) MindControlColony(starIdx int) GroundInvasionResult {
 	s.recordPlayerCommand(PlayerCommand{Name: CmdMindControl, Args: []int{starIdx}})
 	if !s.RaceTelepathic() {
-		return GroundInvasionResult{Reason: "只有心靈感應種族可以心靈控制殖民地"}
+		return GroundInvasionResult{Reason: GroundRequiresTelepathy}
 	}
 	if starIdx < 0 || starIdx >= len(s.Stars) {
-		return GroundInvasionResult{Reason: "無效的星索引"}
+		return GroundInvasionResult{Reason: GroundInvalidStar}
 	}
 	if s.Fleet().AtStar != starIdx || s.Fleet().ETA != 0 {
-		return GroundInvasionResult{Reason: "艦隊尚未抵達該星"}
+		return GroundInvasionResult{Reason: GroundFleetNotPresent}
 	}
 	if s.Stars[starIdx].Owner != 2 {
-		return GroundInvasionResult{Reason: "該星不是敵方殖民地"}
+		return GroundInvasionResult{Reason: GroundNotEnemyColony}
 	}
 	cruiserOrLarger := false
 	for _, ship := range s.Fleet().Ships {
@@ -639,11 +653,11 @@ func (s *GameSession) MindControlColony(starIdx int) GroundInvasionResult {
 		}
 	}
 	if !cruiserOrLarger {
-		return GroundInvasionResult{Reason: "需要至少一艘巡洋艦以上艦艇才能心靈控制"}
+		return GroundInvasionResult{Reason: GroundRequiresCruiser}
 	}
 	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
 	if !ok {
-		return GroundInvasionResult{Reason: "該星無可心靈控制的殖民地模型"}
+		return GroundInvasionResult{Reason: GroundNoColonyModel}
 	}
 	aiPlayer := &s.AIPlayers[aiIdx]
 	ensureAIGroundForceSlots(aiPlayer)
@@ -760,21 +774,21 @@ func (s *GameSession) MindControlColony(starIdx int) GroundInvasionResult {
 func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	s.recordPlayerCommand(PlayerCommand{Name: CmdInvadeColony, Args: []int{starIdx}})
 	if starIdx < 0 || starIdx >= len(s.Stars) {
-		return GroundInvasionResult{Reason: "無效的星索引"}
+		return GroundInvasionResult{Reason: GroundInvalidStar}
 	}
 	if s.Fleet().AtStar != starIdx || s.Fleet().ETA != 0 {
-		return GroundInvasionResult{Reason: "艦隊尚未抵達該星"}
+		return GroundInvasionResult{Reason: GroundFleetNotPresent}
 	}
 	star := &s.Stars[starIdx]
 	if star.Owner != 2 {
-		return GroundInvasionResult{Reason: "該星不是敵方殖民地"}
+		return GroundInvasionResult{Reason: GroundNotEnemyColony}
 	}
 	if s.Fleet().Marines <= 0 && s.Fleet().Tanks <= 0 {
-		return GroundInvasionResult{Reason: "艦隊未載運地面部隊"}
+		return GroundInvasionResult{Reason: GroundNoTroops}
 	}
 	aiIdx, colonyIdx, ok := s.findAIColonyByStar(starIdx)
 	if !ok {
-		return GroundInvasionResult{Reason: "該星無可入侵的殖民地模型(簡化限制,見 AIOpponent.ColonyStars)"}
+		return GroundInvasionResult{Reason: GroundNoColonyModel}
 	}
 	aiPlayer := &s.AIPlayers[aiIdx]
 	ensureAIGroundForceSlots(aiPlayer)
