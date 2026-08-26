@@ -36,6 +36,9 @@
    Unification／Galactic Unification 時為 0；其餘政府在人口至少 3 時分別固定為 10／16，
    人口恰為 2 時只有 `budgetFactor>0` 才取同一正值，人口 0／1 為 0。兩式不讀
    priority gate、late-tech 或 personality；budget factor 只作 gate，不加入固定分數。
+   raw ID 17 Gaia Transformation 使用 `budgetFactor+[Pacifist]`；不讀 priority gate、
+   late-tech、人口或政府。它是一次性 Special 產品，不寫入 `ColonyBuildings`；候選只在
+   已取得前置科技且殖民地為 Terran 時出現，完成後同步把 AI 殖民地與對應全局行星改成 Gaia。
 5. 優先建築 gate 僅由已知科技 application、已建建築、殖民地礦產及 AI 生效政府組成：
    - Ultra Poor／Poor／Abundant 殖民地已知 Automated Factories 但未建 Automated Factory；或
    - Feudal／Confederation／Dictatorship／Imperium 已知但未建 Marine Barracks／Armor Barracks。
@@ -61,6 +64,9 @@
   符合完整公式；計分不得改變加權抽選的亂數位置。
 - raw 20／31 在八種政府、人口 1／2／3 與 budget factor 0／正值的邊界符合完整固定分數；
   priority gate 與 personality 變化不得影響結果。
+- raw 17 在結算前國庫 1499／1500、一般／Pacifist 性格下符合
+  `budgetFactor+[Pacifist]`；非 Terran 不得成為候選，完工後不得殘留為常駐建築，且
+  AI 殖民地與對應全局行星都必須是 Gaia。
 - 只完成多選主題但選了其他 application 時，不得觸發相應 Automated Factory／Barracks gate。
 - 精確分支與類別式 fallback 不可混稱同一證據等級。
 - 既有擴張測試以「建築＋造艦總投入」驗證新殖民地確實參與經濟，不再假設所有產出都是軍艦。

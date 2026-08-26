@@ -269,6 +269,72 @@ func TestOriginalAIMoraleBuildingScores(t *testing.T) {
 	}
 }
 
+func TestOriginalAIGaiaTransformationScore(t *testing.T) {
+	b := gamedata.Building{NameZH: gamedata.GaiaTransformationActionName, NameEN: "Gaia Transformation"}
+	ctx := originalAIBuildScoreContext{treasuryBefore: 1499, netBC: 6400, priorityGate: true, lateTech: true}
+	if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{}, ai.PersonalityXenophobic, ctx); !exact || score != 0 {
+		t.Fatalf("低國庫一般性格分數=(%d,%v)，want (0,true)", score, exact)
+	}
+	if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{}, ai.PersonalityPacifist, ctx); !exact || score != 1 {
+		t.Fatalf("Gaia 不讀 priority/late-tech，Pacifist 分數=(%d,%v)，want (1,true)", score, exact)
+	}
+	ctx.treasuryBefore = 1500
+	if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{}, ai.PersonalityPacifist, ctx); !exact || score != 11 {
+		t.Fatalf("國庫門檻後 Pacifist 分數=(%d,%v)，want (11,true)", score, exact)
+	}
+}
+
+func TestAICompletesGaiaTransformationAsSpecial(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	a.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{gamedata.TOPIC_TRANS_GENETICS: true}
+	a.Colonies[0].Climate = gamedata.TERRAN
+	a.Colonies[0].PopMax = 10
+	planet := s.aiColonyPlanet(0, 0)
+	if planet == nil {
+		t.Fatal("測試 AI 殖民地缺少對應全局行星")
+	}
+	syncPlanetClimate(planet, gamedata.TERRAN)
+	key := aiColonyBuildKey(a, 0)
+	a.ColonyBuilds = map[int]ColonyBuild{key: {
+		Name: gamedata.GaiaTransformationActionName, Progress: 499, Cost: 500,
+	}}
+	out := engine.EmpireOutput{Colonies: []engine.ColonyOutput{{NetIndustry: 1}}}
+	s.advanceAIColonyBuilds(0, out)
+	if a.Colonies[0].Climate != gamedata.GAIA || planet.ClimateID != gamedata.GAIA {
+		t.Fatalf("Gaia 完工未同步 colony／planet：%v／%v", a.Colonies[0].Climate, planet.ClimateID)
+	}
+	if len(a.ColonyBuildings) > 0 && a.ColonyBuildings[0][gamedata.GaiaTransformationActionName] {
+		t.Fatal("Gaia Transformation 是 Special，不得殘留於 ColonyBuildings")
+	}
+	if _, ok := a.ColonyBuilds[key]; ok {
+		t.Fatal("Gaia 完工後目前產品應清空")
+	}
+}
+
+func TestAIGaiaTransformationCandidateRequiresTerran(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	a.Personality = ai.PersonalityPacifist
+	a.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{gamedata.TOPIC_TRANS_GENETICS: true}
+	a.ColonyBuildings[0] = make(map[string]bool)
+	for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
+		a.ColonyBuildings[0][b.NameZH] = true
+	}
+	out := engine.EmpireOutput{
+		Colonies: []engine.ColonyOutput{{NetIndustry: 1}},
+		Player:   engine.PlayerState{BC: 1499},
+	}
+	a.Colonies[0].Climate = gamedata.DESERT
+	if build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1); ok {
+		t.Fatalf("非 Terran 不得選 Gaia Transformation：%+v", build)
+	}
+	a.Colonies[0].Climate = gamedata.TERRAN
+	if build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1); !ok || build.Name != gamedata.GaiaTransformationActionName {
+		t.Fatalf("Terran 的唯一正分候選應是 Gaia Transformation：build=%+v ok=%v", build, ok)
+	}
+}
+
 func TestAIOriginalPriorityBuildingGate(t *testing.T) {
 	known := map[gamedata.Technology]bool{gamedata.TECH_AUTOMATED_FACTORIES: true}
 	if !aiOriginalPriorityBuildingGate(engine.ColonyState{MineralRichness: gamedata.ABUNDANT}, nil, known, gamedata.MoraleGovDemocracy) {

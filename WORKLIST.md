@@ -340,6 +340,8 @@
   raw 10 Cloning Center 亦已閉合 population-growth trait、結算前 1500 BC gate、signed word
   淨 BC／64 與 `sub_134C92` 整數平方根；計分不消耗候選抽選 RNG。raw 20 Holo Simulator
   與 raw 31 Pleasure Dome 也已依八政府、人口 2／3 邊界及 budget-factor gate 接入固定 10／16。
+  raw 17 Gaia Transformation 已閉合為 `budgetFactor+[Pacifist]`，並補上 Terran 候選、
+  一次性產品完成及 AI 殖民地／全局行星 Gaia 同步，不會誤記為常駐建築。
   其餘分數區域、
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
   state machine 亦待閉合。見

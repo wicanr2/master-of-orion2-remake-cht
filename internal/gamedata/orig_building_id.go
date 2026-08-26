@@ -29,6 +29,7 @@ var OrigBuildingID = map[string]int{
 	"Dimensional Portal":          14, // Dimensional Portal
 	"Biospheres":                  15, // Biospheres
 	"Food Replicators":            16, // Food Replicators
+	"Gaia Transformation":         17, // Gaia Transformation (Special)
 	"Galactic Cybernet":           19, // Galactic Cybernet
 	"Holo Simulator":              20, // Holo Simulator
 	"Hydroponic Farm":             21, // Hydroponic Farm
@@ -65,9 +66,14 @@ func OriginalBuildingIDForName(name string) (id int, ok bool) {
 		return id, true
 	}
 	building, ok := BuildingByNameZH(name)
-	if !ok {
-		return 0, false
+	if ok {
+		id, ok = OrigBuildingID[building.NameEN]
+		return id, ok
 	}
-	id, ok = OrigBuildingID[building.NameEN]
-	return id, ok
+	action, ok := SpecialActionByNameZH(name)
+	if ok {
+		id, ok = OrigBuildingID[action.NameEN]
+		return id, ok
+	}
+	return 0, false
 }

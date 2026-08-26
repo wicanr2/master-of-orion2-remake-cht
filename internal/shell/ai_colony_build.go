@@ -165,6 +165,8 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		pacifist = 1
 	}
 	switch rawID {
+	case 17: // 0xD07C2..0xD07C5 → 0xD0414：Gaia Transformation
+		return originalAIBudgetFactor(ctx.treasuryBefore, ctx.netBC) + pacifist, true
 	case 10: // 0xD071C..0xD0734：Cloning Center
 		if ctx.priorityGate {
 			return 0, true
@@ -309,6 +311,22 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 		}
 		candidates = append(candidates, candidate{ColonyBuild{Name: b.NameZH, Cost: b.ProductionCost}, score})
 	}
+	for _, action := range gamedata.AvailableSpecialActions(a.Player.CompletedTopics) {
+		// 本切片只閉合 raw 17；其餘 Special 的原版 AI 分數與可建 gate 尚未完成。
+		if action.NameZH != gamedata.GaiaTransformationActionName ||
+			!gamedata.GaiaTransformationCanApply(a.Colonies[colony].Climate) {
+			continue
+		}
+		proxy := gamedata.Building{NameZH: action.NameZH, NameEN: action.NameEN}
+		score, exact := originalAIExactBuildingScore(proxy, a.Colonies[colony], a.Personality, ctx)
+		if !exact {
+			continue
+		}
+		if score > maxScore {
+			maxScore = score
+		}
+		candidates = append(candidates, candidate{ColonyBuild{Name: action.NameZH, Cost: action.ProductionCost}, score})
+	}
 	if len(candidates) == 0 {
 		return ColonyBuild{}, false
 	}
@@ -398,6 +416,26 @@ func applyAICompletedBuilding(c *engine.ColonyState, name string) {
 	}
 }
 
+// applyAICompletedSpecial 套用已閉合的 AI 一次性產品；成功時回傳 true，呼叫端不得把它
+// 寫入 ColonyBuildings。未知 Special 維持 false，避免以玩家近似路徑冒充原版 AI。
+func (s *GameSession) applyAICompletedSpecial(aiIndex, colony int, name string) bool {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) || colony < 0 || colony >= len(s.AIPlayers[aiIndex].Colonies) {
+		return false
+	}
+	if name != gamedata.GaiaTransformationActionName {
+		return false
+	}
+	a := &s.AIPlayers[aiIndex]
+	c := &a.Colonies[colony]
+	if !gamedata.GaiaTransformationCanApply(c.Climate) {
+		return true
+	}
+	applyClimateChangeToColony(c, gamedata.GaiaTransformationResultClimate,
+		aiRaceHasTrait(*a, gamedata.TRAIT_AQUATIC), aiRaceHasTrait(*a, gamedata.TRAIT_TOLERANT))
+	syncPlanetClimate(s.aiColonyPlanet(aiIndex, colony), gamedata.GaiaTransformationResultClimate)
+	return true
+}
+
 // advanceAIColonyBuilds 逐殖民地消費本回合淨工業，回傳沒有可建建築之殖民地的產能，
 // 供尚待進一步 RE 的艦艇產品轉接層使用。同一份產能不會同時蓋建築又造艦。
 func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput) int {
@@ -428,15 +466,17 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 			a.ColonyBuilds[key] = build
 			continue
 		}
-		for len(a.ColonyBuildings) <= i {
-			a.ColonyBuildings = append(a.ColonyBuildings, nil)
-		}
-		if a.ColonyBuildings[i] == nil {
-			a.ColonyBuildings[i] = make(map[string]bool)
-		}
-		if !a.ColonyBuildings[i][build.Name] {
-			a.ColonyBuildings[i][build.Name] = true
-			applyAICompletedBuilding(&a.Colonies[i], build.Name)
+		if !s.applyAICompletedSpecial(aiIndex, i, build.Name) {
+			for len(a.ColonyBuildings) <= i {
+				a.ColonyBuildings = append(a.ColonyBuildings, nil)
+			}
+			if a.ColonyBuildings[i] == nil {
+				a.ColonyBuildings[i] = make(map[string]bool)
+			}
+			if !a.ColonyBuildings[i][build.Name] {
+				a.ColonyBuildings[i][build.Name] = true
+				applyAICompletedBuilding(&a.Colonies[i], build.Name)
+			}
 		}
 		delete(a.ColonyBuilds, key)
 	}

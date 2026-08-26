@@ -5,8 +5,8 @@ package gamedata
 // Special 套用後改變星球狀態或觸發一次性效果,不是可維護的建物,依 docs/tech/colony-buildings.md
 // 的既有結論**刻意不計入**該檔「40 項建築」的統計(見該檔「不列入本表的型別」說明)。
 //
-// 本檔收錄地形改造(Terraforming)/蓋亞轉化(Gaia Transformation)/土壤改良(Soil Enrichment)/
-// 運輸艦隊(Freighter Fleet,2026-07-11 補實作 #4)四項。前三項是 terraform.go 已移植好唯讀
+// 本檔收錄地形改造(Terraforming)/蓋亞轉化(Gaia Transformation)/土壤改良(Soil Enrichment)、
+// 運輸艦隊(Freighter Fleet,2026-07-11 補實作 #4)與後續支援艦產品。前三項是 terraform.go 已移植好唯讀
 // 規則、但先前零呼叫端的部分,套用後改變星球狀態(氣候/PopMax 等)。運輸艦隊性質不同——它不改
 // 殖民地狀態,是帝國整體效果(engine.PlayerState.ActiveFreighters 增量 + 一次性現金加成,見
 // applySpecialAction 的「運輸艦隊」case),但共用同一個「Special 一次性行動、可重複建造、不記入
@@ -85,7 +85,7 @@ const (
 	OutpostShipActionName = "前哨船"
 )
 
-// SpecialActions 是本 remake 目前接線的全部 Special 一次性行動(見檔頭說明,收錄 4 項)。
+// SpecialActions 是本 remake 目前接線的全部 Special 一次性行動（見檔頭說明）。
 var SpecialActions = []SpecialAction{
 	{
 		NameZH: TerraformActionName, NameEN: "Terraforming",

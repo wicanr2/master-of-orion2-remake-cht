@@ -207,6 +207,27 @@ AI 殖民地建造，直到 `0x13742` 才呼叫 raw `sub_E4F49` 套用本回合�
 `population >= 3 || (population == 2 && budgetFactor > 0)`，Holo Simulator 為 10、
 Pleasure Dome 為 16；其餘為 0。
 
+## 第七批：Gaia Transformation
+
+2026-08-26 以同一份正式 `.i64` 的一次性副本重跑 IDA Pro 9.4／IDAPython；輸入與資料庫
+SHA-256 仍分別為本文件證據契約所列的
+`7ae2ac2e5904ca330009af2827279d889906b0b9b7a8854c38eb707a56e955b5` 與
+`4a01791fcf877ed87a740a54748694ab34a02675e3117dac052aeaa3f883944e`。非破壞性匯出
+`/tmp/moo2-ai-gaia-v1.json` 再次確認：
+
+- raw building ID 17 的 jump-table entry 是
+  `0xCFFA2 c2 07 0d 00 → loc_D07C2 @ 0xD07C2`。
+- `mov ebx,var_1C @ 0xD07C2` 先令分數等於 `[Pacifist]`；`jmp loc_D0414 @ 0xD07C5`
+  隨後無條件執行 `add ebx,var_18 @ 0xD0414`，再走正值與 1000 上限出口。
+- 此 case 不讀 priority gate、late-tech、人口、政府或星球氣候。氣候適用性屬
+  `Colony_Can_Build_Product_` 的候選 gate，不是這個分數函式自行處理。
+
+因此完整計分公式是 `budgetFactor + [Pacifist]`；`budgetFactor` 沿用第五批已閉合的
+結算前國庫、signed word 淨 BC、朝零除以 64、unsigned 整數平方根及 10 上限契約。
+remake 的候選層只在 typed 殖民地為 Terran 時提供 Gaia Transformation，完工後必須把
+AI 殖民地與全局行星同步改成 Gaia；這個 typed 適用性 gate 是既有手冊／地形規則契約，
+不冒稱本次 `sub_D0036` 計分反組譯本身證實了 `Colony_Can_Build_Product_` 的完整控制流。
+
 其餘未封閉區域會讀 alien／outpost 狀態、政府／性格其他碼、其他殖民地 packed 人口用途、帝國建築數、
 星球 owner／環境、事件與未解 player flags；在欄位寫入端與 typed 對映完成前維持
 `unknown_pending_review`，由明示近似 fallback 處理。
