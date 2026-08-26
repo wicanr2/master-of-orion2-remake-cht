@@ -128,8 +128,8 @@ func (s *GameSession) SetCustomRaceUnusedPicks(picks int) {
 
 // ScoreLine 是 Hi-Score 畫面的一列(項目名 + 分數)。
 type ScoreLine struct {
-	Label string
-	Value int
+	TextKey string
+	Value   int
 }
 
 // ScoreLines 把逐項得分整理成顯示用的列表(順序比照原版 `Draw_*_Score_` 的分項)。
@@ -137,14 +137,14 @@ type ScoreLine struct {
 func (s *GameSession) ScoreLines() []ScoreLine {
 	b := s.FinalScore()
 	return []ScoreLine{
-		{"時間 / 星圖 / 種族數", b.Time},
-		{"人口", b.Population},
-		{"俘虜人口", b.Captured},
-		{"科技", b.Technology},
-		{"殲滅種族", b.Elimination},
-		{"攻下獵戶座", b.Orion},
-		{"議會勝利", b.Council},
-		{"擊敗安塔蘭", b.Antares},
-		{"總分", b.Total},
+		{"hiscore.score.time", b.Time},
+		{"hiscore.score.population", b.Population},
+		{"hiscore.score.captured", b.Captured},
+		{"hiscore.score.technology", b.Technology},
+		{"hiscore.score.elimination", b.Elimination},
+		{"hiscore.score.orion", b.Orion},
+		{"hiscore.score.council", b.Council},
+		{"hiscore.score.antares", b.Antares},
+		{"hiscore.score.total", b.Total},
 	}
 }

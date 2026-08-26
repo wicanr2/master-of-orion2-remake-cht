@@ -83,6 +83,14 @@
   `(320,14)` 疊 `#2..37` 的 36 張事件圖；缺檔、非法 ID 或勘查報告安全退回自繪面板。
   正版資產與缺資產 fallback 兩套中文畫廊皆為 35/35，已目視抽查 `05_event.png` 的插圖、
   台標、正文與按鈕安全框。動畫每 3 tick 一幀仍明標 remake timing approximation。
+  最終得分／名人堂已完成第八個切片：九個分項改由規則層提供穩定 `TextKey`，勝敗標題、原因、
+  摘要、提示與轉場均由 `ui.json` 供應，`hiscore.go` 不再內嵌玩家文案或直接呼叫字型繪製。
+  IDA 證實 `sub_9EB42 @ 0x9EB42..0x9EC32` 載入 `SCORE.LBX#0..14`、
+  `sub_9E27A @ 0x9E27A..0x9E3AD` 以 `#0` 畫 640×480 背景，並由 `sub_9D7EA`
+  建立整張畫面輸入欄；舊外部符號把 loader 誤當完整畫面函式。remake 現驗證 `#0` 尺寸、
+  frame 與內嵌調色盤後使用原版機械框，缺檔才退回 `TURNSUM.LBX` 自繪面板；繁中只覆蓋烘字
+  文字牌，英文保留原圖。正版與缺 `SCORE.LBX` 兩套畫廊皆為 35/35，已目視抽查九列、總分及
+  全畫面點擊提示均在內容框內；`#1..14` race icon 的 writer／consumer 尚未閉合，未任意接入。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
@@ -98,7 +106,9 @@
   [`docs/re/colony-screen-ui-text-audit-20260826.md`](docs/re/colony-screen-ui-text-audit-20260826.md) 與
   [`docs/tech/colony-screen-external-text-spec.md`](docs/tech/colony-screen-external-text-spec.md)、
   [`docs/re/event-screen-ui-text-audit-20260826.md`](docs/re/event-screen-ui-text-audit-20260826.md) 與
-  [`docs/tech/event-screen-external-text-spec.md`](docs/tech/event-screen-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+  [`docs/tech/event-screen-external-text-spec.md`](docs/tech/event-screen-external-text-spec.md)、
+  [`docs/re/hi-score-screen-ui-text-audit-20260826.md`](docs/re/hi-score-screen-ui-text-audit-20260826.md) 與
+  [`docs/tech/hi-score-external-text-spec.md`](docs/tech/hi-score-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`
   已把本次錯判提煉成跨專案流程，涵蓋重新稽核觸發條件、具名符號限制、玩家機制證據矩陣、

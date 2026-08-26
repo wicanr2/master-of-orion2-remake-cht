@@ -126,6 +126,15 @@ func (r textSafeRect) drawLeft(dst *ebiten.Image, fnt *uifont.Font, text string,
 	}
 }
 
+func (r textSafeRect) drawRight(dst *ebiten.Image, fnt *uifont.Font, text string, size float64, col color.Color) {
+	if fnt == nil || r.maxLines() == 0 {
+		return
+	}
+	text = r.clipped(fnt, text, size)
+	w, _ := fnt.Measure(text, size)
+	fnt.Draw(dst, text, float64(r.x+r.w-r.insetX)-w, float64(r.contentY()), size, col)
+}
+
 func (r textSafeRect) drawCentered(dst *ebiten.Image, fnt *uifont.Font, text string, size float64, col color.Color) {
 	if fnt == nil || r.maxLines() == 0 {
 		return

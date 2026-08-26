@@ -80,8 +80,8 @@ func TestScoreLinesLastIsTotal(t *testing.T) {
 		t.Fatalf("得分列數 = %d,want 9(八個分項 + 總分)", len(lines))
 	}
 	last := lines[len(lines)-1]
-	if last.Label != "總分" {
-		t.Errorf("最後一列應是總分,實為 %q", last.Label)
+	if last.TextKey != "hiscore.score.total" {
+		t.Errorf("最後一列應是總分鍵,實為 %q", last.TextKey)
 	}
 	if last.Value != s.FinalScore().Total {
 		t.Errorf("總分列 %d 與 FinalScore %d 不符", last.Value, s.FinalScore().Total)

@@ -18,6 +18,7 @@
 - [build-queue-external-text-spec.md](build-queue-external-text-spec.md) — 建造佇列的外部雙語文案、原版烘字按鈕後備與雙軸文字安全框。
 - [colony-screen-external-text-spec.md](colony-screen-external-text-spec.md) — 殖民地主畫面的外部雙語文案、職業欄與按鈕雙軸安全框。
 - [event-screen-external-text-spec.md](event-screen-external-text-spec.md) — 事件／勘查快報的原版 GNN 資產、外部雙語文案、fallback 與雙軸安全框。
+- [hi-score-external-text-spec.md](hi-score-external-text-spec.md) — 最終得分的原版 `SCORE.LBX` 背景、外部雙語文案、fallback 與雙軸安全框。
 
 ## 待補(後續輪次)
 
