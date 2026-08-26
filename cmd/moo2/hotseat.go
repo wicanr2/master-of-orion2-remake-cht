@@ -148,6 +148,7 @@ func (b *sceneBuilder) finishResolvedTurn() *origTransition {
 	}
 	// 新流程在投入 RP 前已選 application；這裡只接住舊存檔可能留下的突破後待決狀態。
 	if _, _, pending := b.session.PendingResearchChoice(); pending {
+		b.stopContinuousTurns()
 		sc, err := b.researchChoice(b.turnSummary)
 		if err == nil {
 			return &origTransition{next: sc}
@@ -157,6 +158,7 @@ func (b *sceneBuilder) finishResolvedTurn() *origTransition {
 	// 排在事件快報之前:遊戲都結束了,再播一則新聞快報只是擋路。
 	// 過場載不動就直接跳到最終得分——結局片不該擋住結算。
 	if b.session.Victory.Over {
+		b.stopContinuousTurns()
 		if settings.Animations && !b.skipCutscenes {
 			if sc := b.endingCutsceneFor(); sc != nil {
 				return &origTransition{next: sc}
@@ -167,12 +169,36 @@ func (b *sceneBuilder) finishResolvedTurn() *origTransition {
 	// 本回合有隨機事件或星系發現 → 先播快報(原版事件有專屬畫面,不是回合摘要裡一行字,
 	// 見 eventscreen.go 檔頭),按「繼續」才進回合摘要。
 	if b.shouldOpenReportScreen() {
+		b.stopContinuousTurns()
 		return b.goTo(b.eventScreen, uiText(b.lang, "event.transition.report"))
 	}
 	if !b.shouldShowTurnSummary() {
 		return b.goTo(b.galaxy, uiText(b.lang, "gamesettings.transition.galaxy"))
 	}
+	b.stopContinuousTurns()
 	return b.goTo(b.turnSummary, uiText(b.lang, "event.transition.summary"))
+}
+
+func (b *sceneBuilder) canRunContinuousTurns() bool {
+	return b != nil && b.session != nil && !b.session.HotseatEnabled() &&
+		b.networkTurn == nil && !b.networkPending
+}
+
+func (b *sceneBuilder) startContinuousTurns() {
+	if !b.canRunContinuousTurns() || b.session.EffectiveGameSettings().EndOfTurnWait {
+		b.stopContinuousTurns()
+		return
+	}
+	b.continuousTurns = true
+	b.continuousTurnAt = b.animTick + continuousTurnInterval
+}
+
+func (b *sceneBuilder) stopContinuousTurns() {
+	if b == nil {
+		return
+	}
+	b.continuousTurns = false
+	b.continuousTurnAt = 0
 }
 
 // endTurnPressed 是「結束回合」鈕的完整流程。
@@ -185,16 +211,20 @@ func (b *sceneBuilder) endTurnPressed() *origTransition {
 		return nil
 	}
 	if b.session.EnsurePlayerResearchApplication() {
+		b.stopContinuousTurns()
 		if sc, err := b.researchChoice(b.galaxy); err == nil {
 			return &origTransition{next: sc}
 		}
 	}
 	if b.networkTurn != nil {
+		b.stopContinuousTurns()
 		return b.submitNetworkTurn()
 	}
 	if !b.session.HotseatEnabled() {
+		b.startContinuousTurns()
 		return b.advanceWorldTurn()
 	}
+	b.stopContinuousTurns()
 	next, wrapped := b.session.AdvanceSeat()
 	if !wrapped {
 		return &origTransition{next: newHotseatScreen(b, next, b.session.SeatName(next), "",

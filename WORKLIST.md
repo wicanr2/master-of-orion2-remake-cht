@@ -218,7 +218,7 @@
   [`docs/re/input-box-ui-text-audit-20260827.md`](docs/re/input-box-ui-text-audit-20260827.md) 與
   [`docs/tech/input-box-external-text-spec.md`](docs/tech/input-box-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
 
-- [~] **原版對局內 SETTINGS 分頁**：2026-08-26 已完成原版 13 列畫面、資產、外部雙語文案、
+- [x] **原版對局內 SETTINGS 分頁**：2026-08-26 已完成原版 13 列畫面、資產、外部雙語文案、
   原版預設值、`.GAM` 匯入與 JSON 往返。IDA 證實
   `Do_Options_Game_Popup_ @ 0x7E00F..0x7E154` 與 `_Draw_Options_Game_Popup_ @ 0x7FA28..0x8011F`
   由 `_Game_Popup_ @ 0x8012F` 的四路 switch 直接進入，並已追回
@@ -265,8 +265,13 @@
   特殊事件通知優先保留，從快報按繼續與直接結算共用同一 gate。飢荒／叛亂計數文案已外置於
   `ui.json`。證據與規格見 `docs/re/serious-turn-summary-setting-audit-20260827.md`、
   `docs/tech/serious-turn-summary-setting-spec.md`。
-  本輪全域消費端掃描同時確認 End Of Turn Wait 在 remake 仍只有設定／匯入／保存，沒有玩家
-  回合流程 consumer；因此 SETTINGS 項目維持進行中，下一切片須依原版連續回合停止條件閉合。
+  End Of Turn Wait 已由 `byte_199BDD @ 0x199BDD`、連續回合入口 `sub_8AD82 @ 0x8AD82`、
+  全畫面中止輸入 `sub_83411 @ 0x83411`、中斷 writer `sub_84E9D @ 0x84E9D` 與官方 help
+  契約閉合。remake 在單人局關閉此設定時，會以固定 15 tick 的介面時序近似連續推進；任一滑鼠
+  點擊、研究選擇、勝負、GNN／勘查快報或回合摘要都會停止。熱座與網路鎖步不啟用連續推進，
+  避免越過玩家席位與同步閘門。證據、規格與回歸測試見
+  `docs/re/end-of-turn-wait-setting-audit-20260827.md`、
+  `docs/tech/end-of-turn-wait-setting-spec.md`。至此 13 列設定皆有正常玩家路徑消費端；
   DOS／Win95 平台 API 內部維持既定停止線。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`

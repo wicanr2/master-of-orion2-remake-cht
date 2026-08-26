@@ -39,6 +39,8 @@ import (
 
 const moo2ScreenW, moo2ScreenH = 640, 480
 
+const continuousTurnInterval = 15
+
 // uiScale 是**內部畫布**相對於 640×480 邏輯座標的倍率(第 86 項(hi-res 畫布))。
 //
 // `rulebook/81`:老遊戲做 CJK 中文化不要縮字,要拉高內部畫布——美術用 nearest 整數倍
@@ -481,8 +483,11 @@ type sceneBuilder struct {
 	shipPick map[int]bool
 	// flashMsg / flashUntil 是星圖底緣的短暫訊息(F10 快速存檔的回報等,見 hotkeys.go)。
 	// flashUntil 用 animTick 計時,到了就不畫。
-	flashMsg           string
-	flashUntil         int
+	flashMsg   string
+	flashUntil int
+	// continuousTurns 是 End Of Turn Wait 關閉後的可中斷連續回合 UI 狀態；不進存檔。
+	continuousTurns    bool
+	continuousTurnAt   int
 	nebMaskCache       map[int]*nebulaMask  // 星雲遮罩;派遣時沿航線取樣上百次,不快取會重解上百次 LBX
 	pendingHotseat     int                  // 多人設定畫面選的真人席位數;0/1 = 單人局
 	pendingHotseatAI   []int                // 新局生成後由選帝國畫面指定的 AIPlayers 索引
@@ -7002,7 +7007,26 @@ func (a *interactiveApp) Update() error {
 			a.cur = sc
 		}
 	}
-	if t := a.cur.update(a.pollInput()); t != nil {
+	in := a.pollInput()
+	if a.b != nil && a.b.continuousTurns {
+		if in.ClickReleased || in.RightClickReleased {
+			// 原版用全畫面輸入欄中止連續回合；同一個 click 不再傳給星圖熱區。
+			a.b.stopContinuousTurns()
+			in = shell.InputState{}
+		} else if a.tick >= a.b.continuousTurnAt {
+			a.b.continuousTurnAt = a.tick + continuousTurnInterval
+			if t := a.b.advanceWorldTurn(); t != nil {
+				if t.quit {
+					return ebiten.Termination
+				}
+				if t.next != nil {
+					a.cur = t.next
+				}
+			}
+			return nil
+		}
+	}
+	if t := a.cur.update(in); t != nil {
 		if t.quit {
 			return ebiten.Termination
 		}
