@@ -11,8 +11,11 @@ type OriginalStartingValueState struct {
 	Raw4            int
 	Raw4Known       bool
 	InitialSixKnown bool
-	Known           map[Technology]bool
-	Opponents       []map[Technology]bool
+	// RelativeTurn 是目前星曆減 35000。sub_FC845 只在前 150 回合提高特定類別估值；
+	// 開局呼叫端傳 0，常態 AI 選題傳 GameSession.Turn。
+	RelativeTurn int
+	Known        map[Technology]bool
+	Opponents    []map[Technology]bool
 }
 
 // OriginalAITechProfile 保留 sub_589D6 寫入 player+0x28/+0x205/+0x206 的 raw 值。
@@ -374,8 +377,7 @@ func originalTechValueCommon(tech Technology, state OriginalStartingValueState, 
 		}
 	}
 
-	// 開局 stardate 必在 35000+150 之前。
-	if category == 0x12 {
+	if state.RelativeTurn < 150 && category == 0x12 {
 		value *= 2
 	}
 

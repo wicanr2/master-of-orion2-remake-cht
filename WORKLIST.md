@@ -314,21 +314,28 @@
   `RemakeDecider` 並以 `ok=false` 告知 fallback；依 `Compute_AI_Data_ @ 0xD3D34`、
   `Move_All_AI_ @ 0xDBB29`、`All_AI_Colonize_ @ 0xE67F6`、`All_AI_Tech_Select_ @ 0xDCA69`、
   `Search_For_Battles_ @ 0xE9D62` 重建原版 state machine、難度作弊、殖民地職務與建造、研究／
-  應用選擇、艦隊目標與戰鬥決策；目前 `advanceAIResearch` 能正常研究，但主題選擇仍是 remake
-  啟發式，不能用「AI 會進步」替代原版 AI parity。2026-08-26 已把官方五級 Generic AI
+  應用選擇、艦隊目標與戰鬥決策；常態研究切片已接原版 application 級估值抽選，但不能用
+  單一切片替代完整原版 AI parity。2026-08-26 已把官方五級 Generic AI
   bonuses 的 Growth／Food／Prod／Res／BC 與 Command Deficit `12/11/10/9/8` 接進 AI 每回合
   暫態殖民地與帝國結算；玩家不吃加成，
   負 quarter 採向下取整，且修正 `NewDemoSession` 性格難度為 1、session 卻留零值 Tutor 的雙真相。
   Spy Bonus `-2/-1/0/+1/+2` 亦已進 AI 攻守兩張能力表；數值已證實，攻守共同注入及逐殖民地
   quarter 捨入／士氣重力順序仍為強推論。Troops／Marines `-2/-1/0/+1/+2` 經盤點確認早已由
-  `GroundDifficultyBonus` 接入 AI 殖民地防守與叛軍；Antaran Marines 的非零 runtime 玩家路徑、
-  建造／科技／艦隊／外交及其餘 AI state machine 仍待閉合。見
+  `GroundDifficultyBonus` 接入 AI 殖民地防守與叛軍；Antaran Marines `2×difficulty-4` 的
+  owner≥8 共用地面／登艦 block 已由 IDA caller 閉合，但目前沒有 owner≥8 typed 地面單位，
+  不另造原版未證實的登陸事件。2026-08-26 另閉合 `All_AI_Tech_Select_ → sub_DC288 → sub_FD335`：
+  新局 AI 保存 raw6／raw4／raw7 profile，常態回合以一次 application 級估值抽選同時決定
+  field/application；舊存檔 profile 未知才回退 remake 啟發式。建造／艦隊／外交及其餘 AI
+  state machine 仍待閉合。見
   [`docs/re/ai-difficulty-economy-audit-20260826.md`](docs/re/ai-difficulty-economy-audit-20260826.md) 與
   [`docs/spec/ai-difficulty-economy.md`](docs/spec/ai-difficulty-economy.md)、
   [`docs/re/ai-command-deficit-audit-20260826.md`](docs/re/ai-command-deficit-audit-20260826.md) 與
   [`docs/spec/ai-command-deficit.md`](docs/spec/ai-command-deficit.md)、
   [`docs/re/ai-spy-difficulty-audit-20260826.md`](docs/re/ai-spy-difficulty-audit-20260826.md) 與
-  [`docs/spec/ai-spy-difficulty.md`](docs/spec/ai-spy-difficulty.md)。
+  [`docs/spec/ai-spy-difficulty.md`](docs/spec/ai-spy-difficulty.md)、
+  [`docs/re/antaran-marines-caller-audit-20260826.md`](docs/re/antaran-marines-caller-audit-20260826.md) 與
+  [`docs/re/ai-normal-research-selection-audit-20260826.md`](docs/re/ai-normal-research-selection-audit-20260826.md)、
+  [`docs/spec/ai-normal-research-selection.md`](docs/spec/ai-normal-research-selection.md)。
 - [ ] **艦隊、殖民、事件與安塔蘭忠實化**：重建 `Move_All_Ships_Toward_Stars_ @ 0xFFEEA`、
   `Colonize_Planet_ @ 0xBB082`、`Compute_Blockades_ @ 0xE5097`、`Compute_Contacts_ @ 0xEB192`、
   `Check_All_Rebellions_ @ 0xED44A`、`Determine_Event_ @ 0x2230A` 與

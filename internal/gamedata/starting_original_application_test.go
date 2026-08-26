@@ -117,3 +117,21 @@ func TestAIProfileCategoryOverridesFollowRawSwitches(t *testing.T) {
 		t.Fatalf("raw6=2 的 category 0x27=%d，期望 %d", got, want)
 	}
 }
+
+func TestOriginalTechValueEarlyCategoryBonusStopsAtTurn150(t *testing.T) {
+	tech := Technology(0)
+	for i := 1; i < len(TechItemCategory); i++ {
+		if TechItemCategory[i] == 0x12 {
+			tech = Technology(i)
+			break
+		}
+	}
+	if tech == 0 {
+		t.Fatal("測試資料應至少有一項 category 0x12 application")
+	}
+	early := OriginalHumanTechValueKnownSlice(tech, OriginalStartingValueState{Human: true, RelativeTurn: 149})
+	late := OriginalHumanTechValueKnownSlice(tech, OriginalStartingValueState{Human: true, RelativeTurn: 150})
+	if early != late*2 {
+		t.Fatalf("category 0x12 前150回合估值應恰為後期兩倍：early=%d late=%d tech=%d", early, late, tech)
+	}
+}

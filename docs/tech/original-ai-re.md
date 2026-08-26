@@ -8,9 +8,11 @@ original 模式有真實依據可循,而不是 remake 啟發式的重貼標籤�
 
 **與 `internal/ai` 現況的關係**：`internal/ai/{diplomacy,economy,military,research}.go` 的決策器仍是
 設計性重建，`ModeOriginal` 仍 fallback；但本文件的五級 Generic AI bonuses 已於 2026-08-26
-透過 `aiColoniesForTurn`／`RunEmpireTurn` 接入 AI 的 Growth／Food／Prod／Res／BC 玩家路徑。
+透過 `aiColoniesForTurn`／`RunEmpireTurn` 接入 AI 的 Growth／Food／Prod／Res／BC 玩家路徑，
+常態研究亦已依 `sub_DCA69 → sub_DC288 → sub_FD335` 接入 application 級估值抽選。
 接線證據、捨入限制與規格見 `docs/re/ai-difficulty-economy-audit-20260826.md` 及
-`docs/spec/ai-difficulty-economy.md`，不可再把整份本文視為「只有筆記、零程式消費端」。
+`docs/spec/ai-difficulty-economy.md`、`docs/re/ai-normal-research-selection-audit-20260826.md` 及
+`docs/spec/ai-normal-research-selection.md`，不可再把整份本文視為「只有筆記、零程式消費端」。
 
 **鐵律(比照 `patch15-cfg-data-source.md` 的教訓)**:
 
@@ -408,14 +410,8 @@ MOO2 一手資料為準,1oom 的常數不能直接套用到 MOO2。
 
 ---
 
-## 6. 與既有文件的衝突(留供下一輪處理,本輪不修改其他檔案)
+## 6. 文件同步狀態
 
-- `docs/tech/community-mechanics-findings.md` 第 1 節「AI 決策傾向 / 難度加成的具體數值」結論
-  「找不到可靠來源,仍無來源」——**難度加成部分已被本文件 §2 推翻**(官方手冊有精確表格),
-  該文件當時只搜了 GameFAQs/StrategyWiki/Steam 討論串等社群站台,沒有讀本專案已有的 `MANUAL_150.html`
-  正文(可能是因為該文件的搜尋重點放在「社群逆向數字」,而非重新翻一次已下載的官方文件)。「AI 決策
-  邏輯」(逐回合演算法)部分仍然無來源,這半句沒有被推翻。
-- `docs/tech/ai-decision-modes.md` 第 5 節「MOO2 的 AI 決策邏輯與難度加成,官方手冊未公開規則」——
-  同上,「難度加成」半句已不成立,「AI 決策邏輯」半句仍然成立。
-- 建議下一輪:把上述兩處改成「難度加成有官方數值(見 `original-ai-re.md` §2),AI 決策邏輯本身仍未
-  公開」,並在 `ai-decision-modes.md` 第 3 節架構圖把「原版 AI RE 研究,目前尚無此文件」改成指向本檔。
+`community-mechanics-findings.md` 與 `ai-decision-modes.md` 已移除「官方難度值無來源」及
+「所有 AI 決策都只有設計性重建」的過期總括斷言。現況分為已接的五級難度／常態研究切片，
+以及仍待閉合的建造、艦隊、外交與戰鬥 state machine。

@@ -9,7 +9,7 @@
 | 模式 | `AIMode` 常數 | 現況 | 說明 |
 |---|---|---|---|
 | 設計性重建 | `ModeRemake` | 已實作 | `internal/ai` 這套啟發式,權重/門檻皆為本專案設計值,非原版數值。 |
-| 逆向原版 | `ModeOriginal` | 待 RE,fallback | 目標是還原原版 MOO2 AI 行為;官方手冊與英語社群公認未破解該邏輯(見 `community-mechanics-findings.md`),尚無可移植的權威資料。 |
+| 逆向原版 | `ModeOriginal` | fallback | 完整決策器尚未完成；五級難度、性格 profile 與常態研究 application 抽選已有原版證據與正常回合消費端。 |
 
 統一介面是 `Decider`(`decider.go:29`),六個方法涵蓋殖民地工作分配、稅率、研究選題、生產優先、外交姿態與模式回報:
 
@@ -35,11 +35,15 @@ type Decider interface {
 
 ### 目前的接線狀態
 
-`internal/engine/ai.go` 是把 `internal/ai` 接進回合引擎的地方,目前**只接了經濟決策**:`ApplyAIEconomy`/`RunAIEmpireTurn` 透過 `ai.Decider` 介面呼叫 `ColonyJobs`/`TaxRate`(已改為經介面注入,支援 remake/original 模式選擇)。研究選題(`ResearchTopic`)、生產優先(`BuildPriority`)、外交姿態(`Stance`)三個介面方法目前**尚無呼叫端**接入回合引擎;主選單(`cmd/moo2/menu.go`)也還沒有 AI 模式的選項。換言之,`Decider`/`AIMode` 抽象層已就緒且經濟決策已走介面,其餘決策面向串接到回合流程與 UI 仍是後續工作。
+`internal/engine/ai.go` 以 `Decider` 介面承接殖民地職務與稅率。正常新局的研究選題已不再走
+`Decider.ResearchTopic`：`internal/shell/ai_research.go` 依原版 `sub_DC288 → sub_FD335` 直接做
+application 級估值抽選；只有舊存檔沒有 raw profile 時才回退 `DecideResearchTopic`。
+`BuildPriority` 與 `Stance` 仍由 remake 主動行為直接消費，完整 `ModeOriginal` 工廠與主選單選項尚未完成。
 
 ## 2. remake AI 的決策邏輯
 
-以下逐項列出程式碼中的判斷次序與設計值,**全部標【設計性重建,非原版】**——MOO2 官方手冊未給、社群逆向也未破解 AI 決策的實際規則(見 `docs/tech/community-mechanics-findings.md`)。
+以下列出 `RemakeDecider` 的設計性重建規則。正常新局的難度加成與常態研究已另有原版路徑，
+不能再把本章擴張成「所有 AI 行為都只有設計值」。
 
 ### 2.1 經濟(`economy.go`)
 
@@ -67,9 +71,10 @@ type Decider interface {
 
 三段稅率對齊 gamedata 稅率規則的 10% 級距。`engine/ai.go` 目前固定用 `lowThreshold=50`、`highThreshold=300`。
 
-### 2.2 研究選題(`research.go`)
+### 2.2 舊存檔研究選題 fallback（`research.go`）
 
-`DecideResearchTopic(candidates, profile)` 依 `Profile.IndustryWeight` 對 `ResearchWeight` 的相對大小分三支:
+`DecideResearchTopic(candidates, profile)` 只在 AI raw profile 未知時作安全 fallback；正常新局走
+`selectOriginalAIResearch`。fallback 依 `Profile.IndustryWeight` 對 `ResearchWeight` 的相對大小分三支：
 
 | 性格傾向 | 判斷條件 | 選題策略 |
 |---|---|---|
@@ -149,10 +154,10 @@ type Decider interface {
               │                                       │
    ┌──────────▼───────────┐                ┌──────────▼────────────┐
    │   RemakeDecider        │                │  OriginalDecider(未實作) │
-   │   decider.go            │                │  待逆向原版 AI 後新增      │
+   │   decider.go            │                │  待整合原版各切片後新增     │
    │   Profile + 國庫門檻      │                │  docs/tech/            │
    │                         │                │  (original AI RE 研究,  │
-   │  委派至同套件既有函式:     │                │   目前尚無此文件)         │
+   │  委派至同套件既有函式:     │                │   original-ai-re.md)     │
    │  - economy.go            │                └────────────────────────┘
    │    DecideColonyJobs
    │    DecideTaxRate
@@ -190,7 +195,11 @@ type Decider interface {
 
 **`internal/ai` 目前提供的 remake AI 不是、也不試圖精確重現原版 MOO2 的 AI 行為。**
 
-- MOO2 的高階 **AI 決策邏輯**(選目標、戰略取捨)官方未公開、社群也公認未完全破解。但**部分原版 AI 資料實為權威可移植**:官方手冊有「Generic AI bonuses」難度加成表、AIRACES.CFG 有 classic 種族性格分布(見 `docs/tech/original-ai-re.md`)。故 original AI 模式可對難度縮放與性格分布做**忠實還原**,只有高階決策啟發式仍須近似。本 remake 層的決策邏輯(工作/研究/生產/外交啟發式)仍為【設計性重建,非原版】。
+- MOO2 的完整高階 AI state machine 尚未閉合；但官方五級難度、AIRACES.CFG 性格分布與
+  `sub_DC288 → sub_FD335` 常態研究 application 抽選已有可移植證據與程式消費端。殖民地職務、
+  建造、艦隊、外交及戰鬥決策仍多為設計性重建。
 - `docs/tech/design-reconstruction.md` 是這一層的界線總覽文件:明確列出「原版權威資料」與「本專案設計」的分野,並要求每個設計性重建的檔頭與函式註解都標註【設計性重建,非原版】——本文件第 2、4 節的表格即依此原始碼註解整理。
-- **original 模式待 RE**:`ModeOriginal` 目前只是型別上的保留位,`NewDecider` 對它 fallback 回 remake 邏輯並回傳 `ok=false`。要讓 original 模式名副其實,需要先完成原版 AI 的逆向工程研究(目前 `docs/tech/` 尚無對應的 `original-ai-re.md`,屬於待建立的後續工作),再新增 `OriginalDecider` 實作並接上 `NewDecider` 的 `ModeOriginal` 分支。
+- **original 模式待整合**：`ModeOriginal` 工廠仍 fallback 並回傳 `ok=false`。需先把
+  `original-ai-re.md` 各已證實切片與剩餘 state machine 整合成完整 `OriginalDecider`，不能只因
+  常態研究已接就提前把模式標成完成。
 - 設計值可調:未來若實機逆向出原版真值(如 AI 性格分布、關係事件的真實調整量),可直接替換 `internal/ai` / `internal/diplomacy` 內的設計值,不影響已驗證的公式層與其餘架構。

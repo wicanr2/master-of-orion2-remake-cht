@@ -45,8 +45,12 @@ type AIOpponent struct {
 	// 驅動關係演化、擴張積極度等行為差異——先前三個 AI 除了名字之外行為完全相同,
 	// 因為所有性格相關的數字都是硬編的固定值(見 ai/personality_tables.go)。
 	Personality ai.Personality
-	Relation    int    // 對玩家的外交關係分數(驅動 17 級 RelationLevel 與態勢)
-	StanceName  string // 目前對玩家態勢(中文;由 ai.DecideStance 推得)
+	// OriginalTechProfile 是 sub_589D6 建立、供 sub_FC845／sub_FD335 常態研究選擇消費的
+	// raw6／raw4／raw7 與 runtime 種族特性。Known 區分舊存檔的合法零值。
+	OriginalTechProfile      gamedata.OriginalAITechProfile `json:"originalTechProfile,omitempty"`
+	OriginalTechProfileKnown bool                           `json:"originalTechProfileKnown,omitempty"`
+	Relation                 int                            // 對玩家的外交關係分數(驅動 17 級 RelationLevel 與態勢)
+	StanceName               string                         // 目前對玩家態勢(中文;由 ai.DecideStance 推得)
 	// Treaty 是玩家與這個 AI 的正式外交／經濟協議狀態。正式狀態與貿易、研究
 	// 旗標分開，對應原版 +0x627、+0x62F、+0x637 的資料形狀。
 	Treaty     TreatyState
@@ -4046,7 +4050,7 @@ func (s *GameSession) applyStartingRandomTech() {
 		return known
 	}
 	grantRandom := func(ps *engine.PlayerState, human bool, origRace int,
-		profileTraits *[gamedata.RaceTraitCount]int8, seed int64,
+		profileTraits *[gamedata.RaceTraitCount]int8, profileOverride *gamedata.OriginalAITechProfile, seed int64,
 		opponents func() []map[gamedata.Technology]bool) {
 		if ps.CompletedTopics == nil {
 			return
@@ -4054,7 +4058,10 @@ func (s *GameSession) applyStartingRandomTech() {
 		rng := newRandStream(seed)
 		var aiProfile gamedata.OriginalAITechProfile
 		aiProfileKnown := false
-		if profileTraits != nil {
+		if profileOverride != nil {
+			aiProfile = *profileOverride
+			aiProfileKnown = true
+		} else if profileTraits != nil {
 			raw27 := 0
 			if origRace >= 0 {
 				raw27 = gamedata.RollOriginalAIRaw27(origRace, s.Difficulty, rng.Intn)
@@ -4066,7 +4073,8 @@ func (s *GameSession) applyStartingRandomTech() {
 			avail := gamedata.AvailableTopics(ps.CompletedTopics)
 			state := gamedata.OriginalStartingValueState{
 				Human: human, Difficulty: s.Difficulty, InitialSixKnown: true,
-				AIProfile: aiProfile, AIProfileKnown: aiProfileKnown,
+				RelativeTurn: s.Turn,
+				AIProfile:    aiProfile, AIProfileKnown: aiProfileKnown,
 				Raw4: aiProfile.Raw4, Raw4Known: aiProfileKnown,
 				Known: knownTechs(*ps), Opponents: opponents(),
 			}
@@ -4108,7 +4116,7 @@ func (s *GameSession) applyStartingRandomTech() {
 	if playerTraitsKnown {
 		playerTraitsPtr = &playerTraits
 	}
-	grantRandom(&s.Player, true, s.raceOrigIdx(), playerTraitsPtr,
+	grantRandom(&s.Player, true, s.raceOrigIdx(), playerTraitsPtr, nil,
 		s.EventSeed*6364136223846793005+11, playerOpponents)
 	for i := range s.AIPlayers {
 		aiIdx := i
@@ -4129,7 +4137,11 @@ func (s *GameSession) applyStartingRandomTech() {
 		if traits, ok := gamedata.OrigRaceTraits(origRace); ok {
 			aiTraitsPtr = &traits
 		}
-		grantRandom(&s.AIPlayers[i].Player, false, origRace, aiTraitsPtr,
+		var profileOverride *gamedata.OriginalAITechProfile
+		if s.AIPlayers[i].OriginalTechProfileKnown {
+			profileOverride = &s.AIPlayers[i].OriginalTechProfile
+		}
+		grantRandom(&s.AIPlayers[i].Player, false, origRace, aiTraitsPtr, profileOverride,
 			s.EventSeed*6364136223846793005+int64(i)*7919+101, opponents)
 	}
 }
@@ -5276,7 +5288,7 @@ func (s *GameSession) advanceAI(i int, out engine.EmpireOutput) {
 	//
 	// 先前完全沒有這一步——AI 每回合把研究點投進一個早就完成的主題,無限重複完成同一項,
 	// 科技線整條靠間諜從玩家那裡偷。
-	s.advanceAIResearch(i)
+	s.advanceAIResearch(i, out.TotalResearch)
 
 	// 2.5) 間諜:AI 用最簡單的週期政策每 6 回合訓練 1 名間諜派來偷玩家科技(見 spy.go
 	// advanceEspionage),上限比照手冊每對手 63 人(gamedata.SpySlotBonus 的夾範圍)。不像
@@ -6045,14 +6057,28 @@ func buildDemoAIOpponents(aiHomeStars []int, difficulty int, seed int64) []AIOpp
 	aiPlayers := make([]AIOpponent, 0, len(aiHomeStars))
 	// 性格抽樣用獨立的亂數流:同一個 seed 一定抽出同一組性格(存讀檔與重跑要可重現)。
 	pr := rand.New(rand.NewSource(seed*31 + 17))
+	// sub_589D6 的 raw profile 只在建立帝國時抽一次。使用與性格分離的穩定 stream，
+	// 避免新增研究資料改變既有 personality 序列；原版全域 PRNG 位元序列仍不宣稱一致。
+	tr := rand.New(rand.NewSource(seed*6364136223846793005 + 101))
 	for i := 0; i < len(aiHomeStars); i++ {
 		setup := demoAIOpponentSetup[i%len(demoAIOpponentSetup)]
 		pers := pickAIPersonality(setup.raceEn, difficulty, pr)
+		raceIndex := raceIndexForEnglishName(setup.raceEn)
+		var techProfile gamedata.OriginalAITechProfile
+		techProfileKnown := false
+		if raceIndex >= 0 && raceIndex < len(Races) {
+			origRace := Races[raceIndex].OrigIdx
+			if traits, ok := gamedata.OrigRaceTraits(origRace); ok {
+				raw27 := gamedata.RollOriginalAIRaw27(origRace, difficulty, tr.Intn)
+				techProfile = gamedata.RollOriginalAITechProfile(traits, difficulty, raw27, tr.Intn)
+				techProfileKnown = true
+			}
+		}
 		aiPlayers = append(aiPlayers, AIOpponent{
 			Name:               setup.name,
 			Color:              (i + 1) % 8,
 			ColorKnown:         true,
-			RaceIndex:          raceIndexForEnglishName(setup.raceEn),
+			RaceIndex:          raceIndex,
 			PopulationRaceSlot: i + 1, PopulationRaceSlotKnown: true,
 			Player:      newHomeworldPlayerState(1),
 			Colonies:    []engine.ColonyState{playerHomeworldColony()}, // AI 同為 Average 起始單一母星,與玩家共用忠實 yield
@@ -6062,8 +6088,10 @@ func buildDemoAIOpponents(aiHomeStars []int, difficulty int, seed int64) []AIOpp
 			// AIOpponent.ColonyBuildings 欄位註解)。
 			ColonyBuildings: []map[string]bool{cloneBuildings(homeworldBuildings())},
 			// 原版開局後由全域英雄池逐回合產生 offer；不再依種族固定贈送 Commando。
-			Leaders:     nil,
-			Personality: pers,
+			Leaders:                  nil,
+			Personality:              pers,
+			OriginalTechProfile:      techProfile,
+			OriginalTechProfileKnown: techProfileKnown,
 			// 經濟傾向由性格推導(見 ai.ProfileForPersonality),不再手寫。
 			Decider:    ai.NewRemakeDecider(ai.ProfileForPersonality(pers)),
 			OwnedStars: 1,

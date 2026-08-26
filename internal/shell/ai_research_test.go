@@ -1,10 +1,63 @@
 package shell
 
 import (
+	"path/filepath"
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
+
+func TestAIOriginalResearchSelectionStoresFieldAndApplicationTogether(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	if !a.OriginalTechProfileKnown {
+		t.Fatal("新局 AI 應保存 sub_589D6 raw profile")
+	}
+	a.Player.CompletedTopics[a.Player.ResearchTopic] = true
+	if !s.selectOriginalAIResearch(0, 12) {
+		t.Fatal("有可研究 field 時應能完成原版 application 級抽選")
+	}
+	if a.Player.CompletedTopics[a.Player.ResearchTopic] {
+		t.Fatalf("選到已完成 field %v", a.Player.ResearchTopic)
+	}
+	if !gamedata.ResearchTopicGrantsAll(a.Player.ResearchTopic) &&
+		!aiRaceHasTrait(*a, gamedata.TRAIT_CREATIVE) && !a.Player.HasResearchApplication {
+		t.Fatalf("非全授予 field %v 應在同一次決策保存 application", a.Player.ResearchTopic)
+	}
+}
+
+func TestAIOriginalResearchSelectionIsDeterministic(t *testing.T) {
+	build := func() *GameSession {
+		s := NewDemoSession()
+		a := &s.AIPlayers[0]
+		a.Player.CompletedTopics[a.Player.ResearchTopic] = true
+		s.advanceAIResearch(0, 12)
+		return s
+	}
+	a, b := build(), build()
+	pa, pb := a.AIPlayers[0].Player, b.AIPlayers[0].Player
+	if pa.ResearchTopic != pb.ResearchTopic || pa.ResearchApplication != pb.ResearchApplication ||
+		pa.HasResearchApplication != pb.HasResearchApplication {
+		t.Fatalf("同 seed/profile/研究產出應選同一 field/application：%+v / %+v", pa, pb)
+	}
+}
+
+func TestAIOriginalTechProfileSurvivesSaveLoad(t *testing.T) {
+	s := NewDemoSession()
+	before := s.AIPlayers[0].OriginalTechProfile
+	path := filepath.Join(t.TempDir(), "ai-profile.json")
+	if err := s.Save(path); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadSession(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got.AIPlayers[0].OriginalTechProfileKnown || got.AIPlayers[0].OriginalTechProfile != before {
+		t.Fatalf("raw profile 未完整往返：before=%+v after=%+v known=%v",
+			before, got.AIPlayers[0].OriginalTechProfile, got.AIPlayers[0].OriginalTechProfileKnown)
+	}
+}
 
 // 目前主題完成之後,AI 要換下一個——這是這一項修的那個洞。
 //

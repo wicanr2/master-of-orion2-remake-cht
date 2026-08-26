@@ -1,6 +1,6 @@
 # 銀河霸主 II remake 誠實現況
 
-> 更新：2026-08-25。本文只描述目前狀態；剩餘工作的唯一活表是
+> 更新：2026-08-26。本文只描述目前狀態；剩餘工作的唯一活表是
 > [`WORKLIST.md`](../WORKLIST.md)，原版證據邊界以
 > [`docs/re/parity-matrix.tsv`](re/parity-matrix.tsv) 為準。
 
@@ -37,6 +37,9 @@
 - 官方五級 AI Growth／Food／Prod／Res／BC、Command Deficit 與 Spy 難度表已於 2026-08-26
   接入 AI 回合，且不作用於玩家；quarter 捨入、士氣／重力先後及 Spy 攻守共同注入尚無完整
   IDA 指令級證據，維持強推論。
+- AI 常態研究已依 `All_AI_Tech_Select_ → sub_DC288 → sub_FD335` 改為一次 application 級
+  估值抽選，raw profile 與研究亂數位置可存檔；建造、艦隊、外交與其餘原版 AI state machine
+  尚未閉合，不能以研究切片宣稱完整原版 AI。
 - 畫面已有大量原版座標證據，但動態文字測量、中文分頁、按鈕置中、hover 及
   英文模式回歸仍是活躍 polish；不再使用「逐畫面像素對齊已全部完成」的總括斷言。
 - 多人連線的現代化可玩核心與安全／NAT 擴充要分開驗收；後者不因本機 smoke test

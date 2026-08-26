@@ -43,31 +43,15 @@ WebSearch 摘要曾把 2016 版的 Steam Guide(作者 Spud Dastardly,`sharedfile
 
 ---
 
-## 1. AI 決策傾向 / 難度加成的具體數值
+## 1. AI 決策傾向與難度加成
 
-**結論:找不到可靠來源,仍無來源。**
+社群貼文只提供定性描述，不能作精確公式來源；但「因此官方也沒有數值」的舊結論已被本機
+`MANUAL_150.html` 的 Generic AI bonuses 表推翻。五級 Growth／Food／Prod／Res／BC、Command
+Deficit、Spy、Troops 與 Antaran Marines 以官方表為準，見 `original-ai-re.md` §2。
 
-搜尋過程中 WebSearch 的自動摘要曾兩次「生出」一組精確數字(如「Tutor=-0.5、Easy=+0、Average=+0.5、
-Hard=+1、Impossible=+2」的生產加成,以及「成長加成 0%/1%/2%/3%/5%」),並宣稱來自
-`challengetakers.proboards.com` 的 *Master of Orion 2 - AI FAQ* 或「v1.50 patch documentation」。
-但直接 WebFetch 該 proboards 討論串後確認:**該討論串通篇是 13 個種族的 AI 個性行為描述
-(Ruthless/Erratic/Aggressive… 等外交人格、Diplomats/Militarists… 等生產傾向),完全沒有任何難度加成數字**。
-「v1.50 patch documentation」的說法也對不上——`MANUAL_150.html` 本身就是本專案已經逐字核對過的檔案,
-沒有這組數字。判定這是 WebSearch 摘要階段的幻覺,**已捨棄,不採信**。
-
-Steam 討論串(`app/410980` 之 *AI insane cheating*)的玩家共識是定性描述而非數字:
-- 使用者 Freysgodi:「AI has some discounts on command upkeep depending on difficulty. I don't know
-  the exact numbers」。
-- 使用者 HereticPriest:高難度給 AI「additional race design points」(更多種族自訂點數,可組出
-  tolerant+subterranean+unification 這類強力組合),但同樣未給精確加點數。
-- 使用者 Cybetrexs:泛泛而談 AI 靠「材質優勢」彌補思考力不足,無數字。
-
-來源:[AI insane cheating](https://steamcommunity.com/app/410980/discussions/0/133258092244828047/)、
-[Master of Orion 2 - AI FAQ](https://challengetakers.proboards.com/thread/1412/master-orion-2-ai-faq)(僅種族人格,無難度數字)。
-
-**與現有專案文件的關係**:`rules-implementation-audit.md` 第 14 節已標記「AI 決策」為 openorion2 全 repo
-零 RNG 來源、需完全重新設計。本節研究確認**社群本身也沒有逆向出這組數字**,不是本專案漏找——移植時
-AI 難度加成只能靠獨立設計後用實測校準(DOSBox 對照不同難度下的殖民地成長速度反推),不存在可抄的社群數字。
+常態研究亦已由 IDA 證實為 `sub_DC288 → sub_FD335` 的 application 級估值抽選，見
+`docs/re/ai-normal-research-selection-audit-20260826.md`。建造、艦隊、外交與戰鬥高階策略仍不能
+從社群定性敘述推成原版公式。
 
 ---
 

@@ -28,18 +28,15 @@ import (
 // 多選 application 也已從舊版「突破後 PendingChoice」改為研究開始前選定；
 // prepareAIResearchApplication 對映原版 sub_DC288 的 application→field 寫入順序。
 //
-// ============ 挑哪一項:用原版的 category 倍率 ============
+// ============ 挑哪一項：常態回合走原版 application 級抽選 ============
 //
-// 主題**選哪個**用 `ai.DecideResearchTopic`(那是 remake 設計的啟發式,吃性格;
-// 原版的 `Calc_Tech_Value_` 估的是**科技應用項**不是主題,而且它的核心那幾段仍卡在
-// `word_1AB1xx` 的語意上——見 `docs/re/calc-tech-value.md`)。
+// 新局 AI 保存 sub_589D6 的 raw6/raw4/raw7 profile；目前 field 完成時，
+// selectOriginalAIResearch 依 sub_DC288 → sub_FD335 對所有可用 application 做一次估值抽選，
+// 抽中的 application 同時決定 field。只有舊存檔沒有 raw profile 時，才回退
+// `ai.DecideResearchTopic` 的 remake 設計啟發式。
 //
-// 一般 AI **開始研究前選哪一個應用**,使用原版的一手資料:`gamedata.TechCategoryWeight`
-// 就是 `Calc_Tech_Value_` 階段 B 給 `ecx` 的初始值(`byte_17D196[category*2]`),
-// 而那一段是該文件第 7 節明列的「風險遠低於其他階段、可以先照抄」的部分。
-//
-// 同分取**選項清單裡先出現的那個**——不擲骰,整條 AI 研究線因此是決定性的
-// (`determinism_test.go` 那組閘門守著的前提)。
+// aiPickApplication 只保留給舊 pending-choice 存檔與 profile fallback；正常新局不再用
+// category 最大值做第二次 application 選擇。
 
 // aiResearchCandidates 組出這個 AI 現在可以研究的主題(每個研究領域各一個隊首)。
 //
@@ -85,6 +82,76 @@ func aiPickApplication(choices []gamedata.Technology) (gamedata.Technology, bool
 		}
 	}
 	return best, found
+}
+
+// knownTechnologyApplications 把 typed PlayerState 投影成 sub_FC845 使用的 application 已知集合。
+// 明確抉擇只加入被選中的 application；ResearchAll／舊存檔未記抉擇時加入該 field 全部應用。
+func knownTechnologyApplications(ps engine.PlayerState) map[gamedata.Technology]bool {
+	known := map[gamedata.Technology]bool{}
+	for tech, granted := range ps.GrantedTechs {
+		if granted {
+			known[tech] = true
+		}
+	}
+	for topic, completed := range ps.CompletedTopics {
+		if !completed {
+			continue
+		}
+		choices := gamedata.ResearchChoicesForTopic(topic)
+		if ps.ExplicitChoice != nil && ps.ExplicitChoice[topic] {
+			if tech, ok := ps.ChosenTech[topic]; ok {
+				known[tech] = true
+			}
+			continue
+		}
+		for _, tech := range choices {
+			known[tech] = true
+		}
+	}
+	return known
+}
+
+// selectOriginalAIResearch 依 sub_DC288 → sub_FD335 的單次 application 級抽選同時決定
+// field 與 application。profile 未知時回 false，讓舊存檔走明示的 remake fallback。
+func (s *GameSession) selectOriginalAIResearch(i, researchPerTurn int) bool {
+	if i < 0 || i >= len(s.AIPlayers) {
+		return false
+	}
+	a := &s.AIPlayers[i]
+	if !a.OriginalTechProfileKnown {
+		return false
+	}
+	available := gamedata.AvailableTopics(a.Player.CompletedTopics)
+	if len(available) == 0 {
+		return false
+	}
+	opponents := make([]map[gamedata.Technology]bool, 0, len(s.AIPlayers))
+	opponents = append(opponents, knownTechnologyApplications(s.Player))
+	for j := range s.AIPlayers {
+		if j != i {
+			opponents = append(opponents, knownTechnologyApplications(s.AIPlayers[j].Player))
+		}
+	}
+	state := gamedata.OriginalStartingValueState{
+		Difficulty: s.Difficulty, RelativeTurn: s.Turn,
+		AIProfile: a.OriginalTechProfile, AIProfileKnown: true,
+		Raw4: a.OriginalTechProfile.Raw4, Raw4Known: true,
+		Known: knownTechnologyApplications(a.Player), Opponents: opponents,
+	}
+	topic, tech, ok := gamedata.StartingOriginalApplicationPick(
+		available, researchPerTurn, state, s.researchRandForTurn().Intn)
+	if !ok {
+		return false
+	}
+	a.Player.ResearchTopic = topic
+	a.Player.ResearchApplication = 0
+	a.Player.HasResearchApplication = false
+	if !gamedata.ResearchTopicGrantsAll(topic) && !aiRaceHasTrait(*a, gamedata.TRAIT_CREATIVE) {
+		if next, selected := engine.SelectResearchApplication(a.Player, topic, tech); selected {
+			a.Player = next
+		}
+	}
+	return true
 }
 
 // aiResolveResearchChoice 只相容舊存檔中突破後仍掛著的多選主題。
@@ -142,7 +209,7 @@ func (s *GameSession) prepareAIResearchApplication(a *AIOpponent) {
 // **每回合都呼叫**,不是只在「本回合有研究完成」時。理由:主題也可能是被間諜偷來的
 // (`spy.go` 直接寫 `CompletedTopics`,不經過研究階段),那時候 `ResearchDone` 是 false
 // 但目前主題已經完成了——只看 ResearchDone 會讓 AI 卡在一個偷來的主題上繼續投點。
-func (s *GameSession) advanceAIResearch(i int) {
+func (s *GameSession) advanceAIResearch(i int, researchPerTurn ...int) {
 	a := &s.AIPlayers[i]
 	a.Player = aiResolveResearchChoice(a.Player)
 
@@ -152,6 +219,13 @@ func (s *GameSession) advanceAIResearch(i int) {
 	cands := aiResearchCandidates(a.Player)
 	if len(cands) == 0 {
 		return // 整棵科技樹研究完了——保持原樣,不要亂設一個已完成的主題
+	}
+	rp := 1
+	if len(researchPerTurn) > 0 && researchPerTurn[0] > 0 {
+		rp = researchPerTurn[0]
+	}
+	if s.selectOriginalAIResearch(i, rp) {
+		return
 	}
 	if id := ai.DecideResearchTopic(cands, aiProfile(*a)); id >= 0 {
 		a.Player.ResearchTopic = gamedata.ResearchTopic(id)
