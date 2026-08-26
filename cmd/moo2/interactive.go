@@ -377,9 +377,9 @@ func loadOverlayScreen(res *assets.Resolver, lbxName string, assetID int, lang i
 	rgba := im.Frames[0].ToRGBA(pal, im.KeyColor())
 
 	cat := i18n.New(lang)
-	if f, err := OpenI18NTSV(tsvPath); err == nil {
+	if f, err := OpenI18NJSON(tsvPath); err == nil {
 		defer f.Close()
-		if _, err := cat.LoadTSV(f); err != nil {
+		if _, err := cat.LoadJSON(f); err != nil {
 			return nil, err
 		}
 	} else if lang == i18n.Traditional {
@@ -626,7 +626,7 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 	onAction := func(a string) *origTransition {
 		switch a {
 		case "toggleLang":
-			// 切語言 = 換整個顯示層:overlayScreen 是在建構時把譯表烘進去的,
+			// 切語言 = 換整個顯示層：overlayScreen 是在建構時載入外部文案的，
 			// 所以改完 b.lang 要重建畫面才會生效(與版本切換同款做法)。
 			// 英文模式下 overlay 機制整段跳過擦底疊字,直接露出原版烘進圖的英文。
 			if b.lang == i18n.Traditional {
@@ -707,7 +707,7 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 	if menuFont == nil {
 		menuFont = b.fnt
 	}
-	s, err := loadOverlayScreen(b.res, "mainmenu.lbx", 21, b.lang, menuFont, "menu.tsv",
+	s, err := loadOverlayScreen(b.res, "mainmenu.lbx", 21, b.lang, menuFont, "menu.json",
 		menuOverlays, color.RGBA{104, 224, 96, 255}, 15, hits, onAction, nil)
 	if err != nil {
 		return nil, err
@@ -1096,7 +1096,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		{458, 438, 74, 19, "Info", 12},
 		{544, 448, 90, 15, "Turn", 12},
 	}
-	s, err := loadOverlayScreen(b.res, "buffer0.lbx", 0, b.lang, b.fnt, "menu.tsv",
+	s, err := loadOverlayScreen(b.res, "buffer0.lbx", 0, b.lang, b.fnt, "menu.json",
 		overlays, color.RGBA{210, 216, 230, 255}, 12, hits, onAction, nil)
 	if err != nil {
 		return nil, err
@@ -1441,7 +1441,7 @@ func drawWormholeLinks(dst *ebiten.Image, stars []shell.Star, visible []bool) {
 // 「目前懸停哪個殖民地」——overlayScreen 新增 mx/my 欄位在 update() 逐幀記錄局部滑鼠座標,
 // s.postDraw 逐幀依 mx/my 落在哪一列殖民地表格列,畫出該殖民地的行星資訊(氣候/重力/礦產/
 // 大小/人口上限)與生產資訊(食物/工業/研究/污染);無懸停落在任何列時預設顯示殖民地 0
-// (母星)。氣候/重力/礦產的**中文名**沒有官方在地化來源可援引——既有 i18n TSV 與先前的
+// (母星)。氣候/重力/礦產的**中文名**沒有官方在地化來源可援引——既有 i18n JSON 與先前的
 // 中文化專案(~/master-of-orion)都沒有 MOO2 這幾組列舉的定案譯名,故用簡明直譯頂著顯示,
 // 不是官方在地化文本。**英文名**則直接取原版手冊用語,不是回譯。
 // 純展示層查表,不影響 engine/gamedata 任何邏輯或數值。
@@ -1657,7 +1657,7 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 		{475, 450, 42, 22, "BC", 0},
 		{538, 447, 76, 22, "RETURN", 0},
 	}
-	s, err := loadOverlayScreen(b.res, "colsum.lbx", 0, b.lang, b.fnt, "colony.tsv",
+	s, err := loadOverlayScreen(b.res, "colsum.lbx", 0, b.lang, b.fnt, "colony.json",
 		overlays, color.RGBA{210, 216, 230, 255}, 13, hits, onAction, nil)
 	if err != nil {
 		return nil, err
@@ -1897,7 +1897,7 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 		{438, 442, 90, 18, "IGNORE", 11},
 		{536, 432, 82, 22, "RETURN", 0},
 	}
-	s, err := loadOverlayScreen(b.res, "races.lbx", 0, b.lang, b.fnt, "diplo.tsv",
+	s, err := loadOverlayScreen(b.res, "races.lbx", 0, b.lang, b.fnt, "diplo.json",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction, nil)
 	if err != nil {
 		return nil, err
@@ -3850,12 +3850,12 @@ func (b *sceneBuilder) tacticalCombat() (origScreen, error) {
 // battleResult 顯示上一場戰鬥結果(重用 TURNSUM.LBX#0 視窗當通用面板)。點畫面返回種族關係。
 func (b *sceneBuilder) battleResult() (*overlayScreen, error) {
 	hits, onAction := b.backHit(b.races, "種族關係")
-	// 標題以中文直接當 enKey(misc.tsv 查無 → fallback 回傳自身),擦底覆蓋烘進的 TURN SUMMARY。
+	// 標題以中文直接當 enKey(misc.json 查無 → fallback 回傳自身),擦底覆蓋烘進的 TURN SUMMARY。
 	overlays := []labelRect{
 		{88, 14, 204, 22, "戰鬥結果", 0},
 		{158, 324, 64, 18, "CLOSE", 0},
 	}
-	s, err := loadOverlayScreen(b.res, "turnsum.lbx", 0, b.lang, b.fnt, "misc.tsv",
+	s, err := loadOverlayScreen(b.res, "turnsum.lbx", 0, b.lang, b.fnt, "misc.json",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"buffer0.lbx", 0}})
 	if err != nil {
@@ -3933,7 +3933,7 @@ func (b *sceneBuilder) council() (*overlayScreen, error) {
 			return b.goTo(b.races, "種族關係")
 		}
 	}
-	s, err := loadOverlayScreen(b.res, "council.lbx", 1, b.lang, b.fnt, "misc.tsv",
+	s, err := loadOverlayScreen(b.res, "council.lbx", 1, b.lang, b.fnt, "misc.json",
 		nil, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"council.lbx", 0}})
 	if err != nil {
@@ -4311,7 +4311,7 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 		{100, 385, 95, 20, "CANCEL", 0}, // 101..192 × 386..401
 		{419, 386, 94, 22, "ACCEPT", 0}, // 420..510 × 388..407
 	}
-	s, err := loadOverlayScreen(b.res, "newgame.lbx", newGameBackgroundAssetForResolver(b.res, b.gameVersion), b.lang, b.fnt, "menu.tsv",
+	s, err := loadOverlayScreen(b.res, "newgame.lbx", newGameBackgroundAssetForResolver(b.res, b.gameVersion), b.lang, b.fnt, "menu.json",
 		overlays, color.RGBA{210, 216, 230, 255}, 13, hits, onAction,
 		paletteChain{{"raceopt.lbx", 4}, {"newgame.lbx", 1}})
 	if err != nil {
@@ -4489,7 +4489,7 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 		{487, 435, 60, 19, "Combat", 0},
 		{556, 430, 84, 28, "RETURN", 0},
 	}
-	s, err := loadOverlayScreen(b.res, "fleet.lbx", 0, b.lang, b.fnt, "menu.tsv",
+	s, err := loadOverlayScreen(b.res, "fleet.lbx", 0, b.lang, b.fnt, "menu.json",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"buffer0.lbx", 0}, {"fleet.lbx", 111}})
 	if err != nil {
@@ -4936,7 +4936,7 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 	for i, name := range []string{"Clear", "Cancel", "Build"} {
 		overlays = append(overlays, labelRect{dsBtnX[i], dsBtnY, dsBtnW, dsBtnH, name, 0})
 	}
-	s, err := loadOverlayScreen(b.res, "design.lbx", 0, b.lang, b.fnt, "tech.tsv",
+	s, err := loadOverlayScreen(b.res, "design.lbx", 0, b.lang, b.fnt, "tech.json",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"buffer0.lbx", 0}})
 	if err != nil {
@@ -5344,7 +5344,7 @@ func (b *sceneBuilder) officer() (*overlayScreen, error) {
 		return nil
 	}
 	overlays := officerOverlays()
-	s, err := loadOverlayScreen(b.res, "officer.lbx", 0, b.lang, b.fnt, "officer.tsv",
+	s, err := loadOverlayScreen(b.res, "officer.lbx", 0, b.lang, b.fnt, "officer.json",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"buffer0.lbx", 0}})
 	if err != nil {
@@ -5494,7 +5494,7 @@ func (b *sceneBuilder) info() (*overlayScreen, error) {
 		{21, 154, 164, 18, "Reference", 0},
 		{535, 434, 84, 22, "RETURN", 0},
 	}
-	s, err := loadOverlayScreen(b.res, "info.lbx", 0, b.lang, b.fnt, "misc.tsv",
+	s, err := loadOverlayScreen(b.res, "info.lbx", 0, b.lang, b.fnt, "misc.json",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"info.lbx", 1}})
 	if err != nil {
@@ -5518,7 +5518,7 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 		{88, 14, 204, 22, "TURN SUMMARY", 0},
 		{158, 324, 64, 18, "CLOSE", 0},
 	}
-	s, err := loadOverlayScreen(b.res, "turnsum.lbx", 0, b.lang, b.fnt, "misc.tsv",
+	s, err := loadOverlayScreen(b.res, "turnsum.lbx", 0, b.lang, b.fnt, "misc.json",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,
 		paletteChain{{"buffer0.lbx", 0}})
 	if err != nil {
@@ -5701,7 +5701,7 @@ func (b *sceneBuilder) research() (*overlayScreen, error) {
 		{22, 343, 128, 18, "Physics", 0},
 		{248, 343, 124, 18, "Force Fields", 0},
 	}
-	s, err := loadOverlayScreen(b.res, "techsel.lbx", 0, b.lang, b.fnt, "tech.tsv",
+	s, err := loadOverlayScreen(b.res, "techsel.lbx", 0, b.lang, b.fnt, "tech.json",
 		overlays, color.RGBA{210, 216, 230, 255}, 13, hits, onAction,
 		paletteChain{{"science.lbx", 0}})
 	if err != nil {
@@ -5834,7 +5834,7 @@ func (b *sceneBuilder) planets() (*overlayScreen, error) {
 		}
 		return nil
 	}
-	s, err := loadOverlayScreen(b.res, "plntsum.lbx", 0, b.lang, b.fnt, "planets.tsv",
+	s, err := loadOverlayScreen(b.res, "plntsum.lbx", 0, b.lang, b.fnt, "planets.json",
 		planetsOverlays, color.RGBA{206, 218, 240, 255}, 14, hits, onAction, nil)
 	if err != nil {
 		return nil, err

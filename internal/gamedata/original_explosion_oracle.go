@@ -5,11 +5,11 @@ package gamedata
 // 反編譯器猜出的全域名稱當成已證實語意。
 
 const (
-	OriginalShipExplosionRollRange   = 0xC9 // Random(201)
-	OriginalShipExplosionRollOffset  = 0x4A // +74
-	OriginalColonyExplosionRollRange = 0x191 // Random(401)
-	OriginalColonyExplosionRollOffset = 0x95 // +149
-	OriginalExplosionChainStep       = 0x14 // each spherical step subtracts 20
+	OriginalShipExplosionRollRange    = 0xC9  // Random(201)
+	OriginalShipExplosionRollOffset   = 0x4A  // +74
+	OriginalColonyExplosionRollRange  = 0x191 // Random(401)
+	OriginalColonyExplosionRollOffset = 0x95  // +149
+	OriginalExplosionChainStep        = 0x14  // each spherical step subtracts 20
 )
 
 func boundedOriginalRoll(roll, rangeSize int) int {

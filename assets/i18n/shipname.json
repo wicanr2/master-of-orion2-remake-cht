@@ -1,0 +1,2154 @@
+[
+  {
+    "key": "Anaconda",
+    "value": "森蚺"
+  },
+  {
+    "key": "Annihilator",
+    "value": "殲滅者"
+  },
+  {
+    "key": "Armageddon",
+    "value": "末日"
+  },
+  {
+    "key": "Asteriod",
+    "value": "小行星"
+  },
+  {
+    "key": "Avenger",
+    "value": "復仇者"
+  },
+  {
+    "key": "Backsword",
+    "value": "單刃劍"
+  },
+  {
+    "key": "Balista",
+    "value": "弩炮"
+  },
+  {
+    "key": "Barracuda I",
+    "value": "梭魚 I"
+  },
+  {
+    "key": "Barracuda II",
+    "value": "梭魚 II"
+  },
+  {
+    "key": "Barracuda III",
+    "value": "梭魚 III"
+  },
+  {
+    "key": "Barracuda IV",
+    "value": "梭魚 IV"
+  },
+  {
+    "key": "Barracuda V",
+    "value": "梭魚 V"
+  },
+  {
+    "key": "Barracuda VI",
+    "value": "梭魚 VI"
+  },
+  {
+    "key": "Barracuda VII",
+    "value": "梭魚 VII"
+  },
+  {
+    "key": "Barracuda VIII",
+    "value": "梭魚 VIII"
+  },
+  {
+    "key": "Biter",
+    "value": "咬噬者"
+  },
+  {
+    "key": "Blackhawk",
+    "value": "黑鷹"
+  },
+  {
+    "key": "Bloodfoot",
+    "value": "血足"
+  },
+  {
+    "key": "Boa I",
+    "value": "蚺蛇 I"
+  },
+  {
+    "key": "Boa II",
+    "value": "蚺蛇 II"
+  },
+  {
+    "key": "Boa III",
+    "value": "蚺蛇 III"
+  },
+  {
+    "key": "Boa IV",
+    "value": "蚺蛇 IV"
+  },
+  {
+    "key": "Boa V",
+    "value": "蚺蛇 V"
+  },
+  {
+    "key": "Boa VI",
+    "value": "蚺蛇 VI"
+  },
+  {
+    "key": "Bobcat I",
+    "value": "短尾貓 I"
+  },
+  {
+    "key": "Bobcat II",
+    "value": "短尾貓 II"
+  },
+  {
+    "key": "Bobcat III",
+    "value": "短尾貓 III"
+  },
+  {
+    "key": "Bobcat IV",
+    "value": "短尾貓 IV"
+  },
+  {
+    "key": "Bobcat V",
+    "value": "短尾貓 V"
+  },
+  {
+    "key": "Bobcat VI",
+    "value": "短尾貓 VI"
+  },
+  {
+    "key": "Bobcat VII",
+    "value": "短尾貓 VII"
+  },
+  {
+    "key": "Bobcat VIII",
+    "value": "短尾貓 VIII"
+  },
+  {
+    "key": "Bola",
+    "value": "流星索"
+  },
+  {
+    "key": "Cannonade",
+    "value": "炮擊"
+  },
+  {
+    "key": "Carraca",
+    "value": "卡拉克帆船"
+  },
+  {
+    "key": "Catapult",
+    "value": "投石機"
+  },
+  {
+    "key": "Cave Bear",
+    "value": "洞熊"
+  },
+  {
+    "key": "Chameleon",
+    "value": "變色龍"
+  },
+  {
+    "key": "Cheetah",
+    "value": "獵豹"
+  },
+  {
+    "key": "Cinqueda",
+    "value": "秦克達劍"
+  },
+  {
+    "key": "Claw I",
+    "value": "利爪 I"
+  },
+  {
+    "key": "Claw II",
+    "value": "利爪 II"
+  },
+  {
+    "key": "Claw III",
+    "value": "利爪 III"
+  },
+  {
+    "key": "Claymore",
+    "value": "闊刃大劍"
+  },
+  {
+    "key": "Cobra I",
+    "value": "眼鏡蛇 I"
+  },
+  {
+    "key": "Cobra II",
+    "value": "眼鏡蛇 II"
+  },
+  {
+    "key": "Cobra III",
+    "value": "眼鏡蛇 III"
+  },
+  {
+    "key": "Cobra IV",
+    "value": "眼鏡蛇 IV"
+  },
+  {
+    "key": "Cobra V",
+    "value": "眼鏡蛇 V"
+  },
+  {
+    "key": "Cobra VI",
+    "value": "眼鏡蛇 VI"
+  },
+  {
+    "key": "Cobra VII",
+    "value": "眼鏡蛇 VII"
+  },
+  {
+    "key": "Cobra VIII",
+    "value": "眼鏡蛇 VIII"
+  },
+  {
+    "key": "Comet I",
+    "value": "彗星 I"
+  },
+  {
+    "key": "Comet II",
+    "value": "彗星 II"
+  },
+  {
+    "key": "Comet III",
+    "value": "彗星 III"
+  },
+  {
+    "key": "Comet IV",
+    "value": "彗星 IV"
+  },
+  {
+    "key": "Comet V",
+    "value": "彗星 V"
+  },
+  {
+    "key": "Comet VI",
+    "value": "彗星 VI"
+  },
+  {
+    "key": "Condor",
+    "value": "神鷹"
+  },
+  {
+    "key": "Coral Snake",
+    "value": "珊瑚蛇"
+  },
+  {
+    "key": "Corona I",
+    "value": "日冕 I"
+  },
+  {
+    "key": "Corona II",
+    "value": "日冕 II"
+  },
+  {
+    "key": "Corona III",
+    "value": "日冕 III"
+  },
+  {
+    "key": "Corona IV",
+    "value": "日冕 IV"
+  },
+  {
+    "key": "Corona V",
+    "value": "日冕 V"
+  },
+  {
+    "key": "Corona VI",
+    "value": "日冕 VI"
+  },
+  {
+    "key": "Corona VII",
+    "value": "日冕 VII"
+  },
+  {
+    "key": "Corona VIII",
+    "value": "日冕 VIII"
+  },
+  {
+    "key": "Corsair",
+    "value": "海盜"
+  },
+  {
+    "key": "Corvette",
+    "value": "護衛艦"
+  },
+  {
+    "key": "Corvette I",
+    "value": "護衛艦 I"
+  },
+  {
+    "key": "Corvette II",
+    "value": "護衛艦 II"
+  },
+  {
+    "key": "Corvette III",
+    "value": "護衛艦 III"
+  },
+  {
+    "key": "Corvette IV",
+    "value": "護衛艦 IV"
+  },
+  {
+    "key": "Corvette V",
+    "value": "護衛艦 V"
+  },
+  {
+    "key": "Corvette VI",
+    "value": "護衛艦 VI"
+  },
+  {
+    "key": "Corvette VII",
+    "value": "護衛艦 VII"
+  },
+  {
+    "key": "Corvette VIII",
+    "value": "護衛艦 VIII"
+  },
+  {
+    "key": "Courageous",
+    "value": "無畏者"
+  },
+  {
+    "key": "Courier I",
+    "value": "信差 I"
+  },
+  {
+    "key": "Courier II",
+    "value": "信差 II"
+  },
+  {
+    "key": "Courier III",
+    "value": "信差 III"
+  },
+  {
+    "key": "Courier IV",
+    "value": "信差 IV"
+  },
+  {
+    "key": "Courier V",
+    "value": "信差 V"
+  },
+  {
+    "key": "Courier VI",
+    "value": "信差 VI"
+  },
+  {
+    "key": "Courier VII",
+    "value": "信差 VII"
+  },
+  {
+    "key": "Courier VIII",
+    "value": "信差 VIII"
+  },
+  {
+    "key": "Coyote I",
+    "value": "郊狼 I"
+  },
+  {
+    "key": "Coyote II",
+    "value": "郊狼 II"
+  },
+  {
+    "key": "Coyote III",
+    "value": "郊狼 III"
+  },
+  {
+    "key": "Coyote IV",
+    "value": "郊狼 IV"
+  },
+  {
+    "key": "Coyote V",
+    "value": "郊狼 V"
+  },
+  {
+    "key": "Coyote VI",
+    "value": "郊狼 VI"
+  },
+  {
+    "key": "Coyote VII",
+    "value": "郊狼 VII"
+  },
+  {
+    "key": "Crusader",
+    "value": "十字軍"
+  },
+  {
+    "key": "Cub",
+    "value": "幼獸"
+  },
+  {
+    "key": "Cutlass",
+    "value": "彎刀"
+  },
+  {
+    "key": "Dagger",
+    "value": "匕首"
+  },
+  {
+    "key": "Dark Blade",
+    "value": "暗刃"
+  },
+  {
+    "key": "Defiler",
+    "value": "褻瀆者"
+  },
+  {
+    "key": "Demon",
+    "value": "惡魔"
+  },
+  {
+    "key": "Destructor I",
+    "value": "毀滅者 I"
+  },
+  {
+    "key": "Destructor II",
+    "value": "毀滅者 II"
+  },
+  {
+    "key": "Destructor III",
+    "value": "毀滅者 III"
+  },
+  {
+    "key": "Destructor IV",
+    "value": "毀滅者 IV"
+  },
+  {
+    "key": "Destructor V",
+    "value": "毀滅者 V"
+  },
+  {
+    "key": "Destructor VI",
+    "value": "毀滅者 VI"
+  },
+  {
+    "key": "Destructor VII",
+    "value": "毀滅者 VII"
+  },
+  {
+    "key": "Destructor VIII",
+    "value": "毀滅者 VIII"
+  },
+  {
+    "key": "Devastator I",
+    "value": "破壞者 I"
+  },
+  {
+    "key": "Devastator II",
+    "value": "破壞者 II"
+  },
+  {
+    "key": "Devastator III",
+    "value": "破壞者 III"
+  },
+  {
+    "key": "Devastator IV",
+    "value": "破壞者 IV"
+  },
+  {
+    "key": "Devastator V",
+    "value": "破壞者 V"
+  },
+  {
+    "key": "Devastator VI",
+    "value": "破壞者 VI"
+  },
+  {
+    "key": "Devastator VII",
+    "value": "破壞者 VII"
+  },
+  {
+    "key": "Devastator VIII",
+    "value": "破壞者 VIII"
+  },
+  {
+    "key": "Dirk",
+    "value": "德克短劍"
+  },
+  {
+    "key": "Dragon",
+    "value": "巨龍"
+  },
+  {
+    "key": "Draken",
+    "value": "龍式"
+  },
+  {
+    "key": "Dreadnought",
+    "value": "無畏艦"
+  },
+  {
+    "key": "Dreadwing I",
+    "value": "懼翼 I"
+  },
+  {
+    "key": "Dreadwing II",
+    "value": "懼翼 II"
+  },
+  {
+    "key": "Dreadwing III",
+    "value": "懼翼 III"
+  },
+  {
+    "key": "Dreadwing IV",
+    "value": "懼翼 IV"
+  },
+  {
+    "key": "Dreadwing V",
+    "value": "懼翼 V"
+  },
+  {
+    "key": "Dreadwing VI",
+    "value": "懼翼 VI"
+  },
+  {
+    "key": "Dreadwing VII",
+    "value": "懼翼 VII"
+  },
+  {
+    "key": "Dreadwing VIII",
+    "value": "懼翼 VIII"
+  },
+  {
+    "key": "Escort I",
+    "value": "護航艦 I"
+  },
+  {
+    "key": "Escort II",
+    "value": "護航艦 II"
+  },
+  {
+    "key": "Escort III",
+    "value": "護航艦 III"
+  },
+  {
+    "key": "Escort IV",
+    "value": "護航艦 IV"
+  },
+  {
+    "key": "Escort V",
+    "value": "護航艦 V"
+  },
+  {
+    "key": "Escort VI",
+    "value": "護航艦 VI"
+  },
+  {
+    "key": "Escort VII",
+    "value": "護航艦 VII"
+  },
+  {
+    "key": "Escort VIII",
+    "value": "護航艦 VIII"
+  },
+  {
+    "key": "Etendard",
+    "value": "軍旗"
+  },
+  {
+    "key": "Excaliber",
+    "value": "王者之劍"
+  },
+  {
+    "key": "Falcata",
+    "value": "法爾卡塔劍"
+  },
+  {
+    "key": "Falchard",
+    "value": "法爾雄劍"
+  },
+  {
+    "key": "Falcon I",
+    "value": "獵鷹 I"
+  },
+  {
+    "key": "Falcon II",
+    "value": "獵鷹 II"
+  },
+  {
+    "key": "Falcon III",
+    "value": "獵鷹 III"
+  },
+  {
+    "key": "Falcon IV",
+    "value": "獵鷹 IV"
+  },
+  {
+    "key": "Falcon V",
+    "value": "獵鷹 V"
+  },
+  {
+    "key": "Falcon VI",
+    "value": "獵鷹 VI"
+  },
+  {
+    "key": "Falcon VII",
+    "value": "獵鷹 VII"
+  },
+  {
+    "key": "Fang",
+    "value": "獠牙"
+  },
+  {
+    "key": "Fighter I",
+    "value": "戰鬥機 I"
+  },
+  {
+    "key": "Fighter II",
+    "value": "戰鬥機 II"
+  },
+  {
+    "key": "Fighter III",
+    "value": "戰鬥機 III"
+  },
+  {
+    "key": "Fighter IV",
+    "value": "戰鬥機 IV"
+  },
+  {
+    "key": "Fighter V",
+    "value": "戰鬥機 V"
+  },
+  {
+    "key": "Fighter VI",
+    "value": "戰鬥機 VI"
+  },
+  {
+    "key": "Fighter VII",
+    "value": "戰鬥機 VII"
+  },
+  {
+    "key": "Fighter VIII",
+    "value": "戰鬥機 VIII"
+  },
+  {
+    "key": "Fisher",
+    "value": "魚鷹"
+  },
+  {
+    "key": "Flail",
+    "value": "連枷"
+  },
+  {
+    "key": "Foe Render",
+    "value": "裂敵者"
+  },
+  {
+    "key": "Fury I",
+    "value": "狂怒 I"
+  },
+  {
+    "key": "Fury II",
+    "value": "狂怒 II"
+  },
+  {
+    "key": "Fury III",
+    "value": "狂怒 III"
+  },
+  {
+    "key": "Fury IV",
+    "value": "狂怒 IV"
+  },
+  {
+    "key": "Fury V",
+    "value": "狂怒 V"
+  },
+  {
+    "key": "Fury VI",
+    "value": "狂怒 VI"
+  },
+  {
+    "key": "Fury VII",
+    "value": "狂怒 VII"
+  },
+  {
+    "key": "Fury VIII",
+    "value": "狂怒 VIII"
+  },
+  {
+    "key": "Gatherer I",
+    "value": "採集者 I"
+  },
+  {
+    "key": "Gatherer II",
+    "value": "採集者 II"
+  },
+  {
+    "key": "Gatherer III",
+    "value": "採集者 III"
+  },
+  {
+    "key": "Gatherer IV",
+    "value": "採集者 IV"
+  },
+  {
+    "key": "Gatherer V",
+    "value": "採集者 V"
+  },
+  {
+    "key": "Gatherer VI",
+    "value": "採集者 VI"
+  },
+  {
+    "key": "Gatherer VII",
+    "value": "採集者 VII"
+  },
+  {
+    "key": "Gatherer VIII",
+    "value": "採集者 VIII"
+  },
+  {
+    "key": "Gila I",
+    "value": "毒蜥 I"
+  },
+  {
+    "key": "Gila II",
+    "value": "毒蜥 II"
+  },
+  {
+    "key": "Gila III",
+    "value": "毒蜥 III"
+  },
+  {
+    "key": "Gladius",
+    "value": "羅馬短劍"
+  },
+  {
+    "key": "Goblin I",
+    "value": "哥布林 I"
+  },
+  {
+    "key": "Goblin II",
+    "value": "哥布林 II"
+  },
+  {
+    "key": "Goblin III",
+    "value": "哥布林 III"
+  },
+  {
+    "key": "Goblin IV",
+    "value": "哥布林 IV"
+  },
+  {
+    "key": "Goblin V",
+    "value": "哥布林 V"
+  },
+  {
+    "key": "Goblin VI",
+    "value": "哥布林 VI"
+  },
+  {
+    "key": "Goblin VII",
+    "value": "哥布林 VII"
+  },
+  {
+    "key": "Goblin VIII",
+    "value": "哥布林 VIII"
+  },
+  {
+    "key": "Goshawk",
+    "value": "蒼鷹"
+  },
+  {
+    "key": "Gremlin I",
+    "value": "搗蛋精靈 I"
+  },
+  {
+    "key": "Gremlin II",
+    "value": "搗蛋精靈 II"
+  },
+  {
+    "key": "Gremlin III",
+    "value": "搗蛋精靈 III"
+  },
+  {
+    "key": "Gremlin IV",
+    "value": "搗蛋精靈 IV"
+  },
+  {
+    "key": "Gremlin V",
+    "value": "搗蛋精靈 V"
+  },
+  {
+    "key": "Gremlin VI",
+    "value": "搗蛋精靈 VI"
+  },
+  {
+    "key": "Gremlin VII",
+    "value": "搗蛋精靈 VII"
+  },
+  {
+    "key": "Gremlin VIII",
+    "value": "搗蛋精靈 VIII"
+  },
+  {
+    "key": "Griffin I",
+    "value": "獅鷲 I"
+  },
+  {
+    "key": "Griffin II",
+    "value": "獅鷲 II"
+  },
+  {
+    "key": "Griffin III",
+    "value": "獅鷲 III"
+  },
+  {
+    "key": "Griffin IV",
+    "value": "獅鷲 IV"
+  },
+  {
+    "key": "Griffin V",
+    "value": "獅鷲 V"
+  },
+  {
+    "key": "Griffin VI",
+    "value": "獅鷲 VI"
+  },
+  {
+    "key": "Griffin VII",
+    "value": "獅鷲 VII"
+  },
+  {
+    "key": "Griffin VIII",
+    "value": "獅鷲 VIII"
+  },
+  {
+    "key": "Gripen",
+    "value": "鷹獅"
+  },
+  {
+    "key": "GrizzlyBear",
+    "value": "灰熊"
+  },
+  {
+    "key": "Guardian",
+    "value": "守護者"
+  },
+  {
+    "key": "Halberd",
+    "value": "戟"
+  },
+  {
+    "key": "Harbinger",
+    "value": "先驅"
+  },
+  {
+    "key": "Harrier",
+    "value": "鷂"
+  },
+  {
+    "key": "Hatsutaka",
+    "value": "初鷹"
+  },
+  {
+    "key": "Hawk I",
+    "value": "鷹 I"
+  },
+  {
+    "key": "Hawk II",
+    "value": "鷹 II"
+  },
+  {
+    "key": "Hawk III",
+    "value": "鷹 III"
+  },
+  {
+    "key": "Hellcat",
+    "value": "地獄貓"
+  },
+  {
+    "key": "Helldiver",
+    "value": "地獄俯衝者"
+  },
+  {
+    "key": "Hornet I",
+    "value": "大黃蜂 I"
+  },
+  {
+    "key": "Hornet II",
+    "value": "大黃蜂 II"
+  },
+  {
+    "key": "Hornet III",
+    "value": "大黃蜂 III"
+  },
+  {
+    "key": "Hornet IV",
+    "value": "大黃蜂 IV"
+  },
+  {
+    "key": "Hornet V",
+    "value": "大黃蜂 V"
+  },
+  {
+    "key": "Hornet VI",
+    "value": "大黃蜂 VI"
+  },
+  {
+    "key": "Hornet VII",
+    "value": "大黃蜂 VII"
+  },
+  {
+    "key": "Hornet VIII",
+    "value": "大黃蜂 VIII"
+  },
+  {
+    "key": "Iguana",
+    "value": "鬣蜥"
+  },
+  {
+    "key": "Infidel",
+    "value": "異教徒"
+  },
+  {
+    "key": "Intangible",
+    "value": "無形者"
+  },
+  {
+    "key": "Interceptor",
+    "value": "攔截機"
+  },
+  {
+    "key": "Interdictor",
+    "value": "阻截者"
+  },
+  {
+    "key": "Intruder",
+    "value": "入侵者"
+  },
+  {
+    "key": "Invincible",
+    "value": "無敵者"
+  },
+  {
+    "key": "Jaguar",
+    "value": "美洲虎"
+  },
+  {
+    "key": "Karabela",
+    "value": "卡拉貝拉軍刀"
+  },
+  {
+    "key": "Katana",
+    "value": "武士刀"
+  },
+  {
+    "key": "Katar",
+    "value": "卡塔爾刺拳劍"
+  },
+  {
+    "key": "King Cobra I",
+    "value": "眼鏡王蛇 I"
+  },
+  {
+    "key": "King Cobra II",
+    "value": "眼鏡王蛇 II"
+  },
+  {
+    "key": "King Cobra III",
+    "value": "眼鏡王蛇 III"
+  },
+  {
+    "key": "King Cobra IV",
+    "value": "眼鏡王蛇 IV"
+  },
+  {
+    "key": "King Cobra V",
+    "value": "眼鏡王蛇 V"
+  },
+  {
+    "key": "King Cobra VI",
+    "value": "眼鏡王蛇 VI"
+  },
+  {
+    "key": "King Cobra VII",
+    "value": "眼鏡王蛇 VII"
+  },
+  {
+    "key": "King Cobra VIII",
+    "value": "眼鏡王蛇 VIII"
+  },
+  {
+    "key": "King Snake",
+    "value": "王蛇"
+  },
+  {
+    "key": "Knight",
+    "value": "騎士"
+  },
+  {
+    "key": "Kodiak",
+    "value": "科迪亞克熊"
+  },
+  {
+    "key": "Kracon",
+    "value": "克拉肯"
+  },
+  {
+    "key": "Kris",
+    "value": "克力士劍"
+  },
+  {
+    "key": "Lark",
+    "value": "雲雀"
+  },
+  {
+    "key": "Lightning I",
+    "value": "閃電 I"
+  },
+  {
+    "key": "Lightning II",
+    "value": "閃電 II"
+  },
+  {
+    "key": "Lightning III",
+    "value": "閃電 III"
+  },
+  {
+    "key": "Lightning IV",
+    "value": "閃電 IV"
+  },
+  {
+    "key": "Lightning V",
+    "value": "閃電 V"
+  },
+  {
+    "key": "Lightning VI",
+    "value": "閃電 VI"
+  },
+  {
+    "key": "Lightning VII",
+    "value": "閃電 VII"
+  },
+  {
+    "key": "Lightning VIII",
+    "value": "閃電 VIII"
+  },
+  {
+    "key": "Locaber",
+    "value": "洛哈伯戰斧"
+  },
+  {
+    "key": "Lynx I",
+    "value": "猞猁 I"
+  },
+  {
+    "key": "Lynx II",
+    "value": "猞猁 II"
+  },
+  {
+    "key": "Lynx III",
+    "value": "猞猁 III"
+  },
+  {
+    "key": "Lynx IV",
+    "value": "猞猁 IV"
+  },
+  {
+    "key": "Lynx V",
+    "value": "猞猁 V"
+  },
+  {
+    "key": "Lynx VI",
+    "value": "猞猁 VI"
+  },
+  {
+    "key": "Lynx VII",
+    "value": "猞猁 VII"
+  },
+  {
+    "key": "Lynx VIII",
+    "value": "猞猁 VIII"
+  },
+  {
+    "key": "Mace",
+    "value": "釘頭錘"
+  },
+  {
+    "key": "Main Gauche",
+    "value": "左手劍"
+  },
+  {
+    "key": "Malvosin",
+    "value": "惡鄰"
+  },
+  {
+    "key": "Manta I",
+    "value": "魔鬼魚 I"
+  },
+  {
+    "key": "Manta II",
+    "value": "魔鬼魚 II"
+  },
+  {
+    "key": "Manta III",
+    "value": "魔鬼魚 III"
+  },
+  {
+    "key": "Manta IV",
+    "value": "魔鬼魚 IV"
+  },
+  {
+    "key": "Manta V",
+    "value": "魔鬼魚 V"
+  },
+  {
+    "key": "Manta VI",
+    "value": "魔鬼魚 VI"
+  },
+  {
+    "key": "Manta VII",
+    "value": "魔鬼魚 VII"
+  },
+  {
+    "key": "Manta VIII",
+    "value": "魔鬼魚 VIII"
+  },
+  {
+    "key": "Marauder",
+    "value": "劫掠者"
+  },
+  {
+    "key": "Menace",
+    "value": "威脅者"
+  },
+  {
+    "key": "Messenger",
+    "value": "信使"
+  },
+  {
+    "key": "Meteor",
+    "value": "流星"
+  },
+  {
+    "key": "Mirage",
+    "value": "幻影"
+  },
+  {
+    "key": "Monitor",
+    "value": "巨蜥"
+  },
+  {
+    "key": "Morey I",
+    "value": "海鱔 I"
+  },
+  {
+    "key": "Morey II",
+    "value": "海鱔 II"
+  },
+  {
+    "key": "Morey III",
+    "value": "海鱔 III"
+  },
+  {
+    "key": "Morey IV",
+    "value": "海鱔 IV"
+  },
+  {
+    "key": "Morey V",
+    "value": "海鱔 V"
+  },
+  {
+    "key": "Morey VI",
+    "value": "海鱔 VI"
+  },
+  {
+    "key": "Morey VII",
+    "value": "海鱔 VII"
+  },
+  {
+    "key": "Morey VIII",
+    "value": "海鱔 VIII"
+  },
+  {
+    "key": "Mustang",
+    "value": "野馬"
+  },
+  {
+    "key": "Nemesis",
+    "value": "復仇女神"
+  },
+  {
+    "key": "Nexus I",
+    "value": "樞紐 I"
+  },
+  {
+    "key": "Nexus II",
+    "value": "樞紐 II"
+  },
+  {
+    "key": "Nexus III",
+    "value": "樞紐 III"
+  },
+  {
+    "key": "Nexus IV",
+    "value": "樞紐 IV"
+  },
+  {
+    "key": "Nexus V",
+    "value": "樞紐 V"
+  },
+  {
+    "key": "Nexus VI",
+    "value": "樞紐 VI"
+  },
+  {
+    "key": "Nexus VII",
+    "value": "樞紐 VII"
+  },
+  {
+    "key": "Nexus VIII",
+    "value": "樞紐 VIII"
+  },
+  {
+    "key": "Nova",
+    "value": "新星"
+  },
+  {
+    "key": "Nymph",
+    "value": "寧芙"
+  },
+  {
+    "key": "Oasis",
+    "value": "綠洲"
+  },
+  {
+    "key": "Ogre I",
+    "value": "食人魔 I"
+  },
+  {
+    "key": "Ogre II",
+    "value": "食人魔 II"
+  },
+  {
+    "key": "Ogre III",
+    "value": "食人魔 III"
+  },
+  {
+    "key": "Ogre IV",
+    "value": "食人魔 IV"
+  },
+  {
+    "key": "Ogre V",
+    "value": "食人魔 V"
+  },
+  {
+    "key": "Ogre VI",
+    "value": "食人魔 VI"
+  },
+  {
+    "key": "Ogre VII",
+    "value": "食人魔 VII"
+  },
+  {
+    "key": "Ogre VIII",
+    "value": "食人魔 VIII"
+  },
+  {
+    "key": "Omnipotent",
+    "value": "全能者"
+  },
+  {
+    "key": "Orca",
+    "value": "虎鯨"
+  },
+  {
+    "key": "Overseer",
+    "value": "監督者"
+  },
+  {
+    "key": "Paladin",
+    "value": "聖騎士"
+  },
+  {
+    "key": "Panda",
+    "value": "熊貓"
+  },
+  {
+    "key": "Panther I",
+    "value": "黑豹 I"
+  },
+  {
+    "key": "Panther II",
+    "value": "黑豹 II"
+  },
+  {
+    "key": "Panther III",
+    "value": "黑豹 III"
+  },
+  {
+    "key": "Panther IV",
+    "value": "黑豹 IV"
+  },
+  {
+    "key": "Panther V",
+    "value": "黑豹 V"
+  },
+  {
+    "key": "Panther VI",
+    "value": "黑豹 VI"
+  },
+  {
+    "key": "Panther VII",
+    "value": "黑豹 VII"
+  },
+  {
+    "key": "Panther VIII",
+    "value": "黑豹 VIII"
+  },
+  {
+    "key": "Pegasus",
+    "value": "天馬"
+  },
+  {
+    "key": "Peregrine",
+    "value": "游隼"
+  },
+  {
+    "key": "Phantom",
+    "value": "鬼怪"
+  },
+  {
+    "key": "Phoenix",
+    "value": "鳳凰"
+  },
+  {
+    "key": "Pike",
+    "value": "長矛"
+  },
+  {
+    "key": "Pikemaul",
+    "value": "矛錘"
+  },
+  {
+    "key": "Pin Feather",
+    "value": "針羽"
+  },
+  {
+    "key": "Piranha I",
+    "value": "食人魚 I"
+  },
+  {
+    "key": "Piranha II",
+    "value": "食人魚 II"
+  },
+  {
+    "key": "Piranha III",
+    "value": "食人魚 III"
+  },
+  {
+    "key": "Piranha IV",
+    "value": "食人魚 IV"
+  },
+  {
+    "key": "Piranha V",
+    "value": "食人魚 V"
+  },
+  {
+    "key": "Piranha VI",
+    "value": "食人魚 VI"
+  },
+  {
+    "key": "Piranha VII",
+    "value": "食人魚 VII"
+  },
+  {
+    "key": "Piranha VIII",
+    "value": "食人魚 VIII"
+  },
+  {
+    "key": "Prophet",
+    "value": "先知"
+  },
+  {
+    "key": "Python",
+    "value": "蟒蛇"
+  },
+  {
+    "key": "Quetzicoatl",
+    "value": "羽蛇神"
+  },
+  {
+    "key": "Rafale",
+    "value": "陣風"
+  },
+  {
+    "key": "Raider",
+    "value": "掠奪者"
+  },
+  {
+    "key": "Rapier",
+    "value": "銳劍"
+  },
+  {
+    "key": "Ravager I",
+    "value": "蹂躪者 I"
+  },
+  {
+    "key": "Ravager II",
+    "value": "蹂躪者 II"
+  },
+  {
+    "key": "Ravager III",
+    "value": "蹂躪者 III"
+  },
+  {
+    "key": "Ravager IV",
+    "value": "蹂躪者 IV"
+  },
+  {
+    "key": "Ravager V",
+    "value": "蹂躪者 V"
+  },
+  {
+    "key": "Ravager VI",
+    "value": "蹂躪者 VI"
+  },
+  {
+    "key": "Ravager VII",
+    "value": "蹂躪者 VII"
+  },
+  {
+    "key": "Ravager VIII",
+    "value": "蹂躪者 VIII"
+  },
+  {
+    "key": "Red Wing",
+    "value": "紅翼"
+  },
+  {
+    "key": "Relentless",
+    "value": "不懈者"
+  },
+  {
+    "key": "Roc",
+    "value": "大鵬"
+  },
+  {
+    "key": "Sabre",
+    "value": "軍刀"
+  },
+  {
+    "key": "Sabretooth",
+    "value": "劍齒虎"
+  },
+  {
+    "key": "Sage",
+    "value": "賢者"
+  },
+  {
+    "key": "Scimitar",
+    "value": "彎月刀"
+  },
+  {
+    "key": "Scorpion I",
+    "value": "蠍子 I"
+  },
+  {
+    "key": "Scorpion II",
+    "value": "蠍子 II"
+  },
+  {
+    "key": "Scorpion III",
+    "value": "蠍子 III"
+  },
+  {
+    "key": "Scorpion IV",
+    "value": "蠍子 IV"
+  },
+  {
+    "key": "Scorpion V",
+    "value": "蠍子 V"
+  },
+  {
+    "key": "Scorpion VI",
+    "value": "蠍子 VI"
+  },
+  {
+    "key": "Scorpion VII",
+    "value": "蠍子 VII"
+  },
+  {
+    "key": "Scorpion VIII",
+    "value": "蠍子 VIII"
+  },
+  {
+    "key": "Seeker I",
+    "value": "探索者 I"
+  },
+  {
+    "key": "Seeker II",
+    "value": "探索者 II"
+  },
+  {
+    "key": "Seeker III",
+    "value": "探索者 III"
+  },
+  {
+    "key": "Seeker IV",
+    "value": "探索者 IV"
+  },
+  {
+    "key": "Seeker V",
+    "value": "探索者 V"
+  },
+  {
+    "key": "Seeker VI",
+    "value": "探索者 VI"
+  },
+  {
+    "key": "Seeker VII",
+    "value": "探索者 VII"
+  },
+  {
+    "key": "Seeker VIII",
+    "value": "探索者 VIII"
+  },
+  {
+    "key": "Seibe Bow",
+    "value": "塞貝弓"
+  },
+  {
+    "key": "Seraphin",
+    "value": "熾天使"
+  },
+  {
+    "key": "Shark",
+    "value": "鯊魚"
+  },
+  {
+    "key": "Sharpbeak",
+    "value": "利喙"
+  },
+  {
+    "key": "Shurikin",
+    "value": "手裡劍"
+  },
+  {
+    "key": "Skein Dbuh",
+    "value": "斯基安杜夫刀"
+  },
+  {
+    "key": "Skyhawk",
+    "value": "天鷹"
+  },
+  {
+    "key": "Soarer",
+    "value": "翱翔者"
+  },
+  {
+    "key": "Sparrow I",
+    "value": "麻雀 I"
+  },
+  {
+    "key": "Spider I",
+    "value": "蜘蛛 I"
+  },
+  {
+    "key": "Spider II",
+    "value": "蜘蛛 II"
+  },
+  {
+    "key": "Spider III",
+    "value": "蜘蛛 III"
+  },
+  {
+    "key": "Spider IV",
+    "value": "蜘蛛 IV"
+  },
+  {
+    "key": "Spider V",
+    "value": "蜘蛛 V"
+  },
+  {
+    "key": "Spider VI",
+    "value": "蜘蛛 VI"
+  },
+  {
+    "key": "Spider VII",
+    "value": "蜘蛛 VII"
+  },
+  {
+    "key": "Spider VIII",
+    "value": "蜘蛛 VIII"
+  },
+  {
+    "key": "Spitfire",
+    "value": "噴火"
+  },
+  {
+    "key": "Sprite I",
+    "value": "精靈 I"
+  },
+  {
+    "key": "Sprite II",
+    "value": "精靈 II"
+  },
+  {
+    "key": "Sprite III",
+    "value": "精靈 III"
+  },
+  {
+    "key": "Sprite IV",
+    "value": "精靈 IV"
+  },
+  {
+    "key": "Sprite V",
+    "value": "精靈 V"
+  },
+  {
+    "key": "Sprite VI",
+    "value": "精靈 VI"
+  },
+  {
+    "key": "Sprite VII",
+    "value": "精靈 VII"
+  },
+  {
+    "key": "StarStreak I",
+    "value": "星曳 I"
+  },
+  {
+    "key": "StarStreak II",
+    "value": "星曳 II"
+  },
+  {
+    "key": "StarStreak III",
+    "value": "星曳 III"
+  },
+  {
+    "key": "StarStreak IV",
+    "value": "星曳 IV"
+  },
+  {
+    "key": "StarStreak V",
+    "value": "星曳 V"
+  },
+  {
+    "key": "StarStreak VI",
+    "value": "星曳 VI"
+  },
+  {
+    "key": "StarStreak VII",
+    "value": "星曳 VII"
+  },
+  {
+    "key": "StarStreak VIII",
+    "value": "星曳 VIII"
+  },
+  {
+    "key": "Starling",
+    "value": "椋鳥"
+  },
+  {
+    "key": "Stiletto",
+    "value": "斯蒂雷托"
+  },
+  {
+    "key": "Stingray I",
+    "value": "魟魚 I"
+  },
+  {
+    "key": "Stingray II",
+    "value": "魟魚 II"
+  },
+  {
+    "key": "Stingray III",
+    "value": "魟魚 III"
+  },
+  {
+    "key": "Stingray IV",
+    "value": "魟魚 IV"
+  },
+  {
+    "key": "Stingray V",
+    "value": "魟魚 V"
+  },
+  {
+    "key": "Stingray VI",
+    "value": "魟魚 VI"
+  },
+  {
+    "key": "Stingray VII",
+    "value": "魟魚 VII"
+  },
+  {
+    "key": "Stingray VIII",
+    "value": "魟魚 VIII"
+  },
+  {
+    "key": "Striker",
+    "value": "打擊者"
+  },
+  {
+    "key": "Sun Fire I",
+    "value": "日焰 I"
+  },
+  {
+    "key": "Sun Fire II",
+    "value": "日焰 II"
+  },
+  {
+    "key": "Sun Fire III",
+    "value": "日焰 III"
+  },
+  {
+    "key": "Sun Fire IV",
+    "value": "日焰 IV"
+  },
+  {
+    "key": "Sun Fire V",
+    "value": "日焰 V"
+  },
+  {
+    "key": "Sun Fire VI",
+    "value": "日焰 VI"
+  },
+  {
+    "key": "Sun Fire VII",
+    "value": "日焰 VII"
+  },
+  {
+    "key": "Sun Fire VIII",
+    "value": "日焰 VIII"
+  },
+  {
+    "key": "Swiftpaw",
+    "value": "疾爪"
+  },
+  {
+    "key": "Swiftwing",
+    "value": "疾翼"
+  },
+  {
+    "key": "Tachi",
+    "value": "太刀"
+  },
+  {
+    "key": "Tarantula",
+    "value": "狼蛛"
+  },
+  {
+    "key": "Thrush",
+    "value": "畫眉"
+  },
+  {
+    "key": "Thunder I",
+    "value": "雷霆 I"
+  },
+  {
+    "key": "Thunder II",
+    "value": "雷霆 II"
+  },
+  {
+    "key": "Thunder III",
+    "value": "雷霆 III"
+  },
+  {
+    "key": "Thunder IV",
+    "value": "雷霆 IV"
+  },
+  {
+    "key": "Thunder V",
+    "value": "雷霆 V"
+  },
+  {
+    "key": "Thunder VI",
+    "value": "雷霆 VI"
+  },
+  {
+    "key": "Thunder VII",
+    "value": "雷霆 VII"
+  },
+  {
+    "key": "Thunder VIII",
+    "value": "雷霆 VIII"
+  },
+  {
+    "key": "Thunderbolt",
+    "value": "雷電"
+  },
+  {
+    "key": "Tormentor I",
+    "value": "折磨者 I"
+  },
+  {
+    "key": "Tormentor II",
+    "value": "折磨者 II"
+  },
+  {
+    "key": "Tormentor III",
+    "value": "折磨者 III"
+  },
+  {
+    "key": "Tormentor IV",
+    "value": "折磨者 IV"
+  },
+  {
+    "key": "Tormentor V",
+    "value": "折磨者 V"
+  },
+  {
+    "key": "Tormentor VI",
+    "value": "折磨者 VI"
+  },
+  {
+    "key": "Tormentor VII",
+    "value": "折磨者 VII"
+  },
+  {
+    "key": "Tormentor VIII",
+    "value": "折磨者 VIII"
+  },
+  {
+    "key": "Tornado I",
+    "value": "龍捲風 I"
+  },
+  {
+    "key": "Tornado II",
+    "value": "龍捲風 II"
+  },
+  {
+    "key": "Tornado III",
+    "value": "龍捲風 III"
+  },
+  {
+    "key": "Tornado IV",
+    "value": "龍捲風 IV"
+  },
+  {
+    "key": "Tornado V",
+    "value": "龍捲風 V"
+  },
+  {
+    "key": "Tornado VI",
+    "value": "龍捲風 VI"
+  },
+  {
+    "key": "Tornado VII",
+    "value": "龍捲風 VII"
+  },
+  {
+    "key": "Tornado VIII",
+    "value": "龍捲風 VIII"
+  },
+  {
+    "key": "Trebuchet",
+    "value": "投石車"
+  },
+  {
+    "key": "Troll I",
+    "value": "巨魔 I"
+  },
+  {
+    "key": "Troll II",
+    "value": "巨魔 II"
+  },
+  {
+    "key": "Troll III",
+    "value": "巨魔 III"
+  },
+  {
+    "key": "Troll IV",
+    "value": "巨魔 IV"
+  },
+  {
+    "key": "Troll V",
+    "value": "巨魔 V"
+  },
+  {
+    "key": "Troll VI",
+    "value": "巨魔 VI"
+  },
+  {
+    "key": "Troll VII",
+    "value": "巨魔 VII"
+  },
+  {
+    "key": "Troll VIII",
+    "value": "巨魔 VIII"
+  },
+  {
+    "key": "Ursus",
+    "value": "巨熊"
+  },
+  {
+    "key": "Venom",
+    "value": "毒液"
+  },
+  {
+    "key": "Violator",
+    "value": "侵犯者"
+  },
+  {
+    "key": "Viper I",
+    "value": "蝮蛇 I"
+  },
+  {
+    "key": "Viper II",
+    "value": "蝮蛇 II"
+  },
+  {
+    "key": "Viper III",
+    "value": "蝮蛇 III"
+  },
+  {
+    "key": "Viper IV",
+    "value": "蝮蛇 IV"
+  },
+  {
+    "key": "Viper V",
+    "value": "蝮蛇 V"
+  },
+  {
+    "key": "Viper VI",
+    "value": "蝮蛇 VI"
+  },
+  {
+    "key": "Viper VII",
+    "value": "蝮蛇 VII"
+  },
+  {
+    "key": "Viper VIII",
+    "value": "蝮蛇 VIII"
+  },
+  {
+    "key": "War Eagle",
+    "value": "戰鷹"
+  },
+  {
+    "key": "War Hammer",
+    "value": "戰鎚"
+  },
+  {
+    "key": "War Ship I",
+    "value": "戰艦 I"
+  },
+  {
+    "key": "War Ship II",
+    "value": "戰艦 II"
+  },
+  {
+    "key": "War Ship III",
+    "value": "戰艦 III"
+  },
+  {
+    "key": "War Ship IV",
+    "value": "戰艦 IV"
+  },
+  {
+    "key": "War Ship V",
+    "value": "戰艦 V"
+  },
+  {
+    "key": "War Ship VI",
+    "value": "戰艦 VI"
+  },
+  {
+    "key": "War Ship VII",
+    "value": "戰艦 VII"
+  },
+  {
+    "key": "War Ship VIII",
+    "value": "戰艦 VIII"
+  },
+  {
+    "key": "Warbear I",
+    "value": "戰熊 I"
+  },
+  {
+    "key": "Warbear II",
+    "value": "戰熊 II"
+  },
+  {
+    "key": "Warbear III",
+    "value": "戰熊 III"
+  },
+  {
+    "key": "Warbear IV",
+    "value": "戰熊 IV"
+  },
+  {
+    "key": "Warbear V",
+    "value": "戰熊 V"
+  },
+  {
+    "key": "Warcat I",
+    "value": "戰貓 I"
+  },
+  {
+    "key": "Warcat II",
+    "value": "戰貓 II"
+  },
+  {
+    "key": "Warcat III",
+    "value": "戰貓 III"
+  },
+  {
+    "key": "Warcat IV",
+    "value": "戰貓 IV"
+  },
+  {
+    "key": "Warcat V",
+    "value": "戰貓 V"
+  },
+  {
+    "key": "Warcat VI",
+    "value": "戰貓 VI"
+  },
+  {
+    "key": "Warcat VII",
+    "value": "戰貓 VII"
+  },
+  {
+    "key": "Warcat VIII",
+    "value": "戰貓 VIII"
+  },
+  {
+    "key": "Wasp I",
+    "value": "黃蜂 I"
+  },
+  {
+    "key": "Wasp II",
+    "value": "黃蜂 II"
+  },
+  {
+    "key": "Wasp III",
+    "value": "黃蜂 III"
+  },
+  {
+    "key": "Wasp IV",
+    "value": "黃蜂 IV"
+  },
+  {
+    "key": "Wasp V",
+    "value": "黃蜂 V"
+  },
+  {
+    "key": "Wasp VI",
+    "value": "黃蜂 VI"
+  },
+  {
+    "key": "Wasp VII",
+    "value": "黃蜂 VII"
+  },
+  {
+    "key": "Wasp VIII",
+    "value": "黃蜂 VIII"
+  },
+  {
+    "key": "Widow I",
+    "value": "寡婦 I"
+  },
+  {
+    "key": "Widow II",
+    "value": "寡婦 II"
+  },
+  {
+    "key": "Widow III",
+    "value": "寡婦 III"
+  },
+  {
+    "key": "Widow IV",
+    "value": "寡婦 IV"
+  },
+  {
+    "key": "Widow V",
+    "value": "寡婦 V"
+  },
+  {
+    "key": "Widow VI",
+    "value": "寡婦 VI"
+  },
+  {
+    "key": "Widow VII",
+    "value": "寡婦 VII"
+  },
+  {
+    "key": "Widow VIII",
+    "value": "寡婦 VIII"
+  },
+  {
+    "key": "Wildcat",
+    "value": "野貓"
+  },
+  {
+    "key": "Wolf I",
+    "value": "狼 I"
+  },
+  {
+    "key": "Wolf II",
+    "value": "狼 II"
+  },
+  {
+    "key": "Wolf III",
+    "value": "狼 III"
+  },
+  {
+    "key": "Wolf IV",
+    "value": "狼 IV"
+  },
+  {
+    "key": "Wolf V",
+    "value": "狼 V"
+  },
+  {
+    "key": "Wolf VI",
+    "value": "狼 VI"
+  },
+  {
+    "key": "Wolf VII",
+    "value": "狼 VII"
+  },
+  {
+    "key": "Wolverine I",
+    "value": "狼獾 I"
+  },
+  {
+    "key": "Wolverine II",
+    "value": "狼獾 II"
+  },
+  {
+    "key": "Wolverine III",
+    "value": "狼獾 III"
+  },
+  {
+    "key": "Wolverine IV",
+    "value": "狼獾 IV"
+  },
+  {
+    "key": "Wolverine V",
+    "value": "狼獾 V"
+  },
+  {
+    "key": "Wolverine VI",
+    "value": "狼獾 VI"
+  },
+  {
+    "key": "Wolverine VII",
+    "value": "狼獾 VII"
+  },
+  {
+    "key": "Wyvern",
+    "value": "飛龍"
+  },
+  {
+    "key": "Pathfinder",
+    "value": "拓荒號"
+  },
+  {
+    "key": "Vanguard I",
+    "value": "先驅一號"
+  },
+  {
+    "key": "Vanguard II",
+    "value": "先驅二號"
+  }
+]

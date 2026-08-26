@@ -663,3 +663,45 @@ score += budgetFactor
 寫入及 typed 對映已分別在第十五、第五批閉合。本批沒有新增未知欄位；跳表、立即數、共享
 尾端與 gate 均為**已證實**。四棟既有戰鬥 consumer 會建立固定防禦反擊者；其傷害／空間／
 戰機數量仍混合手冊與明示近似，不能由本批 AI 建造分數證據升格為精確戰鬥 parity。
+## raw 1／9／11／14／18／48：零分組與 Capitol 行星索引
+
+### 證據來源
+
+- 輸入：`Orion2.exe`，SHA-256
+  `7ae2ac2e5904ca330009af2827279d889906b0b9b7a8854c38eb707a56e955b5`。
+- IDA Pro 9.4，正式資料庫 `Orion2.exe.i64`，SHA-256
+  `4a01791fcf877ed87a740a54748694ab34a02675e3117dac052aeaa3f883944e`。
+- 位址基準：IDA 線性位址（DOS/4GW）。匯出器：
+  `tools/ida/audit_ai_colony_build.py`；原始函式名與位址均保留。
+
+### 已證實：raw 1／11／14／18／48 固定零分
+
+`Colony_Building_Score_` 原始函式 `sub_D0036 @ 0xD0036` 在 `0xD006D`
+以 `xor ebx, ebx` 初始化分數。`0xD019F` 先把 raw ID 減一，`0xD01A2` 只接受
+`0..46`，raw 48 因 `47 > 46` 直接進 default。跳表本身把 raw 1／11／14／18
+也送到 `0xD0417`；該處只測試仍為零的 `ebx`，再於 `0xD041F` 清零並返回。
+
+因此 raw 1 Alien Control／Management Center、raw 11 Colony Base、raw 14
+Dimensional Portal、raw 18 與 raw 48 的評分都是固定 0。這是評分結論，不代表所有項目
+都屬一般可建產品；remake 一般建築表目前只有 raw 1／14 可直接形成正常候選。
+
+### 已證實：raw 9 是目前 Capitol 所在行星
+
+raw 9 入口 `0xD06E1` 先把 `player+0x89F` 的政府值除二；結果等於 3（Unification／
+Galactic Unification）即進零分尾端。否則 `0xD0704..0xD0712` 比較
+`player+0x29` 與目前殖民地 `+0x02`，相等才把分數設為 100。
+
+`sub_13FD9 @ 0x13FD9` 是建築完成 consumer；其 raw 9 分支
+`0x14126..0x1413B` 以殖民地 owner 取得 player record，並把目前殖民地 `+0x02`
+原值寫入 `player+0x29`。同一個 `colony+0x02` 在評分函式 `0xD00C0..0xD00DC`
+乘以 17 後索引行星 record，故其資料尺度是行星索引，不是殖民地或星系索引。
+
+結論：`player+0x29` 是目前 Capitol 的行星索引；raw 9 只在該行星且非統一政體給 100。
+remake 尚未持久化「目前 Capitol 行星」，不可用 `Colonies[0]` 冒充；本輪先不接 raw 9。
+
+### 證據等級與剩餘限制
+
+- raw 1／11／14／18／48 固定零分：**已證實**。
+- `player+0x29` 為目前 Capitol 行星索引、raw 9 條件與分數：**已證實**。
+- 首都攻陷後由哪個玩家流程選新 Capitol、士氣懲罰與存檔欄位：**未知**；是 raw 9
+  remake 垂直鏈的必要前置，不以第一殖民地近似。

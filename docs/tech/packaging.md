@@ -135,7 +135,7 @@ import table 裡)——與「傳統 cgo 連結 user32/gdi32/opengl32」的樣貌
    `dist-all/MasterOfOrion2-cht-windows-amd64.zip`；它拒絕符號連結與特殊檔，避免封裝混入工作樹外內容。
 
 **實測產出**(2026-07-03):`dist-all/MasterOfOrion2-cht-windows-amd64.zip`(4.8 MB),內含 `moo2.exe`(9.9 MB,GUI subsystem)、
-`moo2sim.exe`(1.9 MB,console subsystem)、`assets/i18n/*.tsv`。
+`moo2sim.exe`(1.9 MB,console subsystem)、`assets/i18n/*.json`。
 
 **已知限制**:本機 docker 只能驗證「跨編成功 + PE 格式/import table 正確」,**無法在 Linux 容器內實際執行
 Windows GUI**(沒有 Wine + 真的 Win32 訊息迴圈測試)。要驗證雙擊後真的能開窗、貼圖正常,仍需要真 Windows

@@ -20,7 +20,7 @@ var techGroups = []string{
 	"Fuels/Range", "Scanners", "Offense",
 }
 
-// infoReviewGame 自繪「科技總覽」畫面,示範單畫面多 TSV 來源:
+// infoReviewGame 自繪「科技總覽」畫面,示範單畫面多 JSON 來源:
 // 標題/分組列 = misc,詳情科技名 = tech,詳情本文 = help(對照 SA2 規格 §2 TechReviewWidget)。
 type infoReviewGame struct {
 	font       *uifont.Font
@@ -85,7 +85,7 @@ func (g *infoReviewGame) Draw(screen *ebiten.Image) {
 }
 
 // runInfoReview 渲染「科技總覽」示範畫面。detailTech 為右欄範例科技(以英文標題查 HELP.LBX 取本文,
-// 需同時在 tech.tsv 與 help.tsv)。
+// 需同時在 tech.json 與 help.json)。
 func runInfoReview(dirs []string, lbxName string, lang i18n.Lang, fnt *uifont.Font, reg *i18n.Registry,
 	detailTech, shot string, frames int) error {
 	if fnt == nil {

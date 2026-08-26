@@ -1,0 +1,162 @@
+[
+  {
+    "key": "government",
+    "value": "政體",
+    "note": "種族"
+  },
+  {
+    "key": "Population Growth:",
+    "value": "人口成長:",
+    "note": "種族"
+  },
+  {
+    "key": "Food Production:",
+    "value": "糧食生產:",
+    "note": "種族"
+  },
+  {
+    "key": "Industrial Production",
+    "value": "工業生產",
+    "note": "種族"
+  },
+  {
+    "key": "Scientific Research:",
+    "value": "科學研究:",
+    "note": "種族"
+  },
+  {
+    "key": "Tax:",
+    "value": "稅收:",
+    "note": "種族"
+  },
+  {
+    "key": "Ship Defense:",
+    "value": "艦船防禦:",
+    "note": "種族"
+  },
+  {
+    "key": "Ship Offense:",
+    "value": "艦船攻擊:",
+    "note": "種族"
+  },
+  {
+    "key": "Ground Combat:",
+    "value": "地面戰鬥:",
+    "note": "種族"
+  },
+  {
+    "key": "Espionage:",
+    "value": "間諜活動:",
+    "note": "種族"
+  },
+  {
+    "key": "Low Gravity",
+    "value": "低重力",
+    "note": "種族"
+  },
+  {
+    "key": "High Gravity",
+    "value": "高重力",
+    "note": "種族"
+  },
+  {
+    "key": "Aquatic",
+    "value": "水棲",
+    "note": "種族"
+  },
+  {
+    "key": "Subterranean",
+    "value": "地底棲",
+    "note": "種族"
+  },
+  {
+    "key": "Large Home World",
+    "value": "大型母星",
+    "note": "種族"
+  },
+  {
+    "key": "Rich Home World",
+    "value": "富礦母星",
+    "note": "種族"
+  },
+  {
+    "key": "Artifacts Home World",
+    "value": "遺跡母星",
+    "note": "種族"
+  },
+  {
+    "key": "Cybernetic",
+    "value": "半機械化",
+    "note": "種族"
+  },
+  {
+    "key": "Lithovore",
+    "value": "食岩",
+    "note": "種族"
+  },
+  {
+    "key": "Repulsive",
+    "value": "令人厭惡",
+    "note": "種族"
+  },
+  {
+    "key": "Charismatic",
+    "value": "魅力非凡",
+    "note": "種族"
+  },
+  {
+    "key": "Uncreative",
+    "value": "缺乏創造力",
+    "note": "種族"
+  },
+  {
+    "key": "Creative",
+    "value": "富創造力",
+    "note": "種族"
+  },
+  {
+    "key": "Tolerant",
+    "value": "適應力強",
+    "note": "種族"
+  },
+  {
+    "key": "Expert Traders",
+    "value": "貿易專家",
+    "note": "種族"
+  },
+  {
+    "key": "Telepathic",
+    "value": "心靈感應",
+    "note": "種族"
+  },
+  {
+    "key": "Lucky",
+    "value": "幸運",
+    "note": "種族"
+  },
+  {
+    "key": "Omniscient",
+    "value": "全知",
+    "note": "種族"
+  },
+  {
+    "key": "Stealth Ships",
+    "value": "匿蹤艦船",
+    "note": "種族"
+  },
+  {
+    "key": "Trans Dimensional",
+    "value": "跨次元",
+    "note": "種族"
+  },
+  {
+    "key": "Warlord",
+    "value": "軍閥",
+    "note": "種族"
+  },
+  {
+    "key": "Poor Home World",
+    "value": "貧礦母星",
+    "note": "種族"
+  }
+]

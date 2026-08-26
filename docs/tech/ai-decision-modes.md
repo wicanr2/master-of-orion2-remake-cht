@@ -187,7 +187,7 @@ application 級估值抽選；只有舊存檔沒有 raw profile 時才回退 `De
 
 `diplomacy.Stance` 的輸入 `RelationLevel` 來自獨立的關係系統,同屬設計性重建(`relations.go` 檔頭聲明),與 AI 性格決策共同構成外交姿態邏輯:
 
-- **17 級關係量表**(`FEUD` 到 `HARMONY`,`relations.go:18`):量表**名稱**對齊原版資料——來自遊戲資料 BILLTEXT,已譯於 `assets/i18n/misc.tsv`,顯示時可經 i18n 轉中文。這部分是**原版權威**。
+- **17 級關係量表**(`FEUD` 到 `HARMONY`,`relations.go:18`):量表**名稱**對齊原版資料——來自遊戲資料 BILLTEXT,已譯於 `assets/i18n/misc.json`,顯示時可經 i18n 轉中文。這部分是**原版權威**。
 - **數值分數 `RelationScore`**(範圍 `[-100, +100]`)、**分數→等級對映**(`RelationLevelForScore`,線性對稱映射,`NEUTRAL` 含 0 分)、**14 種事件的調整值**(`events.go` 的 `relationEventDelta`,如宣戰 `-40`、結盟 `+30`、貿易往來每回合 `+1`)、**每回合自然漂移速率**(`naturalDriftPerTurn = 1`,無事件時分數往中立回歸)——這些數字**全部是本專案設計值**,原版實際數字未知。
 - `IsHostile()`(`< RelationWary`)、`IsFriendly()`(`> RelationAffable`)是 `diplomacy.go` 外交姿態判斷所依賴的門檻,同屬設計值。
 

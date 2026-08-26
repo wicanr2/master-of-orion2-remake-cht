@@ -109,7 +109,7 @@ func (b *sceneBuilder) eventScreen() (*overlayScreen, error) {
 	// turnsum.lbx 資產 0 沒有內嵌調色盤,要跟 buffer0.lbx 借(與 tacticalCombat 同一個做法)。
 	// 少了這條 paletteChain 會載入失敗、goTo 回 nil,結果是「按下結束回合後畫面完全不動」——
 	// EndTurn 其實跑了(星曆與國庫都變了),只是轉場沒發生,看起來像按鈕壞掉。
-	s, err := loadOverlayScreen(b.res, "turnsum.lbx", 0, b.lang, b.fnt, "misc.tsv",
+	s, err := loadOverlayScreen(b.res, "turnsum.lbx", 0, b.lang, b.fnt, "misc.json",
 		nil, evBodyCol, 13, hits, onAction, paletteChain{{"buffer0.lbx", 0}})
 	if err != nil {
 		return nil, err

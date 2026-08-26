@@ -1,7 +1,7 @@
 package main
 
 // researchchoice.go:MOO2 招牌「開始研究前先選 application」的玩家 UI。
-// 資料為真值(gamedata.researchChoices);科技名經 TECHNAME/tech.tsv 中文化。
+// 資料為真值(gamedata.researchChoices);科技名經 TECHNAME/tech.json 中文化。
 // 版面合成近似,尚未對原版 SCIENCE.LBX 像素對齊。
 
 import (
@@ -34,9 +34,9 @@ func (b *sceneBuilder) researchChoice(onDone func() (*overlayScreen, error)) (or
 		s.bg = ebiten.NewImageFromImage(im.Frames[0].ToRGBA(im.Embedded, im.KeyColor()))
 	}
 	s.cat = i18n.New(b.lang)
-	if f, err := OpenI18NTSV("tech.tsv"); err == nil {
+	if f, err := OpenI18NJSON("tech.json"); err == nil {
 		defer f.Close()
-		_, _ = s.cat.LoadTSV(f)
+		_, _ = s.cat.LoadJSON(f)
 	}
 	return s, nil
 }

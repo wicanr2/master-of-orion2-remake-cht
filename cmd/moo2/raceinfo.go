@@ -16,7 +16,7 @@ type raceStatRow struct {
 	value   string
 }
 
-// 對照 openorion2 info.cpp RaceInfoWidget:標籤來自 RACESTUF(raceinfo.tsv),逐列顯示。
+// 對照 openorion2 info.cpp RaceInfoWidget:標籤來自 RACESTUF(raceinfo.json),逐列顯示。
 // 數值為示範用(實際由存檔種族資料填)。
 var raceStatRows = []raceStatRow{
 	{"Population Growth:", "+25%"},

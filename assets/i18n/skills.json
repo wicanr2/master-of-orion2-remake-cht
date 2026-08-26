@@ -1,0 +1,137 @@
+[
+  {
+    "key": "ASSASSIN SKILL",
+    "value": "刺客技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "COMMANDO SKILL",
+    "value": "突擊隊技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "DIPLOMAT SKILL",
+    "value": "外交官技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "ENGINEER SKILL",
+    "value": "工程師技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "ENVIRONMENTALIST SKILL",
+    "value": "環境學家技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "FAMOUS SKILL",
+    "value": "名望技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "FARMING LEADER SKILL",
+    "value": "農業領袖技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "FIGHTER PILOT SKILL",
+    "value": "戰機飛行員技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "FINANCIAL LEADER SKILL",
+    "value": "財政領袖技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "GALACTIC LORE SKILL",
+    "value": "銀河知識技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "HELMSMAN SKILL",
+    "value": "舵手技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "INSTRUCTOR SKILL",
+    "value": "教官技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "LABOR LEADER SKILL",
+    "value": "勞工領袖技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "MEDICINE SKILL",
+    "value": "醫學技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "MEGAWEALTH SKILL",
+    "value": "巨富技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "NAVIGATOR SKILL",
+    "value": "領航員技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "OPERATIONS SKILL",
+    "value": "作戰技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "ORDNANCE SKILL",
+    "value": "軍械技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "RESEARCHER SKILL",
+    "value": "研究員技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "SCIENCE LEADER SKILL",
+    "value": "科學領袖技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "SECURITY SKILL",
+    "value": "保全技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "SPIRITUAL LEADER SKILL",
+    "value": "精神領袖技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "SPY MASTER SKILL",
+    "value": "間諜首領技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "TACTICS SKILL",
+    "value": "戰術技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "TELEPATH SKILL",
+    "value": "心靈感應技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "TRADER SKILL",
+    "value": "商人技能",
+    "note": "軍官技能"
+  },
+  {
+    "key": "WEAPONRY SKILL",
+    "value": "武器技能",
+    "note": "軍官技能"
+  }
+]

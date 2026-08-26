@@ -11,7 +11,7 @@ remake 已在格子戰術中自動派送八個武器槽，但玩家看不到各�
 - `Orion2.exe.i64` SHA-256：`4a01791fcf877ed87a740a54748694ab34a02675e3117dac052aeaa3f883944e`
 - IDA Pro 9.4，映像 `ida-pro-9.4-ver3:py312-v1`
 - 位址基準：IDA linear，DOS/4GW LE image
-- 原版說明抽取：`cmd/moo2/embedded/i18n/help.tsv` SHA-256
+- 原版說明抽取：`assets/i18n/help.json` SHA-256
   `e55e686d0a17e930f7f7d96f693aef24f0047c9c9d049f16ae6b513f1516623b`
 - 非破壞性探針：`tools/ida/audit_tactical_weapon_controls.py`；原 `.i64` 唯讀掛載，容器內複本分析。
 

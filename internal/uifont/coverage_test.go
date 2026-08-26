@@ -13,7 +13,7 @@ import (
 )
 
 // TestBitmapTCCoverage 是 [HARD] 守門測試(取代 runtime fallback):
-// 掃描 repo 全語料(assets/i18n/*.tsv 各欄 + internal/、cmd/ 下所有 .go 檔)出現的每一個
+// 掃描 repo 全語料（assets/i18n/*.json + internal/、cmd/ 下所有 .go 檔）出現的每一個
 // CJK/全形字元,逐字檢查 bitmapfont.FaceTC 是否有實際墨點(ink)。任一字缺就 Fatal 並列出缺字清單,
 // 讓「未來新增未涵蓋字」在 build/CI 就被抓到,而不是 runtime 靜默消失成方塊/空白
 // (對齊 docs/tech/pixel-font-decision.md 的窮舉驗證與 mom playbook 的缺字 [HARD] 教訓)。
@@ -29,16 +29,16 @@ func TestBitmapTCCoverage(t *testing.T) {
 
 	chars := map[rune]struct{}{}
 
-	// assets/i18n/*.tsv:三欄 英文<TAB>中文<TAB>備註,逐欄掃描(備註也可能含中文範例)。
-	tsvDir := filepath.Join(root, "assets", "i18n")
-	tsvFiles, err := filepath.Glob(filepath.Join(tsvDir, "*.tsv"))
+	// JSON 原始內容包含 key、value 與 note，直接掃描可涵蓋所有中文語料。
+	jsonDir := filepath.Join(root, "assets", "i18n")
+	jsonFiles, err := filepath.Glob(filepath.Join(jsonDir, "*.json"))
 	if err != nil {
-		t.Fatalf("glob %s: %v", tsvDir, err)
+		t.Fatalf("glob %s: %v", jsonDir, err)
 	}
-	if len(tsvFiles) == 0 {
-		t.Fatalf("在 %s 找不到任何 .tsv,repo 根目錄定位可能有誤", tsvDir)
+	if len(jsonFiles) == 0 {
+		t.Fatalf("在 %s 找不到任何 .json，repo 根目錄定位可能有誤", jsonDir)
 	}
-	for _, path := range tsvFiles {
+	for _, path := range jsonFiles {
 		collectCJK(t, path, chars)
 	}
 

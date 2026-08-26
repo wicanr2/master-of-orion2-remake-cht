@@ -223,7 +223,7 @@ func (b *sceneBuilder) colonyScreen() (*overlayScreen, error) {
 		return b.goTo(b.colonyScreen, "殖民地") // 重繪反映新狀態
 	}
 
-	s, err := loadOverlayScreen(b.res, "colsum.lbx", 0, b.lang, b.fnt, "colony.tsv",
+	s, err := loadOverlayScreen(b.res, "colsum.lbx", 0, b.lang, b.fnt, "colony.json",
 		nil, colBodyCol, 13, hits, onAction, nil)
 	if err != nil {
 		return nil, err

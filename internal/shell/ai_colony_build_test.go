@@ -45,6 +45,57 @@ func TestOriginalAIExactBuildingScores(t *testing.T) {
 	}
 }
 
+func TestOriginalAIFixedZeroBuildingScores(t *testing.T) {
+	for _, name := range []string{"異族管理中心", "次元傳送門"} {
+		b, ok := gamedata.BuildingByNameZH(name)
+		if !ok {
+			t.Fatalf("測試建築不存在：%s", name)
+		}
+		contexts := []originalAIBuildScoreContext{
+			{},
+			{priorityGate: true, treasuryBefore: 1500, netBC: 6400},
+		}
+		for _, ctx := range contexts {
+			for _, personality := range []ai.Personality{ai.PersonalityXenophobic, ai.PersonalityRuthless} {
+				if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 20}, personality, ctx); !exact || score != 0 {
+					t.Errorf("%s 固定零分：score=%d exact=%v personality=%v ctx=%+v", name, score, exact, personality, ctx)
+				}
+			}
+		}
+	}
+}
+
+func TestChooseAIColonyBuildingRejectsOnlyFixedZeroCandidate(t *testing.T) {
+	for _, target := range []string{"異族管理中心", "次元傳送門"} {
+		s := NewDemoSession()
+		a := &s.AIPlayers[0]
+		a.Colonies = []engine.ColonyState{{Population: 8, Workers: 8}}
+		a.ColonyStars = []int{3}
+		a.ColonyPlanets = []int{3}
+		a.ColonyBuildings = []map[string]bool{{}}
+		a.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{}
+		var targetTopic gamedata.ResearchTopic
+		for _, b := range gamedata.Buildings {
+			if b.NameZH == target {
+				targetTopic = b.PrereqTopic
+			}
+		}
+		a.Player.CompletedTopics[targetTopic] = true
+		for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
+			if b.NameZH != target {
+				a.ColonyBuildings[0][b.NameZH] = true
+			}
+		}
+		out := engine.EmpireOutput{
+			Colonies: []engine.ColonyOutput{{NetIndustry: 20}},
+			Player:   engine.PlayerState{BC: 100},
+		}
+		if build, ok := chooseAIColonyBuilding(a, 0, out, 4, 7); ok {
+			t.Errorf("只剩固定零分候選 %s 時不應任選產品：%+v", target, build)
+		}
+	}
+}
+
 func TestOriginalAIResearchBuildingScores(t *testing.T) {
 	tests := []struct {
 		name    string

@@ -1,6 +1,6 @@
 # 遊戲字串源總清單與翻譯進度
 
-窮舉 openorion2 `TextManager::load` 載入的所有字串源(mom playbook [HARD]:漏一源 = 整類畫面英文)。目標:完成所有訊息翻譯。譯文放 `assets/i18n/*.tsv`(英文原文即 key)。
+窮舉 openorion2 `TextManager::load` 載入的所有字串源(mom playbook [HARD]:漏一源 = 整類畫面英文)。目標:完成所有訊息翻譯。譯文放 `assets/i18n/*.json`(英文原文即 key)。
 
 **完整性狀態(2026-07-02):`TextManager::load` 全部 22 個來源已逐一 account。**
 所有敘述/UI 類字串源均已翻譯完成;**專有名詞池**共 4 個(STARNAME 母星/隨機星名、SHIPNAME 艦名、RACENAME AI 統治者名),依策略逐一定案——母星名(13)、艦名(672)、隨機星名(829)均已翻譯落地,RACENAME(104)依既有先例定案保留原文。

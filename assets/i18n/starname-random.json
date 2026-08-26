@@ -1,0 +1,3318 @@
+[
+  {
+    "key": "Abbith",
+    "value": "阿比斯"
+  },
+  {
+    "key": "Abeen",
+    "value": "阿賓"
+  },
+  {
+    "key": "Acamar",
+    "value": "天苑一"
+  },
+  {
+    "key": "Achir",
+    "value": "阿基爾"
+  },
+  {
+    "key": "Actaeus",
+    "value": "阿克泰烏斯"
+  },
+  {
+    "key": "Aden",
+    "value": "亞丁"
+  },
+  {
+    "key": "Adib",
+    "value": "阿迪布"
+  },
+  {
+    "key": "Aji",
+    "value": "餘味"
+  },
+  {
+    "key": "Akrab",
+    "value": "阿克拉布"
+  },
+  {
+    "key": "Alacast",
+    "value": "阿拉卡斯特"
+  },
+  {
+    "key": "Alaozar",
+    "value": "阿勞扎爾"
+  },
+  {
+    "key": "Alar",
+    "value": "阿拉爾"
+  },
+  {
+    "key": "Alcor",
+    "value": "輔"
+  },
+  {
+    "key": "Aldebaran",
+    "value": "畢宿五"
+  },
+  {
+    "key": "Aleph",
+    "value": "阿列夫"
+  },
+  {
+    "key": "Algeiba",
+    "value": "軒轅十二"
+  },
+  {
+    "key": "Algol",
+    "value": "大陵五"
+  },
+  {
+    "key": "Alpha",
+    "value": "阿爾法"
+  },
+  {
+    "key": "Anchat",
+    "value": "安查特"
+  },
+  {
+    "key": "Andromeda",
+    "value": "仙女座"
+  },
+  {
+    "key": "Anraq",
+    "value": "安拉克"
+  },
+  {
+    "key": "Antarktos",
+    "value": "安塔克托斯"
+  },
+  {
+    "key": "Aquilae",
+    "value": "天鷹"
+  },
+  {
+    "key": "Aran",
+    "value": "阿蘭"
+  },
+  {
+    "key": "Arcturus",
+    "value": "大角"
+  },
+  {
+    "key": "Argus",
+    "value": "阿爾戈斯"
+  },
+  {
+    "key": "Arietis",
+    "value": "白羊"
+  },
+  {
+    "key": "Arkab",
+    "value": "阿爾卡布"
+  },
+  {
+    "key": "Arkham",
+    "value": "阿卡姆"
+  },
+  {
+    "key": "Arlyeh",
+    "value": "阿萊耶"
+  },
+  {
+    "key": "Aroch",
+    "value": "阿羅克"
+  },
+  {
+    "key": "Artemis",
+    "value": "阿爾忒彌斯"
+  },
+  {
+    "key": "Ascellus",
+    "value": "阿塞盧斯"
+  },
+  {
+    "key": "Asterion",
+    "value": "阿斯特里翁"
+  },
+  {
+    "key": "Atari",
+    "value": "打吃"
+  },
+  {
+    "key": "Atsui",
+    "value": "阿蘇伊"
+  },
+  {
+    "key": "Audax",
+    "value": "奧達克斯"
+  },
+  {
+    "key": "Aurora",
+    "value": "奧羅拉"
+  },
+  {
+    "key": "Avellar",
+    "value": "阿維拉爾"
+  },
+  {
+    "key": "Axion",
+    "value": "軸子"
+  },
+  {
+    "key": "Ayil",
+    "value": "阿伊爾"
+  },
+  {
+    "key": "Azimon",
+    "value": "阿茲蒙"
+  },
+  {
+    "key": "Baalbo",
+    "value": "巴爾博"
+  },
+  {
+    "key": "Baaltis",
+    "value": "巴爾提斯"
+  },
+  {
+    "key": "Babylon",
+    "value": "巴比倫"
+  },
+  {
+    "key": "Bagdei",
+    "value": "巴格迪"
+  },
+  {
+    "key": "Baham",
+    "value": "巴哈姆"
+  },
+  {
+    "key": "Balik",
+    "value": "巴利克"
+  },
+  {
+    "key": "Barcada",
+    "value": "巴爾卡達"
+  },
+  {
+    "key": "Barv",
+    "value": "巴弗"
+  },
+  {
+    "key": "Benat",
+    "value": "貝納特"
+  },
+  {
+    "key": "Berel",
+    "value": "貝雷爾"
+  },
+  {
+    "key": "Bestia",
+    "value": "貝斯提亞"
+  },
+  {
+    "key": "Beta Ceti",
+    "value": "鯨魚座β"
+  },
+  {
+    "key": "Bethmoora",
+    "value": "貝斯穆拉"
+  },
+  {
+    "key": "Bier",
+    "value": "比爾"
+  },
+  {
+    "key": "Biot",
+    "value": "比奧"
+  },
+  {
+    "key": "Birdon",
+    "value": "伯登"
+  },
+  {
+    "key": "Blucher",
+    "value": "布呂歇爾"
+  },
+  {
+    "key": "Bogina",
+    "value": "博吉娜"
+  },
+  {
+    "key": "Bolo",
+    "value": "波洛"
+  },
+  {
+    "key": "Bootes",
+    "value": "牧夫座"
+  },
+  {
+    "key": "Borea",
+    "value": "波瑞亞"
+  },
+  {
+    "key": "Boshi",
+    "value": "尖頂"
+  },
+  {
+    "key": "Brachium",
+    "value": "布拉基烏姆"
+  },
+  {
+    "key": "Browntes",
+    "value": "布戎特斯"
+  },
+  {
+    "key": "Brutum",
+    "value": "布魯圖姆"
+  },
+  {
+    "key": "Bubulus",
+    "value": "布布盧斯"
+  },
+  {
+    "key": "Bue",
+    "value": "布埃"
+  },
+  {
+    "key": "Bulan",
+    "value": "布蘭"
+  },
+  {
+    "key": "Bunda",
+    "value": "邦達"
+  },
+  {
+    "key": "Bungula",
+    "value": "邦古拉"
+  },
+  {
+    "key": "Burin",
+    "value": "布林"
+  },
+  {
+    "key": "Bussola",
+    "value": "布索拉"
+  },
+  {
+    "key": "Butain",
+    "value": "布坦"
+  },
+  {
+    "key": "Cabrilla",
+    "value": "卡布里拉"
+  },
+  {
+    "key": "Cadmus",
+    "value": "卡德摩斯"
+  },
+  {
+    "key": "Caeleb",
+    "value": "迦勒"
+  },
+  {
+    "key": "Callisto",
+    "value": "卡利斯托"
+  },
+  {
+    "key": "Camelus",
+    "value": "卡梅盧斯"
+  },
+  {
+    "key": "Canis",
+    "value": "犬座"
+  },
+  {
+    "key": "Canopus",
+    "value": "老人星"
+  },
+  {
+    "key": "Capella",
+    "value": "五車二"
+  },
+  {
+    "key": "Caph",
+    "value": "王良四"
+  },
+  {
+    "key": "Carcosa",
+    "value": "卡爾克薩"
+  },
+  {
+    "key": "Carina",
+    "value": "船底座"
+  },
+  {
+    "key": "Castor",
+    "value": "北河二"
+  },
+  {
+    "key": "Cathuria",
+    "value": "卡圖里亞"
+  },
+  {
+    "key": "Ceginus",
+    "value": "塞吉努斯"
+  },
+  {
+    "key": "Celaeno",
+    "value": "刻拉厄諾"
+  },
+  {
+    "key": "Celephais",
+    "value": "賽勒法斯"
+  },
+  {
+    "key": "Celox",
+    "value": "塞洛克斯"
+  },
+  {
+    "key": "Celtsi",
+    "value": "凱爾茨"
+  },
+  {
+    "key": "Centauri",
+    "value": "半人馬"
+  },
+  {
+    "key": "Cephee",
+    "value": "仙王"
+  },
+  {
+    "key": "Cerva",
+    "value": "塞爾瓦"
+  },
+  {
+    "key": "Cetus",
+    "value": "鯨魚座"
+  },
+  {
+    "key": "Charon",
+    "value": "卡戎"
+  },
+  {
+    "key": "Chay Foo",
+    "value": "柴福"
+  },
+  {
+    "key": "Chelae",
+    "value": "凱萊"
+  },
+  {
+    "key": "Chiba",
+    "value": "千葉"
+  },
+  {
+    "key": "Ching",
+    "value": "清"
+  },
+  {
+    "key": "Choo",
+    "value": "秋"
+  },
+  {
+    "key": "Chorazin",
+    "value": "哥拉汛"
+  },
+  {
+    "key": "Chort",
+    "value": "喬特"
+  },
+  {
+    "key": "Cimmeria",
+    "value": "辛梅利亞"
+  },
+  {
+    "key": "Collassa",
+    "value": "科拉薩"
+  },
+  {
+    "key": "Commoriom",
+    "value": "康莫瑞歐姆"
+  },
+  {
+    "key": "Concordia",
+    "value": "康科迪亞"
+  },
+  {
+    "key": "Corbeau",
+    "value": "科爾博"
+  },
+  {
+    "key": "Corolla",
+    "value": "科羅拉"
+  },
+  {
+    "key": "Corona",
+    "value": "科羅娜"
+  },
+  {
+    "key": "Corvus",
+    "value": "烏鴉座"
+  },
+  {
+    "key": "Cressa",
+    "value": "克蕾莎"
+  },
+  {
+    "key": "Crius",
+    "value": "克利俄斯"
+  },
+  {
+    "key": "Croix",
+    "value": "克魯瓦"
+  },
+  {
+    "key": "Croth",
+    "value": "克羅斯"
+  },
+  {
+    "key": "Crux",
+    "value": "南十字座"
+  },
+  {
+    "key": "Crypto",
+    "value": "克里普托"
+  },
+  {
+    "key": "Cursa",
+    "value": "庫爾薩"
+  },
+  {
+    "key": "Cygni",
+    "value": "天鵝座"
+  },
+  {
+    "key": "Daban",
+    "value": "達班"
+  },
+  {
+    "key": "Dagon",
+    "value": "達貢"
+  },
+  {
+    "key": "Dame",
+    "value": "單官"
+  },
+  {
+    "key": "Dannu",
+    "value": "達奴"
+  },
+  {
+    "key": "Dante",
+    "value": "但丁"
+  },
+  {
+    "key": "Darrian",
+    "value": "達里安"
+  },
+  {
+    "key": "Dauphin",
+    "value": "道芬"
+  },
+  {
+    "key": "Degiri",
+    "value": "德吉里"
+  },
+  {
+    "key": "Deli",
+    "value": "德利"
+  },
+  {
+    "key": "Delta",
+    "value": "德爾塔"
+  },
+  {
+    "key": "Demhe",
+    "value": "德姆赫"
+  },
+  {
+    "key": "Dendo",
+    "value": "登多"
+  },
+  {
+    "key": "Deneb",
+    "value": "天津四"
+  },
+  {
+    "key": "Denubius",
+    "value": "多瑙"
+  },
+  {
+    "key": "Derke",
+    "value": "德克"
+  },
+  {
+    "key": "Desmos",
+    "value": "德斯莫斯"
+  },
+  {
+    "key": "Dhira",
+    "value": "迪拉"
+  },
+  {
+    "key": "Diab",
+    "value": "迪亞布"
+  },
+  {
+    "key": "Dilfim",
+    "value": "迪爾芬"
+  },
+  {
+    "key": "Dilgan",
+    "value": "迪爾根"
+  },
+  {
+    "key": "Distaff",
+    "value": "迪斯塔夫"
+  },
+  {
+    "key": "Dolz",
+    "value": "多爾茲"
+  },
+  {
+    "key": "Dorado",
+    "value": "劍魚座"
+  },
+  {
+    "key": "Draco",
+    "value": "天龍座"
+  },
+  {
+    "key": "Drakka",
+    "value": "德拉卡"
+  },
+  {
+    "key": "Dramasa",
+    "value": "德拉馬薩"
+  },
+  {
+    "key": "Dromos",
+    "value": "德羅莫斯"
+  },
+  {
+    "key": "Drossel",
+    "value": "德羅塞爾"
+  },
+  {
+    "key": "Dumke",
+    "value": "敦克"
+  },
+  {
+    "key": "Dunatis",
+    "value": "杜納提斯"
+  },
+  {
+    "key": "Dunwich",
+    "value": "敦威治"
+  },
+  {
+    "key": "Ecber",
+    "value": "埃克貝爾"
+  },
+  {
+    "key": "Echidna",
+    "value": "厄客德娜"
+  },
+  {
+    "key": "Ecu",
+    "value": "埃庫"
+  },
+  {
+    "key": "Einhorn",
+    "value": "獨角獸"
+  },
+  {
+    "key": "Elcorno",
+    "value": "埃爾科諾"
+  },
+  {
+    "key": "Electra",
+    "value": "厄勒克特拉"
+  },
+  {
+    "key": "Elkis",
+    "value": "埃爾基斯"
+  },
+  {
+    "key": "Ell",
+    "value": "艾爾"
+  },
+  {
+    "key": "Elvarad",
+    "value": "埃爾瓦拉德"
+  },
+  {
+    "key": "Elysia",
+    "value": "埃利西亞"
+  },
+  {
+    "key": "Endoria",
+    "value": "恩多利亞"
+  },
+  {
+    "key": "Enoch",
+    "value": "以諾"
+  },
+  {
+    "key": "Ensis",
+    "value": "恩西斯"
+  },
+  {
+    "key": "Enzu",
+    "value": "恩祖"
+  },
+  {
+    "key": "Epsilon",
+    "value": "艾普西隆"
+  },
+  {
+    "key": "Ercole",
+    "value": "埃爾科萊"
+  },
+  {
+    "key": "Eridanus",
+    "value": "波江座"
+  },
+  {
+    "key": "Erigone",
+    "value": "厄里戈涅"
+  },
+  {
+    "key": "Eros",
+    "value": "厄洛斯"
+  },
+  {
+    "key": "Erulus",
+    "value": "埃魯盧斯"
+  },
+  {
+    "key": "Escalon",
+    "value": "埃斯卡隆"
+  },
+  {
+    "key": "Esper",
+    "value": "埃斯佩爾"
+  },
+  {
+    "key": "Etana",
+    "value": "埃塔那"
+  },
+  {
+    "key": "Exis",
+    "value": "埃克西斯"
+  },
+  {
+    "key": "Ezor",
+    "value": "埃佐"
+  },
+  {
+    "key": "Ezra",
+    "value": "以斯拉"
+  },
+  {
+    "key": "Faelis",
+    "value": "法埃利斯"
+  },
+  {
+    "key": "Fafnir",
+    "value": "法夫尼爾"
+  },
+  {
+    "key": "Fahd",
+    "value": "法赫德"
+  },
+  {
+    "key": "Fakar",
+    "value": "法卡爾"
+  },
+  {
+    "key": "Fascia",
+    "value": "法西亞"
+  },
+  {
+    "key": "Felis",
+    "value": "費利斯"
+  },
+  {
+    "key": "Fera",
+    "value": "費拉"
+  },
+  {
+    "key": "Fides",
+    "value": "菲德斯"
+  },
+  {
+    "key": "Finn",
+    "value": "芬恩"
+  },
+  {
+    "key": "Firma",
+    "value": "費爾瑪"
+  },
+  {
+    "key": "Fische",
+    "value": "費舍"
+  },
+  {
+    "key": "Fixas",
+    "value": "菲克薩斯"
+  },
+  {
+    "key": "Fluvius",
+    "value": "弗魯維烏斯"
+  },
+  {
+    "key": "Fomalhaut",
+    "value": "北落師門"
+  },
+  {
+    "key": "Fortuna",
+    "value": "福爾圖娜"
+  },
+  {
+    "key": "Fovea",
+    "value": "佛維亞"
+  },
+  {
+    "key": "Frere",
+    "value": "弗雷爾"
+  },
+  {
+    "key": "Fullen",
+    "value": "富倫"
+  },
+  {
+    "key": "Fundus",
+    "value": "芬杜斯"
+  },
+  {
+    "key": "Fuseki",
+    "value": "佈局"
+  },
+  {
+    "key": "Gabbar",
+    "value": "加巴爾"
+  },
+  {
+    "key": "Gadjo",
+    "value": "加喬"
+  },
+  {
+    "key": "Galapago",
+    "value": "加拉帕戈"
+  },
+  {
+    "key": "Galileo",
+    "value": "伽利略"
+  },
+  {
+    "key": "Galos",
+    "value": "加洛斯"
+  },
+  {
+    "key": "Gamma",
+    "value": "伽瑪"
+  },
+  {
+    "key": "Gatto",
+    "value": "加托"
+  },
+  {
+    "key": "Gazelle",
+    "value": "瞪羚"
+  },
+  {
+    "key": "Gehenna",
+    "value": "欣嫩"
+  },
+  {
+    "key": "Gemat",
+    "value": "傑馬特"
+  },
+  {
+    "key": "Genam",
+    "value": "傑南"
+  },
+  {
+    "key": "Geodesy",
+    "value": "傑奧德西"
+  },
+  {
+    "key": "Geph",
+    "value": "格夫"
+  },
+  {
+    "key": "Geta",
+    "value": "蓋塔"
+  },
+  {
+    "key": "Ghamus",
+    "value": "加姆斯"
+  },
+  {
+    "key": "Gharne",
+    "value": "加爾內"
+  },
+  {
+    "key": "Ghav",
+    "value": "加夫"
+  },
+  {
+    "key": "Gibber",
+    "value": "吉伯"
+  },
+  {
+    "key": "Gigas",
+    "value": "吉迦斯"
+  },
+  {
+    "key": "Gion",
+    "value": "祇園"
+  },
+  {
+    "key": "Girtab",
+    "value": "吉爾塔布"
+  },
+  {
+    "key": "Gladius",
+    "value": "格拉迪烏斯"
+  },
+  {
+    "key": "Goi",
+    "value": "戈伊"
+  },
+  {
+    "key": "Gontzol",
+    "value": "岡佐爾"
+  },
+  {
+    "key": "Gorgonis",
+    "value": "戈爾貢"
+  },
+  {
+    "key": "Gorra",
+    "value": "戈拉"
+  },
+  {
+    "key": "Gote",
+    "value": "後手"
+  },
+  {
+    "key": "Grumium",
+    "value": "格魯米姆"
+  },
+  {
+    "key": "Grus",
+    "value": "天鶴座"
+  },
+  {
+    "key": "Gryphon",
+    "value": "獅鷲"
+  },
+  {
+    "key": "Guad",
+    "value": "瓜德"
+  },
+  {
+    "key": "Gula",
+    "value": "古拉"
+  },
+  {
+    "key": "Guradas",
+    "value": "古拉達斯"
+  },
+  {
+    "key": "Gurion",
+    "value": "古里安"
+  },
+  {
+    "key": "Habor",
+    "value": "哈博"
+  },
+  {
+    "key": "Hadar",
+    "value": "馬腹一"
+  },
+  {
+    "key": "Hadramaut",
+    "value": "哈德拉毛"
+  },
+  {
+    "key": "Hague",
+    "value": "海牙"
+  },
+  {
+    "key": "Hali",
+    "value": "哈利"
+  },
+  {
+    "key": "Hally",
+    "value": "哈雷"
+  },
+  {
+    "key": "Hamete",
+    "value": "哈梅特"
+  },
+  {
+    "key": "Hammis",
+    "value": "哈米斯"
+  },
+  {
+    "key": "Hanekomi",
+    "value": "扳入"
+  },
+  {
+    "key": "Hapi",
+    "value": "哈皮"
+  },
+  {
+    "key": "Hap",
+    "value": "哈普"
+  },
+  {
+    "key": "Harag",
+    "value": "哈拉格"
+  },
+  {
+    "key": "Hasami",
+    "value": "夾"
+  },
+  {
+    "key": "Hase",
+    "value": "哈瀨"
+  },
+  {
+    "key": "Hastur",
+    "value": "哈斯塔"
+  },
+  {
+    "key": "Hawking",
+    "value": "霍金"
+  },
+  {
+    "key": "Hayk",
+    "value": "哈伊克"
+  },
+  {
+    "key": "Helios",
+    "value": "赫利俄斯"
+  },
+  {
+    "key": "Helos",
+    "value": "赫洛斯"
+  },
+  {
+    "key": "Heracles",
+    "value": "海克力斯"
+  },
+  {
+    "key": "Hera",
+    "value": "赫拉"
+  },
+  {
+    "key": "Herculis",
+    "value": "武仙"
+  },
+  {
+    "key": "Hermidon",
+    "value": "赫米敦"
+  },
+  {
+    "key": "Herschel",
+    "value": "赫歇爾"
+  },
+  {
+    "key": "Hewel",
+    "value": "休厄爾"
+  },
+  {
+    "key": "Hinde",
+    "value": "欣德"
+  },
+  {
+    "key": "Hiraki",
+    "value": "拆"
+  },
+  {
+    "key": "Hircus",
+    "value": "希爾庫斯"
+  },
+  {
+    "key": "Honte",
+    "value": "洪特"
+  },
+  {
+    "key": "Horne",
+    "value": "霍恩"
+  },
+  {
+    "key": "Horus",
+    "value": "荷魯斯"
+  },
+  {
+    "key": "Hoshi",
+    "value": "星"
+  },
+  {
+    "key": "Hut",
+    "value": "哈特"
+  },
+  {
+    "key": "Hyades",
+    "value": "畢宿星團"
+  },
+  {
+    "key": "Hyboria",
+    "value": "海波利亞"
+  },
+  {
+    "key": "Hydrae",
+    "value": "長蛇"
+  },
+  {
+    "key": "Hyperborea",
+    "value": "極北之地"
+  },
+  {
+    "key": "Ibis",
+    "value": "朱鷺"
+  },
+  {
+    "key": "Icarus",
+    "value": "伊卡洛斯"
+  },
+  {
+    "key": "Ilya",
+    "value": "伊利亞"
+  },
+  {
+    "key": "Imma",
+    "value": "伊瑪"
+  },
+  {
+    "key": "Inak",
+    "value": "伊納克"
+  },
+  {
+    "key": "Inari",
+    "value": "稻荷"
+  },
+  {
+    "key": "Incedius",
+    "value": "因塞迪烏斯"
+  },
+  {
+    "key": "Indus",
+    "value": "印第安座"
+  },
+  {
+    "key": "Inganok",
+    "value": "因加諾克"
+  },
+  {
+    "key": "Invaka",
+    "value": "因瓦卡"
+  },
+  {
+    "key": "Iras",
+    "value": "伊拉斯"
+  },
+  {
+    "key": "Irem",
+    "value": "埃雷姆"
+  },
+  {
+    "key": "Irra",
+    "value": "伊拉"
+  },
+  {
+    "key": "Ishi",
+    "value": "伊希"
+  },
+  {
+    "key": "Ishtar",
+    "value": "伊絲塔"
+  },
+  {
+    "key": "Ivielda",
+    "value": "伊維爾達"
+  },
+  {
+    "key": "Ixion",
+    "value": "伊克西翁"
+  },
+  {
+    "key": "Izar",
+    "value": "梗河一"
+  },
+  {
+    "key": "Jabbar",
+    "value": "賈巴爾"
+  },
+  {
+    "key": "Jabo",
+    "value": "賈博"
+  },
+  {
+    "key": "Jacob",
+    "value": "雅各"
+  },
+  {
+    "key": "Jaculum",
+    "value": "賈庫盧姆"
+  },
+  {
+    "key": "Janib",
+    "value": "賈尼布"
+  },
+  {
+    "key": "Jataka",
+    "value": "本生"
+  },
+  {
+    "key": "Jinga",
+    "value": "金加"
+  },
+  {
+    "key": "Jobe",
+    "value": "喬博"
+  },
+  {
+    "key": "Jordanus",
+    "value": "約旦"
+  },
+  {
+    "key": "Joseki",
+    "value": "定石"
+  },
+  {
+    "key": "Joshua",
+    "value": "約書亞"
+  },
+  {
+    "key": "Juga",
+    "value": "尤加"
+  },
+  {
+    "key": "Jugum",
+    "value": "尤古姆"
+  },
+  {
+    "key": "Juka",
+    "value": "尤卡"
+  },
+  {
+    "key": "Justa",
+    "value": "尤斯塔"
+  },
+  {
+    "key": "Juza",
+    "value": "尤扎"
+  },
+  {
+    "key": "Kadath",
+    "value": "卡達斯"
+  },
+  {
+    "key": "Kae",
+    "value": "凱"
+  },
+  {
+    "key": "Kaff",
+    "value": "卡夫"
+  },
+  {
+    "key": "Kaht",
+    "value": "卡特"
+  },
+  {
+    "key": "Kailis",
+    "value": "凱利斯"
+  },
+  {
+    "key": "Kakari",
+    "value": "掛"
+  },
+  {
+    "key": "Kakata",
+    "value": "卡卡塔"
+  },
+  {
+    "key": "Kake",
+    "value": "卡凱"
+  },
+  {
+    "key": "Kalb",
+    "value": "卡爾布"
+  },
+  {
+    "key": "Kali",
+    "value": "迦梨"
+  },
+  {
+    "key": "Katab",
+    "value": "卡塔布"
+  },
+  {
+    "key": "Keats",
+    "value": "濟慈"
+  },
+  {
+    "key": "Keeta",
+    "value": "基塔"
+  },
+  {
+    "key": "Kelev",
+    "value": "凱勒夫"
+  },
+  {
+    "key": "Khrissa",
+    "value": "克里薩"
+  },
+  {
+    "key": "Khumba",
+    "value": "庫姆巴"
+  },
+  {
+    "key": "Kif",
+    "value": "基夫"
+  },
+  {
+    "key": "Kit Alpha",
+    "value": "基特阿爾法"
+  },
+  {
+    "key": "Kled",
+    "value": "克萊德"
+  },
+  {
+    "key": "Kluhn",
+    "value": "克魯恩"
+  },
+  {
+    "key": "Klystron",
+    "value": "速調管"
+  },
+  {
+    "key": "Knaa",
+    "value": "克納"
+  },
+  {
+    "key": "Knyan",
+    "value": "克尼安"
+  },
+  {
+    "key": "Kochba",
+    "value": "科赫巴"
+  },
+  {
+    "key": "Kolath",
+    "value": "科拉斯"
+  },
+  {
+    "key": "Komi",
+    "value": "貼目"
+  },
+  {
+    "key": "Komoku",
+    "value": "小目"
+  },
+  {
+    "key": "Kosumi",
+    "value": "小尖"
+  },
+  {
+    "key": "Koth",
+    "value": "科斯"
+  },
+  {
+    "key": "Kraken",
+    "value": "海妖"
+  },
+  {
+    "key": "Krebs",
+    "value": "克雷布斯"
+  },
+  {
+    "key": "Kronos",
+    "value": "克洛諾斯"
+  },
+  {
+    "key": "Ktynga",
+    "value": "克廷加"
+  },
+  {
+    "key": "Kulthos",
+    "value": "庫爾索斯"
+  },
+  {
+    "key": "Kyusho",
+    "value": "急所"
+  },
+  {
+    "key": "Laan",
+    "value": "拉恩"
+  },
+  {
+    "key": "Lacerta",
+    "value": "蝎虎座"
+  },
+  {
+    "key": "Ladon",
+    "value": "拉冬"
+  },
+  {
+    "key": "Laius",
+    "value": "拉伊俄斯"
+  },
+  {
+    "key": "Lamash",
+    "value": "拉瑪什"
+  },
+  {
+    "key": "Laniger",
+    "value": "拉尼格"
+  },
+  {
+    "key": "Lar",
+    "value": "拉爾"
+  },
+  {
+    "key": "Lawdon",
+    "value": "勞頓"
+  },
+  {
+    "key": "Lemuria",
+    "value": "利莫里亞"
+  },
+  {
+    "key": "Leng",
+    "value": "冷"
+  },
+  {
+    "key": "Leonids",
+    "value": "獅子座流星"
+  },
+  {
+    "key": "Lepus",
+    "value": "天兔座"
+  },
+  {
+    "key": "Lerion",
+    "value": "萊里恩"
+  },
+  {
+    "key": "Lesath",
+    "value": "尾宿八"
+  },
+  {
+    "key": "Leviathan",
+    "value": "利維坦"
+  },
+  {
+    "key": "Lince",
+    "value": "林塞"
+  },
+  {
+    "key": "Linx",
+    "value": "天貓座"
+  },
+  {
+    "key": "Lir",
+    "value": "利爾"
+  },
+  {
+    "key": "Lomar",
+    "value": "羅瑪爾"
+  },
+  {
+    "key": "Lone",
+    "value": "隆恩"
+  },
+  {
+    "key": "Lora",
+    "value": "蘿拉"
+  },
+  {
+    "key": "Lupus",
+    "value": "豺狼座"
+  },
+  {
+    "key": "Lura",
+    "value": "露拉"
+  },
+  {
+    "key": "Lurnis",
+    "value": "盧爾尼斯"
+  },
+  {
+    "key": "Lyae",
+    "value": "萊亞"
+  },
+  {
+    "key": "Lycaon",
+    "value": "呂卡翁"
+  },
+  {
+    "key": "Lyra",
+    "value": "天琴座"
+  },
+  {
+    "key": "Maalor",
+    "value": "馬洛爾"
+  },
+  {
+    "key": "Maaz",
+    "value": "馬茲"
+  },
+  {
+    "key": "Madira",
+    "value": "馬迪拉"
+  },
+  {
+    "key": "Madorla",
+    "value": "曼多拉"
+  },
+  {
+    "key": "Magari",
+    "value": "馬加里"
+  },
+  {
+    "key": "Magdalen",
+    "value": "抹大拉"
+  },
+  {
+    "key": "Magi",
+    "value": "麻葛"
+  },
+  {
+    "key": "Magnus",
+    "value": "馬格努斯"
+  },
+  {
+    "key": "Mahu",
+    "value": "馬胡"
+  },
+  {
+    "key": "Malec",
+    "value": "馬萊克"
+  },
+  {
+    "key": "Malus",
+    "value": "馬盧斯"
+  },
+  {
+    "key": "Mane Go",
+    "value": "芒果"
+  },
+  {
+    "key": "Manica",
+    "value": "馬尼卡"
+  },
+  {
+    "key": "Manzil",
+    "value": "曼齊爾"
+  },
+  {
+    "key": "Maretta",
+    "value": "馬雷塔"
+  },
+  {
+    "key": "Marindi",
+    "value": "馬林迪"
+  },
+  {
+    "key": "Mariner",
+    "value": "馬里納"
+  },
+  {
+    "key": "Markab",
+    "value": "室宿二"
+  },
+  {
+    "key": "Matar",
+    "value": "馬塔爾"
+  },
+  {
+    "key": "Media",
+    "value": "米蒂亞"
+  },
+  {
+    "key": "Menalo",
+    "value": "梅納洛"
+  },
+  {
+    "key": "Menita",
+    "value": "梅妮塔"
+  },
+  {
+    "key": "Mensa",
+    "value": "山案座"
+  },
+  {
+    "key": "Merope",
+    "value": "墨洛珀"
+  },
+  {
+    "key": "Mihr",
+    "value": "米赫爾"
+  },
+  {
+    "key": "Milaff",
+    "value": "米拉夫"
+  },
+  {
+    "key": "Minerva",
+    "value": "密涅瓦"
+  },
+  {
+    "key": "Min",
+    "value": "敏"
+  },
+  {
+    "key": "Miract",
+    "value": "米拉克"
+  },
+  {
+    "key": "Mirak",
+    "value": "天璇"
+  },
+  {
+    "key": "Miranda",
+    "value": "米蘭達"
+  },
+  {
+    "key": "Mirror",
+    "value": "鏡"
+  },
+  {
+    "key": "Mirza",
+    "value": "米爾扎"
+  },
+  {
+    "key": "Misha",
+    "value": "米沙"
+  },
+  {
+    "key": "Mithras",
+    "value": "密特拉"
+  },
+  {
+    "key": "Mizar",
+    "value": "開陽"
+  },
+  {
+    "key": "Mochos",
+    "value": "莫科斯"
+  },
+  {
+    "key": "Monius",
+    "value": "莫尼烏斯"
+  },
+  {
+    "key": "Monkar",
+    "value": "蒙卡爾"
+  },
+  {
+    "key": "Monstrum",
+    "value": "蒙斯特魯姆"
+  },
+  {
+    "key": "Montone",
+    "value": "蒙托內"
+  },
+  {
+    "key": "Moro",
+    "value": "莫羅"
+  },
+  {
+    "key": "Morrig",
+    "value": "莫瑞格"
+  },
+  {
+    "key": "Moyo",
+    "value": "模樣"
+  },
+  {
+    "key": "Mula",
+    "value": "穆拉"
+  },
+  {
+    "key": "Mulban",
+    "value": "穆爾班"
+  },
+  {
+    "key": "Mulubat",
+    "value": "穆盧巴特"
+  },
+  {
+    "key": "Munic",
+    "value": "慕尼克"
+  },
+  {
+    "key": "Muru",
+    "value": "穆魯"
+  },
+  {
+    "key": "Musator",
+    "value": "穆薩托"
+  },
+  {
+    "key": "Muscida",
+    "value": "穆西達"
+  },
+  {
+    "key": "Mutatrix",
+    "value": "穆塔特里克斯"
+  },
+  {
+    "key": "Mutlat",
+    "value": "穆特拉"
+  },
+  {
+    "key": "Naam",
+    "value": "納姆"
+  },
+  {
+    "key": "Nagar",
+    "value": "納加爾"
+  },
+  {
+    "key": "Naos",
+    "value": "納俄斯"
+  },
+  {
+    "key": "Narn",
+    "value": "納恩"
+  },
+  {
+    "key": "Nasak",
+    "value": "納薩克"
+  },
+  {
+    "key": "Nath",
+    "value": "納斯"
+  },
+  {
+    "key": "Necht",
+    "value": "內赫特"
+  },
+  {
+    "key": "Nekkar",
+    "value": "內卡爾"
+  },
+  {
+    "key": "Nephthys",
+    "value": "奈芙蒂斯"
+  },
+  {
+    "key": "Neptunus",
+    "value": "涅普頓"
+  },
+  {
+    "key": "Nessus",
+    "value": "涅索斯"
+  },
+  {
+    "key": "Niallar",
+    "value": "尼亞拉"
+  },
+  {
+    "key": "Nilus",
+    "value": "尼盧斯"
+  },
+  {
+    "key": "Nimbus",
+    "value": "寧巴斯"
+  },
+  {
+    "key": "Ninsar",
+    "value": "寧薩爾"
+  },
+  {
+    "key": "Niphla",
+    "value": "尼夫拉"
+  },
+  {
+    "key": "Niru",
+    "value": "尼魯"
+  },
+  {
+    "key": "Nir",
+    "value": "尼爾"
+  },
+  {
+    "key": "Nisus",
+    "value": "尼蘇斯"
+  },
+  {
+    "key": "Nobi",
+    "value": "長"
+  },
+  {
+    "key": "Noctua",
+    "value": "諾克圖亞"
+  },
+  {
+    "key": "Nordia",
+    "value": "諾迪亞"
+  },
+  {
+    "key": "Nortes",
+    "value": "諾爾特斯"
+  },
+  {
+    "key": "Noton",
+    "value": "諾頓"
+  },
+  {
+    "key": "Nubilium",
+    "value": "努比利烏姆"
+  },
+  {
+    "key": "Numinos",
+    "value": "努米諾斯"
+  },
+  {
+    "key": "Obaca",
+    "value": "奧巴卡"
+  },
+  {
+    "key": "Oba",
+    "value": "奧巴"
+  },
+  {
+    "key": "Obelus",
+    "value": "奧貝勒斯"
+  },
+  {
+    "key": "Oberon",
+    "value": "奧伯龍"
+  },
+  {
+    "key": "Octipes",
+    "value": "奧克提佩斯"
+  },
+  {
+    "key": "Oculus",
+    "value": "歐庫魯斯"
+  },
+  {
+    "key": "Ogeima",
+    "value": "大飛"
+  },
+  {
+    "key": "Ogka",
+    "value": "奧格卡"
+  },
+  {
+    "key": "Okab",
+    "value": "奧卡布"
+  },
+  {
+    "key": "Okda",
+    "value": "奧克達"
+  },
+  {
+    "key": "Oki",
+    "value": "放置"
+  },
+  {
+    "key": "Olathoe",
+    "value": "奧拉索埃"
+  },
+  {
+    "key": "Olorun",
+    "value": "奧洛倫"
+  },
+  {
+    "key": "Olor",
+    "value": "奧洛"
+  },
+  {
+    "key": "Omega",
+    "value": "歐米伽"
+  },
+  {
+    "key": "Omicron",
+    "value": "歐米克戎"
+  },
+  {
+    "key": "Ooma",
+    "value": "烏瑪"
+  },
+  {
+    "key": "Opus",
+    "value": "歐帕斯"
+  },
+  {
+    "key": "Orbis",
+    "value": "奧爾比斯"
+  },
+  {
+    "key": "Orf",
+    "value": "奧夫"
+  },
+  {
+    "key": "Oriab",
+    "value": "奧里亞布"
+  },
+  {
+    "key": "Origen",
+    "value": "奧利振"
+  },
+  {
+    "key": "Orloge",
+    "value": "奧洛日"
+  },
+  {
+    "key": "Osae",
+    "value": "奧賽"
+  },
+  {
+    "key": "Oshi",
+    "value": "押"
+  },
+  {
+    "key": "Osiris",
+    "value": "奧西里斯"
+  },
+  {
+    "key": "Otawa",
+    "value": "渥太瓦"
+  },
+  {
+    "key": "Ovillus",
+    "value": "奧維盧斯"
+  },
+  {
+    "key": "Padus",
+    "value": "帕杜斯"
+  },
+  {
+    "key": "Paladia",
+    "value": "帕拉迪亞"
+  },
+  {
+    "key": "Palaemon",
+    "value": "帕萊蒙"
+  },
+  {
+    "key": "Pandora",
+    "value": "潘朵拉"
+  },
+  {
+    "key": "Panthera",
+    "value": "潘瑟拉"
+  },
+  {
+    "key": "Paradise",
+    "value": "樂園"
+  },
+  {
+    "key": "Paranar",
+    "value": "帕拉納"
+  },
+  {
+    "key": "Parma",
+    "value": "帕爾馬"
+  },
+  {
+    "key": "Passer",
+    "value": "帕塞爾"
+  },
+  {
+    "key": "Patera",
+    "value": "帕特拉"
+  },
+  {
+    "key": "Pavone",
+    "value": "帕沃內"
+  },
+  {
+    "key": "Pavo",
+    "value": "孔雀座"
+  },
+  {
+    "key": "Pax",
+    "value": "帕克斯"
+  },
+  {
+    "key": "Pegasus",
+    "value": "飛馬座"
+  },
+  {
+    "key": "Pelenor",
+    "value": "佩蘭諾"
+  },
+  {
+    "key": "Peren",
+    "value": "佩倫"
+  },
+  {
+    "key": "Perizoma",
+    "value": "佩里佐馬"
+  },
+  {
+    "key": "Pern",
+    "value": "佩恩"
+  },
+  {
+    "key": "Persea",
+    "value": "佩爾塞亞"
+  },
+  {
+    "key": "Perseo",
+    "value": "珀爾修斯"
+  },
+  {
+    "key": "Pesci",
+    "value": "佩斯基"
+  },
+  {
+    "key": "Phakt",
+    "value": "法克特"
+  },
+  {
+    "key": "Phantos",
+    "value": "幻影"
+  },
+  {
+    "key": "Pharmaz",
+    "value": "法瑪茲"
+  },
+  {
+    "key": "Phecca",
+    "value": "天璣"
+  },
+  {
+    "key": "Pherd",
+    "value": "費爾德"
+  },
+  {
+    "key": "Phobeus",
+    "value": "福波斯"
+  },
+  {
+    "key": "Phoenix",
+    "value": "鳳凰座"
+  },
+  {
+    "key": "Phyco",
+    "value": "費科"
+  },
+  {
+    "key": "Piatuos",
+    "value": "皮亞圖斯"
+  },
+  {
+    "key": "Pictor",
+    "value": "繪架座"
+  },
+  {
+    "key": "Pindar",
+    "value": "品達"
+  },
+  {
+    "key": "Pipiri",
+    "value": "皮皮里"
+  },
+  {
+    "key": "Pistrix",
+    "value": "皮斯特里克斯"
+  },
+  {
+    "key": "Plastrum",
+    "value": "普拉斯特魯姆"
+  },
+  {
+    "key": "Pleides",
+    "value": "昴宿星團"
+  },
+  {
+    "key": "Pliny",
+    "value": "普林尼"
+  },
+  {
+    "key": "Poculum",
+    "value": "波庫盧姆"
+  },
+  {
+    "key": "Polarion",
+    "value": "波拉里翁"
+  },
+  {
+    "key": "Polaris",
+    "value": "北極星"
+  },
+  {
+    "key": "Pollus",
+    "value": "波盧斯"
+  },
+  {
+    "key": "Pollux",
+    "value": "北河三"
+  },
+  {
+    "key": "Pomptina",
+    "value": "龐普蒂納"
+  },
+  {
+    "key": "Ponnuki",
+    "value": "提子"
+  },
+  {
+    "key": "Porrima",
+    "value": "波麗瑪"
+  },
+  {
+    "key": "Poseidonis",
+    "value": "波塞多尼斯"
+  },
+  {
+    "key": "Praxis",
+    "value": "普拉克西斯"
+  },
+  {
+    "key": "Priapus",
+    "value": "普里阿普斯"
+  },
+  {
+    "key": "Proclus",
+    "value": "普羅克洛斯"
+  },
+  {
+    "key": "Proctor",
+    "value": "普羅克特"
+  },
+  {
+    "key": "Procyon",
+    "value": "南河三"
+  },
+  {
+    "key": "Proditor",
+    "value": "普羅迪托爾"
+  },
+  {
+    "key": "Profugus",
+    "value": "普羅富古斯"
+  },
+  {
+    "key": "Propus",
+    "value": "普羅普斯"
+  },
+  {
+    "key": "Proteus",
+    "value": "普羅透斯"
+  },
+  {
+    "key": "Proxima",
+    "value": "比鄰星"
+  },
+  {
+    "key": "Psi Gamma",
+    "value": "普西伽瑪"
+  },
+  {
+    "key": "Ptolemy",
+    "value": "托勒密"
+  },
+  {
+    "key": "Pund",
+    "value": "龐德"
+  },
+  {
+    "key": "Python",
+    "value": "皮同"
+  },
+  {
+    "key": "Qablu",
+    "value": "卡布魯"
+  },
+  {
+    "key": "Qatar",
+    "value": "卡塔爾"
+  },
+  {
+    "key": "Quadrupes",
+    "value": "四足獸"
+  },
+  {
+    "key": "Quandra",
+    "value": "昆德拉"
+  },
+  {
+    "key": "Quayal",
+    "value": "奎亞爾"
+  },
+  {
+    "key": "Quercia",
+    "value": "奎爾恰"
+  },
+  {
+    "key": "Que",
+    "value": "克"
+  },
+  {
+    "key": "Qui",
+    "value": "奎"
+  },
+  {
+    "key": "Rabe",
+    "value": "拉貝"
+  },
+  {
+    "key": "Radiff",
+    "value": "拉迪夫"
+  },
+  {
+    "key": "Rahab",
+    "value": "拉哈伯"
+  },
+  {
+    "key": "Ramad",
+    "value": "拉馬德"
+  },
+  {
+    "key": "Ramo",
+    "value": "拉莫"
+  },
+  {
+    "key": "Rana",
+    "value": "拉納"
+  },
+  {
+    "key": "Ras",
+    "value": "拉斯"
+  },
+  {
+    "key": "Rav",
+    "value": "拉夫"
+  },
+  {
+    "key": "Rayden",
+    "value": "雷電"
+  },
+  {
+    "key": "Rebar",
+    "value": "雷巴"
+  },
+  {
+    "key": "Regulus",
+    "value": "軒轅十四"
+  },
+  {
+    "key": "Remus",
+    "value": "雷穆斯"
+  },
+  {
+    "key": "Reticuli",
+    "value": "網罟"
+  },
+  {
+    "key": "Revati",
+    "value": "雷瓦蒂"
+  },
+  {
+    "key": "Rex",
+    "value": "雷克斯"
+  },
+  {
+    "key": "Rha",
+    "value": "拉"
+  },
+  {
+    "key": "Rhea",
+    "value": "瑞亞"
+  },
+  {
+    "key": "Rhilus",
+    "value": "里魯斯"
+  },
+  {
+    "key": "Rhombus",
+    "value": "若姆布斯"
+  },
+  {
+    "key": "Rial",
+    "value": "里亞爾"
+  },
+  {
+    "key": "Ribat",
+    "value": "里巴特"
+  },
+  {
+    "key": "Rigel",
+    "value": "參宿七"
+  },
+  {
+    "key": "Risabam",
+    "value": "里薩班"
+  },
+  {
+    "key": "Rishka",
+    "value": "里什卡"
+  },
+  {
+    "key": "Riwand",
+    "value": "里萬德"
+  },
+  {
+    "key": "Rlyeh",
+    "value": "拉萊耶"
+  },
+  {
+    "key": "Roch",
+    "value": "洛許"
+  },
+  {
+    "key": "Romulas",
+    "value": "羅慕路斯"
+  },
+  {
+    "key": "Rosa",
+    "value": "蘿莎"
+  },
+  {
+    "key": "Rosemund",
+    "value": "羅斯蒙德"
+  },
+  {
+    "key": "Rotan",
+    "value": "羅坦"
+  },
+  {
+    "key": "Ruba",
+    "value": "魯巴"
+  },
+  {
+    "key": "Rukubi",
+    "value": "魯庫比"
+  },
+  {
+    "key": "Rutilicus",
+    "value": "魯提利庫斯"
+  },
+  {
+    "key": "Ruzam",
+    "value": "魯扎姆"
+  },
+  {
+    "key": "Ryoun",
+    "value": "廖恩"
+  },
+  {
+    "key": "Saak",
+    "value": "薩克"
+  },
+  {
+    "key": "Sabaki",
+    "value": "騰挪"
+  },
+  {
+    "key": "Sabazius",
+    "value": "薩巴齊烏斯"
+  },
+  {
+    "key": "Sabik",
+    "value": "薩比克"
+  },
+  {
+    "key": "Sadak",
+    "value": "薩達克"
+  },
+  {
+    "key": "Sadr",
+    "value": "天津一"
+  },
+  {
+    "key": "Sagan",
+    "value": "薩根"
+  },
+  {
+    "key": "Sagitta",
+    "value": "天箭座"
+  },
+  {
+    "key": "Sahil",
+    "value": "薩希爾"
+  },
+  {
+    "key": "Sahu",
+    "value": "薩胡"
+  },
+  {
+    "key": "Saiph",
+    "value": "參宿六"
+  },
+  {
+    "key": "Saltator",
+    "value": "薩爾塔托爾"
+  },
+  {
+    "key": "Sal",
+    "value": "薩爾"
+  },
+  {
+    "key": "Samson",
+    "value": "參孫"
+  },
+  {
+    "key": "San San",
+    "value": "珊珊"
+  },
+  {
+    "key": "San",
+    "value": "聖"
+  },
+  {
+    "key": "Sarfah",
+    "value": "薩爾法"
+  },
+  {
+    "key": "Sargon",
+    "value": "薩爾貢"
+  },
+  {
+    "key": "Sarkomand",
+    "value": "薩科曼德"
+  },
+  {
+    "key": "Sarnath",
+    "value": "薩爾納斯"
+  },
+  {
+    "key": "Sarti",
+    "value": "薩爾蒂"
+  },
+  {
+    "key": "Sarwa",
+    "value": "薩爾瓦"
+  },
+  {
+    "key": "Satyr",
+    "value": "薩堤爾"
+  },
+  {
+    "key": "Saxon",
+    "value": "撒克遜"
+  },
+  {
+    "key": "Scaliger",
+    "value": "斯卡利傑"
+  },
+  {
+    "key": "Scera",
+    "value": "斯塞拉"
+  },
+  {
+    "key": "Scheader",
+    "value": "王良一"
+  },
+  {
+    "key": "Scheat",
+    "value": "室宿一"
+  },
+  {
+    "key": "Schiff",
+    "value": "席夫"
+  },
+  {
+    "key": "Schwan",
+    "value": "施萬"
+  },
+  {
+    "key": "Scorpio",
+    "value": "天蠍座"
+  },
+  {
+    "key": "Scutulum",
+    "value": "盾牌"
+  },
+  {
+    "key": "Segel",
+    "value": "塞格爾"
+  },
+  {
+    "key": "Seginus",
+    "value": "招搖"
+  },
+  {
+    "key": "Seidon",
+    "value": "塞頓"
+  },
+  {
+    "key": "Seki",
+    "value": "雙活"
+  },
+  {
+    "key": "Selia",
+    "value": "塞莉亞"
+  },
+  {
+    "key": "Sella",
+    "value": "塞拉"
+  },
+  {
+    "key": "Semeai",
+    "value": "對殺"
+  },
+  {
+    "key": "Sente",
+    "value": "先手"
+  },
+  {
+    "key": "Septum",
+    "value": "塞普敦"
+  },
+  {
+    "key": "Serapis",
+    "value": "塞拉皮斯"
+  },
+  {
+    "key": "Serpens",
+    "value": "巨蛇座"
+  },
+  {
+    "key": "Shaghar",
+    "value": "沙加爾"
+  },
+  {
+    "key": "Shalako",
+    "value": "沙拉科"
+  },
+  {
+    "key": "Sharru",
+    "value": "沙魯"
+  },
+  {
+    "key": "Shat",
+    "value": "沙特"
+  },
+  {
+    "key": "Shen",
+    "value": "神"
+  },
+  {
+    "key": "Shicho",
+    "value": "徵子"
+  },
+  {
+    "key": "Shih",
+    "value": "石"
+  },
+  {
+    "key": "Shimari",
+    "value": "守角"
+  },
+  {
+    "key": "Shinogi",
+    "value": "治孤"
+  },
+  {
+    "key": "Shira",
+    "value": "希拉"
+  },
+  {
+    "key": "Shwing",
+    "value": "施溫"
+  },
+  {
+    "key": "Siktut",
+    "value": "西克圖"
+  },
+  {
+    "key": "Simak",
+    "value": "西馬克"
+  },
+  {
+    "key": "Simius",
+    "value": "西米烏斯"
+  },
+  {
+    "key": "Siru",
+    "value": "西魯"
+  },
+  {
+    "key": "Situla",
+    "value": "西圖拉"
+  },
+  {
+    "key": "Skai",
+    "value": "斯凱"
+  },
+  {
+    "key": "Slkim",
+    "value": "斯爾金"
+  },
+  {
+    "key": "Smon",
+    "value": "斯蒙"
+  },
+  {
+    "key": "Sonans",
+    "value": "索南斯"
+  },
+  {
+    "key": "Souchis",
+    "value": "索基斯"
+  },
+  {
+    "key": "Spica",
+    "value": "角宿一"
+  },
+  {
+    "key": "Stalaz",
+    "value": "斯塔拉茲"
+  },
+  {
+    "key": "Statius",
+    "value": "斯塔提烏斯"
+  },
+  {
+    "key": "Steinbok",
+    "value": "斯坦博克"
+  },
+  {
+    "key": "Stellio",
+    "value": "星蜥"
+  },
+  {
+    "key": "Suji",
+    "value": "筋"
+  },
+  {
+    "key": "Sukra",
+    "value": "蘇克拉"
+  },
+  {
+    "key": "Sulcus",
+    "value": "蘇爾庫斯"
+  },
+  {
+    "key": "Sung",
+    "value": "宋"
+  },
+  {
+    "key": "Sutul",
+    "value": "蘇圖爾"
+  },
+  {
+    "key": "Suud",
+    "value": "蘇德"
+  },
+  {
+    "key": "Syntaxis",
+    "value": "辛塔克西斯"
+  },
+  {
+    "key": "Syrius",
+    "value": "天狼星"
+  },
+  {
+    "key": "Taben",
+    "value": "塔本"
+  },
+  {
+    "key": "Tah",
+    "value": "塔"
+  },
+  {
+    "key": "Tais",
+    "value": "泰斯"
+  },
+  {
+    "key": "Tai",
+    "value": "泰"
+  },
+  {
+    "key": "Takamoku",
+    "value": "高目"
+  },
+  {
+    "key": "Talas",
+    "value": "怛羅斯"
+  },
+  {
+    "key": "Tali",
+    "value": "塔莉"
+  },
+  {
+    "key": "Tambiru",
+    "value": "坦比魯"
+  },
+  {
+    "key": "Tammech",
+    "value": "塔梅赫"
+  },
+  {
+    "key": "Tantalus",
+    "value": "坦塔羅斯"
+  },
+  {
+    "key": "Tao",
+    "value": "道"
+  },
+  {
+    "key": "Tarandus",
+    "value": "塔蘭杜斯"
+  },
+  {
+    "key": "Tarazad",
+    "value": "塔拉扎德"
+  },
+  {
+    "key": "Tarcuta",
+    "value": "塔庫塔"
+  },
+  {
+    "key": "Tatiana",
+    "value": "塔蒂雅娜"
+  },
+  {
+    "key": "Tau Cygni",
+    "value": "天鵝座τ"
+  },
+  {
+    "key": "Tauri",
+    "value": "金牛"
+  },
+  {
+    "key": "Taurus",
+    "value": "金牛座"
+  },
+  {
+    "key": "Tejat",
+    "value": "泰賈特"
+  },
+  {
+    "key": "Telum",
+    "value": "泰倫姆"
+  },
+  {
+    "key": "Templum",
+    "value": "坦普魯姆"
+  },
+  {
+    "key": "Tenuki",
+    "value": "脫先"
+  },
+  {
+    "key": "Tericas",
+    "value": "特里卡斯"
+  },
+  {
+    "key": "Testa",
+    "value": "泰斯塔"
+  },
+  {
+    "key": "Tesuji",
+    "value": "手筋"
+  },
+  {
+    "key": "Tewari",
+    "value": "手割"
+  },
+  {
+    "key": "Thales",
+    "value": "泰勒斯"
+  },
+  {
+    "key": "Thaur",
+    "value": "陶爾"
+  },
+  {
+    "key": "Thesbia",
+    "value": "塞斯比亞"
+  },
+  {
+    "key": "Thiba",
+    "value": "提巴"
+  },
+  {
+    "key": "Thog",
+    "value": "索格"
+  },
+  {
+    "key": "Thok",
+    "value": "索克"
+  },
+  {
+    "key": "Thoth",
+    "value": "托特"
+  },
+  {
+    "key": "Thraa",
+    "value": "特拉阿"
+  },
+  {
+    "key": "Thrax",
+    "value": "斯拉克斯"
+  },
+  {
+    "key": "Thuban",
+    "value": "右樞"
+  },
+  {
+    "key": "Thuggon",
+    "value": "塔貢"
+  },
+  {
+    "key": "Tiam",
+    "value": "提亞姆"
+  },
+  {
+    "key": "Tigris",
+    "value": "底格里斯"
+  },
+  {
+    "key": "Tindalos",
+    "value": "廷達洛斯"
+  },
+  {
+    "key": "Tinnan",
+    "value": "廷南"
+  },
+  {
+    "key": "Tirstar",
+    "value": "提爾斯塔"
+  },
+  {
+    "key": "Tome",
+    "value": "托姆"
+  },
+  {
+    "key": "Tond",
+    "value": "通德"
+  },
+  {
+    "key": "Toranor",
+    "value": "托拉諾"
+  },
+  {
+    "key": "Tormantius",
+    "value": "托曼提烏斯"
+  },
+  {
+    "key": "Trax",
+    "value": "特拉克斯"
+  },
+  {
+    "key": "Trethon",
+    "value": "特雷森"
+  },
+  {
+    "key": "Trifid",
+    "value": "三葉"
+  },
+  {
+    "key": "Trigon",
+    "value": "特里岡"
+  },
+  {
+    "key": "Triones",
+    "value": "特里奧內斯"
+  },
+  {
+    "key": "Tripton",
+    "value": "特里普頓"
+  },
+  {
+    "key": "Tristan",
+    "value": "特里斯坦"
+  },
+  {
+    "key": "Tsang",
+    "value": "藏"
+  },
+  {
+    "key": "Tsath",
+    "value": "察斯"
+  },
+  {
+    "key": "Tsugi",
+    "value": "接"
+  },
+  {
+    "key": "Tsuke",
+    "value": "碰"
+  },
+  {
+    "key": "Tucana",
+    "value": "杜鵑座"
+  },
+  {
+    "key": "Tukan",
+    "value": "圖坎"
+  },
+  {
+    "key": "Tur",
+    "value": "圖爾"
+  },
+  {
+    "key": "Tycho",
+    "value": "第谷"
+  },
+  {
+    "key": "Tyrannus",
+    "value": "提拉努斯"
+  },
+  {
+    "key": "Tyrius",
+    "value": "提里烏斯"
+  },
+  {
+    "key": "Tyr",
+    "value": "提爾"
+  },
+  {
+    "key": "Ubar",
+    "value": "烏巴爾"
+  },
+  {
+    "key": "Ubboth",
+    "value": "烏波斯"
+  },
+  {
+    "key": "Udara",
+    "value": "烏達拉"
+  },
+  {
+    "key": "Udha",
+    "value": "烏達"
+  },
+  {
+    "key": "Ukko",
+    "value": "烏科"
+  },
+  {
+    "key": "Ulgher",
+    "value": "烏爾格"
+  },
+  {
+    "key": "Ulthar",
+    "value": "烏撒"
+  },
+  {
+    "key": "Umm",
+    "value": "烏姆"
+  },
+  {
+    "key": "Ungal",
+    "value": "溫加爾"
+  },
+  {
+    "key": "Unuk",
+    "value": "天市右垣七"
+  },
+  {
+    "key": "Urania",
+    "value": "烏拉尼亞"
+  },
+  {
+    "key": "Urf",
+    "value": "烏爾夫"
+  },
+  {
+    "key": "Urkab",
+    "value": "烏爾卡布"
+  },
+  {
+    "key": "Urna",
+    "value": "烏爾娜"
+  },
+  {
+    "key": "Ursula",
+    "value": "烏蘇拉"
+  },
+  {
+    "key": "Ursus",
+    "value": "烏爾蘇斯"
+  },
+  {
+    "key": "Ussika",
+    "value": "烏西卡"
+  },
+  {
+    "key": "Uxmai",
+    "value": "烏克斯邁"
+  },
+  {
+    "key": "Uz",
+    "value": "烏茲"
+  },
+  {
+    "key": "Vagn",
+    "value": "瓦格恩"
+  },
+  {
+    "key": "Vaht",
+    "value": "瓦特"
+  },
+  {
+    "key": "Valkyr",
+    "value": "瓦爾基里"
+  },
+  {
+    "key": "Valusia",
+    "value": "瓦盧西亞"
+  },
+  {
+    "key": "Varak",
+    "value": "瓦拉克"
+  },
+  {
+    "key": "Vardi",
+    "value": "瓦爾迪"
+  },
+  {
+    "key": "Varinia",
+    "value": "瓦琳妮亞"
+  },
+  {
+    "key": "Vector",
+    "value": "維克托"
+  },
+  {
+    "key": "Vega",
+    "value": "織女星"
+  },
+  {
+    "key": "Vela",
+    "value": "船帆座"
+  },
+  {
+    "key": "Veneris",
+    "value": "維納斯"
+  },
+  {
+    "key": "Vespa",
+    "value": "韋斯帕"
+  },
+  {
+    "key": "Vhoorl",
+    "value": "沃霍爾"
+  },
+  {
+    "key": "Vij",
+    "value": "維吉"
+  },
+  {
+    "key": "Virgil",
+    "value": "維吉爾"
+  },
+  {
+    "key": "Virgo",
+    "value": "室女座"
+  },
+  {
+    "key": "Vitruvious",
+    "value": "維特魯威"
+  },
+  {
+    "key": "Volans",
+    "value": "飛魚座"
+  },
+  {
+    "key": "Volantis",
+    "value": "飛魚"
+  },
+  {
+    "key": "Voor",
+    "value": "沃爾"
+  },
+  {
+    "key": "Vox",
+    "value": "沃克斯"
+  },
+  {
+    "key": "Vulcan",
+    "value": "伏爾甘"
+  },
+  {
+    "key": "Vuples",
+    "value": "烏普勒斯"
+  },
+  {
+    "key": "Waage",
+    "value": "沃格"
+  },
+  {
+    "key": "Wabir",
+    "value": "瓦比爾"
+  },
+  {
+    "key": "Waghi",
+    "value": "瓦吉"
+  },
+  {
+    "key": "Wag",
+    "value": "瓦格"
+  },
+  {
+    "key": "Wain",
+    "value": "韋恩"
+  },
+  {
+    "key": "Warikomi",
+    "value": "挖"
+  },
+  {
+    "key": "Wasat",
+    "value": "瓦薩特"
+  },
+  {
+    "key": "Wazn",
+    "value": "瓦茲恩"
+  },
+  {
+    "key": "Weg",
+    "value": "韋格"
+  },
+  {
+    "key": "Wei",
+    "value": "魏"
+  },
+  {
+    "key": "Wesat",
+    "value": "韋薩特"
+  },
+  {
+    "key": "Wesen",
+    "value": "韋森"
+  },
+  {
+    "key": "Whynil",
+    "value": "懷尼爾"
+  },
+  {
+    "key": "Wilder",
+    "value": "懷爾德"
+  },
+  {
+    "key": "Willow",
+    "value": "柳"
+  },
+  {
+    "key": "Wirius",
+    "value": "維里烏斯"
+  },
+  {
+    "key": "Wolf",
+    "value": "狼"
+  },
+  {
+    "key": "Woo",
+    "value": "伍"
+  },
+  {
+    "key": "Woz",
+    "value": "沃茲"
+  },
+  {
+    "key": "Xanthus",
+    "value": "克桑托斯"
+  },
+  {
+    "key": "Xeen",
+    "value": "希恩"
+  },
+  {
+    "key": "Xendalla",
+    "value": "森達拉"
+  },
+  {
+    "key": "Xengara",
+    "value": "森加拉"
+  },
+  {
+    "key": "Xenon",
+    "value": "氙"
+  },
+  {
+    "key": "Xiclotl",
+    "value": "希克洛特爾"
+  },
+  {
+    "key": "Xiphias",
+    "value": "劍魚"
+  },
+  {
+    "key": "Xolas",
+    "value": "索拉斯"
+  },
+  {
+    "key": "Xoth",
+    "value": "索斯"
+  },
+  {
+    "key": "Yaddith",
+    "value": "亞底斯"
+  },
+  {
+    "key": "Yad",
+    "value": "亞德"
+  },
+  {
+    "key": "Yarak",
+    "value": "亞拉克"
+  },
+  {
+    "key": "Yarrow",
+    "value": "亞羅"
+  },
+  {
+    "key": "Yed",
+    "value": "耶德"
+  },
+  {
+    "key": "Yekub",
+    "value": "耶庫布"
+  },
+  {
+    "key": "Yen",
+    "value": "顏"
+  },
+  {
+    "key": "Yhe",
+    "value": "耶"
+  },
+  {
+    "key": "Yian",
+    "value": "伊安"
+  },
+  {
+    "key": "Yifne",
+    "value": "伊夫內"
+  },
+  {
+    "key": "Yildum",
+    "value": "伊爾杜姆"
+  },
+  {
+    "key": "Ymar",
+    "value": "伊瑪爾"
+  },
+  {
+    "key": "Ynarl",
+    "value": "伊納爾"
+  },
+  {
+    "key": "Yoth",
+    "value": "約斯"
+  },
+  {
+    "key": "Yue",
+    "value": "月"
+  },
+  {
+    "key": "Yuzh",
+    "value": "尤茲"
+  },
+  {
+    "key": "Zaban",
+    "value": "扎班"
+  },
+  {
+    "key": "Zak",
+    "value": "扎克"
+  },
+  {
+    "key": "Zaman",
+    "value": "扎曼"
+  },
+  {
+    "key": "Zaniah",
+    "value": "扎尼亞"
+  },
+  {
+    "key": "Zaoth",
+    "value": "扎奧斯"
+  },
+  {
+    "key": "Zarijan",
+    "value": "扎里揚"
+  },
+  {
+    "key": "Zaurak",
+    "value": "玉井二"
+  },
+  {
+    "key": "Zenith",
+    "value": "天頂"
+  },
+  {
+    "key": "Zerah",
+    "value": "謝拉"
+  },
+  {
+    "key": "Zhadoom",
+    "value": "扎杜姆"
+  },
+  {
+    "key": "Zhardan",
+    "value": "扎爾丹"
+  },
+  {
+    "key": "Zibbat",
+    "value": "齊巴特"
+  },
+  {
+    "key": "Zib",
+    "value": "齊布"
+  },
+  {
+    "key": "Zichos",
+    "value": "齊霍斯"
+  },
+  {
+    "key": "Zinge",
+    "value": "津格"
+  },
+  {
+    "key": "Zin",
+    "value": "津恩"
+  },
+  {
+    "key": "Zirkel",
+    "value": "齊克爾"
+  },
+  {
+    "key": "Zirr",
+    "value": "齊爾"
+  },
+  {
+    "key": "Zobna",
+    "value": "佐布納"
+  },
+  {
+    "key": "Zoctan",
+    "value": "佐克坦"
+  },
+  {
+    "key": "Zona",
+    "value": "佐娜"
+  },
+  {
+    "key": "Zosma",
+    "value": "太微四"
+  },
+  {
+    "key": "Zothique",
+    "value": "佐希克"
+  },
+  {
+    "key": "Zuban",
+    "value": "祖班"
+  },
+  {
+    "key": "Zubrah",
+    "value": "祖布拉"
+  },
+  {
+    "key": "Zweig",
+    "value": "茨威格"
+  }
+]

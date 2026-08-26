@@ -47,6 +47,11 @@
 
 #### 原版忠實度重新稽核（最高優先）
 
+- [~] **玩家可見文案外部化**：2026-08-26 已把既有 `assets/i18n/*.json` 與內嵌副本統一轉為
+  有序 JSON 並移除 `go:embed` 副本，載入器保留 per-source、先出現者優先及原版單位元控制標記契約。剩餘工作是逐畫面
+  移除 `tr(中文, 英文)` 與直接繪製的硬編文案，改以穩定鍵值查詢；規格見
+  [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`
   已把本次錯判提煉成跨專案流程，涵蓋重新稽核觸發條件、具名符號限制、玩家機制證據矩陣、
   IDA 深抽樣、自洽測試與原版 oracle 分級，以及 README／發行聲明閘門；知識路由與 IDA Docker
@@ -386,6 +391,11 @@
   Garrison 亦已由共享 `0xD050B..0xD0549` 尾端閉合；四棟現依 ETA9、四槽星系壓力、
   Ruthless、priority gate 與 budget factor 精確計分。正常唯一候選均可完工並新增對應固定
   防禦反擊者；反擊者本身的 space／武器／戰機火力仍保留手冊＋近似證據等級。
+  raw 1 Alien Management Center、raw 11 Colony Base、raw 14 Dimensional Portal、raw 18
+  與 raw 48 已證實直接走共同零分尾端；一般建築表中的 raw 1／14 已接 exact 零分，正常
+  候選只剩兩者任一時不會被類別代理誤選。raw 9 Capitol 亦已證實只在非統一政體且目前
+  殖民地行星等於 `player+0x29` 的 Capitol 行星時取 100；remake 尚缺可存檔 Capitol 行星、
+  首都攻陷與重建狀態鏈，故不以第一殖民地冒充。
   其餘分數區域、
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
   state machine 亦待閉合。見
@@ -1067,8 +1077,8 @@ internal/shell/orbital_bombardment.go:218
 - [x] 戰鬥公式依武器類型分流(**2026-07-11**):飛彈躲避/AMR 攔截/球狀傷害的公式其實先前就已移植自手冊(`gamedata/missile.go`/`gamedata/damage.go`,有測試),只是戰鬥解算(`cmd/moo2/interactive.go` `fireRound`、`internal/shell/session.go` `battleVolley`)全部武器都走 beam 邏輯(`shell.ResolveShot`),飛彈(核飛彈/麥克萊特飛彈)被當 beam 打。這輪修正:新增 `internal/shell/weapon_kind.go` 依武器名分類 beam/missile/spherical(核對手冊「Notes on Spherical Damage」確認死光不是球狀武器,是一般光束武器且是 `DamageForHit` 手冊 worked example 出處,現行武器表也沒有任何真正的球狀武器);新增 `shell.ResolveMissileShot`(AMR 攔截 + Jam Chance 躲避)、`shell.ResolveSphericalShot`(已測試但暫無武器掛載,備妥待未來新增);`fireRound`/`battleVolley` 依 `CombatShip.Kind`/`combatant.kind` 分流,beam 行為不變(回歸測試)。詳見 `docs/tech/tactical-combat-weapon-kinds.md`。
 - [x] AI 財政赤字修正:職務保底(MinWorkersForSolvency/DecideColonyJobsSolvent,只 Scientific 挪 1 人)+ 順修 AI 職務回寫 bug;AI BC 從發散(-217)改收斂有界(48),測試綠(見 ai-fiscal-solvency.md)
 - [x] TradeGoodsIncome 接線(2026-07-11):貿易品是建造佇列選項(非第四種職務配置,原判斷是誤判)——建造選單新增「貿易品」、`engine.ColonyState.TradeGoods` + `syncTradeGoodsFlag`、`RunEmpireTurn` 接上 2:1 換算(`EmpireOutput.TradeGoodsRevenue`);Fantastic Trader 仍 TODO。見 `docs/tech/gameplay-systems-status.md` §2
-- [x] 原版 672 艦名池翻譯並接入(取代硬編 10 名)(2026-07-11:190 組基底詞意譯+羅馬數字流水號保留,`assets/i18n/shipname.tsv` + `internal/shell/shipnames.go`,見 `docs/tech/proper-noun-strategy.md` 艦名節)
-- [x] 原版 829 隨機星名池翻譯並接入(取代二十八宿占位池)(2026-07-11:829 條英文名彼此互不重複——真名/圍棋術語彩蛋/克蘇魯神話等專有名詞優先意譯,虛構短音節規則化音譯,`assets/i18n/starname-random.tsv` + `internal/shell/starnames.go`,`genGalaxy` 改用 `randomStarNamePool`,二十八宿 `starNamePool` 已移除;見 `docs/tech/proper-noun-strategy.md` 隨機星名節)
+- [x] 原版 672 艦名池翻譯並接入(取代硬編 10 名)(2026-07-11:190 組基底詞意譯+羅馬數字流水號保留,`assets/i18n/shipname.json` + `internal/shell/shipnames.go`,見 `docs/tech/proper-noun-strategy.md` 艦名節)
+- [x] 原版 829 隨機星名池翻譯並接入(取代二十八宿占位池)(2026-07-11:829 條英文名彼此互不重複——真名/圍棋術語彩蛋/克蘇魯神話等專有名詞優先意譯,虛構短音節規則化音譯,`assets/i18n/starname-random.json` + `internal/shell/starnames.go`,`genGalaxy` 改用 `randomStarNamePool`,二十八宿 `starNamePool` 已移除;見 `docs/tech/proper-noun-strategy.md` 隨機星名節)
 - [x] **勝利條件(2026-07-11)**:銀河議會選舉(手冊 GAME_MANUAL.pdf p.183,`gamedata/council.go`
   +`shell/council.go`)——議會成立門檻(半數銀河已殖民 + 存續帝國數)、票數=人口(手冊無精確換算
   公式,近似1:1)、2/3超級多數勝出(沿用 `internal/engine/victory.go` 既有但先前從未接線的
@@ -1347,8 +1357,8 @@ internal/shell/orbital_bombardment.go:218
 - [x] 通用畫面覆蓋渲染器(`cmd/moo2/overlay.go`:資料驅動擦底疊字,選單+行星列表共用)
 - [x] 主選單中文化(6 按鈕)+ 行星列表中文化(18 標籤,before/after)
 - [x] LBX 字串資源解析 + dumper(`internal/lbx/strings.go` + `cmd/lbxstrings`);TECHNAME 560 條科技名 dump 成功
-- [x] **科技/元件名譯表完整(`assets/i18n/tech.tsv`:419 條唯一全翻)** — 研究主題/領域、武器/裝甲/護盾/引擎/電腦、建築、艦種、武器改造(含縮寫);覆蓋驗證 419/419 無遺漏
-- [x] i18n TSV 守護測試(載入所有 assets/i18n/*.tsv + 佔位符一致性)
+- [x] **科技/元件名譯表完整(`assets/i18n/tech.json`:419 條唯一全翻)** — 研究主題/領域、武器/裝甲/護盾/引擎/電腦、建築、艦種、武器改造(含縮寫);覆蓋驗證 419/419 無遺漏
+- [x] i18n TSV 守護測試(載入所有 assets/i18n/*.json + 佔位符一致性)
 - [~] 觀感微調,保留
 - [x] 其餘字串源逐一 dump + 翻(2026-07-11 盤點:多數已完成,見 assets/i18n/):科技描述 techdesc.tsv(83)、種族 races/raceinfo.tsv、事件 event.tsv(98)、外交 diplo.tsv(780)、help.tsv(704)、母星名 starname.tsv、技能 skilldesc.tsv、estrings(585)/rstring(178)/antaran、艦名 shipname.tsv(535,同日稍後完成,見下方獨立項)、隨機星名 starname-random.tsv(829,同日稍後完成,見下方獨立項)
 - [x] **★ 調色盤鏈解鎖(關鍵)**:對照 openorion2 `gfx.cpp Image::load` 破解「無內嵌調色盤畫面」上色機制(基底提供圖 + 本圖部分內嵌疊加);實作 `cmd/moo2/interactive.go` `resolvePalette`;研究選擇(TECHSEL,借 SCIENCE 調色盤)完整渲染驗證。見 `docs/tech/palette-chain.md`
@@ -1417,7 +1427,7 @@ internal/shell/orbital_bombardment.go:218
 - [x] dumper 已齊(`cmd/lbxdump`、`cmd/lbxstrings`、`cmd/lbxinfo`),24 份 TSV 共 5,049 條由此而來
 - [x] 逐畫面重建:主選單/星系圖/行星清單/殖民地/科技研究/艦隊/軍官/種族資訊/對話框/載存檔皆已建(載存檔在 `cmd/moo2/loadgame.go`,過場截圖廊第 70 拍)。
 - [x] `cmd/moo2/overlay.go` 已實作擦底疊字
-- [x] LBX 字串譯文表:科技名/描述、種族、事件、外交、星名、help、技能、殖民地、議會、選單等 22 個逐源分檔 TSV 已完成(assets/i18n/*.tsv);艦名池(2026-07-11 補完,shipname.tsv)、隨機星名池(2026-07-11 補完,starname-random.tsv)均已落地,四個專有名詞池全數定案
+- [x] LBX 字串譯文表:科技名/描述、種族、事件、外交、星名、help、技能、殖民地、議會、選單等 22 個逐源分檔 TSV 已完成(assets/i18n/*.json);艦名池(2026-07-11 補完,shipname.tsv)、隨機星名池(2026-07-11 補完,starname-random.tsv)均已落地,四個專有名詞池全數定案
 - [x] `internal/i18n` 有 `TranslateFormat`(含測試)
 - [~] 24 份 TSV 本身就是譯名的單一來源;獨立術語表由 2026-08-08 新建的 `CONTEXT.md` 部分承接(它收的是**專案內部術語**,不是遊戲專有名詞)。「中文(英文)」小字控制碼仍未做
 - [x] `scripts/screenshot.sh` + `-gamegallery`(目前 35 張，含 `01b_newgame`)已是常規驗收流程

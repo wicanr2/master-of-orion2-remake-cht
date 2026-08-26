@@ -1,0 +1,67 @@
+[
+  {
+    "key": "Game Design",
+    "value": "遊戲設計",
+    "note": "名單"
+  },
+  {
+    "key": "Lead Programmer",
+    "value": "首席程式設計師",
+    "note": "名單"
+  },
+  {
+    "key": "Programmers",
+    "value": "程式設計",
+    "note": "名單"
+  },
+  {
+    "key": "Lead Artist",
+    "value": "首席美術",
+    "note": "名單"
+  },
+  {
+    "key": "Artists",
+    "value": "美術",
+    "note": "名單"
+  },
+  {
+    "key": "Libraries",
+    "value": "程式庫",
+    "note": "名單"
+  },
+  {
+    "key": "Music",
+    "value": "音樂",
+    "note": "名單"
+  },
+  {
+    "key": "Sound Effects",
+    "value": "音效",
+    "note": "名單"
+  },
+  {
+    "key": "QA Lead",
+    "value": "品保主管",
+    "note": "名單"
+  },
+  {
+    "key": "Quality Assurance",
+    "value": "品質保證",
+    "note": "名單"
+  },
+  {
+    "key": "Compatibility Lead",
+    "value": "相容性主管",
+    "note": "名單"
+  },
+  {
+    "key": "Compatibility Tech",
+    "value": "相容性技術",
+    "note": "名單"
+  },
+  {
+    "key": "Special Thanks",
+    "value": "特別感謝",
+    "note": "名單"
+  }
+]

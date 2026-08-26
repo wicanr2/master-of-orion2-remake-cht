@@ -1,0 +1,177 @@
+[
+  {
+    "key": "Continue",
+    "value": "繼續",
+    "note": "主選單:接續上次遊戲"
+  },
+  {
+    "key": "Load Game",
+    "value": "載入遊戲",
+    "note": "主選單"
+  },
+  {
+    "key": "New Game",
+    "value": "新遊戲",
+    "note": "主選單"
+  },
+  {
+    "key": "Multi Player",
+    "value": "多人對戰",
+    "note": "主選單"
+  },
+  {
+    "key": "Hall of Fame",
+    "value": "名人堂",
+    "note": "主選單:歷代高分榜"
+  },
+  {
+    "key": "Quit Game",
+    "value": "結束遊戲",
+    "note": "主選單"
+  },
+  {
+    "key": "Colonies",
+    "value": "殖民地",
+    "note": "星系工具列"
+  },
+  {
+    "key": "Planets",
+    "value": "行星",
+    "note": "星系工具列"
+  },
+  {
+    "key": "Fleets",
+    "value": "艦隊",
+    "note": "星系工具列"
+  },
+  {
+    "key": "Zoom",
+    "value": "縮放",
+    "note": "星系工具列"
+  },
+  {
+    "key": "Game",
+    "value": "遊戲",
+    "note": "主畫面標題"
+  },
+  {
+    "key": "Leaders",
+    "value": "領袖",
+    "note": "星系工具列"
+  },
+  {
+    "key": "Races",
+    "value": "種族",
+    "note": "星系工具列"
+  },
+  {
+    "key": "Info",
+    "value": "情報",
+    "note": "星系工具列"
+  },
+  {
+    "key": "Turn",
+    "value": "結束回合",
+    "note": "星系工具列"
+  },
+  {
+    "key": "Game",
+    "value": "遊戲",
+    "note": "星系工具列"
+  },
+  {
+    "key": "FLEET OPERATIONS",
+    "value": "艦隊作戰",
+    "note": "艦隊列表標題"
+  },
+  {
+    "key": "ALL",
+    "value": "全選",
+    "note": "艦隊列表按鈕:全選/全不選這支艦隊的艦艇(手冊 p.47「All: Selects all of the ships in the fleet」)"
+  },
+  {
+    "key": "RELOCATE",
+    "value": "調動",
+    "note": "艦隊列表按鈕"
+  },
+  {
+    "key": "SCRAP",
+    "value": "拆解",
+    "note": "艦隊列表按鈕"
+  },
+  {
+    "key": "LEADERS",
+    "value": "軍官",
+    "note": "艦隊列表按鈕"
+  },
+  {
+    "key": "Support",
+    "value": "支援",
+    "note": "艦隊列表切換"
+  },
+  {
+    "key": "Combat",
+    "value": "戰鬥",
+    "note": "艦隊列表切換"
+  },
+  {
+    "key": "RETURN",
+    "value": "返回",
+    "note": "艦隊列表按鈕"
+  },
+  {
+    "key": "DIFFICULTY",
+    "value": "難度",
+    "note": "新遊戲"
+  },
+  {
+    "key": "GALAXY SIZE",
+    "value": "星系大小",
+    "note": "新遊戲"
+  },
+  {
+    "key": "GALAXY AGE",
+    "value": "星系年齡",
+    "note": "新遊戲"
+  },
+  {
+    "key": "PLAYERS",
+    "value": "玩家數",
+    "note": "新遊戲"
+  },
+  {
+    "key": "RACE",
+    "value": "種族",
+    "note": "新遊戲"
+  },
+  {
+    "key": "TECH LEVEL",
+    "value": "科技等級",
+    "note": "新遊戲"
+  },
+  {
+    "key": "TACTICAL COMBAT",
+    "value": "戰術戰鬥",
+    "note": "新遊戲"
+  },
+  {
+    "key": "RANDOM EVENTS",
+    "value": "隨機事件",
+    "note": "新遊戲"
+  },
+  {
+    "key": "ANTARANS ATTACK",
+    "value": "安塔蘭攻擊",
+    "note": "新遊戲"
+  },
+  {
+    "key": "CANCEL",
+    "value": "取消",
+    "note": "新遊戲"
+  },
+  {
+    "key": "ACCEPT",
+    "value": "接受",
+    "note": "新遊戲"
+  }
+]

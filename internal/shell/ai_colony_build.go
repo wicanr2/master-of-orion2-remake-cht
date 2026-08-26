@@ -447,6 +447,8 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		ruthless = 1
 	}
 	switch rawID {
+	case 1, 14: // raw 1／14 跳表直接進 0xD0417 的共同零分尾端
+		return 0, true
 	case 26, 27, 42, 47: // 0xD04B3..0xD0549：四種固定殖民地防禦
 		if !ctx.strategicPressureContextKnown {
 			return 0, false

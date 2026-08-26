@@ -1,0 +1,262 @@
+[
+  {
+    "key": "Population",
+    "value": "人口",
+    "note": "類別"
+  },
+  {
+    "key": "-50% Growth",
+    "value": "-50% 成長",
+    "note": "特性"
+  },
+  {
+    "key": "+50% Growth",
+    "value": "+50% 成長",
+    "note": "特性"
+  },
+  {
+    "key": "+100% Growth",
+    "value": "+100% 成長",
+    "note": "特性"
+  },
+  {
+    "key": "Farming",
+    "value": "農業",
+    "note": "類別"
+  },
+  {
+    "key": "-1/2 Food",
+    "value": "-1/2 食物",
+    "note": "特性"
+  },
+  {
+    "key": "+1 Food",
+    "value": "+1 食物",
+    "note": "特性"
+  },
+  {
+    "key": "+2 Food",
+    "value": "+2 食物",
+    "note": "特性"
+  },
+  {
+    "key": "Industry",
+    "value": "工業",
+    "note": "類別"
+  },
+  {
+    "key": "-1 Production",
+    "value": "-1 生產",
+    "note": "特性"
+  },
+  {
+    "key": "+1 Production",
+    "value": "+1 生產",
+    "note": "特性"
+  },
+  {
+    "key": "+2 Production",
+    "value": "+2 生產",
+    "note": "特性"
+  },
+  {
+    "key": "Science",
+    "value": "科學",
+    "note": "類別"
+  },
+  {
+    "key": "-1 Research",
+    "value": "-1 研究",
+    "note": "特性"
+  },
+  {
+    "key": "+1 Research",
+    "value": "+1 研究",
+    "note": "特性"
+  },
+  {
+    "key": "+2 Research",
+    "value": "+2 研究",
+    "note": "特性"
+  },
+  {
+    "key": "Money",
+    "value": "金錢",
+    "note": "類別"
+  },
+  {
+    "key": "-0.5 BC",
+    "value": "-0.5 星幣",
+    "note": "特性"
+  },
+  {
+    "key": "+0.5 BC",
+    "value": "+0.5 星幣",
+    "note": "特性"
+  },
+  {
+    "key": "+1.0 BC",
+    "value": "+1.0 星幣",
+    "note": "特性"
+  },
+  {
+    "key": "Ship Defense",
+    "value": "艦船防禦",
+    "note": "類別"
+  },
+  {
+    "key": "Ship Attack",
+    "value": "艦船攻擊",
+    "note": "類別"
+  },
+  {
+    "key": "Ground Combat",
+    "value": "地面戰鬥",
+    "note": "類別"
+  },
+  {
+    "key": "Spying",
+    "value": "間諜",
+    "note": "類別"
+  },
+  {
+    "key": "Governments",
+    "value": "政體",
+    "note": "類別"
+  },
+  {
+    "key": "Feudal",
+    "value": "封建",
+    "note": "政體"
+  },
+  {
+    "key": "Dictatorship",
+    "value": "獨裁",
+    "note": "政體"
+  },
+  {
+    "key": "Democracy",
+    "value": "民主",
+    "note": "政體"
+  },
+  {
+    "key": "Unification",
+    "value": "統一",
+    "note": "政體"
+  },
+  {
+    "key": "Special Abilities",
+    "value": "特殊能力",
+    "note": "類別"
+  },
+  {
+    "key": "Low-G World",
+    "value": "低重力世界",
+    "note": "特性"
+  },
+  {
+    "key": "High-G World",
+    "value": "高重力世界",
+    "note": "特性"
+  },
+  {
+    "key": "Aquatic",
+    "value": "水棲",
+    "note": "特性"
+  },
+  {
+    "key": "Subterranean",
+    "value": "地底棲",
+    "note": "特性"
+  },
+  {
+    "key": "Large Home World",
+    "value": "大型母星",
+    "note": "特性"
+  },
+  {
+    "key": "Rich Home World",
+    "value": "富礦母星",
+    "note": "特性"
+  },
+  {
+    "key": "Poor Home World",
+    "value": "貧礦母星",
+    "note": "特性"
+  },
+  {
+    "key": "Artifacts World",
+    "value": "遺物世界",
+    "note": "特性"
+  },
+  {
+    "key": "Cybernetic",
+    "value": "半機械化",
+    "note": "特性"
+  },
+  {
+    "key": "Lithovore",
+    "value": "食岩",
+    "note": "特性"
+  },
+  {
+    "key": "Repulsive",
+    "value": "令人厭惡",
+    "note": "特性"
+  },
+  {
+    "key": "Charismatic",
+    "value": "魅力非凡",
+    "note": "特性"
+  },
+  {
+    "key": "Uncreative",
+    "value": "缺乏創造力",
+    "note": "特性"
+  },
+  {
+    "key": "Creative",
+    "value": "富創造力",
+    "note": "特性"
+  },
+  {
+    "key": "Tolerant",
+    "value": "適應力強",
+    "note": "特性"
+  },
+  {
+    "key": "Fantastic Traders",
+    "value": "卓越貿易者",
+    "note": "特性"
+  },
+  {
+    "key": "Telepathic",
+    "value": "心靈感應",
+    "note": "特性"
+  },
+  {
+    "key": "Lucky",
+    "value": "幸運",
+    "note": "特性"
+  },
+  {
+    "key": "Omniscient",
+    "value": "全知",
+    "note": "特性"
+  },
+  {
+    "key": "Stealthy Ships",
+    "value": "匿蹤艦船",
+    "note": "特性"
+  },
+  {
+    "key": "Trans Dimensional",
+    "value": "跨次元",
+    "note": "特性"
+  },
+  {
+    "key": "Warlord",
+    "value": "軍閥",
+    "note": "特性"
+  }
+]

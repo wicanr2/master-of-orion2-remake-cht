@@ -54,7 +54,7 @@ Conditions」摘要,**與上述無版本差異**)額外補了計分公式一節,
 | 勝出門檻 | 「a full two-thirds majority of the votes」 | ✅ 明確(2/3) |
 | 人口 → 票數換算 | 「Based on the size of the population... assigned a number of votes」 | ❌ 只有定性描述,無換算係數 |
 | 候選人怎麼選、第三方怎麼投票 | 「Two contenders are chosen... How each race votes is determined on the basis of current diplomatic relations」 | ❌ 只有定性描述,無公式 |
-| 重開間隔(第幾屆之後多久再開) | 手冊未提;外交台詞(`assets/i18n/diplo.tsv`)證實會反覆召開 | ❌ 完全沒有數字 |
+| 重開間隔(第幾屆之後多久再開) | 手冊未提;外交台詞(`assets/i18n/diplo.json`)證實會反覆召開 | ❌ 完全沒有數字 |
 | Council Win 計分獎勵 | 「100 points」(MANUAL_150.html) | ✅ 明確,但本 remake 無計分系統可接 |
 
 ## 2. openorion2 沒有可抄的邏輯(這是從零設計)

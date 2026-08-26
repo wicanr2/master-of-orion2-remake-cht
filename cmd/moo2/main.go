@@ -194,7 +194,7 @@ func main() {
 	helpIndex := flag.Int("help-index", 1, "百科條目 index(HELP.LBX asset0)")
 	helpTitle := flag.String("help-title", "", "依英文標題選百科條目(優先於 -help-index)")
 	helpList := flag.Bool("help-list", false, "列出所有百科條目(headless,不開視窗)")
-	infoMode := flag.Bool("info-viewer", false, "科技總覽畫面模式(示範單畫面多 TSV 來源)")
+	infoMode := flag.Bool("info-viewer", false, "科技總覽畫面模式(示範單畫面多 JSON 來源)")
 	infoTech := flag.String("info-tech", "Achilles Targeting Unit", "科技總覽右欄範例科技(英文標題)")
 	raceMode := flag.Bool("race-viewer", false, "種族統計畫面模式")
 	gameMode := flag.Bool("game", false, "還原原版互動遊戲(原版主選單→導覽各原版畫面,全繁中;有 -shot 則腳本驗證)")
@@ -204,17 +204,16 @@ func main() {
 	promoHideCursor := flag.Bool("promo-hide-cursor", false, "推廣導覽錄製時隱藏導覽準星，避免遮住 UI 文字或按鈕(需 -promo-demo)")
 	colonyMode := flag.Bool("colony-viewer", false, "殖民地摘要畫面模式")
 	diploMode := flag.Bool("diplo-viewer", false, "外交關係畫面模式")
-	tsvPath := flag.String("tsv", "", "譯表 TSV(留空用該畫面預設)")
+	tsvPath := flag.String("tsv", "", "譯表 JSON(留空用該畫面預設)")
 	lang := flag.String("lang", "zh", "語言:zh(繁中)或 en(英文)")
 	versionFlag := flag.String("version", "auto", "-game 初始版本:auto、1.3 或 1.5(主選單仍可切換)")
-	// 譯表預設**烘在執行檔裡**(見 embedassets.go),所以從任何目錄跑都找得到。
-	// 這個旗標是開發用的覆寫:改譯表不必重編。
-	i18nDir := flag.String("i18n", "", "譯表目錄(留空 = 用烘進執行檔的那份)")
+	// 玩家文案是獨立 JSON；預設由外部文案載入器自動尋找。
+	i18nDir := flag.String("i18n", "", "JSON 文案目錄（留空 = 自動尋找外部文案）")
 	// hi-res 內部畫布倍率(第 86 項(hi-res 畫布)):2 = 1280×960(CJK 才有足夠字級),
 	// 1 = 回到 640×480 的舊行為(**逐位元回歸驗證用**,見 interactive.go 的 uiScale)。
 	uiScaleFlag := flag.Float64("uiscale", 2, "內部畫布倍率(2=hi-res,1=原版 640×480)")
 	flag.Parse()
-	i18nOverrideDir = *i18nDir // 讓散在各處的 OpenI18NTSV 也吃得到 -i18n(見 embedassets.go)
+	i18nOverrideDir = *i18nDir // 讓散在各處的 OpenI18NJSON 也吃得到 -i18n。
 	if *uiScaleFlag >= 1 {
 		uiScale = *uiScaleFlag
 	}
@@ -256,7 +255,7 @@ func main() {
 		if *menuMode {
 			tsv := *tsvPath
 			if tsv == "" {
-				tsv = "menu.tsv"
+				tsv = "menu.json"
 			}
 			// 主選單用純向量 Noto(平滑,與 -game 主選單一致);zh 未帶 -font 時退回混合字型。
 			menuFont := fnt
@@ -267,7 +266,7 @@ func main() {
 		} else {
 			tsv := *tsvPath
 			if tsv == "" {
-				tsv = "planets.tsv"
+				tsv = "planets.json"
 			}
 			err = runPlanets(dirs, langID, fnt, tsv, *shot, *frames)
 		}
@@ -277,7 +276,7 @@ func main() {
 		return
 	}
 
-	// 百科檢視器模式:HELP.LBX + help.tsv,自繪面板顯示一則條目。
+	// 百科檢視器模式:HELP.LBX + help.json,自繪面板顯示一則條目。
 	if *helpMode {
 		if *dataDirs == "" {
 			fmt.Fprintln(os.Stderr, "需指定 -data <遊戲資料夾>")
@@ -304,7 +303,7 @@ func main() {
 		return
 	}
 
-	// 科技總覽模式:示範單畫面多 TSV 來源(misc 標題/分組 + tech 名 + help 本文)。
+	// 科技總覽模式:示範單畫面多 JSON 來源(misc 標題/分組 + tech 名 + help 本文)。
 	if *infoMode {
 		if *dataDirs == "" {
 			fmt.Fprintln(os.Stderr, "需指定 -data <遊戲資料夾>")

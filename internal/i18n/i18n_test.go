@@ -6,18 +6,19 @@ import (
 	"testing"
 )
 
-const sampleTSV = `# 主選單
-Continue	繼續	menu
-Load Game	載入遊戲
-New Game	新遊戲
-Quit Game	結束遊戲
-Cost %v	花費 %v	模板
-Empty	` // 空中文欄應略過
+const sampleJSON = `[
+  {"key":"Continue","value":"繼續","note":"menu"},
+  {"key":"Load Game","value":"載入遊戲"},
+  {"key":"New Game","value":"新遊戲"},
+  {"key":"Quit Game","value":"結束遊戲"},
+  {"key":"Cost %v","value":"花費 %v","note":"模板"},
+  {"key":"Empty","value":""}
+]`
 
 func newZH(t *testing.T) *Catalog {
 	t.Helper()
 	c := New(Traditional)
-	n, err := c.LoadTSV(strings.NewReader(sampleTSV))
+	n, err := c.LoadJSON(strings.NewReader(sampleJSON))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,20 +65,21 @@ func TestTranslateFormat(t *testing.T) {
 
 func TestFirstWins(t *testing.T) {
 	c := New(Traditional)
-	c.LoadTSV(strings.NewReader("Power\t能量\n"))
-	c.LoadTSV(strings.NewReader("Power\t電力\n")) // 後載入應被略過
+	c.LoadJSON(strings.NewReader(`[{"key":"Power","value":"能量"}]`))
+	c.LoadJSON(strings.NewReader(`[{"key":"Power","value":"電力"}]`)) // 後載入應被略過
 	if got := c.Translate("Power"); got != "能量" {
 		t.Errorf("先載入者優先,得 %q,預期 能量", got)
 	}
 }
 
-// TestLoadTSVTrimsDecodedKey 回歸:含尾端/開頭跳脫換行的 key 須能被(TrimSpace 後的)查詢命中。
-// 修正前 key 在 decode 前 TrimSpace,殘留真實 \n,而 Translate 查詢端 TrimSpace 會削掉 → 永久 miss。
-func TestLoadTSVTrimsDecodedKey(t *testing.T) {
-	tsv := "Reduced to reduced intensity.\\n\tzh尾端換行\n" +
-		"\\n\\nThis colony does not allow farming.\tzh開頭換行\n"
+// TestLoadJSONTrimsKey 回歸：含尾端／開頭換行的 key 須能被查詢命中。
+func TestLoadJSONTrimsDecodedKey(t *testing.T) {
+	data := `[
+  {"key":"Reduced to reduced intensity.\n","value":"zh尾端換行"},
+  {"key":"\n\nThis colony does not allow farming.","value":"zh開頭換行"}
+]`
 	c := New(Traditional)
-	if _, err := c.LoadTSV(strings.NewReader(tsv)); err != nil {
+	if _, err := c.LoadJSON(strings.NewReader(data)); err != nil {
 		t.Fatal(err)
 	}
 	cases := []struct{ query, want string }{

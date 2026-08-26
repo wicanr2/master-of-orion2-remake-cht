@@ -1,0 +1,2167 @@
+[
+  {
+    "key": "Starting Tech",
+    "value": "起始科技",
+    "note": "研究主題"
+  },
+  {
+    "key": "Advanced Biology",
+    "value": "進階生物學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Advanced Chemistry",
+    "value": "進階化學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Advanced Construction",
+    "value": "進階建設",
+    "note": "研究主題"
+  },
+  {
+    "key": "Advanced Engineering",
+    "value": "進階工程學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Advanced Fusion",
+    "value": "進階核融合",
+    "note": "研究主題"
+  },
+  {
+    "key": "Advanced Governments",
+    "value": "進階政體",
+    "note": "研究主題"
+  },
+  {
+    "key": "Advanced Magnetism",
+    "value": "進階磁學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Advanced Manufacturing",
+    "value": "進階製造",
+    "note": "研究主題"
+  },
+  {
+    "key": "Advanced Metallurgy",
+    "value": "進階冶金學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Military Tactics",
+    "value": "軍事戰術",
+    "note": "研究主題"
+  },
+  {
+    "key": "Advanced Robotics",
+    "value": "進階機器人學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Teaching Methods",
+    "value": "教學方法",
+    "note": "研究主題"
+  },
+  {
+    "key": "Anti-Matter Fission",
+    "value": "反物質分裂",
+    "note": "研究主題"
+  },
+  {
+    "key": "Artificial Consciousness",
+    "value": "人工意識",
+    "note": "研究主題"
+  },
+  {
+    "key": "Artificial Intelligence",
+    "value": "人工智慧",
+    "note": "研究主題"
+  },
+  {
+    "key": "Artificial Gravity",
+    "value": "人造重力",
+    "note": "研究主題"
+  },
+  {
+    "key": "Artificial Life",
+    "value": "人造生命",
+    "note": "研究主題"
+  },
+  {
+    "key": "Astro Biology",
+    "value": "太空生物學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Astro Construction",
+    "value": "太空建設",
+    "note": "研究主題"
+  },
+  {
+    "key": "Astro Engineering",
+    "value": "太空工程學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Capsule Construction",
+    "value": "太空艙建造",
+    "note": "研究主題"
+  },
+  {
+    "key": "Chemistry",
+    "value": "化學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Cold Fusion",
+    "value": "冷核融合",
+    "note": "研究主題"
+  },
+  {
+    "key": "Cybertechnics",
+    "value": "生化電子學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Cybertronics",
+    "value": "生化電子工程",
+    "note": "研究主題"
+  },
+  {
+    "key": "Distortion Fields",
+    "value": "扭曲力場",
+    "note": "研究主題"
+  },
+  {
+    "key": "Electromagnetic Refraction",
+    "value": "電磁折射",
+    "note": "研究主題"
+  },
+  {
+    "key": "Electronics",
+    "value": "電子學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Engineering",
+    "value": "工程學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Evolutionary Genetics",
+    "value": "演化遺傳學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Fusion Physics",
+    "value": "核融合物理",
+    "note": "研究主題"
+  },
+  {
+    "key": "Galactic Economics",
+    "value": "銀河經濟學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Galactic Networking",
+    "value": "銀河網路",
+    "note": "研究主題"
+  },
+  {
+    "key": "Genetic Engineering",
+    "value": "基因工程",
+    "note": "研究主題"
+  },
+  {
+    "key": "Genetic Mutations",
+    "value": "基因突變",
+    "note": "研究主題"
+  },
+  {
+    "key": "Gravitic Fields",
+    "value": "重力場",
+    "note": "研究主題"
+  },
+  {
+    "key": "High Energy Distribution",
+    "value": "高能分配",
+    "note": "研究主題"
+  },
+  {
+    "key": "Hyper Dimensional Fission",
+    "value": "超維分裂",
+    "note": "研究主題"
+  },
+  {
+    "key": "Hyper Dimensional Physics",
+    "value": "超維物理",
+    "note": "研究主題"
+  },
+  {
+    "key": "Interphased Fission",
+    "value": "交相分裂",
+    "note": "研究主題"
+  },
+  {
+    "key": "Ion Fission",
+    "value": "離子分裂",
+    "note": "研究主題"
+  },
+  {
+    "key": "Superscalar Construction",
+    "value": "超純量建構",
+    "note": "研究主題"
+  },
+  {
+    "key": "Macro Economics",
+    "value": "總體經濟學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Macro Genetics",
+    "value": "巨觀遺傳學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Magneto Gravitics",
+    "value": "磁重力學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Matter Energy Conversion",
+    "value": "物質能量轉換",
+    "note": "研究主題"
+  },
+  {
+    "key": "Molecular Compression",
+    "value": "分子壓縮",
+    "note": "研究主題"
+  },
+  {
+    "key": "Molecular Control",
+    "value": "分子控制",
+    "note": "研究主題"
+  },
+  {
+    "key": "Moleculatronics",
+    "value": "分子電子學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Molecular Manipulation",
+    "value": "分子操控",
+    "note": "研究主題"
+  },
+  {
+    "key": "Multi-Dimensional Physics",
+    "value": "多維物理",
+    "note": "研究主題"
+  },
+  {
+    "key": "Multi-Phased Physics",
+    "value": "多相物理",
+    "note": "研究主題"
+  },
+  {
+    "key": "Nano Technology",
+    "value": "奈米科技",
+    "note": "研究主題"
+  },
+  {
+    "key": "Neutrino Physics",
+    "value": "微中子物理",
+    "note": "研究主題"
+  },
+  {
+    "key": "Nuclear Fission",
+    "value": "核分裂",
+    "note": "研究主題"
+  },
+  {
+    "key": "Optronics",
+    "value": "光電子學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Physics",
+    "value": "物理學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Planetoid Construction",
+    "value": "小行星建造",
+    "note": "研究主題"
+  },
+  {
+    "key": "Plasma Physics",
+    "value": "電漿物理",
+    "note": "研究主題"
+  },
+  {
+    "key": "Positronics",
+    "value": "正電子學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Quantum Fields",
+    "value": "量子場",
+    "note": "研究主題"
+  },
+  {
+    "key": "Robotics",
+    "value": "機器人學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Servo Mechanics",
+    "value": "伺服機械",
+    "note": "研究主題"
+  },
+  {
+    "key": "Subspace Fields",
+    "value": "次空間場",
+    "note": "研究主題"
+  },
+  {
+    "key": "Subspace Physics",
+    "value": "次空間物理",
+    "note": "研究主題"
+  },
+  {
+    "key": "Tachyon Physics",
+    "value": "快子物理",
+    "note": "研究主題"
+  },
+  {
+    "key": "Tectonic Engineering",
+    "value": "地殼工程",
+    "note": "研究主題"
+  },
+  {
+    "key": "Temporal Fields",
+    "value": "時間場",
+    "note": "研究主題"
+  },
+  {
+    "key": "Temporal Physics",
+    "value": "時間物理",
+    "note": "研究主題"
+  },
+  {
+    "key": "Trans Genetics",
+    "value": "超遺傳學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Transwarp Fields",
+    "value": "超曲速場",
+    "note": "研究主題"
+  },
+  {
+    "key": "Warp Fields",
+    "value": "曲速場",
+    "note": "研究主題"
+  },
+  {
+    "key": "Xeno Relations",
+    "value": "異星關係",
+    "note": "研究主題"
+  },
+  {
+    "key": "Xenon Technology",
+    "value": "氙科技",
+    "note": "研究主題"
+  },
+  {
+    "key": "Hyper Biology",
+    "value": "超生物學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Hyper Power",
+    "value": "超動力",
+    "note": "研究主題"
+  },
+  {
+    "key": "Hyper Physics",
+    "value": "超物理學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Hyper Construction",
+    "value": "超建設",
+    "note": "研究主題"
+  },
+  {
+    "key": "Hyper Fields",
+    "value": "超力場",
+    "note": "研究主題"
+  },
+  {
+    "key": "Hyper Chemistry",
+    "value": "超化學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Hyper Computers",
+    "value": "超電腦",
+    "note": "研究主題"
+  },
+  {
+    "key": "Hyper Sociology",
+    "value": "超社會學",
+    "note": "研究主題"
+  },
+  {
+    "key": "Biology",
+    "value": "生物學",
+    "note": "研究領域"
+  },
+  {
+    "key": "Power",
+    "value": "動力",
+    "note": "研究領域"
+  },
+  {
+    "key": "Construction",
+    "value": "建設",
+    "note": "研究領域"
+  },
+  {
+    "key": "Fields",
+    "value": "力場",
+    "note": "研究領域"
+  },
+  {
+    "key": "Computers",
+    "value": "電腦",
+    "note": "研究領域"
+  },
+  {
+    "key": "Sociology",
+    "value": "社會學",
+    "note": "研究領域"
+  },
+  {
+    "key": "No Tech",
+    "value": "無科技",
+    "note": "佔位"
+  },
+  {
+    "key": "Achilles Targeting Unit",
+    "value": "阿基里斯瞄準系統",
+    "note": "元件"
+  },
+  {
+    "key": "Adamantium Armor",
+    "value": "精金裝甲",
+    "note": "裝甲"
+  },
+  {
+    "key": "Advanced City Planning",
+    "value": "先進都市規劃",
+    "note": "建築"
+  },
+  {
+    "key": "Advanced Damage Control",
+    "value": "先進損管",
+    "note": "元件"
+  },
+  {
+    "key": "Alien Management Center",
+    "value": "異族管理中心",
+    "note": "建築"
+  },
+  {
+    "key": "Android Farmers",
+    "value": "機器人農民",
+    "note": "建築"
+  },
+  {
+    "key": "Android Scientists",
+    "value": "機器人科學家",
+    "note": "建築"
+  },
+  {
+    "key": "Android Workers",
+    "value": "機器人工人",
+    "note": "建築"
+  },
+  {
+    "key": "Anti-Grav Harness",
+    "value": "反重力裝具",
+    "note": "元件"
+  },
+  {
+    "key": "Anti-Matter Bomb",
+    "value": "反物質炸彈",
+    "note": "武器"
+  },
+  {
+    "key": "Anti-Matter Drive",
+    "value": "反物質引擎",
+    "note": "引擎"
+  },
+  {
+    "key": "Anti-Matter Torpedoes",
+    "value": "反物質魚雷",
+    "note": "武器"
+  },
+  {
+    "key": "Anti-Missile Rockets",
+    "value": "反飛彈火箭",
+    "note": "武器"
+  },
+  {
+    "key": "Armor Barracks",
+    "value": "裝甲兵營",
+    "note": "建築"
+  },
+  {
+    "key": "Artemis System Net",
+    "value": "阿提米斯星系網",
+    "note": "建築"
+  },
+  {
+    "key": "Planet Construction",
+    "value": "行星建設",
+    "note": "科技"
+  },
+  {
+    "key": "Assault Shuttles",
+    "value": "突擊梭",
+    "note": "武器"
+  },
+  {
+    "key": "Astro University",
+    "value": "太空大學",
+    "note": "建築"
+  },
+  {
+    "key": "Atmospheric Renewer",
+    "value": "大氣再生器",
+    "note": "建築"
+  },
+  {
+    "key": "Augmented Engines",
+    "value": "強化引擎",
+    "note": "元件"
+  },
+  {
+    "key": "Autolab",
+    "value": "自動實驗室",
+    "note": "建築"
+  },
+  {
+    "key": "Automated Factories",
+    "value": "自動化工廠",
+    "note": "建築"
+  },
+  {
+    "key": "Automated Repair Unit",
+    "value": "自動修復裝置",
+    "note": "元件"
+  },
+  {
+    "key": "Battleoids",
+    "value": "戰鬥機械人",
+    "note": "元件"
+  },
+  {
+    "key": "Battle Pods",
+    "value": "戰鬥艙",
+    "note": "元件"
+  },
+  {
+    "key": "Battle Scanner",
+    "value": "戰鬥掃描器",
+    "note": "元件"
+  },
+  {
+    "key": "Battlestation",
+    "value": "戰鬥站",
+    "note": "艦種"
+  },
+  {
+    "key": "Bio-Terminator",
+    "value": "生化終結者",
+    "note": "武器"
+  },
+  {
+    "key": "Biomorphic Fungi",
+    "value": "生物形態真菌",
+    "note": "建築"
+  },
+  {
+    "key": "Black Hole Generator",
+    "value": "黑洞產生器",
+    "note": "武器"
+  },
+  {
+    "key": "Bomber Bays",
+    "value": "轟炸機庫",
+    "note": "元件"
+  },
+  {
+    "key": "Capitol",
+    "value": "首都",
+    "note": "建築"
+  },
+  {
+    "key": "Class I Shield",
+    "value": "第一級護盾",
+    "note": "護盾"
+  },
+  {
+    "key": "Class III Shield",
+    "value": "第三級護盾",
+    "note": "護盾"
+  },
+  {
+    "key": "Class V Shield",
+    "value": "第五級護盾",
+    "note": "護盾"
+  },
+  {
+    "key": "Class VII Shield",
+    "value": "第七級護盾",
+    "note": "護盾"
+  },
+  {
+    "key": "Class X Shield",
+    "value": "第十級護盾",
+    "note": "護盾"
+  },
+  {
+    "key": "Cloaking Device",
+    "value": "隱形裝置",
+    "note": "元件"
+  },
+  {
+    "key": "Cloning Center",
+    "value": "複製中心",
+    "note": "建築"
+  },
+  {
+    "key": "Colony Base",
+    "value": "殖民基地",
+    "note": "元件"
+  },
+  {
+    "key": "Colony Ship",
+    "value": "殖民船",
+    "note": "艦種"
+  },
+  {
+    "key": "Confederation",
+    "value": "邦聯",
+    "note": "政體"
+  },
+  {
+    "key": "Cyber-Security Link",
+    "value": "網路安全連結",
+    "note": "建築"
+  },
+  {
+    "key": "Cybertronic Computer",
+    "value": "生化電子電腦",
+    "note": "電腦"
+  },
+  {
+    "key": "Damper Field",
+    "value": "阻尼場",
+    "note": "元件"
+  },
+  {
+    "key": "Dauntless Guidance System",
+    "value": "無畏導引系統",
+    "note": "元件"
+  },
+  {
+    "key": "Death Ray",
+    "value": "死光",
+    "note": "武器"
+  },
+  {
+    "key": "Death Spores",
+    "value": "死亡孢子",
+    "note": "武器"
+  },
+  {
+    "key": "Deep Core Mining",
+    "value": "深核採礦",
+    "note": "建築"
+  },
+  {
+    "key": "Core Waste Dumps",
+    "value": "核廢料傾倒場",
+    "note": "建築"
+  },
+  {
+    "key": "Deuterium Fuel Cells",
+    "value": "氘燃料電池",
+    "note": "燃料"
+  },
+  {
+    "key": "Dimensional Portal",
+    "value": "次元傳送門",
+    "note": "建築"
+  },
+  {
+    "key": "Displacement Device",
+    "value": "位移裝置",
+    "note": "元件"
+  },
+  {
+    "key": "Disrupter Cannon",
+    "value": "崩解砲",
+    "note": "武器"
+  },
+  {
+    "key": "Doom Star Construction",
+    "value": "末日之星建造",
+    "note": "科技"
+  },
+  {
+    "key": "Reinforced Hull",
+    "value": "強化船殼",
+    "note": "元件"
+  },
+  {
+    "key": "Ecm Jammer",
+    "value": "電子干擾器",
+    "note": "元件"
+  },
+  {
+    "key": "Electronic Computer",
+    "value": "電子電腦",
+    "note": "電腦"
+  },
+  {
+    "key": "Emissions Guidance System",
+    "value": "輻射導引系統",
+    "note": "元件"
+  },
+  {
+    "key": "Energy Absorber",
+    "value": "能量吸收器",
+    "note": "元件"
+  },
+  {
+    "key": "Biospheres",
+    "value": "生物圈",
+    "note": "建築"
+  },
+  {
+    "key": "Evolutionary Mutation",
+    "value": "演化突變",
+    "note": "科技"
+  },
+  {
+    "key": "Extended Fuel Tanks",
+    "value": "延伸燃料槽",
+    "note": "元件"
+  },
+  {
+    "key": "Fast Missile Racks",
+    "value": "快速飛彈架",
+    "note": "元件"
+  },
+  {
+    "key": "Federation",
+    "value": "聯邦",
+    "note": "政體"
+  },
+  {
+    "key": "Fighter Bays",
+    "value": "戰機庫",
+    "note": "元件"
+  },
+  {
+    "key": "Fighter Garrison",
+    "value": "戰機駐防",
+    "note": "建築"
+  },
+  {
+    "key": "Food Replicators",
+    "value": "食物複製機",
+    "note": "建築"
+  },
+  {
+    "key": "Freighters",
+    "value": "貨船",
+    "note": "元件"
+  },
+  {
+    "key": "Fusion Beam",
+    "value": "核融合光束",
+    "note": "武器"
+  },
+  {
+    "key": "Fusion Bomb",
+    "value": "核融合炸彈",
+    "note": "武器"
+  },
+  {
+    "key": "Fusion Drive",
+    "value": "核融合引擎",
+    "note": "引擎"
+  },
+  {
+    "key": "Fusion Rifle",
+    "value": "核融合步槍",
+    "note": "陸戰"
+  },
+  {
+    "key": "Gaia Transformation",
+    "value": "蓋亞改造",
+    "note": "建築"
+  },
+  {
+    "key": "Galactic Currency Exchange",
+    "value": "銀河貨幣交易所",
+    "note": "建築"
+  },
+  {
+    "key": "Galactic Cybernet",
+    "value": "銀河電子網",
+    "note": "建築"
+  },
+  {
+    "key": "Galactic Unification",
+    "value": "銀河統一",
+    "note": "政體"
+  },
+  {
+    "key": "Gauss Cannon",
+    "value": "高斯砲",
+    "note": "武器"
+  },
+  {
+    "key": "Graviton Beam",
+    "value": "重力子光束",
+    "note": "武器"
+  },
+  {
+    "key": "Gyro Destabilizer",
+    "value": "陀螺失穩器",
+    "note": "武器"
+  },
+  {
+    "key": "Hard Shields",
+    "value": "硬化護盾",
+    "note": "元件"
+  },
+  {
+    "key": "Heavy Armor",
+    "value": "重型裝甲",
+    "note": "元件"
+  },
+  {
+    "key": "Heavy Fighter Bays",
+    "value": "重型戰機庫",
+    "note": "元件"
+  },
+  {
+    "key": "Heightened Intelligence",
+    "value": "智力增強",
+    "note": "科技"
+  },
+  {
+    "key": "High Energy Focus",
+    "value": "高能聚焦",
+    "note": "元件"
+  },
+  {
+    "key": "Holo Simulator",
+    "value": "全像模擬器",
+    "note": "建築"
+  },
+  {
+    "key": "Hydroponic Farm",
+    "value": "水耕農場",
+    "note": "建築"
+  },
+  {
+    "key": "Hyper Drive",
+    "value": "超空間引擎",
+    "note": "引擎"
+  },
+  {
+    "key": "Megafluxers",
+    "value": "百萬通量器",
+    "note": "元件"
+  },
+  {
+    "key": "Hyper-X Capacitors",
+    "value": "超X電容",
+    "note": "元件"
+  },
+  {
+    "key": "Hyperspace Communications",
+    "value": "超空間通訊",
+    "note": "建築"
+  },
+  {
+    "key": "Imperium",
+    "value": "帝國",
+    "note": "政體"
+  },
+  {
+    "key": "Inertial Nullifier",
+    "value": "慣性抵消器",
+    "note": "元件"
+  },
+  {
+    "key": "Inertial Stabilizer",
+    "value": "慣性穩定器",
+    "note": "元件"
+  },
+  {
+    "key": "Interphased Drive",
+    "value": "交相引擎",
+    "note": "引擎"
+  },
+  {
+    "key": "Ion Drive",
+    "value": "離子引擎",
+    "note": "引擎"
+  },
+  {
+    "key": "Ion Pulse Cannon",
+    "value": "離子脈衝砲",
+    "note": "武器"
+  },
+  {
+    "key": "Iridium Fuel Cells",
+    "value": "銥燃料電池",
+    "note": "燃料"
+  },
+  {
+    "key": "Jump Gate",
+    "value": "躍遷門",
+    "note": "建築"
+  },
+  {
+    "key": "Laser Cannon",
+    "value": "雷射砲",
+    "note": "武器"
+  },
+  {
+    "key": "Laser Rifle",
+    "value": "雷射步槍",
+    "note": "陸戰"
+  },
+  {
+    "key": "Lightning Field",
+    "value": "閃電場",
+    "note": "元件"
+  },
+  {
+    "key": "Marine Barracks",
+    "value": "陸戰隊兵營",
+    "note": "建築"
+  },
+  {
+    "key": "Mass Driver",
+    "value": "質量投射器",
+    "note": "武器"
+  },
+  {
+    "key": "Mauler Device",
+    "value": "重擊裝置",
+    "note": "武器"
+  },
+  {
+    "key": "Merculite Missile",
+    "value": "麥克萊特飛彈",
+    "note": "武器"
+  },
+  {
+    "key": "Microbiotics",
+    "value": "微生物技術",
+    "note": "建築"
+  },
+  {
+    "key": "Microlite Construction",
+    "value": "微石建造",
+    "note": "科技"
+  },
+  {
+    "key": "Outpost Ship",
+    "value": "前哨船",
+    "note": "艦種"
+  },
+  {
+    "key": "Moleculartronic Computer",
+    "value": "分子電子電腦",
+    "note": "電腦"
+  },
+  {
+    "key": "Multi-Wave Ecm Jammer",
+    "value": "多波電子干擾器",
+    "note": "元件"
+  },
+  {
+    "key": "Multi-Phased Shields",
+    "value": "多相護盾",
+    "note": "元件"
+  },
+  {
+    "key": "Nano Disassemblers",
+    "value": "奈米分解器",
+    "note": "元件"
+  },
+  {
+    "key": "Neural Scanner",
+    "value": "神經掃描器",
+    "note": "建築"
+  },
+  {
+    "key": "Neutron Blaster",
+    "value": "中子爆破槍",
+    "note": "武器"
+  },
+  {
+    "key": "Neutron Scanner",
+    "value": "中子掃描器",
+    "note": "元件"
+  },
+  {
+    "key": "Neutronium Armor",
+    "value": "中子素裝甲",
+    "note": "裝甲"
+  },
+  {
+    "key": "Neutronium Bomb",
+    "value": "中子素炸彈",
+    "note": "武器"
+  },
+  {
+    "key": "Nuclear Bomb",
+    "value": "核彈",
+    "note": "武器"
+  },
+  {
+    "key": "Nuclear Drive",
+    "value": "核子引擎",
+    "note": "引擎"
+  },
+  {
+    "key": "Nuclear Missile",
+    "value": "核飛彈",
+    "note": "武器"
+  },
+  {
+    "key": "Optronic Computer",
+    "value": "光電子電腦",
+    "note": "電腦"
+  },
+  {
+    "key": "Particle Beam",
+    "value": "粒子光束",
+    "note": "武器"
+  },
+  {
+    "key": "Personal Shield",
+    "value": "個人護盾",
+    "note": "陸戰"
+  },
+  {
+    "key": "Phase Shifter",
+    "value": "相位轉換器",
+    "note": "元件"
+  },
+  {
+    "key": "Phasing Cloak",
+    "value": "相位隱形",
+    "note": "元件"
+  },
+  {
+    "key": "Phasor",
+    "value": "相位砲",
+    "note": "武器"
+  },
+  {
+    "key": "Phasor Rifle",
+    "value": "相位步槍",
+    "note": "陸戰"
+  },
+  {
+    "key": "Planetary Barrier Shield",
+    "value": "行星屏障護盾",
+    "note": "建築"
+  },
+  {
+    "key": "Planetary Flux Shield",
+    "value": "行星通量護盾",
+    "note": "建築"
+  },
+  {
+    "key": "Planetary Gravity Generator",
+    "value": "行星重力產生器",
+    "note": "建築"
+  },
+  {
+    "key": "Planetary Missile Base",
+    "value": "行星飛彈基地",
+    "note": "建築"
+  },
+  {
+    "key": "Ground Batteries",
+    "value": "地面砲台",
+    "note": "建築"
+  },
+  {
+    "key": "Planetary Radiation Shield",
+    "value": "行星輻射護盾",
+    "note": "建築"
+  },
+  {
+    "key": "Planetary Stock Exchange",
+    "value": "行星證券交易所",
+    "note": "建築"
+  },
+  {
+    "key": "Planetary Supercomputer",
+    "value": "行星超級電腦",
+    "note": "建築"
+  },
+  {
+    "key": "Plasma Cannon",
+    "value": "電漿砲",
+    "note": "武器"
+  },
+  {
+    "key": "Plasma Rifle",
+    "value": "電漿步槍",
+    "note": "陸戰"
+  },
+  {
+    "key": "Plasma Torpedoes",
+    "value": "電漿魚雷",
+    "note": "武器"
+  },
+  {
+    "key": "Plasma Web",
+    "value": "電漿網",
+    "note": "武器"
+  },
+  {
+    "key": "Pleasure Dome",
+    "value": "享樂圓頂",
+    "note": "建築"
+  },
+  {
+    "key": "Pollution Processor",
+    "value": "污染處理器",
+    "note": "建築"
+  },
+  {
+    "key": "Positronic Computer",
+    "value": "正電子電腦",
+    "note": "電腦"
+  },
+  {
+    "key": "Powered Armor",
+    "value": "動力裝甲",
+    "note": "陸戰"
+  },
+  {
+    "key": "Pulse Rifle",
+    "value": "脈衝步槍",
+    "note": "陸戰"
+  },
+  {
+    "key": "Proton Torpedoes",
+    "value": "質子魚雷",
+    "note": "武器"
+  },
+  {
+    "key": "Psionics",
+    "value": "靈能學",
+    "note": "科技"
+  },
+  {
+    "key": "Pulsar",
+    "value": "脈衝星",
+    "note": "武器"
+  },
+  {
+    "key": "Pulson Missile",
+    "value": "脈子飛彈",
+    "note": "武器"
+  },
+  {
+    "key": "Quantum Detonator",
+    "value": "量子引爆器",
+    "note": "元件"
+  },
+  {
+    "key": "Rangemaster Unit",
+    "value": "射程控制器",
+    "note": "元件"
+  },
+  {
+    "key": "Recyclotron",
+    "value": "回收機",
+    "note": "建築"
+  },
+  {
+    "key": "Reflection Field",
+    "value": "反射場",
+    "note": "元件"
+  },
+  {
+    "key": "Robotic Factory",
+    "value": "機器人工廠",
+    "note": "建築"
+  },
+  {
+    "key": "Research Laboratory",
+    "value": "研究實驗室",
+    "note": "建築"
+  },
+  {
+    "key": "Robo-Miners",
+    "value": "機器人礦工",
+    "note": "建築"
+  },
+  {
+    "key": "Space Scanner",
+    "value": "太空掃描器",
+    "note": "元件"
+  },
+  {
+    "key": "Scout Lab",
+    "value": "偵察實驗室",
+    "note": "元件"
+  },
+  {
+    "key": "Security Stations",
+    "value": "保全站",
+    "note": "元件"
+  },
+  {
+    "key": "Sensors",
+    "value": "感測器",
+    "note": "元件"
+  },
+  {
+    "key": "Shield Capacitors",
+    "value": "護盾電容",
+    "note": "元件"
+  },
+  {
+    "key": "Soil Enrichment",
+    "value": "土壤強化",
+    "note": "建築"
+  },
+  {
+    "key": "Space Academy",
+    "value": "太空學院",
+    "note": "建築"
+  },
+  {
+    "key": "Spaceport",
+    "value": "太空港",
+    "note": "建築"
+  },
+  {
+    "key": "Spatial Compressor",
+    "value": "空間壓縮器",
+    "note": "武器"
+  },
+  {
+    "key": "Spy Network",
+    "value": "間諜網",
+    "note": "建築"
+  },
+  {
+    "key": "Standard Fuel Cells",
+    "value": "標準燃料電池",
+    "note": "燃料"
+  },
+  {
+    "key": "Star Base",
+    "value": "星際基地",
+    "note": "艦種"
+  },
+  {
+    "key": "Star Fortress",
+    "value": "星際要塞",
+    "note": "艦種"
+  },
+  {
+    "key": "Star Gate",
+    "value": "星際之門",
+    "note": "建築"
+  },
+  {
+    "key": "Stasis Field",
+    "value": "停滯場",
+    "note": "武器"
+  },
+  {
+    "key": "Stealth Field",
+    "value": "匿蹤場",
+    "note": "元件"
+  },
+  {
+    "key": "Stealth Suit",
+    "value": "匿蹤衣",
+    "note": "陸戰"
+  },
+  {
+    "key": "Stellar Converter",
+    "value": "恆星轉換器",
+    "note": "武器"
+  },
+  {
+    "key": "Structural Analyzer",
+    "value": "結構分析器",
+    "note": "元件"
+  },
+  {
+    "key": "Sub-Space Communications",
+    "value": "次空間通訊",
+    "note": "建築"
+  },
+  {
+    "key": "Sub-Space Teleporter",
+    "value": "次空間傳送器",
+    "note": "元件"
+  },
+  {
+    "key": "Subterranean Farms",
+    "value": "地底農場",
+    "note": "建築"
+  },
+  {
+    "key": "Survival Pods",
+    "value": "求生艙",
+    "note": "元件"
+  },
+  {
+    "key": "Tachyon Communications",
+    "value": "快子通訊",
+    "note": "建築"
+  },
+  {
+    "key": "Tachyon Scanner",
+    "value": "快子掃描器",
+    "note": "元件"
+  },
+  {
+    "key": "Telepathic Training",
+    "value": "心靈感應訓練",
+    "note": "建築"
+  },
+  {
+    "key": "Terraforming",
+    "value": "地形改造",
+    "note": "建築"
+  },
+  {
+    "key": "Thorium Fuel Cells",
+    "value": "釷燃料電池",
+    "note": "燃料"
+  },
+  {
+    "key": "Time Warp Facilitator",
+    "value": "時間扭曲促進器",
+    "note": "元件"
+  },
+  {
+    "key": "Titan Construction",
+    "value": "泰坦建造",
+    "note": "科技"
+  },
+  {
+    "key": "Titanium Armor",
+    "value": "鈦裝甲",
+    "note": "裝甲"
+  },
+  {
+    "key": "Tractor Beam",
+    "value": "牽引光束",
+    "note": "武器"
+  },
+  {
+    "key": "Transport",
+    "value": "運輸艦",
+    "note": "艦種"
+  },
+  {
+    "key": "Transporters",
+    "value": "傳送器",
+    "note": "元件"
+  },
+  {
+    "key": "Tritanium Armor",
+    "value": "三鈦裝甲",
+    "note": "裝甲"
+  },
+  {
+    "key": "Troop Pods",
+    "value": "部隊艙",
+    "note": "元件"
+  },
+  {
+    "key": "Universal Antidote",
+    "value": "萬用解毒劑",
+    "note": "建築"
+  },
+  {
+    "key": "Urridium Fuel Cells",
+    "value": "鈾銥燃料電池",
+    "note": "燃料"
+  },
+  {
+    "key": "Virtual Reality Network",
+    "value": "虛擬實境網路",
+    "note": "建築"
+  },
+  {
+    "key": "Warp Dissipater",
+    "value": "曲速消散器",
+    "note": "元件"
+  },
+  {
+    "key": "Warp Interdictor",
+    "value": "曲速攔阻器",
+    "note": "建築"
+  },
+  {
+    "key": "Weather Control System",
+    "value": "天氣控制系統",
+    "note": "建築"
+  },
+  {
+    "key": "Wide Area Jammer",
+    "value": "廣域干擾器",
+    "note": "元件"
+  },
+  {
+    "key": "Xeno Psychology",
+    "value": "異星心理學",
+    "note": "科技"
+  },
+  {
+    "key": "Xentronium Armor",
+    "value": "氙素裝甲",
+    "note": "裝甲"
+  },
+  {
+    "key": "Zeon Missile",
+    "value": "澤昂飛彈",
+    "note": "武器"
+  },
+  {
+    "key": "Zortrium Armor",
+    "value": "佐特裝甲",
+    "note": "裝甲"
+  },
+  {
+    "key": "No Building",
+    "value": "無建築",
+    "note": "佔位"
+  },
+  {
+    "key": "Alien Control Center",
+    "value": "異族控制中心",
+    "note": "建築"
+  },
+  {
+    "key": "Atmosphere Renewer",
+    "value": "大氣再生器",
+    "note": "建築"
+  },
+  {
+    "key": "Automated Factory",
+    "value": "自動化工廠",
+    "note": "建築"
+  },
+  {
+    "key": "Deep Core Mine",
+    "value": "深核礦場",
+    "note": "建築"
+  },
+  {
+    "key": "Core Waste Dump",
+    "value": "核廢料場",
+    "note": "建築"
+  },
+  {
+    "key": "Currency Exchange",
+    "value": "貨幣交易所",
+    "note": "建築"
+  },
+  {
+    "key": "Barrier Shield",
+    "value": "屏障護盾",
+    "note": "建築"
+  },
+  {
+    "key": "Flux Shield",
+    "value": "通量護盾",
+    "note": "建築"
+  },
+  {
+    "key": "Gravity Generator",
+    "value": "重力產生器",
+    "note": "建築"
+  },
+  {
+    "key": "Missile Base",
+    "value": "飛彈基地",
+    "note": "建築"
+  },
+  {
+    "key": "Radiation Shield",
+    "value": "輻射護盾",
+    "note": "建築"
+  },
+  {
+    "key": "Stock Exchange",
+    "value": "證券交易所",
+    "note": "建築"
+  },
+  {
+    "key": "Supercomputer",
+    "value": "超級電腦",
+    "note": "建築"
+  },
+  {
+    "key": "Research Lab",
+    "value": "研究實驗室",
+    "note": "建築"
+  },
+  {
+    "key": "Robo Miner Plant",
+    "value": "機器人礦場",
+    "note": "建築"
+  },
+  {
+    "key": "Weather Controller",
+    "value": "天氣控制器",
+    "note": "建築"
+  },
+  {
+    "key": "Artificial Planet",
+    "value": "人造行星",
+    "note": "建築"
+  },
+  {
+    "key": "No Special",
+    "value": "無特殊",
+    "note": "佔位"
+  },
+  {
+    "key": "Shield Capacitor",
+    "value": "護盾電容",
+    "note": "特殊"
+  },
+  {
+    "key": "Sub Space Teleporter",
+    "value": "次空間傳送器",
+    "note": "特殊"
+  },
+  {
+    "key": "Warp Dissipator",
+    "value": "曲速消散器",
+    "note": "特殊"
+  },
+  {
+    "key": "Regeneration",
+    "value": "再生",
+    "note": "特殊"
+  },
+  {
+    "key": "No Armor",
+    "value": "無裝甲",
+    "note": "佔位"
+  },
+  {
+    "key": "No Shield",
+    "value": "無護盾",
+    "note": "佔位"
+  },
+  {
+    "key": "No Weapons",
+    "value": "無武器",
+    "note": "佔位"
+  },
+  {
+    "key": "Disrupter",
+    "value": "崩解砲",
+    "note": "武器"
+  },
+  {
+    "key": "Anti-Matter Torp",
+    "value": "反物質魚雷",
+    "note": "武器"
+  },
+  {
+    "key": "Proton Torpedo",
+    "value": "質子魚雷",
+    "note": "武器"
+  },
+  {
+    "key": "Plasma Torpedo",
+    "value": "電漿魚雷",
+    "note": "武器"
+  },
+  {
+    "key": "Death Spore",
+    "value": "死亡孢子",
+    "note": "武器"
+  },
+  {
+    "key": "Assault Shuttle",
+    "value": "突擊梭",
+    "note": "戰機"
+  },
+  {
+    "key": "Heavy Fighter",
+    "value": "重型戰機",
+    "note": "戰機"
+  },
+  {
+    "key": "Bomber",
+    "value": "轟炸機",
+    "note": "戰機"
+  },
+  {
+    "key": "Interceptor",
+    "value": "攔截機",
+    "note": "戰機"
+  },
+  {
+    "key": "Anti-Missile Rocket",
+    "value": "反飛彈火箭",
+    "note": "武器"
+  },
+  {
+    "key": "Dragon Breath",
+    "value": "龍息",
+    "note": "怪獸武器"
+  },
+  {
+    "key": "Phasor Eye",
+    "value": "相位眼",
+    "note": "怪獸武器"
+  },
+  {
+    "key": "Crystal Ray",
+    "value": "水晶射線",
+    "note": "怪獸武器"
+  },
+  {
+    "key": "Plasma Breath",
+    "value": "電漿吐息",
+    "note": "怪獸武器"
+  },
+  {
+    "key": "Plasma Flux",
+    "value": "電漿通量",
+    "note": "怪獸武器"
+  },
+  {
+    "key": "Caustic Slime",
+    "value": "腐蝕黏液",
+    "note": "怪獸武器"
+  },
+  {
+    "key": "No Computer",
+    "value": "無電腦",
+    "note": "佔位"
+  },
+  {
+    "key": "No Drive",
+    "value": "無引擎",
+    "note": "佔位"
+  },
+  {
+    "key": "No Unit",
+    "value": "無單位",
+    "note": "佔位"
+  },
+  {
+    "key": "Marines",
+    "value": "陸戰隊",
+    "note": "單位"
+  },
+  {
+    "key": "Armor",
+    "value": "裝甲車",
+    "note": "單位"
+  },
+  {
+    "key": "Spy",
+    "value": "間諜",
+    "note": "單位"
+  },
+  {
+    "key": "No Fuel Cells",
+    "value": "無燃料電池",
+    "note": "佔位"
+  },
+  {
+    "key": "Uridium Fuel Cells",
+    "value": "鈾銥燃料電池",
+    "note": "燃料"
+  },
+  {
+    "key": "No Mods",
+    "value": "無改造",
+    "note": "佔位"
+  },
+  {
+    "key": "Heavy Mount",
+    "value": "重型砲座",
+    "note": "改造"
+  },
+  {
+    "key": "Point Defense",
+    "value": "點防禦",
+    "note": "改造"
+  },
+  {
+    "key": "Armor Piercing",
+    "value": "穿甲",
+    "note": "改造"
+  },
+  {
+    "key": "Continuous",
+    "value": "連續",
+    "note": "改造"
+  },
+  {
+    "key": "No Range Dissipation",
+    "value": "無射程衰減",
+    "note": "改造"
+  },
+  {
+    "key": "Shield Piercing",
+    "value": "穿盾",
+    "note": "改造"
+  },
+  {
+    "key": "Auto Fire",
+    "value": "自動射擊",
+    "note": "改造"
+  },
+  {
+    "key": "Enveloping",
+    "value": "包覆",
+    "note": "改造"
+  },
+  {
+    "key": "Mirv",
+    "value": "多彈頭",
+    "note": "改造"
+  },
+  {
+    "key": "ECCM",
+    "value": "反反制",
+    "note": "改造"
+  },
+  {
+    "key": "Heavily Armored",
+    "value": "重裝甲",
+    "note": "改造"
+  },
+  {
+    "key": "Fast",
+    "value": "快速",
+    "note": "改造"
+  },
+  {
+    "key": "Emmisions Guidance",
+    "value": "輻射導引",
+    "note": "改造"
+  },
+  {
+    "key": "Overloaded",
+    "value": "超載",
+    "note": "改造"
+  },
+  {
+    "key": "None",
+    "value": "無",
+    "note": "佔位"
+  },
+  {
+    "key": "Hv",
+    "value": "重",
+    "note": "改造縮寫"
+  },
+  {
+    "key": "Pd",
+    "value": "點防",
+    "note": "改造縮寫"
+  },
+  {
+    "key": "AP",
+    "value": "穿甲",
+    "note": "改造縮寫"
+  },
+  {
+    "key": "CO",
+    "value": "連續",
+    "note": "改造縮寫"
+  },
+  {
+    "key": "NR",
+    "value": "無衰",
+    "note": "改造縮寫"
+  },
+  {
+    "key": "SP",
+    "value": "穿盾",
+    "note": "改造縮寫"
+  },
+  {
+    "key": "AF",
+    "value": "自動",
+    "note": "改造縮寫"
+  },
+  {
+    "key": "ENV",
+    "value": "包覆",
+    "note": "改造縮寫"
+  },
+  {
+    "key": "MV",
+    "value": "多彈",
+    "note": "改造縮寫"
+  },
+  {
+    "key": "ARM",
+    "value": "重裝",
+    "note": "改造縮寫"
+  },
+  {
+    "key": "FST",
+    "value": "快速",
+    "note": "改造縮寫"
+  },
+  {
+    "key": "EMG",
+    "value": "輻導",
+    "note": "改造縮寫"
+  },
+  {
+    "key": "OVR",
+    "value": "超載",
+    "note": "改造縮寫"
+  },
+  {
+    "key": "Mass Drivers",
+    "value": "質量投射器",
+    "note": "武器"
+  },
+  {
+    "key": "Gauss Cannons",
+    "value": "高斯砲",
+    "note": "武器"
+  },
+  {
+    "key": "Laser Cannons",
+    "value": "雷射砲",
+    "note": "武器"
+  },
+  {
+    "key": "Particle Beams",
+    "value": "粒子光束",
+    "note": "武器"
+  },
+  {
+    "key": "Fusion Beams",
+    "value": "核融合光束",
+    "note": "武器"
+  },
+  {
+    "key": "Ion Pulse Cannons",
+    "value": "離子脈衝砲",
+    "note": "武器"
+  },
+  {
+    "key": "Graviton Beams",
+    "value": "重力子光束",
+    "note": "武器"
+  },
+  {
+    "key": "Neutron Blasters",
+    "value": "中子爆破槍",
+    "note": "武器"
+  },
+  {
+    "key": "Phasors",
+    "value": "相位砲",
+    "note": "武器"
+  },
+  {
+    "key": "Disrupters",
+    "value": "崩解砲",
+    "note": "武器"
+  },
+  {
+    "key": "Death Rays",
+    "value": "死光",
+    "note": "武器"
+  },
+  {
+    "key": "Plasma Cannons",
+    "value": "電漿砲",
+    "note": "武器"
+  },
+  {
+    "key": "Spatial Compressors",
+    "value": "空間壓縮器",
+    "note": "武器"
+  },
+  {
+    "key": "Nuclear Missiles",
+    "value": "核飛彈",
+    "note": "武器"
+  },
+  {
+    "key": "Merculite Missiles",
+    "value": "麥克萊特飛彈",
+    "note": "武器"
+  },
+  {
+    "key": "Pulson Missiles",
+    "value": "脈子飛彈",
+    "note": "武器"
+  },
+  {
+    "key": "Zeon Missiles",
+    "value": "澤昂飛彈",
+    "note": "武器"
+  },
+  {
+    "key": "Anti-Matter Torps",
+    "value": "反物質魚雷",
+    "note": "武器"
+  },
+  {
+    "key": "Nuclear Bombs",
+    "value": "核彈",
+    "note": "武器"
+  },
+  {
+    "key": "Fusion Bombs",
+    "value": "核融合炸彈",
+    "note": "武器"
+  },
+  {
+    "key": "Anti-Matter Bombs",
+    "value": "反物質炸彈",
+    "note": "武器"
+  },
+  {
+    "key": "Neutronium Bombs",
+    "value": "中子素炸彈",
+    "note": "武器"
+  },
+  {
+    "key": "Bio-Terminators",
+    "value": "生化終結者",
+    "note": "武器"
+  },
+  {
+    "key": "Mauler Devices",
+    "value": "重擊裝置",
+    "note": "武器"
+  },
+  {
+    "key": "Heavy Fighters",
+    "value": "重型戰機",
+    "note": "戰機"
+  },
+  {
+    "key": "Bombers",
+    "value": "轟炸機",
+    "note": "戰機"
+  },
+  {
+    "key": "Interceptors",
+    "value": "攔截機",
+    "note": "戰機"
+  },
+  {
+    "key": "Stasis Fields",
+    "value": "停滯場",
+    "note": "武器"
+  },
+  {
+    "key": "Gyro Destabilizers",
+    "value": "陀螺失穩器",
+    "note": "武器"
+  },
+  {
+    "key": "Plasma Webs",
+    "value": "電漿網",
+    "note": "武器"
+  },
+  {
+    "key": "Pulsars",
+    "value": "脈衝星",
+    "note": "武器"
+  },
+  {
+    "key": "Black Hole Generators",
+    "value": "黑洞產生器",
+    "note": "武器"
+  },
+  {
+    "key": "Stellar Converters",
+    "value": "恆星轉換器",
+    "note": "武器"
+  },
+  {
+    "key": "Tractor Beams",
+    "value": "牽引光束",
+    "note": "武器"
+  },
+  {
+    "key": "Dragon Breaths",
+    "value": "龍息",
+    "note": "怪獸武器"
+  },
+  {
+    "key": "Phasor Eyes",
+    "value": "相位眼",
+    "note": "怪獸武器"
+  },
+  {
+    "key": "Crystal Rays",
+    "value": "水晶射線",
+    "note": "怪獸武器"
+  },
+  {
+    "key": "Plasma Breaths",
+    "value": "電漿吐息",
+    "note": "怪獸武器"
+  },
+  {
+    "key": "Plasma Fluxs",
+    "value": "電漿通量",
+    "note": "怪獸武器"
+  },
+  {
+    "key": "Caustic Slimes",
+    "value": "腐蝕黏液",
+    "note": "怪獸武器"
+  },
+  {
+    "key": "Frigate",
+    "value": "巡防艦",
+    "note": "艦種"
+  },
+  {
+    "key": "Destroyer",
+    "value": "驅逐艦",
+    "note": "艦種"
+  },
+  {
+    "key": "Cruiser",
+    "value": "巡洋艦",
+    "note": "艦種"
+  },
+  {
+    "key": "Battleship",
+    "value": "戰艦",
+    "note": "艦種"
+  },
+  {
+    "key": "Titan",
+    "value": "泰坦",
+    "note": "艦種"
+  },
+  {
+    "key": "Doom Star",
+    "value": "末日之星",
+    "note": "艦種"
+  },
+  {
+    "key": "Frigates",
+    "value": "巡防艦",
+    "note": "艦種"
+  },
+  {
+    "key": "Destroyers",
+    "value": "驅逐艦",
+    "note": "艦種"
+  },
+  {
+    "key": "Cruisers",
+    "value": "巡洋艦",
+    "note": "艦種"
+  },
+  {
+    "key": "Battleships",
+    "value": "戰艦",
+    "note": "艦種"
+  },
+  {
+    "key": "Titans",
+    "value": "泰坦",
+    "note": "艦種"
+  },
+  {
+    "key": "Doom Stars",
+    "value": "末日之星",
+    "note": "艦種"
+  },
+  {
+    "key": "Star Bases",
+    "value": "星際基地",
+    "note": "艦種"
+  },
+  {
+    "key": "Battle Stations",
+    "value": "戰鬥站",
+    "note": "艦種"
+  },
+  {
+    "key": "Star Fortresses",
+    "value": "星際要塞",
+    "note": "艦種"
+  },
+  {
+    "key": "Force Fields",
+    "value": "力場",
+    "note": "研究領域"
+  },
+  {
+    "key": "Select New Research",
+    "value": "選擇新研究",
+    "note": "介面"
+  },
+  {
+    "key": "Ship Design",
+    "value": "艦艇設計",
+    "note": "艦艇設計"
+  },
+  {
+    "key": "Clear",
+    "value": "清除",
+    "note": "艦艇設計"
+  },
+  {
+    "key": "Build",
+    "value": "建造",
+    "note": "艦艇設計"
+  },
+  {
+    "key": "Cancel",
+    "value": "取消",
+    "note": "艦艇設計"
+  }
+]

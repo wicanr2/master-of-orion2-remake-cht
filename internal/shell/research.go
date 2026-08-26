@@ -81,7 +81,7 @@ func (s *GameSession) ResearchCostForDisplay(t gamedata.ResearchTopic) int {
 }
 
 // ResearchTopicName 回傳主題的英文顯示名(83 個 topic 全收錄,= gamedata.TopicEnglishName,
-// 也就是 assets/i18n/tech.tsv 的 i18n key)。shell 層不 import i18n,由 cmd/moo2 顯示端
+// 也就是 assets/i18n/tech.json 的 i18n key)。shell 層不 import i18n,由 cmd/moo2 顯示端
 // 經 catalog 翻中文(見 cmd/moo2/topicname.go 的 topicNameZh),與其他畫面字串一致。
 func ResearchTopicName(t gamedata.ResearchTopic) string {
 	return gamedata.TopicEnglishName(t)

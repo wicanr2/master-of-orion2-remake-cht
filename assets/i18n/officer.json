@@ -1,0 +1,357 @@
+[
+  {
+    "key": "Alkari Pilot",
+    "value": "阿爾卡里飛行員",
+    "note": "軍官"
+  },
+  {
+    "key": "Ambassador",
+    "value": "大使",
+    "note": "軍官"
+  },
+  {
+    "key": "Ancient Spacefarer",
+    "value": "遠古星際旅人",
+    "note": "軍官"
+  },
+  {
+    "key": "Antaran Warrior",
+    "value": "安塔蘭戰士",
+    "note": "軍官"
+  },
+  {
+    "key": "Armsdealer",
+    "value": "軍火商",
+    "note": "軍官"
+  },
+  {
+    "key": "Armsman",
+    "value": "兵器兵",
+    "note": "軍官"
+  },
+  {
+    "key": "Armsmaster",
+    "value": "兵器大師",
+    "note": "軍官"
+  },
+  {
+    "key": "Astrogator",
+    "value": "星際領航員",
+    "note": "軍官"
+  },
+  {
+    "key": "Bandit Lord",
+    "value": "盜匪領主",
+    "note": "軍官"
+  },
+  {
+    "key": "Battle Lord",
+    "value": "戰爭領主",
+    "note": "軍官"
+  },
+  {
+    "key": "Bounty Hunter",
+    "value": "賞金獵人",
+    "note": "軍官"
+  },
+  {
+    "key": "Bulrathi Commando",
+    "value": "布拉希突擊隊員",
+    "note": "軍官"
+  },
+  {
+    "key": "Cyber Mage",
+    "value": "賽博法師",
+    "note": "軍官"
+  },
+  {
+    "key": "Cyber Marauder",
+    "value": "賽博掠奪者",
+    "note": "軍官"
+  },
+  {
+    "key": "Dark Lord",
+    "value": "黑暗領主",
+    "note": "軍官"
+  },
+  {
+    "key": "Elder Sensei",
+    "value": "元老宗師",
+    "note": "軍官"
+  },
+  {
+    "key": "Elerian Mystic",
+    "value": "伊勒利安秘術師",
+    "note": "軍官"
+  },
+  {
+    "key": "Enforcer",
+    "value": "執法者",
+    "note": "軍官"
+  },
+  {
+    "key": "Environmentalist",
+    "value": "環境學家",
+    "note": "軍官"
+  },
+  {
+    "key": "Explorer",
+    "value": "探險家",
+    "note": "軍官"
+  },
+  {
+    "key": "Farming Leader",
+    "value": "農業領袖",
+    "note": "軍官"
+  },
+  {
+    "key": "Fighter Ace",
+    "value": "王牌飛行員",
+    "note": "軍官"
+  },
+  {
+    "key": "Financial Leader",
+    "value": "財政領袖",
+    "note": "軍官"
+  },
+  {
+    "key": "Forsaken Warrior",
+    "value": "棄逐戰士",
+    "note": "軍官"
+  },
+  {
+    "key": "Gadgeteer",
+    "value": "巧匠",
+    "note": "軍官"
+  },
+  {
+    "key": "Gifted",
+    "value": "天賦異稟者",
+    "note": "軍官"
+  },
+  {
+    "key": "Gnolam Capitalist",
+    "value": "諾嵐資本家",
+    "note": "軍官"
+  },
+  {
+    "key": "High Priestess",
+    "value": "大祭司",
+    "note": "軍官"
+  },
+  {
+    "key": "Ikarian Doctor",
+    "value": "伊卡利亞醫師",
+    "note": "軍官"
+  },
+  {
+    "key": "Independent Trader",
+    "value": "獨立商人",
+    "note": "軍官"
+  },
+  {
+    "key": "Klackon Taskmaster",
+    "value": "克拉肯監工",
+    "note": "軍官"
+  },
+  {
+    "key": "Labor Leader",
+    "value": "勞工領袖",
+    "note": "軍官"
+  },
+  {
+    "key": "Last Orion",
+    "value": "最後的獵戶人",
+    "note": "軍官"
+  },
+  {
+    "key": "Legendary Captain",
+    "value": "傳奇艦長",
+    "note": "軍官"
+  },
+  {
+    "key": "Legendary Engineer",
+    "value": "傳奇工程師",
+    "note": "軍官"
+  },
+  {
+    "key": "Legendary Pilot",
+    "value": "傳奇飛行員",
+    "note": "軍官"
+  },
+  {
+    "key": "Legendary Scientist",
+    "value": "傳奇科學家",
+    "note": "軍官"
+  },
+  {
+    "key": "Master Tactician",
+    "value": "戰術大師",
+    "note": "軍官"
+  },
+  {
+    "key": "Meklar Cybernaut",
+    "value": "麥克拉電子人",
+    "note": "軍官"
+  },
+  {
+    "key": "Mrrshan Warrior",
+    "value": "姆爾沙戰士",
+    "note": "軍官"
+  },
+  {
+    "key": "Naturalist",
+    "value": "博物學家",
+    "note": "軍官"
+  },
+  {
+    "key": "Noble",
+    "value": "貴族",
+    "note": "軍官"
+  },
+  {
+    "key": "Overlord",
+    "value": "至尊領主",
+    "note": "軍官"
+  },
+  {
+    "key": "Peacemaker",
+    "value": "和平使者",
+    "note": "軍官"
+  },
+  {
+    "key": "Pirate Captain",
+    "value": "海盜船長",
+    "note": "軍官"
+  },
+  {
+    "key": "Planetologist",
+    "value": "行星學家",
+    "note": "軍官"
+  },
+  {
+    "key": "Privateer",
+    "value": "私掠船長",
+    "note": "軍官"
+  },
+  {
+    "key": "Psilon Scientist",
+    "value": "賽隆科學家",
+    "note": "軍官"
+  },
+  {
+    "key": "Rebel Pilot",
+    "value": "叛軍飛行員",
+    "note": "軍官"
+  },
+  {
+    "key": "Relic Android",
+    "value": "遺跡仿生人",
+    "note": "軍官"
+  },
+  {
+    "key": "Revolutionary",
+    "value": "革命者",
+    "note": "軍官"
+  },
+  {
+    "key": "Rogue Trader",
+    "value": "流氓商人",
+    "note": "軍官"
+  },
+  {
+    "key": "Ruthless",
+    "value": "無情者",
+    "note": "軍官"
+  },
+  {
+    "key": "Sakkra Armsman",
+    "value": "薩克拉兵器兵",
+    "note": "軍官"
+  },
+  {
+    "key": "Science Leader",
+    "value": "科學領袖",
+    "note": "軍官"
+  },
+  {
+    "key": "Siren",
+    "value": "海妖",
+    "note": "軍官"
+  },
+  {
+    "key": "Smuggler",
+    "value": "走私者",
+    "note": "軍官"
+  },
+  {
+    "key": "Spy Master",
+    "value": "諜報大師",
+    "note": "軍官"
+  },
+  {
+    "key": "Supreme Leader",
+    "value": "最高領袖",
+    "note": "軍官"
+  },
+  {
+    "key": "Technomancer",
+    "value": "科技法師",
+    "note": "軍官"
+  },
+  {
+    "key": "Trilarian Navigator",
+    "value": "特里拉領航員",
+    "note": "軍官"
+  },
+  {
+    "key": "Tulosian Mercenary",
+    "value": "圖洛西亞傭兵",
+    "note": "軍官"
+  },
+  {
+    "key": "Unknown",
+    "value": "未知",
+    "note": "軍官"
+  },
+  {
+    "key": "Warlord",
+    "value": "軍閥",
+    "note": "軍官"
+  },
+  {
+    "key": "Weapons Officer",
+    "value": "武器官",
+    "note": "軍官"
+  },
+  {
+    "key": "Colony Leaders",
+    "value": "殖民地領袖",
+    "note": "軍官列表頁籤"
+  },
+  {
+    "key": "Ship Officers",
+    "value": "艦艇軍官",
+    "note": "軍官列表頁籤"
+  },
+  {
+    "key": "HIRE",
+    "value": "雇用",
+    "note": "軍官列表按鈕"
+  },
+  {
+    "key": "POOL",
+    "value": "人才庫",
+    "note": "軍官列表按鈕"
+  },
+  {
+    "key": "DISMISS",
+    "value": "解雇",
+    "note": "軍官列表按鈕"
+  },
+  {
+    "key": "RETURN",
+    "value": "返回",
+    "note": "軍官列表按鈕"
+  }
+]

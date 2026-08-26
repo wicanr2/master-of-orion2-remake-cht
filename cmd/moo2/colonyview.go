@@ -10,10 +10,10 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
 
-// colonyStatRow 是殖民地摘要面板的一列:標籤(英文 key)+ 來源 TSV 名 + 範例數值字串。
+// colonyStatRow 是殖民地摘要面板的一列:標籤(英文 key)+ 來源 JSON 名 + 範例數值字串。
 type colonyStatRow struct {
 	labelEN string
-	source  string // i18n.Registry 來源名(哪個 TSV 有該 key)
+	source  string // i18n.Registry 來源名(哪個 JSON 有該 key)
 	value   string
 }
 
@@ -89,7 +89,7 @@ func runColonyView(lang i18n.Lang, fnt *uifont.Font, reg *i18n.Registry, shot st
 	for i, r := range colonyStatRows {
 		rowsZH[i] = reg.Source(r.source).Translate(r.labelEN)
 	}
-	// 標題:misc.tsv 只有「Colony」單字(無「Colony Summary」複合詞),故取其譯文「殖民」
+	// 標題:misc.json 只有「Colony」單字(無「Colony Summary」複合詞),故取其譯文「殖民」
 	// 再接固定字「地摘要」,組成「殖民地摘要」(等同 openorion2 回合結算的殖民經濟摘要畫面)。
 	title := reg.Source("misc").Translate("Colony") + "地摘要"
 	g := &colonyViewGame{

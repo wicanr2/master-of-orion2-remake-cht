@@ -27,7 +27,7 @@
 ## 2. 母星名譯案(13 個)
 
 先確認每個母星對應的種族(依 `openorion2/src/lbx.cpp` 的 `_homeworlds`/`STARNAME asset0` 與遊戲設定考證,
-種族百科文字已在 `assets/i18n/help.tsv` 譯出,可交叉核對種族特徵):
+種族百科文字已在 `assets/i18n/help.json` 譯出,可交叉核對種族特徵):
 
 | 英文 | 對應種族 | 建議中文 | 理由 |
 |---|---|---|---|
@@ -63,7 +63,7 @@ Cryslon	克萊斯隆
 Trilar	特里拉
 ```
 
-> 落地時建議另立 `assets/i18n/starname.tsv`(或併入既有種族相關 TSV),並在 `docs/tech/string-sources.md`
+> 落地時建議另立 `assets/i18n/starname.json`(或併入既有種族相關 TSV),並在 `docs/tech/string-sources.md`
 > 的 STARNAME asset0 列補上 TSV 檔名與「✅ 完成」狀態——本文件只定案譯名,不動 TSV/程式碼。
 
 ## 3. 隨機池的可行性評估
@@ -93,7 +93,7 @@ Trilar	特里拉
 **採用方案**:查得到真名/既定譯名的一律優先意譯——恆星/星座沿用天文界慣用漢名,圍棋術語沿用中文
 圍棋界慣用術語(保留彩蛋樂趣),神話/人名沿用常見譯名或既定音譯;查無實據的虛構音節走規則化音譯
 (短促、避生僻字、盡量避免與其他條目撞字)。829 條英文名逐一核對後彼此互不重複。落地產出:
-`assets/i18n/starname-random.tsv`(829 條英文/中文對照 + 分類說明)、`internal/shell/starnames.go`
+`assets/i18n/starname-random.json`(829 條英文/中文對照 + 分類說明)、`internal/shell/starnames.go`
 (`randomStarNamePool`,依原始索引順序的 829 條循環池)。`genGalaxy` 已改用此池取代舊有的
 二十八宿占位池(`starNamePool` 已移除)。
 
@@ -117,7 +117,7 @@ I~III 多個變體)。
 - 羅馬數字後綴(I/II/III)可原樣保留或轉全形羅馬數字,不需要額外翻譯決策。
 
 **落地結果(2026-07-11)**:完整 dump 672 筆後去重統計,基底詞彙量為 190 組(去重唯一英文名 535 條),
-落在可一次性處理的規模,已排入本輪翻譯。譯表存於 `assets/i18n/shipname.tsv`(535 條英文/中文對照,
+落在可一次性處理的規模,已排入本輪翻譯。譯表存於 `assets/i18n/shipname.json`(535 條英文/中文對照,
 含 provenance 註解),實際採用的 672 條循環池(依原始索引順序、含重複)寫入
 `internal/shell/shipnames.go` 的 `shipNamePool`,取代 `internal/shell/session.go` 原本硬編的
 10 個中文艦名循環。少數拼字明顯訛誤或高度罕見的西洋兵器/器物名(如 Falchard、Malvosin、
@@ -130,5 +130,5 @@ Sgian-dubh)給出翻譯,但把握度低於其餘條目,留待之後有更多考�
 |---|---|
 | 母星名(13) | 全部 13 個譯案已定案,可直接落地(見第 2 節 TSV) |
 | AI 統治者姓名(104) | 定案保留原文,不另翻譯 |
-| 艦名(672) | **已落地**:190 組基底詞(535 條唯一英文名)意譯 + 羅馬數字流水號保留,見 `assets/i18n/shipname.tsv` + `internal/shell/shipnames.go` |
-| 隨機星名(829) | **已落地**(2026-07-11):829 條英文名彼此互不重複,真名/圍棋術語/神話專有名詞優先意譯,虛構短音節規則化音譯,見 `assets/i18n/starname-random.tsv` + `internal/shell/starnames.go` |
+| 艦名(672) | **已落地**:190 組基底詞(535 條唯一英文名)意譯 + 羅馬數字流水號保留,見 `assets/i18n/shipname.json` + `internal/shell/shipnames.go` |
+| 隨機星名(829) | **已落地**(2026-07-11):829 條英文名彼此互不重複,真名/圍棋術語/神話專有名詞優先意譯,虛構短音節規則化音譯,見 `assets/i18n/starname-random.json` + `internal/shell/starnames.go` |

@@ -115,9 +115,9 @@ func runOverlay(dirs []string, lbxName string, assetID int, lang i18n.Lang, fnt 
 	rgba := im.Frames[0].ToRGBA(im.Embedded, im.KeyColor())
 
 	cat := i18n.New(lang)
-	if f, err := OpenI18NTSV(tsvPath); err == nil {
+	if f, err := OpenI18NJSON(tsvPath); err == nil {
 		defer f.Close()
-		if _, err := cat.LoadTSV(f); err != nil {
+		if _, err := cat.LoadJSON(f); err != nil {
 			return err
 		}
 	} else if lang == i18n.Traditional {

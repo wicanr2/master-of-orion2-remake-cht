@@ -9,7 +9,7 @@ import "fmt"
 //     類別「研究主題」的 75 條 key),與 enums.go 的 TOPIC_* 整數值一一對應。
 //     配對經腳本以「enum index == tech.tsv 研究主題出現序」逐項斷言核對(75/75 相符)。
 //   - 名稱刻意採 TECHNAME.LBX 的實際拼寫(含連字號:Anti-Matter Fission /
-//     Multi-Dimensional Physics / Multi-Phased Physics),使其正好等於 assets/i18n/tech.tsv
+//     Multi-Dimensional Physics / Multi-Phased Physics),使其正好等於 assets/i18n/tech.json
 //     的 key,顯示層 i18n 才查得到中文。**不用程式化 title-case**——那會把
 //     "Anti-Matter Fission" 誤產成 "Antimatter Fission" 而對不上 tech.tsv。
 //   - topic 75..82(TOPIC_HYPER_*):原版對所有 hyper 主題共用單一字串
@@ -105,7 +105,7 @@ var topicEnglishNames = map[ResearchTopic]string{
 	TOPIC_HYPER_SOCIOLOGY:    "Hyper Sociology",
 }
 
-// TopicEnglishName 回傳研究主題的英文顯示名(= assets/i18n/tech.tsv 的 key)。
+// TopicEnglishName 回傳研究主題的英文顯示名(= assets/i18n/tech.json 的 key)。
 // 查無(理論上不會發生,83 個全收錄)回 fmt.Sprintf("Topic#%d", ...)。
 func TopicEnglishName(t ResearchTopic) string {
 	if name, ok := topicEnglishNames[t]; ok {

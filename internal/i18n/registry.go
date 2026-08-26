@@ -28,8 +28,8 @@ func NewRegistry(lang Lang) *Registry {
 	return &Registry{lang: lang, sources: map[string]*Catalog{}, merged: New(lang)}
 }
 
-// LoadFS 從 fsys 的 dir 目錄載入所有 *.tsv:每檔成為一個以「去 .tsv 副檔名的檔名」命名的
-// 來源 catalog(如 tech.tsv → 來源 "tech"),並依檔名字母序併入 merged 備援表
+// LoadFS 從 fsys 的 dir 目錄載入所有 *.json：每檔成為一個以去副檔名檔名命名的
+// 來源 catalog（如 tech.json → 來源 "tech"），並依檔名字母序併入 merged 備援表
 // (先載入者優先,與單一 Catalog 的優先權規則一致)。回傳載入的來源數。
 func (r *Registry) LoadFS(fsys fs.FS, dir string) (int, error) {
 	entries, err := fs.ReadDir(fsys, dir)
@@ -38,7 +38,7 @@ func (r *Registry) LoadFS(fsys fs.FS, dir string) (int, error) {
 	}
 	var names []string
 	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".tsv") {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
 			continue
 		}
 		names = append(names, e.Name())
@@ -50,12 +50,12 @@ func (r *Registry) LoadFS(fsys fs.FS, dir string) (int, error) {
 			return len(r.sources), err
 		}
 		cat := New(r.lang)
-		_, err = cat.LoadTSV(f)
+		_, err = cat.LoadJSON(f)
 		f.Close()
 		if err != nil {
 			return len(r.sources), err
 		}
-		src := strings.TrimSuffix(name, ".tsv")
+		src := strings.TrimSuffix(name, ".json")
 		r.sources[src] = cat
 		for k, v := range cat.m { // 併入 merged(先載入者優先)
 			if _, ok := r.merged.m[k]; !ok {

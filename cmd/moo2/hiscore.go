@@ -92,7 +92,7 @@ func (b *sceneBuilder) hiScore() (*overlayScreen, error) {
 	}
 	// 沿用回合摘要底圖(turnsum.lbx 資產 0 沒有內嵌調色盤,要跟 buffer0.lbx 借,
 	// 與 eventScreen 同一個做法——少了 paletteChain 會載入失敗、轉場靜默失效)。
-	s, err := loadOverlayScreen(b.res, "turnsum.lbx", 0, b.lang, b.fnt, "misc.tsv",
+	s, err := loadOverlayScreen(b.res, "turnsum.lbx", 0, b.lang, b.fnt, "misc.json",
 		nil, color.RGBA{220, 228, 242, 255}, 13, hits, onAction, paletteChain{{"buffer0.lbx", 0}})
 	if err != nil {
 		return nil, err

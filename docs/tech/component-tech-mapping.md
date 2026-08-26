@@ -19,7 +19,7 @@
 
 > 本文件由資料校正 subagent 產出,**只列對得上真資料的對應,對不上的明講,不臆造**。
 > 不改動任何程式碼。核對範圍:`internal/shell/session.go`(WeaponOptions/ArmorOptions/ShieldOptions/SpecialOptions)
-> ↔ `assets/i18n/tech.tsv`(中英對照)↔ `internal/gamedata/technames.go`(`TechnologyNames`)↔
+> ↔ `assets/i18n/tech.json`(中英對照)↔ `internal/gamedata/technames.go`(`TechnologyNames`)↔
 > `internal/gamedata/techtree.go`(`researchChoices[83]`,權威:某 TECH 屬哪個 TOPIC 看這裡)。
 
 ## 判定方法

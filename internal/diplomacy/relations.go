@@ -6,7 +6,7 @@
 //
 // 【原版資料 vs 本套件設計】的界線:
 //   - 原版(權威):17 級關係「名稱量表」(FEUD…HARMONY)——來自遊戲資料 BILLTEXT，已翻譯於
-//     assets/i18n/misc.tsv;本套件的 RelationLevel 名稱與之對齊,顯示時可經 i18n 翻成中文。
+//     assets/i18n/misc.json;本套件的 RelationLevel 名稱與之對齊,顯示時可經 i18n 翻成中文。
 //   - 本套件設計(非原版):數值分數(RelationScore)、分數→等級的對映、各事件的調整值、
 //     每回合往中立漂移的速率——這些數字都是設計選擇,原版實際值未知。
 package diplomacy

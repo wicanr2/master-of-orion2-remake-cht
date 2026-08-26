@@ -101,9 +101,9 @@ var missileWeaponDamage = map[string]WeaponDamageRange{
 	// (`A-M Torpedo / 20 / 30 / 25 / Proton Torpedo / 40 / Plasma Torpedo / 120`),
 	// 當初把相鄰那一格讀成了質子魚雷。執行檔武器表逐格給出:A-M 20格25傷、質子 30格40傷、
 	// 電漿 40格120傷——與手冊那幾個數字一一對上,只是欄位歸屬相反。
-	"反物質魚雷": {25, 25}, // Anti-Matter Torpedo 25
-	"質子魚雷":   {40, 40}, // Proton Torpedo 40
-	"電漿魚雷":   {120, 120}, // Plasma Torpedo 120; range dissipation is applied by combat_formula.go
+	"反物質魚雷": {25, 25},   // Anti-Matter Torpedo 25
+	"質子魚雷":  {40, 40},   // Proton Torpedo 40
+	"電漿魚雷":  {120, 120}, // Plasma Torpedo 120; range dissipation is applied by combat_formula.go
 }
 
 // WeaponDamageByName 回傳某武器元件的手冊傷害範圍;不在表上回 ok=false

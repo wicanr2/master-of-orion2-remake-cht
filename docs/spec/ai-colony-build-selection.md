@@ -178,3 +178,19 @@
 - 只完成多選主題但選了其他 application 時，不得觸發相應 Automated Factory／Barracks gate。
 - 精確分支與類別式 fallback 不可混稱同一證據等級。
 - 既有擴張測試以「建築＋造艦總投入」驗證新殖民地確實參與經濟，不再假設所有產出都是軍艦。
+## 固定零分建築
+
+原版 `Colony_Building_Score_` 對 raw 1／11／14／18／48 固定回傳 0。remake 一般建築表
+中可形成候選的 raw 1（異族管理中心）與 raw 14（次元傳送門）必須走 exact 分支並回 0，
+不得再落入分類代理分數。零分候選仍可保留在候選集合，但不增加加權總和；當所有候選皆為
+零分時，選擇器回傳「沒有新建築」，不得任選一棟。
+
+raw 9 Capitol 的原版規格已證實為「非統一政體且目前殖民地行星等於玩家 Capitol 行星時
+回傳 100，否則 0」，但必須等 remake 有可存檔的 Capitol 行星狀態才可接線；不得以第一座
+殖民地或母星索引近似。
+
+驗收：
+
+- raw 1／14 在任意性格、priority gate 與 budget factor 下均為 `(0, exact=true)`。
+- 正常 AI 候選只剩 raw 1 或 raw 14 時，`chooseAIColonyBuilding` 回傳 `ok=false`。
+- 這些測試證明 remake 遵循已證實公式；不把尚未接線的 raw 9 宣稱完成。

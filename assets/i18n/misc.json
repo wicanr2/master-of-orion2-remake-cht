@@ -1,0 +1,537 @@
+[
+  {
+    "key": "HISTORY GRAPH",
+    "value": "歷史曲線圖",
+    "note": "介面"
+  },
+  {
+    "key": "TECH REVIEW",
+    "value": "科技總覽",
+    "note": "介面"
+  },
+  {
+    "key": "RACE STATISTICS",
+    "value": "種族統計",
+    "note": "介面"
+  },
+  {
+    "key": "TURN SUMMARY",
+    "value": "回合摘要",
+    "note": "介面"
+  },
+  {
+    "key": "REFERENCE",
+    "value": "參考資料",
+    "note": "介面"
+  },
+  {
+    "key": "( E L I M I N A T E D )",
+    "value": "(已滅亡)",
+    "note": "介面"
+  },
+  {
+    "key": "NO CONTACT",
+    "value": "尚未接觸",
+    "note": "介面"
+  },
+  {
+    "key": "NO MESSAGES",
+    "value": "無訊息",
+    "note": "介面"
+  },
+  {
+    "key": "INCOME",
+    "value": "收入",
+    "note": "介面"
+  },
+  {
+    "key": "MAINTENANCE",
+    "value": "維護費",
+    "note": "介面"
+  },
+  {
+    "key": "BC INCOME",
+    "value": "BC 收入",
+    "note": "介面"
+  },
+  {
+    "key": "BUILDINGS",
+    "value": "建築",
+    "note": "介面"
+  },
+  {
+    "key": "FREIGHTERS",
+    "value": "貨運船",
+    "note": "介面"
+  },
+  {
+    "key": "SHIPS",
+    "value": "艦艇",
+    "note": "介面"
+  },
+  {
+    "key": "SPIES",
+    "value": "間諜",
+    "note": "介面"
+  },
+  {
+    "key": "TRIBUTE",
+    "value": "進貢",
+    "note": "介面"
+  },
+  {
+    "key": "LEADERS",
+    "value": "軍官",
+    "note": "介面"
+  },
+  {
+    "key": "Research cost:",
+    "value": "研究成本:",
+    "note": "介面"
+  },
+  {
+    "key": "Pure research",
+    "value": "純研究",
+    "note": "介面"
+  },
+  {
+    "key": "LIST",
+    "value": "清單",
+    "note": "介面"
+  },
+  {
+    "key": "BASIC",
+    "value": "基礎",
+    "note": "介面"
+  },
+  {
+    "key": "BIOLOGY",
+    "value": "生物學",
+    "note": "介面"
+  },
+  {
+    "key": "POWER",
+    "value": "能源",
+    "note": "介面"
+  },
+  {
+    "key": "PHYSICS",
+    "value": "物理學",
+    "note": "介面"
+  },
+  {
+    "key": "CONSTRUCTION",
+    "value": "建造學",
+    "note": "介面"
+  },
+  {
+    "key": "FORCE FIELDS",
+    "value": "力場學",
+    "note": "介面"
+  },
+  {
+    "key": "CHEMISTRY",
+    "value": "化學",
+    "note": "介面"
+  },
+  {
+    "key": "COMPUTERS",
+    "value": "電腦學",
+    "note": "介面"
+  },
+  {
+    "key": "SOCIOLOGY",
+    "value": "社會學",
+    "note": "介面"
+  },
+  {
+    "key": "OTHER",
+    "value": "其他",
+    "note": "介面"
+  },
+  {
+    "key": "Miscellaneous",
+    "value": "雜項",
+    "note": "介面"
+  },
+  {
+    "key": "New Construction Types",
+    "value": "新建造類型",
+    "note": "介面"
+  },
+  {
+    "key": "Spies",
+    "value": "間諜",
+    "note": "介面"
+  },
+  {
+    "key": "Colony",
+    "value": "殖民",
+    "note": "介面"
+  },
+  {
+    "key": "Ground Combat",
+    "value": "地面戰鬥",
+    "note": "介面"
+  },
+  {
+    "key": "Ship Equipment",
+    "value": "艦艇裝備",
+    "note": "介面"
+  },
+  {
+    "key": "Food",
+    "value": "食物",
+    "note": "介面"
+  },
+  {
+    "key": "Pollution",
+    "value": "污染",
+    "note": "介面"
+  },
+  {
+    "key": "Morale",
+    "value": "士氣",
+    "note": "介面"
+  },
+  {
+    "key": "Production",
+    "value": "生產",
+    "note": "介面"
+  },
+  {
+    "key": "Defense",
+    "value": "防禦",
+    "note": "介面"
+  },
+  {
+    "key": "Research",
+    "value": "研究",
+    "note": "介面"
+  },
+  {
+    "key": "Money",
+    "value": "金錢",
+    "note": "介面"
+  },
+  {
+    "key": "Beams",
+    "value": "光束武器",
+    "note": "介面"
+  },
+  {
+    "key": "Missiles/Torpedoes",
+    "value": "飛彈/魚雷",
+    "note": "介面"
+  },
+  {
+    "key": "Bombs/Biological",
+    "value": "炸彈/生化",
+    "note": "介面"
+  },
+  {
+    "key": "Fighters",
+    "value": "戰機",
+    "note": "介面"
+  },
+  {
+    "key": "Special",
+    "value": "特殊",
+    "note": "介面"
+  },
+  {
+    "key": "Shields",
+    "value": "護盾",
+    "note": "介面"
+  },
+  {
+    "key": "Armor",
+    "value": "裝甲",
+    "note": "介面"
+  },
+  {
+    "key": "Drives",
+    "value": "引擎",
+    "note": "介面"
+  },
+  {
+    "key": "Computers",
+    "value": "電腦",
+    "note": "介面"
+  },
+  {
+    "key": "Fuels/Range",
+    "value": "燃料/航程",
+    "note": "介面"
+  },
+  {
+    "key": "Scanners",
+    "value": "掃描器",
+    "note": "介面"
+  },
+  {
+    "key": "Offense",
+    "value": "攻擊",
+    "note": "介面"
+  },
+  {
+    "key": "No Special Devices",
+    "value": "無特殊裝置",
+    "note": "介面"
+  },
+  {
+    "key": "Green Crew (%d EP)",
+    "value": "新兵艦員(%d EP)",
+    "note": "介面"
+  },
+  {
+    "key": "Regular Crew (%d EP)",
+    "value": "正規艦員(%d EP)",
+    "note": "介面"
+  },
+  {
+    "key": "Veteran Crew (%d EP)",
+    "value": "老兵艦員(%d EP)",
+    "note": "介面"
+  },
+  {
+    "key": "Elite Crew (%d EP)",
+    "value": "精銳艦員(%d EP)",
+    "note": "介面"
+  },
+  {
+    "key": "Ultra Elite Crew (%d EP)",
+    "value": "超級精銳艦員(%d EP)",
+    "note": "介面"
+  },
+  {
+    "key": "Categories",
+    "value": "分類",
+    "note": "介面"
+  },
+  {
+    "key": "How to?",
+    "value": "如何?",
+    "note": "介面"
+  },
+  {
+    "key": "Category:",
+    "value": "分類:",
+    "note": "介面"
+  },
+  {
+    "key": "How to:",
+    "value": "方法:",
+    "note": "介面"
+  },
+  {
+    "key": "MESSAGE SUMMARY AS OF SD: \\x88",
+    "value": "訊息摘要(星曆 \\x88)",
+    "note": "介面"
+  },
+  {
+    "key": "Net Income: \\x82 BC",
+    "value": "淨收入:\\x82 BC",
+    "note": "介面"
+  },
+  {
+    "key": "NO ACTIVE SPIES",
+    "value": "無活動間諜",
+    "note": "介面"
+  },
+  {
+    "key": "NONE",
+    "value": "無",
+    "note": "介面"
+  },
+  {
+    "key": "ALLIANCES:",
+    "value": "同盟:",
+    "note": "介面"
+  },
+  {
+    "key": "WARS:",
+    "value": "戰爭:",
+    "note": "介面"
+  },
+  {
+    "key": "FEUD",
+    "value": "世仇",
+    "note": "外交"
+  },
+  {
+    "key": "HATE",
+    "value": "仇恨",
+    "note": "外交"
+  },
+  {
+    "key": "DISCORD",
+    "value": "敵視",
+    "note": "外交"
+  },
+  {
+    "key": "TROUBLED",
+    "value": "交惡",
+    "note": "外交"
+  },
+  {
+    "key": "TENSE",
+    "value": "緊張",
+    "note": "外交"
+  },
+  {
+    "key": "RESTLESS",
+    "value": "躁動",
+    "note": "外交"
+  },
+  {
+    "key": "WARY",
+    "value": "戒備",
+    "note": "外交"
+  },
+  {
+    "key": "UNEASE",
+    "value": "疑慮",
+    "note": "外交"
+  },
+  {
+    "key": "NEUTRAL",
+    "value": "中立",
+    "note": "外交"
+  },
+  {
+    "key": "RELAXED",
+    "value": "緩和",
+    "note": "外交"
+  },
+  {
+    "key": "AMIABLE",
+    "value": "和善",
+    "note": "外交"
+  },
+  {
+    "key": "CALM",
+    "value": "平和",
+    "note": "外交"
+  },
+  {
+    "key": "AFFABLE",
+    "value": "親切",
+    "note": "外交"
+  },
+  {
+    "key": "PEACEFUL",
+    "value": "和平",
+    "note": "外交"
+  },
+  {
+    "key": "FRIENDLY",
+    "value": "友好",
+    "note": "外交"
+  },
+  {
+    "key": "UNITY",
+    "value": "一心",
+    "note": "外交"
+  },
+  {
+    "key": "HARMONY",
+    "value": "和睦",
+    "note": "外交"
+  },
+  {
+    "key": "(IGNORED)",
+    "value": "(已忽略)",
+    "note": "介面"
+  },
+  {
+    "key": "^ NO CONTACT^",
+    "value": "^ 無接觸^",
+    "note": "介面"
+  },
+  {
+    "key": "SPY:",
+    "value": "間諜:",
+    "note": "介面"
+  },
+  {
+    "key": "AGENT:",
+    "value": "探員:",
+    "note": "介面"
+  },
+  {
+    "key": "He will be here soon.",
+    "value": "他很快就會到。",
+    "note": "介面"
+  },
+  {
+    "key": "Sorry, they've already done their turn.",
+    "value": "抱歉,他們已結束本回合了。",
+    "note": "介面"
+  },
+  {
+    "key": "He is ignoring you!",
+    "value": "他正在無視你!",
+    "note": "介面"
+  },
+  {
+    "key": "RESEARCH TREATY:",
+    "value": "研究條約:",
+    "note": "介面"
+  },
+  {
+    "key": "TRADE TREATY:",
+    "value": "貿易條約:",
+    "note": "介面"
+  },
+  {
+    "key": "GIVING \\x82% TRIBUTE",
+    "value": "給予 \\x82% 進貢",
+    "note": "介面"
+  },
+  {
+    "key": "RECEIVING \\x82% TRIBUTE",
+    "value": "收取 \\x82% 進貢",
+    "note": "介面"
+  },
+  {
+    "key": "STAR DATE",
+    "value": "星曆",
+    "note": "科技總覽標題"
+  },
+  {
+    "key": "History Graph",
+    "value": "歷史圖表",
+    "note": "科技總覽選單"
+  },
+  {
+    "key": "Tech Review",
+    "value": "科技總覽",
+    "note": "科技總覽選單"
+  },
+  {
+    "key": "Race Statistics",
+    "value": "種族統計",
+    "note": "科技總覽選單"
+  },
+  {
+    "key": "Turn Summary",
+    "value": "回合摘要",
+    "note": "科技總覽選單"
+  },
+  {
+    "key": "Reference",
+    "value": "參考資料",
+    "note": "科技總覽選單"
+  },
+  {
+    "key": "RETURN",
+    "value": "返回",
+    "note": "科技總覽按鈕"
+  },
+  {
+    "key": "CLOSE",
+    "value": "關閉",
+    "note": "回合摘要"
+  }
+]

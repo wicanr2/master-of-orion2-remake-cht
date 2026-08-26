@@ -11,8 +11,8 @@ import (
 )
 
 // diploRelationRow 是外交關係面板的一列:對手種族(estrings 種族名稱 key)+
-// 對我方關係等級(misc.tsv 17 級關係字,如 FEUD/HATE/…/NEUTRAL/…/HARMONY)+
-// 條約狀態(misc.tsv 已譯 key,可留空表示無條約)。
+// 對我方關係等級(misc.json 17 級關係字,如 FEUD/HATE/…/NEUTRAL/…/HARMONY)+
+// 條約狀態(misc.json 已譯 key,可留空表示無條約)。
 type diploRelationRow struct {
 	raceEN     string // estrings: 種族名稱
 	relationEN string // misc: 外交關係等級(17 級)
@@ -88,10 +88,10 @@ func (g *diploGame) Draw(screen *ebiten.Image) {
 
 // runDiploView 渲染外交關係示範畫面(多來源:estrings 種族名 + misc 關係等級/條約狀態)。
 //
-// misc.tsv / estrings.tsv 皆未收錄「外交」畫面標題本身的 key(已 grep 確認:
-// 兩檔都沒有 "Diplomacy" 相關字串,help.tsv 內的 "diplomacy screen" 僅出現在句子翻譯中,
+// misc.json / estrings.json 皆未收錄「外交」畫面標題本身的 key(已 grep 確認:
+// 兩檔都沒有 "Diplomacy" 相關字串,help.json 內的 "diplomacy screen" 僅出現在句子翻譯中,
 // 並非可獨立取用的 UI key)。因此標題比照 raceinfo.go 的 raceName、colonyview.go 的
-// colonyName,採固定字串,不強行套用不相關的 TSV key。
+// colonyName,採固定字串,不強行套用不相關的 JSON key。
 func runDiploView(lang i18n.Lang, fnt *uifont.Font, reg *i18n.Registry, shot string, frames int) error {
 	if fnt == nil {
 		return fmt.Errorf("外交關係需以 -font 指定字型")

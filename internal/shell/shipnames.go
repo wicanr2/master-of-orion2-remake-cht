@@ -8,7 +8,7 @@ package shell
 // 在**造艦時**翻,所以中文模式輸出不變。
 //
 // 翻譯方案見 docs/tech/proper-noun-strategy.md(基底詞意譯 + 羅馬數字流水號原樣保留)。
-// 英文池是從先前的中文池反查還原的:`assets/i18n/shipname.tsv` 的中文→英文反查
+// 英文池是從先前的中文池反查還原的:`assets/i18n/shipname.json` 的中文→英文反查
 // **零歧義、零缺漏**,還原唯一。
 var shipNamePool = []string{
 	"Sparrow I",

@@ -8,7 +8,7 @@ package shell
 // 在**銀河生成時**翻(見 session.go),所以中文模式的輸出與這一輪之前逐位元相同
 // (畫廊 34 張逐位元比對是這句話的證據)。
 //
-// 英文池是從先前的中文池**反查**還原的:`assets/i18n/starname-random.tsv` 的中文→英文
+// 英文池是從先前的中文池**反查**還原的:`assets/i18n/starname-random.json` 的中文→英文
 // 反查**零歧義**(829 條中文各自只對應一個英文),所以還原是唯一的,不是猜的。
 var randomStarNamePool = []string{
 	"Uz",

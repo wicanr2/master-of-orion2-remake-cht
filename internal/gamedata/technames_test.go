@@ -1,38 +1,31 @@
 package gamedata
 
 import (
-	"bufio"
+	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
-// loadTechTSVKeys 讀 assets/i18n/tech.tsv,回傳所有英文 key 的集合(第一欄,略過註解/空行)。
-func loadTechTSVKeys(t *testing.T) map[string]bool {
+// loadTechJSONKeys 讀 assets/i18n/tech.json，回傳所有英文 key 的集合。
+func loadTechJSONKeys(t *testing.T) map[string]bool {
 	t.Helper()
-	fp := filepath.Join("..", "..", "assets", "i18n", "tech.tsv")
-	f, err := os.Open(fp)
+	fp := filepath.Join("..", "..", "assets", "i18n", "tech.json")
+	data, err := os.ReadFile(fp)
 	if err != nil {
-		t.Fatalf("開啟 %s 失敗: %v", fp, err)
-	}
-	defer f.Close()
-
-	keys := make(map[string]bool)
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		cols := strings.Split(line, "\t")
-		if len(cols) == 0 || cols[0] == "" {
-			continue
-		}
-		keys[cols[0]] = true
-	}
-	if err := scanner.Err(); err != nil {
 		t.Fatalf("讀取 %s 失敗: %v", fp, err)
+	}
+	var rows []struct {
+		Key string `json:"key"`
+	}
+	if err := json.Unmarshal(data, &rows); err != nil {
+		t.Fatalf("解析 %s 失敗: %v", fp, err)
+	}
+	keys := make(map[string]bool)
+	for _, row := range rows {
+		if row.Key != "" {
+			keys[row.Key] = true
+		}
 	}
 	return keys
 }
@@ -40,7 +33,7 @@ func loadTechTSVKeys(t *testing.T) map[string]bool {
 // TestTechnologyNamesMatchTSV 確保 TechnologyNames 每一條 value 都能在 tech.tsv 查到中文,
 // 否則 UI 顯示科技名時會查無中文、退回英文原字串(功能沒壞但翻譯缺漏),此測試用來擋這種漏網。
 func TestTechnologyNamesMatchTSV(t *testing.T) {
-	keys := loadTechTSVKeys(t)
+	keys := loadTechJSONKeys(t)
 	for tech, name := range TechnologyNames {
 		if !keys[name] {
 			t.Errorf("Technology(%d) 對應英文名 %q 不在 tech.tsv key 集合內", int(tech), name)

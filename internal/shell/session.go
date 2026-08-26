@@ -610,7 +610,7 @@ func (s *GameSession) NextUnlockedComponent(opts []Component, cur int) int {
 // ⚠ **艦名存英文原文,中文由注入的翻譯器在建艦當下翻**(同第 84 項(名稱池雙語化)的星名/艦名池)。
 // 先前這三個名字是硬編中文,所以英文模式的艦隊畫面上永遠掛著「拓荒號 / 先驅一二號」。
 // 三個名字本身是 remake 自訂的(原版從艦名池抽,而這裡沒有 rng 可用),譯表在
-// `assets/i18n/shipname.tsv` 尾端獨立標記。
+// `assets/i18n/shipname.json` 尾端獨立標記。
 func homeworldShips(tr func(string) string) []Ship {
 	local := func(en string) string {
 		if tr == nil {

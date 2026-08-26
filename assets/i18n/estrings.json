@@ -1,0 +1,2882 @@
+[
+  {
+    "key": "A Space Amoeba",
+    "value": "一隻太空變形蟲",
+    "note": "怪獸"
+  },
+  {
+    "key": "A Space Crystal",
+    "value": "一顆太空水晶",
+    "note": "怪獸"
+  },
+  {
+    "key": "A Space Dragon",
+    "value": "一頭太空巨龍",
+    "note": "怪獸"
+  },
+  {
+    "key": "A Space Eel",
+    "value": "一隻太空巨鰻",
+    "note": "怪獸"
+  },
+  {
+    "key": "A Space Hydra",
+    "value": "一頭太空九頭蛇",
+    "note": "怪獸"
+  },
+  {
+    "key": "A Space Monster",
+    "value": "一頭太空怪獸",
+    "note": "怪獸"
+  },
+  {
+    "key": "a Space Monster",
+    "value": "一頭太空怪獸",
+    "note": "怪獸"
+  },
+  {
+    "key": "Space Monster",
+    "value": "太空怪獸",
+    "note": "怪獸"
+  },
+  {
+    "key": "Android Farmer",
+    "value": "機器人農民",
+    "note": "單位"
+  },
+  {
+    "key": "Android Scientist",
+    "value": "機器人科學家",
+    "note": "單位"
+  },
+  {
+    "key": "Android Worker",
+    "value": "機器人工人",
+    "note": "單位"
+  },
+  {
+    "key": "Colony Ship",
+    "value": "殖民船",
+    "note": "單位"
+  },
+  {
+    "key": "Doom Star",
+    "value": "末日之星",
+    "note": "單位"
+  },
+  {
+    "key": "Custom Design",
+    "value": "自訂設計",
+    "note": "介面"
+  },
+  {
+    "key": "Ancient Derelict",
+    "value": "古代廢船",
+    "note": "事件"
+  },
+  {
+    "key": "Colony built on %s",
+    "value": "已在 %s 建立殖民地",
+    "note": "報告"
+  },
+  {
+    "key": "Build List for %s",
+    "value": "%s 的建造清單",
+    "note": "介面"
+  },
+  {
+    "key": "Build Time: %d",
+    "value": "建造時間:%d",
+    "note": "介面"
+  },
+  {
+    "key": "Cost Here: %d",
+    "value": "此處花費:%d",
+    "note": "介面"
+  },
+  {
+    "key": "Cost to build",
+    "value": "建造花費",
+    "note": "介面"
+  },
+  {
+    "key": "Cost to maintain",
+    "value": "維護花費",
+    "note": "介面"
+  },
+  {
+    "key": "Climate Change",
+    "value": "氣候變遷",
+    "note": "事件"
+  },
+  {
+    "key": "Computer Virus",
+    "value": "電腦病毒",
+    "note": "事件"
+  },
+  {
+    "key": "Diplomatic Blunder",
+    "value": "外交失誤",
+    "note": "事件"
+  },
+  {
+    "key": "Diplomatic Marriage",
+    "value": "外交聯姻",
+    "note": "事件"
+  },
+  {
+    "key": "This colony does not allow farming.",
+    "value": "\n\n此殖民地不允許農耕。",
+    "note": "報告"
+  },
+  {
+    "key": "This is not a Valid Colony!",
+    "value": "這不是有效的殖民地!",
+    "note": "報告"
+  },
+  {
+    "key": "Colinization failed for unspecified reason...",
+    "value": "殖民因不明原因失敗……",
+    "note": "報告"
+  },
+  {
+    "key": "Annihilate the Conquered occupants of this colony at 1 per turn?",
+    "value": "以每回合 1 名的速度殲滅此殖民地被征服的居民?",
+    "note": "確認"
+  },
+  {
+    "key": "Do you want to spend %d BC to buy %d production?",
+    "value": "你想花 %d 星幣購買 %d 生產嗎?",
+    "note": "確認"
+  },
+  {
+    "key": "Destroy %s for a return of %dBC?",
+    "value": "摧毀 %s 以換取 %d 星幣?",
+    "note": "確認"
+  },
+  {
+    "key": "Build colony on %s with",
+    "value": "在 %s 建立殖民地,配備\n\n",
+    "note": "介面"
+  },
+  {
+    "key": "Defeat Antarans",
+    "value": "擊敗安塔蘭人",
+    "note": "勝利"
+  },
+  {
+    "key": "Galactic Unification",
+    "value": "銀河統一",
+    "note": "勝利"
+  },
+  {
+    "key": "Achievements",
+    "value": "成就",
+    "note": "介面"
+  },
+  {
+    "key": "Attack Summary",
+    "value": "攻擊摘要",
+    "note": "戰鬥"
+  },
+  {
+    "key": "Defense Summary",
+    "value": "防禦摘要",
+    "note": "戰鬥"
+  },
+  {
+    "key": "Enemy ships Bomb %s",
+    "value": "敵艦轟炸 %s",
+    "note": "報告"
+  },
+  {
+    "key": "%d bomb strikes",
+    "value": "%d 次炸彈命中",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%d est. bomb hits",
+    "value": "預估 %d 次炸彈命中",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%d hit",
+    "value": "%d 次命中",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%d hits",
+    "value": "%d 次命中",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%d million people killed",
+    "value": "%d 百萬人喪生",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%d million people killed by biological weapons",
+    "value": "%d 百萬人死於生化武器",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%d units of armor killed",
+    "value": "%d 單位裝甲被殲滅",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%d units of infantry killed",
+    "value": "%d 單位步兵被殲滅",
+    "note": "戰鬥"
+  },
+  {
+    "key": "armored infantry",
+    "value": "裝甲步兵",
+    "note": "單位"
+  },
+  {
+    "key": "Sending %d million %s from %s to %s, ETA - %d turns.",
+    "value": "正將 %d 百萬 %s 自 %s 送往 %s,預計 %d 回合抵達。",
+    "note": "報告"
+  },
+  {
+    "key": "Declined because the planet is at its population limit.",
+    "value": "因該行星已達人口上限而拒絕。",
+    "note": "報告"
+  },
+  {
+    "key": "Declined by user due to %d turn delay.",
+    "value": "因 %d 回合延遲,已由使用者拒絕。",
+    "note": "報告"
+  },
+  {
+    "key": "You cannot send the dragon to the same star.",
+    "value": "你無法將巨龍送往同一顆恆星。",
+    "note": "報告"
+  },
+  {
+    "key": "You may not attack a place which has no colony",
+    "value": "你無法攻擊沒有殖民地的地方",
+    "note": "報告"
+  },
+  {
+    "key": "%d Buildings",
+    "value": "%d 座建築",
+    "note": "介面"
+  },
+  {
+    "key": "%d Colonists",
+    "value": "%d 名殖民者",
+    "note": "介面"
+  },
+  {
+    "key": "%d Max Population",
+    "value": "最大人口 %d",
+    "note": "介面"
+  },
+  {
+    "key": "%d Total Population",
+    "value": "總人口 %d",
+    "note": "介面"
+  },
+  {
+    "key": "%d turn(s)",
+    "value": "%d 回合",
+    "note": "介面"
+  },
+  {
+    "key": "5 Players",
+    "value": "5 名玩家",
+    "note": "介面"
+  },
+  {
+    "key": "(AI Bonus)",
+    "value": "(AI 加成)",
+    "note": "介面"
+  },
+  {
+    "key": "%s gains a level",
+    "value": "%s 升級了",
+    "note": "軍官"
+  },
+  {
+    "key": "%s offers to join you for %d BC now and %dBC a turn,%s do you accept?",
+    "value": "%s 提出願意加入你,現在給 %d BC、之後每回合 %dBC,%s你接受嗎?",
+    "note": "外交"
+  },
+  {
+    "key": "%s select a target to Attack",
+    "value": "%s 請選擇攻擊目標",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%s will goto the officer pool and thanks you for the %d BC",
+    "value": "%s 將回到軍官預備隊,並感謝你給的 %d BC",
+    "note": "軍官"
+  },
+  {
+    "key": "%s will wait a while to see if you can raise the %d.",
+    "value": "%s 會再等一陣子,看你能否湊到 %d。",
+    "note": "軍官"
+  },
+  {
+    "key": "%s will wait to see if you will pay %d BC later.",
+    "value": "%s 會再等等,看你之後是否會支付 %d BC。",
+    "note": "軍官"
+  },
+  {
+    "key": "%d armor killed",
+    "value": "%d 個裝甲被摧毀\r",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%d infantry killed",
+    "value": "%d 名步兵陣亡\r",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%d million people killed by biological weapons",
+    "value": "%d 百萬人死於生物武器\r",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%d million people killed",
+    "value": "%d 百萬人死亡\r",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%d percent scale",
+    "value": "%d 百分比縮放",
+    "note": "介面"
+  },
+  {
+    "key": "%s - %s colony",
+    "value": "%s - %s殖民地",
+    "note": "殖民"
+  },
+  {
+    "key": "%s at %s",
+    "value": "%s 在 %s",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%s attacked by the %s",
+    "value": "%s 被 %s 攻擊",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%s attacks %s at colony of %s",
+    "value": "%s 攻擊 %s,地點在 %s 的殖民地",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%s attacks %s at the %s system",
+    "value": "%s 攻擊 %s,地點在 %s 星系",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%s bombed by the %s",
+    "value": "%s 被 %s 轟炸",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%s bombed by the %s",
+    "value": "%s 被 %s 轟炸\r",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%s dark",
+    "value": "%s 已陷入黑暗",
+    "note": "場景"
+  },
+  {
+    "key": "%s departing for %s",
+    "value": "%s 正前往 %s",
+    "note": "艦隊"
+  },
+  {
+    "key": "%s destroyed",
+    "value": "%s 已被摧毀",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%s destroyed",
+    "value": "%s 已被摧毀\r",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%s enroute to %s",
+    "value": "%s 正前往 %s 途中",
+    "note": "艦隊"
+  },
+  {
+    "key": "%s finished building %s, place your orders for future production.",
+    "value": "%s 已完成建造 %s,請下達後續生產指令。",
+    "note": "殖民"
+  },
+  {
+    "key": "%s fleet",
+    "value": "%s 艦隊",
+    "note": "艦隊"
+  },
+  {
+    "key": "%s is above a product. Do you want to delete %s before exiting?",
+    "value": "%s 位於某項產品之上。要在離開前刪除 %s 嗎?",
+    "note": "介面"
+  },
+  {
+    "key": "%s is succesfully defended from the %s",
+    "value": "%s 成功抵禦了 %s 的攻擊",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%s is successfully defended from the %s troops",
+    "value": "%s 成功抵禦了 %s 部隊的攻擊",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%s is taken by the %s troops.",
+    "value": "%s 已被 %s 部隊攻佔。",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%s is taken by the %s",
+    "value": "%s 已被 %s 攻佔",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%s just colonized, place your orders for future production.",
+    "value": "%s 剛完成殖民,請下達後續生產指令。",
+    "note": "殖民"
+  },
+  {
+    "key": "%s just conquered, place your orders for future production.",
+    "value": "%s 剛被征服,請下達後續生產指令。",
+    "note": "殖民"
+  },
+  {
+    "key": "%s just liberated, place your orders for future production.",
+    "value": "%s 剛被解放,請下達後續生產指令。",
+    "note": "殖民"
+  },
+  {
+    "key": "%s select combat at %s",
+    "value": "%s 請在 %s 選擇戰鬥",
+    "note": "戰鬥"
+  },
+  {
+    "key": "%s%s - %s colony",
+    "value": "%s%s - %s殖民地\n",
+    "note": "殖民"
+  },
+  {
+    "key": "%s%s %s \n%sravity\nMineral %s\nPopulation (%d/%d)\n%s%+dk %s",
+    "value": "%s%s %s \n%sravity\n礦物 %s\n人口 (%d/%d)\n%s%+dk %s",
+    "note": "殖民"
+  },
+  {
+    "key": "%sArmor type: %s%s",
+    "value": "%s裝甲類型:%s%s\n",
+    "note": "艦船"
+  },
+  {
+    "key": "%sAutobuilding%s\n%s - %dt",
+    "value": "%s自動建造%s\n%s - %dt",
+    "note": "殖民"
+  },
+  {
+    "key": "%sAutobuilding%s\n%s",
+    "value": "%s自動建造%s\n%s",
+    "note": "殖民"
+  },
+  {
+    "key": "%sBase food per%s%d",
+    "value": "%s基礎食物/人%s%d\n",
+    "note": "殖民"
+  },
+  {
+    "key": "%sBase industry per%s%d",
+    "value": "%s基礎工業/人%s%d\n",
+    "note": "殖民"
+  },
+  {
+    "key": "%sBase research per%s%d",
+    "value": "%s基礎研究/人%s%d\n\n",
+    "note": "殖民"
+  },
+  {
+    "key": "%sColony of %s",
+    "value": "%s%s的殖民地",
+    "note": "殖民"
+  },
+  {
+    "key": "%sComputer type: %s%s",
+    "value": "%s電腦類型:%s%s\n",
+    "note": "艦船"
+  },
+  {
+    "key": "%sCost to build: %s%d",
+    "value": "%s建造花費:%s%d\n",
+    "note": "殖民"
+  },
+  {
+    "key": "%sFood per farmer        %s%d.%d",
+    "value": "%s每位農夫食物產量        %s%d.%d\n",
+    "note": "殖民"
+  },
+  {
+    "key": "%sFood per farmer        %s%d",
+    "value": "%s每位農夫食物產量        %s%d\n",
+    "note": "殖民"
+  },
+  {
+    "key": "%sFood: %s%+d",
+    "value": "%s食物:%s%+d",
+    "note": "殖民"
+  },
+  {
+    "key": "%sFreighters: %s%d",
+    "value": "%s貨船:%s%d",
+    "note": "殖民"
+  },
+  {
+    "key": "%sFtl type: %s%s",
+    "value": "%s超光速引擎類型:%s%s\n",
+    "note": "艦船"
+  },
+  {
+    "key": "%sIncome: %s%+d",
+    "value": "%s收入:%s%+d",
+    "note": "殖民"
+  },
+  {
+    "key": "%sIncome: %s%s%+d",
+    "value": "%s收入:%s%s%+d",
+    "note": "殖民"
+  },
+  {
+    "key": "%sIndustry per worker    %s%d",
+    "value": "%s每位工人工業產量    %s%d\n",
+    "note": "殖民"
+  },
+  {
+    "key": "%sMaintenance penalty %s%+d%%",
+    "value": "%s維護懲罰 %s%+d%%\n",
+    "note": "殖民"
+  },
+  {
+    "key": "%sMax Population%s%d",
+    "value": "%s最大人口%s%d",
+    "note": "殖民"
+  },
+  {
+    "key": "%sMax Population%s%d",
+    "value": "%s最大人口%s%d\n",
+    "note": "殖民"
+  },
+  {
+    "key": "%sMineral %s",
+    "value": "%s礦物 %s\n",
+    "note": "殖民"
+  },
+  {
+    "key": "%sMorale %s%+d%%",
+    "value": "%s士氣 %s%+d%%\n\n",
+    "note": "殖民"
+  },
+  {
+    "key": "%sPopulation %s%d/%d",
+    "value": "%s人口 %s%d/%d \n\n",
+    "note": "殖民"
+  },
+  {
+    "key": "%sPopulation: %s%d",
+    "value": "%s人口:%s%d",
+    "note": "殖民"
+  },
+  {
+    "key": "%sResearch per scientist %s%d",
+    "value": "%s每位科學家研究量 %s%d\n",
+    "note": "殖民"
+  },
+  {
+    "key": "%sResearch per scientist %s%d",
+    "value": "%s每位科學家研究量 %s%d\n\n",
+    "note": "殖民"
+  },
+  {
+    "key": "%sResearch: %s%d",
+    "value": "%s研究:%s%d",
+    "note": "殖民"
+  },
+  {
+    "key": "%sReserve: %s%d",
+    "value": "%s儲備:%s%d",
+    "note": "殖民"
+  },
+  {
+    "key": "%sShield type: %s%s",
+    "value": "%s護盾類型:%s%s\n",
+    "note": "艦船"
+  },
+  {
+    "key": "%sWorker penalty      %s%+d%%",
+    "value": "%s工人懲罰      %s%+d%%\n",
+    "note": "殖民"
+  },
+  {
+    "key": "%sWorker penalty      %s%+d%%",
+    "value": "%s工人懲罰      %s%+d%%\n\n",
+    "note": "殖民"
+  },
+  {
+    "key": "%d settlers already enroute.",
+    "value": "\n%d 位移民者已在途中。\n",
+    "note": "殖民"
+  },
+  {
+    "key": "%sSpecials:",
+    "value": "\n%s特殊項目:\n",
+    "note": "艦船"
+  },
+  {
+    "key": "%sWeapons:",
+    "value": "\n%s武器:\n",
+    "note": "艦船"
+  },
+  {
+    "key": "Colonist have been shuffled to new jobs.",
+    "value": "\n\n殖民者已被重新分配至新的工作。",
+    "note": "殖民"
+  },
+  {
+    "key": "Please be aware that the destination colony is blockaded. If settlers arrive at at blockaded colony, they die!",
+    "value": "\n\n請注意,目的地殖民地正遭到封鎖。若移民者抵達遭封鎖的殖民地,將會死亡!",
+    "note": "殖民"
+  },
+  {
+    "key": "-Blockaded",
+    "value": "\n-遭封鎖",
+    "note": "殖民"
+  },
+  {
+    "key": "^ Repeat ^",
+    "value": "^ 重複 ^",
+    "note": "介面"
+  },
+  {
+    "key": "2 Players",
+    "value": "2 位玩家",
+    "note": "設定"
+  },
+  {
+    "key": "3 Players",
+    "value": "3 位玩家",
+    "note": "設定"
+  },
+  {
+    "key": "4 Players",
+    "value": "4 位玩家",
+    "note": "設定"
+  },
+  {
+    "key": "6 Players",
+    "value": "6 位玩家",
+    "note": "設定"
+  },
+  {
+    "key": "7 Players",
+    "value": "7 位玩家",
+    "note": "設定"
+  },
+  {
+    "key": "8 Players",
+    "value": "8 位玩家",
+    "note": "設定"
+  },
+  {
+    "key": "Accident",
+    "value": "意外事故",
+    "note": "事件"
+  },
+  {
+    "key": "Advanced",
+    "value": "進階",
+    "note": "設定"
+  },
+  {
+    "key": "Amoeba",
+    "value": "阿米巴",
+    "note": "怪獸"
+  },
+  {
+    "key": "Android",
+    "value": "機器人",
+    "note": "種族"
+  },
+  {
+    "key": "Annihilating %s",
+    "value": "殲滅 %s 中",
+    "note": "戰鬥"
+  },
+  {
+    "key": "Anomaly",
+    "value": "異常現象",
+    "note": "場景"
+  },
+  {
+    "key": "Arid",
+    "value": "乾旱",
+    "note": "氣候"
+  },
+  {
+    "key": "Asteroids",
+    "value": "小行星帶",
+    "note": "場景"
+  },
+  {
+    "key": "Autobuilding",
+    "value": "自動建造",
+    "note": "殖民"
+  },
+  {
+    "key": "Average",
+    "value": "中等",
+    "note": "設定"
+  },
+  {
+    "key": "Barrn",
+    "value": "貧瘠",
+    "note": "氣候"
+  },
+  {
+    "key": "Beast",
+    "value": "野獸",
+    "note": "怪獸"
+  },
+  {
+    "key": "Begin Bombing Button",
+    "value": "開始轟炸",
+    "note": "按鈕"
+  },
+  {
+    "key": "Blockaded",
+    "value": "遭封鎖",
+    "note": "狀態"
+  },
+  {
+    "key": "Bombard Colony Button",
+    "value": "轟炸殖民地",
+    "note": "按鈕"
+  },
+  {
+    "key": "Boom",
+    "value": "激增",
+    "note": "事件"
+  },
+  {
+    "key": "bringing the knowledge of %s.",
+    "value": "帶來了 %s 的知識。",
+    "note": "外交"
+  },
+  {
+    "key": "bringing the knowledge of the following:",
+    "value": "帶來了以下的知識:",
+    "note": "外交"
+  },
+  {
+    "key": "CAPTURED",
+    "value": "已擄獲",
+    "note": "狀態"
+  },
+  {
+    "key": "Cease Fire Button",
+    "value": "停火",
+    "note": "按鈕"
+  },
+  {
+    "key": "Climate",
+    "value": "氣候",
+    "note": "殖民"
+  },
+  {
+    "key": "Comet",
+    "value": "彗星",
+    "note": "場景"
+  },
+  {
+    "key": "CRUNCH",
+    "value": "喀啦一聲!",
+    "note": "感嘆詞"
+  },
+  {
+    "key": "Crystal",
+    "value": "水晶",
+    "note": "礦產"
+  },
+  {
+    "key": "Declined because the planet is at its population limit. The settlers would die upon arrival in %d turns.",
+    "value": "已拒絕,因為該行星已達人口上限。移民者將在 %d 回合後抵達並死亡。",
+    "note": "殖民"
+  },
+  {
+    "key": "delete %s",
+    "value": "刪除 %s",
+    "note": "介面"
+  },
+  {
+    "key": "Depletion",
+    "value": "枯竭",
+    "note": "礦產"
+  },
+  {
+    "key": "Deposit",
+    "value": "礦藏",
+    "note": "礦產"
+  },
+  {
+    "key": "Derelict",
+    "value": "廢棄船",
+    "note": "場景"
+  },
+  {
+    "key": "Description",
+    "value": "描述",
+    "note": "介面"
+  },
+  {
+    "key": "Desrt",
+    "value": "沙漠",
+    "note": "氣候"
+  },
+  {
+    "key": "Destroy Colony Button",
+    "value": "摧毀殖民地",
+    "note": "按鈕"
+  },
+  {
+    "key": "Difficulty",
+    "value": "難度",
+    "note": "設定"
+  },
+  {
+    "key": "Donation",
+    "value": "捐贈",
+    "note": "事件"
+  },
+  {
+    "key": "Dragon",
+    "value": "巨龍",
+    "note": "怪獸"
+  },
+  {
+    "key": "Drop All Button",
+    "value": "全部卸下",
+    "note": "按鈕"
+  },
+  {
+    "key": "Earthquake",
+    "value": "地震",
+    "note": "事件"
+  },
+  {
+    "key": "Easy",
+    "value": "簡單",
+    "note": "設定"
+  },
+  {
+    "key": "Eel",
+    "value": "太空鰻",
+    "note": "怪獸"
+  },
+  {
+    "key": "ETA:%d t",
+    "value": "預計到達時間:%d 回合",
+    "note": "艦隊"
+  },
+  {
+    "key": "expert",
+    "value": "專家",
+    "note": "設定"
+  },
+  {
+    "key": "farmer",
+    "value": "農夫",
+    "note": "殖民"
+  },
+  {
+    "key": "Flux",
+    "value": "亂流",
+    "note": "場景"
+  },
+  {
+    "key": "Freak Accident",
+    "value": "離奇意外",
+    "note": "事件"
+  },
+  {
+    "key": "Freighter Fleet",
+    "value": "貨船艦隊",
+    "note": "艦隊"
+  },
+  {
+    "key": "Funnel",
+    "value": "漏斗",
+    "note": "場景"
+  },
+  {
+    "key": "Gaia",
+    "value": "蓋亞",
+    "note": "氣候"
+  },
+  {
+    "key": "Galaxy Age",
+    "value": "銀河年齡",
+    "note": "設定"
+  },
+  {
+    "key": "Galaxy Size",
+    "value": "銀河大小",
+    "note": "設定"
+  },
+  {
+    "key": "Gas Giant - uninhabitable",
+    "value": "氣態巨行星 - 不可居住",
+    "note": "氣候"
+  },
+  {
+    "key": "Gas Giant - uninhabitable",
+    "value": "氣態巨行星 - 不可居住\n",
+    "note": "氣候"
+  },
+  {
+    "key": "General Status",
+    "value": "整體狀態",
+    "note": "介面"
+  },
+  {
+    "key": "Gravity Here: %s",
+    "value": "此地重力:%s",
+    "note": "殖民"
+  },
+  {
+    "key": "ha!",
+    "value": "哈!",
+    "note": "感嘆詞"
+  },
+  {
+    "key": "Hard",
+    "value": "困難",
+    "note": "設定"
+  },
+  {
+    "key": "Heavy G Bonus",
+    "value": "高重力加成",
+    "note": "殖民"
+  },
+  {
+    "key": "Hire Button",
+    "value": "雇用",
+    "note": "按鈕"
+  },
+  {
+    "key": "Housing",
+    "value": "住房",
+    "note": "殖民"
+  },
+  {
+    "key": "Huge",
+    "value": "巨大",
+    "note": "設定"
+  },
+  {
+    "key": "Hydra",
+    "value": "九頭蛇",
+    "note": "怪獸"
+  },
+  {
+    "key": "Hyperspace Flux",
+    "value": "超空間亂流",
+    "note": "場景"
+  },
+  {
+    "key": "Impossible",
+    "value": "不可能",
+    "note": "設定"
+  },
+  {
+    "key": "Industrial Accident",
+    "value": "工業意外",
+    "note": "事件"
+  },
+  {
+    "key": "infantry",
+    "value": "步兵",
+    "note": "戰鬥"
+  },
+  {
+    "key": "Infrn",
+    "value": "煉獄",
+    "note": "氣候"
+  },
+  {
+    "key": "intelligent",
+    "value": "聰穎",
+    "note": "種族"
+  },
+  {
+    "key": "Invade Colony Button",
+    "value": "入侵殖民地",
+    "note": "按鈕"
+  },
+  {
+    "key": "Invading %s",
+    "value": "正在入侵 %s",
+    "note": "戰鬥"
+  },
+  {
+    "key": "kill %d infantry",
+    "value": "消滅 %d 名步兵",
+    "note": "戰鬥"
+  },
+  {
+    "key": "kill %d tanks",
+    "value": "消滅 %d 輛坦克",
+    "note": "戰鬥"
+  },
+  {
+    "key": "Large",
+    "value": "大型",
+    "note": "設定"
+  },
+  {
+    "key": "LOKNAR",
+    "value": "洛克納",
+    "note": "場景"
+  },
+  {
+    "key": "Low G Penalty",
+    "value": "低重力懲罰",
+    "note": "殖民"
+  },
+  {
+    "key": "Maint. Cost: %d",
+    "value": "維護費用:%d",
+    "note": "介面"
+  },
+  {
+    "key": "Marriage",
+    "value": "聯姻",
+    "note": "事件"
+  },
+  {
+    "key": "Max %d farms, %d food each",
+    "value": "最多 %d 座農場,每座產出 %d 食物",
+    "note": "殖民"
+  },
+  {
+    "key": "Medium",
+    "value": "中等",
+    "note": "設定"
+  },
+  {
+    "key": "militia",
+    "value": "民兵",
+    "note": "戰鬥"
+  },
+  {
+    "key": "Mind Control Colony Button",
+    "value": "精神控制殖民地",
+    "note": "按鈕"
+  },
+  {
+    "key": "Mineral %s",
+    "value": "礦物 %s",
+    "note": "殖民"
+  },
+  {
+    "key": "Mineral Depletion",
+    "value": "礦藏枯竭",
+    "note": "礦產"
+  },
+  {
+    "key": "Mineral Deposit",
+    "value": "礦藏",
+    "note": "礦產"
+  },
+  {
+    "key": "Mineral Rich",
+    "value": "礦產豐富",
+    "note": "礦產"
+  },
+  {
+    "key": "More destroyed...",
+    "value": "更多被摧毀...\r",
+    "note": "戰鬥"
+  },
+  {
+    "key": "Mutiny",
+    "value": "叛變",
+    "note": "事件"
+  },
+  {
+    "key": "Natives cannot be moved to another job or planet!",
+    "value": "原住民無法被調往其他工作或行星!",
+    "note": "殖民"
+  },
+  {
+    "key": "No Combat Button",
+    "value": "無戰鬥",
+    "note": "按鈕"
+  },
+  {
+    "key": "No Farming",
+    "value": "無法耕作",
+    "note": "殖民"
+  },
+  {
+    "key": "No freighters left in your pool.",
+    "value": "貨船預備隊已無存量。\n",
+    "note": "殖民"
+  },
+  {
+    "key": "No Random Events",
+    "value": "無隨機事件",
+    "note": "設定"
+  },
+  {
+    "key": "No Rebels",
+    "value": "無叛亂",
+    "note": "設定"
+  },
+  {
+    "key": "No room for another colonist in this job field",
+    "value": "此職位已無空缺容納更多殖民者",
+    "note": "殖民"
+  },
+  {
+    "key": "No room in queue, ship not refitted",
+    "value": "佇列已滿,船艦未能改裝",
+    "note": "艦船"
+  },
+  {
+    "key": "NO STAR BASE",
+    "value": "無星際基地",
+    "note": "狀態"
+  },
+  {
+    "key": "No Xenon Attacks",
+    "value": "無異形攻擊",
+    "note": "設定"
+  },
+  {
+    "key": "NOOOO!.",
+    "value": "不~~~!\n",
+    "note": "感嘆詞"
+  },
+  {
+    "key": "Nova",
+    "value": "新星",
+    "note": "場景"
+  },
+  {
+    "key": "Ocean",
+    "value": "海洋",
+    "note": "氣候"
+  },
+  {
+    "key": "Officers",
+    "value": "軍官",
+    "note": "軍官"
+  },
+  {
+    "key": "Organic Rich",
+    "value": "有機物豐富",
+    "note": "礦產"
+  },
+  {
+    "key": "Orion Discovered",
+    "value": "發現奧利安",
+    "note": "事件"
+  },
+  {
+    "key": "Outpost Ship",
+    "value": "前哨站船",
+    "note": "艦船"
+  },
+  {
+    "key": "Pirate Activity",
+    "value": "海盜活動",
+    "note": "事件"
+  },
+  {
+    "key": "Pirate Raid",
+    "value": "海盜突襲",
+    "note": "事件"
+  },
+  {
+    "key": "Pirates",
+    "value": "海盜",
+    "note": "種族"
+  },
+  {
+    "key": "Plague",
+    "value": "瘟疫",
+    "note": "事件"
+  },
+  {
+    "key": "Planet already colonized",
+    "value": "該行星已被殖民",
+    "note": "殖民"
+  },
+  {
+    "key": "Planet Warning",
+    "value": "行星警告",
+    "note": "介面"
+  },
+  {
+    "key": "Plasma Flux Damage.",
+    "value": "電漿亂流損傷。\n",
+    "note": "戰鬥"
+  },
+  {
+    "key": "Players",
+    "value": "玩家",
+    "note": "設定"
+  },
+  {
+    "key": "Poor",
+    "value": "貧瘠",
+    "note": "礦產"
+  },
+  {
+    "key": "Pop %d,%03d k (%+dk)",
+    "value": "人口 %d,%03d千 (%+d千)",
+    "note": "殖民"
+  },
+  {
+    "key": "Pop %d,%03d k (%s%+dk%s)",
+    "value": "人口 %d,%03d千 (%s%+d千%s)",
+    "note": "殖民"
+  },
+  {
+    "key": "Pop. Boom",
+    "value": "人口激增",
+    "note": "事件"
+  },
+  {
+    "key": "Population Boom",
+    "value": "人口激增",
+    "note": "事件"
+  },
+  {
+    "key": "power suits",
+    "value": "動力裝甲",
+    "note": "戰鬥"
+  },
+  {
+    "key": "Pre Warp",
+    "value": "曲速前",
+    "note": "科技"
+  },
+  {
+    "key": "Pulsar Damage Ship.",
+    "value": "脈衝星傷害擊中星艦。\n",
+    "note": "戰鬥訊息"
+  },
+  {
+    "key": "Pulsar Damage.",
+    "value": "脈衝星傷害。\n",
+    "note": "戰鬥訊息"
+  },
+  {
+    "key": "Purchasing failed unexpectedly... Please tell Eric.",
+    "value": "購買時發生非預期的失敗……請通知 Eric。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "Race Bonus",
+    "value": "種族加成",
+    "note": "UI標籤"
+  },
+  {
+    "key": "Race Elimination",
+    "value": "種族滅絕",
+    "note": "遊戲設定"
+  },
+  {
+    "key": "Random Events",
+    "value": "隨機事件",
+    "note": "遊戲設定"
+  },
+  {
+    "key": "Rebellion",
+    "value": "叛亂",
+    "note": "事件"
+  },
+  {
+    "key": "Refit Ship",
+    "value": "改裝星艦",
+    "note": "按鈕"
+  },
+  {
+    "key": "Reject Button",
+    "value": "拒絕按鈕",
+    "note": "按鈕名稱"
+  },
+  {
+    "key": "Rich",
+    "value": "富饒",
+    "note": "行星礦產"
+  },
+  {
+    "key": "Rubble",
+    "value": "瓦礫",
+    "note": "行星特殊"
+  },
+  {
+    "key": "Scouts arrive at the %s system",
+    "value": "偵察兵抵達 %s 星系",
+    "note": "事件訊息"
+  },
+  {
+    "key": "Select Combat at %s",
+    "value": "選擇在 %s 進行戰鬥方式",
+    "note": "UI提示"
+  },
+  {
+    "key": "Select planet for an outpost in the %s system",
+    "value": "選擇要在 %s 星系設立前哨站的行星",
+    "note": "UI提示"
+  },
+  {
+    "key": "Select planet for artificial planet construction in the %s system",
+    "value": "選擇要在 %s 星系建造人造行星的位置",
+    "note": "UI提示"
+  },
+  {
+    "key": "Select planet for Colony Base in %s system",
+    "value": "選擇 %s 星系中殖民基地的目標行星",
+    "note": "UI提示"
+  },
+  {
+    "key": "Select planet for Colony Ship in %s system",
+    "value": "選擇 %s 星系中殖民船的目標行星",
+    "note": "UI提示"
+  },
+  {
+    "key": "Select planet for troops in the %s system",
+    "value": "選擇要在 %s 星系派駐部隊的行星",
+    "note": "UI提示"
+  },
+  {
+    "key": "Select star for me to attack cowardly %s!",
+    "value": "選一顆星讓我攻擊吧,你這膽小的 %s!",
+    "note": "外交對白"
+  },
+  {
+    "key": "Serendipity",
+    "value": "意外之喜",
+    "note": "事件"
+  },
+  {
+    "key": "Settlers Depart",
+    "value": "移民出發",
+    "note": "訊息"
+  },
+  {
+    "key": "Settlers Failed.",
+    "value": "移民失敗。",
+    "note": "訊息"
+  },
+  {
+    "key": "Ships in refit will be scrapped. Continue?",
+    "value": "改裝中的星艦將被報廢,確定要繼續嗎?",
+    "note": "確認對話"
+  },
+  {
+    "key": "Small",
+    "value": "小型",
+    "note": "行星大小"
+  },
+  {
+    "key": "Space Amoeba",
+    "value": "太空變形蟲",
+    "note": "太空怪獸"
+  },
+  {
+    "key": "Space Crystal",
+    "value": "太空水晶",
+    "note": "太空怪獸"
+  },
+  {
+    "key": "Space Dragon",
+    "value": "太空巨龍",
+    "note": "太空怪獸"
+  },
+  {
+    "key": "Space Eel",
+    "value": "太空鰻魚",
+    "note": "太空怪獸"
+  },
+  {
+    "key": "Space Hydra",
+    "value": "太空九頭蛇",
+    "note": "太空怪獸"
+  },
+  {
+    "key": "Spatial Compressor Damage ship.",
+    "value": "空間壓縮器傷害擊中星艦。\n",
+    "note": "戰鬥訊息"
+  },
+  {
+    "key": "Spatial Compressor Damage.",
+    "value": "空間壓縮器傷害。\n",
+    "note": "戰鬥訊息"
+  },
+  {
+    "key": "Special",
+    "value": "特殊",
+    "note": "行星特殊分類"
+  },
+  {
+    "key": "Spy",
+    "value": "間諜",
+    "note": "特工職業"
+  },
+  {
+    "key": "Strategic Combat",
+    "value": "戰略戰鬥",
+    "note": "選單選項"
+  },
+  {
+    "key": "Subterranean Bonus",
+    "value": "地底加成",
+    "note": "科技/建築"
+  },
+  {
+    "key": "Summary",
+    "value": "總覽",
+    "note": "UI標籤"
+  },
+  {
+    "key": "Super Nova",
+    "value": "超新星",
+    "note": "事件"
+  },
+  {
+    "key": "Surrender",
+    "value": "投降",
+    "note": "外交選項"
+  },
+  {
+    "key": "Swamp",
+    "value": "沼澤",
+    "note": "行星氣候"
+  },
+  {
+    "key": "Tactical Combat",
+    "value": "戰術戰鬥",
+    "note": "選單選項"
+  },
+  {
+    "key": "Tech Level",
+    "value": "科技等級",
+    "note": "UI標籤"
+  },
+  {
+    "key": "Tells %s %s you are interested in hiring, and sends him to the pool, hiring the hero if you have the %dBC, and to wait 20 turns if you do not.",
+    "value": "告訴 %s %s 你有意雇用,並將其送入人才庫;若你擁有 %d BC 便直接雇用該英雄,否則需等待 20 回合。",
+    "note": "UI說明"
+  },
+  {
+    "key": "Tells %s %s you are not interested in hiring for %dBC right now, and sends the hero to the pool for 20 turns.",
+    "value": "告訴 %s %s 你目前不打算以 %d BC 雇用他,並將該英雄送回人才庫等待 20 回合。",
+    "note": "UI說明"
+  },
+  {
+    "key": "Terra",
+    "value": "泰拉",
+    "note": "地名/專有名詞"
+  },
+  {
+    "key": "That is an outpost. You cannot send settlers to an outpost.",
+    "value": "那是一座前哨站,無法向前哨站派遣移民。\n",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "That planet may not be attacked.",
+    "value": "該行星無法被攻擊。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "The Antaran fleet",
+    "value": "安塔蘭艦隊",
+    "note": "單位名稱"
+  },
+  {
+    "key": "The Defending Player has a telepathic officer here who thwarts your attempt to seize the colony.",
+    "value": "防守方在此駐有一名心靈感應軍官,挫敗了你奪取殖民地的企圖。",
+    "note": "戰鬥訊息"
+  },
+  {
+    "key": "The Defending Player is a telepathic race as well, and psychicly thumbs their collective noses at your attempt to seize the colony.",
+    "value": "防守方本身也是心靈感應種族,以精神力嘲弄你奪取殖民地的企圖。",
+    "note": "戰鬥訊息"
+  },
+  {
+    "key": "The Guardian",
+    "value": "守護者",
+    "note": "單位名稱"
+  },
+  {
+    "key": "The planet is at its population limit after sending %d, If this is not remedied the %d remaining settlers will die upon arrival. Continue?",
+    "value": "派出 %d 名移民後,該行星人口將達上限。若不處理,剩餘 %d 名移民抵達後將會死亡,確定要繼續嗎?",
+    "note": "確認對話"
+  },
+  {
+    "key": "The planet is at its population limit after sending %d, If this is not remedied the remaining %d settlers will die upon arrival in %d turns Continue?",
+    "value": "派出 %d 名移民後,該行星人口將達上限。若不處理,剩餘 %d 名移民將在 %d 回合後抵達時死亡,確定要繼續嗎?",
+    "note": "確認對話"
+  },
+  {
+    "key": "The planet is at its population limit, If this is not remedied the settlers will die upon arrival. Continue?",
+    "value": "該行星人口已達上限。若不處理,移民抵達後將會死亡,確定要繼續嗎?",
+    "note": "確認對話"
+  },
+  {
+    "key": "The planet is at its population limit, If this is not remedied the settlers will die upon arrival in %d turns Continue?",
+    "value": "該行星人口已達上限。若不處理,移民將在 %d 回合後抵達時死亡,確定要繼續嗎?",
+    "note": "確認對話"
+  },
+  {
+    "key": "The source colony is blockaded, and cannot send settlers.",
+    "value": "來源殖民地遭到封鎖,無法派遣移民。\n",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "There may not be room for this unit here when it is built. Continue?",
+    "value": "建造完成時此處可能沒有足夠空間容納該單位,確定要繼續嗎?",
+    "note": "確認對話"
+  },
+  {
+    "key": "These colonists will be unavailable for %d turns, while in transit, are you sure?",
+    "value": "這些殖民者在運送途中將有 %d 回合無法使用,確定嗎?",
+    "note": "確認對話"
+  },
+  {
+    "key": "This colonist is a native, natives can only farm or mine.",
+    "value": "這名殖民者是原住民,原住民只能從事農耕或採礦。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "This colonist is a Rebel, Rebels will not move to another job",
+    "value": "這名殖民者是叛亂份子,叛亂份子不會轉換其他工作。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "This colonist is an android, and cannot be reconfigured for another job.",
+    "value": "這名殖民者是機械人,無法重新指派其他工作。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "This colonist is an expert, it will lose this status if transfered, Continue?",
+    "value": "這名殖民者是專家,轉調後將失去專家身分,確定要繼續嗎?",
+    "note": "確認對話"
+  },
+  {
+    "key": "This colonist is conquered, conquered people cannot be resettled.",
+    "value": "這名殖民者是被征服者,被征服的人民無法再次遷移。\n",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "This colony does not allow farming.",
+    "value": "這座殖民地不允許從事農耕。\n",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "This is not your planet.",
+    "value": "這不是你的行星。\n",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "This ship has a leader, Send %s to the officer pool first?",
+    "value": "這艘星艦上有領袖,要先將 %s 送回軍官人才庫嗎?",
+    "note": "確認對話"
+  },
+  {
+    "key": "This ship is being refitted, removing it from the queue will delete it forever, losing all of the original value of the ship. Delete the ship?",
+    "value": "這艘星艦正在改裝中,將其自佇列移除會永久刪除,原本投入的造艦價值也將全數損失。確定要刪除這艘星艦嗎?",
+    "note": "確認對話"
+  },
+  {
+    "key": "This ship is too large to be built here.",
+    "value": "這艘星艦體型過大,無法在此建造。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "Time-space Anomaly",
+    "value": "時空異象",
+    "note": "事件"
+  },
+  {
+    "key": "To",
+    "value": "至",
+    "note": "UI標籤"
+  },
+  {
+    "key": "Too many ships already built",
+    "value": "已建造的星艦數量過多",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "Toxic",
+    "value": "有毒",
+    "note": "行星氣候"
+  },
+  {
+    "key": "Trade Goods",
+    "value": "貿易商品",
+    "note": "生產類別"
+  },
+  {
+    "key": "Transport Ship",
+    "value": "運輸船",
+    "note": "艦種"
+  },
+  {
+    "key": "Turn(s) Left: %d",
+    "value": "剩餘回合數:%d",
+    "note": "UI標籤"
+  },
+  {
+    "key": "Tutor",
+    "value": "教學",
+    "note": "UI選項"
+  },
+  {
+    "key": "U-Poor",
+    "value": "極貧瘠",
+    "note": "行星礦產"
+  },
+  {
+    "key": "U-Rich",
+    "value": "極富饒",
+    "note": "行星礦產"
+  },
+  {
+    "key": "Virus",
+    "value": "病毒",
+    "note": "事件"
+  },
+  {
+    "key": "Warp Beast",
+    "value": "曲速獸",
+    "note": "太空怪獸"
+  },
+  {
+    "key": "Warp Funnel",
+    "value": "曲速漩渦",
+    "note": "太空特徵"
+  },
+  {
+    "key": "Who",
+    "value": "何人",
+    "note": "UI標籤"
+  },
+  {
+    "key": "Will you pay me %dbc to feast elsewhere %s, if you refuse, I shall pillage your puny subjects in the %s system!",
+    "value": "你願意付我 %d BC 讓我到別處大快朵頤嗎,%s?若你拒絕,我就去 %s 星系蹂躪你那些渺小的子民!",
+    "note": "太空怪獸對白"
+  },
+  {
+    "key": "Wormhole",
+    "value": "蟲洞",
+    "note": "太空特徵"
+  },
+  {
+    "key": "Xenon Attacks",
+    "value": "齊農人來襲",
+    "note": "事件"
+  },
+  {
+    "key": "You already have enough colony bases for every planet in system",
+    "value": "此星系內每顆行星都已有足夠的殖民基地",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You aren't even telepathic!",
+    "value": "你根本不具備心靈感應能力!",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You cannot afford this increase in production. You are short by %d BC.",
+    "value": "你無法負擔這筆生產力提升費用,還差 %d BC。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You Cannot build an artificial planet on anything but an asteroid belt or a gas giant",
+    "value": "人造行星只能建造在小行星帶或氣態巨行星上",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You cannot build there.",
+    "value": "你無法在此建造。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You Cannot build this ship here, perhaps you do not have a starbase, battlestation, etc ?",
+    "value": "你無法在此建造這艘星艦,也許你尚未擁有星際基地、戰鬥站等設施?",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You cannot buy Housing or Trade Goods, as they are settings, not specific items.",
+    "value": "你無法購買住房或貿易商品,因為它們屬於整體設定,而非個別項目。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You cannot buy while this star is blockaded.",
+    "value": "此星系遭到封鎖時無法購買。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You cannot change this once you have bought it",
+    "value": "一旦購買後便無法更改",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You cannot drop troops there.",
+    "value": "你無法在此空投部隊。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You cannot mind control this colony",
+    "value": "你無法對這座殖民地進行精神控制",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You cannot refit captured ships.",
+    "value": "你無法改裝擄獲的星艦。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You cannot refit cruiser or larger ships at a star with no star base (or better).",
+    "value": "沒有星際基地(或更高等級設施)的星系無法改裝巡洋艦以上的星艦。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You cannot refit Loknar's ship.",
+    "value": "你無法改裝洛克納爾的座艦。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You cannot send the last unit of population from a colony.",
+    "value": "你無法將殖民地最後一名人口遷出。\n",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You cannot spend BC's to get this faster than in a single turn.",
+    "value": "你無法花費 BC 讓此項目在一回合內完成得更快。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You can't destroy more than one thing a turn.",
+    "value": "每回合最多只能摧毀一項目標。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You do not have sufficient technology to build ships",
+    "value": "你尚未擁有足夠的科技來建造星艦",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You do not have the tech to build doomstars",
+    "value": "你尚未擁有建造末日星的科技",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You do not have the tech to build titans",
+    "value": "你尚未擁有建造泰坦艦的科技",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You don't have %dbc %s, for your insolence i shall devour the %s system!",
+    "value": "你付不出 %d BC,%s,你這無禮之徒,我要把 %s 星系吞了!",
+    "note": "太空怪獸對白"
+  },
+  {
+    "key": "You find %s, who joins you out of gratitude for being rescued.",
+    "value": "你發現了 %s,他出於獲救的感激而加入了你。",
+    "note": "事件訊息"
+  },
+  {
+    "key": "You find %s, who would join you out of gratitude for being rescued, but you have no room",
+    "value": "你發現了 %s,他原本願意因獲救而加入,但你已沒有空間容納他",
+    "note": "事件訊息"
+  },
+  {
+    "key": "You have already bought this product.",
+    "value": "你已經購買過此產品。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You have no product selected to buy.",
+    "value": "你尚未選擇要購買的產品。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You have no cruisers, which are required to seize the colony.",
+    "value": "你沒有巡洋艦,而奪取殖民地需要巡洋艦。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You have reached the maximum number of settlers which can be enroute at any given time.",
+    "value": "你派出的移民數量已達同時在途的上限。\n",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You may not attack a fleet in space if the player has a colony in this system. You must attack the fleet at the colony.",
+    "value": "若對方在此星系擁有殖民地,你不能在太空中攻擊其艦隊,必須在殖民地處進行攻擊。",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You may not attack a planet which has no colony",
+    "value": "你不能攻擊沒有殖民地的行星",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You may not attack you own colony",
+    "value": "你不能攻擊自己的殖民地",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You may not attack your own colony",
+    "value": "你不能攻擊自己的殖民地",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "You may not attack your own fleet. Hit the Close button if you want no combat at the star",
+    "value": "你不能攻擊自己的艦隊。若不想在此星系開戰,請點選關閉按鈕",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "Native",
+    "value": "原住民",
+    "note": "人口類型"
+  },
+  {
+    "key": "Conquered",
+    "value": "被征服者",
+    "note": "人口類型"
+  },
+  {
+    "key": "Conq.",
+    "value": "征服",
+    "note": "人口類型縮寫"
+  },
+  {
+    "key": "Agricultural",
+    "value": "農業",
+    "note": "種族專精"
+  },
+  {
+    "key": "Industrial",
+    "value": "工業",
+    "note": "種族專精"
+  },
+  {
+    "key": "Research",
+    "value": "研究",
+    "note": "種族專精"
+  },
+  {
+    "key": "HG",
+    "value": "特大型",
+    "note": "尺寸縮寫"
+  },
+  {
+    "key": "S",
+    "value": "小型",
+    "note": "尺寸縮寫"
+  },
+  {
+    "key": "M",
+    "value": "中型",
+    "note": "尺寸縮寫"
+  },
+  {
+    "key": "L",
+    "value": "大型",
+    "note": "尺寸縮寫"
+  },
+  {
+    "key": "H",
+    "value": "巨型",
+    "note": "尺寸縮寫"
+  },
+  {
+    "key": "Allows you to choose not to begin combat at this time.",
+    "value": "讓你選擇此時不開始戰鬥。",
+    "note": "UI說明"
+  },
+  {
+    "key": "Allows you to begin dropping troops in an effort to conquer the colony.",
+    "value": "讓你開始空投部隊,試圖征服該殖民地。",
+    "note": "UI說明"
+  },
+  {
+    "key": "Allows you to begin the bombardment phase of your attack.",
+    "value": "讓你開始進行攻擊的轟炸階段。",
+    "note": "UI說明"
+  },
+  {
+    "key": "Use your stellar converter like God intended, to repeatedly pummel the planet until only an asteroid field remains to mark the dead.",
+    "value": "如神所願地使用你的恆星轉換器,反覆轟擊這顆行星,直到只剩一片小行星帶為死者留下印記。",
+    "note": "UI說明"
+  },
+  {
+    "key": "Prove your superiority over the inferior race below by psychically overwhelming the colony's defences.",
+    "value": "以精神力壓制殖民地的防禦,向下方的劣等種族證明你的優越。",
+    "note": "UI說明"
+  },
+  {
+    "key": "Drop all your bombs in one final attack.\n\n 'Nuke 'em from orbit, it's the only way to be sure..'",
+    "value": "在最後一擊中投下你所有的炸彈。\n\n「從軌道上把他們炸了,這才是唯一保險的辦法……」",
+    "note": "UI說明"
+  },
+  {
+    "key": "Allows you to pause bombing at any time you choose, either to begin again, or to go on to another phase of combat.",
+    "value": "讓你可以隨時暫停轟炸,之後再繼續轟炸,或進入戰鬥的其他階段。",
+    "note": "UI說明"
+  },
+  {
+    "key": "Begin dropping bombs one at a time now, Allowing for a cease fire at any time.",
+    "value": "現在開始逐一投下炸彈,並可隨時停火。",
+    "note": "UI說明"
+  },
+  {
+    "key": "Xenophobic",
+    "value": "排外",
+    "note": "種族特質"
+  },
+  {
+    "key": "Ruthless",
+    "value": "冷酷無情",
+    "note": "種族特質"
+  },
+  {
+    "key": "Aggressive",
+    "value": "好戰",
+    "note": "種族特質"
+  },
+  {
+    "key": "Erratic",
+    "value": "反覆無常",
+    "note": "種族特質"
+  },
+  {
+    "key": "Honorable",
+    "value": "重信譽",
+    "note": "種族特質"
+  },
+  {
+    "key": "Pacifistic",
+    "value": "和平主義",
+    "note": "種族特質"
+  },
+  {
+    "key": "Dishonored",
+    "value": "失信",
+    "note": "外交狀態"
+  },
+  {
+    "key": "Diplomat",
+    "value": "外交官",
+    "note": "領袖職業"
+  },
+  {
+    "key": "Militarist",
+    "value": "軍國主義者",
+    "note": "種族傾向"
+  },
+  {
+    "key": "Expansionist",
+    "value": "擴張主義者",
+    "note": "種族傾向"
+  },
+  {
+    "key": "Technologist",
+    "value": "科技主義者",
+    "note": "種族傾向"
+  },
+  {
+    "key": "Industrialist",
+    "value": "工業主義者",
+    "note": "種族傾向"
+  },
+  {
+    "key": "Ecologist",
+    "value": "生態主義者",
+    "note": "種族傾向"
+  },
+  {
+    "key": "No Treaty",
+    "value": "無條約",
+    "note": "外交狀態"
+  },
+  {
+    "key": "Non-Aggression Pact",
+    "value": "互不侵犯條約",
+    "note": "外交狀態"
+  },
+  {
+    "key": "Alliance",
+    "value": "同盟",
+    "note": "外交狀態"
+  },
+  {
+    "key": "Peace Treaty",
+    "value": "和平條約",
+    "note": "外交狀態"
+  },
+  {
+    "key": "Limited War",
+    "value": "有限戰爭",
+    "note": "外交狀態"
+  },
+  {
+    "key": "War",
+    "value": "戰爭",
+    "note": "外交狀態"
+  },
+  {
+    "key": "Jihad",
+    "value": "聖戰",
+    "note": "外交狀態"
+  },
+  {
+    "key": "Feudal",
+    "value": "封建制",
+    "note": "政府體制"
+  },
+  {
+    "key": "Confederation",
+    "value": "邦聯制",
+    "note": "政府體制"
+  },
+  {
+    "key": "Dictatorship",
+    "value": "獨裁制",
+    "note": "政府體制"
+  },
+  {
+    "key": "Imperium",
+    "value": "帝制",
+    "note": "政府體制"
+  },
+  {
+    "key": "Democracy",
+    "value": "民主制",
+    "note": "政府體制"
+  },
+  {
+    "key": "Federation",
+    "value": "聯邦制",
+    "note": "政府體制"
+  },
+  {
+    "key": "Unification",
+    "value": "統一制",
+    "note": "政府體制"
+  },
+  {
+    "key": "Hyper-advanced...",
+    "value": "超進化……",
+    "note": "政府體制"
+  },
+  {
+    "key": "Alkari",
+    "value": "阿爾卡利人",
+    "note": "種族名稱"
+  },
+  {
+    "key": "Bulrathi",
+    "value": "布拉希人",
+    "note": "種族名稱"
+  },
+  {
+    "key": "Darlok",
+    "value": "達洛克人",
+    "note": "種族名稱"
+  },
+  {
+    "key": "Elerian",
+    "value": "埃勒利安人",
+    "note": "種族名稱"
+  },
+  {
+    "key": "Gnolam",
+    "value": "諾拉姆人",
+    "note": "種族名稱"
+  },
+  {
+    "key": "Human",
+    "value": "人類",
+    "note": "種族名稱"
+  },
+  {
+    "key": "Klackon",
+    "value": "克拉肯人",
+    "note": "種族名稱"
+  },
+  {
+    "key": "Meklar",
+    "value": "梅克拉人",
+    "note": "種族名稱"
+  },
+  {
+    "key": "Mrrshan",
+    "value": "姆爾商人",
+    "note": "種族名稱"
+  },
+  {
+    "key": "Psilon",
+    "value": "賽隆人",
+    "note": "種族名稱"
+  },
+  {
+    "key": "Sakkra",
+    "value": "薩克拉人",
+    "note": "種族名稱"
+  },
+  {
+    "key": "Silicoid",
+    "value": "矽晶人",
+    "note": "種族名稱"
+  },
+  {
+    "key": "Trilarian",
+    "value": "崔拉利安人",
+    "note": "種族名稱"
+  },
+  {
+    "key": "Antarans",
+    "value": "安塔蘭人",
+    "note": "種族名稱"
+  },
+  {
+    "key": "Guardian",
+    "value": "守護者",
+    "note": "單位名稱"
+  },
+  {
+    "key": "Governmental",
+    "value": "政府",
+    "note": "科技分類"
+  },
+  {
+    "key": "Planetary Systems",
+    "value": "行星系統",
+    "note": "科技分類"
+  },
+  {
+    "key": "Space Systems",
+    "value": "太空系統",
+    "note": "科技分類"
+  },
+  {
+    "key": "Ship Systems/Crew",
+    "value": "星艦系統/船員",
+    "note": "科技分類"
+  },
+  {
+    "key": "Ship Drives",
+    "value": "星艦引擎",
+    "note": "科技分類"
+  },
+  {
+    "key": "Ship Defenses",
+    "value": "星艦防禦",
+    "note": "科技分類"
+  },
+  {
+    "key": "Ship Weapons",
+    "value": "星艦武器",
+    "note": "科技分類"
+  },
+  {
+    "key": "Missiles/Bombs",
+    "value": "飛彈/炸彈",
+    "note": "科技分類"
+  },
+  {
+    "key": "Ground Combat",
+    "value": "地面戰鬥",
+    "note": "科技分類"
+  },
+  {
+    "key": "Population",
+    "value": "人口",
+    "note": "科技分類"
+  },
+  {
+    "key": "Production",
+    "value": "生產",
+    "note": "科技分類"
+  },
+  {
+    "key": "Ecology",
+    "value": "生態",
+    "note": "科技分類"
+  },
+  {
+    "key": "Security",
+    "value": "安全",
+    "note": "科技分類"
+  },
+  {
+    "key": "B Class",
+    "value": "B級",
+    "note": "恆星分類"
+  },
+  {
+    "key": "F Class",
+    "value": "F級",
+    "note": "恆星分類"
+  },
+  {
+    "key": "G Class",
+    "value": "G級",
+    "note": "恆星分類"
+  },
+  {
+    "key": "K Class",
+    "value": "K級",
+    "note": "恆星分類"
+  },
+  {
+    "key": "M Class",
+    "value": "M級",
+    "note": "恆星分類"
+  },
+  {
+    "key": "Dwarf Class",
+    "value": "矮星級",
+    "note": "恆星分類"
+  },
+  {
+    "key": "Black Hole",
+    "value": "黑洞",
+    "note": "恆星分類"
+  },
+  {
+    "key": "Tiny",
+    "value": "微型",
+    "note": "行星大小"
+  },
+  {
+    "key": "Ultra Poor",
+    "value": "極度貧瘠",
+    "note": "行星礦產"
+  },
+  {
+    "key": "Abundant",
+    "value": "豐富",
+    "note": "行星礦產"
+  },
+  {
+    "key": "Ultra Rich",
+    "value": "極度富饒",
+    "note": "行星礦產"
+  },
+  {
+    "key": "Low G",
+    "value": "低重力",
+    "note": "行星重力"
+  },
+  {
+    "key": "Normal G",
+    "value": "標準重力",
+    "note": "行星重力"
+  },
+  {
+    "key": "Heavy G",
+    "value": "高重力",
+    "note": "行星重力"
+  },
+  {
+    "key": "No",
+    "value": "否",
+    "note": "UI標籤"
+  },
+  {
+    "key": "Minimal",
+    "value": "稀少",
+    "note": "行星環境"
+  },
+  {
+    "key": "Breathable",
+    "value": "可呼吸",
+    "note": "行星環境"
+  },
+  {
+    "key": "Bombarded",
+    "value": "遭轟炸",
+    "note": "行星狀態"
+  },
+  {
+    "key": "Hostile",
+    "value": "惡劣",
+    "note": "行星環境"
+  },
+  {
+    "key": "Life Supporting",
+    "value": "適居",
+    "note": "行星環境"
+  },
+  {
+    "key": "Lifeless",
+    "value": "無生命",
+    "note": "行星環境"
+  },
+  {
+    "key": "No Special",
+    "value": "無特殊",
+    "note": "行星特殊分類"
+  },
+  {
+    "key": "Stable Wormhole",
+    "value": "穩定蟲洞",
+    "note": "太空特徵"
+  },
+  {
+    "key": "Space Debris",
+    "value": "太空殘骸",
+    "note": "太空特徵"
+  },
+  {
+    "key": "Pirate Cache",
+    "value": "海盜藏寶",
+    "note": "太空特徵"
+  },
+  {
+    "key": "Gold Deposits",
+    "value": "黃金礦藏",
+    "note": "太空特徵"
+  },
+  {
+    "key": "Gem Deposits",
+    "value": "寶石礦藏",
+    "note": "太空特徵"
+  },
+  {
+    "key": "Natives",
+    "value": "原住民",
+    "note": "太空特徵"
+  },
+  {
+    "key": "Splinter Colony",
+    "value": "分裂殖民地",
+    "note": "太空特徵"
+  },
+  {
+    "key": "Marooned Hero",
+    "value": "遇難英雄",
+    "note": "太空特徵"
+  },
+  {
+    "key": "Ancient Artifacts",
+    "value": "遠古遺物",
+    "note": "太空特徵"
+  },
+  {
+    "key": "Orion Special",
+    "value": "歐利安特殊資源",
+    "note": "太空特徵"
+  },
+  {
+    "key": "Sun",
+    "value": "恆星",
+    "note": "天體"
+  },
+  {
+    "key": "Asteroid",
+    "value": "小行星帶",
+    "note": "天體"
+  },
+  {
+    "key": "Gas Giant",
+    "value": "氣態巨行星",
+    "note": "天體"
+  },
+  {
+    "key": "Planet",
+    "value": "行星",
+    "note": "天體"
+  },
+  {
+    "key": "Radiated",
+    "value": "輻射地",
+    "note": "行星氣候"
+  },
+  {
+    "key": "Barren",
+    "value": "貧瘠地",
+    "note": "行星氣候"
+  },
+  {
+    "key": "Desert",
+    "value": "沙漠",
+    "note": "行星氣候"
+  },
+  {
+    "key": "Tundra",
+    "value": "凍原",
+    "note": "行星氣候"
+  },
+  {
+    "key": "Terran",
+    "value": "陸地型",
+    "note": "行星氣候"
+  },
+  {
+    "key": "Assassin",
+    "value": "刺客",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Assassin*",
+    "value": "刺客*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Commando",
+    "value": "突擊隊員",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Commando*",
+    "value": "突擊隊員*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Diplomat*",
+    "value": "外交官*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Engineer",
+    "value": "工程師",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Engineer*",
+    "value": "工程師*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Environmentalist",
+    "value": "環境學家",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Environmentalist*",
+    "value": "環境學家*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Famous",
+    "value": "知名",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Famous*",
+    "value": "知名*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Farming Leader",
+    "value": "農業專家",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Farming Leader*",
+    "value": "農業專家*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Fighter Pilot",
+    "value": "戰鬥機飛行員",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Fighter Pilot*",
+    "value": "戰鬥機飛行員*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Financial Leader",
+    "value": "財政專家",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Financial Leader*",
+    "value": "財政專家*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Galactic Lore",
+    "value": "銀河傳說",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Galactic Lore*",
+    "value": "銀河傳說*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Helmsman",
+    "value": "舵手",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Helmsman*",
+    "value": "舵手*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Instructor",
+    "value": "教官",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Instructor*",
+    "value": "教官*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Labor Leader",
+    "value": "勞工專家",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Labor Leader*",
+    "value": "勞工專家*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Medicine",
+    "value": "醫術",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Medicine*",
+    "value": "醫術*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Megawealth",
+    "value": "鉅富",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Megawealth*",
+    "value": "鉅富*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Navigator",
+    "value": "領航員",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Navigator*",
+    "value": "領航員*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Operations",
+    "value": "作戰專才",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Operations*",
+    "value": "作戰專才*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Ordnance",
+    "value": "軍械專才",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Ordnance*",
+    "value": "軍械專才*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Researcher",
+    "value": "研究員",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Researcher*",
+    "value": "研究員*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Science Leader",
+    "value": "科學專家",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Science Leader*",
+    "value": "科學專家*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Security*",
+    "value": "安全*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Spiritual Leader",
+    "value": "心靈導師",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Spiritual Leader*",
+    "value": "心靈導師*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Spy Master",
+    "value": "間諜頭子",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Spy Master*",
+    "value": "間諜頭子*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Tactics",
+    "value": "戰術",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Tactics*",
+    "value": "戰術*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Telepath",
+    "value": "心靈感應者",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Telepath*",
+    "value": "心靈感應者*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Trader",
+    "value": "商人",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Trader*",
+    "value": "商人*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Weaponry",
+    "value": "武器專才",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Weaponry*",
+    "value": "武器專才*",
+    "note": "領袖技能"
+  },
+  {
+    "key": "Commander",
+    "value": "指揮官",
+    "note": "軍階"
+  },
+  {
+    "key": "Captain",
+    "value": "上尉",
+    "note": "軍階"
+  },
+  {
+    "key": "Commodore",
+    "value": "准將",
+    "note": "軍階"
+  },
+  {
+    "key": "Rear Admiral",
+    "value": "少將",
+    "note": "軍階"
+  },
+  {
+    "key": "Admiral",
+    "value": "上將",
+    "note": "軍階"
+  },
+  {
+    "key": "Lord Admiral",
+    "value": "大元帥",
+    "note": "軍階"
+  },
+  {
+    "key": "Administrator",
+    "value": "行政官",
+    "note": "文官職稱"
+  },
+  {
+    "key": "Director",
+    "value": "主任",
+    "note": "文官職稱"
+  },
+  {
+    "key": "Magistrate",
+    "value": "執政官",
+    "note": "文官職稱"
+  },
+  {
+    "key": "Commissioner",
+    "value": "專員",
+    "note": "文官職稱"
+  },
+  {
+    "key": "Governor",
+    "value": "總督",
+    "note": "文官職稱"
+  },
+  {
+    "key": "Lord",
+    "value": "領主",
+    "note": "文官職稱"
+  },
+  {
+    "key": "SAVE%d.GAM is invalid! Try another save slot or start a NEW game",
+    "value": "SAVE%d.GAM 檔案無效!請嘗試其他存檔欄位,或開始新遊戲",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "loading a game",
+    "value": "讀取遊戲中",
+    "note": "狀態文字"
+  },
+  {
+    "key": "Error saving game.",
+    "value": "存檔失敗。\n",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "(Auto Save)",
+    "value": "(自動存檔)",
+    "note": "UI標籤"
+  },
+  {
+    "key": "^^ no description ^^",
+    "value": "^^ 無說明 ^^",
+    "note": "UI提示"
+  },
+  {
+    "key": "^^ empty slot ^^",
+    "value": "^^ 空白欄位 ^^",
+    "note": "UI提示"
+  },
+  {
+    "key": "%s is invalid!",
+    "value": "%s 無效!",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "Single Player",
+    "value": "單人遊戲",
+    "note": "選單選項"
+  },
+  {
+    "key": "%d Human, Hot Seat",
+    "value": "%d 人,輪流對戰",
+    "note": "選單選項"
+  },
+  {
+    "key": "%d Human, Network",
+    "value": "%d 人,網路連線",
+    "note": "選單選項"
+  },
+  {
+    "key": "Modem",
+    "value": "數據機",
+    "note": "選單選項"
+  },
+  {
+    "key": "%s Auto Save",
+    "value": "%s 自動存檔",
+    "note": "UI標籤"
+  },
+  {
+    "key": "Goto design screen",
+    "value": "前往設計畫面",
+    "note": "UI說明"
+  },
+  {
+    "key": "Pick Design For %s",
+    "value": "為 %s 選擇設計圖",
+    "note": "UI標題"
+  },
+  {
+    "key": "Custom refit this ship on the design screen",
+    "value": "在設計畫面中自訂改裝這艘星艦",
+    "note": "UI說明"
+  },
+  {
+    "key": "This design is not the same size as the ship you are refitting",
+    "value": "此設計圖的尺寸與你正在改裝的星艦不同",
+    "note": "錯誤訊息"
+  },
+  {
+    "key": "Clicking here refits the %s ship with the %s design",
+    "value": "點選這裡會將 %s 依 %s 設計圖進行改裝",
+    "note": "UI說明"
+  },
+  {
+    "key": "Ship Designs",
+    "value": "星艦設計",
+    "note": "UI標題"
+  },
+  {
+    "key": "Goto Design Screen Button",
+    "value": "前往設計畫面按鈕",
+    "note": "按鈕名稱"
+  },
+  {
+    "key": "Clicking here sends you to the design screen to cutsom refit this ship.",
+    "value": "點選這裡會前往設計畫面,自訂改裝這艘星艦。",
+    "note": "UI說明"
+  },
+  {
+    "key": "Quick Refit Popup",
+    "value": "快速改裝彈出視窗",
+    "note": "UI標題"
+  },
+  {
+    "key": "This popup allows you to quickly refit ships by upgrading them into an existing design as opposed to designing them by hand each time",
+    "value": "此彈出視窗讓你能將星艦快速升級為現有設計圖,而不必每次手動設計",
+    "note": "UI說明"
+  },
+  {
+    "key": "Cancel Button",
+    "value": "取消按鈕",
+    "note": "按鈕名稱"
+  },
+  {
+    "key": "Allows you to cancel and not refit the ship",
+    "value": "讓你取消操作,不進行改裝",
+    "note": "UI說明"
+  }
+]

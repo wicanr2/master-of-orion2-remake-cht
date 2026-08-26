@@ -1,0 +1,77 @@
+[
+  {
+    "key": "Planet",
+    "value": "行星",
+    "note": "欄位標題"
+  },
+  {
+    "key": "Climate",
+    "value": "氣候",
+    "note": "欄位/排序"
+  },
+  {
+    "key": "Gravity",
+    "value": "重力",
+    "note": "欄位"
+  },
+  {
+    "key": "Minerals",
+    "value": "礦產",
+    "note": "欄位/排序"
+  },
+  {
+    "key": "Size",
+    "value": "大小",
+    "note": "欄位/排序"
+  },
+  {
+    "key": "Sort Priority",
+    "value": "排序優先",
+    "note": "標題"
+  },
+  {
+    "key": "Display Restrictions",
+    "value": "顯示篩選",
+    "note": "標題"
+  },
+  {
+    "key": "No Enemy Presence",
+    "value": "無敵蹤",
+    "note": "篩選:附近無敵軍"
+  },
+  {
+    "key": "Normal Gravity",
+    "value": "正常重力",
+    "note": "篩選"
+  },
+  {
+    "key": "Non-Hostile Environment",
+    "value": "適居環境",
+    "note": "篩選"
+  },
+  {
+    "key": "Mineral Abundance",
+    "value": "礦產豐富",
+    "note": "篩選"
+  },
+  {
+    "key": "Planets In Range",
+    "value": "射程內",
+    "note": "篩選"
+  },
+  {
+    "key": "Send Colony Ship",
+    "value": "派殖民船",
+    "note": "按鈕"
+  },
+  {
+    "key": "Send Outpost Ship",
+    "value": "派前哨船",
+    "note": "按鈕"
+  },
+  {
+    "key": "Return",
+    "value": "返回",
+    "note": "按鈕"
+  }
+]

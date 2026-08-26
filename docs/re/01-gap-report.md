@@ -4189,10 +4189,10 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     ### 實測打回來兩次
 
     第一次:改掉 5 處 `reg.LoadFS(os.DirFS("assets/i18n"))` 之後,
-    **從 `/tmp/elsewhere` 跑仍然掛**——還有七處直接 `os.Open("assets/i18n/xxx.tsv")`
+    **從 `/tmp/elsewhere` 跑仍然掛**——還有七處直接 `os.Open("assets/i18n/xxx.json")`
     讀單一檔案,那七處不走 `LoadFS`,grep `LoadFS` 找不到它們。
 
-    第二次:把所有 `"assets/i18n/xxx.tsv"` 字面改成 `"xxx.tsv"` 之後,**還是掛**——
+    第二次:把所有 `"assets/i18n/xxx.json"` 字面改成 `"xxx.tsv"` 之後,**還是掛**——
     `interactive.go` 有第二個譯表載入點,字面已經改對了卻**還走 `os.Open`**。
     路徑字面的檢查放它過去了。
 
@@ -4205,7 +4205,7 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     字型是使用者自備的 TTC(授權不明)、遊戲資料是玩家的正版 LBX,兩者都不能進執行檔
     (CLAUDE.md 的 `[HARD]`)。譯表是本專案自己寫的,而且它正是「換一台機器就跑不起來」的那一份。
 
-    `go:embed` 讀不到 `../../assets`(不能跨出套件目錄),所以 `cmd/moo2/embedded/i18n/`
+    當時 `go:embed` 讀不到 `../../assets`（不能跨出套件目錄），所以曾建立 `cmd/moo2/embedded/i18n/`；2026-08-26 已依外部文案決策移除
     有一份副本,`TestEmbeddedI18NMatchesAssets` 逐位元比對兩份——**不同步就會紅**。
     `-i18n <dir>` 保留為開發覆寫(改譯表不必重編)。
 

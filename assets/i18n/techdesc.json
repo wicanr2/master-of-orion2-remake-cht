@@ -1,0 +1,402 @@
+[
+  {
+    "key": "Bio Terminator",
+    "value": "生化終結者",
+    "note": "名稱"
+  },
+  {
+    "key": "ECM Jammer",
+    "value": "電子干擾器",
+    "note": "名稱"
+  },
+  {
+    "key": "Gyroscopic Destablizer",
+    "value": "陀螺失穩器",
+    "note": "名稱"
+  },
+  {
+    "key": "Hyperdyne Capacitors",
+    "value": "超動力電容",
+    "note": "名稱"
+  },
+  {
+    "key": "Multi Phased Shields",
+    "value": "多相護盾",
+    "note": "名稱"
+  },
+  {
+    "key": "Multi-Wave ECM Jammer",
+    "value": "多波電子干擾器",
+    "note": "名稱"
+  },
+  {
+    "key": "Troop Pod",
+    "value": "部隊艙",
+    "note": "名稱"
+  },
+  {
+    "key": "+100% beam defense, no turning costs",
+    "value": "+100% 光束防禦,無轉向消耗",
+    "note": "描述"
+  },
+  {
+    "key": "+100% missile evasion",
+    "value": "+100% 飛彈迴避",
+    "note": "描述"
+  },
+  {
+    "key": "10% chance of killing colonists",
+    "value": "10% 機率殺死殖民者",
+    "note": "描述"
+  },
+  {
+    "key": "+10% vs monsters, adds research",
+    "value": "對怪獸 +10%,並增加研究",
+    "note": "描述"
+  },
+  {
+    "key": "+130% missile evasion, +70% rest of fleet",
+    "value": "+130% 飛彈迴避,艦隊其餘 +70%",
+    "note": "描述"
+  },
+  {
+    "key": "20% chance of killing colonists",
+    "value": "20% 機率殺死殖民者",
+    "note": "描述"
+  },
+  {
+    "key": "+20% to marine defense",
+    "value": "+20% 陸戰隊防禦",
+    "note": "描述"
+  },
+  {
+    "key": "2 beam shots once until recharge",
+    "value": "充能前可發射 2 次光束",
+    "note": "描述"
+  },
+  {
+    "key": "2 shot launcher with 1 turn wait",
+    "value": "雙發發射器,需等待 1 回合",
+    "note": "描述"
+  },
+  {
+    "key": "2x range damage penalties",
+    "value": "2 倍射程傷害懲罰",
+    "note": "描述"
+  },
+  {
+    "key": "2x range damage penalties. Always hits",
+    "value": "2 倍射程傷害懲罰。必定命中",
+    "note": "描述"
+  },
+  {
+    "key": "2x range damage penalties. Enveloping",
+    "value": "2 倍射程傷害懲罰。包覆",
+    "note": "描述"
+  },
+  {
+    "key": "30% chance for each weapon to miss",
+    "value": "每件武器 30% 機率失手",
+    "note": "描述"
+  },
+  {
+    "key": "4 bombers carry best bomb",
+    "value": "4 架轟炸機攜帶最佳炸彈",
+    "note": "描述"
+  },
+  {
+    "key": "4 Hvy Fighters. 2x bomb + 2x best PD weap.",
+    "value": "4 架重型戰機。2 倍炸彈 + 2 倍最佳點防武器",
+    "note": "描述"
+  },
+  {
+    "key": "4 interceptors carry best PD weapon",
+    "value": "4 架攔截機攜帶最佳點防武器",
+    "note": "描述"
+  },
+  {
+    "key": "4 shuttles. Carry 4 marines.",
+    "value": "4 架突擊梭。搭載 4 名陸戰隊。",
+    "note": "描述"
+  },
+  {
+    "key": "+50% beam defense, half turning costs",
+    "value": "+50% 光束防禦,轉向消耗減半",
+    "note": "描述"
+  },
+  {
+    "key": "50% chance to destroy missiles/fighters",
+    "value": "50% 機率摧毀飛彈/戰機",
+    "note": "描述"
+  },
+  {
+    "key": "+50% damage for beam weapons",
+    "value": "光束武器 +50% 傷害",
+    "note": "描述"
+  },
+  {
+    "key": "+50% ship range",
+    "value": "艦船射程 +50%",
+    "note": "描述"
+  },
+  {
+    "key": "+50% to hit with beam weapons",
+    "value": "光束武器命中 +50%",
+    "note": "描述"
+  },
+  {
+    "key": "+70 %missile evasion",
+    "value": "+70% 飛彈迴避",
+    "note": "描述"
+  },
+  {
+    "key": "+70% shield recharge rate",
+    "value": "護盾充能率 +70%",
+    "note": "描述"
+  },
+  {
+    "key": "+80% defense, Invisible on main screen",
+    "value": "+80% 防禦,主畫面隱形",
+    "note": "描述"
+  },
+  {
+    "key": "Basic ground attack weapon",
+    "value": "基本地面攻擊武器",
+    "note": "描述"
+  },
+  {
+    "key": "Basic missile",
+    "value": "基本飛彈",
+    "note": "描述"
+  },
+  {
+    "key": "Basic ship weapon",
+    "value": "基本艦船武器",
+    "note": "描述"
+  },
+  {
+    "key": "Damage not reduced by range",
+    "value": "傷害不隨射程衰減",
+    "note": "描述"
+  },
+  {
+    "key": "Damage reduced by range",
+    "value": "傷害隨射程衰減",
+    "note": "描述"
+  },
+  {
+    "key": "Damages everything in 2 square radius",
+    "value": "傷害 2 格半徑內所有目標",
+    "note": "描述"
+  },
+  {
+    "key": "Damages everything in 6 square radius",
+    "value": "傷害 6 格半徑內所有目標",
+    "note": "描述"
+  },
+  {
+    "key": "Destroys missiles",
+    "value": "摧毀飛彈",
+    "note": "描述"
+  },
+  {
+    "key": "Direct fire torpedo.",
+    "value": "直射魚雷。",
+    "note": "描述"
+  },
+  {
+    "key": "Doubles any damage that penetrates shield",
+    "value": "使穿透護盾的傷害加倍",
+    "note": "描述"
+  },
+  {
+    "key": "Doubles marines on board",
+    "value": "使艦上陸戰隊加倍",
+    "note": "描述"
+  },
+  {
+    "key": "Enveloping, Always hits, No range penalties",
+    "value": "包覆,必定命中,無射程懲罰",
+    "note": "描述"
+  },
+  {
+    "key": "Enveloping, Persistent",
+    "value": "包覆,持續",
+    "note": "描述"
+  },
+  {
+    "key": "Extra structure damage",
+    "value": "額外結構傷害",
+    "note": "描述"
+  },
+  {
+    "key": "Fire every other turn",
+    "value": "每隔一回合發射",
+    "note": "描述"
+  },
+  {
+    "key": "Ignores armor and structure",
+    "value": "無視裝甲與結構",
+    "note": "描述"
+  },
+  {
+    "key": "Ignores shields",
+    "value": "無視護盾",
+    "note": "描述"
+  },
+  {
+    "key": "Immobilizes target, Implodes it in 3 turns",
+    "value": "使目標無法動彈,3 回合後內爆",
+    "note": "描述"
+  },
+  {
+    "key": "Improved ground attack weapon",
+    "value": "改良地面攻擊武器",
+    "note": "描述"
+  },
+  {
+    "key": "Improved missile",
+    "value": "改良飛彈",
+    "note": "描述"
+  },
+  {
+    "key": "Increases available space 50%",
+    "value": "可用空間增加 50%",
+    "note": "描述"
+  },
+  {
+    "key": "Increases combat speed by 5",
+    "value": "戰鬥速度增加 5",
+    "note": "描述"
+  },
+  {
+    "key": "Increases shield strength 50%",
+    "value": "護盾強度增加 50%",
+    "note": "描述"
+  },
+  {
+    "key": "Invisible in combat and on main screen",
+    "value": "戰鬥與主畫面皆隱形",
+    "note": "描述"
+  },
+  {
+    "key": "Invisible on Main Screen",
+    "value": "主畫面隱形",
+    "note": "描述"
+  },
+  {
+    "key": "Kills marines",
+    "value": "殺死陸戰隊",
+    "note": "描述"
+  },
+  {
+    "key": "Marines can board enemy ships at 12 squares",
+    "value": "陸戰隊可於 12 格外登上敵艦",
+    "note": "描述"
+  },
+  {
+    "key": "Moves ship up to 20 squares in combat",
+    "value": "戰鬥中可移動艦船達 20 格",
+    "note": "描述"
+  },
+  {
+    "key": "Negates armor. More 3x chance to hit.",
+    "value": "抵消裝甲。命中機率提高 3 倍。",
+    "note": "描述"
+  },
+  {
+    "key": "Prohibits enemy ships from retreating",
+    "value": "禁止敵艦撤退",
+    "note": "描述"
+  },
+  {
+    "key": "Reduces all damage by 3",
+    "value": "所有傷害減少 3",
+    "note": "描述"
+  },
+  {
+    "key": "Reduces damage a ship takes by 3/4",
+    "value": "使艦船受到的傷害減少 3/4",
+    "note": "描述"
+  },
+  {
+    "key": "Reduces damage by 1/4. Fires absorbed energy",
+    "value": "傷害減少 1/4。發射吸收的能量",
+    "note": "描述"
+  },
+  {
+    "key": "Reduces range to hit penalties by 1/3",
+    "value": "射程命中懲罰減少 1/3",
+    "note": "描述"
+  },
+  {
+    "key": "Reduces target speed",
+    "value": "降低目標速度",
+    "note": "描述"
+  },
+  {
+    "key": "Reflects beam attacks",
+    "value": "反射光束攻擊",
+    "note": "描述"
+  },
+  {
+    "key": "Repairs damage each combat turn",
+    "value": "每戰鬥回合修復損傷",
+    "note": "描述"
+  },
+  {
+    "key": "Ships move and attack twice per turn",
+    "value": "艦船每回合移動與攻擊兩次",
+    "note": "描述"
+  },
+  {
+    "key": "Spins enemy ship, damages structure",
+    "value": "使敵艦旋轉,損傷結構",
+    "note": "描述"
+  },
+  {
+    "key": "Superior ground attack wwepon",
+    "value": "高等地面攻擊武器",
+    "note": "描述"
+  },
+  {
+    "key": "Superior missile",
+    "value": "高等飛彈",
+    "note": "描述"
+  },
+  {
+    "key": "Teleports any ship up to 18 squares",
+    "value": "使任意艦船瞬移達 18 格",
+    "note": "描述"
+  },
+  {
+    "key": "Triple destruction explosion",
+    "value": "三重毀滅爆炸",
+    "note": "描述"
+  },
+  {
+    "key": "Triples armor points of a ship",
+    "value": "使艦船裝甲值三倍",
+    "note": "描述"
+  },
+  {
+    "key": "Triples structure points of a ship",
+    "value": "使艦船結構值三倍",
+    "note": "描述"
+  },
+  {
+    "key": "Ultimate ground attack weapon",
+    "value": "終極地面攻擊武器",
+    "note": "描述"
+  },
+  {
+    "key": "Ultimate missile",
+    "value": "終極飛彈",
+    "note": "描述"
+  },
+  {
+    "key": "Entraps ship until released",
+    "value": "困住艦船直到釋放",
+    "note": "描述"
+  }
+]

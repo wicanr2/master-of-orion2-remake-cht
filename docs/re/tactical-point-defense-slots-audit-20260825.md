@@ -12,7 +12,7 @@
 - IDA Pro 9.4，映像 ida-pro-9.4-idapython:py312-v1
 - 位址基準：IDA linear，DOS/4GW LE image
 - 非破壞性探針：tools/ida/audit_regular_combat_ship_loader.py；原始資料庫唯讀，容器內複本分析。
-- 原版內建說明：cmd/moo2/embedded/i18n/help.tsv，SHA-256
+- 原版內建說明：assets/i18n/help.json，SHA-256
   e55e686d0a17e930f7f7d96f693aef24f0047c9c9d049f16ae6b513f1516623b。
 
 ## 已證實
@@ -42,4 +42,3 @@
 - 每槽一回合只自動觸發一次；同槽 WorkingCount 依序開火，並共用艦級的攔截餘數。
 - 舊存檔／單槽艦繼續使用 WeaponName、Mods 與 PointDefenseSpent 相容路徑。
 - 快速結算與格子戰術都消費逐槽 PD；只有格子戰術有紅／橘／綠狀態，且自動點防刻意忽略該狀態。
-

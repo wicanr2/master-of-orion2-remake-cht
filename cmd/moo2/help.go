@@ -25,7 +25,7 @@ const (
 )
 
 // helpGame 以自繪深色面板顯示一則百科條目(標題 + 自動換行本文)。
-// 這是第一個實際用到 HELP.LBX 譯文(help.tsv)的畫面。
+// 這是第一個實際用到 HELP.LBX 譯文(help.json)的畫面。
 type helpGame struct {
 	font      *uifont.Font
 	title     string
@@ -170,7 +170,7 @@ func runHelp(dirs []string, lbxName string, index int, title string, lang i18n.L
 
 	title, body := e.Title, e.Text
 	if lang == i18n.Traditional {
-		// 標題可能是科技/元件名(在 tech.tsv 等),用 merged 備援;本文 key 在 help 來源。
+		// 標題可能是科技/元件名(在 tech.json 等),用 merged 備援;本文 key 在 help 來源。
 		title = reg.Translate(e.Title)
 		body = reg.Source("help").Translate(e.Text) // 先以 raw key 查譯文
 	}

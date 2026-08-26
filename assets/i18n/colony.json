@@ -1,0 +1,72 @@
+[
+  {
+    "key": "NAME",
+    "value": "名稱",
+    "note": "殖民地總覽"
+  },
+  {
+    "key": "FARMERS",
+    "value": "農夫",
+    "note": "殖民地總覽"
+  },
+  {
+    "key": "WORKERS",
+    "value": "工人",
+    "note": "殖民地總覽"
+  },
+  {
+    "key": "SCIENTISTS",
+    "value": "科學家",
+    "note": "殖民地總覽"
+  },
+  {
+    "key": "BUILDING",
+    "value": "建造",
+    "note": "殖民地總覽"
+  },
+  {
+    "key": "SORT",
+    "value": "排序",
+    "note": "殖民地總覽"
+  },
+  {
+    "key": "Name",
+    "value": "名稱",
+    "note": "排序"
+  },
+  {
+    "key": "Population",
+    "value": "人口",
+    "note": "排序"
+  },
+  {
+    "key": "Food",
+    "value": "食物",
+    "note": "排序"
+  },
+  {
+    "key": "Industry",
+    "value": "工業",
+    "note": "排序"
+  },
+  {
+    "key": "Science",
+    "value": "科學",
+    "note": "排序"
+  },
+  {
+    "key": "Producing",
+    "value": "生產中",
+    "note": "排序"
+  },
+  {
+    "key": "BC",
+    "value": "BC",
+    "note": "排序"
+  },
+  {
+    "key": "RETURN",
+    "value": "返回",
+    "note": "殖民地總覽"
+  }
+]

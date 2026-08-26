@@ -31,7 +31,7 @@ original 模式有真實依據可循,而不是 remake 啟發式的重貼標籤�
 
 ### 1.1 官方遊戲字串(高可信度,一手資料)
 
-專案既有的字串抽取結果 `assets/i18n/estrings.tsv`(來自遊戲 `ESTRINGS.LBX`,非社群轉述)第 400-410 行
+專案既有的字串抽取結果 `assets/i18n/estrings.json`(來自遊戲 `ESTRINGS.LBX`,非社群轉述)第 400-410 行
 列出以下詞條,並各自標了原始分類:
 
 | 英文 | 中文(專案既有翻譯) | 字串分類(estrings.tsv 原標) |
@@ -50,7 +50,7 @@ original 模式有真實依據可循,而不是 remake 啟發式的重貼標籤�
 | Industrialist | 工業主義者 | 種族傾向 |
 | Ecologist | 生態主義者 | 種族傾向 |
 
-【來源】`/home/anr2/moo2/assets/i18n/estrings.tsv`(本專案既有的遊戲字串抽取檔)。【可信度:高】——
+【來源】`/home/anr2/moo2/assets/i18n/estrings.json`(本專案既有的遊戲字串抽取檔)。【可信度:高】——
 這是遊戲原始字串表,不是社群轉述。
 
 **重要澄清(修正 AIRACES.CFG 註解的字面印象)**:`AIRACES.CFG` 的 `race_personality` 註解把 0-6 七個值
@@ -402,7 +402,7 @@ MOO2 一手資料為準,1oom 的常數不能直接套用到 MOO2。
   `original_game/Master of Orion 2 - CD Manual.pdf` 只有 9 頁且無文字層,無法檢索,推測是掃描版附件
   非完整手冊)。
 - `openorion2/src/gamestate.h`、`gamestate.cpp`、`galaxy.cpp`(grep `ai_|personality|difficulty|objective`)。
-- `assets/i18n/estrings.tsv`(本專案既有字串抽取,含官方 `ESTRINGS.LBX` 字串分類)。
+- `assets/i18n/estrings.json`(本專案既有字串抽取,含官方 `ESTRINGS.LBX` 字串分類)。
 - `https://challengetakers.proboards.com/thread/1412/master-orion-2-ai-faq`(WebFetch 原文,作者 Onishiba)。
 - `docs/kickoff/07-ai-strategy.md`、`docs/tech/community-mechanics-findings.md`、
   `docs/tech/patch15-cfg-data-source.md`、`docs/tech/ai-decision-modes.md`、

@@ -19,7 +19,7 @@ func TestTopicEnglishNameCoversAll83(t *testing.T) {
 // TestTopicEnglishNameMatchTSV 確保每個 topic 英文名都能在 tech.tsv 查到中文,
 // 否則顯示層翻譯會查無、退回英文(功能沒壞但翻譯缺漏)。
 func TestTopicEnglishNameMatchTSV(t *testing.T) {
-	keys := loadTechTSVKeys(t)
+	keys := loadTechJSONKeys(t)
 	for i := 0; i < 83; i++ {
 		name := TopicEnglishName(ResearchTopic(i))
 		if !keys[name] {

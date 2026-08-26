@@ -6,11 +6,11 @@
 //   - **TranslateFormat**:給 fmt.Sprintf 模板用 —— 先翻模板字面再填值
 //     (填值後整串比對不會命中)。
 //
-// 譯表格式:TSV 三欄 `英文原文<TAB>中文<TAB>備註`(備註選填);空中文欄略過(選擇性覆蓋)。
+// 譯表格式:JSON 陣列；每筆含 key、value 與可省略的 note。空 value 略過。
 package i18n
 
 import (
-	"bufio"
+	"encoding/json"
 	"io"
 	"strings"
 )
@@ -40,31 +40,28 @@ func (c *Catalog) Lang() Lang { return c.lang }
 // SetLang 切換語言(runtime 可切,對應主選單中/英切換)。
 func (c *Catalog) SetLang(l Lang) { c.lang = l }
 
-// LoadTSV 從 TSV 讀入譯文並併入 catalog。同一 key 以**先載入者優先**
-// (後載入的重複 key 略過),對應 mom 以檔名字母序控制優先權的做法。
+// Entry 是外部 JSON 譯表的一筆玩家可見文案。
+type Entry struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+	Note  string `json:"note,omitempty"`
+}
+
+// LoadJSON 從 JSON 讀入譯文並併入 catalog。同一 key 以先載入者優先
+// （後載入的重複 key 略過）。JSON 本身負責換行、Tab 與控制碼的跳脫解碼。
 // 回傳新增的條目數。
-func (c *Catalog) LoadTSV(r io.Reader) (int, error) {
+func (c *Catalog) LoadJSON(r io.Reader) (int, error) {
+	var entries []Entry
+	dec := json.NewDecoder(r)
+	if err := dec.Decode(&entries); err != nil {
+		return 0, err
+	}
 	added := 0
-	sc := bufio.NewScanner(r)
-	sc.Buffer(make([]byte, 0, 64*1024), 1024*1024)
-	for sc.Scan() {
-		line := sc.Text()
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		cols := strings.Split(line, "\t")
-		if len(cols) < 2 {
-			continue
-		}
-		// 先 decode 再 TrimSpace:key 須與 Translate 查詢端的 TrimSpace(s) 一致。
-		// 若先 TrimSpace 再 decode,尾端/開頭的跳脫換行(\n\n…)會殘留在 key 中,
-		// 而查詢端 TrimSpace 會削掉真實換行 → 這類 key 永遠對不上(如 HELP 尾端 \n、
-		// ESTRINGS 開頭 \n\n 的訊息)。value 保留原樣(僅去編碼字串兩端空白),
-		// 以維持顯示用的前導/尾隨空白語意。
-		key := strings.TrimSpace(decodeEscapes(cols[0]))
-		val := decodeEscapes(strings.TrimSpace(cols[1]))
+	for _, entry := range entries {
+		key := strings.TrimSpace(decodeByteEscapes(entry.Key))
+		val := decodeByteEscapes(entry.Value)
 		if key == "" || val == "" {
-			continue // 空中文 → 選擇性覆蓋,略過
+			continue
 		}
 		if _, exists := c.m[key]; exists {
 			continue // 先載入者優先
@@ -72,49 +69,31 @@ func (c *Catalog) LoadTSV(r io.Reader) (int, error) {
 		c.m[key] = val
 		added++
 	}
-	return added, sc.Err()
+	return added, nil
 }
 
-// decodeEscapes 把 TSV 中的跳脫序列還原成實際位元組:`\xNN`(MOO2 變數插入控制碼,
-// 如 \x8f 帝國名、\x80 行星名)、`\n`、`\t`、`\\`。讓含控制碼的事件/外交訊息能以文字 TSV 表示。
-func decodeEscapes(s string) string {
-	if !strings.Contains(s, "\\") {
+// decodeByteEscapes 還原 JSON 文案中的原版單位元控制標記（例如 \x8f 帝國名）。
+// JSON 的 \u008f 會變成 UTF-8 雙位元，不能表示原版 LBX 字串協定，因此資料檔明確保存 \xNN。
+func decodeByteEscapes(s string) string {
+	if !strings.Contains(s, `\x`) {
 		return s
 	}
 	var b strings.Builder
 	for i := 0; i < len(s); i++ {
-		if s[i] != '\\' || i+1 >= len(s) {
-			b.WriteByte(s[i])
-			continue
-		}
-		switch s[i+1] {
-		case 'n':
-			b.WriteByte('\n')
-			i++
-		case 't':
-			b.WriteByte('\t')
-			i++
-		case '\\':
-			b.WriteByte('\\')
-			i++
-		case 'x':
-			if i+3 < len(s) {
-				if v, ok := hex2(s[i+2], s[i+3]); ok {
-					b.WriteByte(v)
-					i += 3
-					continue
-				}
+		if s[i] == '\\' && i+3 < len(s) && s[i+1] == 'x' {
+			if v, ok := hexByte(s[i+2], s[i+3]); ok {
+				b.WriteByte(v)
+				i += 3
+				continue
 			}
-			b.WriteByte(s[i])
-		default:
-			b.WriteByte(s[i])
 		}
+		b.WriteByte(s[i])
 	}
 	return b.String()
 }
 
-func hex2(a, b byte) (byte, bool) {
-	h := func(c byte) (byte, bool) {
+func hexByte(a, b byte) (byte, bool) {
+	hex := func(c byte) (byte, bool) {
 		switch {
 		case c >= '0' && c <= '9':
 			return c - '0', true
@@ -122,15 +101,13 @@ func hex2(a, b byte) (byte, bool) {
 			return c - 'a' + 10, true
 		case c >= 'A' && c <= 'F':
 			return c - 'A' + 10, true
+		default:
+			return 0, false
 		}
-		return 0, false
 	}
-	hi, ok1 := h(a)
-	lo, ok2 := h(b)
-	if !ok1 || !ok2 {
-		return 0, false
-	}
-	return hi<<4 | lo, true
+	hi, okHi := hex(a)
+	lo, okLo := hex(b)
+	return hi<<4 | lo, okHi && okLo
 }
 
 // Translate 回傳字串的當前語言版本。英文模式或查無 → 回原字串(TrimSpace 後查找,

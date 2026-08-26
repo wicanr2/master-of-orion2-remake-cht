@@ -44,9 +44,9 @@ func installNameTranslator(lang i18n.Lang) {
 func properNounCatalog() *i18n.Catalog {
 	nameCatOnce.Do(func() {
 		nameCat = i18n.New(i18n.Traditional)
-		for _, f := range []string{"starname-random.tsv", "shipname.tsv"} {
-			if fh, err := OpenI18NTSV(f); err == nil {
-				_, _ = nameCat.LoadTSV(fh)
+		for _, f := range []string{"starname-random.json", "shipname.json"} {
+			if fh, err := OpenI18NJSON(f); err == nil {
+				_, _ = nameCat.LoadJSON(fh)
 				fh.Close()
 			}
 		}

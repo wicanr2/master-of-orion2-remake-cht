@@ -1,0 +1,887 @@
+[
+  {
+    "key": "There's a space anomaly!",
+    "value": "出現空間異常!",
+    "note": "報告"
+  },
+  {
+    "key": "(no barracks)",
+    "value": "(無兵營)",
+    "note": "標籤"
+  },
+  {
+    "key": "Unification has no morale.",
+    "value": "統一政體沒有士氣。",
+    "note": "標籤"
+  },
+  {
+    "key": "Government Morale",
+    "value": "政府士氣",
+    "note": "摘要"
+  },
+  {
+    "key": "No Capital",
+    "value": "無首都",
+    "note": "標籤"
+  },
+  {
+    "key": "Mixed Races",
+    "value": "混合種族",
+    "note": "標籤"
+  },
+  {
+    "key": "Bonus",
+    "value": "加成",
+    "note": "摘要"
+  },
+  {
+    "key": "Leader Bonus",
+    "value": "領袖加成",
+    "note": "摘要"
+  },
+  {
+    "key": "Total Morale",
+    "value": "總士氣",
+    "note": "摘要"
+  },
+  {
+    "key": "Morale Summary",
+    "value": "士氣摘要",
+    "note": "摘要"
+  },
+  {
+    "key": "Produced By Farmers",
+    "value": "農民生產",
+    "note": "摘要"
+  },
+  {
+    "key": "Aquatic Bonus",
+    "value": "水棲加成",
+    "note": "摘要"
+  },
+  {
+    "key": "Native Bonus",
+    "value": "原住民加成",
+    "note": "摘要"
+  },
+  {
+    "key": "Android Bonus",
+    "value": "機器人加成",
+    "note": "摘要"
+  },
+  {
+    "key": "Base",
+    "value": "基礎",
+    "note": "摘要"
+  },
+  {
+    "key": "Gravity Penalty",
+    "value": "重力懲罰",
+    "note": "摘要"
+  },
+  {
+    "key": "Conquered Penalty",
+    "value": "征服懲罰",
+    "note": "摘要"
+  },
+  {
+    "key": "Blockaded",
+    "value": "遭封鎖",
+    "note": "摘要"
+  },
+  {
+    "key": "Morale Bonus",
+    "value": "士氣加成",
+    "note": "摘要"
+  },
+  {
+    "key": "Morale Penalty",
+    "value": "士氣懲罰",
+    "note": "摘要"
+  },
+  {
+    "key": "Government Bonus",
+    "value": "政府加成",
+    "note": "摘要"
+  },
+  {
+    "key": "Government Penalty",
+    "value": "政府懲罰",
+    "note": "摘要"
+  },
+  {
+    "key": "Total Food Produced",
+    "value": "食物總產",
+    "note": "摘要"
+  },
+  {
+    "key": "Food Summary",
+    "value": "食物摘要",
+    "note": "摘要"
+  },
+  {
+    "key": "Produced By Workers",
+    "value": "工人生產",
+    "note": "摘要"
+  },
+  {
+    "key": "Used",
+    "value": "已使用",
+    "note": "摘要"
+  },
+  {
+    "key": "Pollution Penalty",
+    "value": "污染懲罰",
+    "note": "摘要"
+  },
+  {
+    "key": "replicated to %d food",
+    "value": "複製為 %d 食物",
+    "note": "摘要"
+  },
+  {
+    "key": "Taxed",
+    "value": "徵稅",
+    "note": "摘要"
+  },
+  {
+    "key": "Total Industry Produced",
+    "value": "工業總產",
+    "note": "摘要"
+  },
+  {
+    "key": "Industry Summary",
+    "value": "工業摘要",
+    "note": "摘要"
+  },
+  {
+    "key": "Produced By Scientists",
+    "value": "科學家生產",
+    "note": "摘要"
+  },
+  {
+    "key": "Artifacts Bonus",
+    "value": "遺物加成",
+    "note": "摘要"
+  },
+  {
+    "key": "Intelligence Bonus",
+    "value": "智力加成",
+    "note": "摘要"
+  },
+  {
+    "key": "Total Research Produced",
+    "value": "研究總產",
+    "note": "摘要"
+  },
+  {
+    "key": "Research Summary",
+    "value": "研究摘要",
+    "note": "摘要"
+  },
+  {
+    "key": "Taxes Collected",
+    "value": "徵得稅收",
+    "note": "摘要"
+  },
+  {
+    "key": "Special Income",
+    "value": "特殊收入",
+    "note": "摘要"
+  },
+  {
+    "key": "Trade Goods",
+    "value": "貿易品",
+    "note": "摘要"
+  },
+  {
+    "key": "Taxed from industry",
+    "value": "自工業徵稅",
+    "note": "摘要"
+  },
+  {
+    "key": "Total Income",
+    "value": "總收入",
+    "note": "摘要"
+  },
+  {
+    "key": "BC Summary",
+    "value": "星幣摘要",
+    "note": "摘要"
+  },
+  {
+    "key": "starting command points",
+    "value": "起始指揮點",
+    "note": "摘要"
+  },
+  {
+    "key": "%d from %d star bases",
+    "value": "%d 來自 %d 座星際基地\n",
+    "note": "摘要"
+  },
+  {
+    "key": "%d from 1 star base",
+    "value": "來自 1 座星際基地 %d\n",
+    "note": "摘要"
+  },
+  {
+    "key": "%d from %d battlestations",
+    "value": "%d 來自 %d 座戰鬥站\n",
+    "note": "摘要"
+  },
+  {
+    "key": "%d from 1 battlestation",
+    "value": "來自 1 座戰鬥站 %d\n",
+    "note": "摘要"
+  },
+  {
+    "key": "%d from %d fortresses",
+    "value": "%d 來自 %d 座要塞\n",
+    "note": "摘要"
+  },
+  {
+    "key": "%d from 1 fortress",
+    "value": "來自 1 座要塞 %d\n",
+    "note": "摘要"
+  },
+  {
+    "key": "from Warlord ability",
+    "value": "來自軍閥能力",
+    "note": "摘要"
+  },
+  {
+    "key": "from Imperium government",
+    "value": "來自帝國政體",
+    "note": "摘要"
+  },
+  {
+    "key": "total command points",
+    "value": "總指揮點",
+    "note": "摘要"
+  },
+  {
+    "key": "%d from 1 %s",
+    "value": "%d 來自 1 艘 %s\n",
+    "note": "摘要"
+  },
+  {
+    "key": "%d from %d %s",
+    "value": "%d 來自 %d 艘 %s\n",
+    "note": "摘要"
+  },
+  {
+    "key": "%d from 1 noncombat ship",
+    "value": "來自 1 艘非戰鬥船艦 %d\n",
+    "note": "摘要"
+  },
+  {
+    "key": "%d from %d noncombat ships",
+    "value": "%d 來自 %d 艘非戰鬥船艦\n",
+    "note": "摘要"
+  },
+  {
+    "key": "total command point used",
+    "value": "已使用指揮點",
+    "note": "摘要"
+  },
+  {
+    "key": "total command points used",
+    "value": "已使用指揮點",
+    "note": "摘要"
+  },
+  {
+    "key": "Ship maintenance costs",
+    "value": "船艦維護費",
+    "note": "摘要"
+  },
+  {
+    "key": "Command Summary",
+    "value": "指揮摘要",
+    "note": "摘要"
+  },
+  {
+    "key": "Defender only has noncombat ships, which are destroyed.",
+    "value": "防禦方只剩非戰鬥船艦,已被摧毀。",
+    "note": "報告"
+  },
+  {
+    "key": "You have the following treaties:",
+    "value": "你已簽訂下列條約:",
+    "note": "外交"
+  },
+  {
+    "key": "Trade treaty",
+    "value": "貿易條約",
+    "note": "外交"
+  },
+  {
+    "key": "Research treaty",
+    "value": "研究條約",
+    "note": "外交"
+  },
+  {
+    "key": "Receiving tribute",
+    "value": "收取貢金",
+    "note": "外交"
+  },
+  {
+    "key": "Do you really wish to risk a war?",
+    "value": "你真的想冒著開戰的風險嗎?",
+    "note": "確認"
+  },
+  {
+    "key": "Outpost destroyed",
+    "value": "前哨站被摧毀",
+    "note": "報告"
+  },
+  {
+    "key": "Colony seized by mind control!",
+    "value": "殖民地遭精神控制奪取!",
+    "note": "報告"
+  },
+  {
+    "key": "%s attacks you at %s.",
+    "value": "%s 在 %s 攻擊你。",
+    "note": "報告"
+  },
+  {
+    "key": "Combat is reported between %s & %s.",
+    "value": "%s 與 %s 之間傳出戰鬥。",
+    "note": "報告"
+  },
+  {
+    "key": "native",
+    "value": "原住民",
+    "note": "標籤"
+  },
+  {
+    "key": "%s & %s declare an alliance.",
+    "value": "%s 與 %s 宣布結盟。",
+    "note": "報告"
+  },
+  {
+    "key": "%s & %s declare war.",
+    "value": "%s 與 %s 宣戰。",
+    "note": "報告"
+  },
+  {
+    "key": "Your treasury was only %d BC, with a net income of %d BC.",
+    "value": "你的國庫只剩 %d 星幣,淨收入為 %d 星幣。",
+    "note": "報告"
+  },
+  {
+    "key": "%s ship %s (cost %d BC) lost, out of range at %s.",
+    "value": "%s 的船艦 %s(造價 %d 星幣)因超出航程於 %s 損失。",
+    "note": "報告"
+  },
+  {
+    "key": "%s ship %s (cost %d BC) scrapped at %s, received %d BC.",
+    "value": "%s 的船艦 %s(造價 %d 星幣)於 %s 拆解,獲得 %d 星幣。",
+    "note": "報告"
+  },
+  {
+    "key": "%s ship %s (cost %d BC) scrapped in hyperspace.",
+    "value": "%s 的船艦 %s(造價 %d 星幣)於超空間中拆解。",
+    "note": "報告"
+  },
+  {
+    "key": "colony",
+    "value": "殖民地",
+    "note": "標籤"
+  },
+  {
+    "key": "outpost",
+    "value": "前哨站",
+    "note": "標籤"
+  },
+  {
+    "key": "Lost %s at %s due to %s.",
+    "value": "失去 %s 於 %s,肇因於 %s。",
+    "note": "報告"
+  },
+  {
+    "key": "%s killed.",
+    "value": "%s 陣亡。",
+    "note": "報告"
+  },
+  {
+    "key": "Scrapped %s at %s for %d BC.",
+    "value": "拆解 %s 於 %s,獲得 %d 星幣。",
+    "note": "報告"
+  },
+  {
+    "key": "%s finished construction: %s.",
+    "value": "%s 完成建造:%s。",
+    "note": "報告"
+  },
+  {
+    "key": "%s christened a new ship, the %s.",
+    "value": "%s 為一艘新船艦命名:%s。",
+    "note": "報告"
+  },
+  {
+    "key": "%s refitted a ship, the %s.",
+    "value": "%s 改裝了一艘船艦:%s。",
+    "note": "報告"
+  },
+  {
+    "key": "%s finished training a new spy.",
+    "value": "%s 完成培訓一名新間諜。",
+    "note": "報告"
+  },
+  {
+    "key": "%s built an Android Farmer.",
+    "value": "%s 建造了一名機器人農民。",
+    "note": "報告"
+  },
+  {
+    "key": "%s built an Android Worker.",
+    "value": "%s 建造了一名機器人工人。",
+    "note": "報告"
+  },
+  {
+    "key": "%s built an Android Scientist.",
+    "value": "%s 建造了一名機器人科學家。",
+    "note": "報告"
+  },
+  {
+    "key": "%s built a freighter fleet.",
+    "value": "%s 建造了一支貨船隊。",
+    "note": "報告"
+  },
+  {
+    "key": "Next in queue was %s.",
+    "value": "佇列中的下一項是 %s。",
+    "note": "報告"
+  },
+  {
+    "key": "Autobuild %s next.",
+    "value": "自動建造下一項:%s。",
+    "note": "報告"
+  },
+  {
+    "key": "Annihilated the last conquered %s on %s.",
+    "value": "殲滅了最後被征服的 %s(位於 %s)。",
+    "note": "報告"
+  },
+  {
+    "key": "Assimilated the last conquered %s on %s.",
+    "value": "同化了最後被征服的 %s(位於 %s)。",
+    "note": "報告"
+  },
+  {
+    "key": "%s had starvation (short %d food).",
+    "value": "%s 發生饑荒(短缺 %d 食物)。",
+    "note": "報告"
+  },
+  {
+    "key": "%s had starvation (short %d industry).",
+    "value": "%s 發生短缺(短缺 %d 工業)。",
+    "note": "報告"
+  },
+  {
+    "key": "%s had starvation (short %d food, %d industry).",
+    "value": "%s 發生短缺(短缺 %d 食物、%d 工業)。",
+    "note": "報告"
+  },
+  {
+    "key": "%d settler arrived at %s.",
+    "value": "%d 名移民抵達 %s。",
+    "note": "報告"
+  },
+  {
+    "key": "%d settlers arrived at %s.",
+    "value": "%d 名移民抵達 %s。",
+    "note": "報告"
+  },
+  {
+    "key": "All were killed by blockade.",
+    "value": "全數死於封鎖。",
+    "note": "報告"
+  },
+  {
+    "key": "%d was killed by population limit.",
+    "value": "%d 名因人口上限而死亡。",
+    "note": "報告"
+  },
+  {
+    "key": "%d were killed by population limit.",
+    "value": "%d 名因人口上限而死亡。",
+    "note": "報告"
+  },
+  {
+    "key": "The plague on %s continues.",
+    "value": "%s 的瘟疫持續。",
+    "note": "報告"
+  },
+  {
+    "key": "The lust-crazed population boom on %s continues.",
+    "value": "%s 狂熱的人口爆炸持續。",
+    "note": "報告"
+  },
+  {
+    "key": "A comet still threatens %s.",
+    "value": "一顆彗星仍威脅著 %s。",
+    "note": "報告"
+  },
+  {
+    "key": "%d of your rebels liberated %s, losing %d in the fighting!",
+    "value": "你有 %d 名叛軍解放了 %s,在戰鬥中損失 %d 名!",
+    "note": "報告"
+  },
+  {
+    "key": "%d of your rebels died gloriously on %s!",
+    "value": "你有 %d 名叛軍在 %s 光榮犧牲!",
+    "note": "報告"
+  },
+  {
+    "key": "%d %s rebel liberated %s from you, losing %d in the fighting!",
+    "value": "%d 名 %s 叛軍自你手中解放了 %s,在戰鬥中損失 %d 名!",
+    "note": "報告"
+  },
+  {
+    "key": "%d %s rebels liberated %s from you, losing %d in the fighting!",
+    "value": "%d 名 %s 叛軍自你手中解放了 %s,在戰鬥中損失 %d 名!",
+    "note": "報告"
+  },
+  {
+    "key": "You suppressed %d %s rebel on %s!",
+    "value": "你鎮壓了 %d 名 %s 叛軍(位於 %s)!",
+    "note": "報告"
+  },
+  {
+    "key": "You suppressed %d %s rebels on %s!",
+    "value": "你鎮壓了 %d 名 %s 叛軍(位於 %s)!",
+    "note": "報告"
+  },
+  {
+    "key": "%s would produce an Android, but there's no more room!",
+    "value": "%s 本可生產一名機器人,但已無空間!",
+    "note": "報告"
+  },
+  {
+    "key": "%s produced an Android, causing death of a %s!",
+    "value": "%s 生產了一名機器人,導致一名 %s 死亡!",
+    "note": "報告"
+  },
+  {
+    "key": "A hyperspace flux prevents ships from entering hyperspace.",
+    "value": "超空間亂流阻止船艦進入超空間。",
+    "note": "報告"
+  },
+  {
+    "key": "The hyperspace beast still lurks.",
+    "value": "超空間巨獸仍潛伏著。",
+    "note": "報告"
+  },
+  {
+    "key": "The hyperspace beast ate your ship %s enroute to %s.",
+    "value": "超空間巨獸在你的船艦 %s 前往 %s 途中將其吞噬。",
+    "note": "報告"
+  },
+  {
+    "key": "The hyperspace beast ate a %s ship.",
+    "value": "超空間巨獸吞噬了一艘 %s 的船艦。",
+    "note": "報告"
+  },
+  {
+    "key": "A spy sent against %s was lost.",
+    "value": "派往對付 %s 的一名間諜損失了。",
+    "note": "報告"
+  },
+  {
+    "key": "A defending spy was killed.",
+    "value": "一名防禦間諜被殺。",
+    "note": "報告"
+  },
+  {
+    "key": "%d defending spies were killed.",
+    "value": "%d 名防禦間諜被殺。",
+    "note": "報告"
+  },
+  {
+    "key": "Enemy artemis net at %s attacked your arriving fleet.",
+    "value": "%s 的敵方阿提米斯網攻擊了你抵達的艦隊。",
+    "note": "報告"
+  },
+  {
+    "key": "Enemy artemis net at %s killed a ship with leader.",
+    "value": "%s 的敵方阿提米斯網擊殺了一艘載有領袖的船艦。",
+    "note": "報告"
+  },
+  {
+    "key": "%d ship was killed retreating from %s.",
+    "value": "%d 艘船艦在自 %s 撤退時被擊殺。",
+    "note": "報告"
+  },
+  {
+    "key": "%d ships were killed retreating from %s.",
+    "value": "%d 艘船艦在自 %s 撤退時被擊殺。",
+    "note": "報告"
+  },
+  {
+    "key": "defending spy",
+    "value": "防禦間諜",
+    "note": "標籤"
+  },
+  {
+    "key": "spy sent against %s",
+    "value": "派往對付 %s 的間諜",
+    "note": "標籤"
+  },
+  {
+    "key": "%s assassinated a %s %s.",
+    "value": "%s 暗殺了一名 %s %s。",
+    "note": "報告"
+  },
+  {
+    "key": "A %s was mysteriously assassinated.",
+    "value": "一名 %s 遭神祕暗殺。",
+    "note": "報告"
+  },
+  {
+    "key": "There is a spacetime anomaly at %s.",
+    "value": "%s 出現時空異常。",
+    "note": "報告"
+  },
+  {
+    "key": "The %s and %s empires are now at war.",
+    "value": "%s 與 %s 帝國現已交戰。",
+    "note": "報告"
+  },
+  {
+    "key": "The %s and %s empires are now at peace.",
+    "value": "%s 與 %s 帝國現已議和。",
+    "note": "報告"
+  },
+  {
+    "key": "The %s and %s empires have formed an alliance.",
+    "value": "%s 與 %s 帝國已結為同盟。",
+    "note": "報告"
+  },
+  {
+    "key": "The %s and %s empires have signed a nonaggression pact.",
+    "value": "%s 與 %s 帝國已簽訂互不侵犯條約。",
+    "note": "報告"
+  },
+  {
+    "key": "The peace treaty between the %s and %s empires has expired.",
+    "value": "%s 與 %s 帝國之間的和平條約已到期。",
+    "note": "報告"
+  },
+  {
+    "key": "A young space eel was spawned at %s.",
+    "value": "一隻幼年太空巨鰻於 %s 誕生。",
+    "note": "報告"
+  },
+  {
+    "key": "A space eel devoured its young at %s.",
+    "value": "一隻太空巨鰻在 %s 吞食了自己的幼體。",
+    "note": "報告"
+  },
+  {
+    "key": "Your explorers discovered the technological secrets of %s among the ancient ruins.",
+    "value": "你的探險者在古代遺跡中發現了 %s 的科技祕密。",
+    "note": "報告"
+  },
+  {
+    "key": "Citizens demand a stadium.  And more cream of celery soup.",
+    "value": "市民要求一座體育場。還要更多芹菜奶油濃湯。",
+    "note": "報告"
+  },
+  {
+    "key": "We had to dismiss %s since we're broke!",
+    "value": "由於我們破產,不得不解雇 %s!",
+    "note": "報告"
+  },
+  {
+    "key": "You have no dimensional portal.",
+    "value": "你沒有次元傳送門。",
+    "note": "報告"
+  },
+  {
+    "key": "A hyperspace flux prevents movement.",
+    "value": "超空間亂流阻止移動。",
+    "note": "報告"
+  },
+  {
+    "key": "No colony was accessible.",
+    "value": "沒有可存取的殖民地。",
+    "note": "報告"
+  },
+  {
+    "key": "%d leaders were killed.",
+    "value": "%d 名領袖被殺。",
+    "note": "報告"
+  },
+  {
+    "key": "%s was killed.",
+    "value": "%s 被殺。",
+    "note": "報告"
+  },
+  {
+    "key": "%s escaped to your leader pool.",
+    "value": "%s 逃回你的領袖庫。",
+    "note": "報告"
+  },
+  {
+    "key": "%s escaped to another ship in the group.",
+    "value": "%s 逃往隊伍中的另一艘船艦。",
+    "note": "報告"
+  },
+  {
+    "key": "mass killing",
+    "value": "大規模屠殺",
+    "note": "標籤"
+  },
+  {
+    "key": "bombardment",
+    "value": "轟炸",
+    "note": "標籤"
+  },
+  {
+    "key": "Stellar Converter",
+    "value": "恆星轉換器",
+    "note": "標籤"
+  },
+  {
+    "key": "all people dead",
+    "value": "全數人口死亡",
+    "note": "標籤"
+  },
+  {
+    "key": "modem disk file error",
+    "value": "數據機磁碟檔案錯誤",
+    "note": "錯誤"
+  },
+  {
+    "key": "modem diff buffer error",
+    "value": "數據機差異緩衝錯誤",
+    "note": "錯誤"
+  },
+  {
+    "key": "Incompatible program versions (host %s, you %s)",
+    "value": "程式版本不相容(主機 %s,你 %s)",
+    "note": "錯誤"
+  },
+  {
+    "key": "only 1 host allowed",
+    "value": "僅允許 1 名主機",
+    "note": "錯誤"
+  },
+  {
+    "key": "net send error!",
+    "value": "網路傳送錯誤!",
+    "note": "錯誤"
+  },
+  {
+    "key": "lost net user!",
+    "value": "失去網路使用者!",
+    "note": "錯誤"
+  },
+  {
+    "key": "sending chunk %d of %d",
+    "value": "正在傳送第 %d / %d 區塊\n",
+    "note": "網路"
+  },
+  {
+    "key": "The ambassador left before you arrived.",
+    "value": "大使在你抵達前離開了。\n",
+    "note": "外交"
+  },
+  {
+    "key": "Can't try DOS net game under Windows",
+    "value": "無法在 Windows 下嘗試 DOS 網路遊戲",
+    "note": "錯誤"
+  },
+  {
+    "key": "Comm failure",
+    "value": "通訊失敗",
+    "note": "錯誤"
+  },
+  {
+    "key": "Game is full (or nonexistent)",
+    "value": "遊戲已滿(或不存在)",
+    "note": "錯誤"
+  },
+  {
+    "key": "Receiving chunk %d of %d",
+    "value": "正在接收第 %d / %d 區塊",
+    "note": "網路"
+  },
+  {
+    "key": "Answering failed",
+    "value": "接聽失敗",
+    "note": "錯誤"
+  },
+  {
+    "key": "Sorry, no more player slots available in that game!",
+    "value": "抱歉,該遊戲已無可用的玩家名額!",
+    "note": "網路"
+  },
+  {
+    "key": "Dialing failed",
+    "value": "撥號失敗",
+    "note": "錯誤"
+  },
+  {
+    "key": "Really begin game? (AI will take over unpicked human slots)",
+    "value": "確定開始遊戲?(AI 將接管未選的人類名額)",
+    "note": "確認"
+  },
+  {
+    "key": "Really start with only 1 player?",
+    "value": "確定只用 1 名玩家開始?",
+    "note": "確認"
+  },
+  {
+    "key": "waiting ...",
+    "value": "等待中 ...",
+    "note": "網路"
+  },
+  {
+    "key": "have %d of %d chunks",
+    "value": "已有 %d / %d 區塊\n",
+    "note": "網路"
+  },
+  {
+    "key": "Your spy steals %s from the %s.",
+    "value": "你的間諜竊取了 %s,來自 %s。",
+    "note": "報告"
+  },
+  {
+    "key": "Your spy destroys the %s %s on %s.",
+    "value": "你的間諜摧毀了 %s %s(位於 %s)。",
+    "note": "報告"
+  },
+  {
+    "key": "You framed the %s.",
+    "value": "你嫁禍給了 %s。\n",
+    "note": "報告"
+  },
+  {
+    "key": "%s spy steals %s.",
+    "value": "%s 的間諜竊取了 %s。",
+    "note": "報告"
+  },
+  {
+    "key": "%s spy destroys the %s on %s.",
+    "value": "%s 的間諜摧毀了 %s(位於 %s)。",
+    "note": "報告"
+  },
+  {
+    "key": "Really trash your colony base for %dBC?",
+    "value": "確定拆除殖民基地換取 %d 星幣?",
+    "note": "確認"
+  },
+  {
+    "key": "Colonize the preselected planet of %s?",
+    "value": "殖民預選的行星 %s?",
+    "note": "確認"
+  },
+  {
+    "key": "Build outpost on the preselected planet of %s?",
+    "value": "在預選的行星 %s 上建造前哨站?",
+    "note": "確認"
+  }
+]

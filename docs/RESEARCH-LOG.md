@@ -59,7 +59,7 @@
 
 | 主張 | 來源／證據 | 證據等級 | 重製對映 |
 |---|---|---|---|
-| 近迫防禦要在戰機接戰前先開火 | `assets/i18n/help.tsv` 第 402 筆（原版 help 編號 #402）明定：PD 尚未開火時，會在飛彈命中艦艇或戰機接戰前開火。 | 已證實（手冊／help） | `cmd/moo2/tacticalfighter.go:advanceSquadrons` 在 `StepToward` 到達接戰距離後、戰機攻擊前呼叫 `ResolvePointDefenseFighterShot`，並共用 `CombatShip.PointDefenseSpent`。 |
+| 近迫防禦要在戰機接戰前先開火 | `assets/i18n/help.json` 第 402 筆（原版 help 編號 #402）明定：PD 尚未開火時，會在飛彈命中艦艇或戰機接戰前開火。 | 已證實（手冊／help） | `cmd/moo2/tacticalfighter.go:advanceSquadrons` 在 `StepToward` 到達接戰距離後、戰機攻擊前呼叫 `ResolvePointDefenseFighterShot`，並共用 `CombatShip.PointDefenseSpent`。 |
 | 戰機的 Beam Defense 公式 | `docs/knowledge-base/manual-cht/03-combat.md` p.157；`gamedata.CombatFighterBeamDefense` 已保存 `5*Speed + racial Ship Defense + Fighter Pilot + Helmsman`。 | 已證實（公式）；Helmsman 原版接線仍未知 | `CombatShip`／`FighterSquadron` 帶入參戰種族 Ship Defense 與 `SKILL_FIGHTER_PILOT` 最大值；Helmsman 明示傳 0。 |
 | PD／戰機的逐彈命中／消費完整等價 | raw `sub_3AD57 @0x3AD57` 只證實 fighter／beam 分支與 `Weapon_In_Range` 呼叫；相鄰 `sub_3AC20 @0x3AC20` 的直接傷害式已追回，但完整 raw record 參數、敵方戰機政策與 runtime 邊界尚未追回。 | 未知 | 只接玩家格子戰術的順序、共用 PD 武器改造與兩條戰機受傷消費；測試證明重製內部閉環，不升格為原版全路徑。 |
 
@@ -130,7 +130,7 @@ docker run --rm --network bridge --memory 2g --cpus 2 --pids-limit 512 \
 | ETA callback 並非單一 UI call | `sub_E2AB1 @ 0xE2AB1` 掃六個 `+0x48..+0x52` 槽，命中時呼叫 `sub_E1D59`／`sub_DF8F0`，尾端呼叫 `sub_E2710`；後者寫回多個 empire derived 欄位 | 已證實 callback 鏈；raw 設計／帝國欄位語意未全命名 | `applyLeaderETACallback` 撤銷／重套殖民地領袖增量並刷新所有殖民地士氣，保留領袖任職 |
 | CMBTSHP timer 仍不可由目前靜態鏈定值 | `sub_30062`／`sub_30631`／`sub_31F25`／`sub_3F628` 可證實 loader、draw、input loop、heading，但未見 frame counter／clock／timer 寫入 | 未知 | `CMBTSHPFrameAtTick` 固定 4 tick/frame、`[0,1,2,1]`；採可重播近似 |
 
-獨立文字 oracle：`cmd/moo2/embedded/i18n/help.tsv` 的 `Sabotage` 說明直接寫「tries to destroy buildings」；
+獨立文字 oracle：`assets/i18n/help.json` 的 `Sabotage` 說明直接寫「tries to destroy buildings」；
 它與 raw `0x145EA` 的旗標清除互相支持「建築破壞」解釋，但不額外證明特殊槽位或精確選取機率。
 
 ## 2026-08-09 逐對手外交入口切片
@@ -185,7 +185,7 @@ docker run --rm --network bridge --memory 2g --cpus 2 --pids-limit 512 \
 | 主張 | 來源／證據 | 證據等級 | 重製對映 |
 |---|---|---|---|
 | 原版關係資料保存雙向納貢模式 | 同一份 `Orion2.exe.asm`（SHA256 `7AE2AC2E5904CA330009AF2827279D889906B0B9B7A8854C38EB707A56E955B5`；IDA 2026；LE 32-bit OS/2/DOS 位址空間）中，`sub_194C5` 的固定納貢選項呼叫 `sub_52049`；該函式在關係矩陣 `[row+col*2+0x63F]` 寫入 raw mode，並同步另一方向的關係資料。`sub_180D4` 讀取同一欄位以顯示／終止納貢狀態。 | 已證實（位址、讀寫端） | `TreatyState.PlayerTribute`／`AITribute` 以 raw mode 1／2 保存方向；JSON round-trip 由既有 AI `Treaty` 快照承接。 |
-| 固定納貢選項是 5%／10% 的週期納貢 | `assets/i18n/misc.tsv` 的 `GIVING \\x82% TRIBUTE`／`RECEIVING \\x82% TRIBUTE`；`sub_194C5` 固定傳入 `EBX=1`／`EBX=2`，原版顯示路徑依 raw mode 1／2 分別傳 5／10。 | 已證實 | 外交畫面提供「給予 5% 進貢／給予 10% 進貢」與「終止進貢」；`TreatySummary` 顯示付出／收取方向。 |
+| 固定納貢選項是 5%／10% 的週期納貢 | `assets/i18n/misc.json` 的 `GIVING \\x82% TRIBUTE`／`RECEIVING \\x82% TRIBUTE`；`sub_194C5` 固定傳入 `EBX=1`／`EBX=2`，原版顯示路徑依 raw mode 1／2 分別傳 5／10。 | 已證實 | 外交畫面提供「給予 5% 進貢／給予 10% 進貢」與「終止進貢」；`TreatySummary` 顯示付出／收取方向。 |
 | 納貢成本從付款方收入計算，並扣除先前納貢成本 | `sub_E1FC7` 讀取付款方收入欄位 `+0xAE` 與既有總納貢成本 `+0xE78`，再執行 `mode*(income-existing_cost)/20`，結果由 `sub_E2000`／`sub_E2710` 累加到帝國經濟；負值在原版路徑被夾為 0。 | 已證實（公式）；`+0xAE` 對應 remake gross 收入為強推論 | `tributeCost` 採同一 raw mode／20 公式；`EndTurn` 在雙方 `RunEmpireTurn` 後移轉 BC，玩家摘要暴露 `EmpireOutput.TributeCost`。 |
 | 一次性金錢／科技／星系餽贈等同於週期納貢 | `sub_194C5` 後續選項另呼叫 `sub_19F26`、`sub_1C479`、`sub_1D237`；其支付、選科技／星系與接受條件尚未形成完整可重現模型。 | 未知 | 不把一次性餽贈誤接成週期納貢；目前只接已證實的固定 5%／10% 路徑。 |
 
