@@ -48,6 +48,16 @@
    `FoodPerFarmer<=0` 時為 0；否則為
    `3+2×[帝國食物盈餘<0]+2×[Pacifist]`。它只在既有土壤適用氣候提供候選，完工使
    `FoodPerFarmer+1`，不寫入常駐建築集合。
+   raw ID 21 Hydroponic Farm 不讀 priority gate；`cache+2==0` 時為 0，否則依原版
+   `colonyFoodHalf` 的 `0／1／2／其餘` 取 `12／11／10／6`，再加完整帝國食物赤字幅度與
+   `4×[Pacifist]`。raw ID 43 Subterranean Farms 在 priority gate 或 `cache+2==0` 時為 0，
+   同一四段快取取 `13／12／10／7`，再加完整赤字幅度與 `3×[Pacifist]`。raw ID 46
+   Weather Controller 在 priority gate、`cache+2==0` 或 `colonyFoodHalf<=0` 時為 0；其餘
+   食物赤字時為 `10+2×[Pacifist]`，非赤字時為 `5+2×[Pacifist]`。
+   `colonyFoodHalf` 不得由已含 owner Farming／Aquatic 的 `FoodPerFarmer` 直接倍增；候選建立端
+   必須以 `2×ClimateFoodPerFarmer(Climate)` 加已建 Weather Controller 的 4 與 Astro
+   University 的 2 重建；基值為 0 且已知 Biomorphic Fungi 時先改成 2。若缺少完整人口
+   profile 或食物快取來源，回報非 exact。
 5. 優先建築 gate 僅由已知科技 application、已建建築、殖民地礦產及 AI 生效政府組成：
    - Ultra Poor／Poor／Abundant 殖民地已知 Automated Factories 但未建 Automated Factory；或
    - Feudal／Confederation／Dictatorship／Imperium 已知但未建 Marine Barracks／Armor Barracks。
@@ -81,6 +91,9 @@
   完工不得寫入常駐建築，且殖民地／行星氣候必須同步前進一級。
 - raw 37 在兩種 Lithovore 組合、`FoodPerFarmer` 0／1、食物盈餘 -1／0、一般／Pacifist
   與 priority gate 邊界符合公式；不適用氣候不得成為候選，完工只增加每農夫食物且不留常駐旗標。
+- raw 21／43 的四段 `colonyFoodHalf` 表、赤字幅度（不只正負）、一般／Pacifist、cache gate
+  與 priority gate 差異必須逐式測試；raw 46 另測 `colonyFoodHalf` 0／正值與赤字正負。
+  三棟都要以唯一正常候選走過選擇、逐殖民地產能、完工旗標及 typed 食物效果。
 - 只完成多選主題但選了其他 application 時，不得觸發相應 Automated Factory／Barracks gate。
 - 精確分支與類別式 fallback 不可混稱同一證據等級。
 - 既有擴張測試以「建築＋造艦總投入」驗證新殖民地確實參與經濟，不再假設所有產出都是軍艦。

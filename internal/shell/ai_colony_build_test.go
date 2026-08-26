@@ -465,6 +465,149 @@ func TestOriginalAISoilEnrichmentScore(t *testing.T) {
 	}
 }
 
+func completeAIFoodScoreColony() engine.ColonyState {
+	return engine.ColonyState{
+		Population: 4, Workers: 4, Climate: gamedata.TERRAN,
+		OwnerRaceSlot: 1, OwnerRaceSlotKnown: true, OwnerRaceProfileKnown: true,
+		PopulationGroups: []engine.PopulationGroup{{
+			RaceSlot: 1, RaceSlotKnown: true, ProfileKnown: true, Workers: 4,
+		}},
+	}
+}
+
+func TestOriginalAIFoodBuildingScoreTables(t *testing.T) {
+	colony := completeAIFoodScoreColony()
+	tests := []struct {
+		name  string
+		raw   int
+		bases [4]int
+		pac   int
+	}{
+		{"水耕農場", 21, [4]int{12, 11, 10, 6}, 4},
+		{"地底農場", 43, [4]int{13, 12, 10, 7}, 3},
+	}
+	for _, tt := range tests {
+		b, ok := gamedata.BuildingByNameZH(tt.name)
+		if !ok {
+			t.Fatalf("測試建築不存在：%s", tt.name)
+		}
+		for half, want := range tt.bases {
+			ctx := originalAIBuildScoreContext{colonyFoodHalf: half, colonyFoodHalfKnown: true}
+			if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic, ctx); !exact || score != want {
+				t.Errorf("%s half=%d 分數=(%d,%v)，want (%d,true)", tt.name, half, score, exact, want)
+			}
+			ctx.empireFoodBalanceHalf = -3
+			if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, ctx); !exact || score != want+3+tt.pac {
+				t.Errorf("%s half=%d Pacifist 赤字分數=(%d,%v)，want (%d,true)", tt.name, half, score, exact, want+3+tt.pac)
+			}
+		}
+		ctx := originalAIBuildScoreContext{priorityGate: true, colonyFoodHalf: 2, colonyFoodHalfKnown: true}
+		score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic, ctx)
+		want := 10
+		if tt.raw == 43 {
+			want = 0
+		}
+		if !exact || score != want {
+			t.Errorf("%s priority gate 分數=(%d,%v)，want (%d,true)", tt.name, score, exact, want)
+		}
+	}
+}
+
+func TestOriginalAIWeatherControllerScore(t *testing.T) {
+	b, ok := gamedata.BuildingByNameZH("氣候控制器")
+	if !ok {
+		t.Fatal("氣候控制器不存在")
+	}
+	colony := completeAIFoodScoreColony()
+	ctx := originalAIBuildScoreContext{colonyFoodHalfKnown: true}
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, ctx); !exact || score != 0 {
+		t.Fatalf("零食物快取分數=(%d,%v)，want (0,true)", score, exact)
+	}
+	ctx.colonyFoodHalf = 2
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic, ctx); !exact || score != 5 {
+		t.Fatalf("非赤字分數=(%d,%v)，want (5,true)", score, exact)
+	}
+	ctx.empireFoodBalanceHalf = -3
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, ctx); !exact || score != 12 {
+		t.Fatalf("Pacifist 赤字分數=(%d,%v)，want (12,true)", score, exact)
+	}
+	ctx.priorityGate = true
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, ctx); !exact || score != 0 {
+		t.Fatalf("priority gate 分數=(%d,%v)，want (0,true)", score, exact)
+	}
+}
+
+func TestOriginalAIFoodBuildingProfileAndCacheGates(t *testing.T) {
+	b, _ := gamedata.BuildingByNameZH("水耕農場")
+	colony := completeAIFoodScoreColony()
+	ctx := originalAIBuildScoreContext{colonyFoodHalf: 2, colonyFoodHalfKnown: true}
+	colony.Lithovore = true
+	colony.PopulationGroups[0].Lithovore = true
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, ctx); !exact || score != 0 {
+		t.Fatalf("主要人口與 owner 同為 Lithovore 應歸零：score=%d exact=%v", score, exact)
+	}
+	colony.PopulationGroups = nil
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, ctx); exact || score != 0 {
+		t.Fatalf("人口 profile 不完整不得冒稱 exact：score=%d exact=%v", score, exact)
+	}
+	colony = completeAIFoodScoreColony()
+	ctx.colonyFoodHalfKnown = false
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, ctx); exact || score != 0 {
+		t.Fatalf("食物快取未知不得冒稱 exact：score=%d exact=%v", score, exact)
+	}
+	if got, known := originalAIColonyFoodHalf(engine.ColonyState{Climate: gamedata.TERRAN}, map[string]bool{
+		"氣候控制器": true, "太空大學": true,
+	}, nil); !known || got != 10 {
+		t.Fatalf("Terran+Weather+Astro raw half=(%d,%v)，want (10,true)", got, known)
+	}
+	if got, known := originalAIColonyFoodHalf(engine.ColonyState{Climate: gamedata.TOXIC}, nil,
+		map[gamedata.Technology]bool{gamedata.TECH_BIOMORPHIC_FUNGI: true}); !known || got != 2 {
+		t.Fatalf("Toxic+Biomorphic Fungi raw half=(%d,%v)，want (2,true)", got, known)
+	}
+}
+
+func TestAIFoodBuildingsCandidateAndCompletion(t *testing.T) {
+	tests := []struct {
+		name      string
+		topic     gamedata.ResearchTopic
+		startFood int
+		startFlat int
+		wantFood  int
+		wantFlat  int
+	}{
+		{"水耕農場", gamedata.TOPIC_ASTRO_BIOLOGY, 2, 0, 2, 2},
+		{"地底農場", gamedata.TOPIC_MACRO_GENETICS, 2, 0, 2, 4},
+		{"氣候控制器", gamedata.TOPIC_MACRO_GENETICS, 2, 0, 4, 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := NewDemoSession()
+			a := &s.AIPlayers[0]
+			a.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{tt.topic: true}
+			a.Colonies[0] = completeAIFoodScoreColony()
+			a.Colonies[0].FoodPerFarmer = tt.startFood
+			a.Colonies[0].FlatFood = tt.startFlat
+			a.ColonyBuildings[0] = make(map[string]bool)
+			for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
+				a.ColonyBuildings[0][b.NameZH] = true
+			}
+			delete(a.ColonyBuildings[0], tt.name)
+			out := engine.EmpireOutput{Colonies: []engine.ColonyOutput{{NetIndustry: 1}}, Player: engine.PlayerState{BC: 100}}
+			build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1)
+			if !ok || build.Name != tt.name {
+				t.Fatalf("唯一候選錯誤：build=%+v ok=%v", build, ok)
+			}
+			key := aiColonyBuildKey(a, 0)
+			a.ColonyBuilds = map[int]ColonyBuild{key: {Name: tt.name, Cost: 1}}
+			s.advanceAIColonyBuilds(0, out)
+			if !a.ColonyBuildings[0][tt.name] || a.Colonies[0].FoodPerFarmer != tt.wantFood || a.Colonies[0].FlatFood != tt.wantFlat {
+				t.Fatalf("完工未垂直接線：built=%v food=%d flat=%d，want true/%d/%d",
+					a.ColonyBuildings[0][tt.name], a.Colonies[0].FoodPerFarmer, a.Colonies[0].FlatFood, tt.wantFood, tt.wantFlat)
+			}
+		})
+	}
+}
+
 func TestAISoilEnrichmentCandidateAndCompletion(t *testing.T) {
 	s := NewDemoSession()
 	a := &s.AIPlayers[0]

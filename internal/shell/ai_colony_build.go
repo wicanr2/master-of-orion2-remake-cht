@@ -122,10 +122,33 @@ type originalAIBuildScoreContext struct {
 	priorityGate          bool
 	aquatic               bool
 	empireFoodBalanceHalf int
+	colonyFoodHalf        int
+	colonyFoodHalfKnown   bool
 	raceGrowthPercent     int
 	government            gamedata.MoraleGovernmentType
 	treasuryBefore        int
 	netBC                 int
+}
+
+// originalAIColonyFoodHalf 對映 sub_DE03E 的 owner-independent +0xDD 快取：氣候基值先
+// 轉成半單位；零基值且已知 Biomorphic Fungi 時改成 2，Weather Controller／Astro
+// University 再分別加 4／2。Farming、Aquatic
+// 與原住民等修飾不屬此欄，不能從已烘入這些效果的 FoodPerFarmer 直接倍增。
+func originalAIColonyFoodHalf(colony engine.ColonyState, built map[string]bool, known map[gamedata.Technology]bool) (int, bool) {
+	if colony.Climate < gamedata.TOXIC || colony.Climate > gamedata.GAIA {
+		return 0, false
+	}
+	foodHalf := 2 * gamedata.ClimateFoodPerFarmer(colony.Climate)
+	if foodHalf == 0 && known[gamedata.TECH_BIOMORPHIC_FUNGI] {
+		foodHalf = 2
+	}
+	if built["氣候控制器"] {
+		foodHalf += 4
+	}
+	if built["太空大學"] {
+		foodHalf += 2
+	}
+	return foodHalf, true
 }
 
 // originalAIBudgetFactor 對映 Colony_Building_Score_ @ 0xD009B..0xD0142。
@@ -168,6 +191,39 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		pacifist = 1
 	}
 	switch rawID {
+	case 21, 43, 46: // 0xD07E9／0xD09F2／0xD0AB9：三棟食物建築
+		eligible, known := originalAIFoodBuildingPopulationGate(colony)
+		if !known || !ctx.colonyFoodHalfKnown {
+			return 0, false
+		}
+		if !eligible || rawID != 21 && ctx.priorityGate {
+			return 0, true
+		}
+		if rawID == 46 {
+			if ctx.colonyFoodHalf <= 0 {
+				return 0, true
+			}
+			score := 5
+			if ctx.empireFoodBalanceHalf < 0 {
+				score = 10
+			}
+			return score + 2*pacifist, true
+		}
+		bases := [4]int{12, 11, 10, 6}
+		personalityBonus := 4 * pacifist
+		if rawID == 43 {
+			bases = [4]int{13, 12, 10, 7}
+			personalityBonus = 3 * pacifist
+		}
+		bucket := ctx.colonyFoodHalf
+		if bucket < 0 || bucket > 2 {
+			bucket = 3
+		}
+		score := bases[bucket] + personalityBonus
+		if ctx.empireFoodBalanceHalf < 0 {
+			score -= ctx.empireFoodBalanceHalf
+		}
+		return score, true
 	case 37: // 0xD0956..0xD0995：Soil Enrichment
 		if ctx.priorityGate || colony.FoodPerFarmer <= 0 {
 			return 0, true
@@ -333,8 +389,8 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 	var candidates []candidate
 	lateTech := aiOriginalLateTechReached(a.Player)
 	government := effectiveAIGovernment(a)
-	priorityGate := aiOriginalPriorityBuildingGate(a.Colonies[colony], built,
-		knownTechnologyApplications(a.Player), government)
+	known := knownTechnologyApplications(a.Player)
+	priorityGate := aiOriginalPriorityBuildingGate(a.Colonies[colony], built, known, government)
 	ctx := originalAIBuildScoreContext{
 		lateTech: lateTech, priorityGate: priorityGate,
 		aquatic:               aiRaceHasTrait(*a, gamedata.TRAIT_AQUATIC),
@@ -344,6 +400,7 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 		treasuryBefore:        empireOut.Player.BC - empireOut.NetBC,
 		netBC:                 empireOut.NetBC,
 	}
+	ctx.colonyFoodHalf, ctx.colonyFoodHalfKnown = originalAIColonyFoodHalf(a.Colonies[colony], built, known)
 	maxScore := 1 // raw Assign_Colony_New_Building_ 也把最大分數下限夾到 1。
 	for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
 		if built[b.NameZH] {

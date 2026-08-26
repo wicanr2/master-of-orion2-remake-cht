@@ -284,6 +284,65 @@ raw 37 的 entry 為 `0xCFFF2 56 09 0d 00 → 0xD0956`。完整控制流是：
 `ColonyBuildings`。原版 planet `+0x0B` 沒有 remake 的獨立全局行星欄位，持久化權威是
 `ColonyState.FoodPerFarmer`；這是資料模型對映，不宣稱逐欄保存原版 planet record。
 
+## 第十批：Hydroponic Farm、Subterranean Farms、Weather Controller
+
+本批以同一份唯讀正式資料庫的一次性副本重跑 `tools/ida/audit_ai_colony_build.py`；
+輸入雜湊、IDA Pro 9.4、IDA linear 位址基準及非破壞性契約與本文開頭相同。
+
+三筆外層跳表原始值為：
+
+| raw ID | 建築 | table entry bytes → target |
+|---:|---|---|
+| 21 | Hydroponic Farm | `0xCFFB2 e9070d00 → 0xD07E9` |
+| 43 | Subterranean Farms | `0xD000A f2090d00 → 0xD09F2` |
+| 46 | Weather Controller | `0xD0016 b90a0d00 → 0xD0AB9` |
+
+### raw 21：Hydroponic Farm
+
+`0xD07E9..0xD083F` 先要求 `cache+2 != 0`，但不讀 priority gate。接著依
+`colony+0xDD` 選基礎分：`0→12`、`1→11`、`2→10`、其餘值 `→6`。若
+signed word `player+0xB0 < 0`，`movsx` 後以 `sub ebx,eax @ 0xD0837` 加上赤字的
+實際幅度；最後 `shl eax,2 @ 0xD083C` 加 `4×[Pacifist]`。完整公式為：
+
+```text
+cache+2 == 0 → 0
+base = {0:12, 1:11, 2:10, default:6}[colonyFoodHalf]
+score = base + max(0, -empireFoodBalanceHalf) + 4×[Pacifist]
+```
+
+### raw 43：Subterranean Farms
+
+`0xD09F2..0xD0A4E` 在 priority gate 或 `cache+2 == 0` 時歸零。其餘依
+`colony+0xDD` 選 `0→13`、`1→12`、`2→10`、其餘值 `→7`；負的
+`player+0xB0` 同樣以 `sub ebx,eax @ 0xD0A48` 加完整赤字幅度，最後加入
+`3×[Pacifist]`。此 case 不讀 budget factor 或 late-tech。
+
+### raw 46：Weather Controller
+
+`0xD0AB9..0xD0AEE` 在 priority gate、`cache+2 == 0` 或 unsigned
+`colony+0xDD <= 0` 時歸零。其餘在 `player+0xB0 < 0` 時取 10，非負時取 5，
+再由既有共同尾端 `0xD098E..0xD0993` 加 `2×[Pacifist]`。此 case 不加入赤字幅度、
+budget factor 或 late-tech。
+
+### typed 尺度對映
+
+- `sub_DF8F0 @ 0xDFA34..0xDFA39` 與 `sub_E2710 @ 0xE2A18..0xE2A1E`
+  都把食物產出減消耗寫入 signed word `player+0xB0`；remake 的
+  `EmpireOutput.TotalFoodHalf` 是逐殖民地 `FoodSurplusHalf` 的同尺度總和，因此 raw 21／43
+  可保留赤字幅度，而不只保留正負號。
+- `sub_DE03E @ 0xDE044..0xDE0C1` 以 `2×planet+0x0B` 建立
+  `colony+0xDD`，Weather Controller 再加 4、Astro University 再加 2。這是沒有 owner
+  Farming／Aquatic 修飾的半單位快取；不得直接使用已烘入種族修飾的
+  `ColonyState.FoodPerFarmer`。remake 在 AI 候選建立時，以 typed 氣候基值的兩倍，加上已建
+  Weather Controller／Astro University 的 `4／2` 重建此快取。原版零食物時另讀
+  `player stride 0xEA9 + 0x134 == 3 @ 0xDE066..0xDE087` 並改成 2；`0x134-0x117=29`，
+  與受版控 `TECH_BIOMORPHIC_FUNGI Technology=29` 及研究 application 狀態表基址吻合，故
+  typed 重建在基值為 0 且已知 Biomorphic Fungi 時同樣改成 2。
+
+以上三式的控制流、立即數、原始位址與 bytes 為**已證實**；Biomorphic Fungi 語意由原始
+technology-table 偏移與受版控 enum 交叉對回，為**已證實**。typed AI 殖民地的氣候／科技／
+建築快取重建為資料模型對映，不是以 Go 現況反證原版。
+
 其餘未封閉區域會讀 alien／outpost 狀態、政府／性格其他碼、其他殖民地 packed 人口用途、帝國建築數、
 星球 owner／環境、事件與未解 player flags；在欄位寫入端與 typed 對映完成前維持
 `unknown_pending_review`，由明示近似 fallback 處理。

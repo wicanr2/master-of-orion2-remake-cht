@@ -347,6 +347,10 @@
   budget factor 接入精確分數；只有具下一級氣候的殖民地可選，完工同步殖民地／行星且不留常駐旗標。
   raw 37 Soil Enrichment 已依修正後的 cache+2、每農夫食物半單位、帝國食物差額與 Pacifist
   閉合；適用氣候可正常選建，完工只增加每農夫食物且不留常駐旗標。
+  raw 21 Hydroponic Farm、raw 43 Subterranean Farms 與 raw 46 Weather Controller 亦已由
+  外層跳表、`colony+0xDD` 半單位快取及 `player+0xB0` signed word 消費端閉合：前兩者保留
+  四段食物表與完整赤字幅度，後者保留赤字二段式；三者的 Pacifist、cache+2 與 priority gate
+  差異均已接線。AI 可由正常唯一候選完成三棟建築，並分別寫回固定食物或每農夫食物效果。
   其餘分數區域、
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
   state machine 亦待閉合。見
