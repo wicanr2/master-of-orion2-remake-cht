@@ -382,6 +382,10 @@
   兩組外交係數、`max(0,used+1-supply)` 指揮赤字、Ruthless 與 budget factor。正常候選完工
   會維持 Star Base→Battlestation→Star Fortress 單槽取代鏈，且已由指揮評等與掃描範圍
   consumer 抽測；衛星精確武裝／hull space 仍維持原有近似，不因本項升格。
+  raw 26 Missile Base、raw 27 Ground Batteries、raw 42 Stellar Converter 與 raw 47 Fighter
+  Garrison 亦已由共享 `0xD050B..0xD0549` 尾端閉合；四棟現依 ETA9、四槽星系壓力、
+  Ruthless、priority gate 與 budget factor 精確計分。正常唯一候選均可完工並新增對應固定
+  防禦反擊者；反擊者本身的 space／武器／戰機火力仍保留手冊＋近似證據等級。
   其餘分數區域、
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
   state machine 亦待閉合。見

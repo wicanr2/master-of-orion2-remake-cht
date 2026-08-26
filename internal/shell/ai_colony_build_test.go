@@ -1168,6 +1168,109 @@ func TestAIOriginalOrbitalBaseScores(t *testing.T) {
 	}
 }
 
+func TestAIOriginalFixedDefenseScores(t *testing.T) {
+	ctx := originalAIBuildScoreContext{
+		strategicPressureContextKnown: true,
+		reachTreatyNear:               1,
+		reachNoPolicyNear:             2,
+		reachWarNear:                  3,
+		reachExtended:                 4,
+		incomingOtherFleetETA9:        true,
+	}
+	for _, name := range []string{"飛彈基地", "地面砲台", gamedata.StellarConverterName, "戰機基地"} {
+		b, ok := gamedata.BuildingByNameZH(name)
+		if !ok {
+			t.Fatalf("找不到固定防禦建築 %q", name)
+		}
+		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{}, ai.PersonalityRuthless, ctx); !exact || score != 95 {
+			t.Errorf("%s score=(%d,%v)，want (95,true)", name, score, exact)
+		}
+	}
+
+	b, _ := gamedata.BuildingByNameZH("飛彈基地")
+	ctx = originalAIBuildScoreContext{
+		strategicPressureContextKnown: true,
+		priorityGate:                  true,
+	}
+	if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{}, ai.PersonalityRuthless, ctx); !exact || score != 0 {
+		t.Fatalf("priority gate 無 ETA9 應先歸零：(%d,%v)", score, exact)
+	}
+	ctx.priorityGate = false
+	ctx.treasuryBefore, ctx.netBC = 1500, 64
+	if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{}, ai.PersonalityRuthless, ctx); !exact || score != 1 {
+		t.Fatalf("零 pressure 時只加 budget，不得加 Ruthless：(%d,%v)", score, exact)
+	}
+	ctx.strategicPressureContextKnown = false
+	if _, exact := originalAIExactBuildingScore(b, engine.ColonyState{}, ai.PersonalityRuthless, ctx); exact {
+		t.Fatal("缺 session-wide 壓力 context 時不得冒稱精確")
+	}
+}
+
+func TestAIFixedDefenseCandidateCompletionAndRetaliationConsumer(t *testing.T) {
+	tests := []struct {
+		name  string
+		topic gamedata.ResearchTopic
+	}{
+		{"飛彈基地", gamedata.TOPIC_ADVANCED_CONSTRUCTION},
+		{"地面砲台", gamedata.TOPIC_ASTRO_CONSTRUCTION},
+		{gamedata.StellarConverterName, gamedata.TOPIC_TEMPORAL_PHYSICS},
+		{"戰機基地", gamedata.TOPIC_ASTRO_ENGINEERING},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := NewDemoSession()
+			a := &s.AIPlayers[0]
+			a.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{tt.topic: true}
+			a.ColonyBuildings[0] = make(map[string]bool)
+			for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
+				if b.NameZH != tt.name {
+					a.ColonyBuildings[0][b.NameZH] = true
+				}
+			}
+			out := engine.EmpireOutput{Colonies: []engine.ColonyOutput{{NetIndustry: 2000}}}
+			pressure := originalAIStrategicPressureContext{known: true, incomingOtherFleetETA9: true}
+			build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1, pressure)
+			if !ok || build.Name != tt.name {
+				t.Fatalf("唯一固定防禦候選錯誤：build=%+v ok=%v built=%v", build, ok, a.ColonyBuildings[0])
+			}
+
+			before := retaliationAttackers(a.ColonyBuildings[0], a.Player, s.RuleProfile)
+			expected := retaliationAttackers(map[string]bool{tt.name: true}, a.Player, s.RuleProfile)
+			if len(expected) != 1 {
+				t.Fatalf("%s 單獨存在應產生一個固定防禦者，got %v", tt.name, expected)
+			}
+			a.ColonyBuilds = map[int]ColonyBuild{aiColonyBuildKey(a, 0): {Name: tt.name, Cost: 1}}
+			s.advanceAIColonyBuilds(0, out)
+			if !a.ColonyBuildings[0][tt.name] {
+				t.Fatalf("%s 完工未寫入建築 map", tt.name)
+			}
+			after := retaliationAttackers(a.ColonyBuildings[0], a.Player, s.RuleProfile)
+			if len(after) != len(before)+1 {
+				t.Fatalf("%s 完工後固定防禦者數=%d，want %d；before=%v after=%v",
+					tt.name, len(after), len(before)+1, before, after)
+			}
+			want := expected[0]
+			sameDefense := func(c combatant) bool {
+				return c.atk == want.atk && c.wmin == want.wmin && c.wmax == want.wmax && c.kind == want.kind
+			}
+			beforeCount, afterCount := 0, 0
+			for _, c := range before {
+				if sameDefense(c) {
+					beforeCount++
+				}
+			}
+			for _, c := range after {
+				if sameDefense(c) {
+					afterCount++
+				}
+			}
+			if afterCount != beforeCount+1 {
+				t.Fatalf("%s 完工後未新增對應反擊者：want=%+v before=%v after=%v", tt.name, want, before, after)
+			}
+		})
+	}
+}
+
 func TestAIOrbitalBaseCandidateCompletionReplacementAndConsumers(t *testing.T) {
 	tests := []struct {
 		name        string

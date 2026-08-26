@@ -76,10 +76,8 @@ type RuleProfile struct {
 	// space」)光束武器的 arc-cost 百分比。來源同上,CHANGELOG_150.TXT 1.50.7:1.3 地面砲台
 	// arc-cost 為 +0%(無懲罰),1.5 統一改為 +50%。
 	//
-	// ⚠ 現況(2026-07-11):AI 開局 homeworldBuildings() 沒有「地面砲台」這項建築(見
-	// session.go homeworldBuildings 註解),本欄位目前在 NewDemoSession 的自然對局流程走不到
-	// ——只有 retaliationAttackers 對「地面砲台」存在時才會讀取,供未來 AI/玩家真的建出地面
-	// 砲台後使用,不是遺漏,是誠實標註「已備妥但暫無呼叫端會觸發」。
+	// 玩家與 AI 的正常建造候選均可完成地面砲台；retaliationAttackers 在殖民地固定防禦
+	// 反擊時讀取本欄位。
 	GroundBatteryBeamArcCostPct int
 
 	// 經濟(#4,2026-07-11 補實作):建造「運輸艦隊」(Freighter Fleet)完工當下,套用進國庫的

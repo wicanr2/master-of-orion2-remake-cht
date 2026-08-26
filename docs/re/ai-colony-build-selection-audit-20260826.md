@@ -633,3 +633,33 @@ raw 40 的外交係數比兩個高階基地更高是原始 bytes 與共享尾端
 Battlestation 必須取代 Star Base，Star Fortress 必須取代兩者。指揮評等、掃描範圍與戰鬥
 衛星 consumer 已存在；衛星 hull space／精確武裝仍是另有揭露的近似，不能由本批 AI 計分
 證據升格為原版精確火力。
+
+## 第十八批：Missile Base／Ground Batteries／Stellar Converter／Fighter Garrison
+
+同一份正式 IDA Pro 9.4 非破壞性匯出顯示四棟固定殖民地防禦匯入共同尾端；raw 27 與
+raw 42 更直接共用 `loc_D04F2`。跳表原始值為：
+
+| raw ID | 建築 | entry bytes → target |
+|---:|---|---|
+| 26 | Missile Base | `0xCFFC6 c5040d00 → 0xD04C5` |
+| 27 | Ground Batteries | `0xCFFCA f2040d00 → 0xD04F2` |
+| 42 | Stellar Converter | `0xD0006 f2040d00 → 0xD04F2` |
+| 47 | Fighter Garrison | `0xD001A b3040d00 → 0xD04B3` |
+
+raw 26 在 `0xD04C5..0xD04F0`、raw 27／42 在 `0xD04F2..0xD050B`、raw 47 在
+`0xD04B3..0xD050B` 各自實作同一 priority／ETA9 gate；raw 47 只是以預先算好的
+`colonyIndex×7` 位移讀 `cache+5`，分支方向沒有不同。通過 gate 後四者都進
+`0xD050B..0xD053E`：
+
+```text
+pressure = 10×ETA9 + 4×treatyNear + 8×noPolicyNear + 16×warNear + 4×extended
+priorityGate && !incomingETA9 → 0
+score = pressure
+score != 0 時 score += [Ruthless]
+score += budgetFactor
+```
+
+其中 `cache+5`、四個 `system×49 + 1 + owner×6` 槽、`[Ruthless]` 與 `budgetFactor` 的
+寫入及 typed 對映已分別在第十五、第五批閉合。本批沒有新增未知欄位；跳表、立即數、共享
+尾端與 gate 均為**已證實**。四棟既有戰鬥 consumer 會建立固定防禦反擊者；其傷害／空間／
+戰機數量仍混合手冊與明示近似，不能由本批 AI 建造分數證據升格為精確戰鬥 parity。

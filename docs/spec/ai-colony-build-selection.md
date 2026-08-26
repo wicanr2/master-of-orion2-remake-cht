@@ -112,6 +112,11 @@
    `max(0,UsedCommandPoints+1-CommandPointsSupply)`；合併結果非零時加 `[Ruthless]`，最後加
    `budgetFactor`。完工後 Battlestation 必須移除 Star Base，Star Fortress 必須移除兩個
    低階基地；已有高階基地時不得把低階基地重新列為候選。
+   raw ID 26 Missile Base、raw ID 27 Ground Batteries、raw ID 42 Stellar Converter 與 raw
+   ID 47 Fighter Garrison 共用固定防禦公式。priority gate 成立且沒有 ETA=9 艦隊時為 0；
+   其餘 pressure 為 `10×ETA9+4×條約+8×無政策+16×戰爭+4×延伸`，pressure 非零時加
+   `[Ruthless]`，最後加 `budgetFactor`。四棟完工須進常駐建築 map，並由既有殖民地固定防禦
+   反擊 consumer 觀察到對應戰鬥者；該 consumer 的近似火力不得冒稱由本計分 RE 證實。
 5. 優先建築 gate 僅由已知科技 application、已建建築、殖民地礦產及 AI 生效政府組成：
    - Ultra Poor／Poor／Abundant 殖民地已知 Automated Factories 但未建 Automated Factory；或
    - Feudal／Confederation／Dictatorship／Imperium 已知但未建 Marine Barracks／Armor Barracks。
@@ -168,6 +173,8 @@
 - raw 8／40／41 要測 priority gate 與 ETA9 例外、兩組外交係數、指揮評等恰好足夠／不足、
   Ruthless 只在合併結果非零時加分，以及 budget factor。三棟須以正常候選走過完工替換鏈，
   並至少由指揮評等與掃描範圍 consumer 驗證；已有高階基地時不得候選或完工低階基地。
+- raw 26／27／42／47 要逐式測四個 reach count、ETA9、priority gate、Ruthless 與 budget
+  factor；四棟均須以正常唯一候選完工，且固定防禦反擊 consumer 必須各多出對應攻擊者。
 - 只完成多選主題但選了其他 application 時，不得觸發相應 Automated Factory／Barracks gate。
 - 精確分支與類別式 fallback 不可混稱同一證據等級。
 - 既有擴張測試以「建築＋造艦總投入」驗證新殖民地確實參與經濟，不再假設所有產出都是軍艦。

@@ -179,8 +179,7 @@ func originalColonyBuildingIDs(buildings map[string]bool) []int {
 //     hull space 固定 gamedata.MissileBaseSpace(300,確認值),配 defender 已解鎖的最佳
 //     missile 武器——missile 不吃 beam 的 arc-cost(見 SatelliteBeamSpaceWithArc 註解),
 //     直接用 WeaponSpaceByName 原始佔格算 fit。
-//   - 地面砲台(若存活——現行 AI 資料模型尚無此建築,見 RuleProfile.GroundBatteryBeamArcCostPct
-//     欄位註解,這裡是為完整性支援,非死碼:未來 AI/玩家真建出地面砲台時即可運作):
+//   - 地面砲台(若存活；玩家與 AI 的正常建造候選都可完成此建築):
 //     hull space 固定 gamedata.GroundBatterySpace(450,確認值),套用
 //     profile.GroundBatteryBeamArcCostPct 的 arc-cost,算法同軌道基地。
 //   - wmin/wmax 換算比照 fleetBombardDamage/mkPlayerCombatants 同款慣例(wmin=atk/2,

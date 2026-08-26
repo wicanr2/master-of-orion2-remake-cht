@@ -201,7 +201,8 @@ type originalAIBuildScoreContext struct {
 	usedCommandPoints             int
 }
 
-// originalAIStrategicPressureContext 是 raw 2／8／22／23／24／28／40／41 共用的 session-wide 暫態輸入；不進存檔。
+// originalAIStrategicPressureContext 是 raw 2／8／22／23／24／26／27／28／40／41／42／47
+// 共用的 session-wide 暫態輸入；不進存檔。
 // score 公式本身可精確測試，而跨帝國航程由 GameSession 在候選建立前一次投影。
 type originalAIStrategicPressureContext struct {
 	known                  bool
@@ -446,6 +447,23 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		ruthless = 1
 	}
 	switch rawID {
+	case 26, 27, 42, 47: // 0xD04B3..0xD0549：四種固定殖民地防禦
+		if !ctx.strategicPressureContextKnown {
+			return 0, false
+		}
+		if ctx.priorityGate && !ctx.incomingOtherFleetETA9 {
+			return 0, true
+		}
+		incoming := 0
+		if ctx.incomingOtherFleetETA9 {
+			incoming = 1
+		}
+		score := 10*incoming + 4*ctx.reachTreatyNear + 8*ctx.reachNoPolicyNear +
+			16*ctx.reachWarNear + 4*ctx.reachExtended
+		if score != 0 {
+			score += ruthless
+		}
+		return score + originalAIBudgetFactor(ctx.treasuryBefore, ctx.netBC), true
 	case 8, 40, 41: // 0xD01C6..0xD02BA：三層軌道基地
 		if !ctx.strategicPressureContextKnown {
 			return 0, false
