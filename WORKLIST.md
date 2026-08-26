@@ -376,6 +376,14 @@
   排序／篩選與殖民／前哨玩法未在文案切片中改動。證據與規格見
   [`docs/re/planet-list-screen-text-audit-20260827.md`](docs/re/planet-list-screen-text-audit-20260827.md) 與
   [`docs/spec/planet-list-screen-external-text.md`](docs/spec/planet-list-screen-external-text.md)。
+  新遊戲設定已完成第四十一個切片：固定 DIFFICULTY／GALAXY SIZE／PLAYERS／TECH LEVEL、
+  三個開關與 ACCEPT／CANCEL 原已由 `menu.json` overlay catalog 提供；本輪再把星系大小＋星數、
+  帝國數兩個動態模板及設定／主選單轉場移至 `ui.json`，`ngSettings` 到 `newGameSetup()` 的完整
+  source slice 已無 `tr`。五個數值列持續使用原版 100×20 selector 熱區衍生的 `ngStripTextRect`，
+  並以繁中／英文最長實際設定值驗證 12→11→10px 字高降級至少有一級能落入 16px 內容區；文字
+  與熱區中心一致。原版值圖、兩版背景索引、選項數與開局規則均未改動。證據與規格見
+  [`docs/re/newgame-setup-text-audit-20260827.md`](docs/re/newgame-setup-text-audit-20260827.md) 與
+  [`docs/spec/newgame-setup-external-text.md`](docs/spec/newgame-setup-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

@@ -4248,7 +4248,7 @@ var ngSettings = []ngSetting{
 		set: func(b *sceneBuilder, i int) { b.newGameSize = i },
 		label: func(b *sceneBuilder) string {
 			gs := shell.GalaxySizes[b.newGameSize]
-			return fmt.Sprintf(b.tr("%s %d 星", "%s  %d stars"),
+			return fmt.Sprintf(uiText(b.lang, "newgame.setting.galaxy_size"),
 				newGameGalaxySizeLabel(b.lang, b.newGameSize), gs.Stars)
 		},
 	},
@@ -4265,7 +4265,7 @@ var ngSettings = []ngSetting{
 		idx: func(b *sceneBuilder) int { return b.newGameEmpires - shell.MinEmpires },
 		set: func(b *sceneBuilder, i int) { b.newGameEmpires = shell.MinEmpires + i },
 		label: func(b *sceneBuilder) string {
-			return fmt.Sprintf(b.tr("%d 個帝國", "%d empires"), b.newGameEmpires)
+			return fmt.Sprintf(uiText(b.lang, "newgame.setting.empires"), b.newGameEmpires)
 		},
 	},
 	{
@@ -4378,7 +4378,7 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 				continue
 			}
 			st.set(b, (st.idx(b)+1)%st.n(b)) // 點一下換下一個選項(原版是左右箭頭,remake 循環)
-			return b.goTo(b.newGameSetup, "新遊戲設定")
+			return b.goTo(b.newGameSetup, uiText(b.lang, "newgame.transition.setup"))
 		}
 		if a == "accept" {
 			// 熱座每一席都要接管一個帝國。若玩家在多人畫面選的真人數
@@ -4398,7 +4398,7 @@ func (b *sceneBuilder) newGameSetup() (*overlayScreen, error) {
 			}
 			return &origTransition{next: sc}
 		}
-		return b.goTo(b.menu, "主選單")
+		return b.goTo(b.menu, uiText(b.lang, "newgame.transition.main_menu"))
 	}
 	// 標籤位置是**對美術量測**的:這些字烘在 newgame.lbx#28 背景圖裡,不是程式畫的,
 	// 反組譯裡沒有它們的座標——量圖就是這一項的一手來源。做法是掃出每個標籤的亮像素
