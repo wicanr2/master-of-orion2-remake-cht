@@ -3977,7 +3977,7 @@ func (b *sceneBuilder) battleResult() (*overlayScreen, error) {
 	hits, onAction := b.backHit(b.races, "種族關係")
 	// 標題以中文直接當 enKey(misc.json 查無 → fallback 回傳自身),擦底覆蓋烘進的 TURN SUMMARY。
 	overlays := []labelRect{
-		{88, 14, 204, 22, "戰鬥結果", 0},
+		{88, 14, 204, 22, "BATTLE RESULT", 0},
 		{158, 324, 64, 18, "CLOSE", 0},
 	}
 	s, err := loadOverlayScreen(b.res, "turnsum.lbx", 0, b.lang, b.fnt, "misc.json",
@@ -3992,24 +3992,23 @@ func (b *sceneBuilder) battleResult() (*overlayScreen, error) {
 		body := color.RGBA{214, 220, 235, 255}
 		win := color.RGBA{120, 220, 140, 255}
 		lose := color.RGBA{235, 120, 110, 255}
-		outcome, oc := b.tr("✗ 敗北", "✗ DEFEAT"), lose
+		outcome, oc := uiText(b.lang, "battle.result.defeat"), lose
 		if bt.PlayerWon {
-			outcome, oc = b.tr("★ 勝利!", "★ VICTORY!"), win
+			outcome, oc = uiText(b.lang, "battle.result.victory"), win
 		}
-		s.extras = []extraText{
-			{x: 40, y: 56, size: 15, text: fmt.Sprintf(b.tr("對「%s」開戰", "Battle against %s"), bt.Enemy), col: gold},
-			{x: 40, y: 84, size: 16, text: outcome, col: oc},
-			{x: 40, y: 110, size: 12, text: fmt.Sprintf(b.tr("我方 %d 艦 ／ 敵方 %d 艦", "You %d ships / enemy %d ships"),
-				bt.PlayerStart, bt.EnemyStart), col: body},
+		s.extras = battleResultExtras(b.fnt, battleResultTextRect(0),
+			fmt.Sprintf(uiText(b.lang, "battle.result.against"), battleResultEnemyText(b.lang, bt)), 15, gold)
+		s.extras = append(s.extras, battleResultExtras(b.fnt, battleResultTextRect(1), outcome, 16, oc)...)
+		s.extras = append(s.extras, battleResultExtras(b.fnt, battleResultTextRect(2),
+			fmt.Sprintf(uiText(b.lang, "battle.result.start"), bt.PlayerStart, bt.EnemyStart), 12, body)...)
+		for i, round := range bt.Log { // 逐回合 typed 戰報
+			if i >= 6 {
+				break
+			}
+			s.extras = append(s.extras, battleResultExtras(b.fnt, battleResultLogTextRect(i), battleRoundText(b.lang, round), 12, body)...)
 		}
-		yy := 134.0
-		for _, line := range bt.Log { // 逐回合戰報
-			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 12, text: line, col: body})
-			yy += 20
-		}
-		s.extras = append(s.extras, extraText{x: 40, y: yy + 4, size: 13,
-			text: fmt.Sprintf(b.tr("損失:我方 %d 艦 ／ 敵方 %d 艦", "Losses: you %d ships / enemy %d ships"),
-				bt.PlayerLosses, bt.EnemyLosses), col: gold})
+		s.extras = append(s.extras, battleResultExtras(b.fnt, battleResultLossTextRect(len(bt.Log)),
+			fmt.Sprintf(uiText(b.lang, "battle.result.losses"), bt.PlayerLosses, bt.EnemyLosses), 13, gold)...)
 	}
 	return s, nil
 }

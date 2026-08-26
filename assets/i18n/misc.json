@@ -530,6 +530,11 @@
     "note": "科技總覽按鈕"
   },
   {
+    "key": "BATTLE RESULT",
+    "value": "戰鬥結果",
+    "note": "艦隊戰果摘要標題"
+  },
+  {
     "key": "CLOSE",
     "value": "關閉",
     "note": "回合摘要"

@@ -1,7 +1,6 @@
 package shell
 
 import (
-	"fmt"
 	"math/rand"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
@@ -413,14 +412,14 @@ func (s *GameSession) AssaultAntares() (BattleResult, bool) {
 	}
 	pf := mkPlayer()
 
-	res := BattleResult{Enemy: "安塔蘭母星防禦艦隊", PlayerStart: len(pf), EnemyStart: len(df)}
+	res := BattleResult{EnemyKind: BattleEnemyAntaran, PlayerStart: len(pf), EnemyStart: len(df)}
 	// 種子與 ResolveBattle 用不同 offset(987654321 vs 12345),避免同一回合呼叫兩個戰鬥函式時
 	// 巧合共用同一亂數序列。
 	rng := rand.New(rand.NewSource(int64(s.Turn)*2654435761 + 987654321))
 	for round := 1; round <= 6 && len(pf) > 0 && len(df) > 0; round++ {
 		eDestroyed := battleVolley(pf, &df, rng)
 		pDestroyed := battleVolley(df, &pf, rng)
-		res.Log = append(res.Log, fmt.Sprintf("第 %d 回合:擊沉安塔蘭艦 %d ／ 我方損失 %d", round, eDestroyed, pDestroyed))
+		res.Log = append(res.Log, BattleRoundResult{Round: round, EnemyDestroyed: eDestroyed, PlayerDestroyed: pDestroyed})
 	}
 	res.PlayerLosses = res.PlayerStart - len(pf)
 	res.EnemyLosses = res.EnemyStart - len(df)

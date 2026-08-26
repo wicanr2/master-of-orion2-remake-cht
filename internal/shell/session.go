@@ -666,13 +666,27 @@ func shipStrength(class string) int {
 // BattleResult 是一場戰鬥的結果(逐回合解算)。
 type BattleResult struct {
 	Enemy                     string
+	EnemyKind                 BattleEnemyKind
 	PlayerStart, EnemyStart   int // 開戰時雙方艦數
 	PlayerWon                 bool
 	PlayerLosses, EnemyLosses int
-	Log                       []string // 逐回合戰報
+	Log                       []BattleRoundResult // 逐回合 typed 戰報
 	// CrewXPGained 是這一仗每艘倖存艦拿到的艦員經驗(手冊 p.121:被擊沉敵艦艦體等級
 	// 總和的一半,最少 1)。輸掉的仗是 0——手冊寫的是「Each battle **won**」。
 	CrewXPGained int
+}
+
+type BattleEnemyKind string
+
+const (
+	BattleEnemyDynamic BattleEnemyKind = ""
+	BattleEnemyAntaran BattleEnemyKind = "antaran_home_defense"
+)
+
+type BattleRoundResult struct {
+	Round           int
+	EnemyDestroyed  int
+	PlayerDestroyed int
 }
 
 // removeWeakestShip 移除戰力最弱的一艘艦。
@@ -1447,7 +1461,7 @@ func (s *GameSession) ResolveBattle(enemy string) BattleResult {
 	rng := rand.New(rand.NewSource(int64(s.Turn)*2654435761 + 12345)) // 依回合種子,可重現
 	for round := 1; round <= 6 && len(pf) > 0 && len(ef) > 0; round++ {
 		eDestroyed, pDestroyed := resolveQuickCombatRound(&pf, &ef, s.EffectiveGameSettings().ShipInitiative, rng)
-		res.Log = append(res.Log, fmt.Sprintf("第 %d 回合:擊沉敵艦 %d ／ 我方損失 %d", round, eDestroyed, pDestroyed))
+		res.Log = append(res.Log, BattleRoundResult{Round: round, EnemyDestroyed: eDestroyed, PlayerDestroyed: pDestroyed})
 	}
 	res.PlayerLosses = res.PlayerStart - len(pf)
 	res.EnemyLosses = res.EnemyStart - len(ef)

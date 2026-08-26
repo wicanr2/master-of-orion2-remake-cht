@@ -359,6 +359,15 @@
   原版逐字與動畫停留時間仍維持未知。證據與規格見
   [`docs/re/council-screen-text-audit-20260827.md`](docs/re/council-screen-text-audit-20260827.md) 與
   [`docs/spec/council-screen-external-text.md`](docs/spec/council-screen-external-text.md)。
+  艦隊戰果摘要已完成第三十九個切片：勝敗、敵方、開戰艦數、逐回合與總損失模板改由
+  `ui.json` 供應，面板標題／關閉字則沿用 `misc.json` 的 overlay catalog；`battleResult()` 不再
+  呼叫 `tr`。快速結算與安塔蘭終局原先保存的中文 `Log []string` 改為 typed
+  `BattleRoundResult` 純數值，安塔蘭固定敵方名亦改由 `BattleEnemyKind` 交給 UI 翻譯。
+  最多六列戰報、總損失及三列摘要各有不相交雙軸安全框，雙語長敵方名與最大測試數值均經
+  runtime 字型 containment 驗證。此畫面仍是借用 `TURNSUM.LBX#0` 的 remake adapter，未升格為
+  原版專用戰果畫面 parity。證據與規格見
+  [`docs/re/battle-result-screen-text-audit-20260827.md`](docs/re/battle-result-screen-text-audit-20260827.md) 與
+  [`docs/spec/battle-result-screen-external-text.md`](docs/spec/battle-result-screen-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見
