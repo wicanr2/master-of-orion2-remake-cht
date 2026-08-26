@@ -94,5 +94,419 @@
     "english": "START NET GAME",
     "value": "開始連線對局",
     "note": "等待其他玩家加入畫面的主機按鈕"
+  },
+  {
+    "key": "customrace.title",
+    "english": "CUSTOM RACE",
+    "value": "自訂種族",
+    "note": "自訂種族畫面標題"
+  },
+  {
+    "key": "customrace.picks_remaining",
+    "english": "Picks left %d / %d",
+    "value": "剩餘點數 %d / %d",
+    "note": "自訂種族剩餘點數"
+  },
+  {
+    "key": "customrace.name.empire",
+    "english": "Custom Empire",
+    "value": "自訂帝國",
+    "note": "自訂種族開局預設帝國名"
+  },
+  {
+    "key": "customrace.name.race",
+    "english": "Custom",
+    "value": "自訂種族",
+    "note": "自訂種族資料預設名"
+  },
+  {
+    "key": "customrace.button.cancel",
+    "english": "CANCEL",
+    "value": "取消",
+    "note": "自訂種族按鈕"
+  },
+  {
+    "key": "customrace.button.accept",
+    "english": "ACCEPT",
+    "value": "接受",
+    "note": "自訂種族按鈕"
+  },
+  {
+    "key": "customrace.category.population",
+    "english": "Population",
+    "value": "人口",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.category.farming",
+    "english": "Farming",
+    "value": "農業",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.category.industry",
+    "english": "Industry",
+    "value": "工業",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.category.science",
+    "english": "Science",
+    "value": "科學",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.category.money",
+    "english": "Money",
+    "value": "金錢",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.category.ship_attack",
+    "english": "Ship Attack",
+    "value": "艦船攻擊",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.category.ship_defense",
+    "english": "Ship Defense",
+    "value": "艦船防禦",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.category.ground_combat",
+    "english": "Ground Combat",
+    "value": "地面戰鬥",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.category.spying",
+    "english": "Spying",
+    "value": "間諜",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.category.governments",
+    "english": "Governments",
+    "value": "政體",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.growth.minus50",
+    "english": "-50% Growth",
+    "value": "-50% 成長",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.growth.plus50",
+    "english": "+50% Growth",
+    "value": "+50% 成長",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.growth.plus100",
+    "english": "+100% Growth",
+    "value": "+100% 成長",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.food.minus_half",
+    "english": "-1/2 Food",
+    "value": "-1/2 食物",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.food.plus1",
+    "english": "+1 Food",
+    "value": "+1 食物",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.food.plus2",
+    "english": "+2 Food",
+    "value": "+2 食物",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.production.minus1",
+    "english": "-1 Production",
+    "value": "-1 生產",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.production.plus1",
+    "english": "+1 Production",
+    "value": "+1 生產",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.production.plus2",
+    "english": "+2 Production",
+    "value": "+2 生產",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.research.minus1",
+    "english": "-1 Research",
+    "value": "-1 研究",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.research.plus1",
+    "english": "+1 Research",
+    "value": "+1 研究",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.research.plus2",
+    "english": "+2 Research",
+    "value": "+2 研究",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.bc.minus_half",
+    "english": "-0.5 BC",
+    "value": "-0.5 星幣",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.bc.plus_half",
+    "english": "+0.5 BC",
+    "value": "+0.5 星幣",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.bc.plus1",
+    "english": "+1.0 BC",
+    "value": "+1.0 星幣",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.attack.minus20",
+    "english": "-20",
+    "value": "-20",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.attack.plus20",
+    "english": "+20",
+    "value": "+20",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.attack.plus50",
+    "english": "+50",
+    "value": "+50",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.defense.minus20",
+    "english": "-20",
+    "value": "-20",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.defense.plus25",
+    "english": "+25",
+    "value": "+25",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.defense.plus50",
+    "english": "+50",
+    "value": "+50",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.ground.minus10",
+    "english": "-10",
+    "value": "-10",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.ground.plus10",
+    "english": "+10",
+    "value": "+10",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.ground.plus20",
+    "english": "+20",
+    "value": "+20",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.spying.minus10",
+    "english": "-10",
+    "value": "-10",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.spying.plus10",
+    "english": "+10",
+    "value": "+10",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.option.spying.plus20",
+    "english": "+20",
+    "value": "+20",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.government.feudal",
+    "english": "Feudal",
+    "value": "封建",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.government.dictatorship",
+    "english": "Dictatorship",
+    "value": "獨裁",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.government.democracy",
+    "english": "Democracy",
+    "value": "民主",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.government.unification",
+    "english": "Unification",
+    "value": "統一",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.low_g",
+    "english": "Low-G World",
+    "value": "低重力世界",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.high_g",
+    "english": "High-G World",
+    "value": "高重力世界",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.aquatic",
+    "english": "Aquatic",
+    "value": "水棲",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.subterranean",
+    "english": "Subterranean",
+    "value": "地底棲",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.large_homeworld",
+    "english": "Large Home World",
+    "value": "大型母星",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.rich_homeworld",
+    "english": "Rich Home World",
+    "value": "富礦母星",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.poor_homeworld",
+    "english": "Poor Home World",
+    "value": "貧礦母星",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.artifacts_world",
+    "english": "Artifacts World",
+    "value": "遺物世界",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.cybernetic",
+    "english": "Cybernetic",
+    "value": "半機械化",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.lithovore",
+    "english": "Lithovore",
+    "value": "食岩",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.repulsive",
+    "english": "Repulsive",
+    "value": "令人厭惡",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.charismatic",
+    "english": "Charismatic",
+    "value": "魅力非凡",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.uncreative",
+    "english": "Uncreative",
+    "value": "缺乏創造力",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.creative",
+    "english": "Creative",
+    "value": "富創造力",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.tolerant",
+    "english": "Tolerant",
+    "value": "適應力強",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.fantastic_traders",
+    "english": "Fantastic Traders",
+    "value": "卓越貿易者",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.telepathic",
+    "english": "Telepathic",
+    "value": "心靈感應",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.lucky",
+    "english": "Lucky",
+    "value": "幸運",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.omniscient",
+    "english": "Omniscient",
+    "value": "全知",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.stealthy_ships",
+    "english": "Stealthy Ships",
+    "value": "匿蹤艦船",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.trans_dimensional",
+    "english": "Trans Dimensional",
+    "value": "跨次元",
+    "note": "RACESTUF.LBX asset 0"
+  },
+  {
+    "key": "customrace.special.warlord",
+    "english": "Warlord",
+    "value": "軍閥",
+    "note": "RACESTUF.LBX asset 0"
   }
 ]

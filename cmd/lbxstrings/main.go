@@ -3,7 +3,7 @@
 //
 // 用法:
 //
-//	lbxstrings <file.lbx> [--asset N] [--cstr] [--tsv]
+//	lbxstrings [--asset N] [--cstr] [--tsv] <file.lbx>
 //	  --asset N  只 dump 第 N 個資產
 //	  --cstr     改用 C-string 格式解析
 //	  --tsv      輸出 TSV 三欄骨架(英文<TAB><TAB>),供翻譯
@@ -29,7 +29,7 @@ func main() {
 	tsv := flag.Bool("tsv", false, "輸出 TSV 骨架供翻譯")
 	flag.Parse()
 	if flag.NArg() < 1 {
-		fmt.Fprintln(os.Stderr, "用法: lbxstrings <file.lbx> [--asset N] [--cstr] [--tsv]")
+		fmt.Fprintln(os.Stderr, "用法: lbxstrings [--asset N] [--cstr] [--tsv] <file.lbx>")
 		os.Exit(2)
 	}
 	data, err := os.ReadFile(flag.Arg(0))

@@ -135,20 +135,9 @@
 出處:Feudal/Confederation 767–799 行;Dictatorship/Imperium 801–825 行;Democracy/Federation
 827–855 行;Unification/Galactic Unification 858–889 行(皆 `manual.txt`,約印刷頁 20–23)。
 
-**remake 實作範圍(2026-07-10,`shell.ApplyGovernment`)**:僅實作「已建模資源」的乘數——
-封建研究×½、統一食物/產能×1.5、民主研究×1.5(數值取自上表)。**其餘效果未模擬**(誠實標註,
-不自編):征服同化回合、間諜/防禦加成、造艦成本、首都陷落效應——因 remake 尚未建立這些系統。
-進階型態(Confederation/Imperium/Federation/Galactic Unification)未納入(自訂畫面只提供四種
-基礎政府;`moraleGovByIndex` 一律映射到對應基礎型)。
-
-**2026-07-11 追加:士氣(Morale)已接線**,不再是上面清單裡的「未模擬」項——`GameSession.Government`
-+ `shell.colonyMoralePercent` 依政府基礎值(封建/獨裁/統一無 Barracks -20%,民主 0,對照本表
-`govt_bonus` 交叉驗證數字)+ 已建士氣建築(全息模擬艙 +20%、歡樂穹頂 +30%)算出
-`ColonyState.MoralePercent`,由 `RunColonyTurn` 套用到食物/工業/研究產出。仍未模擬(誠實列出):
-Imperium 額外 +20%/Confederation-Feudal 差異(進階政府未納入,見上段)、首都陷落 Morale 懲罰
-(remake 無「首都被攻陷」狀態)、多種族懲罰(remake 不追蹤殖民地是否含未同化外族人口)、
-Virtual Reality Network(手冊定性為「成就」而非建築,remake 無成就追蹤系統)。詳見
-`internal/gamedata/morale.go`、`docs/tech/colony-buildings.md` §6.1 士氣列。
+本檔只維護原版 picks 與政府數值證據，不複製會過期的 remake 完成清單。現況以
+`WORKLIST.md` 活表與程式 consumer 為準；首都指定、失守士氣與重建鏈已另由
+`docs/re/capitol-state-audit-20260826.md` 閉合，不能再引用早期「remake 無首都狀態」的結論。
 
 ## 附錄:選用 mod「150 improved」(150i)的另一組點數(僅供參考,非預設值,勿直接採用)
 
@@ -171,20 +160,18 @@ Virtual Reality Network(手冊定性為「成就」而非建築,remake 無成就
 
 - **Normal-G World**:手冊沒有把它列成一個「可購買」選項,只在 Low-G/High-G 的描述裡提到「Normal-G」
   作為比較基準。判斷它是未選 Low-G/High-G 時的預設狀態,cost=0,但這是推論,非手冊明文列出的選項列。
-- **各級距的畫面顯示名稱**(例如遊戲畫面上 Farming 三級可能顯示成"Poor / Good / Great"或其他字眼):
-  手冊正文與 `config.json` 都只用 `growth1/2/3`、`farming1/2/3`…這種欄位序號,**沒有列出畫面上實際顯示的
-  文字標籤**。上表「差/佳/優」是我依數值高低給的**建議中譯分級名**,不是手冊或設定檔裡的原文字串。
-  若要跟原版畫面像素/文字對齊,需要另外找遊戲截圖或字串資源檔核對实際 UI 標籤文字。
+- **畫面顯示名稱已解**：正版 `RACESTUF.LBX` asset 0 直接保存 `Population`、
+  `-50% Growth`、`-1/2 Food`、`Ship Defense`、`-20/+25/+50` 等完整順序；不存在泛用
+  `Poor/Good/Great`。輸入雜湊與完整 remake 對映見
+  `docs/re/custom-race-ui-text-audit-20260826.md`。
 
 ## 交給你裁決的不確定點
 
 1. **1.3 vs 1.5 base 是否完全相同**:目前只能證明「1.5 base(未開 150i mod)」= 本檔主表數字;
    找不到反例證明 1.3 原版數字不同,但也沒有直接證據證明兩者完全一致。若你手邊有原版 1.3 執行檔或
    社群已核實的 1.3 wiki 點數表,建議再對一次。
-2. **中譯分級名稱**(差/佳/優)是我建議的譯法,非官方字串,你可能想換成更貼近原版 UI 的字眼
-   (例如「劣等/普通/優良」或直接沿用英文級距數字)。
-3. **150i mod 的點數是否要支援**:附錄列出的 150i 數字只是抄錄存查,专案要不要做「選用平衡模式」
+2. **150i mod 的點數是否要支援**:附錄列出的 150i 數字只是抄錄存查,專案要不要做「選用平衡模式」
    需要你決定,目前 WORKLIST 沒有這項。
-4. **Score Multiplier 公式**:手冊只給 3 個數據點(0/5/10 剩餘 picks → 100%/150%/200%),隱含
+3. **Score Multiplier 公式**:手冊只給 3 個數據點(0/5/10 剩餘 picks → 100%/150%/200%),隱含
    「每剩 1 pick +10%」的線性關係,但手冊沒有明文寫出這條公式,也沒說負值 picks(倒扣後總花費超過
    10)時 Score 會怎麼算,需要你確認是否要以此線性假設實作,或者只在有剩餘 picks 時套用。

@@ -39,6 +39,11 @@ func TestCommittedJSONsLoad(t *testing.T) {
 		}
 		for _, entry := range entries {
 			en, zh := entry.Key, entry.Value
+			// 原版位置式 catalog 以英文原文當 key；remake 自繪 UI 以語意 key 搭配
+			// 外部 english。兩種 schema 都必須比較真正的英文玩家文案。
+			if entry.English != "" {
+				en = entry.English
+			}
 			if strings.Count(en, "%") != strings.Count(zh, "%") {
 				t.Errorf("%s:模板佔位符數不一致 %q → %q", filepath.Base(fp), en, zh)
 			}

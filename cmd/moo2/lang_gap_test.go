@@ -28,14 +28,14 @@ import (
 // 補完一批就把數字改小;要往上調代表英文模式退步了,先問為什麼。
 //
 // 2026-08-07 降到 16。**剩下這 16 條全是偵測器分不出來的東西,不是真缺口**:
-//   - `shipClassZH` / `designHull` / `customrace` 的「政府型態」:那是**查表 key**,
-//     不是顯示字(換成英文 shell 那邊直接查不到)。
+//   - `shipClassZH` / `designHull` 的中文值是**查表 key**，不是顯示字
+//     (換成英文 shell 那邊直接查不到)。customrace 已改用外部語意鍵，不再列入此例外。
 //   - `colonyview` / `diploview` / `raceinfo` / `menu` / `planets` / `galaxy` 的
 //     視窗標題與示範資料:那幾支是 dev-only 的單畫面檢視模式,不在主遊戲流程裡。
 //   - `multiplayer` 的「熱座 %d 人」:英文模式在它之前就 `continue` 讓路了,跑不到。
 //
-// 換句話說,真正的 UI 缺口目前是 0——但別把這句當「英文模式做完了」:
-// 引擎層(internal/)仍會回中文字串,那是另一輪,見 docs/HONEST-STATUS.md。
+// 這只表示「未經 tr 包覆的中文 literal」沒有超過棘輪，不能證明玩家文案已外部化；
+// `tr(中文,英文)` 仍是 WORKLIST 明列的遷移來源，另由逐檔靜態測試守住已完成畫面。
 const langGapCeiling = 16
 
 // 不算缺口的呼叫:場景名(只進 log)、印到 stderr 的訊息、error 值。
