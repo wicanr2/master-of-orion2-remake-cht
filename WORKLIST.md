@@ -757,6 +757,11 @@
   Garrison 亦已由共享 `0xD050B..0xD0549` 尾端閉合；四棟現依 ETA9、四槽星系壓力、
   Ruthless、priority gate 與 budget factor 精確計分。正常唯一候選均可完工並新增對應固定
   防禦反擊者；反擊者本身的 space／武器／戰機火力仍保留手冊＋近似證據等級。
+  raw 45 Warp Field Interdictor 已由 `0xD05BD..0xD0614` 與星系 bit-mask writer
+  `sub_E5296 @ 0xE5296..0xE53CD` 閉合：同星系已有己方干擾器時只保留 budget factor 一半，
+  否則依 ETA9 與 treaty／no-policy／war／extended 四槽使用 `5／2／3／4／1` 係數，非零再加
+  Ruthless。正常候選、完工與三秒差距航線降速 consumer 已抽測；`route.go` 不再內嵌中文建築名，
+  改以 raw 45 對照資料表。
   raw 1 Alien Management Center、raw 11 Colony Base、raw 14 Dimensional Portal、raw 18
   與 raw 48 已證實直接走共同零分尾端；一般建築表中的 raw 1／14 已接 exact 零分，正常
   候選只剩兩者任一時不會被類別代理誤選。raw 9 Capitol 亦已閉合：remake 會保存每個帝國
@@ -765,7 +770,7 @@
   人口最高殖民地（同人口取較低 colony index），新擁有者沒有指定行星時接手該行星；完工後
   清除士氣懲罰。狀態已接玩家、AI、熱座與 JSON 往返，玩家可見名稱由
   `assets/i18n/tech.json` 提供，不內嵌於 Go。
-  其餘分數區域、
+  raw 3 Artemis System Net 等其餘分數區域、
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
   state machine 亦待閉合。見
   [`docs/re/ai-difficulty-economy-audit-20260826.md`](docs/re/ai-difficulty-economy-audit-20260826.md) 與

@@ -127,13 +127,14 @@ func TestRouteCrossesNebulaWithoutProbe(t *testing.T) {
 
 // TestRouteInterdictedSlowsFleet 釘住 Warp Field Interdictor:敵方星系 3 秒差距內的航線降速。
 func TestRouteInterdictedSlowsFleet(t *testing.T) {
+	interdictor := testBuildingByRawID(t, 45)
 	w, h := gamedata.GalaxyParsecSpan(1)
 	s := routeTestSession([][2]float64{{0, 0}, {12 / w, 0}})
 	// 敵星在航線中段偏北 2 秒差距,蓋了干擾器。
 	s.Stars[3] = Star{X: 6 / w, Y: 2 / h, Owner: 2, Wormhole: -1}
 	s.AIPlayers = []AIOpponent{{
 		ColonyStars:     []int{3},
-		ColonyBuildings: []map[string]bool{{interdictorBuildingName: true}},
+		ColonyBuildings: []map[string]bool{{interdictor.NameZH: true}},
 	}}
 	if !s.RouteInterdicted(0, 1) {
 		t.Error("敵星離航線 2 秒差距且有干擾器,應判定為受干擾")
@@ -154,12 +155,13 @@ func TestRouteInterdictedSlowsFleet(t *testing.T) {
 // TestInterdictorNotExemptedByNavigator:手冊那句豁免只講「nebulae and black holes」,
 // 干擾場是人造的,不在豁免範圍。
 func TestInterdictorNotExemptedByNavigator(t *testing.T) {
+	interdictor := testBuildingByRawID(t, 45)
 	w, h := gamedata.GalaxyParsecSpan(1)
 	s := routeTestSession([][2]float64{{0, 0}, {12 / w, 0}})
 	s.Stars[3] = Star{X: 6 / w, Y: 2 / h, Owner: 2, Wormhole: -1}
 	s.AIPlayers = []AIOpponent{{
 		ColonyStars:     []int{3},
-		ColonyBuildings: []map[string]bool{{interdictorBuildingName: true}},
+		ColonyBuildings: []map[string]bool{{interdictor.NameZH: true}},
 	}}
 	s.Leaders = append(s.Leaders, Leader{Name: "領航員", Skill: navigatorSkillLabel, Ship: true, Tier: 1})
 	s.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{gamedata.TOPIC_NUCLEAR_FISSION: true}
@@ -171,24 +173,15 @@ func TestInterdictorNotExemptedByNavigator(t *testing.T) {
 	}
 }
 
-// TestInterdictorBuildingNameMatchesTable 防止譯名漂移。
-//
-// `ColonyBuildings` 是以中文名當 key 的 map,名字對不上就是**靜靜失效**
-// (查不到 key = 沒有干擾場),不會有任何錯誤訊息。
-func TestInterdictorBuildingNameMatchesTable(t *testing.T) {
-	found := ""
+func testBuildingByRawID(t *testing.T, rawID int) gamedata.Building {
+	t.Helper()
 	for _, b := range gamedata.Buildings {
-		if b.NameEN == "Warp Field Interdictor" {
-			found = b.NameZH
+		if id, ok := gamedata.OriginalBuildingIDForName(b.NameZH); ok && id == rawID {
+			return b
 		}
 	}
-	if found == "" {
-		t.Fatal("gamedata.Buildings 裡找不到 Warp Field Interdictor")
-	}
-	if found != interdictorBuildingName {
-		t.Errorf("建築表的中文名是 %q,route.go 用的是 %q —— 對不上會靜靜失效",
-			found, interdictorBuildingName)
-	}
+	t.Fatalf("建築表找不到 raw ID %d", rawID)
+	return gamedata.Building{}
 }
 
 // TestSendFleetRefusesBlackHoleRoute:黑洞擋路時派遣要被拒絕,而不是默默算個 ETA。

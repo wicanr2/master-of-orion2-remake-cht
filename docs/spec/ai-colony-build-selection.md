@@ -195,3 +195,9 @@ raw 9 Capitol 的原版規格已證實為「非統一政體且目前殖民地行
 - 正常 AI 候選只剩 raw 1 或 raw 14 時，`chooseAIColonyBuilding` 回傳 `ok=false`。
 - 這些測試證明 remake 遵循已證實公式；raw 9 另由可存檔 Capitol 指定行星、失守重建
   狀態與完工 consumer 的整合測試驗證，詳見 `docs/spec/capitol-state.md`。
+
+## raw 45 曲速場干擾器
+
+raw 45 不得再落入 Defense 類別 fallback；精確公式、未知輸入處理與垂直驗收以
+`docs/spec/ai-warp-interdictor-build-score.md` 為準。同星系已建狀態由逐殖民地建築 map
+依 raw ID 投影，不另存中文名稱常數或第二份效果旗標。

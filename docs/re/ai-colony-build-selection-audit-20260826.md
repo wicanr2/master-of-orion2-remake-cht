@@ -663,6 +663,33 @@ score += budgetFactor
 寫入及 typed 對映已分別在第十五、第五批閉合。本批沒有新增未知欄位；跳表、立即數、共享
 尾端與 gate 均為**已證實**。四棟既有戰鬥 consumer 會建立固定防禦反擊者；其傷害／空間／
 戰機數量仍混合手冊與明示近似，不能由本批 AI 建造分數證據升格為精確戰鬥 parity。
+## raw 45：曲速場干擾器
+
+2026-08-27 以相同輸入、資料庫、工具與位址基準重跑
+`tools/ida/audit_ai_colony_build.py`。raw 45 的跳表 entry
+`0xD0012 bd050d00` 指向 `0xD05BD`；精簡非破壞性證據匯出為
+`docs/re/evidence/ai-warp-interdictor-score-ida.json`。
+
+### 已證實的計分分支
+
+`0xD05BD..0xD0614` 的控制流為：
+
+1. priority gate 成立且 `cache+5`（九回合內其他艦隊抵達）為零時，直接零分。
+2. `systemRecord[systemIndex*0x71+0x39]` 右移目前 player index 後測 bit 0；bit 已設時
+   不再加入戰略壓力，只給 `floor(budgetFactor/2)`。
+3. bit 未設時，壓力為
+   `5×ETA9 + 2×treatyNear + 3×noPolicyNear + 4×warNear + extended`；壓力非零才再加
+   `[Ruthless]`，最後加 `floor(budgetFactor/2)`。
+
+`sub_E5296 @ 0xE5296..0xE53CD` 閉合 offset `+0x39` 的寫入語意：它逐星系掃最多五顆
+行星，從 colony building base `+0x136` 檢查 `+0x2D`，即 raw building 45；已建時以
+`1 << ownerPlayer` 寫入 system record `+0x39`。因此該 bit 是「此星系已有該玩家的 raw 45」，
+不是一般外交旗標。跳表、立即數、building offset 與 mask writer 均為**已證實**。
+
+remake 已有四種航程／外交壓力、ETA9、Ruthless、budget factor、逐殖民地建築與星系索引；
+把它們投影成原版 cache 的逐格值屬**強推論**，因原版全局 cache 更新順序與 PRNG 位置尚未
+逐位元重建。曲速場完工後的三秒差距航線降速 consumer 已由手冊與正常 route path 接線。
+
 ## raw 1／9／11／14／18／48：零分組與 Capitol 行星索引
 
 ### 證據來源

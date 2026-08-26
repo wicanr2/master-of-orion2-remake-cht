@@ -194,6 +194,8 @@ type originalAIBuildScoreContext struct {
 	reachWarNear                  int
 	reachExtended                 int
 	incomingOtherFleetETA9        bool
+	interdictorStateKnown         bool
+	interdictorInSystem           bool
 	hostileAlienPopulation        bool
 	armorBarracksBuilt            bool
 	marineBarracksBuilt           bool
@@ -203,7 +205,7 @@ type originalAIBuildScoreContext struct {
 	capitolStateKnown             bool
 }
 
-// originalAIStrategicPressureContext 是 raw 2／8／22／23／24／26／27／28／40／41／42／47
+// originalAIStrategicPressureContext 是 raw 2／8／22／23／24／26／27／28／40／41／42／45／47
 // 共用的 session-wide 暫態輸入；不進存檔。
 // score 公式本身可精確測試，而跨帝國航程由 GameSession 在候選建立前一次投影。
 type originalAIStrategicPressureContext struct {
@@ -213,7 +215,21 @@ type originalAIStrategicPressureContext struct {
 	reachWarNear           int
 	reachExtended          int
 	incomingOtherFleetETA9 bool
+	interdictorStateKnown  bool
+	interdictorInSystem    bool
 	hostileAlienPopulation bool
+}
+
+func builtMapHasOriginalBuildingID(built map[string]bool, rawID int) bool {
+	for name, present := range built {
+		if !present {
+			continue
+		}
+		if id, ok := gamedata.OriginalBuildingIDForName(name); ok && id == rawID {
+			return true
+		}
+	}
+	return false
 }
 
 // originalAIFuelRangeParsecs 對映 sub_10034D 與原始表 0x17FFDE..0x18001：
@@ -282,6 +298,7 @@ func (s *GameSession) originalAIPolicyBetween(ownerAI, sourceSlot int) (gamedata
 		}
 		return s.AIPolicies[ownerAI][i], len(other.Colonies) > 0, true
 	}
+
 	return gamedata.DIPLO_NONE, false, false
 }
 
@@ -301,6 +318,15 @@ func (s *GameSession) originalAIStrategicPressureContext(aiIndex, colonyIndex in
 	target := owner.ColonyStars[colonyIndex]
 	if target < 0 || target >= len(s.Stars) {
 		return ctx
+	}
+	ctx.interdictorStateKnown = len(owner.ColonyBuildings) >= len(owner.Colonies)
+	if ctx.interdictorStateKnown {
+		for i, star := range owner.ColonyStars {
+			if star == target && i < len(owner.ColonyBuildings) && builtMapHasOriginalBuildingID(owner.ColonyBuildings[i], 45) {
+				ctx.interdictorInSystem = true
+				break
+			}
+		}
 	}
 
 	classify := func(stars []int, ps engine.PlayerState, policy gamedata.ForeignPolicy) bool {
@@ -462,6 +488,27 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		return 0, true
 	case 1, 14: // raw 1／14 跳表直接進 0xD0417 的共同零分尾端
 		return 0, true
+	case 45: // 0xD05BD..0xD0614：Warp Field Interdictor
+		if !ctx.strategicPressureContextKnown || !ctx.interdictorStateKnown {
+			return 0, false
+		}
+		if ctx.priorityGate && !ctx.incomingOtherFleetETA9 {
+			return 0, true
+		}
+		budget := originalAIBudgetFactor(ctx.treasuryBefore, ctx.netBC) / 2
+		if ctx.interdictorInSystem {
+			return budget, true
+		}
+		incoming := 0
+		if ctx.incomingOtherFleetETA9 {
+			incoming = 1
+		}
+		pressure := 5*incoming + 2*ctx.reachTreatyNear + 3*ctx.reachNoPolicyNear +
+			4*ctx.reachWarNear + ctx.reachExtended
+		if pressure != 0 {
+			pressure += ruthless
+		}
+		return pressure + budget, true
 	case 26, 27, 42, 47: // 0xD04B3..0xD0549：四種固定殖民地防禦
 		if !ctx.strategicPressureContextKnown {
 			return 0, false
@@ -869,6 +916,8 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 		ctx.reachWarNear = pressure[0].reachWarNear
 		ctx.reachExtended = pressure[0].reachExtended
 		ctx.incomingOtherFleetETA9 = pressure[0].incomingOtherFleetETA9
+		ctx.interdictorStateKnown = pressure[0].interdictorStateKnown
+		ctx.interdictorInSystem = pressure[0].interdictorInSystem
 		ctx.hostileAlienPopulation = pressure[0].hostileAlienPopulation
 	}
 	ctx.colonyFoodHalf, ctx.colonyFoodHalfKnown = originalAIColonyFoodHalf(a.Colonies[colony], built, known)

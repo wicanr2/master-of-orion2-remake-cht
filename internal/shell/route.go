@@ -140,20 +140,13 @@ func (s *GameSession) starHasInterdictor(starIdx int) bool {
 			if st != starIdx || i >= len(a.ColonyBuildings) {
 				continue
 			}
-			if a.ColonyBuildings[i] != nil && a.ColonyBuildings[i][interdictorBuildingName] {
+			if builtMapHasOriginalBuildingID(a.ColonyBuildings[i], 45) {
 				return true
 			}
 		}
 	}
 	return false
 }
-
-// interdictorBuildingName 是曲速力場干擾器的中文建築名。
-//
-// ⚠ `ColonyBuildings` 是以**中文名**當 key 的 map,所以這裡只能寫死字串。
-// `TestInterdictorBuildingNameMatchesTable` 用英文名回查 `gamedata.Buildings` 核對,
-// 避免哪天譯名改了這裡靜靜失效(找不到 key 就是「沒有干擾場」,不會報錯)。
-const interdictorBuildingName = "曲速力場干擾器"
 
 // routeNebulaSamples 決定沿線取樣點數:每秒差距 4 點,至少 8 點。
 //

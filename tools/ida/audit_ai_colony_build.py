@@ -61,6 +61,7 @@ ROOTS = {
     "raw_Recompute_Player_Economy": 0xE2710,
     "raw_Do_Colony_Calculations": 0xE2B31,
     "raw_Apply_Player_Economy": 0xE4F49,
+    "raw_Recompute_System_Flags": 0xE5296,
     "raw_Integer_Sqrt": 0x134C92,
     "raw_Recompute_Player_Fuel_Range": 0x10034D,
     "raw_Record_19306C_Flag_Writer": 0xF83D8,

@@ -1,0 +1,37 @@
+{
+  "schema": "moo2.ida.re-evidence.v1",
+  "mutation": "none",
+  "tool": {"name": "IDA Pro", "version": "9.4"},
+  "input": {
+    "file": "Orion2.exe",
+    "source_sha256": "7ae2ac2e5904ca330009af2827279d889906b0b9b7a8854c38eb707a56e955b5",
+    "database_sha256": "4a01791fcf877ed87a740a54748694ab34a02675e3117dac052aeaa3f883944e"
+  },
+  "address_basis": "IDA linear; DOS/4GW LE image",
+  "raw_locations": {
+    "score_function": "sub_D0036 @ 0xD0036",
+    "raw_45_jump_entry": "0xD0012: bd050d00 -> 0xD05BD",
+    "raw_45_branch": "0xD05BD..0xD0614",
+    "system_flag_writer": "sub_E5296 @ 0xE5296..0xE53CD"
+  },
+  "instructions": [
+    {"ea":"0xD05BD","bytes":"84e4","text":"test ah, ah","semantic":"priority gate"},
+    {"ea":"0xD05C9","bytes":"80780500","text":"cmp byte ptr [eax+5], 0","semantic":"incoming ETA=9 cache"},
+    {"ea":"0xD05DD","bytes":"0fb6440139","text":"movzx eax, byte ptr [ecx+eax+39h]","semantic":"system player bit mask"},
+    {"ea":"0xD05E5","bytes":"d3f8","text":"sar eax, cl","semantic":"select current player bit"},
+    {"ea":"0xD05FA","bytes":"8d1c80","text":"lea ebx, [eax+eax*4]","semantic":"5 * incoming ETA9"},
+    {"ea":"0xD0600","bytes":"01c0","text":"add eax, eax","semantic":"2 * treaty-near"},
+    {"ea":"0xD0608","bytes":"8d0440","text":"lea eax, [eax+eax*2]","semantic":"3 * no-policy-near"},
+    {"ea":"0xD0611","bytes":"c1e002","text":"shl eax, 2","semantic":"4 * war-near"},
+    {"ea":"0xD05AD","bytes":"035de0","text":"add ebx, [ebp+var_20]","semantic":"add Ruthless only when pressure is nonzero"},
+    {"ea":"0xD05B6","bytes":"d1f8","text":"sar eax, 1","semantic":"budget factor divided by two"},
+    {"ea":"0xE5318","bytes":"807a2d00","text":"cmp byte ptr [edx+2Dh], 0","semantic":"building flag raw 45"},
+    {"ea":"0xE531E","bytes":"085839","text":"or [eax+39h], bl","semantic":"set owning player bit in system mask"}
+  ],
+  "confidence": {
+    "formula_and_raw45_flag": "confirmed",
+    "typed_remake_projection_of_system_pressure": "strong inference",
+    "global_prng_position": "unknown"
+  },
+  "source": "tools/ida/audit_ai_colony_build.py"
+}
