@@ -235,6 +235,21 @@
   現代轉接，不升格為原版 IPX parity；證據與規格見
   [`docs/re/multiplayer-setup-player-text-audit-20260827.md`](docs/re/multiplayer-setup-player-text-audit-20260827.md) 與
   [`docs/tech/multiplayer-setup-external-text-spec.md`](docs/tech/multiplayer-setup-external-text-spec.md)。
+  區網對局選擇已完成第二十五個切片：標題、空清單兩列、直接位址、取消、兩種連線錯誤及
+  三個畫廊示範對局名均由 `ui.json` 供應，`choosemultinetgame.go` 不再內嵌玩家文案或呼叫
+  `tr`。十列各自拆成名稱／位址／人數三個不相交的雙軸安全框；標題、空清單、按鈕與訊息列
+  亦改走安全框。英文有正版 `MULTIGM.LBX#41` 時保留 `JOIN NETWORK GAME SETUP` 烘字，
+  繁中與缺 panel fallback 才重繪。IDA Pro 9.4 證實 `sub_F0C8E @ 0xF0C8E..0xF0E17`
+  外層、`sub_F40D3 @ 0xF40D3..0xF41AD` loader、
+  `sub_EFF87 @ 0xEFF87..0xF009A` field builder 與
+  `sub_F1AF4 @ 0xF1AF4..0xF1CE6` draw；面板、十列、按鈕與選中脈動的立即數均可回查。
+  `sub_F5777 @ 0xF5777..0xF5883` 另證實名稱上限 8 與逐一 `strcmp` 重名檢查；舊註解所稱
+  remake 尚無名稱輸入框已刪除，現行主機流程早已用 `inputBox` 與 `netplay.GameNameMax=8` 接入。
+  UDP discovery 與直接 TCP 位址仍明標 IPX 的現代轉接，不冒稱原版協定內部。中英文畫廊各
+  35/35，兩種 `33_netgames.png` 目視確認無標題重繪錯誤、欄位重疊、裁切或按鈕偏心；證據與
+  規格見
+  [`docs/re/choose-multi-net-game-player-text-audit-20260827.md`](docs/re/choose-multi-net-game-player-text-audit-20260827.md) 與
+  [`docs/tech/choose-multi-net-game-external-text-spec.md`](docs/tech/choose-multi-net-game-external-text-spec.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與

@@ -6,6 +6,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/netplay"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
@@ -61,9 +62,8 @@ import (
 //
 // ============ 誠實留白 ============
 //
-// 原版可以在這張畫面**改對局名稱**(`Change_MP_Game_Name_` @ 0xF5777,長度上限 8、
-// 且要與既有對局不同名)。remake 還沒有文字輸入框,所以名稱目前取玩家名的前 8 字元。
-// 上限與唯一性的規則已經記在 `netplay.GameNameMax`,做輸入框時直接套。
+// 原版 `Change_MP_Game_Name_` @ 0xF5777 的長度上限為 8，且逐一檢查既有對局避免重名。
+// remake 主機流程已用 inputBox + netplay.GameNameMax=8 接入名稱輸入；這張清單只負責選擇／加入。
 
 const (
 	cmngPanelAsset = 41 // 479×384
@@ -119,6 +119,57 @@ func cmngRowRect(winX, winY, i int) (x, y, w, h int) {
 	return x1, y1, (winX + cmngRowX2) - x1, cmngRowH
 }
 
+func cmngTitleTextRect(winX, winY int) textSafeRect {
+	return textSafeRect{x: winX + 86, y: winY + 26, w: 308, h: 26,
+		insetX: 4, insetY: 2, lineH: 22}
+}
+
+func cmngRowNameTextRect(winX, winY, i int) textSafeRect {
+	x, y, _, h := cmngRowRect(winX, winY, i)
+	return textSafeRect{x: x + cmngTextDX, y: y, w: 110, h: h, insetX: 1, insetY: 2, lineH: h - 4}
+}
+
+func cmngRowAddressTextRect(winX, winY, i int) textSafeRect {
+	x, y, w, h := cmngRowRect(winX, winY, i)
+	return textSafeRect{x: x + cmngTextDX + 120, y: y, w: w - cmngTextDX - 120 - 48, h: h,
+		insetX: 1, insetY: 3, lineH: h - 6}
+}
+
+func cmngRowPlayersTextRect(winX, winY, i int) textSafeRect {
+	x, y, w, h := cmngRowRect(winX, winY, i)
+	return textSafeRect{x: x + w - 44, y: y, w: 42, h: h, insetX: 1, insetY: 3, lineH: h - 6}
+}
+
+func cmngEmptyTitleTextRect(winX, winY int) textSafeRect {
+	return textSafeRect{x: winX + 20, y: winY + cmngRowFirst + 28, w: cmngPanelW - 40, h: 20,
+		insetX: 2, insetY: 1, lineH: 18}
+}
+
+func cmngEmptyHintTextRect(winX, winY int) textSafeRect {
+	return textSafeRect{x: winX + 20, y: winY + cmngRowFirst + 50, w: cmngPanelW - 40, h: 20,
+		insetX: 2, insetY: 2, lineH: 16}
+}
+
+func cmngDirectTextRect(winX, winY int) textSafeRect {
+	x, y, w, h := cmngDirectRect(winX, winY)
+	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 5, insetY: 2, lineH: h - 4}
+}
+
+func cmngCancelRect(winX, winY int) (x, y, w, h int) {
+	return winX + cmngBtnX - 2, winY + cmngBtnY - 4, cmngBtnW, cmngBtnH
+}
+
+func cmngCancelTextRect(winX, winY int) textSafeRect {
+	x, y, w, h := cmngCancelRect(winX, winY)
+	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 5, insetY: 2, lineH: h - 4}
+}
+
+func cmngMessageTextRect(winX, winY int) textSafeRect {
+	_, by, _, _ := cmngCancelRect(winX, winY)
+	return textSafeRect{x: winX + 12, y: by - 38, w: cmngPanelW - 24, h: 22,
+		insetX: 2, insetY: 2, lineH: 18}
+}
+
 // cmngTextTop 回傳第 i 列文字的**上緣** y(字在 22 px 的列裡垂直置中)。
 //
 // glyphH 是實際字高;原版拿 `sub_122259` 問字型要,remake 傳進來。
@@ -154,9 +205,9 @@ func (b *sceneBuilder) chooseMultiNetGame(browser *netplay.Browser) *chooseMulti
 func (b *sceneBuilder) chooseMultiNetGameDemo() *chooseMultiNetGameScreen {
 	s := b.chooseMultiNetGame(nil)
 	s.games = []netplay.Game{
-		{Name: "ORION", Addr: "192.168.1.20:24501", Players: 2, Max: 8},
-		{Name: "SAKKRA", Addr: "192.168.1.31:24501", Players: 1, Max: 4},
-		{Name: "ANTARES", Addr: "192.168.1.44:24501", Players: 5, Max: 6},
+		{Name: uiText(b.lang, "netgames.demo.orion"), Addr: "192.168.1.20:24501", Players: 2, Max: 8},
+		{Name: uiText(b.lang, "netgames.demo.sakkra"), Addr: "192.168.1.31:24501", Players: 1, Max: 4},
+		{Name: uiText(b.lang, "netgames.demo.antares"), Addr: "192.168.1.44:24501", Players: 5, Max: 6},
 	}
 	s.sel = 0
 	return s
@@ -179,7 +230,7 @@ func (s *chooseMultiNetGameScreen) update(in shell.InputState) *origTransition {
 				s.closeBrowser()
 				return &origTransition{next: sc}
 			}
-			s.msg = s.b.tr("連不上這場對局(主機可能已關)", "Could not connect (host may be gone)")
+			s.msg = uiText(s.b.lang, "netgames.error.selected_game")
 			return nil
 		}
 	}
@@ -193,7 +244,7 @@ func (s *chooseMultiNetGameScreen) update(in shell.InputState) *origTransition {
 				}
 				sc, err := s.b.joinNetGame(netplay.Game{Name: "direct", Addr: addr})
 				if err != nil {
-					s.msg = s.b.tr("連不上 ", "Could not connect to ") + addr
+					s.msg = fmt.Sprintf(uiText(s.b.lang, "netgames.error.direct_address"), addr)
 					return nil
 				}
 				s.closeBrowser()
@@ -241,11 +292,13 @@ func (s *chooseMultiNetGameScreen) draw(dst *ebiten.Image) {
 	hot := color.RGBA{245, 238, 200, 255}
 	dim := color.RGBA{140, 150, 172, 255}
 
-	// 標題:原版烘的是 "JOIN NETWORK GAME SETUP",中文要擦底疊上去。
-	fillPanel(dst, float32(winX+86), float32(winY+26), 308, 26,
-		color.RGBA{24, 27, 34, 255}, false)
-	s.b.fnt.DrawCentered(dst, truncateToWidth(s.b.fnt, s.b.tr("選擇要加入的對局", "Choose a network game"), 16, 380),
-		float64(winX+cmngPanelW/2), float64(winY)+30, 16, gold)
+	// 標題:原版烘的是 JOIN NETWORK GAME SETUP；英文有正版 panel 時直接保留。
+	if s.b.lang == i18n.Traditional || s.panel == nil {
+		r := cmngTitleTextRect(winX, winY)
+		fillPanel(dst, float32(r.x), float32(r.y), float32(r.w), float32(r.h),
+			color.RGBA{24, 27, 34, 255}, false)
+		r.drawCentered(dst, s.b.fnt, uiText(s.b.lang, "netgames.title"), 16, gold)
+	}
 
 	const glyphH = 13
 	for i := 0; i < cmngMaxRows && i < len(s.games); i++ {
@@ -257,20 +310,17 @@ func (s *chooseMultiNetGameScreen) draw(dst *ebiten.Image) {
 			vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1, gold, false)
 			col = hot
 		}
-		s.b.fnt.Draw(dst, truncateToWidth(s.b.fnt, g.Name, glyphH, 110), float64(x+cmngTextDX),
-			float64(cmngTextTop(winY, i, glyphH)), glyphH, col)
-		s.b.fnt.Draw(dst, truncateToWidth(s.b.fnt, g.Addr, 11, float64(w-cmngTextDX-162)), float64(x+cmngTextDX+120),
-			float64(cmngTextTop(winY, i, 11)), 11, dim)
-		s.b.fnt.Draw(dst, fmt.Sprintf("%d/%d", g.Players, g.Max),
-			float64(x+w-42), float64(cmngTextTop(winY, i, 11)), 11, dim)
+		cmngRowNameTextRect(winX, winY, i).drawLeft(dst, s.b.fnt, g.Name, glyphH, col)
+		cmngRowAddressTextRect(winX, winY, i).drawLeft(dst, s.b.fnt, g.Addr, 11, dim)
+		cmngRowPlayersTextRect(winX, winY, i).drawCentered(dst, s.b.fnt,
+			fmt.Sprintf("%d/%d", g.Players, g.Max), 11, dim)
 	}
 
 	if len(s.games) == 0 {
-		s.b.fnt.DrawCentered(dst, truncateToWidth(s.b.fnt, s.b.tr("區網上沒有偵測到對局", "No games found on the LAN"), 13, 380),
-			float64(winX+cmngPanelW/2), float64(winY+cmngRowFirst)+40, 13, dim)
-		s.b.fnt.DrawCentered(dst,
-			truncateToWidth(s.b.fnt, s.b.tr("主機端要先在多人設定按「開始新遊戲」", "The host must start a game first"), 11, 380),
-			float64(winX+cmngPanelW/2), float64(winY+cmngRowFirst)+62, 11, dim)
+		cmngEmptyTitleTextRect(winX, winY).drawCentered(dst, s.b.fnt,
+			uiText(s.b.lang, "netgames.empty.title"), 13, dim)
+		cmngEmptyHintTextRect(winX, winY).drawCentered(dst, s.b.fnt,
+			uiText(s.b.lang, "netgames.empty.hint"), 11, dim)
 	}
 
 	// 「直接輸入位址」:原版**沒有**這顆鈕(IPX 自己找得到,不需要打位址)。
@@ -278,17 +328,17 @@ func (s *chooseMultiNetGameScreen) draw(dst *ebiten.Image) {
 	// 所以擺在清單外面而不是塞進原版的版面裡。
 	dx, dy, dw, dh := cmngDirectRect(winX, winY)
 	vector.StrokeRect(dst, float32(dx), float32(dy), float32(dw), float32(dh), 1, dim, false)
-	s.b.fnt.DrawCentered(dst, truncateToWidth(s.b.fnt, s.b.tr("直接輸入位址", "Enter address"), 12, float64(dw-10)),
-		float64(dx+dw/2), float64(dy)+5, 12, body)
+	cmngDirectTextRect(winX, winY).drawCentered(dst, s.b.fnt,
+		uiText(s.b.lang, "netgames.button.direct_address"), 12, body)
 
 	// 底下那顆鈕的位置是反組譯真值(欄位左上角);寬高是量的,原版沒有給。
-	bx, by := winX+cmngBtnX, winY+cmngBtnY
-	fillPanel(dst, float32(bx-2), float32(by-4),
-		float32(cmngBtnW), float32(cmngBtnH), color.RGBA{150, 148, 138, 255}, false)
-	s.b.fnt.DrawCentered(dst, truncateToWidth(s.b.fnt, s.b.tr("返回", "CANCEL"), 13, float64(cmngBtnW-10)),
-		float64(bx-2+cmngBtnW/2), float64(by)-1, 13, color.RGBA{28, 28, 24, 255})
+	bx, by, bw, bh := cmngCancelRect(winX, winY)
+	fillPanel(dst, float32(bx), float32(by), float32(bw), float32(bh),
+		color.RGBA{150, 148, 138, 255}, false)
+	cmngCancelTextRect(winX, winY).drawCentered(dst, s.b.fnt,
+		uiText(s.b.lang, "netgames.button.cancel"), 13, color.RGBA{28, 28, 24, 255})
 	if s.msg != "" {
-		s.b.fnt.DrawCentered(dst, truncateToWidth(s.b.fnt, s.msg, 12, float64(cmngPanelW-24)), float64(winX+cmngPanelW/2),
-			float64(by)-26, 12, color.RGBA{240, 170, 140, 255})
+		cmngMessageTextRect(winX, winY).drawCentered(dst, s.b.fnt, s.msg, 12,
+			color.RGBA{240, 170, 140, 255})
 	}
 }

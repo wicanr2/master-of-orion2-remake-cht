@@ -1,5 +1,65 @@
 [
   {
+    "key": "netgames.title",
+    "english": "JOIN NETWORK GAME SETUP",
+    "value": "選擇要加入的對局",
+    "note": "MULTIGM.LBX#41 區網對局選擇標題"
+  },
+  {
+    "key": "netgames.empty.title",
+    "english": "No games found on the LAN",
+    "value": "區網上沒有偵測到對局",
+    "note": "UDP LAN discovery 空清單提示"
+  },
+  {
+    "key": "netgames.empty.hint",
+    "english": "The host must start a game first",
+    "value": "主機端必須先建立新遊戲",
+    "note": "空清單操作提示"
+  },
+  {
+    "key": "netgames.button.direct_address",
+    "english": "Enter address",
+    "value": "直接輸入位址",
+    "note": "remake TCP 轉接入口，原版 IPX 畫面沒有此按鈕"
+  },
+  {
+    "key": "netgames.button.cancel",
+    "english": "CANCEL",
+    "value": "返回",
+    "note": "區網對局選擇底部按鈕"
+  },
+  {
+    "key": "netgames.error.selected_game",
+    "english": "Could not connect; the host may have closed the game.",
+    "value": "無法連線；主機可能已關閉對局。",
+    "note": "點選已探索對局的連線錯誤"
+  },
+  {
+    "key": "netgames.error.direct_address",
+    "english": "Could not connect to %s",
+    "value": "無法連線至 %s",
+    "note": "直接 TCP 位址連線錯誤；%s 是玩家輸入位址"
+  },
+  {
+    "key": "netgames.demo.orion",
+    "english": "ORION",
+    "value": "ORION",
+    "note": "畫廊示範對局名，不翻譯玩家資料"
+  },
+  {
+    "key": "netgames.demo.sakkra",
+    "english": "SAKKRA",
+    "value": "SAKKRA",
+    "note": "畫廊示範對局名，不翻譯玩家資料"
+  },
+  {
+    "key": "netgames.demo.antares",
+    "english": "ANTARES",
+    "value": "ANTARES",
+    "note": "畫廊示範對局名，不翻譯玩家資料"
+  },
+  {
     "key": "multiplayer.setup.title",
     "english": "MULTI-PLAYER GAME SET UP",
     "value": "多人遊戲設定",

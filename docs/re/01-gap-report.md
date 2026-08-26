@@ -2038,8 +2038,9 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
         ——**字在 22 px 的列裡垂直置中**。選中的那一列另有脈動亮度(`[win+0x1E8]` 在 −3..+4
         第一版把原版的 `(0x16 − 字高)/2` 加了一個字高當基線傳給 `uifont.Draw`,結果**整欄字
         掉到下一列**——截圖上選取框在第一列、字在第二列。原因是 `uifont.Draw` 底層是
-        - 原版可以在這張畫面**改對局名稱**(`Change_MP_Game_Name_` @ 0xF5777:長度上限 8、
-          上限與唯一性的規則已記在 `netplay.GameNameMax`,做輸入框時直接套。
+        - 原版 `Change_MP_Game_Name_` @ 0xF5777 以 `edx=8 @ 0xF580F` 限制名稱，並在
+          `0xF5835` 逐一 `strcmp` 檢查重名。remake 主機流程已用 `inputBox` 與
+          `netplay.GameNameMax=8` 接入；區網清單本身只負責選擇與加入。
         **9 張網路畫面到此結案**:6 張做了(`MP_Setup` / `Hotseat` / `Net_Next_Turn` /
         `Choose_Net_Plyrs` / 狀態面板 7 狀態 / `Choose_Multi_Net_Game`),
         3 張明確不做(`Modem_Setup` / `NullModem_Setup` / `Comm Info` —— 硬體已不存在)。
