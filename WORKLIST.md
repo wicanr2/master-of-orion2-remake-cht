@@ -212,6 +212,16 @@
   現行 55 幀會依序播放，僅每 3 tick 一幀仍是 timing approximation。證據與規格見
   [`docs/re/antaran-room-player-text-audit-20260827.md`](docs/re/antaran-room-player-text-audit-20260827.md) 與
   [`docs/tech/antaran-room-external-text-spec.md`](docs/tech/antaran-room-external-text-spec.md)。
+  種族選擇已完成第二十三個切片：Go 表格只保留十四個穩定種族鍵、肖像索引與規則索引；標題、
+  族名、形容詞、單行摘要、取消按鈕、預設帝國名格式與轉場均由 `ui.json` 供應。規則層原先未被
+  遊戲消費的 `Desc`／`EnDesc` 已移除，外交索引相容查找改由外部雙語名稱與 typed 索引完成。
+  IDA Pro 9.4 證實 `sub_5BC74 @ 0x5BC74..0x5BD97` loader、`sub_5BD97` draw 與
+  `sub_5C510 @ 0x5C510..0x5CF37` 外層，十四個欄位座標為 x=`0x15F+0x7E*(i/7)`、
+  y=`0x5A+0x30*(i%7)`；外部兩份符號表在這三個位址互相衝突，故文件保留 raw 位址。
+  中英文畫廊各 35/35；`02_raceselect.png` 目視確認中文所有文字在框內且按鈕置中，英文保留
+  原版烘字，選中項與新增摘要／取消轉接面板也未裁切。證據與規格見
+  [`docs/re/race-selection-player-text-audit-20260827.md`](docs/re/race-selection-player-text-audit-20260827.md) 與
+  [`docs/tech/race-selection-external-text-spec.md`](docs/tech/race-selection-external-text-spec.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與

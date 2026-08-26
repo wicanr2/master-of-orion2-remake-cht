@@ -129,7 +129,7 @@
 | `Mainmenu_Load_Game_Popup_` @ 0x804B7 / `Do_Save_Game_Popup_` @ 0x7E154 | `loadGame` / `saveGameInPlay` | ✅ 2026-08-07 已建(`cmd/moo2/loadgame.go`),十格存檔選單,存讀共用同一視窗 |
 | `Do_Main_Game_Popup_` @ 0x7DD41 / `_Draw_Main_Game_Popup_` @ 0x7F701(遊戲中的「遊戲」選單)| `gameMenu` | ✅ 2026-08-07 已建(`cmd/moo2/gamemenu.go`),星系畫面頂端「遊戲」鈕先前是死的 |
 | `Newgame` | `newGameSetup` | ⚠ 原版底排是 **PLAYERS**(對手數),remake 誤作 RACE 入口 |
-| `Race_Selection` | `raceSelect` | ⚠ 版面左右相反(原版肖像左/2欄按鈕右) |
+| `Race_Selection` | `raceSelect` | ✅ 肖像左、右側 2 欄 × 7 列；座標已由原版立即數錨定，說明／取消面板為明示的 remake 轉接介面 |
 | `Racial_Option` | `customRace` | 自訂種族點數 |
 | `Flag` | `nameFlag` | ⚠ 原版命名與旗幟是**兩個獨立畫面**,remake 合併且用色塊非旗幟圖 |
 | `Main` / `Main_Main` / `Mini_Main` | `galaxy` | 原版有 mini 變體,remake 無 |

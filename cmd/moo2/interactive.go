@@ -2077,7 +2077,12 @@ func diplomatRaceIndex(enemy string) int {
 		if e.shellIdx < 0 {
 			continue // Custom 沒有使節像
 		}
-		if enemy == e.zh || enemy == e.en || enemy == e.enAdj {
+		ruleRace := shell.Races[e.shellIdx]
+		if enemy == ruleRace.Name || enemy == ruleRace.EnName ||
+			enemy == raceSelectEntryText(i18n.Traditional, e, "name") ||
+			enemy == raceSelectEntryText(i18n.English, e, "name") ||
+			enemy == raceSelectEntryText(i18n.Traditional, e, "adjective") ||
+			enemy == raceSelectEntryText(i18n.English, e, "adjective") {
 			return i
 		}
 	}

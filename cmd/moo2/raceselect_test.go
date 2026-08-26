@@ -8,7 +8,9 @@ func TestRaceSelectTextPanelsRemainInsideTheirRects(t *testing.T) {
 	s := &raceSelectScreen{}
 	for i := range raceSelectList {
 		x, y, w, h := s.rowRect(i)
-		tx, ty, tw, th := s.rowTextRect(i)
+		tr := s.rowTextRect(i)
+		tx, ty := tr.contentX(), tr.contentY()
+		tw, th := tr.w-2*tr.insetX, tr.h-2*tr.insetY
 		if tw <= 0 || th <= 0 {
 			t.Fatalf("第 %d 個種族按鈕沒有可用的中文字內框：(%d,%d,%d,%d)", i, x, y, w, h)
 		}
@@ -33,8 +35,7 @@ func TestRaceSelectTextPanelsRemainInsideTheirRects(t *testing.T) {
 	if rsInfoX+rsInfoW > rsPortX+rsPortW || rsInfoY+rsInfoH > 438 {
 		t.Fatalf("能力資訊框越過肖像下方安全帶：資訊=(%d,%d,%d,%d)", rsInfoX, rsInfoY, rsInfoW, rsInfoH)
 	}
-	// 標題、兩行 8px 說明的視覺中心都必須落在 40px 高的框內。
-	if rsInfoY+23+11+4 > rsInfoY+rsInfoH {
-		t.Fatalf("第二行種族說明會越過資訊框：infoY=%d infoH=%d", rsInfoY, rsInfoH)
+	if raceSelectInfoDescriptionTextRect().y+raceSelectInfoDescriptionTextRect().h > rsInfoY+rsInfoH {
+		t.Fatalf("種族說明會越過資訊框：infoY=%d infoH=%d", rsInfoY, rsInfoH)
 	}
 }

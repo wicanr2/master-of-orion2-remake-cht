@@ -3602,8 +3602,6 @@ type Race struct {
 	// SpyBonus 是諜報加成(原版 TRAIT_SPYING,達洛克 +20、薩克拉 −10)。
 	// 同樣是定值,與 spyTechBonusFor 那幾項科技加成同一個池子。
 	SpyBonus int
-	Desc     string
-	EnDesc   string // 英文模式的同一段說明(remake 自撰摘要的英譯,非原版文案)
 }
 
 // Races 是 MOO2 十三經典種族。索引 0 為人類(預設)。
@@ -3623,21 +3621,21 @@ type Race struct {
 // `race_traits_wiring_test.go` 逐族釘住這張表與 gamedata 一致,改動任一格都會紅。
 // 欄位序:名稱 / 英文名 / 原版編號 / 工業 / 科研 / 農業 / 成長% / 起始BC / 每人BC(半單位) /
 //
-//	艦攻% / 艦防% / 地面戰% / 諜報% / 中文說明 / 英文說明。
+//	艦攻% / 艦防% / 地面戰% / 諜報%。玩家名稱與摘要由外部 JSON 提供。
 var Races = []Race{
-	{"人類", "Humans", 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "外交手腕高明,雇用領袖較廉(民主政體)", "Skilled diplomats; leaders come cheap (Democracy)"},
-	{"席隆", "Psilons", 9, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, "創造性研究,科學家產出高", "Creative researchers; high output per scientist"},
-	{"薩克拉", "Sakkra", 10, 0, 0, 2, 100, 0, 0, 0, 0, 0, -10, "繁殖迅速、擅農,但不擅諜報", "Prolific breeders and farmers; poor at espionage"},
-	{"克拉肯", "Klackons", 6, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0, "團結勤奮,農業與工業兼優,但無創造力", "Unified and industrious; strong farms and factories, uncreative"},
-	{"姆瑞森", "Mrrshan", 8, 0, 0, 0, 0, 0, 0, 50, 0, 0, 0, "好戰善攻,艦艇攻擊加成", "Warlike marksmen; bonus to ship attack"},
-	{"布拉西", "Bulrathi", 1, 0, 0, 0, 0, 0, 0, 20, 0, 10, 0, "體格強悍,地面戰與艦艇攻擊加成", "Powerful build; bonus to ground combat and ship attack"},
-	{"阿爾卡里", "Alkari", 0, 0, 0, 0, 0, 0, 0, 0, 50, 0, 0, "飛行天賦,艦艇防禦加成", "Born pilots; bonus to ship defense"},
-	{"梅克拉", "Meklars", 7, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, "半機械,工業產出高", "Cybernetic; high factory output"},
-	{"達洛克", "Darloks", 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20, "潛伏間諜,擅長滲透與匿蹤", "Shapeshifting spies; infiltration and stealth"},
-	{"崔拉里安", "Trilarians", 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "水棲民族,可跨維度航行", "Aquatic; travel between dimensions"},
-	{"埃雷里安", "Elerians", 3, 0, 0, 0, 0, 0, 0, 20, 25, 0, 0, "心靈感應,艦艇攻防兼備", "Telepathic; strong ship attack and defense"},
-	{"諾蘭姆", "Gnolams", 4, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, "幸運富商,每人口每回合額外進帳", "Lucky traders; extra income per unit of population"},
-	{"矽基", "Silicoids", 11, 0, 0, 0, -50, 0, 0, 0, 0, 0, 0, "岩石生命,耐任何環境但成長極慢", "Lithovore; immune to environment but very slow to grow"},
+	{"人類", "Humans", 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{"席隆", "Psilons", 9, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0},
+	{"薩克拉", "Sakkra", 10, 0, 0, 2, 100, 0, 0, 0, 0, 0, -10},
+	{"克拉肯", "Klackons", 6, 1, 0, 2, 0, 0, 0, 0, 0, 0, 0},
+	{"姆瑞森", "Mrrshan", 8, 0, 0, 0, 0, 0, 0, 50, 0, 0, 0},
+	{"布拉西", "Bulrathi", 1, 0, 0, 0, 0, 0, 0, 20, 0, 10, 0},
+	{"阿爾卡里", "Alkari", 0, 0, 0, 0, 0, 0, 0, 0, 50, 0, 0},
+	{"梅克拉", "Meklars", 7, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{"達洛克", "Darloks", 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20},
+	{"崔拉里安", "Trilarians", 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+	{"埃雷里安", "Elerians", 3, 0, 0, 0, 0, 0, 0, 20, 25, 0, 0},
+	{"諾蘭姆", "Gnolams", 4, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0},
+	{"矽基", "Silicoids", 11, 0, 0, 0, -50, 0, 0, 0, 0, 0, 0},
 }
 
 // ApplyRace 把 Races[idx] 的起始加成套到玩家帝國:各殖民地每單位產出加成、額外起始國庫、

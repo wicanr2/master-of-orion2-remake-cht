@@ -17,28 +17,16 @@ import (
 
 var cjk = regexp.MustCompile(`[\p{Han}]`)
 
-// TestRaceEntriesHaveEnglish:種族清單每一列都要有英文複數名與單數形容詞形。
-// enAdj 用在「Human Empire」這種場合,不是自動去尾 s(Alkari / Bulrathi /
-// Mrrshan / Sakkra 本來就沒有 s)。
+// TestRaceEntriesHaveEnglish:種族清單只保存穩定鍵；英文複數名與單數形容詞來自外部 catalog。
 func TestRaceEntriesHaveEnglish(t *testing.T) {
 	for i, e := range raceSelectList {
-		if e.en == "" || e.enAdj == "" {
-			t.Errorf("raceSelectList[%d] %q:英文欄未填(en=%q enAdj=%q)", i, e.zh, e.en, e.enAdj)
+		name := raceSelectEntryText(i18n.English, e, "name")
+		adj := raceSelectEntryText(i18n.English, e, "adjective")
+		if name == "" || adj == "" || name == e.key || adj == e.key {
+			t.Errorf("raceSelectList[%d] %q：外部英文名稱／形容詞缺漏", i, e.key)
 		}
-		if cjk.MatchString(e.en) || cjk.MatchString(e.enAdj) {
-			t.Errorf("raceSelectList[%d] %q:英文欄裡有中文(en=%q enAdj=%q)", i, e.zh, e.en, e.enAdj)
-		}
-	}
-}
-
-// TestRacesHaveEnglishDesc:能力說明的英文版。種族選擇畫面肖像下方那一行會用到。
-func TestRacesHaveEnglishDesc(t *testing.T) {
-	for i, r := range shell.Races {
-		if r.EnName == "" || r.EnDesc == "" {
-			t.Errorf("shell.Races[%d] %q:EnName/EnDesc 未填", i, r.Name)
-		}
-		if cjk.MatchString(r.EnDesc) {
-			t.Errorf("shell.Races[%d] %q:EnDesc 裡有中文:%q", i, r.Name, r.EnDesc)
+		if cjk.MatchString(name) || cjk.MatchString(adj) {
+			t.Errorf("raceSelectList[%d] %q：外部英文欄含中文(name=%q adjective=%q)", i, e.key, name, adj)
 		}
 	}
 }

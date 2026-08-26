@@ -30,6 +30,7 @@ package main
 // 處理器(`sub_114C72("\x1B")`)。點種族即確認。remake 照做:滑過看肖像、點下去確認。
 
 import (
+	"fmt"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -39,14 +40,9 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
 
-// raceEntry 是種族選擇清單一列:中/英名、RACESEL 肖像 asset、對應 shell.Races 索引(-1=Custom)。
-//
-// en 是**複數**族名(原版按鈕上烘的就是這個);enAdj 是當形容詞用的單數形
-// (「Human Empire」而不是「Humans Empire」)。分兩欄而不是自動去尾 s——
-// Alkari / Bulrathi / Mrrshan / Sakkra 本來就沒有 s,規則化只會埋雷。
+// raceEntry 是種族選擇清單一列。玩家名稱／形容詞／摘要全部由 ui.json 的穩定 key 提供。
 type raceEntry struct {
-	zh, en   string
-	enAdj    string
+	key      string
 	portrait int
 	shellIdx int
 }
@@ -54,20 +50,24 @@ type raceEntry struct {
 // raceSelectList 依原版字母序排列(對齊 RACESEL 肖像 15..28),shellIdx 指回 shell.Races。
 // Custom(28)尚無點數畫面,暫以無加成處理(TODO:接 Race Customization 畫面)。
 var raceSelectList = []raceEntry{
-	{"阿爾卡里", "Alkari", "Alkari", 15, 6},
-	{"布拉西", "Bulrathi", "Bulrathi", 16, 5},
-	{"達洛克", "Darloks", "Darlok", 17, 8},
-	{"埃雷里安", "Elerians", "Elerian", 18, 10},
-	{"諾蘭姆", "Gnolams", "Gnolam", 19, 11},
-	{"人類", "Humans", "Human", 20, 0},
-	{"克拉肯", "Klackons", "Klackon", 21, 3},
-	{"梅克拉", "Meklars", "Meklar", 22, 7},
-	{"姆瑞森", "Mrrshan", "Mrrshan", 23, 4},
-	{"席隆", "Psilons", "Psilon", 24, 1},
-	{"薩克拉", "Sakkra", "Sakkra", 25, 2},
-	{"矽基", "Silicoids", "Silicoid", 26, 12},
-	{"崔拉里安", "Trilarians", "Trilarian", 27, 9},
-	{"自訂種族", "Custom", "Custom", 28, -1},
+	{"alkari", 15, 6},
+	{"bulrathi", 16, 5},
+	{"darlok", 17, 8},
+	{"elerian", 18, 10},
+	{"gnolam", 19, 11},
+	{"human", 20, 0},
+	{"klackon", 21, 3},
+	{"meklar", 22, 7},
+	{"mrrshan", 23, 4},
+	{"psilon", 24, 1},
+	{"sakkra", 25, 2},
+	{"silicoid", 26, 12},
+	{"trilarian", 27, 9},
+	{"custom", 28, -1},
+}
+
+func raceSelectEntryText(lang i18n.Lang, entry raceEntry, field string) string {
+	return uiText(lang, "race.select.race."+entry.key+"."+field)
 }
 
 type raceSelectScreen struct {
@@ -140,10 +140,26 @@ func (s *raceSelectScreen) rowRect(i int) (x, y, w, h int) {
 
 // rowTextRect 回傳種族按鈕內可安全放置譯文的內框。它與原版資產的按鈕外框完全分離，
 // 卻保持同一個整數像素中心，使點陣／向量字都不會因半像素位移而顯得模糊或偏移。
-func (s *raceSelectScreen) rowTextRect(i int) (x, y, w, h int) {
+func (s *raceSelectScreen) rowTextRect(i int) textSafeRect {
 	bx, by, bw, bh := s.rowRect(i)
-	return bx + rsButtonTextInset, by + rsButtonTextInset,
-		bw - 2*rsButtonTextInset, bh - 2*rsButtonTextInset
+	return textSafeRect{x: bx, y: by, w: bw, h: bh, insetX: rsButtonTextInset, insetY: rsButtonTextInset}
+}
+
+func raceSelectTitleTextRect() textSafeRect {
+	return textSafeRect{x: rsTitleX, y: rsTitleY, w: rsTitleW, h: rsTitleH, insetX: 4}
+}
+
+func raceSelectInfoNameTextRect() textSafeRect {
+	return textSafeRect{x: rsInfoX + 6, y: rsInfoY, w: rsInfoW - 12, h: 18, insetX: 2}
+}
+
+func raceSelectInfoDescriptionTextRect() textSafeRect {
+	return textSafeRect{x: rsInfoX + 6, y: rsInfoY + 18, w: rsInfoW - 12, h: 20, insetX: 2, insetY: 1}
+}
+
+func (s *raceSelectScreen) cancelTextRect() textSafeRect {
+	x, y, w, h := s.cancelRect()
+	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 4, insetY: 2}
 }
 
 // cancelRect 是「取消」。原版這個畫面沒有可見的取消鈕,只綁 ESC;remake 沒有鍵盤路徑,
@@ -176,7 +192,7 @@ func (s *raceSelectScreen) update(in shell.InputState) *origTransition {
 		if clickSound != nil {
 			clickSound()
 		}
-		return s.b.goTo(s.b.newGameSetup, "星系設定")
+		return s.b.goTo(s.b.newGameSetup, uiText(s.b.lang, "race.select.transition.new_game"))
 	}
 	// 點種族鈕即確認(原版沒有 ACCEPT,見檔頭)。自訂種族先進點數畫面。
 	if s.hover >= 0 {
@@ -193,7 +209,8 @@ func (s *raceSelectScreen) update(in shell.InputState) *origTransition {
 		}
 		s.applyAndStart()
 		e := raceSelectList[s.sel]
-		return &origTransition{next: s.b.nameFlag(s.b.tr(e.zh+"帝國", e.enAdj+" Empire"))}
+		return &origTransition{next: s.b.nameFlag(fmt.Sprintf(uiText(s.b.lang, "race.select.empire_name"),
+			raceSelectEntryText(s.b.lang, e, "adjective")))}
 	}
 	return nil
 }
@@ -259,8 +276,7 @@ func (s *raceSelectScreen) draw(dst *ebiten.Image) {
 	if s.b.lang == i18n.Traditional {
 		fillPanel(dst, rsTitleX, rsTitleY, rsTitleW, rsTitleH,
 			color.RGBA{26, 28, 34, 255}, false)
-		s.fnt.DrawCentered(dst, "選擇你的種族",
-			float64(rsTitleX+rsTitleW/2), float64(rsTitleY+rsTitleH/2), 16, gold)
+		raceSelectTitleTextRect().drawCentered(dst, s.fnt, uiText(s.b.lang, "race.select.title"), 16, gold)
 	}
 
 	// 右側:14 顆種族鈕,2 欄 × 7 列(座標為反組譯真值)。
@@ -295,9 +311,7 @@ func (s *raceSelectScreen) draw(dst *ebiten.Image) {
 		if i == s.sel {
 			col = gold
 		}
-		tx, ty, tw, th := s.rowTextRect(i)
-		label := truncateToWidth(s.fnt, e.zh, 14, float64(tw))
-		s.fnt.DrawCentered(dst, label, float64(tx+tw/2), float64(ty+th/2), 14, col)
+		s.rowTextRect(i).drawCentered(dst, s.fnt, raceSelectEntryText(s.b.lang, e, "name"), 14, col)
 	}
 
 	// 肖像下方那一條(y 395..438)放:左邊取消鈕、右邊族名 + 能力描述。
@@ -306,28 +320,20 @@ func (s *raceSelectScreen) draw(dst *ebiten.Image) {
 	cx, cy, cw, ch := s.cancelRect()
 	fillPanel(dst, rsInfoX, rsInfoY, rsInfoW, rsInfoH, color.RGBA{17, 29, 35, 255}, false)
 	vector.StrokeRect(dst, rsInfoX, rsInfoY, rsInfoW, rsInfoH, 1, color.RGBA{108, 130, 150, 255}, false)
-	infoX := float64(rsInfoX + rsInfoW/2)
-	s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.b.tr(r.zh, r.en), 12, rsInfoW-12), infoX, rsInfoY+9, 12, gold)
-	descW := float64(rsInfoW - 12)
-	if r.shellIdx >= 0 {
-		desc := s.b.tr(shell.Races[r.shellIdx].Desc, shell.Races[r.shellIdx].EnDesc)
-		for i, ln := range s.fnt.Wrap(desc, 8, descW) {
-			if i >= 2 {
-				break
-			}
-			s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, ln, 8, descW), infoX, float64(rsInfoY+23+i*11), 8, body)
-		}
-	} else {
-		s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.b.tr("自行分配種族點數", "Spend your own race picks"), 8, descW),
-			infoX, rsInfoY+23, 8, dim)
+	raceSelectInfoNameTextRect().drawCentered(dst, s.fnt, raceSelectEntryText(s.b.lang, r, "name"), 12, gold)
+	descCol := body
+	if r.shellIdx < 0 {
+		descCol = dim
 	}
+	raceSelectInfoDescriptionTextRect().drawCentered(dst, s.fnt,
+		raceSelectEntryText(s.b.lang, r, "description"), 8, descCol)
 
 	// 取消(remake 自己加的,原版只綁 ESC,見 cancelRect 註解)。
 	fillPanel(dst, float32(cx), float32(cy), float32(cw), float32(ch),
 		color.RGBA{34, 34, 44, 255}, false)
 	vector.StrokeRect(dst, float32(cx), float32(cy), float32(cw), float32(ch), 1.5,
 		color.RGBA{160, 140, 100, 255}, false)
-	s.fnt.DrawCentered(dst, s.b.tr("取消", "CANCEL"), float64(cx+cw/2), float64(cy+ch/2), 14, body)
+	s.cancelTextRect().drawCentered(dst, s.fnt, uiText(s.b.lang, "race.select.cancel"), 14, body)
 }
 
 // raceButton 惰性載入某族的選擇鈕(RACESEL 資產 1–14,兩幀:一般 / 選中)。
