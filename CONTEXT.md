@@ -55,6 +55,10 @@
 
 ## 三、工作方法
 
+- **正式網路回合等待** — `networkWaitScreen` 擁有唯一的 session poll 與兩階段鎖步 update loop，
+  並共用 `netNextTurnScreen` 的原版面板 renderer、聊天記錄與輸入狀態；`netNextTurnDemo` 只是
+  無 socket 畫廊資料。_避免_：把 renderer 稱為畫廊專用，或讓 renderer 再次 poll 而吞掉鎖步封包。
+
 - **忠實化** — 把自編值/自編行為換成原版或手冊的真值。**與「新增系統」是兩件事**,
   不可混報為進度。
   _避免_: 優化、改善(那些不描述「對齊原版」這件事)

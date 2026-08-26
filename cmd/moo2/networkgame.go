@@ -7,24 +7,24 @@ import (
 	"net"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/netplay"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
 
 var (
 	colorDarkNetwork  = color.RGBA{6, 8, 14, 255}
-	colorPanelNetwork = color.RGBA{12, 18, 32, 245}
-	colorGoldNetwork  = color.RGBA{240, 220, 120, 255}
 	colorBodyNetwork  = color.RGBA{214, 222, 238, 255}
-	colorDimNetwork   = color.RGBA{150, 162, 185, 255}
 	colorErrorNetwork = color.RGBA{235, 140, 130, 255}
 )
 
 // networkgame.go：把 TCP 大廳接到真正的共同開局與決定性鎖步回合。
 //
-// 網路上只傳兩種東西：主機選定的完整快照，以及每位玩家本回合的
-// PlayerCommand 序列。所有機器都從同一份回合基準快照重播，重播後再交換
-// 第二階段指紋；指紋不一致就失敗即關閉，不能讓分岔的對局繼續假裝正常。
+// 決定性遊戲狀態只由兩種資料形成：主機選定的完整快照，以及每位玩家本回合的
+// PlayerCommand 序列。聊天、心跳、重連與分岔通知是控制訊息，不直接修改遊戲狀態。
+// 所有機器都從同一份回合基準快照重播，重播後再交換第二階段指紋；指紋不一致就
+// 失敗即關閉，不能讓分岔的對局繼續假裝正常。
 
 type networkStartPayload struct {
 	Roster   netplay.Roster `json:"roster"`
@@ -39,7 +39,6 @@ type networkTurnState struct {
 	replayed  bool
 	readySent bool
 	errorText string
-	chat      []string
 }
 
 // beginNetworkHostSetup 是主機在等待面板按下 START NET GAME 後的入口。
@@ -58,7 +57,7 @@ func (b *sceneBuilder) beginNetworkHostSetup() *origTransition {
 	if len(r.Players) > b.newGameEmpires {
 		b.newGameEmpires = len(r.Players)
 	}
-	return b.goTo(b.newGameSetup, "網路共同開局設定")
+	return b.goTo(b.newGameSetup, uiText(b.lang, "network.transition.shared_setup"))
 }
 
 // finishNetworkHostSetup 在主機完成種族、旗色與名稱後廣播唯一的共同開局。
@@ -78,7 +77,7 @@ func (b *sceneBuilder) finishNetworkHostSetup() *origTransition {
 	}
 	for i := range names {
 		if names[i] == "" {
-			names[i] = fmt.Sprintf("Player %d", i+1)
+			names[i] = fmt.Sprintf(uiText(b.lang, "network.player.fallback"), i+1)
 		}
 	}
 	if got := b.session.SetupNetworkWithNames(names); got != len(names) {
@@ -121,17 +120,17 @@ func (b *sceneBuilder) finishNetworkHostSetup() *origTransition {
 		b.networkError = err.Error()
 		return nil
 	}
-	return b.goTo(b.galaxy, "網路星系主畫面")
+	return b.goTo(b.galaxy, uiText(b.lang, "network.transition.galaxy"))
 }
 
 // acceptNetworkGame 套用主機的快照；客戶端不得自行重新擲骰星系。
 func (b *sceneBuilder) acceptNetworkGame(raw string) (*origTransition, error) {
 	var start networkStartPayload
 	if err := json.Unmarshal([]byte(raw), &start); err != nil {
-		return nil, fmt.Errorf("解析主機共同開局：%w", err)
+		return nil, fmt.Errorf(uiText(b.lang, "network.error.parse_start"), err)
 	}
 	if len(start.Roster.Players) < 2 || len(start.Snapshot) == 0 {
-		return nil, fmt.Errorf("主機共同開局資料不完整")
+		return nil, fmt.Errorf("%s", uiText(b.lang, "network.error.incomplete_start"))
 	}
 	gs, err := shell.RestoreSnapshot(start.Snapshot)
 	if err != nil {
@@ -150,16 +149,16 @@ func (b *sceneBuilder) acceptNetworkGame(raw string) (*origTransition, error) {
 	if err := b.startNetworkTurnState(); err != nil {
 		return nil, err
 	}
-	return b.goTo(b.galaxy, "網路星系主畫面"), nil
+	return b.goTo(b.galaxy, uiText(b.lang, "network.transition.galaxy")), nil
 }
 
 // startNetworkTurnState 建立本回合的共同基準，並開啟玩家操作記錄。
 func (b *sceneBuilder) startNetworkTurnState() error {
 	if b.session == nil || b.netSess == nil {
-		return fmt.Errorf("網路對局缺少 session")
+		return fmt.Errorf("%s", uiText(b.lang, "network.error.missing_session"))
 	}
 	if len(b.networkRoster.Players) < 2 {
-		return fmt.Errorf("網路對局玩家不足")
+		return fmt.Errorf("%s", uiText(b.lang, "network.error.not_enough_players"))
 	}
 	b.networkTurn = &networkTurnState{}
 	b.session.SetCommandRecorder(nil)
@@ -219,7 +218,7 @@ func (b *sceneBuilder) submitNetworkTurn() *origTransition {
 		return &origTransition{next: b.networkWaitScreen()}
 	}
 	if err := b.netSess.Send(m); err != nil {
-		b.failNetwork(b.tr("送出回合指令：", "Send turn commands: ") + err.Error())
+		b.failNetwork(fmt.Sprintf(uiText(b.lang, "network.error.send_commands"), err.Error()))
 	}
 	st.submitted = true
 	return &origTransition{next: b.networkWaitScreen()}
@@ -231,12 +230,34 @@ func mWithPlayer(m netplay.Message, player int) netplay.Message {
 }
 
 type networkWaitScreen struct {
-	b    *sceneBuilder
-	tick int
+	b      *sceneBuilder
+	visual *netNextTurnScreen
+	tick   int
 }
 
 func (b *sceneBuilder) networkWaitScreen() *networkWaitScreen {
-	return &networkWaitScreen{b: b}
+	names := make([]string, len(b.networkRoster.Players))
+	for i := range names {
+		names[i] = fmt.Sprintf(uiText(b.lang, "network.player.fallback"), i+1)
+	}
+	for _, player := range b.networkRoster.Players {
+		if player.ID < 0 || player.ID >= len(names) {
+			continue
+		}
+		name := player.Name
+		if name == "" {
+			name = fmt.Sprintf(uiText(b.lang, "network.player.fallback"), player.ID+1)
+		}
+		names[player.ID] = name
+	}
+	var table *netplay.Table
+	if b.networkTurn != nil {
+		table = b.networkTurn.table
+	}
+	visual := b.netNextTurn(table, names, b.netMe)
+	// 正式 update loop 是唯一封包 consumer；visual 只重用 renderer 與聊天輸入狀態。
+	visual.sess = b.netSess
+	return &networkWaitScreen{b: b, visual: visual}
 }
 
 func (s *networkWaitScreen) update(in shell.InputState) *origTransition {
@@ -245,12 +266,25 @@ func (s *networkWaitScreen) update(in shell.InputState) *origTransition {
 	if st == nil {
 		return nil
 	}
+	if s.visual != nil {
+		s.visual.tick = s.tick
+		s.visual.table = st.table
+		if st.errorText == "" {
+			s.visual.typeChatRunes(ebiten.AppendInputChars(nil))
+			if inpututil.IsKeyJustPressed(ebiten.KeyBackspace) {
+				s.visual.backspaceChat()
+			}
+			if inpututil.IsKeyJustPressed(ebiten.KeyEnter) || inpututil.IsKeyJustPressed(ebiten.KeyKPEnter) {
+				s.visual.sendChat()
+			}
+		}
+	}
 	if st.errorText == "" && s.b.netSess != nil {
 		for _, m := range s.b.netSess.Poll() {
 			s.handle(m)
 		}
 		if err := s.b.netSess.Err(); err != nil {
-			s.b.failNetwork(s.b.tr("網路連線錯誤：", "Network error: ") + err.Error())
+			s.b.failNetwork(fmt.Sprintf(uiText(s.b.lang, "network.error.connection"), err.Error()))
 		}
 	}
 	if st.errorText == "" && st.table != nil && st.table.Ready() && !st.replayed {
@@ -284,7 +318,7 @@ func (s *networkWaitScreen) handle(m netplay.Message) {
 	switch m.Kind {
 	case netplay.KindTurnDone:
 		if st.table == nil {
-			s.b.failNetwork(s.b.tr("尚未建立回合表就收到玩家指令", "Received commands before the turn table was ready"))
+			s.b.failNetwork(uiText(s.b.lang, "network.error.commands_before_table"))
 			return
 		}
 		if err := st.table.Add(m); err != nil {
@@ -292,7 +326,7 @@ func (s *networkWaitScreen) handle(m netplay.Message) {
 		}
 	case netplay.KindTurnReady:
 		if st.table == nil {
-			s.b.failNetwork(s.b.tr("尚未建立回合表就收到 ready", "Received ready before the turn table was ready"))
+			s.b.failNetwork(uiText(s.b.lang, "network.error.ready_before_table"))
 			return
 		}
 		if err := st.table.AddReady(m); err != nil {
@@ -301,11 +335,8 @@ func (s *networkWaitScreen) handle(m netplay.Message) {
 	case netplay.KindDesync:
 		s.b.failNetwork(m.Detail)
 	case netplay.KindChat:
-		if m.Text != "" {
-			st.chat = append(st.chat, fmt.Sprintf("P%d: %s", m.Player+1, m.Text))
-			if len(st.chat) > 4 {
-				st.chat = st.chat[len(st.chat)-4:]
-			}
+		if m.Text != "" && s.visual != nil {
+			s.visual.chat.Append(m.Player, m.Text)
 		}
 	}
 }
@@ -313,7 +344,7 @@ func (s *networkWaitScreen) handle(m netplay.Message) {
 func (s *networkWaitScreen) replayCommands() error {
 	st := s.b.networkTurn
 	if st == nil || st.table == nil {
-		return fmt.Errorf("網路回合資料不存在")
+		return fmt.Errorf("%s", uiText(s.b.lang, "network.error.turn_data_missing"))
 	}
 	gs, err := shell.RestoreSnapshot(st.base)
 	if err != nil {
@@ -331,7 +362,7 @@ func (s *networkWaitScreen) replayCommands() error {
 			cmds = append(cmds, toShellCommand(c))
 		}
 		if err := s.b.session.ApplyPlayerCommandsForSeat(p, cmds); err != nil {
-			return fmt.Errorf("重播玩家 %d 指令：%w", p, err)
+			return fmt.Errorf(uiText(s.b.lang, "network.error.replay_player"), p, err)
 		}
 	}
 	if err := s.b.session.SetActiveSeat(0); err != nil {
@@ -339,14 +370,14 @@ func (s *networkWaitScreen) replayCommands() error {
 	}
 	hash := s.b.session.NetworkStateHash()
 	if hash == "" {
-		return fmt.Errorf("重播後算不出狀態指紋")
+		return fmt.Errorf("%s", uiText(s.b.lang, "network.error.fingerprint_missing"))
 	}
 	ready := netplay.Message{Kind: netplay.KindTurnReady, Turn: st.table.Turn(), StateHash: hash}
 	if err := st.table.AddReady(mWithPlayer(ready, s.b.netMe)); err != nil {
 		return err
 	}
 	if err := s.b.netSess.Send(ready); err != nil {
-		return fmt.Errorf("送出重播指紋：%w", err)
+		return fmt.Errorf(uiText(s.b.lang, "network.error.send_fingerprint"), err)
 	}
 	st.replayed = true
 	st.readySent = true
@@ -380,7 +411,7 @@ func (s *networkWaitScreen) resolveTurn() *origTransition {
 
 func (b *sceneBuilder) captureNetworkTurnBase() error {
 	if b.networkTurn == nil || b.session == nil {
-		return fmt.Errorf("網路回合狀態不存在")
+		return fmt.Errorf("%s", uiText(b.lang, "network.error.turn_state_missing"))
 	}
 	b.session.SetCommandRecorder(nil)
 	if err := b.session.SetActiveSeat(0); err != nil {
@@ -405,7 +436,7 @@ func (b *sceneBuilder) captureNetworkTurnBase() error {
 
 func (b *sceneBuilder) failNetwork(detail string) {
 	if detail == "" {
-		detail = b.tr("網路對局已中止", "Network match stopped")
+		detail = uiText(b.lang, "network.error.stopped")
 	}
 	if b.networkTurn != nil {
 		b.networkTurn.errorText = detail
@@ -447,61 +478,36 @@ func (b *sceneBuilder) closeNetwork() {
 }
 
 func (s *networkWaitScreen) draw(dst *ebiten.Image) {
-	dst.Fill(colorDarkNetwork)
-	if s.b.fnt == nil {
-		return
-	}
 	st := s.b.networkTurn
-	fillPanel(dst, 42, 42, 556, 396, colorPanelNetwork, false)
-	title := s.b.tr("網路回合鎖步", "NETWORK TURN LOCKSTEP")
-	s.b.fnt.DrawCentered(dst, title, 320, 70, 18, colorGoldNetwork)
-	if st == nil {
+	if s.visual == nil {
+		dst.Fill(colorDarkNetwork)
 		return
 	}
-	if st.errorText != "" {
-		s.b.fnt.DrawCentered(dst, s.b.tr("對局已停止：", "GAME STOPPED: ")+st.errorText,
-			320, 120, 13, colorErrorNetwork)
-		s.b.fnt.DrawCentered(dst, s.b.tr("點擊返回多人設定", "Click to return to multiplayer setup"),
-			320, 410, 12, colorBodyNetwork)
+	s.visual.tick = s.tick
+	if st != nil {
+		s.visual.table = st.table
+	}
+	s.visual.draw(dst)
+	if st == nil || st.errorText == "" || s.b.fnt == nil {
 		return
 	}
-	turn := 0
-	if st.table != nil {
-		turn = st.table.Turn()
-	} else if s.b.session != nil {
-		turn = s.b.session.Turn
-	}
-	s.b.fnt.DrawCentered(dst, fmt.Sprintf(s.b.tr("第 %d 回合", "TURN %d"), turn), 320, 102, 14, colorBodyNetwork)
-	status := s.b.tr("等待所有玩家完成指令…", "Waiting for all players to submit commands…")
-	if st.table != nil && st.table.Ready() {
-		status = s.b.tr("指令已到齊，正在比對重播結果…", "Commands received; comparing replay results…")
-	} else if st.submitted {
-		status = s.b.tr("你已提交，等待其他玩家…", "Submitted; waiting for other players…")
-	}
-	s.b.fnt.DrawCentered(dst, status, 320, 130, 12, colorGoldNetwork)
-	for i, p := range s.b.networkRoster.Players {
-		name := truncateToWidth(s.b.fnt, p.Name, 12, 190)
-		state := s.b.tr("未提交", "not ready")
-		if st.table != nil {
-			if st.table.Ready() {
-				state = s.b.tr("已重播", "replayed")
-			} else if !containsInt(st.table.Missing(), p.ID) {
-				state = s.b.tr("已提交", "submitted")
-			}
-		}
-		s.b.fnt.Draw(dst, fmt.Sprintf("%d. %s", i+1, name), 78, float64(165+i*28), 12, colorBodyNetwork)
-		s.b.fnt.Draw(dst, state, 390, float64(165+i*28), 12, colorDimNetwork)
-	}
-	for i, line := range st.chat {
-		s.b.fnt.Draw(dst, truncateToWidth(s.b.fnt, line, 10, 490), 74, float64(335+i*15), 10, colorDimNetwork)
-	}
+	fillPanel(dst, 21, 360, 598, 88, color.RGBA{70, 16, 20, 245}, false)
+	vector.StrokeRect(dst, 21, 360, 598, 88, 1, color.RGBA{230, 110, 110, 255}, false)
+	networkWaitErrorTitleTextRect().drawCentered(dst, s.b.fnt,
+		uiText(s.b.lang, "network.error.title"), 13, colorErrorNetwork)
+	networkWaitErrorDetailTextRect().drawCentered(dst, s.b.fnt, st.errorText, 11, colorBodyNetwork)
+	networkWaitErrorHintTextRect().drawCentered(dst, s.b.fnt,
+		uiText(s.b.lang, "network.error.return_hint"), 11, colorBodyNetwork)
 }
 
-func containsInt(values []int, want int) bool {
-	for _, v := range values {
-		if v == want {
-			return true
-		}
-	}
-	return false
+func networkWaitErrorTitleTextRect() textSafeRect {
+	return textSafeRect{x: 29, y: 367, w: 582, h: 18, insetX: 4}
+}
+
+func networkWaitErrorDetailTextRect() textSafeRect {
+	return textSafeRect{x: 29, y: 389, w: 582, h: 18, insetX: 4}
+}
+
+func networkWaitErrorHintTextRect() textSafeRect {
+	return textSafeRect{x: 29, y: 416, w: 582, h: 18, insetX: 4}
 }

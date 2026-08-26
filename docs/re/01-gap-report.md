@@ -2407,8 +2407,11 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
       session；本機先立即寫入 `ChatLog`，遠端再由每幀 pump 收進記錄。
     - 玩家列的顏色仍是 remake 自訂的兩色,沒接 `Get_Net_Next_Turn_Player_Colors_` @ 0xF31BB
     2026-08-27 以 IDA Pro 9.4 重跑資料庫副本，確認 `sub_FC470`、`sub_F3E42`、
-    `sub_EFCEA`、`sub_F1075`、`sub_F31BB`、`sub_F55A4` 邊界與 caller 鏈；完整輸入雜湊、
-    原始定位與推論分級見 `docs/re/net-next-turn-player-text-audit-20260827.md`。
+    `sub_EFCEA`、`sub_F1075`、`sub_F31BB`、`sub_F55A4` 邊界與 caller 鏈；後續補查
+    `sub_FBFE2`／`sub_FC2D2`／`sub_F7E95` 證實主客戶端正式回合同樣使用此 renderer。
+    remake 正式 `networkWaitScreen` 已共用原版面板與聊天輸入，鎖步 update loop 維持唯一
+    封包 consumer；完整輸入雜湊、原始定位與推論分級見
+    `docs/re/net-next-turn-player-text-audit-20260827.md`。
     比對時發現 `docs/screenshots/` 只有 27 張,而 gallery 產 35 張——
 
 37. **整棵研究樹從二手轉寫升格成一手驗證過**(2026-08-07)。

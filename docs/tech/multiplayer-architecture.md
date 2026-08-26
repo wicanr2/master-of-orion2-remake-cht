@@ -90,7 +90,8 @@ Mutation-on-battle-turn desync),可反推原版網路架構為:
 - **網路對戰最低可玩鏈已完成**：`cmd/moo2` 由大廳名冊進入主機共同新局；主機廣播設定／種子／
   席位快照，客戶端套用同一快照。玩家狀態入口會記錄 `PlayerCommand`，每回合依序走
   `turn_done` → 依玩家編號從共同基準重播 → `turn_ready`；`NetworkStateHash` 分歧、未知指令、
-  錯席位與重複封包都失敗即關閉。`networkWaitScreen` 是正式回合等待畫面，`netNextTurn` 仍只供畫廊示範。
+  錯席位與重複封包都失敗即關閉。`networkWaitScreen` 是正式回合 update loop，並共用原版
+  `Net_Next_Turn` 面板 renderer、聊天記錄與輸入列；只有 `netNextTurnDemo` 仍是無 socket 畫廊資料。
 - **可選公網可靠性已接入**：`internal/netplay` 在每次連線先送一次性 challenge，非空
   `MOO2_NET_AUTH` 時以 HMAC proof 驗證共享身份；`MOO2_NET_TLS=1` 時再套 TLS 1.3（預設為
   記憶體內短期憑證，正式憑證可由 `LobbyOptions.TLSConfig` 注入）。第一次加入取得 resume token，

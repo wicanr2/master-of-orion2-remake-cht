@@ -10,8 +10,8 @@
 
 - 面板尺寸、輸入列、玩家列步距、聊天記錄及 GNN speaker 分支採原版已證實契約。
 - 玩家列第一列 y、現代狀態指紋與分岔錯誤文案是明標介面轉接，不宣稱原版逐像素或逐字一致。
-- 正式多人流程使用 `networkWaitScreen`；`netNextTurnScreen` 是原版畫面／聊天版面的畫廊
-  adapter。外部化不得反向宣稱正式流程已改走此 adapter。
+- 正式多人流程由 `networkWaitScreen` 擁有鎖步 update loop，並共用 `netNextTurnScreen`
+  renderer 與聊天輸入狀態；後者不 poll session。`netNextTurnDemo` 只提供無 socket 畫廊資料。
 
 ## 版面與溢位政策
 
@@ -25,4 +25,3 @@
 - 靜態測試禁止 `netnextturn.go` 出現 `.tr(` 或直接內嵌固定玩家文案。
 - 雙語 catalog 必須具備所有 `netwait.*` 鍵，格式參數數量必須正確。
 - 幾何測試以實際 runtime 字型驗證各安全框寬高；再重跑中英文畫廊抽查 `30_netwait.png`。
-

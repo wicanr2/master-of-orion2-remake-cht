@@ -16,6 +16,9 @@ import idc
 
 
 ROOTS = {
+    "raw_send_game_orders": 0xF7E95,
+    "raw_host_next_turn": 0xFBFE2,
+    "raw_client_next_turn": 0xFC2D2,
     "raw_net_next_turn": 0xFC470,
     "raw_load_net_next_turn_screen": 0xF3E42,
     "raw_add_net_next_turn_fields": 0xEFCEA,

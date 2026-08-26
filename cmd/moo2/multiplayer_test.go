@@ -254,6 +254,20 @@ func TestMultiplayerTCPHostJoinAndFirstTurn(t *testing.T) {
 	if !ok {
 		t.Fatalf("客戶端提交回合後應進等待畫面，得到 %T", clientWaitTransition.next)
 	}
+	if hostWait.visual == nil || clientWait.visual == nil {
+		t.Fatal("正式回合等待必須接入 Net_Next_Turn 原版面板 renderer")
+	}
+	hostWait.visual.typeChatRunes([]rune("lockstep chat"))
+	hostWait.visual.sendChat()
+	waitForMultiplayerTest(t, "等待聊天與鎖步封包共存", func() bool {
+		clientWait.update(shell.InputState{})
+		for _, line := range clientWait.visual.chat.Lines() {
+			if line.Speaker == host.netMe && line.Text == "lockstep chat" {
+				return true
+			}
+		}
+		return false
+	})
 	waitForMultiplayerTest(t, "第一回合完成 lockstep", func() bool {
 		hostWait.update(shell.InputState{})
 		clientWait.update(shell.InputState{})

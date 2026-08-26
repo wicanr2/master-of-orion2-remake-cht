@@ -265,9 +265,17 @@
   `0xBB／0x11`、玩家列步距 `0x19`、GNN speaker `8` 與聊天記錄 `+0x47C` 可回查，
   第一列 y 仍維持近似。runtime 字型測試另抓到標題、指紋、分岔警告與輸入列舊框垂直不足，
   現已依實際 glyph ink 修正；中英文畫廊各 35/35，兩種 `30_netwait.png` 目視無越框。
-  正式多人回合等待仍使用 `networkWaitScreen`，本切片不把畫廊 adapter 冒稱正式路徑；證據與規格見
+  正式多人回合等待已完成第二十八個切片：IDA 補查證實 `sub_FC470` 分流
+  `sub_FBFE2 @ 0xFBFE2..0xFC299` 與 `sub_FC2D2 @ 0xFC2D2..0xFC470`，客戶端直接呼叫
+  `sub_F7E95 @ 0xF7E95..0xF83B7` 送單，主客戶端都使用 `sub_F1075` renderer。
+  `networkWaitScreen` 現保留現代兩階段鎖步 update loop，但正式畫面共用 `netNextTurnScreen`
+  的原版三塊面板、玩家列、聊天記錄與輸入列；等待時可輸入並送出 `KindChat`，renderer 不 poll
+  session，避免吞掉鎖步封包。自製 556×396 替代面板與直接字型繪製已移除，固定轉場、後備名、
+  協定錯誤及返回提示均由 `ui.json` 供應；雙 peer 測試已在同一正式等待階段同時傳聊天、
+  `turn_done` 與 `turn_ready` 並完成第一回合。證據與規格見
   [`docs/re/net-next-turn-player-text-audit-20260827.md`](docs/re/net-next-turn-player-text-audit-20260827.md) 與
-  [`docs/tech/net-next-turn-external-text-spec.md`](docs/tech/net-next-turn-external-text-spec.md)。
+  [`docs/tech/net-next-turn-external-text-spec.md`](docs/tech/net-next-turn-external-text-spec.md)、
+  [`docs/tech/network-turn-wait-player-path-spec.md`](docs/tech/network-turn-wait-player-path-spec.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
@@ -1072,7 +1080,7 @@
 - [x] **議會／安塔蘭視覺收尾（2026-08-11）**：`COUNCIL.LBX#1` 10 幀與 `ANTAROOM.LBX#1` 55 幀已由原版資產逐幀累積並接入播放；`CMBTSHP` 已接原版 `45*playerColor+rawPicture` 圖片映射，並以移動後固定 tick 播放近似 timer，靜止後不自行旋轉。原版 timer 仍標未知。畫面尺寸、雜湊、外部截圖與未宣稱項目見 [`docs/re/visual-oracle-20260811.md`](docs/re/visual-oracle-20260811.md)。
 - [x] **本機完整版與實機推廣片（2026-08-12，最終錄製與剪輯）**：`dist-all/` 集中保留三個僅供本機驗收的完整包（含使用者私有資料子集與 CJK 字型，不可公開散布）；其 SHA-256 核對檔列於 `dist-all/SHA256SUMS`。三平台完整包均由本輪工作樹離線重建，採 55 個經靜態消費端與封裝後畫廊交叉確認的正常玩家路徑 LBX（含 `COMBAT`、`INBOX`、`MULTIGM`、`RACESEL`、`STREAM`／`STREAMHD`），不是把 373 個原版檔全塞入；Linux 完整 AppImage 已在 Docker + Xvfb 從包內資料啟動，Windows ZIP 的 CRC／PE／根目錄、macOS universal `.app` 的結構／`lipo` 與三包的 55 檔集合亦已抽樣驗證。正式預覽片以封裝後 AppImage 在 Docker + Xvfb 走 `-game -promo-demo -promo-hide-cursor -noaudio`，經 21 個正常 UI 點擊實際完成新局、種族、命名旗色、星圖、殖民地人口調配、`RACES` 間諜操作、外交、戰術移動／射擊、撤離與戰果回寫後返回 `RACES`；不以截圖輪播冒充遊玩。依復古遊戲推廣片流程，另用 `scripts/make_live_promo.sh` 加入 4 秒銀河戰略風片頭、五個短暫章節識別與 5 秒片尾；章節框只佔 4:3 畫布外的左右側欄，不遮蓋遊戲 UI。成片為 72.767 秒 H.264/AAC、1280×720、30 fps、48 kHz stereo；完整解碼無警告，音量平均 -18.3 dB、峰值 -2.9 dB，七個代表影格確認片頭、五章實機與片尾文字均在安全框內。錄製若未收到 `LastBattle` 寫回的 `promo-demo: complete` 就拒絕輸出；新局與種族按鈕文字均以按鈕內安全區置中，導覽游標完全隱藏。原版 `STREAM.LBX` 配樂只在錄影後混入，未做逐曲人耳驗收，影片仍不可當作可公開散布素材。錄製、剪輯與權利邊界見 `scripts/capture_promo_gameplay.sh`、`scripts/make_live_promo.sh` 與 `dist-all/promo/README.md`。
 - [x] **音訊文件同步（2026-08-11）**：`docs/tech/audio-track-map.md` 已移除「外交音樂是單一 `bgmDiplo` 常數」的過期敘述，改記逐族好曲、壞曲池與原版門檻未知；IDA Pro 靜態證據見 [`docs/re/oracle-static-ida-20260811.md`](docs/re/oracle-static-ida-20260811.md)。
-- [x] **多人網路最低可玩鏈與可選可靠性（2026-08-12）**：保留原版決定性 lockstep、以 TCP 取代已失效的 IPX／數據機／序列／TEN。`cmd/moo2` 已從大廳名冊接到主機共同新局（設定／種子／席位快照廣播）、客戶端套用同一快照、玩家指令依席位與玩家編號收集／重播、`turn_done` → `turn_ready` 兩階段回合結算，以及 `NetworkStateHash` 不一致時失敗即關閉；另已加入 resume token 重連、心跳／逾時／重連寬限、challenge-HMAC 身份驗證與可選 TLS 1.3。`MOO2_NET_AUTH` 開啟共享密碼 proof，`MOO2_NET_TLS=1` 開啟加密；NAT 穿透仍需外部 relay 或 UPnP，沒有冒稱內建解法。共同開局的非主機席位現在在建立時即初始化 `AutoBuild`／`RepeatBuild` 平行向量，避免只有客戶端切換該席位後出現 nil／空 slice 形狀差異而誤報分岔。驗證包含 `internal/netplay` loopback TCP／TLS／重連抽樣、`internal/shell` 快照／席位重播與 UI 指紋正規化，以及 Docker + Xvfb `cmd/moo2` 三次共同開局、首回合 lockstep 目標測試。`netNextTurn` 仍是畫廊示範，正式流程使用 `networkWaitScreen`。
+- [x] **多人網路最低可玩鏈與可選可靠性（2026-08-12）**：保留原版決定性 lockstep、以 TCP 取代已失效的 IPX／數據機／序列／TEN。`cmd/moo2` 已從大廳名冊接到主機共同新局（設定／種子／席位快照廣播）、客戶端套用同一快照、玩家指令依席位與玩家編號收集／重播、`turn_done` → `turn_ready` 兩階段回合結算，以及 `NetworkStateHash` 不一致時失敗即關閉；另已加入 resume token 重連、心跳／逾時／重連寬限、challenge-HMAC 身份驗證與可選 TLS 1.3。`MOO2_NET_AUTH` 開啟共享密碼 proof，`MOO2_NET_TLS=1` 開啟加密；NAT 穿透仍需外部 relay 或 UPnP，沒有冒稱內建解法。共同開局的非主機席位現在在建立時即初始化 `AutoBuild`／`RepeatBuild` 平行向量，避免只有客戶端切換該席位後出現 nil／空 slice 形狀差異而誤報分岔。驗證包含 `internal/netplay` loopback TCP／TLS／重連抽樣、`internal/shell` 快照／席位重播與 UI 指紋正規化，以及 Docker + Xvfb `cmd/moo2` 共同開局、首回合 lockstep 與等待階段聊天共存測試。正式 `networkWaitScreen` 已共用原版 `Net_Next_Turn` renderer；`netNextTurnDemo` 只保留無 socket 畫廊資料。
 - [x] **可選 AI-to-AI 強化（2026-08-11）**：AI 星選的行星價值／距離模型與議會兩候選人／第三方搖擺票已完成；現在另有可保存、可重播的 AI 彼此戰爭、停戰／互不侵犯／同盟、貿易／研究協議，以及抽象艦隊攻擊最高人口殖民地的戰鬥／佔領解算。這是 remake 模型，不冒充原版逐艦 blueprint；細節見 [`docs/tech/ai-to-ai.md`](docs/tech/ai-to-ai.md)。
 - [x] **原版 `.GAM` 匯入（2026-08-11；2026-08-24 多槽勘誤）**：`ImportGAM`／`LoadGAMSession` 已把原版 `.GAM` 轉成可玩的 remake 工作階段；`LoadSession` 依 little-endian `0xE0` magic 自動分流，載入畫面會探測同槽 `SAVE1.GAM`～`SAVE10.GAM`，匯入後另存為 remake JSON，不覆寫原始檔。星系、行星、殖民地／前哨站、玩家／AI、外交旗標、67 筆領袖、艦隊、建築與建造佇列均有對應；八個武器記錄與特殊裝置 bitset 現會完整保存及快照往返，不再靜默丟棄第一槽以外資料。研究完成 byte、特殊裝置 raw ID 的完整語意與原版任命／任期下游維持報告式未知，不猜測。`SAVE10.GAM` 真檔抽樣已通過。
 - [x] **敵方戰機下游命中／傷害（2026-08-11）**：ID 31 第二組 `1..4 / 4..16 / 2..7` 與 `sub_3AD57 @ 0x3AD57` 的 1..100 隨機、`roll <= 95` 攻防修正、40 命中門檻、`max-min+1` 插值端點，以及相鄰 `sub_3AC20 @ 0x3AC20` 的直接插值式已分開接入；Bomber profile 走 `ResolveFighterBomb`，兩條結果都逐架進最弱護盾面／裝甲／結構消費。`RawFlags & 4` 的 sub3AD57 表面分支經可達性分析證實不可達；未追回的是攻方加成欄位完整語意、兩份外部索引函式名稱與 raw runtime 輸入，不再把固定 3/5 近似寫成原版值。

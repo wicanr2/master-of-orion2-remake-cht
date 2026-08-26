@@ -18,6 +18,9 @@
 
 | 附加語意 | 原始定位與名稱 | 邊界 | 證據等級 |
 |---|---|---|---|
+| 送出遊戲指令 | `sub_F7E95 @ 0xF7E95` | `0xF7E95..0xF83B7` | 已證實 |
+| 主機下一回合 | `sub_FBFE2 @ 0xFBFE2` | `0xFBFE2..0xFC299` | 已證實 |
+| 客戶端下一回合 | `sub_FC2D2 @ 0xFC2D2` | `0xFC2D2..0xFC470` | 已證實 |
 | 回合等待外層 | `sub_FC470 @ 0xFC470` | `0xFC470..0xFC6A5` | 已證實 |
 | 面板 loader | `sub_F3E42 @ 0xF3E42` | `0xF3E42..0xF3FC6` | 已證實 |
 | 輸入／玩家欄位 builder | `sub_EFCEA @ 0xEFCEA` | `0xEFCEA..0xEFE7A` | 已證實 |
@@ -34,11 +37,14 @@ IDA 資料庫名稱。
   `+0xBB` 計算輸入列位置、高 `0x11`，玩家列迴圈步距為 `0x19`。
 - **已證實**：renderer 讀聊天記錄計數欄 `+0x47C`，speaker `8` 走 GNN 分支；
   `sub_F55A4` 直接呼叫 renderer 並以全域輸入 buffer 是否為空控制送出。
+- **已證實**：`sub_FC470` 直接分流到 `sub_FBFE2` 與 `sub_FC2D2`；客戶端路徑直接呼叫
+  `sub_F7E95` 送出遊戲指令。主機／客戶端路徑都把 `sub_F1075` 作為等待畫面 renderer，
+  因此這套面板與聊天是正式回合同步玩家路徑，不只是展示畫面。
 - **未證實**：玩家列第一列的精確 y 錨點仍藏於 window／runtime 欄位資料流；現行
   `nntRowFirst=104` 只能維持既有 remake 版面近似。
 - **未證實**：原版字串內容尚未在本輪匯出成可對照 catalog；繁中及現代狀態指紋／
   分岔警告只可標為等義介面轉接。
-- **過期斷言**：`netNextTurnDemo` 註解稱「連線流程 UI 還沒做」已被正式
-  `networkWaitScreen`、共同快照與兩階段鎖步流程推翻；該畫面目前只是畫廊 adapter，
-  不是多人功能尚未接線的證據。
-
+- **remake mapping**：正式 `networkWaitScreen` 保留共同快照與兩階段鎖步 update loop，
+  但已改用 `netNextTurnScreen` renderer 並接入正式聊天輸入／`KindChat` session；renderer
+  不自行 poll，避免搶走 `turn_done`、`turn_ready` 或 `desync`。雙 peer 測試同時送聊天與
+  第一回合命令，證明正常玩家路徑已閉合。`netNextTurnDemo` 只保留為無 socket 的畫廊資料來源。
