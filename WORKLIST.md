@@ -62,7 +62,12 @@
   標題、動態模板、欄名、態勢／關係、回合摘要及 Reference 目錄均由 `ui.json` 供應，英文模式不再
   直接輸出 `shell` 保存的中文狀態，Reference 亦不再暴露專案內部路徑。原版已知 `BILLTEXT.LBX`
   標題與 remake 補充目錄已在 JSON 註記及 RE 稽核中分級；完整 Reference 內容與 Turn Summary
-  動態組裝仍是原版證據留白，不把現行補充升格為精確還原。其餘自繪畫面仍待逐批遷移；通用規格見
+  動態組裝仍是原版證據留白，不把現行補充升格為精確還原。殖民地建造佇列已完成第五個切片：
+  六顆按鈕、狀態訊息、格式模板、Housing／Trade Goods 顯示名皆由 `ui.json` 供應；直接字型繪製
+  已改成雙軸安全框，舊 `y=470` 越界訊息移到佇列上方兩行區。IDA 另證實 `func_names.txt` 把
+  `Draw_Build_Queue_Popup_` 錯放在 5-byte thunk `0xB3E75`，完整繪製函式實為
+  `sub_B3CF7 @ 0xB3CF7..0xB3E75`；`0xB08CA`／`0xB094C` 則是兩個相鄰且都被呼叫的函式，
+  後者精確語意維持未知。其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
   [`docs/spec/netinfo-external-text.md`](docs/spec/netinfo-external-text.md)、
@@ -71,7 +76,9 @@
   [`docs/re/name-banner-flow-audit-20260826.md`](docs/re/name-banner-flow-audit-20260826.md) 與
   [`docs/tech/name-banner-external-text-spec.md`](docs/tech/name-banner-external-text-spec.md)、
   [`docs/re/info-subscreen-text-audit-20260826.md`](docs/re/info-subscreen-text-audit-20260826.md) 與
-  [`docs/tech/info-subscreen-external-text-spec.md`](docs/tech/info-subscreen-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+  [`docs/tech/info-subscreen-external-text-spec.md`](docs/tech/info-subscreen-external-text-spec.md)、
+  [`docs/re/build-queue-ui-text-audit-20260826.md`](docs/re/build-queue-ui-text-audit-20260826.md) 與
+  [`docs/tech/build-queue-external-text-spec.md`](docs/tech/build-queue-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`
   已把本次錯判提煉成跨專案流程，涵蓋重新稽核觸發條件、具名符號限制、玩家機制證據矩陣、

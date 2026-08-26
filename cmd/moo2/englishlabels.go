@@ -114,9 +114,9 @@ func buildItemLabel(lang i18n.Lang, name string) string {
 	}
 	switch name {
 	case shell.TradeGoodsBuildName:
-		return "Trade Goods"
+		return uiText(lang, "buildqueue.item.trade_goods")
 	case shell.HousingBuildName:
-		return "Housing"
+		return uiText(lang, "buildqueue.item.housing")
 	default:
 		return colonyBuildingLabel(lang, name)
 	}

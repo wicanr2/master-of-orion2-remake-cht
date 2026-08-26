@@ -15,6 +15,7 @@
 - [packaging.md](packaging.md) — 跨平台打包,CI + 本機 docker 腳本兩條路徑:macOS 走 GitHub Actions(`macos-14` runner 原生編 arm64+amd64 → `lipo` universal binary → `.app`/`.dmg`/`.tar.gz`,launcher script 繞過相對路徑 i18n 問題,對應 `.github/workflows/build-macos.yml`/`build-desktop.yml`);Linux/Windows 除 CI 外另有**已實測跑過**的本機 docker 打包腳本 `scripts/package-appimage.sh`(linuxdeploy+appimagetool 產 AppImage)、`scripts/package-windows.sh`(**實測 ebiten v2.9.9 Windows backend 已純 Go/purego 化,`CGO_ENABLED=0` 免 mingw-w64 即可跨編**,推翻原本 cgo 假設)。
 
 - [colony-production-controls.md](colony-production-controls.md) — 殖民地 BUY、AUTO BUILD、REFIT、REPEAT BUILD 的手冊證據、remake 近似、保存與鎖步驗證邊界。
+- [build-queue-external-text-spec.md](build-queue-external-text-spec.md) — 建造佇列的外部雙語文案、原版烘字按鈕後備與雙軸文字安全框。
 
 ## 待補(後續輪次)
 
