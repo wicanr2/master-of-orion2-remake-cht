@@ -1975,8 +1975,8 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
         `Add_Choose_Net_Plyrs_Fields_` @ 0xEFB50 給每列的點擊區(逐項立即數):
         `x1 = winX + 0x6A`、`y1 = winY + i×0x24 + 0x40`、`x2 = winX + 0x1B3`、`y2 = y1 + 0x1D`
         並補 `TestChooseNetPlayersInfoLinesSitBelowTheWindowAndStayOnScreen` 把它釘住
-        - **沒有文字輸入框,所以「加入」只連得上本機。** 要連別台得先做輸入框——
-          這是下一步,不是這一輪偷懶;`netLobbyDialAddr` 的註解寫明了。
+        - **勘誤（2026-08-27）**：此處所稱「沒有文字輸入框」已過期；目前對局清單已有
+          「直接輸入位址」入口，`netLobbyDialAddr` 只在區網探索啟動失敗時作本機後備。
         - **不能點列指派種族。** 原版這張畫面可以(`sub_EFABA` 在每列旁再建一組欄位),
         - **沒有重連、沒有心跳、沒有加密。** 這是區網對戰的最低限度,寫在 `lobby.go` 檔頭。
         剩下 4 張(`Join_Net` / `Choose_Multi_Net_Game` / `Generic_Net_Info` / `SendGet_Net_Info`)。

@@ -141,9 +141,9 @@ func (b *sceneBuilder) chooseNetPlayers(r netplay.Roster, me int, hosting bool, 
 // 留一個半開的 listener 給後續的截圖沒有意義。名冊的**畫面**與資料從哪來無關。
 func (b *sceneBuilder) chooseNetPlayersDemo() *chooseNetPlayersScreen {
 	r := netplay.Roster{Seed: 20260807, Players: []netplay.Player{
-		{ID: 0, Name: b.tr("指揮官", "Commander")},
-		{ID: 1, Name: "Sakkra"},
-		{ID: 2, Name: "Psilon"},
+		{ID: 0, Name: uiText(b.lang, "netroster.demo.commander")},
+		{ID: 1, Name: uiText(b.lang, "netroster.demo.sakkra")},
+		{ID: 2, Name: uiText(b.lang, "netroster.demo.psilon")},
 	}}
 	return b.chooseNetPlayers(r, 0, true, "192.168.1.20:24501")
 }
@@ -166,7 +166,7 @@ func (s *chooseNetPlayersScreen) update(in shell.InputState) *origTransition {
 			return tr
 		}
 		if err := s.b.netSess.Err(); err != nil {
-			s.msg = s.b.tr("網路連線錯誤：", "Network error: ") + err.Error()
+			s.msg = fmt.Sprintf(uiText(s.b.lang, "netroster.error.network"), err.Error())
 		}
 	}
 	if !in.ClickReleased {
@@ -222,43 +222,44 @@ func (s *chooseNetPlayersScreen) draw(dst *ebiten.Image) {
 	if s.b.lang == i18n.Traditional {
 		fillPanel(dst, float32(winX+120), float32(winY+22), 240, 26,
 			color.RGBA{26, 30, 38, 255}, false)
-		s.b.fnt.DrawCentered(dst, "連線玩家", float64(winX+cnpBannerW/2), float64(winY)+40, 18, gold)
+		(textSafeRect{x: winX + 120, y: winY + 22, w: 240, h: 26, insetX: 4}).drawCentered(
+			dst, s.b.fnt, uiText(s.b.lang, "netroster.title"), 18, gold)
 	}
 
 	for i := 0; i < rows; i++ {
 		x, y, w, _ := cnpRowRect(winX, winY, i)
-		name := s.b.tr("(空位)", "(open)")
+		name := uiText(s.b.lang, "netroster.row.open")
 		col := dim
 		if i < len(s.roster.Players) {
 			name = s.roster.Players[i].Name
 			col = body
 			if i == s.me {
-				name += s.b.tr("(你)", " (you)")
+				name += uiText(s.b.lang, "netroster.row.you_suffix")
 			}
 			if i == 0 {
-				name += s.b.tr("・主機", " · host")
+				name += uiText(s.b.lang, "netroster.row.host_suffix")
 			}
 		}
-		s.b.fnt.Draw(dst, fmt.Sprintf("%d.", i+1), float64(x-24), float64(y)+20, 13, dim)
-		s.b.fnt.Draw(dst, truncateToWidth(s.b.fnt, name, 13, float64(w-16)), float64(x+8), float64(y)+20, 13, col)
-		_ = w
+		(textSafeRect{x: x - 28, y: y + 4, w: 24, h: 21}).drawRight(dst, s.b.fnt,
+			fmt.Sprintf(uiText(s.b.lang, "netroster.row.number"), i+1), 13, dim)
+		(textSafeRect{x: x, y: y + 4, w: w, h: 21, insetX: 8}).drawLeft(dst, s.b.fnt, name, 13, col)
 	}
 
-	hint := s.b.tr("等待主機開始對局", "Waiting for the host to start")
+	hint := uiText(s.b.lang, "netroster.hint.wait_host")
 	if s.hosting {
-		hint = s.b.tr("等其他玩家加入——位址:", "Waiting for players — address: ") + s.addr
+		hint = fmt.Sprintf(uiText(s.b.lang, "netroster.hint.hosting"), s.addr)
 	}
-	seed := fmt.Sprintf(s.b.tr("種子 %d(由主機決定並廣播)", "Seed %d (chosen and broadcast by the host)"),
-		s.roster.Seed)
+	seed := fmt.Sprintf(uiText(s.b.lang, "netroster.seed"), s.roster.Seed)
 	y1, y2 := cnpInfoBaselines(winY, rows)
 	fillPanel(dst, float32(winX+8), float32(y1-13), float32(cnpBannerW-16), float32(y2-y1+18),
 		color.RGBA{10, 12, 18, 235}, false)
-	s.b.fnt.Draw(dst, truncateToWidth(s.b.fnt, hint, 12, float64(cnpBannerW-32)), float64(winX+16), float64(y1), 12, body)
+	info1 := textSafeRect{x: winX + 8, y: y1 - 13, w: cnpBannerW - 16, h: 15, insetX: 8}
+	info2 := textSafeRect{x: winX + 8, y: y2 - 13, w: cnpBannerW - 16, h: 15, insetX: 8}
+	info1.drawLeft(dst, s.b.fnt, hint, 12, body)
 	if s.msg != "" {
-		s.b.fnt.Draw(dst, truncateToWidth(s.b.fnt, s.msg, 11, float64(cnpBannerW-32)),
-			float64(winX+16), float64(y2), 11, color.RGBA{235, 150, 140, 255})
+		info2.drawLeft(dst, s.b.fnt, s.msg, 11, color.RGBA{235, 150, 140, 255})
 	} else {
-		s.b.fnt.Draw(dst, truncateToWidth(s.b.fnt, seed, 11, float64(cnpBannerW-32)), float64(winX+16), float64(y2), 11, dim)
+		info2.drawLeft(dst, s.b.fnt, seed, 11, dim)
 	}
 }
 
@@ -274,7 +275,7 @@ const netLobbyAddr = "0.0.0.0:24501"
 //
 // 正常路徑是區網探索(見 choosemultinetgame.go):主機廣播、客戶端列出來點一場。
 // 探索開不起來(埠被佔、沒有網路)時才退回這個位址,至少同一台機器上測得動。
-// 要打任意位址仍然需要文字輸入框——那是還沒做的一項,不是這裡偷懶。
+// 使用者也可從對局清單的「直接輸入位址」進入；此常數只供探索失敗時後備。
 const netLobbyDialAddr = "127.0.0.1:24501"
 
 // configuredNetplayOptions 是可選的公網保護開關。預設仍維持區網 TCP 相容形狀；
@@ -424,7 +425,7 @@ func (b *sceneBuilder) joinNetLobby() (origScreen, error) {
 
 // joinNetGame 連上指定的一場對局並進名冊畫面。
 func (b *sceneBuilder) joinNetGame(g netplay.Game) (origScreen, error) {
-	name := b.tr("玩家", "Player")
+	name := uiText(b.lang, "netroster.default_player_name")
 	if b.session != nil && b.session.PlayerName != "" {
 		name = b.session.PlayerName
 	}

@@ -237,6 +237,12 @@
   [`docs/tech/multiplayer-setup-external-text-spec.md`](docs/tech/multiplayer-setup-external-text-spec.md)。
   區網對局選擇已完成第二十五個切片：標題、空清單兩列、直接位址、取消、兩種連線錯誤及
   三個畫廊示範對局名均由 `ui.json` 供應，`choosemultinetgame.go` 不再內嵌玩家文案或呼叫
+  字型直接繪製。連線玩家名冊亦完成下一個切片：標題、空席／主機／本機標記、列號模板、
+  等待提示、位址、共同種子、網路錯誤、預設玩家名與畫廊假資料均改由 `ui.json` 供應；
+  標題、列號、玩家名及兩行狀態分別套用雙軸安全框。舊文件所稱只能連本機的斷言已勘誤，
+  現行「直接輸入位址」是正常後備入口。原版逐列種族／顏色指派仍是獨立玩法缺口，未因
+  名冊文案與版面完成而升格。規格見
+  [`docs/tech/network-roster-external-text-spec.md`](docs/tech/network-roster-external-text-spec.md)。
   `tr`。十列各自拆成名稱／位址／人數三個不相交的雙軸安全框；標題、空清單、按鈕與訊息列
   亦改走安全框。英文有正版 `MULTIGM.LBX#41` 時保留 `JOIN NETWORK GAME SETUP` 烘字，
   繁中與缺 panel fallback 才重繪。IDA Pro 9.4 證實 `sub_F0C8E @ 0xF0C8E..0xF0E17`

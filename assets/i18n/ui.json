@@ -1222,5 +1222,18 @@
   {"key":"gamesettings.option.serious_turn_summary.help","english":"Limit the turn summary to serious reports.","value":"回合摘要只顯示需要注意的重要報告。","note":"SETTINGS 右鍵情境說明"},
   {"key":"turnsummary.serious.starvation_count","english":"◆ Starvation reported at %d colonies","value":"◆ %d 座殖民地發生飢荒","note":"重要回合摘要；%d 為飢荒殖民地數"},
   {"key":"turnsummary.serious.rebellion_count","english":"◆ %d rebellions erupted this turn","value":"◆ 本回合爆發 %d 場叛亂","note":"重要回合摘要；%d 為叛亂數"},
-  {"key":"gamesettings.option.ship_initiative.help","english":"Resolve combat actions by ship initiative instead of resolving each side as a block.","value":"依各艦主動權交錯處理戰鬥行動，而非讓雙方分批完成。","note":"SETTINGS 右鍵情境說明"}
+  {"key":"gamesettings.option.ship_initiative.help","english":"Resolve combat actions by ship initiative instead of resolving each side as a block.","value":"依各艦主動權交錯處理戰鬥行動，而非讓雙方分批完成。","note":"SETTINGS 右鍵情境說明"},
+  {"key":"netroster.title","english":"NETWORK PLAYERS","value":"連線玩家","note":"Choose_Net_Plyrs 名冊標題"},
+  {"key":"netroster.demo.commander","english":"Commander","value":"指揮官","note":"畫廊名冊示範玩家"},
+  {"key":"netroster.demo.sakkra","english":"Sakkra","value":"Sakkra","note":"畫廊名冊示範玩家"},
+  {"key":"netroster.demo.psilon","english":"Psilon","value":"Psilon","note":"畫廊名冊示範玩家"},
+  {"key":"netroster.row.open","english":"(open)","value":"（空位）","note":"名冊空席"},
+  {"key":"netroster.row.you_suffix","english":" (you)","value":"（你）","note":"本機玩家後綴"},
+  {"key":"netroster.row.host_suffix","english":" · host","value":"・主機","note":"主機玩家後綴"},
+  {"key":"netroster.row.number","english":"%d.","value":"%d.","note":"名冊列號格式"},
+  {"key":"netroster.hint.wait_host","english":"Waiting for the host to start","value":"等待主機開始對局","note":"客戶端等待提示"},
+  {"key":"netroster.hint.hosting","english":"Waiting for players — address: %s","value":"等待其他玩家加入——位址：%s","note":"主機等待提示；%s 為監聽位址"},
+  {"key":"netroster.seed","english":"Seed %d (chosen and broadcast by the host)","value":"種子 %d（由主機決定並廣播）","note":"共同開局種子"},
+  {"key":"netroster.error.network","english":"Network error: %s","value":"網路連線錯誤：%s","note":"連線階段錯誤；%s 為底層原因"},
+  {"key":"netroster.default_player_name","english":"Player","value":"玩家","note":"沒有存檔玩家名時的後備名稱"}
 ]
