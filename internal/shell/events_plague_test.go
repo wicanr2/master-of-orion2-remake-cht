@@ -30,6 +30,7 @@ func TestStartPlayerPlagueUsesCurrentResearchAndSavedRoll(t *testing.T) {
 	s.PlayerColonies = s.PlayerColonies[:1]
 	s.PlayerColonyStars = s.PlayerColonyStars[:1]
 	s.PlayerColonyPlanets = s.PlayerColonyPlanets[:1]
+	delete(s.ColonyBuildings[0], CapitolBuildName)
 	s.LastPlayerOutput = engine.EmpireOutput{Colonies: []engine.ColonyOutput{{Research: 10}}}
 	seed := int64(71)
 	probe := newRandStream(seed)
@@ -88,7 +89,7 @@ func TestPlagueAndPopulationBoomAreMutuallyExclusive(t *testing.T) {
 	s.eventRand = newRandStream(3)
 	planet := s.ColonyPlanetIndex(0)
 	s.PersistentEvents = []PersistentEvent{{Kind: PersistentPopulationBoom, PlanetIndex: planet}}
-	if _, ok := s.plagueTargetEligible(s.PlayerColonies[:1], func(int) int { return planet }); ok {
+	if _, ok := s.plagueTargetEligible(s.PlayerColonies[:1], nil, func(int) int { return planet }); ok {
 		t.Fatal("同一行星已有事件 17 時不得再建立事件 16")
 	}
 }

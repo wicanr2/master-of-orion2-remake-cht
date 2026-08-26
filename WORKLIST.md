@@ -93,8 +93,8 @@
   玩家、熱座與 AI 會同步 colony／planet 並重算食物與容量，不再誤走一般 Terraforming 階梯。
   事件 11／12 礦產亦已由 `sub_2325E`／`sub_232BB` 與 `sub_206A2` 閉合：枯竭只選
   Ultra Rich 並作 `4→3`，發現作 `min(4, old+2)`；玩家、熱座與 AI 會同步 planet／colony
-  與每工人產能，且不再錯誤重算重力。`colony+0x13F` 已證實為 raw 9 Capitol 建築槽；
-  枯竭抽選器尚未套用「排除首都殖民地」條件，保留為待接的事件目標 filter。
+  與每工人產能，且不再錯誤重算重力。枯竭已經 `sub_23DA0` 只在無 Capitol 候選間抽樣；
+  發現維持 `sub_23D44` 的全殖民地候選，兩條不再共用錯誤的泛用 selector。
   事件 17 人口暴增亦已由 `sub_2230A`、`sub_206A2`、`sub_23509` 與 `sub_E1839` 閉合：
   不再一次性自訂 `+2` 人口，而是目標殖民地逐族成長加 100 百分點；前五個 active turn
   不結束，第六回合起每回合 1/20，age > 20 強制結束。玩家、熱座與 AI 均走可存檔持續 record。
@@ -105,14 +105,14 @@
   固定自訂扣 1～2 人口並拆一棟，而是以
   `max(1, (人口+raw 建築數)×(Random(3)+Random(2))/10)` 產生傷害，再由一般建築、
   陸戰隊、戰車、建造進度與人口的共用戰略候選池分配。玩家、熱座與 AI 均回寫傷亡，
-  最後人口死亡會移除殖民地與平行陣列；事件目標尚未排除 Capitol 殖民地，packed colonist
-  死亡身分仍明標近似。
+  最後人口死亡會移除殖民地與平行陣列；`sub_23DA0` 的無 Capitol 候選條件已接，packed
+  colonist 死亡身分仍明標近似。
   事件 10 工業事故亦已由 `sub_231B4`、`sub_23833`、`sub_DD13E`、`sub_DD2F2` 與
   `sub_DCEBD` 閉合：環境耐受帝國直接免疫，只選 Barren..Gaia 殖民地；特殊命中數為
   `人口×(Random(3)+Random(3))/10` 且可為 0，逐次排除 Android 人口並在人口／陸戰隊／
   戰車間分配，最後仍固定結算 1 點一般戰略殖民地傷害。玩家、熱座與 AI 均已回寫人口群組、
   駐軍、建築效果、建造進度與殖民地平行陣列；氣候不再被錯誤降級。typed 群組不保存原版
-  packed 順序，故只宣稱候選集合與分布對齊；事件目標尚未排除已完成 Capitol 的殖民地。
+  packed 順序，故只宣稱候選集合與分布對齊；事件目標已排除完成 Capitol 的殖民地。
   事件 2 彗星亦已由 `sub_2230A`、`sub_206A2`、`sub_23B28`、`sub_23780` 與
   `sub_DD2F2` 閉合：耐久為 `10×(Random(5)+10+難度)`、倒數為
   `Random(5)+10-難度`；目標星系所有停泊艦艇不分 owner 逐艘貢獻 `艦體級+1`，撞擊時以
@@ -123,7 +123,8 @@
   同星系各帝國運輸船總數及五級難度換算，低於 5 不成立；每回合按剩餘強度百分比讓同星
   帝國各損失一艘運輸船，再由所有 owner 的停泊艦艇以 `艦體級+1` 清剿。玩家、熱座與 AI
   共用可存檔 record，並已補齊事件 2／16／17／25／14／24 的同星互斥。remake 以殖民地
-  presence 重建 raw `star+0x38` bitset；共用目標抽選器的 Capitol 排除條件尚待接線。
+  presence 重建 raw `star+0x38` bitset；事件 2／7／10／11／16 共用的 `sub_23DA0`
+  無 Capitol 候選條件已接到玩家、熱座目前席位與 AI。
   事件 9 超空間亂流亦已由 `sub_2230A`、`sub_206A2`、`sub_233FA` 及航行／AI callers
   閉合：全銀河 record 建立時 age=0，第六次 consumer 起每回合 `1/20` 解除，age>20
   強制結束；玩家、熱座與 AI 的既有航程及新派遣均會凍結，跨維度種族依 raw
@@ -499,8 +500,8 @@
   `Random(5)+10-difficulty`，初始需求嚴格為建立時全星系 RP×倒數；每回合全 owner 殖民地
   RP 只投入搶救，失敗時玩家、非目前熱座與 AI 同星殖民地及各自殖民行星均會移除／變
   Radiated。舊 `×(倒數+1)`、均勻 6–14、目前玩家限定與單一代表行星代理均已移除。
-  `colony+0x13F` 已證實為 Capitol 建築槽，但超新星目標尚未套用排除 Capitol 星系的條件；
-  1.50 倒數版本差仍未知。證據與規格見
+  超新星候選星已要求至少一座 active 且無 Capitol 的殖民地，成立後仍消費／影響同星全部
+  active 殖民地；1.50 倒數版本差仍未知。證據與規格見
   [`docs/re/random-event-supernova-audit-20260825.md`](docs/re/random-event-supernova-audit-20260825.md) 與
   [`docs/spec/random-event-supernova.md`](docs/spec/random-event-supernova.md)。
   事件 25 時空異象已由 `Determine_Event_`、`sub_23BEC`、`sub_242FC`、`sub_206A2`、
@@ -509,8 +510,8 @@
   active age，且只在 age>4 消耗事件亂數；玩家、非目前熱座、AI 及同星多 owner 的食物、
   工業、研究與人口成長回合輸入均會凍結，原始殖民資料與事件 record 可存檔往返。
   食物／工業／建造／維護／人口移動的原版 raw 欄位尚未逐項靜態閉合，現依官方手冊與共用
-  重算鏈實作；`colony+0x13F` 已證實為 Capitol 建築槽，但時空異象目標尚未套用相同排除
-  條件；GNN state 同回合時序與 1.50 版本差仍未知。證據與規格見
+  重算鏈實作；時空異象使用 `sub_23BEC` 而非 `sub_23DA0`，現有靜態證據不支持替它套用
+  Capitol 排除條件；GNN state 同回合時序與 1.50 版本差仍未知。證據與規格見
   [`docs/re/random-event-stasis-audit-20260825.md`](docs/re/random-event-stasis-audit-20260825.md) 與
   [`docs/spec/random-event-stasis.md`](docs/spec/random-event-stasis.md)。
   事件 26 超空間獸已由 `Determine_Event_`、`sub_206A2`、`sub_100618`、`sub_23CED`、

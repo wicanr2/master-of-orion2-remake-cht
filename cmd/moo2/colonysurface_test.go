@@ -310,6 +310,7 @@ func TestColonySurfacePlanHomeworldHasCapitol(t *testing.T) {
 	for k, v := range sess.ColonyBuildings[0] {
 		dup[k] = v
 	}
+	delete(dup, shell.CapitolBuildName)
 	sess.ColonyBuildings = append(sess.ColonyBuildings, dup)
 
 	count := func(idx int) int {
@@ -341,6 +342,7 @@ func TestColonySurfacePlanNonHomeworldHasColonyBase(t *testing.T) {
 	for k, v := range sess.ColonyBuildings[0] {
 		dup[k] = v
 	}
+	delete(dup, shell.CapitolBuildName)
 	sess.ColonyBuildings = append(sess.ColonyBuildings, dup)
 
 	count := func(idx, id int) int {

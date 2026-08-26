@@ -5,16 +5,25 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
-// originalMineralEventColony 對應 sub_2325E／sub_232BB：每次先均勻抽一座
-// 殖民地，再檢查礦產，最多重試 200 次。枯竭只接受 Ultra Rich；發現接受
-// Ultra Rich 以下。原版枯竭抽選器另檢查 colony+0x13F==0（無 Capitol），remake 尚未把該
-// raw 欄位的已證實玩家語意，故目前只保留玩家可見的礦產條件。
-func originalMineralEventColony(colonies []engine.ColonyState, planetAt func(int) *Planet, eventID int, rng *randStream) (int, bool) {
+// originalMineralEventColony 對應 sub_2325E／sub_232BB：最多重試 200 次。
+// 枯竭經 sub_23DA0 只在無 Capitol 候選間抽樣；發現經 sub_23D44 在全部殖民地間抽樣。
+func originalMineralEventColony(colonies []engine.ColonyState, buildings []map[string]bool,
+	planetAt func(int) *Planet, eventID int, rng *randStream) (int, bool) {
 	if len(colonies) == 0 || planetAt == nil || rng == nil || (eventID != 11 && eventID != 12) {
 		return 0, false
 	}
 	for attempt := 0; attempt < 200; attempt++ {
-		i := reservoirEventColony(colonies, rng)
+		i := -1
+		if eventID == 11 {
+			var ok bool
+			i, ok = pickEarthquakeColony(colonies,
+				func(i int) bool { return !colonyHasCapitol(buildings, i) }, rng.Intn)
+			if !ok {
+				continue
+			}
+		} else {
+			i = reservoirEventColony(colonies, rng)
+		}
 		if i < 0 {
 			continue
 		}
@@ -63,7 +72,7 @@ func applyMineralEventToColony(c *engine.ColonyState, p *Planet, eventID int) (f
 }
 
 func (s *GameSession) applyPlayerMineralEvent(eventID int) (idx int, from, to gamedata.PlanetMinerals, ok bool) {
-	i, ok := originalMineralEventColony(s.PlayerColonies, s.ColonyPlanet, eventID, s.eventRand)
+	i, ok := originalMineralEventColony(s.PlayerColonies, s.ColonyBuildings, s.ColonyPlanet, eventID, s.eventRand)
 	if !ok {
 		return 0, 0, 0, false
 	}
@@ -77,7 +86,7 @@ func (s *GameSession) applyAIMineralEvent(aiIndex, eventID int) (idx int, from, 
 	}
 	a := &s.AIPlayers[aiIndex]
 	planetAt := func(i int) *Planet { return s.aiColonyPlanet(aiIndex, i) }
-	i, ok := originalMineralEventColony(a.Colonies, planetAt, eventID, s.eventRand)
+	i, ok := originalMineralEventColony(a.Colonies, a.ColonyBuildings, planetAt, eventID, s.eventRand)
 	if !ok {
 		return 0, 0, 0, false
 	}

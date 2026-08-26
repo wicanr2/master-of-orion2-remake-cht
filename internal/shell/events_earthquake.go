@@ -43,12 +43,14 @@ func originalEarthquakeDamage(population, rawBuildingCount, roll3, roll2 int) in
 	return damage
 }
 
-// pickEarthquakeColony 重製 sub_23DA0 的逐索引 reservoir sampling。remake 的 colony
-// slice 本身只保存有效殖民地；raw +0x13F 已證實為 Capitol 建築槽，但此 helper
-// 尚未接收建築狀態，因此排除條件列在 WORKLIST 的事件目標 filter 待辦。
-func pickEarthquakeColony(colonies []engine.ColonyState, intn func(int) int) (int, bool) {
+// pickEarthquakeColony 重製 sub_23DA0 的逐索引 reservoir sampling。eligible 對映
+// raw colony+0x13F==0；nil 只供不涉及建築狀態的低階亂數測試。
+func pickEarthquakeColony(colonies []engine.ColonyState, eligible func(int) bool, intn func(int) int) (int, bool) {
 	pick, seen := -1, 0
 	for i := range colonies {
+		if eligible != nil && !eligible(i) {
+			continue
+		}
 		seen++
 		if intn == nil || intn(seen) == 0 {
 			pick = i
@@ -94,7 +96,8 @@ func resolveEarthquakeDamage(colony *engine.ColonyState, buildings map[string]bo
 }
 
 func (s *GameSession) applyPlayerEarthquake() (earthquakeImpact, bool) {
-	i, ok := pickEarthquakeColony(s.PlayerColonies, s.eventRand.Intn)
+	i, ok := pickEarthquakeColony(s.PlayerColonies,
+		func(i int) bool { return !colonyHasCapitol(s.ColonyBuildings, i) }, s.eventRand.Intn)
 	if !ok {
 		return earthquakeImpact{}, false
 	}
@@ -142,7 +145,8 @@ func (s *GameSession) applyAIEarthquake(aiIndex int) (earthquakeImpact, bool) {
 		return earthquakeImpact{}, false
 	}
 	a := &s.AIPlayers[aiIndex]
-	i, ok := pickEarthquakeColony(a.Colonies, s.eventRand.Intn)
+	i, ok := pickEarthquakeColony(a.Colonies,
+		func(i int) bool { return !colonyHasCapitol(a.ColonyBuildings, i) }, s.eventRand.Intn)
 	if !ok {
 		return earthquakeImpact{}, false
 	}

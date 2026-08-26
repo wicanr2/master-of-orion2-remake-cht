@@ -30,19 +30,21 @@ func originalIndustrialAccidentHits(population, rollA, rollB int) int {
 
 // originalIndustrialAccidentColony 對應 sub_231B4：200 次拒絕抽樣後，原版
 // fallback 持續覆寫結果，所以取得最高索引合格殖民地。
-func originalIndustrialAccidentColony(colonies []engine.ColonyState, rng *randStream) (int, bool) {
+func originalIndustrialAccidentColony(colonies []engine.ColonyState, buildings []map[string]bool,
+	rng *randStream) (int, bool) {
 	if len(colonies) == 0 || rng == nil {
 		return 0, false
 	}
 	for attempt := 0; attempt < 200; attempt++ {
-		i := reservoirEventColony(colonies, rng)
-		if i >= 0 && colonies[i].Climate > gamedata.RADIATED {
+		i, ok := pickEarthquakeColony(colonies,
+			func(i int) bool { return !colonyHasCapitol(buildings, i) }, rng.Intn)
+		if ok && colonies[i].Climate > gamedata.RADIATED {
 			return i, true
 		}
 	}
 	pick := -1
 	for i := range colonies {
-		if colonies[i].Climate > gamedata.RADIATED {
+		if !colonyHasCapitol(buildings, i) && colonies[i].Climate > gamedata.RADIATED {
 			pick = i
 		}
 	}
@@ -196,7 +198,7 @@ func (s *GameSession) applyPlayerIndustrialAccident() (industrialAccidentImpact,
 	if s.RaceTolerant() {
 		return industrialAccidentImpact{}, false
 	}
-	i, ok := originalIndustrialAccidentColony(s.PlayerColonies, s.eventRand)
+	i, ok := originalIndustrialAccidentColony(s.PlayerColonies, s.ColonyBuildings, s.eventRand)
 	if !ok {
 		return industrialAccidentImpact{}, false
 	}
@@ -240,7 +242,7 @@ func (s *GameSession) applyAIIndustrialAccident(aiIndex int) (industrialAccident
 		return industrialAccidentImpact{}, false
 	}
 	a := &s.AIPlayers[aiIndex]
-	i, ok := originalIndustrialAccidentColony(a.Colonies, s.eventRand)
+	i, ok := originalIndustrialAccidentColony(a.Colonies, a.ColonyBuildings, s.eventRand)
 	if !ok {
 		return industrialAccidentImpact{}, false
 	}

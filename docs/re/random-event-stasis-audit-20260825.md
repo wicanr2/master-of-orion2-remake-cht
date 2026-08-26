@@ -43,7 +43,7 @@
 
 ## 未知
 
-- `colony+0x13F` 的玩家可見語意。
+- `colony+0x13F` 後續已由 Capitol 狀態鏈證實為 raw building 9；但時空異象目標使用
+  `sub_23BEC`，本輪靜態證據沒有顯示它以此欄排除 Capitol，故不得套用 `sub_23DA0` 的條件。
 - 事件 record state 2／5／6 與 GNN 畫面切換的精確同回合時序。
 - 1.50 binary 未取得，無法排除版本差異。
-

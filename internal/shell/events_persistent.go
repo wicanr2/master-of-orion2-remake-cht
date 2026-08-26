@@ -562,6 +562,41 @@ func (s *GameSession) galaxyHasActiveColonyAtStar(star int) bool {
 	return false
 }
 
+// galaxyHasEventColonyWithoutCapitolAtStar 對映 sub_23A5F 的候選星條件：至少一座
+// active colony 的 raw building 9 槽為零。這只決定超新星能否選該星，不縮小成立後的效果範圍。
+func (s *GameSession) galaxyHasEventColonyWithoutCapitolAtStar(star int) bool {
+	for i, candidate := range s.PlayerColonyStars {
+		if candidate == star && i < len(s.PlayerColonies) && s.PlayerColonies[i].Population > 0 &&
+			!colonyHasCapitol(s.ColonyBuildings, i) {
+			return true
+		}
+	}
+	if s.HotseatEnabled() {
+		for seatIndex := range s.Seats {
+			if seatIndex == s.ActiveSeat {
+				continue
+			}
+			v := &s.Seats[seatIndex]
+			for i, candidate := range v.PlayerColonyStars {
+				if candidate == star && i < len(v.PlayerColonies) && v.PlayerColonies[i].Population > 0 &&
+					!colonyHasCapitol(v.ColonyBuildings, i) {
+					return true
+				}
+			}
+		}
+	}
+	for ai := range s.AIPlayers {
+		a := &s.AIPlayers[ai]
+		for i, candidate := range a.ColonyStars {
+			if candidate == star && i < len(a.Colonies) && a.Colonies[i].Population > 0 &&
+				!colonyHasCapitol(a.ColonyBuildings, i) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (s *GameSession) supernovaSystemResearch(star int) int {
 	total := 0
 	for i, candidate := range s.PlayerColonyStars {
@@ -600,7 +635,7 @@ func (s *GameSession) pickSupernovaStar() (int, bool) {
 	}
 	for try := 0; try < 1000; try++ {
 		star := s.eventRoll(len(s.Stars)) - 1
-		if s.galaxyHasActiveColonyAtStar(star) && !s.pirateActivityConflictAtStar(star) {
+		if s.galaxyHasEventColonyWithoutCapitolAtStar(star) && !s.pirateActivityConflictAtStar(star) {
 			return star, true
 		}
 	}
@@ -627,7 +662,7 @@ func (s *GameSession) startSupernova() (string, bool) {
 
 func (s *GameSession) pickStasisStar(colonies []engine.ColonyState, stars []int) (int, bool) {
 	s.eventRandForTest()
-	i, ok := pickEarthquakeColony(colonies, s.eventRand.Intn)
+	i, ok := pickEarthquakeColony(colonies, nil, s.eventRand.Intn)
 	if !ok || i < 0 || i >= len(stars) {
 		return -1, false
 	}

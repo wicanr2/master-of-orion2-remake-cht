@@ -12,12 +12,12 @@ func TestOriginalMineralEventEligibility(t *testing.T) {
 	planets := []Planet{{MineralID: gamedata.ULTRA_POOR}, {MineralID: gamedata.RICH}, {MineralID: gamedata.ULTRA_RICH}}
 	planetAt := func(i int) *Planet { return &planets[i] }
 
-	idx, ok := originalMineralEventColony(colonies, planetAt, 11, newRandStream(11))
+	idx, ok := originalMineralEventColony(colonies, nil, planetAt, 11, newRandStream(11))
 	if !ok || idx != 2 {
 		t.Fatalf("枯竭事件只能選 Ultra Rich，得到 idx=%d ok=%v", idx, ok)
 	}
 	for seed := int64(1); seed <= 20; seed++ {
-		idx, ok = originalMineralEventColony(colonies, planetAt, 12, newRandStream(seed))
+		idx, ok = originalMineralEventColony(colonies, nil, planetAt, 12, newRandStream(seed))
 		if !ok || idx == 2 {
 			t.Fatalf("發現事件不可選已達上限的 Ultra Rich，seed=%d idx=%d ok=%v", seed, idx, ok)
 		}
@@ -58,6 +58,7 @@ func TestMineralEventExactDeltasAndGravity(t *testing.T) {
 func TestMineralEventUpdatesPlayerAndAIWorldState(t *testing.T) {
 	s := NewDemoSession()
 	s.eventRand = newRandStream(7)
+	delete(s.ColonyBuildings[0], CapitolBuildName)
 	for i := range s.PlayerColonies {
 		if p := s.ColonyPlanet(i); p != nil {
 			p.MineralID = gamedata.ULTRA_RICH

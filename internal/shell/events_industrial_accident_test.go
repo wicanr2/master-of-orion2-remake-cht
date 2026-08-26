@@ -20,12 +20,12 @@ func TestOriginalIndustrialAccidentHitsAllowsZero(t *testing.T) {
 
 func TestIndustrialAccidentClimateEligibility(t *testing.T) {
 	for _, climate := range []gamedata.PlanetClimate{gamedata.TOXIC, gamedata.RADIATED} {
-		if _, ok := originalIndustrialAccidentColony([]engine.ColonyState{{Climate: climate}}, newRandStream(1)); ok {
+		if _, ok := originalIndustrialAccidentColony([]engine.ColonyState{{Climate: climate}}, nil, newRandStream(1)); ok {
 			t.Fatalf("%v 不得成為工業事故目標", climate)
 		}
 	}
 	for climate := gamedata.BARREN; climate <= gamedata.GAIA; climate++ {
-		if i, ok := originalIndustrialAccidentColony([]engine.ColonyState{{Climate: climate}}, newRandStream(1)); !ok || i != 0 {
+		if i, ok := originalIndustrialAccidentColony([]engine.ColonyState{{Climate: climate}}, nil, newRandStream(1)); !ok || i != 0 {
 			t.Fatalf("%v 應可成為工業事故目標：i=%d ok=%v", climate, i, ok)
 		}
 	}

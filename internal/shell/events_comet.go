@@ -91,7 +91,8 @@ func (s *GameSession) appendComet(planet, star int) PersistentEvent {
 }
 
 func (s *GameSession) startPlayerComet() (string, bool) {
-	i, ok := pickEarthquakeColony(s.PlayerColonies, s.eventRand.Intn)
+	i, ok := pickEarthquakeColony(s.PlayerColonies,
+		func(i int) bool { return !colonyHasCapitol(s.ColonyBuildings, i) }, s.eventRand.Intn)
 	if !ok {
 		return "", false
 	}
@@ -109,7 +110,8 @@ func (s *GameSession) startAIComet(aiIndex int) (string, bool) {
 		return "", false
 	}
 	a := &s.AIPlayers[aiIndex]
-	i, ok := pickEarthquakeColony(a.Colonies, s.eventRand.Intn)
+	i, ok := pickEarthquakeColony(a.Colonies,
+		func(i int) bool { return !colonyHasCapitol(a.ColonyBuildings, i) }, s.eventRand.Intn)
 	if !ok || i >= len(a.ColonyPlanets) || i >= len(a.ColonyStars) {
 		return "", false
 	}

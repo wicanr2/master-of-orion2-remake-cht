@@ -20,7 +20,7 @@
    Barren..Gaia，排除 Toxic／Radiated。
 3. 200 次全失敗後，線性掃描仍持續覆寫結果，故 fallback 是最高索引的合格
    殖民地。`sub_23DA0` 另拒絕 raw `colony+0x13F != 0`；此欄已證實為 Capitol，remake
-   已有 typed 對等狀態，但事件抽選器尚未接入此條件。
+   已以各帝國 `ColonyBuildings` 的 typed 狀態接入此條件，fallback 也套用相同資格。
 
 ## 效果與亂數
 

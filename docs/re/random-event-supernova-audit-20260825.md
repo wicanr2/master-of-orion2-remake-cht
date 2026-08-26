@@ -37,8 +37,8 @@
 
 - **強推論：**planet `+0x08=1` 對應 Radiated，與資料表及手冊結果一致；本輪未重新命名 raw
   planet 欄位，程式仍保留原位址證據。
-- **已證實但尚未接線：**`colony+0x13F` 是 Capitol 建築槽；remake 已有對等欄位，候選目前仍以 active colony
-  表示並標為近似。
+- **已接線：**`colony+0x13F` 是 Capitol 建築槽；remake 候選星現在至少需要一座 active 且
+  無 Capitol 的殖民地。事件成立後的 RP 與爆發 consumer 仍掃同星全部 active 殖民地。
 - 1.50 二進位未取得；倒數若與 1.50 手冊 6–14 不同，須由版本 profile 處理，不能把 1.31
   指令改寫成手冊共同規則。
 

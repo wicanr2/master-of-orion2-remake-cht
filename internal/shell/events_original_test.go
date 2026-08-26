@@ -176,10 +176,10 @@ func TestEventsHaveRealEffects(t *testing.T) {
 				}
 				return
 			case 8: // 艦船爆炸
-				if len(s.Fleet().Ships) >= before.ships {
-					t.Errorf("seed %d:艦船事件後艦數應減少(%d → %d)", seed, before.ships, len(s.Fleet().Ships))
+				// 全銀河事件可能命中 AI；只有玩家艦數真的改變時才完成這個玩家側抽樣。
+				if len(s.Fleet().Ships) < before.ships {
+					return
 				}
-				return
 			}
 		}
 	}

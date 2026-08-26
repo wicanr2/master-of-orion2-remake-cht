@@ -4,14 +4,15 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 )
 
-func (s *GameSession) plagueTargetEligible(colonies []engine.ColonyState, planetAt func(int) int) (int, bool) {
+func (s *GameSession) plagueTargetEligible(colonies []engine.ColonyState, buildings []map[string]bool,
+	planetAt func(int) int) (int, bool) {
 	if len(colonies) == 0 || planetAt == nil || s.eventRand == nil {
 		return 0, false
 	}
-	// sub_23DA0 做一次 reservoir sampling；它另要求 colony+0x13F==0（無 Capitol），該
-	// 欄位的玩家語意仍未知，remake 只保留已能表示的殖民地事件互斥條件。
-	i := reservoirEventColony(colonies, s.eventRand)
-	if i < 0 {
+	// sub_23DA0 只在無 Capitol 候選間作一次 reservoir sampling；事件 16 本身不重抽。
+	i, ok := pickEarthquakeColony(colonies,
+		func(i int) bool { return !colonyHasCapitol(buildings, i) }, s.eventRand.Intn)
+	if !ok {
 		return 0, false
 	}
 	planet := planetAt(i)
@@ -29,7 +30,7 @@ func originalPlagueResearchNeed(research, difficulty, roll1To8 int) (int, bool) 
 }
 
 func (s *GameSession) startPlayerPlague() (idx, need int, ok bool) {
-	i, ok := s.plagueTargetEligible(s.PlayerColonies, s.ColonyPlanetIndex)
+	i, ok := s.plagueTargetEligible(s.PlayerColonies, s.ColonyBuildings, s.ColonyPlanetIndex)
 	if !ok || i >= len(s.LastPlayerOutput.Colonies) {
 		return 0, 0, false
 	}
@@ -54,7 +55,7 @@ func (s *GameSession) startAIPlague(aiIndex int) (idx, need int, ok bool) {
 		}
 		return -1
 	}
-	i, ok := s.plagueTargetEligible(a.Colonies, planetAt)
+	i, ok := s.plagueTargetEligible(a.Colonies, a.ColonyBuildings, planetAt)
 	if !ok {
 		return 0, 0, false
 	}

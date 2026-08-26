@@ -26,7 +26,7 @@ colony index 寫入事件 record `word +3`；選不到殖民地時使事件失�
 所有直接 callsite 都把 player slot 放在 `eax`，而 helper 每遇到第 `n` 個合格候選便呼叫
 `Random(n)`，只有結果等於 1 才取代目前目標。擁有者與 reservoir 行為為**已證實**；
 `+0x06` 已由既有 `.GAM` layout 對回 outpost／無殖民地狀態，`+0x13F` 已證實是
-Capitol 建築槽；remake 目前尚未把這個排除條件接入事件抽選器。
+Capitol 建築槽；remake 已以 `ColonyBuildings` 的 typed raw 9 狀態接入相同排除條件。
 
 ## 地震強度公式
 
@@ -69,4 +69,4 @@ Capitol 建築槽；remake 目前尚未把這個排除條件接入事件抽選�
 - remake 不保存原版 packed colonist 排列；人口被抽中後以既有 deterministic 職務／群組
   正規化維持資料一致。候選集合與總人口回寫對齊，死亡的是哪一筆 packed colonist 仍是
   **明示近似**。
-- `colony +0x13F` 已解為 Capitol 建築槽；地震目標抽選器尚未套用排除條件。
+- `colony +0x13F` 已解為 Capitol 建築槽；地震目標抽選器已只在無 Capitol 候選間作 reservoir sampling。

@@ -203,6 +203,7 @@ func TestSupernovaCountdownAndOutcome(t *testing.T) {
 
 func TestStartSupernovaUsesOriginalNeedFormulaAndGlobalTarget(t *testing.T) {
 	s := NewDemoSession()
+	delete(s.ColonyBuildings[0], CapitolBuildName)
 	s.Turn = 201 // elapsed=200
 	s.Difficulty = 4
 	if _, ok := s.startSupernova(); !ok {
@@ -235,6 +236,7 @@ func TestSupernovaCanTargetAIOnlyStar(t *testing.T) {
 	}
 	s.Turn = 201
 	want := s.AIPlayers[0].ColonyStars[0]
+	delete(s.AIPlayers[0].ColonyBuildings[0], CapitolBuildName)
 	if _, ok := s.startSupernova(); !ok {
 		t.Fatal("專用 sub_23A5F 目標不得限定目前玩家")
 	}
@@ -684,6 +686,7 @@ func TestNewlyImplementedEventsAreDispatched(t *testing.T) {
 		// 分派要真的有 case——沒有的話 applyRandomEvent 會落到最後的 return "", false。
 		// 這裡用一個乾淨的 session 逐一試,只要求「不是因為沒有 case 而回 false」。
 		fresh := NewDemoSession()
+		delete(fresh.ColonyBuildings[0], CapitolBuildName)
 		fresh.Turn = 400
 		fresh.Player.ActiveFreighters = 100 // 事件 14 原版要求難度換算後至少有 5 點海盜強度。
 		fresh.Fleet().DestStar, fresh.Fleet().ETA = 5, 9

@@ -30,7 +30,7 @@ func TestPickEarthquakeColonyUsesReservoirOrder(t *testing.T) {
 	wants := []int{1, 2, 3}
 	returns := []int{0, 1, 0}
 	calls := make([]int, 0, 3)
-	pick, ok := pickEarthquakeColony(colonies, func(n int) int {
+	pick, ok := pickEarthquakeColony(colonies, nil, func(n int) int {
 		calls = append(calls, n)
 		return returns[len(calls)-1]
 	})

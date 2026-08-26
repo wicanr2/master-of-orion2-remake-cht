@@ -8,9 +8,8 @@
 
 ## 規則
 
-1. 在目標帝國的殖民地中依原始索引做 reservoir sampling；目前可表示的合格條件是有效、
-   非前哨且沒有 Capitol（raw `+0x13F==0`）的殖民地；目前 remake 尚未把 Capitol
-   排除條件接入事件抽選器。
+1. 在目標帝國有效、非前哨且沒有 Capitol（raw `+0x13F==0`）的殖民地中，依原始索引做
+   reservoir sampling；remake 以各帝國 `ColonyBuildings` 的 typed raw 9 狀態限制候選。
 2. 令 `P = 人口 + 49 槽中目前已建且可對回原版 raw ID 的建築數`。
 3. 依序從事件亂數流取得 `r3 ∈ [1,3]`、`r2 ∈ [1,2]`，計算
    `damage = max(1, P × (r3+r2) / 10)`，整數除法向零截斷。

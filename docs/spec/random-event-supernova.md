@@ -8,10 +8,10 @@
 ## 建立
 
 - elapsed turn 至少 200。
-- 從全銀河 `0..len(Stars)-1` 每次等機率抽一星，最多 1,000 次；候選需至少一座 active
+- 從全銀河 `0..len(Stars)-1` 每次等機率抽一星，最多 1,000 次；候選需至少一座 active、
+  無 Capitol 的
   玩家／熱座／AI 殖民地，且不能與彗星、瘟疫、人口暴增、時空異象、海盜活動或另一超新星
-  同星。`colony+0x13F` 已證實為 Capitol 建築槽且已有 typed 狀態；事件星系抽選器
-  尚未接入「至少一個無 Capitol 的有效殖民地」條件。
+  同星。`colony+0x13F` 已證實為 Capitol 建築槽且由各帝國 `ColonyBuildings` 表示。
 - 倒數=`roll1Based(5)+10-difficulty`；需求=`該星建立當下所有帝國殖民地 RP 總和×倒數`。
 - 保存 `StarIndex`、`Countdown`、`ResearchNeeded`、`ResearchDone=0`，可 JSON 往返。
 
