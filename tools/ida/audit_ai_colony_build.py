@@ -22,6 +22,8 @@ ROOTS = {
     "raw_Next_Turn_Calc": 0x136B3,
     "raw_AI_Barracks_Score_Flag": 0xCFF02,
     "raw_Colony_Building_Score": 0xD0036,
+    "raw_Player_Fields_3A_3C_Display_Consumer": 0x87BAE,
+    "raw_Player_Fields_3A_3C_AI_Consumer": 0xCF40D,
     "raw_Assign_Colony_New_Building": 0xD0B08,
     "raw_AI_Build_Dispatch": 0xD0D2F,
     "raw_Assign_Empire_Building": 0xD10EE,
@@ -54,6 +56,7 @@ ROOTS = {
     "raw_Colony_Food_Per_Farmer": 0xDE03E,
     "raw_Colony_Industry_Production": 0xDEE1B,
     "raw_Recompute_Colony_Output": 0xE1D59,
+    "raw_Recompute_Player_Fields_3A_3C": 0xE2000,
     "raw_Recompute_Player_Economy": 0xE2710,
     "raw_Do_Colony_Calculations": 0xE2B31,
     "raw_Apply_Player_Economy": 0xE4F49,
@@ -66,6 +69,8 @@ TRACKED_RECORD_OFFSETS = {
     "colony_pollution_word": 0x08,
     "colony_raw_e9_word": 0xE9,
     "player_food_balance_word": 0xB0,
+    "player_raw_3a_word": 0x3A,
+    "player_raw_3c_word": 0x3C,
     "colony_food_output_byte": 0xDD,
     "player_cybernetic_trait": 0x8B0,
     "player_lithovore_trait": 0x8B1,
@@ -92,6 +97,14 @@ REVIEWED_OFFSET_SEMANTICS = {
     "player_food_balance_word": {
         "semantic": "base-dependent raw +0xB0; player base stores empire food production minus consumption",
         "confidence": "confirmed_only_for_reviewed_player_base_context",
+    },
+    "player_raw_3a_word": {
+        "semantic": "player-context signed total command rating supply, recomputed by sub_E2000 and consumed by raw building scores 8/40/41",
+        "confidence": "confirmed_from_sub_E2000_write_display_and_ai_consumers",
+    },
+    "player_raw_3c_word": {
+        "semantic": "player-context signed command rating used by active ships, recomputed by sub_E2000 and consumed by raw building scores 8/40/41",
+        "confidence": "confirmed_from_sub_E2000_write_display_and_ai_consumers",
     },
     "colony_food_output_byte": {
         "semantic": "base-dependent raw +0xDD; colony-context meaning pending write-origin review",

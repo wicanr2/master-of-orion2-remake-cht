@@ -155,12 +155,15 @@ func TestEveryBuildingHasOrigID(t *testing.T) {
 	}
 }
 
-// TestOrigBuildingIDHasNoStrays:對照表裡不該有 remake 建築表沒有的名字
-// (打錯字會變成一筆永遠用不到的項目,而測試若只檢查「每棟都有對到」是抓不出來的)。
+// TestOrigBuildingIDHasNoStrays:對照表裡只能有常駐建築或具有原版 raw building ID 的
+// 一次性 Special。後者供 AI 分數跳表使用，不代表會畫在殖民地表面。
 func TestOrigBuildingIDHasNoStrays(t *testing.T) {
 	known := map[string]bool{}
 	for _, b := range gamedata.Buildings {
 		known[b.NameEN] = true
+	}
+	for _, action := range gamedata.SpecialActions {
+		known[action.NameEN] = true
 	}
 	for name := range origBuildingID {
 		if !known[name] {
@@ -521,16 +524,14 @@ func TestColonySatellitePositionsMatchOriginal(t *testing.T) {
 //
 // 旗標既然沒被設起來,`Make_Bldg_Array_For_Colony_` 那個讀旗標陣列的迴圈就不會擺它們。
 //
-// remake 天然就是對的(SpecialActions 不在 `gamedata.Buildings` 裡,`origBuildingID`
-// 因此查不到它們),這支測試是把那個「天然正確」釘住——哪天有人「順手」把一次性項目
-// 加進建築表,地表就會冒出四棟原版沒有的房子。
+// `origBuildingID` 現在也供 AI raw 17/37/44 計分使用，因此可以包含一次性產品；真正要釘住的
+// 玩家可見契約是它們不進 `gamedata.Buildings`，且地表規劃永遠不產生這四個 ID。
 func TestColonySurfacePlanExcludesOneShotTransformations(t *testing.T) {
 	oneShot := map[int]string{17: "Gaia 轉化", 37: "土壤改良", 44: "地形改造", 48: "人造行星"}
-	for id, name := range oneShot {
-		for en, got := range origBuildingID {
-			if got == id {
-				t.Errorf("編號 %d(%s)是一次性改造,不該出現在 origBuildingID(對到了 %q)", id, name, en)
-			}
+	for _, b := range gamedata.Buildings {
+		rawID := origBuildingID[b.NameEN]
+		if oneShotName, ok := oneShot[rawID]; ok {
+			t.Errorf("一次性改造 %d(%s) 不得混入 gamedata.Buildings：%q", rawID, oneShotName, b.NameEN)
 		}
 	}
 	b := newSurfaceTestBuilder(t)

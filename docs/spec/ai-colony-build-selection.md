@@ -105,6 +105,13 @@
    三式最後加 `budgetFactor`；只有 raw 28 在 Radiated 氣候另加 `2×[Pacifist]`。
    完工必須保留互斥建築語意、把 Radiated colony／planet 同步轉成 Barren，並由實際軌道轟炸
    的逐發減傷 consumer 驗證，不可只測建築旗標。
+   raw ID 40 Star Base、raw ID 8 Battlestation 與 raw ID 41 Star Fortress 也使用同一份
+   星系壓力 context，並另讀 typed 指揮評等。priority gate 成立且沒有 ETA=9 艦隊時為 0；
+   raw 40 的 pressure 是 `10×ETA9+4×條約+8×無政策+16×戰爭+3×延伸`，raw 8／41 是
+   `10×ETA9+3×條約+6×無政策+12×戰爭+3×延伸`。三式都加入
+   `max(0,UsedCommandPoints+1-CommandPointsSupply)`；合併結果非零時加 `[Ruthless]`，最後加
+   `budgetFactor`。完工後 Battlestation 必須移除 Star Base，Star Fortress 必須移除兩個
+   低階基地；已有高階基地時不得把低階基地重新列為候選。
 5. 優先建築 gate 僅由已知科技 application、已建建築、殖民地礦產及 AI 生效政府組成：
    - Ultra Poor／Poor／Abundant 殖民地已知 Automated Factories 但未建 Automated Factory；或
    - Feudal／Confederation／Dictatorship／Imperium 已知但未建 Marine Barracks／Armor Barracks。
@@ -158,6 +165,9 @@
 - raw 23／24／28 要測 priority gate 與 ETA9 的例外、四個 reach count、Ruthless、Pacifist／
   Radiated 專屬加分及 budget factor；三棟均須以唯一正常候選完工，驗證 Radiated→Barren
   colony／planet 同步，以及 5／10／20 的軌道轟炸逐發減傷。
+- raw 8／40／41 要測 priority gate 與 ETA9 例外、兩組外交係數、指揮評等恰好足夠／不足、
+  Ruthless 只在合併結果非零時加分，以及 budget factor。三棟須以正常候選走過完工替換鏈，
+  並至少由指揮評等與掃描範圍 consumer 驗證；已有高階基地時不得候選或完工低階基地。
 - 只完成多選主題但選了其他 application 時，不得觸發相應 Automated Factory／Barracks gate。
 - 精確分支與類別式 fallback 不可混稱同一證據等級。
 - 既有擴張測試以「建築＋造艦總投入」驗證新殖民地確實參與經濟，不再假設所有產出都是軍艦。

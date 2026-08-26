@@ -592,3 +592,44 @@ score += budgetFactor
 第十五批已閉合的燃料航程、外交、星系座標與艦隊 ETA；session-wide context 不完整時仍回報
 非 exact。完工消費端分成兩條：建築 map 由軌道轟炸逐發讀取 `5／10／20` 減傷，三面護盾
 任一建成時若原氣候為 Radiated，typed colony 與全局 planet 均轉成 Barren。
+
+## 第十七批：Star Base／Battlestation／Star Fortress
+
+2026-08-26 以正式 `.i64` 的一次性副本及 IDA Pro 9.4 重跑非破壞性探針。raw 40
+Star Base、raw 8 Battlestation、raw 41 Star Fortress 的跳表與基礎壓力式為：
+
+| raw ID | entry bytes → target | pressure formula |
+|---:|---|---|
+| 40 | `0xCFFFE c6010d00 → 0xD01C6` | `10×ETA9 + 4×treatyNear + 8×noPolicyNear + 16×warNear + 3×extended` |
+| 8 | `0xCFF7E 32020d00 → 0xD0232` | `10×ETA9 + 3×treatyNear + 6×noPolicyNear + 12×warNear + 3×extended` |
+| 41 | `0xD0002 77020d00 → 0xD0277` | 同 raw 8 |
+
+三式在 priority gate 成立且 ETA9 為 0 時歸零；其餘先算 pressure，再共同讀 signed word
+`player+0x3A／+0x3C @ 0xD0214..0xD0229`。若 `+0x3A <= +0x3C`，加入
+`+0x3C+1-(+0x3A)`，否則不加。合併後分數非零才於 `0xD0540..0xD0549` 加
+`[Ruthless]`，最後於 `0xD0414` 加 `budgetFactor`。
+
+兩個 player 欄位已沿寫入與顯示端閉合，不由計分式反猜名：
+
+- `sub_E2000 @ 0xE2000..0xE2644` 先於函式開頭把 `player+0x3A／+0x3C` 清零；前段由
+  殖民地軌道基地、科技與政體等來源重算 `+0x3A`，後段逐 active ship 讀 raw ship
+  `+0x10`，加一後累計到 `+0x3C`。因此兩欄分別是**總指揮評等供給**與**現役艦隊占用**。
+- UI consumer `sub_87BAE @ 0x87BAE` 以玩家 record stride `0xEA9` 讀兩欄，顯示
+  `+0x3A` 及 `+0x3A-+0x3C`；AI consumer `sub_CF40D @ 0xCF40D` 亦以兩欄比較控制艦隊配置。
+  這些獨立 consumer 與唯一重算鏈共同把語意提升為**已證實**。
+
+完整公式因此為：
+
+```text
+priorityGate && !incomingETA9 → 0
+commandDeficit = max(0, commandUsed + 1 - commandSupply)
+score = pressureFormula + commandDeficit
+score != 0 時 score += [Ruthless]
+score += budgetFactor
+```
+
+raw 40 的外交係數比兩個高階基地更高是原始 bytes 與共享尾端的直接結果，不按建築等級
+自行「修順」。remake 的 typed 對映使用既有 `CommandPointsSupply／UsedCommandPoints`；完工時
+Battlestation 必須取代 Star Base，Star Fortress 必須取代兩者。指揮評等、掃描範圍與戰鬥
+衛星 consumer 已存在；衛星 hull space／精確武裝仍是另有揭露的近似，不能由本批 AI 計分
+證據升格為原版精確火力。

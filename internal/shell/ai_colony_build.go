@@ -197,9 +197,11 @@ type originalAIBuildScoreContext struct {
 	hostileAlienPopulation        bool
 	armorBarracksBuilt            bool
 	marineBarracksBuilt           bool
+	commandPointsSupply           int
+	usedCommandPoints             int
 }
 
-// originalAIStrategicPressureContext 是 raw 2／22／23／24／28 共用的 session-wide 暫態輸入；不進存檔。
+// originalAIStrategicPressureContext 是 raw 2／8／22／23／24／28／40／41 共用的 session-wide 暫態輸入；不進存檔。
 // score 公式本身可精確測試，而跨帝國航程由 GameSession 在候選建立前一次投影。
 type originalAIStrategicPressureContext struct {
 	known                  bool
@@ -444,6 +446,30 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		ruthless = 1
 	}
 	switch rawID {
+	case 8, 40, 41: // 0xD01C6..0xD02BA：三層軌道基地
+		if !ctx.strategicPressureContextKnown {
+			return 0, false
+		}
+		if ctx.priorityGate && !ctx.incomingOtherFleetETA9 {
+			return 0, true
+		}
+		incoming := 0
+		if ctx.incomingOtherFleetETA9 {
+			incoming = 1
+		}
+		score := 10*incoming + 3*ctx.reachTreatyNear + 6*ctx.reachNoPolicyNear +
+			12*ctx.reachWarNear + 3*ctx.reachExtended
+		if rawID == 40 {
+			score = 10*incoming + 4*ctx.reachTreatyNear + 8*ctx.reachNoPolicyNear +
+				16*ctx.reachWarNear + 3*ctx.reachExtended
+		}
+		if deficit := ctx.usedCommandPoints + 1 - ctx.commandPointsSupply; deficit > 0 {
+			score += deficit
+		}
+		if score != 0 {
+			score += ruthless
+		}
+		return score + originalAIBudgetFactor(ctx.treasuryBefore, ctx.netBC), true
 	case 23, 24, 28: // 0xD03B5..0xD04B2：三種 Planetary Shield
 		if !ctx.strategicPressureContextKnown {
 			return 0, false
@@ -798,6 +824,8 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 		ownerHighGravity:      aiRaceHasTrait(*a, gamedata.TRAIT_HIGH_G),
 		armorBarracksBuilt:    built["裝甲營房"],
 		marineBarracksBuilt:   built["海軍陸戰隊營"],
+		commandPointsSupply:   empireOut.Player.CommandPointsSupply,
+		usedCommandPoints:     empireOut.Player.UsedCommandPoints,
 	}
 	if len(pressure) > 0 {
 		ctx.strategicPressureContextKnown = pressure[0].known
@@ -812,7 +840,7 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 	ctx.primaryPopCapacity, ctx.primaryPopCapKnown = originalAIPrimaryPopulationCapacity(a.Colonies[colony], built, known)
 	maxScore := 1 // raw Assign_Colony_New_Building_ 也把最大分數下限夾到 1。
 	for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
-		if built[b.NameZH] {
+		if built[b.NameZH] || aiOrbitalBaseSuperseded(b.NameZH, built) {
 			continue
 		}
 		score := aiBuildingScore(b, a.Colonies[colony], out, a.Personality, ctx)
@@ -876,6 +904,30 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 		pick -= c.score
 	}
 	return candidates[len(candidates)-1].build, true
+}
+
+// aiOrbitalBaseSuperseded 阻止高階軌道基地已完工後又候選低階基地。原版三者是取代鏈，
+// 不是可重複建造的三個獨立建築；這也安全處理舊存檔中殘留的低階產品。
+func aiOrbitalBaseSuperseded(name string, built map[string]bool) bool {
+	switch name {
+	case "星基":
+		return built["戰鬥站"] || built["星辰要塞"]
+	case "戰鬥站":
+		return built["星辰要塞"]
+	default:
+		return false
+	}
+}
+
+// applyAICompletedOrbitalBase 維持 Star Base → Battlestation → Star Fortress 的單槽取代鏈。
+func applyAICompletedOrbitalBase(name string, built map[string]bool) {
+	switch name {
+	case "戰鬥站":
+		delete(built, "星基")
+	case "星辰要塞":
+		delete(built, "星基")
+		delete(built, "戰鬥站")
+	}
 }
 
 // applyAICompletedBuilding 把已完成建築接到 AI 殖民地的主要經濟欄位。建築 map 仍是
@@ -1035,8 +1087,9 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 			if a.ColonyBuildings[i] == nil {
 				a.ColonyBuildings[i] = make(map[string]bool)
 			}
-			if !a.ColonyBuildings[i][build.Name] {
+			if !a.ColonyBuildings[i][build.Name] && !aiOrbitalBaseSuperseded(build.Name, a.ColonyBuildings[i]) {
 				s.applyAICompletedPlanetaryShield(aiIndex, i, build.Name, a.ColonyBuildings[i])
+				applyAICompletedOrbitalBase(build.Name, a.ColonyBuildings[i])
 				a.ColonyBuildings[i][build.Name] = true
 				applyAICompletedBuilding(&a.Colonies[i], build.Name)
 			}

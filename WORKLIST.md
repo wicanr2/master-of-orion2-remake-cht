@@ -377,6 +377,11 @@
   以及 Radiation Shield 的 Radiated／Pacifist 加分。三棟可由正常唯一候選完工，會依序取代
   低階護盾、同步 AI colony／planet 的 Radiated→Barren，並由既有軌道轟炸 consumer 讀取
   每發 5／10／20 減傷；context 不完整時維持明示 fallback。
+  raw 40 Star Base、raw 8 Battlestation 與 raw 41 Star Fortress 亦已由同一星系壓力 context、
+  `sub_E2000` 的 `player+0x3A／+0x3C` 寫入鏈及 UI／AI consumer 閉合；typed 分數現保留
+  兩組外交係數、`max(0,used+1-supply)` 指揮赤字、Ruthless 與 budget factor。正常候選完工
+  會維持 Star Base→Battlestation→Star Fortress 單槽取代鏈，且已由指揮評等與掃描範圍
+  consumer 抽測；衛星精確武裝／hull space 仍維持原有近似，不因本項升格。
   其餘分數區域、
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
   state machine 亦待閉合。見

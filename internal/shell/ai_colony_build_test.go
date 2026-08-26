@@ -1125,6 +1125,132 @@ func TestAIPlanetaryShieldCandidateCompletionAndConsumers(t *testing.T) {
 	}
 }
 
+func TestAIOriginalOrbitalBaseScores(t *testing.T) {
+	starBase, _ := gamedata.BuildingByNameZH("星基")
+	battlestation, _ := gamedata.BuildingByNameZH("戰鬥站")
+	starFortress, _ := gamedata.BuildingByNameZH("星辰要塞")
+	ctx := originalAIBuildScoreContext{
+		strategicPressureContextKnown: true,
+		reachTreatyNear:               1,
+		reachNoPolicyNear:             2,
+		reachWarNear:                  3,
+		reachExtended:                 4,
+		incomingOtherFleetETA9:        true,
+		commandPointsSupply:           5,
+		usedCommandPoints:             7,
+	}
+	if score, exact := originalAIExactBuildingScore(starBase, engine.ColonyState{}, ai.PersonalityRuthless, ctx); !exact || score != 94 {
+		t.Fatalf("Star Base score=(%d,%v)，want (94,true)", score, exact)
+	}
+	for _, b := range []gamedata.Building{battlestation, starFortress} {
+		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{}, ai.PersonalityRuthless, ctx); !exact || score != 77 {
+			t.Errorf("%s score=(%d,%v)，want (77,true)", b.NameZH, score, exact)
+		}
+	}
+
+	ctx = originalAIBuildScoreContext{
+		strategicPressureContextKnown: true,
+		priorityGate:                  true,
+		commandPointsSupply:           5,
+		usedCommandPoints:             99,
+	}
+	if score, exact := originalAIExactBuildingScore(starBase, engine.ColonyState{}, ai.PersonalityRuthless, ctx); !exact || score != 0 {
+		t.Fatalf("priority gate 無 ETA9 必須先歸零，不得吃指揮赤字：(%d,%v)", score, exact)
+	}
+	ctx.priorityGate = false
+	ctx.usedCommandPoints = 5
+	if score, exact := originalAIExactBuildingScore(starBase, engine.ColonyState{}, ai.PersonalityRuthless, ctx); !exact || score != 2 {
+		t.Fatalf("恰好用滿供給時 command deficit 1 再加 Ruthless：(%d,%v)，want 2", score, exact)
+	}
+	ctx.commandPointsSupply = 6
+	if score, exact := originalAIExactBuildingScore(starBase, engine.ColonyState{}, ai.PersonalityRuthless, ctx); !exact || score != 0 {
+		t.Fatalf("尚餘一點供給時不得加 deficit 或 Ruthless：(%d,%v)", score, exact)
+	}
+}
+
+func TestAIOrbitalBaseCandidateCompletionReplacementAndConsumers(t *testing.T) {
+	tests := []struct {
+		name        string
+		topic       gamedata.ResearchTopic
+		lower       []string
+		wantCommand int
+		wantScan    int
+	}{
+		{"星基", gamedata.TOPIC_ENGINEERING, nil, 1, 2},
+		{"戰鬥站", gamedata.TOPIC_ROBOTICS, []string{"星基"}, 2, 4},
+		{"星辰要塞", gamedata.TOPIC_SUPERSCALAR_CONSTRUCTION, []string{"星基", "戰鬥站"}, 3, 6},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := NewDemoSession()
+			a := &s.AIPlayers[0]
+			a.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{tt.topic: true}
+			a.ColonyBuildings[0] = make(map[string]bool)
+			for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
+				if b.NameZH != tt.name {
+					a.ColonyBuildings[0][b.NameZH] = true
+				}
+			}
+			for _, name := range tt.lower {
+				a.ColonyBuildings[0][name] = true
+			}
+			out := engine.EmpireOutput{
+				Colonies: []engine.ColonyOutput{{NetIndustry: 3000}},
+				Player:   engine.PlayerState{CommandPointsSupply: 5, UsedCommandPoints: 5},
+			}
+			build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1,
+				originalAIStrategicPressureContext{known: true})
+			if !ok || build.Name != tt.name {
+				t.Fatalf("唯一軌道基地候選錯誤：build=%+v ok=%v built=%v", build, ok, a.ColonyBuildings[0])
+			}
+			a.ColonyBuilds = map[int]ColonyBuild{aiColonyBuildKey(a, 0): {Name: tt.name, Cost: 1}}
+			s.advanceAIColonyBuilds(0, out)
+			if !a.ColonyBuildings[0][tt.name] {
+				t.Fatalf("%s 完工未寫入建築 map", tt.name)
+			}
+			for _, name := range tt.lower {
+				if a.ColonyBuildings[0][name] {
+					t.Fatalf("%s 完工後仍殘留低階基地 %s", tt.name, name)
+				}
+			}
+			if got := gamedata.CommandPointsFromBuildings(a.ColonyBuildings[0]); got != tt.wantCommand {
+				t.Fatalf("指揮評等 consumer=%d，want %d", got, tt.wantCommand)
+			}
+			if got := gamedata.OrbitalScannerBonusParsec(a.ColonyBuildings[0]); got != tt.wantScan {
+				t.Fatalf("掃描範圍 consumer=%d，want %d", got, tt.wantScan)
+			}
+		})
+	}
+}
+
+func TestAIOrbitalBaseDoesNotDowngrade(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	a.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{
+		gamedata.TOPIC_ENGINEERING:              true,
+		gamedata.TOPIC_ROBOTICS:                 true,
+		gamedata.TOPIC_SUPERSCALAR_CONSTRUCTION: true,
+	}
+	a.ColonyBuildings[0] = map[string]bool{"星辰要塞": true}
+	for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
+		if b.NameZH != "星基" && b.NameZH != "戰鬥站" {
+			a.ColonyBuildings[0][b.NameZH] = true
+		}
+	}
+	out := engine.EmpireOutput{
+		Colonies: []engine.ColonyOutput{{NetIndustry: 100}},
+		Player:   engine.PlayerState{CommandPointsSupply: 5, UsedCommandPoints: 99},
+	}
+	if build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1,
+		originalAIStrategicPressureContext{known: true}); ok {
+		t.Fatalf("已有 Star Fortress 時不得降級候選：%+v", build)
+	}
+	if !aiOrbitalBaseSuperseded("星基", a.ColonyBuildings[0]) ||
+		!aiOrbitalBaseSuperseded("戰鬥站", a.ColonyBuildings[0]) {
+		t.Fatal("高階基地的 typed 取代 gate 未覆蓋兩個低階產品")
+	}
+}
+
 func TestAIBarracksCandidateCompletionAndGroundForceConsumer(t *testing.T) {
 	tests := []struct {
 		name       string
