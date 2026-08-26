@@ -166,11 +166,12 @@
 - [~] **原版對局內 SETTINGS 分頁**：2026-08-26 已完成原版 13 列畫面、資產、外部雙語文案、
   原版預設值、`.GAM` 匯入與 JSON 往返。IDA 證實
   `Do_Options_Game_Popup_ @ 0x7E00F..0x7E154` 與 `_Draw_Options_Game_Popup_ @ 0x7FA28..0x8011F`
-  由 `_Game_Popup_ @ 0x8012F` 的四路 switch 直接進入。現行 SETTINGS 只在主選單就地展開
+  由 `_Game_Popup_ @ 0x8012F` 的四路 switch 直接進入，並已追回
   `sub_7FA28` 的 13 欄、文字 ID、17 px 列距、設定位元、`sub_7EFEF` 載入、
   `Update_Game_Settings_ @ 0x7F14C` 回寫及 `sub_127E1` 預設。remake 已接遷移線、自動存檔、
-  結局動畫與回合摘要消費端；Enemy Moves、Expanding Help、Auto Select Ships／Colony、GNN、
-  Auto Delete Trade Goods／Housing、Serious Summary 與 Ship Initiative 尚須依各自玩家路徑閉合，
+  結局動畫、回合摘要，以及 Auto Delete Trade Goods／Housing 的原版建造佇列確認／清除消費端；
+  Enemy Moves、Expanding Help、Auto Select Ships／Colony、GNN、Serious Summary 與 Ship Initiative
+  尚須依各自玩家路徑閉合，
   不能因設定值可保存就宣稱生效。DOS／Win95 平台 API 內部維持既定停止線。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`

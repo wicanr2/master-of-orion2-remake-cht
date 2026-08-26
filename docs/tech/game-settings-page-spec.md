@@ -26,7 +26,8 @@
 ## 本切片消費端
 
 - 已接：Show Relocation Lines、Auto Save Game、Animations（結局過場 gate）、
-  End Of Turn Summary（一般回合與事件快報後）。
+  End Of Turn Summary（一般回合與事件快報後）、Auto Delete Trade Goods／Housing
+  （離開建造佇列時的原版阻塞模式確認／清除鏈）。
 - 其餘開關目前可往返保存，但在相應玩家路徑閉合前不得宣稱玩法效果已完成；它們留在
   WORKLIST 的玩家機制稽核，而不是以「畫面能切換」冒充功能完成。
 

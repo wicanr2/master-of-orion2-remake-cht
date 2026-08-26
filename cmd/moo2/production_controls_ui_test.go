@@ -3,10 +3,48 @@ package main
 import (
 	"testing"
 
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/assets"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
+
+func TestBuildQueueOKHonorsAutoDeleteSetting(t *testing.T) {
+	resolver, err := assets.NewResolver(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	makeScreen := func(auto bool) (*buildQueueScreen, *shell.GameSession) {
+		sess := shell.NewDemoSession()
+		sess.Builds[0] = shell.ColonyBuild{Name: shell.TradeGoodsBuildName}
+		if !sess.EnqueueBuild(0, "研究實驗室", 60) {
+			t.Fatal("測試前提：應能把一般產品排在貿易品後方")
+		}
+		settings := sess.EffectiveGameSettings()
+		settings.AutoDeleteTradeGoodHousing = auto
+		sess.ApplyGameSettings(settings)
+		b := &sceneBuilder{session: sess, colonyIdx: 0, lang: i18n.Traditional, res: resolver}
+		return &buildQueueScreen{b: b, idx: 0}, sess
+	}
+
+	screen, sess := makeScreen(false)
+	tr := screen.update(shell.InputState{ClickReleased: true, MouseX: 590, MouseY: 455})
+	if tr == nil {
+		t.Fatal("設定關閉且模式阻塞產品時，OK 應開啟確認框")
+	}
+	if _, ok := tr.next.(*confirmScreen); !ok {
+		t.Fatalf("設定關閉應轉到 confirmScreen，得到 %T", tr.next)
+	}
+	if got := sess.BlockingBuildMode(0); got != shell.TradeGoodsBuildName {
+		t.Fatalf("尚未確認前不得刪除，得到 blocking=%q", got)
+	}
+
+	screen, sess = makeScreen(true)
+	screen.update(shell.InputState{ClickReleased: true, MouseX: 590, MouseY: 455})
+	if got := sess.BlockingBuildMode(0); got != "" || sess.Builds[0].Name != "研究實驗室" {
+		t.Fatalf("設定開啟應直接清除阻塞模式並遞補產品：blocking=%q build=%+v", got, sess.Builds[0])
+	}
+}
 
 func TestBuildQueueControlsToggleAutoAndRepeat(t *testing.T) {
 	sess := shell.NewDemoSession()

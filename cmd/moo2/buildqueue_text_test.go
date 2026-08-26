@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
 
@@ -16,6 +17,7 @@ func TestBuildQueuePlayerTextComesFromExternalCatalog(t *testing.T) {
 		"buildqueue.message.auto_enabled", "buildqueue.message.auto_disabled",
 		"buildqueue.message.repeat_cancelled", "buildqueue.message.choose_repeat",
 		"buildqueue.message.unavailable", "buildqueue.message.repeat_invalid", "buildqueue.message.repeat_set",
+		"buildqueue.confirm.delete_mode_above_product",
 		"buildqueue.empty.available", "buildqueue.empty.slot", "buildqueue.queue.refit",
 		"buildqueue.queue.eta", "buildqueue.queue.progress", "buildqueue.list.cost",
 		"buildqueue.title.default_colony", "buildqueue.title.format", "buildqueue.hint.queue_remove",
@@ -50,6 +52,9 @@ func TestBuildQueueTextFitsSafeRects(t *testing.T) {
 		checkClippedTextFits(t, fnt, buildQueueStatusTextRect(),
 			fmt.Sprintf(uiText(lang, "buildqueue.status.repeat_active"), "Trans Dimensional Colony Ship"), 11)
 		assertBuildQueueMultilineFits(t, fnt, buildQueueMessageTextRect(), uiText(lang, "buildqueue.message.repeat_invalid"), 11)
+		confirm := fmt.Sprintf(uiText(lang, "buildqueue.confirm.delete_mode_above_product"),
+			buildItemLabel(lang, shell.TradeGoodsBuildName), buildItemLabel(lang, shell.TradeGoodsBuildName))
+		assertBuildQueueMultilineFits(t, fnt, confirmMessageTextRect(), confirm, confirmTextSize)
 	}
 	msg := buildQueueMessageTextRect()
 	if msg.y+msg.h > bqQueueY0 || msg.y < 0 || msg.y+msg.h > 480 {

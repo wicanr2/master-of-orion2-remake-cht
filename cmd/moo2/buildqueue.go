@@ -143,7 +143,21 @@ func (s *buildQueueScreen) update(in shell.InputState) *origTransition {
 			clickSound()
 		}
 		switch bt.act {
-		case "cancel", "ok":
+		case "cancel":
+			return b.goTo(b.colonyScreen, uiText(b.lang, "buildqueue.transition.colony"))
+		case "ok":
+			if mode := sess.BlockingBuildMode(s.idx); mode != "" {
+				finish := func() *origTransition {
+					sess.DeleteBlockingBuildModes(s.idx)
+					return b.goTo(b.colonyScreen, uiText(b.lang, "buildqueue.transition.colony"))
+				}
+				if sess.EffectiveGameSettings().AutoDeleteTradeGoodHousing {
+					return finish()
+				}
+				msg := fmt.Sprintf(uiText(b.lang, "buildqueue.confirm.delete_mode_above_product"),
+					buildItemLabel(b.lang, mode), buildItemLabel(b.lang, mode))
+				return &origTransition{next: b.confirm(s, msg, finish, nil)}
+			}
 			return b.goTo(b.colonyScreen, uiText(b.lang, "buildqueue.transition.colony"))
 		case "design":
 			return b.goTo(b.shipDesign, uiText(b.lang, "buildqueue.transition.ship_design"))

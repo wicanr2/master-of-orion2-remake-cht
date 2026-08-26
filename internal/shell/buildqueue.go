@@ -58,6 +58,51 @@ func (s *GameSession) BuildQueueFor(i int) []ColonyBuild {
 	return out
 }
 
+// BlockingBuildMode 回傳第一個位於其他非空佇列項之前的 Housing／Trade Goods 模式。
+// 原版 sub_B09CE 對七格佇列先找 raw -3／-2／-10，再檢查後方是否仍有非空項；
+// remake 的 Repeat Build 是獨立 typed 狀態而非 raw -10 格，因此這裡只處理實際存在於
+// BuildQueueFor 的兩種持續模式。空字串表示沒有阻塞項。
+func (s *GameSession) BlockingBuildMode(i int) string {
+	q := s.BuildQueueFor(i)
+	for pos, item := range q {
+		if item.Name != HousingBuildName && item.Name != TradeGoodsBuildName {
+			continue
+		}
+		for _, later := range q[pos+1:] {
+			if later.Name != "" {
+				return item.Name
+			}
+		}
+		return ""
+	}
+	return ""
+}
+
+// DeleteBlockingBuildModes 模擬 sub_B2542 @ 0xB2679..0xB26AB：只要仍有持續模式
+// 位於其他非空項之前，就刪除第一個；最後一個模式或一般產品會保留。回傳刪除數量。
+// 透過 DequeueBuild 執行，讓多人鎖步能記錄每個實際佇列變更。
+func (s *GameSession) DeleteBlockingBuildModes(i int) int {
+	deleted := 0
+	for {
+		name := s.BlockingBuildMode(i)
+		if name == "" {
+			return deleted
+		}
+		q := s.BuildQueueFor(i)
+		pos := -1
+		for j, item := range q {
+			if item.Name == name {
+				pos = j
+				break
+			}
+		}
+		if pos < 0 || !s.DequeueBuild(i, pos) {
+			return deleted
+		}
+		deleted++
+	}
+}
+
 // EnqueueBuild 把一個建造項排進殖民地 i 的佇列。
 // 當前沒有建造中的項目時直接成為當前項,否則排到隊尾。
 // 佇列已滿(含當前項共 BuildQueueTotalSlots 格)回 false。

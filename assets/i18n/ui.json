@@ -686,6 +686,7 @@
   {"key":"buildqueue.message.unavailable","english":"This action is unavailable","value":"這個操作目前不可用","note":"建造控制安全退路"},
   {"key":"buildqueue.message.repeat_invalid","english":"Only colony ships, outpost ships, freighters, and other Specials can repeat","value":"只能重複殖民船、前哨船、運輸艦隊或其他特殊項目","note":"現行 remake 重複建造限制"},
   {"key":"buildqueue.message.repeat_set","english":"Repeat Build set: %s","value":"已指定重複建造：%s","note":"%s 為外部建造項目名稱"},
+  {"key":"buildqueue.confirm.delete_mode_above_product","english":"%s is above a product. Do you want to delete %s before exiting?","value":"%s 排在其他產品之前。離開前要刪除%s嗎？","note":"E_Strings(0x3B) 原版確認句；兩個 %s 是同一個 Housing／Trade Goods 名稱"},
   {"key":"buildqueue.empty.available","english":"Nothing available to queue","value":"目前沒有可排入的項目","note":"可建清單空狀態"},
   {"key":"buildqueue.empty.slot","english":"(empty)","value":"（空）","note":"七格建造佇列空格"},
   {"key":"buildqueue.queue.refit","english":"REFIT: %s","value":"改裝：%s","note":"%s 為來源艦名"},

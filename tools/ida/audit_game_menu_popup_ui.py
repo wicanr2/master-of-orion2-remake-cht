@@ -30,6 +30,27 @@ ROOTS = {
     "game_popup_candidate": 0x8012F,
     "set_music_for_game_popup_candidate": 0x80892,
     "set_sound_for_game_popup_candidate": 0x80918,
+    "auto_delete_trade_goods_housing_consumer": 0xB2542,
+    "build_queue_special_entry_predicate": 0xB09CE,
+    "build_queue_delete_slot": 0xB2150,
+    "build_queue_entry_label": 0xB2FFA,
+    "special_build_entry_label": 0xAFC6D,
+}
+
+SETTING_GLOBALS = {
+    "end_of_turn_summary": 0x199BDC,
+    "end_of_turn_wait": 0x199BDD,
+    "enemy_moves": 0x199BDF,
+    "expanding_help": 0x199BE0,
+    "auto_select_ships": 0x199BE1,
+    "animations": 0x199BE2,
+    "auto_select_colony": 0x199BE3,
+    "show_relocation_lines": 0x199BE4,
+    "show_gnn_report": 0x199BE5,
+    "auto_delete_trade_goods_housing": 0x199BE6,
+    "auto_save_game": 0x199BE7,
+    "serious_turn_summary": 0x199BE8,
+    "ship_initiative": 0x199BE9,
 }
 
 
@@ -75,6 +96,23 @@ def function_record(ea):
     }
 
 
+def global_record(ea):
+    refs = []
+    for ref in idautils.DataRefsTo(ea):
+        owner = ida_funcs.get_func(ref)
+        refs.append({
+            "site": instruction(ref),
+            "function_start": f"0x{owner.start_ea:X}" if owner else None,
+            "function_end_exclusive": f"0x{owner.end_ea:X}" if owner else None,
+            "raw_name": ida_name.get_name(owner.start_ea) if owner else None,
+        })
+    return {
+        "address": f"0x{ea:X}",
+        "raw_name": ida_name.get_name(ea) or "<unnamed>",
+        "refs": refs,
+    }
+
+
 def main():
     ida_auto.auto_wait()
     source = os.environ["MOO2_IDA_INPUT"]
@@ -87,6 +125,7 @@ def main():
         "input": {"path": source, "sha256": digest(source)},
         "database": {"path": database, "sha256": digest(database)},
         "roots": {name: function_record(ea) for name, ea in ROOTS.items()},
+        "setting_globals": {name: global_record(ea) for name, ea in SETTING_GLOBALS.items()},
     }
     with open(os.environ["MOO2_IDA_OUTPUT"], "w", encoding="utf-8") as target:
         json.dump(output, target, ensure_ascii=False, indent=2)

@@ -128,3 +128,48 @@ func TestBuildQueueSurvivesSaveLoad(t *testing.T) {
 		t.Errorf("存讀檔後佇列應保留,got %+v", restored.BuildQueue)
 	}
 }
+
+func TestBlockingBuildModesMatchOriginalSevenSlotScan(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		current ColonyBuild
+		queue   []ColonyBuild
+		want    string
+		deleted int
+		remain  []string
+	}{
+		{name: "last mode is allowed", current: ColonyBuild{Name: TradeGoodsBuildName}, want: "", remain: []string{TradeGoodsBuildName}},
+		{name: "trade goods before product", current: ColonyBuild{Name: TradeGoodsBuildName}, queue: []ColonyBuild{{Name: "研究實驗室"}}, want: TradeGoodsBuildName, deleted: 1, remain: []string{"研究實驗室"}},
+		{name: "multiple modes preserve final mode", current: ColonyBuild{Name: TradeGoodsBuildName}, queue: []ColonyBuild{{Name: HousingBuildName}}, want: TradeGoodsBuildName, deleted: 1, remain: []string{HousingBuildName}},
+		{name: "multiple modes before product all removed", current: ColonyBuild{Name: HousingBuildName}, queue: []ColonyBuild{{Name: TradeGoodsBuildName}, {Name: "自動工廠"}}, want: HousingBuildName, deleted: 2, remain: []string{"自動工廠"}},
+		{name: "ordinary queue untouched", current: ColonyBuild{Name: "自動工廠"}, queue: []ColonyBuild{{Name: TradeGoodsBuildName}}, want: "", remain: []string{"自動工廠", TradeGoodsBuildName}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := NewDemoSession()
+			s.Builds[0] = tc.current
+			s.ensureBuildQueue()
+			s.BuildQueue[0] = append([]ColonyBuild(nil), tc.queue...)
+			if got := s.BlockingBuildMode(0); got != tc.want {
+				t.Fatalf("BlockingBuildMode=%q，預期 %q", got, tc.want)
+			}
+			if got := s.DeleteBlockingBuildModes(0); got != tc.deleted {
+				t.Fatalf("刪除數=%d，預期 %d", got, tc.deleted)
+			}
+			q := s.BuildQueueFor(0)
+			got := make([]string, 0, len(q))
+			for _, item := range q {
+				if item.Name != "" {
+					got = append(got, item.Name)
+				}
+			}
+			if len(got) != len(tc.remain) {
+				t.Fatalf("剩餘佇列=%v，預期 %v", got, tc.remain)
+			}
+			for i := range got {
+				if got[i] != tc.remain[i] {
+					t.Fatalf("剩餘佇列=%v，預期 %v", got, tc.remain)
+				}
+			}
+		})
+	}
+}

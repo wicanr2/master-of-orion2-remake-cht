@@ -31,6 +31,17 @@
 - `sub_127E1 @ 0x127E1..0x12937` 的原始指令已證實預設值：開啟回合摘要、回合等待、
   自動選艦、動畫、遷移線、GNN 與自動存檔；其餘六項關閉。`sub_12937` 把從
   `0x199BDC` 起的 `0x229` bytes 寫入 `mox.set`。這是玩家可見設定契約；檔案服務內部不深挖。
+- `byte_199BE6` 唯一的非載入／回寫直接資料參照位於 `sub_B2542 @ 0xB2542..0xB2FFA` 的
+  `0xB2660`。值非零時跳過 `Confirmation_Box_ @ sub_77658`，直接進入七格刪除迴圈；值為零時
+  先顯示 `E_Strings(0x3B)`：「`%s is above a product...`」，玩家拒絕便重繪建造佇列而不退出。
+- `sub_B09CE @ 0xB09CE..0xB0A24` 先找七格中的 raw `-3`、`-2`、`-10`，再檢查其後是否仍有
+  非空格；`sub_AFC6D @ 0xAFC6D..0xAFD42` 分別把三者映射到一基底 E_Strings ID
+  `0x142`、`0x21D`、`0x88`。正版 `ESTRINGS.LBX` 以 `loadStrings(offset=6)` 交叉驗證後，
+  三者依序是 `Housing`、`Trade Goods`、`^ Repeat ^`；ID `0x3B` 對應零基底第 58 條確認句。
+- `sub_B2150 @ 0xB2150..0xB2190` 會把指定格後方資料左移，並在移位後目前格為 raw `-10`
+  時繼續移除。`sub_B2542 @ 0xB2679..0xB26AB` 則重複掃描七格，只刪除仍位於其他非空項之前的
+  上述特殊模式；最後一個模式或一般產品保留。因此設定的精確語意是「離開佇列時自動確認清除
+  阻塞產品的 Housing／Trade Goods／Repeat」，不是每回合或完工後無條件刪除。
 - 外部符號所列 `Print_Options_To_Bitmap_ @ 0x7EDB1` 在目前 IDA 資料庫不是
   函式邊界；相鄰 `sub_7ED66` 精確結束於 `0x7EDB1`。本輪不以符號名強行建函式。
 
@@ -45,3 +56,6 @@
   交叉驗證，列為強推論。remake 使用固定文字安全框，不能以量圖座標反向升格為指令級證據。
 - 部分開關依賴原版畫面節奏或尚未閉合的消費端；remake 可保存其值，但只有已有明確玩家
   契約的消費端可宣稱生效。Windows／DOS 平台 API 與 `mox.set` 檔案服務維持停止線。
+- remake 的 Repeat Build 是 `RepeatBuild[]` typed 狀態，不把 raw `-10` 插入七格佇列；因此
+  本輪精確重現 Housing／Trade Goods 的「模式在產品之前」掃描與確認流程，raw `-10` 的畫面
+  表示法保留為資料模型差異，不把 typed Repeat 狀態誤刪。
