@@ -76,6 +76,26 @@ type Header struct {
 
 	TreesSize                              uint32
 	MMapSize, MClrSize, FullSize, TypeSize uint32
+	Audio                                  [7]AudioTrackInfo
+}
+
+// AudioTrackInfo 是 Smacker 標頭內單一音軌的格式描述。
+type AudioTrackInfo struct {
+	MaxChunkSize  uint32
+	SampleRate    int
+	Channels      int
+	BitsPerSample int
+	Packed        bool
+	BinkAudio     bool
+	DCT           bool
+}
+
+// AudioTrack 是串接所有含音訊幀後的原始 PCM。
+type AudioTrack struct {
+	PCM           []byte
+	SampleRate    int
+	Channels      int
+	BitsPerSample int
 }
 
 // headerSize 是 Smacker 標頭的固定長度。
@@ -122,6 +142,19 @@ func ParseHeader(data []byte) (*Header, error) {
 	}
 	if h.Width <= 0 || h.Height <= 0 || h.Frames <= 0 {
 		return nil, fmt.Errorf("smk: 標頭尺寸不合理(%dx%d,%d 幀)", h.Width, h.Height, h.Frames)
+	}
+	for i := range h.Audio {
+		flagsRate := le.Uint32(data[72+i*4:])
+		flags := byte(flagsRate >> 24)
+		h.Audio[i] = AudioTrackInfo{
+			MaxChunkSize:  le.Uint32(data[24+i*4:]),
+			SampleRate:    int(flagsRate & 0x00ffffff),
+			Channels:      1 + int((flags>>4)&1),
+			BitsPerSample: 8 + 8*int((flags>>5)&1),
+			Packed:        flags&0x80 != 0,
+			BinkAudio:     flags&0x08 != 0,
+			DCT:           flags&0x04 != 0,
+		}
 	}
 	return h, nil
 }
@@ -372,6 +405,128 @@ func (d *Decoder) DecodeNext() (pix []byte, pal []byte, err error) {
 		return nil, nil, fmt.Errorf("smk: 第 %d 幀影像: %w", d.cur-1, err)
 	}
 	return d.pix, d.pal[:], nil
+}
+
+// DecodeAudioTrack 解出指定音軌並串接為原生取樣率的 PCM。它不改變影像解碼位置。
+// MOO2 實際資產只使用 Smacker packed 8-bit PCM；其餘 codec 明確拒絕，避免把未知格式當聲音。
+func (d *Decoder) DecodeAudioTrack(track int) (*AudioTrack, error) {
+	if track < 0 || track >= len(d.H.Audio) {
+		return nil, fmt.Errorf("smk: 音軌索引超出範圍(%d)", track)
+	}
+	info := d.H.Audio[track]
+	if info.SampleRate <= 0 {
+		return nil, fmt.Errorf("smk: 音軌 %d 不存在", track)
+	}
+	if info.BinkAudio || info.DCT || info.BitsPerSample != 8 {
+		return nil, fmt.Errorf("smk: 音軌 %d 使用未支援格式(Bink=%t,DCT=%t,%d-bit)", track, info.BinkAudio, info.DCT, info.BitsPerSample)
+	}
+	out := make([]byte, 0, int(info.MaxChunkSize)*d.H.Frames/2)
+	for frame, data := range d.frameData {
+		off, err := framePayloadOffset(data, d.frameFlags[frame])
+		if err != nil {
+			return nil, fmt.Errorf("smk: 第 %d 幀: %w", frame, err)
+		}
+		af := d.frameFlags[frame] >> 1
+		for i := 0; i < 7; i++ {
+			if af&1 != 0 {
+				size := int(binary.LittleEndian.Uint32(data[off:]))
+				packet := data[off+4 : off+size]
+				if i == track {
+					if info.Packed {
+						pcm, err := decodePackedAudio8(packet, info)
+						if err != nil {
+							return nil, fmt.Errorf("smk: 第 %d 幀音軌 %d: %w", frame, track, err)
+						}
+						out = append(out, pcm...)
+					} else {
+						out = append(out, packet...)
+					}
+				}
+				off += size
+			}
+			af >>= 1
+		}
+	}
+	return &AudioTrack{PCM: out, SampleRate: info.SampleRate, Channels: info.Channels, BitsPerSample: info.BitsPerSample}, nil
+}
+
+func framePayloadOffset(data []byte, flags byte) (int, error) {
+	off := 0
+	if flags&frameHasPalette != 0 {
+		if len(data) == 0 {
+			return 0, fmt.Errorf("調色盤記錄超出範圍")
+		}
+		size := int(data[0]) * 4
+		if size < 1 || size > len(data) {
+			return 0, fmt.Errorf("調色盤長度不合理(%d)", size)
+		}
+		off = size
+	}
+	af := flags >> 1
+	for i := 0; i < 7; i++ {
+		if af&1 != 0 {
+			if off+4 > len(data) {
+				return 0, fmt.Errorf("音軌 %d 超出範圍", i)
+			}
+			size := int(binary.LittleEndian.Uint32(data[off:]))
+			if size < 4 || off+size > len(data) {
+				return 0, fmt.Errorf("音軌 %d 長度不合理(%d)", i, size)
+			}
+			off += size
+		}
+		af >>= 1
+	}
+	if flags&frameHasPalette != 0 {
+		return int(data[0]) * 4, nil
+	}
+	return 0, nil
+}
+
+func decodePackedAudio8(packet []byte, info AudioTrackInfo) ([]byte, error) {
+	if len(packet) < 5 {
+		return nil, fmt.Errorf("壓縮封包太短")
+	}
+	want := int(binary.LittleEndian.Uint32(packet))
+	if want <= 0 || (info.MaxChunkSize > 0 && uint32(want) > info.MaxChunkSize) {
+		return nil, fmt.Errorf("解壓長度不合理(%d,上限 %d)", want, info.MaxChunkSize)
+	}
+	br := newBitReader(packet[4:])
+	if br.bit() == 0 {
+		return make([]byte, want), nil
+	}
+	channels := 1 + int(br.bit())
+	bits := 8 + 8*int(br.bit())
+	if channels != info.Channels || bits != 8 {
+		return nil, fmt.Errorf("封包格式 %d 聲道/%d-bit 與標頭不符", channels, bits)
+	}
+	trees := make([]*tree8, channels)
+	for i := range trees {
+		br.bit()
+		var err error
+		trees[i], err = readTree8(br, 0)
+		if err != nil {
+			return nil, err
+		}
+		br.bit()
+	}
+	out := make([]byte, want)
+	pred := make([]byte, channels)
+	for i := channels - 1; i >= 0; i-- {
+		pred[i] = byte(br.bits(8))
+	}
+	if want < channels {
+		return nil, fmt.Errorf("解壓長度 %d 小於聲道數 %d", want, channels)
+	}
+	copy(out, pred)
+	for i := channels; i < want; i++ {
+		ch := i % channels
+		pred[ch] += trees[ch].decode(br)
+		out[i] = pred[ch]
+	}
+	if br.overread {
+		return nil, fmt.Errorf("壓縮位元流超出封包")
+	}
+	return out, nil
 }
 
 // decodeVideo 解一幀的影像位元流(4×4 區塊逐列)。

@@ -149,6 +149,29 @@ func toStereo16(src []byte, channels, bits int) []byte {
 	return out
 }
 
+// NewPCMClip 將原始 PCM 轉成 Mixer 使用的 16-bit LE 雙聲道，並以最近鄰重取樣。
+// Smacker 過場實際只需要 11025→22050（每個 frame 複製一次）與 22050→22050。
+func NewPCMClip(src []byte, sampleRate, channels, bits, targetRate int) (*Clip, error) {
+	if sampleRate <= 0 || targetRate <= 0 || (channels != 1 && channels != 2) || (bits != 8 && bits != 16) {
+		return nil, fmt.Errorf("audio: PCM 格式不合理(%d Hz,%d 聲道,%d-bit→%d Hz)", sampleRate, channels, bits, targetRate)
+	}
+	pcm := toStereo16(src, channels, bits)
+	if sampleRate == targetRate || len(pcm) == 0 {
+		return &Clip{PCM: pcm, SampleRate: targetRate}, nil
+	}
+	srcFrames := len(pcm) / 4
+	dstFrames := (srcFrames*targetRate + sampleRate/2) / sampleRate
+	out := make([]byte, dstFrames*4)
+	for i := 0; i < dstFrames; i++ {
+		s := i * sampleRate / targetRate
+		if s >= srcFrames {
+			s = srcFrames - 1
+		}
+		copy(out[i*4:i*4+4], pcm[s*4:s*4+4])
+	}
+	return &Clip{PCM: out, SampleRate: targetRate}, nil
+}
+
 // indexOf 回傳 needle 在 haystack 中第一次出現的位置,無則 -1。
 func indexOf(haystack, needle []byte) int {
 	n := len(needle)

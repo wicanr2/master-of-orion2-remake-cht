@@ -28,8 +28,9 @@ const maxTreeDepth = 512
 
 // bitReader 是 LSB-first 的位元讀取器(Smacker 的位元流是每個位元組從最低位讀起)。
 type bitReader struct {
-	data []byte
-	pos  int // 位元位置
+	data     []byte
+	pos      int // 位元位置
+	overread bool
 }
 
 func newBitReader(data []byte) *bitReader { return &bitReader{data: data} }
@@ -40,6 +41,7 @@ func (r *bitReader) bit() uint32 {
 	i := r.pos >> 3
 	if i >= len(r.data) {
 		r.pos++
+		r.overread = true
 		return 0
 	}
 	v := uint32(r.data[i]>>(uint(r.pos)&7)) & 1

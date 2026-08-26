@@ -158,7 +158,7 @@
 | 8 | ~~**`Colony_Landing` / `Colony_Combat` / `Colony_Bombing`**~~ | 中 | ✅ 2026-08-07 全部已建(`cmd/moo2/groundcombat.go`、`cmd/moo2/bombing.go`),版面座標取自反組譯(見下方第 15、18 項)|
 | 9 | ~~**`Main_Antaran_Room`**~~ | 中 | ✅ `cmd/moo2/antaranroom.go` 會逐幀累積播放 `ANTAROOM.LBX#1` 的 55 幀；精確原版幀停留時間未知，現行每 3 tick 一幀為已標註近似 |
 | 10 | ~~**`Hall_Of_Fame` / `Hi_Score`**~~ | 低 | ✅ 2026-08-07 已建(`cmd/moo2/hiscore.go` + `gamedata/score.go`),八項計分係數全來自反組譯 module 60 |
-| 11 | **`Smack`** | 低 | 🟡 畫面與流程已建（`cmd/moo2/cutscene.go` + `internal/smk`）；音軌尚未解碼，不能稱完整完成 |
+| 11 | ~~**`Smack`**~~ | 低 | ✅ 畫面、流程與 MOO2 使用的 packed 8-bit PCM 已建（`cmd/moo2/cutscene.go` + `internal/smk`）；人耳抽聽仍是外部驗收 |
 | 12 | 多人連線 11 個畫面 | — | ✅ `MP_Setup`(`cmd/moo2/multiplayer.go`)與 `Hotseat`(`cmd/moo2/hotseat.go`)2026-08-07 已建,版面座標取自反組譯(見下方第 3 項(Colony+Event 畫面))。`Net_Next_Turn`(第 29 項(決定性化))與 `Choose_Net_Plyrs`(第 29 項(決定性化))2026-08-07 已建。`Modem_Setup`/`NullModem_Setup`/`Comm Info` **不做**(硬體已不存在)。`Join_Net`/`Generic_Net_Info`/`SendGet_Net_Info` 是同一張畫面的不同狀態(第 29 項(決定性化)),`Choose_Multi_Net_Game` 見第 29 項(決定性化)。**11 張全部結案:8 做 / 3 不做** |
 
 ### A-3 remake 有、原版無獨立畫面
@@ -556,7 +556,7 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
         另外訂正了一個版面推論:原版的 `Print_Centered_` 第二個引數是文字的**上緣**不是中心
 
 
-    ### Smacker 過場 → **畫面與流程已完成，音軌未完成**（`internal/smk/` + `cmd/moo2/cutscene.go`）。
+    ### Smacker 過場 → **畫面、流程與真實資產音軌已完成**（`internal/smk/` + `cmd/moo2/cutscene.go`）。
 
 
         先釐清前提:MOO2 的片頭與各結局過場**不是 LBX**,是**裸的 Smacker 檔**,只是沿用了

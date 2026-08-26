@@ -31,7 +31,7 @@
 - **已證實玩法：**按任意鍵或滑鼠動作可跳過；影片播完後回 caller。
 - **remake 介面修正：**移除非原版的底部跳過提示，避免文字覆蓋影片與黑邊；轉場名稱
   改由外部 JSON 提供。
-- **未知／未完成：**Smacker 音軌仍未解碼；原版 `SMACKSOUND*`／`_SmackDoPCM`
-  證明原始 runtime 有音訊能力，因此「Smacker 過場已完整完成」不能涵蓋聲音。
-  PCM／DAC／timer 內部依專案停止線不深挖，但 sample 解碼與人耳可見的播放完成閘門仍是
-  remake 功能缺口。
+- **已實作：**Smacker packed 8-bit mono／stereo 音軌已解碼並接入 Mixer；跳過或播完會
+  停止音軌並恢復背景音樂。格式證據與近似邊界見 `cutscene-audio-audit-20260827.md`。
+- **外部驗收：**PCM／DAC／timer 內部依專案停止線不深挖；有音訊輸出的桌面抽聽仍未完成，
+  因此不宣稱 DOS 硬體 wall-clock 或人耳聽感 parity。

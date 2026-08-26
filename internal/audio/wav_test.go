@@ -174,3 +174,20 @@ func TestExtractWAV(t *testing.T) {
 		}
 	})
 }
+
+func TestNewPCMClipResamples11025To22050(t *testing.T) {
+	clip, err := NewPCMClip([]byte{128, 129}, 11025, 1, 8, 22050)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if clip.SampleRate != 22050 || len(clip.PCM) != 16 {
+		t.Fatalf("clip=%d Hz/%d bytes", clip.SampleRate, len(clip.PCM))
+	}
+	for _, pair := range [][2]int{{0, 1}, {2, 3}} {
+		l0, r0 := frame16(t, clip.PCM, pair[0])
+		l1, r1 := frame16(t, clip.PCM, pair[1])
+		if l0 != l1 || r0 != r1 {
+			t.Fatalf("重取樣未複製 frame %d: (%d,%d) != (%d,%d)", pair[0], l0, r0, l1, r1)
+		}
+	}
+}

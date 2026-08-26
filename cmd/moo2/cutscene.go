@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	moo2audio "github.com/wicanr2/master-of-orion2-remake-cht/internal/audio"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
@@ -25,9 +26,7 @@ import (
 //     用累積毫秒對齊,不假設兩者同步。
 //   - 按任意鍵、點任意處或播完 → 離開；原版播放迴圈同時查鍵盤與滑鼠。
 //
-// ⚠ 誠實留白:**只有畫面沒有聲音**。Smacker 的音軌是壓縮的(片頭第 0 軌 23748 bytes、
-// 11025 Hz),解碼器目前跳過音訊區塊——那需要再實作一組 Smacker 音訊 Huffman,
-// 與畫面是兩套獨立的編碼。
+// 音軌在第一次互動 update 時才解碼與播放，截圖廊快轉不碰音訊裝置。
 
 // cutsceneScreen 播放一段 Smacker 影片。
 type cutsceneScreen struct {
@@ -41,10 +40,12 @@ type cutsceneScreen struct {
 	offX   int
 	offY   int
 
-	accumMS  float64 // 距離下一幀還差多少毫秒
-	done     bool
-	next     func() (*overlayScreen, error)
-	nextName string
+	accumMS      float64 // 距離下一幀還差多少毫秒
+	done         bool
+	audioStarted bool
+	audioClip    *moo2audio.Clip
+	next         func() (*overlayScreen, error)
+	nextName     string
 }
 
 // tickMS 是 ebiten 一個 tick 的毫秒數(固定 60 TPS)。
@@ -107,10 +108,22 @@ func cutsceneSkipRequested(in shell.InputState) bool {
 }
 
 func (s *cutsceneScreen) update(in shell.InputState) *origTransition {
+	if !s.audioStarted {
+		s.audioStarted = true
+		if track, err := s.dec.DecodeAudioTrack(0); err == nil {
+			s.audioClip, err = moo2audio.NewPCMClip(track.PCM, track.SampleRate, track.Channels, track.BitsPerSample, moo2SampleRate)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "過場 %s 音訊轉換失敗:%v\n", s.name, err)
+			}
+		}
+		playCutsceneAudio(s.audioClip)
+	}
 	if cutsceneSkipRequested(in) {
+		stopCutsceneAudio()
 		return s.b.goTo(s.next, s.nextName)
 	}
 	if s.done {
+		stopCutsceneAudio()
 		return s.b.goTo(s.next, s.nextName)
 	}
 	// 影片幀率(片頭 76 ms/幀)與 ebiten 的 60 TPS 不同步,用累積毫秒對齊。

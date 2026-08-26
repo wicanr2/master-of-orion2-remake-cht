@@ -1115,11 +1115,11 @@
 
 - [ ] **外部音訊驗收**：在有音訊輸出的桌面逐曲聽 `STREAM`／`STREAMHD` 與場景切換，確認音量與曲目；
   Docker 的解碼、長度、峰值、非靜音檢查已完成，不能冒充人耳驗收。
-- [ ] **Smacker 過場音軌**：`internal/smk` 目前只解畫面並跳過 audio chunk；IDA 已證實原版
-  `Play_Cinematic_` 下游使用 `SMACKSOUND*`，執行檔也含 `_SmackDoPCM`。依硬體時序停止線，
-  不追回 DAC／PIT／MSS 逐週期內部；仍須依 Smacker 格式解出 sample、接音量與播放完成閘門，
-  再以技術解碼及有音訊輸出的桌面抽聽驗收。證據見
-  `docs/re/cutscene-player-path-audit-20260827.md`。
+- [x] **Smacker 過場音軌（2026-08-27）**：`internal/smk` 已解 MOO2 真實資產使用的 packed
+  8-bit mono／stereo PCM，11025 Hz 會轉為 Mixer 的 22050 Hz；互動路徑會取代背景曲，跳過或
+  播完後停止並恢復背景音樂，截圖廊不初始化音訊。IDA、官方格式來源、真 `INTRO.LBX` 與測試證據
+  見 `docs/re/cutscene-audio-audit-20260827.md`；DAC／PIT／MSS 逐週期內部依停止線不追回，
+  有音訊輸出的桌面抽聽仍由上方「外部音訊驗收」統一追蹤。
 - [ ] **最新工作樹重新打包、推廣片與平台真機驗收**：2026-08-12 的 `dist-all` 三平台包與推廣片
   早於目前議會公式、文字版面及後續 source 變更，只能當歷史產物；所有發行 gate 完成後，以同一
   `HEAD` 重新產生 Linux AppImage、Windows amd64 ZIP、macOS universal 包與實際玩家路徑推廣片，

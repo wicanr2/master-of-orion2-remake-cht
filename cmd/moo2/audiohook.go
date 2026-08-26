@@ -85,8 +85,9 @@ var (
 	// 鍵是曲目編號(≤100 = STREAM 的 entry id;>100 = 100 + STREAMHD 的 entry id),
 	// 不是「第幾條 WAV」——`LoadMusic` 會略過非 WAV 的槽(STREAM entry 0 是彩蛋字串、
 	// 7/9 是空槽),所以序號與 entry id 並不一致,一定要用 LoadMusic 回傳的 entryIDs 配對。
-	musicByTrack = map[int]*moo2audio.Clip{}
-	curBGM       = -1
+	musicByTrack        = map[int]*moo2audio.Clip{}
+	curBGM              = -1
+	cutsceneAudioActive bool
 )
 
 // playSceneBGM 切換背景音樂到指定**原版曲目編號**(headless / 該曲不存在時為 no-op)。
@@ -129,10 +130,30 @@ func playSceneBGMOnce(track int) {
 // 由互動主迴圈呼叫(interactiveApp.Update)。headless / 沒有音訊裝置時 theMixer 為 nil,
 // 整個函式是 no-op。
 func tickBGM() {
-	if theMixer == nil || !theMixer.BGMFinished() {
+	if theMixer == nil || cutsceneAudioActive || !theMixer.BGMFinished() {
 		return
 	}
 	curBGM = -1 // 這樣接下來擲到同一首也會真的重播
+	playBackgroundMusic()
+}
+
+func playCutsceneAudio(c *moo2audio.Clip) {
+	if theMixer == nil || c == nil {
+		return
+	}
+	if err := theMixer.PlayBGMOnce(c); err == nil {
+		cutsceneAudioActive = true
+		curBGM = -1
+	}
+}
+
+func stopCutsceneAudio() {
+	if theMixer == nil || !cutsceneAudioActive {
+		return
+	}
+	theMixer.StopBGM()
+	cutsceneAudioActive = false
+	curBGM = -1
 	playBackgroundMusic()
 }
 
