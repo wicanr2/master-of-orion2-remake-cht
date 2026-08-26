@@ -101,6 +101,18 @@ def main():
     ida_auto.auto_wait()
     source = os.environ["MOO2_IDA_INPUT"]
     database = os.environ["MOO2_IDA_DATABASE"]
+    score_switch_table = 0xCFF62
+    score_switch = []
+    for case_index in range(47):
+        entry_ea = score_switch_table + case_index * 4
+        target = ida_bytes.get_dword(entry_ea)
+        score_switch.append({
+            "raw_building_id": case_index + 1,
+            "entry_ea": f"0x{entry_ea:X}",
+            "entry_bytes": (ida_bytes.get_bytes(entry_ea, 4) or b"").hex(),
+            "target_ea": f"0x{target:X}",
+            "target_name": ida_name.get_name(target) or "<unnamed>",
+        })
     report = {
         "schema": "moo2.ida.re-evidence.v1",
         "contract": "raw-location + navigation-label + reviewed confidence + source",
@@ -114,6 +126,12 @@ def main():
         },
         "address_basis": "IDA linear; DOS/4GW LE image",
         "semantic_status": "unknown_pending_review",
+        "score_switch": {
+            "jump_ea": "0xD01BF",
+            "table_ea": f"0x{score_switch_table:X}",
+            "case_count": 47,
+            "entries": score_switch,
+        },
         "roots": {name: function_record(ea) for name, ea in ROOTS.items()},
     }
     with open(os.environ["MOO2_IDA_OUTPUT"], "w", encoding="utf-8") as fh:

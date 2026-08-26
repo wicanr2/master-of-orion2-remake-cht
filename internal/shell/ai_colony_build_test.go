@@ -4,9 +4,46 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
+
+func TestOriginalAIExactBuildingScores(t *testing.T) {
+	colony := engine.ColonyState{Population: 6}
+	tests := []struct {
+		name      string
+		balanced  int
+		honorable int
+	}{
+		{"太空大學", 5, 5},
+		{"自動工廠", 19, 21},
+		{"深層核心礦場", 18, 22},
+		{"機器人工廠", 12, 14},
+		{"機器人採礦廠", 11, 13},
+	}
+	for _, tt := range tests {
+		b, ok := gamedata.BuildingByNameZH(tt.name)
+		if !ok {
+			t.Fatalf("測試建築不存在：%s", tt.name)
+		}
+		got, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic)
+		if !exact || got != tt.balanced {
+			t.Errorf("%s 一般性格分數=(%d,%v)，want (%d,true)", tt.name, got, exact, tt.balanced)
+		}
+		got, exact = originalAIExactBuildingScore(b, colony, ai.PersonalityHonorable)
+		if !exact || got != tt.honorable {
+			t.Errorf("%s Honorable 分數=(%d,%v)，want (%d,true)", tt.name, got, exact, tt.honorable)
+		}
+	}
+	fallback, ok := gamedata.BuildingByNameZH("研究實驗室")
+	if !ok {
+		t.Fatal("研究實驗室不存在")
+	}
+	if score, exact := originalAIExactBuildingScore(fallback, colony, ai.PersonalityHonorable); exact || score != 0 {
+		t.Fatalf("未閉合 case 不得冒稱 exact：score=%d exact=%v", score, exact)
+	}
+}
 
 func TestAIColonyBuildConsumesIndustryBeforeShipPool(t *testing.T) {
 	s := NewDemoSession()

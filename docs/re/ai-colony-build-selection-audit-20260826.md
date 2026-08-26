@@ -55,3 +55,27 @@ raw `sub_D2754 @ 0xD2754..0xD2783` 只在殖民地有效、有人口，且目前
 - **未知**：`sub_D10EE` 中完整的帝國級建築、支援艦、戰鬥艦、改裝與購買配額；不可把
   本輪建築子鏈誤寫成完整原版 AI 生產 parity。
 
+## 逐 case 跳表與第一批精確分數
+
+IDA raw `jmp cs:jpt_D01BF[edx] @ 0xD01BF` 的資料表位於 `0xCFF62`，共 47 筆
+little-endian dword；索引在 `0xD019F` 先減 1，因此 entry 0 對 raw building ID 1。
+探針逐筆保存 entry 位址、四個原始 bytes 與 target，不依賴反編譯器的 case 排版。
+
+第一批可由 remake 現有 typed 欄位完整表示的 case：
+
+| raw ID | 建築 | table entry → target | 原始指令式 | typed 公式 | 等級 |
+|---:|---|---|---|---|---|
+| 4 | 太空大學 | `0xCFF6E a3060d00 → 0xD06A3` | `mov ebx,5` | `5` | 已證實 |
+| 7 | 自動工廠 | `0xCFF7A d0060d00 → 0xD06D0` | `pop+13+2×var_2C` | `population + 13 + 2×[Honorable]` | 已證實 |
+| 12 | 深層核心礦場 | `0xCFF8E 39070d00 → 0xD0739` | `pop+12+4×var_2C` | `population + 12 + 4×[Honorable]` | 已證實 |
+| 34 | 機器人工廠 | `0xCFFE6 18090d00 → 0xD0918` | `12+2×var_2C` | `12 + 2×[Honorable]` | 已證實 |
+| 36 | 機器人採礦廠 | `0xCFFEE 47090d00 → 0xD0947` | `pop+5+2×var_2C` | `population + 5 + 2×[Honorable]` | 已證實 |
+
+`var_2C` 由 `0xD007A..0xD0082` 的 `player+0x28 == 4` 建立。專案既有
+`ai.Personality` 已以 AIRACES／官方字串把 raw 4 對到 `PersonalityHonorable`，所以這五式
+不需要猜測新的欄位語意。五條路徑最後都直接進共同正值／1000 上限，不會經
+`0xD0414 add ebx,var_18` 的國庫亂數擾動。
+
+其餘 case 會讀 alien／outpost 狀態、政府／性格其他碼、殖民地 packed 人口、帝國建築數、
+星球 owner／環境、事件與未解 player flags；在欄位寫入端與 typed 對映完成前維持
+`unknown_pending_review`，由明示近似 fallback 處理。

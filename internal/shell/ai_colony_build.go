@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
@@ -14,10 +15,39 @@ func aiColonyBuildKey(a *AIOpponent, colony int) int {
 	return -colony - 1
 }
 
-// aiBuildingScore 是原版 Colony_Building_Score_ 的 typed 轉接層。原版 47 個 case 的
-// 完整欄位語意尚未全部映射；此處只使用 remake 已有的殖民地輸出與建築分類。加權抽選、
-// 難度濾門、候選範圍與逐殖民地產品資料形狀則直接依 IDA 證據實作。
-func aiBuildingScore(b gamedata.Building, colony engine.ColonyState, out engine.ColonyOutput) int {
+// aiBuildingScore 是原版 Colony_Building_Score_ 的 typed 轉接層。已閉合 case 先走
+// originalAIExactBuildingScore；其餘 case 的完整欄位語意尚未全部映射，才使用 remake 已有的
+// 殖民地輸出與建築分類。加權抽選、難度濾門、候選範圍與逐殖民地產品資料形狀則直接依
+// IDA 證據實作。
+func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState, personality ai.Personality) (int, bool) {
+	rawID, ok := gamedata.OriginalBuildingIDForName(b.NameZH)
+	if !ok {
+		return 0, false
+	}
+	honorable := 0
+	if personality == ai.PersonalityHonorable {
+		honorable = 1
+	}
+	switch rawID {
+	case 4: // 0xD06A3：Astro University
+		return 5, true
+	case 7: // 0xD06D0：Automated Factory
+		return colony.Population + 13 + 2*honorable, true
+	case 12: // 0xD0739：Deep Core Mine
+		return colony.Population + 12 + 4*honorable, true
+	case 34: // 0xD0918：Robotic Factory
+		return 12 + 2*honorable, true
+	case 36: // 0xD0947：Robo Mining Plant
+		return colony.Population + 5 + 2*honorable, true
+	default:
+		return 0, false
+	}
+}
+
+func aiBuildingScore(b gamedata.Building, colony engine.ColonyState, out engine.ColonyOutput, personality ai.Personality) int {
+	if score, exact := originalAIExactBuildingScore(b, colony, personality); exact {
+		return score
+	}
 	score := 20
 	switch b.Category {
 	case gamedata.CategoryProduction, gamedata.CategoryEnvironment:
@@ -62,7 +92,7 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, out engine.ColonyOutput, 
 		if built[b.NameZH] {
 			continue
 		}
-		score := aiBuildingScore(b, a.Colonies[colony], out)
+		score := aiBuildingScore(b, a.Colonies[colony], out, a.Personality)
 		if score > maxScore {
 			maxScore = score
 		}

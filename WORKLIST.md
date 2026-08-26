@@ -329,8 +329,10 @@
   `All_Colony_AI_ → Colony_AI_ → sub_D6E1D → sub_D10EE／Assign_Colony_Building_` 證實
   原版生產是逐殖民地產品，不是全帝國工業單一造艦池；Go 已保存每星 AI 殖民地產品與進度，
   先消費 typed 可建建築，沒有候選的產能才進造艦轉接層，且同一份產能不再重複消費。
-  raw 1..48 可建 gate、難度濾門與加權抽選控制流已接；47 項完整分數、帝國配額、支援／戰鬥艦
-  產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI state machine 亦待閉合。見
+  raw 1..48 可建 gate、難度濾門與加權抽選控制流已接；同日直接解碼 `0xCFF62` 的 47-case
+  跳表，raw 4／7／12／34／36 已改用人口與 Honorable 性格的原版精確分數。其餘 42 項分數、
+  帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
+  state machine 亦待閉合。見
   [`docs/re/ai-difficulty-economy-audit-20260826.md`](docs/re/ai-difficulty-economy-audit-20260826.md) 與
   [`docs/spec/ai-difficulty-economy.md`](docs/spec/ai-difficulty-economy.md)、
   [`docs/re/ai-command-deficit-audit-20260826.md`](docs/re/ai-command-deficit-audit-20260826.md) 與
