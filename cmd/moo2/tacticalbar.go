@@ -25,7 +25,7 @@ import (
 //	撤退  ✅ 保留倖存艦離場,判定為未勝
 //	等待  ✅ 將目前艦移到本回合未行動艦之後
 //	完成  ✅ 結束目前艦的行動；全部完成後才結算敵方回擊
-//	選項  ❌ 原版開的是設定畫面,remake 還沒有那個畫面(見 gamemenu.go 的 SETTINGS 註解)
+//	選項  ⚠ 設定畫面已完成，但戰鬥中開啟後返回同一場戰局的轉場尚未接線
 //
 // 尚未完成的選項按鈕會說明為什麼沒有反應；其餘按鈕都接到實際戰鬥狀態。
 
@@ -60,26 +60,21 @@ func (t *tacticalScreen) handleBarButton(idx int) bool {
 	if clickSound != nil {
 		clickSound()
 	}
-	switch barButtonsCHT[idx].orig {
-	case "AUTO":
+	switch barButtonsCHT[idx].action {
+	case "auto":
 		t.autoResolve()
-	case "SCAN":
-		t.toggleMode(tacticalModeScan,
-			t.b.tr("掃描模式:點一艘敵艦看它的資料(再按一次取消)",
-				"Scan mode: click an enemy ship to inspect it (click SCAN again to cancel)"))
-	case "BOARD":
-		t.toggleMode(tacticalModeBoard,
-			t.b.tr("登艦模式:選我方艦之後點相鄰敵艦(再按一次取消)",
-				"Board mode: select your ship, then click an adjacent enemy (click BOARD again to cancel)"))
-	case "RETREAT":
+	case "scan":
+		t.toggleMode(tacticalModeScan, uiText(t.b.lang, "tactical.mode.scan_on"))
+	case "board":
+		t.toggleMode(tacticalModeBoard, uiText(t.b.lang, "tactical.mode.board_on"))
+	case "retreat":
 		t.retreat()
-	case "WAIT":
+	case "wait":
 		t.waitSelectedAction()
-	case "DONE":
+	case "done":
 		t.finishSelectedAction()
-	case "OPTIONS":
-		t.log = t.b.tr("完整的原版設定畫面尚未完成;音量可在遊戲選單調整",
-			"The full original settings screen is not built yet; adjust volume in the game menu")
+	case "options":
+		t.log = uiText(t.b.lang, "tactical.options.combat_return_unavailable")
 	default:
 		return false
 	}
@@ -90,7 +85,7 @@ func (t *tacticalScreen) handleBarButton(idx int) bool {
 func (t *tacticalScreen) toggleMode(m tacticalMode, onMsg string) {
 	if t.mode == m {
 		t.mode = tacticalModeNormal
-		t.log = t.b.tr("回到一般模式:點敵艦開火", "Back to normal: click an enemy to fire")
+		t.log = uiText(t.b.lang, "tactical.mode.normal")
 		return
 	}
 	t.mode = m
@@ -106,8 +101,7 @@ func (t *tacticalScreen) retreat() {
 		return
 	}
 	t.over, t.won = true, false
-	t.log = fmt.Sprintf(t.b.tr("撤離戰場,%d 艦脫離。點擊繼續",
-		"Withdrawing — %d ships escape. Click to continue"), len(t.player))
+	t.log = fmt.Sprintf(uiText(t.b.lang, "tactical.retreat.summary"), len(t.player))
 }
 
 // autoResolve 用**同一套格子規則**把剩下的戰鬥打完。
@@ -144,14 +138,13 @@ func (t *tacticalScreen) autoResolve() {
 	for n := 0; n < maxRounds && !t.over; n++ {
 		target := t.nearestReachableEnemy()
 		if target < 0 {
-			t.log = t.b.tr("沒有敵艦在射程內,自動接管停下——先移動再按自動",
-				"No enemy in range; auto-resolve stopped — move closer first")
+			t.log = uiText(t.b.lang, "tactical.auto.no_target")
 			return
 		}
 		before := t.round
 		t.fireRound(target)
 		if t.round == before { // 這一發沒推進回合(相位匿蹤/停滯),換一個目標會無限繞
-			t.log += t.b.tr("(自動接管停下)", " (auto-resolve stopped)")
+			t.log += uiText(t.b.lang, "tactical.auto.stopped_suffix")
 			return
 		}
 	}
@@ -209,8 +202,7 @@ func (t *tacticalScreen) nearestReachableEnemy() int {
 // scanEnemy 產生一艘敵艦的資料摘要(手冊的 SCAN)。
 func (t *tacticalScreen) scanEnemy(idx int) string {
 	e := t.enemy[idx]
-	return fmt.Sprintf(t.b.tr("%s:結構 %d/%d 裝甲 %d 攻擊 %d 防禦 %d 傷害 %d-%d 護盾減 %d 陸戰隊 %d",
-		"%s: structure %d/%d, armor %d, attack %d, defense %d, damage %d-%d, shields -%d, marines %d"),
+	return fmt.Sprintf(uiText(t.b.lang, "tactical.scan.summary"),
 		combatShipLabel(t.b.lang, t.b.session, e.Name), e.HP, e.MaxHP, e.ArmorHP, e.Attack, e.Defense, e.WeaponMin, e.WeaponMax,
 		e.ShieldReduction, e.Marines)
 }
@@ -221,19 +213,18 @@ func (t *tacticalScreen) scanEnemy(idx int) string {
 // (`GameSession.ShipBoardingAttack`)——戰力怎麼算、誰倖存、奪不奪得到,都不在畫面層。
 func (t *tacticalScreen) boardEnemy(idx int) {
 	if t.sel < 0 || t.sel >= len(t.player) {
-		t.log = t.b.tr("先選一艘我方艦再登艦", "Select one of your ships first")
+		t.log = uiText(t.b.lang, "tactical.board.select_ship")
 		return
 	}
 	att := &t.player[t.sel]
 	def := &t.enemy[idx]
 	dist := abs(att.Col-def.Col) + abs(att.Row-def.Row)
 	if !shell.ShipBoardingReachAgainst(*att, *def, dist) {
-		t.log = t.b.tr("登艦條件不符:請移到相鄰格,或用傳送器在 12 格內擊穿面向護盾",
-			"Boarding unavailable: move adjacent, or use Transporters within 12 squares after dropping the facing shield")
+		t.log = uiText(t.b.lang, "tactical.board.unavailable")
 		return
 	}
 	if shell.ShipBoardingPartySize(*att) <= 0 {
-		t.log = fmt.Sprintf(t.b.tr("%s 艦上沒有陸戰隊可以派", "%s has no marines to send"), att.Name)
+		t.log = fmt.Sprintf(uiText(t.b.lang, "tactical.board.no_marines"), att.Name)
 		return
 	}
 	attName, defName := att.Name, combatShipLabel(t.b.lang, t.b.session, def.Name)
@@ -244,20 +235,17 @@ func (t *tacticalScreen) boardEnemy(idx int) {
 		return t.rng.Intn(n)
 	})
 	if res.Captured {
-		t.log = fmt.Sprintf(t.b.tr("★ %s 的陸戰隊肅清了 %s,奪船成功(打贏這場才留得住)",
-			"★ Marines from %s clear %s — captured (you must still win the battle to keep it)"),
+		t.log = fmt.Sprintf(uiText(t.b.lang, "tactical.board.captured"),
 			attName, defName)
 		// 手冊:被奪的船換旗。remake 直接把它移出敵方序列——留在場上會繼續對玩家開火。
 		t.enemy = append(t.enemy[:idx], t.enemy[idx+1:]...)
 		if len(t.enemy) == 0 {
 			t.over, t.won = true, true
-			t.log += t.b.tr("(敵艦隊已無戰力,勝利!點擊繼續)",
-				" (enemy fleet is finished — victory! Click to continue)")
+			t.log += uiText(t.b.lang, "tactical.board.victory_suffix")
 		}
 		return
 	}
-	t.log = fmt.Sprintf(t.b.tr("%s 的登艦隊被擋下:守軍剩 %d,我方剩 %d(%d 回合)",
-		"Boarding party from %s repelled: %d defenders left, %d attackers left (%d rounds)"),
+	t.log = fmt.Sprintf(uiText(t.b.lang, "tactical.board.repelled"),
 		attName, res.DefenderSurvived, res.AttackerSurvived, res.Rounds)
 }
 
@@ -265,9 +253,9 @@ func (t *tacticalScreen) boardEnemy(idx int) {
 func (t *tacticalScreen) modeHint() string {
 	switch t.mode {
 	case tacticalModeScan:
-		return t.b.tr("【掃描模式】點敵艦看資料", "[SCAN MODE] click an enemy to inspect")
+		return uiText(t.b.lang, "tactical.mode.scan_hint")
 	case tacticalModeBoard:
-		return t.b.tr("【登艦模式】點敵艦派登艦隊", "[BOARD MODE] click an enemy to send marines")
+		return uiText(t.b.lang, "tactical.mode.board_hint")
 	}
 	return ""
 }

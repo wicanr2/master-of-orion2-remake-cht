@@ -3680,21 +3680,18 @@ func (t *tacticalScreen) drawTacticalMessage(dst *ebiten.Image) {
 		color.RGBA{214, 220, 235, 255})
 }
 
-// barButtonsCHT 是 COMBAT.LBX#0 控制列上各英文按鈕的螢幕中心座標 + 中文標籤。
+// barButtonsCHT 是 COMBAT.LBX#0 控制列按鈕的螢幕中心座標、動作識別字與外部文案鍵。
 // 座標於實際戰鬥截圖(gallery)量測;控制列貼在 y=moo2ScreenH-129=351。
 // WEAPONS/SPECIALS 兩個欄位標頭在 remake 未用的清單面板內,略過。
-//
-// `orig` 是原版烘在鈕上的英文。放成欄位而不是行末註解,是因為它有用途:英文模式整段
-// 不畫(讓原版美術露出來),而這一欄就是「露出來會是什麼字」的記錄,對得起來才敢讓路。
 var barButtonsCHT = []struct {
-	cx, cy int
-	label  string
-	orig   string
+	cx, cy  int
+	action  string
+	textKey string
 }{
-	{300, 374, "自動", "AUTO"}, {365, 374, "掃描", "SCAN"},
-	{300, 401, "登船", "BOARD"}, {365, 401, "撤退", "RETREAT"},
-	{300, 428, "等待", "WAIT"}, {365, 428, "完成", "DONE"},
-	{334, 455, "選項", "OPTIONS"},
+	{300, 374, "auto", "tactical.button.auto"}, {365, 374, "scan", "tactical.button.scan"},
+	{300, 401, "board", "tactical.button.board"}, {365, 401, "retreat", "tactical.button.retreat"},
+	{300, 428, "wait", "tactical.button.wait"}, {365, 428, "done", "tactical.button.done"},
+	{334, 455, "options", "tactical.button.options"},
 }
 
 // 座標來源:**英文模式跑同一張畫廊圖**(擦底整段不畫,COMBAT.LBX#0 的按鈕直接露出來),
@@ -3882,10 +3879,7 @@ func (t *tacticalScreen) drawFallbackCombatBar(dst *ebiten.Image) {
 		x, y := float32(b.cx-27), float32(b.cy-9)
 		fillPanel(dst, x, y, 54, 18, color.RGBA{42, 48, 63, 255}, false)
 		vector.StrokeRect(dst, x, y, 54, 18, 1, color.RGBA{126, 141, 169, 255}, false)
-		label := b.label
-		if t.b.lang == i18n.English {
-			label = b.orig
-		}
+		label := uiText(t.b.lang, b.textKey)
 		t.fnt.DrawCentered(dst, label, float64(b.cx), float64(b.cy), 12, color.RGBA{225, 230, 240, 255})
 	}
 }
@@ -3899,7 +3893,7 @@ func (t *tacticalScreen) drawBarLabelsCHT(dst *ebiten.Image) {
 		x, y := float32(b.cx-barButtonPlateW/2), float32(b.cy-barButtonPlateH/2)
 		fillPanel(dst, x, y, barButtonPlateW, barButtonPlateH, color.RGBA{40, 44, 54, 255}, false)
 		vector.StrokeRect(dst, x, y, barButtonPlateW, barButtonPlateH, 1, color.RGBA{120, 130, 150, 255}, false)
-		t.fnt.DrawCentered(dst, b.label, float64(b.cx), float64(b.cy), 13, color.RGBA{225, 230, 240, 255})
+		t.fnt.DrawCentered(dst, uiText(i18n.Traditional, b.textKey), float64(b.cx), float64(b.cy), 13, color.RGBA{225, 230, 240, 255})
 	}
 }
 

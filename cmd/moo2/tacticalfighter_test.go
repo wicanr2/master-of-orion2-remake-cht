@@ -304,7 +304,7 @@ func TestSelectAllFromPartialSelectionSelectsEverything(t *testing.T) {
 func TestTacticalBarButtonsAreClickable(t *testing.T) {
 	for i, b := range barButtonsCHT {
 		if got := barButtonHit(b.cx, b.cy); got != i {
-			t.Errorf("點 %s(%s)的正中央命中第 %d 顆,期望第 %d 顆", b.label, b.orig, got, i)
+			t.Errorf("點 %s 的正中央命中第 %d 顆,期望第 %d 顆", b.action, got, i)
 		}
 	}
 	// 控制列以外不該中(棋盤區在 y<365)。
@@ -320,7 +320,7 @@ func TestTacticalBarButtonsDoNotOverlap(t *testing.T) {
 			a, b := barButtonsCHT[i], barButtonsCHT[j]
 			if abs(a.cx-b.cx) < 54 && abs(a.cy-b.cy) < 18 {
 				t.Errorf("%s 與 %s 的熱區重疊(中心相距 %d,%d)",
-					a.label, b.label, abs(a.cx-b.cx), abs(a.cy-b.cy))
+					a.action, b.action, abs(a.cx-b.cx), abs(a.cy-b.cy))
 			}
 		}
 	}

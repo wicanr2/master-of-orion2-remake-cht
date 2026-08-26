@@ -61,7 +61,7 @@ openorion2 galaxy 用 `STARBG#3` 當背景,palette = `_gui->palette()`(全域 GU
 - ⚠ **CPU 教訓**:截圖廊初版沒有終止保護 + 存圖用 `tick==目標`(精確相等),ebiten Update/Draw 解耦會跳幀漏存 → **永不終止的 render loop 空轉燒 CPU**(兩個容器各卡 17–20 分)。已修:存圖改 `tick>=目標`、Update 超過末 tick+3 硬性終止;跑時容器內外雙 `timeout`。**教訓:headless GUI 迴圈必設硬性終止 + timeout**(rulebook 35)。
 
 ### Phase 2 進行中(2026-07-10；2026-08-11 oracle 更新)
-- ✅ **控制列按鈕中文化**:7 個實際控制按鈕(AUTO→自動/SCAN→掃描/BOARD→登船/RETREAT→撤退/WAIT→等待/DONE→完成/OPTIONS→選項)已疊深色底+中文蓋掉烘進英文(`drawBarLabelsCHT` + `barButtonsCHT` 座標表,於實際截圖逐像素量測)。log 移到控制列上方星空避免壓按鈕。截圖驗證對齊乾淨。
+- ✅ **控制列按鈕中文化**:7 個實際控制按鈕(AUTO→自動/SCAN→掃描/BOARD→登船/RETREAT→撤退/WAIT→等待/DONE→完成/OPTIONS→選項)已疊深色底+中文蓋掉烘進英文。`barButtonsCHT` 只保存座標、動作識別字與 `ui.json` 文案鍵，不再內嵌中英文標籤；座標於實際截圖逐像素量測。log 移到控制列上方星空避免壓按鈕。
 - ⏳ 未使用清單面板的 WEAPONS/SPECIALS 欄位標頭刻意略過(remake 未顯示武器清單);若之後接上武器列表再中文化。
 - ✅ **艦艇 sprite raw 圖片映射**：`CMBTSHP` 的資產索引已由 IDA `sub_30062 @ 0x30062` 證實為
   `45*playerColor+rawPicture`；`rawPicture 0..43`、`44` 為 sentinel。remake 已優先讀

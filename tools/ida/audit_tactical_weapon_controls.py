@@ -22,7 +22,9 @@ import idc
 PATTERN = re.compile(r"weapon|combat", re.I)
 ROOTS = [0x2E2CD, 0x2E98D, 0x67FFC, 0x68177, 0x47939,
          0x2C57C, 0x2C63E, 0x2F7E3, 0x2F8AE, 0x2F91C, 0x2FA38,
-         0x338F4, 0x33C61, 0x3EFF8]
+         0x338F4, 0x33C61, 0x3EFF8,
+         0x2F4EE, 0x34921, 0x478A2, 0x478A3]
+DATA_ROOTS = [0x1A1244, 0x1A135C]
 
 
 def digest(path):
@@ -71,6 +73,22 @@ def function_summary(ea):
     }
 
 
+def data_summary(ea):
+    refs = []
+    for x in idautils.XrefsTo(ea, 0):
+        owner = ida_funcs.get_func(x.frm)
+        refs.append({
+            "site": instruction(x.frm),
+            "function_start": f"0x{owner.start_ea:X}" if owner else None,
+            "raw_name": ida_name.get_name(owner.start_ea) if owner else None,
+        })
+    return {
+        "address": f"0x{ea:X}",
+        "raw_name": ida_name.get_name(ea),
+        "refs": refs,
+    }
+
+
 def main():
     ida_auto.auto_wait()
     source = os.environ["MOO2_IDA_INPUT"]
@@ -106,6 +124,7 @@ def main():
         "candidates": candidates,
         "field_hits": field_hits,
         "roots": [{"requested": f"0x{ea:X}", "record": function_summary(ea)} for ea in ROOTS],
+        "data_roots": [data_summary(ea) for ea in DATA_ROOTS],
     }
     with open(os.environ["MOO2_IDA_OUTPUT"], "w", encoding="utf-8") as fh:
         json.dump(payload, fh, ensure_ascii=False, indent=2)

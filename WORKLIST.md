@@ -134,6 +134,14 @@
   `Load_Game_Popup_Pictures_ @ 0x7EA5C` 的 `GAME.LBX#0..7` 連續載入鏈。
   正版繁中、正版英文與缺 `GAME.LBX` fallback 畫廊均完成 35 張；已目視抽查
   `19_gamemenu.png`，六顆按鈕的文字中心一致，兩個音量標籤可見且未越出中央面板。
+  格子戰術控制列已完成第十四個切片：七顆按鈕與 SCAN／BOARD／AUTO／撤退／登艦戰報等
+  玩家訊息均由 `ui.json` 供應，`tacticalbar.go` 不再呼叫 `tr`；按鈕表只保留座標、動作識別字
+  與文案鍵。52×16 文字板、54×18 熱區與中心點由程式測試綁在同一份座標，雙語標籤亦經字型
+  尺寸檢查。IDA 證實 `sub_2F4EE` 與 `sub_34921` 是多 caller 的戰鬥控制 helper，但外部符號所稱
+  `Combat_Screen_ @ 0x478A2` 並非 IDA 函式；相鄰 `sub_478A3` 只是 stride `0x169` 記錄旗標
+  predicate。`dword_1A1244` 只有直接 writer，間接字串消費端未閉合，因此原版精確按鈕 widget ID
+  與 SCAN／BOARD 字串維持未知。另修正過期的 SETTINGS 提示：13 列設定頁已完成，尚缺的是戰鬥中
+  保存狀態並返回同一戰局的轉場。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
@@ -161,7 +169,9 @@
   [`docs/re/command-points-screen-ui-text-audit-20260826.md`](docs/re/command-points-screen-ui-text-audit-20260826.md) 與
   [`docs/tech/command-points-external-text-spec.md`](docs/tech/command-points-external-text-spec.md)、
   [`docs/re/game-menu-popup-ui-text-audit-20260826.md`](docs/re/game-menu-popup-ui-text-audit-20260826.md) 與
-  [`docs/tech/game-menu-external-text-spec.md`](docs/tech/game-menu-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+  [`docs/tech/game-menu-external-text-spec.md`](docs/tech/game-menu-external-text-spec.md)、
+  [`docs/re/tactical-control-bar-text-audit-20260826.md`](docs/re/tactical-control-bar-text-audit-20260826.md) 與
+  [`docs/tech/tactical-control-bar-external-text-spec.md`](docs/tech/tactical-control-bar-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
 
 - [~] **原版對局內 SETTINGS 分頁**：2026-08-26 已完成原版 13 列畫面、資產、外部雙語文案、
   原版預設值、`.GAM` 匯入與 JSON 往返。IDA 證實
