@@ -335,6 +335,85 @@ func TestAIGaiaTransformationCandidateRequiresTerran(t *testing.T) {
 	}
 }
 
+func TestOriginalAITerraformingScore(t *testing.T) {
+	b := gamedata.Building{NameZH: gamedata.TerraformActionName, NameEN: "Terraforming"}
+	tests := []struct {
+		climate             gamedata.PlanetClimate
+		nonAquatic, aquatic int
+	}{
+		{gamedata.BARREN, 2, 2},
+		{gamedata.DESERT, 1, 1},
+		{gamedata.TUNDRA, 0, 1},
+		{gamedata.OCEAN, 4, 0},
+		{gamedata.SWAMP, 6, 0},
+		{gamedata.ARID, 1, 1},
+	}
+	for _, tt := range tests {
+		colony := engine.ColonyState{Climate: tt.climate}
+		if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic,
+			originalAIBuildScoreContext{treasuryBefore: 1499}); !exact || score != tt.nonAquatic {
+			t.Errorf("氣候 %d 非 Aquatic 分數=(%d,%v)，want (%d,true)", tt.climate, score, exact, tt.nonAquatic)
+		}
+		if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic,
+			originalAIBuildScoreContext{treasuryBefore: 1499, aquatic: true}); !exact || score != tt.aquatic {
+			t.Errorf("氣候 %d Aquatic 分數=(%d,%v)，want (%d,true)", tt.climate, score, exact, tt.aquatic)
+		}
+		want := tt.nonAquatic + 3 + 10
+		if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist,
+			originalAIBuildScoreContext{treasuryBefore: 1500, netBC: 6400}); !exact || score != want {
+			t.Errorf("氣候 %d Pacifist+budget 分數=(%d,%v)，want (%d,true)", tt.climate, score, exact, want)
+		}
+		if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist,
+			originalAIBuildScoreContext{priorityGate: true, treasuryBefore: 1500, netBC: 6400}); !exact || score != 0 {
+			t.Errorf("氣候 %d priority gate 分數=(%d,%v)，want (0,true)", tt.climate, score, exact)
+		}
+	}
+}
+
+func TestAICompletesTerraformingAsSpecial(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	a.Colonies[0].Climate = gamedata.BARREN
+	a.Colonies[0].PopMax = 4
+	planet := s.aiColonyPlanet(0, 0)
+	if planet == nil {
+		t.Fatal("測試 AI 殖民地缺少對應全局行星")
+	}
+	syncPlanetClimate(planet, gamedata.BARREN)
+	key := aiColonyBuildKey(a, 0)
+	a.ColonyBuilds = map[int]ColonyBuild{key: {
+		Name: gamedata.TerraformActionName, Progress: 249, Cost: 250,
+	}}
+	s.advanceAIColonyBuilds(0, engine.EmpireOutput{Colonies: []engine.ColonyOutput{{NetIndustry: 1}}})
+	want := gamedata.TerraformNextClimateOptions(gamedata.BARREN)[0]
+	if a.Colonies[0].Climate != want || planet.ClimateID != want {
+		t.Fatalf("Terraforming 完工未同步 colony／planet：%v／%v，want %v", a.Colonies[0].Climate, planet.ClimateID, want)
+	}
+	if len(a.ColonyBuildings) > 0 && a.ColonyBuildings[0][gamedata.TerraformActionName] {
+		t.Fatal("Terraforming 是 Special，不得殘留於 ColonyBuildings")
+	}
+}
+
+func TestAITerraformingCandidateRequiresNextClimate(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	a.Personality = ai.PersonalityPacifist
+	a.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{gamedata.TOPIC_GENETIC_MUTATIONS: true}
+	a.ColonyBuildings[0] = make(map[string]bool)
+	for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
+		a.ColonyBuildings[0][b.NameZH] = true
+	}
+	out := engine.EmpireOutput{Colonies: []engine.ColonyOutput{{NetIndustry: 1}}, Player: engine.PlayerState{BC: 1499}}
+	a.Colonies[0].Climate = gamedata.TOXIC
+	if build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1); ok {
+		t.Fatalf("無下一級的 Toxic 不得選 Terraforming：%+v", build)
+	}
+	a.Colonies[0].Climate = gamedata.BARREN
+	if build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1); !ok || build.Name != gamedata.TerraformActionName {
+		t.Fatalf("Barren 的唯一 Special 候選應是 Terraforming：build=%+v ok=%v", build, ok)
+	}
+}
+
 func TestAIOriginalPriorityBuildingGate(t *testing.T) {
 	known := map[gamedata.Technology]bool{gamedata.TECH_AUTOMATED_FACTORIES: true}
 	if !aiOriginalPriorityBuildingGate(engine.ColonyState{MineralRichness: gamedata.ABUNDANT}, nil, known, gamedata.MoraleGovDemocracy) {

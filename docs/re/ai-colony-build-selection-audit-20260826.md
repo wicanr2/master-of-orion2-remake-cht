@@ -228,6 +228,36 @@ remake 的候選層只在 typed 殖民地為 Terran 時提供 Gaia Transformatio
 AI 殖民地與全局行星同步改成 Gaia；這個 typed 適用性 gate 是既有手冊／地形規則契約，
 不冒稱本次 `sub_D0036` 計分反組譯本身證實了 `Colony_Can_Build_Product_` 的完整控制流。
 
+## 第八批：Terraforming
+
+同日以 IDA Pro 9.4 重跑擴充後的 `tools/ida/audit_ai_colony_build.py`；非破壞性匯出
+`/tmp/moo2-ai-terraform-v1.json` 的輸入、資料庫 SHA-256 與位址基準均和本文件證據契約一致。
+raw 44 外層 entry 是 `0xD000E 53 0a 0d 00 → 0xD0A53`。`0xD0A53` 先檢查共用
+priority gate，成立即零分；否則讀已由事件與地形改造 consumer 證實為氣候的
+`planet+8`，減 2 後以 `jmp cs:jpt_D0A67[eax*4] @ 0xD0A67` 分派。
+
+內層表位於 `0xD001E`，六筆原始 dword 為：
+
+| raw 氣候 | 氣候 | entry bytes → target | 非 Aquatic 基礎分 | Aquatic 基礎分 |
+|---:|---|---|---:|---:|
+| 2 | Barren | `0xD001E 6f 0a 0d 00 → 0xD0A6F` | 2 | 2 |
+| 3 | Desert | `0xD0022 7f 0a 0d 00 → 0xD0A7F` | 1 | 1 |
+| 4 | Tundra | `0xD0026 76 0a 0d 00 → 0xD0A76` | 0 | 1 |
+| 5 | Ocean | `0xD002A 86 0a 0d 00 → 0xD0A86` | 4 | 0 |
+| 6 | Swamp | `0xD002E 96 0a 0d 00 → 0xD0A96` | 6 | 0 |
+| 7 | Arid | `0xD0032 7f 0a 0d 00 → 0xD0A7F` | 1 | 1 |
+
+Aquatic 分支直接讀 `player+0x8AB @ 0xD0A76/0xD0A86/0xD0A96`；此位址等於 runtime
+trait 基址 `+0x89F` 加 index 12，且 `sub_DE0C6` 等獨立食物 consumer 已證實 index 12
+是 Aquatic。有效氣候 case 最後在 `0xD0AB0` 加 `3×[Pacifist]`，再經 `0xD0414` 加
+`budgetFactor`。因此完整計分公式是：priority gate 時 0；否則
+`climateBase[climate][Aquatic] + 3×[Pacifist] + budgetFactor`。
+
+Toxic／Radiated／Terran／Gaia 不在這個內層表；remake 依既有 typed
+`TerraformNextClimateOptions` 只讓具下一級的 Barren..Arid 成為候選。完工時採同一 helper
+的第一個結果（Barren 的 Desert／Tundra 二選一仍是既有明示近似），並同步 AI 殖民地與
+全局行星。候選適用性與 Barren 分歧並非本次計分函式的「已證實」內容。
+
 其餘未封閉區域會讀 alien／outpost 狀態、政府／性格其他碼、其他殖民地 packed 人口用途、帝國建築數、
 星球 owner／環境、事件與未解 player flags；在欄位寫入端與 typed 對映完成前維持
 `unknown_pending_review`，由明示近似 fallback 處理。

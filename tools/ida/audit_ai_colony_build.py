@@ -55,6 +55,7 @@ TRACKED_RECORD_OFFSETS = {
     "player_food_balance_word": 0xB0,
     "player_cybernetic_trait": 0x8B0,
     "player_lithovore_trait": 0x8B1,
+    "player_aquatic_trait": 0x8AB,
     "player_late_tech": 0x59D,
     "shared_gate_125": 0x125,
     "shared_gate_12d": 0x12D,
@@ -76,6 +77,10 @@ REVIEWED_OFFSET_SEMANTICS = {
     "player_lithovore_trait": {
         "semantic": "base-dependent raw +0x8B1; candidate player Lithovore trait byte pending write-origin review",
         "confidence": "strong_inference_from_trait_table_index_and_consumers",
+    },
+    "player_aquatic_trait": {
+        "semantic": "base-dependent raw +0x8AB; player Aquatic trait byte from runtime trait index 12",
+        "confidence": "confirmed_from_trait_table_index_and_independent_food_consumers",
     },
     "player_late_tech": {
         "semantic": "player late-tech flag when research field >= 75",
@@ -220,6 +225,18 @@ def main():
             "target_ea": f"0x{target:X}",
             "target_name": ida_name.get_name(target) or "<unnamed>",
         })
+    terraform_switch_table = 0xD001E
+    terraform_switch = []
+    for case_index in range(6):
+        entry_ea = terraform_switch_table + case_index * 4
+        target = ida_bytes.get_dword(entry_ea)
+        terraform_switch.append({
+            "raw_climate": case_index + 2,
+            "entry_ea": f"0x{entry_ea:X}",
+            "entry_bytes": (ida_bytes.get_bytes(entry_ea, 4) or b"").hex(),
+            "target_ea": f"0x{target:X}",
+            "target_name": ida_name.get_name(target) or "<unnamed>",
+        })
     report = {
         "schema": "moo2.ida.re-evidence.v1",
         "contract": "raw-location + navigation-label + reviewed confidence + source",
@@ -238,6 +255,12 @@ def main():
             "table_ea": f"0x{score_switch_table:X}",
             "case_count": 47,
             "entries": score_switch,
+        },
+        "terraform_score_switch": {
+            "jump_ea": "0xD0A67",
+            "table_ea": f"0x{terraform_switch_table:X}",
+            "case_count": 6,
+            "entries": terraform_switch,
         },
         "direct_record_offset_refs": {
             name: {

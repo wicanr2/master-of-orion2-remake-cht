@@ -50,16 +50,17 @@ var OrigBuildingID = map[string]int{
 	"Robo Mining Plant":           36, // Robo Miner Plant
 	"Space Academy":               38, // Space Academy
 	"Spaceport":                   39, // Spaceport
-	"Stellar Converter":           42, // Stellar Converter(行星版,分類 0 → 畫在地表格點上)
 	"Star Base":                   40, // Star Base
 	"Star Fortress":               41, // Star Fortress
+	"Stellar Converter":           42, // Stellar Converter(行星版,分類 0 → 畫在地表格點上)
 	"Subterranean Farms":          43, // Subterranean Farms
+	"Terraforming":                44, // Terraforming (Special)
 	"Warp Field Interdictor":      45, // Warp Interdictor
 	"Weather Controller":          46, // Weather Controller
 	"Fighter Garrison":            47, // Fighter Garrison
 }
 
-// OriginalBuildingIDForName 將 remake 建築 map 使用的中文名，或既有英文手冊名，
+// OriginalBuildingIDForName 將 remake 常駐建築／Special 使用的中文名，或既有英文手冊名，
 // 對回原版 raw building ID。無法映射時回傳 ok=false，不以表位置或字串相似度猜測。
 func OriginalBuildingIDForName(name string) (id int, ok bool) {
 	if id, ok = OrigBuildingID[name]; ok {

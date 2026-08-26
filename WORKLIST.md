@@ -342,6 +342,8 @@
   與 raw 31 Pleasure Dome 也已依八政府、人口 2／3 邊界及 budget-factor gate 接入固定 10／16。
   raw 17 Gaia Transformation 已閉合為 `budgetFactor+[Pacifist]`，並補上 Terran 候選、
   一次性產品完成及 AI 殖民地／全局行星 Gaia 同步，不會誤記為常駐建築。
+  raw 44 Terraforming 亦已依 Barren..Arid 內層跳表、Aquatic、Pacifist、priority gate 與
+  budget factor 接入精確分數；只有具下一級氣候的殖民地可選，完工同步殖民地／行星且不留常駐旗標。
   其餘分數區域、
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
   state machine 亦待閉合。見

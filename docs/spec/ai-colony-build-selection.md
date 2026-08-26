@@ -39,6 +39,11 @@
    raw ID 17 Gaia Transformation 使用 `budgetFactor+[Pacifist]`；不讀 priority gate、
    late-tech、人口或政府。它是一次性 Special 產品，不寫入 `ColonyBuildings`；候選只在
    已取得前置科技且殖民地為 Terran 時出現，完成後同步把 AI 殖民地與對應全局行星改成 Gaia。
+   raw ID 44 Terraforming 在 priority gate 時為 0；否則為
+   `climateBase+3×[Pacifist]+budgetFactor`。非 Aquatic／Aquatic 的 Barren、Desert、Tundra、
+   Ocean、Swamp、Arid 基礎分依序為 `2/2、1/1、0/1、4/0、6/0、1/1`。候選只在
+   `TerraformNextClimateOptions` 有結果時出現；它同樣是一次性 Special，完成後同步 AI
+   殖民地與全局行星，Barren 多候選沿用既有固定第一項近似。
 5. 優先建築 gate 僅由已知科技 application、已建建築、殖民地礦產及 AI 生效政府組成：
    - Ultra Poor／Poor／Abundant 殖民地已知 Automated Factories 但未建 Automated Factory；或
    - Feudal／Confederation／Dictatorship／Imperium 已知但未建 Marine Barracks／Armor Barracks。
@@ -67,6 +72,9 @@
 - raw 17 在結算前國庫 1499／1500、一般／Pacifist 性格下符合
   `budgetFactor+[Pacifist]`；非 Terran 不得成為候選，完工後不得殘留為常駐建築，且
   AI 殖民地與對應全局行星都必須是 Gaia。
+- raw 44 的六種有效氣候在 Aquatic／非 Aquatic、一般／Pacifist、priority gate 與
+  budget factor 0／正值邊界逐式符合內層跳表；Toxic／Radiated／Terran／Gaia 不得成為候選，
+  完工不得寫入常駐建築，且殖民地／行星氣候必須同步前進一級。
 - 只完成多選主題但選了其他 application 時，不得觸發相應 Automated Factory／Barracks gate。
 - 精確分支與類別式 fallback 不可混稱同一證據等級。
 - 既有擴張測試以「建築＋造艦總投入」驗證新殖民地確實參與經濟，不再假設所有產出都是軍艦。

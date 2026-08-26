@@ -118,6 +118,7 @@ func originalAIForeignLithovorePopulation(colony engine.ColonyState) (bool, bool
 type originalAIBuildScoreContext struct {
 	lateTech              bool
 	priorityGate          bool
+	aquatic               bool
 	empireFoodBalanceHalf int
 	raceGrowthPercent     int
 	government            gamedata.MoraleGovernmentType
@@ -165,6 +166,30 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		pacifist = 1
 	}
 	switch rawID {
+	case 44: // 0xD0A53..0xD0AB4：Terraforming
+		if ctx.priorityGate {
+			return 0, true
+		}
+		base := 0
+		switch colony.Climate {
+		case gamedata.BARREN:
+			base = 2
+		case gamedata.DESERT, gamedata.ARID:
+			base = 1
+		case gamedata.TUNDRA:
+			if ctx.aquatic {
+				base = 1
+			}
+		case gamedata.OCEAN:
+			if !ctx.aquatic {
+				base = 4
+			}
+		case gamedata.SWAMP:
+			if !ctx.aquatic {
+				base = 6
+			}
+		}
+		return base + 3*pacifist + originalAIBudgetFactor(ctx.treasuryBefore, ctx.netBC), true
 	case 17: // 0xD07C2..0xD07C5 → 0xD0414：Gaia Transformation
 		return originalAIBudgetFactor(ctx.treasuryBefore, ctx.netBC) + pacifist, true
 	case 10: // 0xD071C..0xD0734：Cloning Center
@@ -294,6 +319,7 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 		knownTechnologyApplications(a.Player), government)
 	ctx := originalAIBuildScoreContext{
 		lateTech: lateTech, priorityGate: priorityGate,
+		aquatic:               aiRaceHasTrait(*a, gamedata.TRAIT_AQUATIC),
 		empireFoodBalanceHalf: empireOut.TotalFoodHalf,
 		raceGrowthPercent:     aiColonistProductionProfile(*a).growth,
 		government:            government,
@@ -312,9 +338,15 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 		candidates = append(candidates, candidate{ColonyBuild{Name: b.NameZH, Cost: b.ProductionCost}, score})
 	}
 	for _, action := range gamedata.AvailableSpecialActions(a.Player.CompletedTopics) {
-		// 本切片只閉合 raw 17；其餘 Special 的原版 AI 分數與可建 gate 尚未完成。
-		if action.NameZH != gamedata.GaiaTransformationActionName ||
-			!gamedata.GaiaTransformationCanApply(a.Colonies[colony].Climate) {
+		// 目前只閉合 raw 17／44；其餘 Special 的原版 AI 分數與可建 gate 尚未完成。
+		applicable := false
+		switch action.NameZH {
+		case gamedata.GaiaTransformationActionName:
+			applicable = gamedata.GaiaTransformationCanApply(a.Colonies[colony].Climate)
+		case gamedata.TerraformActionName:
+			applicable = len(gamedata.TerraformNextClimateOptions(a.Colonies[colony].Climate)) > 0
+		}
+		if !applicable {
 			continue
 		}
 		proxy := gamedata.Building{NameZH: action.NameZH, NameEN: action.NameEN}
@@ -422,17 +454,28 @@ func (s *GameSession) applyAICompletedSpecial(aiIndex, colony int, name string) 
 	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) || colony < 0 || colony >= len(s.AIPlayers[aiIndex].Colonies) {
 		return false
 	}
-	if name != gamedata.GaiaTransformationActionName {
-		return false
-	}
 	a := &s.AIPlayers[aiIndex]
 	c := &a.Colonies[colony]
-	if !gamedata.GaiaTransformationCanApply(c.Climate) {
+	target := c.Climate
+	switch name {
+	case gamedata.GaiaTransformationActionName:
+		if gamedata.GaiaTransformationCanApply(c.Climate) {
+			target = gamedata.GaiaTransformationResultClimate
+		}
+	case gamedata.TerraformActionName:
+		options := gamedata.TerraformNextClimateOptions(c.Climate)
+		if len(options) > 0 {
+			target = options[0]
+		}
+	default:
+		return false
+	}
+	if target == c.Climate {
 		return true
 	}
-	applyClimateChangeToColony(c, gamedata.GaiaTransformationResultClimate,
+	applyClimateChangeToColony(c, target,
 		aiRaceHasTrait(*a, gamedata.TRAIT_AQUATIC), aiRaceHasTrait(*a, gamedata.TRAIT_TOLERANT))
-	syncPlanetClimate(s.aiColonyPlanet(aiIndex, colony), gamedata.GaiaTransformationResultClimate)
+	syncPlanetClimate(s.aiColonyPlanet(aiIndex, colony), target)
 	return true
 }
 
