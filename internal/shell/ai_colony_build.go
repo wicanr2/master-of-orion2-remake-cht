@@ -52,7 +52,70 @@ func aiOriginalPriorityBuildingGate(colony engine.ColonyState, built map[string]
 		known[gamedata.TECH_ARMOR_BARRACKS] && !built["裝甲營房"]
 }
 
-func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState, personality ai.Personality, lateTech, priorityGate bool) (int, bool) {
+func originalAIPrimaryPopulationSlot(colony engine.ColonyState) (int, bool) {
+	if !engine.PopulationGroupsComplete(colony) || !colony.OwnerRaceSlotKnown ||
+		colony.OwnerRaceSlot < 0 || colony.OwnerRaceSlot >= 8 {
+		return 0, false
+	}
+	// sub_D2A08 只計 packed colonist 低 nibble 中 0..7 的 player slot；8 以上的
+	// Android／特殊槽不參與這個 AI cache 欄位。
+	var counts [8]int
+	total := 0
+	for _, group := range colony.PopulationGroups {
+		if group.RaceSlot < 0 || group.RaceSlot >= len(counts) {
+			continue
+		}
+		n := group.Farmers + group.Workers + group.Scientists
+		counts[group.RaceSlot] += n
+		total += n
+	}
+	if total <= 0 {
+		return 0, false
+	}
+	// 0xD2A45..0xD2A7C：同數時保留較高 slot；嚴格過半直接採該 slot。
+	dominant := len(counts) - 1
+	for slot := dominant - 1; slot >= 0; slot-- {
+		if counts[dominant] < counts[slot] {
+			dominant = slot
+		}
+	}
+	if total < 2*counts[dominant] {
+		return dominant, true
+	}
+	owner := colony.OwnerRaceSlot
+	// 0xD2A7E..0xD2AA2 保留原版不尋常的 fallback：owner 嚴格超過三分之一時
+	// 採 owner；否則只有 slot 0 非空且與 owner 數量不同時採 slot 0。
+	if total < 3*counts[owner] {
+		return owner, true
+	}
+	if counts[0] > 0 && counts[0] != counts[owner] {
+		return 0, true
+	}
+	return owner, true
+}
+
+func originalAIForeignLithovorePopulation(colony engine.ColonyState) (bool, bool) {
+	slot, known := originalAIPrimaryPopulationSlot(colony)
+	if !known || !colony.OwnerRaceProfileKnown {
+		return false, false
+	}
+	primaryLithovore := colony.Lithovore
+	if slot != colony.OwnerRaceSlot {
+		found := false
+		for _, group := range colony.PopulationGroups {
+			if group.RaceSlotKnown && group.ProfileKnown && group.RaceSlot == slot {
+				primaryLithovore, found = group.Lithovore, true
+				break
+			}
+		}
+		if !found {
+			return false, false
+		}
+	}
+	return primaryLithovore && !colony.Lithovore, true
+}
+
+func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState, personality ai.Personality, lateTech, priorityGate bool, empireFoodBalanceHalf int) (int, bool) {
 	rawID, ok := gamedata.OriginalBuildingIDForName(b.NameZH)
 	if !ok {
 		return 0, false
@@ -101,6 +164,18 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 			return 0, true
 		}
 		return 18 + pacifist, true
+	case 16: // 0xD0797..0xD07BD：Food Replicators
+		foreignLithovore, known := originalAIForeignLithovorePopulation(colony)
+		if !known {
+			return 0, false
+		}
+		if !foreignLithovore {
+			return 0, true
+		}
+		if empireFoodBalanceHalf < 0 {
+			return 8 + pacifist, true
+		}
+		return 4 + pacifist, true
 	case 34: // 0xD0918：Robotic Factory
 		return 12 + 2*honorable, true
 	case 36: // 0xD0947：Robo Mining Plant
@@ -110,8 +185,8 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 	}
 }
 
-func aiBuildingScore(b gamedata.Building, colony engine.ColonyState, out engine.ColonyOutput, personality ai.Personality, lateTech, priorityGate bool) int {
-	if score, exact := originalAIExactBuildingScore(b, colony, personality, lateTech, priorityGate); exact {
+func aiBuildingScore(b gamedata.Building, colony engine.ColonyState, out engine.ColonyOutput, personality ai.Personality, lateTech, priorityGate bool, empireFoodBalanceHalf int) int {
+	if score, exact := originalAIExactBuildingScore(b, colony, personality, lateTech, priorityGate, empireFoodBalanceHalf); exact {
 		return score
 	}
 	score := 20
@@ -140,10 +215,14 @@ func aiBuildingScore(b gamedata.Building, colony engine.ColonyState, out engine.
 	return score
 }
 
-func chooseAIColonyBuilding(a *AIOpponent, colony int, out engine.ColonyOutput, difficulty, turn int) (ColonyBuild, bool) {
+func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOutput, difficulty, turn int) (ColonyBuild, bool) {
 	if colony < 0 || colony >= len(a.Colonies) {
 		return ColonyBuild{}, false
 	}
+	if colony >= len(empireOut.Colonies) {
+		return ColonyBuild{}, false
+	}
+	out := empireOut.Colonies[colony]
 	built := map[string]bool(nil)
 	if colony < len(a.ColonyBuildings) {
 		built = a.ColonyBuildings[colony]
@@ -161,7 +240,7 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, out engine.ColonyOutput, 
 		if built[b.NameZH] {
 			continue
 		}
-		score := aiBuildingScore(b, a.Colonies[colony], out, a.Personality, lateTech, priorityGate)
+		score := aiBuildingScore(b, a.Colonies[colony], out, a.Personality, lateTech, priorityGate, empireOut.TotalFoodHalf)
 		if score > maxScore {
 			maxScore = score
 		}
@@ -275,7 +354,7 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 		build := a.ColonyBuilds[key]
 		if build.Name == "" {
 			var ok bool
-			build, ok = chooseAIColonyBuilding(a, i, out.Colonies[i], s.Difficulty, s.Turn)
+			build, ok = chooseAIColonyBuilding(a, i, out, s.Difficulty, s.Turn)
 			if !ok {
 				shipProduction += out.Colonies[i].NetIndustry
 				continue

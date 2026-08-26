@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import re
 import traceback
 
 import ida_auto
@@ -24,6 +25,7 @@ ROOTS = {
     "raw_Assign_Empire_Building": 0xD10EE,
     "raw_Assign_Colony_Building": 0xD2754,
     "raw_Player_Colony_Autobuild": 0xD2783,
+    "raw_AI_Colony_Primary_Player": 0xD2A08,
     "raw_Compute_AI_Data": 0xD3D34,
     "raw_Collect_AI_Colonies": 0xD5795,
     "raw_Assign_Buildings": 0xD589B,
@@ -37,13 +39,19 @@ ROOTS = {
     "raw_Colony_AI": 0xD6ED4,
     "raw_All_Colony_AI": 0xD6F67,
     "raw_Colony_Product_Cost": 0xE0DD6,
+    "raw_AI_Colony_Secondary_Value": 0xE0C1D,
     "raw_Colony_Can_Build_Product": 0xE11BC,
     "raw_Apply_Production": 0xE36DF,
     "raw_AI_Choose_Research": 0xDC288,
+    "raw_AI_Empire_Output_Cache": 0xDF8F0,
+    "raw_Recompute_Player_Economy": 0xE2710,
 }
 
 
 TRACKED_RECORD_OFFSETS = {
+    "player_food_balance_word": 0xB0,
+    "player_cybernetic_trait": 0x8B0,
+    "player_lithovore_trait": 0x8B1,
     "player_late_tech": 0x59D,
     "shared_gate_125": 0x125,
     "shared_gate_12d": 0x12D,
@@ -54,6 +62,18 @@ TRACKED_RECORD_OFFSETS = {
 }
 
 REVIEWED_OFFSET_SEMANTICS = {
+    "player_food_balance_word": {
+        "semantic": "base-dependent raw +0xB0; player base stores empire food production minus consumption",
+        "confidence": "confirmed_only_for_reviewed_player_base_context",
+    },
+    "player_cybernetic_trait": {
+        "semantic": "base-dependent raw +0x8B0; candidate player Cybernetic trait byte pending write-origin review",
+        "confidence": "hypothesis_pending_write_origin_review",
+    },
+    "player_lithovore_trait": {
+        "semantic": "base-dependent raw +0x8B1; candidate player Lithovore trait byte pending write-origin review",
+        "confidence": "strong_inference_from_trait_table_index_and_consumers",
+    },
     "player_late_tech": {
         "semantic": "player late-tech flag when research field >= 75",
         "confidence": "confirmed_direct_write_and_consumers",
@@ -91,7 +111,14 @@ def operand_mentions_offset(ea, offset):
     normalized = " ".join(operands).lower().replace("0x", "")
     needle = f"+{offset:x}h"
     spaced = f"+ {offset:x}h"
-    return needle in normalized or spaced in normalized
+    if needle in normalized or spaced in normalized:
+        return True
+    # IDA 對首碼為 A..F 的 displacement 會補前導 0（例如 +0B0h）。只正規化
+    # `+...h` 內的十六進位數，不碰立即數或絕對位址。
+    for match in re.finditer(r"\+\s*([0-9a-f]+)h", normalized):
+        if int(match.group(1), 16) == offset:
+            return True
+    return False
 
 
 def instruction_context(fn_ea, ea, radius=6):

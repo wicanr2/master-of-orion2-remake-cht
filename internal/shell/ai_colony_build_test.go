@@ -27,11 +27,11 @@ func TestOriginalAIExactBuildingScores(t *testing.T) {
 		if !ok {
 			t.Fatalf("測試建築不存在：%s", tt.name)
 		}
-		got, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic, false, false)
+		got, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic, false, false, 0)
 		if !exact || got != tt.balanced {
 			t.Errorf("%s 一般性格分數=(%d,%v)，want (%d,true)", tt.name, got, exact, tt.balanced)
 		}
-		got, exact = originalAIExactBuildingScore(b, colony, ai.PersonalityHonorable, false, false)
+		got, exact = originalAIExactBuildingScore(b, colony, ai.PersonalityHonorable, false, false, 0)
 		if !exact || got != tt.honorable {
 			t.Errorf("%s Honorable 分數=(%d,%v)，want (%d,true)", tt.name, got, exact, tt.honorable)
 		}
@@ -40,7 +40,7 @@ func TestOriginalAIExactBuildingScores(t *testing.T) {
 	if !ok {
 		t.Fatal("研究實驗室不存在")
 	}
-	if score, exact := originalAIExactBuildingScore(fallback, colony, ai.PersonalityHonorable, false, false); !exact || score != 5 {
+	if score, exact := originalAIExactBuildingScore(fallback, colony, ai.PersonalityHonorable, false, false, 0); !exact || score != 5 {
 		t.Fatalf("研究實驗室完整公式：score=%d exact=%v，want 5,true", score, exact)
 	}
 }
@@ -62,16 +62,16 @@ func TestOriginalAIResearchBuildingScores(t *testing.T) {
 		if !ok {
 			t.Fatalf("測試建築不存在：%s", name)
 		}
-		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 9}, ai.PersonalityXenophobic, false, false); !exact || score != tt.normal {
+		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 9}, ai.PersonalityXenophobic, false, false, 0); !exact || score != tt.normal {
 			t.Errorf("%s 一般分數=(%d,%v)，want (%d,true)", name, score, exact, tt.normal)
 		}
-		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 9}, ai.PersonalityErratic, false, false); !exact || score != tt.erratic {
+		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 9}, ai.PersonalityErratic, false, false, 0); !exact || score != tt.erratic {
 			t.Errorf("%s Erratic 分數=(%d,%v)，want (%d,true)", name, score, exact, tt.erratic)
 		}
-		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 9}, ai.PersonalityErratic, true, false); !exact || score != 0 {
+		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 9}, ai.PersonalityErratic, true, false, 0); !exact || score != 0 {
 			t.Errorf("%s 晚期科技分數=(%d,%v)，want (0,true)", name, score, exact)
 		}
-		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 9}, ai.PersonalityErratic, false, true); !exact || score != 0 {
+		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 9}, ai.PersonalityErratic, false, true, 0); !exact || score != 0 {
 			t.Errorf("%s 優先建築 gate 分數=(%d,%v)，want (0,true)", name, score, exact)
 		}
 	}
@@ -83,17 +83,70 @@ func TestOriginalAIBiospheresScore(t *testing.T) {
 		t.Fatal("測試建築不存在：生態圈")
 	}
 	colony := engine.ColonyState{Population: 9}
-	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic, false, false); !exact || score != 18 {
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic, false, false, 0); !exact || score != 18 {
 		t.Fatalf("Biospheres 一般分數=(%d,%v)，want (18,true)", score, exact)
 	}
-	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, false, false); !exact || score != 19 {
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, false, false, 0); !exact || score != 19 {
 		t.Fatalf("Biospheres Pacifist 分數=(%d,%v)，want (19,true)", score, exact)
 	}
-	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, false, true); !exact || score != 0 {
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, false, true, 0); !exact || score != 0 {
 		t.Fatalf("Biospheres priority gate 分數=(%d,%v)，want (0,true)", score, exact)
 	}
-	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, true, false); !exact || score != 19 {
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, true, false, 0); !exact || score != 19 {
 		t.Fatalf("Biospheres 不讀 late-tech，分數=(%d,%v)，want (19,true)", score, exact)
+	}
+}
+
+func TestOriginalAIFoodReplicatorsScore(t *testing.T) {
+	b, ok := gamedata.BuildingByNameZH("食物複製機")
+	if !ok {
+		t.Fatal("測試建築不存在：食物複製機")
+	}
+	colony := engine.ColonyState{
+		Population: 6, Workers: 6, OwnerRaceSlot: 1, OwnerRaceSlotKnown: true, OwnerRaceProfileKnown: true,
+		PopulationGroups: []engine.PopulationGroup{
+			{RaceSlot: 1, RaceSlotKnown: true, ProfileKnown: true, Workers: 2},
+			{RaceSlot: 2, RaceSlotKnown: true, ProfileKnown: true, Workers: 4, Lithovore: true},
+		},
+	}
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic, false, false, 0); !exact || score != 4 {
+		t.Fatalf("非赤字、外來食岩主要人口分數=(%d,%v)，want (4,true)", score, exact)
+	}
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, false, false, -1); !exact || score != 9 {
+		t.Fatalf("赤字、Pacifist 分數=(%d,%v)，want (9,true)", score, exact)
+	}
+	colony.Lithovore = true
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, false, false, -1); !exact || score != 0 {
+		t.Fatalf("owner 已是 Lithovore 時分數=(%d,%v)，want (0,true)", score, exact)
+	}
+	colony.Lithovore = false
+	colony.PopulationGroups[1].Lithovore = false
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, false, false, -1); !exact || score != 0 {
+		t.Fatalf("主要人口非 Lithovore 時分數=(%d,%v)，want (0,true)", score, exact)
+	}
+	colony.PopulationGroups = nil
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, false, false, -1); exact || score != 0 {
+		t.Fatalf("人口 profile 不完整時不應冒稱 exact：score=%d exact=%v", score, exact)
+	}
+}
+
+func TestOriginalAIPrimaryPopulationSlotOwnerFallback(t *testing.T) {
+	colony := engine.ColonyState{
+		Population: 6, Workers: 6, OwnerRaceSlot: 1, OwnerRaceSlotKnown: true, OwnerRaceProfileKnown: true,
+		PopulationGroups: []engine.PopulationGroup{
+			{RaceSlot: 0, RaceSlotKnown: true, ProfileKnown: true, Workers: 2},
+			{RaceSlot: 1, RaceSlotKnown: true, ProfileKnown: true, Workers: 1},
+			{RaceSlot: 2, RaceSlotKnown: true, ProfileKnown: true, Workers: 3},
+		},
+	}
+	if slot, known := originalAIPrimaryPopulationSlot(colony); !known || slot != 0 {
+		t.Fatalf("無嚴格多數且 owner 不逾三分之一時應走 raw slot-0 fallback：slot=%d known=%v", slot, known)
+	}
+	colony.PopulationGroups[0].Workers = 1
+	colony.PopulationGroups[1].Workers = 3
+	colony.PopulationGroups[2].Workers = 2
+	if slot, known := originalAIPrimaryPopulationSlot(colony); !known || slot != 1 {
+		t.Fatalf("owner 嚴格逾三分之一時應採 owner：slot=%d known=%v", slot, known)
 	}
 }
 

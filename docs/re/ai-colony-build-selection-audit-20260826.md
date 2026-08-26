@@ -133,6 +133,27 @@ raw building ID 15 的 jump-table entry 位於 `0xCFF9A`，原始 bytes
 因此 Biospheres 的完整 typed 公式為：priority gate 時 `0`，否則
 `18 + [Pacifist]`。這條路徑不讀 late-tech、人口或 `var_18`，沒有額外 PRNG 或未解欄位。
 
-其餘未封閉區域會讀 alien／outpost 狀態、政府／性格其他碼、殖民地 packed 人口、帝國建築數、
+## 第四批：Food Replicators
+
+raw building ID 16 的 jump-table case 位於 `0xD0797..0xD07BD`。其完整資料鏈如下：
+
+1. raw `sub_D3D34 @ 0xD489D..0xD4967` 建立每殖民地 7-byte AI cache。`cache+0` 由
+   raw `sub_D2A08 @ 0xD2A08..0xD2AA9` 從 `colony+0x0C` 的 packed colonist 低 nibble
+   計數，依原版多數／owner fallback 規則選出主要人口 player slot。
+2. `0xD4934..0xD4963` 只有在該主要人口 player 的 `+0x8B1` 非零、而殖民地 owner
+   player 的 `+0x8B1` 為零時，才寫 `cache+2=1`。`+0x8B1` 與受版控 trait index 18、
+   多個人口消費端一致，為 Lithovore；因此此旗標表示「主要人口為食岩、owner 非食岩」。
+3. raw 16 先於 `0xD079A` 檢查 `cache+2`；未成立直接零分。成立後以 signed
+   `player+0xB0` 選 `8`（負值）或 `4`（非負），最後加 `var_1C=[Pacifist]`。
+4. `player+0xB0` 有兩條獨立直接寫入證據：raw `sub_DF8F0 @ 0xDFA34..0xDFA39`
+   將逐殖民地食物產出減消耗的總差寫入；raw `sub_E2710 @ 0xE2A18..0xE2A1E`
+   亦將聚合食物產出 `var_1C` 減聚合消耗 `var_10` 寫入。其符號可由 remake
+   `EmpireOutput.TotalFoodHalf` 精確表示；半單位尺度不改變 `<0` 邊界。
+
+因此完整 typed 公式為：主要人口／owner profile 不完整時維持未知並走明示 fallback；
+資料完整且不是「主要人口 Lithovore、owner 非 Lithovore」時 `0`；成立時
+`4 + 4×[帝國食物盈餘<0] + [Pacifist]`。這條路徑不讀 priority gate 或 late-tech。
+
+其餘未封閉區域會讀 alien／outpost 狀態、政府／性格其他碼、其他殖民地 packed 人口用途、帝國建築數、
 星球 owner／環境、事件與未解 player flags；在欄位寫入端與 typed 對映完成前維持
 `unknown_pending_review`，由明示近似 fallback 處理。
