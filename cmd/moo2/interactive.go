@@ -2114,7 +2114,7 @@ func loadDiplomatScene(res *assets.Resolver, r int) *ebiten.Image {
 }
 
 type diplomacyOption struct {
-	label, action string
+	textKey, action string
 }
 
 type diplomacyScreen struct {
@@ -2131,26 +2131,26 @@ type diplomacyScreen struct {
 func newDiplomacyScreen(b *sceneBuilder) *diplomacyScreen {
 	// 對談對象改用真正的主要 AI 對手(races 畫面第一個),使外交動作實際改變其關係、可見於
 	// 態勢/議會;取不到 session 時退回示範名。
-	enemy := b.tr("薩克拉", "Sakkra") // 取不到 session 時的示範名
+	enemy := uiText(b.lang, "diplomacy.audience.fallback_enemy") // 取不到 session 時的示範名
 	if b.session != nil {
 		enemy = enemyDisplayName(b.lang, b.session, b.session.PrimaryEnemyName())
 	}
 	return &diplomacyScreen{b: b, fnt: b.fnt, enemy: enemy, room: loadDiplomatScene(b.res, diplomatRaceIndex(enemy)),
-		response: enemy + b.tr("使節:人類,你有何提議?", " emissary: Human, what do you propose?"),
+		response: fmt.Sprintf(uiText(b.lang, "diplomacy.audience.opening"), enemy),
 		opts: []diplomacyOption{
-			{b.tr("提議和平", "Propose Peace"), "peace"},
-			{b.tr("提議貿易", "Propose Trade"), "trade"},
-			{b.tr("提議研究", "Propose Research"), "research"},
-			{b.tr("提議互不侵犯", "Propose Non-Aggression"), "nonaggression"},
-			{b.tr("提議同盟", "Propose Alliance"), "alliance"},
-			{b.tr("威脅恫嚇", "Threaten"), "threat"},
-			{b.tr("給予 5% 進貢", "Offer 5% Tribute"), "tribute_5"},
-			{b.tr("給予 10% 進貢", "Offer 10% Tribute"), "tribute_10"},
-			{b.tr("贈送 10 BC", "Gift 10 BC"), "gift_cash"},
-			{b.tr("特殊貿易：食物換現金", "Special Trade: Food for Credits"), "special_food"},
-			{b.tr("特殊貿易：研究交換", "Special Trade: Research Exchange"), "special_research"},
-			{b.tr("贈送一項科技", "Gift a Technology"), "gift_tech"},
-			{b.tr("贈送一座殖民地", "Gift a Colony"), "gift_star"},
+			{"diplomacy.audience.option.peace", "peace"},
+			{"diplomacy.audience.option.trade", "trade"},
+			{"diplomacy.audience.option.research", "research"},
+			{"diplomacy.audience.option.nonaggression", "nonaggression"},
+			{"diplomacy.audience.option.alliance", "alliance"},
+			{"diplomacy.audience.option.threat", "threat"},
+			{"diplomacy.audience.option.tribute_5", "tribute_5"},
+			{"diplomacy.audience.option.tribute_10", "tribute_10"},
+			{"diplomacy.audience.option.gift_cash", "gift_cash"},
+			{"diplomacy.audience.option.special_food", "special_food"},
+			{"diplomacy.audience.option.special_research", "special_research"},
+			{"diplomacy.audience.option.gift_tech", "gift_tech"},
+			{"diplomacy.audience.option.gift_star", "gift_star"},
 		},
 		backRect: [4]int{250, 430, 140, 34}}
 }
@@ -2159,29 +2159,39 @@ func (d *diplomacyScreen) optRect(i int) (x, y, w, h int) {
 	return 16 + (i%3)*208, 190 + (i/3)*42, 192, 34
 }
 
+func (d *diplomacyScreen) optTextRect(i int) textSafeRect {
+	x, y, w, h := d.optRect(i)
+	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 6, insetY: 3}
+}
+
 func (d *diplomacyScreen) breakOptions() []diplomacyOption {
 	state := d.b.session.TreatyFor(d.enemy)
 	options := make([]diplomacyOption, 0, 3)
 	if state.TradeActive {
-		options = append(options, diplomacyOption{d.b.tr("終止貿易", "End Trade"), "break_trade"})
+		options = append(options, diplomacyOption{"diplomacy.audience.break.trade", "break_trade"})
 	}
 	if state.ResearchActive {
-		options = append(options, diplomacyOption{d.b.tr("終止研究", "End Research"), "break_research"})
+		options = append(options, diplomacyOption{"diplomacy.audience.break.research", "break_research"})
 	}
 	if state.FormalPolicy != gamedata.DIPLO_NONE {
-		options = append(options, diplomacyOption{d.b.tr("終止正式條約", "End Formal Treaty"), "break_formal"})
+		options = append(options, diplomacyOption{"diplomacy.audience.break.formal", "break_formal"})
 	}
 	if state.PlayerTribute != shell.TributeNone || state.AITribute != shell.TributeNone {
-		options = append(options, diplomacyOption{d.b.tr("終止進貢", "End Tribute"), "break_tribute"})
+		options = append(options, diplomacyOption{"diplomacy.audience.break.tribute", "break_tribute"})
 	}
 	if state.SpecialTrade.Active {
-		options = append(options, diplomacyOption{d.b.tr("終止特殊貿易", "End Special Trade"), "break_special"})
+		options = append(options, diplomacyOption{"diplomacy.audience.break.special", "break_special"})
 	}
 	return options
 }
 
 func (d *diplomacyScreen) breakRect(i int) (x, y, w, h int) {
-	return 20 + i*155, 376, 140, 26
+	return 16 + i*124, 398, 116, 24
+}
+
+func (d *diplomacyScreen) breakTextRect(i int) textSafeRect {
+	x, y, w, h := d.breakRect(i)
+	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 6, insetY: 3}
 }
 
 func (d *diplomacyScreen) update(in shell.InputState) *origTransition {
@@ -2222,8 +2232,9 @@ func (d *diplomacyScreen) draw(dst *ebiten.Image) {
 	}
 	// 上方標題 + 使節台詞(疊半透明深色條增可讀性)。
 	fillPanel(dst, 0, 44, moo2ScreenW, 92, color.RGBA{8, 6, 14, 180}, false)
-	d.fnt.DrawCentered(dst, d.b.tr("外交對談", "AUDIENCE"), 320, 62, 20, gold)
-	d.fnt.DrawCentered(dst, truncateToWidth(d.fnt, d.enemy+d.b.tr(" 使節", " Emissary"), 14, 560), 320, 96, 14, color.RGBA{235, 150, 140, 255})
+	textSafeRect{x: 32, y: 48, w: 576, h: 28, insetX: 8, insetY: 2}.drawCentered(dst, d.fnt, uiText(d.b.lang, "diplomacy.audience.title"), 20, gold)
+	textSafeRect{x: 40, y: 82, w: 560, h: 24, insetX: 4, insetY: 2}.drawCentered(dst, d.fnt,
+		fmt.Sprintf(uiText(d.b.lang, "diplomacy.audience.emissary"), d.enemy), 14, color.RGBA{235, 150, 140, 255})
 	responseLines := d.fnt.Wrap(d.response, 14, 560)
 	if len(responseLines) > 2 {
 		responseLines = responseLines[:2]
@@ -2237,26 +2248,28 @@ func (d *diplomacyScreen) draw(dst *ebiten.Image) {
 		d.fnt.DrawCentered(dst, line, 320, y, 14, body)
 	}
 	state := d.b.session.TreatyFor(d.enemy)
-	d.fnt.DrawCentered(dst, truncateToWidth(d.fnt, d.b.tr("目前協議：", "Current agreements: ")+shell.TreatySummary(state, d.b.lang != i18n.Traditional), 13, 560), 320, 164, 13, gold)
+	textSafeRect{x: 40, y: 151, w: 560, h: 24, insetX: 4, insetY: 2}.drawCentered(dst, d.fnt,
+		fmt.Sprintf(uiText(d.b.lang, "diplomacy.audience.agreements"), shell.TreatySummary(state, d.b.lang != i18n.Traditional)), 13, gold)
 	for i, o := range d.opts {
 		x, y, w, h := d.optRect(i)
 		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{34, 30, 54, 255}, false)
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, color.RGBA{110, 90, 160, 255}, false)
 		drawHoverBorder(dst, float32(x), float32(y), float32(w), float32(h), pointInRect(d.hoverX, d.hoverY, x, y, w, h))
-		d.fnt.DrawCentered(dst, truncateToWidth(d.fnt, o.label, 15, float64(w-12)), float64(x+w/2), float64(y+h/2), 15, body)
+		d.optTextRect(i).drawCentered(dst, d.fnt, uiText(d.b.lang, o.textKey), 15, body)
 	}
 	for i, o := range d.breakOptions() {
 		x, y, w, h := d.breakRect(i)
 		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{52, 30, 30, 255}, false)
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, color.RGBA{170, 100, 90, 255}, false)
 		drawHoverBorder(dst, float32(x), float32(y), float32(w), float32(h), pointInRect(d.hoverX, d.hoverY, x, y, w, h))
-		d.fnt.DrawCentered(dst, truncateToWidth(d.fnt, o.label, 13, float64(w-12)), float64(x+w/2), float64(y+h/2), 13, body)
+		d.breakTextRect(i).drawCentered(dst, d.fnt, uiText(d.b.lang, o.textKey), 11, body)
 	}
 	bx, by, bw, bh := d.backRect[0], d.backRect[1], d.backRect[2], d.backRect[3]
 	fillPanel(dst, float32(bx), float32(by), float32(bw), float32(bh), color.RGBA{40, 34, 30, 255}, false)
 	vector.StrokeRect(dst, float32(bx), float32(by), float32(bw), float32(bh), 1.5, color.RGBA{160, 140, 100, 255}, false)
 	drawHoverBorder(dst, float32(bx), float32(by), float32(bw), float32(bh), pointInRect(d.hoverX, d.hoverY, bx, by, bw, bh))
-	d.fnt.DrawCentered(dst, truncateToWidth(d.fnt, d.b.tr("結束對談", "END AUDIENCE"), 15, float64(bw-12)), float64(bx+bw/2), float64(by+bh/2), 15, body)
+	textSafeRect{x: bx, y: by, w: bw, h: bh, insetX: 6, insetY: 3}.drawCentered(dst, d.fnt,
+		uiText(d.b.lang, "diplomacy.audience.button.end"), 15, body)
 }
 
 // diplomacy 進入外交對談畫面(對象是主要對手)。
@@ -2286,7 +2299,7 @@ func (b *sceneBuilder) diplomacyWith(enemy string) (origScreen, error) {
 	if enemy != "" {
 		d.enemy = enemyDisplayName(b.lang, b.session, enemy)
 		d.room = loadDiplomatScene(b.res, diplomatRaceIndex(enemy))
-		d.response = d.enemy + b.tr("使節:人類,你有何提議?", " emissary: Human, what do you propose?")
+		d.response = fmt.Sprintf(uiText(b.lang, "diplomacy.audience.opening"), d.enemy)
 	}
 	return d, nil
 }

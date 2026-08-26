@@ -319,11 +319,20 @@
   是 `Play_Cinematic_` 完整外層，逐幀迴圈同時讀 `Keyboard_Status_`／`Read_Key_` 與
   `Mouse_Button_`，且沒有任何固定文字列印。remake 現接受任意鍵或滑鼠跳過，並移除非原版的
   底部「點擊跳過」提示；片頭與最終得分轉場名稱改由 `ui.json` 供應。外部符號表的相鄰名稱
-  錯位已保留 raw 位址說明，不覆蓋資料庫名稱。Smacker 音軌仍是另一項功能缺口，不因畫面與
-  文案切片完成而結案。Docker＋Xvfb 繁中畫廊完成 35/35；目視抽查 `21_intro.png` 與
+  錯位已保留 raw 位址說明，不覆蓋資料庫名稱。Smacker 真實資產音軌亦已依
+  `docs/re/cutscene-audio-audit-20260827.md` 接入，DAC／PIT／MSS 逐週期內部依停止線不追回。
+  Docker＋Xvfb 繁中畫廊完成 35/35；目視抽查 `21_intro.png` 與
   `22_ending.png`，影片只含原始 frame 與黑邊，沒有額外提示侵入畫面。證據與規格見
   [`docs/re/cutscene-player-path-audit-20260827.md`](docs/re/cutscene-player-path-audit-20260827.md) 與
   [`docs/spec/cutscene-player-path.md`](docs/spec/cutscene-player-path.md)。
+  外交對談已完成第三十四個切片：原版 `DIPLOMAT.LBX` 房間／使節動畫及請求燈證據與
+  remake 三欄操作轉接明確分級；13 個提議、五種動態解約、標題、使節模板、協議摘要與離開
+  按鈕均改由 `ui.json` 供應。`diplomacyOption` 只保存穩定文案鍵與規則 action，按鈕文字框由
+  點擊熱區推導並經雙語最長字串測試；同時修正五種協議皆可終止時第五顆按鈕從 x=640
+  跑出畫布、解約列與最後一列提議重疊的舊版面。原版逐句提議分頁、完整回應動畫與熱區仍維持未知，
+  不因外部文案完成而升格。證據與規格見
+  [`docs/re/diplomacy-audience-text-audit-20260827.md`](docs/re/diplomacy-audience-text-audit-20260827.md) 與
+  [`docs/spec/diplomacy-audience-external-text.md`](docs/spec/diplomacy-audience-external-text.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
