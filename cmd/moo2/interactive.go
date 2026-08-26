@@ -5973,24 +5973,17 @@ func (b *sceneBuilder) planets() (*overlayScreen, error) {
 	// 即時行星資料填進表格列(欄位中心 x 對齊標題;列中心 y 見 planetListRowY)。
 	if b.session != nil {
 		body := color.RGBA{206, 218, 240, 255}
-		cx := struct{ name, cli, grv, min, siz float64 }{57, 136, 218, 303, 382}
 		for i := 0; i < planetListRows && top+i < len(list); i++ {
 			pi := list[top+i]
 			p := b.session.Planets[pi]
 			climate, gravity, minerals, size := planetEnvironmentLabels(b.lang, p)
-			y := planetListRowY[i]
 			col := body
 			if pi == b.planetPick {
 				col = color.RGBA{250, 230, 140, 255} // 選中的那一列換色(這個畫面沒有可畫的選取框)
 			}
-			s.extras = append(s.extras,
-				// 行星名欄寬 78(標題列 {18,14,78,18});長名字要截,否則會溢出欄框。
-				extraText{x: cx.name, y: y, size: 12, text: truncateToWidth(b.fnt, p.Name, 12, 74), col: col, align: 1},
-				extraText{x: cx.cli, y: y, size: 12, text: climate, col: col, align: 1},
-				extraText{x: cx.grv, y: y, size: 12, text: gravity, col: col, align: 1},
-				extraText{x: cx.min, y: y, size: 12, text: minerals, col: col, align: 1},
-				extraText{x: cx.siz, y: y, size: 12, text: size, col: col, align: 1},
-			)
+			for column, text := range []string{p.Name, climate, gravity, minerals, size} {
+				s.extras = append(s.extras, planetListColumnRect(i, column, false).centeredExtras(b.fnt, text, 12, col)...)
+			}
 			// 兩項原版有、remake 先前完全沒顯示的資訊,各自塞進對應欄位格子的第二行
 			// (格高 50,主文字置中,y+11 這一行還在格內)。
 			//
@@ -6005,29 +5998,28 @@ func (b *sceneBuilder) planets() (*overlayScreen, error) {
 					line += " " + n
 				}
 				// 欄寬 78(標題列 {18,14,78,18}),超出會往左溢到欄框外——截掉。
-				s.extras = append(s.extras, extraText{x: cx.name, y: y + 11, size: 9,
-					text: truncateToWidth(b.fnt, line, 9, 74), col: sub, align: 1})
+				s.extras = append(s.extras, planetListColumnRect(i, 0, true).centeredExtras(b.fnt, line, 9, sub)...)
 			}
 			// 這顆行星目前的狀態(自己的殖民地/前哨站),那是「還能不能派船過去」的關鍵資訊。
 			if ci := b.session.ColonyIndexOnPlanet(pi); ci >= 0 {
-				s.extras = append(s.extras, extraText{x: cx.siz, y: y + 11, size: 9,
-					text: b.tr("● 已殖民", "● colony"), col: color.RGBA{150, 225, 165, 255}, align: 1})
+				s.extras = append(s.extras, planetListColumnRect(i, 4, true).centeredExtras(b.fnt,
+					uiText(b.lang, "planet.list.status.colony"), 9, color.RGBA{150, 225, 165, 255})...)
 			} else if b.session.HasOutpostOnPlanet(pi) {
-				s.extras = append(s.extras, extraText{x: cx.siz, y: y + 11, size: 9,
-					text: b.tr("● 前哨站", "● outpost"), col: color.RGBA{150, 195, 235, 255}, align: 1})
+				s.extras = append(s.extras, planetListColumnRect(i, 4, true).centeredExtras(b.fnt,
+					uiText(b.lang, "planet.list.status.outpost"), 9, color.RGBA{150, 195, 235, 255})...)
 			}
 			if sp := planetSpecialLabel(b.lang, p.SpecialID); sp != "" {
-				s.extras = append(s.extras, extraText{x: cx.min, y: y + 11, size: 9, text: "★" + sp, col: sub, align: 1})
+				s.extras = append(s.extras, planetListColumnRect(i, 3, true).centeredExtras(b.fnt, "★"+sp, 9, sub)...)
 			}
 		}
 		if len(list) == 0 {
-			s.extras = append(s.extras, extraText{x: 210, y: 61, size: 12,
-				text: b.tr("尚未探索任何星系", "No systems explored yet"), col: body, align: 1})
+			s.extras = append(s.extras, planetListEmptyTextRect().centeredExtras(b.fnt,
+				uiText(b.lang, "planet.list.empty"), 12, body)...)
 		}
 		// 動作結果訊息:壓在兩顆動作鈕上方那條空白帶。
 		if b.planetListMsg != "" {
-			s.extras = append(s.extras, extraText{x: 532, y: 376, size: 9, text: b.planetListMsg,
-				col: color.RGBA{240, 215, 150, 255}, align: 1})
+			s.extras = append(s.extras, planetListMessageTextRect().centeredExtras(b.fnt,
+				b.planetListMsg, 9, color.RGBA{240, 215, 150, 255})...)
 		}
 	}
 	return s, nil

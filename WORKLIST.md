@@ -368,6 +368,14 @@
   原版專用戰果畫面 parity。證據與規格見
   [`docs/re/battle-result-screen-text-audit-20260827.md`](docs/re/battle-result-screen-text-audit-20260827.md) 與
   [`docs/spec/battle-result-screen-external-text.md`](docs/spec/battle-result-screen-external-text.md)。
+  行星列表已完成第四十個切片：固定的殖民地／前哨狀態與空清單提示由 `ui.json` 供應，
+  `planets()` 不再呼叫 `tr`；無任何呼叫端、卻仍在 shell 組中文句子的 `OutpostTargetHint` 已移除。
+  每個 50px 列的五欄主文字與星系／特殊物產／佔領狀態第二行改用由原欄界推導的雙軸安全框，
+  不再只有行星名手動限寬。右側操作訊息框底緣 y=384，與 y=386 的殖民船按鈕保持 2px 間隔；
+  空清單也有獨立框。雙語最長狀態、行星名與派遣訊息已通過 runtime 字型及列 containment 測試。
+  排序／篩選與殖民／前哨玩法未在文案切片中改動。證據與規格見
+  [`docs/re/planet-list-screen-text-audit-20260827.md`](docs/re/planet-list-screen-text-audit-20260827.md) 與
+  [`docs/spec/planet-list-screen-external-text.md`](docs/spec/planet-list-screen-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

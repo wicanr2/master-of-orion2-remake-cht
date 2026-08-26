@@ -269,27 +269,3 @@ func (s *GameSession) consumeOutpostForColony(starIdx, planetIdx int) bool {
 // 手冊沒把前哨船列在任何科技之下(它與殖民船一樣是開局就有的支援艦),故恆可建造——
 // 這與 AvailableBuildOptions 裡「住宅」恆可用是同一個處理,不是漏了 gate。
 func OutpostBuildAvailable() bool { return true }
-
-// planetSupportsOutpost 回傳該行星資料是否適合建前哨站(供 UI 顯示提示用)。
-// 手冊 p.85:前哨站不需要宜居世界,氣態巨星與小行星帶正是它的用途;一般行星也可以。
-// 只有「沒有任何天體」的黑洞星系不行。
-func planetSupportsOutpost(p Planet) bool { return !p.NoPlanet }
-
-// OutpostTargetHint 回傳在該星建前哨站的用途提示(供 UI 顯示)。
-func (s *GameSession) OutpostTargetHint(starIdx int) string {
-	if starIdx < 0 || starIdx >= len(s.Planets) {
-		return ""
-	}
-	target := s.OutpostTargetPlanet(starIdx)
-	if target < 0 {
-		return "無天體可用"
-	}
-	p := s.Planets[target]
-	if !planetSupportsOutpost(p) {
-		return "無天體可用"
-	}
-	if p.TypeID != gamedata.HABITABLE && p.TypeID != 0 {
-		return p.Name + "・" + planetTypeDisplayName(p.TypeID) + "・僅能建前哨站"
-	}
-	return p.Name + "・可建前哨站(掃描站)"
-}
