@@ -384,6 +384,14 @@
   與熱區中心一致。原版值圖、兩版背景索引、選項數與開局規則均未改動。證據與規格見
   [`docs/re/newgame-setup-text-audit-20260827.md`](docs/re/newgame-setup-text-audit-20260827.md) 與
   [`docs/spec/newgame-setup-external-text.md`](docs/spec/newgame-setup-external-text.md)。
+  艦隊作戰名冊已完成第四十二個切片：未知地點、艦隊標頭、航行後綴、拆分提示、結構損傷與
+  四種轉場名稱均移至 `ui.json`，`fleet()` 已無 `tr`。艦艇名稱、艦級與損傷改用三個互不重疊的
+  雙軸安全欄，標頭與拆分提示亦限於左側名冊框；雙語長星名、長艦名、三位數 ETA 與損傷均有
+  runtime 字型 containment 測試。原版名冊超出可視容量時的捲動／分頁輸入仍屬未知，現有 source
+  也沒有捲動狀態；本切片沒有猜造新操作，這個容量缺口須待原版輸入證據或使用者產品決策後再
+  關閉。證據與規格見
+  [`docs/re/fleet-operations-text-audit-20260827.md`](docs/re/fleet-operations-text-audit-20260827.md) 與
+  [`docs/spec/fleet-operations-external-text.md`](docs/spec/fleet-operations-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

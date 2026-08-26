@@ -4516,17 +4516,17 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 	onAction := func(a string) *origTransition {
 		switch a {
 		case "design":
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "fleet.transition.design"))
 		case "leaders":
 			b.officerMsg = ""
 			b.officerTab = 1
-			return b.goTo(b.officer, "軍官列表")
+			return b.goTo(b.officer, uiText(b.lang, "fleet.transition.officers"))
 		}
 		if strings.HasPrefix(a, "selfleet") && b.session != nil {
 			if n, err := strconv.Atoi(a[len("selfleet"):]); err == nil {
 				b.session.SelectFleet(n)
 				b.shipPick = nil // 新艦隊用自己的索引，並由 Auto Select Ships 決定初始集合。
-				return b.goTo(b.fleet, "艦隊列表")
+				return b.goTo(b.fleet, uiText(b.lang, "fleet.transition.fleet"))
 			}
 			return nil
 		}
@@ -4536,7 +4536,7 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 					b.shipPick = map[int]bool{}
 				}
 				b.shipPick[n] = !b.shipPick[n]
-				return b.goTo(b.fleet, "艦隊列表")
+				return b.goTo(b.fleet, uiText(b.lang, "fleet.transition.fleet"))
 			}
 			return nil
 		}
@@ -4550,13 +4550,13 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 			if _, ok := b.session.SplitFleet(b.session.SelectedFleet, picked); ok {
 				b.shipPick = nil // 艦數與索引已改變，依設定重建目前艦隊的初始集合。
 			}
-			return b.goTo(b.fleet, "艦隊列表")
+			return b.goTo(b.fleet, uiText(b.lang, "fleet.transition.fleet"))
 		}
 		switch a {
 		case "selectall":
 			// 手冊 p.47:已全選就變成全不選。
 			b.toggleSelectAllShips()
-			return b.goTo(b.fleet, "艦隊列表")
+			return b.goTo(b.fleet, uiText(b.lang, "fleet.transition.fleet"))
 		case "relocateall":
 			b.beginRelocateAll()
 			b.flash(uiText(b.lang, "relocation.prompt.retarget_all"))
@@ -4581,11 +4581,11 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 			sc, err := b.antaranRoom()
 			if err != nil {
 				fmt.Fprintln(os.Stderr, "安塔蘭王座廳:", err)
-				return b.goTo(b.fleet, "艦隊列表")
+				return b.goTo(b.fleet, uiText(b.lang, "fleet.transition.fleet"))
 			}
 			return &origTransition{next: sc}
 		}
-		return b.goTo(b.galaxy, "星系主畫面")
+		return b.goTo(b.galaxy, uiText(b.lang, "fleet.transition.galaxy"))
 	}
 	overlays := []labelRect{
 		{190, 17, 260, 20, "FLEET OPERATIONS", 0},
@@ -4616,27 +4616,26 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 		body := color.RGBA{206, 214, 232, 255}
 		head := color.RGBA{150, 220, 200, 255}
 		sel := color.RGBA{250, 230, 140, 255}
-		y := 312.0
+		y := float64(fleetRosterStart + 12)
 		for fi := range b.session.Fleets {
 			f := &b.session.Fleets[fi]
 			// 艦隊標頭:選中標記 + 所在地 + 航行狀態。
-			mark := "  "
+			headerKey := "fleet.roster.header.inactive"
 			hc := head
 			if fi == b.session.SelectedFleet {
-				mark, hc = "▶ ", sel
+				headerKey, hc = "fleet.roster.header.active", sel
 			}
-			loc := b.tr("未知", "unknown")
+			loc := uiText(b.lang, "fleet.roster.unknown_location")
 			if f.AtStar >= 0 && f.AtStar < len(b.session.Stars) {
 				loc = b.session.Stars[f.AtStar].Name
 			}
-			title := fmt.Sprintf(b.tr("%s第 %d 艦隊 — %s(%d 艘)", "%sFleet %d — %s (%d ships)"),
-				mark, fi+1, loc, len(f.Ships))
+			title := fmt.Sprintf(uiText(b.lang, headerKey), fi+1, loc, len(f.Ships))
 			if f.DestStar >= 0 && f.DestStar < len(b.session.Stars) {
-				title += fmt.Sprintf(b.tr(" → %s,%d 回合", " → %s, %d turns"),
+				title += fmt.Sprintf(uiText(b.lang, "fleet.roster.transit"),
 					b.session.Stars[f.DestStar].Name, f.ETA)
 			}
-			s.extras = append(s.extras, extraText{x: 24, y: y, size: 12, text: title, col: hc})
-			fleetHits = append(fleetHits, hitRegion{20, int(y) - 12, 300, 16, fmt.Sprintf("selfleet%d", fi)})
+			s.extras = append(s.extras, fleetHeaderTextRect(int(y)).leftExtras(b.fnt, title, fleetRosterFont, hc)...)
+			fleetHits = append(fleetHits, hitRegion{20, int(y) - 9, 304, fleetRosterRowH, fmt.Sprintf("selfleet%d", fi)})
 			y += 20
 			// 拆分入口:選了至少一艘、又不是全部時才出現。
 			//
@@ -4655,10 +4654,10 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 					}
 				}
 				if n > 0 && n < len(f.Ships) {
-					s.extras = append(s.extras, extraText{x: 34, y: y, size: 11,
-						text: fmt.Sprintf(b.tr("▶ 把選中的 %d 艘拆成新艦隊", "▶ Split %d selected into a new fleet"), n),
-						col:  color.RGBA{150, 230, 180, 255}})
-					fleetHits = append(fleetHits, hitRegion{28, int(y) - 11, 296, 15, "splitfleet"})
+					s.extras = append(s.extras, fleetSplitTextRect(int(y)).leftExtras(b.fnt,
+						fmt.Sprintf(uiText(b.lang, "fleet.roster.split"), n), fleetRosterFont,
+						color.RGBA{150, 230, 180, 255})...)
+					fleetHits = append(fleetHits, hitRegion{28, int(y) - 9, 296, fleetRosterRowH, "splitfleet"})
 					y += 18
 				}
 			}
@@ -4672,12 +4671,12 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 					} else {
 						mk = uiText(b.lang, "fleet.selection.unselected")
 					}
-					fleetHits = append(fleetHits, hitRegion{34, int(y) - 11, 290, 15, fmt.Sprintf("pickship%d", si)})
+					fleetHits = append(fleetHits, hitRegion{34, int(y) - 9, 290, fleetRosterRowH, fmt.Sprintf("pickship%d", si)})
 				}
 				s.extras = append(s.extras,
-					extraText{x: 40, y: y, size: 12, text: mk + sh.Name, col: nameCol},
-					extraText{x: 140, y: y, size: 11, text: shipClassLabel(b.lang, sh.Class), col: body},
-				)
+					fleetShipNameTextRect(int(y)).leftExtras(b.fnt, mk+sh.Name, fleetRosterFont, nameCol)...)
+				s.extras = append(s.extras,
+					fleetShipClassTextRect(int(y)).leftExtras(b.fnt, shipClassLabel(b.lang, sh.Class), fleetRosterFont, body)...)
 				// 結構損傷(見 internal/shell/repair.go)。原版是在艦艇資訊面板用損壞色標示,
 				// remake 只有結構這一份損傷值,直接寫百分比;完好的船不畫,免得整排都是「損傷 0%」。
 				if d := shell.ShipDamagePercent(sh); d > 0 {
@@ -4685,8 +4684,8 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 					if d >= 50 {
 						col = color.RGBA{230, 110, 90, 255} // 重傷:紅
 					}
-					s.extras = append(s.extras,
-						extraText{x: 246, y: y, size: 11, text: fmt.Sprintf(b.tr("損傷 %d%%", "%d%% damaged"), d), col: col})
+					s.extras = append(s.extras, fleetShipDamageTextRect(int(y)).leftExtras(b.fnt,
+						fmt.Sprintf(uiText(b.lang, "fleet.roster.damage"), d), fleetRosterFont, col)...)
 				}
 				y += 18
 			}
