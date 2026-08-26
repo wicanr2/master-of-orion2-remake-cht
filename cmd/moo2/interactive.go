@@ -780,7 +780,7 @@ func (b *sceneBuilder) backHit(dest func() (*overlayScreen, error), name string)
 // 另外保留內縮，避免點陣字墨碰到右上 CLOSE 或下方操作鈕。
 const (
 	starPanelX, starPanelY = 28, 326
-	starPanelW, starPanelH = 210, 132
+	starPanelW, starPanelH = 210, 140
 	starPanelButtonX       = 38
 	starPanelButtonW       = 190
 )
@@ -980,11 +980,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			// SendFleet 會直接回 false——要說清楚原因,不然玩家只會看到「點了沒反應」。
 			if !b.session.SendFleet(b.session.SelectedStar) {
 				if !b.session.FleetHasFTL() {
-					b.lastActionMsg = b.tr(
-						"沒有 FTL 引擎,艦隊無法離開本星系——先研究「核分裂」"+
-							"(曲速前開局的規則,手冊:探索本星系之外在研究出 FTL 之前是不可能的)",
-						"No FTL drive — the fleet cannot leave this system. Research Nuclear Fission first "+
-							"(pre-warp start; the manual: exploring outside this system is impossible until FTL).")
+					b.lastActionMsg = uiText(b.lang, "galaxy.star_panel.error.no_ftl")
 				}
 			}
 			return b.goTo(b.galaxy, "星系主畫面")
@@ -992,10 +988,9 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		if a == "loadmarines" && b.session != nil {
 			n := b.session.LoadMarines(0) // 母星是唯一已知殖民地索引對映(見上方熱區註解)
 			if n > 0 {
-				b.lastActionMsg = fmt.Sprintf(b.tr("已載運 %d 名陸戰隊上艦", "%d marines loaded aboard"), n)
+				b.lastActionMsg = fmt.Sprintf(uiText(b.lang, "galaxy.star_panel.result.marines_loaded"), n)
 			} else {
-				b.lastActionMsg = b.tr("無陸戰隊可載運(駐軍不足或艦隊已滿載)",
-					"No marines to load (garrison too small, or the fleet is full)")
+				b.lastActionMsg = uiText(b.lang, "galaxy.star_panel.error.no_marines")
 			}
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
@@ -1033,7 +1028,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				b.lastActionMsg = res.Reason
 				return b.goTo(b.galaxy, "星系主畫面")
 			}
-			b.lastActionMsg = b.tr("心靈控制成功：殖民地人口已完全同化", "Mind control succeeded: the colony population is fully assimilated")
+			b.lastActionMsg = uiText(b.lang, "galaxy.star_panel.result.mind_control")
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
 		if a == "colonize" && b.session != nil {
@@ -1041,8 +1036,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			if !res.Ok {
 				b.lastActionMsg = res.Reason
 			} else {
-				b.lastActionMsg = fmt.Sprintf(b.tr("拓殖成功!新殖民地起始人口 %d(上限 %d)",
-					"Colony founded — starting population %d (max %d)"), res.StartPopulation, res.PopMax)
+				b.lastActionMsg = fmt.Sprintf(uiText(b.lang, "galaxy.star_panel.result.colonized"), res.StartPopulation, res.PopMax)
 			}
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
@@ -1061,8 +1055,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			if !res.Ok {
 				b.lastActionMsg = res.Reason
 			} else {
-				b.lastActionMsg = b.tr("軍事前哨站建立完成——掃描範圍已往外推(手冊:前哨站沒有產出)",
-					"Outpost established — scanning range extended (the manual: outposts produce nothing)")
+				b.lastActionMsg = uiText(b.lang, "galaxy.star_panel.result.outpost")
 			}
 			return b.goTo(b.galaxy, "星系主畫面")
 		}
@@ -1167,7 +1160,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				infoCol := color.RGBA{245, 230, 150, 255}
 				fnt.DrawCentered(dst, fmt.Sprintf("%d", sess.Player.BC), 579, 110, 12, infoCol) // 國庫 BC
 				// 工業稅率(點國庫框循環,手冊 p.37):畫在國庫格頂端,提示可調的經濟槓桿。
-				fnt.DrawCentered(dst, fmt.Sprintf(b.tr("稅%d%%", "TAX %d%%"), sess.Player.TaxRate),
+				fnt.DrawCentered(dst, fmt.Sprintf(uiText(b.lang, "galaxy.status.tax"), sess.Player.TaxRate),
 					579, 62, 9, color.RGBA{205, 215, 165, 255})
 				// 現算,不用 EndTurn 才更新的快取欄位(見 shell.CommandPointsSupplyNow)。
 				netCmd := sess.CommandPointsSupplyNow() - sess.CommandPointsUsedNow()
@@ -1203,43 +1196,43 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				// starPanelTextLayoutStart
 				if sess.SelectedStar >= 0 && sess.SelectedStar < len(sess.Planets) {
 					p, _ := sess.PlanetDataAt(sess.SelectedStar)
-					// 面板高度 132(非原版 110):敵殖民地時軌道轟炸(402)/地面入侵(424)雙鈕
-					// 共存需多留一列,否則第二顆鈕會露出面板背景框之外。
+					// 面板高度 140 是 remake 轉接：敵殖民地可能同時顯示轟炸(402)、入侵(424)
+					// 與心靈控制(446)，底緣需到 466，否則最下列會露出背景框之外。
 					fillPanel(dst, starPanelX, starPanelY, starPanelW, starPanelH, color.RGBA{10, 14, 30, 235}, false)
 					vector.StrokeRect(dst, starPanelX, starPanelY, starPanelW, starPanelH, 1, color.RGBA{90, 130, 200, 255}, false)
 					drawStarPanelText(dst, fnt, starPanelNameTextRect(), p.Name, 14, color.RGBA{240, 220, 120, 255})
 					// 右上 CLOSE 鈕(✕),對齊上方 "closestar" 熱區與原版彈窗 CLOSE(issue #6)。
-					drawStarPanelText(dst, fnt, starPanelCloseTextRect(), "✕", 14, color.RGBA{235, 150, 140, 255})
+					drawStarPanelText(dst, fnt, starPanelCloseTextRect(), uiText(b.lang, "galaxy.star_panel.button.close"), 14, color.RGBA{235, 150, 140, 255})
 					// 行星特殊物產(金礦/寶石礦/原住民/遠古文物…)接在星名右邊,另用一色標出來——
 					// 這是「這顆星值不值得搶」的關鍵資訊。標題列左右分欄，
 					// 不讓長星名把它推過 CLOSE，也不讓兩者互相蓋字。
 					specialLabel := ""
 					specialColor := color.RGBA{250, 200, 100, 255}
 					if mon := sess.MonsterNameAtStar(sess.SelectedStar); mon != "" {
-						specialLabel = "☠" + mon
+						specialLabel = fmt.Sprintf(uiText(b.lang, "galaxy.star_panel.monster"), mon)
 						specialColor = color.RGBA{240, 130, 150, 255}
 					} else if sp := planetSpecialLabel(b.lang, p.SpecialID); sp != "" {
-						specialLabel = "★" + sp
+						specialLabel = fmt.Sprintf(uiText(b.lang, "galaxy.star_panel.special"), sp)
 					}
 					drawStarPanelText(dst, fnt, starPanelSpecialTextRect(), specialLabel, 10, specialColor)
 					climate, gravity, minerals, size := planetEnvironmentLabels(b.lang, p)
-					drawStarPanelText(dst, fnt, starPanelEnvironmentTextRect(353), fmt.Sprintf(b.tr("氣候 %s ／ 大小 %s", "Climate %s / Size %s"), climate, size), 11, color.RGBA{210, 216, 230, 255})
-					drawStarPanelText(dst, fnt, starPanelEnvironmentTextRect(369), fmt.Sprintf(b.tr("重力 %s ／ 礦產 %s", "Gravity %s / Minerals %s"), gravity, minerals), 11, color.RGBA{210, 216, 230, 255})
+					drawStarPanelText(dst, fnt, starPanelEnvironmentTextRect(353), fmt.Sprintf(uiText(b.lang, "galaxy.star_panel.environment.climate_size"), climate, size), 11, color.RGBA{210, 216, 230, 255})
+					drawStarPanelText(dst, fnt, starPanelEnvironmentTextRect(369), fmt.Sprintf(uiText(b.lang, "galaxy.star_panel.environment.gravity_minerals"), gravity, minerals), 11, color.RGBA{210, 216, 230, 255})
 					// 同系其他天體(氣態巨星/小行星帶)的完整摘要放在行星列表畫面——這個面板
 					// 只有 337~401 這四列的空間,402 起是操作鈕,再塞一列會壓到按鈕。
 					// 陸戰隊狀態行:艦隊目前載運數,選中母星時另顯示殖民地駐軍池數(唯一已知對映)。
-					marineLine := fmt.Sprintf(b.tr("艦隊陸戰隊 %d", "Fleet marines %d"), sess.Fleet().Marines)
+					marineLine := fmt.Sprintf(uiText(b.lang, "galaxy.star_panel.marines.fleet"), sess.Fleet().Marines)
 					if sess.SelectedStar == 0 && len(sess.PlayerColonyMarines) > 0 {
-						marineLine = fmt.Sprintf(b.tr("艦隊陸戰隊 %d／殖民地駐軍 %d", "Fleet marines %d / colony garrison %d"),
+						marineLine = fmt.Sprintf(uiText(b.lang, "galaxy.star_panel.marines.garrison"),
 							sess.Fleet().Marines, sess.PlayerColonyMarines[0])
 					}
 					// 艦員等級接在同一行:這是玩家唯一看得到艦員經驗的地方(remake 沒有逐艦
 					// 資訊面板),而那個等級直接影響命中、防禦與飛彈閃避(見第 60 項(打得準也閃得掉))。
 					// 取艦隊裡**最低**的那一艘——戰力由最弱的那條線決定。
 					if lv, toNext, ok := sess.FleetCrewSummary(); ok {
-						marineLine += fmt.Sprintf(b.tr("／艦員 %s", " / crew %s"), shell.ShipCrewLevelName(lv))
+						marineLine += fmt.Sprintf(uiText(b.lang, "galaxy.star_panel.crew"), shell.ShipCrewLevelName(lv))
 						if toNext > 0 {
-							marineLine += fmt.Sprintf(b.tr("(再 %d 經驗升級)", " (%d xp to next)"), toNext)
+							marineLine += fmt.Sprintf(uiText(b.lang, "galaxy.star_panel.crew_next"), toNext)
 						}
 					}
 					drawStarPanelText(dst, fnt, starPanelMarineTextRect(), marineLine, 11, color.RGBA{200, 220, 170, 255})
@@ -1250,56 +1243,57 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{110, 200, 140, 255}, false)
 						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), b.lastActionMsg, 10, color.RGBA{225, 240, 225, 255})
 					case sess.Fleet().ETA > 0:
-						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), fmt.Sprintf(b.tr("艦隊航行中…剩 %d 回合", "Fleet in transit — %d turns left"), sess.Fleet().ETA), 11, color.RGBA{120, 200, 240, 255})
+						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), fmt.Sprintf(uiText(b.lang, "galaxy.star_panel.status.transit"), sess.Fleet().ETA), 11, color.RGBA{120, 200, 240, 255})
 					case sess.SelectedStar == sess.Fleet().AtStar && sess.SelectedStar == 0:
 						fillPanel(dst, 38, 402, 190, 20, color.RGBA{40, 70, 120, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{110, 160, 230, 255}, false)
-						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), b.tr("▶ 載運陸戰隊", "▶ Load marines"), 12, color.RGBA{230, 235, 245, 255})
+						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), uiText(b.lang, "galaxy.star_panel.button.load_marines"), 12, color.RGBA{230, 235, 245, 255})
 					case sess.SelectedStar == sess.Fleet().AtStar && sess.Stars[sess.SelectedStar].Owner == 2:
 						// 軌道轟炸恆可用(艦隊武器開火,不需陸戰隊),畫在 402 這列。
 						fillPanel(dst, 38, 402, 190, 20, color.RGBA{90, 60, 130, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{170, 140, 230, 255}, false)
-						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), b.tr("▶ 軌道轟炸", "▶ Bombard"), 12, color.RGBA{240, 235, 250, 255})
+						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), uiText(b.lang, "galaxy.star_panel.button.bombard"), 12, color.RGBA{240, 235, 250, 255})
 						// 發動地面入侵額外要求已載運陸戰隊,畫在下一列(424),與轟炸鈕並存。
 						if sess.Fleet().Marines > 0 {
 							fillPanel(dst, 38, 424, 190, 20, color.RGBA{120, 50, 40, 255}, false)
 							vector.StrokeRect(dst, 38, 424, 190, 20, 1, color.RGBA{230, 130, 110, 255}, false)
-							drawStarPanelText(dst, fnt, starPanelButtonTextRect(424), b.tr("▶ 發動地面入侵", "▶ Invade"), 12, color.RGBA{245, 235, 230, 255})
+							drawStarPanelText(dst, fnt, starPanelButtonTextRect(424), uiText(b.lang, "galaxy.star_panel.button.invade"), 12, color.RGBA{245, 235, 230, 255})
 						}
 						if sess.RaceTelepathic() {
 							fillPanel(dst, 38, 446, 190, 20, color.RGBA{55, 95, 125, 255}, false)
 							vector.StrokeRect(dst, 38, 446, 190, 20, 1, color.RGBA{120, 210, 235, 255}, false)
-							drawStarPanelText(dst, fnt, starPanelButtonTextRect(446), b.tr("▶ 心靈控制", "▶ Mind control"), 12, color.RGBA{230, 250, 255, 255})
+							drawStarPanelText(dst, fnt, starPanelButtonTextRect(446), uiText(b.lang, "galaxy.star_panel.button.mind_control"), 12, color.RGBA{230, 250, 255, 255})
 						}
 					case sess.SelectedStar == sess.Fleet().AtStar && sess.StarGuardedByMonster(sess.SelectedStar):
 						fillPanel(dst, 38, 402, 190, 20, color.RGBA{110, 45, 60, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{230, 120, 140, 255}, false)
-						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), b.tr("▶ 挑戰", "▶ Attack ")+sess.MonsterNameAtStar(sess.SelectedStar), 12, color.RGBA{250, 230, 235, 255})
+						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), fmt.Sprintf(uiText(b.lang, "galaxy.star_panel.button.attack"), sess.MonsterNameAtStar(sess.SelectedStar)), 12, color.RGBA{250, 230, 235, 255})
 					case sess.SelectedStar == sess.Fleet().AtStar && len(starPanelColonyRows(sess)) > 0:
 						// 與 galaxy() 建 hits 的判斷共用同一支 starPanelColonyRows,
 						// 免得「畫得出來卻點不到」或反過來。
 						for _, r := range starPanelColonyRows(sess) {
 							row := float32(r.y)
 							face, edge, ink := color.RGBA{40, 110, 60, 255}, color.RGBA{130, 220, 150, 255}, color.RGBA{235, 245, 235, 255}
-							label := b.tr("▶ 建立殖民地", "▶ Colonize")
+							labelKey := "galaxy.star_panel.button.colonize"
 							if r.action == "outpost" {
 								face, edge, ink = color.RGBA{45, 80, 110, 255}, color.RGBA{140, 190, 230, 255}, color.RGBA{230, 240, 250, 255}
-								label = b.tr("▶ 建立前哨站", "▶ Build outpost")
+								labelKey = "galaxy.star_panel.button.outpost"
 							}
+							label := uiText(b.lang, labelKey)
 							// 目標天體寫進鈕裡——同星系有多顆天體時,玩家要看得出這一下會落在哪顆。
 							if r.planet >= 0 && r.planet < len(sess.Planets) {
-								label += "：" + sess.Planets[r.planet].Name
+								label = fmt.Sprintf(uiText(b.lang, "galaxy.star_panel.button.target"), label, sess.Planets[r.planet].Name)
 							}
 							fillPanel(dst, 38, row, 190, 20, face, false)
 							vector.StrokeRect(dst, 38, row, 190, 20, 1, edge, false)
 							drawStarPanelText(dst, fnt, starPanelButtonTextRect(r.y), label, 12, ink)
 						}
 					case sess.SelectedStar == sess.Fleet().AtStar:
-						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), b.tr("艦隊已在此星", "Fleet is already here"), 11, color.RGBA{140, 200, 140, 255})
+						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), uiText(b.lang, "galaxy.star_panel.status.arrived"), 11, color.RGBA{140, 200, 140, 255})
 					default:
 						fillPanel(dst, 38, 402, 190, 20, color.RGBA{40, 70, 120, 255}, false)
 						vector.StrokeRect(dst, 38, 402, 190, 20, 1, color.RGBA{110, 160, 230, 255}, false)
-						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), b.tr("▶ 派遣艦隊至此星", "▶ Send fleet here"), 12, color.RGBA{230, 235, 245, 255})
+						drawStarPanelText(dst, fnt, starPanelButtonTextRect(402), uiText(b.lang, "galaxy.star_panel.button.dispatch"), 12, color.RGBA{230, 235, 245, 255})
 					}
 					// 集結點鈕(第二列):選中的是自己的殖民地才有。標題直接寫出目前設到哪,
 					// 不然玩家看不出「有沒有設」——那正是這個功能最容易被忽略的地方。
