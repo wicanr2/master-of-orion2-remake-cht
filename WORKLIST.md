@@ -118,6 +118,14 @@
   作英文動態文案 fallback，原版烘字是否露出仍由各畫面控制，不再由全域 nil 字型決定。
   正版繁中、缺 `GAME.LBX` fallback 與正版英文畫廊均完成 35 張；已目視抽查 `18_loadgame.png`，
   三欄文字未侵入圖示，按鈕中心一致，過長日期依規格顯示省略號而不越框。
+  指揮點數摘要已完成第十二個切片：標題、六個欄位與關閉提示全部改由
+  `ui.json` 供應，欄名／數值分欄、懲罰列與關閉列均經雙軸安全框繪製。IDA 證實
+  `sub_8BAB9` 直接呼叫的是 `sub_E2644 @ 0xE2644..0xE2671`，再由它呼叫
+  `sub_E2000`；舊文件所稱 `sub_DDF24` 獨立泛用視窗函式並不存在，raw `0xDDF24`
+  是 `sub_DDEFB` 內的尾端 call site。同輪修正畫面把每點 10 BC 超額懲罰誤顯示為
+  1 BC 的錯誤，現改讀 `gamedata.IncomeCommandOverflowCostPerPoint`，與引擎消費端共用契約。
+  正版繁中、正版英文與缺 `GAME.LBX` fallback 畫廊均完成 35 張；已目視抽查
+  `27_commandpoints.png`，三者標題、分欄數值與關閉提示都在面板內。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
@@ -141,7 +149,9 @@
   [`docs/re/colony-bombing-screen-ui-audit-20260826.md`](docs/re/colony-bombing-screen-ui-audit-20260826.md) 與
   [`docs/tech/colony-bombing-external-text-spec.md`](docs/tech/colony-bombing-external-text-spec.md)、
   [`docs/re/load-save-popup-ui-text-audit-20260826.md`](docs/re/load-save-popup-ui-text-audit-20260826.md) 與
-  [`docs/tech/load-save-external-text-spec.md`](docs/tech/load-save-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+  [`docs/tech/load-save-external-text-spec.md`](docs/tech/load-save-external-text-spec.md)、
+  [`docs/re/command-points-screen-ui-text-audit-20260826.md`](docs/re/command-points-screen-ui-text-audit-20260826.md) 與
+  [`docs/tech/command-points-external-text-spec.md`](docs/tech/command-points-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`
   已把本次錯判提煉成跨專案流程，涵蓋重新稽核觸發條件、具名符號限制、玩家機制證據矩陣、

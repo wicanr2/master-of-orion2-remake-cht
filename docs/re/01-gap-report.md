@@ -1087,7 +1087,8 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     sub_11438B(0, 0, 0x27F, 0x1DF, key=0x1B)    ; 整螢幕隱形欄位,ESC 關閉
     sub_128C32(0, 0, 0x27F, 0x1DF, 0)           ; Fill 清畫面
     Draw_Mini_Main_Screen_()                     ; 迷你星圖當底
-    Show_Command_Points_(玩家索引)               ; → sub_E2000 組文字 → sub_DDF24 顯示
+    Show_Command_Points_(玩家索引)               ; → sub_E2644 包裝 sub_E2000 組文字
+                                                  ; → loc_DDF24 尾端顯示
     ```
     文字本身在執行期才載入的字串區塊裡(`sub_DD4FD` 用 `repne scasb` 逐條走),英文原句沒解出來。
     | 符號 | 欄位 |
@@ -1097,7 +1098,8 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     | `_total_command_points_used_msg` / `_total_command_point_used_msg` | 已使用(原版連單複數都分兩條)|
     | `_command_summary_msg` | 總結 |
     | `_command_points_window_field` | 這個視窗的欄位 |
-    (原版走 `sub_DDF24` 那支泛用訊息視窗,座標是傳進去的,沒有「指揮點數專用」的立即數可抄)。
+    2026-08-26 IDA 勘誤:`loc_DDF24` 其實是 `sub_DDEFB @ 0xDDEFB..0xDDF2C`
+    內的尾端 call site,不是獨立泛用視窗函式;仍沒有「指揮點數專用」的座標證據。
     ⚠ ESC 那一半沒接:`shell.InputState` 目前只帶滑鼠,加鍵盤要動共用結構。
     第一版直接讀 `Player.CommandPointsSupply`,畫出來是:
     ```

@@ -4,7 +4,7 @@ package main
 //
 // 原版有這個獨立畫面,remake 先前只在星圖右欄第 2 格顯示一個淨值數字——玩家看得到
 // 「還剩幾點」,但看不到那個數字是怎麼來的(起始值多少、建築給了多少、艦隊吃掉多少)。
-// 指揮點數不足會直接扣國庫(手冊 p.37「每超額 1 點 → 每回合 −1 BC」),所以「為什麼是這個
+// 指揮點數不足會直接扣國庫(手冊 p.169「每超額 1 點 → 每回合 −10 BC」),所以「為什麼是這個
 // 數字」是玩家真的需要的資訊。
 //
 // ============ 畫面結構(反組譯)============
@@ -15,7 +15,8 @@ package main
 //	sub_11438B(0, 0, 0x27F, 0x1DF, key=0x1B)         ; 整螢幕隱形欄位,ESC 關閉
 //	sub_128C32(0, 0, 0x27F, 0x1DF, 0)                ; Fill 清畫面
 //	Draw_Mini_Main_Screen_()                          ; 畫迷你星圖當底
-//	Show_Command_Points_(玩家索引)                    ; → sub_E2000 組文字 → sub_DDF24 顯示
+//	Show_Command_Points_(玩家索引)                    ; → sub_E2644 包裝 sub_E2000 組文字
+//	                                                     ; → loc_DDF24 尾端顯示
 //
 // 也就是**「迷你星圖當背景 + 一塊文字視窗,ESC / 點擊關閉」**。
 //
@@ -44,9 +45,9 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
 
-// 文字視窗的框(remake 版面:置中於星圖框內)。原版的視窗座標由 `sub_DDF24` 這支
-// 泛用訊息視窗決定,那支同時被十幾個畫面共用,座標是傳進去的——沒有「指揮點數專用」的
-// 一組立即數可抄,所以這裡是 remake 自己排的。
+// 文字視窗的框(remake 版面:置中於星圖框內)。IDA 重查證實 `loc_DDF24`
+// 是 `sub_DDEFB` 內的尾端 call site,不是獨立泛用視窗函式;目前仍沒有指揮點數專用座標證據,
+// 所以這裡是有標註的 remake 版面。
 const (
 	cpPanelX, cpPanelY = 150, 130
 	cpPanelW, cpPanelH = 340, 236
@@ -54,6 +55,26 @@ const (
 
 type commandPointsScreen struct {
 	b *sceneBuilder
+}
+
+func cpTitleTextRect() textSafeRect {
+	return textSafeRect{x: cpPanelX + 18, y: cpPanelY + 10, w: cpPanelW - 36, h: 24, insetX: 4, insetY: 2}
+}
+
+func cpLabelTextRect(y int) textSafeRect {
+	return textSafeRect{x: cpPanelX + 18, y: y - 2, w: cpPanelW - 104, h: 22, insetX: 4, insetY: 2}
+}
+
+func cpValueTextRect(y int) textSafeRect {
+	return textSafeRect{x: cpPanelX + cpPanelW - 82, y: y - 2, w: 62, h: 22, insetX: 4, insetY: 2}
+}
+
+func cpPenaltyTextRect(y int) textSafeRect {
+	return textSafeRect{x: cpPanelX + 18, y: y - 2, w: cpPanelW - 36, h: 22, insetX: 4, insetY: 2}
+}
+
+func cpCloseTextRect() textSafeRect {
+	return textSafeRect{x: cpPanelX + 18, y: cpPanelY + cpPanelH - 28, w: cpPanelW - 36, h: 22, insetX: 4, insetY: 2}
 }
 
 // commandPoints 建指揮點數視窗。
@@ -101,8 +122,7 @@ func (s *commandPointsScreen) draw(dst *ebiten.Image) {
 	dim := color.RGBA{140, 152, 178, 255}
 	warn := color.RGBA{235, 150, 140, 255}
 
-	b.fnt.DrawCentered(dst, b.tr("指揮點數", "COMMAND POINTS"),
-		cpPanelX+cpPanelW/2, cpPanelY+22, 15, gold)
+	cpTitleTextRect().drawCentered(dst, b.fnt, uiText(b.lang, "commandpoints.title"), 15, gold)
 
 	// 四個欄位對應原版的四條訊息(見檔頭)。
 	base := gamedata.CommandPointsBase
@@ -119,16 +139,16 @@ func (s *commandPointsScreen) draw(dst *ebiten.Image) {
 
 	y := cpPanelY + 56
 	row := func(label string, v int, c color.Color) {
-		b.fnt.Draw(dst, label, cpPanelX+22, float64(y), 12, dim)
-		b.fnt.Draw(dst, fmt.Sprintf("%d", v), float64(cpPanelX+cpPanelW-60), float64(y), 13, c)
+		cpLabelTextRect(y).drawLeft(dst, b.fnt, label, 12, dim)
+		cpValueTextRect(y).drawRight(dst, b.fnt, fmt.Sprintf("%d", v), 13, c)
 		y += 26
 	}
-	row(b.tr("起始指揮點數", "Starting Command Points"), base, body)
-	row(b.tr("軌道基地提供", "From orbital bases"), fromBldg, body)
-	row(b.tr("指揮點數總計", "Total Command Points"), total, body)
-	row(b.tr("已使用", "Total Command Points Used"), used, body)
+	row(uiText(b.lang, "commandpoints.label.starting"), base, body)
+	row(uiText(b.lang, "commandpoints.label.orbital_bases"), fromBldg, body)
+	row(uiText(b.lang, "commandpoints.label.total"), total, body)
+	row(uiText(b.lang, "commandpoints.label.used"), used, body)
 
-	// 淨值 + 超額懲罰。手冊 p.37:每超額 1 點,每回合 −1 BC。
+	// 淨值 + 超額懲罰。手冊 p.169:每超額 1 點,每回合 −10 BC。
 	net := total - used
 	c := body
 	if net < 0 {
@@ -137,14 +157,14 @@ func (s *commandPointsScreen) draw(dst *ebiten.Image) {
 	y += 18
 	vector.StrokeLine(dst, float32(cpPanelX+20), float32(y-12),
 		float32(cpPanelX+cpPanelW-20), float32(y-14), 1, color.RGBA{60, 78, 118, 255}, false)
-	b.fnt.Draw(dst, b.tr("淨餘", "Net"), cpPanelX+22, float64(y), 13, gold)
-	b.fnt.Draw(dst, fmt.Sprintf("%d", net), float64(cpPanelX+cpPanelW-60), float64(y), 14, c)
+	cpLabelTextRect(y).drawLeft(dst, b.fnt, uiText(b.lang, "commandpoints.label.net"), 13, gold)
+	cpValueTextRect(y).drawRight(dst, b.fnt, fmt.Sprintf("%d", net), 14, c)
 	if net < 0 {
 		y += 24
-		b.fnt.Draw(dst, fmt.Sprintf(b.tr("超額 %d 點 → 每回合 −%d BC", "Over by %d → −%d BC/turn"), -net, -net),
-			cpPanelX+22, float64(y), 11, warn)
+		cpPenaltyTextRect(y).drawLeft(dst, b.fnt,
+			fmt.Sprintf(uiText(b.lang, "commandpoints.penalty"), -net,
+				-net*gamedata.IncomeCommandOverflowCostPerPoint), 11, warn)
 	}
 
-	b.fnt.DrawCentered(dst, b.tr("點一下關閉", "click to close"),
-		cpPanelX+cpPanelW/2, cpPanelY+cpPanelH-16, 11, dim)
+	cpCloseTextRect().drawCentered(dst, b.fnt, uiText(b.lang, "commandpoints.close"), 11, dim)
 }

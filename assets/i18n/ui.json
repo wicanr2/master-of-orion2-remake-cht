@@ -800,5 +800,13 @@
   {"key":"loadsave.message.load_failed","english":"That save would not load (it may come from an older build).","value":"無法讀取這個存檔（可能來自舊版本）","note":"JSON／GAM 載入失敗"},
   {"key":"loadsave.button.load","english":"LOAD","value":"載入","note":"GAME.LBX#21 烘字按鈕替換"},
   {"key":"loadsave.button.save","english":"SAVE","value":"儲存","note":"存檔模式動作按鈕；英文亦需覆蓋 #21 的 LOAD 烘字"},
-  {"key":"loadsave.button.cancel","english":"CANCEL","value":"取消","note":"GAME.LBX#22 烘字按鈕替換"}
+  {"key":"loadsave.button.cancel","english":"CANCEL","value":"取消","note":"GAME.LBX#22 烘字按鈕替換"},
+  {"key":"commandpoints.title","english":"COMMAND POINTS","value":"指揮點數","note":"指揮點數摘要視窗標題"},
+  {"key":"commandpoints.label.starting","english":"Starting Command Points","value":"起始指揮點數","note":"原版 _starting_command_points_msg 對應欄位"},
+  {"key":"commandpoints.label.orbital_bases","english":"From orbital bases","value":"軌道基地提供","note":"軌道基地供給分項"},
+  {"key":"commandpoints.label.total","english":"Total Command Points","value":"指揮點數總計","note":"原版 _total_command_points_msg 對應欄位"},
+  {"key":"commandpoints.label.used","english":"Total Command Points Used","value":"已使用","note":"原版 _total_command_point(s)_used_msg 對應欄位"},
+  {"key":"commandpoints.label.net","english":"Net","value":"淨餘","note":"remake 供給減使用的摘要欄"},
+  {"key":"commandpoints.penalty","english":"Over by %d points → −%d BC/turn","value":"超額 %d 點 → 每回合 −%d BC","note":"超額點數與每點 10 BC 的回合懲罰"},
+  {"key":"commandpoints.close","english":"click to close","value":"點一下關閉","note":"指揮點數視窗關閉提示"}
 ]
