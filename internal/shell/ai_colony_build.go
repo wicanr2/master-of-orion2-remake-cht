@@ -199,6 +199,8 @@ type originalAIBuildScoreContext struct {
 	marineBarracksBuilt           bool
 	commandPointsSupply           int
 	usedCommandPoints             int
+	capitolPlanetMatches          bool
+	capitolStateKnown             bool
 }
 
 // originalAIStrategicPressureContext 是 raw 2／8／22／23／24／26／27／28／40／41／42／47
@@ -447,6 +449,17 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		ruthless = 1
 	}
 	switch rawID {
+	case 9: // 0xD06E1..0xD0712：非統一政體的指定 Capitol 行星固定 100
+		if isUnifiedGovernment(ctx.government) {
+			return 0, true
+		}
+		if !ctx.capitolStateKnown {
+			return 0, false
+		}
+		if ctx.capitolPlanetMatches {
+			return 100, true
+		}
+		return 0, true
 	case 1, 14: // raw 1／14 跳表直接進 0xD0417 的共同零分尾端
 		return 0, true
 	case 26, 27, 42, 47: // 0xD04B3..0xD0549：四種固定殖民地防禦
@@ -846,6 +859,8 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 		marineBarracksBuilt:   built["海軍陸戰隊營"],
 		commandPointsSupply:   empireOut.Player.CommandPointsSupply,
 		usedCommandPoints:     empireOut.Player.UsedCommandPoints,
+		capitolStateKnown:     a.CapitolPlanetKnown && colony < len(a.ColonyPlanets),
+		capitolPlanetMatches:  a.CapitolPlanetKnown && colony < len(a.ColonyPlanets) && a.ColonyPlanets[colony] == a.CapitolPlanet,
 	}
 	if len(pressure) > 0 {
 		ctx.strategicPressureContextKnown = pressure[0].known
@@ -859,6 +874,17 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 	ctx.colonyFoodHalf, ctx.colonyFoodHalfKnown = originalAIColonyFoodHalf(a.Colonies[colony], built, known)
 	ctx.primaryPopCapacity, ctx.primaryPopCapKnown = originalAIPrimaryPopulationCapacity(a.Colonies[colony], built, known)
 	maxScore := 1 // raw Assign_Colony_New_Building_ 也把最大分數下限夾到 1。
+	if a.CapitolRebuildRequired && ctx.capitolStateKnown && ctx.capitolPlanetMatches && !isUnifiedGovernment(government) &&
+		!built[CapitolBuildName] {
+		proxy := gamedata.Building{NameZH: CapitolBuildName, NameEN: CapitolBuildName}
+		score, exact := originalAIExactBuildingScore(proxy, a.Colonies[colony], a.Personality, ctx)
+		if exact {
+			if score > maxScore {
+				maxScore = score
+			}
+			candidates = append(candidates, candidate{ColonyBuild{Name: CapitolBuildName, Cost: CapitolProductionCost}, score})
+		}
+	}
 	for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
 		if built[b.NameZH] || aiOrbitalBaseSuperseded(b.NameZH, built) {
 			continue
@@ -1111,7 +1137,15 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 				s.applyAICompletedPlanetaryShield(aiIndex, i, build.Name, a.ColonyBuildings[i])
 				applyAICompletedOrbitalBase(build.Name, a.ColonyBuildings[i])
 				a.ColonyBuildings[i][build.Name] = true
+				if build.Name == CapitolBuildName && i < len(a.ColonyPlanets) {
+					a.CapitolPlanet = a.ColonyPlanets[i]
+					a.CapitolPlanetKnown = true
+					a.CapitolRebuildRequired = false
+				}
 				applyAICompletedBuilding(&a.Colonies[i], build.Name)
+				if build.Name == CapitolBuildName {
+					s.recalcAIColonyMorale(aiIndex)
+				}
 			}
 		}
 		delete(a.ColonyBuilds, key)

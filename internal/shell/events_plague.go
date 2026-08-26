@@ -8,7 +8,7 @@ func (s *GameSession) plagueTargetEligible(colonies []engine.ColonyState, planet
 	if len(colonies) == 0 || planetAt == nil || s.eventRand == nil {
 		return 0, false
 	}
-	// sub_23DA0 做一次 reservoir sampling；它另要求 colony+0x13F==0，該 raw
+	// sub_23DA0 做一次 reservoir sampling；它另要求 colony+0x13F==0（無 Capitol），該
 	// 欄位的玩家語意仍未知，remake 只保留已能表示的殖民地事件互斥條件。
 	i := reservoirEventColony(colonies, s.eventRand)
 	if i < 0 {

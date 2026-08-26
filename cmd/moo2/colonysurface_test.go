@@ -165,6 +165,7 @@ func TestOrigBuildingIDHasNoStrays(t *testing.T) {
 	for _, action := range gamedata.SpecialActions {
 		known[action.NameEN] = true
 	}
+	known[shell.CapitolBuildName] = true // raw 9 帝國固有特殊產品，不屬一般科技建築表
 	for name := range origBuildingID {
 		if !known[name] {
 			t.Errorf("對照表有 %q,但 gamedata.Buildings 裡沒有這個名字", name)

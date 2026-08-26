@@ -369,7 +369,7 @@ func TestAdvancedStartFillsAllBuildingSlots(t *testing.T) {
 	s.DisableEvents = true
 	s.TechLevel, s.TechLevelSet = 2, true
 	s.applyStartingTech()
-	if got := len(s.ColonyBuildings[0]); got != 6 {
+	if got := len(s.ColonyBuildings[0]) - 1; got != 6 {
 		t.Errorf("先進級母星應發滿 6 個名額(⌈⅔×8⌉),實得 %d 棟:%v",
 			got, s.ColonyBuildings[0])
 	}
@@ -380,7 +380,7 @@ func TestAdvancedStartFillsAllBuildingSlots(t *testing.T) {
 		s.DisableEvents = true
 		s.TechLevel, s.TechLevelSet = lv, true
 		s.applyStartingTech()
-		if got := len(s.ColonyBuildings[0]); got != 2 {
+		if got := len(s.ColonyBuildings[0]) - 1; got != 2 {
 			t.Errorf("TECH LEVEL %d 應仍是兩棟(手冊逐字),實得 %d 棟:%v",
 				lv, got, s.ColonyBuildings[0])
 		}

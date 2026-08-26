@@ -167,7 +167,10 @@ func (s *GameSession) autoBuildChoice(i int) ColonyBuild {
 	if c.Population < c.PopMax {
 		return ColonyBuild{Name: HousingBuildName}
 	}
-	opts := s.AvailableBuildOptions()
+	opts := s.AvailableBuildOptionsForColony(i)
+	if s.playerCanBuildCapitol(i) {
+		return ColonyBuild{Name: CapitolBuildName, Cost: CapitolProductionCost}
+	}
 	priority := []string{"自動工廠", "機器人採礦廠", "研究實驗室", "太空港"}
 	for _, name := range priority {
 		for _, o := range opts {

@@ -19,8 +19,8 @@
    `random-event-climate-audit-20260825.md` 證實是氣候，因此只接受
    Barren..Gaia，排除 Toxic／Radiated。
 3. 200 次全失敗後，線性掃描仍持續覆寫結果，故 fallback 是最高索引的合格
-   殖民地。`sub_23DA0` 另拒絕 raw `colony+0x13F != 0`；此欄尚無 typed
-   玩家語意，remake 不猜測，標為**未知且非阻塞**。
+   殖民地。`sub_23DA0` 另拒絕 raw `colony+0x13F != 0`；此欄已證實為 Capitol，remake
+   已有 typed 對等狀態，但事件抽選器尚未接入此條件。
 
 ## 效果與亂數
 
@@ -47,4 +47,3 @@
   同 seed 下逐人索引完全相同。
 - **已證實且必須保留**：Android 不進特殊人口候選、環境耐受免疫事件、氣候門檻、
   200 次重試與最高索引 fallback、H 可為 0，以及最後固定 1 點一般傷害。
-

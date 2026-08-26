@@ -90,6 +90,9 @@ func englishSafeFallback(text, fallback string) string {
 // 建築與 Special action 分屬兩張資料表，兩者都必須查，否則英文畫面會在
 // Terraforming、Colony Ship 等項目重新露出中文。
 func colonyBuildingLabel(lang i18n.Lang, name string) string {
+	if name == shell.CapitolBuildName {
+		return techCatalog(lang).Translate(name)
+	}
 	if lang == i18n.Traditional {
 		return name
 	}

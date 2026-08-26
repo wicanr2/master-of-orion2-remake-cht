@@ -33,14 +33,18 @@ type AIOpponent struct {
 	// 不是 RaceIndex／OrigIdx。零為合法值，Known 區分舊 JSON。
 	PopulationRaceSlot      int
 	PopulationRaceSlotKnown bool
-	Player                  engine.PlayerState
-	Colonies                []engine.ColonyState
-	Decider                 ai.Decider
-	FleetStrength           int             // 由 Ships 的非支援艦艦體強度推導；舊存檔／舊測試純量相容欄位
-	FleetInvestPool         int             // 舊存檔相容欄位；新造艦進度使用 ShipBuildProgress
-	ShipDesigns             []ShipBlueprint `json:"shipDesigns,omitempty"`
-	Ships                   []Ship          `json:"ships,omitempty"`
-	ShipBuildProgress       int             `json:"shipBuildProgress,omitempty"`
+	// CapitolPlanet 對應原版 player+0x29；Known 區分合法行星 0 與舊存檔缺欄。
+	CapitolPlanet          int
+	CapitolPlanetKnown     bool
+	CapitolRebuildRequired bool
+	Player                 engine.PlayerState
+	Colonies               []engine.ColonyState
+	Decider                ai.Decider
+	FleetStrength          int             // 由 Ships 的非支援艦艦體強度推導；舊存檔／舊測試純量相容欄位
+	FleetInvestPool        int             // 舊存檔相容欄位；新造艦進度使用 ShipBuildProgress
+	ShipDesigns            []ShipBlueprint `json:"shipDesigns,omitempty"`
+	Ships                  []Ship          `json:"ships,omitempty"`
+	ShipBuildProgress      int             `json:"shipBuildProgress,omitempty"`
 	// ColonyBuilds 以星系索引保存 AI 各殖民地目前產品；原版 Colony_AI_ 是逐殖民地
 	// 指派產品，不是把全帝國工業直接灌入單一造艦池。
 	ColonyBuilds map[int]ColonyBuild `json:"colonyBuilds,omitempty"`
@@ -2538,6 +2542,22 @@ func availableBuildOptions(completedTopics map[gamedata.ResearchTopic]bool) []Co
 	return out
 }
 
+func (s *GameSession) availableBuildOptionsForColony(colony int) []ColonyBuild {
+	out := availableBuildOptions(s.Player.CompletedTopics)
+	if !s.playerCanBuildCapitol(colony) {
+		return out
+	}
+	// 原版 Capitol 是帝國固有 raw 9，不屬一般科技建築表；放在三個恆可選項之後。
+	insert := 3
+	if insert > len(out) {
+		insert = len(out)
+	}
+	out = append(out, ColonyBuild{})
+	copy(out[insert+1:], out[insert:])
+	out[insert] = ColonyBuild{Name: CapitolBuildName, Cost: CapitolProductionCost}
+	return out
+}
+
 // 起始文明等級的殖民地開局建築數上限(不含 Capitol),依 docs/tech/homeworld-init.md §2.2
 // (MANUAL_150.html「Initial Buildings」段,一手來源):
 // "The number of starting buildings on each colony is capped to 3 for Pre-warp,
@@ -2575,7 +2595,7 @@ func (s *GameSession) CycleColonyBuild(idx int) {
 	if idx < 0 || idx >= len(s.Builds) {
 		return
 	}
-	opts := availableBuildOptions(s.Player.CompletedTopics)
+	opts := s.availableBuildOptionsForColony(idx)
 	if len(opts) == 0 {
 		return
 	}
@@ -2821,8 +2841,17 @@ func (s *GameSession) completeColonyBuild(i int) {
 				}
 				if !s.ColonyBuildings[i][b.Name] {
 					s.ColonyBuildings[i][b.Name] = true
+					if b.Name == CapitolBuildName && i < len(s.PlayerColonyPlanets) {
+						s.PlayerCapitolPlanet = s.PlayerColonyPlanets[i]
+						s.PlayerCapitolPlanetKnown = true
+						s.PlayerCapitolRebuildRequired = false
+					}
 					s.applyBuildingEffect(i, b.Name)
-					s.recalcColonyMorale(i)
+					if b.Name == CapitolBuildName {
+						s.recalcAllColonyMorale()
+					} else {
+						s.recalcColonyMorale(i)
+					}
 				}
 			}
 		}
@@ -3702,8 +3731,8 @@ var moraleGovByIndex = []gamedata.MoraleGovernmentType{
 //     來源),故無法判斷是否該套用,保守視為「單一種族」一律不套用——異族管理中心已建/未建在
 //     此近似下暫無可見差異(與行星重力產生器在 demo session 暫不可見同一類「架構已備、資料
 //     尚未跟上」情形,見 colony-buildings.md)。
-//   - 首都淪陷懲罰 gamedata.MoraleCapitalCapturedPenalty:remake 沒有「首都被攻陷」這個狀態,
-//     TODO 待地面入侵系統擴充到「可攻佔玩家母星」後補上,現在不加。
+//   - 首都淪陷懲罰由 PlayerCapitolRebuildRequired 接入；只有攻陷／移除鏈能設置，
+//     Capitol 完工後清除，不從缺少建築鍵值猜測事件。
 //
 // multiRacial 為 true 時套用手冊的多種族殖民地 20% 士氣懲罰
 // (`gamedata.MoraleMultiRacialPenalty`,異族管理中心可消除)。
@@ -3787,6 +3816,9 @@ func (s *GameSession) recalcColonyMorale(i int) {
 	gov := s.effectiveGovernment()
 	s.PlayerColonies[i].MoralePercent = colonyMoralePercent(gov, s.buildingsFor(i),
 		s.PlayerColonies[i].UnassimilatedPop > 0, achievementMoralePercent(s.Player, gov))
+	if s.playerCapitolMissing() {
+		s.PlayerColonies[i].MoralePercent += gamedata.MoraleCapitalCapturedPenalty(gov)
+	}
 	setColonyGovernmentOutput(&s.PlayerColonies[i], gov)
 }
 
@@ -3812,6 +3844,7 @@ func (s *GameSession) ApplyGovernment(gov int) {
 	if gov >= 0 && gov < len(moraleGovByIndex) {
 		s.applyGovernmentType(moraleGovByIndex[gov])
 	}
+	s.syncStartingCapitolForGovernment()
 	s.recalcAllColonyMorale()
 	s.finalizeStartingTechForRace()
 }
@@ -3892,7 +3925,13 @@ func (s *GameSession) SetupNewGame(stars int, seed int64, numAI int) {
 		s.Stars, rand.New(rand.NewSource(seed+4)))
 	s.SelectedStar = -1
 	s.AIPlayers = buildDemoAIOpponents(aiHomeStars, s.Difficulty, seed)
-	s.syncAIColonyPlanets()                                    // 行星索引要等 Planets 生完才補得起來(見該函式)
+	s.syncAIColonyPlanets() // 行星索引要等 Planets 生完才補得起來(見該函式)
+	s.PlayerColonyPlanets = []int{s.PlanetAt(0)}
+	s.PlayerCapitolPlanetKnown = false
+	for i := range s.AIPlayers {
+		s.AIPlayers[i].CapitolPlanetKnown = false
+	}
+	s.ensureCapitolState()
 	s.PlayerSpies = make([]int, len(s.AIPlayers))              // 平行 AIPlayers,重置為全新對手的間諜數(開局皆 0)
 	s.PlayerSpyMissions = make([]SpyMission, len(s.AIPlayers)) // 零值 STEAL
 	s.PlayerColonyStars = []int{0}
@@ -4164,12 +4203,19 @@ func (s *GameSession) applyStartingBuildings() {
 		known = map[gamedata.ResearchTopic]bool{gamedata.TOPIC_STARTING_TECH: true}
 	}
 	b := homeworldBuildingsForKnown(s.techLevel(), homeworldStartPop, known)
+	if !isUnifiedGovernment(s.effectiveGovernment()) {
+		b[CapitolBuildName] = true
+	}
 	if len(s.ColonyBuildings) > 0 {
 		s.ColonyBuildings[0] = cloneBuildings(b)
 	}
 	for i := range s.AIPlayers {
 		if len(s.AIPlayers[i].ColonyBuildings) > 0 {
-			s.AIPlayers[i].ColonyBuildings[0] = cloneBuildings(b)
+			aiBuildings := cloneBuildings(b)
+			if isUnifiedGovernment(effectiveAIGovernment(&s.AIPlayers[i])) {
+				delete(aiBuildings, CapitolBuildName)
+			}
+			s.AIPlayers[i].ColonyBuildings[0] = aiBuildings
 		}
 	}
 }
@@ -4284,7 +4330,11 @@ type GameSession struct {
 	AssimilationProgressVersion int
 	Player                      engine.PlayerState
 	PlayerColonies              []engine.ColonyState
-	AIPlayers                   []AIOpponent
+	// PlayerCapitolPlanet 對應原版 player+0x29；Known 區分合法行星 0 與舊 JSON。
+	PlayerCapitolPlanet          int
+	PlayerCapitolPlanetKnown     bool
+	PlayerCapitolRebuildRequired bool
+	AIPlayers                    []AIOpponent
 	// AIRelations 是 AI 對手彼此的外交關係矩陣(AIRelations[i][j] = AI i 對 AI j 的關係分數,
 	// 夾 -40..40,同 AIOpponent.Relation 尺度)。先前 AI 只對玩家單向有關係;此矩陣讓多帝國彼此
 	// 也有關係(依相對軍力漂移),使星系「活起來」並可支撐議會第三方搖擺票(見 advanceAIDiplomacy)。
@@ -5922,9 +5972,8 @@ func newHomeworldPlayerState(researchTopic gamedata.ResearchTopic) engine.Player
 //   - Marine Barracks + Star Base:唯二出現在預設 initial_buildings 清單且技術已知的項目
 //     ("Pre-warp and Average Tech games only start with Marine Barracks and a Star Base")。
 //   - Colony Base 刻意不列入:它是一次性殖民行動,非常駐建築(§3.3)。
-//   - Capitol 刻意不列入此 map:Capitol 不佔用建築格位、不計入 StartingBuildingCount 上限
-//     (§3.2),且非玩家可建/可失去的一般建築,本專案的 ColonyBuildings 追蹤機制不收錄它,
-//     視為首都固有(隱性)狀態。
+//   - Capitol 不計入 StartingBuildingCount 上限，但會以 `CapitolBuildName` 存進
+//     ColonyBuildings；正常開局自動給予，失都後只在指定行星重建。
 //
 // 建築數 2 遠低於 StartingBuildingCount(8, BuildingCapAverage)=5 的上限——這是符合手冊的
 // (上限只是「至多」,實際只有這兩項的科技條件成立,見 §3.3)。
@@ -6194,6 +6243,7 @@ func NewDemoSession() *GameSession {
 	// 玩家母星座落的行星(見 PlayerColonyPlanets 欄位註解)。星 0 恆為母星,
 	// demoHomeStarSet 保證那裡有可殖民天體。
 	session.PlayerColonyPlanets = []int{session.PlanetAt(0)}
+	session.ensureCapitolState()
 	// 開局研究主題(依 TECH LEVEL;demo 局沒設過,`techLevel()` 退回「一般」)。
 	// 與 SetupNewGame 走同一條路,免得兩邊漂開。
 	session.applyStartingTech()

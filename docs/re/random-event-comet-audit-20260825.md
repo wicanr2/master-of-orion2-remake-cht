@@ -55,7 +55,8 @@
 - **近似**：原版 `Status==0` 是逐艦 record 狀態；remake 以 `Fleet.ETA==0` 且
   `AtStar==targetStar` 表示停泊，AI 以 `FleetETA==0/FleetStar` 表示。這保留玩家可見
   的「已抵達艦艇才能攔截」，但不是 raw status 的一對一表示。
-- **未知且非阻塞**：`sub_23DA0` 的 raw `colony+0x13F==0` filter 尚無 typed 語意；不猜值。
+- **已證實但尚未接線**：`sub_23DA0` 的 raw `colony+0x13F==0` 是排除 Capitol 殖民地；
+  remake 已有 typed 狀態，但事件抽選器尚未套用。
 - **相依缺口**：原版互斥表包含事件 14；remake 尚未建立海盜活動持續 record，目前事件 14
   不會進事件池，故現況不可能重疊。實作事件 14 時必須把其 planet/star record 接回
   `cometTargetConflicted`，不能據此文件宣稱該相依已永久閉合。

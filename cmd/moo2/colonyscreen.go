@@ -239,7 +239,7 @@ func (b *sceneBuilder) colonyBuildChoices() []shell.ColonyBuild {
 		return nil
 	}
 	idx := b.colonyIdx
-	all := b.session.AvailableBuildOptions()
+	all := b.session.AvailableBuildOptionsForColony(idx)
 	queued := map[string]bool{}
 	for _, q := range b.session.BuildQueueFor(idx) {
 		if q.Name != "" {

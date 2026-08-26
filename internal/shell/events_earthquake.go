@@ -44,7 +44,8 @@ func originalEarthquakeDamage(population, rawBuildingCount, roll3, roll2 int) in
 }
 
 // pickEarthquakeColony 重製 sub_23DA0 的逐索引 reservoir sampling。remake 的 colony
-// slice 本身只保存有效殖民地；raw +0x13F 尚無 typed 對映，故不在此猜測過濾。
+// slice 本身只保存有效殖民地；raw +0x13F 已證實為 Capitol 建築槽，但此 helper
+// 尚未接收建築狀態，因此排除條件列在 WORKLIST 的事件目標 filter 待辦。
 func pickEarthquakeColony(colonies []engine.ColonyState, intn func(int) int) (int, bool) {
 	pick, seen := -1, 0
 	for i := range colonies {

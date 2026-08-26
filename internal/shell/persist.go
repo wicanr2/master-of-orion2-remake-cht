@@ -22,6 +22,9 @@ type aiSnapshot struct {
 	LuckyEventCounter       int                  `json:"luckyEventCounter,omitempty"`
 	PopulationRaceSlot      int                  `json:"populationRaceSlot,omitempty"`
 	PopulationRaceSlotKnown bool                 `json:"populationRaceSlotKnown,omitempty"`
+	CapitolPlanet           int                  `json:"capitolPlanet"`
+	CapitolPlanetKnown      bool                 `json:"capitolPlanetKnown,omitempty"`
+	CapitolRebuildRequired  bool                 `json:"capitolRebuildRequired,omitempty"`
 	Player                  engine.PlayerState   `json:"player"`
 	Colonies                []engine.ColonyState `json:"colonies"`
 	Profile                 ai.Profile           `json:"profile"`
@@ -83,16 +86,19 @@ type aiSnapshot struct {
 // sessionSnapshot 是 GameSession 的完整可序列化狀態(排除純顯示的暫態:LastEvent/LastAntares
 // /LastBattle/LastPlayerOutput,它們下一回合會重算)。含未匯出的遊戲狀態(popAccum/raceGrowthPct)。
 type sessionSnapshot struct {
-	Version                     int                  `json:"version"`
-	Turn                        int                  `json:"turn"`
-	AssimilationProgressVersion int                  `json:"assimilationProgressVersion,omitempty"`
-	Player                      engine.PlayerState   `json:"player"`
-	PlayerColonies              []engine.ColonyState `json:"playerColonies"`
-	AIPlayers                   []aiSnapshot         `json:"aiPlayers"`
-	Stars                       []Star               `json:"stars"`
-	Planets                     []Planet             `json:"planets"`
-	Leaders                     []Leader             `json:"leaders"`
-	ColonyLeaderNames           []string             `json:"colonyLeaderNames,omitempty"`
+	Version                      int                  `json:"version"`
+	Turn                         int                  `json:"turn"`
+	AssimilationProgressVersion  int                  `json:"assimilationProgressVersion,omitempty"`
+	Player                       engine.PlayerState   `json:"player"`
+	PlayerColonies               []engine.ColonyState `json:"playerColonies"`
+	PlayerCapitolPlanet          int                  `json:"playerCapitolPlanet"`
+	PlayerCapitolPlanetKnown     bool                 `json:"playerCapitolPlanetKnown,omitempty"`
+	PlayerCapitolRebuildRequired bool                 `json:"playerCapitolRebuildRequired,omitempty"`
+	AIPlayers                    []aiSnapshot         `json:"aiPlayers"`
+	Stars                        []Star               `json:"stars"`
+	Planets                      []Planet             `json:"planets"`
+	Leaders                      []Leader             `json:"leaders"`
+	ColonyLeaderNames            []string             `json:"colonyLeaderNames,omitempty"`
 	// Fleets / SelectedFleet 是**多艦隊模型**(見 fleet.go)。
 	// omitempty:2026-08-07 之前的存檔沒有這兩個欄位,解碼成 nil,由 restore 從下面那組
 	// 舊欄位(Ships / FleetAtStar / …)組出唯一的一支艦隊。
@@ -253,6 +259,7 @@ type sessionSnapshot struct {
 
 // snapshot 擷取 GameSession 目前狀態成可序列化快照。
 func (s *GameSession) snapshot() sessionSnapshot {
+	s.ensureCapitolState()
 	s.ensureAssimilationProgressScale()
 	// 歷史除數的零值只代表尚未寫過；快照前正規化，避免主機與讀回端指紋分歧。
 	s.ensureHistoryScales()
@@ -277,7 +284,9 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		}
 		ais[i] = aiSnapshot{Name: a.Name, RaceIndex: a.RaceIndex, LuckyEventCounter: a.LuckyEventCounter,
 			PopulationRaceSlot: a.PopulationRaceSlot, PopulationRaceSlotKnown: a.PopulationRaceSlotKnown,
-			Player: a.Player, Colonies: a.Colonies, Profile: prof,
+			CapitolPlanet: a.CapitolPlanet, CapitolPlanetKnown: a.CapitolPlanetKnown,
+			CapitolRebuildRequired: a.CapitolRebuildRequired,
+			Player:                 a.Player, Colonies: a.Colonies, Profile: prof,
 			FleetStrength: a.FleetStrength, FleetInvestPool: a.FleetInvestPool,
 			ShipDesigns: a.ShipDesigns, Ships: a.Ships, ShipBuildProgress: a.ShipBuildProgress,
 			ColonyBuilds: a.ColonyBuilds,
@@ -297,7 +306,9 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		Version: saveFormatVersion, Turn: s.Turn,
 		AssimilationProgressVersion: s.AssimilationProgressVersion, Player: s.Player,
 		PlayerColonies: s.PlayerColonies, AIPlayers: ais,
-		Stars: s.Stars, Planets: s.Planets, Leaders: s.Leaders,
+		PlayerCapitolPlanet: s.PlayerCapitolPlanet, PlayerCapitolPlanetKnown: s.PlayerCapitolPlanetKnown,
+		PlayerCapitolRebuildRequired: s.PlayerCapitolRebuildRequired,
+		Stars:                        s.Stars, Planets: s.Planets, Leaders: s.Leaders,
 		ColonyLeaderNames: s.ColonyLeaderNames,
 		Fleets:            s.Fleets, SelectedFleet: s.SelectedFleet, ShipDesigns: s.ShipDesigns,
 		ColonyRelocateTo: s.ColonyRelocateTo, ShowRelocationLines: s.ShowRelocationLines,
@@ -381,7 +392,9 @@ func (snap sessionSnapshot) restore() *GameSession {
 		ais[i] = AIOpponent{
 			Name: a.Name, RaceIndex: a.RaceIndex, LuckyEventCounter: a.LuckyEventCounter,
 			PopulationRaceSlot: populationRaceSlot, PopulationRaceSlotKnown: populationRaceSlotKnown,
-			Player: a.Player, Colonies: a.Colonies,
+			CapitolPlanet: a.CapitolPlanet, CapitolPlanetKnown: a.CapitolPlanetKnown,
+			CapitolRebuildRequired: a.CapitolRebuildRequired,
+			Player:                 a.Player, Colonies: a.Colonies,
 			Decider:           ai.NewRemakeDecider(a.Profile), // 由性格重建決策器
 			FleetStrength:     a.FleetStrength,
 			FleetInvestPool:   a.FleetInvestPool,
@@ -416,7 +429,9 @@ func (snap sessionSnapshot) restore() *GameSession {
 	out := &GameSession{
 		Turn: snap.Turn, AssimilationProgressVersion: snap.AssimilationProgressVersion,
 		Player: snap.Player, PlayerColonies: snap.PlayerColonies,
-		AIPlayers: ais, Stars: snap.Stars, Planets: snap.Planets, Leaders: snap.Leaders,
+		PlayerCapitolPlanet: snap.PlayerCapitolPlanet, PlayerCapitolPlanetKnown: snap.PlayerCapitolPlanetKnown,
+		PlayerCapitolRebuildRequired: snap.PlayerCapitolRebuildRequired,
+		AIPlayers:                    ais, Stars: snap.Stars, Planets: snap.Planets, Leaders: snap.Leaders,
 		ColonyLeaderNames: snap.ColonyLeaderNames,
 		Fleets:            snap.restoredFleets(), SelectedFleet: snap.SelectedFleet, ShipDesigns: snap.ShipDesigns,
 		ColonyRelocateTo: snap.ColonyRelocateTo,
@@ -501,6 +516,8 @@ func (snap sessionSnapshot) restore() *GameSession {
 	for i := range out.AIPlayers {
 		out.normalizeAIShipState(i)
 	}
+	out.ensureCapitolState()
+	out.recalcAllColonyMorale()
 	return out
 }
 

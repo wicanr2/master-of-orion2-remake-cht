@@ -10,7 +10,8 @@
 - elapsed turn 至少 200。
 - 從全銀河 `0..len(Stars)-1` 每次等機率抽一星，最多 1,000 次；候選需至少一座 active
   玩家／熱座／AI 殖民地，且不能與彗星、瘟疫、人口暴增、時空異象、海盜活動或另一超新星
-  同星。`colony+0x13F` 無對等欄位，明標近似。
+  同星。`colony+0x13F` 已證實為 Capitol 建築槽且已有 typed 狀態；事件星系抽選器
+  尚未接入「至少一個無 Capitol 的有效殖民地」條件。
 - 倒數=`roll1Based(5)+10-difficulty`；需求=`該星建立當下所有帝國殖民地 RP 總和×倒數`。
 - 保存 `StarIndex`、`Countdown`、`ResearchNeeded`、`ResearchDone=0`，可 JSON 往返。
 
@@ -38,4 +39,3 @@
 4. 多帝國同星時共同投入 RP；成功不摧毀殖民地。
 5. 失敗時玩家／熱座／AI 殖民地與平行陣列均移除，各自殖民行星變 Radiated。
 6. JSON 往返、研究轉用、全專案測試、格式、擁有權與 Docker 清理通過。
-

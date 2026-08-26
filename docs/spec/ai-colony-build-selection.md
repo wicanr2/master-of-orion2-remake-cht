@@ -193,4 +193,5 @@ raw 9 Capitol 的原版規格已證實為「非統一政體且目前殖民地行
 
 - raw 1／14 在任意性格、priority gate 與 budget factor 下均為 `(0, exact=true)`。
 - 正常 AI 候選只剩 raw 1 或 raw 14 時，`chooseAIColonyBuilding` 回傳 `ok=false`。
-- 這些測試證明 remake 遵循已證實公式；不把尚未接線的 raw 9 宣稱完成。
+- 這些測試證明 remake 遵循已證實公式；raw 9 另由可存檔 Capitol 指定行星、失守重建
+  狀態與完工 consumer 的整合測試驗證，詳見 `docs/spec/capitol-state.md`。

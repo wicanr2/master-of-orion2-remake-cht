@@ -662,10 +662,11 @@ func (s *GameSession) MindControlColony(starIdx int) GroundInvasionResult {
 	if planet < 0 {
 		planet = s.PlanetAt(starIdx)
 	}
+	transferredBuildings := s.prepareCapturedAIColony(aiIdx, colonyIdx, planet)
 	s.PlayerColonies = append(s.PlayerColonies, captured)
 	s.ensureColonyLeaderSlots()
 	s.Builds = append(s.Builds, ColonyBuild{})
-	s.ColonyBuildings = append(s.ColonyBuildings, nil)
+	s.ColonyBuildings = append(s.ColonyBuildings, transferredBuildings)
 	s.PlayerColonyMarines = append(s.PlayerColonyMarines, 0)
 	s.MarineBarracksAge = append(s.MarineBarracksAge, 0)
 	s.PlayerColonyTanks = append(s.PlayerColonyTanks, 0)
@@ -689,6 +690,8 @@ func (s *GameSession) MindControlColony(starIdx int) GroundInvasionResult {
 		aiPlayer.ColonyBuildings = append(aiPlayer.ColonyBuildings[:colonyIdx], aiPlayer.ColonyBuildings[colonyIdx+1:]...)
 	}
 	removeAIGroundForceSlot(aiPlayer, colonyIdx)
+	s.recalcAIColonyMorale(aiIdx)
+	s.recalcAllColonyMorale()
 	stillEnemy := false
 	for _, st := range aiPlayer.ColonyStars {
 		if st == starIdx {
@@ -742,9 +745,9 @@ func (s *GameSession) MindControlColony(starIdx int) GroundInvasionResult {
 // 對同一顆星重複輸入必得到相同結果,可重現。
 //
 // 攻方勝:星 Owner 轉 1;把該 AI 殖民地整筆過戶為玩家殖民地(PlayerColonies 新增一筆,
-// Builds/ColonyBuildings(玩家側,補 nil 佔位)/PlayerColonyMarines/MarineBarracksAge 同步補齊
-// 長度——AI 側的原始建築仍依既有過戶近似不轉移,過戶後的玩家殖民地一律視為「無已完工
-// 建築」起算,非本輪範圍,見該欄位設計動機)、從 AIOpponent/Colony* 與 AI 駐軍平行陣列移除、
+// Builds/ColonyBuildings/PlayerColonyMarines/MarineBarracksAge 同步補齊長度；其他建築隨
+// 殖民地過戶，Capitol 依原版 `sub_ECBF7` 單獨移除並觸發舊擁有者重指派；再從
+// AIOpponent/Colony* 與 AI 駐軍平行陣列移除、
 // 雙方持有星數更新(AI.OwnedStars--;玩家由 PlayerOwnedStars() 即時算,Owner 已轉 1 故自動反映)。
 // 過戶殖民地保留原始 Population；原版靜態呼叫鏈 `Change_Colony_Ownership_ @ 0xED260`
 // → `Resolve_Invasion_Troops_ @ 0xECECA` 寫回的是入侵部隊欄位，不是人口欄位。守方戰鬥
@@ -887,6 +890,7 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 
 	if res.AttackerWon {
 		captured := colony
+		transferredBuildings := s.prepareCapturedAIColony(aiIdx, colonyIdx, capturedPlanet)
 		// `Resolve_Invasion_Troops @ 0xECECA` 寫回的是原始殖民地的入侵部隊欄位
 		// (上限由 `Invade @ 0xED59D` 決定)，不是人口欄位。靜態證據沒有支持「守方
 		// 戰鬥單位存活數 = 佔領後人口」，所以保留 captured.Population；markColonyConquered
@@ -900,6 +904,7 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 		for len(s.ColonyBuildings) < len(s.PlayerColonies) {
 			s.ColonyBuildings = append(s.ColonyBuildings, nil)
 		}
+		s.ColonyBuildings[len(s.PlayerColonies)-1] = transferredBuildings
 		for len(s.PlayerColonyMarines) < len(s.PlayerColonies) {
 			s.PlayerColonyMarines = append(s.PlayerColonyMarines, 0)
 		}
@@ -949,6 +954,8 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 			aiPlayer.ColonyBuildings = append(aiPlayer.ColonyBuildings[:colonyIdx], aiPlayer.ColonyBuildings[colonyIdx+1:]...)
 		}
 		removeAIGroundForceSlot(aiPlayer, colonyIdx)
+		s.recalcAIColonyMorale(aiIdx)
+		s.recalcAllColonyMorale()
 		// ⚠ 星的歸屬只在**這顆星上再也沒有敵方殖民地**時才翻面。同星系多殖民地打開之後
 		// (第 24/24 項),一個星系可能有這個 AI 的兩個殖民地;打下一個就把整顆星判給玩家,
 		// 會讓另一個殖民地變成「站在玩家星系裡的敵軍」,而且星圖顏色與可入侵性都對不上。

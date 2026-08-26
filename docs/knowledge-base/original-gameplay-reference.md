@@ -291,7 +291,7 @@ MoO2 **從未有官方中文版**,華人社群覆蓋遠不如星海爭霸、文�
 | 檢查點 | 結果 | 依據 |
 |---|---|---|
 | 永遠已知科技(Capitol/Spy Network/Pulse Rifle/Colony Base/Star Base/Marine Barracks) | ✅ 忠實 | `newHomeworldPlayerState`(session.go:2215-2244)標 TOPIC_STARTING_TECH 已知;Colony Base 記入 ChosenTech |
-| Capitol 不佔建築格位(隱性首都狀態) | ✅ 忠實 | homeworldBuildings 刻意排除 Capitol(session.go:2260),與 reference 一致 |
+| Capitol 是 raw 9 實體建築，另有帝國級指定首都狀態 | ✅ 已接 | 建築槽、指定行星、攻陷重指派、士氣、重建與存檔均已接線；證據見 `docs/re/capitol-state-audit-20260826.md` |
 | 開局母星建築 = Marine Barracks + Star Base | ✅ 忠實(手冊逐字) | homeworld-init.md §3.2/§3.3「start with Marine Barracks and a Star Base」;cap 5 只是上限,實際 2 是 tech 條件成立者(session.go:2255-2265) |
 | 勝利條件恰 3 種(征服/議會/安塔蘭),非 2016 版 6 種 | ✅ 忠實 | VictoryExtermination(council.go)+ VictoryHighCouncil + VictoryAntaran(antaran_victory.go),無多餘勝利型別 |
 | Average 開局 = FTL + 含 ≥1 Colony Ship | ✅ 忠實 | homeworldShips = 1 殖民船 + 2 偵察艦 |

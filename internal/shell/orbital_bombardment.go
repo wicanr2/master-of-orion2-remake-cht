@@ -142,7 +142,7 @@ type GroundBombardResult struct {
 func originalColonyBuildingIDs(buildings map[string]bool) []int {
 	ids := make([]int, 0, len(buildings))
 	for name, active := range buildings {
-		if !active {
+		if !active || name == CapitolBuildName {
 			continue
 		}
 		if id, ok := gamedata.OriginalBuildingIDForName(name); ok {
@@ -150,6 +150,16 @@ func originalColonyBuildingIDs(buildings map[string]bool) []int {
 		}
 	}
 	return ids
+}
+
+func bombardmentBuildingCount(buildings map[string]bool) int {
+	n := 0
+	for name, active := range buildings {
+		if active && name != CapitolBuildName {
+			n++
+		}
+	}
+	return n
 }
 
 // retaliationAttackers 依「轟炸建築吸收階段之後仍存活」的防禦建築,組出防禦方反擊用的
@@ -396,7 +406,7 @@ func (s *GameSession) BombardColony(starIdx int) GroundBombardResult {
 	res.TanksLost = casualties.TanksLost
 	res.BuildProgressLost = casualties.BuildProgressLost
 	res.BuildingsDestroyed = len(casualties.DestroyedBuildingIDs)
-	res.BuildingsRemaining = len(buildings)
+	res.BuildingsRemaining = bombardmentBuildingCount(buildings)
 	res.RemainingHits = casualties.DamageRemaining
 
 	// --- 生物武器(手冊 p.99;第 52 項(生物武器分類)接上)---

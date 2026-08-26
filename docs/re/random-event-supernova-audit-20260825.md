@@ -37,7 +37,7 @@
 
 - **強推論：**planet `+0x08=1` 對應 Radiated，與資料表及手冊結果一致；本輪未重新命名 raw
   planet 欄位，程式仍保留原位址證據。
-- **未知：**`colony+0x13F` 的玩家可見語意；remake 沒有對等欄位，候選先以 active colony
+- **已證實但尚未接線：**`colony+0x13F` 是 Capitol 建築槽；remake 已有對等欄位，候選目前仍以 active colony
   表示並標為近似。
 - 1.50 二進位未取得；倒數若與 1.50 手冊 6–14 不同，須由版本 profile 處理，不能把 1.31
   指令改寫成手冊共同規則。
@@ -49,4 +49,3 @@
 - 「事件只挑目前玩家殖民地」：錯；原版從全銀河星系 rejection sampling。
 - 「爆發只摧毀玩家殖民地並改一顆代表行星」：不完整；原版掃該星五個殖民槽，逐殖民地改
   planet raw climate 並摧毀，不分 owner。
-

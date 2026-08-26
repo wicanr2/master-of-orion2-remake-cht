@@ -56,10 +56,10 @@ func TestNewDemoSessionHomeworldState(t *testing.T) {
 		t.Fatalf("應有 1 份殖民地建築紀錄,got %d", len(s.ColonyBuildings))
 	}
 	b := s.ColonyBuildings[0]
-	if !b["海軍陸戰隊營"] || !b["星基"] {
-		t.Fatalf("母星應已建成海軍陸戰隊營+星基,got %+v", b)
+	if !b["海軍陸戰隊營"] || !b["星基"] || !b[CapitolBuildName] {
+		t.Fatalf("母星應已建成 Capitol、海軍陸戰隊營與星基,got %+v", b)
 	}
-	if len(b) != 2 {
+	if len(b)-1 != 2 {
 		t.Fatalf("Average 起始母星應僅 2 項常駐建築(不含 Capitol/Colony Base),got %+v", b)
 	}
 

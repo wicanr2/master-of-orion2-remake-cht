@@ -6,6 +6,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
 
 // colonysurface.go:殖民地畫面的**行星表面格點**(原版 module 74 的 `CR_To_XY_` 那一套)。
@@ -358,8 +359,8 @@ func (b *sceneBuilder) colonySurfaceLayout(idx int) colonySurface {
 
 // origCapitolID 是國會大廈的原版建築編號。
 //
-// 它**不在** `gamedata.Buildings` 裡,那是對的——建立殖民地時自動給予、不可建造,
-// 不該出現在建造選單。但它是一棟**實體建築**:佔一格、有美術(`bldg0.lbx` 資產 8×36+格)、
+// 它**不在**一般 `gamedata.Buildings` 科技表裡,因為是帝國固有 raw 9；正常開局自動給予，
+// 失都後只在指定行星以特殊產品重建。它是一棟**實體建築**:佔一格、有美術(`bldg0.lbx` 資產 8×36+格)、
 // 會被畫在地表上。「不在建造表裡」與「不在地表格陣裡」是兩件事,先前混為一談了。
 //
 // 只有母星有。patch 1.5 手冊三處佐證:
@@ -370,7 +371,7 @@ func (b *sceneBuilder) colonySurfaceLayout(idx int) colonySurface {
 const origCapitolID = 9
 
 // origColonyBaseID 是拓殖基地的原版建築編號,是 `origCapitolID` 的對稱項:
-// **母星有國會大廈,其餘殖民地有拓殖基地**,兩者都是拓殖時自動給予、不可建造的實體建築。
+// **指定首都有國會大廈,其餘殖民地有拓殖基地**；國會大廈失守後可在指定首都重建。
 //
 // 與 Capitol 同一個坑:先前因為「不在建造表裡」就連地表也漏掉了。
 // 分類 0(地表建築)、成本 200 PP、維護 0 —— 真值見 `docs/re/01-gap-report.md` 第 11 項(48棟建築盤點)那張表,
@@ -383,10 +384,10 @@ func (b *sceneBuilder) colonyOrigBuildingIDs(idx int) map[int]bool {
 	if b.session == nil || idx < 0 || idx >= len(b.session.ColonyBuildings) {
 		return has
 	}
-	if idx == 0 {
-		// 殖民地 0 恆為玩家母星(見 `GameSession.PlayerColonyStars` 欄位註解:星 0 恆為母星)。
+	if b.session.ColonyHasBuilding(idx, shell.CapitolBuildName) {
+		// Capitol 位置由可存檔的指定行星／建築狀態決定，不再把殖民地 0 當永久首都。
 		has[origCapitolID] = true
-	} else {
+	} else if idx != 0 {
 		// 其餘殖民地拿拓殖基地——與母星的國會大廈對稱,都是拓殖時自動給予的實體建築。
 		has[origColonyBaseID] = true
 	}

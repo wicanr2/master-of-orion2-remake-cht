@@ -62,20 +62,23 @@ const DefaultOpponents = 3
 //	而**那支測試根本不存在**。一個指名了不存在的護欄的註解比沒有註解更危險——
 //	它讓人以為這裡有人在看。改成真的寫一支。)
 type seat struct {
-	Player              engine.PlayerState
-	PlayerColonies      []engine.ColonyState
-	PlayerColonyStars   []int
-	PlayerColonyPlanets []int
-	PlayerColonyMarines []int
-	PlayerColonyTanks   []int
-	MarineBarracksAge   []int
-	ArmorBarracksAge    []int
-	Builds              []ColonyBuild
-	BuildQueue          [][]ColonyBuild
-	AutoBuild           []bool
-	RepeatBuild         []ColonyBuild
-	ColonyBuildings     []map[string]bool
-	PopAccum            []int
+	Player                       engine.PlayerState
+	PlayerColonies               []engine.ColonyState
+	PlayerCapitolPlanet          int
+	PlayerCapitolPlanetKnown     bool
+	PlayerCapitolRebuildRequired bool
+	PlayerColonyStars            []int
+	PlayerColonyPlanets          []int
+	PlayerColonyMarines          []int
+	PlayerColonyTanks            []int
+	MarineBarracksAge            []int
+	ArmorBarracksAge             []int
+	Builds                       []ColonyBuild
+	BuildQueue                   [][]ColonyBuild
+	AutoBuild                    []bool
+	RepeatBuild                  []ColonyBuild
+	ColonyBuildings              []map[string]bool
+	PopAccum                     []int
 	// Fleets / SelectedFleet 是這位玩家的艦隊(多艦隊模型,見 fleet.go)。
 	// 先前是 Ships + FleetAtStar/DestStar/ETA/Marines/Tanks 一組欄位。
 	Fleets        []Fleet
@@ -139,8 +142,10 @@ type seat struct {
 func (s *GameSession) saveSeat() seat {
 	return seat{
 		Player: s.Player, PlayerColonies: s.PlayerColonies, PlayerColonyStars: s.PlayerColonyStars,
-		PlayerColonyPlanets: s.PlayerColonyPlanets,
-		PlayerColonyMarines: s.PlayerColonyMarines, PlayerColonyTanks: s.PlayerColonyTanks,
+		PlayerCapitolPlanet: s.PlayerCapitolPlanet, PlayerCapitolPlanetKnown: s.PlayerCapitolPlanetKnown,
+		PlayerCapitolRebuildRequired: s.PlayerCapitolRebuildRequired,
+		PlayerColonyPlanets:          s.PlayerColonyPlanets,
+		PlayerColonyMarines:          s.PlayerColonyMarines, PlayerColonyTanks: s.PlayerColonyTanks,
 		MarineBarracksAge: s.MarineBarracksAge, ArmorBarracksAge: s.ArmorBarracksAge,
 		Builds: s.Builds, BuildQueue: s.BuildQueue,
 		AutoBuild: s.AutoBuild, RepeatBuild: s.RepeatBuild,
@@ -170,6 +175,8 @@ func (s *GameSession) saveSeat() seat {
 // loadSeat 把一個席位快照裝回玩家側狀態。
 func (s *GameSession) loadSeat(v seat) {
 	s.Player, s.PlayerColonies, s.PlayerColonyStars = v.Player, v.PlayerColonies, v.PlayerColonyStars
+	s.PlayerCapitolPlanet, s.PlayerCapitolPlanetKnown = v.PlayerCapitolPlanet, v.PlayerCapitolPlanetKnown
+	s.PlayerCapitolRebuildRequired = v.PlayerCapitolRebuildRequired
 	s.PlayerColonyPlanets = v.PlayerColonyPlanets
 	s.PlayerColonyMarines, s.PlayerColonyTanks = v.PlayerColonyMarines, v.PlayerColonyTanks
 	s.MarineBarracksAge, s.ArmorBarracksAge = v.MarineBarracksAge, v.ArmorBarracksAge

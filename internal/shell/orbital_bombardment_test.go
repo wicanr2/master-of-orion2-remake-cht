@@ -96,7 +96,7 @@ func TestBombardColony_ReducesPopulationDeterministically(t *testing.T) {
 	if startPop != 8 {
 		t.Fatalf("測試前提錯誤:預期母星預設人口 8,got %d(playerHomeworldColony 是否變動?)", startPop)
 	}
-	startBuildings := len(s.AIPlayers[aiIdx].ColonyBuildings[colonyIdx])
+	startBuildings := bombardmentBuildingCount(s.AIPlayers[aiIdx].ColonyBuildings[colonyIdx])
 	if startBuildings != 2 {
 		t.Fatalf("測試前提錯誤:預期 AI 母星開局有 2 棟建築(海軍陸戰隊營+星基),got %d", startBuildings)
 	}

@@ -157,6 +157,11 @@ func (s *GameSession) AvailableBuildOptions() []ColonyBuild {
 	return availableBuildOptions(s.Player.CompletedTopics)
 }
 
+// AvailableBuildOptionsForColony 加入只在指定重建行星出現的 Capitol 特殊產品。
+func (s *GameSession) AvailableBuildOptionsForColony(i int) []ColonyBuild {
+	return s.availableBuildOptionsForColony(i)
+}
+
 // BuildQueueBacklogLen 回傳殖民地 i 後續排隊項的數量(不含當前建造)。供 UI 顯示「+N」。
 func (s *GameSession) BuildQueueBacklogLen(i int) int {
 	if i < 0 || i >= len(s.BuildQueue) {

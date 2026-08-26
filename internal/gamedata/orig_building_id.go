@@ -15,6 +15,7 @@ package gamedata
 // 手冊 "Planetary Stock Exchange"、內部 "Stock Exchange"。照字串比對會漏一半。
 // 右欄註記的是原版 TECHNAME.LBX 裡的原文,方便日後核對。
 var OrigBuildingID = map[string]int{
+	"Capitol":                     9,  // Capitol；帝國固有建築，失都後可重建
 	"Alien Management Center":     1,  // Alien Control Center
 	"Armor Barracks":              2,  // Armor Barracks
 	"Artemis System Net":          3,  // Artemis System Net

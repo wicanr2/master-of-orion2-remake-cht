@@ -7,7 +7,7 @@ import (
 
 // originalMineralEventColony 對應 sub_2325E／sub_232BB：每次先均勻抽一座
 // 殖民地，再檢查礦產，最多重試 200 次。枯竭只接受 Ultra Rich；發現接受
-// Ultra Rich 以下。原版枯竭抽選器另檢查 colony+0x13F==0，但 remake 尚無該
+// Ultra Rich 以下。原版枯竭抽選器另檢查 colony+0x13F==0（無 Capitol），remake 尚未把該
 // raw 欄位的已證實玩家語意，故目前只保留玩家可見的礦產條件。
 func originalMineralEventColony(colonies []engine.ColonyState, planetAt func(int) *Planet, eventID int, rng *randStream) (int, bool) {
 	if len(colonies) == 0 || planetAt == nil || rng == nil || (eventID != 11 && eventID != 12) {

@@ -222,9 +222,9 @@ func (s *buildQueueScreen) draw(dst *ebiten.Image) {
 		}
 		y := bqListY0 + i*bqListStep
 		o := opts[j]
-		txt := o.Name
+		txt := buildItemLabel(b.lang, o.Name)
 		if o.Cost > 0 {
-			txt = fmt.Sprintf("%s  %dPP", o.Name, o.Cost)
+			txt = fmt.Sprintf("%s  %dPP", buildItemLabel(b.lang, o.Name), o.Cost)
 		}
 		b.fnt.Draw(dst, truncateToWidth(b.fnt, txt, 11, float64(bqListX1-bqListX0-6)),
 			float64(bqListX0+3), float64(y+3), 11, body)
@@ -242,7 +242,7 @@ func (s *buildQueueScreen) draw(dst *ebiten.Image) {
 		col := dim
 		if i < len(q) && q[i].Name != "" {
 			col = body
-			label = q[i].Name
+			label = buildItemLabel(b.lang, q[i].Name)
 			if q[i].Refit != nil {
 				label = b.tr("改裝：", "REFIT: ") + q[i].Refit.Source.Name
 			}
