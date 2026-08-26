@@ -141,10 +141,14 @@ raw building ID 16 的 jump-table case 位於 `0xD0797..0xD07BD`。其完整資�
 1. raw `sub_D3D34 @ 0xD489D..0xD4967` 建立每殖民地 7-byte AI cache。`cache+0` 由
    raw `sub_D2A08 @ 0xD2A08..0xD2AA9` 從 `colony+0x0C` 的 packed colonist 低 nibble
    計數，依原版多數／owner fallback 規則選出主要人口 player slot。
-2. `0xD4934..0xD4963` 只有在該主要人口 player 的 `+0x8B1` 非零、而殖民地 owner
-   player 的 `+0x8B1` 為零時，才寫 `cache+2=1`。`+0x8B1` 與受版控 trait index 18、
-   多個人口消費端一致，為 Lithovore；因此此旗標表示「主要人口為食岩、owner 非食岩」。
-3. raw 16 先於 `0xD079A` 檢查 `cache+2`；未成立直接零分。成立後以 signed
+2. `memset @ 0xD489D..0xD48A4` 先令 cache 全零。`cmp primary+0x8B1,0 @ 0xD4946`
+   的 `jz 0xD4963` 會直接執行 `mov [cache+2],1`；primary 為 Lithovore 時才繼續檢查
+   owner，且只有 owner 也為 Lithovore 的 `jnz 0xD4967` 會跳過寫入。故 cache+2 的精確
+   語意是 `!(primaryLithovore && ownerLithovore)`，不是先前只看落入寫入點而誤讀成的
+   「主要人口為 Lithovore、owner 非 Lithovore」。此結論由 memset、兩個條件跳躍與唯一
+   寫入端共同證實。
+3. raw 16 先於 `0xD079A` 檢查 `cache+2`；只有主要人口與 owner 同為 Lithovore 時零分。
+   其餘情況以 signed
    `player+0xB0` 選 `8`（負值）或 `4`（非負），最後加 `var_1C=[Pacifist]`。
 4. `player+0xB0` 有兩條獨立直接寫入證據：raw `sub_DF8F0 @ 0xDFA34..0xDFA39`
    將逐殖民地食物產出減消耗的總差寫入；raw `sub_E2710 @ 0xE2A18..0xE2A1E`
@@ -152,7 +156,7 @@ raw building ID 16 的 jump-table case 位於 `0xD0797..0xD07BD`。其完整資�
    `EmpireOutput.TotalFoodHalf` 精確表示；半單位尺度不改變 `<0` 邊界。
 
 因此完整 typed 公式為：主要人口／owner profile 不完整時維持未知並走明示 fallback；
-資料完整且不是「主要人口 Lithovore、owner 非 Lithovore」時 `0`；成立時
+資料完整且主要人口與 owner 同為 Lithovore 時 `0`；其餘為
 `4 + 4×[帝國食物盈餘<0] + [Pacifist]`。這條路徑不讀 priority gate 或 late-tech。
 
 ## 第五批：Cloning Center 與 `var_18` 勘誤
@@ -257,6 +261,28 @@ Toxic／Radiated／Terran／Gaia 不在這個內層表；remake 依既有 typed
 `TerraformNextClimateOptions` 只讓具下一級的 Barren..Arid 成為候選。完工時採同一 helper
 的第一個結果（Barren 的 Desert／Tundra 二選一仍是既有明示近似），並同步 AI 殖民地與
 全局行星。候選適用性與 Barren 分歧並非本次計分函式的「已證實」內容。
+
+## 第九批：Soil Enrichment
+
+raw 37 的 entry 為 `0xCFFF2 56 09 0d 00 → 0xD0956`。完整控制流是：
+
+1. `test ah,ah @ 0xD0956`：priority gate 成立時零分。
+2. `cmp [cache+2],0 @ 0xD0961`：主要人口與 owner 同為 Lithovore 時零分；旗標完整
+   寫入證據與勘誤見第四批。
+3. `cmp byte ptr [colony+0xDD],0 @ 0xD096B`：目前每農夫食物產出不大於 0 時零分。
+   `sub_13A3D @ 0x13F3D..0x13F4E` 由 colony 的 planet index 讀 `planet+0x0B` 後寫入此欄；
+   正常重算端 `sub_E1D59 @ 0xE1D6F..0xE1D7B` 呼叫 raw `sub_DE03E @ 0xDE03E` 再回寫。
+   `sub_DE03E` 將 planet 食物基值乘 2，加入 Weather Controller 的 4 個 half-unit 與
+   Astro University 的 2 個 half-unit，因此 `+0xDD` 是目前每農夫食物的半單位快取。
+   raw 37 只問正負，remake `FoodPerFarmer>0` 可保持同一邊界。
+4. `player+0xB0 < 0` 時基礎分 5，否則 3；`0xD098E..0xD0993` 再加
+   `2×[Pacifist]`。此 case 不加入 `budgetFactor` 或 late-tech。
+
+因此完整公式為：priority gate、cache+2 為 0 或每農夫食物不大於 0 時為 0；否則
+`3 + 2×[帝國食物盈餘<0] + 2×[Pacifist]`。remake 只在既有
+`TerraformSoilEnrichmentWorks` 允許的氣候提供一次性候選；完工後每農夫食物 +1，且不寫入
+`ColonyBuildings`。原版 planet `+0x0B` 沒有 remake 的獨立全局行星欄位，持久化權威是
+`ColonyState.FoodPerFarmer`；這是資料模型對映，不宣稱逐欄保存原版 planet record。
 
 其餘未封閉區域會讀 alien／outpost 狀態、政府／性格其他碼、其他殖民地 packed 人口用途、帝國建築數、
 星球 owner／環境、事件與未解 player flags；在欄位寫入端與 typed 對映完成前維持

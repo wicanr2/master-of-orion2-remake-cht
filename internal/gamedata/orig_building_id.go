@@ -48,6 +48,7 @@ var OrigBuildingID = map[string]int{
 	"Robotic Factory":             34, // Robotic Factory
 	"Research Laboratory":         35, // Research Lab
 	"Robo Mining Plant":           36, // Robo Miner Plant
+	"Soil Enrichment":             37, // Soil Enrichment (Special)
 	"Space Academy":               38, // Space Academy
 	"Spaceport":                   39, // Spaceport
 	"Star Base":                   40, // Star Base

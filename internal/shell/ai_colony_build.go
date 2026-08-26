@@ -94,7 +94,9 @@ func originalAIPrimaryPopulationSlot(colony engine.ColonyState) (int, bool) {
 	return owner, true
 }
 
-func originalAIForeignLithovorePopulation(colony engine.ColonyState) (bool, bool) {
+// originalAIFoodBuildingPopulationGate 對映 Compute_AI_Data_ 的 cache+2：只有主要人口與
+// owner 同為 Lithovore 時為 false；profile 不完整時 known=false。
+func originalAIFoodBuildingPopulationGate(colony engine.ColonyState) (eligible, known bool) {
 	slot, known := originalAIPrimaryPopulationSlot(colony)
 	if !known || !colony.OwnerRaceProfileKnown {
 		return false, false
@@ -112,7 +114,7 @@ func originalAIForeignLithovorePopulation(colony engine.ColonyState) (bool, bool
 			return false, false
 		}
 	}
-	return primaryLithovore && !colony.Lithovore, true
+	return !(primaryLithovore && colony.Lithovore), true
 }
 
 type originalAIBuildScoreContext struct {
@@ -166,6 +168,22 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		pacifist = 1
 	}
 	switch rawID {
+	case 37: // 0xD0956..0xD0995：Soil Enrichment
+		if ctx.priorityGate || colony.FoodPerFarmer <= 0 {
+			return 0, true
+		}
+		eligible, known := originalAIFoodBuildingPopulationGate(colony)
+		if !known {
+			return 0, false
+		}
+		if !eligible {
+			return 0, true
+		}
+		score := 3 + 2*pacifist
+		if ctx.empireFoodBalanceHalf < 0 {
+			score += 2
+		}
+		return score, true
 	case 44: // 0xD0A53..0xD0AB4：Terraforming
 		if ctx.priorityGate {
 			return 0, true
@@ -246,11 +264,11 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		}
 		return 18 + pacifist, true
 	case 16: // 0xD0797..0xD07BD：Food Replicators
-		foreignLithovore, known := originalAIForeignLithovorePopulation(colony)
+		eligible, known := originalAIFoodBuildingPopulationGate(colony)
 		if !known {
 			return 0, false
 		}
-		if !foreignLithovore {
+		if !eligible {
 			return 0, true
 		}
 		if ctx.empireFoodBalanceHalf < 0 {
@@ -338,13 +356,15 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 		candidates = append(candidates, candidate{ColonyBuild{Name: b.NameZH, Cost: b.ProductionCost}, score})
 	}
 	for _, action := range gamedata.AvailableSpecialActions(a.Player.CompletedTopics) {
-		// 目前只閉合 raw 17／44；其餘 Special 的原版 AI 分數與可建 gate 尚未完成。
+		// 目前只閉合 raw 17／37／44；其餘 Special 的原版 AI 分數與可建 gate 尚未完成。
 		applicable := false
 		switch action.NameZH {
 		case gamedata.GaiaTransformationActionName:
 			applicable = gamedata.GaiaTransformationCanApply(a.Colonies[colony].Climate)
 		case gamedata.TerraformActionName:
 			applicable = len(gamedata.TerraformNextClimateOptions(a.Colonies[colony].Climate)) > 0
+		case gamedata.SoilEnrichmentActionName:
+			applicable = gamedata.TerraformSoilEnrichmentWorks(a.Colonies[colony].Climate)
 		}
 		if !applicable {
 			continue
@@ -467,6 +487,11 @@ func (s *GameSession) applyAICompletedSpecial(aiIndex, colony int, name string) 
 		if len(options) > 0 {
 			target = options[0]
 		}
+	case gamedata.SoilEnrichmentActionName:
+		if gamedata.TerraformSoilEnrichmentWorks(c.Climate) {
+			c.FoodPerFarmer += gamedata.TerraformSoilEnrichmentFoodBonusPerFarmer
+		}
+		return true
 	default:
 		return false
 	}

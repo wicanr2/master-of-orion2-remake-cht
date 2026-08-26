@@ -24,8 +24,8 @@
    否則分別為 `11+4×[Erratic]`、`11`、`8+3×[Erratic]`、`5+2×[Erratic]`。
    raw ID 15 Biospheres 亦使用完整精確公式：priority gate 時為 0，否則
    `18+[Pacifist]`；late-tech 不影響此式。
-   raw ID 16 Food Replicators 在逐種族人口資料完整時使用完整精確公式：只有主要人口
-   Lithovore 且 owner 非 Lithovore 才為正；帝國食物盈餘為負時 `8+[Pacifist]`，
+   raw ID 16 Food Replicators 在逐種族人口資料完整時使用完整精確公式：主要人口與 owner
+   同為 Lithovore 時為 0；其餘在帝國食物盈餘為負時 `8+[Pacifist]`，
    否則 `4+[Pacifist]`。主要人口依原版 player-slot 計數與 owner fallback 規則決定；
    profile 不完整時仍走明示類別 fallback，不把缺資料的零值冒充原版零分。
    raw ID 10 Cloning Center 使用原版結算前國庫／淨 BC 因子：priority gate 時為 0；
@@ -44,6 +44,10 @@
    Ocean、Swamp、Arid 基礎分依序為 `2/2、1/1、0/1、4/0、6/0、1/1`。候選只在
    `TerraformNextClimateOptions` 有結果時出現；它同樣是一次性 Special，完成後同步 AI
    殖民地與全局行星，Barren 多候選沿用既有固定第一項近似。
+   raw ID 37 Soil Enrichment 在 priority gate、主要人口與 owner 同為 Lithovore，或
+   `FoodPerFarmer<=0` 時為 0；否則為
+   `3+2×[帝國食物盈餘<0]+2×[Pacifist]`。它只在既有土壤適用氣候提供候選，完工使
+   `FoodPerFarmer+1`，不寫入常駐建築集合。
 5. 優先建築 gate 僅由已知科技 application、已建建築、殖民地礦產及 AI 生效政府組成：
    - Ultra Poor／Poor／Abundant 殖民地已知 Automated Factories 但未建 Automated Factory；或
    - Feudal／Confederation／Dictatorship／Imperium 已知但未建 Marine Barracks／Armor Barracks。
@@ -63,8 +67,8 @@
 - raw 6／19／30／35 在一般與 Erratic 性格下符合完整正值公式；晚期科技與兩類優先建築
   gate 的邊界皆精確歸零。
 - raw 15 在一般／Pacifist 性格下分別為 18／19，priority gate 時為 0；late-tech 不得誤歸零。
-- raw 16 在一般／Pacifist、食物赤字／非赤字邊界符合 `8/9`、`4/5`；主要人口非 Lithovore
-  或 owner 已是 Lithovore 時為 0，profile 不完整時必須回報非 exact。
+- raw 16 在一般／Pacifist、食物赤字／非赤字邊界符合 `8/9`、`4/5`；只有主要人口與 owner
+  同為 Lithovore 時為 0，profile 不完整時必須回報非 exact。
 - raw 10 在結算前國庫 1499／1500、淨 BC 的平方根邊界、負淨 BC 與負／非負人口成長下
   符合完整公式；計分不得改變加權抽選的亂數位置。
 - raw 20／31 在八種政府、人口 1／2／3 與 budget factor 0／正值的邊界符合完整固定分數；
@@ -75,6 +79,8 @@
 - raw 44 的六種有效氣候在 Aquatic／非 Aquatic、一般／Pacifist、priority gate 與
   budget factor 0／正值邊界逐式符合內層跳表；Toxic／Radiated／Terran／Gaia 不得成為候選，
   完工不得寫入常駐建築，且殖民地／行星氣候必須同步前進一級。
+- raw 37 在兩種 Lithovore 組合、`FoodPerFarmer` 0／1、食物盈餘 -1／0、一般／Pacifist
+  與 priority gate 邊界符合公式；不適用氣候不得成為候選，完工只增加每農夫食物且不留常駐旗標。
 - 只完成多選主題但選了其他 application 時，不得觸發相應 Automated Factory／Barracks gate。
 - 精確分支與類別式 fallback 不可混稱同一證據等級。
 - 既有擴張測試以「建築＋造艦總投入」驗證新殖民地確實參與經濟，不再假設所有產出都是軍艦。

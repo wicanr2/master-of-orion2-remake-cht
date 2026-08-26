@@ -45,6 +45,7 @@ ROOTS = {
     "raw_Apply_Production": 0xE36DF,
     "raw_AI_Choose_Research": 0xDC288,
     "raw_AI_Empire_Output_Cache": 0xDF8F0,
+    "raw_Colony_Food_Per_Farmer": 0xDE03E,
     "raw_Recompute_Player_Economy": 0xE2710,
     "raw_Apply_Player_Economy": 0xE4F49,
     "raw_Integer_Sqrt": 0x134C92,
@@ -53,6 +54,7 @@ ROOTS = {
 
 TRACKED_RECORD_OFFSETS = {
     "player_food_balance_word": 0xB0,
+    "colony_food_output_byte": 0xDD,
     "player_cybernetic_trait": 0x8B0,
     "player_lithovore_trait": 0x8B1,
     "player_aquatic_trait": 0x8AB,
@@ -69,6 +71,10 @@ REVIEWED_OFFSET_SEMANTICS = {
     "player_food_balance_word": {
         "semantic": "base-dependent raw +0xB0; player base stores empire food production minus consumption",
         "confidence": "confirmed_only_for_reviewed_player_base_context",
+    },
+    "colony_food_output_byte": {
+        "semantic": "base-dependent raw +0xDD; colony-context meaning pending write-origin review",
+        "confidence": "unknown_pending_write_origin_review",
     },
     "player_cybernetic_trait": {
         "semantic": "base-dependent raw +0x8B0; candidate player Cybernetic trait byte pending write-origin review",

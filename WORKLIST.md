@@ -336,7 +336,8 @@
   政府碼交叉閉合共用 priority gate，四棟研究設施現已使用完整正值／零值公式；raw 15
   Biospheres 亦已閉合為 priority gate 時 0、否則 `18+[Pacifist]`。raw 16 Food Replicators
   已由主要人口 player-slot 選擇、Lithovore 差異旗標與帝國食物差額兩個寫入端閉合，現依
-  外來食岩主要人口、食物赤字與 Pacifist 使用完整公式；profile 不完整時不冒稱 exact。
+  「主要人口與 owner 不得同為 Lithovore」、食物赤字與 Pacifist 使用完整公式；profile
+  不完整時不冒稱 exact。2026-08-26 回查 cache+2 唯一寫入端已修正舊分支方向誤讀。
   raw 10 Cloning Center 亦已閉合 population-growth trait、結算前 1500 BC gate、signed word
   淨 BC／64 與 `sub_134C92` 整數平方根；計分不消耗候選抽選 RNG。raw 20 Holo Simulator
   與 raw 31 Pleasure Dome 也已依八政府、人口 2／3 邊界及 budget-factor gate 接入固定 10／16。
@@ -344,6 +345,8 @@
   一次性產品完成及 AI 殖民地／全局行星 Gaia 同步，不會誤記為常駐建築。
   raw 44 Terraforming 亦已依 Barren..Arid 內層跳表、Aquatic、Pacifist、priority gate 與
   budget factor 接入精確分數；只有具下一級氣候的殖民地可選，完工同步殖民地／行星且不留常駐旗標。
+  raw 37 Soil Enrichment 已依修正後的 cache+2、每農夫食物半單位、帝國食物差額與 Pacifist
+  閉合；適用氣候可正常選建，完工只增加每農夫食物且不留常駐旗標。
   其餘分數區域、
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
   state machine 亦待閉合。見

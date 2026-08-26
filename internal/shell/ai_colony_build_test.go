@@ -121,9 +121,14 @@ func TestOriginalAIFoodReplicatorsScore(t *testing.T) {
 	}
 	colony.Lithovore = false
 	colony.PopulationGroups[1].Lithovore = false
-	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, originalAIBuildScoreContext{empireFoodBalanceHalf: -1}); !exact || score != 0 {
-		t.Fatalf("主要人口非 Lithovore 時分數=(%d,%v)，want (0,true)", score, exact)
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, originalAIBuildScoreContext{empireFoodBalanceHalf: -1}); !exact || score != 9 {
+		t.Fatalf("主要人口與 owner 均非 Lithovore 時分數=(%d,%v)，want (9,true)", score, exact)
 	}
+	colony.Lithovore = true
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, originalAIBuildScoreContext{empireFoodBalanceHalf: -1}); !exact || score != 9 {
+		t.Fatalf("owner Lithovore、主要人口非 Lithovore 時分數=(%d,%v)，want (9,true)", score, exact)
+	}
+	colony.Lithovore = false
 	colony.PopulationGroups = nil
 	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, originalAIBuildScoreContext{empireFoodBalanceHalf: -1}); exact || score != 0 {
 		t.Fatalf("人口 profile 不完整時不應冒稱 exact：score=%d exact=%v", score, exact)
@@ -411,6 +416,108 @@ func TestAITerraformingCandidateRequiresNextClimate(t *testing.T) {
 	a.Colonies[0].Climate = gamedata.BARREN
 	if build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1); !ok || build.Name != gamedata.TerraformActionName {
 		t.Fatalf("Barren 的唯一 Special 候選應是 Terraforming：build=%+v ok=%v", build, ok)
+	}
+}
+
+func TestOriginalAISoilEnrichmentScore(t *testing.T) {
+	b := gamedata.Building{NameZH: gamedata.SoilEnrichmentActionName, NameEN: "Soil Enrichment"}
+	colony := engine.ColonyState{
+		Population: 4, Workers: 4, FoodPerFarmer: 1,
+		OwnerRaceSlot: 1, OwnerRaceSlotKnown: true, OwnerRaceProfileKnown: true,
+		PopulationGroups: []engine.PopulationGroup{{
+			RaceSlot: 1, RaceSlotKnown: true, ProfileKnown: true, Workers: 4,
+		}},
+	}
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic, originalAIBuildScoreContext{}); !exact || score != 3 {
+		t.Fatalf("一般、非赤字分數=(%d,%v)，want (3,true)", score, exact)
+	}
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist,
+		originalAIBuildScoreContext{empireFoodBalanceHalf: -1}); !exact || score != 7 {
+		t.Fatalf("Pacifist、赤字分數=(%d,%v)，want (7,true)", score, exact)
+	}
+	colony.Lithovore = true
+	colony.PopulationGroups[0].Lithovore = true
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist,
+		originalAIBuildScoreContext{empireFoodBalanceHalf: -1}); !exact || score != 0 {
+		t.Fatalf("主要人口與 owner 同為 Lithovore 應歸零：score=%d exact=%v", score, exact)
+	}
+	colony.PopulationGroups[0].Lithovore = false
+	colony.PopulationGroups = []engine.PopulationGroup{
+		{RaceSlot: 1, RaceSlotKnown: true, ProfileKnown: true, Workers: 1, Lithovore: true},
+		{RaceSlot: 2, RaceSlotKnown: true, ProfileKnown: true, Workers: 3},
+	}
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic, originalAIBuildScoreContext{}); !exact || score != 3 {
+		t.Fatalf("只有 owner Lithovore 仍可建：score=%d exact=%v", score, exact)
+	}
+	colony.FoodPerFarmer = 0
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist,
+		originalAIBuildScoreContext{empireFoodBalanceHalf: -1}); !exact || score != 0 {
+		t.Fatalf("FoodPerFarmer=0 應歸零：score=%d exact=%v", score, exact)
+	}
+	colony.FoodPerFarmer = 1
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist,
+		originalAIBuildScoreContext{priorityGate: true, empireFoodBalanceHalf: -1}); !exact || score != 0 {
+		t.Fatalf("priority gate 應歸零：score=%d exact=%v", score, exact)
+	}
+	colony.PopulationGroups = nil
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, originalAIBuildScoreContext{}); exact || score != 0 {
+		t.Fatalf("人口 profile 不完整不得冒稱 exact：score=%d exact=%v", score, exact)
+	}
+}
+
+func TestAISoilEnrichmentCandidateAndCompletion(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	a.Personality = ai.PersonalityPacifist
+	a.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{gamedata.TOPIC_ADVANCED_BIOLOGY: true}
+	a.ColonyBuildings[0] = make(map[string]bool)
+	for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
+		a.ColonyBuildings[0][b.NameZH] = true
+	}
+	a.Colonies[0].Population = 4
+	a.Colonies[0].Farmers = 0
+	a.Colonies[0].Workers = 4
+	a.Colonies[0].Scientists = 0
+	a.Colonies[0].FoodPerFarmer = 1
+	a.Colonies[0].OwnerRaceSlot = 1
+	a.Colonies[0].OwnerRaceSlotKnown = true
+	a.Colonies[0].OwnerRaceProfileKnown = true
+	a.Colonies[0].PopulationGroups = []engine.PopulationGroup{{
+		RaceSlot: 1, RaceSlotKnown: true, ProfileKnown: true, Workers: 4,
+	}}
+	out := engine.EmpireOutput{Colonies: []engine.ColonyOutput{{NetIndustry: 1}}, Player: engine.PlayerState{BC: 1499}}
+	a.Colonies[0].Climate = gamedata.BARREN
+	if build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1); ok {
+		t.Fatalf("Barren 不得選 Soil Enrichment：%+v", build)
+	}
+	a.Colonies[0].Climate = gamedata.TERRAN
+	actions := gamedata.AvailableSpecialActions(a.Player.CompletedTopics)
+	foundSoil := false
+	for _, action := range actions {
+		foundSoil = foundSoil || action.NameZH == gamedata.SoilEnrichmentActionName
+	}
+	if !foundSoil {
+		t.Fatal("完成 Advanced Biology 後 Soil Enrichment 未進 AvailableSpecialActions")
+	}
+	proxy := gamedata.Building{NameZH: gamedata.SoilEnrichmentActionName, NameEN: "Soil Enrichment"}
+	ctx := originalAIBuildScoreContext{empireFoodBalanceHalf: out.TotalFoodHalf}
+	if score, exact := originalAIExactBuildingScore(proxy, a.Colonies[0], a.Personality, ctx); !exact || score != 5 {
+		t.Fatalf("候選前 Soil Enrichment 分數=(%d,%v)，want (5,true)", score, exact)
+	}
+	build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1)
+	if !ok || build.Name != gamedata.SoilEnrichmentActionName {
+		t.Fatalf("Terran 的唯一 Special 候選應是 Soil Enrichment：build=%+v ok=%v", build, ok)
+	}
+	key := aiColonyBuildKey(a, 0)
+	a.ColonyBuilds = map[int]ColonyBuild{key: {
+		Name: gamedata.SoilEnrichmentActionName, Progress: 119, Cost: 120,
+	}}
+	s.advanceAIColonyBuilds(0, out)
+	if a.Colonies[0].FoodPerFarmer != 2 {
+		t.Fatalf("Soil Enrichment 完工 FoodPerFarmer=%d，want 2", a.Colonies[0].FoodPerFarmer)
+	}
+	if a.ColonyBuildings[0][gamedata.SoilEnrichmentActionName] {
+		t.Fatal("Soil Enrichment 是 Special，不得殘留於 ColonyBuildings")
 	}
 }
 
