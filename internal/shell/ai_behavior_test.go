@@ -85,9 +85,9 @@ func TestAIExpand_CreatesRealColony(t *testing.T) {
 }
 
 // TestAIExpand_EconomyGrowsWithColonyCount 驗證 aiExpand 建立的新殖民地會被下一次
-// engine.RunEmpireTurn 算進 AI 經濟——相同 20 回合下，有擴張者的累積造艦產出應高於
-// 被固定在單一母星的對照組。不能再比較前後十回合增量：接上種族重力後，新殖民地可能位於
-// 不適重力行星，且造艦交付會造成分段值，後十回合不保證嚴格大於前十回合。
+// engine.RunEmpireTurn 算進 AI 經濟——相同 20 回合下，有擴張者投入建築＋造艦的累積產出
+// 應高於被固定在單一母星的對照組。原版逐殖民地產品鏈接上後，不能再只看造艦池：新殖民地
+// 會先蓋可用設施，該產能沒有消失，也不能同時重複計入造艦。
 func TestAIExpand_EconomyGrowsWithColonyCount(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
@@ -103,10 +103,7 @@ func TestAIExpand_EconomyGrowsWithColonyCount(t *testing.T) {
 	if len(s.AIPlayers[0].Colonies) <= 1 {
 		t.Fatalf("20 回合後 AI 殖民地數應 >1,got %d", len(s.AIPlayers[0].Colonies))
 	}
-	expandedProduction := s.AIPlayers[0].ShipBuildProgress
-	for _, sh := range s.AIPlayers[0].Ships {
-		expandedProduction += ShipCost(sh.Class)
-	}
+	expandedProduction := aiProductionInvestment(s.AIPlayers[0])
 
 	control := NewDemoSession()
 	control.DisableEvents = true
@@ -122,13 +119,31 @@ func TestAIExpand_EconomyGrowsWithColonyCount(t *testing.T) {
 	for turn := 0; turn < 20; turn++ {
 		control.EndTurn()
 	}
-	controlProduction := control.AIPlayers[0].ShipBuildProgress
-	for _, sh := range control.AIPlayers[0].Ships {
-		controlProduction += ShipCost(sh.Class)
-	}
+	controlProduction := aiProductionInvestment(control.AIPlayers[0])
 	if expandedProduction <= controlProduction {
-		t.Fatalf("擴張 AI 的累積造艦產出 %d 應高於單母星對照組 %d", expandedProduction, controlProduction)
+		t.Fatalf("擴張 AI 的累積建築＋造艦投入 %d 應高於單母星對照組 %d", expandedProduction, controlProduction)
 	}
+}
+
+func aiProductionInvestment(a AIOpponent) int {
+	total := a.ShipBuildProgress
+	for _, sh := range a.Ships {
+		total += ShipCost(sh.Class)
+	}
+	for _, build := range a.ColonyBuilds {
+		total += build.Progress
+	}
+	for _, built := range a.ColonyBuildings {
+		for name, ok := range built {
+			if !ok {
+				continue
+			}
+			if b, found := gamedata.BuildingByNameZH(name); found {
+				total += b.ProductionCost
+			}
+		}
+	}
+	return total
 }
 
 // TestAIExpand_NoOpWhenNoUnownedStars 驗證所有星都已有歸屬時,aiExpand 安全 no-op(不 panic、

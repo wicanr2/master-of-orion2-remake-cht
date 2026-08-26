@@ -20,6 +20,10 @@
 
 ## 二、造艦與元件
 
+- **AI 殖民地產品** — 每座 AI 殖民地自己的目前建造項與進度，remake 以
+  `AIOpponent.ColonyBuilds[star]` 保存。原版 `Colony_AI_` 也是逐殖民地指派；不可再把
+  `TotalNetIndustry` 全部視為同一個造艦池，或讓同一份產能同時蓋建築又造艦。
+
 - **元件(Component)** — 造艦畫面上可選的一項,分四張表:`WeaponOptions`(武器)、
   `ArmorOptions`(裝甲)、`ShieldOptions`(護盾)、`SpecialOptions`(特殊系統)。
 - **元件表有 ≠ 效果有接** — 一項可以在表裡、花得了錢,而程式碼沒有任何地方讀它(第 72 項(元件表有≠效果有接)的

@@ -325,8 +325,12 @@
   owner≥8 共用地面／登艦 block 已由 IDA caller 閉合，但目前沒有 owner≥8 typed 地面單位，
   不另造原版未證實的登陸事件。2026-08-26 另閉合 `All_AI_Tech_Select_ → sub_DC288 → sub_FD335`：
   新局 AI 保存 raw6／raw4／raw7 profile，常態回合以一次 application 級估值抽選同時決定
-  field/application；舊存檔 profile 未知才回退 remake 啟發式。建造／艦隊／外交及其餘 AI
-  state machine 仍待閉合。見
+  field/application；舊存檔 profile 未知才回退 remake 啟發式。2026-08-26 另由
+  `All_Colony_AI_ → Colony_AI_ → sub_D6E1D → sub_D10EE／Assign_Colony_Building_` 證實
+  原版生產是逐殖民地產品，不是全帝國工業單一造艦池；Go 已保存每星 AI 殖民地產品與進度，
+  先消費 typed 可建建築，沒有候選的產能才進造艦轉接層，且同一份產能不再重複消費。
+  raw 1..48 可建 gate、難度濾門與加權抽選控制流已接；47 項完整分數、帝國配額、支援／戰鬥艦
+  產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI state machine 亦待閉合。見
   [`docs/re/ai-difficulty-economy-audit-20260826.md`](docs/re/ai-difficulty-economy-audit-20260826.md) 與
   [`docs/spec/ai-difficulty-economy.md`](docs/spec/ai-difficulty-economy.md)、
   [`docs/re/ai-command-deficit-audit-20260826.md`](docs/re/ai-command-deficit-audit-20260826.md) 與
@@ -335,7 +339,9 @@
   [`docs/spec/ai-spy-difficulty.md`](docs/spec/ai-spy-difficulty.md)、
   [`docs/re/antaran-marines-caller-audit-20260826.md`](docs/re/antaran-marines-caller-audit-20260826.md) 與
   [`docs/re/ai-normal-research-selection-audit-20260826.md`](docs/re/ai-normal-research-selection-audit-20260826.md)、
-  [`docs/spec/ai-normal-research-selection.md`](docs/spec/ai-normal-research-selection.md)。
+  [`docs/spec/ai-normal-research-selection.md`](docs/spec/ai-normal-research-selection.md)、
+  [`docs/re/ai-colony-build-selection-audit-20260826.md`](docs/re/ai-colony-build-selection-audit-20260826.md) 與
+  [`docs/spec/ai-colony-build-selection.md`](docs/spec/ai-colony-build-selection.md)。
 - [ ] **艦隊、殖民、事件與安塔蘭忠實化**：重建 `Move_All_Ships_Toward_Stars_ @ 0xFFEEA`、
   `Colonize_Planet_ @ 0xBB082`、`Compute_Blockades_ @ 0xE5097`、`Compute_Contacts_ @ 0xEB192`、
   `Check_All_Rebellions_ @ 0xED44A`、`Determine_Event_ @ 0x2230A` 與

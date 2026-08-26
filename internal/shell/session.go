@@ -41,6 +41,9 @@ type AIOpponent struct {
 	ShipDesigns             []ShipBlueprint `json:"shipDesigns,omitempty"`
 	Ships                   []Ship          `json:"ships,omitempty"`
 	ShipBuildProgress       int             `json:"shipBuildProgress,omitempty"`
+	// ColonyBuilds 以星系索引保存 AI 各殖民地目前產品；原版 Colony_AI_ 是逐殖民地
+	// 指派產品，不是把全帝國工業直接灌入單一造艦池。
+	ColonyBuilds map[int]ColonyBuild `json:"colonyBuilds,omitempty"`
 	// Personality 是原版 AI 性格(AIRACES.CFG race_personality 0-6),開局依種族分布抽出。
 	// 驅動關係演化、擴張積極度等行為差異——先前三個 AI 除了名字之外行為完全相同,
 	// 因為所有性格相關的數字都是硬編的固定值(見 ai/personality_tables.go)。
@@ -5252,7 +5255,7 @@ func (s *GameSession) playerMilitary() int {
 }
 
 // advanceAI 推進第 i 個 AI 對手的主動行為(每回合,經濟結算後):
-//  1. 造艦:把部分淨工業投入軍力(好戰性格投更多),FleetStrength 累積。
+//  1. 生產:逐殖民地先推進自己的建築產品；沒有可建建築的產能才進造艦轉接層。
 //  2. 擴張:每隔數回合佔領一顆無主星(Owner=2,OwnedStars++)。
 //  3. 研究:替 AI 處理待決的科技抉擇,並在目前主題完成時挑下一個(見 ai_research.go)。
 //  4. 外交態勢:依「AI 軍力 vs 玩家軍力 + 難度」漂移對玩家關係分數,經 ai.DecideStance
@@ -5268,11 +5271,12 @@ func (s *GameSession) advanceAI(i int, out engine.EmpireOutput) {
 	// 整數除法每回合都捨去成 0,FleetStrength 永久停滯(見 playerHomeworldColony 上方歷史記錄註解/
 	// docs/tech/colony-economy-maintenance.md)。改成先把 NetIndustry 存進池子、池子夠 invest
 	// 才兌現軍力、餘數留到下回合累積,小額淨工業也能跨回合逐步兌現,不會卡死。
-	if out.TotalNetIndustry > 0 {
+	shipProduction := s.advanceAIColonyBuilds(i, out)
+	if shipProduction > 0 {
 		// EmpireOutput 的 NetIndustry 已是扣維護後可投入生產的點數；藍圖成本同樣以
 		// 生產點計價，不再先縮成抽象軍力單位。偏工業性格額外投入一倍，屬既有 AI
 		// 性格權重的 remake 轉接，不是原版精確 build selector。
-		production := out.TotalNetIndustry
+		production := shipProduction
 		if prof.IndustryWeight > prof.ResearchWeight {
 			production *= 2
 		}
@@ -5417,16 +5421,14 @@ var stanceNames = map[ai.Stance]string{
 // aiExpand 讓第 i 個 AI 佔領一顆無主星:標 Star.Owner=2、OwnedStars++,並用
 // newColonyFromStar(colonization.go,與玩家 ColonizeStar 共用同一套建法)建立真正的
 // engine.ColonyState,append 進 AIOpponent.Colonies + ColonyStars + ColonyBuildings(三者是
-// AIOpponent 的殖民地平行陣列,長度須恆等——不像玩家還有 Builds/PlayerColonyMarines/
-// MarineBarracksAge/PlayerColonyTanks/ArmorBarracksAge/popAccum 那套逐殖民地建造/駐軍追蹤,
-// 因為 EndTurn 對 AI 只呼叫 RunEmpireTurn 結算經濟,從不呼叫 advanceBuilds/advanceMarines/
-// advanceArmor/advancePopulation 這些玩家專屬的逐殖民地流程,故無需同步那些陣列)。新殖民地的
+// AIOpponent 的殖民地平行陣列,長度須恆等。AI 目前產品以 ColonyBuilds[star] 保存，故不另加
+// 一條會因殖民地移除而錯位的平行陣列；駐軍與人口仍各有既有同步欄位。新殖民地的
 // ColonyBuildings 項 append 空 map(手冊只保證母星有星基,新拓殖星沒有)。
 //
 // 2026-07-11 訂正:先前只設旗標、不建殖民地模型(見 AIOpponent.ColonyStars 欄位註解),
 // 導致 AI 版圖擴張後經濟(EndTurn 的 RunEmpireTurn(ps, a.Colonies))永遠停在初始母星產出,
-// 不會隨佔領星數成長。現在下回合 EndTurn 就會把新殖民地的淨工業算進
-// out.TotalNetIndustry,advanceAI 的造艦投資(見上方)自然吃到更多產出,AI 才會隨擴張變強。
+// 不會隨佔領星數成長。現在下回合 EndTurn 會把新殖民地的淨工業交給逐殖民地產品；有可建
+// 設施時先累積建築，沒有候選才交給造艦轉接層，AI 仍會隨擴張增加總生產投入。
 //
 // gov 傳 gamedata.MoraleGovDictatorship(AIOpponent 沒有 Government 欄位,政府型態未建模,
 // 見 newColonyFromPlanet 註解)。AI 已由 RaceIndex 補套布林種族特性，但數值型食物／工業／

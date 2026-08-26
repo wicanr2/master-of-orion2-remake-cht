@@ -15,8 +15,10 @@
 
 1. 每個 `AIOpponent` 保存六筆 `ShipBlueprint` 與一份實際 `Ship` 清單。
 2. 藍圖依該 AI 自己的 `engine.PlayerState` 解鎖科技產生；不可借用真人科技。
-3. AI 工業累積成有界、可序列化的造艦進度。精確原版選艦評分未知時，採固定可重現的
-   「目前可負擔的最高 hull 0..4」政策，標為 remake 近似。
+3. AI 工業先由每座殖民地自己的產品消費；只有沒有可建建築的殖民地產能才進入有界、
+   可序列化的造艦進度。精確原版選艦評分未知時，造艦轉接層採固定可重現的
+   「目前可負擔的最高 hull 0..4」政策，標為 remake 近似；逐殖民地證據與規格見
+   `docs/re/ai-colony-build-selection-audit-20260826.md` 與 `docs/spec/ai-colony-build-selection.md`。
 4. 建成艦深複製藍圖全部 typed 武器／特殊槽。`FleetStrength` 每次由實艦艦體強度總和重算。
 5. `ResolveBattle` 與 `StartCombat` 依 enemy 名稱取得該 AI 實艦；只有沒有對應 AI 的特殊
    腳本敵人才可使用既有代理艦隊。
@@ -31,4 +33,3 @@
 - 工業跨回合累積後產生實艦，摘要軍力等於實艦總和。
 - 快速與戰術入口都讀同一批 AI 實艦及其多槽武器；戰損可回寫。
 - JSON 往返與網路狀態指紋穩定；舊摘要存檔可決定性遷移。
-

@@ -30,6 +30,7 @@ type aiSnapshot struct {
 	ShipDesigns             []ShipBlueprint      `json:"shipDesigns,omitempty"`
 	Ships                   []Ship               `json:"ships,omitempty"`
 	ShipBuildProgress       int                  `json:"shipBuildProgress,omitempty"`
+	ColonyBuilds            map[int]ColonyBuild  `json:"colonyBuilds,omitempty"`
 	Relation                int                  `json:"relation"`
 	StanceName              string               `json:"stanceName"`
 	Treaty                  TreatyState          `json:"treaty,omitempty"`
@@ -279,7 +280,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 			Player: a.Player, Colonies: a.Colonies, Profile: prof,
 			FleetStrength: a.FleetStrength, FleetInvestPool: a.FleetInvestPool,
 			ShipDesigns: a.ShipDesigns, Ships: a.Ships, ShipBuildProgress: a.ShipBuildProgress,
-			Relation: a.Relation, StanceName: a.StanceName, Treaty: a.Treaty, OwnedStars: a.OwnedStars,
+			ColonyBuilds: a.ColonyBuilds,
+			Relation:     a.Relation, StanceName: a.StanceName, Treaty: a.Treaty, OwnedStars: a.OwnedStars,
 			ColonyStars: a.ColonyStars, ColonyPlanets: a.ColonyPlanets,
 			Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
 			Leaders: a.Leaders, LeaderOffer: a.LeaderOffer,
@@ -386,6 +388,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 			ShipDesigns:       a.ShipDesigns,
 			Ships:             a.Ships,
 			ShipBuildProgress: a.ShipBuildProgress,
+			ColonyBuilds:      a.ColonyBuilds,
 			Relation:          a.Relation, StanceName: a.StanceName, Treaty: a.Treaty, OwnedStars: a.OwnedStars,
 			ColonyStars: a.ColonyStars, ColonyPlanets: a.ColonyPlanets,
 			Spies: a.Spies, DefensiveAgents: a.DefensiveAgents, ColonyBuildings: a.ColonyBuildings,
