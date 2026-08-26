@@ -181,6 +181,16 @@
   35/35，`07_fleet.png` 三艘預設選取標記可辨識且未侵入艦名、艦級或損傷欄。證據與規格併入
   [`docs/re/auto-select-ships-setting-audit-20260827.md`](docs/re/auto-select-ships-setting-audit-20260827.md) 與
   [`docs/tech/auto-select-ships-setting-spec.md`](docs/tech/auto-select-ships-setting-spec.md)。
+  熱座逐席交接已完成第二十個切片：標題、玩家／席位模板、隱私說明、結算提示、接手按鈕及
+  兩個轉場標籤全部由 `ui.json` 供應，`hotseat.go` 不再內嵌中英文玩家句子或直接呼叫字型繪製。
+  360×230 自繪 adapter 的六個文字區皆有雙軸安全框，按鈕文字與 110×30 熱區共用中心；
+  最長雙語模板的 bitmap glyph 量測與中英文畫廊各 35/35 已通過，兩種 `24_hotseat.png` 均
+  目視確認未越框；英文操作句另經實圖修正，避免把 TAKE OVER 拆成兩行。
+  IDA 同輪推翻舊註解把 `sub_628E2 @ 0x628E2..0x62BB7` 直接當成逐回合 privacy gate 的斷言：
+  它確為熱座互動流程並讀取四個文字 ID，但現有證據不足以證明 remake 視窗尺寸、錨點或 TAKE
+  OVER 文案是原版精確畫面，因此明標必要的同機隱私轉接設計。證據與規格見
+  [`docs/re/hotseat-handoff-ui-audit-20260827.md`](docs/re/hotseat-handoff-ui-audit-20260827.md) 與
+  [`docs/tech/hotseat-handoff-external-text-spec.md`](docs/tech/hotseat-handoff-external-text-spec.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
