@@ -16,19 +16,23 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 //	● In games with Ship Initiative off, the damage energy is stored for only one combat
 //	  round; if the ship doesn't use it, it is lost.
 //
-// ============ 兩個要講清楚的取捨 ============
+// ============ 一個仍保留的操作取捨 ============
 //
-//  1. **主動權一律當成開著。** remake 的齊射次序就是照手冊的主動權公式排的
-//     (gamedata.CombatInitiative,第 69 項(戰鬥速度與引擎階)),沒有「關掉主動權」這個選項。
-//     所以走上面那條「accumulates until it is fired」,儲能不會每回合歸零。
-//
-//  2. **儲能是「下一次開火時自動射出」,不是玩家的另一個按鈕。** 原版讓玩家自己挑時機;
+//  1. **儲能是「下一次開火時自動射出」,不是玩家的另一個按鈕。** 原版讓玩家自己挑時機;
 //     remake 的格子戰術一次點擊就是「這艘船對那艘船開火」,沒有第二個動作可以掛。
 //     做成自動射出的代價是玩家不能存著等大魚,好處是它真的會生效——**這是建模取捨,
 //     不是抄漏**。要改成玩家控制,得先有「選擇要用哪個系統」的動作層。
 //
 // 手冊那句「A cloaked ship will not decloak from firing its stored energy」在這個模型下
 // 仍然要守:射儲能的那一發不呼叫 CloakOnFire(見 cloak.go 的警告)。
+
+// ExpireTacticalStoredEnergy 在 Ship Initiative 關閉時的完整戰鬥回合末清空未使用儲能。
+// 開啟時呼叫端不得呼叫，讓能量依手冊跨回合累積到下一次開火。
+func ExpireTacticalStoredEnergy(ships []CombatShip) {
+	for i := range ships {
+		ships[i].StoredEnergy = 0
+	}
+}
 
 // EnergyAbsorberAbsorb 把一次攻擊的潛在傷害轉存進防守方的吸收器。
 //

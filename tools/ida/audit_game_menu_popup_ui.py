@@ -35,9 +35,18 @@ ROOTS = {
     "build_queue_delete_slot": 0xB2150,
     "build_queue_entry_label": 0xB2FFA,
     "special_build_entry_label": 0xAFC6D,
+    "ship_initiative_consumer": 0x47939,
+    "ship_initiative_missile_consumer": 0x3C892,
+    "ship_initiative_turn_init": 0x42B70,
+    "ship_initiative_combat_turn": 0x42F7F,
+    "ship_initiative_seeking_missiles": 0x44EA4,
+    "ship_initiative_next_ship": 0x455A4,
+    "ship_initiative_sort_comparator": 0x42E9C,
+    "ship_initiative_sort_score": 0x42E66,
 }
 
 SETTING_GLOBALS = {
+    "combat_ship_initiative_runtime": 0x17D853,
     "end_of_turn_summary": 0x199BDC,
     "end_of_turn_wait": 0x199BDD,
     "enemy_moves": 0x199BDF,

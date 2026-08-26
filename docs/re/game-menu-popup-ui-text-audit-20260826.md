@@ -44,6 +44,21 @@
   阻塞產品的 Housing／Trade Goods／Repeat」，不是每回合或完工後無條件刪除。
 - 外部符號所列 `Print_Options_To_Bitmap_ @ 0x7EDB1` 在目前 IDA 資料庫不是
   函式邊界；相鄰 `sub_7ED66` 精確結束於 `0x7EDB1`。本輪不以符號名強行建函式。
+- `byte_199BE9` 在 `sub_47939 @ 0x47AA4..0x47AB5` 被複製到戰鬥期
+  `word_17D853`。開啟時，`sub_42F7F @ 0x43151` 以 `sub_42E9C` 對合併艦艇
+  清單做 `qsort`；關閉時不排序，且 `0x4303E..0x43062`、`0x430D4..0x430F8`、
+  `0x433F7..0x43423`、`0x44C98..0x44CBC` 依戰鬥記錄 `+0x20` 的陣營值分批處理。
+- `sub_47939 @ 0x48BEB..0x48C9B` 證實兩種外層流程：開啟時以合併清單呼叫
+  `sub_42F7F`；關閉時依既定兩側順序分別呼叫。這是 Ship Initiative 的玩家可見
+  回合順序契約；中間的網路同步、重繪與 Win95／DOS 平台呼叫不列入深挖。
+- `sub_42E9C @ 0x42E9C..0x42F3B` 是排序比較器，分數來源由
+  `sub_42E66 @ 0x42E66..0x42E9C` 顯示為戰鬥記錄 `+0x3B` 加上有號
+  `+0x34 / 10`；比較器同分回傳 0。欄位與手冊的 Beam Attack、Combat Speed
+  對應仍需 typed record 的獨立證據，因此只把「降冪比較此分數」列為已證實，
+  不用推測性欄位名覆蓋 raw offset。
+- `word_17D853` 另在 `sub_3C892 @ 0x3C9DC`、`sub_44EA4 @ 0x44F09..0x45208`
+  改變飛彈建立與追蹤時序；remake 目前沒有原版同構的 seeking-missile 記錄，故只重製
+  同回合行動順序，不冒稱飛彈逐 tick 完全一致。
 
 ## 強推論與 remake 邊界
 
@@ -59,3 +74,6 @@
 - remake 的 Repeat Build 是 `RepeatBuild[]` typed 狀態，不把 raw `-10` 插入七格佇列；因此
   本輪精確重現 Housing／Trade Goods 的「模式在產品之前」掃描與確認流程，raw `-10` 的畫面
   表示法保留為資料模型差異，不把 typed Repeat 狀態誤刪。
+- 手冊把主動權分數定義為 Beam Attack + 10×Combat Speed；它與上述 raw 欄位運算的
+  數值尺度並非直接同形。現行 `gamedata.CombatInitiative` 採手冊玩家契約，IDA 比較器
+  用來證實合併排序、同分與開關分流，不把尚未完成欄位型別對照的 raw 算式硬套入 remake。

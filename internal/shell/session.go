@@ -787,7 +787,10 @@ type combatant struct {
 	// battleVolley 過濾陣亡者時是整個 struct 複製,所以這個欄位會跟著倖存者走——
 	// 這正是「戰後把剩餘血量寫回正確那艘船」需要的東西(先前用外部平行陣列會在有人陣亡後錯位)。
 	shipIdx int
-	kind    WeaponKind
+	// battleID 只在快速結算的一場戰鬥內識別行動者；合併主動權序列不能用切片索引，
+	// 因為每次擊沉都會壓縮敵方切片。它不進存檔，也不改變原始艦艇索引。
+	battleID int
+	kind     WeaponKind
 	// weaponName 是攻方武器的元件名——球形武器要靠它判「是不是空間壓縮器」
 	// (只有那一項手冊明講豁免護盾與裝甲)。
 	weaponName string
@@ -888,24 +891,7 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 	// 就地排序沒有問題:呼叫端每次都重新建構戰列(mkPlayerCombatantsIndexed / genEnemyFleet)。
 	sortByInitiative(attackers)
 	for i := range attackers {
-		if len(attackers[i].weaponMounts) > 0 {
-			battleMountVolley(&attackers[i], defenders, rng)
-			continue
-		}
-		// 行動次數(第 70 項(陀螺去穩器)):超載電容/快速飛彈架/時間扭曲加速器可以再打一次。
-		// 沒有這些系統的船 shots==1,迴圈只跑一圈——**RNG 消耗與先前逐位元相同**。
-		// ⚠ shots 為 0 的話(零值)這艘船會完全不開火,所以下面夾在至少 1。
-		nshots := attackers[i].shots
-		if nshots < 1 {
-			nshots = 1
-		}
-		for sh := 0; sh < nshots; sh++ {
-			prepareCombatantAmmo(&attackers[i])
-			if attackers[i].kind == WeaponKindMissile && !weaponAmmoCanFire(attackers[i].ammo) {
-				break
-			}
-			battleShot(&attackers[i], defenders, rng)
-		}
+		battleCombatantVolley(&attackers[i], defenders, rng)
 	}
 	alive := (*defenders)[:0]
 	for _, c := range *defenders {
@@ -914,6 +900,103 @@ func battleVolley(attackers []combatant, defenders *[]combatant, rng *rand.Rand)
 		}
 	}
 	*defenders = alive
+	return before - len(*defenders)
+}
+
+// battleCombatantVolley 執行單一艦艇的一次回合行動。拆出此層是為了讓 Ship Initiative
+// 開啟時能把敵我艦艇放進同一條行動序列，而不複製武器、彈藥與特殊系統公式。
+func battleCombatantVolley(attacker *combatant, defenders *[]combatant, rng *rand.Rand) {
+	if len(attacker.weaponMounts) > 0 {
+		battleMountVolley(attacker, defenders, rng)
+		return
+	}
+	nshots := attacker.shots
+	if nshots < 1 {
+		nshots = 1
+	}
+	for sh := 0; sh < nshots; sh++ {
+		prepareCombatantAmmo(attacker)
+		if attacker.kind == WeaponKindMissile && !weaponAmmoCanFire(attacker.ammo) {
+			break
+		}
+		battleShot(attacker, defenders, rng)
+	}
+}
+
+func compactLivingCombatants(items []combatant) []combatant {
+	alive := items[:0]
+	for _, item := range items {
+		if item.hp > 0 {
+			alive = append(alive, item)
+		}
+	}
+	return alive
+}
+
+func resetQuickPointDefense(items []combatant) {
+	for i := range items {
+		items[i].pointDefenseSpent = false
+		for j := range items[i].pointDefenseSpentSlots {
+			items[i].pointDefenseSpentSlots[j] = false
+		}
+	}
+}
+
+type quickInitiativeAction struct {
+	player     bool
+	battleID   int
+	initiative int
+}
+
+// resolveQuickCombatRound 只負責一個完整戰鬥回合的先後順序。關閉時沿用原版的
+// 雙方分批行動；開啟時將兩側放入同一個穩定降冪序列，已先被擊沉的艦不會還擊。
+func resolveQuickCombatRound(player, enemy *[]combatant, initiative bool, rng *rand.Rand) (enemyDestroyed, playerDestroyed int) {
+	pBefore, eBefore := len(*player), len(*enemy)
+	if !initiative {
+		battleVolleyInFleetOrder(*player, enemy, rng)
+		battleVolleyInFleetOrder(*enemy, player, rng)
+		for i := range *player {
+			(*player)[i].storedEnergy = 0
+		}
+		for i := range *enemy {
+			(*enemy)[i].storedEnergy = 0
+		}
+		return eBefore - len(*enemy), pBefore - len(*player)
+	}
+
+	resetQuickPointDefense(*player)
+	resetQuickPointDefense(*enemy)
+	actions := make([]quickInitiativeAction, 0, len(*player)+len(*enemy))
+	for i := range *player {
+		actions = append(actions, quickInitiativeAction{player: true, battleID: (*player)[i].battleID, initiative: (*player)[i].initiative})
+	}
+	for i := range *enemy {
+		actions = append(actions, quickInitiativeAction{battleID: (*enemy)[i].battleID, initiative: (*enemy)[i].initiative})
+	}
+	sort.SliceStable(actions, func(i, j int) bool { return actions[i].initiative > actions[j].initiative })
+	for _, action := range actions {
+		actors, targets := enemy, player
+		if action.player {
+			actors, targets = player, enemy
+		}
+		for i := range *actors {
+			if (*actors)[i].battleID == action.battleID && (*actors)[i].hp > 0 {
+				battleCombatantVolley(&(*actors)[i], targets, rng)
+				*targets = compactLivingCombatants(*targets)
+				break
+			}
+		}
+	}
+	return eBefore - len(*enemy), pBefore - len(*player)
+}
+
+func battleVolleyInFleetOrder(attackers []combatant, defenders *[]combatant, rng *rand.Rand) int {
+	before := len(*defenders)
+	resetQuickPointDefense(*defenders)
+	for i := range attackers {
+		battleCombatantVolley(&attackers[i], defenders, rng)
+	}
+	*defenders = compactLivingCombatants(*defenders)
 	return before - len(*defenders)
 }
 
@@ -1353,12 +1436,17 @@ func (s *GameSession) ResolveBattle(enemy string) BattleResult {
 		}
 	}
 	pf, pfIdx := s.mkPlayerCombatantsIndexed()
+	for i := range pf {
+		pf[i].battleID = i + 1
+	}
+	for i := range ef {
+		ef[i].battleID = len(pf) + i + 1
+	}
 
 	res := BattleResult{Enemy: enemy, PlayerStart: len(pf), EnemyStart: len(ef)}
 	rng := rand.New(rand.NewSource(int64(s.Turn)*2654435761 + 12345)) // 依回合種子,可重現
 	for round := 1; round <= 6 && len(pf) > 0 && len(ef) > 0; round++ {
-		eDestroyed := battleVolley(pf, &ef, rng)
-		pDestroyed := battleVolley(ef, &pf, rng)
+		eDestroyed, pDestroyed := resolveQuickCombatRound(&pf, &ef, s.EffectiveGameSettings().ShipInitiative, rng)
 		res.Log = append(res.Log, fmt.Sprintf("第 %d 回合:擊沉敵艦 %d ／ 我方損失 %d", round, eDestroyed, pDestroyed))
 	}
 	res.PlayerLosses = res.PlayerStart - len(pf)

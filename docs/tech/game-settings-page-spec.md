@@ -27,7 +27,9 @@
 
 - 已接：Show Relocation Lines、Auto Save Game、Animations（結局過場 gate）、
   End Of Turn Summary（一般回合與事件快報後）、Auto Delete Trade Goods／Housing
-  （離開建造佇列時的原版阻塞模式確認／清除鏈）。
+  （離開建造佇列時的原版阻塞模式確認／清除鏈），以及 Ship Initiative 的快速結算
+  全域行動序、格子戰術同側排序與能量吸收器回合期限。格子戰術的敵我逐艦交錯仍依
+  [`ship-initiative-settings-spec.md`](ship-initiative-settings-spec.md) 留在活表，不提前宣稱 exact。
 - 其餘開關目前可往返保存，但在相應玩家路徑閉合前不得宣稱玩法效果已完成；它們留在
   WORKLIST 的玩家機制稽核，而不是以「畫面能切換」冒充功能完成。
 

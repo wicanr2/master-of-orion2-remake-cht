@@ -2369,6 +2369,9 @@ func newTacticalScreenForShips(b *sceneBuilder, p, e []shell.CombatShip, monster
 		moveLeft: freshMoveBudgets(p), acted: make([]bool, len(p)), waited: make([]bool, len(p)),
 		monsterStar: monsterStar}
 	t.launchEnemySquadrons()
+	if b.session.EffectiveGameSettings().ShipInitiative {
+		t.sel = t.nextActionableShip()
+	}
 	return t
 }
 
@@ -2394,11 +2397,20 @@ func (t *tacticalScreen) ensureActionQueue() {
 func (t *tacticalScreen) nextActionableShip() int {
 	t.ensureActionQueue()
 	for pass := 0; pass < 2; pass++ {
+		best := -1
 		for i := range t.player {
 			if t.acted[i] || (pass == 0 && t.waited[i]) {
 				continue
 			}
-			return i
+			if !t.b.session.EffectiveGameSettings().ShipInitiative {
+				return i
+			}
+			if best < 0 || t.player[i].Initiative > t.player[best].Initiative {
+				best = i
+			}
+		}
+		if best >= 0 {
+			return best
 		}
 	}
 	return -1
@@ -3452,7 +3464,16 @@ func (t *tacticalScreen) finishRound(preCount, pAtk int, firedMissile, anyHit bo
 				wi = i
 			}
 		}
-		for i := range t.enemy {
+		enemyOrder := make([]int, len(t.enemy))
+		for i := range enemyOrder {
+			enemyOrder[i] = i
+		}
+		if t.b.session.EffectiveGameSettings().ShipInitiative {
+			sort.SliceStable(enemyOrder, func(i, j int) bool {
+				return t.enemy[enemyOrder[i]].Initiative > t.enemy[enemyOrder[j]].Initiative
+			})
+		}
+		for _, i := range enemyOrder {
 			eAtk += t.enemyRetaliationDamage(i, wi)
 			if t.player[wi].HP <= 0 {
 				break
@@ -3475,6 +3496,10 @@ func (t *tacticalScreen) finishRound(preCount, pAtk int, firedMissile, anyHit bo
 	}
 	t.player = palive
 	t.refreshSquadronCarriers()
+	if !t.b.session.EffectiveGameSettings().ShipInitiative {
+		shell.ExpireTacticalStoredEnergy(t.player)
+		shell.ExpireTacticalStoredEnergy(t.enemy)
+	}
 	shell.TacticalAdvanceCharge(t.player)
 	shell.TacticalAdvanceCharge(t.enemy)
 	for i := range t.player {
