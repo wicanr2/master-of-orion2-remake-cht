@@ -11,7 +11,6 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/smk"
-	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
 
 // cutscene.go:Smacker 過場播放(原版 `Smack` 畫面)。
@@ -24,7 +23,7 @@ import (
 //     整數倍是刻意的——1996 年的點陣素材做非整數縮放會糊掉,寧可留黑邊。
 //   - 幀率由檔案的 rate 欄位決定(片頭 76 ms/幀 ≈ 13 fps),與 ebiten 的 60 tick/s
 //     用累積毫秒對齊,不假設兩者同步。
-//   - 點任意處或播完 → 離開。原版的過場也是可以按鍵跳過的。
+//   - 按任意鍵、點任意處或播完 → 離開；原版播放迴圈同時查鍵盤與滑鼠。
 //
 // ⚠ 誠實留白:**只有畫面沒有聲音**。Smacker 的音軌是壓縮的(片頭第 0 軌 23748 bytes、
 // 11025 Hz),解碼器目前跳過音訊區塊——那需要再實作一組 Smacker 音訊 Huffman,
@@ -33,7 +32,6 @@ import (
 // cutsceneScreen 播放一段 Smacker 影片。
 type cutsceneScreen struct {
 	b    *sceneBuilder
-	fnt  *uifont.Font
 	dec  *smk.Decoder
 	name string
 
@@ -64,7 +62,7 @@ func newCutsceneScreen(b *sceneBuilder, lbxName string, next func() (*overlayScr
 		fmt.Fprintf(os.Stderr, "過場 %s 不是 Smacker:%v\n", lbxName, err)
 		return nil
 	}
-	s := &cutsceneScreen{b: b, fnt: b.fnt, dec: dec, name: lbxName, next: next, nextName: nextName}
+	s := &cutsceneScreen{b: b, dec: dec, name: lbxName, next: next, nextName: nextName}
 	s.rgba = image.NewRGBA(image.Rect(0, 0, dec.H.Width, dec.H.Height))
 	s.canvas = ebiten.NewImage(dec.H.Width, dec.H.Height)
 	// 整數倍放大到塞得下 640×480 的最大倍率(至少 1 倍)。
@@ -104,8 +102,12 @@ func (s *cutsceneScreen) advance() {
 	}
 }
 
+func cutsceneSkipRequested(in shell.InputState) bool {
+	return in.ClickReleased || in.AnyKeyPressed
+}
+
 func (s *cutsceneScreen) update(in shell.InputState) *origTransition {
-	if in.ClickReleased { // 點任意處跳過(原版的過場也能按鍵跳過)
+	if cutsceneSkipRequested(in) {
 		return s.b.goTo(s.next, s.nextName)
 	}
 	if s.done {
@@ -126,9 +128,6 @@ func (s *cutsceneScreen) draw(dst *ebiten.Image) {
 	op.GeoM.Scale(float64(s.scale), float64(s.scale))
 	op.GeoM.Translate(float64(s.offX), float64(s.offY))
 	drawPanelImage(dst, s.canvas, op)
-	if s.fnt != nil {
-		s.fnt.DrawCentered(dst, s.b.tr("點擊跳過", "click to skip"), 320, 468, 11, color.RGBA{130, 140, 150, 255})
-	}
 }
 
 // seekForGallery 讓截圖廊快轉到第 n 幀。
@@ -145,7 +144,8 @@ func (s *cutsceneScreen) seekForGallery(n int) {
 // intro 播放片頭,播完或點擊後進主選單。
 // 影片載不動時直接回主選單——過場不該擋住玩家進遊戲。
 func (b *sceneBuilder) intro() origScreen {
-	if sc := newCutsceneScreen(b, gamedata.CutsceneFileFor(gamedata.CutsceneIntro), b.menu, "主選單"); sc != nil {
+	if sc := newCutsceneScreen(b, gamedata.CutsceneFileFor(gamedata.CutsceneIntro), b.menu,
+		uiText(b.lang, "cutscene.transition.main_menu")); sc != nil {
 		return sc
 	}
 	s, err := b.menu()
@@ -175,7 +175,7 @@ func (b *sceneBuilder) endingCutsceneFor() origScreen {
 		return nil
 	}
 	// 結局片播完 → 最終得分(原版也是結局片接 Hall of Fame)。
-	if sc := newCutsceneScreen(b, name, b.hiScore, "最終得分"); sc != nil {
+	if sc := newCutsceneScreen(b, name, b.hiScore, uiText(b.lang, "cutscene.transition.hall_of_fame")); sc != nil {
 		return sc
 	}
 	return nil

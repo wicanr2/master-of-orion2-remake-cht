@@ -6781,6 +6781,7 @@ func (a *interactiveApp) pollInput() shell.InputState {
 		ClickReleased:      inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft),
 		RightClickReleased: inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonRight),
 		MouseDown:          ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft),
+		AnyKeyPressed:      len(inpututil.AppendJustPressedKeys(nil)) > 0,
 		Hotkey:             pollHotkey(),
 	}
 }

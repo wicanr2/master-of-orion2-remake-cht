@@ -158,7 +158,7 @@
 | 8 | ~~**`Colony_Landing` / `Colony_Combat` / `Colony_Bombing`**~~ | 中 | ✅ 2026-08-07 全部已建(`cmd/moo2/groundcombat.go`、`cmd/moo2/bombing.go`),版面座標取自反組譯(見下方第 15、18 項)|
 | 9 | ~~**`Main_Antaran_Room`**~~ | 中 | ✅ `cmd/moo2/antaranroom.go` 會逐幀累積播放 `ANTAROOM.LBX#1` 的 55 幀；精確原版幀停留時間未知，現行每 3 tick 一幀為已標註近似 |
 | 10 | ~~**`Hall_Of_Fame` / `Hi_Score`**~~ | 低 | ✅ 2026-08-07 已建(`cmd/moo2/hiscore.go` + `gamedata/score.go`),八項計分係數全來自反組譯 module 60 |
-| 11 | ~~**`Smack`**~~ | 低 | ✅ 已建(`cmd/moo2/cutscene.go` + `internal/smk`,真的解 Smacker,不是靜態圖)|
+| 11 | **`Smack`** | 低 | 🟡 畫面與流程已建（`cmd/moo2/cutscene.go` + `internal/smk`）；音軌尚未解碼，不能稱完整完成 |
 | 12 | 多人連線 11 個畫面 | — | ✅ `MP_Setup`(`cmd/moo2/multiplayer.go`)與 `Hotseat`(`cmd/moo2/hotseat.go`)2026-08-07 已建,版面座標取自反組譯(見下方第 3 項(Colony+Event 畫面))。`Net_Next_Turn`(第 29 項(決定性化))與 `Choose_Net_Plyrs`(第 29 項(決定性化))2026-08-07 已建。`Modem_Setup`/`NullModem_Setup`/`Comm Info` **不做**(硬體已不存在)。`Join_Net`/`Generic_Net_Info`/`SendGet_Net_Info` 是同一張畫面的不同狀態(第 29 項(決定性化)),`Choose_Multi_Net_Game` 見第 29 項(決定性化)。**11 張全部結案:8 做 / 3 不做** |
 
 ### A-3 remake 有、原版無獨立畫面
@@ -556,7 +556,7 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
         另外訂正了一個版面推論:原版的 `Print_Centered_` 第二個引數是文字的**上緣**不是中心
 
 
-    ### ~~Smacker 過場~~ → **已完成**(2026-08-07,`internal/smk/` + `cmd/moo2/cutscene.go`)。
+    ### Smacker 過場 → **畫面與流程已完成，音軌未完成**（`internal/smk/` + `cmd/moo2/cutscene.go`）。
 
 
         先釐清前提:MOO2 的片頭與各結局過場**不是 LBX**,是**裸的 Smacker 檔**,只是沿用了
@@ -565,7 +565,7 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
         `ANWINFIN` 同理。所以這一項要的是一個 SMK2/SMK4 解碼器,不是找檔案。
 
         - **位元預算幾乎完全吻合**:1407 幀合計只多讀 721 bits(平均每幀 0.5 bit,就是最後一個
-        **結局過場也接了**(2026-08-07,`internal/gamedata/cutscene.go`)。這一步的重點是
+        **結局過場畫面也接了**（2026-08-07，`internal/gamedata/cutscene.go`）。這一步的重點是
            `AMEBAFIN` 與 `PLNTDFIN` ← `Bomb_Results_Popups_` @ 0xE85F7 +
            `Do_Attacker_Beat_Colony_Stuff_` @ 0xE87D2;`DIMTVFIN` ← `Tactical_Combat_` @ 0x47939。
            其餘六個名字執行檔**完全沒有字面引用**,存在 `ESTRINGS.LBX` 的字串池裡
@@ -574,6 +574,11 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
         ——挑選它們的程式碼不在執行檔的字面引用裡。remake 一律用 `GENWINFN`(已由末幀確認是
         完整結局片),`WININFIN` 標為待定,不臆測。`ORIONFIN` / `ANATKFIN` 等事件動畫也還沒接
         (前者需要獵戶座星系,remake 還沒有)。清單見 `gamedata.UnmappedCutscenes`。
+
+        2026-08-27 重新以 IDA Pro 9.4 稽核 `Play_Cinematic_` 玩家路徑，證實原版迴圈同時
+        查鍵盤與滑鼠，且沒有 remake 後加的底部跳過提示；現已接任意鍵跳過並移除該提示。
+        同一執行檔存在 `SMACKSOUND*` 與 `_SmackDoPCM`，而 remake 解碼器明確跳過音訊區塊，
+        所以本項不得再整體標成完成。詳見 `docs/re/cutscene-player-path-audit-20260827.md`。
 
 
     ### 多人連線與熱座（現代傳輸轉接）

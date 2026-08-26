@@ -1296,5 +1296,7 @@
   {"key":"tactical.fighter.button.launch","english":"▶ LAUNCH","value":"▶ 出擊","note":"remake 標題列戰機出擊按鈕"},
   {"key":"tactical.fighter.status.active","english":"Fighters: %d squadrons, %d craft","value":"戰機：%d 隊，%d 架在場","note":"戰術控制列中隊摘要"},
   {"key":"tactical.fighter.log.boarding_success","english":"Boarded: %s's crew is wiped out — the ship is taken","value":"登艦成功：%s 的守軍全滅，該艦被奪下","note":"%s 為目標艦名"},
-  {"key":"tactical.fighter.log.boarding_failed","english":"Boarding repelled: %s still has %d marine units","value":"登艦失敗：%s 還剩 %d 隊守軍","note":"依序為目標艦名與守軍數"}
+  {"key":"tactical.fighter.log.boarding_failed","english":"Boarding repelled: %s still has %d marine units","value":"登艦失敗：%s 還剩 %d 隊守軍","note":"依序為目標艦名與守軍數"},
+  {"key":"cutscene.transition.main_menu","english":"Main menu","value":"主選單","note":"片頭播放完成後的轉場名稱"},
+  {"key":"cutscene.transition.hall_of_fame","english":"Hall of Fame","value":"最終得分","note":"結局過場播放完成後的轉場名稱"}
 ]

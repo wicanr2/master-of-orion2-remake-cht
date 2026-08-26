@@ -315,6 +315,15 @@
   證據與規格見
   [`docs/re/tactical-fighter-text-layout-audit-20260827.md`](docs/re/tactical-fighter-text-layout-audit-20260827.md) 與
   [`docs/spec/tactical-fighter-text-layout.md`](docs/spec/tactical-fighter-text-layout.md)。
+  Smacker 過場已完成第三十三個切片：IDA Pro 9.4 證實 `sub_14DF7 @ 0x14DF7..0x15085`
+  是 `Play_Cinematic_` 完整外層，逐幀迴圈同時讀 `Keyboard_Status_`／`Read_Key_` 與
+  `Mouse_Button_`，且沒有任何固定文字列印。remake 現接受任意鍵或滑鼠跳過，並移除非原版的
+  底部「點擊跳過」提示；片頭與最終得分轉場名稱改由 `ui.json` 供應。外部符號表的相鄰名稱
+  錯位已保留 raw 位址說明，不覆蓋資料庫名稱。Smacker 音軌仍是另一項功能缺口，不因畫面與
+  文案切片完成而結案。Docker＋Xvfb 繁中畫廊完成 35/35；目視抽查 `21_intro.png` 與
+  `22_ending.png`，影片只含原始 frame 與黑邊，沒有額外提示侵入畫面。證據與規格見
+  [`docs/re/cutscene-player-path-audit-20260827.md`](docs/re/cutscene-player-path-audit-20260827.md) 與
+  [`docs/spec/cutscene-player-path.md`](docs/spec/cutscene-player-path.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
@@ -1106,6 +1115,11 @@
 
 - [ ] **外部音訊驗收**：在有音訊輸出的桌面逐曲聽 `STREAM`／`STREAMHD` 與場景切換，確認音量與曲目；
   Docker 的解碼、長度、峰值、非靜音檢查已完成，不能冒充人耳驗收。
+- [ ] **Smacker 過場音軌**：`internal/smk` 目前只解畫面並跳過 audio chunk；IDA 已證實原版
+  `Play_Cinematic_` 下游使用 `SMACKSOUND*`，執行檔也含 `_SmackDoPCM`。依硬體時序停止線，
+  不追回 DAC／PIT／MSS 逐週期內部；仍須依 Smacker 格式解出 sample、接音量與播放完成閘門，
+  再以技術解碼及有音訊輸出的桌面抽聽驗收。證據見
+  `docs/re/cutscene-player-path-audit-20260827.md`。
 - [ ] **最新工作樹重新打包、推廣片與平台真機驗收**：2026-08-12 的 `dist-all` 三平台包與推廣片
   早於目前議會公式、文字版面及後續 source 變更，只能當歷史產物；所有發行 gate 完成後，以同一
   `HEAD` 重新產生 Linux AppImage、Windows amd64 ZIP、macOS universal 包與實際玩家路徑推廣片，
