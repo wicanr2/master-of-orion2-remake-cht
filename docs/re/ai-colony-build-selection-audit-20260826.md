@@ -76,6 +76,31 @@ little-endian dword；索引在 `0xD019F` 先減 1，因此 entry 0 對 raw buil
 不需要猜測新的欄位語意。五條路徑最後都直接進共同正值／1000 上限，不會經
 `0xD0414 add ebx,var_18` 的國庫亂數擾動。
 
-其餘 case 會讀 alien／outpost 狀態、政府／性格其他碼、殖民地 packed 人口、帝國建築數、
+## 第二批：晚期科技狀態下的四棟研究設施
+
+同一份非破壞性探針現會全資料庫掃描原始運算元中的 `player+0x59D`，並匯出函式、原始名稱、
+指令位址、bytes 與運算元。直接定位結果共 12 筆；唯一直接寫入是：
+
+- `sub_DC288 @ 0xDC2E4..0xDC2EF`：映射後的研究 field 以 `cmp al,4Bh` 檢查，raw field
+  `>=75` 時在 `0xDC2E8` 以 `C6 83 9D 05 00 00 01` 寫 `player+0x59D = 1`。
+- 掃描沒有找到對 `player+0x59D` 的直接清零。整個 player record 的初始化仍可能間接清零，
+  因此結論限定為「遊戲建立後一旦設立，未見直接撤銷端」，不把直接運算元掃描冒稱完整間接寫入證明。
+- raw 75..82 與 typed `TOPIC_HYPER_*` 一對一；remake 可由目前 Hyper field、已完成 Hyper field
+  或已保存的 Hyper level 重建這個持續狀態，不需新增猜測欄位。
+
+`Colony_Building_Score_` 的四條直接 consumer 為：
+
+| raw ID | 建築 | consumer | 已證實的封閉子域 |
+|---:|---|---|---|
+| 6 | 自動實驗室 | `cmp [edi+59Dh],0 @ 0xD06B5` | late-tech 非零時 score=0 |
+| 19 | 銀河網路中心 | `cmp [edi+59Dh],0 @ 0xD07D2` | late-tech 非零時 score=0 |
+| 30 | 行星超級電腦 | `cmp [edi+59Dh],0 @ 0xD08D5` | late-tech 非零時 score=0 |
+| 35 | 研究實驗室 | `cmp [edi+59Dh],0 @ 0xD092D` | late-tech 非零時 score=0 |
+
+四條分支在 late-tech 非零時都直接跳到共同零分出口，因此不依賴仍未命名的 `ah` gate。
+late-tech 為零時，raw 6／19／30／35 各自的正值公式仍受 `ah` 影響；該區域繼續標為
+`unknown_pending_review`，不能因本輪封閉了零分半域就宣稱四個 case 全式完成。
+
+其餘未封閉區域會讀 alien／outpost 狀態、政府／性格其他碼、殖民地 packed 人口、帝國建築數、
 星球 owner／環境、事件與未解 player flags；在欄位寫入端與 typed 對映完成前維持
 `unknown_pending_review`，由明示近似 fallback 處理。

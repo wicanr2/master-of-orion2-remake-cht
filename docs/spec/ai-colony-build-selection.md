@@ -18,8 +18,10 @@
 2. 每座殖民地只消費自己的 `ColonyOutput.NetIndustry`。同一份產能不可同時蓋建築與造艦。
 3. 候選只含該 AI 科技已解鎖、且該殖民地尚未完成的 typed 建築。
 4. 候選套原版已證實的難度濾門與加權抽選形狀；typed 分數與亂數位置明標近似。
-   raw ID 4、7、12、34、36 例外：使用 IDA 已閉合的精確公式；`player+0x28==4`
-   對應 `PersonalityHonorable`，人口取該殖民地 `Population`。
+   raw ID 4、7、12、34、36 例外：使用 IDA 已閉合的完整精確公式；`player+0x28==4`
+   對應 `PersonalityHonorable`，人口取該殖民地 `Population`。raw ID 6、19、30、35 在 AI
+   已選中或完成任一 Hyper field 後使用已閉合的精確零分；late-tech 前仍因共用 `ah` gate
+   未完成 typed 對映而走明示 fallback，不能標成完整 case parity。
 5. 完工後寫入 `ColonyBuildings`，並把已建模的累積經濟效果寫回該 AI 的 `ColonyState`。
 6. 若沒有任何可建建築，該殖民地產能才交給既有 AI 艦艇產品轉接層；此轉接層不冒稱
    `sub_D10EE` 的完整戰鬥艦選擇器。
@@ -31,6 +33,8 @@
 - 產品完工後建築 map 與 typed 產出效果同步，產品清空。
 - 無可建建築時，殖民地產能完整交給造艦轉接層。
 - 存檔／讀檔保存進行中的 AI 殖民地產品。
-- 五個已閉合 raw ID 在一般與 Honorable 性格下逐式符合原版立即數公式；其他 ID 才走
-  類別式 fallback，兩者不可混稱同一證據等級。
+- 五個完整閉合 raw ID 在一般與 Honorable 性格下逐式符合原版立即數公式。
+- raw 6／19／30／35 在目前研究、已完成主題或舊存檔 Hyper level 任一來源顯示已進入晚期
+  科技時皆為精確零分；晚期科技前必須回報 `exact=false` 並走 fallback。
+- 精確分支與類別式 fallback 不可混稱同一證據等級。
 - 既有擴張測試以「建築＋造艦總投入」驗證新殖民地確實參與經濟，不再假設所有產出都是軍艦。

@@ -39,7 +39,28 @@ ROOTS = {
     "raw_Colony_Product_Cost": 0xE0DD6,
     "raw_Colony_Can_Build_Product": 0xE11BC,
     "raw_Apply_Production": 0xE36DF,
+    "raw_AI_Choose_Research": 0xDC288,
 }
+
+
+def operand_mentions_player_late_tech(ea):
+    """保留 IDA 原始運算元，找出 player record +0x59D 的所有直接定位。"""
+    operands = [idc.print_operand(ea, i) for i in range(2)]
+    normalized = " ".join(operands).lower().replace("0x", "")
+    return "+59dh" in normalized or "+ 59dh" in normalized
+
+
+def direct_player_late_tech_refs():
+    refs = []
+    for fn_ea in idautils.Functions():
+        for ea in idautils.FuncItems(fn_ea):
+            if operand_mentions_player_late_tech(ea):
+                refs.append({
+                    "function_start": f"0x{fn_ea:X}",
+                    "raw_name": ida_name.get_name(fn_ea) or "<unnamed>",
+                    "instruction": instruction(ea),
+                })
+    return refs
 
 
 def digest(path):
@@ -132,6 +153,7 @@ def main():
             "case_count": 47,
             "entries": score_switch,
         },
+        "direct_player_plus_0x59d_refs": direct_player_late_tech_refs(),
         "roots": {name: function_record(ea) for name, ea in ROOTS.items()},
     }
     with open(os.environ["MOO2_IDA_OUTPUT"], "w", encoding="utf-8") as fh:

@@ -27,11 +27,11 @@ func TestOriginalAIExactBuildingScores(t *testing.T) {
 		if !ok {
 			t.Fatalf("測試建築不存在：%s", tt.name)
 		}
-		got, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic)
+		got, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic, false)
 		if !exact || got != tt.balanced {
 			t.Errorf("%s 一般性格分數=(%d,%v)，want (%d,true)", tt.name, got, exact, tt.balanced)
 		}
-		got, exact = originalAIExactBuildingScore(b, colony, ai.PersonalityHonorable)
+		got, exact = originalAIExactBuildingScore(b, colony, ai.PersonalityHonorable, false)
 		if !exact || got != tt.honorable {
 			t.Errorf("%s Honorable 分數=(%d,%v)，want (%d,true)", tt.name, got, exact, tt.honorable)
 		}
@@ -40,8 +40,41 @@ func TestOriginalAIExactBuildingScores(t *testing.T) {
 	if !ok {
 		t.Fatal("研究實驗室不存在")
 	}
-	if score, exact := originalAIExactBuildingScore(fallback, colony, ai.PersonalityHonorable); exact || score != 0 {
+	if score, exact := originalAIExactBuildingScore(fallback, colony, ai.PersonalityHonorable, false); exact || score != 0 {
 		t.Fatalf("未閉合 case 不得冒稱 exact：score=%d exact=%v", score, exact)
+	}
+}
+
+func TestOriginalAILateTechResearchBuildingScoresAreZero(t *testing.T) {
+	for _, name := range []string{"自動實驗室", "銀河網路中心", "行星超級電腦", "研究實驗室"} {
+		b, ok := gamedata.BuildingByNameZH(name)
+		if !ok {
+			t.Fatalf("測試建築不存在：%s", name)
+		}
+		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 9}, ai.PersonalityErratic, true); !exact || score != 0 {
+			t.Errorf("%s 晚期科技分數=(%d,%v)，want (0,true)", name, score, exact)
+		}
+		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 9}, ai.PersonalityErratic, false); exact || score != 0 {
+			t.Errorf("%s 晚期科技前仍受未知 ah gate，不能冒稱 exact：(%d,%v)", name, score, exact)
+		}
+	}
+}
+
+func TestAIOriginalLateTechReachedUsesSelectedOrCompletedHyperField(t *testing.T) {
+	ps := engine.PlayerState{ResearchTopic: gamedata.TOPIC_HYPER_PHYSICS}
+	if !aiOriginalLateTechReached(ps) {
+		t.Fatal("選中 raw 75..82 的 Hyper field 時應立即進入晚期科技")
+	}
+	ps = engine.PlayerState{CompletedTopics: map[gamedata.ResearchTopic]bool{gamedata.TOPIC_HYPER_BIOLOGY: true}}
+	if !aiOriginalLateTechReached(ps) {
+		t.Fatal("完成任一 Hyper field 後晚期科技狀態應持續")
+	}
+	ps = engine.PlayerState{HyperAdvancedLevels: map[gamedata.ResearchTopic]int{gamedata.TOPIC_HYPER_SOCIOLOGY: 2}}
+	if !aiOriginalLateTechReached(ps) {
+		t.Fatal("舊存檔只保留 Hyper 等級時仍應重建晚期科技狀態")
+	}
+	if aiOriginalLateTechReached(engine.PlayerState{ResearchTopic: gamedata.TOPIC_ADVANCED_CONSTRUCTION}) {
+		t.Fatal("一般研究 field 不得誤判為晚期科技")
 	}
 }
 

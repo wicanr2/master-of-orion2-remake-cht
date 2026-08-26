@@ -19,7 +19,24 @@ func aiColonyBuildKey(a *AIOpponent, colony int) int {
 // originalAIExactBuildingScore；其餘 case 的完整欄位語意尚未全部映射，才使用 remake 已有的
 // 殖民地輸出與建築分類。加權抽選、難度濾門、候選範圍與逐殖民地產品資料形狀則直接依
 // IDA 證據實作。
-func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState, personality ai.Personality) (int, bool) {
+func aiOriginalLateTechReached(ps engine.PlayerState) bool {
+	if gamedata.IsHyperAdvancedTopic(ps.ResearchTopic) {
+		return true
+	}
+	for topic, completed := range ps.CompletedTopics {
+		if completed && gamedata.IsHyperAdvancedTopic(topic) {
+			return true
+		}
+	}
+	for topic, level := range ps.HyperAdvancedLevels {
+		if level > 0 && gamedata.IsHyperAdvancedTopic(topic) {
+			return true
+		}
+	}
+	return false
+}
+
+func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState, personality ai.Personality, lateTech bool) (int, bool) {
 	rawID, ok := gamedata.OriginalBuildingIDForName(b.NameZH)
 	if !ok {
 		return 0, false
@@ -29,6 +46,12 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		honorable = 1
 	}
 	switch rawID {
+	case 6, 19, 30, 35: // 0xD06B5／0xD07D2／0xD08D5／0xD092D：晚期科技後皆歸零。
+		if lateTech {
+			return 0, true
+		}
+		// 尚未進入晚期科技時，四式仍受未完成 typed 對映的共用 ah gate 影響。
+		return 0, false
 	case 4: // 0xD06A3：Astro University
 		return 5, true
 	case 7: // 0xD06D0：Automated Factory
@@ -44,8 +67,8 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 	}
 }
 
-func aiBuildingScore(b gamedata.Building, colony engine.ColonyState, out engine.ColonyOutput, personality ai.Personality) int {
-	if score, exact := originalAIExactBuildingScore(b, colony, personality); exact {
+func aiBuildingScore(b gamedata.Building, colony engine.ColonyState, out engine.ColonyOutput, personality ai.Personality, lateTech bool) int {
+	if score, exact := originalAIExactBuildingScore(b, colony, personality, lateTech); exact {
 		return score
 	}
 	score := 20
@@ -87,12 +110,13 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, out engine.ColonyOutput, 
 		score int
 	}
 	var candidates []candidate
+	lateTech := aiOriginalLateTechReached(a.Player)
 	maxScore := 1 // raw Assign_Colony_New_Building_ 也把最大分數下限夾到 1。
 	for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
 		if built[b.NameZH] {
 			continue
 		}
-		score := aiBuildingScore(b, a.Colonies[colony], out, a.Personality)
+		score := aiBuildingScore(b, a.Colonies[colony], out, a.Personality, lateTech)
 		if score > maxScore {
 			maxScore = score
 		}
