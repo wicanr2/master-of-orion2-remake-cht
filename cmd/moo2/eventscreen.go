@@ -106,6 +106,22 @@ func (b *sceneBuilder) shouldForceEventIntoSummary() bool {
 		!b.session.EffectiveGameSettings().ShowGNNReport
 }
 
+// shouldShowTurnSummary 是所有結算後畫面共用的摘要 gate。GNN 關閉時的事件通知
+// 優先保留；其餘情況依 End Of Turn Summary 與 Serious Summary 共同決定。
+func (b *sceneBuilder) shouldShowTurnSummary() bool {
+	if b == nil || b.session == nil {
+		return false
+	}
+	if b.shouldForceEventIntoSummary() {
+		return true
+	}
+	settings := b.session.EffectiveGameSettings()
+	if !settings.EndOfTurnSummary {
+		return false
+	}
+	return !settings.ShowOnlySeriousTurnSummary || b.session.HasSeriousTurnSummaryReport()
+}
+
 func eventHeaderTextRect() textSafeRect {
 	return textSafeRect{x: int(evPanelX), y: int(evPanelY), w: int(evPanelW), h: 26, insetX: 12, insetY: 2}
 }
@@ -158,7 +174,7 @@ func (b *sceneBuilder) eventScreen() (*overlayScreen, error) {
 	hits := []hitRegion{{270, 372, 100, 24, "ok"}}
 	onAction := func(a string) *origTransition {
 		if a == "ok" {
-			if b.session != nil && !b.session.EffectiveGameSettings().EndOfTurnSummary {
+			if !b.shouldShowTurnSummary() {
 				return b.goTo(b.galaxy, uiText(b.lang, "gamesettings.transition.galaxy"))
 			}
 			return b.goTo(b.turnSummary, uiText(b.lang, "event.transition.summary"))

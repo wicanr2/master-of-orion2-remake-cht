@@ -126,6 +126,36 @@ func TestCurrentReportGNNOffWithoutDiscoveryHasNoReportScreen(t *testing.T) {
 	}
 }
 
+func TestShouldShowTurnSummarySeriousGate(t *testing.T) {
+	s := shell.NewDemoSession()
+	settings := s.EffectiveGameSettings()
+	settings.EndOfTurnSummary = true
+	settings.ShowOnlySeriousTurnSummary = true
+	s.ApplyGameSettings(settings)
+	b := &sceneBuilder{session: s, lang: i18n.Traditional}
+	if b.shouldShowTurnSummary() {
+		t.Fatal("只有一般經濟資料時，重要摘要模式應略過摘要")
+	}
+	s.LastRebellions = []shell.RebellionResult{{Triggered: true}}
+	if !b.shouldShowTurnSummary() {
+		t.Fatal("叛亂應觸發重要回合摘要")
+	}
+}
+
+func TestShouldShowTurnSummaryGNNFallbackBeatsSeriousGate(t *testing.T) {
+	s := shell.NewDemoSession()
+	settings := s.EffectiveGameSettings()
+	settings.EndOfTurnSummary = false
+	settings.ShowOnlySeriousTurnSummary = true
+	settings.ShowGNNReport = false
+	s.ApplyGameSettings(settings)
+	s.LastEventReport = &shell.EventReport{Name: "event", Message: "event"}
+	b := &sceneBuilder{session: s, lang: i18n.Traditional}
+	if !b.shouldShowTurnSummary() {
+		t.Fatal("GNN 關閉後的特殊事件通知不可被摘要選項或重要摘要 gate 吞掉")
+	}
+}
+
 func TestCurrentReportEventEnglishUsesBilingualPayload(t *testing.T) {
 	s := shell.NewDemoSession()
 	s.LastEventReport = &shell.EventReport{

@@ -69,6 +69,7 @@ ROOTS = {
     "show_gnn_consumer_c": 0x21B6D,
     "show_gnn_consumer_d": 0x8B17B,
     "show_gnn_consumer_e": 0x8B956,
+    "serious_turn_summary_consumer": 0xFE0EA,
 }
 
 SETTING_GLOBALS = {

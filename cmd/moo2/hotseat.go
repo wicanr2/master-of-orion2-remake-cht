@@ -169,7 +169,7 @@ func (b *sceneBuilder) finishResolvedTurn() *origTransition {
 	if b.shouldOpenReportScreen() {
 		return b.goTo(b.eventScreen, uiText(b.lang, "event.transition.report"))
 	}
-	if !settings.EndOfTurnSummary && !b.shouldForceEventIntoSummary() {
+	if !b.shouldShowTurnSummary() {
 		return b.goTo(b.galaxy, uiText(b.lang, "gamesettings.transition.galaxy"))
 	}
 	return b.goTo(b.turnSummary, uiText(b.lang, "event.transition.summary"))

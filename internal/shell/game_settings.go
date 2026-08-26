@@ -54,3 +54,18 @@ func (s *GameSession) ApplyGameSettings(settings GameSettings) {
 	s.GameSettings = settings
 	s.ShowRelocationLines = settings.ShowRelocationLines
 }
+
+// HasSeriousTurnSummaryReport 判斷本回合是否包含應觸發「只顯示重要摘要」的玩家結果。
+// 飢荒、叛亂與破產處分由原版 help 直接列舉；兩種敵襲是已有 typed 結果的威脅擴充。
+func (s *GameSession) HasSeriousTurnSummaryReport() bool {
+	if s == nil {
+		return false
+	}
+	for _, colony := range s.LastPlayerOutput.Colonies {
+		if colony.Starving {
+			return true
+		}
+	}
+	return len(s.LastRebellions) > 0 || len(s.LastBankruptcy) > 0 ||
+		s.LastAntares != "" || s.LastRaid != ""
+}

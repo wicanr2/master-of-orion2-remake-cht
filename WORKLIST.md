@@ -258,8 +258,16 @@
   End Of Turn Summary 同時關閉，特殊事件也不會靜默消失。星系勘查是玩家自家回報，不受 GNN
   選項抑制；同回合事件則保留於摘要。證據、規格與組合測試見
   `docs/re/show-gnn-report-setting-audit-20260827.md`、`docs/tech/show-gnn-report-setting-spec.md`。
-  Serious Summary 尚須依玩家摘要篩選路徑閉合，
-  不能因設定值可保存就宣稱生效。DOS／Win95 平台 API 內部維持既定停止線。
+  Serious Summary 已由唯一玩法 consumer `sub_FE0EA @ 0xFE0EA..0xFE250` 閉合：它逐筆掃描
+  18-byte 回合報告記錄，開啟時只有 serious raw type／subtype 能觸發整張摘要；不是在已開啟
+  的摘要裡刪除一般行。remake 已接 typed gate：官方 help 明列的飢荒、叛亂、破產處分會觸發，
+  安塔蘭與敵方突襲是明標強推論的威脅擴充；一般經濟、研究與建造完成不觸發。GNN 關閉後的
+  特殊事件通知優先保留，從快報按繼續與直接結算共用同一 gate。飢荒／叛亂計數文案已外置於
+  `ui.json`。證據與規格見 `docs/re/serious-turn-summary-setting-audit-20260827.md`、
+  `docs/tech/serious-turn-summary-setting-spec.md`。
+  本輪全域消費端掃描同時確認 End Of Turn Wait 在 remake 仍只有設定／匯入／保存，沒有玩家
+  回合流程 consumer；因此 SETTINGS 項目維持進行中，下一切片須依原版連續回合停止條件閉合。
+  DOS／Win95 平台 API 內部維持既定停止線。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`
   已把本次錯判提煉成跨專案流程，涵蓋重新稽核觸發條件、具名符號限制、玩家機制證據矩陣、

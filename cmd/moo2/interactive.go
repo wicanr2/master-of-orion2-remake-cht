@@ -5678,6 +5678,24 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 			}
 			yy += float64(len(lines)) * 19
 		}
+		starving := 0
+		for _, colony := range out.Colonies {
+			if colony.Starving {
+				starving++
+			}
+		}
+		if starving > 0 {
+			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 13,
+				text: fmt.Sprintf(uiText(b.lang, "turnsummary.serious.starvation_count"), starving),
+				col:  color.RGBA{240, 130, 100, 255}})
+			yy += 19
+		}
+		if rebellions := len(b.session.LastRebellions); rebellions > 0 {
+			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 13,
+				text: fmt.Sprintf(uiText(b.lang, "turnsummary.serious.rebellion_count"), rebellions),
+				col:  color.RGBA{240, 130, 100, 255}})
+			yy += 19
+		}
 		if out.ResearchDone {
 			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 14, text: b.tr("★ 完成一項研究!", "★ A research field is complete!"), col: color.RGBA{120, 220, 140, 255}})
 			yy += 24

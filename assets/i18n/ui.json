@@ -912,5 +912,7 @@
   {"key":"gamesettings.option.auto_delete_trade_housing.help","english":"Remove Trade Goods or Housing from the queue after one completed turn.","value":"貿易商品或住宅完成一回合後，自動從建造佇列移除。","note":"SETTINGS 右鍵情境說明"},
   {"key":"gamesettings.option.auto_save_game.help","english":"Save the current game automatically at the end of each turn.","value":"每回合結束時自動儲存目前對局。","note":"SETTINGS 右鍵情境說明"},
   {"key":"gamesettings.option.serious_turn_summary.help","english":"Limit the turn summary to serious reports.","value":"回合摘要只顯示需要注意的重要報告。","note":"SETTINGS 右鍵情境說明"},
+  {"key":"turnsummary.serious.starvation_count","english":"◆ Starvation reported at %d colonies","value":"◆ %d 座殖民地發生飢荒","note":"重要回合摘要；%d 為飢荒殖民地數"},
+  {"key":"turnsummary.serious.rebellion_count","english":"◆ %d rebellions erupted this turn","value":"◆ 本回合爆發 %d 場叛亂","note":"重要回合摘要；%d 為叛亂數"},
   {"key":"gamesettings.option.ship_initiative.help","english":"Resolve combat actions by ship initiative instead of resolving each side as a block.","value":"依各艦主動權交錯處理戰鬥行動，而非讓雙方分批完成。","note":"SETTINGS 右鍵情境說明"}
 ]
