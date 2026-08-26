@@ -23,15 +23,16 @@ const (
 	Traditional
 )
 
-// Catalog 是一份英文→中文對照表 + 目前語言狀態。
+// Catalog 同時支援原版英文 key→繁中覆蓋，以及 remake 語意鍵→外部中英文文案。
 type Catalog struct {
-	lang Lang
-	m    map[string]string
+	lang    Lang
+	m       map[string]string
+	english map[string]string
 }
 
 // New 建立指定語言的空 Catalog。
 func New(lang Lang) *Catalog {
-	return &Catalog{lang: lang, m: make(map[string]string)}
+	return &Catalog{lang: lang, m: make(map[string]string), english: make(map[string]string)}
 }
 
 // Lang 回傳目前語言。
@@ -42,9 +43,10 @@ func (c *Catalog) SetLang(l Lang) { c.lang = l }
 
 // Entry 是外部 JSON 譯表的一筆玩家可見文案。
 type Entry struct {
-	Key   string `json:"key"`
-	Value string `json:"value"`
-	Note  string `json:"note,omitempty"`
+	Key     string `json:"key"`
+	English string `json:"english,omitempty"`
+	Value   string `json:"value"`
+	Note    string `json:"note,omitempty"`
 }
 
 // LoadJSON 從 JSON 讀入譯文並併入 catalog。同一 key 以先載入者優先
@@ -60,16 +62,51 @@ func (c *Catalog) LoadJSON(r io.Reader) (int, error) {
 	for _, entry := range entries {
 		key := strings.TrimSpace(decodeByteEscapes(entry.Key))
 		val := decodeByteEscapes(entry.Value)
-		if key == "" || val == "" {
+		english := decodeByteEscapes(entry.English)
+		if key == "" {
 			continue
 		}
-		if _, exists := c.m[key]; exists {
-			continue // 先載入者優先
+		if val != "" {
+			if _, exists := c.m[key]; !exists {
+				c.m[key] = val
+				added++
+			}
 		}
-		c.m[key] = val
-		added++
+		if english != "" {
+			if _, exists := c.english[key]; !exists {
+				c.english[key] = english
+			}
+		}
 	}
 	return added, nil
+}
+
+// Text 以穩定語意鍵查詢玩家文案。自繪 remake 畫面使用此入口，讓中英文句子都留在
+// 外部 JSON；Traditional 優先 value，English 使用 english，缺譯時退回另一語言再退回鍵值。
+// 原版英文字串作 key 的資料表仍使用 Translate，不改變既有位置式來源契約。
+func (c *Catalog) Text(key string) string {
+	return c.TextFor(c.lang, key)
+}
+
+// TextFor 與 Text 相同，但不修改 catalog 的目前語言，供共用惰性 catalog 的顯示端使用。
+func (c *Catalog) TextFor(lang Lang, key string) string {
+	key = strings.TrimSpace(key)
+	if lang == English {
+		if v, ok := c.english[key]; ok {
+			return v
+		}
+		if v, ok := c.m[key]; ok {
+			return v
+		}
+		return key
+	}
+	if v, ok := c.m[key]; ok {
+		return v
+	}
+	if v, ok := c.english[key]; ok {
+		return v
+	}
+	return key
 }
 
 // decodeByteEscapes 還原 JSON 文案中的原版單位元控制標記（例如 \x8f 帝國名）。

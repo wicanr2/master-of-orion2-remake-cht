@@ -1,0 +1,98 @@
+[
+  {
+    "key": "netinfo.caption.waiting_for_joiners",
+    "english": "Waiting for players to join",
+    "value": "等待其他玩家加入",
+    "note": "多人連線資訊面板狀態"
+  },
+  {
+    "key": "netinfo.caption.joining",
+    "english": "Joining game",
+    "value": "加入對局中",
+    "note": "多人連線資訊面板狀態"
+  },
+  {
+    "key": "netinfo.caption.wait_race_info",
+    "english": "Waiting for race info",
+    "value": "等待種族資料",
+    "note": "多人連線資訊面板狀態"
+  },
+  {
+    "key": "netinfo.caption.initializing",
+    "english": "Initializing network",
+    "value": "初始化連線",
+    "note": "多人連線資訊面板狀態"
+  },
+  {
+    "key": "netinfo.caption.sending_data",
+    "english": "Sending data",
+    "value": "傳送資料",
+    "note": "多人連線資訊面板狀態"
+  },
+  {
+    "key": "netinfo.caption.generating_map",
+    "english": "Generating map",
+    "value": "產生星圖",
+    "note": "多人連線資訊面板狀態"
+  },
+  {
+    "key": "netinfo.caption.getting_data",
+    "english": "Getting data",
+    "value": "接收資料",
+    "note": "多人連線資訊面板狀態"
+  },
+  {
+    "key": "netinfo.title.waiting_for_joiners",
+    "english": "JOIN NETWORK GAME SETUP",
+    "value": "加入網路遊戲設定",
+    "note": "MULTIGM.LBX 標題帶替換文案"
+  },
+  {
+    "key": "netinfo.title.joining",
+    "english": "WAITING TO JOIN GAME",
+    "value": "等待加入遊戲",
+    "note": "MULTIGM.LBX 標題帶替換文案"
+  },
+  {
+    "key": "netinfo.title.wait_race_info",
+    "english": "RECEIVING RACE SETUPS",
+    "value": "接收種族設定",
+    "note": "MULTIGM.LBX 標題帶替換文案"
+  },
+  {
+    "key": "netinfo.title.initializing",
+    "english": "INITIALIZING NETWORK",
+    "value": "初始化網路",
+    "note": "MULTIGM.LBX 標題帶替換文案"
+  },
+  {
+    "key": "netinfo.title.sending_data",
+    "english": "SENDING GAME DATA",
+    "value": "傳送遊戲資料",
+    "note": "MULTIGM.LBX 標題帶替換文案"
+  },
+  {
+    "key": "netinfo.title.generating_map",
+    "english": "GENERATING MAP",
+    "value": "產生星圖",
+    "note": "MULTIGM.LBX 標題帶替換文案"
+  },
+  {
+    "key": "netinfo.title.getting_data",
+    "english": "RECEIVING GAME DATA",
+    "value": "接收遊戲資料",
+    "note": "MULTIGM.LBX 標題帶替換文案"
+  },
+  {
+    "key": "netinfo.label.status",
+    "english": "STATUS",
+    "value": "狀態",
+    "note": "多人連線資訊面板欄位標籤"
+  },
+  {
+    "key": "netinfo.button.start",
+    "english": "START NET GAME",
+    "value": "開始連線對局",
+    "note": "等待其他玩家加入畫面的主機按鈕"
+  }
+]

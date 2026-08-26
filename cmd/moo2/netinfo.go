@@ -102,23 +102,23 @@ func netInfoStates() []netInfoState {
 	}
 }
 
-// netInfoCaption 是每個狀態的中文說明(原版是烘在圖上的英文)。
+// netInfoCaption 是每個狀態的外部文案(原版英文烘在圖上，remake 只保存語意鍵)。
 func (b *sceneBuilder) netInfoCaption(st netInfoState) string {
 	switch st {
 	case netInfoWaitingForJoiners:
-		return b.tr("等待其他玩家加入", "Waiting for players to join")
+		return uiText(b.lang, "netinfo.caption.waiting_for_joiners")
 	case netInfoJoining:
-		return b.tr("加入對局中", "Joining game")
+		return uiText(b.lang, "netinfo.caption.joining")
 	case netInfoWaitRaceInfo:
-		return b.tr("等待種族資料", "Waiting for race info")
+		return uiText(b.lang, "netinfo.caption.wait_race_info")
 	case netInfoInitializing:
-		return b.tr("初始化連線", "Initializing network")
+		return uiText(b.lang, "netinfo.caption.initializing")
 	case netInfoSendingData:
-		return b.tr("傳送資料", "Sending data")
+		return uiText(b.lang, "netinfo.caption.sending_data")
 	case netInfoGeneratingMap:
-		return b.tr("產生星圖", "Generating map")
+		return uiText(b.lang, "netinfo.caption.generating_map")
 	case netInfoGettingData:
-		return b.tr("接收資料", "Getting data")
+		return uiText(b.lang, "netinfo.caption.getting_data")
 	}
 	return ""
 }
@@ -128,19 +128,19 @@ func (b *sceneBuilder) netInfoCaption(st netInfoState) string {
 func (b *sceneBuilder) netInfoTitle(st netInfoState) string {
 	switch st {
 	case netInfoWaitingForJoiners:
-		return b.tr("加入網路遊戲設定", "JOIN NETWORK GAME SETUP")
+		return uiText(b.lang, "netinfo.title.waiting_for_joiners")
 	case netInfoJoining:
-		return b.tr("等待加入遊戲", "WAITING TO JOIN GAME")
+		return uiText(b.lang, "netinfo.title.joining")
 	case netInfoWaitRaceInfo:
-		return b.tr("接收種族設定", "RECEIVING RACE SETUPS")
+		return uiText(b.lang, "netinfo.title.wait_race_info")
 	case netInfoInitializing:
-		return b.tr("初始化網路", "INITIALIZING NETWORK")
+		return uiText(b.lang, "netinfo.title.initializing")
 	case netInfoSendingData:
-		return b.tr("傳送遊戲資料", "SENDING GAME DATA")
+		return uiText(b.lang, "netinfo.title.sending_data")
 	case netInfoGeneratingMap:
-		return b.tr("產生星圖", "GENERATING MAP")
+		return uiText(b.lang, "netinfo.title.generating_map")
 	case netInfoGettingData:
-		return b.tr("接收遊戲資料", "RECEIVING GAME DATA")
+		return uiText(b.lang, "netinfo.title.getting_data")
 	}
 	return ""
 }
@@ -299,7 +299,7 @@ func (s *netInfoScreen) draw(dst *ebiten.Image) {
 	if s.b.lang == i18n.Traditional && netInfoHasStatusLabel(s.state) {
 		fillPanel(dst, float32(winX+25), float32(winY+h/2-16), 70, 30,
 			color.RGBA{14, 16, 22, 240}, false)
-		s.b.fnt.DrawCentered(dst, "狀態", float64(winX+60), float64(winY+h/2)+6,
+		s.b.fnt.DrawCentered(dst, uiText(s.b.lang, "netinfo.label.status"), float64(winX+60), float64(winY+h/2)+6,
 			13, color.RGBA{215, 222, 238, 255})
 	}
 	if netInfoHasStatusLabel(s.state) {
@@ -326,7 +326,7 @@ func (s *netInfoScreen) draw(dst *ebiten.Image) {
 		fillPanel(dst, float32(bx+4), float32(by+4),
 			float32(netInfoStartBtnW-8), float32(netInfoStartBtnH-8),
 			color.RGBA{58, 58, 52, 255}, false)
-		s.b.fnt.DrawCentered(dst, truncateToWidth(s.b.fnt, s.b.tr("開始連線對局", "START NET GAME"), 13, float64(netInfoStartBtnW-10)),
+		s.b.fnt.DrawCentered(dst, truncateToWidth(s.b.fnt, uiText(s.b.lang, "netinfo.button.start"), 13, float64(netInfoStartBtnW-10)),
 			float64(bx+netInfoStartBtnW/2), float64(by)+18, 13, color.RGBA{236, 232, 210, 255})
 	}
 	if netInfoHasProgress(s.state) {

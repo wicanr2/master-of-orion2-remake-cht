@@ -7,7 +7,8 @@
 
 ## JSON 契約
 
-每份檔案是有序陣列，每筆包含 `key`、`value` 與可省略的 `note`：
+每份檔案是有序陣列。原版位置式字串表沿用英文原文 `key`、繁中 `value` 與可省略的
+`note`：
 
 ```json
 {"key": "Continue", "value": "繼續", "note": "主選單"}
@@ -19,6 +20,16 @@
 - 同一來源重複鍵採先出現者優先；不同來源維持獨立 catalog。
 - 原版 `0x80–0x9F` 單位元插值標記以字面 `\xNN` 保存，載入後才還原；不可改成
   JSON `\u00NN`，後者會產生不同的 UTF-8 位元組。
+
+remake 自繪 UI 不得把英文句子當穩定鍵，改用語意鍵並加上外部 `english`：
+
+```json
+{"key":"netinfo.label.status","english":"STATUS","value":"狀態","note":"多人面板"}
+```
+
+- 程式只保存不會顯示給玩家的語意鍵。
+- `Catalog.TextFor` 依語言選 `english` 或 `value`；`Catalog.Translate` 的原版英文 key 行為不變。
+- 不得為了外部化而把所有原版 per-source catalog 合併成單一表。
 
 ## 遷移與驗證
 

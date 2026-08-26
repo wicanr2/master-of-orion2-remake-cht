@@ -52,6 +52,24 @@ func TestEnglishMode(t *testing.T) {
 	}
 }
 
+func TestSemanticKeyTextUsesExternalEnglishAndTraditional(t *testing.T) {
+	c := New(Traditional)
+	data := `[{"key":"netinfo.status","english":"STATUS","value":"狀態"}]`
+	if _, err := c.LoadJSON(strings.NewReader(data)); err != nil {
+		t.Fatal(err)
+	}
+	if got := c.Text("netinfo.status"); got != "狀態" {
+		t.Fatalf("繁中語意鍵 = %q", got)
+	}
+	c.SetLang(English)
+	if got := c.Text("netinfo.status"); got != "STATUS" {
+		t.Fatalf("英文語意鍵 = %q", got)
+	}
+	if got := c.Text("missing.key"); got != "missing.key" {
+		t.Fatalf("缺少語意鍵應退回鍵值，得到 %q", got)
+	}
+}
+
 func TestTranslateFormat(t *testing.T) {
 	c := newZH(t)
 	tmpl := c.TranslateFormat("Cost %v")

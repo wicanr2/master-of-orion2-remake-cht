@@ -49,8 +49,13 @@
 
 - [~] **玩家可見文案外部化**：2026-08-26 已把既有 `assets/i18n/*.json` 與內嵌副本統一轉為
   有序 JSON 並移除 `go:embed` 副本，載入器保留 per-source、先出現者優先及原版單位元控制標記契約。剩餘工作是逐畫面
-  移除 `tr(中文, 英文)` 與直接繪製的硬編文案，改以穩定鍵值查詢；規格見
-  [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+  移除 `tr(中文, 英文)` 與直接繪製的硬編文案，改以穩定鍵值查詢。多人資訊面板已完成第一個
+  垂直切片：IDA 重新確認七個 MULTIGM 狀態共用 loader／draw 與按鈕 helper；`netinfo.go`
+  現只保存 `netinfo.*` 語意鍵，中英文標題、狀態與按鈕均由 `assets/i18n/ui.json` 提供，並有
+  靜態防回歸與雙語 catalog 測試。其餘自繪畫面仍待逐批遷移；通用規格見
+  [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
+  [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
+  [`docs/spec/netinfo-external-text.md`](docs/spec/netinfo-external-text.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`
   已把本次錯判提煉成跨專案流程，涵蓋重新稽核觸發條件、具名符號限制、玩家機制證據矩陣、

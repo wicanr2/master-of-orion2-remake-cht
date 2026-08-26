@@ -62,6 +62,11 @@ func (r *Registry) LoadFS(fsys fs.FS, dir string) (int, error) {
 				r.merged.m[k] = v
 			}
 		}
+		for k, v := range cat.english {
+			if _, ok := r.merged.english[k]; !ok {
+				r.merged.english[k] = v
+			}
+		}
 	}
 	return len(names), nil
 }
