@@ -186,7 +186,7 @@ func (s *chooseMultiNetGameScreen) update(in shell.InputState) *origTransition {
 	dx, dy, dw, dh := cmngDirectRect(winX, winY)
 	if in.MouseX >= dx && in.MouseX < dx+dw && in.MouseY >= dy && in.MouseY < dy+dh {
 		return &origTransition{next: s.b.inputBox(s,
-			s.b.tr("輸入主機位址", "Enter host address"), netLobbyDialAddr, 45,
+			"inputbox.title.host_address", netLobbyDialAddr, 45,
 			func(addr string) *origTransition {
 				if addr == "" {
 					return nil

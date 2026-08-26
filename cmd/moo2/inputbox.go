@@ -130,11 +130,11 @@ func inboxClampMaxLen(n int) int {
 
 // inputBoxScreen 是文字輸入彈窗。
 type inputBoxScreen struct {
-	b     *sceneBuilder
-	under origScreen
-	title string
-	text  []rune
-	max   int
+	b        *sceneBuilder
+	under    origScreen
+	titleKey string
+	text     []rune
+	max      int
 	// onOK 收使用者輸入的字串;回傳的轉場非 nil 就走它,nil 則回到下層。
 	onOK func(string) *origTransition
 	// onCancel 為 nil 時,取消就回下層。
@@ -148,11 +148,12 @@ type inputBoxScreen struct {
 	scriptOK bool // 截圖廊/測試用:不吃鍵盤
 }
 
-// inputBox 疊一個文字輸入彈窗在目前的畫面上。
-func (b *sceneBuilder) inputBox(under origScreen, title, initial string, max int,
+// inputBox 疊一個文字輸入彈窗在目前的畫面上。titleKey 必須指向 ui.json，
+// 不接受已翻譯玩家句子，避免共用 modal 的 caller 各自內嵌文案。
+func (b *sceneBuilder) inputBox(under origScreen, titleKey, initial string, max int,
 	onOK func(string) *origTransition) *inputBoxScreen {
 	s := &inputBoxScreen{
-		b: b, under: under, title: title, text: []rune(initial),
+		b: b, under: under, titleKey: titleKey, text: []rune(initial),
 		max: inboxClampMaxLen(max), onOK: onOK,
 		x: inboxDefaultX, y: inboxDefaultY,
 	}
@@ -163,6 +164,24 @@ func (b *sceneBuilder) inputBox(under origScreen, title, initial string, max int
 	s.ok = b.inboxImage(inboxOKAsset, 0, true)
 	s.okHi = b.inboxImage(inboxOKAsset, 1, true)
 	return s
+}
+
+func inboxTitleTextRect(x, y int) textSafeRect {
+	return textSafeRect{x: x + 10, y: y + inboxTitleDY, w: inboxBoxW - 20, h: inboxTitleH,
+		insetX: 2, insetY: 2, lineH: inboxTitleH - 4}
+}
+
+func inboxOKTextRect(x, y int) textSafeRect {
+	bx, by, bw, bh := inboxOKRect(x, y)
+	return textSafeRect{x: bx, y: by, w: bw, h: bh, insetX: 5, insetY: 5, lineH: bh - 10}
+}
+
+func inboxHintTextRect(x, y int) textSafeRect {
+	_, fy, _, fh := inboxFieldRect(x, y)
+	_, by, _, _ := inboxOKRect(x, y)
+	top := fy + fh
+	return textSafeRect{x: x + 10, y: top, w: inboxBoxW - 20, h: by - top,
+		insetX: 2, insetY: 1, lineH: by - top - 2}
 }
 
 // inboxImage 取 INBOX.LBX 的某資產某幀(調色盤取資產 0 自帶的那份)。
@@ -286,8 +305,7 @@ func (s *inputBoxScreen) draw(dst *ebiten.Image) {
 	}
 	// 標題:水平置中於彈窗寬、垂直置中於 54 px 的標題帶(原版就是這樣算的)。
 	const titleSize = 15
-	s.b.fnt.DrawCentered(dst, truncateToWidth(s.b.fnt, s.title, titleSize, inboxBoxW-20), float64(s.x+inboxBoxW/2),
-		float64(s.y+inboxTitleDY+(inboxTitleH-titleSize)/2), titleSize,
+	inboxTitleTextRect(s.x, s.y).drawCentered(dst, s.b.fnt, uiText(s.b.lang, s.titleKey), titleSize,
 		color.RGBA{240, 220, 120, 255})
 
 	fx, fy, fw, fh := inboxFieldRect(s.x, s.y)
@@ -302,8 +320,7 @@ func (s *inputBoxScreen) draw(dst *ebiten.Image) {
 	if (s.tick/inboxCaretPeriod)%2 == 0 {
 		txt = inboxVisibleInputText(s.b.fnt, string(s.text), textSize, inputRect)
 	}
-	s.b.fnt.Draw(dst, txt, float64(inputRect.contentX()), float64(fy+(fh-textSize)/2), textSize,
-		color.RGBA{225, 230, 244, 255})
+	inputRect.drawLeft(dst, s.b.fnt, txt, textSize, color.RGBA{225, 230, 244, 255})
 
 	// OK 鈕的中文字要先把烘死的 "ACCEPT" 擦掉再疊——不擦就是兩層字疊在一起
 	// (同 confirmbox 的 YES/NO,`confirmBtnFace` 那支取面色的 helper 通用,這裡直接用)。
@@ -312,11 +329,10 @@ func (s *inputBoxScreen) draw(dst *ebiten.Image) {
 		fillPanel(dst, float32(bx+5), float32(by+5),
 			float32(bw-10), float32(inboxOKH-10), f, false)
 	}
-	s.b.fnt.DrawCentered(dst, s.b.tr("確定", "ACCEPT"), float64(bx+bw/2), float64(by)+7, 14,
+	inboxOKTextRect(s.x, s.y).drawCentered(dst, s.b.fnt, uiText(s.b.lang, "inputbox.button.accept"), 12,
 		color.RGBA{28, 28, 24, 255})
-	// 提示行擺在鈕**下方**:擺在 inboxBoxH−30 會壓在鈕上,截圖看出來的。
-	s.b.fnt.DrawCentered(dst,
-		truncateToWidth(s.b.fnt, s.b.tr("Enter 確定  ·  Esc 取消", "Enter = accept  ·  Esc = cancel"), 11, inboxBoxW-20),
-		float64(s.x+inboxBoxW/2), float64(by+inboxOKH+4), 11,
+	// 提示行放在輸入欄與 OK 鈕之間的 20px 空帶；放在按鈕下方雖仍在 288×151
+	// 邏輯框內，實際字墨會壓到 INBOX 美術的下邊框。
+	inboxHintTextRect(s.x, s.y).drawCentered(dst, s.b.fnt, uiText(s.b.lang, "inputbox.hint.accept_cancel"), 11,
 		color.RGBA{150, 162, 185, 255})
 }

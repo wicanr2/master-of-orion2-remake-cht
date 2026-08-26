@@ -890,5 +890,10 @@
   {"key":"refit.error.no_upgrade","english":"%s has no same-hull upgrade available","value":"%s 沒有可套用的同艦體升級","note":"%s 為來源艦名"},
   {"key":"refit.error.queue_full","english":"The build queue is full","value":"建造佇列已滿","note":"REFIT 排隊失敗"},
   {"key":"refit.error.enqueue_failed","english":"The refit job could not be added to the build queue","value":"建造佇列無法加入改裝工作","note":"REFIT 防禦性排隊失敗"},
-  {"key":"refit.error.unknown","english":"The refit could not be completed","value":"無法完成艦艇改裝","note":"未知 REFIT 錯誤安全 fallback"}
+  {"key":"refit.error.unknown","english":"The refit could not be completed","value":"無法完成艦艇改裝","note":"未知 REFIT 錯誤安全 fallback"},
+  {"key":"inputbox.title.game_name","english":"Game name","value":"對局名稱","note":"Change_MP_Game_Name_ 呼叫共用輸入彈窗"},
+  {"key":"inputbox.title.host_address","english":"Enter host address","value":"輸入主機位址","note":"現代 TCP 直接連線 adapter 標題"},
+  {"key":"inputbox.button.accept","english":"ACCEPT","value":"確定","note":"INBOX.LBX#1 烘字按鈕覆蓋與 fallback"},
+  {"key":"inputbox.hint.accept_cancel","english":"Enter = accept · Esc = cancel","value":"Enter 確定 · Esc 取消","note":"現代鍵盤操作提示"},
+  {"key":"network.host.default_name","english":"Host","value":"主機玩家","note":"未指定玩家名時的多人主機預設名稱"}
 ]

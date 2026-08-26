@@ -320,7 +320,7 @@ func (b *sceneBuilder) netSessionOptions() netplay.SessionOptions {
 // `Change_MP_Game_Name_` @ 0xF5777(長度上限 8、且要與既有對局不同名)。
 // 名稱是別人在清單上看到的東西,開完局才改就晚了。
 func (b *sceneBuilder) hostNetLobby() (origScreen, error) {
-	def := b.tr("主機玩家", "Host")
+	def := uiText(b.lang, "network.host.default_name")
 	if b.session != nil && b.session.PlayerName != "" {
 		def = b.session.PlayerName
 	}
@@ -331,7 +331,7 @@ func (b *sceneBuilder) hostNetLobby() (origScreen, error) {
 	if err != nil {
 		return nil, err
 	}
-	return b.inputBox(under, b.tr("對局名稱", "Game name"), def, netplay.GameNameMax,
+	return b.inputBox(under, "inputbox.title.game_name", def, netplay.GameNameMax,
 		func(name string) *origTransition {
 			sc, err := b.startNetLobby(name)
 			if err != nil {
@@ -351,7 +351,7 @@ func (b *sceneBuilder) startNetLobby(name string) (origScreen, error) {
 		seed = b.session.EventSeed
 	}
 	if name == "" {
-		name = b.tr("主機玩家", "Host")
+		name = uiText(b.lang, "network.host.default_name")
 	}
 	netOpts := configuredNetplayOptions()
 	lb, err := netplay.HostWithOptions(netLobbyAddr, name, seed, netOpts)

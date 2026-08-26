@@ -117,7 +117,7 @@ func TestInputBoxCountsRunesNotBytes(t *testing.T) {
 // 初值超過上限時要先截掉,而不是讓緩衝區一開始就違規。
 func TestInputBoxTruncatesInitialValue(t *testing.T) {
 	b := &sceneBuilder{}
-	s := b.inputBox(nil, "標題", "ABCDEFGHIJKL", 8, nil)
+	s := b.inputBox(nil, "inputbox.title.game_name", "ABCDEFGHIJKL", 8, nil)
 	if s.Text() != "ABCDEFGH" {
 		t.Errorf("初值應截到 8 字元,實得 %q", s.Text())
 	}
@@ -127,7 +127,7 @@ func TestInputBoxTruncatesInitialValue(t *testing.T) {
 func TestInputBoxTrimsOnAccept(t *testing.T) {
 	var got string
 	b := &sceneBuilder{}
-	s := b.inputBox(nil, "標題", "  192.168.1.20:24501  ", 45,
+	s := b.inputBox(nil, "inputbox.title.host_address", "  192.168.1.20:24501  ", 45,
 		func(v string) *origTransition { got = v; return nil })
 	s.accept()
 	if got != "192.168.1.20:24501" {

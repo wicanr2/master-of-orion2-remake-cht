@@ -6893,7 +6893,7 @@ func (a *interactiveApp) Update() error {
 	// 截圖廊專用:文字輸入彈窗(原版 Remapped_Input_Box_Popup_),疊在目前畫面上。
 	if a.galleryInputBoxTick > 0 && a.tick == a.galleryInputBoxTick && a.galleryBuilder != nil {
 		ib := a.galleryBuilder.inputBox(a.cur,
-			a.galleryBuilder.tr("輸入主機位址", "Enter host address"),
+			"inputbox.title.host_address",
 			"192.168.1.20:24501", 45, nil)
 		ib.scriptOK = true // 截圖廊不吃鍵盤,否則腳本的按鍵會被它收走
 		a.cur = ib

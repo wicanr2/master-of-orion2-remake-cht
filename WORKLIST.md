@@ -157,6 +157,16 @@
   `sub_D108B @ 0xD108B..0xD10D2` 與 `sub_D10EE @ 0xD10EE..0xD2754` 都稱為
   `Refit_Cost_` 的混用；後者會呼叫前者，兩者必須分開引用。remake 的單頁自動最佳模板仍是
   已揭露的設計庫替代 UX，不因文案與版面完成而升格為原版兩階段 popup parity。
+  共用文字輸入彈窗已完成第十七個切片：`inputBox` API 改收 `ui.json` title key，不再接受已翻譯
+  自由句子；對局名稱、直接主機位址、ACCEPT、Enter／Esc 提示與主機預設名均已外部化，三個現有
+  caller 皆改用穩定鍵。標題、輸入內容＋游標、98×28 按鈕與底部提示各有雙軸安全框；實際 glyph
+  量測修正舊程式把字級當字高、以及提示中心回侵按鈕的問題。IDA Pro 9.4 本輪確認
+  `sub_91B89 @ 0x91B89..0x91BB4`、`sub_91BB4 @ 0x91BB4..0x91BD4`、
+  `sub_91BD4 @ 0x91BD4..0x91F14`、`sub_91F14 @ 0x91F14..0x9222A` 與
+  `sub_F5777 @ 0xF5777..0xF5883` 的獨立邊界及 caller 鏈。現代 IME、Enter／Esc 與 30-frame
+  caret 維持明標平台近似，不為 Win95 掃描碼 API 內部另開 RE。Docker + Xvfb 中文畫廊已重跑
+  35/35；首次截圖證明按鈕下方提示仍壓到 `INBOX` 美術邊框，現移到輸入欄與按鈕間的 20px 空帶，
+  第二次 `34_inputbox.png` 目視確認標題、內容、提示與 ACCEPT 均未互相侵入或超出彈窗。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
@@ -190,7 +200,9 @@
   [`docs/re/research-choice-ui-text-audit-20260826.md`](docs/re/research-choice-ui-text-audit-20260826.md) 與
   [`docs/tech/research-choice-external-text-spec.md`](docs/tech/research-choice-external-text-spec.md)、
   [`docs/re/refit-ui-text-audit-20260827.md`](docs/re/refit-ui-text-audit-20260827.md) 與
-  [`docs/tech/refit-external-text-spec.md`](docs/tech/refit-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+  [`docs/tech/refit-external-text-spec.md`](docs/tech/refit-external-text-spec.md)、
+  [`docs/re/input-box-ui-text-audit-20260827.md`](docs/re/input-box-ui-text-audit-20260827.md) 與
+  [`docs/tech/input-box-external-text-spec.md`](docs/tech/input-box-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
 
 - [~] **原版對局內 SETTINGS 分頁**：2026-08-26 已完成原版 13 列畫面、資產、外部雙語文案、
   原版預設值、`.GAM` 匯入與 JSON 往返。IDA 證實
