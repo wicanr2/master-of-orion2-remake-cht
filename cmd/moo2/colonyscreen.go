@@ -102,7 +102,7 @@ var (
 // 以下安全框全由 COLPUPS.LBX#5 的三個內凹面板量得。動態字不能只有限寬：
 // 左欄的未同化提示會搶到底部人口列，中欄的建築清單也會搶到面板下緣，故一併限定高度。
 func colonyLeftTitleTextRect() textSafeRect {
-	return textSafeRect{x: colPanelLX + 5, y: colPanelLY + 6, w: colPanelLW - 10, h: 14}
+	return textSafeRect{x: colPanelLX + 5, y: colPanelLY + 4, w: colPanelLW - 10, h: 18}
 }
 
 func colonyLeftRowsTextRect(hasAssimilation bool) textSafeRect {
@@ -115,11 +115,11 @@ func colonyLeftRowsTextRect(hasAssimilation bool) textSafeRect {
 }
 
 func colonyAssimilationTextRect() textSafeRect {
-	return textSafeRect{x: colPanelLX + 5, y: colPanelLY + colPanelLH - 32, w: colPanelLW - 10, h: 12}
+	return textSafeRect{x: colPanelLX + 5, y: colPanelLY + colPanelLH - 34, w: colPanelLW - 10, h: 16}
 }
 
 func colonyPopulationTextRect() textSafeRect {
-	return textSafeRect{x: colPanelLX + 5, y: colPanelLY + colPanelLH - 16, w: colPanelLW - 10, h: 12}
+	return textSafeRect{x: colPanelLX + 5, y: colPanelLY + colPanelLH - 17, w: colPanelLW - 10, h: 16}
 }
 
 func colonyOutputTextRect(column, row int) textSafeRect {
@@ -140,7 +140,7 @@ func colonyOutputTextRect(column, row int) textSafeRect {
 }
 
 func colonyBuildingsTitleTextRect() textSafeRect {
-	return textSafeRect{x: colPanelMX + 6, y: colPanelMY + 44, w: colPanelMW - 12, h: 13}
+	return textSafeRect{x: colPanelMX + 6, y: colPanelMY + 44, w: colPanelMW - 12, h: 16}
 }
 
 func colonyBuildingsListTextRect() textSafeRect {
@@ -149,19 +149,19 @@ func colonyBuildingsListTextRect() textSafeRect {
 }
 
 func colonyJobTextRect(row, field int) textSafeRect {
-	y := colJobY0 + row*colJobStep + 6
+	y := colJobY0 + row*colJobStep + 4
 	switch field {
 	case 0: // 職業名
-		return textSafeRect{x: colJobX0 + 10, y: y, w: 56, h: 14}
+		return textSafeRect{x: colJobX0 + 10, y: y, w: 56, h: 18}
 	case 1: // 人數
-		return textSafeRect{x: colJobX0 + 70, y: y, w: 50, h: 14}
+		return textSafeRect{x: colJobX0 + 70, y: y, w: 50, h: 18}
 	default: // 操作提示
-		return textSafeRect{x: colJobX1 - 56, y: y, w: 50, h: 14}
+		return textSafeRect{x: colJobX1 - 56, y: y, w: 50, h: 18}
 	}
 }
 
 func colonyButtonTextRect(x, y, w, h int) textSafeRect {
-	return textSafeRect{x: x + 3, y: y + 3, w: w - 6, h: h - 6, insetX: 3, insetY: 2}
+	return textSafeRect{x: x + 3, y: y + 1, w: w - 6, h: h - 2}
 }
 
 // colonyScreen 建單一殖民地畫面。操作的殖民地由 b.colonyIdx 指定。
@@ -195,12 +195,12 @@ func (b *sceneBuilder) colonyScreen() (*overlayScreen, error) {
 		s := b.session
 		switch {
 		case a == "return":
-			return b.goTo(b.colonySummary, "殖民地總覽")
+			return b.goTo(b.colonySummary, uiText(b.lang, "colony.transition.summary"))
 		case a == "leaders":
 			// 原版這顆直接開殖民地領袖分頁；保留殖民地索引讓下一步指派有明確目標。
 			b.officerTab = 0
 			b.colonyIdx = idx
-			return b.goTo(b.officer, "軍官列表")
+			return b.goTo(b.officer, uiText(b.lang, "colony.transition.officers"))
 		case a == "job_f":
 			s.ShiftColonyJob(idx, "w", "f")
 		case a == "job_w":
@@ -215,12 +215,12 @@ func (b *sceneBuilder) colonyScreen() (*overlayScreen, error) {
 			return &origTransition{next: sc}
 		case a == "buy":
 			if _, ok := s.BuyCurrentBuild(idx); ok {
-				return b.goTo(b.colonyScreen, "殖民地")
+				return b.goTo(b.colonyScreen, uiText(b.lang, "colony.transition.colony"))
 			}
 		default:
 			return nil
 		}
-		return b.goTo(b.colonyScreen, "殖民地") // 重繪反映新狀態
+		return b.goTo(b.colonyScreen, uiText(b.lang, "colony.transition.colony")) // 重繪反映新狀態
 	}
 
 	s, err := loadOverlayScreen(b.res, "colsum.lbx", 0, b.lang, b.fnt, "colony.json",
@@ -281,21 +281,25 @@ func (b *sceneBuilder) drawColonyScreen(dst *ebiten.Image, idx int) {
 	// 道路夾在地形與框架之間,和原版 `Draw_Colony_Screen_` 的呼叫序一致。
 	surf := b.colonySurfaceLayout(idx)
 	b.drawColonyRoads(dst, surf.roads)
-	if im := b.colonyChrome(); im != nil {
-		drawPanelImage(dst, im, &ebiten.DrawImageOptions{})
+	chrome := b.colonyChrome()
+	if chrome != nil {
+		drawPanelImage(dst, chrome, &ebiten.DrawImageOptions{})
 	}
 	b.drawColonyBuildings(dst, surf)
 	b.drawColonySatellites(dst, idx)
 	b.drawColonyTopBar(dst, idx, c)
 
 	// 兩顆鈕的英文(LEADERS / RETURN)烘在框架圖上,照既有做法擦底疊中文。
-	drawBtn := func(y, h int, zh string) {
+	drawBtn := func(y, h int, textKey string) {
+		if b.lang != i18n.Traditional && chrome != nil {
+			return
+		}
 		fillPanel(dst, float32(colBtnX+3), float32(y+3),
 			float32(colBtnW-6), float32(h-6), color.RGBA{72, 76, 84, 255}, false)
-		colonyButtonTextRect(colBtnX, y, colBtnW, h).drawCentered(dst, b.fnt, zh, 12, colBodyCol)
+		colonyButtonTextRect(colBtnX, y, colBtnW, h).drawCentered(dst, b.fnt, uiText(b.lang, textKey), 12, colBodyCol)
 	}
-	drawBtn(colLeadersY, colLeadersH, b.tr("領袖", "LEADERS"))
-	drawBtn(colReturnY, colReturnH, b.tr("返回", "RETURN"))
+	drawBtn(colLeadersY, colLeadersH, "colony.button.leaders")
+	drawBtn(colReturnY, colReturnH, "colony.button.return")
 
 	// CHANGE / BUY 也是烘在框架上的英文。
 	// **CHANGE 已接上**(2026-08-07):原版它就是「換要蓋什麼」,中段還給行星表面之後
@@ -304,19 +308,22 @@ func (b *sceneBuilder) drawColonyScreen(dst *ebiten.Image, idx int) {
 	// 國庫足夠時亮起，讓視覺狀態、熱區和規則端 CanBuyCurrentBuild 共用同一條判斷。
 	for _, btn := range []struct {
 		x, y, w, h int
-		zh         string
+		textKey    string
 		on         bool
 	}{
-		{colChangeX, colChangeY, colChangeW, colChangeH, b.tr("更換", "CHANGE"), true},
-		{colBuyX, colChangeY, colBuyW, colChangeH, b.tr("購買", "BUY"), sess.CanBuyCurrentBuild(idx)},
+		{colChangeX, colChangeY, colChangeW, colChangeH, "colony.button.change", true},
+		{colBuyX, colChangeY, colBuyW, colChangeH, "colony.button.buy", sess.CanBuyCurrentBuild(idx)},
 	} {
+		if b.lang != i18n.Traditional && chrome != nil && btn.on {
+			continue
+		}
 		face, ink := color.RGBA{112, 116, 120, 255}, color.RGBA{72, 74, 78, 255}
 		if btn.on { // CHANGE 接上建造視窗了,不再畫成灰的
 			face, ink = color.RGBA{74, 88, 74, 255}, color.RGBA{225, 240, 225, 255}
 		}
 		fillPanel(dst, float32(btn.x+3), float32(btn.y+3),
 			float32(btn.w-6), float32(btn.h-6), face, false)
-		colonyButtonTextRect(btn.x, btn.y, btn.w, btn.h).drawCentered(dst, b.fnt, btn.zh, 11, ink)
+		colonyButtonTextRect(btn.x, btn.y, btn.w, btn.h).drawCentered(dst, b.fnt, uiText(b.lang, btn.textKey), 11, ink)
 	}
 }
 
@@ -345,7 +352,7 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 	sess := b.session
 
 	// --- 左面板:殖民地名 + 行星環境 + 人口 ---
-	name := fmt.Sprintf(b.tr("殖民地 %d", "Colony %d"), idx+1)
+	name := fmt.Sprintf(uiText(b.lang, "colony.title.default"), idx+1)
 	// 名字取自**殖民地座落的行星**(同星系可以有多個殖民地,取星的代表行星會撞名)。
 	if n := sess.ColonyName(idx); n != "" {
 		name = n
@@ -360,11 +367,11 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 	// 而且那也讓沒被征服過的殖民地畫面保持原樣。
 	if turns, ok := sess.AssimilationRemainingTurns(idx); ok {
 		colonyAssimilationTextRect().drawLeft(dst, b.fnt,
-			fmt.Sprintf(b.tr("未同化 %d ／還需 %d 回合", "Unassimilated %d / %d turns"),
+			fmt.Sprintf(uiText(b.lang, "colony.assimilation"),
 				c.UnassimilatedPop, turns), 10, colWarnCol)
 	}
 	colonyPopulationTextRect().drawLeft(dst, b.fnt,
-		fmt.Sprintf(b.tr("人口 %d/%d", "Pop %d/%d"), c.Population, c.PopMax), 11, colOkCol)
+		fmt.Sprintf(uiText(b.lang, "colony.population"), c.Population, c.PopMax), 11, colOkCol)
 
 	// --- 中面板:本回合產出 + 已建建築 ---
 	// 產出優先用上一回合的結算(與總覽同一份資料);第 1 回合還沒結算過就即時算一次,
@@ -379,28 +386,27 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 	if co.FoodSurplus < 0 {
 		foodCol = colWarnCol
 	}
-	colonyOutputTextRect(0, 0).drawLeft(dst, b.fnt, fmt.Sprintf(b.tr("食物 %+d", "Food %+d"), co.FoodSurplus), 11, foodCol)
-	colonyOutputTextRect(1, 0).drawLeft(dst, b.fnt, fmt.Sprintf(b.tr("工業 %d", "Ind %d"), co.NetIndustry), 11, colBodyCol)
-	colonyOutputTextRect(0, 1).drawLeft(dst, b.fnt, fmt.Sprintf(b.tr("研究 %d", "Res %d"), co.Research), 11, colBodyCol)
+	colonyOutputTextRect(0, 0).drawLeft(dst, b.fnt, fmt.Sprintf(uiText(b.lang, "colony.output.food"), co.FoodSurplus), 11, foodCol)
+	colonyOutputTextRect(1, 0).drawLeft(dst, b.fnt, fmt.Sprintf(uiText(b.lang, "colony.output.industry"), co.NetIndustry), 11, colBodyCol)
+	colonyOutputTextRect(0, 1).drawLeft(dst, b.fnt, fmt.Sprintf(uiText(b.lang, "colony.output.research"), co.Research), 11, colBodyCol)
 	// MoralePercent 是「對產出的百分點調整」(每格笑臉 +10、哭臉 -10),0 = 無加成也無懲罰,
 	// 不是「士氣只有 0 分」。標成「士氣修正」避免誤讀(見 engine.ColonyState.MoralePercent)。
 	colonyOutputTextRect(1, 1).drawLeft(dst, b.fnt,
-		fmt.Sprintf(b.tr("士氣 %+d%%", "Morale %+d%%"), c.MoralePercent), 11, colBodyCol)
+		fmt.Sprintf(uiText(b.lang, "colony.output.morale"), c.MoralePercent), 11, colBodyCol)
 
-	colonyBuildingsTitleTextRect().drawLeft(dst, b.fnt, b.tr("已建建築", "Buildings"), 11, colTitleCol)
+	colonyBuildingsTitleTextRect().drawLeft(dst, b.fnt, uiText(b.lang, "colony.buildings.title"), 11, colTitleCol)
 	names := sess.ColonyBuildingNames(idx)
 	if len(names) == 0 {
-		colonyBuildingsListTextRect().drawLeft(dst, b.fnt, b.tr("(無)", "(none)"), 10, colDimCol)
+		colonyBuildingsListTextRect().drawLeft(dst, b.fnt, uiText(b.lang, "colony.buildings.none"), 10, colDimCol)
 	} else {
 		sort.Strings(names)
 		displayNames := names
-		separator := "、"
+		separator := uiText(b.lang, "colony.buildings.separator")
 		if b.lang != i18n.Traditional {
 			displayNames = make([]string, len(names))
 			for i, name := range names {
 				displayNames[i] = colonyBuildingLabel(b.lang, name)
 			}
-			separator = ", "
 		}
 		colonyBuildingsListTextRect().drawLeft(dst, b.fnt, strings.Join(displayNames, separator), 10, colOkCol)
 	}
@@ -409,8 +415,8 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 	jobs := []struct {
 		label string
 		n     int
-	}{{b.tr("農夫", "Farmers"), c.Farmers}, {b.tr("工人", "Workers"), c.Workers},
-		{b.tr("科學家", "Scientists"), c.Scientists}}
+	}{{uiText(b.lang, "colony.job.farmers"), c.Farmers}, {uiText(b.lang, "colony.job.workers"), c.Workers},
+		{uiText(b.lang, "colony.job.scientists"), c.Scientists}}
 	for i, j := range jobs {
 		y := colJobY0 + i*colJobStep
 		fillPanel(dst, float32(colJobX0), float32(y),
@@ -418,7 +424,7 @@ func (b *sceneBuilder) drawColonyTopBar(dst *ebiten.Image, idx int, c engine.Col
 		vector.StrokeRect(dst, float32(colJobX0), float32(y),
 			float32(colJobX1-colJobX0), float32(colJobStep-4), 1, colPanelEdge, false)
 		colonyJobTextRect(i, 0).drawLeft(dst, b.fnt, j.label, 12, colTitleCol)
-		colonyJobTextRect(i, 1).drawLeft(dst, b.fnt, fmt.Sprintf(b.tr("%d 人", "%d"), j.n), 12, colBodyCol)
-		colonyJobTextRect(i, 2).drawLeft(dst, b.fnt, b.tr("點此 +1", "click +1"), 10, colDimCol)
+		colonyJobTextRect(i, 1).drawLeft(dst, b.fnt, fmt.Sprintf(uiText(b.lang, "colony.job.count"), j.n), 12, colBodyCol)
+		colonyJobTextRect(i, 2).drawLeft(dst, b.fnt, uiText(b.lang, "colony.job.hint"), 10, colDimCol)
 	}
 }

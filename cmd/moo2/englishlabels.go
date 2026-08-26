@@ -43,7 +43,9 @@ func planetSpecialLabel(lang i18n.Lang, special gamedata.PlanetSpecial) string {
 // 不把中文字串當成英文回傳。
 func colonyPlanetRows(lang i18n.Lang, p shell.Planet) []string {
 	if lang == i18n.Traditional {
-		rows := []string{p.Climate, p.Size, "礦產" + p.Mineral, "重力" + p.Gravity}
+		rows := []string{p.Climate, p.Size,
+			fmt.Sprintf(uiText(lang, "colony.planet.minerals"), p.Mineral),
+			fmt.Sprintf(uiText(lang, "colony.planet.gravity"), p.Gravity)}
 		if sp := planetSpecialLabel(lang, p.SpecialID); sp != "" {
 			rows = append(rows, "★"+sp)
 		}
@@ -51,7 +53,9 @@ func colonyPlanetRows(lang i18n.Lang, p shell.Planet) []string {
 	}
 
 	climate, gravity, minerals, size := planetEnvironmentLabels(lang, p)
-	rows := []string{climate, size, "Minerals " + minerals, "Gravity " + gravity}
+	rows := []string{climate, size,
+		fmt.Sprintf(uiText(lang, "colony.planet.minerals"), minerals),
+		fmt.Sprintf(uiText(lang, "colony.planet.gravity"), gravity)}
 	if sp := planetSpecialLabel(lang, p.SpecialID); sp != "" {
 		rows = append(rows, "★"+sp)
 	}
@@ -70,9 +74,9 @@ func englishEnumName(table [][2]string, zh string) string {
 		}
 	}
 	if strings.TrimSpace(zh) == "" {
-		return "Unknown"
+		return uiText(i18n.English, "common.unknown")
 	}
-	return englishSafeFallback(zh, "Unknown")
+	return englishSafeFallback(zh, uiText(i18n.English, "common.unknown"))
 }
 
 // englishSafeFallback 保留已經是英文／自訂 ASCII 名稱的資料；只有無法翻譯的
@@ -102,7 +106,7 @@ func colonyBuildingLabel(lang i18n.Lang, name string) string {
 	if a, ok := gamedata.SpecialActionByNameZH(name); ok {
 		return a.NameEN
 	}
-	return englishSafeFallback(name, "Unknown Build")
+	return englishSafeFallback(name, uiText(i18n.English, "common.unknown_build"))
 }
 
 // buildItemLabel 轉換建造佇列裡的常駐建築、Special action 與兩個特殊設定。

@@ -67,7 +67,15 @@
   已改成雙軸安全框，舊 `y=470` 越界訊息移到佇列上方兩行區。IDA 另證實 `func_names.txt` 把
   `Draw_Build_Queue_Popup_` 錯放在 5-byte thunk `0xB3E75`，完整繪製函式實為
   `sub_B3CF7 @ 0xB3CF7..0xB3E75`；`0xB08CA`／`0xB094C` 則是兩個相鄰且都被呼叫的函式，
-  後者精確語意維持未知。其餘自繪畫面仍待逐批遷移；通用規格見
+  後者精確語意維持未知。殖民地主畫面已完成第六個切片：按鈕、轉場、行星前綴、同化／人口、
+  產出、建築與職業文案均改用 `ui.json`，所有文字走雙軸安全框；職業列依 IDA 的
+  x=`310..510`、y=`62+30i` 保持原位並補足實際字墨高度，按鈕移除重複 inset。IDA 同時證實
+  完整 `Colony_Screen_` caller 鏈位於 `sub_C058A @ 0xC058A..0xC0965`，而
+  `func_names.txt` 的 `0xC0965` 是無 caller 的相鄰小函式。35 張中文畫廊已重跑；腳本先解除
+  新局研究 application gate，正常第一回合存為回合摘要。原版一般事件至少第 50 回合才可能出現，
+  事件圖改用外部 JSON 雙語固定戰報，只作版面驗證，不再把研究頁或第一回合誤標成事件。
+  目視抽查事件、回合摘要、殖民地主畫面與最終得分，檔名與內容一致且文字未越框。
+  其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
   [`docs/spec/netinfo-external-text.md`](docs/spec/netinfo-external-text.md)、
@@ -78,7 +86,9 @@
   [`docs/re/info-subscreen-text-audit-20260826.md`](docs/re/info-subscreen-text-audit-20260826.md) 與
   [`docs/tech/info-subscreen-external-text-spec.md`](docs/tech/info-subscreen-external-text-spec.md)、
   [`docs/re/build-queue-ui-text-audit-20260826.md`](docs/re/build-queue-ui-text-audit-20260826.md) 與
-  [`docs/tech/build-queue-external-text-spec.md`](docs/tech/build-queue-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+  [`docs/tech/build-queue-external-text-spec.md`](docs/tech/build-queue-external-text-spec.md)、
+  [`docs/re/colony-screen-ui-text-audit-20260826.md`](docs/re/colony-screen-ui-text-audit-20260826.md) 與
+  [`docs/tech/colony-screen-external-text-spec.md`](docs/tech/colony-screen-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`
   已把本次錯判提煉成跨專案流程，涵蓋重新稽核觸發條件、具名符號限制、玩家機制證據矩陣、

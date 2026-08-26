@@ -5995,8 +5995,10 @@ type interactiveApp struct {
 	galleryDir   string
 	galleryShots []galleryShot
 	galleryDone  int
+	// galleryEventTick 是截圖廊顯示固定事件戰報的 tick；只驗證版面，不注入玩法狀態。
+	galleryEventTick int
 	// galleryVictoryTick 是截圖廊專用:在這個 tick 把對局設成「已分出勝負」,好讓導覽腳本
-	// 走得到最終得分畫面。與上面 EventSeed=1 同一個理由——那條路徑靠正常遊玩要好幾百回合,
+	// 走得到最終得分畫面。那條路徑靠正常遊玩要好幾百回合,
 	// 截圖驗證等不起。只在截圖廊模式下設值,正常遊戲恆為 0(不觸發)。
 	galleryVictoryTick int
 	// galleryFleetTick 是截圖廊在哪個 tick 給艦隊注入結構損傷 + 次元傳送門
@@ -6108,6 +6110,10 @@ func (a *interactiveApp) drawPromoCursor(dst *ebiten.Image) {
 // galleryVictoryTick 是截圖廊在哪個 tick 把對局設成「已分出勝負」——必須早於腳本裡
 // 「按 TURN 進最終得分」那一拍(t29),取它的前一拍。
 const galleryVictoryTick = 38
+
+// 原版一般事件至少要到第 50 回合；短畫廊在此顯示外部文案組成的固定戰報，
+// 僅驗證事件畫面，不宣稱這是第一回合的玩法結果。
+const galleryEventTick = 16
 
 // galleryFleetTick 是截圖廊在哪個 tick 給艦隊注入結構損傷 + 次元傳送門——取「進艦隊列表」
 // 那一拍(t19)的前一拍。
@@ -6259,16 +6265,17 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		idle,            // t10: settle
 		idle,            // t11: settle → 截圖 galaxy
 
-		// 事件快報排在最前面:「星系主畫面按 TURN」是最短、最不依賴前置狀態的路徑,
-		// 截圖廊固定了會觸發事件的 seed(見 runInteractive),所以這一步必定走到快報畫面。
-		// (先前把它排在戰鬥之後,只要中間任何一步的座標過期就整串偏掉——2026-08-06 踩過。)
-		click(589, 458), // t12: 「結束回合」→ 事件快報
-		idle,            // t13: settle
-		idle,            // t14: settle → 截圖 event
-		click(320, 384), // t15: 事件快報「繼續」→ 回合摘要
-		idle,            // t16: settle → 截圖 turnsummary
-		click(320, 393), // t17: 回合摘要「關閉」→ 星系主畫面
-		idle,            // t18: settle
+		// 第一個正常世界回合只會進回合摘要；原版一般事件至少要到第 50 回合，
+		// 因此事件版面另由 galleryEventTick 的固定戰報驗證。
+		// 新對局尚未選研究 application；第一次按 TURN 會先進入 researchChoice，
+		// 不會結算世界。舊腳本漏掉這個正常玩家 gate，導致 t14..t74 全拍成同一張研究畫面。
+		click(589, 458), // t12: 第一次「結束回合」→ 選擇研究 application
+		click(320, 173), // t13: 選第一項 application → 回星系
+		click(589, 458), // t14: 再按「結束回合」→ 回合摘要並截圖
+		click(320, 393), // t15: 回合摘要「關閉」→ 星系主畫面
+		idle,            // t16: galleryEventTick 顯示固定事件戰報並截圖
+		click(320, 384), // t17: 事件快報「繼續」→ 回合摘要
+		click(320, 393), // t18: 回合摘要「關閉」→ 星系主畫面
 
 		// 艦隊列表 + 安塔蘭王座廳。排在最終得分**之前**,王座廳才照得到「按鈕可用」的樣子
 		// ——勝負一旦定了,前置條件第一條就先擋掉(見 AssaultAntaresBlockReason)。
@@ -6297,7 +6304,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 
 		// 最終得分畫面:對局分出勝負後按 TURN 就會進去(見 interactive.go 的 turn 分支)。
 		// 勝負由 galleryVictoryTick 在下面第一拍前設好——那條路徑正常玩要幾百回合才走得到,
-		// 截圖驗證等不起,與上面固定 EventSeed 是同一個理由。
+		// 截圖驗證等不起。
 		click(589, 458), // t39: 「結束回合」→ 最終得分
 		idle,            // t40: settle
 		idle,            // t41: settle → 截圖 hiscore
@@ -6419,8 +6426,8 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{6, "02_raceselect.png"},
 		{8, "03_nameflag.png"},
 		{11, "04_galaxy.png"},
-		{14, "05_event.png"},
-		{16, "06_turnsummary.png"},
+		{14, "06_turnsummary.png"},
+		{16, "05_event.png"},
 		{21, "07_fleet.png"},
 		{24, "08_antaranroom.png"},
 		{31, "09_colonysummary.png"},
@@ -6657,6 +6664,21 @@ func (a *interactiveApp) Update() error {
 			Over: true, Reason: engine.VictoryAntaran, Winner: "player", Turn: a.gallerySession.Turn,
 		}
 		a.gallerySession.AntaranHomeworldConquered = true
+	}
+	// 截圖廊專用：一般事件最早第 50 回合才可能發生，短畫廊只用固定雙語戰報
+	// 驗證事件視窗版面；不呼叫事件規則，也不修改對局經濟或殖民地狀態。
+	if a.galleryEventTick > 0 && a.tick == a.galleryEventTick && a.galleryBuilder != nil && a.gallerySession != nil {
+		a.gallerySession.LastEventReport = &shell.EventReport{
+			EventID:   -1,
+			Good:      true,
+			Name:      uiText(i18n.Traditional, "gallery.event.name"),
+			NameEN:    uiText(i18n.English, "gallery.event.name"),
+			Message:   uiText(i18n.Traditional, "gallery.event.message"),
+			MessageEN: uiText(i18n.English, "gallery.event.message"),
+		}
+		if sc, err := a.galleryBuilder.eventScreen(); err == nil {
+			a.cur = sc
+		}
 	}
 	// 截圖廊專用:艦隊列表勾兩艘船,讓「拆成新艦隊」那一行出現在截圖裡
 	// (不勾就永遠看不到,那一層等於沒被驗到)。
@@ -7000,10 +7022,6 @@ func runInteractive(versionAssets versionAssetDirs, initial gamedata.GameVersion
 			return fmt.Errorf("建立過場截圖目錄 %q: %w", galleryDir, err)
 		}
 		script, shots = buildGalleryScript()
-		// 截圖廊要驗證「事件快報畫面」,但隨機事件每回合只有 30% 機率,靠連按碰運氣既慢又不穩。
-		// 固定成一個已知「第一次 EndTurn 就觸發」的種子(見 events.go;seed 1 → 古代遺骸科技),
-		// 讓這條驗收路徑每次都走得到事件畫面。只影響截圖廊模式,不影響正常遊戲。
-		b.session.EventSeed = 1
 	}
 
 	// 預設放大 2 倍(headless 驗證/截圖廊維持 1 倍);視窗可自由拉伸,內容等比縮放置中。
@@ -7023,6 +7041,7 @@ func runInteractive(versionAssets versionAssetDirs, initial gamedata.GameVersion
 		galleryDir: galleryDir, galleryShots: shots, b: b}
 	if galleryDir != "" {
 		app.gallerySession = b.session
+		app.galleryEventTick = galleryEventTick
 		// t29 是腳本裡「按 TURN 進最終得分」那一拍;勝負必須在它之前設好,故取 t28。
 		app.galleryVictoryTick = galleryVictoryTick
 		app.galleryFleetTick = galleryFleetTick
