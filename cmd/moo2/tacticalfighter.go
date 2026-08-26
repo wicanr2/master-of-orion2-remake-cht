@@ -101,7 +101,7 @@ func (t *tacticalScreen) launchFrom(idx int) {
 	squadron.FighterPilotBonus = s.FighterPilotBonus
 	squadron.FighterHelmsmanBonus = s.FighterHelmsmanBonus
 	t.squads = append(t.squads, squadron)
-	t.log = fmt.Sprintf(t.b.tr("%s 派出一隊%s(%d 架)", "%s launches a %s squadron (%d craft)"),
+	t.log = fmt.Sprintf(uiText(t.b.lang, "tactical.fighter.log.launch"),
 		s.Name, fighterKindLabel(t.b.lang, kind), t.squads[len(t.squads)-1].Alive)
 }
 
@@ -238,7 +238,7 @@ func (t *tacticalScreen) advanceSquadrons() (damage int) {
 			}
 			if f.StepToward(carrier.Col, carrier.Row) {
 				f.Recover()
-				t.log = t.b.tr("戰機返航補給,可再次出擊", "Fighters recovered — ready to launch again")
+				t.log = uiText(t.b.lang, "tactical.fighter.log.recovered")
 			}
 			continue
 		}
@@ -439,14 +439,15 @@ func (t *tacticalScreen) drawSquadrons(dst *ebiten.Image) {
 		if t.fnt == nil {
 			continue
 		}
-		mark := "◇" // 攔截機
+		mark := uiText(t.b.lang, "tactical.fighter.glyph.interceptor")
 		if f.Kind == shell.FighterHeavy {
-			mark = "◆"
+			mark = uiText(t.b.lang, "tactical.fighter.glyph.heavy")
 		}
 		if f.Returning {
-			mark = "↩"
+			mark = uiText(t.b.lang, "tactical.fighter.glyph.returning")
 		}
-		t.fnt.DrawCentered(dst, fmt.Sprintf("%s%d", mark, f.Alive), float64(x)+12, float64(y)+12, 10, col)
+		textSafeRect{x: int(x), y: int(y), w: 24, h: 16, insetX: 1, insetY: 1}.drawCentered(
+			dst, t.fnt, fmt.Sprintf("%s%d", mark, f.Alive), 10, col)
 	}
 }
 
@@ -461,8 +462,8 @@ func (t *tacticalScreen) drawLaunchButton(dst *ebiten.Image) {
 	vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1,
 		color.RGBA{120, 220, 235, 255}, false)
 	drawHoverBorder(dst, float32(x), float32(y), float32(w), float32(h), pointInRect(t.hoverX, t.hoverY, x, y, w, h))
-	label := t.b.tr("▶ 出擊", "▶ LAUNCH")
-	t.fnt.DrawCentered(dst, label, float64(x+w/2), float64(y+h/2)+4, 12, color.RGBA{225, 245, 250, 255})
+	textSafeRect{x: x, y: y, w: w, h: h, insetX: 5, insetY: 3}.drawCentered(dst, t.fnt,
+		uiText(t.b.lang, "tactical.fighter.button.launch"), 12, color.RGBA{225, 245, 250, 255})
 }
 
 // squadronStatusLine 回傳控制列上方要顯示的中隊摘要(沒有中隊就回空字串)。
@@ -481,7 +482,7 @@ func (t *tacticalScreen) squadronStatusLine() string {
 	if n == 0 {
 		return ""
 	}
-	return fmt.Sprintf(t.b.tr("戰機:%d 隊 %d 架在場", "Fighters: %d squadrons, %d craft"), n, craft)
+	return fmt.Sprintf(uiText(t.b.lang, "tactical.fighter.status.active"), n, craft)
 }
 
 // resolveShuttleBoarding 是突擊艇抵達目標時的登艦結算(第 80 項(登艦戰))。
@@ -516,10 +517,8 @@ func (t *tacticalScreen) resolveShuttleBoarding(f *shell.FighterSquadron, e *she
 	if res.Captured {
 		e.HP = 0
 		e.Captured = true
-		t.log = fmt.Sprintf(t.b.tr("登艦成功:%s 的守軍全滅,該艦被奪下",
-			"Boarded: %s's crew is wiped out — the ship is taken"), combatShipLabel(t.b.lang, t.b.session, e.Name))
+		t.log = fmt.Sprintf(uiText(t.b.lang, "tactical.fighter.log.boarding_success"), combatShipLabel(t.b.lang, t.b.session, e.Name))
 		return
 	}
-	t.log = fmt.Sprintf(t.b.tr("登艦失敗:%s 還剩 %d 隊守軍",
-		"Boarding repelled: %s still has %d marine units"), combatShipLabel(t.b.lang, t.b.session, e.Name), res.DefenderSurvived)
+	t.log = fmt.Sprintf(uiText(t.b.lang, "tactical.fighter.log.boarding_failed"), combatShipLabel(t.b.lang, t.b.session, e.Name), res.DefenderSurvived)
 }

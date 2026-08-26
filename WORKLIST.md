@@ -304,6 +304,17 @@
   維持既有近似，不因本輪版面與文案完成而升格。證據與規格見
   [`docs/re/diplomacy-request-lights-audit-20260827.md`](docs/re/diplomacy-request-lights-audit-20260827.md) 與
   [`docs/spec/diplomacy-request-light-external-text.md`](docs/spec/diplomacy-request-light-external-text.md)。
+  格子戰術戰機介面已完成第三十二個切片：出擊、返航、場上摘要、登艦結果與三種 token glyph
+  共九組固定文案全部由 `ui.json` 提供，`tacticalfighter.go` 不再呼叫 `tr` 或直接呼叫字型繪製。
+  90×26 出擊鈕與 24×16 中隊 token 均以 `textSafeRect` 約束，按鈕文字框與命中框共用邊界。
+  原版 `sub_3AC20`／`sub_3AD57`／`sub_3D2DF` 只支撐既有 runtime 玩法證據；標題列出擊鈕、
+  單 token 與 glyph 是明標 remake adapter，不升格為原版逐架動畫。IDA 專用映像本輪因
+  IDAPython 未設定及授權不可用而無法產生新匯出，已如實記為工具鏈阻塞；既有結論未升格。
+  Docker＋Xvfb 繁中畫廊已完成 35/35，目視抽查 `16_tactical.png`，出擊戰報與 `◇4` token
+  均在各自框內，未侵入相鄰艦艇名稱或控制列。
+  證據與規格見
+  [`docs/re/tactical-fighter-text-layout-audit-20260827.md`](docs/re/tactical-fighter-text-layout-audit-20260827.md) 與
+  [`docs/spec/tactical-fighter-text-layout.md`](docs/spec/tactical-fighter-text-layout.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與

@@ -1287,5 +1287,14 @@
   {"key":"audience.reason.war.glyph","english":"W","value":"戰","note":"remake 外交請求燈來意 glyph；原版使用逐種族動畫"},
   {"key":"audience.reason.trade.glyph","english":"T","value":"貿","note":"remake 外交請求燈來意 glyph；原版使用逐種族動畫"},
   {"key":"audience.reason.alliance.glyph","english":"A","value":"盟","note":"remake 外交請求燈來意 glyph；原版使用逐種族動畫"},
-  {"key":"audience.reason.unknown.glyph","english":"?","value":"談","note":"未知會談來意安全後備；remake adapter"}
+  {"key":"audience.reason.unknown.glyph","english":"?","value":"談","note":"未知會談來意安全後備；remake adapter"},
+  {"key":"tactical.fighter.log.launch","english":"%s launches a %s squadron (%d craft)","value":"%s 派出一隊%s（%d 架）","note":"依序為母艦名、戰機型別與架數"},
+  {"key":"tactical.fighter.log.recovered","english":"Fighters recovered — ready to launch again","value":"戰機返航補給，可再次出擊","note":"中隊回到母艦後的戰鬥訊息"},
+  {"key":"tactical.fighter.glyph.interceptor","english":"◇","value":"◇","note":"remake 中隊 token：攔截機"},
+  {"key":"tactical.fighter.glyph.heavy","english":"◆","value":"◆","note":"remake 中隊 token：重戰機"},
+  {"key":"tactical.fighter.glyph.returning","english":"↩","value":"↩","note":"remake 中隊 token：返航"},
+  {"key":"tactical.fighter.button.launch","english":"▶ LAUNCH","value":"▶ 出擊","note":"remake 標題列戰機出擊按鈕"},
+  {"key":"tactical.fighter.status.active","english":"Fighters: %d squadrons, %d craft","value":"戰機：%d 隊，%d 架在場","note":"戰術控制列中隊摘要"},
+  {"key":"tactical.fighter.log.boarding_success","english":"Boarded: %s's crew is wiped out — the ship is taken","value":"登艦成功：%s 的守軍全滅，該艦被奪下","note":"%s 為目標艦名"},
+  {"key":"tactical.fighter.log.boarding_failed","english":"Boarding repelled: %s still has %d marine units","value":"登艦失敗：%s 還剩 %d 隊守軍","note":"依序為目標艦名與守軍數"}
 ]
