@@ -708,6 +708,92 @@ func TestAIPollutionBuildingsCandidateAndCompletion(t *testing.T) {
 	}
 }
 
+func TestOriginalAIPlanetaryGravityGeneratorScore(t *testing.T) {
+	b, ok := gamedata.BuildingByNameZH("行星重力產生器")
+	if !ok {
+		t.Fatal("行星重力產生器不存在")
+	}
+	tests := []struct {
+		name     string
+		low      bool
+		high     bool
+		gravity  gamedata.PlanetGravity
+		wantBase int
+	}{
+		{"一般-LowG星", false, false, gamedata.LOW_G, 3},
+		{"一般-NormalG星", false, false, gamedata.NORMAL_G, 0},
+		{"一般-HeavyG星", false, false, gamedata.HEAVY_G, 6},
+		{"LowG族-LowG星", true, false, gamedata.LOW_G, 0},
+		{"LowG族-NormalG星", true, false, gamedata.NORMAL_G, 3},
+		{"LowG族-HeavyG星", true, false, gamedata.HEAVY_G, 6},
+		{"HighG族-LowG星", false, true, gamedata.LOW_G, 3},
+		{"HighG族-NormalG星", false, true, gamedata.NORMAL_G, 0},
+		{"HighG族-HeavyG星", false, true, gamedata.HEAVY_G, 0},
+		{"雙trait採HighG-LowG星", true, true, gamedata.LOW_G, 3},
+		{"雙trait採HighG-HeavyG星", true, true, gamedata.HEAVY_G, 0},
+	}
+	for _, tt := range tests {
+		colony := engine.ColonyState{PlanetGravity: tt.gravity}
+		ctx := originalAIBuildScoreContext{
+			ownerLowGravity: tt.low, ownerHighGravity: tt.high, priorityGate: true,
+		}
+		if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic, ctx); !exact || score != tt.wantBase {
+			t.Errorf("%s 一般分數=(%d,%v)，want (%d,true)", tt.name, score, exact, tt.wantBase)
+		}
+		wantPacifist := tt.wantBase
+		if wantPacifist > 0 {
+			wantPacifist++
+		}
+		if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, ctx); !exact || score != wantPacifist {
+			t.Errorf("%s Pacifist 分數=(%d,%v)，want (%d,true)", tt.name, score, exact, wantPacifist)
+		}
+	}
+}
+
+func TestAIPlanetaryGravityGeneratorCandidateCompletionAndConsumer(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	a.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{gamedata.TOPIC_ARTIFICIAL_GRAVITY: true}
+	a.Colonies[0] = completeAIFoodScoreColony()
+	a.Colonies[0].PlanetGravity = gamedata.NORMAL_G
+	a.Colonies[0].IndustryPerWorker = 4
+	a.Colonies[0].PopulationGroups[0].Gravity = gamedata.LOW_G
+	a.ColonyBuildings[0] = make(map[string]bool)
+	for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
+		a.ColonyBuildings[0][b.NameZH] = true
+	}
+	delete(a.ColonyBuildings[0], "行星重力產生器")
+	gravityBuilding, found := gamedata.BuildingByNameZH("行星重力產生器")
+	if !found {
+		t.Fatal("行星重力產生器不存在")
+	}
+	ctx := originalAIBuildScoreContext{
+		ownerLowGravity:  aiRaceHasTrait(*a, gamedata.TRAIT_LOW_G),
+		ownerHighGravity: aiRaceHasTrait(*a, gamedata.TRAIT_HIGH_G),
+	}
+	if score, exact := originalAIExactBuildingScore(gravityBuilding, a.Colonies[0], a.Personality, ctx); !exact || score <= 0 {
+		t.Fatalf("測試前提：Low-G owner 在 Normal-G 星球的重力產生器應有正分：score=%d exact=%v low=%v high=%v",
+			score, exact, ctx.ownerLowGravity, ctx.ownerHighGravity)
+	}
+	before := engine.RunColonyTurn(a.Colonies[0])
+	out := engine.EmpireOutput{Colonies: []engine.ColonyOutput{{NetIndustry: 20}}}
+	build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1)
+	if !ok || build.Name != "行星重力產生器" {
+		t.Fatalf("唯一候選錯誤：build=%+v ok=%v", build, ok)
+	}
+	key := aiColonyBuildKey(a, 0)
+	a.ColonyBuilds = map[int]ColonyBuild{key: {Name: "行星重力產生器", Cost: 1}}
+	s.advanceAIColonyBuilds(0, out)
+	after := engine.RunColonyTurn(a.Colonies[0])
+	if !a.ColonyBuildings[0]["行星重力產生器"] || !a.Colonies[0].NormalizeGravity {
+		t.Fatalf("完工未寫入建築／NormalizeGravity：built=%v normalize=%v",
+			a.ColonyBuildings[0]["行星重力產生器"], a.Colonies[0].NormalizeGravity)
+	}
+	if after.GrossIndustry <= before.GrossIndustry {
+		t.Fatalf("完工後重力 consumer 未改善工業：before=%d after=%d", before.GrossIndustry, after.GrossIndustry)
+	}
+}
+
 func TestAISoilEnrichmentCandidateAndCompletion(t *testing.T) {
 	s := NewDemoSession()
 	a := &s.AIPlayers[0]

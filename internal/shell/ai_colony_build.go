@@ -143,6 +143,8 @@ type originalAIBuildScoreContext struct {
 	colonyFoodHalf        int
 	colonyFoodHalfKnown   bool
 	pollutionCleanupCost  int
+	ownerLowGravity       bool
+	ownerHighGravity      bool
 	raceGrowthPercent     int
 	government            gamedata.MoraleGovernmentType
 	treasuryBefore        int
@@ -218,6 +220,32 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		pacifist = 1
 	}
 	switch rawID {
+	case 25: // 0xD0844..0xD089A：Planetary Gravity Generator
+		// 原版先判 High-G；雙 trait 的髒資料不得被 Low-G 分支覆蓋。
+		if ctx.ownerHighGravity {
+			if colony.PlanetGravity == gamedata.LOW_G {
+				return 3 + pacifist, true
+			}
+			return 0, true
+		}
+		if ctx.ownerLowGravity {
+			switch colony.PlanetGravity {
+			case gamedata.NORMAL_G:
+				return 3 + pacifist, true
+			case gamedata.HEAVY_G:
+				return 6 + pacifist, true
+			default:
+				return 0, true
+			}
+		}
+		switch colony.PlanetGravity {
+		case gamedata.LOW_G:
+			return 3 + pacifist, true
+		case gamedata.HEAVY_G:
+			return 6 + pacifist, true
+		default:
+			return 0, true
+		}
 	case 5, 13, 32: // 0xD074B..0xD077F：三棟污染處理建築
 		tolerant, known := originalAIPrimaryPopulationTolerant(colony)
 		if !known {
@@ -439,6 +467,8 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 		treasuryBefore:        empireOut.Player.BC - empireOut.NetBC,
 		netBC:                 empireOut.NetBC,
 		pollutionCleanupCost:  out.PollutionCleanupCost,
+		ownerLowGravity:       aiRaceHasTrait(*a, gamedata.TRAIT_LOW_G),
+		ownerHighGravity:      aiRaceHasTrait(*a, gamedata.TRAIT_HIGH_G),
 	}
 	ctx.colonyFoodHalf, ctx.colonyFoodHalfKnown = originalAIColonyFoodHalf(a.Colonies[colony], built, known)
 	maxScore := 1 // raw Assign_Colony_New_Building_ 也把最大分數下限夾到 1。

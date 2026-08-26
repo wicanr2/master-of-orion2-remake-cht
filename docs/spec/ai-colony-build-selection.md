@@ -65,6 +65,12 @@
    `ColonyOutput.PollutionCleanupCost`，不可改以總工業或 polluting production 估算；主要人口
    Tolerant 依同一 player-slot 選擇規則判定，profile 不完整時回報非 exact。raw 5／32 不得
    誤吃 priority gate，raw 13 不得漏掉。
+   raw ID 25 Planetary Gravity Generator 使用 owner 的重力 trait 與行星重力：High-G owner
+   只有在 Low-G 星球取 `3+[Pacifist]`；Low-G owner 在 Normal-G／Heavy-G 分別取
+   `3／6+[Pacifist]`，Low-G 星球為 0；一般 owner 在 Low-G／Heavy-G 分別取
+   `3／6+[Pacifist]`，Normal-G 為 0。若髒資料同時有 High-G／Low-G，High-G 優先。此式不讀
+   priority gate、budget factor、late-tech 或主要人口種族。完工必須寫入
+   `NormalizeGravity`，並由既有逐人口產出路徑消費。
 5. 優先建築 gate 僅由已知科技 application、已建建築、殖民地礦產及 AI 生效政府組成：
    - Ultra Poor／Poor／Abundant 殖民地已知 Automated Factories 但未建 Automated Factory；或
    - Feudal／Confederation／Dictatorship／Imperium 已知但未建 Marine Barracks／Armor Barracks。
@@ -104,6 +110,9 @@
 - raw 5／13／32 在主要人口 Tolerant／非 Tolerant、清污成本 5／6／10／11、一般／Pacifist
   與 priority gate 邊界符合公式；三棟均以唯一正常候選走過選擇、逐殖民地產能與完工後
   污染旗標效果。測試必須把 `PollutionCleanupCost` 與 gross／polluting production 分開。
+- raw 25 的一般／Low-G／High-G owner × 三種行星重力、一般／Pacifist、雙 trait 優先序與
+  priority gate 不影響性逐格符合表格；唯一正常候選須走過逐殖民地產能、完工旗標與重力懲罰
+  消費端，不能只測 `NormalizeGravity` 欄位被設為 true。
 - 只完成多選主題但選了其他 application 時，不得觸發相應 Automated Factory／Barracks gate。
 - 精確分支與類別式 fallback 不可混稱同一證據等級。
 - 既有擴張測試以「建築＋造艦總投入」驗證新殖民地確實參與經濟，不再假設所有產出都是軍艦。

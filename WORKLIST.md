@@ -355,6 +355,9 @@
   `Compute_AI_Data_` 7-byte cache 的唯一寫入鏈與 `sub_DEE1B` 清污成本回寫；現以主要人口
   Tolerant、精確 `PollutionCleanupCost` 的 5／10 邊界、整數平方根及 Pacifist 計分，且只有
   raw 13 受 priority gate 阻擋。三棟均可由正常候選完工並寫回污染旗標。
+  raw 25 Planetary Gravity Generator 已依 owner 的 High-G 優先、Low-G／一般分支與行星
+  `LOW_G=0／NORMAL_G=1／HEAVY_G=2` 閉合完整 `0／3／6+[Pacifist]` 表；不誤吃 priority
+  gate。正常 AI 候選完工後的 `NormalizeGravity` 已由逐人口工業產出 consumer 驗證，不只測旗標。
   其餘分數區域、
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
   state machine 亦待閉合。見

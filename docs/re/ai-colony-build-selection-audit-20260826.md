@@ -392,6 +392,29 @@ cleanupCost > 10 → floor(sqrt(cleanupCost)) + [Pacifist]
 跳表、公式、cache 唯一寫入鏈與清污成本寫回均為**已證實**。typed 對映要求主要人口 profile
 完整；舊 JSON 缺 profile 時不得把 owner 的 Tolerant 直接冒充主要人口 trait。
 
+## 第十二批：Planetary Gravity Generator
+
+raw 25 的外層 entry 為 `0xCFFC2 44080d00 → 0xD0844`。`0xD0844..0xD089A`
+先由 colony 的 planet index 讀 `planet+0x06`，再依 owner player 的重力 trait 分支：
+
+| owner trait | planet gravity 0 Low-G | 1 Normal-G | 2 Heavy-G |
+|---|---:|---:|---:|
+| High-G (`player+0x8AA!=0`) | `3+[Pacifist]` | 0 | 0 |
+| Low-G (`player+0x8A9!=0`) | 0 | `3+[Pacifist]` | `6+[Pacifist]` |
+| 一般 | `3+[Pacifist]` | 0 | `6+[Pacifist]` |
+
+指令證據：High-G 先於 `0xD0856` 判定，只有 `test ax,ax @ 0xD085F` 為零才進
+`0xD0868` 的 `Pacifist+3`；Low-G 於 `0xD0873` 判定，gravity 1 進 +3、gravity 2 進
+`0xD088C` 的 `Pacifist+6`；一般種族在 `0xD0897 test ax,ax` 後共用相同 gravity 0／2
+出口。此 case 不讀 priority gate、budget factor、late-tech 或主要人口種族。
+
+`docs/re/owner-race-gravity-production-audit-20260825.md` 已由獨立 consumer 證實
+`planet+0x06` 的 `LOW_G=0／NORMAL_G=1／HEAVY_G=2`，以及
+`player+0x8A9/0x8AA` 對應 `TRAIT_LOW_G/TRAIT_HIGH_G`。兩 trait 同時存在時原版先取
+High-G，與該產出 consumer 的優先序一致。remake 候選端使用 AI owner 的 runtime trait 與
+`ColonyState.PlanetGravity`；完工寫入既有 `NormalizeGravity`，後續逐人口產出 consumer
+已另有垂直測試。以上跳表、分支、typed enum 對映與效果 consumer 均為**已證實**。
+
 其餘未封閉區域會讀 alien／outpost 狀態、政府／性格其他碼、其他殖民地 packed 人口用途、帝國建築數、
 星球 owner／環境、事件與未解 player flags；在欄位寫入端與 typed 對映完成前維持
 `unknown_pending_review`，由明示近似 fallback 處理。
