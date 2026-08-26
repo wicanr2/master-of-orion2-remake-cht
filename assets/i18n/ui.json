@@ -865,5 +865,9 @@
   {"key":"tactical.board.victory_suffix","english":" (enemy fleet is finished — victory! Click to continue)","value":"（敵艦隊已無戰力，勝利！點擊繼續）","note":"登艦後敵軍清空時附加訊息"},
   {"key":"tactical.board.repelled","english":"Boarding party from %s repelled: %d defenders left, %d attackers left (%d rounds)","value":"%s 的登艦隊遭擊退：守軍剩 %d，我方剩 %d（%d 回合）","note":"依序為玩家艦名、守軍、攻方倖存者與交戰回合"},
   {"key":"tactical.mode.scan_hint","english":"[SCAN MODE] click an enemy to inspect","value":"【掃描模式】點擊敵艦查看資料","note":"控制列上方短提示"},
-  {"key":"tactical.mode.board_hint","english":"[BOARD MODE] click an enemy to send marines","value":"【登艦模式】點擊敵艦派出陸戰隊","note":"控制列上方短提示"}
+  {"key":"tactical.mode.board_hint","english":"[BOARD MODE] click an enemy to send marines","value":"【登艦模式】點擊敵艦派出陸戰隊","note":"控制列上方短提示"},
+  {"key":"research.choice.title","english":"CHOOSE RESEARCH APPLICATION","value":"選擇研究應用","note":"研究開始前的 application 選擇 adapter 標題"},
+  {"key":"research.choice.topic_summary","english":"Field: %s (the selected technology is granted at breakthrough)","value":"主題：%s（突破後取得所選科技）","note":"%s 為 tech.json 提供的研究主題名"},
+  {"key":"research.choice.transition.summary","english":"Turn Summary","value":"回合摘要","note":"選定 application 後返回回合摘要"},
+  {"key":"research.choice.transition.galaxy","english":"Galaxy","value":"星系主畫面","note":"選定 application 後返回星系"}
 ]

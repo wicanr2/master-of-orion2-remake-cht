@@ -5,6 +5,7 @@ package main
 // 版面合成近似,尚未對原版 SCIENCE.LBX 像素對齊。
 
 import (
+	"fmt"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -54,6 +55,19 @@ func (s *researchChoiceScreen) rowRect(i int) (int, int, int, int) {
 	return 140, 150 + i*56, 360, 46
 }
 
+func researchChoiceTitleTextRect() textSafeRect {
+	return textSafeRect{x: 20, y: 52, w: 600, h: 36, insetX: 4, insetY: 2, lineH: 32}
+}
+
+func researchChoiceTopicTextRect() textSafeRect {
+	return textSafeRect{x: 20, y: 92, w: 600, h: 24, insetX: 4, insetY: 1, lineH: 22}
+}
+
+func (s *researchChoiceScreen) rowTextRect(i int) textSafeRect {
+	x, y, w, h := s.rowRect(i)
+	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 6, insetY: 2, lineH: h - 4}
+}
+
 func (s *researchChoiceScreen) update(in shell.InputState) *origTransition {
 	s.hover = -1
 	for i := range s.choices {
@@ -70,9 +84,9 @@ func (s *researchChoiceScreen) update(in shell.InputState) *origTransition {
 		clickSound()
 	}
 	if s.next != nil {
-		return s.b.goTo(s.next, "回合摘要")
+		return s.b.goTo(s.next, uiText(s.b.lang, "research.choice.transition.summary"))
 	}
-	return s.b.goTo(s.b.galaxy, "星系主畫面")
+	return s.b.goTo(s.b.galaxy, uiText(s.b.lang, "research.choice.transition.galaxy"))
 }
 
 func (s *researchChoiceScreen) draw(dst *ebiten.Image) {
@@ -87,11 +101,10 @@ func (s *researchChoiceScreen) draw(dst *ebiten.Image) {
 	body := color.RGBA{206, 218, 240, 255}
 	dim := color.RGBA{150, 160, 180, 255}
 
-	s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.b.tr("選擇研究應用", "CHOOSE RESEARCH APPLICATION"), 18, 600),
-		320, 70, 18, gold)
+	researchChoiceTitleTextRect().drawCentered(dst, s.fnt, uiText(s.b.lang, "research.choice.title"), 18, gold)
 	topicName := topicNameZh(s.b.lang, s.topic)
-	s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.b.tr("主題:"+topicName+"(突破後取得所選科技)",
-		"Field: "+topicName+" (the selected technology is granted at breakthrough)"), 12, 600), 320, 104, 12, dim)
+	researchChoiceTopicTextRect().drawCentered(dst, s.fnt,
+		fmt.Sprintf(uiText(s.b.lang, "research.choice.topic_summary"), topicName), 12, dim)
 
 	for i, t := range s.choices {
 		x, y, w, h := s.rowRect(i)
@@ -103,6 +116,6 @@ func (s *researchChoiceScreen) draw(dst *ebiten.Image) {
 		}
 		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), bgc, false)
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, bord, false)
-		s.fnt.DrawCentered(dst, truncateToWidth(s.fnt, s.techZh(t), 16, float64(w-12)), float64(x+w/2), float64(y+h/2), 16, body)
+		s.rowTextRect(i).drawCentered(dst, s.fnt, s.techZh(t), 16, body)
 	}
 }

@@ -142,6 +142,13 @@
   predicate。`dword_1A1244` 只有直接 writer，間接字串消費端未閉合，因此原版精確按鈕 widget ID
   與 SCAN／BOARD 字串維持未知。另修正過期的 SETTINGS 提示：13 列設定頁已完成，尚缺的是戰鬥中
   保存狀態並返回同一戰局的轉場。
+  研究應用選擇已完成第十五個切片：標題、目前 field 模板與兩個轉場名稱均由 `ui.json` 供應，
+  科技及 topic 名稱維持 `tech.json` 單一來源；`researchchoice.go` 不再呼叫 `tr` 或直接繪製字型。
+  標題、field 摘要及 application row 全部改走雙軸安全框，row 文字中心與 hover／點擊框由同一個
+  `rowRect` 推導。IDA Pro 9.4 本輪唯讀重跑仍確認 `sub_10DC12 @ 0x10DC12` 是選擇函式、
+  `sub_E4410 @ 0xE4410` 是突破消費端；field 與 application 在研究開始前寫入。原版把選擇整合於
+  `TECHSEL.LBX#0`，remake 的獨立 application 面板仍明標介面轉接近似；精確 row widget 與將
+  adapter 合併回八領域畫面是獨立視覺忠實度缺口，不以本輪文案測試升格。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
@@ -171,7 +178,9 @@
   [`docs/re/game-menu-popup-ui-text-audit-20260826.md`](docs/re/game-menu-popup-ui-text-audit-20260826.md) 與
   [`docs/tech/game-menu-external-text-spec.md`](docs/tech/game-menu-external-text-spec.md)、
   [`docs/re/tactical-control-bar-text-audit-20260826.md`](docs/re/tactical-control-bar-text-audit-20260826.md) 與
-  [`docs/tech/tactical-control-bar-external-text-spec.md`](docs/tech/tactical-control-bar-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+  [`docs/tech/tactical-control-bar-external-text-spec.md`](docs/tech/tactical-control-bar-external-text-spec.md)、
+  [`docs/re/research-choice-ui-text-audit-20260826.md`](docs/re/research-choice-ui-text-audit-20260826.md) 與
+  [`docs/tech/research-choice-external-text-spec.md`](docs/tech/research-choice-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
 
 - [~] **原版對局內 SETTINGS 分頁**：2026-08-26 已完成原版 13 列畫面、資產、外部雙語文案、
   原版預設值、`.GAM` 匯入與 JSON 往返。IDA 證實
