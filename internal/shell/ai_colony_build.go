@@ -120,6 +120,7 @@ type originalAIBuildScoreContext struct {
 	priorityGate          bool
 	empireFoodBalanceHalf int
 	raceGrowthPercent     int
+	government            gamedata.MoraleGovernmentType
 	treasuryBefore        int
 	netBC                 int
 }
@@ -173,6 +174,19 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 			score += pacifist
 		}
 		return score, true
+	case 20, 31: // 0xD0616..0xD069E：Holo Simulator／Pleasure Dome
+		// raw government / 2 == 3 只對應 Unification／Galactic Unification。
+		if int(ctx.government)/2 == 3 {
+			return 0, true
+		}
+		budgetFactor := originalAIBudgetFactor(ctx.treasuryBefore, ctx.netBC)
+		if colony.Population < 3 && (budgetFactor == 0 || colony.Population < 2) {
+			return 0, true
+		}
+		if rawID == 20 {
+			return 10, true
+		}
+		return 16, true
 	case 6: // 0xD06AD..0xD06CB：Autolab
 		if ctx.priorityGate || ctx.lateTech {
 			return 0, true
@@ -273,12 +287,14 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 	}
 	var candidates []candidate
 	lateTech := aiOriginalLateTechReached(a.Player)
+	government := effectiveAIGovernment(a)
 	priorityGate := aiOriginalPriorityBuildingGate(a.Colonies[colony], built,
-		knownTechnologyApplications(a.Player), effectiveAIGovernment(a))
+		knownTechnologyApplications(a.Player), government)
 	ctx := originalAIBuildScoreContext{
 		lateTech: lateTech, priorityGate: priorityGate,
 		empireFoodBalanceHalf: empireOut.TotalFoodHalf,
 		raceGrowthPercent:     aiColonistProductionProfile(*a).growth,
+		government:            government,
 		treasuryBefore:        empireOut.Player.BC - empireOut.NetBC,
 		netBC:                 empireOut.NetBC,
 	}

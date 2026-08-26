@@ -338,7 +338,9 @@
   已由主要人口 player-slot 選擇、Lithovore 差異旗標與帝國食物差額兩個寫入端閉合，現依
   外來食岩主要人口、食物赤字與 Pacifist 使用完整公式；profile 不完整時不冒稱 exact。
   raw 10 Cloning Center 亦已閉合 population-growth trait、結算前 1500 BC gate、signed word
-  淨 BC／64 與 `sub_134C92` 整數平方根；計分不消耗候選抽選 RNG。其餘分數區域、
+  淨 BC／64 與 `sub_134C92` 整數平方根；計分不消耗候選抽選 RNG。raw 20 Holo Simulator
+  與 raw 31 Pleasure Dome 也已依八政府、人口 2／3 邊界及 budget-factor gate 接入固定 10／16。
+  其餘分數區域、
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
   state machine 亦待閉合。見
   [`docs/re/ai-difficulty-economy-audit-20260826.md`](docs/re/ai-difficulty-economy-audit-20260826.md) 與

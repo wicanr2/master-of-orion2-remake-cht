@@ -32,6 +32,10 @@
    否則為 `floor(budgetFactor/2)`，且只有負人口成長種族的 Pacifist 再加 1。
    `budgetFactor` 在結算前國庫小於 1500 時為 0；否則依原版 signed word 淨 BC
    朝零除以 64、unsigned 整數平方根後夾到 10。這不是亂數，不得消費候選抽選 RNG。
+   raw ID 20 Holo Simulator 與 raw ID 31 Pleasure Dome 共用士氣建築 gate：
+   Unification／Galactic Unification 時為 0；其餘政府在人口至少 3 時分別固定為 10／16，
+   人口恰為 2 時只有 `budgetFactor>0` 才取同一正值，人口 0／1 為 0。兩式不讀
+   priority gate、late-tech 或 personality；budget factor 只作 gate，不加入固定分數。
 5. 優先建築 gate 僅由已知科技 application、已建建築、殖民地礦產及 AI 生效政府組成：
    - Ultra Poor／Poor／Abundant 殖民地已知 Automated Factories 但未建 Automated Factory；或
    - Feudal／Confederation／Dictatorship／Imperium 已知但未建 Marine Barracks／Armor Barracks。
@@ -55,6 +59,8 @@
   或 owner 已是 Lithovore 時為 0，profile 不完整時必須回報非 exact。
 - raw 10 在結算前國庫 1499／1500、淨 BC 的平方根邊界、負淨 BC 與負／非負人口成長下
   符合完整公式；計分不得改變加權抽選的亂數位置。
+- raw 20／31 在八種政府、人口 1／2／3 與 budget factor 0／正值的邊界符合完整固定分數；
+  priority gate 與 personality 變化不得影響結果。
 - 只完成多選主題但選了其他 application 時，不得觸發相應 Automated Factory／Barracks gate。
 - 精確分支與類別式 fallback 不可混稱同一證據等級。
 - 既有擴張測試以「建築＋造艦總投入」驗證新殖民地確實參與經濟，不再假設所有產出都是軍艦。

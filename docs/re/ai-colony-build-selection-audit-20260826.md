@@ -183,6 +183,30 @@ AI 殖民地建造，直到 `0x13742` 才呼叫 raw `sub_E4F49` 套用本回合�
 `min(10, isqrt32(uint32(trunc(int16(netBC)/64))))`。這裡的 `int16` 是原版 word 儲存契約，
 不是 remake 任意縮窄。
 
+## 第六批：Holo Simulator／Pleasure Dome
+
+兩個 jump-table entry 與原始 bytes 為：
+
+| raw ID | 建築 | entry → target | 固定正值 |
+|---:|---|---|---:|
+| 20 | Holo Simulator | `0xCFFAE 16 06 0d 00 → 0xD0616` | 10 |
+| 31 | Pleasure Dome | `0xCFFDA 5c 06 0d 00 → 0xD065C` | 16 |
+
+`0xD0616..0xD0657` 與 `0xD065C..0xD069E` 是同形控制流：
+
+1. 讀 `player+0x89F` 的政府碼，以帶號、朝零除以 2；結果等於 3 時直接零分。
+   既有 31-byte trait 表與政府 enum 已逐值對回 0..7，因此只排除 raw 6／7，也就是
+   Unification／Galactic Unification。
+2. `colony+0x0A >= 3` 時直接給固定正值。
+3. 人口小於 3 時先要求 `var_18 > 0`，再要求人口至少 2；因此只有人口恰為 2 且
+   `budgetFactor > 0` 仍給固定正值，人口 0／1 或因子 0 均為 0。
+4. 兩條 case 都不讀共用 `ah` priority gate、late-tech 或 personality，也不把
+   `budgetFactor` 加進分數；它在兩人口邊界只作布林 gate。
+
+完整 typed 公式為：Unification 系政府時 `0`；否則若
+`population >= 3 || (population == 2 && budgetFactor > 0)`，Holo Simulator 為 10、
+Pleasure Dome 為 16；其餘為 0。
+
 其餘未封閉區域會讀 alien／outpost 狀態、政府／性格其他碼、其他殖民地 packed 人口用途、帝國建築數、
 星球 owner／環境、事件與未解 player flags；在欄位寫入端與 typed 對映完成前維持
 `unknown_pending_review`，由明示近似 fallback 處理。

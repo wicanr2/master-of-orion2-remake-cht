@@ -224,6 +224,51 @@ func TestChooseAICloningCenterUsesPreSettlementTreasury(t *testing.T) {
 	}
 }
 
+func TestOriginalAIMoraleBuildingScores(t *testing.T) {
+	tests := []struct {
+		name string
+		want int
+	}{
+		{"全息模擬艙", 10},
+		{"歡樂穹頂", 16},
+	}
+	for _, tt := range tests {
+		b, ok := gamedata.BuildingByNameZH(tt.name)
+		if !ok {
+			t.Fatalf("測試建築不存在：%s", tt.name)
+		}
+		ctx := originalAIBuildScoreContext{government: gamedata.MoraleGovFeudalism}
+		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 3}, ai.PersonalityPacifist, ctx); !exact || score != tt.want {
+			t.Errorf("%s 人口 3 固定分=(%d,%v)，want (%d,true)", tt.name, score, exact, tt.want)
+		}
+		ctx.priorityGate = true
+		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 3}, ai.PersonalityErratic, ctx); !exact || score != tt.want {
+			t.Errorf("%s 不讀 priority/personality：score=%d exact=%v，want %d,true", tt.name, score, exact, tt.want)
+		}
+		ctx = originalAIBuildScoreContext{government: gamedata.MoraleGovFeudalism, treasuryBefore: 1499, netBC: 6400}
+		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 2}, ai.PersonalityXenophobic, ctx); !exact || score != 0 {
+			t.Errorf("%s 人口 2、factor 0 應歸零：score=%d exact=%v", tt.name, score, exact)
+		}
+		ctx.treasuryBefore = 1500
+		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 2}, ai.PersonalityXenophobic, ctx); !exact || score != tt.want {
+			t.Errorf("%s 人口 2、factor>0 分數=(%d,%v)，want (%d,true)", tt.name, score, exact, tt.want)
+		}
+		if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 1}, ai.PersonalityXenophobic, ctx); !exact || score != 0 {
+			t.Errorf("%s 人口 1 即使 factor>0 仍應歸零：score=%d exact=%v", tt.name, score, exact)
+		}
+		for gov := gamedata.MoraleGovFeudalism; gov <= gamedata.MoraleGovGalacticUnification; gov++ {
+			ctx.government = gov
+			want := tt.want
+			if int(gov)/2 == 3 {
+				want = 0
+			}
+			if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{Population: 9}, ai.PersonalityXenophobic, ctx); !exact || score != want {
+				t.Errorf("%s 政府 %d 分數=(%d,%v)，want (%d,true)", tt.name, gov, score, exact, want)
+			}
+		}
+	}
+}
+
 func TestAIOriginalPriorityBuildingGate(t *testing.T) {
 	known := map[gamedata.Technology]bool{gamedata.TECH_AUTOMATED_FACTORIES: true}
 	if !aiOriginalPriorityBuildingGate(engine.ColonyState{MineralRichness: gamedata.ABUNDANT}, nil, known, gamedata.MoraleGovDemocracy) {
