@@ -58,14 +58,20 @@
   成本與按鈕。命名／旗色頁亦完成第三個切片：IDA 推翻 `Player_Name_ @ 0xE5E09` 是輸入畫面及
   `Request_Banner_Color_ @ 0xFBEE1` 是單機旗色選單的舊符號解釋；旗色玩法資料現只保留穩定鍵、
   索引與 RGB，標題、提示、按鈕、預設名及八色名稱皆由 `ui.json` 提供。原版兩畫面、真旗幟圖與
-  `RACEOPT.LBX#0` 錯誤背景仍是獨立忠實度缺口，尚未完成。其餘自繪畫面仍待逐批遷移；通用規格見
+  `RACEOPT.LBX#0` 錯誤背景仍是獨立忠實度缺口，尚未完成。INFO 五個子畫面也已完成第四個切片：
+  標題、動態模板、欄名、態勢／關係、回合摘要及 Reference 目錄均由 `ui.json` 供應，英文模式不再
+  直接輸出 `shell` 保存的中文狀態，Reference 亦不再暴露專案內部路徑。原版已知 `BILLTEXT.LBX`
+  標題與 remake 補充目錄已在 JSON 註記及 RE 稽核中分級；完整 Reference 內容與 Turn Summary
+  動態組裝仍是原版證據留白，不把現行補充升格為精確還原。其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
   [`docs/spec/netinfo-external-text.md`](docs/spec/netinfo-external-text.md)、
   [`docs/re/custom-race-ui-text-audit-20260826.md`](docs/re/custom-race-ui-text-audit-20260826.md) 與
   [`docs/spec/custom-race-external-text.md`](docs/spec/custom-race-external-text.md)、
   [`docs/re/name-banner-flow-audit-20260826.md`](docs/re/name-banner-flow-audit-20260826.md) 與
-  [`docs/tech/name-banner-external-text-spec.md`](docs/tech/name-banner-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+  [`docs/tech/name-banner-external-text-spec.md`](docs/tech/name-banner-external-text-spec.md)、
+  [`docs/re/info-subscreen-text-audit-20260826.md`](docs/re/info-subscreen-text-audit-20260826.md) 與
+  [`docs/tech/info-subscreen-external-text-spec.md`](docs/tech/info-subscreen-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
 
 - [x] **共用知識庫防錯閘門**：`~/.codex/knowledge-base/local/retro-remake-gameplay-parity-audit.md`
   已把本次錯判提煉成跨專案流程，涵蓋重新稽核觸發條件、具名符號限制、玩家機制證據矩陣、

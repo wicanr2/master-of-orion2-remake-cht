@@ -35,23 +35,20 @@ const (
 	infoPanelH = 380.0
 )
 
-// infoTabTitles 是五個分頁的中文標題(順序同 b.infoTab)。
-var infoTabTitles = []string{"歷史圖表", "科技總覽", "種族統計", "回合摘要", "參考資料"}
-
-// infoTabTitlesEn 是原版 INFO 畫面那五個分頁的英文名。
-var infoTabTitlesEn = []string{"HISTORY", "TECHNOLOGY", "RACES", "TURN SUMMARY", "REFERENCE"}
+// infoTabTextKeys 是五個分頁的外部語意鍵（順序同 b.infoTab）。
+var infoTabTextKeys = [...]string{"info.tab.history", "info.tab.technology", "info.tab.races", "info.tab.turn_summary", "info.tab.reference"}
 
 // drawInfoSubscreen 依 b.infoTab 把對應子畫面內容加進 overlayScreen。
 func (b *sceneBuilder) drawInfoSubscreen(s *overlayScreen) {
 	tab := b.infoTab
-	if tab < 0 || tab >= len(infoTabTitles) {
+	if tab < 0 || tab >= len(infoTabTextKeys) {
 		tab = 0
 	}
 	gold := infoTitleCol
-	b.appendInfoCentered(s, infoTitleTextRect(), b.tr(infoTabTitles[tab], infoTabTitlesEn[tab]), 15, gold)
+	b.appendInfoCentered(s, infoTitleTextRect(), uiText(b.lang, infoTabTextKeys[tab]), 15, gold)
 	if b.session == nil {
 		b.appendInfoCentered(s, infoCenteredTextRect(int(infoPanelY)+48, 24),
-			b.tr("尚無對局資料", "No game data yet"), 12, infoBodyCol)
+			uiText(b.lang, "info.no_game_data"), 12, infoBodyCol)
 		return
 	}
 	switch tab {
@@ -128,22 +125,22 @@ func infoRaceStatTextRect(column, y, h int) textSafeRect {
 }
 
 func infoRaceRelationTextRect(y int) textSafeRect {
-	return infoContentTextRect(y, 12)
+	return infoContentTextRect(y, 16)
 }
 
 func infoSummaryLabelTextRect(y int) textSafeRect {
-	return infoTextRect(int(infoPanelX)+24, y, 110, 12)
+	return infoTextRect(int(infoPanelX)+24, y, 110, 16)
 }
 
 func infoSummaryValueTextRect(y int) textSafeRect {
-	return infoTextRect(int(infoPanelX)+150, y, int(infoPanelW)-166, 12)
+	return infoTextRect(int(infoPanelX)+150, y, int(infoPanelW)-166, 16)
 }
 
 func infoReferenceTextRect(column, y int) textSafeRect {
 	if column == 0 {
-		return infoTextRect(int(infoPanelX)+24, y, 180, 12)
+		return infoTextRect(int(infoPanelX)+24, y, 180, 16)
 	}
-	return infoTextRect(int(infoPanelX)+220, y, int(infoPanelW)-236, 12)
+	return infoTextRect(int(infoPanelX)+220, y, int(infoPanelW)-236, 16)
 }
 
 func infoHistoryMaxTextRect() textSafeRect {
@@ -184,12 +181,10 @@ func (b *sceneBuilder) infoHistory(s *overlayScreen) {
 	series, turns := b.session.HistorySeries(metric)
 
 	b.appendInfoCentered(s, infoCenteredTextRect(int(infoPanelY)+26, 20),
-		b.tr("指標:", "Metric: ")+historyMetricLabel(b.lang, metric)+
-			b.tr("(點圖表切換)", " (click the chart to switch)"), 11, body)
+		fmt.Sprintf(uiText(b.lang, "info.history.metric"), historyMetricLabel(b.lang, metric)), 11, body)
 	if len(turns) < 2 {
 		b.appendInfoCentered(s, infoCenteredTextRect(int(infoPanelY)+74, 32),
-			b.tr("尚未累積足夠回合(結束回合後開始記錄)",
-				"Not enough turns recorded yet (recording starts after you end a turn)"), 12, body)
+			uiText(b.lang, "info.history.insufficient_turns"), 12, body)
 		return
 	}
 
@@ -226,8 +221,8 @@ func (b *sceneBuilder) infoHistory(s *overlayScreen) {
 	// 軸標 + 圖例。圖例保留三列、兩欄；超過時最後一格明示省略，不能壓到面板下緣。
 	b.appendInfoLeft(s, infoHistoryMaxTextRect(), fmt.Sprintf("%d", maxV), 10, body)
 	b.appendInfoLeft(s, infoHistoryZeroTextRect(), "0", 10, body)
-	b.appendInfoLeft(s, infoHistoryTurnTextRect(false), fmt.Sprintf(b.tr("第 %d 回合", "Turn %d"), turns[0]), 10, body)
-	b.appendInfoLeft(s, infoHistoryTurnTextRect(true), fmt.Sprintf(b.tr("第 %d 回合", "Turn %d"), turns[len(turns)-1]), 10, body)
+	b.appendInfoLeft(s, infoHistoryTurnTextRect(false), fmt.Sprintf(uiText(b.lang, "info.history.turn"), turns[0]), 10, body)
+	b.appendInfoLeft(s, infoHistoryTurnTextRect(true), fmt.Sprintf(uiText(b.lang, "info.history.turn"), turns[len(turns)-1]), 10, body)
 	limit := len(names)
 	if len(series) < limit {
 		limit = len(series)
@@ -236,7 +231,7 @@ func (b *sceneBuilder) infoHistory(s *overlayScreen) {
 		text := "── " + names[i]
 		col := empireLineColors[i%len(empireLineColors)]
 		if i == infoHistoryLegendSlots-1 && limit > infoHistoryLegendSlots {
-			text = fmt.Sprintf(b.tr("…另有 %d 個帝國", "…%d more empires"), limit-i)
+			text = fmt.Sprintf(uiText(b.lang, "info.history.more_empires"), limit-i)
 			col = infoDimCol
 		}
 		b.appendInfoLeft(s, infoHistoryLegendTextRect(i), text, 11, col)
@@ -259,24 +254,24 @@ func (b *sceneBuilder) infoTechReview(s *overlayScreen) {
 	sort.Strings(completed)
 
 	y := int(infoPanelY) + 44
-	b.appendInfoLeft(s, infoContentTextRect(y, 14),
-		fmt.Sprintf(b.tr("研究中:%s(%d RP)", "Researching: %s (%d RP)"),
+	b.appendInfoLeft(s, infoContentTextRect(y, 18),
+		fmt.Sprintf(uiText(b.lang, "info.tech.researching"),
 			topicNameZh(b.lang, p.ResearchTopic), p.ResearchProgress), 12, cur)
 	y += 22
-	b.appendInfoLeft(s, infoContentTextRect(y, 14),
-		fmt.Sprintf(b.tr("已完成主題:%d 項", "Fields completed: %d"), len(completed)), 12, body)
+	b.appendInfoLeft(s, infoContentTextRect(y, 18),
+		fmt.Sprintf(uiText(b.lang, "info.tech.completed_count"), len(completed)), 12, body)
 	y += 20
 	// 兩欄列出已完成主題
 	for i, nm := range completed {
 		if y+(i/2)*15 > int(infoPanelY+infoPanelH)-40 {
 			b.appendInfoLeft(s, infoContentTextRect(int(infoPanelY+infoPanelH)-30, 14),
-				fmt.Sprintf(b.tr("…另有 %d 項", "…and %d more"), len(completed)-i), 10, body)
+				fmt.Sprintf(uiText(b.lang, "info.tech.more"), len(completed)-i), 10, body)
 			break
 		}
-		b.appendInfoLeft(s, infoTechTopicTextRect(i%2, y+(i/2)*15, 12), "✓ "+nm, 10, done)
+		b.appendInfoLeft(s, infoTechTopicTextRect(i%2, y+(i/2)*15, 14), "✓ "+nm, 10, done)
 	}
 	if len(completed) == 0 {
-		b.appendInfoLeft(s, infoContentTextRect(y, 14), b.tr("(尚無已完成的研究主題)", "(no fields completed yet)"), 11, body)
+		b.appendInfoLeft(s, infoContentTextRect(y, 16), uiText(b.lang, "info.tech.none_completed"), 11, body)
 	}
 }
 
@@ -288,8 +283,9 @@ func (b *sceneBuilder) infoRaceStats(s *overlayScreen) {
 	sess := b.session
 
 	y := int(infoPanelY) + 44
-	for column, text := range []string{b.tr("帝國", "EMPIRE"), b.tr("殖民地", "COLONIES"), b.tr("人口", "POP"), b.tr("艦隊", "FLEET"), b.tr("態勢", "STANCE")} {
-		b.appendInfoLeft(s, infoRaceStatTextRect(column, y, 12), text, 11, gold)
+	for column, key := range []string{"empire", "colonies", "population", "fleet", "stance"} {
+		text := uiText(b.lang, "info.races.header."+key)
+		b.appendInfoLeft(s, infoRaceStatTextRect(column, y, 16), text, 11, gold)
 	}
 	y += 20
 
@@ -297,12 +293,12 @@ func (b *sceneBuilder) infoRaceStats(s *overlayScreen) {
 	for _, c := range sess.PlayerColonies {
 		pop += c.Population
 	}
-	for column, text := range []string{b.tr("你", "You"), fmt.Sprintf("%d", len(sess.PlayerColonies)), fmt.Sprintf("%d", pop), fmt.Sprintf("%d", sess.PlayerFleetStrengthForUI()), "—"} {
+	for column, text := range []string{uiText(b.lang, "info.races.you"), fmt.Sprintf("%d", len(sess.PlayerColonies)), fmt.Sprintf("%d", pop), fmt.Sprintf("%d", sess.PlayerFleetStrengthForUI()), "—"} {
 		textCol := body
 		if column == 0 {
 			textCol = empireLineColors[0]
 		}
-		b.appendInfoLeft(s, infoRaceStatTextRect(column, y, 12), text, 11, textCol)
+		b.appendInfoLeft(s, infoRaceStatTextRect(column, y, 16), text, 11, textCol)
 	}
 	y += 18
 
@@ -317,19 +313,19 @@ func (b *sceneBuilder) infoRaceStats(s *overlayScreen) {
 			apop += c.Population
 		}
 		col := empireLineColors[(i+1)%len(empireLineColors)]
-		for column, text := range []string{aiEmpireLabel(b.lang, *a), fmt.Sprintf("%d", len(a.Colonies)), fmt.Sprintf("%d", apop), fmt.Sprintf("%d", a.FleetStrength), a.StanceName} {
+		for column, text := range []string{aiEmpireLabel(b.lang, *a), fmt.Sprintf("%d", len(a.Colonies)), fmt.Sprintf("%d", apop), fmt.Sprintf("%d", a.FleetStrength), infoStanceLabel(b.lang, a.StanceName)} {
 			textCol := body
 			if column == 0 {
 				textCol = col
 			}
-			b.appendInfoLeft(s, infoRaceStatTextRect(column, y, 12), text, 11, textCol)
+			b.appendInfoLeft(s, infoRaceStatTextRect(column, y, 16), text, 11, textCol)
 		}
 		y += 18
 	}
 
 	// AI 彼此關係(本專案 2026-07-12 建的 AIRelations 矩陣,原版對應 module 27 外交關係)
 	y += 10
-	b.appendInfoLeft(s, infoRaceRelationTextRect(y), b.tr("AI 之間的關係", "Relations between AI empires"), 11, gold)
+	b.appendInfoLeft(s, infoRaceRelationTextRect(y), uiText(b.lang, "info.races.ai_relations"), 11, gold)
 	y += 18
 	for i := 0; i < visibleAI; i++ {
 		line := aiEmpireLabel(b.lang, sess.AIPlayers[i]) + ":"
@@ -337,7 +333,7 @@ func (b *sceneBuilder) infoRaceStats(s *overlayScreen) {
 			if i == j {
 				continue
 			}
-			line += fmt.Sprintf(" [%s %s]", aiEmpireLabel(b.lang, sess.AIPlayers[j]), sess.AIRelationName(i, j))
+			line += fmt.Sprintf(" [%s %s]", aiEmpireLabel(b.lang, sess.AIPlayers[j]), infoAIRelationLabel(b.lang, sess, i, j))
 		}
 		b.appendInfoLeft(s, infoRaceRelationTextRect(y), line, 10, body)
 		y += 15
@@ -353,20 +349,20 @@ func (b *sceneBuilder) infoTurnSummary(s *overlayScreen) {
 
 	y := int(infoPanelY) + 44
 	rows := [][2]string{
-		{b.tr("星曆", "Stardate"), shell.StardateForTurn(b.session.Turn)}, // 3500 起算,見 shell.StartStardate 的反組譯出處
-		{b.tr("國庫", "Treasury"), fmt.Sprintf(b.tr("%d BC(本回合 %+d)", "%d BC (%+d this turn)"),
+		{uiText(b.lang, "info.summary.stardate"), shell.StardateForTurn(b.session.Turn)}, // 3500 起算,見 shell.StartStardate 的反組譯出處
+		{uiText(b.lang, "info.summary.treasury"), fmt.Sprintf(uiText(b.lang, "info.summary.treasury_value"),
 			b.session.Player.BC, out.NetBC)},
-		{b.tr("稅收", "Taxes"), fmt.Sprintf("%d BC", out.TaxRevenue)},
-		{b.tr("餘糧收入", "Food surplus"), fmt.Sprintf("%d BC", out.FoodSurplusRevenue)},
-		{b.tr("貿易品收入", "Trade goods"), fmt.Sprintf("%d BC", out.TradeGoodsRevenue)},
-		{b.tr("維護支出", "Maintenance"), fmt.Sprintf("%d BC", b.session.Player.Maintenance)},
+		{uiText(b.lang, "info.summary.taxes"), fmt.Sprintf("%d BC", out.TaxRevenue)},
+		{uiText(b.lang, "info.summary.food_revenue"), fmt.Sprintf("%d BC", out.FoodSurplusRevenue)},
+		{uiText(b.lang, "info.summary.trade_goods"), fmt.Sprintf("%d BC", out.TradeGoodsRevenue)},
+		{uiText(b.lang, "info.summary.maintenance"), fmt.Sprintf("%d BC", b.session.Player.Maintenance)},
 		// 領袖薪餉單獨一列,不併進「維護支出」——那一列是**建築**維護,兩者來源不同,
 		// 混在一起玩家就看不出「解雇一個領袖能省多少」。
-		{b.tr("領袖薪餉", "Leader upkeep"), fmt.Sprintf("%d BC", b.session.LeaderUpkeepTotal())},
-		{b.tr("指揮超支", "Command overrun"), fmt.Sprintf("%d BC", out.CommandOverflowCost)},
-		{b.tr("食物盈餘", "Food surplus"), fmt.Sprintf("%d", out.TotalFood)},
-		{b.tr("淨工業", "Net industry"), fmt.Sprintf("%d", out.TotalNetIndustry)},
-		{b.tr("研究產出", "Research"), fmt.Sprintf("%d RP", out.TotalResearch)},
+		{uiText(b.lang, "info.summary.leader_upkeep"), fmt.Sprintf("%d BC", b.session.LeaderUpkeepTotal())},
+		{uiText(b.lang, "info.summary.command_overrun"), fmt.Sprintf("%d BC", out.CommandOverflowCost)},
+		{uiText(b.lang, "info.summary.food_surplus"), fmt.Sprintf("%d", out.TotalFood)},
+		{uiText(b.lang, "info.summary.net_industry"), fmt.Sprintf("%d", out.TotalNetIndustry)},
+		{uiText(b.lang, "info.summary.research"), fmt.Sprintf("%d RP", out.TotalResearch)},
 	}
 	for _, r := range rows {
 		b.appendInfoLeft(s, infoSummaryLabelTextRect(y), r[0], 11, gold)
@@ -412,23 +408,12 @@ func (b *sceneBuilder) infoReference(s *overlayScreen) {
 	// remake 這裡放同結構的速查:左欄=規則分類、右欄=常用操作,內容取自專案的繁中機制大全
 	// (docs/knowledge-base/manual-cht/),不重抄手冊原文。
 	// 這兩份清單是原版 INFO → REFERENCE 分頁的目錄,英文取原版用語。
-	cats := []string{"政府型態", "行星與星系", "太空建設", "艦艇系統", "艦艇引擎", "艦艇防禦",
-		"艦艇武器", "飛彈與炸彈", "地面戰", "人口", "生產", "生態", "安全", "成就"}
-	catsEn := []string{"Government", "Planets & Star Systems", "Space Construction", "Ship Systems",
-		"Ship Drives", "Ship Defenses", "Ship Weapons", "Missiles & Bombs", "Ground Combat",
-		"Population", "Production", "Ecology", "Security", "Achievements"}
-	hows := []string{"建立新殖民地", "移動艦隊", "調動人口", "指派領袖", "前往安塔蘭",
-		"入侵行星", "俘獲艦艇", "調整稅率", "設計艦艇", "取得更多說明"}
-	howsEn := []string{"Create a new colony", "Move a fleet", "Move population", "Assign leaders",
-		"Go to Antares", "Invade a planet", "Capture a ship", "Adjust taxes", "Design a ship",
-		"Get more help"}
-	if b.lang != i18n.Traditional {
-		cats, hows = catsEn, howsEn
-	}
+	cats := infoTextList(b.lang, "info.reference.category.", 14)
+	hows := infoTextList(b.lang, "info.reference.howto.", 10)
 
 	y := int(infoPanelY) + 44
-	b.appendInfoLeft(s, infoReferenceTextRect(0, y), b.tr("分類", "CATEGORY"), 12, gold)
-	b.appendInfoLeft(s, infoReferenceTextRect(1, y), b.tr("怎麼做?", "HOW DO I…?"), 12, gold)
+	b.appendInfoLeft(s, infoReferenceTextRect(0, y), uiText(b.lang, "info.reference.categories"), 12, gold)
+	b.appendInfoLeft(s, infoReferenceTextRect(1, y), uiText(b.lang, "info.reference.howto"), 12, gold)
 	y += 20
 	for i := 0; i < len(cats) || i < len(hows); i++ {
 		if i < len(cats) {
@@ -439,8 +424,43 @@ func (b *sceneBuilder) infoReference(s *overlayScreen) {
 		}
 	}
 	b.appendInfoLeft(s, infoTextRect(int(infoPanelX)+24, int(infoPanelY+infoPanelH)-24, int(infoPanelW)-48, 12),
-		b.tr("詳細規則見專案文件 docs/knowledge-base/manual-cht/",
-			"Full rules: docs/knowledge-base/manual-cht/ in the project repo"), 10, infoDimCol)
+		uiText(b.lang, "info.reference.footer"), 10, infoDimCol)
+}
+
+func infoTextList(lang i18n.Lang, prefix string, count int) []string {
+	out := make([]string, count)
+	for i := range out {
+		out[i] = uiText(lang, fmt.Sprintf("%s%02d", prefix, i+1))
+	}
+	return out
+}
+
+func infoStanceLabel(lang i18n.Lang, stored string) string {
+	for _, key := range []string{"war", "hostile", "neutral", "trade", "alliance"} {
+		catalogKey := "info.races.stance." + key
+		if stored == uiText(i18n.Traditional, catalogKey) {
+			return uiText(lang, catalogKey)
+		}
+	}
+	return uiText(lang, "info.races.stance.unknown")
+}
+
+func infoAIRelationLabel(lang i18n.Lang, sess *shell.GameSession, i, j int) string {
+	if i < 0 || j < 0 || i >= len(sess.AIRelations) || j >= len(sess.AIRelations[i]) {
+		return uiText(lang, "info.races.stance.neutral")
+	}
+	key := "neutral"
+	switch score := sess.AIRelations[i][j]; {
+	case score <= -25:
+		key = "hostile"
+	case score <= -8:
+		key = "tense"
+	case score >= 25:
+		key = "allied"
+	case score >= 8:
+		key = "friendly"
+	}
+	return uiText(lang, "info.races.relation."+key)
 }
 
 // 讓 gamedata 匯入不被最佳化掉(topicNameZh 需要 gamedata.ResearchTopic 型別)。
