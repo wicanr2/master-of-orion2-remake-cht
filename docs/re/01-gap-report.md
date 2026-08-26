@@ -576,10 +576,12 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
         (前者需要獵戶座星系,remake 還沒有)。清單見 `gamedata.UnmappedCutscenes`。
 
 
-    ### ~~多人連線(獨立子專案)~~ → **熱座已完成**(2026-08-07,`internal/shell/hotseat.go` +
+    ### 多人連線與熱座（現代傳輸轉接）
 
 
-        `cmd/moo2/multiplayer.go` + `cmd/moo2/hotseat.go`);**網路 / 數據機 / 序列埠直連未做**。
+        熱座由 `internal/shell/hotseat.go`、`cmd/moo2/multiplayer.go` 與 `cmd/moo2/hotseat.go`
+        串接；網路模式已以 TCP 大廳、共同快照與 lockstep 取代失效的 IPX。數據機、序列埠直連、
+        COMM INFO 與 TEN 維持停用，不為已淘汰硬體／服務建立假功能。
 
         **原版的多人設定畫面整張版面都拿到了**(`Multi_Player_Screen_` @ 0xF4D99,初始化
         `sub_F42CA`、建 widget `sub_F009A`):背景 MULTIGM.LBX#0(640×480)、面板 #1(482×335,

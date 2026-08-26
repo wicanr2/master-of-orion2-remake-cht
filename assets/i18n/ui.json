@@ -1,5 +1,149 @@
 [
   {
+    "key": "multiplayer.setup.title",
+    "english": "MULTI-PLAYER GAME SET UP",
+    "value": "多人遊戲設定",
+    "note": "MULTIGM.LBX#1 多人主設定標題"
+  },
+  {
+    "key": "multiplayer.setup.button.network",
+    "english": "NETWORK",
+    "value": "區域網路",
+    "note": "多人主設定左欄"
+  },
+  {
+    "key": "multiplayer.setup.button.modem",
+    "english": "MODEM",
+    "value": "數據機",
+    "note": "已淘汰傳輸方式，維持停用"
+  },
+  {
+    "key": "multiplayer.setup.button.null_modem",
+    "english": "NULL MODEM",
+    "value": "序列埠直連",
+    "note": "已淘汰傳輸方式，維持停用"
+  },
+  {
+    "key": "multiplayer.setup.button.hotseat",
+    "english": "HOTSEAT",
+    "value": "熱座",
+    "note": "多人主設定左欄"
+  },
+  {
+    "key": "multiplayer.setup.button.hotseat_count",
+    "english": "HOTSEAT %d",
+    "value": "熱座 %d 人",
+    "note": "remake 席位數循環顯示"
+  },
+  {
+    "key": "multiplayer.setup.button.start",
+    "english": "START NEW GAME",
+    "value": "開始新遊戲",
+    "note": "多人主設定右欄"
+  },
+  {
+    "key": "multiplayer.setup.button.load",
+    "english": "LOAD GAME",
+    "value": "載入遊戲",
+    "note": "多人主設定右欄"
+  },
+  {
+    "key": "multiplayer.setup.button.join",
+    "english": "JOIN GAME",
+    "value": "加入遊戲",
+    "note": "多人主設定右欄"
+  },
+  {
+    "key": "multiplayer.setup.button.comm_info",
+    "english": "COMM INFO",
+    "value": "連線資訊",
+    "note": "數據機／序列線參數，維持停用"
+  },
+  {
+    "key": "multiplayer.setup.button.ten",
+    "english": "TOTAL ENTERTAINMENT NETWORK",
+    "value": "TEN 連線服務",
+    "note": "已停止營運的原版線上服務"
+  },
+  {
+    "key": "multiplayer.setup.button.cancel",
+    "english": "CANCEL",
+    "value": "取消",
+    "note": "多人主設定返回按鈕"
+  },
+  {
+    "key": "multiplayer.setup.note.hotseat",
+    "english": "Hot seat: %d humans take turns; other empires remain AI-controlled.",
+    "value": "熱座：%d 位真人輪流下令，其餘帝國由 AI 操作。",
+    "note": "remake 熱座轉接說明"
+  },
+  {
+    "key": "multiplayer.setup.note.network",
+    "english": "TCP: START NEW GAME hosts; JOIN GAME finds or joins a lobby.",
+    "value": "TCP 網路：開始新遊戲建立大廳；加入遊戲尋找或連入對局。",
+    "note": "remake 現代網路轉接說明"
+  },
+  {
+    "key": "multiplayer.setup.message.legacy_transport",
+    "english": "Modem and null-modem hardware are unavailable; this build uses TCP.",
+    "value": "數據機與序列線已不可用；本版改用 TCP。",
+    "note": "淘汰傳輸方式提示"
+  },
+  {
+    "key": "multiplayer.setup.message.choose_supported",
+    "english": "Choose NETWORK or HOTSEAT.",
+    "value": "請選擇區域網路或熱座。",
+    "note": "開始對局前的模式提示"
+  },
+  {
+    "key": "multiplayer.setup.message.no_saves",
+    "english": "No saved games yet.",
+    "value": "目前沒有存檔。",
+    "note": "載入多人遊戲提示"
+  },
+  {
+    "key": "multiplayer.setup.message.load_failed",
+    "english": "Could not open the load window.",
+    "value": "無法開啟存檔視窗。",
+    "note": "載入多人遊戲錯誤"
+  },
+  {
+    "key": "multiplayer.setup.message.comm_legacy",
+    "english": "COMM INFO is for legacy modem and serial hardware; TCP needs no setup here.",
+    "value": "連線資訊供舊式數據機與序列線使用；TCP 不需在此設定。",
+    "note": "COMM INFO 停止線提示"
+  },
+  {
+    "key": "multiplayer.setup.message.ten_closed",
+    "english": "TEN was the original online service and is no longer operating.",
+    "value": "TEN 是原版線上服務，目前已停止營運。",
+    "note": "TEN 停止線提示"
+  },
+  {
+    "key": "multiplayer.setup.error.host",
+    "english": "Could not host: %s",
+    "value": "無法建立大廳：%s",
+    "note": "remake TCP 主機錯誤；%s 是底層原因"
+  },
+  {
+    "key": "multiplayer.setup.error.join",
+    "english": "Could not join: %s",
+    "value": "無法加入大廳：%s",
+    "note": "remake TCP 加入錯誤；%s 是底層原因"
+  },
+  {
+    "key": "multiplayer.setup.transition.new_game",
+    "english": "New game setup",
+    "value": "新遊戲設定",
+    "note": "畫廊轉場標籤"
+  },
+  {
+    "key": "multiplayer.setup.transition.main_menu",
+    "english": "Main menu",
+    "value": "主選單",
+    "note": "畫廊轉場標籤"
+  },
+  {
     "key": "netinfo.caption.waiting_for_joiners",
     "english": "Waiting for players to join",
     "value": "等待其他玩家加入",

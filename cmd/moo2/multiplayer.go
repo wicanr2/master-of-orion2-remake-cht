@@ -81,27 +81,27 @@ const (
 	mpHotseat
 )
 
-// mpButton 是面板上的一顆鈕:資產、相對面板的位置、中/英標籤、動作代號。
-// 英文用原版烘在按鈕上的字(NETWORK / MODEM / …),不是自己另譯的。
+// mpButton 是面板上的一顆鈕:資產、相對面板的位置、外部文案鍵、動作代號。
+// 英文資產存在時保留原版烘字；缺資產 fallback 與繁中改由 ui.json 供應。
 type mpButton struct {
-	asset  int
-	dx, dy int
-	zh, en string
-	act    string
+	asset   int
+	dx, dy  int
+	textKey string
+	act     string
 }
 
 // mpButtons 是左欄四個連線方式 + 右欄四個動作 + CANCEL,全部座標見檔頭。
 var mpButtons = []mpButton{
-	{2, mpColLeftDX, mpRow0DY, "區域網路", "NETWORK", "network"},
-	{3, mpColLeftDX, mpRow1DY, "數據機", "MODEM", "modem"},
-	{4, mpColLeftDX, mpRow2DY, "序列埠直連", "NULL MODEM", "nullmodem"},
-	{5, mpColLeftDX, mpRow3DY, "熱座", "HOTSEAT", "hotseat"},
-	{7, mpColRightDX, mpRow0DY, "開始新遊戲", "START NEW GAME", "start"},
-	{8, mpColRightDX, mpRow1DY, "載入遊戲", "LOAD GAME", "load"},
-	{9, mpColRightDX, mpRow2DY, "加入遊戲", "JOIN GAME", "join"},
-	{10, mpColRightDX, mpRow3DY, "連線資訊", "COMM INFO", "comm"},
-	{256, mpTenDX, mpTenDY, "TEN 連線服務", "TOTAL ENTERTAINMENT NETWORK", "ten"},
-	{6, mpCancelDX, mpCancelDY, "取消", "CANCEL", "cancel"},
+	{2, mpColLeftDX, mpRow0DY, "multiplayer.setup.button.network", "network"},
+	{3, mpColLeftDX, mpRow1DY, "multiplayer.setup.button.modem", "modem"},
+	{4, mpColLeftDX, mpRow2DY, "multiplayer.setup.button.null_modem", "nullmodem"},
+	{5, mpColLeftDX, mpRow3DY, "multiplayer.setup.button.hotseat", "hotseat"},
+	{7, mpColRightDX, mpRow0DY, "multiplayer.setup.button.start", "start"},
+	{8, mpColRightDX, mpRow1DY, "multiplayer.setup.button.load", "load"},
+	{9, mpColRightDX, mpRow2DY, "multiplayer.setup.button.join", "join"},
+	{10, mpColRightDX, mpRow3DY, "multiplayer.setup.button.comm_info", "comm"},
+	{256, mpTenDX, mpTenDY, "multiplayer.setup.button.ten", "ten"},
+	{6, mpCancelDX, mpCancelDY, "multiplayer.setup.button.cancel", "cancel"},
 }
 
 // multiplayerScreen 是多人遊戲設定畫面。
@@ -298,10 +298,36 @@ func (s *multiplayerScreen) frameFace(asset, frame int) (color.RGBA, bool) {
 // `mov bx,[edx+2] / mov dx,[edx]` 就是讀影像標頭的寬高)。
 func (s *multiplayerScreen) btnRect(btn mpButton) (int, int, int, int) {
 	w, h := 154, 26 // 取不到圖時沿用左欄按鈕實測尺寸
+	switch btn.act {
+	case "ten":
+		w, h = 253, 30 // MULTIGM.LBX#256 已證實尺寸
+	case "cancel":
+		w, h = 129, 25 // MULTIGM.LBX#6 已證實尺寸
+	}
 	if im := s.frameImage(btn.asset, mpFrameNormal); im != nil {
 		w, h = im.Bounds().Dx(), im.Bounds().Dy()
 	}
 	return s.panX + btn.dx, s.panY + btn.dy, w, h
+}
+
+func (s *multiplayerScreen) buttonTextRect(btn mpButton) textSafeRect {
+	x, y, w, h := s.btnRect(btn)
+	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 3, insetY: 3, lineH: h - 6}
+}
+
+func (s *multiplayerScreen) titleTextRect() textSafeRect {
+	return textSafeRect{x: s.panX + 30, y: s.panY + 16, w: s.panW - 60, h: 24,
+		insetX: 3, insetY: 1, lineH: 22}
+}
+
+func (s *multiplayerScreen) noteTextRect() textSafeRect {
+	return textSafeRect{x: 20, y: s.panY + s.panH + 4, w: moo2ScreenW - 40, h: 24,
+		insetX: 3, insetY: 1, lineH: 22}
+}
+
+func (s *multiplayerScreen) messageTextRect() textSafeRect {
+	return textSafeRect{x: 20, y: s.panY + s.panH + 24, w: moo2ScreenW - 40, h: 24,
+		insetX: 3, insetY: 1, lineH: 22}
 }
 
 // enabled 回傳這顆鈕在目前模式下能不能點；implemented 則另外處理已淘汰的傳輸方式。
@@ -357,8 +383,7 @@ func (s *multiplayerScreen) click(act string) *origTransition {
 	case "modem", "nullmodem":
 		// ⚠ 這兩個是**數據機與序列線**——那些硬體現在不存在,remake 走 TCP。
 		// 替不存在的硬體做設定畫面不是還原,是裝飾。
-		s.msg = s.b.tr("數據機 / 序列線在現在的機器上不存在;本版的連線走 TCP。",
-			"Modem / null-modem hardware no longer exists; this build uses TCP.")
+		s.msg = uiText(s.b.lang, "multiplayer.setup.message.legacy_transport")
 		return nil
 	case "hotseat":
 		if s.mode != mpHotseat {
@@ -375,48 +400,45 @@ func (s *multiplayerScreen) click(act string) *origTransition {
 		if s.mode == mpNetwork {
 			sc, err := s.b.hostNetLobby()
 			if err != nil {
-				s.msg = s.b.tr("開不了大廳:", "Could not host: ") + err.Error()
+				s.msg = fmt.Sprintf(uiText(s.b.lang, "multiplayer.setup.error.host"), err)
 				return nil
 			}
 			return &origTransition{next: sc}
 		}
 		if s.mode != mpHotseat {
-			s.msg = s.b.tr("數據機 / 序列線在現在的機器上不存在;請選「網路」或「熱座」。",
-				"Modem / null-modem no longer exists; pick NETWORK or HOTSEAT.")
+			s.msg = uiText(s.b.lang, "multiplayer.setup.message.choose_supported")
 			return nil
 		}
 		s.b.pendingHotseat = s.humans
-		return s.b.goTo(s.b.newGameSetup, "新遊戲設定")
+		return s.b.goTo(s.b.newGameSetup, uiText(s.b.lang, "multiplayer.setup.transition.new_game"))
 	case "load":
 		if !shell.AnySaveExists(saveDirFor()) {
-			s.msg = s.b.tr("還沒有任何存檔。", "No saved games yet.")
+			s.msg = uiText(s.b.lang, "multiplayer.setup.message.no_saves")
 			return nil
 		}
 		sc, err := s.b.loadGame()
 		if err != nil {
-			s.msg = s.b.tr("存檔視窗開不起來。", "Could not open the load window.")
+			s.msg = uiText(s.b.lang, "multiplayer.setup.message.load_failed")
 			return nil
 		}
 		return &origTransition{next: sc}
 	case "join":
 		sc, err := s.b.joinNetLobby()
 		if err != nil {
-			s.msg = s.b.tr("連不上大廳:", "Could not join: ") + err.Error()
+			s.msg = fmt.Sprintf(uiText(s.b.lang, "multiplayer.setup.error.join"), err)
 			return nil
 		}
 		return &origTransition{next: sc}
 	case "comm":
 		// COMM INFO 是數據機/序列線的連線參數(鮑率、COM 埠…)——那些硬體現在不存在。
-		s.msg = s.b.tr("連線參數是數據機 / 序列線年代的東西;本版走 TCP,不需要設定。",
-			"COMM INFO configured modem / serial hardware; this build uses TCP.")
+		s.msg = uiText(s.b.lang, "multiplayer.setup.message.comm_legacy")
 		return nil
 	case "ten":
 		// TEN(Total Entertainment Network)是 1990 年代的線上對戰服務,1999 年就收了。
-		s.msg = s.b.tr("TEN 是原版年代的線上對戰服務,早已停止營運。",
-			"TEN was the 1990s online service for this game; it shut down long ago.")
+		s.msg = uiText(s.b.lang, "multiplayer.setup.message.ten_closed")
 		return nil
 	}
-	return s.b.goTo(s.b.menu, "主選單")
+	return s.b.goTo(s.b.menu, uiText(s.b.lang, "multiplayer.setup.transition.main_menu"))
 }
 
 func (s *multiplayerScreen) draw(dst *ebiten.Image) {
@@ -466,10 +488,7 @@ func (s *multiplayerScreen) draw(dst *ebiten.Image) {
 		if face, ok := s.frameFace(btn.asset, frame); ok {
 			fillPanel(dst, float32(x+3), float32(y+3), float32(w-6), float32(h-6), face, false)
 		}
-		label := btn.zh
-		if s.b.lang != i18n.Traditional {
-			label = btn.en
-		}
+		label := uiText(s.b.lang, btn.textKey)
 		col := mpLabelNormal
 		switch frame {
 		case mpFrameSelected:
@@ -482,30 +501,26 @@ func (s *multiplayerScreen) draw(dst *ebiten.Image) {
 			col = color.RGBA{225, 230, 240, 255}
 		}
 		if btn.act == "hotseat" && s.mode == mpHotseat {
-			label = fmt.Sprintf("熱座 %d 人", s.humans)
+			label = fmt.Sprintf(uiText(s.b.lang, "multiplayer.setup.button.hotseat_count"), s.humans)
 		}
-		s.fnt.DrawCentered(dst, label, float64(x+w/2), float64(y+h/2), 13, col)
+		s.buttonTextRect(btn).drawCentered(dst, s.fnt, label, 13, col)
 	}
 
 	// 面板標題帶(MULTI-PLAYER GAME SET UP)烘在面板上,同樣擦底疊中文。
 	// 底色從標題帶自身採樣(左緣往內 8px),不用猜的常數——面板調色盤換了也不會露餡。
-	tx, ty, tw, th := s.panX+30, s.panY+16, s.panW-60, 24
-	if s.b.lang == i18n.Traditional { // 英文模式露原版烘在面板上的標題
-		fillPanel(dst, float32(tx), float32(ty), float32(tw), float32(th), s.titleFace, false)
-		s.fnt.DrawCentered(dst, "多人遊戲設定",
-			float64(s.panX+s.panW/2), float64(ty+th/2), 16, sel)
+	titleRect := s.titleTextRect()
+	if s.b.lang == i18n.Traditional || s.panel == nil { // 英文有原版面板時露出烘字
+		fillPanel(dst, float32(titleRect.x), float32(titleRect.y), float32(titleRect.w), float32(titleRect.h), s.titleFace, false)
+		titleRect.drawCentered(dst, s.fnt, uiText(s.b.lang, "multiplayer.setup.title"), 16, sel)
 	}
 
-	note := fmt.Sprintf(s.b.tr("熱座:%d 位真人輪流下令,其餘帝國仍由 AI 操作。",
-		"Hot seat: %d humans take turns; the remaining empires stay AI-controlled."), s.humans)
+	note := fmt.Sprintf(uiText(s.b.lang, "multiplayer.setup.note.hotseat"), s.humans)
 	if s.mode == mpNetwork {
-		note = s.b.tr("TCP 網路:「開始新遊戲」建立大廳,「加入遊戲」尋找或連入對局。",
-			"TCP network: START NEW GAME hosts a lobby; JOIN GAME finds or joins one.")
+		note = uiText(s.b.lang, "multiplayer.setup.note.network")
 	}
-	s.fnt.DrawCentered(dst, note, 320, float64(s.panY+s.panH+16), 12, dim)
+	s.noteTextRect().drawCentered(dst, s.fnt, note, 12, dim)
 	if s.msg != "" {
-		s.fnt.DrawCentered(dst, s.msg, 320, float64(s.panY+s.panH+36), 12,
-			color.RGBA{235, 160, 120, 255})
+		s.messageTextRect().drawCentered(dst, s.fnt, s.msg, 12, color.RGBA{235, 160, 120, 255})
 	}
 }
 

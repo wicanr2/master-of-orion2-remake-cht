@@ -222,6 +222,19 @@
   原版烘字，選中項與新增摘要／取消轉接面板也未裁切。證據與規格見
   [`docs/re/race-selection-player-text-audit-20260827.md`](docs/re/race-selection-player-text-audit-20260827.md) 與
   [`docs/tech/race-selection-external-text-spec.md`](docs/tech/race-selection-external-text-spec.md)。
+  多人主設定已完成第二十四個切片：十顆按鈕只保留資產、座標、動作與穩定文案鍵；標題、
+  按鈕、熱座席位格式、TCP／熱座說明、錯誤訊息與轉場均由 `ui.json` 供應。英文正版資產保留
+  烘字，繁中與缺資產 fallback 從同一鍵繪製；標題、按鈕及底部說明／錯誤兩列均改走雙軸
+  安全框。IDA Pro 9.4 證實 `sub_F42CA @ 0xF42CA..0xF44BB` loader、
+  `sub_F009A @ 0xF009A..0xF03F2` widget builder、`sub_F4D99` 主畫面與
+  `sub_F5691 @ 0xF5691..0xF5777` 模式 writer；欄位偏移 `0x3B／0x10D`、列偏移
+  `0x5B／0x7A／0x9B／0xBB` 及模式 byte `0x199F3A` 均可回查原始 bytes。
+  目標測試先抓到缺資產時 TEN 錯套一般按鈕 154px 寬度，現依 `MULTIGM.LBX#256` 已證實尺寸
+  改為 253×30，CANCEL fallback 同步釘住 129×25。中英文畫廊各 35/35，兩種
+  `23_multiplayer.png` 目視確認無烘字外洩、裁切、越框或按鈕偏心。TCP 與席位循環仍明標
+  現代轉接，不升格為原版 IPX parity；證據與規格見
+  [`docs/re/multiplayer-setup-player-text-audit-20260827.md`](docs/re/multiplayer-setup-player-text-audit-20260827.md) 與
+  [`docs/tech/multiplayer-setup-external-text-spec.md`](docs/tech/multiplayer-setup-external-text-spec.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
