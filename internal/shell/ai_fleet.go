@@ -222,7 +222,7 @@ func (s *GameSession) applyArtemisMinesToAIFleet(i, starIdx int) *ArtemisStrike 
 			break
 		}
 	}
-	if ci < 0 || !s.buildingsFor(ci)[artemisBuildingName] {
+	if ci < 0 || !builtMapHasOriginalBuildingID(s.buildingsFor(ci), 3) {
 		return nil
 	}
 	a := &s.AIPlayers[i]

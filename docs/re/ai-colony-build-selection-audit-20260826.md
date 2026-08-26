@@ -493,10 +493,6 @@ netIndustry < 17 且 population < 5 且 budgetFactor == 0 → 0
 經驗 consumer 讀取；AI 造艦目前仍是帝國匯總產能，無法指出來源殖民地，故「該殖民地新艦
 起始等級 +1」只在玩家逐殖民地交付鏈精確接線，AI 端維持已揭露的資料模型限制。
 
-其餘未封閉區域會讀 alien／outpost 狀態、政府／性格其他碼、其他殖民地 packed 人口用途、帝國建築數、
-星球 owner／環境、事件與未解 player flags；在欄位寫入端與 typed 對映完成前維持
-`unknown_pending_review`，由明示近似 fallback 處理。
-
 ## 第十五批：Armor Barracks／Marine Barracks
 
 2026-08-26 再以正式 `.i64` 的一次性副本及 IDA Pro 9.4 匯出
@@ -663,6 +659,22 @@ score += budgetFactor
 寫入及 typed 對映已分別在第十五、第五批閉合。本批沒有新增未知欄位；跳表、立即數、共享
 尾端與 gate 均為**已證實**。四棟既有戰鬥 consumer 會建立固定防禦反擊者；其傷害／空間／
 戰機數量仍混合手冊與明示近似，不能由本批 AI 建造分數證據升格為精確戰鬥 parity。
+## raw 3：Artemis System Net
+
+2026-08-27 以相同證據契約複核 raw 3：跳表 entry `0xCFF6A 4e050d00` 指向
+`0xD054E`，精簡匯出為 `docs/re/evidence/ai-artemis-build-score-ida.json`。
+
+`0xD054E..0xD05B8` 的完整公式為：priority gate 且 ETA9 為零時直接零分；星系
+`+0x39` 的目前 player bit 已設時只給 `floor(budgetFactor/2)`；否則壓力為
+`10×ETA9 + treatyNear + noPolicyNear + 3×warNear + extended`，壓力非零再加
+`[Ruthless]`，最後加 `floor(budgetFactor/2)`。
+
+這裡的星系 `+0x39` **不是 Artemis 自身旗標**。`sub_E5296 @ 0xE5296..0xE53CD`
+從 colony building base `+0x136` 檢查 `+0x2D`，即 raw 45 Warp Field Interdictor，
+再寫入 owner player bit。raw 3／45 都讀這個相同 bit；此相依關係雖反直覺，仍由 writer 與
+兩個 consumer 證實，不以產品名稱猜測改寫。原始公式與 raw 45 bit 語意為**已證實**；
+remake 四槽外交／航程 context 的投影仍為**強推論**。
+
 ## raw 45：曲速場干擾器
 
 2026-08-27 以相同輸入、資料庫、工具與位址基準重跑

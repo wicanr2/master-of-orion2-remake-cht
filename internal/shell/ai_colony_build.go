@@ -488,6 +488,27 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		return 0, true
 	case 1, 14: // raw 1／14 跳表直接進 0xD0417 的共同零分尾端
 		return 0, true
+	case 3: // 0xD054E..0xD05B8：Artemis System Net
+		if !ctx.strategicPressureContextKnown || !ctx.interdictorStateKnown {
+			return 0, false
+		}
+		if ctx.priorityGate && !ctx.incomingOtherFleetETA9 {
+			return 0, true
+		}
+		budget := originalAIBudgetFactor(ctx.treasuryBefore, ctx.netBC) / 2
+		if ctx.interdictorInSystem {
+			return budget, true
+		}
+		incoming := 0
+		if ctx.incomingOtherFleetETA9 {
+			incoming = 1
+		}
+		pressure := 10*incoming + ctx.reachTreatyNear + ctx.reachNoPolicyNear +
+			3*ctx.reachWarNear + ctx.reachExtended
+		if pressure != 0 {
+			pressure += ruthless
+		}
+		return pressure + budget, true
 	case 45: // 0xD05BD..0xD0614：Warp Field Interdictor
 		if !ctx.strategicPressureContextKnown || !ctx.interdictorStateKnown {
 			return 0, false

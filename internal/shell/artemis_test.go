@@ -10,7 +10,8 @@ func artemisNetSession(t *testing.T, ships []Ship) (*GameSession, int) {
 	if !ok {
 		t.Fatal("應找得到 AI 母星的殖民地模型")
 	}
-	s.AIPlayers[aiIdx].ColonyBuildings[colonyIdx][artemisBuildingName] = true
+	artemis := testBuildingByRawID(t, 3)
+	s.AIPlayers[aiIdx].ColonyBuildings[colonyIdx][artemis.NameZH] = true
 	f := s.Fleet()
 	f.Ships = ships
 	f.AtStar = 0
@@ -45,7 +46,7 @@ func TestArtemisMines_DoomStarAlwaysTriggers(t *testing.T) {
 func TestArtemisMines_NoNetNoStrike(t *testing.T) {
 	s, starIdx := artemisNetSession(t, []Ship{mineTestShip("末日一號", "末日之星", "無護盾")})
 	aiIdx, colonyIdx, _ := s.findAIColonyByStar(starIdx)
-	delete(s.AIPlayers[aiIdx].ColonyBuildings[colonyIdx], artemisBuildingName)
+	delete(s.AIPlayers[aiIdx].ColonyBuildings[colonyIdx], testBuildingByRawID(t, 3).NameZH)
 	s.advanceFleet()
 	if s.LastArtemis != nil {
 		t.Fatalf("沒有水雷網不該有結算,得到 %+v", s.LastArtemis)

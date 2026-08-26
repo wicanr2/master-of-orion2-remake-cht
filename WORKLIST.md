@@ -762,6 +762,11 @@
   否則依 ETA9 與 treaty／no-policy／war／extended 四槽使用 `5／2／3／4／1` 係數，非零再加
   Ruthless。正常候選、完工與三秒差距航線降速 consumer 已抽測；`route.go` 不再內嵌中文建築名，
   改以 raw 45 對照資料表。
+  raw 3 Artemis System Net 已由 `0xD054E..0xD05B8` 閉合；它依原版共用 raw 45 星系 bit，
+  尚無 raw 45 時採 ETA9／treaty／no-policy／war／extended 的 `10／1／1／3／1` 係數，非零再加
+  Ruthless 與 budget factor 一半。同星系已有 raw 45 時只留 budget factor 一半。正常候選、
+  完工、玩家艦隊與 AI 艦隊抵達 consumer 均已抽測；兩條 consumer 都改以 raw 3 查資料表，
+  不再保存內嵌中文建築名。至此一般建築表可映射的 raw 1..47 均有 exact 計分或已證實零分。
   raw 1 Alien Management Center、raw 11 Colony Base、raw 14 Dimensional Portal、raw 18
   與 raw 48 已證實直接走共同零分尾端；一般建築表中的 raw 1／14 已接 exact 零分，正常
   候選只剩兩者任一時不會被類別代理誤選。raw 9 Capitol 亦已閉合：remake 會保存每個帝國
@@ -770,7 +775,6 @@
   人口最高殖民地（同人口取較低 colony index），新擁有者沒有指定行星時接手該行星；完工後
   清除士氣懲罰。狀態已接玩家、AI、熱座與 JSON 往返，玩家可見名稱由
   `assets/i18n/tech.json` 提供，不內嵌於 Go。
-  raw 3 Artemis System Net 等其餘分數區域、
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
   state machine 亦待閉合。見
   [`docs/re/ai-difficulty-economy-audit-20260826.md`](docs/re/ai-difficulty-economy-audit-20260826.md) 與

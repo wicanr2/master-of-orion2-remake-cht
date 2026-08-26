@@ -102,7 +102,7 @@ func TestArtemisNetNowHitsArrivingAIFleets(t *testing.T) {
 	s.advanceAIFleets() // 初始化位置
 
 	star := s.PlayerColonyStarIndex(0)
-	s.ColonyBuildings[0][artemisBuildingName] = true
+	s.ColonyBuildings[0][testBuildingByRawID(t, 3).NameZH] = true
 
 	i := 0
 	before := s.AIPlayers[i].FleetStrength
@@ -133,7 +133,7 @@ func TestArrivingAtAStarWithoutTheNetCostsNothing(t *testing.T) {
 	s := newRaidTestSession(t)
 	s.advanceAIFleets()
 	star := s.PlayerColonyStarIndex(0)
-	delete(s.ColonyBuildings[0], artemisBuildingName)
+	delete(s.ColonyBuildings[0], testBuildingByRawID(t, 3).NameZH)
 
 	i := 0
 	before := s.AIPlayers[i].FleetStrength

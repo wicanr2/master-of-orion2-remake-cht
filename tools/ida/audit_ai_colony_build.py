@@ -108,8 +108,8 @@ REVIEWED_OFFSET_SEMANTICS = {
         "confidence": "confirmed_from_sub_13FD9_write_and_sub_D0036_consumer",
     },
     "base_dependent_raw_39_byte": {
-        "semantic": "base-dependent raw +0x39; D0036 reads it from the record table at dword_19306C for raw 3/45, meaning pending write-origin review",
-        "confidence": "unknown_pending_write_origin_review",
+        "semantic": "when based at dword_19306C, system+0x39 is a per-player bit mask set by sub_E5296 when any colony in that system has raw building 45; D0036 consumes it for raw scores 3/45",
+        "confidence": "confirmed_from_sub_E5296_write_and_sub_D0036_consumers",
     },
     "player_raw_3a_word": {
         "semantic": "player-context signed total command rating supply, recomputed by sub_E2000 and consumed by raw building scores 8/40/41",

@@ -175,6 +175,9 @@
   並至少由指揮評等與掃描範圍 consumer 驗證；已有高階基地時不得候選或完工低階基地。
 - raw 26／27／42／47 要逐式測四個 reach count、ETA9、priority gate、Ruthless 與 budget
   factor；四棟均須以正常唯一候選完工，且固定防禦反擊 consumer 必須各多出對應攻擊者。
+- raw 3 依 `docs/spec/ai-artemis-build-score.md` 測五個壓力係數、raw 45 星系 bit、priority／
+  ETA9、Ruthless 與 budget factor；正常唯一候選完工後，玩家與 AI 艦隊 consumer 都必須
+  由 raw ID 3 讀到效果，不得內嵌中文建築名。
 - 只完成多選主題但選了其他 application 時，不得觸發相應 Automated Factory／Barracks gate。
 - 精確分支與類別式 fallback 不可混稱同一證據等級。
 - 既有擴張測試以「建築＋造艦總投入」驗證新殖民地確實參與經濟，不再假設所有產出都是軍艦。

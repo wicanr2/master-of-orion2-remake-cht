@@ -1295,6 +1295,91 @@ func TestAIOriginalWarpInterdictorScore(t *testing.T) {
 	}
 }
 
+func TestAIOriginalArtemisSystemNetScore(t *testing.T) {
+	b := testBuildingByRawID(t, 3)
+	ctx := originalAIBuildScoreContext{
+		strategicPressureContextKnown: true,
+		interdictorStateKnown:         true,
+		reachTreatyNear:               1,
+		reachNoPolicyNear:             2,
+		reachWarNear:                  3,
+		reachExtended:                 4,
+		incomingOtherFleetETA9:        true,
+		treasuryBefore:                1500,
+		netBC:                         256,
+	}
+	if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{}, ai.PersonalityRuthless, ctx); !exact || score != 28 {
+		t.Fatalf("raw 3 完整壓力分數=(%d,%v)，want (28,true)", score, exact)
+	}
+	ctx.interdictorInSystem = true
+	if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{}, ai.PersonalityRuthless, ctx); !exact || score != 1 {
+		t.Fatalf("同星系已有 raw 45 時 raw 3 只留 budget/2：(%d,%v)", score, exact)
+	}
+	ctx.interdictorInSystem = false
+	ctx.priorityGate = true
+	ctx.incomingOtherFleetETA9 = false
+	if score, exact := originalAIExactBuildingScore(b, engine.ColonyState{}, ai.PersonalityRuthless, ctx); !exact || score != 0 {
+		t.Fatalf("priority gate 無 ETA9 應零分：(%d,%v)", score, exact)
+	}
+	ctx.priorityGate = false
+	ctx.strategicPressureContextKnown = false
+	if _, exact := originalAIExactBuildingScore(b, engine.ColonyState{}, ai.PersonalityRuthless, ctx); exact {
+		t.Fatal("缺戰略壓力 context 不得冒稱精確")
+	}
+	ctx.strategicPressureContextKnown = true
+	ctx.interdictorStateKnown = false
+	if _, exact := originalAIExactBuildingScore(b, engine.ColonyState{}, ai.PersonalityRuthless, ctx); exact {
+		t.Fatal("缺同星系 raw 45 狀態不得冒稱精確")
+	}
+}
+
+func TestAIArtemisCandidateCompletionAndPlayerFleetConsumer(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	b := testBuildingByRawID(t, 3)
+	a.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{gamedata.TOPIC_PLANETOID_CONSTRUCTION: true}
+	a.ColonyBuildings[0] = make(map[string]bool)
+	for _, candidate := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
+		if candidate.NameZH != b.NameZH {
+			a.ColonyBuildings[0][candidate.NameZH] = true
+		}
+	}
+	out := engine.EmpireOutput{Colonies: []engine.ColonyOutput{{NetIndustry: 2000}}}
+	pressure := originalAIStrategicPressureContext{known: true, interdictorStateKnown: true, incomingOtherFleetETA9: true}
+	build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1, pressure)
+	if !ok || build.Name != b.NameZH {
+		t.Fatalf("唯一 raw 3 候選錯誤：build=%+v ok=%v", build, ok)
+	}
+	a.ColonyBuilds = map[int]ColonyBuild{aiColonyBuildKey(a, 0): {Name: b.NameZH, Cost: 1}}
+	s.advanceAIColonyBuilds(0, out)
+	if !builtMapHasOriginalBuildingID(a.ColonyBuildings[0], 3) {
+		t.Fatal("raw 3 完工未寫入建築 map")
+	}
+	if !s.starHasArtemisNet(a.ColonyStars[0]) {
+		t.Fatal("raw 3 完工後玩家艦隊抵達 consumer 未讀到 Artemis 網")
+	}
+}
+
+func TestAllMappedBuildingsHaveExactOriginalScore(t *testing.T) {
+	colony := completeAIFoodScoreColony()
+	ctx := originalAIBuildScoreContext{
+		strategicPressureContextKnown: true,
+		interdictorStateKnown:         true,
+		primaryPopCapKnown:            true,
+		colonyFoodHalfKnown:           true,
+		capitolStateKnown:             true,
+	}
+	for _, b := range gamedata.Buildings {
+		rawID, mapped := gamedata.OriginalBuildingIDForName(b.NameZH)
+		if !mapped {
+			continue
+		}
+		if _, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityHonorable, ctx); !exact {
+			t.Errorf("raw %d 未走原版 exact 分支", rawID)
+		}
+	}
+}
+
 func TestAIWarpInterdictorCandidateCompletionAndRouteConsumer(t *testing.T) {
 	s := NewDemoSession()
 	a := &s.AIPlayers[0]

@@ -26,10 +26,9 @@ import (
 //
 // ============ 誠實留白 ============
 //
-//   - 只對**玩家艦隊**生效。AI 沒有「艦隊移動到某顆星」的模型(它的攻擊是抽象解算的),
-//     所以玩家自己的阿提米絲網目前擋不到 AI。**這是 AI 模型的缺口,不是這個系統沒接**
-//     ——AI 有真的艦隊移動時,這裡是它唯一的掛勾點。
-//   - 被水雷炸沉的船直接從艦隊移除,不進戰鬥記錄——remake 沒有「戰場外損失」這個
+//   - 玩家與 AI 艦隊抵達都已接同一組水雷規則；AI 的艦艇資料仍是匯總戰力，故 AI 路徑
+//     以無護盾承傷並換算戰力損失，不能冒稱逐艦 parity。
+//   - 玩家艦隊被水雷炸沉的船直接從艦隊移除,不進戰鬥記錄——remake 沒有「戰場外損失」這個
 //     事件類別,硬塞進戰鬥記錄會讓歷史紀錄出現一場沒有敵人的仗。
 
 // artemisHullClass 把 remake 的中文艦體名對到手冊的六個 size class。
@@ -91,11 +90,8 @@ func (s *GameSession) starHasArtemisNet(starIdx int) bool {
 	if colonyIdx >= len(ai.ColonyBuildings) {
 		return false
 	}
-	return ai.ColonyBuildings[colonyIdx][artemisBuildingName]
+	return builtMapHasOriginalBuildingID(ai.ColonyBuildings[colonyIdx], 3)
 }
-
-// artemisBuildingName 是建築表裡的中文名(gamedata.Buildings 的 NameZH)。
-const artemisBuildingName = "阿提米絲系統網"
 
 // applyArtemisMines 對剛抵達 starIdx 的艦隊 f 結算一次水雷網。
 //
