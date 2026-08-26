@@ -1281,5 +1281,7 @@
   {"key":"hotseat.empire_select.button.start","english":"START GAME","value":"開始遊戲","note":"確認熱座接管名單"},
   {"key":"hotseat.empire_select.transition.galaxy","english":"Galaxy","value":"星系主畫面","note":"確認後轉入星系"},
   {"key":"hotseat.empire_select.error.no_session","english":"Hotseat empire selection has no active game","value":"熱座選帝國時沒有作用中的對局","note":"建立畫面的內部錯誤"},
-  {"key":"hotseat.empire_select.error.too_few_seats","english":"Hotseat requires at least two human seats","value":"熱座真人席位數不足","note":"建立畫面的席位數錯誤"}
+  {"key":"hotseat.empire_select.error.too_few_seats","english":"Hotseat requires at least two human seats","value":"熱座真人席位數不足","note":"建立畫面的席位數錯誤"},
+  {"key":"confirm.button.yes","english":"YES","value":"是","note":"CONFIRM.LBX#1；英文正版資產存在時保留烘字，缺資產時作後備"},
+  {"key":"confirm.button.no","english":"NO","value":"否","note":"CONFIRM.LBX#2；英文正版資產存在時保留烘字，缺資產時作後備"}
 ]

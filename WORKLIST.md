@@ -284,6 +284,16 @@
   是 `GameSession` 單玩家模型所需的接管 adapter，不冒稱原版版面。證據與規格見
   [`docs/re/hotseat-empire-selection-audit-20260827.md`](docs/re/hotseat-empire-selection-audit-20260827.md) 與
   [`docs/spec/hotseat-empire-selection.md`](docs/spec/hotseat-empire-selection.md)。
+  共用是／否確認框已完成第三十個切片：繁中按鈕及缺資產英文後備由 `ui.json` 提供，
+  `confirmbox.go` 不再內嵌固定按鈕文案或直接呼叫字型繪製；51×21 文字框與點擊熱區共用
+  整數像素中心。缺 `CONFIRM.LBX#1/#2` 時會畫出可見底板、邊框與雙語標籤，不再留下可點但
+  不可見的熱區。IDA Pro 9.4 複核 `sub_77658 @ 0x77658..0x77860` 的 34 個直接呼叫點、
+  Y／N 快捷鍵、兩顆按鈕座標、`sub_778E4` hover frame，以及從字級 4 降到 1、文字高度
+  `<=0x7E` 的原版停止條件；現行固定字級＋省略號維持明標近似。繁中與英文正版資料畫廊
+  各 35/35，兩種 `29_confirm.png` 已目視確認正文與按鈕在框內，英文原版烘字未被覆蓋。
+  證據與規格見
+  [`docs/re/confirm-box-player-text-audit-20260827.md`](docs/re/confirm-box-player-text-audit-20260827.md) 與
+  [`docs/spec/confirm-box-external-text.md`](docs/spec/confirm-box-external-text.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與

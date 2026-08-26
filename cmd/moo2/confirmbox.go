@@ -76,6 +76,16 @@ func confirmMessageTextRect() textSafeRect {
 	}
 }
 
+// confirmButtonTextRect 與原版 widget 的 51×21 熱區共用中心；按鈕資產本身略大，
+// 但玩家點擊與文字位置不能因此各算一套中心。
+func confirmButtonTextRect(x, y int) textSafeRect {
+	return textSafeRect{x: x, y: y, w: confirmBtnW, h: confirmBtnH, insetX: 3, insetY: 1}
+}
+
+func confirmNeedsButtonLabel(lang i18n.Lang, assetDrawn bool) bool {
+	return lang == i18n.Traditional || !assetDrawn
+}
+
 // drawFallbackConfirmPanel 是 CONFIRM.LBX 缺席時的可見容器。它嚴格使用原版底框的
 // 座標與尺寸；深色不透明底同時是 hi-res 文字重播的 z 序屏障，避免星圖名稱穿過訊息。
 // 這是 remake 後備畫面，不宣稱為原版像素。
@@ -190,35 +200,49 @@ func (s *confirmScreen) draw(dst *ebiten.Image) {
 		drawFallbackConfirmPanel(dst)
 	}
 	mx, my := ebiten.CursorPosition()
-	drawBtn := func(img, hi *ebiten.Image, x, y int) {
+	drawBtn := func(img, hi *ebiten.Image, x, y int) bool {
 		use := img
 		if hitBox(mx, my, x, y, confirmBtnW, confirmBtnH) && hi != nil {
 			use = hi // Draw_Confirm_Box_ 每幀把游標所在的那顆設成第 1 幀
 		}
 		if use == nil {
-			return
+			return false
 		}
 		op := &ebiten.DrawImageOptions{}
 		op.GeoM.Translate(float64(x), float64(y))
 		drawPanelImage(dst, use, op)
+		return true
 	}
-	drawBtn(s.yes, s.yesHi, confirmYesX, confirmYesY)
-	drawBtn(s.no, s.noHi, confirmNoX, confirmNoY)
+	yesDrawn := drawBtn(s.yes, s.yesHi, confirmYesX, confirmYesY)
+	noDrawn := drawBtn(s.no, s.noHi, confirmNoX, confirmNoY)
 
 	if s.b.fnt == nil {
 		return
 	}
-	// 中文模式:先擦掉烘在圖上的 YES / NO 再疊中文(同 loadgame/gamemenu 的做法)。
-	// 英文模式讓路,露原版烘的字。
-	if s.b.lang == i18n.Traditional {
-		ink := color.RGBA{235, 240, 250, 255}
-		label := func(txt string, x, y int, face color.RGBA) {
+	// 繁中模式擦除原版烘字後疊上外部文案；英文資產存在時保留烘字。
+	// 缺任一按鈕資產時，兩種語言都要畫出可見後備按鈕，不能只留下隱形熱區。
+	ink := color.RGBA{235, 240, 250, 255}
+	prepareLabelFace := func(x, y int, face color.RGBA, assetDrawn bool) {
+		if s.b.lang == i18n.Traditional && assetDrawn {
 			fillPanel(dst, float32(x+4), float32(y+4),
 				float32(confirmBtnW-8), float32(confirmBtnH-8), face, false)
-			s.b.fnt.DrawCentered(dst, txt, float64(x+confirmBtnW/2), float64(y+confirmBtnH/2)+4, 12, ink)
+		} else if !assetDrawn {
+			fillPanel(dst, float32(x), float32(y), float32(confirmBtnW), float32(confirmBtnH), face, false)
+			vector.StrokeRect(dst, float32(x), float32(y), float32(confirmBtnW), float32(confirmBtnH),
+				1, color.RGBA{180, 190, 210, 255}, false)
+		} else {
+			return
 		}
-		label("是", confirmYesX, confirmYesY, s.yesFace)
-		label("否", confirmNoX, confirmNoY, s.noFace)
+	}
+	prepareLabelFace(confirmYesX, confirmYesY, s.yesFace, yesDrawn)
+	prepareLabelFace(confirmNoX, confirmNoY, s.noFace, noDrawn)
+	if confirmNeedsButtonLabel(s.b.lang, yesDrawn) {
+		confirmButtonTextRect(confirmYesX, confirmYesY).drawCentered(dst, s.b.fnt,
+			uiText(s.b.lang, "confirm.button.yes"), 10, ink)
+	}
+	if confirmNeedsButtonLabel(s.b.lang, noDrawn) {
+		confirmButtonTextRect(confirmNoX, confirmNoY).drawCentered(dst, s.b.fnt,
+			uiText(s.b.lang, "confirm.button.no"), 10, ink)
 	}
 	confirmMessageTextRect().drawCenteredLines(dst, s.b.fnt, s.msg, confirmTextSize, color.RGBA{230, 224, 200, 255})
 }

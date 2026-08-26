@@ -1775,9 +1775,13 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     | Y 熱區 | `sub_11438B(eax=0EBh, edx=12Eh, ebx=11Eh, ecx=143h)` | 235..286 × 302..323 |
     | N 熱區 | `sub_11438B(eax=159h, edx=12Eh, ebx=18Ch, ecx=143h)` | 345..396 × 302..323 |
     | 文字 | `sub_77A74(eax=0CCh, edx=0D0h, ebx=0E0h)` | 左緣 204、垂直置中 208、**折行寬 224** |
-    `Draw_Confirm_Box_` @ 0x778E4 每幀把兩顆鈕的幀號歸 0,再把**游標所在**那顆設成 1
-    原版在文字放不下時會**縮字級**:`sub_103CAF` 量高度,`var_C` 從 4 遞減到 1,
-    - `cmd/moo2/confirmbox.go`:widget(疊在下層畫面上,框外點擊無效——modal 的重點)
+    `sub_778E4 @ 0x778E4..0x77961` 每幀把兩顆鈕的幀號歸 0,再把**游標所在**那顆設成 1。
+    2026-08-27 以 IDA Pro 9.4 複核函式邊界與 34 個直接呼叫點；原版在文字放不下時會
+    **縮字級**：`sub_103CAF` 量高度，`var_C` 從 4 遞減到 1，直到高度 `<=0x7E`。
+    `Y`／`N` 字串是 widget 快捷鍵，可見英文烘在 `CONFIRM.LBX#1/#2`；remake 固定字級與
+    省略號是明標近似。完整證據見 `docs/re/confirm-box-player-text-audit-20260827.md`。
+    - `cmd/moo2/confirmbox.go`:widget(疊在下層畫面上,框外點擊無效——modal 的重點)；
+      繁中按鈕及缺資產英文後備由 `ui.json` 提供，文字框與點擊熱區共用中心
     - `internal/shell/relocation.go`:`RelocateToNeedsConfirm` + 起點的怪獸拒絕 + 檔頭訂正
     - `cmd/moo2/relocation.go` / `interactive.go`:`pendingConfirm` 接線
 
