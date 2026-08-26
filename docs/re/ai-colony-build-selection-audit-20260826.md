@@ -496,3 +496,67 @@ netIndustry < 17 且 population < 5 且 budgetFactor == 0 → 0
 其餘未封閉區域會讀 alien／outpost 狀態、政府／性格其他碼、其他殖民地 packed 人口用途、帝國建築數、
 星球 owner／環境、事件與未解 player flags；在欄位寫入端與 typed 對映完成前維持
 `unknown_pending_review`，由明示近似 fallback 處理。
+
+## 第十五批：Armor Barracks／Marine Barracks
+
+2026-08-26 再以正式 `.i64` 的一次性副本及 IDA Pro 9.4 匯出
+`sub_CFF02 @ 0xCFF02`、`sub_D3A68 @ 0xD3A68`、`sub_D3BA0 @ 0xD3BA0`、
+`Compute_AI_Data_ @ 0xD3D34` 與 `Colony_Building_Score_ @ 0xD0036`。本批保留 raw 名稱與
+位址；以下語意是受版控附加註記，不取代原始定位。
+
+raw 2 與 raw 22 讀的資料分屬兩張表，不能再籠統稱為「7-byte 殖民地 cache」：
+
+- `system×49 + 1 + owner×6` 的前四槽由 `sub_D3BA0 @ 0xD3C48..0xD3D18` 建立。
+  `sub_D3A68` 先從每個帝國 `player+0x324` 取得航程 `R`，以星系座標平方距離分成
+  `<=900R²`（30R raw units，即 R 秒差距）與 `<=2025R²`（45R raw units，即 1.5R 秒差距）。
+  其他帝國在近圈內時，再依 owner 對它的 `player+0x627` 正式政策計數：raw 1..3 進槽 0、
+  raw 0 進槽 1、raw 4..6 進槽 2；只在延伸圈而不在近圈者進槽 3。四槽因此依序是
+  **近圈條約帝國、近圈無正式政策帝國、近圈戰爭帝國、延伸圈帝國**。距離、政策分支與唯一
+  寫入端均為**已證實**。
+- `colonyIndex×7 + 5` 由 `Compute_AI_Data_ @ 0xD4998..0xD4A35` 建立。它取殖民地所在星系，
+  掃描 owner 以外的 active player，若 `system×80 + other×10 + 9` 非零便寫 1。該 10-byte
+  表由 `0xD3FEB..0xD4279` 依艦隊 destination／location 與 ETA 槽 0..9 寫入，所以 `cache+5`
+  是**其他帝國艦隊以該星系為目的地且位於 ETA=9 槽**的布林值；不檢查外交政策。
+- `sub_CFF02 @ 0xCFF02..0xCFF61` 反向掃 packed colonists，忽略 slot >=8、owner 自族與
+  inactive source player；若任一外族人口的 source player 與殖民地 owner 在
+  `player+0x627` 為 raw 4..6，回傳 1。這是**殖民地含戰爭帝國外族人口**，不是一般
+  「alien population」旗標；控制流與 consumer 為**已證實**。
+
+兩式的完整 score 控制流為：
+
+```text
+raw 2 Armor Barracks:
+  population < 3 且 budgetFactor == 0 → 0
+  base = 2*incomingETA9 + treatyNear + noPolicyNear + 3*warNear + extended
+  base != 0 時加 [Ruthless]
+  Marine Barracks 未建且 government/2 <= 1 時加 6
+  含戰爭帝國外族人口時加 1
+
+raw 22 Marine Barracks:
+  population < 2 且 budgetFactor == 0 → 0
+  base = 5*incomingETA9 + treatyNear + 3*noPolicyNear + 6*warNear + 2*extended
+  base != 0 時加 [Ruthless]
+  Armor Barracks 未建且 government/2 <= 1 時加 12
+  含戰爭帝國外族人口時加 3
+```
+
+`var_20` 由 `player+0x28 == 1 @ 0xD0085..0xD008D` 建立，受版控 AIRACES enum 對應
+`PersonalityRuthless`，不是 Aggressive。兩個「另一棟兵營未建」交叉加分是原始指令實況：
+raw 2 檢查 `colony+0x14C`（building 22），raw 22 檢查 `colony+0x138`（building 2）。
+上述立即數、人口／預算 gate、政府 gate、性格與 hostile-population consumer 均為**已證實**。
+
+`player+0x324` 的上游亦已閉合。`sub_10034D @ 0x10034D..0x10038B` 由高至低掃
+`0x17FFDE` 的 10-byte records；命中已取得 application（狀態 3）後，把同 record 的 range
+寫入 `+0x324`，全未命中則寫 0。原始表逐筆為：
+
+| technology raw ID | typed application | range（秒差距） |
+|---:|---|---:|
+| 167 | Standard Fuel Cells | 4 |
+| 51 | Deuterium Fuel Cells | 6 |
+| 98 | Iridium Fuel Cells | 9 |
+| 194 | Urridium Fuel Cells | 12 |
+| 184 | Thorium Fuel Cells | 255 |
+
+IDA 匯出 raw words 為 `167,4 / 51,6 / 98,9 / 194,12 / 184,255`；科技 ID 逐項對回受版控
+`gamedata.Technology`。因此 remake 可由實際已取得 application 精確重建 R；舊存檔若沒有任何
+可證明的 fuel application，必須讓 barracks context 失敗並走明示 fallback，不擅自補 Standard。

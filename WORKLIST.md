@@ -366,6 +366,12 @@
   `colony+0xE9`；現保留 17 工業／5 人口／budget gate、`netIndustry-15` unsigned 平方根及
   1000 上限。正常 AI 候選完工後，同星系 AI 實艦每回合會取得學院經驗；AI 匯總造艦無來源
   殖民地，故 AI 新艦起始等級仍是明示資料模型限制。
+  raw 2 Armor Barracks 與 raw 22 Marine Barracks 已沿 `sub_D3A68`／`sub_D3BA0` 的
+  近圈條約／無政策／戰爭／延伸航程四槽、`Compute_AI_Data_ cache+5` 的他國艦隊 ETA=9，
+  以及 `sub_CFF02` 的戰爭帝國外族人口旗標閉合；`sub_10034D` 的燃料表亦證實
+  Standard／Deuterium／Iridium／Urridium／Thorium 航程為 4／6／9／12／255。兩式已接
+  Ruthless、人口／budget、政府與交叉兵營 gate；正常唯一候選完工後由 AI 陸戰隊／戰車營
+  補充 consumer 驗證。舊存檔若缺 fuel application 或外交／population-slot 對映，仍誠實走 fallback。
   其餘分數區域、
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
   state machine 亦待閉合。見

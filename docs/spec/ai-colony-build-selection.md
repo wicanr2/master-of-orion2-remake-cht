@@ -87,6 +87,16 @@
    65535 後夾成 1000，不得平滑成 0。完工必須寫入 AI 殖民地建築 map，並由同星系 AI 艦艇
    每回合經驗加成 consumer 驗證；AI 匯總造艦尚無來源殖民地，因此不宣稱 AI 新艦起始等級
    已精確接線。
+   raw ID 2 Armor Barracks 與 raw ID 22 Marine Barracks 使用同一份星系壓力 context。
+   四個 reach count 依序是近圈條約、近圈無正式政策、近圈戰爭、延伸圈帝國數；另有其他
+   帝國艦隊 ETA=9 與殖民地內戰爭帝國外族人口旗標。Armor Barracks 在人口 `<3` 且
+   `budgetFactor==0` 時為 0，否則為
+   `2×ETA9+條約+無政策+3×戰爭+延伸+[base!=0]×[Ruthless]`，再於 Marine Barracks 未建且
+   `government/2<=1` 加 6、hostile alien population 加 1。Marine Barracks 的人口門檻是 2，
+   基礎式為 `5×ETA9+條約+3×無政策+6×戰爭+2×延伸+[base!=0]×[Ruthless]`，再於 Armor
+   Barracks 未建且同一政府 gate 加 12、hostile alien population 加 3。燃料科技須先轉成
+   原版 `player+0x324` 的 R 秒差距口徑；若 session-wide 外交、航程、艦隊或 population-slot
+   對映不完整，這兩式必須回報非 exact 並走明示 fallback。
 5. 優先建築 gate 僅由已知科技 application、已建建築、殖民地礦產及 AI 生效政府組成：
    - Ultra Poor／Poor／Abundant 殖民地已知 Automated Factories 但未建 Automated Factory；或
    - Feudal／Confederation／Dictatorship／Imperium 已知但未建 Marine Barracks／Armor Barracks。
@@ -134,6 +144,9 @@
   唯一正常候選走過逐殖民地產能、完工旗標及帝國收入／無污染產能消費端。
 - raw 38 要測 priority gate、人口 4／5、budget factor 0／正值及淨工業 14／15／16／17 的
   unsigned 不連續邊界；唯一正常候選完工後，停泊同星系的 AI 實艦每回合必須多得學院經驗。
+- raw 2／22 要逐項測四個 reach count、其他帝國 ETA=9、Ruthless、兩個人口／budget gate、
+  八種政府、交叉兵營旗標與 hostile alien population；正常唯一候選完工後，必須由既有
+  駐軍回合鏈觀察 Marine／Tank 數量成長，不能只檢查建築 map。
 - 只完成多選主題但選了其他 application 時，不得觸發相應 Automated Factory／Barracks gate。
 - 精確分支與類別式 fallback 不可混稱同一證據等級。
 - 既有擴張測試以「建築＋造艦總投入」驗證新殖民地確實參與經濟，不再假設所有產出都是軍艦。

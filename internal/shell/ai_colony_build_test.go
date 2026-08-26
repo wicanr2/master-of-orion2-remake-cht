@@ -956,6 +956,129 @@ func TestAISpaceAcademyCandidateCompletionAndCrewConsumer(t *testing.T) {
 	}
 }
 
+func TestAIOriginalBarracksScores(t *testing.T) {
+	armor, ok := gamedata.BuildingByNameZH(armorBarracksBuildingName)
+	if !ok {
+		t.Fatal("找不到裝甲營房")
+	}
+	marine, ok := gamedata.BuildingByNameZH(marineBarracksBuildingName)
+	if !ok {
+		t.Fatal("找不到海軍陸戰隊營")
+	}
+	colony := engine.ColonyState{Population: 3}
+	ctx := originalAIBuildScoreContext{
+		barracksContextKnown:   true,
+		reachTreatyNear:        1,
+		reachNoPolicyNear:      2,
+		reachWarNear:           3,
+		reachExtended:          4,
+		incomingOtherFleetETA9: true,
+		hostileAlienPopulation: true,
+		armorBarracksBuilt:     true,
+		marineBarracksBuilt:    true,
+		government:             gamedata.MoraleGovDemocracy,
+	}
+	if score, exact := originalAIExactBuildingScore(armor, colony, ai.PersonalityRuthless, ctx); !exact || score != 20 {
+		t.Fatalf("Armor Barracks 分數=(%d,%v)，want (20,true)", score, exact)
+	}
+	if score, exact := originalAIExactBuildingScore(marine, colony, ai.PersonalityRuthless, ctx); !exact || score != 42 {
+		t.Fatalf("Marine Barracks 分數=(%d,%v)，want (42,true)", score, exact)
+	}
+
+	ctx = originalAIBuildScoreContext{barracksContextKnown: true, government: gamedata.MoraleGovDictatorship}
+	if score, exact := originalAIExactBuildingScore(armor, engine.ColonyState{Population: 2}, ai.PersonalityAggressive, ctx); !exact || score != 0 {
+		t.Fatalf("人口 2、無 budget 的 Armor gate=(%d,%v)，want (0,true)", score, exact)
+	}
+	if score, exact := originalAIExactBuildingScore(marine, engine.ColonyState{Population: 2}, ai.PersonalityAggressive, ctx); !exact || score != 12 {
+		t.Fatalf("Marine 交叉 Armor／政府加分=(%d,%v)，want (12,true)", score, exact)
+	}
+	ctx.treasuryBefore = 1500
+	ctx.netBC = 64
+	if score, exact := originalAIExactBuildingScore(armor, engine.ColonyState{Population: 2}, ai.PersonalityAggressive, ctx); !exact || score != 6 {
+		t.Fatalf("正 budget 應通過 Armor 人口 gate 並取政府加分：(%d,%v)", score, exact)
+	}
+	ctx.barracksContextKnown = false
+	if _, exact := originalAIExactBuildingScore(armor, colony, ai.PersonalityRuthless, ctx); exact {
+		t.Fatal("缺 session-wide context 時不得冒稱 Armor Barracks exact")
+	}
+}
+
+func TestAIOriginalFuelRangeTable(t *testing.T) {
+	tests := []struct {
+		tech gamedata.Technology
+		want int
+	}{
+		{gamedata.TECH_STANDARD_FUEL_CELLS, 4},
+		{gamedata.TECH_DEUTERIUM_FUEL_CELLS, 6},
+		{gamedata.TECH_IRIDIUM_FUEL_CELLS, 9},
+		{gamedata.TECH_URRIDIUM_FUEL_CELLS, 12},
+		{gamedata.TECH_THORIUM_FUEL_CELLS, 255},
+	}
+	for _, tt := range tests {
+		got, ok := originalAIFuelRangeParsecs(engine.PlayerState{
+			GrantedTechs: map[gamedata.Technology]bool{tt.tech: true},
+		})
+		if !ok || got != tt.want {
+			t.Errorf("fuel tech %d range=(%d,%v)，want (%d,true)", tt.tech, got, ok, tt.want)
+		}
+	}
+	if _, ok := originalAIFuelRangeParsecs(engine.PlayerState{}); ok {
+		t.Fatal("沒有已知 fuel application 時不得擅自補 Standard Fuel Cells")
+	}
+}
+
+func TestAIBarracksCandidateCompletionAndGroundForceConsumer(t *testing.T) {
+	tests := []struct {
+		name       string
+		building   string
+		topic      gamedata.ResearchTopic
+		wantMarine bool
+	}{
+		{"Marine Barracks", marineBarracksBuildingName, gamedata.TOPIC_ENGINEERING, true},
+		{"Armor Barracks", armorBarracksBuildingName, gamedata.TOPIC_ASTRO_ENGINEERING, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := NewDemoSession()
+			s.ensureAIAIState()
+			a := &s.AIPlayers[0]
+			a.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{tt.topic: true}
+			a.Colonies[0].Population = 8
+			a.Colonies[0].PopMax = 12
+			a.Colonies[0].OwnerRaceSlot = a.PopulationRaceSlot
+			a.Colonies[0].OwnerRaceSlotKnown = true
+			a.Colonies[0].OwnerRaceProfileKnown = true
+			a.Colonies[0].PopulationGroups = []engine.PopulationGroup{{
+				RaceSlot: a.PopulationRaceSlot, RaceSlotKnown: true, ProfileKnown: true, Workers: 8,
+			}}
+			a.ColonyBuildings[0] = make(map[string]bool)
+			for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
+				a.ColonyBuildings[0][b.NameZH] = true
+			}
+			delete(a.ColonyBuildings[0], tt.building)
+			out := engine.EmpireOutput{Colonies: []engine.ColonyOutput{{NetIndustry: 200}}, Player: engine.PlayerState{BC: 2000}}
+			build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1, s.originalAIBarracksContext(0, 0))
+			if !ok || build.Name != tt.building {
+				t.Fatalf("唯一候選錯誤：build=%+v ok=%v", build, ok)
+			}
+			a.ColonyMarines, a.ColonyTanks = nil, nil
+			a.MarineBarracksAge, a.ArmorBarracksAge = nil, nil
+			a.ColonyBuilds = map[int]ColonyBuild{aiColonyBuildKey(a, 0): {Name: tt.building, Cost: 1}}
+			s.advanceAIColonyBuilds(0, out)
+			advanceAIGroundForces(a)
+			if !a.ColonyBuildings[0][tt.building] {
+				t.Fatalf("%s 完工未寫入建築 map", tt.building)
+			}
+			if tt.wantMarine && a.ColonyMarines[0] <= 0 {
+				t.Fatalf("Marine Barracks 完工後駐軍 consumer 未產生陸戰隊：%v", a.ColonyMarines)
+			}
+			if !tt.wantMarine && a.ColonyTanks[0] <= 0 {
+				t.Fatalf("Armor Barracks 完工後駐軍 consumer 未產生戰車營：%v", a.ColonyTanks)
+			}
+		})
+	}
+}
+
 func TestAIPlanetaryGravityGeneratorCandidateCompletionAndConsumer(t *testing.T) {
 	s := NewDemoSession()
 	a := &s.AIPlayers[0]

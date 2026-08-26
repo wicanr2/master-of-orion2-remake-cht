@@ -20,6 +20,7 @@ import idc
 
 ROOTS = {
     "raw_Next_Turn_Calc": 0x136B3,
+    "raw_AI_Barracks_Score_Flag": 0xCFF02,
     "raw_Colony_Building_Score": 0xD0036,
     "raw_Assign_Colony_New_Building": 0xD0B08,
     "raw_AI_Build_Dispatch": 0xD0D2F,
@@ -27,6 +28,9 @@ ROOTS = {
     "raw_Assign_Colony_Building": 0xD2754,
     "raw_Player_Colony_Autobuild": 0xD2783,
     "raw_AI_Colony_Primary_Player": 0xD2A08,
+    "raw_AI_System_Relationship_Inputs": 0xD3A68,
+    "raw_AI_System_Range_Gate": 0xD2AA9,
+    "raw_AI_Colony_Build_Assignment_Pass": 0xD3BA0,
     "raw_Compute_AI_Data": 0xD3D34,
     "raw_Collect_AI_Colonies": 0xD5795,
     "raw_Assign_Buildings": 0xD589B,
@@ -54,6 +58,7 @@ ROOTS = {
     "raw_Do_Colony_Calculations": 0xE2B31,
     "raw_Apply_Player_Economy": 0xE4F49,
     "raw_Integer_Sqrt": 0x134C92,
+    "raw_Recompute_Player_Fuel_Range": 0x10034D,
 }
 
 
@@ -65,6 +70,7 @@ TRACKED_RECORD_OFFSETS = {
     "player_cybernetic_trait": 0x8B0,
     "player_lithovore_trait": 0x8B1,
     "player_aquatic_trait": 0x8AB,
+    "player_fuel_range_word": 0x324,
     "player_late_tech": 0x59D,
     "shared_gate_125": 0x125,
     "shared_gate_12d": 0x12D,
@@ -102,6 +108,10 @@ REVIEWED_OFFSET_SEMANTICS = {
     "player_aquatic_trait": {
         "semantic": "base-dependent raw +0x8AB; player Aquatic trait byte from runtime trait index 12",
         "confidence": "confirmed_from_trait_table_index_and_independent_food_consumers",
+    },
+    "player_fuel_range_word": {
+        "semantic": "player-context signed word consumed as current colony reach radius by sub_D3A68/sub_D2AA9",
+        "confidence": "confirmed_consumer_semantic_pending_write_origin_review",
     },
     "player_late_tech": {
         "semantic": "player late-tech flag when research field >= 75",
@@ -315,6 +325,12 @@ def main():
         },
         "global_data_refs": {
             "raw_ai_colony_cache_pointer": global_data_refs(0x1AA1EC),
+            "raw_system_player_cache_pointer": global_data_refs(0x1AA1E4),
+            "raw_system_player_fleet_cache_pointer": global_data_refs(0x1AA1F8),
+        },
+        "fuel_range_table": {
+            "start": "0x17FFDE",
+            "bytes": (ida_bytes.get_bytes(0x17FFDE, 0x50) or b"").hex(),
         },
         "roots": {name: function_record(ea) for name, ea in ROOTS.items()},
     }

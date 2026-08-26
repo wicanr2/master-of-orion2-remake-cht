@@ -45,9 +45,9 @@
 Computers → Biology → Physics → Force Fields)排列。「研究成本」欄取自 `tech.cpp` 該建築所屬 RP 主題值,
 同一研究主題內若有其他科技/建築同組,一併註明(代表玩家研究完那筆 RP 就同時解鎖該組全部項目)。
 
-| # | 建築(英文) | 建議中譯 | 分類 | 前置研究欄位 | 研究成本(RP) | 維護費(BC/turn) | 建造成本(PP) | 效果 | 互斥/取代 | 頁碼 |
+| # | 建築(英文) | 建議中譯 | 分類 | 前置研究欄位 | 研究成本(RP) | 維護費(BC/turn) | 手冊明載建造成本(PP) | 效果 | 互斥/取代 | 頁碼 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1 | Marine Barracks | 陸戰隊營房 | 防禦/陸戰 | Engineering(起始已知) | 50(與 Colony Base、Star Base 同組) | 1 | 待查證 | 建成立即產生最多 4 個陸戰隊單位;之後每 5 回合 +1,上限為「現有人口/2」與「星球人口上限/2」取較小值;特定政府下可消除士氣懲罰 | 無 | p.77 |
+| 1 | Marine Barracks | 陸戰隊營房 | 防禦/陸戰 | Engineering(起始已知) | 50(與 Colony Base、Star Base 同組) | 1 | 手冊未列；原版執行檔表為 **60** | 建成立即產生最多 4 個陸戰隊單位;之後每 5 回合 +1,上限為「現有人口/2」與「星球人口上限/2」取較小值;特定政府下可消除士氣懲罰 | 無 | p.77 |
 | 2 | Automated Factories | 自動化工廠 | 生產 | Advanced Construction | 150(與 Heavy Armor、Missile Base 同組) | 1 | 待查證 | 每個工業人口 +1 產能/回合,殖民地整體 +5 產能 | 無 | p.78 |
 | 3 | Missile Base | 飛彈基地 | 防禦 | Advanced Construction | 150(與上同組) | 2 | 待查證 | 配備最佳飛彈(佔用 300 空間內盡量多),自動防禦來襲艦隊;只能被軌道轟炸摧毀 | 無 | p.78 |
 | 4 | Armor Barracks | 裝甲營房 | 防禦/陸戰 | Astro Engineering | 400(與 Fighter Garrison、Spaceport 同組) | 2 | **150**(`MANUAL_150.html` 官方 modding 範例數字,唯一有 PP 來源的一項) | 建成立即產生最多 2 個裝甲營,之後每 5 回合 +1,上限為「現有人口/4」與「星球人口上限/4」取較小值;特定政府下可消除士氣懲罰 | 無 | p.79 |
@@ -130,7 +130,7 @@ Computers → Biology → Physics → Force Fields)排列。「研究成本」�
 
 | 項目 | 狀態 |
 |---|---|
-| 34 項建築(除 Armor Barracks 外)的建造成本(PP) | 無手冊來源,需存檔/資料檔逆向;Biospheres/Cloning Center 兩項有低可信度社群數字,已標注來源等級 |
+| 建造成本(PP)的手冊來源 | 手冊除 Armor Barracks 範例外未列完整表；runtime 權威值已由原版執行檔建築表逐項解碼，實作以 `internal/gamedata/buildings.go` 為準，不再列為 RE 缺口 |
 | `initial_buildings` 優先清單完整排序 | 手冊只透露 entry 1-5,見 `homeworld-init.md` §3.4 |
 | Planetary Missile Base / Ground Batteries 具體傷害輸出數值(依裝備武器科技變動) | 手冊只給「配備最佳武器、佔用 N 空間」的規則,實際數值需搭配當時已解鎖的武器科技現算,非固定值 |
 | 是否還有本表遺漏的殖民地建築(如更晚期或 1.31/1.50 新增項目) | 本表基於 `GAME_MANUAL.pdf`(patch 1.5 版手冊)「The Big List」完整解析 182 個型別標記項目,理論上已涵蓋全部;若原版 1.31 手冊有 1.5 才移除/新增的建築,需另外核對(本專案未取得 1.31 原始手冊全文,僅有 1.5 手冊) |

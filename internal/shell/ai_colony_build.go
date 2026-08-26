@@ -1,6 +1,8 @@
 package shell
 
 import (
+	"math"
+
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
@@ -170,22 +172,203 @@ func originalAIPrimaryPopulationCapacity(colony engine.ColonyState, built map[st
 }
 
 type originalAIBuildScoreContext struct {
-	lateTech              bool
-	priorityGate          bool
-	aquatic               bool
-	empireFoodBalanceHalf int
-	colonyFoodHalf        int
-	colonyFoodHalfKnown   bool
-	pollutionCleanupCost  int
-	ownerLowGravity       bool
-	ownerHighGravity      bool
-	primaryPopCapacity    int
-	primaryPopCapKnown    bool
-	netIndustry           int
-	raceGrowthPercent     int
-	government            gamedata.MoraleGovernmentType
-	treasuryBefore        int
-	netBC                 int
+	lateTech               bool
+	priorityGate           bool
+	aquatic                bool
+	empireFoodBalanceHalf  int
+	colonyFoodHalf         int
+	colonyFoodHalfKnown    bool
+	pollutionCleanupCost   int
+	ownerLowGravity        bool
+	ownerHighGravity       bool
+	primaryPopCapacity     int
+	primaryPopCapKnown     bool
+	netIndustry            int
+	raceGrowthPercent      int
+	government             gamedata.MoraleGovernmentType
+	treasuryBefore         int
+	netBC                  int
+	barracksContextKnown   bool
+	reachTreatyNear        int
+	reachNoPolicyNear      int
+	reachWarNear           int
+	reachExtended          int
+	incomingOtherFleetETA9 bool
+	hostileAlienPopulation bool
+	armorBarracksBuilt     bool
+	marineBarracksBuilt    bool
+}
+
+// originalAIBarracksContext 是 raw 2／22 需要的 session-wide 暫態輸入；不進存檔。
+// score 公式本身可精確測試，而跨帝國航程由 GameSession 在候選建立前一次投影。
+type originalAIBarracksContext struct {
+	known                  bool
+	reachTreatyNear        int
+	reachNoPolicyNear      int
+	reachWarNear           int
+	reachExtended          int
+	incomingOtherFleetETA9 bool
+	hostileAlienPopulation bool
+}
+
+// originalAIFuelRangeParsecs 對映 sub_10034D 與原始表 0x17FFDE..0x18001：
+// tech 167/51/98/194/184 分別寫 4/6/9/12/255。沒有任何已知 fuel application 時
+// 原版寫 0；remake 不以「一般都有 Standard Fuel Cells」掩蓋不完整舊存檔。
+func originalAIFuelRangeParsecs(ps engine.PlayerState) (int, bool) {
+	known := knownTechnologyApplications(ps)
+	switch {
+	case known[gamedata.TECH_THORIUM_FUEL_CELLS]:
+		return 255, true
+	case known[gamedata.TECH_URRIDIUM_FUEL_CELLS]:
+		return 12, true
+	case known[gamedata.TECH_IRIDIUM_FUEL_CELLS]:
+		return 9, true
+	case known[gamedata.TECH_DEUTERIUM_FUEL_CELLS]:
+		return 6, true
+	case known[gamedata.TECH_STANDARD_FUEL_CELLS]:
+		return 4, true
+	}
+	return 0, false
+}
+
+func (s *GameSession) originalAIStarDistanceParsecs(a, b int) float64 {
+	if a < 0 || b < 0 || a >= len(s.Stars) || b >= len(s.Stars) {
+		return math.Inf(1)
+	}
+	w, h := gamedata.GalaxyParsecSpan(s.GalaxySizeClass())
+	dx := (s.Stars[a].X - s.Stars[b].X) * w
+	dy := (s.Stars[a].Y - s.Stars[b].Y) * h
+	return math.Hypot(dx, dy)
+}
+
+func anyOriginalAIColonyInRange(s *GameSession, target int, stars []int, limit float64) bool {
+	for _, star := range stars {
+		if s.originalAIStarDistanceParsecs(target, star) <= limit {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *GameSession) originalAIPolicyBetween(ownerAI, sourceSlot int) (gamedata.ForeignPolicy, bool, bool) {
+	if ownerAI < 0 || ownerAI >= len(s.AIPlayers) {
+		return gamedata.DIPLO_NONE, false, false
+	}
+	playerSlot := -1
+	for _, colony := range s.PlayerColonies {
+		if colony.OwnerRaceSlotKnown {
+			playerSlot = colony.OwnerRaceSlot
+			break
+		}
+	}
+	if sourceSlot == playerSlot && playerSlot >= 0 {
+		return s.AIPlayers[ownerAI].Treaty.FormalPolicy, len(s.PlayerColonies) > 0, true
+	}
+	for i := range s.AIPlayers {
+		other := s.AIPlayers[i]
+		if !other.PopulationRaceSlotKnown || other.PopulationRaceSlot != sourceSlot {
+			continue
+		}
+		if i == ownerAI {
+			return gamedata.DIPLO_NONE, true, true
+		}
+		if ownerAI >= len(s.AIPolicies) || i >= len(s.AIPolicies[ownerAI]) {
+			return gamedata.DIPLO_NONE, false, false
+		}
+		return s.AIPolicies[ownerAI][i], len(other.Colonies) > 0, true
+	}
+	return gamedata.DIPLO_NONE, false, false
+}
+
+// originalAIBarracksContext 投影 sub_D3A68／sub_D3BA0、Compute_AI_Data_ cache+5 與
+// sub_CFF02 的 session-wide 輸入。任何 player-slot／外交矩陣缺口都令 known=false，
+// 讓 caller 回到明示 fallback，避免把舊存檔零值冒充原版精確狀態。
+func (s *GameSession) originalAIBarracksContext(aiIndex, colonyIndex int) originalAIBarracksContext {
+	ctx := originalAIBarracksContext{}
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) || colonyIndex < 0 ||
+		colonyIndex >= len(s.AIPlayers[aiIndex].Colonies) || colonyIndex >= len(s.AIPlayers[aiIndex].ColonyStars) {
+		return ctx
+	}
+	owner := &s.AIPlayers[aiIndex]
+	if !owner.PopulationRaceSlotKnown {
+		return ctx
+	}
+	target := owner.ColonyStars[colonyIndex]
+	if target < 0 || target >= len(s.Stars) {
+		return ctx
+	}
+
+	classify := func(stars []int, ps engine.PlayerState, policy gamedata.ForeignPolicy) bool {
+		rangeParsecs, ok := originalAIFuelRangeParsecs(ps)
+		if !ok {
+			return false
+		}
+		r := float64(rangeParsecs)
+		if anyOriginalAIColonyInRange(s, target, stars, r) {
+			switch {
+			case policy >= gamedata.DIPLO_LIMITED_WAR:
+				ctx.reachWarNear++
+			case policy == gamedata.DIPLO_NONE:
+				ctx.reachNoPolicyNear++
+			default:
+				ctx.reachTreatyNear++
+			}
+		} else if anyOriginalAIColonyInRange(s, target, stars, 1.5*r) {
+			ctx.reachExtended++
+		}
+		return true
+	}
+
+	if len(s.PlayerColonies) > 0 {
+		if !classify(s.PlayerColonyStars, s.Player, owner.Treaty.FormalPolicy) {
+			return originalAIBarracksContext{}
+		}
+	}
+	for i := range s.AIPlayers {
+		if i == aiIndex || len(s.AIPlayers[i].Colonies) == 0 {
+			continue
+		}
+		if aiIndex >= len(s.AIPolicies) || i >= len(s.AIPolicies[aiIndex]) {
+			return originalAIBarracksContext{}
+		}
+		if !classify(s.AIPlayers[i].ColonyStars, s.AIPlayers[i].Player, s.AIPolicies[aiIndex][i]) {
+			return originalAIBarracksContext{}
+		}
+	}
+
+	for i := range s.Fleets {
+		if s.Fleets[i].DestStar == target && s.Fleets[i].ETA == 9 {
+			ctx.incomingOtherFleetETA9 = true
+		}
+	}
+	for i := range s.AIPlayers {
+		if i != aiIndex && s.AIPlayers[i].FleetDestStar == target && s.AIPlayers[i].FleetETA == 9 {
+			ctx.incomingOtherFleetETA9 = true
+		}
+	}
+
+	colony := owner.Colonies[colonyIndex]
+	if !engine.PopulationGroupsComplete(colony) {
+		return originalAIBarracksContext{}
+	}
+	for _, group := range colony.PopulationGroups {
+		if group.RaceSlot < 0 || group.RaceSlot >= 8 || group.RaceSlot == owner.PopulationRaceSlot ||
+			group.Farmers+group.Workers+group.Scientists <= 0 {
+			continue
+		}
+		policy, active, ok := s.originalAIPolicyBetween(aiIndex, group.RaceSlot)
+		if !ok {
+			return originalAIBarracksContext{}
+		}
+		if !active {
+			continue
+		}
+		if policy >= gamedata.DIPLO_LIMITED_WAR {
+			ctx.hostileAlienPopulation = true
+		}
+	}
+	ctx.known = true
+	return ctx
 }
 
 // originalAIColonyFoodHalf 對映 sub_DE03E 的 owner-independent +0xDD 快取：氣候基值先
@@ -256,7 +439,51 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 	if personality == ai.PersonalityPacifist {
 		pacifist = 1
 	}
+	ruthless := 0
+	if personality == ai.PersonalityRuthless {
+		ruthless = 1
+	}
 	switch rawID {
+	case 2, 22: // 0xD02BF..0xD03B2：Armor Barracks／Marine Barracks
+		if !ctx.barracksContextKnown {
+			return 0, false
+		}
+		budgetFactor := originalAIBudgetFactor(ctx.treasuryBefore, ctx.netBC)
+		minimumPopulation := 3
+		if rawID == 22 {
+			minimumPopulation = 2
+		}
+		if colony.Population < minimumPopulation && budgetFactor == 0 {
+			return 0, true
+		}
+		incoming := 0
+		if ctx.incomingOtherFleetETA9 {
+			incoming = 1
+		}
+		hostileAlien := 0
+		if ctx.hostileAlienPopulation {
+			hostileAlien = 1
+		}
+		if rawID == 2 {
+			score := 2*incoming + ctx.reachTreatyNear + ctx.reachNoPolicyNear +
+				3*ctx.reachWarNear + ctx.reachExtended
+			if score != 0 {
+				score += ruthless
+			}
+			if !ctx.marineBarracksBuilt && int(ctx.government)/2 <= 1 {
+				score += 6
+			}
+			return score + hostileAlien, true
+		}
+		score := 5*incoming + ctx.reachTreatyNear + 3*ctx.reachNoPolicyNear +
+			6*ctx.reachWarNear + 2*ctx.reachExtended
+		if score != 0 {
+			score += ruthless
+		}
+		if !ctx.armorBarracksBuilt && int(ctx.government)/2 <= 1 {
+			score += 12
+		}
+		return score + 3*hostileAlien, true
 	case 29, 39: // 0xD089C..0xD08C8／0xD09D0..0xD09ED：Stock Exchange／Spaceport
 		if !ctx.primaryPopCapKnown {
 			return 0, false
@@ -512,7 +739,7 @@ func aiBuildingScore(b gamedata.Building, colony engine.ColonyState, out engine.
 	return score
 }
 
-func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOutput, difficulty, turn int) (ColonyBuild, bool) {
+func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOutput, difficulty, turn int, barracks ...originalAIBarracksContext) (ColonyBuild, bool) {
 	if colony < 0 || colony >= len(a.Colonies) {
 		return ColonyBuild{}, false
 	}
@@ -545,6 +772,17 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 		pollutionCleanupCost:  out.PollutionCleanupCost,
 		ownerLowGravity:       aiRaceHasTrait(*a, gamedata.TRAIT_LOW_G),
 		ownerHighGravity:      aiRaceHasTrait(*a, gamedata.TRAIT_HIGH_G),
+		armorBarracksBuilt:    built["裝甲營房"],
+		marineBarracksBuilt:   built["海軍陸戰隊營"],
+	}
+	if len(barracks) > 0 {
+		ctx.barracksContextKnown = barracks[0].known
+		ctx.reachTreatyNear = barracks[0].reachTreatyNear
+		ctx.reachNoPolicyNear = barracks[0].reachNoPolicyNear
+		ctx.reachWarNear = barracks[0].reachWarNear
+		ctx.reachExtended = barracks[0].reachExtended
+		ctx.incomingOtherFleetETA9 = barracks[0].incomingOtherFleetETA9
+		ctx.hostileAlienPopulation = barracks[0].hostileAlienPopulation
 	}
 	ctx.colonyFoodHalf, ctx.colonyFoodHalfKnown = originalAIColonyFoodHalf(a.Colonies[colony], built, known)
 	ctx.primaryPopCapacity, ctx.primaryPopCapKnown = originalAIPrimaryPopulationCapacity(a.Colonies[colony], built, known)
@@ -727,7 +965,8 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 		build := a.ColonyBuilds[key]
 		if build.Name == "" {
 			var ok bool
-			build, ok = chooseAIColonyBuilding(a, i, out, s.Difficulty, s.Turn)
+			build, ok = chooseAIColonyBuilding(a, i, out, s.Difficulty, s.Turn,
+				s.originalAIBarracksContext(aiIndex, i))
 			if !ok {
 				shipProduction += out.Colonies[i].NetIndustry
 				continue
