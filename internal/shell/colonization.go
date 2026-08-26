@@ -208,11 +208,36 @@ func climateColonizable(c gamedata.PlanetClimate) bool {
 // ColonizationResult 是一次拓殖嘗試的結果(供 UI/測試檢視),命名/欄位風格對稱
 // ground_invasion.go 的 GroundInvasionResult。
 type ColonizationResult struct {
-	Ok              bool   // 是否成功建立殖民地(false = 前置條件不足,未消耗任何狀態)
-	Reason          string // Ok=false 時的原因(供 UI 提示;Ok=true 時為空字串)
-	ColonyIndex     int    // Ok=true 時,新殖民地在 s.PlayerColonies 的索引
-	StartPopulation int    // Ok=true 時,新殖民地起始人口(見 colonizeStartPopulation)
-	PopMax          int    // Ok=true 時,新殖民地人口上限(見 gamedata.PlanetBasePopMax)
+	Ok              bool                    // 是否成功建立殖民地(false = 前置條件不足,未消耗任何狀態)
+	Reason          ColonizationRefusalCode // Ok=false 時的穩定原因碼
+	PlanetType      gamedata.PlanetType     // requires_outpost 的動態參數
+	MonsterKind     gamedata.SpaceMonster   // monster_blocked 的動態參數
+	ColonyIndex     int                     // Ok=true 時,新殖民地在 s.PlayerColonies 的索引
+	StartPopulation int                     // Ok=true 時,新殖民地起始人口(見 colonizeStartPopulation)
+	PopMax          int                     // Ok=true 時,新殖民地人口上限(見 gamedata.PlanetBasePopMax)
+}
+
+type ColonizationRefusalCode string
+
+const (
+	ColonizeInvalidPlanet    ColonizationRefusalCode = "invalid_planet"
+	ColonizeInvalidStar      ColonizationRefusalCode = "invalid_star"
+	ColonizeFleetNotPresent  ColonizationRefusalCode = "fleet_not_present"
+	ColonizeEnemyOwned       ColonizationRefusalCode = "enemy_owned"
+	ColonizeAlreadyColonized ColonizationRefusalCode = "already_colonized"
+	ColonizeMonsterBlocked   ColonizationRefusalCode = "monster_blocked"
+	ColonizeNoColonyShip     ColonizationRefusalCode = "no_colony_ship"
+	ColonizeNoPlanet         ColonizationRefusalCode = "no_planet"
+	ColonizeUnknownClimate   ColonizationRefusalCode = "unknown_climate"
+	ColonizeRequiresOutpost  ColonizationRefusalCode = "requires_outpost"
+	ColonizeClimateBlocked   ColonizationRefusalCode = "climate_blocked"
+)
+
+func (c ColonizationRefusalCode) String() string { return string(c) }
+
+type colonizationRefusal struct {
+	Code       ColonizationRefusalCode
+	PlanetType gamedata.PlanetType
 }
 
 // newColonyFromStar 依 starIdx 對應的行星資料(s.Planets[starIdx],genPlanets 產生)建一筆新
@@ -233,14 +258,14 @@ type ColonizationResult struct {
 // 發生)、氣候資料無法辨識(不應發生)、或該行星需額外科技才能殖民(氣態巨星/小行星帶,目前星系
 // 生成從不產生,見檔頭§1,實務上不會觸發)。呼叫端各自處理:ColonizeStar 直接把 reason 回給
 // UI;aiExpand 這類背景擴張沒有 UI 可顯示,只用 ok 決定要不要放棄這顆星、繼續找下一顆。
-func (s *GameSession) newColonyFromPlanet(planetIdx int, gov gamedata.MoraleGovernmentType, foodBonus, indBonus, resBonus int) (colony engine.ColonyState, ok bool, reason string) {
+func (s *GameSession) newColonyFromPlanet(planetIdx int, gov gamedata.MoraleGovernmentType, foodBonus, indBonus, resBonus int) (colony engine.ColonyState, ok bool, refusal colonizationRefusal) {
 	if planetIdx < 0 || planetIdx >= len(s.Planets) {
-		return engine.ColonyState{}, false, "無行星資料(不應發生)"
+		return engine.ColonyState{}, false, colonizationRefusal{Code: ColonizeInvalidPlanet}
 	}
 	planet := s.Planets[planetIdx]
 
 	if planet.NoPlanet {
-		return engine.ColonyState{}, false, "這顆恆星沒有行星(黑洞)"
+		return engine.ColonyState{}, false, colonizationRefusal{Code: ColonizeNoPlanet}
 	}
 
 	var (
@@ -257,7 +282,7 @@ func (s *GameSession) newColonyFromPlanet(planetIdx int, gov gamedata.MoraleGove
 		var cok bool
 		climate, cok = climateFromDisplay(planet.Climate)
 		if !cok {
-			return engine.ColonyState{}, false, "行星氣候資料無法辨識(不應發生,見 climateDisplayToGamedata)"
+			return engine.ColonyState{}, false, colonizationRefusal{Code: ColonizeUnknownClimate}
 		}
 		var gok, mok, szok bool
 		if gravity, gok = gravityFromDisplay(planet.Gravity); !gok {
@@ -278,10 +303,10 @@ func (s *GameSession) newColonyFromPlanet(planetIdx int, gov gamedata.MoraleGove
 	// Gen < 2 的舊存檔沒有 TypeID(零值 0 不是任何合法類別),restorePlanetIDs 已回填
 	// HABITABLE;這裡再擋一次零值,免得手改過的存檔繞過去。
 	if planet.TypeID != 0 && planet.TypeID != gamedata.HABITABLE {
-		return engine.ColonyState{}, false, planetTypeDisplayName(planet.TypeID) + "不能直接殖民,要先建前哨站再改造成人造行星"
+		return engine.ColonyState{}, false, colonizationRefusal{Code: ColonizeRequiresOutpost, PlanetType: planet.TypeID}
 	}
 	if !climateColonizable(climate) {
-		return engine.ColonyState{}, false, "此類行星的氣候無法建立殖民地"
+		return engine.ColonyState{}, false, colonizationRefusal{Code: ColonizeClimateBlocked}
 	}
 
 	// 行星特殊物產的效果(手冊定性 + 反組譯定量,見 gamedata/planet_special.go)。
@@ -361,7 +386,7 @@ func (s *GameSession) newColonyFromPlanet(planetIdx int, gov gamedata.MoraleGove
 			Lithovore: colony.Lithovore, Tolerant: tolerant, Subterranean: subterranean,
 			GrowthBonusPercent: s.raceGrowthPct, ProfileKnown: true}}
 	}
-	return colony, true, ""
+	return colony, true, colonizationRefusal{}
 }
 
 // ColonizeStar 嘗試在 starIdx 這顆星建立新殖民地。前置條件:
@@ -491,31 +516,31 @@ func (s *GameSession) ColonyIndexOnPlanet(planet int) int {
 func (s *GameSession) ColonizePlanet(planetIdx int) ColonizationResult {
 	s.recordPlayerCommand(PlayerCommand{Name: CmdColonizePlanet, Args: []int{planetIdx}})
 	if planetIdx < 0 || planetIdx >= len(s.Planets) {
-		return ColonizationResult{Reason: "無效的行星索引"}
+		return ColonizationResult{Reason: ColonizeInvalidPlanet}
 	}
 	starIdx := s.PlanetStar(planetIdx)
 	if starIdx < 0 {
-		return ColonizationResult{Reason: "無效的星索引"}
+		return ColonizationResult{Reason: ColonizeInvalidStar}
 	}
 	if s.Fleet().AtStar != starIdx || s.Fleet().ETA != 0 {
-		return ColonizationResult{Reason: "艦隊尚未抵達該星"}
+		return ColonizationResult{Reason: ColonizeFleetNotPresent}
 	}
 	star := &s.Stars[starIdx]
 	if star.Owner == 2 {
-		return ColonizationResult{Reason: "該星已被敵方佔領,不可拓殖"}
+		return ColonizationResult{Reason: ColonizeEnemyOwned}
 	}
 	if s.ColonyIndexOnPlanet(planetIdx) >= 0 {
-		return ColonizationResult{Reason: "那顆行星上已經有你的殖民地"}
+		return ColonizationResult{Reason: ColonizeAlreadyColonized}
 	}
 	// 手冊 p.62 逐字:殖民船要「as long as all space monsters and enemy ships have been
 	// cleared from that planet's system」。這條 gate 先前寫在檔頭的引文裡卻沒有實作,
 	// 因為 remake 根本沒有怪獸(見 monster.go)。
-	if reason := s.monsterBlockReason(starIdx); reason != "" {
-		return ColonizationResult{Reason: reason}
+	if monster := s.MonsterAtStar(starIdx); monster != nil {
+		return ColonizationResult{Reason: ColonizeMonsterBlocked, MonsterKind: monster.Kind}
 	}
 	shipIdx := s.findColonyShipIndex()
 	if shipIdx < 0 {
-		return ColonizationResult{Reason: "艦隊未載運殖民船"}
+		return ColonizationResult{Reason: ColonizeNoColonyShip}
 	}
 
 	foodBonus, indBonus, resBonus := 0, 0, 0
@@ -523,9 +548,9 @@ func (s *GameSession) ColonizePlanet(planetIdx int) ColonizationResult {
 		r := Races[s.RaceIndex]
 		foodBonus, indBonus, resBonus = r.FoodBonus, r.IndBonus, r.ResBonus
 	}
-	colony, ok, reason := s.newColonyFromPlanet(planetIdx, s.Government, foodBonus, indBonus, resBonus)
+	colony, ok, refusal := s.newColonyFromPlanet(planetIdx, s.Government, foodBonus, indBonus, resBonus)
 	if !ok {
-		return ColonizationResult{Reason: reason}
+		return ColonizationResult{Reason: refusal.Code, PlanetType: refusal.PlanetType}
 	}
 
 	s.appendPlayerColony(colony, starIdx, planetIdx) // 平行陣列的 padding 慣例見該函式

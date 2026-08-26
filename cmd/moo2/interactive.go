@@ -1034,7 +1034,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		if a == "colonize" && b.session != nil {
 			res := b.session.ColonizeStar(b.session.SelectedStar)
 			if !res.Ok {
-				b.lastActionMsg = res.Reason
+				b.lastActionMsg = colonizationRefusalText(b.lang, res)
 			} else {
 				b.lastActionMsg = fmt.Sprintf(uiText(b.lang, "galaxy.star_panel.result.colonized"), res.StartPopulation, res.PopMax)
 			}
@@ -1053,7 +1053,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 		if a == "outpost" && b.session != nil {
 			res := b.session.BuildOutpost(b.session.SelectedStar)
 			if !res.Ok {
-				b.lastActionMsg = res.Reason
+				b.lastActionMsg = outpostRefusalText(b.lang, res)
 			} else {
 				b.lastActionMsg = uiText(b.lang, "galaxy.star_panel.result.outpost")
 			}
@@ -6055,42 +6055,42 @@ func (b *sceneBuilder) planets() (*overlayScreen, error) {
 func (b *sceneBuilder) planetListAction(action string) string {
 	sess := b.session
 	if b.planetPick < 0 || b.planetPick >= len(sess.Planets) {
-		return b.tr("先點一列選一顆行星", "Pick a planet row first")
+		return uiText(b.lang, "planet.action.pick_first")
 	}
 	star := sess.PlanetStar(b.planetPick)
 	if star < 0 {
-		return b.tr("那顆天體不屬於任何星系", "That body belongs to no system")
+		return uiText(b.lang, "planet.action.no_system")
 	}
 	colony := action == "sendcolony"
 	if colony && !sess.FleetHasColonyShip() {
-		return b.tr("艦隊未載運殖民船", "No colony ship in the fleet")
+		return uiText(b.lang, "galaxy.colonization.refusal.no_colony_ship")
 	}
 	if !colony && !sess.FleetHasOutpostShip() {
-		return b.tr("艦隊未載運前哨船", "No outpost ship in the fleet")
+		return uiText(b.lang, "galaxy.outpost.refusal.no_outpost_ship")
 	}
 	if sess.Fleet().AtStar != star || sess.Fleet().ETA != 0 {
 		if sess.Fleet().ETA > 0 {
-			return fmt.Sprintf(b.tr("艦隊航行中…剩 %d 回合", "Fleet in transit — %d turns left"), sess.Fleet().ETA)
+			return fmt.Sprintf(uiText(b.lang, "galaxy.star_panel.status.transit"), sess.Fleet().ETA)
 		}
 		if !sess.SendFleet(star) {
-			return b.tr("艦隊無法前往該星系", "The fleet cannot reach that system")
+			return uiText(b.lang, "planet.action.unreachable")
 		}
-		return fmt.Sprintf(b.tr("艦隊已出發前往 %s(%d 回合後抵達)", "Fleet en route to %s (%d turns)"),
+		return fmt.Sprintf(uiText(b.lang, "planet.action.en_route"),
 			sess.Stars[star].Name, sess.Fleet().ETA)
 	}
 	if colony {
 		res := sess.ColonizePlanet(b.planetPick)
 		if !res.Ok {
-			return res.Reason
+			return colonizationRefusalText(b.lang, res)
 		}
-		return fmt.Sprintf(b.tr("%s 拓殖成功——起始人口 %d(上限 %d)", "Colonized %s — pop %d (max %d)"),
+		return fmt.Sprintf(uiText(b.lang, "planet.action.colonized"),
 			sess.Planets[b.planetPick].Name, res.StartPopulation, res.PopMax)
 	}
 	res := sess.BuildOutpostOnPlanet(b.planetPick)
 	if !res.Ok {
-		return res.Reason
+		return outpostRefusalText(b.lang, res)
 	}
-	return fmt.Sprintf(b.tr("%s 前哨站建立完成(掃描站,無產出)", "Outpost established on %s (scanner, no output)"),
+	return fmt.Sprintf(uiText(b.lang, "planet.action.outpost_established"),
 		sess.Planets[b.planetPick].Name)
 }
 

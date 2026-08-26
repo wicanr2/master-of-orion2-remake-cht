@@ -74,7 +74,7 @@ func TestNewColonyUsesRaceEnvironmentRules(t *testing.T) {
 
 	colony, ok, reason := s.newColonyFromPlanet(planetIdx, gamedata.MoraleGovDictatorship, 0, 0, 0)
 	if !ok {
-		t.Fatalf("應能建立測試殖民地: %s", reason)
+		t.Fatalf("應能建立測試殖民地: %v", reason)
 	}
 	if colony.FoodPerFarmer != gamedata.ClimateFoodPerFarmer(gamedata.TERRAN) {
 		t.Errorf("水生族 Tundra 食物應按 Terran 計算,得到 %d", colony.FoodPerFarmer)

@@ -126,10 +126,27 @@ func (s *GameSession) OutpostTargetPlanet(starIdx int) int {
 
 // OutpostResult 是一次建前哨站嘗試的結果(欄位風格對稱 ColonizationResult)。
 type OutpostResult struct {
-	Ok     bool
-	Reason string // Ok=false 時的原因
-	Star   int    // Ok=true 時的星索引
+	Ok          bool
+	Reason      OutpostRefusalCode    // Ok=false 時的穩定原因碼
+	MonsterKind gamedata.SpaceMonster // monster_blocked 的動態參數
+	Star        int
 }
+
+type OutpostRefusalCode string
+
+const (
+	OutpostInvalidPlanet    OutpostRefusalCode = "invalid_planet"
+	OutpostInvalidStar      OutpostRefusalCode = "invalid_star"
+	OutpostFleetNotPresent  OutpostRefusalCode = "fleet_not_present"
+	OutpostEnemyOwned       OutpostRefusalCode = "enemy_owned"
+	OutpostMonsterBlocked   OutpostRefusalCode = "monster_blocked"
+	OutpostNoShip           OutpostRefusalCode = "no_outpost_ship"
+	OutpostNoTarget         OutpostRefusalCode = "no_target"
+	OutpostAlreadyPresent   OutpostRefusalCode = "already_present"
+	OutpostAlreadyColonized OutpostRefusalCode = "already_colonized"
+)
+
+func (c OutpostRefusalCode) String() string { return string(c) }
 
 // BuildOutpost 在 starIdx 建立軍事前哨站。前置條件:
 //  1. 玩家艦隊已抵達該星(FleetAtStar==starIdx 且 FleetETA==0),與 ColonizeStar 同款。
@@ -143,28 +160,28 @@ type OutpostResult struct {
 func (s *GameSession) BuildOutpost(starIdx int) OutpostResult {
 	s.recordPlayerCommand(PlayerCommand{Name: CmdBuildOutpost, Args: []int{starIdx}})
 	if starIdx < 0 || starIdx >= len(s.Stars) {
-		return OutpostResult{Reason: "星索引無效"}
+		return OutpostResult{Reason: OutpostInvalidStar}
 	}
 	if s.Fleet().AtStar != starIdx || s.Fleet().ETA != 0 {
-		return OutpostResult{Reason: "艦隊尚未抵達該星"}
+		return OutpostResult{Reason: OutpostFleetNotPresent}
 	}
 	if s.Stars[starIdx].Owner == 2 {
 		// 敵方的地盤不能插旗。自己的星系可以——氣態巨星/小行星帶正是前哨站的用途(手冊 p.85),
 		// 那些天體常常就在自己已經殖民的星系裡。
-		return OutpostResult{Reason: "該星已被敵方佔領,不可建立前哨站"}
+		return OutpostResult{Reason: OutpostEnemyOwned}
 	}
 	// 怪獸擋路(見 monster.go)。手冊只對殖民船寫明這條,但怪獸就盤據在那個星系裡,
 	// 沒有理由前哨船能無視它——比照處理,並在此標明這是延伸而非手冊逐字。
-	if reason := s.monsterBlockReason(starIdx); reason != "" {
-		return OutpostResult{Reason: reason}
+	if monster := s.MonsterAtStar(starIdx); monster != nil {
+		return OutpostResult{Reason: OutpostMonsterBlocked, MonsterKind: monster.Kind}
 	}
 	shipIdx := s.findOutpostShipIndex()
 	if shipIdx < 0 {
-		return OutpostResult{Reason: "艦隊未載運前哨船"}
+		return OutpostResult{Reason: OutpostNoShip}
 	}
 	target := s.OutpostTargetPlanet(starIdx)
 	if target < 0 {
-		return OutpostResult{Reason: "該星系沒有可供建立前哨站的天體"}
+		return OutpostResult{Reason: OutpostNoTarget}
 	}
 	return s.buildOutpostOn(starIdx, target, shipIdx)
 }
@@ -174,33 +191,33 @@ func (s *GameSession) BuildOutpost(starIdx int) OutpostResult {
 func (s *GameSession) BuildOutpostOnPlanet(planetIdx int) OutpostResult {
 	s.recordPlayerCommand(PlayerCommand{Name: CmdOutpostOnPlanet, Args: []int{planetIdx}})
 	if planetIdx < 0 || planetIdx >= len(s.Planets) {
-		return OutpostResult{Reason: "行星索引無效"}
+		return OutpostResult{Reason: OutpostInvalidPlanet}
 	}
 	starIdx := s.PlanetStar(planetIdx)
 	if starIdx < 0 {
-		return OutpostResult{Reason: "星索引無效"}
+		return OutpostResult{Reason: OutpostInvalidStar}
 	}
 	if s.Fleet().AtStar != starIdx || s.Fleet().ETA != 0 {
-		return OutpostResult{Reason: "艦隊尚未抵達該星"}
+		return OutpostResult{Reason: OutpostFleetNotPresent}
 	}
 	if s.Stars[starIdx].Owner == 2 {
-		return OutpostResult{Reason: "該星已被敵方佔領,不可建立前哨站"}
+		return OutpostResult{Reason: OutpostEnemyOwned}
 	}
 	if s.HasOutpostOnPlanet(planetIdx) {
-		return OutpostResult{Reason: "那顆天體上已有前哨站"}
+		return OutpostResult{Reason: OutpostAlreadyPresent}
 	}
 	if s.ColonyIndexOnPlanet(planetIdx) >= 0 {
-		return OutpostResult{Reason: "那顆天體上已經有你的殖民地"}
+		return OutpostResult{Reason: OutpostAlreadyColonized}
 	}
-	if reason := s.monsterBlockReason(starIdx); reason != "" {
-		return OutpostResult{Reason: reason}
+	if monster := s.MonsterAtStar(starIdx); monster != nil {
+		return OutpostResult{Reason: OutpostMonsterBlocked, MonsterKind: monster.Kind}
 	}
 	if s.Planets[planetIdx].NoPlanet {
-		return OutpostResult{Reason: "該星系沒有可供建立前哨站的天體"}
+		return OutpostResult{Reason: OutpostNoTarget}
 	}
 	shipIdx := s.findOutpostShipIndex()
 	if shipIdx < 0 {
-		return OutpostResult{Reason: "艦隊未載運前哨船"}
+		return OutpostResult{Reason: OutpostNoShip}
 	}
 	return s.buildOutpostOn(starIdx, planetIdx, shipIdx)
 }

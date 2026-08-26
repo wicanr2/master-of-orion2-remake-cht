@@ -2,7 +2,6 @@ package shell
 
 import (
 	"math/rand"
-	"strings"
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
@@ -233,8 +232,8 @@ func TestColonizeRejectsNonHabitable(t *testing.T) {
 		if res.Ok {
 			t.Errorf("類別 %d 不該可以殖民", tp)
 		}
-		if want := planetTypeDisplayName(tp); !strings.Contains(res.Reason, want) {
-			t.Errorf("類別 %d 的拒絕理由 %q 應含 %q", tp, res.Reason, want)
+		if res.Reason != ColonizeRequiresOutpost || res.PlanetType != tp {
+			t.Errorf("類別 %d 應回 requires_outpost 與 typed 類別，實為 reason=%q type=%d", tp, res.Reason, res.PlanetType)
 		}
 		// 被拒絕時不該消耗殖民船,也不該改變星的歸屬。
 		if s.findColonyShipIndex() < 0 {

@@ -2,7 +2,6 @@ package shell
 
 import (
 	"math/rand"
-	"strings"
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
@@ -47,8 +46,8 @@ func TestMonsterBlocksColonizeAndOutpost(t *testing.T) {
 	if res.Ok {
 		t.Error("怪獸盤據時不該能拓殖")
 	}
-	if !strings.Contains(res.Reason, gamedata.MonsterNameZH(gamedata.MonsterCrystal)) {
-		t.Errorf("拒絕理由應點名怪獸,實為 %q", res.Reason)
+	if res.Reason != ColonizeMonsterBlocked || res.MonsterKind != gamedata.MonsterCrystal {
+		t.Errorf("拒絕結果應帶 typed 怪獸，實為 reason=%q kind=%d", res.Reason, res.MonsterKind)
 	}
 	if op := s.BuildOutpost(target); op.Ok {
 		t.Error("怪獸盤據時不該能建前哨站")

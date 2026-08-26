@@ -343,8 +343,13 @@
   星圖選星側欄已完成第三十五個切片：稅率、環境兩列、陸戰隊／艦員、怪獸／特殊物產前綴、
   ETA、拓殖／前哨／轟炸／入侵／心靈控制／派遣按鈕及本地成功提示均由 `ui.json` 供應，
   行星與怪獸名稱只作動態參數。面板高度由 132 修為 140，使 y=446..466 的心靈控制列完整
-  落在框內；雙語最長字串、格式模板與面板 containment 均有測試。shell 回傳的轟炸／入侵／
-  拓殖等動態拒絕 `Reason` 仍是後續 typed 結果切片，不在本輪誤稱完成。證據與規格見
+  落在框內；雙語最長字串、格式模板與面板 containment 均有測試。拓殖／前哨站亦完成第三十六個
+  切片：`internal/shell` 的自由中文 `Reason string` 已改成 typed 拒絕碼，怪獸與天體類別以
+  enum 參數傳到 UI；星圖與行星列表只從 `ui.json` 組合雙語結果，行星列表相鄰的選取、派遣與
+  成功提示亦不再內嵌於 Go。轟炸／入侵／心靈控制及怪獸戰鬥等其他動態拒絕仍是後續 typed
+  結果切片，不在本輪誤稱完成。拓殖／前哨證據與規格見
+  [`docs/re/colonization-outpost-result-audit-20260827.md`](docs/re/colonization-outpost-result-audit-20260827.md) 與
+  [`docs/tech/colonization-outpost-result-text-spec.md`](docs/tech/colonization-outpost-result-text-spec.md)；星圖證據與規格見
   [`docs/re/galaxy-star-panel-text-audit-20260827.md`](docs/re/galaxy-star-panel-text-audit-20260827.md) 與
   [`docs/spec/galaxy-star-panel-external-text.md`](docs/spec/galaxy-star-panel-external-text.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
