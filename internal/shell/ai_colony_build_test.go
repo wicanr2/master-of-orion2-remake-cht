@@ -608,6 +608,106 @@ func TestAIFoodBuildingsCandidateAndCompletion(t *testing.T) {
 	}
 }
 
+func TestOriginalAIPollutionBuildingScores(t *testing.T) {
+	colony := completeAIFoodScoreColony()
+	tests := []struct {
+		name string
+		raw  int
+	}{
+		{"大氣更新器", 5},
+		{"核心廢料場", 13},
+		{"污染處理器", 32},
+	}
+	for _, tt := range tests {
+		b, ok := gamedata.BuildingByNameZH(tt.name)
+		if !ok {
+			t.Fatalf("測試建築不存在：%s", tt.name)
+		}
+		for _, tc := range []struct {
+			cleanup int
+			want    int
+		}{{5, 0}, {6, 0}, {10, 0}, {11, 3}, {16, 4}} {
+			ctx := originalAIBuildScoreContext{pollutionCleanupCost: tc.cleanup}
+			if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic, ctx); !exact || score != tc.want {
+				t.Errorf("%s cleanup=%d 分數=(%d,%v)，want (%d,true)", tt.name, tc.cleanup, score, exact, tc.want)
+			}
+			if tc.cleanup > 5 {
+				if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, ctx); !exact || score != tc.want+1 {
+					t.Errorf("%s cleanup=%d Pacifist 分數=(%d,%v)，want (%d,true)", tt.name, tc.cleanup, score, exact, tc.want+1)
+				}
+			}
+		}
+		ctx := originalAIBuildScoreContext{priorityGate: true, pollutionCleanupCost: 16}
+		score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityXenophobic, ctx)
+		want := 4
+		if tt.raw == 13 {
+			want = 0
+		}
+		if !exact || score != want {
+			t.Errorf("%s priority gate 分數=(%d,%v)，want (%d,true)", tt.name, score, exact, want)
+		}
+	}
+}
+
+func TestOriginalAIPollutionBuildingPrimaryTolerantGate(t *testing.T) {
+	b, _ := gamedata.BuildingByNameZH("污染處理器")
+	colony := completeAIFoodScoreColony()
+	ctx := originalAIBuildScoreContext{pollutionCleanupCost: 16}
+	colony.TolerantRace = true
+	colony.PopulationGroups[0].Tolerant = true
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, ctx); !exact || score != 0 {
+		t.Fatalf("主要人口 Tolerant 應歸零：score=%d exact=%v", score, exact)
+	}
+	colony.TolerantRace = false
+	colony.PopulationGroups = []engine.PopulationGroup{
+		{RaceSlot: 1, RaceSlotKnown: true, ProfileKnown: true, Workers: 1},
+		{RaceSlot: 2, RaceSlotKnown: true, ProfileKnown: true, Workers: 3, Tolerant: true},
+	}
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, ctx); !exact || score != 0 {
+		t.Fatalf("主要外族人口 Tolerant 應歸零：score=%d exact=%v", score, exact)
+	}
+	colony.PopulationGroups = nil
+	if score, exact := originalAIExactBuildingScore(b, colony, ai.PersonalityPacifist, ctx); exact || score != 0 {
+		t.Fatalf("人口 profile 不完整不得冒稱 exact：score=%d exact=%v", score, exact)
+	}
+}
+
+func TestAIPollutionBuildingsCandidateAndCompletion(t *testing.T) {
+	tests := []struct {
+		name  string
+		topic gamedata.ResearchTopic
+		check func(engine.ColonyState) bool
+	}{
+		{"大氣更新器", gamedata.TOPIC_MOLECULAR_COMPRESSION, func(c engine.ColonyState) bool { return c.AtmosphericRenewer }},
+		{"核心廢料場", gamedata.TOPIC_TECTONIC_ENGINEERING, func(c engine.ColonyState) bool { return c.CoreWasteDump }},
+		{"污染處理器", gamedata.TOPIC_ADVANCED_CHEMISTRY, func(c engine.ColonyState) bool { return c.PollutionProcessor }},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := NewDemoSession()
+			a := &s.AIPlayers[0]
+			a.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{tt.topic: true}
+			a.Colonies[0] = completeAIFoodScoreColony()
+			a.ColonyBuildings[0] = make(map[string]bool)
+			for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
+				a.ColonyBuildings[0][b.NameZH] = true
+			}
+			delete(a.ColonyBuildings[0], tt.name)
+			out := engine.EmpireOutput{Colonies: []engine.ColonyOutput{{NetIndustry: 20, PollutionCleanupCost: 16}}}
+			build, ok := chooseAIColonyBuilding(a, 0, out, 2, 1)
+			if !ok || build.Name != tt.name {
+				t.Fatalf("唯一候選錯誤：build=%+v ok=%v", build, ok)
+			}
+			key := aiColonyBuildKey(a, 0)
+			a.ColonyBuilds = map[int]ColonyBuild{key: {Name: tt.name, Cost: 1}}
+			s.advanceAIColonyBuilds(0, out)
+			if !a.ColonyBuildings[0][tt.name] || !tt.check(a.Colonies[0]) {
+				t.Fatalf("完工未垂直接線：built=%v colony=%+v", a.ColonyBuildings[0][tt.name], a.Colonies[0])
+			}
+		})
+	}
+}
+
 func TestAISoilEnrichmentCandidateAndCompletion(t *testing.T) {
 	s := NewDemoSession()
 	a := &s.AIPlayers[0]

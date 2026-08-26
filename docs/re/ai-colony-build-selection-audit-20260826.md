@@ -343,6 +343,55 @@ budget factor 或 late-tech。
 technology-table 偏移與受版控 enum 交叉對回，為**已證實**。typed AI 殖民地的氣候／科技／
 建築快取重建為資料模型對映，不是以 Go 現況反證原版。
 
+## 第十一批：Atmospheric Renewer、Core Waste Dumps、Pollution Processor
+
+### 跳表與共同公式
+
+| raw ID | 建築 | table entry bytes → target |
+|---:|---|---|
+| 5 | Atmospheric Renewer | `0xCFF72 53070d00 → 0xD0753` |
+| 13 | Core Waste Dumps | `0xCFF92 4b070d00 → 0xD074B` |
+| 32 | Pollution Processor | `0xCFFDE 53070d00 → 0xD0753` |
+
+raw 13 先在 `0xD074B..0xD074D` 檢查 priority gate，成立即零分；raw 5／32 直接進
+共同段 `0xD0753`，不讀 priority gate。共同段的控制流為：
+
+1. `var_4 == 0 @ 0xD0753` 時零分。
+2. signed word `colony+0x08 <= 5 @ 0xD075D` 時零分。
+3. 先以 `ebx=[Pacifist] @ 0xD0768` 建立分數；`colony+0x08 <= 10 @ 0xD076B`
+   時直接收尾，因此一般性格是 0、Pacifist 是 1。
+4. 大於 10 時，以 `movsx` 載入 `colony+0x08`，呼叫 `sub_134C92 @ 0xD077A`，再於
+   `0xD0993` 加入 `ebx`。`sub_134C92` 已由完整函式解碼為 unsigned 32-bit 整數平方根。
+
+因此三棟共用：
+
+```text
+primaryTolerant 或 cleanupCost <= 5 → 0
+6 <= cleanupCost <= 10 → [Pacifist]
+cleanupCost > 10 → floor(sqrt(cleanupCost)) + [Pacifist]
+```
+
+只有 raw 13 額外受 priority gate 阻擋。
+
+### `var_4` 與 `colony+0x08` 寫入來源
+
+- `var_4` 由 `cache[3]+cache[4] @ 0xD00EF..0xD00FD` 建立。`Compute_AI_Data_`
+  先以 `memset @ 0xD4898..0xD48A4` 清空整張 7-byte cache；本輪匯出
+  `dword_1AA1EC @ 0x1AA1EC` 的全部直接 xref 後，只有該函式能取得 cache 寫入指標，且沒有
+  byte 3 的後續寫入。byte 4 的唯一寫入為 `0xD4967..0xD4970`：主要人口的
+  `player+0x8B6` 為 0 時寫 1。`0x8B6-0x89F=23`，受版控 31 格 enum 與既有工業事故
+  consumer 都把 trait 23 證實為 Tolerant。因此 `var_4` 精確等於
+  `!primaryPopulationTolerant`，不是兩個未解旗標的和。
+- `sub_DEE1B @ 0xDEF7A..0xDF0E9` 在 Core Waste Dump 時先把 `colony+0x08` 清零；
+  其餘路徑由總工業、星球污染容忍、Nano Disassemblers、Pollution Processor、Atmospheric
+  Renewer、環保官及逐人口 Tolerant 調整得到 `ebx`，正值時同時從工業扣除，最後
+  `mov [esi+8],bx @ 0xDF0E9`。因此 `colony+0x08` 是本回合**清污成本**，不是未消費的
+  污染產能。remake 的 `ColonyOutput.PollutionCleanupCost` 是同一玩家可見消費端，候選計分
+  必須使用該欄，不能重新以總工業估算。
+
+跳表、公式、cache 唯一寫入鏈與清污成本寫回均為**已證實**。typed 對映要求主要人口 profile
+完整；舊 JSON 缺 profile 時不得把 owner 的 Tolerant 直接冒充主要人口 trait。
+
 其餘未封閉區域會讀 alien／outpost 狀態、政府／性格其他碼、其他殖民地 packed 人口用途、帝國建築數、
 星球 owner／環境、事件與未解 player flags；在欄位寫入端與 typed 對映完成前維持
 `unknown_pending_review`，由明示近似 fallback 處理。

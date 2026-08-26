@@ -46,13 +46,17 @@ ROOTS = {
     "raw_AI_Choose_Research": 0xDC288,
     "raw_AI_Empire_Output_Cache": 0xDF8F0,
     "raw_Colony_Food_Per_Farmer": 0xDE03E,
+    "raw_Colony_Industry_Production": 0xDEE1B,
+    "raw_Recompute_Colony_Output": 0xE1D59,
     "raw_Recompute_Player_Economy": 0xE2710,
+    "raw_Do_Colony_Calculations": 0xE2B31,
     "raw_Apply_Player_Economy": 0xE4F49,
     "raw_Integer_Sqrt": 0x134C92,
 }
 
 
 TRACKED_RECORD_OFFSETS = {
+    "colony_pollution_word": 0x08,
     "player_food_balance_word": 0xB0,
     "colony_food_output_byte": 0xDD,
     "player_cybernetic_trait": 0x8B0,
@@ -68,6 +72,10 @@ TRACKED_RECORD_OFFSETS = {
 }
 
 REVIEWED_OFFSET_SEMANTICS = {
+    "colony_pollution_word": {
+        "semantic": "base-dependent raw +0x08; colony base stores current pollution cleanup burden",
+        "confidence": "confirmed_from_sub_DEE1B_write_and_industry_consumer",
+    },
     "player_food_balance_word": {
         "semantic": "base-dependent raw +0xB0; player base stores empire food production minus consumption",
         "confidence": "confirmed_only_for_reviewed_player_base_context",
@@ -132,6 +140,11 @@ def operand_mentions_offset(ea, offset):
     for match in re.finditer(r"\+\s*([0-9a-f]+)h", normalized):
         if int(match.group(1), 16) == offset:
             return True
+    # 小位移有時以無尾碼十進位顯示（例如 `[ecx+8]`）。只接受緊鄰 `]`／`,` 的
+    # displacement 位置，避免把比例或立即數 8 混入。
+    for match in re.finditer(r"\+\s*([0-9]+)(?=\s*[\],])", normalized):
+        if int(match.group(1), 10) == offset:
+            return True
     return False
 
 
@@ -157,6 +170,21 @@ def direct_record_offset_refs(offset):
                     "instruction": instruction(ea),
                     "context": instruction_context(fn_ea, ea),
                 })
+    return refs
+
+
+def global_data_refs(ea):
+    """保留全域本體的直接 xref 與函式內前後文，供人工續追指標式間接讀寫。"""
+    refs = []
+    for ref in idautils.DataRefsTo(ea):
+        owner = ida_funcs.get_func(ref)
+        refs.append({
+            "global_ea": f"0x{ea:X}",
+            "site": instruction(ref),
+            "function_start": f"0x{owner.start_ea:X}" if owner else None,
+            "raw_name": ida_name.get_name(owner.start_ea) if owner else None,
+            "context": instruction_context(owner.start_ea, ref) if owner else [],
+        })
     return refs
 
 
@@ -277,6 +305,9 @@ def main():
                 "refs": direct_record_offset_refs(offset),
             }
             for name, offset in TRACKED_RECORD_OFFSETS.items()
+        },
+        "global_data_refs": {
+            "raw_ai_colony_cache_pointer": global_data_refs(0x1AA1EC),
         },
         "roots": {name: function_record(ea) for name, ea in ROOTS.items()},
     }

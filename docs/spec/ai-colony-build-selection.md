@@ -58,6 +58,13 @@
    必須以 `2×ClimateFoodPerFarmer(Climate)` 加已建 Weather Controller 的 4 與 Astro
    University 的 2 重建；基值為 0 且已知 Biomorphic Fungi 時先改成 2。若缺少完整人口
    profile 或食物快取來源，回報非 exact。
+   raw ID 5 Atmospheric Renewer 與 raw ID 32 Pollution Processor 共用污染分數；raw ID 13
+   Core Waste Dumps 使用同式，但 priority gate 成立時先歸零。主要人口為 Tolerant 或
+   `PollutionCleanupCost<=5` 時為 0；清污成本 6..10 時為 `[Pacifist]`；大於 10 時為
+   `floor(sqrt(PollutionCleanupCost))+[Pacifist]`。清污成本必須取本回合
+   `ColonyOutput.PollutionCleanupCost`，不可改以總工業或 polluting production 估算；主要人口
+   Tolerant 依同一 player-slot 選擇規則判定，profile 不完整時回報非 exact。raw 5／32 不得
+   誤吃 priority gate，raw 13 不得漏掉。
 5. 優先建築 gate 僅由已知科技 application、已建建築、殖民地礦產及 AI 生效政府組成：
    - Ultra Poor／Poor／Abundant 殖民地已知 Automated Factories 但未建 Automated Factory；或
    - Feudal／Confederation／Dictatorship／Imperium 已知但未建 Marine Barracks／Armor Barracks。
@@ -94,6 +101,9 @@
 - raw 21／43 的四段 `colonyFoodHalf` 表、赤字幅度（不只正負）、一般／Pacifist、cache gate
   與 priority gate 差異必須逐式測試；raw 46 另測 `colonyFoodHalf` 0／正值與赤字正負。
   三棟都要以唯一正常候選走過選擇、逐殖民地產能、完工旗標及 typed 食物效果。
+- raw 5／13／32 在主要人口 Tolerant／非 Tolerant、清污成本 5／6／10／11、一般／Pacifist
+  與 priority gate 邊界符合公式；三棟均以唯一正常候選走過選擇、逐殖民地產能與完工後
+  污染旗標效果。測試必須把 `PollutionCleanupCost` 與 gross／polluting production 分開。
 - 只完成多選主題但選了其他 application 時，不得觸發相應 Automated Factory／Barracks gate。
 - 精確分支與類別式 fallback 不可混稱同一證據等級。
 - 既有擴張測試以「建築＋造艦總投入」驗證新殖民地確實參與經濟，不再假設所有產出都是軍艦。

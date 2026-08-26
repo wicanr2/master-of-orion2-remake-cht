@@ -117,6 +117,24 @@ func originalAIFoodBuildingPopulationGate(colony engine.ColonyState) (eligible, 
 	return !(primaryLithovore && colony.Lithovore), true
 }
 
+// originalAIPrimaryPopulationTolerant 對映 Compute_AI_Data_ cache+4。cache+3 經 memset
+// 與全部全域 xref 複核後沒有寫入端；因此污染建築讀到的 var_4 精確等於主要人口非 Tolerant。
+func originalAIPrimaryPopulationTolerant(colony engine.ColonyState) (bool, bool) {
+	slot, known := originalAIPrimaryPopulationSlot(colony)
+	if !known || !colony.OwnerRaceProfileKnown {
+		return false, false
+	}
+	if slot == colony.OwnerRaceSlot {
+		return colony.TolerantRace, true
+	}
+	for _, group := range colony.PopulationGroups {
+		if group.RaceSlotKnown && group.ProfileKnown && group.RaceSlot == slot {
+			return group.Tolerant, true
+		}
+	}
+	return false, false
+}
+
 type originalAIBuildScoreContext struct {
 	lateTech              bool
 	priorityGate          bool
@@ -124,6 +142,7 @@ type originalAIBuildScoreContext struct {
 	empireFoodBalanceHalf int
 	colonyFoodHalf        int
 	colonyFoodHalfKnown   bool
+	pollutionCleanupCost  int
 	raceGrowthPercent     int
 	government            gamedata.MoraleGovernmentType
 	treasuryBefore        int
@@ -163,12 +182,20 @@ func originalAIBudgetFactor(treasuryBefore, netBC int) int {
 	if q < 0 {
 		return 10
 	}
-	root := 0
-	for (root+1)*(root+1) <= q {
-		root++
-	}
+	root := originalAIIntegerSqrt(q)
 	if root > 10 {
 		return 10
+	}
+	return root
+}
+
+func originalAIIntegerSqrt(n int) int {
+	if n <= 0 {
+		return 0
+	}
+	root := 0
+	for (root+1)*(root+1) <= n {
+		root++
 	}
 	return root
 }
@@ -191,6 +218,18 @@ func originalAIExactBuildingScore(b gamedata.Building, colony engine.ColonyState
 		pacifist = 1
 	}
 	switch rawID {
+	case 5, 13, 32: // 0xD074B..0xD077F：三棟污染處理建築
+		tolerant, known := originalAIPrimaryPopulationTolerant(colony)
+		if !known {
+			return 0, false
+		}
+		if tolerant || rawID == 13 && ctx.priorityGate || ctx.pollutionCleanupCost <= 5 {
+			return 0, true
+		}
+		if ctx.pollutionCleanupCost <= 10 {
+			return pacifist, true
+		}
+		return originalAIIntegerSqrt(ctx.pollutionCleanupCost) + pacifist, true
 	case 21, 43, 46: // 0xD07E9／0xD09F2／0xD0AB9：三棟食物建築
 		eligible, known := originalAIFoodBuildingPopulationGate(colony)
 		if !known || !ctx.colonyFoodHalfKnown {
@@ -399,6 +438,7 @@ func chooseAIColonyBuilding(a *AIOpponent, colony int, empireOut engine.EmpireOu
 		government:            government,
 		treasuryBefore:        empireOut.Player.BC - empireOut.NetBC,
 		netBC:                 empireOut.NetBC,
+		pollutionCleanupCost:  out.PollutionCleanupCost,
 	}
 	ctx.colonyFoodHalf, ctx.colonyFoodHalfKnown = originalAIColonyFoodHalf(a.Colonies[colony], built, known)
 	maxScore := 1 // raw Assign_Colony_New_Building_ 也把最大分數下限夾到 1。

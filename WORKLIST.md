@@ -351,6 +351,10 @@
   外層跳表、`colony+0xDD` 半單位快取及 `player+0xB0` signed word 消費端閉合：前兩者保留
   四段食物表與完整赤字幅度，後者保留赤字二段式；三者的 Pacifist、cache+2 與 priority gate
   差異均已接線。AI 可由正常唯一候選完成三棟建築，並分別寫回固定食物或每農夫食物效果。
+  raw 5 Atmospheric Renewer、raw 13 Core Waste Dumps、raw 32 Pollution Processor 也已追回
+  `Compute_AI_Data_` 7-byte cache 的唯一寫入鏈與 `sub_DEE1B` 清污成本回寫；現以主要人口
+  Tolerant、精確 `PollutionCleanupCost` 的 5／10 邊界、整數平方根及 Pacifist 計分，且只有
+  raw 13 受 priority gate 阻擋。三棟均可由正常候選完工並寫回污染旗標。
   其餘分數區域、
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
   state machine 亦待閉合。見
