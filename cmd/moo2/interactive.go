@@ -2249,7 +2249,7 @@ func (d *diplomacyScreen) draw(dst *ebiten.Image) {
 	}
 	state := d.b.session.TreatyFor(d.enemy)
 	textSafeRect{x: 40, y: 151, w: 560, h: 24, insetX: 4, insetY: 2}.drawCentered(dst, d.fnt,
-		fmt.Sprintf(uiText(d.b.lang, "diplomacy.audience.agreements"), shell.TreatySummary(state, d.b.lang != i18n.Traditional)), 13, gold)
+		fmt.Sprintf(uiText(d.b.lang, "diplomacy.audience.agreements"), treatySummaryText(d.b.lang, state)), 13, gold)
 	for i, o := range d.opts {
 		x, y, w, h := d.optRect(i)
 		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{34, 30, 54, 255}, false)

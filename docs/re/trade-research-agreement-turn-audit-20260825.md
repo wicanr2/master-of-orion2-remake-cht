@@ -101,4 +101,6 @@ AI↔AI 原版協議仍屬 AI 外交切片，不藉此冒稱閉合。
 - 新增獨立、可存檔的 agreement RNG；抽取條件與順序對齊，但 PRNG 演算法非原版逐位元重現。
 - AI 目前政府仍固定 Dictatorship，是既存已明示近似；不阻擋本輪公式與時序閉合。
 - `SpecialTradeState` 是 remake 擴充，不混入本輪原版普通協議結論。
-
+- 外交畫面的單行「第 N 回合／目前 BC 或 RP」摘要是 remake 可觀察性轉接，並非上述欄位
+  位址能證實的原版逐句文案。規則層現只輸出 typed `TreatySummaryPart`；名稱、格式與分隔符
+  由 `assets/i18n/ui.json` 提供，不把顯示字串反寫成原版證據。

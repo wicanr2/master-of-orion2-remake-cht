@@ -1,8 +1,6 @@
 package shell
 
 import (
-	"fmt"
-
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
@@ -533,97 +531,65 @@ func (s *GameSession) TreatyFor(enemy string) TreatyState {
 	return TreatyState{}
 }
 
-// TreatyFormalName 回傳原版 ForeignPolicy 值的顯示名稱。
-func TreatyFormalName(policy gamedata.ForeignPolicy, english bool) string {
-	if english {
-		switch policy {
-		case gamedata.DIPLO_NON_AGGRESSION:
-			return "Non-Aggression Pact"
-		case gamedata.DIPLO_ALLIANCE:
-			return "Alliance"
-		case gamedata.DIPLO_PEACE:
-			return "Peace Treaty"
-		default:
-			return "None"
-		}
-	}
-	switch policy {
-	case gamedata.DIPLO_NON_AGGRESSION:
-		return "互不侵犯條約"
-	case gamedata.DIPLO_ALLIANCE:
-		return "同盟"
-	case gamedata.DIPLO_PEACE:
-		return "和平條約"
-	default:
-		return "無正式條約"
-	}
+// TreatySummaryKind 是外交畫面摘要的穩定資料種類；顯示文字由 UI 外部 catalog 提供。
+type TreatySummaryKind string
+
+const (
+	TreatySummaryFormalNone       TreatySummaryKind = "formal_none"
+	TreatySummaryNonAggression    TreatySummaryKind = "nonaggression"
+	TreatySummaryAlliance         TreatySummaryKind = "alliance"
+	TreatySummaryPeace            TreatySummaryKind = "peace"
+	TreatySummaryPayingTribute    TreatySummaryKind = "paying_tribute"
+	TreatySummaryReceivingTribute TreatySummaryKind = "receiving_tribute"
+	TreatySummaryTrade            TreatySummaryKind = "trade"
+	TreatySummaryResearch         TreatySummaryKind = "research"
+	TreatySummarySpecialFood      TreatySummaryKind = "special_food"
+	TreatySummarySpecialResearch  TreatySummaryKind = "special_research"
+	TreatySummarySpecialUnknown   TreatySummaryKind = "special_unknown"
+)
+
+type TreatySummaryPart struct {
+	Kind    TreatySummaryKind
+	Turns   int
+	Value   int
+	Percent int
 }
 
-// TreatySummary 是外交畫面目前協議的單行摘要。
-func TreatySummary(t TreatyState, english bool) string {
-	formal := TreatyFormalName(t.FormalPolicy, english)
-	parts := make([]string, 0, 5)
-	if t.FormalPolicy != gamedata.DIPLO_NONE {
-		parts = append(parts, formal)
+// TreatySummaryParts 將條約狀態轉成不含玩家文案的固定順序摘要資料。
+func TreatySummaryParts(t TreatyState) []TreatySummaryPart {
+	parts := make([]TreatySummaryPart, 0, 6)
+	switch t.FormalPolicy {
+	case gamedata.DIPLO_NON_AGGRESSION:
+		parts = append(parts, TreatySummaryPart{Kind: TreatySummaryNonAggression})
+	case gamedata.DIPLO_ALLIANCE:
+		parts = append(parts, TreatySummaryPart{Kind: TreatySummaryAlliance})
+	case gamedata.DIPLO_PEACE:
+		parts = append(parts, TreatySummaryPart{Kind: TreatySummaryPeace})
 	}
 	if t.PlayerTribute != TributeNone {
-		if english {
-			parts = append(parts, fmt.Sprintf("Paying tribute %d%%", t.PlayerTribute.TributePercent()))
-		} else {
-			parts = append(parts, fmt.Sprintf("進貢%d%%", t.PlayerTribute.TributePercent()))
-		}
+		parts = append(parts, TreatySummaryPart{Kind: TreatySummaryPayingTribute, Percent: t.PlayerTribute.TributePercent()})
 	}
 	if t.AITribute != TributeNone {
-		if english {
-			parts = append(parts, fmt.Sprintf("Receiving tribute %d%%", t.AITribute.TributePercent()))
-		} else {
-			parts = append(parts, fmt.Sprintf("收取%d%%進貢", t.AITribute.TributePercent()))
-		}
+		parts = append(parts, TreatySummaryPart{Kind: TreatySummaryReceivingTribute, Percent: t.AITribute.TributePercent()})
 	}
 	if t.TradeActive {
-		if english {
-			parts = append(parts, fmt.Sprintf("Trade %d turns (%d BC)", t.TradeTurns, t.PlayerTradeValue))
-		} else {
-			parts = append(parts, fmt.Sprintf("貿易第%d回合(%d BC)", t.TradeTurns, t.PlayerTradeValue))
-		}
+		parts = append(parts, TreatySummaryPart{Kind: TreatySummaryTrade, Turns: t.TradeTurns, Value: t.PlayerTradeValue})
 	}
 	if t.ResearchActive {
-		if english {
-			parts = append(parts, fmt.Sprintf("Research %d turns (%d RP)", t.ResearchTurns, t.PlayerResearchValue))
-		} else {
-			parts = append(parts, fmt.Sprintf("研究第%d回合(%d RP)", t.ResearchTurns, t.PlayerResearchValue))
-		}
+		parts = append(parts, TreatySummaryPart{Kind: TreatySummaryResearch, Turns: t.ResearchTurns, Value: t.PlayerResearchValue})
 	}
 	if t.SpecialTrade.Active {
-		if english {
-			parts = append(parts, fmt.Sprintf("Special trade %d turns", t.SpecialTrade.Turns))
-		} else {
-			label := "特殊貿易"
-			if t.SpecialTrade.Kind == SpecialTradeFoodForCredits {
-				label = "食物換現金"
-			} else if t.SpecialTrade.Kind == SpecialTradeResearchExchange {
-				label = "研究交換"
-			}
-			parts = append(parts, fmt.Sprintf("%s第%d回合", label, t.SpecialTrade.Turns))
+		kind := TreatySummarySpecialUnknown
+		switch t.SpecialTrade.Kind {
+		case SpecialTradeFoodForCredits:
+			kind = TreatySummarySpecialFood
+		case SpecialTradeResearchExchange:
+			kind = TreatySummarySpecialResearch
 		}
+		parts = append(parts, TreatySummaryPart{Kind: kind, Turns: t.SpecialTrade.Turns, Value: t.SpecialTrade.PlayerValue})
 	}
 	if len(parts) == 0 {
-		return formal
+		return []TreatySummaryPart{{Kind: TreatySummaryFormalNone}}
 	}
-	sep := "、"
-	if english {
-		sep = ", "
-	}
-	return joinTreatyParts(parts, sep)
-}
-
-func joinTreatyParts(parts []string, sep string) string {
-	if len(parts) == 0 {
-		return ""
-	}
-	result := parts[0]
-	for _, part := range parts[1:] {
-		result += sep + part
-	}
-	return result
+	return parts
 }

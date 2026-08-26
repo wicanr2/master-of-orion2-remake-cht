@@ -184,6 +184,39 @@ func TestTreatyStateKeepsFormalAndEconomicAgreementsSeparate(t *testing.T) {
 	}
 }
 
+func TestTreatySummaryPartsAreTypedAndOrdered(t *testing.T) {
+	state := TreatyState{
+		FormalPolicy: gamedata.DIPLO_ALLIANCE, PlayerTribute: TributeFivePercent,
+		AITribute: TributeTenPercent, TradeActive: true, TradeTurns: 3, PlayerTradeValue: -2,
+		ResearchActive: true, ResearchTurns: 4, PlayerResearchValue: 7,
+		SpecialTrade: SpecialTradeState{Active: true, Kind: SpecialTradeFoodForCredits, Turns: 2, PlayerValue: 5},
+	}
+	got := TreatySummaryParts(state)
+	wantKinds := []TreatySummaryKind{
+		TreatySummaryAlliance, TreatySummaryPayingTribute, TreatySummaryReceivingTribute,
+		TreatySummaryTrade, TreatySummaryResearch, TreatySummarySpecialFood,
+	}
+	if len(got) != len(wantKinds) {
+		t.Fatalf("條約摘要項目數=%d，預期 %d：%+v", len(got), len(wantKinds), got)
+	}
+	for i, kind := range wantKinds {
+		if got[i].Kind != kind {
+			t.Fatalf("條約摘要第 %d 項=%s，預期 %s", i, got[i].Kind, kind)
+		}
+	}
+	if got[1].Percent != 5 || got[2].Percent != 10 || got[3].Turns != 3 || got[3].Value != -2 || got[4].Value != 7 {
+		t.Fatalf("條約摘要 typed 參數錯誤：%+v", got)
+	}
+	empty := TreatySummaryParts(TreatyState{})
+	if len(empty) != 1 || empty[0].Kind != TreatySummaryFormalNone {
+		t.Fatalf("空條約摘要=%+v，預期 formal_none", empty)
+	}
+	unknown := TreatySummaryParts(TreatyState{SpecialTrade: SpecialTradeState{Active: true, Kind: 99, Turns: 8}})
+	if len(unknown) != 1 || unknown[0].Kind != TreatySummarySpecialUnknown || unknown[0].Turns != 8 {
+		t.Fatalf("未知特殊貿易摘要=%+v", unknown)
+	}
+}
+
 func TestTributeTreatyTransfersTreasuryAndCanEnd(t *testing.T) {
 	s := NewDemoSession()
 	target := s.AIPlayers[0].Name

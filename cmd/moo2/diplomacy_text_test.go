@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
@@ -158,6 +159,54 @@ func TestDiplomacyRuleFilesDoNotEmbedPlayerResponses(t *testing.T) {
 			if strings.Contains(source, phrase) {
 				t.Errorf("%s 仍內嵌玩家外交回應 %q", path, phrase)
 			}
+		}
+	}
+}
+
+func TestTreatySummaryUsesExternalBilingualTemplates(t *testing.T) {
+	state := shell.TreatyState{
+		FormalPolicy: gamedata.DIPLO_ALLIANCE, PlayerTribute: shell.TributeFivePercent,
+		TradeActive: true, TradeTurns: 9, PlayerTradeValue: 12,
+		ResearchActive: true, ResearchTurns: 8, PlayerResearchValue: -3,
+		SpecialTrade: shell.SpecialTradeState{Active: true, Kind: shell.SpecialTradeResearchExchange, Turns: 7},
+	}
+	keys := []string{
+		"diplomacy.summary.unknown", "diplomacy.summary.formal_none",
+		"diplomacy.summary.nonaggression", "diplomacy.summary.alliance", "diplomacy.summary.peace",
+		"diplomacy.summary.paying_tribute", "diplomacy.summary.receiving_tribute",
+		"diplomacy.summary.trade", "diplomacy.summary.research",
+		"diplomacy.summary.special_food", "diplomacy.summary.special_research",
+		"diplomacy.summary.special_unknown",
+	}
+	for _, lang := range []i18n.Lang{i18n.Traditional, i18n.English} {
+		for _, key := range keys {
+			if got := uiText(lang, key); got == "" || got == key {
+				t.Fatalf("缺少條約摘要外部文案 %s (%v)", key, lang)
+			}
+		}
+		got := treatySummaryText(lang, state)
+		if got == "" || strings.Contains(got, "%!") || strings.Contains(got, "diplomacy.summary") {
+			t.Errorf("條約摘要格式化失敗 (%v)：%q", lang, got)
+		}
+		unknown := treatySummaryPartText(lang, shell.TreatySummaryPart{Kind: "not_registered"})
+		if unknown == "" || strings.Contains(unknown, "not_registered") {
+			t.Errorf("未知條約摘要未安全 fallback (%v)：%q", lang, unknown)
+		}
+	}
+}
+
+func TestTreatyRuleDoesNotEmbedSummaryLabels(t *testing.T) {
+	raw, err := os.ReadFile("../../internal/shell/treaty.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	for _, phrase := range []string{
+		"Non-Aggression Pact", "無正式條約", "Paying tribute", "進貢%d%%",
+		"Trade %d turns", "貿易第%d回合", "食物換現金", "研究交換",
+	} {
+		if strings.Contains(source, `"`+phrase) {
+			t.Errorf("treaty.go 仍內嵌條約摘要文案 %q", phrase)
 		}
 	}
 }

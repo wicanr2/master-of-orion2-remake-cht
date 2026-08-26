@@ -331,12 +331,15 @@
   點擊熱區推導並經雙語最長字串測試；同時修正五種協議皆可終止時第五顆按鈕從 x=640
   跑出畫布、解約列與最後一列提議重疊的舊版面。外交規則與三種餽贈亦不再直接組中文句子：
   shell 回傳 typed `DiplomacyResultCode` 及金額／科技／殖民地參數，UI 才以
-  `diplomacy.response.*` 雙語 JSON 模板格式化，未知 code 安全 fallback。原版逐句提議分頁、
+  `diplomacy.response.*` 雙語 JSON 模板格式化，未知 code 安全 fallback。條約摘要也改由
+  `TreatySummaryParts` 回傳正式狀態、進貢百分比、普通協議回合／值與特殊貿易種類；名稱、
+  BC／RP 模板與分隔符只存在 `ui.json`，空狀態與未知種類皆有 typed fallback。原版逐句提議分頁、
   完整回應動畫與熱區仍維持未知，
   不因外部文案完成而升格。證據與規格見
   [`docs/re/diplomacy-audience-text-audit-20260827.md`](docs/re/diplomacy-audience-text-audit-20260827.md) 與
   [`docs/spec/diplomacy-audience-external-text.md`](docs/spec/diplomacy-audience-external-text.md)、
-  [`docs/spec/diplomacy-result-external-text.md`](docs/spec/diplomacy-result-external-text.md)。
+  [`docs/spec/diplomacy-result-external-text.md`](docs/spec/diplomacy-result-external-text.md)、
+  [`docs/spec/treaty-summary-external-text.md`](docs/spec/treaty-summary-external-text.md)。
   其餘自繪畫面仍待逐批遷移；通用規格見
   [`docs/spec/external-player-text.md`](docs/spec/external-player-text.md)，本批證據與規格見
   [`docs/re/netinfo-text-contract-audit-20260826.md`](docs/re/netinfo-text-contract-audit-20260826.md) 與
