@@ -414,6 +414,9 @@ func (s *GameSession) advanceCouncil() {
 	}
 
 	tally := s.tallyCouncil()
+	// sub_15239 @ 0x152BA：議會流程一開始即寫 word_19A0E2=1；流會保持 1。
+	s.OriginalCouncilDiplomacyState = 1
+	s.OriginalCouncilDiplomacyStateKnown = true
 	s.CouncilMeetings++
 	s.lastCouncilTurn = s.Turn
 	if !tally.valid {
@@ -442,6 +445,7 @@ func (s *GameSession) RespondToCouncilVote(choice int) {
 	if p == nil || choice < 0 || choice > 2 {
 		return
 	}
+	s.ensureCouncilState()
 	if choice < 2 {
 		p.CandidateVotes[choice] += p.PlayerBaseVotes
 		s.CouncilLastVotes[0] = p.CandidateIdx[choice]
@@ -454,11 +458,15 @@ func (s *GameSession) RespondToCouncilVote(choice int) {
 			continue
 		}
 		if p.CandidateIdx[c] == -1 {
+			s.OriginalCouncilDiplomacyState = 2
+			s.OriginalCouncilDiplomacyStateKnown = true
 			s.Victory = VictoryState{Over: true, Reason: engine.VictoryHighCouncil, Winner: "player", Turn: p.Turn}
 			s.LastCouncilNotice = &CouncilNotice{Kind: CouncilNoticePlayerElected, Meeting: s.CouncilMeetings,
 				CandidateIdx: p.CandidateIdx, CandidateName: p.CandidateName,
 				Votes: p.CandidateVotes, TotalVotes: p.TotalVotes, WinnerSlot: c}
 		} else {
+			s.OriginalCouncilDiplomacyState = 3
+			s.OriginalCouncilDiplomacyStateKnown = true
 			s.PendingCouncilElection = &CouncilElection{Turn: p.Turn, PlayerVotes: p.PlayerBaseVotes, EnemyVotes: p.CandidateVotes[c], TotalVotes: p.TotalVotes, EnemyName: p.CandidateName[c]}
 			s.LastCouncilNotice = &CouncilNotice{Kind: CouncilNoticeEnemyElectedPending, Meeting: s.CouncilMeetings,
 				CandidateIdx: p.CandidateIdx, CandidateName: p.CandidateName,

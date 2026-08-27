@@ -131,6 +131,7 @@ func TestOriginalAIHumanDecisionFailsBeforeRNGWhenCouncilStateCouldChangeOutcome
 	}
 	// 人口最強且極高 power ratio 時，type 4 可能依 word_19A0E2==1 成立；該三態未知。
 	s.AIPlayers[0].Colonies[0].Population = 300
+	s.OriginalCouncilDiplomacyStateKnown = false
 	for len(s.AIPlayers[0].Ships) < 20 {
 		s.AIPlayers[0].Ships = append(s.AIPlayers[0].Ships, originalPowerTestShip())
 	}

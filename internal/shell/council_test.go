@@ -91,6 +91,43 @@ func TestCouncilScheduleExactIntervalAndSnapshot(t *testing.T) {
 	}
 }
 
+func TestOriginalCouncilDiplomacyStateLifecycleAndSnapshot(t *testing.T) {
+	s := NewDemoSession()
+	if !s.OriginalCouncilDiplomacyStateKnown || s.OriginalCouncilDiplomacyState != 0 {
+		t.Fatalf("新局 council raw=%d known=%v，預期 0/true", s.OriginalCouncilDiplomacyState, s.OriginalCouncilDiplomacyStateKnown)
+	}
+	s.OriginalCouncilDiplomacyState = 1
+	r := s.snapshot().restore()
+	if !r.OriginalCouncilDiplomacyStateKnown || r.OriginalCouncilDiplomacyState != 1 {
+		t.Fatalf("council raw 存檔往返=%d/%v", r.OriginalCouncilDiplomacyState, r.OriginalCouncilDiplomacyStateKnown)
+	}
+	p := &CouncilVotePending{Turn: 50, CandidateIdx: [2]int{-1, 0}, CandidateName: [2]string{"player", "AI"},
+		CandidateVotes: [2]int{70, 10}, TotalVotes: 100}
+	r.PendingCouncilVote = p
+	r.RespondToCouncilVote(2)
+	if r.OriginalCouncilDiplomacyState != 2 {
+		t.Fatalf("真人已達 2/3 時 council raw=%d，預期 2", r.OriginalCouncilDiplomacyState)
+	}
+
+	r = NewDemoSession()
+	r.OriginalCouncilDiplomacyState = 1
+	r.PendingCouncilVote = &CouncilVotePending{Turn: 50, CandidateIdx: [2]int{-1, 0}, CandidateName: [2]string{"player", "AI"},
+		CandidateVotes: [2]int{10, 70}, TotalVotes: 100}
+	r.RespondToCouncilVote(2)
+	if r.OriginalCouncilDiplomacyState != 3 {
+		t.Fatalf("其他帝國已達 2/3 時 council raw=%d，預期 3", r.OriginalCouncilDiplomacyState)
+	}
+
+	r = NewDemoSession()
+	r.OriginalCouncilDiplomacyState = 1
+	r.PendingCouncilVote = &CouncilVotePending{Turn: 50, CandidateIdx: [2]int{-1, 0}, CandidateName: [2]string{"player", "AI"},
+		CandidateVotes: [2]int{40, 40}, TotalVotes: 100}
+	r.RespondToCouncilVote(2)
+	if r.OriginalCouncilDiplomacyState != 1 {
+		t.Fatalf("流會 council raw=%d，預期維持 1", r.OriginalCouncilDiplomacyState)
+	}
+}
+
 // TestCouncilPlayerWinsBySupermajority 驗證玩家人口達 2/3 多數時直接當選勝利,不需要
 // RespondToCouncilElection(手冊:議會無法強迫的是「別人當選、你不同意」,不適用於你自己當選)。
 func TestCouncilPlayerWinsBySupermajority(t *testing.T) {

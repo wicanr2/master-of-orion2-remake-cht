@@ -111,12 +111,17 @@
 25. outcome 拆段後確認原版 RNG 邊界：`powerRatio/40+Random_(3)-2` 先產生 intensity，
     `sub_4F93B` 再消耗 kind／payload，之後 `0x54B30` 才消耗 `Random_(100)`。尾端
     strongest 讀的是來源 `player+0xA6` 人口；`word_19A0E2` 已知在議會流程寫 1、後續外交
-    流程可寫 2／3，因此只改稱 `CouncilStateIs1`，目前不以既有 council adapter 猜造 producer。
+    流程可寫 2／3，因此只改稱 `CouncilStateIs1`，不以「開過議會」猜造 producer。
 26. `sub_53EDB` 的 outcome 1／3／4 分別寫方向 reason 106／105／124，之後都呼叫
     `sub_54CC0 @ 0x54CC0`。後者將 `word_19B580／word_19B582／byte_19B584／byte_19B587`
     鏡射到雙方方向記錄；remake 現以 `OriginalHumanDiplomaticRequest` 保存 outcome、raw reason
     與 typed action，並與會談旗標及 JSON snapshot 同步。原版接受／拒絕 callback 尚未閉合，
     因此不從 request payload 推測後續資產／條約 mutation。
+27. `word_19A0E2 @ 0x19A0E2` 的完整直接 xref 已閉合：`sub_4D78E @ 0x4DA90`
+    初始化寫 0；`sub_15239 @ 0x152BA` 每次議會開始寫 1；`sub_15DF8 @ 0x15E37／0x15E42`
+    在達成 2/3 多數時，真人當選寫 2、其他帝國當選寫 3，沒有勝者不覆寫而維持 1。
+    remake 現以 known+raw 保存這個三態，接入既有議會開始／計票結果並通過 snapshot 往返；
+    舊 JSON／GAM 缺 raw 時仍保守 unknown。
 
 ## Remake 對映與限制
 
@@ -156,12 +161,13 @@
 - 已接正常回合 orchestration：同一 RNG stream 依序走完整 score、intensity、action 與 outcome；
   outcome 1／3／4 建立可持久化 typed request，outcome 2 交給既有單主力航程 adapter，0 不動作。
   任一 producer unknown 才回到明示 stance fallback。來源人口最強且 intensity 可能大於 3 時，
-  因 `word_19A0E2` 未知會改變 type 4，會在消耗本輪 RNG 前失敗即關閉。
+  新局直接消費議會生命週期保存的 `word_19A0E2` 三態；只有舊 JSON／GAM unknown 且可能改變
+  type 4 時，才在消耗本輪 RNG 前失敗即關閉。
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。
-- 尚未閉合：`sub_544A1` 所需的完整 directional incident writer、outcome 1／3／4
-  接受／拒絕 callback 與 `word_19A0E2` 三態 producer。只有這些 typed 輸入 unknown 時，
+- 尚未閉合：`sub_544A1` 所需的完整 directional incident writer，以及 outcome 1／3／4
+  接受／拒絕 callback。只有這些 typed 輸入 unknown 時，
   願戰來源才保留明示的 `DecideStance` 相容 fallback；不以部分 score 升格整條決策。
 
 ## 勘誤：`sub_4F93B`

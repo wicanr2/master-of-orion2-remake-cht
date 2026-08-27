@@ -234,8 +234,8 @@ func (s *GameSession) originalAISourcePopulationStrongest(aiIndex int) (bool, bo
 }
 
 // originalAIHumanDecision 串起 sub_544A1 → sub_4F93B → outcome 尾端，保留同一條
-// roll stream。word_19A0E2 三態尚無 typed producer；只要來源人口最強且 intensity 可能
-// 大於 3，就在擲骰前失敗即關閉，避免把未知 council gate 當 false 後改變正常 RNG。
+// roll stream。舊 JSON／GAM 若缺 word_19A0E2 typed 狀態，且其值可能影響 type 4，會在
+// 擲骰前失敗即關閉；新局與新版 snapshot 直接消費議會生命週期保存的 raw 三態。
 func (s *GameSession) originalAIHumanDecision(aiIndex int, roll func(int) int) (originalAIHumanDecision, bool) {
 	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) || roll == nil {
 		return originalAIHumanDecision{}, false
@@ -244,7 +244,7 @@ func (s *GameSession) originalAIHumanDecision(aiIndex int, roll func(int) int) (
 	sourcePower, targetPower, exact := s.originalAIHumanDirectionalFleetPower(aiIndex)
 	powerRatio, ratioOK := gamedata.OriginalNPCPowerRatio(sourcePower, targetPower,
 		s.originalAIThirdPartyWars(aiIndex))
-	if !ok || !exact || !ratioOK || strongest && powerRatio/40+1 > 3 {
+	if !ok || !exact || !ratioOK || strongest && powerRatio/40+1 > 3 && !s.OriginalCouncilDiplomacyStateKnown {
 		return originalAIHumanDecision{}, false
 	}
 	// sub_4F93B 的 typed 候選／維護資料先做無 RNG preflight；若等 score 擲完才發現
@@ -275,7 +275,8 @@ func (s *GameSession) originalAIHumanDecision(aiIndex int, roll func(int) int) (
 		Score: result.Score, ContactTurns: a.OriginalHumanContactTurns, Difficulty: s.Difficulty,
 		DiplomaticActionAvailable: action.Kind != gamedata.OriginalHumanDiplomaticActionNone,
 		ForcedType2:               result.ForcedType2, SourcePopulationStrongest: strongest,
-		CouncilStateIs1: false, SourceRepulsive: aiRaceHasTrait(a, gamedata.TRAIT_REPULSIVE),
+		CouncilStateIs1: s.OriginalCouncilDiplomacyStateKnown && s.OriginalCouncilDiplomacyState == 1,
+		SourceRepulsive: aiRaceHasTrait(a, gamedata.TRAIT_REPULSIVE),
 		TargetRepulsive: s.RaceRepulsive(),
 	}, intensity, roll)
 	if !ok {

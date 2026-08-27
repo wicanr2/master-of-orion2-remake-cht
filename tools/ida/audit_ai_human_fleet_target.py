@@ -61,9 +61,18 @@ ROOTS = {
     "raw_diplomatic_colony_candidate_gate_e4a09": 0xE4A09,
     "raw_diplomatic_colony_candidates_e5cd4": 0xE5CD4,
     "raw_diplomatic_colony_sort_e5bd8": 0xE5BD8,
+    "raw_human_request_payload_consumer_1aeb5": 0x1AEB5,
+    "raw_human_request_payload_consumer_1d565": 0x1D565,
+    "raw_human_request_reason_dispatch_1afa6": 0x1AFA6,
+    "raw_council_begin_15239": 0x15239,
+    "raw_council_response_15df8": 0x15DF8,
+    "raw_council_state_consumer_1660b": 0x1660B,
+    "raw_council_state_consumer_168af": 0x168AF,
+    "raw_council_state_consumer_16c4e": 0x16C4E,
 }
 PERSONALITY_SCORE_TABLE_EA = 0x181080
 INCIDENT_DIVISOR_TABLE_EA = 0x180CF0
+COUNCIL_DIPLOMACY_STATE_EA = 0x19A0E2
 
 
 def digest(path):
@@ -188,6 +197,17 @@ def signed_word_table(ea, count):
     }
 
 
+def data_xrefs(ea):
+    rows = []
+    for xref in idautils.XrefsTo(ea, 0):
+        row = instruction(xref.frm)
+        fn = ida_funcs.get_func(xref.frm)
+        row["function_start_ea"] = f"0x{fn.start_ea:X}" if fn else None
+        row["function_original_name"] = ida_name.get_name(fn.start_ea) if fn else None
+        rows.append(row)
+    return rows
+
+
 def main():
     ida_auto.auto_wait()
     source = os.environ["MOO2_IDA_INPUT"]
@@ -219,6 +239,8 @@ def main():
         "raw_human_target_incident_operand_matches": operand_matches(["6CFh", "71Fh"]),
         "raw_relation_incident_operand_matches": operand_matches(["64Fh", "65Fh"]),
         "raw_human_target_grievance_operand_matches": operand_matches(["7EEh", "7F6h"]),
+        "raw_human_request_operand_matches": operand_matches(["657h", "75Fh", "767h", "777h", "7B7h"]),
+        "raw_council_diplomacy_state_xrefs": data_xrefs(COUNCIL_DIPLOMACY_STATE_EA),
         "raw_personality_score_table": signed_word_table(PERSONALITY_SCORE_TABLE_EA, 7),
         "raw_incident_divisor_table": signed_word_table(INCIDENT_DIVISOR_TABLE_EA, 7),
     }

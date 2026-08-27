@@ -1180,8 +1180,10 @@
   三態，不再稱泛用 escalation。正常 AI 回合現已接上完整 score → action → outcome；完整 producer
   可表示時，outcome 0／2 與 1／3／4 會分別停止、交給單主力航程 adapter 或建立會談請求，unknown
   才保留 stance fallback。三種外交 outcome 已保存 raw reason 106／105／124 與完整 typed payload，
-  並通過存檔往返；因原版接受／拒絕 callback 尚未閉合，目前不提前套用資產／條約效果。最後主要
-  阻塞是該 callback、council 三態 producer 與 `sub_FF593` 蟲洞 star-mask 支線。
+  並通過存檔往返；因原版接受／拒絕 callback 尚未閉合，目前不提前套用資產／條約效果。
+  `word_19A0E2` 三態亦已由 IDA 全 xref 閉合：初始化 0、開會 1、真人當選 2、其他帝國當選 3，
+  流會維持 1；新局議會生命週期與 snapshot 已接，舊 JSON／GAM 缺 raw 才 unknown。最後主要
+  阻塞是該 callback 與 `sub_FF593` 蟲洞 star-mask 支線。
   typed producer unknown 時的願戰來源仍是明示的 `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與
   [`docs/spec/ai-human-formal-war-policy.md`](docs/spec/ai-human-formal-war-policy.md)、

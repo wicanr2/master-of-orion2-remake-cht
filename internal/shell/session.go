@@ -4745,9 +4745,13 @@ type GameSession struct {
 	PendingCouncilVote     *CouncilVotePending // AI 已投票、等待真人選候選人或棄權
 	LastCouncilNotice      *CouncilNotice      // 本回合議會型別化通知(nil=無；供回合摘要)
 	CouncilMeetings        int                 // 已召開過的議會屆數
-	lastCouncilTurn        int                 // 上次召開議會的回合數(0=從未召開)
-	CouncilLastVotes       []int               // 帝國順序為玩家、AIPlayers；-2=上屆棄權／未知，-1=玩家
-	councilRand            *randStream         // 議會 Vote_Check_ 的獨立 1..200 可重播亂數流
+	// OriginalCouncilDiplomacyState 對應 word_19A0E2：0=尚未開會、1=已開會但無勝者、
+	// 2=真人當選、3=其他帝國當選。Known 區分舊 JSON／GAM 缺 raw 與合法 0。
+	OriginalCouncilDiplomacyState      int
+	OriginalCouncilDiplomacyStateKnown bool
+	lastCouncilTurn                    int         // 上次召開議會的回合數(0=從未召開)
+	CouncilLastVotes                   []int       // 帝國順序為玩家、AIPlayers；-2=上屆棄權／未知，-1=玩家
+	councilRand                        *randStream // 議會 Vote_Check_ 的獨立 1..200 可重播亂數流
 
 	// AntaranHomeworldConquered 是手冊三條勝利路徑之二「攻陷安塔蘭母星」的達成旗標(見
 	// antaran_victory.go)。由 AssaultAntares 戰勝後設為 true;engine.CheckAntaranVictory 讀取
@@ -6379,20 +6383,21 @@ func NewDemoSession() *GameSession {
 	aiPlayers := buildDemoAIOpponents(aiHomeStars, 1, 42) // demo 固定難度 1 / seed 42(可重現)
 
 	session := &GameSession{
-		Turn:              1,
-		Difficulty:        1, // 與 buildDemoAIOpponents(..., 1, ...) 同一份示範局難度，避免零值誤套 Tutor。
-		Player:            newHomeworldPlayerState(gamedata.TOPIC_ADVANCED_CONSTRUCTION),
-		PlayerColonies:    []engine.ColonyState{playerHomeworldColony()},
-		ColonyBuildings:   []map[string]bool{homeworldBuildings()},
-		PlayerColonyStars: []int{0},                       // 母星 = 星 0(見欄位註解)
-		Government:        gamedata.MoraleGovDictatorship, // 預設獨裁(自訂種族 0 點基準),見欄位註解的零值陷阱說明
-		AIPlayers:         aiPlayers,
-		EnableAIVsAI:      true,                               // 新示範／新局啟用；舊存檔缺欄位仍維持關閉
-		PlayerSpies:       make([]int, len(aiPlayers)),        // 玩家對每個 AI 對手的間諜數,平行 AIPlayers,開局皆 0(見欄位/spy.go ensurePlayerSpies 註解)
-		PlayerSpyMissions: make([]SpyMission, len(aiPlayers)), // 零值 STEAL,與原本最小迴圈相容
-		Stars:             galaxy,
-		Nebulae:           demoNebulae,
-		Planets:           genPlanets(galaxy, rand.New(rand.NewSource(43)), rand.New(rand.NewSource(47)), galaxyAgeSetting, demoHomeStarSet(aiHomeStars)),
+		Turn:                               1,
+		Difficulty:                         1, // 與 buildDemoAIOpponents(..., 1, ...) 同一份示範局難度，避免零值誤套 Tutor。
+		Player:                             newHomeworldPlayerState(gamedata.TOPIC_ADVANCED_CONSTRUCTION),
+		PlayerColonies:                     []engine.ColonyState{playerHomeworldColony()},
+		ColonyBuildings:                    []map[string]bool{homeworldBuildings()},
+		PlayerColonyStars:                  []int{0},                       // 母星 = 星 0(見欄位註解)
+		Government:                         gamedata.MoraleGovDictatorship, // 預設獨裁(自訂種族 0 點基準),見欄位註解的零值陷阱說明
+		AIPlayers:                          aiPlayers,
+		EnableAIVsAI:                       true, // 新示範／新局啟用；舊存檔缺欄位仍維持關閉
+		OriginalCouncilDiplomacyStateKnown: true,
+		PlayerSpies:                        make([]int, len(aiPlayers)),        // 玩家對每個 AI 對手的間諜數,平行 AIPlayers,開局皆 0(見欄位/spy.go ensurePlayerSpies 註解)
+		PlayerSpyMissions:                  make([]SpyMission, len(aiPlayers)), // 零值 STEAL,與原本最小迴圈相容
+		Stars:                              galaxy,
+		Nebulae:                            demoNebulae,
+		Planets:                            genPlanets(galaxy, rand.New(rand.NewSource(43)), rand.New(rand.NewSource(47)), galaxyAgeSetting, demoHomeStarSet(aiHomeStars)),
 		// Monsters 在下面 session 建好後補上——genMonsters 會就地修改 Planets(手冊 p.60:
 		// 有怪獸的星系一定另有一個特殊物產),不能在同一個複合字面值裡引用尚未建立的欄位。
 		// 開局領袖池為空(2026-07-12 手冊考據校正)。手冊 GAME_MANUAL.pdf p.47 + p.134「Mercenary
