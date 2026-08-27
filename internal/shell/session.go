@@ -4482,6 +4482,11 @@ type GameSession struct {
 	AITreatyBiasRaw    [][]int
 	AIAgreementBiasRaw [][]int
 	AITributeModes     [][]int
+	// AIIncidentReasonRaw／MagnitudeRaw／MemoryRaw 對應方向性 +0x64F／+0x65F／+0x71F。
+	// 前兩者保存 Change_Relations_ 待處理的最強事件；MemoryRaw 是談判第三方 +5 的來源。
+	AIIncidentReasonRaw    [][]int
+	AIIncidentMagnitudeRaw [][]int
+	AIIncidentMemoryRaw    [][]int
 	// AIWarDurationRaw／AIDiplomacyCooldownRaw 對應方向性 +0x717／+0x72F。
 	AIWarDurationRaw       [][]int
 	AIDiplomacyCooldownRaw [][]int

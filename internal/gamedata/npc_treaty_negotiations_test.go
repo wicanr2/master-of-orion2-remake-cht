@@ -2,6 +2,27 @@ package gamedata
 
 import "testing"
 
+func TestOriginalNPCIncidentMemoryNegativeAndPositive(t *testing.T) {
+	negative, ok := OriginalNPCIncidentMemoryStep(OriginalNPCIncidentMemoryInput{
+		PendingReason: 4, PendingMagnitude: -10, Memory: 1, Government: 2,
+	}, func() int { return 39 }) // threshold 20-2*(-10)=40。
+	if !ok || negative.Memory != 2 || negative.PendingReason != 4 {
+		t.Fatalf("負面事件記憶=%+v,%v", negative, ok)
+	}
+	protected, ok := OriginalNPCIncidentMemoryStep(OriginalNPCIncidentMemoryInput{
+		PendingReason: 4, PendingMagnitude: -1, Government: 5, ProtectedAgreement: true,
+	}, func() int { return 100 })
+	if !ok || protected.Memory != 2 {
+		t.Fatalf("有協議負面事件應固定 +2：%+v,%v", protected, ok)
+	}
+	positive, ok := OriginalNPCIncidentMemoryStep(OriginalNPCIncidentMemoryInput{
+		PendingReason: 5, PendingMagnitude: 8, Memory: 2, Government: 2,
+	}, func() int { return 10 })
+	if !ok || positive.Memory != 1 || positive.PendingReason != 5 {
+		t.Fatalf("正面事件應在低骰遞減記憶：%+v,%v", positive, ok)
+	}
+}
+
 func TestOriginalNPCTreatyNegotiationCreatesAllianceAndResearch(t *testing.T) {
 	rolls := []struct{ n, v int }{{250, 1}, {100, 100}, {100, 100}, {100, 1}}
 	pos := 0

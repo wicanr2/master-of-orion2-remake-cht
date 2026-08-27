@@ -73,6 +73,9 @@ func TestDiplomacyGrowthRawAndRandPersist(t *testing.T) {
 	s.AITreatyBiasRaw[0][1] = -20
 	s.AIAgreementBiasRaw[0][1] = -30
 	s.AITributeModes[0][1] = 2
+	s.AIIncidentReasonRaw[0][1] = 14
+	s.AIIncidentMagnitudeRaw[0][1] = 5
+	s.AIIncidentMemoryRaw[0][1] = 2
 	s.AIWarDurationRaw[0][1] = 17
 	s.AIDiplomacyCooldownRaw[0][1] = 23
 	s.diplomacyGrowthRandForTurn().Intn(100)
@@ -92,6 +95,8 @@ func TestDiplomacyGrowthRawAndRandPersist(t *testing.T) {
 	}
 	if got.AIReputationRaw[0][1] != -7 || got.AITreatyBiasRaw[0][1] != -20 ||
 		got.AIAgreementBiasRaw[0][1] != -30 || got.AITributeModes[0][1] != 2 ||
+		got.AIIncidentReasonRaw[0][1] != 14 || got.AIIncidentMagnitudeRaw[0][1] != 5 ||
+		got.AIIncidentMemoryRaw[0][1] != 2 ||
 		got.AIWarDurationRaw[0][1] != 17 || got.AIDiplomacyCooldownRaw[0][1] != 23 {
 		t.Fatalf("NPC negotiation raw state did not round-trip: rep=%v treaty=%v agreement=%v tribute=%v duration=%v cooldown=%v",
 			got.AIReputationRaw, got.AITreatyBiasRaw, got.AIAgreementBiasRaw, got.AITributeModes,

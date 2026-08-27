@@ -99,8 +99,13 @@ func (s *GameSession) applyDiplomaticIncident(evID int, target eventEmpireTarget
 	}
 	updated := normalizedRelationFromOriginal(raw)
 	if target.kind == eventEmpireAI && partner.kind == eventEmpireAI {
+		currentRaw := originalRelationFromNormalized(current)
 		s.AIRelations[target.index][partner.index] = updated
 		s.AIRelations[partner.index][target.index] = updated
+		s.AIRelationsRaw = resizeIntMatrix(s.AIRelationsRaw, len(s.AIPlayers))
+		s.AIRelationsRawKnown = resizeBoolMatrix(s.AIRelationsRawKnown, len(s.AIPlayers))
+		s.setOriginalAIAIRelation(target.index, partner.index, raw)
+		s.recordOriginalAIIncident(target.index, partner.index, evID, raw-currentRaw)
 	} else if target.kind == eventEmpireAI {
 		s.AIPlayers[target.index].Relation = updated
 	} else {

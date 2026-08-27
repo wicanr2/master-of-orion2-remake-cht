@@ -84,7 +84,8 @@ remake 現由 typed 實艦逐艦重建 `+0x5EC` 方向國力矩陣並接入此�
 
 - **已接**：ordered AI pair、難度頻率、政府表、條約／協議分數、raw 記憶
   回復與 -30、互不侵犯／同盟／貿易／研究、納貢 mode 2 與關係 delta。
-- **資料模型投影**：AI 都視為已接觸且存活；treaty-break 記憶 `+0x71F` 尚未接入本談判 base。
+- **已接事件記憶**：`+0x64F／+0x65F／+0x71F` 已訂正為 pending reason／magnitude／重複事件
+  記憶；一般政府更新、鏡射與本談判第三方 +5 已接。`+0x727` 與其餘 reason writer 仍留白。
   它不同於已閉合的戰爭計時 `+0x717`。純量國力只作舊存檔相容回退。
 - **後續已閉合**：一般 AI↔AI 宣戰、`+0x717／+0x72F` 及直接停戰見
   [`npc-war-ceasefire-audit-20260827.md`](npc-war-ceasefire-audit-20260827.md)。

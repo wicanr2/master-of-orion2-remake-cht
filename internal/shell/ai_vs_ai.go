@@ -48,6 +48,9 @@ func (s *GameSession) ensureAIAIState() {
 	s.AITreatyBiasRaw = resizeIntMatrix(s.AITreatyBiasRaw, n)
 	s.AIAgreementBiasRaw = resizeIntMatrix(s.AIAgreementBiasRaw, n)
 	s.AITributeModes = resizeIntMatrix(s.AITributeModes, n)
+	s.AIIncidentReasonRaw = resizeIntMatrix(s.AIIncidentReasonRaw, n)
+	s.AIIncidentMagnitudeRaw = resizeIntMatrix(s.AIIncidentMagnitudeRaw, n)
+	s.AIIncidentMemoryRaw = resizeIntMatrix(s.AIIncidentMemoryRaw, n)
 	s.AIWarDurationRaw = resizeIntMatrix(s.AIWarDurationRaw, n)
 	s.AIDiplomacyCooldownRaw = resizeIntMatrix(s.AIDiplomacyCooldownRaw, n)
 	for i := range s.AIPolicies {
@@ -122,6 +125,7 @@ func (s *GameSession) advanceAIAIDiplomacy() {
 	s.ensureOriginalAIAIRelations()
 	s.ensureAIAIState()
 	s.advanceOriginalAIAIWarTimers()
+	s.advanceOriginalAIIncidentMemory(func() int { return s.diplomacyGrowthRandForTurn().Intn(100) + 1 })
 	for i := range s.AIPlayers {
 		for j := range s.AIPlayers {
 			if i == j {
@@ -267,6 +271,7 @@ func (s *GameSession) declareOriginalAIAIWar(source, target int, roll func(int) 
 	s.AIAgreementBiasRaw[source][target], s.AIAgreementBiasRaw[target][source] = -200, -200
 	s.AIWarDurationRaw[source][target], s.AIWarDurationRaw[target][source] = 0, 0
 	s.AIDiplomacyCooldownRaw[source][target], s.AIDiplomacyCooldownRaw[target][source] = 0, 0
+	s.clearOriginalAIIncidentMemory(source, target)
 	s.setOriginalAIAIRelation(source, target, -74-value)
 }
 
@@ -277,6 +282,7 @@ func (s *GameSession) makeOriginalAIAICeasefire(a, b int) {
 	s.AIResearch[a][b], s.AIResearch[b][a] = false, false
 	s.AITributeModes[a][b], s.AITributeModes[b][a] = 0, 0
 	s.AIDiplomacyCooldownRaw[a][b], s.AIDiplomacyCooldownRaw[b][a] = 30, 30
+	s.clearOriginalAIIncidentMemory(a, b)
 	next := s.originalAIAIRelation(a, b) + 50
 	if next > 0 {
 		next = 0
@@ -300,7 +306,10 @@ func (s *GameSession) advanceOriginalAIAINegotiation(outer, inner int, roll func
 			thirdPartyBonus += 20
 			nonHumanWars++
 		}
-		// +0x71F 的 treaty-break writer 尚未映射；初始化值 0 不任意加分。
+		if inner < len(s.AIIncidentMemoryRaw) && k < len(s.AIIncidentMemoryRaw[inner]) &&
+			s.AIIncidentMemoryRaw[inner][k] > 0 {
+			thirdPartyBonus += 5
+		}
 	}
 	result, ok := gamedata.OriginalNPCTreatyNegotiation(gamedata.OriginalNPCTreatyInput{
 		Difficulty: s.Difficulty, CurrentRaw: s.originalAIAIRelation(outer, inner),
@@ -322,6 +331,7 @@ func (s *GameSession) advanceOriginalAIAINegotiation(outer, inner int, roll func
 	s.AIAgreementBiasRaw[outer][inner] = result.AgreementBiasRaw
 	if result.Policy != s.AIPolicies[outer][inner] {
 		s.AIPolicies[outer][inner], s.AIPolicies[inner][outer] = result.Policy, result.Policy
+		s.clearOriginalAIIncidentMemory(outer, inner)
 	}
 	if result.TradeActive {
 		s.AITrade[outer][inner], s.AITrade[inner][outer] = true, true
@@ -331,16 +341,19 @@ func (s *GameSession) advanceOriginalAIAINegotiation(outer, inner int, roll func
 	}
 	if result.TributeMode != 0 {
 		s.AITributeModes[outer][inner] = result.TributeMode
+		s.clearOriginalAIIncidentMemory(outer, inner)
 	}
 	if result.RelationDelta != 0 {
+		current := s.originalAIAIRelation(outer, inner)
 		next, valid := gamedata.OriginalChangeRelationScore(gamedata.OriginalRelationChangeInput{
-			CurrentRaw: s.originalAIAIRelation(outer, inner), BaseDelta: result.RelationDelta,
+			CurrentRaw: current, BaseDelta: result.RelationDelta,
 			ActorGovernment:   originalAIRelationGovernment(s.AIPlayers[inner]),
 			TargetCharismatic: aiRaceHasTrait(s.AIPlayers[outer], gamedata.TRAIT_CHARISMATIC),
 			Policy:            result.Policy, BothAI: true, RelativeTurn: s.Turn - 1, Difficulty: s.Difficulty,
 		})
 		if valid {
 			s.setOriginalAIAIRelation(outer, inner, next)
+			s.recordOriginalAIIncident(inner, outer, 14, next-current)
 		}
 	}
 }

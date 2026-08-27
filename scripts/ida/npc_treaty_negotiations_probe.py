@@ -19,14 +19,18 @@ import idc
 TARGET_EA = 0x2552D
 RELATED_EAS = (
     0x252A7, 0x252D5, 0x25AD2, 0x25BC6, 0x25DF1, 0x2670A,
-    0x4F694, 0x500CF, 0x5090C, 0x51078, 0x5138E, 0x52049, 0x5232E, 0x524C3,
+    0x4E3B5, 0x4EB06, 0x4F0DC, 0x4F694, 0x4FE25, 0x500CF, 0x5090C, 0x51078,
+    0x5138E, 0x52049, 0x5232E, 0x524C3,
     0x524FB, 0x52602,
+    0x53EDB,
     0xD3D34,
     0x54D80, 0x54E5B, 0x56726, 0x5679E, 0x5680D, 0x5685F, 0x5699C, 0x56CA2,
     0x582BF, 0x58387, 0x58425, 0x5EAE9, 0x5EE27, 0x5EED4,
     0x5EF09, 0x5EF17, 0x5EF4B, 0x5F2C3, 0x5F2F6, 0x5F379, 0x5F871,
 )
 GOVERNMENT_SCORE_TABLE_EA = 0x180CCC
+INCIDENT_GOVERNMENT_THRESHOLD_TABLE_EA = 0x180CDC
+INCIDENT_DEMOCRACY_MEMORY_THRESHOLD_EA = 0x180CE8
 NPC_POWER_MOD_WORD_EAS = (
     0x17FD26, 0x17FD35, 0x17FD62, 0x17FD80, 0x17FD8F, 0x17FD9E,
     0x17FDAD, 0x17FDBC, 0x17FDCB, 0x17FDDA, 0x17FDE9,
@@ -47,8 +51,8 @@ NPC_POWER_WEAPON_BASE_EA = 0x17F807
 NPC_POWER_WEAPON_RECORD_SIZE = 28
 NPC_POWER_FIGHTER_MINI_THRESHOLD_EA = 0x17FD32
 RELATIVE_OPERANDS = ("+5ECh]", "+617h]", "+627h]", "+62Fh]", "+637h]", "+63Fh]",
-                     "+68Fh]", "+69Fh]", "+6D7h]", "+717h]", "+71Fh]",
-                     "+72Fh]")
+                     "+64Fh]", "+65Fh]", "+68Fh]", "+69Fh]", "+6D7h]", "+717h]",
+                     "+71Fh]", "+72Fh]", "+737h]")
 
 
 def instruction(ea):
@@ -152,6 +156,19 @@ def main():
             int.from_bytes(table[i:i + 2], "little", signed=True)
             for i in range(0, len(table), 2)
         ],
+    }
+
+    incident_table = ida_bytes.get_bytes(INCIDENT_GOVERNMENT_THRESHOLD_TABLE_EA, 16) or b""
+    target["incident_memory_thresholds"] = {
+        "government_table_ea": hex(INCIDENT_GOVERNMENT_THRESHOLD_TABLE_EA),
+        "government_signed_words": [
+            int.from_bytes(incident_table[i:i + 2], "little", signed=True)
+            for i in range(0, len(incident_table), 2)
+        ],
+        "democracy_memory_ea": hex(INCIDENT_DEMOCRACY_MEMORY_THRESHOLD_EA),
+        "democracy_memory_signed_word": int.from_bytes(
+            ida_bytes.get_bytes(INCIDENT_DEMOCRACY_MEMORY_THRESHOLD_EA, 2) or b"\x00\x00",
+            "little", signed=True),
     }
 
     target["npc_power_modifier_words"] = [
