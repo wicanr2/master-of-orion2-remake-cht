@@ -314,8 +314,8 @@ type OriginalHumanTargetOutcomeInput struct {
 	Difficulty                int
 	DiplomaticActionAvailable bool
 	ForcedType2               bool
-	SourceStrongest           bool
-	GlobalEscalation          bool
+	SourcePopulationStrongest bool
+	CouncilStateIs1           bool
 	SourceRepulsive           bool
 	TargetRepulsive           bool
 }
@@ -383,27 +383,34 @@ func OriginalHumanTargetThreshold(score, contactTurns int) (int, bool) {
 	return contactTurns / int(root), true
 }
 
-// OriginalHumanTargetOutcome 對應 0x54AC9..0x54CBB。roll 採專案 1-based 契約；
-// 函式保留原版 RNG 消耗順序，即使後續 gate 失敗也不延後已發生的擲骰。
-func OriginalHumanTargetOutcome(in OriginalHumanTargetOutcomeInput, roll func(int) int) (int, bool) {
-	if in.ContactTurns < 0 || in.ContactTurns > 250 || in.PowerRatio < 0 ||
-		in.Difficulty < 0 || in.Difficulty > 6 || roll == nil {
+// OriginalHumanTargetActionIntensity 對應 sub_544A1 呼叫 sub_4F93B 前的
+// powerRatio/40+Random_(3)-2，並將結果下限夾為 1。roll3 採 1-based 契約。
+func OriginalHumanTargetActionIntensity(powerRatio, roll3 int) (int, bool) {
+	if powerRatio < 0 || roll3 < 1 || roll3 > 3 {
+		return 0, false
+	}
+	intensity := powerRatio/40 + roll3 - 2
+	if intensity < 1 {
+		intensity = 1
+	}
+	return intensity, true
+}
+
+// OriginalHumanTargetOutcomeAfterAction 對應 sub_4F93B 回傳後的
+// 0x54B30..0x54CBB。呼叫端必須先依原版順序產生 intensity 與外交 action；本函式
+// 從 Random_(100) 開始繼續消耗 RNG。actionIntensity 為 0 表示 sub_4F93B 無 action。
+func OriginalHumanTargetOutcomeAfterAction(in OriginalHumanTargetOutcomeInput, actionIntensity int,
+	roll func(int) int) (int, bool) {
+	if in.ContactTurns < 0 || in.ContactTurns > 250 || in.Difficulty < 0 ||
+		in.Difficulty > 6 || actionIntensity < 0 || roll == nil {
 		return 0, false
 	}
 	threshold, ok := OriginalHumanTargetThreshold(in.Score, in.ContactTurns)
 	if !ok {
 		return 0, false
 	}
-	r3 := roll(3)
-	if r3 < 1 || r3 > 3 {
-		return 0, false
-	}
-	actionCount := in.PowerRatio/40 + (r3 - 1) - 1
-	if actionCount < 1 {
-		actionCount = 1
-	}
 	if !in.DiplomaticActionAvailable {
-		actionCount = 0
+		actionIntensity = 0
 	}
 	r100 := roll(100)
 	if r100 < 1 || r100 > 100 {
@@ -416,7 +423,7 @@ func OriginalHumanTargetOutcome(in OriginalHumanTargetOutcomeInput, roll func(in
 	if r16 < 1 || r16 > 16 {
 		return 0, false
 	}
-	if r16-1+in.Difficulty >= 16 || actionCount <= 0 || in.ForcedType2 {
+	if r16-1+in.Difficulty >= 16 || actionIntensity <= 0 || in.ForcedType2 {
 		return 2, true
 	}
 	// 原版在檢查 strongest/global/actionCount 前無條件消耗 Random_(4)。
@@ -424,7 +431,7 @@ func OriginalHumanTargetOutcome(in OriginalHumanTargetOutcomeInput, roll func(in
 	if r4a < 1 || r4a > 4 {
 		return 0, false
 	}
-	if in.SourceStrongest && in.GlobalEscalation && actionCount > 3 {
+	if in.SourcePopulationStrongest && in.CouncilStateIs1 && actionIntensity > 3 {
 		return 4, true
 	}
 	if in.SourceRepulsive || in.TargetRepulsive {
@@ -434,8 +441,23 @@ func OriginalHumanTargetOutcome(in OriginalHumanTargetOutcomeInput, roll func(in
 	if r4b < 1 || r4b > 4 {
 		return 0, false
 	}
-	if r4b-1 > int(originalHumanTargetISqrt(uint32(actionCount+4))) {
+	if r4b-1 > int(originalHumanTargetISqrt(uint32(actionIntensity+4))) {
 		return 3, true
 	}
 	return 1, true
+}
+
+// OriginalHumanTargetOutcome 是保留完整原版 RNG 順序的相容 wrapper：先消耗
+// Random_(3) 產生 action intensity，再進入 outcome 尾端。整合正常 AI 回合時應在
+// 兩段之間呼叫 sub_4F93B 對應 producer，不能用本 wrapper 取代 action payload。
+func OriginalHumanTargetOutcome(in OriginalHumanTargetOutcomeInput, roll func(int) int) (int, bool) {
+	if in.PowerRatio < 0 || roll == nil {
+		return 0, false
+	}
+	r3 := roll(3)
+	intensity, ok := OriginalHumanTargetActionIntensity(in.PowerRatio, r3)
+	if !ok {
+		return 0, false
+	}
+	return OriginalHumanTargetOutcomeAfterAction(in, intensity, roll)
 }

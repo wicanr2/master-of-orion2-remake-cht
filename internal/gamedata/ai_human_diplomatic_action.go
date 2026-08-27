@@ -22,7 +22,7 @@ type OriginalHumanDiplomaticActionInput struct {
 	SourceMaintenance    int
 	TargetCredits        int
 	CreditIntensityLimit int
-	ColonyTarget         int
+	ColonyCandidates     []int
 }
 
 type OriginalHumanDiplomaticAction struct {
@@ -58,7 +58,7 @@ func OriginalHumanDiplomaticActionSelect(in OriginalHumanDiplomaticActionInput,
 	if intensity > in.CreditIntensityLimit {
 		credits = false
 	}
-	if intensity < 6 || in.ColonyTarget < 0 {
+	if intensity < 6 || len(in.ColonyCandidates) == 0 {
 		colony = false
 	}
 	if !direct && !tech && !credits && !colony {
@@ -143,7 +143,16 @@ func OriginalHumanDiplomaticActionSelect(in OriginalHumanDiplomaticActionInput,
 		}
 		out.Technology = in.TechnologyCandidates[idx]
 	case OriginalHumanDiplomaticActionColony:
-		out.Colony = in.ColonyTarget
+		half := (len(in.ColonyCandidates) + 1) / 2
+		r := roll(half)
+		if r < 1 || r > half {
+			return OriginalHumanDiplomaticAction{}, false
+		}
+		index := r - 1
+		if intensity > 6 {
+			index = len(in.ColonyCandidates) - r
+		}
+		out.Colony = in.ColonyCandidates[index]
 	default:
 		return OriginalHumanDiplomaticAction{}, true
 	}

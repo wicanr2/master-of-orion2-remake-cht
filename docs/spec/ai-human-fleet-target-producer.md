@@ -61,12 +61,20 @@
 23. 科技候選由 `sub_27094` 取得 target 已知、source 未知且 `Calc_Tech_Value_` 對 source
     為正的 application，依估值排序。雙方最高已知科技 level 最低視為 1；target 較低時
     ratio limit=`10*target/source`，否則 10，最終下限 1。
+24. 殖民地候選由 `sub_E5CD4／sub_E5BE3／sub_E4A09` 建立：排除真人首都星、不可達星與
+    真人唯一殖民星，按同星真人總人口的 unsigned byte 升冪排序。intensity 6 從較低人口
+    半部抽取，intensity 7–10 從較高人口半部抽取；奇數候選數以 `(count+1)/2` 為半部大小。
+    remake 尚未保存原版 `star+0x67` 暫時外交佔用槽；正常無 pending request 狀態等價為全 -1。
+25. action intensity 必須先按 `powerRatio/40+Random_(3)-2`（下限 1）算出，再讓
+    `sub_4F93B` 消耗 kind／payload RNG，最後才從 `Random_(100)` 進 outcome 尾端。
+    `sub_544A1` 的 strongest 判定比較來源人口 `player+0xA6`，不是艦隊；type 4 的另一條
+    gate 是 `word_19A0E2==1`，不得用「曾召開議會」或泛稱 global escalation 猜填。
 
 ## DRAFT 邊界
 
 `sub_544A1 @ 0x544A1..0x54CC0` 的四類尾端與 RNG 已形成純規則；尚缺的是 directional
 incident memory 的 writer 門檻／正常玩家事件 producer、government 0 的蟲洞 mask 支線，以及
-`sub_4F93B` 的殖民地候選 producer與 outcome 1／3／4 的玩家請求狀態。
+outcome 1／3／4 的玩家請求狀態，以及 `word_19A0E2` 三態 runtime producer。
 這些欄位閉合前，remake 可用既有戰爭態勢決定是否呼叫原版目標估值，但必須標為 fallback，
 不得把只含 relation/personality 的部分 score 冒充完整 producer。
 

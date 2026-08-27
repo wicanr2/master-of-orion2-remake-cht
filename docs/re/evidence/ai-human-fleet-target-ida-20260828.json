@@ -47583,6 +47583,55 @@
           "data_refs": []
         }
       ]
+    },
+    "raw_diplomatic_colony_sort_e5bd8": {
+      "requested": "0xE5BD8",
+      "original_name": "sub_E5BD8",
+      "start_ea": "0xE5BD8",
+      "end_ea": "0xE5BE3",
+      "bytes_sha256": "7e825dde48cba8b041941ba5f4c810c88eb3d1c710524085772e42b8733e7121",
+      "pseudocode_navigation_only": "int __fastcall sub_E5BD8(int a1, int a2)\n{\n  return *(unsigned __int8 *)(a1 + 1) - *(unsigned __int8 *)(a2 + 1);\n}\n",
+      "instructions": [
+        {
+          "ea": "0xE5BD8",
+          "bytes": "0fb64001",
+          "text": "movzx   eax, byte ptr [eax+1]",
+          "code_refs": [],
+          "data_refs": []
+        },
+        {
+          "ea": "0xE5BDC",
+          "bytes": "0fb65201",
+          "text": "movzx   edx, byte ptr [edx+1]",
+          "code_refs": [],
+          "data_refs": []
+        },
+        {
+          "ea": "0xE5BE0",
+          "bytes": "29d0",
+          "text": "sub     eax, edx",
+          "code_refs": [],
+          "data_refs": []
+        },
+        {
+          "ea": "0xE5BE2",
+          "bytes": "c3",
+          "text": "retn",
+          "code_refs": [],
+          "data_refs": []
+        }
+      ],
+      "callers": [
+        {
+          "ea": "0xE5C8D",
+          "bytes": "b9d85b0e00",
+          "text": "mov     ecx, offset sub_E5BD8",
+          "code_refs": [],
+          "data_refs": [
+            "0xE5BD8"
+          ]
+        }
+      ]
     }
   },
   "raw_fleet_target_arrival_caller_layers": [

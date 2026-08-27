@@ -102,6 +102,16 @@
     `Calc_Tech_Value_==0` 後依估值排序。`0x4F9C0..0x4FA78` 分別取雙方最高科技 level，
     target 較低時算 `10*target/source`，否則 10，再夾下限 1。typed producer 已接來源
     `OriginalTechProfile`、雙方已知 application 與既有 `OriginalAITechValueKnownSlice`。
+24. `sub_E5CD4 @ 0xE5CD4..0xE5DE8` 建立真人殖民星候選；`sub_E5BE3 @
+    0xE5BE3..0xE5CD4` 加總同星真人殖民地 `+0x0A` population byte，並用
+    `sub_E5BD8 @ 0xE5BD8..0xE5BE3` 的 `uint8(a[1])-uint8(b[1])` 升冪排序。它排除
+    首都建築 raw 9、不可達星及真人唯一殖民星；候選數的 `(n+1)/2` 是抽選半部大小。
+    intensity<=6 取低人口半部，intensity>6 取高人口半部。上述 producer 與 payload 已接；
+    `star+0x67` 暫時外交佔用槽在 remake 尚無獨立狀態，正常無 pending request 路徑等價全 -1。
+25. outcome 拆段後確認原版 RNG 邊界：`powerRatio/40+Random_(3)-2` 先產生 intensity，
+    `sub_4F93B` 再消耗 kind／payload，之後 `0x54B30` 才消耗 `Random_(100)`。尾端
+    strongest 讀的是來源 `player+0xA6` 人口；`word_19A0E2` 已知在議會流程寫 1、後續外交
+    流程可寫 2／3，因此只改稱 `CouncilStateIs1`，目前不以既有 council adapter 猜造 producer。
 
 ## Remake 對映與限制
 
@@ -135,14 +145,15 @@
 - 已接 shell typed producer：新局可由雙向逐艦國力、人口、歷史與持久 raw 組合上述 score；
   government 0 蟲洞支線、GAM／舊 JSON 缺 incident、歷史不足時失敗即關閉。它尚未
   取代正常發兵 fallback，因 `sub_4F93B` 完整候選 availability 仍未閉合。
-- 已接 `sub_4F93B` 科技／BC 前半 producer：科技比例與候選排序、無納貢時 source 六項
-  維護費可 typed 產生；kind RNG 與科技 payload 的兩個 off-by-one 已修正。殖民地候選與
-  outcome 1／3／4 的請求資料仍未閉合，因此尚未把部分 availability 接成正常決策。
+- 已接 `sub_4F93B` 四種候選 producer：科技比例與候選排序、無納貢時 source 六項維護費、
+  真人可要求殖民星排序與高低半部 payload 均可 typed 產生；kind RNG 與科技 payload 的兩個
+  off-by-one 已修正。任一必要資料未知時整體失敗即關閉，避免部分 availability 改變 RNG。
+  outcome 1／3／4 的請求資料仍未閉合，因此尚未把 action 接成正常決策。
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。
-- 尚未閉合：`sub_544A1` 所需的完整 directional incident memory、排名／科技趨勢與
-  `sub_4F93B` 外交行動 availability／payload。現行願戰來源仍是明示的 `DecideStance` 相容
+- 尚未閉合：`sub_544A1` 所需的完整 directional incident writer、outcome 1／3／4 請求狀態與
+  `word_19A0E2` 三態 producer。現行願戰來源仍是明示的 `DecideStance` 相容
   fallback；四類尾端雖已閉合，不以不完整上游 score 升格整條決策。
 
 ## 勘誤：`sub_4F93B`

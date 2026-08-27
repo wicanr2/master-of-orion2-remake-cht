@@ -66,3 +66,41 @@ func TestOriginalAIHumanTechnologyCandidatesConsumeTargetKnownApplications(t *te
 		t.Fatalf("target 獨有科技 %v 未進候選：%v", wanted, candidates)
 	}
 }
+
+func TestOriginalAIHumanColonyCandidatesExcludeCapitolAndSortPopulation(t *testing.T) {
+	s := &GameSession{
+		Stars: []Star{
+			{X: 0.10, Y: 0.10, Wormhole: -1}, {X: 0.11, Y: 0.10, Wormhole: -1},
+			{X: 0.12, Y: 0.10, Wormhole: -1}, {X: 0.13, Y: 0.10, Wormhole: -1},
+		},
+		PlayerColonies: []engine.ColonyState{
+			originalTargetPopulationColony(0), originalTargetPopulationColony(0), originalTargetPopulationColony(0),
+		},
+		PlayerColonyStars:   []int{0, 1, 2},
+		PlayerColonyPlanets: []int{0, 1, 2},
+		ColonyBuildings:     []map[string]bool{{CapitolBuildName: true}, {}, {}},
+		PlayerCapitolPlanet: 0, PlayerCapitolPlanetKnown: true,
+		AIPlayers: []AIOpponent{{
+			PopulationRaceSlot: 1, PopulationRaceSlotKnown: true,
+			OriginalTechProfileKnown: true,
+			Player: engine.PlayerState{GrantedTechs: map[gamedata.Technology]bool{
+				gamedata.TECH_STANDARD_FUEL_CELLS: true,
+			}},
+			Colonies: []engine.ColonyState{originalTargetPopulationColony(1)}, ColonyStars: []int{3},
+		}},
+	}
+	s.PlayerColonies[0].Population, s.PlayerColonies[0].Farmers = 20, 20
+	s.PlayerColonies[0].PopulationGroups[0].Farmers = 20
+	s.PlayerColonies[1].Population, s.PlayerColonies[1].Farmers = 5, 5
+	s.PlayerColonies[1].PopulationGroups[0].Farmers = 5
+	s.PlayerColonies[2].Population, s.PlayerColonies[2].Farmers = 10, 10
+	s.PlayerColonies[2].PopulationGroups[0].Farmers = 10
+	candidates, ok := s.originalAIHumanColonyCandidates(0)
+	if !ok || len(candidates) != 2 || candidates[0] != 1 || candidates[1] != 2 {
+		t.Fatalf("colony candidates=%v/%v，預期 [1 2]", candidates, ok)
+	}
+	action, ok := s.originalAIHumanDiplomaticAction(0, 3, func(int) int { return 1 })
+	if !ok || action.Kind != gamedata.OriginalHumanDiplomaticActionDirect || action.DirectTier != 2 {
+		t.Fatalf("full diplomatic action=%+v/%v", action, ok)
+	}
+}

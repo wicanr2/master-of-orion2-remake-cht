@@ -1146,8 +1146,8 @@
   `player+0x816` 的 20–39 回合 decision cooldown 與存檔，並移除固定 12 回合寬限、1.25 倍
   軍力門檻及誤用 losing-ground personality chance。後續又閉合 `player+0x88F` 接觸後逐回合
   遞增／250 上限／至少 10 回合 gate、`word_181080` 七欄 personality score、正負 score
-  threshold、RNG 消耗順序與四類結果純規則。`sub_544A1` 的完整 directional incident memory、
-  排名／科技趨勢，以及 `sub_4F93B` 的科技／殖民地候選 producer 仍待 typed 化；四種 action
+  threshold、RNG 消耗順序與四類結果純規則。`sub_544A1` 的 directional incident writer
+  仍待閉合；四種 action
   kind、候選 gate、RNG 順序與 BC／科技／直接要求／殖民地 payload 核心已成為純規則。
   Honorable AI 的玩家正式違約鏈亦已閉合：`break_formal` 永久寫 AI→玩家 `+0x727` 並存檔，
   base score 由 Honorable +20 改讀 Dishonored -10；普通貿易解約不誤寫。
@@ -1174,8 +1174,11 @@
   limit；缺 incident、歷史、精確雙向國力或 government 0 可達資料時失敗即關閉。
   `sub_4F93B` 又修正兩個既有 off-by-one：kind 命中值是 `Random(n)==1`，科技 payload
   使用 `Random(3)-2`；source `+0xB4` 也由錯稱收入訂正為六項維護費。科技比例、真人
-  獨有科技候選估值排序及無納貢維護費 producer 已接。正常發兵仍未切換，最後主要阻塞是
-  殖民地候選、outcome 1／3／4 請求狀態與 `sub_FF593` 蟲洞 star-mask 支線。
+  獨有科技候選估值排序、無納貢維護費 producer，以及 `sub_E5CD4／sub_E5BE3` 真人殖民星
+  候選排序與高低人口半部 payload 已接。outcome 已拆成 intensity → action → 尾端三段，避免
+  正常接線改變 RNG；同時訂正 strongest 為人口最強，`word_19A0E2==1` 保守命名為 council
+  三態，不再稱泛用 escalation。正常發兵仍未切換，最後主要阻塞是 outcome 1／3／4 請求狀態、
+  council 三態 producer 與 `sub_FF593` 蟲洞 star-mask 支線。
   目前願戰來源仍是明示的
   `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與

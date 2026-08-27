@@ -159,6 +159,27 @@ func TestOriginalHumanTargetOutcomeConsumesRollsInOriginalOrder(t *testing.T) {
 	}
 }
 
+func TestOriginalHumanTargetActionIntensity(t *testing.T) {
+	for _, tc := range []struct{ ratio, roll, want int }{
+		{0, 1, 1}, {80, 1, 1}, {80, 2, 2}, {120, 3, 4},
+	} {
+		got, ok := OriginalHumanTargetActionIntensity(tc.ratio, tc.roll)
+		if !ok || got != tc.want {
+			t.Fatalf("ratio=%d roll=%d intensity=%d/%v，預期 %d", tc.ratio, tc.roll, got, ok, tc.want)
+		}
+	}
+}
+
+func TestOriginalHumanTargetOutcomeAfterActionStartsAtRandom100(t *testing.T) {
+	spans := []int{}
+	got, ok := OriginalHumanTargetOutcomeAfterAction(OriginalHumanTargetOutcomeInput{
+		Score: -10, ContactTurns: 20, Difficulty: 1, DiplomaticActionAvailable: true,
+	}, 2, func(n int) int { spans = append(spans, n); return n })
+	if !ok || got != 2 || len(spans) != 2 || spans[0] != 100 || spans[1] != 16 {
+		t.Fatalf("outcome=%d/%v spans=%v，預期從 Random_(100) 開始並回 type 2", got, ok, spans)
+	}
+}
+
 func TestOriginalHumanTargetOutcomeContactGateStillConsumesEarlyRolls(t *testing.T) {
 	spans := []int{}
 	got, ok := OriginalHumanTargetOutcome(OriginalHumanTargetOutcomeInput{

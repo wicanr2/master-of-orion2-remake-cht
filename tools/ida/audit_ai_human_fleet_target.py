@@ -60,6 +60,7 @@ ROOTS = {
     "raw_diplomatic_colony_candidate_e5be3": 0xE5BE3,
     "raw_diplomatic_colony_candidate_gate_e4a09": 0xE4A09,
     "raw_diplomatic_colony_candidates_e5cd4": 0xE5CD4,
+    "raw_diplomatic_colony_sort_e5bd8": 0xE5BD8,
 }
 PERSONALITY_SCORE_TABLE_EA = 0x181080
 INCIDENT_DIVISOR_TABLE_EA = 0x180CF0

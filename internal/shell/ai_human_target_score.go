@@ -25,25 +25,21 @@ func colonyHasOriginalRaceSlot(colony engine.ColonyState, slot int) (bool, bool)
 	return false, true
 }
 
-// originalAIHumanGovernmentZeroReachability 對映 sub_DCB47 → sub_FF666 →
-// sub_FF5F8/sub_FF593/sub_FF4E9 的無蟲洞分支。每個含 target 人口的殖民地若也含 source
-// 人口加 5；否則只要 source 或其聯盟方任一人口殖民地在 source fuel range 內便加 1。
-// sub_FF593 的蟲洞 star-mask 語意尚未閉合，所以遇到需要該支線的目標時失敗即關閉。
-func (s *GameSession) originalAIHumanGovernmentZeroReachability(aiIndex int) (int, bool) {
+func (s *GameSession) originalAIPopulationReachabilityContext(aiIndex int) ([]originalPopulationColony, []int, int, bool) {
 	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) {
-		return 0, false
+		return nil, nil, 0, false
 	}
 	source := &s.AIPlayers[aiIndex]
 	if !source.PopulationRaceSlotKnown {
-		return 0, false
+		return nil, nil, 0, false
 	}
 	rangeParsecs, ok := originalAIFuelRangeParsecs(source.Player)
 	if !ok {
-		return 0, false
+		return nil, nil, 0, false
 	}
 	colonies := make([]originalPopulationColony, 0, len(s.PlayerColonies)+len(source.Colonies))
 	if len(s.PlayerColonies) != len(s.PlayerColonyStars) {
-		return 0, false
+		return nil, nil, 0, false
 	}
 	for i := range s.PlayerColonies {
 		colonies = append(colonies, originalPopulationColony{s.PlayerColonies[i], s.PlayerColonyStars[i]})
@@ -51,7 +47,7 @@ func (s *GameSession) originalAIHumanGovernmentZeroReachability(aiIndex int) (in
 	for i := range s.AIPlayers {
 		owner := &s.AIPlayers[i]
 		if len(owner.Colonies) != len(owner.ColonyStars) {
-			return 0, false
+			return nil, nil, 0, false
 		}
 		for j := range owner.Colonies {
 			colonies = append(colonies, originalPopulationColony{owner.Colonies[j], owner.ColonyStars[j]})
@@ -77,7 +73,7 @@ func (s *GameSession) originalAIHumanGovernmentZeroReachability(aiIndex int) (in
 		for slot := range alliedSlots {
 			has, known := colonyHasOriginalRaceSlot(item.colony, slot)
 			if !known {
-				return 0, false
+				return nil, nil, 0, false
 			}
 			if has {
 				bases = append(bases, item.star)
@@ -85,6 +81,19 @@ func (s *GameSession) originalAIHumanGovernmentZeroReachability(aiIndex int) (in
 			}
 		}
 	}
+	return colonies, bases, rangeParsecs, true
+}
+
+// originalAIHumanGovernmentZeroReachability 對映 sub_DCB47 → sub_FF666 →
+// sub_FF5F8/sub_FF593/sub_FF4E9 的無蟲洞分支。每個含 target 人口的殖民地若也含 source
+// 人口加 5；否則只要 source 或其聯盟方任一人口殖民地在 source fuel range 內便加 1。
+// sub_FF593 的蟲洞 star-mask 語意尚未閉合，所以遇到需要該支線的目標時失敗即關閉。
+func (s *GameSession) originalAIHumanGovernmentZeroReachability(aiIndex int) (int, bool) {
+	colonies, bases, rangeParsecs, ok := s.originalAIPopulationReachabilityContext(aiIndex)
+	if !ok {
+		return 0, false
+	}
+	source := &s.AIPlayers[aiIndex]
 
 	score := 0
 	for _, item := range colonies {
