@@ -235,6 +235,10 @@ type sessionSnapshot struct {
 	AIRelations         [][]int  `json:"aiRelations,omitempty"`
 	AIRelationsRaw      [][]int  `json:"aiRelationsRaw,omitempty"`
 	AIRelationsRawKnown [][]bool `json:"aiRelationsRawKnown,omitempty"`
+	AIReputationRaw     [][]int  `json:"aiReputationRaw,omitempty"`
+	AITreatyBiasRaw     [][]int  `json:"aiTreatyBiasRaw,omitempty"`
+	AIAgreementBiasRaw  [][]int  `json:"aiAgreementBiasRaw,omitempty"`
+	AITributeModes      [][]int  `json:"aiTributeModes,omitempty"`
 	// AI 對 AI 強化狀態。全部 omitempty，舊存檔解出 nil/false 後保持舊規則。
 	EnableAIVsAI bool                       `json:"enableAIVsAI,omitempty"`
 	AIWars       [][]bool                   `json:"aiWars,omitempty"`
@@ -369,6 +373,10 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		AIRelations:               s.AIRelations,
 		AIRelationsRaw:            s.AIRelationsRaw,
 		AIRelationsRawKnown:       s.AIRelationsRawKnown,
+		AIReputationRaw:           s.AIReputationRaw,
+		AITreatyBiasRaw:           s.AITreatyBiasRaw,
+		AIAgreementBiasRaw:        s.AIAgreementBiasRaw,
+		AITributeModes:            s.AITributeModes,
 		EnableAIVsAI:              s.EnableAIVsAI,
 		AIWars:                    s.AIWars,
 		AIPolicies:                s.AIPolicies,
@@ -496,6 +504,10 @@ func (snap sessionSnapshot) restore() *GameSession {
 		AIRelations:               snap.AIRelations,
 		AIRelationsRaw:            snap.AIRelationsRaw,
 		AIRelationsRawKnown:       snap.AIRelationsRawKnown,
+		AIReputationRaw:           snap.AIReputationRaw,
+		AITreatyBiasRaw:           snap.AITreatyBiasRaw,
+		AIAgreementBiasRaw:        snap.AIAgreementBiasRaw,
+		AITributeModes:            snap.AITributeModes,
 		EnableAIVsAI:              snap.EnableAIVsAI,
 		AIWars:                    snap.AIWars,
 		AIPolicies:                snap.AIPolicies,

@@ -6,26 +6,42 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
-func TestAIVsAIDiplomacyCreatesWarAndCeasefire(t *testing.T) {
+func TestAIVsAIOriginalNegotiationCreatesAllianceAndResearch(t *testing.T) {
 	s := NewDemoSession()
-	s.AIPlayers[0].FleetStrength = 0
-	s.AIPlayers[1].FleetStrength = 0
-	s.AIRelations[0][1], s.AIRelations[1][0] = -30, -30
-	s.advanceAIDiplomacy()
-	if !s.AIWars[0][1] || !s.AIWars[1][0] {
-		t.Fatalf("負關係應建立對稱戰爭：wars=%v", s.AIWars)
+	s.ensureOriginalAIAIRelations()
+	s.ensureAIAIState()
+	s.setOriginalAIAIRelation(0, 1, 100)
+	s.AIReputationRaw[0][1] = 100
+	s.AITreatyBiasRaw[0][1] = 100
+	s.AIAgreementBiasRaw[0][1] = 100
+	s.AIPolicies[0][1], s.AIPolicies[1][0] = gamedata.DIPLO_NON_AGGRESSION, gamedata.DIPLO_NON_AGGRESSION
+	s.AITrade[0][1], s.AITrade[1][0] = true, true
+	s.AIPlayers[0].FleetStrength, s.AIPlayers[1].FleetStrength = 100, 100
+	s.advanceOriginalAIAINegotiation(0, 1, func(n int) int {
+		if n == 250-40*s.Difficulty {
+			return 1
+		}
+		return n
+	})
+	if s.AIPolicies[0][1] != gamedata.DIPLO_ALLIANCE || !s.AIResearch[0][1] {
+		t.Fatalf("原版分數應升同盟並建立研究協議：policy=%v research=%v", s.AIPolicies, s.AIResearch)
 	}
-	if s.AIPolicies[0][1] != gamedata.DIPLO_WAR || s.AITrade[0][1] {
-		t.Fatalf("戰爭政策／貿易旗標不對：policy=%v trade=%v", s.AIPolicies, s.AITrade)
+	if s.AITreatyBiasRaw[0][1] != 70 || s.AIAgreementBiasRaw[0][1] != 70 {
+		t.Fatalf("談判後 raw 記憶應各扣 30：treaty=%v agreement=%v",
+			s.AITreatyBiasRaw, s.AIAgreementBiasRaw)
 	}
+}
 
-	s.AIRelations[0][1], s.AIRelations[1][0] = 20, 20
+func TestAIVsAIWarDoesNotUseInventedRelationCeasefire(t *testing.T) {
+	s := NewDemoSession()
+	s.ensureAIAIState()
+	s.AIWars[0][1], s.AIWars[1][0] = true, true
+	s.AIPolicies[0][1], s.AIPolicies[1][0] = gamedata.DIPLO_WAR, gamedata.DIPLO_WAR
+	s.AIRelations[0][1], s.AIRelations[1][0] = 40, 40
 	s.advanceAIDiplomacy()
-	if s.AIWars[0][1] || s.AIWars[1][0] {
-		t.Fatalf("恢復關係後應停戰：wars=%v", s.AIWars)
-	}
-	if s.AIPolicies[0][1] != gamedata.DIPLO_NON_AGGRESSION || !s.AITrade[0][1] {
-		t.Fatalf("停戰後應有互不侵犯／貿易：policy=%v trade=%v", s.AIPolicies, s.AITrade)
+	if !s.AIWars[0][1] || s.AIPolicies[0][1] != gamedata.DIPLO_WAR {
+		t.Fatalf("高顯示關係不得以自編 +12 門檻自動停戰：wars=%v policy=%v",
+			s.AIWars, s.AIPolicies)
 	}
 }
 

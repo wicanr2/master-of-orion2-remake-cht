@@ -57,6 +57,10 @@ func TestHotseatCanSelectSpecificAIEmpires(t *testing.T) {
 	s.AIRelations = [][]int{{0, 1, 2}, {3, 0, 4}, {5, 6, 0}}
 	s.AIRelationsRaw = [][]int{{0, 10, 20}, {30, 0, 40}, {50, 60, 0}}
 	s.AIRelationsRawKnown = [][]bool{{true, true, true}, {true, true, true}, {true, true, true}}
+	s.AIReputationRaw = [][]int{{0, 10, 20}, {30, 0, 40}, {50, 60, 0}}
+	s.AITreatyBiasRaw = [][]int{{0, -10, -20}, {-30, 0, -40}, {-50, -60, 0}}
+	s.AIAgreementBiasRaw = [][]int{{0, -11, -21}, {-31, 0, -41}, {-51, -61, 0}}
+	s.AITributeModes = [][]int{{0, 1, 2}, {2, 0, 1}, {1, 2, 0}}
 	wantRemaining := s.AIPlayers[1].Name
 	wantRace := s.AIPlayers[0].RaceIndex
 	wantLeaderCount := len(s.AIPlayers[0].Leaders)
@@ -84,6 +88,11 @@ func TestHotseatCanSelectSpecificAIEmpires(t *testing.T) {
 	if got := s.AIRelationsRaw; len(got) != 1 || len(got[0]) != 1 || got[0][0] != 0 ||
 		len(s.AIRelationsRawKnown) != 1 || !s.AIRelationsRawKnown[0][0] {
 		t.Errorf("AI raw 關係矩陣應同步壓縮,raw=%v known=%v", got, s.AIRelationsRawKnown)
+	}
+	if len(s.AIReputationRaw) != 1 || s.AIReputationRaw[0][0] != 0 ||
+		len(s.AITreatyBiasRaw) != 1 || len(s.AIAgreementBiasRaw) != 1 || len(s.AITributeModes) != 1 {
+		t.Errorf("NPC 談判矩陣應同步壓縮: rep=%v treaty=%v agreement=%v tribute=%v",
+			s.AIReputationRaw, s.AITreatyBiasRaw, s.AIAgreementBiasRaw, s.AITributeModes)
 	}
 }
 

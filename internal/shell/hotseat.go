@@ -301,6 +301,10 @@ func (s *GameSession) SetupHotseatWithAIIndices(indices []int) int {
 	oldRelations := s.AIRelations
 	oldRelationsRaw := s.AIRelationsRaw
 	oldRelationsRawKnown := s.AIRelationsRawKnown
+	oldReputationRaw := s.AIReputationRaw
+	oldTreatyBiasRaw := s.AITreatyBiasRaw
+	oldAgreementBiasRaw := s.AIAgreementBiasRaw
+	oldTributeModes := s.AITributeModes
 	oldWars := s.AIWars
 	oldPolicies := s.AIPolicies
 	oldTrade := s.AITrade
@@ -340,6 +344,10 @@ func (s *GameSession) SetupHotseatWithAIIndices(indices []int) int {
 	s.AIRelations = filterAIRelations(oldRelations, remainingOldIndices)
 	s.AIRelationsRaw = filterAIRelations(oldRelationsRaw, remainingOldIndices)
 	s.AIRelationsRawKnown = filterAIBoolMatrix(oldRelationsRawKnown, remainingOldIndices)
+	s.AIReputationRaw = filterAIRelations(oldReputationRaw, remainingOldIndices)
+	s.AITreatyBiasRaw = filterAIRelations(oldTreatyBiasRaw, remainingOldIndices)
+	s.AIAgreementBiasRaw = filterAIRelations(oldAgreementBiasRaw, remainingOldIndices)
+	s.AITributeModes = filterAIRelations(oldTributeModes, remainingOldIndices)
 	s.AIWars = filterAIBoolMatrix(oldWars, remainingOldIndices)
 	s.AIPolicies = filterAIPolicyMatrix(oldPolicies, remainingOldIndices)
 	s.AITrade = filterAIBoolMatrix(oldTrade, remainingOldIndices)

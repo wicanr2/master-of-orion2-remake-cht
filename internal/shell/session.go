@@ -4454,6 +4454,12 @@ type GameSession struct {
 	AIRelations         [][]int
 	AIRelationsRaw      [][]int
 	AIRelationsRawKnown [][]bool
+	// NPC_To_NPC_Treaty_Negotiations_ 的方向性 raw 狀態：+0x6D7 聲望／積怨、
+	// +0x68F 條約記憶、+0x69F 協議記憶及 +0x63F 納貢模式。
+	AIReputationRaw    [][]int
+	AITreatyBiasRaw    [][]int
+	AIAgreementBiasRaw [][]int
+	AITributeModes     [][]int
 	// EnableAIVsAI 是 remake 的可選強化開關。新示範／新局開啟；舊存檔缺欄位
 	// 解為 false，避免在沒有快照資料時突然改變既有對局。
 	EnableAIVsAI bool

@@ -955,9 +955,12 @@
   `Diplomacy_Growth_` 的 `Random(105)`／`Random(4)`／`Random(2)` 漂移與
   戰爭 -90 壓制；舊玩家↔AI 性格／軍力差及 AI↔AI 艦隊差關係漂移與其測試斷言已移除。
   AI↔AI 現依 `0x4E27C..0x4E2E3` 的鏡射順序保存高槽→低槽 raw current，並接回
-  既有議會／政策 consumer、存檔與熱座矩陣壓縮。自訂種族採中立 fallback；反向條約、`+0x737`
-  鎖定 writer、計時器與 reason 快取仍未閉合。特殊貿易與 ETA
-  callback 仍是可玩 remake 模型，普通協議的 AI 政體也仍固定 Dictatorship。
+  既有議會／政策 consumer、存檔與熱座矩陣壓縮。`NPC_To_NPC_Treaty_Negotiations_`
+  也已閉合 ordered pair、難度頻率、八格政府表、raw 聲望／條約與協議記憶、第三方戰爭、
+  互不侵犯／同盟／貿易／研究及納貢 mode 2；原有 `-25／+12／+25／+8` 自編政策門檻已移除。
+  新 raw 矩陣均可存檔並隨熱座壓縮。自訂種族採中立 fallback；反向玩家條約、`+0x737`
+  鎖定 writer、`+0x71F` treaty-break writer、原版 `+0x5EC` 國力 producer、宣戰／停戰建立函式、
+  計時器與 reason 快取仍未閉合。特殊貿易與 ETA callback 仍是可玩 remake 模型。
   領袖招募現依 `sub_97A66/sub_9781D/sub_97B2D` 每回合擲骰，包含前五回合門檻、
   Charismatic／Repulsive、Famous 一般／進階加成、兩類四席與隨星曆開放的隨機候選前綴；
   亂數流可隨存檔續接。證據與規格見

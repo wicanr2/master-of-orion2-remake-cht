@@ -13,10 +13,6 @@ package shell
 import "github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 
 const (
-	aiWarRelationThreshold  = -25
-	aiCeasefireRelation     = 12
-	aiAllianceRelation      = 25
-	aiTradeRelation         = 8
 	aiAIColonyDefensePerPop = 4
 	aiAIBattleRandomSpan    = 21
 	aiAIAttackerLossDivisor = 6
@@ -48,6 +44,10 @@ func (s *GameSession) ensureAIAIState() {
 	s.AIPolicies = resizePolicyMatrix(s.AIPolicies, n)
 	s.AITrade = resizeBoolMatrix(s.AITrade, n)
 	s.AIResearch = resizeBoolMatrix(s.AIResearch, n)
+	s.AIReputationRaw = resizeIntMatrix(s.AIReputationRaw, n)
+	s.AITreatyBiasRaw = resizeIntMatrix(s.AITreatyBiasRaw, n)
+	s.AIAgreementBiasRaw = resizeIntMatrix(s.AIAgreementBiasRaw, n)
+	s.AITributeModes = resizeIntMatrix(s.AITributeModes, n)
 	for i := range s.AIPolicies {
 		if i < len(s.AIPolicies[i]) {
 			s.AIPolicies[i][i] = gamedata.DIPLO_NONE
@@ -114,19 +114,34 @@ func filterAIPolicyMatrix(matrix [][]gamedata.ForeignPolicy, kept []int) [][]gam
 	return out
 }
 
-// advanceAIAIDiplomacy 把 AIRelations 轉成正式政策，並讓貿易／研究協定產生
-// 可觀察但保守的資源交換。政策是雙方視角分開保存，戰爭旗標則對稱。
+// advanceAIAIDiplomacy 先依 sub_2552D 推進 ordered AI pair 的條約、協議與
+// 納貢談判，再讓既有可選資源／戰爭 consumer 消費正式狀態。
 func (s *GameSession) advanceAIAIDiplomacy() {
+	s.ensureOriginalAIAIRelations()
 	s.ensureAIAIState()
+	for i := range s.AIPlayers {
+		for j := range s.AIPlayers {
+			if i == j {
+				continue
+			}
+			s.AITreatyBiasRaw[i][j] = gamedata.OriginalNPCNegotiationBiasRecovery(s.AITreatyBiasRaw[i][j])
+			s.AIAgreementBiasRaw[i][j] = gamedata.OriginalNPCNegotiationBiasRecovery(s.AIAgreementBiasRaw[i][j])
+		}
+	}
+	roll := func(n int) int { return s.diplomacyGrowthRandForTurn().Intn(n) + 1 }
+	for i := range s.AIPlayers {
+		for j := range s.AIPlayers {
+			if i == j {
+				continue
+			}
+			s.advanceOriginalAIAINegotiation(i, j, roll)
+		}
+	}
 	for i := 0; i < len(s.AIPlayers); i++ {
 		for j := i + 1; j < len(s.AIPlayers); j++ {
-			r := (s.AIRelations[i][j] + s.AIRelations[j][i]) / 2
-			atWar := s.AIWars[i][j] || s.AIWars[j][i]
-			if atWar && r >= aiCeasefireRelation {
-				atWar = false
-			} else if !atWar && r <= aiWarRelationThreshold {
-				atWar = true
-			}
+			atWar := s.AIWars[i][j] || s.AIWars[j][i] ||
+				s.AIPolicies[i][j] >= gamedata.DIPLO_LIMITED_WAR ||
+				s.AIPolicies[j][i] >= gamedata.DIPLO_LIMITED_WAR
 			s.AIWars[i][j], s.AIWars[j][i] = atWar, atWar
 			if atWar {
 				s.AIPolicies[i][j], s.AIPolicies[j][i] = gamedata.DIPLO_WAR, gamedata.DIPLO_WAR
@@ -134,24 +149,73 @@ func (s *GameSession) advanceAIAIDiplomacy() {
 				s.AIResearch[i][j], s.AIResearch[j][i] = false, false
 				continue
 			}
-
-			policy := gamedata.DIPLO_PEACE
-			switch {
-			case r >= aiAllianceRelation:
-				policy = gamedata.DIPLO_ALLIANCE
-			case r >= aiTradeRelation:
-				policy = gamedata.DIPLO_NON_AGGRESSION
-			case r < 0:
-				policy = gamedata.DIPLO_LIMITED_WAR
-			}
-			s.AIPolicies[i][j], s.AIPolicies[j][i] = policy, policy
-			trade := r >= aiTradeRelation
-			research := r >= aiAllianceRelation
+			trade := s.AITrade[i][j] || s.AITrade[j][i]
+			research := s.AIResearch[i][j] || s.AIResearch[j][i]
 			s.AITrade[i][j], s.AITrade[j][i] = trade, trade
 			s.AIResearch[i][j], s.AIResearch[j][i] = research, research
 			if trade || research {
 				s.exchangeAIBenefits(i, j, trade, research)
 			}
+		}
+	}
+}
+
+func (s *GameSession) advanceOriginalAIAINegotiation(outer, inner int, roll func(int) int) {
+	thirdPartyBonus, nonHumanWars, outerWars := 0, 0, 0
+	for k := range s.AIPlayers {
+		if k == outer || k == inner {
+			continue
+		}
+		if s.AIPolicies[outer][k] >= gamedata.DIPLO_LIMITED_WAR {
+			thirdPartyBonus += 10
+			nonHumanWars++
+			outerWars++
+		}
+		if s.AIPolicies[inner][k] >= gamedata.DIPLO_LIMITED_WAR {
+			thirdPartyBonus += 20
+			nonHumanWars++
+		}
+		// +0x71F 的 treaty-break writer 尚未映射；初始化值 0 不任意加分。
+	}
+	result, ok := gamedata.OriginalNPCTreatyNegotiation(gamedata.OriginalNPCTreatyInput{
+		Difficulty: s.Difficulty, CurrentRaw: s.originalAIAIRelation(outer, inner),
+		ReputationRaw: s.AIReputationRaw[outer][inner],
+		TreatyBiasRaw: s.AITreatyBiasRaw[outer][inner], AgreementBiasRaw: s.AIAgreementBiasRaw[outer][inner],
+		Policy: s.AIPolicies[outer][inner], TradeActive: s.AITrade[outer][inner],
+		ResearchActive:   s.AIResearch[outer][inner],
+		OuterGovernment:  originalAIRelationGovernment(s.AIPlayers[outer]),
+		InnerGovernment:  originalAIRelationGovernment(s.AIPlayers[inner]),
+		NonHumanWarCount: nonHumanWars, ThirdPartyBonus: thirdPartyBonus,
+		TributeBlocked: s.AITributeModes[outer][inner] < 0,
+		OuterStrength:  s.AIPlayers[outer].FleetStrength, InnerStrength: s.AIPlayers[inner].FleetStrength,
+		OuterThirdPartyWars: outerWars,
+	}, roll)
+	if !ok {
+		return
+	}
+	s.AITreatyBiasRaw[outer][inner] = result.TreatyBiasRaw
+	s.AIAgreementBiasRaw[outer][inner] = result.AgreementBiasRaw
+	if result.Policy != s.AIPolicies[outer][inner] {
+		s.AIPolicies[outer][inner], s.AIPolicies[inner][outer] = result.Policy, result.Policy
+	}
+	if result.TradeActive {
+		s.AITrade[outer][inner], s.AITrade[inner][outer] = true, true
+	}
+	if result.ResearchActive {
+		s.AIResearch[outer][inner], s.AIResearch[inner][outer] = true, true
+	}
+	if result.TributeMode != 0 {
+		s.AITributeModes[outer][inner] = result.TributeMode
+	}
+	if result.RelationDelta != 0 {
+		next, valid := gamedata.OriginalChangeRelationScore(gamedata.OriginalRelationChangeInput{
+			CurrentRaw: s.originalAIAIRelation(outer, inner), BaseDelta: result.RelationDelta,
+			ActorGovernment:   originalAIRelationGovernment(s.AIPlayers[inner]),
+			TargetCharismatic: aiRaceHasTrait(s.AIPlayers[outer], gamedata.TRAIT_CHARISMATIC),
+			Policy:            result.Policy, BothAI: true, RelativeTurn: s.Turn - 1, Difficulty: s.Difficulty,
+		})
+		if valid {
+			s.setOriginalAIAIRelation(outer, inner, next)
 		}
 	}
 }

@@ -68,6 +68,11 @@ func TestDiplomacyGrowthRawAndRandPersist(t *testing.T) {
 	s.AIPlayers[0].OriginalRelationTargetKnown = true
 	s.ensureOriginalAIAIRelations()
 	s.setOriginalAIAIRelation(0, 1, -13)
+	s.ensureAIAIState()
+	s.AIReputationRaw[0][1] = -7
+	s.AITreatyBiasRaw[0][1] = -20
+	s.AIAgreementBiasRaw[0][1] = -30
+	s.AITributeModes[0][1] = 2
 	s.diplomacyGrowthRandForTurn().Intn(100)
 	s.diplomacyGrowthRandForTurn().Intn(3)
 	snap := s.snapshot()
@@ -82,6 +87,11 @@ func TestDiplomacyGrowthRawAndRandPersist(t *testing.T) {
 	if got.AIRelationsRaw[0][1] != -13 || !got.AIRelationsRawKnown[1][0] {
 		t.Fatalf("AI↔AI raw relation did not round-trip: raw=%v known=%v",
 			got.AIRelationsRaw, got.AIRelationsRawKnown)
+	}
+	if got.AIReputationRaw[0][1] != -7 || got.AITreatyBiasRaw[0][1] != -20 ||
+		got.AIAgreementBiasRaw[0][1] != -30 || got.AITributeModes[0][1] != 2 {
+		t.Fatalf("NPC negotiation raw state did not round-trip: rep=%v treaty=%v agreement=%v tribute=%v",
+			got.AIReputationRaw, got.AITreatyBiasRaw, got.AIAgreementBiasRaw, got.AITributeModes)
 	}
 }
 

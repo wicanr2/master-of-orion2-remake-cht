@@ -67,6 +67,9 @@
 - **原版關係目標** — `sub_4D78E` 由 `byte_180ED4` 的 14×14 種族配對表
   初始化 `player+0x61F`；`Diplomacy_Growth_` 讓 current `+0x617` 逐回合向它
   靠近。_避免_：性格平衡點、軍力差關係目標（兩者是已移除的 remake 自編模型）
+- **NPC 談判記憶** — 原版 ordered pair 的 `+0x68F／+0x69F` signed word；
+  每回合各向 0 回復 10，實際觸發一次 `sub_2552D` 談判後各扣 30，直接參與
+  條約與協議分數。_避免_：外交冷卻常數（它們是帶正負值的分數記憶，不只是計時器）
 
 - **正式網路回合等待** — `networkWaitScreen` 擁有唯一的 session poll 與兩階段鎖步 update loop，
   並共用 `netNextTurnScreen` 的原版面板 renderer、聊天記錄與輸入狀態；`netNextTurnDemo` 只是
