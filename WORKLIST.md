@@ -52,12 +52,12 @@
 
 #### 原版忠實度重新稽核（最高優先）
 
-- [~] **既有長跑回歸的三個決定性失敗**：2026-08-28 以相同 Docker、`-count=1` 連續重跑仍有
-  `TestAIExpand_EconomyGrowsWithColonyCount`（擴張組投入 534，未高於單母星 539）、
-  `TestAIResearchActuallyProgressesOverAGame`（200 回合未走到多選 application）與
-  `TestCouncilEnemyWinsRequiresPlayerResponse`（下一屆議會未再次觸發）失敗。三者不是本輪封鎖
-  切片造成；封鎖、AI 職務、外交積怨與存讀定向測試均通過。後續須分別由固定輸入重現，判定是
-  測試錯誤假設、亂數流漂移或真實玩法缺口後再修正，不得把全套回歸寫成已通過。
+- [x] **2026-08-28 三個長跑回歸已分類並修正**：議會第二屆確實準時召開，但原版搖擺票重擲後
+  流會，舊測試錯把「再次當選」當排程契約；AI 0 是 Creative，舊研究測試錯把合法的
+  `ExplicitChoice` 空集合當成未研究；擴張測試則錯假設新殖民地短期資產必高於只造艦的單母星。
+  改為直接驗證第二屆排程、非 Creative application 與新增殖民地 `ColonyOutput` 後，另發現真缺口：
+  職務 RE 漏掉 `sub_D6AD4 → sub_D6A00` 追加農夫，導致 AI 人口 8→1。現已補該下游切片，
+  三項定向長跑通過；`player+0x38` 精確食物運輸容量仍依 AI 職務規格列為 DRAFT，不冒稱完成。
 
 - [~] **玩家可見文案外部化**：2026-08-26 已把既有 `assets/i18n/*.json` 與內嵌副本統一轉為
   有序 JSON 並移除 `go:embed` 副本，載入器保留 per-source、先出現者優先及原版單位元控制標記契約。剩餘工作是逐畫面
@@ -2270,7 +2270,7 @@ internal/shell/orbital_bombardment.go
   1、FleetStrength 線性成長(3→60);修後 AI 殖民地數隨回合增至 9、FleetStrength 加速成長
   (3→101),玩家開局 BC 軌跡兩版本一致(102→…→96),無 regression。測試:
   `internal/shell/ai_behavior_test.go` 新增 `TestAIExpand_CreatesRealColony`(佔星後建真殖民地、
-  平行陣列同步)、`TestAIExpand_EconomyGrowsWithColonyCount`(殖民地數增加後軍力成長加速)、
+  平行陣列同步)、`TestAIExpand_ColonyParticipatesInEconomy`(新增殖民地輸出進入帝國結算對應 slot)、
   `TestAIExpand_NoOpWhenNoUnownedStars`(無星可擴張時安全 no-op)。詳見
   `docs/HONEST-STATUS.md` 與頂端活表。
 - [x] 第 45~45 項逐條清點，**領袖技能 26 項已有 remake 消費端**；Tactics 依原版自己未實作，Famous 招募機率已補證，Diplomat 接受門檻仍為 oracle 留白

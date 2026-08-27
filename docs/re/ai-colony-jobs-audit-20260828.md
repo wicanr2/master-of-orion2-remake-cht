@@ -101,6 +101,10 @@ owner／外族／prisoner／Natives 半食物需求。remake 對應值分別是
 
 ## Remake 狀態與剩餘邊界
 
+- 本文件原先把 `sub_D66B3` 視為職務鏈終點，已由後續 caller 稽核推翻：
+  `sub_D6E1D` 在建造 pass 後還會呼叫 `sub_D6AD4 → sub_D6A00` 追加農夫。
+  勘誤與 remake 對映見
+  [`ai-food-assignment-audit-20260828.md`](ai-food-assignment-audit-20260828.md)。
 - 封鎖狀態現已由 `.GAM` mask 或正常回合艦隊 producer 垂直接到 AI 殖民地職務分流；
   此項不再是 remake 缺口。
 - `sub_23DFE` 在 `+0xDD<=0` 事件耦合分支的玩家可見理由已保留為事件 filter；

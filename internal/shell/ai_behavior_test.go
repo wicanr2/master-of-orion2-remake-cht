@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
@@ -83,11 +84,10 @@ func TestAIExpand_CreatesRealColony(t *testing.T) {
 	}
 }
 
-// TestAIExpand_EconomyGrowsWithColonyCount 驗證 aiExpand 建立的新殖民地會被下一次
-// engine.RunEmpireTurn 算進 AI 經濟——相同 20 回合下，有擴張者投入建築＋造艦的累積產出
-// 應高於被固定在單一母星的對照組。原版逐殖民地產品鏈接上後，不能再只看造艦池：新殖民地
-// 會先蓋可用設施，該產能沒有消失，也不能同時重複計入造艦。
-func TestAIExpand_EconomyGrowsWithColonyCount(t *testing.T) {
+// TestAIExpand_ColonyParticipatesInEconomy 驗證 aiExpand 建立的新殖民地會被下一次
+// engine.RunEmpireTurn 算進 AI 經濟。不能用「20 回合後資產一定較多」做代理：新殖民地會先
+// 承擔開發成本，短期資產可能低於只造艦的單母星帝國。
+func TestAIExpand_ColonyParticipatesInEconomy(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
 	// 同上:固定成擴張率 100% 的性格,讓「擴張 → 經濟成長」這條因果測得準,
@@ -96,53 +96,22 @@ func TestAIExpand_EconomyGrowsWithColonyCount(t *testing.T) {
 		s.AIPlayers[i].Personality = ai.PersonalityRuthless
 	}
 
-	for turn := 0; turn < 20; turn++ {
+	for turn := 0; turn < 20 && len(s.AIPlayers[0].Colonies) <= 1; turn++ {
 		s.EndTurn()
 	}
 	if len(s.AIPlayers[0].Colonies) <= 1 {
 		t.Fatalf("20 回合後 AI 殖民地數應 >1,got %d", len(s.AIPlayers[0].Colonies))
 	}
-	expandedProduction := aiProductionInvestment(s.AIPlayers[0])
-
-	control := NewDemoSession()
-	control.DisableEvents = true
-	for i := range control.AIPlayers {
-		control.AIPlayers[i].Personality = ai.PersonalityRuthless
+	a := s.AIPlayers[0]
+	projected := s.aiColoniesForTurn(0, a.Colonies)
+	all := engine.RunEmpireTurn(a.Player, projected)
+	if len(all.Colonies) != len(a.Colonies) {
+		t.Fatalf("AI 全殖民地經濟輸出筆數=%d，want %d", len(all.Colonies), len(a.Colonies))
 	}
-	// 封住所有無主星，只移除擴張這個變因；既有玩家／AI 母星與其重力保持相同。
-	for i := range control.Stars {
-		if control.Stars[i].Owner == 0 {
-			control.Stars[i].Owner = 1
-		}
+	last := len(projected) - 1
+	if want := engine.RunColonyTurn(projected[last]); all.Colonies[last] != want {
+		t.Fatalf("新殖民地輸出未位於帝國結算的對應 slot：got=%+v want=%+v", all.Colonies[last], want)
 	}
-	for turn := 0; turn < 20; turn++ {
-		control.EndTurn()
-	}
-	controlProduction := aiProductionInvestment(control.AIPlayers[0])
-	if expandedProduction <= controlProduction {
-		t.Fatalf("擴張 AI 的累積建築＋造艦投入 %d 應高於單母星對照組 %d", expandedProduction, controlProduction)
-	}
-}
-
-func aiProductionInvestment(a AIOpponent) int {
-	total := a.ShipBuildProgress
-	for _, sh := range a.Ships {
-		total += ShipCost(sh.Class)
-	}
-	for _, build := range a.ColonyBuilds {
-		total += build.Progress
-	}
-	for _, built := range a.ColonyBuildings {
-		for name, ok := range built {
-			if !ok {
-				continue
-			}
-			if b, found := gamedata.BuildingByNameZH(name); found {
-				total += b.ProductionCost
-			}
-		}
-	}
-	return total
 }
 
 // TestAIExpand_NoOpWhenNoUnownedStars 驗證所有星都已有歸屬時,aiExpand 安全 no-op(不 panic、

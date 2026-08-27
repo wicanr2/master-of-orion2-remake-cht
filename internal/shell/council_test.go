@@ -163,16 +163,21 @@ func TestCouncilEnemyWinsRequiresPlayerResponse(t *testing.T) {
 		t.Fatalf("回應後 PendingCouncilElection 應清空")
 	}
 
-	// 再跑到下一屆(原版 25 回合後),讓 AI 再次當選,這次接受。
+	// 再跑到下一屆(原版 25 回合後)。搖擺票每屆重擲，不能假設同一 AI 必定再次當選；
+	// 此段只驗證拒絕上一屆不會封死後續議會排程。
 	for i := 0; i < gamedata.CouncilMeetingInterval && !s.Victory.Over && s.PendingCouncilElection == nil; i++ {
 		s.EndTurn()
 		if s.PendingCouncilVote != nil {
 			s.RespondToCouncilVote(2)
 		}
 	}
-	if s.PendingCouncilElection == nil {
-		t.Fatalf("下一屆選舉應再度觸發(AI 人口仍壓倒性領先)")
+	if s.CouncilMeetings != 2 || s.lastCouncilTurn != gamedata.CouncilFirstMeetingTurn+gamedata.CouncilMeetingInterval {
+		t.Fatalf("拒絕後下一屆仍應準時召開：turn=%d meetings=%d last=%d notice=%+v",
+			s.Turn, s.CouncilMeetings, s.lastCouncilTurn, s.LastCouncilNotice)
 	}
+	// 接受／拒絕是同一份 typed election 的兩個純分支；恢復第一屆確定當選的快照，
+	// 避免把第二屆隨機投票誤當成接受流程的前置條件。
+	s.PendingCouncilElection = &pending
 	s.RespondToCouncilElection(true)
 	if !s.Victory.Over || s.Victory.Reason != engine.VictoryHighCouncil || s.Victory.Winner != pending.EnemyName {
 		t.Fatalf("接受後應以 engine.VictoryHighCouncil 結束,Winner=%q,got Over=%v Reason=%v Winner=%q",

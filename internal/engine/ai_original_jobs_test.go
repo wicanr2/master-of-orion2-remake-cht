@@ -28,11 +28,34 @@ func TestApplyOriginalAIUnblockadedJobsConsumesNormalCandidates(t *testing.T) {
 	if !ok {
 		t.Fatal("完整 population groups 與 +0xDD 應可走原版未封鎖路徑")
 	}
-	if got[0].Farmers != 0 || got[0].Workers+got[0].Scientists != c.Population {
-		t.Fatalf("一般人口應由帝國迭代耗盡為工人／科學家：%+v", got[0])
+	if co := RunColonyTurn(got[0]); co.FoodSurplusHalf < 0 {
+		t.Fatalf("sub_D6AD4 下游 pass 應在職務平衡後補足農夫：colony=%+v output=%+v", got[0], co)
 	}
-	if !PopulationGroupsComplete(got[0]) || got[0].PopulationGroups[0].Farmers != 0 {
+	if got[0].Workers+got[0].Scientists == 0 {
+		t.Fatalf("餵飽後仍應保留工業／研究人口：%+v", got[0])
+	}
+	if !PopulationGroupsComplete(got[0]) || got[0].PopulationGroups[0].Farmers != got[0].Farmers {
 		t.Fatalf("總職務與逐 race 群組必須同步：%+v", got[0].PopulationGroups)
+	}
+}
+
+func TestApplyOriginalAIJobsAdditionalFarmersCoverEveryUntransportedColony(t *testing.T) {
+	home := originalAIJobTestColony()
+	outpost := originalAIJobTestColony()
+	outpost.Population, outpost.Farmers, outpost.Workers, outpost.Scientists = 1, 0, 1, 0
+	outpost.PopulationGroups[0].Farmers = 0
+	outpost.PopulationGroups[0].Workers = 1
+	outpost.PopulationGroups[0].Scientists = 0
+	got, ok := ApplyOriginalAIJobs(PlayerState{}, []ColonyState{home, outpost}, OriginalAIJobContext{
+		ColonyFoodHalf: []int{4, 4}, ColonyFoodHalfKnown: []bool{true, true}, ColonyBlockaded: []bool{false, false},
+	})
+	if !ok {
+		t.Fatal("完整未封鎖輸入不應 fallback")
+	}
+	for i := range got {
+		if co := RunColonyTurn(got[i]); co.FoodSurplusHalf < 0 {
+			t.Fatalf("缺 player+0x38 typed 運輸容量時不得讓殖民地留在饑荒：i=%d colony=%+v output=%+v", i, got[i], co)
+		}
 	}
 }
 

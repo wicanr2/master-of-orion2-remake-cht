@@ -170,6 +170,63 @@ func applyOriginalAIBlockadedColony(cs *ColonyState, foodHalf int) {
 	}
 }
 
+// applyOriginalAIAdditionalFarmers 對映 sub_D6AD4 → sub_D6A00 的玩家可表示切片。
+// 原版在工業／研究平衡後仍會逐人補農夫，直到帝國食物與運輸壓力解除。remake 尚未
+// 保存 player+0x38 的運輸餘額，因此除了帝國 TotalFoodHalf，也要求沒有未封鎖殖民地
+// 留在本地饑荒；這是「沒有 typed 運輸容量」時的失敗即關閉邊界，不猜可運輸量。
+func applyOriginalAIAdditionalFarmers(ps PlayerState, colonies []ColonyState, blockaded []bool) {
+	for {
+		empireFoodDeficit := RunEmpireTurn(ps, colonies).TotalFoodHalf < 0
+		localDeficit := false
+		for i := range colonies {
+			if (blockaded == nil || !blockaded[i]) && RunColonyTurn(colonies[i]).FoodSurplusHalf < 0 {
+				localDeficit = true
+				break
+			}
+		}
+		if !empireFoodDeficit && !localDeficit {
+			return
+		}
+
+		bestColony, bestGroup, bestFrom := -1, -1, -1
+		bestGain := 0
+		for ci := range colonies {
+			if blockaded != nil && blockaded[ci] {
+				continue
+			}
+			before := RunColonyTurn(colonies[ci]).FoodSurplusHalf
+			// 缺運輸 typed 狀態時，優先填仍在本地赤字的殖民地；只有全殖民地
+			// 自給而帝國總帳仍負時才允許一般候選。
+			if localDeficit && before >= 0 {
+				continue
+			}
+			for _, candidate := range originalAIColonistCandidates(colonies[ci]) {
+				if candidate.from == int(gamedata.FARMER) || candidate.food <= 0 {
+					continue
+				}
+				trial := colonies[ci]
+				trial.PopulationGroups = append([]PopulationGroup(nil), colonies[ci].PopulationGroups...)
+				originalAIMoveCandidate(&trial, candidate, int(gamedata.FARMER))
+				gain := RunColonyTurn(trial).FoodSurplusHalf - before
+				if gain > bestGain {
+					bestColony, bestGroup, bestFrom, bestGain = ci, candidate.group, candidate.from, gain
+				}
+			}
+		}
+		if bestColony < 0 {
+			return
+		}
+		// 同群／同職人口對已閉合 comparator 等價；重新建立候選可避免先前
+		// 改職後保存過期的 from／prisoner 索引。
+		for _, candidate := range originalAIColonistCandidates(colonies[bestColony]) {
+			if candidate.group == bestGroup && candidate.from == bestFrom {
+				originalAIMoveCandidate(&colonies[bestColony], candidate, int(gamedata.FARMER))
+				break
+			}
+		}
+	}
+}
+
 // ApplyOriginalAIUnblockadedJobs 重建 sub_D652C／sub_D66B3 的未封鎖路徑。
 // 它不處理 sub_D61E7；呼叫端若存在封鎖殖民地必須回退並保留未閉合狀態。
 func ApplyOriginalAIUnblockadedJobs(ps PlayerState, colonies []ColonyState, ctx OriginalAIJobContext) ([]ColonyState, bool) {
@@ -292,6 +349,7 @@ func ApplyOriginalAIJobs(ps PlayerState, colonies []ColonyState, ctx OriginalAIJ
 		w.end--
 		originalAIMoveCandidate(&out[bestColony], w.items[w.end], int(gamedata.WORKER))
 	}
+	applyOriginalAIAdditionalFarmers(ps, out, ctx.ColonyBlockaded)
 	return out, true
 }
 

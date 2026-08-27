@@ -259,15 +259,27 @@ func TestAIWithOrdinaryTreeCompleteChoosesRepeatedHyper(t *testing.T) {
 func TestAIResearchActuallyProgressesOverAGame(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
-	start := s.AIPlayers[0].Player.ResearchTopic
-	startDone := len(s.AIPlayers[0].Player.CompletedTopics)
+	aiIndex := -1
+	for i := range s.AIPlayers {
+		if !aiRaceHasTrait(s.AIPlayers[i], gamedata.TRAIT_CREATIVE) {
+			aiIndex = i
+			break
+		}
+	}
+	if aiIndex < 0 {
+		t.Fatal("測試需要至少一個非 Creative AI，才能驗證 application 擇一記錄")
+	}
+	start := s.AIPlayers[aiIndex].Player.ResearchTopic
+	startDone := len(s.AIPlayers[aiIndex].Player.CompletedTopics)
 
 	for turn := 0; turn < 200; turn++ {
 		s.EndTurn()
 	}
-	a := s.AIPlayers[0].Player
+	a := s.AIPlayers[aiIndex].Player
 	if a.ResearchTopic == start {
-		t.Errorf("200 回合後 AI 的研究主題還停在 %v", start)
+		t.Errorf("200 回合後 AI 的研究主題還停在 %v：name=%s race=%d colonies=%d progress=%d",
+			start, s.AIPlayers[aiIndex].Name, s.AIPlayers[aiIndex].RaceIndex,
+			len(s.AIPlayers[aiIndex].Colonies), a.ResearchProgress)
 	}
 	if len(a.CompletedTopics) <= startDone {
 		t.Errorf("200 回合後完成的主題數沒有成長:%d → %d", startDone, len(a.CompletedTopics))
@@ -276,6 +288,8 @@ func TestAIResearchActuallyProgressesOverAGame(t *testing.T) {
 		t.Error("回合結算完不該還留著待決的科技抉擇")
 	}
 	if len(a.ExplicitChoice) == 0 {
-		t.Error("跑了 200 回合卻一次明確抉擇都沒有——多選主題的那條路徑沒被走到")
+		t.Errorf("非 Creative AI 跑了 200 回合卻一次明確抉擇都沒有：index=%d topic=%v completed=%d chosen=%d application=%d hasApplication=%v",
+			aiIndex,
+			a.ResearchTopic, len(a.CompletedTopics), len(a.ChosenTech), a.ResearchApplication, a.HasResearchApplication)
 	}
 }
