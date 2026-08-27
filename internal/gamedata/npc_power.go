@@ -11,14 +11,15 @@ type OriginalNPCPowerMount struct {
 // OriginalNPCShipPowerInput 是單艦對單一 observer 的方向國力輸入。
 // BeamAttack／ObserverDefense 與 RemainingDurability 均由原版相鄰 helper 的 typed producer 提供。
 type OriginalNPCShipPowerInput struct {
-	Mounts              []OriginalNPCPowerMount
-	BeamAttack          int
-	ObserverDefense     int
-	OwnerBestComputer   int
-	DesignComputer      int
-	RemainingDurability int
-	BestBeamWeaponID    int
-	BestBombWeaponID    int
+	Mounts                  []OriginalNPCPowerMount
+	BeamAttack              int
+	ObserverDefense         int
+	ObserverWeaponReduction int
+	OwnerBestComputer       int
+	DesignComputer          int
+	RemainingDurability     int
+	BestBeamWeaponID        int
+	BestBombWeaponID        int
 }
 
 var originalNPCPowerModPercent = [...]struct {
@@ -28,6 +29,29 @@ var originalNPCPowerModPercent = [...]struct {
 	{0x0002, 100}, {0x0004, -50}, {0x0020, 25}, {0x0080, 50},
 	{0x0100, 100}, {0x0200, 100}, {0x0400, 25}, {0x0800, 25},
 	{0x1000, 25}, {0x2000, 300}, {0x4000, 50},
+}
+
+var originalNPCComputerWeaponReduction = [...]int{0, 1, 3, 5, 7, 10}
+var originalNPCDriveDefenseSpeed = [...]int{0, 6, 8, 10, 12, 14, 16, 2}
+
+// OriginalNPCComputerWeaponReduction 對應 sub_5F871 對一般帝國的 word_17F6C1 查表。
+func OriginalNPCComputerWeaponReduction(computer int) (int, bool) {
+	if computer < 0 || computer >= len(originalNPCComputerWeaponReduction) {
+		return 0, false
+	}
+	return originalNPCComputerWeaponReduction[computer], true
+}
+
+// OriginalNPCObserverDefense 對應 sub_5EAE9 的一般帝國分支。
+func OriginalNPCObserverDefense(drive int, racialShipDefense int, transDimensional bool) (int, bool) {
+	if drive < 0 || drive >= len(originalNPCDriveDefenseSpeed) {
+		return 0, false
+	}
+	result := 5*originalNPCDriveDefenseSpeed[drive] + racialShipDefense
+	if transDimensional {
+		result += 20
+	}
+	return result, true
 }
 
 // OriginalNPCPowerModifier 對應 sub_5EE27；結果以原版 word 上限 64000 封頂。
@@ -59,7 +83,7 @@ func OriginalNPCDurabilityFactor(remaining int) int {
 // OriginalNPCShipPower 對應 sub_5EF4B 的玩家艦艇分支。最多只讀前八槽；非法 raw ID
 // 或艦載機缺少其 owner 的最佳武器映射時失敗即關閉。
 func OriginalNPCShipPower(in OriginalNPCShipPowerInput) (int, bool) {
-	if in.BeamAttack < 0 || in.ObserverDefense < 0 || in.OwnerBestComputer < 0 ||
+	if in.BeamAttack < 0 || in.ObserverDefense < 0 || in.ObserverWeaponReduction < 0 || in.OwnerBestComputer < 0 ||
 		in.DesignComputer < 0 || in.RemainingDurability < 0 {
 		return 0, false
 	}
@@ -98,7 +122,7 @@ func OriginalNPCShipPower(in OriginalNPCShipPowerInput) (int, bool) {
 			} else if mount.RawMods&0x0004 != 0 {
 				base = (50*base + 50) / 100
 			}
-			base -= in.ObserverDefense
+			base -= in.ObserverWeaponReduction
 			if base < 0 {
 				base = 0
 			}

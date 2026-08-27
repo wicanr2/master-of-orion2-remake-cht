@@ -968,7 +968,10 @@
   computer／size／armor／shield／base combat speed、五個 damaged-special bytes、分離損傷與 crew
   level 均無損進入 typed `Ship` 並可 JSON 往返；同輪另由 IDA 匯出 `sub_5EE27` 十一個 signed
   modifier words，逐艦純規則已實作八槽、戰機轉換、觀察者扣減、命中／彈藥、電腦與耐久修正。
-  仍待新造艦同形映射、四個相鄰 helper 的 typed 輸入、方向矩陣累加與外交 consumer 接線。
+  新造 AI 艦現也保存可證實的 raw weapon ID／mods、computer、size、armor、shield 與 base combat
+  speed；未閉合改造失敗即關閉。IDA 另把 observer 的電腦武器扣減與引擎／種族防禦拆成兩張
+  精確表，並確認一般艦耐久是 `sub_58387 + sub_58425`；仍待 `sub_582BF` 結構容量、
+  `sub_54E5B` 完整命中輸入、方向矩陣累加與外交 consumer 接線。
   證據與規格見
   [`docs/re/npc-power-matrix-audit-20260828.md`](docs/re/npc-power-matrix-audit-20260828.md) 與
   [`docs/spec/npc-power-matrix.md`](docs/spec/npc-power-matrix.md)。

@@ -72,7 +72,7 @@ func TestAIProductionBuildsPersistentBlueprintShip(t *testing.T) {
 func TestTacticalCombatUsesNamedAIShipsAndWritesLosses(t *testing.T) {
 	s := NewDemoSession()
 	design := s.AIPlayers[0].ShipDesigns[0]
-	ship := shipFromBlueprint("證據艦", design, BuildWeaponOptions(s.RuleProfile))
+	ship := shipFromBlueprint("證據艦", design, BuildWeaponOptions(s.RuleProfile), 3, 2)
 	s.AIPlayers[0].Ships = []Ship{ship}
 	s.syncAIShipStrength(0)
 	_, enemies := s.StartCombat(s.PrimaryEnemyName())

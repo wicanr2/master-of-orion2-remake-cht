@@ -32,11 +32,8 @@ func blueprintFromLoadout(class string, loadout AutoDesignLoadout) ShipBlueprint
 		Class: class, RawRole: loadout.RawRole,
 		Weapon: loadout.Weapon, Armor: loadout.Armor, Shield: loadout.Shield, Special: loadout.Special,
 		Mods: mods, Arc: loadout.Arc, Ammo: loadout.Ammo,
-		WeaponMounts: []ShipWeaponMount{{
-			RawType: -1, Name: w.Name, MaxCount: 1, WorkingCount: 1,
-			Arc: loadout.Arc, Mods: append([]string(nil), loadout.Mods...), Ammo: loadout.Ammo, Attack: w.Value,
-		}},
-		Specials: []ShipSpecialMount{specialMountFromOption(loadout.Special)},
+		WeaponMounts: []ShipWeaponMount{originalWeaponMount(w, loadout.Mods, loadout.Arc, loadout.Ammo, 1)},
+		Specials:     []ShipSpecialMount{specialMountFromOption(loadout.Special)},
 	}
 }
 
@@ -108,8 +105,7 @@ func (s *GameSession) SetShipDesignMountLoadout(hull, mountIndex int, loadout Au
 	design.Armor = loadout.Armor
 	design.Shield = loadout.Shield
 	w := pick(BuildWeaponOptions(s.RuleProfile), loadout.Weapon)
-	mount := ShipWeaponMount{RawType: -1, Name: w.Name, MaxCount: 1, WorkingCount: 1,
-		Arc: loadout.Arc, Mods: append([]string(nil), loadout.Mods...), Ammo: loadout.Ammo, Attack: w.Value}
+	mount := originalWeaponMount(w, loadout.Mods, loadout.Arc, loadout.Ammo, 1)
 	if len(design.WeaponMounts) == 0 {
 		design.WeaponMounts = []ShipWeaponMount{mount}
 	}

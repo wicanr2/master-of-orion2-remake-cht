@@ -23,6 +23,8 @@
 
 `OriginalNPCShipPower` 的純算術層已於 2026-08-28 實作並測試；尚未完成的是 shell 對
 `sub_54E5B／sub_5679E／sub_5EAE9／sub_5F2F6` 輸入的完整 typed producer 與回合接線。
+其中最佳電腦與 observer 防禦查表、新造 AI 艦 raw 欄位已完成；`sub_582BF` 結構容量及
+`sub_54E5B` 軍官／船員完整命中輸入仍未閉合，所以目前不得提前接外交 consumer。
 
 ## 接線與驗收
 

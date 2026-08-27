@@ -40,17 +40,32 @@ func (s *GameSession) updateAIShipDesignsAfterTech(i int) {
 	}
 }
 
-func shipFromBlueprint(name string, design ShipBlueprint, profileOptions []Component) Ship {
+func shipFromBlueprint(name string, design ShipBlueprint, profileOptions []Component, computerRaw, driveRaw int) Ship {
 	w := pick(profileOptions, design.Weapon)
 	armor := pick(ArmorOptions, design.Armor)
 	shield := pick(ShieldOptions, design.Shield)
 	special := pick(SpecialOptions, design.Special)
-	return Ship{
+	ship := Ship{
 		Name: name, Class: design.Class, Weapon: w.Name, Armor: armor.Name, Shield: shield.Name,
 		Special: special.Name, WeaponAttack: w.Value, Mods: append([]string(nil), design.Mods...),
 		Arc: design.Arc, WeaponAmmo: design.Ammo, WeaponMounts: cloneWeaponMounts(design.WeaponMounts),
 		SpecialIDs: append([]int(nil), design.SpecialIDs...), Specials: cloneSpecialMounts(design.Specials),
 	}
+	if class, ok := shipClassFromName(design.Class); ok {
+		ship.DesignSizeRaw, ship.DesignSizeRawKnown = uint8(class), true
+		ship.BaseCombatSpeedRaw = uint8(gamedata.ShipCombatSpeed(driveRaw, class, false, false))
+		ship.BaseCombatSpeedKnown = true
+	}
+	if computerRaw >= 0 && computerRaw <= 5 {
+		ship.ComputerRaw, ship.ComputerRawKnown = uint8(computerRaw), true
+	}
+	if design.Armor >= 0 && design.Armor < len(ArmorOptions) {
+		ship.ArmorRaw, ship.ArmorRawKnown = uint8(design.Armor), true
+	}
+	if design.Shield >= 0 && design.Shield < len(ShieldOptions) {
+		ship.ShieldRaw, ship.ShieldRawKnown = uint8(design.Shield), true
+	}
+	return ship
 }
 
 func (s *GameSession) syncAIShipStrength(i int) {
@@ -140,7 +155,8 @@ func (s *GameSession) advanceAIShipProduction(i, production int) {
 		}
 		a.ShipBuildProgress -= cost
 		name := fmt.Sprintf("%s %s %d", a.Name, playerShipDesignClasses[chosen], len(a.Ships)+1)
-		a.Ships = append(a.Ships, shipFromBlueprint(name, a.ShipDesigns[chosen], BuildWeaponOptions(s.RuleProfile)))
+		a.Ships = append(a.Ships, shipFromBlueprint(name, a.ShipDesigns[chosen], BuildWeaponOptions(s.RuleProfile),
+			originalBestComputer(a.Player), aiDriveLevel(*a)))
 	}
 	if len(a.Ships) > 0 {
 		s.syncAIShipStrength(i)
@@ -168,7 +184,8 @@ func (s *GameSession) normalizeAIShipState(i int) {
 		unit := shipStrength(playerShipDesignClasses[0])
 		for remaining := a.FleetStrength; remaining >= unit; remaining -= unit {
 			name := fmt.Sprintf("%s %s %d", a.Name, playerShipDesignClasses[0], len(a.Ships)+1)
-			a.Ships = append(a.Ships, shipFromBlueprint(name, a.ShipDesigns[0], BuildWeaponOptions(s.RuleProfile)))
+			a.Ships = append(a.Ships, shipFromBlueprint(name, a.ShipDesigns[0], BuildWeaponOptions(s.RuleProfile),
+				originalBestComputer(a.Player), aiDriveLevel(*a)))
 		}
 	}
 	s.syncAIShipStrength(i)

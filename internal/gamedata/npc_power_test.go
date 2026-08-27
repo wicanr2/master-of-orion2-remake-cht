@@ -12,10 +12,19 @@ func TestOriginalNPCPowerModifierUsesExecutableWords(t *testing.T) {
 	}
 }
 
+func TestOriginalNPCObserverTables(t *testing.T) {
+	if got, ok := OriginalNPCComputerWeaponReduction(5); !ok || got != 10 {
+		t.Fatalf("最高電腦扣減=%d,%v，預期 10,true", got, ok)
+	}
+	if got, ok := OriginalNPCObserverDefense(3, 25, true); !ok || got != 95 {
+		t.Fatalf("observer defense=%d,%v，預期 10*5+25+20=95", got, ok)
+	}
+}
+
 func TestOriginalNPCShipPowerBeamObserverAndDamage(t *testing.T) {
 	in := OriginalNPCShipPowerInput{
 		Mounts:     []OriginalNPCPowerMount{{WeaponID: 3, WorkingCount: 10}},
-		BeamAttack: 50, ObserverDefense: 20, OwnerBestComputer: 3, DesignComputer: 3,
+		BeamAttack: 50, ObserverDefense: 20, ObserverWeaponReduction: 20, OwnerBestComputer: 3, DesignComputer: 3,
 		RemainingDurability: 100,
 	}
 	// Laser max4-20 defense=0，十門；命中 80%，耐久 factor100。
@@ -23,6 +32,7 @@ func TestOriginalNPCShipPowerBeamObserverAndDamage(t *testing.T) {
 		t.Fatalf("高防禦觀察者國力=%d,%v，預期 0,true", got, ok)
 	}
 	in.ObserverDefense = 1
+	in.ObserverWeaponReduction = 1
 	// (4-1)*10 * 99% = 29（整數截斷）。
 	if got, ok := OriginalNPCShipPower(in); !ok || got != 29 {
 		t.Fatalf("方向光束國力=%d,%v，預期 29,true", got, ok)

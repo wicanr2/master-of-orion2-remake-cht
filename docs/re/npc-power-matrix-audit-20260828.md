@@ -43,6 +43,15 @@
 `+100／-50／+25／+50／+100／+100／+25／+25／+25／+300／+50`；乘完後逐槽封頂 64000。
 原始位址、bytes 與值已加入同一 evidence JSON。這是國力評分倍率，不可拿造艦佔格成本表替代。
 
+同輪進一步證實兩個 observer 輸入不可混用：`sub_5F871` 依 `sub_5679E` 的最佳電腦 0..5
+查 `word_17F6C1`，扣減依序為 `0／1／3／5／7／10`；`sub_5EAE9` 則依 `sub_56726` 的最佳
+引擎 0..7 查速度 `0／6／8／10／12／14／16／2`，乘 5 後才加 empire `+2213` 艦防與
+`+2236` 跨維度的 20。純規則已拆成 `ObserverWeaponReduction` 與 `ObserverDefense` 兩欄。
+
+`sub_5F2F6` 的一般艦分支會把 `sub_58387` 與 `sub_58425` 相加；後者已證實由 hull size、armor
+百分比與 special raw ID 14 的三倍分支形成裝甲容量，前者仍轉呼叫 `sub_582BF` 計結構容量。
+因此耐久 producer 尚未閉合，不可用 remake 的 `shipMaxHP` 冒充原版 raw 容量。
+
 ## 已證實：消費公式
 
 `sub_500CF @ 0x500CF` 對指定方向使用 `+0x5EC`：
@@ -62,6 +71,9 @@ ratio /= 2 for each source third-party war
 - **已完成純規則**：`OriginalNPCShipPower` 已接八槽限制、戰機／突擊艇／脈衝星轉換、HV／PD、
   觀察者扣減、光束命中 10..100、飛彈／魚雷 75%、炸彈歸零、十一個 raw modifier、電腦落後與
   `sub_5EED4` 耐久壓縮；非法 raw 輸入失敗即關閉。
+- **已完成新造艦輸入切片**：可回查 `OrigWeaponByTech` 的武器會寫 raw ID；已有 consumer 證據的
+  HV／PD／CO／NR／AF／ARM／FST／OVR 寫 raw bits，其他未閉合改造讓 mount 維持不可供國力
+  producer 消費。交付 AI 艦同時保存 computer、size、armor、shield 與 base combat speed。
 - **尚待實作**：補齊 remake 新造艦的同形 raw 映射、觀察者防禦輸入與逐艦公式，產生
   `AIPowerRaw[owner][observer]`；衍生矩陣每回合重建，不作權威存檔。
 - **目前近似**：宣戰／納貢仍以 hull-only `FleetStrength` 代入；必須繼續標為強推論資料投影，
