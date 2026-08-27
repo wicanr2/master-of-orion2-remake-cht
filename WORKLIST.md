@@ -1115,9 +1115,9 @@
   `Decider.ColonyJobs` 足以承載 original mode。四個 comparator、job raw ID、
   `player+0xAA/+0xAC` producer、逐 race／prisoner 候選與帝國停止比較現已閉合；
   未封鎖殖民地會先依原版最低工人／半工業消耗配置，再以研究－工業邊際逐人平衡，
-  並同步 `PopulationGroups`。整體仍缺 `Compute_Blockades_` producer 到 typed colony 的
-  垂直接線，以及 `sub_D61E7` 封鎖分支的欄位契約；未封鎖子規格與正常回合消費端已
-  `CONFORMED`，但不能據此勾掉完整 AI 決策器；見
+  並同步 `PopulationGroups`。`Compute_Blockades_` producer、`sub_D61E7` 封鎖分支與
+  `sub_D6AD4 → sub_D6A00` 追加農夫 consumer 均已接入；因尚無 typed 運輸容量，追加農夫
+  對 `player+0x38` 的殖民地選擇仍採失敗即關閉近似，不能據此勾掉完整 AI 決策器；見
   [`docs/re/ai-colony-jobs-audit-20260828.md`](docs/re/ai-colony-jobs-audit-20260828.md) 與
   [`docs/spec/ai-colony-jobs.md`](docs/spec/ai-colony-jobs.md)。其餘 AI 建造證據見
   [`docs/re/ai-difficulty-economy-audit-20260826.md`](docs/re/ai-difficulty-economy-audit-20260826.md) 與
@@ -1131,6 +1131,11 @@
   [`docs/spec/ai-normal-research-selection.md`](docs/spec/ai-normal-research-selection.md)、
   [`docs/re/ai-colony-build-selection-audit-20260826.md`](docs/re/ai-colony-build-selection-audit-20260826.md) 與
   [`docs/spec/ai-colony-build-selection.md`](docs/spec/ai-colony-build-selection.md)。
+  2026-08-28 另閉合 AI 稅率 consumer：`player+0x31` 的直接寫入只有真人稅率視窗
+  `sub_CC198`，AI 回合沒有依國庫主動調稅 producer。新建 AI 現從 0% 起步並保持現值；匯入
+  存檔的非零稅率也不被覆蓋。舊 10／30／50% `RemakeDecider` 門檻已退出正常原版路徑；見
+  [`docs/re/ai-tax-rate-audit-20260828.md`](docs/re/ai-tax-rate-audit-20260828.md) 與
+  [`docs/spec/ai-tax-rate.md`](docs/spec/ai-tax-rate.md)。
 - [ ] **艦隊、殖民、事件與安塔蘭忠實化**：重建 `Move_All_Ships_Toward_Stars_ @ 0xFFEEA`、
   `sub_E5EB3 @ 0xE5EB3` 殖民建立鏈、`Compute_Blockades_ @ 0xE5097`、`Compute_Contacts_ @ 0xEB192`、
   `Check_All_Rebellions_ @ 0xED44A`、`Determine_Event_ @ 0x2230A` 與

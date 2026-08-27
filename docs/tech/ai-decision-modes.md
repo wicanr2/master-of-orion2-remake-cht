@@ -35,7 +35,10 @@ type Decider interface {
 
 ### 目前的接線狀態
 
-`internal/engine/ai.go` 以 `Decider` 介面承接殖民地職務與稅率。正常新局的研究選題已不再走
+`internal/engine/ai.go` 仍以 `Decider` 介面承接 remake／fallback 殖民地職務與稅率。正常新局的
+原版職務已走 `ApplyOriginalAIJobs`；正常 AI 稅率也已依 `player+0x31` 寫入稽核改為保持現值，
+不再呼叫 `RemakeDecider.TaxRate`。只有職務 fallback 暫用 `ApplyAIEconomy`，且呼叫端會還原稅率。
+正常新局的研究選題已不再走
 `Decider.ResearchTopic`：`internal/shell/ai_research.go` 依原版 `sub_DC288 → sub_FD335` 直接做
 application 級估值抽選；只有舊存檔沒有 raw profile 時才回退 `DecideResearchTopic`。
 `BuildPriority` 與 `Stance` 仍由 remake 主動行為直接消費，完整 `ModeOriginal` 工廠與主選單選項尚未完成。

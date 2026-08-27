@@ -5171,7 +5171,6 @@ func (s *GameSession) EndTurn() {
 			s.AIPlayers[i].Player.TreatyResearch = treatyYields[i].AIResearch
 		}
 		ps := s.AIPlayers[i].Player
-		ps.TaxRate = s.AIPlayers[i].Decider.TaxRate(ps.BC)
 		jobCtx := engine.OriginalAIJobContext{
 			Personality:         s.AIPlayers[i].Personality,
 			LateTech:            aiOriginalLateTechReached(ps),
@@ -5197,8 +5196,11 @@ func (s *GameSession) EndTurn() {
 		colonies, exactJobs := engine.ApplyOriginalAIJobs(ps, s.AIPlayers[i].Colonies, jobCtx)
 		if !exactJobs {
 			// 舊 JSON 缺逐種族 profile 或 +0xDD 無法建立時，保留既有可玩 fallback；
-			// 不把這條路徑宣稱為原版忠實。封鎖分支接線後也必須在這裡先分流。
+			// 不把這條路徑宣稱為原版忠實。原版可執行檔沒有 AI 回合寫入 player+0x31
+			// 稅率的 producer，因此 fallback 只能代理職務，不能順便套用 remake 的國庫門檻調稅。
+			originalTaxRate := ps.TaxRate
 			ps, colonies = engine.ApplyAIEconomy(ps, s.AIPlayers[i].Colonies, s.AIPlayers[i].Decider)
+			ps.TaxRate = originalTaxRate
 		}
 		ps = applyAIDifficultyPlayerInputs(ps, s.Difficulty)
 		s.AIPlayers[i].Colonies = colonies
@@ -6265,13 +6267,18 @@ func buildDemoAIOpponents(aiHomeStars []int, difficulty int, seed int64) []AIOpp
 				techProfileKnown = true
 			}
 		}
+		player := newHomeworldPlayerState(1)
+		// 原版 player+0x31 稅率 byte 的直接寫入只存在於真人稅率 UI；AI 回合沒有
+		// 自動調稅 producer。新建 AI 因此使用清零初始化的 0%，其後回合保持現值。
+		// 匯入 .GAM 的 AI 若已有其他值，正常回合也不會在上方被擅自覆蓋。
+		player.TaxRate = gamedata.TaxRateMinPercent
 		aiPlayers = append(aiPlayers, AIOpponent{
 			Name:               setup.name,
 			Color:              (i + 1) % 8,
 			ColorKnown:         true,
 			RaceIndex:          raceIndex,
 			PopulationRaceSlot: i + 1, PopulationRaceSlotKnown: true,
-			Player:      newHomeworldPlayerState(1),
+			Player:      player,
 			Colonies:    []engine.ColonyState{playerHomeworldColony()}, // AI 同為 Average 起始單一母星,與玩家共用忠實 yield
 			ColonyStars: []int{aiHomeStars[i]},                         // 唯一有實際殖民地模型的星(見 AIOpponent.ColonyStars 註解)
 			// ColonyBuildings 母星比照玩家,開局已建成 homeworldBuildings()(海軍陸戰隊營+
