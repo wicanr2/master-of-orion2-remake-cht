@@ -58,14 +58,35 @@ func TestApplyGAMPopulationProfilesSpecialSlots(t *testing.T) {
 }
 
 func TestImportedShipPreservesBankruptcyFields(t *testing.T) {
-	raw := save.Ship{Mission: 7}
+	raw := save.Ship{
+		Mission: 7, ShieldDamage: 2, DriveDamage: 3, ComputerDamage: 4,
+		CrewLevel: 3, CrewExp: 77, ArmorDamage: 11, StructureDamage: 13,
+	}
 	raw.Design.Name = "OUTPOST"
 	raw.Design.Type = uint8(gamedata.OUTPOST_SHIP)
 	raw.Design.Cost = 240
+	raw.Design.Computer = 5
+	raw.Design.Size = 2
+	raw.Design.Armor = 3
+	raw.Design.Shield = 4
+	raw.Design.BaseCombatSpeed = 9
+	raw.DamagedSpecials = [5]uint8{1, 2, 3, 4, 5}
 	ship := importedShip(raw, 0, &GAMImportReport{})
 	if !ship.RawTypeKnown || ship.RawType != gamedata.OUTPOST_SHIP ||
 		!ship.RawMissionKnown || ship.RawMission != 7 || ship.ProductionCost != 240 {
 		t.Fatalf("GAM 艦艇破產欄位未保存：%+v", ship)
+	}
+	if !ship.ComputerRawKnown || ship.ComputerRaw != 5 || ship.ShieldDamageRaw != 2 ||
+		ship.DriveDamageRaw != 3 || ship.ComputerDamageRaw != 4 || !ship.CrewLevelRawKnown ||
+		ship.CrewLevelRaw != 3 || ship.ArmorDamageRaw != 11 || ship.StructureDamageRaw != 13 ||
+		!ship.OriginalDamageKnown || ship.Damage != 13 || ship.CrewXP != 77 {
+		t.Fatalf("GAM 艦艇國力 producer raw 欄位未無損保存：%+v", ship)
+	}
+	if !ship.DesignSizeRawKnown || ship.DesignSizeRaw != 2 || !ship.ArmorRawKnown ||
+		ship.ArmorRaw != 3 || !ship.ShieldRawKnown || ship.ShieldRaw != 4 ||
+		!ship.BaseCombatSpeedKnown || ship.BaseCombatSpeedRaw != 9 ||
+		ship.DamagedSpecialsRaw != [5]uint8{1, 2, 3, 4, 5} {
+		t.Fatalf("GAM 艦型／防護／特殊損傷 raw 欄位未無損保存：%+v", ship)
 	}
 }
 
@@ -98,6 +119,19 @@ func TestWeaponMountsRoundTripSnapshot(t *testing.T) {
 		RawType: 16, Name: "脈衝飛彈", MaxCount: 3, WorkingCount: 2, Arc: 16, Ammo: 5, Attack: 20,
 	}}
 	s.Fleet().Ships[0].SpecialIDs = []int{2, 17}
+	s.Fleet().Ships[0].ComputerRaw, s.Fleet().Ships[0].ComputerRawKnown = 4, true
+	s.Fleet().Ships[0].ShieldDamageRaw = 2
+	s.Fleet().Ships[0].DriveDamageRaw = 3
+	s.Fleet().Ships[0].ComputerDamageRaw = 1
+	s.Fleet().Ships[0].CrewLevelRaw, s.Fleet().Ships[0].CrewLevelRawKnown = 3, true
+	s.Fleet().Ships[0].ArmorDamageRaw = 9
+	s.Fleet().Ships[0].StructureDamageRaw = 7
+	s.Fleet().Ships[0].OriginalDamageKnown = true
+	s.Fleet().Ships[0].DesignSizeRaw, s.Fleet().Ships[0].DesignSizeRawKnown = 2, true
+	s.Fleet().Ships[0].ArmorRaw, s.Fleet().Ships[0].ArmorRawKnown = 3, true
+	s.Fleet().Ships[0].ShieldRaw, s.Fleet().Ships[0].ShieldRawKnown = 4, true
+	s.Fleet().Ships[0].BaseCombatSpeedRaw, s.Fleet().Ships[0].BaseCombatSpeedKnown = 9, true
+	s.Fleet().Ships[0].DamagedSpecialsRaw = [5]uint8{1, 2, 3, 4, 5}
 	b, err := s.MarshalSnapshot()
 	if err != nil {
 		t.Fatal(err)
@@ -112,6 +146,17 @@ func TestWeaponMountsRoundTripSnapshot(t *testing.T) {
 	}
 	if len(ship.SpecialIDs) != 2 || ship.SpecialIDs[1] != 17 {
 		t.Fatalf("special IDs 快照往返失真：%v", ship.SpecialIDs)
+	}
+	if !ship.ComputerRawKnown || ship.ComputerRaw != 4 || ship.ShieldDamageRaw != 2 ||
+		ship.DriveDamageRaw != 3 || ship.ComputerDamageRaw != 1 || !ship.CrewLevelRawKnown ||
+		ship.CrewLevelRaw != 3 || ship.ArmorDamageRaw != 9 || ship.StructureDamageRaw != 7 ||
+		!ship.OriginalDamageKnown {
+		t.Fatalf("國力 producer raw 欄位快照往返失真：%+v", ship)
+	}
+	if !ship.DesignSizeRawKnown || ship.DesignSizeRaw != 2 || !ship.ArmorRawKnown || ship.ArmorRaw != 3 ||
+		!ship.ShieldRawKnown || ship.ShieldRaw != 4 || !ship.BaseCombatSpeedKnown || ship.BaseCombatSpeedRaw != 9 ||
+		ship.DamagedSpecialsRaw != [5]uint8{1, 2, 3, 4, 5} {
+		t.Fatalf("國力 producer 艦型 raw 欄位快照往返失真：%+v", ship)
 	}
 }
 

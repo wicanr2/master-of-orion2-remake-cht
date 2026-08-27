@@ -964,7 +964,10 @@
   relation +50 封頂 0 與 30 回合解除均已接入；矩陣可存檔並隨熱座壓縮。2026-08-28 已進一步
   證實 `+0x5EC` 是 `sub_D3D34` 每回合由逐艦八武器槽、改造、命中、船員／損傷及觀察者防禦
   重建的八欄方向矩陣，不是單一艦體總和；RE 已成 READY 規格，但 typed producer 尚未實作，
-  現以 `FleetStrength` 代入 ratio 的路徑仍明標強推論投影。證據與規格見
+  現以 `FleetStrength` 代入 ratio 的路徑仍明標強推論投影。2026-08-28 已先補齊 `.GAM` 垂直輸入：
+  computer／size／armor／shield／base combat speed、五個 damaged-special bytes、分離損傷與 crew
+  level 均無損進入 typed `Ship` 並可 JSON 往返；仍待新造艦同形映射、觀察者防禦與 producer 接線。
+  證據與規格見
   [`docs/re/npc-power-matrix-audit-20260828.md`](docs/re/npc-power-matrix-audit-20260828.md) 與
   [`docs/spec/npc-power-matrix.md`](docs/spec/npc-power-matrix.md)。
   自訂種族採中立 fallback；反向玩家條約、`+0x737` 鎖定 writer、`+0x71F` treaty-break writer、

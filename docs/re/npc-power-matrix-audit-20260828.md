@@ -52,7 +52,9 @@ ratio /= 2 for each source third-party war
 ## 結論與停止條件
 
 - **已證實**：資料形狀、唯一直接 writer、逐艦逐觀察者累加、主要武器槽輸入及 ratio consumer。
-- **尚待實作**：把原版八槽武器記錄、改造 flags、船員／損傷與觀察者防禦輸入映射到 remake 的
-  `Ship／WeaponMounts／PlayerState`，產生 `AIPowerRaw[owner][observer]` 並保存重播所需狀態。
+- **已完成資料鏈**：原版 `.GAM` 的八槽武器、computer、size、armor、shield、base combat speed、
+  五個 damaged-special bytes、分離損傷與 crew level 已映射到 typed `Ship`，並通過 JSON 往返測試。
+- **尚待實作**：補齊 remake 新造艦的同形 raw 映射、觀察者防禦輸入與逐艦公式，產生
+  `AIPowerRaw[owner][observer]`；衍生矩陣每回合重建，不作權威存檔。
 - **目前近似**：宣戰／納貢仍以 hull-only `FleetStrength` 代入；必須繼續標為強推論資料投影，
   不得因 consumer 公式已對齊而宣稱完整 parity。

@@ -1,6 +1,6 @@
 # NPC 方向國力矩陣規格
 
-**狀態：READY（RE 已閉合，remake producer 尚未實作）**
+**狀態：READY（producer 控制流已閉合；remake 資料鏈施工中）**
 
 證據：[`../re/npc-power-matrix-audit-20260828.md`](../re/npc-power-matrix-audit-20260828.md)。
 
@@ -9,6 +9,9 @@
 - `AIPowerRaw[owner][observer]` 為非負整數方向矩陣；不可壓成每帝國單一純量。
 - 每回合由目前實艦重算，不把衍生值當權威存檔；存檔後重建必須得到同值。
 - 舊存檔只有 `FleetStrength` 時，先走既有逐艦相容轉換，再計算矩陣。
+- 原版 `.GAM` 匯入必須無損保留 `Computer／Size／Armor／Shield／BaseCombatSpeed`、五個
+  `DamagedSpecials` bytes，以及 shield／drive／computer／armor／structure damage 與 crew level；
+  合法零值一律由 `Known` 旗標和缺欄區分。這條資料鏈已於 2026-08-28 完成並有 JSON 往返測試。
 
 ## Producer
 
@@ -23,4 +26,5 @@
 - NPC 條約納貢與一般宣戰 reason 23 都必須改讀同一矩陣。
 - 測試至少涵蓋：同 hull 不同武器得到不同 power、觀察者防禦造成方向差、八槽累加、受損／船員
   修正、零艦隊 `+1` ratio、防止超過 800，以及存檔後重建一致。
-- 完成前，`FleetStrength` 投影只能保留為舊存檔或無 typed mount 的明示 fallback。
+- 完成前，`FleetStrength` 投影只能保留為舊存檔或無 typed mount 的明示 fallback；目前 producer
+  尚未接線，因此本規格仍不可標為 `CONFORMED`。

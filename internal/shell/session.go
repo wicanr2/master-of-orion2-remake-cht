@@ -247,6 +247,28 @@ type Ship struct {
 	RawMission      uint8             `json:"rawMission,omitempty"`
 	RawMissionKnown bool              `json:"rawMissionKnown,omitempty"`
 	ProductionCost  int               `json:"productionCost,omitempty"`
+	// 原版 129-byte Ship／內嵌 ShipDesign 中，+0x10 computer 與 +0x6E..+0x7D
+	// 的分離損傷／crew 欄位會被 +0x5EC 國力 producer 直接消費。Known 旗標區分
+	// 合法 raw 0 與舊 JSON；Damage/CrewXP 仍是 remake 正常玩法的相容欄位。
+	ComputerRaw          uint8    `json:"computerRaw,omitempty"`
+	ComputerRawKnown     bool     `json:"computerRawKnown,omitempty"`
+	DesignSizeRaw        uint8    `json:"designSizeRaw,omitempty"`
+	DesignSizeRawKnown   bool     `json:"designSizeRawKnown,omitempty"`
+	ArmorRaw             uint8    `json:"armorRaw,omitempty"`
+	ArmorRawKnown        bool     `json:"armorRawKnown,omitempty"`
+	ShieldRaw            uint8    `json:"shieldRaw,omitempty"`
+	ShieldRawKnown       bool     `json:"shieldRawKnown,omitempty"`
+	BaseCombatSpeedRaw   uint8    `json:"baseCombatSpeedRaw,omitempty"`
+	BaseCombatSpeedKnown bool     `json:"baseCombatSpeedRawKnown,omitempty"`
+	ShieldDamageRaw      uint8    `json:"shieldDamageRaw,omitempty"`
+	DriveDamageRaw       uint8    `json:"driveDamageRaw,omitempty"`
+	ComputerDamageRaw    uint8    `json:"computerDamageRaw,omitempty"`
+	CrewLevelRaw         uint8    `json:"crewLevelRaw,omitempty"`
+	CrewLevelRawKnown    bool     `json:"crewLevelRawKnown,omitempty"`
+	ArmorDamageRaw       int      `json:"armorDamageRaw,omitempty"`
+	StructureDamageRaw   int      `json:"structureDamageRaw,omitempty"`
+	OriginalDamageKnown  bool     `json:"originalDamageKnown,omitempty"`
+	DamagedSpecialsRaw   [5]uint8 `json:"damagedSpecialsRaw,omitempty"`
 	// WeaponMounts 與 SpecialIDs 保存原版多槽 blueprint。快速與格子戰術已逐槽消費武器；
 	// importer／建造仍把第一個有效槽同步到相容欄位，供舊存檔與其他顯示使用。
 	WeaponMounts []ShipWeaponMount  `json:"weaponMounts,omitempty"`
