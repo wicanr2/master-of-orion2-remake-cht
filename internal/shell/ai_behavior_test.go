@@ -1,7 +1,6 @@
 package shell
 
 import (
-	"fmt"
 	"math"
 	"testing"
 
@@ -167,26 +166,19 @@ func TestAIExpand_NoOpWhenNoUnownedStars(t *testing.T) {
 	}
 }
 
-// TestAIStanceHostileWhenStrong 驗證 AI 遠強於玩家(玩家無艦隊)時,關係轉敵對。
-func TestAIStanceHostileWhenStrong(t *testing.T) {
+// TestAIStanceConsumesOriginalHostileRelation 驗證態勢消費原版 raw 關係投影，
+// 不再以軍力差自行改寫外交關係。
+func TestAIStanceConsumesOriginalHostileRelation(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
-	s.Fleet().Ships = nil // 玩家無軍力
-	for n := 0; n < 16; n++ {
-		s.AIPlayers[0].Ships = append(s.AIPlayers[0].Ships, Ship{Class: "泰坦", Name: fmt.Sprintf("測試泰坦%d", n)})
-	}
-	s.syncAIShipStrength(0)
-	for i := 0; i < 40; i++ {
-		s.EndTurn()
-	}
-	if s.AIPlayers[0].Relation >= 0 {
-		t.Fatalf("AI 遠強於玩家時關係應轉負:%d", s.AIPlayers[0].Relation)
-	}
+	s.AIPlayers[0].OriginalRelationRaw = -75
+	s.AIPlayers[0].OriginalRelationKnown = true
+	s.AIPlayers[0].Relation = normalizedRelationFromOriginal(-75)
+	s.advanceAI(0, s.LastPlayerOutput)
 	st := s.AIPlayers[0].StanceName
 	if st != "宣戰" && st != "敵視" {
-		t.Fatalf("AI 強勢時態勢應敵對(宣戰/敵視),實得「%s」", st)
+		t.Fatalf("原版負關係投影應產生敵對態勢,實得「%s」", st)
 	}
-	t.Logf("AI 關係 %d、態勢「%s」", s.AIPlayers[0].Relation, st)
 }
 
 // TestAIPersonalitiesDiverge 驗證性格接線真的造成行為差異,不是只多了一個欄位。
@@ -216,9 +208,10 @@ func TestAIPersonalitiesDiverge(t *testing.T) {
 	if ruthlessColonies <= pacifistColonies {
 		t.Errorf("冷酷無情的擴張應多於和平主義:%d vs %d 個殖民地", ruthlessColonies, pacifistColonies)
 	}
-	// 外交:和平主義的關係平衡點在友好側,不該跟冷酷無情一樣觸底。
-	if pacifistRel <= ruthlessRel {
-		t.Errorf("和平主義的關係應優於冷酷無情:%+d vs %+d", pacifistRel, ruthlessRel)
+	// 外交關係不再由 Personality 自編平衡點驅動；兩局相同種族配對與條約
+	// 應維持同一原版目標，性格只在仍有證據的 AI 決策權重上分岔。
+	if pacifistRel != ruthlessRel {
+		t.Errorf("性格不得自行改寫原版關係目標:%+d vs %+d", pacifistRel, ruthlessRel)
 	}
 	t.Logf("和平主義:%d 殖民地 關係%+d ／ 冷酷無情:%d 殖民地 關係%+d",
 		pacifistColonies, pacifistRel, ruthlessColonies, ruthlessRel)

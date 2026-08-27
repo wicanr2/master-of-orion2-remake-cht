@@ -18,6 +18,7 @@ import (
 func newRaidTestSession(t *testing.T) *GameSession {
 	t.Helper()
 	s := NewDemoSession()
+	s.EnableAIVsAI = false
 	s.Turn = aiRaidGraceTurns + 1
 	s.Fleet().Ships = nil // 玩家無艦隊 → playerMilitary()=0,隔離軍力門檻這個變數
 	for i := range s.AIPlayers {
@@ -309,13 +310,26 @@ func TestAIColonyValueGrowthRoom(t *testing.T) {
 	}
 }
 
-// TestAIRaidsHappenInRealGame 是「這個子系統在真實對局裡真的會發生嗎」的探針。
+// TestAIRaidsHappenInRealWarGame 是「正式戰爭狀態能否沿正常回合路徑觸發
+// 突襲」的探針。原版種族目標不保證任一中立開局會自行宣戰，因此不再把
+// 已移除的軍力差關係漂移當作本測試的隱含前提。
 //
 // 加這一條的理由:突襲的門檻疊了四層(寬限回合、戰爭態勢、軍力領先、性格機率),
 // 任何一層設太嚴,整個子系統就變成永遠不觸發的死碼,而上面那些單元測試——因為都把
 // 前提直接擺好——一條都抓不到。這裡不擺前提,照 NewDemoSession 跑滿 300 回合。
-func TestAIRaidsHappenInRealGame(t *testing.T) {
+func TestAIRaidsHappenInRealWarGame(t *testing.T) {
 	s := NewDemoSession()
+	s.EnableAIVsAI = false
+	s.AIPlayers[0].Treaty.FormalPolicy = gamedata.DIPLO_WAR
+	s.AIPlayers[0].OriginalRelationRaw = -90
+	s.AIPlayers[0].OriginalRelationKnown = true
+	s.AIPlayers[0].Relation = normalizedRelationFromOriginal(-90)
+	s.AIPlayers[0].Personality = ai.PersonalityRuthless
+	for i := 0; i < 16; i++ {
+		s.AIPlayers[0].Ships = append(s.AIPlayers[0].Ships, Ship{Class: "泰坦"})
+	}
+	s.syncAIShipStrength(0)
+	s.Fleet().Ships = nil
 	raids, repelled := 0, 0
 	firstTurn := -1
 	for i := 0; i < 300; i++ {
@@ -341,7 +355,10 @@ func TestAIRaidsHappenInRealGame(t *testing.T) {
 		}
 	}
 	if raids == 0 {
-		t.Fatal("300 回合內一次突襲都沒發生——門檻疊太嚴,子系統等於死碼")
+		a := s.AIPlayers[0]
+		t.Fatalf("300 回合內一次突襲都沒發生: stance=%q relation=%d raw=%d fleet=%d pos=%d dest=%d eta=%d last=%d",
+			a.StanceName, a.Relation, a.OriginalRelationRaw, a.FleetStrength,
+			a.FleetStar, a.FleetDestStar, a.FleetETA, a.LastRaidTurn)
 	}
 	t.Logf("300 回合共 %d 次突襲(其中 %d 次被擊退),最早發生在第 %d 回合,結束 BC=%d",
 		raids, repelled, firstTurn, s.Player.BC)

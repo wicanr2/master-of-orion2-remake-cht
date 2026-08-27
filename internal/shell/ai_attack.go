@@ -85,7 +85,7 @@ func (s *GameSession) aiRaidWilling(i int) bool {
 	if a.Treaty.BlocksOffensive() {
 		return false // 和平／互不侵犯／同盟均不得對玩家發動攻勢
 	}
-	if a.StanceName != stanceNames[ai.StanceWar] {
+	if a.Treaty.FormalPolicy < gamedata.DIPLO_LIMITED_WAR && a.StanceName != stanceNames[ai.StanceWar] {
 		return false // 只有已經進入戰爭態勢的 AI 才動手
 	}
 	if s.Turn-a.LastRaidTurn < aiRaidInterval {

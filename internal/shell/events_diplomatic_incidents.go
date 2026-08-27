@@ -13,7 +13,16 @@ type diplomaticIncidentPartner struct {
 	policy gamedata.ForeignPolicy
 }
 
-func originalRelationFromNormalized(value int) int { return clampRelation(value) * 5 / 2 }
+func originalRelationFromNormalized(value int) int {
+	scaled := clampRelation(value) * 5
+	// 向外取整，確保 raw 再投影回 normalized 時保留每個整數刻度。
+	if scaled > 0 {
+		scaled++
+	} else if scaled < 0 {
+		scaled--
+	}
+	return scaled / 2
+}
 
 func normalizedRelationFromOriginal(value int) int { return clampRelation(value * 2 / 5) }
 

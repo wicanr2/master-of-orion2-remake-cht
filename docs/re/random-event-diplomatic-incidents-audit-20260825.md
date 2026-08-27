@@ -62,7 +62,8 @@
 ## Remake 投影與剩餘未知
 
 - remake 現有 `Relation`／`AIRelations` 是 `-40..40` 的正規化模型，原版欄位是 signed byte
-  `-100..100`。本切片採可逆尺度 `raw = normalized×5/2`、`normalized = raw×2/5`，在 raw
+  `-100..100`。remake 顯示採 `normalized = raw×2/5`；反向轉換須向外取整，
+  才能讓每個整數顯示刻度往返不遺失（例如 `7 → 18 → 7`），在 raw
   尺度執行上述事件可達公式後才轉回；這是資料模型投影，不是 raw byte 逐值保存。
 - 玩家／AI 正式戰爭可由 `Treaty.FormalPolicy` 表示，AI／AI 由 `AIPolicies` 表示。熱座真人
   彼此目前沒有外交關係矩陣，因此該配對不能成為第二目標；這是明示資料模型缺口。

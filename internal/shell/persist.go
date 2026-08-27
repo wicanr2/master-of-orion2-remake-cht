@@ -17,27 +17,31 @@ const saveFormatVersion = 1
 // aiSnapshot 是一個 AI 對手的可序列化快照。Decider 為介面不能直接序列化,故只存其性格
 // (ai.Profile,純 struct),讀檔時以 ai.NewRemakeDecider 重建。
 type aiSnapshot struct {
-	Name                    string               `json:"name"`
-	RaceIndex               int                  `json:"raceIndex,omitempty"`
-	LuckyEventCounter       int                  `json:"luckyEventCounter,omitempty"`
-	PopulationRaceSlot      int                  `json:"populationRaceSlot,omitempty"`
-	PopulationRaceSlotKnown bool                 `json:"populationRaceSlotKnown,omitempty"`
-	CapitolPlanet           int                  `json:"capitolPlanet"`
-	CapitolPlanetKnown      bool                 `json:"capitolPlanetKnown,omitempty"`
-	CapitolRebuildRequired  bool                 `json:"capitolRebuildRequired,omitempty"`
-	Player                  engine.PlayerState   `json:"player"`
-	Colonies                []engine.ColonyState `json:"colonies"`
-	Profile                 ai.Profile           `json:"profile"`
-	FleetStrength           int                  `json:"fleetStrength"`
-	FleetInvestPool         int                  `json:"fleetInvestPool"` // 舊摘要造艦格式相容欄位
-	ShipDesigns             []ShipBlueprint      `json:"shipDesigns,omitempty"`
-	Ships                   []Ship               `json:"ships,omitempty"`
-	ShipBuildProgress       int                  `json:"shipBuildProgress,omitempty"`
-	ColonyBuilds            map[int]ColonyBuild  `json:"colonyBuilds,omitempty"`
-	Relation                int                  `json:"relation"`
-	StanceName              string               `json:"stanceName"`
-	Treaty                  TreatyState          `json:"treaty,omitempty"`
-	OwnedStars              int                  `json:"ownedStars"`
+	Name                        string               `json:"name"`
+	RaceIndex                   int                  `json:"raceIndex,omitempty"`
+	LuckyEventCounter           int                  `json:"luckyEventCounter,omitempty"`
+	PopulationRaceSlot          int                  `json:"populationRaceSlot,omitempty"`
+	PopulationRaceSlotKnown     bool                 `json:"populationRaceSlotKnown,omitempty"`
+	CapitolPlanet               int                  `json:"capitolPlanet"`
+	CapitolPlanetKnown          bool                 `json:"capitolPlanetKnown,omitempty"`
+	CapitolRebuildRequired      bool                 `json:"capitolRebuildRequired,omitempty"`
+	Player                      engine.PlayerState   `json:"player"`
+	Colonies                    []engine.ColonyState `json:"colonies"`
+	Profile                     ai.Profile           `json:"profile"`
+	FleetStrength               int                  `json:"fleetStrength"`
+	FleetInvestPool             int                  `json:"fleetInvestPool"` // 舊摘要造艦格式相容欄位
+	ShipDesigns                 []ShipBlueprint      `json:"shipDesigns,omitempty"`
+	Ships                       []Ship               `json:"ships,omitempty"`
+	ShipBuildProgress           int                  `json:"shipBuildProgress,omitempty"`
+	ColonyBuilds                map[int]ColonyBuild  `json:"colonyBuilds,omitempty"`
+	Relation                    int                  `json:"relation"`
+	OriginalRelationRaw         int                  `json:"originalRelationRaw,omitempty"`
+	OriginalRelationKnown       bool                 `json:"originalRelationKnown,omitempty"`
+	OriginalRelationTargetRaw   int                  `json:"originalRelationTargetRaw,omitempty"`
+	OriginalRelationTargetKnown bool                 `json:"originalRelationTargetKnown,omitempty"`
+	StanceName                  string               `json:"stanceName"`
+	Treaty                      TreatyState          `json:"treaty,omitempty"`
+	OwnedStars                  int                  `json:"ownedStars"`
 	// 會談請求(見 shell/audience.go)。舊存檔缺欄位解成 false/"" —— 正是「沒有請求」,
 	// 沒有零值陷阱。
 	WantsAudience  bool   `json:"wantsAudience,omitempty"`
@@ -167,6 +171,7 @@ type sessionSnapshot struct {
 	CouncilDraws            int64                         `json:"councilDraws,omitempty"`
 	PopulationDraws         int64                         `json:"populationDraws,omitempty"`
 	AgreementDraws          int64                         `json:"agreementDraws,omitempty"`
+	DiplomacyGrowthDraws    int64                         `json:"diplomacyGrowthDraws,omitempty"`
 	OfficerDraws            int64                         `json:"officerDraws,omitempty"`
 	AntaresRaids            int                           `json:"antaresRaids"`
 	AntaranInvasion         AntaranInvasionState          `json:"antaranInvasion,omitempty"`
@@ -291,7 +296,11 @@ func (s *GameSession) snapshot() sessionSnapshot {
 			FleetStrength: a.FleetStrength, FleetInvestPool: a.FleetInvestPool,
 			ShipDesigns: a.ShipDesigns, Ships: a.Ships, ShipBuildProgress: a.ShipBuildProgress,
 			ColonyBuilds: a.ColonyBuilds,
-			Relation:     a.Relation, StanceName: a.StanceName, Treaty: a.Treaty, OwnedStars: a.OwnedStars,
+			Relation:     a.Relation, OriginalRelationRaw: a.OriginalRelationRaw,
+			OriginalRelationKnown:       a.OriginalRelationKnown,
+			OriginalRelationTargetRaw:   a.OriginalRelationTargetRaw,
+			OriginalRelationTargetKnown: a.OriginalRelationTargetKnown,
+			StanceName:                  a.StanceName, Treaty: a.Treaty, OwnedStars: a.OwnedStars,
 			ColonyStars: a.ColonyStars, ColonyPlanets: a.ColonyPlanets,
 			Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
 			Leaders: a.Leaders, LeaderOffer: a.LeaderOffer,
@@ -332,8 +341,9 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		EventDraws:        s.eventRand.Draws(), DiscoveryDraws: s.discoveryRand.Draws(),
 		SpyDraws: s.spyRand.Draws(), ResearchDraws: s.researchRand.Draws(), CouncilDraws: s.councilRand.Draws(),
 		PopulationDraws: s.populationRand.Draws(), AgreementDraws: s.agreementRand.Draws(),
-		OfficerDraws: s.officerRand.Draws(),
-		AntaresRaids: s.AntaresRaids, AntaranInvasion: s.AntaranInvasion,
+		DiplomacyGrowthDraws: s.diplomacyGrowthRand.Draws(),
+		OfficerDraws:         s.officerRand.Draws(),
+		AntaresRaids:         s.AntaresRaids, AntaranInvasion: s.AntaranInvasion,
 		RaceIndex: s.RaceIndex, CustomRaceTraits: s.CustomRaceTraits,
 		CustomRaceRuntimeTraits: s.CustomRaceRuntimeTraits,
 		PlayerName:              s.PlayerName, FlagColor: s.FlagColor,
@@ -404,7 +414,11 @@ func (snap sessionSnapshot) restore() *GameSession {
 			Ships:             a.Ships,
 			ShipBuildProgress: a.ShipBuildProgress,
 			ColonyBuilds:      a.ColonyBuilds,
-			Relation:          a.Relation, StanceName: a.StanceName, Treaty: a.Treaty, OwnedStars: a.OwnedStars,
+			Relation:          a.Relation, OriginalRelationRaw: a.OriginalRelationRaw,
+			OriginalRelationKnown:       a.OriginalRelationKnown,
+			OriginalRelationTargetRaw:   a.OriginalRelationTargetRaw,
+			OriginalRelationTargetKnown: a.OriginalRelationTargetKnown,
+			StanceName:                  a.StanceName, Treaty: a.Treaty, OwnedStars: a.OwnedStars,
 			ColonyStars: a.ColonyStars, ColonyPlanets: a.ColonyPlanets,
 			Spies: a.Spies, DefensiveAgents: a.DefensiveAgents, ColonyBuildings: a.ColonyBuildings,
 			Leaders: a.Leaders, LeaderOffer: a.LeaderOffer,
@@ -520,6 +534,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 	out.councilRand = restoreRandStream(snap.EventSeed*2654435761+17, snap.CouncilDraws)
 	out.populationRand = restoreRandStream(snap.EventSeed*2654435761+23, snap.PopulationDraws)
 	out.agreementRand = restoreRandStream(snap.EventSeed*2654435761+29, snap.AgreementDraws)
+	out.diplomacyGrowthRand = restoreRandStream(snap.EventSeed*2654435761+37, snap.DiplomacyGrowthDraws)
 	out.officerRand = restoreRandStream(snap.EventSeed*2654435761+31, snap.OfficerDraws)
 	out.ensureBuildQueue()
 	out.EnsureShipDesigns()

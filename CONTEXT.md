@@ -64,6 +64,9 @@
   `ForeignPolicy`，兩方數值不可因關係分數會鏡射就假定必然對稱。remake 目前的
   `Treaty.FormalPolicy` 及 `AIPolicies` 是對稱投影；逆向時必須明寫資料模型限制。
   _避免_：對稱關係、戰爭旗標（這些詞會隱藏原版的方向性）
+- **原版關係目標** — `sub_4D78E` 由 `byte_180ED4` 的 14×14 種族配對表
+  初始化 `player+0x61F`；`Diplomacy_Growth_` 讓 current `+0x617` 逐回合向它
+  靠近。_避免_：性格平衡點、軍力差關係目標（兩者是已移除的 remake 自編模型）
 
 - **正式網路回合等待** — `networkWaitScreen` 擁有唯一的 session poll 與兩階段鎖步 update loop，
   並共用 `netNextTurnScreen` 的原版面板 renderer、聊天記錄與輸入狀態；`netNextTurnDemo` 只是

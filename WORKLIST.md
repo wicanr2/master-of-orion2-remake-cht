@@ -950,7 +950,12 @@
   完整一般外交關係演化與 AI 戰爭／協議決策。2026-08-27 已以 IDA Pro 9.4
   匯出 `Change_Relations_` 完整 406 條指令與 30 個直接 caller，並勘誤事件 4／5 在對稱戰爭
   下應早退。其餘 caller 仍需依 reason、方向條約、人類／AI 守門與 `+0x64F..+0x6BF`
-  快取／抱怨欄位分類，不得用單一線性 `adjustRelation` 冒充已閉合。特殊貿易與 ETA
+  快取／抱怨欄位分類，不得用單一線性 `adjustRelation` 冒充已閉合。2026-08-27
+  另由 `sub_4D78E` 閉合 `byte_180ED4` 14×14 種族關係目標表，並接回
+  `Diplomacy_Growth_` 的 `Random(105)`／`Random(4)`／`Random(2)` 漂移與
+  戰爭 -90 壓制；舊性格／軍力差關係漂移及其測試斷言已移除。remake 目前只投影
+  AI→玩家方向，自訂種族採中立 fallback；AI↔AI 全矩陣、反向條約、`+0x737`
+  鎖定 writer、計時器與 reason 快取仍未閉合。特殊貿易與 ETA
   callback 仍是可玩 remake 模型，普通協議的 AI 政體也仍固定 Dictatorship。
   領袖招募現依 `sub_97A66/sub_9781D/sub_97B2D` 每回合擲骰，包含前五回合門檻、
   Charismatic／Repulsive、Famous 一般／進階加成、兩類四席與隨星曆開放的隨機候選前綴；

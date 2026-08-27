@@ -56,8 +56,16 @@ type AIOpponent struct {
 	// raw6／raw4／raw7 與 runtime 種族特性。Known 區分舊存檔的合法零值。
 	OriginalTechProfile      gamedata.OriginalAITechProfile `json:"originalTechProfile,omitempty"`
 	OriginalTechProfileKnown bool                           `json:"originalTechProfileKnown,omitempty"`
-	Relation                 int                            // 對玩家的外交關係分數(驅動 17 級 RelationLevel 與態勢)
-	StanceName               string                         // 目前對玩家態勢(中文;由 ai.DecideStance 推得)
+	Relation                 int                            // 對玩家的 normalized 外交關係（-40..40）
+	// OriginalRelationRaw 保存原版 player+0x617 signed byte 的 -100..100 餘數；
+	// Known 區分合法 raw 0 與舊存檔缺欄。UI／AI 仍只消費 Relation。
+	OriginalRelationRaw   int  `json:"originalRelationRaw,omitempty"`
+	OriginalRelationKnown bool `json:"originalRelationKnown,omitempty"`
+	// OriginalRelationTargetRaw 保存 sub_4D78E 由 byte_180ED4 初始化的
+	// player+0x61F 目標。現有單向欄位表示「AI 觀察玩家」方向。
+	OriginalRelationTargetRaw   int    `json:"originalRelationTargetRaw,omitempty"`
+	OriginalRelationTargetKnown bool   `json:"originalRelationTargetKnown,omitempty"`
+	StanceName                  string // 目前對玩家態勢(中文;由 ai.DecideStance 推得)
 	// Treaty 是玩家與這個 AI 的正式外交／經濟協議狀態。正式狀態與貿易、研究
 	// 旗標分開，對應原版 +0x627、+0x62F、+0x637 的資料形狀。
 	Treaty     TreatyState
@@ -4694,12 +4702,13 @@ type GameSession struct {
 	TechLevel    int
 	TechLevelSet bool
 	// LastEspionage 是本回合諜報結算的訊息(供回合摘要顯示;每回合開頭清空)。
-	LastEspionage  []string
-	spyRand        *randStream // 間諜擲骰亂數源(由 EventSeed 惰性建立,比照 eventRand 慣例)
-	discoveryRand  *randStream // 星系發現擲骰亂數源(見 discovery.go discoveryRoll,同上慣例)
-	populationRand *randStream // 負成長刪人口 reservoir sampling；抽取次數隨存檔保存
-	agreementRand  *randStream // 貿易／研究協議 goal%5 的逐方向補點擲骰；抽取次數隨存檔保存
-	officerRand    *randStream // 隨機領袖招募的百分比與候選抽取；抽取次數隨存檔保存
+	LastEspionage       []string
+	spyRand             *randStream // 間諜擲骰亂數源(由 EventSeed 惰性建立,比照 eventRand 慣例)
+	discoveryRand       *randStream // 星系發現擲骰亂數源(見 discovery.go discoveryRoll,同上慣例)
+	populationRand      *randStream // 負成長刪人口 reservoir sampling；抽取次數隨存檔保存
+	agreementRand       *randStream // 貿易／研究協議 goal%5 的逐方向補點擲骰；抽取次數隨存檔保存
+	diplomacyGrowthRand *randStream // Diplomacy_Growth_ 條約關係增益；獨立流保證存讀／鎖步可重播
+	officerRand         *randStream // 隨機領袖招募的百分比與候選抽取；抽取次數隨存檔保存
 }
 
 // advanceEvents 的實作位於 events.go：排程、候選 ID、帝國目標與已閉合的效果逐項依原版
@@ -5086,6 +5095,9 @@ func (s *GameSession) EndTurn() {
 		s.UpdatePlayerShipDesignsAfterTech()
 	}
 	s.recoverFromFamine() // 饑荒防死鎖:見函式註解;依本回合 Starving 結果修正下回合職務分配
+	// 原版先完成整張條約關係 pair loop，再完成整張目標漂移 loop；在 AI
+	// 經濟／行動前集中執行，避免逐 AI 交錯而改變擲骰順序。
+	s.advanceOriginalDiplomacyGrowth()
 	aiGross := make([]int, len(s.AIPlayers))
 	for i := range s.AIPlayers {
 		applyResearchTopicGrantCallbacks(&s.AIPlayers[i].Player, gamedata.TOPIC_ASTRO_CONSTRUCTION)
@@ -5415,8 +5427,8 @@ func (s *GameSession) playerMilitary() int {
 //  1. 生產:逐殖民地先推進自己的建築產品；沒有可建建築的產能才進造艦轉接層。
 //  2. 擴張:每隔數回合佔領一顆無主星(Owner=2,OwnedStars++)。
 //  3. 研究:替 AI 處理待決的科技抉擇,並在目前主題完成時挑下一個(見 ai_research.go)。
-//  4. 外交態勢:依「AI 軍力 vs 玩家軍力 + 難度」漂移對玩家關係分數,經 ai.DecideStance
-//     推得態勢(戰爭/敵視/中立/提議貿易/提議結盟),存中文 StanceName。
+//  4. 外交態勢:消費本回合已由原版 Diplomacy_Growth 規則更新的關係分數，
+//     經 ai.DecideStance 推得態勢並保存顯示名稱。
 func (s *GameSession) advanceAI(i int, out engine.EmpireOutput) {
 	a := &s.AIPlayers[i]
 	prof := aiProfile(*a)
@@ -5464,37 +5476,14 @@ func (s *GameSession) advanceAI(i int, out engine.EmpireOutput) {
 		a.DefensiveAgents++
 	}
 
-	// 3) 外交態勢:AI 越強、難度越高,對玩家越敵對。
-	pm := s.playerMilitary()
-	strengthGap := a.FleetStrength - pm // AI 領先越多越敢敵對
-
-	// 關係往一個**平衡點**漂移,而不是每回合無止境累減。
-	//
-	// 先前是 `Relation -= strengthGap/20*diff`,純累加:只要 AI 軍力領先,關係必定一路
-	// 觸底 -40,60 回合後三個 AI 一律「宣戰」,性格完全沒有體感(2026-08-06 探針實測)。
-	//
-	// 平衡點 = 性格的基礎關係傾向(原版 _personality_relation_modifiers,±70 尺度縮到
-	// ±35 對齊 Relation 的 ±40)再被軍力差往敵對方向推。和平主義(+30)因此會停在友好側,
-	// 除非玩家軍力遠遜於它;冷酷無情(-20)本來就偏敵對,軍力一領先就迅速宣戰。
-	//
-	// ⚠ 原版關係演化的確切公式尚未反編(module 27 的 Diplomacy_Growth_/Change_Relations_),
-	// 「往平衡點漂移」是 remake 的模型;有硬證的只有平衡點取自哪張表。
-	equilibrium := ai.PersonalityRelationModifier(a.Personality) / 2
-	target := equilibrium - strengthGap/5
-	switch {
-	case a.Relation < target:
-		a.Relation++
-	case a.Relation > target:
-		a.Relation--
-	}
-	if a.Relation > 40 {
-		a.Relation = 40
-	}
-	if a.Relation < -40 {
-		a.Relation = -40
-	}
+	// 3) 外交態勢：關係已在本回合 AI loop 前依 Diplomacy_Growth_ 更新。
 	prevStance := a.StanceName
 	stance := ai.DecideStance(diplomacy.RelationLevelForScore(a.Relation), prof)
+	// 正式戰爭欄位是原版權威狀態；-90 raw 投影為 -36，不能因 remake
+	// 的 -40..40 顯示尺而降級成「敵視」。
+	if a.Treaty.FormalPolicy >= gamedata.DIPLO_LIMITED_WAR {
+		stance = ai.StanceWar
+	}
 	a.StanceName = stanceNames[stance]
 	// 態勢改變 = 這位對手有話要說(宣戰要通知、提議要開口)。見 audience.go。
 	a.noteStanceChange(prevStance)
