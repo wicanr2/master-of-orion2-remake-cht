@@ -73,6 +73,20 @@ func OriginalHumanTargetPopulationTrend(relativeTurn, sourceNow, source40, targe
 	return (sourceGrowth - targetGrowth) / 2, true
 }
 
+// OriginalHumanTargetPowerPressure 對應 sub_544A1 @ 0x54768..0x547DC。
+// powerRatio 直接採 sub_500CF／OriginalNPCPowerRatio 的 0..800 結果。
+// 一般正人口路徑在 ratio>=300 且來源政府 raw !=5 時加入 -ratio/40，並把
+// 後續行動上限改成 150；active=false 表示原版未進入此分支。
+func OriginalHumanTargetPowerPressure(powerRatio, sourceGovernment int) (score, actionLimit int, active, ok bool) {
+	if powerRatio < 0 || powerRatio > 800 || sourceGovernment < 0 || sourceGovernment > 7 {
+		return 0, 0, false, false
+	}
+	if powerRatio < 300 || sourceGovernment == 5 {
+		return 0, 0, false, true
+	}
+	return -powerRatio / 40, 150, true, true
+}
+
 // OriginalHumanTargetOutcomeInput 是 sub_544A1 尾端已閉合的決策輸入。
 // Score 是上游所有方向關係、事件、性格與領袖修正合成後的 signed 分數。
 type OriginalHumanTargetOutcomeInput struct {

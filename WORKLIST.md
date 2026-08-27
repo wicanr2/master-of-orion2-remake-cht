@@ -1157,6 +1157,8 @@
   `sub_4F0DC` 的完整上游門檻及正常玩家事件 reason producer 仍待閉合，未以猜測接線。
   同一 score 的存活帝國人口優勢 `-10`，以及第 100 回合後雙方 40 回合人口成長差也已由
   `+0xA6／+0xB9B` raw 讀取閉合為純規則；其餘國力／科技項仍待拆解。
+  `sub_500CF` 亦確認等同既有 `OriginalNPCPowerRatio`，ratio>=300 且政府 raw!=5 時的
+  `-ratio/40` 與行動上限 150 已接純規則；尚缺玩家↔AI 逐艦方向 `+0x5EC` shell producer。
   目前願戰來源仍是明示的
   `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與

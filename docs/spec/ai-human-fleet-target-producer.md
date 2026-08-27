@@ -32,6 +32,9 @@
     加 `-10`；只剩來源一國也加 `-10`。三國以上不套此項。
 13. 相對回合至少 100 後，比較雙方目前與 40 格前的 `+0xB9B` 人口歷史。只有真人人口
     成長大於來源 AI 時，加 `(sourceGrowth-targetGrowth)/2`，採 signed 整數向零截斷。
+14. `sub_500CF` 的國力比沿用 `OriginalNPCPowerRatio`：`100*(source+1)/(target+1)`、上限
+    800，來源對每個第三方正式戰爭再折半。ratio 至少 300 且來源政府 raw 不是 5 時，
+    score 加 `-ratio/40`，後續行動上限設為 150。
 
 ## DRAFT 邊界
 

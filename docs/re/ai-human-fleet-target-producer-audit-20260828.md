@@ -56,6 +56,12 @@
     `0x5488B..0x54949` 自相對回合 100 起讀雙方 `+0xB9B` 的目前格與 40 格前；真人成長
     嚴格較高時，加入 `(sourceGrowth-targetGrowth)/2`，原因碼候選為 117。350 格之後原版
     以 309 作 40 格前的環回索引；remake 的時間排序 350 格環保存玩家可見等價資料。
+13. `sub_500CF @ 0x500CF..0x50164` 讀雙向 `player+0x5EC`，計算
+    `100*(sourceToTarget+1)/(targetToSource+1)`、夾至 800，來源對每個非雙方的正式戰爭
+    再右移一位。這與既有 `OriginalNPCPowerRatio` 完全相同。`0x54768..0x547DC` 在 ratio
+    至少 300 且來源政府 raw !=5 時加入 `-ratio/40`、把行動上限設為 150。ratio<300
+    後的 raw 人口比較是 `2*sourcePopulation < 3*sourcePopulation` 時跳過，正常正人口下
+    不形成第二條 gate；不得把 Hex-Rays 的同值比較誤寫成雙方人口公式。
 
 ## Remake 對映與限制
 
@@ -74,6 +80,8 @@
   上游完整門檻及各正常玩家事件 reason 尚未 typed，因此此輪不偽造 writer。
 - 已接純規則：存活帝國人口優勢與 40 回合人口成長差；兩者直接消費原版已存在的
   `+0xA6／+0xB9B` typed 對映，不把反編譯器暫名當證據。
+- 已接純規則：`sub_500CF` 國力比重用既有 `OriginalNPCPowerRatio`，另補 ratio>=300 的
+  score／行動上限 consumer；玩家↔AI 的逐艦方向 `+0x5EC` shell producer 仍待泛化。
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。

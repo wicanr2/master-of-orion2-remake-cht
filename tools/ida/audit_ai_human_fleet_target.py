@@ -49,6 +49,7 @@ ROOTS = {
     "raw_diplomatic_action_availability": 0x4F93B,
     "raw_human_incident_writer": 0x4F0DC,
     "raw_change_relations": 0x4E3B5,
+    "raw_human_target_power_ratio": 0x500CF,
 }
 PERSONALITY_SCORE_TABLE_EA = 0x181080
 INCIDENT_DIVISOR_TABLE_EA = 0x180CF0

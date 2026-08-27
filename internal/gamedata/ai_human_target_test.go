@@ -56,6 +56,18 @@ func TestOriginalHumanTargetPopulationTrend(t *testing.T) {
 	}
 }
 
+func TestOriginalHumanTargetPowerPressure(t *testing.T) {
+	if score, limit, active, ok := OriginalHumanTargetPowerPressure(299, 0); !ok || active || score != 0 || limit != 0 {
+		t.Fatalf("ratio 299 不應啟動：score=%d limit=%d active=%v ok=%v", score, limit, active, ok)
+	}
+	if score, limit, active, ok := OriginalHumanTargetPowerPressure(319, 0); !ok || !active || score != -7 || limit != 150 {
+		t.Fatalf("ratio 319 應向零截斷為 -7：score=%d limit=%d active=%v ok=%v", score, limit, active, ok)
+	}
+	if score, limit, active, ok := OriginalHumanTargetPowerPressure(800, 5); !ok || active || score != 0 || limit != 0 {
+		t.Fatalf("government 5 應排除此項：score=%d limit=%d active=%v ok=%v", score, limit, active, ok)
+	}
+}
+
 func TestOriginalHumanTargetThreshold(t *testing.T) {
 	if got, ok := OriginalHumanTargetThreshold(-5, 20); !ok || got != 100 {
 		t.Fatalf("負分 threshold=%d/%v，預期 100/true", got, ok)
