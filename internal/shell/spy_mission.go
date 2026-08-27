@@ -32,27 +32,6 @@ func normalizedSpyMission(m SpyMission) SpyMission {
 	return m
 }
 
-// SpyMissionLabel 回傳任務的介面標籤。
-func SpyMissionLabel(m SpyMission, english bool) string {
-	switch m {
-	case SpyMissionHide:
-		if english {
-			return "HIDE"
-		}
-		return "隱匿"
-	case SpyMissionSabotage:
-		if english {
-			return "SABOTAGE"
-		}
-		return "破壞建築"
-	default:
-		if english {
-			return "STEAL"
-		}
-		return "偷取科技"
-	}
-}
-
 // ensurePlayerSpyMissions 讓任務陣列與 AIPlayers 平行。舊存檔沒有此欄位時，
 // 零值 STEAL 正好是原本「所有間諜都偷科技」的相容預設。
 func (s *GameSession) ensurePlayerSpyMissions() {

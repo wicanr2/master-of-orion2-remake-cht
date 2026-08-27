@@ -425,11 +425,21 @@
   主選單已完成第四十六個切片：左下語言列、規則版本列及相關轉場名稱均由 `ui.json` 供應，
   Go 只保留穩定 key、目前語言與 `1.3`／`1.5` 動態值。兩條 remake 擴充列改由各自
   220×22 點擊列推導雙軸安全框，文字與熱區共用中心；繁中、英文及刻意加長的版本值已通過
-  runtime fallback 字型 containment；繁中與英文正版資料畫廊各 35/35，英文實圖另確認正常值
+  runtime fallback 字型 containment；現行繁中與英文正版資料畫廊各 36/36，英文實圖另確認正常值
   完整顯示、不依賴省略號收尾。原版證據只支持 `MAINMENU.LBX#21` 的六顆既有按鈕，
   語言／版本列仍明標 remake requirement，不升格為原版控制。證據與規格見
   [`docs/re/main-menu-text-layout-audit-20260827.md`](docs/re/main-menu-text-layout-audit-20260827.md) 與
   [`docs/spec/main-menu-external-text.md`](docs/spec/main-menu-external-text.md)。
+  RACES 種族／間諜畫面已完成第四十七個切片：帝國態勢、軍力／星數、AI 彼此關係、增派 Spy、
+  三種任務、Agent 狀態／控制及轉場名稱均由 `ui.json` 供應；`shell.SpyMissionLabel` 與
+  `AIRelationName` 已移除，規則層只留 typed 任務、關係分數及相容存檔狀態。runtime 稽核推翻
+  五條 16px 字形可塞入約 73px 資訊區的舊假設，現改為四條互不重疊的 17px 節奏；整區外交
+  hit／hover 保留。新增正常玩家路徑 `15a_races.png` 又證實舊 Agent 控制會遮住左欄第 4 個
+  帝國槽，現移入右下 BONUSES 面板並在 y=418 外交按鈕列前結束。繁中與英文正版資料畫廊各
+  36/36，兩張 RACES 畫面均已目視確認。原版三個任務槽左右語意與完整 callback 仍未知，現行
+  增派／循環／隱匿控制維持明標 remake adapter。證據與規格見
+  [`docs/re/races-spy-text-layout-audit-20260827.md`](docs/re/races-spy-text-layout-audit-20260827.md) 與
+  [`docs/spec/races-spy-external-text.md`](docs/spec/races-spy-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

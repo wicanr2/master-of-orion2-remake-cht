@@ -1815,7 +1815,7 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 	onAction := func(a string) *origTransition {
 		switch a {
 		case "audience":
-			return b.goTo(b.council, "銀河議會")
+			return b.goTo(b.council, uiText(b.lang, "races.transition.council"))
 		case "report":
 			sc, err := b.diplomacy() // 外交對談
 			if err != nil {
@@ -1834,30 +1834,30 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 			if b.session != nil {
 				b.session.TrainDefensiveAgent()
 			}
-			return b.goTo(b.races, "種族關係")
+			return b.goTo(b.races, uiText(b.lang, "races.transition.screen"))
 		case "dismissagent":
 			if b.session != nil {
 				b.session.DismissDefensiveAgent()
 			}
-			return b.goTo(b.races, "種族關係")
+			return b.goTo(b.races, uiText(b.lang, "races.transition.screen"))
 		}
 		if idx, ok := racesSpyActionIndex(a); ok {
 			if b.session != nil {
 				b.session.TrainSpy(idx) // BC 不足時無作用(見 shell.TrainSpy)
 			}
-			return b.goTo(b.races, "種族關係")
+			return b.goTo(b.races, uiText(b.lang, "races.transition.screen"))
 		}
 		if idx, ok := racesSpyMissionActionIndex(a); ok {
 			if b.session != nil {
 				b.session.CycleSpyMission(idx)
 			}
-			return b.goTo(b.races, "種族關係")
+			return b.goTo(b.races, uiText(b.lang, "races.transition.screen"))
 		}
 		if idx, ok := racesSpyHideActionIndex(a); ok {
 			if b.session != nil {
 				b.session.SetSpyMission(idx, shell.SpyMissionHide)
 			}
-			return b.goTo(b.races, "種族關係")
+			return b.goTo(b.races, uiText(b.lang, "races.transition.screen"))
 		}
 		if idx, ok := racesDiplomacyActionIndex(a); ok {
 			if b.session == nil || idx < 0 || idx >= len(b.session.AIPlayers) {
@@ -1870,7 +1870,7 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 			}
 			return &origTransition{next: sc}
 		}
-		return b.goTo(b.galaxy, "星系主畫面")
+		return b.goTo(b.galaxy, uiText(b.lang, "races.transition.galaxy"))
 	}
 	// 座標經 PIL 量測(remain-scan/races_a0_f00.png)。
 	overlays := []labelRect{
@@ -1919,9 +1919,9 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 			// 收束。過去左欄只寬 90px 卻給了 250px maxW，文字必然跨欄。
 			s.extras = append(s.extras, racesInfoLineRect(i, 0).leftExtras(b.fnt, aiEmpireLabel(b.lang, a), 11, gold)...)
 			s.extras = append(s.extras, racesInfoLineRect(i, 1).leftExtras(b.fnt,
-				fmt.Sprintf(b.tr("對你: %s", "You: %s"), a.StanceName), 10, body)...)
+				racesText(b.lang, "races.info.you", infoStanceLabel(b.lang, a.StanceName)), 10, body)...)
 			s.extras = append(s.extras, racesInfoLineRect(i, 2).leftExtras(b.fnt,
-				fmt.Sprintf(b.tr("軍 %d・星 %d", "P%d · S%d"), a.FleetStrength, a.OwnedStars), 10, body)...)
+				racesText(b.lang, "races.info.power_stars", a.FleetStrength, a.OwnedStars), 10, body)...)
 			// AI 之間的外交關係(活星系;支撐議會第三方搖擺)。
 			rel := ""
 			for j := range b.session.AIPlayers {
@@ -1929,36 +1929,32 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 					continue
 				}
 				if rel != "" {
-					rel += "、"
+					rel += uiText(b.lang, "races.info.relation_separator")
 				}
-				rel += fmt.Sprintf("%s:%s", aiEmpireLabel(b.lang, b.session.AIPlayers[j]), b.session.AIRelationName(i, j))
+				rel += racesText(b.lang, "races.info.relation_entry", aiEmpireLabel(b.lang, b.session.AIPlayers[j]),
+					infoAIRelationLabel(b.lang, b.session, i, j))
 			}
 			if rel == "" {
-				rel = b.tr("無資料", "none")
+				rel = uiText(b.lang, "races.info.none")
 			}
-			s.extras = append(s.extras, racesInfoLineRect(i, 3).leftExtras(b.fnt, b.tr("他國: ", "Others: ")+rel, 9, dim)...)
-			s.extras = append(s.extras, racesInfoLineRect(i, 4).leftExtras(b.fnt, b.tr("點此對談", "Click to talk"), 9,
-				color.RGBA{180, 200, 220, 255})...)
+			s.extras = append(s.extras, racesInfoLineRect(i, 3).leftExtras(b.fnt, racesText(b.lang, "races.info.others", rel), 9, dim)...)
 			// 三個原生間諜槽各自有置中文字。底板已先覆蓋七列，過去會落入
 			// 下一列的 y+23 假按鈕已移除；繪製與命中共用 racesSpySlotRect。
 			spies := 0
 			if i < len(b.session.PlayerSpies) {
 				spies = b.session.PlayerSpies[i]
 			}
-			spyX, spyY, spyW, spyH := racesSpySlotRect(i, 0)
-			missionX, missionY, missionW, missionH := racesSpySlotRect(i, 1)
-			hideX, hideY, hideW, hideH := racesSpySlotRect(i, 2)
-			spyRect := textSafeRect{x: spyX, y: spyY, w: spyW, h: spyH, insetX: 3, insetY: 2}
-			missionRect := textSafeRect{x: missionX, y: missionY, w: missionW, h: missionH, insetX: 3, insetY: 2}
-			hideRect := textSafeRect{x: hideX, y: hideY, w: hideW, h: hideH, insetX: 3, insetY: 2}
+			spyRect := racesSpySlotTextRect(i, 0)
+			missionRect := racesSpySlotTextRect(i, 1)
+			hideRect := racesSpySlotTextRect(i, 2)
 			s.extras = append(s.extras, centeredExtraTextInSafeRect(spyRect, 10,
-				fmt.Sprintf(b.tr("增派 %d", "add %d"), spies), color.RGBA{150, 220, 160, 255}))
+				racesText(b.lang, "races.spy.add", spies), color.RGBA{150, 220, 160, 255}))
 			mission := b.session.SpyMissionFor(i)
 			s.extras = append(s.extras,
 				centeredExtraTextInSafeRect(missionRect, 10,
-					shell.SpyMissionLabel(mission, b.lang != i18n.Traditional), color.RGBA{220, 190, 120, 255}),
+					uiText(b.lang, racesSpyMissionTextKey(mission)), color.RGBA{220, 190, 120, 255}),
 				centeredExtraTextInSafeRect(hideRect, 10,
-					b.tr("隱匿", "HIDE"), color.RGBA{180, 200, 220, 255}),
+					uiText(b.lang, "races.spy.mission.hide"), color.RGBA{180, 200, 220, 255}),
 			)
 		}
 		agents := b.session.DefensiveAgents
@@ -1971,13 +1967,13 @@ func (b *sceneBuilder) races() (*overlayScreen, error) {
 				fill: controlFace, border: controlBorder},
 		)
 		s.extras = append(s.extras,
-			centeredExtraTextInRect(racesAgentStatusX, racesAgentStatusY, racesAgentStatusW, racesAgentStatusH, 10,
-				fmt.Sprintf(b.tr("防諜特務 %d（BC %d）", "defense %d (BC %d)"), agents, b.session.Player.BC),
+			centeredExtraTextInSafeRect(racesAgentStatusTextRect(), 10,
+				racesText(b.lang, "races.agent.status", agents, b.session.Player.BC),
 				color.RGBA{235, 215, 145, 255}),
-			centeredExtraTextInRect(racesAgentTrainX, racesAgentY, racesAgentW, racesAgentH, 10,
-				b.tr("訓練（30 BC）", "TRAIN (30 BC)"), color.RGBA{150, 220, 160, 255}),
-			centeredExtraTextInRect(racesAgentDismissX, racesAgentY, racesAgentW, racesAgentH, 10,
-				b.tr("解散", "DISMISS"), color.RGBA{220, 180, 160, 255}),
+			centeredExtraTextInSafeRect(racesAgentTrainTextRect(), 10,
+				uiText(b.lang, "races.agent.train"), color.RGBA{150, 220, 160, 255}),
+			centeredExtraTextInSafeRect(racesAgentDismissTextRect(), 10,
+				uiText(b.lang, "races.agent.dismiss"), color.RGBA{220, 180, 160, 255}),
 		)
 	}
 	return s, nil
@@ -6462,6 +6458,9 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{48, "12_planets.png"},
 		{53, "13_info.png"},
 		{55, "14_info_tech.png"},
+		// RACES 原本正常路徑有走到，卻在下一拍就進外交而沒有截圖；間諜列與 Agent
+		// 版面因此長期不在逐位元驗收範圍。t59 是進畫面後的 settle 幀。
+		{59, "15a_races.png"},
 		{62, "15_diplomacy.png"},
 		{66, "16_tactical.png"},
 		{68, "17_groundcombat.png"},

@@ -17,7 +17,7 @@ func TestGalleryScriptResolvesInitialResearchBeforeWorldTurn(t *testing.T) {
 	if !worldTurn.ClickReleased || worldTurn.MouseX != 589 || worldTurn.MouseY != 458 {
 		t.Fatalf("t14 必須再次按 TURN 才會真正結算世界，得到 %+v", worldTurn)
 	}
-	foundEvent, foundSummary := false, false
+	foundEvent, foundSummary, foundRaces := false, false, false
 	for _, shot := range shots {
 		if shot.name == "05_event.png" {
 			foundEvent = shot.tick == galleryEventTick
@@ -25,11 +25,17 @@ func TestGalleryScriptResolvesInitialResearchBeforeWorldTurn(t *testing.T) {
 		if shot.name == "06_turnsummary.png" {
 			foundSummary = shot.tick == 14
 		}
+		if shot.name == "15a_races.png" {
+			foundRaces = shot.tick == 59
+		}
 	}
 	if !foundEvent {
 		t.Fatal("事件快報須由明示的畫廊事件 tick 截圖")
 	}
 	if !foundSummary {
 		t.Fatal("正常第一個世界回合須在 t14 截取回合摘要")
+	}
+	if !foundRaces {
+		t.Fatal("正常 RACES 玩家路徑須在進外交前截取種族／間諜畫面")
 	}
 }

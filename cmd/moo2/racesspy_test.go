@@ -2,9 +2,12 @@ package main
 
 import (
 	"image/color"
+	"os"
 	"strings"
 	"testing"
 
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
 
@@ -180,11 +183,17 @@ func TestRacesInfoTextStopsBeforeSliderAndSpyButtons(t *testing.T) {
 		if r.y+r.h > racesSpyAnchors[i][1]-4 {
 			t.Fatalf("第 %d 列資訊框越過間諜鈕：bottom=%d, spyY=%d", i, r.y+r.h, racesSpyAnchors[i][1])
 		}
-		for line := 0; line < 5; line++ {
+		for line := 0; line < 4; line++ {
 			lr := racesInfoLineRect(i, line)
 			if lr.x < r.x || lr.y < r.y || lr.x+lr.w > r.x+r.w || lr.y+lr.h > r.y+r.h {
 				t.Fatalf("第 %d 列第 %d 行安全框 (%d,%d,%d,%d) 超出資料區 (%d,%d,%d,%d)",
 					i, line, lr.x, lr.y, lr.w, lr.h, r.x, r.y, r.w, r.h)
+			}
+			if line > 0 {
+				prev := racesInfoLineRect(i, line-1)
+				if prev.y+prev.h > lr.y {
+					t.Fatalf("第 %d 列資訊行 %d/%d 重疊：%+v %+v", i, line-1, line, prev, lr)
+				}
 			}
 		}
 	}
@@ -203,7 +212,6 @@ func TestRacesInfoTextSafeRectsContainBitmapGlyphs(t *testing.T) {
 		{1, 10, "對你：非常友善"},
 		{2, 10, "軍 999・星 99"},
 		{3, 9, "他國：AI（自訂）非常友善"},
-		{4, 9, "點此對談 Click to talk"},
 	}
 	for _, sample := range samples {
 		for i := 0; i < racesMaxRows; i++ {
@@ -234,19 +242,104 @@ func TestRacesAgentControlsAreExplicitAndSeparated(t *testing.T) {
 	if regions[0].x+racesAgentW > regions[1].x {
 		t.Fatal("防守 Agent 兩個熱區不應互相重疊")
 	}
+	checked := append(append([]hitRegion(nil), regions...), hitRegion{
+		x: racesAgentStatusX, y: racesAgentStatusY, w: racesAgentStatusW, h: racesAgentStatusH,
+	})
+	for _, region := range checked {
+		if region.y+region.h > 418 {
+			t.Fatalf("Agent 控制侵入外交按鈕列：%+v", region)
+		}
+		for i := 0; i < racesMaxRows; i++ {
+			info := racesInfoRect(i)
+			if rectsOverlap(region.x, region.y, region.w, region.h, info.x, info.y, info.w, info.h) {
+				t.Fatalf("Agent 控制侵入第 %d 個帝國資訊槽：%+v / %+v", i, region, info)
+			}
+			for slot := 0; slot < racesSpyButtonSlots; slot++ {
+				x, y, w, h := racesSpySlotRect(i, slot)
+				if rectsOverlap(region.x, region.y, region.w, region.h, x, y, w, h) {
+					t.Fatalf("Agent 控制侵入第 %d 個帝國第 %d 間諜槽", i, slot)
+				}
+			}
+		}
+	}
+}
+
+func rectsOverlap(ax, ay, aw, ah, bx, by, bw, bh int) bool {
+	return ax < bx+bw && bx < ax+aw && ay < by+bh && by < ay+ah
 }
 
 func TestRacesActionTextCentersInsideItsClickableRect(t *testing.T) {
-	anchor := racesSpyAnchors[0]
-	spy := centeredExtraTextInRect(anchor[0], anchor[1], racesSpyButtonW, racesSpyButtonH, 11, "派間諜(0)", color.RGBA{})
-	if spy.align != 1 || spy.x != float64(anchor[0]+racesSpyButtonW/2) || spy.y != float64(anchor[1]+racesSpyButtonH/2) {
+	spyRect := racesSpySlotTextRect(0, 0)
+	spy := centeredExtraTextInSafeRect(spyRect, 10, "增派 0", color.RGBA{})
+	if spy.align != 1 || spy.x != float64(spyRect.x)+float64(spyRect.w)/2 || spy.y != float64(spyRect.y)+float64(spyRect.h)/2 {
 		t.Fatalf("派間諜文字未置中於熱區：%+v", spy)
 	}
 	if spy.maxW != float64(racesSpyButtonW-6) {
 		t.Fatalf("派間諜文字最大寬度 = %.0f, want %d", spy.maxW, racesSpyButtonW-6)
 	}
-	train := centeredExtraTextInRect(racesAgentTrainX, racesAgentY, racesAgentW, racesAgentH, 10, "訓練 Agent（30 BC）", color.RGBA{})
+	trainRect := racesAgentTrainTextRect()
+	train := centeredExtraTextInSafeRect(trainRect, 10, "訓練（30 BC）", color.RGBA{})
 	if train.align != 1 || train.x != float64(racesAgentTrainX+racesAgentW/2) || train.y != float64(racesAgentY+racesAgentH/2) {
 		t.Fatalf("訓練 Agent 文字未置中於熱區：%+v", train)
+	}
+}
+
+func TestRacesExternalTextCatalogAndRuntimeBounds(t *testing.T) {
+	keys := []string{
+		"races.transition.council", "races.transition.screen", "races.transition.galaxy",
+		"races.info.you", "races.info.power_stars", "races.info.others", "races.info.none",
+		"races.info.relation_entry", "races.info.relation_separator", "races.spy.add",
+		"races.spy.mission.steal", "races.spy.mission.sabotage", "races.spy.mission.hide",
+		"races.agent.status", "races.agent.train", "races.agent.dismiss",
+	}
+	fnt := uifont.LoadBitmapTC()
+	for _, lang := range []i18n.Lang{i18n.Traditional, i18n.English} {
+		for _, key := range keys {
+			if got := uiText(lang, key); got == "" || got == key {
+				t.Fatalf("lang=%v key=%s unresolved: %q", lang, key, got)
+			}
+		}
+		checkClippedTextFits(t, fnt, racesInfoLineRect(0, 1),
+			racesText(lang, "races.info.you", infoStanceLabel(lang, "提議貿易")), 10)
+		checkClippedTextFits(t, fnt, racesInfoLineRect(0, 2),
+			racesText(lang, "races.info.power_stars", 999999, 99), 10)
+		checkClippedTextFits(t, fnt, racesInfoLineRect(0, 3),
+			racesText(lang, "races.info.others", strings.Repeat("Long Empire: Allied, ", 10)), 9)
+		for slot, mission := range []shell.SpyMission{shell.SpyMissionSteal, shell.SpyMissionSabotage, shell.SpyMissionHide} {
+			checkClippedTextFits(t, fnt, racesSpySlotTextRect(0, slot), uiText(lang, racesSpyMissionTextKey(mission)), 10)
+		}
+		checkClippedTextFits(t, fnt, racesAgentStatusTextRect(), racesText(lang, "races.agent.status", 63, 999999), 10)
+		checkClippedTextFits(t, fnt, racesAgentTrainTextRect(), uiText(lang, "races.agent.train"), 10)
+		checkClippedTextFits(t, fnt, racesAgentDismissTextRect(), uiText(lang, "races.agent.dismiss"), 10)
+	}
+}
+
+func TestRacesSourceAndRulesHaveNoEmbeddedPlayerLabels(t *testing.T) {
+	raw, err := os.ReadFile("interactive.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := string(raw)
+	start := strings.Index(source, "func (b *sceneBuilder) races()")
+	if start < 0 {
+		t.Fatal("races source start not found")
+	}
+	end := strings.Index(source[start:], "// --- 外交對談畫面")
+	if end < 0 {
+		t.Fatal("races source end not found")
+	}
+	if strings.Contains(source[start:start+end], ".tr(") {
+		t.Fatal("races() must not embed translated player text")
+	}
+	for _, path := range []string{"../../internal/shell/spy_mission.go", "../../internal/shell/session.go"} {
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, forbidden := range []string{"SpyMissionLabel", "AIRelationName"} {
+			if strings.Contains(string(raw), forbidden) {
+				t.Fatalf("%s still exposes player label helper %s", path, forbidden)
+			}
+		}
 	}
 }

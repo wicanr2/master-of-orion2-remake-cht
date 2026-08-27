@@ -5544,26 +5544,6 @@ func (s *GameSession) advanceAIDiplomacy() {
 	}
 }
 
-// AIRelationName 回傳 AI i 對 AI j 的關係中文分級(供 races 畫面顯示);越界/無矩陣回「中立」。
-// 依分數分五級,對齊 Chinese UI 語氣(RelationLevel.Name() 是英文,不直接用於顯示)。
-func (s *GameSession) AIRelationName(i, j int) string {
-	if i < 0 || j < 0 || i >= len(s.AIRelations) || j >= len(s.AIRelations[i]) {
-		return "中立"
-	}
-	switch r := s.AIRelations[i][j]; {
-	case r <= -25:
-		return "敵對"
-	case r <= -8:
-		return "緊張"
-	case r < 8:
-		return "中立"
-	case r < 25:
-		return "友好"
-	default:
-		return "同盟"
-	}
-}
-
 // stanceNames 是 ai.Stance 的中文顯示。
 var stanceNames = map[ai.Stance]string{
 	ai.StanceWar:             "宣戰",

@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
 
 // racesspy.go:種族關係畫面上**間諜派遣區塊**的版面座標。
@@ -65,14 +69,51 @@ func racesSpySlotRect(i, slot int) (x, y, w, h int) {
 	return anchor[0] + racesSpySlotOffsets[slot], anchor[1], racesSpySlotWidths[slot], racesSpyButtonH
 }
 
-// 防守 Agent 是 RACES 畫面上進攻間諜之外的第二條管理線。座標放在左下方
-// 的空白區，不覆蓋原版外交按鈕或七列種族資料；尺寸是 remake 控制項尺寸。
+func racesSpySlotTextRect(i, slot int) textSafeRect {
+	x, y, w, h := racesSpySlotRect(i, slot)
+	return textSafeRect{x: x, y: y, w: w, h: h, insetX: 3, insetY: 2}
+}
+
+// 防守 Agent 是 RACES 畫面上進攻間諜之外的第二條管理線。左下並非空白區，
+// 而是原版第 4 個帝國槽；控制項放入右下 BONUSES 面板，底緣停在外交按鈕列 y=418。
 const (
-	racesAgentTrainX, racesAgentDismissX  = 20, 128
-	racesAgentY, racesAgentW, racesAgentH = 414, 100, 20
-	racesAgentStatusX, racesAgentStatusY  = 20, 396
-	racesAgentStatusW, racesAgentStatusH  = 208, 16
+	racesAgentTrainX, racesAgentDismissX  = 340, 434
+	racesAgentY, racesAgentW, racesAgentH = 400, 90, 18
+	racesAgentStatusX, racesAgentStatusY  = 340, 384
+	racesAgentStatusW, racesAgentStatusH  = 184, 16
 )
+
+func racesAgentStatusTextRect() textSafeRect {
+	return textSafeRect{x: racesAgentStatusX, y: racesAgentStatusY, w: racesAgentStatusW, h: racesAgentStatusH,
+		insetX: 3, insetY: 0}
+}
+
+func racesAgentTrainTextRect() textSafeRect {
+	return textSafeRect{x: racesAgentTrainX, y: racesAgentY, w: racesAgentW, h: racesAgentH, insetX: 3, insetY: 1}
+}
+
+func racesAgentDismissTextRect() textSafeRect {
+	return textSafeRect{x: racesAgentDismissX, y: racesAgentY, w: racesAgentW, h: racesAgentH, insetX: 3, insetY: 1}
+}
+
+func racesText(lang i18n.Lang, key string, args ...any) string {
+	template := uiText(lang, key)
+	if len(args) == 0 {
+		return template
+	}
+	return fmt.Sprintf(template, args...)
+}
+
+func racesSpyMissionTextKey(m shell.SpyMission) string {
+	switch m {
+	case shell.SpyMissionSabotage:
+		return "races.spy.mission.sabotage"
+	case shell.SpyMissionHide:
+		return "races.spy.mission.hide"
+	default:
+		return "races.spy.mission.steal"
+	}
+}
 
 // racesInfoRect 是單一 AI 的資訊／對談安全區。左、右欄都必須在關係滑桿之前收束，
 // 下緣也停在第一顆間諜鈕之前；不能用「右欄比較空」而容許文字穿過滑桿。
@@ -93,28 +134,14 @@ func racesInfoRect(i int) textSafeRect {
 	return textSafeRect{x: x, y: top, w: right - x, h: bottom - top, insetX: 4, insetY: 0}
 }
 
-// racesInfoLineRect 把一列資訊切成固定五行。名稱、我方關係、軍力／星數、他國關係、
-// 對談提示各有自己的安全框；即使其他 AI 名稱很多，也不能推擠下一項或間諜控制列。
+// racesInfoLineRect 把一列資訊切成固定四行。約 73px 的資料區放不下五條 16px runtime
+// 字形；外交入口由整區 hit／hover 表達，不另塞第五行提示。
 func racesInfoLineRect(i, line int) textSafeRect {
 	r := racesInfoRect(i)
-	var y, h int
-	switch line {
-	case 0:
-		y, h = r.y+2, 16
-	case 1:
-		y, h = r.y+17, 16
-	case 2:
-		y, h = r.y+29, 16
-	case 3:
-		y, h = r.y+41, 16
-	case 4:
-		y, h = r.y+53, 16
-	default:
+	if line < 0 || line >= 4 {
 		return textSafeRect{}
 	}
-	// 每行保留 12px 的原生垂直間距；h=16 容納實際點陣字身，避免
-	// leftExtras 依安全框高度改變行距而把最後一行推入間諜按鈕。
-	return textSafeRect{x: r.x, y: y, w: r.w, h: h, insetX: r.insetX, lineH: 12}
+	return textSafeRect{x: r.x, y: r.y + 2 + line*17, w: r.w, h: 16, insetX: r.insetX}
 }
 
 // ============ 只做「說得出意思」的明確控制 ============
