@@ -126,6 +126,11 @@ func (s *GameSession) advanceAIFleets() []AIFleetArrival {
 			}
 			a.FleetTargetAI, a.FleetTargetAISet = -1, false
 			arr := AIFleetArrival{AIName: a.Name, StarName: s.starName(a.FleetStar), StarIdx: a.FleetStar}
+			// sub_DB257 在 AI 艦隊目標處理末端呼叫 sub_51078。只有抵達玩家殖民星
+			// 才套 human-war writer；AI↔AI 戰爭由下方既有 typed 矩陣處理。
+			if _, atPlayerColony := s.playerColonyAtStar(a.FleetStar); atPlayerColony {
+				s.declareOriginalAIHumanWar(i, s.eventRoll)
+			}
 			// 阿提米絲系統網:手冊「any enemy ship **entering** that system」
 			// ——進門的那一刻結算,與玩家那條同一個時點(見 session.go advanceFleet)。
 			arr.Mines = s.applyArtemisMinesToAIFleet(i, a.FleetStar)
@@ -138,6 +143,15 @@ func (s *GameSession) advanceAIFleets() []AIFleetArrival {
 		s.aiLaunchRaidFleet(i)
 	}
 	return arrivals
+}
+
+func (s *GameSession) playerColonyAtStar(star int) (int, bool) {
+	for i := range s.PlayerColonies {
+		if s.PlayerColonyStarIndex(i) == star {
+			return i, true
+		}
+	}
+	return -1, false
 }
 
 // aiLaunchRaidFleet 讓閒置的 AI 艦隊決定要不要朝某個玩家殖民地出發。

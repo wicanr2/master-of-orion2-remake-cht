@@ -363,3 +363,63 @@ func TestAIRaidsHappenInRealWarGame(t *testing.T) {
 	t.Logf("300 回合共 %d 次突襲(其中 %d 次被擊退),最早發生在第 %d 回合,結束 BC=%d",
 		raids, repelled, firstTurn, s.Player.BC)
 }
+
+func TestOriginalAIHumanWarWriterUsesDifficultyAndClearsAgreements(t *testing.T) {
+	for _, tc := range []struct {
+		difficulty int
+		want       gamedata.ForeignPolicy
+	}{
+		{2, gamedata.DIPLO_WAR},
+		{3, gamedata.DIPLO_TOTAL_WAR},
+	} {
+		s := NewDemoSession()
+		s.Difficulty = tc.difficulty
+		a := &s.AIPlayers[0]
+		a.Treaty = TreatyState{
+			FormalPolicy: gamedata.DIPLO_ALLIANCE, TradeActive: true, ResearchActive: true,
+			PlayerTribute: TributeFivePercent,
+			SpecialTrade:  SpecialTradeState{Kind: SpecialTradeFoodForCredits, Active: true},
+		}
+		if !s.declareOriginalAIHumanWar(0, func(n int) int { return 1 }) {
+			t.Fatalf("難度 %d 未建立正式宣戰", tc.difficulty)
+		}
+		if a.Treaty.FormalPolicy != tc.want || a.Treaty.TradeActive || a.Treaty.ResearchActive ||
+			a.Treaty.PlayerTribute != TributeNone || a.Treaty.SpecialTrade.Active {
+			t.Fatalf("難度 %d 宣戰狀態錯誤：%+v", tc.difficulty, a.Treaty)
+		}
+		if a.OriginalRelationRaw != -75 || !a.OriginalRelationKnown ||
+			!a.WantsAudience || a.AudienceReason != AudienceReasonWar {
+			t.Fatalf("難度 %d 宣戰關係／會談錯誤：raw=%d known=%v audience=%v/%q",
+				tc.difficulty, a.OriginalRelationRaw, a.OriginalRelationKnown, a.WantsAudience, a.AudienceReason)
+		}
+	}
+}
+
+func TestOriginalAIHumanWarWriterIsIdempotent(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	a.Treaty.FormalPolicy = gamedata.DIPLO_WAR
+	a.OriginalRelationRaw, a.OriginalRelationKnown = -88, true
+	called := false
+	if s.declareOriginalAIHumanWar(0, func(n int) int { called = true; return 1 }) {
+		t.Fatal("既有正式戰爭不應重複寫入")
+	}
+	if called || a.OriginalRelationRaw != -88 {
+		t.Fatalf("冪等 gate 仍消耗亂數或改關係：called=%v raw=%d", called, a.OriginalRelationRaw)
+	}
+}
+
+func TestOriginalAIHumanTotalWarRoundTrips(t *testing.T) {
+	s := NewDemoSession()
+	s.Difficulty = 3
+	if !s.declareOriginalAIHumanWar(0, func(n int) int { return 25 }) {
+		t.Fatal("未建立高難度全面戰爭")
+	}
+	restored := s.snapshot().restore()
+	a := restored.AIPlayers[0]
+	if a.Treaty.FormalPolicy != gamedata.DIPLO_TOTAL_WAR || a.OriginalRelationRaw != -99 ||
+		!a.OriginalRelationKnown || !a.WantsAudience || a.AudienceReason != AudienceReasonWar {
+		t.Fatalf("全面戰爭存檔往返遺失：policy=%d raw=%d/%v audience=%v/%q",
+			a.Treaty.FormalPolicy, a.OriginalRelationRaw, a.OriginalRelationKnown, a.WantsAudience, a.AudienceReason)
+	}
+}

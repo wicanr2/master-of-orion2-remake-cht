@@ -1138,7 +1138,11 @@
   [`docs/spec/ai-tax-rate.md`](docs/spec/ai-tax-rate.md)。
   同日亦訂正 AI 對真人戰爭 policy 的下游：`sub_51078` 已證實 human 戰爭依難度寫 raw 5／6，
   `aiForeignPolicyFor` 現直接保留正式 4／5／6 給目標估值，不再由中文態勢與關係猜回錯誤 policy。
-  AI↔真人 `sub_25DF1 → sub_51078` 宣戰 producer 及方向 bias／duration／cooldown typed 狀態仍待接；見
+  後續 IDA 勘誤證實 `sub_25DF1` 所有候選 target loop 均排除 human，不能把 AI↔AI 的方向
+  bias／duration／cooldown 錯搬給真人。真正可見入口之一是 `sub_DB257 @ 0xDB257` 的 AI 艦隊
+  接戰鏈：抵達玩家殖民星時現會先呼叫 typed human-war writer，依難度寫 raw 5／6、清協議、
+  寫 -75..-99 關係並點亮宣戰會談；raw 6 也已接入每回合關係成長／戰爭 -90 drift 與存檔。
+  完整原版派艦意願／真人目標選擇策略仍待閉合。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與
   [`docs/spec/ai-human-formal-war-policy.md`](docs/spec/ai-human-formal-war-policy.md)。
 - [ ] **艦隊、殖民、事件與安塔蘭忠實化**：重建 `Move_All_Ships_Toward_Stars_ @ 0xFFEEA`、

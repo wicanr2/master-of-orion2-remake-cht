@@ -363,7 +363,7 @@ func TestFormalWarPolicyOverridesRemakeStanceProjection(t *testing.T) {
 	}{
 		{gamedata.DIPLO_LIMITED_WAR, gamedata.DiploLimitedWar},
 		{gamedata.DIPLO_WAR, gamedata.DiploWar},
-		{gamedata.ForeignPolicy(6), gamedata.DiploTotalWar},
+		{gamedata.DIPLO_TOTAL_WAR, gamedata.DiploTotalWar},
 	} {
 		a := &AIOpponent{
 			Treaty:     TreatyState{FormalPolicy: tc.policy},

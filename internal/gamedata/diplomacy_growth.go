@@ -159,7 +159,7 @@ type OriginalDiplomacyGrowthTreatyInput struct {
 func OriginalDiplomacyGrowthTreatyRelation(in OriginalDiplomacyGrowthTreatyInput,
 	roll func(int) int) (int, bool) {
 	if in.CurrentRaw < -100 || in.CurrentRaw > 100 || roll == nil ||
-		in.FormalPolicy < DIPLO_NONE || in.FormalPolicy > DIPLO_WAR ||
+		in.FormalPolicy < DIPLO_NONE || in.FormalPolicy > DIPLO_TOTAL_WAR ||
 		in.TributeMode < 0 || in.TributeMode > 2 {
 		return in.CurrentRaw, false
 	}
@@ -228,7 +228,7 @@ type OriginalDiplomacyRelationDriftInput struct {
 func OriginalDiplomacyRelationDrift(in OriginalDiplomacyRelationDriftInput,
 	roll func(int) int) (int, bool) {
 	if in.CurrentRaw < -100 || in.CurrentRaw > 100 || in.TargetRaw < -100 ||
-		in.TargetRaw > 100 || in.Policy < DIPLO_NONE || in.Policy > DIPLO_WAR || roll == nil {
+		in.TargetRaw > 100 || in.Policy < DIPLO_NONE || in.Policy > DIPLO_TOTAL_WAR || roll == nil {
 		return in.CurrentRaw, false
 	}
 	checked := func(n int) (int, bool) {

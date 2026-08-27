@@ -539,6 +539,9 @@ const (
 	DIPLO_PEACE          ForeignPolicy = 3
 	DIPLO_LIMITED_WAR    ForeignPolicy = 4
 	DIPLO_WAR            ForeignPolicy = 5
+	// DIPLO_TOTAL_WAR 是 sub_51078 對 human 參戰且 difficulty>=3 寫入的 raw 6。
+	// AI↔AI 宣戰仍固定 raw 4；不可把這個常數外推到 NPC 候選器。
+	DIPLO_TOTAL_WAR ForeignPolicy = 6
 )
 
 // LeaderSkills

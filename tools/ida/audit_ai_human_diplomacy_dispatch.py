@@ -22,6 +22,7 @@ ROOTS = {
     "raw_humans_requesting_diplomacy": 0xFA795,
     "raw_draw_diplomacy_request_lights": 0x83D06,
     "raw_change_relations": 0x4E3B5,
+    "raw_declare_war": 0x51078,
     "raw_set_formal_policy": 0x5232E,
 }
 REQUEST_MASK_EA = 0x1AB054
@@ -68,6 +69,12 @@ def main():
     ida_auto.auto_wait()
     source = os.environ["MOO2_IDA_INPUT"]
     database = os.environ["MOO2_IDA_DATABASE"]
+    source_database = os.environ.get("MOO2_IDA_SOURCE_DATABASE", database)
+    war_callers = {}
+    for xref in idautils.XrefsTo(ROOTS["raw_declare_war"], 0):
+        fn = ida_funcs.get_func(xref.frm)
+        if fn is not None:
+            war_callers[f"0x{fn.start_ea:X}"] = function_record(fn.start_ea)
     report = {
         "schema": "moo2.ida.re-evidence.v1",
         "contract": "raw-location + original-name + bytes + xrefs; semantics reviewed externally",
@@ -76,12 +83,13 @@ def main():
         "input": {
             "file": os.path.basename(source),
             "source_sha256": digest(source),
-            "database_sha256": digest(database),
+            "database_sha256": digest(source_database),
             "processor": ida_ida.inf_get_procname(),
         },
         "address_basis": "IDA linear; DOS/4GW LE image",
         "semantic_status": "unknown_pending_review",
         "roots": {name: function_record(ea) for name, ea in ROOTS.items()},
+        "raw_declare_war_caller_functions": war_callers,
         "request_mask": {
             "ea": f"0x{REQUEST_MASK_EA:X}",
             "original_name": ida_name.get_name(REQUEST_MASK_EA) or "<unnamed>",

@@ -173,3 +173,19 @@ func TestOriginalDiplomacyRelationDriftWarCapAndLock(t *testing.T) {
 		t.Fatalf("war cap got=%d ok=%v", got, ok)
 	}
 }
+
+func TestOriginalDiplomacyGrowthAcceptsHumanTotalWarPolicy(t *testing.T) {
+	got, ok := OriginalDiplomacyGrowthTreatyRelation(OriginalDiplomacyGrowthTreatyInput{
+		CurrentRaw: -75, FormalPolicy: DIPLO_TOTAL_WAR,
+	}, func(n int) int { return 1 })
+	if !ok || got != -75 {
+		t.Fatalf("raw policy 6 條約 pass = %d/%v，預期 -75/true", got, ok)
+	}
+
+	got, ok = OriginalDiplomacyRelationDrift(OriginalDiplomacyRelationDriftInput{
+		CurrentRaw: -75, TargetRaw: 20, Policy: DIPLO_TOTAL_WAR,
+	}, func(n int) int { return n })
+	if !ok || got != -90 {
+		t.Fatalf("raw policy 6 關係漂移 = %d/%v，預期戰爭上限 -90/true", got, ok)
+	}
+}

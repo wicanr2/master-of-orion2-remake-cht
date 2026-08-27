@@ -162,7 +162,7 @@ func aiForeignPolicyFor(a *AIOpponent) gamedata.AIForeignPolicy {
 			return gamedata.DiploLimitedWar
 		case gamedata.DIPLO_WAR:
 			return gamedata.DiploWar
-		case gamedata.ForeignPolicy(6):
+		case gamedata.DIPLO_TOTAL_WAR:
 			return gamedata.DiploTotalWar
 		}
 	}
@@ -265,6 +265,9 @@ func (s *GameSession) aiRaid(i int) *AIRaidReport {
 		return nil
 	}
 	a := &s.AIPlayers[i]
+	// 原版 sub_DB257 在 AI 艦隊接戰入口呼叫 sub_51078；同星出發沒有
+	// advanceAIFleets 的「抵達」事件，因此在 raid 端再做一次冪等補門。
+	s.declareOriginalAIHumanWar(i, s.eventRoll)
 	// ⚠ 間隔守門**留在這裡**,不能跟著其他條件一起搬到出發那一刻。
 	//
 	// 其餘條件(戰爭態勢/軍力領先/性格)是「要不要出兵」,判一次就夠;
@@ -362,6 +365,40 @@ func (s *GameSession) aiRaid(i int) *AIRaidReport {
 	}
 
 	return rep
+}
+
+// declareOriginalAIHumanWar 對映 sub_DB257 @ 0xDB257 的接戰 caller 與
+// sub_51078 @ 0x51078 的 human-war writer。它只處理已經抵達玩家殖民星後的正式狀態；
+// 艦隊為何出發仍由上游策略決定，不在此函式猜測。
+func (s *GameSession) declareOriginalAIHumanWar(i int, roll func(int) int) bool {
+	if i < 0 || i >= len(s.AIPlayers) || roll == nil {
+		return false
+	}
+	a := &s.AIPlayers[i]
+	if a.Treaty.FormalPolicy >= gamedata.DIPLO_LIMITED_WAR {
+		return false
+	}
+	random25 := roll(25) - 1 // eventRoll 是 1..n；原版 Random(25) 是 0..24。
+	if random25 < 0 || random25 >= 25 {
+		return false
+	}
+	a.Treaty.endFormal()
+	a.Treaty.endTrade()
+	a.Treaty.endResearch()
+	a.Treaty.endTribute()
+	a.Treaty.endSpecialTrade()
+	if s.Difficulty < 3 {
+		a.Treaty.FormalPolicy = gamedata.DIPLO_WAR
+	} else {
+		a.Treaty.FormalPolicy = gamedata.DIPLO_TOTAL_WAR
+	}
+	a.OriginalRelationRaw = -75 - random25
+	a.OriginalRelationKnown = true
+	a.Relation = normalizedRelationFromOriginal(a.OriginalRelationRaw)
+	a.StanceName = stanceNames[ai.StanceWar]
+	a.WantsAudience = true
+	a.AudienceReason = AudienceReasonWar
+	return true
 }
 
 // colonyDefense 回傳玩家第 ci 個殖民地的防禦力(remake 的模型,見檔頭)。

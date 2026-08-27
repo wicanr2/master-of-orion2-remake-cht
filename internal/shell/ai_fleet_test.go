@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
 // AI 艦隊開局停在自己的母星——而且**不能靠零值**。
@@ -70,6 +71,11 @@ func TestAIRaidRequiresTheFleetToArriveFirst(t *testing.T) {
 	}
 	if _, ok := s.aiFleetAtPlayerColony(launched); !ok {
 		t.Fatal("抵達後應被判定為「停在玩家殖民地上空」")
+	}
+	a := s.AIPlayers[launched]
+	if a.Treaty.FormalPolicy != gamedata.DIPLO_WAR || !a.WantsAudience || a.AudienceReason != AudienceReasonWar {
+		t.Fatalf("AI 艦隊抵達玩家殖民星後未建立正式宣戰：policy=%d audience=%v/%q",
+			a.Treaty.FormalPolicy, a.WantsAudience, a.AudienceReason)
 	}
 }
 
