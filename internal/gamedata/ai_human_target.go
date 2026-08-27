@@ -21,7 +21,7 @@ type OriginalHumanTargetOutcomeInput struct {
 // OriginalHumanTargetBaseScore 閉合 sub_544A1 可直接表示的基礎項；尚未 typed 的
 // directional incident memory 由 additional 明確傳入，不在此函式猜值。
 func OriginalHumanTargetBaseScore(relationRaw, personality, diplomatBonus, difficulty,
-	formalPolicy, additional int, targetCharismatic bool) (int, bool) {
+	formalPolicy, additional int, targetCharismatic, targetBetrayedHonorable bool) (int, bool) {
 	if relationRaw < -128 || relationRaw > 127 || personality < 0 || personality >= len(OriginalHumanTargetPersonalityScore) ||
 		diplomatBonus < 0 || difficulty < 0 || difficulty > 6 || formalPolicy < 0 || formalPolicy > 6 {
 		return 0, false
@@ -30,7 +30,11 @@ func OriginalHumanTargetBaseScore(relationRaw, personality, diplomatBonus, diffi
 	if relationRaw >= 50 {
 		relationScore = relationRaw / 5
 	}
-	score := relationScore + OriginalHumanTargetPersonalityScore[personality] + diplomatBonus + 15 - difficulty + additional
+	personalityScore := OriginalHumanTargetPersonalityScore[personality]
+	if personality == 4 && targetBetrayedHonorable {
+		personalityScore = OriginalHumanTargetPersonalityScore[6]
+	}
+	score := relationScore + personalityScore + diplomatBonus + 15 - difficulty + additional
 	if formalPolicy == int(DIPLO_NON_AGGRESSION) {
 		score += 10
 	} else if formalPolicy == int(DIPLO_ALLIANCE) {

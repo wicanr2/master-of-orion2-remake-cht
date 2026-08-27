@@ -18,6 +18,14 @@ func TestOriginalHumanTargetThreshold(t *testing.T) {
 	}
 }
 
+func TestOriginalHumanTargetHonorableBetrayalUsesDishonoredScore(t *testing.T) {
+	loyal, ok1 := OriginalHumanTargetBaseScore(0, 4, 0, 2, 0, 0, false, false)
+	betrayed, ok2 := OriginalHumanTargetBaseScore(0, 4, 0, 2, 0, 0, false, true)
+	if !ok1 || !ok2 || loyal-betrayed != 30 {
+		t.Fatalf("Honorable/Dishonored score=%d/%d ok=%v/%v，預期差 30", loyal, betrayed, ok1, ok2)
+	}
+}
+
 func TestOriginalHumanTargetOutcomeConsumesRollsInOriginalOrder(t *testing.T) {
 	rolls := []int{2, 1, 16}
 	roll := func(n int) int {

@@ -61,6 +61,7 @@ type aiSnapshot struct {
 	OriginalFoodDeficitTurns     int                            `json:"originalFoodDeficitTurns,omitempty"`
 	OriginalWarFlag60ERaw        int                            `json:"originalWarFlag60ERaw,omitempty"`
 	OriginalBlockadeGrievanceRaw int                            `json:"originalBlockadeGrievanceRaw,omitempty"`
+	OriginalHumanBetrayalRaw     bool                           `json:"originalHumanBetrayalRaw,omitempty"`
 	// LastRaidTurn 是這個 AI 上次突襲玩家的回合(見 ai_attack.go)。不存的話讀檔後
 	// 每個 AI 的間隔計時器都歸零,存檔當回合可能立刻又被突襲一次。
 	LastRaidTurn                        int `json:"last_raid_turn"`
@@ -329,6 +330,7 @@ func (s *GameSession) snapshot() sessionSnapshot {
 			OriginalFoodDeficitTurns:     a.OriginalFoodDeficitTurns,
 			OriginalWarFlag60ERaw:        a.OriginalWarFlag60ERaw,
 			OriginalBlockadeGrievanceRaw: a.OriginalBlockadeGrievanceRaw,
+			OriginalHumanBetrayalRaw:     a.OriginalHumanBetrayalRaw,
 			WantsAudience:                a.WantsAudience, AudienceReason: a.AudienceReason,
 			FleetStar: a.FleetStar, FleetPosSet: a.FleetPosSet,
 			FleetDestStar: a.FleetDestStar, FleetETA: a.FleetETA,
@@ -464,6 +466,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 			OriginalFoodDeficitTurns:     a.OriginalFoodDeficitTurns,
 			OriginalWarFlag60ERaw:        a.OriginalWarFlag60ERaw,
 			OriginalBlockadeGrievanceRaw: a.OriginalBlockadeGrievanceRaw,
+			OriginalHumanBetrayalRaw:     a.OriginalHumanBetrayalRaw,
 			WantsAudience:                a.WantsAudience, AudienceReason: a.AudienceReason,
 			FleetStar: a.FleetStar, FleetPosSet: a.FleetPosSet,
 			FleetDestStar: a.FleetDestStar, FleetETA: a.FleetETA,

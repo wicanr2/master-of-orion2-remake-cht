@@ -182,6 +182,19 @@ func TestTreatyStateKeepsFormalAndEconomicAgreementsSeparate(t *testing.T) {
 	if state.FormalPolicy != gamedata.DIPLO_NONE {
 		t.Fatalf("正式條約未終止: %+v", state)
 	}
+	if !s.AIPlayers[0].OriginalHumanBetrayalRaw {
+		t.Fatal("玩家破壞正式條約後，AI→玩家 +0x727 應永久設為 1")
+	}
+}
+
+func TestEconomicAgreementBreakDoesNotSetFormalBetrayal(t *testing.T) {
+	s := NewDemoSession()
+	target := s.AIPlayers[0].Name
+	s.DiplomacyResponse("trade", target)
+	s.DiplomacyResponse("break_trade", target)
+	if s.AIPlayers[0].OriginalHumanBetrayalRaw {
+		t.Fatal("只終止貿易不得寫正式條約 +0x727")
+	}
 }
 
 func TestTreatySummaryPartsAreTypedAndOrdered(t *testing.T) {

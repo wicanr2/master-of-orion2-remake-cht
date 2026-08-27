@@ -1149,6 +1149,8 @@
   threshold、RNG 消耗順序與四類結果純規則。`sub_544A1` 的完整 directional incident memory、
   排名／科技趨勢，以及 `sub_4F93B` 的科技／殖民地候選 producer 仍待 typed 化；四種 action
   kind、候選 gate、RNG 順序與 BC／科技／直接要求／殖民地 payload 核心已成為純規則。
+  Honorable AI 的玩家正式違約鏈亦已閉合：`break_formal` 永久寫 AI→玩家 `+0x727` 並存檔，
+  base score 由 Honorable +20 改讀 Dishonored -10；普通貿易解約不誤寫。
   目前願戰來源仍是明示的
   `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與

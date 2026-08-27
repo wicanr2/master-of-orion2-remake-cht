@@ -41,6 +41,7 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 		s.AIPlayers[0].OriginalFoodDeficitTurns = -32768
 		s.AIPlayers[0].OriginalWarFlag60ERaw = 1
 		s.AIPlayers[0].OriginalBlockadeGrievanceRaw = -7
+		s.AIPlayers[0].OriginalHumanBetrayalRaw = true
 		offer := aiPreferredLeader(45, false)
 		s.AIPlayers[0].LeaderOffer = &offer
 		s.AIPlayers[0].LeaderLastOfferTurn = s.Turn
@@ -127,10 +128,10 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 		t.Errorf("AI Lucky 事件計數器未保留：got=%d want=91", got.AIPlayers[0].LuckyEventCounter)
 	}
 	if got.AIPlayers[0].OriginalFoodDeficitTurns != -32768 || got.AIPlayers[0].OriginalWarFlag60ERaw != 1 ||
-		got.AIPlayers[0].OriginalBlockadeGrievanceRaw != -7 {
-		t.Errorf("AI 原版宣戰 raw 欄位未保留：food=%d raw60E=%d blockade6BF=%d",
+		got.AIPlayers[0].OriginalBlockadeGrievanceRaw != -7 || !got.AIPlayers[0].OriginalHumanBetrayalRaw {
+		t.Errorf("AI 原版宣戰 raw 欄位未保留：food=%d raw60E=%d blockade6BF=%d betrayal727=%v",
 			got.AIPlayers[0].OriginalFoodDeficitTurns, got.AIPlayers[0].OriginalWarFlag60ERaw,
-			got.AIPlayers[0].OriginalBlockadeGrievanceRaw)
+			got.AIPlayers[0].OriginalBlockadeGrievanceRaw, got.AIPlayers[0].OriginalHumanBetrayalRaw)
 	}
 	if got.Player.ResearchApplication != s.Player.ResearchApplication ||
 		got.Player.HasResearchApplication != s.Player.HasResearchApplication {

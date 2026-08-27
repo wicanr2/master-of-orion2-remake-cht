@@ -178,6 +178,9 @@ type AIOpponent struct {
 	// OriginalBlockadeGrievanceRaw 對應 AI 看向目前真人的 player+0x6BF 方向值；
 	// 人類艦隊在戰時封鎖 AI 殖民星時，由 Change_Relations_ reason raw 7 累加。
 	OriginalBlockadeGrievanceRaw int `json:"originalBlockadeGrievanceRaw,omitempty"`
+	// OriginalHumanBetrayalRaw 對應 AI 看向目前真人方向的 player+0x727；
+	// 玩家破壞既有正式條約後永久設為 true。
+	OriginalHumanBetrayalRaw bool `json:"originalHumanBetrayalRaw,omitempty"`
 }
 
 // cloneBuildings 回傳 m 的獨立拷貝(逐鍵複製),供需要「各自獨立、不共享底層 map」的初始化
@@ -1740,6 +1743,7 @@ func (s *GameSession) DiplomacyResponse(action, enemy string) DiplomacyResult {
 		if !ai.Treaty.endFormal() {
 			return diplomacyResult(DiploResultNoFormal, enemy)
 		}
+		ai.OriginalHumanBetrayalRaw = true
 		ai.adjustRelation(-30)
 		return diplomacyResult(DiploResultFormalEnded, enemy)
 	case "break_tribute":

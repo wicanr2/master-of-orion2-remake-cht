@@ -21,6 +21,9 @@
 9. `sub_4F93B` 外交 action selector 使用 kind 1=BC、2=科技、3=殖民地、4=直接要求；
    intensity 上限 10，候選 RNG 順序為 `3→3→2`，科技 payload 另消耗 `Random(3)`。
    BC 金額小於 100 時向下取整到 10，否則向下取整到 100，最後封頂 32000。
+10. Honorable source（personality 4）若記錄 target 曾破壞正式條約 `+0x727==1`，base score
+    必須改用 personality index 6 的 -10，不得仍使用 Honorable +20。玩家 `break_formal`
+    是單向永久 writer；`break_trade`／`break_research` 不是。
 
 ## DRAFT 邊界
 
@@ -35,6 +38,7 @@ incident memory、排名／科技趨勢，以及 `sub_4F93B` 的科技候選表�
 - contact turns 由 249 增至 250 後封頂，並與 cooldown 一起通過存檔往返。
 - 正負 score threshold、四類結果及每條路徑的 RNG 次數必須有純規則測試。
 - 外交 action 四種 kind、候選 gate、RNG 順序、BC 取整及科技索引必須有純規則測試。
+- 正式解約寫 +0x727、經存檔往返及 Honorable score 差 30；經濟協議解約須有負對照。
 - 成功派艦後 cooldown 必須落在 20–39，並經 JSON snapshot 往返不變。
 - 玩家軍力較高或 personality losing-ground chance 為 0，不得單獨形成固定 veto。
 - 艦隊抵達後的 formal policy 5／6 writer 與 10 回合重複結算保護維持既有測試。

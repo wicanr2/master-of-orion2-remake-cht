@@ -41,6 +41,10 @@
    `contactTurns/isqrt(score³+5)`，score 負時為 `contactTurns*(-score)`。尾端先消耗
    `Random_(3)` 建立 action count，再消耗 `Random_(100)`；即使接觸未滿 10，這兩次 RNG
    仍已發生。通過後依序選回傳 2、4、3 或 1；Repulsive gate 位於 type 2／4 之後。
+10. `0x5499F..0x549CF` 先讀 source personality；只有 personality 4（Honorable）且
+    AI→真人方向永久違約旗標 `+0x727==1` 時，改以 personality index 6（Dishonored）的
+    `word_181080=-10` 取代 index 4 的 `+20`。原版 `sub_5138E` 在 actor 破壞既有正式條約時
+    寫入對方看向 actor 的 `+0x727`；普通貿易／研究終止不屬此 writer。
 
 ## Remake 對映與限制
 
@@ -51,6 +55,9 @@
 - 已接純規則：七欄 personality score、可表示的 relation／formal policy／Charismatic／Diplomat
   基礎分、正負 threshold、原版 RNG 消耗順序與 0–4 結果分類。這些規則已有 fail-closed 測試，
   但尚未用不完整 score 取代 shell fallback。
+- 已接方向 writer：玩家成功執行 `break_formal` 後，AI→玩家的
+  `OriginalHumanBetrayalRaw` 永久設為 true 並通過存檔；Honorable base score 隨即從 +20 改讀
+  Dishonored -10。只終止貿易的反例不寫此旗標。
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。
