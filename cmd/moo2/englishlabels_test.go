@@ -45,7 +45,7 @@ func TestColonyBuildingLabel(t *testing.T) {
 }
 
 func TestEnglishUnknownLabelsUseSafeFallback(t *testing.T) {
-	if got := englishEnumName(climateNames[:], "舊存檔未知氣候"); got != "Unknown" {
+	if got := englishEnvironmentName("climate", 10, "舊存檔未知氣候"); got != "Unknown" {
 		t.Fatalf("未知行星 enum 的英文 fallback = %q, want Unknown", got)
 	}
 	if got := colonyBuildingLabel(i18n.English, "舊存檔未知建築"); got != "Unknown Build" {

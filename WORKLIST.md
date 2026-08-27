@@ -403,6 +403,16 @@
   精確控制流。證據與規格見
   [`docs/re/officer-screen-text-layout-audit-20260827.md`](docs/re/officer-screen-text-layout-audit-20260827.md) 與
   [`docs/spec/officer-screen-external-text.md`](docs/spec/officer-screen-external-text.md)。
+  殖民地總覽已完成第四十四個切片：殖民地列、建造進度／佇列／已建摘要、Empire Summary、
+  Planetary Info、Production Info、饑荒／估算標記與三種轉場均由 `ui.json` 供應；原先內嵌 Go
+  的 23 組氣候／重力／礦產／大小雙語顯示名及 unknown fallback 也移入 JSON，enum 只保留
+  穩定 key 映射。九列五欄與三個下方面板皆改走雙軸安全框，`postDraw` 不再直接呼叫字型。
+  runtime 量測證實 7px 繁中字墨仍高 16px：原建造＋已建兩行及 Planetary 六列必然重疊，故
+  建造資訊合為單列（主要建造置前），Planetary 移除與上表重複的殖民地序號，三面板統一為
+  五列×17px。雙語長環境名、建築名與六位數產出已通過 containment；懸停內容與 Empire
+  Summary 仍是明標手冊＋remake adapter，未升格為原版逐字／逐值 parity。證據與規格見
+  [`docs/re/colony-summary-text-layout-audit-20260827.md`](docs/re/colony-summary-text-layout-audit-20260827.md) 與
+  [`docs/spec/colony-summary-external-text.md`](docs/spec/colony-summary-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

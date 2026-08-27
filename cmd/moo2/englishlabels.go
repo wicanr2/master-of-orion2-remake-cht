@@ -23,10 +23,10 @@ func planetEnvironmentLabels(lang i18n.Lang, p shell.Planet) (climate, gravity, 
 	}
 	// 舊存檔只有中文字串；用既有雙語表反查，未知值才保留原文以免
 	// 把一個無法辨識的值誤翻成另一種行星。
-	return englishEnumName(climateNames[:], p.Climate),
-		englishEnumName(gravityNames[:], p.Gravity),
-		englishEnumName(mineralNames[:], p.Mineral),
-		englishEnumName(planetSizeNames[:], p.Size)
+	return englishEnvironmentName("climate", 10, p.Climate),
+		englishEnvironmentName("gravity", 3, p.Gravity),
+		englishEnvironmentName("minerals", 5, p.Mineral),
+		englishEnvironmentName("size", 5, p.Size)
 }
 
 func planetSpecialLabel(lang i18n.Lang, special gamedata.PlanetSpecial) string {
@@ -62,21 +62,23 @@ func colonyPlanetRows(lang i18n.Lang, p shell.Planet) []string {
 	return rows
 }
 
-// englishEnumName 將一組 [中文,英文] 值反查成英文；舊存檔若帶入未知中文 key，
-// 使用明確的 Unknown 安全 fallback，不讓英文畫面把未知資料原樣畫回中文。
-func englishEnumName(table [][2]string, zh string) string {
-	for _, pair := range table {
-		if pair[0] == zh {
-			return pair[1]
+// englishEnvironmentName 以 JSON catalog 反查舊存檔的中文環境字串；未知值使用
+// 明確的英文 fallback，不讓英文畫面把無法辨識的中文資料直接畫出。
+func englishEnvironmentName(category string, count int, value string) string {
+	for i := 0; i < count; i++ {
+		zh := planetEnvironmentLabel(i18n.Traditional, category, i)
+		en := planetEnvironmentLabel(i18n.English, category, i)
+		if value == zh {
+			return en
 		}
-		if pair[1] == zh {
-			return zh
+		if value == en {
+			return value
 		}
 	}
-	if strings.TrimSpace(zh) == "" {
+	if strings.TrimSpace(value) == "" {
 		return uiText(i18n.English, "common.unknown")
 	}
-	return englishSafeFallback(zh, uiText(i18n.English, "common.unknown"))
+	return englishSafeFallback(value, uiText(i18n.English, "common.unknown"))
 }
 
 // englishSafeFallback 保留已經是英文／自訂 ASCII 名稱的資料；只有無法翻譯的

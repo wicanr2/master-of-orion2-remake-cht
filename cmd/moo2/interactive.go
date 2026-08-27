@@ -1502,69 +1502,6 @@ func drawWormholeLinks(dst *ebiten.Image, stars []shell.Star, visible []bool) {
 // 中文化專案(~/master-of-orion)都沒有 MOO2 這幾組列舉的定案譯名,故用簡明直譯頂著顯示,
 // 不是官方在地化文本。**英文名**則直接取原版手冊用語,不是回譯。
 // 純展示層查表,不影響 engine/gamedata 任何邏輯或數值。
-// 四組列舉的中英名。英文是原版手冊的用語;中文是簡明直譯(見上方註解:沒有官方定案譯名
-// 可援引)。擺成 zh/en 成對的表而不是兩份 slice——加一種氣候時漏填英文會在這裡看得見。
-var (
-	climateNames = [...][2]string{
-		{"有毒", "Toxic"}, {"輻射", "Radiated"}, {"貧瘠", "Barren"}, {"沙漠", "Desert"},
-		{"凍原", "Tundra"}, {"海洋", "Ocean"}, {"沼澤", "Swamp"}, {"乾旱", "Arid"},
-		{"類地", "Terran"}, {"蓋亞", "Gaia"},
-	}
-	mineralNames = [...][2]string{
-		{"極貧礦", "Ultra Poor"}, {"貧礦", "Poor"}, {"普通", "Abundant"},
-		{"富礦", "Rich"}, {"極富礦", "Ultra Rich"},
-	}
-	planetSizeNames = [...][2]string{
-		{"極小", "Tiny"}, {"小型", "Small"}, {"中型", "Medium"},
-		{"大型", "Large"}, {"巨型", "Huge"},
-	}
-	gravityNames = [...][2]string{
-		{"低重力", "Low-G"}, {"標準", "Normal-G"}, {"高重力", "Heavy-G"},
-	}
-	unknownName = [2]string{"未知", "Unknown"}
-)
-
-// pickName 依語言挑一組 zh/en。
-func pickName(lang i18n.Lang, pair [2]string) string {
-	if lang == i18n.Traditional {
-		return pair[0]
-	}
-	return pair[1]
-}
-
-func climateName(lang i18n.Lang, c gamedata.PlanetClimate) string {
-	if int(c) >= 0 && int(c) < len(climateNames) {
-		return pickName(lang, climateNames[c])
-	}
-	return pickName(lang, unknownName)
-}
-
-func gravityName(lang i18n.Lang, g gamedata.PlanetGravity) string {
-	switch g {
-	case gamedata.LOW_G:
-		return pickName(lang, gravityNames[0])
-	case gamedata.NORMAL_G:
-		return pickName(lang, gravityNames[1])
-	case gamedata.HEAVY_G:
-		return pickName(lang, gravityNames[2])
-	}
-	return pickName(lang, unknownName)
-}
-
-func mineralsName(lang i18n.Lang, m gamedata.PlanetMinerals) string {
-	if int(m) >= 0 && int(m) < len(mineralNames) {
-		return pickName(lang, mineralNames[m])
-	}
-	return pickName(lang, unknownName)
-}
-
-func planetSizeName(lang i18n.Lang, sz gamedata.PlanetSize) string {
-	if int(sz) >= 0 && int(sz) < len(planetSizeNames) {
-		return pickName(lang, planetSizeNames[sz])
-	}
-	return pickName(lang, unknownName)
-}
-
 // shipClassLabel 把 shell 的艦體 key(中文)換成該語言要顯示的名字。
 // 英文用原版艦體名(dsHullOrder,順序一致)。
 func shipClassLabel(lang i18n.Lang, zhKey string) string {
@@ -1644,14 +1581,13 @@ func wrapToWidth(fnt *uifont.Font, s string, size, maxW float64) []string {
 func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 	// 點各殖民地的職務欄 → 重分配 1 名人口(農夫欄→多農夫、工人欄→多工人、科學家欄→多科學家);
 	// RETURN → 星系主畫面。列中心 y 與欄 x 對齊資料。
-	rowY := []float64{47, 78, 109, 140, 171, 202, 233, 264, 295}
 	hits := []hitRegion{{582, 452, 52, 20, "return"}}
 	if b.session != nil {
 		for i := range b.session.PlayerColonies {
-			if i >= len(rowY) {
+			if i >= len(colonySummaryRowY) {
 				break
 			}
-			top := int(rowY[i]) - 15
+			top := colonySummaryRowY[i] - 15
 			hits = append(hits,
 				// 殖民地名欄 → 進入單一殖民地畫面(原版 Main_Screen_ → Do_Colony_Screen_,
 				// COLONY 與 COLONY SUMMARY 是兩個不同畫面,見 colonyscreen.go 檔頭)。
@@ -1665,7 +1601,7 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 	}
 	onAction := func(a string) *origTransition {
 		if a == "return" {
-			return b.goTo(b.galaxy, "星系主畫面")
+			return b.goTo(b.galaxy, uiText(b.lang, "colony.summary.transition.galaxy"))
 		}
 		if len(a) == 2 && b.session != nil {
 			idx := int(a[1] - '0')
@@ -1681,9 +1617,9 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 			case 'n':
 				b.colonyIdx = idx
 				b.colonyListTop = 0
-				return b.goTo(b.colonyScreen, "殖民地")
+				return b.goTo(b.colonyScreen, uiText(b.lang, "colony.summary.transition.colony"))
 			}
-			return b.goTo(b.colonySummary, "殖民地總覽") // 重繪顯示新分配
+			return b.goTo(b.colonySummary, uiText(b.lang, "colony.summary.transition.summary")) // 重繪顯示新分配
 		}
 		return nil
 	}
@@ -1724,30 +1660,28 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 	// 即時殖民地資料填進表格列(欄位中心 x 對齊標題;列中心 y 經 PIL 量測,每列約 31px)。
 	if b.session != nil {
 		body := color.RGBA{214, 220, 235, 255}
-		rowY := []float64{47, 78, 109, 140, 171, 202, 233, 264, 295}
-		colX := struct{ name, far, wrk, sci float64 }{57, 163, 300, 440}
 		for i, c := range b.session.PlayerColonies {
-			if i >= len(rowY) {
+			if i >= len(colonySummaryRowY) {
 				break
 			}
-			y := rowY[i]
-			s.extras = append(s.extras,
-				extraText{x: colX.name, y: y, size: 13, text: fmt.Sprintf(b.tr("殖民地 %d", "Colony %d"), i+1), col: body, align: 1},
-				extraText{x: colX.far, y: y, size: 13, text: fmt.Sprintf("%d", c.Farmers), col: body, align: 1},
-				extraText{x: colX.wrk, y: y, size: 13, text: fmt.Sprintf("%d", c.Workers), col: body, align: 1},
-				extraText{x: colX.sci, y: y, size: 13, text: fmt.Sprintf("%d", c.Scientists), col: body, align: 1},
-			)
+			s.extras = append(s.extras, colonySummaryColumnRect(i, 0).centeredExtras(b.fnt,
+				colonySummaryText(b.lang, "colony.summary.row.name", i+1), 11, body)...)
+			for column, value := range []int{c.Farmers, c.Workers, c.Scientists} {
+				s.extras = append(s.extras, colonySummaryColumnRect(i, column+1).centeredExtras(b.fnt,
+					fmt.Sprintf("%d", value), 11, body)...)
+			}
 			// 建造欄:項目名 + 進度(空則顯示「—」提示可點)。
-			bt := "—"
+			bt := uiText(b.lang, "colony.summary.build.empty")
 			if i < len(b.session.Builds) && b.session.Builds[i].Name != "" {
 				bd := b.session.Builds[i]
-				bt = fmt.Sprintf("%s %d/%d", buildItemLabel(b.lang, bd.Name), bd.Progress, bd.Cost)
+				bt = colonySummaryText(b.lang, "colony.summary.build.progress",
+					buildItemLabel(b.lang, bd.Name), bd.Progress, bd.Cost)
 			}
 			if n := b.session.BuildQueueBacklogLen(i); n > 0 {
-				bt += fmt.Sprintf(" +%d", n) // 佇列還排著 n 項(原版 7 格 BUILD QUEUE)
+				bt += colonySummaryText(b.lang, "colony.summary.build.backlog", n)
 			}
-			s.extras = append(s.extras, extraText{x: 571, y: y, size: 12, text: bt, col: body, align: 1})
-			// 已建建築(顯示效果來源):在建造欄下方以小字列出。
+			builtLabel := ""
+			// 已建建築(顯示效果來源):與目前建造合併為一列，避免 30px 列內兩行 CJK 字墨重疊。
 			if i < len(b.session.ColonyBuildings) && len(b.session.ColonyBuildings[i]) > 0 {
 				names := make([]string, 0, len(b.session.ColonyBuildings[i]))
 				for n := range b.session.ColonyBuildings[i] {
@@ -1763,9 +1697,13 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 						displayNames[j] = colonyBuildingLabel(b.lang, name)
 					}
 				}
-				lbl := truncateToWidth(b.fnt, b.tr("已建:", "Built: ")+strings.Join(displayNames, b.tr("、", ", ")), 10, 110)
-				s.extras = append(s.extras, extraText{x: 571, y: y + 13, size: 10, text: lbl, col: color.RGBA{150, 200, 150, 255}, align: 1})
+				builtLabel = colonySummaryText(b.lang, "colony.summary.build.built",
+					strings.Join(displayNames, uiText(b.lang, "list.separator")))
 			}
+			if builtLabel != "" {
+				bt = colonySummaryText(b.lang, "colony.summary.build.with_built", bt, builtLabel)
+			}
+			s.extras = append(s.extras, colonySummaryBuildRect(i).centeredExtras(b.fnt, bt, 8, body)...)
 		}
 		// 第 4 格「Empire Summary」面板(x≈516-628,y≈349-438;見上方函式註解的
 		// manual 查證):原本是空黑格,補上既有 session 欄位算好的帝國概況文字
@@ -1777,14 +1715,14 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 		out := b.session.LastPlayerOutput
 		es := color.RGBA{205, 218, 235, 255}
 		lines := []string{
-			fmt.Sprintf(b.tr("國庫 %d BC", "Treasury %d BC"), b.session.Player.BC),
-			fmt.Sprintf(b.tr("收支 %+d/回合", "Net %+d/turn"), out.NetBC),
-			fmt.Sprintf(b.tr("人口 %d", "Pop %d"), pop),
-			fmt.Sprintf(b.tr("食物 %+d", "Food %+d"), out.TotalFood),
-			fmt.Sprintf(b.tr("研究 %d/回合", "Res %d/turn"), out.TotalResearch),
+			colonySummaryText(b.lang, "colony.summary.empire.treasury", b.session.Player.BC),
+			colonySummaryText(b.lang, "colony.summary.empire.net", out.NetBC),
+			colonySummaryText(b.lang, "colony.summary.empire.population", pop),
+			colonySummaryText(b.lang, "colony.summary.empire.food", out.TotalFood),
+			colonySummaryText(b.lang, "colony.summary.empire.research", out.TotalResearch),
 		}
 		for i, l := range lines {
-			s.extras = append(s.extras, extraText{x: 522, y: 360 + float64(i)*16, size: 11, text: l, col: es})
+			s.extras = append(s.extras, colonySummaryEmpireRect(i).leftExtras(b.fnt, l, 8, es)...)
 		}
 
 		// --- Planetary Info(第1格,x10-92)+ Production Info(第2格,x102-371) ---
@@ -1798,12 +1736,12 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 			}
 			ox, oy := float64(s.offsetX), float64(s.offsetY)
 			idx := 0
-			for i, ry := range rowY {
+			for i, ry := range colonySummaryRowY {
 				if i >= len(b.session.PlayerColonies) {
 					break
 				}
 				top, bottom := ry-15, ry+16
-				if float64(s.my) >= top && float64(s.my) < bottom && s.mx >= 10 && s.mx < 628 {
+				if s.my >= top && s.my < bottom && s.mx >= 10 && s.mx < 628 {
 					idx = i
 					break
 				}
@@ -1816,15 +1754,16 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 
 			// Planetary Info:窄格(82px),短標籤 + 值同行。
 			piLines := []string{
-				fmt.Sprintf(b.tr("殖民地%d", "Colony %d"), idx+1),
-				b.tr("氣候", "Cli ") + climateName(b.lang, c.Climate),
-				b.tr("重力", "Grav ") + gravityName(b.lang, c.PlanetGravity),
-				b.tr("礦產", "Min ") + mineralsName(b.lang, c.MineralRichness),
-				b.tr("大小", "Size ") + planetSizeName(b.lang, c.PlanetSize),
-				fmt.Sprintf(b.tr("上限%d", "Max %d"), c.PopMax),
+				colonySummaryText(b.lang, "colony.summary.planet.climate", climateName(b.lang, c.Climate)),
+				colonySummaryText(b.lang, "colony.summary.planet.gravity", gravityName(b.lang, c.PlanetGravity)),
+				colonySummaryText(b.lang, "colony.summary.planet.minerals", mineralsName(b.lang, c.MineralRichness)),
+				colonySummaryText(b.lang, "colony.summary.planet.size", planetSizeName(b.lang, c.PlanetSize)),
+				colonySummaryText(b.lang, "colony.summary.planet.max_population", c.PopMax),
 			}
 			for i, l := range piLines {
-				s.font.Draw(dst, l, 14+ox, 358+float64(i)*14+oy, 10, label)
+				r := colonySummaryPlanetInfoRect(i)
+				r.x, r.y = r.x+int(ox), r.y+int(oy)
+				r.drawLeft(dst, s.font, l, 7, label)
 			}
 
 			// Production Info:較寬(269px)。優先用 LastPlayerOutput.Colonies[idx](當回合已
@@ -1834,23 +1773,25 @@ func (b *sceneBuilder) colonySummary() (*overlayScreen, error) {
 			if idx < len(b.session.LastPlayerOutput.Colonies) {
 				co := b.session.LastPlayerOutput.Colonies[idx]
 				prodLines = []string{
-					fmt.Sprintf(b.tr("食物 產%d 耗%d 盈虧%+d", "Food +%d -%d net %+d"), co.Food, co.FoodConsumed, co.FoodSurplus),
-					fmt.Sprintf(b.tr("工業 毛%d 淨%d", "Industry gross %d net %d"), co.GrossIndustry, co.NetIndustry),
-					fmt.Sprintf(b.tr("研究 %d/回合", "Research %d/turn"), co.Research),
-					fmt.Sprintf(b.tr("污染清理耗產能 %d", "Pollution cleanup costs %d"), co.PollutionCleanupCost),
+					colonySummaryText(b.lang, "colony.summary.production.food", co.Food, co.FoodConsumed, co.FoodSurplus),
+					colonySummaryText(b.lang, "colony.summary.production.industry", co.GrossIndustry, co.NetIndustry),
+					colonySummaryText(b.lang, "colony.summary.production.research", co.Research),
+					colonySummaryText(b.lang, "colony.summary.production.pollution", co.PollutionCleanupCost),
 				}
 				if co.Starving {
-					prodLines = append(prodLines, b.tr("缺糧中(饑荒)", "STARVING"))
+					prodLines = append(prodLines, uiText(b.lang, "colony.summary.production.starving"))
 				}
 			} else {
 				prodLines = []string{
-					fmt.Sprintf(b.tr("食物(約) %d", "Food (est.) %d"), c.Farmers*c.FoodPerFarmer),
-					fmt.Sprintf(b.tr("工業(約) %d", "Industry (est.) %d"), c.Workers*c.IndustryPerWorker),
-					fmt.Sprintf(b.tr("研究(約) %d", "Research (est.) %d"), c.Scientists*c.ResearchPerScientist),
+					colonySummaryText(b.lang, "colony.summary.production.food_estimate", c.Farmers*c.FoodPerFarmer),
+					colonySummaryText(b.lang, "colony.summary.production.industry_estimate", c.Workers*c.IndustryPerWorker),
+					colonySummaryText(b.lang, "colony.summary.production.research_estimate", c.Scientists*c.ResearchPerScientist),
 				}
 			}
 			for i, l := range prodLines {
-				s.font.Draw(dst, l, 110+ox, 360+float64(i)*16+oy, 11, label)
+				r := colonySummaryProductionRect(i)
+				r.x, r.y = r.x+int(ox), r.y+int(oy)
+				r.drawLeft(dst, s.font, l, 9, label)
 			}
 		}
 	}
