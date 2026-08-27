@@ -16,9 +16,13 @@
 
 | 檔案 | 型態 | 可反編 |
 |---|---|---|
-| `Orion2.exe` | **DOS/4GW LE**,32-bit protected mode,Watcom C++ | ✅ 有符號 + Hex-Rays 可用 |
-| `ORION95.EXE` | PE32(Win95 版) | 可反編但**無符號** |
+| `Orion2.exe` | **DOS/4GW LE**，32-bit protected mode，Watcom C/C++ runtime | ✅ 有符號 + Hex-Rays 可用 |
+| `ORION95.EXE` | PE32 i386，Microsoft Visual C++ runtime 家族，linker 4.20 | 可反編但**無原版除錯符號** |
 | `SETSOUND.EXE` | DOS/4GW LE | 音效設定,非遊戲邏輯 |
+
+編譯器家族與可排除的 stack probe／例外處理 pattern 已由 IDA Pro 9.4 另行錨定，見
+`docs/re/compiler-runtime-fingerprint-20260827.md`。精確 Watcom／Visual C++ 小版本仍為未知；
+這些 compiler-generated helper 不計入 remake 玩法缺口，也不照譯成 Go。
 
 ## 符號表格式(逐位元組驗證)
 

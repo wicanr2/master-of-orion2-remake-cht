@@ -54,6 +54,11 @@
 
 - Windows API／Win95 平台內部行為不屬玩法 RE 範圍；只保留玩家可見契約，remake 採有標註的
   現代近似，不把作業系統內部實作列成 parity 缺口。
+- DOS 主程式已證實使用 Watcom C/C++ 32-bit runtime＋DOS/4GW；Win95 主程式已證實屬
+  Microsoft Visual C++ runtime 家族（PE linker 4.20），但兩者精確編譯器小版本仍未知。
+  stack probe、x87 初始化、C++／SEH 例外處理等 compiler-generated helper 已建立 bytes／xref
+  指紋並排除於玩法完整度之外；詳見
+  [`compiler-runtime-fingerprint-20260827.md`](re/compiler-runtime-fingerprint-20260827.md)。
 
 - 優先順序是原版執行檔立即數／交叉參照、官方手冊與 patch 資料、openorion2、
   LBX 形狀與有界原版實驗。

@@ -79,6 +79,10 @@
   二手 = 檔名、美術字樣、命名習慣、目錄結構。**一手永遠贏二手。**
 - **來源優先序** — 執行檔反組譯的立即數 > 手冊行文 > openorion2 原始碼 > LBX 資產尺寸交叉驗證
   > 量圖。靜態來源真的不夠才提 DOSBox 實測。
+- **編譯器／runtime 排除 pattern** — 由位址與邊界、bytes／指令形狀、IDA library 辨識及
+  caller role 共同錨定的編譯器生成 helper。DOS 的 Watcom stack probe／x87 初始化與 Win95 的
+  Microsoft stack probe／C++／SEH 例外處理不算玩法缺口，也不照譯到 Go；分析時跨過 helper，
+  繼續追玩家可見 consumer。_避免_：只憑函式名稱排除、把 middleware 整批當 runtime。
 
 ## 四、驗收
 

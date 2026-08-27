@@ -693,6 +693,11 @@
   衛生條目已加入按需入口。MOO2 的公式與位址仍只留在本專案證據，不污染通用知識。
 - [~] **建立玩家機制—IDA—Go 證據矩陣**：第二輪已由 14 列擴充為 31 列；一次性 IDA Pro 9.4 已確認原版 5,397 個函式；內建
   符號表有 4,201 個函式名稱，但名稱不等於資料流已研究。本輪高影響抽樣證實
+  編譯器／runtime helper 已另建排除索引：DOS 版證實為 Watcom C/C++ 32-bit＋DOS/4GW，
+  Win95 版證實為 Microsoft Visual C++ runtime 家族（PE linker 4.20）；stack probe、x87 初始化、
+  C++／SEH 例外處理不列為玩法缺口。精確編譯器小版本仍為未知，且舊 `symbols_ea.tsv` 的 runtime
+  區域錯位已記錄勘誤；後續矩陣只計玩家可見 consumer，詳見
+  `docs/re/compiler-runtime-fingerprint-20260827.md`。
   `Calc_Council_Vote_ @ 0x15B90` 為 `ceil(population/10)`，Go 已於 2026-08-24 依 IDAPython
   caller／consumer 證據修正；
   `Check_For_Council_Meeting_ @ 0x168AF` 已有原版排程與門檻，Go 卻以手冊未寫為由自訂 8 回合；

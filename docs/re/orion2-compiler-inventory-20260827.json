@@ -1,0 +1,2054 @@
+{
+  "address_space": "IDA linear EA",
+  "compiler_id": 3,
+  "input_path": "/work/Orion2.exe",
+  "input_sha256": "7ae2ac2e5904ca330009af2827279d889906b0b9b7a8854c38eb707a56e955b5",
+  "matches": [
+    {
+      "bytes_sha256": "451c9ce410c72d256a161642c2ae596b1214d7e6e62529c7e53ba1e2e6da21be",
+      "caller_count": 32,
+      "end_ea": "0xfe8da",
+      "is_library": true,
+      "name": "__wcpp_1_unwind_leave_",
+      "size": 5,
+      "start_ea": "0xfe8d5"
+    },
+    {
+      "bytes_sha256": "7b542b56cf75f517fc03a18dff77e4f679a90654731575b5d5477544281c6423",
+      "caller_count": 0,
+      "end_ea": "0x1101ed",
+      "is_library": true,
+      "name": "start",
+      "size": 725,
+      "start_ea": "0x10ff18"
+    },
+    {
+      "bytes_sha256": "fc9a8a48821d123d80153e8abb827ffb63a98e6965cb368b2c9c27467e87775b",
+      "caller_count": 1,
+      "end_ea": "0x1265f2",
+      "is_library": true,
+      "name": "mem_putc_",
+      "size": 19,
+      "start_ea": "0x1265df"
+    },
+    {
+      "bytes_sha256": "8c5307d47365b49fad6dcf188e917137c2f8d86dd9dae12976fbfc7953a5ecd9",
+      "caller_count": 710,
+      "end_ea": "0x126622",
+      "is_library": true,
+      "name": "sprintf_",
+      "size": 48,
+      "start_ea": "0x1265f2"
+    },
+    {
+      "bytes_sha256": "79734056ec8a0c8a32d4af6f7d2cb4e27764125b1e9c088d52b00071513a3aed",
+      "caller_count": 2,
+      "end_ea": "0x12668f",
+      "is_library": true,
+      "name": "atoi_",
+      "size": 109,
+      "start_ea": "0x126622"
+    },
+    {
+      "bytes_sha256": "327b8441ab2e17f393f060ccc7a724e6a01e7d92eb8730c6de67e9e242a5de42",
+      "caller_count": 2,
+      "end_ea": "0x126760",
+      "is_library": true,
+      "name": "__open_flags_",
+      "size": 209,
+      "start_ea": "0x12668f"
+    },
+    {
+      "bytes_sha256": "69c505e3a2154482985dc0f903aeefe8866af6354c2aa6c0dc2d79ed8aa13543",
+      "caller_count": 2,
+      "end_ea": "0x126824",
+      "is_library": true,
+      "name": "__doopen_",
+      "size": 196,
+      "start_ea": "0x126760"
+    },
+    {
+      "bytes_sha256": "aa8f9fe8fe525c6493e54dc0bf777dc98c8b4abb1ebd49bd0213d084d999f1b3",
+      "caller_count": 1,
+      "end_ea": "0x12685d",
+      "is_library": true,
+      "name": "_fsopen_",
+      "size": 57,
+      "start_ea": "0x126824"
+    },
+    {
+      "bytes_sha256": "63a083707c130dd296dfc725b38effb1e33abd43fa78327c5ae76131ab029a5b",
+      "caller_count": 74,
+      "end_ea": "0x126867",
+      "is_library": true,
+      "name": "fopen_",
+      "size": 10,
+      "start_ea": "0x12685d"
+    },
+    {
+      "bytes_sha256": "bba0b9c8075e2665f33a0008362af57a464dc0b3bee90a681c0f4cc390fa7bed",
+      "caller_count": 1,
+      "end_ea": "0x1268cf",
+      "is_library": true,
+      "name": "close_file_",
+      "size": 104,
+      "start_ea": "0x126867"
+    },
+    {
+      "bytes_sha256": "600ed459dbbec31563554e7d9020cac8ef4efdc95f2cb1e26d502eab14213f0f",
+      "caller_count": 0,
+      "end_ea": "0x126911",
+      "is_library": true,
+      "name": "freopen_",
+      "size": 66,
+      "start_ea": "0x1268cf"
+    },
+    {
+      "bytes_sha256": "52f4bef02c2920236021eeda91b5c1aaffb97d2264831beac9349760123382aa",
+      "caller_count": 3,
+      "end_ea": "0x12697a",
+      "is_library": true,
+      "name": "fgets_",
+      "size": 105,
+      "start_ea": "0x126911"
+    },
+    {
+      "bytes_sha256": "2957d9798a8213ae58fd3b19553747a08ac266919934308ce28d1ef7cded0501",
+      "caller_count": 74,
+      "end_ea": "0x1269a7",
+      "is_library": true,
+      "name": "fclose_",
+      "size": 45,
+      "start_ea": "0x12697a"
+    },
+    {
+      "bytes_sha256": "9e809256cc1a22307702e652785712783d7e797b6c320a7e4f5b665883db073d",
+      "caller_count": 2,
+      "end_ea": "0x1269bc",
+      "is_library": true,
+      "name": "__shutdown_stream_",
+      "size": 21,
+      "start_ea": "0x1269a7"
+    },
+    {
+      "bytes_sha256": "d23d267fbffd6753e152a0183bb527fbe18f93292e4fe7bf3ca7a63c88fbf95a",
+      "caller_count": 3,
+      "end_ea": "0x1269c8",
+      "is_library": true,
+      "name": "__hex_",
+      "size": 12,
+      "start_ea": "0x1269bc"
+    },
+    {
+      "bytes_sha256": "0c7f0a3c23e0e5b294efc2c273a369469ca71310072c53e964c33b3c1a423519",
+      "caller_count": 1,
+      "end_ea": "0x126a2d",
+      "is_library": true,
+      "name": "__MkTmpFile_",
+      "size": 101,
+      "start_ea": "0x1269c8"
+    },
+    {
+      "bytes_sha256": "1ae25170f4b13410d5abe5b3069e65d94fef0d0490a6beebf0553aaaf2f0f309",
+      "caller_count": 2,
+      "end_ea": "0x126abd",
+      "is_library": true,
+      "name": "__doclose_",
+      "size": 144,
+      "start_ea": "0x126a2d"
+    },
+    {
+      "bytes_sha256": "7cda5ed45e61636c8e3d18e829298ac34588cd7e53f2a31df7c42971f28dce7e",
+      "caller_count": 4,
+      "end_ea": "0x1288c0",
+      "is_library": true,
+      "name": "utoa_",
+      "size": 74,
+      "start_ea": "0x128876"
+    },
+    {
+      "bytes_sha256": "8c9b2a012f2a5662b7561a999525b356b841996c269c140a853a321f5414eec9",
+      "caller_count": 81,
+      "end_ea": "0x1288db",
+      "is_library": true,
+      "name": "itoa_",
+      "size": 27,
+      "start_ea": "0x1288c0"
+    },
+    {
+      "bytes_sha256": "c30da08fd72446c339607869e4ab41cfa0eff0f52c804d9e82e7c8ba94899faf",
+      "caller_count": 120,
+      "end_ea": "0x128ab6",
+      "is_library": true,
+      "name": "fread_",
+      "size": 475,
+      "start_ea": "0x1288db"
+    },
+    {
+      "bytes_sha256": "e1bb125f736118af8cb392e308cbf68630169cada23d288f5adad0c3eb4fdc8c",
+      "caller_count": 461,
+      "end_ea": "0x129c88",
+      "is_library": true,
+      "name": "memset_",
+      "size": 24,
+      "start_ea": "0x129c70"
+    },
+    {
+      "bytes_sha256": "8600f52e253b0c13909150448902ade4d86281381cff42bb9cee9860e40db6ab",
+      "caller_count": 1,
+      "end_ea": "0x129cab",
+      "is_library": true,
+      "name": "strerror_",
+      "size": 23,
+      "start_ea": "0x129c94"
+    },
+    {
+      "bytes_sha256": "148c134c049943c7cb3a79796d2b04bdd589959fbad50cfb49178c03a518bfbb",
+      "caller_count": 134,
+      "end_ea": "0x129e6b",
+      "is_library": true,
+      "name": "fwrite_",
+      "size": 448,
+      "start_ea": "0x129cab"
+    },
+    {
+      "bytes_sha256": "305813effce5b701a2e6631f5f5173c39e1023246e7f5b1d8f99f5e809d2855d",
+      "caller_count": 2,
+      "end_ea": "0x129ea6",
+      "is_library": true,
+      "name": "access_",
+      "size": 59,
+      "start_ea": "0x129e6b"
+    },
+    {
+      "bytes_sha256": "c0ccd95ea608c8f43848c52014da5b47312d1a08cfcc3bb79f89fb7bfdfd69a9",
+      "caller_count": 2,
+      "end_ea": "0x129ee8",
+      "is_library": true,
+      "name": "__update_buffer_",
+      "size": 66,
+      "start_ea": "0x129ea6"
+    },
+    {
+      "bytes_sha256": "b8d728aed514a3cab75a57ff72fcd9e087952bfb1b4809430b2d2930841447af",
+      "caller_count": 55,
+      "end_ea": "0x129fe4",
+      "is_library": true,
+      "name": "fseek_",
+      "size": 252,
+      "start_ea": "0x129ee8"
+    },
+    {
+      "bytes_sha256": "a3284286cb317d2bef5ea494bbca84062e7a77ff26677805ddb6e1c44e663d3b",
+      "caller_count": 3,
+      "end_ea": "0x129ff9",
+      "is_library": true,
+      "name": "fflush_",
+      "size": 16,
+      "start_ea": "0x129fe9"
+    },
+    {
+      "bytes_sha256": "a4ff6395f59183110985f903e81c46b19322cb0e0774be1ab3f8ad7aa4b90349",
+      "caller_count": 5,
+      "end_ea": "0x133e9c",
+      "is_library": true,
+      "name": "byteswap_",
+      "size": 38,
+      "start_ea": "0x133e76"
+    },
+    {
+      "bytes_sha256": "f3f08da1a7531387721fbe59659f195447e30ce0874b8effe3b467ea84be63a4",
+      "caller_count": 4,
+      "end_ea": "0x133ef4",
+      "is_library": true,
+      "name": "med3_",
+      "size": 88,
+      "start_ea": "0x133e9c"
+    },
+    {
+      "bytes_sha256": "08e9650fafa4c3815f14e8efc579d35ab4d06c8cf89461d9c62bf118e8170a66",
+      "caller_count": 40,
+      "end_ea": "0x13432d",
+      "is_library": true,
+      "name": "qsort_",
+      "size": 1081,
+      "start_ea": "0x133ef4"
+    },
+    {
+      "bytes_sha256": "e2de07c2e8ce74e666f01edb1271e76c31a6a73b59b63c5fc7fbc0628e6a21d5",
+      "caller_count": 36,
+      "end_ea": "0x138c31",
+      "is_library": true,
+      "name": "strcmp_",
+      "size": 161,
+      "start_ea": "0x138b90"
+    },
+    {
+      "bytes_sha256": "e772694b4c32fd386b5e944d655235fd46f44d81f1185ebeff1c830e87cc78f4",
+      "caller_count": 1,
+      "end_ea": "0x138e66",
+      "is_library": true,
+      "name": "cget_file_",
+      "size": 84,
+      "start_ea": "0x138e12"
+    },
+    {
+      "bytes_sha256": "00d1cbe3ea7c9fe5b275aac0108625147518a79e253f59391258c46c98a330cc",
+      "caller_count": 1,
+      "end_ea": "0x138e6e",
+      "is_library": true,
+      "name": "uncget_file_",
+      "size": 8,
+      "start_ea": "0x138e66"
+    },
+    {
+      "bytes_sha256": "28d0cab2bc836eed1688ed5fe739d9fc6e5a1990b883052c91c4ae94f09a92e4",
+      "caller_count": 1,
+      "end_ea": "0x138e95",
+      "is_library": true,
+      "name": "vfscanf_",
+      "size": 39,
+      "start_ea": "0x138e6e"
+    },
+    {
+      "bytes_sha256": "b377c01a30bc6db18300a67a8bc43ff63c22d2e8cd07f26caf3931061ad8ab38",
+      "caller_count": 1,
+      "end_ea": "0x138eb6",
+      "is_library": true,
+      "name": "fscanf_",
+      "size": 33,
+      "start_ea": "0x138e95"
+    },
+    {
+      "bytes_sha256": "164e7ec0f0071a4a13bc08a3816496dfb82750f63c133bc760c7c661be257aa7",
+      "caller_count": 1,
+      "end_ea": "0x138f31",
+      "is_library": true,
+      "name": "fputs_",
+      "size": 123,
+      "start_ea": "0x138eb6"
+    },
+    {
+      "bytes_sha256": "64b39b42ecef516f64ab5db044fa9028e0591d59af23f14583d393fbc4cd6b2c",
+      "caller_count": 32,
+      "end_ea": "0x139a4c",
+      "is_library": true,
+      "name": "memmove_",
+      "size": 77,
+      "start_ea": "0x1399ff"
+    },
+    {
+      "bytes_sha256": "a183438093cac8b3344939381e2961e15a14279b12a08f773d0589a78cbbd12b",
+      "caller_count": 7,
+      "end_ea": "0x139a69",
+      "is_library": true,
+      "name": "unknown_libname_1",
+      "size": 29,
+      "start_ea": "0x139a4c"
+    },
+    {
+      "bytes_sha256": "67747acb9672ee49e90bc90b5adf551d38ca96e4f492d74ae36e4d55ced9209e",
+      "caller_count": 2,
+      "end_ea": "0x139a85",
+      "is_library": true,
+      "name": "unknown_libname_2",
+      "size": 28,
+      "start_ea": "0x139a69"
+    },
+    {
+      "bytes_sha256": "251447ee91a9067dcd6ab96703133f617565974cd6c4819021760c4688c91abf",
+      "caller_count": 0,
+      "end_ea": "0x139a88",
+      "is_library": true,
+      "name": "unknown_libname_3",
+      "size": 3,
+      "start_ea": "0x139a85"
+    },
+    {
+      "bytes_sha256": "4bcfbb250620aab40bd7a16658b83e71bc6cd84974953e268504426b74ec3903",
+      "caller_count": 2,
+      "end_ea": "0x139aab",
+      "is_library": true,
+      "name": "sub_139A88",
+      "size": 35,
+      "start_ea": "0x139a88"
+    },
+    {
+      "bytes_sha256": "eb9bed6d66cee5cc6afcd7c3a2bcf713b2fd419181e1691bbae3f6468f4c4958",
+      "caller_count": 1,
+      "end_ea": "0x139ace",
+      "is_library": true,
+      "name": "sub_139AAB",
+      "size": 35,
+      "start_ea": "0x139aab"
+    },
+    {
+      "bytes_sha256": "591e290c35107ce4ac72f7618362d7ef94d2744102fc9b80516b62d88d974d96",
+      "caller_count": 6,
+      "end_ea": "0x139af3",
+      "is_library": true,
+      "name": "strncpy_",
+      "size": 37,
+      "start_ea": "0x139ace"
+    },
+    {
+      "bytes_sha256": "cb7c0b8305a91f1ac25089bea4846c2224a52ea9efa8a784bf3708de0eea7b43",
+      "caller_count": 10,
+      "end_ea": "0x13ad07",
+      "is_library": true,
+      "name": "strncmp_",
+      "size": 41,
+      "start_ea": "0x13acde"
+    },
+    {
+      "bytes_sha256": "85b3d2864fb18c06010ba9299e9790f05b873a8df017f1c563dc1f1469aaa915",
+      "caller_count": 13,
+      "end_ea": "0x13c8dd",
+      "is_library": true,
+      "name": "stricmp_",
+      "size": 71,
+      "start_ea": "0x13c896"
+    },
+    {
+      "bytes_sha256": "fc9a8a48821d123d80153e8abb827ffb63a98e6965cb368b2c9c27467e87775b",
+      "caller_count": 1,
+      "end_ea": "0x13c8f0",
+      "is_library": true,
+      "name": "mem_putc__0",
+      "size": 19,
+      "start_ea": "0x13c8dd"
+    },
+    {
+      "bytes_sha256": "bc8134dc548d422d88fbcb594631906efb352b1d6857b8be3d883985e7882121",
+      "caller_count": 3,
+      "end_ea": "0x13c905",
+      "is_library": true,
+      "name": "vsprintf_",
+      "size": 21,
+      "start_ea": "0x13c8f0"
+    },
+    {
+      "bytes_sha256": "bc8950ceb2dfc1506f6d98a4785c9b4cf3327e9c79cda7f9b9a35bd729ca8082",
+      "caller_count": 4,
+      "end_ea": "0x13c934",
+      "is_library": true,
+      "name": "time_",
+      "size": 47,
+      "start_ea": "0x13c905"
+    },
+    {
+      "bytes_sha256": "1d8b147cd45eeb7971bd6ee5e2c009df4c8a1634798f7d6f0bc9057469fce2ca",
+      "caller_count": 2,
+      "end_ea": "0x13c985",
+      "is_library": true,
+      "name": "_localtime_",
+      "size": 81,
+      "start_ea": "0x13c934"
+    },
+    {
+      "bytes_sha256": "60d0c2fe3e9f27629d70271257cad36dc9b7b557e83a95bfe5fc815213593c2f",
+      "caller_count": 3,
+      "end_ea": "0x13c992",
+      "is_library": true,
+      "name": "localtime_",
+      "size": 13,
+      "start_ea": "0x13c985"
+    },
+    {
+      "bytes_sha256": "f28adda0ba951d92b7695e6b0ef3a62374033a93839e0124ed7357f424739207",
+      "caller_count": 6,
+      "end_ea": "0x13ca1b",
+      "is_library": true,
+      "name": "fgetc_",
+      "size": 137,
+      "start_ea": "0x13c992"
+    },
+    {
+      "bytes_sha256": "ea07c7010fcbc8082af0da2d2c03c6046e11cd87c3212bf38ccfaebee6d578c1",
+      "caller_count": 2,
+      "end_ea": "0x13ca4a",
+      "is_library": true,
+      "name": "__filbuf_",
+      "size": 47,
+      "start_ea": "0x13ca1b"
+    },
+    {
+      "bytes_sha256": "e9881925ecb9cd2403e2e88faaf8366761b14e9bb6d269c3565c85cd1524749d",
+      "caller_count": 4,
+      "end_ea": "0x13caf6",
+      "is_library": true,
+      "name": "__fill_buffer_",
+      "size": 172,
+      "start_ea": "0x13ca4a"
+    },
+    {
+      "bytes_sha256": "d28493aa2ba396da07c982d8bff8e76c248af07a9f2b874278ca4346563e5e03",
+      "caller_count": 42,
+      "end_ea": "0x13cb78",
+      "is_library": true,
+      "name": "_nfree_",
+      "size": 130,
+      "start_ea": "0x13caf6"
+    },
+    {
+      "bytes_sha256": "709ce997ac79090905903e799d181772c0456822dcee95af9ba5696df41f09a3",
+      "caller_count": 40,
+      "end_ea": "0x13cc5b",
+      "is_library": true,
+      "name": "_nmalloc_",
+      "size": 227,
+      "start_ea": "0x13cb78"
+    },
+    {
+      "bytes_sha256": "b4d460be978b80eba17160f338372e375c48b5d328c230be2f6ad16f320b5e40",
+      "caller_count": 6,
+      "end_ea": "0x13e238",
+      "is_library": true,
+      "name": "toupper_",
+      "size": 14,
+      "start_ea": "0x13e22a"
+    },
+    {
+      "bytes_sha256": "12faceab764ccdbbbeeaffb3213def7775e07263b5d2a97f620a888f07514172",
+      "caller_count": 4,
+      "end_ea": "0x13e246",
+      "is_library": true,
+      "name": "tolower_",
+      "size": 14,
+      "start_ea": "0x13e238"
+    },
+    {
+      "bytes_sha256": "9c00cb3b642bdb5d7fddd4656c1e89371990f9bd31509778745aeb0d5a4fb846",
+      "caller_count": 3,
+      "end_ea": "0x13ee7e",
+      "is_library": true,
+      "name": "strupr_",
+      "size": 37,
+      "start_ea": "0x13ee59"
+    },
+    {
+      "bytes_sha256": "c108d660d64cc13e225d49aa2bec7ecdd78a8995a17883cf5e8bd93f1fce70c4",
+      "caller_count": 1,
+      "end_ea": "0x13ef66",
+      "is_library": true,
+      "name": "__CMain",
+      "size": 74,
+      "start_ea": "0x13ef1c"
+    },
+    {
+      "bytes_sha256": "902e31dc711d7eb13d1734a925372331f6c823ac3331aa9d9bd28d139c4023b6",
+      "caller_count": 1,
+      "end_ea": "0x13efb7",
+      "is_library": true,
+      "name": "__InitRtns",
+      "size": 75,
+      "start_ea": "0x13ef6c"
+    },
+    {
+      "bytes_sha256": "8c5d3e5dfc2800bd05a5350baeee3493fb1d8fff54007c56dcaa56a61a49636a",
+      "caller_count": 1,
+      "end_ea": "0x13f006",
+      "is_library": true,
+      "name": "__FiniRtns",
+      "size": 79,
+      "start_ea": "0x13efb7"
+    },
+    {
+      "bytes_sha256": "e69bf71ef7fb7b01c8d3181a3786afce696ebcd3933f223c3ed394e5b1b83b21",
+      "caller_count": 1,
+      "end_ea": "0x13f0c8",
+      "is_library": true,
+      "name": "__Init_Argv_",
+      "size": 193,
+      "start_ea": "0x13f007"
+    },
+    {
+      "bytes_sha256": "d594ac362a538355ca29c888f18ee15c044ef6eb8132e02ea109b991c699cbe2",
+      "caller_count": 2,
+      "end_ea": "0x13f1d7",
+      "is_library": true,
+      "name": "_SplitParms_",
+      "size": 271,
+      "start_ea": "0x13f0c8"
+    },
+    {
+      "bytes_sha256": "46f8a1ea596e478b02d93c7b5d00a1b9d5a793868384cf400d72d05f0f12d069",
+      "caller_count": 743,
+      "end_ea": "0x13f1f0",
+      "is_library": true,
+      "name": "__CHK",
+      "size": 16,
+      "start_ea": "0x13f1e0"
+    },
+    {
+      "bytes_sha256": "e598d0c3ba86d917b177d7adde0556aa99bc355543c57aee0a3e50b684dd7e99",
+      "caller_count": 0,
+      "end_ea": "0x13f1f3",
+      "is_library": true,
+      "name": "__GRO",
+      "size": 3,
+      "start_ea": "0x13f1f0"
+    },
+    {
+      "bytes_sha256": "95bcb7a4b0f7af31e2cf2b597e539d856322243571682159cd4a3d62ccc83950",
+      "caller_count": 1,
+      "end_ea": "0x13f211",
+      "is_library": true,
+      "name": "__STK",
+      "size": 30,
+      "start_ea": "0x13f1f3"
+    },
+    {
+      "bytes_sha256": "a35cc7e7a7fc471ac807b2354e473f5a8ef52212a4c0f883a9e338778f54db90",
+      "caller_count": 2,
+      "end_ea": "0x13f220",
+      "is_library": true,
+      "name": "__STKOVERFLOW_",
+      "size": 15,
+      "start_ea": "0x13f211"
+    },
+    {
+      "bytes_sha256": "da48d3536673a26592954077f828ef18ed7f21adeb447797d5d67ae8a35672ca",
+      "caller_count": 32,
+      "end_ea": "0x13f253",
+      "is_library": true,
+      "name": "strcat_",
+      "size": 51,
+      "start_ea": "0x13f220"
+    },
+    {
+      "bytes_sha256": "26ca6e97626db990c8aa0689f27e28b694e6085edf0af0b5d4a5ff34e992c332",
+      "caller_count": 56,
+      "end_ea": "0x13f270",
+      "is_library": true,
+      "name": "int386_",
+      "size": 29,
+      "start_ea": "0x13f253"
+    },
+    {
+      "bytes_sha256": "f13448ffd18d2651fc8e09719dd7d4fef0948544b990eda8a2dca13235d867c4",
+      "caller_count": 1,
+      "end_ea": "0x13f2ba",
+      "is_library": true,
+      "name": "sound_",
+      "size": 74,
+      "start_ea": "0x13f270"
+    },
+    {
+      "bytes_sha256": "2014171c05ae19cf4d3e2b3d847691ce29759fbc730b123c2f3ba2bfea8f2a31",
+      "caller_count": 1,
+      "end_ea": "0x13f2cb",
+      "is_library": true,
+      "name": "nosound_",
+      "size": 17,
+      "start_ea": "0x13f2ba"
+    },
+    {
+      "bytes_sha256": "8fab8bcb4ffb9f7b0ba6cf1eabe3e8647f2527669fca67b4c32810f30f009940",
+      "caller_count": 15,
+      "end_ea": "0x13f2f3",
+      "is_library": true,
+      "name": "printf_",
+      "size": 34,
+      "start_ea": "0x13f2d1"
+    },
+    {
+      "bytes_sha256": "ae3f4619b0413d70d3004b9131c3752153074e45725be13b9a148978895e359e",
+      "caller_count": 13,
+      "end_ea": "0x13f2f4",
+      "is_library": true,
+      "name": "__null_int23_exit_",
+      "size": 1,
+      "start_ea": "0x13f2f3"
+    },
+    {
+      "bytes_sha256": "7ea99a78469175fac7feb4da2264d2b14c1aeada75c1fd9c8ea2d81c8d739922",
+      "caller_count": 17,
+      "end_ea": "0x13f30a",
+      "is_library": true,
+      "name": "exit_",
+      "size": 22,
+      "start_ea": "0x13f2f4"
+    },
+    {
+      "bytes_sha256": "6347951d5d39f5b7ee0e9da9e996151a59ad8519337e673932037f5a6982798e",
+      "caller_count": 1,
+      "end_ea": "0x13f322",
+      "is_library": true,
+      "name": "_exit_",
+      "size": 22,
+      "start_ea": "0x13f30c"
+    },
+    {
+      "bytes_sha256": "07e1afa2d230bfc46af4254710923b68bd58078981cb444dfca9bca9ee1f73a9",
+      "caller_count": 2,
+      "end_ea": "0x13f35a",
+      "is_library": true,
+      "name": "_memavl_",
+      "size": 56,
+      "start_ea": "0x13f322"
+    },
+    {
+      "bytes_sha256": "fbd8186ce7a2f04d3c02a0f62ce10a420a10419851eac33e5139f39e2dace402",
+      "caller_count": 26,
+      "end_ea": "0x13f37f",
+      "is_library": true,
+      "name": "memcpy_",
+      "size": 37,
+      "start_ea": "0x13f35a"
+    },
+    {
+      "bytes_sha256": "8c05089d4f927f7113c961ee898d082d5b911b7bd41912ce0b9a12959a23501c",
+      "caller_count": 65,
+      "end_ea": "0x13f39e",
+      "is_library": true,
+      "name": "strcpy_",
+      "size": 31,
+      "start_ea": "0x13f37f"
+    },
+    {
+      "bytes_sha256": "1df45849af24dee32b56a3a97ebb98dbb1125a4fdd39b750d0a399430454e1ae",
+      "caller_count": 2,
+      "end_ea": "0x13f3b9",
+      "is_library": true,
+      "name": "_dos_getfileattr_",
+      "size": 27,
+      "start_ea": "0x13f39e"
+    },
+    {
+      "bytes_sha256": "49bd21f7a364df61c9968e8887774ef12507c67cc60ec0ade04cb127e65f221c",
+      "caller_count": 1,
+      "end_ea": "0x13f3f9",
+      "is_library": true,
+      "name": "_dos_getdiskfree_",
+      "size": 45,
+      "start_ea": "0x13f3cc"
+    },
+    {
+      "bytes_sha256": "43d7835af111453f8d18fc4782727e128689d6128488badfaabe7ef77cc8cd2c",
+      "caller_count": 1,
+      "end_ea": "0x13f486",
+      "is_library": true,
+      "name": "getcwd_",
+      "size": 136,
+      "start_ea": "0x13f3fe"
+    },
+    {
+      "bytes_sha256": "4c798122763f9874160c5dc53566012220eda9e35b62470f74efa9be02db64d5",
+      "caller_count": 13,
+      "end_ea": "0x144348",
+      "is_library": true,
+      "name": "strlen_",
+      "size": 25,
+      "start_ea": "0x14432f"
+    },
+    {
+      "bytes_sha256": "e9194199a3d98866f4e4769408467a786fa9aa72571fa6120ce1f977c4e1b9da",
+      "caller_count": 1,
+      "end_ea": "0x144906",
+      "is_library": true,
+      "name": "_Full_at_exit_rtn_",
+      "size": 59,
+      "start_ea": "0x1448cb"
+    },
+    {
+      "bytes_sha256": "78ad2c1e9a0da954aa023460696670b6056432ea3b593741c5bfb85bbbaa1470",
+      "caller_count": 3,
+      "end_ea": "0x144942",
+      "is_library": true,
+      "name": "atexit_",
+      "size": 60,
+      "start_ea": "0x144906"
+    },
+    {
+      "bytes_sha256": "7933549b3c960028da2d6d2a128e94226649d17cf1d898f6e49f041a03fe1e44",
+      "caller_count": 3,
+      "end_ea": "0x1449b1",
+      "is_library": true,
+      "name": "ultoa_",
+      "size": 74,
+      "start_ea": "0x144967"
+    },
+    {
+      "bytes_sha256": "8c9b2a012f2a5662b7561a999525b356b841996c269c140a853a321f5414eec9",
+      "caller_count": 3,
+      "end_ea": "0x1449cc",
+      "is_library": true,
+      "name": "ltoa_",
+      "size": 27,
+      "start_ea": "0x1449b1"
+    },
+    {
+      "bytes_sha256": "bfededee87fdcb6e1f4e946a034e0ce7812266946a2f918e1a02ace527df2288",
+      "caller_count": 13,
+      "end_ea": "0x144a63",
+      "is_library": true,
+      "name": "int386x_",
+      "size": 25,
+      "start_ea": "0x144a4a"
+    },
+    {
+      "bytes_sha256": "0f8cd4e92efcf33e877d5f08dcc1da4d50b2920fbf365cc08261d7b65c72a997",
+      "caller_count": 3,
+      "end_ea": "0x146756",
+      "is_library": true,
+      "name": "__prtf_",
+      "size": 927,
+      "start_ea": "0x1463b7"
+    },
+    {
+      "bytes_sha256": "fa72590c2ee16704e2aef31b4e459635bfa54a81d3f6abe4bd4ee06026f46151",
+      "caller_count": 1,
+      "end_ea": "0x146894",
+      "is_library": true,
+      "name": "getprintspecs_",
+      "size": 318,
+      "start_ea": "0x146756"
+    },
+    {
+      "bytes_sha256": "51fabeee716e7dede757d9abc8ab1f9f5019321ef1a86732fdaf6f2f08d4b730",
+      "caller_count": 1,
+      "end_ea": "0x1468f3",
+      "is_library": true,
+      "name": "evalflags_",
+      "size": 95,
+      "start_ea": "0x146894"
+    },
+    {
+      "bytes_sha256": "9d8bc97444cfd457f1466e3ddcfe23318765644fb52885eaac30f33960efd1d5",
+      "caller_count": 2,
+      "end_ea": "0x146917",
+      "is_library": true,
+      "name": "far_strlen_",
+      "size": 36,
+      "start_ea": "0x1468f3"
+    },
+    {
+      "bytes_sha256": "3008369860a810c886838e903eacaa2d8656ad3cb25493b090a679fe574cb3c6",
+      "caller_count": 1,
+      "end_ea": "0x14693a",
+      "is_library": true,
+      "name": "far_other_strlen_",
+      "size": 35,
+      "start_ea": "0x146917"
+    },
+    {
+      "bytes_sha256": "6a80d0118608b3603b50b0bc0600f0f8ae643f6a9ad84875eb10024ed24f7624",
+      "caller_count": 2,
+      "end_ea": "0x146998",
+      "is_library": true,
+      "name": "fmt4hex_",
+      "size": 94,
+      "start_ea": "0x14693a"
+    },
+    {
+      "bytes_sha256": "6349c311e3a5ba284c9427bb53dc4292f5ee6fdd260db1f4c6043b521fad785b",
+      "caller_count": 1,
+      "end_ea": "0x146a8d",
+      "is_library": true,
+      "name": "FixedPoint_Format_",
+      "size": 245,
+      "start_ea": "0x146998"
+    },
+    {
+      "bytes_sha256": "a02dc01307d89ced770c6cefc7bab7d4eb783ffe0c2f96b9eb6782e333e5a6da",
+      "caller_count": 1,
+      "end_ea": "0x146a94",
+      "is_library": true,
+      "name": "float_format_",
+      "size": 7,
+      "start_ea": "0x146a8d"
+    },
+    {
+      "bytes_sha256": "bc15be7177d7b2f6a031b1686a85f4e6b6aca9152ec4e2878ce1d86b2c745263",
+      "caller_count": 1,
+      "end_ea": "0x146f7d",
+      "is_library": true,
+      "name": "formstring_",
+      "size": 1257,
+      "start_ea": "0x146a94"
+    },
+    {
+      "bytes_sha256": "7e64e8bc5f5f6af4f0542a45b7d1698a4f8c7207af80823e69d5db01fbfccc41",
+      "caller_count": 2,
+      "end_ea": "0x146f95",
+      "is_library": true,
+      "name": "zupstr_",
+      "size": 24,
+      "start_ea": "0x146f7d"
+    },
+    {
+      "bytes_sha256": "f3c6076d41b1145f9c99986c1d4a095fcbac233a129e0563b7741f12acd08b4a",
+      "caller_count": 24,
+      "end_ea": "0x146fa6",
+      "is_library": true,
+      "name": "__set_errno_",
+      "size": 12,
+      "start_ea": "0x146f9a"
+    },
+    {
+      "bytes_sha256": "dbbbcb8f3a2fe597177198364021b00a9ea25d1935fd9e63eb7fa0fa5b69f99d",
+      "caller_count": 0,
+      "end_ea": "0x146fad",
+      "is_library": true,
+      "name": "__set_ERANGE_",
+      "size": 7,
+      "start_ea": "0x146fa6"
+    },
+    {
+      "bytes_sha256": "b1a6be3e53fd223d44cd5b1aff07d6ee18812f7ee3a9acd2d8e47ae3ede6860c",
+      "caller_count": 1,
+      "end_ea": "0x146fbd",
+      "is_library": true,
+      "name": "__set_EINVAL_",
+      "size": 16,
+      "start_ea": "0x146fad"
+    },
+    {
+      "bytes_sha256": "5e2efdb7fb4258dba5722e8d56d90067f9126d0ba9df83b3acf44620fff2ba84",
+      "caller_count": 1,
+      "end_ea": "0x146fc9",
+      "is_library": true,
+      "name": "__set_doserrno_",
+      "size": 12,
+      "start_ea": "0x146fbd"
+    },
+    {
+      "bytes_sha256": "bd4a17bc39640915961bbb35a93097bd7531fcd04d49466bfbe0967f1450c8cf",
+      "caller_count": 6,
+      "end_ea": "0x146fed",
+      "is_library": true,
+      "name": "open_",
+      "size": 36,
+      "start_ea": "0x146fc9"
+    },
+    {
+      "bytes_sha256": "7ed8f5722f1313ff8280ee652ac6ccd5911eee09b52eb0cb0699b33998ced722",
+      "caller_count": 2,
+      "end_ea": "0x1471d6",
+      "is_library": true,
+      "name": "sopen_",
+      "size": 489,
+      "start_ea": "0x146fed"
+    },
+    {
+      "bytes_sha256": "50968c9de5376c3dea74cbe75971969f5b8ae25526f0b660c2cd0cece89a44cb",
+      "caller_count": 0,
+      "end_ea": "0x14723b",
+      "is_library": true,
+      "name": "__set_binary_",
+      "size": 101,
+      "start_ea": "0x1471d6"
+    },
+    {
+      "bytes_sha256": "42f37749ae15956c2f56a6501b5926fd5241ef4180fdabec986db11f9327dfa6",
+      "caller_count": 1,
+      "end_ea": "0x1472e1",
+      "is_library": true,
+      "name": "__allocfp_",
+      "size": 166,
+      "start_ea": "0x14723b"
+    },
+    {
+      "bytes_sha256": "93cecab6e80f524992a671a28fdd855646ba4010ac4ed52d03f2735e959e6c6e",
+      "caller_count": 2,
+      "end_ea": "0x14731a",
+      "is_library": true,
+      "name": "__freefp_",
+      "size": 57,
+      "start_ea": "0x1472e1"
+    },
+    {
+      "bytes_sha256": "4aabb6febc5967aac87df51561d6247e9a2fb4c5a3265a146c1a8f5f557bd529",
+      "caller_count": 3,
+      "end_ea": "0x147369",
+      "is_library": true,
+      "name": "__chktty_",
+      "size": 49,
+      "start_ea": "0x147338"
+    },
+    {
+      "bytes_sha256": "53abe4a5d7444b9ea26b687313e075c9babf074d801d6c15c8ddb0ab46c58cfb",
+      "caller_count": 10,
+      "end_ea": "0x147449",
+      "is_library": true,
+      "name": "__flush_",
+      "size": 217,
+      "start_ea": "0x147370"
+    },
+    {
+      "bytes_sha256": "9d56a73ecf71d156ee9dcae229405b0a83e27273125f3b4e729cf105df5d0a98",
+      "caller_count": 27,
+      "end_ea": "0x14748b",
+      "is_library": true,
+      "name": "ftell_",
+      "size": 66,
+      "start_ea": "0x147449"
+    },
+    {
+      "bytes_sha256": "9a14d7dd9dec219d137ac1e9a006c629a6702cb7f13ccf294ae66363b0b2e2e6",
+      "caller_count": 12,
+      "end_ea": "0x1474ce",
+      "is_library": true,
+      "name": "lseek_",
+      "size": 67,
+      "start_ea": "0x14748b"
+    },
+    {
+      "bytes_sha256": "879e5573010081d9d29cb04d0ab898f0563a41ac18d4377dbab50829d18e0039",
+      "caller_count": 2,
+      "end_ea": "0x147503",
+      "is_library": true,
+      "name": "__close_",
+      "size": 53,
+      "start_ea": "0x1474ce"
+    },
+    {
+      "bytes_sha256": "506e0fc6068745751cdc8914fe03f6be2e69cfefa7931a8bc498f3b0291df2a9",
+      "caller_count": 8,
+      "end_ea": "0x14757a",
+      "is_library": true,
+      "name": "__ioalloc_",
+      "size": 119,
+      "start_ea": "0x147503"
+    },
+    {
+      "bytes_sha256": "cbbe3d108a557c8132c8b1bb3d5c2407060f5d91087d97b808114adab681270e",
+      "caller_count": 2,
+      "end_ea": "0x147599",
+      "is_library": true,
+      "name": "__qread_",
+      "size": 31,
+      "start_ea": "0x14757a"
+    },
+    {
+      "bytes_sha256": "8bd4126f640ec6f565a8e4069e0dbd027d32ee12da3ec9d6ff52ce2151aa7365",
+      "caller_count": 1,
+      "end_ea": "0x148251",
+      "is_library": true,
+      "name": "__STOSB",
+      "size": 49,
+      "start_ea": "0x148220"
+    },
+    {
+      "bytes_sha256": "3c03f427d6c627dab0595d319b3ca81fc73e01c5838787422314b02b94658876",
+      "caller_count": 1,
+      "end_ea": "0x1482c3",
+      "is_library": true,
+      "name": "__STOSD",
+      "size": 108,
+      "start_ea": "0x148257"
+    },
+    {
+      "bytes_sha256": "daf9e6737f6814cde3d9b38dc9460536d2b1c08ebdd0aef04c251a7c2a5adb20",
+      "caller_count": 2,
+      "end_ea": "0x148337",
+      "is_library": true,
+      "name": "__qwrite_",
+      "size": 116,
+      "start_ea": "0x1482c3"
+    },
+    {
+      "bytes_sha256": "6d518ee03ef5a535860c79bc2ac21f0129060dc5aad55aa972b7e7370000e2a6",
+      "caller_count": 33,
+      "end_ea": "0x1483db",
+      "is_library": true,
+      "name": "fputc_",
+      "size": 164,
+      "start_ea": "0x148337"
+    },
+    {
+      "bytes_sha256": "4847eedfe0b915c2e2302b345a64d5fd178bd461ca13888bfcbf20fe95ce7d6d",
+      "caller_count": 1,
+      "end_ea": "0x1483e2",
+      "is_library": true,
+      "name": "_dosret0_",
+      "size": 7,
+      "start_ea": "0x1483db"
+    },
+    {
+      "bytes_sha256": "6d97952dc659de6bf505b2aa4a346ac621f15bcac8281f664d7e6289cd859ead",
+      "caller_count": 2,
+      "end_ea": "0x1483e6",
+      "is_library": true,
+      "name": "_dosretax_",
+      "size": 4,
+      "start_ea": "0x1483e2"
+    },
+    {
+      "bytes_sha256": "f180f3eb61ca64b3ae7c924e2d1fb0821a89ce497c8b02532f91db470298f094",
+      "caller_count": 11,
+      "end_ea": "0x148457",
+      "is_library": true,
+      "name": "__set_errno_dos_",
+      "size": 113,
+      "start_ea": "0x1483e6"
+    },
+    {
+      "bytes_sha256": "434401b4a88060f6524abcdf77d83d028990f56d215c29148bb2241fe5a77ba3",
+      "caller_count": 2,
+      "end_ea": "0x148468",
+      "is_library": true,
+      "name": "tell_",
+      "size": 17,
+      "start_ea": "0x148457"
+    },
+    {
+      "bytes_sha256": "ec00ca47e45690a2bb4154b2b7c8d3206f30e6cb748cda2e461ccc35ae2965d2",
+      "caller_count": 2,
+      "end_ea": "0x1484c3",
+      "is_library": true,
+      "name": "clock_value_",
+      "size": 91,
+      "start_ea": "0x148468"
+    },
+    {
+      "bytes_sha256": "45311b62045770af312f0c6b3671334c411a40dc77cce1b2b1058b8a5bde0323",
+      "caller_count": 1,
+      "end_ea": "0x1484ce",
+      "is_library": true,
+      "name": "__clock_init_",
+      "size": 11,
+      "start_ea": "0x1484c3"
+    },
+    {
+      "bytes_sha256": "86ee82984977dc086f3c17ffb4ecdfe232459c034befb0dab3c89d4ce065e31c",
+      "caller_count": 1,
+      "end_ea": "0x1484f6",
+      "is_library": true,
+      "name": "__clock_",
+      "size": 40,
+      "start_ea": "0x1484ce"
+    },
+    {
+      "bytes_sha256": "ed563fef7aff90379a90ed4533db7fd90746a66497edbd943af9bae1837fa2f3",
+      "caller_count": 1,
+      "end_ea": "0x1484fb",
+      "is_library": true,
+      "name": "flushall_",
+      "size": 5,
+      "start_ea": "0x1484f6"
+    },
+    {
+      "bytes_sha256": "567d2600bacddf063c2c303fc6885a18e7015111f025b831058d7faa025d749a",
+      "caller_count": 2,
+      "end_ea": "0x14852a",
+      "is_library": true,
+      "name": "__flushall_",
+      "size": 47,
+      "start_ea": "0x1484fb"
+    },
+    {
+      "bytes_sha256": "c51c40e96b0ffe4ea734a77404a68c8c1a867aef43d21a39452c054b94a50a67",
+      "caller_count": 3,
+      "end_ea": "0x14980b",
+      "is_library": true,
+      "name": "_dos_getvect_",
+      "size": 50,
+      "start_ea": "0x1497d9"
+    },
+    {
+      "bytes_sha256": "509921de40765ed9335854c433a28b70abb95f0406d61b99afd17aca1b356dc3",
+      "caller_count": 6,
+      "end_ea": "0x149838",
+      "is_library": true,
+      "name": "_dos_setvect_",
+      "size": 45,
+      "start_ea": "0x14980b"
+    },
+    {
+      "bytes_sha256": "64ff6e3457e66ec82aabbfe015aa2e6166907a0acd3c382470201d975765e1eb",
+      "caller_count": 8,
+      "end_ea": "0x14d140",
+      "is_library": true,
+      "name": "abs_",
+      "size": 7,
+      "start_ea": "0x14d139"
+    },
+    {
+      "bytes_sha256": "33598abbad29668c581004e60a31f1396d58a8963c670e08776afcf5df64efc7",
+      "caller_count": 1,
+      "end_ea": "0x14d1c2",
+      "is_library": true,
+      "name": "ungetc_",
+      "size": 130,
+      "start_ea": "0x14d140"
+    },
+    {
+      "bytes_sha256": "4be978b7a23c7ffb5a3c03f6d8d5e9aec61d337490dc99b61d11428c8188658a",
+      "caller_count": 4,
+      "end_ea": "0x15001f",
+      "is_library": true,
+      "name": "__doserror_",
+      "size": 19,
+      "start_ea": "0x15000c"
+    },
+    {
+      "bytes_sha256": "fa5f103ee34948519b677f2728cf0657b05cc560ed449d35d54f8f309d3a28b8",
+      "caller_count": 4,
+      "end_ea": "0x1509f9",
+      "is_library": true,
+      "name": "unlink_",
+      "size": 33,
+      "start_ea": "0x1509d8"
+    },
+    {
+      "bytes_sha256": "518786e0e58000dd81fdd4f29be38b0196f15da38d6ec94780ed2d445c3eae1a",
+      "caller_count": 3,
+      "end_ea": "0x150a27",
+      "is_library": true,
+      "name": "rename_",
+      "size": 46,
+      "start_ea": "0x1509f9"
+    },
+    {
+      "bytes_sha256": "362c0f373cc364dc380e5d9fd5959c60c6d5602a32d0a9e3685e4918cf387728",
+      "caller_count": 1,
+      "end_ea": "0x150aea",
+      "is_library": true,
+      "name": "__getctime_",
+      "size": 195,
+      "start_ea": "0x150a27"
+    },
+    {
+      "bytes_sha256": "7127c7c81c2d91b0ed95a75f6637fd9d05a5ef431a52d4f25d453979f283eaa8",
+      "caller_count": 2,
+      "end_ea": "0x150c3e",
+      "is_library": true,
+      "name": "mktime_",
+      "size": 340,
+      "start_ea": "0x150aea"
+    },
+    {
+      "bytes_sha256": "30edd0f296c87aa1313ea58a5c11e4b4ca84151921daa9c622089e59a02256d7",
+      "caller_count": 0,
+      "end_ea": "0x150c92",
+      "is_library": true,
+      "name": "__CacheOSTZ_",
+      "size": 84,
+      "start_ea": "0x150c3e"
+    },
+    {
+      "bytes_sha256": "1aa9c858ac0116ad857348501cdaec658feac32b2ea6e63f78ac1a1b7fa2fff7",
+      "caller_count": 2,
+      "end_ea": "0x150cef",
+      "is_library": true,
+      "name": "tzset_",
+      "size": 69,
+      "start_ea": "0x150caa"
+    },
+    {
+      "bytes_sha256": "b8138f07cb15bfc22414e3509e998b810c70268318561956db04e321ec8cef9d",
+      "caller_count": 9,
+      "end_ea": "0x150d13",
+      "is_library": true,
+      "name": "parse_time_",
+      "size": 36,
+      "start_ea": "0x150cef"
+    },
+    {
+      "bytes_sha256": "74c107aa494d22250f4d90b44af2788bfab9b89e815148805a66a85fa549db2a",
+      "caller_count": 2,
+      "end_ea": "0x150e3c",
+      "is_library": true,
+      "name": "parse_offset_",
+      "size": 297,
+      "start_ea": "0x150d13"
+    },
+    {
+      "bytes_sha256": "1ff72e154338b425dc5319a3abc4232c5aa8a66ea41b820f4fc187f66f194962",
+      "caller_count": 2,
+      "end_ea": "0x150f40",
+      "is_library": true,
+      "name": "parse_rule_",
+      "size": 260,
+      "start_ea": "0x150e3c"
+    },
+    {
+      "bytes_sha256": "8bc651a6d0f560b56d0de0521cace3536853a87f9b212eaa9437f9fd4b633331",
+      "caller_count": 4,
+      "end_ea": "0x151123",
+      "is_library": true,
+      "name": "__brktime_",
+      "size": 277,
+      "start_ea": "0x15100e"
+    },
+    {
+      "bytes_sha256": "4c75737352beb1552bd187fa2d8bd91146b615925dd7e9771dde6f5ec4ceb0ef",
+      "caller_count": 1,
+      "end_ea": "0x151141",
+      "is_library": true,
+      "name": "_gmtime_",
+      "size": 30,
+      "start_ea": "0x151123"
+    },
+    {
+      "bytes_sha256": "312cfd5fcfc865033e614552336323b479e88d482fa15d4d68d0401a7b86442a",
+      "caller_count": 7,
+      "end_ea": "0x151189",
+      "is_library": true,
+      "name": "__leapyear_",
+      "size": 59,
+      "start_ea": "0x15114e"
+    },
+    {
+      "bytes_sha256": "74956dc25a38c9249c4b45b9ce9728048574f79bb9bfb3c0189d26187599c000",
+      "caller_count": 2,
+      "end_ea": "0x15126e",
+      "is_library": true,
+      "name": "calc_yday_",
+      "size": 229,
+      "start_ea": "0x151189"
+    },
+    {
+      "bytes_sha256": "a25bb8eda5c93eabf78600f83488c8f95f7f7e2fbe3d42b9862842cfb64e4c9e",
+      "caller_count": 1,
+      "end_ea": "0x1512a2",
+      "is_library": true,
+      "name": "check_order_",
+      "size": 52,
+      "start_ea": "0x15126e"
+    },
+    {
+      "bytes_sha256": "ebdbad5b55123385a9b4034b3e912d73549a4fb6ad0819b7bf64679972499b3e",
+      "caller_count": 2,
+      "end_ea": "0x151565",
+      "is_library": true,
+      "name": "__isindst_",
+      "size": 707,
+      "start_ea": "0x1512a2"
+    },
+    {
+      "bytes_sha256": "56db2d9110548973c38952e0e31d00d216628786eb4b7860afd4f5bc4891c875",
+      "caller_count": 2,
+      "end_ea": "0x151595",
+      "is_library": true,
+      "name": "time_less_",
+      "size": 48,
+      "start_ea": "0x151565"
+    },
+    {
+      "bytes_sha256": "b442a4883d7d173f9a73ff641bf6eb530da5d920dd3696b8b347ccde7779bdad",
+      "caller_count": 1,
+      "end_ea": "0x1515b2",
+      "is_library": true,
+      "name": "getche_",
+      "size": 29,
+      "start_ea": "0x151595"
+    },
+    {
+      "bytes_sha256": "e2988ba5ac5adb294e77bcf89251a86ecbd3e5efa33bf77993db7875d41cd92d",
+      "caller_count": 1,
+      "end_ea": "0x151655",
+      "is_library": true,
+      "name": "__MemAllocator",
+      "size": 163,
+      "start_ea": "0x1515b2"
+    },
+    {
+      "bytes_sha256": "00943c920c48f4ed43a38c6dd875905ec41debf53a6b9e5ac323ef6124e179f3",
+      "caller_count": 1,
+      "end_ea": "0x151765",
+      "is_library": true,
+      "name": "__MemFree",
+      "size": 267,
+      "start_ea": "0x15165a"
+    },
+    {
+      "bytes_sha256": "b36ead1cd61e59ebc5d6ea57ea8a535dd4c4c6a6477c817dabbb196ac97bcc2b",
+      "caller_count": 2,
+      "end_ea": "0x1517b6",
+      "is_library": true,
+      "name": "__unlink_",
+      "size": 81,
+      "start_ea": "0x151765"
+    },
+    {
+      "bytes_sha256": "78654097095d10e8d23f2b8384fd20412c3077775cfc2ad7f740272703f9ac0d",
+      "caller_count": 2,
+      "end_ea": "0x151812",
+      "is_library": true,
+      "name": "__FreeDPMIBlocks_",
+      "size": 92,
+      "start_ea": "0x1517b6"
+    },
+    {
+      "bytes_sha256": "a1b7acffa3c7e561e01281e32fd5d74df49aa731788e53674ff0eb71da500f8d",
+      "caller_count": 0,
+      "end_ea": "0x151911",
+      "is_library": true,
+      "name": "__ReAllocDPMIBlock_",
+      "size": 255,
+      "start_ea": "0x151812"
+    },
+    {
+      "bytes_sha256": "08ba13db3d4d1b59863112d9810687d1b0860835b7c3ebeef53017897fd8d9e7",
+      "caller_count": 3,
+      "end_ea": "0x151985",
+      "is_library": true,
+      "name": "__LinkUpNewMHeap_",
+      "size": 116,
+      "start_ea": "0x151911"
+    },
+    {
+      "bytes_sha256": "67e1ac19eb5d59794859ce5bd87d8a2a17561d4d3d9227c193778afcc29714ff",
+      "caller_count": 1,
+      "end_ea": "0x1519d5",
+      "is_library": true,
+      "name": "__LastFree_",
+      "size": 80,
+      "start_ea": "0x151985"
+    },
+    {
+      "bytes_sha256": "3e50bdff06b4e9f4667ec530743a4545a4c14ebd48a6883e08ad06eacec3cf66",
+      "caller_count": 1,
+      "end_ea": "0x151aa6",
+      "is_library": true,
+      "name": "RationalAlloc_",
+      "size": 209,
+      "start_ea": "0x1519d5"
+    },
+    {
+      "bytes_sha256": "1d497c918570c92f031a67e48af7f1825383aaa4f6e5523e868b3e34a37eb334",
+      "caller_count": 1,
+      "end_ea": "0x151b56",
+      "is_library": true,
+      "name": "__CreateNewNHeap_",
+      "size": 176,
+      "start_ea": "0x151aa6"
+    },
+    {
+      "bytes_sha256": "4029fd7c9d292f878e1c5fbb4ad7ec5f695600c96b0711df4eb70fc632620787",
+      "caller_count": 1,
+      "end_ea": "0x151ca2",
+      "is_library": true,
+      "name": "__ExpandDGROUP_",
+      "size": 332,
+      "start_ea": "0x151b56"
+    },
+    {
+      "bytes_sha256": "52725126b8d56f52e7fe06b9dc0307161c87daecea23bebad9d8ade08a91d4de",
+      "caller_count": 2,
+      "end_ea": "0x151d1f",
+      "is_library": true,
+      "name": "__AdjustAmount_",
+      "size": 125,
+      "start_ea": "0x151ca2"
+    },
+    {
+      "bytes_sha256": "a8055727f1ffb06e05aec6b607fa2f6491b947bc205fab3876201d5d18b4844b",
+      "caller_count": 1,
+      "end_ea": "0x151d31",
+      "is_library": true,
+      "name": "putch_",
+      "size": 15,
+      "start_ea": "0x151d22"
+    },
+    {
+      "bytes_sha256": "3de49afc29a3105ecee0ae23e846c8d892d700e472d6a63275810665b6252d0b",
+      "caller_count": 0,
+      "end_ea": "0x151eb8",
+      "is_library": true,
+      "name": "bzero_",
+      "size": 12,
+      "start_ea": "0x151eac"
+    },
+    {
+      "bytes_sha256": "23d35f0c70a40971e87e25eebc1356326e9f4129ddee687aa633b12ea4757f74",
+      "caller_count": 240,
+      "end_ea": "0x153e1b",
+      "is_library": true,
+      "name": "fprintf_",
+      "size": 33,
+      "start_ea": "0x153dfa"
+    },
+    {
+      "bytes_sha256": "2d5bfedd75c3528e5be8b22e7e087319317bdb3f9ddd57746560e1dd672e7cd9",
+      "caller_count": 1,
+      "end_ea": "0x153e8d",
+      "is_library": true,
+      "name": "__CommonInit_",
+      "size": 105,
+      "start_ea": "0x153e24"
+    },
+    {
+      "bytes_sha256": "59a145dbea253f04ca6a9123a2daf59990fe4c2b234161f8c3c0da7288b84054",
+      "caller_count": 0,
+      "end_ea": "0x153e92",
+      "is_library": true,
+      "name": "__exit_with_msg_",
+      "size": 5,
+      "start_ea": "0x153e8d"
+    },
+    {
+      "bytes_sha256": "fe89c11f50f4a66a3a4d39c3643c73fcfd14e6fc86b1eaa78669bd3819518ea0",
+      "caller_count": 4,
+      "end_ea": "0x153eaf",
+      "is_library": true,
+      "name": "__fatal_runtime_error_",
+      "size": 29,
+      "start_ea": "0x153e92"
+    },
+    {
+      "bytes_sha256": "6418fee50561d422446d56ced569c55536d662c849169b47a816f0ee8a005f02",
+      "caller_count": 7,
+      "end_ea": "0x153ed7",
+      "is_library": true,
+      "name": "segread_",
+      "size": 40,
+      "start_ea": "0x153eaf"
+    },
+    {
+      "bytes_sha256": "44430b2ccde935db3dec499cd77b2b1a9fda066a46aed786018321ab881f3bc1",
+      "caller_count": 1,
+      "end_ea": "0x153f09",
+      "is_library": true,
+      "name": "__delay_init_",
+      "size": 50,
+      "start_ea": "0x153ed7"
+    },
+    {
+      "bytes_sha256": "d2b4279b7cc29b476cef1f26abec7293b643e737f1c761ca18ec7b8dbbfc647e",
+      "caller_count": 1,
+      "end_ea": "0x153f3f",
+      "is_library": true,
+      "name": "__delay_",
+      "size": 54,
+      "start_ea": "0x153f09"
+    },
+    {
+      "bytes_sha256": "9b7c0494151dd74e0231e9c0072db0fbe49553b1f7844a1e80e5603f76f23cc3",
+      "caller_count": 1,
+      "end_ea": "0x153f50",
+      "is_library": true,
+      "name": "file_putc_",
+      "size": 17,
+      "start_ea": "0x153f3f"
+    },
+    {
+      "bytes_sha256": "39b4801f10a39e85bbc6d5439d618001a43433ea5ef045d6204f72d43e233fb1",
+      "caller_count": 2,
+      "end_ea": "0x153fcf",
+      "is_library": true,
+      "name": "__fprtf_",
+      "size": 127,
+      "start_ea": "0x153f50"
+    },
+    {
+      "bytes_sha256": "52bf24246478b7d203cffebab1d86bc029dd3f7ca568eb9792fba4d59053d372",
+      "caller_count": 5,
+      "end_ea": "0x1557d8",
+      "is_library": true,
+      "name": "getenv_",
+      "size": 97,
+      "start_ea": "0x155777"
+    },
+    {
+      "bytes_sha256": "1215ddfdfb1a2d51911140ce1f3cd5689ac284ac911a6a6c16fdb3ba3100e238",
+      "caller_count": 5,
+      "end_ea": "0x156157",
+      "is_library": true,
+      "name": "isatty_",
+      "size": 39,
+      "start_ea": "0x156130"
+    },
+    {
+      "bytes_sha256": "38fe284c2f8603f23ca135f780c4eef59eafb4c1a62373c343efcd39467eb967",
+      "caller_count": 1,
+      "end_ea": "0x156174",
+      "is_library": true,
+      "name": "setbuf_",
+      "size": 29,
+      "start_ea": "0x156157"
+    },
+    {
+      "bytes_sha256": "ca4962a1800adc4c5fcffca79c24ef8a3de45126e32ab1fd5d9f10515d72e0ba",
+      "caller_count": 6,
+      "end_ea": "0x1561a7",
+      "is_library": true,
+      "name": "convDec_",
+      "size": 51,
+      "start_ea": "0x156174"
+    },
+    {
+      "bytes_sha256": "42e48254232a5354dce44af00e74de53bceae7934e6bc59e770d18cef43fa48a",
+      "caller_count": 2,
+      "end_ea": "0x156294",
+      "is_library": true,
+      "name": "_asctime_",
+      "size": 237,
+      "start_ea": "0x1561a7"
+    },
+    {
+      "bytes_sha256": "b1068b1f04fbabde3e61a0126861efbd29da036bb71eab87975ae3aeee5dee57",
+      "caller_count": 0,
+      "end_ea": "0x1562ad",
+      "is_library": true,
+      "name": "_ctime_",
+      "size": 25,
+      "start_ea": "0x156294"
+    },
+    {
+      "bytes_sha256": "cd7f274731106b10e2ea3339844679fb4bc388663c1ed7b432e442772900ce72",
+      "caller_count": 2,
+      "end_ea": "0x1562bf",
+      "is_library": true,
+      "name": "asctime_",
+      "size": 13,
+      "start_ea": "0x1562b2"
+    },
+    {
+      "bytes_sha256": "a816e5cba671da732e5fef32eab11cc5698446ab8e1936762e25749c0e9f8051",
+      "caller_count": 1,
+      "end_ea": "0x15c1dc",
+      "is_library": true,
+      "name": "__int386x_",
+      "size": 56,
+      "start_ea": "0x15c1a4"
+    },
+    {
+      "bytes_sha256": "1c9f187909593c896a7b2c2de58112a2be1b8d1d203b20fe18c3aec6563bf118",
+      "caller_count": 1,
+      "end_ea": "0x15c201",
+      "is_library": true,
+      "name": "sub_15C1DC",
+      "size": 37,
+      "start_ea": "0x15c1dc"
+    },
+    {
+      "bytes_sha256": "87e9c2379947049f4d64dd0c8c92724d35ba84011de3cf2d6f63d43d8d088e6a",
+      "caller_count": 0,
+      "end_ea": "0x15c24e",
+      "is_library": true,
+      "name": "_DoINTR_",
+      "size": 77,
+      "start_ea": "0x15c201"
+    },
+    {
+      "bytes_sha256": "075d5d8480533bb54c612b8054859728a74c6031f7dbd39f64ff77ab36950692",
+      "caller_count": 5,
+      "end_ea": "0x15c594",
+      "is_library": true,
+      "name": "W?_no_support_loaded$n()v",
+      "size": 18,
+      "start_ea": "0x15c582"
+    },
+    {
+      "bytes_sha256": "11b19ae0c5d66f08398dd99ba2710280a740b181fdcd0d446eeeac05af86d391",
+      "caller_count": 5,
+      "end_ea": "0x15c5e9",
+      "is_library": true,
+      "name": "__IOMode_",
+      "size": 85,
+      "start_ea": "0x15c594"
+    },
+    {
+      "bytes_sha256": "463940981fa94a7501ffd4fd8f03ff13800eae1c7fb9abff703268462da30dda",
+      "caller_count": 3,
+      "end_ea": "0x15c5fe",
+      "is_library": true,
+      "name": "__SetIOMode_",
+      "size": 21,
+      "start_ea": "0x15c5e9"
+    },
+    {
+      "bytes_sha256": "a9e1f3cd96c58b4382db55098d11065dd74478c63a12f3c9f79dba8e3b2f0207",
+      "caller_count": 1,
+      "end_ea": "0x15c675",
+      "is_library": true,
+      "name": "__InitFiles_",
+      "size": 119,
+      "start_ea": "0x15c5fe"
+    },
+    {
+      "bytes_sha256": "40bcc6d76e80fba1a774d2a80004097987fbd27bc606fa5135455404a9086fdb",
+      "caller_count": 1,
+      "end_ea": "0x15c681",
+      "is_library": true,
+      "name": "__full_io_exit_",
+      "size": 12,
+      "start_ea": "0x15c675"
+    },
+    {
+      "bytes_sha256": "7d37a52178545be8a97415d33906a85f39ba87f612f2cffc3c58b299880a6139",
+      "caller_count": 0,
+      "end_ea": "0x15c6de",
+      "is_library": true,
+      "name": "fcloseall_",
+      "size": 93,
+      "start_ea": "0x15c681"
+    },
+    {
+      "bytes_sha256": "1005a32af8e3efa95312d73faff7aec33eff1db9a3e19b005e97f1d50bc5f811",
+      "caller_count": 1,
+      "end_ea": "0x15c72c",
+      "is_library": true,
+      "name": "intdos_",
+      "size": 78,
+      "start_ea": "0x15c6de"
+    },
+    {
+      "bytes_sha256": "53e850581a80e6ab648259cfc4cd4cb0ce6318ad47b3434767e906a8c7ab8572",
+      "caller_count": 1,
+      "end_ea": "0x15ca26",
+      "is_library": true,
+      "name": "__FDFS",
+      "size": 76,
+      "start_ea": "0x15c9da"
+    },
+    {
+      "bytes_sha256": "3c516decabb85d8981ad80f88bc645d508af762bb05e397e6705f1464b31212e",
+      "caller_count": 3,
+      "end_ea": "0x15df43",
+      "is_library": true,
+      "name": "__assert_",
+      "size": 31,
+      "start_ea": "0x15df24"
+    },
+    {
+      "bytes_sha256": "f9de33994c807cbec92a26445de4a471b370be7c69b8572d5fd64340bbecb90d",
+      "caller_count": 0,
+      "end_ea": "0x15df53",
+      "is_library": true,
+      "name": "unknown_libname_4",
+      "size": 16,
+      "start_ea": "0x15df43"
+    },
+    {
+      "bytes_sha256": "d27b57539054f121f76cf73449f28f9bc62e55552fa9f031a288fc6c7785cd31",
+      "caller_count": 0,
+      "end_ea": "0x15e01b",
+      "is_library": true,
+      "name": "sbrk_",
+      "size": 200,
+      "start_ea": "0x15df53"
+    },
+    {
+      "bytes_sha256": "995cfb9af91ca5b3e8742677b8e5e2607d9a3fc14618f41e4a0b988398a9870d",
+      "caller_count": 2,
+      "end_ea": "0x15e0e6",
+      "is_library": true,
+      "name": "__brk_",
+      "size": 203,
+      "start_ea": "0x15e01b"
+    },
+    {
+      "bytes_sha256": "35839a2ddede975ff98cd29de89d502a5fe1cb152826f3168bb1e8e453708bc8",
+      "caller_count": 3,
+      "end_ea": "0x15f935",
+      "is_library": true,
+      "name": "__int23_handler_",
+      "size": 15,
+      "start_ea": "0x15f926"
+    },
+    {
+      "bytes_sha256": "b5cfd9f04570ea57f74f9e1f91d8470e9f84b154b0be42a65eaab599d303c35e",
+      "caller_count": 3,
+      "end_ea": "0x15f9ca",
+      "is_library": true,
+      "name": "__int_ctrl_break_handler_",
+      "size": 15,
+      "start_ea": "0x15f9bb"
+    },
+    {
+      "bytes_sha256": "e9972215238f6b3a23b616780fedaeacff79b318fc8691cc2f73b8b562768810",
+      "caller_count": 5,
+      "end_ea": "0x15fac7",
+      "is_library": true,
+      "name": "__DPMI_hosted_",
+      "size": 148,
+      "start_ea": "0x15fa33"
+    },
+    {
+      "bytes_sha256": "aac019297a0a841af7c83a17acb7ad8ebb76afb865d70bd3303e31b466061b03",
+      "caller_count": 8,
+      "end_ea": "0x15fbba",
+      "is_library": true,
+      "name": "__restore_int23_",
+      "size": 243,
+      "start_ea": "0x15fac7"
+    },
+    {
+      "bytes_sha256": "5ee3e8f510b5f9da43ed168352f53d428fb8273aa8e20d5bacff50ae0129ad17",
+      "caller_count": 4,
+      "end_ea": "0x15fc7d",
+      "is_library": true,
+      "name": "__restore_int_",
+      "size": 5,
+      "start_ea": "0x15fc78"
+    },
+    {
+      "bytes_sha256": "6a80a59688b1edaa307faf4a445dff9aa793837e39cfd99e3c8b6bc409ae9864",
+      "caller_count": 8,
+      "end_ea": "0x15fcb5",
+      "is_library": true,
+      "name": "__restore_int_ctrl_break_",
+      "size": 56,
+      "start_ea": "0x15fc7d"
+    },
+    {
+      "bytes_sha256": "3fad069f4059f0008e2bc50f658977a555275dae36d661e38c57f2b089882ccf",
+      "caller_count": 1,
+      "end_ea": "0x15fdd0",
+      "is_library": true,
+      "name": "__grab_int23_",
+      "size": 283,
+      "start_ea": "0x15fcb5"
+    },
+    {
+      "bytes_sha256": "8392de7352d80576829602c921902144566171f9d8cbfb192f1739bfe66d4b44",
+      "caller_count": 1,
+      "end_ea": "0x15feeb",
+      "is_library": true,
+      "name": "__grab_int_ctrl_break_",
+      "size": 283,
+      "start_ea": "0x15fdd0"
+    },
+    {
+      "bytes_sha256": "46f5f74c111a31d606003f39dd9599010d1e3592151f3fc20a9083b4e32b5c39",
+      "caller_count": 1,
+      "end_ea": "0x15ff11",
+      "is_library": true,
+      "name": "__EnterWVIDEO_",
+      "size": 38,
+      "start_ea": "0x15feeb"
+    },
+    {
+      "bytes_sha256": "296132f65f01317ede17127853ff88028fe3727e38d54cb92dc6dfd9dc6c256a",
+      "caller_count": 2,
+      "end_ea": "0x16000c",
+      "is_library": true,
+      "name": "read_",
+      "size": 251,
+      "start_ea": "0x15ff11"
+    },
+    {
+      "bytes_sha256": "e9f736589f12bb5330b777ac3c8f33b239e0cf784c41987bd7960352d946d9f2",
+      "caller_count": 13,
+      "end_ea": "0x16002c",
+      "is_library": true,
+      "name": "close_",
+      "size": 32,
+      "start_ea": "0x16000c"
+    },
+    {
+      "bytes_sha256": "fccfa72397f597794481996cdfb7e1fd08f8f20bce29e27347c1e8a7489e2456",
+      "caller_count": 1,
+      "end_ea": "0x160069",
+      "is_library": true,
+      "name": "filelength_",
+      "size": 61,
+      "start_ea": "0x16002c"
+    },
+    {
+      "bytes_sha256": "d6788ca22c62e9aa0e67ea06f12f8bc07af7cc7beb8c91990db2bfe0358de73a",
+      "caller_count": 2,
+      "end_ea": "0x16023e",
+      "is_library": true,
+      "name": "write_",
+      "size": 469,
+      "start_ea": "0x160069"
+    },
+    {
+      "bytes_sha256": "ed9dfbb7c417068c5cf4b54b55b6c0619e634ba690d12195f552a5207c2d47c4",
+      "caller_count": 15,
+      "end_ea": "0x160291",
+      "is_library": true,
+      "name": "strnicmp_",
+      "size": 83,
+      "start_ea": "0x16023e"
+    },
+    {
+      "bytes_sha256": "87c0d88b0cd8f8345de5960cbb963f24634966de193934c7ac84c6a2783a77b0",
+      "caller_count": 1,
+      "end_ea": "0x1602f8",
+      "is_library": true,
+      "name": "setvbuf_",
+      "size": 103,
+      "start_ea": "0x160291"
+    },
+    {
+      "bytes_sha256": "768500a510310d7c0ce154dc2773e9f233d6fda9f4452d3f887cffa0b933f1c5",
+      "caller_count": 7,
+      "end_ea": "0x163233",
+      "is_library": true,
+      "name": "calloc_",
+      "size": 24,
+      "start_ea": "0x16321b"
+    },
+    {
+      "bytes_sha256": "ee2e5984c657cfa68728700489d30aed3160a866f325862ceb2d9eee5e30546c",
+      "caller_count": 3,
+      "end_ea": "0x1632a1",
+      "is_library": true,
+      "name": "__terminate_",
+      "size": 18,
+      "start_ea": "0x16328f"
+    },
+    {
+      "bytes_sha256": "7441bd773f15c6727c8eb6998d84848b8bdd129e1f5a7b50bd9fd3459eafd776",
+      "caller_count": 1,
+      "end_ea": "0x1638a0",
+      "is_library": true,
+      "name": "__sigabort_",
+      "size": 10,
+      "start_ea": "0x163896"
+    },
+    {
+      "bytes_sha256": "227e1bd3a6080ddd08063c3d2d82da35cfce49bb4f5be6df823fa56c03c091b0",
+      "caller_count": 2,
+      "end_ea": "0x1638d5",
+      "is_library": true,
+      "name": "__sigfpe_handler_",
+      "size": 53,
+      "start_ea": "0x1638a0"
+    },
+    {
+      "bytes_sha256": "366d722894987a5bb1173262110168a4f49f3a6ec17726fef7aaab0a78de983c",
+      "caller_count": 0,
+      "end_ea": "0x16395a",
+      "is_library": true,
+      "name": "signal_",
+      "size": 133,
+      "start_ea": "0x1638d5"
+    },
+    {
+      "bytes_sha256": "20333d62acc6ed848b8cae2280a46d507d0c84cba56e8d8ff581f9678eb3abd7",
+      "caller_count": 3,
+      "end_ea": "0x163a4c",
+      "is_library": true,
+      "name": "raise_",
+      "size": 194,
+      "start_ea": "0x16398a"
+    },
+    {
+      "bytes_sha256": "1ed93699db90463ab8bee58a0279726b8d7edee9b36cbd3a37e0f66d5816e662",
+      "caller_count": 1,
+      "end_ea": "0x163a65",
+      "is_library": true,
+      "name": "_chain_intr_",
+      "size": 25,
+      "start_ea": "0x163a4c"
+    },
+    {
+      "bytes_sha256": "83b2e6daaa9bc48554073c0af9440347f3c21e647d09eae4a38927ff410673ba",
+      "caller_count": 1,
+      "end_ea": "0x163b39",
+      "is_library": true,
+      "name": "__setenvp_",
+      "size": 212,
+      "start_ea": "0x163a65"
+    },
+    {
+      "bytes_sha256": "12aaf7b698fe25ad33df7f91cf3f8b80126b952acda477f62d212373d719e66b",
+      "caller_count": 1,
+      "end_ea": "0x163b9e",
+      "is_library": true,
+      "name": "__GrabFP87_",
+      "size": 49,
+      "start_ea": "0x163b6d"
+    },
+    {
+      "bytes_sha256": "9c70cd74b3868c125a76bfcde27ea827da5aa78453a89fbf5794518744a2980f",
+      "caller_count": 1,
+      "end_ea": "0x163f7b",
+      "is_library": true,
+      "name": "__Phar_hook_init_",
+      "size": 195,
+      "start_ea": "0x163eb8"
+    },
+    {
+      "bytes_sha256": "853a3da0e9333606be3e4b697c01499ea4e6d4448e3628bc309fab82ade131c4",
+      "caller_count": 1,
+      "end_ea": "0x163fa8",
+      "is_library": true,
+      "name": "__Phar_hook_fini_",
+      "size": 45,
+      "start_ea": "0x163f7b"
+    },
+    {
+      "bytes_sha256": "ef26c86d454acf534a7bff381c092a6cec50b89c25e82629182b5dbbaf8fc9a7",
+      "caller_count": 1,
+      "end_ea": "0x163fd5",
+      "is_library": true,
+      "name": "__DOS4G_hook_init_",
+      "size": 45,
+      "start_ea": "0x163fa8"
+    },
+    {
+      "bytes_sha256": "2a8637eb01aff0dca191a64f6f8f25a84d7697f9a96417e154c026de11c2122b",
+      "caller_count": 1,
+      "end_ea": "0x163fee",
+      "is_library": true,
+      "name": "__DOS4G_hook_fini_",
+      "size": 25,
+      "start_ea": "0x163fd5"
+    },
+    {
+      "bytes_sha256": "6d16baea5eb0081d5233c240aef562d03117b0a0290dbed5e0c680895d088773",
+      "caller_count": 1,
+      "end_ea": "0x16402c",
+      "is_library": true,
+      "name": "__Ergo_hook_init_",
+      "size": 62,
+      "start_ea": "0x163fee"
+    },
+    {
+      "bytes_sha256": "9a6fd19d126c21e5f0b114b9858fd63cf56279f15e1bddeb5f2da20d0010edd8",
+      "caller_count": 1,
+      "end_ea": "0x164045",
+      "is_library": true,
+      "name": "__Ergo_hook_fini_",
+      "size": 25,
+      "start_ea": "0x16402c"
+    },
+    {
+      "bytes_sha256": "2630469930ba2ee6755070883664e50db38ec0ba03da2ac50903fd62db9aebed",
+      "caller_count": 1,
+      "end_ea": "0x16409e",
+      "is_library": true,
+      "name": "__Intel_hook_init_",
+      "size": 88,
+      "start_ea": "0x164046"
+    },
+    {
+      "bytes_sha256": "ae3f4619b0413d70d3004b9131c3752153074e45725be13b9a148978895e359e",
+      "caller_count": 1,
+      "end_ea": "0x16409f",
+      "is_library": true,
+      "name": "__Intel_hook_fini_",
+      "size": 1,
+      "start_ea": "0x16409e"
+    },
+    {
+      "bytes_sha256": "fab0ef6d6c49cb5fc36f209ac0d0575f218b42f4912f9b29e389b05fd1d994dc",
+      "caller_count": 2,
+      "end_ea": "0x1640da",
+      "is_library": true,
+      "name": "__init_8087_",
+      "size": 49,
+      "start_ea": "0x1640a9"
+    },
+    {
+      "bytes_sha256": "2c67f0bef984c980192103480f2770bd78cd6c7488f4cbc662569c8633573988",
+      "caller_count": 1,
+      "end_ea": "0x16412e",
+      "is_library": true,
+      "name": "__chk8087_",
+      "size": 74,
+      "start_ea": "0x1640e4"
+    },
+    {
+      "bytes_sha256": "c17666e3fcd3e66c7a8bd6098d4cc2a9f19b4b7893a403543791f8fcfa5426d2",
+      "caller_count": 1,
+      "end_ea": "0x164157",
+      "is_library": true,
+      "name": "__init_80x87",
+      "size": 39,
+      "start_ea": "0x164130"
+    }
+  ],
+  "processor": "metapc",
+  "root_filename": "Orion2.exe",
+  "tool": "IDA Pro 9.4 IDAPython"
+}

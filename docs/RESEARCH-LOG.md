@@ -292,3 +292,18 @@ Hex-Rays `9.4.0.260610`、IDA 線性位址與非破壞性 IDC。結果不是 run
 文件同步：`README.md`、`WORKLIST.md`、`docs/tech/ground-combat-algorithm.md`、
 `docs/tech/spy-system.md` 與
 `docs/re/special-trade-sabotage-leader-eta-20260811.md`。
+
+## 2026-08-27 編譯器／runtime 排除指紋
+
+使用 IDA Pro 9.4／IDAPython，對 repo 外唯讀保存的 DOS 與 Win95 正式資料庫建立非破壞性
+inventory 與代表函式輸出。DOS `Orion2.exe`（SHA-256 `7ae2ac2e…55e955b5`）已證實為
+Watcom C/C++ 32-bit runtime＋DOS/4GW；Win95 `ORION95.EXE`（SHA-256
+`6e19afdc…6e275185`）已證實為 Microsoft Visual C++ runtime 家族，PE linker 為 4.20。
+精確編譯器小版本沒有足夠證據，維持未知。
+
+本輪以位址／邊界、bytes SHA-256、指令形狀、IDA library 辨識與 caller role 建立 Watcom
+`__CHK`／`__STK`／`__STKOVERFLOW_`／`__chk8087_`，以及 Microsoft
+`__alloca_probe`／C++／SEH handler 的排除 pattern。這些 helper 不計入玩法 parity，Go 也不
+照譯；只有 caller 把其結果轉成玩家可見分支時才重新開啟 caller 切片。另確認舊
+`symbols_ea.tsv` 在 runtime 區段仍有一格錯位，後續一律用 `symbols_fixed.tsv` 並以 bytes／xref
+獨立錨定。完整證據見 `docs/re/compiler-runtime-fingerprint-20260827.md`。
