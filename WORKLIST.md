@@ -1142,9 +1142,15 @@
   bias／duration／cooldown 錯搬給真人。真正可見入口之一是 `sub_DB257 @ 0xDB257` 的 AI 艦隊
   接戰鏈：抵達玩家殖民星時現會先呼叫 typed human-war writer，依難度寫 raw 5／6、清協議、
   寫 -75..-99 關係並點亮宣戰會談；raw 6 也已接入每回合關係成長／戰爭 -90 drift 與存檔。
-  完整原版派艦意願／真人目標選擇策略仍待閉合。見
+  後續全庫 raw displacement 稽核已找到正常 producer `sub_53EDB → sub_544A1`：現已接入
+  `player+0x816` 的 20–39 回合 decision cooldown 與存檔，並移除固定 12 回合寬限、1.25 倍
+  軍力門檻及誤用 losing-ground personality chance。`sub_544A1` 的完整 directional incident
+  memory、排名／科技趨勢與四類結果仍待 typed 化；目前願戰來源仍是明示的 `DecideStance`
+  fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與
-  [`docs/spec/ai-human-formal-war-policy.md`](docs/spec/ai-human-formal-war-policy.md)。
+  [`docs/spec/ai-human-formal-war-policy.md`](docs/spec/ai-human-formal-war-policy.md)、
+  [`docs/re/ai-human-fleet-target-producer-audit-20260828.md`](docs/re/ai-human-fleet-target-producer-audit-20260828.md) 與
+  [`docs/spec/ai-human-fleet-target-producer.md`](docs/spec/ai-human-fleet-target-producer.md)。
 - [ ] **艦隊、殖民、事件與安塔蘭忠實化**：重建 `Move_All_Ships_Toward_Stars_ @ 0xFFEEA`、
   `sub_E5EB3 @ 0xE5EB3` 殖民建立鏈、`Compute_Blockades_ @ 0xE5097`、`Compute_Contacts_ @ 0xEB192`、
   `Check_All_Rebellions_ @ 0xED44A`、`Determine_Event_ @ 0x2230A` 與

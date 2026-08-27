@@ -3,7 +3,6 @@ package shell
 import (
 	"testing"
 
-	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
@@ -203,18 +202,31 @@ func TestAIFleetETAGrowsWithDistance(t *testing.T) {
 	}
 }
 
-// 和平主義 AI 從不派艦隊——出發那一端的守門要真的擋得住。
-func TestPacifistAINeverLaunchesAFleet(t *testing.T) {
+func TestHumanTargetDecisionCooldownSurvivesSaveLoad(t *testing.T) {
 	s := newRaidTestSession(t)
-	for i := range s.AIPlayers {
-		s.AIPlayers[i].Personality = ai.PersonalityPacifist
+	s.AIPlayers[0].OriginalHumanTargetDecisionCooldown = 37
+	got := s.snapshot().restore().AIPlayers[0].OriginalHumanTargetDecisionCooldown
+	if got != 37 {
+		t.Fatalf("原版真人目標 decision cooldown 存讀檔後=%d，預期 37", got)
 	}
-	for turn := 0; turn < 30; turn++ {
-		s.Turn = aiRaidGraceTurns + turn
-		s.advanceAIFleets()
-		if aiFleetLaunched(s) {
-			t.Fatalf("第 %d 回合和平主義 AI 派出了艦隊", s.Turn)
+}
+
+func TestHumanTargetLaunchWritesOriginalCooldownRange(t *testing.T) {
+	s := newRaidTestSession(t)
+	s.advanceAIFleets()
+	launched := -1
+	for i := range s.AIPlayers {
+		if s.AIPlayers[i].FleetETA > 0 {
+			launched = i
+			break
 		}
+	}
+	if launched < 0 {
+		t.Fatal("測試前提不成立：應有 AI 建立真人目標並派艦")
+	}
+	got := s.AIPlayers[launched].OriginalHumanTargetDecisionCooldown
+	if got < 20 || got > 39 {
+		t.Fatalf("sub_53EDB 類型 2 cooldown=%d，應在 Random_(20)+20 的 20..39", got)
 	}
 }
 

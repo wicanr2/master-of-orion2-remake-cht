@@ -103,6 +103,10 @@ func (s *GameSession) advanceAIFleets() []AIFleetArrival {
 	var arrivals []AIFleetArrival
 	for i := range s.AIPlayers {
 		a := &s.AIPlayers[i]
+		decisionBlocked := a.OriginalHumanTargetDecisionCooldown > 0
+		if decisionBlocked {
+			a.OriginalHumanTargetDecisionCooldown--
+		}
 		if !a.FleetPosSet {
 			// 第一次跑到這裡就把位置定在母星(新對局與舊存檔共用這條初始化)。
 			if home := aiFleetStar(*a); home >= 0 {
@@ -140,7 +144,9 @@ func (s *GameSession) advanceAIFleets() []AIFleetArrival {
 			}
 			continue
 		}
-		s.aiLaunchRaidFleet(i)
+		if !decisionBlocked {
+			s.aiLaunchRaidFleet(i)
+		}
 	}
 	return arrivals
 }
@@ -160,7 +166,7 @@ func (s *GameSession) playerColonyAtStar(star int) (int, bool) {
 // 目標沿用 `aiRaidTarget`(原版的三層估值)——**這一輪沒有新增任何決策規則**,
 // 只是把「決定打誰」與「實際打到」之間插進了一段航程。
 func (s *GameSession) aiLaunchRaidFleet(i int) {
-	if s.DisableEvents || s.Turn < aiRaidGraceTurns {
+	if s.DisableEvents {
 		return
 	}
 	if s.EnableAIVsAI && s.aiLaunchAIFleet(i) {
@@ -189,6 +195,9 @@ func (s *GameSession) aiLaunchRaidFleet(i int) {
 	a.FleetDestStar = dest
 	a.FleetETA = eta
 	a.FleetTargetAI, a.FleetTargetAISet = -1, false
+	// sub_53EDB 類型 2 成功後把 player+0x816 寫成 Random_(20)+20。
+	// eventRoll 是 1..n，因此 +19 對映原版 20..39。
+	a.OriginalHumanTargetDecisionCooldown = s.eventRoll(20) + 19
 }
 
 // aiFleetAtPlayerColony 回傳這個 AI 的艦隊是否**停在**某個玩家殖民地上空

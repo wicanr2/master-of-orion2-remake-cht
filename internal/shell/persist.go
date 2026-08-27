@@ -63,7 +63,8 @@ type aiSnapshot struct {
 	OriginalBlockadeGrievanceRaw int                            `json:"originalBlockadeGrievanceRaw,omitempty"`
 	// LastRaidTurn 是這個 AI 上次突襲玩家的回合(見 ai_attack.go)。不存的話讀檔後
 	// 每個 AI 的間隔計時器都歸零,存檔當回合可能立刻又被突襲一次。
-	LastRaidTurn int `json:"last_raid_turn"`
+	LastRaidTurn                        int `json:"last_raid_turn"`
+	OriginalHumanTargetDecisionCooldown int `json:"originalHumanTargetDecisionCooldown,omitempty"`
 
 	// ColonyBuildings 見 shell.AIOpponent.ColonyBuildings 註解。舊存檔(本欄位加入前存的檔)
 	// 解碼時這裡是 nil——BombardColony 對 nil/空 map 視為「無建築」,回歸行為與加欄位前一致,
@@ -321,7 +322,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 			Leaders: a.Leaders, LeaderOffer: a.LeaderOffer,
 			LeaderLastOfferTurn: a.LeaderLastOfferTurn, ColonyLeaderNames: a.ColonyLeaderNames,
 			Personality: a.Personality, LastRaidTurn: a.LastRaidTurn,
-			OriginalTechProfile: a.OriginalTechProfile, OriginalTechProfileKnown: a.OriginalTechProfileKnown,
+			OriginalHumanTargetDecisionCooldown: a.OriginalHumanTargetDecisionCooldown,
+			OriginalTechProfile:                 a.OriginalTechProfile, OriginalTechProfileKnown: a.OriginalTechProfileKnown,
 			OriginalFoodDeficitTurns:     a.OriginalFoodDeficitTurns,
 			OriginalWarFlag60ERaw:        a.OriginalWarFlag60ERaw,
 			OriginalBlockadeGrievanceRaw: a.OriginalBlockadeGrievanceRaw,
@@ -454,7 +456,8 @@ func (snap sessionSnapshot) restore() *GameSession {
 			Leaders: a.Leaders, LeaderOffer: a.LeaderOffer,
 			LeaderLastOfferTurn: a.LeaderLastOfferTurn, ColonyLeaderNames: a.ColonyLeaderNames,
 			Personality: a.Personality, LastRaidTurn: a.LastRaidTurn,
-			OriginalTechProfile: a.OriginalTechProfile, OriginalTechProfileKnown: a.OriginalTechProfileKnown,
+			OriginalHumanTargetDecisionCooldown: a.OriginalHumanTargetDecisionCooldown,
+			OriginalTechProfile:                 a.OriginalTechProfile, OriginalTechProfileKnown: a.OriginalTechProfileKnown,
 			OriginalFoodDeficitTurns:     a.OriginalFoodDeficitTurns,
 			OriginalWarFlag60ERaw:        a.OriginalWarFlag60ERaw,
 			OriginalBlockadeGrievanceRaw: a.OriginalBlockadeGrievanceRaw,

@@ -96,10 +96,12 @@ type AIOpponent struct {
 	// Spies 分開，符合手冊 Spy(進攻)／Agent(防守) 的兩種 slot。
 	DefensiveAgents int
 
-	// LastRaidTurn 是這個 AI 上次對玩家發動突襲的回合(見 ai_attack.go),用來維持
-	// aiRaidInterval 的最短間隔。0 = 從未突襲(Go 零值即想要的預設值:第一次突襲最早
-	// 發生在 Turn >= aiRaidGraceTurns,不會因為零值提早)。
+	// LastRaidTurn 是這個 AI 上次對玩家發動突襲的回合(見 ai_attack.go)，只供
+	// remake 的「停在同星不可每回合重複結算」adapter；出兵決策改讀原版 cooldown。
 	LastRaidTurn int
+	// OriginalHumanTargetDecisionCooldown 對應原版 player+0x816（decimal +2070）。
+	// sub_53EDB 只在它為 0 時評估真人目標；類型 2 成功後寫 Random_(20)+20。
+	OriginalHumanTargetDecisionCooldown int `json:"originalHumanTargetDecisionCooldown,omitempty"`
 
 	// WantsAudience 是「這位對手正在請求會談」(原版 `Humans_Requesting_Diplomacy_` 那個
 	// 位元遮罩裡屬於它的那一位)。AudienceReason 是來意(宣戰/提議貿易/提議結盟)。

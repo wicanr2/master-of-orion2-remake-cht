@@ -27,24 +27,19 @@ import (
 // **「什麼時候打、打贏了會怎樣」這一段仍是 remake 的模型**,原版對應的決策函式尚未反編。
 // 下面每個常數都標明了這一點,別把它們當成考據結果。
 //
-// 設計上刻意保守(這是「讓遊戲有壓力」而不是「讓玩家開局被輾死」):
-//   - 前 aiRaidGraceTurns 回合完全不打
-//   - 只有態勢已是戰爭、且軍力真的領先的 AI 才會動手
+// 出兵外圈已改用 sub_53EDB 的目標空值、正式戰爭與 +0x816 decision cooldown 契約。
+// `sub_544A1` 的完整事件記憶／排名輸入尚未可表示，因此願戰判斷暫時只投影既有戰爭態勢；
+// 不再疊加開局寬限、軍力倍率或 personality 擬亂數。
+//
+// 結算仍是 remake adapter：
 //   - 損失有界:人口不低於 1、BC 不為負、一次最多毀一棟建築
 //   - 玩家艦隊在場會實際參戰並可能擊退突襲
 
 const (
-	// aiRaidGraceTurns 是開局寬限:這之前 AI 絕不突襲(remake 的平衡值,非原版數字)。
-	// 這是 AI 突襲自己的 remake 寬限；安塔蘭已改走原版科技延遲、資源、建艦與出兵鏈，
-	// 兩者不能再用固定起始回合互相比照。
-	aiRaidGraceTurns = 12
 	// aiRaidInterval 是同一個 AI 兩次突襲的最短間隔(回合)。remake 的節奏值,
 	// 依 300 回合探針調過:間隔 6 時三個 AI 同時開戰會變成「平均每 3.3 回合被打一次」、
 	// 連續兩百多回合,玩起來是磨而不是壓力;10 回合把頻率砍半,單次的痛感不變。
 	aiRaidInterval = 10
-	// aiRaidStrengthMargin 是發動突襲所需的軍力領先倍率(百分比)。125 = AI 軍力要有
-	// 玩家的 1.25 倍才敢動手。remake 的門檻值。
-	aiRaidStrengthMargin = 125
 	// aiRaidDistanceUnit 與 aiDistanceUnit 同一把尺(見 session.go),把星圖歸一化座標
 	// 換算成原版鄰近價值用的距離單位。
 	aiRaidDistanceUnit = aiDistanceUnit
@@ -68,7 +63,7 @@ type AIRaidReport struct {
 // DisableEvents 時整段停用(與 advanceAntares 一致,供確定性探針/測試使用)。
 func (s *GameSession) advanceAIRaids() {
 	s.LastRaidReport = nil
-	if s.DisableEvents || s.Turn < aiRaidGraceTurns {
+	if s.DisableEvents {
 		return
 	}
 	for i := range s.AIPlayers {
@@ -88,25 +83,13 @@ func (s *GameSession) aiRaidWilling(i int) bool {
 	if a.Treaty.FormalPolicy < gamedata.DIPLO_LIMITED_WAR && a.StanceName != stanceNames[ai.StanceWar] {
 		return false // 只有已經進入戰爭態勢的 AI 才動手
 	}
-	if s.Turn-a.LastRaidTurn < aiRaidInterval {
+	if a.OriginalHumanTargetDecisionCooldown > 0 {
 		return false
 	}
-	// 軍力門檻:玩家軍力 0 時也要求 AI 至少有一點戰力,不讓 0 打 0。
-	pm := s.playerMilitary()
 	if a.FleetStrength <= 0 {
 		return false
 	}
-	if pm > 0 && a.FleetStrength*100 < pm*aiRaidStrengthMargin {
-		return false
-	}
-	// 性格:好戰/冷酷的 AI 更常動手。用「劣勢時的反應強度」表當積極度——
-	// 那張表的語意(_personality_losing_ground_chance)最接近「多敢開打」,
-	// 但**用在這個判斷點是 remake 的選擇**,原版在哪裡讀它還沒反編確認。
-	chance := ai.PersonalityLosingGroundChance(a.Personality)
-	if chance <= 0 {
-		return false // 和平主義(0)從不主動突襲
-	}
-	return (s.Turn*7+i*13)%100 < chance // 確定性擬亂數,保持存檔/探針可重現
+	return true
 }
 
 // aiRaidTarget 挑第 i 個 AI 最想打的玩家殖民地,回傳其索引;沒有可打的回 -1。

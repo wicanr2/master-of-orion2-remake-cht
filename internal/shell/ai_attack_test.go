@@ -14,13 +14,13 @@ import (
 //   - 「何時打、打贏怎樣」是 remake 的模型,測的是**界限**(不會滅殖民地、BC 不為負),
 //     不是「數字等於原版」——原版那段還沒反編。
 
-// newRaidTestSession 造一個「AI 已宣戰、軍力壓倒、時間也到了」的 session。
+// newRaidTestSession 造一個「AI 已進戰爭態勢且有艦隊」的 session。
 func newRaidTestSession(t *testing.T) *GameSession {
 	t.Helper()
 	s := NewDemoSession()
 	s.EnableAIVsAI = false
-	s.Turn = aiRaidGraceTurns + 1
-	s.Fleet().Ships = nil // 玩家無艦隊 → playerMilitary()=0,隔離軍力門檻這個變數
+	s.Turn = 20
+	s.Fleet().Ships = nil
 	for i := range s.AIPlayers {
 		s.AIPlayers[i].StanceName = stanceNames[ai.StanceWar]
 		s.AIPlayers[i].FleetStrength = 400
@@ -53,19 +53,25 @@ func aiFleetLaunched(s *GameSession) bool {
 	return false
 }
 
-// ⚠ 這四個「守門」測試在第 47 項(AI艦隊移動)之後驗的是**出發那一端**(aiLaunchRaidFleet),
+// ⚠ 這些「守門」測試在第 47 項(AI艦隊移動)之後驗的是**出發那一端**(aiLaunchRaidFleet),
 // 不是結算端。理由:守門條件跟著艦隊模型搬到了出發時刻,若還是只呼叫 advanceAIRaids,
 // 這幾支會因為「艦隊本來就不在目標上」而**假綠**——測不到任何東西卻一路通過。
-func TestAIRaidGracePeriod(t *testing.T) {
+func TestAIHumanTargetDecisionCooldown(t *testing.T) {
 	s := newRaidTestSession(t)
-	s.Turn = aiRaidGraceTurns - 1
+	for i := range s.AIPlayers {
+		s.AIPlayers[i].OriginalHumanTargetDecisionCooldown = 2
+	}
 	s.advanceAIFleets()
 	if aiFleetLaunched(s) {
-		t.Error("寬限期內不該派出艦隊")
+		t.Error("原版 decision cooldown 尚未歸零時不該派出艦隊")
 	}
-	s.advanceAIRaids()
-	if s.LastRaidReport != nil {
-		t.Errorf("寬限期內不該突襲,卻發生了:%+v", s.LastRaidReport)
+	s.advanceAIFleets()
+	if aiFleetLaunched(s) {
+		t.Error("cooldown 從 1 減到 0 的同回合仍不該派出艦隊")
+	}
+	s.advanceAIFleets()
+	if !aiFleetLaunched(s) {
+		t.Error("cooldown 已歸零且戰爭態勢成立時應允許 fallback producer 派艦")
 	}
 }
 
@@ -84,45 +90,30 @@ func TestAIRaidNeedsWarStance(t *testing.T) {
 	}
 }
 
-// 軍力門檻:玩家艦隊夠強時 AI 不敢動手(aiRaidStrengthMargin)。
-func TestAIRaidNeedsStrengthAdvantage(t *testing.T) {
+func TestAIHumanTargetProducerHasNoInventedStrengthGate(t *testing.T) {
 	s := newRaidTestSession(t)
 	for i := range s.AIPlayers {
 		s.AIPlayers[i].FleetStrength = 10
 	}
-	// 玩家軍力遠超 AI。
+	// 玩家軍力遠超 AI；原版 sub_53EDB/sub_544A1 並沒有現行舊版 1.25 倍固定門檻。
 	s.Fleet().Ships = []Ship{{Class: "巡洋艦"}, {Class: "巡洋艦"}, {Class: "巡洋艦"}}
 	if pm := s.playerMilitary(); pm == 0 {
 		t.Fatal("測試前提不成立:玩家軍力應 > 0")
 	}
 	s.advanceAIFleets()
-	if aiFleetLaunched(s) {
-		t.Error("AI 軍力不足不該派出艦隊")
-	}
-	s.advanceAIRaids()
-	if s.LastRaidReport != nil {
-		t.Errorf("AI 軍力不足不該突襲,卻發生了:%+v", s.LastRaidReport)
+	if !aiFleetLaunched(s) {
+		t.Error("不得再用自創 1.25 倍軍力門檻阻擋原版目標 producer fallback")
 	}
 }
 
-// 和平主義的反應強度是 0(原版 _personality_losing_ground_chance 第 6 欄),從不主動突襲。
-func TestAIRaidPacifistNeverRaids(t *testing.T) {
+func TestAIHumanTargetProducerDoesNotReuseLosingGroundChance(t *testing.T) {
 	s := newRaidTestSession(t)
 	for i := range s.AIPlayers {
 		s.AIPlayers[i].Personality = ai.PersonalityPacifist
 	}
-	for turn := 0; turn < 30; turn++ {
-		s.Turn = aiRaidGraceTurns + turn
-		s.advanceAIFleets()
-		if aiFleetLaunched(s) {
-			t.Fatalf("和平主義 AI(反應強度 %d)不該派出艦隊",
-				ai.PersonalityLosingGroundChance(ai.PersonalityPacifist))
-		}
-		s.advanceAIRaids()
-		if s.LastRaidReport != nil {
-			t.Fatalf("和平主義 AI 不該突襲(反應強度 %d),卻發生了:%+v",
-				ai.PersonalityLosingGroundChance(ai.PersonalityPacifist), s.LastRaidReport)
-		}
+	s.advanceAIFleets()
+	if !aiFleetLaunched(s) {
+		t.Fatal("不得把 losing-ground chance 誤當 sub_544A1 的出兵 veto")
 	}
 }
 
@@ -193,23 +184,15 @@ func TestAIRaidRepelledByFleetAtStar(t *testing.T) {
 	// ⚠ 2026-08-07 加的,理由值得寫下來:`colonyDefense` 的軌道防禦先前是
 	// `CommandPointsFromBuildings × 10`(自編係數),星基因此值 10 —— 比一艘巡洋艦(8)還強。
 	// 那與 `gamedata/satellite.go` 的校準**自相矛盾**:那份校準明講星基 ≈ 驅逐艦 tier(4)。
-	// 改用同一套 space 預算推導之後星基只值 3,而 AI 的願打門檻是玩家艦隊的 125%——
-	// 兩艘巡洋艦(16)配一座光禿禿的星基,防禦 19 < 門檻 21,**AI 會贏,而那是正確的結果**。
+	// 改用同一套 space 預算推導之後星基只值 3；本測試只鎖定抵達後的攻防結果。
 	//
 	// 這個測試守的是「把艦隊擺對地方有意義」,不是「星基很強」。所以把母星升級成真的有投資
 	// 防禦的樣子(戰鬥站 space 500,是星基的兩倍),而不是把模型改回去遷就測試。
 	s.ColonyBuildings[0]["戰鬥站"] = true
 
-	// AI 軍力要同時滿足兩個條件才測得到「擊退」:①過得了 aiRaidStrengthMargin 門檻
-	// (否則它根本不動手)②低於殖民地防禦(否則會突破)。艦艇戰力表日後若調整,
-	// 這兩個界限會自動跟著走,不用回來改硬編數字。
-	pm, def := s.playerMilitary(), s.colonyDefense(0)
-	minWilling := pm*aiRaidStrengthMargin/100 + 1
-	if minWilling > def {
-		t.Fatalf("測試前提不成立:願打門檻 %d 已高於母星防禦 %d,擊退情境不可能出現", minWilling, def)
-	}
+	def := s.colonyDefense(0)
 	for i := range s.AIPlayers {
-		s.AIPlayers[i].FleetStrength = minWilling
+		s.AIPlayers[i].FleetStrength = def
 	}
 	strengthBefore := s.AIPlayers[0].FleetStrength
 
