@@ -17,18 +17,6 @@ func originalRelationFromNormalized(value int) int { return clampRelation(value)
 
 func normalizedRelationFromOriginal(value int) int { return clampRelation(value * 2 / 5) }
 
-func (s *GameSession) aiEventGovernment(index int) int {
-	if index < 0 || index >= len(s.AIPlayers) {
-		return int(gamedata.MoraleGovDictatorship)
-	}
-	ai := s.AIPlayers[index]
-	race := aiRaceIndex(ai)
-	if race < 0 || race >= len(Races) {
-		return int(gamedata.MoraleGovDictatorship)
-	}
-	return gamedata.OrigRaceTrait(Races[race].OrigIdx, gamedata.TRAIT_GOVERNMENT)
-}
-
 func (s *GameSession) pickDiplomaticIncidentPartner(target eventEmpireTarget) (diplomaticIncidentPartner, bool) {
 	if s.eventRand == nil {
 		s.eventRand = newRandStream(s.EventSeed*2654435761 + 1)
@@ -83,27 +71,20 @@ func (s *GameSession) applyDiplomaticIncident(evID int, target eventEmpireTarget
 		return eventResult{}, false
 	}
 	actorName := s.eventEmpireTargetName(target)
-	actorGovernment := int(s.Government)
-	targetCharismatic := false
 	current := 0
 
 	switch {
 	case target.kind == eventEmpireAI && partner.kind == eventEmpireAI:
 		s.ensureAIRelations()
 		current = s.AIRelations[target.index][partner.index]
-		actorGovernment = s.aiEventGovernment(target.index)
-		targetCharismatic = aiRaceHasTrait(s.AIPlayers[partner.index], gamedata.TRAIT_CHARISMATIC)
 	case target.kind == eventEmpireAI:
 		current = s.AIPlayers[target.index].Relation
-		actorGovernment = s.aiEventGovernment(target.index)
-		targetCharismatic = s.RaceCharismatic()
 	default:
 		current = s.AIPlayers[partner.index].Relation
-		targetCharismatic = aiRaceHasTrait(s.AIPlayers[partner.index], gamedata.TRAIT_CHARISMATIC)
 	}
 
 	raw, ok := gamedata.OriginalDiplomaticIncidentRelation(originalRelationFromNormalized(current),
-		evID, actorGovernment, targetCharismatic, partner.policy)
+		evID, partner.policy)
 	if !ok {
 		return eventResult{}, false
 	}
@@ -119,12 +100,12 @@ func (s *GameSession) applyDiplomaticIncident(evID int, target eventEmpireTarget
 
 	if evID == 4 {
 		return eventResult{
-			Message:   fmt.Sprintf("%s 與 %s 之間爆發外交暗殺風波，兩國關係惡化", actorName, partner.name),
-			MessageEN: fmt.Sprintf("An assassination plot damaged diplomatic relations between %s and %s.", actorName, partner.name),
+			Message:   fmt.Sprintf("%s 與 %s 之間爆發外交暗殺風波", actorName, partner.name),
+			MessageEN: fmt.Sprintf("An assassination plot erupted between %s and %s.", actorName, partner.name),
 		}, true
 	}
 	return eventResult{
-		Message:   fmt.Sprintf("%s 與 %s 締結外交聯姻，兩國關係大幅改善", actorName, partner.name),
-		MessageEN: fmt.Sprintf("A diplomatic marriage greatly improved relations between %s and %s.", actorName, partner.name),
+		Message:   fmt.Sprintf("%s 與 %s 締結外交聯姻", actorName, partner.name),
+		MessageEN: fmt.Sprintf("A diplomatic marriage was arranged between %s and %s.", actorName, partner.name),
 	}, true
 }

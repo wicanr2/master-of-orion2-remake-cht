@@ -14,7 +14,7 @@ func makeAIAliveForDiplomaticIncident(a *AIOpponent) {
 	}
 }
 
-func TestDiplomaticIncidentRequiresWarAndUsesOriginalMarriageCap(t *testing.T) {
+func TestDiplomaticIncidentRequiresWarAndPreservesRelation(t *testing.T) {
 	s := NewDemoSession()
 	for i := range s.AIPlayers {
 		s.AIPlayers[i].Colonies = nil
@@ -30,15 +30,16 @@ func TestDiplomaticIncidentRequiresWarAndUsesOriginalMarriageCap(t *testing.T) {
 	if !ok || !strings.Contains(result.Message, stripAILabel(s.AIPlayers[0].Name)) {
 		t.Fatalf("事件 5 應使用同一戰爭對象播報：ok=%v result=%+v", ok, result)
 	}
-	if s.AIPlayers[0].Relation != -10 {
-		t.Fatalf("raw -25 戰爭上限應投影為 -10，got %d", s.AIPlayers[0].Relation)
+	if s.AIPlayers[0].Relation != -40 {
+		t.Fatalf("對稱戰爭狀態會在 Change_Relations_ 早退，關係應保留 -40，got %d",
+			s.AIPlayers[0].Relation)
 	}
 	if s.AIPlayers[0].Treaty.FormalPolicy != gamedata.DIPLO_WAR {
 		t.Fatal("外交聯姻不得自行終止戰爭")
 	}
 }
 
-func TestDiplomaticAssassinationUpdatesAIAISymmetrically(t *testing.T) {
+func TestDiplomaticAssassinationPreservesSymmetricAIRelation(t *testing.T) {
 	s := NewDemoSession()
 	s.PlayerColonies = nil
 	for i := range s.AIPlayers {
@@ -56,8 +57,9 @@ func TestDiplomaticAssassinationUpdatesAIAISymmetrically(t *testing.T) {
 	if !ok || result.Message == "" || result.MessageEN == "" {
 		t.Fatalf("AI／AI 事件 4 應成立：ok=%v result=%+v", ok, result)
 	}
-	if s.AIRelations[0][1] != s.AIRelations[1][0] || s.AIRelations[0][1] >= -10 {
-		t.Fatalf("關係應對稱惡化：%d/%d", s.AIRelations[0][1], s.AIRelations[1][0])
+	if s.AIRelations[0][1] != -10 || s.AIRelations[1][0] != -10 {
+		t.Fatalf("對稱戰爭狀態會在 Change_Relations_ 早退，關係不應寫回：%d/%d",
+			s.AIRelations[0][1], s.AIRelations[1][0])
 	}
 }
 
@@ -123,7 +125,8 @@ func TestDiplomaticIncidentWritesInactiveHotseatTarget(t *testing.T) {
 	if !ok || result.Message == "" || s.ActiveSeat != 0 {
 		t.Fatalf("非目前席位應結算後恢復目前席位：ok=%v active=%d result=%+v", ok, s.ActiveSeat, result)
 	}
-	if s.AIPlayers[0].Relation != -10 {
-		t.Fatalf("非目前席位事件應回寫共同外交邊：got %d", s.AIPlayers[0].Relation)
+	if s.AIPlayers[0].Relation != -40 {
+		t.Fatalf("非目前席位的對稱戰爭事件也不應寫回關係：got %d",
+			s.AIPlayers[0].Relation)
 	}
 }

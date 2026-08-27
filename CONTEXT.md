@@ -60,6 +60,11 @@
 
 ## 三、工作方法
 
+- **方向正式狀態** — 原版外交 record 以「觀察者帝國 → 目標帝國」保存
+  `ForeignPolicy`，兩方數值不可因關係分數會鏡射就假定必然對稱。remake 目前的
+  `Treaty.FormalPolicy` 及 `AIPolicies` 是對稱投影；逆向時必須明寫資料模型限制。
+  _避免_：對稱關係、戰爭旗標（這些詞會隱藏原版的方向性）
+
 - **正式網路回合等待** — `networkWaitScreen` 擁有唯一的 session poll 與兩階段鎖步 update loop，
   並共用 `netNextTurnScreen` 的原版面板 renderer、聊天記錄與輸入狀態；`netNextTurnDemo` 只是
   無 socket 畫廊資料。_避免_：把 renderer 稱為畫廊專用，或讓 renderer 再次 poll 而吞掉鎖步封包。

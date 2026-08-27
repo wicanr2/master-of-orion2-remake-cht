@@ -769,9 +769,11 @@
   不再自創選艦、移交 AI 或狀態變更；1.50 二進位未取得，該版本仍標未知。
   事件 4／5 外交暗殺／聯姻亦已閉合：`sub_23B7D` 先在存活已接觸帝國間 reservoir 抽第二帝國，
   caller 再要求正式狀態 4／5；抽到和平對象時候選直接失敗而不重抽。consumer 以 raw
-  `-100／+100` 呼叫 `Change_Relations_ @ 0x4E3B5`，套目前關係、actor 政體、第二帝國
-  Charismatic 與戰爭 `-25` 上限。Go 已移除自訂 `±12`，在原版 `-100..100` 尺度運算後投影回
-  `-40..40`，玩家／AI 與 AI／AI 對稱回寫均已接；熱座真人彼此外交矩陣仍是資料模型缺口。
+  `-100／+100` 呼叫 `Change_Relations_ @ 0x4E3B5`。2026-08-27 完整控制流勘誤證實：該函式
+  讀取第二帝國對受害帝國的反向正式狀態，值 `>=4` 時在 `0x4E75C..0x4E764`
+  直接返回；舊述「套政體／Charismatic 後夾到 -25」對對稱戰爭路徑不可達。Go 已移除
+  自訂 `±12` 與這個假效果；玩家／AI 與 AI／AI 事件仍播報，但保留現有關係分數。
+  熱座真人彼此外交矩陣與原版方向不對稱條約仍是資料模型缺口。
   事件 27 曲速漏斗亦已由 `sub_23CED`、`sub_2230A @ 0x22D2F`、
   `sub_206A2 @ 0x212BE`、`sub_21371 @ 0x21902` 與完整
   `Move_All_Ships_Toward_Stars_ @ 0xFFEEA` 閉合：1.31 保存均勻抽中的 active 艦艇索引，
@@ -945,8 +947,10 @@
   `sub_101483` 在消費端加入；證據與規格見
   [`docs/re/sabotage-score-upstream-audit-20260825.md`](docs/re/sabotage-score-upstream-audit-20260825.md) 與
   [`docs/spec/sabotage-score-upstream.md`](docs/spec/sabotage-score-upstream.md)。仍待
-  完整一般外交關係演化與 AI 戰爭／協議決策；事件 4／5 已有 `Change_Relations_` 的窄切片，
-  但不能代替其餘 28 個 caller。特殊貿易與 ETA
+  完整一般外交關係演化與 AI 戰爭／協議決策。2026-08-27 已以 IDA Pro 9.4
+  匯出 `Change_Relations_` 完整 406 條指令與 30 個直接 caller，並勘誤事件 4／5 在對稱戰爭
+  下應早退。其餘 caller 仍需依 reason、方向條約、人類／AI 守門與 `+0x64F..+0x6BF`
+  快取／抱怨欄位分類，不得用單一線性 `adjustRelation` 冒充已閉合。特殊貿易與 ETA
   callback 仍是可玩 remake 模型，普通協議的 AI 政體也仍固定 Dictatorship。
   領袖招募現依 `sub_97A66/sub_9781D/sub_97B2D` 每回合擲骰，包含前五回合門檻、
   Charismatic／Repulsive、Famous 一般／進階加成、兩類四席與隨星曆開放的隨機候選前綴；
