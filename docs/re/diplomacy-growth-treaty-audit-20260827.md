@@ -62,9 +62,15 @@
   `> abs(current)` 才擲 `Random(4)`，等於 1 時再以 `Random(2)-1` 得到 0／1
   step。鎖定 word `observer+2*target+0x737 == 0` 時，current 才向目標靠近。
   正式狀態 `>=4` 時，不論鎖定與否都把高於 `-90` 的 current 壓到 `-90`。
+- `0x4E27C..0x4E2E3` 依 observer 外圈、target 內圈做轉置複製：
+  `dest[observer][target] = source[target][observer]`。由於兩個方向都會走到，
+  低槽→高槽先被高槽→低槽覆寫，之後反向再讀到該新值；因此每對最終保留
+  **高槽 observer→低槽 target** 的 current，self 固定清為 0。這與前段 pair loop
+  由 `inner` 高槽作 actor 的方向一致。
 - **資料模型投影**：remake 只有 AI→玩家單邊 `AIOpponent.Relation`，因此以
-  AI 種族為 observer、玩家種族為 target 保存 `+0x61F`。自訂種族不在原表，
-  失敗即關閉為 0；反向與 AI↔AI 全矩陣仍是資料模型缺口。
+  AI 種族為 observer、玩家種族為 target 保存 `+0x61F`；AI↔AI 則每對保存
+  高槽→低槽 raw current，鏡射到既有雙向顯示矩陣。自訂種族不在原表，
+  失敗即關閉為 0。玩家反向與完整方向條約仍是資料模型缺口。
 
 ## 已證實但本切片不實作
 

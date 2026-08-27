@@ -4449,11 +4449,11 @@ type GameSession struct {
 	PlayerCapitolPlanetKnown     bool
 	PlayerCapitolRebuildRequired bool
 	AIPlayers                    []AIOpponent
-	// AIRelations 是 AI 對手彼此的外交關係矩陣(AIRelations[i][j] = AI i 對 AI j 的關係分數,
-	// 夾 -40..40,同 AIOpponent.Relation 尺度)。先前 AI 只對玩家單向有關係;此矩陣讓多帝國彼此
-	// 也有關係(依相對軍力漂移),使星系「活起來」並可支撐議會第三方搖擺票(見 advanceAIDiplomacy)。
-	// 對稱維護(i↔j 各記一半視角)。長度 = len(AIPlayers)。
-	AIRelations [][]int
+	// AIRelations 是 AI 對手彼此的 -40..40 顯示／消費投影。原版 raw current
+	// 另存在 AIRelationsRaw；Diplomacy_Growth_ 每對完成後依高槽→低槽方向鏡射。
+	AIRelations         [][]int
+	AIRelationsRaw      [][]int
+	AIRelationsRawKnown [][]bool
 	// EnableAIVsAI 是 remake 的可選強化開關。新示範／新局開啟；舊存檔缺欄位
 	// 解為 false，避免在沒有快照資料時突然改變既有對局。
 	EnableAIVsAI bool
@@ -5213,7 +5213,7 @@ func (s *GameSession) EndTurn() {
 	s.advanceAntaranVictory()  // 是否已攻陷安塔蘭母星(手冊三條勝利路徑之二,見 antaran_victory.go)
 	s.detectEmpireEliminationBroadcasts()
 	s.publishNextStatusBroadcast()
-	s.advanceAIDiplomacy() // AI 對手彼此外交關係漂移(多帝國活星系;支撐議會第三方搖擺)
+	s.advanceAIDiplomacy() // 由本回合原版關係結果推進可選 AI↔AI 政策／戰爭 consumer
 	s.advanceAISurrenders()
 	s.publishNextStatusBroadcast()
 	s.advanceCouncil()    // 銀河議會選舉(手冊三條勝利路徑之一:2/3 多數當選銀河領袖),記於 LastCouncilNotice
@@ -5506,30 +5506,10 @@ func (s *GameSession) ensureAIRelations() {
 	s.AIRelations = m
 }
 
-// advanceAIDiplomacy 每回合漂移 AI 對手彼此的外交關係:軍力領先者令鄰邦戒懼(關係下滑),尺度
-// /夾值同 AIOpponent.Relation。使多帝國彼此形成敵友,讓星系「活起來」並支撐議會第三方搖擺票。
+// advanceAIDiplomacy 只把本回合已由原版 Diplomacy_Growth_ 更新的 AI↔AI
+// 關係交給現有可選政策／戰爭模型。舊軍力差關係漂移已移除。
 func (s *GameSession) advanceAIDiplomacy() {
 	s.ensureAIRelations()
-	n := len(s.AIPlayers)
-	if n < 2 {
-		return
-	}
-	for i := 0; i < n; i++ {
-		for j := 0; j < n; j++ {
-			if i == j {
-				continue
-			}
-			gap := s.AIPlayers[j].FleetStrength - s.AIPlayers[i].FleetStrength // j 領先 → i 戒懼 j
-			r := s.AIRelations[i][j] - gap/20
-			if r > 40 {
-				r = 40
-			}
-			if r < -40 {
-				r = -40
-			}
-			s.AIRelations[i][j] = r
-		}
-	}
 	if s.EnableAIVsAI {
 		s.advanceAIAIDiplomacy()
 	}

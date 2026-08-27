@@ -66,6 +66,8 @@ func TestDiplomacyGrowthRawAndRandPersist(t *testing.T) {
 	s.AIPlayers[0].OriginalRelationKnown = true
 	s.AIPlayers[0].OriginalRelationTargetRaw = -24
 	s.AIPlayers[0].OriginalRelationTargetKnown = true
+	s.ensureOriginalAIAIRelations()
+	s.setOriginalAIAIRelation(0, 1, -13)
 	s.diplomacyGrowthRandForTurn().Intn(100)
 	s.diplomacyGrowthRandForTurn().Intn(3)
 	snap := s.snapshot()
@@ -76,5 +78,35 @@ func TestDiplomacyGrowthRawAndRandPersist(t *testing.T) {
 	}
 	if got.diplomacyGrowthRand == nil || got.diplomacyGrowthRand.Draws() != 2 {
 		t.Fatalf("diplomacy growth RNG draws did not round-trip: %+v", got.diplomacyGrowthRand)
+	}
+	if got.AIRelationsRaw[0][1] != -13 || !got.AIRelationsRawKnown[1][0] {
+		t.Fatalf("AI↔AI raw relation did not round-trip: raw=%v known=%v",
+			got.AIRelationsRaw, got.AIRelationsRawKnown)
+	}
+}
+
+func TestOriginalAIAIRelationsInitializeFromHighToLowRaceTarget(t *testing.T) {
+	s := NewDemoSession()
+	s.AIRelations, s.AIRelationsRaw, s.AIRelationsRawKnown = nil, nil, nil
+	s.ensureOriginalAIAIRelations()
+	lo, hi := aiRaceIndex(s.AIPlayers[0]), aiRaceIndex(s.AIPlayers[1])
+	want, ok := gamedata.OriginalBaseRelation(Races[hi].OrigIdx, Races[lo].OrigIdx)
+	if !ok || s.AIRelationsRaw[0][1] != want || s.AIRelationsRaw[1][0] != want {
+		t.Fatalf("high→low target missing: raw=%v want=%d", s.AIRelationsRaw, want)
+	}
+}
+
+func TestOriginalAIAIRelationWarCapUsesFormalPolicy(t *testing.T) {
+	s := NewDemoSession()
+	s.ensureAIAIState()
+	s.ensureOriginalAIAIRelations()
+	s.setOriginalAIAIRelation(0, 1, 20)
+	s.AIPolicies[0][1], s.AIPolicies[1][0] = gamedata.DIPLO_WAR, gamedata.DIPLO_WAR
+	s.advanceOriginalDiplomacyGrowth()
+	if got := s.AIRelationsRaw[0][1]; got != -90 || s.AIRelationsRaw[1][0] != -90 {
+		t.Fatalf("formal war must mirror -90 raw, got %v", s.AIRelationsRaw)
+	}
+	if s.AIRelations[0][1] != normalizedRelationFromOriginal(-90) {
+		t.Fatalf("war projection mismatch: %v", s.AIRelations)
 	}
 }

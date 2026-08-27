@@ -1,6 +1,6 @@
 # 每回合外交關係成長規格
 
-**狀態：CONFORMED（玩家↔AI 可表示切片）**  
+**狀態：CONFORMED（玩家↔AI 與 AI↔AI 可表示切片）**
 證據：[`../re/diplomacy-growth-treaty-audit-20260827.md`](../re/diplomacy-growth-treaty-audit-20260827.md)。
 
 ## 範圍
@@ -39,8 +39,8 @@
 ## 種族目標與漂移
 
 1. 目標取 `byte_180ED4[observerRace][targetRace]` 的 signed low byte。
-   現行投影以 AI 種族為 observer、玩家種族為 target；自訂種族採中立 0
-   的失敗即關閉投影。
+   玩家邊以 AI 種族為 observer、玩家種族為 target；AI↔AI 每對以高槽種族
+   為 observer、低槽種族為 target。自訂種族採中立 0 的失敗即關閉投影。
 2. 每條邊先擲 `roll(105)`；只有結果大於 `abs(current)` 才擲 `roll(4)`，
    等於 1 時再擲 `roll(2)-1` 得到 step 0／1。
 3. 未鎖定時以 step 向 target 靠近且不越過。正式狀態 `>=4` 時，把高於
@@ -50,6 +50,8 @@
 ## Remake 資料與玩家路徑
 
 - `AIOpponent.Relation` 維持供 UI／AI 消費的 `-40..40` 投影。
+- `AIRelations` 維持 AI↔AI 顯示／議會／政策消費投影；另保存對稱 raw current
+  與 Known。原版 `0x4E27C..0x4E2E3` 的覆寫順序使每對保留高槽→低槽結果。
 - 存檔另保存 raw current、raw target 與各自 Known。舊存檔以能往返保存
   每個整數顯示刻度的向外取整建立 raw；外部玩法改寫顯示值時重建 raw。
 - 使用可存檔的獨立確定性亂數流；這只保證 remake 重播，不宣稱原版 PRNG
@@ -63,3 +65,4 @@
 - `EndTurn` 正常路徑集中執行條約成長與目標漂移；正式戰爭可沿正常回合
   路徑形成戰爭態勢與突襲。
 - 存檔往返保留 raw current、raw target、Known 與亂數流位置。
+- 熱座接管 AI 帝國時同步過濾 AI↔AI 顯示、raw 與 Known 矩陣。

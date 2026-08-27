@@ -232,7 +232,9 @@ type sessionSnapshot struct {
 
 	// AIRelations 是 AI 對手彼此關係矩陣(見 GameSession.AIRelations)。omitempty:舊存檔無此欄位
 	// 解為 nil,ensureAIRelations 讀檔後自然補回,不破壞相容。
-	AIRelations [][]int `json:"aiRelations,omitempty"`
+	AIRelations         [][]int  `json:"aiRelations,omitempty"`
+	AIRelationsRaw      [][]int  `json:"aiRelationsRaw,omitempty"`
+	AIRelationsRawKnown [][]bool `json:"aiRelationsRawKnown,omitempty"`
 	// AI 對 AI 強化狀態。全部 omitempty，舊存檔解出 nil/false 後保持舊規則。
 	EnableAIVsAI bool                       `json:"enableAIVsAI,omitempty"`
 	AIWars       [][]bool                   `json:"aiWars,omitempty"`
@@ -365,6 +367,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		MercLastOfferTurn:         s.MercLastOfferTurn,
 		OfficerCooldowns:          s.OfficerCooldowns,
 		AIRelations:               s.AIRelations,
+		AIRelationsRaw:            s.AIRelationsRaw,
+		AIRelationsRawKnown:       s.AIRelationsRawKnown,
 		EnableAIVsAI:              s.EnableAIVsAI,
 		AIWars:                    s.AIWars,
 		AIPolicies:                s.AIPolicies,
@@ -490,6 +494,8 @@ func (snap sessionSnapshot) restore() *GameSession {
 		MercLastOfferTurn:         snap.MercLastOfferTurn,
 		OfficerCooldowns:          snap.OfficerCooldowns,
 		AIRelations:               snap.AIRelations,
+		AIRelationsRaw:            snap.AIRelationsRaw,
+		AIRelationsRawKnown:       snap.AIRelationsRawKnown,
 		EnableAIVsAI:              snap.EnableAIVsAI,
 		AIWars:                    snap.AIWars,
 		AIPolicies:                snap.AIPolicies,

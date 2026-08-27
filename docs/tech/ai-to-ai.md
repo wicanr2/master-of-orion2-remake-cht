@@ -6,13 +6,17 @@
 `EnableAIVsAI`；舊 JSON 存檔若沒有這個欄位，載入時保持關閉，避免把既有對局靜默改成
 另一套規則。
 
-這一層補的是可玩性與可重播的 N-way 互動，不宣稱已還原原版 AI 的逐艦設計、每一發武器
-或正式外交接受表。原版逐艦 blueprint 與精確門檻仍列在
+這一層的政策選擇、資源交換與抽象戰爭仍是可玩性模型，不宣稱已還原原版
+正式外交接受表、逐艦設計或每一發武器。2026-08-27 關係演化底層已改接
+`Diplomacy_Growth_` 的條約成長、14×14 種族目標與逐回合漂移；原版逐艦 blueprint
+與精確談判門檻仍列在
 [`docs/re/oracle-static-ida-20260811.md`](../re/oracle-static-ida-20260811.md) 的未知項目。
 
 ## 接線內容
 
-- `AIRelations` 兩兩矩陣形成 `AIWars`、`AIPolicies`、`AITrade`、`AIResearch` 四組可保存狀態。
+- `AIRelations` 是原版 raw current 的 `-40..40` 投影；raw 與 Known 另以矩陣保存。
+  每對依原版鏡射順序保留高槽 observer→低槽 target，再形成 `AIWars`、
+  `AIPolicies`、`AITrade`、`AIResearch` 四組可保存狀態。
   這些矩陣不再只供議會顯示，會進入每回合外交與艦隊決策。
 - remake 的代理門檻為：平均關係 `<= -25` 宣戰、戰爭中升至 `>= 12` 停戰、`>= 25` 形成同盟、
   `>= 8` 允許互不侵犯／貿易，`>= 25` 另允許研究協議。這些是 remake 規則，不能寫成原版
@@ -29,8 +33,8 @@
 
 ## 保存與測試
 
-`internal/shell/persist.go` 保存 `EnableAIVsAI`、四組矩陣與 AI 艦隊目標欄位；熱座切換會同步
-過濾矩陣，避免 AI 索引在換席位後錯位。
+`internal/shell/persist.go` 保存 `EnableAIVsAI`、政策矩陣、raw current／Known 與 AI
+艦隊目標欄位；熱座切換會同步過濾矩陣，避免 AI 索引在換席位後錯位。
 
 抽樣護欄位於 `internal/shell/ai_vs_ai_test.go`：
 

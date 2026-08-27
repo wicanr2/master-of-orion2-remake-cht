@@ -953,8 +953,9 @@
   快取／抱怨欄位分類，不得用單一線性 `adjustRelation` 冒充已閉合。2026-08-27
   另由 `sub_4D78E` 閉合 `byte_180ED4` 14×14 種族關係目標表，並接回
   `Diplomacy_Growth_` 的 `Random(105)`／`Random(4)`／`Random(2)` 漂移與
-  戰爭 -90 壓制；舊性格／軍力差關係漂移及其測試斷言已移除。remake 目前只投影
-  AI→玩家方向，自訂種族採中立 fallback；AI↔AI 全矩陣、反向條約、`+0x737`
+  戰爭 -90 壓制；舊玩家↔AI 性格／軍力差及 AI↔AI 艦隊差關係漂移與其測試斷言已移除。
+  AI↔AI 現依 `0x4E27C..0x4E2E3` 的鏡射順序保存高槽→低槽 raw current，並接回
+  既有議會／政策 consumer、存檔與熱座矩陣壓縮。自訂種族採中立 fallback；反向條約、`+0x737`
   鎖定 writer、計時器與 reason 快取仍未閉合。特殊貿易與 ETA
   callback 仍是可玩 remake 模型，普通協議的 AI 政體也仍固定 Dictatorship。
   領袖招募現依 `sub_97A66/sub_9781D/sub_97B2D` 每回合擲骰，包含前五回合門檻、
