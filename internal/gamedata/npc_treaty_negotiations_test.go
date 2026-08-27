@@ -23,6 +23,17 @@ func TestOriginalNPCIncidentMemoryNegativeAndPositive(t *testing.T) {
 	}
 }
 
+func TestOriginalNPCTreatyCooldownUsesBetrayalGovernmentIndex(t *testing.T) {
+	plain, ok := OriginalNPCTreatyCooldownDelta(4, false, DIPLO_ALLIANCE, false)
+	if !ok || plain != 100 {
+		t.Fatalf("government 4 alliance cooldown=%d,%v，預期 100,true", plain, ok)
+	}
+	remembered, ok := OriginalNPCTreatyCooldownDelta(4, true, DIPLO_ALLIANCE, false)
+	if !ok || remembered != 10 {
+		t.Fatalf("+0x727 應改走索引 6：%d,%v，預期 10,true", remembered, ok)
+	}
+}
+
 func TestOriginalNPCTreatyNegotiationCreatesAllianceAndResearch(t *testing.T) {
 	rolls := []struct{ n, v int }{{250, 1}, {100, 100}, {100, 100}, {100, 1}}
 	pos := 0

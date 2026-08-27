@@ -242,6 +242,7 @@ type sessionSnapshot struct {
 	AIIncidentReasonRaw    [][]int  `json:"aiIncidentReasonRaw,omitempty"`
 	AIIncidentMagnitudeRaw [][]int  `json:"aiIncidentMagnitudeRaw,omitempty"`
 	AIIncidentMemoryRaw    [][]int  `json:"aiIncidentMemoryRaw,omitempty"`
+	AIIncidentBetrayalRaw  [][]bool `json:"aiIncidentBetrayalRaw,omitempty"`
 	AIWarDurationRaw       [][]int  `json:"aiWarDurationRaw,omitempty"`
 	AIDiplomacyCooldownRaw [][]int  `json:"aiDiplomacyCooldownRaw,omitempty"`
 	// AI 對 AI 強化狀態。全部 omitempty，舊存檔解出 nil/false 後保持舊規則。
@@ -385,6 +386,7 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		AIIncidentReasonRaw:       s.AIIncidentReasonRaw,
 		AIIncidentMagnitudeRaw:    s.AIIncidentMagnitudeRaw,
 		AIIncidentMemoryRaw:       s.AIIncidentMemoryRaw,
+		AIIncidentBetrayalRaw:     s.AIIncidentBetrayalRaw,
 		AIWarDurationRaw:          s.AIWarDurationRaw,
 		AIDiplomacyCooldownRaw:    s.AIDiplomacyCooldownRaw,
 		EnableAIVsAI:              s.EnableAIVsAI,
@@ -521,6 +523,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 		AIIncidentReasonRaw:       snap.AIIncidentReasonRaw,
 		AIIncidentMagnitudeRaw:    snap.AIIncidentMagnitudeRaw,
 		AIIncidentMemoryRaw:       snap.AIIncidentMemoryRaw,
+		AIIncidentBetrayalRaw:     snap.AIIncidentBetrayalRaw,
 		AIWarDurationRaw:          snap.AIWarDurationRaw,
 		AIDiplomacyCooldownRaw:    snap.AIDiplomacyCooldownRaw,
 		EnableAIVsAI:              snap.EnableAIVsAI,

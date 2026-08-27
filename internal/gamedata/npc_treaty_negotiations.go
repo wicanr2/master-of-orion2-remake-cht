@@ -4,6 +4,27 @@ package gamedata
 // 原始 16 bytes SHA-256：d045c3a754e49617cce57a4cdbfcd3a1cdf54b955ea21ea36be5b418e6f33f3c。
 var OriginalNPCGovernmentScores = [8]int{-50, -20, -20, 0, 20, 30, -70, 0}
 var originalNPCIncidentGovernmentThresholds = [8]int{40, 30, 20, 5, 0, -10, 50, 0}
+var originalNPCTreatyCooldownGovernment = [8]int{5, 10, 20, 5, 50, 40, 5, 0}
+
+// OriginalNPCTreatyCooldownDelta 對應 sub_5232E／sub_52049 對 +0x72F 的政府表副作用。
+// government 4 且單向 +0x727 已設時改讀索引 6；policy 1 為 1.5 倍，policy 2 或
+// tribute 為 2 倍。
+func OriginalNPCTreatyCooldownDelta(government int, betrayalMemory bool, policy ForeignPolicy, tribute bool) (int, bool) {
+	if government < 0 || government >= len(originalNPCTreatyCooldownGovernment) {
+		return 0, false
+	}
+	if government == 4 && betrayalMemory {
+		government = 6
+	}
+	base := originalNPCTreatyCooldownGovernment[government]
+	if tribute || policy == DIPLO_ALLIANCE {
+		return 2 * base, true
+	}
+	if policy == DIPLO_NON_AGGRESSION {
+		return base + base/2, true
+	}
+	return 0, true
+}
 
 type OriginalNPCIncidentMemoryInput struct {
 	PendingReason       int

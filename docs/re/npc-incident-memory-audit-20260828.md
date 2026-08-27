@@ -31,6 +31,13 @@ byte `+0x71F`。因此三欄應稱「待處理 reason／幅度／重複事件記
   並支援 JSON 往返及熱座索引壓縮。
 - AI↔AI 納貢的 reason 14 正面關係變動已寫入 pending；事件 4／5 在現行對稱戰爭路徑會依
   `Change_Relations_` 早退，因此不會偽造 pending。
-- **尚未閉合**：`+0x727` 的 producer、其他 Change_Relations_ reason 的 AI↔AI 可達 caller，
+- `+0x727` 已由 42 個全域 operand 站點確認：`sub_4D78E` 初始化清零，之後沒有 clearer；
+  `sub_5138E` 在 actor 破壞既有正式條約時，寫入 target→actor 方向。一般 AI 宣戰現先執行這個
+  writer，再改成戰爭政策。事件記憶的 government 4 特殊門檻已改讀該方向旗標。
+- `word_18105C @ 0x18105C` 的締約／納貢 cooldown 政府表為
+  `5／10／20／5／50／40／5／0`。government 4 有 `+0x727` 時改走索引 6；互不侵犯加 1.5 倍，
+  同盟與納貢加 2 倍到 `+0x72F`。remake 已保留原版 signed-byte 寫回及雙向各自政府／旗標。
+- **尚未閉合**：其他 Change_Relations_ reason 的 AI↔AI 可達 caller、`sub_4EB06／sub_4F0DC／
+  sub_533F4` 其餘 `+0x727` writer 的玩家回應路徑，
   以及原版 `.GAM` 外交矩陣匯入。這些留白不影響已接的一般記憶公式，但目前仍不可宣稱所有
   外交 incident writer 完整 parity。

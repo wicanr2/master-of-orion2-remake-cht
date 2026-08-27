@@ -4487,6 +4487,7 @@ type GameSession struct {
 	AIIncidentReasonRaw    [][]int
 	AIIncidentMagnitudeRaw [][]int
 	AIIncidentMemoryRaw    [][]int
+	AIIncidentBetrayalRaw  [][]bool
 	// AIWarDurationRaw／AIDiplomacyCooldownRaw 對應方向性 +0x717／+0x72F。
 	AIWarDurationRaw       [][]int
 	AIDiplomacyCooldownRaw [][]int

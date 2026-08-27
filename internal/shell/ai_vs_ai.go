@@ -51,6 +51,7 @@ func (s *GameSession) ensureAIAIState() {
 	s.AIIncidentReasonRaw = resizeIntMatrix(s.AIIncidentReasonRaw, n)
 	s.AIIncidentMagnitudeRaw = resizeIntMatrix(s.AIIncidentMagnitudeRaw, n)
 	s.AIIncidentMemoryRaw = resizeIntMatrix(s.AIIncidentMemoryRaw, n)
+	s.AIIncidentBetrayalRaw = resizeBoolMatrix(s.AIIncidentBetrayalRaw, n)
 	s.AIWarDurationRaw = resizeIntMatrix(s.AIWarDurationRaw, n)
 	s.AIDiplomacyCooldownRaw = resizeIntMatrix(s.AIDiplomacyCooldownRaw, n)
 	for i := range s.AIPolicies {
@@ -262,6 +263,7 @@ func (s *GameSession) declareOriginalAIAIWar(source, target int, roll func(int) 
 	if value < 1 || value > 25 {
 		return
 	}
+	s.markOriginalAITreatyBetrayal(source, target)
 	s.AIPolicies[source][target], s.AIPolicies[target][source] = gamedata.DIPLO_LIMITED_WAR, gamedata.DIPLO_LIMITED_WAR
 	s.AIWars[source][target], s.AIWars[target][source] = true, true
 	s.AITrade[source][target], s.AITrade[target][source] = false, false
@@ -332,6 +334,7 @@ func (s *GameSession) advanceOriginalAIAINegotiation(outer, inner int, roll func
 	if result.Policy != s.AIPolicies[outer][inner] {
 		s.AIPolicies[outer][inner], s.AIPolicies[inner][outer] = result.Policy, result.Policy
 		s.clearOriginalAIIncidentMemory(outer, inner)
+		s.addOriginalTreatyCooldown(outer, inner, result.Policy, false)
 	}
 	if result.TradeActive {
 		s.AITrade[outer][inner], s.AITrade[inner][outer] = true, true
@@ -342,6 +345,7 @@ func (s *GameSession) advanceOriginalAIAINegotiation(outer, inner int, roll func
 	if result.TributeMode != 0 {
 		s.AITributeModes[outer][inner] = result.TributeMode
 		s.clearOriginalAIIncidentMemory(outer, inner)
+		s.addOriginalTreatyCooldown(outer, inner, gamedata.DIPLO_NONE, true)
 	}
 	if result.RelationDelta != 0 {
 		current := s.originalAIAIRelation(outer, inner)

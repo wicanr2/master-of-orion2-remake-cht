@@ -979,7 +979,9 @@
   同輪已訂正 `+0x71F` 並非單純 treaty-break：`Change_Relations_` 的 `+0x64F／+0x65F` 保存 pending
   reason／幅度，`sub_252D5` 依政府表、協議與亂數形成 `+0x71F` 重複事件記憶。一般公式、
   ordered pair、雙向鏡射、談判第三方 +5、存檔與熱座壓縮均已接；納貢 reason 14 是首條可達
-  writer。仍待 `+0x727` 特殊分支及其餘 reason 的 AI↔AI 可達 caller。自訂種族採中立 fallback；
+  writer。`+0x727` 另由全域 42 個站點確認為單向永久違約旗標；一般 AI 宣戰現先依 `sub_5138E`
+  寫 target→actor，再讓 government 4 的事件門檻及 `word_18105C` 締約／納貢 cooldown 改走索引 6。
+  其餘玩家回應 writer 與 reason 的 AI↔AI 可達 caller仍待閉合。自訂種族採中立 fallback；
   反向玩家條約、`+0x737` 鎖定 writer、
   特殊宣戰 reason 20／22／68／113 及 `+0x6AF／+0x6BF` 記憶仍未閉合。特殊貿易與 ETA callback
   仍是可玩 remake 模型。證據與規格見

@@ -56740,6 +56740,22 @@
           "start_ea": "0x252d5"
         },
         "instruction": {
+          "bytes": "80bc372707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [edi+esi+727h], 1",
+          "ea": "0x25451"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "5a73b1f8c3c697bc44811242239ee195cb41bb84c21d6a7753b502c1471359b5",
+          "end_ea": "0x2552d",
+          "original_name": "sub_252D5",
+          "size": 600,
+          "start_ea": "0x252d5"
+        },
+        "instruction": {
           "bytes": "668b805f060000",
           "code_refs": [],
           "data_refs": [],
@@ -57885,6 +57901,22 @@
       },
       {
         "function": {
+          "bytes_sha256": "3c506a19939be2d46cf9f6d8b1cccb669391bf0fb2c1fcfb314d9bae29869af2",
+          "end_ea": "0x26d0d",
+          "original_name": "sub_26BBD",
+          "size": 336,
+          "start_ea": "0x26bbd"
+        },
+        "instruction": {
+          "bytes": "80bb2707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [ebx+727h], 1",
+          "ea": "0x26c85"
+        }
+      },
+      {
+        "function": {
           "bytes_sha256": "aeb2654e531456c40d580ca3d5d2caed3190585242d8c2fff991cfa762aaeb21",
           "end_ea": "0x27094",
           "original_name": "sub_26FBA",
@@ -57897,6 +57929,22 @@
           "data_refs": [],
           "disasm": "movsx   eax, byte ptr [ecx+eax+6D7h]",
           "ea": "0x26fe4"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "aeb2654e531456c40d580ca3d5d2caed3190585242d8c2fff991cfa762aaeb21",
+          "end_ea": "0x27094",
+          "original_name": "sub_26FBA",
+          "size": 218,
+          "start_ea": "0x26fba"
+        },
+        "instruction": {
+          "bytes": "80bc312707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [ecx+esi+727h], 1",
+          "ea": "0x27043"
         }
       },
       {
@@ -58009,6 +58057,54 @@
           "data_refs": [],
           "disasm": "cmp     byte ptr [esi+ebx+627h], 2",
           "ea": "0x2747e"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "ba56d30b8473dc5441eea1ce61f7ae4536451ce2ff69c62e8a29ac5ff86b59e9",
+          "end_ea": "0x276b6",
+          "original_name": "sub_2755F",
+          "size": 343,
+          "start_ea": "0x2755f"
+        },
+        "instruction": {
+          "bytes": "80bc062707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [esi+eax+727h], 1",
+          "ea": "0x27665"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "42a6906db2c05ea67b47815aecb482099e450ca1be050e4f135f68d89339a461",
+          "end_ea": "0x277cf",
+          "original_name": "sub_276E6",
+          "size": 233,
+          "start_ea": "0x276e6"
+        },
+        "instruction": {
+          "bytes": "80bc022707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [edx+eax+727h], 1",
+          "ea": "0x2774d"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "42a6906db2c05ea67b47815aecb482099e450ca1be050e4f135f68d89339a461",
+          "end_ea": "0x277cf",
+          "original_name": "sub_276E6",
+          "size": 233,
+          "start_ea": "0x276e6"
+        },
+        "instruction": {
+          "bytes": "80bc3a2707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [edx+edi+727h], 1; jumptable 00027772 case 4",
+          "ea": "0x27784"
         }
       },
       {
@@ -58505,6 +58601,22 @@
           "data_refs": [],
           "disasm": "mov     byte ptr [ebx+eax+717h], 0",
           "ea": "0x4d8e7"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "b96299e71aad5ecf5d8b3f31aab1feb4607ba0af277ebb5b72c1b8f07ebb4df3",
+          "end_ea": "0x4dab2",
+          "original_name": "sub_4D78E",
+          "size": 804,
+          "start_ea": "0x4d78e"
+        },
+        "instruction": {
+          "bytes": "c684032707000000",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "mov     byte ptr [ebx+eax+727h], 0",
+          "ea": "0x4d8ef"
         }
       },
       {
@@ -60036,6 +60148,22 @@
           "start_ea": "0x4eb06"
         },
         "instruction": {
+          "bytes": "80b82707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [eax+727h], 1",
+          "ea": "0x4ed21"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "2ea0a5399791f17b018f2a5d8f903147adbf5d29b661251922f9b5d7eb0ac7f9",
+          "end_ea": "0x4f0dc",
+          "original_name": "sub_4EB06",
+          "size": 1494,
+          "start_ea": "0x4eb06"
+        },
+        "instruction": {
           "bytes": "80b82706000001",
           "code_refs": [],
           "data_refs": [],
@@ -60100,11 +60228,59 @@
           "start_ea": "0x4eb06"
         },
         "instruction": {
+          "bytes": "c6802707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "mov     byte ptr [eax+727h], 1",
+          "ea": "0x4eda7"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "2ea0a5399791f17b018f2a5d8f903147adbf5d29b661251922f9b5d7eb0ac7f9",
+          "end_ea": "0x4f0dc",
+          "original_name": "sub_4EB06",
+          "size": 1494,
+          "start_ea": "0x4eb06"
+        },
+        "instruction": {
+          "bytes": "c6843a2707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "mov     byte ptr [edx+edi+727h], 1",
+          "ea": "0x4edae"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "2ea0a5399791f17b018f2a5d8f903147adbf5d29b661251922f9b5d7eb0ac7f9",
+          "end_ea": "0x4f0dc",
+          "original_name": "sub_4EB06",
+          "size": 1494,
+          "start_ea": "0x4eb06"
+        },
+        "instruction": {
           "bytes": "80b82706000004",
           "code_refs": [],
           "data_refs": [],
           "disasm": "cmp     byte ptr [eax+627h], 4",
           "ea": "0x4edea"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "2ea0a5399791f17b018f2a5d8f903147adbf5d29b661251922f9b5d7eb0ac7f9",
+          "end_ea": "0x4f0dc",
+          "original_name": "sub_4EB06",
+          "size": 1494,
+          "start_ea": "0x4eb06"
+        },
+        "instruction": {
+          "bytes": "80b82707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [eax+727h], 1",
+          "ea": "0x4edff"
         }
       },
       {
@@ -60169,6 +60345,38 @@
           "data_refs": [],
           "disasm": "cmp     byte ptr [eax+637h], 0",
           "ea": "0x4ee5f"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "2ea0a5399791f17b018f2a5d8f903147adbf5d29b661251922f9b5d7eb0ac7f9",
+          "end_ea": "0x4f0dc",
+          "original_name": "sub_4EB06",
+          "size": 1494,
+          "start_ea": "0x4eb06"
+        },
+        "instruction": {
+          "bytes": "c6802707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "mov     byte ptr [eax+727h], 1",
+          "ea": "0x4ee8a"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "2ea0a5399791f17b018f2a5d8f903147adbf5d29b661251922f9b5d7eb0ac7f9",
+          "end_ea": "0x4f0dc",
+          "original_name": "sub_4EB06",
+          "size": 1494,
+          "start_ea": "0x4eb06"
+        },
+        "instruction": {
+          "bytes": "c6843a2707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "mov     byte ptr [edx+edi+727h], 1",
+          "ea": "0x4ee91"
         }
       },
       {
@@ -60281,6 +60489,22 @@
           "data_refs": [],
           "disasm": "movsx   eax, word ptr [eax+edx*2+65Fh]",
           "ea": "0x4f17f"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "f6c2d5388ebf85838b2cb0d60a6657fbdae391f64adcb6668af0ad87a28483c1",
+          "end_ea": "0x4f59b",
+          "original_name": "sub_4F0DC",
+          "size": 1215,
+          "start_ea": "0x4f0dc"
+        },
+        "instruction": {
+          "bytes": "80b82707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [eax+727h], 1",
+          "ea": "0x4f1a5"
         }
       },
       {
@@ -60596,6 +60820,38 @@
           "start_ea": "0x4f0dc"
         },
         "instruction": {
+          "bytes": "c684032707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "mov     byte ptr [ebx+eax+727h], 1",
+          "ea": "0x4f3d4"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "f6c2d5388ebf85838b2cb0d60a6657fbdae391f64adcb6668af0ad87a28483c1",
+          "end_ea": "0x4f59b",
+          "original_name": "sub_4F0DC",
+          "size": 1215,
+          "start_ea": "0x4f0dc"
+        },
+        "instruction": {
+          "bytes": "c684022707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "mov     byte ptr [edx+eax+727h], 1",
+          "ea": "0x4f3e4"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "f6c2d5388ebf85838b2cb0d60a6657fbdae391f64adcb6668af0ad87a28483c1",
+          "end_ea": "0x4f59b",
+          "original_name": "sub_4F0DC",
+          "size": 1215,
+          "start_ea": "0x4f0dc"
+        },
+        "instruction": {
           "bytes": "80b81f07000003",
           "code_refs": [],
           "data_refs": [],
@@ -60697,6 +60953,22 @@
           "data_refs": [],
           "disasm": "cmp     byte ptr [eax+71Fh], 2",
           "ea": "0x4f49f"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "f6c2d5388ebf85838b2cb0d60a6657fbdae391f64adcb6668af0ad87a28483c1",
+          "end_ea": "0x4f59b",
+          "original_name": "sub_4F0DC",
+          "size": 1215,
+          "start_ea": "0x4f0dc"
+        },
+        "instruction": {
+          "bytes": "80b82707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [eax+727h], 1",
+          "ea": "0x4f4be"
         }
       },
       {
@@ -61284,6 +61556,22 @@
           "start_ea": "0x50827"
         },
         "instruction": {
+          "bytes": "80b82707000000",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [eax+727h], 0",
+          "ea": "0x50852"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "b253a3e263dc980fe18f4bbf25c07cb699bbb2ce8e38538233a26ce6acf10c69",
+          "end_ea": "0x5090c",
+          "original_name": "sub_50827",
+          "size": 229,
+          "start_ea": "0x50827"
+        },
+        "instruction": {
           "bytes": "80b82706000001",
           "code_refs": [],
           "data_refs": [],
@@ -61305,6 +61593,22 @@
           "data_refs": [],
           "disasm": "cmp     byte ptr [eax+627h], 2",
           "ea": "0x50868"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "b253a3e263dc980fe18f4bbf25c07cb699bbb2ce8e38538233a26ce6acf10c69",
+          "end_ea": "0x5090c",
+          "original_name": "sub_50827",
+          "size": 229,
+          "start_ea": "0x50827"
+        },
+        "instruction": {
+          "bytes": "80bc032707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [ebx+eax+727h], 1",
+          "ea": "0x508aa"
         }
       },
       {
@@ -61684,11 +61988,43 @@
           "start_ea": "0x50b57"
         },
         "instruction": {
+          "bytes": "80b82707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [eax+727h], 1",
+          "ea": "0x50bec"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "4053f4f7f05d4936bbc65a39c93e39e31479b3ae0d745979be80c579c958b26e",
+          "end_ea": "0x50dac",
+          "original_name": "sub_50B57",
+          "size": 597,
+          "start_ea": "0x50b57"
+        },
+        "instruction": {
           "bytes": "00902f070000",
           "code_refs": [],
           "data_refs": [],
           "disasm": "add     [eax+72Fh], dl",
           "ea": "0x50c36"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "4053f4f7f05d4936bbc65a39c93e39e31479b3ae0d745979be80c579c958b26e",
+          "end_ea": "0x50dac",
+          "original_name": "sub_50B57",
+          "size": 597,
+          "start_ea": "0x50b57"
+        },
+        "instruction": {
+          "bytes": "80b82707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [eax+727h], 1",
+          "ea": "0x50c4f"
         }
       },
       {
@@ -62281,6 +62617,22 @@
           "data_refs": [],
           "disasm": "cmp     byte ptr [eax+627h], 4",
           "ea": "0x513e4"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "3630ccc0e43c8414ec6d5c6d4ae9e1a09cf69c762b90fc846bb52182cc793397",
+          "end_ea": "0x5175b",
+          "original_name": "sub_5138E",
+          "size": 973,
+          "start_ea": "0x5138e"
+        },
+        "instruction": {
+          "bytes": "c6802707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "mov     byte ptr [eax+727h], 1",
+          "ea": "0x513f1"
         }
       },
       {
@@ -63700,11 +64052,43 @@
           "start_ea": "0x52049"
         },
         "instruction": {
+          "bytes": "80b82707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [eax+727h], 1",
+          "ea": "0x5209d"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "686e984fae5693ade43c0f0051e0dc3646c5323a9eac97923a88ae5a1362e0dc",
+          "end_ea": "0x52150",
+          "original_name": "sub_52049",
+          "size": 263,
+          "start_ea": "0x52049"
+        },
+        "instruction": {
           "bytes": "00902f070000",
           "code_refs": [],
           "data_refs": [],
           "disasm": "add     [eax+72Fh], dl",
           "ea": "0x520e7"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "686e984fae5693ade43c0f0051e0dc3646c5323a9eac97923a88ae5a1362e0dc",
+          "end_ea": "0x52150",
+          "original_name": "sub_52049",
+          "size": 263,
+          "start_ea": "0x52049"
+        },
+        "instruction": {
+          "bytes": "80bc072707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [edi+eax+727h], 1",
+          "ea": "0x520fe"
         }
       },
       {
@@ -63732,11 +64116,43 @@
           "start_ea": "0x52150"
         },
         "instruction": {
+          "bytes": "80bc012707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [ecx+eax+727h], 1",
+          "ea": "0x52173"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "65e08746c0ff33e1fe85289bb18f562e0bd17dc9e6072fdfc2d03fe0990539ad",
+          "end_ea": "0x5223f",
+          "original_name": "sub_52150",
+          "size": 239,
+          "start_ea": "0x52150"
+        },
+        "instruction": {
           "bytes": "00882f070000",
           "code_refs": [],
           "data_refs": [],
           "disasm": "add     [eax+72Fh], cl",
           "ea": "0x521c1"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "65e08746c0ff33e1fe85289bb18f562e0bd17dc9e6072fdfc2d03fe0990539ad",
+          "end_ea": "0x5223f",
+          "original_name": "sub_52150",
+          "size": 239,
+          "start_ea": "0x52150"
+        },
+        "instruction": {
+          "bytes": "80b82707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [eax+727h], 1",
+          "ea": "0x521db"
         }
       },
       {
@@ -63764,11 +64180,43 @@
           "start_ea": "0x5223f"
         },
         "instruction": {
+          "bytes": "80bc012707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [ecx+eax+727h], 1",
+          "ea": "0x52262"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "170e1912a2e0869bc1f83825d4617aeba1566ff7125c2217aa25970d643d0a22",
+          "end_ea": "0x5232e",
+          "original_name": "sub_5223F",
+          "size": 239,
+          "start_ea": "0x5223f"
+        },
+        "instruction": {
           "bytes": "00882f070000",
           "code_refs": [],
           "data_refs": [],
           "disasm": "add     [eax+72Fh], cl",
           "ea": "0x522b0"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "170e1912a2e0869bc1f83825d4617aeba1566ff7125c2217aa25970d643d0a22",
+          "end_ea": "0x5232e",
+          "original_name": "sub_5223F",
+          "size": 239,
+          "start_ea": "0x5223f"
+        },
+        "instruction": {
+          "bytes": "80b82707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [eax+727h], 1",
+          "ea": "0x522ca"
         }
       },
       {
@@ -63849,6 +64297,38 @@
           "data_refs": [],
           "disasm": "mov     byte ptr [esi+71Fh], 0",
           "ea": "0x5237a"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "4ea1726012e4b0e2a42c1222ba81d5a1649ad2410d52de7e907a8ba528b068a7",
+          "end_ea": "0x524c3",
+          "original_name": "sub_5232E",
+          "size": 405,
+          "start_ea": "0x5232e"
+        },
+        "instruction": {
+          "bytes": "80b82707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [eax+727h], 1",
+          "ea": "0x52389"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "4ea1726012e4b0e2a42c1222ba81d5a1649ad2410d52de7e907a8ba528b068a7",
+          "end_ea": "0x524c3",
+          "original_name": "sub_5232E",
+          "size": 405,
+          "start_ea": "0x5232e"
+        },
+        "instruction": {
+          "bytes": "80b82707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [eax+727h], 1",
+          "ea": "0x523cb"
         }
       },
       {
@@ -64356,6 +64836,22 @@
           "start_ea": "0x5272d"
         },
         "instruction": {
+          "bytes": "80bc022707000000",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [edx+eax+727h], 0",
+          "ea": "0x52819"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "063e27289fe74ee00c1a2012b3601c6645633aa5074342b5dc42317effb51da8",
+          "end_ea": "0x53126",
+          "original_name": "sub_5272D",
+          "size": 2553,
+          "start_ea": "0x5272d"
+        },
+        "instruction": {
           "bytes": "80bc022706000002",
           "code_refs": [],
           "data_refs": [],
@@ -64404,11 +64900,59 @@
           "start_ea": "0x5272d"
         },
         "instruction": {
+          "bytes": "80bc022707000000",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [edx+eax+727h], 0",
+          "ea": "0x52b10"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "063e27289fe74ee00c1a2012b3601c6645633aa5074342b5dc42317effb51da8",
+          "end_ea": "0x53126",
+          "original_name": "sub_5272D",
+          "size": 2553,
+          "start_ea": "0x5272d"
+        },
+        "instruction": {
+          "bytes": "80bc022707000000",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [edx+eax+727h], 0",
+          "ea": "0x52cd8"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "063e27289fe74ee00c1a2012b3601c6645633aa5074342b5dc42317effb51da8",
+          "end_ea": "0x53126",
+          "original_name": "sub_5272D",
+          "size": 2553,
+          "start_ea": "0x5272d"
+        },
+        "instruction": {
           "bytes": "80b82706000002",
           "code_refs": [],
           "data_refs": [],
           "disasm": "cmp     byte ptr [eax+627h], 2",
           "ea": "0x52d64"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "063e27289fe74ee00c1a2012b3601c6645633aa5074342b5dc42317effb51da8",
+          "end_ea": "0x53126",
+          "original_name": "sub_5272D",
+          "size": 2553,
+          "start_ea": "0x5272d"
+        },
+        "instruction": {
+          "bytes": "80bc022707000000",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [edx+eax+727h], 0",
+          "ea": "0x52e4a"
         }
       },
       {
@@ -64493,6 +65037,22 @@
       },
       {
         "function": {
+          "bytes_sha256": "063e27289fe74ee00c1a2012b3601c6645633aa5074342b5dc42317effb51da8",
+          "end_ea": "0x53126",
+          "original_name": "sub_5272D",
+          "size": 2553,
+          "start_ea": "0x5272d"
+        },
+        "instruction": {
+          "bytes": "80bc022707000000",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [edx+eax+727h], 0",
+          "ea": "0x5304e"
+        }
+      },
+      {
+        "function": {
           "bytes_sha256": "5dc55a9794fb872f3ed576231e0b9530ba5779dbe34c4a83a50493ef14e72f9e",
           "end_ea": "0x533f4",
           "original_name": "sub_53146",
@@ -64521,6 +65081,22 @@
           "data_refs": [],
           "disasm": "movsx   dx, byte ptr [eax+617h]",
           "ea": "0x53172"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "5dc55a9794fb872f3ed576231e0b9530ba5779dbe34c4a83a50493ef14e72f9e",
+          "end_ea": "0x533f4",
+          "original_name": "sub_53146",
+          "size": 686,
+          "start_ea": "0x53146"
+        },
+        "instruction": {
+          "bytes": "80b82707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [eax+727h], 1",
+          "ea": "0x531b8"
         }
       },
       {
@@ -64589,6 +65165,38 @@
       },
       {
         "function": {
+          "bytes_sha256": "cde4862e30840e79d4621f5677789d8b1253dbad473963232dcc57ef80e5df1a",
+          "end_ea": "0x534c9",
+          "original_name": "sub_533F4",
+          "size": 213,
+          "start_ea": "0x533f4"
+        },
+        "instruction": {
+          "bytes": "c684062707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "mov     byte ptr [esi+eax+727h], 1",
+          "ea": "0x534ac"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "cde4862e30840e79d4621f5677789d8b1253dbad473963232dcc57ef80e5df1a",
+          "end_ea": "0x534c9",
+          "original_name": "sub_533F4",
+          "size": 213,
+          "start_ea": "0x533f4"
+        },
+        "instruction": {
+          "bytes": "c684192707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "mov     byte ptr [ecx+ebx+727h], 1",
+          "ea": "0x534bc"
+        }
+      },
+      {
+        "function": {
           "bytes_sha256": "0a9fbb5f858033cc0af57b98b4f19055fe805ff923fcbc761050a86a40fbfaf6",
           "end_ea": "0x5356c",
           "original_name": "sub_534C9",
@@ -64649,6 +65257,22 @@
           "data_refs": [],
           "disasm": "cmp     byte ptr [eax+627h], 2",
           "ea": "0x535eb"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "2a0b073bbe21f37e1cc679c2332256f55f3aac36b93ab33f0e4cb45832fef324",
+          "end_ea": "0x53713",
+          "original_name": "sub_536BC",
+          "size": 87,
+          "start_ea": "0x536bc"
+        },
+        "instruction": {
+          "bytes": "80bc112707000000",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [ecx+edx+727h], 0",
+          "ea": "0x536e3"
         }
       },
       {
@@ -64793,6 +65417,22 @@
           "data_refs": [],
           "disasm": "mov     [eax+617h], dl",
           "ea": "0x539aa"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "aaef333d2a00877cd8f65c75295ff25b6d3f2c6ce10ee2a919726c5e2acc549d",
+          "end_ea": "0x53e96",
+          "original_name": "sub_539D9",
+          "size": 1213,
+          "start_ea": "0x539d9"
+        },
+        "instruction": {
+          "bytes": "80bc3a2707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [edx+edi+727h], 1",
+          "ea": "0x53a5f"
         }
       },
       {
@@ -64985,6 +65625,22 @@
           "data_refs": [],
           "disasm": "inc     byte ptr [edi+71Fh]",
           "ea": "0x53de6"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "cd511d1bdc3d6fdc080c62220f9c888522c28b3d401bfb665c9f7ca6430b4978",
+          "end_ea": "0x53edb",
+          "original_name": "sub_53E96",
+          "size": 69,
+          "start_ea": "0x53e96"
+        },
+        "instruction": {
+          "bytes": "80bc012707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [ecx+eax+727h], 1",
+          "ea": "0x53eb2"
         }
       },
       {
@@ -65289,6 +65945,22 @@
           "data_refs": [],
           "disasm": "cmp     byte ptr [edx+eax+627h], 2",
           "ea": "0x54980"
+        }
+      },
+      {
+        "function": {
+          "bytes_sha256": "f04a8858b35a24cc5663a5f01d2cc9a86f5bf4313b7900e36af29c96ed9d73c0",
+          "end_ea": "0x54cc0",
+          "original_name": "sub_544A1",
+          "size": 2079,
+          "start_ea": "0x544a1"
+        },
+        "instruction": {
+          "bytes": "80bc022707000001",
+          "code_refs": [],
+          "data_refs": [],
+          "disasm": "cmp     byte ptr [edx+eax+727h], 1",
+          "ea": "0x549a8"
         }
       },
       {
@@ -66221,7 +66893,20 @@
       }
     ],
     "size": 1445,
-    "start_ea": "0x2552d"
+    "start_ea": "0x2552d",
+    "treaty_cooldown_government_table": {
+      "ea": "0x18105c",
+      "signed_words": [
+        5,
+        10,
+        20,
+        5,
+        50,
+        40,
+        5,
+        0
+      ]
+    }
   },
   "tool": "IDA Pro 9.4 IDAPython"
 }

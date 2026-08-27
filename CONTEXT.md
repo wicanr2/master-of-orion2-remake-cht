@@ -75,7 +75,8 @@
   _避免_：把 `+0x717` 與外交事件記憶 `+0x71F` 混為同一欄。
 - **NPC 外交事件記憶** — `+0x64F／+0x65F` 是 `Change_Relations_` 保存的待處理 reason／幅度；
   `sub_252D5` 依政府、協議與亂數更新並鏡射 `+0x71F`，後者正值會讓第三方談判 base 加 5。
-  _避免_：treaty-break 計數器（它不是只由解約寫入）
+  `+0x727` 才是無 clearer 的單向永久違約旗標，actor 毀約時寫在 target→actor 方向。
+  _避免_：把 `+0x71F` 稱為 treaty-break 計數器，或把 `+0x727` 鏡射成對稱狀態
 
 - **正式網路回合等待** — `networkWaitScreen` 擁有唯一的 session poll 與兩階段鎖步 update loop，
   並共用 `netNextTurnScreen` 的原版面板 renderer、聊天記錄與輸入狀態；`netNextTurnDemo` 只是

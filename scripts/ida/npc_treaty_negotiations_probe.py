@@ -31,6 +31,7 @@ RELATED_EAS = (
 GOVERNMENT_SCORE_TABLE_EA = 0x180CCC
 INCIDENT_GOVERNMENT_THRESHOLD_TABLE_EA = 0x180CDC
 INCIDENT_DEMOCRACY_MEMORY_THRESHOLD_EA = 0x180CE8
+TREATY_COOLDOWN_GOVERNMENT_TABLE_EA = 0x18105C
 NPC_POWER_MOD_WORD_EAS = (
     0x17FD26, 0x17FD35, 0x17FD62, 0x17FD80, 0x17FD8F, 0x17FD9E,
     0x17FDAD, 0x17FDBC, 0x17FDCB, 0x17FDDA, 0x17FDE9,
@@ -52,7 +53,7 @@ NPC_POWER_WEAPON_RECORD_SIZE = 28
 NPC_POWER_FIGHTER_MINI_THRESHOLD_EA = 0x17FD32
 RELATIVE_OPERANDS = ("+5ECh]", "+617h]", "+627h]", "+62Fh]", "+637h]", "+63Fh]",
                      "+64Fh]", "+65Fh]", "+68Fh]", "+69Fh]", "+6D7h]", "+717h]",
-                     "+71Fh]", "+72Fh]", "+737h]")
+                     "+71Fh]", "+727h]", "+72Fh]", "+737h]")
 
 
 def instruction(ea):
@@ -169,6 +170,14 @@ def main():
         "democracy_memory_signed_word": int.from_bytes(
             ida_bytes.get_bytes(INCIDENT_DEMOCRACY_MEMORY_THRESHOLD_EA, 2) or b"\x00\x00",
             "little", signed=True),
+    }
+    cooldown_table = ida_bytes.get_bytes(TREATY_COOLDOWN_GOVERNMENT_TABLE_EA, 16) or b""
+    target["treaty_cooldown_government_table"] = {
+        "ea": hex(TREATY_COOLDOWN_GOVERNMENT_TABLE_EA),
+        "signed_words": [
+            int.from_bytes(cooldown_table[i:i + 2], "little", signed=True)
+            for i in range(0, len(cooldown_table), 2)
+        ],
     }
 
     target["npc_power_modifier_words"] = [

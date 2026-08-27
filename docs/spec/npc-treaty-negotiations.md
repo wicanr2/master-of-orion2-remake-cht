@@ -13,6 +13,7 @@
 - signed-word `treatyBiasRaw`／`agreementBiasRaw`（`+0x68F／+0x69F`）；
 - direction-only `tributeMode`（`+0x63F`）。
 - 待處理外交 `reason／magnitude` 與重複事件記憶（`+0x64F／+0x65F／+0x71F`）。
+- 單向永久違約記憶（`+0x727`）及締約／納貢對 `+0x72F` 的政府表增量。
 - 戰爭計時與停戰冷卻另依
   [`npc-war-ceasefire.md`](npc-war-ceasefire.md) 保存 `+0x717／+0x72F`。
 
@@ -34,7 +35,8 @@
 
 - `+0x5EC` 一般 AI 實艦方向國力已接；只有缺 raw 實艦的舊存檔使用明標非精確純量回退。
 - `+0x64F／+0x65F／+0x71F` 已訂正為 pending reason／magnitude／重複事件記憶；一般政府
-  更新、鏡射與第三方 +5 已接。`+0x727` 特殊分支及其餘 reason writer 尚未閉合。
+  更新、鏡射與第三方 +5 已接。一般宣戰的 `+0x727` 方向 writer、government 4 特殊門檻及
+  締約／納貢 cooldown 表已接；其餘 reason／玩家回應 writer 尚未閉合。
 - AI 接觸／淘汰已有較高階可玩狀態但非原版方向矩陣；現行存活 AI pair 視為
   通過 `+0x584／+0x8B2` 外圈守門。
 - 外交亂數使用可存檔確定性流，只保證 remake 重播一致。

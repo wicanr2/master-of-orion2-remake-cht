@@ -46,3 +46,26 @@ func TestOriginalAIIncidentRecordKeepsStrongestAndTreatyClearsMemory(t *testing.
 		t.Fatalf("締約／宣戰／停戰 writer 應清事件記憶：%v", s.AIIncidentMemoryRaw)
 	}
 }
+
+func TestOriginalAITreatyBetrayalIsDirectionalAndChangesCooldown(t *testing.T) {
+	s := NewDemoSession()
+	s.ensureAIAIState()
+	s.ensureOriginalAIAIRelations()
+	s.AIPlayers[1].RaceIndex = 0
+	s.AIPolicies[0][1], s.AIPolicies[1][0] = gamedata.DIPLO_NON_AGGRESSION, gamedata.DIPLO_NON_AGGRESSION
+	s.declareOriginalAIAIWar(0, 1, func(int) int { return 1 })
+	if !s.AIIncidentBetrayalRaw[1][0] || s.AIIncidentBetrayalRaw[0][1] {
+		t.Fatalf("宣戰違約記憶方向錯誤：%v", s.AIIncidentBetrayalRaw)
+	}
+	s.AIDiplomacyCooldownRaw[0][1] = 120
+	s.AIPlayers[0].RaceIndex = -1
+	delta, ok := gamedata.OriginalNPCTreatyCooldownDelta(originalAIRelationGovernment(s.AIPlayers[0]), false,
+		gamedata.DIPLO_ALLIANCE, false)
+	if !ok {
+		t.Fatal("測試政府應可映射 cooldown")
+	}
+	s.addOriginalTreatyCooldown(0, 1, gamedata.DIPLO_ALLIANCE, false)
+	if want := originalSignedByteAdd(120, delta); s.AIDiplomacyCooldownRaw[0][1] != want {
+		t.Fatalf("+0x72F 應保留原版 signed-byte 寫回：%d", s.AIDiplomacyCooldownRaw[0][1])
+	}
+}
