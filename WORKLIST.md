@@ -1158,7 +1158,10 @@
   同一 score 的存活帝國人口優勢 `-10`，以及第 100 回合後雙方 40 回合人口成長差也已由
   `+0xA6／+0xB9B` raw 讀取閉合為純規則；其餘國力／科技項仍待拆解。
   `sub_500CF` 亦確認等同既有 `OriginalNPCPowerRatio`，ratio>=300 且政府 raw!=5 時的
-  `-ratio/40` 與行動上限 150 已接純規則；尚缺玩家↔AI 逐艦方向 `+0x5EC` shell producer。
+  `-ratio/40` 與行動上限 150 已接純規則；玩家↔AI 逐艦方向 `+0x5EC` shell producer
+  亦已泛化，雙方 owner／observer 科技、引擎、種族攻防與領袖各自生效，缺 raw 失敗即關閉。
+  後續 IDA 又訂正 `sub_E5B17` 為 target 殖民人口容量加總、`sub_DCB47` 為殖民地 player-mask
+  可達計數；前者的 `+0x60E` 強制分支可直接接，後者尚缺殖民地可達 typed 資料。
   目前願戰來源仍是明示的
   `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與

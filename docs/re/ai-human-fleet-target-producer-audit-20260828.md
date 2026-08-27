@@ -62,6 +62,13 @@
     至少 300 且來源政府 raw !=5 時加入 `-ratio/40`、把行動上限設為 150。ratio<300
     後的 raw 人口比較是 `2*sourcePopulation < 3*sourcePopulation` 時跳過，正常正人口下
     不形成第二條 gate；不得把 Hex-Rays 的同值比較誤寫成雙方人口公式。
+14. `sub_E5B17 @ 0xE5B17..0xE5B69` 掃 target 所有非 outpost 殖民地，呼叫
+    `sub_E0C1D` 加總種族人口容量；它不是艦力 helper。`0x54593..0x545CE` 在 source
+    `+0x60E==1` 且 source 類型 raw 2，或來源總人口 `+0xA6` 大於 target 容量一半時，
+    直接把 score 設為 -150、原因碼 114。
+15. `sub_DCB47 @ 0xDCB47..0xDCBB0` 掃殖民地記錄的 player mask：同時含 source／target
+    的殖民地加 5，只有 target 且 `sub_FF666` 對 source 可達則加 1。government raw 0
+    分支以此總數作 `Random(400)` 門檻；資料形狀已證實，殖民地可達語意尚未 typed。
 
 ## Remake 對映與限制
 
@@ -81,7 +88,8 @@
 - 已接純規則：存活帝國人口優勢與 40 回合人口成長差；兩者直接消費原版已存在的
   `+0xA6／+0xB9B` typed 對映，不把反編譯器暫名當證據。
 - 已接純規則：`sub_500CF` 國力比重用既有 `OriginalNPCPowerRatio`，另補 ratio>=300 的
-  score／行動上限 consumer；玩家↔AI 的逐艦方向 `+0x5EC` shell producer 仍待泛化。
+  score／行動上限 consumer。玩家↔AI 的逐艦方向 `+0x5EC` shell producer 已泛化：雙方
+  皆依 owner 艦艇與 observer 科技／引擎／種族防禦計算，任一 raw 缺欄就失敗即關閉。
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。

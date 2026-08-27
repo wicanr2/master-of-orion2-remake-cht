@@ -50,6 +50,8 @@ ROOTS = {
     "raw_human_incident_writer": 0x4F0DC,
     "raw_change_relations": 0x4E3B5,
     "raw_human_target_power_ratio": 0x500CF,
+    "raw_human_target_special_e5b17": 0xE5B17,
+    "raw_human_target_special_dcb47": 0xDCB47,
 }
 PERSONALITY_SCORE_TABLE_EA = 0x181080
 INCIDENT_DIVISOR_TABLE_EA = 0x180CF0

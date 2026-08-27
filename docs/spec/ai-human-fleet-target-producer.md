@@ -35,11 +35,14 @@
 14. `sub_500CF` 的國力比沿用 `OriginalNPCPowerRatio`：`100*(source+1)/(target+1)`、上限
     800，來源對每個第三方正式戰爭再折半。ratio 至少 300 且來源政府 raw 不是 5 時，
     score 加 `-ratio/40`，後續行動上限設為 150。
+15. AI↔真人的兩個方向 `+0x5EC` 必須與 AI↔AI 共用 `sub_5EF4B` typed producer：owner
+    艦艇、攻擊種族值與領袖，對上 observer 的電腦、引擎、防禦種族值及跨維度效果；
+    不得以雙方 `FleetStrength` 純量冒充方向值。
 
 ## DRAFT 邊界
 
 `sub_544A1 @ 0x544A1..0x54CC0` 的四類尾端與 RNG 已形成純規則；尚缺的是 directional
-incident memory 的 writer 門檻／正常玩家事件 producer、其餘國力／科技項，以及 `sub_4F93B`
+incident memory 的 writer 門檻／正常玩家事件 producer、特殊政府／殖民可達／科技項，以及 `sub_4F93B`
 的科技候選表／殖民地候選 producer。
 這些欄位閉合前，remake 可用既有戰爭態勢決定是否呼叫原版目標估值，但必須標為 fallback，
 不得把只含 relation/personality 的部分 score 冒充完整 producer。

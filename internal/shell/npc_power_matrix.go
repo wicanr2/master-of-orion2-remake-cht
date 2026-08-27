@@ -88,33 +88,29 @@ func originalNPCPowerMounts(sh Ship) ([]gamedata.OriginalNPCPowerMount, bool) {
 	return mounts, true
 }
 
-// originalNPCDirectionalFleetPower 產生 sub_5EF4B 對 owner 艦隊、observer 科技與
-// 種族防禦的單向總值。任一必要 raw 欄缺失便失敗即關閉，讓呼叫端明確採舊存檔回退。
-func (s *GameSession) originalNPCDirectionalFleetPower(owner, observer int) (int, bool) {
-	if owner < 0 || observer < 0 || owner >= len(s.AIPlayers) || observer >= len(s.AIPlayers) {
+// originalDirectionalFleetPower 產生 sub_5EF4B 對 owner 艦隊、observer 科技與
+// 種族防禦的單向總值。它刻意不以 AI 索引當 API，讓原版同一個 player record 公式也能
+// 用於 AI↔真人；任一必要 raw 欄缺失便失敗即關閉。
+func originalDirectionalFleetPower(ships []Ship, ownerState, observerState engine.PlayerState,
+	ownerAttack, observerDefense, observerDrive int, observerTransDimensional bool,
+	ownerLeaders []Leader, crewLevel func(Ship) (int, bool)) (int, bool) {
+	if crewLevel == nil {
 		return 0, false
 	}
-	a, target := s.AIPlayers[owner], s.AIPlayers[observer]
 	// 舊存檔與精簡測試可能只有抽象 FleetStrength。非零純量卻沒有實艦時不能把
 	// 「沒有可逐艦計算的資料」誤判成原版精確零國力。
-	if len(a.Ships) == 0 && a.FleetStrength > 0 {
-		return 0, false
-	}
-	ownerBestComputer := originalBestComputer(a.Player)
-	reduction, ok := gamedata.OriginalNPCComputerWeaponReduction(originalBestComputer(target.Player))
+	ownerBestComputer := originalBestComputer(ownerState)
+	reduction, ok := gamedata.OriginalNPCComputerWeaponReduction(originalBestComputer(observerState))
 	if !ok {
 		return 0, false
 	}
-	_, targetDefense := aiRaceCombatBonuses(target)
-	observerDefense, ok := gamedata.OriginalNPCObserverDefense(aiDriveLevel(target), targetDefense,
-		aiRaceHasTrait(target, gamedata.TRAIT_TRANS_DIMENSIONAL))
+	defense, ok := gamedata.OriginalNPCObserverDefense(observerDrive, observerDefense, observerTransDimensional)
 	if !ok {
 		return 0, false
 	}
-	bestBeam, bestBomb := originalBestFighterBeam(a.Player), originalBestBomb(a.Player)
-	ownerAttack, _ := aiRaceCombatBonuses(a)
+	bestBeam, bestBomb := originalBestFighterBeam(ownerState), originalBestBomb(ownerState)
 	total := 0
-	for _, sh := range a.Ships {
+	for _, sh := range ships {
 		if isSupportShipClass(sh.Class) {
 			continue
 		}
@@ -125,12 +121,12 @@ func (s *GameSession) originalNPCDirectionalFleetPower(owner, observer int) (int
 		if !valid {
 			return 0, false
 		}
-		crew, valid := originalAICrewLevel(a, sh)
+		crew, valid := crewLevel(sh)
 		if !valid {
 			return 0, false
 		}
 		beamAttack, valid := gamedata.OriginalNPCShipBeamAttack(int(sh.ComputerRaw), crew,
-			officerSkillBonusForShip(a.Leaders, sh, gamedata.SKILL_WEAPONRY), ownerAttack,
+			officerSkillBonusForShip(ownerLeaders, sh, gamedata.SKILL_WEAPONRY), ownerAttack,
 			originalShipSpecialWorking(sh, int(gamedata.SPEC_BATTLE_SCANNER)))
 		if !valid {
 			return 0, false
@@ -143,7 +139,7 @@ func (s *GameSession) originalNPCDirectionalFleetPower(owner, observer int) (int
 			return 0, false
 		}
 		power, valid := gamedata.OriginalNPCShipPower(gamedata.OriginalNPCShipPowerInput{
-			Mounts: mounts, BeamAttack: beamAttack, ObserverDefense: observerDefense,
+			Mounts: mounts, BeamAttack: beamAttack, ObserverDefense: defense,
 			ObserverWeaponReduction: reduction, OwnerBestComputer: ownerBestComputer,
 			DesignComputer: int(sh.ComputerRaw), RemainingDurability: durability,
 			BestBeamWeaponID: bestBeam, BestBombWeaponID: bestBomb,
@@ -154,6 +150,48 @@ func (s *GameSession) originalNPCDirectionalFleetPower(owner, observer int) (int
 		total += power
 	}
 	return total, true
+}
+
+// originalNPCDirectionalFleetPower 是 AI 索引相容 wrapper。
+func (s *GameSession) originalNPCDirectionalFleetPower(owner, observer int) (int, bool) {
+	if owner < 0 || observer < 0 || owner >= len(s.AIPlayers) || observer >= len(s.AIPlayers) {
+		return 0, false
+	}
+	a, target := s.AIPlayers[owner], s.AIPlayers[observer]
+	if len(a.Ships) == 0 && a.FleetStrength > 0 {
+		return 0, false
+	}
+	ownerAttack, _ := aiRaceCombatBonuses(a)
+	_, targetDefense := aiRaceCombatBonuses(target)
+	return originalDirectionalFleetPower(a.Ships, a.Player, target.Player, ownerAttack, targetDefense,
+		aiDriveLevel(target), aiRaceHasTrait(target, gamedata.TRAIT_TRANS_DIMENSIONAL), a.Leaders,
+		func(sh Ship) (int, bool) { return originalAICrewLevel(a, sh) })
+}
+
+// originalAIHumanDirectionalFleetPower 對應 sub_500CF 在 AI source、真人 target 時讀取的
+// 兩個方向 +0x5EC。回傳 AI→真人與真人→AI；任一側缺 raw 即整對失敗即關閉。
+func (s *GameSession) originalAIHumanDirectionalFleetPower(aiIndex int) (sourceToHuman, humanToSource int, ok bool) {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) {
+		return 0, 0, false
+	}
+	a := s.AIPlayers[aiIndex]
+	if len(a.Ships) == 0 && a.FleetStrength > 0 {
+		return 0, 0, false
+	}
+	ownerAttack, ownerDefense := aiRaceCombatBonuses(a)
+	sourceToHuman, ok = originalDirectionalFleetPower(a.Ships, a.Player, s.Player, ownerAttack,
+		s.RaceShipDefPct, s.driveLevel(), s.raceHasTrait(gamedata.TRAIT_TRANS_DIMENSIONAL), a.Leaders,
+		func(sh Ship) (int, bool) { return originalAICrewLevel(a, sh) })
+	if !ok {
+		return 0, 0, false
+	}
+	humanToSource, ok = originalDirectionalFleetPower(s.AllShips(), s.Player, a.Player, s.RaceCombatPct,
+		ownerDefense, aiDriveLevel(a), aiRaceHasTrait(a, gamedata.TRAIT_TRANS_DIMENSIONAL), s.Leaders,
+		func(sh Ship) (int, bool) {
+			level := s.shipCrewLevel(sh)
+			return level, level >= gamedata.CrewGreen && level <= gamedata.CrewUltraElite
+		})
+	return sourceToHuman, humanToSource, ok
 }
 
 // originalAIPowerMatrix 對每個 ordered pair 產生方向國力。exact=false 只會出現在

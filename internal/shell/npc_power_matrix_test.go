@@ -42,3 +42,21 @@ func TestOriginalAIPowerMatrixMarksLegacyScalarFallback(t *testing.T) {
 		t.Fatalf("真正空艦隊應是精確零：%d exact=%v", power[1][0], exact[1][0])
 	}
 }
+
+func TestOriginalAIHumanDirectionalFleetPowerUsesBothObservers(t *testing.T) {
+	s := &GameSession{
+		Player:    engine.PlayerState{},
+		Fleets:    []Fleet{{Ships: []Ship{originalPowerTestShip()}}},
+		AIPlayers: []AIOpponent{{Ships: []Ship{originalPowerTestShip()}}},
+	}
+	aiToHuman, humanToAI, ok := s.originalAIHumanDirectionalFleetPower(0)
+	if !ok || aiToHuman <= 0 || humanToAI <= 0 {
+		t.Fatalf("雙向真人國力=%d/%d ok=%v", aiToHuman, humanToAI, ok)
+	}
+	s.Player.GrantedTechs = map[gamedata.Technology]bool{gamedata.TECH_MOLECULARTRONIC_COMPUTER: true}
+	reducedAI, improvedHuman, ok := s.originalAIHumanDirectionalFleetPower(0)
+	if !ok || reducedAI >= aiToHuman || improvedHuman <= 0 {
+		t.Fatalf("真人觀察科技應降低 AI→真人方向：before=%d after=%d human=%d ok=%v",
+			aiToHuman, reducedAI, improvedHuman, ok)
+	}
+}
