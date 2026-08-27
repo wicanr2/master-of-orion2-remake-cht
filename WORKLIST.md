@@ -560,6 +560,17 @@
   證據與規格見
   [`docs/re/council-notice-text-audit-20260827.md`](docs/re/council-notice-text-audit-20260827.md) 與
   [`docs/spec/council-notice-external-text.md`](docs/spec/council-notice-external-text.md)。
+  帝國投降事件 34 已完成第六十個切片：既有 `EventReport.Target*`／`SecondaryTarget*` 雙 target
+  record 現直接作 typed 顯示輸入，`queueEmpireSurrender` 不再建立中英文完整句子。事件畫面、
+  回合摘要與 INFO 摘要共用 `eventReportMessageText`；投降模板由 `ui.json` 提供，AI 名稱依
+  `RaceIndex` 顯示當前語言，玩家／熱座自訂名保留，非法 target 安全回退未知帝國。其餘尚未
+  遷移事件與舊存檔仍可沿用 `Message`／`MessageEN`，未以全域刪欄破壞相容性。原版已證實
+  pending→事件 34→延後資產接收順序；本輪未改自動投降近似 gate 或資產 consumer，通知逐字
+  仍明標 remake adapter。聚焦測試覆蓋 AI→AI、AI→玩家、AI→熱座、非法 target、舊存檔 fallback、
+  pending／延後轉移與來源碼防回歸；繁中與英文正版資料畫廊各重跑 38/38。正常畫廊未強制
+  觸發投降，故只證明事件路由無回歸，事件 34 實際文案由 typed 測試覆蓋。證據與規格見
+  [`docs/re/empire-surrender-notice-text-audit-20260827.md`](docs/re/empire-surrender-notice-text-audit-20260827.md) 與
+  [`docs/spec/empire-surrender-notice-external-text.md`](docs/spec/empire-surrender-notice-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

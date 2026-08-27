@@ -1,8 +1,6 @@
 package shell
 
 import (
-	"fmt"
-
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
@@ -34,9 +32,7 @@ func (s *GameSession) queueEmpireSurrender(aiIndex int, receiver eventEmpireTarg
 	s.PendingSurrenders = append(s.PendingSurrenders, pending)
 	surrenderer := eventEmpireTarget{kind: eventEmpireAI, index: aiIndex, alive: true}
 	from, to := s.eventEmpireTargetName(surrenderer), s.eventEmpireTargetName(receiver)
-	report := s.statusTargetReport(34, surrenderer,
-		fmt.Sprintf("%s 已向 %s 無條件投降；帝國接收程序即將開始", from, to),
-		fmt.Sprintf("%s has surrendered unconditionally to %s; imperial absorption will now begin.", from, to))
+	report := s.statusTargetReport(34, surrenderer, "", "")
 	report.TargetName = from
 	report.SecondaryTargetKind = receiver.kind.String()
 	report.SecondaryTargetIndex = receiver.index

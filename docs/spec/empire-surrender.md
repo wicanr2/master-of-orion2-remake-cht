@@ -6,7 +6,8 @@
 
 - 投降者只能是仍存活的 AI 帝國；接收者可以是玩家／目前熱座席位或另一個存活 AI。
 - 建立時保存投降者與接收者的穩定 target kind／index，立即排入事件 34；資產不在 setter
-  中移動。pending surrender 必須進 JSON 與多人快照。
+  中移動。pending surrender 必須進 JSON 與多人快照。事件 34 不在規則層保存成品句子；顯示契約見
+  [`empire-surrender-notice-external-text.md`](empire-surrender-notice-external-text.md)。
 - 下一個投降 consumer 依建立順序處理。AI slice 不刪除，只把投降者清成 inactive，避免所有
   既有索引漂移。已失效、自己投給自己或接收者已滅亡的 record 採失敗即關閉，不做半套轉移。
 

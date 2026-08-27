@@ -48,6 +48,9 @@ func TestEmpireSurrenderQueuesEventBeforeDeferredTransfer(t *testing.T) {
 	if report.EventID != 34 || report.TargetIndex != 0 || report.SecondaryTargetKind != "ai" || report.SecondaryTargetIndex != 1 {
 		t.Fatalf("事件 34 雙帝國 record 錯誤：%+v", report)
 	}
+	if report.Message != "" || report.MessageEN != "" {
+		t.Fatalf("事件 34 規則層不應保存成品通知：%+v", report)
+	}
 	if len(s.AIPlayers[0].Colonies) != beforeColonies {
 		t.Fatal("setter 階段不得提早搬資產")
 	}

@@ -111,13 +111,10 @@ func (b *sceneBuilder) currentReport() *reportPanel {
 		if r.Good {
 			tag = uiText(b.lang, "event.tag.good_news")
 		}
-		title, body := r.Name, r.Message
+		title, body := r.Name, eventReportMessageText(b.lang, b.session, r)
 		if b.lang != i18n.Traditional {
 			if r.NameEN != "" {
 				title = r.NameEN
-			}
-			if r.MessageEN != "" {
-				body = r.MessageEN
 			}
 		}
 		return &reportPanel{header: uiText(b.lang, "event.header.gnn"),

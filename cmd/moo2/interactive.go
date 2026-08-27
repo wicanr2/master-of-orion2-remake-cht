@@ -5568,9 +5568,9 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 		}
 		// 隨機事件(繁榮/瘟疫/海盜…)。英文模式讀結構化雙語報告，
 		// 不直接把引擎保留給繁中回合摘要的 LastEvent 當成英文顯示字串。
-		eventMsg := b.session.LastEvent
-		if b.lang != i18n.Traditional && b.session.LastEventReport != nil && b.session.LastEventReport.MessageEN != "" {
-			eventMsg = b.session.LastEventReport.MessageEN
+		eventMsg := eventReportMessageText(b.lang, b.session, b.session.LastEventReport)
+		if eventMsg == "" {
+			eventMsg = b.session.LastEvent
 		}
 		if b.lang != i18n.Traditional && b.session.LastPersistentEventEN != "" {
 			if eventMsg != "" {

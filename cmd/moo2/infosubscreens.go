@@ -371,9 +371,9 @@ func (b *sceneBuilder) infoTurnSummary(s *overlayScreen) {
 	}
 	// 本回合事件/戰報(原版事件有獨立畫面,remake 暫列於此)
 	y += 8
-	eventMsg := b.session.LastEvent
-	if b.lang != i18n.Traditional && b.session.LastEventReport != nil && b.session.LastEventReport.MessageEN != "" {
-		eventMsg = b.session.LastEventReport.MessageEN
+	eventMsg := eventReportMessageText(b.lang, b.session, b.session.LastEventReport)
+	if eventMsg == "" {
+		eventMsg = b.session.LastEvent
 	}
 	if b.lang != i18n.Traditional && b.session.LastPersistentEventEN != "" {
 		if eventMsg != "" {
