@@ -1103,7 +1103,12 @@
   清除士氣懲罰。狀態已接玩家、AI、熱座與 JSON 往返，玩家可見名稱由
   `assets/i18n/tech.json` 提供，不內嵌於 Go。
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
-  state machine 亦待閉合。見
+  state machine 亦待閉合。2026-08-28 又以 IDA 證實 AI 職務分配是封鎖／未封鎖
+  分流、逐 colonist 排序、邊際輸出與全帝國迭代；這直接反證現有逐殖民地
+  `Decider.ColonyJobs` 足以承載 original mode。四個 comparator、job raw ID 與
+  `player+0xAA/+0xAC` producer 尚待閉合，規格維持 `DRAFT`；見
+  [`docs/re/ai-colony-jobs-audit-20260828.md`](docs/re/ai-colony-jobs-audit-20260828.md) 與
+  [`docs/spec/ai-colony-jobs.md`](docs/spec/ai-colony-jobs.md)。其餘 AI 建造證據見
   [`docs/re/ai-difficulty-economy-audit-20260826.md`](docs/re/ai-difficulty-economy-audit-20260826.md) 與
   [`docs/spec/ai-difficulty-economy.md`](docs/spec/ai-difficulty-economy.md)、
   [`docs/re/ai-command-deficit-audit-20260826.md`](docs/re/ai-command-deficit-audit-20260826.md) 與
