@@ -1135,6 +1135,13 @@
   `sub_22D57` 的總人口來源、好／壞事件極值排除與差平方權重亦已由 IDA 閉合並寫成純規則測試。
   全局排程、Lucky 全槽掃描、人口權重目標、熱座非目前席位回寫，以及 AI 的 BC／RP
   一對一事件已接線；AI 殖民地／艦隊／外交與持續 record 等複合效果尚未閉合。
+  2026-08-28 已由 `sub_E5097` 閉合封鎖資料形狀與主鏈時序：`star+0x2A` 是被封鎖
+  player mask，八個 `+0x2B` byte 是逐受害者 blockader mask；每回合先清表，再由有效、
+  已抵達艦隊與 owner policy raw 4..6 重建，owner>=8 封鎖同星所有殖民者。`.GAM`
+  匯入現無損保存兩張 mask，不再壓成 bool。正常回合仍缺玩家／熱座／AI fleet producer、
+  多 owner 同星 mask、關係懲罰與 AI 封鎖職務 consumer；見
+  [`docs/re/blockades-audit-20260828.md`](docs/re/blockades-audit-20260828.md) 與
+  [`docs/spec/blockades.md`](docs/spec/blockades.md)。
   事件 19–23 怪獸入侵已由 `sub_2230A`、`sub_23BEC`、`sub_206A2`、`sub_A16BF` 與
   `sub_A1A23` 閉合最早回合／亂流排除、受害帝國有效殖民星 reservoir sampling、五個獨立
   loader 及 owner 8 航行入口。Go 已移除「第一顆無主星」與太空鰻借用變形蟲的舊代理，

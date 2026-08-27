@@ -70,6 +70,19 @@ func TestImportGAMOpponentsPreservesRaw60E(t *testing.T) {
 	}
 }
 
+func TestImportGAMStarsPreservesBlockadeMasks(t *testing.T) {
+	raw := &save.GameState{Stars: []save.Star{{
+		Name: "BLOCKADE", Blockaded: 0b00000101,
+		BlockadedBy: [8]uint8{0b00000010, 0, 0b10000000},
+	}}}
+	report := &GAMImportReport{StarCount: 1, PlayerCount: 3}
+	stars := importGAMStars(raw, 0, report)
+	if len(stars) != 1 || stars[0].BlockadedMask != 0b00000101 ||
+		stars[0].BlockadedBy[0] != 0b00000010 || stars[0].BlockadedBy[2] != 0b10000000 {
+		t.Fatalf("GAM 星系封鎖 mask 不得壓成 bool：%+v", stars)
+	}
+}
+
 func TestImportedShipPreservesBankruptcyFields(t *testing.T) {
 	raw := save.Ship{
 		Mission: 7, ShieldDamage: 2, DriveDamage: 3, ComputerDamage: 4,

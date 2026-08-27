@@ -218,6 +218,11 @@ type Star struct {
 	//
 	// 零值 false 是安全的(= 不在星雲內),舊存檔不需要修補。
 	InNebula bool
+	// BlockadedMask 對應原版 star+0x2A：每一 bit 是被封鎖的 player slot。
+	// BlockadedBy[slot] 對應 star+0x2B+slot：每一 bit 是封鎖該 slot 的艦隊 owner。
+	// 兩者由原版每回合主鏈先消費舊值、移動艦隊後再整表重算；不是單一 bool。
+	BlockadedMask uint8
+	BlockadedBy   [8]uint8
 }
 
 // ShipWeaponMount 保存原版 8-byte weapon record 的 typed runtime 對應。

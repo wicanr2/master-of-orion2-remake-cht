@@ -224,17 +224,19 @@ func importGAMStars(raw *save.GameState, human int, report *GAMImportReport) []S
 			wormhole = -1
 		}
 		out[i] = Star{
-			X:        float64(r.X) / width,
-			Y:        float64(r.Y) / height,
-			Spectral: int(r.SpectralClass),
-			Size:     int(r.Size),
-			NameEN:   nameEN,
-			Name:     nameEN,
-			Owner:    owner,
-			Explored: r.Visited != 0 || owner == 1,
-			Orbits:   orbits,
-			Wormhole: wormhole,
-			InNebula: r.InNebula != 0,
+			X:             float64(r.X) / width,
+			Y:             float64(r.Y) / height,
+			Spectral:      int(r.SpectralClass),
+			Size:          int(r.Size),
+			NameEN:        nameEN,
+			Name:          nameEN,
+			Owner:         owner,
+			Explored:      r.Visited != 0 || owner == 1,
+			Orbits:        orbits,
+			Wormhole:      wormhole,
+			InNebula:      r.InNebula != 0,
+			BlockadedMask: r.Blockaded,
+			BlockadedBy:   r.BlockadedBy,
 		}
 	}
 	return out
