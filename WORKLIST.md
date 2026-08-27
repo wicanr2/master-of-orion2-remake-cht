@@ -1200,6 +1200,11 @@
   固定三次，5／10 限縮為炸彈攻擊當量，接上 >30,000 提前停止，並由 `sub_4267B` caller 證實
   runtime 結果是 `/40` 後直接寫 record `+3`，已取代錯用手冊 UI `/100` 的結算；非炸彈兩版本相同、
   炸彈版本差、逐擊護盾、停止門檻與 `/40` 邊界均有測試。仍待逐武器數量與快速戰鬥 record；
+  2026-08-27 已重新閉合 `Fighter_Garrison_Strength_`：舊版 10／6／4 中隊乘泛用戰機近似值已
+  改為原版兩組最佳武器扣最佳裝甲、三檔 40/0、40/24、32/24 權重、`/2` 與 64000 上限，並接回
+  殖民地反擊正常路徑；`byte_199CB4==1` 的固定 120 模式語意與逐架戰術生成仍分開標未知。證據與
+  規格見 [`docs/re/fighter-garrison-strength-audit-20260827.md`](docs/re/fighter-garrison-strength-audit-20260827.md)
+  及 [`docs/spec/fighter-garrison-strength.md`](docs/spec/fighter-garrison-strength.md)。
   `Get_Colony_Hits_` 已閉合人口／士兵／戰車／非軌道建築的耐久公式並接入顯示值；
   `sub_E87D2` → `sub_DD2F2 @ 0xDD2F2` → `sub_DCEBD @ 0xDCEBD` 的戰略殖民地內部
   傷亡鏈亦已閉合並實作：一般建築、陸戰隊、戰車、建造進度與人口共用隨機候選池，
@@ -1563,7 +1568,7 @@
 | 項目 | 為什麼停 |
 |---|---|
 | `Calc_Tech_Value_` 階段 C–K | 三張資料表已解、低風險那半已接;**剩下的擋門是「候選各自代表什麼」**,常數表不能照抄 |
-| ~~戰機基地 10 回合整補~~ **已結案,不做** | `Fighter_Garrison_Strength_` @ `0x5F64C` **從帝國記錄的科技旗標當場算**,原版也沒有逐殖民地的中隊存量——remake 現行做法與原版一致,那個 10 回合計時器本來就不該有(第 73 項(音樂場景表))|
+| ~~戰機基地 10 回合整補~~ **已結案,不做** | `Fighter_Garrison_Strength_` 確實從帝國科技與武器表當場算，沒有逐殖民地中隊存量；但 2026-08-27 已訂正：舊 remake 的「10／6／4 × 泛用戰機火力」並不等於原版戰略強度，現已依 `0x5F64C` 精確公式替換。|
 
 ### 附錄四、歷史功能盤點（非待辦；目前狀態以上方盤點結論為準）
 
@@ -1704,11 +1709,12 @@
 要「整補」得先有東西**會少**。remake 的戰機基地戰力是**當場算出來的**,不是存下來的狀態:
 
 ```
-internal/shell/orbital_bombardment.go:218
-    atk, _ := gamedata.FighterGarrisonCombatContribution(fighterGarrisonTierFor(defender))
+internal/shell/orbital_bombardment.go
+    atk := fighterGarrisonStrengthFor(defender)
 ```
 
-`fighterGarrisonTierFor` 只看科技,回傳 10/6/4 個中隊——**沒有任何地方存著「這個殖民地現在剩幾隊」**。
+`fighterGarrisonStrengthFor` 從帝國科技、武器與裝甲當場算戰略強度——**沒有任何地方存著
+「這個殖民地現在剩幾隊」**。
 所以補一個 10 回合的計時器,它會把一個永遠等於滿額的值重設成滿額,是空轉。
 
 要接得先有中隊耗損。而**手冊沒有描述任何耗損機制**——它只說會整補,沒說什麼時候會少。
@@ -3472,9 +3478,10 @@ Elite(500),統帥種族 Regular(0)→Veteran(50)→Elite(150)→Ultra-Elite(500)
 
 ⚠ **「有程式碼消費」不等於「完整還原」**——好幾棟仍有寫明的部分實作,留白各自記在檔頭。
 
-**一個如實記錄、沒有硬調的數字**:戰機基地算出來是攔截機 480 / 轟炸機 120 / 重戰機 256,
-**研究出轟炸機艙反而變弱**。那是 `combat.go` 兩個標明過的近似值造成的假象,不是手冊的意思
-——**沒有硬調數字去湊曲線**,要修的是那兩個近似值,而手冊與反組譯目前都沒給戰機的真實傷害。
+**2026-08-27 勘誤**：本節當時只確認「沒有逐殖民地中隊存量」，卻把它誤推成戰力算法一致。
+IDA 重新追查 `0x5F64C` 後已證實原版使用最佳合格 beam／bomb、最佳裝甲與三檔權重，而非
+10／6／4 乘泛用戰機近似值；現行程式已替換，完整推翻理由見
+`docs/re/fighter-garrison-strength-audit-20260827.md`。
 
 ## ★ 2026-08-07 把上一輪自己寫的兩條留白關掉(gap report 第 42 項(關掉兩條留白))
 

@@ -1,0 +1,1243 @@
+{
+  "address_space": "IDA linear EA",
+  "best_armor_lookup": [
+    {
+      "armor_index": 0,
+      "ea": "0x17f6c1",
+      "raw_word": 0
+    },
+    {
+      "armor_index": 1,
+      "ea": "0x17f6fc",
+      "raw_word": 1
+    },
+    {
+      "armor_index": 2,
+      "ea": "0x17f737",
+      "raw_word": 3
+    },
+    {
+      "armor_index": 3,
+      "ea": "0x17f772",
+      "raw_word": 5
+    },
+    {
+      "armor_index": 4,
+      "ea": "0x17f7ad",
+      "raw_word": 7
+    },
+    {
+      "armor_index": 5,
+      "ea": "0x17f7e8",
+      "raw_word": 10
+    }
+  ],
+  "callees": [
+    {
+      "bytes_sha256": "5abc80809617101f1267096de1737e5a7ff66eaef550aff9cb06b8161e8f56f8",
+      "decompiler_navigation_only": "void __fastcall sub_5699C(__int16 a1)\n{\n  __int16 i; // cx\n  int v2; // ebx\n  __int16 v3; // [esp+0h] [ebp-Ch]\n  __int16 v4; // [esp+4h] [ebp-8h]\n  __int16 v5; // [esp+8h] [ebp-4h]\n\n  v5 = 0;\n  if ( a1 < 8 )\n  {\n    for ( i = 0; i < 40; ++i )\n    {\n      v2 = 14 * i;\n      if ( *(_BYTE *)(word_17F80D[v2] + dword_197F98 + 3753 * v3 + 279) == 3\n        && (word_17F81D[14 * i] & 4) != 0\n        && byte_17F80F[28 * i] == 0 )\n      {\n        v4 = (unsigned __int8)byte_17FD32;\n        if ( (__int16)sub_6D048(v3) >= v4 && word_17F819[v2] > v5 )\n          v5 = word_17F819[v2];\n      }\n    }\n  }\n  JUMPOUT(0x55B0C);\n}\n",
+      "end_ea": "0x56a3a",
+      "original_name": "sub_5699C",
+      "reference_ea": "0x5f65b",
+      "size": 158,
+      "start_ea": "0x5699c",
+      "xref_type": 17
+    },
+    {
+      "bytes_sha256": "b7a7e70ff322e4cfb3a5ea44f0dbdebb0362cea83d4d34de0e0b413756761296",
+      "decompiler_navigation_only": "int __fastcall sub_56CA2(__int16 a1)\n{\n  int v1; // ebx\n  int v2; // edx\n  __int16 v4; // [esp+4h] [ebp-4h]\n\n  v1 = 21;\n  v4 = 0;\n  if ( a1 >= 8 )\n    return 24;\n  v2 = 0;\n  do\n  {\n    if ( *(_BYTE *)(3753 * a1 + dword_197F98 + word_17F80D[14 * (__int16)v2] + 279) == 3\n      && byte_17F80F[28 * (__int16)v2] == 3\n      && word_17F819[14 * (__int16)v2] > v4 )\n    {\n      v1 = v2;\n      v4 = word_17F819[14 * (__int16)v2];\n    }\n    ++v2;\n  }\n  while ( (__int16)v2 < 40 );\n  return v1;\n}\n",
+      "end_ea": "0x56d1e",
+      "original_name": "sub_56CA2",
+      "reference_ea": "0x5f667",
+      "size": 124,
+      "start_ea": "0x56ca2",
+      "xref_type": 17
+    },
+    {
+      "bytes_sha256": "6d862c7137f34b8127a265537ae6bab90299e68553a9b6e28e653bf5d88e7da9",
+      "decompiler_navigation_only": "int __fastcall sub_5F871(__int16 a1, int a2)\n{\n  int v2; // edx\n\n  if ( a1 >= 8 )\n  {\n    if ( (unsigned __int16)a1 < 9u )\n    {\n      return 6;\n    }\n    else if ( (unsigned __int16)a1 <= 9u )\n    {\n      return 8;\n    }\n    else if ( (unsigned __int16)a1 <= 0xEu )\n    {\n      return 0;\n    }\n    else\n    {\n      return a2;\n    }\n  }\n  else\n  {\n    v2 = 59 * (__int16)sub_5679E(a1);\n    LOWORD(v2) = *(__int16 *)((char *)&word_17F6C1 + v2);\n    return v2;\n  }\n}\n",
+      "end_ea": "0x5f8bf",
+      "original_name": "sub_5F871",
+      "reference_ea": "0x5f674",
+      "size": 78,
+      "start_ea": "0x5f871",
+      "xref_type": 17
+    },
+    {
+      "bytes_sha256": "86bfe720cea0dcfe5aec17fab487a9b3b7cdaa48f807268ca6f7b4f06aabc48b",
+      "decompiler_navigation_only": "_WORD *__fastcall sub_5F379(__int16 a1, int a2)\n{\n  __int16 v2; // cx\n  int v3; // eax\n  int v4; // edx\n  int v5; // edi\n  int v6; // ebx\n  unsigned int v7; // edx\n  int v8; // eax\n  __int16 i; // bx\n  int v10; // eax\n  unsigned int v11; // eax\n  __int16 v12; // si\n  __int16 j; // dx\n  int v14; // eax\n  __int16 k; // si\n  unsigned int v16; // edi\n  int v17; // edx\n  _WORD *result; // eax\n  _DWORD v19[4]; // [esp+0h] [ebp-2Ch]\n  _DWORD v20[2]; // [esp+10h] [ebp-1Ch]\n  int v21; // [esp+18h] [ebp-14h]\n  unsigned int v22; // [esp+1Ch] [ebp-10h]\n  int v23; // [esp+20h] [ebp-Ch]\n  int v24; // [esp+24h] [ebp-8h]\n  int v25; // [esp+28h] [ebp-4h]\n\n  v2 = a1;\n  v23 = a2;\n  v3 = 0;\n  v20[0] = &loc_70002;\n  v20[1] = close;\n  do\n  {\n    v4 = (__int16)v3++;\n    v19[v4] = 0;\n  }\n  while ( (__int16)v3 < 4 );\n  if ( byte_199CB4 == 1 )\n  {\n    v5 = 10 * *(unsigned __int8 *)(129 * v2 + dword_197F9C + 16) * *(unsigned __int8 *)(129 * v2 + dword_197F9C + 16);\n    v6 = 1;\n    v19[0] = v5;\n    do\n    {\n      v7 = (v5 + (__int16)v6 - 1) / (unsigned int)(__int16)v6;\n      v8 = (__int16)v6++;\n      v19[v8] = v7;\n    }\n    while ( (__int16)v6 < 4 );\n  }\n  else\n  {\n    for ( i = 0; i < 8; ++i )\n    {\n      v10 = 8 * i + dword_197F9C + 129 * v2;\n      if ( *(__int16 *)(v10 + 28) > 0 )\n      {\n        v11 = 28 * *(__int16 *)(v10 + 28);\n        if ( byte_17F80F[v11] != 0 && byte_17F80F[v11] != 2 )\n          v12 = word_17F819[v11 / 2];\n        else\n          v12 = word_17F819[14 * *(__int16 *)(129 * v2 + dword_197F9C + 8 * i + 28)] / 2;\n        for ( j = 0; j < 4; ++j )\n        {\n          v24 = *(unsigned __int8 *)(129 * v2 + dword_197F9C + 8 * i + 31);\n          if ( v24 * (v12 - *((__int16 *)v20 + j)) <= 0 )\n            v25 = 0;\n          else\n            v25 = v24 * (v12 - *((__int16 *)v20 + j));\n          v14 = j;\n          v19[v14] += v25;\n        }\n      }\n    }\n  }\n  for ( k = 0; k < 4; ++k )\n  {\n    v21 = k;\n    v16 = (__int16)sub_5F2C3(v2, v2, 4 * k) * v19[k];\n    v22 = (__int16)sub_5F2F6(v17);\n    v19[k] = v16 / v22;\n    result = (_WORD *)(v23 + 2 * v21);\n    if ( v19[k] <= 0xFA00u )\n      *result = v19[k];\n    else\n      *result = -1536;\n  }\n  return result;\n}\n",
+      "end_ea": "0x5f524",
+      "original_name": "sub_5F379",
+      "reference_ea": "0x5f742",
+      "size": 427,
+      "start_ea": "0x5f379",
+      "xref_type": 19
+    }
+  ],
+  "callers": [
+    {
+      "bytes_sha256": "7c32c285b466701f07d3729dfeee913ed4cb39df70ccb5718c56820e7c7138ae",
+      "call_ea": "0x5f7eb",
+      "decompiler_navigation_only": "int __fastcall sub_5F747(int a1, __int16 a2)\n{\n  int v2; // ecx\n  char *v4; // eax\n  int v5; // ebx\n  char *v6; // eax\n  char *v7; // eax\n\n  v2 = a1;\n  v4 = (char *)(dword_192B18 + 361 * (__int16)a1);\n  v5 = 0;\n  if ( v4[336] != 0 )\n    v5 = sub_5F524(*v4, a2, 0, v2);\n  v6 = (char *)(361 * (__int16)v2 + dword_192B18);\n  if ( v6[337] != 0 )\n    v5 += sub_5F5A3(*v6, a2, v5);\n  if ( *(_BYTE *)(dword_192B18 + 361 * (__int16)v2 + 352) != 0 )\n  {\n    if ( byte_199CB4 == 1 )\n      v5 += 200;\n    else\n      v5 += 500;\n  }\n  v7 = (char *)(dword_192B18 + 361 * (__int16)v2);\n  if ( v7[357] != 0 )\n    v5 += sub_5F64C(*v7, a2, v5);\n  if ( (unsigned __int16)v5 > 0xFA00u )\n    return 64000;\n  return v5;\n}\n",
+      "end_ea": "0x5f804",
+      "instructions": [
+        {
+          "bytes": "53",
+          "disasm": "push    ebx",
+          "ea": "0x5f747"
+        },
+        {
+          "bytes": "51",
+          "disasm": "push    ecx",
+          "ea": "0x5f748"
+        },
+        {
+          "bytes": "56",
+          "disasm": "push    esi",
+          "ea": "0x5f749"
+        },
+        {
+          "bytes": "89c1",
+          "disasm": "mov     ecx, eax",
+          "ea": "0x5f74a"
+        },
+        {
+          "bytes": "89d6",
+          "disasm": "mov     esi, edx",
+          "ea": "0x5f74c"
+        },
+        {
+          "bytes": "98",
+          "disasm": "cwde",
+          "ea": "0x5f74e"
+        },
+        {
+          "bytes": "69c069010000",
+          "disasm": "imul    eax, 169h",
+          "ea": "0x5f74f"
+        },
+        {
+          "bytes": "8b15182b1900",
+          "disasm": "mov     edx, dword_192B18",
+          "ea": "0x5f755"
+        },
+        {
+          "bytes": "01d0",
+          "disasm": "add     eax, edx",
+          "ea": "0x5f75b"
+        },
+        {
+          "bytes": "31db",
+          "disasm": "xor     ebx, ebx",
+          "ea": "0x5f75d"
+        },
+        {
+          "bytes": "80b85001000000",
+          "disasm": "cmp     byte ptr [eax+150h], 0",
+          "ea": "0x5f75f"
+        },
+        {
+          "bytes": "760d",
+          "disasm": "jbe     short loc_5F775",
+          "ea": "0x5f766"
+        },
+        {
+          "bytes": "0fbfd6",
+          "disasm": "movsx   edx, si",
+          "ea": "0x5f768"
+        },
+        {
+          "bytes": "0fbe00",
+          "disasm": "movsx   eax, byte ptr [eax]",
+          "ea": "0x5f76b"
+        },
+        {
+          "bytes": "e8b1fdffff",
+          "disasm": "call    sub_5F524",
+          "ea": "0x5f76e"
+        },
+        {
+          "bytes": "89c3",
+          "disasm": "mov     ebx, eax",
+          "ea": "0x5f773"
+        },
+        {
+          "bytes": "0fbfd1",
+          "disasm": "movsx   edx, cx",
+          "ea": "0x5f775"
+        },
+        {
+          "bytes": "69d269010000",
+          "disasm": "imul    edx, 169h",
+          "ea": "0x5f778"
+        },
+        {
+          "bytes": "a1182b1900",
+          "disasm": "mov     eax, dword_192B18",
+          "ea": "0x5f77e"
+        },
+        {
+          "bytes": "01d0",
+          "disasm": "add     eax, edx",
+          "ea": "0x5f783"
+        },
+        {
+          "bytes": "80b85101000000",
+          "disasm": "cmp     byte ptr [eax+151h], 0",
+          "ea": "0x5f785"
+        },
+        {
+          "bytes": "760d",
+          "disasm": "jbe     short loc_5F79B",
+          "ea": "0x5f78c"
+        },
+        {
+          "bytes": "0fbfd6",
+          "disasm": "movsx   edx, si",
+          "ea": "0x5f78e"
+        },
+        {
+          "bytes": "0fbe00",
+          "disasm": "movsx   eax, byte ptr [eax]",
+          "ea": "0x5f791"
+        },
+        {
+          "bytes": "e80afeffff",
+          "disasm": "call    sub_5F5A3",
+          "ea": "0x5f794"
+        },
+        {
+          "bytes": "01c3",
+          "disasm": "add     ebx, eax",
+          "ea": "0x5f799"
+        },
+        {
+          "bytes": "0fbfc1",
+          "disasm": "movsx   eax, cx",
+          "ea": "0x5f79b"
+        },
+        {
+          "bytes": "69c069010000",
+          "disasm": "imul    eax, 169h",
+          "ea": "0x5f79e"
+        },
+        {
+          "bytes": "8b15182b1900",
+          "disasm": "mov     edx, dword_192B18",
+          "ea": "0x5f7a4"
+        },
+        {
+          "bytes": "80bc026001000000",
+          "disasm": "cmp     byte ptr [edx+eax+160h], 0",
+          "ea": "0x5f7aa"
+        },
+        {
+          "bytes": "7617",
+          "disasm": "jbe     short loc_5F7CB",
+          "ea": "0x5f7b2"
+        },
+        {
+          "bytes": "803db49c190001",
+          "disasm": "cmp     byte_199CB4, 1",
+          "ea": "0x5f7b4"
+        },
+        {
+          "bytes": "7508",
+          "disasm": "jnz     short loc_5F7C5",
+          "ea": "0x5f7bb"
+        },
+        {
+          "bytes": "81c3c8000000",
+          "disasm": "add     ebx, 0C8h",
+          "ea": "0x5f7bd"
+        },
+        {
+          "bytes": "eb06",
+          "disasm": "jmp     short loc_5F7CB",
+          "ea": "0x5f7c3"
+        },
+        {
+          "bytes": "81c3f4010000",
+          "disasm": "add     ebx, 1F4h",
+          "ea": "0x5f7c5"
+        },
+        {
+          "bytes": "0fbfc1",
+          "disasm": "movsx   eax, cx",
+          "ea": "0x5f7cb"
+        },
+        {
+          "bytes": "69c069010000",
+          "disasm": "imul    eax, 169h",
+          "ea": "0x5f7ce"
+        },
+        {
+          "bytes": "8b15182b1900",
+          "disasm": "mov     edx, dword_192B18",
+          "ea": "0x5f7d4"
+        },
+        {
+          "bytes": "01d0",
+          "disasm": "add     eax, edx",
+          "ea": "0x5f7da"
+        },
+        {
+          "bytes": "80b86501000000",
+          "disasm": "cmp     byte ptr [eax+165h], 0",
+          "ea": "0x5f7dc"
+        },
+        {
+          "bytes": "760d",
+          "disasm": "jbe     short loc_5F7F2",
+          "ea": "0x5f7e3"
+        },
+        {
+          "bytes": "0fbfd6",
+          "disasm": "movsx   edx, si",
+          "ea": "0x5f7e5"
+        },
+        {
+          "bytes": "0fbe00",
+          "disasm": "movsx   eax, byte ptr [eax]",
+          "ea": "0x5f7e8"
+        },
+        {
+          "bytes": "e85cfeffff",
+          "disasm": "call    sub_5F64C",
+          "ea": "0x5f7eb"
+        },
+        {
+          "bytes": "01c3",
+          "disasm": "add     ebx, eax",
+          "ea": "0x5f7f0"
+        },
+        {
+          "bytes": "6681fb00fa",
+          "disasm": "cmp     bx, 0FA00h",
+          "ea": "0x5f7f2"
+        },
+        {
+          "bytes": "7605",
+          "disasm": "jbe     short loc_5F7FE",
+          "ea": "0x5f7f7"
+        },
+        {
+          "bytes": "bb00fa0000",
+          "disasm": "mov     ebx, 0FA00h",
+          "ea": "0x5f7f9"
+        },
+        {
+          "bytes": "89d8",
+          "disasm": "mov     eax, ebx",
+          "ea": "0x5f7fe"
+        },
+        {
+          "bytes": "5e",
+          "disasm": "pop     esi",
+          "ea": "0x5f800"
+        },
+        {
+          "bytes": "59",
+          "disasm": "pop     ecx",
+          "ea": "0x5f801"
+        },
+        {
+          "bytes": "5b",
+          "disasm": "pop     ebx",
+          "ea": "0x5f802"
+        },
+        {
+          "bytes": "c3",
+          "disasm": "retn",
+          "ea": "0x5f803"
+        }
+      ],
+      "original_name": "sub_5F747",
+      "size": 189,
+      "start_ea": "0x5f747",
+      "xref_type": 17
+    }
+  ],
+  "compiler_id": 3,
+  "input_path": "/work/Orion2.exe",
+  "input_sha256": "7ae2ac2e5904ca330009af2827279d889906b0b9b7a8854c38eb707a56e955b5",
+  "processor": "metapc",
+  "root_filename": "Orion2.exe",
+  "semantic_claim": {
+    "level": "unknown",
+    "note": "此匯出只保留原始定位與資料流；玩法語意須經人工審查後另行分級。"
+  },
+  "target": {
+    "bytes_sha256": "b2b7ca0894d6d425e547cc3e79bbb646ecf86b9bc7e2c7aa5e648be71d2df612",
+    "decompiler_navigation_only": "void __fastcall sub_5F64C(__int16 a1, __int16 a2)\n{\n  __int16 v3; // dx\n  int v4; // edx\n\n  sub_5699C(a1);\n  sub_56CA2(v3);\n  sub_5F871(a2, v4);\n  JUMPOUT(0x5F51E);\n}\n",
+    "end_ea": "0x5f747",
+    "instructions": [
+      {
+        "bytes": "53",
+        "disasm": "push    ebx",
+        "ea": "0x5f64c"
+      },
+      {
+        "bytes": "51",
+        "disasm": "push    ecx",
+        "ea": "0x5f64d"
+      },
+      {
+        "bytes": "56",
+        "disasm": "push    esi",
+        "ea": "0x5f64e"
+      },
+      {
+        "bytes": "57",
+        "disasm": "push    edi",
+        "ea": "0x5f64f"
+      },
+      {
+        "bytes": "c8100000",
+        "disasm": "enter   10h, 0",
+        "ea": "0x5f650"
+      },
+      {
+        "bytes": "89d3",
+        "disasm": "mov     ebx, edx",
+        "ea": "0x5f654"
+      },
+      {
+        "bytes": "0fbfd0",
+        "disasm": "movsx   edx, ax",
+        "ea": "0x5f656"
+      },
+      {
+        "bytes": "89d0",
+        "disasm": "mov     eax, edx",
+        "ea": "0x5f659"
+      },
+      {
+        "bytes": "e83c73ffff",
+        "disasm": "call    sub_5699C",
+        "ea": "0x5f65b"
+      },
+      {
+        "bytes": "8945f0",
+        "disasm": "mov     [ebp+var_10], eax",
+        "ea": "0x5f660"
+      },
+      {
+        "bytes": "89d0",
+        "disasm": "mov     eax, edx",
+        "ea": "0x5f663"
+      },
+      {
+        "bytes": "31ff",
+        "disasm": "xor     edi, edi",
+        "ea": "0x5f665"
+      },
+      {
+        "bytes": "e83676ffff",
+        "disasm": "call    sub_56CA2",
+        "ea": "0x5f667"
+      },
+      {
+        "bytes": "8945f4",
+        "disasm": "mov     [ebp+var_C], eax",
+        "ea": "0x5f66c"
+      },
+      {
+        "bytes": "0fbfc3",
+        "disasm": "movsx   eax, bx",
+        "ea": "0x5f66f"
+      },
+      {
+        "bytes": "31f6",
+        "disasm": "xor     esi, esi",
+        "ea": "0x5f672"
+      },
+      {
+        "bytes": "e8f8010000",
+        "disasm": "call    sub_5F871",
+        "ea": "0x5f674"
+      },
+      {
+        "bytes": "8945f8",
+        "disasm": "mov     [ebp+var_8], eax",
+        "ea": "0x5f679"
+      },
+      {
+        "bytes": "31db",
+        "disasm": "xor     ebx, ebx",
+        "ea": "0x5f67c"
+      },
+      {
+        "bytes": "803db49c190001",
+        "disasm": "cmp     byte_199CB4, 1",
+        "ea": "0x5f67e"
+      },
+      {
+        "bytes": "750a",
+        "disasm": "jnz     short loc_5F691",
+        "ea": "0x5f685"
+      },
+      {
+        "bytes": "bb78000000",
+        "disasm": "mov     ebx, 78h ; 'x'",
+        "ea": "0x5f687"
+      },
+      {
+        "bytes": "e9af000000",
+        "disasm": "jmp     loc_5F740",
+        "ea": "0x5f68c"
+      },
+      {
+        "bytes": "69d2a90e0000",
+        "disasm": "imul    edx, 0EA9h",
+        "ea": "0x5f691"
+      },
+      {
+        "bytes": "a1987f1900",
+        "disasm": "mov     eax, dword_197F98",
+        "ea": "0x5f697"
+      },
+      {
+        "bytes": "01d0",
+        "disasm": "add     eax, edx",
+        "ea": "0x5f69c"
+      },
+      {
+        "bytes": "b90a000000",
+        "disasm": "mov     ecx, 0Ah",
+        "ea": "0x5f69e"
+      },
+      {
+        "bytes": "80b86a01000003",
+        "disasm": "cmp     byte ptr [eax+16Ah], 3",
+        "ea": "0x5f6a3"
+      },
+      {
+        "bytes": "7507",
+        "disasm": "jnz     short loc_5F6B3",
+        "ea": "0x5f6aa"
+      },
+      {
+        "bytes": "be04000000",
+        "disasm": "mov     esi, 4",
+        "ea": "0x5f6ac"
+      },
+      {
+        "bytes": "eb0e",
+        "disasm": "jmp     short loc_5F6C1",
+        "ea": "0x5f6b1"
+      },
+      {
+        "bytes": "80b83601000003",
+        "disasm": "cmp     byte ptr [eax+136h], 3",
+        "ea": "0x5f6b3"
+      },
+      {
+        "bytes": "7507",
+        "disasm": "jnz     short loc_5F6C3",
+        "ea": "0x5f6ba"
+      },
+      {
+        "bytes": "bf06000000",
+        "disasm": "mov     edi, 6",
+        "ea": "0x5f6bc"
+      },
+      {
+        "bytes": "31c9",
+        "disasm": "xor     ecx, ecx",
+        "ea": "0x5f6c1"
+      },
+      {
+        "bytes": "89f0",
+        "disasm": "mov     eax, esi",
+        "ea": "0x5f6c3"
+      },
+      {
+        "bytes": "01f0",
+        "disasm": "add     eax, esi",
+        "ea": "0x5f6c5"
+      },
+      {
+        "bytes": "01c8",
+        "disasm": "add     eax, ecx",
+        "ea": "0x5f6c7"
+      },
+      {
+        "bytes": "c1e002",
+        "disasm": "shl     eax, 2",
+        "ea": "0x5f6c9"
+      },
+      {
+        "bytes": "8945fc",
+        "disasm": "mov     [ebp+var_4], eax",
+        "ea": "0x5f6cc"
+      },
+      {
+        "bytes": "0fbfc6",
+        "disasm": "movsx   eax, si",
+        "ea": "0x5f6cf"
+      },
+      {
+        "bytes": "8d0440",
+        "disasm": "lea     eax, [eax+eax*2]",
+        "ea": "0x5f6d2"
+      },
+      {
+        "bytes": "99",
+        "disasm": "cdq",
+        "ea": "0x5f6d5"
+      },
+      {
+        "bytes": "2bc2",
+        "disasm": "sub     eax, edx",
+        "ea": "0x5f6d6"
+      },
+      {
+        "bytes": "d1f8",
+        "disasm": "sar     eax, 1",
+        "ea": "0x5f6d8"
+      },
+      {
+        "bytes": "0fbfd7",
+        "disasm": "movsx   edx, di",
+        "ea": "0x5f6da"
+      },
+      {
+        "bytes": "01d0",
+        "disasm": "add     eax, edx",
+        "ea": "0x5f6dd"
+      },
+      {
+        "bytes": "c1e002",
+        "disasm": "shl     eax, 2",
+        "ea": "0x5f6df"
+      },
+      {
+        "bytes": "89c1",
+        "disasm": "mov     ecx, eax",
+        "ea": "0x5f6e2"
+      },
+      {
+        "bytes": "0fbf45f0",
+        "disasm": "movsx   eax, word ptr [ebp+var_10]",
+        "ea": "0x5f6e4"
+      },
+      {
+        "bytes": "6bc01c",
+        "disasm": "imul    eax, 1Ch",
+        "ea": "0x5f6e8"
+      },
+      {
+        "bytes": "0fbf55f8",
+        "disasm": "movsx   edx, word ptr [ebp+var_8]",
+        "ea": "0x5f6eb"
+      },
+      {
+        "bytes": "0fbf8019f81700",
+        "disasm": "movsx   eax, word_17F819[eax]",
+        "ea": "0x5f6ef"
+      },
+      {
+        "bytes": "29d0",
+        "disasm": "sub     eax, edx",
+        "ea": "0x5f6f6"
+      },
+      {
+        "bytes": "85c0",
+        "disasm": "test    eax, eax",
+        "ea": "0x5f6f8"
+      },
+      {
+        "bytes": "7d02",
+        "disasm": "jge     short loc_5F6FE",
+        "ea": "0x5f6fa"
+      },
+      {
+        "bytes": "31c0",
+        "disasm": "xor     eax, eax",
+        "ea": "0x5f6fc"
+      },
+      {
+        "bytes": "0fbf55fc",
+        "disasm": "movsx   edx, word ptr [ebp+var_4]",
+        "ea": "0x5f6fe"
+      },
+      {
+        "bytes": "0fafc2",
+        "disasm": "imul    eax, edx",
+        "ea": "0x5f702"
+      },
+      {
+        "bytes": "0fb7db",
+        "disasm": "movzx   ebx, bx",
+        "ea": "0x5f705"
+      },
+      {
+        "bytes": "01c3",
+        "disasm": "add     ebx, eax",
+        "ea": "0x5f708"
+      },
+      {
+        "bytes": "0fbf45f4",
+        "disasm": "movsx   eax, word ptr [ebp+var_C]",
+        "ea": "0x5f70a"
+      },
+      {
+        "bytes": "6bc01c",
+        "disasm": "imul    eax, 1Ch",
+        "ea": "0x5f70e"
+      },
+      {
+        "bytes": "0fbf9019f81700",
+        "disasm": "movsx   edx, word_17F819[eax]",
+        "ea": "0x5f711"
+      },
+      {
+        "bytes": "0fbf45f8",
+        "disasm": "movsx   eax, word ptr [ebp+var_8]",
+        "ea": "0x5f718"
+      },
+      {
+        "bytes": "29c2",
+        "disasm": "sub     edx, eax",
+        "ea": "0x5f71c"
+      },
+      {
+        "bytes": "89d0",
+        "disasm": "mov     eax, edx",
+        "ea": "0x5f71e"
+      },
+      {
+        "bytes": "85d2",
+        "disasm": "test    edx, edx",
+        "ea": "0x5f720"
+      },
+      {
+        "bytes": "7d02",
+        "disasm": "jge     short loc_5F726",
+        "ea": "0x5f722"
+      },
+      {
+        "bytes": "31d0",
+        "disasm": "xor     eax, edx",
+        "ea": "0x5f724"
+      },
+      {
+        "bytes": "0fbfd1",
+        "disasm": "movsx   edx, cx",
+        "ea": "0x5f726"
+      },
+      {
+        "bytes": "0fafc2",
+        "disasm": "imul    eax, edx",
+        "ea": "0x5f729"
+      },
+      {
+        "bytes": "0fb7db",
+        "disasm": "movzx   ebx, bx",
+        "ea": "0x5f72c"
+      },
+      {
+        "bytes": "01c3",
+        "disasm": "add     ebx, eax",
+        "ea": "0x5f72f"
+      },
+      {
+        "bytes": "66d1eb",
+        "disasm": "shr     bx, 1",
+        "ea": "0x5f731"
+      },
+      {
+        "bytes": "6681fb00fa",
+        "disasm": "cmp     bx, 0FA00h",
+        "ea": "0x5f734"
+      },
+      {
+        "bytes": "7605",
+        "disasm": "jbe     short loc_5F740",
+        "ea": "0x5f739"
+      },
+      {
+        "bytes": "bb00fa0000",
+        "disasm": "mov     ebx, 0FA00h",
+        "ea": "0x5f73b"
+      },
+      {
+        "bytes": "89d8",
+        "disasm": "mov     eax, ebx",
+        "ea": "0x5f740"
+      },
+      {
+        "bytes": "e9d7fdffff",
+        "disasm": "jmp     locret_5F51E",
+        "ea": "0x5f742"
+      }
+    ],
+    "original_name": "sub_5F64C",
+    "size": 251,
+    "start_ea": "0x5f64c"
+  },
+  "tool": "IDA Pro 9.4 IDAPython",
+  "weapon_table": [
+    {
+      "category": 0,
+      "damage_max": 0,
+      "ea": "0x17f807",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a17000000000000ff0000000000000000000000000000048a1700",
+      "tech_id": 0,
+      "weapon_id": 0
+    },
+    {
+      "category": 0,
+      "damage_max": 6,
+      "ea": "0x17f823",
+      "fighter_eligible_bit_0x4": true,
+      "raw_flags_at_22": 142,
+      "raw_hex": "048a17000100680000ff0a00070004000600060006068e00048a1700",
+      "tech_id": 104,
+      "weapon_id": 1
+    },
+    {
+      "category": 0,
+      "damage_max": 18,
+      "ea": "0x17f83f",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 138,
+      "raw_hex": "048a170002004e0000ff0a000a000400120012000a0a8a00048a1700",
+      "tech_id": 78,
+      "weapon_id": 2
+    },
+    {
+      "category": 0,
+      "damage_max": 4,
+      "ea": "0x17f85b",
+      "fighter_eligible_bit_0x4": true,
+      "raw_flags_at_22": 190,
+      "raw_hex": "048a17000300640000ff0a0005000000010004000104be00048a1700",
+      "tech_id": 100,
+      "weapon_id": 3
+    },
+    {
+      "category": 0,
+      "damage_max": 30,
+      "ea": "0x17f877",
+      "fighter_eligible_bit_0x4": true,
+      "raw_flags_at_22": 22,
+      "raw_hex": "048a170004007b0000ff0f00230000010a001e0005191600048a1700",
+      "tech_id": 123,
+      "weapon_id": 4
+    },
+    {
+      "category": 0,
+      "damage_max": 6,
+      "ea": "0x17f893",
+      "fighter_eligible_bit_0x4": true,
+      "raw_flags_at_22": 278,
+      "raw_hex": "048a17000500460000ff0a00060002000200060002061601048a1700",
+      "tech_id": 70,
+      "weapon_id": 5
+    },
+    {
+      "category": 0,
+      "damage_max": 10,
+      "ea": "0x17f8af",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 144,
+      "raw_hex": "048a17000600610000ff1e000f00080002000a00020a9000048a1700",
+      "tech_id": 97,
+      "weapon_id": 6
+    },
+    {
+      "category": 0,
+      "damage_max": 15,
+      "ea": "0x17f8cb",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 18,
+      "raw_hex": "048a170007004f0000ff0f000c00200003000f00050f1200048a1700",
+      "tech_id": 79,
+      "weapon_id": 7
+    },
+    {
+      "category": 0,
+      "damage_max": 12,
+      "ea": "0x17f8e7",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 18,
+      "raw_hex": "048a17000800730000ff0a000800100003000c00030c1200048a1700",
+      "tech_id": 115,
+      "weapon_id": 8
+    },
+    {
+      "category": 0,
+      "damage_max": 20,
+      "ea": "0x17f903",
+      "fighter_eligible_bit_0x4": true,
+      "raw_flags_at_22": 214,
+      "raw_hex": "048a170009007f0000ff0a000a000000050014000514d600048a1700",
+      "tech_id": 127,
+      "weapon_id": 9
+    },
+    {
+      "category": 0,
+      "damage_max": 40,
+      "ea": "0x17f91f",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 130,
+      "raw_hex": "048a17000a00360000ff1400190004002800280014148200048a1700",
+      "tech_id": 54,
+      "weapon_id": 10
+    },
+    {
+      "category": 0,
+      "damage_max": 100,
+      "ea": "0x17f93b",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 2,
+      "raw_hex": "048a17000b002f0000ff1e004b005000320064000a280200048a1700",
+      "tech_id": 47,
+      "weapon_id": 11
+    },
+    {
+      "category": 0,
+      "damage_max": 30,
+      "ea": "0x17f957",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 18,
+      "raw_hex": "048a17000c00890000ff19000f00020206001e0006181200048a1700",
+      "tech_id": 137,
+      "weapon_id": 12
+    },
+    {
+      "category": 5,
+      "damage_max": 32,
+      "ea": "0x17f973",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a17000d00a50005ff3200280000100400200005280000048a1700",
+      "tech_id": 165,
+      "weapon_id": 13
+    },
+    {
+      "category": 1,
+      "damage_max": 8,
+      "ea": "0x17f98f",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 15872,
+      "raw_hex": "048a17000e0079000105000000000000080008000808003e048a1700",
+      "tech_id": 121,
+      "weapon_id": 14
+    },
+    {
+      "category": 1,
+      "damage_max": 14,
+      "ea": "0x17f9ab",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 15872,
+      "raw_hex": "048a17000f006a0001050000000000000e000e000e0e003e048a1700",
+      "tech_id": 106,
+      "weapon_id": 15
+    },
+    {
+      "category": 1,
+      "damage_max": 20,
+      "ea": "0x17f9c7",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 15872,
+      "raw_hex": "048a1700100095000105000000000000140014001414003e048a1700",
+      "tech_id": 149,
+      "weapon_id": 16
+    },
+    {
+      "category": 1,
+      "damage_max": 30,
+      "ea": "0x17f9e3",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 15872,
+      "raw_hex": "048a17001100ca0001050000000000001e001e001e1e003e048a1700",
+      "tech_id": 202,
+      "weapon_id": 17
+    },
+    {
+      "category": 2,
+      "damage_max": 25,
+      "ea": "0x17f9ff",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 21760,
+      "raw_hex": "048a170012000c00020214000f0000001900190019190055048a1700",
+      "tech_id": 12,
+      "weapon_id": 18
+    },
+    {
+      "category": 2,
+      "damage_max": 40,
+      "ea": "0x17fa1b",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 17664,
+      "raw_hex": "048a17001300920002021e00140000002800280028280045048a1700",
+      "tech_id": 146,
+      "weapon_id": 19
+    },
+    {
+      "category": 2,
+      "damage_max": 120,
+      "ea": "0x17fa37",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 17696,
+      "raw_hex": "048a170014008b00020228004b0000087800780032322045048a1700",
+      "tech_id": 139,
+      "weapon_id": 20
+    },
+    {
+      "category": 3,
+      "damage_max": 12,
+      "ea": "0x17fa53",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a170015007700030a05000300000003000c00030c0000048a1700",
+      "tech_id": 119,
+      "weapon_id": 21
+    },
+    {
+      "category": 3,
+      "damage_max": 24,
+      "ea": "0x17fa6f",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a170016004700030a0700050000000400180004180000048a1700",
+      "tech_id": 71,
+      "weapon_id": 22
+    },
+    {
+      "category": 3,
+      "damage_max": 40,
+      "ea": "0x17fa8b",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a170017000a00030a0700060000000500280005280000048a1700",
+      "tech_id": 10,
+      "weapon_id": 23
+    },
+    {
+      "category": 3,
+      "damage_max": 60,
+      "ea": "0x17faa7",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a170018007600030a0a00090000000a003c000a3c0000048a1700",
+      "tech_id": 118,
+      "weapon_id": 24
+    },
+    {
+      "category": 3,
+      "damage_max": 10,
+      "ea": "0x17fac3",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a170019003000030a0500050080000a000a000a0a0000048a1700",
+      "tech_id": 48,
+      "weapon_id": 25
+    },
+    {
+      "category": 3,
+      "damage_max": 20,
+      "ea": "0x17fadf",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a17001a001c00030a0700080080001400140014140000048a1700",
+      "tech_id": 28,
+      "weapon_id": 26
+    },
+    {
+      "category": 0,
+      "damage_max": 100,
+      "ea": "0x17fafb",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 2,
+      "raw_hex": "048a17001b00690000ff32004b0002046400640019190200048a1700",
+      "tech_id": 105,
+      "weapon_id": 27
+    },
+    {
+      "category": 4,
+      "damage_max": 0,
+      "ea": "0x17fb17",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a17001c001100040119000a0000000000000000000000048a1700",
+      "tech_id": 17,
+      "weapon_id": 28
+    },
+    {
+      "category": 4,
+      "damage_max": 0,
+      "ea": "0x17fb33",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a17001d00530004015000320000000000000004100000048a1700",
+      "tech_id": 83,
+      "weapon_id": 29
+    },
+    {
+      "category": 4,
+      "damage_max": 0,
+      "ea": "0x17fb4f",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a17001e001f0004013c001e0000000000000002070000048a1700",
+      "tech_id": 31,
+      "weapon_id": 30
+    },
+    {
+      "category": 4,
+      "damage_max": 15,
+      "ea": "0x17fb6b",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a17001f00420004011e000a00000006000f0001040000048a1700",
+      "tech_id": 66,
+      "weapon_id": 31
+    },
+    {
+      "category": 5,
+      "damage_max": 0,
+      "ea": "0x17fb87",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a17002000ab0005ff4b004b0000000000000000000000048a1700",
+      "tech_id": 171,
+      "weapon_id": 32
+    },
+    {
+      "category": 5,
+      "damage_max": 0,
+      "ea": "0x17fba3",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a170021000d0005141400050000000000000000000000048a1700",
+      "tech_id": 13,
+      "weapon_id": 33
+    },
+    {
+      "category": 5,
+      "damage_max": 4,
+      "ea": "0x17fbbf",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a17002200500005ff4b00320000000100040003080000048a1700",
+      "tech_id": 80,
+      "weapon_id": 34
+    },
+    {
+      "category": 5,
+      "damage_max": 25,
+      "ea": "0x17fbdb",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a170023008c0005ff28002800000005001900040c0000048a1700",
+      "tech_id": 140,
+      "weapon_id": 35
+    },
+    {
+      "category": 5,
+      "damage_max": 24,
+      "ea": "0x17fbf7",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a17002400940005ff32001e0000000200180004140000048a1700",
+      "tech_id": 148,
+      "weapon_id": 36
+    },
+    {
+      "category": 5,
+      "damage_max": 15,
+      "ea": "0x17fc13",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a170025001e0005ff96009600000006000f0064640000048a1700",
+      "tech_id": 30,
+      "weapon_id": 37
+    },
+    {
+      "category": 5,
+      "damage_max": 400,
+      "ea": "0x17fc2f",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a17002600ae0005fff401f401000090019001fafa0000048a1700",
+      "tech_id": 174,
+      "weapon_id": 38
+    },
+    {
+      "category": 5,
+      "damage_max": 0,
+      "ea": "0x17fc4b",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a17002700bc0005ff1e00140000000000000000000000048a1700",
+      "tech_id": 188,
+      "weapon_id": 39
+    },
+    {
+      "category": 2,
+      "damage_max": 300,
+      "ea": "0x17fc67",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 2,
+      "raw_hex": "048a17002800000002011900140000042c012c0196960200048a1700",
+      "tech_id": 0,
+      "weapon_id": 40
+    },
+    {
+      "category": 0,
+      "damage_max": 10,
+      "ea": "0x17fc83",
+      "fighter_eligible_bit_0x4": true,
+      "raw_flags_at_22": 214,
+      "raw_hex": "048a17002900000000ff0a000a00000005000a00050ad600048a1700",
+      "tech_id": 0,
+      "weapon_id": 41
+    },
+    {
+      "category": 0,
+      "damage_max": 80,
+      "ea": "0x17fc9f",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 18,
+      "raw_hex": "048a17002a00000000ff3c004b00100028005000325a1200048a1700",
+      "tech_id": 0,
+      "weapon_id": 42
+    },
+    {
+      "category": 0,
+      "damage_max": 60,
+      "ea": "0x17fcbb",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 2,
+      "raw_hex": "048a17002b00000000ff32004b0002043c003c0046460200048a1700",
+      "tech_id": 0,
+      "weapon_id": 43
+    },
+    {
+      "category": 5,
+      "damage_max": 40,
+      "ea": "0x17fcd7",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a17002c00000005fffa00640000000a0028000a1e0000048a1700",
+      "tech_id": 0,
+      "weapon_id": 44
+    },
+    {
+      "category": 5,
+      "damage_max": 50,
+      "ea": "0x17fcf3",
+      "fighter_eligible_bit_0x4": false,
+      "raw_flags_at_22": 0,
+      "raw_hex": "048a17002d00000005ff2c016400000019003200040c0000048a1700",
+      "tech_id": 0,
+      "weapon_id": 45
+    }
+  ]
+}

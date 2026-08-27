@@ -22,20 +22,21 @@ func TestFighterGarrisonSquadronsDecreaseWithTechTier(t *testing.T) {
 
 // 中隊數雖然遞減,整座基地的戰力仍應往上走——那正是「每階更強」的意思。
 // 這條是上一條的另一半:少了它,把三個數字寫成 10/6/4 但戰力遞減也會通過。
-func TestFighterGarrisonTotalStrengthStillRisesWithTech(t *testing.T) {
-	ia, _ := FighterGarrisonCombatContribution(FighterGarrisonInterceptor)
-	ba, _ := FighterGarrisonCombatContribution(FighterGarrisonBomber)
-	ha, _ := FighterGarrisonCombatContribution(FighterGarrisonHeavyFighter)
-	t.Logf("攔截機 %d / 轟炸機 %d / 重戰機 %d", ia, ba, ha)
-	if ha <= ba {
-		t.Errorf("重戰機檔(%d)應強過轟炸機檔(%d)", ha, ba)
+func TestFighterGarrisonStrategicStrengthMatchesIDAFormula(t *testing.T) {
+	if got := FighterGarrisonStrategicStrength(FighterGarrisonInterceptor, 4, 12, 0); got != 80 {
+		t.Errorf("攔截機應為 (4*40)/2=80，得到 %d", got)
 	}
-	// ⚠ 攔截機 10 隊 × 48 = 480,轟炸機 6 隊 × 20 = 120——**攔截機檔反而最強**。
-	// 那不是 bug:remake 的單隊貢獻值(fighterBeamDamageApprox/fighterBombDamageApprox)
-	// 是近似值而不是手冊真值(見 combat.go 該處註解),所以三檔的相對強弱本來就不可靠。
-	// 這裡如實記錄而不是硬調數字去湊一個好看的曲線。
-	if ia <= 0 || ba <= 0 || ha <= 0 {
-		t.Error("三檔的戰力都應為正")
+	if got := FighterGarrisonStrategicStrength(FighterGarrisonBomber, 30, 40, 3); got != 984 {
+		t.Errorf("轟炸機應為 ((30-3)*40+(40-3)*24)/2=984，得到 %d", got)
+	}
+	if got := FighterGarrisonStrategicStrength(FighterGarrisonHeavyFighter, 30, 40, 5); got != 820 {
+		t.Errorf("重戰機應為 ((30-5)*32+(40-5)*24)/2=820，得到 %d", got)
+	}
+	if got := FighterGarrisonStrategicStrength(FighterGarrisonBomber, 3, 4, 10); got != 0 {
+		t.Errorf("裝甲扣減後不得為負，得到 %d", got)
+	}
+	if got := FighterGarrisonStrategicStrength(FighterGarrisonHeavyFighter, 10000, 10000, 0); got != 64000 {
+		t.Errorf("上限應為 64000，得到 %d", got)
 	}
 }
 
@@ -74,12 +75,19 @@ func TestPlanetDefenseMaintenanceMatchesTheBuildingTable(t *testing.T) {
 }
 
 // 轟炸機中隊的貢獻:每次只投彈一發(FighterShotsBomber = 1),炸彈必中。
-func TestFighterBomberContributionUsesTheBombShot(t *testing.T) {
-	atk, hp := FighterBomberCombatContribution()
-	if atk != FighterSquadronSize*FighterShotsBomber*fighterBombDamageApprox {
-		t.Errorf("轟炸機攻擊應是 4 架 × 1 次 × 投彈值,得到 %d", atk)
+func TestFighterGarrisonRawTables(t *testing.T) {
+	for _, id := range []int{1, 3, 4, 5, 9} {
+		if !FighterGarrisonBeamWeaponEligible(id) {
+			t.Errorf("武器 %d 應有 fighter eligibility", id)
+		}
 	}
-	if hp != FighterSquadronSize*FighterHitsInterceptor {
-		t.Errorf("手冊沒給轟炸機的耐受數,應沿用攔截機那一格,得到 %d", hp)
+	if FighterGarrisonBeamWeaponEligible(41) {
+		t.Error("怪物武器 41 不得進玩家選擇器")
+	}
+	want := map[Technology]int{TECH_TITANIUM_ARMOR: 0, TECH_TRITANIUM_ARMOR: 1, TECH_ZORTRIUM_ARMOR: 3, TECH_NEUTRONIUM_ARMOR: 5, TECH_ADAMANTIUM_ARMOR: 7, TECH_XENTRONIUM_ARMOR: 10}
+	for tech, reduction := range want {
+		if got := FighterGarrisonArmorReduction(tech); got != reduction {
+			t.Errorf("裝甲 %d 減傷=%d，預期 %d", tech, got, reduction)
+		}
 	}
 }

@@ -46,6 +46,33 @@ func TestBestUnlockedWeaponValue_PicksHighestUnlockedBeam(t *testing.T) {
 	}
 }
 
+func TestFighterGarrisonStrengthForUsesOriginalWeaponAndArmorSelectors(t *testing.T) {
+	if got := fighterGarrisonStrengthFor(engine.PlayerState{}); got != 80 {
+		t.Fatalf("起始雷射應為 (4*40)/2=80，得到 %d", got)
+	}
+
+	ps := engine.PlayerState{}
+	grant := func(tech gamedata.Technology) {
+		topic, ok := gamedata.OrigTechTopic(tech)
+		if !ok {
+			t.Fatalf("科技 %d 缺原版主題", tech)
+		}
+		grantTechnologyApplication(&ps, topic, tech)
+	}
+	grant(gamedata.TECH_PARTICLE_BEAM)
+	grant(gamedata.TECH_ANTIMATTER_BOMB)
+	grant(gamedata.TECH_BOMBER_BAYS)
+	grant(gamedata.TECH_XENTRONIUM_ARMOR)
+	// (30-10)*40 + (40-10)*24，再除 2。
+	if got := fighterGarrisonStrengthFor(ps); got != 760 {
+		t.Errorf("轟炸機、粒子束、反物質炸彈、氙素裝甲應得 760，得到 %d", got)
+	}
+	attackers := retaliationAttackers(map[string]bool{"戰機基地": true}, ps, gamedata.Profile15())
+	if len(attackers) != 1 || attackers[0].atk != 760 {
+		t.Errorf("殖民地反擊應消費同一強度，得到 %+v", attackers)
+	}
+}
+
 // TestRetaliationAttackers_VersionDifference 驗證版本效果:同一 AI(未解鎖任何武器,雷射
 // fallback)、同一防禦建築(星基),Profile13(arc25%)算出的反擊 atk 應高於 Profile15
 // (arc33%)——arc-cost 較高 → perBeam 較大 → fit 較少 → 防禦略弱,這是 #14 版本差異在

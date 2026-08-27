@@ -2849,10 +2849,10 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     Farmers: 4, Workers: 2, Scientists: 2,
     ```
     ```
-    internal/shell/orbital_bombardment.go:218
-        atk, _ := gamedata.FighterGarrisonCombatContribution(fighterGarrisonTierFor(defender))
+    internal/shell/orbital_bombardment.go
+        atk := fighterGarrisonStrengthFor(defender)
     ```
-    `fighterGarrisonTierFor` 只看科技,回傳 10/6/4 個中隊——**沒有任何地方存著「現在剩幾隊」**。
+    `fighterGarrisonStrengthFor` 從帝國科技、武器與裝甲當場計算——**沒有任何地方存著「現在剩幾隊」**。
     `Load_Antaran_Defense_Fleet_` @ 0x4D141(只有 77 bytes,全文可讀):
     ```
     if word_199182 < 1: word_199182 = 1     ; 第 5 筆至少 1
@@ -3729,7 +3729,8 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     per-colony 中隊計數欄位」。查了:`Fighter_Garrison_Strength_` @ `0x5F64C`
     **從帝國記錄當場算**(`imul edx, 0EA9h` + `dword_197F98` 取該帝國記錄,
     再讀 `[eax+0x16A]` / `[eax+0x136]` 兩個科技旗標),**沒有逐殖民地的中隊存量**。
-    所以 remake 現行做法(`fighterGarrisonTierFor` 只看科技)**與原版一致**。
+    這只證實 remake 不需建立逐殖民地中隊庫存；戰略強度公式已於 2026-08-27 另由
+    `docs/re/fighter-garrison-strength-audit-20260827.md` 閉合並替換舊近似值。
     `Calc_Tech_Value_` 階段 C–K 這一輪**沒有動**。不假裝兩項都查完了。
 
 74. **文件政策:過期的斷言直接刪除**(2026-08-08)。

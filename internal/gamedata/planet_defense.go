@@ -75,31 +75,58 @@ func FighterGarrisonSquadrons(tier FighterGarrisonTier) int {
 	return FighterGarrisonInterceptorSquadrons
 }
 
-// FighterBomberCombatContribution 回傳一個**轟炸機**中隊對抽象戰力的貢獻(攻擊, HP)。
-//
-// 補齊既有的攔截機/重戰機兩支:轟炸機每次出手只投彈(手冊 p.83,`FighterShotsBomber` = 1),
-// 炸彈必中。HP 沿用攔截機那一格——手冊 p.127 的表只給了攔截機 2 與重戰機 5 兩個數字,
-// **轟炸機那一格沒給**,所以取最接近的下界而不是自己插一個值,並在這裡標明。
-func FighterBomberCombatContribution() (atk, hp int) {
-	return FighterSquadronSize * FighterShotsBomber * fighterBombDamageApprox,
-		FighterSquadronSize * FighterHitsInterceptor
-}
-
-// FighterGarrisonCombatContribution 回傳一座戰機基地對殖民地反擊的貢獻(攻擊, HP)。
-//
-// = 該檔次的中隊數 × 單一中隊的貢獻。
-func FighterGarrisonCombatContribution(tier FighterGarrisonTier) (atk, hp int) {
-	var a, h int
+// FighterGarrisonStrategicStrength 是原版 Fighter_Garrison_Strength_ @ 0x5F64C
+// 的正常戰略模式公式。beamDamage／bombDamage 是玩家已知合格武器的最大傷害，
+// armorReduction 是最佳裝甲的單次減傷。
+func FighterGarrisonStrategicStrength(tier FighterGarrisonTier, beamDamage, bombDamage, armorReduction int) int {
+	beamWeight, bombWeight := 40, 0
 	switch tier {
 	case FighterGarrisonBomber:
-		a, h = FighterBomberCombatContribution()
+		bombWeight = 24
 	case FighterGarrisonHeavyFighter:
-		a, h = FighterHeavyBayCombatContribution()
-	default:
-		a, h = FighterBayCombatContribution()
+		beamWeight, bombWeight = 32, 24
 	}
-	n := FighterGarrisonSquadrons(tier)
-	return a * n, h * n
+	beamDamage -= armorReduction
+	if beamDamage < 0 {
+		beamDamage = 0
+	}
+	bombDamage -= armorReduction
+	if bombDamage < 0 {
+		bombDamage = 0
+	}
+	strength := (beamDamage*beamWeight + bombDamage*bombWeight) / 2
+	if strength > 64000 {
+		return 64000
+	}
+	return strength
+}
+
+// FighterGarrisonBeamWeaponEligible 對應原版武器表 raw flags +22 的 bit 0x0004。
+// ID 41 也帶此旗標，但它是無玩家科技的怪物武器，不列入玩家選擇器。
+func FighterGarrisonBeamWeaponEligible(weaponID int) bool {
+	switch weaponID {
+	case 1, 3, 4, 5, 9:
+		return true
+	}
+	return false
+}
+
+// FighterGarrisonArmorReduction 對應 sub_5F871 使用的六階 raw word。
+func FighterGarrisonArmorReduction(tech Technology) int {
+	switch tech {
+	case TECH_TRITANIUM_ARMOR:
+		return 1
+	case TECH_ZORTRIUM_ARMOR:
+		return 3
+	case TECH_NEUTRONIUM_ARMOR:
+		return 5
+	case TECH_ADAMANTIUM_ARMOR:
+		return 7
+	case TECH_XENTRONIUM_ARMOR:
+		return 10
+	default:
+		return 0
+	}
 }
 
 // StellarConverterDamagePerSide 是恆星轉換器一發打在**一面**上的傷害(手冊 p.111:400)。
