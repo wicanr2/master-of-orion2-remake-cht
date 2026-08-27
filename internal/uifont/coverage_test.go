@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"unicode"
 
 	bitmapfont "github.com/hajimehoshi/bitmapfont/v4"
 	"golang.org/x/image/math/fixed"
@@ -14,7 +15,7 @@ import (
 
 // TestBitmapTCCoverage 是 [HARD] 守門測試(取代 runtime fallback):
 // 掃描 repo 全語料（assets/i18n/*.json + internal/、cmd/ 下所有 .go 檔）出現的每一個
-// CJK/全形字元,逐字檢查 bitmapfont.FaceTC 是否有實際墨點(ink)。任一字缺就 Fatal 並列出缺字清單,
+// CJK/全形非空白字元,逐字檢查 bitmapfont.FaceTC 是否有實際墨點(ink)。任一字缺就 Fatal 並列出缺字清單,
 // 讓「未來新增未涵蓋字」在 build/CI 就被抓到,而不是 runtime 靜默消失成方塊/空白
 // (對齊 docs/tech/pixel-font-decision.md 的窮舉驗證與 mom playbook 的缺字 [HARD] 教訓)。
 //
@@ -117,7 +118,9 @@ func collectCJK(t *testing.T, path string, set map[rune]struct{}) {
 		t.Fatalf("讀取 %s: %v", path, err)
 	}
 	for _, r := range string(data) {
-		if isCJK(r) {
+		// U+3000 等排版空白依定義就不應有墨點；把它送進 hasInk 會把合法
+		// 空白誤報成缺字。空白寬度由 Face 的 advance 契約處理，不屬 glyph ink 守門。
+		if isCJK(r) && !unicode.IsSpace(r) {
 			set[r] = struct{}{}
 		}
 	}

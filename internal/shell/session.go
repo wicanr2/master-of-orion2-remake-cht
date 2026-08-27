@@ -165,6 +165,9 @@ type AIOpponent struct {
 	LeaderOffer         *Leader
 	LeaderLastOfferTurn int
 	ColonyLeaderNames   []string
+	// OriginalFoodDeficitTurns 對應原版 player+0x7EC：帝國食物結餘
+	// player+0xB0 為負時逐回合累加，否則歸零；sub_25DF1 以此產生 reason 113。
+	OriginalFoodDeficitTurns int `json:"originalFoodDeficitTurns,omitempty"`
 }
 
 // cloneBuildings 回傳 m 的獨立拷貝(逐鍵複製),供需要「各自獨立、不共享底層 map」的初始化
@@ -5160,6 +5163,9 @@ func (s *GameSession) EndTurn() {
 		ps = applyAIDifficultyPlayerInputs(ps, s.Difficulty)
 		s.AIPlayers[i].Colonies = colonies
 		out := engine.RunEmpireTurnWithResearchRoller(ps, s.aiColoniesForTurn(i, colonies), s.researchBreakthroughRoll)
+		if turns, ok := gamedata.OriginalNPCFoodDeficitTurns(s.AIPlayers[i].OriginalFoodDeficitTurns, out.TotalFoodHalf); ok {
+			s.AIPlayers[i].OriginalFoodDeficitTurns = turns
+		}
 		s.recordAIPlagueResearch(i, out)
 		out.Player.TreatyIncomeBC = 0
 		out.Player.TreatyResearch = 0

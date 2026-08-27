@@ -196,8 +196,9 @@ func (s *GameSession) advanceOriginalAIAIWarTimers() {
 	}
 }
 
-// advanceOriginalAIAIWarPolicy 接回 sub_25DF1 的一般宣戰候選與 sub_2670A
-// 的 AI↔AI 直接停戰。特殊政府／事件宣戰分支留待各自有玩家可見 producer 時接回。
+// advanceOriginalAIAIWarPolicy 接回 sub_25DF1 的 reason 20／68／113 與一般
+// reason 23 候選，再依 sub_2670A 處理 AI↔AI 直接停戰。各理由採原版分開掃描
+// 全體目標的順序，避免改成逐目標混排後改變亂數序列。
 func (s *GameSession) advanceOriginalAIAIWarPolicy(roll func(int) int) {
 	count := len(s.AIPlayers)
 	if count < 2 {
@@ -214,27 +215,97 @@ func (s *GameSession) advanceOriginalAIAIWarPolicy(roll func(int) int) {
 		if wars != 0 {
 			continue
 		}
-		candidates := make([]int, 0, count-1)
+		candidate := make([]bool, count)
+		targetAtWar := make([]bool, count)
 		for target := range s.AIPlayers {
 			if source == target {
 				continue
 			}
-			targetAtWar := false
 			for third := range s.AIPlayers {
 				if third != source && third != target && s.AIPolicies[target][third] >= gamedata.DIPLO_LIMITED_WAR {
-					targetAtWar = true
+					targetAtWar[target] = true
 					break
 				}
 			}
-			candidate, ok := gamedata.OriginalNPCGenericWarCandidate(gamedata.OriginalNPCWarCandidateInput{
-				Difficulty: s.Difficulty, Government: originalAIRelationGovernment(s.AIPlayers[source]),
+		}
+		government := originalAIRelationGovernment(s.AIPlayers[source])
+		// reason 20：raw government 3 的低機率宣戰。
+		for target := range s.AIPlayers {
+			if source == target {
+				continue
+			}
+			ratio, valid := gamedata.OriginalNPCPowerRatio(power[source][target], power[target][source], wars)
+			if !valid {
+				continue
+			}
+			candidate[target], _ = gamedata.OriginalNPCGovernmentWarCandidate(gamedata.OriginalNPCSpecialWarCandidateInput{
+				Difficulty: s.Difficulty, Government: government, PowerRatio: ratio,
+				Cooldown: s.AIDiplomacyCooldownRaw[source][target],
+			}, roll)
+		}
+		// reason 68：只有 Turn%playerCount 的輪值目標擲敵意門檻。
+		for target := range s.AIPlayers {
+			if source == target || candidate[target] {
+				continue
+			}
+			ratio, valid := gamedata.OriginalNPCPowerRatio(power[source][target], power[target][source], wars)
+			if !valid {
+				continue
+			}
+			candidate[target], _ = gamedata.OriginalNPCHostilityWarCandidate(gamedata.OriginalNPCSpecialWarCandidateInput{
+				Difficulty: s.Difficulty, Government: government, PowerRatio: ratio,
+				Cooldown: s.AIDiplomacyCooldownRaw[source][target], TargetIsRotating: s.Turn%count == target,
+				CurrentRelationRaw: s.originalAIAIRelation(source, target),
+			}, roll)
+		}
+		// reason 113：原版每個 source 無條件先擲一次 Random(100)，再把同一結果
+		// 套到所有尚無候選的合格目標；FoodDeficitTurns 為 +0x7EC producer。
+		foodRoll := roll
+		foodResult := 0
+		foodRoll = func(n int) int {
+			if foodResult == 0 {
+				foodResult = roll(n)
+			}
+			return foodResult
+		}
+		for target := range s.AIPlayers {
+			if source == target || candidate[target] {
+				continue
+			}
+			ratio, valid := gamedata.OriginalNPCPowerRatio(power[source][target], power[target][source], wars)
+			if !valid {
+				continue
+			}
+			candidate[target], _ = gamedata.OriginalNPCFoodDeficitWarCandidate(gamedata.OriginalNPCSpecialWarCandidateInput{
+				Difficulty: s.Difficulty, Government: government, PowerRatio: ratio,
+				Cooldown:         s.AIDiplomacyCooldownRaw[source][target],
+				FoodDeficitTurns: s.AIPlayers[source].OriginalFoodDeficitTurns,
+			}, foodRoll)
+		}
+		if foodResult == 0 {
+			// 即使沒有合格目標，原版仍在目標 loop 前消耗這次擲骰。
+			foodResult = roll(100)
+		}
+		// reason 23：一般政策／政府／國力候選。
+		for target := range s.AIPlayers {
+			if source == target || candidate[target] {
+				continue
+			}
+			got, ok := gamedata.OriginalNPCGenericWarCandidate(gamedata.OriginalNPCWarCandidateInput{
+				Difficulty: s.Difficulty, Government: government,
 				Policy: s.AIPolicies[source][target], TradeActive: s.AITrade[source][target],
 				ResearchActive: s.AIResearch[source][target], TributeMode: s.AITributeModes[source][target],
 				SourceStrength: power[source][target], TargetStrength: power[target][source],
 				SourceThirdPartyWars: wars, Cooldown: s.AIDiplomacyCooldownRaw[source][target],
-				TargetIsRotating: s.Turn%count == target, TargetAtWarWithAI: targetAtWar,
+				TargetIsRotating: s.Turn%count == target, TargetAtWarWithAI: targetAtWar[target],
 			}, roll)
-			if ok && candidate {
+			if ok && got {
+				candidate[target] = true
+			}
+		}
+		candidates := make([]int, 0, count-1)
+		for target := range candidate {
+			if candidate[target] && !(s.Difficulty >= 3 && targetAtWar[target]) {
 				candidates = append(candidates, target)
 			}
 		}

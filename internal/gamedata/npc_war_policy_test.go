@@ -45,3 +45,57 @@ func TestOriginalNPCCeasefireThreshold(t *testing.T) {
 		t.Fatalf("threshold=%d ok=%v", got, ok)
 	}
 }
+
+func TestOriginalNPCGovernmentWarCandidate(t *testing.T) {
+	in := OriginalNPCSpecialWarCandidateInput{Difficulty: 2, Government: 3, PowerRatio: 100}
+	got, ok := OriginalNPCGovernmentWarCandidate(in, func(n int) int {
+		if n != 150 {
+			t.Fatalf("roll span=%d，want 150", n)
+		}
+		return 1
+	})
+	if !ok || !got {
+		t.Fatalf("reason 20 應成立：got=%v ok=%v", got, ok)
+	}
+	in.Government = 2
+	if got, ok = OriginalNPCGovernmentWarCandidate(in, func(int) int { t.Fatal("非 government 3 不應取亂數"); return 1 }); !ok || got {
+		t.Fatalf("政府 gate 失敗：got=%v ok=%v", got, ok)
+	}
+}
+
+func TestOriginalNPCHostilityWarCandidateUsesSignedRelationThreshold(t *testing.T) {
+	in := OriginalNPCSpecialWarCandidateInput{
+		Difficulty: 2, Government: 1, PowerRatio: 100, TargetIsRotating: true, CurrentRelationRaw: -80,
+	}
+	// (-(-80)-5)/(2*2+1) = 15。
+	if got, ok := OriginalNPCHostilityWarCandidate(in, func(n int) int { return 15 }); !ok || !got {
+		t.Fatalf("門檻內應成立：got=%v ok=%v", got, ok)
+	}
+	if got, ok := OriginalNPCHostilityWarCandidate(in, func(n int) int { return 16 }); !ok || got {
+		t.Fatalf("門檻外不應成立：got=%v ok=%v", got, ok)
+	}
+}
+
+func TestOriginalNPCFoodDeficitWarCandidateConsumesRollAtZero(t *testing.T) {
+	calls := 0
+	in := OriginalNPCSpecialWarCandidateInput{Difficulty: 2, Government: 1, PowerRatio: 100}
+	if got, ok := OriginalNPCFoodDeficitWarCandidate(in, func(n int) int { calls++; return 1 }); !ok || got || calls != 1 {
+		t.Fatalf("零赤字 streak 仍應擲一次且不成立：got=%v ok=%v calls=%d", got, ok, calls)
+	}
+	in.FoodDeficitTurns = 3
+	if got, ok := OriginalNPCFoodDeficitWarCandidate(in, func(n int) int { return 3 }); !ok || !got {
+		t.Fatalf("streak 內應成立：got=%v ok=%v", got, ok)
+	}
+}
+
+func TestOriginalNPCFoodDeficitTurnsAccumulatesAndResets(t *testing.T) {
+	if got, ok := OriginalNPCFoodDeficitTurns(4, -1); !ok || got != 5 {
+		t.Fatalf("赤字 streak=%d ok=%v，want 5,true", got, ok)
+	}
+	if got, ok := OriginalNPCFoodDeficitTurns(5, 0); !ok || got != 0 {
+		t.Fatalf("非赤字應歸零：got=%d ok=%v", got, ok)
+	}
+	if got, ok := OriginalNPCFoodDeficitTurns(32767, -1); !ok || got != 32767 {
+		t.Fatalf("signed word 上限應飽和：got=%d ok=%v", got, ok)
+	}
+}

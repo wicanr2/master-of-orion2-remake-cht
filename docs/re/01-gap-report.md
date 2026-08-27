@@ -4724,3 +4724,16 @@ AI 母星仍保留既有「無完整種族環境初始化」的模型差異；�
 對照契約與網路參考連結見 `docs/re/visual-oracle-20260811.md`。`CMBTSHP` 艦型
 索引仍維持視覺近似，地面戰實機傷亡、事件漂移與爆炸連鎖不因靜態畫面通過而升格
 為完成。
+
+## 106. NPC 特殊宣戰理由 20／68／113（2026-08-28）
+
+IDA Pro 9.4 對 `sub_25DF1 @ 0x25DF1` 的 raw 指令重新核對後，已接回 raw government 3
+的 reason 20、方向關係門檻 reason 68，以及食物赤字 reason 113。`sub_4DAB2 @ 0x4DAB2`
+證實 `player+0xB0` 為負時遞增 `+0x7EC`、非負時歸零；remake 現由 AI 經濟的
+`TotalFoodHalf` 產生、保存並消費此 streak。候選仍依原版「每個理由掃完整張目標表」順序，
+reason 113 每個來源固定消耗一次 `Random(100)`。
+
+未接部分不再混寫成「全部特殊宣戰未知」：`+0x60E` 強制 reason 113 旗標沒有 producer；
+reason 22 的 `+0x6FF` 已證實是殖民破壞怨值，但現有 AI↔AI 抽象戰爭在開戰前沒有可達 writer；
+`sub_233FA` 的全域 2／4／6 事件 gate 也尚未映射。完整位址、證據等級與規格見
+`docs/re/npc-special-war-policy-audit-20260828.md` 與 `docs/spec/npc-special-war-policy.md`。

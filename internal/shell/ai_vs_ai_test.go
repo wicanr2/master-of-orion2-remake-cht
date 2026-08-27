@@ -73,6 +73,31 @@ func TestOriginalAIAIWarDeclarationWritesRawState(t *testing.T) {
 	}
 }
 
+func TestOriginalAIAIHostilityWarCandidateReachesDeclaration(t *testing.T) {
+	s := NewDemoSession()
+	s.ensureOriginalAIAIRelations()
+	s.ensureAIAIState()
+	s.Difficulty = 2
+	s.Turn = 1 // 三位 AI 時 target 1 是 reason 68 的輪值目標。
+	s.setOriginalAIAIRelation(0, 1, -100)
+	s.AIPlayers[0].FleetStrength = 10000
+	s.AIPlayers[1].FleetStrength = 1
+	s.AIPlayers[2].FleetStrength = 1
+	s.advanceOriginalAIAIWarPolicy(func(n int) int {
+		switch n {
+		case 100, 1, 25:
+			return 1
+		case 200:
+			return 200
+		default:
+			return n
+		}
+	})
+	if !s.AIWars[0][1] || s.AIPolicies[0][1] != gamedata.DIPLO_LIMITED_WAR {
+		t.Fatalf("reason 68 應抵達正式宣戰 consumer：wars=%v policy=%v", s.AIWars, s.AIPolicies)
+	}
+}
+
 func TestOriginalAIAICeasefireUsesDurationAndCooldown(t *testing.T) {
 	s := NewDemoSession()
 	s.ensureOriginalAIAIRelations()
