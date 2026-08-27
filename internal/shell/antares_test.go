@@ -39,8 +39,8 @@ func TestAntaresDefenseReducesDamage(t *testing.T) {
 	if s.Player.BC != beforeBC {
 		t.Fatalf("安塔蘭戰鬥不得沿用舊腳本直接扣 BC：%d → %d", beforeBC, s.Player.BC)
 	}
-	if s.LastAntares == "" || s.LastAntaresEN == "" {
-		t.Fatal("抵達戰鬥應有雙語報告")
+	if s.LastAntaranNotice == nil || s.LastAntaranNotice.Kind != AntaranNoticeBattle {
+		t.Fatalf("抵達戰鬥應有型別化報告：%+v", s.LastAntaranNotice)
 	}
 }
 
@@ -120,8 +120,22 @@ func TestAntaranRaidCanTargetAI(t *testing.T) {
 	if s.AIPlayers[0].FleetStrength >= before {
 		t.Fatalf("AI 目標應承受安塔蘭艦隊戰鬥損耗：%d → %d", before, s.AIPlayers[0].FleetStrength)
 	}
-	if s.LastAntares == "" || s.LastAntaresEN == "" {
-		t.Fatal("AI 戰鬥應有雙語報告")
+	if s.LastAntaranNotice == nil || s.LastAntaranNotice.Kind != AntaranNoticeAIEngaged {
+		t.Fatalf("AI 戰鬥應有型別化報告：%+v", s.LastAntaranNotice)
+	}
+}
+
+func TestAntaranNoticeFollowsHotseatTarget(t *testing.T) {
+	s := NewDemoSession()
+	if len(s.AIPlayers) < 1 || s.SetupHotseat(2) != 2 {
+		t.Skip("需要第二個熱座帝國")
+	}
+	want := &AntaranNotice{Kind: AntaranNoticeLaunched, StarName: "測試星", StarNameEN: "Test", ETA: 3}
+	s.LastAntaranNotice = want
+	s.Seats[s.ActiveSeat] = s.saveSeat()
+	s.loadSeat(s.Seats[s.ActiveSeat])
+	if s.LastAntaranNotice == nil || *s.LastAntaranNotice != *want {
+		t.Fatalf("安塔蘭通知未隨熱座席位往返：%+v", s.LastAntaranNotice)
 	}
 }
 

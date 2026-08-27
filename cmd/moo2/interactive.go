@@ -5585,11 +5585,7 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 			})
 		}
 		// 安塔蘭人入侵警報(紅色醒目)。
-		if b.session.LastAntares != "" {
-			antaresMsg := b.session.LastAntares
-			if b.lang != i18n.Traditional && b.session.LastAntaresEN != "" {
-				antaresMsg = b.session.LastAntaresEN
-			}
+		if antaresMsg := antaranNoticeText(b.lang, b.session.LastAntaranNotice); antaresMsg != "" {
 			messages = append(messages, turnSummaryMessage{
 				text: antaresMsg, size: 14, col: color.RGBA{240, 110, 90, 255},
 			})

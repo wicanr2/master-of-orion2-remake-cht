@@ -1,13 +1,33 @@
 package shell
 
 import (
-	"fmt"
 	"math/rand"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
 const antaranRaidApproxETA = 3
+
+// AntaranNoticeKind 是玩家可見安塔蘭通知的穩定種類；句型由 UI 外部 catalog 決定。
+type AntaranNoticeKind uint8
+
+const (
+	AntaranNoticeNone AntaranNoticeKind = iota
+	AntaranNoticeLaunched
+	AntaranNoticeAIEngaged
+	AntaranNoticeUndefended
+	AntaranNoticeBattle
+)
+
+// AntaranNotice 保存一筆安塔蘭戰略入侵的型別化玩家結果，不保存任何語言句子。
+type AntaranNotice struct {
+	Kind       AntaranNoticeKind
+	StarName   string
+	StarNameEN string
+	ETA        int
+	ShipsLost  int
+	Repelled   bool
+}
 
 // AntaranRaidFleet 是原版 owner 8 出征艦隊在 remake ETA 模型中的可存檔投影。
 type AntaranRaidFleet struct {
@@ -47,7 +67,7 @@ func (s *GameSession) initAntaranInvasionState() {
 
 // advanceAntares 對應 Antaran_Invasion_Check_ 的全局一次性回合入口。
 func (s *GameSession) advanceAntares() {
-	s.LastAntares, s.LastAntaresEN = "", ""
+	s.LastAntaranNotice = nil
 	if s.DisableEvents || s.AntaranHomeworldConquered {
 		s.AntaranInvasion.Pending = nil
 		return
@@ -112,8 +132,8 @@ func (s *GameSession) advanceAntares() {
 	st.Pending = append(st.Pending, raid)
 	st.Readiness = 0
 	s.AntaresRaids++
-	s.LastAntares = fmt.Sprintf("⚠ 安塔蘭艦隊已朝 %s 出發，預計 %d 回合後抵達", s.starName(star), raid.ETA)
-	s.LastAntaresEN = fmt.Sprintf("⚠ An Antaran fleet launched toward %s and will arrive in about %d turns.", s.starNameEN(star), raid.ETA)
+	s.LastAntaranNotice = &AntaranNotice{Kind: AntaranNoticeLaunched,
+		StarName: s.starName(star), StarNameEN: s.starNameEN(star), ETA: raid.ETA}
 }
 
 func (s *GameSession) chooseAntaranTarget() (eventEmpireTarget, int, bool) {
@@ -234,8 +254,8 @@ func (s *GameSession) resolveAntaranRaid(raid AntaranRaidFleet) (survivors [5]in
 			lost = a.FleetStrength
 		}
 		a.FleetStrength -= lost
-		s.LastAntares = fmt.Sprintf("⚠ 安塔蘭艦隊抵達 %s，與當地守軍交戰", s.starName(raid.StarIndex))
-		s.LastAntaresEN = fmt.Sprintf("⚠ An Antaran fleet reached %s and engaged the local defenders.", s.starNameEN(raid.StarIndex))
+		s.LastAntaranNotice = &AntaranNotice{Kind: AntaranNoticeAIEngaged,
+			StarName: s.starName(raid.StarIndex), StarNameEN: s.starNameEN(raid.StarIndex)}
 		return raid.Ships
 	}
 
@@ -246,12 +266,12 @@ func (s *GameSession) resolveAntaranRaid(raid AntaranRaidFleet) (survivors [5]in
 		}
 		s.loadSeat(s.Seats[raid.TargetIndex])
 		defer func() {
-			message, messageEN := s.LastAntares, s.LastAntaresEN
+			notice := s.LastAntaranNotice
 			s.Seats[raid.TargetIndex] = s.saveSeat()
 			if active >= 0 && active < len(s.Seats) {
 				s.loadSeat(s.Seats[active])
 			}
-			s.LastAntares, s.LastAntaresEN = message, messageEN
+			s.LastAntaranNotice = notice
 		}()
 	}
 	fleetIdx := -1
@@ -263,8 +283,8 @@ func (s *GameSession) resolveAntaranRaid(raid AntaranRaidFleet) (survivors [5]in
 	}
 	attackers := antaranRaidCombatants(raid.Ships)
 	if fleetIdx < 0 {
-		s.LastAntares = fmt.Sprintf("⚠ 安塔蘭艦隊抵達未設防的 %s", s.starName(raid.StarIndex))
-		s.LastAntaresEN = fmt.Sprintf("⚠ An Antaran fleet reached the undefended %s system.", s.starNameEN(raid.StarIndex))
+		s.LastAntaranNotice = &AntaranNotice{Kind: AntaranNoticeUndefended,
+			StarName: s.starName(raid.StarIndex), StarNameEN: s.starNameEN(raid.StarIndex)}
 		return raid.Ships
 	}
 	selected := s.SelectedFleet
@@ -295,9 +315,8 @@ func (s *GameSession) resolveAntaranRaid(raid AntaranRaidFleet) (survivors [5]in
 			survivors[4]++
 		}
 	}
-	s.LastAntares = fmt.Sprintf("⚠ 安塔蘭艦隊在 %s 與守軍交戰：我方損失 %d 艘，%s",
-		s.starName(raid.StarIndex), lost, map[bool]string{true: "已擊退", false: "敵軍仍佔優勢"}[repelled])
-	s.LastAntaresEN = fmt.Sprintf("⚠ Battle with the Antarans at %s: %d defending ships lost; repelled=%t.",
-		s.starNameEN(raid.StarIndex), lost, repelled)
+	s.LastAntaranNotice = &AntaranNotice{Kind: AntaranNoticeBattle,
+		StarName: s.starName(raid.StarIndex), StarNameEN: s.starNameEN(raid.StarIndex),
+		ShipsLost: lost, Repelled: repelled}
 	return survivors
 }

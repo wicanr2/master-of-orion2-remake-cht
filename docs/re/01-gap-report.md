@@ -4480,7 +4480,9 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
 
     - `AIRaidReport.MessageEN`：AI 突襲的擊退／突破結果保留 AI 種族英文名與星名，
       並由回合摘要與 INFO 畫面在英文模式選用。
-    - `GameSession.LastAntaresEN`：安塔蘭突襲警報補英文模板，熱座席位快照同步保存顯示暫態。
+    - 當時以 `GameSession.LastAntaresEN` 補英文模板並讓熱座席位保存顯示暫態；2026-08-27
+      已由型別化 `LastAntaranNotice` 與外部 `antaran.notice.*` 文案取代。舊欄位不再存在，
+      見 [`antaran-notice-text-audit-20260827.md`](antaran-notice-text-audit-20260827.md)。
     - `LastPersistentEventEN`：超新星倒數／解除／爆發、時空異象消散、超空間獸航道訊息
       補英文進度；事件 19–28 的怪獸／持續事件初始報告不再只顯示 `A ... event has been reported.`。
 

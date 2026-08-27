@@ -4583,8 +4583,7 @@ type GameSession struct {
 	commandReplayDepth int
 	AntaresRaids       int                  // 已成功部署的安塔蘭攻擊艦隊數
 	AntaranInvasion    AntaranInvasionState // 原版全局資源／建艦／出征狀態
-	LastAntares        string               // 本回合安塔蘭突襲描述(空=無;供回合摘要)
-	LastAntaresEN      string               // 同一安塔蘭突襲的英文描述(英文模式)
+	LastAntaranNotice  *AntaranNotice       // 本回合安塔蘭突襲的型別化結果；玩家句型由 UI 提供
 	// Monsters 是星圖上守衛星系的太空怪獸(見 monster.go)。清空 = 全部已被清除。
 	Monsters []MonsterGuard
 
@@ -4606,7 +4605,7 @@ type GameSession struct {
 	Outposts []Outpost
 
 	// LastRaid / LastRaidReport 是本回合 AI 對玩家殖民地的突襲(見 ai_attack.go);
-	// 空/nil = 無。與 LastAntares 分開:安塔蘭人是週期腳本,AI 突襲是外交/軍備的後果。
+	// 空/nil = 無。與 LastAntaranNotice 分開:安塔蘭人是週期腳本,AI 突襲是外交/軍備的後果。
 	LastRaid       string
 	LastRaidReport *AIRaidReport
 	RaceIndex      int // 玩家選定的種族(shell.Races 索引)
@@ -5196,7 +5195,7 @@ func (s *GameSession) EndTurn() {
 	}
 	s.Turn++
 	s.advanceShipRepair()      // 停在自家據點的艦艇完全修復(原版 Repair_Ships_At_Colonies_)
-	s.advanceAntares()         // 安塔蘭人週期性入侵(依 Turn 排程升級),記於 LastAntares
+	s.advanceAntares()         // 安塔蘭人週期性入侵(依 Turn 排程升級),記於 LastAntaranNotice
 	s.advanceAIRaids()         // AI 對手突襲玩家殖民地(戰爭態勢 + 軍力領先才發動),記於 LastRaid
 	s.advanceConquestVictory() // 對手是否已全滅(手冊三條勝利路徑之一:殲滅所有對手)
 	s.advancePlayerDefeat()    // 玩家是否已無任何殖民地(超新星等事件可致,見該函式)

@@ -83,7 +83,7 @@ type aiSnapshot struct {
 	FleetTargetAISet bool `json:"fleetTargetAISet,omitempty"`
 }
 
-// sessionSnapshot 是 GameSession 的完整可序列化狀態(排除純顯示的暫態:LastEvent/LastAntares
+// sessionSnapshot 是 GameSession 的完整可序列化狀態(排除純顯示的暫態:LastEvent/LastAntaranNotice
 // /LastBattle/LastPlayerOutput,它們下一回合會重算)。含未匯出的遊戲狀態(popAccum/raceGrowthPct)。
 type sessionSnapshot struct {
 	Version                      int                  `json:"version"`
@@ -210,7 +210,7 @@ type sessionSnapshot struct {
 	AntaranHomeworldConquered bool                `json:"antaranHomeworldConquered,omitempty"`
 
 	// PlayerSpies 是玩家派駐到各 AI 對手的間諜數(平行 AIPlayers),見 spy.go。
-	// LastEspionage(本回合諜報結算訊息)比照 LastEvent/LastAntares/LastBattle,是下回合會
+	// LastEspionage(本回合諜報結算訊息)比照 LastEvent/LastAntaranNotice/LastBattle,是下回合會
 	// 重算的純顯示暫態,刻意不存檔。
 	PlayerSpies []int `json:"playerSpies"`
 	// PlayerSpyMissions 與 PlayerSpies 平行。舊存檔沒有此欄位時由

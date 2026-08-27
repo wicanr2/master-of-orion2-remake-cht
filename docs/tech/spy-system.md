@@ -105,7 +105,7 @@ of enemy property」的定性描述，但原版 `0x10130A` 的讀寫端已具體
    - **HIDE 判定**:玩家將該 AI 的任務切為 HIDE 後，跳過 STEAL，改用
      `resolveSpyVsSpy(AB, DB, hide=true)`；介面以明確標籤循環三種任務。
    - 結果訊息記進 `GameSession.LastEspionage []string`(供回合摘要顯示,比照
-     `LastEvent`/`LastAntares`/`LastBattle` 的既有慣例,下回合重算不存檔)。
+     `LastEvent`／`LastAntaranNotice`／`LastBattle` 的既有慣例，下回合重算不存檔）。
 4. **測試**(`internal/shell/spy_test.go`):SABOTAGE 候選的穩定排序／建造成本權重／無候選 no-op、
    成功移除建築與失敗保留 map；另有 `spyStealOptions` 找到/找不到可偷科技、
    `applyTechTheft` 只解鎖偷到的那一項不連帶解鎖同主題其餘選項、`resolveSpyVsSpy` 四種門檻

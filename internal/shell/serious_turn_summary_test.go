@@ -23,7 +23,7 @@ func TestHasSeriousTurnSummaryReportRecognizesTypedThreats(t *testing.T) {
 		{"starvation", func(s *GameSession) { s.LastPlayerOutput.Colonies = []engine.ColonyOutput{{Starving: true}} }},
 		{"rebellion", func(s *GameSession) { s.LastRebellions = []RebellionResult{{Triggered: true}} }},
 		{"bankruptcy", func(s *GameSession) { s.LastBankruptcy = []BankruptcyAction{{Kind: BankruptcyScrapShip}} }},
-		{"antaran", func(s *GameSession) { s.LastAntares = "typed" }},
+		{"antaran", func(s *GameSession) { s.LastAntaranNotice = &AntaranNotice{Kind: AntaranNoticeLaunched} }},
 		{"raid", func(s *GameSession) { s.LastRaid = "typed" }},
 	}
 	for _, tc := range tests {

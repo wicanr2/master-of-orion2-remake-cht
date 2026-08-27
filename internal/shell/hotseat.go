@@ -127,8 +127,7 @@ type seat struct {
 	LastPersistentEventEN     string
 	LastEventReport           *EventReport
 	LastDiscovery             *SystemDiscovery
-	LastAntares               string
-	LastAntaresEN             string
+	LastAntaranNotice         *AntaranNotice
 	LastRaid                  string
 	LastRaidReport            *AIRaidReport
 	LastEspionage             []string
@@ -166,7 +165,7 @@ func (s *GameSession) saveSeat() seat {
 
 		LastPlayerOutput: s.LastPlayerOutput, LastBuilt: s.LastBuilt,
 		LastEvent: s.LastEvent, LastPersistentEventEN: s.LastPersistentEventEN, LastEventReport: s.LastEventReport, LastDiscovery: s.LastDiscovery,
-		LastAntares: s.LastAntares, LastAntaresEN: s.LastAntaresEN, LastRaid: s.LastRaid, LastRaidReport: s.LastRaidReport,
+		LastAntaranNotice: s.LastAntaranNotice, LastRaid: s.LastRaid, LastRaidReport: s.LastRaidReport,
 		LastEspionage: s.LastEspionage, LastBankruptcy: s.LastBankruptcy, LastBattle: s.LastBattle,
 		AntaresRaids: s.AntaresRaids, AntaranHomeworldConquered: s.AntaranHomeworldConquered,
 	}
@@ -200,7 +199,7 @@ func (s *GameSession) loadSeat(v seat) {
 
 	s.LastPlayerOutput, s.LastBuilt = v.LastPlayerOutput, v.LastBuilt
 	s.LastEvent, s.LastPersistentEventEN, s.LastEventReport, s.LastDiscovery = v.LastEvent, v.LastPersistentEventEN, v.LastEventReport, v.LastDiscovery
-	s.LastAntares, s.LastAntaresEN, s.LastRaid, s.LastRaidReport = v.LastAntares, v.LastAntaresEN, v.LastRaid, v.LastRaidReport
+	s.LastAntaranNotice, s.LastRaid, s.LastRaidReport = v.LastAntaranNotice, v.LastRaid, v.LastRaidReport
 	s.LastEspionage, s.LastBankruptcy, s.LastBattle = v.LastEspionage, v.LastBankruptcy, v.LastBattle
 	s.AntaresRaids, s.AntaranHomeworldConquered = v.AntaresRaids, v.AntaranHomeworldConquered
 }

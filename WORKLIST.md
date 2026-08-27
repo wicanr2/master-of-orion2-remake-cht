@@ -527,6 +527,17 @@
   原版勘查報告逐字與 `★` 排版仍明標未知／remake adapter，不因外部化升格 parity。證據與規格見
   [`docs/re/planet-special-display-catalog-audit-20260827.md`](docs/re/planet-special-display-catalog-audit-20260827.md) 與
   [`docs/spec/planet-special-display-catalog.md`](docs/spec/planet-special-display-catalog.md)。
+  安塔蘭戰略入侵通知已完成第五十七個切片：出發、抵達 AI 殖民星、未設防抵達及玩家守軍
+  勝／敗不再由 `internal/shell` 組合雙語句子，規則層只保存通知種類、雙語星名、ETA、損失與
+  是否擊退的 `AntaranNotice`。回合摘要與 INFO 摘要共用 `antaranNoticeText`，五種句型、警示
+  符號及未知 fallback 全由 `ui.json` 提供；熱座席位與重要摘要 gate 也已改讀 typed notice。
+  現有 IDA 證據只支持出兵、目標星與戰鬥資料，不支持任何通知逐字，因此句型仍明標 remake
+  adapter。聚焦測試已覆蓋五個雙語分支、英文星名、熱座往返、重要摘要及來源碼防回歸。
+  繁中與英文正版資料畫廊各重跑 38/38；抽查回合摘要與 INFO 畫面未見 key 外洩、重疊或越框，
+  但畫廊沒有強制注入安塔蘭事件，五種實際通知內容仍由 typed 測試證明而非冒充視覺 oracle。
+  證據與規格見
+  [`docs/re/antaran-notice-text-audit-20260827.md`](docs/re/antaran-notice-text-audit-20260827.md) 與
+  [`docs/spec/antaran-notice-external-text.md`](docs/spec/antaran-notice-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見
