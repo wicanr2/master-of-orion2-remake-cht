@@ -206,6 +206,11 @@ func (s *GameSession) advanceOriginalAIAIWarPolicy(roll func(int) int) {
 	}
 	power, _ := s.originalAIPowerMatrix()
 	for source := range s.AIPlayers {
+		// sub_25DF1 外層沿用 sub_233FA：超空間亂流 active 時，只有
+		// player+0x8BC（跨維度）帝國仍執行宣戰候選鏈。
+		if s.hyperspaceFluxActive() && !aiRaceHasTrait(s.AIPlayers[source], gamedata.TRAIT_TRANS_DIMENSIONAL) {
+			continue
+		}
 		wars := 0
 		for target := range s.AIPlayers {
 			if source != target && s.AIPolicies[source][target] >= gamedata.DIPLO_LIMITED_WAR {
@@ -257,6 +262,21 @@ func (s *GameSession) advanceOriginalAIAIWarPolicy(roll func(int) int) {
 				Cooldown: s.AIDiplomacyCooldownRaw[source][target], TargetIsRotating: s.Turn%count == target,
 				CurrentRelationRaw: s.originalAIAIRelation(source, target),
 			}, roll)
+		}
+		// reason 113（第一分支）：原版 GAM 的 player+0x60E 恰為 1 時，
+		// 所有合格目標直接成為候選，不消耗亂數。producer 未知，故新局不臆造此值。
+		for target := range s.AIPlayers {
+			if source == target || candidate[target] {
+				continue
+			}
+			ratio, valid := gamedata.OriginalNPCPowerRatio(power[source][target], power[target][source], wars)
+			if !valid {
+				continue
+			}
+			candidate[target], _ = gamedata.OriginalNPCForcedWarCandidate(gamedata.OriginalNPCSpecialWarCandidateInput{
+				Difficulty: s.Difficulty, Government: government, PowerRatio: ratio,
+				Cooldown: s.AIDiplomacyCooldownRaw[source][target], ForcedWarRaw: s.AIPlayers[source].OriginalWarFlag60ERaw,
+			})
 		}
 		// reason 113：原版每個 source 無條件先擲一次 Random(100)，再把同一結果
 		// 套到所有尚無候選的合格目標；FoodDeficitTurns 為 +0x7EC producer。

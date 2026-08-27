@@ -168,6 +168,9 @@ type AIOpponent struct {
 	// OriginalFoodDeficitTurns 對應原版 player+0x7EC：帝國食物結餘
 	// player+0xB0 為負時逐回合累加，否則歸零；sub_25DF1 以此產生 reason 113。
 	OriginalFoodDeficitTurns int `json:"originalFoodDeficitTurns,omitempty"`
+	// OriginalWarFlag60ERaw 保存原版 Player+0x60E；consumer 已證實，producer 未知。
+	// 只從原版 GAM 或 remake JSON 延續，不為新局自行推導。
+	OriginalWarFlag60ERaw int `json:"originalWarFlag60ERaw,omitempty"`
 }
 
 // cloneBuildings 回傳 m 的獨立拷貝(逐鍵複製),供需要「各自獨立、不共享底層 map」的初始化

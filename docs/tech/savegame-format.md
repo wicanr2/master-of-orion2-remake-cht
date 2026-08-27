@@ -41,14 +41,14 @@ u16 shipCount     → Ship    × 500 (MAX_SHIPS)
 | Galaxy | 32 | sizeFactor1 + skip4 + w2 + h2 + skip2 + Nebula×4(20) + nebulaCount1 |
 | Colonist | 4 | bit-packed u32 |
 | Colony | 361 | 見 §4 |
-| Planet | 16 | |
+| Planet | 17 | `Colony` i16 加 15 個 byte 欄位；parser stride 測試固定 |
 | Star | 113 | |
 | Leader | 59 | = LEADER_DATA_SIZE(交叉驗證通過) |
 | ShipWeapon | 8 | |
 | ShipDesign | 99 | name16 + 7 + specials5 + Weapon×8(64) + 6 |
 | Ship | 129 | ShipDesign99 + 30 |
 | SettlerInfo | 4 | bit-packed |
-| Player | 3755 | 見 §5 |
+| Player | 3753 | 見 §5 |
 
 陣列容量常數:MAX_POPULATION=42、MAX_RACES=10(玩家+androids+natives)、MAX_BUILD_QUEUE=7、MAX_BUILDINGS=49、MAX_ORBITS=5、MAX_SETTLERS=25、MAX_RESEARCH_TOPICS=83、MAX_TECHNOLOGIES=212(204 applied + 8 areas)、MAX_PLAYER_BLUEPRINTS=5、TRAITS_COUNT=31、MAX_HISTORY_LENGTH=350、MAX_SHIP_SPECIALS=40、MAX_SHIP_WEAPONS=8。
 
@@ -71,7 +71,7 @@ buildings[49] u8;status u16。
 
 **Colonist(4 bytes,u32 bit-packed)**:`race = bits[0:4]`、`loyalty = bits[4:7]`、`job = bits[7:9]`、`flags = bits[9:]`。
 
-## 5. Player(3755 bytes)欄位順序(含相對 skip)
+## 5. Player(3753 bytes)欄位順序(含相對 skip)
 
 skip1;name[20];race[15];eliminated/picture/color/personality/objective u8(personality 100 = 人類);
 homePlayerId u16, networkPlayerId u16, playerDoneFlags u8, skip2(dead), researchBreakthrough u8, taxRate u8, BC i32, totalFreighters u16, surplusFreighters i16, commandPoints u16, usedCommandPoints i16, foodFreighted u16, settlersFreighted u16;
@@ -79,7 +79,9 @@ SettlerInfo[25];
 totalPop/foodProduced/industryProduced/researchProduced/bcProduced u16, surplusFood i16, surplusBC i16;
 totalMaintenance i32, building/freighter/ship/spy/tribute/officer Maintenance u16;
 researchTopics[83] u8;techs[212] u8;researchProgress u32;**skip45**;hyperTechLevels[8] u8;**skip253**;researchTopic u8, researchItem u8;skip3;
-blueprints[5] ShipDesign;selectedBlueprint ShipDesign;**skip12**;playerContacts[8] u8;**skip139**;playerRelations[8] i8;skip8;foreignPolicies[8]/tradeTreaties[8]/researchTreaties[8] u8;**skip608**;traits[31] i8;skip33;
+blueprints[5] ShipDesign;selectedBlueprint ShipDesign;**skip12**;playerContacts[8] u8;skip130;
+`+0x60E` raw u8（已證實 consumer，producer 未知）;skip8;playerRelations[8] i8;skip8;
+foreignPolicies[8]/tradeTreaties[8]/researchTreaties[8] u8;**skip608**;traits[31] i8;skip33;
 fleetHistory[350]/techHistory[350]/populationHistory[350]/buildingHistory[350] u8;spies[8] u8, infoPanel u8;skip21;galaxyCharted u8;skip51。
 
 **SettlerInfo(4 bytes,LE bit-packed)**:byte0=sourceColony、byte1=destinationPlanet、byte2 低 4 bit=player 高 4 bit=eta、byte3 低 2 bit=job(其餘保留)。原版用 `BitStream` 逐 byte 依需求讀,26 bit 落在 4 byte 內。

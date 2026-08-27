@@ -58,6 +58,8 @@ type aiSnapshot struct {
 	Personality              ai.Personality                 `json:"personality"`
 	OriginalTechProfile      gamedata.OriginalAITechProfile `json:"originalTechProfile,omitempty"`
 	OriginalTechProfileKnown bool                           `json:"originalTechProfileKnown,omitempty"`
+	OriginalFoodDeficitTurns int                            `json:"originalFoodDeficitTurns,omitempty"`
+	OriginalWarFlag60ERaw    int                            `json:"originalWarFlag60ERaw,omitempty"`
 	// LastRaidTurn 是這個 AI 上次突襲玩家的回合(見 ai_attack.go)。不存的話讀檔後
 	// 每個 AI 的間隔計時器都歸零,存檔當回合可能立刻又被突襲一次。
 	LastRaidTurn int `json:"last_raid_turn"`
@@ -319,7 +321,9 @@ func (s *GameSession) snapshot() sessionSnapshot {
 			LeaderLastOfferTurn: a.LeaderLastOfferTurn, ColonyLeaderNames: a.ColonyLeaderNames,
 			Personality: a.Personality, LastRaidTurn: a.LastRaidTurn,
 			OriginalTechProfile: a.OriginalTechProfile, OriginalTechProfileKnown: a.OriginalTechProfileKnown,
-			WantsAudience: a.WantsAudience, AudienceReason: a.AudienceReason,
+			OriginalFoodDeficitTurns: a.OriginalFoodDeficitTurns,
+			OriginalWarFlag60ERaw:    a.OriginalWarFlag60ERaw,
+			WantsAudience:            a.WantsAudience, AudienceReason: a.AudienceReason,
 			FleetStar: a.FleetStar, FleetPosSet: a.FleetPosSet,
 			FleetDestStar: a.FleetDestStar, FleetETA: a.FleetETA,
 			FleetTargetAI: a.FleetTargetAI, FleetTargetAISet: a.FleetTargetAISet}
@@ -449,7 +453,9 @@ func (snap sessionSnapshot) restore() *GameSession {
 			LeaderLastOfferTurn: a.LeaderLastOfferTurn, ColonyLeaderNames: a.ColonyLeaderNames,
 			Personality: a.Personality, LastRaidTurn: a.LastRaidTurn,
 			OriginalTechProfile: a.OriginalTechProfile, OriginalTechProfileKnown: a.OriginalTechProfileKnown,
-			WantsAudience: a.WantsAudience, AudienceReason: a.AudienceReason,
+			OriginalFoodDeficitTurns: a.OriginalFoodDeficitTurns,
+			OriginalWarFlag60ERaw:    a.OriginalWarFlag60ERaw,
+			WantsAudience:            a.WantsAudience, AudienceReason: a.AudienceReason,
 			FleetStar: a.FleetStar, FleetPosSet: a.FleetPosSet,
 			FleetDestStar: a.FleetDestStar, FleetETA: a.FleetETA,
 			FleetTargetAI: a.FleetTargetAI, FleetTargetAISet: a.FleetTargetAISet,

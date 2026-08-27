@@ -57,6 +57,19 @@ func TestApplyGAMPopulationProfilesSpecialSlots(t *testing.T) {
 	}
 }
 
+func TestImportGAMOpponentsPreservesRaw60E(t *testing.T) {
+	raw := &save.GameState{Players: make([]save.Player, 2)}
+	raw.Players[0].Personality = 100
+	raw.Players[1].Name = "AI"
+	raw.Players[1].Raw60E = 1
+	report := &GAMImportReport{PlayerCount: 2}
+	s := &GameSession{}
+	importGAMOpponents(s, raw, 0, report)
+	if len(s.AIPlayers) != 1 || s.AIPlayers[0].OriginalWarFlag60ERaw != 1 || report.ImportedAI != 1 {
+		t.Fatalf("GAM Player+0x60E 未無損匯入：AI=%+v report=%+v", s.AIPlayers, report)
+	}
+}
+
 func TestImportedShipPreservesBankruptcyFields(t *testing.T) {
 	raw := save.Ship{
 		Mission: 7, ShieldDamage: 2, DriveDamage: 3, ComputerDamage: 4,

@@ -985,14 +985,18 @@
   反向玩家條約、`+0x737` 鎖定 writer仍待閉合。2026-08-28 已依 `sub_25DF1` 的分支掃描順序
   接回特殊宣戰 reason 20、reason 68 與 reason 113 的食物赤字路徑；`sub_4DAB2` 證實
   `player+0xB0 < 0` 會累加 `+0x7EC`、否則歸零，該 signed-word streak 已由 AI 經濟輸出產生、
-  保存並抵達正式宣戰 consumer。尚未閉合的是 `+0x60E` 的另一條 reason 113 強制旗標、
-  reason 22 的 `+0x6FF` 殖民破壞怨值 AI↔AI producer、外層事件 gate，以及
+  保存並抵達正式宣戰 consumer。`+0x60E` 的另一條 reason 113 已完成
+  `.GAM` raw 保留、JSON 往返與消費端，但 runtime producer 仍未知；其餘尚未閉合的是
+  reason 22 的 `+0x6FF` 殖民破壞怨值 AI↔AI producer，以及
   `+0x6AF／+0x6BF` 記憶。特殊貿易與 ETA callback
   仍是可玩 remake 模型。證據與規格見
   [`docs/re/npc-war-ceasefire-audit-20260827.md`](docs/re/npc-war-ceasefire-audit-20260827.md) 與
   [`docs/spec/npc-war-ceasefire.md`](docs/spec/npc-war-ceasefire.md)、
   [`docs/re/npc-special-war-policy-audit-20260828.md`](docs/re/npc-special-war-policy-audit-20260828.md) 與
   [`docs/spec/npc-special-war-policy.md`](docs/spec/npc-special-war-policy.md)。
+  `sub_233FA` 外層 gate 同日由既有事件 9 稽核交叉閉合：超空間亂流 active 時非跨維度 AI
+  不執行宣戰候選，`player+0x8BC` 對應的跨維度種族可照常執行；正常與免疫分支均有測試。
+  同日亦訂正 `+0x7EC` 的 `inc word` 為 16-bit 回繞，而非過去文件誤述的飽和。
   領袖招募現依 `sub_97A66/sub_9781D/sub_97B2D` 每回合擲骰，包含前五回合門檻、
   Charismatic／Repulsive、Famous 一般／進階加成、兩類四席與隨星曆開放的隨機候選前綴；
   亂數流可隨存檔續接。證據與規格見

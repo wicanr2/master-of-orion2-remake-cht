@@ -196,7 +196,7 @@ func (c *Colony) load(r *reader) {
 	c.Status = r.u16()
 }
 
-// ── Planet(16 bytes)──────────────────────────────────────
+// ── Planet(17 bytes)──────────────────────────────────────
 type Planet struct {
 	Colony     int16
 	Star       uint8
@@ -553,7 +553,10 @@ type Player struct {
 	Blueprints        [maxPlayerBlueprint]ShipDesign
 	SelectedBlueprint ShipDesign
 
-	PlayerContacts   [maxPlayers]uint8
+	PlayerContacts [maxPlayers]uint8
+	// Raw60E 保留 Player record +0x60E。其唯一已證實 consumer 是 sub_25DF1
+	// 的無亂數 reason 113 分支；producer 語意未知，因此不以推測名稱取代 raw offset。
+	Raw60E           uint8
 	PlayerRelations  [maxPlayers]int8
 	ForeignPolicies  [maxPlayers]uint8
 	TradeTreaties    [maxPlayers]uint8
@@ -633,7 +636,9 @@ func (p *Player) load(r *reader) {
 	for i := range p.PlayerContacts {
 		p.PlayerContacts[i] = r.u8()
 	}
-	r.skip(139)
+	r.skip(130) // +0x58C..+0x60D
+	p.Raw60E = r.u8()
+	r.skip(8) // +0x60F..+0x616
 	for i := range p.PlayerRelations {
 		p.PlayerRelations[i] = r.i8()
 	}

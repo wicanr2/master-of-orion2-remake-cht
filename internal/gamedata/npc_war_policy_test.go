@@ -88,6 +88,17 @@ func TestOriginalNPCFoodDeficitWarCandidateConsumesRollAtZero(t *testing.T) {
 	}
 }
 
+func TestOriginalNPCForcedWarCandidateUsesRaw60EWithoutRoll(t *testing.T) {
+	in := OriginalNPCSpecialWarCandidateInput{Difficulty: 2, Government: 1, PowerRatio: 100, ForcedWarRaw: 1}
+	if got, ok := OriginalNPCForcedWarCandidate(in); !ok || !got {
+		t.Fatalf("raw +0x60E=1 應成立：got=%v ok=%v", got, ok)
+	}
+	in.ForcedWarRaw = 2
+	if got, ok := OriginalNPCForcedWarCandidate(in); !ok || got {
+		t.Fatalf("只有 raw 1 合法：got=%v ok=%v", got, ok)
+	}
+}
+
 func TestOriginalNPCFoodDeficitTurnsAccumulatesAndResets(t *testing.T) {
 	if got, ok := OriginalNPCFoodDeficitTurns(4, -1); !ok || got != 5 {
 		t.Fatalf("赤字 streak=%d ok=%v，want 5,true", got, ok)
@@ -95,7 +106,7 @@ func TestOriginalNPCFoodDeficitTurnsAccumulatesAndResets(t *testing.T) {
 	if got, ok := OriginalNPCFoodDeficitTurns(5, 0); !ok || got != 0 {
 		t.Fatalf("非赤字應歸零：got=%d ok=%v", got, ok)
 	}
-	if got, ok := OriginalNPCFoodDeficitTurns(32767, -1); !ok || got != 32767 {
-		t.Fatalf("signed word 上限應飽和：got=%d ok=%v", got, ok)
+	if got, ok := OriginalNPCFoodDeficitTurns(32767, -1); !ok || got != -32768 {
+		t.Fatalf("signed word inc 應回繞：got=%d ok=%v", got, ok)
 	}
 }

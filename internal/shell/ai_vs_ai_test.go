@@ -98,6 +98,50 @@ func TestOriginalAIAIHostilityWarCandidateReachesDeclaration(t *testing.T) {
 	}
 }
 
+func TestOriginalAIAIWarPolicyHonorsHyperspaceFluxTransDimensionalGate(t *testing.T) {
+	newCandidate := func(transDimensional bool) *GameSession {
+		s := NewDemoSession()
+		s.ensureOriginalAIAIRelations()
+		s.ensureAIAIState()
+		s.Difficulty, s.Turn = 2, 1
+		s.PersistentEvents = []PersistentEvent{{Kind: PersistentHyperspaceFlux, StarIndex: -1}}
+		s.AIPlayers[0].RaceIndex = 0
+		if transDimensional {
+			for i := range Races {
+				if gamedata.OrigRaceHasTrait(Races[i].OrigIdx, gamedata.TRAIT_TRANS_DIMENSIONAL) {
+					s.AIPlayers[0].RaceIndex = i
+					break
+				}
+			}
+		}
+		s.setOriginalAIAIRelation(0, 1, -100)
+		s.AIPlayers[0].FleetStrength = 10000
+		s.AIPlayers[1].FleetStrength = 1
+		s.AIPlayers[2].FleetStrength = 1
+		return s
+	}
+	roll := func(n int) int {
+		switch n {
+		case 100, 1, 25:
+			return 1
+		case 200:
+			return 200
+		default:
+			return n
+		}
+	}
+	blocked := newCandidate(false)
+	blocked.advanceOriginalAIAIWarPolicy(roll)
+	if blocked.AIWars[0][1] {
+		t.Fatal("亂流中非跨維度 AI 不得進入宣戰候選鏈")
+	}
+	immune := newCandidate(true)
+	immune.advanceOriginalAIAIWarPolicy(roll)
+	if !immune.AIWars[0][1] {
+		t.Fatal("亂流中跨維度 AI 應繞過 gate 並可正常宣戰")
+	}
+}
+
 func TestOriginalAIAICeasefireUsesDurationAndCooldown(t *testing.T) {
 	s := NewDemoSession()
 	s.ensureOriginalAIAIRelations()

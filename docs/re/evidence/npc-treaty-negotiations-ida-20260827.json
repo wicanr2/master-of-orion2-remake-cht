@@ -63637,6 +63637,251 @@
         "start_ea": "0x5f871"
       },
       {
+        "bytes_sha256": "da6ad76289ab823fadbdc7652185e74e1e5c6b6f362f8d09e3d4775117622d95",
+        "decompiler_navigation_only": "int __fastcall sub_E5B17(__int16 a1)\n{\n  int v2; // ecx\n  char *v3; // ebx\n  __int16 v4; // ax\n  int v5; // ecx\n\n  v2 = 0;\n  v3 = (char *)(361 * word_199996 + dword_192B18);\n  while ( (unsigned int)v3 > dword_192B18 )\n  {\n    v3 -= 361;\n    if ( *v3 == a1 && v3[6] == 0 )\n    {\n      v4 = sub_E0C1D(v3, a1);\n      v2 = v4 + v5;\n    }\n  }\n  return v2;\n}\n",
+        "end_ea": "0xe5b69",
+        "instructions": [
+          {
+            "bytes": "53",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "push    ebx",
+            "ea": "0xe5b17"
+          },
+          {
+            "bytes": "51",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "push    ecx",
+            "ea": "0xe5b18"
+          },
+          {
+            "bytes": "52",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "push    edx",
+            "ea": "0xe5b19"
+          },
+          {
+            "bytes": "56",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "push    esi",
+            "ea": "0xe5b1a"
+          },
+          {
+            "bytes": "89c6",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "mov     esi, eax",
+            "ea": "0xe5b1b"
+          },
+          {
+            "bytes": "0fbf1596991900",
+            "code_refs": [],
+            "data_refs": [
+              {
+                "ea": "0x199996",
+                "original_name": "word_199996"
+              }
+            ],
+            "disasm": "movsx   edx, word_199996",
+            "ea": "0xe5b1d"
+          },
+          {
+            "bytes": "69d269010000",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "imul    edx, 169h",
+            "ea": "0xe5b24"
+          },
+          {
+            "bytes": "8b1d182b1900",
+            "code_refs": [],
+            "data_refs": [
+              {
+                "ea": "0x192b18",
+                "original_name": "dword_192B18"
+              }
+            ],
+            "disasm": "mov     ebx, dword_192B18",
+            "ea": "0xe5b2a"
+          },
+          {
+            "bytes": "31c9",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "xor     ecx, ecx",
+            "ea": "0xe5b30"
+          },
+          {
+            "bytes": "01d3",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "add     ebx, edx",
+            "ea": "0xe5b32"
+          },
+          {
+            "bytes": "eb24",
+            "code_refs": [
+              "0xe5b5a"
+            ],
+            "data_refs": [],
+            "disasm": "jmp     short loc_E5B5A",
+            "ea": "0xe5b34"
+          },
+          {
+            "bytes": "81eb69010000",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "sub     ebx, 169h",
+            "ea": "0xe5b36"
+          },
+          {
+            "bytes": "660fbe03",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "movsx   ax, byte ptr [ebx]",
+            "ea": "0xe5b3c"
+          },
+          {
+            "bytes": "6639f0",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "cmp     ax, si",
+            "ea": "0xe5b40"
+          },
+          {
+            "bytes": "7515",
+            "code_refs": [
+              "0xe5b5a"
+            ],
+            "data_refs": [],
+            "disasm": "jnz     short loc_E5B5A",
+            "ea": "0xe5b43"
+          },
+          {
+            "bytes": "807b0600",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "cmp     byte ptr [ebx+6], 0",
+            "ea": "0xe5b45"
+          },
+          {
+            "bytes": "750f",
+            "code_refs": [
+              "0xe5b5a"
+            ],
+            "data_refs": [],
+            "disasm": "jnz     short loc_E5B5A",
+            "ea": "0xe5b49"
+          },
+          {
+            "bytes": "0fbfd6",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "movsx   edx, si",
+            "ea": "0xe5b4b"
+          },
+          {
+            "bytes": "89d8",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "mov     eax, ebx",
+            "ea": "0xe5b4e"
+          },
+          {
+            "bytes": "e8c8b0ffff",
+            "code_refs": [
+              "0xe0c1d"
+            ],
+            "data_refs": [],
+            "disasm": "call    sub_E0C1D",
+            "ea": "0xe5b50"
+          },
+          {
+            "bytes": "0fbfd0",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "movsx   edx, ax",
+            "ea": "0xe5b55"
+          },
+          {
+            "bytes": "01d1",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "add     ecx, edx",
+            "ea": "0xe5b58"
+          },
+          {
+            "bytes": "3b1d182b1900",
+            "code_refs": [],
+            "data_refs": [
+              {
+                "ea": "0x192b18",
+                "original_name": "dword_192B18"
+              }
+            ],
+            "disasm": "cmp     ebx, dword_192B18",
+            "ea": "0xe5b5a"
+          },
+          {
+            "bytes": "77d4",
+            "code_refs": [
+              "0xe5b36"
+            ],
+            "data_refs": [],
+            "disasm": "ja      short loc_E5B36",
+            "ea": "0xe5b60"
+          },
+          {
+            "bytes": "89c8",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "mov     eax, ecx",
+            "ea": "0xe5b62"
+          },
+          {
+            "bytes": "5e",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "pop     esi",
+            "ea": "0xe5b64"
+          },
+          {
+            "bytes": "5a",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "pop     edx",
+            "ea": "0xe5b65"
+          },
+          {
+            "bytes": "59",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "pop     ecx",
+            "ea": "0xe5b66"
+          },
+          {
+            "bytes": "5b",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "pop     ebx",
+            "ea": "0xe5b67"
+          },
+          {
+            "bytes": "c3",
+            "code_refs": [],
+            "data_refs": [],
+            "disasm": "retn",
+            "ea": "0xe5b68"
+          }
+        ],
+        "original_name": "sub_E5B17",
+        "size": 82,
+        "start_ea": "0xe5b17"
+      },
+      {
         "bytes_sha256": "fb6032d461b3e8e8232b120c0eec9cb4c441311d7220e24db7872ba8c18421e5",
         "decompiler_navigation_only": "void __fastcall sub_ECBF7(int a1, int a2)\n{\n  __int16 v2; // si\n  int v3; // edi\n  char *v4; // ebx\n  char v5; // cl\n  int v6; // edx\n  int v7; // eax\n  int v8; // ecx\n  int v9; // eax\n  int v10; // edi\n  int v11; // eax\n  int v12; // edi\n  unsigned int v13; // eax\n  int v14; // edi\n  int v15; // edi\n  int v16; // ecx\n  int v17; // eax\n\n  v2 = a1;\n  v3 = 361 * a1;\n  v4 = (char *)(361 * a1 + dword_192B18);\n  sub_DCCCC(v4, a2, v4, a2);\n  v7 = 3753 * *(char *)(v3 + dword_192B18) + dword_197F98 + 2 * v6;\n  *(_WORD *)(v7 + 1791) += (unsigned __int8)v4[10];\n  if ( v4[319] != 0 )\n    sub_145EA(v2, 9);\n  if ( *(_WORD *)(dword_197F98 + 3753 * *v4 + 41) == *((_WORD *)v4 + 1) )\n    sub_ECB65();\n  *v4 = v5;\n  sub_E53CD(v4);\n  v9 = dword_197F98 + 3753 * v8;\n  if ( *(__int16 *)(v9 + 41) == -1 )\n    *(_WORD *)(v9 + 41) = *((_WORD *)v4 + 1);\n  v10 = 3753 * v8;\n  v11 = dword_197F98;\n  v4[297] = 0;\n  if ( *(char *)(3753 * v8 + v11 + 2207) / 2 == 3 )\n  {\n    if ( v4[330] != 0 )\n    {\n      sub_145EA(v2, 20);\n      *(_DWORD *)(dword_197F98 + v10 + 50) += dword_17ECC1 / 2;\n    }\n    if ( v4[341] != 0 )\n    {\n      v12 = 3753 * v8;\n      sub_145EA(v2, 31);\n      *(_DWORD *)(dword_197F98 + v12 + 50) += dword_17ED92 / 2;\n    }\n  }\n  v13 = (unsigned int)&v4[4 * (unsigned __int8)v4[10] + 12];\n  while ( 1 )\n  {\n    if ( v13 <= (unsigned int)(v4 + 12) )\n    {\n      sub_E1CED(v4);\n      sub_EC97C(v4);\n      sub_B20A1(v2);\n      v16 = 17 * *((__int16 *)v4 + 1);\n      *(_WORD *)(v4 + 293) = 0;\n      *(_WORD *)(v4 + 291) = -40;\n      v4[302] = 0;\n      v4[303] = 4;\n      v17 = dword_1930D4;\n      v4[321] = 0;\n      sub_E5296(dword_19306C + 113 * *(unsigned __int8 *)(v16 + v17 + 2));\n      v4[220] = 0;\n      JUMPOUT(0xECBF1);\n    }\n    v13 -= 4;\n    v14 = *(_DWORD *)v13 & 0xF;\n    if ( v14 == v8 )\n      break;\n    if ( v14 == 8 || v14 == 9 )\n    {\n      v15 = 16 * (v8 & 7);\n      *(_BYTE *)v13 &= 0x8Fu;\nLABEL_15:\n      *(_DWORD *)v13 |= v15;\n    }\n    else if ( *(_DWORD *)v13 << 25 >> 29 == v8 )\n    {\n      *(_BYTE *)(v13 + 1) &= ~4u;\n    }\n    else\n    {\n      if ( *(_BYTE *)(3753 * v8 + dword_197F98 + 2232) != 0 )\n        break;\n      *(_BYTE *)(v13 + 1) |= 4u;\n    }\n  }\n  v15 = 16 * (v8 & 7);\n  *(_WORD *)v13 &= 0xFB8Fu;\n  goto LABEL_15;\n}\n",
         "end_ea": "0xece05",

@@ -28,6 +28,16 @@ type OriginalNPCSpecialWarCandidateInput struct {
 	TargetIsRotating   bool
 	CurrentRelationRaw int
 	FoodDeficitTurns   int
+	ForcedWarRaw       int
+}
+
+// OriginalNPCForcedWarCandidate 對應 sub_25DF1 的第一條 reason 113 分支。
+// player+0x60E 必須恰為 1；此分支不消耗亂數。
+func OriginalNPCForcedWarCandidate(in OriginalNPCSpecialWarCandidateInput) (bool, bool) {
+	if !validOriginalNPCSpecialWarInput(in) || in.ForcedWarRaw < 0 || in.ForcedWarRaw > 255 {
+		return false, false
+	}
+	return in.ForcedWarRaw == 1 && in.PowerRatio >= 100 && in.Cooldown <= 0, true
 }
 
 // OriginalNPCGovernmentWarCandidate 對應 sub_25DF1 的 reason 20：只有 raw
@@ -81,22 +91,20 @@ func OriginalNPCFoodDeficitWarCandidate(in OriginalNPCSpecialWarCandidateInput, 
 func validOriginalNPCSpecialWarInput(in OriginalNPCSpecialWarCandidateInput) bool {
 	return in.Difficulty >= 0 && in.Difficulty <= 6 && in.Government >= 0 && in.Government <= 7 &&
 		in.PowerRatio >= 0 && in.CurrentRelationRaw >= -128 && in.CurrentRelationRaw <= 127 &&
-		in.FoodDeficitTurns >= 0 && in.FoodDeficitTurns <= 32767
+		in.FoodDeficitTurns >= -32768 && in.FoodDeficitTurns <= 32767
 }
 
 // OriginalNPCFoodDeficitTurns 對應 sub_4DAB2：player+0xB0 為負時遞增
-// player+0x7EC，否則歸零。原欄位為 signed word，正向累加在 32767 飽和。
+// player+0x7EC，否則歸零。原欄位為 signed word，inc word 依 16-bit
+// 二補數語意從 32767 回繞為 -32768。
 func OriginalNPCFoodDeficitTurns(current, foodBalance int) (int, bool) {
-	if current < 0 || current > 32767 {
+	if current < -32768 || current > 32767 {
 		return 0, false
 	}
 	if foodBalance >= 0 {
 		return 0, true
 	}
-	if current < 32767 {
-		current++
-	}
-	return current, true
+	return int(int16(uint16(int16(current)) + 1)), true
 }
 
 // OriginalNPCPowerRatio 對應 sub_500CF 的比例與第三方戰爭折半規則。
