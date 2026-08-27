@@ -489,6 +489,15 @@
   格子戰術及熱座交接均無 key 洩漏或越框。證據與規格見
   [`docs/re/runtime-label-catalog-audit-20260827.md`](docs/re/runtime-label-catalog-audit-20260827.md) 與
   [`docs/spec/runtime-label-catalog.md`](docs/spec/runtime-label-catalog.md)。
+  元件顯示名稱已完成第五十三個切片：六個 `TECH_NONE` 佔位／抽象元件的中英文名稱與未知
+  fallback 均由 `ui.json` 供應，Go 只保留既有規則鍵到語意鍵的路由。舊註解所稱五筆已按
+  實際清單訂正為六筆；未知無科技元件在英文模式也不再退回中文規則鍵。有 `UnlockTech` 的
+  英文名稱仍由原版執行檔科技名稱表推導，避免複製第二份元件表；繁中科技元件名稱仍沿用
+  typed 元件資料，屬後續資料表外部化邊界。本輪 `cmd/moo2`＋`internal/shell` 測試通過，
+  繁中與英文正版資料畫廊各 37/37；實圖抽查 `25_shipdesign.png` 的 `無護盾`／`無` 與
+  `No Shield`／`None` 均正確且未越框。證據與規格見
+  [`docs/re/component-display-label-catalog-audit-20260827.md`](docs/re/component-display-label-catalog-audit-20260827.md) 與
+  [`docs/spec/component-display-label-catalog.md`](docs/spec/component-display-label-catalog.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

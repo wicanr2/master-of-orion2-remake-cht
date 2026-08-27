@@ -20,32 +20,28 @@ import (
 // 所以英文顯示名 = 那個科技的原版英文名,一行推導,不必再維護一份 77 列的對照
 // ——**兩份表遲早會漂移**,這是本專案反覆踩過的形狀。
 //
-// 只有 `UnlockTech == 0` 的幾項要手寫(那幾項在原版沒有對應科技:三個「無」是 UI 佔位,
-// 戰鬥電腦在原版是獨立槽、重生程序是種族特性)。
+// 只有 `UnlockTech == 0` 的幾項需要額外顯示路由；中英文顯示值都留在 ui.json。
 
-// componentNoTechEnglish 是沒有解鎖科技的元件的英文名。
-//
-// ⚠ 這張表**只該有這五筆**。新增元件時如果又要往這裡加,先問「它的 UnlockTech 為什麼是 0」
-// ——多半是漏填,而不是真的沒有對應科技。
-var componentNoTechEnglish = map[string]string{
-	"無":    "None",
-	"無裝甲":  "No Armor",
-	"無護盾":  "No Shield",
-	"無武裝":  "Unarmed",
-	"戰鬥電腦": "Battle Computer",
-	"重生程序": "Regeneration",
+// componentNoTechTextKey 將既有規則鍵路由到外部玩家文案；map 的值是語意鍵，不是顯示文字。
+var componentNoTechTextKey = map[string]string{
+	"無":    "component.label.none",
+	"無裝甲":  "component.label.no_armor",
+	"無護盾":  "component.label.no_shield",
+	"無武裝":  "component.label.unarmed",
+	"戰鬥電腦": "component.label.battle_computer",
+	"重生程序": "component.label.regeneration",
 }
 
-// componentLabel 回傳元件在指定語言下的顯示名。中文模式直接回 `Name`(它本來就是中文)。
+// componentLabel 回傳元件在指定語言下的顯示名；規則鍵不得直接充當未知值的玩家文案。
 func componentLabel(lang i18n.Lang, c shell.Component) string {
-	if lang != i18n.English {
-		return c.Name
+	if key, ok := componentNoTechTextKey[c.Name]; ok {
+		return uiText(lang, key)
 	}
-	if en, ok := componentNoTechEnglish[c.Name]; ok {
-		return en
-	}
-	if c.UnlockTech != gamedata.TECH_NONE {
+	if lang == i18n.English && c.UnlockTech != gamedata.TECH_NONE {
 		return gamedata.TechnologyName(c.UnlockTech)
 	}
-	return c.Name // 沒有科技也不在上表:退回中文(至少看得到東西),並由測試盯著
+	if c.UnlockTech == gamedata.TECH_NONE {
+		return uiText(lang, "component.label.unknown")
+	}
+	return c.Name
 }
