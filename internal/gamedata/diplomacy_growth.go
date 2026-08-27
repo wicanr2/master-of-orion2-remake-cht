@@ -110,6 +110,38 @@ func OriginalChangeRelationScore(in OriginalRelationChangeInput) (int, bool) {
 	return result, true
 }
 
+// OriginalWarBlockadeGrievance 對映 Change_Relations_ reason raw 7、policy 4/5、
+// target personality 100 的 +0x6BF 特例。它回傳寫入積怨表的 delta/4（負數向下取整），
+// 不改一般 +0x617 關係分數。
+func OriginalWarBlockadeGrievance(in OriginalRelationChangeInput) (int, bool) {
+	if in.CurrentRaw < -100 || in.CurrentRaw > 100 || in.BaseDelta >= 0 || in.BaseDelta < -5 ||
+		(in.Policy != DIPLO_LIMITED_WAR && in.Policy != DIPLO_WAR) {
+		return 0, false
+	}
+	delta := in.BaseDelta
+	if in.CurrentRaw > 0 {
+		delta *= 2
+	} else {
+		delta /= in.CurrentRaw/-25 + 1
+	}
+	if in.ActorGovernment == 4 {
+		delta *= 2
+	} else if in.ActorGovernment == 0 {
+		delta = delta * 3 / 2
+	}
+	if in.TargetCharismatic {
+		delta /= 2
+	}
+	if delta >= 0 {
+		return 0, false
+	}
+	quarter := delta / 4
+	if delta%4 != 0 {
+		quarter--
+	}
+	return quarter, true
+}
+
 // OriginalDiplomacyGrowthTreatyInput 是 Diplomacy_Growth_ @ 0x4DD6B 首個
 // pair loop 中已閉合的條約欄位。TributeMode 是 raw +0x63F 的 0/1/2。
 type OriginalDiplomacyGrowthTreatyInput struct {

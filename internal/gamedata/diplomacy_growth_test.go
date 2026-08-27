@@ -33,6 +33,21 @@ func TestOriginalChangeRelationScore(t *testing.T) {
 	}
 }
 
+func TestOriginalWarBlockadeGrievance(t *testing.T) {
+	got, ok := OriginalWarBlockadeGrievance(OriginalRelationChangeInput{
+		CurrentRaw: -25, BaseDelta: -5, ActorGovernment: 2, Policy: DIPLO_WAR,
+	})
+	if !ok || got != -1 {
+		t.Fatalf("-5 經 -25 關係縮減後再向下除四應為 -1：got=%d ok=%v", got, ok)
+	}
+	got, ok = OriginalWarBlockadeGrievance(OriginalRelationChangeInput{
+		CurrentRaw: 0, BaseDelta: -5, ActorGovernment: 4, TargetCharismatic: true, Policy: DIPLO_LIMITED_WAR,
+	})
+	if !ok || got != -2 {
+		t.Fatalf("民主負向倍增、Charismatic 減半後 -5/4 向下應為 -2：got=%d ok=%v", got, ok)
+	}
+}
+
 func TestOriginalDiplomacyGrowthTreatyRelationOrder(t *testing.T) {
 	rolls := []struct{ n, value int }{
 		{100, 1}, {3, 1}, // NAP: -20 -> -18

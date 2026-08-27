@@ -171,6 +171,9 @@ type AIOpponent struct {
 	// OriginalWarFlag60ERaw 保存原版 Player+0x60E；consumer 已證實，producer 未知。
 	// 只從原版 GAM 或 remake JSON 延續，不為新局自行推導。
 	OriginalWarFlag60ERaw int `json:"originalWarFlag60ERaw,omitempty"`
+	// OriginalBlockadeGrievanceRaw 對應 AI 看向目前真人的 player+0x6BF 方向值；
+	// 人類艦隊在戰時封鎖 AI 殖民星時，由 Change_Relations_ reason raw 7 累加。
+	OriginalBlockadeGrievanceRaw int `json:"originalBlockadeGrievanceRaw,omitempty"`
 }
 
 // cloneBuildings 回傳 m 的獨立拷貝(逐鍵複製),供需要「各自獨立、不共享底層 map」的初始化
@@ -5174,6 +5177,7 @@ func (s *GameSession) EndTurn() {
 			LateTech:            aiOriginalLateTechReached(ps),
 			ColonyFoodHalf:      make([]int, len(s.AIPlayers[i].Colonies)),
 			ColonyFoodHalfKnown: make([]bool, len(s.AIPlayers[i].Colonies)),
+			ColonyBlockaded:     make([]bool, len(s.AIPlayers[i].Colonies)),
 		}
 		knownTech := knownTechnologyApplications(ps)
 		for colony := range s.AIPlayers[i].Colonies {
@@ -5183,8 +5187,14 @@ func (s *GameSession) EndTurn() {
 			}
 			jobCtx.ColonyFoodHalf[colony], jobCtx.ColonyFoodHalfKnown[colony] =
 				originalAIColonyFoodHalf(s.AIPlayers[i].Colonies[colony], built, knownTech)
+			if colony < len(s.AIPlayers[i].ColonyStars) {
+				star, slot := s.AIPlayers[i].ColonyStars[colony], s.AIPlayers[i].PopulationRaceSlot
+				if star >= 0 && star < len(s.Stars) && s.AIPlayers[i].PopulationRaceSlotKnown && slot >= 0 && slot < 8 {
+					jobCtx.ColonyBlockaded[colony] = s.Stars[star].BlockadedMask&(1<<slot) != 0
+				}
+			}
 		}
-		colonies, exactJobs := engine.ApplyOriginalAIUnblockadedJobs(ps, s.AIPlayers[i].Colonies, jobCtx)
+		colonies, exactJobs := engine.ApplyOriginalAIJobs(ps, s.AIPlayers[i].Colonies, jobCtx)
 		if !exactJobs {
 			// 舊 JSON 缺逐種族 profile 或 +0xDD 無法建立時，保留既有可玩 fallback；
 			// 不把這條路徑宣稱為原版忠實。封鎖分支接線後也必須在這裡先分流。
@@ -5278,12 +5288,13 @@ func (s *GameSession) EndTurn() {
 		}
 	}
 	s.Turn++
-	s.advanceShipRepair()      // 停在自家據點的艦艇完全修復(原版 Repair_Ships_At_Colonies_)
-	s.advanceAntares()         // 安塔蘭人週期性入侵(依 Turn 排程升級),記於 LastAntaranNotice
-	s.advanceAIRaids()         // AI 對手突襲玩家殖民地(戰爭態勢 + 軍力領先才發動),記於 LastRaidReport
-	s.advanceConquestVictory() // 對手是否已全滅(手冊三條勝利路徑之一:殲滅所有對手)
-	s.advancePlayerDefeat()    // 玩家是否已無任何殖民地(超新星等事件可致,見該函式)
-	s.advanceAntaranVictory()  // 是否已攻陷安塔蘭母星(手冊三條勝利路徑之二,見 antaran_victory.go)
+	s.advanceShipRepair()          // 停在自家據點的艦艇完全修復(原版 Repair_Ships_At_Colonies_)
+	s.advanceAntares()             // 安塔蘭人週期性入侵(依 Turn 排程升級),記於 LastAntaranNotice
+	s.advanceAIRaids()             // AI 對手突襲玩家殖民地(戰爭態勢 + 軍力領先才發動),記於 LastRaidReport
+	s.recomputeOriginalBlockades() // 本回合艦隊移動／戰鬥後重建，供下一回合殖民地 AI 消費。
+	s.advanceConquestVictory()     // 對手是否已全滅(手冊三條勝利路徑之一:殲滅所有對手)
+	s.advancePlayerDefeat()        // 玩家是否已無任何殖民地(超新星等事件可致,見該函式)
+	s.advanceAntaranVictory()      // 是否已攻陷安塔蘭母星(手冊三條勝利路徑之二,見 antaran_victory.go)
 	s.detectEmpireEliminationBroadcasts()
 	s.publishNextStatusBroadcast()
 	s.advanceAIDiplomacy() // 由本回合原版關係結果推進可選 AI↔AI 政策／戰爭 consumer

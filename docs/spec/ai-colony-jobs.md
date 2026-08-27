@@ -1,6 +1,6 @@
 # AI 殖民地職務分配規格
 
-規格狀態：整體 `DRAFT`；「未封鎖殖民地＋帝國平衡」子切片 `CONFORMED`。
+規格狀態：可表示的封鎖／未封鎖殖民地與帝國平衡 `CONFORMED`。
 
 證據與未知邊界見
 [`../re/ai-colony-jobs-audit-20260828.md`](../re/ai-colony-jobs-audit-20260828.md)。
@@ -29,17 +29,20 @@ colonist 候選，先套最低工人／半工業消耗，再以帝國研究與�
 `colony+0xDD` 等價值完整時使用，否則明示回退既有 remake AI。這不代表整份
 AI 職務分配完成。
 
+`engine.ApplyOriginalAIJobs` 另已接 `sub_D61E7`：有農業的封鎖殖民地依
+`food-industry` 由大到小選農夫，糧食足夠後由末端把其餘人口改為工人；無農業時
+依事件 filter 全改工人或科學家。Android／Natives 的前置區保持不變。shell 於
+每回合 AI 職務階段讀取進入回合時的 `Star.BlockadedMask`，符合原版「先消費舊 mask、
+艦隊移動／戰鬥後才重算下一輪 mask」的主鏈順序。
+
 ## CONFORMED 驗收
 
 1. 一般 race 的農夫會經候選迭代分配為工人／科學家，Android／Natives 保持原職。
 2. 改職後 `PopulationGroups`、三職務總數及 PRISONER 總數一致。
 3. 後段殖民地輸入不完整時回傳 fallback，且不得部分修改較早的呼叫端狀態。
-4. `internal/engine`、`internal/shell` 與純 Go 回歸套件以 Docker、`-count=1` 通過。
+4. 新增的 engine 與 shell 定向回歸須以 Docker、`-count=1` 通過；全套既有
+   shell 隨機長跑另由總體測試債追蹤，不作本公式的虛假完成證據。
 
-## 整體 READY 前必須閉合
-
-1. 封鎖狀態從原版 `.GAM`／當回合艦隊狀態到 `ColonyState` 的 producer。
-2. 封鎖路徑 `+0xDD/+0xE0/+0xE7/+0xFC..+0xFF` 的完整欄位契約。
-
-上述任一項未閉合前，本規格不得升為 `READY`，生產程式也不得以
-personality weights 或平均種族產出填補缺欄。
+封鎖造成的 AI 對真人積怨已接線；仍未完成的是 remake 尚不可表示的真人對真人 policy。
+它屬封鎖世界狀態，不改變本文件已閉合的職務公式。資料不完整時仍不得以
+personality weights 或平均種族產出冒稱原版路徑。

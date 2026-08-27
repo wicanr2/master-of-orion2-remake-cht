@@ -40,7 +40,7 @@ ROOTS = {
 }
 
 RAW_WINDOWS = (0xD578F, 0xD61D2, 0xD61D6)
-TRACKED_OFFSETS = (0xAA, 0xAC)
+TRACKED_OFFSETS = (0xAA, 0xAC, 0xDD, 0xE0, 0xE7, 0xFC, 0xFD, 0xFE, 0xFF)
 
 
 def digest(path):
@@ -124,10 +124,30 @@ def direct_offset_refs(offset):
     return refs
 
 
+def all_direct_offset_refs(offsets):
+    refs = {offset: [] for offset in offsets}
+    for fn_ea in idautils.Functions():
+        items = list(idautils.FuncItems(fn_ea))
+        for index, ea in enumerate(items):
+            matched = [offset for offset in offsets if operand_mentions_offset(ea, offset)]
+            if not matched:
+                continue
+            record = {
+                "function_start": f"0x{fn_ea:X}",
+                "original_name": ida_name.get_name(fn_ea) or "<unnamed>",
+                "instruction": instruction(ea),
+                "context": [instruction(item) for item in items[max(0, index-5):index+6]],
+            }
+            for offset in matched:
+                refs[offset].append(record)
+    return refs
+
+
 def main():
     ida_auto.auto_wait()
     source = os.environ["MOO2_IDA_INPUT"]
     database = os.environ["MOO2_IDA_DATABASE"]
+    offset_refs = all_direct_offset_refs(TRACKED_OFFSETS)
     report = {
         "schema": "moo2.ida.re-evidence.v1",
         "contract": "raw-location + original-name + bytes + xrefs; semantics reviewed externally",
@@ -144,7 +164,7 @@ def main():
         "roots": {name: function_record(ea) for name, ea in ROOTS.items()},
         "raw_windows": [instruction_window(ea) for ea in RAW_WINDOWS],
         "direct_offset_refs": {
-            f"0x{offset:X}": direct_offset_refs(offset) for offset in TRACKED_OFFSETS
+            f"0x{offset:X}": offset_refs[offset] for offset in TRACKED_OFFSETS
         },
     }
     with open(os.environ["MOO2_IDA_OUTPUT"], "w", encoding="utf-8") as stream:

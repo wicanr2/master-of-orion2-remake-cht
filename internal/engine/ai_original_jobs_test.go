@@ -78,3 +78,35 @@ func TestApplyOriginalAIUnblockadedJobsRejectsUnknownTypedInput(t *testing.T) {
 		t.Fatalf("後段驗證失敗不得部分修改呼叫端：before=%+v after=%+v", before, valid.PopulationGroups[0])
 	}
 }
+
+func TestApplyOriginalAIJobsBlockadedFeedsThenUsesWorkers(t *testing.T) {
+	c := originalAIJobTestColony()
+	got, ok := ApplyOriginalAIJobs(PlayerState{}, []ColonyState{c}, OriginalAIJobContext{
+		Personality: ai.PersonalityErratic, ColonyFoodHalf: []int{4},
+		ColonyFoodHalfKnown: []bool{true}, ColonyBlockaded: []bool{true},
+	})
+	if !ok {
+		t.Fatal("完整封鎖殖民地輸入不應 fallback")
+	}
+	co := RunColonyTurn(got[0])
+	if co.FoodHalf < co.FoodConsumedHalf {
+		t.Fatalf("可耕作封鎖殖民地應先補足食物：colony=%+v output=%+v", got[0], co)
+	}
+	if got[0].Scientists != 0 || got[0].Farmers+got[0].Workers != got[0].Population {
+		t.Fatalf("糧食足夠後其餘一般人口應為工人：%+v", got[0])
+	}
+}
+
+func TestApplyOriginalAIJobsBlockadedNoFarmingUsesEventBranch(t *testing.T) {
+	c := originalAIJobTestColony()
+	ctx := OriginalAIJobContext{ColonyFoodHalf: []int{0}, ColonyFoodHalfKnown: []bool{true}, ColonyBlockaded: []bool{true}}
+	got, ok := ApplyOriginalAIJobs(PlayerState{}, []ColonyState{c}, ctx)
+	if !ok || got[0].Workers != c.Population || got[0].Farmers != 0 || got[0].Scientists != 0 {
+		t.Fatalf("無農業且事件 filter 未命中應全轉工人：ok=%v colony=%+v", ok, got)
+	}
+	c.ResearchDiverted = true
+	got, ok = ApplyOriginalAIJobs(PlayerState{}, []ColonyState{c}, ctx)
+	if !ok || got[0].Scientists != c.Population || got[0].Farmers != 0 || got[0].Workers != 0 {
+		t.Fatalf("無農業且事件 filter 命中應全轉科學家：ok=%v colony=%+v", ok, got)
+	}
+}

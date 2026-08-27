@@ -16,7 +16,7 @@
 
 `ida-pro-9.4-idapython:locked-v1` 本輪因 `Python3TargetDLL` 與 license
 環境未載入而退出 1，沒有輸出證據；依正對照改用已驗證的
-`py312-v1` 後，同一份 `.i64` 成功產生 545,982-byte JSON。前一次空輸出
+`py312-v1` 後，同一份 `.i64` 成功產生 1,031,473-byte JSON。前一次空輸出
 不作為「函式不存在」或玩法結論。
 
 ## 已證實的控制流
@@ -82,6 +82,13 @@
 全設為 raw `2` 或 raw `1`；但 `sub_23DFE` 已由獨立稽核證實是事件殖民地
 filter，這條呼叫不可改名成一般「無農業判斷」。
 
+`colony+0xE0` 的 producer 也已閉合：`sub_E1CED @ 0xE1CED` 呼叫與
+`+0xDD` 相同的 `sub_DE03E`；回傳零時寫 `+0xE0=0`，非零時寫
+`+0xE0=0xFF`。因此它是可耕作 gate，不是「最多農夫 255 人」或人口容量。
+`+0xE7` 的 writer 位於 `sub_DE664` 食物聚合鏈；`+0xFC..+0xFF` 則是已閉合的
+owner／外族／prisoner／Natives 半食物需求。remake 對應值分別是
+`RunColonyTurn.Food` 與 `FoodConsumedHalf`。
+
 上述第 1–8 點是原始指令、caller 與資料流可回查的已證實結論。
 
 ## 對 remake 的直接反證
@@ -92,12 +99,12 @@ filter，這條呼叫不可改名成一般「無農業判斷」。
 邊際產出、全帝國迭代與每步重算；因此不能藉由讓
 `NewDecider(ModeOriginal)` 回傳同一個逐殖民地 helper 就宣稱原版 AI。
 
-## 待閉合
+## Remake 狀態與剩餘邊界
 
-- 封鎖狀態的 producer 與 `ColonyState` 垂直表示；目前 `.GAM` 的 `Star.Blockaded`
-  已可解析，但 engine／shell 尚未把它接到 AI 殖民地職務分流。
-- `colony+0xDD/+0xE0/+0xE7/+0xFC..+0xFF` 的完整欄位契約，以及
-  `sub_23DFE` 在 `+0xDD<=0` 這條事件耦合分支的玩家可見理由。
+- 封鎖狀態現已由 `.GAM` mask 或正常回合艦隊 producer 垂直接到 AI 殖民地職務分流；
+  此項不再是 remake 缺口。
+- `sub_23DFE` 在 `+0xDD<=0` 事件耦合分支的玩家可見理由已保留為事件 filter；
+  欄位與控制流足以實作，但事件 UI 理由不由本切片重新命名。
 - `sub_D5FE1` 已證實只把 Android／Natives 計入前置區間；一般 race slot
   全部留在後續排序範圍。`player+0x8B6`（Tolerant）、PRISONER bit 10 與
   `colony+0x12F` raw `2/3` 只影響 `AI record+0x0C` 的策略計數，不是把該人口

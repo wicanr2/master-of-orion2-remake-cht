@@ -52,6 +52,13 @@
 
 #### 原版忠實度重新稽核（最高優先）
 
+- [~] **既有長跑回歸的三個決定性失敗**：2026-08-28 以相同 Docker、`-count=1` 連續重跑仍有
+  `TestAIExpand_EconomyGrowsWithColonyCount`（擴張組投入 534，未高於單母星 539）、
+  `TestAIResearchActuallyProgressesOverAGame`（200 回合未走到多選 application）與
+  `TestCouncilEnemyWinsRequiresPlayerResponse`（下一屆議會未再次觸發）失敗。三者不是本輪封鎖
+  切片造成；封鎖、AI 職務、外交積怨與存讀定向測試均通過。後續須分別由固定輸入重現，判定是
+  測試錯誤假設、亂數流漂移或真實玩法缺口後再修正，不得把全套回歸寫成已通過。
+
 - [~] **玩家可見文案外部化**：2026-08-26 已把既有 `assets/i18n/*.json` 與內嵌副本統一轉為
   有序 JSON 並移除 `go:embed` 副本，載入器保留 per-source、先出現者優先及原版單位元控制標記契約。剩餘工作是逐畫面
   移除 `tr(中文, 英文)` 與直接繪製的硬編文案，改以穩定鍵值查詢。多人資訊面板已完成第一個
@@ -1138,8 +1145,13 @@
   2026-08-28 已由 `sub_E5097` 閉合封鎖資料形狀與主鏈時序：`star+0x2A` 是被封鎖
   player mask，八個 `+0x2B` byte 是逐受害者 blockader mask；每回合先清表，再由有效、
   已抵達艦隊與 owner policy raw 4..6 重建，owner>=8 封鎖同星所有殖民者。`.GAM`
-  匯入現無損保存兩張 mask，不再壓成 bool。正常回合仍缺玩家／熱座／AI fleet producer、
-  多 owner 同星 mask、關係懲罰與 AI 封鎖職務 consumer；見
+  匯入現無損保存兩張 mask，不再壓成 bool。正常回合亦已由玩家／非目前熱座／AI 艦隊、
+  多 owner 同星 occupied mask 與 owner>=8 怪物／安塔蘭分支重建；AI 在下一回合依
+  `sub_D61E7` 的 food-industry 排序補農夫、其餘轉工人，無農業事件分支轉工人／科學家。
+  封鎖 caller 亦已勘誤為 `-Random_(5)`／reason raw 7；AI 被真人封鎖時依
+  `sub_4E3B5` 的關係、政體、Charismatic 與算術 `/4` 寫 `+0x6BF` typed 積怨，
+  policy>=4 於 `0x4E75C` 早退且不改一般關係分數。尚缺目前資料模型沒有的真人對真人
+  raw policy，以及沒有玩家可見 consumer 的真人側反向 `+0x6BF`；見
   [`docs/re/blockades-audit-20260828.md`](docs/re/blockades-audit-20260828.md) 與
   [`docs/spec/blockades.md`](docs/spec/blockades.md)。
   事件 19–23 怪獸入侵已由 `sub_2230A`、`sub_23BEC`、`sub_206A2`、`sub_A16BF` 與

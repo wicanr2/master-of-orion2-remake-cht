@@ -14,6 +14,8 @@ type OriginalAIJobContext struct {
 	LateTech            bool
 	ColonyFoodHalf      []int
 	ColonyFoodHalfKnown []bool
+	// ColonyBlockaded 與 colonies 同長；nil 只供既有未封鎖 API 相容。
+	ColonyBlockaded []bool
 }
 
 type originalAIColonistCandidate struct {
@@ -132,10 +134,55 @@ func originalAISortMarginal(candidates []originalAIColonistCandidate) {
 	})
 }
 
+func originalAISortBlockaded(candidates []originalAIColonistCandidate) {
+	sort.SliceStable(candidates, func(i, j int) bool {
+		a, b := candidates[i], candidates[j]
+		if av, bv := a.food-a.industry, b.food-b.industry; av != bv {
+			return av > bv
+		}
+		return a.food < b.food
+	})
+}
+
+func applyOriginalAIBlockadedColony(cs *ColonyState, foodHalf int) {
+	items := originalAIColonistCandidates(*cs)
+	originalAISortBlockaded(items)
+	if foodHalf <= 0 {
+		to := int(gamedata.WORKER)
+		if cs.ResearchDiverted { // sub_23DFE 命中。
+			to = int(gamedata.SCIENTIST)
+		}
+		for _, item := range items {
+			originalAIMoveCandidate(cs, item, to)
+		}
+		return
+	}
+	first, end := 0, len(items)
+	for first < end {
+		co := RunColonyTurn(*cs)
+		if 2*co.Food >= co.FoodConsumedHalf {
+			end--
+			originalAIMoveCandidate(cs, items[end], int(gamedata.WORKER))
+			continue
+		}
+		originalAIMoveCandidate(cs, items[first], int(gamedata.FARMER))
+		first++
+	}
+}
+
 // ApplyOriginalAIUnblockadedJobs 重建 sub_D652C／sub_D66B3 的未封鎖路徑。
 // 它不處理 sub_D61E7；呼叫端若存在封鎖殖民地必須回退並保留未閉合狀態。
 func ApplyOriginalAIUnblockadedJobs(ps PlayerState, colonies []ColonyState, ctx OriginalAIJobContext) ([]ColonyState, bool) {
+	ctx.ColonyBlockaded = make([]bool, len(colonies))
+	return ApplyOriginalAIJobs(ps, colonies, ctx)
+}
+
+// ApplyOriginalAIJobs 重建 sub_D61E7／sub_D652C／sub_D66B3 的殖民地職務主鏈。
+func ApplyOriginalAIJobs(ps PlayerState, colonies []ColonyState, ctx OriginalAIJobContext) ([]ColonyState, bool) {
 	if len(ctx.ColonyFoodHalf) != len(colonies) || len(ctx.ColonyFoodHalfKnown) != len(colonies) {
+		return nil, false
+	}
+	if ctx.ColonyBlockaded != nil && len(ctx.ColonyBlockaded) != len(colonies) {
 		return nil, false
 	}
 	out := append([]ColonyState(nil), colonies...)
@@ -152,6 +199,10 @@ func ApplyOriginalAIUnblockadedJobs(ps PlayerState, colonies []ColonyState, ctx 
 	for i := range out {
 		if !populationGroupsValid(out[i]) || !ctx.ColonyFoodHalfKnown[i] {
 			return nil, false
+		}
+		if ctx.ColonyBlockaded != nil && ctx.ColonyBlockaded[i] {
+			applyOriginalAIBlockadedColony(&out[i], ctx.ColonyFoodHalf[i])
+			continue
 		}
 		items := originalAIColonistCandidates(out[i])
 		originalAISortInitial(items, ctx.ColonyFoodHalf[i] > 0)

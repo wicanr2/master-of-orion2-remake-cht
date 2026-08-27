@@ -33,17 +33,28 @@
 5. owner `>=8` 時，`0xE51A0..0xE51A6` 直接令 `star+0x2A=star+0x38`，即封鎖
    該星所有殖民帝國；這條分支沒有填一般八帝國的 `BlockadedBy` mask。
 6. 第二階段逐 blocked player／blockader pair 掃描，只在 blockader 自己沒有該星殖民地時，
-   呼叫 `Random_(7)`，取負值後交給 `sub_4E3B5` 關係變更鏈；呼叫 reason raw `5`，
-   星系索引也隨 stack 傳入。精確 UI 訊息與政府修飾由共用關係函式負責，不在此重複解釋。
+   以 `eax=5` 呼叫 `Random_`，取負值後以 `ecx=7` 交給 `sub_4E3B5`；因此是
+   `-Random_(5)`、reason raw `7`，不是先前暫讀的 Random(7)／reason 5。星系索引也隨
+   stack 傳入。
 7. 唯一直接 caller 位於 `sub_136B3 @ 0x136B3` 的 `0x13774`。同一主鏈先在
    `0x13751` 執行殖民地 AI、`0x13756` 搜尋戰鬥，再於 `0x13774` 重算封鎖；因此
    本回合職務分配消費的是進入回合時既有 mask，艦隊移動／戰鬥後建立的 mask 供下一輪使用。
 
-## Remake 反證與邊界
+## Remake 狀態與邊界
 
 - `internal/save.Star` 雖已解析 `Blockaded`／`BlockadedBy`，但 shell 過去匯入時丟棄；
   且把 raw 欄命名成單數容易誤讀為 bool。本輪先以 `Star.BlockadedMask` 與
   `Star.BlockadedBy` 無損保存 `.GAM` 狀態。
-- 正常回合仍缺依玩家／熱座／AI 艦隊、星系多殖民 owner mask 與 raw policy 重算的 producer。
-- `sub_D61E7` 封鎖殖民地職務 consumer 已定位，但 `colony+0xE0` producer 尚未閉合；
-  在此之前不能把未封鎖職務公式套到封鎖殖民地。
+- 可表示的玩家／熱座／AI 艦隊 producer 與 `sub_D61E7` consumer 已接線；
+  `colony+0xE0` 也已由 `sub_E1CED` 閉合為可耕作 gate。
+- 目前資料模型沒有真人對真人的雙向 raw policy，也沒有玩家可見的真人側
+  `+0x6BF` consumer；兩者仍不得以猜值補洞。
+
+## 關係鏈補充閉合
+
+`sub_4E3B5 @ 0x4E680..0x4E75C` 證實 policy raw 4／5、reason 1..9、負 delta
+會進戰時特例；只有 target personality raw `100`（真人）才把調整後 delta 算術右移二位，
+以相反符號寫入雙方 `+0x6BF` word。之後在 `0x4E75C` 因 policy>=4 直接返回，
+不寫一般 `+0x617` 關係分數。封鎖 caller 的實際 reason 是 7，所以 remake 以
+`OriginalWarBlockadeGrievance` 保存 AI 被目前真人封鎖的 `+0x6BF` 積怨；一般關係保持不變。
+真人側反向 `+0x6BF` 沒有玩家可見 consumer，現有 shell 未另造影子欄位。
