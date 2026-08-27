@@ -9,6 +9,22 @@ func TestOriginalHumanTargetPersonalityScoreTable(t *testing.T) {
 	}
 }
 
+func TestOriginalHumanTargetIncidentScore(t *testing.T) {
+	for personality, want := range []int{-30, -15, -10, -10, -7, -6, -15} {
+		got, reason, ok := OriginalHumanTargetIncidentScore(3, 7, personality)
+		if !ok || got != want || reason != 77 {
+			t.Fatalf("personality=%d: got score=%d reason=%d ok=%v，預期 %d/77/true",
+				personality, got, reason, ok, want)
+		}
+	}
+	if got, reason, ok := OriginalHumanTargetIncidentScore(0, 0, 4); !ok || got != 0 || reason != 0 {
+		t.Fatalf("空記憶應為中性：score=%d reason=%d ok=%v", got, reason, ok)
+	}
+	if _, _, ok := OriginalHumanTargetIncidentScore(1, 10, 0); ok {
+		t.Fatal("+0x6CF 不可接受原版 writer 範圍外的 reason")
+	}
+}
+
 func TestOriginalHumanTargetThreshold(t *testing.T) {
 	if got, ok := OriginalHumanTargetThreshold(-5, 20); !ok || got != 100 {
 		t.Fatalf("負分 threshold=%d/%v，預期 100/true", got, ok)

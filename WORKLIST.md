@@ -1151,6 +1151,10 @@
   kind、候選 gate、RNG 順序與 BC／科技／直接要求／殖民地 payload 核心已成為純規則。
   Honorable AI 的玩家正式違約鏈亦已閉合：`break_formal` 永久寫 AI→玩家 `+0x727` 並存檔，
   base score 由 Honorable +20 改讀 Dishonored -10；普通貿易解約不誤寫。
+  `sub_4F0DC` 的事件記憶下游亦已追回：它只把 reason 1..9 從 `+0x64F` 複製至
+  `+0x6CF`；`sub_544A1` 再以 signed `+0x71F` 與共用表
+  `word_180CF0=[1,2,3,3,4,5,2]` 計算負分及 `reason+70`。純規則與原始表測試已接；
+  `sub_4F0DC` 的完整上游門檻及正常玩家事件 reason producer 仍待閉合，未以猜測接線。
   目前願戰來源仍是明示的
   `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與

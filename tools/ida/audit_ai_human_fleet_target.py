@@ -47,8 +47,11 @@ ROOTS = {
     "raw_human_target_memory_reset": 0x54D4D,
     "raw_human_target_score_modifier": 0xE5E09,
     "raw_diplomatic_action_availability": 0x4F93B,
+    "raw_human_incident_writer": 0x4F0DC,
+    "raw_change_relations": 0x4E3B5,
 }
 PERSONALITY_SCORE_TABLE_EA = 0x181080
+INCIDENT_DIVISOR_TABLE_EA = 0x180CF0
 
 
 def digest(path):
@@ -166,7 +169,10 @@ def main():
         "raw_fleet_target_arrival_caller_layers": caller_layers(ROOTS["raw_fleet_target_arrival"], 4),
         "raw_ai_record_target_operand_matches": operand_matches(["7C7h", "7CAh"]),
         "raw_human_target_gate_operand_matches": operand_matches(["74Fh", "816h", "88Fh"]),
+        "raw_human_target_incident_operand_matches": operand_matches(["6CFh", "71Fh"]),
+        "raw_relation_incident_operand_matches": operand_matches(["64Fh", "65Fh"]),
         "raw_personality_score_table": signed_word_table(PERSONALITY_SCORE_TABLE_EA, 7),
+        "raw_incident_divisor_table": signed_word_table(INCIDENT_DIVISOR_TABLE_EA, 7),
     }
     with open(os.environ["MOO2_IDA_OUTPUT"], "w", encoding="utf-8") as stream:
         json.dump(report, stream, ensure_ascii=False, indent=2)

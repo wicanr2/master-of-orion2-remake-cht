@@ -3,6 +3,27 @@ package gamedata
 // OriginalHumanTargetPersonalityScore 對應 word_181080 的七個 signed word。
 var OriginalHumanTargetPersonalityScore = [...]int{-10, -5, -3, 0, 20, 20, -10}
 
+// originalHumanTargetIncidentDivisor 對應 word_180CF0 的七個 signed word。
+// 原版亦把同一張表用作 personality 最大威脅數；sub_544A1 在此重用為
+// AI→真人重複事件記憶的負分除數。
+var originalHumanTargetIncidentDivisor = [...]int{1, 2, 3, 3, 4, 5, 2}
+
+// OriginalHumanTargetIncidentScore 對應 sub_544A1 @ 0x54524..0x5457A。
+// memory 是 AI→真人方向 +0x71F 的 signed byte，rememberedReason 是 +0x6CF；
+// 原版只讓 1..9 的 +0x64F reason 複製進 +0x6CF，因此超出範圍時失敗即關閉。
+// reasonCode 是玩家可見訊息選擇器使用的 rememberedReason+70。
+func OriginalHumanTargetIncidentScore(memory, rememberedReason, personality int) (score, reasonCode int, ok bool) {
+	if memory < 0 || memory > 127 || rememberedReason < 0 || rememberedReason > 9 ||
+		personality < 0 || personality >= len(originalHumanTargetIncidentDivisor) {
+		return 0, 0, false
+	}
+	if memory == 0 || rememberedReason == 0 {
+		return 0, 0, true
+	}
+	divisor := originalHumanTargetIncidentDivisor[personality]
+	return -10 * memory / divisor, rememberedReason + 70, true
+}
+
 // OriginalHumanTargetOutcomeInput 是 sub_544A1 尾端已閉合的決策輸入。
 // Score 是上游所有方向關係、事件、性格與領袖修正合成後的 signed 分數。
 type OriginalHumanTargetOutcomeInput struct {

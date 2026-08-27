@@ -24,11 +24,16 @@
 10. Honorable source（personality 4）若記錄 target 曾破壞正式條約 `+0x727==1`，base score
     必須改用 personality index 6 的 -10，不得仍使用 Honorable +20。玩家 `break_formal`
     是單向永久 writer；`break_trade`／`break_research` 不是。
+11. `sub_4F0DC` 只把範圍 1..9 的 pending reason `+0x64F` 複製至 remembered reason
+    `+0x6CF`。`sub_544A1` 在 `+0x71F>0` 且 `+0x6CF!=0` 時計算
+    `-10*memory/word_180CF0[personality]`；表值固定為 `[1,2,3,3,4,5,2]`，相符的
+    玩家可見原因碼為 `rememberedReason+70`。
 
 ## DRAFT 邊界
 
 `sub_544A1 @ 0x544A1..0x54CC0` 的四類尾端與 RNG 已形成純規則；尚缺的是 directional
-incident memory、排名／科技趨勢，以及 `sub_4F93B` 的科技候選表／殖民地候選 producer。
+incident memory 的 writer 門檻／正常玩家事件 producer、排名／科技趨勢，以及 `sub_4F93B`
+的科技候選表／殖民地候選 producer。
 這些欄位閉合前，remake 可用既有戰爭態勢決定是否呼叫原版目標估值，但必須標為 fallback，
 不得把只含 relation/personality 的部分 score 冒充完整 producer。
 

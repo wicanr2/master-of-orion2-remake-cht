@@ -45,6 +45,12 @@
     AI→真人方向永久違約旗標 `+0x727==1` 時，改以 personality index 6（Dishonored）的
     `word_181080=-10` 取代 index 4 的 `+20`。原版 `sub_5138E` 在 actor 破壞既有正式條約時
     寫入對方看向 actor 的 `+0x727`；普通貿易／研究終止不屬此 writer。
+11. `sub_4F0DC @ 0x4F0DC..0x4F59B` 是 AI 對真人方向 pending 關係事件的消費端。
+    `0x4F333..0x4F34B` 只在 `+0x64F` 為 1..9 時複製至 `+0x6CF`；全庫 operand 掃描顯示
+    `+0x6CF` 的唯一 runtime writer 正是 `0x4F34B`。`sub_544A1 @ 0x54524..0x5457A`
+    在 signed `+0x71F>0` 且 `+0x6CF!=0` 時計算 `-10*memory/divisor`，除數重用
+    `word_180CF0 @ 0x180CF0 = [1,2,3,3,4,5,2]`；若該負分成為目前最低項，原因碼寫成
+    unsigned `+0x6CF + 70`。上述資料流與表 bytes 已證實；Hex-Rays 名稱僅供導覽。
 
 ## Remake 對映與限制
 
@@ -58,6 +64,9 @@
 - 已接方向 writer：玩家成功執行 `break_formal` 後，AI→玩家的
   `OriginalHumanBetrayalRaw` 永久設為 true 並通過存檔；Honorable base score 隨即從 +20 改讀
   Dishonored -10。只終止貿易的反例不寫此旗標。
+- 已接純規則：`OriginalHumanTargetIncidentScore` 依原版共用表消費 `+0x71F／+0x6CF`，
+  並回傳相符的原因碼；非法 signed-byte／reason／personality 失敗即關閉。`sub_4F0DC`
+  上游完整門檻及各正常玩家事件 reason 尚未 typed，因此此輪不偽造 writer。
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。
