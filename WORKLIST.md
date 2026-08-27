@@ -966,7 +966,9 @@
   重建的八欄方向矩陣，不是單一艦體總和；RE 已成 READY 規格，但 typed producer 尚未實作，
   現以 `FleetStrength` 代入 ratio 的路徑仍明標強推論投影。2026-08-28 已先補齊 `.GAM` 垂直輸入：
   computer／size／armor／shield／base combat speed、五個 damaged-special bytes、分離損傷與 crew
-  level 均無損進入 typed `Ship` 並可 JSON 往返；仍待新造艦同形映射、觀察者防禦與 producer 接線。
+  level 均無損進入 typed `Ship` 並可 JSON 往返；同輪另由 IDA 匯出 `sub_5EE27` 十一個 signed
+  modifier words，逐艦純規則已實作八槽、戰機轉換、觀察者扣減、命中／彈藥、電腦與耐久修正。
+  仍待新造艦同形映射、四個相鄰 helper 的 typed 輸入、方向矩陣累加與外交 consumer 接線。
   證據與規格見
   [`docs/re/npc-power-matrix-audit-20260828.md`](docs/re/npc-power-matrix-audit-20260828.md) 與
   [`docs/spec/npc-power-matrix.md`](docs/spec/npc-power-matrix.md)。

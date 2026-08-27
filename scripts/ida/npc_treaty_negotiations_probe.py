@@ -26,6 +26,10 @@ RELATED_EAS = (
     0x5EF09, 0x5EF17, 0x5EF4B, 0x5F2C3, 0x5F2F6, 0x5F379, 0x5F871,
 )
 GOVERNMENT_SCORE_TABLE_EA = 0x180CCC
+NPC_POWER_MOD_WORD_EAS = (
+    0x17FD26, 0x17FD35, 0x17FD62, 0x17FD80, 0x17FD8F, 0x17FD9E,
+    0x17FDAD, 0x17FDBC, 0x17FDCB, 0x17FDDA, 0x17FDE9,
+)
 RELATIVE_OPERANDS = ("+5ECh]", "+617h]", "+627h]", "+62Fh]", "+637h]", "+63Fh]",
                      "+68Fh]", "+69Fh]", "+6D7h]", "+717h]", "+71Fh]",
                      "+72Fh]")
@@ -133,6 +137,16 @@ def main():
             for i in range(0, len(table), 2)
         ],
     }
+
+    target["npc_power_modifier_words"] = [
+        {
+            "ea": hex(ea),
+            "raw_hex": (ida_bytes.get_bytes(ea, 2) or b"").hex(),
+            "signed_word": int.from_bytes(
+                ida_bytes.get_bytes(ea, 2) or b"\x00\x00", "little", signed=True),
+        }
+        for ea in NPC_POWER_MOD_WORD_EAS
+    ]
 
     result = {
         "tool": "IDA Pro 9.4 IDAPython",

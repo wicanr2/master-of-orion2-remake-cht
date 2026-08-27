@@ -38,6 +38,11 @@
 逐艦武器效能。`sub_5F871` 提供由帝國科技／特殊 owner 決定的扣減輸入。這些資料流證明
 `+0x5EC` 不是艦體數量、建造成本或全銀河無條件可見的 `FleetStrength`。
 
+2026-08-28 由同一 `.i64` 副本再匯出 `sub_5EE27` 十一個直接讀取的 signed word。依 raw bit
+`0x0002／0004／0020／0080／0100／0200／0400／0800／1000／2000／4000`，倍率增量依序為
+`+100／-50／+25／+50／+100／+100／+25／+25／+25／+300／+50`；乘完後逐槽封頂 64000。
+原始位址、bytes 與值已加入同一 evidence JSON。這是國力評分倍率，不可拿造艦佔格成本表替代。
+
 ## 已證實：消費公式
 
 `sub_500CF @ 0x500CF` 對指定方向使用 `+0x5EC`：
@@ -54,6 +59,9 @@ ratio /= 2 for each source third-party war
 - **已證實**：資料形狀、唯一直接 writer、逐艦逐觀察者累加、主要武器槽輸入及 ratio consumer。
 - **已完成資料鏈**：原版 `.GAM` 的八槽武器、computer、size、armor、shield、base combat speed、
   五個 damaged-special bytes、分離損傷與 crew level 已映射到 typed `Ship`，並通過 JSON 往返測試。
+- **已完成純規則**：`OriginalNPCShipPower` 已接八槽限制、戰機／突擊艇／脈衝星轉換、HV／PD、
+  觀察者扣減、光束命中 10..100、飛彈／魚雷 75%、炸彈歸零、十一個 raw modifier、電腦落後與
+  `sub_5EED4` 耐久壓縮；非法 raw 輸入失敗即關閉。
 - **尚待實作**：補齊 remake 新造艦的同形 raw 映射、觀察者防禦輸入與逐艦公式，產生
   `AIPowerRaw[owner][observer]`；衍生矩陣每回合重建，不作權威存檔。
 - **目前近似**：宣戰／納貢仍以 hull-only `FleetStrength` 代入；必須繼續標為強推論資料投影，

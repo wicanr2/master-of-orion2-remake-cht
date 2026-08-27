@@ -21,6 +21,9 @@
 3. 同 owner 的逐艦值累加至該 observer 欄；非法／無法映射的 mount 失敗即關閉，不以艦體值猜補。
 4. `OriginalNPCPowerRatio` 只消費矩陣值，維持 800 cap 及來源第三方戰爭逐次折半。
 
+`OriginalNPCShipPower` 的純算術層已於 2026-08-28 實作並測試；尚未完成的是 shell 對
+`sub_54E5B／sub_5679E／sub_5EAE9／sub_5F2F6` 輸入的完整 typed producer 與回合接線。
+
 ## 接線與驗收
 
 - NPC 條約納貢與一般宣戰 reason 23 都必須改讀同一矩陣。

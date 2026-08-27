@@ -3177,6 +3177,63 @@
         "ea": "0x25acd"
       }
     ],
+    "npc_power_modifier_words": [
+      {
+        "ea": "0x17fd26",
+        "raw_hex": "6400",
+        "signed_word": 100
+      },
+      {
+        "ea": "0x17fd35",
+        "raw_hex": "ceff",
+        "signed_word": -50
+      },
+      {
+        "ea": "0x17fd62",
+        "raw_hex": "1900",
+        "signed_word": 25
+      },
+      {
+        "ea": "0x17fd80",
+        "raw_hex": "3200",
+        "signed_word": 50
+      },
+      {
+        "ea": "0x17fd8f",
+        "raw_hex": "6400",
+        "signed_word": 100
+      },
+      {
+        "ea": "0x17fd9e",
+        "raw_hex": "6400",
+        "signed_word": 100
+      },
+      {
+        "ea": "0x17fdad",
+        "raw_hex": "1900",
+        "signed_word": 25
+      },
+      {
+        "ea": "0x17fdbc",
+        "raw_hex": "1900",
+        "signed_word": 25
+      },
+      {
+        "ea": "0x17fdcb",
+        "raw_hex": "1900",
+        "signed_word": 25
+      },
+      {
+        "ea": "0x17fdda",
+        "raw_hex": "2c01",
+        "signed_word": 300
+      },
+      {
+        "ea": "0x17fde9",
+        "raw_hex": "3200",
+        "signed_word": 50
+      }
+    ],
     "original_name": "sub_2552D",
     "related_functions": [
       {
