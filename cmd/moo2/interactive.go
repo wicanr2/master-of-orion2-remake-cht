@@ -5634,6 +5634,13 @@ var researchAreaOrder = map[string]int{
 	"Computers": 6, "Biology": 0, "Physics": 2, "Force Fields": 4,
 }
 
+var researchAreaHits = []hitRegion{
+	{16, 32, 208, 98, "Construction"}, {242, 32, 214, 98, "Power"},
+	{16, 137, 208, 98, "Chemistry"}, {242, 137, 214, 98, "Sociology"},
+	{16, 243, 208, 98, "Computers"}, {242, 243, 214, 98, "Biology"},
+	{16, 348, 208, 98, "Physics"}, {242, 348, 214, 98, "Force Fields"},
+}
+
 // currentAreaTopic 回傳某研究領域「目前應研究的主題」:MOO2 原版機制是玩家選定領域、
 // 該領域依 techtree 固定順序逐一解鎖(非玩家自由挑選領域內個別主題,完成一項後才跳下一項,
 // 期間若有多科技可選走 researchChoiceScreen 另外決定),故此處回傳該領域第一個尚未完成的
@@ -5669,12 +5676,7 @@ func (b *sceneBuilder) research() (*overlayScreen, error) {
 	// (Play_Streaming_Music_ 的 edx = −2 哨兵)。接的那一步在 tickBGM。
 	playSceneBGMOnce(trackScienceRoom)
 	// 8 個研究領域為點擊熱區(bg 局部座標;涵蓋整塊面板)→ 設定該領域目前主題 → 回星系。
-	hits := []hitRegion{
-		{16, 32, 208, 98, "Construction"}, {242, 32, 214, 98, "Power"},
-		{16, 137, 208, 98, "Chemistry"}, {242, 137, 214, 98, "Sociology"},
-		{16, 243, 208, 98, "Computers"}, {242, 243, 214, 98, "Biology"},
-		{16, 348, 208, 98, "Physics"}, {242, 348, 214, 98, "Force Fields"},
-	}
+	hits := researchAreaHits
 	onAction := func(a string) *origTransition {
 		if idx, ok := researchAreaOrder[a]; ok && b.session != nil {
 			if t, _, done := currentAreaTopic(b.session, idx); !done {
@@ -5686,7 +5688,7 @@ func (b *sceneBuilder) research() (*overlayScreen, error) {
 				}
 			}
 		}
-		return b.goTo(b.galaxy, "星系主畫面")
+		return b.goTo(b.galaxy, researchAreaText(b.lang, "research.area.transition.galaxy"))
 	}
 	// 研究領域標籤擦底疊字(座標為 bg 局部座標,472×480;draw 時自動加置中偏移)。
 	// y=27/131/237/343 為 PIL 量測(openorion2 無按鈕 y 字面,均距推導一致,保留)。
@@ -5718,25 +5720,21 @@ func (b *sceneBuilder) research() (*overlayScreen, error) {
 				continue
 			}
 			t, cost, done := currentAreaTopic(b.session, idx)
-			label := fmt.Sprintf("%s ・ %d RP", topicNameZh(b.lang, t), cost)
+			label := researchAreaText(b.lang, "research.area.topic_cost", topicNameZh(b.lang, t), cost)
 			if gamedata.IsHyperAdvancedTopic(t) {
 				level := b.session.Player.HyperAdvancedLevels[t]
 				if level == 0 && b.session.Player.CompletedTopics[t] {
 					level = 1 // 舊存檔尚未經下一次研究結算遷移
 				}
-				label = fmt.Sprintf(b.tr("%s 第%d級 ・ %d RP", "%s level %d ・ %d RP"),
+				label = researchAreaText(b.lang, "research.area.hyper_level_cost",
 					topicNameZh(b.lang, t), level+1, cost)
 			}
 			col := body
 			if done {
-				label, col = b.tr("已完成本領域全部科技", "All technologies in this field are complete"), gold
+				label, col = researchAreaText(b.lang, "research.area.complete"), gold
 			}
-			cx := float64(h.x) + float64(h.w)/2
-			cy := float64(h.y) + 40 // 標題帶(高18)下方留白處置中
-			s.extras = append(s.extras, extraText{
-				x: cx, y: cy, size: 12, text: label, col: col, align: 1,
-				maxW: float64(h.w - 12),
-			})
+			s.extras = append(s.extras,
+				centeredExtraTextInSafeRect(researchAreaTopicTextRect(h), 12, label, col))
 		}
 	}
 	return s, nil
@@ -6034,6 +6032,8 @@ type interactiveApp struct {
 	galleryNetGamesTick int
 	// galleryInputBoxTick 是截圖廊把畫面換成文字輸入彈窗的 tick。
 	galleryInputBoxTick int
+	// galleryResearchTick 是截圖廊把畫面換成研究領域畫面的 tick。
+	galleryResearchTick int
 	galleryBuilder      *sceneBuilder
 	gallerySession      *shell.GameSession
 }
@@ -6138,6 +6138,10 @@ const galleryNetGamesTick = 103
 // 這一張是**疊在對局清單上**的(modal 要看得見下層,同確認框),所以刻意接在
 // galleryNetGamesTick 之後而不是自己推一張底。
 const galleryInputBoxTick = 105
+
+// galleryResearchTick 是截圖廊在哪個 tick 換成研究領域畫面——取截圖(t108)的前一拍。
+// 此注入只驗證正式 renderer 與真實 session 資料；研究選題的正常玩家 gate 另由 t12~t13 驗證。
+const galleryResearchTick = 107
 
 // galleryFighterTick 是截圖廊在哪個 tick 於戰術戰鬥裡派出一隊戰機——取截圖(t66)的前一拍。
 //
@@ -6410,6 +6414,9 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		// 文字輸入彈窗(原版 Remapped_Input_Box_Popup_),疊在對局清單上。
 		idle, // t105: 由 galleryInputBoxTick 疊上輸入彈窗
 		idle, // t106: settle → 截圖 inputbox
+
+		idle, // t107: 由 galleryResearchTick 換成研究領域畫面
+		idle, // t108: settle → 截圖 research
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -6452,6 +6459,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{102, "32_netinfo.png"},
 		{104, "33_netgames.png"},
 		{106, "34_inputbox.png"},
+		{108, "35_research.png"},
 	}
 	return script, shots
 }
@@ -6836,6 +6844,12 @@ func (a *interactiveApp) Update() error {
 		ib.scriptOK = true // 截圖廊不吃鍵盤,否則腳本的按鍵會被它收走
 		a.cur = ib
 	}
+	// 截圖廊專用:研究領域畫面。使用同一場對局的 session，只省略重新導覽回星圖的步驟。
+	if a.galleryResearchTick > 0 && a.tick == a.galleryResearchTick && a.galleryBuilder != nil {
+		if sc, err := a.galleryBuilder.research(); err == nil {
+			a.cur = sc
+		}
+	}
 	// 截圖廊專用:戰術戰鬥裡派一隊戰機出擊(見 galleryFighterTick 的說明)。
 	if a.galleryFighterTick > 0 && a.tick == a.galleryFighterTick {
 		if ts, ok := a.cur.(*tacticalScreen); ok && len(ts.player) > 1 {
@@ -7081,6 +7095,7 @@ func runInteractive(versionAssets versionAssetDirs, initial gamedata.GameVersion
 		app.galleryNetInfoTick = galleryNetInfoTick
 		app.galleryNetGamesTick = galleryNetGamesTick
 		app.galleryInputBoxTick = galleryInputBoxTick
+		app.galleryResearchTick = galleryResearchTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,

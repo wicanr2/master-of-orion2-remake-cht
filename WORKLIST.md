@@ -459,6 +459,15 @@
   原版完整逐欄組裝、排序及分頁仍未知；現行摘要維持明標 remake adapter。證據與規格見
   [`docs/re/turn-summary-dynamic-text-layout-audit-20260827.md`](docs/re/turn-summary-dynamic-text-layout-audit-20260827.md) 與
   [`docs/spec/turn-summary-external-text.md`](docs/spec/turn-summary-external-text.md)。
+  研究領域畫面已完成第五十個切片：目前主題、RP 成本、超進階等級、完成狀態及星系轉場均由
+  `ui.json` 供應，主題名稱仍由 `tech.json` 提供；Go 僅傳 typed 主題、等級與成本。八個動態列
+  現由各自 hit region 推導單行雙軸安全框，不再只有寬度限制。原版 `sub_10DC12 @ 0x10DC12`
+  已證實 field／application 寫回與 `TECHSEL.LBX#0` 資產鏈；現行「各領域一列摘要＋另頁選
+  application」仍明標 remake adapter，未知原版 widget 精確幾何。`cmd/moo2`＋`internal/shell`
+  全套測試通過；繁中與英文正版資料畫廊各 37/37，新增 `35_research.png`，實圖抽查八列均在
+  領域框內。證據與規格見
+  [`docs/re/research-area-dynamic-text-layout-audit-20260827.md`](docs/re/research-area-dynamic-text-layout-audit-20260827.md) 與
+  [`docs/spec/research-area-external-text.md`](docs/spec/research-area-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

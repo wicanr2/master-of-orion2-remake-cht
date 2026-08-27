@@ -17,8 +17,8 @@
 | 間諜／逐對手外交／條約 | `spy_test.go`、`spy_mission_test.go`、`original_spy_oracle_test.go`、`treaty_test.go`、餽贈／RACES／外交畫面測試 | 間諜手冊 p.174-175；IDA `sub_100A3E`／`sub_100A83`／`sub_101483`；外交 raw 證據 | Docker `-gamegallery` 的 `15_diplomacy.png` 與 UI 熱區測試 | 種族關係→選 AI 列→切換 STEAL/SABOTAGE/HIDE→提議餽贈／特殊貿易／條約→終止→回合結算→存檔 | SABOTAGE 帝國攻防表與 slot 分層已閉合；訓練／維護與 AI 任務政策、特殊貿易表及完整 AI end-to-end 接受表仍未閉合 |
 | 事件／勝利 | `events_test.go`、勝利測試 | 手冊、執行檔表 | 報告／王座廳畫廊紀錄 | 回合→事件／三勝利路徑 | 通過內部流程；部分數值仍為近似 |
 | 存檔／讀檔 | `persist_test.go`、各切片 round-trip | remake JSON schema；原版 GAM 只讀 | Load 畫面已納入本輪畫廊 | 寫入可寫 overlay 後讀回 | 單元通過；本輪 Docker 畫廊含 `18_loadgame.png`，未宣稱原版逐像素一致 |
-| 圖像／主題 | LBX／資產／畫廊工具 | LBX 位元組與執行檔索引 | 本輪 Docker 畫廊 35 張 | 各畫面正常載入 | 35 張均成功產生且非零；修正 1.5／30 資產目錄的 `NEWGAME#31` 越界警告；逐張原版比對仍開放 |
-| 中文／英文／字型 | i18n、英文 labels、`englishSafeFallback`、lang gap 測試 | 原版烘字與譯表 | 中英畫廊紀錄 | 語言切換→完整流程 | 英文 36/36 畫廊抽查通過；未知值保留安全 fallback，16 條棘輪例外是 key／dev-only／不可達分支 |
+| 圖像／主題 | LBX／資產／畫廊工具 | LBX 位元組與執行檔索引 | 本輪 Docker 畫廊 37 張 | 各畫面正常載入 | 37 張均成功產生且非零；修正 1.5／30 資產目錄的 `NEWGAME#31` 越界警告；逐張原版比對仍開放 |
+| 中文／英文／字型 | i18n、英文 labels、`englishSafeFallback`、lang gap 測試 | 原版烘字與譯表 | 中英畫廊紀錄 | 語言切換→完整流程 | 英文 37/37 畫廊抽查通過；未知值保留安全 fallback，16 條棘輪例外是 key／dev-only／不可達分支 |
 | 打包 | Docker build／跨編 | 無原版需求 | 正常路徑 smoke 截圖 | 從任意目錄啟動 | Linux／Windows 重新產出並驗證；macOS 使用既有 CI 產物，Linux 容器不宣稱真機執行 |
 
 ## 本輪截圖 metadata
@@ -26,7 +26,7 @@
 | 圖像 | 建置 | 存檔／情境 | 座標 | 種子／時間 | 主題 | 比對類型 |
 |---|---|---|---|---|---|---|
 | `normal-path.png`（暫存） | 目前工作樹／Docker 最終建置 | `-data /private/gamedata/mastori2 -game -shot`，私有資料唯讀 | 640×480，`uiscale=1`；148,252 bytes | Docker + Xvfb；容器內產生後供人工檢查 | 繁中正常路徑成功；未作原版逐像素宣稱 |
-| `01_menu.png`、`01b_newgame.png`、`02`–`34_inputbox.png`，含 `15a_races.png`（共 36 張） | 目前工作樹／Docker 畫廊建置 | `-gamegallery`，含 `18_loadgame.png` | 36/36 非零；統一由畫廊流程產生 | Docker + Xvfb；私有資料 `:ro` | 中文與英文均 36/36；抽查 RACES、外交、艦艇設計、輸入框、星圖；尚未逐張原版比對 |
+| `01_menu.png`、`01b_newgame.png`、`02`–`35_research.png`，含 `15a_races.png`（共 37 張） | 目前工作樹／Docker 畫廊建置 | `-gamegallery`，含 `18_loadgame.png` | 37/37 非零；統一由畫廊流程產生 | Docker + Xvfb；私有資料 `:ro` | 中文與英文均 37/37；抽查 RACES、外交、艦艇設計、輸入框、星圖、研究領域；尚未逐張原版比對 |
 | `15_diplomacy.png`（同上畫廊中的暫存畫面） | 目前工作樹／Docker 畫廊建置 | 無存檔，外交畫面初始路徑 | 1280×960，預設 `uiscale=2`；36/36 PNG 非零 | Docker + Xvfb；輸出在 `/tmp` | 已檢查八格提案、固定納貢按鈕、協議摘要與終止區不與結束按鈕重疊；尚未逐像素對原版比對 |
 
 ## 發行門檻
