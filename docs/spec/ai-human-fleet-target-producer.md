@@ -18,11 +18,14 @@
    - score<0：`threshold=contactTurns*(-score)`；
    - RNG 順序固定為 `Random(3)`、`Random(100)`，通過後再依路徑消耗 `Random(16)` 與
      一至兩次 `Random(4)`；不得因 gate 結果重排。
+9. `sub_4F93B` 外交 action selector 使用 kind 1=BC、2=科技、3=殖民地、4=直接要求；
+   intensity 上限 10，候選 RNG 順序為 `3→3→2`，科技 payload 另消耗 `Random(3)`。
+   BC 金額小於 100 時向下取整到 10，否則向下取整到 100，最後封頂 32000。
 
 ## DRAFT 邊界
 
 `sub_544A1 @ 0x544A1..0x54CC0` 的四類尾端與 RNG 已形成純規則；尚缺的是 directional
-incident memory、排名／科技趨勢及 `sub_4F93B` 外交行動 availability／payload 的完整 typed input。
+incident memory、排名／科技趨勢，以及 `sub_4F93B` 的科技候選表／殖民地候選 producer。
 這些欄位閉合前，remake 可用既有戰爭態勢決定是否呼叫原版目標估值，但必須標為 fallback，
 不得把只含 relation/personality 的部分 score 冒充完整 producer。
 
@@ -31,6 +34,7 @@ incident memory、排名／科技趨勢及 `sub_4F93B` 外交行動 availability
 - cooldown 2 必須連續阻擋兩次評估，第三次才可派艦。
 - contact turns 由 249 增至 250 後封頂，並與 cooldown 一起通過存檔往返。
 - 正負 score threshold、四類結果及每條路徑的 RNG 次數必須有純規則測試。
+- 外交 action 四種 kind、候選 gate、RNG 順序、BC 取整及科技索引必須有純規則測試。
 - 成功派艦後 cooldown 必須落在 20–39，並經 JSON snapshot 往返不變。
 - 玩家軍力較高或 personality losing-ground chance 為 0，不得單獨形成固定 veto。
 - 艦隊抵達後的 formal policy 5／6 writer 與 10 回合重複結算保護維持既有測試。

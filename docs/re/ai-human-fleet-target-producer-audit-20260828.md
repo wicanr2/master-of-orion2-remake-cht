@@ -64,3 +64,10 @@
 雙方科技／BC／殖民地資料選擇外交行動，並寫 `word_19B580／word_19B582／byte_19B584／
 byte_19B587` payload；回傳 0 才使 `sub_544A1` 把 action count 歸零。後續文件與 typed API
 一律稱 `DiplomaticActionAvailable`，不再沿用錯誤軍事名稱。
+
+四種內部 kind 已由 raw branch 閉合：1 是 BC payload、2 是科技候選 payload、3 是殖民地
+payload、4 是一至二級直接要求。selector 先把 intensity 夾至 10；intensity>6 關閉 kind 4、
+科技／BC 分別受可供候選比例與支付能力上限、殖民地要求 intensity≥6。候選選擇依序消耗
+`Random_(3)`、`Random_(3)`、`Random_(2)`；kind 1 金額按 10／100 向下取整並封頂 32000，
+kind 2 再消耗 `Random_(3)` 由候選尾端反向取索引。這一核心已實作為
+`OriginalHumanDiplomaticActionSelect`；科技候選表與可要求殖民地仍由尚未閉合的上游建立。
