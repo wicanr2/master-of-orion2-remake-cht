@@ -1,7 +1,6 @@
 package shell
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
@@ -63,21 +62,17 @@ type AIRaidReport struct {
 	BCLost     int    // 國庫損失
 	Building   string // 被摧毀的建築(空 = 無)
 	FleetLost  int    // 玩家艦隊在防禦中損失的戰力(擊退時 AI 的損失)
-	Message    string // 已填好數字的敘述
-	MessageEN  string // 同一結果的英文敘述
 }
 
-// advanceAIRaids 每回合檢查所有 AI 對手是否對玩家發動突襲,結果寫進 LastRaid/LastRaidReport。
+// advanceAIRaids 每回合檢查所有 AI 對手是否對玩家發動突襲,結果寫進 LastRaidReport。
 // DisableEvents 時整段停用(與 advanceAntares 一致,供確定性探針/測試使用)。
 func (s *GameSession) advanceAIRaids() {
-	s.LastRaid = ""
 	s.LastRaidReport = nil
 	if s.DisableEvents || s.Turn < aiRaidGraceTurns {
 		return
 	}
 	for i := range s.AIPlayers {
 		if rep := s.aiRaid(i); rep != nil {
-			s.LastRaid = rep.Message
 			s.LastRaidReport = rep
 			return // 一回合最多一次突襲,避免多 AI 同時開火把玩家瞬間打爆
 		}
@@ -276,8 +271,7 @@ func (s *GameSession) aiRaid(i int) *AIRaidReport {
 	}
 	a.LastRaidTurn = s.Turn
 
-	starName := "未知星系"
-	starNameEN := starName
+	starName, starNameEN := "", ""
 	if star := s.PlayerColonyStarIndex(ci); star >= 0 && star < len(s.Stars) {
 		starName = s.Stars[star].Name
 		starNameEN = s.Stars[star].NameEN
@@ -304,10 +298,6 @@ func (s *GameSession) aiRaid(i int) *AIRaidReport {
 		s.reduceAIShipStrength(i, a.FleetStrength-loss)
 		rep.Repelled = true
 		rep.FleetLost = loss
-		rep.Message = fmt.Sprintf("⚔ %s 突襲 %s,遭防禦部隊擊退,對方損失 %d 戰力", a.Name, starName, loss)
-		rep.MessageEN = fmt.Sprintf("⚔ %s raided %s but was repelled by the defense forces, losing %d fleet strength",
-			aiNameEN, starNameEN, loss)
-		s.LastRaid = rep.Message
 		return rep
 	}
 
@@ -367,23 +357,6 @@ func (s *GameSession) aiRaid(i int) *AIRaidReport {
 		rep.Building = s.destroyColonyBuilding(ci)
 	}
 
-	parts := fmt.Sprintf("人口 -%d、國庫 -%d BC", rep.PopLost, rep.BCLost)
-	if rep.Building != "" {
-		parts += "、" + rep.Building + "被摧毀"
-	}
-	if rep.FleetLost > 0 {
-		parts += fmt.Sprintf(";防禦部隊使對方折損 %d 戰力", rep.FleetLost)
-	}
-	rep.Message = fmt.Sprintf("⚔ %s 突襲 %s:%s", a.Name, starName, parts)
-	partsEN := fmt.Sprintf("Population -%d, treasury -%d BC", rep.PopLost, rep.BCLost)
-	if rep.Building != "" {
-		partsEN += fmt.Sprintf("; %s was destroyed", rep.Building)
-	}
-	if rep.FleetLost > 0 {
-		partsEN += fmt.Sprintf("; the defending force cost them %d fleet strength", rep.FleetLost)
-	}
-	rep.MessageEN = fmt.Sprintf("⚔ %s raided %s: %s", aiNameEN, starNameEN, partsEN)
-	s.LastRaid = rep.Message
 	return rep
 }
 

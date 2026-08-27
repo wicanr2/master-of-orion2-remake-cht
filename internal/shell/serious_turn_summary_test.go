@@ -24,7 +24,7 @@ func TestHasSeriousTurnSummaryReportRecognizesTypedThreats(t *testing.T) {
 		{"rebellion", func(s *GameSession) { s.LastRebellions = []RebellionResult{{Triggered: true}} }},
 		{"bankruptcy", func(s *GameSession) { s.LastBankruptcy = []BankruptcyAction{{Kind: BankruptcyScrapShip}} }},
 		{"antaran", func(s *GameSession) { s.LastAntaranNotice = &AntaranNotice{Kind: AntaranNoticeLaunched} }},
-		{"raid", func(s *GameSession) { s.LastRaid = "typed" }},
+		{"raid", func(s *GameSession) { s.LastRaidReport = &AIRaidReport{} }},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

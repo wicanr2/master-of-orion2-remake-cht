@@ -1,7 +1,6 @@
 package shell
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
@@ -64,8 +63,8 @@ func TestAIRaidGracePeriod(t *testing.T) {
 		t.Error("寬限期內不該派出艦隊")
 	}
 	s.advanceAIRaids()
-	if s.LastRaid != "" {
-		t.Errorf("寬限期內不該突襲,卻發生了:%s", s.LastRaid)
+	if s.LastRaidReport != nil {
+		t.Errorf("寬限期內不該突襲,卻發生了:%+v", s.LastRaidReport)
 	}
 }
 
@@ -79,8 +78,8 @@ func TestAIRaidNeedsWarStance(t *testing.T) {
 		t.Error("非戰爭態勢不該派出艦隊")
 	}
 	s.advanceAIRaids()
-	if s.LastRaid != "" {
-		t.Errorf("非戰爭態勢不該突襲,卻發生了:%s", s.LastRaid)
+	if s.LastRaidReport != nil {
+		t.Errorf("非戰爭態勢不該突襲,卻發生了:%+v", s.LastRaidReport)
 	}
 }
 
@@ -100,8 +99,8 @@ func TestAIRaidNeedsStrengthAdvantage(t *testing.T) {
 		t.Error("AI 軍力不足不該派出艦隊")
 	}
 	s.advanceAIRaids()
-	if s.LastRaid != "" {
-		t.Errorf("AI 軍力不足不該突襲,卻發生了:%s", s.LastRaid)
+	if s.LastRaidReport != nil {
+		t.Errorf("AI 軍力不足不該突襲,卻發生了:%+v", s.LastRaidReport)
 	}
 }
 
@@ -119,9 +118,9 @@ func TestAIRaidPacifistNeverRaids(t *testing.T) {
 				ai.PersonalityLosingGroundChance(ai.PersonalityPacifist))
 		}
 		s.advanceAIRaids()
-		if s.LastRaid != "" {
-			t.Fatalf("和平主義 AI 不該突襲(反應強度 %d),卻發生了:%s",
-				ai.PersonalityLosingGroundChance(ai.PersonalityPacifist), s.LastRaid)
+		if s.LastRaidReport != nil {
+			t.Fatalf("和平主義 AI 不該突襲(反應強度 %d),卻發生了:%+v",
+				ai.PersonalityLosingGroundChance(ai.PersonalityPacifist), s.LastRaidReport)
 		}
 	}
 }
@@ -133,18 +132,12 @@ func TestAIRaidHappensAndBoundsLosses(t *testing.T) {
 
 	parkAIFleetsAtPlayerColony(s)
 	s.advanceAIRaids()
-	if s.LastRaid == "" || s.LastRaidReport == nil {
+	if s.LastRaidReport == nil {
 		t.Fatal("條件全部滿足時應該發生突襲")
 	}
 	rep := s.LastRaidReport
-	if rep.MessageEN == "" || !strings.Contains(rep.MessageEN, "raided") {
-		t.Errorf("AI 突襲報告應有英文模板,got %q", rep.MessageEN)
-	}
-	if strings.Contains(rep.MessageEN, "突襲") || strings.Contains(rep.MessageEN, "星系") {
-		t.Errorf("AI 突襲英文報告仍含中文模板字串:%q", rep.MessageEN)
-	}
 	if rep.Repelled {
-		t.Fatalf("玩家無艦隊、無駐軍時不該擊退 400 戰力的突襲:%s", rep.Message)
+		t.Fatalf("玩家無艦隊、無駐軍時不該擊退 400 戰力的突襲:%+v", rep)
 	}
 	c := s.PlayerColonies[rep.ColonyIdx]
 	// 界限一:突襲不滅殖民地(人口至少留 1)。
@@ -169,6 +162,20 @@ func TestAIRaidHappensAndBoundsLosses(t *testing.T) {
 	if c.Farmers+c.Workers+c.Scientists != c.Population {
 		t.Errorf("職業分配 %d+%d+%d 與人口 %d 對不上",
 			c.Farmers, c.Workers, c.Scientists, c.Population)
+	}
+}
+
+func TestAIRaidReportFollowsHotseatSeat(t *testing.T) {
+	s := NewDemoSession()
+	if len(s.AIPlayers) < 1 || s.SetupHotseat(2) != 2 {
+		t.Skip("需要第二個熱座帝國")
+	}
+	want := &AIRaidReport{AIName: "敵軍", StarName: "測試星", ColonyIdx: 1, PopLost: 2, BCLost: 30}
+	s.LastRaidReport = want
+	s.Seats[s.ActiveSeat] = s.saveSeat()
+	s.loadSeat(s.Seats[s.ActiveSeat])
+	if s.LastRaidReport == nil || *s.LastRaidReport != *want {
+		t.Fatalf("AI 突襲 typed report 未隨熱座席位往返：%+v", s.LastRaidReport)
 	}
 }
 
@@ -211,8 +218,8 @@ func TestAIRaidRepelledByFleetAtStar(t *testing.T) {
 		t.Fatal("應該發生一次(被擊退的)突襲")
 	}
 	if !s.LastRaidReport.Repelled {
-		t.Fatalf("防禦 %d >= 攻擊 %d 應擊退,卻被突破:%s",
-			s.colonyDefense(0), strengthBefore, s.LastRaidReport.Message)
+		t.Fatalf("防禦 %d >= 攻擊 %d 應擊退,卻被突破:%+v",
+			s.colonyDefense(0), strengthBefore, s.LastRaidReport)
 	}
 	if s.AIPlayers[0].FleetStrength >= strengthBefore {
 		t.Errorf("擊退後 AI 軍力應下降:%d → %d", strengthBefore, s.AIPlayers[0].FleetStrength)
@@ -227,7 +234,7 @@ func TestAIRaidRespectsInterval(t *testing.T) {
 	s := newRaidTestSession(t)
 	parkAIFleetsAtPlayerColony(s)
 	s.advanceAIRaids()
-	if s.LastRaid == "" {
+	if s.LastRaidReport == nil {
 		t.Fatal("第一次應該要打")
 	}
 	raider := -1
@@ -244,8 +251,8 @@ func TestAIRaidRespectsInterval(t *testing.T) {
 	s.AIPlayers = s.AIPlayers[raider : raider+1]
 	s.Turn++
 	s.advanceAIRaids()
-	if s.LastRaid != "" {
-		t.Errorf("間隔 %d 回合內不該再打,卻發生了:%s", aiRaidInterval, s.LastRaid)
+	if s.LastRaidReport != nil {
+		t.Errorf("間隔 %d 回合內不該再打,卻發生了:%+v", aiRaidInterval, s.LastRaidReport)
 	}
 }
 

@@ -58,8 +58,8 @@ func TestAIRaidRequiresTheFleetToArriveFirst(t *testing.T) {
 	// 在途期間一次都不能打到。
 	for k := 0; k < eta; k++ {
 		s.advanceAIRaids()
-		if s.LastRaid != "" {
-			t.Fatalf("艦隊還在路上(第 %d/%d 回合)就打到了:%s", k+1, eta, s.LastRaid)
+		if s.LastRaidReport != nil {
+			t.Fatalf("艦隊還在路上(第 %d/%d 回合)就打到了:%+v", k+1, eta, s.LastRaidReport)
 		}
 		s.Turn++
 		s.advanceAIFleets()
@@ -86,7 +86,7 @@ func TestParkedAIFleetDoesNotRaidEveryTurn(t *testing.T) {
 	raids := 0
 	for k := 0; k < aiRaidInterval; k++ {
 		s.advanceAIRaids()
-		if s.LastRaid != "" {
+		if s.LastRaidReport != nil {
 			raids++
 		}
 		s.Turn++

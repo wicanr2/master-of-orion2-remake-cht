@@ -5592,15 +5592,12 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 		}
 		// AI 對手突襲警報(見 shell/ai_attack.go)。擊退用綠字、被打用紅字,
 		// 讓玩家一眼看出「這回合的軍備夠不夠」。
-		if b.session.LastRaid != "" {
+		if b.session.LastRaidReport != nil {
 			col := color.RGBA{240, 110, 90, 255}
-			if b.session.LastRaidReport != nil && b.session.LastRaidReport.Repelled {
+			if b.session.LastRaidReport.Repelled {
 				col = color.RGBA{130, 220, 150, 255}
 			}
-			raidMsg := b.session.LastRaid
-			if b.lang != i18n.Traditional && b.session.LastRaidReport != nil && b.session.LastRaidReport.MessageEN != "" {
-				raidMsg = b.session.LastRaidReport.MessageEN
-			}
+			raidMsg := aiRaidNoticeText(b.lang, b.session.LastRaidReport)
 			messages = append(messages, turnSummaryMessage{text: raidMsg, size: 14, col: col})
 		}
 		s.extras = append(s.extras, turnSummaryDynamicExtras(b.fnt, messages)...)

@@ -381,10 +381,7 @@ func (b *sceneBuilder) infoTurnSummary(s *overlayScreen) {
 		}
 		eventMsg += b.session.LastPersistentEventEN
 	}
-	raidMsg := b.session.LastRaid
-	if b.lang != i18n.Traditional && b.session.LastRaidReport != nil && b.session.LastRaidReport.MessageEN != "" {
-		raidMsg = b.session.LastRaidReport.MessageEN
-	}
+	raidMsg := aiRaidNoticeText(b.lang, b.session.LastRaidReport)
 	antaresMsg := antaranNoticeText(b.lang, b.session.LastAntaranNotice)
 	for _, msg := range []string{eventMsg, antaresMsg, raidMsg, b.session.LastCouncil} {
 		if msg == "" {

@@ -538,6 +538,17 @@
   證據與規格見
   [`docs/re/antaran-notice-text-audit-20260827.md`](docs/re/antaran-notice-text-audit-20260827.md) 與
   [`docs/spec/antaran-notice-external-text.md`](docs/spec/antaran-notice-external-text.md)。
+  AI 殖民地突襲通知已完成第五十八個切片：`AIRaidReport` 只保留 AI／星系名、勝敗、人口、
+  BC、建築與艦力損失；規則層已移除 `Message`／`MessageEN` 與額外 `LastRaid` 字串旗標。
+  擊退、突破、建築摧毀與攻方折損主句／片段／分隔符均由 `ui.json` 提供，回合摘要與 INFO
+  共用 `aiRaidNoticeText`；英文建築名經既有 building catalog 翻譯，不再直接插入中文規則名。
+  重要摘要、熱座席位及舊測試也改以 `LastRaidReport != nil` 判定。原版證據支持殖民地估值與
+  艦隊抵達，不支持現行發動／損失／通知句型，故仍明標 remake adapter。聚焦測試已覆蓋雙語
+  勝敗、兩個可選片段、未知名稱 fallback、熱座往返與來源碼防回歸。
+  繁中與英文正版資料畫廊各重跑 38/38；正常畫廊未強制觸發 AI 突襲，因此只證明 UI 流程沒有
+  回歸，實際通知內容與建築翻譯由 typed 測試覆蓋，不冒充原版視覺對照。證據與規格見
+  [`docs/re/ai-raid-notice-text-audit-20260827.md`](docs/re/ai-raid-notice-text-audit-20260827.md) 與
+  [`docs/spec/ai-raid-notice-external-text.md`](docs/spec/ai-raid-notice-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

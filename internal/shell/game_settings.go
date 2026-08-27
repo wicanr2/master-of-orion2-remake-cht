@@ -67,5 +67,5 @@ func (s *GameSession) HasSeriousTurnSummaryReport() bool {
 		}
 	}
 	return len(s.LastRebellions) > 0 || len(s.LastBankruptcy) > 0 ||
-		s.LastAntaranNotice != nil || s.LastRaid != ""
+		s.LastAntaranNotice != nil || s.LastRaidReport != nil
 }

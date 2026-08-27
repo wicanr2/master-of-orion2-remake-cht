@@ -4604,9 +4604,8 @@ type GameSession struct {
 	// 憑空多出一個殖民地。
 	Outposts []Outpost
 
-	// LastRaid / LastRaidReport 是本回合 AI 對玩家殖民地的突襲(見 ai_attack.go);
+	// LastRaidReport 是本回合 AI 對玩家殖民地的型別化突襲結果(見 ai_attack.go);
 	// 空/nil = 無。與 LastAntaranNotice 分開:安塔蘭人是週期腳本,AI 突襲是外交/軍備的後果。
-	LastRaid       string
 	LastRaidReport *AIRaidReport
 	RaceIndex      int // 玩家選定的種族(shell.Races 索引)
 	// CustomRaceTraits 是客製種族畫面所選的布林能力位元遮罩。零值代表沒有特殊能力；
@@ -5196,7 +5195,7 @@ func (s *GameSession) EndTurn() {
 	s.Turn++
 	s.advanceShipRepair()      // 停在自家據點的艦艇完全修復(原版 Repair_Ships_At_Colonies_)
 	s.advanceAntares()         // 安塔蘭人週期性入侵(依 Turn 排程升級),記於 LastAntaranNotice
-	s.advanceAIRaids()         // AI 對手突襲玩家殖民地(戰爭態勢 + 軍力領先才發動),記於 LastRaid
+	s.advanceAIRaids()         // AI 對手突襲玩家殖民地(戰爭態勢 + 軍力領先才發動),記於 LastRaidReport
 	s.advanceConquestVictory() // 對手是否已全滅(手冊三條勝利路徑之一:殲滅所有對手)
 	s.advancePlayerDefeat()    // 玩家是否已無任何殖民地(超新星等事件可致,見該函式)
 	s.advanceAntaranVictory()  // 是否已攻陷安塔蘭母星(手冊三條勝利路徑之二,見 antaran_victory.go)

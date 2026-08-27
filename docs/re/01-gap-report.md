@@ -4478,8 +4478,10 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     中文敘述。這一輪沒有把查表 key 全域替換,而是沿報告資料結構補雙語欄位，避免
     `special_device_map`、`weapon_damage`、`shipspace` 這類內部 key 被翻壞。
 
-    - `AIRaidReport.MessageEN`：AI 突襲的擊退／突破結果保留 AI 種族英文名與星名，
-      並由回合摘要與 INFO 畫面在英文模式選用。
+    - 當時以 `AIRaidReport.MessageEN` 保存 AI 突襲英文成品句子；2026-08-27 已改為 typed
+      `AIRaidReport` 與外部 `raid.notice.*` 模板，並在 UI 翻譯被摧毀建築名稱。舊 `Message`／
+      `MessageEN`／`LastRaid` 欄位不再存在，見
+      [`ai-raid-notice-text-audit-20260827.md`](ai-raid-notice-text-audit-20260827.md)。
     - 當時以 `GameSession.LastAntaresEN` 補英文模板並讓熱座席位保存顯示暫態；2026-08-27
       已由型別化 `LastAntaranNotice` 與外部 `antaran.notice.*` 文案取代。舊欄位不再存在，
       見 [`antaran-notice-text-audit-20260827.md`](antaran-notice-text-audit-20260827.md)。
