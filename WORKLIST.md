@@ -961,8 +961,12 @@
   新 raw 矩陣均可存檔並隨熱座壓縮。2026-08-27 又閉合一般 AI↔AI 宣戰／停戰垂直切片：
   `sub_25DF1` reason 23 候選、`sub_51078` policy 4 與 -75..-99 關係 writer、`sub_5090C`
   的 `+0x717` 戰爭計時／`+0x72F` 冷卻，以及 `sub_2670A／sub_524FB` 的難度停戰門檻、
-  relation +50 封頂 0 與 30 回合解除均已接入；矩陣可存檔並隨熱座壓縮。原版
-  `+0x5EC` producer 尚未閉合，現以 `FleetStrength` 代入已證實 ratio 公式，明標強推論投影。
+  relation +50 封頂 0 與 30 回合解除均已接入；矩陣可存檔並隨熱座壓縮。2026-08-28 已進一步
+  證實 `+0x5EC` 是 `sub_D3D34` 每回合由逐艦八武器槽、改造、命中、船員／損傷及觀察者防禦
+  重建的八欄方向矩陣，不是單一艦體總和；RE 已成 READY 規格，但 typed producer 尚未實作，
+  現以 `FleetStrength` 代入 ratio 的路徑仍明標強推論投影。證據與規格見
+  [`docs/re/npc-power-matrix-audit-20260828.md`](docs/re/npc-power-matrix-audit-20260828.md) 與
+  [`docs/spec/npc-power-matrix.md`](docs/spec/npc-power-matrix.md)。
   自訂種族採中立 fallback；反向玩家條約、`+0x737` 鎖定 writer、`+0x71F` treaty-break writer、
   特殊宣戰 reason 20／22／68／113 及 `+0x6AF／+0x6BF` 記憶仍未閉合。特殊貿易與 ETA callback
   仍是可玩 remake 模型。證據與規格見

@@ -21,9 +21,11 @@ RELATED_EAS = (
     0x252A7, 0x252D5, 0x25AD2, 0x25BC6, 0x25DF1, 0x2670A,
     0x4F694, 0x500CF, 0x5090C, 0x51078, 0x5138E, 0x52049, 0x5232E, 0x524C3,
     0x524FB, 0x52602,
+    0xD3D34,
+    0x5EF09, 0x5EF17, 0x5EF4B, 0x5F379, 0x5F871,
 )
 GOVERNMENT_SCORE_TABLE_EA = 0x180CCC
-RELATIVE_OPERANDS = ("+617h]", "+627h]", "+62Fh]", "+637h]", "+63Fh]",
+RELATIVE_OPERANDS = ("+5ECh]", "+617h]", "+627h]", "+62Fh]", "+637h]", "+63Fh]",
                      "+68Fh]", "+69Fh]", "+6D7h]", "+717h]", "+71Fh]",
                      "+72Fh]")
 
