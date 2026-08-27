@@ -5862,7 +5862,8 @@ func (b *sceneBuilder) planets() (*overlayScreen, error) {
 					uiText(b.lang, "planet.list.status.outpost"), 9, color.RGBA{150, 195, 235, 255})...)
 			}
 			if sp := planetSpecialLabel(b.lang, p.SpecialID); sp != "" {
-				s.extras = append(s.extras, planetListColumnRect(i, 3, true).centeredExtras(b.fnt, "★"+sp, 9, sub)...)
+				s.extras = append(s.extras, planetListColumnRect(i, 3, true).centeredExtras(b.fnt,
+					fmt.Sprintf(uiText(b.lang, "planet.special.marked"), sp), 9, sub)...)
 			}
 		}
 		if len(list) == 0 {

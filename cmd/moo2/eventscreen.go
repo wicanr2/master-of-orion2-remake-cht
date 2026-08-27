@@ -3,11 +3,14 @@ package main
 import (
 	"fmt"
 	"image/color"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/assets"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
 
 // 事件畫面(原版 `Event_Screen_` / `Draw_Event_Screen_` / `Event_Fade_In_`,module 15)。
@@ -52,6 +55,50 @@ type reportPanel struct {
 	good   bool   // 好消息(綠框)/壞消息(紅框)
 }
 
+// discoveryBodyText 將型別化的發現結果套入外部文案模板。舊存檔的成品字串只由
+// currentReport 作相容回退，不再讓新遊戲狀態綁死某一種語言。
+func discoveryBodyText(lang i18n.Lang, d *shell.SystemDiscovery) string {
+	if d == nil {
+		return ""
+	}
+	star := d.StarName
+	if lang == i18n.English && d.StarNameEN != "" {
+		star = d.StarNameEN
+	}
+	switch {
+	case d.BCGained > 0:
+		return fmt.Sprintf(uiText(lang, "event.discovery.bc"), star, planetSpecialLabel(lang, d.Special), d.BCGained)
+	case gamedata.SpecialFoundsSplinterColony(d.Special):
+		if d.ColonyIdx >= 0 {
+			if d.Population <= 0 && d.Message != "" {
+				return "" // 舊存檔沒有 Population，交由 currentReport 顯示舊成品句子。
+			}
+			return fmt.Sprintf(uiText(lang, "event.discovery.splinter.success"), star, d.Population)
+		}
+		return fmt.Sprintf(uiText(lang, "event.discovery.splinter.failed"), star)
+	case gamedata.SpecialGrantsFreeLeader(d.Special):
+		if d.LeaderGot != "" {
+			return fmt.Sprintf(uiText(lang, "event.discovery.leader.success"), star, d.LeaderGot)
+		}
+		return fmt.Sprintf(uiText(lang, "event.discovery.leader.full"), star)
+	case gamedata.SpecialGrantsFreeTech(d.Special):
+		if len(d.TechTopics) == 0 {
+			if d.TechGot != "" && d.Message != "" {
+				return "" // 舊存檔只有 TechGot 字串，避免誤報為沒有新科技。
+			}
+			return fmt.Sprintf(uiText(lang, "event.discovery.tech.none"), star)
+		}
+		names := make([]string, 0, len(d.TechTopics))
+		for _, topic := range d.TechTopics {
+			names = append(names, topicNameZh(lang, topic))
+		}
+		return fmt.Sprintf(uiText(lang, "event.discovery.tech.success"), star,
+			strings.Join(names, uiText(lang, "event.discovery.tech.separator")))
+	default:
+		return ""
+	}
+}
+
 // currentReport 依 session 目前的狀態決定要播哪一則快報;兩者皆無回 nil。
 // 隨機事件優先——它是本回合結算出來的全銀河新聞,發現則是自家艦隊的回報,兩則同時發生時
 // 先播新聞、發現的內容仍留在回合摘要文字裡。
@@ -78,12 +125,17 @@ func (b *sceneBuilder) currentReport() *reportPanel {
 	}
 	if d := b.session.LastDiscovery; d != nil {
 		// 星系發現一律是好消息(原版這五種特殊物產沒有負面的)。
-		title, body := d.Name, d.Message
-		if b.lang != i18n.Traditional {
-			if d.NameEN != "" {
+		title := planetSpecialLabel(b.lang, d.Special)
+		body := discoveryBodyText(b.lang, d)
+		if title == "" {
+			title = d.Name
+			if b.lang == i18n.English && d.NameEN != "" {
 				title = d.NameEN
 			}
-			if d.MessageEN != "" {
+		}
+		if body == "" {
+			body = d.Message
+			if b.lang == i18n.English && d.MessageEN != "" {
 				body = d.MessageEN
 			}
 		}

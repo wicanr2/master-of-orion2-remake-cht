@@ -29,6 +29,32 @@ func TestColonyPlanetRowsUseEnglishIDs(t *testing.T) {
 	}
 }
 
+func TestPlanetSpecialCatalogCoverage(t *testing.T) {
+	for sp := gamedata.BadSpecial1; sp <= gamedata.OrionSpecial; sp++ {
+		for _, lang := range []i18n.Lang{i18n.Traditional, i18n.English} {
+			if got := planetSpecialLabel(lang, sp); got == "" || got == gamedata.PlanetSpecialTextKey(sp) {
+				t.Errorf("語系 %v 特殊物產 %d 缺少外部顯示文案：%q", lang, sp, got)
+			}
+		}
+	}
+	if got := planetSpecialLabel(i18n.Traditional, gamedata.NoSpecial); got != "" {
+		t.Errorf("無特殊物產不應顯示標籤：%q", got)
+	}
+}
+
+func TestPlanetSpecialRuleSourceHasNoEmbeddedDisplayNames(t *testing.T) {
+	raw, err := os.ReadFile("../../internal/gamedata/planet_special.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	src := string(raw)
+	for _, forbidden := range []string{`"Space Debris"`, `"Ancient Artifacts"`, `"太空殘骸"`, `"遠古文物"`} {
+		if strings.Contains(src, forbidden) {
+			t.Errorf("planet_special.go 仍內嵌玩家顯示名稱 %s", forbidden)
+		}
+	}
+}
+
 func TestRuntimeLabelCatalogCoverage(t *testing.T) {
 	groups := [][]string{
 		{"info.history.metric.population", "info.history.metric.technology", "info.history.metric.fleet", "info.history.metric.buildings"},

@@ -84,18 +84,22 @@ func TestSpecialDiscoveryBC(t *testing.T) {
 	}
 }
 
-func TestPlanetSpecialEnglishDisplayNames(t *testing.T) {
-	if got := PlanetSpecialNameEN(SpaceDebris); got != "Space Debris" {
-		t.Errorf("太空殘骸英文名 = %q,want Space Debris", got)
+func TestPlanetSpecialTextKeys(t *testing.T) {
+	want := map[PlanetSpecial]string{
+		BadSpecial1: "planet.special.anomaly", SpaceDebris: "planet.special.space_debris",
+		PirateCache: "planet.special.pirate_cache", GoldDeposits: "planet.special.gold_deposits",
+		GemDeposits: "planet.special.gem_deposits", Natives: "planet.special.natives",
+		SplinterColony: "planet.special.splinter_colony", LostHero: "planet.special.lost_hero",
+		BadSpecial2: "planet.special.anomaly", AncientArtifacts: "planet.special.ancient_artifacts",
+		OrionSpecial: "planet.special.orion",
 	}
-	if got := PlanetSpecialNameEN(AncientArtifacts); got != "Ancient Artifacts" {
-		t.Errorf("遠古文物英文名 = %q,want Ancient Artifacts", got)
+	for sp := BadSpecial1; sp <= OrionSpecial; sp++ {
+		if got := PlanetSpecialTextKey(sp); got != want[sp] {
+			t.Errorf("PlanetSpecialTextKey(%d) = %q,want %q", sp, got, want[sp])
+		}
 	}
-	if got := PlanetSpecialNameEN(NoSpecial); got != "" {
-		t.Errorf("無特殊物產英文名 = %q,want 空字串", got)
-	}
-	if got := PlanetSpecialNameEN(PlanetSpecial(99)); got != "" {
-		t.Errorf("越界特殊物產英文名 = %q,want 空字串", got)
+	if PlanetSpecialTextKey(NoSpecial) != "" || PlanetSpecialTextKey(PlanetSpecial(99)) != "" {
+		t.Error("無特殊物產與越界值應回空文案鍵")
 	}
 }
 

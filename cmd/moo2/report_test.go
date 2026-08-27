@@ -32,8 +32,6 @@ func TestCurrentReportDiscoveryUsesScoutHeader(t *testing.T) {
 	s := shell.NewDemoSession()
 	s.LastDiscovery = &shell.SystemDiscovery{
 		StarName: "測試星", Special: gamedata.PirateCache,
-		Name:     gamedata.PlanetSpecialName(gamedata.PirateCache),
-		Message:  "勘查小隊在測試星星系裡找到海盜藏寶,變賣所得 100 BC 已入國庫。",
 		BCGained: 100, ColonyIdx: -1,
 	}
 	b := &sceneBuilder{session: s, lang: i18n.Traditional}
@@ -60,10 +58,6 @@ func TestCurrentReportDiscoveryEnglishUsesBilingualPayload(t *testing.T) {
 		StarName:   "測試星",
 		StarNameEN: "Test",
 		Special:    gamedata.SpaceDebris,
-		Name:       "太空殘骸",
-		NameEN:     "Space Debris",
-		Message:    "勘查小隊在測試星星系裡找到太空殘骸,變賣所得 50 BC 已入國庫。",
-		MessageEN:  "The survey team found Space Debris in the Test system. The proceeds, 50 BC, have been added to the treasury.",
 		BCGained:   50,
 		ColonyIdx:  -1,
 	}
@@ -76,6 +70,29 @@ func TestCurrentReportDiscoveryEnglishUsesBilingualPayload(t *testing.T) {
 	}
 	if strings.Contains(r.body, "勘查小隊") {
 		t.Errorf("英文快報仍外洩中文: %q", r.body)
+	}
+}
+
+func TestDiscoveryBodyTextLocalizesTypedTechTopics(t *testing.T) {
+	d := &shell.SystemDiscovery{StarName: "測試星", StarNameEN: "Test", Special: gamedata.AncientArtifacts,
+		TechTopics: []gamedata.ResearchTopic{gamedata.TOPIC_ENGINEERING, gamedata.TOPIC_ADVANCED_GOVERNMENTS}}
+	zh := discoveryBodyText(i18n.Traditional, d)
+	en := discoveryBodyText(i18n.English, d)
+	if !strings.Contains(zh, "、") || strings.Contains(en, "、") || !strings.Contains(en, ", ") {
+		t.Fatalf("科技清單沒有依語系套用外部分隔符：zh=%q en=%q", zh, en)
+	}
+	if strings.Contains(en, "測試星") || !strings.Contains(en, "Test") {
+		t.Errorf("英文科技發現沒有使用英文星名：%q", en)
+	}
+}
+
+func TestCurrentReportKeepsLegacyDiscoveryPayload(t *testing.T) {
+	s := shell.NewDemoSession()
+	s.LastDiscovery = &shell.SystemDiscovery{StarName: "舊星", Special: gamedata.AncientArtifacts,
+		Name: "遠古文物", Message: "舊版科技發現句子", TechGot: "舊科技", ColonyIdx: -1}
+	r := (&sceneBuilder{session: s, lang: i18n.Traditional}).currentReport()
+	if r == nil || r.body != "舊版科技發現句子" {
+		t.Fatalf("舊存檔發現報告未安全回退：%+v", r)
 	}
 }
 

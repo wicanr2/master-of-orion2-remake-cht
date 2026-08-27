@@ -16,13 +16,29 @@ func TestEventScreenPlayerTextComesFromExternalCatalog(t *testing.T) {
 	keys := []string{
 		"event.transition.summary", "event.header.gnn", "event.header.survey",
 		"event.tag.alert", "event.tag.good_news", "event.tag.discovery",
-		"event.title.format", "event.button.continue",
+		"event.title.format", "event.button.continue", "event.discovery.bc",
+		"event.discovery.splinter.success", "event.discovery.splinter.failed",
+		"event.discovery.leader.success", "event.discovery.leader.full",
+		"event.discovery.tech.success", "event.discovery.tech.none", "event.discovery.tech.separator",
 	}
 	for _, key := range keys {
 		for _, lang := range []i18n.Lang{i18n.English, i18n.Traditional} {
 			if got := uiText(lang, key); got == "" || got == key {
 				t.Errorf("事件快報缺少外部雙語文案：%s (%v)", key, lang)
 			}
+		}
+	}
+}
+
+func TestDiscoveryRuleSourceHasNoEmbeddedPlayerSentences(t *testing.T) {
+	raw, err := os.ReadFile("../../internal/shell/discovery.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	src := string(raw)
+	for _, forbidden := range []string{"勘查小隊", "失散同胞", "受困的傭兵", "遠古文物解析", "survey team found", "stranded mercenary", "ancient artifacts in"} {
+		if strings.Contains(strings.ToLower(src), strings.ToLower(forbidden)) {
+			t.Errorf("discovery.go 仍內嵌玩家句子 %q", forbidden)
 		}
 	}
 }

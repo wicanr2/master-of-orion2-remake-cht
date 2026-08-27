@@ -143,7 +143,7 @@ func TestDiscoveryAncientArtifactsGrantsOneTech(t *testing.T) {
 		}
 	}
 	d := s.discoverSystemSpecials(idx)
-	if d == nil || d.TechGot == "" {
+	if d == nil || len(d.TechTopics) == 0 {
 		t.Fatal("遠古文物應該白送一項科技")
 	}
 	after := 0

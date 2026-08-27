@@ -30,10 +30,11 @@ func planetEnvironmentLabels(lang i18n.Lang, p shell.Planet) (climate, gravity, 
 }
 
 func planetSpecialLabel(lang i18n.Lang, special gamedata.PlanetSpecial) string {
-	if lang == i18n.Traditional {
-		return gamedata.PlanetSpecialName(special)
+	key := gamedata.PlanetSpecialTextKey(special)
+	if key == "" {
+		return ""
 	}
-	return gamedata.PlanetSpecialNameEN(special)
+	return uiText(lang, key)
 }
 
 // colonyPlanetRows 是殖民地上方面板的行星資訊。
@@ -47,7 +48,7 @@ func colonyPlanetRows(lang i18n.Lang, p shell.Planet) []string {
 			fmt.Sprintf(uiText(lang, "colony.planet.minerals"), p.Mineral),
 			fmt.Sprintf(uiText(lang, "colony.planet.gravity"), p.Gravity)}
 		if sp := planetSpecialLabel(lang, p.SpecialID); sp != "" {
-			rows = append(rows, "★"+sp)
+			rows = append(rows, fmt.Sprintf(uiText(lang, "planet.special.marked"), sp))
 		}
 		return rows
 	}
@@ -57,7 +58,7 @@ func colonyPlanetRows(lang i18n.Lang, p shell.Planet) []string {
 		fmt.Sprintf(uiText(lang, "colony.planet.minerals"), minerals),
 		fmt.Sprintf(uiText(lang, "colony.planet.gravity"), gravity)}
 	if sp := planetSpecialLabel(lang, p.SpecialID); sp != "" {
-		rows = append(rows, "★"+sp)
+		rows = append(rows, fmt.Sprintf(uiText(lang, "planet.special.marked"), sp))
 	}
 	return rows
 }

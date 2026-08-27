@@ -517,6 +517,16 @@
   內，英文長能力名依既有單行省略契約收尾。證據與規格見
   [`docs/re/custom-race-ui-text-audit-20260826.md`](docs/re/custom-race-ui-text-audit-20260826.md) 與
   [`docs/spec/custom-race-external-text.md`](docs/spec/custom-race-external-text.md)。
+  行星特殊物產與勘查報告已完成第五十六個切片：十二個原版代碼只保留 typed enum 到
+  `planet.special.*` 語意鍵的映射，中英文名稱、`★` 標記及八種勘查結果模板均由
+  `ui.json` 提供。新 `SystemDiscovery` 只保存 BC、人口、領袖與科技主題等型別化結果，
+  不再於規則層組合雙語句子；舊 Name／Message 欄位僅供既有存檔安全回退。遠古文物所贈科技
+  改保存 `ResearchTopic`，顯示時逐項經 `tech.json` 翻譯，修正英文報告混入中文頓號的問題。
+  聚焦測試已覆蓋特殊物產 catalog、typed 科技清單、舊存檔回退及來源碼防回歸；繁中與英文
+  正版資料畫廊各重跑 38/38，抽查星圖、殖民地主畫面及行星列表沒有文案鍵外洩或新增越框。
+  原版勘查報告逐字與 `★` 排版仍明標未知／remake adapter，不因外部化升格 parity。證據與規格見
+  [`docs/re/planet-special-display-catalog-audit-20260827.md`](docs/re/planet-special-display-catalog-audit-20260827.md) 與
+  [`docs/spec/planet-special-display-catalog.md`](docs/spec/planet-special-display-catalog.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

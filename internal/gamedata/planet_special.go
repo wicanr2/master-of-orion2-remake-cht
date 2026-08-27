@@ -46,33 +46,32 @@ const (
 // 的獨立佐證。
 var planetSpecialWeights = [12]int{64, 5, 3, 2, 3, 2, 9, 4, 3, 0, 5, 0}
 
-// planetSpecialNames 是各特殊物產的中文顯示名。
-var planetSpecialNames = [12]string{
-	"", "異常", "太空殘骸", "海盜藏寶", "金礦", "寶石礦",
-	"原住民", "失散殖民地", "受困英雄", "異常", "遠古文物", "獵戶座",
-}
-
-// planetSpecialNamesEN 是一次性發現與資料面板使用的英文顯示名。
-// 這是顯示資料，不是規則查詢鍵；規則仍以 PlanetSpecial enum 判定。
-var planetSpecialNamesEN = [12]string{
-	"", "Anomaly", "Space Debris", "Pirate Cache", "Gold Deposits", "Gem Deposits",
-	"Natives", "Splinter Colony", "Lost Hero", "Anomaly", "Ancient Artifacts", "Orion",
-}
-
-// PlanetSpecialName 回傳中文顯示名;無特殊物產回空字串。
-func PlanetSpecialName(s PlanetSpecial) string {
-	if s < 0 || int(s) >= len(planetSpecialNames) {
+// PlanetSpecialTextKey 回傳外部玩家文案的穩定語意鍵；無特殊物產或越界值回空。
+func PlanetSpecialTextKey(s PlanetSpecial) string {
+	switch s {
+	case BadSpecial1, BadSpecial2:
+		return "planet.special.anomaly"
+	case SpaceDebris:
+		return "planet.special.space_debris"
+	case PirateCache:
+		return "planet.special.pirate_cache"
+	case GoldDeposits:
+		return "planet.special.gold_deposits"
+	case GemDeposits:
+		return "planet.special.gem_deposits"
+	case Natives:
+		return "planet.special.natives"
+	case SplinterColony:
+		return "planet.special.splinter_colony"
+	case LostHero:
+		return "planet.special.lost_hero"
+	case AncientArtifacts:
+		return "planet.special.ancient_artifacts"
+	case OrionSpecial:
+		return "planet.special.orion"
+	default:
 		return ""
 	}
-	return planetSpecialNames[s]
-}
-
-// PlanetSpecialNameEN 回傳英文顯示名；無特殊物產或代碼越界回空字串。
-func PlanetSpecialNameEN(s PlanetSpecial) string {
-	if s < 0 || int(s) >= len(planetSpecialNamesEN) {
-		return ""
-	}
-	return planetSpecialNamesEN[s]
 }
 
 // PlanetSpecialWeight 回傳該特殊物產的出現權重(%)。
