@@ -43,7 +43,11 @@ ROOTS = {
     "raw_human_target_decision": 0x544A1,
     "raw_human_target_commit": 0x54CC0,
     "raw_ai_personality_class": 0x53E96,
+    "raw_turn_gate_update": 0x4DAB2,
+    "raw_human_target_memory_reset": 0x54D4D,
+    "raw_human_target_score_modifier": 0xE5E09,
 }
+PERSONALITY_SCORE_TABLE_EA = 0x181080
 
 
 def digest(path):
@@ -127,6 +131,18 @@ def operand_matches(patterns):
     return matches
 
 
+def signed_word_table(ea, count):
+    values = []
+    for index in range(count):
+        raw = ida_bytes.get_word(ea + 2 * index)
+        values.append(raw - 0x10000 if raw >= 0x8000 else raw)
+    return {
+        "ea": f"0x{ea:X}",
+        "bytes": (ida_bytes.get_bytes(ea, 2 * count) or b"").hex(),
+        "values_signed_word": values,
+    }
+
+
 def main():
     ida_auto.auto_wait()
     source = os.environ["MOO2_IDA_INPUT"]
@@ -148,6 +164,8 @@ def main():
         "roots": {name: function_record(ea) for name, ea in ROOTS.items()},
         "raw_fleet_target_arrival_caller_layers": caller_layers(ROOTS["raw_fleet_target_arrival"], 4),
         "raw_ai_record_target_operand_matches": operand_matches(["7C7h", "7CAh"]),
+        "raw_human_target_gate_operand_matches": operand_matches(["74Fh", "816h", "88Fh"]),
+        "raw_personality_score_table": signed_word_table(PERSONALITY_SCORE_TABLE_EA, 7),
     }
     with open(os.environ["MOO2_IDA_OUTPUT"], "w", encoding="utf-8") as stream:
         json.dump(report, stream, ensure_ascii=False, indent=2)

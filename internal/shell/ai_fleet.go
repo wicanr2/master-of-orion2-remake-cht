@@ -103,6 +103,11 @@ func (s *GameSession) advanceAIFleets() []AIFleetArrival {
 	var arrivals []AIFleetArrival
 	for i := range s.AIPlayers {
 		a := &s.AIPlayers[i]
+		// remake 尚未拆出獨立 contact bitset；目前可進外交畫面的 AI 視為已接觸。
+		// 對映 sub_4DAB2：接觸方向的 +0x88F 每回合遞增並封頂 250。
+		if a.OriginalHumanContactTurns < 250 {
+			a.OriginalHumanContactTurns++
+		}
 		decisionBlocked := a.OriginalHumanTargetDecisionCooldown > 0
 		if decisionBlocked {
 			a.OriginalHumanTargetDecisionCooldown--
@@ -173,6 +178,9 @@ func (s *GameSession) aiLaunchRaidFleet(i int) {
 		return
 	}
 	a := &s.AIPlayers[i]
+	if a.OriginalHumanContactTurns < 10 {
+		return
+	}
 	if !s.aiRaidWilling(i) {
 		return
 	}

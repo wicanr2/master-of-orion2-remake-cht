@@ -24,8 +24,9 @@ func newRaidTestSession(t *testing.T) *GameSession {
 	for i := range s.AIPlayers {
 		s.AIPlayers[i].StanceName = stanceNames[ai.StanceWar]
 		s.AIPlayers[i].FleetStrength = 400
-		s.AIPlayers[i].Personality = ai.PersonalityRuthless // 反應強度 100 → 必定動手
+		s.AIPlayers[i].Personality = ai.PersonalityRuthless
 		s.AIPlayers[i].LastRaidTurn = 0
+		s.AIPlayers[i].OriginalHumanContactTurns = 10
 	}
 	return s
 }

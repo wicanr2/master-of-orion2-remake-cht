@@ -65,6 +65,7 @@ type aiSnapshot struct {
 	// 每個 AI 的間隔計時器都歸零,存檔當回合可能立刻又被突襲一次。
 	LastRaidTurn                        int `json:"last_raid_turn"`
 	OriginalHumanTargetDecisionCooldown int `json:"originalHumanTargetDecisionCooldown,omitempty"`
+	OriginalHumanContactTurns           int `json:"originalHumanContactTurns,omitempty"`
 
 	// ColonyBuildings 見 shell.AIOpponent.ColonyBuildings 註解。舊存檔(本欄位加入前存的檔)
 	// 解碼時這裡是 nil——BombardColony 對 nil/空 map 視為「無建築」,回歸行為與加欄位前一致,
@@ -323,6 +324,7 @@ func (s *GameSession) snapshot() sessionSnapshot {
 			LeaderLastOfferTurn: a.LeaderLastOfferTurn, ColonyLeaderNames: a.ColonyLeaderNames,
 			Personality: a.Personality, LastRaidTurn: a.LastRaidTurn,
 			OriginalHumanTargetDecisionCooldown: a.OriginalHumanTargetDecisionCooldown,
+			OriginalHumanContactTurns:           a.OriginalHumanContactTurns,
 			OriginalTechProfile:                 a.OriginalTechProfile, OriginalTechProfileKnown: a.OriginalTechProfileKnown,
 			OriginalFoodDeficitTurns:     a.OriginalFoodDeficitTurns,
 			OriginalWarFlag60ERaw:        a.OriginalWarFlag60ERaw,
@@ -457,6 +459,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 			LeaderLastOfferTurn: a.LeaderLastOfferTurn, ColonyLeaderNames: a.ColonyLeaderNames,
 			Personality: a.Personality, LastRaidTurn: a.LastRaidTurn,
 			OriginalHumanTargetDecisionCooldown: a.OriginalHumanTargetDecisionCooldown,
+			OriginalHumanContactTurns:           a.OriginalHumanContactTurns,
 			OriginalTechProfile:                 a.OriginalTechProfile, OriginalTechProfileKnown: a.OriginalTechProfileKnown,
 			OriginalFoodDeficitTurns:     a.OriginalFoodDeficitTurns,
 			OriginalWarFlag60ERaw:        a.OriginalWarFlag60ERaw,

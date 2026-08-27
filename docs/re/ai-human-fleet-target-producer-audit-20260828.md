@@ -31,14 +31,29 @@
 6. `sub_DB47E @ 0xDB47E..0xDB659` 是之後的 AI 軍事階段；它依序準備目標表、呼叫
    `sub_D7764`、再呼叫 `sub_DB257`。`sub_DB257` 讀 `+0x7C7/+0x7CA`，在目標矩陣 entry
    非零時呼叫 `sub_51078`，屬接戰／宣戰 consumer，不是目標 producer。
+7. `sub_4DAB2 @ 0x4DAB2..0x4DD6B` 是三個 gate 的每回合 producer：`player+0x816`
+   非零就減一；AI→真人方向在 `player+0x584` 接觸 bit 成立時，`player+0x88F` 每回合加一、
+   封頂 250。`player+0x74F` 則每回合由方向 formal policy `+0x627` 鏡射，不是 personality。
+8. `word_181080 @ 0x181080` 七個 signed word 為 `-10/-5/-3/0/20/20/-10`，索引是
+   source personality class。`sub_E5E09 @ 0xE5E09..0xE5EB3` 掃 target 的有效領袖，取
+   Diplomat 一般 `10*(level+1)` 或進階 `15*(level+1)` 的最大值。
+9. `0x54A27..0x54A87` 的敵意機率 threshold 已由 raw instructions 閉合：score 非負時為
+   `contactTurns/isqrt(score³+5)`，score 負時為 `contactTurns*(-score)`。尾端先消耗
+   `Random_(3)` 建立 action count，再消耗 `Random_(100)`；即使接觸未滿 10，這兩次 RNG
+   仍已發生。通過後依序選回傳 2、4、3 或 1；Repulsive gate 位於 type 2／4 之後。
 
 ## Remake 對映與限制
 
 - 已接：新增可持久化 `OriginalHumanTargetDecisionCooldown` 對映 `player+0x816`；大於 0
   時每世界回合遞減且不啟動新真人目標，成功派艦後依原版範圍寫 20–39。
+- 已接：新增可持久化 `OriginalHumanContactTurns` 對映 `player+0x88F`；現行 remake 尚未拆出
+  獨立接觸 bitset，因此可進外交畫面的 AI 視為已接觸，每回合遞增並封頂 250，未滿 10 不派艦。
+- 已接純規則：七欄 personality score、可表示的 relation／formal policy／Charismatic／Diplomat
+  基礎分、正負 threshold、原版 RNG 消耗順序與 0–4 結果分類。這些規則已有 fail-closed 測試，
+  但尚未用不完整 score 取代 shell fallback。
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。
-- 尚未閉合：`sub_544A1` 所需的完整 directional incident memory、排名／科技趨勢欄位與四類
-  結果。現行願戰來源仍是明示的 `DecideStance` 相容 fallback；本輪不把它升格為原版決策。
-
+- 尚未閉合：`sub_544A1` 所需的完整 directional incident memory、排名／科技趨勢與
+  `sub_4F93B` military-target availability。現行願戰來源仍是明示的 `DecideStance` 相容
+  fallback；四類尾端雖已閉合，不以不完整上游 score 升格整條決策。

@@ -205,9 +205,25 @@ func TestAIFleetETAGrowsWithDistance(t *testing.T) {
 func TestHumanTargetDecisionCooldownSurvivesSaveLoad(t *testing.T) {
 	s := newRaidTestSession(t)
 	s.AIPlayers[0].OriginalHumanTargetDecisionCooldown = 37
-	got := s.snapshot().restore().AIPlayers[0].OriginalHumanTargetDecisionCooldown
-	if got != 37 {
-		t.Fatalf("原版真人目標 decision cooldown 存讀檔後=%d，預期 37", got)
+	s.AIPlayers[0].OriginalHumanContactTurns = 123
+	got := s.snapshot().restore().AIPlayers[0]
+	if got.OriginalHumanTargetDecisionCooldown != 37 || got.OriginalHumanContactTurns != 123 {
+		t.Fatalf("原版真人目標狀態存讀檔後 cooldown/contact=%d/%d",
+			got.OriginalHumanTargetDecisionCooldown, got.OriginalHumanContactTurns)
+	}
+}
+
+func TestHumanContactTurnsIncrementAndCap(t *testing.T) {
+	s := newRaidTestSession(t)
+	s.AIPlayers = s.AIPlayers[:1]
+	s.AIPlayers[0].OriginalHumanContactTurns = 249
+	s.advanceAIFleets()
+	if got := s.AIPlayers[0].OriginalHumanContactTurns; got != 250 {
+		t.Fatalf("contact turns=%d，預期 250", got)
+	}
+	s.advanceAIFleets()
+	if got := s.AIPlayers[0].OriginalHumanContactTurns; got != 250 {
+		t.Fatalf("contact turns 不得超過 250，得到 %d", got)
 	}
 }
 

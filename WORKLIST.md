@@ -1144,9 +1144,11 @@
   寫 -75..-99 關係並點亮宣戰會談；raw 6 也已接入每回合關係成長／戰爭 -90 drift 與存檔。
   後續全庫 raw displacement 稽核已找到正常 producer `sub_53EDB → sub_544A1`：現已接入
   `player+0x816` 的 20–39 回合 decision cooldown 與存檔，並移除固定 12 回合寬限、1.25 倍
-  軍力門檻及誤用 losing-ground personality chance。`sub_544A1` 的完整 directional incident
-  memory、排名／科技趨勢與四類結果仍待 typed 化；目前願戰來源仍是明示的 `DecideStance`
-  fallback，不冒稱原版完成。見
+  軍力門檻及誤用 losing-ground personality chance。後續又閉合 `player+0x88F` 接觸後逐回合
+  遞增／250 上限／至少 10 回合 gate、`word_181080` 七欄 personality score、正負 score
+  threshold、RNG 消耗順序與四類結果純規則。`sub_544A1` 的完整 directional incident memory、
+  排名／科技趨勢與 `sub_4F93B` target availability 仍待 typed 化；目前願戰來源仍是明示的
+  `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與
   [`docs/spec/ai-human-formal-war-policy.md`](docs/spec/ai-human-formal-war-policy.md)、
   [`docs/re/ai-human-fleet-target-producer-audit-20260828.md`](docs/re/ai-human-fleet-target-producer-audit-20260828.md) 與

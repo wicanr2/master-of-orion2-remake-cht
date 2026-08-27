@@ -102,6 +102,8 @@ type AIOpponent struct {
 	// OriginalHumanTargetDecisionCooldown 對應原版 player+0x816（decimal +2070）。
 	// sub_53EDB 只在它為 0 時評估真人目標；類型 2 成功後寫 Random_(20)+20。
 	OriginalHumanTargetDecisionCooldown int `json:"originalHumanTargetDecisionCooldown,omitempty"`
+	// OriginalHumanContactTurns 對應 AI→目前真人方向的 player+0x88F；接觸後每回合遞增，封頂 250。
+	OriginalHumanContactTurns int `json:"originalHumanContactTurns,omitempty"`
 
 	// WantsAudience 是「這位對手正在請求會談」(原版 `Humans_Requesting_Diplomacy_` 那個
 	// 位元遮罩裡屬於它的那一位)。AudienceReason 是來意(宣戰/提議貿易/提議結盟)。
