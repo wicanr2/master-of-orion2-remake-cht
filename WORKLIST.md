@@ -413,6 +413,15 @@
   Summary 仍是明標手冊＋remake adapter，未升格為原版逐字／逐值 parity。證據與規格見
   [`docs/re/colony-summary-text-layout-audit-20260827.md`](docs/re/colony-summary-text-layout-audit-20260827.md) 與
   [`docs/spec/colony-summary-external-text.md`](docs/spec/colony-summary-external-text.md)。
+  艦艇設計已完成第四十五個切片：畫面轉場、建造回饋、艦體成本、元件屬性、射界、彈架、
+  掛載控制、解鎖摘要、空間分解與改造晶片文案均由 `ui.json` 供應，Go 僅保留穩定 key 與
+  動態數值。解鎖摘要／建造錯誤、空間表及改造區改成固定且互不侵入的雙軸安全框；runtime
+  字形量測另抓出 15px 晶片列距小於 16px 中文字形的必然重疊，現已改為四條 16px 列，
+  文字與點擊區共用邊界並在面板底界內結束。武器規則、成本、空間、射界、彈架與改造可用性
+  未被此文案切片更動；右上原版資訊面板逐字內容與部分操作控制流仍維持明標 adapter，未升格
+  為原版精確 parity。證據與規格見
+  [`docs/re/ship-design-screen-text-layout-audit-20260827.md`](docs/re/ship-design-screen-text-layout-audit-20260827.md) 與
+  [`docs/spec/ship-design-external-text.md`](docs/spec/ship-design-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

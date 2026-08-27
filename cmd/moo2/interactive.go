@@ -1076,7 +1076,7 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 			// 原版 Auto Select Ships 只在新進入艦隊操作時初始化；nil 與玩家手動
 			// 全不選的空 map 必須分開，否則畫面重建會把取消選取吃掉。
 			b.shipPick = nil
-			return b.goTo(b.fleet, "艦隊列表")
+			return b.goTo(b.fleet, uiText(b.lang, "fleet.transition.fleet"))
 		case "leaders":
 			b.officerTab = 0
 			return b.goTo(b.officer, "軍官列表")
@@ -4818,8 +4818,8 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 	modHits := make([]hitRegion, len(modOptions))
 	for i := range modOptions {
 		r := designModChipRect(i)
-		// 高度跟著 rowStep(15):寫死 18 會讓相鄰兩列的熱區重疊 3px,點在交界處會中到上一列。
-		modHits[i] = hitRegion{int(r.x), int(r.y) - 2, int(r.w), 15, fmt.Sprintf("mod:%d", i)}
+		// 高度與 16px 列距一致，讓點擊區和實際中文字形共用同一邊界。
+		modHits[i] = hitRegion{int(r.x), int(r.y), int(r.w), 16, fmt.Sprintf("mod:%d", i)}
 	}
 	hits = append(modHits, hits...)
 	onAction := func(a string) *origTransition {
@@ -4831,22 +4831,22 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			b.designAmmo = shell.NormalizeWeaponAmmo(shell.WeaponOptions[b.designWeapon].Name, 0)
 			b.designMsg = "" // 換元件可能改變空間是否超格,清掉舊的建造提示避免誤導
 			b.saveShipDesign()
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		case "armor":
 			b.designArmor = b.session.NextUnlockedComponent(shell.ArmorOptions, b.designArmor)
 			b.designMsg = ""
 			b.saveShipDesign()
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		case "shield":
 			b.designShield = b.session.NextUnlockedComponent(shell.ShieldOptions, b.designShield)
 			b.designMsg = ""
 			b.saveShipDesign()
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		case "special":
 			b.designSpecial = b.session.NextUnlockedSpecialForDesign(b.designHull, b.designSpecialMount, b.designSpecial)
 			b.designMsg = ""
 			b.saveShipDesign()
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		case "specialprev":
 			b.saveShipDesign()
 			design, _ := b.session.ShipDesign(b.designHull)
@@ -4854,7 +4854,7 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 				b.designSpecialMount--
 				b.loadShipDesign(b.designHull)
 			}
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		case "specialnext":
 			b.saveShipDesign()
 			design, _ := b.session.ShipDesign(b.designHull)
@@ -4862,14 +4862,14 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 				b.designSpecialMount++
 				b.loadShipDesign(b.designHull)
 			}
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		case "specialadd":
 			b.saveShipDesign()
 			if idx, ok := b.session.AddShipDesignSpecialMount(b.designHull); ok {
 				b.designSpecialMount = idx
 				b.loadShipDesign(b.designHull)
 			}
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		case "specialdel":
 			b.saveShipDesign()
 			if b.session.RemoveShipDesignSpecialMount(b.designHull, b.designSpecialMount) {
@@ -4878,17 +4878,17 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 				}
 				b.loadShipDesign(b.designHull)
 			}
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		case "arc":
 			b.designArc = shell.CycleWeaponArc(weaponName, b.designArc)
 			b.designMsg = ""
 			b.saveShipDesign()
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		case "ammo":
 			b.designAmmo = shell.CycleWeaponAmmo(weaponName, b.designAmmo)
 			b.designMsg = ""
 			b.saveShipDesign()
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		case "mountadd":
 			b.saveShipDesign()
 			if idx, ok := b.session.AddShipDesignMount(b.designHull, b.designMount); ok {
@@ -4896,7 +4896,7 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 				b.loadShipDesign(b.designHull)
 			}
 			b.designMsg = ""
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		case "mountdel":
 			b.saveShipDesign()
 			if b.session.RemoveShipDesignMount(b.designHull, b.designMount) {
@@ -4906,40 +4906,39 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 				b.loadShipDesign(b.designHull)
 			}
 			b.designMsg = ""
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		case "mountdec":
 			b.saveShipDesign()
 			b.session.AdjustShipDesignMountCount(b.designHull, b.designMount, -1)
 			b.loadShipDesign(b.designHull)
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		case "mountinc":
 			b.saveShipDesign()
 			b.session.AdjustShipDesignMountCount(b.designHull, b.designMount, 1)
 			b.loadShipDesign(b.designHull)
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		case "clear":
 			if b.session.ResetShipDesign(b.designHull) {
 				b.loadShipDesign(b.designHull)
 			}
 			b.designMsg = ""
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		case "cancel":
 			b.saveShipDesign()
-			return b.goTo(b.fleet, "艦隊列表")
+			return b.goTo(b.fleet, uiText(b.lang, "shipdesign.transition.fleet"))
 		case "build":
 			b.saveShipDesign()
 			design, _ := b.session.ShipDesign(b.designHull)
 			if !b.session.BlueprintDesignFits(design) {
-				b.designMsg = fmt.Sprintf(b.tr("空間不足,無法建造%s(目前元件+改造超出艦體空間上限)",
-					"%s does not fit — components plus mods exceed the hull space limit"), shipClassLabel(b.lang, design.Class))
-				return b.goTo(b.shipDesign, "艦艇設計")
+				b.designMsg = shipDesignText(b.lang, "shipdesign.message.no_space", shipClassLabel(b.lang, design.Class))
+				return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 			}
 			if !b.session.BuildShipDesign(b.designHull) {
-				b.designMsg = b.tr("國庫不足，無法建造目前設計。", "Insufficient treasury for this design.")
-				return b.goTo(b.shipDesign, "艦艇設計")
+				b.designMsg = uiText(b.lang, "shipdesign.message.no_treasury")
+				return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 			}
 			b.designMsg = ""
-			return b.goTo(b.fleet, "艦隊列表")
+			return b.goTo(b.fleet, uiText(b.lang, "shipdesign.transition.fleet"))
 		}
 		if strings.HasPrefix(a, "mod:") {
 			var idx int
@@ -4949,7 +4948,7 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 				b.designMsg = ""
 				b.saveShipDesign()
 			}
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		}
 		if strings.HasPrefix(a, "mount:") {
 			var idx int
@@ -4961,7 +4960,7 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 				b.loadShipDesign(b.designHull)
 			}
 			b.designMsg = ""
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		}
 		if _, ok := hullZH[a]; ok && b.session != nil {
 			b.saveShipDesign()
@@ -4973,10 +4972,10 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 				}
 			}
 			b.designMsg = ""
-			return b.goTo(b.shipDesign, "艦艇設計")
+			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		}
 		b.saveShipDesign()
-		return b.goTo(b.fleet, "艦隊列表")
+		return b.goTo(b.fleet, uiText(b.lang, "shipdesign.transition.fleet"))
 	}
 	overlays := []labelRect{{255, 12, 320, 24, "Ship Design", 0}}
 	// 六列艦體名的擦底帶跟著槽走(各留 2px 邊,不吃到浮雕框)。
@@ -5004,15 +5003,13 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		if b.designHull >= 0 && b.designHull < len(dsHullY) {
 			y0, y1 := dsHullY[b.designHull][0], dsHullY[b.designHull][1]
 			s.extras = append(s.extras, extraText{x: dsHullX0 - 9, y: float64(y0+y1)/2 - 6,
-				size: 12, text: ">", col: color.RGBA{240, 220, 120, 255}})
+				size: 12, text: uiText(b.lang, "shipdesign.marker.current"), col: color.RGBA{240, 220, 120, 255}})
 		}
-		// 價格跟著艦體槽的真實 y 走(dsHullY 不等距;先前照 60+17i 等距排,越往下偏越多,
-		// 最後一格會壓到下面的總價那一行)。
+		// 價格欄保留原槽順序，但以六條連續 16px 安全列容納 runtime 中文字形；
+		// 不改原版不等高的艦體點擊槽，兩者中心誤差最多 1px。
 		for i, cl := range classes {
-			y0, y1 := dsHullY[i][0], dsHullY[i][1]
-			s.extras = append(s.extras, extraText{
-				x: float64(dsHullX1 + 16), y: float64(y0+y1)/2 - 6, size: 11,
-				text: fmt.Sprintf("%d BC", shell.ShipCost(cl)), col: body, align: 0})
+			s.extras = append(s.extras, shipDesignHullCostRect(i).leftExtras(b.fnt,
+				shipDesignText(b.lang, "shipdesign.hull.cost", shell.ShipCost(cl)), 8, body)...)
 		}
 		// 四類元件(點擊各列循環選擇),顯示名稱 + 效果 + 成本。
 		w := shell.WeaponOptions[b.designWeapon]
@@ -5026,52 +5023,50 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			c     shell.Component
 			eff   string
 		}{
-			{b.tr("武器", "Weapon"), w, fmt.Sprintf(b.tr("+%d攻", "+%d atk"), w.Value)},
-			{b.tr("裝甲", "Armor"), ar, fmt.Sprintf("+%dHP", ar.Value)},
-			{b.tr("護盾", "Shield"), sd, fmt.Sprintf("+%dHP", sd.Value)},
-			{b.tr("特殊", "Special"), sp, ""},
+			{uiText(b.lang, "shipdesign.component.weapon"), w, shipDesignText(b.lang, "shipdesign.component.attack", w.Value)},
+			{uiText(b.lang, "shipdesign.component.armor"), ar, shipDesignText(b.lang, "shipdesign.component.hp", ar.Value)},
+			{uiText(b.lang, "shipdesign.component.shield"), sd, shipDesignText(b.lang, "shipdesign.component.hp", sd.Value)},
+			{uiText(b.lang, "shipdesign.component.special"), sp, ""},
 		}
 		for i, r := range rows {
 			// 面板內高只有 55..149(量自背景圖:上邊框 51/53、下邊框 151/153),四列
 			// 用 69+24i 排的話末列(「特殊」)畫到 153,**剛好被下邊框切掉一半**。
 			// 改成 60+22i → 60/82/104/126,末列墨水收在 140,離下邊框還有 9px。
-			y := float64(60 + i*22)
-			s.extras = append(s.extras,
-				// ⚠ 分隔符用 ASCII 冒號,不用 `▸`(U+25B8)。中文模式走 bitmapfont 點陣路徑有這個字,
-				// **英文模式走純向量字沒有**,畫出來是豆腐框——同一個字串在兩種語言下走不同字型,
-				// 而只看中文截圖永遠看不到。挑字元的原則:兩條字型路徑都保證有的才用。
-				extraText{x: 305, y: y, size: 12,
-					text: r.label + ": " + componentLabel(b.lang, r.c), col: gold, maxW: 157})
+			s.extras = append(s.extras, shipDesignComponentNameRect(i).leftExtras(b.fnt,
+				shipDesignText(b.lang, "shipdesign.component.line", r.label, componentLabel(b.lang, r.c)), 9, gold)...)
 			if i < 3 {
-				s.extras = append(s.extras, extraText{x: 470, y: y, size: 11,
-					text: fmt.Sprintf("%s %dBC", r.eff, r.c.Cost), col: color.RGBA{200, 208, 225, 255}, maxW: 162})
+				s.extras = append(s.extras, shipDesignComponentEffectRect(i).leftExtras(b.fnt,
+					shipDesignText(b.lang, "shipdesign.component.effect_cost", r.eff, r.c.Cost), 8,
+					color.RGBA{200, 208, 225, 255})...)
 			}
 		}
 		for _, ctl := range []struct{ action, label string }{
-			{"specialprev", "<"}, {"specialnext", ">"}, {"specialadd", "+"}, {"specialdel", "-"},
+			{"specialprev", uiText(b.lang, "shipdesign.control.previous")},
+			{"specialnext", uiText(b.lang, "shipdesign.control.next")},
+			{"specialadd", uiText(b.lang, "shipdesign.control.add")},
+			{"specialdel", uiText(b.lang, "shipdesign.control.remove")},
 		} {
 			r := designSpecialControlRect(ctl.action)
 			s.extraPanels = append(s.extraPanels, extraPanel{x: r[0], y: r[1], w: r[2], h: r[3],
 				fill: color.RGBA{25, 31, 45, 255}, border: color.RGBA{105, 120, 145, 255}})
-			s.extras = append(s.extras, centeredExtraTextInRect(r[0], r[1], r[2], r[3], 9, ctl.label, body))
+			s.extras = append(s.extras, centeredExtraTextInSafeRect(shipDesignControlTextRect(r), 8, ctl.label, body))
 		}
-		s.extras = append(s.extras, extraText{x: 470, y: 126, size: 9,
-			text: fmt.Sprintf("S %d/%d", b.designSpecialMount+1, len(blueprint.Specials)), col: body, maxW: 46})
+		s.extras = append(s.extras, shipDesignComponentEffectRect(3).leftExtras(b.fnt,
+			shipDesignText(b.lang, "shipdesign.special.slot", b.designSpecialMount+1, len(blueprint.Specials)), 8, body)...)
 		arcPercent := gamedata.WeaponArcCostPercent(designArc)
 		arcLabel := shell.WeaponArcLabelZH(designArc)
 		if b.lang == i18n.English {
 			arcLabel = shell.WeaponArcLabelEN(designArc)
 		}
-		s.extras = append(s.extras, extraText{x: 305, y: 148, size: 10,
-			text: fmt.Sprintf(b.tr("火線角: %s (+%d%%佔格/成本)", "Weapon arc: %s (+%d%% space/cost)"), arcLabel, arcPercent),
-			col:  color.RGBA{190, 205, 235, 255}, maxW: 327})
+		s.extras = append(s.extras, shipDesignArcTextRect().leftExtras(b.fnt,
+			shipDesignText(b.lang, "shipdesign.arc", arcLabel, arcPercent), 9, color.RGBA{190, 205, 235, 255})...)
 		ammo := shell.NormalizeWeaponAmmo(w.Name, b.designAmmo)
-		ammoText := b.tr("彈藥: 固定", "Ammo: fixed")
+		ammoText := uiText(b.lang, "shipdesign.ammo.fixed")
 		if shell.WeaponUsesVariableMissileRack(w.Name) {
-			ammoText = fmt.Sprintf(b.tr("飛彈彈架: %d 發(點擊切換)", "Missile rack: %d shots (click to cycle)"), ammo)
+			ammoText = shipDesignText(b.lang, "shipdesign.ammo.variable", ammo)
 		}
-		s.extras = append(s.extras, extraText{x: 305, y: 162, size: 10, text: ammoText,
-			col: color.RGBA{190, 205, 235, 255}, maxW: 327})
+		s.extras = append(s.extras, shipDesignAmmoTextRect().leftExtras(b.fnt,
+			ammoText, 9, color.RGBA{190, 205, 235, 255})...)
 		designHull := shipClassZH[b.designHull] // shell 的 key(見 shipClassZH 註解)
 		total, totalKnown := b.session.BlueprintDesignCost(blueprint)
 		// 各類已解鎖元件數(需研究對應科技解鎖進階元件)。
@@ -5097,62 +5092,57 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			}
 			if i < len(blueprint.WeaponMounts) {
 				s.extraPanels = append(s.extraPanels, extraPanel{x: x, y: y, w: w, h: h, fill: face, border: color.RGBA{105, 120, 145, 255}})
-				s.extras = append(s.extras, centeredExtraTextInRect(x, y, w, h, 10, fmt.Sprintf("%d", i+1), body))
+				s.extras = append(s.extras, centeredExtraTextInSafeRect(
+					shipDesignControlTextRect(r), 8, fmt.Sprintf("%d", i+1), body))
 			}
 		}
 		for _, ctl := range []struct {
 			action string
 			label  string
 		}{
-			{"mountadd", b.tr("新增", "ADD")}, {"mountdel", b.tr("刪除", "DEL")},
-			{"mountdec", "-"}, {"mountinc", "+"},
+			{"mountadd", uiText(b.lang, "shipdesign.control.mount_add")},
+			{"mountdel", uiText(b.lang, "shipdesign.control.mount_delete")},
+			{"mountdec", uiText(b.lang, "shipdesign.control.remove")},
+			{"mountinc", uiText(b.lang, "shipdesign.control.add")},
 		} {
 			r := designMountControlRect(ctl.action)
 			s.extraPanels = append(s.extraPanels, extraPanel{x: r[0], y: r[1], w: r[2], h: r[3],
 				fill: color.RGBA{25, 31, 45, 255}, border: color.RGBA{105, 120, 145, 255}})
-			s.extras = append(s.extras, centeredExtraTextInRect(r[0], r[1], r[2], r[3], 9, ctl.label, body))
+			s.extras = append(s.extras, centeredExtraTextInSafeRect(shipDesignControlTextRect(r), 8, ctl.label, body))
 		}
-		totalText := fmt.Sprintf(b.tr("%s總價 %d BC；槽 %d/%d ×%d", "%s total %d BC; mount %d/%d ×%d"),
+		totalText := shipDesignText(b.lang, "shipdesign.total",
 			shipClassLabel(b.lang, designHull), total, b.designMount+1, len(blueprint.WeaponMounts), mountCount)
 		if !totalKnown {
-			totalText = b.tr("設計含未知原版裝備，無法安全計價／建造", "Unknown original equipment; cannot price or build safely")
+			totalText = uiText(b.lang, "shipdesign.total.unknown")
 		}
-		s.extras = append(s.extras,
-			extraText{x: 305, y: 222, size: 11, text: totalText, col: color.RGBA{170, 220, 180, 255}, maxW: 327},
-			// 左下第一個框的內緣量測值:x 19..140、y 441..465(邊框 141/142 與 440/466)。
-			// 原本寫 (12,460) 在框**外面**,壓在左邊框與下邊框的交角上。
-			extraText{x: 24, y: 447, size: 12,
-				text: fmt.Sprintf(b.tr("國庫 %d BC", "Treasury %d BC"), b.session.Player.BC), col: gold})
+		s.extras = append(s.extras, shipDesignTotalTextRect().leftExtras(b.fnt,
+			totalText, 9, color.RGBA{170, 220, 180, 255})...)
+		s.extras = append(s.extras, shipDesignTreasuryTextRect().leftExtras(b.fnt,
+			shipDesignText(b.lang, "shipdesign.treasury", b.session.Player.BC), 9, gold)...)
 
-		// 「已解鎖」這一行**依實際量測折行**,不是硬塞成一行。
+		// 「已解鎖」或建造錯誤使用固定兩行安全框，不再依折行數推動下游區塊。
 		//
 		// ⚠ 先前是單行寫死在 x=305:中文版尾巴「(研究科技解鎖進階元件)」被畫布右緣切掉,
 		// 英文版更長。**這種缺口截圖看得到、測試看不到**——沒有任何測試在量文字寬度。
 		// 這一段之後每加一個元件字串都會更長(特殊系統這一輪就從 32 個變成 38 個),
 		// 所以修法不能是「把字改短」,要真的折行。
-		const dsTextX, dsTextRight = 305.0, 632.0
-		unlockLines := b.fnt.Wrap(fmt.Sprintf(b.tr(
-			"已解鎖 武器%d/%d 裝甲%d/%d 護盾%d/%d 特殊%d/%d(研究科技解鎖進階元件)",
-			"Unlocked: weapons %d/%d armor %d/%d shields %d/%d special %d/%d (research unlocks more)"),
+		unlockText := shipDesignText(b.lang, "shipdesign.unlocked",
 			cnt(shell.WeaponOptions), len(shell.WeaponOptions), cnt(shell.ArmorOptions), len(shell.ArmorOptions),
-			cnt(shell.ShieldOptions), len(shell.ShieldOptions), cnt(shell.SpecialOptions), len(shell.SpecialOptions)),
-			11, dsTextRight-dsTextX)
-		for i, ln := range unlockLines {
-			s.extras = append(s.extras, extraText{x: dsTextX, y: 240 + float64(i)*14, size: 11,
-				text: ln, col: color.RGBA{170, 200, 240, 255}})
+			cnt(shell.ShieldOptions), len(shell.ShieldOptions), cnt(shell.SpecialOptions), len(shell.SpecialOptions))
+		if b.designMsg != "" {
+			unlockText = b.designMsg
 		}
+		s.extras = append(s.extras, shipDesignStatusTextRect().leftExtras(b.fnt,
+			unlockText, 9, color.RGBA{170, 200, 240, 255})...)
 
 		// 空間預算/已用(依目前選定元件即時計算):逐艦體列出「空間:已用／總」,超格轉紅並標
 		// 「空間不足」。底部 BUILD 用同一份 session 判斷擋下建造(不扣款、不入艦隊)，
 		// designMsg 顯示擋下提示——顯示與建造驗證共用同一份判斷，不會不一致。
 		// ⚠ 六列單欄 17px 間距會**壓到面板下緣的分隔線**(末日之星那一列直接掉進下一格)。
 		// 改成 **3 列 × 2 欄**:同樣六筆,高度從 102px 降到 45px,整塊留在面板內。
-		// 欄寬 163px 是量出來的(dsTextRight−dsTextX 的一半),不是猜的。
-		spaceHeaderY := 240 + float64(len(unlockLines))*14
-		s.extras = append(s.extras, extraText{x: dsTextX, y: spaceHeaderY, size: 12,
-			text: b.tr("各艦體空間(依目前元件):", "Space per hull (with current components):"), col: gold, maxW: dsTextRight - dsTextX})
-		const dsSpaceRows = 3
-		dsSpaceColW := (dsTextRight - dsTextX) / 2
+		// 欄寬 166px 由固定右側內容區 300..632 對半分配。
+		s.extras = append(s.extras, shipDesignSpaceHeaderRect().leftExtras(b.fnt,
+			uiText(b.lang, "shipdesign.space.header"), 9, gold)...)
 		okCol := color.RGBA{170, 220, 180, 255}
 		badCol := color.RGBA{230, 90, 90, 255}
 		for i, cl := range classes {
@@ -5166,43 +5156,28 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 				totalSp = b.session.HullSpaceFor(cl)
 			}
 			fits := known && used <= totalSp
-			txt := fmt.Sprintf(b.tr("%s 空間:%d／%d", "%s space %d/%d"), shipClassLabel(b.lang, cl), used, totalSp)
+			txt := shipDesignText(b.lang, "shipdesign.space.row", shipClassLabel(b.lang, cl), used, totalSp)
 			col := okCol
 			if !known {
-				txt = fmt.Sprintf(b.tr("%s 空間:未知", "%s space: unknown"), shipClassLabel(b.lang, cl))
+				txt = shipDesignText(b.lang, "shipdesign.space.unknown", shipClassLabel(b.lang, cl))
 				col = badCol
 			} else if !fits {
-				txt += b.tr("(空間不足)", " (over capacity)")
+				txt += uiText(b.lang, "shipdesign.space.over")
 				col = badCol
 			}
-			s.extras = append(s.extras, extraText{
-				x:    dsTextX + float64(i/dsSpaceRows)*dsSpaceColW,
-				y:    spaceHeaderY + 16 + float64(i%dsSpaceRows)*15,
-				size: 11, text: txt, col: col, maxW: dsSpaceColW - 6})
-		}
-		if b.designMsg != "" {
-			// 兩欄之後這塊只有 3 列高;訊息接在它下面,並且**也折行**
-			// ——「空間不足,無法建造末日之星(目前元件+改造超出艦體空間上限)」比一行長。
-			msgY := spaceHeaderY + 16 + dsSpaceRows*15 + 6
-			for i, ln := range b.fnt.Wrap(b.designMsg, 12, dsTextRight-dsTextX) {
-				s.extras = append(s.extras, extraText{x: dsTextX, y: msgY + float64(i)*15, size: 12,
-					text: ln, col: badCol})
-			}
+			s.extras = append(s.extras, shipDesignSpaceRowRect(i).leftExtras(b.fnt, txt, 8, col)...)
 		}
 
 		// 武器改造(mod)勾選 chip:順序對齊上方 modOptions 與 mod:0..N 熱區。已勾選
 		// 轉金色高亮,未勾選灰色；只有目前武器適用的改造會出現在這裡。
-		modHeaderY := 352.0
-		modHeaderTxt := b.tr("武器改造(點擊切換,適用項目):", "Weapon mods (click to toggle; applicable mods):")
+		modHeaderTxt := uiText(b.lang, "shipdesign.mods.available")
 		if len(modOptions) == 0 {
-			modHeaderTxt = b.tr("武器改造(此武器沒有已接線的適用項目):",
-				"Weapon mods (no connected mods apply to this weapon):")
+			modHeaderTxt = uiText(b.lang, "shipdesign.mods.none")
 		}
-		s.extras = append(s.extras, extraText{x: 305, y: modHeaderY, size: 11, text: modHeaderTxt, col: gold, maxW: dsTextRight - dsTextX})
+		s.extras = append(s.extras, shipDesignModHeaderRect().leftExtras(b.fnt, modHeaderTxt, 8, gold)...)
 		activeCol := color.RGBA{240, 220, 120, 255}
 		inactiveCol := color.RGBA{150, 155, 165, 255}
 		for i, mod := range modOptions {
-			r := designModChipRect(i) // 與熱區同一份座標
 			chipCol := inactiveCol
 			if shell.HasWeaponMod(b.designMods, mod) {
 				chipCol = activeCol
@@ -5211,7 +5186,7 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			if b.lang == i18n.English {
 				modLabel = shell.WeaponModLabelEN(mod)
 			}
-			s.extras = append(s.extras, extraText{x: r.x, y: r.y, size: 10, text: modLabel, col: chipCol, maxW: r.w - 6})
+			s.extras = append(s.extras, shipDesignModTextRect(i).leftExtras(b.fnt, modLabel, 8, chipCol)...)
 		}
 	}
 	return s, nil
@@ -7205,10 +7180,9 @@ func designModChipRect(i int) struct{ x, y, w float64 } {
 		x0      = 305.0 // 與同一面板其他文字的左緣一致
 		right   = 632.0 // 畫布右緣留 8px
 		rows    = 4
-		rowStep = 15.0
-		// 面板下邊框量在 y=431。舊值 y0=370/step=16 讓末列畫到 428,**貼著邊框**,
-		// 2× 畫布上看得出來被切。改 366/15 → 366/381/396/411,末列墨水收在 424。
-		// 標題在 352(高 11px,到 363),366 起不會疊到標題。
+		rowStep = 16.0
+		// 面板下邊框量在 y=431。四列使用 16px 字形高度與列距，位置為
+		// 366/382/398/414，末列止於 430；標題止於 366，兩者只共用邊界。
 		// 先前 4 欄 × 22px 兩列的版面在英文下會疊字,改 2 欄 4 列之後行高才收得緊。
 		y0 = 366.0
 	)
