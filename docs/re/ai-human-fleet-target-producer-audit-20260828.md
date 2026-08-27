@@ -83,6 +83,14 @@
 18. `player+0x28` 已由既有 `sub_589D6` 證據保存為 `OriginalAITechProfile.Raw6`；此次只
     增加獨立 known 狀態。GAM parser 的 `save.Player.Objective` 正是該 raw byte，但因
     `+0x205／+0x206` 未解析，仍不把整份 profile 標為 known。
+19. `sub_DCB47 @ 0xDCB47..0xDCBB0` 的 raw prologue 先保存 `eax` source，再由 `dl` 建 target
+    mask；因此 Hex-Rays 顯示的未初始化 `v6` 是反編譯假象。`sub_FF666 @ 0xFF666..0xFF68A`
+    讀 source `player+0x324` 後呼叫 `sub_FF5F8 @ 0xFF5F8..0xFF666`；後者先檢查 source，
+    再檢查 source 對其正式聯盟 raw 2 的其他 player。
+20. `sub_FF4E9 @ 0xFF4E9..0xFF593` 對含指定 player 人口 mask 的殖民地，以原版星圖座標
+    判斷 `dx²+dy² <= 900*fuelRange²`；`sub_FF593 @ 0xFF593..0xFF5F8` 另有 target 蟲洞
+    `+0x29` 與 partner star mask `+0x33` 支線。無蟲洞距離契約已證實；蟲洞 mask 的完整
+    語意仍標為 unknown，remake 不以 `Star.Owner` 猜測替代。
 
 ## Remake 對映與限制
 
@@ -105,7 +113,8 @@
   score／行動上限 consumer。玩家↔AI 的逐艦方向 `+0x5EC` shell producer 已泛化：雙方
   皆依 owner 艦艇與 observer 科技／引擎／種族防禦計算，任一 raw 缺欄就失敗即關閉。
 - 已接純規則：上述 `+0x60E`、government 3、食物赤字、government 1 與 government 0
-  分支的 gate／算式；尚未把缺少 typed producer 的 `sub_DCB47` 計數偽造為零。
+  分支的 gate／算式。`sub_DCB47` 無蟲洞 producer 已接 typed 人口群、殖民星、聯盟與燃料
+  距離；人口群／燃料未知或目標需要尚未閉合的蟲洞 mask 時失敗即關閉。
 - 已接垂直鏈：玩家 `break_formal` 除既有永久 `+0x727` 外，現在也依受害 AI personality
   寫 signed `+0x7EE` 與受害 slot `+0x7F6`，通過 JSON 往返；純規則依原版 `3*x/5`
   與 176／177 原因碼消費。經濟協議解約仍有負對照。
@@ -113,7 +122,7 @@
   覆寫、government 1、grievance、國力、人口、歷史、條約、personality、target raw
   modifier、Charismatic、Diplomat 與難度，保留 worst term／reason／action limit。
 - 已接 shell typed producer：新局可由雙向逐艦國力、人口、歷史與持久 raw 組合上述 score；
-  government 0 缺 `sub_DCB47`、GAM／舊 JSON 缺 incident、歷史不足時失敗即關閉。它尚未
+  government 0 蟲洞支線、GAM／舊 JSON 缺 incident、歷史不足時失敗即關閉。它尚未
   取代正常發兵 fallback，因 `sub_4F93B` 完整候選 availability 仍未閉合。
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複

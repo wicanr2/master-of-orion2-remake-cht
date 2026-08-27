@@ -1,8 +1,120 @@
 package shell
 
 import (
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
+
+type originalPopulationColony struct {
+	colony engine.ColonyState
+	star   int
+}
+
+func colonyHasOriginalRaceSlot(colony engine.ColonyState, slot int) (bool, bool) {
+	if slot < 0 || !engine.PopulationGroupsComplete(colony) {
+		return false, false
+	}
+	for _, group := range colony.PopulationGroups {
+		if !group.RaceSlotKnown {
+			return false, false
+		}
+		if group.RaceSlot == slot && populationGroupUnits(group) > 0 {
+			return true, true
+		}
+	}
+	return false, true
+}
+
+// originalAIHumanGovernmentZeroReachability 對映 sub_DCB47 → sub_FF666 →
+// sub_FF5F8/sub_FF593/sub_FF4E9 的無蟲洞分支。每個含 target 人口的殖民地若也含 source
+// 人口加 5；否則只要 source 或其聯盟方任一人口殖民地在 source fuel range 內便加 1。
+// sub_FF593 的蟲洞 star-mask 語意尚未閉合，所以遇到需要該支線的目標時失敗即關閉。
+func (s *GameSession) originalAIHumanGovernmentZeroReachability(aiIndex int) (int, bool) {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) {
+		return 0, false
+	}
+	source := &s.AIPlayers[aiIndex]
+	if !source.PopulationRaceSlotKnown {
+		return 0, false
+	}
+	rangeParsecs, ok := originalAIFuelRangeParsecs(source.Player)
+	if !ok {
+		return 0, false
+	}
+	colonies := make([]originalPopulationColony, 0, len(s.PlayerColonies)+len(source.Colonies))
+	if len(s.PlayerColonies) != len(s.PlayerColonyStars) {
+		return 0, false
+	}
+	for i := range s.PlayerColonies {
+		colonies = append(colonies, originalPopulationColony{s.PlayerColonies[i], s.PlayerColonyStars[i]})
+	}
+	for i := range s.AIPlayers {
+		owner := &s.AIPlayers[i]
+		if len(owner.Colonies) != len(owner.ColonyStars) {
+			return 0, false
+		}
+		for j := range owner.Colonies {
+			colonies = append(colonies, originalPopulationColony{owner.Colonies[j], owner.ColonyStars[j]})
+		}
+	}
+
+	alliedSlots := map[int]bool{source.PopulationRaceSlot: true}
+	if source.Treaty.FormalPolicy == gamedata.DIPLO_ALLIANCE {
+		alliedSlots[0] = true
+	}
+	for i := range s.AIPlayers {
+		if i == aiIndex || !s.AIPlayers[i].PopulationRaceSlotKnown || aiIndex >= len(s.AIPolicies) ||
+			i >= len(s.AIPolicies[aiIndex]) {
+			continue
+		}
+		if s.AIPolicies[aiIndex][i] == gamedata.DIPLO_ALLIANCE {
+			alliedSlots[s.AIPlayers[i].PopulationRaceSlot] = true
+		}
+	}
+
+	bases := make([]int, 0, len(colonies))
+	for _, item := range colonies {
+		for slot := range alliedSlots {
+			has, known := colonyHasOriginalRaceSlot(item.colony, slot)
+			if !known {
+				return 0, false
+			}
+			if has {
+				bases = append(bases, item.star)
+				break
+			}
+		}
+	}
+
+	score := 0
+	for _, item := range colonies {
+		hasTarget, known := colonyHasOriginalRaceSlot(item.colony, 0)
+		if !known {
+			return 0, false
+		}
+		if !hasTarget {
+			continue
+		}
+		hasSource, known := colonyHasOriginalRaceSlot(item.colony, source.PopulationRaceSlot)
+		if !known {
+			return 0, false
+		}
+		if hasSource {
+			score += 5
+			continue
+		}
+		if item.star < 0 || item.star >= len(s.Stars) {
+			return 0, false
+		}
+		if s.Stars[item.star].Wormhole >= 0 {
+			return 0, false
+		}
+		if anyOriginalAIColonyInRange(s, item.star, bases, float64(rangeParsecs)) {
+			score++
+		}
+	}
+	return score, true
+}
 
 // originalAIHumanPopulationTrend 從 remake 的時間排序 350 格環取得原版目前／40 格前人口值。
 func (s *GameSession) originalAIHumanPopulationTrend(aiIndex int) (int, bool) {
@@ -67,9 +179,12 @@ func (s *GameSession) originalAIHumanTargetScore(aiIndex int,
 		return gamedata.OriginalHumanTargetScoreResult{}, 0, false
 	}
 	government := originalAIRelationGovernment(*a)
-	// government raw 0 需要 sub_DCB47 的殖民地 player-mask／可達計數；未 typed 前失敗即關閉。
+	reachability, reachabilityKnown := 0, false
 	if government == 0 {
-		return gamedata.OriginalHumanTargetScoreResult{}, 0, false
+		reachability, reachabilityKnown = s.originalAIHumanGovernmentZeroReachability(aiIndex)
+		if !reachabilityKnown {
+			return gamedata.OriginalHumanTargetScoreResult{}, 0, false
+		}
 	}
 	sourcePower, targetPower, exact := s.originalAIHumanDirectionalFleetPower(aiIndex)
 	if !exact {
@@ -101,11 +216,11 @@ func (s *GameSession) originalAIHumanTargetScore(aiIndex int,
 		TargetPopulationCapacity: targetCapacity, ForceWarRaw: a.OriginalWarFlag60ERaw,
 		FoodDeficitTurns: a.OriginalFoodDeficitTurns, PowerRatio: powerRatio,
 		GovernmentOneTargetValue: targetValue, GovernmentOneTargetExists: targetValue > 0,
-		GovernmentZeroReachabilityKnown: false,
-		IncidentMemory:                  a.OriginalHumanIncidentMemoryRaw,
-		IncidentReason:                  a.OriginalHumanIncidentReasonRaw,
-		TreatyGrievance:                 a.OriginalHumanTreatyGrievanceRaw,
-		TreatyVictimRaw:                 a.OriginalHumanTreatyVictimRaw, TreatyVictimKnown: a.OriginalHumanTreatyVictimKnown,
+		GovernmentZeroReachability: reachability, GovernmentZeroReachabilityKnown: reachabilityKnown,
+		IncidentMemory:  a.OriginalHumanIncidentMemoryRaw,
+		IncidentReason:  a.OriginalHumanIncidentReasonRaw,
+		TreatyGrievance: a.OriginalHumanTreatyGrievanceRaw,
+		TreatyVictimRaw: a.OriginalHumanTreatyVictimRaw, TreatyVictimKnown: a.OriginalHumanTreatyVictimKnown,
 		SourceRaw: a.PopulationRaceSlot, PopulationDominance: dominance, PopulationTrend: trend,
 		TargetRaw1DFIs3: int(s.Government) == 3, TargetCharismatic: s.RaceCharismatic(),
 		TargetBetrayedHonorable: a.OriginalHumanBetrayalRaw,

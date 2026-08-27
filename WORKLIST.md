@@ -1162,8 +1162,9 @@
   亦已泛化，雙方 owner／observer 科技、引擎、種族攻防與領袖各自生效，缺 raw 失敗即關閉。
   後續 IDA 又訂正 `sub_E5B17` 為 target 殖民人口容量加總、`sub_DCB47` 為殖民地 player-mask
   可達計數；`+0x60E` 人口壓力、government 3 難度骰、食物赤字、government 1 目標值與
-  government 0 可達骰均已拆成保留嚴格不等號及 RNG 邊界的純規則。後者仍缺殖民地可達
-  typed producer，因此完整 score 尚不升格。
+  government 0 可達骰均已拆成保留嚴格不等號及 RNG 邊界的純規則。`sub_DCB47 →
+  sub_FF666 → sub_FF5F8／sub_FF593／sub_FF4E9` 又閉合無蟲洞距離鏈：同殖民地 +5，
+  source／聯盟人口殖民地在燃料距離內 +1；蟲洞 star-mask 尚未知時失敗即關閉。
   `+0x7EE／+0x7F6` 亦由全庫 operand 掃描閉合為 `sub_5138E` 正式違約記憶：玩家
   `break_formal` 現依受害 AI personality 寫 -10／-20、記錄受害 slot 並持久化；
   `3*x/5` 與原因 176／177 已接純規則，普通貿易解約不誤寫。
@@ -1172,7 +1173,7 @@
   組成單一 ordered composer 與 shell typed producer，會輸出 score／worst reason／action
   limit；缺 incident、歷史、精確雙向國力或 government 0 可達資料時失敗即關閉。
   正常發兵仍未切換，最後主要阻塞是 `sub_4F93B` 科技／殖民地候選 availability 與
-  government 0 `sub_DCB47` producer。
+  `sub_FF593` 蟲洞 star-mask 支線。
   目前願戰來源仍是明示的
   `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與

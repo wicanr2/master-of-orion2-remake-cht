@@ -52,6 +52,10 @@ ROOTS = {
     "raw_human_target_power_ratio": 0x500CF,
     "raw_human_target_special_e5b17": 0xE5B17,
     "raw_human_target_special_dcb47": 0xDCB47,
+    "raw_colony_source_reachability_ff666": 0xFF666,
+    "raw_colony_range_test_ff5f8": 0xFF5F8,
+    "raw_colony_direct_range_test_ff593": 0xFF593,
+    "raw_colony_distance_range_test_ff4e9": 0xFF4E9,
 }
 PERSONALITY_SCORE_TABLE_EA = 0x181080
 INCIDENT_DIVISOR_TABLE_EA = 0x180CF0
@@ -121,6 +125,35 @@ def caller_layers(root, depth):
     return layers
 
 
+def compact_caller_layers(root, depth):
+    layers = []
+    root_fn = ida_funcs.get_func(root)
+    if root_fn is None:
+        return layers
+    frontier = {root_fn.start_ea}
+    seen = set(frontier)
+    for _ in range(depth):
+        callers = {}
+        for target in frontier:
+            for xref in idautils.XrefsTo(target, 0):
+                fn = ida_funcs.get_func(xref.frm)
+                if fn is None or fn.start_ea in seen:
+                    continue
+                row = callers.setdefault(f"0x{fn.start_ea:X}", {
+                    "original_name": ida_name.get_name(fn.start_ea) or "<unnamed>",
+                    "start_ea": f"0x{fn.start_ea:X}",
+                    "end_ea": f"0x{fn.end_ea:X}",
+                    "call_sites": [],
+                })
+                row["call_sites"].append(instruction(xref.frm))
+        layers.append(callers)
+        frontier = {int(ea, 16) for ea in callers}
+        seen.update(frontier)
+        if not frontier:
+            break
+    return layers
+
+
 def operand_matches(patterns):
     matches = []
     for fn_ea in idautils.Functions():
@@ -170,6 +203,12 @@ def main():
         "semantic_status": "unknown_pending_review",
         "roots": {name: function_record(ea) for name, ea in ROOTS.items()},
         "raw_fleet_target_arrival_caller_layers": caller_layers(ROOTS["raw_fleet_target_arrival"], 4),
+        "raw_diplomatic_action_availability_caller_layers": compact_caller_layers(
+            ROOTS["raw_diplomatic_action_availability"], 4
+        ),
+        "raw_human_target_special_dcb47_caller_layers": compact_caller_layers(
+            ROOTS["raw_human_target_special_dcb47"], 3
+        ),
         "raw_ai_record_target_operand_matches": operand_matches(["7C7h", "7CAh"]),
         "raw_human_target_gate_operand_matches": operand_matches(["74Fh", "816h", "88Fh"]),
         "raw_human_target_incident_operand_matches": operand_matches(["6CFh", "71Fh"]),

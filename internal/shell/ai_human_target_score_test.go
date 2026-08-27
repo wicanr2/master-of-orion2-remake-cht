@@ -4,7 +4,61 @@ import (
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
+
+func originalTargetPopulationColony(slot int) engine.ColonyState {
+	return engine.ColonyState{
+		Population: 1, Farmers: 1, OwnerRaceSlot: slot, OwnerRaceSlotKnown: true, OwnerRaceProfileKnown: true,
+		PopulationGroups: []engine.PopulationGroup{{
+			RaceSlot: slot, RaceSlotKnown: true, ProfileKnown: true, Farmers: 1,
+		}},
+	}
+}
+
+func TestOriginalAIHumanGovernmentZeroReachabilityCountsRangeAndSharedColony(t *testing.T) {
+	s := &GameSession{
+		Stars:             []Star{{X: 0.10, Y: 0.10, Wormhole: -1}, {X: 0.11, Y: 0.10, Wormhole: -1}},
+		PlayerColonies:    []engine.ColonyState{originalTargetPopulationColony(0)},
+		PlayerColonyStars: []int{0},
+		AIPlayers: []AIOpponent{{
+			PopulationRaceSlot: 1, PopulationRaceSlotKnown: true,
+			Player: engine.PlayerState{GrantedTechs: map[gamedata.Technology]bool{
+				gamedata.TECH_STANDARD_FUEL_CELLS: true,
+			}},
+			Colonies:    []engine.ColonyState{originalTargetPopulationColony(1)},
+			ColonyStars: []int{1},
+		}},
+	}
+	if got, ok := s.originalAIHumanGovernmentZeroReachability(0); !ok || got != 1 {
+		t.Fatalf("range score=%d ok=%v, want 1/true", got, ok)
+	}
+	s.PlayerColonies[0].Population = 2
+	s.PlayerColonies[0].Farmers = 2
+	s.PlayerColonies[0].PopulationGroups = append(s.PlayerColonies[0].PopulationGroups,
+		engine.PopulationGroup{RaceSlot: 1, RaceSlotKnown: true, ProfileKnown: true, Farmers: 1})
+	if got, ok := s.originalAIHumanGovernmentZeroReachability(0); !ok || got != 5 {
+		t.Fatalf("shared-colony score=%d ok=%v, want 5/true", got, ok)
+	}
+}
+
+func TestOriginalAIHumanGovernmentZeroReachabilityFailsClosedForWormholeBranch(t *testing.T) {
+	s := &GameSession{
+		Stars:             []Star{{X: 0.10, Y: 0.10, Wormhole: 1}, {X: 0.90, Y: 0.90, Wormhole: 0}},
+		PlayerColonies:    []engine.ColonyState{originalTargetPopulationColony(0)},
+		PlayerColonyStars: []int{0},
+		AIPlayers: []AIOpponent{{
+			PopulationRaceSlot: 1, PopulationRaceSlotKnown: true,
+			Player: engine.PlayerState{GrantedTechs: map[gamedata.Technology]bool{
+				gamedata.TECH_STANDARD_FUEL_CELLS: true,
+			}},
+			Colonies: []engine.ColonyState{originalTargetPopulationColony(1)}, ColonyStars: []int{1},
+		}},
+	}
+	if _, ok := s.originalAIHumanGovernmentZeroReachability(0); ok {
+		t.Fatal("sub_FF593 蟲洞 star-mask 尚未閉合時不得猜測可達")
+	}
+}
 
 func TestOriginalAIHumanTargetScoreConsumesTypedVerticalInputs(t *testing.T) {
 	race := -1

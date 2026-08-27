@@ -51,12 +51,16 @@
 20. 已閉合 score 必須由單一 composer 依原始順序處理，並同時輸出 final score、最負單項、
     原因碼、行動上限與 forced type 2。shell producer 任一必要 raw、雙向國力或歷史缺失時
     回傳 unknown，不得把部分分數送入尾端 RNG。
+21. `sub_DCB47` 的 source／target 由 `eax／edx` 傳入；同殖民地含雙方人口加 5。只有 target
+    人口時，`sub_FF666` 讀 source `player+0x324` 燃料距離，經 `sub_FF5F8／sub_FF593／
+    sub_FF4E9` 檢查 source 或聯盟方人口殖民地的距離後加 1。無蟲洞路徑可由 typed 人口群、
+    殖民星與燃料科技重建；蟲洞 star-mask 支線未閉合時必須回傳 unknown。
 
 ## DRAFT 邊界
 
 `sub_544A1 @ 0x544A1..0x54CC0` 的四類尾端與 RNG 已形成純規則；尚缺的是 directional
-incident memory 的 writer 門檻／正常玩家事件 producer、government 0 殖民可達，以及 `sub_4F93B`
-的科技候選表／殖民地候選 producer。
+incident memory 的 writer 門檻／正常玩家事件 producer、government 0 的蟲洞 mask 支線，以及
+`sub_4F93B` 的科技候選表／殖民地候選 producer。
 這些欄位閉合前，remake 可用既有戰爭態勢決定是否呼叫原版目標估值，但必須標為 fallback，
 不得把只含 relation/personality 的部分 score 冒充完整 producer。
 
@@ -71,5 +75,7 @@ incident memory 的 writer 門檻／正常玩家事件 producer、government 0 �
 - 成功派艦後 cooldown 必須落在 20–39，並經 JSON snapshot 往返不變。
 - composer 測試固定驗證 `-150` 覆寫後仍按順序加入 grievance／國力／人口／性格，且
   government 3 與食物 RNG 消耗順序不變；shell 缺 known 欄位須有負對照。
+- government 0 的無蟲洞測試須分別驗證範圍內 +1、同殖民地 +5；遇到尚未閉合的蟲洞
+  star-mask 支線須失敗即關閉。
 - 玩家軍力較高或 personality losing-ground chance 為 0，不得單獨形成固定 veto。
 - 艦隊抵達後的 formal policy 5／6 writer 與 10 回合重複結算保護維持既有測試。
