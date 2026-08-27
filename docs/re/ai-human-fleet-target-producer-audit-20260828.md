@@ -51,6 +51,11 @@
     在 signed `+0x71F>0` 且 `+0x6CF!=0` 時計算 `-10*memory/divisor`，除數重用
     `word_180CF0 @ 0x180CF0 = [1,2,3,3,4,5,2]`；若該負分成為目前最低項，原因碼寫成
     unsigned `+0x6CF + 70`。上述資料流與表 bytes 已證實；Hex-Rays 名稱僅供導覽。
+12. `0x547DE..0x54889` 掃所有未淘汰帝國的 `player+0xA6`：存活數少於三且來源人口
+    嚴格大於其他存活帝國，或只餘一國時，score 加 `-10`、原因碼候選為 178。
+    `0x5488B..0x54949` 自相對回合 100 起讀雙方 `+0xB9B` 的目前格與 40 格前；真人成長
+    嚴格較高時，加入 `(sourceGrowth-targetGrowth)/2`，原因碼候選為 117。350 格之後原版
+    以 309 作 40 格前的環回索引；remake 的時間排序 350 格環保存玩家可見等價資料。
 
 ## Remake 對映與限制
 
@@ -67,6 +72,8 @@
 - 已接純規則：`OriginalHumanTargetIncidentScore` 依原版共用表消費 `+0x71F／+0x6CF`，
   並回傳相符的原因碼；非法 signed-byte／reason／personality 失敗即關閉。`sub_4F0DC`
   上游完整門檻及各正常玩家事件 reason 尚未 typed，因此此輪不偽造 writer。
+- 已接純規則：存活帝國人口優勢與 40 回合人口成長差；兩者直接消費原版已存在的
+  `+0xA6／+0xB9B` typed 對映，不把反編譯器暫名當證據。
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。

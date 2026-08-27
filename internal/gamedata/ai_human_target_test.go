@@ -25,6 +25,37 @@ func TestOriginalHumanTargetIncidentScore(t *testing.T) {
 	}
 }
 
+func TestOriginalHumanTargetPopulationDominance(t *testing.T) {
+	for _, tc := range []struct {
+		populations []int
+		source      int
+		want        int
+	}{
+		{[]int{40}, 0, -10},
+		{[]int{40, 30}, 0, -10},
+		{[]int{40, 40}, 0, 0},
+		{[]int{40, 30, 20}, 0, 0},
+	} {
+		got, ok := OriginalHumanTargetPopulationDominance(tc.populations, tc.source)
+		if !ok || got != tc.want {
+			t.Fatalf("populations=%v source=%d: got %d/%v，預期 %d/true",
+				tc.populations, tc.source, got, ok, tc.want)
+		}
+	}
+}
+
+func TestOriginalHumanTargetPopulationTrend(t *testing.T) {
+	if got, ok := OriginalHumanTargetPopulationTrend(99, 100, 80, 120, 80); !ok || got != 0 {
+		t.Fatalf("100 回合前不得套趨勢：%d/%v", got, ok)
+	}
+	if got, ok := OriginalHumanTargetPopulationTrend(100, 100, 80, 121, 80); !ok || got != -10 {
+		t.Fatalf("AI +20、真人 +41 應得 (20-41)/2=-10：%d/%v", got, ok)
+	}
+	if got, ok := OriginalHumanTargetPopulationTrend(100, 120, 80, 100, 80); !ok || got != 0 {
+		t.Fatalf("真人成長未領先應為 0：%d/%v", got, ok)
+	}
+}
+
 func TestOriginalHumanTargetThreshold(t *testing.T) {
 	if got, ok := OriginalHumanTargetThreshold(-5, 20); !ok || got != 100 {
 		t.Fatalf("負分 threshold=%d/%v，預期 100/true", got, ok)

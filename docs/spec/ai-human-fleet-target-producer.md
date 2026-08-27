@@ -28,11 +28,15 @@
     `+0x6CF`。`sub_544A1` 在 `+0x71F>0` 且 `+0x6CF!=0` 時計算
     `-10*memory/word_180CF0[personality]`；表值固定為 `[1,2,3,3,4,5,2]`，相符的
     玩家可見原因碼為 `rememberedReason+70`。
+12. 存活帝國少於三個且來源 AI 的 `player+0xA6` 人口嚴格高於其他存活帝國時，score
+    加 `-10`；只剩來源一國也加 `-10`。三國以上不套此項。
+13. 相對回合至少 100 後，比較雙方目前與 40 格前的 `+0xB9B` 人口歷史。只有真人人口
+    成長大於來源 AI 時，加 `(sourceGrowth-targetGrowth)/2`，採 signed 整數向零截斷。
 
 ## DRAFT 邊界
 
 `sub_544A1 @ 0x544A1..0x54CC0` 的四類尾端與 RNG 已形成純規則；尚缺的是 directional
-incident memory 的 writer 門檻／正常玩家事件 producer、排名／科技趨勢，以及 `sub_4F93B`
+incident memory 的 writer 門檻／正常玩家事件 producer、其餘國力／科技項，以及 `sub_4F93B`
 的科技候選表／殖民地候選 producer。
 這些欄位閉合前，remake 可用既有戰爭態勢決定是否呼叫原版目標估值，但必須標為 fallback，
 不得把只含 relation/personality 的部分 score 冒充完整 producer。

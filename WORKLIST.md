@@ -1155,6 +1155,8 @@
   `+0x6CF`；`sub_544A1` 再以 signed `+0x71F` 與共用表
   `word_180CF0=[1,2,3,3,4,5,2]` 計算負分及 `reason+70`。純規則與原始表測試已接；
   `sub_4F0DC` 的完整上游門檻及正常玩家事件 reason producer 仍待閉合，未以猜測接線。
+  同一 score 的存活帝國人口優勢 `-10`，以及第 100 回合後雙方 40 回合人口成長差也已由
+  `+0xA6／+0xB9B` raw 讀取閉合為純規則；其餘國力／科技項仍待拆解。
   目前願戰來源仍是明示的
   `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與

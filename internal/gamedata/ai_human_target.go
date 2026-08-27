@@ -24,6 +24,55 @@ func OriginalHumanTargetIncidentScore(memory, rememberedReason, personality int)
 	return -10 * memory / divisor, rememberedReason + 70, true
 }
 
+// OriginalHumanTargetPopulationDominance 對應 sub_544A1 @ 0x547DE..0x54889。
+// populations 只包含仍有效且未被淘汰的帝國；source 是其中的來源 AI 索引。
+// 原版在僅餘一國，或少於三國且來源人口嚴格高於其他存活帝國時，加上 -10。
+func OriginalHumanTargetPopulationDominance(populations []int, source int) (int, bool) {
+	if source < 0 || source >= len(populations) || len(populations) == 0 {
+		return 0, false
+	}
+	for _, population := range populations {
+		if population < 0 || population > 32767 {
+			return 0, false
+		}
+	}
+	if len(populations) == 1 {
+		return -10, true
+	}
+	if len(populations) >= 3 {
+		return 0, true
+	}
+	otherMax := -1
+	for index, population := range populations {
+		if index != source && population > otherMax {
+			otherMax = population
+		}
+	}
+	if populations[source] > otherMax {
+		return -10, true
+	}
+	return 0, true
+}
+
+// OriginalHumanTargetPopulationTrend 對應 sub_544A1 @ 0x5488B..0x54949。
+// 原版自第 100 個相對回合起，比較雙方目前與 40 格前的 +0xB9B 人口歷史；
+// 只有真人成長量大於來源 AI 時，加入 (sourceGrowth-targetGrowth)/2。
+func OriginalHumanTargetPopulationTrend(relativeTurn, sourceNow, source40, targetNow, target40 int) (int, bool) {
+	if relativeTurn < 0 || sourceNow < 0 || sourceNow > 255 || source40 < 0 || source40 > 255 ||
+		targetNow < 0 || targetNow > 255 || target40 < 0 || target40 > 255 {
+		return 0, false
+	}
+	if relativeTurn < 100 {
+		return 0, true
+	}
+	sourceGrowth := sourceNow - source40
+	targetGrowth := targetNow - target40
+	if targetGrowth <= sourceGrowth {
+		return 0, true
+	}
+	return (sourceGrowth - targetGrowth) / 2, true
+}
+
 // OriginalHumanTargetOutcomeInput 是 sub_544A1 尾端已閉合的決策輸入。
 // Score 是上游所有方向關係、事件、性格與領袖修正合成後的 signed 分數。
 type OriginalHumanTargetOutcomeInput struct {
