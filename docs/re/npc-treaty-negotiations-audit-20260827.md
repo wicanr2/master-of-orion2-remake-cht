@@ -86,7 +86,9 @@ remake 尚無 `+0x5EC` 原版國力矩陣，現以可觀察 `FleetStrength` 作�
 - **已接**：ordered AI pair、難度頻率、政府表、條約／協議分數、raw 記憶
   回復與 -30、互不侵犯／同盟／貿易／研究、納貢 mode 2 與關係 delta。
 - **資料模型投影**：AI 都視為已接觸且存活；國力以 `FleetStrength` 代理；
-  `+0x71F` 尚無 writer，維持初始化 0。
-- **仍未知／未接**：原版宣戰與停戰建立函式、完整方向接觸、`+0x5EC`
-  國力 producer、policy helper 寫入的未消費 raw 欄位，以及玩家／熱座方向矩陣。
+  treaty-break 記憶 `+0x71F` 尚未接入本談判 base。它不同於已閉合的戰爭計時 `+0x717`。
+- **後續已閉合**：一般 AI↔AI 宣戰、`+0x717／+0x72F` 及直接停戰見
+  [`npc-war-ceasefire-audit-20260827.md`](npc-war-ceasefire-audit-20260827.md)。
+- **仍未知／未接**：完整方向接觸、`+0x5EC` 國力 producer、特殊宣戰 reason、policy helper
+  寫入的未消費 raw 欄位，以及玩家方向矩陣。
 - 本頁只證實 1.31 executable；沒有把 1.50 行為外推成相同。

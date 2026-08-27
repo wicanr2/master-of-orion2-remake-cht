@@ -39,9 +39,62 @@ func TestAIVsAIWarDoesNotUseInventedRelationCeasefire(t *testing.T) {
 	s.AIPolicies[0][1], s.AIPolicies[1][0] = gamedata.DIPLO_WAR, gamedata.DIPLO_WAR
 	s.AIRelations[0][1], s.AIRelations[1][0] = 40, 40
 	s.advanceAIDiplomacy()
-	if !s.AIWars[0][1] || s.AIPolicies[0][1] != gamedata.DIPLO_WAR {
+	if !s.AIWars[0][1] || s.AIPolicies[0][1] != gamedata.DIPLO_LIMITED_WAR {
 		t.Fatalf("高顯示關係不得以自編 +12 門檻自動停戰：wars=%v policy=%v",
 			s.AIWars, s.AIPolicies)
+	}
+}
+
+func TestOriginalAIAIWarDeclarationWritesRawState(t *testing.T) {
+	s := NewDemoSession()
+	s.ensureOriginalAIAIRelations()
+	s.ensureAIAIState()
+	s.AITrade[0][1], s.AITrade[1][0] = true, true
+	s.AIResearch[0][1], s.AIResearch[1][0] = true, true
+	s.AITributeModes[0][1], s.AITributeModes[1][0] = 2, 1
+	s.declareOriginalAIAIWar(0, 1, func(n int) int {
+		if n != 25 {
+			t.Fatalf("宣戰關係亂數 Random(%d)，應為 25", n)
+		}
+		return 25
+	})
+	if !s.AIWars[0][1] || s.AIPolicies[0][1] != gamedata.DIPLO_LIMITED_WAR ||
+		s.AITrade[0][1] || s.AIResearch[0][1] || s.AITributeModes[0][1] != 0 {
+		t.Fatalf("宣戰正式狀態錯誤：wars=%v policy=%v trade=%v research=%v tribute=%v",
+			s.AIWars, s.AIPolicies, s.AITrade, s.AIResearch, s.AITributeModes)
+	}
+	if got := s.originalAIAIRelation(0, 1); got != -99 {
+		t.Fatalf("宣戰關係=%d，應為 -99", got)
+	}
+	if s.AITreatyBiasRaw[0][1] != -200 || s.AIAgreementBiasRaw[1][0] != -200 ||
+		s.AIWarDurationRaw[0][1] != 0 || s.AIDiplomacyCooldownRaw[1][0] != 0 {
+		t.Fatalf("宣戰 raw 狀態錯誤：treaty=%v agreement=%v duration=%v cooldown=%v",
+			s.AITreatyBiasRaw, s.AIAgreementBiasRaw, s.AIWarDurationRaw, s.AIDiplomacyCooldownRaw)
+	}
+}
+
+func TestOriginalAIAICeasefireUsesDurationAndCooldown(t *testing.T) {
+	s := NewDemoSession()
+	s.ensureOriginalAIAIRelations()
+	s.ensureAIAIState()
+	s.Difficulty = 4 // 門檻 30。
+	s.setOriginalAIAIRelation(0, 1, -80)
+	s.AIWars[0][1], s.AIWars[1][0] = true, true
+	s.AIPolicies[0][1], s.AIPolicies[1][0] = gamedata.DIPLO_LIMITED_WAR, gamedata.DIPLO_LIMITED_WAR
+	s.AIWarDurationRaw[0][1], s.AIWarDurationRaw[1][0] = 30, 30
+	s.advanceAIAIDiplomacy()
+	if s.AIWars[0][1] || s.AIPolicies[0][1] != gamedata.DIPLO_PEACE ||
+		s.AIDiplomacyCooldownRaw[0][1] != 30 {
+		t.Fatalf("停戰狀態錯誤：wars=%v policy=%v cooldown=%v", s.AIWars, s.AIPolicies, s.AIDiplomacyCooldownRaw)
+	}
+	if got := s.originalAIAIRelation(0, 1); got != -30 {
+		t.Fatalf("停戰關係=%d，應為 -30", got)
+	}
+	for i := 0; i < 30; i++ {
+		s.advanceOriginalAIAIWarTimers()
+	}
+	if s.AIDiplomacyCooldownRaw[0][1] != 0 || s.AIPolicies[0][1] != gamedata.DIPLO_NONE {
+		t.Fatalf("30 回合後應解除暫時和平：policy=%v cooldown=%v", s.AIPolicies, s.AIDiplomacyCooldownRaw)
 	}
 }
 

@@ -958,9 +958,16 @@
   既有議會／政策 consumer、存檔與熱座矩陣壓縮。`NPC_To_NPC_Treaty_Negotiations_`
   也已閉合 ordered pair、難度頻率、八格政府表、raw 聲望／條約與協議記憶、第三方戰爭、
   互不侵犯／同盟／貿易／研究及納貢 mode 2；原有 `-25／+12／+25／+8` 自編政策門檻已移除。
-  新 raw 矩陣均可存檔並隨熱座壓縮。自訂種族採中立 fallback；反向玩家條約、`+0x737`
-  鎖定 writer、`+0x71F` treaty-break writer、原版 `+0x5EC` 國力 producer、宣戰／停戰建立函式、
-  計時器與 reason 快取仍未閉合。特殊貿易與 ETA callback 仍是可玩 remake 模型。
+  新 raw 矩陣均可存檔並隨熱座壓縮。2026-08-27 又閉合一般 AI↔AI 宣戰／停戰垂直切片：
+  `sub_25DF1` reason 23 候選、`sub_51078` policy 4 與 -75..-99 關係 writer、`sub_5090C`
+  的 `+0x717` 戰爭計時／`+0x72F` 冷卻，以及 `sub_2670A／sub_524FB` 的難度停戰門檻、
+  relation +50 封頂 0 與 30 回合解除均已接入；矩陣可存檔並隨熱座壓縮。原版
+  `+0x5EC` producer 尚未閉合，現以 `FleetStrength` 代入已證實 ratio 公式，明標強推論投影。
+  自訂種族採中立 fallback；反向玩家條約、`+0x737` 鎖定 writer、`+0x71F` treaty-break writer、
+  特殊宣戰 reason 20／22／68／113 及 `+0x6AF／+0x6BF` 記憶仍未閉合。特殊貿易與 ETA callback
+  仍是可玩 remake 模型。證據與規格見
+  [`docs/re/npc-war-ceasefire-audit-20260827.md`](docs/re/npc-war-ceasefire-audit-20260827.md) 與
+  [`docs/spec/npc-war-ceasefire.md`](docs/spec/npc-war-ceasefire.md)。
   領袖招募現依 `sub_97A66/sub_9781D/sub_97B2D` 每回合擲骰，包含前五回合門檻、
   Charismatic／Repulsive、Famous 一般／進階加成、兩類四席與隨星曆開放的隨機候選前綴；
   亂數流可隨存檔續接。證據與規格見

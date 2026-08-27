@@ -70,6 +70,9 @@
 - **NPC 談判記憶** — 原版 ordered pair 的 `+0x68F／+0x69F` signed word；
   每回合各向 0 回復 10，實際觸發一次 `sub_2552D` 談判後各扣 30，直接參與
   條約與協議分數。_避免_：外交冷卻常數（它們是帶正負值的分數記憶，不只是計時器）
+- **NPC 戰爭計時／停戰冷卻** — `+0x717` 是戰爭中每回合雙向累加、上限 250 的 duration；
+  `+0x72F` 是停戰時設為 30、逐方向遞減的 cooldown，歸零會解除暫時 policy 3。
+  _避免_：把 `+0x717` 與 treaty-break 記憶 `+0x71F` 混為同一欄。
 
 - **正式網路回合等待** — `networkWaitScreen` 擁有唯一的 session poll 與兩階段鎖步 update loop，
   並共用 `netNextTurnScreen` 的原版面板 renderer、聊天記錄與輸入狀態；`netNextTurnDemo` 只是

@@ -48,6 +48,8 @@ func (s *GameSession) ensureAIAIState() {
 	s.AITreatyBiasRaw = resizeIntMatrix(s.AITreatyBiasRaw, n)
 	s.AIAgreementBiasRaw = resizeIntMatrix(s.AIAgreementBiasRaw, n)
 	s.AITributeModes = resizeIntMatrix(s.AITributeModes, n)
+	s.AIWarDurationRaw = resizeIntMatrix(s.AIWarDurationRaw, n)
+	s.AIDiplomacyCooldownRaw = resizeIntMatrix(s.AIDiplomacyCooldownRaw, n)
 	for i := range s.AIPolicies {
 		if i < len(s.AIPolicies[i]) {
 			s.AIPolicies[i][i] = gamedata.DIPLO_NONE
@@ -119,6 +121,7 @@ func filterAIPolicyMatrix(matrix [][]gamedata.ForeignPolicy, kept []int) [][]gam
 func (s *GameSession) advanceAIAIDiplomacy() {
 	s.ensureOriginalAIAIRelations()
 	s.ensureAIAIState()
+	s.advanceOriginalAIAIWarTimers()
 	for i := range s.AIPlayers {
 		for j := range s.AIPlayers {
 			if i == j {
@@ -137,6 +140,7 @@ func (s *GameSession) advanceAIAIDiplomacy() {
 			s.advanceOriginalAIAINegotiation(i, j, roll)
 		}
 	}
+	s.advanceOriginalAIAIWarPolicy(roll)
 	for i := 0; i < len(s.AIPlayers); i++ {
 		for j := i + 1; j < len(s.AIPlayers); j++ {
 			atWar := s.AIWars[i][j] || s.AIWars[j][i] ||
@@ -144,7 +148,8 @@ func (s *GameSession) advanceAIAIDiplomacy() {
 				s.AIPolicies[j][i] >= gamedata.DIPLO_LIMITED_WAR
 			s.AIWars[i][j], s.AIWars[j][i] = atWar, atWar
 			if atWar {
-				s.AIPolicies[i][j], s.AIPolicies[j][i] = gamedata.DIPLO_WAR, gamedata.DIPLO_WAR
+				// sub_51078 對 AI↔AI 固定寫 policy 4；5／6 是人類參戰分支。
+				s.AIPolicies[i][j], s.AIPolicies[j][i] = gamedata.DIPLO_LIMITED_WAR, gamedata.DIPLO_LIMITED_WAR
 				s.AITrade[i][j], s.AITrade[j][i] = false, false
 				s.AIResearch[i][j], s.AIResearch[j][i] = false, false
 				continue
@@ -158,6 +163,124 @@ func (s *GameSession) advanceAIAIDiplomacy() {
 			}
 		}
 	}
+}
+
+// advanceOriginalAIAIWarTimers 對應 sub_5090C：停戰冷卻每回合遞減；正式
+// 戰爭的 +0x717 雙向累加，最高 250。policy 3 在冷卻歸零後回到無條約。
+func (s *GameSession) advanceOriginalAIAIWarTimers() {
+	for i := 0; i < len(s.AIPlayers); i++ {
+		for j := i + 1; j < len(s.AIPlayers); j++ {
+			for _, pair := range [][2]int{{i, j}, {j, i}} {
+				a, b := pair[0], pair[1]
+				if s.AIDiplomacyCooldownRaw[a][b] > 0 {
+					s.AIDiplomacyCooldownRaw[a][b]--
+				}
+			}
+			if s.AIDiplomacyCooldownRaw[i][j] == 0 && s.AIPolicies[i][j] == gamedata.DIPLO_PEACE {
+				s.AIPolicies[i][j], s.AIPolicies[j][i] = gamedata.DIPLO_NONE, gamedata.DIPLO_NONE
+			}
+			if s.AIPolicies[i][j] >= gamedata.DIPLO_LIMITED_WAR {
+				if s.AIWarDurationRaw[i][j] < 250 {
+					s.AIWarDurationRaw[i][j]++
+				}
+				if s.AIWarDurationRaw[j][i] < 250 {
+					s.AIWarDurationRaw[j][i]++
+				}
+			}
+		}
+	}
+}
+
+// advanceOriginalAIAIWarPolicy 接回 sub_25DF1 的一般宣戰候選與 sub_2670A
+// 的 AI↔AI 直接停戰。特殊政府／事件宣戰分支留待各自有玩家可見 producer 時接回。
+func (s *GameSession) advanceOriginalAIAIWarPolicy(roll func(int) int) {
+	count := len(s.AIPlayers)
+	if count < 2 {
+		return
+	}
+	for source := range s.AIPlayers {
+		wars := 0
+		for target := range s.AIPlayers {
+			if source != target && s.AIPolicies[source][target] >= gamedata.DIPLO_LIMITED_WAR {
+				wars++
+			}
+		}
+		if wars != 0 {
+			continue
+		}
+		candidates := make([]int, 0, count-1)
+		for target := range s.AIPlayers {
+			if source == target {
+				continue
+			}
+			targetAtWar := false
+			for third := range s.AIPlayers {
+				if third != source && third != target && s.AIPolicies[target][third] >= gamedata.DIPLO_LIMITED_WAR {
+					targetAtWar = true
+					break
+				}
+			}
+			candidate, ok := gamedata.OriginalNPCGenericWarCandidate(gamedata.OriginalNPCWarCandidateInput{
+				Difficulty: s.Difficulty, Government: originalAIRelationGovernment(s.AIPlayers[source]),
+				Policy: s.AIPolicies[source][target], TradeActive: s.AITrade[source][target],
+				ResearchActive: s.AIResearch[source][target], TributeMode: s.AITributeModes[source][target],
+				SourceStrength: s.AIPlayers[source].FleetStrength, TargetStrength: s.AIPlayers[target].FleetStrength,
+				SourceThirdPartyWars: wars, Cooldown: s.AIDiplomacyCooldownRaw[source][target],
+				TargetIsRotating: s.Turn%count == target, TargetAtWarWithAI: targetAtWar,
+			}, roll)
+			if ok && candidate {
+				candidates = append(candidates, target)
+			}
+		}
+		if len(candidates) > 0 {
+			choice := roll(len(candidates))
+			if choice >= 1 && choice <= len(candidates) {
+				s.declareOriginalAIAIWar(source, candidates[choice-1], roll)
+			}
+		}
+	}
+	threshold, ok := gamedata.OriginalNPCCeasefireThreshold(s.Difficulty, 0)
+	if !ok {
+		return
+	}
+	for i := 0; i < count; i++ {
+		for j := i + 1; j < count; j++ {
+			if s.AIPolicies[i][j] >= gamedata.DIPLO_LIMITED_WAR && s.AIWarDurationRaw[i][j] > threshold {
+				s.makeOriginalAIAICeasefire(i, j)
+			}
+		}
+	}
+}
+
+func (s *GameSession) declareOriginalAIAIWar(source, target int, roll func(int) int) {
+	value := roll(25)
+	if value < 1 || value > 25 {
+		return
+	}
+	s.AIPolicies[source][target], s.AIPolicies[target][source] = gamedata.DIPLO_LIMITED_WAR, gamedata.DIPLO_LIMITED_WAR
+	s.AIWars[source][target], s.AIWars[target][source] = true, true
+	s.AITrade[source][target], s.AITrade[target][source] = false, false
+	s.AIResearch[source][target], s.AIResearch[target][source] = false, false
+	s.AITributeModes[source][target], s.AITributeModes[target][source] = 0, 0
+	s.AITreatyBiasRaw[source][target], s.AITreatyBiasRaw[target][source] = -200, -200
+	s.AIAgreementBiasRaw[source][target], s.AIAgreementBiasRaw[target][source] = -200, -200
+	s.AIWarDurationRaw[source][target], s.AIWarDurationRaw[target][source] = 0, 0
+	s.AIDiplomacyCooldownRaw[source][target], s.AIDiplomacyCooldownRaw[target][source] = 0, 0
+	s.setOriginalAIAIRelation(source, target, -74-value)
+}
+
+func (s *GameSession) makeOriginalAIAICeasefire(a, b int) {
+	s.AIPolicies[a][b], s.AIPolicies[b][a] = gamedata.DIPLO_PEACE, gamedata.DIPLO_PEACE
+	s.AIWars[a][b], s.AIWars[b][a] = false, false
+	s.AITrade[a][b], s.AITrade[b][a] = false, false
+	s.AIResearch[a][b], s.AIResearch[b][a] = false, false
+	s.AITributeModes[a][b], s.AITributeModes[b][a] = 0, 0
+	s.AIDiplomacyCooldownRaw[a][b], s.AIDiplomacyCooldownRaw[b][a] = 30, 30
+	next := s.originalAIAIRelation(a, b) + 50
+	if next > 0 {
+		next = 0
+	}
+	s.setOriginalAIAIRelation(a, b, next)
 }
 
 func (s *GameSession) advanceOriginalAIAINegotiation(outer, inner int, roll func(int) int) {

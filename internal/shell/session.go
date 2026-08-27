@@ -4460,6 +4460,9 @@ type GameSession struct {
 	AITreatyBiasRaw    [][]int
 	AIAgreementBiasRaw [][]int
 	AITributeModes     [][]int
+	// AIWarDurationRaw／AIDiplomacyCooldownRaw 對應方向性 +0x717／+0x72F。
+	AIWarDurationRaw       [][]int
+	AIDiplomacyCooldownRaw [][]int
 	// EnableAIVsAI 是 remake 的可選強化開關。新示範／新局開啟；舊存檔缺欄位
 	// 解為 false，避免在沒有快照資料時突然改變既有對局。
 	EnableAIVsAI bool

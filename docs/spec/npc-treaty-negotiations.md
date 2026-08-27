@@ -12,6 +12,8 @@
 - signed-byte `reputationRaw`（原版 `+0x6D7`）；
 - signed-word `treatyBiasRaw`／`agreementBiasRaw`（`+0x68F／+0x69F`）；
 - direction-only `tributeMode`（`+0x63F`）。
+- 戰爭計時與停戰冷卻另依
+  [`npc-war-ceasefire.md`](npc-war-ceasefire.md) 保存 `+0x717／+0x72F`。
 
 所有矩陣必須隨 JSON 存檔與熱座 AI 索引壓縮；舊存檔缺欄以原版初始化值 0
 補入。
@@ -29,7 +31,8 @@
 ## 資料模型投影
 
 - `+0x5EC` 暫以 `FleetStrength` 代入相同 ratio／cap／第三方戰爭除半公式。
-- `+0x71F` 尚無可靠 writer，輸入固定初始化 0，不加第三方 bonus。
+- `+0x71F` treaty-break 記憶尚未接入本談判 base 的第三方 bonus；它不同於已閉合的
+  `+0x717` 戰爭計時。
 - AI 接觸／淘汰已有較高階可玩狀態但非原版方向矩陣；現行存活 AI pair 視為
   通過 `+0x584／+0x8B2` 外圈守門。
 - 外交亂數使用可存檔確定性流，只保證 remake 重播一致。

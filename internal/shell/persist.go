@@ -232,13 +232,15 @@ type sessionSnapshot struct {
 
 	// AIRelations 是 AI 對手彼此關係矩陣(見 GameSession.AIRelations)。omitempty:舊存檔無此欄位
 	// 解為 nil,ensureAIRelations 讀檔後自然補回,不破壞相容。
-	AIRelations         [][]int  `json:"aiRelations,omitempty"`
-	AIRelationsRaw      [][]int  `json:"aiRelationsRaw,omitempty"`
-	AIRelationsRawKnown [][]bool `json:"aiRelationsRawKnown,omitempty"`
-	AIReputationRaw     [][]int  `json:"aiReputationRaw,omitempty"`
-	AITreatyBiasRaw     [][]int  `json:"aiTreatyBiasRaw,omitempty"`
-	AIAgreementBiasRaw  [][]int  `json:"aiAgreementBiasRaw,omitempty"`
-	AITributeModes      [][]int  `json:"aiTributeModes,omitempty"`
+	AIRelations            [][]int  `json:"aiRelations,omitempty"`
+	AIRelationsRaw         [][]int  `json:"aiRelationsRaw,omitempty"`
+	AIRelationsRawKnown    [][]bool `json:"aiRelationsRawKnown,omitempty"`
+	AIReputationRaw        [][]int  `json:"aiReputationRaw,omitempty"`
+	AITreatyBiasRaw        [][]int  `json:"aiTreatyBiasRaw,omitempty"`
+	AIAgreementBiasRaw     [][]int  `json:"aiAgreementBiasRaw,omitempty"`
+	AITributeModes         [][]int  `json:"aiTributeModes,omitempty"`
+	AIWarDurationRaw       [][]int  `json:"aiWarDurationRaw,omitempty"`
+	AIDiplomacyCooldownRaw [][]int  `json:"aiDiplomacyCooldownRaw,omitempty"`
 	// AI 對 AI 強化狀態。全部 omitempty，舊存檔解出 nil/false 後保持舊規則。
 	EnableAIVsAI bool                       `json:"enableAIVsAI,omitempty"`
 	AIWars       [][]bool                   `json:"aiWars,omitempty"`
@@ -377,6 +379,8 @@ func (s *GameSession) snapshot() sessionSnapshot {
 		AITreatyBiasRaw:           s.AITreatyBiasRaw,
 		AIAgreementBiasRaw:        s.AIAgreementBiasRaw,
 		AITributeModes:            s.AITributeModes,
+		AIWarDurationRaw:          s.AIWarDurationRaw,
+		AIDiplomacyCooldownRaw:    s.AIDiplomacyCooldownRaw,
 		EnableAIVsAI:              s.EnableAIVsAI,
 		AIWars:                    s.AIWars,
 		AIPolicies:                s.AIPolicies,
@@ -508,6 +512,8 @@ func (snap sessionSnapshot) restore() *GameSession {
 		AITreatyBiasRaw:           snap.AITreatyBiasRaw,
 		AIAgreementBiasRaw:        snap.AIAgreementBiasRaw,
 		AITributeModes:            snap.AITributeModes,
+		AIWarDurationRaw:          snap.AIWarDurationRaw,
+		AIDiplomacyCooldownRaw:    snap.AIDiplomacyCooldownRaw,
 		EnableAIVsAI:              snap.EnableAIVsAI,
 		AIWars:                    snap.AIWars,
 		AIPolicies:                snap.AIPolicies,
