@@ -4650,7 +4650,7 @@ type GameSession struct {
 	Victory                VictoryState        // 遊戲是否已分出勝負(Over=true 後不再產生新的議會選舉)
 	PendingCouncilElection *CouncilElection    // 非玩家當選、等待玩家 RespondToCouncilElection 回應(手冊:議會無法強迫玩家接受)
 	PendingCouncilVote     *CouncilVotePending // AI 已投票、等待真人選候選人或棄權
-	LastCouncil            string              // 本回合議會動態描述(空=無;供回合摘要)
+	LastCouncilNotice      *CouncilNotice      // 本回合議會型別化通知(nil=無；供回合摘要)
 	CouncilMeetings        int                 // 已召開過的議會屆數
 	lastCouncilTurn        int                 // 上次召開議會的回合數(0=從未召開)
 	CouncilLastVotes       []int               // 帝國順序為玩家、AIPlayers；-2=上屆棄權／未知，-1=玩家
@@ -5204,7 +5204,7 @@ func (s *GameSession) EndTurn() {
 	s.advanceAIDiplomacy() // AI 對手彼此外交關係漂移(多帝國活星系;支撐議會第三方搖擺)
 	s.advanceAISurrenders()
 	s.publishNextStatusBroadcast()
-	s.advanceCouncil()    // 銀河議會選舉(手冊三條勝利路徑之一:2/3 多數當選銀河領袖),記於 LastCouncil
+	s.advanceCouncil()    // 銀河議會選舉(手冊三條勝利路徑之一:2/3 多數當選銀河領袖),記於 LastCouncilNotice
 	s.advanceMercOffers() // 傭兵領袖不定期上門(手冊 p.134),補進 MercPool 供玩家在軍官畫面雇用
 	s.recordHistory()     // 全帝國國力快照(原版 module 122 Record_History_),供 INFO 歷史圖表
 	// 熱座:其餘真人席位的帝國也要各自過完這一回合,否則他們的殖民地會被凍結

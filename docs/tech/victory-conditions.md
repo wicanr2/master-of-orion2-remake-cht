@@ -104,9 +104,10 @@ openorion2 裡確實連影子都沒有,只能依手冊從零設計,沒有既有 
 
 ### 4.2 shell 層整合(`internal/shell/council.go`)
 
-- `GameSession` 新增欄位:`Victory VictoryState`、`PendingCouncilElection *CouncilElection`、
-  `LastCouncil string`、`CouncilMeetings int`、`lastCouncilTurn int`(存讀檔已同步,見
-  `internal/shell/persist.go`)。
+- `GameSession` 保存 `Victory VictoryState`、`PendingCouncilElection *CouncilElection`、
+  `LastCouncilNotice *CouncilNotice`、`CouncilMeetings int`、`lastCouncilTurn int`。勝負、待決選舉、
+  屆次與上次開會回合等持久狀態已同步存讀檔（見 `internal/shell/persist.go`）；
+  `LastCouncilNotice` 與舊成品通知相同，只是當回合的顯示暫態，不寫入存檔。
 - `advanceCouncil()`:`EndTurn` 每回合呼叫的狀態機。議會成立(`councilEligible`)且相對回合至少
   25 才能首次召開，後續每隔 25 回合再開；這組排程來自 `Check_For_Council_Meeting_ @ 0x168AF`
   raw 指令，而非手冊猜值。**逐帝國**(玩家 + 每個 AI 對手各自
@@ -118,7 +119,8 @@ openorion2 裡確實連影子都沒有,只能依手冊從零設計,沒有既有 
   - 某個 AI 達 2/3 → 記錄 `PendingCouncilElection`(`EnemyName` = 該 AI 名稱,不是寫死的
     `AIPlayers[0]`),等玩家用 `RespondToCouncilElection(accept bool)` 回應:`accept=true` 結束遊戲
     判負,`accept=false` 不結束、下一屆再開(手冊原句直接翻譯成這個互動)。
-  - 沒有任何一方達標 → 流會,`LastCouncil` 記錄本屆票數,下一屆再開。
+  - 沒有任何一方達標 → 流會；`LastCouncilNotice` 以 typed 候選索引與票數記錄本屆結果，
+    下一屆再開。固定雙語句型由 `assets/i18n/ui.json` 提供，不存於規則層。
 - `advanceConquestVictory()`:殲滅所有對手,沿用 `engine.CheckExtermination`(對稱判定,理論上也涵蓋
   「玩家 0 殖民地、AI 存活」→ AI 勝利的方向,但本 remake 目前沒有任何機制會讓玩家殖民地清零,這個
   分支現況不可達,只是沿用同一個對稱函式的自然結果)。`InvadeColony` 攻陷 AI 唯一殖民地後立即呼叫一次

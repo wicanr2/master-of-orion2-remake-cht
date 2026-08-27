@@ -549,6 +549,17 @@
   回歸，實際通知內容與建築翻譯由 typed 測試覆蓋，不冒充原版視覺對照。證據與規格見
   [`docs/re/ai-raid-notice-text-audit-20260827.md`](docs/re/ai-raid-notice-text-audit-20260827.md) 與
   [`docs/spec/ai-raid-notice-external-text.md`](docs/spec/ai-raid-notice-external-text.md)。
+  銀河議會回合通知已完成第五十九個切片：規則層移除繁中 `LastCouncil` 成品字串，改以
+  `CouncilNotice` 保存候選不足、等待真人投票、玩家當選、AI 當選待回應及無人過門檻五種
+  typed 結果，以及屆次、候選索引、明確當選 slot、得票與總票。INFO 回合摘要現共用
+  `councilNoticeText`；五種雙語模板、玩家稱呼與未知 fallback 均由 `ui.json` 提供，英文模式
+  依 AI `RaceIndex` 顯示原版英文種族名，不再洩漏繁中規則字串。議會排程、`Vote_Check_`、
+  2／3 門檻與接受／拒絕流程未改；原版證據只支持狀態與票數，通知逐字仍明標 remake adapter。
+  聚焦測試已覆蓋五種雙語結果、英文名稱及來源碼防回歸；繁中與英文正版資料畫廊各重跑
+  38/38。正常畫廊未強制召開議會，故只證明 UI 路由無回歸，通知內容由 typed 測試覆蓋。
+  證據與規格見
+  [`docs/re/council-notice-text-audit-20260827.md`](docs/re/council-notice-text-audit-20260827.md) 與
+  [`docs/spec/council-notice-external-text.md`](docs/spec/council-notice-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

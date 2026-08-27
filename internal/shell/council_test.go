@@ -36,8 +36,8 @@ func TestCouncilNotEligibleEarlyGame(t *testing.T) {
 		t.Fatalf("開局星系殖民率過低,議會不應成立")
 	}
 	s.EndTurn()
-	if s.LastCouncil != "" {
-		t.Fatalf("議會未成立時不應有 LastCouncil 訊息,got %q", s.LastCouncil)
+	if s.LastCouncilNotice != nil {
+		t.Fatalf("議會未成立時不應有 typed notice,got %+v", s.LastCouncilNotice)
 	}
 	if s.CouncilMeetings != 0 {
 		t.Fatalf("議會未成立時 CouncilMeetings 應為 0,got %d", s.CouncilMeetings)
@@ -60,8 +60,8 @@ func TestCouncilEligibleAfterHalfSettled(t *testing.T) {
 	if s.CouncilMeetings != 1 {
 		t.Fatalf("議會成立後應立即召開第 1 屆,got CouncilMeetings=%d", s.CouncilMeetings)
 	}
-	if s.LastCouncil == "" {
-		t.Fatalf("已開會應留下 LastCouncil 訊息")
+	if s.LastCouncilNotice == nil || s.LastCouncilNotice.Kind != CouncilNoticeVoteRequested {
+		t.Fatalf("已開會應留下等待投票的 typed notice：%+v", s.LastCouncilNotice)
 	}
 }
 
@@ -117,6 +117,10 @@ func TestCouncilPlayerWinsBySupermajority(t *testing.T) {
 	if s.PendingCouncilElection != nil {
 		t.Fatalf("玩家自己當選不應留下待回應選舉")
 	}
+	if n := s.LastCouncilNotice; n == nil || n.Kind != CouncilNoticePlayerElected ||
+		n.WinnerSlot < 0 || n.WinnerSlot > 1 || n.CandidateIdx[n.WinnerSlot] != -1 {
+		t.Fatalf("玩家當選應留下含明確 winner slot 的 typed notice：%+v", n)
+	}
 }
 
 // TestCouncilEnemyWinsRequiresPlayerResponse 驗證 AI 達 2/3 多數時不會直接結束遊戲,而是
@@ -140,6 +144,10 @@ func TestCouncilEnemyWinsRequiresPlayerResponse(t *testing.T) {
 	}
 	if s.PendingCouncilElection == nil {
 		t.Fatalf("AI 達2/3多數應留下待回應選舉")
+	}
+	if n := s.LastCouncilNotice; n == nil || n.Kind != CouncilNoticeEnemyElectedPending ||
+		n.WinnerSlot < 0 || n.WinnerSlot > 1 || n.CandidateIdx[n.WinnerSlot] < 0 {
+		t.Fatalf("AI 當選應留下含明確 winner slot 的 typed notice：%+v", n)
 	}
 	pending := *s.PendingCouncilElection
 

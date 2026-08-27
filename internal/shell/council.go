@@ -66,6 +66,28 @@ type CouncilElection struct {
 	EnemyName   string
 }
 
+// CouncilNoticeKind 是一屆議會在回合摘要留下的型別化結果；固定玩家文案由 UI catalog 提供。
+type CouncilNoticeKind uint8
+
+const (
+	CouncilNoticeInsufficientCandidates CouncilNoticeKind = iota + 1
+	CouncilNoticeVoteRequested
+	CouncilNoticePlayerElected
+	CouncilNoticeEnemyElectedPending
+	CouncilNoticeNoMajority
+)
+
+// CouncilNotice 只保存重建議會回合通知所需的動態資料。CandidateIdx 沿用 -1=玩家、>=0=AI。
+type CouncilNotice struct {
+	Kind          CouncilNoticeKind
+	Meeting       int
+	CandidateIdx  [2]int
+	CandidateName [2]string
+	Votes         [2]int
+	TotalVotes    int
+	WinnerSlot    int // 0/1；只在 PlayerElected／EnemyElectedPending 有意義
+}
+
 // CouncilVotePending 保存原版 sub_1633C 的真人三選一畫面之前已完成的 AI 計票。
 // 候選索引沿用 -1=玩家、>=0=AIPlayers；Choice 由 RespondToCouncilVote 傳入 0/1/2。
 type CouncilVotePending struct {
@@ -377,7 +399,7 @@ func (s *GameSession) tallyCouncil() councilTally {
 //
 // 2026-08-24 依 Council_Votes_／Vote_Check_ 訂正：固定關係門檻與自動玩家選票均已移除。
 func (s *GameSession) advanceCouncil() {
-	s.LastCouncil = ""
+	s.LastCouncilNotice = nil
 	if s.DisableEvents || s.Victory.Over || s.PendingCouncilElection != nil || s.PendingCouncilVote != nil {
 		return
 	}
@@ -395,7 +417,7 @@ func (s *GameSession) advanceCouncil() {
 	s.CouncilMeetings++
 	s.lastCouncilTurn = s.Turn
 	if !tally.valid {
-		s.LastCouncil = fmt.Sprintf("銀河議會第 %d 屆選舉:候選人不足,流會", s.CouncilMeetings)
+		s.LastCouncilNotice = &CouncilNotice{Kind: CouncilNoticeInsufficientCandidates, Meeting: s.CouncilMeetings}
 		return
 	}
 	rows := make([]CouncilVoteRow, 0, len(tally.rows))
@@ -408,8 +430,9 @@ func (s *GameSession) advanceCouncil() {
 		CandidateName:  [2]string{s.councilDisplayName(tally.candIdx[0]), s.councilDisplayName(tally.candIdx[1])},
 		CandidateVotes: tally.candVotes, TotalVotes: tally.total,
 		PlayerBaseVotes: gamedata.CouncilVotes(s.playerPopulationTotal()), Rows: rows}
-	s.LastCouncil = fmt.Sprintf("銀河議會第 %d 屆選舉:請投票給 %s、%s，或棄權", s.CouncilMeetings,
-		s.PendingCouncilVote.CandidateName[0], s.PendingCouncilVote.CandidateName[1])
+	s.LastCouncilNotice = &CouncilNotice{Kind: CouncilNoticeVoteRequested, Meeting: s.CouncilMeetings,
+		CandidateIdx: tally.candIdx, CandidateName: s.PendingCouncilVote.CandidateName,
+		Votes: tally.candVotes, TotalVotes: tally.total}
 }
 
 // RespondToCouncilVote 完成原版 sub_1633C 的三選一；choice 0/1 投候選人，2 表示棄權。
@@ -432,14 +455,20 @@ func (s *GameSession) RespondToCouncilVote(choice int) {
 		}
 		if p.CandidateIdx[c] == -1 {
 			s.Victory = VictoryState{Over: true, Reason: engine.VictoryHighCouncil, Winner: "player", Turn: p.Turn}
-			s.LastCouncil = fmt.Sprintf("銀河議會第 %d 屆選舉:你以 %d/%d 票當選銀河領袖!", s.CouncilMeetings, p.CandidateVotes[c], p.TotalVotes)
+			s.LastCouncilNotice = &CouncilNotice{Kind: CouncilNoticePlayerElected, Meeting: s.CouncilMeetings,
+				CandidateIdx: p.CandidateIdx, CandidateName: p.CandidateName,
+				Votes: p.CandidateVotes, TotalVotes: p.TotalVotes, WinnerSlot: c}
 		} else {
 			s.PendingCouncilElection = &CouncilElection{Turn: p.Turn, PlayerVotes: p.PlayerBaseVotes, EnemyVotes: p.CandidateVotes[c], TotalVotes: p.TotalVotes, EnemyName: p.CandidateName[c]}
-			s.LastCouncil = fmt.Sprintf("銀河議會第 %d 屆選舉:%s 以 %d/%d 票當選，等待你接受或拒絕", s.CouncilMeetings, p.CandidateName[c], p.CandidateVotes[c], p.TotalVotes)
+			s.LastCouncilNotice = &CouncilNotice{Kind: CouncilNoticeEnemyElectedPending, Meeting: s.CouncilMeetings,
+				CandidateIdx: p.CandidateIdx, CandidateName: p.CandidateName,
+				Votes: p.CandidateVotes, TotalVotes: p.TotalVotes, WinnerSlot: c}
 		}
 		return
 	}
-	s.LastCouncil = fmt.Sprintf("銀河議會第 %d 屆選舉:%s（%d 票）、%s（%d 票）皆未達2/3，流會", s.CouncilMeetings, p.CandidateName[0], p.CandidateVotes[0], p.CandidateName[1], p.CandidateVotes[1])
+	s.LastCouncilNotice = &CouncilNotice{Kind: CouncilNoticeNoMajority, Meeting: s.CouncilMeetings,
+		CandidateIdx: p.CandidateIdx, CandidateName: p.CandidateName,
+		Votes: p.CandidateVotes, TotalVotes: p.TotalVotes}
 }
 
 // CouncilStatus 是議會目前狀態的唯讀快照,供 UI 呈現用(cmd/moo2 是 package main,無法直接讀

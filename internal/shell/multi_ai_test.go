@@ -248,7 +248,7 @@ func TestCouncilSwingVotesElectFrontrunner(t *testing.T) {
 	s.RespondToCouncilVote(0)
 
 	if !s.Victory.Over {
-		t.Fatalf("友好 AI 的搖擺票應把玩家推過 2/3 當選,got Victory=%+v LastCouncil=%q", s.Victory, s.LastCouncil)
+		t.Fatalf("友好 AI 的搖擺票應把玩家推過 2/3 當選,got Victory=%+v notice=%+v", s.Victory, s.LastCouncilNotice)
 	}
 	if s.Victory.Reason != engine.VictoryHighCouncil || s.Victory.Winner != "player" {
 		t.Fatalf("應為玩家以議會選舉當選,got Reason=%v Winner=%q", s.Victory.Reason, s.Victory.Winner)
@@ -278,5 +278,8 @@ func TestCouncilNeutralAISAbstainNoWinner(t *testing.T) {
 	}
 	if s.PendingCouncilElection != nil {
 		t.Fatalf("無人達 2/3,不該留下待回應選舉,got %+v", s.PendingCouncilElection)
+	}
+	if n := s.LastCouncilNotice; n == nil || n.Kind != CouncilNoticeNoMajority {
+		t.Fatalf("無人達門檻應留下 typed 流會通知：%+v", n)
 	}
 }
