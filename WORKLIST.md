@@ -468,6 +468,16 @@
   領域框內。證據與規格見
   [`docs/re/research-area-dynamic-text-layout-audit-20260827.md`](docs/re/research-area-dynamic-text-layout-audit-20260827.md) 與
   [`docs/spec/research-area-external-text.md`](docs/spec/research-area-external-text.md)。
+  星圖快捷鍵回饋已完成第五十一個切片：F10 成功、失敗與無槽位回饋，以及 F9 起點、目標與
+  秒差距模板均由 `ui.json` 供應；Go 只傳 runtime 錯誤或距離數值。IDA 非破壞性匯出確認
+  `sub_825A8 @ 0x825A8..0x82809` 的負值輸入碼 jump table，並重驗
+  `sub_EBE79 @ 0xEBE79..0xEBEB7` 以 `900=30²` 及整數平方根向上取整計算秒差距。原版逐字
+  提示、幾何與再按 F9 取消仍未知，現行回饋維持明標 remake adapter。游標提示會依星圖邊界
+  翻邊並夾限，距離中點及快速存檔各使用固定雙軸安全框，不再由未截斷字寬擴張底板。
+  `cmd/moo2`＋`internal/shell` 全套測試通過；繁中與英文正版資料畫廊各 37/37，實圖抽查
+  `28_measure.png` 的距離框均在星圖內。證據與規格見
+  [`docs/re/galaxy-hotkey-feedback-layout-audit-20260827.md`](docs/re/galaxy-hotkey-feedback-layout-audit-20260827.md) 與
+  [`docs/spec/galaxy-hotkey-external-text.md`](docs/spec/galaxy-hotkey-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

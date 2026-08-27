@@ -19,7 +19,6 @@ package main
 // 不是「點兩顆看結果」,而是**跟著游標即時更新**。
 
 import (
-	"fmt"
 	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -150,14 +149,14 @@ func (b *sceneBuilder) quickSave() {
 		return
 	}
 	if b.savePath == "" {
-		b.flash(b.tr("沒有存檔位置可用", "No save slot available"))
+		b.flash(hotkeyText(b.lang, "hotkey.quicksave.no_slot"))
 		return
 	}
 	if err := b.session.Save(b.savePath); err != nil {
-		b.flash(b.tr("快速存檔失敗:", "Quick save failed: ") + err.Error())
+		b.flash(hotkeyText(b.lang, "hotkey.quicksave.failed", err.Error()))
 		return
 	}
-	b.flash(b.tr("已快速存檔(覆蓋同一格)", "Quick saved (same slot overwritten)"))
+	b.flash(hotkeyText(b.lang, "hotkey.quicksave.success"))
 }
 
 // measureClickedStar 在測距模式下吃掉一次點星:第一次記起點,之後換起點。
@@ -184,11 +183,14 @@ func (b *sceneBuilder) drawMeasureOverlay(dst *ebiten.Image, mx, my int) {
 	// 固定位置一定會壓到某顆星(第一版釘在 (30,34),結果蓋掉左上角那顆星的名字)。
 	// (參數收已翻好的字而不是 zh/en 一對:英文缺口棘輪只認得直接寫在呼叫點的 `tr(...)`,
 	//  包一層就漏掉了——那支測試的價值正是「別讓中文字面值繞過翻譯」。)
-	hint := func(s string) {
-		b.fnt.Draw(dst, s, float64(mx+12), float64(my-6), 11, tint)
+	hint := func(key string) {
+		r := measureHintTextRect(mx, my)
+		fillPanel(dst, float32(r.x), float32(r.y), float32(r.w), float32(r.h),
+			color.RGBA{12, 18, 34, 225}, false)
+		r.drawCentered(dst, b.fnt, hotkeyText(b.lang, key), 11, tint)
 	}
 	if b.measure.from < 0 || b.measure.from >= len(sess.Stars) {
-		hint(b.tr("測距:點選第一顆星", "MEASURE: click first star"))
+		hint("hotkey.measure.select_origin")
 		return
 	}
 	fx, fy := starScreenPos(sess.Stars[b.measure.from])
@@ -196,14 +198,16 @@ func (b *sceneBuilder) drawMeasureOverlay(dst *ebiten.Image, mx, my int) {
 
 	to := b.starAtScreen(mx, my)
 	if to < 0 || to == b.measure.from {
-		hint(b.tr("測距:移到另一顆星", "MEASURE: hover another star"))
+		hint("hotkey.measure.hover_target")
 		return
 	}
 	tx, ty := starScreenPos(sess.Stars[to])
 	vector.StrokeLine(dst, float32(fx), float32(fy), float32(tx), float32(ty), 1, tint, true)
 	pc := sess.ParsecsBetweenStars(b.measure.from, to)
-	b.fnt.DrawCentered(dst, fmt.Sprintf(b.tr("%d 秒差距", "%d PC"), pc),
-		float64(fx+tx)/2, float64(fy+ty)/2-8, 11, tint)
+	r := measureDistanceTextRect(fx, fy, tx, ty)
+	fillPanel(dst, float32(r.x), float32(r.y), float32(r.w), float32(r.h),
+		color.RGBA{12, 18, 34, 225}, false)
+	r.drawCentered(dst, b.fnt, hotkeyText(b.lang, "hotkey.measure.distance", pc), 11, tint)
 }
 
 // starAtScreen 回傳螢幕座標 (mx,my) 落在哪顆星上(沒有回 −1)。
@@ -274,9 +278,8 @@ func (b *sceneBuilder) drawFlash(dst *ebiten.Image) {
 	if !b.flashVisible() || b.fnt == nil {
 		return
 	}
-	w, _ := b.fnt.Measure(b.flashMsg, 11)
-	const cx, cy = 340, 412 // 星圖視窗(20..527)偏右的底緣,不壓到左下角面板
-	fillPanel(dst, float32(cx)-float32(w)/2-6, cy-11, float32(w)+12, 16,
+	r := quickSaveFlashTextRect()
+	fillPanel(dst, float32(r.x), float32(r.y), float32(r.w), float32(r.h),
 		color.RGBA{12, 18, 34, 225}, false)
-	b.fnt.DrawCentered(dst, b.flashMsg, cx, cy, 11, color.RGBA{225, 240, 220, 255})
+	r.drawCentered(dst, b.fnt, b.flashMsg, 11, color.RGBA{225, 240, 220, 255})
 }

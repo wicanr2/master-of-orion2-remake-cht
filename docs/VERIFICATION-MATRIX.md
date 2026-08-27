@@ -26,7 +26,7 @@
 | 圖像 | 建置 | 存檔／情境 | 座標 | 種子／時間 | 主題 | 比對類型 |
 |---|---|---|---|---|---|---|
 | `normal-path.png`（暫存） | 目前工作樹／Docker 最終建置 | `-data /private/gamedata/mastori2 -game -shot`，私有資料唯讀 | 640×480，`uiscale=1`；148,252 bytes | Docker + Xvfb；容器內產生後供人工檢查 | 繁中正常路徑成功；未作原版逐像素宣稱 |
-| `01_menu.png`、`01b_newgame.png`、`02`–`35_research.png`，含 `15a_races.png`（共 37 張） | 目前工作樹／Docker 畫廊建置 | `-gamegallery`，含 `18_loadgame.png` | 37/37 非零；統一由畫廊流程產生 | Docker + Xvfb；私有資料 `:ro` | 中文與英文均 37/37；抽查 RACES、外交、艦艇設計、輸入框、星圖、研究領域；尚未逐張原版比對 |
+| `01_menu.png`、`01b_newgame.png`、`02`–`35_research.png`，含 `15a_races.png`（共 37 張） | 目前工作樹／Docker 畫廊建置 | `-gamegallery`，含 `18_loadgame.png` | 37/37 非零；統一由畫廊流程產生 | Docker + Xvfb；私有資料 `:ro` | 中文與英文均 37/37；抽查 RACES、外交、艦艇設計、輸入框、F9 測距、星圖、研究領域；尚未逐張原版比對 |
 | `15_diplomacy.png`（同上畫廊中的暫存畫面） | 目前工作樹／Docker 畫廊建置 | 無存檔，外交畫面初始路徑 | 1280×960，預設 `uiscale=2`；36/36 PNG 非零 | Docker + Xvfb；輸出在 `/tmp` | 已檢查八格提案、固定納貢按鈕、協議摘要與終止區不與結束按鈕重疊；尚未逐像素對原版比對 |
 
 ## 發行門檻

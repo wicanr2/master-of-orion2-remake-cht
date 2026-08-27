@@ -3,9 +3,12 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
 
 // hotkeys_test.go:星圖快捷鍵的護欄(規則層的循環邏輯在 internal/shell/starnav_test.go)。
@@ -230,5 +233,95 @@ func TestFlashExpires(t *testing.T) {
 	b.flashMsg, b.animTick = "", 0
 	if b.flashVisible() {
 		t.Error("沒有訊息時不該畫")
+	}
+}
+
+func TestHotkeyTextCatalogAndFormatContract(t *testing.T) {
+	tests := []struct {
+		key         string
+		formatCount int
+		args        []any
+	}{
+		{"hotkey.quicksave.no_slot", 0, nil},
+		{"hotkey.quicksave.failed", 1, []any{"permission denied"}},
+		{"hotkey.quicksave.success", 0, nil},
+		{"hotkey.measure.select_origin", 0, nil},
+		{"hotkey.measure.hover_target", 0, nil},
+		{"hotkey.measure.distance", 1, []any{999}},
+	}
+	for _, lang := range []i18n.Lang{i18n.Traditional, i18n.English} {
+		for _, tc := range tests {
+			template := uiText(lang, tc.key)
+			if template == "" || template == tc.key {
+				t.Fatalf("語系 %v 缺少 %q", lang, tc.key)
+			}
+			if got := strings.Count(template, "%"); got != tc.formatCount {
+				t.Fatalf("語系 %v %q 格式欄位=%d，want %d：%q", lang, tc.key, got, tc.formatCount, template)
+			}
+			if got := hotkeyText(lang, tc.key, tc.args...); strings.Contains(got, "%!") {
+				t.Fatalf("語系 %v %q 格式化失敗：%q", lang, tc.key, got)
+			}
+		}
+	}
+}
+
+func TestHotkeyOverlayTextRectsStayInsideGalaxyViewport(t *testing.T) {
+	inside := func(name string, r textSafeRect) {
+		t.Helper()
+		if r.x < starVX0 || r.y < starVY0 || r.x+r.w > starVX1+1 || r.y+r.h > starVY1+1 {
+			t.Fatalf("%s 安全框 %+v 超出星圖 viewport (%d,%d)-(%d,%d)",
+				name, r, starVX0, starVY0, starVX1, starVY1)
+		}
+	}
+	for _, p := range [][2]int{{starVX0, starVY0}, {starVX1, starVY0}, {starVX0, starVY1}, {starVX1, starVY1}, {320, 240}} {
+		inside("游標提示", measureHintTextRect(p[0], p[1]))
+	}
+	for _, line := range [][4]int{
+		{starVX0, starVY0, starVX1, starVY1},
+		{starVX1, starVY0, starVX1, starVY1},
+		{starVX0, starVY1, starVX1, starVY1},
+	} {
+		inside("距離", measureDistanceTextRect(line[0], line[1], line[2], line[3]))
+	}
+	flash := quickSaveFlashTextRect()
+	inside("快速存檔", flash)
+	if flash.x <= 238 {
+		t.Fatalf("快速存檔框 %+v 侵入左側選星資訊面板", flash)
+	}
+}
+
+func TestHotkeyOverlayLongestTextIsWidthBounded(t *testing.T) {
+	fnt := uifont.LoadBitmapTC()
+	for _, lang := range []i18n.Lang{i18n.Traditional, i18n.English} {
+		values := []struct {
+			r    textSafeRect
+			text string
+		}{
+			{measureHintTextRect(starVX1, starVY1), hotkeyText(lang, "hotkey.measure.select_origin")},
+			{measureHintTextRect(starVX0, starVY0), hotkeyText(lang, "hotkey.measure.hover_target")},
+			{measureDistanceTextRect(starVX0, starVY0, starVX1, starVY1), hotkeyText(lang, "hotkey.measure.distance", 999999)},
+			{quickSaveFlashTextRect(), hotkeyText(lang, "hotkey.quicksave.failed", strings.Repeat("permission denied 銀河存檔路徑", 20))},
+		}
+		for _, value := range values {
+			clipped := value.r.clipped(fnt, value.text, 11)
+			if w, _ := fnt.Measure(clipped, 11); w > value.r.contentWidth() {
+				t.Fatalf("語系 %v 截斷後仍超寬：%.0f > %.0f，%q", lang, w, value.r.contentWidth(), clipped)
+			}
+		}
+	}
+}
+
+func TestHotkeyPlayerTextIsNotEmbeddedInSource(t *testing.T) {
+	source, err := os.ReadFile("hotkeys.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(source)
+	for _, forbidden := range []string{
+		".tr(", "沒有存檔位置可用", "快速存檔失敗", "測距:點選第一顆星", "%d 秒差距",
+	} {
+		if strings.Contains(text, forbidden) {
+			t.Fatalf("hotkeys.go 仍內嵌玩家文案 %q", forbidden)
+		}
 	}
 }
