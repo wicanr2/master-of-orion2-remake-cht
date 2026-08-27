@@ -66,7 +66,7 @@ func TestMultiplayerSetupTextFitsSafeRects(t *testing.T) {
 			{"熱座說明", "multiplayer.setup.note.hotseat", fmt.Sprintf(uiText(lang, "multiplayer.setup.note.hotseat"), maxHotseatSeats)},
 			{"網路說明", "multiplayer.setup.note.network", uiText(lang, "multiplayer.setup.note.network")},
 		} {
-			checkFull(item.name, s.noteTextRect(), item.value, 12)
+			checkFull(item.name, s.noteTextRect(), item.value, 10)
 		}
 		for _, key := range []string{
 			"multiplayer.setup.message.legacy_transport",
@@ -76,14 +76,23 @@ func TestMultiplayerSetupTextFitsSafeRects(t *testing.T) {
 			"multiplayer.setup.message.comm_legacy",
 			"multiplayer.setup.message.ten_closed",
 		} {
-			checkFull(key, s.messageTextRect(), uiText(lang, key), 12)
+			checkFull(key, s.messageTextRect(), uiText(lang, key), 10)
 		}
 		for _, key := range []string{"multiplayer.setup.error.host", "multiplayer.setup.error.join"} {
 			value := fmt.Sprintf(uiText(lang, key), "connection refused")
 			if strings.Contains(value, "%!") {
 				t.Errorf("格式參數不相容：%s = %q", key, value)
 			}
-			checkFull(key, s.messageTextRect(), value, 12)
+			checkFull(key, s.messageTextRect(), value, 10)
+		}
+	}
+}
+
+func TestMultiplayerSetupNotesStayInsideMainPanel(t *testing.T) {
+	s := &multiplayerScreen{panX: 79, panY: 72, panW: 482, panH: 335}
+	for name, r := range map[string]textSafeRect{"note": s.noteTextRect(), "message": s.messageTextRect()} {
+		if r.x < s.panX || r.y < s.panY || r.x+r.w > s.panX+s.panW || r.y+r.h > s.panY+s.panH {
+			t.Fatalf("%s 未包含於多人主面板：rect=%+v panel=(%d,%d,%d,%d)", name, r, s.panX, s.panY, s.panW, s.panH)
 		}
 	}
 }

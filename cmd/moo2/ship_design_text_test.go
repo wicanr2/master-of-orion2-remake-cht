@@ -25,7 +25,7 @@ func TestShipDesignCatalogAndTextBounds(t *testing.T) {
 		checkClippedTextFits(t, fnt, shipDesignArcTextRect(), shipDesignText(lang, "shipdesign.arc", "360 DEGREE", 999), 9)
 		checkClippedTextFits(t, fnt, shipDesignTotalTextRect(), shipDesignText(lang, "shipdesign.total", strings.Repeat("超長艦體名", 4), 999999, 8, 8, 99), 9)
 		checkClippedTextFits(t, fnt, shipDesignStatusTextRect(), shipDesignText(lang, "shipdesign.message.no_space", strings.Repeat("超長艦體名", 6)), 9)
-		checkClippedTextFits(t, fnt, shipDesignSpaceRowRect(5), shipDesignText(lang, "shipdesign.space.row", "DOOM STAR", 999999, 999999), 8)
+		checkClippedTextFits(t, fnt, shipDesignSpaceRowRect(), shipDesignText(lang, "shipdesign.space.row", "DOOM STAR", 999999, 999999), 8)
 		checkClippedTextFits(t, fnt, shipDesignModHeaderRect(), uiText(lang, "shipdesign.mods.available"), 8)
 		checkClippedTextFits(t, fnt, shipDesignModTextRect(7), strings.Repeat("No Range Dissipation", 3), 8)
 	}
@@ -35,16 +35,33 @@ func TestShipDesignTextRectsDoNotEnterModArea(t *testing.T) {
 	if shipDesignStatusTextRect().y+shipDesignStatusTextRect().h > shipDesignSpaceHeaderRect().y {
 		t.Fatal("status overlaps space header")
 	}
-	if shipDesignSpaceHeaderRect().y+shipDesignSpaceHeaderRect().h > shipDesignSpaceRowRect(0).y {
+	if shipDesignSpaceHeaderRect().y+shipDesignSpaceHeaderRect().h > shipDesignSpaceRowRect().y {
 		t.Fatal("space header overlaps rows")
 	}
 	for i := 0; i < 6; i++ {
 		if i > 0 && shipDesignHullCostRect(i-1).y+shipDesignHullCostRect(i-1).h > shipDesignHullCostRect(i).y {
 			t.Fatalf("hull cost rows %d/%d overlap", i-1, i)
 		}
-		if r := shipDesignSpaceRowRect(i); r.y+r.h > shipDesignModHeaderRect().y {
-			t.Fatalf("space row %d enters mod area: %+v", i, r)
+	}
+	if r := shipDesignSpaceRowRect(); r.y+r.h > shipDesignSpaceBarRect()[1] {
+		t.Fatalf("space row enters capacity bar: %+v", r)
+	}
+	bar := shipDesignSpaceBarRect()
+	if bar[1]+bar[3] > shipDesignModHeaderRect().y {
+		t.Fatalf("capacity bar enters mod area: %v", bar)
+	}
+	lower := textSafeRect{x: 300, y: 304, w: 332, h: 128}
+	inside := func(name string, r textSafeRect) {
+		t.Helper()
+		if r.x < lower.x || r.y < lower.y || r.x+r.w > lower.x+lower.w || r.y+r.h > lower.y+lower.h {
+			t.Fatalf("%s 未包含於下方美術面板：rect=%+v panel=%+v", name, r, lower)
 		}
+	}
+	inside("space header", shipDesignSpaceHeaderRect())
+	inside("space row", shipDesignSpaceRowRect())
+	inside("mod header", shipDesignModHeaderRect())
+	if bar[0] < lower.x || bar[1] < lower.y || bar[0]+bar[2] > lower.x+lower.w || bar[1]+bar[3] > lower.y+lower.h {
+		t.Fatalf("capacity bar 未包含於下方美術面板：bar=%v panel=%+v", bar, lower)
 	}
 	for i := 0; i < 8; i++ {
 		if r := shipDesignModTextRect(i); r.y+r.h > 431 {

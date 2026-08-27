@@ -5087,37 +5087,48 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 		s.extras = append(s.extras, shipDesignStatusTextRect().leftExtras(b.fnt,
 			unlockText, 9, color.RGBA{170, 200, 240, 255})...)
 
-		// 空間預算/已用(依目前選定元件即時計算):逐艦體列出「空間:已用／總」,超格轉紅並標
-		// 「空間不足」。底部 BUILD 用同一份 session 判斷擋下建造(不扣款、不入艦隊)，
-		// designMsg 顯示擋下提示——顯示與建造驗證共用同一份判斷，不會不一致。
-		// ⚠ 六列單欄 17px 間距會**壓到面板下緣的分隔線**(末日之星那一列直接掉進下一格)。
-		// 改成 **3 列 × 2 欄**:同樣六筆,高度從 102px 降到 45px,整塊留在面板內。
-		// 欄寬 166px 由固定右側內容區 300..632 對半分配。
+		// 空間預算只顯示目前選定艦體，符合「選取艦體 → 查看當前詳情」的現代操作模式。
+		// 舊版六艦體比較表雖彼此不重疊，卻跨過背景美術的上下 panel 分隔線；這裡將文字與
+		// 容量條一起限制在下方面板 304..431。BUILD 仍共用相同的空間判斷。
 		s.extras = append(s.extras, shipDesignSpaceHeaderRect().leftExtras(b.fnt,
 			uiText(b.lang, "shipdesign.space.header"), 9, gold)...)
 		okCol := color.RGBA{170, 220, 180, 255}
 		badCol := color.RGBA{230, 90, 90, 255}
-		for i, cl := range classes {
-			candidate := blueprint
-			candidate.Class = cl
-			used, known := b.session.BlueprintDesignSpaceUsed(candidate)
-			// 總空間同樣要含巨型通量器加成,否則顯示的「已用／總」會與 onAction 的建造判斷不一致
-			// ——兩邊本來就共用同一份判斷,這裡改一邊就要改另一邊。
-			totalSp := gamedata.ShipHullSpace(gamedata.CombatShipClass(i))
-			if b.session != nil {
-				totalSp = b.session.HullSpaceFor(cl)
+		used, known := b.session.BlueprintDesignSpaceUsed(blueprint)
+		totalSp := gamedata.ShipHullSpace(gamedata.CombatShipClass(b.designHull))
+		if b.session != nil {
+			totalSp = b.session.HullSpaceFor(blueprint.Class)
+		}
+		fits := known && used <= totalSp
+		txt := shipDesignText(b.lang, "shipdesign.space.row", shipClassLabel(b.lang, designHull), used, totalSp)
+		col := okCol
+		if !known {
+			txt = shipDesignText(b.lang, "shipdesign.space.unknown", shipClassLabel(b.lang, designHull))
+			col = badCol
+		} else if !fits {
+			txt += uiText(b.lang, "shipdesign.space.over")
+			col = badCol
+		}
+		s.extras = append(s.extras, shipDesignSpaceRowRect().leftExtras(b.fnt, txt, 8, col)...)
+		bar := shipDesignSpaceBarRect()
+		s.extraPanels = append(s.extraPanels, extraPanel{x: bar[0], y: bar[1], w: bar[2], h: bar[3],
+			fill: color.RGBA{18, 23, 34, 255}, border: color.RGBA{92, 105, 126, 255}})
+		if known && totalSp > 0 && used > 0 {
+			fillW := (bar[2] - 2) * used / totalSp
+			if fillW < 1 {
+				fillW = 1
 			}
-			fits := known && used <= totalSp
-			txt := shipDesignText(b.lang, "shipdesign.space.row", shipClassLabel(b.lang, cl), used, totalSp)
-			col := okCol
-			if !known {
-				txt = shipDesignText(b.lang, "shipdesign.space.unknown", shipClassLabel(b.lang, cl))
-				col = badCol
-			} else if !fits {
-				txt += uiText(b.lang, "shipdesign.space.over")
-				col = badCol
+			if fillW > bar[2]-2 {
+				fillW = bar[2] - 2
 			}
-			s.extras = append(s.extras, shipDesignSpaceRowRect(i).leftExtras(b.fnt, txt, 8, col)...)
+			fillCol := okCol
+			if !fits {
+				fillCol = badCol
+			} else if used*10 >= totalSp*8 {
+				fillCol = gold
+			}
+			s.extraPanels = append(s.extraPanels, extraPanel{x: bar[0] + 1, y: bar[1] + 1, w: fillW, h: bar[3] - 2,
+				fill: fillCol})
 		}
 
 		// 武器改造(mod)勾選 chip:順序對齊上方 modOptions 與 mod:0..N 熱區。已勾選

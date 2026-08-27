@@ -44,11 +44,15 @@ func shipDesignStatusTextRect() textSafeRect {
 	return textSafeRect{x: 300, y: 238, w: 332, h: 36, insetX: 5, insetY: 2, lineH: 16}
 }
 func shipDesignSpaceHeaderRect() textSafeRect {
-	return textSafeRect{x: 300, y: 277, w: 332, h: 18, insetX: 5, insetY: 1}
+	return textSafeRect{x: 300, y: 306, w: 332, h: 16, insetX: 5}
 }
 
-func shipDesignSpaceRowRect(index int) textSafeRect {
-	return textSafeRect{x: 300 + (index/3)*166, y: 296 + (index%3)*18, w: 166, h: 18, insetX: 5, insetY: 1}
+func shipDesignSpaceRowRect() textSafeRect {
+	return textSafeRect{x: 300, y: 323, w: 332, h: 18, insetX: 5, insetY: 1}
+}
+
+func shipDesignSpaceBarRect() [4]int {
+	return [4]int{305, 343, 322, 7}
 }
 
 func shipDesignModHeaderRect() textSafeRect {

@@ -321,13 +321,13 @@ func (s *multiplayerScreen) titleTextRect() textSafeRect {
 }
 
 func (s *multiplayerScreen) noteTextRect() textSafeRect {
-	return textSafeRect{x: 20, y: s.panY + s.panH + 4, w: moo2ScreenW - 40, h: 24,
-		insetX: 3, insetY: 1, lineH: 22}
+	// TEN 與 CANCEL 之間的 34px 空帶，完整位於 482×335 主面板內。
+	return textSafeRect{x: s.panX + 24, y: s.panY + 252, w: s.panW - 48, h: 30,
+		insetX: 3, insetY: 2, lineH: 13}
 }
 
 func (s *multiplayerScreen) messageTextRect() textSafeRect {
-	return textSafeRect{x: 20, y: s.panY + s.panH + 24, w: moo2ScreenW - 40, h: 24,
-		insetX: 3, insetY: 1, lineH: 22}
+	return s.noteTextRect()
 }
 
 // enabled 回傳這顆鈕在目前模式下能不能點；implemented 則另外處理已淘汰的傳輸方式。
@@ -518,9 +518,10 @@ func (s *multiplayerScreen) draw(dst *ebiten.Image) {
 	if s.mode == mpNetwork {
 		note = uiText(s.b.lang, "multiplayer.setup.note.network")
 	}
-	s.noteTextRect().drawCentered(dst, s.fnt, note, 12, dim)
 	if s.msg != "" {
-		s.messageTextRect().drawCentered(dst, s.fnt, s.msg, 12, color.RGBA{235, 160, 120, 255})
+		s.messageTextRect().drawCentered(dst, s.fnt, s.msg, 10, color.RGBA{235, 160, 120, 255})
+	} else {
+		s.noteTextRect().drawCentered(dst, s.fnt, note, 10, dim)
 	}
 }
 

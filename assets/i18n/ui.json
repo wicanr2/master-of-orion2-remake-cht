@@ -169,8 +169,8 @@
   },
   {
     "key": "multiplayer.setup.message.comm_legacy",
-    "english": "COMM INFO is for legacy modem and serial hardware; TCP needs no setup here.",
-    "value": "連線資訊供舊式數據機與序列線使用；TCP 不需在此設定。",
+    "english": "COMM INFO is legacy modem/serial setup; TCP needs none.",
+    "value": "連線資訊僅供舊式數據機／序列線；TCP 不需設定。",
     "note": "COMM INFO 停止線提示"
   },
   {
@@ -1377,7 +1377,7 @@
   {"key":"shipdesign.total.unknown","english":"Unknown original equipment; cannot price or build safely","value":"設計含未知原版裝備，無法安全計價或建造","note":"fail-closed 設計"},
   {"key":"shipdesign.treasury","english":"Treasury %d BC","value":"國庫 %d BC","note":"左下國庫"},
   {"key":"shipdesign.unlocked","english":"Unlocked: weapons %d/%d armor %d/%d shields %d/%d special %d/%d (research unlocks more)","value":"已解鎖：武器%d/%d 裝甲%d/%d 護盾%d/%d 特殊%d/%d（研究可解鎖更多）","note":"四類已解鎖數與總數"},
-  {"key":"shipdesign.space.header","english":"Space per hull (with current components):","value":"各艦體空間（依目前元件）：","note":"空間表標題"},
+  {"key":"shipdesign.space.header","english":"Current hull capacity:","value":"目前艦體空間：","note":"目前選定艦體的空間標題"},
   {"key":"shipdesign.space.row","english":"%s space %d/%d","value":"%s 空間：%d/%d","note":"艦體、已用、總空間"},
   {"key":"shipdesign.space.unknown","english":"%s space: unknown","value":"%s 空間：未知","note":"未知原版裝備空間 fallback"},
   {"key":"shipdesign.space.over","english":" (over capacity)","value":"（空間不足）","note":"空間表超額後綴"},
