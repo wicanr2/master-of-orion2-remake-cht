@@ -440,11 +440,14 @@
   增派／循環／隱匿控制維持明標 remake adapter。證據與規格見
   [`docs/re/races-spy-text-layout-audit-20260827.md`](docs/re/races-spy-text-layout-audit-20260827.md) 與
   [`docs/spec/races-spy-external-text.md`](docs/spec/races-spy-external-text.md)。
-  格子戰術已開始第四十八個切片：畫面標題、開場操作提示、武器槽三態顯示／切換戰報、
-  無限彈藥、缺名 fallback 與右鍵明細模板均由 `ui.json` 供應，Go 僅保留語意鍵、狀態與
-  動態艦艇／武器資料。原版三態與單次待命恢復已有 IDA／手冊錨點；戰報逐字內容、右鍵彈窗
-  外觀與循環方向仍維持明標 remake adapter。其餘移動、開火、回合與勝敗戰報尚待依同一
-  契約遷移，故本項仍為進行中。規格見
+  格子戰術已完成第四十八個切片：畫面標題、開場操作提示、行動佇列、移動、目標拒絕、
+  開火、回合、戰機附註、勝敗、戰後轉場，以及武器槽三態／右鍵明細均由 `ui.json` 供應；
+  `newTacticalScreenForShips` 到戰術繪製終點的來源切片已無 `.tr(`，Go 僅保留語意鍵與具型別
+  動態值。原版三態與單次待命恢復已有 IDA／手冊錨點；戰報逐字內容、右鍵彈窗外觀與循環
+  方向仍維持明標 remake adapter。`cmd/moo2`＋`internal/shell` 全套測試通過，繁中與英文正版
+  資料畫廊各 36/36，實圖抽查 `16_tactical.png` 的標題、戰報、艦名、武器列與控制列均在
+  安全框內。證據與規格見
+  [`docs/re/tactical-dynamic-battle-log-audit-20260827.md`](docs/re/tactical-dynamic-battle-log-audit-20260827.md) 與
   [`docs/spec/tactical-dynamic-text-catalog.md`](docs/spec/tactical-dynamic-text-catalog.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與

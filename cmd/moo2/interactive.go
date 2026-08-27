@@ -2357,7 +2357,7 @@ func newTacticalScreenForShips(b *sceneBuilder, p, e []shell.CombatShip, monster
 	// 開場先算一次狀態效果,否則第一回合的移動力會用未受牽引的速度(第 69 項(戰鬥速度與引擎階))。
 	shell.ApplyTacticalStatusEffects(p, e)
 	t := &tacticalScreen{b: b, fnt: b.fnt, player: p, enemy: e, sel: firstReadyShip(p),
-		log: tacticalText(b.lang, "tactical.log.initial"),
+		log:    tacticalText(b.lang, "tactical.log.initial"),
 		pStart: len(p), eStart: len(e),
 		rng: rand.New(rand.NewSource(seed)),
 		bg:  loadCombatBG(b.res), bar: loadCombatBar(b.res),
@@ -2436,7 +2436,7 @@ func (t *tacticalScreen) finishSelectedAction() {
 		return
 	}
 	t.sel = t.nextActionableShip()
-	t.log = fmt.Sprintf(t.b.tr("%s 完成行動,輪到下一艦", "%s is done; next ship"), name)
+	t.log = tacticalText(t.b.lang, "tactical.log.ship_done", name)
 }
 
 func (t *tacticalScreen) waitSelectedAction() {
@@ -2452,11 +2452,11 @@ func (t *tacticalScreen) waitSelectedAction() {
 	t.waited[t.sel] = true
 	next := t.nextActionableShip()
 	if next == t.sel {
-		t.log = t.b.tr("目前沒有其他未行動艦;再按完成或直接開火", "No other ship is ready; press DONE or fire")
+		t.log = tacticalText(t.b.lang, "tactical.log.no_other_ready")
 		return
 	}
 	t.sel = next
-	t.log = fmt.Sprintf(t.b.tr("%s 等待,輪到下一艦", "%s waits; next ship"), name)
+	t.log = tacticalText(t.b.lang, "tactical.log.ship_waits", name)
 }
 
 // freshMoveBudgets 依各艦的戰鬥速度算出這一回合的移動格數(第 69 項(戰鬥速度與引擎階))。
@@ -2556,7 +2556,7 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 			t.b.session.ApplyCombatOutcomeWithEnemySurvivors(t.b.session.PrimaryEnemyName(), t.pStart, t.eStart, survivors, enemySurvivors,
 				t.won, t.destroyedEnemyHullClassSum)
 		}
-		return t.b.goTo(t.b.battleResult, "戰鬥結果")
+		return t.b.goTo(t.b.battleResult, tacticalText(t.b.lang, "tactical.transition.result"))
 	}
 	if slot := t.tacticalWeaponSlotAt(in.MouseX, in.MouseY); slot >= 0 {
 		if in.RightClickReleased {
@@ -2591,11 +2591,11 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 			return nil
 		}
 		if pi < len(t.acted) && t.acted[pi] {
-			t.log = fmt.Sprintf(t.b.tr("%s 本回合已完成,請選另一艘艦", "%s has already finished this round; select another ship"), t.player[pi].Name)
+			t.log = tacticalText(t.b.lang, "tactical.log.already_finished", t.player[pi].Name)
 			return nil
 		}
 		if pi < len(t.waited) && t.waited[pi] && t.nextActionableShip() != pi {
-			t.log = t.b.tr("這艘艦已選擇等待,請先完成其他未行動艦", "This ship is waiting; finish the other ready ships first")
+			t.log = tacticalText(t.b.lang, "tactical.log.waiting_ship")
 			return nil
 		}
 		t.sel = pi
@@ -2626,8 +2626,7 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 		}
 		need := abs(sh.Col-col) + abs(sh.Row-row)
 		if need > budget {
-			t.log = fmt.Sprintf(t.b.tr("%s 這回合只剩 %d 格移動力(需要 %d)",
-				"%s has %d movement left this round (needs %d)"), sh.Name, budget, need)
+			t.log = tacticalText(t.b.lang, "tactical.log.move_insufficient", sh.Name, budget, need)
 			return nil
 		}
 		sh.Facing = gamedata.CombatFacingForVector(col-sh.Col, row-sh.Row)
@@ -2636,8 +2635,7 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 			t.moveLeft[t.sel] = budget - need
 		}
 		t.markShipMotion(*sh, false)
-		t.log = fmt.Sprintf(t.b.tr("%s 移動到 (%d,%d),剩 %d 格", "%s moves to (%d,%d), %d left"),
-			sh.Name, col, row, t.moveLeft[t.sel])
+		t.log = tacticalText(t.b.lang, "tactical.log.moved", sh.Name, col, row, t.moveLeft[t.sel])
 	}
 	return nil
 }
@@ -2670,7 +2668,7 @@ func (t *tacticalScreen) fireSelectedShip(target int) {
 		t.sel = t.nextActionableShip()
 	}
 	if t.sel < 0 || t.sel >= len(t.player) {
-		t.log = t.b.tr("本回合沒有可行動的我方艦", "No player ship is ready this round")
+		t.log = tacticalText(t.b.lang, "tactical.log.no_player_ready")
 		return
 	}
 	actor := t.sel
@@ -2715,8 +2713,7 @@ func (t *tacticalScreen) fireRoundForActors(target int, actors []int, endRound b
 		}
 		actors = ready
 		if len(actors) == 0 {
-			t.log = t.b.tr("本艦沒有啟用的武器槽；點擊武器列切換狀態",
-				"This ship has no active weapon slots; click a weapon row to change status")
+			t.log = tacticalText(t.b.lang, "tactical.log.no_active_mount")
 			return false
 		}
 	}
@@ -2736,8 +2733,7 @@ func (t *tacticalScreen) fireRoundForActors(target int, actors []int, endRound b
 	// (兩者都是「這一發根本沒有目標」),但原因相反——那個是被定住,這個是自己躲起來。
 	// 回合數用 t.round+1:t.round 要到本次開火結算完才會 ++。
 	if shell.CloakUntargetable(t.enemy[target], t.round+1) {
-		t.log = fmt.Sprintf(t.b.tr("%s 相位匿蹤中,任何武器都鎖定不了它",
-			"%s is phase-cloaked — nothing can target it"),
+		t.log = tacticalText(t.b.lang, "tactical.log.phase_cloaked",
 			combatShipLabel(t.b.lang, t.b.session, t.enemy[target].Name))
 		return false
 	}
@@ -2745,8 +2741,7 @@ func (t *tacticalScreen) fireRoundForActors(target int, actors []int, endRound b
 		// 手冊(Stasis Field):「cannot … **or be affected by any weapon**. It is
 		// effectively removed from battle entirely.」——只做「不能動」會讓它變成活靶,
 		// 那是相反的效果。
-		t.log = fmt.Sprintf(t.b.tr("%s 被停滯力場封住,任何武器都打不到它",
-			"%s is held in a stasis field — no weapon can affect it"),
+		t.log = tacticalText(t.b.lang, "tactical.log.in_stasis",
 			combatShipLabel(t.b.lang, t.b.session, t.enemy[target].Name))
 		return false
 	}
@@ -2906,12 +2901,11 @@ func (t *tacticalScreen) fireRoundForActors(target int, actors []int, endRound b
 	}
 	if firing == 0 {
 		if ammoBlocked {
-			t.log = t.b.tr("飛彈／魚雷彈藥耗盡,本艦無法開火", "Missile/torpedo ammunition depleted — this ship cannot fire")
+			t.log = tacticalText(t.b.lang, "tactical.log.ammo_depleted")
 		} else if inRange && arcBlocked {
-			t.log = t.b.tr("目標在射程內,但不在目前武器射界;轉向或移動後再開火",
-				"Target is in range but outside the weapon arc — turn or move before firing")
+			t.log = tacticalText(t.b.lang, "tactical.log.outside_arc")
 		} else {
-			t.log = t.b.tr("目標超出射程,移動艦艇靠近再開火", "Target out of range — move closer before firing")
+			t.log = tacticalText(t.b.lang, "tactical.log.out_of_range")
 		}
 		return false
 	}
@@ -2926,14 +2920,13 @@ func (t *tacticalScreen) fireRoundForActors(target int, actors []int, endRound b
 				playSFX(sfxHit)
 			}
 		}
-		name := t.b.tr("我方艦", "player ship")
+		name := tacticalText(t.b.lang, "tactical.label.player_ship")
 		if len(actors) > 0 && actors[0] >= 0 && actors[0] < len(t.player) {
 			name = t.player[actors[0]].Name
 		}
-		t.log = fmt.Sprintf(t.b.tr("%s 完成行動:造成 %d 傷害;輪到下一艦", "%s finished: %d damage; next ship"), name, pAtk)
+		t.log = tacticalText(t.b.lang, "tactical.log.action_damage", name, pAtk)
 		if len(t.enemy) == 0 {
-			t.over, t.won, t.log = true, true, t.b.tr("★ 敵艦隊全滅,勝利!點擊繼續",
-				"★ Enemy fleet destroyed — victory! Click to continue")
+			t.over, t.won, t.log = true, true, tacticalText(t.b.lang, "tactical.log.victory")
 		}
 		return true
 	}
@@ -3011,18 +3004,14 @@ func (t *tacticalScreen) fireRoundForActors(target int, actors []int, endRound b
 	if t.sel >= len(t.player) {
 		t.sel = firstReadyShip(t.player)
 	}
-	t.log = fmt.Sprintf(t.b.tr("第 %d 回合:%d 艦齊射 %d ／ 敵方還擊 %d",
-		"Round %d: %d ships deal %d / enemy returns %d"), t.round, firing, pAtk, eAtk)
+	t.log = tacticalText(t.b.lang, "tactical.log.round_volley", t.round, firing, pAtk, eAtk)
 	if fDmg > 0 || fLost > 0 {
-		t.log += fmt.Sprintf(t.b.tr("(戰機造成 %d,折損 %d 架)", " (fighters deal %d, %d lost)"),
-			fDmg, fLost)
+		t.log += tacticalText(t.b.lang, "tactical.log.fighter_suffix", fDmg, fLost)
 	}
 	if len(t.enemy) == 0 {
-		t.over, t.won, t.log = true, true, t.b.tr("★ 敵艦隊全滅,勝利!點擊繼續",
-			"★ Enemy fleet destroyed — victory! Click to continue")
+		t.over, t.won, t.log = true, true, tacticalText(t.b.lang, "tactical.log.victory")
 	} else if len(t.player) == 0 {
-		t.over, t.won, t.log = true, false, t.b.tr("✗ 我方艦隊全滅,敗北。點擊繼續",
-			"✗ Your fleet is destroyed — defeat. Click to continue")
+		t.over, t.won, t.log = true, false, tacticalText(t.b.lang, "tactical.log.defeat")
 	}
 	return true
 	*/
@@ -3121,8 +3110,7 @@ func (t *tacticalScreen) fireMultiMountActors(target int, actors []int, endRound
 	}
 	if fired == 0 {
 		if enabled == 0 {
-			t.log = t.b.tr("本艦沒有啟用的武器槽；點擊武器列切換狀態",
-				"This ship has no active weapon slots; click a weapon row to change status")
+			t.log = tacticalText(t.b.lang, "tactical.log.no_active_mount")
 		}
 		return false
 	}
@@ -3139,7 +3127,7 @@ func (t *tacticalScreen) fireMultiMountActors(target int, actors []int, endRound
 		if len(t.enemy) < preCount {
 			playSFX(sfxExplode)
 		}
-		t.log = fmt.Sprintf(t.b.tr("多槽齊射造成 %d 傷害；輪到下一艦", "Multi-mount volley deals %d damage; next ship"), damage)
+		t.log = tacticalText(t.b.lang, "tactical.log.multi_mount_damage", damage)
 		return true
 	}
 	return t.finishRound(preCount, damage, firedMissile, damage > 0, fired)
@@ -3531,21 +3519,17 @@ func (t *tacticalScreen) finishRound(preCount, pAtk int, firedMissile, anyHit bo
 	t.waited = make([]bool, len(t.player))
 	t.sel = firstReadyShip(t.player)
 	if firing > 0 {
-		t.log = fmt.Sprintf(t.b.tr("第 %d 回合:%d 艦齊射 %d ／ 敵方還擊 %d",
-			"Round %d: %d ships deal %d / enemy returns %d"), t.round, firing, pAtk, eAtk)
+		t.log = tacticalText(t.b.lang, "tactical.log.round_volley", t.round, firing, pAtk, eAtk)
 	} else {
-		t.log = fmt.Sprintf(t.b.tr("第 %d 回合完成 ／ 敵方還擊 %d",
-			"Round %d complete / enemy returns %d"), t.round, eAtk)
+		t.log = tacticalText(t.b.lang, "tactical.log.round_complete", t.round, eAtk)
 	}
 	if fDmg > 0 || fLost > 0 {
-		t.log += fmt.Sprintf(t.b.tr("(戰機造成 %d,折損 %d 架)", " (fighters deal %d, %d lost)"), fDmg, fLost)
+		t.log += tacticalText(t.b.lang, "tactical.log.fighter_suffix", fDmg, fLost)
 	}
 	if len(t.enemy) == 0 {
-		t.over, t.won, t.log = true, true, t.b.tr("★ 敵艦隊全滅,勝利!點擊繼續",
-			"★ Enemy fleet destroyed — victory! Click to continue")
+		t.over, t.won, t.log = true, true, tacticalText(t.b.lang, "tactical.log.victory")
 	} else if len(t.player) == 0 {
-		t.over, t.won, t.log = true, false, t.b.tr("✗ 我方艦隊全滅,敗北。點擊繼續",
-			"✗ Your fleet is destroyed — defeat. Click to continue")
+		t.over, t.won, t.log = true, false, tacticalText(t.b.lang, "tactical.log.defeat")
 	}
 	t.initiativeEnemyDamage = 0
 	if initiative && !t.over {
