@@ -56,6 +56,10 @@ ROOTS = {
     "raw_colony_range_test_ff5f8": 0xFF5F8,
     "raw_colony_direct_range_test_ff593": 0xFF593,
     "raw_colony_distance_range_test_ff4e9": 0xFF4E9,
+    "raw_diplomatic_technology_candidates_27094": 0x27094,
+    "raw_diplomatic_colony_candidate_e5be3": 0xE5BE3,
+    "raw_diplomatic_colony_candidate_gate_e4a09": 0xE4A09,
+    "raw_diplomatic_colony_candidates_e5cd4": 0xE5CD4,
 }
 PERSONALITY_SCORE_TABLE_EA = 0x181080
 INCIDENT_DIVISOR_TABLE_EA = 0x180CF0

@@ -96,6 +96,57 @@ func TechCategoryWeight(tech Technology) int {
 	return TechCategoryDefaultMultiplier[c]
 }
 
+// OriginalTechnologyResearchLevel 回傳科技所屬主題在原版研究表中的 level。
+// sub_4F93B 以雙方已知科技的最高 level 建立科技要求 intensity 上限。
+func OriginalTechnologyResearchLevel(tech Technology) (int, bool) {
+	topic, ok := OrigTechTopic(tech)
+	if !ok || int(topic) < 0 || int(topic) >= len(OrigTopicLevel) {
+		return 0, false
+	}
+	return originalTopicLevel(topic), true
+}
+
+// OriginalDiplomaticTechnologyRatioLimit 對映 sub_4F93B @ 0x4F9C0..0x4FA78。
+// 雙方最高科技 level 最低視為 1；target 較低時回 10*target/source，否則回 10，
+// 最終下限為 1。
+func OriginalDiplomaticTechnologyRatioLimit(sourceKnown, targetKnown map[Technology]bool) (int, bool) {
+	if sourceKnown == nil || targetKnown == nil {
+		return 0, false
+	}
+	maxLevel := func(known map[Technology]bool) (int, bool) {
+		best := 1
+		for tech, present := range known {
+			if !present {
+				continue
+			}
+			level, ok := OriginalTechnologyResearchLevel(tech)
+			if !ok {
+				return 0, false
+			}
+			if level > best {
+				best = level
+			}
+		}
+		return best, true
+	}
+	source, ok := maxLevel(sourceKnown)
+	if !ok {
+		return 0, false
+	}
+	target, ok := maxLevel(targetKnown)
+	if !ok {
+		return 0, false
+	}
+	limit := 10
+	if target < source {
+		limit = 10 * target / source
+	}
+	if limit < 1 {
+		limit = 1
+	}
+	return limit, true
+}
+
 // ============ category enum 的語意(2026-08-08 第 52 項(生物武器分類))============
 //
 // `docs/re/calc-tech-value.md` 的「誠實留白」第 1 條寫著:

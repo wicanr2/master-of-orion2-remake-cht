@@ -1172,8 +1172,10 @@
   `save.Player.Objective`，不因缺另外兩個 profile raw 而誤升格。`sub_544A1` 已閉合項目也已
   組成單一 ordered composer 與 shell typed producer，會輸出 score／worst reason／action
   limit；缺 incident、歷史、精確雙向國力或 government 0 可達資料時失敗即關閉。
-  正常發兵仍未切換，最後主要阻塞是 `sub_4F93B` 科技／殖民地候選 availability 與
-  `sub_FF593` 蟲洞 star-mask 支線。
+  `sub_4F93B` 又修正兩個既有 off-by-one：kind 命中值是 `Random(n)==1`，科技 payload
+  使用 `Random(3)-2`；source `+0xB4` 也由錯稱收入訂正為六項維護費。科技比例、真人
+  獨有科技候選估值排序及無納貢維護費 producer 已接。正常發兵仍未切換，最後主要阻塞是
+  殖民地候選、outcome 1／3／4 請求狀態與 `sub_FF593` 蟲洞 star-mask 支線。
   目前願戰來源仍是明示的
   `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與

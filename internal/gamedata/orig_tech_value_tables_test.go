@@ -99,3 +99,37 @@ func TestTechCategoryOfIsIndexedByTechnology(t *testing.T) {
 		t.Error("越界的科技應回 false")
 	}
 }
+
+func TestOriginalDiplomaticTechnologyRatioLimitUsesHighestKnownLevel(t *testing.T) {
+	low, high := Technology(-1), Technology(-1)
+	lowLevel, highLevel := 1<<30, -1
+	for raw := 1; raw < len(TechItemCategory); raw++ {
+		tech := Technology(raw)
+		level, ok := OriginalTechnologyResearchLevel(tech)
+		if !ok || level <= 0 {
+			continue
+		}
+		if level < lowLevel {
+			low, lowLevel = tech, level
+		}
+		if level > highLevel {
+			high, highLevel = tech, level
+		}
+	}
+	if low < 0 || high < 0 || highLevel <= lowLevel {
+		t.Fatal("研究表應能提供高低兩個 level")
+	}
+	got, ok := OriginalDiplomaticTechnologyRatioLimit(
+		map[Technology]bool{high: true}, map[Technology]bool{low: true})
+	want := 10 * lowLevel / highLevel
+	if want < 1 {
+		want = 1
+	}
+	if !ok || got != want {
+		t.Fatalf("ratio limit=%d/%v，預期 %d", got, ok, want)
+	}
+	if got, ok := OriginalDiplomaticTechnologyRatioLimit(
+		map[Technology]bool{low: true}, map[Technology]bool{high: true}); !ok || got != 10 {
+		t.Fatalf("target 不較低時 ratio limit=%d/%v，預期 10", got, ok)
+	}
+}

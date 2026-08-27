@@ -4,7 +4,7 @@ import "testing"
 
 func TestOriginalHumanDiplomaticActionCredits(t *testing.T) {
 	out, ok := OriginalHumanDiplomaticActionSelect(OriginalHumanDiplomaticActionInput{
-		Intensity: 4, CreditsEnabled: true, SourceIncome: 12, TargetCredits: 987, CreditIntensityLimit: 10,
+		Intensity: 4, CreditsEnabled: true, SourceMaintenance: 12, TargetCredits: 987, CreditIntensityLimit: 10,
 	}, func(int) int { return 1 })
 	if !ok || out.Kind != OriginalHumanDiplomaticActionCredits || out.Credits != 400 {
 		t.Fatalf("credits action=%+v/%v，預期 400 BC", out, ok)
@@ -13,7 +13,7 @@ func TestOriginalHumanDiplomaticActionCredits(t *testing.T) {
 
 func TestOriginalHumanDiplomaticActionSelectionRollOrder(t *testing.T) {
 	spans := []int{}
-	rolls := []int{1, 2, 2}
+	rolls := []int{2, 1, 2}
 	roll := func(n int) int {
 		spans = append(spans, n)
 		v := rolls[0]
@@ -23,9 +23,9 @@ func TestOriginalHumanDiplomaticActionSelectionRollOrder(t *testing.T) {
 	out, ok := OriginalHumanDiplomaticActionSelect(OriginalHumanDiplomaticActionInput{
 		Intensity: 6, DirectEnabled: true, TechnologyEnabled: true, CreditsEnabled: true, ColonyEnabled: true,
 		TechnologyCandidates: []int{10, 20, 30}, TechnologyRatioLimit: 10,
-		SourceIncome: 20, TargetCredits: 1000, CreditIntensityLimit: 10, ColonyTarget: 7,
+		SourceMaintenance: 20, TargetCredits: 1000, CreditIntensityLimit: 10, ColonyTarget: 7,
 	}, roll)
-	if !ok || out.Kind != OriginalHumanDiplomaticActionTechnology || out.Technology != 30 {
+	if !ok || out.Kind != OriginalHumanDiplomaticActionTechnology || out.Technology != 20 {
 		t.Fatalf("technology action=%+v/%v", out, ok)
 	}
 	want := []int{3, 3, 3}

@@ -55,12 +55,18 @@
     人口時，`sub_FF666` 讀 source `player+0x324` 燃料距離，經 `sub_FF5F8／sub_FF593／
     sub_FF4E9` 檢查 source 或聯盟方人口殖民地的距離後加 1。無蟲洞路徑可由 typed 人口群、
     殖民星與燃料科技重建；蟲洞 star-mask 支線未閉合時必須回傳 unknown。
+22. `sub_4F93B` 的 kind 抽選逐次比較 `Random(3／3／2)==1`，不是比較 2；科技 payload
+    索引為 `count-1-(count*intensity/ratio+Random(3)-2)`。source `player+0xB4` 是六項
+    維護費總額，不是收入；BC payload 以它最低 10 後乘 `10*intensity`。
+23. 科技候選由 `sub_27094` 取得 target 已知、source 未知且 `Calc_Tech_Value_` 對 source
+    為正的 application，依估值排序。雙方最高已知科技 level 最低視為 1；target 較低時
+    ratio limit=`10*target/source`，否則 10，最終下限 1。
 
 ## DRAFT 邊界
 
 `sub_544A1 @ 0x544A1..0x54CC0` 的四類尾端與 RNG 已形成純規則；尚缺的是 directional
 incident memory 的 writer 門檻／正常玩家事件 producer、government 0 的蟲洞 mask 支線，以及
-`sub_4F93B` 的科技候選表／殖民地候選 producer。
+`sub_4F93B` 的殖民地候選 producer與 outcome 1／3／4 的玩家請求狀態。
 這些欄位閉合前，remake 可用既有戰爭態勢決定是否呼叫原版目標估值，但必須標為 fallback，
 不得把只含 relation/personality 的部分 score 冒充完整 producer。
 
@@ -70,6 +76,8 @@ incident memory 的 writer 門檻／正常玩家事件 producer、government 0 �
 - contact turns 由 249 增至 250 後封頂，並與 cooldown 一起通過存檔往返。
 - 正負 score threshold、四類結果及每條路徑的 RNG 次數必須有純規則測試。
 - 外交 action 四種 kind、候選 gate、RNG 順序、BC 取整及科技索引必須有純規則測試。
+- kind RNG 必須以回傳 1 命中，科技索引固定覆蓋 `Random(3)-2` 邊界；不得沿用舊版
+  `r-1==1` 與多減一格的錯誤測試 oracle。
 - 正式解約寫 +0x727、經存檔往返及 Honorable score 差 30；經濟協議解約須有負對照。
 - 正式解約同時寫 +0x7EE／+0x7F6，並驗證一般／Honorable 幅度、`3*x/5`、原因碼與存檔。
 - 成功派艦後 cooldown 必須落在 20–39，並經 JSON snapshot 往返不變。

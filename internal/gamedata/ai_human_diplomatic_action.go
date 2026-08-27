@@ -19,7 +19,7 @@ type OriginalHumanDiplomaticActionInput struct {
 	ColonyEnabled        bool
 	TechnologyCandidates []int
 	TechnologyRatioLimit int
-	SourceIncome         int
+	SourceMaintenance    int
 	TargetCredits        int
 	CreditIntensityLimit int
 	ColonyTarget         int
@@ -37,7 +37,7 @@ type OriginalHumanDiplomaticAction struct {
 // 的候選 gate、RNG 順序與四種 payload。候選科技與殖民地由上游提供。
 func OriginalHumanDiplomaticActionSelect(in OriginalHumanDiplomaticActionInput,
 	roll func(int) int) (OriginalHumanDiplomaticAction, bool) {
-	if in.Intensity < 0 || in.TechnologyRatioLimit < 0 || in.SourceIncome < 0 ||
+	if in.Intensity < 0 || in.TechnologyRatioLimit < 0 || in.SourceMaintenance < 0 ||
 		in.TargetCredits < 0 || in.CreditIntensityLimit < 0 || roll == nil {
 		return OriginalHumanDiplomaticAction{}, false
 	}
@@ -71,7 +71,7 @@ func OriginalHumanDiplomaticActionSelect(in OriginalHumanDiplomaticActionInput,
 		if r < 1 || r > 3 {
 			return OriginalHumanDiplomaticAction{}, false
 		}
-		if r-1 == 1 || (!direct && !tech && !credits) {
+		if r == 1 || (!direct && !tech && !credits) {
 			kind = OriginalHumanDiplomaticActionColony
 		}
 	}
@@ -80,7 +80,7 @@ func OriginalHumanDiplomaticActionSelect(in OriginalHumanDiplomaticActionInput,
 		if r < 1 || r > 3 {
 			return OriginalHumanDiplomaticAction{}, false
 		}
-		if r-1 == 1 || (!direct && !credits) {
+		if r == 1 || (!direct && !credits) {
 			kind = OriginalHumanDiplomaticActionTechnology
 		}
 	}
@@ -89,7 +89,7 @@ func OriginalHumanDiplomaticActionSelect(in OriginalHumanDiplomaticActionInput,
 		if r < 1 || r > 2 {
 			return OriginalHumanDiplomaticAction{}, false
 		}
-		if r-1 == 1 || !credits {
+		if r == 1 || !credits {
 			kind = OriginalHumanDiplomaticActionDirect
 		}
 	}
@@ -105,11 +105,11 @@ func OriginalHumanDiplomaticActionSelect(in OriginalHumanDiplomaticActionInput,
 			out.DirectTier = 2
 		}
 	case OriginalHumanDiplomaticActionCredits:
-		income := in.SourceIncome
-		if income < 10 {
-			income = 10
+		maintenance := in.SourceMaintenance
+		if maintenance < 10 {
+			maintenance = 10
 		}
-		amount := 10 * intensity * income
+		amount := 10 * intensity * maintenance
 		if amount > in.TargetCredits {
 			amount = in.TargetCredits
 		}
@@ -134,7 +134,7 @@ func OriginalHumanDiplomaticActionSelect(in OriginalHumanDiplomaticActionInput,
 			return OriginalHumanDiplomaticAction{}, false
 		}
 		idx := len(in.TechnologyCandidates) - 1 -
-			(len(in.TechnologyCandidates)*intensity/in.TechnologyRatioLimit + (r - 1) - 2)
+			(len(in.TechnologyCandidates)*intensity/in.TechnologyRatioLimit + r - 2)
 		if idx < 0 {
 			idx = 0
 		}

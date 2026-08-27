@@ -91,6 +91,17 @@
     判斷 `dx²+dy² <= 900*fuelRange²`；`sub_FF593 @ 0xFF593..0xFF5F8` 另有 target 蟲洞
     `+0x29` 與 partner star mask `+0x33` 支線。無蟲洞距離契約已證實；蟲洞 mask 的完整
     語意仍標為 unknown，remake 不以 `Star.Owner` 猜測替代。
+21. `sub_4F93B @ 0x4FB53／0x4FB7A／0x4FBA6` 的三次 raw comparison 都是
+    `call sub_1247A0; cmp eax,1`。現行 selector 原先把它寫成 `r-1==1`，實際錯移為命中 2；
+    `0x4FCDD..0x4FD17` 的科技索引也證實常數是 `Random(3)-2`。兩項已依 raw 指令勘誤。
+22. `sub_4F93B @ 0x4FBFB..0x4FC23` 讀 source `player+0xB4`；獨立
+    `sub_E2000 @ 0xE2000` 證據已證實這是建築、運輸艦、指揮赤字、間諜、納貢、軍官六項
+    維護費總額，不是收入。remake 已改名 `SourceMaintenance`；有 AI→玩家納貢而缺本回合
+    raw 分項時失敗即關閉。
+23. `sub_27094 @ 0x27094..0x2720F` 掃 target 已知且 source 未知的科技，排除
+    `Calc_Tech_Value_==0` 後依估值排序。`0x4F9C0..0x4FA78` 分別取雙方最高科技 level，
+    target 較低時算 `10*target/source`，否則 10，再夾下限 1。typed producer 已接來源
+    `OriginalTechProfile`、雙方已知 application 與既有 `OriginalAITechValueKnownSlice`。
 
 ## Remake 對映與限制
 
@@ -124,6 +135,9 @@
 - 已接 shell typed producer：新局可由雙向逐艦國力、人口、歷史與持久 raw 組合上述 score；
   government 0 蟲洞支線、GAM／舊 JSON 缺 incident、歷史不足時失敗即關閉。它尚未
   取代正常發兵 fallback，因 `sub_4F93B` 完整候選 availability 仍未閉合。
+- 已接 `sub_4F93B` 科技／BC 前半 producer：科技比例與候選排序、無納貢時 source 六項
+  維護費可 typed 產生；kind RNG 與科技 payload 的兩個 off-by-one 已修正。殖民地候選與
+  outcome 1／3／4 的請求資料仍未閉合，因此尚未把部分 availability 接成正常決策。
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。
