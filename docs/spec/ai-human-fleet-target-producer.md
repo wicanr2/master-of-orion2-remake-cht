@@ -38,6 +38,11 @@
 15. AI↔真人的兩個方向 `+0x5EC` 必須與 AI↔AI 共用 `sub_5EF4B` typed producer：owner
     艦艇、攻擊種族值與領袖，對上 observer 的電腦、引擎、防禦種族值及跨維度效果；
     不得以雙方 `FleetStrength` 純量冒充方向值。
+16. 特殊覆寫依原始順序處理：`+0x60E==1` 且來源類型 raw 2 或來源人口大於真人容量一半；
+    government 3 的 `Random(200)<=difficulty+1`；以及 `Random(100)<+0x7EC` 食物赤字，
+    都把目前 score 覆寫成 -150。government 3 同時把行動上限改為 100。
+17. government 1 在國力比至少 100、target `+0x857>=200` 且 `+0x837!=-1` 時加入
+    `-targetValue/20`。government 0 以 `sub_DCB47` 計數作 `Random(400)<=count` 的 -150 覆寫。
 
 ## DRAFT 邊界
 

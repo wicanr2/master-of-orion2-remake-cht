@@ -87,6 +87,57 @@ func OriginalHumanTargetPowerPressure(powerRatio, sourceGovernment int) (score, 
 	return -powerRatio / 40, 150, true, true
 }
 
+// OriginalHumanTargetForcedPopulation 對應 0x54593..0x545CE。sourceTypeRaw 是
+// player+0x28；raw 2 無條件觸發，否則來源總人口嚴格大於真人殖民容量一半才觸發。
+func OriginalHumanTargetForcedPopulation(forceWarRaw int, sourceTypeRaw int,
+	sourcePopulation, targetPopulationCapacity int) (bool, bool) {
+	if forceWarRaw < 0 || forceWarRaw > 255 || sourceTypeRaw < 0 || sourceTypeRaw > 255 ||
+		sourcePopulation < 0 || sourcePopulation > 32767 || targetPopulationCapacity < 0 || targetPopulationCapacity > 32767 {
+		return false, false
+	}
+	return forceWarRaw == 1 && (sourceTypeRaw == 2 || sourcePopulation > targetPopulationCapacity/2), true
+}
+
+// OriginalHumanTargetGovernmentThree 對應 0x545CE..0x54614；roll200 採 1..200。
+// 觸發時 score 覆寫 -150、原因 109、行動上限 100。
+func OriginalHumanTargetGovernmentThree(government, difficulty, roll200 int) (bool, bool) {
+	if government < 0 || government > 7 || difficulty < 0 || difficulty > 6 || roll200 < 1 || roll200 > 200 {
+		return false, false
+	}
+	return government == 3 && roll200 <= difficulty+1, true
+}
+
+// OriginalHumanTargetFoodDeficit 對應 0x54614..0x5464C。原版條件是
+// Random_(100) < signed +0x7EC，而非 <=。
+func OriginalHumanTargetFoodDeficit(foodDeficitTurns, roll100 int) (bool, bool) {
+	if foodDeficitTurns < -32768 || foodDeficitTurns > 32767 || roll100 < 1 || roll100 > 100 {
+		return false, false
+	}
+	return roll100 < foodDeficitTurns, true
+}
+
+// OriginalHumanTargetGovernmentOnePressure 對應 0x5464C..0x546C4。
+// targetValue 是 source→target 的 dword +0x857，targetExists 對應 +0x837!=-1。
+func OriginalHumanTargetGovernmentOnePressure(government, powerRatio, targetValue int,
+	targetExists bool) (int, bool) {
+	if government < 0 || government > 7 || powerRatio < 0 || powerRatio > 800 || targetValue < 0 {
+		return 0, false
+	}
+	if government != 1 || powerRatio < 100 || targetValue < 200 || !targetExists {
+		return 0, true
+	}
+	return -targetValue / 20, true
+}
+
+// OriginalHumanTargetGovernmentZeroExpansion 對應 0x546C4..0x5470C。
+// reachableColonyScore 是 sub_DCB47 的非負總數；Random_(400)<=總數時覆寫 -150。
+func OriginalHumanTargetGovernmentZeroExpansion(government, reachableColonyScore, roll400 int) (bool, bool) {
+	if government < 0 || government > 7 || reachableColonyScore < 0 || roll400 < 1 || roll400 > 400 {
+		return false, false
+	}
+	return government == 0 && roll400 <= reachableColonyScore, true
+}
+
 // OriginalHumanTargetOutcomeInput 是 sub_544A1 尾端已閉合的決策輸入。
 // Score 是上游所有方向關係、事件、性格與領袖修正合成後的 signed 分數。
 type OriginalHumanTargetOutcomeInput struct {

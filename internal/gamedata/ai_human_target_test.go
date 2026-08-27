@@ -68,6 +68,30 @@ func TestOriginalHumanTargetPowerPressure(t *testing.T) {
 	}
 }
 
+func TestOriginalHumanTargetSpecialBranches(t *testing.T) {
+	if got, ok := OriginalHumanTargetForcedPopulation(1, 0, 51, 100); !ok || !got {
+		t.Fatalf("+0x60E 人口過半應觸發：%v/%v", got, ok)
+	}
+	if got, ok := OriginalHumanTargetForcedPopulation(1, 0, 50, 100); !ok || got {
+		t.Fatalf("人口恰半不得觸發：%v/%v", got, ok)
+	}
+	if got, ok := OriginalHumanTargetGovernmentThree(3, 2, 3); !ok || !got {
+		t.Fatalf("government 3 應以 difficulty+1=3 通過：%v/%v", got, ok)
+	}
+	if got, ok := OriginalHumanTargetFoodDeficit(10, 10); !ok || got {
+		t.Fatalf("食物赤字 gate 是嚴格小於：%v/%v", got, ok)
+	}
+	if got, ok := OriginalHumanTargetFoodDeficit(10, 9); !ok || !got {
+		t.Fatalf("9<10 應觸發：%v/%v", got, ok)
+	}
+	if got, ok := OriginalHumanTargetGovernmentOnePressure(1, 100, 219, true); !ok || got != -10 {
+		t.Fatalf("government 1 目標壓力應向零截斷：%d/%v", got, ok)
+	}
+	if got, ok := OriginalHumanTargetGovernmentZeroExpansion(0, 5, 5); !ok || !got {
+		t.Fatalf("government 0 gate 是 <=：%v/%v", got, ok)
+	}
+}
+
 func TestOriginalHumanTargetThreshold(t *testing.T) {
 	if got, ok := OriginalHumanTargetThreshold(-5, 20); !ok || got != 100 {
 		t.Fatalf("負分 threshold=%d/%v，預期 100/true", got, ok)

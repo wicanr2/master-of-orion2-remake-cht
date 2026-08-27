@@ -1161,7 +1161,9 @@
   `-ratio/40` 與行動上限 150 已接純規則；玩家↔AI 逐艦方向 `+0x5EC` shell producer
   亦已泛化，雙方 owner／observer 科技、引擎、種族攻防與領袖各自生效，缺 raw 失敗即關閉。
   後續 IDA 又訂正 `sub_E5B17` 為 target 殖民人口容量加總、`sub_DCB47` 為殖民地 player-mask
-  可達計數；前者的 `+0x60E` 強制分支可直接接，後者尚缺殖民地可達 typed 資料。
+  可達計數；`+0x60E` 人口壓力、government 3 難度骰、食物赤字、government 1 目標值與
+  government 0 可達骰均已拆成保留嚴格不等號及 RNG 邊界的純規則。後者仍缺殖民地可達
+  typed producer，因此完整 score 尚不升格。
   目前願戰來源仍是明示的
   `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與

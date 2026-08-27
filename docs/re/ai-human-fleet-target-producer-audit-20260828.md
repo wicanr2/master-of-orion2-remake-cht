@@ -69,6 +69,12 @@
 15. `sub_DCB47 @ 0xDCB47..0xDCBB0` 掃殖民地記錄的 player mask：同時含 source／target
     的殖民地加 5，只有 target 且 `sub_FF666` 對 source 可達則加 1。government raw 0
     分支以此總數作 `Random(400)` 門檻；資料形狀已證實，殖民地可達語意尚未 typed。
+16. `0x545CE..0x5470C` 的其餘特殊分支已由 raw comparison 閉合：government 3 使用
+    `Random(200)<=difficulty+1` 並覆寫 score=-150／原因 109／行動上限 100；所有政府都
+    無條件先消耗 `Random(100)`，只有結果嚴格小於 signed `+0x7EC` 食物赤字回合時覆寫
+    -150／原因 119。government 1 在 `sub_500CF>=100`、方向 `+0x857>=200` 且對應
+    `+0x837!=-1` 時加入 `-value/20`／原因 115。government 0 則在
+    `Random(400)<=sub_DCB47` 時覆寫 -150／原因 121。
 
 ## Remake 對映與限制
 
@@ -90,6 +96,8 @@
 - 已接純規則：`sub_500CF` 國力比重用既有 `OriginalNPCPowerRatio`，另補 ratio>=300 的
   score／行動上限 consumer。玩家↔AI 的逐艦方向 `+0x5EC` shell producer 已泛化：雙方
   皆依 owner 艦艇與 observer 科技／引擎／種族防禦計算，任一 raw 缺欄就失敗即關閉。
+- 已接純規則：上述 `+0x60E`、government 3、食物赤字、government 1 與 government 0
+  分支的 gate／算式；尚未把缺少 typed producer 的 `sub_DCB47` 計數偽造為零。
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。
