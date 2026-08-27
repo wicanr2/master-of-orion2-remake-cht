@@ -5162,7 +5162,29 @@ func (s *GameSession) EndTurn() {
 			s.AIPlayers[i].Player.TreatyIncomeBC = treatyYields[i].AIBC
 			s.AIPlayers[i].Player.TreatyResearch = treatyYields[i].AIResearch
 		}
-		ps, colonies := engine.ApplyAIEconomy(s.AIPlayers[i].Player, s.AIPlayers[i].Colonies, s.AIPlayers[i].Decider)
+		ps := s.AIPlayers[i].Player
+		ps.TaxRate = s.AIPlayers[i].Decider.TaxRate(ps.BC)
+		jobCtx := engine.OriginalAIJobContext{
+			Personality:         s.AIPlayers[i].Personality,
+			LateTech:            aiOriginalLateTechReached(ps),
+			ColonyFoodHalf:      make([]int, len(s.AIPlayers[i].Colonies)),
+			ColonyFoodHalfKnown: make([]bool, len(s.AIPlayers[i].Colonies)),
+		}
+		knownTech := knownTechnologyApplications(ps)
+		for colony := range s.AIPlayers[i].Colonies {
+			var built map[string]bool
+			if colony < len(s.AIPlayers[i].ColonyBuildings) {
+				built = s.AIPlayers[i].ColonyBuildings[colony]
+			}
+			jobCtx.ColonyFoodHalf[colony], jobCtx.ColonyFoodHalfKnown[colony] =
+				originalAIColonyFoodHalf(s.AIPlayers[i].Colonies[colony], built, knownTech)
+		}
+		colonies, exactJobs := engine.ApplyOriginalAIUnblockadedJobs(ps, s.AIPlayers[i].Colonies, jobCtx)
+		if !exactJobs {
+			// 舊 JSON 缺逐種族 profile 或 +0xDD 無法建立時，保留既有可玩 fallback；
+			// 不把這條路徑宣稱為原版忠實。封鎖分支接線後也必須在這裡先分流。
+			ps, colonies = engine.ApplyAIEconomy(ps, s.AIPlayers[i].Colonies, s.AIPlayers[i].Decider)
+		}
 		ps = applyAIDifficultyPlayerInputs(ps, s.Difficulty)
 		s.AIPlayers[i].Colonies = colonies
 		out := engine.RunEmpireTurnWithResearchRoller(ps, s.aiColoniesForTurn(i, colonies), s.researchBreakthroughRoll)

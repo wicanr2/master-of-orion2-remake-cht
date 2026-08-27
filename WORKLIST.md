@@ -1105,8 +1105,12 @@
   帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
   state machine 亦待閉合。2026-08-28 又以 IDA 證實 AI 職務分配是封鎖／未封鎖
   分流、逐 colonist 排序、邊際輸出與全帝國迭代；這直接反證現有逐殖民地
-  `Decider.ColonyJobs` 足以承載 original mode。四個 comparator、job raw ID 與
-  `player+0xAA/+0xAC` producer 尚待閉合，規格維持 `DRAFT`；見
+  `Decider.ColonyJobs` 足以承載 original mode。四個 comparator、job raw ID、
+  `player+0xAA/+0xAC` producer、逐 race／prisoner 候選與帝國停止比較現已閉合；
+  未封鎖殖民地會先依原版最低工人／半工業消耗配置，再以研究－工業邊際逐人平衡，
+  並同步 `PopulationGroups`。整體仍缺 `Compute_Blockades_` producer 到 typed colony 的
+  垂直接線，以及 `sub_D61E7` 封鎖分支的欄位契約；未封鎖子規格與正常回合消費端已
+  `CONFORMED`，但不能據此勾掉完整 AI 決策器；見
   [`docs/re/ai-colony-jobs-audit-20260828.md`](docs/re/ai-colony-jobs-audit-20260828.md) 與
   [`docs/spec/ai-colony-jobs.md`](docs/spec/ai-colony-jobs.md)。其餘 AI 建造證據見
   [`docs/re/ai-difficulty-economy-audit-20260826.md`](docs/re/ai-difficulty-economy-audit-20260826.md) 與

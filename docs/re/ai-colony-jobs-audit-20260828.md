@@ -16,7 +16,7 @@
 
 `ida-pro-9.4-idapython:locked-v1` 本輪因 `Python3TargetDLL` 與 license
 環境未載入而退出 1，沒有輸出證據；依正對照改用已驗證的
-`py312-v1` 後，同一份 `.i64` 成功產生 189,241-byte JSON。前一次空輸出
+`py312-v1` 後，同一份 `.i64` 成功產生 545,982-byte JSON。前一次空輸出
 不作為「函式不存在」或玩法結論。
 
 ## 已證實的控制流
@@ -39,15 +39,50 @@
    殖民地 AI 記錄 `+8` 與 `+0x0A`。沒有可指派人口時分別寫
    `0x8001` 與 `0x7FFF`作為 sentinel。
 6. `sub_D66B3` 先以 `sub_E2D72` 重算帝國，然後從所有
-   未封鎖殖民地選最大 `+8` 候選，把一名人口改為 job raw `1`；
+   未封鎖殖民地選最大 `+8` 候選，把一名人口改為科學家 raw `2`；
    每次都呼叫 `sub_D648A` 與 `sub_E2A70` 重算。到達帝國停止條件後，
-   再以最小 `+0x0A` 候選逐名改為 job raw `2`。
+   再以最小 `+0x0A` 候選逐名改為工人 raw `1`。舊稿把兩個 raw job
+   方向寫反；本結論以 `sub_DDFD3` 的間接表與實際 bit write 共同訂正。
 7. 帝國停止條件直接讀 `player+0xAA` 與 `player+0xAC`。權重基值
    為 `10` 與 `18`；`player+0xB2 < 0` 時後者加
    `isqrt(-signed(player+0xB2))`，late-tech `player+0x59D` 使前者歸零，
    raw personality 3 使前者 `+2`，raw personality 4 使後者 `+2`。
+8. `sub_E2710 @ 0xE2710` 是上述帝國欄位的 producer：它把各殖民地
+   `+0xE9` 累加後寫入 signed word `player+0xAA`（工業），並把殖民地
+   `+0xEB` 及其他研究來源累加、上限夾至 `32767` 後寫入
+   `player+0xAC`（研究）。`sub_D66B3` 比較
+   `research*researchWeight` 與 `industry*industryWeight`；前者較小時
+   繼續加入科學家，否則轉入加入工人的循環。
 
-上述第 1–7 點是原始指令、caller 與資料流可回查的已證實結論。
+## 已證實的排序鍵
+
+- `sub_D5FA9 @ 0xD5FA9`：race slot `8`／`9` 排在一般種族之前；同類回傳
+  `0`，沒有第二鍵。
+- `sub_D614D @ 0xD614D`：封鎖分支以
+  `food(raw 0)-industry(raw 1)` 由大到小排序；同分時 food 由小到大。
+- `sub_D6315 @ 0xD6315`：未封鎖的一般排序以
+  `research(raw 2)-industry(raw 1)` 由大到小；同分時 industry 由小到大，
+  再以 race slot 由小到大。
+- `sub_D63A6 @ 0xD63A6`：只有 `colony+0xDD>0` 才使用；以
+  `food+industry-2*research` 由大到小，接著 industry 由大到小、research
+  由小到大、race slot 由小到大。`colony+0xDD<=0` 時委派 `sub_D6315`。
+
+以上產出鍵都由 `sub_DDFD3` 對同一名 colonist 分別套 raw job 後取得，
+不是殖民地平均值。`PopulationGroups` 以 race slot、職務、prisoner 與逐種族
+產出 profile 聚合；同群人口在這些排序鍵上等價，因此足以無損表示目前已見的
+排序輸入，不必為排序目的展開成逐人陣列。
+
+## 封鎖分支的已知邊界
+
+`sub_D61E7` 先套 `sub_D5FE1` 與 `sub_D614D`。`colony+0xDD>0` 時，
+每次改職後以 `sub_E1D59` 重算，並比較 `2*signed(colony+0xE7)` 與
+`byte colony+0xFC..+0xFF` 的需求總和；不足時在目前農夫數尚未達
+`colony+0xE0` 前，依排序把下一名可改派人口變成農夫，否則把末端候選變成
+工人並重跑。`colony+0xDD<=0` 時，`sub_23DFE` 的回傳值決定把一般可改派人口
+全設為 raw `2` 或 raw `1`；但 `sub_23DFE` 已由獨立稽核證實是事件殖民地
+filter，這條呼叫不可改名成一般「無農業判斷」。
+
+上述第 1–8 點是原始指令、caller 與資料流可回查的已證實結論。
 
 ## 對 remake 的直接反證
 
@@ -59,9 +94,12 @@
 
 ## 待閉合
 
-- `sub_D5FA9`、`sub_D614D`、`sub_D6315`、`sub_D63A6` 的完整排序鍵，
-  特別是異族、android、士氣、重力與種族產出差異。
-- `player+0xAA/+0xAC` 的寫入端與尺度，以及 `sub_D66B3` 兩個循環
-  的 signed／unsigned 比較邊界。
-- 現有 aggregate `ColonyState` 能否保留排序所需的逐種族資料；
-  若不足，應先擴充 typed population groups，不得以平均值偽裝 exact。
+- 封鎖狀態的 producer 與 `ColonyState` 垂直表示；目前 `.GAM` 的 `Star.Blockaded`
+  已可解析，但 engine／shell 尚未把它接到 AI 殖民地職務分流。
+- `colony+0xDD/+0xE0/+0xE7/+0xFC..+0xFF` 的完整欄位契約，以及
+  `sub_23DFE` 在 `+0xDD<=0` 這條事件耦合分支的玩家可見理由。
+- `sub_D5FE1` 已證實只把 Android／Natives 計入前置區間；一般 race slot
+  全部留在後續排序範圍。`player+0x8B6`（Tolerant）、PRISONER bit 10 與
+  `colony+0x12F` raw `2/3` 只影響 `AI record+0x0C` 的策略計數，不是把該人口
+  從 qsort／改職範圍移除。`+0x0C` 的非職務消費端仍可另案追查，但不再阻塞
+  未封鎖職務切片。

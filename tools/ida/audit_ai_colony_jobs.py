@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import re
 import traceback
 
 import ida_auto
@@ -33,9 +34,13 @@ ROOTS = {
     "raw_colonist_output_for_job": 0xDDFD3,
     "raw_recompute_colony_output": 0xE1D59,
     "raw_recompute_colony_for_player": 0xE2A70,
+    "raw_recompute_player_economy": 0xE2710,
     "raw_recompute_empire_for_player": 0xE2D72,
     "raw_integer_sqrt": 0x134C92,
 }
+
+RAW_WINDOWS = (0xD578F, 0xD61D2, 0xD61D6)
+TRACKED_OFFSETS = (0xAA, 0xAC)
 
 
 def digest(path):
@@ -78,6 +83,47 @@ def function_record(requested):
     }
 
 
+def instruction_window(ea, radius=5):
+    fn = ida_funcs.get_func(ea)
+    if fn is None:
+        return {"requested": f"0x{ea:X}", "error": "function missing"}
+    items = list(idautils.FuncItems(fn.start_ea))
+    index = min(range(len(items)), key=lambda i: abs(items[i] - ea))
+    return {
+        "requested": f"0x{ea:X}",
+        "owner_start": f"0x{fn.start_ea:X}",
+        "owner_original_name": ida_name.get_name(fn.start_ea) or "<unnamed>",
+        "instructions": [instruction(item) for item in items[max(0, index-radius):index+radius+1]],
+    }
+
+
+def operand_mentions_offset(ea, offset):
+    operands = " ".join(idc.print_operand(ea, i) for i in range(2)).lower().replace("0x", "")
+    for match in re.finditer(r"\+\s*([0-9a-f]+)h", operands):
+        if int(match.group(1), 16) == offset:
+            return True
+    for match in re.finditer(r"\+\s*([0-9]+)(?=\s*[\],])", operands):
+        if int(match.group(1), 10) == offset:
+            return True
+    return False
+
+
+def direct_offset_refs(offset):
+    refs = []
+    for fn_ea in idautils.Functions():
+        items = list(idautils.FuncItems(fn_ea))
+        for index, ea in enumerate(items):
+            if not operand_mentions_offset(ea, offset):
+                continue
+            refs.append({
+                "function_start": f"0x{fn_ea:X}",
+                "original_name": ida_name.get_name(fn_ea) or "<unnamed>",
+                "instruction": instruction(ea),
+                "context": [instruction(item) for item in items[max(0, index-5):index+6]],
+            })
+    return refs
+
+
 def main():
     ida_auto.auto_wait()
     source = os.environ["MOO2_IDA_INPUT"]
@@ -96,6 +142,10 @@ def main():
         "address_basis": "IDA linear; DOS/4GW LE image",
         "semantic_status": "unknown_pending_review",
         "roots": {name: function_record(ea) for name, ea in ROOTS.items()},
+        "raw_windows": [instruction_window(ea) for ea in RAW_WINDOWS],
+        "direct_offset_refs": {
+            f"0x{offset:X}": direct_offset_refs(offset) for offset in TRACKED_OFFSETS
+        },
     }
     with open(os.environ["MOO2_IDA_OUTPUT"], "w", encoding="utf-8") as stream:
         json.dump(report, stream, ensure_ascii=False, indent=2)
