@@ -1,7 +1,7 @@
 # 銀河霸主2 中文化
 
-> ⚠ **接手先讀 [`CONTEXT.md`](CONTEXT.md)(共用詞彙)+ [`docs/HANDOFF.md`](docs/HANDOFF.md)
-> + [`docs/HONEST-STATUS.md`](docs/HONEST-STATUS.md)。**
+> ⚠ **接手先讀 [`CONTEXT.md`](CONTEXT.md)（共用詞彙）+
+> [`docs/HONEST-STATUS.md`](docs/HONEST-STATUS.md) + [`WORKLIST.md`](WORKLIST.md) 頂端活表。**
 >
 > **現況的唯一活來源是 [`WORKLIST.md`](WORKLIST.md) 頂端的「剩餘工作」表。**
 > 這裡不複製那份清單——複製出來的每一份都會過期,而過期的斷言會被當成現況引用。

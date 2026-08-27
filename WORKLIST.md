@@ -813,10 +813,13 @@
   [`docs/re/re-completeness-review-20260813.md`](docs/re/re-completeness-review-20260813.md)，第一輪公式反例見
   [`docs/re/parity-re-audit-20260812.md`](docs/re/parity-re-audit-20260812.md)，
   可機械搜尋的逐系統列見 [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv)。
-- [x] **清除現況文件與 source 過期斷言**（2026-08-24）：`docs/HONEST-STATUS.md` 與
-  `docs/tech/gameplay-systems-status.md` 已濃縮為目前可證實／近似／未知邊界，不再宣稱經濟、
+- [x] **清除現況文件與 source 過期斷言**（2026-08-24；2026-08-27 再稽核）：
+  `docs/HONEST-STATUS.md` 已濃縮為目前可證實／近似／未知邊界；重複且已漂移的玩法狀態表已移除，不再宣稱經濟、
   兩條戰鬥路徑或全畫面已完全 parity；同步修正客製種族、AI 研究、飛彈防禦、突擊艇
-  與 AI 種族殖民的過期 source 註解。歷史翻案仍只保留於 `docs/re/01-gap-report.md` 與 Git。
+  與 AI 種族殖民的過期 source 註解。2026-08-27 另掃描 424 份專案 Markdown，刪除已由活表／
+  parity 矩陣取代的 `HANDOFF`、完成度評估、剩餘工作路線圖、玩法狀態表與舊文件稽核報告；
+  同步修正舊儀表板分數、8 月 12 日打包「最新」措辭、`.GAM` importer、敵方戰機命中／傷害及
+  武器／食物舊值。歷史翻案只保留可回查的正確證據與 Git，不再保留錯誤句子副本。
 - [x] **新遊戲規則與開局忠實化**：2026-08-24 已重審 RE 並建立
   [`docs/spec/newgame-opening-rules.md`](docs/spec/newgame-opening-rules.md)。開局建築已依原版優先表、
   `3/5/9` 上限與 `min(ceil(2/3 population), cap)` 接線；先進級已執行固定六次加
@@ -1445,7 +1448,7 @@
 
 - 每次資料或 UI 修改只跑 Docker 目標測試、`go build`、`-gamegallery` 與代表畫面抽查；使用者已明示不要求完整遊戲測試。
 - 任何原版差異必須標成「已證實／強推論／假說／未知」，沒有 `VESA.COM` 就不能把靜態近似升格成 runtime parity。
-- 本區完成後才回寫對應文件；`docs/HONEST-STATUS.md`、`docs/tech/remaining-work-roadmap.md` 若出現舊敘述，先以本區為交接依據，下一輪再同步。
+- 本區完成後才回寫對應文件；`docs/HONEST-STATUS.md` 若出現舊敘述，當輪直接同步，不另建剩餘工作路線圖。
 - 本輪實際抽樣：`gamedata`／`engine` 食物複製機、`shell` 特殊貿易／AI SABOTAGE／領袖任期／地面戰、人口成長／上限、`cmd/moo2` Xvfb 單測與 35 張 `-gamegallery` 均通過；使用者已明示不要求把整個 `go test ./...` 包裝成全綠。
 
 ### 附錄一、手冊忠實化證據摘要（非待辦）
@@ -1596,7 +1599,7 @@
 |---|---|---|---|
 | A | ~~**叛亂系統**(第 46 項)~~ **已完成** — 機率規則從 `Check_Rebellion_` 抄出(每單位 1%、難度、AMC 減半、滅絕加倍)、每回合檢定、地面戰、殖民地還政舊主全部接上;順帶把 `GroundTypeFourth` 定名為叛軍 | 跨模組狀態機 | 主迴圈 ✅ |
 | B | **`Calc_Tech_Value_` 抄寫** — 規格 + 三張資料表已解(`docs/re/calc-tech-value.md`、`calc-tech-value-tables.md`),**低風險那半已接**(category 倍率 + 科技應用粒度);高風險的階段 C–K 仍擱置。⚠ **擋門換了**:category enum 語意 2026-08-08 第 52 項已從成員反推出來(41 個乾淨的功能類別),**2026-08-08 第 54 項再降一級**:寫入端都找到了(`[0x89F]` = 政體,四項政府科技各寫一個立即數;`[0x28]`/`[0x205]`/`[0x206]` 是 `Init_NPC_Personalities_Objectives_Themes_` 的三次加權抽選,6/4/7 個候選,難度改權重)。**剩下的擋門是「候選各自代表什麼」**,階段 C/D/E 的常數表仍不能照抄 | RE | sonnet ✅ + 主迴圈接線 |
-| C | ~~**文件過期斷言掃描**~~ **已完成** — 約 90 條斷言查出 16 個不符(高 4 / 中 8 / 低 4),全部訂正;報告在 `docs/re/doc-audit-20260808.md` | 機械核實 | sonnet ✅ |
+| C | ~~**文件過期斷言掃描**~~ **已完成** — 約 90 條斷言查出 16 個不符並訂正；歷史報告已由 Git 保存，不再保留錯誤句子的副本 | 機械核實 | sonnet ✅ |
 | D | ~~**spy / leader UI**~~ **remake 核心已接** — 領袖畫面座標、捲動鈕、艦艇／殖民地 `LEADERS` 分頁、指派／改派／解除與保存已接；間諜區塊接進**種族關係**畫面(原版沒有獨立間諜畫面),提供訓練、逐對手 STEAL/SABOTAGE/HIDE、餽贈／特殊貿易與外交條約入口。remake 的 SABOTAGE 分數／Agent 消費已接；留白只剩原版 raw 完整分數／特殊槽位、AI 門檻與防守策略 | 挖完 → 接線 | sonnet ✅ → 主迴圈 ✅ |
 
 > **D 項的規劃被一個負面發現改寫了。** 原本的假設是「做一張間諜畫面」——
@@ -1653,7 +1656,7 @@
 | AR | **第三次 review:改用掃描器**(2026-08-08 第 72 項):前兩輪都是先想到「哪裡可能有問題」再查,上限是**想不到的就查不到**。改成兩段式掃描——抓同時含否定性斷言關鍵詞與程式碼識別字的 markdown 行(434 條),再數每個識別字在非測試 Go 檔的引用數,「說沒接卻被引用 ≥3 次」= 可疑(103 條)。抓到九條假斷言,**全是前兩輪想不到的**(spherical 武器 / `ShowRelocationLines` UI / `AIOpponent.Leaders` / AI 同星系多殖民地 / 艦員等級 / `RaceTrait` 接線 / `Maintenance` / 間諜 UI / BC 死亡螺旋)。⚠ 也抓到三條**不該動的**(AI 無建築追蹤、無種族欄位、`ModeOriginal` 仍回 Remake)——掃描器只縮小範圍,判定仍要逐條看程式碼 | 文件 | 主迴圈 ✅ |
 | AS | **音樂場景表:不需要人耳,執行檔全寫著**(2026-08-08 第 73 項):使用者指出有 IDA Pro 之後這題可解。上一輪判 `Play_Background_Music_`「全檔案零引用 → 死碼」——**位址少加了 `0x10000`(object base)**,真址 `0x2484F`,**15 個呼叫端**。上一輪為了證明零命中做了三種掃描,每一種都很用力,**而全部在錯的位址上找**;正對照本來會當場抓到。改用 `.i64` + 除錯符號表後,20 個呼叫端**每一個都直接對到具名畫面函式**。三個入口全解(≤100 走 STREAM / >100 走 STREAMHD;背景 = STREAM 1/2/3 隨機、戰鬥 = 4/5/6 隨機)。⚠ **主選單是每次隨機三選一,不是固定曲目**。順帶把戰機基地整補從「證據不足」升級成「已查證:原版也是當場算的」 | 逆向 | 主迴圈 ✅ |
 | AT | **過期斷言直接刪除,不留刪節線**(2026-08-08 第 74 項):先前用「`~~錯誤~~` + 訂正註記」保留時序,實際效果是**同一句話出現兩次、錯的排在前面**。改成整句刪除只留正確結論——全 repo 清掉 42 條追認註記、十幾處刪節線引述,含 `audio-track-map.md` §7.5 整節錯誤推導。保留兩類:**完成標記**(不是錯誤結論)與**錯誤怎麼發生的教訓**(改寫成正面敘述)。`docs/re/01-gap-report.md` 是唯一保留錯誤推導全文的地方——它是工程日誌,那正是它的內容 | 文件 | 主迴圈 ✅ |
-| AU | **活表併進 WORKLIST,gap-report 不再是現況**(2026-08-08 第 74 項):使用者問 gap-report 有沒有保留價值。評估:8,154 行裡有 **196 個位址、131 列表格**,是一次性成本的知識(重挖每項數小時起跳),被 18 個檔案引用——不刪。**但真問題存在**:第 72 項把剩餘工作搬進 WORKLIST 之後兩份活表並存了四輪。處置是拆職責——gap-report 開頭 85 行的活表刪掉換成指標,`CLAUDE.md`/`CONTEXT.md`/`HANDOFF.md`/五份 kickoff 的指標全改指這裡;gap-report 的職責寫死成 **RE 硬資料 + 工程日誌**,都不是現況 | 文件 | 主迴圈 ✅ |
+| AU | **活表併進 WORKLIST,gap-report 不再是現況**(2026-08-08 第 74 項):使用者問 gap-report 有沒有保留價值。評估:8,154 行裡有 **196 個位址、131 列表格**,是一次性成本的知識(重挖每項數小時起跳),被 18 個檔案引用——不刪。**但真問題存在**:第 72 項把剩餘工作搬進 WORKLIST 之後兩份活表並存了四輪。處置是拆職責——gap-report 開頭 85 行的活表刪掉換成指標,接手文件與五份 kickoff 的指標全改指這裡;gap-report 的職責寫死成 **RE 硬資料 + 工程日誌**,都不是現況 | 文件 | 主迴圈 ✅ |
 | AV | **取消例外:gap-report 也不留錯誤紀錄**(2026-08-08 第 74 項):第 74/74 項把 gap-report 列為例外(「錯誤推導的全文只留在這裡」),使用者決定取消。刪掉 16 處**複述錯誤斷言**的段落——「`X.go` 原本寫著『……』,兩句都不對」這種形狀,只留正確結論。保留 RE 硬資料、完成標記、以及**一律改成正面敘述的教訓**(不寫「那句話是錯的」,寫規則本身)。**現在全 repo 一條規則:任何文件都不留錯誤斷言的內容**,要知道當初怎麼錯的看 git log | 文件 | 主迴圈 ✅ |
 | AW | **編號項煉成 12 條規則**(2026-08-08 第 74 項):使用者「條目太多了」。編號項裡的教訓**高度重複**——「擋門理由會過期」出現十次、「兩條戰鬥路徑」出現在第 68–71 項每一項。合併成 12 條放在 gap-report 最前面(判斷還缺什麼 5 條 / 改動完整性 4 條 / 逆向 3 條 + 驗收),每條標出產生它的項次。**編號項降級成參考資料**,要看某條規則的證據再去翻。`CLAUDE.md` / `CONTEXT.md` 的指標同步改成「只有開頭那張規則該讀完」(**不複述條數**——那個數字會長) | 文件 | 主迴圈 ✅ |
 | AX | **151 項壓縮:8,163 → 3,582 行**(2026-08-08 第 74 項):第 74 項只加了規則總表,檔案沒變小。這一項動 151 項本身——每項只留**標題 + 結論段 + 帶一手資料的行**(位址/表格/程式碼/識別字/粗體條目),其餘敘述刪除(那正是重複的部分)。**一手資料一筆沒少**:位址 196→197、表格列 778。編號沒動(41 處交叉引用),加八個分組標題。代價如實記錄:機械壓縮切斷了 8 處跨段引述,已清 | 文件 | 主迴圈 ✅ |
@@ -1731,7 +1734,7 @@ internal/shell/orbital_bombardment.go:218
 - [x] 武器改造佔格已於 task#36 接線(`ShipDesignSpaceUsedWithMods`),此條的待辦部分已完成
 - [x] 戰鬥公式依武器類型分流(**2026-07-11**):飛彈躲避/AMR 攔截/球狀傷害的公式其實先前就已移植自手冊(`gamedata/missile.go`/`gamedata/damage.go`,有測試),只是戰鬥解算(`cmd/moo2/interactive.go` `fireRound`、`internal/shell/session.go` `battleVolley`)全部武器都走 beam 邏輯(`shell.ResolveShot`),飛彈(核飛彈/麥克萊特飛彈)被當 beam 打。這輪修正:新增 `internal/shell/weapon_kind.go` 依武器名分類 beam/missile/spherical(核對手冊「Notes on Spherical Damage」確認死光不是球狀武器,是一般光束武器且是 `DamageForHit` 手冊 worked example 出處,現行武器表也沒有任何真正的球狀武器);新增 `shell.ResolveMissileShot`(AMR 攔截 + Jam Chance 躲避)、`shell.ResolveSphericalShot`(已測試但暫無武器掛載,備妥待未來新增);`fireRound`/`battleVolley` 依 `CombatShip.Kind`/`combatant.kind` 分流,beam 行為不變(回歸測試)。詳見 `docs/tech/tactical-combat-weapon-kinds.md`。
 - [x] AI 財政赤字修正:職務保底(MinWorkersForSolvency/DecideColonyJobsSolvent,只 Scientific 挪 1 人)+ 順修 AI 職務回寫 bug;AI BC 從發散(-217)改收斂有界(48),測試綠(見 ai-fiscal-solvency.md)
-- [x] TradeGoodsIncome 接線(2026-07-11):貿易品是建造佇列選項(非第四種職務配置,原判斷是誤判)——建造選單新增「貿易品」、`engine.ColonyState.TradeGoods` + `syncTradeGoodsFlag`、`RunEmpireTurn` 接上 2:1 換算(`EmpireOutput.TradeGoodsRevenue`);Fantastic Trader 仍 TODO。見 `docs/tech/gameplay-systems-status.md` §2
+- [x] TradeGoodsIncome 接線(2026-07-11):貿易品是建造佇列選項——建造選單新增「貿易品」、`engine.ColonyState.TradeGoods` + `syncTradeGoodsFlag`、`RunEmpireTurn` 接上 2:1 換算(`EmpireOutput.TradeGoodsRevenue`)。
 - [x] 原版 672 艦名池翻譯並接入(取代硬編 10 名)(2026-07-11:190 組基底詞意譯+羅馬數字流水號保留,`assets/i18n/shipname.json` + `internal/shell/shipnames.go`,見 `docs/tech/proper-noun-strategy.md` 艦名節)
 - [x] 原版 829 隨機星名池翻譯並接入(取代二十八宿占位池)(2026-07-11:829 條英文名彼此互不重複——真名/圍棋術語彩蛋/克蘇魯神話等專有名詞優先意譯,虛構短音節規則化音譯,`assets/i18n/starname-random.json` + `internal/shell/starnames.go`,`genGalaxy` 改用 `randomStarNamePool`,二十八宿 `starNamePool` 已移除;見 `docs/tech/proper-noun-strategy.md` 隨機星名節)
 - [x] **勝利條件(2026-07-11)**:銀河議會選舉(手冊 GAME_MANUAL.pdf p.183,`gamedata/council.go`
@@ -2095,7 +2098,7 @@ internal/shell/orbital_bombardment.go:218
 - [x] 重力懲罰接進生產管線(**2026-07-11**):`ColonyState` 新增 `PlanetGravity` 欄位,`colonyFood`/`RunColonyTurn` 對食物/工業/研究三種 per-worker 產出套用 `gamedata.GravityPenaltyPercent`(Low-G -25%、Heavy-G -50%;士氣+重力先加總成單一百分點再套一次 `GravityAdjustedProduction`,避免兩次連續整數除法的複合誤差,理由見 `internal/engine/colony.go` 註解)。行星重力產生器 `NormalizeGravity` 旗標由 no-op 變成真的會歸零懲罰。`ColonyStateFromSave`(存檔↔engine 橋接)同步接上 `save.Planet.Gravity`(與 `gamedata.PlanetGravity` 同源 openorion2 enum ordinal,直接轉型)。種族 Low-G/High-G 重力天賦未建模,固定以一般種族為基準;固定加成(Flat*)不吃重力。**已知現實限制**:本專案唯一的殖民地建構點(`NewDemoSession`/`playerHomeworldColony`)固定 Normal-G,尚無「開拓新殖民地」流程會產生 Low-G/Heavy-G 殖民地,故此接線在 demo session 暫不可見,主要對存檔載入模式(`RunGameTurn`)生效。測試 TestRunColonyTurnGravityHeavyPenalty/TestRunColonyTurnGravityNormalizeGravityCancelsPenalty/TestRunColonyTurnGravityNormalGNoPenalty/TestRunColonyTurnGravityAndMoraleCombinedPercent/TestColonyStateFromSaveGravityMapping(engine)
 - [x] 士氣(Morale)接進 MoralePercent(**2026-07-11**):`GameSession` 新增 `Government`(`gamedata.MoraleGovernmentType`)欄位,`ApplyGovernment` 記錄政府型態(`Governments` 索引→`moraleGovByIndex`,四選一映射到對應基礎政府,進階政府 Imperium/Confederation/Federation/Galactic Unification 不區分)。新函式 `colonyMoralePercent`(`internal/shell/session.go`)= `gamedata.MoraleGovernmentBase(gov, hasBarracks)`(手冊 -20%/無 Barracks)+ 全息模擬艙(`MoraleHoloSimulatorBonus`+20%)+ 歡樂穹頂(`MoralePleasureDomeBonus`+30%),依 `ColonyBuildings` 讀取已建建築;政府變更(`ApplyGovernment`)與建築完工(`advanceBuilds`→`recalcColonyMorale`)皆會重算。**母星起始 `MoralePercent` 從無據硬編 +10 訂正為忠實值 0**(獨裁 + 已建 Marine Barracks 抵消 -20% 懲罰,無士氣建築加成;見 `playerHomeworldColony` 註解,`TestGameSessionEndTurn` 已同步訂正預期值 33→30)。多種族懲罰、首都失守懲罰與重建解除均已由後續 typed 狀態鏈接入；Virtual Reality Network 仍因手冊定性為「成就」而不在建築表。詳見 `docs/re/capitol-state-audit-20260826.md` 與 `docs/tech/colony-buildings.md`。
 - [x] 指揮評等(Command Rating)供需接線(**2026-07-11**):手冊 p.169「size class」公式(Frigate=1..Doom Star=6,`gamedata.ShipCommandCost`,以 Titan=5/Doom Star=6 兩處具體數字交叉驗證)+「每未覆蓋點 -10 BC」超支懲罰,先前 `gamedata.IncomeCommandOverflowCost` 是零呼叫端死碼。供給端:星基+1/戰鬥站+2/星辰要塞+3(三者取代不疊加,`gamedata.CommandPointsFromBuildings`)。`engine.PlayerState` 新增 `CommandPointsSupply`/`UsedCommandPoints` 欄位,`shell.GameSession.EndTurn` 每回合依實際已建成軌道衛星(`totalCommandPointsSupply`)與艦隊(`usedCommandPoints`)重算,`engine.RunEmpireTurn` 算超支併入 `NetBC`(新增 `EmpireOutput.CommandOverflowCost` 曝露懲罰金額)。當時誤判「開局母星 1 座星基(+1)vs 3 艘開局艦艇(需求3),缺口2點恆定-20BC/回合」為手冊忠實結果,實為**regression**(見下方同日修復項)。誠實未做(手冊有數字但架構未跟上,詳見 `docs/tech/moo2-formulas-reference.md`「指揮評等供需」節):通訊科技(Tachyon+1/Hyperspace+3,每軌道衛星)、Imperium 政府 +50%(本專案政府型態全域固定 Dictatorship,無 Imperium 狀態)、Operations 軍官技能(手冊無精確數字)、AI 對手(抽象 FleetStrength 無逐艦清單,供需維持零值無懲罰)。測試 TestShipCommandCost/TestShipCommandCostOutOfRange/TestCommandPointsFromBuildings(gamedata)、TestRunEmpireTurnCommandOverflow/TestRunEmpireTurnCommandSupplyCoversDemand(engine)、TestTotalCommandPointsSupply/TestUsedCommandPoints/TestUsedCommandPointsEmptyFleet/TestEndTurnCommandOverflowPenalty/TestUsedCommandPointsUsesGamedataTable(shell)。
-- [x] 指揮評等開局死亡螺旋 regression 修復(**2026-07-11**,同日接線後發現):上一項漏算了帝國基礎指揮評等供給,誤判「開局-20BC/回合」為忠實機制。用真實存檔 `SAVE10.GAM`(`/home/anr2/moo2-private-build/gamedata/mastori2/SAVE10.GAM`)oracle 反推(rulebook 62/64):5 個活躍玩家(不同種族)各持 1 殖民地,`CommandPoints` 讀到 6(其中 1 名玩家=8);比對已建成軌道衛星,讀到 6 的玩家只建星基(6-1=5),讀到 8 的玩家建星辰要塞(8-3=5)——5 個不同種族玩家一致反推基礎值 5,與種族/政府無關。新增 `gamedata.CommandPointsBase=5`(`income.go`,含完整 oracle 推導註解),`shell.GameSession.totalCommandPointsSupply()` 在逐殖民地建築供給之外每帝國加這一次(非逐殖民地)。修復後開局供給=5+1(星基)=6≥3(需求),不再超支;20 回合探針軌跡:BC 從第 2 回合 101 穩定爬升至第 21 回合 136,人口穩定在 8→9,無死亡螺旋(修復前:BC 第 7 回合轉負、第 21 回合 -255,人口第 20 回合起餓死)。300 回合被動不建造測試(`events_test.go` `bcCrashFloor300Turns`)實測最低點從 -3710(第 273 回合)改善到約 -51(第 133 回合),門檻由 -4000 收回 -400。**已知限制(TODO)**:單一存檔皆 1 殖民地,無法分辨此 5 點是 per-empire flat 還是 per-colony,暫採 per-empire flat,待多殖民地存檔驗證。測試更新:`TestTotalCommandPointsSupply`(6→11)、`TestEndTurnCommandOverflowPenalty`(改用外加艦隊建構真實超支情境,原始 20/10/0 三情境已不成立)。詳見 `docs/HONEST-STATUS.md`/`docs/tech/moo2-formulas-reference.md`「指揮評等供需」節/`docs/tech/remaining-work-roadmap.md` A項。
+- [x] 指揮評等開局死亡螺旋 regression 修復(**2026-07-11**,同日接線後發現):原版存檔反推每帝國基礎供給 5，另加軌道衛星供給；`gamedata.CommandPointsBase` 與超支測試已接。單一存檔無法區分少數更深層欄位語意，證據邊界見 `docs/tech/moo2-formulas-reference.md`「指揮評等供需」節與頂端活表。
 - [x] 科技研究樹推進（`RunResearchPhaseWithRoller` 累積、超額突破率、成功清零；`session.advanceResearch` 自動推進主題）
 - [x] 艦隊移動 + 星圖導航:SendFleet 依星距換算 ETA,EndTurn 跨回合推進,抵達標記探索;星圖點星→面板「派遣艦隊至此星」鈕 + 青色艦隊標記 + 航行連線 + ETA 顯示。測試 TestFleetInterstellarMovement
 - [x] 艦艇設計畫面在 `interactive.go`,過場截圖廊第 86 拍(`25_shipdesign.png`)
@@ -2146,7 +2149,7 @@ internal/shell/orbital_bombardment.go:218
   `TestEndTurnGovtBonusMoneyWiring`(shell,新增)。詳見 `docs/HONEST-STATUS.md` 2026-07-11 收入死碼段落、
   `docs/tech/moo2-formulas-reference.md`「政府對 BC 收入的加成」/「士氣對收入的影響」節。
 - [~] 傘狀項,同 task 16
-- [x] 最小拓殖(Colonization)接線(**2026-07-11**):先前玩家只有母星、完全無法擴張——「能玩完整一局」的最大缺口(見 `remaining-work-roadmap.md` B 項)。硬門檻查證(`GAME_MANUAL.pdf` 直接引文):適居性(p.55/p.61,一般行星=habitable worlds 可由殖民船直接殖民,不需額外科技;氣態巨星/小行星帶才需另建軍事前哨+科技,本 remake 星系生成從未產生這兩類行星,gate 現階段恆真、留掛勾點)、起始人口=1(p.61-62,Colony Base/Colony Ship 手冊原文一致)、起始無建築(對照母星起始建築是手冊明講的特例)。PopMax 公式移植自 `openorion2/src/gamestate.cpp:2288` `GameState::planetMaxPop`,已與手冊 p.55-56 各尺寸人口容量範圍逐項交叉驗證(新增 `gamedata.PlanetBasePopMax` + `TestPlanetBasePopMaxManualRanges`)。新增 `internal/shell/colonization.go`:`GameSession.ColonizeStar(starIdx)` 引擎函式(前置條件:艦隊已抵達無主星+載有殖民船;成功則建新 `engine.ColonyState`——起始人口 1、全農(避免population=1、Farmers=0 的首回合饑荒,任務保守預設非手冊規則)、種族加成手動疊加(`ApplyRace` 只在開局套一次,不會回頭套用到後建殖民地)、消耗一艘殖民船、平行陣列同步),`session.go` 新增 `GameSession.PlayerColonyStars`(比照 `AIOpponent.ColonyStars`,`InvadeColony` 過戶殖民地時同步補上,先前完全沒有這個對映),`cmd/moo2/interactive.go` 加「建立殖民地」按鈕(星系主畫面,選中無主星+艦隊已抵達+載有殖民船時顯示)。**發現的架構落差**:`genPlanets` 的行星顯示字串(氣候/重力/礦產/大小)先前完全獨立於 `gamedata` 型別 enum(純展示用途),新增四個對映函式(`climateFromDisplay` 等)把玩家看到的顯示值轉成建構殖民地要用的型別值,避免兩者各算各的。**仍缺(當時)**:AI 側主動拓殖(`aiExpand` 維持先前「只標旗標、無殖民地模型」簡化,**已於下一輪補上,見下方「AI 拓殖建真殖民地」條**)、行星選擇子畫面(每星固定一顆行星,暫不需要)。測試:`internal/shell/colonization_test.go`(成功拓殖/四種前置條件擋下/拓殖後 EndTurn 經濟正常/顯示字串對映覆蓋率)。Regression 探針確認:20 回合開局 BC 軌跡不變(101→130)、拓殖後新殖民地 10 回合經濟穩定不崩潰。詳見 `docs/tech/colonization.md`、`docs/HONEST-STATUS.md`、`docs/tech/remaining-work-roadmap.md` B 項。
+- [x] 最小拓殖(Colonization)接線(**2026-07-11**):玩家可用已抵達無主星的殖民船建立人口 1 的新殖民地；適居性、人口容量、消耗殖民船、平行陣列與回合經濟均有測試。完整證據與當時模型邊界見 `docs/tech/colonization.md`，目前差異只看頂端活表。
 - [x] AI 拓殖建真殖民地(**2026-07-11 追加**):上一條的「仍缺」補上——`aiExpand` 先前只設
   `Star.Owner=2`+`OwnedStars++`,從不建立 `engine.ColonyState`,AI 殖民地數恆為開局母星 1 筆、
   `RunEmpireTurn` 的 `TotalNetIndustry` 永遠停在初始母星產出,AI 版圖擴張與經濟成長脫鉤。抽出
@@ -2165,7 +2168,7 @@ internal/shell/orbital_bombardment.go:218
   `internal/shell/ai_behavior_test.go` 新增 `TestAIExpand_CreatesRealColony`(佔星後建真殖民地、
   平行陣列同步)、`TestAIExpand_EconomyGrowsWithColonyCount`(殖民地數增加後軍力成長加速)、
   `TestAIExpand_NoOpWhenNoUnownedStars`(無星可擴張時安全 no-op)。詳見
-  `docs/HONEST-STATUS.md`、`docs/tech/remaining-work-roadmap.md` B 項。
+  `docs/HONEST-STATUS.md` 與頂端活表。
 - [x] 第 45~45 項逐條清點，**領袖技能 26 項已有 remake 消費端**；Tactics 依原版自己未實作，Famous 招募機率已補證，Diplomat 接受門檻仍為 oracle 留白
 - [x] task#36 已完成(mod 層 + 佔格 + 傷害)
 

@@ -208,7 +208,6 @@
 
 - 上述點數為 **patch 1.5 base(未啟用 150i mod)**。安裝包另附選用 mod `150i` 的 `PICKS_SP.CFG`/`PICKS_MP.CFG` 有**不同**的重平衡數字(如 Money 差 -4→-6/-8、貿易奇才 4→2/1),**不可與預設值混用**;完整差異見 `docs/tech/custom-race-picks.md` 附錄。
 - **1.3 vs 1.5**:目前僅能證明 1.5 base = 上表;無反證顯示 1.3 預設不同,但也無直接證據證明兩者完全一致。若要對齊 1.3,建議另用 1.3 資料再核。
-- ~~remake 現況:`Races` 表對經典種族採**概略調校值**(如姆瑞森 CombatPct=25、薩克拉 GrowthPct=30),非手冊精確數字~~
   **2026-08-08 已了結(第 65 項(種族特性31格))。** `shell.Races` 的每一格數值改由 `gamedata.OrigRaceTraits` 提供,
   來源是 `RACESTUF.LBX` asset 7(13 族 × 31 格選項等級)+ 執行檔 `byte_17D1F9` 的換算表,
   再拿 `SAVE10.GAM` 裡五族的展開值逐格核對。`race_traits_wiring_test.go` 釘住兩邊一致。

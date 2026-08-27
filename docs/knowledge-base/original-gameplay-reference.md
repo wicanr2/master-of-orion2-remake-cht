@@ -310,22 +310,17 @@ MoO2 **從未有官方中文版**,華人社群覆蓋遠不如星海爭霸、文�
 | 母星 pop = **8**(5 玩家一致) | playerHomeworldColony pop=8 | ✅ 確認吻合(「待查 8?」現已證實) |
 | 每農食(FoodPerFarmer)= **4** | `climateFoodPerFarmer[TERRAN]`=**2** | ✅ **已破解(見 §7.0.2-R):存檔欄位是「半單位」,4 半單位 = 2.0 食物 = Terran base 2**。無 +2 加成、無 2x 差;是存檔解析把半單位當整數比較的誤讀。remake 整數表正確,不改表 |
 | 每工業(IndustryPerWorker)= **3** | `MineralIndustryPerWorker(ABUNDANT)`=**3** | ✅ 確認吻合(手冊 p.56-57 ABUNDANT=3 交叉) |
-| 每科研(ResearchPerScientist)= **3** | ~~硬編 30~~→**gamedata.ResearchPerScientistNorm=3** | ✅ **已修(2026-07-12)**:先前硬編 30 約 10x 過高,校正為手冊 p.949「usual 3」。母星研究降到忠實量級 |
-| 職務分配隨種族變:農**2**-5/工0-2/**科2-4** | ~~農4/工3/科1~~→**農4/工1/科3** | ✅ **已修(2026-07-12)**:精確 dump 5 顆母星逐一為 P0海洋3/2/3、P1阿爾卡5/1/2、P2姆瑞森5/0/3、P3薩克拉3/1/4、P4克拉肯2/2/4。**不變式:工≤2、科≥2、偏科研**。舊值農4/工3/科1 兩處違反(工3超上限、科1低於下限),校正為農4/工1/科3(SAVE10 無 Human 樣本,精確三數中信心重建)。moo2sim 探針:和平開局 BC 健康、安塔蘭極限案有界 |
+| 每科研(ResearchPerScientist)= **3** | **gamedata.ResearchPerScientistNorm=3** | ✅ 手冊 p.949「usual 3」；母星研究使用相同量級 |
+| 職務分配隨種族變:農**2**-5/工0-2/**科2-4** | **農4/工1/科3** | ✅ 精確 dump 5 顆母星為 P0海洋3/2/3、P1阿爾卡5/1/2、P2姆瑞森5/0/3、P3薩克拉3/1/4、P4克拉肯2/2/4；不變式為工≤2、科≥2 |
 
-### 7.0.2 食物每農夫 2-vs-4:手冊表已確認、+2 來源待存檔(2026-07-12)
+### 7.0.2 食物每農夫的半單位編碼（2026-07-12）
 
 手冊 GAME_MANUAL.pdf **p.59「Base Food per Unit」氣候表**(pdftotext 逐字,權威):
 Barren **0** / Desert **1** / Tundra **1** / Ocean **2** / Swamp **2** / Arid **1** / **Terran 2** / Gaia **3**。
 → **remake `climateFoodPerFarmer` 基準表完全正確**(TERRAN=2),不是漏讀、不改表。
 
-但 SAVE10.GAM 母星每農夫=**4**(climate=8 與 5 都是 4)。base 2 + **未知來源 +2**。**+2 來源無法從現有 oracle 判定**,可能是:①母星專屬加成 ②全域加倍(則普通殖民地也 ×2)③存檔 climate 枚舉序≠remake(存檔 climate=8 在原版未必=TERRAN)④某開局共通科技。**加一個無來源的 +2 = 杜撰,不做**。判定需「**含非母星、不同氣候(GAIA/DESERT)殖民地的原版存檔**」——SAVE10 全是母星無法分辨。
-
-⚠ DOSBox 未安裝(私有包有 Orion2.exe/ORION95.exe),自動化原版遊玩→存檔不可行;取得varied 存檔需使用者手動或另建 DOSBox 環境。~~食物校正在此暫停(BLOCKED-on-oracle),不盲改~~ **↓ 2026-07-12 已用 openorion2 源碼(存檔欄位定義)破解,不再需要 varied 存檔;結論見 §7.0.2-R。**
-
-### 7.0.2-R 破解:FoodPerFarmer=4 是「半單位編碼」,不是 +2 加成(2026-07-12)
-
-**結論:上面列的「未知來源 +2」不存在。** 原版存檔的 `food_per_farmer` 欄位以**半單位(half-units)**儲存,`4 半單位 = 2.0 食物/農夫 = Terran base 2`,與手冊 p.59「Base Food per Unit: Terran 2」**逐字相符**。之所以看起來「差 2x」,純粹是 remake 存檔解析器(`internal/save`)把該原始位元組(4)當**整數食物值**去和 remake 的整數氣候表(2)比較——**單位不一致的解碼誤讀,不是遺漏加成**。
+原版存檔的 `food_per_farmer` 欄位以**半單位（half-units）**儲存；`4` 半單位等於
+`2.0` 食物／農夫，與手冊 Terran base 2 相符。remake 的整數氣候表維持 `TERRAN=2`。
 
 **直接證據(openorion2 逆向反組譯,權威一手 oracle):**
 

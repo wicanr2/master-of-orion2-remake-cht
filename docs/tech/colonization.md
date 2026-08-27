@@ -1,7 +1,6 @@
 # 最小拓殖(Colonization)接線紀錄
 
-> 2026-07-11。目的:讓玩家能用殖民船在無主適居星建立新殖民地——先前玩家只有母星、完全無法擴張,
-> 這是「能玩完整一局」目前最大的解鎖(見 `remaining-work-roadmap.md` B 項)。本檔記錄硬門檻查證
+> 2026-07-11。目的:讓玩家能用殖民船在無主適居星建立新殖民地。本檔只記錄硬門檻查證
 > 結果、實作範圍、已知簡化與 TODO。
 
 ## 1. 硬門檻查證(手冊原文引用,`moo2_patch1.5/GAME_MANUAL.pdf`,`pdftotext -layout` 直接萃取
@@ -38,7 +37,7 @@ p.50 節錄(Advanced Colonization Techniques 一類科技的效果描述):
 > ⚠ 這一整段原本寫「每顆星固定生成一顆一般行星,**從未生成氣態巨星或小行星帶**…
 > `genPlanets` 完全沒有使用 `PlanetType`」——**那是多星體改版之前的快照,已被推翻**
 > (WORKLIST 第 20 項(手冊搜尋假陰性)「一星多行星第二階段:SystemBodies 升格成真正的行星」)。
-> 發現於 2026-08-08 的文件稽核,見 `docs/re/doc-audit-20260808.md` 第 4 項。
+> 這項邊界已由程式與測試固定；目前工作狀態另見 `../../WORKLIST.md`。
 >
 > §1.1 與 §3 這兩段的細節尚未逐條重寫,**在重寫之前不要引用本文對「現況」的描述**
 > ——右半邊的手冊引文與規則考據仍然有效,過期的是「remake 做到哪」那幾句。
@@ -138,7 +137,7 @@ size=LARGE(3)、climate=TERRAN(climateFactor=80)得 `(4*5*80+50)/100=16`,非 20�
 - Aquatic/Tolerant/Subterranean 等種族特性對 PopMax 的加成(`gamestate.cpp:2288` 原始函式裡的
   修飾項)未套用——本 remake 沒有種族特性追蹤系統(見 `custom-race-picks.md`),留白。
 - 氣態巨星/小行星帶科技 gate(§1.1)無實際案例可測,是未來若補上這兩類行星才會啟用的掛勾點。
-- ~~不支援「同系統多顆行星、選擇殖民哪一顆」——本 remake 每星固定一顆行星~~
+- 本 remake 的資料模型每個星系固定一顆可互動行星，因此沒有同星系多行星選擇流程。
   **已推翻(2026-08-08)**:一星多行星已實作(WORKLIST 第 20 項(手冊搜尋假陰性))。這一條的理由不成立,
   現況請 grep `genPlanets` / `RollSatelliteType` / `ColonizePlanet`。
 - `PlayerColonyStars` 是本次新增欄位,若讀取舊版(本次修改前)存檔,JSON 反序列化會得到 nil

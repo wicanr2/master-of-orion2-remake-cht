@@ -3668,7 +3668,6 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
         |---|---|---|
         | `README.md` | 「行星表面 + 建築 sprite 擺放卡在幾何表尚未抽出」 | 7×7 角點表與 `Cache_Load_Bldg_` 算式都抽出來了 |
         | `README.md` | 「戰機/航母未做」「多 AI 目標選擇為索引順序」 | 兩者都完成(第 27/70 項、`AIEnemyColonyValue`) |
-        | `REMAKE-COMPLETION-ASSESSMENT.md` | 「需先建基礎設施 — 戰機/航母」 | 同上 |
         | `oracle-comparison-20260712.md` | 表格列掛著 ❌「點 Continue 靜默無反應」 | **同一份文件末尾早就寫了「兩項都已完成」** |
         | `ebiten-notes.md` §6 | 三條「待續」 | 全部已了結或方向已改 |
         | `PLAN.md` | Screen 抽象層、widget 樹移植 | 方向已改,沒有執行 |
@@ -3697,7 +3696,7 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
         | `ai-fiscal-solvency.md` | 「`Maintenance` 尚未接線」 | `engine/ai.go:19` 傳進 `decider.ColonyJobs` |
         | `spy-system.md` | 「`interactive.go` 未接間諜畫面/按鈕」 | 第 51 項(間諜UI)接進種族關係畫面 |
         | `colony-economy-maintenance.md` §2.2 | 「BC 保證單調遞減至負值」 | 2026-07-11 修掉,300 回合最低點 −3710 → −51 |
-        掃描器把 `gameplay-systems-status.md` 的「AI 無 `ColonyBuildings` 追蹤」「`AIOpponent`
+        掃描器也檢查了舊狀態表的 AI 殖民地與 `AIOpponent`
         無種族欄位」也列成可疑,查下去**兩條都仍然成立**(`AIOpponent` 的欄位清單裡確實沒有)。
         `ai-decision-modes.md` 的「`ModeOriginal` 仍回傳 `RemakeDecider`」同樣仍然成立(還掛著 TODO)。
 
@@ -3750,7 +3749,7 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
 
 
         **剩餘工作表在 [`WORKLIST.md`](../../WORKLIST.md) 頂端,那裡是唯一活來源。**
-        `CLAUDE.md` / `CONTEXT.md` / `HANDOFF.md` / 五份 kickoff 的指標全部指向那裡。
+        `CLAUDE.md` / `CONTEXT.md` / 五份 kickoff 的指標全部指向那裡。
 
         | 內容 | 量 |
         |---|---|
@@ -3879,7 +3878,7 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
 
     **① 跨文件的項次被套用了 gap-report 的對照表。**
     `rules-implementation-audit.md 第 10 項` 被改成 `第 3 項`、
-    `doc-audit-20260808.md 第 3/4 項` 被改成 `第 2 項`——**那些是別份文件的編號**。
+    跨文件編號不可跟隨本文件項次機械改寫；它們屬於各自文件的局部索引。
     五處已還原。機械替換要先問「這個數字屬於哪個命名空間」,
     而我上一輪只驗了「有沒有指向不存在的項次」——**被改成一個存在的錯項次,那個檢查抓不到**。
 

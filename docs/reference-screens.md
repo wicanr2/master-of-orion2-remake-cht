@@ -36,7 +36,7 @@
 
 英文 UI(待翻,建議 `assets/i18n/colony.json`):Auto Build、Refit、Design、Repeat Build、Cancel、OK。
 
-## ~~待補(需全域調色盤鏈,Phase 4)~~ → 調色盤鏈早已完成
+## 全域調色盤鏈畫面
 
 ⚠ **過期斷言已刪**(2026-08-07)。原文說「殖民地主畫面(COLONY)、艦艇設計(DESIGN)、
 殖民地系統顯示(COLSYSDI)、議會(COUNCIL)、外交(DIPLOMAT)、艦隊(FLEET)、科技選擇(TECHSEL)

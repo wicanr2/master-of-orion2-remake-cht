@@ -133,8 +133,8 @@ AF(每次射擊)=-20、PD=+25(套用在 `CombatHitThreshold` 的 `pdBonus` 參�
 `ShipDesignSpaceUsedWithMods`/`DesignCostWithMods`,建造前用 `ShipDesignFitsWithMods` 擋下超格設計
 (同一份判斷,顯示與驗證不會不一致)。
 
-UI 做到「可勾選 + 即時顯示 + 建造擋超格」這個最小可行版本,未做的部分(標記 TODO,見
-`docs/tech/remaining-work-roadmap.md`):
+UI 做到「可勾選 + 即時顯示 + 建造擋超格」這個最小可行版本；未完成項只在
+`WORKLIST.md` 頂端活表維護：
 - Chip 沒有滑鼠 hover 顯示手冊效果說明(如「+50% 傷害、-50% 射程懲罰」的文字提示)。
 - 沒有「小型化等級」門檻檢查(手冊部分 mod 要求「weapon has undergone N 級小型化」才能裝,
   現行 remake 沒有小型化系統本身,故沒有這個門檻,任何已解鎖武器都能直接掛任何 mod——比原版寬鬆)。

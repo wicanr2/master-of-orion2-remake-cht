@@ -202,7 +202,6 @@ Draw_Reference_Main_Subscreen_ / _Category_ / _How_To_
 |---|---|
 | `ida.sh` | docker headless wrapper(`analyze` / `idc` / `raw`) |
 | **`parse_syms2.py`** | **解析符號表 → TSV(格式正確版,一律用這支)** |
-| ~~`parse_syms.py`~~ | ⚠ 格式讀反,產出的 name↔addr 全部錯開一格。留著只為記錄教訓,不要再用 |
 | `apply_names.idc` | 把符號寫回 IDA 資料庫 |
 | `dump_ea.idc` | 依位址 dump bytes(hex + signed + ASCII 三種解讀並列) |
 | `xref_ea.idc` | 查某位址的 xref |

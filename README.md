@@ -221,10 +221,10 @@ README 只負責介紹遊戲、成果與開始方式；工程斷言、逆向證�
 README.md                         玩家入口：遊戲介紹、成果、安裝與下載
 ├── docs/HONEST-STATUS.md         現況、已接功能、近似、未知與刻意差異
 ├── docs/tech/README.md            技術知識庫總索引
-│   ├── gameplay-systems-status.md 玩法系統與忠實化狀態
 │   ├── multiplayer-architecture.md 多人協定與重製決策
 │   ├── audio-track-map.md         音樂場景派發與音訊限制
 │   └── packaging.md               三平台打包與公開資產政策
+├── docs/re/parity-matrix.tsv      逐系統 remake／原版對齊狀態與下一證據閘門
 ├── docs/re/01-gap-report.md       逆向工程日誌與規則入口
 ├── docs/re/                       位址、資料流、視覺與原版驗證器（oracle）證據
 ├── docs/VERIFICATION-MATRIX.md    測試、畫廊、玩家路徑與原版驗證器（oracle）矩陣

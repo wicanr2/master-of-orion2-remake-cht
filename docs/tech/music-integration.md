@@ -165,7 +165,7 @@ DOS/4G Copyright (C) Rational Systems  (WATCOM C/C++32 Run-Time)
 
 ## 7. 待驗證 / 不確定(誠實標註)
 
-- [x] ~~`CMBTSFX.LBX` / `SPHERSFX.LBX` 的 PCM 規格~~ —— 已於 2026-07-12 裁定為 **LBX 影像庫(非音效)**,無 PCM 可解(§3)。
+- [x] `CMBTSFX.LBX`／`SPHERSFX.LBX` 是 **LBX 影像庫**，沒有 PCM 音訊；戰鬥音效由 `SOUND.LBX` 提供（§3）。
 - [ ] 是否有任何音樂/jingle 走 XMIDI 而非 PCM(§1 不確定項);`SAMPLE.*` 音色庫是否真被遊戲用到。
 - [ ] `STREAMHD` 與 `STREAM` 的關係(HD 是高音質?不同情境音樂?)—— 名稱臆測,待實聽/比對確認。
 - [ ] 各曲目對應的**遊戲情境**(主選單/星圖/戰鬥/勝負畫面)—— 播放觸發邏輯要另查 openorion2 或原版行為,別憑檔名/順序假設。

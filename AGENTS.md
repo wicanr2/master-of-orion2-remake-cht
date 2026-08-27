@@ -10,9 +10,8 @@
 
 1. `CLAUDE.md`
 2. `CONTEXT.md`
-3. `docs/HANDOFF.md`
-4. `docs/HONEST-STATUS.md`
-5. `WORKLIST.md` 頂端的「剩餘工作」表
+3. `docs/HONEST-STATUS.md`
+4. `WORKLIST.md` 頂端的「剩餘工作」表
 
 若要追查逆向證據，只讀 `docs/re/01-gap-report.md` 開頭的「煉出來的規則」，再
 依需要查對應編號；它是硬資料與工程日誌，不是現況清單。

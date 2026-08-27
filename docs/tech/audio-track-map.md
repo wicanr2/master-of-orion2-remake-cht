@@ -199,7 +199,7 @@ docker run --rm --log-opt max-size=10m --log-opt max-file=3 \
 - [ ] 追出 `Start_Diplomacy_Music_` 的**呼叫端**,確認原版依什麼條件判定「關係好/壞」(remake 目前用關係分數 >= 0,是 remake 的代理規則；不是原版門檻)。
       ⚠ **位址要用 IDA 資料庫的線性位址,不是除錯表的 `obj1+` 偏移**——兩者差 `0x10000`(object base),
       這個坑讓第二輪把 `Play_Background_Music_` 誤判成死碼(見 §7.5)。`obj1+0x9082` → 線性 `0x19082`。
-- [x] ~~追 offset+0x25 的「逐族預設值」靜態表~~ **那張表不存在**:`+0x25` 就是種族索引(見上)。
+- [x] `offset+0x25` 是種族索引，不是另一張逐族預設值靜態表（見上）。
 - [x] **`Play_Background_Music_` / `Play_Combat_Music_` 的呼叫端已找到**:先前判「零引用」是位址少加 `0x10000`(object base),真址 `0x2484F` / `0x2496C`,共 15 + 1 個呼叫端。
 
 ## 七、第三輪(2026-07-10):反組譯呼叫點硬證

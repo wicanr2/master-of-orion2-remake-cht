@@ -60,7 +60,7 @@ MONSTR2/5/6/7/9 ATAKSHIP VORTEX1                           ← 怪物/太空生�
 
 - [ ] STREAM/STREAMHD 各 entry → 曲目語意(主選單主題/戰鬥/勝利/失敗/外交…):需對原版實測聆聽 + 社群曲目表交叉比對。
 - [ ] SOUND 各 entry → UI 事件對應(哪個 BUTTONx 用在哪類按鈕):同上。
-- [x] ~~`CMBTSFX/SPHERSFX` 音庫格式逆向~~ —— 已裁定為 **LBX 影像庫(戰鬥視覺特效,非音效)**,見本檔上表;戰鬥音效實際全在 `SOUND.LBX`。此項為與上表 line 28 訂正衝突的過期殘留,已消除。
+- [x] `CMBTSFX`／`SPHERSFX` 是 **LBX 戰鬥視覺特效影像庫**；戰鬥音效位於 `SOUND.LBX`。
 
 ## 來源
 

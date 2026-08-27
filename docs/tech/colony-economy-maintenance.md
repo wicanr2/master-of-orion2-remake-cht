@@ -188,7 +188,7 @@ Maintenance`。只對正盈餘計入(手冊只描述「出售剩餘糧食」這�
 > 分配欄位。已接線:`internal/shell/session.go` 建造選單新增 `TradeGoodsBuildName`、
 > `engine.ColonyState.TradeGoods`、`syncTradeGoodsFlag`;`internal/engine/empire.go`
 > `RunEmpireTurn` 接上 `gamedata.TradeGoodsIncome`,計入 `EmpireOutput.TradeGoodsRevenue`。
-> 詳見 `gameplay-systems-status.md` §2。
+> 目前工作狀態見 `../../WORKLIST.md` 頂端活表；原版對齊邊界見 `../re/parity-matrix.tsv`。
 
 ### 6.3 玩家母星重新接上 Terran/Abundant yield,但 AI 母星維持 placeholder(範圍決策)
 
@@ -287,9 +287,8 @@ Docker 內 `go build -buildvcs=false ./...` 通過;`go test ./internal/...`:除�
 
 ### 6.9 仍待補(誠實列出,不臆造)
 
-- ~~`TradeGoodsIncome` 未接(§6.2):需要「貿易財職務配置」模型~~ **2026-07-11 已接線**——
-  誤判已更正(貿易品是建造佇列選項,非職務配置),見 §6.2 更正註記與
-  `gameplay-systems-status.md` §2。
+- `TradeGoodsIncome` 已接線：貿易品是建造佇列選項，不是人口職務；目前邊界見
+  `../../WORKLIST.md` 頂端活表。
 - AI 母星 yield 仍是 placeholder(§6.3):待 `advanceAI` 的整數捨去 bug(§3)另案修好後,
   才能讓 AI 一併接上 Terran/Abundant,屆時 `averageHomeworldColony`/`playerHomeworldColony`
   兩個函式可以考慮合併回一個。

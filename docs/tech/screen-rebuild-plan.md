@@ -36,7 +36,7 @@
 - **接線**:種族關係畫面「報告」→ diplomacy;已接 `bgmDiplo` 場景音樂。
 
 ### 2. 格子戰術戰鬥(tactical,tacticalScreen)
-- **現況**:自繪星空底 + 格線 + 艦艇 token + HP 條;戰鬥數學**已接 gamedata 真公式**(命中/傷害/過盾/過甲,見 `gameplay-systems-status.md`)。
+- **現況**:自繪星空底 + 格線 + 艦艇 token + HP 條；可表示的戰鬥公式已接入，精確原版邊界見 `../re/parity-matrix.tsv`。
 - **原版**:`COMBAT.LBX` 的戰場背景 + 艦艇 sprite(`CMBTSHP.LBX`)+ 原版 UI 控制列。
 - **重建**:換原版戰場背景 + 真艦艇 sprite;保留已忠實的戰鬥數學。屬中型工作(sprite 對應 + 佈局)。
 

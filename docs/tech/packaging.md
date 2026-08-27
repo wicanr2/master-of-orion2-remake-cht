@@ -1,9 +1,10 @@
 # 跨平台打包
 
-> **最新收尾（2026-08-12）**：Docker 已依最新工作樹重建 Linux AppImage、Windows amd64 ZIP 與
+> **歷史驗證快照（2026-08-12，不代表目前工作樹）**：Docker 當時重建 Linux AppImage、Windows amd64 ZIP 與
 > macOS universal tar.gz 的公開版與本機完整測試版。公開包均不含原版資料、音訊或私有字型；完整包
 > 只供本機授權測試，帶 55 個經正常玩家路徑驗證的 LBX 與字型。所有 archive 都已重算 SHA-256；
 > Linux 完整 AppImage 實際走過 35/35 畫廊抽樣，Windows／macOS 只完成結構驗證，未冒稱原生實機驗收。
+> 目前重新打包與真機驗收狀態只看 `../../WORKLIST.md` 頂端活表。
 
 > 記錄 `cmd/moo2`(ebiten GUI)與 `cmd/moo2sim`(純 Go headless 模擬器)的三平台打包做法,
 > 分兩條互補路徑:

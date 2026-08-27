@@ -88,7 +88,6 @@ docker run --rm --network bridge --memory 2g --cpus 2 --pids-limit 512 \
 - [x] `WORKLIST.md`
 - [x] `docs/tech/weapon-mods.md`
 - [x] `docs/knowledge-base/manual-cht/03-combat.md`
-- [x] `docs/tech/remaining-work-roadmap.md`
 - [x] `docs/re/01-gap-report.md` 第 102 項
 - [x] 程式碼註解與測試
 - [x] 艦隊 → LEADERS → 軍官列 → 指派／改派／解除；JSON／熱座席位保存
@@ -291,5 +290,5 @@ Hex-Rays `9.4.0.260610`、IDA 線性位址與非破壞性 IDC。結果不是 run
   分數／特殊槽政策仍未知。
 
 文件同步：`README.md`、`WORKLIST.md`、`docs/tech/ground-combat-algorithm.md`、
-`docs/tech/spy-system.md`、`docs/tech/remaining-work-roadmap.md` 與
+`docs/tech/spy-system.md` 與
 `docs/re/special-trade-sabotage-leader-eta-20260811.md`。
