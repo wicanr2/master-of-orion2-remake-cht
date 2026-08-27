@@ -422,6 +422,14 @@
   為原版精確 parity。證據與規格見
   [`docs/re/ship-design-screen-text-layout-audit-20260827.md`](docs/re/ship-design-screen-text-layout-audit-20260827.md) 與
   [`docs/spec/ship-design-external-text.md`](docs/spec/ship-design-external-text.md)。
+  主選單已完成第四十六個切片：左下語言列、規則版本列及相關轉場名稱均由 `ui.json` 供應，
+  Go 只保留穩定 key、目前語言與 `1.3`／`1.5` 動態值。兩條 remake 擴充列改由各自
+  220×22 點擊列推導雙軸安全框，文字與熱區共用中心；繁中、英文及刻意加長的版本值已通過
+  runtime fallback 字型 containment；繁中與英文正版資料畫廊各 35/35，英文實圖另確認正常值
+  完整顯示、不依賴省略號收尾。原版證據只支持 `MAINMENU.LBX#21` 的六顆既有按鈕，
+  語言／版本列仍明標 remake requirement，不升格為原版控制。證據與規格見
+  [`docs/re/main-menu-text-layout-audit-20260827.md`](docs/re/main-menu-text-layout-audit-20260827.md) 與
+  [`docs/spec/main-menu-external-text.md`](docs/spec/main-menu-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

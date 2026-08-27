@@ -609,16 +609,6 @@ func savePathFor() string { return shell.SaveSlotPath(saveDirFor(), shell.AutoSa
 // menu 建原版主選單畫面。按鈕熱區用 menuOverlays 的座標(按鈕即標籤)。
 func (b *sceneBuilder) menu() (*overlayScreen, error) {
 	playBackgroundMusic() // 原版主選單走 Play_Background_Music_:STREAM 1/2/3 每次重擲
-	// 左下兩個設定開關的文字不能貼著畫布或底部裝飾邊。寬度以實際熱區扣掉左右
-	// 留白來限制；英文較長時寧可在語意完整的「切換」提示前截斷，也不越出框外。
-	const (
-		menuToggleHitX    = 12
-		menuToggleHitW    = 220
-		menuToggleLabelX  = 20
-		menuToggleLabelW  = 196
-		menuToggleTextY   = 436
-		menuToggleTextGap = 22
-	)
 	// 無存檔時 Continue / Load Game **停用**:不給熱區(點了不動作)+ 標籤畫成灰的。
 	// 這是 2026-07-12 archive.org 原版 oracle 對照的 issue #2 結論——原版那兩顆本來就是
 	// 灰階不可按,remake 先前是「可按但靜默無反應」,玩家會以為壞了。
@@ -633,10 +623,10 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 		hits = append(hits, hitRegion{o.x, o.y, o.w, o.h, o.enKey})
 	}
 	// 規則版本切換(CLAUDE.md:主選單選 1.3/1.5)——左下角熱區,點擊循環切換,開局注入 RuleProfile。
-	hits = append(hits, hitRegion{menuToggleHitX, 450, menuToggleHitW, 22, "toggleVersion"})
+	hits = append(hits, hitRegion{menuToggleHitX, menuVersionY, menuToggleHitW, menuToggleHitH, "toggleVersion"})
 	// 語言切換(CLAUDE.md:「允許在主選單選擇中文/英文」)——擺在版本切換正上方。
 	// 先前語言只有啟動旗標 `-lang`,進了遊戲就換不掉,不符合這條需求。
-	hits = append(hits, hitRegion{menuToggleHitX, 428, menuToggleHitW, 22, "toggleLang"})
+	hits = append(hits, hitRegion{menuToggleHitX, menuLanguageY, menuToggleHitW, menuToggleHitH, "toggleLang"})
 	onAction := func(a string) *origTransition {
 		switch a {
 		case "toggleLang":
@@ -648,7 +638,7 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 			} else {
 				b.lang = i18n.Traditional
 			}
-			return b.goTo(b.menu, "主選單")
+			return b.goTo(b.menu, uiText(b.lang, "mainmenu.transition.main_menu"))
 		case "toggleVersion":
 			next := gamedata.VersionCommunity15
 			if b.gameVersion == gamedata.VersionCommunity15 {
@@ -659,14 +649,14 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 				fmt.Fprintln(os.Stderr, "切換遊戲版本:", err)
 				return nil
 			}
-			return b.goTo(b.menu, "主選單") // 重繪以更新版本顯示
+			return b.goTo(b.menu, uiText(b.lang, "mainmenu.transition.main_menu")) // 重繪以更新版本顯示
 		case "Quit Game":
 			return &origTransition{quit: true}
 		case "New Game":
 			// 新遊戲:先進原版 NEW GAME 設定畫面(難度/星系/玩家…),ACCEPT 後進星系主畫面。
 			b.pendingHotseat = 0 // 單人局(從多人設定畫面進來的才會帶席位數)
 			b.pendingHotseatAI = nil
-			return b.goTo(b.newGameSetup, "新遊戲設定")
+			return b.goTo(b.newGameSetup, uiText(b.lang, "mainmenu.transition.new_game"))
 		case "Multi Player":
 			// 原版 MULTI-PLAYER GAME SET UP(見 cmd/moo2/multiplayer.go)。
 			// remake 只實作其中的 HOTSEAT,其餘連線方式在那個畫面裡明示未實作。
@@ -696,7 +686,7 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 				b.session.SetMercCandidates(b.herodataMercs) // 讀檔建的是新 session,重注入真英雄池
 			}
 			b.savePath = path // 後續自動存檔寫回同一格
-			return b.goTo(b.galaxy, "星系主畫面")
+			return b.goTo(b.galaxy, uiText(b.lang, "mainmenu.transition.galaxy"))
 		case "Load Game":
 			// 開原版的十格存檔選擇視窗(見 cmd/moo2/loadgame.go)。無存檔時這顆鈕停用。
 			if !shell.AnySaveExists(saveDirFor()) {
@@ -711,7 +701,7 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 		case "Hall of Fame":
 			// 名人堂 → 最終得分畫面(原版 Hall of Fame / Hi-Score,見 cmd/moo2/hiscore.go)。
 			// ⚠ 這裡先前暫借給「研究選擇」畫面當調色盤鏈的示範入口,是接錯的,2026-08-07 改正。
-			return b.goTo(b.hiScore, "最終得分")
+			return b.goTo(b.hiScore, uiText(b.lang, "mainmenu.transition.hiscore"))
 		}
 		return nil
 	}
@@ -731,14 +721,13 @@ func (b *sceneBuilder) menu() (*overlayScreen, error) {
 	}
 	// 左下角版本 / 語言切換標籤(點擊上方熱區循環)。
 	// 語言標籤本身要跟著當前語言走,否則英文模式下留一行中文很怪。
-	langLabel := b.tr("語言 繁體中文(點此切換)", "Language: English (click to switch)")
-	verLabel := fmt.Sprintf(b.tr("規則版本 %s(點此切換)", "Rules %s (click to switch)"),
-		versionShort(b.gameVersion))
+	langLabel := uiText(b.lang, "mainmenu.toggle.language")
+	verLabel := mainMenuText(b.lang, "mainmenu.toggle.rules", versionShort(b.gameVersion))
 	s.extras = append(s.extras,
-		extraText{x: menuToggleLabelX, y: menuToggleTextY, size: 11, text: langLabel,
-			col: color.RGBA{150, 210, 150, 255}, maxW: menuToggleLabelW},
-		extraText{x: menuToggleLabelX, y: menuToggleTextY + menuToggleTextGap, size: 11, text: verLabel,
-			col: color.RGBA{150, 210, 150, 255}, maxW: menuToggleLabelW},
+		mainMenuToggleTextRect(menuLanguageY).leftExtras(menuFont, langLabel, 11, color.RGBA{150, 210, 150, 255})...,
+	)
+	s.extras = append(s.extras,
+		mainMenuToggleTextRect(menuVersionY).leftExtras(menuFont, verLabel, 11, color.RGBA{150, 210, 150, 255})...,
 	)
 	return s, nil
 }
