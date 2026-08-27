@@ -355,3 +355,23 @@ func TestFormalTreatyBlocksAIOffensivePolicy(t *testing.T) {
 		t.Fatalf("正式同盟未映射為原版 ForeignPolicy Alliance: %d", got)
 	}
 }
+
+func TestFormalWarPolicyOverridesRemakeStanceProjection(t *testing.T) {
+	for _, tc := range []struct {
+		policy gamedata.ForeignPolicy
+		want   gamedata.AIForeignPolicy
+	}{
+		{gamedata.DIPLO_LIMITED_WAR, gamedata.DiploLimitedWar},
+		{gamedata.DIPLO_WAR, gamedata.DiploWar},
+		{gamedata.ForeignPolicy(6), gamedata.DiploTotalWar},
+	} {
+		a := &AIOpponent{
+			Treaty:     TreatyState{FormalPolicy: tc.policy},
+			StanceName: stanceNames[ai.StanceNeutral],
+			Relation:   40,
+		}
+		if got := aiForeignPolicyFor(a); got != tc.want {
+			t.Errorf("formal policy %d 映射 = %d，預期 %d", tc.policy, got, tc.want)
+		}
+	}
+}

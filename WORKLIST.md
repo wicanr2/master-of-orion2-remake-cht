@@ -1136,6 +1136,11 @@
   存檔的非零稅率也不被覆蓋。舊 10／30／50% `RemakeDecider` 門檻已退出正常原版路徑；見
   [`docs/re/ai-tax-rate-audit-20260828.md`](docs/re/ai-tax-rate-audit-20260828.md) 與
   [`docs/spec/ai-tax-rate.md`](docs/spec/ai-tax-rate.md)。
+  同日亦訂正 AI 對真人戰爭 policy 的下游：`sub_51078` 已證實 human 戰爭依難度寫 raw 5／6，
+  `aiForeignPolicyFor` 現直接保留正式 4／5／6 給目標估值，不再由中文態勢與關係猜回錯誤 policy。
+  AI↔真人 `sub_25DF1 → sub_51078` 宣戰 producer 及方向 bias／duration／cooldown typed 狀態仍待接；見
+  [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與
+  [`docs/spec/ai-human-formal-war-policy.md`](docs/spec/ai-human-formal-war-policy.md)。
 - [ ] **艦隊、殖民、事件與安塔蘭忠實化**：重建 `Move_All_Ships_Toward_Stars_ @ 0xFFEEA`、
   `sub_E5EB3 @ 0xE5EB3` 殖民建立鏈、`Compute_Blockades_ @ 0xE5097`、`Compute_Contacts_ @ 0xEB192`、
   `Check_All_Rebellions_ @ 0xED44A`、`Determine_Event_ @ 0x2230A` 與

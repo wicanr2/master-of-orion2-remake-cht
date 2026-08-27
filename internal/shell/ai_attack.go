@@ -146,11 +146,9 @@ func (s *GameSession) aiRaidTarget(i int) int {
 	return best
 }
 
-// aiForeignPolicyFor 把 remake 的 AI 態勢對映到原版的 ForeignPolicy 編碼。
-//
-// remake 的態勢是 ai.DecideStance 由關係分數推得的五級(戰爭/敵視/中立/提議貿易/提議結盟),
-// 原版是 ForeignPolicy 六級(無/互不侵犯/同盟/和平/有限戰爭/戰爭)。兩套不是同一個維度,
-// 這裡取語意最接近的對映——**對映本身是 remake 的**,原版的態勢↔外交狀態關係另有機制。
+// aiForeignPolicyFor 回傳攻擊目標估值使用的原版 ForeignPolicy 編碼。
+// Treaty.FormalPolicy 是 +0x627 的權威 raw 狀態，包含 sub_51078 對 human 戰爭寫入的 5／6；
+// 只在舊 JSON 沒有正式 policy 時，才保留 StanceName 的相容投影。
 func aiForeignPolicyFor(a *AIOpponent) gamedata.AIForeignPolicy {
 	if a != nil {
 		switch a.Treaty.FormalPolicy {
@@ -160,6 +158,12 @@ func aiForeignPolicyFor(a *AIOpponent) gamedata.AIForeignPolicy {
 			return gamedata.DiploAlliance
 		case gamedata.DIPLO_PEACE:
 			return gamedata.DiploPeace
+		case gamedata.DIPLO_LIMITED_WAR:
+			return gamedata.DiploLimitedWar
+		case gamedata.DIPLO_WAR:
+			return gamedata.DiploWar
+		case gamedata.ForeignPolicy(6):
+			return gamedata.DiploTotalWar
 		}
 	}
 	switch a.StanceName {
