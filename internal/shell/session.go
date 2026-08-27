@@ -56,7 +56,11 @@ type AIOpponent struct {
 	// raw6／raw4／raw7 與 runtime 種族特性。Known 區分舊存檔的合法零值。
 	OriginalTechProfile      gamedata.OriginalAITechProfile `json:"originalTechProfile,omitempty"`
 	OriginalTechProfileKnown bool                           `json:"originalTechProfileKnown,omitempty"`
-	Relation                 int                            // 對玩家的 normalized 外交關係（-40..40）
+	// OriginalRaw28／Known 單獨保存 player+0x28。它也是 OriginalTechProfile.Raw6，
+	// 但 GAM 目前尚未解析 +0x205／+0x206，不能為了其中一欄就把完整 profile 冒稱 known。
+	OriginalRaw28      int  `json:"originalRaw28,omitempty"`
+	OriginalRaw28Known bool `json:"originalRaw28Known,omitempty"`
+	Relation           int  // 對玩家的 normalized 外交關係（-40..40）
 	// OriginalRelationRaw 保存原版 player+0x617 signed byte 的 -100..100 餘數；
 	// Known 區分合法 raw 0 與舊存檔缺欄。UI／AI 仍只消費 Relation。
 	OriginalRelationRaw   int  `json:"originalRelationRaw,omitempty"`
@@ -186,6 +190,11 @@ type AIOpponent struct {
 	OriginalHumanTreatyGrievanceRaw int  `json:"originalHumanTreatyGrievanceRaw,omitempty"`
 	OriginalHumanTreatyVictimRaw    int  `json:"originalHumanTreatyVictimRaw,omitempty"`
 	OriginalHumanTreatyVictimKnown  bool `json:"originalHumanTreatyVictimKnown,omitempty"`
+	// OriginalHumanIncidentMemoryRaw／ReasonRaw 對應 AI→真人 +0x71F／+0x6CF。
+	// Known=false 的 GAM／舊 JSON 不可把缺欄當成原版精確零。
+	OriginalHumanIncidentMemoryRaw int  `json:"originalHumanIncidentMemoryRaw,omitempty"`
+	OriginalHumanIncidentReasonRaw int  `json:"originalHumanIncidentReasonRaw,omitempty"`
+	OriginalHumanIncidentKnown     bool `json:"originalHumanIncidentKnown,omitempty"`
 }
 
 // cloneBuildings 回傳 m 的獨立拷貝(逐鍵複製),供需要「各自獨立、不共享底層 map」的初始化
@@ -6308,10 +6317,13 @@ func buildDemoAIOpponents(aiHomeStars []int, difficulty int, seed int64) []AIOpp
 			// AIOpponent.ColonyBuildings 欄位註解)。
 			ColonyBuildings: []map[string]bool{cloneBuildings(homeworldBuildings())},
 			// 原版開局後由全域英雄池逐回合產生 offer；不再依種族固定贈送 Commando。
-			Leaders:                  nil,
-			Personality:              pers,
-			OriginalTechProfile:      techProfile,
-			OriginalTechProfileKnown: techProfileKnown,
+			Leaders:                    nil,
+			Personality:                pers,
+			OriginalTechProfile:        techProfile,
+			OriginalTechProfileKnown:   techProfileKnown,
+			OriginalRaw28:              techProfile.Raw6,
+			OriginalRaw28Known:         techProfileKnown,
+			OriginalHumanIncidentKnown: true,
 			// 經濟傾向由性格推導(見 ai.ProfileForPersonality),不再手寫。
 			Decider:    ai.NewRemakeDecider(ai.ProfileForPersonality(pers)),
 			OwnedStars: 1,

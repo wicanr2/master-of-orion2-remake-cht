@@ -8,16 +8,164 @@ var OriginalHumanTargetPersonalityScore = [...]int{-10, -5, -3, 0, 20, 20, -10}
 // AI→真人重複事件記憶的負分除數。
 var originalHumanTargetIncidentDivisor = [...]int{1, 2, 3, 3, 4, 5, 2}
 
+// OriginalHumanTargetScoreInput 是 sub_544A1 已閉合前半段的 typed 輸入。
+// 預先計算欄位仍須由各自原版 producer 提供；Known=false 時 composer 失敗即關閉。
+type OriginalHumanTargetScoreInput struct {
+	RelationRaw, Personality, DiplomatBonus, Difficulty, FormalPolicy int
+	Government, Raw28, SourcePopulation, TargetPopulationCapacity     int
+	ForceWarRaw, FoodDeficitTurns, PowerRatio                         int
+	GovernmentOneTargetValue                                          int
+	GovernmentOneTargetExists                                         bool
+	GovernmentZeroReachabilityKnown                                   bool
+	GovernmentZeroReachability                                        int
+	IncidentMemory, IncidentReason                                    int
+	TreatyGrievance, TreatyVictimRaw, SourceRaw                       int
+	TreatyVictimKnown                                                 bool
+	PopulationDominance, PopulationTrend                              int
+	TargetRaw1DFIs3, TargetCharismatic, TargetBetrayedHonorable       bool
+}
+
+type OriginalHumanTargetScoreResult struct {
+	Score, WorstTerm, ReasonCode, ActionLimit int
+	ForcedType2                               bool
+}
+
+// OriginalHumanTargetScore 對應 sub_544A1 @ 0x544A1..0x54A27 已閉合的分數順序。
+// roll 採 1..n；政府與食物分支的亂數不可延後到 Outcome。
+func OriginalHumanTargetScore(in OriginalHumanTargetScoreInput,
+	roll func(int) int) (OriginalHumanTargetScoreResult, bool) {
+	if roll == nil || in.RelationRaw < -128 || in.RelationRaw > 127 ||
+		in.Personality < 0 || in.Personality >= len(OriginalHumanTargetPersonalityScore) ||
+		in.DiplomatBonus < 0 || in.Difficulty < 0 || in.Difficulty > 6 ||
+		in.FormalPolicy < 0 || in.FormalPolicy > 6 || in.Government < 0 || in.Government > 7 ||
+		in.Raw28 < 0 || in.Raw28 > 255 || in.ForceWarRaw < 0 || in.ForceWarRaw > 255 {
+		return OriginalHumanTargetScoreResult{}, false
+	}
+	relationTerm := in.RelationRaw / 10
+	if in.RelationRaw >= 50 {
+		relationTerm = in.RelationRaw / 5
+	}
+	out := OriginalHumanTargetScoreResult{Score: relationTerm, WorstTerm: relationTerm, ReasonCode: 67, ActionLimit: 200}
+	addTerm := func(term, reason int) {
+		if term < out.WorstTerm {
+			out.WorstTerm, out.ReasonCode = term, reason
+		}
+		out.Score += term
+	}
+	override := func(reason, limit int) {
+		out.Score, out.WorstTerm, out.ReasonCode, out.ForcedType2 = -150, -150, reason, true
+		if limit != 0 {
+			out.ActionLimit = limit
+		}
+	}
+	incident, incidentReason, ok := OriginalHumanTargetIncidentScore(in.IncidentMemory, in.IncidentReason, in.Personality)
+	if !ok {
+		return OriginalHumanTargetScoreResult{}, false
+	}
+	if incident != 0 {
+		addTerm(incident, incidentReason)
+	}
+	forced, ok := OriginalHumanTargetForcedPopulation(in.ForceWarRaw, in.Raw28,
+		in.SourcePopulation, in.TargetPopulationCapacity)
+	if !ok {
+		return OriginalHumanTargetScoreResult{}, false
+	}
+	if forced {
+		override(114, 0)
+	}
+	if in.Government == 3 {
+		r := roll(200)
+		trigger, valid := OriginalHumanTargetGovernmentThree(in.Government, in.Difficulty, r)
+		if !valid {
+			return OriginalHumanTargetScoreResult{}, false
+		}
+		if trigger {
+			override(109, 100)
+		}
+	}
+	foodRoll := roll(100)
+	food, valid := OriginalHumanTargetFoodDeficit(in.FoodDeficitTurns, foodRoll)
+	if !valid {
+		return OriginalHumanTargetScoreResult{}, false
+	}
+	if food {
+		override(119, 0)
+	}
+	govOne, valid := OriginalHumanTargetGovernmentOnePressure(in.Government, in.PowerRatio,
+		in.GovernmentOneTargetValue, in.GovernmentOneTargetExists)
+	if !valid {
+		return OriginalHumanTargetScoreResult{}, false
+	}
+	if govOne != 0 {
+		addTerm(govOne, 115)
+	}
+	if in.Government == 0 {
+		if !in.GovernmentZeroReachabilityKnown {
+			return OriginalHumanTargetScoreResult{}, false
+		}
+		r := roll(400)
+		trigger, valid := OriginalHumanTargetGovernmentZeroExpansion(in.Government,
+			in.GovernmentZeroReachability, r)
+		if !valid {
+			return OriginalHumanTargetScoreResult{}, false
+		}
+		if trigger {
+			override(121, 0)
+		}
+	}
+	grievance, grievanceReason, valid := OriginalHumanTargetTreatyGrievance(in.TreatyGrievance,
+		in.TreatyVictimKnown, in.TreatyVictimRaw, in.SourceRaw)
+	if !valid {
+		return OriginalHumanTargetScoreResult{}, false
+	}
+	if grievance != 0 {
+		addTerm(grievance, grievanceReason)
+	}
+	pressure, limit, active, valid := OriginalHumanTargetPowerPressure(in.PowerRatio, in.Government)
+	if !valid {
+		return OriginalHumanTargetScoreResult{}, false
+	}
+	if active {
+		addTerm(pressure, 112)
+		out.ActionLimit = limit
+	}
+	if in.PopulationDominance != 0 {
+		addTerm(in.PopulationDominance, 178)
+		out.ActionLimit = 150
+	}
+	if in.PopulationTrend != 0 {
+		addTerm(in.PopulationTrend, 117)
+	}
+	if in.FormalPolicy == int(DIPLO_NON_AGGRESSION) {
+		out.Score += 10
+	} else if in.FormalPolicy == int(DIPLO_ALLIANCE) {
+		out.Score += 20
+	}
+	personality := OriginalHumanTargetPersonalityScore[in.Personality]
+	if in.Personality == 4 && in.TargetBetrayedHonorable {
+		personality = OriginalHumanTargetPersonalityScore[6]
+	}
+	out.Score += personality
+	if in.TargetRaw1DFIs3 {
+		out.Score += 5
+	}
+	if in.TargetCharismatic {
+		out.Score += 10
+	}
+	out.Score += in.DiplomatBonus + 15 - in.Difficulty
+	return out, true
+}
+
 // OriginalHumanTargetIncidentScore 對應 sub_544A1 @ 0x54524..0x5457A。
 // memory 是 AI→真人方向 +0x71F 的 signed byte，rememberedReason 是 +0x6CF；
 // 原版只讓 1..9 的 +0x64F reason 複製進 +0x6CF，因此超出範圍時失敗即關閉。
 // reasonCode 是玩家可見訊息選擇器使用的 rememberedReason+70。
 func OriginalHumanTargetIncidentScore(memory, rememberedReason, personality int) (score, reasonCode int, ok bool) {
-	if memory < 0 || memory > 127 || rememberedReason < 0 || rememberedReason > 9 ||
+	if memory < -128 || memory > 127 || rememberedReason < 0 || rememberedReason > 9 ||
 		personality < 0 || personality >= len(originalHumanTargetIncidentDivisor) {
 		return 0, 0, false
 	}
-	if memory == 0 || rememberedReason == 0 {
+	if memory <= 0 || rememberedReason == 0 {
 		return 0, 0, true
 	}
 	divisor := originalHumanTargetIncidentDivisor[personality]

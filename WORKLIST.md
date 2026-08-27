@@ -1167,6 +1167,12 @@
   `+0x7EE／+0x7F6` 亦由全庫 operand 掃描閉合為 `sub_5138E` 正式違約記憶：玩家
   `break_formal` 現依受害 AI personality 寫 -10／-20、記錄受害 slot 並持久化；
   `3*x/5` 與原因 176／177 已接純規則，普通貿易解約不誤寫。
+  `player+0x28` 現有獨立 known：新局取 `OriginalAITechProfile.Raw6`，GAM 直接保存
+  `save.Player.Objective`，不因缺另外兩個 profile raw 而誤升格。`sub_544A1` 已閉合項目也已
+  組成單一 ordered composer 與 shell typed producer，會輸出 score／worst reason／action
+  limit；缺 incident、歷史、精確雙向國力或 government 0 可達資料時失敗即關閉。
+  正常發兵仍未切換，最後主要阻塞是 `sub_4F93B` 科技／殖民地候選 availability 與
+  government 0 `sub_DCB47` producer。
   目前願戰來源仍是明示的
   `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與

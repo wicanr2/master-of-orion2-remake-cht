@@ -80,6 +80,9 @@
     signed `+0x7EE` 一般減 10，observer personality raw 4 則減 20；`+0x7F6` 記錄受害
     player slot。`sub_544A1` 加入 `3*signed(+0x7EE)/5`，受害 slot 等於 source 時原因 177，
     否則 176。普通貿易／研究終止沒有這個 writer。
+18. `player+0x28` 已由既有 `sub_589D6` 證據保存為 `OriginalAITechProfile.Raw6`；此次只
+    增加獨立 known 狀態。GAM parser 的 `save.Player.Objective` 正是該 raw byte，但因
+    `+0x205／+0x206` 未解析，仍不把整份 profile 標為 known。
 
 ## Remake 對映與限制
 
@@ -106,6 +109,12 @@
 - 已接垂直鏈：玩家 `break_formal` 除既有永久 `+0x727` 外，現在也依受害 AI personality
   寫 signed `+0x7EE` 與受害 slot `+0x7F6`，通過 JSON 往返；純規則依原版 `3*x/5`
   與 176／177 原因碼消費。經濟協議解約仍有負對照。
+- 已接 composer：`OriginalHumanTargetScore` 依原始先後處理關係、incident、三個 -150
+  覆寫、government 1、grievance、國力、人口、歷史、條約、personality、target raw
+  modifier、Charismatic、Diplomat 與難度，保留 worst term／reason／action limit。
+- 已接 shell typed producer：新局可由雙向逐艦國力、人口、歷史與持久 raw 組合上述 score；
+  government 0 缺 `sub_DCB47`、GAM／舊 JSON 缺 incident、歷史不足時失敗即關閉。它尚未
+  取代正常發兵 fallback，因 `sub_4F93B` 完整候選 availability 仍未閉合。
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。

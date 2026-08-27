@@ -446,8 +446,9 @@ func importGAMOpponents(session *GameSession, raw *save.GameState, human int, re
 			},
 			Spies:                 int(raw.Players[i].Spies[human]),
 			OriginalWarFlag60ERaw: int(raw.Players[i].Raw60E),
-			OwnedStars:            0,
-			ColonyStars:           []int{}, ColonyPlanets: []int{}, ColonyBuildings: []map[string]bool{},
+			OriginalRaw28:         int(raw.Players[i].Objective), OriginalRaw28Known: true,
+			OwnedStars:  0,
+			ColonyStars: []int{}, ColonyPlanets: []int{}, ColonyBuildings: []map[string]bool{},
 			Leaders: []Leader{},
 		}
 		aiIndexByRaw[i] = len(session.AIPlayers)

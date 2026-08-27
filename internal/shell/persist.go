@@ -58,6 +58,8 @@ type aiSnapshot struct {
 	Personality                     ai.Personality                 `json:"personality"`
 	OriginalTechProfile             gamedata.OriginalAITechProfile `json:"originalTechProfile,omitempty"`
 	OriginalTechProfileKnown        bool                           `json:"originalTechProfileKnown,omitempty"`
+	OriginalRaw28                   int                            `json:"originalRaw28,omitempty"`
+	OriginalRaw28Known              bool                           `json:"originalRaw28Known,omitempty"`
 	OriginalFoodDeficitTurns        int                            `json:"originalFoodDeficitTurns,omitempty"`
 	OriginalWarFlag60ERaw           int                            `json:"originalWarFlag60ERaw,omitempty"`
 	OriginalBlockadeGrievanceRaw    int                            `json:"originalBlockadeGrievanceRaw,omitempty"`
@@ -65,6 +67,9 @@ type aiSnapshot struct {
 	OriginalHumanTreatyGrievanceRaw int                            `json:"originalHumanTreatyGrievanceRaw,omitempty"`
 	OriginalHumanTreatyVictimRaw    int                            `json:"originalHumanTreatyVictimRaw,omitempty"`
 	OriginalHumanTreatyVictimKnown  bool                           `json:"originalHumanTreatyVictimKnown,omitempty"`
+	OriginalHumanIncidentMemoryRaw  int                            `json:"originalHumanIncidentMemoryRaw,omitempty"`
+	OriginalHumanIncidentReasonRaw  int                            `json:"originalHumanIncidentReasonRaw,omitempty"`
+	OriginalHumanIncidentKnown      bool                           `json:"originalHumanIncidentKnown,omitempty"`
 	// LastRaidTurn 是這個 AI 上次突襲玩家的回合(見 ai_attack.go)。不存的話讀檔後
 	// 每個 AI 的間隔計時器都歸零,存檔當回合可能立刻又被突襲一次。
 	LastRaidTurn                        int `json:"last_raid_turn"`
@@ -330,6 +335,7 @@ func (s *GameSession) snapshot() sessionSnapshot {
 			OriginalHumanTargetDecisionCooldown: a.OriginalHumanTargetDecisionCooldown,
 			OriginalHumanContactTurns:           a.OriginalHumanContactTurns,
 			OriginalTechProfile:                 a.OriginalTechProfile, OriginalTechProfileKnown: a.OriginalTechProfileKnown,
+			OriginalRaw28: a.OriginalRaw28, OriginalRaw28Known: a.OriginalRaw28Known,
 			OriginalFoodDeficitTurns:        a.OriginalFoodDeficitTurns,
 			OriginalWarFlag60ERaw:           a.OriginalWarFlag60ERaw,
 			OriginalBlockadeGrievanceRaw:    a.OriginalBlockadeGrievanceRaw,
@@ -337,6 +343,9 @@ func (s *GameSession) snapshot() sessionSnapshot {
 			OriginalHumanTreatyGrievanceRaw: a.OriginalHumanTreatyGrievanceRaw,
 			OriginalHumanTreatyVictimRaw:    a.OriginalHumanTreatyVictimRaw,
 			OriginalHumanTreatyVictimKnown:  a.OriginalHumanTreatyVictimKnown,
+			OriginalHumanIncidentMemoryRaw:  a.OriginalHumanIncidentMemoryRaw,
+			OriginalHumanIncidentReasonRaw:  a.OriginalHumanIncidentReasonRaw,
+			OriginalHumanIncidentKnown:      a.OriginalHumanIncidentKnown,
 			WantsAudience:                   a.WantsAudience, AudienceReason: a.AudienceReason,
 			FleetStar: a.FleetStar, FleetPosSet: a.FleetPosSet,
 			FleetDestStar: a.FleetDestStar, FleetETA: a.FleetETA,
@@ -469,6 +478,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 			OriginalHumanTargetDecisionCooldown: a.OriginalHumanTargetDecisionCooldown,
 			OriginalHumanContactTurns:           a.OriginalHumanContactTurns,
 			OriginalTechProfile:                 a.OriginalTechProfile, OriginalTechProfileKnown: a.OriginalTechProfileKnown,
+			OriginalRaw28: a.OriginalRaw28, OriginalRaw28Known: a.OriginalRaw28Known,
 			OriginalFoodDeficitTurns:        a.OriginalFoodDeficitTurns,
 			OriginalWarFlag60ERaw:           a.OriginalWarFlag60ERaw,
 			OriginalBlockadeGrievanceRaw:    a.OriginalBlockadeGrievanceRaw,
@@ -476,6 +486,9 @@ func (snap sessionSnapshot) restore() *GameSession {
 			OriginalHumanTreatyGrievanceRaw: a.OriginalHumanTreatyGrievanceRaw,
 			OriginalHumanTreatyVictimRaw:    a.OriginalHumanTreatyVictimRaw,
 			OriginalHumanTreatyVictimKnown:  a.OriginalHumanTreatyVictimKnown,
+			OriginalHumanIncidentMemoryRaw:  a.OriginalHumanIncidentMemoryRaw,
+			OriginalHumanIncidentReasonRaw:  a.OriginalHumanIncidentReasonRaw,
+			OriginalHumanIncidentKnown:      a.OriginalHumanIncidentKnown,
 			WantsAudience:                   a.WantsAudience, AudienceReason: a.AudienceReason,
 			FleetStar: a.FleetStar, FleetPosSet: a.FleetPosSet,
 			FleetDestStar: a.FleetDestStar, FleetETA: a.FleetETA,

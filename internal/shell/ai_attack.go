@@ -104,6 +104,11 @@ func (s *GameSession) aiRaidWilling(i int) bool {
 // 玩家用中性的 BalancedLow(remake 的玩家沒有 AI 目標傾向這個欄位)。原版兩個立場還會
 // 差在種族人口上限與重力天賦,remake 沒有那兩層,故兩個估值目前只有權重不同。
 func (s *GameSession) aiRaidTarget(i int) int {
+	best, _ := s.aiRaidTargetWithValue(i)
+	return best
+}
+
+func (s *GameSession) aiRaidTargetWithValue(i int) (int, int) {
 	a := &s.AIPlayers[i]
 	obj := aiObjectiveFor(a.Personality)
 	policy := aiForeignPolicyFor(a)
@@ -126,7 +131,7 @@ func (s *GameSession) aiRaidTarget(i int) int {
 			best, bestVal = ci, v
 		}
 	}
-	return best
+	return best, bestVal
 }
 
 // aiForeignPolicyFor 回傳攻擊目標估值使用的原版 ForeignPolicy 編碼。

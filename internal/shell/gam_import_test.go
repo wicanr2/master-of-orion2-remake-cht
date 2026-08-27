@@ -57,16 +57,18 @@ func TestApplyGAMPopulationProfilesSpecialSlots(t *testing.T) {
 	}
 }
 
-func TestImportGAMOpponentsPreservesRaw60E(t *testing.T) {
+func TestImportGAMOpponentsPreservesRaw28AndRaw60E(t *testing.T) {
 	raw := &save.GameState{Players: make([]save.Player, 2)}
 	raw.Players[0].Personality = 100
 	raw.Players[1].Name = "AI"
 	raw.Players[1].Raw60E = 1
+	raw.Players[1].Objective = 2
 	report := &GAMImportReport{PlayerCount: 2}
 	s := &GameSession{}
 	importGAMOpponents(s, raw, 0, report)
-	if len(s.AIPlayers) != 1 || s.AIPlayers[0].OriginalWarFlag60ERaw != 1 || report.ImportedAI != 1 {
-		t.Fatalf("GAM Player+0x60E 未無損匯入：AI=%+v report=%+v", s.AIPlayers, report)
+	if len(s.AIPlayers) != 1 || s.AIPlayers[0].OriginalWarFlag60ERaw != 1 ||
+		!s.AIPlayers[0].OriginalRaw28Known || s.AIPlayers[0].OriginalRaw28 != 2 || report.ImportedAI != 1 {
+		t.Fatalf("GAM Player+0x28／+0x60E 未無損匯入：AI=%+v report=%+v", s.AIPlayers, report)
 	}
 }
 

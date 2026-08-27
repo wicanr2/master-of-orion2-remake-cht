@@ -101,6 +101,29 @@ func TestOriginalHumanTargetTreatyGrievance(t *testing.T) {
 	}
 }
 
+func TestOriginalHumanTargetScorePreservesOverrideAndRollOrder(t *testing.T) {
+	rolls := []int{1, 50} // government 3 Random(200)，接著 food Random(100)
+	draw := 0
+	out, ok := OriginalHumanTargetScore(OriginalHumanTargetScoreInput{
+		RelationRaw: -20, Personality: 4, Difficulty: 2, Government: 3,
+		Raw28: 0, SourcePopulation: 40, TargetPopulationCapacity: 100,
+		FoodDeficitTurns: 0, PowerRatio: 320, TreatyGrievance: -20,
+		TreatyVictimKnown: true, TreatyVictimRaw: 1, SourceRaw: 1,
+		PopulationDominance: -10,
+	}, func(n int) int {
+		v := rolls[draw]
+		draw++
+		return v
+	})
+	if !ok || draw != 2 || !out.ForcedType2 || out.ReasonCode != 109 || out.ActionLimit != 150 {
+		t.Fatalf("composer 結果=%+v ok=%v draws=%d", out, ok, draw)
+	}
+	// -150 override -12 grievance -8 power -10 dominance +20 personality +15 -2 difficulty。
+	if out.Score != -147 {
+		t.Fatalf("score=%d，預期 -147", out.Score)
+	}
+}
+
 func TestOriginalHumanTargetThreshold(t *testing.T) {
 	if got, ok := OriginalHumanTargetThreshold(-5, 20); !ok || got != 100 {
 		t.Fatalf("負分 threshold=%d/%v，預期 100/true", got, ok)
