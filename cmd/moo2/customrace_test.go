@@ -69,6 +69,13 @@ func TestCustomRaceLabelsMatchRACESTUFAndExternalJSON(t *testing.T) {
 			t.Errorf("特殊能力缺少雙語外部文案：%s", sp.textKey)
 		}
 	}
+	for _, key := range []string{"customrace.option.with_cost", "customrace.special.marker.off", "customrace.special.marker.on", "customrace.special.label", "customrace.special.cost"} {
+		for _, lang := range []i18n.Lang{i18n.English, i18n.Traditional} {
+			if got := uiText(lang, key); got == "" || got == key {
+				t.Errorf("控制文字缺少外部文案：lang=%v key=%s", lang, key)
+			}
+		}
+	}
 }
 
 func TestCustomRaceTextSafeRectsContainBothLanguages(t *testing.T) {
@@ -78,19 +85,13 @@ func TestCustomRaceTextSafeRectsContainBothLanguages(t *testing.T) {
 		for i, cat := range s.cats {
 			checkClippedTextFits(t, fnt, s.catNameTextRect(i), uiText(lang, cat.textKey), 13)
 			for _, opt := range cat.opts {
-				label := ""
-				if opt.textKey != "" {
-					label = uiText(lang, opt.textKey)
-				}
-				if opt.cost != 0 {
-					label += fmt.Sprintf(" (%+d)", -opt.cost)
-				}
-				checkClippedTextFits(t, fnt, s.catOptionTextRect(i), label, 13)
+				checkClippedTextFits(t, fnt, s.catOptionTextRect(i), customRaceOptionText(lang, opt), 13)
 			}
 		}
 		for i, sp := range s.specials {
-			checkClippedTextFits(t, fnt, s.specialLabelTextRect(i), "● "+uiText(lang, sp.textKey), 12)
-			checkClippedTextFits(t, fnt, s.specialCostTextRect(i), fmt.Sprintf("%+d", -sp.cost), 12)
+			sp.on = true
+			checkClippedTextFits(t, fnt, s.specialLabelTextRect(i), customRaceSpecialText(lang, sp), 12)
+			checkClippedTextFits(t, fnt, s.specialCostTextRect(i), customRaceSpecialCostText(lang, sp.cost), 12)
 		}
 		checkClippedTextFits(t, fnt, customRaceTitleTextRect(), uiText(lang, "customrace.title"), 18)
 		checkClippedTextFits(t, fnt, customRacePicksTextRect(),
@@ -116,7 +117,7 @@ func TestCustomRaceSourceHasNoEmbeddedPlayerSentences(t *testing.T) {
 	if strings.Contains(src, ".tr(") {
 		t.Fatal("customrace.go 不得再用 tr 內嵌中英文玩家文案")
 	}
-	for _, value := range []string{"Population Growth", "人口成長", "CUSTOM RACE", "自訂種族", "Fantastic Traders", "貿易奇才"} {
+	for _, value := range []string{"Population Growth", "人口成長", "CUSTOM RACE", "自訂種族", "Fantastic Traders", "貿易奇才", "○", "●", " (%+d)", "%+d"} {
 		if strings.Contains(src, `"`+value+`"`) {
 			t.Errorf("customrace.go 仍內嵌玩家文案 %q", value)
 		}

@@ -509,6 +509,14 @@
   六艦體、標題及按鈕均正確且未越框。證據與規格見
   [`docs/re/ship-class-display-catalog-audit-20260827.md`](docs/re/ship-class-display-catalog-audit-20260827.md) 與
   [`docs/spec/ship-class-display-catalog.md`](docs/spec/ship-class-display-catalog.md)。
+  自訂種族控制文字已完成第五十五個切片：數值選項成本、特殊能力 on／off marker、能力列組字
+  與正負點數格式全部由 `ui.json` 提供，`customrace.go` 只傳名稱、選取狀態與整數。RACESTUF
+  只證實選項語料，未證實 `○／●` 與成本排版；文件已把這組視覺維持為 remake adapter，沒有
+  升格原版 glyph。畫廊新增 `02b_customrace.png`，使用正式 `customRace()` 畫面建構流程；繁中
+  與英文正版資料畫廊現各 38/38。實圖抽查兩種語言的標記、名稱、成本、標題與按鈕均在安全框
+  內，英文長能力名依既有單行省略契約收尾。證據與規格見
+  [`docs/re/custom-race-ui-text-audit-20260826.md`](docs/re/custom-race-ui-text-audit-20260826.md) 與
+  [`docs/spec/custom-race-external-text.md`](docs/spec/custom-race-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

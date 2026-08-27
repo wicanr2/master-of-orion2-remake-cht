@@ -8,6 +8,10 @@
    `docs/re/custom-race-ui-text-audit-20260826.md` 的 RACESTUF asset 0 順序。
 4. 數值類未選狀態的 `textKey` 為空，畫面顯示空白；不得自行補 `None`。
 5. 動態點數以程式格式化，但「剩餘點數」模板本身由 JSON 提供，兩種語言都保留兩個 `%d`。
+6. 數值選項與成本使用 `customrace.option.with_cost`；特殊能力使用外部 on／off marker、
+   `customrace.special.label` 與 `customrace.special.cost`。Go 只傳名稱、狀態與整數，不可自行
+   串接空白、括號、正負號或 glyph。
+7. `○／●` 是 remake adapter，不是已證實的原版控制圖示；外部化不改變其證據等級。
 
 ## 文字安全框
 
@@ -23,6 +27,5 @@
 1. 10 個類別、每個數值類 4 個狀態、4 政體及 22 能力的資料形狀不變。
 2. 選項切換、互斥、點數、`customRaceValues` 與政府索引不因文案改變。
 3. 中英文最長標籤經實際 runtime font 量測／截斷後不得超出各自安全框。
-4. 靜態掃描拒絕 `customrace.go` 新增 `tr(...)` 或代表性中英文玩家文案。
+4. 靜態掃描拒絕 `customrace.go` 新增 `tr(...)`、代表性中英文玩家文案、`○／●` 或點數格式常值。
 5. GUI 抽樣需涵蓋繁中與英文自訂種族畫面；幾何測試不等於逐像素原版 parity。
-

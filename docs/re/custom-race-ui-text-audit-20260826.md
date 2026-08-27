@@ -40,6 +40,11 @@ RACESTUF asset 0 依序給出：
 - Go 只保存 `customrace.*` 語意鍵；RACESTUF 英文與繁中譯文都置於
   `assets/i18n/ui.json`。
 - 各列仍沿用 remake 既有合成版面；原版完整畫面幾何與逐像素對照沒有因字串解碼升格。
+- **已證實（稽核前 remake source）**：數值選項成本曾以 Go 內嵌的 ` (%+d)` 組字，特殊能力
+  以 `○／●` 表示關閉／開啟，成本另以 `%+d` 顯示。RACESTUF asset 0 只證實選項語料，沒有
+  證實這組圓點與成本排版是原版視覺，因此它們屬 remake adapter，不得冒稱原版逐字／逐像素。
+- 本切片將上述 adapter 的標記、組字與數值格式一併放入 `ui.json`；Go 只傳選取狀態、名稱與
+  點數，不再保存玩家可見 glyph 或格式模板。
 
 ## 驗收與限制
 
@@ -47,5 +52,6 @@ RACESTUF asset 0 依序給出：
 - 代表性的 `Population/-50% Growth`、`Ship Defense/+25`、`Trans Dimensional` 必須與
   asset dump 相符。
 - `customrace.go` 不得再出現 `tr(...)` 或玩家文案常值。
+- `customrace.go` 不得內嵌 `○／●`、` (%+d)`、`%+d` 或由空白拼接能力名稱；這些皆須由外部
+  模板供應。
 - 本輪只修正文案與規則／顯示識別分離；點數效果的玩法 consumer 仍以各自 RE/spec 為準。
-

@@ -15,6 +15,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
@@ -144,6 +145,29 @@ func (s *customRaceScreen) spent() int {
 }
 
 func (s *customRaceScreen) remaining() int { return startingPicks - s.spent() }
+
+func customRaceOptionText(lang i18n.Lang, opt pickOpt) string {
+	label := ""
+	if opt.textKey != "" {
+		label = uiText(lang, opt.textKey)
+	}
+	if opt.cost == 0 {
+		return label
+	}
+	return fmt.Sprintf(uiText(lang, "customrace.option.with_cost"), label, -opt.cost)
+}
+
+func customRaceSpecialText(lang i18n.Lang, sp specialPick) string {
+	markerKey := "customrace.special.marker.off"
+	if sp.on {
+		markerKey = "customrace.special.marker.on"
+	}
+	return fmt.Sprintf(uiText(lang, "customrace.special.label"), uiText(lang, markerKey), uiText(lang, sp.textKey))
+}
+
+func customRaceSpecialCostText(lang i18n.Lang, cost int) string {
+	return fmt.Sprintf(uiText(lang, "customrace.special.cost"), -cost)
+}
 
 // 版面。
 const (
@@ -350,15 +374,7 @@ func (s *customRaceScreen) draw(dst *ebiten.Image) {
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1, color.RGBA{90, 120, 170, 255}, false)
 		o := c.opts[c.sel]
 		s.catNameTextRect(i).drawLeft(dst, s.fnt, uiText(s.b.lang, c.textKey), 13, body)
-		costStr := ""
-		if o.cost != 0 {
-			costStr = fmt.Sprintf(" (%+d)", -o.cost) // 顯示對剩餘點數的影響:退點=+
-		}
-		optionLabel := ""
-		if o.textKey != "" {
-			optionLabel = uiText(s.b.lang, o.textKey)
-		}
-		s.catOptionTextRect(i).drawLeft(dst, s.fnt, optionLabel+costStr, 13, gold)
+		s.catOptionTextRect(i).drawLeft(dst, s.fnt, customRaceOptionText(s.b.lang, o), 13, gold)
 	}
 
 	// 右:特殊能力開關。
@@ -377,16 +393,12 @@ func (s *customRaceScreen) draw(dst *ebiten.Image) {
 			bord = green
 		}
 		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1, bord, false)
-		mark := "○"
-		if sp.on {
-			mark = "●"
-		}
 		col := body
 		if sp.on {
 			col = green
 		}
-		s.specialLabelTextRect(i).drawLeft(dst, s.fnt, mark+" "+uiText(s.b.lang, sp.textKey), 12, col)
-		s.specialCostTextRect(i).drawCentered(dst, s.fnt, fmt.Sprintf("%+d", -sp.cost), 12, gold)
+		s.specialLabelTextRect(i).drawLeft(dst, s.fnt, customRaceSpecialText(s.b.lang, sp), 12, col)
+		s.specialCostTextRect(i).drawCentered(dst, s.fnt, customRaceSpecialCostText(s.b.lang, sp.cost), 12, gold)
 	}
 
 	// 底部按鈕。

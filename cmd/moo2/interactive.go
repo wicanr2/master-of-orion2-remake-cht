@@ -6019,8 +6019,10 @@ type interactiveApp struct {
 	galleryInputBoxTick int
 	// galleryResearchTick 是截圖廊把畫面換成研究領域畫面的 tick。
 	galleryResearchTick int
-	galleryBuilder      *sceneBuilder
-	gallerySession      *shell.GameSession
+	// galleryCustomRaceTick 是截圖廊把畫面換成自訂種族畫面的 tick。
+	galleryCustomRaceTick int
+	galleryBuilder        *sceneBuilder
+	gallerySession        *shell.GameSession
 }
 
 // promoDemoStep 的 hold 是送出 input 之後、下一個 input 前要保留的實際牆鐘時間。
@@ -6127,6 +6129,10 @@ const galleryInputBoxTick = 105
 // galleryResearchTick 是截圖廊在哪個 tick 換成研究領域畫面——取截圖(t108)的前一拍。
 // 此注入只驗證正式 renderer 與真實 session 資料；研究選題的正常玩家 gate 另由 t12~t13 驗證。
 const galleryResearchTick = 107
+
+// galleryCustomRaceTick 在既有導覽完成後開啟正常 customRace screen constructor；
+// 不修改對局規則，只補上先前未被畫廊覆蓋的文字／幾何驗收畫面。
+const galleryCustomRaceTick = 109
 
 // galleryFighterTick 是截圖廊在哪個 tick 於戰術戰鬥裡派出一隊戰機——取截圖(t66)的前一拍。
 //
@@ -6402,6 +6408,9 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 
 		idle, // t107: 由 galleryResearchTick 換成研究領域畫面
 		idle, // t108: settle → 截圖 research
+
+		idle, // t109: 由 galleryCustomRaceTick 換成自訂種族畫面
+		idle, // t110: settle → 截圖 customrace
 	}
 	shots := []galleryShot{
 		{1, "01_menu.png"},
@@ -6445,6 +6454,7 @@ func buildGalleryScript() ([]shell.InputState, []galleryShot) {
 		{104, "33_netgames.png"},
 		{106, "34_inputbox.png"},
 		{108, "35_research.png"},
+		{110, "02b_customrace.png"},
 	}
 	return script, shots
 }
@@ -6835,6 +6845,12 @@ func (a *interactiveApp) Update() error {
 			a.cur = sc
 		}
 	}
+	// 截圖廊專用:自訂種族畫面。使用正常 screen constructor，只省略從種族選擇點入的導覽。
+	if a.galleryCustomRaceTick > 0 && a.tick == a.galleryCustomRaceTick && a.galleryBuilder != nil {
+		if sc, err := a.galleryBuilder.customRace(); err == nil {
+			a.cur = sc
+		}
+	}
 	// 截圖廊專用:戰術戰鬥裡派一隊戰機出擊(見 galleryFighterTick 的說明)。
 	if a.galleryFighterTick > 0 && a.tick == a.galleryFighterTick {
 		if ts, ok := a.cur.(*tacticalScreen); ok && len(ts.player) > 1 {
@@ -7081,6 +7097,7 @@ func runInteractive(versionAssets versionAssetDirs, initial gamedata.GameVersion
 		app.galleryNetGamesTick = galleryNetGamesTick
 		app.galleryInputBoxTick = galleryInputBoxTick
 		app.galleryResearchTick = galleryResearchTick
+		app.galleryCustomRaceTick = galleryCustomRaceTick
 		app.galleryBuilder = b
 	}
 	// 只有真正互動(非 headless 截圖/腳本/截圖廊)才啟用音訊:headless 環境常無音效卡,

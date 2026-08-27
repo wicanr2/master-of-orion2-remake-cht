@@ -312,6 +312,36 @@
     "note": "自訂種族剩餘點數"
   },
   {
+    "key": "customrace.option.with_cost",
+    "english": "%s (%+d)",
+    "value": "%s（%+d）",
+    "note": "remake 選項名稱與點數 adapter；依序為名稱、對剩餘點數的影響"
+  },
+  {
+    "key": "customrace.special.marker.off",
+    "english": "○",
+    "value": "○",
+    "note": "remake 未選標記，不宣稱原版 glyph"
+  },
+  {
+    "key": "customrace.special.marker.on",
+    "english": "●",
+    "value": "●",
+    "note": "remake 已選標記，不宣稱原版 glyph"
+  },
+  {
+    "key": "customrace.special.label",
+    "english": "%s %s",
+    "value": "%s %s",
+    "note": "remake 特殊能力列；依序為選取標記與能力名稱"
+  },
+  {
+    "key": "customrace.special.cost",
+    "english": "%+d",
+    "value": "%+d",
+    "note": "remake 特殊能力點數欄；參數為對剩餘點數的影響"
+  },
+  {
     "key": "customrace.name.empire",
     "english": "Custom Empire",
     "value": "自訂帝國",
