@@ -185,6 +185,18 @@ func TestTreatyStateKeepsFormalAndEconomicAgreementsSeparate(t *testing.T) {
 	if !s.AIPlayers[0].OriginalHumanBetrayalRaw {
 		t.Fatal("玩家破壞正式條約後，AI→玩家 +0x727 應永久設為 1")
 	}
+	wantGrievance := -10
+	if int(s.AIPlayers[0].Personality) == 4 {
+		wantGrievance = -20
+	}
+	if got := s.AIPlayers[0].OriginalHumanTreatyGrievanceRaw; got != wantGrievance {
+		t.Fatalf("正式違約 +0x7EE=%d，預期 %d", got, wantGrievance)
+	}
+	if s.AIPlayers[0].PopulationRaceSlotKnown &&
+		(!s.AIPlayers[0].OriginalHumanTreatyVictimKnown ||
+			s.AIPlayers[0].OriginalHumanTreatyVictimRaw != s.AIPlayers[0].PopulationRaceSlot) {
+		t.Fatalf("+0x7F6 應記錄受害 AI slot：%+v", s.AIPlayers[0])
+	}
 }
 
 func TestEconomicAgreementBreakDoesNotSetFormalBetrayal(t *testing.T) {
@@ -194,6 +206,9 @@ func TestEconomicAgreementBreakDoesNotSetFormalBetrayal(t *testing.T) {
 	s.DiplomacyResponse("break_trade", target)
 	if s.AIPlayers[0].OriginalHumanBetrayalRaw {
 		t.Fatal("只終止貿易不得寫正式條約 +0x727")
+	}
+	if s.AIPlayers[0].OriginalHumanTreatyGrievanceRaw != 0 || s.AIPlayers[0].OriginalHumanTreatyVictimKnown {
+		t.Fatal("只終止貿易不得寫 +0x7EE／+0x7F6")
 	}
 }
 

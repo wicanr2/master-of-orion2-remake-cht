@@ -43,6 +43,9 @@
     都把目前 score 覆寫成 -150。government 3 同時把行動上限改為 100。
 17. government 1 在國力比至少 100、target `+0x857>=200` 且 `+0x837!=-1` 時加入
     `-targetValue/20`。government 0 以 `sub_DCB47` 計數作 `Random(400)<=count` 的 -150 覆寫。
+18. 玩家破壞正式條約時，受害 AI 看向玩家的 signed `+0x7EE` 一般減 10、Honorable
+    personality raw 4 減 20，`+0x7F6` 記錄受害 AI slot。score 加 `3*grievance/5`；
+    victim==source 使用原因 177，否則 176。三欄隨存檔往返，經濟協議解約不得寫入。
 
 ## DRAFT 邊界
 
@@ -59,6 +62,7 @@ incident memory 的 writer 門檻／正常玩家事件 producer、特殊政府�
 - 正負 score threshold、四類結果及每條路徑的 RNG 次數必須有純規則測試。
 - 外交 action 四種 kind、候選 gate、RNG 順序、BC 取整及科技索引必須有純規則測試。
 - 正式解約寫 +0x727、經存檔往返及 Honorable score 差 30；經濟協議解約須有負對照。
+- 正式解約同時寫 +0x7EE／+0x7F6，並驗證一般／Honorable 幅度、`3*x/5`、原因碼與存檔。
 - 成功派艦後 cooldown 必須落在 20–39，並經 JSON snapshot 往返不變。
 - 玩家軍力較高或 personality losing-ground chance 為 0，不得單獨形成固定 veto。
 - 艦隊抵達後的 formal policy 5／6 writer 與 10 回合重複結算保護維持既有測試。

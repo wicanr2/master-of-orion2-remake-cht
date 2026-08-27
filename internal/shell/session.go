@@ -181,6 +181,11 @@ type AIOpponent struct {
 	// OriginalHumanBetrayalRaw 對應 AI 看向目前真人方向的 player+0x727；
 	// 玩家破壞既有正式條約後永久設為 true。
 	OriginalHumanBetrayalRaw bool `json:"originalHumanBetrayalRaw,omitempty"`
+	// OriginalHumanTreatyGrievanceRaw／VictimRaw 對應 AI→目前真人方向的
+	// signed +0x7EE／+0x7F6。Known 區分合法 victim slot 0 與舊 JSON 缺欄。
+	OriginalHumanTreatyGrievanceRaw int  `json:"originalHumanTreatyGrievanceRaw,omitempty"`
+	OriginalHumanTreatyVictimRaw    int  `json:"originalHumanTreatyVictimRaw,omitempty"`
+	OriginalHumanTreatyVictimKnown  bool `json:"originalHumanTreatyVictimKnown,omitempty"`
 }
 
 // cloneBuildings 回傳 m 的獨立拷貝(逐鍵複製),供需要「各自獨立、不共享底層 map」的初始化
@@ -1744,6 +1749,15 @@ func (s *GameSession) DiplomacyResponse(action, enemy string) DiplomacyResult {
 			return diplomacyResult(DiploResultNoFormal, enemy)
 		}
 		ai.OriginalHumanBetrayalRaw = true
+		penalty := -10
+		if int(ai.Personality) == 4 {
+			penalty = -20
+		}
+		ai.OriginalHumanTreatyGrievanceRaw = originalSignedByteAdd(ai.OriginalHumanTreatyGrievanceRaw, penalty)
+		if ai.PopulationRaceSlotKnown {
+			ai.OriginalHumanTreatyVictimRaw = ai.PopulationRaceSlot
+			ai.OriginalHumanTreatyVictimKnown = true
+		}
 		ai.adjustRelation(-30)
 		return diplomacyResult(DiploResultFormalEnded, enemy)
 	case "break_tribute":

@@ -1164,6 +1164,9 @@
   可達計數；`+0x60E` 人口壓力、government 3 難度骰、食物赤字、government 1 目標值與
   government 0 可達骰均已拆成保留嚴格不等號及 RNG 邊界的純規則。後者仍缺殖民地可達
   typed producer，因此完整 score 尚不升格。
+  `+0x7EE／+0x7F6` 亦由全庫 operand 掃描閉合為 `sub_5138E` 正式違約記憶：玩家
+  `break_formal` 現依受害 AI personality 寫 -10／-20、記錄受害 slot 並持久化；
+  `3*x/5` 與原因 176／177 已接純規則，普通貿易解約不誤寫。
   目前願戰來源仍是明示的
   `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與

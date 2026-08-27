@@ -92,6 +92,15 @@ func TestOriginalHumanTargetSpecialBranches(t *testing.T) {
 	}
 }
 
+func TestOriginalHumanTargetTreatyGrievance(t *testing.T) {
+	if score, reason, ok := OriginalHumanTargetTreatyGrievance(-20, true, 3, 3); !ok || score != -12 || reason != 177 {
+		t.Fatalf("受害者就是來源應為 -12/177：%d/%d/%v", score, reason, ok)
+	}
+	if score, reason, ok := OriginalHumanTargetTreatyGrievance(-10, true, 2, 3); !ok || score != -6 || reason != 176 {
+		t.Fatalf("第三方受害者應為 -6/176：%d/%d/%v", score, reason, ok)
+	}
+}
+
 func TestOriginalHumanTargetThreshold(t *testing.T) {
 	if got, ok := OriginalHumanTargetThreshold(-5, 20); !ok || got != 100 {
 		t.Fatalf("負分 threshold=%d/%v，預期 100/true", got, ok)

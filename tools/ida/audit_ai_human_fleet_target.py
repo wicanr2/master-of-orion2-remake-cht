@@ -174,6 +174,7 @@ def main():
         "raw_human_target_gate_operand_matches": operand_matches(["74Fh", "816h", "88Fh"]),
         "raw_human_target_incident_operand_matches": operand_matches(["6CFh", "71Fh"]),
         "raw_relation_incident_operand_matches": operand_matches(["64Fh", "65Fh"]),
+        "raw_human_target_grievance_operand_matches": operand_matches(["7EEh", "7F6h"]),
         "raw_personality_score_table": signed_word_table(PERSONALITY_SCORE_TABLE_EA, 7),
         "raw_incident_divisor_table": signed_word_table(INCIDENT_DIVISOR_TABLE_EA, 7),
     }

@@ -75,6 +75,11 @@
     -150／原因 119。government 1 在 `sub_500CF>=100`、方向 `+0x857>=200` 且對應
     `+0x837!=-1` 時加入 `-value/20`／原因 115。government 0 則在
     `Random(400)<=sub_DCB47` 時覆寫 -150／原因 121。
+17. 全庫 `+0x7EE／+0x7F6` operand 掃描顯示初始化之外，runtime writer 只在
+    `sub_5138E @ 0x5138E..0x515F8` 的正式違約鏈。受害者及已接觸第三方看向 actor 的
+    signed `+0x7EE` 一般減 10，observer personality raw 4 則減 20；`+0x7F6` 記錄受害
+    player slot。`sub_544A1` 加入 `3*signed(+0x7EE)/5`，受害 slot 等於 source 時原因 177，
+    否則 176。普通貿易／研究終止沒有這個 writer。
 
 ## Remake 對映與限制
 
@@ -98,6 +103,9 @@
   皆依 owner 艦艇與 observer 科技／引擎／種族防禦計算，任一 raw 缺欄就失敗即關閉。
 - 已接純規則：上述 `+0x60E`、government 3、食物赤字、government 1 與 government 0
   分支的 gate／算式；尚未把缺少 typed producer 的 `sub_DCB47` 計數偽造為零。
+- 已接垂直鏈：玩家 `break_formal` 除既有永久 `+0x727` 外，現在也依受害 AI personality
+  寫 signed `+0x7EE` 與受害 slot `+0x7F6`，通過 JSON 往返；純規則依原版 `3*x/5`
+  與 176／177 原因碼消費。經濟協議解約仍有負對照。
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。

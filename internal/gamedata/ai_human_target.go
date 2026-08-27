@@ -138,6 +138,25 @@ func OriginalHumanTargetGovernmentZeroExpansion(government, reachableColonyScore
 	return government == 0 && roll400 <= reachableColonyScore, true
 }
 
+// OriginalHumanTargetTreatyGrievance 對應 sub_544A1 @ 0x5470C..0x54768。
+// grievanceRaw 是 signed byte +0x7EE；victimRaw 是 +0x7F6。只有 writer 已知時才可
+// 產生原因碼，victim==source 使用 177，否則 176。
+func OriginalHumanTargetTreatyGrievance(grievanceRaw int, victimKnown bool,
+	victimRaw, sourceRaw int) (score, reasonCode int, ok bool) {
+	if grievanceRaw < -128 || grievanceRaw > 127 || victimRaw < -128 || victimRaw > 127 ||
+		sourceRaw < -128 || sourceRaw > 127 {
+		return 0, 0, false
+	}
+	score = 3 * grievanceRaw / 5
+	if !victimKnown {
+		return score, 0, true
+	}
+	if victimRaw == sourceRaw {
+		return score, 177, true
+	}
+	return score, 176, true
+}
+
 // OriginalHumanTargetOutcomeInput 是 sub_544A1 尾端已閉合的決策輸入。
 // Score 是上游所有方向關係、事件、性格與領袖修正合成後的 signed 分數。
 type OriginalHumanTargetOutcomeInput struct {
