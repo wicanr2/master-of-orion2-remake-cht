@@ -63,8 +63,8 @@ AI↔AI 且沒有需要開啟人類外交畫面的接收者時，直接呼叫
 
 - **CONFORMED**：一般 reason 23 候選、AI↔AI policy 4、宣戰關係範圍、協議清除、戰爭計時、
   停戰門檻、30 回合冷卻、JSON 往返及熱座索引壓縮。
-- **強推論資料投影**：原版 `+0x5EC` 已證實為逐艦、逐觀察者武器效能矩陣，但 remake producer
-  尚未實作，仍以 `FleetStrength` 代入已證實的 `sub_500CF` 公式；詳見
+- **CONFORMED 國力輸入**：一般 AI 艦隊現由 typed 實艦重建逐艦、逐觀察者 `+0x5EC` 矩陣並
+  代入 `sub_500CF`；只有缺實艦 raw 資料的舊存檔保留明標非精確 `FleetStrength` 回退。詳見
   [`npc-power-matrix-audit-20260828.md`](npc-power-matrix-audit-20260828.md)。
 - **未接**：reason 20／22／68／113 的特殊 producer、宣戰 writer 的 `+0x6AF／+0x6BF` 未消費
   記憶、有人類參戰的政策 5／6 分支，以及完整方向接觸／淘汰矩陣。

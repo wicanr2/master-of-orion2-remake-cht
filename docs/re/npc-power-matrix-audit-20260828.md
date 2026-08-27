@@ -48,9 +48,15 @@
 引擎 0..7 查速度 `0／6／8／10／12／14／16／2`，乘 5 後才加 empire `+2213` 艦防與
 `+2236` 跨維度的 20。純規則已拆成 `ObserverWeaponReduction` 與 `ObserverDefense` 兩欄。
 
-`sub_5F2F6` 的一般艦分支會把 `sub_58387` 與 `sub_58425` 相加；後者已證實由 hull size、armor
-百分比與 special raw ID 14 的三倍分支形成裝甲容量，前者仍轉呼叫 `sub_582BF` 計結構容量。
-因此耐久 producer 尚未閉合，不可用 remake 的 `shipMaxHP` 冒充原版 raw 容量。
+`sub_5F2F6` 的一般艦分支會把 `sub_58387` 與 `sub_58425` 相加。IDA 已追回兩者共用的 hull
+基礎表 `4／10／30／50／80／150` 與 armor raw 0..7 百分比
+`-100／0／100／300／500／700／900／0`；`sub_582BF` 的 special raw 27 只把 structure 乘三，
+`sub_58425` 的 raw 14 只把 armor 乘三。之後才扣 ship `+125` structure damage 與 `+123`
+armor damage。remake 已依此建立獨立耐久 producer，未再借用 `shipMaxHP`。
+
+`sub_54D80／sub_54E5B` 寫給 `sub_5EF4B` 的 attack 輸出也已閉合：computer 表
+`0／25／50／75／100／125`，可用的 special raw 5 戰鬥掃描器加 50，再加逐艦 Weaponry 軍官、
+crew offense `0／15／30／50／75` 與 owner `+2214` 種族艦攻；此路徑不讀 ComputerDamage。
 
 ## 已證實：消費公式
 
@@ -74,7 +80,8 @@ ratio /= 2 for each source third-party war
 - **已完成新造艦輸入切片**：可回查 `OrigWeaponByTech` 的武器會寫 raw ID；已有 consumer 證據的
   HV／PD／CO／NR／AF／ARM／FST／OVR 寫 raw bits，其他未閉合改造讓 mount 維持不可供國力
   producer 消費。交付 AI 艦同時保存 computer、size、armor、shield 與 base combat speed。
-- **尚待實作**：補齊 remake 新造艦的同形 raw 映射、觀察者防禦輸入與逐艦公式，產生
-  `AIPowerRaw[owner][observer]`；衍生矩陣每回合重建，不作權威存檔。
-- **目前近似**：宣戰／納貢仍以 hull-only `FleetStrength` 代入；必須繼續標為強推論資料投影，
-  不得因 consumer 公式已對齊而宣稱完整 parity。
+- **已完成一般 AI producer**：`originalAIPowerMatrix` 每次由實艦重建 owner×observer 方向矩陣，
+  不作權威存檔；納貢與一般宣戰共同消費該矩陣。觀察者科技造成方向差、八槽、受損與零艦隊
+  均有純規則／shell 測試。
+- **相容邊界**：只有非零 `FleetStrength`、卻完全沒有實艦 raw 資料的舊存檔或精簡測試才回退
+  hull-only 純量，並明標 `exact=false`。特殊 owner／要塞分支不在一般 AI 艦隊本切片。

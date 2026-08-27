@@ -65,6 +65,10 @@ func shipFromBlueprint(name string, design ShipBlueprint, profileOptions []Compo
 	if design.Shield >= 0 && design.Shield < len(ShieldOptions) {
 		ship.ShieldRaw, ship.ShieldRawKnown = uint8(design.Shield), true
 	}
+	// remake 新造艦從未受損且由新兵起步；這些合法零值必須標為已知，才能進入
+	// 原版 sub_5EF4B 國力 producer，而不被誤判成舊 JSON 缺欄。
+	ship.CrewLevelRawKnown = true
+	ship.OriginalDamageKnown = true
 	return ship
 }
 

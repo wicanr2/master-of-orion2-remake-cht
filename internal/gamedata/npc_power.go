@@ -33,6 +33,45 @@ var originalNPCPowerModPercent = [...]struct {
 
 var originalNPCComputerWeaponReduction = [...]int{0, 1, 3, 5, 7, 10}
 var originalNPCDriveDefenseSpeed = [...]int{0, 6, 8, 10, 12, 14, 16, 2}
+var originalNPCHullBase = [...]int{4, 10, 30, 50, 80, 150}
+var originalNPCArmorPercent = [...]int{-100, 0, 100, 300, 500, 700, 900, 0}
+
+// OriginalNPCShipDurability 對應 sub_582BF、sub_58425 與 sub_5F2F6 的一般艦艇分支。
+// 原版的 structure 與 armor 共用艦級基礎表及裝甲科技百分比；強化船體／重型裝甲
+// 各自把對應軌乘三，最後才扣除 129-byte Ship 紀錄中的兩條獨立損傷。
+func OriginalNPCShipDurability(size, armor int, reinforcedHull, heavyArmor bool, armorDamage, structureDamage int) (int, bool) {
+	if size < 0 || size >= len(originalNPCHullBase) || armor < 0 || armor >= len(originalNPCArmorPercent) ||
+		armorDamage < 0 || structureDamage < 0 {
+		return 0, false
+	}
+	base := originalNPCHullBase[size]
+	scaled := base + base*originalNPCArmorPercent[armor]/100
+	structure, armorHP := scaled, scaled
+	if reinforcedHull {
+		structure *= 3
+	}
+	if heavyArmor {
+		armorHP *= 3
+	}
+	remaining := structure + armorHP - structureDamage - armorDamage
+	if remaining < 0 {
+		return 0, false
+	}
+	return remaining, true
+}
+
+// OriginalNPCShipBeamAttack 對應 sub_54D80／sub_54E5B 寫回給 sub_5EF4B 的
+// attack 輸出：電腦、可用戰鬥掃描器、艦艇軍官 Weaponry、艦員與種族艦攻。
+func OriginalNPCShipBeamAttack(computer, crewLevel, officerWeaponry, racialShipAttack int, battleScanner bool) (int, bool) {
+	if computer < 0 || computer >= len(computerBonusTable) || crewLevel < 0 || crewLevel >= len(shipCrewOffenseBonuses) {
+		return 0, false
+	}
+	result := ComputerBonus(computer) + ShipCrewOffenseBonus(crewLevel) + officerWeaponry + racialShipAttack
+	if battleScanner {
+		result += 50
+	}
+	return result, true
+}
 
 // OriginalNPCComputerWeaponReduction 對應 sub_5F871 對一般帝國的 word_17F6C1 查表。
 func OriginalNPCComputerWeaponReduction(computer int) (int, bool) {

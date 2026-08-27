@@ -129,6 +129,9 @@ func TestCouncilPlayerWinsBySupermajority(t *testing.T) {
 // 下一屆在原版固定 25 回合後可以再開會。
 func TestCouncilEnemyWinsRequiresPlayerResponse(t *testing.T) {
 	s := NewDemoSession()
+	// 本測試只驗證議會 25 回合週期；關閉可選 AI↔AI 戰爭，避免原版方向國力
+	// 改變外交後在等待期間攻陷用來固定票數的測試殖民地。
+	s.EnableAIVsAI = false
 	settleHalfGalaxy(s)
 	s.PlayerColonies[0].Population = 1
 	s.AIPlayers[0].Colonies[0].Population = 100

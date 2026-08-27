@@ -67,3 +67,22 @@ func TestOriginalNPCDurabilityFactor(t *testing.T) {
 		}
 	}
 }
+
+func TestOriginalNPCShipDurabilityUsesExecutableTables(t *testing.T) {
+	// 戰艦 size3、鈦裝甲 raw2：基礎 50，+100% 後 structure/armor 各 100；
+	// 強化船體與重型裝甲各自乘三，再扣兩條獨立損傷。
+	got, ok := OriginalNPCShipDurability(3, 2, true, true, 40, 60)
+	if !ok || got != 500 {
+		t.Fatalf("耐久=%d,%v，預期 300+300-40-60=500,true", got, ok)
+	}
+	if got, ok := OriginalNPCShipDurability(0, 0, false, false, 1, 0); ok || got != 0 {
+		t.Fatalf("超過零耐久應失敗即關閉：%d,%v", got, ok)
+	}
+}
+
+func TestOriginalNPCShipBeamAttackUsesRuntimeInputs(t *testing.T) {
+	got, ok := OriginalNPCShipBeamAttack(3, CrewVeteran, 12, 20, true)
+	if !ok || got != 187 { // 75 + 30 + 12 + 20 + 50。
+		t.Fatalf("光束命中=%d,%v，預期 187,true", got, ok)
+	}
+}

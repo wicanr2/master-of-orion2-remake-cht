@@ -1,6 +1,6 @@
 # NPC 方向國力矩陣規格
 
-**狀態：READY（producer 控制流已閉合；remake 資料鏈施工中）**
+**狀態：CONFORMED（一般 AI 艦隊 producer 與外交消費端已接；特殊 owner 分支除外）**
 
 證據：[`../re/npc-power-matrix-audit-20260828.md`](../re/npc-power-matrix-audit-20260828.md)。
 
@@ -21,15 +21,15 @@
 3. 同 owner 的逐艦值累加至該 observer 欄；非法／無法映射的 mount 失敗即關閉，不以艦體值猜補。
 4. `OriginalNPCPowerRatio` 只消費矩陣值，維持 800 cap 及來源第三方戰爭逐次折半。
 
-`OriginalNPCShipPower` 的純算術層已於 2026-08-28 實作並測試；尚未完成的是 shell 對
-`sub_54E5B／sub_5679E／sub_5EAE9／sub_5F2F6` 輸入的完整 typed producer 與回合接線。
-其中最佳電腦與 observer 防禦查表、新造 AI 艦 raw 欄位已完成；`sub_582BF` 結構容量及
-`sub_54E5B` 軍官／船員完整命中輸入仍未閉合，所以目前不得提前接外交 consumer。
+`OriginalNPCShipPower`、`OriginalNPCShipDurability` 與 `OriginalNPCShipBeamAttack` 已實作並測試。
+shell producer 逐艦接入 `sub_54E5B／sub_5679E／sub_5EAE9／sub_5F2F6` 的 typed 輸入：電腦、
+可用戰鬥掃描器、Weaponry 軍官、艦員、種族艦攻、observer 引擎／種族艦防／跨維度、裝甲科技、
+強化船體、重型裝甲與兩條獨立損傷。最佳戰機光束與炸彈亦依已知科技及原版嚴格最大值掃描。
 
 ## 接線與驗收
 
 - NPC 條約納貢與一般宣戰 reason 23 都必須改讀同一矩陣。
 - 測試至少涵蓋：同 hull 不同武器得到不同 power、觀察者防禦造成方向差、八槽累加、受損／船員
   修正、零艦隊 `+1` ratio、防止超過 800，以及存檔後重建一致。
-- 完成前，`FleetStrength` 投影只能保留為舊存檔或無 typed mount 的明示 fallback；目前 producer
-  尚未接線，因此本規格仍不可標為 `CONFORMED`。
+- `FleetStrength` 投影只保留給非零純量但完全沒有實艦 raw 資料的舊存檔／精簡測試；矩陣另回傳
+  `exact=false`，不可把 fallback 升格為原版精確值。

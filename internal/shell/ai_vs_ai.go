@@ -198,6 +198,7 @@ func (s *GameSession) advanceOriginalAIAIWarPolicy(roll func(int) int) {
 	if count < 2 {
 		return
 	}
+	power, _ := s.originalAIPowerMatrix()
 	for source := range s.AIPlayers {
 		wars := 0
 		for target := range s.AIPlayers {
@@ -224,7 +225,7 @@ func (s *GameSession) advanceOriginalAIAIWarPolicy(roll func(int) int) {
 				Difficulty: s.Difficulty, Government: originalAIRelationGovernment(s.AIPlayers[source]),
 				Policy: s.AIPolicies[source][target], TradeActive: s.AITrade[source][target],
 				ResearchActive: s.AIResearch[source][target], TributeMode: s.AITributeModes[source][target],
-				SourceStrength: s.AIPlayers[source].FleetStrength, TargetStrength: s.AIPlayers[target].FleetStrength,
+				SourceStrength: power[source][target], TargetStrength: power[target][source],
 				SourceThirdPartyWars: wars, Cooldown: s.AIDiplomacyCooldownRaw[source][target],
 				TargetIsRotating: s.Turn%count == target, TargetAtWarWithAI: targetAtWar,
 			}, roll)
@@ -284,6 +285,7 @@ func (s *GameSession) makeOriginalAIAICeasefire(a, b int) {
 }
 
 func (s *GameSession) advanceOriginalAIAINegotiation(outer, inner int, roll func(int) int) {
+	power, _ := s.originalAIPowerMatrix()
 	thirdPartyBonus, nonHumanWars, outerWars := 0, 0, 0
 	for k := range s.AIPlayers {
 		if k == outer || k == inner {
@@ -310,7 +312,7 @@ func (s *GameSession) advanceOriginalAIAINegotiation(outer, inner int, roll func
 		InnerGovernment:  originalAIRelationGovernment(s.AIPlayers[inner]),
 		NonHumanWarCount: nonHumanWars, ThirdPartyBonus: thirdPartyBonus,
 		TributeBlocked: s.AITributeModes[outer][inner] < 0,
-		OuterStrength:  s.AIPlayers[outer].FleetStrength, InnerStrength: s.AIPlayers[inner].FleetStrength,
+		OuterStrength:  power[outer][inner], InnerStrength: power[inner][outer],
 		OuterThirdPartyWars: outerWars,
 	}, roll)
 	if !ok {

@@ -22,8 +22,8 @@ RELATED_EAS = (
     0x4F694, 0x500CF, 0x5090C, 0x51078, 0x5138E, 0x52049, 0x5232E, 0x524C3,
     0x524FB, 0x52602,
     0xD3D34,
-    0x54E5B, 0x56726, 0x5679E, 0x5680D, 0x5699C, 0x56CA2,
-    0x58387, 0x58425, 0x5EAE9, 0x5EE27, 0x5EED4,
+    0x54D80, 0x54E5B, 0x56726, 0x5679E, 0x5680D, 0x5685F, 0x5699C, 0x56CA2,
+    0x582BF, 0x58387, 0x58425, 0x5EAE9, 0x5EE27, 0x5EED4,
     0x5EF09, 0x5EF17, 0x5EF4B, 0x5F2C3, 0x5F2F6, 0x5F379, 0x5F871,
 )
 GOVERNMENT_SCORE_TABLE_EA = 0x180CCC
@@ -36,6 +36,16 @@ NPC_POWER_DRIVE_RECORD_SIZE = 46
 NPC_POWER_COMPUTER_TECH_WORD_BASE_EA = 0x17F6A7
 NPC_POWER_COMPUTER_TECH_RECORD_SIZE = 59
 NPC_POWER_COMPUTER_REDUCTION_BASE_EA = 0x17F6C1
+NPC_POWER_STRUCTURE_BASE_EA = 0x180026
+NPC_POWER_ARMOR_BASE_EA = 0x180024
+NPC_POWER_HULL_RECORD_SIZE = 36
+NPC_POWER_ARMOR_PERCENT_BASE_EA = 0x17F642
+NPC_POWER_ARMOR_RECORD_SIZE = 15
+NPC_POWER_COMPUTER_ATTACK_BASE_EA = 0x17FE00
+NPC_POWER_COMPUTER_RECORD_SIZE = 22
+NPC_POWER_WEAPON_BASE_EA = 0x17F807
+NPC_POWER_WEAPON_RECORD_SIZE = 28
+NPC_POWER_FIGHTER_MINI_THRESHOLD_EA = 0x17FD32
 RELATIVE_OPERANDS = ("+5ECh]", "+617h]", "+627h]", "+62Fh]", "+637h]", "+63Fh]",
                      "+68Fh]", "+69Fh]", "+6D7h]", "+717h]", "+71Fh]",
                      "+72Fh]")
@@ -185,6 +195,51 @@ def main():
         }
         for index in range(6)
     ]
+    target["npc_power_hull_capacity_words"] = [
+        {
+            "size": size,
+            "structure": int.from_bytes(
+                ida_bytes.get_bytes(NPC_POWER_STRUCTURE_BASE_EA + NPC_POWER_HULL_RECORD_SIZE * size, 2)
+                or b"\x00\x00", "little", signed=True),
+            "armor": int.from_bytes(
+                ida_bytes.get_bytes(NPC_POWER_ARMOR_BASE_EA + NPC_POWER_HULL_RECORD_SIZE * size, 2)
+                or b"\x00\x00", "little", signed=True),
+        }
+        for size in range(6)
+    ]
+    target["npc_power_armor_percent_words"] = [
+        {
+            "armor_index": index,
+            "ea": hex(NPC_POWER_ARMOR_PERCENT_BASE_EA + NPC_POWER_ARMOR_RECORD_SIZE * index),
+            "percent": int.from_bytes(
+                ida_bytes.get_bytes(NPC_POWER_ARMOR_PERCENT_BASE_EA + NPC_POWER_ARMOR_RECORD_SIZE * index, 2)
+                or b"\x00\x00", "little", signed=True),
+        }
+        for index in range(8)
+    ]
+    target["npc_power_computer_attack_words"] = [
+        {
+            "computer_index": index,
+            "ea": hex(NPC_POWER_COMPUTER_ATTACK_BASE_EA + NPC_POWER_COMPUTER_RECORD_SIZE * index),
+            "attack": int.from_bytes(
+                ida_bytes.get_bytes(NPC_POWER_COMPUTER_ATTACK_BASE_EA + NPC_POWER_COMPUTER_RECORD_SIZE * index, 2)
+                or b"\x00\x00", "little", signed=True),
+        }
+        for index in range(6)
+    ]
+    target["npc_power_fighter_beam_gate"] = {
+        "mini_threshold_ea": hex(NPC_POWER_FIGHTER_MINI_THRESHOLD_EA),
+        "mini_threshold": ida_bytes.get_byte(NPC_POWER_FIGHTER_MINI_THRESHOLD_EA),
+        "weapon_static_flags": [
+            {
+                "weapon_id": weapon_id,
+                "ea": hex(NPC_POWER_WEAPON_BASE_EA + NPC_POWER_WEAPON_RECORD_SIZE * weapon_id + 22),
+                "flags": ida_bytes.get_word(
+                    NPC_POWER_WEAPON_BASE_EA + NPC_POWER_WEAPON_RECORD_SIZE * weapon_id + 22),
+            }
+            for weapon_id in range(40)
+        ],
+    }
 
     result = {
         "tool": "IDA Pro 9.4 IDAPython",

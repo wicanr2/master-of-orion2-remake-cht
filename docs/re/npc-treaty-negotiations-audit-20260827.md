@@ -68,9 +68,8 @@ base = signed(+0x6D7) + signed(+0x617)
 `Change_Relations_`。`sub_500CF` 使用方向性 `+0x5EC` 國力矩陣的
 `100*(outer+1)/(inner+1)`，最高 800，outer 每有一場第三方戰爭再除 2。
 
-remake 尚無 `+0x5EC` 原版國力矩陣，現以可觀察 `FleetStrength` 作有明確標註的
-資料模型投影；公式、門檻及亂數順序保持原版。這是「強推論投影」，不是
-原版國力輸入已證實等價。
+remake 現由 typed 實艦逐艦重建 `+0x5EC` 方向國力矩陣並接入此門檻；只有舊存檔存在非零
+`FleetStrength`、卻沒有任何實艦 raw 資料時才保留明標非精確的相容回退。
 
 ## 已證實：談判記憶
 
@@ -85,10 +84,10 @@ remake 尚無 `+0x5EC` 原版國力矩陣，現以可觀察 `FleetStrength` 作�
 
 - **已接**：ordered AI pair、難度頻率、政府表、條約／協議分數、raw 記憶
   回復與 -30、互不侵犯／同盟／貿易／研究、納貢 mode 2 與關係 delta。
-- **資料模型投影**：AI 都視為已接觸且存活；國力以 `FleetStrength` 代理；
-  treaty-break 記憶 `+0x71F` 尚未接入本談判 base。它不同於已閉合的戰爭計時 `+0x717`。
+- **資料模型投影**：AI 都視為已接觸且存活；treaty-break 記憶 `+0x71F` 尚未接入本談判 base。
+  它不同於已閉合的戰爭計時 `+0x717`。純量國力只作舊存檔相容回退。
 - **後續已閉合**：一般 AI↔AI 宣戰、`+0x717／+0x72F` 及直接停戰見
   [`npc-war-ceasefire-audit-20260827.md`](npc-war-ceasefire-audit-20260827.md)。
-- **仍未知／未接**：完整方向接觸、已成 READY 規格但尚未實作的 `+0x5EC` typed 國力 producer、
-  特殊宣戰 reason、policy helper 寫入的未消費 raw 欄位，以及玩家方向矩陣。
+- **仍未知／未接**：完整方向接觸、特殊宣戰 reason、policy helper 寫入的未消費 raw 欄位，
+  以及玩家方向矩陣。
 - 本頁只證實 1.31 executable；沒有把 1.50 行為外推成相同。
