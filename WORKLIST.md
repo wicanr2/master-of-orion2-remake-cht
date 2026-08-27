@@ -501,6 +501,14 @@
   並禁止顯示函式回傳內部規則鍵；雙語畫廊重跑仍各 37/37，實圖未越框。證據與規格見
   [`docs/re/component-display-label-catalog-audit-20260827.md`](docs/re/component-display-label-catalog-audit-20260827.md) 與
   [`docs/spec/component-display-label-catalog.md`](docs/spec/component-display-label-catalog.md)。
+  艦級顯示名稱已完成第五十四個切片：六個戰鬥艦體、四個支援艦及未知 fallback 的中英文文字
+  均由 `ui.json` 提供；`Ship.Class`／`shipClassZH` 僅保留規則與存檔鍵，不再直接成為玩家輸出。
+  艦艇設計標題、六個艦體名與 CLEAR／CANCEL／BUILD 亦移除 Go 內嵌文字；艦體熱區 action 從
+  英文顯示名改成 `hull:<index>`，翻譯不再兼任控制識別。`cmd/moo2`＋`internal/shell` 測試通過，
+  繁中與英文正版資料畫廊各 37/37；實圖抽查 `07_fleet.png` 與 `25_shipdesign.png` 的支援艦、
+  六艦體、標題及按鈕均正確且未越框。證據與規格見
+  [`docs/re/ship-class-display-catalog-audit-20260827.md`](docs/re/ship-class-display-catalog-audit-20260827.md) 與
+  [`docs/spec/ship-class-display-catalog.md`](docs/spec/ship-class-display-catalog.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

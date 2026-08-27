@@ -1491,33 +1491,25 @@ func drawWormholeLinks(dst *ebiten.Image, stars []shell.Star, visible []bool) {
 // 中文化專案(~/master-of-orion)都沒有 MOO2 這幾組列舉的定案譯名,故用簡明直譯頂著顯示,
 // 不是官方在地化文本。**英文名**則直接取原版手冊用語,不是回譯。
 // 純展示層查表,不影響 engine/gamedata 任何邏輯或數值。
-// shipClassLabel 把 shell 的艦體 key(中文)換成該語言要顯示的名字。
-// 英文用原版艦體名(dsHullOrder,順序一致)。
+// shipClassLabel 把 shell 的艦體規則鍵換成外部 ui.json 的玩家顯示名稱。
 func shipClassLabel(lang i18n.Lang, zhKey string) string {
-	if lang == i18n.Traditional {
-		return zhKey
-	}
 	for i, k := range shipClassZH {
-		if k == zhKey && i < len(dsHullOrder) {
-			return dsHullOrder[i]
+		if k == zhKey && i < len(shipClassTextKeys) {
+			return uiText(lang, shipClassTextKeys[i])
 		}
 	}
-	if en, ok := supportClassEN[zhKey]; ok {
-		return en
+	if key, ok := supportClassTextKeys[zhKey]; ok {
+		return uiText(lang, key)
 	}
-	return zhKey
+	return uiText(lang, "ship.class.unknown")
 }
 
-// supportClassEN 是**支援艦**的艦級英文名(手冊 p.119 明列的三種 + 運輸艦)。
-//
-// 六個戰鬥艦體在 dsHullOrder 裡,這四個不在——而開局艦隊全是支援艦,所以英文模式的
-// 艦隊畫面先前整欄掛著「殖民船 / 偵察艦」。⚠ 與 shipClassZH 同理:**左邊那一欄是查表 key**
-// (`shell.ShipCost`/`isSupportShipClass` 都拿它比對),不能換成英文。
-var supportClassEN = map[string]string{
-	"殖民船": "Colony Ship",
-	"偵察艦": "Scout",
-	"前哨船": "Outpost Ship",
-	"運輸艦": "Freighter",
+// supportClassTextKeys 只把支援艦規則鍵路由到語意鍵；顯示文字不留在 Go。
+var supportClassTextKeys = map[string]string{
+	"殖民船": "ship.class.colony_ship",
+	"偵察艦": "ship.class.scout",
+	"前哨船": "ship.class.outpost_ship",
+	"運輸艦": "ship.class.freighter",
 }
 
 // truncateToWidth 把 s 截到在 fnt/size 下量測寬度不超過 maxW,超過則去尾加「…」。
@@ -4625,8 +4617,8 @@ func (b *sceneBuilder) fleet() (*overlayScreen, error) {
 
 // 艦艇設計畫面的原版座標(全部是 sub_6C8F9 / Add_Design_Buttons_ 的立即數,見下方檔頭)。
 var (
-	dsHullOrder = []string{"Frigate", "Destroyer", "Cruiser", "Battleship", "Titan", "Doom Star"}
-	// shipClassZH 是 shell 那邊的艦體 key(中文),順序同 dsHullOrder / gamedata.CombatShipClass。
+	shipClassTextKeys = []string{"ship.class.frigate", "ship.class.destroyer", "ship.class.cruiser", "ship.class.battleship", "ship.class.titan", "ship.class.doom_star"}
+	// shipClassZH 是 shell 那邊的艦體 key(中文),順序同 shipClassTextKeys / gamedata.CombatShipClass。
 	// **這是 key 不是顯示字**——`shell.ShipCost` / `DesignCostWithMods` 都拿它查表,
 	// 換成英文會直接查不到。要顯示英文請走 shipClassLabel。
 	shipClassZH = []string{"巡防艦", "驅逐艦", "巡洋艦", "戰艦", "泰坦", "末日之星"}
@@ -4728,19 +4720,13 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 	playSceneBGM(trackShipDesign) // Design_Screen_ → STREAM #8
 	// 舊行為只保留一份巡洋艦暫態選擇；現在第一次進入時從 session 的六筆設計庫載入。
 	if b.session != nil && !b.designLoaded {
-		b.loadShipDesign(2) // 原本畫面預設巡洋艦；索引與 dsHullOrder 一致。
-	}
-	// 原版艦體名 → shell 的中文 key。由既有的兩份表建,不再手寫第三份對照
-	// (三份表遲早會漂移;順序本來就一致,見 shipClassZH 註解)。
-	hullZH := make(map[string]string, len(dsHullOrder))
-	for i, en := range dsHullOrder {
-		hullZH[en] = shipClassZH[i]
+		b.loadShipDesign(2) // 原本畫面預設巡洋艦；索引與 shipClassZH 一致。
 	}
 	hits := make([]hitRegion, 0, 20)
 	// 六個艦體槽:座標為反組譯真值(見檔頭的 sub_6C8F9 switch 表),不等距。
-	for i, name := range dsHullOrder {
+	for i := range shipClassZH {
 		y0, y1 := dsHullY[i][0], dsHullY[i][1]
-		hits = append(hits, hitRegion{dsHullX0, y0, dsHullX1 - dsHullX0 + 1, y1 - y0 + 1, name})
+		hits = append(hits, hitRegion{dsHullX0, y0, dsHullX1 - dsHullX0 + 1, y1 - y0 + 1, fmt.Sprintf("hull:%d", i)})
 	}
 	for _, action := range []string{"specialprev", "specialnext", "specialadd", "specialdel"} {
 		r := designSpecialControlRect(action)
@@ -4929,31 +4915,30 @@ func (b *sceneBuilder) shipDesign() (*overlayScreen, error) {
 			b.designMsg = ""
 			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		}
-		if _, ok := hullZH[a]; ok && b.session != nil {
+		if strings.HasPrefix(a, "hull:") && b.session != nil {
+			var hull int
+			if _, err := fmt.Sscanf(a, "hull:%d", &hull); err != nil || hull < 0 || hull >= len(shipClassZH) {
+				return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
+			}
 			b.saveShipDesign()
 			b.designMount = 0
-			for i, name := range dsHullOrder {
-				if a == name {
-					b.loadShipDesign(i)
-					break
-				}
-			}
+			b.loadShipDesign(hull)
 			b.designMsg = ""
 			return b.goTo(b.shipDesign, uiText(b.lang, "shipdesign.transition.screen"))
 		}
 		b.saveShipDesign()
 		return b.goTo(b.fleet, uiText(b.lang, "shipdesign.transition.fleet"))
 	}
-	overlays := []labelRect{{255, 12, 320, 24, "Ship Design", 0}}
+	overlays := []labelRect{{255, 12, 320, 24, uiText(b.lang, "shipdesign.title"), 0}}
 	// 六列艦體名的擦底帶跟著槽走(各留 2px 邊,不吃到浮雕框)。
-	for i, name := range dsHullOrder {
+	for i, key := range shipClassTextKeys {
 		y0, y1 := dsHullY[i][0], dsHullY[i][1]
 		overlays = append(overlays, labelRect{
-			dsHullX0 + 2, y0 + 2, dsHullX1 - dsHullX0 - 3, y1 - y0 - 3, name, 12})
+			dsHullX0 + 2, y0 + 2, dsHullX1 - dsHullX0 - 3, y1 - y0 - 3, uiText(b.lang, key), 12})
 	}
 	// 底部三顆鈕:反組譯真值 (374/461/547, 443)。
-	for i, name := range []string{"Clear", "Cancel", "Build"} {
-		overlays = append(overlays, labelRect{dsBtnX[i], dsBtnY, dsBtnW, dsBtnH, name, 0})
+	for i, key := range []string{"shipdesign.button.clear", "shipdesign.button.cancel", "shipdesign.button.build"} {
+		overlays = append(overlays, labelRect{dsBtnX[i], dsBtnY, dsBtnW, dsBtnH, uiText(b.lang, key), 0})
 	}
 	s, err := loadOverlayScreen(b.res, "design.lbx", 0, b.lang, b.fnt, "tech.json",
 		overlays, color.RGBA{206, 214, 232, 255}, 13, hits, onAction,

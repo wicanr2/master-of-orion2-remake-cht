@@ -29,6 +29,21 @@ func TestFleetRosterCatalogAndTextBounds(t *testing.T) {
 	}
 }
 
+func TestShipClassLabelsComeFromExternalCatalog(t *testing.T) {
+	ruleKeys := append(append([]string{}, shipClassZH...), "殖民船", "偵察艦", "前哨船", "運輸艦")
+	for _, lang := range []i18n.Lang{i18n.Traditional, i18n.English} {
+		for _, ruleKey := range ruleKeys {
+			got := shipClassLabel(lang, ruleKey)
+			if got == "" || strings.HasPrefix(got, "ship.class.") {
+				t.Errorf("lang=%v 艦級規則鍵 %q 未解析：%q", lang, ruleKey, got)
+			}
+		}
+		if got, want := shipClassLabel(lang, "未登記艦級"), uiText(lang, "ship.class.unknown"); got != want {
+			t.Errorf("lang=%v 未知艦級=%q，want %q", lang, got, want)
+		}
+	}
+}
+
 func TestFleetRosterColumnsDoNotOverlap(t *testing.T) {
 	rects := []textSafeRect{fleetShipNameTextRect(350), fleetShipClassTextRect(350), fleetShipDamageTextRect(350)}
 	for i := 1; i < len(rects); i++ {

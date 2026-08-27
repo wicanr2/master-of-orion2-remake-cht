@@ -11,7 +11,7 @@ import (
 
 func TestShipDesignCatalogAndTextBounds(t *testing.T) {
 	fnt := uifont.LoadBitmapTC()
-	keys := []string{"shipdesign.transition.screen", "shipdesign.transition.fleet", "shipdesign.message.no_space", "shipdesign.message.no_treasury", "shipdesign.component.weapon", "shipdesign.component.line", "shipdesign.arc", "shipdesign.ammo.variable", "shipdesign.total", "shipdesign.total.unknown", "shipdesign.unlocked", "shipdesign.space.row", "shipdesign.mods.available"}
+	keys := []string{"shipdesign.title", "shipdesign.button.clear", "shipdesign.button.cancel", "shipdesign.button.build", "shipdesign.transition.screen", "shipdesign.transition.fleet", "shipdesign.message.no_space", "shipdesign.message.no_treasury", "shipdesign.component.weapon", "shipdesign.component.line", "shipdesign.arc", "shipdesign.ammo.variable", "shipdesign.total", "shipdesign.total.unknown", "shipdesign.unlocked", "shipdesign.space.row", "shipdesign.mods.available"}
 	for _, lang := range []i18n.Lang{i18n.Traditional, i18n.English} {
 		for _, key := range keys {
 			if got := uiText(lang, key); got == "" || got == key {
@@ -66,5 +66,10 @@ func TestShipDesignSourceHasNoInlineTranslation(t *testing.T) {
 	}
 	if strings.Contains(source[start:start+end], ".tr(") {
 		t.Fatal("shipDesign() must not embed translated player text")
+	}
+	for _, forbidden := range []string{"\"Ship Design\"", "\"Frigate\"", "\"Destroyer\"", "\"Cruiser\"", "\"Battleship\"", "\"Titan\"", "\"Doom Star\"", "\"Clear\"", "\"Cancel\"", "\"Build\""} {
+		if strings.Contains(source[start:start+end], forbidden) {
+			t.Errorf("shipDesign() 仍內嵌玩家顯示文字 %s", forbidden)
+		}
 	}
 }
