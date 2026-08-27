@@ -69,12 +69,19 @@
     `sub_4F93B` 消耗 kind／payload RNG，最後才從 `Random_(100)` 進 outcome 尾端。
     `sub_544A1` 的 strongest 判定比較來源人口 `player+0xA6`，不是艦隊；type 4 的另一條
     gate 是 `word_19A0E2==1`，不得用「曾召開議會」或泛稱 global escalation 猜填。
+26. outcome 1／3／4 分別寫 raw reason 106／105／124，並以 `sub_54CC0` 將
+    `word_19B580／word_19B582／byte_19B584／byte_19B587` payload 鏡射至雙方方向記錄。
+    remake 必須把 outcome、reason 與 typed action 一起保存並通過存檔往返；在接受／拒絕
+    callback 尚未閉合前，只能建立會談請求，不得提前扣 BC、轉科技／殖民地或改條約。
+27. 正常 AI 回合只有在完整 score、四類候選及 outcome 都可表示時才由原版 producer 接管；
+    unknown 才可落回明示的 stance adapter。若來源人口最強且 action intensity 可能大於 3，
+    `word_19A0E2` 未知會影響 type 4，必須在本輪 RNG 前失敗即關閉。
 
 ## DRAFT 邊界
 
 `sub_544A1 @ 0x544A1..0x54CC0` 的四類尾端與 RNG 已形成純規則；尚缺的是 directional
 incident memory 的 writer 門檻／正常玩家事件 producer、government 0 的蟲洞 mask 支線，以及
-outcome 1／3／4 的玩家請求狀態，以及 `word_19A0E2` 三態 runtime producer。
+outcome 1／3／4 接受／拒絕 callback，以及 `word_19A0E2` 三態 runtime producer。
 這些欄位閉合前，remake 可用既有戰爭態勢決定是否呼叫原版目標估值，但必須標為 fallback，
 不得把只含 relation/personality 的部分 score 冒充完整 producer。
 

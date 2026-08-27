@@ -1,6 +1,10 @@
 package shell
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+)
 
 // TestAudienceOnlyOnStanceChange 釘住觸發規則:**態勢改變**才敲門。
 //
@@ -55,7 +59,7 @@ func TestAudienceStanceMapping(t *testing.T) {
 //
 // 規則層吐中文的話,英文模式就沒救了(而且棘輪測試會擋)。
 func TestAudienceReasonsAreCodesNotDisplayText(t *testing.T) {
-	for _, r := range []string{AudienceReasonWar, AudienceReasonTrade, AudienceReasonAlliance} {
+	for _, r := range []string{AudienceReasonWar, AudienceReasonTrade, AudienceReasonAlliance, AudienceReasonOriginal} {
 		for _, c := range r {
 			if c > 127 {
 				t.Errorf("來意代碼 %q 含非 ASCII 字元——那是顯示字串不是代碼", r)
@@ -93,5 +97,25 @@ func TestAudienceRequestsAndClear(t *testing.T) {
 	s.ClearAudienceRequestByName("不存在")
 	if got := s.AudienceRequests(); len(got) != 1 {
 		t.Errorf("越界清除不該影響既有請求,實得 %v", got)
+	}
+}
+
+func TestOriginalHumanDiplomaticRequestSurvivesSnapshotAndClearsWithAudience(t *testing.T) {
+	s := NewDemoSession()
+	s.AIPlayers[0].WantsAudience = true
+	s.AIPlayers[0].AudienceReason = AudienceReasonOriginal
+	s.AIPlayers[0].OriginalHumanDiplomaticRequest = &gamedata.OriginalHumanDiplomaticRequest{
+		Outcome: 1, ReasonCode: 106,
+		Action: gamedata.OriginalHumanDiplomaticAction{Kind: gamedata.OriginalHumanDiplomaticActionTechnology, Technology: 42},
+	}
+	got := s.snapshot().restore()
+	r := got.AIPlayers[0].OriginalHumanDiplomaticRequest
+	if r == nil || r.Outcome != 1 || r.ReasonCode != 106 ||
+		r.Action.Kind != gamedata.OriginalHumanDiplomaticActionTechnology || r.Action.Technology != 42 {
+		t.Fatalf("原版外交請求存檔往返失真：%+v", r)
+	}
+	got.ClearAudienceRequest(0)
+	if got.AIPlayers[0].OriginalHumanDiplomaticRequest != nil {
+		t.Fatal("清除會談請求時必須一併清掉原版 payload")
 	}
 }

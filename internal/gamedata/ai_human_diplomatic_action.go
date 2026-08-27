@@ -33,6 +33,36 @@ type OriginalHumanDiplomaticAction struct {
 	DirectTier int
 }
 
+// OriginalHumanDiplomaticRequest 保存 sub_53EDB outcome 1／3／4 交給 sub_54CC0
+// 前後的玩家可見請求資料。ReasonCode 是方向記錄 +0x657 的 raw 105／106／124；Action
+// 是 sub_4F93B 寫入四個暫存 payload 後，由 sub_54CC0 鏡射到雙方方向記錄的 typed 表示。
+type OriginalHumanDiplomaticRequest struct {
+	Outcome    int
+	ReasonCode int
+	Action     OriginalHumanDiplomaticAction
+}
+
+// OriginalHumanDiplomaticRequestForOutcome 對應 sub_53EDB 三個外交 outcome 的 raw reason。
+// outcome 2 是軍事目標，不建立會談請求；0 是無動作。
+func OriginalHumanDiplomaticRequestForOutcome(outcome int,
+	action OriginalHumanDiplomaticAction) (OriginalHumanDiplomaticRequest, bool) {
+	reason := 0
+	switch outcome {
+	case 1:
+		reason = 106
+	case 3:
+		reason = 105
+	case 4:
+		reason = 124
+	default:
+		return OriginalHumanDiplomaticRequest{}, false
+	}
+	if action.Kind == OriginalHumanDiplomaticActionNone {
+		return OriginalHumanDiplomaticRequest{}, false
+	}
+	return OriginalHumanDiplomaticRequest{Outcome: outcome, ReasonCode: reason, Action: action}, true
+}
+
 // OriginalHumanDiplomaticActionSelect 對應 sub_4F93B @ 0x4F93B..0x4FD30
 // 的候選 gate、RNG 順序與四種 payload。候選科技與殖民地由上游提供。
 func OriginalHumanDiplomaticActionSelect(in OriginalHumanDiplomaticActionInput,

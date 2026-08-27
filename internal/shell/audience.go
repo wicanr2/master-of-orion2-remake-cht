@@ -31,9 +31,10 @@ import "github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
 // ⚠ 用**代碼**不用中文:規則層不該吐顯示字串,顯示文字(以及英文版)是 UI 的事。
 // 既有的 `stanceNames` 是中文,那是先前留下的;新欄位不再擴散這個作法。
 const (
-	AudienceReasonWar      = "war"      // 宣戰
-	AudienceReasonTrade    = "trade"    // 提議貿易
-	AudienceReasonAlliance = "alliance" // 提議結盟
+	AudienceReasonWar      = "war"              // 宣戰
+	AudienceReasonTrade    = "trade"            // 提議貿易
+	AudienceReasonAlliance = "alliance"         // 提議結盟
+	AudienceReasonOriginal = "original_request" // sub_53EDB 105／106／124 typed 請求
 )
 
 // audienceReasonForStance 回傳某個態勢是否構成「來敲門」,以及敲門的來意代碼。
@@ -87,6 +88,7 @@ func (s *GameSession) ClearAudienceRequest(idx int) {
 	}
 	s.AIPlayers[idx].WantsAudience = false
 	s.AIPlayers[idx].AudienceReason = ""
+	s.AIPlayers[idx].OriginalHumanDiplomaticRequest = nil
 }
 
 // ClearAudienceRequestByName 依對手名稱清掉請求(外交畫面拿到的是名字不是索引)。

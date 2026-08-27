@@ -104,3 +104,39 @@ func TestOriginalAIHumanColonyCandidatesExcludeCapitolAndSortPopulation(t *testi
 		t.Fatalf("full diplomatic action=%+v/%v", action, ok)
 	}
 }
+
+func TestQueueOriginalAIHumanDiplomaticRequest(t *testing.T) {
+	s := NewDemoSession()
+	action := gamedata.OriginalHumanDiplomaticAction{
+		Kind: gamedata.OriginalHumanDiplomaticActionColony, Colony: 7,
+	}
+	if !s.queueOriginalAIHumanDiplomaticRequest(0, 3, action) {
+		t.Fatal("合法 outcome 3 應建立原版外交請求")
+	}
+	a := s.AIPlayers[0]
+	if !a.WantsAudience || a.AudienceReason != AudienceReasonOriginal ||
+		a.OriginalHumanDiplomaticRequest == nil || a.OriginalHumanDiplomaticRequest.ReasonCode != 105 ||
+		a.OriginalHumanDiplomaticRequest.Action.Colony != 7 {
+		t.Fatalf("queued request=%+v audience=%v/%q", a.OriginalHumanDiplomaticRequest, a.WantsAudience, a.AudienceReason)
+	}
+	if s.queueOriginalAIHumanDiplomaticRequest(0, 2, action) {
+		t.Fatal("軍事 outcome 2 不得誤排成會談")
+	}
+}
+
+func TestOriginalAIHumanDecisionFailsBeforeRNGWhenCouncilStateCouldChangeOutcome(t *testing.T) {
+	s := NewDemoSession()
+	if len(s.AIPlayers) == 0 {
+		t.Fatal("demo 應有 AI")
+	}
+	// 人口最強且極高 power ratio 時，type 4 可能依 word_19A0E2==1 成立；該三態未知。
+	s.AIPlayers[0].Colonies[0].Population = 300
+	for len(s.AIPlayers[0].Ships) < 20 {
+		s.AIPlayers[0].Ships = append(s.AIPlayers[0].Ships, originalPowerTestShip())
+	}
+	draws := 0
+	_, ok := s.originalAIHumanDecision(0, func(int) int { draws++; return 1 })
+	if ok || draws != 0 {
+		t.Fatalf("council 三態未知應在 RNG 前失敗即關閉：ok=%v draws=%d", ok, draws)
+	}
+}

@@ -181,24 +181,52 @@ func (s *GameSession) aiLaunchRaidFleet(i int) {
 	if a.OriginalHumanContactTurns < 10 {
 		return
 	}
+	if decision, exact := s.originalAIHumanDecision(i, s.eventRoll); exact {
+		switch decision.Outcome {
+		case 0:
+			return
+		case 1, 3, 4:
+			if s.queueOriginalAIHumanDiplomaticRequest(i, decision.Outcome, decision.Action) {
+				cooldownBase := 19
+				if decision.Outcome == 3 {
+					cooldownBase = 9
+				}
+				a.OriginalHumanTargetDecisionCooldown = s.eventRoll(20) + cooldownBase
+			}
+			return
+		case 2:
+			s.aiLaunchRaidFleetToBestTarget(i)
+			return
+		}
+	}
 	if !s.aiRaidWilling(i) {
 		return
 	}
+	s.aiLaunchRaidFleetToBestTarget(i)
+}
+
+// aiLaunchRaidFleetToBestTarget 是 remake 單主力艦隊 adapter。正常原版 producer 與明示
+// stance fallback 共用航程／目標資料；上游是否應出兵由呼叫端決定，不在這裡重做 gate。
+func (s *GameSession) aiLaunchRaidFleetToBestTarget(i int) bool {
+	if i < 0 || i >= len(s.AIPlayers) || s.AIPlayers[i].FleetStrength <= 0 {
+		return false
+	}
+	a := &s.AIPlayers[i]
 	ci := s.aiRaidTarget(i)
 	if ci < 0 {
-		return
+		return false
 	}
 	dest := s.PlayerColonyStarIndex(ci)
 	from := aiFleetStar(*a)
 	if dest < 0 || from < 0 {
-		return
+		return false
 	}
 	if dest == from {
-		return // 已經在目標上空,交給 advanceAIRaids 結算
+		return false // 已經在目標上空,交給 advanceAIRaids 結算
 	}
 	eta := s.aiFleetETATo(*a, from, dest)
 	if eta <= 0 {
-		return
+		return false
 	}
 	a.FleetDestStar = dest
 	a.FleetETA = eta
@@ -206,6 +234,7 @@ func (s *GameSession) aiLaunchRaidFleet(i int) {
 	// sub_53EDB 類型 2 成功後把 player+0x816 寫成 Random_(20)+20。
 	// eventRoll 是 1..n，因此 +19 對映原版 20..39。
 	a.OriginalHumanTargetDecisionCooldown = s.eventRoll(20) + 19
+	return true
 }
 
 // aiFleetAtPlayerColony 回傳這個 AI 的艦隊是否**停在**某個玩家殖民地上空

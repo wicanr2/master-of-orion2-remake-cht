@@ -112,6 +112,11 @@
     `sub_4F93B` 再消耗 kind／payload，之後 `0x54B30` 才消耗 `Random_(100)`。尾端
     strongest 讀的是來源 `player+0xA6` 人口；`word_19A0E2` 已知在議會流程寫 1、後續外交
     流程可寫 2／3，因此只改稱 `CouncilStateIs1`，目前不以既有 council adapter 猜造 producer。
+26. `sub_53EDB` 的 outcome 1／3／4 分別寫方向 reason 106／105／124，之後都呼叫
+    `sub_54CC0 @ 0x54CC0`。後者將 `word_19B580／word_19B582／byte_19B584／byte_19B587`
+    鏡射到雙方方向記錄；remake 現以 `OriginalHumanDiplomaticRequest` 保存 outcome、raw reason
+    與 typed action，並與會談旗標及 JSON snapshot 同步。原版接受／拒絕 callback 尚未閉合，
+    因此不從 request payload 推測後續資產／條約 mutation。
 
 ## Remake 對映與限制
 
@@ -143,18 +148,21 @@
   覆寫、government 1、grievance、國力、人口、歷史、條約、personality、target raw
   modifier、Charismatic、Diplomat 與難度，保留 worst term／reason／action limit。
 - 已接 shell typed producer：新局可由雙向逐艦國力、人口、歷史與持久 raw 組合上述 score；
-  government 0 蟲洞支線、GAM／舊 JSON 缺 incident、歷史不足時失敗即關閉。它尚未
-  取代正常發兵 fallback，因 `sub_4F93B` 完整候選 availability 仍未閉合。
+  government 0 蟲洞支線、GAM／舊 JSON 缺 incident、歷史不足時失敗即關閉。完整 producer
+  成功時已接管正常回合；上述 unknown 狀態才保留 stance fallback。
 - 已接 `sub_4F93B` 四種候選 producer：科技比例與候選排序、無納貢時 source 六項維護費、
   真人可要求殖民星排序與高低半部 payload 均可 typed 產生；kind RNG 與科技 payload 的兩個
   off-by-one 已修正。任一必要資料未知時整體失敗即關閉，避免部分 availability 改變 RNG。
-  outcome 1／3／4 的請求資料仍未閉合，因此尚未把 action 接成正常決策。
+- 已接正常回合 orchestration：同一 RNG stream 依序走完整 score、intensity、action 與 outcome；
+  outcome 1／3／4 建立可持久化 typed request，outcome 2 交給既有單主力航程 adapter，0 不動作。
+  任一 producer unknown 才回到明示 stance fallback。來源人口最強且 intensity 可能大於 3 時，
+  因 `word_19A0E2` 未知會改變 type 4，會在消耗本輪 RNG 前失敗即關閉。
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。
-- 尚未閉合：`sub_544A1` 所需的完整 directional incident writer、outcome 1／3／4 請求狀態與
-  `word_19A0E2` 三態 producer。現行願戰來源仍是明示的 `DecideStance` 相容
-  fallback；四類尾端雖已閉合，不以不完整上游 score 升格整條決策。
+- 尚未閉合：`sub_544A1` 所需的完整 directional incident writer、outcome 1／3／4
+  接受／拒絕 callback 與 `word_19A0E2` 三態 producer。只有這些 typed 輸入 unknown 時，
+  願戰來源才保留明示的 `DecideStance` 相容 fallback；不以部分 score 升格整條決策。
 
 ## 勘誤：`sub_4F93B`
 

@@ -63,3 +63,19 @@ func TestOriginalHumanDiplomaticActionDirectTier(t *testing.T) {
 		t.Fatalf("direct action=%+v/%v", out, ok)
 	}
 }
+
+func TestOriginalHumanDiplomaticRequestOutcomeReasons(t *testing.T) {
+	action := OriginalHumanDiplomaticAction{Kind: OriginalHumanDiplomaticActionCredits, Credits: 500}
+	for outcome, reason := range map[int]int{1: 106, 3: 105, 4: 124} {
+		got, ok := OriginalHumanDiplomaticRequestForOutcome(outcome, action)
+		if !ok || got.Outcome != outcome || got.ReasonCode != reason || got.Action != action {
+			t.Fatalf("outcome %d request=%+v/%v，預期 reason %d", outcome, got, ok, reason)
+		}
+	}
+	if _, ok := OriginalHumanDiplomaticRequestForOutcome(2, action); ok {
+		t.Fatal("軍事 outcome 2 不得建立外交會談請求")
+	}
+	if _, ok := OriginalHumanDiplomaticRequestForOutcome(1, OriginalHumanDiplomaticAction{}); ok {
+		t.Fatal("沒有 sub_4F93B action payload 不得建立請求")
+	}
+}

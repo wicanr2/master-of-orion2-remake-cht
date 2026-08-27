@@ -16,6 +16,12 @@ type originalDiplomaticColonyCandidate struct {
 	population int
 }
 
+type originalAIHumanDecision struct {
+	Outcome   int
+	Intensity int
+	Action    gamedata.OriginalHumanDiplomaticAction
+}
+
 // originalAIMaintenanceTotal 對映 sub_E2000 寫入、sub_4F93B 讀取的 player+0xB4。
 // 納貢成本依本回合毛收入計算；目前沒有持久化其原始 +0xC0 分項，所以存在 AI→玩家
 // 納貢時失敗即關閉。
@@ -187,4 +193,93 @@ func (s *GameSession) originalAIHumanDiplomaticAction(aiIndex, intensity int,
 		SourceMaintenance: maintenance, TargetCredits: s.Player.BC, CreditIntensityLimit: creditLimit,
 		ColonyCandidates: colonies,
 	}, roll)
+}
+
+// queueOriginalAIHumanDiplomaticRequest 對映 sub_53EDB outcome 1／3／4 寫
+// +0x657 reason、sub_54CC0 鏡射 payload，以及 Humans_Requesting_Diplomacy_ 的玩家可見閘門。
+// 接受／拒絕 callback 尚未閉合，因此這裡只保存請求，不提前套用資產或條約效果。
+func (s *GameSession) queueOriginalAIHumanDiplomaticRequest(aiIndex, outcome int,
+	action gamedata.OriginalHumanDiplomaticAction) bool {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) {
+		return false
+	}
+	request, ok := gamedata.OriginalHumanDiplomaticRequestForOutcome(outcome, action)
+	if !ok {
+		return false
+	}
+	a := &s.AIPlayers[aiIndex]
+	a.OriginalHumanDiplomaticRequest = &request
+	a.WantsAudience = true
+	a.AudienceReason = AudienceReasonOriginal
+	return true
+}
+
+func (s *GameSession) originalAISourcePopulationStrongest(aiIndex int) (bool, bool) {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) {
+		return false, false
+	}
+	source := colonyPopulationTotal(s.AIPlayers[aiIndex].Colonies)
+	if source < 0 || source > 32767 {
+		return false, false
+	}
+	if p := colonyPopulationTotal(s.PlayerColonies); p > source {
+		return false, true
+	}
+	for i := range s.AIPlayers {
+		if i != aiIndex && colonyPopulationTotal(s.AIPlayers[i].Colonies) > source {
+			return false, true
+		}
+	}
+	return true, true
+}
+
+// originalAIHumanDecision 串起 sub_544A1 → sub_4F93B → outcome 尾端，保留同一條
+// roll stream。word_19A0E2 三態尚無 typed producer；只要來源人口最強且 intensity 可能
+// 大於 3，就在擲骰前失敗即關閉，避免把未知 council gate 當 false 後改變正常 RNG。
+func (s *GameSession) originalAIHumanDecision(aiIndex int, roll func(int) int) (originalAIHumanDecision, bool) {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) || roll == nil {
+		return originalAIHumanDecision{}, false
+	}
+	strongest, ok := s.originalAISourcePopulationStrongest(aiIndex)
+	sourcePower, targetPower, exact := s.originalAIHumanDirectionalFleetPower(aiIndex)
+	powerRatio, ratioOK := gamedata.OriginalNPCPowerRatio(sourcePower, targetPower,
+		s.originalAIThirdPartyWars(aiIndex))
+	if !ok || !exact || !ratioOK || strongest && powerRatio/40+1 > 3 {
+		return originalAIHumanDecision{}, false
+	}
+	// sub_4F93B 的 typed 候選／維護資料先做無 RNG preflight；若等 score 擲完才發現
+	// producer unknown，再落回 stance fallback 會讓 fallback 平白消耗原版 RNG。
+	if _, _, techOK := s.originalAIHumanTechnologyCandidates(aiIndex); !techOK {
+		return originalAIHumanDecision{}, false
+	}
+	if _, colonyOK := s.originalAIHumanColonyCandidates(aiIndex); !colonyOK {
+		return originalAIHumanDecision{}, false
+	}
+	if _, maintenanceOK := s.originalAIMaintenanceTotal(aiIndex); !maintenanceOK || s.Player.BC < 0 {
+		return originalAIHumanDecision{}, false
+	}
+	result, scoreRatio, ok := s.originalAIHumanTargetScore(aiIndex, roll)
+	if !ok || scoreRatio != powerRatio {
+		return originalAIHumanDecision{}, false
+	}
+	intensity, ok := gamedata.OriginalHumanTargetActionIntensity(powerRatio, roll(3))
+	if !ok {
+		return originalAIHumanDecision{}, false
+	}
+	action, ok := s.originalAIHumanDiplomaticAction(aiIndex, intensity, roll)
+	if !ok {
+		return originalAIHumanDecision{}, false
+	}
+	a := s.AIPlayers[aiIndex]
+	outcome, ok := gamedata.OriginalHumanTargetOutcomeAfterAction(gamedata.OriginalHumanTargetOutcomeInput{
+		Score: result.Score, ContactTurns: a.OriginalHumanContactTurns, Difficulty: s.Difficulty,
+		DiplomaticActionAvailable: action.Kind != gamedata.OriginalHumanDiplomaticActionNone,
+		ForcedType2:               result.ForcedType2, SourcePopulationStrongest: strongest,
+		CouncilStateIs1: false, SourceRepulsive: aiRaceHasTrait(a, gamedata.TRAIT_REPULSIVE),
+		TargetRepulsive: s.RaceRepulsive(),
+	}, intensity, roll)
+	if !ok {
+		return originalAIHumanDecision{}, false
+	}
+	return originalAIHumanDecision{Outcome: outcome, Intensity: intensity, Action: action}, true
 }

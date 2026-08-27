@@ -114,6 +114,9 @@ type AIOpponent struct {
 	// 見 audience.go。opt-in,零值 false = 沒有請求(新對局/舊存檔皆安全)。
 	WantsAudience  bool
 	AudienceReason string
+	// OriginalHumanDiplomaticRequest 保存 sub_53EDB outcome 1／3／4 與 sub_54CC0 payload。
+	// nil 表示沒有該類原版請求；UI 尚未接受前不得先套用推測性的條約／資產效果。
+	OriginalHumanDiplomaticRequest *gamedata.OriginalHumanDiplomaticRequest `json:"originalHumanDiplomaticRequest,omitempty"`
 
 	// ColonyStars 是 Colonies[i] 對應到 Stars 的索引(平行陣列),兩者長度須一致——aiExpand
 	// append 新殖民地、InvadeColony 玩家攻陷 AI 殖民地時各自同步移除,見兩處函式。

@@ -1177,10 +1177,12 @@
   獨有科技候選估值排序、無納貢維護費 producer，以及 `sub_E5CD4／sub_E5BE3` 真人殖民星
   候選排序與高低人口半部 payload 已接。outcome 已拆成 intensity → action → 尾端三段，避免
   正常接線改變 RNG；同時訂正 strongest 為人口最強，`word_19A0E2==1` 保守命名為 council
-  三態，不再稱泛用 escalation。正常發兵仍未切換，最後主要阻塞是 outcome 1／3／4 請求狀態、
-  council 三態 producer 與 `sub_FF593` 蟲洞 star-mask 支線。
-  目前願戰來源仍是明示的
-  `DecideStance` fallback，不冒稱原版完成。見
+  三態，不再稱泛用 escalation。正常 AI 回合現已接上完整 score → action → outcome；完整 producer
+  可表示時，outcome 0／2 與 1／3／4 會分別停止、交給單主力航程 adapter 或建立會談請求，unknown
+  才保留 stance fallback。三種外交 outcome 已保存 raw reason 106／105／124 與完整 typed payload，
+  並通過存檔往返；因原版接受／拒絕 callback 尚未閉合，目前不提前套用資產／條約效果。最後主要
+  阻塞是該 callback、council 三態 producer 與 `sub_FF593` 蟲洞 star-mask 支線。
+  typed producer unknown 時的願戰來源仍是明示的 `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與
   [`docs/spec/ai-human-formal-war-policy.md`](docs/spec/ai-human-formal-war-policy.md)、
   [`docs/re/ai-human-fleet-target-producer-audit-20260828.md`](docs/re/ai-human-fleet-target-producer-audit-20260828.md) 與
