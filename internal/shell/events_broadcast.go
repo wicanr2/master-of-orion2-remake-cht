@@ -60,10 +60,7 @@ func (s *GameSession) detectEmpireEliminationBroadcasts() {
 	}
 	for i := range targets {
 		if s.StatusBroadcast.EmpireAlive[i] && !targets[i].alive {
-			name := s.eventEmpireTargetName(targets[i])
-			s.queueStatusBroadcast(s.statusTargetReport(29, targets[i],
-				fmt.Sprintf("銀河新聞網證實：%s 已失去最後一座殖民地，帝國正式滅亡", name),
-				fmt.Sprintf("Galactic News Network confirms that %s has lost its final colony and ceased to exist.", name)))
+			s.queueStatusBroadcast(s.statusTargetReport(29, targets[i], "", ""))
 		}
 		s.StatusBroadcast.EmpireAlive[i] = targets[i].alive
 	}

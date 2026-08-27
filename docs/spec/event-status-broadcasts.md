@@ -6,13 +6,17 @@
 
 - 狀態播報不進 0..28 隨機候選池，也不改 `EventLastTurn`／`EventAttemptCounter`。
 - `LastEventReport` 使用原版 ID 29..35、正確 `TargetKind/TargetIndex/TargetName`，熱座時廣播給所有席位。
+  事件 29 與 34 不在規則層保存成品訊息；外部顯示契約分別見
+  [`empire-elimination-notice-external-text.md`](empire-elimination-notice-external-text.md) 與
+  [`empire-surrender-notice-external-text.md`](empire-surrender-notice-external-text.md)。
 - 為避免每回合重播，保存已消費的帝國滅亡、Orion 發現、安塔蘭勝利、投降／叛亂事件 key，
   以及事件 30 的 stage。這些欄位必須進 JSON 與多人快照。
 - 同一回合有多則狀態新聞時使用可存檔佇列；不得讓最後一則覆蓋前一則而永久遺失。
 
 ## 觸發
 
-1. **29 帝國滅亡**：存續帝國由有殖民地轉為無殖民地時建立一次；玩家、熱座、AI 一致。
+1. **29 帝國滅亡**：存續帝國由有殖民地轉為無殖民地時建立一次；玩家、熱座、AI 一致；report
+   只保存 typed target，固定雙語通知由外部 catalog 提供。
 2. **30 帝國壯大**：依 RE 文件的殖民星系最大值與三階段門檻；平手按原版掃描順序保留首個最大值。
 3. **31 排行榜播報**：只在一般事件確實進入 `Determine_Event_` 候選處理的時點檢查；elapsed>50、
    議會未成立，`Random(40)==1` 後以 `Random(4)-1` 選艦隊／科技／人口／建築類別。

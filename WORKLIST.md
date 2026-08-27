@@ -571,6 +571,17 @@
   觸發投降，故只證明事件路由無回歸，事件 34 實際文案由 typed 測試覆蓋。證據與規格見
   [`docs/re/empire-surrender-notice-text-audit-20260827.md`](docs/re/empire-surrender-notice-text-audit-20260827.md) 與
   [`docs/spec/empire-surrender-notice-external-text.md`](docs/spec/empire-surrender-notice-external-text.md)。
+  帝國滅亡事件 29 已完成第六十一個切片：`detectEmpireEliminationBroadcasts` 在 active 帝國失去
+  最後殖民地時只排入原版事件 ID 與 typed target，不再建立中英文成品句子；既有可存檔
+  `EmpireAlive` 去重狀態、清理順序與事件佇列未改。共用 `eventReportMessageText` 現以
+  `event.status.empire_eliminated` JSON 模板顯示；AI 依 `RaceIndex` 翻譯，玩家／熱座保留自訂名，
+  非法 target 與舊存檔均有安全 fallback。原版 `sub_E4EB3`→`sub_233AB` 的 active→inactive
+  觸發與單帝國 record 已證實，但四種隨機原文尚未復原，單一摘要仍明標 remake adapter。
+  聚焦測試覆蓋 AI、玩家、熱座、非法 target、舊存檔、成品欄為空及不重播；繁中與英文正版
+  資料畫廊各重跑 38/38。正常畫廊未強制消滅帝國，故只證明事件路由無回歸，實際事件 29 文案
+  由 typed 測試覆蓋。證據與規格見
+  [`docs/re/empire-elimination-notice-text-audit-20260827.md`](docs/re/empire-elimination-notice-text-audit-20260827.md) 與
+  [`docs/spec/empire-elimination-notice-external-text.md`](docs/spec/empire-elimination-notice-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

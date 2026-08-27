@@ -61,6 +61,9 @@ func TestEmpireEliminationBroadcastUsesAliveTransition(t *testing.T) {
 		s.StatusBroadcast.Queue[0].TargetKind != eventEmpireAI.String() || s.StatusBroadcast.Queue[0].TargetIndex != 0 {
 		t.Fatalf("帝國滅亡新聞錯誤：%+v", s.StatusBroadcast.Queue)
 	}
+	if report := s.StatusBroadcast.Queue[0]; report.Message != "" || report.MessageEN != "" {
+		t.Fatalf("事件 29 規則層不應保存成品通知：%+v", report)
+	}
 	s.detectEmpireEliminationBroadcasts()
 	if len(s.StatusBroadcast.Queue) != 1 {
 		t.Fatal("同一個已滅亡帝國不得每回合重播")

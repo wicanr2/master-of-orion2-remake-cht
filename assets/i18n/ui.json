@@ -1064,6 +1064,7 @@
   {"key":"event.tag.alert","english":"ALERT","value":"警訊","note":"負面事件標記"},
   {"key":"event.tag.good_news","english":"GOOD NEWS","value":"喜訊","note":"正面事件標記"},
   {"key":"event.tag.discovery","english":"DISCOVERY","value":"發現","note":"星系勘查標記"},
+  {"key":"event.status.empire_eliminated","english":"Galactic News Network confirms that %s has lost its final colony and ceased to exist.","value":"銀河新聞網證實：%s 已失去最後一座殖民地，帝國正式滅亡。","note":"事件 29 remake adapter；%s 為滅亡帝國"},
   {"key":"event.status.surrender","english":"%s has surrendered unconditionally to %s; imperial absorption will now begin.","value":"%s 已向 %s 無條件投降；帝國接收程序即將開始。","note":"事件 34 remake adapter；依序為投降者與接收者"},
   {"key":"event.discovery.bc","english":"In the %s system, the survey team found %s. The proceeds, %d BC, have been added to the treasury.","value":"%s 星系的勘查小隊找到%s，變賣所得 %d BC 已入國庫。","note":"參數依序為星系名、特殊物產名、金額"},
   {"key":"event.discovery.splinter.success","english":"A splinter colony was found in the %s system. Its %d million inhabitants have rejoined the empire.","value":"在 %s 星系發現失散殖民地；當地 %d 百萬人口已重返帝國。","note":"參數依序為星系名、人口"},

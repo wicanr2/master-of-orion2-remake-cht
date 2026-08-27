@@ -41,6 +41,10 @@ func eventReportMessageText(lang i18n.Lang, session *shell.GameSession, report *
 	if report == nil {
 		return ""
 	}
+	if report.EventID == 29 && (report.TargetKind != "" || report.TargetName != "") {
+		target := eventReportEmpireName(lang, session, report.TargetKind, report.TargetIndex, report.TargetName)
+		return fmt.Sprintf(uiText(lang, "event.status.empire_eliminated"), target)
+	}
 	if report.EventID == 34 && (report.TargetKind != "" || report.SecondaryTargetKind != "" ||
 		report.TargetName != "" || report.SecondaryTargetName != "") {
 		from := eventReportEmpireName(lang, session, report.TargetKind, report.TargetIndex, report.TargetName)
