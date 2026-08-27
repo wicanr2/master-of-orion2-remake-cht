@@ -55,5 +55,12 @@
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。
 - 尚未閉合：`sub_544A1` 所需的完整 directional incident memory、排名／科技趨勢與
-  `sub_4F93B` military-target availability。現行願戰來源仍是明示的 `DecideStance` 相容
+  `sub_4F93B` 外交行動 availability／payload。現行願戰來源仍是明示的 `DecideStance` 相容
   fallback；四類尾端雖已閉合，不以不完整上游 score 升格整條決策。
+
+## 勘誤：`sub_4F93B`
+
+`sub_4F93B @ 0x4F93B..0x4FD30` 不是軍事目標 availability。它以四個候選旗標、action count、
+雙方科技／BC／殖民地資料選擇外交行動，並寫 `word_19B580／word_19B582／byte_19B584／
+byte_19B587` payload；回傳 0 才使 `sub_544A1` 把 action count 歸零。後續文件與 typed API
+一律稱 `DiplomaticActionAvailable`，不再沿用錯誤軍事名稱。

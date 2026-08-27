@@ -22,7 +22,7 @@
 ## DRAFT 邊界
 
 `sub_544A1 @ 0x544A1..0x54CC0` 的四類尾端與 RNG 已形成純規則；尚缺的是 directional
-incident memory、排名／科技趨勢及 `sub_4F93B` target availability 的完整 typed input。
+incident memory、排名／科技趨勢及 `sub_4F93B` 外交行動 availability／payload 的完整 typed input。
 這些欄位閉合前，remake 可用既有戰爭態勢決定是否呼叫原版目標估值，但必須標為 fallback，
 不得把只含 relation/personality 的部分 score 冒充完整 producer。
 

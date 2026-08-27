@@ -46,6 +46,7 @@ ROOTS = {
     "raw_turn_gate_update": 0x4DAB2,
     "raw_human_target_memory_reset": 0x54D4D,
     "raw_human_target_score_modifier": 0xE5E09,
+    "raw_diplomatic_action_availability": 0x4F93B,
 }
 PERSONALITY_SCORE_TABLE_EA = 0x181080
 

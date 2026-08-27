@@ -6,16 +6,16 @@ var OriginalHumanTargetPersonalityScore = [...]int{-10, -5, -3, 0, 20, 20, -10}
 // OriginalHumanTargetOutcomeInput 是 sub_544A1 尾端已閉合的決策輸入。
 // Score 是上游所有方向關係、事件、性格與領袖修正合成後的 signed 分數。
 type OriginalHumanTargetOutcomeInput struct {
-	Score             int
-	ContactTurns      int
-	PowerRatio        int
-	Difficulty        int
-	HasMilitaryTarget bool
-	ForcedType2       bool
-	SourceStrongest   bool
-	GlobalEscalation  bool
-	SourceRepulsive   bool
-	TargetRepulsive   bool
+	Score                     int
+	ContactTurns              int
+	PowerRatio                int
+	Difficulty                int
+	DiplomaticActionAvailable bool
+	ForcedType2               bool
+	SourceStrongest           bool
+	GlobalEscalation          bool
+	SourceRepulsive           bool
+	TargetRepulsive           bool
 }
 
 // OriginalHumanTargetBaseScore 閉合 sub_544A1 可直接表示的基礎項；尚未 typed 的
@@ -96,7 +96,7 @@ func OriginalHumanTargetOutcome(in OriginalHumanTargetOutcomeInput, roll func(in
 	if actionCount < 1 {
 		actionCount = 1
 	}
-	if !in.HasMilitaryTarget {
+	if !in.DiplomaticActionAvailable {
 		actionCount = 0
 	}
 	r100 := roll(100)

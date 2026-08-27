@@ -1147,7 +1147,7 @@
   軍力門檻及誤用 losing-ground personality chance。後續又閉合 `player+0x88F` 接觸後逐回合
   遞增／250 上限／至少 10 回合 gate、`word_181080` 七欄 personality score、正負 score
   threshold、RNG 消耗順序與四類結果純規則。`sub_544A1` 的完整 directional incident memory、
-  排名／科技趨勢與 `sub_4F93B` target availability 仍待 typed 化；目前願戰來源仍是明示的
+  排名／科技趨勢與 `sub_4F93B` 外交行動 availability／payload 仍待 typed 化；目前願戰來源仍是明示的
   `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與
   [`docs/spec/ai-human-formal-war-policy.md`](docs/spec/ai-human-formal-war-policy.md)、

@@ -29,7 +29,7 @@ func TestOriginalHumanTargetOutcomeConsumesRollsInOriginalOrder(t *testing.T) {
 		return v
 	}
 	got, ok := OriginalHumanTargetOutcome(OriginalHumanTargetOutcomeInput{
-		Score: -10, ContactTurns: 20, PowerRatio: 100, Difficulty: 1, HasMilitaryTarget: true,
+		Score: -10, ContactTurns: 20, PowerRatio: 100, Difficulty: 1, DiplomaticActionAvailable: true,
 	}, roll)
 	if !ok || got != 2 || len(rolls) != 0 {
 		t.Fatalf("outcome=%d/%v rollsLeft=%v，預期 type 2 且三次 RNG", got, ok, rolls)
@@ -39,7 +39,7 @@ func TestOriginalHumanTargetOutcomeConsumesRollsInOriginalOrder(t *testing.T) {
 func TestOriginalHumanTargetOutcomeContactGateStillConsumesEarlyRolls(t *testing.T) {
 	spans := []int{}
 	got, ok := OriginalHumanTargetOutcome(OriginalHumanTargetOutcomeInput{
-		Score: -10, ContactTurns: 9, PowerRatio: 100, Difficulty: 2, HasMilitaryTarget: true,
+		Score: -10, ContactTurns: 9, PowerRatio: 100, Difficulty: 2, DiplomaticActionAvailable: true,
 	}, func(n int) int { spans = append(spans, n); return 1 })
 	if !ok || got != 0 || len(spans) != 2 || spans[0] != 3 || spans[1] != 100 {
 		t.Fatalf("contact gate outcome=%d/%v spans=%v", got, ok, spans)
