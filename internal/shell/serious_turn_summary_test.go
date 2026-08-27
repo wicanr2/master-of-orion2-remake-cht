@@ -9,7 +9,7 @@ import (
 func TestHasSeriousTurnSummaryReportIgnoresOrdinaryEconomy(t *testing.T) {
 	s := NewDemoSession()
 	s.LastPlayerOutput.TotalNetIndustry = 99
-	s.LastBuilt = []string{"ordinary"}
+	s.LastBuilt = []BuildNotice{{Kind: BuildNoticeCompleted, ColonyIndex: 0, Name: "ordinary"}}
 	if s.HasSeriousTurnSummaryReport() {
 		t.Fatal("一般經濟與建造完成不應觸發只顯示重要摘要")
 	}

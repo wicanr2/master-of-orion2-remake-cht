@@ -470,9 +470,17 @@ func (s *GameSession) removePlayerColony(i int) {
 	if cut(len(s.RepeatBuild)) {
 		s.RepeatBuild = append(s.RepeatBuild[:i], s.RepeatBuild[i+1:]...)
 	}
-	if cut(len(s.LastBuilt)) {
-		s.LastBuilt = append(s.LastBuilt[:i], s.LastBuilt[i+1:]...)
+	keptNotices := s.LastBuilt[:0]
+	for _, notice := range s.LastBuilt {
+		if notice.ColonyIndex == i {
+			continue
+		}
+		if notice.ColonyIndex > i {
+			notice.ColonyIndex--
+		}
+		keptNotices = append(keptNotices, notice)
 	}
+	s.LastBuilt = keptNotices
 	if cut(len(s.ColonyBuildings)) {
 		s.ColonyBuildings = append(s.ColonyBuildings[:i], s.ColonyBuildings[i+1:]...)
 	}

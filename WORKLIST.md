@@ -449,6 +449,16 @@
   安全框內。證據與規格見
   [`docs/re/tactical-dynamic-battle-log-audit-20260827.md`](docs/re/tactical-dynamic-battle-log-audit-20260827.md) 與
   [`docs/spec/tactical-dynamic-text-catalog.md`](docs/spec/tactical-dynamic-text-catalog.md)。
+  回合摘要已完成第四十九個切片：星曆、經濟、破產、研究、飢荒／叛亂、事件包裝、四種建造
+  結果與轉場模板均由 `ui.json` 供應；規則層的中文 `LastBuilt []string` 已改為暫態 typed
+  `BuildNotice`，一般建造名稱在 UI 依語言翻譯。地震刪殖民地不再把完工通知誤當平行陣列裁切，
+  而是刪除該殖民地通知並重編後續索引。四條基礎列與 y=168..306 動態區都使用固定安全框；
+  破產、飢荒、叛亂、研究、多項完工、事件、安塔蘭與突襲同回合時最多七列，超量末列依實際
+  字型量測加省略號，不侵入 y=324 關閉按鈕。`cmd/moo2`＋`internal/shell` 全套測試通過，繁中與
+  英文正版資料畫廊各 36/36，實圖抽查 `06_turnsummary.png` 的標題、四列與關閉鈕均在框內。
+  原版完整逐欄組裝、排序及分頁仍未知；現行摘要維持明標 remake adapter。證據與規格見
+  [`docs/re/turn-summary-dynamic-text-layout-audit-20260827.md`](docs/re/turn-summary-dynamic-text-layout-audit-20260827.md) 與
+  [`docs/spec/turn-summary-external-text.md`](docs/spec/turn-summary-external-text.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

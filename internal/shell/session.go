@@ -2931,8 +2931,9 @@ func (s *GameSession) completeColonyBuild(i int) {
 	}
 	if b.Refit != nil {
 		s.completeRefitJob(*b.Refit)
-		s.LastBuilt = append(s.LastBuilt,
-			fmt.Sprintf("殖民地 %d 完成改裝:%s", i+1, b.Refit.Target.Name))
+		s.LastBuilt = append(s.LastBuilt, BuildNotice{
+			Kind: BuildNoticeRefitCompleted, ColonyIndex: i, Name: b.Refit.Target.Name,
+		})
 	} else {
 		if i < len(s.ColonyBuildings) {
 			if _, isSpecial := gamedata.SpecialActionByNameZH(b.Name); isSpecial {
@@ -2960,7 +2961,9 @@ func (s *GameSession) completeColonyBuild(i int) {
 				}
 			}
 		}
-		s.LastBuilt = append(s.LastBuilt, fmt.Sprintf("殖民地 %d 完成建造:%s", i+1, b.Name))
+		s.LastBuilt = append(s.LastBuilt, BuildNotice{
+			Kind: BuildNoticeCompleted, ColonyIndex: i, Name: b.Name,
+		})
 	}
 	if repeat := s.RepeatBuildFor(i); sameRepeatBuild(repeat, b) {
 		s.Builds[i] = ColonyBuild{Name: repeat.Name, Cost: repeat.Cost}
@@ -3008,8 +3011,9 @@ func (s *GameSession) applySpecialAction(i int, name string) {
 		// 沒有材料時**誠實地什麼都不發生**——與土壤改良在錯誤氣候上的處理同一個立場:
 		// 不在建造選單擋下選項(手冊沒說介面會擋),但套用時不硬塞效果。
 		if newPlanet, ok := s.BuildArtificialPlanet(i); ok {
-			s.LastBuilt = append(s.LastBuilt,
-				"人造行星建成:"+s.Planets[newPlanet].Name+" 已可拓殖")
+			s.LastBuilt = append(s.LastBuilt, BuildNotice{
+				Kind: BuildNoticeArtificialPlanet, ColonyIndex: i, Name: s.Planets[newPlanet].Name,
+			})
 		}
 	case gamedata.FreighterFleetActionName: // Freighter Fleet p.168:每次建成 +5 艘運輸艦 + 版本現金加成(#4)。
 		// 帝國整體效果,不是這個殖民地本身的狀態,故不用 c(above 已宣告但本 case 用不到)。
@@ -4536,8 +4540,8 @@ type GameSession struct {
 	// 兩者由 ensureBuildQueue 與殖民地數對齊，因此舊存檔零值安全。
 	AutoBuild   []bool
 	RepeatBuild []ColonyBuild
-	LastBuilt   []string // 上回合完成的建造(供回合摘要)
-	popAccum    []int    // 各殖民地人口成長累加值(達門檻則 +1 人口)
+	LastBuilt   []BuildNotice `json:"-"` // 上回合建造結果；暫態 typed UI 資料
+	popAccum    []int         // 各殖民地人口成長累加值(達門檻則 +1 人口)
 
 	// --- 地面戰入侵(見 ground_invasion.go) ---
 	PlayerColonyMarines []int             // 各玩家殖民地 Marine Barracks 駐軍池(平行 PlayerColonies)

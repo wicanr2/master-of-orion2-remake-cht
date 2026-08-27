@@ -84,7 +84,7 @@ func TestPlayerEarthquakeCanDestroyLastColonyAndParallelSlots(t *testing.T) {
 	s.ArmorBarracksAge = []int{0}
 	s.AutoBuild = []bool{false}
 	s.RepeatBuild = []ColonyBuild{{}}
-	s.LastBuilt = []string{""}
+	s.LastBuilt = []BuildNotice{{Kind: BuildNoticeCompleted, ColonyIndex: 0, Name: "測試"}}
 
 	impact, ok := s.applyPlayerEarthquake()
 	if !ok || !impact.ColonyDestroyed || impact.PopulationLost != 1 {

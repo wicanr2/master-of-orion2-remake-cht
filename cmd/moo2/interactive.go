@@ -5507,7 +5507,7 @@ func (b *sceneBuilder) info() (*overlayScreen, error) {
 // turnSummary 建原版回合摘要畫面(TURNSUM.LBX 資產 0,調色盤鏈 buffer0#0,置中視窗)。
 // 原版流程:結束回合後顯示本回合結算;點 CLOSE 回星系主畫面。
 func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
-	hits, onAction := b.backHit(b.galaxy, "星系主畫面")
+	hits, onAction := b.backHit(b.galaxy, turnSummaryText(b.lang, "turnsummary.transition.galaxy"))
 	overlays := []labelRect{
 		{88, 14, 204, 22, "TURN SUMMARY", 0},
 		{158, 324, 64, 18, "CLOSE", 0},
@@ -5524,16 +5524,15 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 		year := 3500 + (b.session.Turn - 1)
 		gold := color.RGBA{240, 220, 120, 255}
 		body := color.RGBA{214, 220, 235, 255}
-		s.extras = []extraText{
-			{x: 40, y: 62, size: 15, text: fmt.Sprintf(b.tr("星曆 %d 結算", "Stardate %d report"), year), col: gold},
-			{x: 40, y: 92, size: 13, text: fmt.Sprintf(b.tr("淨工業 %d ／ 研究 %d", "Net industry %d / research %d"),
-				out.TotalNetIndustry, out.TotalResearch), col: body},
-			{x: 40, y: 116, size: 13, text: fmt.Sprintf(b.tr("食物盈餘 %d ／ 稅收 %d BC", "Food surplus %d / taxes %d BC"),
-				out.TotalFood, out.TaxRevenue), col: body},
-			{x: 40, y: 140, size: 13, text: fmt.Sprintf(b.tr("國庫 %d BC(本回合 %+d)", "Treasury %d BC (%+d this turn)"),
-				b.session.Player.BC, out.NetBC), col: body},
-		}
-		yy := 168.0
+		s.extras = append(s.extras, turnSummaryBaseRect(0).leftExtras(b.fnt,
+			turnSummaryText(b.lang, "turnsummary.report.stardate", year), 15, gold)...)
+		s.extras = append(s.extras, turnSummaryBaseRect(1).leftExtras(b.fnt,
+			turnSummaryText(b.lang, "turnsummary.report.industry_research", out.TotalNetIndustry, out.TotalResearch), 13, body)...)
+		s.extras = append(s.extras, turnSummaryBaseRect(2).leftExtras(b.fnt,
+			turnSummaryText(b.lang, "turnsummary.report.food_tax", out.TotalFood, out.TaxRevenue), 13, body)...)
+		s.extras = append(s.extras, turnSummaryBaseRect(3).leftExtras(b.fnt,
+			turnSummaryText(b.lang, "turnsummary.report.treasury", b.session.Player.BC, out.NetBC), 13, body)...)
+		messages := make([]turnSummaryMessage, 0, 12)
 		if len(b.session.LastBankruptcy) > 0 {
 			buildings, spies, leaders, recovered := 0, 0, 0, 0
 			for _, action := range b.session.LastBankruptcy {
@@ -5547,21 +5546,10 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 					leaders++
 				}
 			}
-			msg := fmt.Sprintf(b.tr("◆ 財政危機：出售 %d 棟、裁撤 %d 名間諜、解雇 %d 位領袖，回收 %d BC",
-				"◆ Fiscal crisis: sold %d, dismissed %d spies and %d leaders; recovered %d BC"),
-				buildings, spies, leaders, recovered)
-			lines := []string{msg}
-			if b.fnt != nil {
-				lines = b.fnt.Wrap(msg, 12, 320)
-			}
-			if len(lines) > 2 {
-				lines = lines[:2]
-				lines[1] += "…"
-			}
-			for i, line := range lines {
-				s.extras = append(s.extras, extraText{x: 40, y: yy + float64(i)*19, size: 13, text: line, col: color.RGBA{240, 150, 100, 255}})
-			}
-			yy += float64(len(lines)) * 19
+			messages = append(messages, turnSummaryMessage{
+				text: turnSummaryText(b.lang, "turnsummary.report.fiscal_crisis", buildings, spies, leaders, recovered),
+				size: 13, col: color.RGBA{240, 150, 100, 255},
+			})
 		}
 		starving := 0
 		for _, colony := range out.Colonies {
@@ -5570,24 +5558,28 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 			}
 		}
 		if starving > 0 {
-			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 13,
-				text: fmt.Sprintf(uiText(b.lang, "turnsummary.serious.starvation_count"), starving),
-				col:  color.RGBA{240, 130, 100, 255}})
-			yy += 19
+			messages = append(messages, turnSummaryMessage{
+				text: turnSummaryText(b.lang, "turnsummary.serious.starvation_count", starving),
+				size: 13, col: color.RGBA{240, 130, 100, 255},
+			})
 		}
 		if rebellions := len(b.session.LastRebellions); rebellions > 0 {
-			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 13,
-				text: fmt.Sprintf(uiText(b.lang, "turnsummary.serious.rebellion_count"), rebellions),
-				col:  color.RGBA{240, 130, 100, 255}})
-			yy += 19
+			messages = append(messages, turnSummaryMessage{
+				text: turnSummaryText(b.lang, "turnsummary.serious.rebellion_count", rebellions),
+				size: 13, col: color.RGBA{240, 130, 100, 255},
+			})
 		}
 		if out.ResearchDone {
-			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 14, text: b.tr("★ 完成一項研究!", "★ A research field is complete!"), col: color.RGBA{120, 220, 140, 255}})
-			yy += 24
+			messages = append(messages, turnSummaryMessage{
+				text: turnSummaryText(b.lang, "turnsummary.report.research_complete"),
+				size: 14, col: color.RGBA{120, 220, 140, 255},
+			})
 		}
-		for _, msg := range b.session.LastBuilt {
-			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 13, text: "★ " + msg, col: color.RGBA{120, 220, 140, 255}})
-			yy += 22
+		for _, notice := range b.session.LastBuilt {
+			messages = append(messages, turnSummaryMessage{
+				text: turnSummaryBuildNoticeText(b.lang, notice),
+				size: 13, col: color.RGBA{120, 220, 140, 255},
+			})
 		}
 		// 隨機事件(繁榮/瘟疫/海盜…)。英文模式讀結構化雙語報告，
 		// 不直接把引擎保留給繁中回合摘要的 LastEvent 當成英文顯示字串。
@@ -5602,14 +5594,10 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 			eventMsg += b.session.LastPersistentEventEN
 		}
 		if eventMsg != "" {
-			lines := []string{"◆ " + eventMsg}
-			if b.fnt != nil {
-				lines = b.fnt.Wrap(lines[0], 12, 320)
-			}
-			for i, line := range lines {
-				s.extras = append(s.extras, extraText{x: 40, y: yy + float64(i)*19, size: 13, text: line, col: color.RGBA{240, 190, 110, 255}})
-			}
-			yy += float64(len(lines)) * 19
+			messages = append(messages, turnSummaryMessage{
+				text: turnSummaryText(b.lang, "turnsummary.report.event", eventMsg),
+				size: 13, col: color.RGBA{240, 190, 110, 255},
+			})
 		}
 		// 安塔蘭人入侵警報(紅色醒目)。
 		if b.session.LastAntares != "" {
@@ -5617,8 +5605,9 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 			if b.lang != i18n.Traditional && b.session.LastAntaresEN != "" {
 				antaresMsg = b.session.LastAntaresEN
 			}
-			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 14, text: antaresMsg, col: color.RGBA{240, 110, 90, 255}})
-			yy += 24
+			messages = append(messages, turnSummaryMessage{
+				text: antaresMsg, size: 14, col: color.RGBA{240, 110, 90, 255},
+			})
 		}
 		// AI 對手突襲警報(見 shell/ai_attack.go)。擊退用綠字、被打用紅字,
 		// 讓玩家一眼看出「這回合的軍備夠不夠」。
@@ -5631,9 +5620,9 @@ func (b *sceneBuilder) turnSummary() (*overlayScreen, error) {
 			if b.lang != i18n.Traditional && b.session.LastRaidReport != nil && b.session.LastRaidReport.MessageEN != "" {
 				raidMsg = b.session.LastRaidReport.MessageEN
 			}
-			s.extras = append(s.extras, extraText{x: 40, y: yy, size: 14, text: raidMsg, col: col})
-			yy += 24
+			messages = append(messages, turnSummaryMessage{text: raidMsg, size: 14, col: col})
 		}
+		s.extras = append(s.extras, turnSummaryDynamicExtras(b.fnt, messages)...)
 	}
 	return s, nil
 }

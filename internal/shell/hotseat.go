@@ -122,7 +122,7 @@ type seat struct {
 	// `Monsters` 與 `PersistentEvents`(怪獸守著哪顆星、超新星倒數、人口暴增／瘟疫目標,是星圖的
 	// 狀態不是某個玩家的——跟著席位走會讓同一顆超新星每回合被倒數 N 次)。
 	LastPlayerOutput          engine.EmpireOutput
-	LastBuilt                 []string
+	LastBuilt                 []BuildNotice
 	LastEvent                 string
 	LastPersistentEventEN     string
 	LastEventReport           *EventReport

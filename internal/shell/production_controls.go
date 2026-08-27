@@ -1,7 +1,6 @@
 package shell
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
@@ -41,8 +40,9 @@ func (s *GameSession) canEnqueueBuild(i int) bool {
 // 來源艦已在 QueueRefit 時移離艦隊，因此這裡刻意不放回去。
 func (s *GameSession) discardQueuedBuild(i int, b ColonyBuild) {
 	if b.Refit != nil {
-		s.LastBuilt = append(s.LastBuilt,
-			fmt.Sprintf("殖民地 %d 取消改裝:%s 已報廢", i+1, b.Refit.Source.Name))
+		s.LastBuilt = append(s.LastBuilt, BuildNotice{
+			Kind: BuildNoticeRefitCancelled, ColonyIndex: i, Name: b.Refit.Source.Name,
+		})
 	}
 	if i >= 0 && i < len(s.RepeatBuild) && sameRepeatBuild(s.RepeatBuild[i], b) {
 		// 拿掉被指定重複的那一項就是明確取消，不讓它在之後靜默重生。
