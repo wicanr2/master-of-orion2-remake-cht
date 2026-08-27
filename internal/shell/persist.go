@@ -47,6 +47,7 @@ type aiSnapshot struct {
 	WantsAudience                  bool                                     `json:"wantsAudience,omitempty"`
 	AudienceReason                 string                                   `json:"audienceReason,omitempty"`
 	OriginalHumanDiplomaticRequest *gamedata.OriginalHumanDiplomaticRequest `json:"originalHumanDiplomaticRequest,omitempty"`
+	OriginalHumanDirectRequestTier int                                      `json:"originalHumanDirectRequestTier,omitempty"`
 	ColonyStars                    []int                                    `json:"colonyStars"` // 見 shell.AIOpponent.ColonyStars 註解
 	// ColonyPlanets 見 shell.AIOpponent.ColonyPlanets。舊存檔沒有 → nil,
 	// ColonyPlanetIndexOfAI 退回該星的代表行星,行為與加欄位前一致。
@@ -351,6 +352,7 @@ func (s *GameSession) snapshot() sessionSnapshot {
 			OriginalHumanIncidentKnown:      a.OriginalHumanIncidentKnown,
 			WantsAudience:                   a.WantsAudience, AudienceReason: a.AudienceReason,
 			OriginalHumanDiplomaticRequest: a.OriginalHumanDiplomaticRequest,
+			OriginalHumanDirectRequestTier: a.OriginalHumanDirectRequestTier,
 			FleetStar:                      a.FleetStar, FleetPosSet: a.FleetPosSet,
 			FleetDestStar: a.FleetDestStar, FleetETA: a.FleetETA,
 			FleetTargetAI: a.FleetTargetAI, FleetTargetAISet: a.FleetTargetAISet}
@@ -497,6 +499,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 			OriginalHumanIncidentKnown:      a.OriginalHumanIncidentKnown,
 			WantsAudience:                   a.WantsAudience, AudienceReason: a.AudienceReason,
 			OriginalHumanDiplomaticRequest: a.OriginalHumanDiplomaticRequest,
+			OriginalHumanDirectRequestTier: a.OriginalHumanDirectRequestTier,
 			FleetStar:                      a.FleetStar, FleetPosSet: a.FleetPosSet,
 			FleetDestStar: a.FleetDestStar, FleetETA: a.FleetETA,
 			FleetTargetAI: a.FleetTargetAI, FleetTargetAISet: a.FleetTargetAISet,

@@ -77,12 +77,16 @@
 27. 正常 AI 回合只有在完整 score、四類候選及 outcome 都可表示時才由原版 producer 接管；
     unknown 才可落回明示的 stance adapter。若來源人口最強且 action intensity 可能大於 3，
     `word_19A0E2` 未知會影響 type 4，必須在本輪 RNG 前失敗即關閉。
+28. reason 105／106 進入 `sub_1AC12` 二選一；接受時呼叫 `sub_1AEB5(human, AI)`：direct
+    寫 tier 1／2，科技授予 AI，BC 全額加給 AI、真人扣至最低 0，殖民地把非首都星完整移交 AI。
+    這條不是玩家餽贈，不得加入 remake 的關係獎勵。reason 124 不進二選一，也不套用 payload，
+    只可確認並清除通知。拒絕 105／106 的關係／軍事 callback 必須另依 raw 參數接線。
 
 ## DRAFT 邊界
 
 `sub_544A1 @ 0x544A1..0x54CC0` 的四類尾端與 RNG 已形成純規則；尚缺的是 directional
 incident memory 的 writer 門檻／正常玩家事件 producer、government 0 的蟲洞 mask 支線，以及
-outcome 1／3／4 接受／拒絕 callback。
+outcome 1／3 的拒絕 callback，以及對應的正常外交 UI 二選一；接受與 outcome 4 通知已閉合。
 這些欄位閉合前，remake 可用既有戰爭態勢決定是否呼叫原版目標估值，但必須標為 fallback，
 不得把只含 relation/personality 的部分 score 冒充完整 producer。
 

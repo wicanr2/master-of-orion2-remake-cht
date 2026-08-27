@@ -69,6 +69,11 @@ ROOTS = {
     "raw_council_state_consumer_1660b": 0x1660B,
     "raw_council_state_consumer_168af": 0x168AF,
     "raw_council_state_consumer_16c4e": 0x16C4E,
+    "raw_human_request_choice_1ac12": 0x1AC12,
+    "raw_human_request_reject_relation_4e3b5": 0x4E3B5,
+    "raw_direct_request_consumer_52049": 0x52049,
+    "raw_technology_transfer_consumer_e4204": 0xE4204,
+    "raw_colony_transfer_consumer_e4ab3": 0xE4AB3,
 }
 PERSONALITY_SCORE_TABLE_EA = 0x181080
 INCIDENT_DIVISOR_TABLE_EA = 0x180CF0

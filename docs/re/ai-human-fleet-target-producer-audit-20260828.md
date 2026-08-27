@@ -122,6 +122,14 @@
     在達成 2/3 多數時，真人當選寫 2、其他帝國當選寫 3，沒有勝者不覆寫而維持 1。
     remake 現以 known+raw 保存這個三態，接入既有議會開始／計票結果並通過 snapshot 往返；
     舊 JSON／GAM 缺 raw 時仍保守 unknown。
+28. `sub_1AFA6 @ 0x1AFA6..0x1B06B` 證實 reason 105／106 進 `sub_1AC12` 二選一；
+    選擇接受時在 `0x1A9D2` 呼叫 `sub_1AEB5(human, AI)`。該 consumer 依方向 payload 呼叫
+    `sub_52049` 寫 direct tier、`sub_E4204` 授予科技，或直接轉移 BC／呼叫 `sub_E4AB3`
+    移交殖民星。BC 的原始順序是 AI 先加全額、真人扣除後若小於 1 夾為 0。remake 已接四種
+    typed payload、snapshot 與首都／唯一殖民星安全 gate，不套用玩家主動餽贈的關係獎勵。
+    reason 124 不在二選一集合，僅顯示後清除，payload 不生效。拒絕 105 的 raw call 是
+    `sub_4E3B5(-50, AI, human, 0, 0, 0)`；拒絕 106 會寫軍事 target，缺 target 才呼叫
+    `sub_51078` 宣戰。後兩者因 reciprocal relation／精確 target payload 尚未 typed，仍未接。
 
 ## Remake 對映與限制
 
@@ -166,8 +174,8 @@
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。
-- 尚未閉合：`sub_544A1` 所需的完整 directional incident writer，以及 outcome 1／3／4
-  接受／拒絕 callback。只有這些 typed 輸入 unknown 時，
+- 尚未閉合：`sub_544A1` 所需的完整 directional incident writer、reason 105／106 拒絕 callback
+  與正常外交二選一 UI。接受 callback 與 reason 124 單向通知已閉合。只有必要 typed 輸入 unknown 時，
   願戰來源才保留明示的 `DecideStance` 相容 fallback；不以部分 score 升格整條決策。
 
 ## 勘誤：`sub_4F93B`
