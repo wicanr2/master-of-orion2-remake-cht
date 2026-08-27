@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -25,6 +26,72 @@ func TestColonyPlanetRowsUseEnglishIDs(t *testing.T) {
 	}
 	if strings.Contains(joined, "類地") || strings.Contains(joined, "常態") {
 		t.Fatalf("英文行星資訊仍含中文: %q", joined)
+	}
+}
+
+func TestRuntimeLabelCatalogCoverage(t *testing.T) {
+	groups := [][]string{
+		{"info.history.metric.population", "info.history.metric.technology", "info.history.metric.fleet", "info.history.metric.buildings"},
+		{"newgame.value.difficulty.0", "newgame.value.difficulty.1", "newgame.value.difficulty.2", "newgame.value.difficulty.3", "newgame.value.difficulty.4"},
+		{"newgame.value.size.0", "newgame.value.size.1", "newgame.value.size.2", "newgame.value.size.3"},
+		{"newgame.value.age.0", "newgame.value.age.1", "newgame.value.age.2"},
+		{"newgame.value.tech.0", "newgame.value.tech.1", "newgame.value.tech.2"},
+		{"tactical.fighter.kind.interceptor", "tactical.fighter.kind.heavy", "tactical.fighter.kind.bomber", "tactical.fighter.kind.assault_shuttle"},
+	}
+	for _, lang := range []i18n.Lang{i18n.Traditional, i18n.English} {
+		for _, group := range groups {
+			for _, key := range group {
+				if got := uiText(lang, key); got == "" || got == key {
+					t.Fatalf("語系 %v 缺少 %q", lang, key)
+				}
+			}
+		}
+	}
+	formats := []struct {
+		key   string
+		count int
+	}{
+		{"galaxy.system.more_bodies", 1},
+		{"combat.ship.named", 2},
+		{"hotseat.player.numbered", 1},
+		{"hotseat.player.numbered_race", 2},
+	}
+	for _, lang := range []i18n.Lang{i18n.Traditional, i18n.English} {
+		for _, format := range formats {
+			if got := strings.Count(uiText(lang, format.key), "%"); got != format.count {
+				t.Fatalf("語系 %v %q 格式欄位=%d，want %d", lang, format.key, got, format.count)
+			}
+		}
+	}
+}
+
+func TestRuntimeLabelInvalidIndexesUseCurrentLanguageFallback(t *testing.T) {
+	for _, label := range []func(i18n.Lang, int) string{
+		newGameDifficultyLabel, newGameGalaxySizeLabel, newGameGalaxyAgeLabel, newGameTechLevelLabel,
+	} {
+		if got := label(i18n.Traditional, -1); got != "未知" {
+			t.Fatalf("繁中無效索引 fallback=%q，want 未知", got)
+		}
+		if got := label(i18n.English, 999); got != "Unknown" {
+			t.Fatalf("英文無效索引 fallback=%q，want Unknown", got)
+		}
+	}
+}
+
+func TestRuntimePlayerLabelsAreNotEmbeddedInEnglishLabelsSource(t *testing.T) {
+	source, err := os.ReadFile("englishlabels.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(source)
+	for _, forbidden := range []string{
+		`return "Technology"`, `return "Unknown"`, `"Tutor", "Easy"`, `"Small", "Medium"`,
+		`"Young", "Average"`, `"Pre-warp", "Average"`, `"Unknown Empire"`, `"Unknown Ship"`,
+		`"Heavy Fighter"`, `"Assault Shuttle"`, `fmt.Sprintf("Player %s`, `fmt.Sprintf("%s Ship %s`,
+	} {
+		if strings.Contains(text, forbidden) {
+			t.Fatalf("englishlabels.go 仍內嵌玩家文案 %q", forbidden)
+		}
 	}
 }
 

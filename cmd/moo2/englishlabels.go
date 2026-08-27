@@ -135,32 +135,26 @@ func systemBodyCountLabel(lang i18n.Lang, sess *shell.GameSession, star int) str
 	if sess == nil {
 		return ""
 	}
-	if lang == i18n.Traditional {
-		return sess.SystemBodyCountText(star)
-	}
 	n := len(sess.PlanetsAt(star)) - 1
 	if n <= 0 {
 		return ""
 	}
 	// 這一欄只有 74px；「%d more」保留原版「另有 N」語意且不被截成半句。
-	return fmt.Sprintf("%d more", n)
+	return fmt.Sprintf(uiText(lang, "galaxy.system.more_bodies"), n)
 }
 
 // historyMetricLabel 是歷史圖表的雙語指標名稱。
 func historyMetricLabel(lang i18n.Lang, metric shell.HistoryMetric) string {
-	if lang == i18n.Traditional {
-		return shell.HistoryMetricName(metric)
-	}
+	key := "info.history.metric.population"
 	switch metric {
 	case shell.HistoryTechnology:
-		return "Technology"
+		key = "info.history.metric.technology"
 	case shell.HistoryFleet:
-		return "Fleet"
+		key = "info.history.metric.fleet"
 	case shell.HistoryBuildings:
-		return "Buildings"
-	default:
-		return "Population"
+		key = "info.history.metric.buildings"
 	}
+	return uiText(lang, key)
 }
 
 // newGameDifficultyLabel、newGameGalaxySizeLabel、newGameGalaxyAgeLabel、
@@ -169,42 +163,30 @@ func historyMetricLabel(lang i18n.Lang, metric shell.HistoryMetric) string {
 // 影響存檔或設定索引。
 func newGameDifficultyLabel(lang i18n.Lang, index int) string {
 	if index < 0 || index >= len(shell.Difficulties) {
-		return "Unknown"
+		return uiText(lang, "common.unknown")
 	}
-	if lang == i18n.Traditional {
-		return shell.Difficulties[index].Name
-	}
-	return [...]string{"Tutor", "Easy", "Average", "Hard", "Impossible"}[index]
+	return uiText(lang, fmt.Sprintf("newgame.value.difficulty.%d", index))
 }
 
 func newGameGalaxySizeLabel(lang i18n.Lang, index int) string {
 	if index < 0 || index >= len(shell.GalaxySizes) {
-		return "Unknown"
+		return uiText(lang, "common.unknown")
 	}
-	if lang == i18n.Traditional {
-		return shell.GalaxySizes[index].Name
-	}
-	return [...]string{"Small", "Medium", "Large", "Huge"}[index]
+	return uiText(lang, fmt.Sprintf("newgame.value.size.%d", index))
 }
 
 func newGameGalaxyAgeLabel(lang i18n.Lang, index int) string {
 	if index < 0 || index >= len(shell.GalaxyAges) {
-		return "Unknown"
+		return uiText(lang, "common.unknown")
 	}
-	if lang == i18n.Traditional {
-		return shell.GalaxyAges[index].Name
-	}
-	return [...]string{"Young", "Average", "Mature"}[index]
+	return uiText(lang, fmt.Sprintf("newgame.value.age.%d", index))
 }
 
 func newGameTechLevelLabel(lang i18n.Lang, index int) string {
 	if index < 0 || index >= len(shell.TechLevels) {
-		return "Unknown"
+		return uiText(lang, "common.unknown")
 	}
-	if lang == i18n.Traditional {
-		return shell.TechLevels[index].Name
-	}
-	return [...]string{"Pre-warp", "Average", "Advanced"}[index]
+	return uiText(lang, fmt.Sprintf("newgame.value.tech.%d", index))
 }
 
 // historyEmpireLabels 是歷史圖表圖例用名稱。玩家的「你」不是種族名，英文
@@ -219,7 +201,7 @@ func historyEmpireLabels(lang i18n.Lang, s *shell.GameSession) []string {
 		return names
 	}
 	if len(names) > 0 {
-		names[0] = "You"
+		names[0] = uiText(lang, "info.history.legend.you")
 	}
 	for i := 1; i < len(names) && i-1 < len(s.AIPlayers); i++ {
 		names[i] = aiEmpireEnglishName(s.AIPlayers[i-1])
@@ -263,7 +245,7 @@ func englishKnownRaceText(text string) string {
 			return out
 		}
 	}
-	return englishSafeFallback(text, "Unknown Empire")
+	return englishSafeFallback(text, uiText(i18n.English, "common.unknown_empire"))
 }
 
 // enemyDisplayName 將外交／戰鬥標籤轉成當前語言。對手名稱可能來自舊存檔，
@@ -281,7 +263,7 @@ func enemyDisplayName(lang i18n.Lang, sess *shell.GameSession, name string) stri
 			return aiEmpireEnglishName(ai)
 		}
 	}
-	return englishSafeFallback(englishKnownRaceText(name), "Unknown Empire")
+	return englishSafeFallback(englishKnownRaceText(name), uiText(i18n.English, "common.unknown_empire"))
 }
 
 // combatShipLabel 是敵艦格子與掃描戰報的顯示名。CombatShip.Name 仍是
@@ -295,31 +277,28 @@ func combatShipLabel(lang i18n.Lang, sess *shell.GameSession, name string) strin
 		prefix := r.Name + shipMark
 		peoplePrefix := r.Name + string(rune(0x4eba)) + shipMark
 		if strings.HasPrefix(name, peoplePrefix) {
-			return fmt.Sprintf("%s Ship %s", r.EnName, strings.TrimPrefix(name, peoplePrefix))
+			return fmt.Sprintf(uiText(lang, "combat.ship.named"), r.EnName, strings.TrimPrefix(name, peoplePrefix))
 		}
 		if strings.HasPrefix(name, prefix) {
-			return fmt.Sprintf("%s Ship %s", r.EnName, strings.TrimPrefix(name, prefix))
+			return fmt.Sprintf(uiText(lang, "combat.ship.named"), r.EnName, strings.TrimPrefix(name, prefix))
 		}
 	}
-	return englishSafeFallback(englishKnownRaceText(name), "Unknown Ship")
+	return englishSafeFallback(englishKnownRaceText(name), uiText(i18n.English, "common.unknown_ship"))
 }
 
 // fighterKindLabel 是戰術戰機摘要的顯示名；shell 內的名稱保持中文，因為
 // 它同時是規則資料與測試的穩定 key。
 func fighterKindLabel(lang i18n.Lang, k shell.FighterKind) string {
-	if lang == i18n.Traditional {
-		return shell.FighterKindName(k)
-	}
+	key := "tactical.fighter.kind.interceptor"
 	switch k {
 	case shell.FighterHeavy:
-		return "Heavy Fighter"
+		key = "tactical.fighter.kind.heavy"
 	case shell.FighterBomber:
-		return "Bomber"
+		key = "tactical.fighter.kind.bomber"
 	case shell.FighterAssaultShuttle:
-		return "Assault Shuttle"
-	default:
-		return "Interceptor"
+		key = "tactical.fighter.kind.assault_shuttle"
 	}
+	return uiText(lang, key)
 }
 
 // hotseatNameLabel 把 shell 的席位名稱轉成英文。熱座接管 AI 後的名稱格式是
@@ -336,12 +315,12 @@ func hotseatNameLabel(lang i18n.Lang, name string) string {
 			n := rest[:at]
 			suffix := rest[at+len(marker):]
 			if suffix != "" {
-				return fmt.Sprintf("Player %s %s", n, englishKnownRaceText(suffix))
+				return fmt.Sprintf(uiText(lang, "hotseat.player.numbered_race"), n, englishKnownRaceText(suffix))
 			}
-			return fmt.Sprintf("Player %s", n)
+			return fmt.Sprintf(uiText(lang, "hotseat.player.numbered"), n)
 		}
 	}
-	return englishSafeFallback(englishKnownRaceText(name), "Unknown Player")
+	return englishSafeFallback(englishKnownRaceText(name), uiText(i18n.English, "common.unknown_player"))
 }
 
 func hasKnownRaceName(name string) bool {

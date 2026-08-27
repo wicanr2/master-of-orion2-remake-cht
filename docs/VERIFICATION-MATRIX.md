@@ -18,7 +18,7 @@
 | 事件／勝利 | `events_test.go`、勝利測試 | 手冊、執行檔表 | 報告／王座廳畫廊紀錄 | 回合→事件／三勝利路徑 | 通過內部流程；部分數值仍為近似 |
 | 存檔／讀檔 | `persist_test.go`、各切片 round-trip | remake JSON schema；原版 GAM 只讀 | Load 畫面已納入本輪畫廊 | 寫入可寫 overlay 後讀回 | 單元通過；本輪 Docker 畫廊含 `18_loadgame.png`，未宣稱原版逐像素一致 |
 | 圖像／主題 | LBX／資產／畫廊工具 | LBX 位元組與執行檔索引 | 本輪 Docker 畫廊 37 張 | 各畫面正常載入 | 37 張均成功產生且非零；修正 1.5／30 資產目錄的 `NEWGAME#31` 越界警告；逐張原版比對仍開放 |
-| 中文／英文／字型 | i18n、英文 labels、`englishSafeFallback`、lang gap 測試 | 原版烘字與譯表 | 中英畫廊紀錄 | 語言切換→完整流程 | 英文 37/37 畫廊抽查通過；未知值保留安全 fallback，16 條棘輪例外是 key／dev-only／不可達分支 |
+| 中文／英文／字型 | i18n、英文 labels、`englishSafeFallback`、lang gap 測試 | 原版烘字與譯表 | 中英畫廊紀錄 | 語言切換→完整流程 | 英文 37/37 畫廊抽查通過；未知值保留安全 fallback，13 條漢字棘輪例外為六個規則 key 與七個 dev-only 標題；另有純英文來源契約 |
 | 打包 | Docker build／跨編 | 無原版需求 | 正常路徑 smoke 截圖 | 從任意目錄啟動 | Linux／Windows 重新產出並驗證；macOS 使用既有 CI 產物，Linux 容器不宣稱真機執行 |
 
 ## 本輪截圖 metadata

@@ -478,6 +478,17 @@
   `28_measure.png` 的距離框均在星圖內。證據與規格見
   [`docs/re/galaxy-hotkey-feedback-layout-audit-20260827.md`](docs/re/galaxy-hotkey-feedback-layout-audit-20260827.md) 與
   [`docs/spec/galaxy-hotkey-external-text.md`](docs/spec/galaxy-hotkey-external-text.md)。
+  Runtime 顯示標籤已完成第五十二個切片：四個歷史指標、十五個新遊戲值、同星系天體數、
+  玩家圖例、四種戰機、敵艦／熱座組字及三種 Unknown fallback 均由 `ui.json` 供應；Go 只保留
+  typed enum／索引到穩定鍵的映射與動態參數。無效新遊戲索引現依目前語言顯示 Unknown，
+  不再在繁中模式固定回英文。這些詞義分別沿用已審查的新遊戲、INFO、戰機與熱座 RE；
+  歷史圖例、舊存檔未知值及名稱組字仍明標 remake adapter，不升格原版逐字 parity。
+  漢字 literal 棘輪依實際輸出由 16 收緊至 13，剩餘六個規則查表鍵與七個 dev-only 檢視器標題；
+  同時新增純英文來源契約，避免舊探針看不到的英文硬編文案回流。`cmd/moo2`＋`internal/shell`
+  全套測試通過；繁中與英文正版資料畫廊各 37/37，實圖抽查新遊戲、行星列表、INFO 歷史、
+  格子戰術及熱座交接均無 key 洩漏或越框。證據與規格見
+  [`docs/re/runtime-label-catalog-audit-20260827.md`](docs/re/runtime-label-catalog-audit-20260827.md) 與
+  [`docs/spec/runtime-label-catalog.md`](docs/spec/runtime-label-catalog.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見
