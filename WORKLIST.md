@@ -1067,7 +1067,7 @@
   [`docs/re/ai-colony-build-selection-audit-20260826.md`](docs/re/ai-colony-build-selection-audit-20260826.md) 與
   [`docs/spec/ai-colony-build-selection.md`](docs/spec/ai-colony-build-selection.md)。
 - [ ] **艦隊、殖民、事件與安塔蘭忠實化**：重建 `Move_All_Ships_Toward_Stars_ @ 0xFFEEA`、
-  `Colonize_Planet_ @ 0xBB082`、`Compute_Blockades_ @ 0xE5097`、`Compute_Contacts_ @ 0xEB192`、
+  `sub_E5EB3 @ 0xE5EB3` 殖民建立鏈、`Compute_Blockades_ @ 0xE5097`、`Compute_Contacts_ @ 0xEB192`、
   `Check_All_Rebellions_ @ 0xED44A`、`Determine_Event_ @ 0x2230A` 與
   `Antaran_Invasion_Check_ @ 0x63D92`；需包含逐回合座標、截擊、合併／拆分、星雲／黑洞／
   干擾器、殖民前置與起始狀態、封鎖／接觸、叛亂兵力／政府／士氣／易手、29 種隨機事件與
@@ -1090,6 +1090,10 @@
   remake 現會列舉及顯示全部停泊群組，戰勝只移除本次第一個停泊群組，不再誤刪同目的星
   航行 record。原版 RNG 屬全銀河自動戰鬥排程順序；玩家單次攻擊採穩定切片順序，以維持
   鎖步重播及戰後 record 回寫一致，明標為介面轉接而非原版排程順序。
+  2026-08-27 已訂正殖民入口：`sub_BB082 @ 0xBB082` 是畫面 helper，真正建立函式為
+  `sub_E5EB3`。一般殖民人口 1、不可自然耕作／Lithovore／Cybernetic 從工人開始、其餘從農夫
+  開始，Native 三人固定農夫，以及正常 caller 消耗殖民船均已接；前哨重用 raw cache 與完整
+  callback 仍待。見 `docs/re/colonization-starting-job-audit-20260827.md`。
   五種事件怪物藍圖已閉合 raw type、艦體、引擎、電腦、special bytes、武器槽、戰速、結構與
   怪物專用裝甲；Go 的新生成怪物及太空鰻分裂已接雙血池。抵達後的殖民地戰鬥已由
   `Search_For_Battles_`、`sub_E8029`、`Do_1_Combat_`、
@@ -2178,7 +2182,7 @@ internal/shell/orbital_bombardment.go
   `RunEmpireTurn` 的 `TotalNetIndustry` 永遠停在初始母星產出,AI 版圖擴張與經濟成長脫鉤。抽出
   `internal/shell/colonization.go` 的共用函式 `newColonyFromStar(starIdx, gov, foodBonus,
   indBonus, resBonus) (engine.ColonyState, ok, reason)`,把 `ColonizeStar`(玩家)原本內嵌的
-  「氣候/重力/礦產/大小解析 → PopMax 查表 → 全農起始 → 士氣算法」搬進去,兩處呼叫端(玩家
+  「氣候/重力/礦產/大小解析 → PopMax 查表 → 起始職務 → 士氣算法」搬進去,兩處呼叫端(玩家
   `ColonizeStar`、AI `aiExpand`)共用同一套建法,不再各算各的。`aiExpand` 佔星時 append 進
   `AIOpponent.Colonies` + `ColonyStars`(AIOpponent 唯二的殖民地平行陣列——不像玩家有
   Builds/ColonyBuildings/PlayerColonyMarines 等逐殖民地建造/駐軍追蹤,因為 EndTurn 對 AI 只呼叫

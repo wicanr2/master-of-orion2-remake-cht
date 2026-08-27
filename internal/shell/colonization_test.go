@@ -1,6 +1,10 @@
 package shell
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+)
 
 // newFleetAtUnownedStarSession 建一個新對局,把玩家艦隊直接擺到某顆無主星上空(已抵達,ETA=0),
 // 供拓殖相關測試省去先跑 SendFleet/EndTurn 航行流程。回傳對局與目標星索引。比照
@@ -59,12 +63,12 @@ func TestColonizeStar_Success(t *testing.T) {
 		t.Fatal("拓殖後艦隊不應再有殖民船(唯一一艘已消耗)")
 	}
 	newColony := s.PlayerColonies[res.ColonyIndex]
-	if newColony.Population != colonizeStartPopulation || newColony.Farmers != colonizeStartPopulation {
-		t.Fatalf("新殖民地應全農起始(Population=Farmers=%d),got Population=%d Farmers=%d",
-			colonizeStartPopulation, newColony.Population, newColony.Farmers)
+	if newColony.Population != colonizeStartPopulation || newColony.Farmers+newColony.Workers != colonizeStartPopulation {
+		t.Fatalf("新殖民地人口與職務應守恆,got Population=%d Farmers=%d Workers=%d",
+			newColony.Population, newColony.Farmers, newColony.Workers)
 	}
-	if newColony.Workers != 0 || newColony.Scientists != 0 {
-		t.Fatalf("新殖民地起始不應有工人/科學家,got Workers=%d Scientists=%d", newColony.Workers, newColony.Scientists)
+	if newColony.Scientists != 0 {
+		t.Fatalf("新殖民地起始不應有科學家,got Scientists=%d", newColony.Scientists)
 	}
 
 	// 平行陣列長度不變量:見 GameSession.PlayerColonyStars 欄位註解。
@@ -78,6 +82,45 @@ func TestColonizeStar_Success(t *testing.T) {
 		len(s.PlayerColonyMarines) != len(s.PlayerColonies) || len(s.MarineBarracksAge) != len(s.PlayerColonies) ||
 		len(s.PlayerColonyTanks) != len(s.PlayerColonies) || len(s.ArmorBarracksAge) != len(s.PlayerColonies) {
 		t.Fatalf("所有平行殖民地陣列長度都應與 PlayerColonies(%d)同步", len(s.PlayerColonies))
+	}
+}
+
+func TestNewColonyStartingJobMatchesOriginalBranch(t *testing.T) {
+	s := NewDemoSession()
+	planetIdx := s.PlanetAt(0)
+	if planetIdx < 0 {
+		t.Fatal("測試需要一顆行星")
+	}
+	p := &s.Planets[planetIdx]
+	p.Gen = 2
+	p.TypeID = gamedata.HABITABLE
+	p.SizeID = gamedata.MEDIUM_PLANET
+	p.GravityID = gamedata.NORMAL_G
+	p.MineralID = gamedata.ABUNDANT
+
+	p.ClimateID = gamedata.TERRAN
+	p.SpecialID = gamedata.NoSpecial
+	farmColony, ok, refusal := s.newColonyFromPlanet(planetIdx, s.Government, 0, 0, 0)
+	if !ok {
+		t.Fatalf("可耕行星應可建立殖民地：%+v", refusal)
+	}
+	if farmColony.Farmers != 1 || farmColony.Workers != 0 || farmColony.PopulationGroups[0].Farmers != 1 {
+		t.Fatalf("可耕行星應從農夫開始：%+v", farmColony)
+	}
+
+	p.ClimateID = gamedata.TOXIC
+	p.SpecialID = gamedata.Natives
+	workerColony, ok, refusal := s.newColonyFromPlanet(planetIdx, s.Government, 0, 0, 0)
+	if !ok {
+		t.Fatalf("有毒行星仍是合法殖民目標：%+v", refusal)
+	}
+	if workerColony.Population != 4 || workerColony.Farmers != 3 || workerColony.Workers != 1 {
+		t.Fatalf("owner 應為工人、三位 Native 應為農夫：pop=%d farmers=%d workers=%d",
+			workerColony.Population, workerColony.Farmers, workerColony.Workers)
+	}
+	if len(workerColony.PopulationGroups) != 2 || workerColony.PopulationGroups[0].Workers != 1 ||
+		workerColony.PopulationGroups[1].Farmers != 3 {
+		t.Fatalf("逐族職務分流錯誤：%+v", workerColony.PopulationGroups)
 	}
 }
 

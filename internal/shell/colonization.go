@@ -33,12 +33,8 @@ import (
 //     homeworldBuildings() 明確列出海軍陸戰隊營+星基是「Pre-warp/Average Tech games only」
 //     的特例),故新殖民地起始建築為空(nil map),與手冊沉默一致,不臆造。
 //
-//     初始工作分配:手冊未提供任何規則。population=1 時選擇「全農」(而非比照
-//     session.go advancePopulation「新增人口預設分配為工人」的既有慣例)——後者是「已有farmer
-//     且經濟穩定的殖民地,人口成長 +1 時」的慣例,套用在population=1、Farmers=0 的全新殖民地會
-//     讓 Food=0(FoodPerFarmer 乘 0 個農夫)但 FoodConsumed=1,首回合即饑荒
-//     (session.go recoverFromFamine 下回合才會修正回 farmer)。「全農」是任務指示明列的簡單
-//     保守預設之一,避免這個不必要的首回合饑荒瞬間,標記於此供 L.CY 檢視。
+//     初始工作分配已由 `sub_E5EB3 @ 0xE5F74..0xE5FA7` 閉合：自然食物為零、Lithovore
+//     或 Cybernetic 時第一位殖民者是工人，其餘為農夫；原住民額外三人固定是農夫。
 //
 //  3. PopMax:一般族使用 gamedata.PlanetBasePopMax(size, climate);水生／環境耐受／穴居
 //     先套手冊明定的氣候對映與人口上限修正,基礎公式移植自 openorion2
@@ -244,7 +240,7 @@ type colonizationRefusal struct {
 // engine.ColonyState,是 ColonizeStar(玩家拓殖,下方)與 session.go aiExpand(AI 擴張)共用的
 // 殖民地建法——2026-07-11 前 aiExpand 只標記 Star.Owner=2 旗標、從未建立真正的殖民地模型(見
 // AIOpponent.ColonyStars 欄位註解),AI 版圖擴張後經濟不會成長。抽出共用後兩處呼叫端行為一致
-// (氣候/重力/礦產/大小解析、PopMax 查表、全農起始、士氣算法皆同一套規則),不會出現「玩家殖民地
+// (氣候/重力/礦產/大小解析、PopMax 查表、原版起始職務、士氣算法皆同一套規則),不會出現「玩家殖民地
 // 一套規則、AI 殖民地另一套」的不忠實分裂。
 //
 // gov 是套用士氣基準的政府型態:玩家傳 s.Government;AI 對手(AIOpponent)沒有 Government 欄位
@@ -338,11 +334,20 @@ func (s *GameSession) newColonyFromPlanet(planetIdx int, gov gamedata.MoraleGove
 	if popMax < startPop {
 		popMax = startPop // 保底:新殖民地的人口上限不能低於起始人口本身
 	}
+	ownerStartsWorker := gamedata.ColonizationStartsWithWorker(
+		gamedata.ClimateFoodPerFarmer(climate), s.RaceLithovore(), s.RaceCybernetic(),
+	)
+	ownerFarmers, ownerWorkers := colonizeStartPopulation, 0
+	if ownerStartsWorker {
+		ownerFarmers, ownerWorkers = 0, colonizeStartPopulation
+	}
+	natives := gamedata.SpecialExtraPopulationOnColonize(special)
 
 	colony = engine.ColonyState{
 		Population:           startPop,
 		PopMax:               popMax,
-		Farmers:              startPop, // 全農,見檔頭§2 理由(避免首回合饑荒)
+		Farmers:              ownerFarmers + natives,
+		Workers:              ownerWorkers,
 		FoodPerFarmer:        foodPerFarmer,
 		IndustryPerWorker:    industryPerWorker,
 		ResearchPerScientist: researchPerScientist,
@@ -366,11 +371,9 @@ func (s *GameSession) newColonyFromPlanet(planetIdx int, gov gamedata.MoraleGove
 		// 由 engine.RunEmpireTurn 併進帝國總收入。
 		SpecialIncome: gamedata.SpecialIncomePerTurn(special),
 	}
-	ownerFarmers := startPop
-	if natives := gamedata.SpecialExtraPopulationOnColonize(special); natives > 0 && natives < startPop {
-		ownerFarmers -= natives
+	if natives > 0 && natives < startPop {
 		colony.PopulationGroups = []engine.PopulationGroup{
-			{RaceSlot: 0, RaceSlotKnown: true, Farmers: ownerFarmers, FoodBonus: foodBonus,
+			{RaceSlot: 0, RaceSlotKnown: true, Farmers: ownerFarmers, Workers: ownerWorkers, FoodBonus: foodBonus,
 				IndustryBonus: indBonus, ResearchBonus: resBonus, Gravity: colony.RaceGravity,
 				Aquatic: aquatic, Cybernetic: colony.Cybernetic, Lithovore: colony.Lithovore,
 				Tolerant: tolerant, Subterranean: subterranean,
@@ -381,7 +384,7 @@ func (s *GameSession) newColonyFromPlanet(planetIdx int, gov gamedata.MoraleGove
 		}
 	} else {
 		colony.PopulationGroups = []engine.PopulationGroup{{RaceSlot: 0, RaceSlotKnown: true,
-			Farmers: startPop, FoodBonus: foodBonus, IndustryBonus: indBonus, ResearchBonus: resBonus,
+			Farmers: ownerFarmers, Workers: ownerWorkers, FoodBonus: foodBonus, IndustryBonus: indBonus, ResearchBonus: resBonus,
 			Gravity: colony.RaceGravity, Aquatic: aquatic, Cybernetic: colony.Cybernetic,
 			Lithovore: colony.Lithovore, Tolerant: tolerant, Subterranean: subterranean,
 			GrowthBonusPercent: s.raceGrowthPct, ProfileKnown: true}}
@@ -398,8 +401,8 @@ func (s *GameSession) newColonyFromPlanet(planetIdx int, gov gamedata.MoraleGove
 // 任一條件不足回傳 Ok=false + Reason,不消耗任何狀態(不扣殖民船、不改 Star.Owner)。
 //
 // 成功:依 starIdx 對應的 Planets[starIdx](climate/gravity/mineral/size 字串轉 gamedata 型別,
-// 見上方對映表)建一筆新 engine.ColonyState——起始人口 colonizeStartPopulation、全農(見檔頭§2
-// 理由)、FoodPerFarmer/IndustryPerWorker 依環境查表 + 玩家種族加成(Races[s.RaceIndex],比照
+// 見上方對映表)建一筆新 engine.ColonyState——起始人口 colonizeStartPopulation、職務依原版
+// 自然食物／Lithovore／Cybernetic 分支、FoodPerFarmer/IndustryPerWorker 依環境查表 + 玩家種族加成(Races[s.RaceIndex],比照
 // ApplyRace 對既有殖民地的加成邏輯——ApplyRace 只在新遊戲開局套一次,不會回頭套用到之後才建立
 // 的殖民地,故這裡手動疊加一次)、士氣依目前政府 + 無建築(colonyMoralePercent(s.Government,
 // nil, 0))。append 進 PlayerColonies + 所有平行陣列(Builds/ColonyBuildings/PlayerColonyMarines/
