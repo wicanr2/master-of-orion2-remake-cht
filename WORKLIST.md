@@ -440,6 +440,12 @@
   增派／循環／隱匿控制維持明標 remake adapter。證據與規格見
   [`docs/re/races-spy-text-layout-audit-20260827.md`](docs/re/races-spy-text-layout-audit-20260827.md) 與
   [`docs/spec/races-spy-external-text.md`](docs/spec/races-spy-external-text.md)。
+  格子戰術已開始第四十八個切片：畫面標題、開場操作提示、武器槽三態顯示／切換戰報、
+  無限彈藥、缺名 fallback 與右鍵明細模板均由 `ui.json` 供應，Go 僅保留語意鍵、狀態與
+  動態艦艇／武器資料。原版三態與單次待命恢復已有 IDA／手冊錨點；戰報逐字內容、右鍵彈窗
+  外觀與循環方向仍維持明標 remake adapter。其餘移動、開火、回合與勝敗戰報尚待依同一
+  契約遷移，故本項仍為進行中。規格見
+  [`docs/spec/tactical-dynamic-text-catalog.md`](docs/spec/tactical-dynamic-text-catalog.md)。
   本批證據與規格見
   [`docs/re/strategic-combat-result-text-audit-20260827.md`](docs/re/strategic-combat-result-text-audit-20260827.md) 與
   [`docs/spec/strategic-combat-result-external-text.md`](docs/spec/strategic-combat-result-external-text.md)；拓殖／前哨證據與規格見

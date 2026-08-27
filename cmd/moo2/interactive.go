@@ -2357,8 +2357,7 @@ func newTacticalScreenForShips(b *sceneBuilder, p, e []shell.CombatShip, monster
 	// 開場先算一次狀態效果,否則第一回合的移動力會用未受牽引的速度(第 69 項(戰鬥速度與引擎階))。
 	shell.ApplyTacticalStatusEffects(p, e)
 	t := &tacticalScreen{b: b, fnt: b.fnt, player: p, enemy: e, sel: firstReadyShip(p),
-		log: b.tr("選取我方艦→移動或開火;完成一艦後才輪到下一艦",
-			"Select a ship to move or fire; finish each ship before the next"),
+		log: tacticalText(b.lang, "tactical.log.initial"),
 		pStart: len(p), eStart: len(e),
 		rng: rand.New(rand.NewSource(seed)),
 		bg:  loadCombatBG(b.res), bar: loadCombatBar(b.res),
@@ -3637,7 +3636,7 @@ func (t *tacticalScreen) draw(dst *ebiten.Image) {
 	}
 	gold := color.RGBA{240, 220, 120, 255}
 	if t.fnt != nil {
-		t.fnt.DrawCentered(dst, truncateToWidth(t.fnt, t.b.tr("戰術戰鬥", "TACTICAL COMBAT"), 20, 600), 320, 34, 20, gold)
+		t.fnt.DrawCentered(dst, truncateToWidth(t.fnt, tacticalText(t.b.lang, "tactical.title"), 20, 600), 320, 34, 20, gold)
 	}
 	for i, s := range t.player {
 		t.drawShip(dst, s, color.RGBA{90, 220, 170, 255}, i == t.sel, false)
@@ -3774,12 +3773,12 @@ func (t *tacticalScreen) cycleSelectedWeaponMode(slot int) {
 	mode := (t.player[t.sel].WeaponModes[slot] + 1) % 3
 	t.player[t.sel].WeaponModes[slot] = mode
 	labels := []string{
-		t.b.tr("可用", "ready"),
-		t.b.tr("待命一次", "standby once"),
-		t.b.tr("關閉", "off"),
+		tacticalText(t.b.lang, "tactical.weapon.mode.ready_log"),
+		tacticalText(t.b.lang, "tactical.weapon.mode.standby_log"),
+		tacticalText(t.b.lang, "tactical.weapon.mode.off_log"),
 	}
 	label := labels[mode]
-	t.log = fmt.Sprintf(t.b.tr("武器槽 %d：%s", "Weapon slot %d: %s"), slot+1, label)
+	t.log = tacticalText(t.b.lang, "tactical.weapon.mode_changed", slot+1, label)
 }
 
 func (t *tacticalScreen) describeSelectedWeapon(slot int) {
@@ -3797,7 +3796,7 @@ func (t *tacticalScreen) describeSelectedWeapon(slot int) {
 	if t.b.lang == i18n.English {
 		arcLabel = shell.WeaponArcLabelEN(arc)
 	}
-	ammoLabel := t.b.tr("無限", "unlimited")
+	ammoLabel := tacticalText(t.b.lang, "tactical.weapon.ammo_unlimited")
 	if ammo != 255 && ammo >= 0 {
 		ammoLabel = fmt.Sprintf("%d", ammo)
 	}
@@ -3805,8 +3804,7 @@ func (t *tacticalScreen) describeSelectedWeapon(slot int) {
 	if len(mods) > 0 {
 		modLabel = strings.Join(mods, "/")
 	}
-	t.log = fmt.Sprintf(t.b.tr("槽%d %s ×%d；傷害上限%d；射界%s；彈藥%s；改造%s",
-		"Slot %d %s ×%d; max damage %d; arc %s; ammo %s; mods %s"),
+	t.log = tacticalText(t.b.lang, "tactical.weapon.description",
 		slot+1, tacticalWeaponDisplayName(t.b, name), count, attack, arcLabel, ammoLabel, modLabel)
 }
 
@@ -3817,7 +3815,7 @@ func tacticalWeaponDisplayName(b *sceneBuilder, name string) string {
 		}
 	}
 	if name == "" {
-		return b.tr("武器", "Weapon")
+		return tacticalText(b.lang, "tactical.weapon.fallback_name")
 	}
 	return name
 }
@@ -3839,11 +3837,11 @@ func (t *tacticalScreen) drawTacticalWeaponPanel(dst *ebiten.Image) {
 			name, count, ammo = mount.Name, mount.WorkingCount, mount.Ammo
 		}
 		col := color.RGBA{100, 220, 130, 255}
-		status := t.b.tr("可用", "READY")
+		status := tacticalText(t.b.lang, "tactical.weapon.mode.ready")
 		if mode == shell.TacticalWeaponStandby {
-			col, status = color.RGBA{235, 170, 70, 255}, t.b.tr("待命", "STANDBY")
+			col, status = color.RGBA{235, 170, 70, 255}, tacticalText(t.b.lang, "tactical.weapon.mode.standby")
 		} else if mode == shell.TacticalWeaponOff {
-			col, status = color.RGBA{225, 90, 85, 255}, t.b.tr("關閉", "OFF")
+			col, status = color.RGBA{225, 90, 85, 255}, tacticalText(t.b.lang, "tactical.weapon.mode.off")
 		}
 		fillPanel(dst, float32(r[0]), float32(r[1]), float32(r[2]), float32(r[3]), color.RGBA{8, 13, 24, 225}, false)
 		vector.StrokeRect(dst, float32(r[0]), float32(r[1]), float32(r[2]), float32(r[3]), 1, col, false)
