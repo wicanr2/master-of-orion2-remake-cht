@@ -6,7 +6,7 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
 
-// componentlabel.go:元件名的英文顯示名(第 85 項(元件名英文))。
+// componentlabel.go:元件規則鍵與雙語顯示名的隔離層(第 85 項(元件名英文))。
 //
 // ============ 問題 ============
 //
@@ -17,7 +17,7 @@ import (
 // ============ 作法:從原版科技名推導,不手寫第二份表 ============
 //
 // 每個元件都帶著 `UnlockTech`,而 `gamedata.TechnologyNames` 是**原版執行檔的科技名表**。
-// 所以英文顯示名 = 那個科技的原版英文名,一行推導,不必再維護一份 77 列的對照
+// 所以顯示名 = 那個科技的原版英文名再交給外部 tech.json 選語言,不必再維護一份 77 列的對照
 // ——**兩份表遲早會漂移**,這是本專案反覆踩過的形狀。
 //
 // 只有 `UnlockTech == 0` 的幾項需要額外顯示路由；中英文顯示值都留在 ui.json。
@@ -37,11 +37,8 @@ func componentLabel(lang i18n.Lang, c shell.Component) string {
 	if key, ok := componentNoTechTextKey[c.Name]; ok {
 		return uiText(lang, key)
 	}
-	if lang == i18n.English && c.UnlockTech != gamedata.TECH_NONE {
-		return gamedata.TechnologyName(c.UnlockTech)
+	if c.UnlockTech != gamedata.TECH_NONE {
+		return techCatalog(lang).Translate(gamedata.TechnologyName(c.UnlockTech))
 	}
-	if c.UnlockTech == gamedata.TECH_NONE {
-		return uiText(lang, "component.label.unknown")
-	}
-	return c.Name
+	return uiText(lang, "component.label.unknown")
 }

@@ -495,7 +495,10 @@
   英文名稱仍由原版執行檔科技名稱表推導，避免複製第二份元件表；繁中科技元件名稱仍沿用
   typed 元件資料，屬後續資料表外部化邊界。本輪 `cmd/moo2`＋`internal/shell` 測試通過，
   繁中與英文正版資料畫廊各 37/37；實圖抽查 `25_shipdesign.png` 的 `無護盾`／`無` 與
-  `No Shield`／`None` 均正確且未越框。證據與規格見
+  `No Shield`／`None` 均正確且未越框。後續閉合科技元件的繁中顯示邊界：有 `UnlockTech` 的
+  元件現一律以原版英文科技鍵查外部 `tech.json`，不再直接輸出 `Component.Name`；例如規則鍵
+  「雷射」在畫面使用正式科技譯名「雷射砲」。新增測試逐項確認四張元件表都有外部繁中譯文，
+  並禁止顯示函式回傳內部規則鍵；雙語畫廊重跑仍各 37/37，實圖未越框。證據與規格見
   [`docs/re/component-display-label-catalog-audit-20260827.md`](docs/re/component-display-label-catalog-audit-20260827.md) 與
   [`docs/spec/component-display-label-catalog.md`](docs/spec/component-display-label-catalog.md)。
   本批證據與規格見

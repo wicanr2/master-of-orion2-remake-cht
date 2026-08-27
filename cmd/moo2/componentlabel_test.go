@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
 )
@@ -50,23 +51,50 @@ func TestComponentNoTechLabelsComeFromExternalCatalog(t *testing.T) {
 	}
 }
 
+func TestComponentTechLabelsComeFromExternalTechCatalog(t *testing.T) {
+	sets := [][]shell.Component{shell.WeaponOptions, shell.ArmorOptions, shell.ShieldOptions, shell.SpecialOptions}
+	for _, opts := range sets {
+		for _, c := range opts {
+			if c.UnlockTech == gamedata.TECH_NONE {
+				continue
+			}
+			en := gamedata.TechnologyName(c.UnlockTech)
+			if !techCatalog(i18n.Traditional).Has(en) {
+				t.Errorf("%q 的原版科技鍵 %q 在 tech.json 缺少繁中譯文", c.Name, en)
+			}
+			for _, lang := range []i18n.Lang{i18n.Traditional, i18n.English} {
+				want := techCatalog(lang).Translate(en)
+				if got := componentLabel(lang, c); got != want {
+					t.Errorf("%q 語言 %v=%q，want 外部科技目錄 %q", c.Name, lang, got, want)
+				}
+			}
+		}
+	}
+}
+
 func TestComponentLabelSourceDoesNotEmbedNoTechDisplayText(t *testing.T) {
 	src, err := os.ReadFile("componentlabel.go")
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, forbidden := range []string{"No Armor", "No Shield", "Unarmed", "Battle Computer", "Regeneration"} {
+	for _, forbidden := range []string{"No Armor", "No Shield", "Unarmed", "Battle Computer", "Regeneration", "return c.Name"} {
 		if strings.Contains(string(src), forbidden) {
 			t.Errorf("componentlabel.go 仍內嵌玩家文案 %q", forbidden)
 		}
 	}
 }
 
-// TestComponentLabelChineseUnchanged 確認外部繁中目錄仍呈現既有名稱；規則鍵本身不會被修改。
-func TestComponentLabelChineseUnchanged(t *testing.T) {
-	for _, c := range shell.SpecialOptions {
-		if got := componentLabel(i18n.Traditional, c); got != c.Name {
-			t.Errorf("中文模式應原樣回傳:%q → %q", c.Name, got)
+// TestComponentNoTechChineseLabelsRemainCompatible 確認外部繁中目錄仍呈現既有無科技名稱；
+// 規則鍵本身不會因顯示層外部化而修改。
+func TestComponentNoTechChineseLabelsRemainCompatible(t *testing.T) {
+	for _, opts := range [][]shell.Component{shell.WeaponOptions, shell.ArmorOptions, shell.ShieldOptions, shell.SpecialOptions} {
+		for _, c := range opts {
+			if c.UnlockTech != gamedata.TECH_NONE {
+				continue
+			}
+			if got := componentLabel(i18n.Traditional, c); got != c.Name {
+				t.Errorf("中文模式應原樣回傳:%q → %q", c.Name, got)
+			}
 		}
 	}
 }
