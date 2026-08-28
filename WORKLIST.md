@@ -1128,7 +1128,13 @@
   人口最高殖民地（同人口取較低 colony index），新擁有者沒有指定行星時接手該行星；完工後
   清除士氣懲罰。狀態已接玩家、AI、熱座與 JSON 往返，玩家可見名稱由
   `assets/i18n/tech.json` 提供，不內嵌於 Go。
-  帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。艦隊／外交及其餘 AI
+  帝國配額、支援／戰鬥艦產品仍待閉合，故建造整體仍是部分完成。2026-08-28 已先閉合
+  產品資料形狀的重要勘誤：真正成本函式是 `sub_E0DD6`，`sub_B206F` 是移除同類產品；
+  raw -15 為 50 PP 貨運艦隊且完工令 `player+0x36 +=5`，raw -7 為 100 PP 但不是可憑成本
+  猜成前哨船的產品。`sub_CFCB6 → sub_CF3BD／sub_CF40D → sub_D10EE` 的三組艦種摘要、
+  配額與 12／15 產能門檻已定位；`-12/-17/-11` 的支援艦名稱／callback、raw -7 身分及戰鬥艦
+  role 仍待垂直閉合。見 [`docs/re/ai-ship-products-audit-20260828.md`](docs/re/ai-ship-products-audit-20260828.md)
+  與 [`docs/spec/ai-ship-products.md`](docs/spec/ai-ship-products.md)。艦隊／外交及其餘 AI
   state machine 亦待閉合。2026-08-28 又以 IDA 證實 AI 職務分配是封鎖／未封鎖
   分流、逐 colonist 排序、邊際輸出與全帝國迭代；這直接反證現有逐殖民地
   `Decider.ColonyJobs` 足以承載 original mode。四個 comparator、job raw ID、
