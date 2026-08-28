@@ -109,6 +109,12 @@ BC、維護、納貢、領袖及事件分流；其已閉合欄位沿用既有專
 [`colony-government-output-audit-20260825.md`](colony-government-output-audit-20260825.md)
 閉合；optional breakdown 文案不影響玩法總產出。
 
+`Colony_Industry_To_Tax_ @ 0xE08F6`、`Colony_BC_Production_ @ 0xE03F1` 與
+`Update_Player_Stats_ @ 0xE2710` 的收入主鏈亦已閉合：稅收先從扣維護後工業逐殖民地取整並
+1:1 回寫；BC producer 只計有機人口，將士氣、特產、科技／建築／政體／領袖與 Trade Goods
+分項相加；帝國 consumer 再聚合食物盈餘、領袖、條約／納貢、維護與 net income。見
+[`colony-bc-production-tax-audit-20260828.md`](colony-bc-production-tax-audit-20260828.md)。
+
 ## 其他 caller 與停止線
 
 `E2B31` 另有兩個 callsite `0xE587C`、`0xE5ADD`，都位於
@@ -123,9 +129,8 @@ runtime helper 被排除。第二遍 `E2B31` 已證實消費它們改變後的 c
 
 - **已證實**：一次性套用鏈、兩遍 derived rebuild、六階段順序、active record gates、三個 raw
   cache producer、殖民地專業公式、開局兩個額外 caller。
-- **未一併閉合**：pre-import 鏈中的工業轉稅與 BC 產出仍有
-  未閉合子鏈；`Update_Player_Stats_` 的每一條公式、封鎖選擇、
-  殖民者遷移規則，以及 `+0x5EA` bit 累加的高層 consumer 語意。它們應按玩家影響另開窄切片。
+- **未一併閉合**：`Update_Player_Stats_` 的其餘非收入 cache、封鎖選擇、殖民者遷移規則，
+  以及 `+0x5EA` bit 累加的高層 consumer 語意。它們應按玩家影響另開窄切片。
 - 士氣已由 [`colony-morale-audit-20260828.md`](colony-morale-audit-20260828.md) 另案閉合，不再
   列為本鏈未知 producer。
 - **remake 判定**：目前 `RunEmpireTurn`／shell helpers 可玩，但尚未依此精確 phase ordering 做

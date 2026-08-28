@@ -49,6 +49,12 @@ ROOTS = {
     "raw_Colony_Research_Per_Scientist": 0xDFDC6,
     "raw_Colony_Research_Colonist_Base": 0xDFE77,
     "raw_Colony_Research_Production": 0xDFF74,
+    "raw_Colony_Industry_Taxed": 0xE08F6,
+    "raw_Colony_BC_Production": 0xE03F1,
+    "raw_Product_Name": 0xCF398,
+    "raw_Product_Name_Fallback": 0xB2FFA,
+    "raw_Option_String": 0xAFC6D,
+    "raw_Colony_Product_Cost": 0xE0DD6,
     "raw_Colony_Replicators": 0xDF66F,
     "raw_Colony_BC_Maintenance": 0xE094F,
     "raw_Colony_Industry_Maintenance": 0xDF546,
@@ -206,6 +212,14 @@ def main():
                 "ea": "0xDD4E1",
                 "bytes": (ida_bytes.get_bytes(0xDD4E1, 5) or b"").hex(),
                 "values": [ida_bytes.get_byte(0xDD4E1 + index) for index in range(5)],
+            },
+            "raw_ai_bc_per_population_quarter_bonus_table": {
+                "ea": "0xDD4E6",
+                "bytes": (ida_bytes.get_bytes(0xDD4E6, 5) or b"").hex(),
+                "signed_values": [ida_bytes.get_byte(0xDD4E6 + index) - 256
+                                  if ida_bytes.get_byte(0xDD4E6 + index) >= 128
+                                  else ida_bytes.get_byte(0xDD4E6 + index)
+                                  for index in range(5)],
             },
         },
         "roots": {name: function(ea, symbols) for name, ea in ROOTS.items()},

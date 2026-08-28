@@ -118,11 +118,9 @@ func RunEmpireTurnWithResearchRoller(ps PlayerState, colonies []ColonyState, rol
 		if cs.TradeGoods {
 			tradeRev = gamedata.TradeGoodsIncomeHalf(co.NetIndustryHalf, ps.FantasticTrader)
 		}
-		// IncomeBonusPercent(太空港 p.79 +50、行星證券交易所 p.93 +100,可疊加):手冊原文是
-		// 「該殖民地所有來源 BC 收入 +N%」——這裡在「逐殖民地」這層迴圈內,對這個殖民地當回合
-		// 的稅收+餘糧收入+貿易品收入小計套用加成,再併入帝國總額,精確對應手冊「該殖民地」的
-		// 範圍(不是先加總帝國全部收入再打折的近似做法)。不含維護費(手冊只講收入加成,沒講
-		// 維護費打折)。
+		// 已知 remake 差異：原版 E03F1 的 Spaceport、Stock Exchange 與 Financial Leader 都只以
+		// B=有機人口基礎BC+Gold/Gems 算獨立加項；現行 IncomeBonusPercent 仍放大稅收、餘糧與
+		// 貿易品 subtotal。依 RE-first gate 暫不改行為，待 READY spec 一次修正資料模型與取整。
 		// 人頭基礎收入(MOO2 收入模型核心,見 gamedata.BaseIncomePerPopHalfBC):每人口每回合基礎
 		// 1 BC(2 半BC),與工業/稅完全分離。種族 Money 特質(cs.IncomePerPop 半BC delta,諾蘭姆
 		// +2、自訂 Money picks ±)在此基礎上加減,floor 在 0/人(手冊 p.20「cannot reduce below zero
@@ -148,22 +146,15 @@ func RunEmpireTurnWithResearchRoller(ps PlayerState, colonies []ColonyState, rol
 		out.FoodSurplusRevenue += foodRev
 		out.TradeGoodsRevenue += tradeRev
 	}
-	// 政府「money」加成(GAME_MANUAL.pdf 引用 MANUAL_150.html govt_bonus democracy_money/
-	// federation_money,gamedata.IncomeApplyGovernmentMoneyBonus)。與上面 cs.IncomeBonusPercent
-	// (太空港/證券交易所)不同,政府是帝國層級屬性、不是逐殖民地建築,故在迴圈外對「本回合已
-	// 加總的帝國 money 收入」(稅收+餘糧收入+貿易品收入,此時已含各殖民地 IncomeBonusPercent)
-	// 套一次,而非逐殖民地套用。加成後差額計入 TaxRevenue(與上方同款作法:不拆分到三個子項,
-	// 避免無意義的捨入分配)。ps.GovtBonusMoneyPercent=0(手冊未列出加成的政府,含 demo 用的
-	// Dictatorship)時 no-op。
+	// 已知 remake 差異：原版政府 BC 加項在 E03F1 逐殖民地以 B 計算；此處仍對帝國總 subtotal
+	// 套百分比。依 RE-first gate 只保留可玩現況，不再稱為原版精確順序。
 	if ps.GovtBonusMoneyPercent != 0 {
 		subtotal := out.TaxRevenue + out.FoodSurplusRevenue + out.TradeGoodsRevenue
 		bonused := gamedata.IncomeApplyGovernmentMoneyBonus(subtotal, ps.GovtBonusMoneyPercent)
 		out.TaxRevenue += bonused - subtotal
 	}
-	// 銀河貨幣交易所(Achievement 科技,手冊:「all colonies (from all sources) by 50%」)。
-	// 與政府加成同一層——帝國層級、迴圈外,因為手冊講的是整體收入的乘數而不是逐殖民地的建築加成。
-	// 放在政府加成**之後**:兩者都是對「已含各殖民地建築加成的帝國收入」再乘,順序不影響總額
-	// (乘法可交換),但先政府後科技與手冊敘述的層次一致(政府是體制、科技是全域基礎建設)。
+	// 已知 remake 差異：原版銀河貨幣交易所在 E03F1 對每座殖民地只加 floor(B/2)，此處仍對
+	// 帝國 subtotal 套乘數；待 RE gate 關閉後由 READY spec 修正。
 	if ps.HasGalacticCurrencyExchange {
 		subtotal := out.TaxRevenue + out.FoodSurplusRevenue + out.TradeGoodsRevenue
 		out.TaxRevenue += gamedata.IncomeApplyGalacticCurrencyExchange(subtotal) - subtotal

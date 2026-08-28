@@ -160,7 +160,7 @@ IDA 靜態證實，但重製直接 importer 仍未實作。
 | 科學家 Researcher | `FlatResearch`(固定點數,**累加型**) | `applyLeaderColonyBonuses` |
 | 間諜大師 Spymaster | 進攻方間諜加成 | `advanceEspionage` |
 | 心靈感應者 Telepath | 防守方 Agent 加成 | `advanceEspionage` |
-| 貿易家 Trader | `IncomeBonusPercent` | 同上 |
+| 貿易家 Trader | 現行 `IncomeBonusPercent`；原版 BC consumer 的精確技能映射尚須與 Financial 分開 | 待 READY spec，不宣稱精確 |
 | 工程師 Engineer | 被指派艦隊的船戰後完全修復(**打贏才有**) | `repair.go` `assignedEngineerTier` |
 | 戰機飛行員 Fighter Pilot | 參戰戰機命中／防禦資料 | `StartCombat`／`tacticalfighter.go` |
 | 銀河學者 Galactic Lore | 星圖立即揭露；太空怪獸／安塔蘭戰鬥加成 | `StarChartVisible`／`monster.go`／`antaran_victory.go` |
@@ -169,7 +169,7 @@ IDA 靜態證實，但重製直接 importer 仍未實作。
 | 軍械官 Ordnance | 艦艇武器傷害上限加成 | `StartCombat`／`mkPlayerCombatantsIndexed` |
 | 保安官 Security | 登艦防守陸戰隊戰力 | `BoardingDefense`／`CombatShip.SecurityBonus` |
 | 武器官 Weaponry | 被指派艦艇光束命中 | `StartCombat`／`mkPlayerCombatantsIndexed` |
-| 財務官 Financial Leader | `IncomeBonusPercent` | 同上 |
+| 財務官 Financial Leader | 原版以 `B` 按有效等級加 10%／15% 並逐項取整；現行 `IncomeBonusPercent` 範圍過大 | 待 READY spec |
 | 心靈導師 Spiritual Leader | `MoralePercent` | 同上 |
 | 醫官 Medicine | `GrowthBonusSum` | 同上 |
 | 農業官 Farming Leader | `FoodBonusPercent` | 同上 |

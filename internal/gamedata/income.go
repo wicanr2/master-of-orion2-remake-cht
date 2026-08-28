@@ -1,7 +1,8 @@
 package gamedata
 
-// 殖民地/帝國收入(Treasury/Income)唯讀公式,移植自 GAME_MANUAL.pdf(moo2_patch1.5 隨附的完整
-// 遊戲手冊)與 MANUAL_150.html(1.50 patch 說明書,latin1 HTML,已去標籤讀取)。
+// 殖民地／帝國收入的 typed 常數與目前 remake helper。手冊來源已由原版 `E08F6`、`E03F1`、
+// `E2710` 指令級證據補正；完整原版公式見 docs/re/colony-bc-production-tax-audit-20260828.md。
+// 注意：下列部分 helper 仍保存策略切換前的 remake 行為，不能單獨視為原版 parity。
 //
 // 手冊「Taxes」章節(GAME_MANUAL.pdf p.168)只有敘述性文字與一個 50% 稅率的例子,精確的稅率
 // 範圍/級距/轉換比例其實寫在更前面的「Management Buttons/指標說明」章節(GAME_MANUAL.pdf
@@ -171,8 +172,8 @@ func IncomeTaxRemainingIndustry(totalIndustry, taxRatePercent int) int {
 }
 
 // TradeGoodsIncome 貿易財(Trade Goods)產出換算成的 BC。一般種族每 2 點分配到貿易財的產能
-// 換 1 BC;Fantastic Trader 種族每 1 點產能換 1 BC(GAME_MANUAL.pdf p.70)。換算採整數無條件
-// 捨去(與手冊其他半 BC 換算的慣例一致,見 IncomeFoodSurplusRevenue 註解)。
+// 換 1 BC;Fantastic Trader 種族每 1 點產能換 1 BC(GAME_MANUAL.pdf p.70)。原版 `E03F1`
+// 對正整數工業的一般換算使用 ceil(n/2)；本 helper 目前仍向下取整，列為 READY spec 待修差異。
 func TradeGoodsIncome(industryAllocated int, fantasticTrader bool) int {
 	if fantasticTrader {
 		return industryAllocated * TradeGoodsFantasticTraderConversionNumerator / TradeGoodsFantasticTraderConversionDenominator
@@ -181,7 +182,8 @@ func TradeGoodsIncome(industryAllocated int, fantasticTrader bool) int {
 }
 
 // TradeGoodsIncomeHalf 是半單位工業帳本的貿易品換算。一般種族 2:1、Fantastic Trader 1:1，
-// 仍以整數 BC 無條件捨去。
+// 目前仍以整數 BC 向下取整；原版先在完整工業欄位算 `(n+1)/2`，半單位資料模型如何轉接須由
+// READY spec 決定，不能把本 helper 冒稱精確原版公式。
 func TradeGoodsIncomeHalf(industryAllocatedHalf int, fantasticTrader bool) int {
 	if fantasticTrader {
 		return industryAllocatedHalf * TradeGoodsFantasticTraderConversionNumerator / (2 * TradeGoodsFantasticTraderConversionDenominator)
@@ -227,17 +229,16 @@ func IncomeFreighterMaintenanceCost(activeFreighters int) int {
 	return activeFreighters * IncomeFreighterMaintenanceNumerator / IncomeFreighterMaintenanceDenominator
 }
 
-// IncomeMoraleAdjustedProduction 依士氣圖示淨值(笑臉為正、哭臉為負),調整殖民地總產出
-// (食物/工業/科研/收入皆適用同一比例,GAME_MANUAL.pdf p.170)。每一格圖示 = ±10%。
-// 例如 netMoraleIcons = 2 時,產出變成 baseProduction * 120 / 100。
+// IncomeMoraleAdjustedProduction 是目前 remake 的泛用百分比 helper。原版 BC producer 不把士氣
+// 套到殖民地全部收入，而只以 raw 5% 刻度調整有機人口基礎 BC；BC 路徑不可再直接套本函式。
 func IncomeMoraleAdjustedProduction(baseProduction, netMoraleIcons int) int {
 	percent := 100 + netMoraleIcons*IncomeMoraleProductionPercentPerIcon
 	return baseProduction * percent / 100
 }
 
-// IncomeApplyGovernmentMoneyBonus 套用政府形式對 BC 收入的加成百分比(如
-// IncomeGovtBonusDemocracyMoneyPercent / IncomeGovtBonusFederationMoneyPercent),回傳加成後的
-// BC(無條件捨去)。bonusPercent 為 0 時原值傳回(手冊未列出加成的政府,呼叫端應傳入 0)。
+// IncomeApplyGovernmentMoneyBonus 是目前 remake 的泛用乘數 helper。原版 `E03F1` 對 Democracy／
+// Federation 逐殖民地以 `B=有機人口基礎BC+Gold/Gems` 分別加 floor(B/2)／floor(3B/4)，
+// 不乘帝國總收入；原版忠實路徑不可直接使用本函式。
 func IncomeApplyGovernmentMoneyBonus(baseBC, bonusPercent int) int {
 	return baseBC * (100 + bonusPercent) / 100
 }
@@ -278,10 +279,9 @@ const IncomeGalacticCurrencyExchangePercent = 50
 // GalacticCurrencyExchangeTech 是它在科技樹上的位置(TOPIC_GALACTIC_ECONOMICS 單選)。
 var GalacticCurrencyExchangeTech = TechRef{TOPIC_GALACTIC_ECONOMICS, TECH_GALACTIC_CURRENCY_EXCHANGE}
 
-// IncomeApplyGalacticCurrencyExchange 對帝國層級的 money 收入套 +50%。
-//
-// 套用位置與政府 money 加成同一層(帝國、迴圈外)——手冊的字是「all colonies (from all
-// sources)」,是對整體收入的乘數,不是逐殖民地的建築加成。
+// IncomeApplyGalacticCurrencyExchange 是目前 remake 的帝國 subtotal helper。原版 `E03F1` 實際在
+// 每座殖民地只以 `B=有機人口基礎BC+Gold/Gems` 加 floor(B/2)，不乘稅收、貿易品或食物盈餘；
+// 本函式須等 READY spec 後退出原版忠實結算路徑。
 func IncomeApplyGalacticCurrencyExchange(subtotal int) int {
 	return subtotal + subtotal*IncomeGalacticCurrencyExchangePercent/100
 }

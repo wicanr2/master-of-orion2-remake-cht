@@ -80,10 +80,24 @@
   關閉；食物環境／基礎／總產出、每工人工業、工業維護、食物複製機與 BC 維護 producer 已
   另行閉合；研究基礎／總產出亦已重審並補回原版同時存在的逐科學家與固定建築加成。士氣
   producer、raw 5% 刻度、政府／軍營／失都／建築／科技／多種族／領袖與三職務消費端亦已
-  閉合；remake 的多種族狀態模型差異留待 READY spec。工業轉稅與 BC 產出的未解子鏈、帝國統計未解欄位、
-  封鎖與人口遷移規則仍分列追查。
+  閉合；remake 的多種族狀態模型差異留待 READY spec。工業轉稅、殖民地 BC 總式及帝國 gross／
+  維護／net／國庫 consumer 也已閉合；`Update_Player_Stats_` 的其餘非收入 cache、封鎖與人口遷移
+  規則仍分列追查。
   證據見 [`docs/re/colony-turn-chain-audit-20260828.md`](docs/re/colony-turn-chain-audit-20260828.md)。
   士氣證據見 [`docs/re/colony-morale-audit-20260828.md`](docs/re/colony-morale-audit-20260828.md)。
+  BC／工業轉稅證據見
+  [`docs/re/colony-bc-production-tax-audit-20260828.md`](docs/re/colony-bc-production-tax-audit-20260828.md)。
+
+- [x] **殖民地工業轉稅／BC 產出／帝國收入 consumer 閉合（RE-only，2026-08-28）**：
+  `E08F6` 證實逐殖民地以 `max(E9-F0,0)` 按 owner `+0x31` 百分比向零截斷、1:1 抽稅並先扣工業；
+  `E03F1` 證實只計 race slot `<8` 的有機人口，Money trait 與五級 AI quarter 表先聚合再取整，
+  士氣只修正人口基礎 BC。Gold／Gems 與 Galactic Currency Exchange、Stock Exchange、Spaceport、
+  Democracy／Federation、Financial Leader 均以 `B=人口基礎+特產` 各自相加，不乘整筆收入；一般
+  Trade Goods 對正奇數工業採 `ceil(n/2)`，Fantastic Trader 為 1:1。`E2710` 再把 `colony+0xED`、
+  食物盈餘、領袖、條約／納貢聚合至 `player+0xAE`，以 `E2000` 寫 `+0xB4` 並得 `+0xB2` net，
+  國庫 consumer 位於 `E4F8E`。這直接反證 remake 目前的全人口、分段向下取整及多個全 subtotal
+  百分比模型；依 RE-first gate 只登記，不改 Go。證據見
+  [`docs/re/colony-bc-production-tax-audit-20260828.md`](docs/re/colony-bc-production-tax-audit-20260828.md)。
 
 - [x] **殖民地每工人工業公式閉合（RE-only，2026-08-28）**：
   `Colony_Industry_Per_Worker_ @ 0xDEC95` 的五級礦產表已確認為 `[1,2,3,5,8]`；四座建築
@@ -2367,7 +2381,7 @@ internal/shell/orbital_bombardment.go
 ## Phase 5 — Gameplay 引擎重建
 - [x] 回合結算主迴圈(engine.RunEmpireTurn:殖民地經濟聚合+稅收+國庫+研究推進)
 - [x] 殖民地經濟:食物/工業/研究/稅收/國庫已實作(engine);人口成長回寫 Population 已補(shell.advancePopulation 累加 PopGrowth 達門檻 +1 人口、新單位依缺糧保護指派、受 PopMax 上限)。本歷史項目的舊 300 點調校門檻已於 2026-08-24 由官方 1.50 尺度 1,000 點取代；目前限制見頂端活表。測試 TestPopulationGrowthWriteback/CappedAtMax
-- [x] 建造佇列 + 建築長期效果:advanceBuilds 完工後套用永久產出加成,每殖民地每種只套一次(ColonyBuildings 去重);殖民地總覽顯示已建建築。**(2026-07-11 忠實化訂正)**先前把手冊「殖民地整體固定加成」揉進 per-worker 欄位湊數(自動工廠工業/工人+2、研究實驗室研究/科學家+5 等,小殖民地過度受益、大殖民地不足),現分開建模:per-worker 訂正回手冊值 + 新增 `FlatFood`/`FlatIndustry`/`FlatResearch`(固定加成)、`IncomeBonusPercent`(太空港+50%/證券交易所+100%,逐殖民地精確套用於 `RunEmpireTurn`)、`PopMax` 直接加成(生態圈+2)、`FlatGrowth`(複製中心)。機器人工廠(2026-07-11 已接線,見下)。共 18 棟已忠實建模數值,詳見 `docs/tech/colony-buildings.md` §6。測試 TestBuildingLongTermEffect/TestResearchLabEffect/TestSpaceportIncomeBonusPercent/TestBiospheresRaisesPopMax 等(engine+shell)
+- [x] 建造佇列 + 建築長期效果:advanceBuilds 完工後套用永久產出加成,每殖民地每種只套一次(ColonyBuildings 去重);殖民地總覽顯示已建建築。per-worker、固定產出、`PopMax` 與 `FlatGrowth` 已分欄；`IncomeBonusPercent` 仍是可玩 remake 模型，已被 2026-08-28 的 `E03F1` 證據反證為範圍過大，須等 RE gate 關閉後由 READY spec 改成以 `B=有機人口基礎BC+Gold/Gems` 計算的逐項加成。現況與證據見 `docs/tech/colony-buildings.md` §6 及 `docs/re/colony-bc-production-tax-audit-20260828.md`。
 - [x] 機器人工廠礦產豐度分級接線(p.82)**(2026-07-11)**:比照重力懲罰的接線手法(`4c2a26a`),`engine.ColonyState` 新增 `MineralRichness gamedata.PlanetMinerals` 欄位,獨立保留建立殖民地當下的原始礦產豐度分類(先前只烘進 `IndustryPerWorker` 靜態費率,事後拿不回原始分類)。零值陷阱處理:`gamedata.ULTRA_POOR` ordinal=0,故全部既有 `ColonyState{...}` 建構點(engine/shell 測試、`cmd/moo2sim`)皆已明確補上本欄位。`applyBuildingEffect` 的機器人工廠 case 依 `gamedata.ProdRoboticFactoryBonus(int(cs.MineralRichness))`(`internal/gamedata/production.go` 既有查表函式,索引與 `mineralProductionTable` 一致)查出手冊固定值(Ultra Poor+5/Poor+8/Abundant+10/Rich+15/Ultra Rich+20)加進 `FlatIndustry`,不動 `IndustryPerWorker`。存檔行星由 `ColonyStateFromSave` 讀 `save.Planet.Minerals`(與 `gamedata.PlanetMinerals` 同源 openorion2 enum ordinal,可直接轉型,同重力)。母星固定 Abundant。測試:`TestRoboticFactoryEffect`(母星 Abundant+10)、`TestRoboticFactoryEffectByMineralRichness`(五級分級逐一驗證,含 UltraPoor+5/Rich+15)(shell)。
 - [x] 重力懲罰接進生產管線(**2026-07-11**):`ColonyState` 新增 `PlanetGravity` 欄位,`colonyFood`/`RunColonyTurn` 對食物/工業/研究三種 per-worker 產出套用 `gamedata.GravityPenaltyPercent`(Low-G -25%、Heavy-G -50%;士氣+重力先加總成單一百分點再套一次 `GravityAdjustedProduction`,避免兩次連續整數除法的複合誤差,理由見 `internal/engine/colony.go` 註解)。行星重力產生器 `NormalizeGravity` 旗標由 no-op 變成真的會歸零懲罰。`ColonyStateFromSave`(存檔↔engine 橋接)同步接上 `save.Planet.Gravity`(與 `gamedata.PlanetGravity` 同源 openorion2 enum ordinal,直接轉型)。種族 Low-G/High-G 重力天賦未建模,固定以一般種族為基準;固定加成(Flat*)不吃重力。**已知現實限制**:本專案唯一的殖民地建構點(`NewDemoSession`/`playerHomeworldColony`)固定 Normal-G,尚無「開拓新殖民地」流程會產生 Low-G/Heavy-G 殖民地,故此接線在 demo session 暫不可見,主要對存檔載入模式(`RunGameTurn`)生效。測試 TestRunColonyTurnGravityHeavyPenalty/TestRunColonyTurnGravityNormalizeGravityCancelsPenalty/TestRunColonyTurnGravityNormalGNoPenalty/TestRunColonyTurnGravityAndMoraleCombinedPercent/TestColonyStateFromSaveGravityMapping(engine)
 - [x] 士氣(Morale)接進 MoralePercent(**2026-07-11**):`GameSession` 新增 `Government`(`gamedata.MoraleGovernmentType`)欄位,`ApplyGovernment` 記錄政府型態(`Governments` 索引→`moraleGovByIndex`,四選一映射到對應基礎政府,進階政府 Imperium/Confederation/Federation/Galactic Unification 不區分)。新函式 `colonyMoralePercent`(`internal/shell/session.go`)= `gamedata.MoraleGovernmentBase(gov, hasBarracks)`(手冊 -20%/無 Barracks)+ 全息模擬艙(`MoraleHoloSimulatorBonus`+20%)+ 歡樂穹頂(`MoralePleasureDomeBonus`+30%),依 `ColonyBuildings` 讀取已建建築;政府變更(`ApplyGovernment`)與建築完工(`advanceBuilds`→`recalcColonyMorale`)皆會重算。**母星起始 `MoralePercent` 從無據硬編 +10 訂正為忠實值 0**(獨裁 + 已建 Marine Barracks 抵消 -20% 懲罰,無士氣建築加成;見 `playerHomeworldColony` 註解,`TestGameSessionEndTurn` 已同步訂正預期值 33→30)。多種族懲罰、首都失守懲罰與重建解除均已由後續 typed 狀態鏈接入；Virtual Reality Network 仍因手冊定性為「成就」而不在建築表。詳見 `docs/re/capitol-state-audit-20260826.md` 與 `docs/tech/colony-buildings.md`。

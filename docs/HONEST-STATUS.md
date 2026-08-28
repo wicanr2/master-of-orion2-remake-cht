@@ -1,6 +1,6 @@
 # 銀河霸主 II remake 誠實現況
 
-> 更新：2026-08-27。本文只描述目前狀態；剩餘工作的唯一活表是
+> 更新：2026-08-28。本文只描述目前狀態；剩餘工作的唯一活表是
 > [`WORKLIST.md`](../WORKLIST.md)，原版證據邊界以
 > [`docs/re/parity-matrix.tsv`](re/parity-matrix.tsv) 為準。
 
@@ -11,6 +11,18 @@
 11 未知／模型不同計算；發行比例為三個獨立閘門通過一個。這些數字不可合成「總還原度」，
 詳細公式只在 README 維護，狀態改變時四份來源必須同輪更新。本週文案外部化仍屬既有進行中
 母項，矩陣分級與發行閘門也未跨級，因此分數維持不變。
+
+## 目前執行策略
+
+先補齊 `docs/re/parity-matrix.tsv` 所列玩家可見玩法的 RE 知識庫，再討論規格與
+Go／Ebitengine 實作。RE 閉合必須保留原始位址、輸入狀態、規則或資料表、玩家可見
+消費端、證據等級與未知邊界；在此閘門關閉前，新發現只登記證據與 remake 差異，
+不直接修改玩法程式或把推論寫成測試真值。
+
+編譯器生成輔助函式、C runtime／標準函式庫與 Windows API／平台內部行為不屬於
+RE 完成分母或 remake 範圍，例如 stack probe、stack overflow check、SEH、`fopen`、
+`fclose`、`fork` 及一般檔案／程序包裝函式。分析時只辨識並跨過這些 pattern；若其
+呼叫邊界會改變玩家可見結果，才保存最小輸入、輸出、錯誤與時序契約。
 
 ## 目前可證實的成果
 
@@ -35,8 +47,9 @@
   本版已證實。逐玩家殲滅星曆 `+0x1F2[target]` 的兩條戰鬥 producer 與唯一 writer 亦已閉合，
   但 remake 尚未保存 8×8 歸屬矩陣。Charismatic／Repulsive
   同化則已閉合為 240 點 raw 進度及精確倍增／減半分支。
-- 原版 `Next_Turn_Calc_ @ 0x136B3` 的完整調用鏈尚未全數閉合；綠色單元測試只能
-  證明 remake 內部自洽，不能代替原版 oracle。
+- 原版 `Next_Turn_Calc_ @ 0x136B3..0x13822` 的 52 個直接呼叫、兩次殖民地 derived-state
+  重算、主要條件閘門與回合外層時序已閉合；各子系統內部資料流仍須依 parity matrix
+  分列追查。綠色單元測試只能證明 remake 內部自洽，不能代替原版 oracle。
 - 官方五級 AI Growth／Food／Prod／Res／BC、Command Deficit 與 Spy 難度表已於 2026-08-26
   接入 AI 回合，且不作用於玩家；quarter 捨入、士氣／重力先後及 Spy 攻守共同注入尚無完整
   IDA 指令級證據，維持強推論。

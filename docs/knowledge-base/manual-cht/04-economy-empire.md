@@ -107,46 +107,52 @@ MOO2 與前作 MOO1 最大的經濟差異:**金錢(BC, Bank Credits)與工業生
 
 ### 2.6 建築與政府倍率
 
-**建築倍率(逐殖民地,可疊加)** — 對該殖民地「所有來源 BC 收入」按百分比放大:
+**執行檔補正：建築是逐項加成，不是「所有來源」乘數。** `Colony_BC_Production_ @ 0xE03F1`
+證實太空港與行星證券交易所都以 `B=有機人口基礎 BC+Gold/Gems` 計算獨立加項：
 
 | 建築 | 加成 | 維護 | 手冊頁 |
 |---|---|---|---|
-| 太空港(Spaceport) | +50% | 1 BC | p.79 |
-| 行星證券交易所(Planetary Stock Exchange) | +100% | 2 BC | p.93 |
+| 太空港(Spaceport) | `floor(B/2)` | 1 BC | p.79＋IDA `0xE03F1` |
+| 行星證券交易所(Planetary Stock Exchange) | `B` | 2 BC | p.93＋IDA `0xE03F1` |
 
-兩者同時存在時相加(+150%)。remake:`ColonyState.IncomeBonusPercent`(領袖 Trader 技能也進同一欄位,可再疊加)。
+兩者同時存在時各自相加，不互相複利，也不放大稅收、餘糧或貿易品。現行 remake 的
+`ColonyState.IncomeBonusPercent` 範圍過大，已列為 RE gate 後的 READY spec 修正項。
 
-**政府倍率(帝國層級,對加總後的 money 收入套一次)** — 來源 `MANUAL_150.html`(換算式 `value × 5 = 加成%`):
+**政府加項（逐殖民地）** — `MANUAL_150.html` 提供百分比，IDA 證實實際取整位置在每座殖民地：
 
 | 政府 | money 加成 |
 |---|---|
-| 民主(Democracy) | +50% |
-| 聯邦(Federation) | +75% |
+| 民主(Democracy) | `floor(B/2)` |
+| 聯邦(Federation) | `floor(3B/4)` |
 
 其餘政府手冊未列 money 加成(= 0)。
 
 ### 2.7 殖民地每回合 BC 組合公式
 
-把上述各項按 remake `engine/empire.go` 的結算順序串起來,一座殖民地當回合對帝國國庫的貢獻:
+依 `E08F6`／`E03F1`／`E2710` 的原始指令，原版收入鏈為：
 
 ```
 ── 逐殖民地層 ──────────────────────────────
-perCapita = 人口 × max(0, 每人基礎收入)          # 基礎1BC ± 種族Money特質
-tax       = 淨工業 × 稅率%                       # 1:1,向下取整
-foodRev   = max(0, 餘糧) × 0.5(Trader ×1)
-tradeRev  = 若設貿易品:淨工業 × 0.5(Trader ×1),否則 0
-special   = 金礦 +5 / 寶石 +10(若該星有)
+organicPop = race slot < 8 的人口數             # 排除 Android／Natives
+basePopBC  = round((4 + 2×MoneyTrait + AI難度quarter) × organicPop / 4)
+moraleBC   = 非統一系時 round_signed(basePopBC × rawMorale / 20)
+special    = Gold +5 / Gems +10
+B          = basePopBC + special
+tax        = floor(max(industry-maintenance,0) × taxRate/100)  # 1:1，並先扣工業
+tradeRev   = 若設貿易品：ceil(抽稅後可用工業/2)；Fantastic Trader 為 1:1
 
-殖民地小計 = (perCapita + tax + foodRev + tradeRev + special)
-           × (1 + 建築加成%/100)               # 太空港+50、證交所+100,可疊加
+殖民地BC = basePopBC + moraleBC + special + tax + tradeRev
+         + CurrencyExchange(B/2) + StockExchange(B) + Spaceport(B/2)
+         + Democracy(B/2)或Federation(3B/4) + FinancialLeader(B×等級倍率)
 
 ── 帝國層 ──────────────────────────────────
-帝國 money = Σ(各殖民地小計) × (1 + 政府money加成%/100)   # 民主+50、聯邦+75
-淨 BC      = 帝國 money − 建築維護費 − 指揮評等超支(§7)
+帝國 gross = Σ(各殖民地BC) + 正食物盈餘換算 + Megawealth + 條約／納貢
+淨 BC      = 帝國 gross − 建築維護費 − 指揮評等超支(§7)
                        − 運輸艦維護費(§7)
 ```
 
-要點:①「淨工業」已是士氣/重力調整後的產出,故收入端不再重複套士氣(避免雙重計算);②建築加成是「逐殖民地」、政府加成是「帝國層一次」,兩者範圍不同;③維護費/超支只從加總後扣,不進建築倍率。
+完整位址、取整與 remake 差異見
+[`colony-bc-production-tax-audit-20260828.md`](../re/colony-bc-production-tax-audit-20260828.md)。
 
 ---
 

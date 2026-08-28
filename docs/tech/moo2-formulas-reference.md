@@ -231,7 +231,10 @@ Galactic Unification: +100%
 
 ## 4. 國庫收入(`income.go`)
 
-**來源**:GAME_MANUAL.pdf p.37(Treasury indicator,稅率範圍/級距/1:1 轉換)、p.168(Taxes 章節,50% 例子與 Trade Goods 2:1 對照)、p.70(Trade Goods 轉換與 Fantastic Trader)、p.25(Fantastic Trader 剩餘糧食換算)、p.169(指揮評等超支費用、運輸艦維護費)、p.170(士氣對產出的影響,與 morale.go 同一手冊段落但套用在收入上)。MANUAL_150.html「Modding with Config → Additional Settings」補充 Democracy/Federation 政府對「money」的加成(換算公式「value*5=百分比」)。
+**來源**：手冊頁面提供顯示比例；精確順序與取整已由 `Colony_Industry_To_Tax_ @ 0xE08F6`、
+`Colony_BC_Production_ @ 0xE03F1`、`Update_Player_Stats_ @ 0xE2710` 補正。完整公式見
+[`colony-bc-production-tax-audit-20260828.md`](../re/colony-bc-production-tax-audit-20260828.md)；
+以下舊 helper 名稱若仍描述 empire subtotal 乘數，只代表目前 remake 行為，不是原版 parity。
 
 ### 稅率
 
@@ -248,7 +251,8 @@ IncomeTaxRemainingIndustry(totalIndustry, taxRate)  = totalIndustry - IncomeTaxR
 
 ### 貿易財(Trade Goods)
 
-一般種族 2 產能換 1 BC,Fantastic Trader 1 產能換 1 BC(p.70:「Every 2 industry converts to 1 BC... unless you are a Fantastic Trader in which case every 1 industry converts to 1 BC」)。`TradeGoodsIncome(industryAllocated int, fantasticTrader bool) int`(`income.go:128`),無條件捨去。
+一般種族 2 產能換 1 BC，Fantastic Trader 1 產能換 1 BC。IDA 證實一般種族對正奇數工業採
+`(industry+1)/2` 向上取整；現行 `TradeGoodsIncome` 的向下取整是已知 remake 差異。
 
 ### 糧食剩餘
 

@@ -156,8 +156,8 @@ Computers → Biology → Physics → Force Fields)排列。「研究成本」�
 | 地底農場 | 固定 +4(與農夫數無關) | `FlatFood` |
 | 氣候控制器 | 每農夫 +2(既有值本來就正確) | `FoodPerFarmer` |
 | 太空大學 | 每受教育人口(農/工/科)各 +1 | `FoodPerFarmer`+`IndustryPerWorker`+`ResearchPerScientist` |
-| 太空港 | 該殖民地 BC 收入 +50%(逐殖民地精確套用,見 `RunEmpireTurn`) | `IncomeBonusPercent` |
-| 行星證券交易所 | 該殖民地 BC 收入 +100%(與太空港疊加) | `IncomeBonusPercent` |
+| 太空港 | 原版逐殖民地加 `floor(B/2)`；現行 remake 誤以 `IncomeBonusPercent` 放大較大 subtotal | `IncomeBonusPercent`（待 READY spec） |
+| 行星證券交易所 | 原版逐殖民地加 `B`；不與太空港互相複利，現行 remake 範圍過大 | `IncomeBonusPercent`（待 READY spec） |
 | 太空學院 | 玩家逐殖民地交付的新艦起始等級 +1；玩家與 AI 停泊艦艇依同星系學院數每回合增加經驗。AI 匯總造艦尚無來源殖民地，故 AI 新艦起始等級仍是明示限制。AI 建造分數見 `docs/re/ai-colony-build-selection-audit-20260826.md` 第十四批。 | `ColonyBuildings["太空學院"]`+`CrewXP` |
 | 生態圈 | 星球人口上限 +2(直接疊加,無獨立 Bonus 影子欄位) | `PopMax` |
 | 複製中心 | 固定 +100 成長點/回合，直到達人口上限；1,000 點新增一人口 | `FlatGrowth` |
