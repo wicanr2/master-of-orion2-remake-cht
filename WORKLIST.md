@@ -71,6 +71,15 @@
   parity matrix 各列獨立判定。證據見
   [`docs/re/next-turn-chain-audit-20260828.md`](docs/re/next-turn-chain-audit-20260828.md)。
 
+- [x] **殖民地一次套用／兩遍重算拓樸閉合（RE-only，2026-08-28）**：IDA 證實真正套用
+  玩家可見殖民地變更的是較早的 `Apply_All_Colony_Changes_ → sub_E3F6E`，每座依事件 gate、
+  人口成長、同化、地面部隊、建造／空殖民地處理一次。後段兩次
+  `Do_Colony_Calculations_ @ 0xE2B31` 都只重建 derived state：pre-import 產出、帝國 imports、
+  人口預測／殖民地專業、帝國彙總及三個 raw cache；第二遍吸收中間的封鎖與殖民者移動，不會
+  重複增加人口或完成建造。開局函式另有兩個 caller，交叉證實它是可重入重算器。外層時序已
+  關閉；14 個 pre-import producer、帝國統計未解欄位、封鎖與人口遷移規則仍分列追查。
+  證據見 [`docs/re/colony-turn-chain-audit-20260828.md`](docs/re/colony-turn-chain-audit-20260828.md)。
+
 - [x] **2026-08-28 三個長跑回歸已分類並修正**：議會第二屆確實準時召開，但原版搖擺票重擲後
   流會，舊測試錯把「再次當選」當排程契約；AI 0 是 Creative，舊研究測試錯把合法的
   `ExplicitChoice` 空集合當成未研究；擴張測試則錯假設新殖民地短期資產必高於只造艦的單母星。
