@@ -105,7 +105,8 @@
   Robotic Factory `[5,8,10,15,20]`、污染容忍 `[2,4,6,8,10]`、Nano、兩棟污染建築、
   Environmentalist、逐人口 Tolerant 比例及 `+0x08/+0xE9` writer。`E36DF` 證實建造端使用
   `max(E9-F0,0)`。同時反證 remake 的奇數污染 excess 向下取整，以及「全部 FlatIndustry
-  都致污」模型；依 RE-first gate 只登記差異。共用 `DE280` 全 modifier 仍待獨立閉合，見
+  都致污」模型；依 RE-first gate 只登記差異。共用 `DE280` 的重力、prisoner、士氣、政體、
+  三種行政領袖、封鎖與五級 AI 難度表亦已獨立閉合，見
   [`docs/re/colony-industry-production-pollution-audit-20260828.md`](docs/re/colony-industry-production-pollution-audit-20260828.md)。
 
 - [x] **2026-08-28 三個長跑回歸已分類並修正**：議會第二屆確實準時召開，但原版搖擺票重擲後

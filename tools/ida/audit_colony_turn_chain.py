@@ -43,6 +43,8 @@ ROOTS = {
     "raw_Colony_Industry_Maintenance": 0xDF546,
     "raw_Colony_Industry_Production": 0xDEE1B,
     "raw_Colony_Job_Production": 0xDE280,
+    "raw_Colony_Pop_Base_Prod_Produced": 0xDE22C,
+    "raw_Gravity_Player_Production_Factor": 0xDDF2C,
     "raw_Apply_Production": 0xE36DF,
 }
 
@@ -151,6 +153,14 @@ def main():
                                   if ida_bytes.get_byte(0xDD4BA + index) >= 128
                                   else ida_bytes.get_byte(0xDD4BA + index)
                                   for index in range(10)],
+            },
+            "raw_ai_job_difficulty_bonus_table": {
+                "ea": "0xDD4D7",
+                "bytes": (ida_bytes.get_bytes(0xDD4D7, 5) or b"").hex(),
+                "signed_values": [ida_bytes.get_byte(0xDD4D7 + index) - 256
+                                  if ida_bytes.get_byte(0xDD4D7 + index) >= 128
+                                  else ida_bytes.get_byte(0xDD4D7 + index)
+                                  for index in range(5)],
             },
             "raw_robotic_factory_bonus_table": {
                 "ea": "0xDD4DC",

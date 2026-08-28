@@ -45,5 +45,7 @@ Cybernet 同時增加「每位科學家」與固定研究，Go 也因此重複�
 
 ## 尚未在本切片宣稱的項目
 
-- `sub_DE280` 的全部人口忠誠、士氣、領袖、事件與種族修正尚未逐欄位完成命名。
+- `sub_DE280` 的重力、prisoner、士氣、政體、三種行政領袖、封鎖、AI 難度與種族基礎 dispatch
+  已閉合；optional breakdown 的逐格 UI 文案索引仍未命名，但不影響研究總產出公式。證據見
+  `colony-government-output-audit-20260825.md`。
 - 本切片只閉合研究建築是否修改 per-scientist，以及四個固定值；其餘欄位維持未知或既有證據等級。

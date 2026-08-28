@@ -80,7 +80,10 @@
   [`colony-industry-per-worker-audit-20260828.md`](colony-industry-per-worker-audit-20260828.md)
   閉合。remake 可保留既有快取作
   舊 JSON fallback，但 typed groups 生效時必須把 owner 種族修正拆出後換成群組修正。
-- `sub_E1839` 尚含饑荒、封鎖、政體、住房、領袖與特殊建築的多項修正；本輪只把已由官方
+- `sub_E1839` 尚含饑荒、住房、領袖與特殊建築的多項成長修正；職務產出中的封鎖、政體、
+  士氣、重力、prisoner、領袖與 AI 難度已另由
+  [`colony-government-output-audit-20260825.md`](colony-government-output-audit-20260825.md)
+  閉合。本輪人口成長部分只把已由官方
   手冊公式獨立核對的逐 slot 基礎、race growth trait、既有殖民地 `GrowthBonusSum` 與住房
   接入。其餘 raw 欄位不因能產生合理數字而升格為已證實。
 - 原版 packed colonist 的實際排列沒有保存在 remake typed groups，因此雖可重現 reservoir

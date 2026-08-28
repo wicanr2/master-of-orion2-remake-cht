@@ -4,7 +4,8 @@
 
 既有文件已局部證實 Cybernetic／Android 的半工業消耗與 `colony+0x08` 清污成本，但沒有把
 工業維護、工人產出、固定建築、污染、食物複製機及建造消費端接成同一條鏈。本切片只補 RE；
-不修改 Go，也不把 `Colony_Job_Production_` 內尚未命名的全部 modifier 提前寫成 READY spec。
+不修改 Go。`Colony_Job_Production_` 的共用 modifier 後續已由同日增補證據閉合，仍須經獨立
+READY spec 才能授權實作修正。
 
 - 輸入：`Orion2.exe`，SHA-256
   `7ae2ac2e5904ca330009af2827279d889906b0b9b7a8854c38eb707a56e955b5`。
@@ -56,9 +57,10 @@ Robotic Factory 表位於 `byte_DD4DC @ 0xDD4DC`，bytes 為 `05 08 0A 0F 14`。
 名稱由 building base `+0x136` 與獨立 `OrigBuildingID` 對映交叉驗證，不從效果猜名。
 
 `Colony_Job_Production_` 是食物／工業／研究共用 helper，會逐 packed colonist 套來源 slot、
-重力、prisoner、政府、領袖、AI difficulty 等 modifier；其完整 modifier 語意是後續共用窄切片。
-本輪已保存函式 `0xDE280..0xDE664`、三個 caller、原始 operands 與 breakdown，沒有因外層公式
-閉合而把該 helper 全部升格。
+重力、prisoner、政府、領袖、封鎖及 AI difficulty modifier。該共用鏈已於 2026-08-28 由
+[`colony-government-output-audit-20260825.md`](colony-government-output-audit-20260825.md)
+補齊五級難度表與封鎖 consumer，函式 `0xDE280..0xDE664`、三個 caller、直接 helper、原始
+operands 與 breakdown 均保存於同一份可重生證據。
 
 ## 原版污染基數與清理公式
 
@@ -118,7 +120,7 @@ productProgress += availableIndustry
 - **推翻舊斷言**：`PollutionCleanupCost` 的奇數 excess 不是向下取整；污染基數也不是完整
   gross／全部 `FlatIndustry`。現行 remake 兩處都與原版指令矛盾，須等 RE gate 關閉後進
   READY spec 修正。
-- **仍未閉合**：`Colony_Job_Production_ @ 0xDE280` 的全部政府／種族／領袖／difficulty
-  modifier 語意、optional breakdown 文案、`Colony_Industry_To_Tax_` 與 AI 多個 `+0xF0`
-  consumer。這些不能因外層污染鏈閉合而升格。
+- **仍未閉合**：optional breakdown 的逐格 UI 文案索引、`Colony_Industry_To_Tax_` 與 AI
+  多個 `+0xF0` consumer。breakdown 文案不改變已閉合的玩法總產出；其餘 consumer 不能因
+  外層污染鏈閉合而升格。
 - **RE-first gate**：本輪只補知識庫與差異清單，不修改 Go 或測試期望。
