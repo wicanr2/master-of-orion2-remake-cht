@@ -24,9 +24,8 @@ type EmpireOutput struct {
 	CommandOverflowCost int
 	// FreighterMaintenanceCost 使用中運輸艦(Freighter)每回合維護費總和(GAME_MANUAL.pdf
 	// p.169,gamedata.IncomeFreighterMaintenanceCost,每艘 0.5 BC)。已計入 NetBC,單獨曝露
-	// 供測試/UI 顯示。ps.ActiveFreighters 玩家側已可透過建造「運輸艦隊」變非 0(見該欄位註解
-	// 2026-07-11(#4)追加接線段落)——本欄位隨之反映真實維護費;AI 對手未接該建造流程,
-	// ActiveFreighters 對 AI 仍恆為 0,本欄位對 AI 側仍是 no-op。
+	// 供測試／UI 顯示。玩家可建造「運輸艦隊」；AI 精確職務路徑也會在運輸壓力成立且
+	// Random(10)<=difficulty 時直接增加 5 艘，因此兩側都可能產生維護費。
 	FreighterMaintenanceCost int
 	SpyMaintenanceCost       int
 	OfficerMaintenanceCost   int
@@ -175,6 +174,10 @@ func RunEmpireTurnWithResearchRoller(ps PlayerState, colonies []ColonyState, rol
 	out.TreatyResearch = ps.TreatyResearch
 	out.TotalResearch += ps.FleetResearch + ps.TreatyResearch
 	out.Player, out.ResearchDone = RunResearchPhaseWithRoller(ps, out.TotalResearch, roller)
+	if transport, ok := OriginalFoodTransport(ps, colonies, nil); ok {
+		out.Player.FoodFreighted = transport.FoodFreighted
+		out.Player.SurplusFreighters = transport.SurplusFreighters
+	}
 	// 半 BC 不直接丟失：兩個半 BC 才從國庫扣 1 BC，餘數保存到下一回合。
 	pendingReplicatorHalfBC := ps.FoodReplicatorBCHalfRemainder + out.FoodReplicatorCostHalfBC
 	out.FoodReplicatorCost = pendingReplicatorHalfBC / 2
@@ -193,9 +196,16 @@ func RunEmpireTurnWithResearchRoller(ps PlayerState, colonies []ColonyState, rol
 	}
 	out.CommandOverflowCost = uncoveredCommandPoints * commandCostPerPoint
 	// 運輸艦(Freighter)維護費(GAME_MANUAL.pdf p.169,gamedata.IncomeFreighterMaintenanceCost)。
-	// 獨立於 ps.Maintenance（建築分項）。ps.ActiveFreighters 玩家側
-	// 建造「運輸艦隊」後會非 0(見該欄位註解 2026-07-11(#4)追加接線段落),AI 對手仍恆 0。
-	out.FreighterMaintenanceCost = gamedata.IncomeFreighterMaintenanceCost(ps.ActiveFreighters)
+	// 獨立於 ps.Maintenance（建築分項）。ActiveFreighters 是總數；原版以本回合重算的
+	// SurplusFreighters 推導實際使用數，再按每兩艘 1 BC 收費。
+	usedFreighters := ps.ActiveFreighters
+	if out.Player.SurplusFreighters > 0 {
+		usedFreighters -= out.Player.SurplusFreighters
+	}
+	if usedFreighters < 0 {
+		usedFreighters = 0
+	}
+	out.FreighterMaintenanceCost = gamedata.IncomeFreighterMaintenanceCost(usedFreighters)
 	out.SpyMaintenanceCost = ps.SpyMaintenance
 	out.OfficerMaintenanceCost = ps.OfficerMaintenance
 	// 國庫結算:稅收 + 餘糧收入 + 貿易品收入 - 維護費 - 指揮評等超支懲罰 - 運輸艦維護費。

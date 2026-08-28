@@ -333,7 +333,8 @@ func TestRunEmpireTurnFreighterMaintenance(t *testing.T) {
 			PlanetSize: gamedata.TINY_PLANET, PlanetGravity: gamedata.NORMAL_G, MineralRichness: gamedata.ABUNDANT, TolerantRace: true},
 	}
 	// 稅收 10(20*50/100),維護費 3,運輸艦 5 艘 → 5*0.5=2.5 無條件捨去 → 2。
-	ps := PlayerState{BC: 100, TaxRate: 50, Maintenance: 3, ActiveFreighters: 5, ResearchTopic: gamedata.ResearchTopic(1)}
+	// 一個在途 settler 佔用五艘，故 +0x38<=0 時五艘全數計維護費。
+	ps := PlayerState{BC: 100, TaxRate: 50, Maintenance: 3, ActiveFreighters: 5, SettlersFreighted: 1, ResearchTopic: gamedata.ResearchTopic(1)}
 	out := RunEmpireTurn(ps, colonies)
 
 	if out.FreighterMaintenanceCost != 2 {
@@ -347,8 +348,15 @@ func TestRunEmpireTurnFreighterMaintenance(t *testing.T) {
 	}
 }
 
-// TestRunEmpireTurnFreighterMaintenanceZeroNoOp 驗證 ActiveFreighters=0(demo/remake 目前恆定
-// 狀態,見該欄位註解)時完全不影響 NetBC——確保零值(no Freighter 塑模)與加欄位前行為一致。
+func TestRunEmpireTurnIdleFreightersHaveNoMaintenance(t *testing.T) {
+	out := RunEmpireTurn(PlayerState{ActiveFreighters: 5}, []ColonyState{{Population: 1, Farmers: 1, FoodPerFarmer: 2}})
+	if out.Player.SurplusFreighters != 5 || out.FreighterMaintenanceCost != 0 {
+		t.Fatalf("未使用貨運艦不應收維護費：surplus=%d cost=%d", out.Player.SurplusFreighters, out.FreighterMaintenanceCost)
+	}
+}
+
+// TestRunEmpireTurnFreighterMaintenanceZeroNoOp 驗證 ActiveFreighters=0 時完全不影響 NetBC，
+// 確保零值與加欄位前行為一致。
 func TestRunEmpireTurnFreighterMaintenanceZeroNoOp(t *testing.T) {
 	colonies := []ColonyState{
 		{Population: 5, PopMax: 20, Workers: 2, IndustryPerWorker: 10,

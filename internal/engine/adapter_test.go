@@ -119,9 +119,14 @@ func TestPlayerStateFromSave(t *testing.T) {
 	p.TaxRate = 45
 	p.ResearchTopic = 1
 	p.ResearchProgress = 200
+	p.TotalFreighters = 12
+	p.SurplusFreighters = -3
+	p.FoodFreighted = 7
+	p.SettlersFreighted = 1
 	ps := PlayerStateFromSave(&p)
 	if ps.BC != 500 || ps.TaxRate != 45 || ps.ResearchTopic != gamedata.ResearchTopic(1) ||
-		ps.ResearchProgress != 200 {
+		ps.ResearchProgress != 200 || ps.ActiveFreighters != 12 || ps.SurplusFreighters != -3 ||
+		ps.FoodFreighted != 7 || ps.SettlersFreighted != 1 {
 		t.Errorf("Player 對映錯誤:%+v", ps)
 	}
 }

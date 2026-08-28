@@ -171,21 +171,20 @@ func applyOriginalAIBlockadedColony(cs *ColonyState, foodHalf int) {
 }
 
 // applyOriginalAIAdditionalFarmers 對映 sub_D6AD4 → sub_D6A00 的玩家可表示切片。
-// 原版在工業／研究平衡後仍會逐人補農夫，直到帝國食物與運輸壓力解除。remake 尚未
-// 保存 player+0x38 的運輸餘額，因此除了帝國 TotalFoodHalf，也要求沒有未封鎖殖民地
-// 留在本地饑荒；這是「沒有 typed 運輸容量」時的失敗即關閉邊界，不猜可運輸量。
-func applyOriginalAIAdditionalFarmers(ps PlayerState, colonies []ColonyState, blockaded []bool) {
+// 原版在工業／研究平衡後仍會逐人補農夫，直到帝國食物與 player+0x38 運輸壓力解除。
+func applyOriginalAIAdditionalFarmers(ps PlayerState, colonies []ColonyState, blockaded []bool) (freighterPressure bool) {
 	for {
 		empireFoodDeficit := RunEmpireTurn(ps, colonies).TotalFoodHalf < 0
-		localDeficit := false
-		for i := range colonies {
-			if (blockaded == nil || !blockaded[i]) && RunColonyTurn(colonies[i]).FoodSurplusHalf < 0 {
-				localDeficit = true
-				break
-			}
+		transport, ok := OriginalFoodTransport(ps, colonies, blockaded)
+		if !ok {
+			return freighterPressure
 		}
-		if !empireFoodDeficit && !localDeficit {
-			return
+		if !empireFoodDeficit && transport.SurplusFreighters >= 0 {
+			return freighterPressure
+		}
+		preferLocal := transport.SurplusFreighters <= 0
+		if preferLocal {
+			freighterPressure = true
 		}
 
 		bestColony, bestGroup, bestFrom := -1, -1, -1
@@ -195,9 +194,7 @@ func applyOriginalAIAdditionalFarmers(ps PlayerState, colonies []ColonyState, bl
 				continue
 			}
 			before := RunColonyTurn(colonies[ci]).FoodSurplusHalf
-			// 缺運輸 typed 狀態時，優先填仍在本地赤字的殖民地；只有全殖民地
-			// 自給而帝國總帳仍負時才允許一般候選。
-			if localDeficit && before >= 0 {
+			if preferLocal && before >= 0 {
 				continue
 			}
 			for _, candidate := range originalAIColonistCandidates(colonies[ci]) {
@@ -214,7 +211,7 @@ func applyOriginalAIAdditionalFarmers(ps PlayerState, colonies []ColonyState, bl
 			}
 		}
 		if bestColony < 0 {
-			return
+			return freighterPressure
 		}
 		// 同群／同職人口對已閉合 comparator 等價；重新建立候選可避免先前
 		// 改職後保存過期的 from／prisoner 索引。
@@ -236,11 +233,18 @@ func ApplyOriginalAIUnblockadedJobs(ps PlayerState, colonies []ColonyState, ctx 
 
 // ApplyOriginalAIJobs 重建 sub_D61E7／sub_D652C／sub_D66B3 的殖民地職務主鏈。
 func ApplyOriginalAIJobs(ps PlayerState, colonies []ColonyState, ctx OriginalAIJobContext) ([]ColonyState, bool) {
+	out, _, ok := ApplyOriginalAIJobsWithTransport(ps, colonies, ctx)
+	return out, ok
+}
+
+// ApplyOriginalAIJobsWithTransport 另回傳 sub_D6AD4 是否曾進入 +0x38<=0 的
+// 貨運壓力分支，供 shell 套用原版難度亂數的 +5 freighters writer。
+func ApplyOriginalAIJobsWithTransport(ps PlayerState, colonies []ColonyState, ctx OriginalAIJobContext) ([]ColonyState, bool, bool) {
 	if len(ctx.ColonyFoodHalf) != len(colonies) || len(ctx.ColonyFoodHalfKnown) != len(colonies) {
-		return nil, false
+		return nil, false, false
 	}
 	if ctx.ColonyBlockaded != nil && len(ctx.ColonyBlockaded) != len(colonies) {
-		return nil, false
+		return nil, false, false
 	}
 	out := append([]ColonyState(nil), colonies...)
 	for i := range out {
@@ -255,7 +259,7 @@ func ApplyOriginalAIJobs(ps PlayerState, colonies []ColonyState, ctx OriginalAIJ
 	work := make([]colonyCandidates, len(out))
 	for i := range out {
 		if !populationGroupsValid(out[i]) || !ctx.ColonyFoodHalfKnown[i] {
-			return nil, false
+			return nil, false, false
 		}
 		if ctx.ColonyBlockaded != nil && ctx.ColonyBlockaded[i] {
 			applyOriginalAIBlockadedColony(&out[i], ctx.ColonyFoodHalf[i])
@@ -349,8 +353,8 @@ func ApplyOriginalAIJobs(ps PlayerState, colonies []ColonyState, ctx OriginalAIJ
 		w.end--
 		originalAIMoveCandidate(&out[bestColony], w.items[w.end], int(gamedata.WORKER))
 	}
-	applyOriginalAIAdditionalFarmers(ps, out, ctx.ColonyBlockaded)
-	return out, true
+	pressure := applyOriginalAIAdditionalFarmers(ps, out, ctx.ColonyBlockaded)
+	return out, pressure, true
 }
 
 func originalIntegerSqrt(n int) int {

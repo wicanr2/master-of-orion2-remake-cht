@@ -5248,7 +5248,7 @@ func (s *GameSession) EndTurn() {
 				}
 			}
 		}
-		colonies, exactJobs := engine.ApplyOriginalAIJobs(ps, s.AIPlayers[i].Colonies, jobCtx)
+		colonies, freighterPressure, exactJobs := engine.ApplyOriginalAIJobsWithTransport(ps, s.AIPlayers[i].Colonies, jobCtx)
 		if !exactJobs {
 			// 舊 JSON 缺逐種族 profile 或 +0xDD 無法建立時，保留既有可玩 fallback；
 			// 不把這條路徑宣稱為原版忠實。原版可執行檔沒有 AI 回合寫入 player+0x31
@@ -5256,6 +5256,14 @@ func (s *GameSession) EndTurn() {
 			originalTaxRate := ps.TaxRate
 			ps, colonies = engine.ApplyAIEconomy(ps, s.AIPlayers[i].Colonies, s.AIPlayers[i].Decider)
 			ps.TaxRate = originalTaxRate
+		} else if freighterPressure {
+			// sub_D6AD4 只有在運輸壓力旗標成立時才呼叫 Random(10)；不可在無壓力時
+			// 預先求值 eventRoll，否則會改變後續事件的確定性亂數序列。
+			if gain, ok := gamedata.OriginalAIFreighterFleetGain(
+				true, s.Difficulty, s.eventRoll(10)); ok {
+				// 原版不是把這批貨運艦排入一般建築產品表；新增後從下一回合重算運輸。
+				ps.ActiveFreighters += gain
+			}
 		}
 		ps = applyAIDifficultyPlayerInputs(ps, s.Difficulty)
 		s.AIPlayers[i].Colonies = colonies

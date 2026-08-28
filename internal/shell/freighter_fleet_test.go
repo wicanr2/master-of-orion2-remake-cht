@@ -92,9 +92,9 @@ func TestFreighterFleetCashBonusVersionDiff(t *testing.T) {
 	}
 }
 
-// TestFreighterFleetMaintenanceAppliesNextTurn 驗證 ActiveFreighters 變非 0 後,維護費
-// (每艘 0.5 BC/回合,gamedata.IncomeFreighterMaintenanceCost)確實從下一回合起反映在 NetBC——
-// 完工當回合的 RunEmpireTurn 已跑在 advanceBuilds 之前,吃的是舊值,故維護費從下一回合才生效。
+// TestFreighterFleetMaintenanceAppliesNextTurn 驗證新貨運艦被殖民者占用後，維護費
+// (每艘使用中 0.5 BC/回合)確實從下一回合起反映在 NetBC。完工當回合的 RunEmpireTurn
+// 已跑在 advanceBuilds 之前，吃的是舊值，故維護費從下一回合才生效。
 func TestFreighterFleetMaintenanceAppliesNextTurn(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
@@ -114,6 +114,8 @@ func TestFreighterFleetMaintenanceAppliesNextTurn(t *testing.T) {
 		t.Errorf("完工當回合的 FreighterMaintenanceCost = %d,want 0(維護費下回合才生效)", got)
 	}
 
+	// 一名在途殖民者占用五艘；若沒有運輸需求，五艘都是 +0x38 正餘額且不應收費。
+	s.Player.SettlersFreighted = 1
 	s.EndTurn() // 下一回合,這次 RunEmpireTurn 才吃到新的 ActiveFreighters
 
 	want := gamedata.IncomeFreighterMaintenanceCost(s.Player.ActiveFreighters)
@@ -121,7 +123,7 @@ func TestFreighterFleetMaintenanceAppliesNextTurn(t *testing.T) {
 		t.Fatal("測試前提錯誤:ActiveFreighters 算出的維護費不應為 0")
 	}
 	if got := s.LastPlayerOutput.FreighterMaintenanceCost; got != want {
-		t.Errorf("下一回合 FreighterMaintenanceCost = %d,want %d(%d 艘 * 0.5 BC)", got, want, s.Player.ActiveFreighters)
+		t.Errorf("下一回合 FreighterMaintenanceCost = %d,want %d(%d 艘使用中 * 0.5 BC)", got, want, s.Player.ActiveFreighters)
 	}
 }
 

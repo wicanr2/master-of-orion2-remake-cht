@@ -37,8 +37,9 @@
 供需」節)。運輸艦維護費（`gamedata.IncomeFreighterMaintenanceCost`)當時（本文件寫下時)本專案
 完全不追蹤運輸艦數量、`Ships` 只有作戰艦艇——**此缺口已於 2026-07-11(#4)補上**:新增「運輸艦隊」
 建造選項(`gamedata.FreighterFleetActionName`),玩家建造完工後 `ActiveFreighters` 會真的累加,
-維護費隨之生效,詳見 `moo2-formulas-reference.md`「運輸艦淨現金版本差異」節;AI 對手仍未接同一
-建造流程,`ActiveFreighters` 對 AI 恆為 0。AI 對手（`AIOpponent`)沒有 `ColonyBuildings` 追蹤機制,
+維護費隨之生效,詳見 `moo2-formulas-reference.md`「運輸艦淨現金版本差異」節。AI 不接同一建造
+流程，但精確職務路徑會依原版運輸壓力亂數直接增加 5 艘，故 `ActiveFreighters` 對 AI 不再恆為 0。
+AI 對手（`AIOpponent`)沒有 `ColonyBuildings` 追蹤機制,
 `Maintenance` 由 `newHomeworldPlayerState` 設一次後不再重算——這對 AI 是誠實的(AI 的建築集合在
 本專案裡本就從未變動過),不是遺漏。
 

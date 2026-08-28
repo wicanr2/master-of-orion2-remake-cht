@@ -43,7 +43,14 @@ func (s *GameSession) originalAIMaintenanceTotal(aiIndex int) (int, bool) {
 	if uncovered < 0 {
 		uncovered = 0
 	}
-	total := ps.Maintenance + gamedata.IncomeFreighterMaintenanceCost(ps.ActiveFreighters) +
+	usedFreighters := ps.ActiveFreighters
+	if ps.SurplusFreighters > 0 {
+		usedFreighters -= ps.SurplusFreighters
+	}
+	if usedFreighters < 0 {
+		usedFreighters = 0
+	}
+	total := ps.Maintenance + gamedata.IncomeFreighterMaintenanceCost(usedFreighters) +
 		uncovered*commandCostPerPoint + ps.SpyMaintenance + ps.OfficerMaintenance
 	if total < 0 {
 		return 0, false

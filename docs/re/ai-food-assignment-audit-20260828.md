@@ -6,9 +6,8 @@
 
 - 輸入 `Orion2.exe`，SHA-256
   `7ae2ac2e5904ca330009af2827279d889906b0b9b7a8854c38eb707a56e955b5`。
-- IDA 資料庫為既有事件怪物研究 checkpoint，SHA-256
-  `587e0665e6fa115b2262efcf3e02197a2dc1dd3319a983283ba8afd56ff62867`；它不是文件其他切片所用
-  `4a0179...` 正式 checkpoint，因此名稱只供導覽，結論以 raw bytes／位址／operand 為準。
+- IDA 資料庫為正式 checkpoint，SHA-256
+  `4a01791fcf877ed87a740a54748694ab34a02675e3117dac052aeaa3f883944e`。
 - 工具：IDA Pro 9.4，映像 `ida-pro-9.4-idapython:py312-v1`；位址基準為 DOS/4GW LE image
   的 IDA linear EA。
 - 非破壞性匯出：
@@ -41,17 +40,26 @@
    `player+0x3E/+0x38`。它會按殖民地缺糧與可運輸條件調整 `colony+0xF3`，因此
    `+0x38` 是食物運輸壓力／餘額，不是第二份食物總量。
 
-以上 1–5 為已證實。`sub_D68CB` 的 raw comparator 與 `sub_D682A` 的
-`food-currentJobOutput` 主形狀亦已證實；packed colonist 額外 `+1000` 分支所讀欄位的完整
-玩家語意、`player+0x36/+0x40` 的正式名稱，以及 `player+0x38` 全尺度仍未知。
+6. `sub_DF8F0` 證實 `player+0x36` 為貨運艦總數、`+0x40` 為在途殖民者數、`+0x3E` 為
+   已運食物、`+0x38` 為帶正負號的貨運艦餘額；可供運糧容量是
+   `TotalFreighters-5*SettlersFreighted`。未封鎖殖民地以 `colony+0xE7/+0xEF/+0xF3`
+   表示食物產出、需求與輸送量。
+7. `sub_E2000 @ 0xE23A6..0xE23C2` 證實維護費使用量：`+0x38<=0` 時取總數，
+   `+0x38>0` 時取總數減餘額，最後無條件捨去除以二。
+8. `sub_D6AD4 @ 0xD6D57..0xD6D76` 只在運輸壓力成立時呼叫 `Random(10)`；
+   `Random(10)<=difficulty` 便直接對 `player+0x36` 加 5，不經一般建造佇列。
+
+以上 1–8 為已證實。`sub_D68CB` 的 raw comparator 與 `sub_D682A` 的
+`food-currentJobOutput` 主形狀亦已證實；packed colonist 額外 `+1000` 分支所讀欄位完整
+玩家語意仍未知。
 
 ## Remake 對映與停止線
 
-`engine.ApplyOriginalAIJobs` 現在於工業／研究平衡後執行追加農夫 pass。它逐一試算將普通人口
-改為農夫造成的半食物增益，只接受正增益候選，直到帝國 `TotalFoodHalf>=0`。由於 remake 尚未
-保存 `player+0x38` 的 typed 運輸容量，另要求每個未封鎖殖民地不留在本地饑荒；這等價於
-「沒有可證明的運輸容量時不假設食物能憑空運送」，屬強推論的失敗即關閉近似，不宣稱原版
-精確殖民地選擇／freighter parity。
+`engine.OriginalFoodTransport` 現按上述欄位重算跨殖民地運糧與帶正負號餘額；
+`ApplyOriginalAIJobsWithTransport` 在帝國缺糧或運輸受限時逐一試算增加農夫，並於運輸容量耗盡時
+只保留本地仍缺糧的殖民地候選。`RunEmpireTurn` 保存兩個衍生欄位並依實際使用艦數收維護費；
+shell 的精確 AI 職務 consumer 只在壓力成立時擲骰，成功便增加 5 艘。`.GAM` importer 亦保存
+四個原版欄位。這條垂直鏈已閉合；packed `+1000` 候選排序分支仍依證據等級保留為未知。
 
 正常 200 回合測試確認此切片消除 AI 人口 8→1 死亡螺旋，且非 Creative AI 會完成科技並寫入
 application 擇一。這是 remake 玩家路徑驗證，不把它升格為原版同 seed／同回合 oracle。

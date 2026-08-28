@@ -57,7 +57,9 @@
   `ExplicitChoice` 空集合當成未研究；擴張測試則錯假設新殖民地短期資產必高於只造艦的單母星。
   改為直接驗證第二屆排程、非 Creative application 與新增殖民地 `ColonyOutput` 後，另發現真缺口：
   職務 RE 漏掉 `sub_D6AD4 → sub_D6A00` 追加農夫，導致 AI 人口 8→1。現已補該下游切片，
-  三項定向長跑通過；`player+0x38` 精確食物運輸容量仍依 AI 職務規格列為 DRAFT，不冒稱完成。
+  三項定向長跑通過。後續 IDA 已閉合 `player+0x36/+0x38/+0x3E/+0x40` 的貨運艦總數、
+  餘額、食物運量及殖民者占用，並接入跨殖民地運糧、維護費與 AI 壓力增艦；只剩
+  `sub_D682A` packed 額外 `+1000` 候選排序分支維持 DRAFT。
 
 - [~] **玩家可見文案外部化**：2026-08-26 已把既有 `assets/i18n/*.json` 與內嵌副本統一轉為
   有序 JSON 並移除 `go:embed` 副本，載入器保留 per-source、先出現者優先及原版單位元控制標記契約。剩餘工作是逐畫面
@@ -1116,8 +1118,9 @@
   `player+0xAA/+0xAC` producer、逐 race／prisoner 候選與帝國停止比較現已閉合；
   未封鎖殖民地會先依原版最低工人／半工業消耗配置，再以研究－工業邊際逐人平衡，
   並同步 `PopulationGroups`。`Compute_Blockades_` producer、`sub_D61E7` 封鎖分支與
-  `sub_D6AD4 → sub_D6A00` 追加農夫 consumer 均已接入；因尚無 typed 運輸容量，追加農夫
-  對 `player+0x38` 的殖民地選擇仍採失敗即關閉近似，不能據此勾掉完整 AI 決策器；見
+  `sub_D6AD4 → sub_D6A00` 追加農夫 consumer 均已接入；`player+0x36/+0x38/+0x3E/+0x40`
+  typed 運輸欄位、跨殖民地運糧、使用量維護費與壓力增艦亦已閉合。完整 AI 決策器仍受
+  packed `+1000` 排序分支及其他艦隊／外交狀態機限制；見
   [`docs/re/ai-colony-jobs-audit-20260828.md`](docs/re/ai-colony-jobs-audit-20260828.md) 與
   [`docs/spec/ai-colony-jobs.md`](docs/spec/ai-colony-jobs.md)。其餘 AI 建造證據見
   [`docs/re/ai-difficulty-economy-audit-20260826.md`](docs/re/ai-difficulty-economy-audit-20260826.md) 與
@@ -2369,7 +2372,7 @@ internal/shell/orbital_bombardment.go
 - [x] diff 全量表 15 項 2026-07-11 全數盤點完畢
   - [x] **AI 殖民地建築資料模型 + 戰略轟炸傷亡回寫(2026-07-11；2026-08-24 IDA 勘誤)**：`AIOpponent` 的建築、陸戰隊與戰車平行陣列均已持久化。舊版「按建築名字母序全部吸收，再依行星尺寸扣人口」已被 `sub_DCEBD @ 0xDCEBD` 直接反證並移除；現在以 raw building ID 48→1 建候選，排除 `{8,9,26,27,40,41,42,47}`，再混入每名陸戰隊、戰車、建造進度項與人口。抽中成本不足的單位即停止；寫回人口、駐軍、建造進度與建築 map，GAM adapter 同步保存 `BuildProgress` 與最後人口點數。1.3 建築 +1 hit 仍是 CHANGELOG 強推論；八類獨立防禦戰鬥者的精確摧毀鏈仍列在頂端活表。
   - [x] **#14 衛星/軌道防禦基地「space 預算武器平台」+ 版本相依 beam arc-cost(2026-07-11)**:`internal/gamedata/satellite.go` 新增獨立衛星/基地 space 預算(飛彈基地 300、地面砲台 450——手冊 p.78/p.81 確認值;星基/戰鬥站/星辰要塞 250/500/1200——借用 `ShipHullSpace` 同量級近似值)+ arc-cost 佔格公式(比照 `WeaponSpaceWithMods`)+ fit 公式;`RuleProfile` 新增 `SatelliteBeamArcCostPct`(1.3=25/1.5=33)、`GroundBatteryBeamArcCostPct`(1.3=0/1.5=50,CHANGELOG_150.TXT 1.50.7/1.50.10)。`internal/shell/orbital_bombardment.go` `retaliationAttackers` 改簽名讀 defender 科技(`bestUnlockedWeaponValue`,新 helper)+ profile,取代舊 shipStrength 4/8/16 固定 tier,推導出「隨科技變強」+「隨版本 arc-cost 不同而不同」的反擊戰力。校準除數 `SatelliteStrengthScale=20` 使雷射參考點下星基/戰鬥站重現舊 tier 4/8,星辰要塞算出 20(非近似 19,誠實標見常數註解)。平衡 sanity:開局艦隊轟炸開局 AI 母星(僅星基),Profile13/15 各掃 Turn 0..14,最大損艦數皆為 1(不破壞平衡)。測試:`internal/gamedata/satellite_test.go`(fit/arc 公式錨點)+ `internal/shell/satellite_defense_test.go`(版本差異/科技效果/飛彈基地不吃 arc/地面砲台/平衡 sanity)。誠實限制:AI 現行資料模型無研究進度推進機制,`bestUnlockedWeaponValue` 在 `NewDemoSession` 自然對局裡恆落到 fallback 分支(雷射/核飛彈),「科技變強」效果目前只能在單元測試手動建構已解鎖科技的 `PlayerState` 觀察到。
-  - [x] **#4 運輸艦淨現金版本差異(2026-07-11 補實作)**:新增「運輸艦隊」(Freighter Fleet)殖民地建造選項(`gamedata.FreighterFleetActionName`,前置科技 `TOPIC_NUCLEAR_FISSION`,估計建造成本 PP60——沿用既有 Special 一次性行動框架,見 `gamedata/special_actions.go`)。完工時 `shell.GameSession.applySpecialAction`:`s.Player.ActiveFreighters += gamedata.FreighterFleetShipsPerBuild`(手冊 p.168:每次建造 +5 艘)+ `s.Player.BC += s.RuleProfile.FreightersCashBonus`(新 `RuleProfile` 欄位,1.3=5/1.5=0,出處 MANUAL_150.html「Buildings & Freighters Free Cash Bug」+ CHANGELOG_150.TXT 1.50.8)。維護費(每艘 0.5 BC/回合)不用另外接——`engine.PlayerState.ActiveFreighters` 先前已接進 `RunEmpireTurn`(恆 0 no-op),本輪讓它真的變非 0,維護費隨之自動生效。**批次 B 的 #10 也已確認非差異**(見 `version-1.3-1.5-diff.md` #10),批次 B 至此結案。**簡化(誠實標)**:只模擬手冊「固定回饋」那一側,不模擬 0-3 BC 建造當下維護費立即扣款那一側;不做完整貨運/補給物流(殖民地間運食物/殖民者)——運輸艦本輪只有「可建造+維護費+版本現金加成」三件事;**AI 未接同一建造流程**,`ActiveFreighters` 對 AI 恆為 0。測試:`TestSpecialActionByNameZH`/`TestAvailableSpecialActions`(gamedata,新增運輸艦隊斷言)、`TestProfile13Values`/`TestProfile15Values`(gamedata,新增 `FreightersCashBonus` 斷言)、`TestFreighterFleetBuild*`(shell,新增:完工增加 ActiveFreighters+國庫、1.3 vs 1.5 現金加成差異、維護費隨後續回合生效、開局不建造回歸不變)。詳見 `docs/tech/version-1.3-1.5-diff.md` #4、`docs/tech/moo2-formulas-reference.md`「運輸艦淨現金版本差異」節。
+  - [x] **#4 運輸艦淨現金版本差異(2026-07-11 補實作；2026-08-28 補完整物流)**:新增「運輸艦隊」建造選項；完工時玩家貨運艦總數 +5，並依 1.3／1.5 profile 套用一次性現金加成。後續 IDA 已閉合 `player+0x36/+0x38/+0x3E/+0x40`，現支援跨殖民地運食物、殖民者每名占用 5 艘、只對使用中艦艇收維護費，以及 AI 在運輸壓力成立時依難度亂數直接增加 5 艘。仍刻意不模擬 1.3 建造當下 0–3 BC 的立即扣款；1.40+ 改為下回合扣，不影響目前 1.5 預設。詳見 `docs/re/ai-food-assignment-audit-20260828.md`、`docs/spec/ai-colony-jobs.md` 與 `docs/tech/version-1.3-1.5-diff.md` #4。
   - [x] **#13 掃描/偵測距離:輕量戰爭迷霧(2026-07-11)**:新增 `internal/gamedata/detection.go`(`ScannerRangeParsec` 基礎2/Space4/Neutron6/Tachyon8、`OrbitalScannerBonusParsec` 星基+2/戰鬥站+4/星辰要塞+6 擇一取代不疊加、`ParsecToNormalized`=1/10 換算常數、`DetectionRangeNormalized` 加總換算——**全部近似**,手冊無公開 parsec 數字)+ `RuleProfile.SensorRangeVersionBonusParsec`(1.3=0/1.5=1,對應 MANUAL_150.html「Scanners and Communications Discrepancy」修正的整體近似,非逐科技數字)+ `internal/shell/detection.go`(`GameSession.VisibleStars`/`starVisible`,啟用先前無人讀取的 `Star.Explored` 死旗標;可見條件:已探索 ∪ 玩家自己的星 ∪ 落在玩家殖民地/艦隊偵測範圍內)。`cmd/moo2/interactive.go` `drawStarmap` 接上 fog 繪製(未偵測星降噪成暗灰小點、不畫星名/擁有環;可見星維持全繪)。調參依據:量測 `NewDemoSession()` 實際程序化星系(24星,種子42)鄰近星距離,使開局 Profile13 可見 3 顆星、Profile15 可見 7 顆星(母星區可見一小圈、遠星入霧,版本差異可觀察)。**誠實邊界**:fog 純視覺,不 gate 選星/派艦/殖民/轟炸等任何操作;不做敵艦 map blip(AI 艦隊為抽象戰力,無地圖座標,零地基)。測試:`internal/gamedata/detection.go` 無獨立測試檔(純查表函式,經 `ruleprofile_test.go` 的 `SensorRangeVersionBonusParsec` 斷言覆蓋)+ `internal/shell/detection_test.go`(6 個測試:母星可見+範圍外不可見、已探索恆可見、版本差異合成盤面+真實星系、軌道基地加成星辰要塞>星基、艦隊偵測源、`VisibleStars`/`starVisible` 接線+越界安全)。`go build`/`go vet`/`go test` 全過;`moo2sim -turns 20` 經濟軌跡不變(fog 不碰回合邏輯)。
 - [x] 資產分版(1.31 vs 1.5 LBX/資料)——`-data13/-data15` 與主選單解析器切換已接；以 1.31 基礎資料 + `MOO2-1.50.26.zip` 的 `patch/150/lbx` 實際跑兩版畫廊各 35 張，並釘住 1.5 `NEWGAME.LBX` 背景資產 #31
 

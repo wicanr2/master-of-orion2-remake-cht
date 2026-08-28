@@ -118,10 +118,14 @@ func ColonyStateFromSave(c *save.Colony, planet *save.Planet) ColonyState {
 // (RunResearchPhase 對 nil map 安全)。
 func PlayerStateFromSave(p *save.Player) PlayerState {
 	return PlayerState{
-		BC:               int(p.BC),
-		TaxRate:          int(p.TaxRate),
-		Maintenance:      int(p.TotalMaintenance),
-		ResearchTopic:    gamedata.ResearchTopic(p.ResearchTopic),
-		ResearchProgress: int(p.ResearchProgress),
+		BC:                int(p.BC),
+		TaxRate:           int(p.TaxRate),
+		Maintenance:       int(p.TotalMaintenance),
+		ResearchTopic:     gamedata.ResearchTopic(p.ResearchTopic),
+		ResearchProgress:  int(p.ResearchProgress),
+		ActiveFreighters:  int(p.TotalFreighters),
+		SettlersFreighted: int(p.SettlersFreighted),
+		FoodFreighted:     int(p.FoodFreighted),
+		SurplusFreighters: int(p.SurplusFreighters),
 	}
 }

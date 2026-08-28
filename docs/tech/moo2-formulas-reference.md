@@ -345,8 +345,9 @@ purposes of maintenance.」)——`gamedata.ShipCommandCost(class CombatShipClas
 行動,前置科技 `TOPIC_NUCLEAR_FISSION`,估計建造成本 PP60)。玩家在殖民地建造佇列排入並完工後,
 `shell.GameSession.applySpecialAction` 對 `s.Player.ActiveFreighters += gamedata.FreighterFleetShipsPerBuild`
 (手冊 p.168:每次建造 +5 艘)並套用版本現金加成(見下方 §「運輸艦淨現金版本差異」節)。**AI
-對手未接同一個建造佇列流程,`ActiveFreighters` 對 AI 仍恆為 0**,只有玩家側會真的變非 0——
-`FreighterMaintenanceCost` 因此只對玩家側 NetBC 有實際影響,誠實標記非全帝國通用。
+AI 不接同一個一般建造佇列；後續 IDA 證實 `sub_D6AD4` 在運輸壓力成立且
+`Random(10)<=difficulty` 時直接增加 5 艘，現已接入精確職務路徑。`ActiveFreighters` 是
+`player+0x36` 貨運艦總數；實際使用量由 `player+0x38` 餘額推導，玩家與 AI 都會計入維護費。
 
 ### 運輸艦淨現金版本差異(#4,2026-07-11 補實作)
 

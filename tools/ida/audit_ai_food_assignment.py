@@ -8,6 +8,7 @@ import traceback
 import ida_auto
 import ida_bytes
 import ida_funcs
+import ida_hexrays
 import ida_ida
 import ida_kernwin
 import ida_name
@@ -31,6 +32,7 @@ ROOTS = {
     "raw_recompute_player_food": 0xDF8F0,
     "raw_colony_food_transport_a": 0xE1839,
     "raw_colony_food_transport_b": 0xE1E1F,
+    "raw_player_maintenance": 0xE2000,
 }
 
 
@@ -59,12 +61,19 @@ def function_record(requested):
     if fn is None:
         return {"requested": f"0x{requested:X}", "error": "function missing"}
     raw = ida_bytes.get_bytes(fn.start_ea, fn.end_ea - fn.start_ea) or b""
+    pseudo = None
+    if ida_hexrays.init_hexrays_plugin():
+        try:
+            pseudo = str(ida_hexrays.decompile(fn.start_ea))
+        except Exception as exc:
+            pseudo = f"<decompile failed: {exc}>"
     return {
         "requested": f"0x{requested:X}",
         "original_name": ida_name.get_name(fn.start_ea) or "<unnamed>",
         "start_ea": f"0x{fn.start_ea:X}",
         "end_ea": f"0x{fn.end_ea:X}",
         "bytes_sha256": hashlib.sha256(raw).hexdigest(),
+        "pseudocode_navigation_only": pseudo,
         "instructions": [instruction(ea) for ea in idautils.FuncItems(fn.start_ea)],
         "callers": [
             instruction(xref.frm)
@@ -72,6 +81,24 @@ def function_record(requested):
             if ida_funcs.get_func(xref.frm) is not None
         ],
     }
+
+
+def transport_operand_functions():
+    out = {}
+    needles = ("+36h]", "+38h]", "+3eh]", "+40h]", "+0f3h]", "+f3h]")
+    for fea in idautils.Functions():
+        hits = []
+        for ea in idautils.FuncItems(fea):
+            text = (idc.generate_disasm_line(ea, 0) or "").lower()
+            if any(needle in text for needle in needles):
+                hits.append(instruction(ea))
+        if hits:
+            out[f"0x{fea:X}"] = {
+                "original_name": ida_name.get_name(fea) or "<unnamed>",
+                "hits": hits,
+                "callers": [f"0x{x:X}" for x in idautils.CodeRefsTo(fea, 0)],
+            }
+    return out
 
 
 def main():
@@ -92,6 +119,7 @@ def main():
         "address_basis": "IDA linear; DOS/4GW LE image",
         "semantic_status": "unknown_pending_review",
         "roots": {name: function_record(ea) for name, ea in ROOTS.items()},
+        "transport_operand_functions": transport_operand_functions(),
     }
     with open(os.environ["MOO2_IDA_OUTPUT"], "w", encoding="utf-8") as stream:
         json.dump(report, stream, ensure_ascii=False, indent=2)

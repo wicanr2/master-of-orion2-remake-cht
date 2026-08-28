@@ -9,12 +9,12 @@ import (
 
 func TestOriginalAIMaintenanceTotalUsesPlayerB4Components(t *testing.T) {
 	s := &GameSession{AIPlayers: []AIOpponent{{Player: engine.PlayerState{
-		Maintenance: 7, ActiveFreighters: 5,
+		Maintenance: 7, ActiveFreighters: 5, SurplusFreighters: 3,
 		CommandPointsSupply: 2, UsedCommandPoints: 5, CommandOverflowCostPerPoint: 9,
 		SpyMaintenance: 3, OfficerMaintenance: 4,
 	}}}}
 	got, ok := s.originalAIMaintenanceTotal(0)
-	want := 7 + gamedata.IncomeFreighterMaintenanceCost(5) + 3*9 + 3 + 4
+	want := 7 + gamedata.IncomeFreighterMaintenanceCost(2) + 3*9 + 3 + 4
 	if !ok || got != want {
 		t.Fatalf("maintenance=%d/%v，預期 %d", got, ok, want)
 	}

@@ -381,9 +381,10 @@ type PlayerState struct {
 	// 由 shell 依科技擁有狀況填(見 shell 的 syncEmpireTechFlags);零值 false = 沒有,安全。
 	HasGalacticCurrencyExchange bool
 
-	// ActiveFreighters 玩家目前「使用中」的運輸艦(Freighter)數量,供 RunEmpireTurn 算維護費
-	// (gamedata.IncomeFreighterMaintenanceCost,GAME_MANUAL.pdf p.169:每艘 0.5 BC/回合,無條件
-	// 捨去)。本專案的艦種塑模(gamedata.ShipType:COMBAT_SHIP/COLONY_SHIP/TRANSPORT_SHIP/
+	// ActiveFreighters 對映原版 player+0x36 的貨運艦總數，供食物／殖民者運輸與
+	// RunEmpireTurn 算維護費。實際使用數量在 SurplusFreighters>0 時為總數減餘量，否則
+	// 為總數；每艘 0.5 BC/回合並無條件捨去。本專案的艦種塑模
+	// (gamedata.ShipType:COMBAT_SHIP/COLONY_SHIP/TRANSPORT_SHIP/
 	// OUTPOST_SHIP,見 enums.go)沒有獨立的「Freighter」艦種概念——TRANSPORT_SHIP 是地面入侵
 	// 用的運兵船,不是手冊這裡講的貨運艦隊(Freighter Fleet,一種抽象的貿易/後勤艦隊,不佔
 	// Command Rating,見 shipspace.go 註解)。
@@ -391,11 +392,16 @@ type PlayerState struct {
 	// 2026-07-11(#4)追加接線:本欄位不再是零呼叫端的死碼——`internal/shell` 新增「運輸艦隊」
 	// (`gamedata.FreighterFleetActionName`)殖民地建造選項(Special 一次性行動,見
 	// `gamedata/special_actions.go`),每完工一次由 `shell.GameSession.applySpecialAction` 對本
-	// 欄位 `+= gamedata.FreighterFleetShipsPerBuild`(手冊:每次建造 +5 艘)。engine 層本身不變,
-	// 仍只是「吃呼叫端算好的數字」,呼叫端從恆傳 0 變成會隨玩家建造累加——這就是本欄位原本設計
-	// 「接線先備妥、待補艦種追蹤即生效」的那個生效時刻。AI 對手(`AIOpponent`)未接同一個建造
-	// 佇列流程,本欄位對 AI 仍恆為 0,見該呼叫端(`shell.EndTurn`)AI 迴圈註解。
+	// 欄位 `+= gamedata.FreighterFleetShipsPerBuild`(手冊:每次建造 +5 艘)。AI 不走一般建造
+	// 佇列；精確職務路徑依 sub_D6AD4 的壓力旗標、難度與 Random(10) 直接增加 5 艘。
 	ActiveFreighters int
+	// SettlersFreighted 對映原版 player+0x40；每個在途 settler 佔用 5 艘貨運艦。
+	// remake 尚未提供殖民者運輸 UI，正常新局為 0；GAM 匯入保留原值。
+	SettlersFreighted int `json:"settlersFreighted,omitempty"`
+	// FoodFreighted／SurplusFreighters 分別對映 player+0x3E／+0x38，於帝國食物
+	// 運輸重算時更新。SurplusFreighters 可為負，表示有可供應食物卻受運力限制。
+	FoodFreighted     int `json:"foodFreighted,omitempty"`
+	SurplusFreighters int `json:"surplusFreighters,omitempty"`
 	// FoodReplicatorBCHalfRemainder 是食物複製機半食物付款留下的半 BC 餘數。
 	// 0/1 都是合法值；每兩個半 BC 在下一次帝國結算時合併成 1 BC。
 	// 這是 remake 的精確帳本欄位，舊 JSON 缺欄位時零值安全。

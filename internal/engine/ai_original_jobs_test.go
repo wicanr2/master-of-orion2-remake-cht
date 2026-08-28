@@ -54,8 +54,33 @@ func TestApplyOriginalAIJobsAdditionalFarmersCoverEveryUntransportedColony(t *te
 	}
 	for i := range got {
 		if co := RunColonyTurn(got[i]); co.FoodSurplusHalf < 0 {
-			t.Fatalf("缺 player+0x38 typed 運輸容量時不得讓殖民地留在饑荒：i=%d colony=%+v output=%+v", i, got[i], co)
+			t.Fatalf("零貨運艦時不得讓未封鎖殖民地留在饑荒：i=%d colony=%+v output=%+v", i, got[i], co)
 		}
+	}
+}
+
+func TestApplyOriginalAIJobsUsesAvailableFoodTransport(t *testing.T) {
+	surplus := originalAIJobTestColony()
+	surplus.Population, surplus.Farmers, surplus.Workers, surplus.Scientists = 1, 1, 0, 0
+	surplus.FoodPerFarmer = 5
+	surplus.PopulationGroups[0].Farmers = 1
+	surplus.PopulationGroups[0].Workers = 0
+	surplus.PopulationGroups[0].Scientists = 0
+	deficit := originalAIJobTestColony()
+	deficit.Population, deficit.Farmers, deficit.Workers, deficit.Scientists = 1, 0, 1, 0
+	deficit.PopulationGroups[0].Farmers = 0
+	deficit.PopulationGroups[0].Workers = 1
+	deficit.PopulationGroups[0].Scientists = 0
+	got, pressure, ok := ApplyOriginalAIJobsWithTransport(
+		PlayerState{ActiveFreighters: 2}, []ColonyState{surplus, deficit}, OriginalAIJobContext{
+			ColonyFoodHalf: []int{5, 5}, ColonyFoodHalfKnown: []bool{true, true},
+			ColonyBlockaded: []bool{false, false},
+		})
+	if !ok || pressure {
+		t.Fatalf("充足運力不應回退或觸發造艦壓力：ok=%v pressure=%v", ok, pressure)
+	}
+	if got[1].Farmers != 0 || got[1].Workers != 1 {
+		t.Fatalf("可跨殖民地運糧時不應強迫缺糧殖民地本地自給：%+v", got[1])
 	}
 }
 
