@@ -37,6 +37,9 @@ ROOTS = {
     "raw_Apply_Colony_Changes": 0xE3F6E,
     "raw_Extra_Caller_A": 0xE587C,
     "raw_Extra_Caller_B": 0xE5ADD,
+    "raw_Colony_Environmental_Stuff": 0xE1CED,
+    "raw_Colony_Replicators": 0xDF66F,
+    "raw_Colony_BC_Maintenance": 0xE094F,
 }
 
 
@@ -136,6 +139,14 @@ def main():
                 "ea": "0xDD4B5",
                 "bytes": (ida_bytes.get_bytes(0xDD4B5, 5) or b"").hex(),
                 "values": [ida_bytes.get_byte(0xDD4B5 + index) for index in range(5)],
+            },
+            "raw_colony_bc_maintenance_modifier_table": {
+                "ea": "0xDD4BA",
+                "bytes": (ida_bytes.get_bytes(0xDD4BA, 10) or b"").hex(),
+                "signed_values": [ida_bytes.get_byte(0xDD4BA + index) - 256
+                                  if ida_bytes.get_byte(0xDD4BA + index) >= 128
+                                  else ida_bytes.get_byte(0xDD4BA + index)
+                                  for index in range(10)],
             },
         },
         "roots": {name: function(ea, symbols) for name, ea in ROOTS.items()},

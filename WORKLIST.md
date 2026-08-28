@@ -77,7 +77,8 @@
   `Do_Colony_Calculations_ @ 0xE2B31` 都只重建 derived state：pre-import 產出、帝國 imports、
   人口預測／殖民地專業、帝國彙總及三個 raw cache；第二遍吸收中間的封鎖與殖民者移動，不會
   重複增加人口或完成建造。開局函式另有兩個 caller，交叉證實它是可重入重算器。外層時序已
-  關閉；每工人工業 producer 已另行閉合，其餘 13 個 pre-import producer、帝國統計未解欄位、
+  關閉；每工人工業、食物複製機與 BC 維護 producer 已另行閉合，其餘 11 個 pre-import producer、
+  （環境 producer 目前只閉合 climate 子欄位）、帝國統計未解欄位、
   封鎖與人口遷移規則仍分列追查。
   證據見 [`docs/re/colony-turn-chain-audit-20260828.md`](docs/re/colony-turn-chain-audit-20260828.md)。
 
@@ -89,6 +90,15 @@
   證據交叉驗證，不以相對位址猜測；`memset_` 暫存清理排除於玩法範圍。本輪遵守 RE-first gate，
   不修改 Go。證據見
   [`docs/re/colony-industry-per-worker-audit-20260828.md`](docs/re/colony-industry-per-worker-audit-20260828.md)。
+
+- [x] **食物複製機／殖民地 BC 維護閉合（RE-only，2026-08-28）**：`Colony_Replicators_`
+  `@ 0xDF66F` 依 owner／外族／prisoner／Natives 的赤字優先序，以 2 工業換 1 個整數食物，
+  並按相應工業消耗優先序限制可用工業；結果寫 `colony+0x114`。後段
+  `Colony_BC_Maintenance_ @ 0xE094F` 把複製食物以每個 1 BC 加入 49 棟建築維護費，再套
+  `[50,25,0,25,0,0,0,0,0,0]` 氣候倍率與整數四捨五入。三種行星護盾會把 Radiated 的有效
+  climate 改成 Barren。這推翻 remake 目前的半食物／半 BC 跨回合餘數模型；依 RE-first gate
+  只登記差異，不修改 Go。證據見
+  [`docs/re/colony-food-replicator-bc-maintenance-audit-20260828.md`](docs/re/colony-food-replicator-bc-maintenance-audit-20260828.md)。
 
 - [x] **2026-08-28 三個長跑回歸已分類並修正**：議會第二屆確實準時召開，但原版搖擺票重擲後
   流會，舊測試錯把「再次當選」當排程契約；AI 0 是 Creative，舊研究測試錯把合法的
@@ -1660,7 +1670,7 @@
 - [x] **captain／common 領袖技能消費端（2026-08-10；招募機率 2026-08-25 補證）**：26 項技能已有至少一個 remake 消費端，包含 Assassin 的逐位行動、Diplomat 的有標註關係代理值、Famous 的雇用費折扣與逐回合招募機率、Megawealth 的回合 BC／維護費、Operations 指揮點數、Spymaster／Telepath 間諜攻防、Galactic Lore 星圖／怪獸／安塔蘭、Ordnance／Security 兩條戰鬥路徑，以及 Fighter Pilot。Tactics 依手冊「This skill is not implemented」保留無效果。細節與測試見 `docs/tech/leader-officer-skills.md`。
 - [x] **英文模式安全 fallback（2026-08-10）**：未知自訂名稱、未知族群／艦艇／建造項目、熱座名稱等顯示值改走 ASCII 保留或通用英文 fallback，不改存檔 key；英文 `-gamegallery` 在 Docker + Xvfb 產生 35/35 張 PNG，抽查主選單、星圖、外交、艦艇設計、輸入框，沒有越界／panic／fatal／error。AST 英文棘輪維持 16 條可解釋例外；不把查表 key 全域翻譯。
 - [x] **一次 20 回合開局經濟／士氣探針（2026-08-10）**：固定無事件開局 BC 50→264（首回合結算後 58）、人口 8→11、士氣 0% 全程、食物輸出 0→1、工業 6→8、研究 6 維持；沒有負食物或人口死亡螺旋。本輪只記錄體感基線，不擅自改收入公式；測試為 `internal/shell/economy_20_turn_test.go`。
-- [x] **本輪 remake gameplay polish（2026-08-11）**：外交 `FoodForCredits`／`ResearchExchange` 特殊貿易已有回合收益與存檔狀態；AI→玩家 `SABOTAGE` 會依 remake 性格政策選任務並讀取玩家建築池；食物複製機補上半食物／半 BC 計算與跨回合 BC 餘數保存（強推論，不冒充原版碎片付款已證實）；原版 `RawStatus=4` 的 `+0x37`／30 門檻已接成領袖清理路徑；IDA 追回活動 Trader 的 raw 經驗分桶、tier 1/2 `×10/×15` 最大加成，並接入 GAM／demo fallback 的貿易目標；本輪再接 `CMBTSHP` 固定 tick 近似、事件／爆炸 strategic consumer、SABOTAGE raw slot helper 對齊／結構化分數／Agent 實際扣除與領袖 ETA callback 近似。這些項目只證明可玩消費端存在；原版 CMBTSHP clock、score table 上游填值與 raw callback 設計／帝國欄位仍須併入核心 parity 矩陣，詳見 [`docs/re/remake-consumer-closure-20260811.md`](docs/re/remake-consumer-closure-20260811.md)。
+- [x] **本輪 remake gameplay polish（2026-08-11）**：外交 `FoodForCredits`／`ResearchExchange` 特殊貿易已有回合收益與存檔狀態；AI→玩家 `SABOTAGE` 會依 remake 性格政策選任務並讀取玩家建築池；當時加入的食物複製機半食物／半 BC 跨回合餘數已於 2026-08-28 被原版 `0xDF66F`／`0xE094F` 反證，列為後續 READY spec 必須移除的忠實度差異；原版 `RawStatus=4` 的 `+0x37`／30 門檻已接成領袖清理路徑；IDA 追回活動 Trader 的 raw 經驗分桶、tier 1/2 `×10/×15` 最大加成，並接入 GAM／demo fallback 的貿易目標；本輪再接 `CMBTSHP` 固定 tick 近似、事件／爆炸 strategic consumer、SABOTAGE raw slot helper 對齊／結構化分數／Agent 實際扣除與領袖 ETA callback 近似。這些項目只證明可玩消費端存在；原版 CMBTSHP clock、score table 上游填值與 raw callback 設計／帝國欄位仍須併入核心 parity 矩陣，詳見 [`docs/re/remake-consumer-closure-20260811.md`](docs/re/remake-consumer-closure-20260811.md)。
 - [x] **議會／安塔蘭視覺收尾（2026-08-11）**：`COUNCIL.LBX#1` 10 幀與 `ANTAROOM.LBX#1` 55 幀已由原版資產逐幀累積並接入播放；`CMBTSHP` 已接原版 `45*playerColor+rawPicture` 圖片映射，並以移動後固定 tick 播放近似 timer，靜止後不自行旋轉。原版 timer 仍標未知。畫面尺寸、雜湊、外部截圖與未宣稱項目見 [`docs/re/visual-oracle-20260811.md`](docs/re/visual-oracle-20260811.md)。
 - [x] **本機完整版與實機推廣片（2026-08-12，最終錄製與剪輯）**：`dist-all/` 集中保留三個僅供本機驗收的完整包（含使用者私有資料子集與 CJK 字型，不可公開散布）；其 SHA-256 核對檔列於 `dist-all/SHA256SUMS`。三平台完整包均由本輪工作樹離線重建，採 55 個經靜態消費端與封裝後畫廊交叉確認的正常玩家路徑 LBX（含 `COMBAT`、`INBOX`、`MULTIGM`、`RACESEL`、`STREAM`／`STREAMHD`），不是把 373 個原版檔全塞入；Linux 完整 AppImage 已在 Docker + Xvfb 從包內資料啟動，Windows ZIP 的 CRC／PE／根目錄、macOS universal `.app` 的結構／`lipo` 與三包的 55 檔集合亦已抽樣驗證。正式預覽片以封裝後 AppImage 在 Docker + Xvfb 走 `-game -promo-demo -promo-hide-cursor -noaudio`，經 21 個正常 UI 點擊實際完成新局、種族、命名旗色、星圖、殖民地人口調配、`RACES` 間諜操作、外交、戰術移動／射擊、撤離與戰果回寫後返回 `RACES`；不以截圖輪播冒充遊玩。依復古遊戲推廣片流程，另用 `scripts/make_live_promo.sh` 加入 4 秒銀河戰略風片頭、五個短暫章節識別與 5 秒片尾；章節框只佔 4:3 畫布外的左右側欄，不遮蓋遊戲 UI。成片為 72.767 秒 H.264/AAC、1280×720、30 fps、48 kHz stereo；完整解碼無警告，音量平均 -18.3 dB、峰值 -2.9 dB，七個代表影格確認片頭、五章實機與片尾文字均在安全框內。錄製若未收到 `LastBattle` 寫回的 `promo-demo: complete` 就拒絕輸出；新局與種族按鈕文字均以按鈕內安全區置中，導覽游標完全隱藏。原版 `STREAM.LBX` 配樂只在錄影後混入，未做逐曲人耳驗收，影片仍不可當作可公開散布素材。錄製、剪輯與權利邊界見 `scripts/capture_promo_gameplay.sh`、`scripts/make_live_promo.sh` 與 `dist-all/promo/README.md`。
 - [x] **音訊文件同步（2026-08-11）**：`docs/tech/audio-track-map.md` 已移除「外交音樂是單一 `bgmDiplo` 常數」的過期敘述，改記逐族好曲、壞曲池與原版門檻未知；IDA Pro 靜態證據見 [`docs/re/oracle-static-ida-20260811.md`](docs/re/oracle-static-ida-20260811.md)。
@@ -3597,8 +3607,10 @@ HONEST-STATUS 寫著「部分軍事/防禦建築(~13 棟,需艦隊駐防/軌道�
 
 ## ★ 2026-08-07 食物複製機(gap report 第 38 項(行星護盾等三棟))
 
-手冊 p.85 一整句就是完整規格,而且三個限定詞缺一不可:**two-for-one**(2 產能 → 1 食物)、
-**1 BC per food**(從國庫)、**as needed**(只補缺口)。
+手冊 p.85 給出三個玩家規則：**two-for-one**（2 產能 → 1 食物）、
+**1 BC per food**、**as needed**（只補缺口）。2026-08-28 的 IDA 證據補上手冊沒有交代的
+精確整數、優先序與維護費時序：原版只換整數食物，依人口群組逐段補缺，複製量再與建築維護
+合併、套氣候倍率後四捨五入；不保存半食物或跨回合半 BC 餘數。
 
 **最後那條是整棟建築的平衡**。漏掉它,殖民地會把全部產能換成食物、再靠既有的餘糧出售
 換回 BC——2 產能 → 1 食物 → 0.5 BC,在高產能低稅率下比稅收更好賺。**原版沒有這個東西。**
@@ -3607,10 +3619,10 @@ HONEST-STATUS 寫著「部分軍事/防禦建築(~13 棟,需艦隊駐防/軌道�
 **維護費 10 BC** 手冊與執行檔建築表兩個來源一致,而且是**全表最貴**(第二貴是 5)
 ——測試連這點都釘住,被改小就失衡。
 
-**接在污染扣完之後、人口成長之前**:換算要用可用產能,而成長同時吃盈餘與淨產能兩個數字。
+**接在 pre-import 重算鏈的食物／工業產出之後、BC 維護之前**：`0xDF66F` 使用當下
+`+0xE7/+0xE9` 與人口群組消耗，`0xE094F` 再消費 `+0x114`。
 
-**誠實留白**:手冊沒說國庫不夠付會怎樣,**不編規則**——換算照做、成本照報。硬加一條
-「付不起就不換」會憑空發明規則,而且讓饑荒在破產時突然惡化。
+國庫不足的後續處理由帝國破產鏈負責；殖民地 producer 本身不以國庫餘額阻止換算。
 
 **順帶清掉過期斷言**:`session.go` 那段「其餘 20 項…暫不建模」的清單被第 38/38 項做掉六棟,
 已改寫成逐項說明還缺哪個子系統。建築表 41 棟裡未被消費的剩 **7 棟**,都是真的缺子系統。

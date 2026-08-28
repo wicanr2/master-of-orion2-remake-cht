@@ -174,7 +174,7 @@ Computers → Biology → Physics → Force Fields)排列。「研究成本」�
 | 建築 | 為何不建模 |
 |---|---|
 | 異族管理中心(p.92-93) | **部分接線,效果暫不可見**:`colonyMoralePercent` 的多種族懲罰(`gamedata.MoraleMultiRacialPenalty`)因 `ColonyState` 不追蹤「殖民地是否含未同化外族人口」而固定不套用,故此建築目前對士氣沒有可觀察差異;其「加速同化征服人口」效果同樣未建模(remake 無同化速率系統)。待多種族人口追蹤/同化系統落地後補上。 |
-| 食物複製機(p.85) | **已接線**：饑荒缺口以半食物單位補足，2 半產能換 1 半食物，半 BC 付款以 `PlayerState.FoodReplicatorBCHalfRemainder` 跨回合保存；支付碎片的原版 runtime 時機仍未知。 |
+| 食物複製機(p.85) | **已接線但不忠實**：目前 remake 會補半食物並跨回合保存半 BC；IDA 已證實原版 `0xDF66F` 只以 2 工業換 1 個整數食物，`0xE094F` 再把每個複製食物以 1 BC 併入建築維護、套氣候倍率後四捨五入。此差異待 RE gate 關閉後依 READY spec 修正，見 `docs/re/colony-food-replicator-bc-maintenance-audit-20260828.md`。 |
 | 軍事/防禦類(飛彈基地、地面砲台、阿提米絲系統網、行星輻射/通量/屏障護盾、曲速力場干擾器) | 對應的艦隊駐防／軌道防禦系統仍未完整閉合。海軍陸戰隊營／裝甲營房的駐軍生成另見 `ground_invasion.go`。星基／戰鬥站／星辰要塞的指揮評等供給已於上表接線；其餘掃描與戰鬥效果仍依各自活表判定。 |
 
 ## 參考來源

@@ -357,7 +357,7 @@ Barren **0** / Desert **1** / Tundra **1** / Ocean **2** / Swamp **2** / Arid **
 
 1. **不要**加任何 +2 母星食物加成、**不要**把 `climateFoodPerFarmer` 表 ×2、**不要**動 climate 枚舉——三者都會製造 bug。remake 的整數氣候表(Terran=2)本身**正確**。
 2. **真正該修的是存檔解析/稽核端**:`internal/save` dump 出的 `FoodPerFarmer` 是半單位,和整單位氣候表比較前應 `÷2`(或在欄位註明半單位語意)。此謎題本質是「audit 比對時的單位不一致」,非 gameplay 缺陷。
-3. remake 已採用「半單位整數」表示 Cybernetic 的食物／生產消耗：`ColonyOutput` 保留 `*Half` 精確欄位，舊整數欄位供既有 UI 與相容存檔使用；帝國收入與建造進度讀精確欄位。食物複製機現在也走半單位轉換：半食物花 2 半產能，半 BC 付款以 `PlayerState.FoodReplicatorBCHalfRemainder` 跨回合累積，兩個半 BC 才扣 1 BC。這是與「half-unit 食物帳本 + 1 BC/完整食物」一致的**強推論**，原版 runtime 的碎單位付款時機仍未直接觀測。
+3. remake 已採用「半單位整數」表示 Cybernetic 的食物／生產消耗；這對人口消耗成立，但不可外推到食物複製機。IDA 已證實原版 `0xDF66F` 會把 spent industry 壓成偶數，只產生整數食物；`0xE094F` 將整數複製量以每食物 1 BC 併入建築維護、套氣候倍率後四捨五入。remake 現有 `FoodReplicatorConvertHalf` 與 `FoodReplicatorBCHalfRemainder` 因此是已被反證的模型，待 RE gate 後依 READY spec 移除。證據見 `docs/re/colony-food-replicator-bc-maintenance-audit-20260828.md`。
 
 **信心度:高。** 一手來源為 openorion2 對原版存檔格式的逆向欄位定義(明文 `// in half-units`),與手冊 p.59 表、StrategyWiki/Fandom 的 Terran base=2 三方交叉一致,且同時無矛盾地解釋了「工業/研究為何沒跟著變 2x」。不需再取得 varied 存檔即可定案。
 

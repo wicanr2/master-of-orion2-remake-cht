@@ -94,6 +94,12 @@ BC、維護、納貢、領袖及事件分流；其已閉合欄位沿用既有專
 `+2`、Deep Core Mine `+3` 與 Microlite Construction `+1`。完整 caller、欄位與混合種族
 下游見 [`colony-industry-per-worker-audit-20260828.md`](colony-industry-per-worker-audit-20260828.md)。
 
+`Colony_Replicators_ @ 0xDF66F` 與 `Colony_BC_Maintenance_ @ 0xE094F` 亦已閉合：複製機
+依人口群組優先序以 2 工業換 1 個整數食物，結果寫 `colony+0x114`；BC 維護把它以每食物 1 BC
+併入建築維護，再套有效氣候倍率與整數四捨五入。`Colony_Environmental_Stuff_ @ 0xE1CED`
+對 `colony+0xE2` 的 climate producer 已追回，但其 `+0xE0` 另一輸出仍待食物 producer 專題。
+見 [`colony-food-replicator-bc-maintenance-audit-20260828.md`](colony-food-replicator-bc-maintenance-audit-20260828.md)。
+
 ## 其他 caller 與停止線
 
 `E2B31` 另有兩個 callsite `0xE587C`、`0xE5ADD`，都位於
@@ -108,7 +114,8 @@ runtime helper 被排除。第二遍 `E2B31` 已證實消費它們改變後的 c
 
 - **已證實**：一次性套用鏈、兩遍 derived rebuild、六階段順序、active record gates、三個 raw
   cache producer、殖民地專業公式、開局兩個額外 caller。
-- **未一併閉合**：除已閉合的每工人工業 producer 外，其餘 13 個 pre-import producer 與
+- **未一併閉合**：除已閉合的每工人工業、食物複製機與 BC 維護 producer 外，其餘 11 個
+  pre-import producer（其中環境 producer 只閉合 climate 子欄位）與
   `Update_Player_Stats_` 的每一條公式、封鎖選擇、
   殖民者遷移規則，以及 `+0x5EA` bit 累加的高層 consumer 語意。它們應按玩家影響另開窄切片。
 - **remake 判定**：目前 `RunEmpireTurn`／shell helpers 可玩，但尚未依此精確 phase ordering 做

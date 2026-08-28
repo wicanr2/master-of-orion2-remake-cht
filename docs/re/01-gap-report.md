@@ -4703,8 +4703,12 @@ AI 母星仍保留既有「無完整種族環境初始化」的模型差異；�
 
 ## 104. 食物複製機半食物／半 BC（2026-08-11）
 
-前文「複製機仍只換完整食物、半 BC 未知」是 2026-08-09 的歷史狀態，現已由程式
-接線取代，但不把它誤寫成原版手冊逐字證實：
+**勘誤（2026-08-28）**：本節記錄的是當時依 half-unit 帳本作出的 remake 強推論，現已被
+IDA 原始指令推翻，不能再作原版規格。`Colony_Replicators_ @ 0xDF66F` 強制 spent industry
+為偶數，只產生整數食物；`Colony_BC_Maintenance_ @ 0xE094F` 把整數複製量以每食物 1 BC
+併入建築維護、套氣候倍率後四捨五入。完整原始位址與 consumer 見
+`docs/re/colony-food-replicator-bc-maintenance-audit-20260828.md`。以下保留錯誤形成原因與當時
+實作護欄，不能被後續工作升格為事實：
 
 - `gamedata.FoodReplicatorConvertHalf` 以 half-food／half-industry 計算：每半食物
   花 2 半產能，完整食物仍等於手冊的 2 產能；因此 Cybernetic 奇數人口的半食物
