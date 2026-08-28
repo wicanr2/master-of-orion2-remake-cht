@@ -5705,6 +5705,15 @@ func (s *GameSession) aiExpand(i int) {
 	if i < 0 || i >= len(s.AIPlayers) {
 		return
 	}
+	currentStar := aiFleetStar(s.AIPlayers[i])
+	colonyBase := -1
+	for colony, star := range s.AIPlayers[i].ColonyStars {
+		if star == currentStar && colony < len(s.AIPlayers[i].ColonyBuildings) &&
+			s.AIPlayers[i].ColonyBuildings[colony][ColonyBaseBuildName] {
+			colonyBase = colony
+			break
+		}
+	}
 	colonyShip := -1
 	for ship := range s.AIPlayers[i].Ships {
 		candidate := s.AIPlayers[i].Ships[ship]
@@ -5715,13 +5724,12 @@ func (s *GameSession) aiExpand(i int) {
 	}
 	// All_AI_Colonize_ → sub_E65F8 只處理實際位於 AI 艦隊／軍官記錄中的殖民船；
 	// 沒有來源時不會依固定週期免費建立殖民地。
-	if colonyShip < 0 {
+	if colonyBase < 0 && colonyShip < 0 {
 		return
 	}
 	if s.AIPlayers[i].FleetETA > 0 {
 		return
 	}
-	currentStar := aiFleetStar(s.AIPlayers[i])
 	if !s.aiCanExpandInto(i, currentStar) {
 		return
 	}
@@ -5781,16 +5789,21 @@ func (s *GameSession) aiExpand(i int) {
 		}
 		s.AIPlayers[i].Colonies = append(s.AIPlayers[i].Colonies, colony)
 		s.AIPlayers[i].ColonyStars = append(s.AIPlayers[i].ColonyStars, idx)
-		// ColonyBuildings 同步 append 空 map,維持三個平行陣列等長(見 AIOpponent.ColonyBuildings
-		// 欄位註解)——手冊只保證母星有星基,新拓殖星沒有,故新 AI 殖民地開局無建築可扣。
-		s.AIPlayers[i].ColonyBuildings = append(s.AIPlayers[i].ColonyBuildings, map[string]bool{})
+		// sub_5E55F @ 0x5E766 在建立新殖民地時寫 colony+0x141=1；raw 11 Colony Base
+		// 是可由後續同星系殖民消耗的一次性來源，不是空建築 map。
+		s.AIPlayers[i].ColonyBuildings = append(s.AIPlayers[i].ColonyBuildings,
+			map[string]bool{ColonyBaseBuildName: true})
 		s.AIPlayers[i].ColonyPlanets = append(s.AIPlayers[i].ColonyPlanets, planetIdx)
 		s.AIPlayers[i].ColonyMarines = append(s.AIPlayers[i].ColonyMarines, 0)
 		s.AIPlayers[i].ColonyTanks = append(s.AIPlayers[i].ColonyTanks, 0)
 		s.AIPlayers[i].MarineBarracksAge = append(s.AIPlayers[i].MarineBarracksAge, 0)
 		s.AIPlayers[i].ArmorBarracksAge = append(s.AIPlayers[i].ArmorBarracksAge, 0)
-		s.AIPlayers[i].Ships = append(s.AIPlayers[i].Ships[:colonyShip], s.AIPlayers[i].Ships[colonyShip+1:]...)
-		s.syncAIShipStrength(i)
+		if colonyBase >= 0 {
+			delete(s.AIPlayers[i].ColonyBuildings[colonyBase], ColonyBaseBuildName)
+		} else {
+			s.AIPlayers[i].Ships = append(s.AIPlayers[i].Ships[:colonyShip], s.AIPlayers[i].Ships[colonyShip+1:]...)
+			s.syncAIShipStrength(i)
+		}
 		s.syncAIRaceEngineFields(&s.AIPlayers[i])
 		s.consumeSpecialOnColonize(planetIdx) // 原住民被 AI 併入人口後同樣從行星上消失(見 colonization.go)
 		return

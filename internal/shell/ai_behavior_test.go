@@ -104,6 +104,11 @@ func TestAIExpandConsumesColonyShipAndCannotRepeatFree(t *testing.T) {
 			t.Fatalf("完成拓殖後應消耗殖民船：%+v", a.Ships)
 		}
 	}
+	// 新殖民地依原版 writer 自帶 Colony Base；本測試要驗「沒有任何來源」時不會免費拓殖，
+	// 因此先明確移除該另一種合法來源。Colony Base 的連鎖另有專測。
+	for _, buildings := range a.ColonyBuildings {
+		delete(buildings, ColonyBaseBuildName)
+	}
 	s.aiExpand(0)
 	if len(a.Colonies) != before+1 {
 		t.Fatalf("沒有第二艘殖民船時不得免費再拓殖：%d → %d", before+1, len(a.Colonies))

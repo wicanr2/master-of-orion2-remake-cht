@@ -24,6 +24,12 @@ ROOTS = {
     "raw_ai_colony_route": 0xE6CAA,
     "raw_colony_creation": 0xE5EB3,
     "raw_colony_candidate_a": 0xE6071,
+    "raw_find_colony_base_source": 0xFDA3F,
+    "raw_find_colony_ship_source": 0xFDAA7,
+    "raw_remove_colony_building": 0x145EA,
+    "raw_ai_colony_product_pass": 0xD10EE,
+    "raw_colony_base_management": 0xE6170,
+    "raw_ai_colonization_planner": 0xFDB01,
 }
 
 
@@ -71,6 +77,23 @@ def function_record(requested):
     }
 
 
+def colony_base_flag_operand_functions():
+    out = {}
+    for fea in idautils.Functions():
+        hits = []
+        for ea in idautils.FuncItems(fea):
+            text = (idc.generate_disasm_line(ea, 0) or "").lower()
+            if "+141h]" in text or "+141h," in text:
+                hits.append(instruction(ea))
+        if hits:
+            out[f"0x{fea:X}"] = {
+                "original_name": ida_name.get_name(fea) or "<unnamed>",
+                "hits": hits,
+                "callers": [f"0x{x:X}" for x in idautils.CodeRefsTo(fea, 0)],
+            }
+    return out
+
+
 def main():
     ida_auto.auto_wait()
     source = os.environ["MOO2_IDA_INPUT"]
@@ -89,6 +112,7 @@ def main():
         "address_basis": "IDA linear; DOS/4GW LE image",
         "semantic_status": "unknown_pending_review",
         "roots": {name: function_record(ea) for name, ea in ROOTS.items()},
+        "colony_base_flag_operand_functions": colony_base_flag_operand_functions(),
     }
     with open(os.environ["MOO2_IDA_OUTPUT"], "w", encoding="utf-8") as stream:
         json.dump(report, stream, ensure_ascii=False, indent=2)

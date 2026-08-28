@@ -1,7 +1,7 @@
 # AI 殖民規格
 
 規格狀態：實際殖民來源、抵達閘門、同星系五軌道選點與母星原生重力 `CONFORMED`；
-單主力艦隊跨星航線 `APPROXIMATED`；多艦隊與 Colony Base 來源 `DRAFT`。
+單主力艦隊跨星航線及 Colony Base 上游 expansion gate `APPROXIMATED`；多艦隊 `DRAFT`。
 
 證據見 [`../re/ai-colonization-audit-20260828.md`](../re/ai-colonization-audit-20260828.md)。
 
@@ -17,10 +17,15 @@
    殖民地。跨星目標必須先保存 `FleetDestStar/FleetETA`，抵達後的下一次殖民掃描才能消耗船。
 7. 同星系只掃 `PlanetsAt(star)` 的五個軌道，以 `sub_D27A7` 對每顆未殖民行星計基礎價值，
    嚴格較高才替換；不得以第一顆可殖民行星或全圖 contextual 分數代替。
+8. AI Colony Base 不走一般建築 scorer。來源殖民地在同星系有未殖民同氣候行星且
+   `population/8 + NetIndustry >= 13` 時，可強制建造 200 PP raw 11；完工保存 source flag。
+9. 同時有 Colony Base 與 Colony Ship 時優先消耗 base；新殖民地依 `colony+0x141` writer
+   自帶新的 Colony Base，讓同星系剩餘行星可繼續走同一條 consumer。
 
 ## 尚未閉合
 
 - 跨星選路仍以單一主力艦隊代理：含 Colony Ship 的整支艦隊一同航行，尚未表示每艘船與多支
   艦隊。此 adapter 已有 ETA／抵達閘門，但不是原版多艦隊 route planner。
-- Colony Base 的同星系建造、消耗與來源殖民地人口／產品鏈尚未接 AI。
+- Colony Base 的已證實同氣候／工業門檻、200 PP 產品與消耗已接；`sub_D10EE` expansion gate
+  其餘帝國陣列仍為 `APPROXIMATED`。
 - 多艘 Colony Ship 的獨立位置、領袖解除任命與多艦隊並行仍為 DRAFT。

@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/engine"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
@@ -386,6 +387,42 @@ func TestAIPicksHighestValuePlanetWithinCurrentSystem(t *testing.T) {
 	a := &s.AIPlayers[0]
 	if got := a.ColonyPlanets[len(a.ColonyPlanets)-1]; got != want {
 		t.Fatalf("同星系應殖民嚴格最高分行星 %d，得到 %d", want, got)
+	}
+}
+
+func TestAIColonyBaseCompletesAndIsConsumedBeforeColonyShip(t *testing.T) {
+	s := aiOnlySession(t)
+	a := &s.AIPlayers[0]
+	a.Colonies[0].Climate = gamedata.TERRAN
+	if len(a.ColonyBuildings) == 0 {
+		a.ColonyBuildings = []map[string]bool{{}}
+	}
+	if a.ColonyBuildings[0] == nil {
+		a.ColonyBuildings[0] = map[string]bool{}
+	}
+	// raw 11 不走一般零分 scorer；sub_D10EE 在同氣候未殖民行星與工業門檻成立時強制產品。
+	out := engine.RunEmpireTurn(a.Player, a.Colonies)
+	out.Colonies[0].NetIndustry = 13
+	if !s.aiShouldBuildColonyBase(0, 0, out.Colonies[0]) {
+		t.Fatal("同星系有合法目標且工業達門檻時應建立 Colony Base 產品")
+	}
+	key := aiColonyBuildKey(a, 0)
+	a.ColonyBuilds = map[int]ColonyBuild{key: {Name: ColonyBaseBuildName, Cost: 200, Progress: 199}}
+	out.Colonies[0].NetIndustry = 1
+	s.advanceAIColonyBuilds(0, out)
+	if !a.ColonyBuildings[0][ColonyBaseBuildName] {
+		t.Fatal("200 PP 完工後應保存 source colony 的 raw 11 旗標")
+	}
+	shipsBefore := len(a.Ships)
+	s.aiExpand(0)
+	if a.ColonyBuildings[0][ColonyBaseBuildName] {
+		t.Fatal("建立同星系殖民地後應消耗 Colony Base")
+	}
+	if len(a.Ships) != shipsBefore {
+		t.Fatal("同時有 Colony Base 與 Colony Ship 時原版優先消耗 base，不得移除艦艇")
+	}
+	if !a.ColonyBuildings[len(a.ColonyBuildings)-1][ColonyBaseBuildName] {
+		t.Fatal("新殖民地應依 colony+0x141 writer 取得新的 Colony Base")
 	}
 }
 

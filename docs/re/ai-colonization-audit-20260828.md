@@ -27,6 +27,14 @@
    以 `sub_D27A7` 估值並取嚴格較高者；找不到時不建立殖民地。
 4. `sub_E5EB3 @ 0xE5EB3..0xE6071` 建立新殖民地、寫入一名起始人口、處理原住民、重算殖民地，
    最後重算星系狀態。這與既有玩家／AI 共用 typed 建構器的玩家可見結果一致。
+5. `sub_FDA3F @ 0xFDA3F..0xFDAA7` 反掃來源星系五軌道，找到 owner 相同且
+   `colony+0x141 != 0` 的殖民地便回傳；`sub_145EA(source,11)` 清除的正是
+   `colony+0x136+11`。`sub_E65F8` 在 Colony Base 與 Colony Ship 同時存在時先走 base 分支。
+6. `sub_D10EE` 不經 raw 11 的一般零分 scorer：在 expansion gate 成立、候選目標與來源行星
+   climate byte 相同、來源 `population/8 + industry - pollution >= 13` 且尚無 base 時，直接把
+   product raw word 寫成 11。原版建築表成本為 200 PP。
+7. `sub_5E55F @ 0x5E766` 在建立新殖民地時直接寫 `colony+0x141=1`；新殖民地因此持有新的
+   Colony Base，不是只有地表畫面虛擬顯示。
 
 ## Remake 訂正與剩餘邊界
 
@@ -39,7 +47,10 @@
   契約是「從軌道 4 反掃至 0，未殖民且基礎值嚴格較高才取代」；同分保留較高軌道。
 - **強推論近似：**目前只有一支 AI 主力艦隊；跨星 adapter 把含 Colony Ship 的整支艦隊送往
   contextual 分數最高的合法星系，保存真實 ETA，抵達後下一回合才由已證實的本地 consumer
-  建殖民地。原版多艦隊 route planner、Colony Base 同星系來源及多支殖民艦仍待窄切片。
+  建殖民地。原版多艦隊 route planner 及多支殖民艦仍待窄切片。
+- Colony Base typed 鏈現依上述 producer／consumer 建模：AI 強制產品成本 200 PP、完工保存
+  source flag、同星系殖民優先消耗 base，且新殖民地重新取得 base。尚未閉合的是 `sub_D10EE`
+  expansion gate 的所有上游帝國陣列與真人 UI 專屬建造操作；目前只採已證實的同氣候與工業門檻。
 
 ## 同輪開局資料勘誤
 

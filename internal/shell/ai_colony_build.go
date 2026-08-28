@@ -8,6 +8,8 @@ import (
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
 
+const ColonyBaseBuildName = "拓殖基地"
+
 // aiColonyBuildKey 以星系索引保存佇列；舊存檔若缺 ColonyStars，使用不會和合法星系
 // 索引衝突的負值，待對映恢復後自然建立正式 key。
 func aiColonyBuildKey(a *AIOpponent, colony int) int {
@@ -1184,8 +1186,12 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 		build := a.ColonyBuilds[key]
 		if build.Name == "" {
 			var ok bool
-			build, ok = chooseAIColonyBuilding(a, i, out, s.Difficulty, s.Turn,
-				s.originalAIStrategicPressureContext(aiIndex, i))
+			if s.aiShouldBuildColonyBase(aiIndex, i, out.Colonies[i]) {
+				build, ok = ColonyBuild{Name: ColonyBaseBuildName, Cost: 200}, true
+			} else {
+				build, ok = chooseAIColonyBuilding(a, i, out, s.Difficulty, s.Turn,
+					s.originalAIStrategicPressureContext(aiIndex, i))
+			}
 			if !ok {
 				shipProduction += out.Colonies[i].NetIndustry
 				continue
@@ -1221,4 +1227,34 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 		delete(a.ColonyBuilds, key)
 	}
 	return shipProduction
+}
+
+// aiShouldBuildColonyBase 對映 sub_D10EE 中繞過 Colony_Building_Score_ 的 raw 11 強制產品。
+// raw 11 在一般 scorer 固定為 0；只有同星系存在未殖民、同氣候行星，來源殖民地尚無
+// Colony Base，且可用工業加 population/8 至少 13 時，才以原版表成本 200 PP 排入產品。
+func (s *GameSession) aiShouldBuildColonyBase(aiIndex, colony int, out engine.ColonyOutput) bool {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) {
+		return false
+	}
+	a := &s.AIPlayers[aiIndex]
+	if colony < 0 || colony >= len(a.Colonies) || colony >= len(a.ColonyStars) {
+		return false
+	}
+	if colony < len(a.ColonyBuildings) && a.ColonyBuildings[colony][ColonyBaseBuildName] {
+		return false
+	}
+	if out.NetIndustry+a.Colonies[colony].Population/8 < 13 {
+		return false
+	}
+	star := a.ColonyStars[colony]
+	for _, planet := range s.PlanetsAt(star) {
+		if s.PlanetColonized(planet) || planet < 0 || planet >= len(s.Planets) {
+			continue
+		}
+		p := s.Planets[planet]
+		if p.TypeID == gamedata.HABITABLE && climateColonizable(p.ClimateID) && p.ClimateID == a.Colonies[colony].Climate {
+			return true
+		}
+	}
+	return false
 }

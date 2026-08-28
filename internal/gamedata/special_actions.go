@@ -11,8 +11,9 @@ package gamedata
 // 殖民地狀態,是帝國整體效果(engine.PlayerState.ActiveFreighters 增量 + 一次性現金加成,見
 // applySpecialAction 的「運輸艦隊」case),但共用同一個「Special 一次性行動、可重複建造、不記入
 // ColonyBuildings dedup」框架,故沿用同一個 SpecialAction 型別收錄,不另開新型別。Colony Base
-// 是另一個 Special 行動,但它走專屬的起始殖民/新殖民地流程(見 docs/tech/homeworld-init.md),
-// 不透過這裡的一般建造佇列,故不收錄於本表。
+// 另走 raw 11 專屬鏈：AI 由 sub_D10EE 強制指定產品，不經一般零分 scorer；完工後保存 source
+// colony flag，殖民時消耗，再由新殖民地 writer 重建。故不收錄於本表，見
+// docs/spec/ai-colonization.md。
 //
 // 前置研究主題(PrereqTopic)來源:openorion2/src/tech.cpp 的 research_choices[] 是以
 // ResearchTopic 的整數值直接當陣列索引(`research_choices[_topic]`,非依 techtree[field][level]

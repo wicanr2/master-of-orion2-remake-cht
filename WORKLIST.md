@@ -73,6 +73,10 @@
   執行 `sub_E65F8` consumer，跨星必須先走主力艦隊 ETA；同星系五軌道改用 `sub_D27A7`
   基礎值嚴格最高分，不再取第一顆或混用 contextual 值。單主力艦隊航線仍為近似；Colony Base、
   多殖民艦獨立位置與多艦隊 route planner 仍是此項剩餘 DRAFT。
+  Colony Base 下游亦已接：`sub_FDA3F` 以 `colony+0x141` 找同星系來源，`sub_D10EE` 在同氣候
+  目標與 `population/8 + NetIndustry >= 13` 時繞過零分 scorer 強制建 200 PP raw 11；殖民時
+  優先消耗 base，而 `sub_5E55F` 讓新殖民地重新取得 base。`sub_D10EE` expansion gate 的完整
+  上游帝國陣列仍列近似，不影響已閉合 producer／consumer。
 
 - [~] **玩家可見文案外部化**：2026-08-26 已把既有 `assets/i18n/*.json` 與內嵌副本統一轉為
   有序 JSON 並移除 `go:embed` 副本，載入器保留 per-source、先出現者優先及原版單位元控制標記契約。剩餘工作是逐畫面
