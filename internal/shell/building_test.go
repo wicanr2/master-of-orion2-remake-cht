@@ -57,9 +57,10 @@ func TestBuildingLongTermEffect(t *testing.T) {
 	t.Logf("自動工廠:工業/工人 %d→%d(+1),固定工業 %d→%d(+5),不重複疊加", startIPW, afterIPW, startFlat, afterFlat)
 }
 
-// TestResearchLabEffect 驗證研究實驗室只增加殖民地固定研究 +5，不改每位科學家的產出。
-// 原版 sub_DFE77 的研究人口基礎值不讀建築旗標；sub_DFF74 才依建築 ID 35 固定加 5。
-func TestResearchLabEffect(t *testing.T) {
+// TestCurrentRemakeResearchLabRegression 固定目前 remake 的已知偏差，不能作為原版對齊證據。
+// 2026-08-28 IDA 重審證實 DFDC6 另使研究實驗室每位科學家 +1；RE-first gate 關閉並形成
+// READY spec 後，必須連同固定 +5 一起改寫本測試與實作。
+func TestCurrentRemakeResearchLabRegression(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
 	start := s.PlayerColonies[0].ResearchPerScientist
@@ -76,7 +77,10 @@ func TestResearchLabEffect(t *testing.T) {
 	}
 }
 
-func TestResearchBuildingsUseFixedOutputOnly(t *testing.T) {
+// TestCurrentRemakeResearchBuildingRegression 固定目前 remake 尚未接上 DFDC6 逐科學家層的偏差。
+// 這不是原版規則測試；原版的研究實驗室／行星超級電腦／銀河網路中心同時具有逐科學家與
+// 固定加成，自動實驗室才只有固定 +30。
+func TestCurrentRemakeResearchBuildingRegression(t *testing.T) {
 	tests := []struct {
 		name string
 		want int

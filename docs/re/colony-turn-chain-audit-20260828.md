@@ -123,7 +123,7 @@ runtime helper 被排除。第二遍 `E2B31` 已證實消費它們改變後的 c
 
 - **已證實**：一次性套用鏈、兩遍 derived rebuild、六階段順序、active record gates、三個 raw
   cache producer、殖民地專業公式、開局兩個額外 caller。
-- **未一併閉合**：pre-import 鏈中的研究基礎／研究總產出、士氣、工業轉稅與 BC 產出仍有
+- **未一併閉合**：pre-import 鏈中的士氣、工業轉稅與 BC 產出仍有
   未閉合子鏈；`Update_Player_Stats_` 的每一條公式、封鎖選擇、
   殖民者遷移規則，以及 `+0x5EA` bit 累加的高層 consumer 語意。它們應按玩家影響另開窄切片。
 - **remake 判定**：目前 `RunEmpireTurn`／shell helpers 可玩，但尚未依此精確 phase ordering 做

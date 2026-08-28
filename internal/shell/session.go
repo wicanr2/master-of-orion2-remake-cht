@@ -2827,7 +2827,7 @@ func (s *GameSession) applyBuildingEffect(i int, name string) {
 		// 舊版 IndustryPerWorker+=2 是「per-worker 值虛增以湊固定效果」的近似,訂正回手冊 +1。
 		c.IndustryPerWorker += 1
 		c.FlatIndustry += 5
-	case "研究實驗室": // 原版 sub_DFF74:殖民地固定 +5；不改每位科學家的基礎產出。
+	case "研究實驗室": // 現行 remake 只接 sub_DFF74 固定 +5；原版 DFDC6 每科學家 +1 待 READY spec。
 		c.FlatResearch += 5
 	case "太空港": // Spaceport p.79:該殖民地所有來源 BC 收入 +50%(手冊原文,不是工業加成)。
 		c.IncomeBonusPercent += 50
@@ -2843,9 +2843,9 @@ func (s *GameSession) applyBuildingEffect(i int, name string) {
 		c.AtmosphericRenewer = true
 	case "核心廢料場": // Core Waste Dumps:完全消除污染,對應 engine.ColonyState.CoreWasteDump 既有旗標
 		c.CoreWasteDump = true
-	case "行星超級電腦": // 原版 sub_DFF74:殖民地固定 +10。
+	case "行星超級電腦": // 現行 remake 只接 sub_DFF74 固定 +10；原版 DFDC6 每科學家 +2 待 READY spec。
 		c.FlatResearch += 10
-	case "銀河網路中心": // 原版 sub_DFF74:殖民地固定 +15。
+	case "銀河網路中心": // 現行 remake 只接 sub_DFF74 固定 +15；原版 DFDC6 每科學家 +3 待 READY spec。
 		c.FlatResearch += 15
 	case "水耕農場": // Hydroponic Farm p.99:殖民地食物整體固定 +2(手冊只有固定值,無 per-farmer 敘述)。
 		// 舊版誤建模成 FoodPerFarmer+=1(每農夫 +1),訂正為純固定值、不再動 FoodPerFarmer。
