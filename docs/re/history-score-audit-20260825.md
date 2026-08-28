@@ -5,6 +5,9 @@
 - 輸入：`Orion2.exe`，SHA-256 `7ae2ac2e5904ca330009af2827279d889906b0b9b7a8854c38eb707a56e955b5`。
 - 工具：IDA Pro 9.4、IDAPython；位址均為 IDA 線性位址（DOS/4GW LE object #1）。
 - 匯出器：`tools/ida/audit_history_score.py`；只在暫存 `.i64` 副本運行，保留原始名稱、位址、bytes 與 operand。
+- 2026-08-28 追加正式證據：
+  [`evidence/history-score-ida-20260828.json`](evidence/history-score-ida-20260828.json)，含
+  `player+0x224` 全庫 operand 掃描、83 筆 topic record 與 SHA-256 可回查 bytes。
 - 以下原始算式與欄位排列為**已證實**；Go 無一對一 raw 快取時的 typed 對映另標示。
 
 ## Record_History_ 的四項資料
@@ -23,6 +26,41 @@
 直到所有本回合值不超過 250；divisor 改變時，所有玩家過去 350 格都依
 `oldValue×oldDivisor/newDivisor` 重縮放，最後才寫入目前 ring index。故現行 remake 的 400 筆
 未正規化人口／BC／艦隊模型並非原版資料形狀；BC 與「當回合 Research」也不是原版圖表指標。
+
+## Technology `player+0x224` producer 閉合（2026-08-28）
+
+全庫直接 operand 掃描只找到三個函式：
+
+| raw 函式 | 位址 | `+0x224` 用途 |
+|---|---:|---|
+| `sub_E4535` | `0xE4535..0xE45FD` | 唯一直接清零／累加 writer |
+| `sub_10208A` | `0x10208A..0x1022CB` | `Record_History_` 讀取端 |
+| `sub_21B6D` | `0x21B6D..0x2230A` | 事件訊息 raw case 2 的科技排名讀取端 |
+
+`sub_E4535` 每次先把 `player+0x224` 清零，再計算：
+
+1. topic `74..0`：讀 `player+0xC4+topic == 3` 作已完成旗標，讀 23-byte topic record
+   的四個 `technology_value_slots` 作額外 known-state 分子／分母，再乘該 topic 的
+   `baseCost` 並作帶號整數除法。
+2. 本版 83 筆 record 的四個 `technology_value_slots` **全部為零**，所以一般 topic 的實際
+   1.31 公式精確簡化為：完成 topic 就加完整 `baseCost`，未完成加零；不是 application
+   比例，也不是本回合 RP。
+3. topic `75..82`：若 Hyper raw level 非零，加入
+   `baseCost + 10000×(level−1)`。本版八筆 `baseCost` 均為 15000，因此各領域的逐級值為
+   15000、25000、35000……。
+
+83×23 bytes 位於 `0x17D904`，合併 SHA-256 為
+`5a24f959d09333c177cef5d2459111244c1e2cadb01b2da3d9885c535d3b2877`。匯出同列保存
+topic index、raw bytes、兩個研究選項導覽值、四個實際 technology-value slot 與 base cost；
+研究選項欄只供表格導覽，不與全零 value slots 混稱。
+
+時序亦已證實：`Next_Turn_Calc_ @ 0x136B3` 在 `0x13742` 先呼叫 `sub_E4F49`；後者對每位
+存活帝國依序做產出重算、突破檢查，並於 `0xE4FA8` 呼叫 `sub_E4535`。主鏈直到
+`0x137FD` 才呼叫 `Record_History_`，所以當回合歷史使用研究處理後重算出的科技值。
+
+這一結論把 remake 先前「以完成主題成本重建 `+0x224`」由強推論升格為本版已證實；現行
+Hyper `15000+10000×levelFromZero` 也與 raw 公式一致。單元測試仍只證 remake 自洽，升格依據
+是上述唯一 writer、兩個 consumer、topic bytes 與主鏈時序。
 
 ## 最終分數 orchestrator
 
@@ -50,6 +88,7 @@ final = (rawEightPartTotal * multiplierPercent + 50) / 100
 ## Remake 對映與剩餘限制
 
 - **已接**：八項總和、未使用初始 Picks、Evolutionary Mutation 尚未消費的 4 Picks、百分比與四捨五入；倍率進 JSON／熱座狀態。
-- **仍待本項下一切片**：把 INFO History 從三項未正規化 400 筆改為上述四項 350-byte ring、保存四個 divisor，並為舊 JSON 做明確遷移。
+- **已接且已由本輪 RE 升格**：INFO History 四項 350-byte ring、四個 divisor、舊 JSON 遷移，
+  以及一般 topic／Hyper 的 `player+0x224` 等價重建。
 - **資料模型限制**：原版逐玩家 `+0x1F2[target]` 的殲滅歸屬尚未保存；現行單人 fallback 仍會把 AI 互滅算給玩家，不能宣稱該輸入已對齊。
 - remake 尚無 Evolutionary Mutation 再選能力 UI，因此取得科技後四點視為全未使用；未來加入 mutation UI 時，必須改存實際剩餘點數。

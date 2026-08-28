@@ -7,6 +7,7 @@ import os
 import ida_auto
 import ida_bytes
 import ida_funcs
+import ida_hexrays
 import ida_ida
 import ida_kernwin
 import ida_nalt
@@ -18,6 +19,10 @@ import idc
 OUT = os.environ.get("MOO2_RE_OUT", "/out/history-score.json")
 SOURCE = os.environ.get("MOO2_RE_SOURCE", ida_nalt.get_input_file_path())
 ROOTS = {
+    "raw_Next_Turn_Calc": 0x136B3,
+    "raw_Technology_Value_Consumer": 0x21B6D,
+    "raw_Recompute_Technology_Value": 0xE4535,
+    "raw_Research_Completion_Caller": 0xE4FA8,
     "raw_Record_History": 0x10208A,
     "raw_History_Building_Summary": 0xE2671,
     "raw_Score_Orchestrator": 0x9D986,
@@ -69,8 +74,15 @@ def function(ea):
             target = idc.get_operand_value(x, 0)
             calls.append({"instruction": insn(x), "target": f"0x{target:X}",
                           "target_name": idc.get_name(target) or "<unnamed>"})
+    pseudo = None
+    if ida_hexrays.init_hexrays_plugin():
+        try:
+            pseudo = str(ida_hexrays.decompile(f.start_ea))
+        except Exception as exc:
+            pseudo = f"<decompile failed: {exc}>"
     return {"requested": f"0x{ea:X}", "start": f"0x{f.start_ea:X}", "end": f"0x{f.end_ea:X}",
             "original_name": idc.get_name(f.start_ea) or "<unnamed>",
+            "pseudocode_navigation_only": pseudo,
             "instructions": [insn(x) for x in idautils.FuncItems(f.start_ea)],
             "callers": [insn(x) for x in idautils.CodeRefsTo(f.start_ea, 0)], "callees": calls}
 
@@ -95,6 +107,46 @@ def linear_window(start, end):
     return {"start": f"0x{start:X}", "end": f"0x{end:X}", "instructions": out}
 
 
+def technology_value_operand_functions():
+    """列出所有直接含 player-relative +0x224 的函式；語意留待外部證據審查。"""
+    out = {}
+    for fea in idautils.Functions():
+        hits = []
+        for ea in idautils.FuncItems(fea):
+            line = (idc.generate_disasm_line(ea, 0) or "").lower()
+            if "+224h]" in line or "+224h," in line:
+                hits.append(insn(ea))
+        if hits:
+            out[f"0x{fea:X}"] = {
+                "original_name": idc.get_name(fea) or "<unnamed>",
+                "hits": hits,
+                "callers": [insn(x) for x in idautils.CodeRefsTo(fea, 0)],
+            }
+    return out
+
+
+def technology_value_topic_records():
+    base = 0x17D904
+    stride = 23
+    rows = []
+    for topic in range(83):
+        ea = base + stride * topic
+        rows.append({
+            "topic": topic,
+            "ea": f"0x{ea:X}",
+            "bytes": (ida_bytes.get_bytes(ea, stride) or b"").hex(),
+            "research_choice_ids_navigation_only": [ida_bytes.get_word(ea + off) for off in (6, 8)],
+            "technology_value_slots": [ida_bytes.get_word(ea + off) for off in (10, 12, 14, 16)],
+            "base_cost": ida_bytes.get_dword(ea + 18),
+        })
+    return {
+        "base": f"0x{base:X}",
+        "stride": stride,
+        "count": len(rows),
+        "records": rows,
+    }
+
+
 def main():
     ida_auto.auto_wait()
     report = {
@@ -108,6 +160,8 @@ def main():
         "roots": {name: function(ea) for name, ea in ROOTS.items()},
         "windows": {name: linear_window(start, end) for name, (start, end) in WINDOWS.items()},
         "named_roots": {name: resolve_named(candidates) for name, candidates in NAMED_ROOTS.items()},
+        "technology_value_operand_functions": technology_value_operand_functions(),
+        "technology_value_topic_records": technology_value_topic_records(),
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, "w", encoding="utf-8") as f:

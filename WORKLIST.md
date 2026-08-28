@@ -1520,9 +1520,13 @@
   `(raw×percent+50)/100`，並移除無證據負分 clamp；倍率已接客製種族、JSON 與熱座。
   同次 IDA 證實歷史圖是 Fleet／Technology／Population／Buildings 四項、350 格 ring 與動態
   divisor 重縮放，推翻舊 400 筆 Population／BC／Fleet 模型；2026-08-25 已實作四項共同除數、
-  既有資料重縮放、350 筆上限、繁中／英文 UI、JSON 除數往返及不相容舊歷史清除。科技 raw
-  `player+0x224` 的 remake 對應採已完成主題／Hyper 成本累積，證據等級仍為強推論；本項剩餘
-  範圍是客製種族 22 項效果的原版逐值／全 consumer 閉合，不再重開歷史資料形狀。
+  既有資料重縮放、350 筆上限、繁中／英文 UI、JSON 除數往返及不相容舊歷史清除。2026-08-28
+  已以全庫 operand 掃描閉合科技 raw `player+0x224`：`sub_E4535` 是唯一 writer；本版 83×23
+  topic 表的四個 technology-value slot 全零，故一般 0..74 topic 精確為完成後加完整 base cost，
+  Hyper 75..82 為 `15000+10000×(level-1)`；主鏈先重算再寫 history，事件科技排名亦直接消費
+  同欄。remake 的已完成主題／Hyper 成本累積因此由強推論升格為本版已證實。歷史／分數尚缺
+  逐玩家殲滅歸屬；本母項其餘主要範圍是客製種族 22 項效果的原版逐值／全 consumer 閉合，
+  不再重開歷史資料形狀。
   2026-08-25 已由 `sub_E3456 @ 0xE3456` 閉合同化 raw 尺度：八政體 rate 為
   `30/60/30/60/60/120/12/16`、門檻 240；Charismatic 進度加倍且優先於 Repulsive 減半，
   異族管理中心的 120 基礎值也受兩者修正。Go 已改存 0..239 raw 餘數，修正政體／建築切換、
