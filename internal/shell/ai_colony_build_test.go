@@ -45,6 +45,73 @@ func TestOriginalAIExactBuildingScores(t *testing.T) {
 	}
 }
 
+func TestOriginalAIFreighterFleetProductVerticalChain(t *testing.T) {
+	s := NewDemoSession()
+	if len(s.AIPlayers) == 0 || len(s.AIPlayers[0].Colonies) == 0 {
+		t.Fatal("測試需要一個 AI 殖民地")
+	}
+	a := &s.AIPlayers[0]
+	grantTechnologyApplication(&a.Player, gamedata.TOPIC_NUCLEAR_FISSION, gamedata.TECH_FREIGHTERS)
+	a.FleetETA = 2
+	a.Ships = []Ship{{Name: "AI 殖民船", Class: ColonyShipClass, RawType: gamedata.COLONY_SHIP, RawTypeKnown: true}}
+	a.Player.SurplusFreighters = 0
+	a.Colonies[0].Population = 16
+	for len(a.ColonyBuildings) <= 0 {
+		a.ColonyBuildings = append(a.ColonyBuildings, nil)
+	}
+	if a.ColonyBuildings[0] == nil {
+		a.ColonyBuildings[0] = make(map[string]bool)
+	}
+	// 避免同星 Colony Base 強制產品搶先；此測試只驗 raw -15 垂直鏈。
+	a.ColonyBuildings[0][ColonyBaseBuildName] = true
+	a.ColonyBuilds = make(map[int]ColonyBuild)
+	out := engine.EmpireOutput{Colonies: make([]engine.ColonyOutput, len(a.Colonies))}
+	out.Colonies[0].NetIndustry = 10 // population/8 + industry = 12，恰好通過原版門檻。
+	bcBefore := a.Player.BC
+
+	for turn := 0; turn < 5; turn++ {
+		s.advanceAIColonyBuilds(0, out)
+	}
+	if got := a.Player.ActiveFreighters; got != gamedata.FreighterFleetShipsPerBuild {
+		t.Fatalf("貨運艦隊完工應增加 %d 艘，got %d", gamedata.FreighterFleetShipsPerBuild, got)
+	}
+	if got := a.Player.BC - bcBefore; got != s.RuleProfile.FreightersCashBonus {
+		t.Fatalf("貨運艦隊現金回饋=%d want %d", got, s.RuleProfile.FreightersCashBonus)
+	}
+	if build := a.ColonyBuilds[aiColonyBuildKey(a, 0)]; build.Name != "" {
+		t.Fatalf("完工產品應清空，got %+v", build)
+	}
+	if a.ColonyBuildings[0][gamedata.FreighterFleetActionName] {
+		t.Fatal("貨運艦隊是可重複特殊產品，不得寫成常駐建築")
+	}
+}
+
+func TestOriginalAIFreighterFleetProductFailsClosedAtGates(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	a.Colonies[0].Population = 16
+	delete(a.Player.CompletedTopics, gamedata.TOPIC_NUCLEAR_FISSION)
+	delete(a.Player.GrantedTechs, gamedata.TECH_FREIGHTERS)
+	out := engine.ColonyOutput{NetIndustry: 10}
+	if s.aiCanBuildOriginalFreighterFleet(0, 0, out) {
+		t.Fatal("未取得 Freighters 科技不得建造")
+	}
+	grantTechnologyApplication(&a.Player, gamedata.TOPIC_NUCLEAR_FISSION, gamedata.TECH_FREIGHTERS)
+	if !s.aiCanBuildOriginalFreighterFleet(0, 0, out) {
+		t.Fatal("科技與產能門檻成立時應可建造")
+	}
+	out.NetIndustry = 9
+	if s.aiCanBuildOriginalFreighterFleet(0, 0, out) {
+		t.Fatal("population/8 + industry 未達 12 不得建造")
+	}
+	out.NetIndustry = 10
+	star := a.ColonyStars[0]
+	s.Stars[star].BlockadedMask |= 1 << a.PopulationRaceSlot
+	if s.aiCanBuildOriginalFreighterFleet(0, 0, out) {
+		t.Fatal("被封鎖殖民地不得接 raw -15 產品")
+	}
+}
+
 func TestOriginalAIFixedZeroBuildingScores(t *testing.T) {
 	for _, name := range []string{"異族管理中心", "次元傳送門"} {
 		b, ok := gamedata.BuildingByNameZH(name)

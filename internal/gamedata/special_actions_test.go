@@ -12,7 +12,8 @@ func TestSpecialActionByNameZH(t *testing.T) {
 	if a, ok := SpecialActionByNameZH(SoilEnrichmentActionName); !ok || a.PrereqTopic != TOPIC_ADVANCED_BIOLOGY {
 		t.Errorf("土壤改良前置科技應為 TOPIC_ADVANCED_BIOLOGY,got %+v ok=%v", a, ok)
 	}
-	if a, ok := SpecialActionByNameZH(FreighterFleetActionName); !ok || a.PrereqTopic != TOPIC_NUCLEAR_FISSION {
+	if a, ok := SpecialActionByNameZH(FreighterFleetActionName); !ok || a.PrereqTopic != TOPIC_NUCLEAR_FISSION ||
+		a.ProductionCost != 50 || a.EstimatedCost {
 		t.Errorf("運輸艦隊前置科技應為 TOPIC_NUCLEAR_FISSION,got %+v ok=%v", a, ok)
 	}
 	if _, ok := SpecialActionByNameZH("不存在的行動"); ok {

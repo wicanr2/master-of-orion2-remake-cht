@@ -11,3 +11,17 @@ func OriginalAIFreighterFleetGain(pressure bool, difficulty, roll10 int) (int, b
 	}
 	return 0, true
 }
+
+// OriginalAIFreighterFleetBuildQuota 對映 sub_CFCB6 → sub_CF3BD：raw type 1 且
+// status 1／2 的航行殖民船數，扣除 player+0x38 的貨運艦餘額後，每不足 5 艘形成
+// 一個 -15 貨運艦隊產品配額。原版使用 (4-diff)/5；此處寫成等價的正數無條件進位。
+func OriginalAIFreighterFleetBuildQuota(surplusFreighters, movingColonyShips int) (int, bool) {
+	if movingColonyShips < 0 {
+		return 0, false
+	}
+	deficit := movingColonyShips - surplusFreighters
+	if deficit <= 0 {
+		return 0, true
+	}
+	return (deficit + FreighterFleetShipsPerBuild - 1) / FreighterFleetShipsPerBuild, true
+}

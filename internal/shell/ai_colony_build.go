@@ -1141,6 +1141,10 @@ func (s *GameSession) applyAICompletedSpecial(aiIndex, colony int, name string) 
 	c := &a.Colonies[colony]
 	target := c.Climate
 	switch name {
+	case gamedata.FreighterFleetActionName:
+		a.Player.ActiveFreighters += gamedata.FreighterFleetShipsPerBuild
+		a.Player.BC += s.RuleProfile.FreightersCashBonus
+		return true
 	case gamedata.GaiaTransformationActionName:
 		if gamedata.GaiaTransformationCanApply(c.Climate) {
 			target = gamedata.GaiaTransformationResultClimate
@@ -1178,6 +1182,8 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 		a.ColonyBuilds = make(map[int]ColonyBuild)
 	}
 	shipProduction := 0
+	freighterQuota := s.originalAIFreighterFleetQuota(aiIndex)
+	freighterAssignments := 0
 	for i := range a.Colonies {
 		if i >= len(out.Colonies) || out.Colonies[i].NetIndustry <= 0 {
 			continue
@@ -1188,6 +1194,10 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 			var ok bool
 			if s.aiShouldBuildColonyBase(aiIndex, i, out.Colonies[i]) {
 				build, ok = ColonyBuild{Name: ColonyBaseBuildName, Cost: 200}, true
+			} else if freighterAssignments < 2 && freighterAssignments < freighterQuota &&
+				s.aiCanBuildOriginalFreighterFleet(aiIndex, i, out.Colonies[i]) {
+				build, ok = ColonyBuild{Name: gamedata.FreighterFleetActionName, Cost: 50}, true
+				freighterAssignments++
 			} else {
 				build, ok = chooseAIColonyBuilding(a, i, out, s.Difficulty, s.Turn,
 					s.originalAIStrategicPressureContext(aiIndex, i))
@@ -1227,6 +1237,48 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 		delete(a.ColonyBuilds, key)
 	}
 	return shipProduction
+}
+
+// originalAIFreighterFleetQuota 對映 sub_CFCB6 → sub_CF3BD。現行 AI 只有一個可航行
+// 主力艦隊，因此 FleetETA>0 時其中所有 type 1 殖民船都屬 raw status 1／2 子集。
+func (s *GameSession) originalAIFreighterFleetQuota(aiIndex int) int {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) {
+		return 0
+	}
+	a := &s.AIPlayers[aiIndex]
+	moving := 0
+	if a.FleetETA > 0 {
+		for _, ship := range a.Ships {
+			if (ship.RawTypeKnown && ship.RawType == gamedata.COLONY_SHIP) || ship.Class == ColonyShipClass {
+				moving++
+			}
+		}
+	}
+	quota, ok := gamedata.OriginalAIFreighterFleetBuildQuota(a.Player.SurplusFreighters, moving)
+	if !ok {
+		return 0
+	}
+	return quota
+}
+
+// aiCanBuildOriginalFreighterFleet 保留 sub_D10EE case 1 的已證實 gate：Freighters 科技、
+// 非封鎖殖民地，以及 population/8 + net industry 至少 12。
+func (s *GameSession) aiCanBuildOriginalFreighterFleet(aiIndex, colony int, out engine.ColonyOutput) bool {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) {
+		return false
+	}
+	a := &s.AIPlayers[aiIndex]
+	if colony < 0 || colony >= len(a.Colonies) || colony >= len(a.ColonyStars) ||
+		!playerStateKnowsTech(a.Player, gamedata.TOPIC_NUCLEAR_FISSION, gamedata.TECH_FREIGHTERS) ||
+		a.Colonies[colony].Population/8+out.NetIndustry < 12 {
+		return false
+	}
+	star := a.ColonyStars[colony]
+	if star < 0 || star >= len(s.Stars) || !a.PopulationRaceSlotKnown ||
+		a.PopulationRaceSlot < 0 || a.PopulationRaceSlot >= 8 {
+		return false
+	}
+	return s.Stars[star].BlockadedMask&(1<<a.PopulationRaceSlot) == 0
 }
 
 // aiShouldBuildColonyBase 對映 sub_D10EE 中繞過 Colony_Building_Score_ 的 raw 11 強制產品。

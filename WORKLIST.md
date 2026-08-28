@@ -43,8 +43,18 @@
 
 ### 2026-08-27 盤點結論（目前唯一待辦來源）
 
-> 範圍遵循使用者 2026-08-12 的新決策：重新以原版玩法忠實度為最高優先，採 IDA Pro
-> 追查原版玩家機制，再對回 Go／Ebitengine 的實際消費端；仍不深挖與遊戲玩法無關的內部功能。
+> **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
+> [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備
+> 原始函式／位址、輸入狀態、規則或資料表、玩家可見 consumer、證據等級與明確未知項。
+> 在這個 RE gate 關閉前，不再為新發現撰寫玩法實作；已在進行中的 raw -15 貨運艦隊切片
+> 已完成測試並同步文件，作為策略切換前的最後一個實作節點。
+>
+> 範圍遵循使用者 2026-08-12 與 2026-08-28 的決策：以原版玩法忠實度為最高優先，採 IDA Pro
+> 追查原版玩家機制；仍不深挖與遊戲玩法無關的內部功能。編譯器生成 helper、runtime／C 標準
+> 函式庫與 Windows API／平台服務，例如 stack probe、stack overflow check、SEH、`fopen`、
+> `fclose`、`fork`、檔案與程序包裝函式，只建立可搜尋的排除 pattern 並跨過，不納入 RE
+> 知識庫完成分母、remake 範圍或忠實度百分比。只有它們呼叫前後直接改變玩家可見玩法時，
+> 才記錄最小輸入／輸出／錯誤／時序契約。
 > `[ ]` 表示原版機制尚未形成可回查的垂直證據鏈，不代表目前基本 4X 對局不可玩。
 > 原版證據留白與 remake 功能缺口分開記，避免把「可玩」誤寫成「已忠實重製」。
 > Windows API／Win95 平台內部行為已依 2026-08-25 使用者決策設為 RE 停止線：只追回玩家可見的
@@ -1132,8 +1142,11 @@
   產品資料形狀的重要勘誤：真正成本函式是 `sub_E0DD6`，`sub_B206F` 是移除同類產品；
   raw -15 為 50 PP 貨運艦隊且完工令 `player+0x36 +=5`，raw -7 為 100 PP 但不是可憑成本
   猜成前哨船的產品。`sub_CFCB6 → sub_CF3BD／sub_CF40D → sub_D10EE` 的三組艦種摘要、
-  配額與 12／15 產能門檻已定位；`-12/-17/-11` 的支援艦名稱／callback、raw -7 身分及戰鬥艦
-  role 仍待垂直閉合。見 [`docs/re/ai-ship-products-audit-20260828.md`](docs/re/ai-ship-products-audit-20260828.md)
+  配額與 12／15 產能門檻已定位；raw -15 貨運艦隊已接移動中殖民船－貨運餘額配額、同輪
+  兩座上限、Freighters 科技／封鎖／產能 12 gate、逐殖民地 50 PP 進度、完工 +5 與版本現金
+  回饋，玩家同產品的舊 60 PP 估值亦訂正為 50 PP。`-12/-17/-11` 的支援艦名稱／callback、
+  raw -7 身分及戰鬥艦 role 仍待垂直閉合。見
+  [`docs/re/ai-ship-products-audit-20260828.md`](docs/re/ai-ship-products-audit-20260828.md)
   與 [`docs/spec/ai-ship-products.md`](docs/spec/ai-ship-products.md)。艦隊／外交及其餘 AI
   state machine 亦待閉合。2026-08-28 又以 IDA 證實 AI 職務分配是封鎖／未封鎖
   分流、逐 colonist 排序、邊際輸出與全帝國迭代；這直接反證現有逐殖民地

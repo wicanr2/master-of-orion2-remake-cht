@@ -110,7 +110,15 @@
 - **編譯器／runtime 排除 pattern** — 由位址與邊界、bytes／指令形狀、IDA library 辨識及
   caller role 共同錨定的編譯器生成 helper。DOS 的 Watcom stack probe／x87 初始化與 Win95 的
   Microsoft stack probe／C++／SEH 例外處理不算玩法缺口，也不照譯到 Go；分析時跨過 helper，
-  繼續追玩家可見 consumer。_避免_：只憑函式名稱排除、把 middleware 整批當 runtime。
+  繼續追玩家可見 consumer。C runtime／標準函式庫與平台函式，例如 `fopen`、`fclose`、`fork`、
+  一般檔案／程序／記憶體包裝函式及 Windows API 也採同一停止線：只在玩家可見行為依賴時保存
+  最小邊界契約，不納入 RE 知識庫完成分母、remake 工作或忠實度百分比。
+  _避免_：只憑函式名稱排除、把 middleware 整批當 runtime，或反過來逐行重製標準函式庫。
+- **RE-first gate（2026-08-28）** — 使用者決定先補齊原版玩家玩法 RE 知識庫，再恢復 spec 與
+  Go／Ebitengine 實作。完成條件以 `docs/re/parity-matrix.tsv` 的玩家玩法列為分母；每列需有
+  raw 位址、輸入狀態、規則／表、玩家可見 consumer、證據等級與未知邊界。compiler helper、
+  runtime、C 標準函式庫及 Windows API 排除項不進分母。_避免_：RE 尚未閉合時因看到一個常數
+  就立即開工，造成產品碼、callback 或資料模型再次誤接。
 
 ## 四、驗收
 

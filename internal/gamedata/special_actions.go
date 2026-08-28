@@ -29,10 +29,10 @@ package gamedata
 //   - Gaia Transformation:research_choices[70]={7500, {TECH_BIOMORPHIC_FUNGI,
 //     TECH_EVOLUTIONARY_MUTATION, TECH_GAIA_TRANSFORMATION}} → TOPIC_TRANS_GENETICS(index 70)。
 //
-// 建造成本(PP)缺口:手冊完全沒給任何 Special 行動的 PP 數字(見 terraform.go 檔頭「建造成本
-// 缺口」大段說明),本檔比照 buildings.go 對其餘 34 項建築既有的估計做法——用同一個 RP 研究成本
-// 量級,參照 buildings.go 同一 RP 區間內其他建築已經標好的 EstimatedCost 估計值當基準,一律標
-// EstimatedCost=true,不是手冊/資料檔實據:
+// 建造成本(PP)缺口:手冊完全沒給地形改造類 Special 行動的 PP 數字(見 terraform.go 檔頭
+// 「建造成本缺口」大段說明),本檔比照 buildings.go 對其餘建築既有的估計做法——用同一個 RP
+// 研究成本量級,參照同區間建築的 EstimatedCost 估計值當基準。貨運艦隊例外：其 raw -15
+// 已由 Colony_Product_Cost_ @ 0xE0DD6 證實固定 50 PP，不再標 EstimatedCost。
 //   - 土壤改良 RP400,同區間裝甲營房/戰機基地估計 PP150,本檔取同一值。
 //   - 地形改造 RP1150,同區間行星重力產生器/行星輻射護盾估計 PP220-260,本檔取 260。
 //   - 蓋亞轉化 RP7500,同區間阿提米絲系統網估計 PP900,本檔取同一值。
@@ -45,8 +45,7 @@ package gamedata
 // 運輸艦隊(Freighter Fleet,2026-07-11 補實作 #4)的 PrereqTopic 出處:
 // openorion2/src/tech.cpp research_choices[55]={50, {TECH_FREIGHTERS, TECH_NUCLEAR_BOMB,
 // TECH_NUCLEAR_DRIVE}} → TOPIC_NUCLEAR_FISSION(index 55,同一索引法見上段說明)。建造成本(PP)
-// 手冊同樣沒給任何數字,比照上面的估計慣例:TOPIC_NUCLEAR_FISSION 研究成本 RP50,與
-// TOPIC_ENGINEERING(同為 RP50)的「海軍陸戰隊營」估計 PP60 同一量級,本檔取同一值 60。
+// 手冊沒有成本數字；現由 Colony_Product_Cost_ @ 0xE0DD6 的 raw -15 分支補證固定 50 PP。
 type SpecialAction struct {
 	NameZH string
 	NameEN string
@@ -111,7 +110,7 @@ var SpecialActions = []SpecialAction{
 	{
 		NameZH: FreighterFleetActionName, NameEN: "Freighter Fleet",
 		PrereqTopic:    TOPIC_NUCLEAR_FISSION,
-		ProductionCost: 60, EstimatedCost: true, // 見檔頭「運輸艦隊」段說明,非手冊實據
+		ProductionCost: 50, // Colony_Product_Cost_ @ 0xE0DD6：raw -15 固定 50 PP
 	},
 	{
 		NameZH: ColonyShipActionName, NameEN: "Colony Ship",

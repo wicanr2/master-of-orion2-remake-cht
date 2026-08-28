@@ -1,6 +1,6 @@
 # AI 艦艇與特殊產品規格
 
-狀態：DRAFT；本規格只固定已證實的產品資料形狀與停止線，不宣稱完整 AI 造艦器完成。
+狀態：PARTIAL；raw -15 貨運艦隊已接，其他產品仍為 DRAFT，不宣稱完整 AI 造艦器完成。
 
 ## 已固定契約
 
@@ -9,13 +9,15 @@
    合法殖民地。
 3. `netCapacity = population/8 + industry - pollution`；原版比較使用整數與嚴格門檻。
 4. raw `-15` 是貨運艦隊，成本 50 PP，完工增加 5 艘貨運艦；它不建立 `Ship` 記錄。
+   配額為 `ceil(max(0,movingColonyShips-surplusFreighters)/5)`；同輪最多分派兩座殖民地，
+   且要求 Freighters 科技、未封鎖及 `netCapacity>=12`。
 5. raw `-7` 成本 100 PP，但產品身分與 callback 尚未閉合，不得實作成前哨船。
 6. raw `-12/-17/-11` 暫只保存 raw code；名稱、修正後成本與 callback 閉合前不得由成本猜測。
 
 ## 實作順序
 
-1. 追回 `sub_CFCB6 → sub_CF3BD → sub_D10EE(case 1) → sub_E36DF` 的 `-15` 完整欄位語意，
-   接成貨運艦隊垂直鏈。
+1. （已完成）`sub_CFCB6 → sub_CF3BD → sub_D10EE(case 1) → sub_E36DF` 的 `-15`
+   貨運艦隊垂直鏈。
 2. 追回 `sub_1026CF → sub_CF40D → sub_D10EE(case 3) → sub_E36DF` 的 `-7` 完整身分，
    再取代固定週期 Spy／Agent fallback。
 3. 逐一閉合 `-12/-17/-11` 的產品字串、成本修正與完工 callback，再接殖民船／前哨船／
