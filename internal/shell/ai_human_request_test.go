@@ -141,3 +141,41 @@ func TestRejectOriginalHumanReason106WithoutCandidateDeclaresWar(t *testing.T) {
 		t.Fatalf("war/request=%v/%v/%v", a.Treaty.FormalPolicy, a.WantsAudience, a.OriginalHumanDiplomaticRequest)
 	}
 }
+
+func TestRefreshOriginalHumanMilitaryCandidateProducesKnownStarOrMinusOne(t *testing.T) {
+	s := NewDemoSession()
+	if !s.refreshOriginalAIHumanMilitaryCandidate(0) {
+		t.Fatal("完整玩家殖民地資料應可產生單主力艦隊軍事候選")
+	}
+	a := &s.AIPlayers[0]
+	if !a.OriginalHumanMilitaryCandidateKnown || a.OriginalHumanMilitaryCandidateStar < 0 ||
+		a.OriginalHumanMilitaryCandidateStar >= len(s.Stars) {
+		t.Fatalf("candidate=%d known=%v", a.OriginalHumanMilitaryCandidateStar, a.OriginalHumanMilitaryCandidateKnown)
+	}
+	s.PlayerColonies, s.PlayerColonyStars = nil, nil
+	if !s.refreshOriginalAIHumanMilitaryCandidate(0) || a.OriginalHumanMilitaryCandidateStar != -1 {
+		t.Fatalf("無殖民地 candidate=%d known=%v，預期 -1/true", a.OriginalHumanMilitaryCandidateStar, a.OriginalHumanMilitaryCandidateKnown)
+	}
+}
+
+func TestReason106RefreshedCandidateFlowsThroughReject(t *testing.T) {
+	s := NewDemoSession()
+	if !s.refreshOriginalAIHumanMilitaryCandidate(0) {
+		t.Fatal("完整玩家殖民地資料應可刷新 reason 106 軍事候選")
+	}
+	a := &s.AIPlayers[0]
+	wantStar := a.OriginalHumanMilitaryCandidateStar
+	a.OriginalHumanMilitaryCandidateReason = 117
+	queueRequestForTest(s, 106, gamedata.OriginalHumanDiplomaticAction{
+		Kind: gamedata.OriginalHumanDiplomaticActionDirect, DirectTier: 1,
+	})
+	if !s.RejectOriginalAIHumanDiplomaticRequest(0) {
+		t.Fatal("已刷新的 reason 106 軍事候選應可進拒絕 callback")
+	}
+	if !a.OriginalHumanMilitaryTargetKnown || a.OriginalHumanMilitaryTargetStar != wantStar ||
+		a.OriginalHumanMilitaryTargetReason != 117 {
+		t.Fatalf("committed target=%d/%d known=%v，預期 %d/117/true",
+			a.OriginalHumanMilitaryTargetStar, a.OriginalHumanMilitaryTargetReason,
+			a.OriginalHumanMilitaryTargetKnown, wantStar)
+	}
+}

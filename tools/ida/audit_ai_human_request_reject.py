@@ -24,7 +24,16 @@ ROOTS = {
     "raw_declare_war_51078": 0x51078,
     "raw_human_target_producer_53edb": 0x53EDB,
     "raw_target_outputs_544a1": 0x544A1,
+    "raw_military_candidate_writer_1fd80": 0x1FD80,
+    "raw_military_candidate_writer_caller_136f7": 0x136F7,
+    "raw_military_candidate_consumer_4f59b": 0x4F59B,
+    "raw_military_candidate_consumer_50827": 0x50827,
+    "raw_military_candidate_score_dbc5c": 0xDBC5C,
+    "raw_military_candidate_score_dbb9f": 0xDBB9F,
+    "raw_military_candidate_search_d94b3": 0xD94B3,
 }
+
+FIELD_OFFSETS = (2103, 2119, 2135, 2183)
 
 
 def digest(path):
@@ -69,6 +78,42 @@ def function_record(ea):
     }
 
 
+def field_operand_functions():
+    out = {}
+    needles = tuple(f"+{offset:X}h]".lower() for offset in FIELD_OFFSETS)
+    for fea in idautils.Functions():
+        hits = []
+        for ea in idautils.FuncItems(fea):
+            text = idc.generate_disasm_line(ea, 0) or ""
+            if any(needle in text.lower() for needle in needles):
+                hits.append(instruction(ea))
+        if hits:
+            out[f"0x{fea:X}"] = {
+                "original_name": ida_name.get_name(fea) or "<unnamed>",
+                "hits": hits,
+                "callers": [f"0x{x:X}" for x in idautils.CodeRefsTo(fea, 0)],
+            }
+    return out
+
+
+def military_search_global_functions():
+    out = {}
+    needles = ("dword_1aa240", "dword_1aa248", "word_1aa24c")
+    for fea in idautils.Functions():
+        hits = []
+        for ea in idautils.FuncItems(fea):
+            text = idc.generate_disasm_line(ea, 0) or ""
+            if any(needle in text.lower() for needle in needles):
+                hits.append(instruction(ea))
+        if hits:
+            out[f"0x{fea:X}"] = {
+                "original_name": ida_name.get_name(fea) or "<unnamed>",
+                "hits": hits,
+                "callers": [f"0x{x:X}" for x in idautils.CodeRefsTo(fea, 0)],
+            }
+    return out
+
+
 def main():
     ida_auto.auto_wait()
     src = os.environ["MOO2_IDA_INPUT"]
@@ -87,6 +132,8 @@ def main():
         "address_basis": "IDA linear; DOS/4GW LE image",
         "semantic_status": "unknown_pending_review",
         "roots": {key: function_record(ea) for key, ea in ROOTS.items()},
+        "field_operand_functions": field_operand_functions(),
+        "military_search_global_functions": military_search_global_functions(),
     }
     with open(os.environ["MOO2_IDA_OUTPUT"], "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)

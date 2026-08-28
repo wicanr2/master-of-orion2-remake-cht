@@ -1188,8 +1188,11 @@
   reason 105／106 的接受 callback：direct tier、科技、BC 與殖民星 payload 已接 typed 消費端，
   且不誤套玩家餽贈關係獎勵；reason 124 已訂正為只顯示／確認、不進二選一也不套 payload。
   reason 105 拒絕 callback 與正常外交二選一 UI 已接；點會談燈不再提前刪除 typed payload。
-  reason 106 的 `+0x7C7／+0x7C9` committed consumer、合法 -1 宣戰與 snapshot 亦已接，最後阻塞
-  縮為 `+0x837／+0x887` 上游軍事候選 producer。unknown 時 UI 保留請求，不冒充無目標宣戰。
+  reason 106 的 `+0x7C7／+0x7C9` committed consumer、合法 -1 宣戰與 snapshot 亦已接。
+  IDA 已定位 `+0x837／+0x847／+0x857` writer 為每回合 `sub_1FD80 → sub_DBB9F → sub_D94B3`
+  多艦隊戰略搜尋；remake 依已授權近似邊界，以既有原版三層殖民地價值＋距離 scorer 在外交前
+  刷新 star，worst reason 仍取精確 `sub_544A1` 輸出。此項標為強推論近似，不宣稱多艦隊 exact，
+  但已不再讓正常 reason 106 拒絕 UI 卡在 unknown。
   `sub_FF593` 蟲洞支線已閉合。
   typed producer unknown 時的願戰來源仍是明示的 `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與

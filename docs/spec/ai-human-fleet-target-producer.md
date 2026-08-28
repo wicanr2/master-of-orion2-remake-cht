@@ -84,13 +84,17 @@
     只可確認並清除通知。拒絕 105 套 `Change_Relations_(-50, AI, human, 0, 0, 0)`；該函式
     鏡射最終 raw 分數。拒絕 106 必須在 `+0x837／+0x887` known 時搬到 `+0x7C7／+0x7C9`；
     known 且 star=-1 才宣戰，unknown 不得當成 -1。
+29. 世界回合必須在真人外交決策前刷新 `+0x837／+0x847／+0x857`。原版由
+    `sub_1FD80 → sub_DBC5C → sub_DBB9F → sub_D94B3` 執行多艦隊戰略搜尋；remake 單主力艦隊
+    以已接的 Colony Worth／Enemy Colony Worth／Proximity scorer 產生 star，證據等級固定為
+    強推論近似。`sub_544A1` 輸出的 worst reason 寫入 `+0x887`；無候選必須保存 known -1。
 
 ## DRAFT 邊界
 
 `sub_544A1 @ 0x544A1..0x54CC0` 的四類尾端與 RNG 已形成純規則；尚缺的是 directional
-incident memory 的 writer 門檻／正常玩家事件 producer，以及 reason 106 所需的
-`+0x837／+0x887` 軍事候選 producer；government 0 蟲洞支線、接受、reason 105 拒絕、
-reason 106 consumer、outcome 4 通知與正常外交 UI 二選一已閉合。
+incident memory 的 writer 門檻／正常玩家事件 producer，以及 `sub_D94B3` 多艦隊搜尋的 exact
+資料形狀；其單主力艦隊近似 producer、government 0 蟲洞支線、接受、兩種拒絕、outcome 4
+通知與正常外交 UI 二選一已閉合。
 這些欄位閉合前，remake 可用既有戰爭態勢決定是否呼叫原版目標估值，但必須標為 fallback，
 不得把只含 relation/personality 的部分 score 冒充完整 producer。
 

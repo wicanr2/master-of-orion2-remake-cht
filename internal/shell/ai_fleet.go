@@ -184,11 +184,15 @@ func (s *GameSession) aiLaunchRaidFleet(i int) {
 	if a.OriginalHumanContactTurns < 10 {
 		return
 	}
+	s.refreshOriginalAIHumanMilitaryCandidate(i)
 	if decision, exact := s.originalAIHumanDecision(i, s.eventRoll); exact {
 		switch decision.Outcome {
 		case 0:
 			return
 		case 1, 3, 4:
+			if decision.Outcome == 1 {
+				a.OriginalHumanMilitaryCandidateReason = decision.Reason
+			}
 			if s.queueOriginalAIHumanDiplomaticRequest(i, decision.Outcome, decision.Action) {
 				cooldownBase := 19
 				if decision.Outcome == 3 {
@@ -206,6 +210,28 @@ func (s *GameSession) aiLaunchRaidFleet(i int) {
 		return
 	}
 	s.aiLaunchRaidFleetToBestTarget(i)
+}
+
+// refreshOriginalAIHumanMilitaryCandidate 是 sub_1FD80 → sub_DBB9F → sub_D94B3 的
+// 單主力艦隊 remake adapter。原版搜尋可同時評估多支艦隊、航線與戰區；remake 尚無等價
+// 資料形狀，因此以既有三層原版殖民地價值＋距離 scorer 產生 +0x837 star。這是強推論近似，
+// 不是原版多艦隊搜尋 exact；但合法「沒有候選」仍保存為 known -1，避免 UI 永久卡住。
+func (s *GameSession) refreshOriginalAIHumanMilitaryCandidate(i int) bool {
+	if i < 0 || i >= len(s.AIPlayers) || len(s.PlayerColonies) != len(s.PlayerColonyStars) {
+		return false
+	}
+	a := &s.AIPlayers[i]
+	ci, _ := s.aiRaidTargetWithValue(i)
+	star := -1
+	if ci >= 0 {
+		star = s.PlayerColonyStarIndex(ci)
+		if star < 0 || star >= len(s.Stars) {
+			return false
+		}
+	}
+	a.OriginalHumanMilitaryCandidateStar = star
+	a.OriginalHumanMilitaryCandidateKnown = true
+	return true
 }
 
 // aiLaunchRaidFleetToBestTarget 是 remake 單主力艦隊 adapter。正常原版 producer 與明示

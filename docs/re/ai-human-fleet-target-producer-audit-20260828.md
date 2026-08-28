@@ -139,9 +139,17 @@
     抵達會設位並隨 snapshot 往返。舊 JSON／GAM 缺完整造訪歷史時保留 unknown，不以 owner 猜測。
 30. reason 105 拒絕 callback 已接 `OriginalChangeRelationScore`，使用真人政體、AI Charismatic、
     正式狀態與現有 raw 關係；正常 UI 不再於進畫面前清除 payload。reason 106 的 committed
-    consumer、合法 -1 宣戰分支與 snapshot 已接；但 `+0x837／+0x887` 上游軍事候選尚未 typed，
-    unknown 時保留請求，不能冒充 -1。原始匯出見
+    consumer、合法 -1 宣戰分支與 snapshot 已接；`+0x837` 現由每回合單主力艦隊的強推論
+    adapter 刷新，`+0x887` 取已閉合的 worst reason。多艦隊精確搜尋仍未閉合；舊存檔或資料
+    不足形成 unknown 時保留請求，不能冒充 -1。原始匯出見
     [`evidence/ai-human-request-reject-ida-20260828.json`](evidence/ai-human-request-reject-ida-20260828.json)。
+31. `+0x837／+0x847／+0x857` 唯一常態 writer 是 `sub_1FD80 @ 0x1FD80..0x1FED2`，由世界回合
+    `sub_136B3 @ 0x136F7` 在 `sub_252A7` 外交決策前呼叫。它逐 source／target 帝國，經
+    `sub_DBC5C → sub_DBB9F → sub_D94B3` 輸出 star、word 評估與 dword 壓力；不符合接觸／存活
+    gate 時分別清為 -1／0／0。`sub_D94B3` 是依多艦隊、航線、戰區與星系資料運作的大型搜尋，
+    不是單純 colony value argmax。remake 的單主力艦隊沒有同構資料；依先前允許的 callback
+    近似邊界，現以既有原版 Colony／Enemy Colony／Proximity 三層 scorer 產生 star，標為
+    **強推論近似**。reason 仍取 `sub_544A1` 已閉合的 worst reason；合法無候選保存 known -1。
 
 ## Remake 對映與限制
 
@@ -186,9 +194,9 @@
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。
-- 尚未閉合：`sub_544A1` 所需的完整 directional incident writer，以及 reason 106 拒絕所讀
-  `+0x837／+0x887` 軍事候選 producer。接受、reason 105 拒絕、reason 106 consumer、reason 124
-  單向通知與正常二選一 UI 已閉合。只有必要 typed 輸入 unknown 時，
+- 尚未閉合：`sub_544A1` 所需的完整 directional incident writer，以及 `sub_D94B3` 原版多艦隊
+  搜尋的逐資料結構 exact parity；後者已有明示強推論的單主力艦隊近似 producer，不再阻塞
+  reason 106 玩家選擇。接受、兩種拒絕、reason 124 單向通知與正常二選一 UI 已閉合。只有必要 typed 輸入 unknown 時，
   願戰來源才保留明示的 `DecideStance` 相容 fallback；不以部分 score 升格整條決策。
 
 ## 勘誤：`sub_4F93B`

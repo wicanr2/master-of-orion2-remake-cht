@@ -19,6 +19,7 @@ type originalDiplomaticColonyCandidate struct {
 type originalAIHumanDecision struct {
 	Outcome   int
 	Intensity int
+	Reason    int
 	Action    gamedata.OriginalHumanDiplomaticAction
 }
 
@@ -282,5 +283,5 @@ func (s *GameSession) originalAIHumanDecision(aiIndex int, roll func(int) int) (
 	if !ok {
 		return originalAIHumanDecision{}, false
 	}
-	return originalAIHumanDecision{Outcome: outcome, Intensity: intensity, Action: action}, true
+	return originalAIHumanDecision{Outcome: outcome, Intensity: intensity, Reason: result.ReasonCode, Action: action}, true
 }

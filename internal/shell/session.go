@@ -124,7 +124,8 @@ type AIOpponent struct {
 	// OriginalHumanDirectRequestTier 對映 sub_52049 的方向 direct-request tier 1／2。
 	OriginalHumanDirectRequestTier int `json:"originalHumanDirectRequestTier,omitempty"`
 	// OriginalHumanMilitaryCandidate* 對應 AI→目前真人方向 +0x837／+0x887；reason 106
-	// 被拒時搬到 +0x7C7／+0x7C9。Known 區分合法 -1（無目標，轉為宣戰）與未知 producer。
+	// 被拒時搬到 +0x7C7／+0x7C9。Known 區分合法 -1（無目標，轉為宣戰）與尚未刷新；
+	// 現行 producer 是單主力艦隊的強推論近似，並不冒稱原版 sub_D94B3 多艦隊搜尋 exact。
 	OriginalHumanMilitaryCandidateStar   int  `json:"originalHumanMilitaryCandidateStar,omitempty"`
 	OriginalHumanMilitaryCandidateReason int  `json:"originalHumanMilitaryCandidateReason,omitempty"`
 	OriginalHumanMilitaryCandidateKnown  bool `json:"originalHumanMilitaryCandidateKnown,omitempty"`
