@@ -42,7 +42,7 @@ func TestAIRaidRequiresTheFleetToArriveFirst(t *testing.T) {
 
 	launched := -1
 	for i := range s.AIPlayers {
-		if s.AIPlayers[i].FleetETA > 0 {
+		if s.AIPlayers[i].FleetETA > 0 && s.AIPlayers[i].FleetDestStar == s.PlayerColonyStarIndex(0) {
 			launched = i
 			break
 		}
@@ -232,7 +232,7 @@ func TestHumanTargetLaunchWritesOriginalCooldownRange(t *testing.T) {
 	s.advanceAIFleets()
 	launched := -1
 	for i := range s.AIPlayers {
-		if s.AIPlayers[i].FleetETA > 0 {
+		if s.AIPlayers[i].FleetETA > 0 && s.AIPlayers[i].FleetDestStar == s.PlayerColonyStarIndex(0) {
 			launched = i
 			break
 		}

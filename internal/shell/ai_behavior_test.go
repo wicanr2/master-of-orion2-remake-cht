@@ -55,13 +55,14 @@ func TestAIBuildsAndExpands(t *testing.T) {
 func TestAIExpand_CreatesRealColony(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
-	// 這個測試要驗的是「擴張執行後會建出真的殖民地模型」,不是「AI 每回合都想擴張」——
-	// 2026-08-06 起擴張前會先過性格的積極度判定(原版 _personality_expansion_chance:
-	// 和平主義只有 30%),把性格固定成擴張率 100% 的冷酷無情,才測得到機制本身。
-	s.AIPlayers[0].Personality = ai.PersonalityRuthless
 	beforeColonies := len(s.AIPlayers[0].Colonies)
 	beforeStars := len(s.AIPlayers[0].ColonyStars)
 
+	if !s.aiLaunchColonizationFleet(0) {
+		t.Fatal("有殖民船且存在合法遠方目標時應建立航線")
+	}
+	s.AIPlayers[0].FleetETA = 1
+	s.advanceAIFleets()
 	s.aiExpand(0)
 
 	if len(s.AIPlayers[0].Colonies) != beforeColonies+1 {
@@ -88,20 +89,38 @@ func TestAIExpandConsumesColonyShipAndCannotRepeatFree(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
 	a := &s.AIPlayers[0]
-	a.Personality = ai.PersonalityRuthless
 	before := len(a.Colonies)
+	if !s.aiLaunchColonizationFleet(0) {
+		t.Fatal("有殖民船時應先建立殖民航線")
+	}
+	a.FleetETA = 1
+	s.advanceAIFleets()
 	s.aiExpand(0)
 	if len(a.Colonies) != before+1 {
 		t.Fatalf("有殖民船時應建立一座殖民地：%d → %d", before, len(a.Colonies))
 	}
 	for _, ship := range a.Ships {
-		if ship.RawTypeKnown && ship.RawType == gamedata.COLONY_SHIP || ship.Class == ColonyShipClass {
+		if (ship.RawTypeKnown && ship.RawType == gamedata.COLONY_SHIP) || ship.Class == ColonyShipClass {
 			t.Fatalf("完成拓殖後應消耗殖民船：%+v", a.Ships)
 		}
 	}
 	s.aiExpand(0)
 	if len(a.Colonies) != before+1 {
 		t.Fatalf("沒有第二艘殖民船時不得免費再拓殖：%d → %d", before+1, len(a.Colonies))
+	}
+}
+
+func TestAIColonyShipDoesNotColonizeBeforeFleetArrives(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	before := len(a.Colonies)
+	if !s.aiLaunchColonizationFleet(0) || a.FleetETA <= 0 {
+		t.Fatal("殖民船應先建立有正 ETA 的跨星航線")
+	}
+	dest := a.FleetDestStar
+	s.aiExpand(0)
+	if len(a.Colonies) != before || a.FleetDestStar != dest {
+		t.Fatalf("尚未抵達不得瞬移殖民：colonies=%d want=%d dest=%d", len(a.Colonies), before, a.FleetDestStar)
 	}
 }
 
@@ -125,11 +144,6 @@ func TestAIHomeworldUsesNativeGravity(t *testing.T) {
 func TestAIExpand_ColonyParticipatesInEconomy(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
-	// 同上:固定成擴張率 100% 的性格,讓「擴張 → 經濟成長」這條因果測得準,
-	// 不受性格積極度的機率影響。
-	for i := range s.AIPlayers {
-		s.AIPlayers[i].Personality = ai.PersonalityRuthless
-	}
 
 	for turn := 0; turn < 20 && len(s.AIPlayers[0].Colonies) <= 1; turn++ {
 		s.EndTurn()
@@ -185,27 +199,21 @@ func TestAIStanceConsumesOriginalHostileRelation(t *testing.T) {
 	}
 }
 
-// TestAIPersonalitiesDiverge 驗證性格接線真的造成行為差異,不是只多了一個欄位。
-//
-// 2026-08-06 之前三個 AI 對手除了名字之外行為完全相同:profile 是手寫的、關係演化用固定
-// 係數、擴張每回合必試。接上原版性格表(ai/personality_tables.go)後,擴張速度與外交走向
-// 應該依性格分岔。
-func TestAIPersonalitiesDiverge(t *testing.T) {
+// All_AI_Colonize_ 每回合消費已抵達來源，沒有 personality expansion chance。
+// 性格可影響行星估值目標，但不得讓同樣已抵達的合法來源憑機率跳過殖民。
+func TestAIColonizationDoesNotUsePersonalityChance(t *testing.T) {
 	grow := func(p ai.Personality) (colonies, relation int) {
 		s := NewDemoSession()
 		s.DisableEvents = true
 		for i := range s.AIPlayers {
 			s.AIPlayers[i].Personality = p
 			s.AIPlayers[i].Relation = 0
-			// 性格只決定是否使用現有殖民來源；補足四艘，避免兩局都被單一開局殖民船
-			// 的共同上限夾成兩座殖民地而看不出機率分岔。
+			// 補足四艘，驗證來源數相同時不會被已推翻的性格機率分岔。
 			base := s.AIPlayers[i].Ships[0]
 			for n := 1; n < 4; n++ {
 				s.AIPlayers[i].Ships = append(s.AIPlayers[i].Ships, base)
 			}
 		}
-		// 20 回合:夠讓擴張速度分出高下,又不會兩邊都把 24 星的星圖佔滿而看不出差異
-		// (60 回合時和平主義也會飽和,實測 7 vs 8 幾乎相同)。
 		for turn := 0; turn < 20; turn++ {
 			s.EndTurn()
 		}
@@ -214,9 +222,8 @@ func TestAIPersonalitiesDiverge(t *testing.T) {
 	pacifistColonies, pacifistRel := grow(ai.PersonalityPacifist)
 	ruthlessColonies, ruthlessRel := grow(ai.PersonalityRuthless)
 
-	// 擴張:冷酷無情(100%)應該明顯多於和平主義(30%)。
-	if ruthlessColonies <= pacifistColonies {
-		t.Errorf("冷酷無情的擴張應多於和平主義:%d vs %d 個殖民地", ruthlessColonies, pacifistColonies)
+	if ruthlessColonies != pacifistColonies {
+		t.Errorf("相同殖民來源不得由性格機率改變消費數量:%d vs %d 個殖民地", ruthlessColonies, pacifistColonies)
 	}
 	// 外交關係不再由 Personality 自編平衡點驅動；兩局相同種族配對與條約
 	// 應維持同一原版目標，性格只在仍有證據的 AI 決策權重上分岔。
@@ -250,7 +257,6 @@ func TestAIPersonalityIsReproducible(t *testing.T) {
 func TestAIPicksBestPlanetNotFirstAvailable(t *testing.T) {
 	s := NewDemoSession()
 	s.DisableEvents = true
-	s.AIPlayers[0].Personality = ai.PersonalityRuthless // 擴張率 100%,確保一定會出手
 
 	// 找出所有無主星裡估值最高的那顆,以及索引最小的那顆。
 	bestIdx, bestVal, firstIdx := -1, -1, -1
@@ -272,8 +278,10 @@ func TestAIPicksBestPlanetNotFirstAvailable(t *testing.T) {
 		t.Skip("這局的最佳星恰好就是索引最小的星,測不出差異")
 	}
 
-	s.aiExpand(0)
-	got := s.AIPlayers[0].ColonyStars[len(s.AIPlayers[0].ColonyStars)-1]
+	if !s.aiLaunchColonizationFleet(0) {
+		t.Fatal("應建立前往最佳星系的殖民航線")
+	}
+	got := s.AIPlayers[0].FleetDestStar
 	if got != bestIdx {
 		t.Errorf("AI 應挑估值最高的星 %d(%d 分),got 星 %d(%d 分)",
 			bestIdx, bestVal, got, s.aiPlanetValue(0, got))

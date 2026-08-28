@@ -44,11 +44,16 @@ func parkAIFleetsAtPlayerColony(s *GameSession) {
 	}
 }
 
-// aiFleetLaunched 回報有沒有任何 AI 這回合派出了艦隊(出發那一刻的守門是否放行)。
+// aiFleetLaunched 回報有沒有任何 AI 這回合朝玩家殖民地派出 raid；殖民航線不算。
 func aiFleetLaunched(s *GameSession) bool {
 	for i := range s.AIPlayers {
-		if s.AIPlayers[i].FleetETA > 0 {
-			return true
+		if s.AIPlayers[i].FleetETA <= 0 {
+			continue
+		}
+		for colony := range s.PlayerColonies {
+			if s.AIPlayers[i].FleetDestStar == s.PlayerColonyStarIndex(colony) {
+				return true
+			}
 		}
 	}
 	return false

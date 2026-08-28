@@ -154,9 +154,66 @@ func (s *GameSession) advanceAIFleets() []AIFleetArrival {
 		}
 		if !decisionBlocked {
 			s.aiLaunchRaidFleet(i)
+			// 原版可由不同艦隊分別作戰與殖民；remake 只有一支主力艦隊，因此先保留
+			// 已成立或仍在 cooldown 保留期的軍事決策，僅在仍閒置時規劃殖民。
+			if a.FleetETA == 0 {
+				s.aiLaunchColonizationFleet(i)
+			}
 		}
 	}
 	return arrivals
+}
+
+// aiLaunchColonizationFleet 是單主力艦隊資料模型下的航線 adapter。原版
+// All_AI_Colonize_ 只消費已在來源星系的 Colony Ship；跨星系選路屬另一條 AI 艦隊鏈。
+// remake 尚未表示多支殖民艦，因此把含殖民船的整支主力艦隊送往價值最高的合法星系，
+// 抵達後由下一回合 aiExpand 在當地選行星並消耗船，不在此處瞬移建立殖民地。
+func (s *GameSession) aiLaunchColonizationFleet(i int) bool {
+	if i < 0 || i >= len(s.AIPlayers) {
+		return false
+	}
+	a := &s.AIPlayers[i]
+	if a.FleetETA > 0 {
+		return false
+	}
+	hasColonyShip := false
+	for _, ship := range a.Ships {
+		if (ship.RawTypeKnown && ship.RawType == gamedata.COLONY_SHIP) || ship.Class == ColonyShipClass {
+			hasColonyShip = true
+			break
+		}
+	}
+	if !hasColonyShip {
+		return false
+	}
+	from := aiFleetStar(*a)
+	if from < 0 {
+		return false
+	}
+	// 同星系已有合法行星時，advanceAI 會先消費來源；不應為同一艘船另開航線。
+	if planet, _ := s.bestAIColonizablePlanet(i, from); s.aiCanExpandInto(i, from) && planet >= 0 {
+		return false
+	}
+	best, bestValue := -1, 0
+	for _, star := range s.aiExpansionCandidates(i) {
+		if star == from || !s.aiCanExpandInto(i, star) || s.StarGuardedByMonster(star) {
+			continue
+		}
+		if value := s.aiPlanetValue(i, star); value > bestValue {
+			best, bestValue = star, value
+		}
+	}
+	if best < 0 {
+		return false
+	}
+	eta := s.aiFleetETATo(*a, from, best)
+	if eta <= 0 {
+		return false
+	}
+	a.FleetDestStar = best
+	a.FleetETA = eta
+	a.FleetPosSet = true
+	return true
 }
 
 func (s *GameSession) playerColonyAtStar(star int) (int, bool) {

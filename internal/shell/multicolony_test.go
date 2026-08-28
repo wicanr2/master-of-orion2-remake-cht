@@ -327,10 +327,7 @@ func TestAIColonizesSecondPlanetInOwnSystem(t *testing.T) {
 	before := len(s.AIPlayers[0].Colonies)
 	ownedBefore := s.AIPlayers[0].OwnedStars
 
-	// 擴張是機率性的(性格決定),多跑幾輪讓它有機會發生。
-	for n := 0; n < 40 && len(s.AIPlayers[0].Colonies) == before; n++ {
-		s.aiExpand(0)
-	}
+	s.aiExpand(0)
 	a := s.AIPlayers[0]
 	if len(a.Colonies) != before+1 {
 		t.Fatalf("AI 應在自己的星系裡多出一個殖民地,殖民地數 %d → %d", before, len(a.Colonies))
@@ -345,6 +342,50 @@ func TestAIColonizesSecondPlanetInOwnSystem(t *testing.T) {
 	// 兩個殖民地必須在不同的行星上。
 	if a.ColonyPlanets[0] == a.ColonyPlanets[1] {
 		t.Errorf("兩個 AI 殖民地疊在同一顆行星 %d 上", a.ColonyPlanets[0])
+	}
+}
+
+func TestAIPicksHighestValuePlanetWithinCurrentSystem(t *testing.T) {
+	s := aiOnlySession(t)
+	home := s.AIPlayers[0].ColonyStars[0]
+	// aiOnlySession 只保證一顆未殖民天體；再補一顆，才能驗證嚴格最高分而非第一顆。
+	extra := len(s.Planets)
+	s.Planets = append(s.Planets, Planet{Name: "AI 高價天體", Gen: planetGenVersion, TypeID: gamedata.HABITABLE,
+		ClimateID: gamedata.TERRAN, GravityID: gamedata.NORMAL_G, MineralID: gamedata.ABUNDANT,
+		SizeID: gamedata.MEDIUM_PLANET})
+	orbits := s.Stars[home].Orbits
+	placed := false
+	for orbit := range orbits {
+		if orbits[orbit] == OrbitEmpty {
+			orbits[orbit], placed = extra, true
+			break
+		}
+	}
+	if !placed {
+		t.Fatal("測試星系缺少空軌道")
+	}
+	s.Stars[home].Orbits = orbits
+	available := make([]int, 0, 4)
+	for _, planet := range s.PlanetsAt(home) {
+		if !s.PlanetColonized(planet) && s.Planets[planet].TypeID == gamedata.HABITABLE {
+			available = append(available, planet)
+		}
+	}
+	if len(available) < 2 {
+		t.Fatalf("fixture 應有兩顆可比較行星，得到 %v", available)
+	}
+	// 完全同分時 sub_E65F8 從軌道 4 反掃且只接受嚴格較高，應保留較高軌道。
+	if tie, _ := s.bestAIColonizablePlanet(0, home); tie != available[len(available)-1] {
+		t.Fatalf("同分應保留較高軌道行星 %d，得到 %d", available[len(available)-1], tie)
+	}
+	// 讓後一軌道明顯優於前一軌道，驗證不是 FirstColonizablePlanet。
+	s.Planets[available[0]].SizeID, s.Planets[available[0]].MineralID = gamedata.TINY_PLANET, gamedata.ULTRA_POOR
+	s.Planets[available[1]].SizeID, s.Planets[available[1]].MineralID = gamedata.HUGE_PLANET, gamedata.ULTRA_RICH
+	want, _ := s.bestAIColonizablePlanet(0, home)
+	s.aiExpand(0)
+	a := &s.AIPlayers[0]
+	if got := a.ColonyPlanets[len(a.ColonyPlanets)-1]; got != want {
+		t.Fatalf("同星系應殖民嚴格最高分行星 %d，得到 %d", want, got)
 	}
 }
 

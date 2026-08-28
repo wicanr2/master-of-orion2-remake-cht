@@ -5613,10 +5613,9 @@ func (s *GameSession) advanceAI(i int, out engine.EmpireOutput) {
 		s.advanceAIShipProduction(i, production)
 	}
 
-	// 2) 擴張:每 5 回合佔一顆最靠近既有版圖的無主星。
-	if s.Turn%5 == 0 {
-		s.aiExpand(i)
-	}
+	// 2) 殖民：All_AI_Colonize_ 每回合掃描已抵達來源；只在殖民船目前所在星系
+	// 建立殖民地。跨星系航程由 advanceAIFleets 的單主力艦隊 adapter 規劃。
+	s.aiExpand(i)
 
 	// 2.7) 研究:處理待決的科技抉擇 + 目前主題完成時挑下一個(見 ai_research.go)。
 	//
@@ -5719,32 +5718,16 @@ func (s *GameSession) aiExpand(i int) {
 	if colonyShip < 0 {
 		return
 	}
+	if s.AIPlayers[i].FleetETA > 0 {
+		return
+	}
+	currentStar := aiFleetStar(s.AIPlayers[i])
+	if !s.aiCanExpandInto(i, currentStar) {
+		return
+	}
 	ensureAIGroundForceSlots(&s.AIPlayers[i])
-	// 擴張積極度依性格(原版 _personality_expansion_chance:冷酷 100、和平主義只有 30)。
-	// 先前所有 AI 一律每回合都嘗試擴張,擴張速度毫無性格差異。
-	if chance := ai.PersonalityExpansionChance(s.AIPlayers[i].Personality); chance < 100 {
-		if s.eventRand == nil {
-			s.eventRand = newRandStream(s.EventSeed*2654435761 + 1)
-		}
-		if s.eventRand.Intn(100) >= chance {
-			return
-		}
-	}
-	// 依原版行星估值挑最好的目標,而不是「掃到第一顆能殖民的就佔」。
-	// 原版每回合替每個玩家把全星圖算一輪分數(Compute_Base_Planet_Values_),AI 據此挑目標;
-	// remake 這裡即時算候選星的分數取最大值,結果等價而不必維護一張快取表。
-	cand := s.aiExpansionCandidates(i)
-	best, bestVal := -1, 0
-	for _, idx := range cand {
-		if v := s.aiPlanetValue(i, idx); v > bestVal {
-			best, bestVal = idx, v
-		}
-	}
-	// 全部候選都是 0 分(不宜居/無行星)時退回順序掃描,確保不會因為估值而完全停止擴張。
-	order := cand
-	if best >= 0 {
-		order = []int{best}
-	}
+	// sub_E65F8 只在來源所在星系的五個行星槽中挑目標，不會讓殖民船瞬移到全圖最佳星。
+	order := []int{currentStar}
 	for _, idx := range order {
 		if !s.aiCanExpandInto(i, idx) {
 			continue
@@ -5754,7 +5737,7 @@ func (s *GameSession) aiExpand(i int) {
 		}
 		// AI 也是「殖民到行星上」——挑該星系第一顆還沒被任何帝國佔走的可殖民天體
 		// (同玩家的 ColonizeStar)。
-		planetIdx := s.FirstColonizablePlanet(idx)
+		planetIdx, _ := s.bestAIColonizablePlanet(i, idx)
 		if planetIdx < 0 {
 			continue
 		}
@@ -5877,36 +5860,67 @@ func (s *GameSession) syncAIColonyPlanets() {
 	}
 }
 
-// aiPlanetValue 算某顆星對 AI i 的價值(原版 Uncolonized_Planet_Worth_To_Player_)。
-// 星索引越界、無行星資料或該行星不可殖民時回 0。
+// aiPlanetValue 算某顆星對 AI i 的跨星航線 contextual 價值；逐行星基礎公式由
+// aiBasePlanetValueAt 對映 Uncolonized_Planet_Worth_To_Player_，兩層不可混用。
 //
 // AI 的目標傾向由性格決定:冷酷/排外偏礦產(工業=軍力),和平主義偏人口。
 // 原版的目標傾向是獨立於性格的另一個維度(玩家結構偏移 2208),remake 沒有那一層,
 // 用性格代打——這是 remake 的映射,不是原版對照。
 func (s *GameSession) aiPlanetValue(aiIdx, starIdx int) int {
-	if starIdx < 0 || starIdx >= len(s.Planets) {
+	if starIdx < 0 || starIdx >= len(s.Stars) || s.StarGuardedByMonster(starIdx) {
 		return 0
 	}
-	// 用「該星系最好的可殖民天體」估值,不是代表行星——多天體之後兩者會不一樣。
-	best := s.FirstColonizablePlanet(starIdx)
-	if best < 0 {
+	best := 0
+	for _, planet := range s.PlanetsAt(starIdx) {
+		if s.PlanetColonized(planet) {
+			continue
+		}
+		if value := s.aiPlanetValueAt(aiIdx, starIdx, planet); value > best {
+			best = value
+		}
+	}
+	return best
+}
+
+// bestAIColonizablePlanet 對應 sub_E65F8 從軌道 4 反掃到 0、只在嚴格較高時替換；
+// 同分因此保留較高軌道，不再把 FirstColonizablePlanet 當成「最佳」行星。
+func (s *GameSession) bestAIColonizablePlanet(aiIdx, starIdx int) (int, int) {
+	if starIdx < 0 || starIdx >= len(s.Stars) || s.StarGuardedByMonster(starIdx) {
+		return -1, 0
+	}
+	best, bestValue := -1, 0
+	planets := s.PlanetsAt(starIdx)
+	for orbit := len(planets) - 1; orbit >= 0; orbit-- {
+		planet := planets[orbit]
+		if s.PlanetColonized(planet) {
+			continue
+		}
+		if value := s.aiBasePlanetValueAt(aiIdx, planet); value > bestValue {
+			best, bestValue = planet, value
+		}
+	}
+	return best, bestValue
+}
+
+func (s *GameSession) aiPlanetValueAt(aiIdx, starIdx, planetIdx int) int {
+	if starIdx < 0 || starIdx >= len(s.Stars) || planetIdx < 0 || planetIdx >= len(s.Planets) {
 		return 0
 	}
-	p := s.Planets[best]
-	if p.NoPlanet || p.Gen < planetGenVersion {
+	p := s.Planets[planetIdx]
+	base := s.aiBasePlanetValueAt(aiIdx, planetIdx)
+	if base <= 0 {
 		return 0
 	}
-	if s.StarGuardedByMonster(starIdx) {
-		return 0 // 打不下來的星不該排進拓殖目標
-	}
-	// 氣態巨星/小行星帶不能殖民(原版 AIPlanetValue 開頭也是 `type != HABITABLE → 0`),
-	// AI 不該把它們排進拓殖目標。
-	if p.TypeID != gamedata.HABITABLE {
-		return 0
-	}
-	if !climateColonizable(p.ClimateID) {
-		return 0
-	}
+	obj := s.aiPlanetObjective(aiIdx)
+	// 第二、三層仍供跨星航線規劃；sub_E65F8 的同星系五軌道選擇只讀上方 base。
+	ctx := s.aiNeighborhood(aiIdx, starIdx, obj)
+	ctx.Base = base + gamedata.AIProximityValue(ctx.distances)
+	ctx.Size = p.SizeID
+	ctx.Colonized = s.Stars[starIdx].Owner != 0
+	return gamedata.AIContextualPlanetValue(ctx.AIContextualInput)
+}
+
+func (s *GameSession) aiPlanetObjective(aiIdx int) gamedata.AIObjective {
 	obj := gamedata.AIObjectiveBalancedLow
 	if aiIdx >= 0 && aiIdx < len(s.AIPlayers) {
 		switch s.AIPlayers[aiIdx].Personality {
@@ -5918,7 +5932,18 @@ func (s *GameSession) aiPlanetValue(aiIdx, starIdx int) int {
 			obj = gamedata.AIObjectiveBalancedHigh
 		}
 	}
-	base := gamedata.AIPlanetValue(gamedata.AIPlanetValueInput{
+	return obj
+}
+
+func (s *GameSession) aiBasePlanetValueAt(aiIdx, planetIdx int) int {
+	if planetIdx < 0 || planetIdx >= len(s.Planets) {
+		return 0
+	}
+	p := s.Planets[planetIdx]
+	if p.NoPlanet || p.Gen < planetGenVersion || p.TypeID != gamedata.HABITABLE || !climateColonizable(p.ClimateID) {
+		return 0
+	}
+	return gamedata.AIPlanetValue(gamedata.AIPlanetValueInput{
 		Habitable: true,
 		MaxPop:    gamedata.PlanetBasePopMax(p.SizeID, p.ClimateID),
 		Minerals:  p.MineralID,
@@ -5927,18 +5952,7 @@ func (s *GameSession) aiPlanetValue(aiIdx, starIdx int) int {
 		// FoodBase 對應原版 planet.foodbase;remake 的等價量是該氣候的每農夫食物。
 		FoodBase: gamedata.ClimateFoodPerFarmer(p.ClimateID),
 		Special:  int(p.SpecialID),
-	}, obj)
-	if base <= 0 {
-		return 0
-	}
-	// 第二、三層:鄰近價值與協同效應(原版 Proximity_Worth_To_Player_ /
-	// Compute_Contextual_Planet_Values_)。原版的「同一恆星系內的其他行星」在 remake
-	// 對應成「鄰近的星」,因為 remake 是一星一行星(見 genPlanets 註解)。
-	ctx := s.aiNeighborhood(aiIdx, starIdx, obj)
-	ctx.Base = base + gamedata.AIProximityValue(ctx.distances)
-	ctx.Size = p.SizeID
-	ctx.Colonized = s.Stars[starIdx].Owner != 0
-	return gamedata.AIContextualPlanetValue(ctx.AIContextualInput)
+	}, s.aiPlanetObjective(aiIdx))
 }
 
 // aiNeighborhoodResult 是某顆候選星的鄰近狀況(供 aiPlanetValue 的第二、三層用)。
