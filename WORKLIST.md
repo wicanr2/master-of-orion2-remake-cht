@@ -77,8 +77,8 @@
   `Do_Colony_Calculations_ @ 0xE2B31` 都只重建 derived state：pre-import 產出、帝國 imports、
   人口預測／殖民地專業、帝國彙總及三個 raw cache；第二遍吸收中間的封鎖與殖民者移動，不會
   重複增加人口或完成建造。開局函式另有兩個 caller，交叉證實它是可重入重算器。外層時序已
-  關閉；每工人工業、工業維護、食物複製機與 BC 維護 producer 已另行閉合，其餘 10 個
-  pre-import producer（環境與工業產出目前只閉合部分子鏈）、帝國統計未解欄位、
+  關閉；食物環境／基礎／總產出、每工人工業、工業維護、食物複製機與 BC 維護 producer 已
+  另行閉合；研究、士氣、工業轉稅與 BC 產出的未解子鏈、帝國統計未解欄位、
   封鎖與人口遷移規則仍分列追查。
   證據見 [`docs/re/colony-turn-chain-audit-20260828.md`](docs/re/colony-turn-chain-audit-20260828.md)。
 

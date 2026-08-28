@@ -97,8 +97,8 @@ signed 淨 BC 差。BC 費用會與全部建築維護一起受氣候倍率及最
 - **推翻舊斷言**：remake 的半食物複製、半 BC 跨回合餘數不是原版近似，而是與 `DF66F` 的
   偶數工業 gate 及 `E094F` 的整數維護公式矛盾。它必須在未來 READY spec 中移除或隔離成明示的
   現代選項，不能留在「原版忠實」模式。
-- **尚未閉合**：`Colony_Environmental_Stuff_` 呼叫 `Colony_Food2_Per_Farmer_` 後寫入
-  `colony+0xE0` 的完整高層語意、`Colony_BC_Production_` 的全部來源，以及 anomaly event 的
-  其他資源欄位效果。它們不因本切片升格。
+- `Colony_Environmental_Stuff_` 的 `colony+0xE0` 已由後續食物切片閉合為可耕作 gate；
+  `Colony_BC_Production_` 的全部來源與 anomaly event 的其他資源欄位效果仍不因本切片升格。
+  見 [`colony-food-production-environment-audit-20260828.md`](colony-food-production-environment-audit-20260828.md)。
 - **RE-first gate**：本輪不修改 Go、不寫 READY spec。差異先登記到 parity matrix／WORKLIST，
   等玩家可見玩法 RE 分母閉合後再依正式 spec 修正與做同狀態測試。
