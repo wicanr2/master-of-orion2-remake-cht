@@ -938,8 +938,14 @@ func (b *sceneBuilder) galaxy() (*overlayScreen, error) {
 				return nil
 			}
 			name := audienceEnemyName(b.session, idx)
-			b.session.ClearAudienceRequest(idx)
-			sc, err := b.diplomacyWith(name)
+			var sc origScreen
+			var err error
+			if _, typed := b.session.PendingOriginalAIHumanDiplomaticRequest(idx); typed {
+				sc, err = b.diplomacyWithOriginalRequest(name, idx)
+			} else {
+				b.session.ClearAudienceRequest(idx)
+				sc, err = b.diplomacyWith(name)
+			}
 			if err != nil {
 				return nil
 			}
@@ -2038,6 +2044,8 @@ type diplomacyScreen struct {
 	opts           []diplomacyOption
 	backRect       [4]int
 	hoverX, hoverY int
+	requestAI      int
+	request        *gamedata.OriginalHumanDiplomaticRequest
 }
 
 func newDiplomacyScreen(b *sceneBuilder) *diplomacyScreen {
@@ -2047,7 +2055,7 @@ func newDiplomacyScreen(b *sceneBuilder) *diplomacyScreen {
 	if b.session != nil {
 		enemy = enemyDisplayName(b.lang, b.session, b.session.PrimaryEnemyName())
 	}
-	return &diplomacyScreen{b: b, fnt: b.fnt, enemy: enemy, room: loadDiplomatScene(b.res, diplomatRaceIndex(enemy)),
+	return &diplomacyScreen{b: b, fnt: b.fnt, enemy: enemy, room: loadDiplomatScene(b.res, diplomatRaceIndex(enemy)), requestAI: -1,
 		response: fmt.Sprintf(uiText(b.lang, "diplomacy.audience.opening"), enemy),
 		opts: []diplomacyOption{
 			{"diplomacy.audience.option.peace", "peace"},
@@ -2065,6 +2073,50 @@ func newDiplomacyScreen(b *sceneBuilder) *diplomacyScreen {
 			{"diplomacy.audience.option.gift_star", "gift_star"},
 		},
 		backRect: [4]int{250, 430, 140, 34}}
+}
+
+func (d *diplomacyScreen) requestRect(i int) (x, y, w, h int) {
+	return 112 + i*216, 238, 200, 38
+}
+
+func originalRequestPrompt(b *sceneBuilder, r gamedata.OriginalHumanDiplomaticRequest) string {
+	if r.ReasonCode == 124 {
+		return uiText(b.lang, "diplomacy.request.notice")
+	}
+	key, detail := "diplomacy.request.direct", fmt.Sprintf("%d", r.Action.DirectTier)
+	switch r.Action.Kind {
+	case gamedata.OriginalHumanDiplomaticActionCredits:
+		key, detail = "diplomacy.request.credits", fmt.Sprintf("%d BC", r.Action.Credits)
+	case gamedata.OriginalHumanDiplomaticActionTechnology:
+		key = "diplomacy.request.technology"
+		detail = techCatalog(b.lang).Translate(gamedata.TechnologyName(gamedata.Technology(r.Action.Technology)))
+	case gamedata.OriginalHumanDiplomaticActionColony:
+		key = "diplomacy.request.colony"
+		if b.session != nil && r.Action.Colony >= 0 && r.Action.Colony < len(b.session.Stars) {
+			detail = b.session.Stars[r.Action.Colony].Name
+		} else {
+			detail = fmt.Sprintf("#%d", r.Action.Colony)
+		}
+	}
+	return fmt.Sprintf(uiText(b.lang, key), detail)
+}
+
+func (d *diplomacyScreen) resolveOriginalRequest(accept bool) bool {
+	if d.b == nil || d.b.session == nil || d.request == nil || d.requestAI < 0 {
+		return false
+	}
+	ok := false
+	if d.request.ReasonCode == 124 {
+		ok = d.b.session.AcknowledgeOriginalAIHumanDiplomaticNotice(d.requestAI)
+	} else if accept {
+		ok = d.b.session.AcceptOriginalAIHumanDiplomaticRequest(d.requestAI)
+	} else {
+		ok = d.b.session.RejectOriginalAIHumanDiplomaticRequest(d.requestAI)
+	}
+	if ok {
+		d.request = nil
+	}
+	return ok
 }
 
 func (d *diplomacyScreen) optRect(i int) (x, y, w, h int) {
@@ -2109,6 +2161,24 @@ func (d *diplomacyScreen) breakTextRect(i int) textSafeRect {
 func (d *diplomacyScreen) update(in shell.InputState) *origTransition {
 	d.hoverX, d.hoverY = in.MouseX, in.MouseY
 	if !in.ClickReleased && !in.RightClickReleased {
+		return nil
+	}
+	if d.request != nil {
+		count := 2
+		if d.request.ReasonCode == 124 {
+			count = 1
+		}
+		for i := 0; i < count; i++ {
+			x, y, w, h := d.requestRect(i)
+			if in.MouseX >= x && in.MouseX < x+w && in.MouseY >= y && in.MouseY < y+h {
+				if d.resolveOriginalRequest(i == 0) {
+					d.response = uiText(d.b.lang, "diplomacy.request.resolved")
+				} else {
+					d.response = uiText(d.b.lang, "diplomacy.request.unresolved")
+				}
+				return nil
+			}
+		}
 		return nil
 	}
 	for i, o := range d.opts {
@@ -2162,26 +2232,42 @@ func (d *diplomacyScreen) draw(dst *ebiten.Image) {
 	state := d.b.session.TreatyFor(d.enemy)
 	textSafeRect{x: 40, y: 151, w: 560, h: 24, insetX: 4, insetY: 2}.drawCentered(dst, d.fnt,
 		fmt.Sprintf(uiText(d.b.lang, "diplomacy.audience.agreements"), treatySummaryText(d.b.lang, state)), 13, gold)
-	for i, o := range d.opts {
-		x, y, w, h := d.optRect(i)
-		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{34, 30, 54, 255}, false)
-		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, color.RGBA{110, 90, 160, 255}, false)
-		drawHoverBorder(dst, float32(x), float32(y), float32(w), float32(h), pointInRect(d.hoverX, d.hoverY, x, y, w, h))
-		d.optTextRect(i).drawCentered(dst, d.fnt, uiText(d.b.lang, o.textKey), 15, body)
+	if d.request != nil {
+		labels := []string{"diplomacy.request.accept", "diplomacy.request.reject"}
+		if d.request.ReasonCode == 124 {
+			labels = []string{"diplomacy.request.continue"}
+		}
+		for i, key := range labels {
+			x, y, w, h := d.requestRect(i)
+			fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{34, 30, 54, 255}, false)
+			vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, color.RGBA{150, 125, 190, 255}, false)
+			drawHoverBorder(dst, float32(x), float32(y), float32(w), float32(h), pointInRect(d.hoverX, d.hoverY, x, y, w, h))
+			textSafeRect{x: x, y: y, w: w, h: h, insetX: 8, insetY: 4}.drawCentered(dst, d.fnt, uiText(d.b.lang, key), 14, body)
+		}
+	} else {
+		for i, o := range d.opts {
+			x, y, w, h := d.optRect(i)
+			fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{34, 30, 54, 255}, false)
+			vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, color.RGBA{110, 90, 160, 255}, false)
+			drawHoverBorder(dst, float32(x), float32(y), float32(w), float32(h), pointInRect(d.hoverX, d.hoverY, x, y, w, h))
+			d.optTextRect(i).drawCentered(dst, d.fnt, uiText(d.b.lang, o.textKey), 15, body)
+		}
 	}
-	for i, o := range d.breakOptions() {
-		x, y, w, h := d.breakRect(i)
-		fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{52, 30, 30, 255}, false)
-		vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, color.RGBA{170, 100, 90, 255}, false)
-		drawHoverBorder(dst, float32(x), float32(y), float32(w), float32(h), pointInRect(d.hoverX, d.hoverY, x, y, w, h))
-		d.breakTextRect(i).drawCentered(dst, d.fnt, uiText(d.b.lang, o.textKey), 11, body)
+	if d.request == nil {
+		for i, o := range d.breakOptions() {
+			x, y, w, h := d.breakRect(i)
+			fillPanel(dst, float32(x), float32(y), float32(w), float32(h), color.RGBA{52, 30, 30, 255}, false)
+			vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1.5, color.RGBA{170, 100, 90, 255}, false)
+			drawHoverBorder(dst, float32(x), float32(y), float32(w), float32(h), pointInRect(d.hoverX, d.hoverY, x, y, w, h))
+			d.breakTextRect(i).drawCentered(dst, d.fnt, uiText(d.b.lang, o.textKey), 11, body)
+		}
+		bx, by, bw, bh := d.backRect[0], d.backRect[1], d.backRect[2], d.backRect[3]
+		fillPanel(dst, float32(bx), float32(by), float32(bw), float32(bh), color.RGBA{40, 34, 30, 255}, false)
+		vector.StrokeRect(dst, float32(bx), float32(by), float32(bw), float32(bh), 1.5, color.RGBA{160, 140, 100, 255}, false)
+		drawHoverBorder(dst, float32(bx), float32(by), float32(bw), float32(bh), pointInRect(d.hoverX, d.hoverY, bx, by, bw, bh))
+		textSafeRect{x: bx, y: by, w: bw, h: bh, insetX: 6, insetY: 3}.drawCentered(dst, d.fnt,
+			uiText(d.b.lang, "diplomacy.audience.button.end"), 15, body)
 	}
-	bx, by, bw, bh := d.backRect[0], d.backRect[1], d.backRect[2], d.backRect[3]
-	fillPanel(dst, float32(bx), float32(by), float32(bw), float32(bh), color.RGBA{40, 34, 30, 255}, false)
-	vector.StrokeRect(dst, float32(bx), float32(by), float32(bw), float32(bh), 1.5, color.RGBA{160, 140, 100, 255}, false)
-	drawHoverBorder(dst, float32(bx), float32(by), float32(bw), float32(bh), pointInRect(d.hoverX, d.hoverY, bx, by, bw, bh))
-	textSafeRect{x: bx, y: by, w: bw, h: bh, insetX: 6, insetY: 3}.drawCentered(dst, d.fnt,
-		uiText(d.b.lang, "diplomacy.audience.button.end"), 15, body)
 }
 
 // diplomacy 進入外交對談畫面(對象是主要對手)。
@@ -2213,6 +2299,25 @@ func (b *sceneBuilder) diplomacyWith(enemy string) (origScreen, error) {
 		d.room = loadDiplomatScene(b.res, diplomatRaceIndex(enemy))
 		d.response = fmt.Sprintf(uiText(b.lang, "diplomacy.audience.opening"), d.enemy)
 	}
+	return d, nil
+}
+
+func (b *sceneBuilder) diplomacyWithOriginalRequest(enemy string, aiIndex int) (origScreen, error) {
+	screen, err := b.diplomacyWith(enemy)
+	if err != nil {
+		return nil, err
+	}
+	d, ok := screen.(*diplomacyScreen)
+	if !ok {
+		return screen, nil
+	}
+	request, ok := b.session.PendingOriginalAIHumanDiplomaticRequest(aiIndex)
+	if !ok {
+		return screen, nil
+	}
+	d.requestAI = aiIndex
+	d.request = &request
+	d.response = originalRequestPrompt(b, request)
 	return d, nil
 }
 

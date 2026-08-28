@@ -90,3 +90,54 @@ func TestOutcomeFourIsNoticeNotAcceptRequest(t *testing.T) {
 		t.Fatal("reason 124 應只清除通知，不套用 payload")
 	}
 }
+
+func TestRejectOriginalHumanReason105AppliesChangeRelationScore(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	a.Relation, a.OriginalRelationRaw, a.OriginalRelationKnown = 0, 0, true
+	queueRequestForTest(s, 105, gamedata.OriginalHumanDiplomaticAction{Kind: gamedata.OriginalHumanDiplomaticActionDirect, DirectTier: 1})
+	want, ok := gamedata.OriginalChangeRelationScore(gamedata.OriginalRelationChangeInput{
+		CurrentRaw: 0, BaseDelta: -50, ActorGovernment: int(s.Government),
+		TargetCharismatic: aiRaceHasTrait(*a, gamedata.TRAIT_CHARISMATIC), Policy: a.Treaty.FormalPolicy,
+	})
+	if !ok || !s.RejectOriginalAIHumanDiplomaticRequest(0) {
+		t.Fatal("reason 105 應可走原版 Change_Relations_ 拒絕 callback")
+	}
+	if a.OriginalRelationRaw != want || a.Relation != normalizedRelationFromOriginal(want) || a.WantsAudience {
+		t.Fatalf("reason105 raw/shown/audience=%d/%d/%v，預期 %d/%d/false", a.OriginalRelationRaw, a.Relation, a.WantsAudience, want, normalizedRelationFromOriginal(want))
+	}
+}
+
+func TestRejectOriginalHumanReason106RequiresAndCommitsMilitaryCandidate(t *testing.T) {
+	s := NewDemoSession()
+	queueRequestForTest(s, 106, gamedata.OriginalHumanDiplomaticAction{Kind: gamedata.OriginalHumanDiplomaticActionDirect, DirectTier: 1})
+	if s.RejectOriginalAIHumanDiplomaticRequest(0) {
+		t.Fatal("+0x837 軍事候選 unknown 時不得冒充 -1 宣戰")
+	}
+	a := &s.AIPlayers[0]
+	a.OriginalHumanMilitaryCandidateStar = 3
+	a.OriginalHumanMilitaryCandidateReason = 112
+	a.OriginalHumanMilitaryCandidateKnown = true
+	if !s.RejectOriginalAIHumanDiplomaticRequest(0) || !a.OriginalHumanMilitaryTargetKnown ||
+		a.OriginalHumanMilitaryTargetStar != 3 || a.OriginalHumanMilitaryTargetReason != 112 {
+		t.Fatalf("reason106 target=%d/%d known=%v", a.OriginalHumanMilitaryTargetStar, a.OriginalHumanMilitaryTargetReason, a.OriginalHumanMilitaryTargetKnown)
+	}
+	got := s.snapshot().restore().AIPlayers[0]
+	if !got.OriginalHumanMilitaryTargetKnown || got.OriginalHumanMilitaryTargetStar != 3 || got.OriginalHumanMilitaryTargetReason != 112 {
+		t.Fatalf("snapshot target=%d/%d known=%v", got.OriginalHumanMilitaryTargetStar, got.OriginalHumanMilitaryTargetReason, got.OriginalHumanMilitaryTargetKnown)
+	}
+}
+
+func TestRejectOriginalHumanReason106WithoutCandidateDeclaresWar(t *testing.T) {
+	s := NewDemoSession()
+	queueRequestForTest(s, 106, gamedata.OriginalHumanDiplomaticAction{Kind: gamedata.OriginalHumanDiplomaticActionDirect, DirectTier: 1})
+	a := &s.AIPlayers[0]
+	a.OriginalHumanMilitaryCandidateStar = -1
+	a.OriginalHumanMilitaryCandidateKnown = true
+	if !s.RejectOriginalAIHumanDiplomaticRequest(0) {
+		t.Fatal("已證實 +0x837=-1 時應走 sub_51078 宣戰")
+	}
+	if a.Treaty.FormalPolicy < gamedata.DIPLO_LIMITED_WAR || a.WantsAudience || a.OriginalHumanDiplomaticRequest != nil {
+		t.Fatalf("war/request=%v/%v/%v", a.Treaty.FormalPolicy, a.WantsAudience, a.OriginalHumanDiplomaticRequest)
+	}
+}

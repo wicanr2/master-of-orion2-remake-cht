@@ -25,6 +25,10 @@ func TestDiplomacyAudienceFixedTextComesFromExternalCatalog(t *testing.T) {
 		"diplomacy.audience.break.trade", "diplomacy.audience.break.research",
 		"diplomacy.audience.break.formal", "diplomacy.audience.break.tribute",
 		"diplomacy.audience.break.special", "diplomacy.audience.button.end",
+		"diplomacy.request.credits", "diplomacy.request.technology", "diplomacy.request.colony",
+		"diplomacy.request.direct", "diplomacy.request.notice", "diplomacy.request.accept",
+		"diplomacy.request.reject", "diplomacy.request.continue", "diplomacy.request.resolved",
+		"diplomacy.request.unresolved",
 	}
 	for _, key := range keys {
 		for _, lang := range []i18n.Lang{i18n.Traditional, i18n.English} {
@@ -86,6 +90,18 @@ func TestDiplomacyAudienceButtonTextRectsMatchHitRectsAndFit(t *testing.T) {
 		for _, lang := range []i18n.Lang{i18n.Traditional, i18n.English} {
 			checkClippedTextFits(t, fnt, r, uiText(lang, key), 11)
 		}
+	}
+	for i, key := range []string{"diplomacy.request.accept", "diplomacy.request.reject"} {
+		x, y, w, h := d.requestRect(i)
+		r := textSafeRect{x: x, y: y, w: w, h: h, insetX: 8, insetY: 4}
+		for _, lang := range []i18n.Lang{i18n.Traditional, i18n.English} {
+			checkClippedTextFits(t, fnt, r, uiText(lang, key), 14)
+		}
+	}
+	x, y, w, h := d.requestRect(0)
+	continueRect := textSafeRect{x: x, y: y, w: w, h: h, insetX: 8, insetY: 4}
+	for _, lang := range []i18n.Lang{i18n.Traditional, i18n.English} {
+		checkClippedTextFits(t, fnt, continueRect, uiText(lang, "diplomacy.request.continue"), 14)
 	}
 }
 

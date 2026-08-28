@@ -116,8 +116,8 @@
 26. `sub_53EDB` 的 outcome 1／3／4 分別寫方向 reason 106／105／124，之後都呼叫
     `sub_54CC0 @ 0x54CC0`。後者將 `word_19B580／word_19B582／byte_19B584／byte_19B587`
     鏡射到雙方方向記錄；remake 現以 `OriginalHumanDiplomaticRequest` 保存 outcome、raw reason
-    與 typed action，並與會談旗標及 JSON snapshot 同步。原版接受／拒絕 callback 尚未閉合，
-    因此不從 request payload 推測後續資產／條約 mutation。
+    與 typed action，並與會談旗標及 JSON snapshot 同步。callback 只在玩家明確選擇後執行，
+    不在建立 request 時提前套用資產／關係 mutation。
 27. `word_19A0E2 @ 0x19A0E2` 的完整直接 xref 已閉合：`sub_4D78E @ 0x4DA90`
     初始化寫 0；`sub_15239 @ 0x152BA` 每次議會開始寫 1；`sub_15DF8 @ 0x15E37／0x15E42`
     在達成 2/3 多數時，真人當選寫 2、其他帝國當選寫 3，沒有勝者不覆寫而維持 1。
@@ -129,12 +129,19 @@
     移交殖民星。BC 的原始順序是 AI 先加全額、真人扣除後若小於 1 夾為 0。remake 已接四種
     typed payload、snapshot 與首都／唯一殖民星安全 gate，不套用玩家主動餽贈的關係獎勵。
     reason 124 不在二選一集合，僅顯示後清除，payload 不生效。拒絕 105 的 raw call 是
-    `sub_4E3B5(-50, AI, human, 0, 0, 0)`；拒絕 106 會寫軍事 target，缺 target 才呼叫
-    `sub_51078` 宣戰。後兩者因 reciprocal relation／精確 target payload 尚未 typed，仍未接。
+    `sub_4E3B5(-50, AI, human, 0, 0, 0)`；新匯出確認它先讀 human→AI `+0x617`，套真人政體與
+    AI Charismatic 後，在 `0x4E991..0x4E9A7` 把結果鏡射回 AI→human，因此現有單一 raw 分數
+    足以精確接線。拒絕 106 讀 AI→human `+0x837／+0x887`；star 非 -1 時搬到
+    `+0x7C7／+0x7C9`，-1 才呼叫 `sub_51078` 宣戰並顯示 reason 179。
 29. `sub_FF593` 蟲洞判定的精確順序已閉合：目標星有 source 殖民地，或目標星直接在
     source／聯盟人口據點燃料航程內，或蟲洞 partner 已被 source 造訪且 partner 在該航程內，
     任一成立即為可達。remake 以 `AIOpponent.ExploredStars` 保存逐 AI 遮罩；新局母星與艦隊
     抵達會設位並隨 snapshot 往返。舊 JSON／GAM 缺完整造訪歷史時保留 unknown，不以 owner 猜測。
+30. reason 105 拒絕 callback 已接 `OriginalChangeRelationScore`，使用真人政體、AI Charismatic、
+    正式狀態與現有 raw 關係；正常 UI 不再於進畫面前清除 payload。reason 106 的 committed
+    consumer、合法 -1 宣戰分支與 snapshot 已接；但 `+0x837／+0x887` 上游軍事候選尚未 typed，
+    unknown 時保留請求，不能冒充 -1。原始匯出見
+    [`evidence/ai-human-request-reject-ida-20260828.json`](evidence/ai-human-request-reject-ida-20260828.json)。
 
 ## Remake 對映與限制
 
@@ -179,8 +186,9 @@
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。
-- 尚未閉合：`sub_544A1` 所需的完整 directional incident writer、reason 105／106 拒絕 callback
-  與正常外交二選一 UI。接受 callback 與 reason 124 單向通知已閉合。只有必要 typed 輸入 unknown 時，
+- 尚未閉合：`sub_544A1` 所需的完整 directional incident writer，以及 reason 106 拒絕所讀
+  `+0x837／+0x887` 軍事候選 producer。接受、reason 105 拒絕、reason 106 consumer、reason 124
+  單向通知與正常二選一 UI 已閉合。只有必要 typed 輸入 unknown 時，
   願戰來源才保留明示的 `DecideStance` 相容 fallback；不以部分 score 升格整條決策。
 
 ## 勘誤：`sub_4F93B`

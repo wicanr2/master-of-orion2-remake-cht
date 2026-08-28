@@ -1182,12 +1182,15 @@
   三態，不再稱泛用 escalation。正常 AI 回合現已接上完整 score → action → outcome；完整 producer
   可表示時，outcome 0／2 與 1／3／4 會分別停止、交給單主力航程 adapter 或建立會談請求，unknown
   才保留 stance fallback。三種外交 outcome 已保存 raw reason 106／105／124 與完整 typed payload，
-  並通過存檔往返；因原版接受／拒絕 callback 尚未閉合，目前不提前套用資產／條約效果。
+  並通過存檔往返；建立 request 時不提前套用資產／關係效果，改由正常外交 UI 的明確選擇觸發。
   `word_19A0E2` 三態亦已由 IDA 全 xref 閉合：初始化 0、開會 1、真人當選 2、其他帝國當選 3，
   流會維持 1；新局議會生命週期與 snapshot 已接，舊 JSON／GAM 缺 raw 才 unknown。IDA 又閉合
   reason 105／106 的接受 callback：direct tier、科技、BC 與殖民星 payload 已接 typed 消費端，
   且不誤套玩家餽贈關係獎勵；reason 124 已訂正為只顯示／確認、不進二選一也不套 payload。
-  最後主要阻塞是 105／106 拒絕 callback 與正常外交二選一 UI；`sub_FF593` 蟲洞支線已閉合。
+  reason 105 拒絕 callback 與正常外交二選一 UI 已接；點會談燈不再提前刪除 typed payload。
+  reason 106 的 `+0x7C7／+0x7C9` committed consumer、合法 -1 宣戰與 snapshot 亦已接，最後阻塞
+  縮為 `+0x837／+0x887` 上游軍事候選 producer。unknown 時 UI 保留請求，不冒充無目標宣戰。
+  `sub_FF593` 蟲洞支線已閉合。
   typed producer unknown 時的願戰來源仍是明示的 `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與
   [`docs/spec/ai-human-formal-war-policy.md`](docs/spec/ai-human-formal-war-policy.md)、

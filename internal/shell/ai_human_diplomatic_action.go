@@ -197,7 +197,7 @@ func (s *GameSession) originalAIHumanDiplomaticAction(aiIndex, intensity int,
 
 // queueOriginalAIHumanDiplomaticRequest 對映 sub_53EDB outcome 1／3／4 寫
 // +0x657 reason、sub_54CC0 鏡射 payload，以及 Humans_Requesting_Diplomacy_ 的玩家可見閘門。
-// 接受／拒絕 callback 尚未閉合，因此這裡只保存請求，不提前套用資產或條約效果。
+// 這裡只保存請求；資產、關係與軍事 callback 必須等玩家在正常外交 UI 明確選擇後才套用。
 func (s *GameSession) queueOriginalAIHumanDiplomaticRequest(aiIndex, outcome int,
 	action gamedata.OriginalHumanDiplomaticAction) bool {
 	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) {

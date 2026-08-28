@@ -108,6 +108,61 @@ func (s *GameSession) AcceptOriginalAIHumanDiplomaticRequest(aiIndex int) bool {
 	return true
 }
 
+// PendingOriginalAIHumanDiplomaticRequest 回傳仍在等待玩家處理的 typed 請求副本。
+func (s *GameSession) PendingOriginalAIHumanDiplomaticRequest(aiIndex int) (gamedata.OriginalHumanDiplomaticRequest, bool) {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) || s.AIPlayers[aiIndex].OriginalHumanDiplomaticRequest == nil {
+		return gamedata.OriginalHumanDiplomaticRequest{}, false
+	}
+	return *s.AIPlayers[aiIndex].OriginalHumanDiplomaticRequest, true
+}
+
+// RejectOriginalAIHumanDiplomaticRequest 執行 sub_1AFA6 的 reason 105／106 拒絕 callback。
+// reason 105 走 Change_Relations_(-50, AI, human, 0, 0, 0)，其尾端會鏡射分數。
+// reason 106 只有在 +0x837／+0x887 producer 已知時才可執行；未知不得假裝成 -1 宣戰。
+func (s *GameSession) RejectOriginalAIHumanDiplomaticRequest(aiIndex int) bool {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) {
+		return false
+	}
+	a := &s.AIPlayers[aiIndex]
+	r := a.OriginalHumanDiplomaticRequest
+	if r == nil {
+		return false
+	}
+	switch r.ReasonCode {
+	case 105:
+		if a.Treaty.FormalPolicy < gamedata.DIPLO_LIMITED_WAR {
+			next, ok := gamedata.OriginalChangeRelationScore(gamedata.OriginalRelationChangeInput{
+				CurrentRaw: a.originalRelationRaw(), BaseDelta: -50,
+				ActorGovernment: int(s.Government), TargetCharismatic: aiRaceHasTrait(*a, gamedata.TRAIT_CHARISMATIC),
+				Policy: a.Treaty.FormalPolicy,
+			})
+			if !ok {
+				return false
+			}
+			a.OriginalRelationRaw, a.OriginalRelationKnown = next, true
+			a.Relation = normalizedRelationFromOriginal(next)
+		}
+	case 106:
+		if !a.OriginalHumanMilitaryCandidateKnown {
+			return false
+		}
+		if a.OriginalHumanMilitaryCandidateStar >= 0 {
+			if a.OriginalHumanMilitaryCandidateStar >= len(s.Stars) {
+				return false
+			}
+			a.OriginalHumanMilitaryTargetStar = a.OriginalHumanMilitaryCandidateStar
+			a.OriginalHumanMilitaryTargetReason = a.OriginalHumanMilitaryCandidateReason
+			a.OriginalHumanMilitaryTargetKnown = true
+		} else if a.Treaty.FormalPolicy < gamedata.DIPLO_LIMITED_WAR && !s.declareOriginalAIHumanWar(aiIndex, s.eventRoll) {
+			return false
+		}
+	default:
+		return false
+	}
+	a.WantsAudience, a.AudienceReason, a.OriginalHumanDiplomaticRequest = false, "", nil
+	return true
+}
+
 // AcknowledgeOriginalAIHumanDiplomaticNotice 清除 reason 124；sub_1AFA6 證實它不進二選一。
 func (s *GameSession) AcknowledgeOriginalAIHumanDiplomaticNotice(aiIndex int) bool {
 	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) {

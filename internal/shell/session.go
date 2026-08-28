@@ -123,6 +123,14 @@ type AIOpponent struct {
 	OriginalHumanDiplomaticRequest *gamedata.OriginalHumanDiplomaticRequest `json:"originalHumanDiplomaticRequest,omitempty"`
 	// OriginalHumanDirectRequestTier 對映 sub_52049 的方向 direct-request tier 1／2。
 	OriginalHumanDirectRequestTier int `json:"originalHumanDirectRequestTier,omitempty"`
+	// OriginalHumanMilitaryCandidate* 對應 AI→目前真人方向 +0x837／+0x887；reason 106
+	// 被拒時搬到 +0x7C7／+0x7C9。Known 區分合法 -1（無目標，轉為宣戰）與未知 producer。
+	OriginalHumanMilitaryCandidateStar   int  `json:"originalHumanMilitaryCandidateStar,omitempty"`
+	OriginalHumanMilitaryCandidateReason int  `json:"originalHumanMilitaryCandidateReason,omitempty"`
+	OriginalHumanMilitaryCandidateKnown  bool `json:"originalHumanMilitaryCandidateKnown,omitempty"`
+	OriginalHumanMilitaryTargetStar      int  `json:"originalHumanMilitaryTargetStar,omitempty"`
+	OriginalHumanMilitaryTargetReason    int  `json:"originalHumanMilitaryTargetReason,omitempty"`
+	OriginalHumanMilitaryTargetKnown     bool `json:"originalHumanMilitaryTargetKnown,omitempty"`
 
 	// ColonyStars 是 Colonies[i] 對應到 Stars 的索引(平行陣列),兩者長度須一致——aiExpand
 	// append 新殖民地、InvadeColony 玩家攻陷 AI 殖民地時各自同步移除,見兩處函式。
