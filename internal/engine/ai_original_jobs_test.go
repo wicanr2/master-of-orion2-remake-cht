@@ -84,6 +84,63 @@ func TestApplyOriginalAIJobsUsesAvailableFoodTransport(t *testing.T) {
 	}
 }
 
+func TestOriginalAIAdditionalFarmerPollutionPriority(t *testing.T) {
+	worker := originalAIColonistCandidate{race: 2, from: int(gamedata.WORKER), food: 4, industry: 3}
+	scientist := originalAIColonistCandidate{race: 1, from: int(gamedata.SCIENTIST), food: 6, research: 0}
+	items := []originalAIColonistCandidate{worker, scientist}
+	originalAISortAdditionalFarmers(items, 7, 7)
+	if items[0].from != int(gamedata.SCIENTIST) {
+		t.Fatalf("清污成本未上升時應依 food-currentJobOutput 排序：%+v", items)
+	}
+	items = []originalAIColonistCandidate{worker, scientist}
+	originalAISortAdditionalFarmers(items, 7, 8)
+	got := originalAIAdditionalFarmerScore(items[0], 7, 8)
+	if items[0].from != int(gamedata.WORKER) || got != 1001 {
+		t.Fatalf("清污成本上升時工人候選應取得 +1000：%+v score=%d", items, got)
+	}
+}
+
+func TestOriginalAIAdditionalFarmerTieBreaks(t *testing.T) {
+	items := []originalAIColonistCandidate{
+		{race: 3, from: int(gamedata.SCIENTIST), food: 5, research: 3},
+		{race: 2, from: int(gamedata.WORKER), food: 4, industry: 2},
+		{race: 1, from: int(gamedata.WORKER), food: 4, industry: 2},
+	}
+	originalAISortAdditionalFarmers(items, 0, 0)
+	if items[0].race != 1 || items[1].race != 2 || items[2].race != 3 {
+		t.Fatalf("同分應依 food、job、race 升冪：%+v", items)
+	}
+}
+
+func TestOriginalAIInitialEquivalentCandidatesKeepExistingWorkersAtTail(t *testing.T) {
+	items := []originalAIColonistCandidate{
+		{from: int(gamedata.SCIENTIST), race: 2, food: 2, industry: 5, research: 3},
+		{from: int(gamedata.WORKER), race: 2, food: 2, industry: 5, research: 3},
+	}
+	originalAISortInitial(items, true)
+	if got := items[len(items)-1].from; got != int(gamedata.WORKER) {
+		t.Fatalf("等價候選尾端職務=%d，預期優先保留既有工人", got)
+	}
+}
+
+func TestOriginalAIEquivalentTieReconstructionDoesNotPermanentlyStarveResearch(t *testing.T) {
+	colony := ColonyState{
+		Population: 4, Workers: 4, Lithovore: true, OwnerRaceProfileKnown: true,
+		FoodPerFarmer: 2, IndustryPerWorker: 5, ResearchPerScientist: 3,
+		PopulationGroups: []PopulationGroup{{RaceSlot: 2, RaceSlotKnown: true, Workers: 4, ProfileKnown: true}},
+	}
+	if !populationGroupsValid(colony) {
+		t.Fatal("測試人口群組必須有效")
+	}
+	// 直接驗證正式 API，避免測試先行改動 PopulationGroups 的共享底層 slice。
+	got, _, ok := ApplyOriginalAIJobsWithTransport(PlayerState{}, []ColonyState{colony}, OriginalAIJobContext{
+		ColonyFoodHalf: []int{0}, ColonyFoodHalfKnown: []bool{true},
+	})
+	if !ok || got[0].Scientists < 1 || RunEmpireTurn(PlayerState{}, got).TotalResearch < 1 {
+		t.Fatalf("等價 qsort 重建不得讓研究永久歸零：ok=%v colony=%+v", ok, got)
+	}
+}
+
 func TestApplyOriginalAIUnblockadedJobsPreservesSpecialAndPrisoner(t *testing.T) {
 	c := originalAIJobTestColony()
 	c.Population = 7

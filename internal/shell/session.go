@@ -133,16 +133,9 @@ type AIOpponent struct {
 	OriginalHumanMilitaryTargetReason    int  `json:"originalHumanMilitaryTargetReason,omitempty"`
 	OriginalHumanMilitaryTargetKnown     bool `json:"originalHumanMilitaryTargetKnown,omitempty"`
 
-	// ColonyStars 是 Colonies[i] 對應到 Stars 的索引(平行陣列),兩者長度須一致——aiExpand
-	// append 新殖民地、InvadeColony 玩家攻陷 AI 殖民地時各自同步移除,見兩處函式。
-	//
-	// 2026-07-11 訂正:先前 aiExpand 每 5 回合佔領一顆無主星時只標記 Star.Owner=2、
-	// OwnedStars++,並不會為那顆星建立真正的 engine.ColonyState,因此本欄位一度只有「開局
-	// 母星」這一筆對映,其餘擴張出的星是「有旗標無殖民地模型」的版圖——地面入侵
-	// (InvadeColony)打不到、AI 經濟(RunEmpireTurn)也不會因擴張成長。現在 aiExpand 改用
-	// newColonyFromStar(colonization.go,與玩家 ColonizeStar 共用同一套建法)建立真殖民地並
-	// 同步 append 進 Colonies/ColonyStars,擴張出的星此後都有實際殖民地模型,可被入侵、且
-	// 會計入 AI 每回合的 TotalNetIndustry。
+	// ColonyStars 是 Colonies[i] 對應到 Stars 的索引（平行陣列），兩者長度須一致。
+	// aiExpand 透過 newColonyFromStar 建立真殖民地並同步 append；InvadeColony 攻陷時同步
+	// 移除，因此 AI 後續殖民地可被入侵且會進入每回合帝國經濟。
 	ColonyStars []int
 
 	// ColonyPlanets 是 Colonies[i] 座落的**行星**索引(平行陣列,對 GameSession.Planets),
@@ -5248,7 +5241,12 @@ func (s *GameSession) EndTurn() {
 				}
 			}
 		}
-		colonies, freighterPressure, exactJobs := engine.ApplyOriginalAIJobsWithTransport(ps, s.AIPlayers[i].Colonies, jobCtx)
+		// sub_D66B3 在 sub_E2D72 重算後讀本回合帝國產出；因此職務選擇必須和
+		// 最終結算看見同一份難度／事件暫態加成。回傳後只合併職務欄，避免把
+		// GrowthBonusSum 等暫態值永久寫回並在下回合重複疊加。
+		jobInput := s.aiColoniesForTurn(i, s.AIPlayers[i].Colonies)
+		assigned, freighterPressure, exactJobs := engine.ApplyOriginalAIJobsWithTransport(ps, jobInput, jobCtx)
+		colonies := mergeAIJobAssignments(s.AIPlayers[i].Colonies, assigned)
 		if !exactJobs {
 			// 舊 JSON 缺逐種族 profile 或 +0xDD 無法建立時，保留既有可玩 fallback；
 			// 不把這條路徑宣稱為原版忠實。原版可執行檔沒有 AI 回合寫入 player+0x31
@@ -5374,6 +5372,20 @@ func (s *GameSession) EndTurn() {
 	if s.HotseatEnabled() {
 		s.advanceIdleSeats()
 	}
+}
+
+func mergeAIJobAssignments(base, assigned []engine.ColonyState) []engine.ColonyState {
+	if len(base) != len(assigned) {
+		return base
+	}
+	out := append([]engine.ColonyState(nil), base...)
+	for i := range out {
+		out[i].Farmers = assigned[i].Farmers
+		out[i].Workers = assigned[i].Workers
+		out[i].Scientists = assigned[i].Scientists
+		out[i].PopulationGroups = append([]engine.PopulationGroup(nil), assigned[i].PopulationGroups...)
+	}
+	return out
 }
 
 func advanceAIColonyPopulation(a *AIOpponent, out engine.EmpireOutput, activeSlots int, rng *randStream) {
@@ -5691,6 +5703,22 @@ var stanceNames = map[ai.Stance]string{
 // 天體(全是氣態巨星/小行星帶,或氣候不合)就 continue 找下一顆無主星,不 fallback 成只設旗標
 // (避免旗標與殖民地模型再度分裂)。找不到任何可擴張的無主星則整個 no-op。
 func (s *GameSession) aiExpand(i int) {
+	if i < 0 || i >= len(s.AIPlayers) {
+		return
+	}
+	colonyShip := -1
+	for ship := range s.AIPlayers[i].Ships {
+		candidate := s.AIPlayers[i].Ships[ship]
+		if (candidate.RawTypeKnown && candidate.RawType == gamedata.COLONY_SHIP) || candidate.Class == ColonyShipClass {
+			colonyShip = ship
+			break
+		}
+	}
+	// All_AI_Colonize_ → sub_E65F8 只處理實際位於 AI 艦隊／軍官記錄中的殖民船；
+	// 沒有來源時不會依固定週期免費建立殖民地。
+	if colonyShip < 0 {
+		return
+	}
 	ensureAIGroundForceSlots(&s.AIPlayers[i])
 	// 擴張積極度依性格(原版 _personality_expansion_chance:冷酷 100、和平主義只有 30)。
 	// 先前所有 AI 一律每回合都嘗試擴張,擴張速度毫無性格差異。
@@ -5778,6 +5806,8 @@ func (s *GameSession) aiExpand(i int) {
 		s.AIPlayers[i].ColonyTanks = append(s.AIPlayers[i].ColonyTanks, 0)
 		s.AIPlayers[i].MarineBarracksAge = append(s.AIPlayers[i].MarineBarracksAge, 0)
 		s.AIPlayers[i].ArmorBarracksAge = append(s.AIPlayers[i].ArmorBarracksAge, 0)
+		s.AIPlayers[i].Ships = append(s.AIPlayers[i].Ships[:colonyShip], s.AIPlayers[i].Ships[colonyShip+1:]...)
+		s.syncAIShipStrength(i)
 		s.syncAIRaceEngineFields(&s.AIPlayers[i])
 		s.consumeSpecialOnColonize(planetIdx) // 原住民被 AI 併入人口後同樣從行星上消失(見 colonization.go)
 		return
@@ -6335,6 +6365,10 @@ func buildDemoAIOpponents(aiHomeStars []int, starCount, difficulty int, seed int
 		// 自動調稅 producer。新建 AI 因此使用清零初始化的 0%，其後回合保持現值。
 		// 匯入 .GAM 的 AI 若已有其他值，正常回合也不會在上方被擅自覆蓋。
 		player.TaxRate = gamedata.TaxRateMinPercent
+		startingColonyShips := homeworldShips(defaultNameTranslator)[:1]
+		startingColonyShips[0].RawType = gamedata.COLONY_SHIP
+		startingColonyShips[0].RawTypeKnown = true
+		startingColonyShips[0].RawMissionKnown = true
 		aiPlayers = append(aiPlayers, AIOpponent{
 			Name:               setup.name,
 			Color:              (i + 1) % 8,
@@ -6348,6 +6382,9 @@ func buildDemoAIOpponents(aiHomeStars []int, starCount, difficulty int, seed int
 			// 星基)——每個 AI 各自 cloneBuildings 一份獨立拷貝,不可共享同一個 map 參考(見
 			// AIOpponent.ColonyBuildings 欄位註解)。
 			ColonyBuildings: []map[string]bool{cloneBuildings(homeworldBuildings())},
+			// Average 開局的實際殖民船由 All_AI_Colonize_ 消費；不再讓每五回合的
+			// remake 排程無限免費拓殖。偵察艦仍待 AI 多艦隊開局模型閉合。
+			Ships: startingColonyShips,
 			// 原版開局後由全域英雄池逐回合產生 offer；不再依種族固定贈送 Commando。
 			Leaders:                    nil,
 			Personality:                pers,
@@ -6369,6 +6406,13 @@ func buildDemoAIOpponents(aiHomeStars []int, starCount, difficulty int, seed int
 			// 和平主義 +30、排外 -50……先前所有 AI 一律從 0 開始,性格毫無體感。
 			Relation: clampRelation(ai.PersonalityRelationModifier(pers) / 2),
 		})
+		if raceIndex >= 0 && raceIndex < len(Races) {
+			orig := Races[raceIndex].OrigIdx
+			has := func(trait gamedata.RaceTrait) bool { return gamedata.OrigRaceHasTrait(orig, trait) }
+			applyHomeworldRaceTraits(&aiPlayers[len(aiPlayers)-1].Colonies[0], nil, Races[raceIndex], has)
+			// 重建 owner population group，讓母星環境與數值 picks 在第一回合職務排序前生效。
+			(&GameSession{}).syncAIRaceEngineFields(&aiPlayers[len(aiPlayers)-1])
+		}
 		// Marine Barracks 是 AI 母星的開局建築；以原版「初建立即最多 4 單位」
 		// 建立駐軍，而不是等第一次入侵時才用目前回合數倒推。其餘殖民地由
 		// aiExpand 追加空的平行 slot。

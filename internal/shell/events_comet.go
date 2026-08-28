@@ -149,7 +149,7 @@ func (s *GameSession) cometInterceptionStrength(star int) int {
 	}
 	for i := range s.AIPlayers {
 		a := &s.AIPlayers[i]
-		if a.FleetETA == 0 && a.FleetStar == star {
+		if a.FleetETA == 0 && aiFleetStar(*a) == star {
 			for j := range a.Ships {
 				total += int(shipSizeClass(a.Ships[j].Class)) + 1
 			}

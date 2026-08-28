@@ -44,6 +44,7 @@ func applyHomeworldRaceTraits(c *engine.ColonyState, p *Planet, r Race, has func
 	subterranean := has(gamedata.TRAIT_SUBTERRANEAN)
 	lithovore := has(gamedata.TRAIT_LITHOVORE)
 	cybernetic := has(gamedata.TRAIT_CYBERNETIC)
+	gravity := raceGravityForTraits(has(gamedata.TRAIT_LOW_G), has(gamedata.TRAIT_HIGH_G))
 
 	size := gamedata.MEDIUM_PLANET
 	if has(gamedata.TRAIT_LARGE_HOMEWORLD) {
@@ -69,6 +70,11 @@ func applyHomeworldRaceTraits(c *engine.ColonyState, p *Planet, r Race, has func
 	c.TolerantRace = tolerant
 	c.Lithovore = lithovore
 	c.Cybernetic = cybernetic
+	// Low-G／High-G 是種族原生重力；母星必須使用同一重力，否則種族會在自己的
+	// 開局世界立即承受非原生重力產出懲罰。
+	c.PlanetGravity = gravity
+	c.RaceGravity = gravity
+	c.RaceGravityKnown = true
 	c.FoodPerFarmer = gamedata.ClimateFoodPerFarmer(raceFoodClimate(climate, aquatic)) + r.FoodBonus
 	c.IndustryPerWorker = gamedata.MineralIndustryPerWorker(mineral) + r.IndBonus
 	c.ResearchPerScientist = gamedata.ResearchPerScientistNorm + r.ResBonus
@@ -88,7 +94,9 @@ func applyHomeworldRaceTraits(c *engine.ColonyState, p *Planet, r Race, has func
 	p.ClimateID = climate
 	p.SizeID = size
 	p.MineralID = mineral
+	p.GravityID = gravity
 	p.Climate = climateDisplayName(climate)
 	p.Size = sizeDisplayName(size)
 	p.Mineral = mineralDisplayName(mineral)
+	p.Gravity = gravityDisplayName(gravity)
 }

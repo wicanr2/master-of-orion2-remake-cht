@@ -1,4 +1,4 @@
-"""非破壞性匯出 MOO2 AI 職務後續食物／殖民地 caller 鏈。"""
+"""非破壞性匯出 MOO2 AI 殖民主鏈與直接鄰接函式。"""
 
 import hashlib
 import json
@@ -19,25 +19,11 @@ import idc
 
 
 ROOTS = {
-    "raw_ai_job_record_partition": 0xD5795,
-    "raw_collect_required_colonists": 0xD5FE1,
-    "raw_unblockaded_assignment": 0xD652C,
-    "raw_unblockaded_recompute_candidate": 0xD648A,
-    "raw_empire_worker_research_balance": 0xD66B3,
-    "raw_unblockaded_food_score": 0xD682A,
-    "raw_unblockaded_food_sort": 0xD68CB,
-    "raw_assign_additional_farmer": 0xD6A00,
-    "raw_post_job_colony_pass": 0xD6AD4,
-    "raw_post_job_empire_pass": 0xD6D80,
-    "raw_ai_colony_job_and_build_dispatch": 0xD6E1D,
-    "raw_colony_ai": 0xD6ED4,
-    "raw_all_colony_ai": 0xD6F67,
-    "raw_recompute_food_transport": 0xE2D09,
-    "raw_recompute_empire_for_player": 0xE2D72,
-    "raw_recompute_player_food": 0xDF8F0,
-    "raw_colony_food_transport_a": 0xE1839,
-    "raw_colony_food_transport_b": 0xE1E1F,
-    "raw_player_maintenance": 0xE2000,
+    "raw_all_ai_colonize": 0xE67F6,
+    "raw_ai_colony_ship_dispatch": 0xE65F8,
+    "raw_ai_colony_route": 0xE6CAA,
+    "raw_colony_creation": 0xE5EB3,
+    "raw_colony_candidate_a": 0xE6071,
 }
 
 
@@ -80,42 +66,9 @@ def function_record(requested):
         "bytes_sha256": hashlib.sha256(raw).hexdigest(),
         "pseudocode_navigation_only": pseudo,
         "instructions": [instruction(ea) for ea in idautils.FuncItems(fn.start_ea)],
-        "callers": [
-            instruction(xref.frm)
-            for xref in idautils.XrefsTo(fn.start_ea, 0)
-            if ida_funcs.get_func(xref.frm) is not None
-        ],
+        "callers": [instruction(xref.frm) for xref in idautils.XrefsTo(fn.start_ea, 0)
+                    if ida_funcs.get_func(xref.frm) is not None],
     }
-
-
-def transport_operand_functions():
-    out = {}
-    needles = ("+36h]", "+38h]", "+3eh]", "+40h]", "+0f3h]", "+f3h]")
-    for fea in idautils.Functions():
-        hits = []
-        for ea in idautils.FuncItems(fea):
-            text = (idc.generate_disasm_line(ea, 0) or "").lower()
-            if any(needle in text for needle in needles):
-                hits.append(instruction(ea))
-        if hits:
-            out[f"0x{fea:X}"] = {
-                "original_name": ida_name.get_name(fea) or "<unnamed>",
-                "hits": hits,
-                "callers": [f"0x{x:X}" for x in idautils.CodeRefsTo(fea, 0)],
-            }
-    return out
-
-
-def global_xrefs(ea):
-    out = []
-    for xref in idautils.XrefsTo(ea, 0):
-        fn = ida_funcs.get_func(xref.frm)
-        out.append({
-            "reference": instruction(xref.frm),
-            "function_start": f"0x{fn.start_ea:X}" if fn else None,
-            "original_name": ida_name.get_name(fn.start_ea) if fn else None,
-        })
-    return out
 
 
 def main():
@@ -136,11 +89,6 @@ def main():
         "address_basis": "IDA linear; DOS/4GW LE image",
         "semantic_status": "unknown_pending_review",
         "roots": {name: function_record(ea) for name, ea in ROOTS.items()},
-        "transport_operand_functions": transport_operand_functions(),
-        "ai_job_record_global_xrefs": {
-            "dword_1AA230": global_xrefs(0x1AA230),
-            "word_1AA236": global_xrefs(0x1AA236),
-        },
     }
     with open(os.environ["MOO2_IDA_OUTPUT"], "w", encoding="utf-8") as stream:
         json.dump(report, stream, ensure_ascii=False, indent=2)
@@ -151,7 +99,7 @@ try:
     main()
 except Exception:
     error = traceback.format_exc()
-    out = os.environ.get("MOO2_IDA_OUTPUT", "/tmp/ai-food-assignment.json")
+    out = os.environ.get("MOO2_IDA_OUTPUT", "/tmp/ai-colonization.json")
     with open(out + ".error", "w", encoding="utf-8") as stream:
         stream.write(error)
     ida_kernwin.msg(error + "\n")

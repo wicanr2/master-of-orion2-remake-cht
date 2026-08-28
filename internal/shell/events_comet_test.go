@@ -39,6 +39,7 @@ func TestCometInterceptionIncludesAllOwnersButOnlyStationaryShips(t *testing.T) 
 		{AtStar: star, ETA: 2, Ships: []Ship{{Class: "末日之星"}}},
 	}
 	s.AIPlayers[0].FleetStar, s.AIPlayers[0].FleetETA = star, 0
+	s.AIPlayers[0].FleetPosSet = true
 	s.AIPlayers[0].Ships = []Ship{{Class: "戰艦"}}
 	want := int(shipSizeClass("巡洋艦")) + 1 + int(shipSizeClass("戰艦")) + 1
 	if got := s.cometInterceptionStrength(star); got != want {

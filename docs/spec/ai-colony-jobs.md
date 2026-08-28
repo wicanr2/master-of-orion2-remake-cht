@@ -1,7 +1,7 @@
 # AI 殖民地職務分配規格
 
-規格狀態：封鎖／未封鎖職務、帝國工業／研究平衡、食物運輸容量與追加農夫切片
-`CONFORMED`；`sub_D682A` packed 額外 `+1000` 分支仍為 `DRAFT`。
+規格狀態：封鎖／未封鎖職務、帝國工業／研究平衡、食物運輸容量與追加農夫公式
+為 `CONFORMED`；Watcom `qsort` 等價候選的逐人口排列為 `APPROXIMATED`。
 
 證據與未知邊界見
 [`../re/ai-colony-jobs-audit-20260828.md`](../re/ai-colony-jobs-audit-20260828.md) 與
@@ -44,6 +44,19 @@ IDA 後續證實 `sub_D6E1D` 不會在 `sub_D66B3` 停止；建造 pass 後仍�
 每名在途殖民者占 5 艘；未封鎖殖民地依本地盈虧與可用艦數運糧，運力不足時只從本地仍缺糧的
 殖民地選追加農夫。運輸壓力成立時，AI 依 `Random(10)<=difficulty` 直接增加 5 艘貨運艦。
 
+`sub_D652C` 在逐殖民地前段職務完成後保存 `PollutionCleanupCost&0xff`；帝國工業／研究
+平衡可能因增加工人而提高清污成本。追加農夫候選中，工人分數為
+`food-worker+[cleanupBefore<cleanupNow]*1000`，其他可改派職務為 `food-research`。
+殖民地內依分數降冪，再依 food、raw job、race slot 升冪；跨殖民地只比較首候選分數，
+同分保留較高 colony index。
+
+`sub_D66B3` 的停止比較必須使用和帝國結算相同的本回合難度／事件暫態加成；只把新職務與
+`PopulationGroups` 寫回持久殖民地，不得把暫態成長或難度欄位重複累加。原版比較器無法在
+同種族、同產出時決定次序，而 remake 已折疊逐人口陣列；等價類別採最小改職的確定性重建，
+並在折疊結果令帝國研究為 0 時，於人口至少 2 且未封鎖的殖民地保留一名可研究人口；單人口
+殖民地與封鎖分支仍完全遵守各自原版規則。此條只保證可重現與不中斷研究，不列為
+原版精確 tie-break。
+
 ## CONFORMED 驗收
 
 1. 一般 race 的農夫會經候選迭代分配為工人／科學家，Android／Natives 保持原職。
@@ -56,10 +69,15 @@ IDA 後續證實 `sub_D6E1D` 不會在 `sub_D66B3` 停止；建造 pass 後仍�
 6. 充足運力允許盈餘殖民地供應缺糧殖民地；零運力才要求缺糧殖民地本地補農夫。
 7. 貨運艦維護費只計使用量：`SurplusFreighters>0` 時為
    `floor((TotalFreighters-SurplusFreighters)/2)`，否則為 `floor(TotalFreighters/2)`。
+8. 清污成本未上升時依 `food-currentJobOutput` 選人；清污成本上升時工人候選取得
+   `+1000`，且保存值必須維持原版低 byte 截斷。
+9. 職務重算使用本回合暫態難度／事件輸入，但持久狀態不得累加這些暫態欄位。
+10. 等價候選重建不得讓仍有可研究人口的 AI 永久維持 `TotalResearch=0`；此驗收屬
+    `APPROXIMATED`，不把綠燈升格為原版 `qsort` parity。
 
 封鎖造成的 AI 對真人積怨已接線；仍未完成的是 remake 尚不可表示的真人對真人 policy。
 它屬封鎖世界狀態，不改變本文件已閉合的職務公式。資料不完整時仍不得以
 personality weights 或平均種族產出冒稱原版路徑。
 
-`sub_D682A` 的 packed 額外 `+1000` 分支仍是 `DRAFT`；它會影響候選排序的少數條件，
-但不推翻已閉合的容量、運糧、維護費與 AI 增艦鏈。
+本規格只宣稱 AI 殖民地職務與食物貨運鏈閉合；不代表艦隊目標、外交、產品配額等其他
+AI state machine 已完成。

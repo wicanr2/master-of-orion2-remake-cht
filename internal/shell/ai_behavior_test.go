@@ -84,6 +84,41 @@ func TestAIExpand_CreatesRealColony(t *testing.T) {
 	}
 }
 
+func TestAIExpandConsumesColonyShipAndCannotRepeatFree(t *testing.T) {
+	s := NewDemoSession()
+	s.DisableEvents = true
+	a := &s.AIPlayers[0]
+	a.Personality = ai.PersonalityRuthless
+	before := len(a.Colonies)
+	s.aiExpand(0)
+	if len(a.Colonies) != before+1 {
+		t.Fatalf("有殖民船時應建立一座殖民地：%d → %d", before, len(a.Colonies))
+	}
+	for _, ship := range a.Ships {
+		if ship.RawTypeKnown && ship.RawType == gamedata.COLONY_SHIP || ship.Class == ColonyShipClass {
+			t.Fatalf("完成拓殖後應消耗殖民船：%+v", a.Ships)
+		}
+	}
+	s.aiExpand(0)
+	if len(a.Colonies) != before+1 {
+		t.Fatalf("沒有第二艘殖民船時不得免費再拓殖：%d → %d", before+1, len(a.Colonies))
+	}
+}
+
+func TestAIHomeworldUsesNativeGravity(t *testing.T) {
+	s := NewDemoSession()
+	for i := range s.AIPlayers {
+		a := &s.AIPlayers[i]
+		if len(a.Colonies) == 0 || !a.Colonies[0].RaceGravityKnown {
+			t.Fatalf("AI[%d] 母星缺重力資料", i)
+		}
+		if a.Colonies[0].PlanetGravity != a.Colonies[0].RaceGravity {
+			t.Fatalf("AI[%d] 不應在自己的母星承受非原生重力：planet=%d race=%d", i,
+				a.Colonies[0].PlanetGravity, a.Colonies[0].RaceGravity)
+		}
+	}
+}
+
 // TestAIExpand_ColonyParticipatesInEconomy 驗證 aiExpand 建立的新殖民地會被下一次
 // engine.RunEmpireTurn 算進 AI 經濟。不能用「20 回合後資產一定較多」做代理：新殖民地會先
 // 承擔開發成本，短期資產可能低於只造艦的單母星帝國。
@@ -162,6 +197,12 @@ func TestAIPersonalitiesDiverge(t *testing.T) {
 		for i := range s.AIPlayers {
 			s.AIPlayers[i].Personality = p
 			s.AIPlayers[i].Relation = 0
+			// 性格只決定是否使用現有殖民來源；補足四艘，避免兩局都被單一開局殖民船
+			// 的共同上限夾成兩座殖民地而看不出機率分岔。
+			base := s.AIPlayers[i].Ships[0]
+			for n := 1; n < 4; n++ {
+				s.AIPlayers[i].Ships = append(s.AIPlayers[i].Ships, base)
+			}
 		}
 		// 20 回合:夠讓擴張速度分出高下,又不會兩邊都把 24 星的星圖佔滿而看不出差異
 		// (60 回合時和平主義也會飽和,實測 7 vs 8 幾乎相同)。

@@ -101,7 +101,7 @@
 2. **AI 守方兵力**:AIOpponent 沒有追蹤各殖民地 Marine Barracks 是否建成/已運作幾回合(無 AI 版 ColonyBuildings),用「已運作 `s.Turn` 回合」近似 `GroundMarineBarracksUnits` 的 turnsSinceBuilt 參數(AI 母星開局即有 Marine Barracks,近似合理但非精確追蹤)。
 3. **AI 種族/特殊能力**:AIOpponent 無 RaceIndex,AI 側 force 只計裝甲/裝備科技加成,不套種族/Low-G/Subterranean。
 4. **入侵後保留人口**:手冊 p.162-164 只有敘述性描述,無精確的「入侵後保留多少平民人口」公式;以「守方地面戰存活戰鬥單位數」近似戰後殖民地人口(至少 1),不做同化/滅絕的玩家抉擇(手冊有此選項,本輪未做)。
-5. **可入侵範圍**:AI 每 5 回合 `aiExpand` 佔領的無主星只標記 `Owner=2`,不建立殖民地經濟模型(見 `AIOpponent.ColonyStars` 註解)。故本輪只有 AI 開局母星(唯一有真實 `ColonyState` 的星)可被入侵;其餘擴張版圖入侵時會回報「無可入侵的殖民地模型」。
+5. **可入侵範圍（已訂正）**：`aiExpand` 已為成功拓殖建立並同步 `ColonyState`、行星與駐軍平行欄位；玩家可入侵 AI 後續殖民地。2026-08-28 起 AI 拓殖還必須找到並消耗實際 Colony Ship，不再每 5 回合免費只改 owner。逐星殖民船航線與多 AI 艦隊仍見 `docs/spec/ai-colonization.md` 的 DRAFT 邊界。
 
 **流程選擇**:入侵由玩家主動呼叫 `InvadeColony`(非艦隊一抵達就自動觸發),與既有架構一致——`SendFleet`/`BuildShip`/`ShiftColonyJob` 等所有玩家決策都是顯式呼叫,不是 `EndTurn` 自動觸發;也讓玩家能先觀察/多載陸戰隊再決定開打,貼近原版「艦隊指令選單」的操作語意。
 

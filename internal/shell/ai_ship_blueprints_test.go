@@ -49,6 +49,7 @@ func TestAIShipTechUpdateRebuildsZeroThroughFourOnly(t *testing.T) {
 
 func TestAIProductionBuildsPersistentBlueprintShip(t *testing.T) {
 	s := NewDemoSession()
+	beforeShips := len(s.AIPlayers[0].Ships)
 	design := s.AIPlayers[0].ShipDesigns[0]
 	view := *s
 	view.Player = s.AIPlayers[0].Player
@@ -57,10 +58,10 @@ func TestAIProductionBuildsPersistentBlueprintShip(t *testing.T) {
 		t.Fatal("開局 AI 巡防艦藍圖成本應可解碼")
 	}
 	s.advanceAIShipProduction(0, cost)
-	if len(s.AIPlayers[0].Ships) != 1 {
+	if len(s.AIPlayers[0].Ships) != beforeShips+1 {
 		t.Fatalf("足額生產點應交付一艘實艦：%d", len(s.AIPlayers[0].Ships))
 	}
-	ship := s.AIPlayers[0].Ships[0]
+	ship := s.AIPlayers[0].Ships[len(s.AIPlayers[0].Ships)-1]
 	if ship.Class != design.Class || len(ship.WeaponMounts) != len(design.WeaponMounts) {
 		t.Fatalf("交付艦未深複製藍圖：ship=%+v design=%+v", ship, design)
 	}

@@ -54,6 +54,11 @@
    `research*researchWeight` 與 `industry*industryWeight`；前者較小時
    繼續加入科學家，否則轉入加入工人的循環。
 
+2026-08-28 補匯出 `sub_D66B3` 本體後，以上乘法、signed 欄位與分支方向均由
+`0xD6787..0xD679D` 再確認。`sub_D63A6／sub_D6315` 對完全等價人口回傳 0；原版次序還依
+逐人口陣列與 Watcom `qsort`，而 remake 只保存群組計數。此等價類別採確定性重建並標為
+`APPROXIMATED`，不列入已證實排序鍵。
+
 ## 已證實的排序鍵
 
 - `sub_D5FA9 @ 0xD5FA9`：race slot `8`／`9` 排在一般種族之前；同類回傳

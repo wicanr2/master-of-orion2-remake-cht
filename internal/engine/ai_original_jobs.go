@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"slices"
 	"sort"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
@@ -106,7 +107,10 @@ func originalAISortInitial(candidates []originalAIColonistCandidate, hasFood boo
 			if a.industry != b.industry {
 				return a.industry < b.industry
 			}
-			return a.race < b.race
+			if a.race != b.race {
+				return a.race < b.race
+			}
+			return originalAIInitialEquivalentLess(a, b)
 		}
 		if av, bv := a.food+a.industry-2*a.research, b.food+b.industry-2*b.research; av != bv {
 			return av > bv
@@ -117,8 +121,23 @@ func originalAISortInitial(candidates []originalAIColonistCandidate, hasFood boo
 		if a.research != b.research {
 			return a.research < b.research
 		}
-		return a.race < b.race
+		if a.race != b.race {
+			return a.race < b.race
+		}
+		return originalAIInitialEquivalentLess(a, b)
 	})
+}
+
+// sub_D63A6／sub_D6315 對同種族、同邊際產出的逐人口記錄回傳相等，最終排列
+// 取決於 Watcom qsort 與原始 4-byte 人口陣列順序。ColonyState 只保存群組職務
+// 計數，無法重建那份順序；等價類別內把既有工人排到尾端，讓 sub_D652C 從尾端
+// 取「最低必要工人」時優先維持原職，避免穩定排序固定犧牲科學家的表示偏差。
+// 這是 deterministic reconstruction，不冒稱原版 qsort 的逐位元 parity。
+func originalAIInitialEquivalentLess(a, b originalAIColonistCandidate) bool {
+	if a.from == b.from {
+		return false
+	}
+	return a.from != int(gamedata.WORKER) && b.from == int(gamedata.WORKER)
 }
 
 func originalAISortMarginal(candidates []originalAIColonistCandidate) {
@@ -172,7 +191,36 @@ func applyOriginalAIBlockadedColony(cs *ColonyState, foodHalf int) {
 
 // applyOriginalAIAdditionalFarmers 對映 sub_D6AD4 → sub_D6A00 的玩家可表示切片。
 // 原版在工業／研究平衡後仍會逐人補農夫，直到帝國食物與 player+0x38 運輸壓力解除。
-func applyOriginalAIAdditionalFarmers(ps PlayerState, colonies []ColonyState, blockaded []bool) (freighterPressure bool) {
+func originalAIAdditionalFarmerScore(candidate originalAIColonistCandidate, cleanupBefore, cleanupNow int) int {
+	score := candidate.food - candidate.research
+	if candidate.from == int(gamedata.WORKER) {
+		score = candidate.food - candidate.industry
+		if cleanupBefore < cleanupNow {
+			score += 1000
+		}
+	}
+	return score
+}
+
+func originalAISortAdditionalFarmers(candidates []originalAIColonistCandidate, cleanupBefore, cleanupNow int) {
+	sort.SliceStable(candidates, func(i, j int) bool {
+		a, b := candidates[i], candidates[j]
+		as := originalAIAdditionalFarmerScore(a, cleanupBefore, cleanupNow)
+		bs := originalAIAdditionalFarmerScore(b, cleanupBefore, cleanupNow)
+		if as != bs {
+			return as > bs
+		}
+		if a.food != b.food {
+			return a.food < b.food
+		}
+		if a.from != b.from {
+			return a.from < b.from
+		}
+		return a.race < b.race
+	})
+}
+
+func applyOriginalAIAdditionalFarmers(ps PlayerState, colonies []ColonyState, blockaded []bool, cleanupBefore []int) (freighterPressure bool) {
 	for {
 		empireFoodDeficit := RunEmpireTurn(ps, colonies).TotalFoodHalf < 0
 		transport, ok := OriginalFoodTransport(ps, colonies, blockaded)
@@ -188,8 +236,10 @@ func applyOriginalAIAdditionalFarmers(ps PlayerState, colonies []ColonyState, bl
 		}
 
 		bestColony, bestGroup, bestFrom := -1, -1, -1
-		bestGain := 0
-		for ci := range colonies {
+		bestScore := -32768
+		// sub_D6AD4 從 AI record 尾端往前掃，跨殖民地只比較已排序首候選的 score；
+		// 同分保留較高 colony index，不再套候選的次鍵。
+		for ci := len(colonies) - 1; ci >= 0; ci-- {
 			if blockaded != nil && blockaded[ci] {
 				continue
 			}
@@ -197,17 +247,19 @@ func applyOriginalAIAdditionalFarmers(ps PlayerState, colonies []ColonyState, bl
 			if preferLocal && before >= 0 {
 				continue
 			}
-			for _, candidate := range originalAIColonistCandidates(colonies[ci]) {
-				if candidate.from == int(gamedata.FARMER) || candidate.food <= 0 {
-					continue
-				}
-				trial := colonies[ci]
-				trial.PopulationGroups = append([]PopulationGroup(nil), colonies[ci].PopulationGroups...)
-				originalAIMoveCandidate(&trial, candidate, int(gamedata.FARMER))
-				gain := RunColonyTurn(trial).FoodSurplusHalf - before
-				if gain > bestGain {
-					bestColony, bestGroup, bestFrom, bestGain = ci, candidate.group, candidate.from, gain
-				}
+			candidates := originalAIColonistCandidates(colonies[ci])
+			candidates = slices.DeleteFunc(candidates, func(candidate originalAIColonistCandidate) bool {
+				return candidate.from == int(gamedata.FARMER)
+			})
+			if len(candidates) == 0 {
+				continue
+			}
+			cleanupNow := RunColonyTurn(colonies[ci]).PollutionCleanupCost
+			originalAISortAdditionalFarmers(candidates, cleanupBefore[ci], cleanupNow)
+			candidate := candidates[0]
+			score := originalAIAdditionalFarmerScore(candidate, cleanupBefore[ci], cleanupNow)
+			if score > bestScore {
+				bestColony, bestGroup, bestFrom, bestScore = ci, candidate.group, candidate.from, score
 			}
 		}
 		if bestColony < 0 {
@@ -220,6 +272,41 @@ func applyOriginalAIAdditionalFarmers(ps PlayerState, colonies []ColonyState, bl
 				originalAIMoveCandidate(&colonies[bestColony], candidate, int(gamedata.FARMER))
 				break
 			}
+		}
+	}
+}
+
+// preserveAIResearchForCollapsedQsortTies 補償 ColonyState 群組模型遺失原版逐人口
+// 4-byte 陣列順序的資訊缺口。當 Watcom qsort 比較器對整個等價類別回傳 0 時，
+// 原版結果取決於該陣列與 runtime partition；remake 若因固定群組順序把所有科學家
+// 都吃掉，就會永久停在同一研究主題。只在帝國研究為 0 時，把邊際損失最小的一名
+// 工人保留為科學家；這是 deterministic reconstruction，不是已證實的原版 tie-break。
+func preserveAIResearchForCollapsedQsortTies(ps PlayerState, colonies []ColonyState, blockaded []bool) {
+	if RunEmpireTurn(ps, colonies).TotalResearch > 0 {
+		return
+	}
+	bestColony, bestGroup := -1, -1
+	bestMargin := -32768
+	for ci := range colonies {
+		if colonies[ci].Population < 2 || (blockaded != nil && blockaded[ci]) {
+			continue
+		}
+		for _, candidate := range originalAIColonistCandidates(colonies[ci]) {
+			if candidate.from != int(gamedata.WORKER) || candidate.research <= 0 {
+				continue
+			}
+			if margin := candidate.research - candidate.industry; margin > bestMargin {
+				bestColony, bestGroup, bestMargin = ci, candidate.group, margin
+			}
+		}
+	}
+	if bestColony < 0 {
+		return
+	}
+	for _, candidate := range originalAIColonistCandidates(colonies[bestColony]) {
+		if candidate.group == bestGroup && candidate.from == int(gamedata.WORKER) {
+			originalAIMoveCandidate(&colonies[bestColony], candidate, int(gamedata.SCIENTIST))
+			return
 		}
 	}
 }
@@ -257,6 +344,7 @@ func ApplyOriginalAIJobsWithTransport(ps PlayerState, colonies []ColonyState, ct
 		first, end int
 	}
 	work := make([]colonyCandidates, len(out))
+	cleanupBefore := make([]int, len(out))
 	for i := range out {
 		if !populationGroupsValid(out[i]) || !ctx.ColonyFoodHalfKnown[i] {
 			return nil, false, false
@@ -291,6 +379,9 @@ func ApplyOriginalAIJobsWithTransport(ps PlayerState, colonies []ColonyState, ct
 		items = items[:end]
 		originalAISortMarginal(items)
 		work[i] = colonyCandidates{items: items, end: len(items)}
+		// sub_D652C @ 0xD660C..0xD660F 只保存 colony+8 的低 byte；後續
+		// sub_D66B3 改職重算可能提高完整 signed word 清污成本。
+		cleanupBefore[i] = RunColonyTurn(out[i]).PollutionCleanupCost & 0xff
 	}
 
 	industryWeight, researchWeight := 10, 18
@@ -353,7 +444,8 @@ func ApplyOriginalAIJobsWithTransport(ps PlayerState, colonies []ColonyState, ct
 		w.end--
 		originalAIMoveCandidate(&out[bestColony], w.items[w.end], int(gamedata.WORKER))
 	}
-	pressure := applyOriginalAIAdditionalFarmers(ps, out, ctx.ColonyBlockaded)
+	pressure := applyOriginalAIAdditionalFarmers(ps, out, ctx.ColonyBlockaded, cleanupBefore)
+	preserveAIResearchForCollapsedQsortTies(ps, out, ctx.ColonyBlockaded)
 	return out, pressure, true
 }
 

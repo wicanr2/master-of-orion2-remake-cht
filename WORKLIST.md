@@ -58,8 +58,17 @@
   改為直接驗證第二屆排程、非 Creative application 與新增殖民地 `ColonyOutput` 後，另發現真缺口：
   職務 RE 漏掉 `sub_D6AD4 → sub_D6A00` 追加農夫，導致 AI 人口 8→1。現已補該下游切片，
   三項定向長跑通過。後續 IDA 已閉合 `player+0x36/+0x38/+0x3E/+0x40` 的貨運艦總數、
-  餘額、食物運量及殖民者占用，並接入跨殖民地運糧、維護費與 AI 壓力增艦；只剩
-  `sub_D682A` packed 額外 `+1000` 候選排序分支維持 DRAFT。
+  餘額、食物運量及殖民者占用，並接入跨殖民地運糧、維護費與 AI 壓力增艦。
+  `sub_D682A` packed `+1000` 亦已閉合為清污成本低 byte 快照：工人使用
+  `food-worker` 並於清污成本上升時加 1000，其他候選使用 `food-research`，完整 tie-break 已接。
+  同一回歸揭露舊 `aiExpand` 每五回合免費殖民會耗盡忠實職務器的工業；IDA 證實
+  `All_AI_Colonize_ → sub_E65F8` 必須有一次性 Colony Base 或 Colony Ship。新局 AI 現保存並
+  消耗一艘 Average 開局殖民船，無船不再免費擴張；AI 母星亦改用種族原生重力，避免 Low-G／
+  High-G 在自己的母星誤吃重力懲罰。逐星殖民船航線、Colony Base 與多艦隊仍列 DRAFT，見
+  `docs/re/ai-colonization-audit-20260828.md` 與 `docs/spec/ai-colonization.md`。
+  補匯出的 `sub_D66B3` 本體亦確認 10／18 工研比較方向；職務器現使用與結算相同的難度／事件
+  暫態輸入。原版等價候選依 Watcom `qsort` 與逐人口陣列次序，remake 群組模型無法表示；依
+  compiler-helper 停止線採確定性最小改職及一名科學家保底，明列為非阻塞近似而非 exact parity。
 
 - [~] **玩家可見文案外部化**：2026-08-26 已把既有 `assets/i18n/*.json` 與內嵌副本統一轉為
   有序 JSON 並移除 `go:embed` 副本，載入器保留 per-source、先出現者優先及原版單位元控制標記契約。剩餘工作是逐畫面
@@ -1119,8 +1128,8 @@
   未封鎖殖民地會先依原版最低工人／半工業消耗配置，再以研究－工業邊際逐人平衡，
   並同步 `PopulationGroups`。`Compute_Blockades_` producer、`sub_D61E7` 封鎖分支與
   `sub_D6AD4 → sub_D6A00` 追加農夫 consumer 均已接入；`player+0x36/+0x38/+0x3E/+0x40`
-  typed 運輸欄位、跨殖民地運糧、使用量維護費與壓力增艦亦已閉合。完整 AI 決策器仍受
-  packed `+1000` 排序分支及其他艦隊／外交狀態機限制；見
+  typed 運輸欄位、跨殖民地運糧、使用量維護費、壓力增艦及清污成本 `+1000` 排序亦已閉合。
+  完整 AI 決策器仍受其他艦隊／外交狀態機限制；見
   [`docs/re/ai-colony-jobs-audit-20260828.md`](docs/re/ai-colony-jobs-audit-20260828.md) 與
   [`docs/spec/ai-colony-jobs.md`](docs/spec/ai-colony-jobs.md)。其餘 AI 建造證據見
   [`docs/re/ai-difficulty-economy-audit-20260826.md`](docs/re/ai-difficulty-economy-audit-20260826.md) 與
@@ -2341,13 +2350,12 @@ internal/shell/orbital_bombardment.go
   `RunEmpireTurn` 結算經濟,從不呼叫那些玩家專屬的 advance* 流程,故無需同步)。**AI 政府型態
   未建模**(`AIOpponent` 無 `Government` 欄位),士氣一律用 `gamedata.MoraleGovDictatorship`
   保守預設;AI 無種族加成模型,`foodBonus`/`indBonus`/`resBonus` 一律傳 0,誠實簡化不臆造。
-  維持既有「每 5 回合擴張一次」節奏不變(未改成每回合)。40 回合探針對照:修前 AI 殖民地數恆
-  1、FleetStrength 線性成長(3→60);修後 AI 殖民地數隨回合增至 9、FleetStrength 加速成長
-  (3→101),玩家開局 BC 軌跡兩版本一致(102→…→96),無 regression。測試:
+  2026-08-28 已由 `All_AI_Colonize_ → sub_E65F8` 訂正來源：排程仍可每 5 回合嘗試，但必須
+  找到並消耗實際 Colony Ship；沒有殖民來源就 no-op，不再形成無限免費拓殖。測試:
   `internal/shell/ai_behavior_test.go` 新增 `TestAIExpand_CreatesRealColony`(佔星後建真殖民地、
   平行陣列同步)、`TestAIExpand_ColonyParticipatesInEconomy`(新增殖民地輸出進入帝國結算對應 slot)、
   `TestAIExpand_NoOpWhenNoUnownedStars`(無星可擴張時安全 no-op)。詳見
-  `docs/HONEST-STATUS.md` 與頂端活表。
+  `docs/re/ai-colonization-audit-20260828.md`、`docs/spec/ai-colonization.md` 與頂端活表。
 - [x] 第 45~45 項逐條清點，**領袖技能 26 項已有 remake 消費端**；Tactics 依原版自己未實作，Famous 招募機率已補證，Diplomat 接受門檻仍為 oracle 留白
 - [x] task#36 已完成(mod 層 + 佔格 + 傷害)
 
