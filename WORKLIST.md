@@ -62,6 +62,15 @@
 
 #### 原版忠實度重新稽核（最高優先）
 
+- [x] **原版回合主鏈拓樸閉合（RE-only，2026-08-28）**：IDA Pro 9.4 重新匯出
+  `Next_Turn_Calc_ @ 0x136B3..0x13822`，證實是 52 個直接 call；固定順序、
+  兩次 `Do_Colony_Calculations_`、安塔蘭／議會／UI 三類條件 gate、逐玩家領袖招募迴圈，以及
+  `Record_History_` 早於星曆遞增均已閉合。`Assign_Auto_Function_`、
+  `Check_Release_Version_`、`Set_Mouse_List_` 只保存玩家可見邊界，不逆向 runtime／平台內部，
+  也不進玩法分母。此項只關閉外層 call graph；外交、間諜、殖民地、戰鬥等子函式的資料流仍由
+  parity matrix 各列獨立判定。證據見
+  [`docs/re/next-turn-chain-audit-20260828.md`](docs/re/next-turn-chain-audit-20260828.md)。
+
 - [x] **2026-08-28 三個長跑回歸已分類並修正**：議會第二屆確實準時召開，但原版搖擺票重擲後
   流會，舊測試錯把「再次當選」當排程契約；AI 0 是 Creative，舊研究測試錯把合法的
   `ExplicitChoice` 空集合當成未研究；擴張測試則錯假設新殖民地短期資產必高於只造艦的單母星。
@@ -739,7 +748,7 @@
   `Check_For_Council_Meeting_ @ 0x168AF` 已有原版排程與門檻，Go 卻以手冊未寫為由自訂 8 回合；
   `Strategic_Bombardment_ @ 0x4257E` 固定走三輪原版快速戰鬥鏈；Go 已於 2026-08-24 修正
   原先的 5/10 全武器抽象模型，5/10 現只作用於炸彈攻擊當量。
-  第二輪另確認 `Next_Turn_Calc_` 含 55 個直接 call，事件、間諜、艦隊航行、殖民地完整回合、
+  2026-08-28 另確認 `Next_Turn_Calc_` 含 52 個直接 call，事件、間諜、艦隊航行、殖民地完整回合、
   研究突破、安塔蘭週期入侵與原版 AI 等此前未完整入矩陣；`Determine_Event_` 的一般排程已於
   2026-08-25 閉合並取代 30% 自訂值；同日已接全局帝國目標與熱座／AI 基本回寫，並由
   `sub_2230A`／`sub_206A2` 閉合富商捐獻的每 20 回合 100 BC 階梯，以及海盜劫掠的

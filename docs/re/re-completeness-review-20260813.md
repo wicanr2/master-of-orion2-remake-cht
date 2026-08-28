@@ -28,8 +28,10 @@
 
 ## 回合主鏈完整性
 
-`Next_Turn_Calc_ @ 0x136B3` 的既有 IDA 指令輸出含 55 個直接 `call` 指令。以外部符號索引只作
-導航對照後，可辨識的重要子系統包括：
+`Next_Turn_Calc_ @ 0x136B3` 已於 2026-08-28 由 IDA 資料庫重新匯出，確認為 **52 個**直接
+`call` 指令。完整順序、callsite、target、三個條件 gate、
+逐玩家招募迴圈與平台停止線見
+[`next-turn-chain-audit-20260828.md`](next-turn-chain-audit-20260828.md)。以下只保留重要子系統摘要：
 
 - `Antaran_Invasion_Check_ @ 0x63D92`
 - `Compute_AI_Data_ @ 0xD3D34`
@@ -58,8 +60,8 @@
 - `Record_History_ @ 0x10208A`
 
 Go 的 `GameSession.EndTurn` 也有完整可玩流程，但它採另一組系統切割與順序；其中包含多個自訂
-adapter、固定週期和 remake AI。尚未逐項對回上述 55 個呼叫的輸入、狀態建立、重複呼叫理由與
-回寫。因此「EndTurn 很長／功能很多」不是原版回合主鏈已還原的證據。
+adapter、固定週期和 remake AI。原版 52 個 call 的外層順序已閉合；各子函式的輸入、狀態建立與
+回寫仍由 parity matrix 的獨立列追查。因此「EndTurn 很長／功能很多」不是各子系統已對齊的證據。
 
 ## 覆蓋面盤點
 
@@ -127,18 +129,15 @@ owner 8 的原版中途座標、完整快速／戰術 battle record 及殖民地
 ## 工具與證據缺口
 
 2026-08-12 的 `re_audit_core.idc` 對 far call 使用 `get_operand_value`，在輸出中得到 55 個
-`0xFFFFFFFFFFFFFFFF`，但原始指令仍保留 `call sub_...` 位址。這代表舊報告的函式本體有效，
-「call target 已機械解析」則無效。本輪已把 `re_audit_core.idc` 與新
-`re_audit_systems2.idc` 改為讀 IDA code xref；正式結果必須等下一次成功的一次性 IDA 作業驗證。
-
-本輪兩次相同的非 root、無網路、tmpfs IDA 命令都因自動權限審查逾時而未建立新輸出；沒有把
-這個環境阻塞改寫成產品缺陷，也沒有退回主機或攤平 ASM 宣稱完成。
+`0xFFFFFFFFFFFFFFFF`，但原始指令仍保留 `call sub_...` 位址。2026-08-28 已由
+`audit_next_turn_chain.py` 直接讀 IDA code operand 與函式邊界，正式輸出包含 52 個有效 target、
+callsite bytes 與來源雜湊；舊 IDC 查詢不再作完成證據。
 
 ## 完整性閘門與建議順序
 
 RE 完整性必須至少通過三層：
 
-1. **回合主鏈覆蓋**：55 個直接呼叫逐一映射到 Go 或明示為不影響玩法的排除項。
+1. **回合主鏈覆蓋**：52 個直接呼叫逐一映射到子系統矩陣列或明示為 runtime／平台邊界排除項。
 2. **系統垂直閉合**：每列完成 caller、欄位、RNG、分支、回寫、平行玩家／AI 路徑與存檔。
 3. **獨立驗證**：同輸入與邊界值的 IDA 靜態測試；靜態不足才做原版動態 oracle，再走正常玩家路徑。
 

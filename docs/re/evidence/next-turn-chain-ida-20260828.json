@@ -1,0 +1,1576 @@
+{
+  "schema": "moo2.ida.next-turn-chain.v1",
+  "evidence_scope": "static_only",
+  "mutation": "none",
+  "tool": {
+    "name": "IDA Pro",
+    "version": "9.4",
+    "script": "tools/ida/audit_next_turn_chain.py"
+  },
+  "input": {
+    "database": "/work/Orion2.exe",
+    "source": "/private/Orion2.exe",
+    "source_sha256": "7ae2ac2e5904ca330009af2827279d889906b0b9b7a8854c38eb707a56e955b5",
+    "symbols": "/private/symbols_fixed.tsv",
+    "symbols_sha256": "f83116049964c14072547dd087a6316117cf62808c328cc7c087984467030b28",
+    "processor": "metapc",
+    "min_ea": "0x10000",
+    "max_ea": "0x1D5CD0"
+  },
+  "address_basis": "IDA linear; DOS/4GW LE object #1",
+  "root": {
+    "requested": "0x136B3",
+    "start": "0x136B3",
+    "end": "0x13822",
+    "ida_original_name": "sub_136B3",
+    "external_symbol_names_navigation_only": [
+      "Next_Turn_Calc_"
+    ],
+    "instructions": [
+      {
+        "ea": "0x136B3",
+        "bytes": "52",
+        "mnem": "push",
+        "op0": "edx",
+        "op1": "",
+        "line": "push    edx"
+      },
+      {
+        "ea": "0x136B4",
+        "bytes": "a03a9f1900",
+        "mnem": "mov",
+        "op0": "al",
+        "op1": "byte_199F3A",
+        "line": "mov     al, byte_199F3A"
+      },
+      {
+        "ea": "0x136B9",
+        "bytes": "3c01",
+        "mnem": "cmp",
+        "op0": "al",
+        "op1": "1",
+        "line": "cmp     al, 1"
+      },
+      {
+        "ea": "0x136BB",
+        "bytes": "770f",
+        "mnem": "ja",
+        "op0": "loc_136CC",
+        "op1": "",
+        "line": "ja      short loc_136CC"
+      },
+      {
+        "ea": "0x136BD",
+        "bytes": "ba01000000",
+        "mnem": "mov",
+        "op0": "edx",
+        "op1": "1",
+        "line": "mov     edx, 1"
+      },
+      {
+        "ea": "0x136C2",
+        "bytes": "b8d4e80f00",
+        "mnem": "mov",
+        "op0": "eax",
+        "op1": "offset nullsub_15",
+        "line": "mov     eax, offset nullsub_15"
+      },
+      {
+        "ea": "0x136C7",
+        "bytes": "e8fe5a1000",
+        "mnem": "call",
+        "op0": "sub_1191CA",
+        "op1": "",
+        "line": "call    sub_1191CA"
+      },
+      {
+        "ea": "0x136CC",
+        "bytes": "e869b40d00",
+        "mnem": "call",
+        "op0": "sub_EEB3A",
+        "op1": "",
+        "line": "call    sub_EEB3A"
+      },
+      {
+        "ea": "0x136D1",
+        "bytes": "803daf9c190000",
+        "mnem": "cmp",
+        "op0": "byte_199CAF",
+        "op1": "0",
+        "line": "cmp     byte_199CAF, 0"
+      },
+      {
+        "ea": "0x136D8",
+        "bytes": "740e",
+        "mnem": "jz",
+        "op0": "loc_136E8",
+        "op1": "",
+        "line": "jz      short loc_136E8"
+      },
+      {
+        "ea": "0x136DA",
+        "bytes": "803db091190000",
+        "mnem": "cmp",
+        "op0": "byte_1991B0",
+        "op1": "0",
+        "line": "cmp     byte_1991B0, 0"
+      },
+      {
+        "ea": "0x136E1",
+        "bytes": "7505",
+        "mnem": "jnz",
+        "op0": "loc_136E8",
+        "op1": "",
+        "line": "jnz     short loc_136E8"
+      },
+      {
+        "ea": "0x136E3",
+        "bytes": "e8aa060500",
+        "mnem": "call",
+        "op0": "sub_63D92",
+        "op1": "",
+        "line": "call    sub_63D92"
+      },
+      {
+        "ea": "0x136E8",
+        "bytes": "e8c3940c00",
+        "mnem": "call",
+        "op0": "sub_DCBB0",
+        "op1": "",
+        "line": "call    sub_DCBB0"
+      },
+      {
+        "ea": "0x136ED",
+        "bytes": "e842060c00",
+        "mnem": "call",
+        "op0": "sub_D3D34",
+        "op1": "",
+        "line": "call    sub_D3D34"
+      },
+      {
+        "ea": "0x136F2",
+        "bytes": "e8f6c80000",
+        "mnem": "call",
+        "op0": "sub_1FFED",
+        "op1": "",
+        "line": "call    sub_1FFED"
+      },
+      {
+        "ea": "0x136F7",
+        "bytes": "e884c60000",
+        "mnem": "call",
+        "op0": "sub_1FD80",
+        "op1": "",
+        "line": "call    sub_1FD80"
+      },
+      {
+        "ea": "0x136FC",
+        "bytes": "e80bd20300",
+        "mnem": "call",
+        "op0": "sub_5090C",
+        "op1": "",
+        "line": "call    sub_5090C"
+      },
+      {
+        "ea": "0x13701",
+        "bytes": "e8a11b0100",
+        "mnem": "call",
+        "op0": "sub_252A7",
+        "op1": "",
+        "line": "call    sub_252A7"
+      },
+      {
+        "ea": "0x13706",
+        "bytes": "e860a60300",
+        "mnem": "call",
+        "op0": "sub_4DD6B",
+        "op1": "",
+        "line": "call    sub_4DD6B"
+      },
+      {
+        "ea": "0x1370B",
+        "bytes": "e8293d0c00",
+        "mnem": "call",
+        "op0": "sub_D7439",
+        "op1": "",
+        "line": "call    sub_D7439"
+      },
+      {
+        "ea": "0x13710",
+        "bytes": "e8a1c50b00",
+        "mnem": "call",
+        "op0": "sub_CFCB6",
+        "op1": "",
+        "line": "call    sub_CFCB6"
+      },
+      {
+        "ea": "0x13715",
+        "bytes": "e84d380c00",
+        "mnem": "call",
+        "op0": "sub_D6F67",
+        "op1": "",
+        "line": "call    sub_D6F67"
+      },
+      {
+        "ea": "0x1371A",
+        "bytes": "e80a840c00",
+        "mnem": "call",
+        "op0": "sub_DBB29",
+        "op1": "",
+        "line": "call    sub_DBB29"
+      },
+      {
+        "ea": "0x1371F",
+        "bytes": "e8d2300d00",
+        "mnem": "call",
+        "op0": "sub_E67F6",
+        "op1": "",
+        "line": "call    sub_E67F6"
+      },
+      {
+        "ea": "0x13724",
+        "bytes": "e840930c00",
+        "mnem": "call",
+        "op0": "sub_DCA69",
+        "op1": "",
+        "line": "call    sub_DCA69"
+      },
+      {
+        "ea": "0x13729",
+        "bytes": "e864a80d00",
+        "mnem": "call",
+        "op0": "sub_EDF92",
+        "op1": "",
+        "line": "call    sub_EDF92"
+      },
+      {
+        "ea": "0x1372E",
+        "bytes": "e8e9a00e00",
+        "mnem": "call",
+        "op0": "sub_FD81C",
+        "op1": "",
+        "line": "call    sub_FD81C"
+      },
+      {
+        "ea": "0x13733",
+        "bytes": "e83fe70e00",
+        "mnem": "call",
+        "op0": "sub_101E77",
+        "op1": "",
+        "line": "call    sub_101E77"
+      },
+      {
+        "ea": "0x13738",
+        "bytes": "e8adc70e00",
+        "mnem": "call",
+        "op0": "sub_FFEEA",
+        "op1": "",
+        "line": "call    sub_FFEEA"
+      },
+      {
+        "ea": "0x1373D",
+        "bytes": "e8e9e10e00",
+        "mnem": "call",
+        "op0": "sub_10192B",
+        "op1": "",
+        "line": "call    sub_10192B"
+      },
+      {
+        "ea": "0x13742",
+        "bytes": "e802180d00",
+        "mnem": "call",
+        "op0": "sub_E4F49",
+        "op1": "",
+        "line": "call    sub_E4F49"
+      },
+      {
+        "ea": "0x13747",
+        "bytes": "e890080d00",
+        "mnem": "call",
+        "op0": "sub_E3FDC",
+        "op1": "",
+        "line": "call    sub_E3FDC"
+      },
+      {
+        "ea": "0x1374C",
+        "bytes": "e878160d00",
+        "mnem": "call",
+        "op0": "sub_E4DC9",
+        "op1": "",
+        "line": "call    sub_E4DC9"
+      },
+      {
+        "ea": "0x13751",
+        "bytes": "e8f71f0c00",
+        "mnem": "call",
+        "op0": "sub_D574D",
+        "op1": "",
+        "line": "call    sub_D574D"
+      },
+      {
+        "ea": "0x13756",
+        "bytes": "e807660d00",
+        "mnem": "call",
+        "op0": "sub_E9D62",
+        "op1": "",
+        "line": "call    sub_E9D62"
+      },
+      {
+        "ea": "0x1375B",
+        "bytes": "e8aaeb0000",
+        "mnem": "call",
+        "op0": "sub_2230A",
+        "op1": "",
+        "line": "call    sub_2230A"
+      },
+      {
+        "ea": "0x13760",
+        "bytes": "e8c2120000",
+        "mnem": "call",
+        "op0": "sub_14A27",
+        "op1": "",
+        "line": "call    sub_14A27"
+      },
+      {
+        "ea": "0x13765",
+        "bytes": "e838cf0000",
+        "mnem": "call",
+        "op0": "sub_206A2",
+        "op1": "",
+        "line": "call    sub_206A2"
+      },
+      {
+        "ea": "0x1376A",
+        "bytes": "e850a10d00",
+        "mnem": "call",
+        "op0": "sub_ED8BF",
+        "op1": "",
+        "line": "call    sub_ED8BF"
+      },
+      {
+        "ea": "0x1376F",
+        "bytes": "e8bdf30c00",
+        "mnem": "call",
+        "op0": "sub_E2B31",
+        "op1": "",
+        "line": "call    sub_E2B31"
+      },
+      {
+        "ea": "0x13774",
+        "bytes": "e81e190d00",
+        "mnem": "call",
+        "op0": "sub_E5097",
+        "op1": "",
+        "line": "call    sub_E5097"
+      },
+      {
+        "ea": "0x13779",
+        "bytes": "e894ba0e00",
+        "mnem": "call",
+        "op0": "sub_FF212",
+        "op1": "",
+        "line": "call    sub_FF212"
+      },
+      {
+        "ea": "0x1377E",
+        "bytes": "e8aef30c00",
+        "mnem": "call",
+        "op0": "sub_E2B31",
+        "op1": "",
+        "line": "call    sub_E2B31"
+      },
+      {
+        "ea": "0x13783",
+        "bytes": "e893c90e00",
+        "mnem": "call",
+        "op0": "sub_10011B",
+        "op1": "",
+        "line": "call    sub_10011B"
+      },
+      {
+        "ea": "0x13788",
+        "bytes": "e84df80700",
+        "mnem": "call",
+        "op0": "sub_92FDA",
+        "op1": "",
+        "line": "call    sub_92FDA"
+      },
+      {
+        "ea": "0x1378D",
+        "bytes": "e83dfd0700",
+        "mnem": "call",
+        "op0": "sub_934CF",
+        "op1": "",
+        "line": "call    sub_934CF"
+      },
+      {
+        "ea": "0x13792",
+        "bytes": "e8b39c0d00",
+        "mnem": "call",
+        "op0": "sub_ED44A",
+        "op1": "",
+        "line": "call    sub_ED44A"
+      },
+      {
+        "ea": "0x13797",
+        "bytes": "e859490400",
+        "mnem": "call",
+        "op0": "sub_580F5",
+        "op1": "",
+        "line": "call    sub_580F5"
+      },
+      {
+        "ea": "0x1379C",
+        "bytes": "e8532d0d00",
+        "mnem": "call",
+        "op0": "sub_E64F4",
+        "op1": "",
+        "line": "call    sub_E64F4"
+      },
+      {
+        "ea": "0x137A1",
+        "bytes": "e8ec790d00",
+        "mnem": "call",
+        "op0": "sub_EB192",
+        "op1": "",
+        "line": "call    sub_EB192"
+      },
+      {
+        "ea": "0x137A6",
+        "bytes": "e8acd30300",
+        "mnem": "call",
+        "op0": "sub_50B57",
+        "op1": "",
+        "line": "call    sub_50B57"
+      },
+      {
+        "ea": "0x137AB",
+        "bytes": "e8cdd00e00",
+        "mnem": "call",
+        "op0": "sub_10087D",
+        "op1": "",
+        "line": "call    sub_10087D"
+      },
+      {
+        "ea": "0x137B0",
+        "bytes": "e851b30300",
+        "mnem": "call",
+        "op0": "sub_4EB06",
+        "op1": "",
+        "line": "call    sub_4EB06"
+      },
+      {
+        "ea": "0x137B5",
+        "bytes": "e8f8a20300",
+        "mnem": "call",
+        "op0": "sub_4DAB2",
+        "op1": "",
+        "line": "call    sub_4DAB2"
+      },
+      {
+        "ea": "0x137BA",
+        "bytes": "803d3a9f190000",
+        "mnem": "cmp",
+        "op0": "byte_199F3A",
+        "op1": "0",
+        "line": "cmp     byte_199F3A, 0"
+      },
+      {
+        "ea": "0x137C1",
+        "bytes": "750e",
+        "mnem": "jnz",
+        "op0": "loc_137D1",
+        "op1": "",
+        "line": "jnz     short loc_137D1"
+      },
+      {
+        "ea": "0x137C3",
+        "bytes": "803d74ce1a0000",
+        "mnem": "cmp",
+        "op0": "byte_1ACE74",
+        "op1": "0",
+        "line": "cmp     byte_1ACE74, 0"
+      },
+      {
+        "ea": "0x137CA",
+        "bytes": "7505",
+        "mnem": "jnz",
+        "op0": "loc_137D1",
+        "op1": "",
+        "line": "jnz     short loc_137D1"
+      },
+      {
+        "ea": "0x137CC",
+        "bytes": "e8de300000",
+        "mnem": "call",
+        "op0": "sub_168AF",
+        "op1": "",
+        "line": "call    sub_168AF"
+      },
+      {
+        "ea": "0x137D1",
+        "bytes": "31d2",
+        "mnem": "xor",
+        "op0": "edx",
+        "op1": "edx",
+        "line": "xor     edx, edx"
+      },
+      {
+        "ea": "0x137D3",
+        "bytes": "eb09",
+        "mnem": "jmp",
+        "op0": "loc_137DE",
+        "op1": "",
+        "line": "jmp     short loc_137DE"
+      },
+      {
+        "ea": "0x137D5",
+        "bytes": "0fbfc2",
+        "mnem": "movsx",
+        "op0": "eax",
+        "op1": "dx",
+        "line": "movsx   eax, dx"
+      },
+      {
+        "ea": "0x137D8",
+        "bytes": "e889420800",
+        "mnem": "call",
+        "op0": "sub_97A66",
+        "op1": "",
+        "line": "call    sub_97A66"
+      },
+      {
+        "ea": "0x137DD",
+        "bytes": "42",
+        "mnem": "inc",
+        "op0": "edx",
+        "op1": "",
+        "line": "inc     edx"
+      },
+      {
+        "ea": "0x137DE",
+        "bytes": "0fbf0598991900",
+        "mnem": "movsx",
+        "op0": "eax",
+        "op1": "word_199998",
+        "line": "movsx   eax, word_199998"
+      },
+      {
+        "ea": "0x137E5",
+        "bytes": "39c2",
+        "mnem": "cmp",
+        "op0": "edx",
+        "op1": "eax",
+        "line": "cmp     edx, eax"
+      },
+      {
+        "ea": "0x137E7",
+        "bytes": "7cec",
+        "mnem": "jl",
+        "op0": "loc_137D5",
+        "op1": "",
+        "line": "jl      short loc_137D5"
+      },
+      {
+        "ea": "0x137E9",
+        "bytes": "e839c00d00",
+        "mnem": "call",
+        "op0": "sub_EF827",
+        "op1": "",
+        "line": "call    sub_EF827"
+      },
+      {
+        "ea": "0x137EE",
+        "bytes": "e869d30f00",
+        "mnem": "call",
+        "op0": "sub_110B5C",
+        "op1": "",
+        "line": "call    sub_110B5C"
+      },
+      {
+        "ea": "0x137F3",
+        "bytes": "6685c0",
+        "mnem": "test",
+        "op0": "ax",
+        "op1": "ax",
+        "line": "test    ax, ax"
+      },
+      {
+        "ea": "0x137F6",
+        "bytes": "7505",
+        "mnem": "jnz",
+        "op0": "loc_137FD",
+        "op1": "",
+        "line": "jnz     short loc_137FD"
+      },
+      {
+        "ea": "0x137F8",
+        "bytes": "e88af40700",
+        "mnem": "call",
+        "op0": "sub_92C87",
+        "op1": "",
+        "line": "call    sub_92C87"
+      },
+      {
+        "ea": "0x137FD",
+        "bytes": "e888e80e00",
+        "mnem": "call",
+        "op0": "sub_10208A",
+        "op1": "",
+        "line": "call    sub_10208A"
+      },
+      {
+        "ea": "0x13802",
+        "bytes": "ff05d82f1900",
+        "mnem": "inc",
+        "op0": "dword_192FD8",
+        "op1": "",
+        "line": "inc     dword_192FD8"
+      },
+      {
+        "ea": "0x13808",
+        "bytes": "803d96c1190000",
+        "mnem": "cmp",
+        "op0": "byte_19C196",
+        "op1": "0",
+        "line": "cmp     byte_19C196, 0"
+      },
+      {
+        "ea": "0x1380F",
+        "bytes": "750f",
+        "mnem": "jnz",
+        "op0": "loc_13820",
+        "op1": "",
+        "line": "jnz     short loc_13820"
+      },
+      {
+        "ea": "0x13811",
+        "bytes": "ba01000000",
+        "mnem": "mov",
+        "op0": "edx",
+        "op1": "1",
+        "line": "mov     edx, 1"
+      },
+      {
+        "ea": "0x13816",
+        "bytes": "b800cf1700",
+        "mnem": "mov",
+        "op0": "eax",
+        "op1": "offset dword_17CF00",
+        "line": "mov     eax, offset dword_17CF00"
+      },
+      {
+        "ea": "0x1381B",
+        "bytes": "e84c061100",
+        "mnem": "call",
+        "op0": "sub_123E6C",
+        "op1": "",
+        "line": "call    sub_123E6C"
+      },
+      {
+        "ea": "0x13820",
+        "bytes": "5a",
+        "mnem": "pop",
+        "op0": "edx",
+        "op1": "",
+        "line": "pop     edx"
+      },
+      {
+        "ea": "0x13821",
+        "bytes": "c3",
+        "mnem": "retn",
+        "op0": "",
+        "op1": "",
+        "line": "retn"
+      }
+    ],
+    "calls": [
+      {
+        "order": 1,
+        "call": {
+          "ea": "0x136C7",
+          "bytes": "e8fe5a1000",
+          "mnem": "call",
+          "op0": "sub_1191CA",
+          "op1": "",
+          "line": "call    sub_1191CA"
+        },
+        "target": "0x1191CA",
+        "target_function_start": "0x1191CA",
+        "ida_original_name": "sub_1191CA",
+        "external_symbol_names_navigation_only": [
+          "Assign_Auto_Function_"
+        ]
+      },
+      {
+        "order": 2,
+        "call": {
+          "ea": "0x136CC",
+          "bytes": "e869b40d00",
+          "mnem": "call",
+          "op0": "sub_EEB3A",
+          "op1": "",
+          "line": "call    sub_EEB3A"
+        },
+        "target": "0xEEB3A",
+        "target_function_start": "0xEEB3A",
+        "ida_original_name": "sub_EEB3A",
+        "external_symbol_names_navigation_only": [
+          "Allocate_Msg_Slots_"
+        ]
+      },
+      {
+        "order": 3,
+        "call": {
+          "ea": "0x136E3",
+          "bytes": "e8aa060500",
+          "mnem": "call",
+          "op0": "sub_63D92",
+          "op1": "",
+          "line": "call    sub_63D92"
+        },
+        "target": "0x63D92",
+        "target_function_start": "0x63D92",
+        "ida_original_name": "sub_63D92",
+        "external_symbol_names_navigation_only": [
+          "Antaran_Invasion_Check_"
+        ]
+      },
+      {
+        "order": 4,
+        "call": {
+          "ea": "0x136E8",
+          "bytes": "e8c3940c00",
+          "mnem": "call",
+          "op0": "sub_DCBB0",
+          "op1": "",
+          "line": "call    sub_DCBB0"
+        },
+        "target": "0xDCBB0",
+        "target_function_start": "0xDCBB0",
+        "ida_original_name": "sub_DCBB0",
+        "external_symbol_names_navigation_only": [
+          "Apply_Evolutionary_Upgrades_"
+        ]
+      },
+      {
+        "order": 5,
+        "call": {
+          "ea": "0x136ED",
+          "bytes": "e842060c00",
+          "mnem": "call",
+          "op0": "sub_D3D34",
+          "op1": "",
+          "line": "call    sub_D3D34"
+        },
+        "target": "0xD3D34",
+        "target_function_start": "0xD3D34",
+        "ida_original_name": "sub_D3D34",
+        "external_symbol_names_navigation_only": [
+          "Compute_AI_Data_"
+        ]
+      },
+      {
+        "order": 6,
+        "call": {
+          "ea": "0x136F2",
+          "bytes": "e8f6c80000",
+          "mnem": "call",
+          "op0": "sub_1FFED",
+          "op1": "",
+          "line": "call    sub_1FFED"
+        },
+        "target": "0x1FFED",
+        "target_function_start": "0x1FFED",
+        "ida_original_name": "sub_1FFED",
+        "external_symbol_names_navigation_only": [
+          "Resolve_Delayed_Diplomacy_Orders_"
+        ]
+      },
+      {
+        "order": 7,
+        "call": {
+          "ea": "0x136F7",
+          "bytes": "e884c60000",
+          "mnem": "call",
+          "op0": "sub_1FD80",
+          "op1": "",
+          "line": "call    sub_1FD80"
+        },
+        "target": "0x1FD80",
+        "target_function_start": "0x1FD80",
+        "ida_original_name": "sub_1FD80",
+        "external_symbol_names_navigation_only": [
+          "Set_Opportunity_Attacks_"
+        ]
+      },
+      {
+        "order": 8,
+        "call": {
+          "ea": "0x136FC",
+          "bytes": "e80bd20300",
+          "mnem": "call",
+          "op0": "sub_5090C",
+          "op1": "",
+          "line": "call    sub_5090C"
+        },
+        "target": "0x5090C",
+        "target_function_start": "0x5090C",
+        "ida_original_name": "sub_5090C",
+        "external_symbol_names_navigation_only": [
+          "Clear_Diplomacy_Messages_"
+        ]
+      },
+      {
+        "order": 9,
+        "call": {
+          "ea": "0x13701",
+          "bytes": "e8a11b0100",
+          "mnem": "call",
+          "op0": "sub_252A7",
+          "op1": "",
+          "line": "call    sub_252A7"
+        },
+        "target": "0x252A7",
+        "target_function_start": "0x252A7",
+        "ida_original_name": "sub_252A7",
+        "external_symbol_names_navigation_only": [
+          "NPC_Diplomacy_"
+        ]
+      },
+      {
+        "order": 10,
+        "call": {
+          "ea": "0x13706",
+          "bytes": "e860a60300",
+          "mnem": "call",
+          "op0": "sub_4DD6B",
+          "op1": "",
+          "line": "call    sub_4DD6B"
+        },
+        "target": "0x4DD6B",
+        "target_function_start": "0x4DD6B",
+        "ida_original_name": "sub_4DD6B",
+        "external_symbol_names_navigation_only": [
+          "Diplomacy_Growth_"
+        ]
+      },
+      {
+        "order": 11,
+        "call": {
+          "ea": "0x1370B",
+          "bytes": "e8293d0c00",
+          "mnem": "call",
+          "op0": "sub_D7439",
+          "op1": "",
+          "line": "call    sub_D7439"
+        },
+        "target": "0xD7439",
+        "target_function_start": "0xD7439",
+        "ida_original_name": "sub_D7439",
+        "external_symbol_names_navigation_only": [
+          "Do_AI_Leaders_"
+        ]
+      },
+      {
+        "order": 12,
+        "call": {
+          "ea": "0x13710",
+          "bytes": "e8a1c50b00",
+          "mnem": "call",
+          "op0": "sub_CFCB6",
+          "op1": "",
+          "line": "call    sub_CFCB6"
+        },
+        "target": "0xCFCB6",
+        "target_function_start": "0xCFCB6",
+        "ida_original_name": "sub_CFCB6",
+        "external_symbol_names_navigation_only": [
+          "Compute_Empire_Building_Needs_"
+        ]
+      },
+      {
+        "order": 13,
+        "call": {
+          "ea": "0x13715",
+          "bytes": "e84d380c00",
+          "mnem": "call",
+          "op0": "sub_D6F67",
+          "op1": "",
+          "line": "call    sub_D6F67"
+        },
+        "target": "0xD6F67",
+        "target_function_start": "0xD6F67",
+        "ida_original_name": "sub_D6F67",
+        "external_symbol_names_navigation_only": [
+          "All_Colony_AI_"
+        ]
+      },
+      {
+        "order": 14,
+        "call": {
+          "ea": "0x1371A",
+          "bytes": "e80a840c00",
+          "mnem": "call",
+          "op0": "sub_DBB29",
+          "op1": "",
+          "line": "call    sub_DBB29"
+        },
+        "target": "0xDBB29",
+        "target_function_start": "0xDBB29",
+        "ida_original_name": "sub_DBB29",
+        "external_symbol_names_navigation_only": [
+          "Move_All_AI_"
+        ]
+      },
+      {
+        "order": 15,
+        "call": {
+          "ea": "0x1371F",
+          "bytes": "e8d2300d00",
+          "mnem": "call",
+          "op0": "sub_E67F6",
+          "op1": "",
+          "line": "call    sub_E67F6"
+        },
+        "target": "0xE67F6",
+        "target_function_start": "0xE67F6",
+        "ida_original_name": "sub_E67F6",
+        "external_symbol_names_navigation_only": [
+          "All_AI_Colonize_"
+        ]
+      },
+      {
+        "order": 16,
+        "call": {
+          "ea": "0x13724",
+          "bytes": "e840930c00",
+          "mnem": "call",
+          "op0": "sub_DCA69",
+          "op1": "",
+          "line": "call    sub_DCA69"
+        },
+        "target": "0xDCA69",
+        "target_function_start": "0xDCA69",
+        "ida_original_name": "sub_DCA69",
+        "external_symbol_names_navigation_only": [
+          "All_AI_Tech_Select_"
+        ]
+      },
+      {
+        "order": 17,
+        "call": {
+          "ea": "0x13729",
+          "bytes": "e864a80d00",
+          "mnem": "call",
+          "op0": "sub_EDF92",
+          "op1": "",
+          "line": "call    sub_EDF92"
+        },
+        "target": "0xEDF92",
+        "target_function_start": "0xEDF92",
+        "ida_original_name": "sub_EDF92",
+        "external_symbol_names_navigation_only": [
+          "Make_Scrap_Ships_Dead_"
+        ]
+      },
+      {
+        "order": 18,
+        "call": {
+          "ea": "0x1372E",
+          "bytes": "e8e9a00e00",
+          "mnem": "call",
+          "op0": "sub_FD81C",
+          "op1": "",
+          "line": "call    sub_FD81C"
+        },
+        "target": "0xFD81C",
+        "target_function_start": "0xFD81C",
+        "ida_original_name": "sub_FD81C",
+        "external_symbol_names_navigation_only": [
+          "Initialize_Reports_"
+        ]
+      },
+      {
+        "order": 19,
+        "call": {
+          "ea": "0x13733",
+          "bytes": "e83fe70e00",
+          "mnem": "call",
+          "op0": "sub_101E77",
+          "op1": "",
+          "line": "call    sub_101E77"
+        },
+        "target": "0x101E77",
+        "target_function_start": "0x101E77",
+        "ida_original_name": "sub_101E77",
+        "external_symbol_names_navigation_only": [
+          "Process_Trade_And_Research_Agreements_"
+        ]
+      },
+      {
+        "order": 20,
+        "call": {
+          "ea": "0x13738",
+          "bytes": "e8adc70e00",
+          "mnem": "call",
+          "op0": "sub_FFEEA",
+          "op1": "",
+          "line": "call    sub_FFEEA"
+        },
+        "target": "0xFFEEA",
+        "target_function_start": "0xFFEEA",
+        "ida_original_name": "sub_FFEEA",
+        "external_symbol_names_navigation_only": [
+          "Move_All_Ships_Toward_Stars_"
+        ]
+      },
+      {
+        "order": 21,
+        "call": {
+          "ea": "0x1373D",
+          "bytes": "e8e9e10e00",
+          "mnem": "call",
+          "op0": "sub_10192B",
+          "op1": "",
+          "line": "call    sub_10192B"
+        },
+        "target": "0x10192B",
+        "target_function_start": "0x10192B",
+        "ida_original_name": "sub_10192B",
+        "external_symbol_names_navigation_only": [
+          "Resolve_Spies_"
+        ]
+      },
+      {
+        "order": 22,
+        "call": {
+          "ea": "0x13742",
+          "bytes": "e802180d00",
+          "mnem": "call",
+          "op0": "sub_E4F49",
+          "op1": "",
+          "line": "call    sub_E4F49"
+        },
+        "target": "0xE4F49",
+        "target_function_start": "0xE4F49",
+        "ida_original_name": "sub_E4F49",
+        "external_symbol_names_navigation_only": [
+          "Apply_All_Player_Changes_"
+        ]
+      },
+      {
+        "order": 23,
+        "call": {
+          "ea": "0x13747",
+          "bytes": "e890080d00",
+          "mnem": "call",
+          "op0": "sub_E3FDC",
+          "op1": "",
+          "line": "call    sub_E3FDC"
+        },
+        "target": "0xE3FDC",
+        "target_function_start": "0xE3FDC",
+        "ida_original_name": "sub_E3FDC",
+        "external_symbol_names_navigation_only": [
+          "Apply_All_Colony_Changes_"
+        ]
+      },
+      {
+        "order": 24,
+        "call": {
+          "ea": "0x1374C",
+          "bytes": "e878160d00",
+          "mnem": "call",
+          "op0": "sub_E4DC9",
+          "op1": "",
+          "line": "call    sub_E4DC9"
+        },
+        "target": "0xE4DC9",
+        "target_function_start": "0xE4DC9",
+        "ida_original_name": "sub_E4DC9",
+        "external_symbol_names_navigation_only": [
+          "Do_Surrenders_"
+        ]
+      },
+      {
+        "order": 25,
+        "call": {
+          "ea": "0x13751",
+          "bytes": "e8f71f0c00",
+          "mnem": "call",
+          "op0": "sub_D574D",
+          "op1": "",
+          "line": "call    sub_D574D"
+        },
+        "target": "0xD574D",
+        "target_function_start": "0xD574D",
+        "ida_original_name": "sub_D574D",
+        "external_symbol_names_navigation_only": [
+          "Deallocate_AI_Data_"
+        ]
+      },
+      {
+        "order": 26,
+        "call": {
+          "ea": "0x13756",
+          "bytes": "e807660d00",
+          "mnem": "call",
+          "op0": "sub_E9D62",
+          "op1": "",
+          "line": "call    sub_E9D62"
+        },
+        "target": "0xE9D62",
+        "target_function_start": "0xE9D62",
+        "ida_original_name": "sub_E9D62",
+        "external_symbol_names_navigation_only": [
+          "Search_For_Battles_"
+        ]
+      },
+      {
+        "order": 27,
+        "call": {
+          "ea": "0x1375B",
+          "bytes": "e8aaeb0000",
+          "mnem": "call",
+          "op0": "sub_2230A",
+          "op1": "",
+          "line": "call    sub_2230A"
+        },
+        "target": "0x2230A",
+        "target_function_start": "0x2230A",
+        "ida_original_name": "sub_2230A",
+        "external_symbol_names_navigation_only": [
+          "Determine_Event_"
+        ]
+      },
+      {
+        "order": 28,
+        "call": {
+          "ea": "0x13760",
+          "bytes": "e8c2120000",
+          "mnem": "call",
+          "op0": "sub_14A27",
+          "op1": "",
+          "line": "call    sub_14A27"
+        },
+        "target": "0x14A27",
+        "target_function_start": "0x14A27",
+        "ida_original_name": "sub_14A27",
+        "external_symbol_names_navigation_only": [
+          "Do_All_Ships_XP_Check_"
+        ]
+      },
+      {
+        "order": 29,
+        "call": {
+          "ea": "0x13765",
+          "bytes": "e838cf0000",
+          "mnem": "call",
+          "op0": "sub_206A2",
+          "op1": "",
+          "line": "call    sub_206A2"
+        },
+        "target": "0x206A2",
+        "target_function_start": "0x206A2",
+        "ida_original_name": "sub_206A2",
+        "external_symbol_names_navigation_only": [
+          "Event_Twiddle_"
+        ]
+      },
+      {
+        "order": 30,
+        "call": {
+          "ea": "0x1376A",
+          "bytes": "e850a10d00",
+          "mnem": "call",
+          "op0": "sub_ED8BF",
+          "op1": "",
+          "line": "call    sub_ED8BF"
+        },
+        "target": "0xED8BF",
+        "target_function_start": "0xED8BF",
+        "ida_original_name": "sub_ED8BF",
+        "external_symbol_names_navigation_only": [
+          "Lose_Out_Of_Range_Ships_"
+        ]
+      },
+      {
+        "order": 31,
+        "call": {
+          "ea": "0x1376F",
+          "bytes": "e8bdf30c00",
+          "mnem": "call",
+          "op0": "sub_E2B31",
+          "op1": "",
+          "line": "call    sub_E2B31"
+        },
+        "target": "0xE2B31",
+        "target_function_start": "0xE2B31",
+        "ida_original_name": "sub_E2B31",
+        "external_symbol_names_navigation_only": [
+          "All_Colony_Calculations_",
+          "Do_Colony_Calculations_"
+        ]
+      },
+      {
+        "order": 32,
+        "call": {
+          "ea": "0x13774",
+          "bytes": "e81e190d00",
+          "mnem": "call",
+          "op0": "sub_E5097",
+          "op1": "",
+          "line": "call    sub_E5097"
+        },
+        "target": "0xE5097",
+        "target_function_start": "0xE5097",
+        "ida_original_name": "sub_E5097",
+        "external_symbol_names_navigation_only": [
+          "Compute_Blockades_"
+        ]
+      },
+      {
+        "order": 33,
+        "call": {
+          "ea": "0x13779",
+          "bytes": "e894ba0e00",
+          "mnem": "call",
+          "op0": "sub_FF212",
+          "op1": "",
+          "line": "call    sub_FF212"
+        },
+        "target": "0xFF212",
+        "target_function_start": "0xFF212",
+        "ida_original_name": "sub_FF212",
+        "external_symbol_names_navigation_only": [
+          "Move_Settlers_"
+        ]
+      },
+      {
+        "order": 34,
+        "call": {
+          "ea": "0x1377E",
+          "bytes": "e8aef30c00",
+          "mnem": "call",
+          "op0": "sub_E2B31",
+          "op1": "",
+          "line": "call    sub_E2B31"
+        },
+        "target": "0xE2B31",
+        "target_function_start": "0xE2B31",
+        "ida_original_name": "sub_E2B31",
+        "external_symbol_names_navigation_only": [
+          "All_Colony_Calculations_",
+          "Do_Colony_Calculations_"
+        ]
+      },
+      {
+        "order": 35,
+        "call": {
+          "ea": "0x13783",
+          "bytes": "e893c90e00",
+          "mnem": "call",
+          "op0": "sub_10011B",
+          "op1": "",
+          "line": "call    sub_10011B"
+        },
+        "target": "0x10011B",
+        "target_function_start": "0x10011B",
+        "ida_original_name": "sub_10011B",
+        "external_symbol_names_navigation_only": [
+          "Allocate_New_Ship_Slots_"
+        ]
+      },
+      {
+        "order": 36,
+        "call": {
+          "ea": "0x13788",
+          "bytes": "e84df80700",
+          "mnem": "call",
+          "op0": "sub_92FDA",
+          "op1": "",
+          "line": "call    sub_92FDA"
+        },
+        "target": "0x92FDA",
+        "target_function_start": "0x92FDA",
+        "ida_original_name": "sub_92FDA",
+        "external_symbol_names_navigation_only": [
+          "Check_For_Officer_Level_"
+        ]
+      },
+      {
+        "order": 37,
+        "call": {
+          "ea": "0x1378D",
+          "bytes": "e83dfd0700",
+          "mnem": "call",
+          "op0": "sub_934CF",
+          "op1": "",
+          "line": "call    sub_934CF"
+        },
+        "target": "0x934CF",
+        "target_function_start": "0x934CF",
+        "ida_original_name": "sub_934CF",
+        "external_symbol_names_navigation_only": [
+          "Decrement_Officer_ETA_"
+        ]
+      },
+      {
+        "order": 38,
+        "call": {
+          "ea": "0x13792",
+          "bytes": "e8b39c0d00",
+          "mnem": "call",
+          "op0": "sub_ED44A",
+          "op1": "",
+          "line": "call    sub_ED44A"
+        },
+        "target": "0xED44A",
+        "target_function_start": "0xED44A",
+        "ida_original_name": "sub_ED44A",
+        "external_symbol_names_navigation_only": [
+          "Check_All_Rebellions_"
+        ]
+      },
+      {
+        "order": 39,
+        "call": {
+          "ea": "0x13797",
+          "bytes": "e859490400",
+          "mnem": "call",
+          "op0": "sub_580F5",
+          "op1": "",
+          "line": "call    sub_580F5"
+        },
+        "target": "0x580F5",
+        "target_function_start": "0x580F5",
+        "ida_original_name": "sub_580F5",
+        "external_symbol_names_navigation_only": [
+          "Repair_Ships_At_Colonies_"
+        ]
+      },
+      {
+        "order": 40,
+        "call": {
+          "ea": "0x1379C",
+          "bytes": "e8532d0d00",
+          "mnem": "call",
+          "op0": "sub_E64F4",
+          "op1": "",
+          "line": "call    sub_E64F4"
+        },
+        "target": "0xE64F4",
+        "target_function_start": "0xE64F4",
+        "ida_original_name": "sub_E64F4",
+        "external_symbol_names_navigation_only": [
+          "Allocate_New_Colony_Slots_"
+        ]
+      },
+      {
+        "order": 41,
+        "call": {
+          "ea": "0x137A1",
+          "bytes": "e8ec790d00",
+          "mnem": "call",
+          "op0": "sub_EB192",
+          "op1": "",
+          "line": "call    sub_EB192"
+        },
+        "target": "0xEB192",
+        "target_function_start": "0xEB192",
+        "ida_original_name": "sub_EB192",
+        "external_symbol_names_navigation_only": [
+          "Compute_Contacts_"
+        ]
+      },
+      {
+        "order": 42,
+        "call": {
+          "ea": "0x137A6",
+          "bytes": "e8acd30300",
+          "mnem": "call",
+          "op0": "sub_50B57",
+          "op1": "",
+          "line": "call    sub_50B57"
+        },
+        "target": "0x50B57",
+        "target_function_start": "0x50B57",
+        "ida_original_name": "sub_50B57",
+        "external_symbol_names_navigation_only": [
+          "Determine_First_Contacts_"
+        ]
+      },
+      {
+        "order": 43,
+        "call": {
+          "ea": "0x137AB",
+          "bytes": "e8cdd00e00",
+          "mnem": "call",
+          "op0": "sub_10087D",
+          "op1": "",
+          "line": "call    sub_10087D"
+        },
+        "target": "0x10087D",
+        "target_function_start": "0x10087D",
+        "ida_original_name": "sub_10087D",
+        "external_symbol_names_navigation_only": [
+          "Reset_Needless_Ignore_Combat_Ships_Flags_"
+        ]
+      },
+      {
+        "order": 44,
+        "call": {
+          "ea": "0x137B0",
+          "bytes": "e851b30300",
+          "mnem": "call",
+          "op0": "sub_4EB06",
+          "op1": "",
+          "line": "call    sub_4EB06"
+        },
+        "target": "0x4EB06",
+        "target_function_start": "0x4EB06",
+        "ida_original_name": "sub_4EB06",
+        "external_symbol_names_navigation_only": [
+          "Determine_Diplomacy_Messages_"
+        ]
+      },
+      {
+        "order": 45,
+        "call": {
+          "ea": "0x137B5",
+          "bytes": "e8f8a20300",
+          "mnem": "call",
+          "op0": "sub_4DAB2",
+          "op1": "",
+          "line": "call    sub_4DAB2"
+        },
+        "target": "0x4DAB2",
+        "target_function_start": "0x4DAB2",
+        "ida_original_name": "sub_4DAB2",
+        "external_symbol_names_navigation_only": [
+          "End_Of_Turn_Diplomacy_Adjustments_"
+        ]
+      },
+      {
+        "order": 46,
+        "call": {
+          "ea": "0x137CC",
+          "bytes": "e8de300000",
+          "mnem": "call",
+          "op0": "sub_168AF",
+          "op1": "",
+          "line": "call    sub_168AF"
+        },
+        "target": "0x168AF",
+        "target_function_start": "0x168AF",
+        "ida_original_name": "sub_168AF",
+        "external_symbol_names_navigation_only": [
+          "Check_For_Council_Meeting_"
+        ]
+      },
+      {
+        "order": 47,
+        "call": {
+          "ea": "0x137D8",
+          "bytes": "e889420800",
+          "mnem": "call",
+          "op0": "sub_97A66",
+          "op1": "",
+          "line": "call    sub_97A66"
+        },
+        "target": "0x97A66",
+        "target_function_start": "0x97A66",
+        "ida_original_name": "sub_97A66",
+        "external_symbol_names_navigation_only": [
+          "Random_Officer_Check_"
+        ]
+      },
+      {
+        "order": 48,
+        "call": {
+          "ea": "0x137E9",
+          "bytes": "e839c00d00",
+          "mnem": "call",
+          "op0": "sub_EF827",
+          "op1": "",
+          "line": "call    sub_EF827"
+        },
+        "target": "0xEF827",
+        "target_function_start": "0xEF827",
+        "ida_original_name": "sub_EF827",
+        "external_symbol_names_navigation_only": [
+          "Add_Ongoing_Event_Msgs_"
+        ]
+      },
+      {
+        "order": 49,
+        "call": {
+          "ea": "0x137EE",
+          "bytes": "e869d30f00",
+          "mnem": "call",
+          "op0": "sub_110B5C",
+          "op1": "",
+          "line": "call    sub_110B5C"
+        },
+        "target": "0x110B5C",
+        "target_function_start": "0x110B5C",
+        "ida_original_name": "sub_110B5C",
+        "external_symbol_names_navigation_only": [
+          "Check_Release_Version_"
+        ]
+      },
+      {
+        "order": 50,
+        "call": {
+          "ea": "0x137F8",
+          "bytes": "e88af40700",
+          "mnem": "call",
+          "op0": "sub_92C87",
+          "op1": "",
+          "line": "call    sub_92C87"
+        },
+        "target": "0x92C87",
+        "target_function_start": "0x92C87",
+        "ida_original_name": "sub_92C87",
+        "external_symbol_names_navigation_only": [
+          "Assert_Marooned_Leaders_"
+        ]
+      },
+      {
+        "order": 51,
+        "call": {
+          "ea": "0x137FD",
+          "bytes": "e888e80e00",
+          "mnem": "call",
+          "op0": "sub_10208A",
+          "op1": "",
+          "line": "call    sub_10208A"
+        },
+        "target": "0x10208A",
+        "target_function_start": "0x10208A",
+        "ida_original_name": "sub_10208A",
+        "external_symbol_names_navigation_only": [
+          "Record_History_"
+        ]
+      },
+      {
+        "order": 52,
+        "call": {
+          "ea": "0x1381B",
+          "bytes": "e84c061100",
+          "mnem": "call",
+          "op0": "sub_123E6C",
+          "op1": "",
+          "line": "call    sub_123E6C"
+        },
+        "target": "0x123E6C",
+        "target_function_start": "0x123E6C",
+        "ida_original_name": "sub_123E6C",
+        "external_symbol_names_navigation_only": [
+          "Set_Mouse_List_"
+        ]
+      }
+    ]
+  }
+}
