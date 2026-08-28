@@ -89,6 +89,11 @@
 這些是快取重算，不是套用人口。`Update_Player_Stats_ @ 0xE2710` 再聚合人口、食物、工業、研究、
 BC、維護、納貢、領袖及事件分流；其已閉合欄位沿用既有專題文件，尚未逐欄證實者不因本輪升格。
 
+其中 `Colony_Industry_Per_Worker_ @ 0xDEC95` 已由獨立切片閉合：五級礦產基礎表為
+`[1,2,3,5,8]`，再加 Astro University `+1`、Automated Factory `+1`、Robo Mining Plant
+`+2`、Deep Core Mine `+3` 與 Microlite Construction `+1`。完整 caller、欄位與混合種族
+下游見 [`colony-industry-per-worker-audit-20260828.md`](colony-industry-per-worker-audit-20260828.md)。
+
 ## 其他 caller 與停止線
 
 `E2B31` 另有兩個 callsite `0xE587C`、`0xE5ADD`，都位於
@@ -103,7 +108,8 @@ runtime helper 被排除。第二遍 `E2B31` 已證實消費它們改變後的 c
 
 - **已證實**：一次性套用鏈、兩遍 derived rebuild、六階段順序、active record gates、三個 raw
   cache producer、殖民地專業公式、開局兩個額外 caller。
-- **未一併閉合**：14 個 pre-import producer 與 `Update_Player_Stats_` 的每一條公式、封鎖選擇、
+- **未一併閉合**：除已閉合的每工人工業 producer 外，其餘 13 個 pre-import producer 與
+  `Update_Player_Stats_` 的每一條公式、封鎖選擇、
   殖民者遷移規則，以及 `+0x5EA` bit 累加的高層 consumer 語意。它們應按玩家影響另開窄切片。
 - **remake 判定**：目前 `RunEmpireTurn`／shell helpers 可玩，但尚未依此精確 phase ordering 做
   同狀態對照；RE-first gate 下只記錄證據，不在本輪改 Go。

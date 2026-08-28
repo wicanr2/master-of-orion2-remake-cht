@@ -77,8 +77,18 @@
   `Do_Colony_Calculations_ @ 0xE2B31` 都只重建 derived state：pre-import 產出、帝國 imports、
   人口預測／殖民地專業、帝國彙總及三個 raw cache；第二遍吸收中間的封鎖與殖民者移動，不會
   重複增加人口或完成建造。開局函式另有兩個 caller，交叉證實它是可重入重算器。外層時序已
-  關閉；14 個 pre-import producer、帝國統計未解欄位、封鎖與人口遷移規則仍分列追查。
+  關閉；每工人工業 producer 已另行閉合，其餘 13 個 pre-import producer、帝國統計未解欄位、
+  封鎖與人口遷移規則仍分列追查。
   證據見 [`docs/re/colony-turn-chain-audit-20260828.md`](docs/re/colony-turn-chain-audit-20260828.md)。
+
+- [x] **殖民地每工人工業公式閉合（RE-only，2026-08-28）**：
+  `Colony_Industry_Per_Worker_ @ 0xDEC95` 的五級礦產表已確認為 `[1,2,3,5,8]`；四座建築
+  依 raw ID 分別為 Astro University `+1`、Automated Factory `+1`、Robo Mining Plant `+2`、
+  Deep Core Mine `+3`，Microlite Construction 另加 `+1`。`0xDED47` 的 owner 快取、一般
+  colonist `player+0x8A2`、Android `+3`、Natives `+0` 下游亦已閉合。building 名稱由獨立 raw ID
+  證據交叉驗證，不以相對位址猜測；`memset_` 暫存清理排除於玩法範圍。本輪遵守 RE-first gate，
+  不修改 Go。證據見
+  [`docs/re/colony-industry-per-worker-audit-20260828.md`](docs/re/colony-industry-per-worker-audit-20260828.md)。
 
 - [x] **2026-08-28 三個長跑回歸已分類並修正**：議會第二屆確實準時召開，但原版搖擺票重擲後
   流會，舊測試錯把「再次當選」當排程契約；AI 0 是 Creative，舊研究測試錯把合法的

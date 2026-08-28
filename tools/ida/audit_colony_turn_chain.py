@@ -27,6 +27,8 @@ ROOTS = {
     "raw_Compute_Blockades": 0xE5097,
     "raw_Move_Settlers": 0xFF212,
     "raw_Pre_Import_Computing": 0xE1D59,
+    "raw_Colony_Industry_Per_Worker": 0xDEC95,
+    "raw_Colony_Empire_Base_Industry_Produced": 0xDED47,
     "raw_Pass_Out_Imports": 0xDF8F0,
     "raw_Colony_Pop_Grows": 0xE1839,
     "raw_Colony_Specialty": 0xE1E1F,
@@ -129,6 +131,13 @@ def main():
             "max_ea": f"0x{ida_ida.inf_get_max_ea():X}",
         },
         "address_basis": "IDA linear; DOS/4GW LE object #1",
+        "data": {
+            "raw_industry_per_worker_base_table": {
+                "ea": "0xDD4B5",
+                "bytes": (ida_bytes.get_bytes(0xDD4B5, 5) or b"").hex(),
+                "values": [ida_bytes.get_byte(0xDD4B5 + index) for index in range(5)],
+            },
+        },
         "roots": {name: function(ea, symbols) for name, ea in ROOTS.items()},
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)

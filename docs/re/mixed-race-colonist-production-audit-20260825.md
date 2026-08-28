@@ -71,8 +71,11 @@
 
 ## 強推論與實作邊界
 
-- 原版 `Colony.FoodPerFarmer/IndustryPerWorker/ResearchPerScientist` 是 owner 的快取捷徑；
-  helper 遇到非 owner colonist 會由環境、建築與該 slot traits 重算。remake 可保留既有快取作
+- 原版 `Colony.FoodPerFarmer/ResearchPerScientist` 是 owner 快取捷徑的高層解釋仍屬強推論；
+  `IndustryPerWorker` 的 environment／building／technology base、`colony+0xDE` writer 與
+  非 owner 重算路徑已由
+  [`colony-industry-per-worker-audit-20260828.md`](colony-industry-per-worker-audit-20260828.md)
+  閉合。remake 可保留既有快取作
   舊 JSON fallback，但 typed groups 生效時必須把 owner 種族修正拆出後換成群組修正。
 - `sub_E1839` 尚含饑荒、封鎖、政體、住房、領袖與特殊建築的多項修正；本輪只把已由官方
   手冊公式獨立核對的逐 slot 基礎、race growth trait、既有殖民地 `GrowthBonusSum` 與住房
