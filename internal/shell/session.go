@@ -3906,8 +3906,8 @@ var moraleGovByIndex = []gamedata.MoraleGovernmentType{
 }
 
 // colonyMoralePercent 依政府基礎值 + 該殖民地已建士氣相關建築,算出淨士氣百分點
-// (engine.ColonyState.MoralePercent 的來源;數值一律用 gamedata/morale.go 手冊常數,不自行
-// 杜撰)。buildings 是該殖民地的 ColonyBuildings 項目(nil 視為尚無任何建築,map 讀取安全)。
+// (engine.ColonyState.MoralePercent 的來源；常數已由原版 sub_DDB25 raw 表與手冊交叉驗證)。
+// buildings 是該殖民地的 ColonyBuildings 項目(nil 視為尚無任何建築,map 讀取安全)。
 //
 // 已套用的來源:
 //  1. gamedata.MoraleGovernmentBase(gov, hasBarracks)——hasBarracks 依手冊 p.76-79:
@@ -3920,11 +3920,9 @@ var moraleGovByIndex = []gamedata.MoraleGovernmentType{
 //   - ~~Virtual Reality Network(全帝國 +20%,p.97-98):remake 無「成就」追蹤系統~~
 //     ⚠ **2026-08-08(第 59 項(成就科技效果))已接。** 那個理由不成立:「成就」在 MOO2 就是科技,
 //     而「有沒有研究出來」一直查得到。與心靈學(+10%,依政體)一起走 achievements.go。
-//   - 多種族懲罰 gamedata.MoraleMultiRacialPenalty:remake 的 ColonyState 沒有「殖民地人口是否
-//     含未同化外族血統」這個狀態(Population/Farmers/Workers/Scientists 只是職務數字,不分血統
-//     來源),故無法判斷是否該套用,保守視為「單一種族」一律不套用——異族管理中心已建/未建在
-//     此近似下暫無可見差異(與行星重力產生器在 demo session 暫不可見同一類「架構已備、資料
-//     尚未跟上」情形,見 colony-buildings.md)。
+//   - 原版 sub_DDAD4 依 packed population 的不同正常 race slot 判定多種族；remake 尚未保存
+//     完整逐人口 race group，目前以 UnassimilatedPop>0 近似。此偏差已登記於
+//     docs/re/colony-morale-audit-20260828.md，待 RE gate 後依 READY spec 修正。
 //   - 首都淪陷懲罰由 PlayerCapitolRebuildRequired 接入；只有攻陷／移除鏈能設置，
 //     Capitol 完工後清除，不從缺少建築鍵值猜測事件。
 //
@@ -3932,8 +3930,8 @@ var moraleGovByIndex = []gamedata.MoraleGovernmentType{
 // (`gamedata.MoraleMultiRacialPenalty`,異族管理中心可消除)。
 //
 // 2026-08-07 接線:那支函式先前是死碼——remake 沒有「這個殖民地有沒有外族人口」可判斷。
-// 第 40 項(同化系統)加上 `ColonyState.UnassimilatedPop` 之後就有了:**未同化人口 > 0 就是多種族**。
-// 這也讓異族管理中心的第二條手冊效果真的生效(第一條是同化速率,見 assimilation.go)。
+// 第 40 項(同化系統)加上 `ColonyState.UnassimilatedPop` 後可提供玩家可見近似，但 IDA 已證實
+// 「未同化人口 > 0」不等同原版 multi-racial；同化完成不會自動讓不同 race slot 消失。
 func colonyMoralePercent(gov gamedata.MoraleGovernmentType, buildings map[string]bool, multiRacial bool,
 	achievementPct int) int {
 	hasBarracks := buildings["海軍陸戰隊營"] || buildings["裝甲營房"]

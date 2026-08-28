@@ -1,9 +1,9 @@
 package gamedata
 
 // 殖民地士氣(Morale)可驗證公式與查表,移植自 moo2_patch1.5/GAME_MANUAL.pdf(繁中化工作用英文版
-// 官方手冊;MANUAL_150.html 只含 1.5 版 changelog/選項說明,無 morale 章節)。openorion2 未實作
-// morale 邏輯(gamestate.cpp 無對應計算),故以手冊原文數字為唯一權威來源。手冊沒有給精確數字的
-// 項目(如 Spiritual Leader 領袖技能的 morale 加成、Tactics 技能)一律不移植,見檔尾 TODO 清單。
+// 官方手冊;MANUAL_150.html 只含 1.5 版 changelog/選項說明,無 morale 章節)。2026-08-28 已以
+// IDA Pro 閉合原版 sub_DDAD4/sub_DDB25/sub_DDEFB 的 raw 表、5% 刻度與消費端；手冊負責玩家
+// 語意交叉驗證，不再是唯一權威。證據見 docs/re/colony-morale-audit-20260828.md。
 //
 // 核心公式(p.65-66「Morale is in the top box」+ p.169-170「Morale」章節,兩處原文一致):
 //
@@ -184,8 +184,8 @@ func GovernmentJobProductionBonus(gov MoraleGovernmentType, job int) int {
 	return 0
 }
 
-// 手冊有描述但未給精確公式/數字,故不移植,呼叫端需要時再補查證:
-//   - Spiritual Leader(領袖 Administration Ability):「Raises the morale of all colonial
-//     populations in the system.」(p.137)——只有文字描述,無百分比或數值。
+// 逆向邊界:
+//   - Spiritual Leader 已由 sub_DDB25 閉合：一般階 5×(expLevel+1)%；進階階走原版
+//     1.5 倍整數取整。實作使用 LeaderSkillBonus，最高等級 adapter 仍待 READY spec 重驗。
 //   - Tactics(領袖 Military Ability):手冊自陳「This skill is not implemented.」(p.137),
 //     與 morale 無關但同段落,一併排除。

@@ -61,7 +61,7 @@ admin),bit0-3 = 該類型內的技能碼(依 enum 宣告順序,0 起算)。
 | **Labor Leader** | admin | `%+d%%`(工業%) | **10** |
 | Medicine | admin | `%+d%%` | 10 |
 | **Science Leader** | admin | `%+d%%`(研究%) | **10** |
-| Spiritual Leader | admin | `%+d`(士氣,無換算公式) | 5 |
+| Spiritual Leader | admin | `%+d`(士氣；原版 consumer 以 5% raw 刻度換算) | 5 |
 | Tactics | admin | `%+d`(手冊自陳未實作) | 2 |
 
 ## 三、實際生效的技能(openorion2 gamestate.cpp 有真呼叫端)
@@ -89,7 +89,9 @@ Lore/Ordnance/Security/Navigator(移動力用途)在 openorion2 全專案 grep �
 是真的沒有效果消費端——已用 `rulebook/62` 反向溯源 SOP 驗證,`shipCombatSpeed`/`shipBeamOffense`/
 `shipBeamDefense`/`leaderHireModifier`/`leaderMaintenanceCost` 已是 `gamestate.cpp` 全部呼叫
 `Leader::skillBonus`/`hasSkill` 的地方,沒有第五個呼叫點)。這些技能的「效果」只存在於手冊文字
-描述(如 Spiritual Leader「Raises morale」、Commando「ground combat strength」)。
+描述(如 Commando「ground combat strength」)。Spiritual Leader 已於 2026-08-28 由原版
+`sub_DDB25 @ 0xDDB25` 補上真正 consumer：一般階 `5×(expLevel+1)%`，進階階採 1.5 倍
+整數取整；見 `docs/re/colony-morale-audit-20260828.md`。
 
 > ⚠ **2026-08-08 更正這一段的最後一句。** 原文寫「精確數字/換算公式手冊沒給」,
 > 那是把「openorion2 沒有消費端」誤讀成「沒有數字」。**數字一直都在**:加成值是

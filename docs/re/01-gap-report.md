@@ -2604,7 +2604,8 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     判定沿用 `groundEquipTechOwned` 那組既有規則,不另立一套。
     `session.go` 寫著「異族管理中心:士氣計算路徑已預留(**colonyMoralePercent 讀取此建築名**)」。
     **`colonyMoralePercent` 根本沒有讀它**——那個建築名在整個 repo 裡只出現在資料表與註解裡。
-    - **未同化人口目前沒有負面效果。** 手冊說多種族殖民地有 20% 士氣懲罰(建築可消除)、
+    - **當時未同化人口尚無負面效果。** 後續 remake 曾以 `UnassimilatedPop>0` 接上士氣代理；
+      2026-08-28 IDA 再證實原版 `sub_DDAD4` 比較不同正常 race slot，該代理不等於原版規則。
 
 41. **戰機基地 + 行星版恆星轉換器,以及一個盤點方法的錯誤**(2026-08-07)。
 
@@ -2637,8 +2638,9 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     其中兩條在寫的當下就已經解得開了——擋住它們的東西是我自己前幾輪剛加上去的。
 
     它一直沒有呼叫端,理由寫在 `session.go` 的註解裡:「因 remake 無多種族人口追蹤,
-    第 40 項(同化系統)加上 `ColonyState.UnassimilatedPop` 之後,那個理由就不成立了:
-    - 同化完最後一單位的那一刻懲罰消失——`advanceAssimilation` 每輪重算士氣,
+    第 40 項(同化系統)加上 `ColonyState.UnassimilatedPop` 之後，先建立了可玩代理值。
+    **2026-08-28 勘誤**：IDA 證實 `sub_DDAD4` 比較不同正常 race slot，並不讀同化狀態；
+    因此「同化完最後一單位就解除懲罰」只描述當時 remake 行為，不是原版規則。
     ```
     Radiation Shield 「Radiated worlds become Barren as long as the shield remains in place」
     Flux Shield      「The existence of a flux shield converts Radiated climates to Barren」

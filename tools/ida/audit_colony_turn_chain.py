@@ -41,6 +41,11 @@ ROOTS = {
     "raw_Colony_Food2_Per_Farmer": 0xDE03E,
     "raw_Colony_Food_Colonist_Base": 0xDE0C6,
     "raw_Colony_Food_Production": 0xDE664,
+    "raw_Mixed_Race_Morale": 0xDDAD4,
+    "raw_Colony_Morale": 0xDDB25,
+    "raw_Show_Morale": 0xDDEFB,
+    "raw_Colony_Officer": 0xDD9F2,
+    "raw_Owned_Officer_Level": 0x94951,
     "raw_Colony_Research_Per_Scientist": 0xDFDC6,
     "raw_Colony_Research_Colonist_Base": 0xDFE77,
     "raw_Colony_Research_Production": 0xDFF74,
@@ -147,6 +152,30 @@ def main():
         },
         "address_basis": "IDA linear; DOS/4GW LE object #1",
         "data": {
+            "raw_government_morale_base_table": {
+                "ea": "0xDD4C4",
+                "bytes": (ida_bytes.get_bytes(0xDD4C4, 8) or b"").hex(),
+                "signed_values": [ida_bytes.get_byte(0xDD4C4 + index) - 256
+                                  if ida_bytes.get_byte(0xDD4C4 + index) >= 128
+                                  else ida_bytes.get_byte(0xDD4C4 + index)
+                                  for index in range(8)],
+            },
+            "raw_missing_capitol_morale_table": {
+                "ea": "0xDD4CC",
+                "bytes": (ida_bytes.get_bytes(0xDD4CC, 3) or b"").hex(),
+                "signed_values": [ida_bytes.get_byte(0xDD4CC + index) - 256
+                                  if ida_bytes.get_byte(0xDD4CC + index) >= 128
+                                  else ida_bytes.get_byte(0xDD4CC + index)
+                                  for index in range(3)],
+            },
+            "raw_barracks_morale_table": {
+                "ea": "0xDD4CF",
+                "bytes": (ida_bytes.get_bytes(0xDD4CF, 8) or b"").hex(),
+                "signed_values": [ida_bytes.get_byte(0xDD4CF + index) - 256
+                                  if ida_bytes.get_byte(0xDD4CF + index) >= 128
+                                  else ida_bytes.get_byte(0xDD4CF + index)
+                                  for index in range(8)],
+            },
             "raw_industry_per_worker_base_table": {
                 "ea": "0xDD4B5",
                 "bytes": (ida_bytes.get_bytes(0xDD4B5, 5) or b"").hex(),

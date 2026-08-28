@@ -166,10 +166,9 @@ func TestRepulsiveRaceSlowsAssimilationInSession(t *testing.T) {
 	}
 }
 
-// 未同化人口 = 多種族殖民地 → 20% 士氣懲罰(手冊 p.66-67),異族管理中心消除。
-//
-// 這條把第 40 項(同化系統)寫的那句「機制在、後果還沒接」關掉:同化現在真的有代價了。
-func TestUnassimilatedPopulationCostsMorale(t *testing.T) {
+// TestCurrentRemakeUnassimilatedPopulationMoraleRegression 固定現行 remake 的已知代理模型。
+// 原版 sub_DDAD4 比較不同正常 race slot，而非 UnassimilatedPop；不得把本測試當 parity 證據。
+func TestCurrentRemakeUnassimilatedPopulationMoraleRegression(t *testing.T) {
 	clean := colonyMoralePercent(gamedata.MoraleGovDictatorship, nil, false, 0)
 	multi := colonyMoralePercent(gamedata.MoraleGovDictatorship, nil, true, 0)
 	if multi != clean-20 {
@@ -183,8 +182,9 @@ func TestUnassimilatedPopulationCostsMorale(t *testing.T) {
 	}
 }
 
-// 同化完最後一單位的那一刻,懲罰要跟著消失——不重算的話玩家會一直被扣。
-func TestMoralePenaltyLiftsWhenAssimilationFinishes(t *testing.T) {
+// TestCurrentRemakeMoralePenaltyLiftsAfterAssimilationRegression 固定現行近似：同化完成便解除懲罰。
+// 原版會保留不同 race slot，待 RE gate 後依 READY spec 改為逐 race population group。
+func TestCurrentRemakeMoralePenaltyLiftsAfterAssimilationRegression(t *testing.T) {
 	s := NewDemoSession()
 	s.ApplyCustomRaceBonuses(Race{OrigIdx: -1})
 	s.DisableEvents = true
@@ -206,6 +206,6 @@ func TestMoralePenaltyLiftsWhenAssimilationFinishes(t *testing.T) {
 		t.Fatalf("4 回合後應同化完,未同化剩 %d", s.PlayerColonies[idx].UnassimilatedPop)
 	}
 	if got := s.PlayerColonies[idx].MoralePercent; got != penalised+20 {
-		t.Errorf("同化完之後 20 點懲罰應消失:%d → %d(期望 %d)", penalised, got, penalised+20)
+		t.Errorf("現行 remake 同化完後應解除 20 點代理懲罰:%d → %d(期望 %d)", penalised, got, penalised+20)
 	}
 }

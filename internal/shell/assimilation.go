@@ -135,8 +135,9 @@ func (s *GameSession) advanceAssimilation() {
 		if c.UnassimilatedPop <= 0 {
 			c.AssimilationProgress = 0
 		}
-		// 多種族士氣懲罰是「有沒有未同化人口」的函數,所以同化完最後一單位的那一刻
-		// 懲罰就該消失——不重算的話玩家會一直被扣到下次蓋建築為止。
+		// 現行 remake 仍以 UnassimilatedPop 代理多種族狀態，因此同化進度變動後重算。
+		// 原版 sub_DDAD4 比較不同 race slot，並不會因同化完成自動解除；這是待 READY spec
+		// 修正的已知偏差，見 docs/re/colony-morale-audit-20260828.md。
 		s.recalcColonyMorale(i)
 	}
 }

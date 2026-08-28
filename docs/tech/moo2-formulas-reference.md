@@ -169,7 +169,7 @@ Factory／Robo Mining Plant／Deep Core Mine 的固定 `+5/+10/+15` 及 Recyclot
 
 ## 3. 士氣(`morale.go`)
 
-**來源**:GAME_MANUAL.pdf p.65-66「Morale is in the top box」與 p.169-170「Morale」章節(兩處原文一致);政府基礎值、首都淪陷懲罰見 p.165-167 Imperial Policy > Government 段與各政府段落 p.21-22。openorion2 未實作 morale 邏輯(`gamestate.cpp` 無對應計算),故以手冊原文數字為唯一權威來源。手冊沒有給精確數字的項目(Spiritual Leader 的 morale 加成、Tactics 技能)不移植,列於本節末 TODO。
+**來源**:GAME_MANUAL.pdf p.65-66、p.169-170 與政府章節；原版 `sub_DDAD4 @ 0xDDAD4`、`sub_DDB25 @ 0xDDB25`、`sub_DDEFB @ 0xDDEFB` 已於 2026-08-28 由 IDA Pro 閉合 raw 表、5% 刻度、心靈導師公式與產出消費端。可回查證據見 `docs/re/colony-morale-audit-20260828.md`；openorion2 只作型別／名稱交叉驗證，不再把手冊稱為唯一權威。
 
 ### 核心公式
 
