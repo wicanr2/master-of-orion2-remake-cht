@@ -65,21 +65,23 @@ type aiSnapshot struct {
 	// Personality 是 AI 性格(見 shell.AIOpponent.Personality)。omitempty 不適用:
 	// 0 是合法值(排外),舊存檔缺欄位會解成 0——那與「排外」無法區分,屬已知的相容性折衷,
 	// 影響只是舊存檔的 AI 性格會一律變成排外,不會壞掉。
-	Personality                     ai.Personality                 `json:"personality"`
-	OriginalTechProfile             gamedata.OriginalAITechProfile `json:"originalTechProfile,omitempty"`
-	OriginalTechProfileKnown        bool                           `json:"originalTechProfileKnown,omitempty"`
-	OriginalRaw28                   int                            `json:"originalRaw28,omitempty"`
-	OriginalRaw28Known              bool                           `json:"originalRaw28Known,omitempty"`
-	OriginalFoodDeficitTurns        int                            `json:"originalFoodDeficitTurns,omitempty"`
-	OriginalWarFlag60ERaw           int                            `json:"originalWarFlag60ERaw,omitempty"`
-	OriginalBlockadeGrievanceRaw    int                            `json:"originalBlockadeGrievanceRaw,omitempty"`
-	OriginalHumanBetrayalRaw        bool                           `json:"originalHumanBetrayalRaw,omitempty"`
-	OriginalHumanTreatyGrievanceRaw int                            `json:"originalHumanTreatyGrievanceRaw,omitempty"`
-	OriginalHumanTreatyVictimRaw    int                            `json:"originalHumanTreatyVictimRaw,omitempty"`
-	OriginalHumanTreatyVictimKnown  bool                           `json:"originalHumanTreatyVictimKnown,omitempty"`
-	OriginalHumanIncidentMemoryRaw  int                            `json:"originalHumanIncidentMemoryRaw,omitempty"`
-	OriginalHumanIncidentReasonRaw  int                            `json:"originalHumanIncidentReasonRaw,omitempty"`
-	OriginalHumanIncidentKnown      bool                           `json:"originalHumanIncidentKnown,omitempty"`
+	Personality                              ai.Personality                 `json:"personality"`
+	OriginalTechProfile                      gamedata.OriginalAITechProfile `json:"originalTechProfile,omitempty"`
+	OriginalTechProfileKnown                 bool                           `json:"originalTechProfileKnown,omitempty"`
+	OriginalRaw28                            int                            `json:"originalRaw28,omitempty"`
+	OriginalRaw28Known                       bool                           `json:"originalRaw28Known,omitempty"`
+	OriginalFoodDeficitTurns                 int                            `json:"originalFoodDeficitTurns,omitempty"`
+	OriginalWarFlag60ERaw                    int                            `json:"originalWarFlag60ERaw,omitempty"`
+	OriginalBlockadeGrievanceRaw             int                            `json:"originalBlockadeGrievanceRaw,omitempty"`
+	OriginalHumanBetrayalRaw                 bool                           `json:"originalHumanBetrayalRaw,omitempty"`
+	OriginalHumanTreatyGrievanceRaw          int                            `json:"originalHumanTreatyGrievanceRaw,omitempty"`
+	OriginalHumanTreatyVictimRaw             int                            `json:"originalHumanTreatyVictimRaw,omitempty"`
+	OriginalHumanTreatyVictimKnown           bool                           `json:"originalHumanTreatyVictimKnown,omitempty"`
+	OriginalHumanIncidentMemoryRaw           int                            `json:"originalHumanIncidentMemoryRaw,omitempty"`
+	OriginalHumanIncidentReasonRaw           int                            `json:"originalHumanIncidentReasonRaw,omitempty"`
+	OriginalHumanIncidentKnown               bool                           `json:"originalHumanIncidentKnown,omitempty"`
+	OriginalHumanIncidentPendingReasonRaw    int                            `json:"originalHumanIncidentPendingReasonRaw,omitempty"`
+	OriginalHumanIncidentPendingMagnitudeRaw int                            `json:"originalHumanIncidentPendingMagnitudeRaw,omitempty"`
 	// LastRaidTurn 是這個 AI 上次突襲玩家的回合(見 ai_attack.go)。不存的話讀檔後
 	// 每個 AI 的間隔計時器都歸零,存檔當回合可能立刻又被突襲一次。
 	LastRaidTurn                        int `json:"last_raid_turn"`
@@ -349,17 +351,19 @@ func (s *GameSession) snapshot() sessionSnapshot {
 			OriginalHumanContactTurns:           a.OriginalHumanContactTurns,
 			OriginalTechProfile:                 a.OriginalTechProfile, OriginalTechProfileKnown: a.OriginalTechProfileKnown,
 			OriginalRaw28: a.OriginalRaw28, OriginalRaw28Known: a.OriginalRaw28Known,
-			OriginalFoodDeficitTurns:        a.OriginalFoodDeficitTurns,
-			OriginalWarFlag60ERaw:           a.OriginalWarFlag60ERaw,
-			OriginalBlockadeGrievanceRaw:    a.OriginalBlockadeGrievanceRaw,
-			OriginalHumanBetrayalRaw:        a.OriginalHumanBetrayalRaw,
-			OriginalHumanTreatyGrievanceRaw: a.OriginalHumanTreatyGrievanceRaw,
-			OriginalHumanTreatyVictimRaw:    a.OriginalHumanTreatyVictimRaw,
-			OriginalHumanTreatyVictimKnown:  a.OriginalHumanTreatyVictimKnown,
-			OriginalHumanIncidentMemoryRaw:  a.OriginalHumanIncidentMemoryRaw,
-			OriginalHumanIncidentReasonRaw:  a.OriginalHumanIncidentReasonRaw,
-			OriginalHumanIncidentKnown:      a.OriginalHumanIncidentKnown,
-			WantsAudience:                   a.WantsAudience, AudienceReason: a.AudienceReason,
+			OriginalFoodDeficitTurns:                 a.OriginalFoodDeficitTurns,
+			OriginalWarFlag60ERaw:                    a.OriginalWarFlag60ERaw,
+			OriginalBlockadeGrievanceRaw:             a.OriginalBlockadeGrievanceRaw,
+			OriginalHumanBetrayalRaw:                 a.OriginalHumanBetrayalRaw,
+			OriginalHumanTreatyGrievanceRaw:          a.OriginalHumanTreatyGrievanceRaw,
+			OriginalHumanTreatyVictimRaw:             a.OriginalHumanTreatyVictimRaw,
+			OriginalHumanTreatyVictimKnown:           a.OriginalHumanTreatyVictimKnown,
+			OriginalHumanIncidentMemoryRaw:           a.OriginalHumanIncidentMemoryRaw,
+			OriginalHumanIncidentReasonRaw:           a.OriginalHumanIncidentReasonRaw,
+			OriginalHumanIncidentKnown:               a.OriginalHumanIncidentKnown,
+			OriginalHumanIncidentPendingReasonRaw:    a.OriginalHumanIncidentPendingReasonRaw,
+			OriginalHumanIncidentPendingMagnitudeRaw: a.OriginalHumanIncidentPendingMagnitudeRaw,
+			WantsAudience:                            a.WantsAudience, AudienceReason: a.AudienceReason,
 			OriginalHumanDiplomaticRequest:       a.OriginalHumanDiplomaticRequest,
 			OriginalHumanDirectRequestTier:       a.OriginalHumanDirectRequestTier,
 			OriginalHumanMilitaryCandidateStar:   a.OriginalHumanMilitaryCandidateStar,
@@ -503,17 +507,19 @@ func (snap sessionSnapshot) restore() *GameSession {
 			OriginalHumanContactTurns:           a.OriginalHumanContactTurns,
 			OriginalTechProfile:                 a.OriginalTechProfile, OriginalTechProfileKnown: a.OriginalTechProfileKnown,
 			OriginalRaw28: a.OriginalRaw28, OriginalRaw28Known: a.OriginalRaw28Known,
-			OriginalFoodDeficitTurns:        a.OriginalFoodDeficitTurns,
-			OriginalWarFlag60ERaw:           a.OriginalWarFlag60ERaw,
-			OriginalBlockadeGrievanceRaw:    a.OriginalBlockadeGrievanceRaw,
-			OriginalHumanBetrayalRaw:        a.OriginalHumanBetrayalRaw,
-			OriginalHumanTreatyGrievanceRaw: a.OriginalHumanTreatyGrievanceRaw,
-			OriginalHumanTreatyVictimRaw:    a.OriginalHumanTreatyVictimRaw,
-			OriginalHumanTreatyVictimKnown:  a.OriginalHumanTreatyVictimKnown,
-			OriginalHumanIncidentMemoryRaw:  a.OriginalHumanIncidentMemoryRaw,
-			OriginalHumanIncidentReasonRaw:  a.OriginalHumanIncidentReasonRaw,
-			OriginalHumanIncidentKnown:      a.OriginalHumanIncidentKnown,
-			WantsAudience:                   a.WantsAudience, AudienceReason: a.AudienceReason,
+			OriginalFoodDeficitTurns:                 a.OriginalFoodDeficitTurns,
+			OriginalWarFlag60ERaw:                    a.OriginalWarFlag60ERaw,
+			OriginalBlockadeGrievanceRaw:             a.OriginalBlockadeGrievanceRaw,
+			OriginalHumanBetrayalRaw:                 a.OriginalHumanBetrayalRaw,
+			OriginalHumanTreatyGrievanceRaw:          a.OriginalHumanTreatyGrievanceRaw,
+			OriginalHumanTreatyVictimRaw:             a.OriginalHumanTreatyVictimRaw,
+			OriginalHumanTreatyVictimKnown:           a.OriginalHumanTreatyVictimKnown,
+			OriginalHumanIncidentMemoryRaw:           a.OriginalHumanIncidentMemoryRaw,
+			OriginalHumanIncidentReasonRaw:           a.OriginalHumanIncidentReasonRaw,
+			OriginalHumanIncidentKnown:               a.OriginalHumanIncidentKnown,
+			OriginalHumanIncidentPendingReasonRaw:    a.OriginalHumanIncidentPendingReasonRaw,
+			OriginalHumanIncidentPendingMagnitudeRaw: a.OriginalHumanIncidentPendingMagnitudeRaw,
+			WantsAudience:                            a.WantsAudience, AudienceReason: a.AudienceReason,
 			OriginalHumanDiplomaticRequest:       a.OriginalHumanDiplomaticRequest,
 			OriginalHumanDirectRequestTier:       a.OriginalHumanDirectRequestTier,
 			OriginalHumanMilitaryCandidateStar:   a.OriginalHumanMilitaryCandidateStar,

@@ -24,6 +24,55 @@ func (s *GameSession) recordOriginalAIIncident(actor, target, reason, appliedDel
 	s.AIIncidentMagnitudeRaw[actor][target] = appliedDelta
 }
 
+func (s *GameSession) recordOriginalAIHumanIncident(aiIndex, reason, baseDelta int) {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) || reason < 1 || reason > 9 || baseDelta >= 0 {
+		return
+	}
+	a := &s.AIPlayers[aiIndex]
+	next, applied, ok := gamedata.OriginalChangeRelationOutcome(gamedata.OriginalRelationChangeInput{
+		CurrentRaw: a.originalRelationRaw(), BaseDelta: baseDelta,
+		ActorGovernment: originalAIRelationGovernment(*a), TargetCharismatic: s.RaceCharismatic(),
+		Policy: a.Treaty.FormalPolicy,
+	})
+	if !ok {
+		return
+	}
+	a.OriginalRelationRaw, a.OriginalRelationKnown = next, true
+	a.Relation = normalizedRelationFromOriginal(next)
+	if absInt(a.OriginalHumanIncidentPendingMagnitudeRaw) < absInt(applied) {
+		a.OriginalHumanIncidentPendingReasonRaw = reason
+		a.OriginalHumanIncidentPendingMagnitudeRaw = applied
+	}
+	a.OriginalHumanIncidentKnown = true
+}
+
+func (s *GameSession) advanceOriginalAIHumanIncidentMemory(roll100 func() int) {
+	for i := range s.AIPlayers {
+		a := &s.AIPlayers[i]
+		pendingReason := a.OriginalHumanIncidentPendingReasonRaw
+		protected := (a.Treaty.FormalPolicy >= gamedata.DIPLO_NON_AGGRESSION &&
+			a.Treaty.FormalPolicy <= gamedata.DIPLO_PEACE) || a.Treaty.TradeActive ||
+			a.Treaty.ResearchActive || a.Treaty.AITribute != TributeNone
+		out, ok := gamedata.OriginalNPCIncidentMemoryStep(gamedata.OriginalNPCIncidentMemoryInput{
+			PendingReason:    a.OriginalHumanIncidentPendingReasonRaw,
+			PendingMagnitude: a.OriginalHumanIncidentPendingMagnitudeRaw,
+			Memory:           a.OriginalHumanIncidentMemoryRaw,
+			Government:       originalAIRelationGovernment(*a), ProtectedAgreement: protected,
+			DemocracyMemoryFlag: a.OriginalHumanBetrayalRaw,
+		}, roll100)
+		if !ok {
+			continue
+		}
+		a.OriginalHumanIncidentPendingReasonRaw = out.PendingReason
+		a.OriginalHumanIncidentPendingMagnitudeRaw = out.PendingMagnitude
+		a.OriginalHumanIncidentMemoryRaw = out.Memory
+		if pendingReason >= 1 && pendingReason <= 9 {
+			a.OriginalHumanIncidentReasonRaw = pendingReason
+		}
+		a.OriginalHumanIncidentKnown = true
+	}
+}
+
 func (s *GameSession) clearOriginalAIIncidentMemory(a, b int) {
 	s.ensureOriginalAIIncidentState()
 	if a < 0 || b < 0 || a >= len(s.AIPlayers) || b >= len(s.AIPlayers) {

@@ -50,6 +50,8 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 		s.AIPlayers[0].OriginalHumanIncidentMemoryRaw = 3
 		s.AIPlayers[0].OriginalHumanIncidentReasonRaw = 7
 		s.AIPlayers[0].OriginalHumanIncidentKnown = true
+		s.AIPlayers[0].OriginalHumanIncidentPendingReasonRaw = 3
+		s.AIPlayers[0].OriginalHumanIncidentPendingMagnitudeRaw = -12
 		offer := aiPreferredLeader(45, false)
 		s.AIPlayers[0].LeaderOffer = &offer
 		s.AIPlayers[0].LeaderLastOfferTurn = s.Turn
@@ -141,7 +143,9 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 		got.AIPlayers[0].OriginalHumanTreatyGrievanceRaw != -20 ||
 		!got.AIPlayers[0].OriginalHumanTreatyVictimKnown || got.AIPlayers[0].OriginalHumanTreatyVictimRaw != 3 ||
 		!got.AIPlayers[0].OriginalHumanIncidentKnown || got.AIPlayers[0].OriginalHumanIncidentMemoryRaw != 3 ||
-		got.AIPlayers[0].OriginalHumanIncidentReasonRaw != 7 {
+		got.AIPlayers[0].OriginalHumanIncidentReasonRaw != 7 ||
+		got.AIPlayers[0].OriginalHumanIncidentPendingReasonRaw != 3 ||
+		got.AIPlayers[0].OriginalHumanIncidentPendingMagnitudeRaw != -12 {
 		t.Errorf("AI 原版宣戰 raw 欄位未保留：food=%d raw60E=%d blockade6BF=%d betrayal727=%v",
 			got.AIPlayers[0].OriginalFoodDeficitTurns, got.AIPlayers[0].OriginalWarFlag60ERaw,
 			got.AIPlayers[0].OriginalBlockadeGrievanceRaw, got.AIPlayers[0].OriginalHumanBetrayalRaw)

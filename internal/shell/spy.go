@@ -412,6 +412,7 @@ type spyMissionResult struct {
 	AttackerSpyKilled   bool
 	DefenderAgentKilled bool
 	TechStolen          bool
+	MissionSucceeded    bool
 	Score               spyMissionScore
 }
 
@@ -460,6 +461,7 @@ func spyMissionAttemptWithAgentsResult(rng rollSource, mission SpyMission, attac
 				result.Messages = append(result.Messages, fmt.Sprintf(
 					"%s 的間諜潛入 %s 得手,但沒有可破壞的已建建築", attackerName, defenderName))
 			} else {
+				result.MissionSucceeded = true
 				result.Messages = append(result.Messages, fmt.Sprintf(
 					"%s 的間諜在 %s 的第 %d 殖民地破壞了%s", attackerName, defenderName, colonyIdx+1, building))
 			}
@@ -472,6 +474,7 @@ func spyMissionAttemptWithAgentsResult(rng rollSource, mission SpyMission, attac
 				pick := opts[rng.Intn(len(opts))]
 				applyTechTheft(attackerPS, pick)
 				result.TechStolen = true
+				result.MissionSucceeded = true
 				result.Messages = append(result.Messages, fmt.Sprintf(
 					"%s 的間諜從 %s 偷得科技:%s", attackerName, defenderName, gamedata.TechnologyName(pick.Tech)))
 			}
@@ -642,6 +645,14 @@ func (s *GameSession) advanceEspionage() {
 			}
 			if result.TechStolen {
 				s.UpdatePlayerShipDesignsAfterTech()
+			}
+			if result.MissionSucceeded {
+				reason := 1
+				if result.Score.Mission == SpyMissionSabotage {
+					reason = 3
+				}
+				s.recordOriginalAIHumanIncident(i, reason,
+					-(s.spyRand.Intn(15)+1)-(s.spyRand.Intn(5)+1))
 			}
 		}
 

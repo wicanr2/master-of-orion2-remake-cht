@@ -31,6 +31,26 @@ func TestOriginalAIIncidentMemoryMirrorsAndFeedsThirdPartyBonus(t *testing.T) {
 	}
 }
 
+func TestOriginalAIHumanSpyIncidentFlowsToMemory(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	a.OriginalRelationRaw, a.OriginalRelationKnown = 0, true
+	s.recordOriginalAIHumanIncident(0, 1, -10)
+	if a.OriginalHumanIncidentPendingReasonRaw != 1 ||
+		a.OriginalHumanIncidentPendingMagnitudeRaw >= 0 || a.OriginalRelationRaw >= 0 {
+		t.Fatalf("pending=%d/%d relation=%d",
+			a.OriginalHumanIncidentPendingReasonRaw,
+			a.OriginalHumanIncidentPendingMagnitudeRaw, a.OriginalRelationRaw)
+	}
+	s.advanceOriginalAIHumanIncidentMemory(func() int { return 1 })
+	if !a.OriginalHumanIncidentKnown || a.OriginalHumanIncidentMemoryRaw <= 0 ||
+		a.OriginalHumanIncidentReasonRaw != 1 {
+		t.Fatalf("remembered=%d reason=%d known=%v",
+			a.OriginalHumanIncidentMemoryRaw, a.OriginalHumanIncidentReasonRaw,
+			a.OriginalHumanIncidentKnown)
+	}
+}
+
 func TestOriginalAIIncidentRecordKeepsStrongestAndTreatyClearsMemory(t *testing.T) {
 	s := NewDemoSession()
 	s.ensureAIAIState()

@@ -92,8 +92,8 @@
 ## DRAFT 邊界
 
 `sub_544A1 @ 0x544A1..0x54CC0` 的四類尾端與 RNG 已形成純規則；尚缺的是 directional
-incident memory 的 writer 門檻／正常玩家事件 producer，以及 `sub_D94B3` 多艦隊搜尋的 exact
-資料形狀；其單主力艦隊近似 producer、government 0 蟲洞支線、接受、兩種拒絕、outcome 4
+incident memory 的嫁禍 reason 2／4 與其餘 reason 5..9 producer，以及 `sub_D94B3` 多艦隊搜尋的 exact
+資料形狀；未嫁禍 STEAL／SABOTAGE、單主力艦隊近似 producer、government 0 蟲洞支線、接受、兩種拒絕、outcome 4
 通知與正常外交 UI 二選一已閉合。
 這些欄位閉合前，remake 可用既有戰爭態勢決定是否呼叫原版目標估值，但必須標為 fallback，
 不得把只含 relation/personality 的部分 score 冒充完整 producer。

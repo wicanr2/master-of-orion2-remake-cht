@@ -127,6 +127,7 @@ func (s *GameSession) advanceAIAIDiplomacy() {
 	s.ensureAIAIState()
 	s.advanceOriginalAIAIWarTimers()
 	s.advanceOriginalAIIncidentMemory(func() int { return s.diplomacyGrowthRandForTurn().Intn(100) + 1 })
+	s.advanceOriginalAIHumanIncidentMemory(func() int { return s.diplomacyGrowthRandForTurn().Intn(100) + 1 })
 	for i := range s.AIPlayers {
 		for j := range s.AIPlayers {
 			if i == j {

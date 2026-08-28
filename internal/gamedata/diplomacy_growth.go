@@ -49,9 +49,16 @@ type OriginalRelationChangeInput struct {
 // raw signed-byte 分數公式。成功時回傳 -100..100；ok=false 表示輸入
 // 不在本 typed 切片可表示的範圍，不得猜測補值。
 func OriginalChangeRelationScore(in OriginalRelationChangeInput) (int, bool) {
+	result, _, ok := OriginalChangeRelationOutcome(in)
+	return result, ok
+}
+
+// OriginalChangeRelationOutcome 除了最終 raw 關係，也回傳 Change_Relations_
+// 在夾限前保存到 +0x65F 的有效變化量，供 incident writer 共用。
+func OriginalChangeRelationOutcome(in OriginalRelationChangeInput) (result, effectiveDelta int, ok bool) {
 	if in.CurrentRaw < -100 || in.CurrentRaw > 100 || in.BaseDelta == 0 ||
 		in.Policy < DIPLO_NONE || in.Policy >= DIPLO_LIMITED_WAR {
-		return in.CurrentRaw, false
+		return in.CurrentRaw, 0, false
 	}
 	delta := in.BaseDelta
 	if delta > 0 {
@@ -98,7 +105,7 @@ func OriginalChangeRelationScore(in OriginalRelationChangeInput) (int, bool) {
 		}
 	}
 
-	result := in.CurrentRaw + delta
+	result = in.CurrentRaw + delta
 	if result < -100 {
 		result = -100
 	} else if result > 100 {
@@ -107,7 +114,7 @@ func OriginalChangeRelationScore(in OriginalRelationChangeInput) (int, bool) {
 	if in.Policy != DIPLO_ALLIANCE && result > 65 {
 		result = 65
 	}
-	return result, true
+	return result, delta, true
 }
 
 // OriginalWarBlockadeGrievance 對映 Change_Relations_ reason raw 7、policy 4/5、

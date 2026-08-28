@@ -210,9 +210,11 @@ type AIOpponent struct {
 	OriginalHumanTreatyVictimKnown  bool `json:"originalHumanTreatyVictimKnown,omitempty"`
 	// OriginalHumanIncidentMemoryRaw／ReasonRaw 對應 AI→真人 +0x71F／+0x6CF。
 	// Known=false 的 GAM／舊 JSON 不可把缺欄當成原版精確零。
-	OriginalHumanIncidentMemoryRaw int  `json:"originalHumanIncidentMemoryRaw,omitempty"`
-	OriginalHumanIncidentReasonRaw int  `json:"originalHumanIncidentReasonRaw,omitempty"`
-	OriginalHumanIncidentKnown     bool `json:"originalHumanIncidentKnown,omitempty"`
+	OriginalHumanIncidentMemoryRaw           int  `json:"originalHumanIncidentMemoryRaw,omitempty"`
+	OriginalHumanIncidentReasonRaw           int  `json:"originalHumanIncidentReasonRaw,omitempty"`
+	OriginalHumanIncidentKnown               bool `json:"originalHumanIncidentKnown,omitempty"`
+	OriginalHumanIncidentPendingReasonRaw    int  `json:"originalHumanIncidentPendingReasonRaw,omitempty"`
+	OriginalHumanIncidentPendingMagnitudeRaw int  `json:"originalHumanIncidentPendingMagnitudeRaw,omitempty"`
 }
 
 // cloneBuildings 回傳 m 的獨立拷貝(逐鍵複製),供需要「各自獨立、不共享底層 map」的初始化

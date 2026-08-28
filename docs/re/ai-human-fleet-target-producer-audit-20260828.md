@@ -163,9 +163,9 @@
 - 已接方向 writer：玩家成功執行 `break_formal` 後，AI→玩家的
   `OriginalHumanBetrayalRaw` 永久設為 true 並通過存檔；Honorable base score 隨即從 +20 改讀
   Dishonored -10。只終止貿易的反例不寫此旗標。
-- 已接純規則：`OriginalHumanTargetIncidentScore` 依原版共用表消費 `+0x71F／+0x6CF`，
-  並回傳相符的原因碼；非法 signed-byte／reason／personality 失敗即關閉。`sub_4F0DC`
-  上游完整門檻及各正常玩家事件 reason 尚未 typed，因此此輪不偽造 writer。
+- 已接垂直鏈：`OriginalHumanTargetIncidentScore` 消費 `+0x71F／+0x6CF`；玩家成功且實際生效的
+  STEAL／SABOTAGE 依原版 reason 1／3 與兩次亂數先寫關係及 pending，再於下一回合轉成 memory。
+  嫁禍 reason 2／4 與其餘 reason 5..9 尚未 typed，不偽造 writer。
 - 已接純規則：存活帝國人口優勢與 40 回合人口成長差；兩者直接消費原版已存在的
   `+0xA6／+0xB9B` typed 對映，不把反編譯器暫名當證據。
 - 已接純規則：`sub_500CF` 國力比重用既有 `OriginalNPCPowerRatio`，另補 ratio>=300 的
@@ -194,7 +194,8 @@
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。
-- 尚未閉合：`sub_544A1` 所需的完整 directional incident writer，以及 `sub_D94B3` 原版多艦隊
+- 尚未閉合：`sub_544A1` directional incident 的嫁禍 reason 2／4 與其餘 reason 5..9 writer，
+  以及 `sub_D94B3` 原版多艦隊
   搜尋的逐資料結構 exact parity；後者已有明示強推論的單主力艦隊近似 producer，不再阻塞
   reason 106 玩家選擇。接受、兩種拒絕、reason 124 單向通知與正常二選一 UI 已閉合。只有必要 typed 輸入 unknown 時，
   願戰來源才保留明示的 `DecideStance` 相容 fallback；不以部分 score 升格整條決策。

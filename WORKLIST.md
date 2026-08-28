@@ -1154,7 +1154,11 @@
   `sub_4F0DC` 的事件記憶下游亦已追回：它只把 reason 1..9 從 `+0x64F` 複製至
   `+0x6CF`；`sub_544A1` 再以 signed `+0x71F` 與共用表
   `word_180CF0=[1,2,3,3,4,5,2]` 計算負分及 `reason+70`。純規則與原始表測試已接；
-  `sub_4F0DC` 的完整上游門檻及正常玩家事件 reason producer 仍待閉合，未以猜測接線。
+  間諜正常 producer 已閉合首條玩家垂直鏈：成功且實際取得科技／拆除建築時，依
+  `sub_10119C／sub_10130A` 的 `-(Random(15)+Random(5))` 與未嫁禍 reason 1／3 更新關係、
+  pending 與下一回合 memory。嫁禍 reason 2／4 因 remake 尚無 attributed third-party 模型，
+  其餘 reason 5..9 也仍待逐 caller 閉合，不以猜測接線。見
+  [`docs/re/ai-human-spy-incident-audit-20260828.md`](docs/re/ai-human-spy-incident-audit-20260828.md)。
   同一 score 的存活帝國人口優勢 `-10`，以及第 100 回合後雙方 40 回合人口成長差也已由
   `+0xA6／+0xB9B` raw 讀取閉合為純規則；其餘國力／科技項仍待拆解。
   `sub_500CF` 亦確認等同既有 `OriginalNPCPowerRatio`，ratio>=300 且政府 raw!=5 時的
