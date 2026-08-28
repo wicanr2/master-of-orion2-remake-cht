@@ -31,7 +31,9 @@
   外交／間諜／領袖、原版 AI、事件／安塔蘭、戰鬥、艦艇設計與其餘客製種族
   仍有待追回的原版規則或只有 remake 近似。
 - 歷史圖四項 350 格、動態除數與最終分數倍率已依 IDA 靜態證據接線；科技歷史 raw
-  `player+0x224` 目前仍以完成主題成本重建，證據等級是強推論。Charismatic／Repulsive
+  `player+0x224` 的唯一 writer、83 筆 topic 表與研究後記錄時序已閉合，完成主題成本重建為
+  本版已證實。逐玩家殲滅星曆 `+0x1F2[target]` 的兩條戰鬥 producer 與唯一 writer 亦已閉合，
+  但 remake 尚未保存 8×8 歸屬矩陣。Charismatic／Repulsive
   同化則已閉合為 240 點 raw 進度及精確倍增／減半分支。
 - 原版 `Next_Turn_Calc_ @ 0x136B3` 的完整調用鏈尚未全數閉合；綠色單元測試只能
   證明 remake 內部自洽，不能代替原版 oracle。

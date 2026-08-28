@@ -7,7 +7,8 @@
 - 匯出器：`tools/ida/audit_history_score.py`；只在暫存 `.i64` 副本運行，保留原始名稱、位址、bytes 與 operand。
 - 2026-08-28 追加正式證據：
   [`evidence/history-score-ida-20260828.json`](evidence/history-score-ida-20260828.json)，含
-  `player+0x224` 全庫 operand 掃描、83 筆 topic record 與 SHA-256 可回查 bytes。
+  `player+0x224`、`player+0x1F2`、`player+0x204` 全庫 operand 掃描、83 筆 topic record
+  與 SHA-256 可回查 bytes。
 - 以下原始算式與欄位排列為**已證實**；Go 無一對一 raw 快取時的 typed 對映另標示。
 
 ## Record_History_ 的四項資料
@@ -62,6 +63,35 @@ topic index、raw bytes、兩個研究選項導覽值、四個實際 technology-
 Hyper `15000+10000×levelFromZero` 也與 raw 公式一致。單元測試仍只證 remake 自洽，升格依據
 是上述唯一 writer、兩個 consumer、topic bytes 與主鏈時序。
 
+## 殲滅歸屬 `player+0x1F2[target]` producer 閉合（2026-08-28）
+
+全庫直接 operand 掃描證實 `+0x1F2` 只有四個函式使用：`sub_9D816`、`sub_9DEF7` 與
+`sub_9E84C` 讀取，`sub_E45FF @ 0xE45FF..0xE481F` 是唯一 writer。`sub_E45FF` 先由傳入的
+3753-byte player record 算出敗方索引；若該敗方 `+0x204` 小於 8，便在 `0xE47D9..0xE4813`
+把當前星曆 `dword_192FD8` 的低 word 寫入：
+
+```text
+player[player[defeated]+0x204] + 0x1F2 + 2*defeated = currentStardate
+```
+
+`+0x204` 的全庫直接掃描同樣只找到四個函式：
+
+| raw 函式 | 位址 | 已證實資料流 |
+|---|---:|---|
+| `sub_E4EB3` | `0xE4EB3..0xE4F49` | 無殖民地帝國的殲滅檢查完成後，把每個存活 player 的 `+0x204` 重設為 `-1` |
+| `sub_E9D62` | `0xE9D62..0xEA8C4` | 非互動回合戰鬥鏈；若 `sub_E7DCA/sub_E8029` 選出殖民地記錄，於 `0xEA0F8` 把本次 battle side 寫到該殖民地舊 owner 的 `+0x204` |
+| `sub_EAAA1` | `0xEAAA1..0xEB192` | 互動戰鬥狀態鏈；同一資料流於 `0xEAFE3` 寫入舊 owner 的 `+0x204` |
+| `sub_E45FF` | `0xE45FF..0xE481F` | 讀取上述暫態 battle side，將星曆寫入該 side 的逐敗方 `+0x1F2` |
+
+兩個 producer 都先以殖民地索引乘 361，從殖民地 record 首 byte 讀舊 owner，再乘 player stride
+3753 定位敗方；寫入值則是同次戰鬥選出的 side/player 索引。`Next_Turn_Calc_` 在 `0x13756`
+呼叫 `sub_E9D62`，後者末尾呼叫 `sub_E4EB3`；互動版由 `sub_F69FE` 在 `0xF6E05` 呼叫
+`sub_EAAA1`。因此欄位是只活到殲滅檢查的戰鬥歸屬暫態，不是累積擊殺數。
+
+上述位址、writer 唯一性、星曆值與逐敗方陣列形狀為**已證實**；把 battle side 稱為玩家語意上的
+「殲滅者」是由最終分數 consumer 與兩條戰鬥 producer 共同支持的**強推論**。原版 RE 輸入鏈已
+閉合；remake 是否保存此 8×8 歸屬矩陣是後續實作議題，不得以目前單人 fallback 反證原版規則。
+
 ## 最終分數 orchestrator
 
 `sub_9D977 @ 0x9D977` 依序寫八項分數並加總到 score record `+0xAA`：
@@ -90,5 +120,6 @@ final = (rawEightPartTotal * multiplierPercent + 50) / 100
 - **已接**：八項總和、未使用初始 Picks、Evolutionary Mutation 尚未消費的 4 Picks、百分比與四捨五入；倍率進 JSON／熱座狀態。
 - **已接且已由本輪 RE 升格**：INFO History 四項 350-byte ring、四個 divisor、舊 JSON 遷移，
   以及一般 topic／Hyper 的 `player+0x224` 等價重建。
-- **資料模型限制**：原版逐玩家 `+0x1F2[target]` 的殲滅歸屬尚未保存；現行單人 fallback 仍會把 AI 互滅算給玩家，不能宣稱該輸入已對齊。
+- **RE 已閉合、remake 尚未接**：原版逐玩家 `+0x1F2[target]` 保存殲滅星曆；現行單人 fallback
+  尚未保存 8×8 歸屬，仍可能把 AI 互滅算給玩家，不能宣稱該輸入已對齊。
 - remake 尚無 Evolutionary Mutation 再選能力 UI，因此取得科技後四點視為全未使用；未來加入 mutation UI 時，必須改存實際剩餘點數。

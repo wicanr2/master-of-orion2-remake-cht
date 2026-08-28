@@ -19,6 +19,16 @@ import idc
 OUT = os.environ.get("MOO2_RE_OUT", "/out/history-score.json")
 SOURCE = os.environ.get("MOO2_RE_SOURCE", ida_nalt.get_input_file_path())
 ROOTS = {
+    "raw_Elimination_Attribution_Writer": 0xE45FF,
+    "raw_Elimination_Writer_Caller_A": 0xE4CC8,
+    "raw_Elimination_Writer_Caller_B": 0xE4F2C,
+    "raw_Elimination_Killer_Reset": 0xE4EB3,
+    "raw_Elimination_Killer_Writer_A": 0xE9D62,
+    "raw_Elimination_Killer_Writer_A_Caller": 0x13756,
+    "raw_Elimination_Killer_Writer_B": 0xEAAA1,
+    "raw_Elimination_Killer_Writer_B_Caller": 0xF6E05,
+    "raw_Elimination_Score_Consumer_A": 0x9D816,
+    "raw_Elimination_Score_Consumer_B": 0x9DEF7,
     "raw_Next_Turn_Calc": 0x136B3,
     "raw_Technology_Value_Consumer": 0x21B6D,
     "raw_Recompute_Technology_Value": 0xE4535,
@@ -125,6 +135,42 @@ def technology_value_operand_functions():
     return out
 
 
+def elimination_attribution_operand_functions():
+    """列出所有直接含 player-relative +0x1F2 的函式；間接取址另由 caller 審查。"""
+    out = {}
+    for fea in idautils.Functions():
+        hits = []
+        for ea in idautils.FuncItems(fea):
+            line = (idc.generate_disasm_line(ea, 0) or "").lower()
+            if "+1f2h]" in line or "+1f2h," in line:
+                hits.append(insn(ea))
+        if hits:
+            out[f"0x{fea:X}"] = {
+                "original_name": idc.get_name(fea) or "<unnamed>",
+                "hits": hits,
+                "callers": [insn(x) for x in idautils.CodeRefsTo(fea, 0)],
+            }
+    return out
+
+
+def elimination_killer_operand_functions():
+    """列出所有直接含 +0x204 的函式；不同 record base 必須在外部逐筆分類。"""
+    out = {}
+    for fea in idautils.Functions():
+        hits = []
+        for ea in idautils.FuncItems(fea):
+            line = (idc.generate_disasm_line(ea, 0) or "").lower()
+            if "+204h]" in line or "+204h," in line:
+                hits.append(insn(ea))
+        if hits:
+            out[f"0x{fea:X}"] = {
+                "original_name": idc.get_name(fea) or "<unnamed>",
+                "hits": hits,
+                "callers": [insn(x) for x in idautils.CodeRefsTo(fea, 0)],
+            }
+    return out
+
+
 def technology_value_topic_records():
     base = 0x17D904
     stride = 23
@@ -161,6 +207,8 @@ def main():
         "windows": {name: linear_window(start, end) for name, (start, end) in WINDOWS.items()},
         "named_roots": {name: resolve_named(candidates) for name, candidates in NAMED_ROOTS.items()},
         "technology_value_operand_functions": technology_value_operand_functions(),
+        "elimination_attribution_operand_functions": elimination_attribution_operand_functions(),
+        "elimination_killer_operand_functions": elimination_killer_operand_functions(),
         "technology_value_topic_records": technology_value_topic_records(),
     }
     os.makedirs(os.path.dirname(OUT), exist_ok=True)

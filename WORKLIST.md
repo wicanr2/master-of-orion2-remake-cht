@@ -1524,8 +1524,11 @@
   已以全庫 operand 掃描閉合科技 raw `player+0x224`：`sub_E4535` 是唯一 writer；本版 83×23
   topic 表的四個 technology-value slot 全零，故一般 0..74 topic 精確為完成後加完整 base cost，
   Hyper 75..82 為 `15000+10000×(level-1)`；主鏈先重算再寫 history，事件科技排名亦直接消費
-  同欄。remake 的已完成主題／Hyper 成本累積因此由強推論升格為本版已證實。歷史／分數尚缺
-  逐玩家殲滅歸屬；本母項其餘主要範圍是客製種族 22 項效果的原版逐值／全 consumer 閉合，
+  同欄。remake 的已完成主題／Hyper 成本累積因此由強推論升格為本版已證實。2026-08-28 又以
+  全庫 operand 掃描閉合逐玩家殲滅歸屬：`sub_E9D62/sub_EAAA1` 把戰鬥 side 寫到敗方暫態
+  `+0x204`，`sub_E45FF` 再把當前星曆寫入勝方 `+0x1F2[敗方]`，隨後 `sub_E4EB3` 重設暫態。
+  RE 證據已齊，但 remake 尚缺可存檔的 8×8 殲滅星曆矩陣；依 RE-first gate 暫不實作。
+  本母項其餘主要範圍是客製種族 22 項效果的原版逐值／全 consumer 閉合，
   不再重開歷史資料形狀。
   2026-08-25 已由 `sub_E3456 @ 0xE3456` 閉合同化 raw 尺度：八政體 rate 為
   `30/60/30/60/60/120/12/16`、門檻 240；Charismatic 進度加倍且優先於 Repulsive 減半，
