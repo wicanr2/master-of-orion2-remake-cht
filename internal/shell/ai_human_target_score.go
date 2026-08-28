@@ -85,9 +85,8 @@ func (s *GameSession) originalAIPopulationReachabilityContext(aiIndex int) ([]or
 }
 
 // originalAIHumanGovernmentZeroReachability 對映 sub_DCB47 → sub_FF666 →
-// sub_FF5F8/sub_FF593/sub_FF4E9 的無蟲洞分支。每個含 target 人口的殖民地若也含 source
-// 人口加 5；否則只要 source 或其聯盟方任一人口殖民地在 source fuel range 內便加 1。
-// sub_FF593 的蟲洞 star-mask 語意尚未閉合，所以遇到需要該支線的目標時失敗即關閉。
+// sub_FF5F8/sub_FF593/sub_FF4E9。每個含 target 人口的殖民地若也含 source 人口加 5；
+// 否則只要本星在航程內，或蟲洞另一端已被 source 造訪且另一端在航程內，便加 1。
 func (s *GameSession) originalAIHumanGovernmentZeroReachability(aiIndex int) (int, bool) {
 	colonies, bases, rangeParsecs, ok := s.originalAIPopulationReachabilityContext(aiIndex)
 	if !ok {
@@ -115,10 +114,18 @@ func (s *GameSession) originalAIHumanGovernmentZeroReachability(aiIndex int) (in
 		if item.star < 0 || item.star >= len(s.Stars) {
 			return 0, false
 		}
-		if s.Stars[item.star].Wormhole >= 0 {
+		if anyOriginalAIColonyInRange(s, item.star, bases, float64(rangeParsecs)) {
+			score++
+			continue
+		}
+		partner := s.Stars[item.star].Wormhole
+		if partner < 0 {
+			continue
+		}
+		if partner >= len(s.Stars) || !source.ExploredStarsKnown || len(source.ExploredStars) != len(s.Stars) {
 			return 0, false
 		}
-		if anyOriginalAIColonyInRange(s, item.star, bases, float64(rangeParsecs)) {
+		if source.ExploredStars[partner] && anyOriginalAIColonyInRange(s, partner, bases, float64(rangeParsecs)) {
 			score++
 		}
 	}

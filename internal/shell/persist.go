@@ -42,6 +42,8 @@ type aiSnapshot struct {
 	StanceName                  string               `json:"stanceName"`
 	Treaty                      TreatyState          `json:"treaty,omitempty"`
 	OwnedStars                  int                  `json:"ownedStars"`
+	ExploredStars               []bool               `json:"exploredStars,omitempty"`
+	ExploredStarsKnown          bool                 `json:"exploredStarsKnown,omitempty"`
 	// 會談請求(見 shell/audience.go)。舊存檔缺欄位解成 false/"" —— 正是「沒有請求」,
 	// 沒有零值陷阱。
 	WantsAudience                  bool                                     `json:"wantsAudience,omitempty"`
@@ -331,6 +333,7 @@ func (s *GameSession) snapshot() sessionSnapshot {
 			OriginalRelationTargetRaw:   a.OriginalRelationTargetRaw,
 			OriginalRelationTargetKnown: a.OriginalRelationTargetKnown,
 			StanceName:                  a.StanceName, Treaty: a.Treaty, OwnedStars: a.OwnedStars,
+			ExploredStars: a.ExploredStars, ExploredStarsKnown: a.ExploredStarsKnown,
 			ColonyStars: a.ColonyStars, ColonyPlanets: a.ColonyPlanets,
 			Spies: a.Spies, ColonyBuildings: a.ColonyBuildings,
 			Leaders: a.Leaders, LeaderOffer: a.LeaderOffer,
@@ -478,6 +481,7 @@ func (snap sessionSnapshot) restore() *GameSession {
 			OriginalRelationTargetRaw:   a.OriginalRelationTargetRaw,
 			OriginalRelationTargetKnown: a.OriginalRelationTargetKnown,
 			StanceName:                  a.StanceName, Treaty: a.Treaty, OwnedStars: a.OwnedStars,
+			ExploredStars: a.ExploredStars, ExploredStarsKnown: a.ExploredStarsKnown,
 			ColonyStars: a.ColonyStars, ColonyPlanets: a.ColonyPlanets,
 			Spies: a.Spies, DefensiveAgents: a.DefensiveAgents, ColonyBuildings: a.ColonyBuildings,
 			Leaders: a.Leaders, LeaderOffer: a.LeaderOffer,

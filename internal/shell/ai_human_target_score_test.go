@@ -42,9 +42,13 @@ func TestOriginalAIHumanGovernmentZeroReachabilityCountsRangeAndSharedColony(t *
 	}
 }
 
-func TestOriginalAIHumanGovernmentZeroReachabilityFailsClosedForWormholeBranch(t *testing.T) {
+func TestOriginalAIHumanGovernmentZeroReachabilityUsesVisitedWormholePartner(t *testing.T) {
 	s := &GameSession{
-		Stars:             []Star{{X: 0.10, Y: 0.10, Wormhole: 1}, {X: 0.90, Y: 0.90, Wormhole: 0}},
+		Stars: []Star{
+			{X: 0.10, Y: 0.10, Wormhole: 1},
+			{X: 0.90, Y: 0.90, Wormhole: 0},
+			{X: 0.89, Y: 0.90, Wormhole: -1},
+		},
 		PlayerColonies:    []engine.ColonyState{originalTargetPopulationColony(0)},
 		PlayerColonyStars: []int{0},
 		AIPlayers: []AIOpponent{{
@@ -52,11 +56,29 @@ func TestOriginalAIHumanGovernmentZeroReachabilityFailsClosedForWormholeBranch(t
 			Player: engine.PlayerState{GrantedTechs: map[gamedata.Technology]bool{
 				gamedata.TECH_STANDARD_FUEL_CELLS: true,
 			}},
-			Colonies: []engine.ColonyState{originalTargetPopulationColony(1)}, ColonyStars: []int{1},
+			Colonies: []engine.ColonyState{originalTargetPopulationColony(1)}, ColonyStars: []int{2},
+			ExploredStars: []bool{false, true, true}, ExploredStarsKnown: true,
 		}},
 	}
+	if got, ok := s.originalAIHumanGovernmentZeroReachability(0); !ok || got != 1 {
+		t.Fatalf("visited wormhole score=%d ok=%v, want 1/true", got, ok)
+	}
+	s.AIPlayers[0].ExploredStars[1] = false
+	if got, ok := s.originalAIHumanGovernmentZeroReachability(0); !ok || got != 0 {
+		t.Fatalf("unvisited wormhole score=%d ok=%v, want 0/true", got, ok)
+	}
+	s.AIPlayers[0].ExploredStarsKnown = false
 	if _, ok := s.originalAIHumanGovernmentZeroReachability(0); ok {
-		t.Fatal("sub_FF593 蟲洞 star-mask 尚未閉合時不得猜測可達")
+		t.Fatal("舊存檔缺逐帝國造訪歷史時不得猜測蟲洞可達")
+	}
+}
+
+func TestOriginalAIExploredStarsSurviveSnapshot(t *testing.T) {
+	s := NewDemoSession()
+	s.AIPlayers[0].ExploredStars[3] = true
+	got := s.snapshot().restore().AIPlayers[0]
+	if !got.ExploredStarsKnown || len(got.ExploredStars) != len(s.Stars) || !got.ExploredStars[3] {
+		t.Fatalf("snapshot lost explored stars: known=%v stars=%v", got.ExploredStarsKnown, got.ExploredStars)
 	}
 }
 

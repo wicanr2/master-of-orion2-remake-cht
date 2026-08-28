@@ -74,6 +74,10 @@ type AIOpponent struct {
 	// 旗標分開，對應原版 +0x627、+0x62F、+0x637 的資料形狀。
 	Treaty     TreatyState
 	OwnedStars int // 已擴張佔領的星數(含母星)
+	// ExploredStars 對應原版逐星 star+0x33 中屬於此帝國的位元。母星建立、艦隊抵達
+	// 與取得殖民地時設位；Known 區分新局的完整歷史與無法還原既往造訪的舊 JSON。
+	ExploredStars      []bool `json:"exploredStars,omitempty"`
+	ExploredStarsKnown bool   `json:"exploredStarsKnown,omitempty"`
 
 	// --- AI 主力艦隊在星圖上的位置(2026-08-08 第 47 項(AI艦隊移動))---
 	//
@@ -4110,7 +4114,7 @@ func (s *GameSession) SetupNewGame(stars int, seed int64, numAI int) {
 	s.Nebulae = genNebulae(galaxySizeClass(len(s.Stars)), demoHomeStarSet(aiHomeStars),
 		s.Stars, rand.New(rand.NewSource(seed+4)))
 	s.SelectedStar = -1
-	s.AIPlayers = buildDemoAIOpponents(aiHomeStars, s.Difficulty, seed)
+	s.AIPlayers = buildDemoAIOpponents(aiHomeStars, len(s.Stars), s.Difficulty, seed)
 	s.syncAIColonyPlanets() // 行星索引要等 Planets 生完才補得起來(見該函式)
 	s.PlayerColonyPlanets = []int{s.PlanetAt(0)}
 	s.PlayerCapitolPlanetKnown = false
@@ -6286,7 +6290,7 @@ func pickAIPersonality(raceEn string, difficulty int, r *rand.Rand) ai.Personali
 // 表長度則循環使用),各自持 Average 起始文明等級的單一母星殖民地(playerHomeworldColony,與
 // 玩家共用忠實 yield)。NewDemoSession 與 SetupNewGame 共用此函式,確保「新遊戲開局怎麼建 AI」
 // 只有一個權威實作,不會兩處各自維護一份、逐漸漂移不一致。
-func buildDemoAIOpponents(aiHomeStars []int, difficulty int, seed int64) []AIOpponent {
+func buildDemoAIOpponents(aiHomeStars []int, starCount, difficulty int, seed int64) []AIOpponent {
 	aiPlayers := make([]AIOpponent, 0, len(aiHomeStars))
 	// 性格抽樣用獨立的亂數流:同一個 seed 一定抽出同一組性格(存讀檔與重跑要可重現)。
 	pr := rand.New(rand.NewSource(seed*31 + 17))
@@ -6336,6 +6340,12 @@ func buildDemoAIOpponents(aiHomeStars []int, difficulty int, seed int64) []AIOpp
 			// 經濟傾向由性格推導(見 ai.ProfileForPersonality),不再手寫。
 			Decider:    ai.NewRemakeDecider(ai.ProfileForPersonality(pers)),
 			OwnedStars: 1,
+			ExploredStars: func() []bool {
+				visited := make([]bool, starCount)
+				visited[aiHomeStars[i]] = true
+				return visited
+			}(),
+			ExploredStarsKnown: true,
 			// 基礎關係傾向依性格起跳(原版 _personality_relation_modifiers):
 			// 和平主義 +30、排外 -50……先前所有 AI 一律從 0 開始,性格毫無體感。
 			Relation: clampRelation(ai.PersonalityRelationModifier(pers) / 2),
@@ -6382,7 +6392,7 @@ func NewDemoSession() *GameSession {
 	demoNebulae := genNebulae(galaxySizeClass(len(galaxy)), demoHomeStarSet(aiHomeStars),
 		galaxy, rand.New(rand.NewSource(46)))
 
-	aiPlayers := buildDemoAIOpponents(aiHomeStars, 1, 42) // demo 固定難度 1 / seed 42(可重現)
+	aiPlayers := buildDemoAIOpponents(aiHomeStars, len(galaxy), 1, 42) // demo 固定難度 1 / seed 42(可重現)
 
 	session := &GameSession{
 		Turn:                               1,

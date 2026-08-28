@@ -1163,8 +1163,10 @@
   後續 IDA 又訂正 `sub_E5B17` 為 target 殖民人口容量加總、`sub_DCB47` 為殖民地 player-mask
   可達計數；`+0x60E` 人口壓力、government 3 難度骰、食物赤字、government 1 目標值與
   government 0 可達骰均已拆成保留嚴格不等號及 RNG 邊界的純規則。`sub_DCB47 →
-  sub_FF666 → sub_FF5F8／sub_FF593／sub_FF4E9` 又閉合無蟲洞距離鏈：同殖民地 +5，
-  source／聯盟人口殖民地在燃料距離內 +1；蟲洞 star-mask 尚未知時失敗即關閉。
+  sub_FF666 → sub_FF5F8／sub_FF593／sub_FF4E9` 又閉合距離鏈：同殖民地 +5，
+  source／聯盟人口殖民地在燃料距離內 +1；蟲洞 partner 另須 source 已造訪且 partner 在航程內。
+  `star+0x33` 已由母星建立、艦隊抵達與殖民地換手 writer 證實為逐帝國造訪遮罩；remake 已新增
+  可持久化 AI 探索表，新局完整追蹤，舊 JSON／GAM 缺歷史時失敗即關閉。
   `+0x7EE／+0x7F6` 亦由全庫 operand 掃描閉合為 `sub_5138E` 正式違約記憶：玩家
   `break_formal` 現依受害 AI personality 寫 -10／-20、記錄受害 slot 並持久化；
   `3*x/5` 與原因 176／177 已接純規則，普通貿易解約不誤寫。
@@ -1185,7 +1187,7 @@
   流會維持 1；新局議會生命週期與 snapshot 已接，舊 JSON／GAM 缺 raw 才 unknown。IDA 又閉合
   reason 105／106 的接受 callback：direct tier、科技、BC 與殖民星 payload 已接 typed 消費端，
   且不誤套玩家餽贈關係獎勵；reason 124 已訂正為只顯示／確認、不進二選一也不套 payload。
-  最後主要阻塞是 105／106 拒絕 callback、正常外交二選一 UI 與 `sub_FF593` 蟲洞 star-mask 支線。
+  最後主要阻塞是 105／106 拒絕 callback 與正常外交二選一 UI；`sub_FF593` 蟲洞支線已閉合。
   typed producer unknown 時的願戰來源仍是明示的 `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與
   [`docs/spec/ai-human-formal-war-policy.md`](docs/spec/ai-human-formal-war-policy.md)、

@@ -128,6 +128,9 @@ func (s *GameSession) advanceAIFleets() []AIFleetArrival {
 			}
 			a.FleetStar = a.FleetDestStar
 			a.FleetDestStar = -1
+			if a.ExploredStarsKnown && a.FleetStar >= 0 && a.FleetStar < len(a.ExploredStars) {
+				a.ExploredStars[a.FleetStar] = true
+			}
 			s.queueOrionDiscoveryBroadcast(eventEmpireTarget{kind: eventEmpireAI, index: i, alive: true}, a.FleetStar)
 			targetAI := -1
 			if a.FleetTargetAISet {

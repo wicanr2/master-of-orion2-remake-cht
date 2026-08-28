@@ -53,8 +53,9 @@
     回傳 unknown，不得把部分分數送入尾端 RNG。
 21. `sub_DCB47` 的 source／target 由 `eax／edx` 傳入；同殖民地含雙方人口加 5。只有 target
     人口時，`sub_FF666` 讀 source `player+0x324` 燃料距離，經 `sub_FF5F8／sub_FF593／
-    sub_FF4E9` 檢查 source 或聯盟方人口殖民地的距離後加 1。無蟲洞路徑可由 typed 人口群、
-    殖民星與燃料科技重建；蟲洞 star-mask 支線未閉合時必須回傳 unknown。
+    sub_FF4E9` 檢查 source 或聯盟方人口殖民地的距離後加 1。目標有蟲洞時，只有 partner
+    的 `star+0x33` source bit 已設且 partner 在同一燃料航程內才可借道；此遮罩是逐帝國
+    已造訪星系，不是 owner。舊存檔缺完整逐 AI 造訪歷史時必須回傳 unknown。
 22. `sub_4F93B` 的 kind 抽選逐次比較 `Random(3／3／2)==1`，不是比較 2；科技 payload
     索引為 `count-1-(count*intensity/ratio+Random(3)-2)`。source `player+0xB4` 是六項
     維護費總額，不是收入；BC payload 以它最低 10 後乘 `10*intensity`。
@@ -85,8 +86,8 @@
 ## DRAFT 邊界
 
 `sub_544A1 @ 0x544A1..0x54CC0` 的四類尾端與 RNG 已形成純規則；尚缺的是 directional
-incident memory 的 writer 門檻／正常玩家事件 producer、government 0 的蟲洞 mask 支線，以及
-outcome 1／3 的拒絕 callback，以及對應的正常外交 UI 二選一；接受與 outcome 4 通知已閉合。
+incident memory 的 writer 門檻／正常玩家事件 producer、outcome 1／3 的拒絕 callback，以及
+對應的正常外交 UI 二選一；government 0 蟲洞支線、接受與 outcome 4 通知已閉合。
 這些欄位閉合前，remake 可用既有戰爭態勢決定是否呼叫原版目標估值，但必須標為 fallback，
 不得把只含 relation/personality 的部分 score 冒充完整 producer。
 

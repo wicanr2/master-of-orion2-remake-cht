@@ -60,6 +60,11 @@
 
 ## 三、工作方法
 
+- **逐帝國星系造訪遮罩** — 原版 `star+0x33` 的每一 bit 表示該帝國已發現／造訪此星系；
+  母星建立、艦隊抵達與殖民地換手會設位。它參與蟲洞可達性，並不表示殖民權；殖民權遮罩是
+  `star+0x38`。remake 的真人暫用 `Star.Explored`，AI 使用 `AIOpponent.ExploredStars`。
+  _避免_：星系 owner mask、蟲洞殖民地遮罩
+
 - **方向正式狀態** — 原版外交 record 以「觀察者帝國 → 目標帝國」保存
   `ForeignPolicy`，兩方數值不可因關係分數會鏡射就假定必然對稱。remake 目前的
   `Treaty.FormalPolicy` 及 `AIPolicies` 是對稱投影；逆向時必須明寫資料模型限制。

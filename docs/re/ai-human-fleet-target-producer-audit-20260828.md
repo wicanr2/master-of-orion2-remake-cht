@@ -89,8 +89,9 @@
     再檢查 source 對其正式聯盟 raw 2 的其他 player。
 20. `sub_FF4E9 @ 0xFF4E9..0xFF593` 對含指定 player 人口 mask 的殖民地，以原版星圖座標
     判斷 `dx²+dy² <= 900*fuelRange²`；`sub_FF593 @ 0xFF593..0xFF5F8` 另有 target 蟲洞
-    `+0x29` 與 partner star mask `+0x33` 支線。無蟲洞距離契約已證實；蟲洞 mask 的完整
-    語意仍標為 unknown，remake 不以 `Star.Owner` 猜測替代。
+    `+0x29` 與 partner 的 `star+0x33` 支線。後者已由 `sub_12D75 @ 0x12DC4` 的母星建立、
+    `sub_E481F @ 0xE488A` 的殖民地換手及 `sub_FFDDA @ 0xFFE6D..0xFFE8B` 的艦隊抵達
+    交叉證實為逐帝國「已發現／造訪星系」遮罩，不是殖民權；殖民權另為 `star+0x38`。
 21. `sub_4F93B @ 0x4FB53／0x4FB7A／0x4FBA6` 的三次 raw comparison 都是
     `call sub_1247A0; cmp eax,1`。現行 selector 原先把它寫成 `r-1==1`，實際錯移為命中 2；
     `0x4FCDD..0x4FD17` 的科技索引也證實常數是 `Random(3)-2`。兩項已依 raw 指令勘誤。
@@ -130,6 +131,10 @@
     reason 124 不在二選一集合，僅顯示後清除，payload 不生效。拒絕 105 的 raw call 是
     `sub_4E3B5(-50, AI, human, 0, 0, 0)`；拒絕 106 會寫軍事 target，缺 target 才呼叫
     `sub_51078` 宣戰。後兩者因 reciprocal relation／精確 target payload 尚未 typed，仍未接。
+29. `sub_FF593` 蟲洞判定的精確順序已閉合：目標星有 source 殖民地，或目標星直接在
+    source／聯盟人口據點燃料航程內，或蟲洞 partner 已被 source 造訪且 partner 在該航程內，
+    任一成立即為可達。remake 以 `AIOpponent.ExploredStars` 保存逐 AI 遮罩；新局母星與艦隊
+    抵達會設位並隨 snapshot 往返。舊 JSON／GAM 缺完整造訪歷史時保留 unknown，不以 owner 猜測。
 
 ## Remake 對映與限制
 

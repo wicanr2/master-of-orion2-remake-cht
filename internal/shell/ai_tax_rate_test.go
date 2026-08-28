@@ -3,7 +3,7 @@ package shell
 import "testing"
 
 func TestOriginalAIStartsAtZeroTax(t *testing.T) {
-	aiPlayers := buildDemoAIOpponents([]int{1}, 1, 42)
+	aiPlayers := buildDemoAIOpponents([]int{1}, 2, 1, 42)
 	if len(aiPlayers) != 1 {
 		t.Fatalf("AI 數量 = %d，預期 1", len(aiPlayers))
 	}
