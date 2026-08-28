@@ -4,8 +4,8 @@ package shell
 //
 // IDA 證據（Orion2.exe image address）：sub_3AD57 @ 0x3AD57（外部符號對
 // Fire_Fighter_Bomb／Fire_Fighter_Beam 有衝突，故保留 raw 名稱）對艦艇路徑
-// 先取 raw OCV-like 修正與目標防禦欄，擲 1..100；roll <= 95 時才加入修正，
-// 只把上界夾到 100，再以 40 為命中門檻。命中後才把武器表的 min/max
+// 先取 raw OCV-like 修正與目標防禦欄，擲 1..100；roll 96..100 時直接設成
+// 100，其餘才加入修正並只上夾到 100，再以 40 為命中門檻。命中後才把武器表的 min/max
 // 送入下游。相鄰的 sub_3AC20 @ 0x3AC20 是另一條直接傷害插值公式，沒有
 // 這個 40 命中門檻；兩者不可因外部符號名稱衝突而互換。sub_3A0B9 @ 0x3A0B9
 // 是戰機／飛彈 runtime record 的受傷消費端；艦艇則進 sub_39985 @ 0x39985
@@ -54,7 +54,8 @@ type FighterBombResult struct {
 
 // ResolveFighterAttack 轉寫原版戰機對艦的命中門檻與傷害插值。
 //
-// roll <= 95 才套用攻防差；95 以上的原版特殊尾端擲骰保留原值。命中門檻
+// ⚠ RE-first 差異登記：原版 roll 96..100 直接變成 100；本函式目前仍保留舊 remake
+// 行為，等待完整 RE gate 關閉後依 READY spec 一次修正。命中門檻
 // 是 40。原始指令使用 `(max-min+1)`，因此在 modified=100 時可能得到
 // max+1；這個看似反直覺的端點行為要保留，不能自行封頂。
 func ResolveFighterAttack(in FighterAttackInput) FighterAttackResult {

@@ -24,6 +24,11 @@
 `sub_FD335` 難度二次門檻已閉合並接線，詳見
 [`ai-starting-tech-profile-audit-20260825.md`](ai-starting-tech-profile-audit-20260825.md)。
 
+2026-08-29 再閉合 Stealthy Ships 分支：raw6 profile 候選 1 權重加 100；非人類 AI 對
+category `0x25` 的 multiplier 由 5 降為 1，涵蓋 tech 38／53／126／172。人類分支稍後會
+重建 multiplier，因此不保留這個覆寫。詳見同一 AI profile 稽核與
+`evidence/stealthy-profile-tech-ida-20260829.json`。
+
 ## 強推論與未知
 
 - `[player+0x205]` 的四值確實被 `sub_FC845` 後段消費，但四個 raw 值的玩家可見名稱尚未閉合；remake 不替它命名，也不猜人類開局值。

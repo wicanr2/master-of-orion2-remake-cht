@@ -2921,8 +2921,9 @@ func (s *GameSession) applyBuildingEffect(i int, name string) {
 		//     資料表與註解裡,`colonyMoralePercent` 從來沒讀過它。
 		//     真正接上的是**同化速率**(第 40 項(同化系統),見 assimilation.go):手冊「1 per 2 turns,
 		//     regardless of government」,對統一政體等於十倍速。
-		//     手冊另外那兩條(消除多種族 20% 士氣懲罰、叛亂機率減半)仍未接——
-		//     remake 沒有多種族人口對士氣的路徑,也沒有叛亂系統。
+		//     後續已接同化、以 UnassimilatedPop 近似的多種族士氣及叛亂機率減半；
+		//     2026-08-28 RE 又證實原版多種族判定按 race group、叛亂按 packed prisoner 與多舊主，
+		//     現行資料模型仍是待 READY spec 修正的近似，不能再寫成「沒有叛亂系統」。
 		// 海軍陸戰隊營本來就有獨立的陸戰隊召兵系統(ground_invasion.go),現在額外貢獻
 		// hasBarracks,兩個系統各自獨立生效,互不影響。
 		//

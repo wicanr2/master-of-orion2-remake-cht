@@ -65,10 +65,11 @@ IDA raw 名稱 `dword_1930DC`，不以別名取代地址／資料流。重製已
   這是相容策略，不是把名稱重新宣稱為原版 ID。
 - `LoadGAMSession` 已直接載入原版 `.GAM` 全局狀態；本切片完成的是軍官欄位在
   重製 JSON 內的穩定身份、逐艦消費，以及 raw ETA／status 的保存。原版 `status=4`
-  的 `Deassign_Officer @ 0x934CF` 每回合遞增 raw `+0x37`，達 **30** 後進入
-  `Check_Officer_Fields @ 0x933F2` 清除欄位，重製由 `advanceLeaderLimbo` 接入。
-  `status=1` 活躍任命的 ETA／船型重算仍標為待 runtime oracle，不把 30 誤寫成所有
-  領袖的固定活躍任期。
+  的 `Decrement_Officer_ETA_ @ 0x934CF` 每回合遞增 raw `+0x37`，達 **30** 後呼叫
+  相鄰的 `Deassign_Officer_ @ 0x933F2` 清除實際星系／艦艇任命及 raw 欄位，重製由
+  `advanceLeaderLimbo` 接入。`status=1` 的 ETA 到 0 callback 已閉合為 star＋owner 的
+  同星系殖民地／imports／帝國彙總重算；remake 仍是較窄近似，詳見
+  `leader-turn-chain-audit-20260828.md`。
 
 固定護欄：`internal/shell/officer_assignment_test.go` 驗證 ID 指派、JSON round-trip
 與缺少 `officer_id` 時的名稱回退；真實 `HERODATA.LBX` 測試驗證每筆 parser ID 與

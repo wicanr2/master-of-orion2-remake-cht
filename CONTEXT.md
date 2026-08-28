@@ -119,6 +119,10 @@
   raw 位址、輸入狀態、規則／表、玩家可見 consumer、證據等級與未知邊界。compiler helper、
   runtime、C 標準函式庫及 Windows API 排除項不進分母。_避免_：RE 尚未閉合時因看到一個常數
   就立即開工，造成產品碼、callback 或資料模型再次誤接。
+- **Stealthy 戰鬥邊界（2026-08-29）** — `player+0x8BB` 五個 direct site 與
+  `Ship_Has_Stealth_Device_` 唯一 caller 都不建立 trait→戰鬥記錄鏈；raw 6／23／31 的快速
+  結算 table effect 為 `0／0`，格子載入器則只複製裝置 bitfield。現有資料流強推論否定 trait
+  與裝置的戰鬥數值等價；後續只追裝置各自的格子間接 consumer，不重開已閉合的星圖公式。
 
 ## 四、驗收
 

@@ -77,7 +77,9 @@ expLevel 4；原版 helper 可回 5，須在 READY spec 階段核對真實英雄
   統一系 bypass、混合種族精確判定、心靈導師兩階公式、pre-import writer、報表 consumer，
   以及 `DE280` 的食物／工業／研究消費端。
 - **已知 remake 偏差**：多種族目前以 `UnassimilatedPop > 0` 近似；領袖最高經驗邊界須重驗。
-- **尚未在本切片宣稱**：BC／income 是否另讀士氣、叛亂如何消費士氣，以及 AI 對人口 race
-  group 的完整保存。它們分別屬 BC 產出、叛亂及 AI 人口模型切片，不以手冊敘述冒充閉合。
+- **後續切片已閉合**：BC 人口基礎會讀士氣，叛亂機率則不直接讀士氣；詳細 consumer 分別見
+  [`colony-bc-production-tax-audit-20260828.md`](colony-bc-production-tax-audit-20260828.md) 與
+  [`rebellions-audit-20260828.md`](rebellions-audit-20260828.md)。AI 對逐 race population group 的
+  完整保存仍屬資料模型缺口，不以手冊敘述冒充閉合。
 - `sprintf_`、文字複製與文字框內部是 C runtime／UI 平台服務；只保留玩家可見報表 callsite，
   不納入 RE 知識庫完成分母或 remake 範圍。

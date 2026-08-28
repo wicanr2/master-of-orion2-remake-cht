@@ -61,14 +61,15 @@
   `+0x8BC` 由手冊語意與多個航行 caller 強推論為跨維度能力；remake 使用既有 typed
   `TRAIT_TRANS_DIMENSIONAL` 投影。
 
-## 尚未閉合
+## 後續收斂
 
-- **未知 producer**：`player+0x60E` 目前只有 `sub_25DF1` 與 `sub_544A1`
-  的可靠讀取證據，尚未找到 runtime writer；因此 remake 新局不臆造該值。
-- **已證實資料形狀、未接 AI↔AI producer**：理由 22 讀方向性
-  `player+0x6FF > 0`。`sub_DCEBD`、`sub_DD13E`、`sub_ECBF7`、`sub_ECF41`
-  會在殖民地人口／建築／單位遭破壞或奪取時累加，宣戰或停戰時清除；現有抽象
-  AI 艦隊只能在正式開戰後攻擊殖民地，不能憑空製造戰前怨值。
-上述 producer 未知與 `+0x6FF` 不阻止已有 `.GAM` raw 的消費端或理由
-20、68 與食物赤字理由 113 的可達垂直切片，但不得宣稱
-`sub_25DF1` 已逐分支完整還原。
+- **`player+0x60E` 已達靜態停止線**：全程式 operand 掃描只有 `sub_25DF1` 與
+  `sub_544A1` 兩個直接讀取點，沒有直接 runtime writer；remake 保留 `.GAM` raw 與 consumer，
+  不臆造遊戲內 producer。
+- **reason 22 已閉合**：方向性 `player+0x6FF > 0` 由 `sub_DCEBD`、`sub_DD13E`、
+  `sub_ECBF7`、`sub_ECF41` 在殖民地人口／建築／單位破壞或易手時累加，`sub_25DF1`
+  建立即時候選，宣戰與停戰時清除。現有抽象 AI 艦隊能否在相同時序產生它是 remake
+  資料模型差異，不是原版 RE 未知。
+
+完整欄位站點與勘誤見
+[`diplomacy-residual-fields-audit-20260828.md`](diplomacy-residual-fields-audit-20260828.md)。

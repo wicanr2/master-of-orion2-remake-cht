@@ -91,7 +91,9 @@ remake 因此沿用已有的 typed 科技／種族 helper，不把 raw offset �
   最後人口 100 點模型與欄位回寫。
 - 1.3 的 `BombardmentBuildingBonusHits` 來自 CHANGELOG，並非本份 1.50 executable；
   它保留為版本相依近似，不能宣稱由本次 IDA 證實。
-- 軌道基地、飛彈基地、地面砲台、恆星轉換器與戰機基地被排除在本 helper 外，表示它們
-  由其他戰鬥者／結果分支處理。本輪不以此證據臆造其精確摧毀鏈；既有防禦反擊仍明標
-  remake 近似。
+- **2026-08-28 勘誤**：排除不代表八棟各有獨立摧毀分支。Capitol raw 9 沒有 combatant；
+  三層軌道基地 raw 40／8／41 互斥地建立一個額外快速 record；raw 26／27／42／47 只接進
+  行星 record 的武器／旗標。`sub_4267B` 把特殊池 `+0x06` 清零，故正常戰略轟炸不逐棟移除
+  這七種防禦。完整證據見
+  [`strategic-bombardment-full-audit-20260828.md`](strategic-bombardment-full-audit-20260828.md)。
 - 合法資料不接近 16-bit 溢位；remake 使用有界 `int`，不模擬溢位。

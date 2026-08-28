@@ -66,9 +66,13 @@
 # 工作順序 
 * 遇到沒有把握的問題基於**第一性原理**討論, 不要假設或者過度依賴先前的記憶
  - 第一性原理的參考請參考目前的 skill & rule 
-* 每一輪玩法忠實化固定依序完成：先用 IDA Pro／IDAPython 確認既有 RE 文件，缺證據就補齊；
-  再寫明確規格與驗收邊界；最後才修改 Go／Ebitengine 實作。不得用目前 Go 行為反向證明規格，
-  也不得略過 RE 與規格直接以 LLM 推測補玩法。
+* 2026-08-28 起採 RE-first 策略：先用 IDA Pro／IDAPython 把 `docs/re/parity-matrix.tsv`
+  所列玩家可見玩法的 RE 證據整體補齊；在使用者確認 RE 知識庫已可進入開工階段前，不撰寫
+  新玩法規格，也不修改 Go／Ebitengine 玩法行為。閘門關閉後才恢復逐項
+  「RE 證據 → READY spec → 實作」；不得用目前 Go 行為反向證明規格，也不得以 LLM 推測補玩法。
+* 編譯器生成 helper、C runtime／標準函式庫及 Windows API／平台內部函式，例如 stack probe、
+  stack overflow check、SEH、`fopen`、`fclose`、`fork` 與一般檔案／程序包裝函式，只辨識 pattern
+  並跨過；除非其呼叫邊界直接影響玩家可見結果，否則不納入 RE 完成分母或 remake 範圍。
 * 先研究可行性 每一輪都更新到 github repo (worklist 允許擴充)
  - 遊戲規則研究
  - 字型選擇

@@ -7,9 +7,9 @@
 另一套規則。
 
 這一層的資源交換與抽象艦隊戰鬥仍是可玩性模型，不宣稱已還原原版
-逐艦設計或每一發武器。2026-08-27 關係演化底層已改接
-`Diplomacy_Growth_` 的條約成長、14×14 種族目標與逐回合漂移；原版逐艦 blueprint
-與尚未閉合的特殊宣戰 producer 仍列在
+實艦戰略戰鬥。2026-08-27 關係演化底層已改接
+`Diplomacy_Growth_` 的條約成長、14×14 種族目標與逐回合漂移。2026-08-28 原版
+AI↔AI 實艦傷亡與撤退鏈已閉合，但尚未接回 remake；其餘未知仍列在
 [`docs/re/oracle-static-ida-20260811.md`](../re/oracle-static-ida-20260811.md) 的未知項目。
 
 ## 接線內容
@@ -23,8 +23,11 @@
   raw 關係／聲望／談判記憶、第三方戰爭與亂數分數建立。一般 AI↔AI 宣戰現依
   `sub_25DF1` reason 23、`sub_51078` policy 4 與 -75..-99 關係 writer；停戰依
   `sub_5090C` 的 `+0x717／+0x72F` 計時及 `sub_2670A／sub_524FB` 門檻與 30 回合冷卻。
-  不再因顯示關係自動宣戰或停戰。特殊 reason 20／22／68／113 仍未閉合；`+0x5EC` 國力
-  producer 的 RE 已閉合為逐艦逐觀察者武器效能矩陣，但 typed remake producer 尚未實作。
+  不再因顯示關係自動宣戰或停戰。特殊 reason 20／22／68／113 的原版 producer／consumer
+  已閉合；`+0x60E` 只有存檔 raw 與兩個直接 consumer，1.31 gameplay code 沒有直接 writer。
+  `+0x5EC` 國力 producer 的 RE 已閉合為逐艦逐觀察者武器效能矩陣。原版 AI↔AI 會把實際
+  ship ID 送入 `Do_1_Combat_`，並因雙方皆非真人而固定走 `Strategic_Combat_`；被摧毀的
+  combatant 直接刪除其原 ship ID，沒有額外的比例損失選艦。remake 抽象戰爭尚未依此重建。
 - 貿易協議每回合最多轉移 1 BC；研究協議每回合最多分享 1 點研究進度。雙方進入戰爭後，
   兩種協議都會清除。
 - 每個 AI 維持一支抽象艦隊。宣戰後，艦隊選擇對手人口最高的殖民地（同人口取穩定索引），
@@ -47,6 +50,9 @@
 - 宣戰寫入 policy 4、-75..-99 關係與 -200 記憶；停戰依 duration 門檻建立 policy 3，
   30 回合後解除，且新增矩陣可存檔及隨熱座壓縮。
 - 抽象艦隊抵達後能確定性結算，並把殖民地／建築從防守 AI 轉給攻擊 AI。
+
+原版實艦 oracle 見
+[`docs/re/ai-ai-ship-battle-audit-20260828.md`](../re/ai-ai-ship-battle-audit-20260828.md)。
 
 這條路徑不改變原版舊傳輸，也不提供 NAT 穿透；網路可靠性另見
 [`docs/tech/multiplayer-architecture.md`](multiplayer-architecture.md)。

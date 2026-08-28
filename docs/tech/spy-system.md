@@ -70,8 +70,9 @@ of enemy property」的定性描述，但原版 `0x10130A` 的讀寫端已具體
 `sub_101483 @ 0x101483` 相同的 helper，且 `T=70`、Agent 消費與 49 槽建築權重已接；
 不是宣稱原版兩張 score table 的上游填值與未命名 raw record 已逐欄還原。
 `TrainDefensiveAgent`／`DismissDefensiveAgent` 使用 63 上限；Spy-vs-Spy 判定擊殺防守方時，
-`advanceEspionage` 會消費一名 Agent，玩家與 AI 方向相同。訓練 30 BC 與 AI 每 8 回合補一名
-仍是 remake 拍板值，因原版建造佇列成本／AI 策略未追回。
+`advanceEspionage` 會消費一名 Agent，玩家與 AI 方向相同。訓練 30 BC 與 AI 週期免費補人
+仍是 remake 拍板值；原版現已證實為殖民地產品 `-7`、100 工業、新人先進 self Agent pool，
+AI 則每回合收回並重配既有人數。完整證據見 `docs/re/spy-turn-policy-audit-20260828.md`。
 
 ## 最小迴圈涵蓋範圍
 
@@ -114,27 +115,25 @@ of enemy property」的定性描述，但原版 `0x10130A` 的讀寫端已具體
    確實套用、`advanceEspionage` 的維護費扣款精確等於間諜數 × 費率、0 間諜完全 no-op、多回合
    結算後間諜數不會變負。
 
-### 延後(TODO,誠實標記,非遺漏)
+### 已由 2026-08-28 RE 關閉、但 remake 尚待改造
 
 1. **SABOTAGE 的原版 oracle 差異**:任務碼、70 門檻、建築旗標清除、49 筆 raw 建築成本表、
    槽 9 skip、建造成本權重、raw relationship byte 的低 6 位 count／高 2 位 mode、
    `sub_101483` slot helper 與 remake 可用資料模型的完整 AB/DB 分數已接入；原版兩張
-   score table 的上游填值、`toggle_flag` 的精確亂數邊界、特殊／未知建築槽的完整政策仍未知。
-   這些不再阻塞 remake 主流程。
-2. **原版三顆任務鈕的完整對位**:原始資料只確認同一列有三顆鈕，沒有確認
-   Espionage/Sabotage/Hide 的左右順序；remake 已接逐對手 `PlayerSpyMissions` 與明確的
-   STEAL/SABOTAGE/HIDE 循環，但不把未解語意的原版位置硬套成完成。
+   score table 的上游填值與主要亂數 consumer 均已閉合；特殊／未知建築槽的正式 UI 名稱不屬
+   本段玩法 gate。
+2. **原版三顆任務值已對位**:packed 值 0／1／2 為 Espionage／Sabotage／Hide，RACES local
+   值為原值加一，未設定列預設 3（Hide）。資產上的實際左右圖像與正式文案仍是 UI 索引工作。
 3. **防守方 Agent 已接；原版資料差異仍保留**:手冊區分 Spy(攻擊,逐對手指派)與 Agent(防守,
    不分對手、全體共用)兩種 slot,各自累計 `SpySlotBonus`。本 remake 已有訓練／解除、63 上限、
    AI 週期補充，且成功的 Spy-vs-Spy 擊殺會扣除 Agent；零 Agent 仍保留手冊所述的基本防禦。
-4. **AI 防守側的原版完整資料模型**:玩家攻擊側的種族、科技與玩家政府加成已接；
-   AI 對手的 remake `RaceIndex`／Agent 數量已有消費端，但原版 raw score 欄位、政體／領袖
-   對應與完整 AI 策略仍未逐欄追回。
+4. **AI 防守側 remake 資料模型差異**:原版攻防 score、政體／領袖、Agent 留守與科技價值配置
+   已追回；remake `RaceIndex`／Agent 結構仍未依該模型改造。
    手冊 Spy Bonuses 表列了種族特性(`SpyRaceTraitBonus`)、
    5 項科技(`SpyTechnologyBonus`:Neural Scanner/Telepathic Training/Cyber Security
    Link/Stealth Suit/Psionics)、政府型態(`SpyGovernmentDefenseBonus`,僅 Defense 欄)三項
    加成,`gamedata/spy.go` 都已備妥函式；玩家側已透過 `psKnowsTech` 逐一核對 5 項科技
-   並接入 `spyMissionScore`；AI 的原版資料缺口仍列 TODO。
+   並接入 `spyMissionScore`；剩餘工作是 RE gate 後的規格與實作，不是原版資料留白。
 5. **軍官(Telepath/Spy Master 技能)+ 暗殺(Assassins)**:手冊只給範圍(2~18、+2%~+18%),
    沒給技能等級 → 加成的精確映射公式,`gamedata/spy.go` 檔頭已標 TODO 保留範圍常數,未提供
    對應函式,故 remake 也未接。
@@ -146,8 +145,7 @@ of enemy property」的定性描述，但原版 `0x10130A` 的讀寫端已具體
 7. **已接**(gap-report 第 51 項(間諜UI))。而且規劃本身被一個負面發現改寫了——
    **原版根本沒有獨立的間諜畫面**(搜 `Spy_Screen`/`Espionage_Screen` 零命中),
    任務指派內嵌在「Races 種族關係」畫面裡,所以 remake 也接在那裡(`cmd/moo2/racesspy.go`)。
-   留白:三顆任務鈕的原版左右語意尚未確認；remake 已提供明確標籤的
-   STEAL/SABOTAGE/HIDE 控制，原版完整命中率與特殊槽位仍分級標記。
+   gameplay 任務值已閉合；只剩原版資產上的左右圖像／正式字串要在 UI 索引中確認。
 
 ## SpyVsSpy 目前為何幾乎不會觸發(誠實說明,非 bug)
 
@@ -158,18 +156,17 @@ raw 政體／score record，未知部分保守傳 0。單元測試用構造出�
 `ab`/`db` 數值驗證 SABOTAGE 門檻、Agent 消費、`resolveSpyVsSpy` 與 HIDE +20，
 避免把 remake 近似分數誤當成原版完整 raw 模型。
 
-## remake 拍板值(非手冊精確數字,誠實標註)
+## remake 現行近似（已知不同於原版）
 
 - `spyTrainCostBC = 30`:手冊(GAME_MANUAL.pdf p.70「Ships & Spies」)只說間諜是透過殖民地
   建造佇列訓練出來的("Training a spy is unlike constructing a building or a ship, but it
   takes quite a lot of work..."),沒給具體成本數字,本 remake 也還沒有殖民地佇列的「間諜」
   建造選項。直接用 BC 簡化訓練流程,成本量級比照最低艦體(巡防艦 18 BC)抓一個 remake 拍板
   值。
-- `spyMaintenancePerSpyBC = 1`:`engine.PlayerState.Maintenance` 欄位註解已載明「間諜維護費
-  本專案尚無可推導模型」,這裡給的是 remake 佔位值,刻意不併入既有 `Maintenance` 欄位(避免
-  牽動既有經濟測試的既定假設),改在 `advanceEspionage` 直接從 BC 扣。
-- AI 每 6 回合 +1 間諜:純週期政策,無手冊依據,比照 `aiExpand` 每 5 回合擴張一顆星的既有
-  節奏抓一個相近數字。
+- `spyMaintenancePerSpyBC = 1`：數值已由 `Compute_Player_Maintenance_ @ 0xE2000` 證實；
+  remake 直接在 `advanceEspionage` 扣款的時序與報表歸屬仍不同於原版維護主鏈。
+- AI 每 6 回合 +1 間諜：純 remake 週期政策；原版沒有此規則，而是把殖民地訓練所得的同一
+  pool 每回合依 Agent 防守需求與可偷科技價值重新分配。
 
 ## 2026-08-11 AI SABOTAGE 接線勘誤
 
@@ -181,8 +178,8 @@ raw 政體／score record，未知部分保守傳 0。單元測試用構造出�
   `Aggressive` 走 SABOTAGE，`Erratic` 偶數回合走 SABOTAGE，其餘走 STEAL。
 - AI 的攻擊者仍使用自身 `Spies`，防守側仍使用玩家 `DefensiveAgents`、政府／種族／
   領袖 bonus；SABOTAGE 成功後把 `s.ColonyBuildings` 傳入同一個已測試的建築清除鏈。
-- 這是**remake personality policy**，不是原版 AI 完整策略的宣稱。原版完整分數欄位、
-  Agent／政體防守資料、`toggle_flag` 的邊界與特殊槽位仍是 oracle 留白。
+- 這是**remake personality policy**，不是原版策略。原版已證實只有目標 personality raw 3
+  時以 1/8 機率選 Sabotage，其餘選 Espionage，且不由 AI 選 Hide；raw 3 的正式名稱仍未知。
 
 護欄：`TestAdvanceEspionageAISabotageUsesRuthlessPolicyAndPlayerBuildings` 以 200 個
 可重播種子抽樣確認三種侵略性格確實能刪除玩家建築；既有玩家 → AI SABOTAGE 測試

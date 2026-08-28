@@ -25,7 +25,7 @@
 > 可勾選工作清單,對應 `PLAN.md` 階段。允許擴充(CLAUDE.md)。完整性優先:不預先砍項;卡關記錄方法換路,不寫「暫緩/低投報」。
 > 圖例:`[ ]` 待辦 `[~]` 進行中 `[x]` 完成(⚠ 多為自製系統的完成,非原版對齊)。
 
-## ★ 剩餘工作（2026-08-27 依 parity 矩陣、source 與 README 畫面重新核對）
+## ★ 剩餘工作（2026-08-29 依 parity 矩陣、source 與 README 畫面重新核對）
 
 > **這一段是唯一該看的剩餘工作表。**
 >
@@ -41,7 +41,7 @@
 > ⚠ 本檔只有下面的「2026-08-24 盤點結論」是目前待辦來源；其後的附錄與 A–AO/B* 表是
 > 證據／歷史紀錄，不要從其中的舊 `[ ]` 或「仍缺」敘述重新開工。
 
-### 2026-08-27 盤點結論（目前唯一待辦來源）
+### 2026-08-29 盤點結論（目前唯一待辦來源）
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備
@@ -81,12 +81,155 @@
   另行閉合；研究基礎／總產出亦已重審並補回原版同時存在的逐科學家與固定建築加成。士氣
   producer、raw 5% 刻度、政府／軍營／失都／建築／科技／多種族／領袖與三職務消費端亦已
   閉合；remake 的多種族狀態模型差異留待 READY spec。工業轉稅、殖民地 BC 總式及帝國 gross／
-  維護／net／國庫 consumer 也已閉合；`Update_Player_Stats_` 的其餘非收入 cache、封鎖與人口遷移
-  規則仍分列追查。
+  維護／net／國庫 consumer 也已閉合；封鎖 producer、typed `.GAM` mask、AI 職務／食物運輸
+  consumer 與戰時積怨亦已有獨立閉合證據。`Move_Settlers_` 的 ETA、五艘貨運艦 gate、容量、
+  四位元組記錄、封鎖／事件抵達 gate、人口與訊息回寫也已閉合。接觸亦已閉合為殖民地 pair
+  的延伸／正常航程重算、第一個變更、斷聯協議／間諜 consumer、首次／重新接觸 reason 17／18
+  與真人訊息 raw 分支；`Update_Player_Stats_` 的其餘非收入 cache 仍分列追查。
   證據見 [`docs/re/colony-turn-chain-audit-20260828.md`](docs/re/colony-turn-chain-audit-20260828.md)。
   士氣證據見 [`docs/re/colony-morale-audit-20260828.md`](docs/re/colony-morale-audit-20260828.md)。
   BC／工業轉稅證據見
   [`docs/re/colony-bc-production-tax-audit-20260828.md`](docs/re/colony-bc-production-tax-audit-20260828.md)。
+  封鎖證據見 [`docs/re/blockades-audit-20260828.md`](docs/re/blockades-audit-20260828.md)。
+  殖民者遷移證據見
+  [`docs/re/move-settlers-audit-20260828.md`](docs/re/move-settlers-audit-20260828.md)。
+  接觸證據見 [`docs/re/contacts-audit-20260828.md`](docs/re/contacts-audit-20260828.md)。
+
+- [x] **殖民地叛亂垂直證據鏈閉合（RE-only，2026-08-28）**：`Check_All_Rebellions_` 實際
+  掃描全部活動殖民地，不只真人玩家；`Check_Rebellion_` 依 packed prisoner 與仍存續舊主建立
+  加權舊主表，以全部合格 prisoner 算每單位 1% 機率及第二次叛軍人數骰。士氣不是直接輸入；
+  政府只會經同化速度間接影響剩餘人口。叛軍／裝甲／陸戰隊／民兵、雙方訊息、殖民地易手、
+  人口 owner／prisoner、三棟建築、佇列與衍生 cache 回寫均已閉合；叛亂勝利後剩餘叛軍最多四名
+  轉為陸戰隊。鎮壓分支不刪 packed population，直接推翻 remake 現行建模；滅國檢查則由較早的
+  `Search_For_Battles_` 獨立呼叫，不是叛亂 callback。依 RE-first gate 只登記差異，不改 Go。
+  證據見 [`docs/re/rebellions-audit-20260828.md`](docs/re/rebellions-audit-20260828.md)。
+
+- [x] **一般地面入侵垂直證據鏈閉合（RE-only，2026-08-28）**：從太空戰後殖民地 action、
+  `Get_Invasion_Info_` 的雙 55-byte record、四兵種／19-byte 加成 block、攻守軍官、兵營生產、
+  民兵、`Ground_Combat_Round_` 雙 d100、AI 十場至少七勝預測、真人畫面 seed 重播，到勝敗、
+  population ownership 與駐軍回寫均已閉合。原版攻方只由 type 2 transport 每艘提供四名
+  type 1 陸戰隊，不運送攻方裝甲；這直接推翻 remake 的獨立 Marine／Tank 艦隊池。另訂正
+  `Resolve_Invasion_Troops_` 正確位址為 `0xECE05`，`0xECECA` 是相鄰的叛亂回寫。依 RE-first
+  gate 只登記差異，不改 Go。證據見
+  [`docs/re/ground-combat-audit-20260828.md`](docs/re/ground-combat-audit-20260828.md)。
+
+- [x] **戰機炸彈／光束 runtime 垂直證據鏈閉合（RE-only，2026-08-28）**：26-byte runtime、
+  四架出擊、raw kind 28／29／30／31 的 1／2／1／4 次攻擊、突擊艇／重戰機／轟炸機／攔截機
+  分流、兩條逐架公式、艦艇分面護盾／裝甲／結構與 runtime 耐久 consumer、失效重新選目標、
+  攻擊耗盡返航及八槽母艦回收均已閉合。`sub_3AD57` 的 d100 在 96..100 會直接設為 100，
+  反駁 remake 現行「保留原 roll」；依 RE-first gate 只登記差異，不改 Go。外部 Fire 名稱互相
+  衝突，文件只引用 raw 位址；raw flag 正式名稱及平台動畫內部不阻塞玩法 RE。證據見
+  [`docs/re/fighter-runtime-audit-20260828.md`](docs/re/fighter-runtime-audit-20260828.md)。
+
+- [x] **戰略戰鬥模式與戰機駐防 120 分支閉合（RE-only，2026-08-28）**：IDA 已匯出
+  `byte_199CB4` 的 52 個直接 operand site／39 個 owner。`Russ_Combat_ @ 0xE7343` 證實值 1
+  選 `Strategic_Combat_ @ 0x40148`，值 0 選格子戰術 `sub_47939`；新遊戲 toggle、預設值、
+  553-byte 設定存檔與多人差異同步也已閉合。因此 `Fighter_Garrison_Strength_ @ 0x5F64C`
+  的固定 120 是戰略解算分支，既有權重公式則屬值 0 分支；舊「正常戰略公式」斷言已訂正。
+  remake 目前只接公式，沒有模式選項與固定 120；依 RE-first gate 只登記差異，不改 Go。
+  格子戰術逐架駐防仍為下一條獨立證據鏈。證據見
+  [`docs/re/strategic-combat-mode-audit-20260828.md`](docs/re/strategic-combat-mode-audit-20260828.md)。
+
+- [x] **Fighter Garrison 格子戰術建立與回寫閉合（RE-only，2026-08-28）**：
+  `Load_Tactical_Colony_ @ 0x4AA36` 證實 Fighter Garrison 不是直接放 token，而是在行星
+  combatant 建立兩個 fighter slot：raw kind 31×5×2、30×3×2、29×2×2 中隊，重戰機科技
+  優先；`Fire_Missile_ @ 0x3C892` 再以每中隊四架展開成 40／24／16 架 runtime，從行星部署
+  中心發射。返航只回收 survivors/4，不寫 colony，故個別損失不跨戰鬥；
+  `Destroy_Colony_Defense_ @ 0x3A19E` 抽中 raw building ID47 時才移除建築並清空 fighter slots。
+  快速結算 33-byte 與格子戰術 313-byte 建立器已明確分流。remake 沒有 colony 兩槽與毀損鏈；
+  依 RE-first gate 只登記，不改 Go。證據見
+  [`docs/re/fighter-garrison-tactical-audit-20260828.md`](docs/re/fighter-garrison-tactical-audit-20260828.md)。
+
+- [x] **間諜訓練、維護、AI 配置與 RACES 任務垂直鏈閉合（RE-only，2026-08-28）**：原版以
+  同一 packed pair 的低 6 bit 保存 0..63 人；self pair 是防守 Agent，其他 pair 是外派 Spy，
+  高 2 bit 為任務。殖民地產品 `-7` 花 100 工業並先加入 self Agent pool；維護為每名每回合
+  1 BC。任務 0／1／2 分別為 Espionage／Sabotage／Hide，UI local 值為原值加一且未設定預設
+  Hide；AI 每回合收回重配，依對手 Agent 與可偷科技加權，raw personality 3 只有 1/8 選
+  Sabotage，其餘 Espionage。remake 的 30 BC 直訓與每六回合免費增加並非原版；依 RE-first gate
+  只登記，不改 Go。證據見
+  [`docs/re/spy-turn-policy-audit-20260828.md`](docs/re/spy-turn-policy-audit-20260828.md)。
+
+- [x] **艦隊派遣、逐座標移動、中繼、截擊與抵達垂直鏈閉合（RE-only，2026-08-28）**：
+  原版以每艘 129-byte ship record 保存 status、加 500／1000 的目的編碼、目前 x／y、
+  Navigator、實際速度、ETA 與截擊標記；30 座標為一 parsec，每回合逐 parsec 投影，ETA 只是
+  可重算的顯示衍生值。星雲與敵方三 parsec 干擾場會在第一步命中後截斷本回合移動為 1；
+  Navigator 只豁免星雲與黑洞，黑洞則在派遣前拒絕。玩家勾選 ship ID 自然形成拆分／聚合，
+  AI 有合法中繼與動態截擊 consumer，抵達才寫 star／探索／報告。remake 的整段 ETA 與玩家／AI
+  分裂模型明確不同；依 RE-first gate 只登記，不改 Go。證據見
+  [`docs/re/fleet-interstellar-movement-audit-20260828.md`](docs/re/fleet-interstellar-movement-audit-20260828.md)。
+
+- [x] **殖民／前哨站完整垂直鏈閉合（RE-only，2026-08-28）**：正常玩家按鈕、回合
+  dispatch、AI 入口、可殖民／可前哨資格、owner gate、type 1／4 艦與 Colony Base 消耗、
+  半價退款、候選衝突、共用建立器、人口／Native 初始化及 star／colony callback 均已追回。
+  前哨站只能由 owner 升級，並把 raw building 22 Marine Barracks 寫入 `colony+0x14C`；
+  `colony+0x123=-39` 是顯示後清除的新 colony 類通知碼，不是永久旗標。raw text 64 逐字文案
+  仍未知但不阻塞玩法 RE。remake 只部分接線；依 RE-first gate 不改 Go。證據見
+  [`docs/re/colonization-full-audit-20260828.md`](docs/re/colonization-full-audit-20260828.md)。
+
+- [x] **五級難度全域 direct consumer coverage 閉合（RE-only，2026-08-28）**：
+  `byte_199CB0 @ 0x199CB0` 的 125 個直接指令站點／78 個 owner 已全部匯出並分類；存檔、新局、
+  熱座與多人同步邊界已和經濟、人口、破產、AI 建造／選星／艦隊、間諜、地面戰、事件、
+  安塔蘭、議會與外交 consumer 分開。原版採逐子系統離散門檻、整數式與表格，沒有通用倍率。
+  直接指令另推翻舊 Spy 共同攻防強推論：只有 AI 攻擊真人時對 resolution 差值加入
+  `difficulty-2`。大型 AI 函式的其餘非難度資料流仍由各矩陣列追查；依 RE-first gate 不改 Go。
+  證據見 [`docs/re/difficulty-consumers-audit-20260828.md`](docs/re/difficulty-consumers-audit-20260828.md)。
+
+- [x] **戰略轟炸 fixed attack table／快速 record／防禦鏈閉合（RE-only，2026-08-28）**：
+  `Qload_Ships_` 的 33-byte combatant、hull／record type 固定 missile／beam／special attack
+  count、最佳武器選取、命中／減傷、三外圈、30000 clamp、`/40`、73-byte 結果與一般殖民地
+  傷亡均已閉合。原版不按設計槽逐門轟炸。舊「八類獨立防禦戰鬥者」亦已訂正：Capitol 沒有
+  combatant；三層軌道基地互斥追加一個 record；raw 26／27／42／47 只接進行星 record，正常
+  戰略轟炸不逐棟移除七種防禦。remake 目前是實際槽數與自製反擊模型，依 RE-first gate 不改 Go。
+  證據見
+  [`docs/re/strategic-bombardment-full-audit-20260828.md`](docs/re/strategic-bombardment-full-audit-20260828.md)。
+
+- [x] **外交條約評分／玩家需求回應垂直證據鏈閉合（RE-only，2026-08-28）**：
+  `sub_53146` 已證實只由五類 AI 條約 proposal 呼叫，和平／互不侵犯／同盟／貿易／研究的
+  基準、方向欄位、政府、特性、Diplomat 領袖、d100、四桶及四組 modifier 消耗均已閉合；
+  `sub_539D9` 則是玩家九類 demand，不是餽贈接受器，其 payload 成本、正式狀態雙門檻、
+  宣戰／解約／關係副作用與 `sub_1B487` 成功 consumer 已閉合。現行 Go 直接成功並給固定關係
+  增益，明確不同；依 RE-first gate 只登記差異。mode 0..2、5、8 的正式 UI 標籤仍待 JIMTEXT
+  或正常畫面確認，但 raw gameplay 已閉合。證據見
+  [`docs/re/diplomacy-response-audit-20260828.md`](docs/re/diplomacy-response-audit-20260828.md)。
+
+- [x] **關係變動 caller／reason／訊息 consumer 垂直鏈閉合（RE-only，2026-08-28）**：
+  `Change_Relations_ @ 0x4E3B5` 的 30 個直接 callsite、17 個 caller、暫存器／stack 契約、
+  delta／reason／payload、`-10000` 通知 sentinel、方向 policy、關係縮放與
+  `+0x64F..+0x67F` pending record 已逐一分類；`Reward_Check_` 的唯一可達 delta 是固定
+  `+200`，`Random(15)+15 = 16..30` 區塊因 `cmp ax,ax／jle` 恆真而不可達。
+  `Determine_Diplomacy_Messages_／Determine_Bad_Message_` 的每回合 reason 1..23 消費、
+  `+0x6CF／+0x71F` 下游及 multiplayer 透傳邊界也已閉合。現行方向資料模型、一般線性外交、
+  嫁禍第三方與完整 pending payload 明確不同；依 RE-first gate 只登記差異，不改 Go。
+  證據見
+  [`docs/re/change-relations-callers-audit-20260828.md`](docs/re/change-relations-callers-audit-20260828.md)。
+
+- [x] **銀河議會投票完整 score 垂直鏈閉合（RE-only，2026-08-28）**：
+  `Vote_Check_ @ 0x16021` 的方向關係、reputation `+0x6D7`、違約積怨 `+0x7EE`、
+  proposal response memory `+0x827`、另一候選戰爭、star record #0 owner、Charismatic／
+  Repulsive、Imperium、上屆選票、三種協議及高難度真人 `6/(difficulty+6)` signed scaling
+  已由 producer／consumer 閉合。`sub_78398 @ 0x78398` raw 資料流固定掃描第一筆 star record
+  的五顆行星並回傳首座有效殖民地 owner；外部 `Orion_Owner_` 名稱只支撐 Orion 語意的強推論。
+  原版 1.31 投票鏈已閉合，但 remake 尚缺多個方向欄與縮放；依 RE-first gate 不改 Go。
+  證據見 [`docs/re/council-voting-audit-20260824.md`](docs/re/council-voting-audit-20260824.md)。
+
+- [x] **領袖 ETA callback 與 AI 任命評分垂直鏈閉合（RE-only，2026-08-28）**：
+  `Decrement_Officer_ETA_ @ 0x934CF` 與相鄰 `Deassign_Officer_ @ 0x933F2` 已分開；管理領袖
+  ETA 到 0 會以 star＋owner 重算同星系六個 planet slot 的殖民地衍生值、imports 與帝國彙總。
+  `Assign_Unassigned_Leaders_ @ 0xD73D4` 的四路 dispatch、艦長五 raw 欄支配排序與同位置重派、
+  管理領袖九組技能選星分數、population-limit／航程外交快取 producer、嚴格最高分及同分保留
+  高星系索引均已閉合。舊文件誤把 `D7078` 當殖民地 status-1 路徑，現已訂正為艦長重派。
+  remake callback 與排序仍是較窄近似；依 RE-first gate 只登記，不改 Go。證據見
+  [`docs/re/leader-turn-chain-audit-20260828.md`](docs/re/leader-turn-chain-audit-20260828.md)。
+
+- [x] **人口成長完整 factor、滅絕與職務回寫閉合（RE-only，2026-08-28）**：
+  `Colony_Pop_Grows_ @ 0xE1839` 的 2000／40、race growth、Microbiotics／Universal Antidote
+  最強值、Medicine、人口暴增／瘟疫、住房、AI 難度與 Cloning Center 逐族截斷已完整閉合；
+  shortage rate 先與正 rate 相加。`Apply_Colony_Pop_Growth_ @ 0xE2DCA` 的 1000 點累積、
+  滅絕政策逐回合刪除 captured population、負池先於正池、容量、packed population 及新人口
+  farmer／worker／scientist 選擇也已閉合。star #0 reserved bit 的 `+150` 在正式 1.31 data
+  預設為 0；patch/profile 正式名稱保留強推論，不阻塞標準 1.31。remake 差異只登記，不改 Go。
+  證據見
+  [`docs/re/population-growth-runtime-audit-20260828.md`](docs/re/population-growth-runtime-audit-20260828.md)。
 
 - [x] **殖民地工業轉稅／BC 產出／帝國收入 consumer 閉合（RE-only，2026-08-28）**：
   `E08F6` 證實逐殖民地以 `max(E9-F0,0)` 按 owner `+0x31` 百分比向零截斷、1:1 抽稅並先扣工業；
@@ -1083,19 +1226,32 @@
   ordered pair、雙向鏡射、談判第三方 +5、存檔與熱座壓縮均已接；納貢 reason 14 是首條可達
   writer。`+0x727` 另由全域 42 個站點確認為單向永久違約旗標；一般 AI 宣戰現先依 `sub_5138E`
   寫 target→actor，再讓 government 4 的事件門檻及 `word_18105C` 締約／納貢 cooldown 改走索引 6。
-  其餘玩家回應 writer 與 reason 的 AI↔AI 可達 caller仍待閉合。自訂種族採中立 fallback；
-  反向玩家條約、`+0x737` 鎖定 writer仍待閉合。2026-08-28 已依 `sub_25DF1` 的分支掃描順序
+  玩家正式解約 writer 與 AI 對真人下游亦已有獨立閉合證據。自訂種族採中立 fallback；
+  完整反向玩家條約矩陣仍是 remake 資料模型差異。2026-08-28 已依 `sub_25DF1` 的分支掃描順序
   接回特殊宣戰 reason 20、reason 68 與 reason 113 的食物赤字路徑；`sub_4DAB2` 證實
   `player+0xB0 < 0` 會累加 `+0x7EC`、否則歸零，該 signed-word streak 已由 AI 經濟輸出產生、
-  保存並抵達正式宣戰 consumer。`+0x60E` 的另一條 reason 113 已完成
-  `.GAM` raw 保留、JSON 往返與消費端，但 runtime producer 仍未知；其餘尚未閉合的是
-  reason 22 的 `+0x6FF` 殖民破壞怨值 AI↔AI producer，以及
-  `+0x6AF／+0x6BF` 記憶。特殊貿易與 ETA callback
+  保存並抵達正式宣戰 consumer。`+0x60E` 的另一條 reason 113 已完成 `.GAM` raw 保留、
+  JSON 往返與消費端；全庫 operand 掃描確認 1.31 沒有直接 runtime writer，故停於存檔／整體
+  record 邊界，不自創 producer。reason 22 的 `+0x6FF` 四條殖民破壞／易手 writer、立即候選與
+  宣戰／停戰清除，`+0x6AF／+0x6BF` modifier consumer，以及 `+0x737` 同回合自然漂移抑制
+  影子亦已閉合。2026-08-28 又以完整 direct-operand inventory、初始化器及主要訊息／提案／
+  需求／AI 任務 consumer 建立 `+0x60F..+0x88F` 逐欄契約，分開 ordered-pair 與每帝國純量；
+  `+0x70F／+0x757／+0x76F` 只有清除端、`+0x7FE` 只有 writer，均誠實保留未知，不猜填。
+  原版 AI 外交玩家可見 RE 至此閉合，remake 的完整方向模型與實艦戰鬥留待 RE gate 關閉後
+  由 READY spec 接線。證據見
+  [`docs/re/directional-diplomacy-block-audit-20260828.md`](docs/re/directional-diplomacy-block-audit-20260828.md)。特殊貿易與 ETA callback
   仍是可玩 remake 模型。證據與規格見
   [`docs/re/npc-war-ceasefire-audit-20260827.md`](docs/re/npc-war-ceasefire-audit-20260827.md) 與
   [`docs/spec/npc-war-ceasefire.md`](docs/spec/npc-war-ceasefire.md)、
-  [`docs/re/npc-special-war-policy-audit-20260828.md`](docs/re/npc-special-war-policy-audit-20260828.md) 與
+  [`docs/re/npc-special-war-policy-audit-20260828.md`](docs/re/npc-special-war-policy-audit-20260828.md)、
+  [`docs/re/diplomacy-residual-fields-audit-20260828.md`](docs/re/diplomacy-residual-fields-audit-20260828.md) 與
   [`docs/spec/npc-special-war-policy.md`](docs/spec/npc-special-war-policy.md)。
+  2026-08-28 已閉合 AI↔AI 戰鬥實艦鏈：`Search_For_Battles_` 對 AI pair 共用
+  `Do_1_Combat_` 與實際 ship ID 清單；`Russ_Combat_` 在雙方皆非真人時固定選
+  `Strategic_Combat_`，destroyed combatant 直接依原 ship ID 呼叫 `Kill_Ship_`，倖存艦回寫
+  `+0x7D`，撤退則逐艦寫 status 9 後尋路。原版沒有 FleetStrength 比例後再隨機選損失艦的
+  旁路；remake 現行抽象結算明確不符，待 RE gate 後實作。證據見
+  [`docs/re/ai-ai-ship-battle-audit-20260828.md`](docs/re/ai-ai-ship-battle-audit-20260828.md)。
   `sub_233FA` 外層 gate 同日由既有事件 9 稽核交叉閉合：超空間亂流 active 時非跨維度 AI
   不執行宣戰候選，`player+0x8BC` 對應的跨維度種族可照常執行；正常與免疫分支均有測試。
   同日亦訂正 `+0x7EC` 的 `inc word` 為 16-bit 回繞，而非過去文件誤述的飽和。
@@ -1119,8 +1275,10 @@
   bonuses 的 Growth／Food／Prod／Res／BC 與 Command Deficit `12/11/10/9/8` 接進 AI 每回合
   暫態殖民地與帝國結算；玩家不吃加成，
   負 quarter 採向下取整，且修正 `NewDemoSession` 性格難度為 1、session 卻留零值 Tutor 的雙真相。
-  Spy Bonus `-2/-1/0/+1/+2` 亦已進 AI 攻守兩張能力表；數值已證實，攻守共同注入及逐殖民地
-  quarter 捨入／士氣重力順序仍為強推論。Troops／Marines `-2/-1/0/+1/+2` 經盤點確認早已由
+  Spy Bonus `-2/-1/0/+1/+2` 目前仍進 AI 攻守兩張能力表，但 2026-08-28 的直接 consumer
+  已證實原版只在 AI 攻擊真人時對最終 resolution 差值加入 `difficulty-2`；remake 現況明確不符，
+  待 RE gate 後依 READY spec 修正。BC quarter 的整座有機人口聚合／捨入已閉合；其餘職務順序
+  由經濟列管理。Troops／Marines `-2/-1/0/+1/+2` 經盤點確認早已由
   `GroundDifficultyBonus` 接入 AI 殖民地防守與叛軍；Antaran Marines `2×difficulty-4` 的
   owner≥8 共用地面／登艦 block 已由 IDA caller 閉合，但目前沒有 owner≥8 typed 地面單位，
   不另造原版未證實的登陸事件。2026-08-26 另閉合 `All_AI_Tech_Select_ → sub_DC288 → sub_FD335`：
@@ -1261,9 +1419,12 @@
   `word_180CF0=[1,2,3,3,4,5,2]` 計算負分及 `reason+70`。純規則與原始表測試已接；
   間諜正常 producer 已閉合首條玩家垂直鏈：成功且實際取得科技／拆除建築時，依
   `sub_10119C／sub_10130A` 的 `-(Random(15)+Random(5))` 與未嫁禍 reason 1／3 更新關係、
-  pending 與下一回合 memory。嫁禍 reason 2／4 因 remake 尚無 attributed third-party 模型，
-  其餘 reason 5..9 也仍待逐 caller 閉合，不以猜測接線。見
-  [`docs/re/ai-human-spy-incident-audit-20260828.md`](docs/re/ai-human-spy-incident-audit-20260828.md)。
+  pending 與下一回合 memory。2026-08-28 已閉合嫁禍 reason 2／4：attacker d100=100 或淨分數
+  至少 90 時自動進入，`Frame_Another_ @ 0x100BC5` 依雙方接觸、偷竊科技狀態與七個正式政策桶
+  做逐桶 reservoir sampling，無候選退回真 attacker；remake 尚無 attributed third-party typed
+  state。reason 5／7／8／9 的其他系統 producer、動態宣戰 reason 與訊息 consumer已
+  逐 caller 閉合，reason 6 沒有 literal producer。見
+  [`docs/re/change-relations-callers-audit-20260828.md`](docs/re/change-relations-callers-audit-20260828.md)。
   同一 score 的存活帝國人口優勢 `-10`，以及第 100 回合後雙方 40 回合人口成長差也已由
   `+0xA6／+0xB9B` raw 讀取閉合為純規則；其餘國力／科技項仍待拆解。
   `sub_500CF` 亦確認等同既有 `OriginalNPCPowerRatio`，ratio>=300 且政府 raw!=5 時的
@@ -1298,10 +1459,14 @@
   且不誤套玩家餽贈關係獎勵；reason 124 已訂正為只顯示／確認、不進二選一也不套 payload。
   reason 105 拒絕 callback 與正常外交二選一 UI 已接；點會談燈不再提前刪除 typed payload。
   reason 106 的 `+0x7C7／+0x7C9` committed consumer、合法 -1 宣戰與 snapshot 亦已接。
-  IDA 已定位 `+0x837／+0x847／+0x857` writer 為每回合 `sub_1FD80 → sub_DBB9F → sub_D94B3`
-  多艦隊戰略搜尋；remake 依已授權近似邊界，以既有原版三層殖民地價值＋距離 scorer 在外交前
-  刷新 star，worst reason 仍取精確 `sub_544A1` 輸出。此項標為強推論近似，不宣稱多艦隊 exact，
-  但已不再讓正常 reason 106 拒絕 UI 卡在 unknown。
+  IDA 已閉合 `+0x837／+0x847／+0x857` writer 為每回合 `sub_1FD80 → sub_DBC5C → sub_DBB9F → sub_D94B3`：
+  三欄依序是候選 planet ID、enemy-colony worth 與攻防壓力；搜尋逐 ship 走航路、限制十回合、
+  納入抵達前防守建造並只在壓力嚴格大於 100 時保留候選。remake 的單主力艦隊 adapter 仍是
+  明示近似，待 RE gate 後依閉合證據重建 typed 多艦隊資料模型。證據見
+  [`docs/re/opportunity-attack-search-audit-20260828.md`](docs/re/opportunity-attack-search-audit-20260828.md)。
+  現行 adapter 仍以既有原版三層殖民地價值＋距離 scorer 在外交前刷新近似目標，worst reason
+  取精確 `sub_544A1` 輸出；它不宣稱逐 ship 多艦隊對齊，但不再讓正常 reason 106 拒絕 UI
+  卡在 unknown。
   `sub_FF593` 蟲洞支線已閉合。
   typed producer unknown 時的願戰來源仍是明示的 `DecideStance` fallback，不冒稱原版完成。見
   [`docs/re/ai-human-diplomacy-dispatch-audit-20260828.md`](docs/re/ai-human-diplomacy-dispatch-audit-20260828.md) 與
@@ -1457,17 +1622,23 @@
   已以 IDAPython 閉合 `Strategic_Bombardment_` 控制流：Go 外圈由錯誤的全武器 5／10 次改為原版
   固定三次，5／10 限縮為炸彈攻擊當量，接上 >30,000 提前停止，並由 `sub_4267B` caller 證實
   runtime 結果是 `/40` 後直接寫 record `+3`，已取代錯用手冊 UI `/100` 的結算；非炸彈兩版本相同、
-  炸彈版本差、逐擊護盾、停止門檻與 `/40` 邊界均有測試。仍待逐武器數量與快速戰鬥 record；
+  炸彈版本差、逐擊護盾、停止門檻與 `/40` 邊界均有測試。2026-08-28 進一步閉合 33-byte
+  快速戰鬥 record 與依 hull／record type 查固定 missile／beam／special 攻擊次數的表格；原版
+  戰略轟炸不按實際設計槽逐門計數。完整證據見
+  [`docs/re/strategic-bombardment-full-audit-20260828.md`](docs/re/strategic-bombardment-full-audit-20260828.md)。
   2026-08-27 已重新閉合 `Fighter_Garrison_Strength_`：舊版 10／6／4 中隊乘泛用戰機近似值已
   改為原版兩組最佳武器扣最佳裝甲、三檔 40/0、40/24、32/24 權重、`/2` 與 64000 上限，並接回
-  殖民地反擊正常路徑；`byte_199CB4==1` 的固定 120 模式語意與逐架戰術生成仍分開標未知。證據與
+  殖民地反擊正常路徑；`byte_199CB4==1` 已於 2026-08-28 閉合為戰略解算模式，固定 120 尚未
+  接入 remake，逐架戰術生成仍為獨立未知。證據與
   規格見 [`docs/re/fighter-garrison-strength-audit-20260827.md`](docs/re/fighter-garrison-strength-audit-20260827.md)
   及 [`docs/spec/fighter-garrison-strength.md`](docs/spec/fighter-garrison-strength.md)。
   `Get_Colony_Hits_` 已閉合人口／士兵／戰車／非軌道建築的耐久公式並接入顯示值；
   `sub_E87D2` → `sub_DD2F2 @ 0xDD2F2` → `sub_DCEBD @ 0xDCEBD` 的戰略殖民地內部
   傷亡鏈亦已閉合並實作：一般建築、陸戰隊、戰車、建造進度與人口共用隨機候選池，
-  成本不足即停止，並保留最後人口 100 點與建造進度 tail-index 不對稱。仍待逐武器數量、
-  快速戰鬥 record，以及 `sub_DCEBD` 排除的八類獨立防禦戰鬥者摧毀鏈。證據見
+  成本不足即停止，並保留最後人口 100 點與建造進度 tail-index 不對稱。2026-08-28 已證實
+  Capitol 不建立 combatant，三層軌道基地互斥追加一個 record，raw 26／27／42／47 只彙入
+  行星 record；`sub_DCEBD` 排除的七種防禦建築不會在一般戰略轟炸中逐棟移除，因此不存在
+  舊待辦所假設的「八類獨立防禦戰鬥者摧毀鏈」。證據見
   [`docs/re/strategic-bombardment-audit-20260824.md`](docs/re/strategic-bombardment-audit-20260824.md)
   [`docs/re/colony-hits-audit-20260824.md`](docs/re/colony-hits-audit-20260824.md) 與
   [`docs/re/strategic-colony-casualties-audit-20260824.md`](docs/re/strategic-colony-casualties-audit-20260824.md)，規格見
@@ -1575,8 +1746,9 @@
   `sub_1633C @ 0x1633C` 閉合候選排序、AI 對兩候選人的獨立 1..200 檢定、雙通過／雙失敗棄權、
   真人三選一、含棄權票的 2/3 分母與上屆選票保存；固定關係門檻已移除，議會亂數與待投票狀態
   可存讀。正式政策、貿易／研究協定、Charismatic、Repulsive、Imperium 與上屆選票分數已接；
-  `+0x617/+0x6D7/+0x7EE/+0x827`、`sub_78398` 與高難度真人縮放仍待外交資料模型閉合，不以
-  `Relation` 重複猜填。證據見 [`docs/re/council-voting-audit-20260824.md`](docs/re/council-voting-audit-20260824.md)，
+  原版 `+0x617/+0x6D7/+0x7EE/+0x827`、star record #0 owner 與高難度真人縮放已由 IDA
+  閉合；remake 仍待 RE gate 後建立方向外交資料模型，不以 `Relation` 重複猜填。證據見
+  [`docs/re/council-voting-audit-20260824.md`](docs/re/council-voting-audit-20260824.md)，
   規格見 [`docs/spec/council-voting.md`](docs/spec/council-voting.md)。
 - [ ] **歷史、分數與客製種族效果忠實化**：依 `Record_History_ @ 0x10208A` 及最終分數消費端
   追回欄位、取樣頻率、正規化、勝利加成與存檔；依 `Convert_Custom_Race_Flags_ @ 0x5BC24`
@@ -1594,8 +1766,68 @@
   全庫 operand 掃描閉合逐玩家殲滅歸屬：`sub_E9D62/sub_EAAA1` 把戰鬥 side 寫到敗方暫態
   `+0x204`，`sub_E45FF` 再把當前星曆寫入勝方 `+0x1F2[敗方]`，隨後 `sub_E4EB3` 重設暫態。
   RE 證據已齊，但 remake 尚缺可存檔的 8×8 殲滅星曆矩陣；依 RE-first gate 暫不實作。
-  本母項其餘主要範圍是客製種族 22 項效果的原版逐值／全 consumer 閉合，
-  不再重開歷史資料形狀。
+  2026-08-28 已用 IDA Pro 9.4 全函式空間掃描 `player+0x89F..+0x8BD`，確認原版 runtime
+  是 31 個 signed byte，並找回 137 個候選 IDA owner 位址（外部原始符號表 exact-address
+  命中 136 個）；`POOR_HOMEWORLD` 是 index 15 的 `-1`，不是第 32 byte。Watcom distant tail
+  chunk 與 IDA 錯誤邊界使這 137 個只能作普查候選，人工追完 register provenance 才能升格；
+  尚不能宣稱間接 consumer 或各分支公式全部閉合。下一批依序追 Telepathic、
+  Omniscience／Stealthy Ships、Ship Attack／Defense／Trans-Dimensional、Government／
+  Repulsive／Charismatic；其餘經濟欄整併既有碎片證據。不再以「22 項 UI 選項都有 remake
+  消費端」代替原版 31-byte 全資料流。證據見
+  [`docs/re/custom-race-trait-consumer-census-20260828.md`](docs/re/custom-race-trait-consumer-census-20260828.md)。
+  Telepathic 已再閉合間諜基礎 +10、外交檢定 +25、心控的艦級／將領／目標種族 gate、無運輸艦
+  接管、征服人口 prisoner 回寫，以及戰術登艦／自毀與 AI 選殖民地的 raw 分支；仍缺 action
+  type 2、combat ship `+0xB0`、敵殖民地最終 worth、科技估值 raw ID 與重複將領 helper 的
+  下游語意，見 [`docs/re/telepathic-trait-audit-20260828.md`](docs/re/telepathic-trait-audit-20260828.md)。
+  Omniscience 已分開閉合 Galactic Lore 共用查詢、Fleet UI、星系 owner、艦隊 stack、discovery
+  report 與隱藏熱鍵；Stealthy Ships 已閉合 AI 可見性 fallback、自動設計排除 raw special 31，
+  以及 Watcom distant tail 的 owner stride、掃描 margin、trait／三種特殊裝置各 +500 與最終
+  stack 刪除比較。Omniscience 的 `star+0x34` 首次抵達報告遮罩、五類
+  `star+0x28 = 50／60／70／80／90 + player` 一次性發現及「略過普通報告但保留獎勵」亦已
+  閉合。Stealthy 的 raw6 profile 候選 1 `+100`，以及非人類 AI 對 category `0x25` 四項
+  匿蹤／位移科技 multiplier `5 -> 1` 也已閉合。2026-08-29 再證實 raw special 6／23／31
+  在 `Qload_Ships_` 通用快速結算表的 effect type／value 都是 `0／0`，而
+  `Load_Combat_Ship_` 只把設計的兩組特殊裝置 bitfield 複製到格子戰術記錄；全庫五個
+  `player+0x8BB` direct site 與 `Ship_Has_Stealth_Device_` 唯一 caller 都未建立 trait→戰鬥
+  bitfield 鏈。因此 trait／裝置戰鬥數值等價已由強推論否定；仍待 raw 6／23／31 各自的格子
+  戰術間接 consumer、命中／目標／回合時序公式，見
+  [`docs/re/omniscience-stealthy-ships-audit-20260828.md`](docs/re/omniscience-stealthy-ships-audit-20260828.md)。
+  Ship Attack／Defense 的 signed raw bonus 已分別接回格子 OCV／DCV、戰機／飛彈、戰術 AI、
+  `Qload_Ships_` 快速 record 與戰略估值；Trans-Dimensional 已閉合格子／飛彈速度 +4、估值
+  DCV +20、FTL +2 及 Hyperspace Flux 的玩家／AI／外交移動免疫。尚餘 strategic record 欄名、
+  bonus 輸出型別、撤退完整 gate、科技 raw ID、AI profile 與 RNG 序列，見
+  [`docs/re/ship-racial-bonuses-transdimensional-audit-20260828.md`](docs/re/ship-racial-bonuses-transdimensional-audit-20260828.md)。
+  Repulsive／Charismatic 已閉合議會 -100／+40、proposal -50／+50、Charismatic 關係正向
+  delta ×2／負向 ÷2、科技交換 +50、領袖出現 -10／+5、候選 score ÷2／+10、同化 ÷2／×2、
+  AI talker 1／3，以及 Repulsive 的單機／網路外交 choice、AI↔AI treaty 與訊息 gate。尚餘
+  choice／message 完整表、advanced officer／AI leader flag、sneak-attack 最終權重、profile／
+  talker raw gate 與 RNG，見
+  [`docs/re/repulsive-charismatic-trait-audit-20260828.md`](docs/re/repulsive-charismatic-trait-audit-20260828.md)。
+  Government 已閉合 0..7 編號、四項進階科技寫入、封建族成本、三職務產出、士氣、殖民地 BC、
+  帝國指揮點、間諜防禦、同化及貿易／研究協議主要公式；不再把 C runtime、Watcom helper 或
+  平台 API 納入缺口。尚餘 AI 評分、產品合法性 raw 表與 occupation policy 窄切片，見
+  [`docs/re/government-trait-audit-20260828.md`](docs/re/government-trait-audit-20260828.md)。
+  經濟／環境 traits 已整併既有 IDA 垂直鏈：Population、Farming、Industry、Science、Money
+  的 signed raw 尺度，Aquatic 食物／氣候／容量，Subterranean 容量／地戰，Tolerant 容量／
+  混合人口污染，以及 Fantastic Traders 的殖民地／帝國／協議三個 consumer 均已閉合。
+  尚餘開局母星與 AI profile／估值窄切片；Cybernetic／Lithovore 另列。見
+  [`docs/re/economic-environment-race-traits-audit-20260828.md`](docs/re/economic-environment-race-traits-audit-20260828.md)。
+  Cybernetic／Lithovore 亦已閉合主要玩家鏈：前者每人口半食物＋半工業、格子戰術每回合
+  `+10%` 修復、戰後與戰略解算清除持久損傷；後者零食物、初始 worker、六項食物科技
+  合法性 gate 與 AI 食物保障 bypass。remake 目前只接 Cybernetic 戰後全修，尚缺格子回合內
+  修復；兩者完整 AI worth 權重仍待。見
+  [`docs/re/cybernetic-lithovore-trait-audit-20260828.md`](docs/re/cybernetic-lithovore-trait-audit-20260828.md)。
+  母星／重力／研究／Warlord traits 已再整併：Large size raw 3、Rich／Poor 礦產 raw 3／1、
+  Artifacts special raw 10、Low／Normal／High-G raw 0／1／2、逐 race 產出與地戰／轟炸效果、
+  Creative／Uncreative 精確時序，以及 Warlord 艦員／領袖 +1、每殖民地 command +2、地面容量
+  兩倍均閉合。Advanced Civ 全圖平衡與 AI profile 權重仍待窄切片。見
+  [`docs/re/homeworld-gravity-research-warlord-traits-audit-20260828.md`](docs/re/homeworld-gravity-research-warlord-traits-audit-20260828.md)。
+  Spying trait 已閉合 signed `-10/+10/+20` 對攻守表的直接加項、AI 生產需求與零 spy
+  bootstrap 機率、packed Agent／Spy pool、100 industry 訓練、每名 1 BC、63 上限、AI
+  留守／外派及 Espionage／Sabotage／Hide 任務主鏈。remake 的 30 BC 訓練、六回合免費 spy
+  與難度共同攻防加項均已列為待修差異。見
+  [`docs/re/spying-race-trait-audit-20260828.md`](docs/re/spying-race-trait-audit-20260828.md)。
+  歷史資料形狀不再重開。
   2026-08-25 已由 `sub_E3456 @ 0xE3456` 閉合同化 raw 尺度：八政體 rate 為
   `30/60/30/60/60/120/12/16`、門檻 240；Charismatic 進度加倍且優先於 Repulsive 減半，
   異族管理中心的 120 基礎值也受兩者修正。Go 已改存 0..239 raw 餘數，修正政體／建築切換、
@@ -1703,7 +1935,7 @@
 - [x] **本機完整版與實機推廣片（2026-08-12，最終錄製與剪輯）**：`dist-all/` 集中保留三個僅供本機驗收的完整包（含使用者私有資料子集與 CJK 字型，不可公開散布）；其 SHA-256 核對檔列於 `dist-all/SHA256SUMS`。三平台完整包均由本輪工作樹離線重建，採 55 個經靜態消費端與封裝後畫廊交叉確認的正常玩家路徑 LBX（含 `COMBAT`、`INBOX`、`MULTIGM`、`RACESEL`、`STREAM`／`STREAMHD`），不是把 373 個原版檔全塞入；Linux 完整 AppImage 已在 Docker + Xvfb 從包內資料啟動，Windows ZIP 的 CRC／PE／根目錄、macOS universal `.app` 的結構／`lipo` 與三包的 55 檔集合亦已抽樣驗證。正式預覽片以封裝後 AppImage 在 Docker + Xvfb 走 `-game -promo-demo -promo-hide-cursor -noaudio`，經 21 個正常 UI 點擊實際完成新局、種族、命名旗色、星圖、殖民地人口調配、`RACES` 間諜操作、外交、戰術移動／射擊、撤離與戰果回寫後返回 `RACES`；不以截圖輪播冒充遊玩。依復古遊戲推廣片流程，另用 `scripts/make_live_promo.sh` 加入 4 秒銀河戰略風片頭、五個短暫章節識別與 5 秒片尾；章節框只佔 4:3 畫布外的左右側欄，不遮蓋遊戲 UI。成片為 72.767 秒 H.264/AAC、1280×720、30 fps、48 kHz stereo；完整解碼無警告，音量平均 -18.3 dB、峰值 -2.9 dB，七個代表影格確認片頭、五章實機與片尾文字均在安全框內。錄製若未收到 `LastBattle` 寫回的 `promo-demo: complete` 就拒絕輸出；新局與種族按鈕文字均以按鈕內安全區置中，導覽游標完全隱藏。原版 `STREAM.LBX` 配樂只在錄影後混入，未做逐曲人耳驗收，影片仍不可當作可公開散布素材。錄製、剪輯與權利邊界見 `scripts/capture_promo_gameplay.sh`、`scripts/make_live_promo.sh` 與 `dist-all/promo/README.md`。
 - [x] **音訊文件同步（2026-08-11）**：`docs/tech/audio-track-map.md` 已移除「外交音樂是單一 `bgmDiplo` 常數」的過期敘述，改記逐族好曲、壞曲池與原版門檻未知；IDA Pro 靜態證據見 [`docs/re/oracle-static-ida-20260811.md`](docs/re/oracle-static-ida-20260811.md)。
 - [x] **多人網路最低可玩鏈與可選可靠性（2026-08-12）**：保留原版決定性 lockstep、以 TCP 取代已失效的 IPX／數據機／序列／TEN。`cmd/moo2` 已從大廳名冊接到主機共同新局（設定／種子／席位快照廣播）、客戶端套用同一快照、玩家指令依席位與玩家編號收集／重播、`turn_done` → `turn_ready` 兩階段回合結算，以及 `NetworkStateHash` 不一致時失敗即關閉；另已加入 resume token 重連、心跳／逾時／重連寬限、challenge-HMAC 身份驗證與可選 TLS 1.3。`MOO2_NET_AUTH` 開啟共享密碼 proof，`MOO2_NET_TLS=1` 開啟加密；NAT 穿透仍需外部 relay 或 UPnP，沒有冒稱內建解法。共同開局的非主機席位現在在建立時即初始化 `AutoBuild`／`RepeatBuild` 平行向量，避免只有客戶端切換該席位後出現 nil／空 slice 形狀差異而誤報分岔。驗證包含 `internal/netplay` loopback TCP／TLS／重連抽樣、`internal/shell` 快照／席位重播與 UI 指紋正規化，以及 Docker + Xvfb `cmd/moo2` 共同開局、首回合 lockstep 與等待階段聊天共存測試。正式 `networkWaitScreen` 已共用原版 `Net_Next_Turn` renderer；`netNextTurnDemo` 只保留無 socket 畫廊資料。
-- [x] **可選 AI-to-AI 強化（2026-08-11）**：AI 星選的行星價值／距離模型與議會兩候選人／第三方搖擺票已完成；現在另有可保存、可重播的 AI 彼此戰爭、停戰／互不侵犯／同盟、貿易／研究協議，以及抽象艦隊攻擊最高人口殖民地的戰鬥／佔領解算。這是 remake 模型，不冒充原版逐艦 blueprint；細節見 [`docs/tech/ai-to-ai.md`](docs/tech/ai-to-ai.md)。
+- [x] **可選 AI-to-AI 強化（2026-08-11）**：AI 星選的行星價值／距離模型與議會兩候選人／第三方搖擺票已完成；現在另有可保存、可重播的 AI 彼此戰爭、停戰／互不侵犯／同盟、貿易／研究協議，以及抽象艦隊攻擊最高人口殖民地的戰鬥／佔領解算。這是 remake 模型，不冒充原版實艦戰略解算；細節見 [`docs/tech/ai-to-ai.md`](docs/tech/ai-to-ai.md)。
 - [x] **原版 `.GAM` 匯入（2026-08-11；2026-08-24 多槽勘誤）**：`ImportGAM`／`LoadGAMSession` 已把原版 `.GAM` 轉成可玩的 remake 工作階段；`LoadSession` 依 little-endian `0xE0` magic 自動分流，載入畫面會探測同槽 `SAVE1.GAM`～`SAVE10.GAM`，匯入後另存為 remake JSON，不覆寫原始檔。星系、行星、殖民地／前哨站、玩家／AI、外交旗標、67 筆領袖、艦隊、建築與建造佇列均有對應；八個武器記錄與特殊裝置 bitset 現會完整保存及快照往返，不再靜默丟棄第一槽以外資料。研究完成 byte、特殊裝置 raw ID 的完整語意與原版任命／任期下游維持報告式未知，不猜測。`SAVE10.GAM` 真檔抽樣已通過。
 - [x] **敵方戰機下游命中／傷害（2026-08-11）**：ID 31 第二組 `1..4 / 4..16 / 2..7` 與 `sub_3AD57 @ 0x3AD57` 的 1..100 隨機、`roll <= 95` 攻防修正、40 命中門檻、`max-min+1` 插值端點，以及相鄰 `sub_3AC20 @ 0x3AC20` 的直接插值式已分開接入；Bomber profile 走 `ResolveFighterBomb`，兩條結果都逐架進最弱護盾面／裝甲／結構消費。`RawFlags & 4` 的 sub3AD57 表面分支經可達性分析證實不可達；未追回的是攻方加成欄位完整語意、兩份外部索引函式名稱與 raw runtime 輸入，不再把固定 3/5 近似寫成原版值。
 - [x] **星際要塞完整已追回火力（2026-08-11）**：`sub_4D18E @ 0x4D18E` 四個槽已保存為 seed／raw／cap `(375,2,99)`、`(187,0,198)`、`(187,4,198)`、`(375,2,99)` 並彙整進安塔蘭終局齊射；class 6 直接 byte stride 讀址 `0x17F69C=900`、`P=750`、`sub_6EE8E @ 0x6EE8E` divisor 中間算式、raw `2/4` 百分比表與 live tech 分支已由 IDA Pro 靜態追回。99/198 是容量上限與拆槽規則，不是固定 runtime 數量；快速戰鬥明示採 full-cap policy，raw flag 正式玩法名稱與 live tech 導出的當下數量仍是 oracle 差異，不阻塞 remake。
@@ -2478,7 +2710,7 @@ internal/shell/orbital_bombardment.go
 - [x] 1.3/1.5 profile 實作 + 驗證(值 + 預設 Profile15=現行 三層回歸斷言)
 - [x] 主選單版本切換生效(**2026-07-11 收尾完成；2026-08-24 勘誤**):UI + 開局注入 + 三個 live 消費端全部接線——①軌道轟炸的炸彈攻擊當量(1.3=5/1.5=10；整體仍固定三外圈)②電漿砲傷害③超先進科技研究成本。
 - [x] diff 全量表 15 項 2026-07-11 全數盤點完畢
-  - [x] **AI 殖民地建築資料模型 + 戰略轟炸傷亡回寫(2026-07-11；2026-08-24 IDA 勘誤)**：`AIOpponent` 的建築、陸戰隊與戰車平行陣列均已持久化。舊版「按建築名字母序全部吸收，再依行星尺寸扣人口」已被 `sub_DCEBD @ 0xDCEBD` 直接反證並移除；現在以 raw building ID 48→1 建候選，排除 `{8,9,26,27,40,41,42,47}`，再混入每名陸戰隊、戰車、建造進度項與人口。抽中成本不足的單位即停止；寫回人口、駐軍、建造進度與建築 map，GAM adapter 同步保存 `BuildProgress` 與最後人口點數。1.3 建築 +1 hit 仍是 CHANGELOG 強推論；八類獨立防禦戰鬥者的精確摧毀鏈仍列在頂端活表。
+  - [x] **AI 殖民地建築資料模型 + 戰略轟炸傷亡回寫(2026-07-11；2026-08-28 IDA 勘誤)**：`AIOpponent` 的建築、陸戰隊與戰車平行陣列均已持久化。舊版「按建築名字母序全部吸收，再依行星尺寸扣人口」已被 `sub_DCEBD @ 0xDCEBD` 直接反證並移除；現在以 raw building ID 48→1 建候選，排除 `{8,9,26,27,40,41,42,47}`，再混入每名陸戰隊、戰車、建造進度項與人口。抽中成本不足的單位即停止；寫回人口、駐軍、建造進度與建築 map，GAM adapter 同步保存 `BuildProgress` 與最後人口點數。1.3 建築 +1 hit 仍是 CHANGELOG 強推論；2026-08-28 已證實 Capitol 與七種防禦建築不屬一般戰略傷亡池，軌道基地與行星防禦的快速 record 建立規則見 `docs/re/strategic-bombardment-full-audit-20260828.md`。
   - [x] **#14 衛星/軌道防禦基地「space 預算武器平台」+ 版本相依 beam arc-cost(2026-07-11)**:`internal/gamedata/satellite.go` 新增獨立衛星/基地 space 預算(飛彈基地 300、地面砲台 450——手冊 p.78/p.81 確認值;星基/戰鬥站/星辰要塞 250/500/1200——借用 `ShipHullSpace` 同量級近似值)+ arc-cost 佔格公式(比照 `WeaponSpaceWithMods`)+ fit 公式;`RuleProfile` 新增 `SatelliteBeamArcCostPct`(1.3=25/1.5=33)、`GroundBatteryBeamArcCostPct`(1.3=0/1.5=50,CHANGELOG_150.TXT 1.50.7/1.50.10)。`internal/shell/orbital_bombardment.go` `retaliationAttackers` 改簽名讀 defender 科技(`bestUnlockedWeaponValue`,新 helper)+ profile,取代舊 shipStrength 4/8/16 固定 tier,推導出「隨科技變強」+「隨版本 arc-cost 不同而不同」的反擊戰力。校準除數 `SatelliteStrengthScale=20` 使雷射參考點下星基/戰鬥站重現舊 tier 4/8,星辰要塞算出 20(非近似 19,誠實標見常數註解)。平衡 sanity:開局艦隊轟炸開局 AI 母星(僅星基),Profile13/15 各掃 Turn 0..14,最大損艦數皆為 1(不破壞平衡)。測試:`internal/gamedata/satellite_test.go`(fit/arc 公式錨點)+ `internal/shell/satellite_defense_test.go`(版本差異/科技效果/飛彈基地不吃 arc/地面砲台/平衡 sanity)。誠實限制:AI 現行資料模型無研究進度推進機制,`bestUnlockedWeaponValue` 在 `NewDemoSession` 自然對局裡恆落到 fallback 分支(雷射/核飛彈),「科技變強」效果目前只能在單元測試手動建構已解鎖科技的 `PlayerState` 觀察到。
   - [x] **#4 運輸艦淨現金版本差異(2026-07-11 補實作；2026-08-28 補完整物流)**:新增「運輸艦隊」建造選項；完工時玩家貨運艦總數 +5，並依 1.3／1.5 profile 套用一次性現金加成。後續 IDA 已閉合 `player+0x36/+0x38/+0x3E/+0x40`，現支援跨殖民地運食物、殖民者每名占用 5 艘、只對使用中艦艇收維護費，以及 AI 在運輸壓力成立時依難度亂數直接增加 5 艘。仍刻意不模擬 1.3 建造當下 0–3 BC 的立即扣款；1.40+ 改為下回合扣，不影響目前 1.5 預設。詳見 `docs/re/ai-food-assignment-audit-20260828.md`、`docs/spec/ai-colony-jobs.md` 與 `docs/tech/version-1.3-1.5-diff.md` #4。
   - [x] **#13 掃描/偵測距離:輕量戰爭迷霧(2026-07-11)**:新增 `internal/gamedata/detection.go`(`ScannerRangeParsec` 基礎2/Space4/Neutron6/Tachyon8、`OrbitalScannerBonusParsec` 星基+2/戰鬥站+4/星辰要塞+6 擇一取代不疊加、`ParsecToNormalized`=1/10 換算常數、`DetectionRangeNormalized` 加總換算——**全部近似**,手冊無公開 parsec 數字)+ `RuleProfile.SensorRangeVersionBonusParsec`(1.3=0/1.5=1,對應 MANUAL_150.html「Scanners and Communications Discrepancy」修正的整體近似,非逐科技數字)+ `internal/shell/detection.go`(`GameSession.VisibleStars`/`starVisible`,啟用先前無人讀取的 `Star.Explored` 死旗標;可見條件:已探索 ∪ 玩家自己的星 ∪ 落在玩家殖民地/艦隊偵測範圍內)。`cmd/moo2/interactive.go` `drawStarmap` 接上 fog 繪製(未偵測星降噪成暗灰小點、不畫星名/擁有環;可見星維持全繪)。調參依據:量測 `NewDemoSession()` 實際程序化星系(24星,種子42)鄰近星距離,使開局 Profile13 可見 3 顆星、Profile15 可見 7 顆星(母星區可見一小圈、遠星入霧,版本差異可觀察)。**誠實邊界**:fog 純視覺,不 gate 選星/派艦/殖民/轟炸等任何操作;不做敵艦 map blip(AI 艦隊為抽象戰力,無地圖座標,零地基)。測試:`internal/gamedata/detection.go` 無獨立測試檔(純查表函式,經 `ruleprofile_test.go` 的 `SensorRangeVersionBonusParsec` 斷言覆蓋)+ `internal/shell/detection_test.go`(6 個測試:母星可見+範圍外不可見、已探索恆可見、版本差異合成盤面+真實星系、軌道基地加成星辰要塞>星基、艦隊偵測源、`VisibleStars`/`starVisible` 接線+越界安全)。`go build`/`go vet`/`go test` 全過;`moo2sim -turns 20` 經濟軌跡不變(fog 不碰回合邏輯)。

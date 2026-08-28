@@ -96,5 +96,8 @@
   compiler／runtime／平台內部不納入 remake；只保留會改變玩家可見流程的 callback、回傳與
   呼叫條件。`Deallocate_AI_Data_` 只作生命週期邊界，不因配置內部增加玩法分母。
 - **仍待 RE**：不是再追主鏈本體，而是 parity matrix 各子系統列尚未閉合的 producer、規則、
-  consumer 與資料模型。尤其 `Do_Colony_Calculations_` 兩遍之間的封鎖／遷移影響、完整間諜
-  外圈、外交回應、地面戰及戰機傷害仍各自保留為獨立缺口。
+  consumer 與資料模型。兩遍殖民地計算之間的封鎖／遷移以及後段接觸／斷聯已由獨立專題閉合；
+  完整間諜外圈、外交其餘回應及戰機傷害仍各自保留為獨立缺口；一般地面入侵已由
+  [`ground-combat-audit-20260828.md`](ground-combat-audit-20260828.md) 閉合。接觸證據見
+  [`contacts-audit-20260828.md`](contacts-audit-20260828.md)；叛亂的候選人口、地面戰與殖民地
+  回寫已由 [`rebellions-audit-20260828.md`](rebellions-audit-20260828.md) 閉合。

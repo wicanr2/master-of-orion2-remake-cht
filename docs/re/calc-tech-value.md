@@ -461,8 +461,8 @@ jmp locret_FC813   # 共用 epilogue(屬於前一個函式 sub_FC7AC),leave/pop�
 | `[player+0x206]` | byte | 365679 | 值 0..6(+default)驅動另一張跳表 | 未定名,同上情況 |
 | `[player+0x117+techIdx]` | byte,依 techIdx 索引 | 365578, 366216(以 `var_C` 為索引掃描), 366493 | `==1`(呼叫端已知)/`==3`(本函式:已取得/obsolete) | tech-item 逐項狀態陣列,`Choose_Tech_Application_` 已用過同一張表 |
 | `[player+0xC4+topic]` | byte,依主題索引 | 366455(`==3`), 366472(`==2`) | 3=主題已全部完成;2=主題目前可研究 | 主題狀態陣列,`01-gap-report.md` 已確立(`==2`可研究、`==3`完成) |
-| `[player+0x89F]` | signed byte | 366101, 366115 | `(值)/2 == 2` 或 `== 3`(有號右移 1 位,等同 ÷2 取整) | 未定名,種族特性相關(猜) |
-| `[player+0x8A0]` .. `[player+0x8AC]`、`[player+0x8B0]`、`[player+0x8B1]`、`[player+0x8B6]`、`[player+0x8B8]`、`[player+0x8A9]`、`[player+0x8AA]`、`[player+0x8BB]` | byte(多數用有號比較 `jl`/`jge`) | 365909–366161 | 每個特定 category(或特定 techIdx=5/131)各自查一個固定偏移,非 0/正負決定要不要覆蓋 `ecx` | **推測**是玩家的種族特性(race pick)旗標陣列——偏移範圍 0x89F–0x8BB(29 bytes)、多數用有號比較,形狀符合「每個特性一個 -N..+N 的等級值」,但**沒有任何一個偏移查到對應的特性名字**,純屬形狀推測,不確定 |
+| `[player+0x89F]` | signed byte | 366101, 366115 | `(值)/2 == 2` 或 `== 3`(有號右移 1 位,等同 ÷2 取整) | Government；欄位身分已由 31-byte producer／consumer 普查確認，本函式內各政府值的科技估值語意仍須逐分支審查 |
+| `[player+0x8A0]` .. `[player+0x8AC]`、`[player+0x8B0]`、`[player+0x8B1]`、`[player+0x8B6]`、`[player+0x8B8]`、`[player+0x8A9]`、`[player+0x8AA]`、`[player+0x8BB]` | signed byte | 365909–366161 | 每個特定 category（或特定 techIdx=5/131）各自查一個固定偏移，非 0／正負決定是否覆蓋 `ecx` | 欄位身分已由 `custom-race-trait-consumer-census-20260828.md` 確認；多數 category 仍需逐分支升格。`+0x8BB` 已於 2026-08-29 另由 `omniscience-stealthy-ships-audit-20260828.md` 閉合為 category `0x25` multiplier `5 -> 1`，不可再列為未解 |
 
 ---
 

@@ -484,7 +484,7 @@ func (s *Ship) load(r *reader) {
 type SettlerInfo struct {
 	SourceColony      uint8
 	DestinationPlanet uint8
-	Player            uint8
+	Player            uint8 // 原版 byte2 low nibble：來源人口的 race／player slot，不一定等於帝國 owner。
 	Eta               uint8
 	Job               uint8
 }

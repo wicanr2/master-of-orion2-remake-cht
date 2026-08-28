@@ -32,8 +32,8 @@
 | `0x3DFE0` | `Fighter_Ocv_` | 呼叫 `0x3CD21`，把結果乘 5；戰機類別路徑再合併 `0x35EAE` 的 Fighter Pilot 結果與 empire record `+2213` 的一個加成位元組。它是 OCV-like 下游證據，但沒有從此處追回敵方完整戰機消費鏈。 | 已證實（呼叫／算術／讀取）；`+2213` 欄位語意未知 | `MissileBeamDefenseOf`／PD 垂直切片使用已證實的速度分支；玩家戰機再接已證實的種族 Ship Defense 與 Fighter Pilot；不把 OCV-like 值宣稱成完整原版攔截命中率。 |
 | `0x3E095` | `Missile_Dcv_` | 標準 kind `0x0E/0x0F/0x10/0x11` 回 `4/8/12/16`；`0x12..0x14` 回 5；`0x1C..0x1F` 讀 `Best_Computer` 後用 `6/10/8/4 × (bonus+100)/200`；high-byte bit `0x08` 使結果加倍。 | 已證實（分支／算術）；ARM 名稱是強推論 | `MissileInterceptionDurabilityForRawFlags` 保留 raw flag `0x0800` 與 Dcv；`Weapon_In_Range` 的攔截鏈已接到 remake PD，但完整原版參數／所有武器映射仍未知。 |
 | `0x3A0B9` | `Weapon_In_Range_` | 讀 runtime 飛彈 kind／raw flags，呼叫 `0x3E095`；把本次攔截傷害先夾到一個 Dcv，再加 runtime `+0x0D` 餘數，以 quotient/remainder 算擊落枚數並寫回餘數。 | 已證實（資料流／算術） | `MissileWarheadsDestroyedByInterception` 複現上限、擊落數與餘數；快速結算／格子戰術的 PD 都走共用 `ResolvePointDefenseIntercept`。 |
-| `0x3AD57` | `sub_3AD57`（外部索引名稱衝突） | `a3 != 0` 的攔截分支先計 OCV-like 值，再對飛彈呼叫 `Weapon_In_Range`；否則進入 `Fire_Beam_Weapon`。完整 fighter／beam 參數仍有未定欄位。 | 已證實（呼叫鏈）；完整武器映射未知 | remake 只接「PD 對標準飛彈」垂直切片，沒有把它宣稱成原版戰機／攔截機全模型。 |
-| `0x3D2DF` | `Is_Missile_Target_Alive_` | 讀取飛彈 runtime record 的旗標與武器欄位；可觀察到旗標高位元組 bit 0 控制一次／四次套用、bit 1 影響數量、bit 2 使一個中間值減半、bit 6 參與特殊分支，低位元組 `0x20` 也改變特殊分支。 | 已證實（讀取）；旗標語意未知 | 保留 raw bits 與偏移，暫不批次命名為 ARM/FST/MIRV。 |
+| `0x3AD57` | `sub_3AD57`（外部索引名稱衝突） | 逐架 d100、OCV／DCV、40 命中門檻、艦艇或 runtime 傷害與失效重選已閉合；96..100 直接強制為 100。 | 已證實；若干來源欄位的 UI 名稱未知 | remake 現行 96..100 保留原 roll 已被反駁；等待 RE gate 後依專題 spec 修正。 |
+| `0x3D2DF` | raw `sub_3D2DF`；外部 `Is_Missile_Target_Alive_` 名稱錯置 | 實際是大型飛彈／戰機 runtime consumer；目標存活 helper 是 `sub_3D299 @ 0x3D299`。戰機四 kind 的攻擊、改目標、返航與回收均在此閉合。 | 已證實（caller、欄位與控制流）；旗標正式名稱未知 | 保留 raw bits；玩家可見戰機契約見 `fighter-runtime-audit-20260828.md`，不把外部名稱當證據。 |
 | `0x39F1D` | `Destroy_Ship_` | 讀取設計武器槽 `+0x52` 的 weapon ID、`+0x56` 的 16 位元旗標；`+56 & 4` 使一個值加倍，`+56 & 2` 使其減半，之後做武器／目標類別合法性判定。這不是已證實的飛彈生命值消費端。 | 已證實（欄位讀取）；ARM 語意未知 | 不將 `+56` 的位元直接命名為 ARM。 |
 | `0x3A142` | `Apply_Damage_To_Missile_` | 將現有飛彈 runtime metadata 組成 bitmask；目前沒有看到 ARM 清除／攔截傷害加倍的直接寫入端。 | 已證實（流程）；ARM 消費端未知 | ARM 保持未接線。 |
 | `0xABC5D` | `Anti_Missile_Rockets_` | 載入 `CMBTSFX.LBX`，計算位置並呼叫動畫／音效／繪圖流程；周邊路徑也處理飛彈數量，但本函式本身沒有可回查的 ARM 彈體耐久公式。 | 已證實（視覺流程） | remake 的 AMR 仍只使用已證實的距離命中率；不把 ARM/FST 硬接進去。 |
@@ -49,7 +49,7 @@ runtime 記錄，避免把「有速度函式」誤寫成「敵方逐艦設計已
 | `0x3CD21` | 讀取呼叫旗標的 `0x10` bit 時執行 `add edx,4`；該旗標在 `0x3C892` 的 runtime 初始化鏈中來自設計槽 raw flags。 | 已證實（速度分支）；旗標名稱未知 | 可支持 FST「速度 +4」；不單憑此宣稱完整攔截器 Beam Defense 已接。 |
 | `0x3DFE0` | `Fighter_Ocv_` 先呼叫 `0x3CD21`，再把其結果乘 5；同一 raw 函式被 `0x2B7CC`（飛彈有效強度路徑）與 `sub_3AD57` 呼叫。 | 已證實（呼叫與算術）；完整參數語意強推論／未知 | 保留 `MissileBeamDefenseFast`／戰機公式資料；不把 OCV-like 值直接改名成單一 Beam Defense 欄位。 |
 | `0x3E563`、`0x2A46A` | `0x3E563` 以戰鬥記錄 `+0x4A` 判斷 `Fighter_Combat_SFX`；`0x2A46A` 的 `Target_Ship_Value` 掃描候選時排除該類記錄，再呼叫 `0x2A239` 進行艦艇目標評估。 | 已證實（讀取／排除端） | remake 一般戰術畫面只在有逐艦資料的敵艦中選目標；不因這段證據虛構 `genEnemyFleet` 的敵方戰機。 |
-| `0x3AD57` | `sub_3AD57` 的一個分支呼叫 `Retarget_Missile` 與 `Fighter_Ocv`，另一分支進入 `Fire_Beam_Weapon`；IDA 反編譯仍有未定參數與跨函式資料流。 | 已證實（呼叫）；完整武器／目標映射未知 | 不把相鄰 `sub_3AC20` 的直接傷害式誤套成這條命中公式。 |
+| `0x3AD57` | 由 `sub_3D2DF` 依 raw kind 呼叫；艦艇與 runtime 目標、命中傷害、重選與擊殺均已閉合。 | 已證實；外部函式名稱衝突 | 不把相鄰 `sub_3AC20` 的直接傷害式誤套；完整鏈見 `fighter-runtime-audit-20260828.md`。 |
 
 手冊 p.157 已明定：主要目標仍有效時維持它，只有主要目標失效且仍有射擊才自動重選。
 因此 `cmd/moo2/tacticalfighter.go` 現在讓 `FighterSquadron` 保存 `TargetName`，只在目標
@@ -60,7 +60,8 @@ runtime 記錄，避免把「有速度函式」誤寫成「敵方逐艦設計已
 在接戰前消費同一艘艦的 PD 使用旗標；戰機命中判定使用 p.157 的
 `5*Speed + racial Ship Defense + Fighter Pilot + Helmsman`；目前玩家呼叫端已由參戰艦隊資料
 提供前兩項，Helmsman 明示傳 0。這是「順序＋公式＋玩家種族／戰機飛行員加成」的切片，
-不是原版 `sub_3AC20`／`sub_3AD57` 的完整 raw record 參數、敵方戰機政策或逐彈 runtime 等價。
+不是原版逐筆 runtime 等價；其完整靜態契約已於 2026-08-28 閉合，現行 remake 差異另見
+[`fighter-runtime-audit-20260828.md`](fighter-runtime-audit-20260828.md)。
 
 ## 目前可安全接入的邊界
 
@@ -69,7 +70,7 @@ runtime 記錄，避免把「有速度函式」誤寫成「敵方逐艦設計已
 2. FST 的 `+4` 分支與速度 runtime 下游已由 `0x3C892`／`0x3CD21`／`0x3DFE0` 串起；
    remake 以標準四種飛彈的 `MissileBeamDefenseOf` 接到 PD 垂直切片，但完整原版反飛彈武器
    的命中／行動順序仍未知；戰機接戰前的 PD 觸發順序已依 help 第 402 筆接入，但其
-   `sub_3AC20`／`sub_3AD57` 的完整 raw 參數與敵方路徑仍未知。
+   `sub_3AC20`／`sub_3AD57` 的 raw 參數與敵方路徑已閉合；remake 尚未依同一 runtime 重構。
 3. ARM 的手冊效果「摧毀所需傷害 ×2」與 `0x3E095` high-byte bit `0x08`、`0x3A0B9`
    的 Dcv 消費鏈相符，列為強推論；remake 已以 raw `0x0800` 接到共用 PD 攔截，但不把
    這個垂直切片升格成原版所有攔截器／AMR／戰機路徑都已還原。
@@ -93,7 +94,7 @@ IDA 線性位址，object #1 的 `0x3CD21` 對照為 `0x13CD21`。該資料庫�
 
 ## 2026-08-11 remake 消費端更新
 
-上面的「完整 `sub_3AC20`／`sub_3AD57` raw 參數未知」仍然成立；但同一 raw chain 已足以支持
+本節是 2026-08-11 的歷史接線快照；完整 raw 參數已由 2026-08-28 專題閉合。當時同一 raw chain 已足以支持
 不再使用固定近似傷害。`sub_3AD57 @ 0x3AD57` 對艦艇路徑的攻防修正、`<=95` 尾端
 處理、40 命中門檻與 ID 31 第二組傷害範圍已落到 `internal/shell/fighter_attack.go`
 與 `internal/gamedata/fighter_damage.go`；相鄰 `sub_3AC20 @ 0x3AC20` 的
@@ -115,9 +116,9 @@ IDA Pro 9.4／IDA 線性位址下，兩份外部索引對名稱互相錯位：`0
 `S=max-min>0` 時 `D=min+floor((floor(100/(2*S))+R)*S/100)`，否則 `D=min`。
 它把每次結果送 `sub_39985 @ 0x39985` 並依 runtime `+0x0F` 數量累加。
 
-`sub_3AD57 @ 0x3AD57` 的艦艇路徑則是另一式：`R<=95` 才加
-`OCV=sub_3DF8D(W)-target defense`（另一 branch 用 `sub_3DFE0`），只把結果上夾
-100；`R+OCV<40` miss，命中時
+`sub_3AD57 @ 0x3AD57` 的艦艇路徑則是另一式：`R>95` 時直接把修正值設為 100；
+否則加 `OCV=sub_3DF8D(W)-target defense`（另一 branch 用 `sub_3DFE0`）並只上夾
+100。修正值小於 40 miss，命中時
 `min+floor((M-40)*(max-min+1)/60)`，`DI==0` 再做 signed half。其
 `var_18` 只由 raw `0x0100` 產生 `0x40`，故 `test var_18,4 @ 0x3AE4E` 不可達；
 `RawFlags & 4` 不應被 remake 虛構成半傷害／+25 效果。`sub_39985` 與

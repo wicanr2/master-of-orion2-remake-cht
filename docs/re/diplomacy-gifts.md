@@ -43,8 +43,10 @@ address-ledger 的歷史索引。本輪改以目前 `Orion2.exe.i64` 的 raw IDA
 `0x5345B` 比較 `word_180DB8[government]`，且 `dx > 0x64` 時再呼叫 `sub_51078`。
 因此不能把它誤寫成另一個單一固定接受常數。
 
-目前真正的外交回應函式 `sub_539D9 @ 0x539D9` 在 `0x53A92` 依 `var_4` 分成九種
-模式。直接比較指令證實兩套狀態路徑：
+**2026-08-28 勘誤：** `sub_539D9 @ 0x539D9` 的唯一直接 caller 是
+`Diplomacy_Demand_ @ 0x18B79` 的九種玩家需求；它不是現金餽贈接受器。以下門檻仍是正確的
+raw 指令證據，但不得再拿來證明 cash gift 的接受公式。完整模式與 consumer 見
+[`diplomacy-response-audit-20260828.md`](diplomacy-response-audit-20260828.md)。
 
 | 狀態路徑 | 精確分支邊界 | 原始訊息／旗標效果 |
 |---|---|---|
@@ -58,9 +60,8 @@ address-ledger 的歷史索引。本輪改以目前 `Orion2.exe.i64` 的 raw IDA
 | 另一狀態路徑 | `-75 ≤ score < 0` | `0x53E2D`／`0x53D8E` → `0xA8` |
 | 另一狀態路徑 | `score ≥ 0` | `0x53E2D`／`0x53E38` → `0xA9`、成功旗標 `1` |
 
-因此本輪可把「原版門檻常數」標為**已證實**；但哪個 `var_4` 模式是現金、科技、
-條約或需求，以及每一種提案完整採用哪一條路徑，仍是**強推論／部分未知**。這不等於
-已追回所有 AI end-to-end 接受公式。
+因此門檻常數仍為**已證實**，但它們只屬需求回應。九種 raw mode、payload 與成功 consumer
+已於 2026-08-28 閉合；現金餽贈的 AI 接受公式仍不能由此函式外推。
 
 ## 原版資料流
 
@@ -69,8 +70,8 @@ address-ledger 的歷史索引。本輪改以目前 `Orion2.exe.i64` 的 raw IDA
 | 外交畫面有「指定金額」現金餽贈 | `help.tsv` 的 `Offer this Emperor a specific amount of money.`（第 600 筆）；`Get_Human_Offer_Gift_Message @0x186D3` 的 `a3=5` 分支走現金餽贈文字；`func_names.txt` 將 `Diplomacy_Offer_Money` 定位在 `0x1D565` | 強推論（介面語意與 raw 分支互相支持） |
 | 現金餽贈的金額可被畫面輸入 | `Diplomacy_Offer_Money @0x1D565`；`Draw_Diplomacy_Screen @0x16F00` 在 `word_19AA40 < 1000` 時呼叫它，`.asm` 同段保留 `word_19AA40` 的數字顯示／更新路徑 | 已證實（畫面資料流） |
 | 成功交易是玩家國庫減、對手國庫加 | `An @0x1DEF8` 的外交 case 13；`Orion2.exe.asm` 對應 case 13 先格式化 `word_19A192` BC，再對 `dword_197F98 + 3753 * player + 50` 減額、對對手同欄位加額 | 已證實 |
-| 現金餽贈會改善外交評估 | 同一輸入的 `sub_539D9 @0x539D9` 在 `var_4` 模式分支中直接使用上述評分與 `-100/-50/-25/0`（或特殊路徑 `-150/-75/0`）比較；原始訊息／成功旗標也在同一函式寫出 | 已證實（門檻常數與分支）；現金模式對應仍部分未知 |
-| AI 一定接受、拒絕門檻與完整關係分數 | `sub_53146` 的四桶與 `sub_539D9` 的兩套分支已追回；前置欄位、亂數、`var_4` 模式與 `sub_53E96` 的完整語意尚未全部命名 | 門檻已證實；end-to-end 接受公式部分未知 |
+| 現金餽贈會改善外交評估 | 舊結論誤用 `sub_539D9`；目前只證實交易資源方向與 remake 的固定關係增益 | 原版接受／關係公式未知 |
+| AI 一定接受、拒絕門檻與完整關係分數 | `sub_53146` 屬 AI 條約 proposal；`sub_539D9` 屬玩家 demand。兩者都不是 cash gift consumer | 現金餽贈 end-to-end 接受公式未知 |
 
 ## 重製對映
 

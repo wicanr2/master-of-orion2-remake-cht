@@ -23,7 +23,7 @@ package gamedata
 //
 //	cmp  byte ptr [colony+12Fh], 4
 //	jz   結束                       ; ★ 4 = 未被征服(初始化時設的預設值)→ 根本不檢定
-//	...                             ; 掃人口單位,ecx = 未同化且「原主帝國還在」的單位數
+//	...                             ; 掃 packed prisoner；ecx = 舊主帝國仍存續的合格單位總數
 //	test ecx, ecx
 //	jle  結束                       ; 沒有這種人口 → 不叛亂
 //	imul edx, ecx, 0Ah              ; ★ 機率 = 單位數 × 10
@@ -97,8 +97,9 @@ func RebellionDifficultyAdjust(difficulty int) int {
 
 // RebellionChancePermille 回傳這個殖民地本回合的叛亂機率(千分之一)。
 //
-// unassimilated 只算「原主帝國仍然存在」的未同化人口單位——原版在計數迴圈裡查了
-// `[player+0x24] == 0` 才 `inc ecx`。這條有規則上的道理:叛亂成功要有可以「還政」的舊主。
+// unassimilated 對應原版所有「舊主帝國仍存續」的 packed prisoner 合計——原版另按 race
+// 建立權重表抽出還政舊主，但機率與第二次叛軍數量骰都使用合計，而不是抽中舊主自己的數量。
+// remake 目前只保存單一 ConqueredFrom，這個函式只表示已閉合的數值公式，不代表完整資料模型。
 //
 // 運算順序照原版:基準 → 難度 → 減半 → 加倍。
 func RebellionChancePermille(unassimilated, difficulty int, ownerIsHuman, rebelIsAI, hasAlienManagementCenter, exterminating bool) int {

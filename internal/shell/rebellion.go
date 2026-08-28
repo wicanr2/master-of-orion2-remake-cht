@@ -43,10 +43,13 @@ import (
 //
 // 所以起事的是 **rand(1..未同化人口數)**。手冊完全沒提這件事。
 //
-// ============ 誠實留白 ============
+// ============ 原版證據與現行近似的邊界 ============
 //
-//   - **只檢定玩家的殖民地。** AI 打下玩家殖民地那條路徑本來就沒有同化模型
-//     (見 assimilation.go 檔頭),沒有未同化人口可以叛亂。
+//   - 原版掃描全部活動殖民地；本檔只檢定玩家殖民地，是 remake 目前缺少 AI packed prisoner
+//     模型的近似，不是原版規則。
+//   - 原版按各 race prisoner 數加權抽舊主；remake 只保存單一 ConqueredFrom。
+//   - 原版鎮壓成功不刪 packed population；本檔 suppressRebellion 仍會刪人口，已確認為待 READY
+//     spec 修正的偏差。RE-first gate 期間不在這裡直接改玩法。
 //   - **沒有滅絕政策。** remake 沒有這個選項,所以「×2」那一路目前不會發生
 //     (`gamedata.RebellionChancePermille` 仍收這個參數,等 UI 有那個選項時直接接上)。
 //   - **守方的裝甲那一格用 `PlayerColonyTanks`**,與 `InvadeColony` 守方留 0 的處理不同
@@ -135,7 +138,8 @@ func (s *GameSession) colonyTanksAt(i int) int {
 	return s.PlayerColonyTanks[i]
 }
 
-// advanceRebellions 每回合對所有玩家殖民地做一次叛亂檢定。
+// advanceRebellions 每回合對 remake 目前可表示的所有玩家殖民地做一次叛亂檢定。
+// 原版 `Check_All_Rebellions_` 會掃描全部活動殖民地，包含 AI owner；此資料模型差異已登記。
 //
 // **由後往前掃**:叛亂成功會移除殖民地,由前往後掃會讓後面的索引全部位移。
 func (s *GameSession) advanceRebellions() []RebellionResult {
@@ -206,11 +210,11 @@ func (s *GameSession) checkRebellionAt(i int) (RebellionResult, bool) {
 	return res, true
 }
 
-// suppressRebellion 鎮壓成功後的後果:起事的人口單位被消滅。
+// suppressRebellion 是現行 remake 的鎮壓近似：把起事人口單位消滅。
 //
-// 手冊沒有逐字寫「鎮壓後死多少人」,原版那段在 `Resolve_Rebellion_Troops_` 裡
-// (沒有逐指令抄)。這裡採「起事者全滅」——**這是 remake 的建模選擇,不是手冊或
-// 反組譯的逐字依據**,寫明白。人口下限 1,免得殖民地在鎮壓中自我消滅。
+// 2026-08-28 IDA 已證實原版守方勝利不呼叫 `Resolve_Rebellion_Troops_`，也不刪 packed
+// population；該 helper 只在叛軍勝利後把剩餘叛軍轉成最多四名陸戰隊。因此本函式不是原版
+// 行為，須待 RE-first gate 關閉並有 READY spec 才能更動。人口下限 1 只是現行近似的護欄。
 func (s *GameSession) suppressRebellion(i, rebels int) {
 	c := &s.PlayerColonies[i]
 	lost := rebels

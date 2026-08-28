@@ -131,7 +131,7 @@
     reason 124 不在二選一集合，僅顯示後清除，payload 不生效。拒絕 105 的 raw call 是
     `sub_4E3B5(-50, AI, human, 0, 0, 0)`；新匯出確認它先讀 human→AI `+0x617`，套真人政體與
     AI Charismatic 後，在 `0x4E991..0x4E9A7` 把結果鏡射回 AI→human，因此現有單一 raw 分數
-    足以精確接線。拒絕 106 讀 AI→human `+0x837／+0x887`；star 非 -1 時搬到
+    足以精確接線。拒絕 106 讀 AI→human `+0x837／+0x887`；planet ID 非 -1 時搬到
     `+0x7C7／+0x7C9`，-1 才呼叫 `sub_51078` 宣戰並顯示 reason 179。
 29. `sub_FF593` 蟲洞判定的精確順序已閉合：目標星有 source 殖民地，或目標星直接在
     source／聯盟人口據點燃料航程內，或蟲洞 partner 已被 source 造訪且 partner 在該航程內，
@@ -140,15 +140,15 @@
 30. reason 105 拒絕 callback 已接 `OriginalChangeRelationScore`，使用真人政體、AI Charismatic、
     正式狀態與現有 raw 關係；正常 UI 不再於進畫面前清除 payload。reason 106 的 committed
     consumer、合法 -1 宣戰分支與 snapshot 已接；`+0x837` 現由每回合單主力艦隊的強推論
-    adapter 刷新，`+0x887` 取已閉合的 worst reason。多艦隊精確搜尋仍未閉合；舊存檔或資料
+    adapter 刷新，`+0x887` 取已閉合的 worst reason。原版多艦隊搜尋已由後續 IDA 切片閉合；舊存檔或資料
     不足形成 unknown 時保留請求，不能冒充 -1。原始匯出見
     [`evidence/ai-human-request-reject-ida-20260828.json`](evidence/ai-human-request-reject-ida-20260828.json)。
 31. `+0x837／+0x847／+0x857` 唯一常態 writer 是 `sub_1FD80 @ 0x1FD80..0x1FED2`，由世界回合
     `sub_136B3 @ 0x136F7` 在 `sub_252A7` 外交決策前呼叫。它逐 source／target 帝國，經
-    `sub_DBC5C → sub_DBB9F → sub_D94B3` 輸出 star、word 評估與 dword 壓力；不符合接觸／存活
+    `sub_DBC5C → sub_DBB9F → sub_D94B3` 輸出 planet ID、enemy-colony worth 與 dword 攻防壓力；不符合接觸／存活
     gate 時分別清為 -1／0／0。`sub_D94B3` 是依多艦隊、航線、戰區與星系資料運作的大型搜尋，
     不是單純 colony value argmax。remake 的單主力艦隊沒有同構資料；依先前允許的 callback
-    近似邊界，現以既有原版 Colony／Enemy Colony／Proximity 三層 scorer 產生 star，標為
+    近似邊界，現以既有原版 Colony／Enemy Colony／Proximity 三層 scorer 產生近似目標，標為
     **強推論近似**。reason 仍取 `sub_544A1` 已閉合的 worst reason；合法無候選保存 known -1。
 
 ## Remake 對映與限制
@@ -165,7 +165,8 @@
   Dishonored -10。只終止貿易的反例不寫此旗標。
 - 已接垂直鏈：`OriginalHumanTargetIncidentScore` 消費 `+0x71F／+0x6CF`；玩家成功且實際生效的
   STEAL／SABOTAGE 依原版 reason 1／3 與兩次亂數先寫關係及 pending，再於下一回合轉成 memory。
-  嫁禍 reason 2／4 與其餘 reason 5..9 尚未 typed，不偽造 writer。
+  嫁禍 reason 2／4 的原版 writer 與第三方抽選已閉合，但 remake 尚未 typed；reason 5／7／8／9 已證實屬其他系統 producer，
+  reason 6 沒有獨立 literal producer，見 `change-relations-callers-audit-20260828.md`。
 - 已接純規則：存活帝國人口優勢與 40 回合人口成長差；兩者直接消費原版已存在的
   `+0xA6／+0xB9B` typed 對映，不把反編譯器暫名當證據。
 - 已接純規則：`sub_500CF` 國力比重用既有 `OriginalNPCPowerRatio`，另補 ratio>=300 的
@@ -194,11 +195,12 @@
 - 已移除：producer 的固定 12 回合寬限、1.25 倍軍力門檻與 losing-ground personality
   擬亂數。10 回合 `LastRaidTurn` 只留作 remake 單一主力艦隊停在同星時避免每回合重複
   結算，不能稱作原版 target cooldown。
-- 尚未閉合：`sub_544A1` directional incident 的嫁禍 reason 2／4 與其餘 reason 5..9 writer，
-  以及 `sub_D94B3` 原版多艦隊
-  搜尋的逐資料結構 exact parity；後者已有明示強推論的單主力艦隊近似 producer，不再阻塞
+- 尚未承接：`sub_544A1` directional incident 的嫁禍 reason 2／4 remake typed state。原版
+  多艦隊搜尋已閉合，但 remake 尚未承接其逐 ship 航路、十回合候選、預估防守建造與攻防壓力
+  資料模型；現有明示強推論的單主力艦隊近似 producer 不再阻塞
   reason 106 玩家選擇。接受、兩種拒絕、reason 124 單向通知與正常二選一 UI 已閉合。只有必要 typed 輸入 unknown 時，
-  願戰來源才保留明示的 `DecideStance` 相容 fallback；不以部分 score 升格整條決策。
+  願戰來源才保留明示的 `DecideStance` 相容 fallback；不以部分 score 升格整條決策。原版搜尋證據見
+  [`opportunity-attack-search-audit-20260828.md`](opportunity-attack-search-audit-20260828.md)。
 
 ## 勘誤：`sub_4F93B`
 

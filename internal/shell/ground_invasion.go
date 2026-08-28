@@ -737,9 +737,9 @@ func (s *GameSession) MindControlColony(starIdx int) GroundInvasionResult {
 //
 // 解算組雙方 gamedata.GroundSide(2026-08-07 換成**原版的資料結構**,見下)。
 //
-//   - 攻方:陸戰隊 = 類型 0、戰車營 = 類型 1。原版的一方就是「四種部隊,一種打完換下一種」
-//     (`Ground_Combat_Round_` @ 0xEC4FE,見 gamedata/ground_battle_orig.go),
-//     與先前「合併陣列、陸戰隊在前」的意圖相同,只是換成原版的形狀。
+//   - remake 攻方使用陸戰隊 type 1、裝甲 type 0。2026-08-28 IDA 已證實原版一般入侵攻方
+//     只由 type 2 transport 每艘提供四名 type 1 陸戰隊，不運送 type 0 裝甲；現行混編是
+//     待 READY spec 修正的資料模型偏差，不是原版四類型配置。
 //     force 套用 playerMarineForce()(裝甲/裝備/種族加成),持有 Battleoids 再疊
 //     tankForceBonusFor,再疊 Commando 領袖加成。
 //     hits-to-kill 陸戰隊/戰車營分開算(GroundMarineHitsToKill / tankHitsToKillFor)。
@@ -748,9 +748,7 @@ func (s *GameSession) MindControlColony(starIdx int) GroundInvasionResult {
 //     原版的結構逐類型記數量,戰後直接讀 `Count[類型]` 就是各兵種的真實存活數,
 //     不必再用 `min(總存活, 戰車原始數)` 推算。那段說明連同它的 TODO 一併移除。
 //
-//     ⚠ 仍在的留白:原版**每種部隊各有一個攻擊力**(`[side + type*2 + 2]`),
-//     那張表還沒追出來,所以兩種目前都填同一個 atkForce。填同值 = 維持現行數字,
-//     而且把差異留在一個看得見的地方(見呼叫處的註解)。
+//     原版逐類型攻擊力的 Battleoids／Powered Armor 分支已閉合；現行 typed helper 已分別加入。
 //
 //   - 守方:使用 AIOpponent 每座殖民地的駐軍池與兵營 age。AI 舊存檔缺少新欄位時,
 //     ensureAIGroundForceSlots 只在第一次以現有建築的 age=0 初值補上；新局與每回合
@@ -765,8 +763,8 @@ func (s *GameSession) MindControlColony(starIdx int) GroundInvasionResult {
 // 殖民地過戶，Capitol 依原版 `sub_ECBF7` 單獨移除並觸發舊擁有者重指派；再從
 // AIOpponent/Colony* 與 AI 駐軍平行陣列移除、
 // 雙方持有星數更新(AI.OwnedStars--;玩家由 PlayerOwnedStars() 即時算,Owner 已轉 1 故自動反映)。
-// 過戶殖民地保留原始 Population；原版靜態呼叫鏈 `Change_Colony_Ownership_ @ 0xED260`
-// → `Resolve_Invasion_Troops_ @ 0xECECA` 寫回的是入侵部隊欄位，不是人口欄位。守方戰鬥
+// 過戶殖民地保留原始 Population；原版靜態呼叫鏈 `Change_Colony_Ownership_ @ 0xECF41`
+// → `Resolve_Invasion_Troops_ @ 0xECE05` 寫回的是入侵部隊欄位，不是人口欄位。守方戰鬥
 // 單位存活數只作結果摘要／守方駐軍回寫，不能當成俘虜人口。
 //
 // 攻方敗(含無法佔領的平手／同時歸零情況皆歸守方,見 ResolveGroundCombatOrig):FleetMarines/FleetTanks 回寫為攻方存活數
@@ -815,15 +813,15 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	// 合併陸戰隊+戰車營單位:Force 只借用 marineUnits/tankUnits 建構出來的 Units,side 級的
 	// atkForce 已在上面算好,故建構單位時 force 參數傳 0(NewGroundForce 的 force 只是塞進
 	// GroundForce.Force 欄位,這裡改在合併後的 atk struct 上設一次即可,避免混淆)。
-	// 攻方分兩種部隊:陸戰隊 = 類型 0、戰車營 = 類型 1(原版是「一種打完換下一種」,
-	// 與先前「戰車營排在合併陣列尾端」的意圖相同,只是換成原版的資料結構)。
+	// remake 攻方分兩種部隊：裝甲 type 0、陸戰隊 type 1。原版一般入侵只有 transport
+	// 提供的 type 1 陸戰隊；保留 type 0 是現行可玩近似，RE-first gate 期間不直接改行為。
 	//
 	// 逐類型的攻擊力/耐受值 = side 級基礎 + 該類型的調整量。
 	// 調整量是原版四個 case 的**純立即數**(裝甲 +10 攻擊 +1 耐受、陸戰隊基準、民兵 −10),
 	// 見 gamedata.GroundTypeStrengthDelta / GroundTypeHitsDelta。
 	//
-	// ⚠ 原版那兩個「科技加成」欄位(加成塊 +1/+3、+2/+4)還沒對出意義,不含在調整量裡
-	// ——回一個「差不多」的值會讓日後追出真值時看不出哪裡被污染過。
+	// 加成塊 +1/+2 是 Battleoids 裝甲專屬、+3/+4 是 Powered Armor 陸戰隊專屬；固定
+	// 類型 delta 與科技 bonus 分開加入，避免重複計算。
 	var atkStrength, atkCounts, atkHits [gamedata.GroundUnitTypes]int
 	atkStrength[groundTypeMarines] = atkForce +
 		gamedata.GroundTypeStrengthDelta(groundTypeMarines) + groundMarineOnlyBonusFor(s.Player)
@@ -907,7 +905,7 @@ func (s *GameSession) InvadeColony(starIdx int) GroundInvasionResult {
 	if res.AttackerWon {
 		captured := colony
 		transferredBuildings := s.prepareCapturedAIColony(aiIdx, colonyIdx, capturedPlanet)
-		// `Resolve_Invasion_Troops @ 0xECECA` 寫回的是原始殖民地的入侵部隊欄位
+		// `Resolve_Invasion_Troops_ @ 0xECE05` 寫回的是原始殖民地的入侵部隊欄位
 		// (上限由 `Invade @ 0xED59D` 決定)，不是人口欄位。靜態證據沒有支持「守方
 		// 戰鬥單位存活數 = 佔領後人口」，所以保留 captured.Population；markColonyConquered
 		// 會把同一批原人口記成未同化人口。

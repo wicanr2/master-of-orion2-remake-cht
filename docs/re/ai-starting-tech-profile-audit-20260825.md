@@ -43,3 +43,12 @@
 - `RollOriginalAIRaw27` 與 `RollOriginalAITechProfile` 保留 raw 抽選與千分比縮放。
 - `OriginalAITechValueKnownSlice` 實作 AI 類別／特性分支並進入共用後段。
 - 正常先進級開局以 AI 原版種族索引建立 profile，三個 AI 使用獨立可重播亂數流。
+
+## 2026-08-29 Stealthy Ships 補證
+
+第一組六候選權重的 stack 順序已追回；`player+0x8BB == 1` 在 `0x58D5D` 對候選 1 加 100，
+最後由同組抽選寫入 `player+0x28`。`Calc_Tech_Value_` 則只在非人類 AI 的 category `0x25`
+把表定 multiplier 5 覆寫為 1；該 category 的四項 tech ID 為 38／53／126／172，即
+Cloaking Device、Displacement Device、Phasing Cloak、Stealth Field。這不是單一 Stealth Field
+特例，也不是最終科技價值固定為 1。證據見
+`evidence/stealthy-profile-tech-ida-20260829.json`。

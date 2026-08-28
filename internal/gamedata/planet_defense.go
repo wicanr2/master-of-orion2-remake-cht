@@ -76,8 +76,8 @@ func FighterGarrisonSquadrons(tier FighterGarrisonTier) int {
 }
 
 // FighterGarrisonStrategicStrength 是原版 Fighter_Garrison_Strength_ @ 0x5F64C
-// 的正常戰略模式公式。beamDamage／bombDamage 是玩家已知合格武器的最大傷害，
-// armorReduction 是最佳裝甲的單次減傷。
+// 在 byte_199CB4 == 0 時的公式分支；原版選擇 Strategic_Combat_ 的模式則固定回傳 120。
+// beamDamage／bombDamage 是玩家已知合格武器的最大傷害，armorReduction 是最佳裝甲的單次減傷。
 func FighterGarrisonStrategicStrength(tier FighterGarrisonTier, beamDamage, bombDamage, armorReduction int) int {
 	beamWeight, bombWeight := 40, 0
 	switch tier {

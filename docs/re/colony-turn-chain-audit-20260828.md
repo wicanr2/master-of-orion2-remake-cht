@@ -121,16 +121,20 @@ BC、維護、納貢、領袖及事件分流；其已閉合欄位沿用既有專
 `Twiddle_Initial_Homeworlds_ @ 0xE5832..0xE5AE7`：第一次在建立母星與更新艦艇航程後，第二次在
 建立開局艦後。這交叉支持它是可重入的 derived-state rebuild，而不是「每呼叫一次就過一回合」。
 
-封鎖與殖民者移動本體仍是獨立玩法：`Compute_Blockades_` 的 `memset_` 只作暫存清理，
-`Move_Settlers_` 的 `memset_／memmove_` 只作記錄操作；它們的玩家可見選擇、亂數與回寫不可因
-runtime helper 被排除。第二遍 `E2B31` 已證實消費它們改變後的 colony／player records。
+封鎖與殖民者移動本體是獨立玩法：`Compute_Blockades_` 已由後續專題閉合為每回合清表、依已抵達
+艦隊與外交 policy 重建 `star+0x2A/+0x2B[]`，再由 AI 職務／食物運輸與戰時積怨消費；見
+[`blockades-audit-20260828.md`](blockades-audit-20260828.md)。`Move_Settlers_` 的 ETA、貨運艦
+gate、容量、四位元組記錄、封鎖／事件抵達 gate、人口與訊息回寫亦已獨立閉合；`memmove_` 只作
+記錄壓縮，不列入玩法分母。見
+[`move-settlers-audit-20260828.md`](move-settlers-audit-20260828.md)。第二遍 `E2B31` 已證實會吸收
+兩者改變後的 colony／player records。
 
 ## 完成邊界
 
 - **已證實**：一次性套用鏈、兩遍 derived rebuild、六階段順序、active record gates、三個 raw
   cache producer、殖民地專業公式、開局兩個額外 caller。
-- **未一併閉合**：`Update_Player_Stats_` 的其餘非收入 cache、封鎖選擇、殖民者遷移規則，
-  以及 `+0x5EA` bit 累加的高層 consumer 語意。它們應按玩家影響另開窄切片。
+- **未一併閉合**：`Update_Player_Stats_` 的其餘非收入 cache，以及 `+0x5EA` bit 累加的高層
+  consumer 語意。它們應按玩家影響另開窄切片；殖民者遷移已由上述專題閉合。
 - 士氣已由 [`colony-morale-audit-20260828.md`](colony-morale-audit-20260828.md) 另案閉合，不再
   列為本鏈未知 producer。
 - **remake 判定**：目前 `RunEmpireTurn`／shell helpers 可玩，但尚未依此精確 phase ordering 做

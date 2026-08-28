@@ -80,19 +80,22 @@
 - 已證實形狀：建立原版快速戰鬥狀態後固定跑 3 個外層回合，每輪依實際 combatant 呼叫
   `Missile_Attack_`、`Strat_Special_Attack_` 與另一武器攻擊鏈，超過 30,000 傷害即提前停止，
   最後以累積值除以 40。
-- 2026-08-24 訂正：Go 已把外圈固定為 3，並將 1.31／1.50 的 5／10 限縮為炸彈攻擊當量；
-  30,000 提前停止也已接線。逐武器數量、快速戰鬥記錄與最終 `/40` 尺度仍未完整映射。
-- 判定：**控制流部分對齊，資料尺度仍部分對齊**。詳見 `strategic-bombardment-audit-20260824.md`。
+- 2026-08-28 訂正：33-byte 快速戰鬥記錄、依 hull／record type 查固定攻擊次數的 9×36 表、
+  最佳武器選取、三外圈、30,000 上限與最終 `/40` 尺度均已由 raw 指令閉合。原版戰略轟炸
+  不按設計槽逐門計數；Capitol 不建立 combatant，三層軌道基地互斥，七種防禦建築也不在
+  一般戰略傷亡池逐棟移除。
+- 判定：**原版玩法 RE 已閉合，remake 仍部分對齊**。詳見
+  `strategic-bombardment-full-audit-20260828.md`。
 
 ## 尚未完成判讀、但已證明不能結案的抽樣
 
 | 系統 | IDA 原始入口 | 目前 Go 狀態 | 稽核判定 |
 |---|---|---|---|
 | 每回合主鏈 | `Next_Turn_Calc_ @ 0x136B3` | `EndTurn` 分批呼叫自製經濟、AI、事件與外交 | 原版有固定數十子系統呼叫順序；20 回合經濟健康測試不能證明順序與副作用一致 |
-| 人口與殖民地成長 | `Apply_Colony_Pop_Growth_ @ 0xE2DCA` | 稽核當時使用 `popGrowthThreshold=300` 與多個調校尺度；300 已於 2026-08-24 依官方 1.50 手冊訂正為 1,000 | 原版函式超過 1,600 bytes，含 job、事件、種族／政府與殖民地欄位；其餘仍需逐欄重建，見 `population-growth-scale-audit-20260824.md` |
+| 人口與殖民地成長 | `Colony_Pop_Grows_ @ 0xE1839`、`Apply_Colony_Pop_Growth_ @ 0xE2DCA` | 稽核當時使用 `popGrowthThreshold=300` 與多個調校尺度；300 已於 2026-08-24 依官方 1.50 手冊訂正為 1,000 | 2026-08-28 已由 IDA 閉合完整逐族 factor、滅絕、池處理與職務回寫；remake 差異待 RE gate 後重審，見 `population-growth-runtime-audit-20260828.md` |
 | 地面戰 | `Ground_Combat_Round_ @ 0xEC4FE` | 已有固定 RNG 與兵種結構 | 核心比較形狀相近，但原版記錄欄位、兵種輪替、傷亡回寫與 AI 加成仍須垂直核對，不可只靠 helper 同形宣稱完成 |
 | 戰機 | `Fire_Fighter_Bomb_ @ 0x3AC20`、`Fire_Fighter_Beam_ @ 0x3AD57` | 部分傷害式已接；敵方 profile、科技與目標選擇仍有 remake 推導 | 純傷害子式有證據；完整出擊、目標、PD、返航與敵艦 runtime blueprint 尚未閉合 |
-| 行星戰機駐防 | `Fighter_Garrison_Strength_ @ 0x5F64C` | 依科技選 10/6/4 中隊與抽象貢獻 | 原版讀玩家科技旗標與武器表做混合式；目前 tier 模型不是原版逐值實作 |
+| 行星戰機駐防 | `Fighter_Garrison_Strength_ @ 0x5F64C`、`Russ_Combat_ @ 0xE7343` | 已接值 0 的三檔武器／裝甲公式，但沒有模式選項與固定 120 分支 | 2026-08-28 已閉合值 1 的戰略解算固定 120、值 0 的公式與全域設定／存讀／同步；格子戰術逐架建立仍另案，見 `strategic-combat-mode-audit-20260828.md` |
 | 殖民地／軌道防禦 | `Get_Colony_Hits_ @ 0x42371` | 衛星空間 250/500/1200 與強度比例為近似 | 原版直接讀殖民地記錄與建築／科技欄位；目前模型需重建，不應以平衡 sanity 結案 |
 
 ## 造成錯判的方法問題

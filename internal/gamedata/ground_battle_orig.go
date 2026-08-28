@@ -11,8 +11,9 @@ package gamedata
 //
 // 2026-08-07 反組譯已把原版結構挖出來,而且與一代那套**有三處實質差異**——不是風格差異,
 // 是會改變勝負機率的差異。
-// `InvadeColony` 使用本檔的 `ResolveGroundCombatOrig`;尚未完成的是 DOSBox 實機的逐場
-// 傷亡／亂數序列校準，以及 AI 守方裝甲營與入侵後人口等資料缺口，不是靜態解算未接線。
+// `InvadeColony` 使用本檔的 `ResolveGroundCombatOrig`。2026-08-28 IDA 已閉合 AI 守方裝甲、
+// transport、人口 ownership 與戰後回寫；仍未對齊的是原版 save global seed，以及 remake
+// 目前用獨立 Marine／Tank pool 取代 type 2 transport 的資料模型。
 //
 // ============ 原版的一方是 26 個位元組 ============
 //
@@ -40,15 +41,15 @@ package gamedata
 // `Resolve_Ground_Combat_` 的迴圈條件是 `A.當前類型 < 4 && B.當前類型 < 4`
 // ——**打到任一方的類型索引推到 4(全滅)為止**。
 //
-// ============ 與 remake 沿用的一代結構的三處差異 ============
+// ============ 與 remake 早期沿用的一代結構的三處差異 ============
 //
 //	1. **平手時雙方都挨打。** 原版是兩個獨立的 `if`(`<=` 與 `>=`),平手時兩個都成立。
-//	   remake 是 `if/else`,平手只有攻方挨打(「平手歸守方」)。
+//	   remake 早期版本是 `if/else`；目前 `ResolveGroundCombatOrig` 已改成原版雙 if。
 //	   一代確實是那樣,但二代不是。
 //	2. **攻擊力依當前部隊類型而不同**,不是整隊共用一個值。
 //	3. **累積命中用 `==` 判定**(`cmp cl, [ebx+eax+12h] / jnz`),不是「扣到 <= 0」。
 //	   差別在耐受值被改小的邊界上會出現——`==` 錯過就永遠不死。
-//	   remake 用遞減到 0,那個版本沒有這個坑,但也不是原版的算法。
+//	   remake 早期版本用遞減到 0；目前本檔已照原版使用 `==`。
 //
 // 第 1 點是**可觀察的機率差異**:d100 對 d100 平手的機率是 1%,而平手在原版會讓雙方
 // 各損失一次命中。守方原本白拿的那 1% 沒有了。
@@ -84,9 +85,8 @@ package gamedata
 // 這順帶解釋了原本那句「殖民地防守方根本不填它」:**叛軍永遠是攻方**,守方那格當然是空的。
 // 攻擊力 −20(四種裡最弱)也合理——起事的是沒有受過訓練的被征服人口。
 //
-// ⚠ 那幾個「加成塊」欄位(`Compute_Player_Ground_Combat_Bonuses_` @ 0xEC15C 產的)
-// 還沒逐欄對出意義,所以這一檔**只提供類型間的相對差**(那部分是純立即數,不依賴未知欄位),
-// side 級的基礎加成仍由呼叫端用手冊的表算(見 `ground_battle.go`)。
+// 2026-08-28 加成 block 已由三張 best-tech 表、trait offsets、兩種軍官 producer 與 consumer
+// 完整交叉閉合；本檔仍只保存解算資料結構，side 級加成由呼叫端 typed helper 建立。
 
 // 部隊類型索引(見上方的對應推導)。
 const (
@@ -98,8 +98,8 @@ const (
 
 // GroundTypeStrengthDelta 是各部隊類型相對基準的攻擊力調整(原版四個 case 的立即數)。
 //
-// 只回**立即數的部分**;`加成塊[+1]` / `加成塊[+3]` 那兩個科技加成欄位還沒對出意義,
-// 不含在這裡——回一個「差不多」的值會讓日後追出真值時看不出哪裡被污染過。
+// 只回類型固定立即數；Battleoids 與 Powered Armor 分別另由 typed 科技 helper 加入，避免
+// 把固定 delta 與科技狀態重複計算。
 func GroundTypeStrengthDelta(unitType int) int {
 	switch unitType {
 	case GroundTypeArmor:
@@ -152,13 +152,13 @@ func GroundTypeHitsDelta(unitType int) int {
 // `[player+0x28] == 100` 這個「人類玩家標記」在 `Init_Player_Tech_` @ 0x5E55F 也出現過
 // (`cmp byte ptr [eax+28h], 64h`)——**同一個標記在兩支不相干的函式裡對得上**。
 //
-// ⚠ 其餘欄位(`[+5]`/`[+7]`/`[+9]` 那幾張表、`[+0x0B]`、`[+0x10]`)還沒逐欄對出意義,
-// 但它們對應的是手冊已經列出的那幾類加成,remake 已用手冊的表算過——不重複實作。
+// 其餘欄位也已閉合：`+5/+6` 最佳裝甲、`+7/+8` 個人護盾、`+9/+10` 最佳步槍、`+0x0B`
+// 種族地面戰、`+0x10` 軍官加成 word；精確證據見 ground-combat-audit-20260828.md。
 
 // GroundBaseHitsToKill 回傳基礎耐受命中數(原版 `[加成塊+0x0C] + 1`)。
 //
-// 預設 1(一下死一個);`extraArmour` 是那個把所有部隊變成要兩下的科技
-// (`[player+0x8AA]`,還沒對出是哪一項,所以參數用中性的名字)。
+// 預設 1（一下死一個）；`extraArmour` 對應 `[player+0x8AA]` High-G trait。參數名是歷史
+// API，不能再把它解讀成未知科技。
 func GroundBaseHitsToKill(extraArmour bool) int {
 	if extraArmour {
 		return 2

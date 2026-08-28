@@ -13,10 +13,11 @@
   `internal/ai/original.go`；五列測試已存在。
 - **已證實（remake 消費鏈）**：`GameSession.EndTurn` 對每個 AI 先呼叫 `ApplyAIEconomy`，再把
   殖民地交給 `RunEmpireTurnWithResearchRoller`。此前兩者之間沒有讀取 `AIDifficultyBonus`。
-- **強推論（捨入與套用點）**：Food／Prod／Res／BC 是「每人口職務」固定加值；remake 以每個
-  殖民地聚合 `units × quarters / 4` 並向下取整，分別在食物消耗前、工業污染前、研究聚合前及
-  殖民地收入建築倍率前加入。官方表證實數值與單位，但目前沒有 IDA 指令證實 1.31 的逐殖民地
-  捨入邊界及與士氣／重力的先後，因此不得標成逐值 parity。
+- **2026-08-28 已證實並縮小未知**：`Colony_Job_Production_ @ 0xDE280` 直接把
+  `byte_DD4D7[difficulty]` 加入共用職務 subtotal；`Colony_Industry_Production_ @ 0xDEE1B`
+  另在 derived 工業鏈加入 `(base*difficulty+4)/8`；`Colony_BC_Production_ @ 0xE03F1` 先把
+  `byte_DD4E6[difficulty]` 加入 quarter factor，再以整座有機人口聚合後 `/4`。BC 的套用與捨入
+  邊界已由指令證實；Food／Prod／Res 的 raw table 值與共用職務順序見完整 consumer 索引。
 
 ## Remake 映射
 
@@ -28,9 +29,12 @@
 
 ## 仍未知
 
-- 原版 1.31 的精確固定點累積、殖民地間餘數、與士氣／重力／政府的操作順序。
+- Food／Prod／Res 三職務如何由同一 raw quarter table 對應官方欄名，仍須和各職務 consumer
+  的完整 subtotal 對照；BC 的整座聚合捨入已不再未知。
 - Command Deficit 與 Spy 已由 `ai-command-deficit-audit-20260826.md`、
-  `ai-spy-difficulty-audit-20260826.md` 的獨立切片接線。Troops／Marines 經現況稽核確認已由
+  `ai-spy-difficulty-audit-20260826.md` 的獨立切片追查；2026-08-28 已證實原版 Spy 只在
+  AI 攻擊真人時對 resolution 差值加入 `difficulty-2`，remake 的共同攻防注入須待 RE gate 後修正。
+  Troops／Marines 經現況稽核確認已由
   `GroundDifficultyBonus(difficulty, GroundAIEmpire)` 接到 AI 殖民地防守與叛軍，五級公式
   `difficulty-2` 正是 `-2..+2`；Antaran Marines 雖有 `GroundAntaranSide` 的 `2*difficulty-4`
   typed helper，仍缺非測試 runtime 呼叫端。本切片不以經濟接線冒稱整張難度表全部閉合。

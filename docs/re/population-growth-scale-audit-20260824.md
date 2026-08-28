@@ -9,19 +9,20 @@
 - **已證實（remake 資料流）**：`gamedata.ColonyGrowth` 產生的點數進入
   `LastPlayerOutput.Colonies[i].PopGrowth`，種族百分比只在 `advancePopulation` 套一次，再存入
   `popAccum`。既有 JSON 存檔的 `popAccum` 已是同一種成長點數，不需比例遷移。
-- **未知／本輪不冒稱完成**：原版 1.31 執行檔是否逐指令使用相同常數、多種族殖民地逐族分配、
-  難度 AI 加成 `i`、事件與職務重排的完整分支仍需 `Apply_Colony_Pop_Growth_` 資料流證據。
+- **已由後續 IDA 閉合**：原版 1.31 的 2000／40／1000 常數、多種族逐族分配、AI 難度、
+  科技／領袖／事件／住房、Cloning Center 逐族截斷、滅絕、負池→正池及新增人口職務回寫。
+  完整證據見 [`population-growth-runtime-audit-20260828.md`](population-growth-runtime-audit-20260828.md)。
 
 ## 輸入與定位
 
 | 輸入 | 雜湊／位址空間 | 用途 |
 |---|---|---|
 | `moo2_patch1.5/MANUAL_150.html` | SHA-256 `ac81d580921d0078496127cb7fb7e064e74bf8cb26f2db958b26b5dff09acba9` | 官方 patch 1.50 人口公式與設定契約 |
-| `ORION2.EXE` 既有 IDA 資料庫索引 | IDA linear `Apply_Colony_Pop_Growth_ @ 0xE2DCA` | 原版回合消費端定位；本輪未新增反組譯斷言 |
+| `ORION2.EXE` 既有 IDA 資料庫索引 | IDA linear `Apply_Colony_Pop_Growth_ @ 0xE2DCA` | 本頁當時只作定位；後續完整反組譯另見 2026-08-28 runtime 專題 |
 | `internal/save/entities.go` | 原版 `.GAM` `Colony.PopGrowth [maxRaces]int16` | 確認原版保存逐族累加值，而非 remake 顯示人口 |
 
-本輪 IDA Pro 容器授權仍無法啟動，因此沒有把新手冊結論假裝成 IDA 證據；函式位址只沿用既有
-符號索引，證據等級不升級。
+本頁保留 2026-08-24 只依官方 1.50 手冊閉合尺度的證據邊界；2026-08-28 已以可用的
+IDA Pro 9.4 工具鏈補完 1.31 runtime，不應再由本頁的舊工具狀態推論目前仍缺 IDA 證據。
 
 ## 尺度推導
 
@@ -40,5 +41,6 @@
 `ColonyBaseGrowth` → `ColonyGrowth` → `engine.ColonyOutput.PopGrowth` →
 `shell.advancePopulation` → `GameSession.popAccum` → `Population`／職務指派 → JSON `PopAccum`。
 
-本輪只修正已由官方契約閉合的尺度。逐族成長與 AI 難度項會改變資料模型，必須先追回原版欄位
-與回寫順序；在那之前保留為待辦，不用新的平均公式補洞。
+本輪當時只修正已由官方契約閉合的尺度；逐族成長與 AI 難度項的原版欄位與回寫順序已在
+[`population-growth-runtime-audit-20260828.md`](population-growth-runtime-audit-20260828.md)
+追回。remake 仍須等 RE-first gate 關閉後依 READY spec 重審，不能以本頁手冊公式自行補洞。

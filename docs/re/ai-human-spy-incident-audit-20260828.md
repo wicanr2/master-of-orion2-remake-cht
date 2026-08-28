@@ -31,6 +31,11 @@
   pending reason／magnitude；下一回合重用 `OriginalNPCIncidentMemoryStep` 形成 memory。
 - 新欄位隨 JSON snapshot 往返；AI 對真人 target composer 因而可從正常間諜玩家路徑取得
   `+0x71F/+0x6CF`，不再只能依新局預設值。
-- remake 尚無「嫁禍第三方」的玩家選擇與 attributed player 資料，因此 reason 2／4 是
-  **已證實但未實作**；不得把所有成功任務隨機改成嫁禍。
-- 其餘 reason 5..9 的正常玩家 writer 仍需逐 caller 分類；本切片不宣稱完整 incident parity。
+- 原版嫁禍不是玩家選擇：attacker d100=100 或淨分數至少 90 時自動嘗試，第三方依雙方接觸、
+  偷竊科技狀態與七個正式政策桶抽選；無候選時退回真 attacker。完整鏈見
+  [`spy-framing-audit-20260828.md`](spy-framing-audit-20260828.md)。remake 尚無 attributed player
+  資料，因此 reason 2／4 仍是**原版 RE 已閉合、remake 未實作**。
+- reason 5／7／8／9 的其他正常 producer、動態宣戰 reason 與完整訊息 consumer 已由
+  [`change-relations-callers-audit-20260828.md`](change-relations-callers-audit-20260828.md)
+  逐 caller 閉合；reason 6 沒有獨立 literal producer，仍只可能來自動態／網路輸入。
+  嫁禍 reason 2／4 的 remake 資料模型缺口不因此消失。

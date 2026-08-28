@@ -185,7 +185,8 @@ func (s *GameSession) VisibleEnemyFleetMoves() []EnemyFleetMove {
 
 // PlayerFleetVisibleToAI 回報 AI 是否能偵測玩家艦隊。匿蹤艦在目前 AI
 // 沒有獨立傳感器掃描器的抽象模型中採保守的完全遮蔽；一般艦隊只要與某個
-// AI 主力艦隊同星就被視為接觸。這個 API 供外交／突襲與未來 blip UI 共用。
+// AI 主力艦隊同星就視為「可偵測」。這不是原版 Compute_Contacts_ 的帝國接觸
+// producer；後者已證實由殖民地間延伸／正常航程重算。這個 API 只供突襲與未來 blip UI 共用。
 func (s *GameSession) PlayerFleetVisibleToAI(aiIdx int) bool {
 	if s == nil || aiIdx < 0 || aiIdx >= len(s.AIPlayers) {
 		return false

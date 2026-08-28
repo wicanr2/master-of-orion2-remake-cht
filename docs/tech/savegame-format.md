@@ -79,12 +79,17 @@ SettlerInfo[25];
 totalPop/foodProduced/industryProduced/researchProduced/bcProduced u16, surplusFood i16, surplusBC i16;
 totalMaintenance i32, building/freighter/ship/spy/tribute/officer Maintenance u16;
 researchTopics[83] u8;techs[212] u8;researchProgress u32;**skip45**;hyperTechLevels[8] u8;**skip253**;researchTopic u8, researchItem u8;skip3;
-blueprints[5] ShipDesign;selectedBlueprint ShipDesign;**skip12**;playerContacts[8] u8;skip130;
+blueprints[5] ShipDesign;selectedBlueprint ShipDesign;**skip12**;playerContacts[8] u8;
+`+0x58C` 本回合第一個新接觸 bitset、`+0x58D[8]` 曾建立接觸累積 byte、`+0x595[8]` 方向性
+正常航程矩陣；其後至 `+0x60D` 仍未完整解析；
 `+0x60E` raw u8（已證實 consumer，producer 未知）;skip8;playerRelations[8] i8;skip8;
 foreignPolicies[8]/tradeTreaties[8]/researchTreaties[8] u8;**skip608**;traits[31] i8;skip33;
 fleetHistory[350]/techHistory[350]/populationHistory[350]/buildingHistory[350] u8;spies[8] u8, infoPanel u8;skip21;galaxyCharted u8;skip51。
 
-**SettlerInfo(4 bytes,LE bit-packed)**:byte0=sourceColony、byte1=destinationPlanet、byte2 低 4 bit=player 高 4 bit=eta、byte3 低 2 bit=job(其餘保留)。原版用 `BitStream` 逐 byte 依需求讀,26 bit 落在 4 byte 內。
+**SettlerInfo(4 bytes,LE bit-packed)**：byte0=sourceColony、byte1=destinationPlanet、byte2 低
+4 bit=來源人口的 race／player slot、高 4 bit=eta、byte3 低 2 bit=job（其餘保留）。目前 Go
+欄名仍為 `Player`，不可把它解讀成必然等於目前帝國 owner。原版 runtime writer／consumer 見
+[`../re/move-settlers-audit-20260828.md`](../re/move-settlers-audit-20260828.md)。
 
 ## 6. Star(113)/ Leader(59)/ Ship(129)重點
 

@@ -40,5 +40,7 @@ planet record 尚無 colony index 時配置暫存 colony record，直接 caller 
 - `planet+0x0B` 的完整欄位名稱仍以 raw offset 保留；它與 remake 的
   `ClimateFoodPerFarmer(climate) == 0` 在十種氣候表逐值對應，故以「自然食物為零」作 typed 映射
   是強推論，不把欄位直接改名成氣候。
-- `sub_E5EB3` 另有前哨站重用、colony `+0x14C`、`+0x123=-39` 與重算 callback；本切片只改
-  玩家可見的起始職務，不猜測尚未命名的快取欄位。
+- 本頁原先未追完的前哨站重用、`colony+0x14C`、`+0x123=-39`、完整資格與重算 callback，
+  已於 2026-08-28 閉合：`+0x14C` 是 raw building 22 Marine Barracks，`+0x123` 是一次性
+  玩家通知欄而 `-39` 是新 colony 類通知碼。完整證據見
+  [`colonization-full-audit-20260828.md`](colonization-full-audit-20260828.md)。

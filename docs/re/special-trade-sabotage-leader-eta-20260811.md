@@ -69,22 +69,22 @@ Agent 也已訓練／扣除，玩家可感知的 SABOTAGE 迴圈已用可重播�
 
 ## 3. 活動領袖 ETA
 
-`Deassign_Officer @ 0x934CF` 遍歷 `0x3B×0x43` 全局領袖記錄：
+`Decrement_Officer_ETA_ @ 0x934CF` 遍歷 `0x3B×0x43` 全局領袖記錄；真正的
+`Deassign_Officer_` 位於相鄰的 `0x933F2`：
 
 - `RawStatus=4`：每回合 `+0x37` 遞增；達 `30`（`0x1E`）呼叫
-  `Check_Officer_Fields @ 0x933F2`。
+  `Deassign_Officer_ @ 0x933F2`。
 - `RawStatus=1`：若 `+0x37>0`，每回合遞減；減到 0 且 `+0x23==1` 時呼叫
   `sub_E2AB1`（殖民地計算入口）。
 - `Get_Ship_Leader_ETA @ 0x98F42` 的一般 fallback 是 5；暫時領袖池會讀其 raw
   ETA／狀態欄，不能把 fallback 5 稱為所有在職領袖任期。
 
-`sub_E2AB1 @ 0xE2AB1` 在 callback 內掃描六個 `+0x48..+0x52` raw 槽，符合條件時呼叫
-`sub_E1D59` 清／重算設計衍生欄位、`sub_DF8F0` 消費艦隊／帝國資料，最後由
-`sub_E2710` 重算帝國彙總欄位；這三個下游不是 Win95 UI 呼叫，而是原版遊戲資料消費端，
-但 raw 設計表與 remake 結構沒有安全的一對一欄位。remake 因此接上 status 1 的 ETA
-decrement、status 4 的 30 回合清理與 GAM raw 欄位保存；`RawETA:1→0` 且 location=1 時，
-`applyLeaderETACallback` 以可撤銷增量重整已指派殖民地的領袖效果，刷新所有殖民地士氣，
-保留領袖。這是已完成的玩家可感知 callback 近似，不宣稱逐值 raw callback parity。
+`sub_E2AB1 @ 0xE2AB1` 的輸入是 assignment/star 與 owner，不是領袖 ID。它掃描該星系六個
+`+0x48..+0x52` planet slot；有效 colony 必須 owner 相符且 `colony+0x06==0`，才呼叫
+`sub_E1D59` 重建殖民地衍生值與 `sub_DF8F0` 重分配帝國 imports，最後由 `sub_E2710`
+重算帝國彙總。remake 已接 status 1 ETA decrement、status 4 的 30 回合清理與 GAM raw 欄位，
+但 `RawETA:1→0` 時只撤銷／重套 typed 領袖效果及刷新士氣，是較窄的近似，不能稱為完整原版
+callback。完整閉合證據見 [`leader-turn-chain-audit-20260828.md`](leader-turn-chain-audit-20260828.md)。
 
 ## 4. 可回查程式與測試
 

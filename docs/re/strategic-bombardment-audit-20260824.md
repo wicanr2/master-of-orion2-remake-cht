@@ -46,14 +46,13 @@
 | `0x4266C..0x42676` | 讀 `+0x1F`、`idiv 0x28` | 已證實：最終除以 40 |
 | `0x42713..0x42726` | 呼叫 `sub_4257E`、`mov [record+3],ax` | 已證實：`/40` 回傳值直接成為結果欄 |
 
-`sub_416CF @ 0x416CF` 會建立實際 combatant、武器數量、攻防、護盾與行星耐久；
-`sub_42371 @ 0x42371` 以殖民地人口／儲存生產／建築槽算出目標值再乘 40。
-這些欄位尚未全部映射到 remake 的單武器 `Ship` 與抽象殖民地 hit 模型。本輪已訂正控制流、
-版本參數用途、30,000 停止與 runtime `/40` 結果尺度；仍不宣稱完成逐武器數量或殖民地耐久 parity。
+`sub_416CF @ 0x416CF` 的 33-byte combatant、type 固定 attack-count 表、最佳武器選取、行星與
+七種防禦接線、三層軌道基地 record 及持久回寫，已於 2026-08-28 全部閉合。原版戰略模式不按
+設計槽逐門計數；詳見 [`strategic-bombardment-full-audit-20260828.md`](strategic-bombardment-full-audit-20260828.md)。
 
 ## 版本參數停止線
 
 patch 1.50 文件的「Bomb weapons now get bomb hits equivalent to 10 instead of 5 attacks」只支持
 炸彈類武器的 5／10 攻擊當量差異，不支持把整個 `Strategic_Bombardment_` 外圈改成 5／10。
-remake 因此把版本欄位限縮為炸彈專用；光束、飛彈與特殊攻擊仍依原始三外圈。炸彈當量如何分布到
-三個原始外圈的逐發細節，在缺少完整 weapon-count 初始化表映射前標為**強推論近似**。
+remake 因此把版本欄位限縮為炸彈專用；光束、飛彈與特殊攻擊仍依原始三外圈。1.31 的完整
+attack-count 表已追回；1.50 bomb 當量如何修改三外圈內部仍是版本相依未知，不阻塞 1.31 RE。

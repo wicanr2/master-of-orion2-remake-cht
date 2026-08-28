@@ -1,6 +1,6 @@
 # 銀河霸主 II remake 誠實現況
 
-> 更新：2026-08-28。本文只描述目前狀態；剩餘工作的唯一活表是
+> 更新：2026-08-29。本文只描述目前狀態；剩餘工作的唯一活表是
 > [`WORKLIST.md`](../WORKLIST.md)，原版證據邊界以
 > [`docs/re/parity-matrix.tsv`](re/parity-matrix.tsv) 為準。
 
@@ -34,6 +34,9 @@ RE 完成分母或 remake 範圍，例如 stack probe、stack overflow check、S
 - 議會人口票數與召開排程已根據靜態反組譯證據修正；候選人、棄權與外交投票精確公式仍待閉合。
 - 客製種族選項已寫入 `CustomRaceTraits` 並參與存檔與玩法消費；AI 也已
   保存 `RaceIndex` 並在研究、地面戰、殖民與外交部分路徑消費種族特性。
+- Stealthy Ships 的星圖、AI、自動設計、profile 與科技估值 direct consumer 已閉合；IDA 證據
+  顯示三種匿蹤裝置不向快速結算提供通用數值，但其 bitfield 會進入格子戰術記錄。現有資料流
+  強推論否定 trait 與裝置的戰鬥等價；三項裝置的格子間接公式仍待追回。
 - 飛彈 ECCM／EMG／MV、魚雷 ENV／OVR／NR、ARM／FST、ECM／慣性防禦、掃描科技、
   艦員與 Helmsman 效果已有戰鬥消費端；快速結算與格子戰術仍必須分別驗證。
 
@@ -63,9 +66,10 @@ RE 完成分母或 remake 範圍，例如 stack probe、stack overflow check、S
 - AI↔AI 宣戰已接一般理由 23，以及 `sub_25DF1` 的政府理由 20、輪值敵意理由 68、
   食物赤字理由 113；後者由 AI 帝國食物結餘產生並保存 `player+0x7EC` 對應 streak。
   超空間亂流外層 gate 與跨維度免疫已接；`+0x60E` 已保留原版
-  `.GAM` raw 並接上已證實 consumer，但其 runtime producer 與理由 22 的殖民破壞怨值
-  AI↔AI producer 尚未閉合，
-  因此不能宣稱整個特殊宣戰決策器已完成。
+  `.GAM` raw 並接上已證實 consumer；1.31 沒有直接 runtime writer。理由 22 的殖民破壞怨值
+  producer／consumer 與 AI↔AI 實艦戰鬥傷亡鏈亦已閉合；`player+0x60F..+0x88F` 外交方向區
+  也已建立逐欄資料形狀、初始化、producer／consumer 與未知邊界契約。remake 尚未接回完整
+  方向模型與實艦戰鬥，因此仍不能宣稱完整原版 AI 已完成。
 - 畫面已有大量原版座標證據，但動態文字測量、中文分頁、按鈕置中、hover 及
   英文模式回歸仍是活躍 polish。README 的艦艇空間資訊與多人說明列已於 2026-08-27 移回各自
   美術面板，並新增 panel containment 測試；這只證明兩個具體畫面，不代表其餘動態欄位已全庫

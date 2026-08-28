@@ -66,5 +66,8 @@ AI↔AI 且沒有需要開啟人類外交畫面的接收者時，直接呼叫
 - **CONFORMED 國力輸入**：一般 AI 艦隊現由 typed 實艦重建逐艦、逐觀察者 `+0x5EC` 矩陣並
   代入 `sub_500CF`；只有缺實艦 raw 資料的舊存檔保留明標非精確 `FleetStrength` 回退。詳見
   [`npc-power-matrix-audit-20260828.md`](npc-power-matrix-audit-20260828.md)。
-- **未接**：reason 20／22／68／113 的特殊 producer、宣戰 writer 的 `+0x6AF／+0x6BF` 未消費
+- **後續已閉合**：reason 20／22／68／113 的特殊 producer，以及宣戰 writer 的
+  `+0x6AF／+0x6BF` 下游 consumer，見
+  [`npc-special-war-policy-audit-20260828.md`](npc-special-war-policy-audit-20260828.md) 與
+  [`diplomacy-residual-fields-audit-20260828.md`](diplomacy-residual-fields-audit-20260828.md)。
   記憶、有人類參戰的政策 5／6 分支，以及完整方向接觸／淘汰矩陣。

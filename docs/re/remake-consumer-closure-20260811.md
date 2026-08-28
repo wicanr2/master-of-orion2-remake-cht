@@ -12,7 +12,7 @@ IDA 證據仍以 [`oracle-static-ida-20260811.md`](oracle-static-ida-20260811.md
 | 艦船爆炸事件 | 事件 8 依 `sub_23CED` 對目標帝國 active 艦艇做 reservoir sampling，只移除所選單艦；該艦軍官依 `sub_941C6` 一併死亡。玩家、熱座與 AI 共用此語意 | 事件 consumer `sub_206A2 @ 0x20AD7..0x20B61` 沒有呼叫戰鬥引擎爆炸鏈；證據見 `random-event-ship-explosion-audit-20260825.md` |
 | `SABOTAGE` 分數 | `spyMissionScore` 明列攻方 Spies slot／科技／種族＋領袖、守方 Agents slot／科技／政府／種族＋領袖，再計算 `E=T+DB-AB` 與 `p`；SABOTAGE 使用 `T=70` 與原版建造成本加權池。`SpySlotBonus` 已與 raw `sub_101483 @ 0x101483` 對齊 | 2026-08-25 已由 `sub_100A3E/sub_100A83` 閉合兩張 runtime 帝國攻防表；檔案初值 `0xFFFF` 不是 runtime 分數。packed relationship、亂數位置與 60／70／80／90／±80 分支已有證據；AI 任務／防守政策仍未閉合。 |
 | 防守 Agent | 玩家可訓練／解除 Agent（63 上限）；AI 依既有 remake 週期補充；Spy-vs-Spy 判定擊殺防守方時，runtime 會實際扣一名 Agent，雙向攻擊皆適用 | 手冊的 slot bonus／±80 門檻已接；訓練成本 30 BC、AI 週期是 remake 拍板值 |
-| 領袖 ETA callback | `RawStatus=1`、`RawETA:1→0`、`RawLocation=1` 觸發 `applyLeaderETACallback`：撤銷／重套領袖增量、刷新所有殖民地士氣；領袖保留，不把 ETA=0 誤解成解雇 | `sub_E2AB1 @ 0xE2AB1` 的六槽掃描與 `sub_E1D59`／`sub_DF8F0`／`sub_E2710` callback 鏈已由 IDA 證實；raw 設計／艦隊欄位無安全一對一模型，remake 採完整玩家可感知近似 |
+| 領袖 ETA callback | `RawStatus=1`、`RawETA:1→0`、`RawLocation=1` 觸發 `applyLeaderETACallback`：撤銷／重套領袖增量、刷新所有殖民地士氣；領袖保留，不把 ETA=0 誤解成解雇 | 2026-08-28 已證實原版 `sub_E2AB1 @ 0xE2AB1` 以 star＋owner 掃六個 planet slot，逐殖民地重建衍生值、重分配 imports，最後更新帝國彙總；remake 此處只是較窄近似，不是完整玩家可見 parity。見 `leader-turn-chain-audit-20260828.md` |
 
 ## Win95／VESA 呼叫邊界
 

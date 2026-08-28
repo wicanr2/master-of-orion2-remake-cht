@@ -228,7 +228,7 @@ DOSBox 環境後，才值得做動態逐值驗收。後續若推翻本表結論�
 
 | 項目 | 接入內容 | 證據等級／邊界 |
 |---|---|---|
-| 敵方戰機下游命中／傷害 | `internal/gamedata/fighter_damage.go` 使用 ID 31 第二組 `1..4 / 4..16 / 2..7`；`internal/shell/fighter_attack.go` 分開轉寫 `sub_3AD57 @ 0x3AD57` 的 roll `<=95`／40 命中式與 `sub_3AC20 @ 0x3AC20` 的直接插值式；Bomber profile 走後者，逐架送入最弱盾／甲／結構消費切片 | 兩條公式的靜態算術為**已證實**；`sub_3DF8D @ 0x3DF8D` 的完整攻方加成欄位、raw flag `&4` 正式名稱與 raw record 輸出指標仍是**強推論／未知**，故實作保留 `RawFlags`，不改名 |
+| 敵方戰機下游命中／傷害 | 2026-08-11 接入兩條公式的歷史快照 | 2026-08-28 已追回完整 runtime／consumer／返航鏈，並反駁此列所依賴的「96..100 保留原 roll」；目前以 `fighter-runtime-audit-20260828.md` 為準 |
 | 星際要塞完整火力 | `sub_4D18E @ 0x4D18E` 的四個非空槽以 seed／raw flags／CapacityCap 保存：`(11,375,2,99)`、`(4,187,0,198)`、`(4,187,4,198)`、`(4,375,2,99)`；快速戰鬥採 full-cap policy，光束／魚雷／特殊武器彙整進終局齊射，炸彈與戰機艙分流 | 槽位 ID／seed／raw flags／容量上限為**已證實**；`sub_6EE8E @ 0x6EE8E` 的 divisor 中間式已追回，live tech 導出的當下數量與 raw flag 正式名稱仍是**未知**，不把 cap 當固定 runtime quantity |
 | `.GAM` 支援 | `internal/shell/gam_import.go`／`LoadGAMSession`／`ImportGAM`；`LoadSession` 以 little-endian `0xE0` magic 分流，轉入星系、行星、殖民地、AI、67 筆領袖、艦隊、建築、外交旗標與研究中主題 | `.GAM` 讀入全局 `0x3B×0x43` 的原版檔案形狀為**已證實**；研究完成 byte 語意、special bit 與原版任命／任期下游仍**未知**，匯入報告會明示而不猜測 |
 
@@ -481,6 +481,12 @@ Hex-Rays 9.4.0.260610、IDA 線性位址與非破壞性 IDC。輸出為 static-o
   的可重播映射，不宣稱等同原版 SAVE global seed。抽樣測試鎖定平手雙命中、AI 裝甲營、
   存活兵力回寫與 captured population 保留。
 
+**2026-08-28 勘誤**：本節把 `0xECECA` 誤標為入侵兵力回寫；正確的
+`Resolve_Invasion_Troops_` 是 `0xECE05..0xECECA`，而 `0xECECA` 起是相鄰的
+`Resolve_Rebellion_Troops_`。完整資料流另證實一般入侵攻方只由 type 2 transport 每艘提供
+四名 type 1 陸戰隊，且 `Change_Pop_Ownership_` 保留人口數並重標 ownership。現況以
+`ground-combat-audit-20260828.md` 為準；保留本段舊文是為了追溯誤判來源。
+
 ### 事件漂移與候選權重
 
 - `raw_0x201F9` 對 36 個事件記錄槽逐槽檢查；2026-08-25 後續控制流確認只有 36 槽全為
@@ -549,13 +555,13 @@ Hex-Rays 9.4.0.260610、IDA 線性位址與非破壞性 IDC。輸出為 static-o
   60／70／80／90／±80 分支。兩張 table 的 raw bytes 是 `0xFF` 初始化值，上游填值、
   完整 score 欄位、toggle 邊界、特殊／未知槽政策與 AI 防守 Agent 的原版 raw policy
   仍未知；remake 以可保存 AB／DB／E 近似完成，不升格為 raw parity。
-- `Deassign_Officer @ 0x934CF` 對 status 4 的 `+0x37` 遞增至 30，對 status 1
-  的 `+0x37` 遞減，歸零且 location 1 時呼叫 `sub_E2AB1`。`sub_E2AB1` 掃描六個
-  `+0x48..+0x52` raw 槽，符合 empire／active 條件時依序呼叫 `sub_E1D59`、
-  `sub_DF8F0`，最後呼叫 `sub_E2710` 重算帝國彙總欄位；這條完整 callback 鏈已由 IDA
-  證實，但 raw 設計／艦隊欄位沒有安全的一對一 remake 模型。`Get_Ship_Leader_ETA
-  @ 0x98F42` 的一般 fallback 是 5，暫時池另讀 raw ETA；remake 以既有可撤銷領袖增量、
-  全殖民地士氣刷新近似完成玩家可感知 callback。
+- `Decrement_Officer_ETA_ @ 0x934CF` 對 status 4 的 `+0x37` 遞增至 30，再呼叫相鄰的
+  `Deassign_Officer_ @ 0x933F2`；對 status 1 的 `+0x37` 遞減，歸零且 type 1 時以
+  star＋owner 呼叫 `sub_E2AB1`。`sub_E2AB1` 掃描該星系六個 `+0x48..+0x52` planet slot，
+  owner 相符且 `colony+0x06==0` 時依序呼叫 `sub_E1D59`、`sub_DF8F0`，最後呼叫
+  `sub_E2710` 重算帝國彙總。`Get_Ship_Leader_ETA @ 0x98F42` 的一般 fallback 是 5，
+  暫時池另讀 raw ETA；remake 的可撤銷領袖增量與全殖民地士氣刷新只是較窄近似。完整勘誤及
+  AI 任命 consumer 見 `leader-turn-chain-audit-20260828.md`。
 
 本節對應程式／測試與完整表格索引見
 [`docs/re/special-trade-sabotage-leader-eta-20260811.md`](special-trade-sabotage-leader-eta-20260811.md)。

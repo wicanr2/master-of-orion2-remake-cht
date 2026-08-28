@@ -66,8 +66,11 @@ raw building 23／24／28 三種行星護盾任一存在時，有效氣候改寫
 colony+0xE0 = (foodHalfBase != 0) ? 0xFF : 0x00
 ```
 
-因此 `+0xE0` 是可耕作布林 gate，不是最多農夫數、人口容量或食物數值。AI 封鎖職務分配將它
-作為「是否還能指派農夫」的 gate，是獨立玩家可見 consumer。
+因此 `+0xE0` 是以 `0xFF／0x00` 編碼的可耕作 sentinel，不是最多農夫數、人口容量或食物
+數值。AI 封鎖職務分配將它作為「是否還能指派農夫」的 gate；
+`Add_Settler_To_Colony_ @ 0xFF015` 也以 unsigned 值比較現有農夫數，令可耕時的 `0xFF`
+不形成實際上限，而不可耕時的 `0x00` 觸發抵達農夫的職務調整。後者完整證據見
+[`move-settlers-audit-20260828.md`](move-settlers-audit-20260828.md)。
 
 ## 食物總產出：`Colony_Food_Production_ @ 0xDE664..0xDEB1D`
 
