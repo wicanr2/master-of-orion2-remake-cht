@@ -106,7 +106,7 @@ b = (100 + g + r + i + t + l + e + h) / 100
 
 ## 2. 生產與污染(`production.go`)
 
-**來源**:`GAME_MANUAL.pdf`(patch 1.5 隨附完整手冊)「System Overview / Yield / Population」章節(約 p.64-67)與各建築說明章節(約 p.78-90)。`MANUAL_150.html`(1.50 patch 說明書)本身只在 UI bugfix 段落提過一次 pollution,無數值公式;openorion2 只有 `Planet::baseProduction()` 單一查表(見第 8 節),未實作生產分配與污染公式,故本節數值全部來自 `GAME_MANUAL.pdf`。
+**來源**:`GAME_MANUAL.pdf`(patch 1.5 隨附完整手冊)「System Overview / Yield / Population」章節(約 p.64-67)與各建築說明章節(約 p.78-90)，以及 IDA Pro 9.4 的 `Colony_Industry_Production_ @ 0xDEE1B`。`MANUAL_150.html`(1.50 patch 說明書)本身只在 UI bugfix 段落提過一次 pollution；整數捨入、實際致污基數與混合 Tolerant 比例以 `docs/re/colony-industry-production-pollution-audit-20260828.md` 的執行檔證據為準。
 
 ### 生產常數
 
@@ -142,10 +142,14 @@ tolerance = 2 * size_class   (size_class 為 1-based:Tiny=1 ... Huge=5)
 **清理成本**(`PollutionCleanupCost`,p.66):
 
 ```
-超出容忍值部分的一半用於清理污染(向下取整);Tolerant 特性種族(含矽晶生物)不受污染影響、免清理。
+超出容忍值部分的一半用於清理污染；原版執行檔對正的奇數 excess **向上取整**。混合殖民地依 Tolerant／Android 人口比例四捨五入，不是只看 owner trait。
 excess = production - tolerance
-cleanup = excess > 0 ? excess / 2 : 0   (tolerantRace 一律 0)
+cleanup = excess > 0 ? (excess + 1) / 2 : 0
 ```
+
+原版 `production` 並非完整 gross：只含逐工人產出與 Robotic Factory 礦產加成；Automated
+Factory／Robo Mining Plant／Deep Core Mine 的固定 `+5/+10/+15` 及 Recyclotron 加成不致污。
+目前 Go 仍把全部 `FlatIndustry` 放進 pollution base，屬已登記、待 READY spec 修正的差異。
 
 **仍會產生污染的產能比例**(`PollutionEighths`,以 8 分之幾表示):
 

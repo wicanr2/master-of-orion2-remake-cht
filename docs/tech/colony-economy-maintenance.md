@@ -65,8 +65,8 @@ Population=8。若沿用舊的 Farmers=3/Workers=4,新 FoodPerFarmer=2 只夠 3�
 | FoodConsumed | 8×1=8 | Population×1 |
 | **FoodSurplus** | **0** | 打平,零緩衝 |
 | GrossIndustry | 3×3=9,士氣+10%→9 | |
-| PollutionCleanupCost | (9-8)/2=0(Large 星球容忍值8) | |
-| **NetIndustry** | **9** | |
+| PollutionCleanupCost | ceil((9-8)/2)=1(Large 星球容忍值8；2026-08-28 IDA 勘誤) | |
+| **NetIndustry** | **8** | |
 | TaxRevenue(稅率40%) | 9×40/100=3 | |
 | **Maintenance(建築,見上節)** | **3** | |
 | **NetBC(第1回合)** | **0** | 打平,不是負的,但也沒有任何緩衝 |

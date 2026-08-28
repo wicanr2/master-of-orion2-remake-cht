@@ -2498,9 +2498,11 @@ openorion2 的 `enum PlanetType` 只定義 1-3,那些碼的語意目前無從確
     差一個數量級；2026-08-24 已另由 IDA 證實 runtime 結果採除以 40，手冊除以 100 僅屬顯示估算。
     所以測試釘的是 `TotalDamage`：原版固定三外圈中的每次攻擊都先套減傷，手算得出來。
     Radiation Shield already in existence」),所以 `PlanetaryShieldReduction` 取**最強的那一面**。
-    第二句決定了接的位置。`FlatIndustry` 是在污染縮減之**前**併進 gross 的
-    改成一個旗標,在 `RunColonyTurn` 的污染切分點之後才加。
-    同樣多出來的產能若接成 `FlatIndustry`,污染一定會變——那條在,才證明「污染沒變」
+    **勘誤（2026-08-28）**：這裡把「remake 的 `FlatIndustry` 目前會進污染公式」誤寫成
+    原版規則。IDA `Colony_Industry_Production_ @ 0xDEE1B` 已證實原版 polluting base 只有
+    逐工人產出與 Robotic Factory 礦產加成；Automated Factory／Robo Mining／Deep Core 的
+    固定 `+5/+10/+15` 及 Recyclotron 均不致污。原錯誤形成原因保留於此，但不得再作 parity
+    證據；完整鏈見 `colony-industry-production-pollution-audit-20260828.md`。
     所以只動 `FlatResearch`。
     - `30_netwait.png` 變了:狀態指紋是存檔快照的 SHA-256,`ColonyState` 多一個欄位就會變。
       那是 `determinism.go` 註解寫明的設計(「新增欄位只要進得了存檔就自動進得了指紋」),

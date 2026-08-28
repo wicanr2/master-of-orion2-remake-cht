@@ -77,8 +77,8 @@
   `Do_Colony_Calculations_ @ 0xE2B31` 都只重建 derived state：pre-import 產出、帝國 imports、
   人口預測／殖民地專業、帝國彙總及三個 raw cache；第二遍吸收中間的封鎖與殖民者移動，不會
   重複增加人口或完成建造。開局函式另有兩個 caller，交叉證實它是可重入重算器。外層時序已
-  關閉；每工人工業、食物複製機與 BC 維護 producer 已另行閉合，其餘 11 個 pre-import producer、
-  （環境 producer 目前只閉合 climate 子欄位）、帝國統計未解欄位、
+  關閉；每工人工業、工業維護、食物複製機與 BC 維護 producer 已另行閉合，其餘 10 個
+  pre-import producer（環境與工業產出目前只閉合部分子鏈）、帝國統計未解欄位、
   封鎖與人口遷移規則仍分列追查。
   證據見 [`docs/re/colony-turn-chain-audit-20260828.md`](docs/re/colony-turn-chain-audit-20260828.md)。
 
@@ -99,6 +99,14 @@
   climate 改成 Barren。這推翻 remake 目前的半食物／半 BC 跨回合餘數模型；依 RE-first gate
   只登記差異，不修改 Go。證據見
   [`docs/re/colony-food-replicator-bc-maintenance-audit-20260828.md`](docs/re/colony-food-replicator-bc-maintenance-audit-20260828.md)。
+
+- [x] **工業消耗／污染／建造消費鏈閉合（RE-only，2026-08-28）**：`DF546` 已閉合
+  Cybernetic／Android 半工業分類與 `+0xF0=ceil(sumHalf/2)`；`DEE1B` 已閉合五種 gross 加成、
+  Robotic Factory `[5,8,10,15,20]`、污染容忍 `[2,4,6,8,10]`、Nano、兩棟污染建築、
+  Environmentalist、逐人口 Tolerant 比例及 `+0x08/+0xE9` writer。`E36DF` 證實建造端使用
+  `max(E9-F0,0)`。同時反證 remake 的奇數污染 excess 向下取整，以及「全部 FlatIndustry
+  都致污」模型；依 RE-first gate 只登記差異。共用 `DE280` 全 modifier 仍待獨立閉合，見
+  [`docs/re/colony-industry-production-pollution-audit-20260828.md`](docs/re/colony-industry-production-pollution-audit-20260828.md)。
 
 - [x] **2026-08-28 三個長跑回歸已分類並修正**：議會第二屆確實準時召開，但原版搖擺票重擲後
   流會，舊測試錯把「再次當選」當排程契約；AI 0 是 Creative，舊研究測試錯把合法的
@@ -3594,9 +3602,10 @@ HONEST-STATUS 寫著「部分軍事/防禦建築(~13 棟,需艦隊駐防/軌道�
 測試以 `TotalDamage` 釘住逐發減傷；runtime 命中換算現依 IDA 呼叫鏈採除以 40。
 手冊寫「取代」不是「疊加」,所以取最強那一面。
 
-**再生反應爐**:接對地方比接上去重要。手冊「不計入污染」那句決定了它**不能**接 `FlatIndustry`
-(那個欄位在污染縮減之前併入 gross),改成旗標、在污染切分點之後才加。測試拆成兩個獨立斷言
-外加一條正對照(同樣的產能接成 FlatIndustry 污染一定會變)。
+**再生反應爐**：手冊與 `DEE1B` 都證實每人口 `+1` 不致污。2026-08-28 的 IDA 勘誤進一步
+證實原版不能用「所有 `FlatIndustry` 都致污」概括：Automated Factory／Robo Mining／Deep Core
+的固定 `+5/+10/+15` 同樣不進 polluting base，只有逐工人產出與 Robotic Factory 礦產加成進入。
+現行 remake 雖把 Recyclotron 放在污染後，其他 fixed production 仍接錯，待 READY spec 修正。
 
 **自動實驗室**:手冊 +30 研究點/回合,只動 `FlatResearch`。
 

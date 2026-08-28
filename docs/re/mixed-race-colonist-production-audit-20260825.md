@@ -48,6 +48,9 @@
 11. `sub_DF546 @ 0xDF546` 以相同分類重建工業消耗。一般 player slot 只有 `+0x8B0`
     Cybernetic 每人消耗 1 個半工業單位；Android 固定每人消耗 2，Natives 為 0。
     owner／Android／外族／prisoner 分別寫 `+0x100..+0x103`，逐 slot 值寫 `+0x10C[slot]`。
+    `+0xF0=(四類半工業總和+1)/2`；它不在 `sub_DEE1B` 早扣，而由
+    `Apply_Production_ @ 0xE3806..0xE382A` 以 `max(colony+0xE9-colony+0xF0,0)` 減少建造進度。
+    完整外層見 `colony-industry-production-pollution-audit-20260828.md`。
 12. `sub_E1839 @ 0xE192B..0xE1A8C` 依固定優先序分配可用資源：食物依 owner → 外族 →
     prisoner → Natives；工業依 owner → Android（一次必須供足 2）→ 外族 → prisoner。
     未滿足的 owner 食物／工業與 Natives 食物每半單位各形成 `-25` 成長點；Android 每個
