@@ -80,7 +80,7 @@ func RollOriginalAIRaw27(origRace, difficulty int, roll func(int) int) int {
 
 func RollOriginalAITechProfile(traits [RaceTraitCount]int8, difficulty, raw27 int, roll func(int) int) OriginalAITechProfile {
 	w6 := []int{1, 2, 1, 2, 2, 1}
-	w4 := []int{1, 2, 2, 1}
+	w4 := []int{2, 1, 2, 1}
 	w7 := []int{2, 2, 1, 2, 1, 2, 3}
 	add := func(w []int, i, n int) { w[i] += n }
 	t := func(i int) int { return int(traits[i]) }
@@ -123,22 +123,22 @@ func RollOriginalAITechProfile(traits [RaceTraitCount]int8, difficulty, raw27 in
 	if t(6) == 20 {
 		add(w6, 1, 10)
 		add(w7, 3, 100)
-		add(w4, 0, 10)
+		add(w4, 1, 10)
 	}
 	if t(6) == 40 {
 		add(w6, 1, 100)
 		add(w7, 3, 1000)
-		add(w4, 0, 100)
+		add(w4, 1, 100)
 	}
 	if t(7) == 25 {
 		add(w6, 1, 10)
 		add(w7, 4, 3)
-		add(w4, 1, 100)
+		add(w4, 0, 100)
 	}
 	if t(7) == 50 {
 		add(w6, 1, 100)
 		add(w7, 4, 10)
-		add(w4, 1, 1000)
+		add(w4, 0, 1000)
 	}
 	if t(8) == 10 {
 		add(w6, 2, 10)

@@ -1,13 +1,13 @@
 # AI 開局科技估值規格
 
-狀態：READY
+狀態：CONFORMED
 
 RE-TRACE: dos-orion2-1.31:0xFC845
 
 CORRECTION-20260830-PROFILE-UPSTREAM：`aiProfileCategoryValue` 已涵蓋目前證實的 trait
-category direct-site 表，但其 `OriginalAITechProfile` 輸入由 `0x589D6` 產生；四候選權重
-尚有已知 index 錯置。因此本規格與 category 實作為 READY／部分實作，整條開局估值尚未
-CONFORMED。
+category direct-site 表；其 `OriginalAITechProfile` 上游 `0x589D6` 的四候選初值與 Ship
+Defense／Ship Attack index 已於 2026-08-30 訂正並通過逐格測試。已知上游阻塞解除，這條
+remake 可表示的開局／常態 AI 估值鏈升為 CONFORMED；原版全域 PRNG 位元序仍不在此聲明內。
 
 ## 輸入
 

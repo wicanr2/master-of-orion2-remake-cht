@@ -1,6 +1,6 @@
 # AI raw profile 種族特性轉換順序規格
 
-狀態：READY
+狀態：CONFORMED
 
 RE-TRACE: dos-orion2-1.31:0x589D6
 

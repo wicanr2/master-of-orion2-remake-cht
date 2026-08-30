@@ -84,7 +84,15 @@
   `sub_E5832` 的 `(MoneyRaw+2)*100` 已由正常新遊戲種族 finalize 同時接入玩家與所有 AI，
   標準 raw `-1／0／+1` 與一般文明不改寫均有測試；`Num_Adv_Civ_Planets_ @ 0x62BB7` 的額度
   整數式亦已進 typed 規則層。全圖候選、round-robin、90% 平衡、special 再分配與一般殖民地
-  初始化仍在本切片後半，追溯表保持 `PARTIAL`，不得以 Money 綠測試宣稱整項完成。
+  初始化仍在本切片後半。第一輪另完成 360／20 上限、距離門檻、worth 穩定排序、玩家順序
+  round-robin 與 owner 衝突的 typed 選取核心；追溯表仍保持 `PARTIAL`，不得以純規則綠測試
+  宣稱正常新遊戲已完成全圖殖民地建立。
+
+- [x] **RE gate 後第二、三輪：AI raw profile 與科技估值收斂（2026-08-30）**：依
+  `CORRECTION-20260830-PROFILE-W4` 把四候選初值修為 `[2,1,2,1]`，Ship Defense 改加 raw ID 1、
+  Ship Attack 改加 raw ID 0，並新增逐 index 驗證；`0x589D6` 上游訂正後，`0xFC845` 已有的
+  category、共同估值、開局與常態研究鏈不再受錯誤 profile 污染。兩列均升為 `CONFORMED／INTERNAL`；
+  此狀態不聲明原版全域 PRNG 位元序一致。
 
 - [x] **原版回合主鏈拓樸閉合（RE-only，2026-08-28）**：IDA Pro 9.4 重新匯出
   `Next_Turn_Calc_ @ 0x136B3..0x13822`，證實是 52 個直接 call；固定順序、

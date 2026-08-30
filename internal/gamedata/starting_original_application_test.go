@@ -54,6 +54,33 @@ func TestRollOriginalAITechProfileRawWeights(t *testing.T) {
 	}
 }
 
+func TestRollOriginalAITechProfileFourCandidateIndices(t *testing.T) {
+	rolls := func(w4Roll int) func(int) int {
+		call := 0
+		return func(total int) int {
+			call++
+			if call == 2 {
+				return w4Roll
+			}
+			return 0
+		}
+	}
+	base := RollOriginalAITechProfile([RaceTraitCount]int8{}, 0, 1, rolls(1))
+	if base.Raw4 != 0 { // 初值 [2,1,2,1] 的 roll=1 仍在 index 0。
+		t.Fatalf("四候選初值應為 [2,1,2,1]，roll=1 得 raw4=%d", base.Raw4)
+	}
+	defense := [RaceTraitCount]int8{}
+	defense[TRAIT_SHIP_DEFENSE] = 20
+	if got := RollOriginalAITechProfile(defense, 0, 1, rolls(2)).Raw4; got != 1 {
+		t.Fatalf("Ship Defense 應加 raw4 index 1，得到 %d", got)
+	}
+	attack := [RaceTraitCount]int8{}
+	attack[TRAIT_SHIP_ATTACK] = 25
+	if got := RollOriginalAITechProfile(attack, 0, 1, rolls(50)).Raw4; got != 0 {
+		t.Fatalf("Ship Attack 應加 raw4 index 0，得到 %d", got)
+	}
+}
+
 func TestRollOriginalAITechProfileRaw27ZeroBoostsThirdRaw7Weight(t *testing.T) {
 	var totals []int
 	RollOriginalAITechProfile([RaceTraitCount]int8{}, 0, 0, func(total int) int {
