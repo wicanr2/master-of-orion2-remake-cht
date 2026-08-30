@@ -96,6 +96,15 @@
   category、共同估值、開局與常態研究鏈不再受錯誤 profile 污染。兩列均升為 `CONFORMED／INTERNAL`；
   此狀態不聲明原版全域 PRNG 位元序一致。
 
+- [x] **AI Agent 產品與安塔蘭戰後回收三輪（2026-08-31）**：`raw -7` 已改用可保存的
+  `ColonyProductKind`，由 AI 殖民地累積 100 PP、通過未封鎖與 `netCapacity>=15` gate 後加入
+  self Agent pool；已移除每 8 回合免費增加 Agent 的舊 fallback，並以測試釘住無產能不得生成。
+  原版逐對手 Agent 配額在 remake 只有帝國總池的限制下，採真人外派 Spy 壓力的強推論投影，
+  不升格為 exact。安塔蘭 raid 結算則改為存活艦離開 `DeployedShips` 並回到既有
+  `OffensiveShips` 總池，只有死亡艦自兩者扣除；有守軍全滅與無守軍存活兩條測試。
+  `0xD10EE` 仍因支援艦 pseudo-product、戰鬥艦與 refit 未全接而維持 `PARTIAL`；`0x63D92`
+  仍因逐座標航行與原版 combat record 未建模而維持 `PARTIAL`。
+
 - [x] **原版回合主鏈拓樸閉合（RE-only，2026-08-28）**：IDA Pro 9.4 重新匯出
   `Next_Turn_Calc_ @ 0x136B3..0x13822`，證實是 52 個直接 call；固定順序、
   兩次 `Do_Colony_Calculations_`、安塔蘭／議會／UI 三類條件 gate、逐玩家領袖招募迴圈，以及

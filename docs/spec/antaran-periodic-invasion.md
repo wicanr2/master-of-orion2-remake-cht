@@ -40,7 +40,8 @@ CORRECTION-20260830-OWNER8-LIFECYCLE
 - 安塔蘭勝利只表示本次攻擊艦隊獲勝，不等於安塔蘭母星勝利狀態；安塔蘭被擊敗後清除 pending。
 - owner 8 的精確戰術 record 尚未全閉合時，快速戰鬥映射必須標為可表示近似並留在 WORKLIST，
   不得用綠測試宣稱完整戰術 parity。原版戰後倖存艦歸還 offensive pool、deployed record
-  刪除已閉合；remake 應以其現有 pool 狀態測同一可觀察結果。
+  刪除已閉合；remake 已在 raid 結算時把全部抵達艦移出 deployed 子集，只將死亡艦自
+  offensive 總池扣除，並以「守軍摧毀」與「無守軍全數存活」兩端測試固定此結果。
 
 ## 驗收
 

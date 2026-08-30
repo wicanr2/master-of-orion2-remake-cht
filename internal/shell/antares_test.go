@@ -165,7 +165,7 @@ func TestDestroyedAntaranRaidShipsReturnToNeitherPool(t *testing.T) {
 	}
 }
 
-func TestUndefendedAntaranRaidShipsRemainDeployed(t *testing.T) {
+func TestUndefendedAntaranRaidShipsReturnToOffensivePool(t *testing.T) {
 	s := NewDemoSession()
 	s.initAntaranInvasionState()
 	s.AntaranInvasion.OffensiveShips[0] = 1
@@ -175,8 +175,8 @@ func TestUndefendedAntaranRaidShipsRemainDeployed(t *testing.T) {
 		Ships: [5]int{1, 0, 0, 0, 0},
 	}}
 	s.advanceAntaranRaidFleets()
-	if s.AntaranInvasion.OffensiveShips[0] != 1 || s.AntaranInvasion.DeployedShips[0] != 1 {
-		t.Fatalf("未被摧毀的攻方不能憑抵達就消失：%+v", s.AntaranInvasion)
+	if s.AntaranInvasion.OffensiveShips[0] != 1 || s.AntaranInvasion.DeployedShips[0] != 0 {
+		t.Fatalf("未被摧毀的攻方應回到 offensive pool 並離開 deployed 子集：%+v", s.AntaranInvasion)
 	}
 }
 

@@ -25,8 +25,10 @@ RE-TRACE: dos-orion2-1.31:0xD10EE
 
 1. （已完成）`sub_CFCB6 → sub_CF3BD → sub_D10EE(case 1) → sub_E36DF` 的 `-15`
    貨運艦隊垂直鏈。
-2. 依已閉合 `sub_1026CF → sub_CF40D → sub_D10EE(case 3) → sub_E36DF` 取代免費週期
-   Spy／Agent fallback。
+2. （部分完成）已依 `sub_D10EE(case 3) → sub_E36DF` 接上 100 PP、未封鎖、
+   `netCapacity>=15` 與 self Agent callback，並移除免費週期 Agent fallback。原版
+   `sub_1026CF → sub_CF40D` 是逐對手 packed pair 配額；remake 目前只有帝國總池，配額暫以
+   真人外派 Spy 壓力投影，證據等級為強推論。免費週期 Spy 是另一個進攻配置缺口，未混報完成。
 3. 依 pseudo-product → ship slot 契約接 Colony Ship／Outpost Ship／Transport 配額。
 4. 依既有 role 0..4 藍圖、case 0 戰力缺額與 case 2 改裝鏈接線；多艦隊資料不足時明示近似。
 

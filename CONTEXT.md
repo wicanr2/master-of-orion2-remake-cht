@@ -25,6 +25,9 @@
 - **AI 殖民地產品** — 每座 AI 殖民地自己的目前建造項與進度，remake 以
   `AIOpponent.ColonyBuilds[star]` 保存。原版 `Colony_AI_` 也是逐殖民地指派；不可再把
   `TotalNetIndustry` 全部視為同一個造艦池，或讓同一份產能同時蓋建築又造艦。
+- **typed AI 特殊產品** — `ColonyBuild.ProductKind` 保存不依賴中文／英文顯示名稱的產品語意；
+  `Name` 只供玩家可見文字與歷史建築相容。Agent、ship slot 等原版負碼產品不得再靠本地化字串
+  判斷完工 callback。
 
 - **元件(Component)** — 造艦畫面上可選的一項,分四張表:`WeaponOptions`(武器)、
   `ArmorOptions`(裝甲)、`ShieldOptions`(護盾)、`SpecialOptions`(特殊系統)。

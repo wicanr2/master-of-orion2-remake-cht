@@ -227,7 +227,9 @@ func (s *GameSession) advanceAntaranRaidFleets() {
 		survivors := s.resolveAntaranRaid(*raid)
 		for class := range raid.Ships {
 			destroyed := raid.Ships[class] - survivors[class]
-			st.DeployedShips[class] -= destroyed
+			// 抵達並結算後，存活艦回到 offensive pool；只有被摧毀者從總池扣除。
+			// DeployedShips 是在途／戰鬥中子集，不是永久駐留池。
+			st.DeployedShips[class] -= raid.Ships[class]
 			st.OffensiveShips[class] -= destroyed
 			if st.DeployedShips[class] < 0 {
 				st.DeployedShips[class] = 0

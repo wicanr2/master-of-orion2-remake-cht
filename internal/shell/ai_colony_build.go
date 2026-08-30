@@ -10,6 +10,51 @@ import (
 
 const ColonyBaseBuildName = "拓殖基地"
 
+const aiAgentProductCost = 100
+
+// originalAIAgentProductQuota 是 sub_1026CF → sub_CF40D 的 remake 投影。原版以每一對
+// 帝國的 Agent 配置重建配額；目前存檔只有帝國總池，無法無損表達逐對手配置，因此以
+// 真人現有外派 Spy 數作可觀察威脅、扣除既有 self pool 與生產中項目。這是強推論近似，
+// 不會在沒有任何間諜壓力時強迫所有 AI 先造 Agent。成本、殖民地門檻與完工 callback
+// 則直接依 raw -7 契約。
+func (s *GameSession) originalAIAgentProductQuota(aiIndex int) int {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) {
+		return 0
+	}
+	a := &s.AIPlayers[aiIndex]
+	desired := 0
+	if aiIndex < len(s.PlayerSpies) {
+		desired = s.PlayerSpies[aiIndex]
+	}
+	pending := 0
+	for _, build := range a.ColonyBuilds {
+		if build.ProductKind == ColonyProductAIAgent {
+			pending++
+		}
+	}
+	quota := desired - a.DefensiveAgents - pending
+	if quota < 0 {
+		return 0
+	}
+	return quota
+}
+
+func (s *GameSession) aiCanBuildOriginalAgent(aiIndex, colony int, out engine.ColonyOutput) bool {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) || colony < 0 || colony >= len(s.AIPlayers[aiIndex].Colonies) {
+		return false
+	}
+	// sub_D10EE case 3：封鎖時拒絕，netCapacity 必須 >=15。
+	a := &s.AIPlayers[aiIndex]
+	star := -1
+	if colony < len(a.ColonyStars) {
+		star = a.ColonyStars[colony]
+	}
+	if star >= 0 && star < len(s.Stars) && s.Stars[star].BlockadedMask&(1<<a.PopulationRaceSlot) != 0 {
+		return false
+	}
+	return a.Colonies[colony].Population/8+out.NetIndustry-out.PollutionCleanupCost >= 15
+}
+
 // aiColonyBuildKey 以星系索引保存佇列；舊存檔若缺 ColonyStars，使用不會和合法星系
 // 索引衝突的負值，待對映恢復後自然建立正式 key。
 func aiColonyBuildKey(a *AIOpponent, colony int) int {
@@ -1184,13 +1229,15 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 	shipProduction := 0
 	freighterQuota := s.originalAIFreighterFleetQuota(aiIndex)
 	freighterAssignments := 0
+	agentQuota := s.originalAIAgentProductQuota(aiIndex)
+	agentAssignments := 0
 	for i := range a.Colonies {
 		if i >= len(out.Colonies) || out.Colonies[i].NetIndustry <= 0 {
 			continue
 		}
 		key := aiColonyBuildKey(a, i)
 		build := a.ColonyBuilds[key]
-		if build.Name == "" {
+		if build.Name == "" && build.ProductKind == "" {
 			var ok bool
 			if s.aiShouldBuildColonyBase(aiIndex, i, out.Colonies[i]) {
 				build, ok = ColonyBuild{Name: ColonyBaseBuildName, Cost: 200}, true
@@ -1198,6 +1245,9 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 				s.aiCanBuildOriginalFreighterFleet(aiIndex, i, out.Colonies[i]) {
 				build, ok = ColonyBuild{Name: gamedata.FreighterFleetActionName, Cost: 50}, true
 				freighterAssignments++
+			} else if agentAssignments < agentQuota && s.aiCanBuildOriginalAgent(aiIndex, i, out.Colonies[i]) {
+				build, ok = ColonyBuild{ProductKind: ColonyProductAIAgent, Cost: aiAgentProductCost}, true
+				agentAssignments++
 			} else {
 				build, ok = chooseAIColonyBuilding(a, i, out, s.Difficulty, s.Turn,
 					s.originalAIStrategicPressureContext(aiIndex, i))
@@ -1212,7 +1262,11 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 			a.ColonyBuilds[key] = build
 			continue
 		}
-		if !s.applyAICompletedSpecial(aiIndex, i, build.Name) {
+		if build.ProductKind == ColonyProductAIAgent {
+			if a.DefensiveAgents < spyMaxSlots {
+				a.DefensiveAgents++
+			}
+		} else if !s.applyAICompletedSpecial(aiIndex, i, build.Name) {
 			for len(a.ColonyBuildings) <= i {
 				a.ColonyBuildings = append(a.ColonyBuildings, nil)
 			}

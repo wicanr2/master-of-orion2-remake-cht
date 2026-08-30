@@ -112,6 +112,47 @@ func TestOriginalAIFreighterFleetProductFailsClosedAtGates(t *testing.T) {
 	}
 }
 
+func TestOriginalAIAgentProductVerticalChain(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	a.DefensiveAgents = 0
+	s.PlayerSpies = make([]int, len(s.AIPlayers))
+	s.PlayerSpies[0] = 1
+	a.ColonyBuilds = make(map[int]ColonyBuild)
+	a.Colonies[0].Population = 16
+	for len(a.ColonyBuildings) <= 0 {
+		a.ColonyBuildings = append(a.ColonyBuildings, nil)
+	}
+	if a.ColonyBuildings[0] == nil {
+		a.ColonyBuildings[0] = make(map[string]bool)
+	}
+	a.ColonyBuildings[0][ColonyBaseBuildName] = true
+	out := engine.EmpireOutput{Colonies: make([]engine.ColonyOutput, len(a.Colonies))}
+	out.Colonies[0].NetIndustry = 13 // population/8 + industry = 15。
+
+	for turn := 0; turn < 8; turn++ {
+		s.advanceAIColonyBuilds(0, out)
+	}
+	if a.DefensiveAgents != 1 {
+		t.Fatalf("raw -7 完工應加入一名 self Agent，got %d", a.DefensiveAgents)
+	}
+	if build := a.ColonyBuilds[aiColonyBuildKey(a, 0)]; build.ProductKind != "" {
+		t.Fatalf("Agent 完工後應清空產品，got %+v", build)
+	}
+}
+
+func TestAIDefensiveAgentsAreNotGrantedByPeriodicFallback(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	a.DefensiveAgents = 0
+	s.Turn = 8
+	// 沒有可投入的殖民地工業時，回合推進不得免費產生 Agent。
+	s.advanceAI(0, engine.EmpireOutput{})
+	if a.DefensiveAgents != 0 {
+		t.Fatalf("Agent 必須由 100 PP 殖民地產品生成，got %d", a.DefensiveAgents)
+	}
+}
+
 func TestOriginalAIFixedZeroBuildingScores(t *testing.T) {
 	for _, name := range []string{"異族管理中心", "次元傳送門"} {
 		b, ok := gamedata.BuildingByNameZH(name)

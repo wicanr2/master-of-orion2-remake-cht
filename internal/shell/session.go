@@ -2665,7 +2665,10 @@ type RefitJob struct {
 
 // ColonyBuild 是某殖民地目前的建造項目。
 type ColonyBuild struct {
-	Name         string
+	Name string
+	// ProductKind 保存不應以本地化顯示文字判斷的特殊產品語意。空值代表歷史存檔的
+	// 一般建築／特殊行動；穩定識別字不顯示給玩家。
+	ProductKind  ColonyProductKind `json:"productKind,omitempty"`
 	Progress     int
 	ProgressHalf int // 半機械族建造進度的半單位餘數；舊存檔缺欄位時為 0
 	Cost         int
@@ -2673,6 +2676,12 @@ type ColonyBuild struct {
 	// Builds / BuildQueue 的 JSON、熱座與網路指令都走同一條可保存佇列。
 	Refit *RefitJob
 }
+
+type ColonyProductKind string
+
+const (
+	ColonyProductAIAgent ColonyProductKind = "ai_agent"
+)
 
 // TradeGoodsBuildName 是「貿易品」建造佇列選項的名稱。與空字串「不建造」同類——是佇列的
 // 特殊選擇而非 gamedata.Buildings 裡的實體建築,恆可選、無前置科技 gate(手冊 GAME_MANUAL.pdf
@@ -5652,11 +5661,8 @@ func (s *GameSession) advanceAI(i int, out engine.EmpireOutput) {
 	if s.Turn%6 == 0 && a.Spies < spyMaxSlots {
 		a.Spies++
 	}
-	// 防守 Agent 與進攻 Spy 分開累積；這是 remake 的固定週期政策，舊存檔
-	// 的零值會從第 8 回合開始自然補上，不改變讀檔相容性。
-	if s.Turn%8 == 0 && a.DefensiveAgents < spyMaxSlots {
-		a.DefensiveAgents++
-	}
+	// 防守 Agent 不再由免費週期計時器生成；原版 raw -7 是殖民地 100 PP 產品，
+	// 由 advanceAIColonyBuilds 保存進度並在完工後加入 self Agent pool。
 
 	// 3) 外交態勢：關係已在本回合 AI loop 前依 Diplomacy_Growth_ 更新。
 	prevStance := a.StanceName
