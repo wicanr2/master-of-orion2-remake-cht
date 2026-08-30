@@ -75,6 +75,20 @@ func AdvancedCivilizationExtraPlanetQuota(starCount, playerCount int) int {
 	return quota
 }
 
+// AdvancedCivilizationProximityPercent 對應 Proximity_Bonus_ 的單一已占母星距離項。
+func AdvancedCivilizationProximityPercent(distance int) int {
+	switch {
+	case distance >= 1 && distance <= 2:
+		return 120
+	case distance >= 3 && distance <= 4:
+		return 110
+	case distance == 5:
+		return 105
+	default:
+		return 100
+	}
+}
+
 // AdvancedCivilizationStartingBC 對應 Orion2.exe 1.31 的 sub_E5832：
 // Advanced Civilization 開局依 TRAIT_MONEY raw 值設定國庫，而不是沿用一般開局 50 BC。
 // 原版公式是 (raw+2)*100；合法標準值 -1／0／+1 分別得到 100／200／300 BC。

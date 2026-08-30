@@ -80,13 +80,15 @@
   [`docs/re/seven-group-closure-audit-20260830.md`](docs/re/seven-group-closure-audit-20260830.md)，逐列狀態見
   [`docs/re/remake-traceability.tsv`](docs/re/remake-traceability.tsv)。
 
-- [~] **RE gate 後第一個實作切片：Advanced Civilization 開局（2026-08-30）**：
+- [x] **RE gate 後第一個實作切片：Advanced Civilization 開局（2026-08-30）**：
   `sub_E5832` 的 `(MoneyRaw+2)*100` 已由正常新遊戲種族 finalize 同時接入玩家與所有 AI，
   標準 raw `-1／0／+1` 與一般文明不改寫均有測試；`Num_Adv_Civ_Planets_ @ 0x62BB7` 的額度
   整數式亦已進 typed 規則層。全圖候選、round-robin、90% 平衡、special 再分配與一般殖民地
-  初始化仍在本切片後半。第一輪另完成 360／20 上限、距離門檻、worth 穩定排序、玩家順序
-  round-robin 與 owner 衝突的 typed 選取核心；追溯表仍保持 `PARTIAL`，不得以純規則綠測試
-  宣稱正常新遊戲已完成全圖殖民地建立。
+  初始化均已接入正常 `SetupNewGame → ApplyRace → finalize`。後續三輪完成 360／20 上限、距離
+  門檻、worth 穩定排序、玩家順序 round-robin、owner 衝突、玩家／AI 額外殖民地與 JSON 往返、
+  90% 平衡、逐顆六次三欄升級，以及 raw special 4／5／10 的 100 次再分配與 Artifacts
+  Homeworld 保護。`0x62C70` 與 Money `0xE5832` 均為 `CONFORMED／INTERNAL`；不聲明原版
+  全域 PRNG 位元序相同。
 
 - [x] **RE gate 後第二、三輪：AI raw profile 與科技估值收斂（2026-08-30）**：依
   `CORRECTION-20260830-PROFILE-W4` 把四候選初值修為 `[2,1,2,1]`，Ship Defense 改加 raw ID 1、

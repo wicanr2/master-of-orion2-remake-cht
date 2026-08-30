@@ -4164,6 +4164,7 @@ func (s *GameSession) finalizeStartingTechForRace() {
 	}
 	s.applyStartingTech()
 	s.applyAdvancedCivilizationStartingBC()
+	s.applyAdvancedCivilizationColonies()
 	normalizeCurrent := func(ps *engine.PlayerState) {
 		if !ps.CompletedTopics[ps.ResearchTopic] {
 			return

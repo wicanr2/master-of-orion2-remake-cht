@@ -1,6 +1,6 @@
 # Advanced Civilization 開局規格
 
-狀態：READY
+狀態：CONFORMED
 
 RE-TRACE: dos-orion2-1.31:0x62C70
 
