@@ -80,6 +80,12 @@
   [`docs/re/seven-group-closure-audit-20260830.md`](docs/re/seven-group-closure-audit-20260830.md)，逐列狀態見
   [`docs/re/remake-traceability.tsv`](docs/re/remake-traceability.tsv)。
 
+- [~] **RE gate 後第一個實作切片：Advanced Civilization 開局（2026-08-30）**：
+  `sub_E5832` 的 `(MoneyRaw+2)*100` 已由正常新遊戲種族 finalize 同時接入玩家與所有 AI，
+  標準 raw `-1／0／+1` 與一般文明不改寫均有測試；`Num_Adv_Civ_Planets_ @ 0x62BB7` 的額度
+  整數式亦已進 typed 規則層。全圖候選、round-robin、90% 平衡、special 再分配與一般殖民地
+  初始化仍在本切片後半，追溯表保持 `PARTIAL`，不得以 Money 綠測試宣稱整項完成。
+
 - [x] **原版回合主鏈拓樸閉合（RE-only，2026-08-28）**：IDA Pro 9.4 重新匯出
   `Next_Turn_Calc_ @ 0x136B3..0x13822`，證實是 52 個直接 call；固定順序、
   兩次 `Do_Colony_Calculations_`、安塔蘭／議會／UI 三類條件 gate、逐玩家領袖招募迴圈，以及

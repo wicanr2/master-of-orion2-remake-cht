@@ -4163,6 +4163,7 @@ func (s *GameSession) finalizeStartingTechForRace() {
 		resetOpeningResearch(&s.AIPlayers[i].Player)
 	}
 	s.applyStartingTech()
+	s.applyAdvancedCivilizationStartingBC()
 	normalizeCurrent := func(ps *engine.PlayerState) {
 		if !ps.CompletedTopics[ps.ResearchTopic] {
 			return
@@ -4175,6 +4176,27 @@ func (s *GameSession) finalizeStartingTechForRace() {
 	normalizeCurrent(&s.Player)
 	for i := range s.AIPlayers {
 		normalizeCurrent(&s.AIPlayers[i].Player)
+	}
+}
+
+// applyAdvancedCivilizationStartingBC 在正式新遊戲的種族特性已確定後套用原版先進文明國庫。
+// 一般／曲速前開局維持 newHomeworldPlayerState 的 50 BC；只有 TechLevel=2 會改寫。
+// 玩家與 AI 必須在同一時點處理，否則先進開局會讓真人憑空比 AI 少 150 BC。
+func (s *GameSession) applyAdvancedCivilizationStartingBC() {
+	if s.techLevel() != 2 {
+		return
+	}
+	if traits, ok := s.playerStartingRuntimeTraits(); ok {
+		s.Player.BC = gamedata.AdvancedCivilizationStartingBC(int(traits[gamedata.TRAIT_MONEY]))
+	}
+	for i := range s.AIPlayers {
+		origRace := -1
+		if raceIdx := aiRaceIndex(s.AIPlayers[i]); raceIdx >= 0 && raceIdx < len(Races) {
+			origRace = Races[raceIdx].OrigIdx
+		}
+		if traits, ok := gamedata.OrigRaceTraits(origRace); ok {
+			s.AIPlayers[i].Player.BC = gamedata.AdvancedCivilizationStartingBC(int(traits[gamedata.TRAIT_MONEY]))
+		}
 	}
 }
 

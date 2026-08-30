@@ -59,6 +59,35 @@ func TestGovernmentChangeAfterOpeningDoesNotResetResearch(t *testing.T) {
 	}
 }
 
+func TestAdvancedCivilizationStartingBCAppliesAfterRaceFinalization(t *testing.T) {
+	s := NewDemoSession()
+	s.TechLevel, s.TechLevelSet = 2, true
+	s.SetupNewGame(20, 4242, 3)
+	s.ApplyRace(raceIndexByEnglishNameForTest(t, "Gnolams"))
+	if got, want := s.Player.BC, gamedata.AdvancedCivilizationStartingBC(2); got != want {
+		t.Fatalf("先進諾蘭姆開局 BC=%d，預期 %d", got, want)
+	}
+	for i := range s.AIPlayers {
+		raw := 0
+		if raceIdx := aiRaceIndex(s.AIPlayers[i]); raceIdx >= 0 && raceIdx < len(Races) {
+			if traits, ok := gamedata.OrigRaceTraits(Races[raceIdx].OrigIdx); ok {
+				raw = int(traits[gamedata.TRAIT_MONEY])
+			}
+		}
+		if got, want := s.AIPlayers[i].Player.BC, gamedata.AdvancedCivilizationStartingBC(raw); got != want {
+			t.Errorf("AI %d 先進開局 BC=%d，預期 %d", i, got, want)
+		}
+	}
+
+	standard := NewDemoSession()
+	standard.TechLevel, standard.TechLevelSet = TechLevelDefault, true
+	standard.SetupNewGame(20, 4242, 2)
+	standard.ApplyRace(raceIndexByEnglishNameForTest(t, "Gnolams"))
+	if standard.Player.BC != 50 {
+		t.Fatalf("一般文明開局不得套先進國庫，得到 %d BC", standard.Player.BC)
+	}
+}
+
 func TestCustomRaceBuildsCompleteRuntimeTraitArray(t *testing.T) {
 	s := NewDemoSession()
 	r := Race{OrigIdx: -1, GrowthPct: 50, FoodBonus: 2, IndBonus: 1, ResBonus: -1,
