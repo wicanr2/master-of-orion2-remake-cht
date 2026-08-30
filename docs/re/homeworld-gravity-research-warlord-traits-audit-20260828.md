@@ -84,7 +84,7 @@ Armor 先有自身 `/2`，再視 Warlord 決定是否額外 `/2`。因此 Warlor
 - **已證實**：三項母星 raw 寫入、signed Rich／Poor 共欄、三種母星重力、逐 race 產出、
   Low-G 地戰 -10、High-G 耐受與轟炸門檻、Creative／Uncreative 時序、Warlord 艦員／領袖、
   每殖民地 command +2 與地面部隊容量。
-- **仍待獨立切片**：母星 trait 的 NPC personality 初始權重、重力轟炸的完整武器強度上游，
-  以及 Warlord AI profile 權重。這些不推翻已閉合
-  玩家規則，但不能由鄰近立即數猜填。
+- **仍待獨立切片**：重力轟炸的完整武器強度上游。母星 traits 與 Warlord 的 NPC raw profile
+  權重已於 2026-08-30 由完整 direct-site 表閉合；raw 候選正式名稱仍未知，但不再把數值權重
+  列為缺口。這些不推翻已閉合玩家規則，也不能由鄰近立即數猜填。
 - C runtime、Watcom helper、Random 內部算法及平台 API 不納入玩法分母。

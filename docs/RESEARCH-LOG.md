@@ -543,6 +543,14 @@ ID4 `+3`、ID0 `+10`、ID5 `+1000`；Lithovore 對第一組 ID2／3／4 加 `+10
 `(MoneyRaw+2)*100`，不是修改母星 planet。詳見
 `docs/re/ai-trait-profile-tech-homeworld-audit-20260830.md`。
 
+## 2026-08-30 全 trait NPC profile 與科技 category direct-site 閉合
+
+續審同一份 IDA 函式匯出，閉合五項 signed 經濟 trait、其餘布林／數值 trait 對 6／4／7 候選
+raw profile 的全部權重；同時重建 `Calc_Tech_Value_` 的全部 25 個 trait direct site，形成
+raw category 0／1／2／3／4／6／12／16／18／25／27／28／37／40 與 application 5／131 的
+精確條件、優先序及 `ecx` 倍率表。raw profile／category 正式玩家名稱仍未知，不影響已證實
+數字與 consumer。詳見 `docs/re/ai-trait-profile-tech-homeworld-audit-20260830.md`。
+
 ## 2026-08-28 母星、重力、研究與 Warlord traits
 
 IDA 直接寫入證實 Large 母星 size raw 3、Rich／Poor 礦產 raw 3／1、Artifacts special raw 10，

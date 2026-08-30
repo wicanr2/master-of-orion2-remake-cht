@@ -80,3 +80,95 @@ player+0x32 = trunc((MoneyRaw + 2) * 400 / 4)
   科技估值表。未知不推翻本輪 raw 權重與公式。
 - remake 的 profile、科技選擇與 Advanced Civilization 全圖開局仍是較窄模型；依全域
   RE-first gate，本輪只補證據與差異，不建立未經 READY spec 的 Go 實作。
+
+## 第四輪：五項 signed 經濟 trait 的 raw profile 權重
+
+三組候選的 raw ID 對應仍採上一節的 6／4／7 組。初始權重依序為
+`[1,2,1,2,2,1]`、`[2,1,2,1]`、`[2,2,1,2,1,2,3]`，再套下表：
+
+| trait 條件 | 6 候選組變更 | 4 候選組 | 7 候選組 |
+| --- | --- | --- | --- |
+| Population `==50` | ID5、ID2 **設為** 11 | 無 | 無 |
+| Population `==100` | ID5、ID2 `+100` | 無 | 無 |
+| Farming `==1` | ID5、ID4、ID3 各 `+3` | 無 | 無 |
+| Farming `==2` | ID5、ID4、ID3 各 `+100` | 無 | 無 |
+| Industry `==1` | ID5、ID4、ID3 各 `+3` | 無 | 無 |
+| Industry `==2` | ID5、ID4、ID3 各 `+10` | 無 | 無 |
+| Science `==1` | ID4 `+3`、ID3 `+10` | 無 | 無 |
+| Science `==2` | ID4 `+10`、ID3 `+100` | 無 | 無 |
+| Money | 無 direct site | 無 | 無 |
+
+Population 第一級是覆寫初值，不是加 10；這是 `0x58A9F..0x58AB0` 的 raw `mov 0xB`。
+其餘位於 `0x58AB7..0x58B64`。函式只比對列出的精確正值，負值不在 profile 初始化直接加權；
+負值仍會在玩家經濟與科技估值 consumer 生效。以上是**已證實** raw 權重。
+
+## 第五輪：其餘 trait 的 raw profile 權重
+
+| trait 條件 | 6 候選組變更 | 4 候選組變更 | 7 候選組變更 |
+| --- | --- | --- | --- |
+| Ship Defense `==20` | ID1 `+10` | ID1 `+10` | ID3 `+100` |
+| Ship Defense `==40` | ID1 `+100` | ID1 `+100` | ID3 `+1000` |
+| Ship Attack `==25` | ID1 `+10` | ID0 `+100` | ID4 `+3` |
+| Ship Attack `==50` | ID1 `+100` | ID0 `+1000` | ID4 `+10` |
+| Ground Combat `==10` | ID2 `+10` | 無 | ID1 `+100` |
+| Ground Combat `==20` | ID2 `+100` | 無 | ID1 `+1000` |
+| Spying `==10／20` | ID0 `+3／+10` | 無 | 無 |
+| Low-G | ID4 `+10`、ID5／ID3 各 `+3` | 無 | 無 |
+| High-G | ID2 `+10` | 無 | ID1 `+1000` |
+| Aquatic | ID4／ID5／ID3 各 `+3` | 無 | 無 |
+| Subterranean | ID4 `+10`、ID5／ID3 各 `+3` | 無 | 無 |
+| Large Homeworld | ID4 `+3`、ID5 `+10` | 無 | 無 |
+| Rich Homeworld `==1` | ID4 `+10` | 無 | 無 |
+| Charismatic | ID0 `+100` | 無 | 無 |
+| Creative | ID3 `+1000` | 無 | 無 |
+| Tolerant | ID4 `+100` | 無 | 無 |
+| Fantastic Traders | ID0 `+100` | 無 | 無 |
+| Stealthy Ships | ID1 `+100` | 無 | 無 |
+| Warlord | ID2 `+10` | 無 | 無 |
+| Trans-Dimensional | ID2 `+10`、ID1 `+13` | 無 | ID3 `+100` |
+
+Cybernetic／Lithovore 已列於第一輪。Poor Homeworld、Repulsive、Uncreative、Telepathic、Lucky、
+Omniscience 在此函式沒有 direct profile 加權；不能把「沒有 direct site」解讀成整體 AI 無效果，
+它們各自仍有外交、研究、事件或地圖 consumer。表格對應 `0x58B6D..0x58D8B`，證據等級為
+**已證實**；raw ID 正式語意名稱仍未知。
+
+## 第六輪：完整 trait × raw tech category 覆寫表
+
+`0xFCA88..0xFCDE9` 是 `Calc_Tech_Value_` 的 raw category 分派。下表列出所有會讀
+`player+0x89F..+0x8BD` 的 category branch；「不變」表示保留 category table 或較早 profile
+分支產生的 `ecx`。
+
+| raw category | trait 條件 | category multiplier `ecx` |
+| ---: | --- | ---: |
+| 0 | Farming `<0`／`>0` | 100／10 |
+| 0 | Lithovore；否則 Cybernetic | 1；20 |
+| 1 | Industry `<0` | 100 |
+| 2 | Science `!=0` | 100 |
+| 3 | Money `<0`／`>0` | 100／20 |
+| 4 | Industry `>0` | 100 |
+| 4 | Tolerant | 1（最後覆寫） |
+| 6 | Subterranean | 20 |
+| 6 | Population `<0`／`>0` | 100／5（在 Subterranean 後覆寫） |
+| 12 | Spying `!=0` | 50 |
+| 12 | `trunc(GovernmentRaw/2)==2` | 50 |
+| 16 | Ground Combat `<0` | 20 |
+| 18 | Ship Defense `<0` | 50 |
+| 25 | Ship Attack `<0` | 100 |
+| 27 | Ship Attack `>0` | 100 |
+| 28 | Ship Defense `>0` | 100 |
+| 37 | Stealthy Ships | 1 |
+| 40 | `trunc(GovernmentRaw/2)==3` | 1 |
+
+另有兩個 tech application raw ID 特例，不走 category 表：ID 5 且 Telepathic 時 `ecx=1`；
+ID 131 在 High-G 時 `ecx=1`，否則 Low-G 時 `ecx=50`。位址為 `0xFCDE9..0xFCE46`。
+表內 signed division 依 Watcom `cdq; sub eax,edx; sar eax,1` 向零截斷。這閉合全部 25 個
+trait direct site 的輸入、優先序與倍率；後續 tier、已研究邊際遞減、profile、cap 與完成度仍
+照 `Calc_Tech_Value_` 共同鏈處理，不能把表內倍率當最終科技 worth。
+
+## 2026-08-30 更新後邊界
+
+- 三組 raw profile 的所有 trait direct site，以及 `Calc_Tech_Value_` 的所有 trait direct site
+  均已閉合。
+- 仍未知的是 raw profile ID 的正式名稱、tech category 的玩家名稱與非 trait 共同估值表名稱；
+  原始數字、控制流與玩家／AI consumer 不因名稱未知而失效。
+- 這三輪仍屬 RE-only；remake profile／科技估值接線須待完整 RE gate 後建立 READY spec。

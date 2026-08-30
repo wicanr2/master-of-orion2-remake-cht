@@ -68,9 +68,9 @@ writer、consumer 與 caller 閉合的窄切片。
   Subterranean 容量／地戰；Tolerant 容量／混合人口污染；Fantastic Traders 的殖民地、帝國
   與協議三個互不重複的 consumer。
 - `Twiddle_Initial_Homeworlds_` 對 Money 的唯一 direct consumer 已閉合為 Advanced
-  Civilization 初始國庫 `(MoneyRaw+2)*100`；它不修改母星行星屬性。Cybernetic／Lithovore
-  的 raw profile 權重及 category 0 科技倍率亦已另行閉合。其餘 trait 的 AI profile／科技估值
-  常數仍須逐 category 審查，不能由已閉合玩家公式外推。
+  Civilization 初始國庫 `(MoneyRaw+2)*100`；它不修改母星行星屬性。2026-08-30 已進一步
+  閉合三組 NPC raw profile 的全部 trait direct site，以及 `Calc_Tech_Value_` 全部 trait × raw
+  category 覆寫。profile／category 正式名稱仍未知，但不再把 direct 權重表列為未解。
 - 直接依據詳見 `population-growth-runtime-audit-20260828.md`、
   `colony-food-production-environment-audit-20260828.md`、
   `colony-industry-production-pollution-audit-20260828.md`、

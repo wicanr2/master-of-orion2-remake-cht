@@ -302,6 +302,23 @@
   `(MoneyRaw+2)*100`，即標準 `-1／0／+1` 對應 `100／200／300 BC`。這不是母星 planet
   屬性修改，Aquatic／Subterranean 不應在此函式另開缺口。證據同上。
 
+- [x] **五項 signed 經濟 trait 的 NPC raw profile 權重閉合（RE-only，2026-08-30）**：
+  Population／Farming／Industry／Science 對 6／4／7 候選的精確設值／加權、門檻與初始權重
+  已閉合；Money 在 profile 初始化無 direct site，其 Advanced Civilization 國庫另由上一項
+  管理。負值沒有 profile 直接加權，但仍有玩家經濟與科技估值 consumer。證據見
+  [`docs/re/ai-trait-profile-tech-homeworld-audit-20260830.md`](docs/re/ai-trait-profile-tech-homeworld-audit-20260830.md)。
+
+- [x] **其餘 trait 的 NPC raw profile 權重閉合（RE-only，2026-08-30）**：Ship Defense／
+  Attack、Ground Combat、Spying、重力、Aquatic、Subterranean、母星、Cybernetic／Lithovore、
+  Charismatic、Creative、Tolerant、Fantastic Traders、Stealthy、Warlord、Trans-Dimensional 的
+  6／4／7 候選 raw 權重已逐 direct site 閉合；沒有 direct site 的 trait 不冒稱整體 AI 無效果。
+  raw ID 正式名稱仍未知。證據同上。
+
+- [x] **全 trait 科技 raw category 覆寫閉合（RE-only，2026-08-30）**：`Calc_Tech_Value_`
+  的 25 個 trait direct site 已重建為 raw category 0／1／2／3／4／6／12／16／18／25／27／
+  28／37／40 與 application 5／131 的精確條件、優先序及 `ecx` 倍率。共同 tier、profile、
+  邊際遞減與 cap 仍照既有估值鏈；表內倍率不是最終 weight。證據同上。
+
 - [x] **2026-08-28 三個長跑回歸已分類並修正**：議會第二屆確實準時召開，但原版搖擺票重擲後
   流會，舊測試錯把「再次當選」當排程契約；AI 0 是 Creative，舊研究測試錯把合法的
   `ExplicitChoice` 空集合當成未研究；擴張測試則錯假設新殖民地短期資產必高於只造艦的單母星。
@@ -1846,20 +1863,22 @@
   經濟／環境 traits 已整併既有 IDA 垂直鏈：Population、Farming、Industry、Science、Money
   的 signed raw 尺度，Aquatic 食物／氣候／容量，Subterranean 容量／地戰，Tolerant 容量／
   混合人口污染，以及 Fantastic Traders 的殖民地／帝國／協議三個 consumer 均已閉合。
-  Money 的 Advanced Civilization 初始國庫已閉合；其餘 trait 的 AI profile／估值仍是
-  窄切片，Cybernetic／Lithovore 另列。見
+  Money 的 Advanced Civilization 初始國庫，以及全部 trait direct NPC profile／科技 category
+  權重均已閉合；raw profile／category 正式名稱與非 trait 共同表仍是窄切片。見
   [`docs/re/economic-environment-race-traits-audit-20260828.md`](docs/re/economic-environment-race-traits-audit-20260828.md)。
   Cybernetic／Lithovore 亦已閉合主要玩家鏈：前者每人口半食物＋半工業、格子戰術每回合
   `+10%` 修復、戰後與戰略解算清除持久損傷；後者零食物、初始 worker、六項食物科技
   合法性 gate 與 AI 食物保障 bypass。兩者的未殖民行星／殖民地 worth 產出項亦已閉合；
-  兩者 raw profile 權重與 category 0 科技倍率亦已閉合；profile 候選正式名稱及其他 category
-  仍是獨立未知。remake 目前只接 Cybernetic 戰後全修，尚缺格子回合內修復。見
+  兩者 raw profile 權重與 category 0 科技倍率亦已閉合；後續全 trait direct category 表也已
+  閉合。profile／category 正式名稱仍未知。remake 目前只接 Cybernetic 戰後全修，尚缺格子
+  回合內修復。見
   [`docs/re/cybernetic-lithovore-trait-audit-20260828.md`](docs/re/cybernetic-lithovore-trait-audit-20260828.md)。
   母星／重力／研究／Warlord traits 已再整併：Large size raw 3、Rich／Poor 礦產 raw 3／1、
   Artifacts special raw 10、Low／Normal／High-G raw 0／1／2、逐 race 產出與地戰／轟炸效果、
   Creative／Uncreative 精確時序，以及 Warlord 艦員／領袖 +1、每殖民地 command +2、地面容量
   兩倍均閉合。Advanced Civilization 的額度、候選、worth、輪選、90% 平衡與 special 再分配
-  已閉合；remake 尚無等價全圖分配器。AI profile 權重仍待窄切片。見
+  已閉合；remake 尚無等價全圖分配器。全部 trait direct NPC raw profile 權重亦已閉合，
+  只剩 raw 候選正式名稱未知。見
   [`docs/re/homeworld-gravity-research-warlord-traits-audit-20260828.md`](docs/re/homeworld-gravity-research-warlord-traits-audit-20260828.md)。
   Advanced Civilization 全圖證據另見
   [`docs/re/advanced-civilization-planets-audit-20260830.md`](docs/re/advanced-civilization-planets-audit-20260830.md)。
