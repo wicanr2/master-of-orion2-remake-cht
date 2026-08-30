@@ -63,6 +63,14 @@
 
 #### 原版忠實度重新稽核（最高優先）
 
+- [x] **RE／spec／source 垂直追溯護欄建立（2026-08-30）**：新增 immutable-key ledger 與
+  fail-closed 檢查器，明確分開 RE、spec state、source、test、implementation 與 verification。
+  首批審查 `0x589D6`、`0xFC845`、`0x62C70／0xE5832`：profile 是部分實作且四候選 index
+  已證實不符；科技估值已有 category／共同鏈但受錯誤 profile 上游影響；Advanced
+  Civilization 全圖分配與 Money 國庫則完全未實作。七個主要 RE 剩餘群組及非阻塞 oracle
+  見 [`docs/re/remainder-inventory-20260830.md`](docs/re/remainder-inventory-20260830.md)，追溯表見
+  [`docs/re/remake-traceability.tsv`](docs/re/remake-traceability.tsv)。
+
 - [x] **原版回合主鏈拓樸閉合（RE-only，2026-08-28）**：IDA Pro 9.4 重新匯出
   `Next_Turn_Calc_ @ 0x136B3..0x13822`，證實是 52 個直接 call；固定順序、
   兩次 `Do_Colony_Calculations_`、安塔蘭／議會／UI 三類條件 gate、逐玩家領袖招募迴圈，以及

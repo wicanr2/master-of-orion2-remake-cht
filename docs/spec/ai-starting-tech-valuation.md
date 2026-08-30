@@ -1,5 +1,14 @@
 # AI 開局科技估值規格
 
+狀態：READY
+
+RE-TRACE: dos-orion2-1.31:0xFC845
+
+CORRECTION-20260830-PROFILE-UPSTREAM：`aiProfileCategoryValue` 已涵蓋目前證實的 trait
+category direct-site 表，但其 `OriginalAITechProfile` 輸入由 `0x589D6` 產生；四候選權重
+尚有已知 index 錯置。因此本規格與 category 實作為 READY／部分實作，整條開局估值尚未
+CONFORMED。
+
 ## 輸入
 
 - 原版種族索引與 31 格已展開 runtime 特性；轉換順序見
@@ -12,7 +21,8 @@
 
 1. 先抽 raw27，再依種族特性與難度建立 raw 6／4／7 profile；不得以中文性格名或 remake AI profile 代替 raw 值。
 2. 每組權重總和超過 1000 時反覆除 2，然後各消費一次加權抽選。
-3. 每個科技應用以 category 靜態值開始，順序套用 raw4、raw7、raw6、種族特性與特定 tech 覆寫，再進入 `sub_FC845` 共用後段。
+3. 每個科技應用以 category 靜態值開始，順序套用 raw4、raw7、raw6、種族特性與特定 tech 覆寫，再進入 `sub_FC845` 共用後段。完整 trait direct-site 表見
+   [`../re/ai-trait-profile-tech-homeworld-audit-20260830.md`](../re/ai-trait-profile-tech-homeworld-audit-20260830.md)。
 4. 依主題成本／研究點得到視野分數後，難度大於 0 時再套 raw6 最高分門檻。
 5. 候選篩選完畢只做一次應用級加權抽選，選中應用同時決定完成主題。
 6. 不可用浮點難度倍率或 `TechCategoryWeight` fallback 冒充已知 AI profile；只有無法對到原版種族的舊存檔才安全回退。
