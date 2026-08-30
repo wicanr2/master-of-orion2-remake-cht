@@ -26,7 +26,7 @@
 > 可勾選工作清單,對應 `PLAN.md` 階段。允許擴充(CLAUDE.md)。完整性優先:不預先砍項;卡關記錄方法換路,不寫「暫緩/低投報」。
 > 圖例:`[ ]` 待辦 `[~]` 進行中 `[x]` 完成(⚠ 多為自製系統的完成,非原版對齊)。
 
-## ★ 剩餘工作（2026-08-29 依 parity 矩陣、source 與 README 畫面重新核對）
+## ★ 剩餘工作（2026-08-30 依 parity 矩陣、source 與 README 畫面重新核對）
 
 > **這一段是唯一該看的剩餘工作表。**
 >
@@ -42,7 +42,7 @@
 > ⚠ 本檔只有下面的「2026-08-24 盤點結論」是目前待辦來源；其後的附錄與 A–AO/B* 表是
 > 證據／歷史紀錄，不要從其中的舊 `[ ]` 或「仍缺」敘述重新開工。
 
-### 2026-08-29 盤點結論（目前唯一待辦來源）
+### 2026-08-30 盤點結論（目前唯一待辦來源）
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備
@@ -269,6 +269,21 @@
   都致污」模型；依 RE-first gate 只登記差異。共用 `DE280` 的重力、prisoner、士氣、政體、
   三種行政領袖、封鎖與五級 AI 難度表亦已獨立閉合，見
   [`docs/re/colony-industry-production-pollution-audit-20260828.md`](docs/re/colony-industry-production-pollution-audit-20260828.md)。
+
+- [x] **Advanced Civilization 全圖分配閉合（RE-only，2026-08-30）**：IDA 已閉合額外行星
+  額度、距離／owner 候選 gate、未殖民行星 worth 與 proximity、隨機玩家輪流選取、最佳玩家
+  90% 平衡、每顆最多六次屬性提升、special 4／5／10 再分配與最後殖民地初始化。
+  `Assign_Advanced_Civilization_Starting_Ships_ @ 0x63848` 在此 binary 沒有玩家可見效果；
+  runtime helper 依停止線排除。remake 尚無等價全圖分配器；依 RE-first gate 只登記差異。
+  證據見
+  [`docs/re/advanced-civilization-planets-audit-20260830.md`](docs/re/advanced-civilization-planets-audit-20260830.md)。
+
+- [x] **Cybernetic／Lithovore AI 行星價值產出項閉合（RE-only，2026-08-30）**：未殖民行星的
+  食物項已證實為 Lithovore `0`、Cybernetic `food*75`、一般 `food*150`；殖民地產出項則為
+  Lithovore `6*(industry+research)`、Cybernetic `4*(food+industry+research)`、一般
+  `3*(industry+research)+6*food`。這些是共同 worth 公式中的產出項，不冒充包含氣候、人口與
+  personality 的完整最終分數。NPC profile 與科技估值仍分列為獨立切片。證據見
+  [`docs/re/cybernetic-lithovore-trait-audit-20260828.md`](docs/re/cybernetic-lithovore-trait-audit-20260828.md)。
 
 - [x] **2026-08-28 三個長跑回歸已分類並修正**：議會第二屆確實準時召開，但原版搖擺票重擲後
   流會，舊測試錯把「再次當選」當排程契約；AI 0 是 Creative，舊研究測試錯把合法的
@@ -1818,14 +1833,18 @@
   [`docs/re/economic-environment-race-traits-audit-20260828.md`](docs/re/economic-environment-race-traits-audit-20260828.md)。
   Cybernetic／Lithovore 亦已閉合主要玩家鏈：前者每人口半食物＋半工業、格子戰術每回合
   `+10%` 修復、戰後與戰略解算清除持久損傷；後者零食物、初始 worker、六項食物科技
-  合法性 gate 與 AI 食物保障 bypass。remake 目前只接 Cybernetic 戰後全修，尚缺格子回合內
-  修復；兩者完整 AI worth 權重仍待。見
+  合法性 gate 與 AI 食物保障 bypass。兩者的未殖民行星／殖民地 worth 產出項亦已閉合；
+  NPC profile 與科技估值仍是獨立窄切片。remake 目前只接 Cybernetic 戰後全修，尚缺格子
+  回合內修復。見
   [`docs/re/cybernetic-lithovore-trait-audit-20260828.md`](docs/re/cybernetic-lithovore-trait-audit-20260828.md)。
   母星／重力／研究／Warlord traits 已再整併：Large size raw 3、Rich／Poor 礦產 raw 3／1、
   Artifacts special raw 10、Low／Normal／High-G raw 0／1／2、逐 race 產出與地戰／轟炸效果、
   Creative／Uncreative 精確時序，以及 Warlord 艦員／領袖 +1、每殖民地 command +2、地面容量
-  兩倍均閉合。Advanced Civ 全圖平衡與 AI profile 權重仍待窄切片。見
+  兩倍均閉合。Advanced Civilization 的額度、候選、worth、輪選、90% 平衡與 special 再分配
+  已閉合；remake 尚無等價全圖分配器。AI profile 權重仍待窄切片。見
   [`docs/re/homeworld-gravity-research-warlord-traits-audit-20260828.md`](docs/re/homeworld-gravity-research-warlord-traits-audit-20260828.md)。
+  Advanced Civilization 全圖證據另見
+  [`docs/re/advanced-civilization-planets-audit-20260830.md`](docs/re/advanced-civilization-planets-audit-20260830.md)。
   Spying trait 已閉合 signed `-10/+10/+20` 對攻守表的直接加項、AI 生產需求與零 spy
   bootstrap 機率、packed Agent／Spy pool、100 industry 訓練、每名 1 BC、63 上限、AI
   留守／外派及 Espionage／Sabotage／Hide 任務主鏈。remake 的 30 BC 訓練、六回合免費 spy

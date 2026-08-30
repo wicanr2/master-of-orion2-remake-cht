@@ -51,11 +51,11 @@ runtime 是 **31 個 signed byte**；`POOR_HOMEWORLD` 不是第 32 byte，而是
 | 11 / `+0x8AA` | High-G | `Enforce_Gravity_`、`Gravity_Player_Production_Factor_`、`Resolve_Bomb_Hit_`、`Compute_Player_Ground_Combat_Bonuses_` | 母星、生產、耐受、轟炸門檻與 AI 選址已閉合 |
 | 12 / `+0x8AB` | Aquatic | `Modify_Home_Worlds_`、`Colony_Empire_Base_Food2_Produced_`、`Player_Effective_Climate_`、`Size_And_Climate_Race_Pop_Limit_` | 食物／氣候／人口上限主鏈已閉合；母星生成仍待窄切片 |
 | 13 / `+0x8AC` | Subterranean | `Uncolonized_Planet_Worth_To_Player_`、`Size_And_Climate_Race_Pop_Limit_`、`Compute_Player_Ground_Combat_Bonuses_` | 人口上限與地面防守 +10 已閉合；AI 估值仍待窄切片 |
-| 14 / `+0x8AD` | Large Homeworld | `Modify_Home_Worlds_` | 標準母星 planet size raw 3 已閉合；Advanced Civ 平衡另列 |
+| 14 / `+0x8AD` | Large Homeworld | `Modify_Home_Worlds_` | 標準母星 planet size raw 3 與 Advanced Civ 平衡均已閉合 |
 | 15 / `+0x8AE` | Rich/Poor Homeworld | `Modify_Home_Worlds_` | signed `-1/0/+1` 與礦產 raw 1／保持／3 已閉合 |
-| 16 / `+0x8AF` | Artifacts Homeworld | `Twiddle_Selected_Adv_Civ_Planets_`、`Modify_Home_Worlds_` | 標準母星 special raw 10 已閉合；Advanced Civ 全圖平衡仍待 |
-| 17 / `+0x8B0` | Cybernetic | `Strategic_Combat_`、`Repair_All_Combat_Ships_`、`Colony_Industry_Maintenance_`、`Apply_Colony_Pop_Growth_` | 食物／工業維護、格子每回合 +10% 與戰後／戰略全修已閉合；AI worth 尚待 |
-| 18 / `+0x8B1` | Lithovore | `Tech_Is_Legal_For_Player_`、`Ensure_At_Least_1_Food_Planet_`、`Colony_Food_Maintenance_`、`Apply_Colony_Pop_Growth_` | 零食物、初始職務、六科技 gate 與 AI 食物保障 bypass 已閉合；AI worth 尚待 |
+| 16 / `+0x8AF` | Artifacts Homeworld | `Twiddle_Selected_Adv_Civ_Planets_`、`Modify_Home_Worlds_` | 標準母星 special raw 10 與 Advanced Civ special 平衡均已閉合 |
+| 17 / `+0x8B0` | Cybernetic | `Strategic_Combat_`、`Repair_All_Combat_Ships_`、`Colony_Industry_Maintenance_`、`Apply_Colony_Pop_Growth_`、`Uncolonized_Planet_Worth_To_Player_`、`Colony_Worth_To_Player_` | 食物／工業維護、格子每回合 +10%、戰後／戰略全修與 AI 行星／殖民地 worth 產出項已閉合；NPC profile／科技估值尚待 |
+| 18 / `+0x8B1` | Lithovore | `Tech_Is_Legal_For_Player_`、`Ensure_At_Least_1_Food_Planet_`、`Colony_Food_Maintenance_`、`Apply_Colony_Pop_Growth_`、`Uncolonized_Planet_Worth_To_Player_`、`Colony_Worth_To_Player_` | 零食物、初始職務、六科技 gate、AI 食物保障 bypass 與 AI 行星／殖民地 worth 產出項已閉合；NPC profile／科技估值尚待 |
 | 19 / `+0x8B2` | Repulsive | `Vote_Check_`、`Diplomacy_Screen_`、`NPC_To_NPC_Treaty_Negotiations_`、`Determine_Diplomacy_Messages_`、`Chance_To_Hire_Hero_`、`Apply_Assimilation_` | 主要公式／gate 閉合；議會 -100、proposal -50、領袖 -10／÷2、同化 ÷2、AI talker 1 與外交路徑限制已證實；choice／message／leader flag 表仍待，見 `repulsive-charismatic-trait-audit-20260828.md` |
 | 20 / `+0x8B3` | Charismatic | `Vote_Check_`、`Change_Relations_`、`Get_Tech_Exchange_Reaction_`、`Chance_To_Hire_Hero_`、`Apply_Assimilation_` | 主要公式閉合；議會 +40、proposal／科技交換 +50、關係 delta 正×2負÷2、領袖 +5／+10、同化 ×2、AI talker 3 已證實，見同上 |
 | 21 / `+0x8B4` | Uncreative | `Init_Player_Tech_`、`Player_Gets_Tech_App_` | 可選集合形成時的單項亂數限縮已閉合 |
@@ -83,18 +83,16 @@ runtime 是 **31 個 signed byte**；`POOR_HOMEWORLD` 不是第 32 byte，而是
 
 依玩家體驗與交叉依賴排序：
 
-1. Telepathic 剩餘 raw 下游：boarding action type 2、combat ship `+0xB0`、敵殖民地最終 worth、
-   科技估值 raw ID，以及重複 general-skill caller 的副作用。
-2. 匿蹤特殊裝置格子戰術 consumer：raw 6／23／31 的設計 bitfield 已證實複製到 combat record，
-   快速結算 table effect 則全為 0／0；下一步只追三項裝置各自的間接命中、目標與回合時序，
-   不再把它們併成 Stealthy Ships trait 的等價效果。
-3. Ship Attack／Ship Defense／Trans-Dimensional 剩餘 raw 下游：strategic record 欄名、四個
+1. 各 trait 的 NPC profile／科技估值：先拆分 personality 初始化、殖民地 worth 與科技選擇
+   三種 accumulator；Cybernetic／Lithovore 的行星／殖民地產出項已閉合，不再重開。
+2. Ship Attack／Ship Defense／Trans-Dimensional 剩餘 raw 下游：strategic record 欄名、四個
    bonus 輸出型別、撤退完整 gate、科技 raw ID、AI profile 與全域 RNG 序列。
-4. Repulsive／Charismatic 剩餘表格：完整 choice／message ID、advanced officer 候選、AI leader
+3. Repulsive／Charismatic 剩餘表格：完整 choice／message ID、advanced officer 候選、AI leader
    flag、sneak-attack 最終權重、profile／talker raw gate 與 RNG。
-5. Government：主要玩家鏈已整併於 `government-trait-audit-20260828.md`；後續只追 AI 評分、
+4. Government：主要玩家鏈已整併於 `government-trait-audit-20260828.md`；後續只追 AI 評分、
    產品合法性 raw 表與 occupation policy，不重開已閉合公式。
-6. 其餘經濟欄整併既有碎片文件，消除重複或互相衝突的公式敘述。
+5. 其餘經濟欄的初始母星／AI profile 窄切片；Advanced Civilization 全圖分配已閉合，不再以
+   母星 trait 名義重開。
 
 只有每一切片具備 raw 位址、輸入狀態、公式／表、玩家可見 consumer 與未知邊界後，才可把
 parity matrix 的「客製種族效果」列升格；目前仍是進行中。

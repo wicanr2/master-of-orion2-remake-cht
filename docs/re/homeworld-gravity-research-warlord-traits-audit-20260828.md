@@ -27,8 +27,10 @@
 礦產 raw 1／3 均落在既有 planet enum；一般中值保持生成器結果，不由本函式硬寫另一常數。
 
 `Twiddle_Selected_Adv_Civ_Planets_ @ 0x638A9` 在 Advanced Civilization 開局會把 Artifacts
-trait 納入高價 special 的重新分配／平衡流程；它不改變上述標準母星 raw 10 契約。其完整
-AI 公平化迴圈牽涉全圖價值重抽，保留為開局生成專題，不從 Hex-Rays 暫存變數猜成簡單覆寫。
+trait 納入高價 special 的重新分配／平衡流程；它不改變上述標準母星 raw 10 契約。2026-08-30
+已閉合其額度、距離／owner gate、worth 排序、輪流選取、最高玩家 90% 平衡、每顆六次升級與
+special 4／5／10 再分配，見
+[`advanced-civilization-planets-audit-20260830.md`](advanced-civilization-planets-audit-20260830.md)。
 
 ## Low-G／High-G：`+0x8A9..+0x8AA`
 
@@ -82,7 +84,7 @@ Armor 先有自身 `/2`，再視 Warlord 決定是否額外 `/2`。因此 Warlor
 - **已證實**：三項母星 raw 寫入、signed Rich／Poor 共欄、三種母星重力、逐 race 產出、
   Low-G 地戰 -10、High-G 耐受與轟炸門檻、Creative／Uncreative 時序、Warlord 艦員／領袖、
   每殖民地 command +2 與地面部隊容量。
-- **仍待獨立切片**：Advanced Civilization 的全圖平衡抽樣、母星 trait 的 NPC personality
-  初始權重、重力轟炸的完整武器強度上游，以及 Warlord AI profile 權重。這些不推翻已閉合
+- **仍待獨立切片**：母星 trait 的 NPC personality 初始權重、重力轟炸的完整武器強度上游，
+  以及 Warlord AI profile 權重。這些不推翻已閉合
   玩家規則，但不能由鄰近立即數猜填。
 - C runtime、Watcom helper、Random 內部算法及平台 API 不納入玩法分母。

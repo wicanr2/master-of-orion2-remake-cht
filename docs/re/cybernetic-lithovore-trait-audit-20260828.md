@@ -6,11 +6,14 @@
   `7ae2ac2e5904ca330009af2827279d889906b0b9b7a8854c38eb707a56e955b5`。
 - IDA 資料庫：`Orion2.exe.i64`，SHA-256
   `4a01791fcf877ed87a740a54748694ab34a02675e3117dac052aeaa3f883944e`。
-- 工具：IDA Pro 9.4、`tools/ida/audit_custom_race_trait_consumers.py`；位址均為
+- 工具：IDA Pro 9.4、`tools/ida/audit_custom_race_trait_consumers.py`、
+  `tools/ida/audit_cybernetic_lithovore_worth.py`；位址均為
   IDA linear、DOS/4GW LE object #1。
 - 可重生證據：
   [`evidence/custom-race-trait-consumers-ida-20260828.json`](evidence/custom-race-trait-consumers-ida-20260828.json)。
   匯出保留原始函式名、位址、bytes、operand、caller 與外部導航符號。
+- AI worth 補充匯出：
+  [`evidence/cybernetic-lithovore-worth-ida-20260830.json`](evidence/cybernetic-lithovore-worth-ida-20260830.json)。
 
 ## Cybernetic `player+0x8B0`
 
@@ -45,9 +48,31 @@ Cybernetic 為 1，Lithovore 為 0；最後以 `(sumHalf+1)/2` 寫整數維護�
 
 ### AI 與殖民地評估
 
-`Uncolonized_Planet_Worth_To_Player_`、`Colony_Worth_To_Player_` 與 NPC profile 初始化均有
-Cybernetic 分支，但完整權重還混合氣候、產出與 personality accumulator；本文件只定位其
-存在，不由鄰近立即數猜完整 AI 公式。
+`Uncolonized_Planet_Worth_To_Player_ @ 0xD27A7` 在共同 worth accumulator 已建立後，令此段
+食物產出 `food` 對分數的加項為：
+
+```text
+Lithovore:  +0
+Cybernetic: +food * 75
+一般種族:   +food * 150
+```
+
+raw 分支位於 `0xD28C5..0xD28EA`。這只取代共同公式中的食物項；氣候、最大人口、礦產與
+personality 等前後項仍照原路累加，不能把上述立即數誤寫成整顆行星的最終 worth。
+
+`Colony_Worth_To_Player_ @ 0xD2CAE` 先取得 `food`、`industry`、`research` 三項基礎產出；其中
+`food` 是 `Colony_Empire_Base_Food2_Produced_ @ 0xDE0C6` 回傳 food2 再除 2。`0xD2E01..0xD2E2F`
+對共同 accumulator 的產出加項為：
+
+```text
+Lithovore:  6 * (industry + research)
+Cybernetic: 4 * (food + industry + research)
+一般種族:   3 * (industry + research) + 6 * food
+```
+
+以上均為 signed 整數資料流的**已證實**公式。NPC profile 初始化與科技估值雖也有 trait direct
+site，但屬另一套 personality／科技選擇權重；本輪未把它們混進行星／殖民地 worth，仍保留為
+獨立 AI profile 窄切片。
 
 ## Lithovore `player+0x8B1`
 
@@ -76,14 +101,15 @@ Creative／Uncreative 與正常選擇規則處理。
 
 ### AI 殖民地資料
 
-`Compute_AI_Data_` 分開檢查主要人口與 owner 是否皆為 Lithovore；只有兩者同時成立時才清除
-一般食物建築需求旗標。混合殖民地不能只看 owner trait。行星／殖民地 worth 另有 Lithovore
-分支，但完整分數仍保留為 AI 窄切片。
+`Compute_AI_Data_ @ 0xD3D34` 分開檢查主要人口與 owner 是否皆為 Lithovore；只有兩者同時成立
+時才清除一般食物建築需求旗標。混合殖民地不能只看 owner trait。行星與殖民地 worth 的
+Lithovore 食物歸零／非食物產出加權已由上一節閉合。
 
 ## 勘誤、remake 差異與停止線
 
 - 舊文件只強調 Cybernetic「戰後完全修復」，漏掉格子戰術每回合 `+10%`。兩者均為已證實，
   不能互相替代。現行 remake 的 `repairAfterBattle` 只覆蓋戰後結果，尚缺回合內修復規格與
   可表示逐系統損傷的資料模型。
-- Lithovore 六項科技禁用表、零食物維護與 AI 食物保障 bypass 已證實；完整 AI worth 權重仍待。
+- Lithovore 六項科技禁用表、零食物維護、AI 食物保障 bypass，以及兩種 trait 的行星／殖民地
+  worth 產出項均已證實；NPC profile 與科技估值權重仍是獨立缺口。
 - `isqrt_`、除法輔助碼、C runtime、Watcom stack probe 與平台 API 不納入玩法分母。

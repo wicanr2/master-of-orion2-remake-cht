@@ -518,6 +518,22 @@ IDA 證實 Cybernetic 除了食物／工業各半外，格子戰術每回合還�
 Food Replicators、Hydroponic Farm、Soil Enrichment、Subterranean Farms 六項科技合法性 gate。
 詳見 `docs/re/cybernetic-lithovore-trait-audit-20260828.md`。
 
+## 2026-08-30 Advanced Civilization 全圖分配
+
+IDA 已閉合額外行星額度、距離／owner 候選 gate、未殖民行星 worth 與 proximity、隨機玩家
+輪流選取、最佳玩家 90% 平衡、每顆最多六次屬性提升、special 4／5／10 再分配，以及最後
+`Init_Colony_` 回寫。`Assign_Advanced_Civilization_Starting_Ships_ @ 0x63848` 在此 binary 是
+無玩家可見效果的空迴圈；runtime helper 不納入玩法分母。詳見
+`docs/re/advanced-civilization-planets-audit-20260830.md`。
+
+## 2026-08-30 Cybernetic／Lithovore AI 行星價值
+
+`Uncolonized_Planet_Worth_To_Player_ @ 0xD27A7` 已證實食物項為 Lithovore `0`、Cybernetic
+`food*75`、一般 `food*150`。`Colony_Worth_To_Player_ @ 0xD2CAE` 的產出項分別為 Lithovore
+`6*(industry+research)`、Cybernetic `4*(food+industry+research)`、一般
+`3*(industry+research)+6*food`。NPC profile 與科技估值是不同資料流，未冒充本輪已閉合。
+詳見 `docs/re/cybernetic-lithovore-trait-audit-20260828.md`。
+
 ## 2026-08-28 母星、重力、研究與 Warlord traits
 
 IDA 直接寫入證實 Large 母星 size raw 3、Rich／Poor 礦產 raw 3／1、Artifacts special raw 10，
