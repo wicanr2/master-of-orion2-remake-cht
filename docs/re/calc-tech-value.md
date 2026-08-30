@@ -1,10 +1,12 @@
 # `Calc_Tech_Value_`(`sub_FC845` @ 0xFC845)規格文件
 
-> **現況入口（2026-08-25）**：本檔是歷史逐段抄錄，含已被 IDA 資料庫推翻的舊判讀；
+> **現況入口（2026-08-30）**：本檔是歷史逐段抄錄，含已被 IDA 資料庫推翻的舊判讀；
 > 現行證據、推論分級與 remake 邊界一律以
 > [`starting-tech-application-audit-20260825.md`](starting-tech-application-audit-20260825.md) 為準。
 > 已閉合的人類／AI 開局應用估值與單次抽選規格見
 > [`../spec/starting-tech-application-selection.md`](../spec/starting-tech-application-selection.md)。
+> Cybernetic／Lithovore 的 raw profile 權重與 category 0 精確倍率另見
+> [`ai-trait-profile-tech-homeworld-audit-20260830.md`](ai-trait-profile-tech-homeworld-audit-20260830.md)。
 
 > ⚠ **2026-08-08(第 54 項(三個寫入端))訂正:第 5 節與第 6.2/6.3 節的三個「沒有查到寫入端」是錯的。**
 > 寫入端都在,只是當初沒找到。已確立的部分:

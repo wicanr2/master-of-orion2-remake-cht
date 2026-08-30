@@ -534,6 +534,15 @@ IDA 已閉合額外行星額度、距離／owner 候選 gate、未殖民行星 w
 `3*(industry+research)+6*food`。NPC profile 與科技估值是不同資料流，未冒充本輪已閉合。
 詳見 `docs/re/cybernetic-lithovore-trait-audit-20260828.md`。
 
+## 2026-08-30 AI trait profile、科技估值與 Advanced Civilization 初始國庫
+
+三個窄切片已由同一份唯讀 IDA 匯出閉合。Cybernetic 對 6／4／7 候選 raw profile 分別加入
+ID4 `+3`、ID0 `+10`、ID5 `+1000`；Lithovore 對第一組 ID2／3／4 加 `+10／+3／+3`。
+`Calc_Tech_Value_` 的 raw category 0 依序讓 Lithovore 覆寫倍率為 1，否則 Cybernetic 為 20。
+`Twiddle_Initial_Homeworlds_` 則只在 Advanced Civilization 讀 Money，將初始國庫寫成
+`(MoneyRaw+2)*100`，不是修改母星 planet。詳見
+`docs/re/ai-trait-profile-tech-homeworld-audit-20260830.md`。
+
 ## 2026-08-28 母星、重力、研究與 Warlord traits
 
 IDA 直接寫入證實 Large 母星 size raw 3、Rich／Poor 礦產 raw 3／1、Artifacts special raw 10，

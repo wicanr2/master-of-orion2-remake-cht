@@ -67,11 +67,13 @@ writer、consumer 與 caller 閉合的窄切片。
 - **已證實**：五項 signed raw 的精確尺度及主要產出 consumer；Aquatic 食物／氣候／容量；
   Subterranean 容量／地戰；Tolerant 容量／混合人口污染；Fantastic Traders 的殖民地、帝國
   與協議三個互不重複的 consumer。
-- **仍須另切片**：新局母星 `Twiddle_Initial_Homeworlds_` 對 Money 的配置影響、各 trait 的
-  AI personality 初始權重及 `Calc_Tech_Value_` 估值常數。這些不改變上列玩家公式，但會影響
-  AI 行為或開局生成，不能以本整併文件冒稱閉合。
+- `Twiddle_Initial_Homeworlds_` 對 Money 的唯一 direct consumer 已閉合為 Advanced
+  Civilization 初始國庫 `(MoneyRaw+2)*100`；它不修改母星行星屬性。Cybernetic／Lithovore
+  的 raw profile 權重及 category 0 科技倍率亦已另行閉合。其餘 trait 的 AI profile／科技估值
+  常數仍須逐 category 審查，不能由已閉合玩家公式外推。
 - 直接依據詳見 `population-growth-runtime-audit-20260828.md`、
   `colony-food-production-environment-audit-20260828.md`、
   `colony-industry-production-pollution-audit-20260828.md`、
   `colony-research-production-audit-20260825.md`、`colony-bc-production-tax-audit-20260828.md`、
   `ground-combat-audit-20260828.md` 與 `ai-colony-build-selection-audit-20260826.md`。
+  本輪補充見 `ai-trait-profile-tech-homeworld-audit-20260830.md`。

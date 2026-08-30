@@ -70,9 +70,10 @@ Cybernetic: 4 * (food + industry + research)
 一般種族:   3 * (industry + research) + 6 * food
 ```
 
-以上均為 signed 整數資料流的**已證實**公式。NPC profile 初始化與科技估值雖也有 trait direct
-site，但屬另一套 personality／科技選擇權重；本輪未把它們混進行星／殖民地 worth，仍保留為
-獨立 AI profile 窄切片。
+以上均為 signed 整數資料流的**已證實**公式。NPC profile 初始化與科技估值屬另一套資料流；
+2026-08-30 已另閉合兩項 trait 的 raw profile 權重，以及科技 raw category 0 的 Lithovore
+倍率 1／Cybernetic 倍率 20 與優先序，見
+[`ai-trait-profile-tech-homeworld-audit-20260830.md`](ai-trait-profile-tech-homeworld-audit-20260830.md)。
 
 ## Lithovore `player+0x8B1`
 
@@ -111,5 +112,6 @@ Lithovore 食物歸零／非食物產出加權已由上一節閉合。
   不能互相替代。現行 remake 的 `repairAfterBattle` 只覆蓋戰後結果，尚缺回合內修復規格與
   可表示逐系統損傷的資料模型。
 - Lithovore 六項科技禁用表、零食物維護、AI 食物保障 bypass，以及兩種 trait 的行星／殖民地
-  worth 產出項均已證實；NPC profile 與科技估值權重仍是獨立缺口。
+  worth 產出項、raw profile 權重與 category 0 科技倍率均已證實；profile 候選正式名稱及其他
+  category 仍是獨立未知。
 - `isqrt_`、除法輔助碼、C runtime、Watcom stack probe 與平台 API 不納入玩法分母。

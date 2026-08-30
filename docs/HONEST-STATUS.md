@@ -1,6 +1,6 @@
 # 銀河霸主 II remake 誠實現況
 
-> 更新：2026-08-29。本文只描述目前狀態；剩餘工作的唯一活表是
+> 更新：2026-08-30。本文只描述目前狀態；剩餘工作的唯一活表是
 > [`WORKLIST.md`](../WORKLIST.md)，原版證據邊界以
 > [`docs/re/parity-matrix.tsv`](re/parity-matrix.tsv) 為準。
 
@@ -34,6 +34,9 @@ RE 完成分母或 remake 範圍，例如 stack probe、stack overflow check、S
 - 議會人口票數與召開排程已根據靜態反組譯證據修正；候選人、棄權與外交投票精確公式仍待閉合。
 - 客製種族選項已寫入 `CustomRaceTraits` 並參與存檔與玩法消費；AI 也已
   保存 `RaceIndex` 並在研究、地面戰、殖民與外交部分路徑消費種族特性。
+- Advanced Civilization 的全圖行星分配已由 IDA 閉合；Money 的初始國庫、Cybernetic／
+  Lithovore 的行星／殖民地 worth、raw NPC profile 權重與科技 category 0 倍率也已有精確
+  證據。這些是 RE-only 成果；全圖分配器與相關 AI 權重尚未依 READY spec 接回 remake。
 - Stealthy Ships 的星圖、AI、自動設計、profile 與科技估值 direct consumer 已閉合；IDA 證據
   顯示三種匿蹤裝置不向快速結算提供通用數值，但其 bitfield 會進入格子戰術記錄。現有資料流
   強推論否定 trait 與裝置的戰鬥等價；raw 6／23 的格子狀態機、10 回合倒數、目標合法性、

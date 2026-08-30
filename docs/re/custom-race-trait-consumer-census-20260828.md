@@ -42,7 +42,7 @@ runtime 是 **31 個 signed byte**；`POOR_HOMEWORLD` 不是第 32 byte，而是
 | 2 / `+0x8A1` | Farming | `Colony_Empire_Base_Food2_Produced_` | 玩家產出主鏈已閉合；開局／AI 權重仍待窄切片 |
 | 3 / `+0x8A2` | Industry | `Colony_Empire_Base_Industry_Produced_` | 玩家產出、污染與建造主鏈已閉合；開局／AI 權重仍待窄切片 |
 | 4 / `+0x8A3` | Science | `Colony_Empire_Base_Research_Produced_` | 玩家逐人口與固定研究主鏈已閉合；開局／AI 權重仍待窄切片 |
-| 5 / `+0x8A4` | Money | `Colony_BC_Production_`、`Twiddle_Initial_Homeworlds_` | 玩家 BC 主鏈已閉合；初始母星分支仍待審 |
+| 5 / `+0x8A4` | Money | `Colony_BC_Production_`、`Twiddle_Initial_Homeworlds_` | 玩家 BC 主鏈與 Advanced Civilization 初始國庫 `(raw+2)*100` 已閉合；後者不是母星 planet 修改 |
 | 6 / `+0x8A5` | Ship Defense | `Defensive_Combat_Bonus_`、`Missile_Dcv_`、`Qload_Ships_`、`Base_Generic_Dcv_`、`Get_Ship_Combat_Bonuses_` | 主要 consumer 閉合；格子 DCV／飛彈與戰機下游、快速 record 與估值均直接加 signed raw 值，見 `ship-racial-bonuses-transdimensional-audit-20260828.md` |
 | 7 / `+0x8A6` | Ship Attack | `Do_Auto_Ship_Turn_`、`Offensive_Combat_Bonus_`、`Fighter_Ocv_`、`Base_Generic_Ocv_`、`Get_Ship_Combat_Bonuses_` | 主要 consumer 閉合；格子 OCV／戰機、戰術 AI、快速 record 與估值均直接加 signed raw 值，見同上 |
 | 8 / `+0x8A7` | Ground Combat | `Compute_Player_Ground_Combat_Bonuses_` | 主公式已有地面戰稽核；AI 與人口回寫鏈仍由地面戰列判定 |
@@ -54,8 +54,8 @@ runtime 是 **31 個 signed byte**；`POOR_HOMEWORLD` 不是第 32 byte，而是
 | 14 / `+0x8AD` | Large Homeworld | `Modify_Home_Worlds_` | 標準母星 planet size raw 3 與 Advanced Civ 平衡均已閉合 |
 | 15 / `+0x8AE` | Rich/Poor Homeworld | `Modify_Home_Worlds_` | signed `-1/0/+1` 與礦產 raw 1／保持／3 已閉合 |
 | 16 / `+0x8AF` | Artifacts Homeworld | `Twiddle_Selected_Adv_Civ_Planets_`、`Modify_Home_Worlds_` | 標準母星 special raw 10 與 Advanced Civ special 平衡均已閉合 |
-| 17 / `+0x8B0` | Cybernetic | `Strategic_Combat_`、`Repair_All_Combat_Ships_`、`Colony_Industry_Maintenance_`、`Apply_Colony_Pop_Growth_`、`Uncolonized_Planet_Worth_To_Player_`、`Colony_Worth_To_Player_` | 食物／工業維護、格子每回合 +10%、戰後／戰略全修與 AI 行星／殖民地 worth 產出項已閉合；NPC profile／科技估值尚待 |
-| 18 / `+0x8B1` | Lithovore | `Tech_Is_Legal_For_Player_`、`Ensure_At_Least_1_Food_Planet_`、`Colony_Food_Maintenance_`、`Apply_Colony_Pop_Growth_`、`Uncolonized_Planet_Worth_To_Player_`、`Colony_Worth_To_Player_` | 零食物、初始職務、六科技 gate、AI 食物保障 bypass 與 AI 行星／殖民地 worth 產出項已閉合；NPC profile／科技估值尚待 |
+| 17 / `+0x8B0` | Cybernetic | `Strategic_Combat_`、`Repair_All_Combat_Ships_`、`Colony_Industry_Maintenance_`、`Apply_Colony_Pop_Growth_`、`Uncolonized_Planet_Worth_To_Player_`、`Colony_Worth_To_Player_`、`Init_NPC_Personalities_Objectives_Themes_`、`Calc_Tech_Value_` | 食物／工業維護、格子每回合 +10%、戰後／戰略全修、AI 行星／殖民地 worth、raw profile 權重與 category 0 科技倍率 20 已閉合；profile 候選名稱／其他 category 尚待 |
+| 18 / `+0x8B1` | Lithovore | `Tech_Is_Legal_For_Player_`、`Ensure_At_Least_1_Food_Planet_`、`Colony_Food_Maintenance_`、`Apply_Colony_Pop_Growth_`、`Uncolonized_Planet_Worth_To_Player_`、`Colony_Worth_To_Player_`、`Init_NPC_Personalities_Objectives_Themes_`、`Calc_Tech_Value_` | 零食物、初始職務、六科技 gate、AI 食物保障 bypass、AI 行星／殖民地 worth、raw profile 權重與 category 0 科技倍率 1／優先序已閉合；profile 候選名稱／其他 category 尚待 |
 | 19 / `+0x8B2` | Repulsive | `Vote_Check_`、`Diplomacy_Screen_`、`NPC_To_NPC_Treaty_Negotiations_`、`Determine_Diplomacy_Messages_`、`Chance_To_Hire_Hero_`、`Apply_Assimilation_` | 主要公式／gate 閉合；議會 -100、proposal -50、領袖 -10／÷2、同化 ÷2、AI talker 1 與外交路徑限制已證實；choice／message／leader flag 表仍待，見 `repulsive-charismatic-trait-audit-20260828.md` |
 | 20 / `+0x8B3` | Charismatic | `Vote_Check_`、`Change_Relations_`、`Get_Tech_Exchange_Reaction_`、`Chance_To_Hire_Hero_`、`Apply_Assimilation_` | 主要公式閉合；議會 +40、proposal／科技交換 +50、關係 delta 正×2負÷2、領袖 +5／+10、同化 ×2、AI talker 3 已證實，見同上 |
 | 21 / `+0x8B4` | Uncreative | `Init_Player_Tech_`、`Player_Gets_Tech_App_` | 可選集合形成時的單項亂數限縮已閉合 |
@@ -83,8 +83,8 @@ runtime 是 **31 個 signed byte**；`POOR_HOMEWORLD` 不是第 32 byte，而是
 
 依玩家體驗與交叉依賴排序：
 
-1. 各 trait 的 NPC profile／科技估值：先拆分 personality 初始化、殖民地 worth 與科技選擇
-   三種 accumulator；Cybernetic／Lithovore 的行星／殖民地產出項已閉合，不再重開。
+1. 其餘 trait 的 NPC profile／科技估值：三種 accumulator 已拆分，Cybernetic／Lithovore 的
+   raw profile 權重、行星／殖民地產出項與 category 0 科技倍率均已閉合，不再重開。
 2. Ship Attack／Ship Defense／Trans-Dimensional 剩餘 raw 下游：strategic record 欄名、四個
    bonus 輸出型別、撤退完整 gate、科技 raw ID、AI profile 與全域 RNG 序列。
 3. Repulsive／Charismatic 剩餘表格：完整 choice／message ID、advanced officer 候選、AI leader
