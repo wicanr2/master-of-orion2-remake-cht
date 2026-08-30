@@ -130,7 +130,17 @@ func TestOriginalAIAgentProductVerticalChain(t *testing.T) {
 	out := engine.EmpireOutput{Colonies: make([]engine.ColonyOutput, len(a.Colonies))}
 	out.Colonies[0].NetIndustry = 13 // population/8 + industry = 15。
 
-	for turn := 0; turn < 8; turn++ {
+	for turn := 0; turn < 4; turn++ {
+		s.advanceAIColonyBuilds(0, out)
+	}
+	restored := s.snapshot().restore()
+	s = restored
+	a = &s.AIPlayers[0]
+	if build := a.ColonyBuilds[aiColonyBuildKey(a, 0)]; build.ProductKind != ColonyProductAIAgent ||
+		build.Progress != 52 || build.Cost != aiAgentProductCost {
+		t.Fatalf("Agent 生產中存讀檔失真：%+v", build)
+	}
+	for turn := 4; turn < 8; turn++ {
 		s.advanceAIColonyBuilds(0, out)
 	}
 	if a.DefensiveAgents != 1 {
@@ -138,6 +148,30 @@ func TestOriginalAIAgentProductVerticalChain(t *testing.T) {
 	}
 	if build := a.ColonyBuilds[aiColonyBuildKey(a, 0)]; build.ProductKind != "" {
 		t.Fatalf("Agent 完工後應清空產品，got %+v", build)
+	}
+}
+
+func TestOriginalAIAgentProductFailsClosedAtCapacityAndBlockadeGates(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	a.Colonies[0].Population = 16
+	out := engine.ColonyOutput{NetIndustry: 12}
+	if s.aiCanBuildOriginalAgent(0, 0, out) {
+		t.Fatal("netCapacity=14 不得通過 raw -7 門檻")
+	}
+	out.NetIndustry = 13
+	if !s.aiCanBuildOriginalAgent(0, 0, out) {
+		t.Fatal("netCapacity=15 應通過 raw -7 門檻")
+	}
+	star := a.ColonyStars[0]
+	s.Stars[star].BlockadedMask |= 1 << a.PopulationRaceSlot
+	if s.aiCanBuildOriginalAgent(0, 0, out) {
+		t.Fatal("被封鎖殖民地不得接 raw -7 產品")
+	}
+	s.Stars[star].BlockadedMask = 0
+	a.PopulationRaceSlotKnown = false
+	if s.aiCanBuildOriginalAgent(0, 0, out) {
+		t.Fatal("缺原版 player slot 的舊存檔不得把零值冒充未封鎖")
 	}
 }
 

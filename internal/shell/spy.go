@@ -416,6 +416,20 @@ type spyMissionResult struct {
 	Score               spyMissionScore
 }
 
+// recordOriginalPlayerSpyIncident 只在 STEAL／SABOTAGE 確實改變資產後建立外交事件。
+// MissionSucceeded 的 writer 位於成功取得科技或刪除建築的分支；單純命中成功率但沒有
+// 可偷科技／可破壞建築時維持 false，不得製造原版 reason 1／3。
+func (s *GameSession) recordOriginalPlayerSpyIncident(aiIndex int, result spyMissionResult, roll func(int) int) {
+	if !result.MissionSucceeded || roll == nil {
+		return
+	}
+	reason := 1
+	if result.Score.Mission == SpyMissionSabotage {
+		reason = 3
+	}
+	s.recordOriginalAIHumanIncident(aiIndex, reason, -(roll(15)+1)-(roll(5)+1))
+}
+
 // spyMissionAttemptWithAgents 是含防守 Agent 數量的相容任務入口。保留舊回傳形狀，
 // 新的 runtime 走下方 result 版本取得完整分數與 Agent 消費結果。
 func spyMissionAttemptWithAgents(rng rollSource, mission SpyMission, attackerPS *engine.PlayerState, defenderPS engine.PlayerState,
@@ -646,14 +660,7 @@ func (s *GameSession) advanceEspionage() {
 			if result.TechStolen {
 				s.UpdatePlayerShipDesignsAfterTech()
 			}
-			if result.MissionSucceeded {
-				reason := 1
-				if result.Score.Mission == SpyMissionSabotage {
-					reason = 3
-				}
-				s.recordOriginalAIHumanIncident(i, reason,
-					-(s.spyRand.Intn(15)+1)-(s.spyRand.Intn(5)+1))
-			}
+			s.recordOriginalPlayerSpyIncident(i, result, s.spyRand.Intn)
 		}
 
 		// AI → 玩家:依性格執行 STEAL/SABOTAGE + SpyVsSpy(對稱處理;AI 已知科技集長期而言

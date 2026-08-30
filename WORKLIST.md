@@ -105,6 +105,16 @@
   `0xD10EE` 仍因支援艦 pseudo-product、戰鬥艦與 refit 未全接而維持 `PARTIAL`；`0x63D92`
   仍因逐座標航行與原版 combat record 未建模而維持 `PARTIAL`。
 
+- [x] **READY 規格驗收與 Agent 邊界五輪（2026-08-31）**：玩家 STEAL／SABOTAGE 的原版
+  reason 1／3 現由獨立正常呼叫端保證「科技或建築確實改變」才消耗 `Random(15)`、
+  `Random(5)` 並建立 pending incident；無資產可改變不消耗事件亂數。事件怪獸五種類型均有
+  owner 8 每回合一單位航程抽樣，既有抵達、太空鰻 age、快照測試共同讓可表示 route 規格升為
+  `CONFORMED`；外圍出生座標仍是明示近似，所以原版 implementation state 保留 `PARTIAL`。
+  GNN 29–35 的佇列、熱座、Orion、安塔蘭、投降、排行榜與叛亂正反邊界已齊，可表示規格同樣
+  升為 `CONFORMED`，但事件 33 remake trigger approximation 不升格。AI Agent 另補 52/100 PP
+  中途 snapshot、封鎖、未知 player slot 與 `netCapacity=14/15` 邊界；`0xD10EE` 因 Colony／
+  Outpost／Transport ship slot、戰鬥艦與 refit 尚未全接，仍維持 `READY／PARTIAL`。
+
 - [x] **原版回合主鏈拓樸閉合（RE-only，2026-08-28）**：IDA Pro 9.4 重新匯出
   `Next_Turn_Calc_ @ 0x136B3..0x13822`，證實是 52 個直接 call；固定順序、
   兩次 `Do_Colony_Calculations_`、安塔蘭／議會／UI 三類條件 gate、逐玩家領袖招募迴圈，以及

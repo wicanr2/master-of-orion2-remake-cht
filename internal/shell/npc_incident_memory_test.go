@@ -51,6 +51,36 @@ func TestOriginalAIHumanSpyIncidentFlowsToMemory(t *testing.T) {
 	}
 }
 
+func TestOriginalPlayerSpyIncidentRequiresChangedAssetAndPreservesRollOrder(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	a.OriginalRelationRaw, a.OriginalRelationKnown = 0, true
+	rolls := []int{14, 4}
+	pos := 0
+	roll := func(limit int) int {
+		value := rolls[pos]
+		pos++
+		if value < 0 || value >= limit {
+			t.Fatalf("roll=%d 超出 0..%d", value, limit-1)
+		}
+		return value
+	}
+	s.recordOriginalPlayerSpyIncident(0, spyMissionResult{Score: spyMissionScore{Mission: SpyMissionSteal}}, roll)
+	if pos != 0 || a.OriginalHumanIncidentPendingReasonRaw != 0 || a.OriginalRelationRaw != 0 {
+		t.Fatalf("未改變資產不得消耗亂數或建立事件：pos=%d ai=%+v", pos, *a)
+	}
+	s.recordOriginalPlayerSpyIncident(0, spyMissionResult{MissionSucceeded: true,
+		Score: spyMissionScore{Mission: SpyMissionSabotage}}, roll)
+	// Demo AI 的政府使 Change_Relations_ 將 -20 base 套為 -10；本測試固定的是
+	// 事件亂數與 callback 順序，不把 base delta 誤當最終 applied delta。
+	if pos != 2 || a.OriginalHumanIncidentPendingReasonRaw != 3 ||
+		a.OriginalHumanIncidentPendingMagnitudeRaw != -10 || a.OriginalRelationRaw != -10 {
+		t.Fatalf("SABOTAGE 事件或 15→5 亂數順序錯誤：pos=%d reason=%d magnitude=%d relation=%d",
+			pos, a.OriginalHumanIncidentPendingReasonRaw,
+			a.OriginalHumanIncidentPendingMagnitudeRaw, a.OriginalRelationRaw)
+	}
+}
+
 func TestOriginalAIIncidentRecordKeepsStrongestAndTreatyClearsMemory(t *testing.T) {
 	s := NewDemoSession()
 	s.ensureAIAIState()

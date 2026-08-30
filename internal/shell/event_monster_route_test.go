@@ -10,6 +10,7 @@ import (
 func TestInvadingMonsterTravelsBeforeGuardingTarget(t *testing.T) {
 	s := NewDemoSession()
 	target := s.PlayerColonyStarIndex(0)
+	s.Monsters = nil
 	message, ok := s.placeInvadingMonster(gamedata.MonsterAmoeba, target)
 	if !ok {
 		t.Fatal("事件怪物應能建立 owner 8 航行 record")
@@ -92,5 +93,21 @@ func TestArrivingEelAgeStartsAtZero(t *testing.T) {
 	s.EndTurn()
 	if s.Monsters[0].TransitETA != 0 || len(s.Monsters[0].EelAges) != 1 || s.Monsters[0].EelAges[0] != 0 {
 		t.Fatalf("抵達同回合 age 必須維持 0：%+v", s.Monsters[0])
+	}
+}
+
+func TestEventMonsterRouteUsesSameOneParsecSpeedForEveryKind(t *testing.T) {
+	s := NewDemoSession()
+	target := s.PlayerColonyStarIndex(0)
+	s.Monsters = nil
+	for _, kind := range []gamedata.SpaceMonster{gamedata.MonsterAmoeba, gamedata.MonsterCrystal,
+		gamedata.MonsterDragon, gamedata.MonsterEel, gamedata.MonsterHydra} {
+		s.Monsters = append(s.Monsters, MonsterGuard{StarIndex: target, Kind: kind, TransitETA: 3})
+	}
+	s.advanceEventMonsterRoutes()
+	for _, m := range s.Monsters {
+		if m.TransitETA != 2 {
+			t.Fatalf("怪獸 %v 應同樣每回合推進 1 parsec：%+v", m.Kind, m)
+		}
 	}
 }

@@ -1,6 +1,6 @@
 # GNN 狀態播報 29–35 規格
 
-**狀態：READY（record／1.31 caller census 已閉合；remake 觸發部分近似）**
+**狀態：CONFORMED（可表示 record／caller 契約；事件 33 觸發仍為明示近似）**
 
 RE-TRACE: dos-orion2-1.31:0x233AB
 

@@ -1,6 +1,6 @@
 # 事件怪物 owner 8 航行規格
 
-**狀態：READY（原版 1.31 RE 已閉合；remake route 部分接線）**
+**狀態：CONFORMED（可表示 route 契約；外圍出生座標仍為明示近似）**
 
 RE-TRACE: dos-orion2-1.31:0xA16BF
 

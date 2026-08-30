@@ -45,11 +45,12 @@ func (s *GameSession) aiCanBuildOriginalAgent(aiIndex, colony int, out engine.Co
 	}
 	// sub_D10EE case 3：封鎖時拒絕，netCapacity 必須 >=15。
 	a := &s.AIPlayers[aiIndex]
-	star := -1
-	if colony < len(a.ColonyStars) {
-		star = a.ColonyStars[colony]
+	if !a.PopulationRaceSlotKnown || a.PopulationRaceSlot < 0 || a.PopulationRaceSlot >= 8 ||
+		colony >= len(a.ColonyStars) {
+		return false
 	}
-	if star >= 0 && star < len(s.Stars) && s.Stars[star].BlockadedMask&(1<<a.PopulationRaceSlot) != 0 {
+	star := a.ColonyStars[colony]
+	if star < 0 || star >= len(s.Stars) || s.Stars[star].BlockadedMask&(1<<a.PopulationRaceSlot) != 0 {
 		return false
 	}
 	return a.Colonies[colony].Population/8+out.NetIndustry-out.PollutionCleanupCost >= 15

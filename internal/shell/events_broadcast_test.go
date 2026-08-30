@@ -122,6 +122,14 @@ func TestAntaranAndRebellionBroadcastHooks(t *testing.T) {
 	}
 }
 
+func TestRebellionBroadcastRequiresActualColonyLoss(t *testing.T) {
+	s := NewDemoSession()
+	s.queueRebellionBroadcasts([]RebellionResult{{ColonyName: "守住的殖民地", ColonyLost: false, RevertedToAI: 0}})
+	if len(s.StatusBroadcast.Queue) != 0 {
+		t.Fatalf("鎮壓成功不得播事件 35：%+v", s.StatusBroadcast.Queue)
+	}
+}
+
 func TestRankingBroadcastOriginalGates(t *testing.T) {
 	s := NewDemoSession()
 	s.StatusBroadcast.GrowthStage = 3 // 本測試只隔離事件 31。
