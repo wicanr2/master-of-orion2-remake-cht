@@ -1,6 +1,10 @@
 # AI 艦艇與特殊產品規格
 
-狀態：PARTIAL；raw -15 貨運艦隊已接，其他產品仍為 DRAFT，不宣稱完整 AI 造艦器完成。
+狀態：READY
+
+RE-TRACE: dos-orion2-1.31:0xD10EE
+
+訂正標記：`CORRECTION-20260830-AI-PRODUCT-CODES`
 
 ## 已固定契約
 
@@ -11,18 +15,20 @@
 4. raw `-15` 是貨運艦隊，成本 50 PP，完工增加 5 艘貨運艦；它不建立 `Ship` 記錄。
    配額為 `ceil(max(0,movingColonyShips-surplusFreighters)/5)`；同輪最多分派兩座殖民地，
    且要求 Freighters 科技、未封鎖及 `netCapacity>=12`。
-5. raw `-7` 成本 100 PP，但產品身分與 callback 尚未閉合，不得實作成前哨船。
-6. raw `-12/-17/-11` 暫只保存 raw code；名稱、修正後成本與 callback 閉合前不得由成本猜測。
+5. raw `-7` 是成本 100 PP 的 Agent 訓練，完工加入 self Agent pool。
+6. raw `-12/-17/-11` 是 Colony Ship／Outpost Ship／Transport 選單 pseudo-product；選定後
+   轉成 `-(shipSlot+100)`，由共用 ship-record 完工鏈處理，不建立三個虛構固定 callback。
+7. `sub_D10EE` case 4 在 Marine Barracks 已建時建 Transport slot，否則先建 raw 22；
+   case 0／1／2／3／5 分別是戰鬥艦或基地／貨運艦／改裝／Agent／無動作。
 
 ## 實作順序
 
 1. （已完成）`sub_CFCB6 → sub_CF3BD → sub_D10EE(case 1) → sub_E36DF` 的 `-15`
    貨運艦隊垂直鏈。
-2. 追回 `sub_1026CF → sub_CF40D → sub_D10EE(case 3) → sub_E36DF` 的 `-7` 完整身分，
-   再取代固定週期 Spy／Agent fallback。
-3. 逐一閉合 `-12/-17/-11` 的產品字串、成本修正與完工 callback，再接殖民船／前哨船／
-   運兵船配額。
-4. 最後處理戰鬥艦 role、改裝與多艦隊分派；不讓後者阻塞前三條玩家可見產品鏈。
+2. 依已閉合 `sub_1026CF → sub_CF40D → sub_D10EE(case 3) → sub_E36DF` 取代免費週期
+   Spy／Agent fallback。
+3. 依 pseudo-product → ship slot 契約接 Colony Ship／Outpost Ship／Transport 配額。
+4. 依既有 role 0..4 藍圖、case 0 戰力缺額與 case 2 改裝鏈接線；多艦隊資料不足時明示近似。
 
 ## 驗收
 

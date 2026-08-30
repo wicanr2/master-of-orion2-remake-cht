@@ -46,13 +46,25 @@
 5. `sub_6478D @ 0x6478D` 從尚未部署的 offensive 艦中挑可用艦級；`sub_643A0`
    一次最多部署五艘，建立 owner 8 的艦隊並寫入一般星際移動 route。
 
-## 強推論與未知
+## 航行、戰鬥與戰後 consumer 收斂（2026-08-30）
+
+- **已證實**：owner 8 使用一般 129-byte ship record；`sub_FF799` 對 owner `>=8` 固定速度 1，
+  `sub_EBB0C/sub_FFDDA` 保存中途座標並於抵達時轉停泊。這是共同艦隊航行鏈，不是安塔蘭專用
+  ETA helper。
+- **已證實**：抵達後由 `Search_For_Battles_ @ 0xE9D62`、`sub_E8029 @ 0xE8029` 與共同
+  battle side builder 載入實際 owner 8 ship design 及星系固定防禦，再進 `Do_1_Combat_` 的
+  快速／戰術選擇。raw 8 不進 raw 10..14 的事件怪獸殖民轟炸分支。
+- **已證實**：`sub_E87D2 @ 0xE9304` 逐一取 owner 8 存活 ship 的 hull class 呼叫
+  `sub_6485F @ 0x6485F`，再呼叫 `sub_A163A` 刪除 deployed ship record。`sub_6485F` 在一般
+  owner 8 艦隊清理也以同一 hull class 呼叫，與 offensive count table 交叉支持「倖存出征艦
+  歸還 offensive pool」。因此原版 1.31 的部署、戰鬥與戰後生命週期已閉合。
+
+## 強推論與資料模型限制
 
 - `byte_199CAF` 是 Antaran Attacks、`byte_1991B0` 是安塔蘭敗亡狀態：兩者的
   `Next_Turn_Calc_` 閘門語意與其他設定／勝利交叉參照一致，但本輪未重命名 IDA 符號。
-- 出征艦隊抵達後沿用一般 `Search_For_Battles_`、快速／戰術戰鬥與殖民地結果鏈；本輪已證實
-  它不是直接扣 BC／人口，但尚未把 owner 8 的所有 battle record 欄位逐欄閉合。
-- 原版保存中途座標；remake 只有整段 ETA。此資料模型差異必須明示，不得冒稱逐座標 parity。
+- 原版保存中途座標；remake 只有整段 ETA 與聚合 combatant。此資料模型差異必須明示，不得
+  冒稱逐座標、逐 battle record 或原版 PRNG parity，但不再列為原版 RE 未知。
 - 1.50 二進位未取得；以上只宣稱 1.31。
 
 ## 推翻的舊斷言

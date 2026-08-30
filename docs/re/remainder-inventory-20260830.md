@@ -9,20 +9,20 @@
 - raw 名稱、逐字文案、sprite／逐像素與 1.50 profile 差異等非 1.31 gameplay gate；
 - 沒有玩家 consumer 的欄位與只剩資料模型近似的實作工作。
 
-依此口徑，41 列 parity matrix 並不是「41 項 RE 未完成」。目前剩 **7 個主要 RE 群組**；每組
-仍需拆成數個窄切片，約 **15–20 條**可執行任務。這是工作量區間，不是完成百分比。
+依此口徑，41 列 parity matrix 並不是「41 項 RE 未完成」。本表原列七群；2026-08-30 起逐群
+以 IDA 與既有垂直鏈重審，已閉合者直接標明，不再以舊群組數推估剩餘量。
 
 ## 七個主要群組
 
 | 群組 | 尚缺的玩家玩法證據 | 不應混入的已完成／實作工作 |
 | --- | --- | --- |
-| 隨機事件剩餘 record | raw type 2／6、其餘持續 record、AI 殖民地／艦隊／外交複合回寫與版本衝突 | 已閉合排程、Lucky、事件 4／5／8／9／13／18／27 不重開 |
-| 原版 AI 回合殘餘 | `Compute_AI_Data_` 未表示欄位、殖民地配置、建造／艦隊 target state、全域 PRNG 與 Uncreative status | 已閉合 raw profile、科技 trait category、常態 application 抽選不重開 |
-| AI 生產與艦艇產品 | 其餘建築分數區、帝國配額、支援／戰鬥艦產品、未解 raw mods | 已閉合 40 個建築分數與六艦體設計庫不重開 |
-| 安塔蘭週期入侵 | owner 8 逐座標航行、完整快速／戰術 record、固定防禦與戰後 consumer | 五種怪獸 blueprint 與要塞既有證據分列，不以實作近似冒充 |
-| 事件怪獸移動／戰術殘餘 | 途中逐座標截擊、Plasma Flux 對在途飛彈、快速反擊目標與戰術 AI | 已閉合藍圖、艦艇擴散、戰機傷亡、Caustic Slime、轟炸與分裂不重開 |
-| AI 協議與政府演化 | AI↔AI 原版協議矩陣、正式終止／關係回寫與 AI 政體升級 | 玩家可表示的逐回合貿易／研究協議公式已閉合 |
-| 狀態播報與投降殘餘 | 33／35 的 1.31 觸發 caller、投降 `+0x717`／`sub_27A3D` 接收者評分 | 29–35 record 與 34 資產移交 consumer 已閉合 |
+| 隨機事件剩餘 record | **已閉合**：`sub_23DFE` 的 2／6 已訂正為事件 16／24 的 record 狀態；29 種隨機事件的 1.31 建立／主要 consumer 與玩家、熱座、AI typed 回寫已有逐事件證據 | 1.50 二進位差異與 GNN 逐幀呈現是獨立 profile／UI gate，不再列入 1.31 玩法 RE |
+| 原版 AI 回合殘餘 | **已閉合**：三張 cache 指標的完整直接 consumer census 已完成；殖民地職務、建造／艦隊 target 分流、Uncreative 狀態與 PRNG 停止線均有明確歸屬 | cache 配置內部、無玩家 consumer 欄位及 Watcom qsort 等價 partition 不納入 remake；source 仍為部分接線 |
+| AI 生產與艦艇產品 | **已閉合**：48 個 building ID 的完整分數／零分、三張 quota、D10EE 六 case、Agent／貨運艦／Transport／Marine Barracks、支援 pseudo-product → ship slot 與 role 0..4 藍圖均有證據 | remake 仍為部分接線；raw mods 若沒有獨立玩家 consumer 不再列為生產 RE |
+| 安塔蘭週期入侵 | **已閉合**：owner 8 共用 129-byte ship 的逐座標 route；抵達後進共同 battle side／快速或戰術鏈；`sub_E87D2` 戰後依艦級呼叫 `sub_6485F` 歸還 offensive pool，再刪除 deployed ship record | remake 的 ETA、聚合 combatant 與殖民地防禦投影仍是明示近似，不冒充資料模型一致 |
+| 事件怪獸移動／戰術殘餘 | **已閉合**：途中只共用一般逐座標航行，抵達星系才搜尋戰鬥，沒有獨立「途中截擊」consumer；Plasma Flux 對 26-byte 飛行物、快速戰鬥入口／目標與戰術特殊武器 consumer 均有證據 | remake 同步飛彈沒有原版在途 record，快速目標與戰術 AI 是可重播近似，屬實作模型限制 |
+| AI 協議與政府演化 | **已閉合**：ordered AI pair 的條約／協議／納貢門檻、宣戰／停戰、方向關係記憶與政府科技寫入 1／3／5／7 及其玩家 consumer 均有垂直證據 | 玩家方向矩陣與未消費 raw 欄不由此冒稱完成；remake 部分接線另由 trace state 表示 |
+| 狀態播報與投降殘餘 | **已閉合**：29–35 record 與 dispatcher、29／30／31／32／34 caller、34 觸發及延後資產 consumer 已閉合；完整 direct-xref census 證實 33／35 在 1.31 沒有 caller，因此停止於未使用 setter 契約 | remake 33／35 與投降接收者選擇保留 trigger approximation，不反推不存在的 1.31 caller |
 
 ## 非阻塞 oracle／命名清單
 
@@ -45,3 +45,10 @@
 
 後續每閉合一條 RE，先追加 immutable key 與 evidence backlink，再更新 spec、source、test 與
 verification state。README／WORKLIST 只能消費這份當前鏈，不從歷史 `[x]` 推斷實作完成。
+
+## 七群收斂結論
+
+2026-08-30 七群的原版 1.31 玩家玩法 RE gate 已全部閉合。彙總證據、停止線與「RE 已閉合但
+remake 仍為部分接線／近似」的逐群區分，見
+[`seven-group-closure-audit-20260830.md`](seven-group-closure-audit-20260830.md)。這不會自動把
+trace ledger 中的 `PARTIAL`、`MISSING` 或 `INTERNAL` 升格為 `CONFORMED`。

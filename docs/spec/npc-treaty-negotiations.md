@@ -2,6 +2,10 @@
 
 **狀態：CONFORMED（remake 可表示的 AI ordered-pair 切片）**
 
+RE-TRACE: dos-orion2-1.31:0x2552D
+
+CORRECTION-20260830-TREATY-GOV-CENSUS
+
 證據：[`../re/npc-treaty-negotiations-audit-20260827.md`](../re/npc-treaty-negotiations-audit-20260827.md)。
 
 ## 狀態

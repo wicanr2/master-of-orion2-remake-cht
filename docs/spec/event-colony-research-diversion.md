@@ -1,5 +1,13 @@
 # 事件殖民地研究轉用規格
 
+規格狀態：CONFORMED
+
+逆向證據：[`event-colony-research-diversion-audit-20260825.md`](../re/event-colony-research-diversion-audit-20260825.md)
+
+訂正標記：`CORRECTION-20260830-EVENT-STATE-NOT-TYPE`
+
+RE-TRACE: dos-orion2-1.31:0x23DFE
+
 ## 狀態與資料流
 
 - `engine.ColonyState.ResearchDiverted` 是單回合輸入，不是持久事件狀態。
@@ -18,6 +26,8 @@
 - 超新星解除或爆發並移除事件後，下一回合不再轉用。
 - 時空異象維持既有完全凍結，不需要另設 `ResearchDiverted`。
 - 熱座席位共用 `coloniesForTurn`，不得走不同規則。
+- 原版 `sub_23DFE` 的 raw `2／6` 是事件 16／24 record 的狀態，不是事件種類；實作不得建立
+  虛構的 type 2／6 對映。
 
 ## 驗證
 

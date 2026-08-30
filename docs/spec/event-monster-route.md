@@ -1,5 +1,11 @@
 # 事件怪物 owner 8 航行規格
 
+**狀態：READY（原版 1.31 RE 已閉合；remake route 部分接線）**
+
+RE-TRACE: dos-orion2-1.31:0xA16BF
+
+CORRECTION-20260830-NO-MIDROUTE-BATTLE
+
 ## 目標
 
 依 `docs/re/event-monster-route-audit-20260825.md`，將事件 19–23 從「立即盤據目標星」改成

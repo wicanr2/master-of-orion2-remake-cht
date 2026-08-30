@@ -1,5 +1,11 @@
 # 安塔蘭週期入侵規格
 
+**狀態：READY（原版 1.31 RE 已閉合；remake 資料模型部分接線）**
+
+RE-TRACE: dos-orion2-1.31:0x63D92
+
+CORRECTION-20260830-OWNER8-LIFECYCLE
+
 ## 目標
 
 依 `docs/re/antaran-periodic-invasion-audit-20260825.md`，把自訂 20／15 直接傷害腳本
@@ -28,13 +34,13 @@
 ## 戰鬥
 
 - 玩家／熱座目標：抵達星系後，先讓同星停泊艦隊使用既有快速戰鬥 `battleVolley` 參戰，
-  不得直接扣國庫。殖民地固定防禦尚未接入這條戰鬥者清單，必須與 owner 8 的戰後殖民地
-  消費端一併留在 `WORKLIST.md`；在接線前不得把「同星艦隊戰鬥已完成」擴張成整個星系
-  防禦已對齊。
+  不得直接扣國庫。原版固定防禦由共同 battle side builder 提供；remake 尚未同構表示完整
+  battle record，故保持部分接線，不再誤寫成原版 consumer 未知。
 - AI 目標：以 AI 已保存的艦型／聚合艦力進入同一強度尺度；不得固定把所有攻擊轉嫁玩家。
 - 安塔蘭勝利只表示本次攻擊艦隊獲勝，不等於安塔蘭母星勝利狀態；安塔蘭被擊敗後清除 pending。
 - owner 8 的精確戰術 record 尚未全閉合時，快速戰鬥映射必須標為可表示近似並留在 WORKLIST，
-  不得用綠測試宣稱完整戰術 parity。
+  不得用綠測試宣稱完整戰術 parity。原版戰後倖存艦歸還 offensive pool、deployed record
+  刪除已閉合；remake 應以其現有 pool 狀態測同一可觀察結果。
 
 ## 驗收
 

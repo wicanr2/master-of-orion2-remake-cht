@@ -71,6 +71,15 @@
   見 [`docs/re/remainder-inventory-20260830.md`](docs/re/remainder-inventory-20260830.md)，追溯表見
   [`docs/re/remake-traceability.tsv`](docs/re/remake-traceability.tsv)。
 
+- [x] **七個玩家玩法 RE 群組收斂（2026-08-30）**：隨機事件 record、原版 AI 回合 cache、
+  AI 生產／支援船產品、安塔蘭週期入侵、事件怪獸移動／戰術、AI 協議／政體演化，以及狀態
+  播報／投降均已依 1.31 IDA 證據閉合。關鍵勘誤包括：事件 16／24 的 2／6 是 record state；
+  支援船負值是 pseudo-product；owner 8 共用逐座標 ship route 並於戰後歸還 offensive pool；
+  怪獸沒有獨立途中截擊入口；狀態 33／35 setter 在 1.31 無 direct caller。各群 remake 的
+  `PARTIAL`／資料模型近似未被升格為原版 parity。彙總見
+  [`docs/re/seven-group-closure-audit-20260830.md`](docs/re/seven-group-closure-audit-20260830.md)，逐列狀態見
+  [`docs/re/remake-traceability.tsv`](docs/re/remake-traceability.tsv)。
+
 - [x] **原版回合主鏈拓樸閉合（RE-only，2026-08-28）**：IDA Pro 9.4 重新匯出
   `Next_Turn_Calc_ @ 0x136B3..0x13822`，證實是 52 個直接 call；固定順序、
   兩次 `Do_Colony_Calculations_`、安塔蘭／議會／UI 三類條件 gate、逐玩家領袖招募迴圈，以及

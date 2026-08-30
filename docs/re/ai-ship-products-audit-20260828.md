@@ -36,16 +36,33 @@
    gate 下；`-15` 與 `-7` 另走各自的 `sub_E11BC` 可建 gate。這直接否定「看到 100 PP
    就把 `-7` 當前哨船」的舊猜法。
 
-## 強推論與未知
+## 2026-08-30 閉合勘誤
 
-- **強推論**：`-12/-17/-11` 對應殖民船、前哨船、運兵船三項支援產品；目前仍缺
-  各自完工 callback 與字串指標的最後一對一閉合，不在程式中固定名稱。
-- **已證實**：既有航行鏈已閉合 status 1／2 為移動狀態，type 1 為殖民船；因此
-  `byte_1A7236` 是移動中殖民船數，`player+0x38` 是帶正負號的貨運艦餘額。
-- **未知**：`byte_1A7285`、`sub_1026CF` 與 `-7` 的完整產品語意；不得用現行每 6／8 回合
-  免費增加 Spy／Agent 的 remake 政策冒稱相同。
-- **未知**：case 4 的 type 2 支援艦／raw 22 fallback、三組 quota 的全部難度與外交輸入，
-  以及戰鬥艦 role 0..4 的完整選擇權重。
+- `-12／-17／-11` 已由 `sub_AFF9E @ 0xAFF9E` 的唯一清單建立端閉合。三項分別受
+  `player+0x140`、`+0x184`、`+0x1D4` 的 status 3 gate；以 application base `+0x117`
+  回推 raw tech ID 為 41／109／189，受版控 enum 分別是 Colony Ship／Outpost Ship／
+  Transport。`-11` 另要求 colony `+0x14C` raw building 22 Marine Barracks。
+- 這三個負碼是產品選單的 pseudo-product，不是 `Apply_Production_` 的三條獨立完工 callback。
+  選定後建立／選取 129-byte ship slot，殖民地產品改存 `-(shipSlot+100)`；完工由
+  `sub_E36DF` 的共用 ship-record consumer 處理。舊待辦要求三個固定 callback 是資料模型誤判。
+- `-7` 已由間諜回合專題閉合為 100 PP 的 Agent 訓練：完工先加入 self Agent pool；
+  `sub_E36DF @ 0xE3B61..0xE3BC7` 的 `sub_10294B(owner,owner)`、packed pair 更新與
+  `sub_B206F(...,-7)` 是 callback，不是免費 Spy／Agent 計時器。
+- `sub_CFCB6` 的 type 2 已由地面入侵／卸載 consumer 證實為 Transport；
+  `sub_D10EE` case 4 在 `netCapacity>=14` 時，Marine Barracks 已建就以 `sub_5663E` 建
+  transport ship slot，否則先指定 raw building 22。這閉合了舊稱「type 2 支援艦／raw 22
+  fallback」的語意。
+- `sub_D10EE` 的六權重抽選已閉合為：case 0 戰鬥艦／軌道基地、case 1 貨運艦隊、case 2
+  艦艇改裝、case 3 Agent、case 4 Transport／Marine Barracks、case 5 無動作。case 0 使用
+  `dword_1A745C` 戰力缺額及既有 role 0..4 藍圖；艦體／role 建立器另由
+  `ai-ship-blueprint-build-audit-20260825.md` 閉合。
+- 三張 quota 的外交、難度與經濟輸入全部留在 `sub_CF3BD／sub_CF40D` 原始指令及
+  `evidence/ai-ship-products-ida-20260828.json`；remake 是否已逐式接線屬 source 差異，
+  不再列為 RE 未知。
+
+補充可重生證據：`tools/ida/audit_support_product_conversion.py` 與
+`evidence/support-product-conversion-ida-20260830.json`。工具、輸入雜湊及位址基準同本文件
+證據契約；推論等級為上述 raw code、tech gate、ship slot 與 callback **已證實**。
 
 ## 對 remake 的約束
 
@@ -53,7 +70,6 @@
 - raw -15 已接完整垂直鏈：以移動中殖民船與貨運艦餘額建立無條件進位配額；同輪最多
   分派兩座具 Freighters 科技、未封鎖且 `population/8+netIndustry>=12` 的殖民地；產品保存
   50 PP 進度，完工增加 5 艘貨運艦與版本相依現金回饋，不建立 `Ship` 或常駐建築。
-- 下一個實作切片閉合 raw -7 的「quota producer → 殖民地門檻 → 產品與進度 → 完工 callback
-  → typed 狀態 → 存檔與測試」。只解出產品碼或成本不算完成。
+- raw -7 的 RE 垂直鏈已閉合；remake 仍須以殖民地 100 PP Agent 產品取代免費週期 fallback。
 - 現行 `advanceAIShipProduction` 與免費週期 Spy／Agent 仍是明示 fallback；本輪證據不支持
   把它們升格為原版忠實。

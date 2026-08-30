@@ -1,5 +1,11 @@
 # GNN 狀態播報 29–35 規格
 
+**狀態：READY（record／1.31 caller census 已閉合；remake 觸發部分近似）**
+
+RE-TRACE: dos-orion2-1.31:0x233AB
+
+CORRECTION-20260830-UNUSED-SETTERS-33-35
+
 證據來源：[`../re/event-status-broadcasts-audit-20260825.md`](../re/event-status-broadcasts-audit-20260825.md)。
 
 ## 共用狀態
