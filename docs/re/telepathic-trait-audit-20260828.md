@@ -34,9 +34,11 @@ base = 10 × signed(player+0x8B8)
 
 ### `Calc_Tech_Value_ @ 0xFC845`
 
-`0xFCE38..0xFCE46` 在一個特定科技分支檢查 Telepathic，命中時把局部估值設為 1。
-六個 caller 分別服務科技交換、需求回應與 AI 科技應用選擇。**科技 raw ID／category 與覆蓋前
-估值仍未在本切片閉合**，因此只保留 raw branch，不把它描述成 Telepathic 的玩家能力。
+`edx` 入口參數原樣保存為 `var_4`，`0xFCDE9..0xFCE46` 證實這是 raw tech ID 特例，不是
+category switch：只有 **raw tech 5** 時檢查 Telepathic，命中便把局部估值設為 1。受版控 enum
+把 raw 5 對回 `TECH_ALIEN_MANAGEMENT_CENTER`；raw 131 是相鄰但獨立的 Aquatic／Subterranean
+特例。六個 caller 服務科技交換、需求回應與 AI 科技應用選擇，所以這是 AI／外交估值權重，
+不是額外玩家能力。
 
 ## 二、戰術登艦與俘獲艦
 
@@ -47,9 +49,10 @@ base = 10 × signed(player+0x8B8)
 - 攻方 owner `+0x8B8 != 0`：在 `0x2C3EB..0x2C427` 直接回傳 raw action type **2**。
 - 非 Telepathic：還要比較雙方 combat ship `+0xAF`，並滿足較嚴格的 `defense-10` 條件，才回傳 2。
 
-兩個直接 caller 均在戰術 AI `Do_Auto_Ship_Turn_ @ 0x29837`。raw action type 2 的下游名稱仍須
-由 `Resolve_Capture_` 的 dispatch 做最後交叉驗證；目前可證的是 Telepathic 繞過額外 crew／
-經驗比較，不把它先寫成「無條件俘獲」。
+兩個直接 caller 均在戰術 AI `Do_Auto_Ship_Turn_ @ 0x29837`。其下游
+`Resolve_Ai_Boarding_ @ 0x2BF73` 對 type 1 只轉移陸戰隊／crew，對 **type 2** 則直接呼叫
+`Resolve_Capture_ @ 0x37DA8`，故 type 2 已閉合為「執行俘獲解算」。它仍不是無條件成功：
+`Resolve_Capture_` 會跑雙方地面戰式傷亡與剩餘兵力，再決定是否呼叫 `Capture_Ship_`。
 
 ### `Capture_Ship_ @ 0x38312`
 
@@ -58,9 +61,12 @@ base = 10 × signed(player+0x8B8)
 - 新 owner 是特殊 owner `>=8`，或不是 Telepathic：將 combat ship `+0xB0` 寫為 1。
 - 新 owner `<8` 且是 Telepathic：跳過該寫入。
 
-直接 caller 是 `Resolve_Capture_ @ 0x37DA8` 與 `Crystal_Control_ @ 0x29790`。combat ship
-`+0xB0` 的精確欄位名稱尚未由全部讀端閉合；目前只保留「Telepathic 俘獲後不設 raw flag」的
-已證實契約，不能用猜測性名稱替代。
+直接 caller 是 `Resolve_Capture_ @ 0x37DA8` 與 `Crystal_Control_ @ 0x29790`。2026-08-30 的
+全庫 direct-operand census 找到 38 個具 0x139 stride 的戰鬥艦 `+0xB0` 讀寫站點：非零時被
+`Combat_Ship_Is_Functional_`、戰術 AI、目標估值、飛彈／光束強度、撤退、艦隊技能、改鎖、
+回合行動與勝負判定排除；`Init_Ship_For_Start_Of_Turn_` 對值 1 清移動量與武器狀態。
+因此其正式資料契約可寫成「俘獲後戰鬥失能／排除旗標」；Telepathic 新 owner 跳過旗標，代表
+擄獲艦不受這層當場失能限制。這不擴張成戰鬥外永久狀態。
 
 ### `Ai_Self_Destruct_Check_ @ 0x28168`
 
@@ -78,8 +84,9 @@ base = 10 × signed(player+0x8B8)
 1. 進攻玩家 `+0x8B8 != 0`。
 2. `Player_Has_Ship_Size_Or_Larger_At_Star_(attacker, 2, star)` 成立；raw size 門檻是 2。
 3. 對殖民地 owner 呼叫 `Player_Has_Leader_With_General_Skill_At_Star_(owner, 0, star)` 的兩次
-   原版檢查皆為 false。兩次呼叫的暫存器實參在原始指令中相同；是否依賴 helper 副作用仍未知，
-   因此保留兩次，不擅自合併。
+   原版檢查皆為 false。兩次呼叫的暫存器實參相同；完整 helper `0xC6052..0xC60E8` 只掃 67 筆
+   領袖記錄並呼叫唯讀 bit-test `Officer_Has_General_Skill_ @ 0x9467D`，沒有寫端或 RNG。
+   因此重複呼叫沒有玩家可見副作用；remake 可合併為一次，而原版 raw 重複仍保留於證據。
 4. 殖民地 owner `+0x8B8 == 0`；Telepathic 帝國不能被此能力心控。
 
 直接 caller 覆蓋：
@@ -101,8 +108,12 @@ raw string 0x233／0x24C／0x200／0x201，再回傳 false；成功回傳 true�
   另有兩個 `Player_Can_Mind_Control_Colony_` caller，故 UI 合法性與戰略解算共享同一判定。
 - `Get_Best_Colony_Target_ @ 0xE78A7`：AI 候選中「攻方 Telepathic、目標 owner 非 Telepathic」
   會設局部布林值，讓沒有一般殖民條件的候選仍可通過後續 gate。
-- `Enemy_Colony_Worth_To_Player_ @ 0xD8D11`：相同攻守組合會令局部 `ebx += 1`、`edx -= 1`；
-  這兩值後續如何形成最終 worth 尚需完整函式邊界修復，故只記 raw 調整，不宣稱百分比。
+- `Enemy_Colony_Worth_To_Player_ @ 0xD8D11..0xD8DE0`：依 raw 關係類別先建立兩個權重
+  `(attackerWeight,targetWeight)`：類別 4 為 `(2,4)`、類別 6 為 `(0,6)`、其餘為 `(1,5)`；
+  Telepathic 攻方對非 Telepathic 目標再變成 `(attackerWeight+1,targetWeight-1)`。完整回傳為
+  `(targetOwnerRawValue×targetWeight + attackerRawValue×attackerWeight) / 6`，採 signed 整數除法。
+  兩個 raw value 皆來自 `off_183554 + player*0x2D0 + planetIndex*2`；表的玩家可見欄名仍未知，
+  但最終權重與除數已閉合。
 
 ## 四、征服後人口 ownership
 
@@ -122,13 +133,13 @@ raw string 0x233／0x24C／0x200／0x201，再回傳 false；成功回傳 true�
 - 戰術 AI 的登艦 action type、自毀分數與俘獲後 raw flag 有 Telepathic 分支。
 - AI 選殖民地與敵殖民地估值直接消費 Telepathic 攻守組合。
 
-### 仍未知
+### 2026-08-30 下游閉合
 
-- `Boarding_Action_Type_` raw action type 2 的完整 dispatch 名稱。
-- combat ship `+0xB0` 的全部讀端與正式語意。
-- `Enemy_Colony_Worth_To_Player_` 的完整函式邊界與最終權重公式。
-- `Calc_Tech_Value_` 中命中 Telepathic 的科技 raw ID／category 玩家名稱。
-- 兩次相同 general-skill helper 呼叫是否依賴可見副作用。
+- raw action type 2 已證實 dispatch 到俘獲解算，而非無條件成功。
+- combat ship `+0xB0` 的戰鬥失能／排除 consumer 已完成全庫 direct-operand census。
+- 敵殖民地最終 worth 的雙權重、Telepathic 位移與 `/6` 已閉合。
+- 科技特例是 raw 5 `TECH_ALIEN_MANAGEMENT_CENTER`，估值覆寫為 1。
+- 重複 general-skill helper 鏈為唯讀，沒有 RNG 或寫入副作用。
 
-因此 Telepathic 已由「只有零散 consumer」提升為四條玩家可見鏈部分閉合，但在上述五個 raw
-下游完成前，客製種族 parity 列仍不能標為完整。
+本輪證據另存 `evidence/telepathic-downstreams-ida-20260830.json`。Telepathic 的上述 raw 下游
+不再阻塞客製種族 parity；剩餘客製種族工作須以其他 trait 各自的活表缺口判定。

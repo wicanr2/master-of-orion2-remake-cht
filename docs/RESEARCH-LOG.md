@@ -45,6 +45,18 @@ payload 與只有初始化／清除端的未知欄。後續切片一律由 parit
 | 火線角如何限制目前格子戰術的合法射擊方向 | 原版 `Relative_Bearing @ 0x32AD1`、`Relative_Bearing_XY @ 0x32A20`、`Move_Ship @ 0x3F5F1`、`Ship_Can_Deploy_At @ 0x49043`；完整位址／雜湊見 `docs/re/weapon-arcs.md` | 已證實（格子戰術方向鏈）；快速路徑不消費射界為強推論 | `CombatShip.Facing`、原始 bearing mask 與格子戰術玩家／敵方射擊已接；`battleVolley` 保留原版抽象模型，詳見快速 call graph 章節 |
 | 戰機從目標最弱護盾面攻擊 | `GAME_MANUAL.pdf` p.157；重製已有 `CombatShip.ShieldFacingHP` 四面容量 | 已證實（手冊＋既有資料模型） | `FighterDamageAtWeakestShield` 選最低容量分面並扣除護盾，戰機武器傷害仍標近似 |
 
+### 2026-08-30 匿蹤裝置與 Telepathic 下游兩輪
+
+| 主張 | 來源／證據 | 證據等級 | 重製對映 |
+|---|---|---|---|
+| raw 6／23 使用 combat ship `+0x40` 狀態機，Phasing 另有 `+0x41=10` | `Init_Special_Devices_ @ 0x4C9F6`、`Fire_Ship_ @ 0x38B5E`、`Init_Ship_For_Start_Of_Turn_ @ 0x42B70`、`Do_Combat_Turn_ @ 0x42F7F` | 已證實 | `internal/shell/cloak.go` 已有同等玩家規則；本輪未改 Go |
+| Phasing `state=4` 不可選取／改鎖／防禦射擊；Cloaking `state=1` 提供 +80 與飛彈 50% miss | `Select_Ship_To_Target_ @ 0x2A46A`、`Retarget_Missile_ @ 0x3DDD8`、`Ship_Specials_Defensive_Bonus_ @ 0x36A63`、`Resolve_Missile_ @ 0x3D2DF` | 已證實 | 既有格子規則已接；快速結算仍維持分離模型 |
+| raw 31 不進 cloak 戰術狀態機 | 全庫 `+0x40／+0x41` direct-operand census、`Init_Special_Devices_`；`cloak-state-offsets-ida-20260830.json` | 已證實資料流邊界 | 只保留戰略 concealment，不虛構格子效果 |
+| Telepathic action type 2 進俘獲解算，且跳過俘獲後 `+0xB0` 戰鬥失能旗標 | `Resolve_Ai_Boarding_ @ 0x2BF73`、`Resolve_Capture_ @ 0x37DA8`、`Capture_Ship_ @ 0x38312` 與 38 個 0x139-stride consumer | 已證實 | 現行 Telepathic 擄獲能力需依此契約抽測，不把 type 2 寫成無條件成功 |
+| Telepathic 敵殖民地 worth 權重位移為 `(+1,-1)`，最終雙表加權除 6 | `Enemy_Colony_Worth_To_Player_ @ 0xD8D11..0xD8DE0` | 已證實（raw 表欄名未知） | 尚不因未知欄名新增猜測性實作 |
+| Telepathic 對 raw tech 5 Alien Management Center 把估值設為 1 | `Calc_Tech_Value_ @ 0xFC845` 的入口 `edx→var_4` 與 `0xFCDE9..0xFCE46`；受版控 enum raw 5 對照 | 已證實 | AI／外交科技估值證據，不是額外玩家能力 |
+| 心控合法性的兩次相同將領 helper 沒有可見副作用 | `Player_Has_Leader_With_General_Skill_At_Star_ @ 0xC6052` 與唯讀 `Officer_Has_General_Skill_ @ 0x9467D` | 已證實 | remake 可合併成一次查詢 |
+
 ### 2026-08-09 外交現金餽贈切片
 
 | 主張 | 來源／證據 | 證據等級 | 重製對映 |

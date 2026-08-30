@@ -227,11 +227,12 @@ Stealth Field 的最終科技價值固定為 1。後續人類分支 `player+0x28
   格子戰術記錄 `+0x4C／+0xB2`。這些 raw bytes、完整函式與 table records 保存於
   `evidence/stealth-battle-boundary-ida-20260829.json`。
 
-### 仍未知
+### 特殊裝置後續切片已閉合（2026-08-30）
 
-- raw 6 Cloaking Device、raw 23 Phasing Cloak 與 raw 31 Stealth Field 在格子戰術中，經複製後
-  各自被哪些間接 consumer 讀取，以及精確命中、目標合法性與回合時序公式。這是特殊裝置本身的
-  後續窄切片，不是 Stealthy Ships trait 的直接 consumer。
+raw 6／23 的 `+0x40` 狀態機、raw 23 的 10 回合 `+0x41` counter、目標排除、現存飛彈改鎖、
+防禦射擊、Cloaking +80 第一種防禦值、飛彈 50% miss 與 AI 預期傷害除二均已追回；raw 31
+沒有進入該戰術狀態機。完整 raw 位址、狀態轉換與停止條件見
+[`cloak-tactical-consumers-audit-20260830.md`](cloak-tactical-consumers-audit-20260830.md)。
 
 全庫 direct-operand census 只有五個 `player+0x8BB` 站點：開局 profile、星圖過濾、AI 自動設計、
 AI 可見性與科技估值；`Ship_Has_Stealth_Device_ @ 0x5D3DB` 的唯一 caller 也只是

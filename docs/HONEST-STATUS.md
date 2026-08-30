@@ -36,7 +36,8 @@ RE 完成分母或 remake 範圍，例如 stack probe、stack overflow check、S
   保存 `RaceIndex` 並在研究、地面戰、殖民與外交部分路徑消費種族特性。
 - Stealthy Ships 的星圖、AI、自動設計、profile 與科技估值 direct consumer 已閉合；IDA 證據
   顯示三種匿蹤裝置不向快速結算提供通用數值，但其 bitfield 會進入格子戰術記錄。現有資料流
-  強推論否定 trait 與裝置的戰鬥等價；三項裝置的格子間接公式仍待追回。
+  強推論否定 trait 與裝置的戰鬥等價；raw 6／23 的格子狀態機、10 回合倒數、目標合法性、
+  +80 防禦與飛彈 50% miss 已追回，raw 31 不進該戰術狀態機。
 - 飛彈 ECCM／EMG／MV、魚雷 ENV／OVR／NR、ARM／FST、ECM／慣性防禦、掃描科技、
   艦員與 Helmsman 效果已有戰鬥消費端；快速結算與格子戰術仍必須分別驗證。
 

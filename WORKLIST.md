@@ -1777,9 +1777,11 @@
   消費端」代替原版 31-byte 全資料流。證據見
   [`docs/re/custom-race-trait-consumer-census-20260828.md`](docs/re/custom-race-trait-consumer-census-20260828.md)。
   Telepathic 已再閉合間諜基礎 +10、外交檢定 +25、心控的艦級／將領／目標種族 gate、無運輸艦
-  接管、征服人口 prisoner 回寫，以及戰術登艦／自毀與 AI 選殖民地的 raw 分支；仍缺 action
-  type 2、combat ship `+0xB0`、敵殖民地最終 worth、科技估值 raw ID 與重複將領 helper 的
-  下游語意，見 [`docs/re/telepathic-trait-audit-20260828.md`](docs/re/telepathic-trait-audit-20260828.md)。
+  接管、征服人口 prisoner 回寫，以及戰術登艦／自毀與 AI 選殖民地的 raw 分支。2026-08-30
+  續閉合 action type 2→`Resolve_Capture_`、combat ship `+0xB0` 戰鬥失能 consumer、敵殖民地
+  最終雙權重 `/6`、raw tech 5 Alien Management Center 估值 1，以及重複將領 helper 無副作用；
+  上述五項不再是缺口。見
+  [`docs/re/telepathic-trait-audit-20260828.md`](docs/re/telepathic-trait-audit-20260828.md)。
   Omniscience 已分開閉合 Galactic Lore 共用查詢、Fleet UI、星系 owner、艦隊 stack、discovery
   report 與隱藏熱鍵；Stealthy Ships 已閉合 AI 可見性 fallback、自動設計排除 raw special 31，
   以及 Watcom distant tail 的 owner stride、掃描 margin、trait／三種特殊裝置各 +500 與最終
@@ -1790,9 +1792,10 @@
   在 `Qload_Ships_` 通用快速結算表的 effect type／value 都是 `0／0`，而
   `Load_Combat_Ship_` 只把設計的兩組特殊裝置 bitfield 複製到格子戰術記錄；全庫五個
   `player+0x8BB` direct site 與 `Ship_Has_Stealth_Device_` 唯一 caller 都未建立 trait→戰鬥
-  bitfield 鏈。因此 trait／裝置戰鬥數值等價已由強推論否定；仍待 raw 6／23／31 各自的格子
-  戰術間接 consumer、命中／目標／回合時序公式，見
-  [`docs/re/omniscience-stealthy-ships-audit-20260828.md`](docs/re/omniscience-stealthy-ships-audit-20260828.md)。
+  bitfield 鏈。因此 trait／裝置戰鬥數值等價已由強推論否定。2026-08-30 已續追 raw 6／23 的
+  `+0x40` 狀態機、Phasing 10 回合 counter、目標／改鎖／防禦射擊 gate、Cloaking +80 與
+  飛彈 50% miss；raw 31 未進該戰術狀態機，故不再列為格子戰術公式缺口。見
+  [`docs/re/cloak-tactical-consumers-audit-20260830.md`](docs/re/cloak-tactical-consumers-audit-20260830.md)。
   Ship Attack／Defense 的 signed raw bonus 已分別接回格子 OCV／DCV、戰機／飛彈、戰術 AI、
   `Qload_Ships_` 快速 record 與戰略估值；Trans-Dimensional 已閉合格子／飛彈速度 +4、估值
   DCV +20、FTL +2 及 Hyperspace Flux 的玩家／AI／外交移動免疫。尚餘 strategic record 欄名、
