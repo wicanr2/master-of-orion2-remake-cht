@@ -2495,7 +2495,8 @@ func loadCombatShipByIdxFrame(res *assets.Resolver, idx, frame int) *ebiten.Imag
 
 // combatMonsterAsset 是 MONSTER.LBX 前 13 張真 sprite 的種類映射。資產接觸表以
 // COMBAT#11 基底＋MONSTER#13 局部色盤重建後，可直接辨識 7=Guardian、8=Eel、
-// 9=Crystal、10=Amoeba、11=Hydra、12=Dragon；0..6 是軌道基地尺寸序列。
+// 9=Crystal、10=Amoeba、11=Hydra、12=Dragon；0..6 是安塔蘭艦艇尺寸／類型序列，
+// 不得誤當殖民地軌道基地。
 func combatMonsterAsset(kind gamedata.SpaceMonster) (int, bool) {
 	switch kind {
 	case gamedata.MonsterGuardian:
@@ -3820,13 +3821,7 @@ func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base co
 			color.RGBA{base.R / 2, base.G / 2, base.B / 2, 255}, false)
 	}
 	if selected {
-		ringClass := 0
-		if s.SizeClass >= gamedata.SHIP_CRUISER {
-			ringClass = 1
-		}
-		if s.SizeClass >= gamedata.SHIP_BATTLESHIP {
-			ringClass = 2
-		}
+		ringClass := tacticalSelectionRingClass(s)
 		frames := t.selectionRings[ringClass]
 		if len(frames) > 0 {
 			ring := frames[(t.tick/5)%len(frames)]
@@ -3837,6 +3832,52 @@ func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base co
 			vector.StrokeCircle(dst, float32(cx), float32(cy), 29, 1,
 				color.RGBA{70, 150, 230, 210}, false)
 		}
+	}
+}
+
+func drawTacticalMinimapCorner(dst *ebiten.Image, x, y float32, right, bottom bool) {
+	dx, dy := float32(8), float32(7)
+	if right {
+		dx = -dx
+	}
+	if bottom {
+		dy = -dy
+	}
+	col := color.RGBA{87, 126, 181, 255}
+	vector.StrokeLine(dst, x, y, x+dx, y, 1, col, false)
+	vector.StrokeLine(dst, x, y, x, y+dy, 1, col, false)
+}
+
+// drawTacticalMinimap 補回 COMBAT 控制甲板右下的原版戰場縮圖。背景星點已烘在
+// COMBAT.LBX#0；這裡只疊可由 typed 戰鬥狀態重建的行星、艦艇與目前 640×351 視窗框。
+func (t *tacticalScreen) drawTacticalMinimap(dst *ebiten.Image) {
+	left, top := tacticalMinimapPoint(0, 0)
+	right, bottom := tacticalMinimapPoint(moo2ScreenW, combatControlDeckY)
+	drawTacticalMinimapCorner(dst, left, top, false, false)
+	drawTacticalMinimapCorner(dst, right, top, true, false)
+	drawTacticalMinimapCorner(dst, left, bottom, false, true)
+	drawTacticalMinimapCorner(dst, right, bottom, true, true)
+
+	if t.planet != nil {
+		px, py := tacticalMinimapPoint(float64(t.planetX)+float64(t.planet.Bounds().Dx())/2,
+			float64(t.planetY)+float64(t.planet.Bounds().Dy())/2)
+		vector.DrawFilledCircle(dst, px, py, 4, color.RGBA{194, 155, 205, 255}, false)
+		vector.StrokeCircle(dst, px, py, 5, 1, color.RGBA{84, 67, 111, 255}, false)
+	}
+	for _, ship := range t.player {
+		x, y := tacticalShipScreenCenter(ship)
+		mx, my := tacticalMinimapPoint(x, y)
+		vector.DrawFilledCircle(dst, mx, my, 1.5, color.RGBA{173, 91, 164, 255}, false)
+	}
+	for _, ship := range t.enemy {
+		x, y := tacticalShipScreenCenter(ship)
+		if ship.MonsterKind != gamedata.MonsterNone && !ship.ScreenPositionKnown && t.monsterStar >= 0 {
+			// 原版同狀態縮圖的橘點位於 (571,416)，反投影約為 (853,192)：在目前
+			// 640px 視窗右側。只用於縮圖呈現，不把單幀推論寫成戰鬥座標狀態。
+			x, y = 853, 192
+		}
+		mx, my := tacticalMinimapPoint(x, y)
+		vector.DrawFilledCircle(dst, mx, my, 2, color.RGBA{151, 104, 48, 255}, false)
 	}
 }
 
@@ -3921,6 +3962,7 @@ func (t *tacticalScreen) drawCombatControlDeck(dst *ebiten.Image) {
 	}
 	t.drawTacticalWeaponPanel(dst)
 	t.drawTacticalSelectedShipPanel(dst)
+	t.drawTacticalMinimap(dst)
 }
 
 const (
@@ -3936,7 +3978,30 @@ const (
 	tacticalSystemsX     = 400
 	tacticalSystemsY     = 365
 	tacticalSystemsW     = 96
+	tacticalMinimapX     = 507
+	tacticalMinimapY     = 404
 )
+
+// tacticalMinimapPoint 將 640×351 的目前視窗投影到原版控制甲板縮圖。Amoeba／Trilar III
+// 同狀態 oracle 中，行星、Star Base 與兩艘 Frigate 的四個已知點共同收斂為 x*3/40、y/16；
+// 48×22 的四角框也正好對應 640×351 可見區。這是單幀強推論，不冒稱原版內部定點公式。
+func tacticalMinimapPoint(x, y float64) (float32, float32) {
+	return float32(tacticalMinimapX + x*3/40), float32(tacticalMinimapY + y/16)
+}
+
+func tacticalSelectionRingClass(ship shell.CombatShip) int {
+	if ship.OrbitalBase {
+		// 同狀態原版裁切的外框是 COMBAT#33 的 50×50 形狀；基地本體並未縮放過大。
+		return 1
+	}
+	if ship.SizeClass >= gamedata.SHIP_BATTLESHIP {
+		return 2
+	}
+	if ship.SizeClass >= gamedata.SHIP_CRUISER {
+		return 1
+	}
+	return 0
+}
 
 func tacticalWeaponSlotRect(i int) [4]int {
 	if i < 0 || i > 7 {

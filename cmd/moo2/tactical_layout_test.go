@@ -60,6 +60,33 @@ func TestTacticalShipFreeCoordinateOverridesGridOnlyForRendering(t *testing.T) {
 	}
 }
 
+func TestTacticalMinimapProjectionMatchesSameStateOracle(t *testing.T) {
+	tests := []struct {
+		x, y         float64
+		wantX, wantY float32
+	}{
+		{163, 222, 519.225, 417.875}, // Trilar III
+		{340, 201, 532.5, 416.5625},  // Star Base
+		{412, 133, 537.9, 412.3125},  // 第一艘 Frigate
+		{853, 192, 570.975, 416},     // 縮圖可見、主視窗外的 Amoeba 強推論點
+	}
+	for _, tt := range tests {
+		gotX, gotY := tacticalMinimapPoint(tt.x, tt.y)
+		if gotX != tt.wantX || gotY != tt.wantY {
+			t.Fatalf("minimap(%v,%v)=(%v,%v)，want (%v,%v)", tt.x, tt.y, gotX, gotY, tt.wantX, tt.wantY)
+		}
+	}
+}
+
+func TestTacticalOrbitalBaseUsesMediumSelectionRing(t *testing.T) {
+	if got := tacticalSelectionRingClass(shell.CombatShip{OrbitalBase: true, SizeClass: gamedata.SHIP_DOOMSTAR}); got != 1 {
+		t.Fatalf("Star Base 選艦環 class=%d，want COMBAT#33 對應的 1", got)
+	}
+	if got := tacticalSelectionRingClass(shell.CombatShip{SizeClass: gamedata.SHIP_BATTLESHIP}); got != 2 {
+		t.Fatalf("一般 Battleship 選艦環 class=%d，want 2", got)
+	}
+}
+
 func TestTacticalTargetSurvivesEnemySliceCompactionByID(t *testing.T) {
 	tactical := &tacticalScreen{
 		enemy: []shell.CombatShip{
