@@ -60,6 +60,25 @@ func TestTacticalShipFreeCoordinateOverridesGridOnlyForRendering(t *testing.T) {
 	}
 }
 
+func TestTacticalFreeCoordinateHitTestMatchesRenderedFrame(t *testing.T) {
+	ships := []shell.CombatShip{
+		{Col: 0, Row: 0, ScreenX: 412, ScreenY: 133, ScreenPositionKnown: true},
+		{Col: 1, Row: 0},
+	}
+	if got := shipAtScreen(ships, 412, 133); got != 0 {
+		t.Fatalf("自由座標中心命中=%d，want 0", got)
+	}
+	if got := shipAtScreen(ships, 382, 103); got != 0 {
+		t.Fatalf("59×60 frame 左上邊界命中=%d，want 0", got)
+	}
+	if got := shipAtScreen(ships, 442, 163); got != -1 {
+		t.Fatalf("右下半開邊界不得命中：%d", got)
+	}
+	if got := shipAtScreen(ships, 100, 100); got != -1 {
+		t.Fatalf("沒有自由座標的格位艦不得由 screen hit test 命中：%d", got)
+	}
+}
+
 func TestTacticalCameraCentersAndClampsLikeOriginal(t *testing.T) {
 	var camera tacticalCamera
 	camera.centerOnRaw(21, 35)

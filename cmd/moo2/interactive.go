@@ -2799,6 +2799,23 @@ func shipAt(list []shell.CombatShip, col, row int) int {
 	return -1
 }
 
+// shipAtScreen 先以 renderer 實際使用的自由座標中心判定艦艇。CMBTSHP／MONSTER
+// 的固定 frame 畫布約 59×60；使用完整 60×60 方框，不裁透明邊界後重新置中。
+// 沒有自由座標的艦仍由既有格位 hit test 處理。
+func shipAtScreen(list []shell.CombatShip, x, y int) int {
+	for i, ship := range list {
+		if !ship.ScreenPositionKnown {
+			continue
+		}
+		cx, cy := tacticalShipScreenCenter(ship)
+		if float64(x) >= cx-30 && float64(x) < cx+30 &&
+			float64(y) >= cy-30 && float64(y) < cy+30 {
+			return i
+		}
+	}
+	return -1
+}
+
 func abs(n int) int {
 	if n < 0 {
 		return -n
@@ -2855,11 +2872,16 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 		t.launchFrom(t.sel)
 		return nil
 	}
-	col, row, ok := cellAt(in.MouseX, in.MouseY)
-	if !ok {
-		return nil
+	pi := shipAtScreen(t.player, in.MouseX, in.MouseY)
+	ei := shipAtScreen(t.enemy, in.MouseX, in.MouseY)
+	col, row, cellOK := cellAt(in.MouseX, in.MouseY)
+	if pi < 0 && cellOK {
+		pi = shipAt(t.player, col, row)
 	}
-	if pi := shipAt(t.player, col, row); pi >= 0 { // 點我方艦 → 選取
+	if ei < 0 && cellOK {
+		ei = shipAt(t.enemy, col, row)
+	}
+	if pi >= 0 { // 點我方艦 → 選取
 		if t.shipInitiativeEnabled() && pi != t.currentInitiativePlayerIndex() {
 			return nil
 		}
@@ -2875,7 +2897,7 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 		t.centerCameraOnSelectedShip()
 		return nil
 	}
-	if ei := shipAt(t.enemy, col, row); ei >= 0 { // 點敵艦 → 依模式:開火 / 掃描 / 登艦
+	if ei >= 0 { // 點敵艦 → 依模式:開火 / 掃描 / 登艦
 		t.target = ei
 		switch t.mode {
 		case tacticalModeScan:
@@ -2885,6 +2907,9 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 		default:
 			t.fireSelectedShip(ei)
 		}
+		return nil
+	}
+	if !cellOK {
 		return nil
 	}
 	if t.sel >= 0 && t.sel < len(t.player) && !t.acted[t.sel] { // 點空格 → 移動選中艦(受戰鬥速度限制)

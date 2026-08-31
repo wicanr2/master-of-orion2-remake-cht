@@ -45,6 +45,8 @@
   `(raw-camera)*20` 基準；怪物同狀態建構與玩家改選我方艦會更新此暫態狀態。
 - renderer、hit test、捲動輸入與 AI 自由座標移動尚未原子切換，故 camera state 維持
   PARTIAL；現行 `ScreenPositionKnown`／格位 fallback 暫時保留，避免出現不可見但可點擊的艦。
+- 已有 `ScreenPositionKnown` 的艦先以 renderer 相同中心與完整 60×60 frame 方框命中，再回退
+  8×6 格位；這只修正既有自由座標的畫面／點擊不對稱，不代表 raw camera renderer 已接線。
 
 ## 驗收
 

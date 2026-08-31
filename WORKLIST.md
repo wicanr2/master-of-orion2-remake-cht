@@ -177,6 +177,8 @@
   2026-08-31 已先接 typed `tacticalCamera`：活動艦置中、原版夾制與 20px 基準皆有固定測試，
   怪物 fixture 與玩家選艦會更新 camera；renderer／hit test／捲動輸入尚未原子切換，狀態為
   PARTIAL，不以孤立 camera helper 冒稱自由座標玩法完成。
+  同輪後續已讓 `ScreenPositionKnown` 艦艇以 renderer 相同中心及 60×60 frame 方框優先命中，
+  修掉「畫在自由座標、只能點舊格位」的不對稱；raw camera renderer／捲動仍列為下一步。
 
 - [x] **原版回合主鏈拓樸閉合（RE-only，2026-08-28）**：IDA Pro 9.4 重新匯出
   `Next_Turn_Calc_ @ 0x136B3..0x13822`，證實是 52 個直接 call；固定順序、

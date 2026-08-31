@@ -233,3 +233,8 @@ Remake 映射已開始：`cmd/moo2` 新增暫態 `tacticalCamera`，直接實作
 兩軸夾制與 20px 基準；同狀態怪物戰建構完成 raw deployment 後會以目前選中艦初始化，玩家
 改選我方艦也會更新。這一輪刻意未讓 renderer／hit test 消費 camera，因兩者若不同步切換，
 會製造「畫面外仍可用舊格位點擊」的新缺陷。此接線為 **PARTIAL**，不升格為畫面 parity。
+
+第二個 remake 小切片先修正現有 adapter 的玩家可見不對稱：`ScreenPositionKnown` 艦艇原本
+依自由中心繪製，點擊卻只查 `Col/Row`。現在 hit test 先使用與 renderer 相同中心及完整
+60×60 frame 半開矩形，再回退 8×6 格位。這項內部測試只證明畫面與點擊共用座標；raw camera
+renderer 與捲動輸入仍未完成。
