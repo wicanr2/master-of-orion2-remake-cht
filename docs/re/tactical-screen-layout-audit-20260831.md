@@ -151,3 +151,34 @@ record `+0x21/+0x22`。Amoeba 為攻方、玩家殖民地為守方的同狀態�
 可見內容與 Star Base 外環級別；較早診斷圖所列的 Star Base「精確縮放」疑慮已由裁切分離為
 本體尺度接近、外環選錯，故不再作為獨立缺口。仍未關閉的是 raw deployment 到主畫面像素的
 camera／sprite center 轉換、畫面外進場移動、縮圖定點公式的 IDA 證據，以及自由座標玩法模型。
+
+## 戰術鏡頭與 sprite 繪製基準（IDA Pro 9.4，2026-08-31）
+
+本輪以正式 `Orion2.exe.i64` 的唯讀副本重新匯出，輸入 `Orion2.exe` SHA-256 為
+`7ae2ac2e5904ca330009af2827279d889906b0b9b7a8854c38eb707a56e955b5`，資料庫 SHA-256 為
+`4a01791fcf877ed87a740a54748694ab34a02675e3117dac052aeaa3f883944e`；工具是 IDA Pro 9.4，
+位址均為 DOS/4GW LE image 的 IDA linear address。可重生匯出入口為
+`tools/ida/audit_tactical_deployment_renderer.py`，不改名、不改型別，也不寫回正式資料庫。
+
+下列為**已證實**：
+
+- `sub_47939 @ 0x47939` 在 `0x479B2/0x479BB` 將 `word_1998F0/F2` 設為 `(0,0)`；這兩個
+  word 是戰術鏡頭 raw 原點。舊候選解釋「`sub_465D0(1)` 初始化鏡頭」已被真正寫入端否定；
+  `sub_465D0` 是重繪／狀態 consumer，不能再當成鏡頭 setter。
+- `sub_2F4EE @ 0x2FB25..0x2FB4B` 從 313-byte combat record `+0x21/+0x22` 讀取 raw X/Y，
+  分別減去 `word_1998F0/F2` 並乘 `0x14`，再呼叫 `sub_30062`。因此傳入 renderer 的基準為
+  `baseX=(rawX-cameraX)*20`、`baseY=(rawY-cameraY)*20`。
+- `sub_34454 @ 0x34454` 依 combat record `+0x23` heading 與 `+0x25` 尺寸／圖形欄位回傳
+  每軸 anchor。已見的基礎值為 `-16`、`-6`、`+4`，再依四組 heading 區段調整 `0..3` 像素；
+  `sub_30062 @ 0x30121..0x30151` 把 anchor 加到上述 20px 基準後交給底層繪圖。
+- `sub_49A41 @ 0x49A41` 是邊緣捲動 consumer，X/Y 鏡頭分別夾在 `0..49` 與 `0..50`；
+  `sub_49D09 @ 0x49D09` 是指定位置置中 consumer，先算 `requestedX-16`、`requestedY-9`，
+  再套同一邊界。這些是 raw 單位，不是像素。
+- 開場鏡頭為 `(0,0)` 時，Amoeba raw `(55,34)` 的 X 基準為 `1100`，即使套用目前追回的
+  anchor 仍在 640px 戰場右側；原版首幀不顯示 Amoeba 是資料與 renderer 共同導出的結果，
+  不再只是截圖猜測。
+
+仍為**未知**的是 LBX frame 解碼後的內部原點／透明裁切如何把上述「繪製基準」轉成肉眼所見的
+sprite 中心，以及敵艦由畫面外進場的逐 tick 移動與鏡頭追蹤時序。先前量測的 Frigate
+`(412,133)/(412,174)` 與 Star Base `(340,201)` 是視覺中心，不可拿來反推 camera 或覆蓋
+已證實的 raw 基準公式；remake 在這一層閉合前保留既有可玩自由座標 adapter。
