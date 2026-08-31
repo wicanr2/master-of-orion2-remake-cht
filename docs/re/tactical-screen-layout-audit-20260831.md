@@ -204,3 +204,27 @@ sprite 中心，以及敵艦由畫面外進場的逐 tick 移動與鏡頭追蹤�
 而 `0x444C8..0x444EE` 在特定 gate 下又會以選中 combat record 呼叫 `sub_49D09`。
 目前尚未閉合該 gate 的初始值與兩條呼叫的先後結果，因此不能僅憑 Frigate Y 中心選定
 cameraY。敵艦進場也仍需追 record `+0x21/+0x22` 的第一個 runtime writer。
+
+### 首個可玩鏡頭與 runtime 座標 writer
+
+後續交叉參照推翻了本節早期的兩個導覽名稱：`word_199888` 是 `sub_11438B @ 0x46C89`
+建立的 UI 熱區 ID，`word_199892/94` 是右下縮圖熱區 `sub_114DCA @ 0x467DE` 回填的
+點擊座標；三者都不是 camera gate 或戰場邊界。`sub_42F7F @ 0x44435..0x444EE` 比較的是
+本輪事件碼：點縮圖時把座標乘 `2/3` 後置中，點選艦事件則用該艦 raw X/Y 置中。
+
+下列控制流為**已證實**：
+
+- `sub_47939` 在部署後呼叫 `sub_4A12A` 載入戰鬥 sprite；該函式不寫 camera。進入首個
+  戰術迴圈後，`sub_4A5CE @ 0x4A6B5..0x4A6C5` 選出該方可行動 combat ship，直接讀
+  record `+0x21/+0x22` 並呼叫 `sub_49D09`。因此初始化 `(0,0)` 只是載入暫態，第一個
+  可玩鏡頭會以活動艦置中；具體艦號由主動方與可行動篩選決定，不能固定寫成 Star Base。
+- 全程式掃描 391 個文字上帶 `+21h/+22h` 的相對運算元後，313-byte combat record 的
+  成對 runtime writer 收斂為兩條。`sub_3EE0F @ 0x3F543..0x3F579` 將連續像素路徑終點
+  各除以 20，寫回 byte `+0x21/+0x22`，並把該艦設為目前選中艦；這是玩家／一般移動落點。
+- `sub_ABFF3 @ 0xAC025..0xAC12D` 以目前 raw 點加候選偏移，查 81×68 佔位圖，經
+  `sub_3E598` 等 consumer 後把選定候選寫回同一雙軸。它沒有直接 code xref，屬於間接派送
+  的戰術 AI 移動端是**強推論**；雙軸寫入與佔位圖資料流本身為已證實。
+
+目前沒有證據支持獨立的「Amoeba 進場動畫」狀態。畫面外敵艦透過正常戰術 AI 移動改寫 raw
+座標，再由 camera／renderer 顯示，是現有證據支持的模型；remake 應完成自由座標移動與 AI
+consumer，不應另造只服務同狀態截圖的 scripted entrance。

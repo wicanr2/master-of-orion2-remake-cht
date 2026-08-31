@@ -169,8 +169,11 @@
   捲動界限 `0..49/0..50` 與置中偏移 `(16,9)`；Amoeba 首幀在右側畫面外已由資料流閉合。
   舊「`sub_465D0` 初始化鏡頭」候選解釋已訂正。`Draw_ @ 0x12A478` 後續證實傳入值就是
   完整 frame 左上角，沒有隱藏 hotspot；真實 CMBTSHP 59×60 畫布與 heading 8 anchor 可精確
-  重建 Frigate X 中心約 412。仍待首幀 cameraY gate、畫面外進場逐 tick 移動、縮圖繪製函式
-  的獨立指令證據、自由座標移動與同艦艇設計 fixture，完成前不宣稱逐像素對齊。
+  重建 Frigate X 中心約 412。後續勘誤 `word_199888/199892/199894` 為 UI 熱區 ID／縮圖點擊
+  座標，不是 camera gate；首個可玩迴圈由 `sub_4A5CE` 選活動艦並置中。`sub_3EE0F` 與間接
+  派送的 `sub_ABFF3` 已閉合一般／AI 移動對 raw 雙軸的回寫，因此不另造 Amoeba scripted
+  entrance。仍待把自由座標 camera／移動／AI consumer 接入 remake、縮圖繪製函式的獨立
+  指令證據與同艦艇設計 fixture，完成前不宣稱逐像素對齊。
 
 - [x] **原版回合主鏈拓樸閉合（RE-only，2026-08-28）**：IDA Pro 9.4 重新匯出
   `Next_Turn_Calc_ @ 0x136B3..0x13822`，證實是 52 個直接 call；固定順序、

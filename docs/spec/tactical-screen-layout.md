@@ -32,8 +32,12 @@
    anchor，也不得直接刪除目前供玩法使用的自由座標 adapter。
 9. `Draw_ @ 0x12A478` 的 x/y 是完整 LBX frame 畫布左上角；底層不會再套中心或 hotspot。
    一般 `CMBTSHP` 畫布為 59×60，Amoeba `MONSTER#10` 為 59×59。視覺中心只能由
-   `base + anchor + frameSize/2` 計算，透明像素外框不得被裁掉後重新置中。首幀 cameraY
-   gate 尚未閉合，故目前不得用單張截圖硬編 Y 原點。
+   `base + anchor + frameSize/2` 計算，透明像素外框不得被裁掉後重新置中。首個活動艦的
+   篩選結果尚未固定成同狀態 fixture，故目前不得用單張截圖硬編 Y 原點。
+10. camera 初始化 `(0,0)` 只存在於載入暫態；第一個可玩迴圈由 `sub_4A5CE` 選出活動艦，
+    再以 `sub_49D09` 置中。縮圖點擊與選艦事件也可改變 camera。敵艦由畫面外進入不得另造
+    scripted 動畫；`sub_3EE0F`／`sub_ABFF3` 證實正常戰術移動會把像素路徑／佔位候選回寫成
+    raw `+0x21/+0x22`，remake 應由同一自由座標移動 consumer 驅動畫面與縮圖。
 
 ## 驗收
 

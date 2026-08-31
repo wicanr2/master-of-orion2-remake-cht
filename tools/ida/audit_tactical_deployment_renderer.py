@@ -23,19 +23,29 @@ ROOTS = [
     0x2F4EE,
     0x30062,
     0x34454,
+    0x3EE0F,
     0x465D0,
     0x46CC8,
     0x47939,
     0x49043,
     0x49A41,
     0x49D09,
+    0x4A12A,
     0x4446A,
     0x444EE,
     0x4A6C5,
     0x12A478,
     0x12ACA4,
+    0xABFF3,
 ]
-DATA_ROOTS = [0x1998F0, 0x1998F2]
+DATA_ROOTS = [
+    0x199888,
+    0x199892,
+    0x199894,
+    0x1998F0,
+    0x1998F2,
+    0x1998F8,
+]
 NAME_PATTERN = re.compile(r"camera|viewport|mini.?map|ship.*center|center.*ship|draw.*combat|combat.*draw", re.I)
 
 
@@ -105,6 +115,22 @@ def data_xrefs(ea):
     return {"address": f"0x{ea:X}", "raw_name": ida_name.get_name(ea), "refs": refs}
 
 
+def relative_operand_accesses():
+    """保留 combat record +21h/+22h 的原始文字候選，供人工資料流審查。"""
+    out = []
+    for fn_ea in idautils.Functions():
+        for ea in idautils.FuncItems(fn_ea):
+            text = ida_lines.tag_remove(idc.generate_disasm_line(ea, 0) or "")
+            if "+21h]" not in text and "+22h]" not in text:
+                continue
+            out.append({
+                "owner_start": f"0x{fn_ea:X}",
+                "owner_raw_name": ida_name.get_name(fn_ea),
+                "site": instruction(ea),
+            })
+    return out
+
+
 def main():
     ida_auto.auto_wait()
     source = os.environ["MOO2_IDA_INPUT"]
@@ -134,6 +160,7 @@ def main():
         "renderer_direct_callees": renderer_callees,
         "named_candidates": named,
         "camera_data_xrefs": [data_xrefs(ea) for ea in DATA_ROOTS],
+        "combat_record_21_22_candidates": relative_operand_accesses(),
     }
     with open(os.environ["MOO2_IDA_OUTPUT"], "w", encoding="utf-8") as fh:
         json.dump(payload, fh, ensure_ascii=False, indent=2)
