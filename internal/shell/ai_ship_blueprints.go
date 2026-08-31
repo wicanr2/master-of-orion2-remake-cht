@@ -134,8 +134,8 @@ func (s *GameSession) reduceAIShipStrength(i, target int) {
 	s.syncAIShipStrength(i)
 }
 
-// advanceAIShipProduction 的「可負擔最高 hull 0..4」是可重現的 remake 選擇器；原版
-// 精確生產評分仍未知。藍圖、成本、交付艦與戰鬥資料則使用同一條 typed 鏈。
+// advanceAIShipProduction 只保留給舊存檔相容與窄單元測試；正常 AI 回合已改走逐殖民地
+// typed ship slot。這裡的「可負擔最高 hull 0..4」不是原版精確生產評分。
 func (s *GameSession) advanceAIShipProduction(i, production int) {
 	if i < 0 || i >= len(s.AIPlayers) || production <= 0 {
 		return

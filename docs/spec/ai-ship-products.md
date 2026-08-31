@@ -38,7 +38,13 @@ RE-TRACE: dos-orion2-1.31:0xD10EE
    尚未在 remake 同構，現沿用玩家支援艦的 120 PP 明示估值；單主力艦隊也會把新船加入目前
    艦隊，兩者均不冒稱原版精確。Outpost Ship／Transport 尚未接，因目前缺 AI 前哨站與逐艦
    地面運輸 consumer，不建立無下游的假完成 Ship。
-4. 依既有 role 0..4 藍圖、case 0 戰力缺額與 case 2 改裝鏈接線；多艦隊資料不足時明示近似。
+4. （部分完成：case 0 戰鬥艦）逐殖民地 `ai_combat_ship` 產品已保存 role 0..4 持久藍圖的
+   深層快照、typed 造價與進度；科技更新不會改寫生產中的武器、特殊裝備或成本。原版多藍圖
+   生產評分仍未知，因此目前採可重播近似：補實艦數量最少的 hull role，平手取較低 hull，
+   不冒稱原版精確 selector。完工建立真正 `RawType=COMBAT_SHIP` 的 Ship，並同步艦隊戰力與
+   指揮點；快速／格子戰術沿用既有 typed Ship consumer。舊存檔的全帝國
+   `ShipBuildProgress` 只遷移一次到第一個 ship slot；正常 AI 回合已停止使用全帝國造艦池。
+   case 2 改裝、軌道基地與多艦隊分派仍待後續切片。
 
 ## 驗收
 

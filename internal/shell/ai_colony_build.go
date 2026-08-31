@@ -108,6 +108,66 @@ func (s *GameSession) completeAIColonyShipProduct(aiIndex int) bool {
 	return true
 }
 
+func cloneAIProductBlueprint(in ShipBlueprint) *ShipBlueprint {
+	out := in
+	out.Mods = append([]string(nil), in.Mods...)
+	out.WeaponMounts = cloneWeaponMounts(in.WeaponMounts)
+	out.SpecialIDs = append([]int(nil), in.SpecialIDs...)
+	out.Specials = cloneSpecialMounts(in.Specials)
+	return &out
+}
+
+// chooseAICombatShipProduct 使用已證實的 role 0..4 持久藍圖與 typed 造價。原版多藍圖
+// 生產評分仍未知，因此採可重播最小政策：補目前實艦數量最少的 role，平手取較低 hull。
+func (s *GameSession) chooseAICombatShipProduct(aiIndex int) (*ShipBlueprint, int, bool) {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) {
+		return nil, 0, false
+	}
+	s.ensureAIShipDesigns(aiIndex)
+	a := &s.AIPlayers[aiIndex]
+	counts := make([]int, 5)
+	for _, ship := range a.Ships {
+		if (ship.RawTypeKnown && ship.RawType != gamedata.COMBAT_SHIP) || isSupportShipClass(ship.Class) {
+			continue
+		}
+		if class, ok := shipClassFromName(ship.Class); ok && int(class) < len(counts) {
+			counts[int(class)]++
+		}
+	}
+	view := *s
+	view.Player = a.Player
+	chosen, chosenCount, cost := -1, 0, 0
+	for hull := 0; hull < len(counts) && hull < len(a.ShipDesigns); hull++ {
+		candidateCost, known := view.BlueprintDesignCost(a.ShipDesigns[hull])
+		if !known || candidateCost <= 0 || !view.BlueprintDesignFits(a.ShipDesigns[hull]) {
+			continue
+		}
+		if chosen < 0 || counts[hull] < chosenCount {
+			chosen, chosenCount, cost = hull, counts[hull], candidateCost
+		}
+	}
+	if chosen < 0 {
+		return nil, 0, false
+	}
+	return cloneAIProductBlueprint(a.ShipDesigns[chosen]), cost, true
+}
+
+func (s *GameSession) completeAICombatShipProduct(aiIndex int, design *ShipBlueprint, cost int) bool {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) || design == nil || cost <= 0 {
+		return false
+	}
+	a := &s.AIPlayers[aiIndex]
+	name := fmt.Sprintf("%s %s %d", a.Name, design.Class, len(a.Ships)+1)
+	ship := shipFromBlueprint(name, *design, BuildWeaponOptions(s.RuleProfile),
+		originalBestComputer(a.Player), aiDriveLevel(*a))
+	ship.RawType, ship.RawTypeKnown, ship.RawMissionKnown = gamedata.COMBAT_SHIP, true, true
+	ship.ProductionCost = cost
+	a.Ships = append(a.Ships, ship)
+	s.syncAIShipStrength(aiIndex)
+	s.syncAICommandPoints(aiIndex)
+	return true
+}
+
 // aiColonyBuildKey 以星系索引保存佇列；舊存檔若缺 ColonyStars，使用不會和合法星系
 // 索引衝突的負值，待對映恢復後自然建立正式 key。
 func aiColonyBuildKey(a *AIOpponent, colony int) int {
@@ -1269,8 +1329,9 @@ func (s *GameSession) applyAICompletedSpecial(aiIndex, colony int, name string) 
 	return true
 }
 
-// advanceAIColonyBuilds 逐殖民地消費本回合淨工業，回傳沒有可建建築之殖民地的產能，
-// 供尚待進一步 RE 的艦艇產品轉接層使用。同一份產能不會同時蓋建築又造艦。
+// advanceAIColonyBuilds 逐殖民地消費本回合淨工業。一般建築、特殊產品與艦艇 ship slot
+// 都保存在 ColonyBuilds；只有無合法 typed 藍圖的損壞／舊狀態才把產能回傳給 caller，
+// 正常回合不再使用全帝國造艦池。同一份產能不會同時蓋建築又造艦。
 func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput) int {
 	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) {
 		return 0
@@ -1311,6 +1372,18 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 			} else {
 				build, ok = chooseAIColonyBuilding(a, i, out, s.Difficulty, s.Turn,
 					s.originalAIStrategicPressureContext(aiIndex, i))
+				if !ok {
+					if design, cost, known := s.chooseAICombatShipProduct(aiIndex); known {
+						build = ColonyBuild{ProductKind: ColonyProductAICombatShip, Cost: cost,
+							ProductShip: design}
+						// 舊存檔的全帝國進度只遷移一次到第一個 typed ship slot。
+						if a.ShipBuildProgress > 0 {
+							build.Progress = a.ShipBuildProgress
+							a.ShipBuildProgress = 0
+						}
+						ok = true
+					}
+				}
 			}
 			if !ok {
 				shipProduction += out.Colonies[i].NetIndustry
@@ -1328,6 +1401,8 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 			}
 		} else if build.ProductKind == ColonyProductAIColonyShip {
 			s.completeAIColonyShipProduct(aiIndex)
+		} else if build.ProductKind == ColonyProductAICombatShip {
+			s.completeAICombatShipProduct(aiIndex, build.ProductShip, build.Cost)
 		} else if !s.applyAICompletedSpecial(aiIndex, i, build.Name) {
 			for len(a.ColonyBuildings) <= i {
 				a.ColonyBuildings = append(a.ColonyBuildings, nil)

@@ -2668,7 +2668,10 @@ type ColonyBuild struct {
 	Name string
 	// ProductKind 保存不應以本地化顯示文字判斷的特殊產品語意。空值代表歷史存檔的
 	// 一般建築／特殊行動；穩定識別字不顯示給玩家。
-	ProductKind  ColonyProductKind `json:"productKind,omitempty"`
+	ProductKind ColonyProductKind `json:"productKind,omitempty"`
+	// ProductShip 保存原版 `-(shipSlot+100)` 指到的艦艇設計快照。科技更新不得在
+	// 生產中途偷偷換裝或改價。
+	ProductShip  *ShipBlueprint `json:"productShip,omitempty"`
 	Progress     int
 	ProgressHalf int // 半機械族建造進度的半單位餘數；舊存檔缺欄位時為 0
 	Cost         int
@@ -2682,6 +2685,7 @@ type ColonyProductKind string
 const (
 	ColonyProductAIAgent      ColonyProductKind = "ai_agent"
 	ColonyProductAIColonyShip ColonyProductKind = "ai_colony_ship"
+	ColonyProductAICombatShip ColonyProductKind = "ai_combat_ship"
 )
 
 // TradeGoodsBuildName 是「貿易品」建造佇列選項的名稱。與空字串「不建造」同類——是佇列的
@@ -5617,7 +5621,7 @@ func (s *GameSession) playerMilitary() int {
 }
 
 // advanceAI 推進第 i 個 AI 對手的主動行為(每回合,經濟結算後):
-//  1. 生產:逐殖民地先推進自己的建築產品；沒有可建建築的產能才進造艦轉接層。
+//  1. 生產:逐殖民地推進建築或 typed ship-slot 產品。
 //  2. 擴張:每隔數回合佔領一顆無主星(Owner=2,OwnedStars++)。
 //  3. 研究:替 AI 處理待決的科技抉擇,並在目前主題完成時挑下一個(見 ai_research.go)。
 //  4. 外交態勢:消費本回合已由原版 Diplomacy_Growth 規則更新的關係分數，
@@ -5626,24 +5630,10 @@ func (s *GameSession) advanceAI(i int, out engine.EmpireOutput) {
 	a := &s.AIPlayers[i]
 	prof := aiProfile(*a)
 
-	// 1) 造艦：工業投入持久造艦進度，完成後交付引用 AI 自己藍圖的實艦。
-	//
-	// FleetInvestPool 是餘數池,修正既有整數捨去 bug:直接算 TotalNetIndustry/invest 時,
-	// 若 TotalNetIndustry(如忠實 yield 下常見的 3)小於 invest(Scientific 性格為 4),
-	// 整數除法每回合都捨去成 0,FleetStrength 永久停滯(見 playerHomeworldColony 上方歷史記錄註解/
-	// docs/tech/colony-economy-maintenance.md)。改成先把 NetIndustry 存進池子、池子夠 invest
-	// 才兌現軍力、餘數留到下回合累積,小額淨工業也能跨回合逐步兌現,不會卡死。
-	shipProduction := s.advanceAIColonyBuilds(i, out)
-	if shipProduction > 0 {
-		// EmpireOutput 的 NetIndustry 已是扣維護後可投入生產的點數；藍圖成本同樣以
-		// 生產點計價，不再先縮成抽象軍力單位。偏工業性格額外投入一倍，屬既有 AI
-		// 性格權重的 remake 轉接，不是原版精確 build selector。
-		production := shipProduction
-		if prof.IndustryWeight > prof.ResearchWeight {
-			production *= 2
-		}
-		s.advanceAIShipProduction(i, production)
-	}
+	// 1) 生產：建築、特殊產品與戰鬥艦都保存於逐殖民地 ColonyBuilds。舊存檔的
+	// ShipBuildProgress 會在建立第一個 typed ship slot 時遷移；正常回合不再把空閒工業
+	// 倍增後灌入全帝國 advanceAIShipProduction 池。
+	s.advanceAIColonyBuilds(i, out)
 
 	// 2) 殖民：All_AI_Colonize_ 每回合掃描已抵達來源；只在殖民船目前所在星系
 	// 建立殖民地。跨星系航程由 advanceAIFleets 的單主力艦隊 adapter 規劃。

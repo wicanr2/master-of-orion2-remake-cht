@@ -293,6 +293,96 @@ func TestOriginalAIColonyShipQuotaRequiresTechAndSuppressesDuplicates(t *testing
 	}
 }
 
+func prepareAICombatShipProductTest(t *testing.T) (*GameSession, engine.EmpireOutput) {
+	t.Helper()
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	s.ensureAIShipDesigns(0)
+	a.Ships = nil
+	a.ColonyBuilds = make(map[int]ColonyBuild)
+	for i := range a.ColonyBuildings {
+		if a.ColonyBuildings[i] == nil {
+			a.ColonyBuildings[i] = make(map[string]bool)
+		}
+		for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
+			a.ColonyBuildings[i][b.NameZH] = true
+		}
+		a.ColonyBuildings[i][ColonyBaseBuildName] = true
+	}
+	// 不讓 Colony Ship 配額搶先；本 fixture 隔離 case 0 戰鬥艦。
+	a.Player.CompletedTopics = map[gamedata.ResearchTopic]bool{}
+	a.Player.GrantedTechs = map[gamedata.Technology]bool{}
+	a.Player.ExplicitChoice = map[gamedata.ResearchTopic]bool{}
+	out := engine.EmpireOutput{Colonies: make([]engine.ColonyOutput, len(a.Colonies))}
+	out.Colonies[0].NetIndustry = 10
+	return s, out
+}
+
+func TestAICombatShipProductUsesPersistentBlueprintSlot(t *testing.T) {
+	s, out := prepareAICombatShipProductTest(t)
+	a := &s.AIPlayers[0]
+	s.advanceAIColonyBuilds(0, out)
+	key := aiColonyBuildKey(a, 0)
+	build := a.ColonyBuilds[key]
+	if build.ProductKind != ColonyProductAICombatShip || build.ProductShip == nil || build.Cost <= 0 {
+		t.Fatalf("case 0 應建立 typed combat ship slot：%+v", build)
+	}
+	wantClass, wantCost := build.ProductShip.Class, build.Cost
+	s = s.snapshot().restore()
+	a = &s.AIPlayers[0]
+	build = a.ColonyBuilds[key]
+	if build.ProductShip == nil || build.ProductShip.Class != wantClass || build.Cost != wantCost || build.Progress != 10 {
+		t.Fatalf("戰鬥艦產品 snapshot 失真：%+v", build)
+	}
+	for len(a.Ships) == 0 {
+		s.advanceAIColonyBuilds(0, out)
+	}
+	ship := a.Ships[0]
+	if !ship.RawTypeKnown || ship.RawType != gamedata.COMBAT_SHIP || ship.Class != wantClass ||
+		ship.ProductionCost != wantCost || a.FleetStrength <= 0 {
+		t.Fatalf("完工實艦或戰力 consumer 錯誤：ship=%+v strength=%d", ship, a.FleetStrength)
+	}
+}
+
+func TestAICombatShipProductSnapshotsDesignAgainstLaterTechUpdates(t *testing.T) {
+	s, out := prepareAICombatShipProductTest(t)
+	a := &s.AIPlayers[0]
+	s.advanceAIColonyBuilds(0, out)
+	key := aiColonyBuildKey(a, 0)
+	before := *a.ColonyBuilds[key].ProductShip
+	a.ShipDesigns[0].Weapon = (a.ShipDesigns[0].Weapon + 1) % len(BuildWeaponOptions(s.RuleProfile))
+	a.ShipDesigns[0].Mods = append(a.ShipDesigns[0].Mods, "後續科技改裝")
+	after := a.ColonyBuilds[key].ProductShip
+	if after == nil || after.Weapon != before.Weapon || len(after.Mods) != len(before.Mods) {
+		t.Fatalf("生產中 ship slot 不得被設計庫更新改寫：before=%+v after=%+v", before, after)
+	}
+}
+
+func TestAICombatShipProductMigratesLegacyEmpireProgressOnce(t *testing.T) {
+	s, out := prepareAICombatShipProductTest(t)
+	a := &s.AIPlayers[0]
+	a.ShipBuildProgress = 37
+	s.advanceAIColonyBuilds(0, out)
+	build := a.ColonyBuilds[aiColonyBuildKey(a, 0)]
+	if build.ProductKind != ColonyProductAICombatShip || build.Progress != 47 || a.ShipBuildProgress != 0 {
+		t.Fatalf("舊全帝國進度應只遷移到第一個 typed slot：build=%+v legacy=%d", build, a.ShipBuildProgress)
+	}
+}
+
+func TestAICombatShipProductBalancesPersistentRolesDeterministically(t *testing.T) {
+	s, _ := prepareAICombatShipProductTest(t)
+	a := &s.AIPlayers[0]
+	design, _, ok := s.chooseAICombatShipProduct(0)
+	if !ok || design.Class != a.ShipDesigns[0].Class {
+		t.Fatalf("空艦隊平手應穩定選 role 0：%+v", design)
+	}
+	a.Ships = append(a.Ships, Ship{Class: a.ShipDesigns[0].Class, RawType: gamedata.COMBAT_SHIP, RawTypeKnown: true})
+	design, _, ok = s.chooseAICombatShipProduct(0)
+	if !ok || design.Class != a.ShipDesigns[1].Class {
+		t.Fatalf("role 0 已有一艘時應補 role 1：%+v", design)
+	}
+}
+
 func TestOriginalAIFixedZeroBuildingScores(t *testing.T) {
 	for _, name := range []string{"異族管理中心", "次元傳送門"} {
 		b, ok := gamedata.BuildingByNameZH(name)
@@ -2066,7 +2156,7 @@ func TestAIColonyBuildSurvivesSaveLoad(t *testing.T) {
 	}
 }
 
-func TestAIColonyWithoutBuildableBuildingFeedsShipProduction(t *testing.T) {
+func TestAIColonyWithoutBuildableBuildingStartsTypedCombatShipProduct(t *testing.T) {
 	s := NewDemoSession()
 	a := &s.AIPlayers[0]
 	a.Colonies = []engine.ColonyState{{Population: 4, PopMax: 10}}
@@ -2074,7 +2164,11 @@ func TestAIColonyWithoutBuildableBuildingFeedsShipProduction(t *testing.T) {
 	a.ColonyBuildings = []map[string]bool{{}}
 	a.Player.CompletedTopics = nil
 	out := engine.EmpireOutput{Colonies: []engine.ColonyOutput{{NetIndustry: 17}}}
-	if got := s.advanceAIColonyBuilds(0, out); got != 17 {
-		t.Fatalf("無可建建築時造艦產能=%d，want 17", got)
+	if got := s.advanceAIColonyBuilds(0, out); got != 0 {
+		t.Fatalf("正常 typed 藍圖存在時不得回傳全帝國造艦產能：%d", got)
+	}
+	build := a.ColonyBuilds[3]
+	if build.ProductKind != ColonyProductAICombatShip || build.ProductShip == nil || build.Progress != 17 {
+		t.Fatalf("無可建建築時應建立逐殖民地戰鬥艦產品：%+v", build)
 	}
 }

@@ -124,6 +124,14 @@
   資料模型近似；Outpost／Transport 因沒有 AI 前哨站／逐艦地面運輸 consumer 未假裝完成，
   `0xD10EE` 維持 `READY／PARTIAL`。
 
+- [x] **AI 戰鬥艦逐殖民地 ship-slot 五輪（2026-08-31）**：case 0 已由 typed
+  `ColonyProductAICombatShip` 保存 role 0..4 持久藍圖的深層快照、造價與逐殖民地進度；科技更新
+  不會改寫生產中的配置。完工建立真正 `RawType=COMBAT_SHIP` 實艦並同步艦隊戰力與指揮點，
+  既有快速／格子戰術直接消費同一份 typed Ship。舊存檔的全帝國 `ShipBuildProgress` 只遷移一次，
+  正常 AI 回合不再使用全帝國造艦池。因原版多藍圖生產評分仍未知，現行「補最少 hull role、
+  平手取低 hull」明示為可重播近似；case 2 改裝、軌道基地與多艦隊分派仍使 `0xD10EE` 保持
+  `READY／PARTIAL`。
+
 - [x] **原版回合主鏈拓樸閉合（RE-only，2026-08-28）**：IDA Pro 9.4 重新匯出
   `Next_Turn_Calc_ @ 0x136B3..0x13822`，證實是 52 個直接 call；固定順序、
   兩次 `Do_Colony_Calculations_`、安塔蘭／議會／UI 三類條件 gate、逐玩家領袖招募迴圈，以及
