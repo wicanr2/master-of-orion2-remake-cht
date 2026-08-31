@@ -2518,15 +2518,21 @@ func newTacticalScreenForShips(b *sceneBuilder, p, e []shell.CombatShip, monster
 			}
 			break
 		}
-		// 同狀態原版 oracle：守方艦在右上縱列，攻擊怪物位於中間。
+		// 同狀態原版 oracle：兩艘守方 Frigate 在右上縱列，選中的 Star Base 位於中間。
+		fleetRow := 0
 		for i := range t.player {
-			t.player[i].ScreenX, t.player[i].ScreenY = 412, 133+i*41
+			if t.player[i].OrbitalBase {
+				t.player[i].ScreenX, t.player[i].ScreenY = 340, 201
+				t.player[i].ScreenPositionKnown = true
+				t.sel = i
+				continue
+			}
+			t.player[i].ScreenX, t.player[i].ScreenY = 412, 133+fleetRow*41
 			t.player[i].ScreenPositionKnown = true
+			fleetRow++
 		}
-		for i := range t.enemy {
-			t.enemy[i].ScreenX, t.enemy[i].ScreenY = 340-i*35, 201+i*35
-			t.enemy[i].ScreenPositionKnown = true
-		}
+		// 首幀可見的中心艦是 Star Base，不是 Amoeba；怪物的原版首幀座標尚未證實，
+		// 因此保持規則格位 fallback，不再把它猜放到 (340,201) 與基地重疊。
 	}
 	t.launchEnemySquadrons()
 	if b.session.EffectiveGameSettings().ShipInitiative {
@@ -3787,11 +3793,11 @@ func (t *tacticalScreen) draw(dst *ebiten.Image) {
 		op.GeoM.Translate(float64(t.planetX), float64(t.planetY))
 		drawPanelImage(dst, t.planet, op)
 	}
-	for _, s := range t.player {
-		t.drawShip(dst, s, color.RGBA{90, 220, 170, 255}, false, false)
+	for i, s := range t.player {
+		t.drawShip(dst, s, color.RGBA{90, 220, 170, 255}, i == t.sel, false)
 	}
-	for i, s := range t.enemy {
-		t.drawShip(dst, s, color.RGBA{235, 110, 100, 255}, i == t.target, true)
+	for _, s := range t.enemy {
+		t.drawShip(dst, s, color.RGBA{235, 110, 100, 255}, false, true)
 	}
 	t.drawCombatFX(dst)
 	t.drawSquadrons(dst) // 戰機畫在艦艇之上(它們是繞著目標飛的)
@@ -3858,6 +3864,8 @@ const (
 	tacticalShipInfoX    = 8
 	tacticalShipInfoY    = 358
 	tacticalShipInfoW    = 96
+	tacticalPortraitX    = 27
+	tacticalPortraitY    = 379
 	tacticalSystemsX     = 400
 	tacticalSystemsY     = 365
 	tacticalSystemsW     = 96
@@ -4000,6 +4008,11 @@ func (t *tacticalScreen) drawTacticalSelectedShipPanel(dst *ebiten.Image) {
 		return
 	}
 	ship := t.player[t.sel]
+	if sprite := t.shipSprite(ship.SpriteIdx, ship.Facing, 0, false); sprite != nil {
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(tacticalPortraitX, tacticalPortraitY)
+		drawPanelImage(dst, sprite, op)
+	}
 	t.fnt.Draw(dst, truncateToWidth(t.fnt, ship.Name, 9, float64(tacticalShipInfoW-8)),
 		float64(tacticalShipInfoX+4), float64(tacticalShipInfoY+1), 9,
 		color.RGBA{160, 190, 235, 255})
@@ -7212,7 +7225,7 @@ func (a *interactiveApp) Layout(int, int) (int, int) { return canvasSize() }
 // runInteractive 啟動「還原原版」的互動遊戲。script/shot 非空時為 headless 驗證;
 // galleryDir 非空時為「端到端過場截圖廊」模式(見 buildGalleryScript),優先於 script/shot。
 func runInteractive(versionAssets versionAssetDirs, initial gamedata.GameVersion, lang i18n.Lang, fnt, fntVec *uifont.Font,
-	script []shell.InputState, shot string, frames int, galleryDir string, noAudio, promoDemo, promoHideCursor bool) error {
+	script []shell.InputState, shot string, frames int, galleryDir, tacticalOracleSave, tacticalOracleMonster string, noAudio, promoDemo, promoHideCursor bool) error {
 
 	if lang == i18n.Traditional && fnt == nil {
 		return fmt.Errorf("中文模式需以 -font 指定 CJK 字型")
@@ -7228,6 +7241,16 @@ func runInteractive(versionAssets versionAssetDirs, initial gamedata.GameVersion
 	b := &sceneBuilder{res: res, versionAssets: versionAssets, fnt: fnt, fntVec: fntVec, lang: lang, session: shell.NewDemoSession(), newGameSize: 1, newGameDiff: newGameDiffDefault,
 		newGameAge: newGameAgeDefault, newGameTech: newGameTechDefault, newGameEmpires: 1 + shell.DefaultOpponents, designWeapon: 1, designAmmo: 5, savePath: savePathFor(), gameVersion: initial,
 		planetPick: -1} // −1 = 行星列表還沒選任何一列(0 是行星 0 的索引,不能當「沒選」)
+	if tacticalOracleSave != "" {
+		if !strings.EqualFold(strings.TrimSpace(tacticalOracleMonster), "amoeba") {
+			return fmt.Errorf("尚未支援的戰術 oracle 怪物 %q", tacticalOracleMonster)
+		}
+		imported, _, err := shell.LoadGAMSession(tacticalOracleSave)
+		if err != nil {
+			return fmt.Errorf("載入戰術 oracle GAM: %w", err)
+		}
+		b.session = imported
+	}
 	b.skipCutscenes = shot != "" || galleryDir != "" || promoDemo // 見該欄位註解
 	// 傭兵候選池改用原版 HERODATA.LBX 真英雄(解析失敗自動退回內建策展名單,不擋遊戲);快取一份
 	// 供新局/讀檔後重新注入(SetupNewGame 保留注入池,LoadSession 建新 session 需重注)。
@@ -7261,6 +7284,44 @@ func runInteractive(versionAssets versionAssetDirs, initial gamedata.GameVersion
 	// 正常互動模式先播片頭(原版 Smack 過場,見 cmd/moo2/cutscene.go);headless 驗證
 	// 與截圖廊直接進主選單——那些腳本是從主選單第一拍開始數 tick 的,插一段影片會整串偏掉。
 	start := origScreen(menu)
+	if tacticalOracleSave != "" {
+		star := -1
+		for _, monster := range b.session.Monsters {
+			if monster.StarIndex == b.session.Fleet().AtStar {
+				star = monster.StarIndex
+				break
+			}
+		}
+		// `.GAM` importer 尚未把 owner=10 的怪物艦轉成 MonsterGuard；診斷入口只依呼叫端
+		// 明示的怪物種類補回該 side。艦隊則從 importer 的真實玩家艦艇中挑出戰鬥艦最多者，
+		// 不以固定 fleet index 猜測。
+		if star < 0 {
+			bestFleet, bestCount := -1, 0
+			for i := range b.session.Fleets {
+				b.session.SelectedFleet = i
+				ships, _ := b.session.StartCombat("\x00oracle-probe")
+				if len(ships) > bestCount {
+					bestFleet, bestCount = i, len(ships)
+				}
+			}
+			if bestFleet >= 0 {
+				b.session.SelectedFleet = bestFleet
+				star = b.session.Fleet().AtStar
+				stats, _ := gamedata.MonsterStatsFor(gamedata.MonsterAmoeba)
+				b.session.Monsters = append(b.session.Monsters, shell.MonsterGuard{
+					StarIndex: star, Kind: gamedata.MonsterAmoeba, Structure: stats.Structure, Armor: stats.Armor,
+				})
+			}
+		}
+		if star < 0 {
+			return fmt.Errorf("戰術 oracle GAM 沒有與玩家艦隊同星的怪物")
+		}
+		player, enemy, reason := b.session.StartMonsterCombat(star)
+		if reason != "" {
+			return fmt.Errorf("戰術 oracle 怪物戰無法建立: %s", reason)
+		}
+		start = newTacticalScreenForShips(b, player, enemy, star)
+	}
 	if !b.skipCutscenes {
 		if sc := b.intro(); sc != nil {
 			start = sc

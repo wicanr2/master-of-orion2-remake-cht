@@ -37,6 +37,43 @@ func TestStartMonsterCombatUsesExactBlueprint(t *testing.T) {
 	}
 }
 
+func TestStartMonsterCombatExcludesSupportShips(t *testing.T) {
+	s, star := monsterTacticalSession(t, gamedata.MonsterAmoeba)
+	s.Fleet().Ships = append(s.Fleet().Ships, Ship{Name: "非戰鬥殖民船", Class: "殖民船"})
+	player, _, reason := s.StartMonsterCombat(star)
+	if reason != "" {
+		t.Fatal(reason)
+	}
+	for _, ship := range player {
+		if ship.Name == "非戰鬥殖民船" {
+			t.Fatal("支援艦不得被投影成格子戰術戰鬥者")
+		}
+	}
+}
+
+func TestStartMonsterCombatIncludesConfirmedColonyStarBase(t *testing.T) {
+	s, star := monsterTacticalSession(t, gamedata.MonsterAmoeba)
+	s.PlayerColonyStars = []int{star}
+	s.ColonyBuildings = []map[string]bool{{"星基": true}}
+	player, _, reason := s.StartMonsterCombat(star)
+	if reason != "" {
+		t.Fatal(reason)
+	}
+	base := player[len(player)-1]
+	if !base.OrbitalBase || base.SpriteIdx%45 != 40 || base.HP != 80 || base.ArmorHP != 80 || len(base.WeaponMounts) != 4 {
+		t.Fatalf("Star Base 首幀契約錯誤：%+v", base)
+	}
+	counts := []int{3, 3, 6, 3}
+	for i, count := range counts {
+		if base.WeaponMounts[i].WorkingCount != count {
+			t.Fatalf("Star Base 槽 %d 數量=%d，want %d", i, base.WeaponMounts[i].WorkingCount, count)
+		}
+	}
+	if base.WeaponMounts[3].Ammo != 20 {
+		t.Fatalf("Star Base 核飛彈 ammo=%d，want 20", base.WeaponMounts[3].Ammo)
+	}
+}
+
 func containsString(values []string, want string) bool {
 	for _, value := range values {
 		if value == want {

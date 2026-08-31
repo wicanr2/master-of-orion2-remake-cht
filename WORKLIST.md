@@ -157,7 +157,8 @@
   新局且仍要求命名母星，不是戰鬥前 fixture；舊「可直接取戰鬥幀」假設已訂正。現已用
   `tools/gamfixture` 建立僅五個 byte 差異的 Amoeba／Trilar III tactical fixture，並由原版正常
   `CONTINUE → TURN → battle search → sub_47939` 取得 640×480 首幀。remake 已接入精確
-  `CMBTPLNT#32/#35` 行星、`COMBAT#32..34` 五幀敵方目標環及該怪物戰首幀自由座標。仍待 Star Base、
+  `CMBTPLNT#32/#35` 行星、`COMBAT#32..34` 五幀我方選艦環及守方首幀自由座標；放大裁切已勘誤
+  `(340,201)` 是 Star Base 而非 Amoeba。Star Base 的已證實早期 loadout 已接入，仍待 Amoeba 座標、
   控制甲板逐值／縮圖、自由座標移動與同艦艇設計 fixture，完成前不宣稱逐像素對齊。
 
 - [x] **原版回合主鏈拓樸閉合（RE-only，2026-08-28）**：IDA Pro 9.4 重新匯出

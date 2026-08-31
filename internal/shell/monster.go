@@ -65,6 +65,9 @@ func (s *GameSession) StartMonsterCombat(starIdx int) (player, monsters []Combat
 	if len(player) == 0 {
 		return nil, nil, MonsterCombatNoCombatShip
 	}
+	if base, ok := s.monsterBattleStarBase(starIdx); ok {
+		player = append(player, base)
+	}
 	count := monsterGroupCount(m)
 	structure, armor := m.Structure, m.Armor
 	for i := 0; i < count && structure > 0; i++ {
@@ -95,6 +98,42 @@ func (s *GameSession) StartMonsterCombat(starIdx int) (player, monsters []Combat
 		monsters = append(monsters, ship)
 	}
 	return player, monsters, ""
+}
+
+// monsterBattleStarBase 補入原版殖民地怪物戰首幀可見的軌道基地。這一版只接已由
+// SAVE10.GAM 正常玩家路徑首幀證實的早期 Star Base；Battlestation／Star Fortress 的
+// 動態 loadout 尚未取得同等證據，不在這裡猜值。
+func (s *GameSession) monsterBattleStarBase(starIdx int) (CombatShip, bool) {
+	colony := -1
+	for i, star := range s.PlayerColonyStars {
+		if star == starIdx {
+			colony = i
+			break
+		}
+	}
+	if colony < 0 || colony >= len(s.ColonyBuildings) || !s.ColonyBuildings[colony]["星基"] {
+		return CombatShip{}, false
+	}
+	sprite, _ := CMBTSHPSpriteIndex(normalizeCMBTSHPColor(s.FlagColor, 0), 40)
+	laser := gamedata.OrigWeaponTable[3]
+	missile := gamedata.OrigWeaponTable[14]
+	mounts := []ShipWeaponMount{
+		{RawType: 3, Name: "雷射", MaxCount: 3, WorkingCount: 3, Arc: gamedata.ARC_MONSTER_360,
+			Mods: []string{string(gamedata.ModHeavyMount)}, Ammo: laser.Ammo, Attack: laser.DamageMax * 2},
+		{RawType: 3, Name: "雷射", MaxCount: 3, WorkingCount: 3, Arc: gamedata.ARC_MONSTER_360,
+			Ammo: laser.Ammo, Attack: laser.DamageMax},
+		{RawType: 3, Name: "雷射", MaxCount: 6, WorkingCount: 6, Arc: gamedata.ARC_MONSTER_360,
+			Mods: []string{string(gamedata.ModPointDefense)}, Ammo: laser.Ammo, Attack: laser.DamageMax / 2},
+		{RawType: 14, Name: "核飛彈", MaxCount: 3, WorkingCount: 3, Arc: gamedata.ARC_MONSTER_360,
+			Ammo: 20, Attack: missile.DamageMax},
+	}
+	base := CombatShip{Name: "Star Base", HP: 80, MaxHP: 80, ArmorHP: 80, Attack: 5,
+		WeaponMin: laser.DamageMin, WeaponMax: laser.DamageMax, WeaponName: "雷射", Kind: WeaponKindBeam,
+		WeaponArc: gamedata.ARC_MONSTER_360, WeaponMounts: mounts, WeaponModes: NewTacticalWeaponModes(mounts),
+		WeaponAmmo: laser.Ammo, SizeClass: gamedata.SHIP_BATTLESHIP, SpriteIdx: sprite,
+		Facing: 0, Charged: true, OrbitalBase: true}
+	base.ensureShieldFacings()
+	return base, true
 }
 
 // ApplyMonsterTacticalOutcome 將格子戰術倖存者回寫玩家艦隊與怪物聚合雙血池。

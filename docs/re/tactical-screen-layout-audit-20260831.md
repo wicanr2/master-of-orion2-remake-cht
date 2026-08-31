@@ -82,10 +82,19 @@ PNG 雜湊、DOSBox-X 版本、裁切契約及輸入檔雜湊，避免日後把�
 - 戰場／控制甲板仍是 `(0,0,640,351)`／`(0,351,640,129)`。
 - Trilar III 行星矩形 `(109,168,108,108)`；真存檔 planet 66 為 `Climate=5、Size=2`，精確對應
   `CMBTPLNT.LBX#32` 與同 block 調色盤 holder `#35`。
-- 兩艘 Trilarian Frigate 中心約為 `(412,133)`、`(412,174)`；Amoeba 中心約 `(340,201)`。
+- 兩艘 Trilarian Frigate 中心約為 `(412,133)`、`(412,174)`；Star Base 中心約 `(340,201)`。
   這直接證明原版 renderer 使用自由座標，而不是 remake 舊 8×6 格心。
-- Amoeba 的藍色五幀敵方目標環來自 `COMBAT.LBX#34`（77×77）；較小兩級環為 `#32/#33`。控制甲板同時顯示 Star Base，證明此環不是我方選艦標記。
+- Star Base 的藍色五幀我方選艦環來自 `COMBAT.LBX#34`（77×77）；較小兩級環為 `#32/#33`。
+  2026-08-31 早期判讀曾把中心艦誤認成 Amoeba；後續將中心與控制甲板 portrait 放大裁切，兩者
+  是同一個 Star Base sprite，足以推翻舊「敵方目標環」解釋。Amoeba 的首幀座標仍未知。
 
-remake 已接入上述 CMBTPLNT 映射、三組原版敵方目標環與怪物戰首幀自由座標。規則層仍保留 8×6
-adapter；第一次格子移動後 renderer 會明確回退格心，未冒稱自由座標移動規則已完成。Star Base、
+remake 已接入上述 CMBTPLNT 映射、三組原版我方選艦環與怪物戰已證實的守方自由座標。規則層仍保留 8×6
+adapter；第一次格子移動後 renderer 會明確回退格心，未冒稱自由座標移動規則已完成。Amoeba 座標、
 下方面板逐字／逐值、縮圖內容與同艦艇設計仍待後續同狀態 fixture 對齊。
+
+remake 同狀態診斷由 `-game -tactical-oracle-save <fixture.GAM> -tactical-oracle-monster amoeba
+-shot <out.png> -uiscale 1` 觸發；它走正式 `.GAM` importer、`StartMonsterCombat` 與 renderer，但
+直接進戰術畫面，所以只算 renderer 診斷，不取代上面的原版正常玩家路徑。2026-08-31 第二張輸出
+SHA-256 為 `284b8520b34431bd1dfc4a0ea7e6c8518d16ade4a7b629767241c7693b5913a5`（僅存 `/tmp`，不入版控）。
+該圖證實行星、兩艘 Frigate、Star Base 中心、選艦環與控制甲板 portrait 已對位；剩餘可見差異是
+Frigate／Star Base 調色偏暗、Amoeba sprite／首幀位置，以及控制甲板字型／逐值排列。

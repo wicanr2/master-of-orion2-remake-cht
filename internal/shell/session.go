@@ -1817,6 +1817,7 @@ type CombatShip struct {
 	// 清除 ScreenPositionKnown，直到自由座標移動規則完成。
 	ScreenX, ScreenY    int
 	ScreenPositionKnown bool
+	OrbitalBase         bool // 殖民地軌道基地；不是戰略 Fleet.Ships 成員。
 	// Facing 是原版 combat record +0x23 的 16 向 heading。0=右、4=上、
 	// 8=左、12=下；移動時由 tactical UI 依移動向量更新。
 	Facing int
@@ -2092,7 +2093,12 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 	security := fleetOfficerSkillMax(s.Leaders, s.Fleet().Ships, gamedata.SKILL_SECURITY)
 	marineStrength := s.playerMarineForce()
 	marineHits := gamedata.GroundMarineHitsToKill(s.raceHasTrait(gamedata.TRAIT_HIGH_G), s.hasPoweredArmor())
-	for i, sh := range s.Fleet().Ships {
+	for _, sh := range s.Fleet().Ships {
+		// 原版同狀態怪物戰只有兩艘 Frigate；同星的 Colony Ship 不進戰術戰場。
+		// 支援艦仍保留在戰略艦隊，僅由 StartCombat 的戰鬥者投影排除。
+		if isSupportShipClass(sh.Class) {
+			continue
+		}
 		body := shipStrength(sh.Class)
 		// 原版 GameState::shipBeamOffense 讀的是這艘船自己的 sptr->officer,
 		// 不是帝國內任一位艦艇軍官。Weaponry 是逐艦命中加成。
@@ -2108,7 +2114,7 @@ func (s *GameSession) StartCombat(enemy string) (player, enemyShips []CombatShip
 			bayKind = bays[0]
 		}
 		player = append(player, CombatShip{
-			Name: sh.Name, HP: hullHP, MaxHP: hullHP, Attack: atk, Col: 1, Row: i, Facing: 0,
+			Name: sh.Name, HP: hullHP, MaxHP: hullHP, Attack: atk, Col: 1, Row: len(player), Facing: 0,
 			Defense: body + shipBeamDefenseBonus(sh) +
 				s.shipOfficerSkillBonus(sh, gamedata.SKILL_HELMSMAN), WeaponMin: atk / 2, WeaponMax: atk + ordnanceBonus,
 			ShieldReduction: s.nebulaShield(shieldReduceByName(sh.Shield), shipHasHardShield(sh)) *

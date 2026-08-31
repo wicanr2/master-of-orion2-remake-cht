@@ -199,6 +199,8 @@ func main() {
 	raceMode := flag.Bool("race-viewer", false, "種族統計畫面模式")
 	gameMode := flag.Bool("game", false, "還原原版互動遊戲(原版主選單→導覽各原版畫面,全繁中;有 -shot 則腳本驗證)")
 	gameGallery := flag.String("gamegallery", "", "headless 導覽腳本:依序點擊主選單→新遊戲→星系主畫面→殖民地/研究/外交/戰鬥,各到達畫面存一張圖到此目錄(需 -game;優先於 -shot)")
+	tacticalOracleSave := flag.String("tactical-oracle-save", "", "戰術 renderer 對拍診斷：從原版 .GAM 匯入怪物戰並以 -shot 截圖（需 -game，不取代正常玩家路徑驗證）")
+	tacticalOracleMonster := flag.String("tactical-oracle-monster", "amoeba", "-tactical-oracle-save 的已知怪物 side（目前支援 amoeba）")
 	noAudio := flag.Bool("noaudio", false, "停用音訊裝置初始化(供 Docker/Xvfb 錄製等無音效輸出環境使用)")
 	promoDemo := flag.Bool("promo-demo", false, "播放可重播的實機推廣導覽(需 -game；不產生截圖、不中斷互動遊戲流程)")
 	promoHideCursor := flag.Bool("promo-hide-cursor", false, "推廣導覽錄製時隱藏導覽準星，避免遮住 UI 文字或按鈕(需 -promo-demo)")
@@ -347,6 +349,9 @@ func main() {
 		if *promoDemo && *gameGallery != "" {
 			fatal(fmt.Errorf("-promo-demo 與 -gamegallery 不可同時使用"))
 		}
+		if *tacticalOracleSave != "" && (*shot == "" || *gameGallery != "" || *promoDemo) {
+			fatal(fmt.Errorf("-tactical-oracle-save 需搭配 -shot，且不可與 -gamegallery 或 -promo-demo 並用"))
+		}
 		if *promoHideCursor && !*promoDemo {
 			fatal(fmt.Errorf("-promo-hide-cursor 需搭配 -promo-demo"))
 		}
@@ -359,7 +364,7 @@ func main() {
 				{MouseX: 486, MouseY: 405, ClickReleased: true},
 			}
 		}
-		if err := runInteractive(versionAssets, initialVersion, langID, fnt, fntVec, script, *shot, *frames, *gameGallery, *noAudio, *promoDemo, *promoHideCursor); err != nil {
+		if err := runInteractive(versionAssets, initialVersion, langID, fnt, fntVec, script, *shot, *frames, *gameGallery, *tacticalOracleSave, *tacticalOracleMonster, *noAudio, *promoDemo, *promoHideCursor); err != nil {
 			fatal(err)
 		}
 		return

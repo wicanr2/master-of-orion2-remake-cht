@@ -44,7 +44,8 @@ func TestQuickCombatTracksMissileAmmoPerMount(t *testing.T) {
 
 func TestStartCombatPreservesPlayerWeaponMounts(t *testing.T) {
 	s := NewDemoSession()
-	s.Fleet().Ships[0].WeaponMounts = []ShipWeaponMount{
+	// Ships[0] 是不進戰術戰場的殖民船；逐槽護欄必須放在第一艘真正戰鬥艦。
+	s.Fleet().Ships[1].WeaponMounts = []ShipWeaponMount{
 		{Name: "雷射", MaxCount: 2, WorkingCount: 2, Attack: 5, Arc: gamedata.ARC_FWD, Ammo: 255},
 		{Name: "核飛彈", MaxCount: 1, WorkingCount: 1, Attack: 8, Arc: gamedata.ARC_360, Ammo: 5},
 	}
@@ -52,7 +53,7 @@ func TestStartCombatPreservesPlayerWeaponMounts(t *testing.T) {
 	if len(player) == 0 || len(player[0].WeaponMounts) != 2 || player[0].WeaponMounts[1].Name != "核飛彈" {
 		t.Fatalf("StartCombat 應保存玩家逐槽武器：%+v", player)
 	}
-	s.Fleet().Ships[0].WeaponMounts[1].Name = "已修改"
+	s.Fleet().Ships[1].WeaponMounts[1].Name = "已修改"
 	if player[0].WeaponMounts[1].Name != "核飛彈" {
 		t.Fatal("CombatShip 的逐槽資料必須與持久 Ship 深複製隔離")
 	}

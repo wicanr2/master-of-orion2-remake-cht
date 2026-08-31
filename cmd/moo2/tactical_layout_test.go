@@ -19,6 +19,10 @@ func TestTacticalOriginalSkeletonRegionsStayInsideCanvas(t *testing.T) {
 		tacticalShipInfoX+tacticalShipInfoW > moo2ScreenW || tacticalSystemsX+tacticalSystemsW > moo2ScreenW {
 		t.Fatal("選艦／Systems 資訊必須完全位於原版控制甲板")
 	}
+	if tacticalPortraitX < tacticalShipInfoX || tacticalPortraitX+59 > tacticalShipInfoX+tacticalShipInfoW ||
+		tacticalPortraitY < combatControlDeckY || tacticalPortraitY+60 > moo2ScreenH {
+		t.Fatal("59×60 CMBTSHP portrait 必須留在原版左側選艦框")
+	}
 }
 
 func TestCombatPlanetAssetMappingMatchesTrilarOracle(t *testing.T) {
