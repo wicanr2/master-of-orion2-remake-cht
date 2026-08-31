@@ -1,7 +1,8 @@
 # 格子戰術戰鬥畫面:原版資產清單與重建規格
 
-> 日期:2026-07-10。狀態:**資產結構已 dump 驗證**;調色盤來源為假設待實作時渲染核對。
-> 目的:把現行自繪 tacticalScreen(星空底+格線+token)換成原版 COMBAT/STARBG/CMBTSHP 美術。
+> 日期:2026-07-10；2026-08-31 更新。狀態：資產結構、調色盤與原版固定骨架已驗證。
+> 現行 renderer 已移除可見格線、逐艦卡與頂部自製訊息層；最新 layout-only 契約見
+> `docs/spec/tactical-screen-layout.md`，本文件其餘 Phase 紀錄只用來追溯資產接線歷程。
 > 方法:`cmd/lbxinfo` dump 結構;openorion2 **無 combat 渲染器**(只渲染 galaxy/主畫面),故 combat 調色盤無權威參考,需渲染實測。
 
 ## 一、資產清單(lbxinfo 實測)

@@ -91,12 +91,3 @@ func TestPromoDemoCompletionRequiresAppliedBattleResult(t *testing.T) {
 		t.Fatal("已寫回 LastBattle 應回報推廣導覽完成")
 	}
 }
-
-func TestTacticalMessageBandDoesNotOverlapTheGridOrControlDeck(t *testing.T) {
-	if tacticalMessageY+tacticalMessageH > gcY0 {
-		t.Fatalf("訊息帶底部 %d 跨入格線起點 %d", tacticalMessageY+tacticalMessageH, gcY0)
-	}
-	if tacticalMessageY+tacticalMessageH > combatControlDeckY {
-		t.Fatalf("訊息帶底部 %d 跨入控制列 %d", tacticalMessageY+tacticalMessageH, combatControlDeckY)
-	}
-}

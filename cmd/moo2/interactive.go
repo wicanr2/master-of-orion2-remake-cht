@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"math"
 	"math/rand"
 	"net"
 	"os"
@@ -2321,19 +2322,15 @@ func (b *sceneBuilder) diplomacyWithOriginalRequest(enemy string, aiIndex int) (
 	return d, nil
 }
 
-// --- 格子戰術戰鬥畫面(自繪 origScreen:星空底 + 格線 + 雙方艦艇 token + HP 條)---
+// --- 格子戰術戰鬥畫面（規則仍使用隱形格位；視覺骨架依原版自由太空戰場）---
 
 // 戰場格子:8 欄 × 6 列。
 const (
-	gcX0, gcY0     = 40, 70
+	gcX0, gcY0     = 8, 6
 	gcCols, gcRows = 8, 6
-	gcCW, gcCH     = 70, 55
+	gcCW, gcCH     = 78, 56
 	fireRange      = 4 // 曼哈頓射程
 
-	// 標題和格線之間原本有一條 26px 留白；戰術訊息固定放在這裡，不能再壓到
-	// y=351 開始的 COMBAT 控制列。這組座標是 remake 的安全訊息帶，非原版宣稱。
-	tacticalMessageX, tacticalMessageY = 58, 48
-	tacticalMessageW, tacticalMessageH = 524, 18
 )
 
 type tacticalScreen struct {
@@ -2671,7 +2668,7 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 		t.handleBarButton(i)
 		return nil
 	}
-	// 出擊鈕在格線右側(⚠ 不是原版版面,見 tacticalfighter.go launchRect 註解)。
+	// 出擊鈕是 SPECIALS 區內的 remake adapter（見 tacticalfighter.go launchRect）。
 	if lx, ly, lw, lh := launchRect(); t.canLaunchFrom(t.sel) && hitBox(in.MouseX, in.MouseY, lx, ly, lw, lh) {
 		if clickSound != nil {
 			clickSound()
@@ -3636,66 +3633,37 @@ func (t *tacticalScreen) finishRound(preCount, pAtk int, firedMissile, anyHit bo
 	return true
 }
 
-// drawShip 畫單艘艦:依 s.SpriteIdx 取該艦級的 CMBTSHP sprite 就縮放貼原版艦圖
-// (敵方水平翻轉朝左),否則 fallback 回原本的矩形 token 畫法。HP 條、艦名、選中金框
-// 一律疊在最上層,不受美術是否載入影響。
-//
-// 2026-07-11 修疊字 bug:原本圖示等比縮放頂滿整格高度,艦名疊在圖示正中央(y+13 恰好落在
-// 圖示範圍內),兩者互相蓋字難辨(端到端截圖查出)。改成上→下三段式版面:艦名帶(固定於格
-// 頂、半透明黑底墊字)→ 圖示(縮小置中,讓開文字帶與血條)→ HP 條(格底),彼此不重疊。
+// drawShip 只畫原版 CMBTSHP 艦艇。規則仍以 8×6 格位保存位置與射程，但格線、艦名卡、
+// 常駐 HP 條與矩形框都不是原版戰術畫面的骨架，不能洩漏到 renderer。選中艦只保留一圈
+// 低彩度環；艦名、武器與耐久移到 COMBAT 控制甲板的既有資訊區。
 func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base color.RGBA, selected bool, enemy bool) {
 	x, y, w, h := cellRect(s.Col, s.Row)
-	x, y, w, h = x+4, y+6, w-8, h-12
-	const labelH = 13 // 艦名帶高度(固定在格頂)
-	const hpH = 8     // 血條預留高度(固定在格底)
-	iconTop := y + labelH
-	iconH := h - labelH - hpH
-	if iconH < 4 {
-		iconH = 4
-	}
+	cx, cy := float64(x+w/2), float64(y+h/2)
 	elapsed, moving := t.shipMotionElapsed(s, enemy)
 	if sprite := t.shipSprite(s.SpriteIdx, s.Facing, elapsed, moving); sprite != nil {
 		sb := sprite.Bounds()
 		sw0, sh0 := float64(sb.Dx()), float64(sb.Dy())
-		sc := float64(iconH) / sh0 // 依縮小後的圖示高度等比縮放(不再頂滿整格)
+		sc := math.Min(1, math.Min(float64(w-4)/sw0, float64(h+6)/sh0))
 		iconW := sw0 * sc
-		iconX := float64(x) + (float64(w)-iconW)/2 // 水平置中於格內
+		iconH := sh0 * sc
+		iconX, iconY := cx-iconW/2, cy-iconH/2
 		op := &ebiten.DrawImageOptions{}
 		if enemy {
 			op.GeoM.Scale(-sc, sc)
-			op.GeoM.Translate(iconX+iconW, float64(iconTop))
+			op.GeoM.Translate(iconX+iconW, iconY)
 		} else {
 			op.GeoM.Scale(sc, sc)
-			op.GeoM.Translate(iconX, float64(iconTop))
+			op.GeoM.Translate(iconX, iconY)
 		}
 		drawPanelImage(dst, sprite, op)
 	} else {
-		fillPanel(dst, float32(x), float32(iconTop), float32(w), float32(iconH), color.RGBA{base.R / 3, base.G / 3, base.B / 3, 255}, false)
+		vector.DrawFilledCircle(dst, float32(cx), float32(cy), 9,
+			color.RGBA{base.R / 2, base.G / 2, base.B / 2, 255}, false)
 	}
-	sw := float32(1.5)
-	sc := base
 	if selected {
-		sw, sc = 3, color.RGBA{255, 240, 120, 255}
+		vector.StrokeCircle(dst, float32(cx), float32(cy), 29, 1,
+			color.RGBA{70, 150, 230, 210}, false)
 	}
-	vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), sw, sc, false)
-	// 艦名帶:半透明黑底 + 文字,固定在格頂、圖示上方,不與圖示重疊。
-	// 注意 uifont.Font.Draw 的 (x,y) 是文字「左上角」基準(非 baseline),故這裡從帶子頂端
-	// 往下留 1px 起畫,讓字身整個落在 labelH 高度內,不溢出到下方圖示區(先前 y+labelH-2
-	// 誤當 baseline 用,實際會把字往下推到圖示範圍,疊字 bug 未修好,端到端截圖二次查出)。
-	fillPanel(dst, float32(x), float32(y), float32(w), float32(labelH), color.RGBA{0, 0, 0, 150}, false)
-	if t.fnt != nil {
-		name := s.Name
-		if enemy {
-			name = combatShipLabel(t.b.lang, t.b.session, name)
-		}
-		t.fnt.Draw(dst, truncateToWidth(t.fnt, name, 10, float64(w-6)), float64(x)+3, float64(y)+1, 10, color.RGBA{235, 240, 250, 255})
-	}
-	frac := float32(s.HP) / float32(s.MaxHP)
-	if frac < 0 {
-		frac = 0
-	}
-	fillPanel(dst, float32(x)+5, float32(y)+float32(h)-8, float32(w-10), 4, color.RGBA{40, 40, 40, 255}, false)
-	fillPanel(dst, float32(x)+5, float32(y)+float32(h)-8, (float32(w-10))*frac, 4, base, false)
 }
 
 func (t *tacticalScreen) draw(dst *ebiten.Image) {
@@ -3705,20 +3673,6 @@ func (t *tacticalScreen) draw(dst *ebiten.Image) {
 	} else {
 		dst.Fill(color.RGBA{6, 6, 16, 255}) // fallback:原本深藍純色底
 	}
-	// 格線很淡地疊在星空上,保留移動格線功能但不搶戲。
-	grid := color.RGBA{60, 80, 120, 40}
-	for gx := 0; gx <= gcCols; gx++ {
-		x := float32(gcX0 + gx*gcCW)
-		vector.StrokeLine(dst, x, gcY0, x, float32(gcY0+gcRows*gcCH), 1, grid, false)
-	}
-	for gy := 0; gy <= gcRows; gy++ {
-		y := float32(gcY0 + gy*gcCH)
-		vector.StrokeLine(dst, gcX0, y, float32(gcX0+gcCols*gcCW), y, 1, grid, false)
-	}
-	gold := color.RGBA{240, 220, 120, 255}
-	if t.fnt != nil {
-		t.fnt.DrawCentered(dst, truncateToWidth(t.fnt, tacticalText(t.b.lang, "tactical.title"), 20, 600), 320, 34, 20, gold)
-	}
 	for i, s := range t.player {
 		t.drawShip(dst, s, color.RGBA{90, 220, 170, 255}, i == t.sel, false)
 	}
@@ -3727,29 +3681,8 @@ func (t *tacticalScreen) draw(dst *ebiten.Image) {
 	}
 	t.drawCombatFX(dst)
 	t.drawSquadrons(dst) // 戰機畫在艦艇之上(它們是繞著目標飛的)
-	t.drawTacticalMessage(dst)
-	t.drawLaunchButton(dst)
 	t.drawCombatControlDeck(dst)
-}
-
-// drawTacticalMessage 把戰鬥提示限制在標題與格線中間的安全帶。舊版把文字中心放在
-// y=343，14px 字身會跨進 y=351 的控制列，造成訊息與按鈕重疊；這裡以固定面板與
-// 實際欄寬截斷保證不會越過格線或控制列。
-func (t *tacticalScreen) drawTacticalMessage(dst *ebiten.Image) {
-	if t.fnt == nil {
-		return
-	}
-	message := t.log
-	if hint := t.modeHint(); hint != "" {
-		message = hint + " · " + message
-	}
-	fillPanel(dst, tacticalMessageX, tacticalMessageY, tacticalMessageW, tacticalMessageH,
-		color.RGBA{5, 10, 20, 205}, false)
-	vector.StrokeRect(dst, tacticalMessageX, tacticalMessageY, tacticalMessageW, tacticalMessageH, 1,
-		color.RGBA{86, 106, 148, 210}, false)
-	t.fnt.DrawCentered(dst, truncateToWidth(t.fnt, message, 12, tacticalMessageW-12),
-		tacticalMessageX+tacticalMessageW/2, tacticalMessageY+tacticalMessageH/2, 12,
-		color.RGBA{214, 220, 235, 255})
+	t.drawLaunchButton(dst)
 }
 
 // barButtonsCHT 是 COMBAT.LBX#0 控制列按鈕的螢幕中心座標、動作識別字與外部文案鍵。
@@ -3800,22 +3733,28 @@ func (t *tacticalScreen) drawCombatControlDeck(dst *ebiten.Image) {
 			barButtonPlateW, barButtonPlateH, pointInRect(t.hoverX, t.hoverY, b.cx-27, b.cy-9, 54, 18))
 	}
 	t.drawTacticalWeaponPanel(dst)
+	t.drawTacticalSelectedShipPanel(dst)
 }
 
 const (
-	tacticalWeaponPanelX   = 12
-	tacticalWeaponPanelY   = 360
-	tacticalWeaponSlotW    = 124
-	tacticalWeaponSlotH    = 23
-	tacticalWeaponSlotGapX = 4
+	tacticalWeaponPanelX = 112
+	tacticalWeaponPanelY = 373
+	tacticalWeaponSlotW  = 150
+	tacticalWeaponSlotH  = 10
+	tacticalShipInfoX    = 8
+	tacticalShipInfoY    = 358
+	tacticalShipInfoW    = 96
+	tacticalSystemsX     = 400
+	tacticalSystemsY     = 365
+	tacticalSystemsW     = 96
 )
 
 func tacticalWeaponSlotRect(i int) [4]int {
 	if i < 0 || i > 7 {
 		return [4]int{}
 	}
-	return [4]int{tacticalWeaponPanelX + (i/4)*(tacticalWeaponSlotW+tacticalWeaponSlotGapX),
-		tacticalWeaponPanelY + (i%4)*tacticalWeaponSlotH, tacticalWeaponSlotW, tacticalWeaponSlotH - 2}
+	return [4]int{tacticalWeaponPanelX, tacticalWeaponPanelY + i*tacticalWeaponSlotH,
+		tacticalWeaponSlotW, tacticalWeaponSlotH}
 }
 
 func (t *tacticalScreen) ensureWeaponModes() {
@@ -3924,17 +3863,51 @@ func (t *tacticalScreen) drawTacticalWeaponPanel(dst *ebiten.Image) {
 		} else if mode == shell.TacticalWeaponOff {
 			col, status = color.RGBA{225, 90, 85, 255}, tacticalText(t.b.lang, "tactical.weapon.mode.off")
 		}
-		fillPanel(dst, float32(r[0]), float32(r[1]), float32(r[2]), float32(r[3]), color.RGBA{8, 13, 24, 225}, false)
-		vector.StrokeRect(dst, float32(r[0]), float32(r[1]), float32(r[2]), float32(r[3]), 1, col, false)
 		label := fmt.Sprintf("%d %s ×%d", i+1, tacticalWeaponDisplayName(t.b, name), count)
 		if ammo != 255 && ammo >= 0 {
 			label += fmt.Sprintf(" [%d]", ammo)
 		}
-		t.fnt.Draw(dst, truncateToWidth(t.fnt, label, 9, float64(r[2]-6)), float64(r[0]+3), float64(r[1]+2), 9, col)
-		t.fnt.Draw(dst, status, float64(r[0]+3), float64(r[1]+11), 8, col)
-		drawHoverBorder(dst, float32(r[0]), float32(r[1]), float32(r[2]), float32(r[3]),
-			pointInRect(t.hoverX, t.hoverY, r[0], r[1], r[2], r[3]))
+		if mode != shell.TacticalWeaponReady {
+			label += " · " + status
+		}
+		t.fnt.Draw(dst, truncateToWidth(t.fnt, label, 8, float64(r[2]-4)),
+			float64(r[0]+2), float64(r[1]+1), 8, col)
+		if pointInRect(t.hoverX, t.hoverY, r[0], r[1], r[2], r[3]) {
+			drawHoverBorder(dst, float32(r[0]), float32(r[1]), float32(r[2]), float32(r[3]), true)
+		}
 	}
+}
+
+// drawTacticalSelectedShipPanel 使用 COMBAT.LBX#0 已有的左側艦名／縮圖與右側 Systems 區，
+// 不在戰場上另造卡片。區域來自 640×480 原版戰鬥參考圖，只是 layout-only 證據；文字內容
+// 取目前 typed CombatShip，可讀性完成但不冒稱原版逐字或逐值顯示順序。
+func (t *tacticalScreen) drawTacticalSelectedShipPanel(dst *ebiten.Image) {
+	if t.fnt == nil || t.sel < 0 || t.sel >= len(t.player) {
+		return
+	}
+	ship := t.player[t.sel]
+	t.fnt.Draw(dst, truncateToWidth(t.fnt, ship.Name, 9, float64(tacticalShipInfoW-8)),
+		float64(tacticalShipInfoX+4), float64(tacticalShipInfoY+1), 9,
+		color.RGBA{160, 190, 235, 255})
+	labels := []string{
+		fmt.Sprintf("HP %d/%d", ship.HP, ship.MaxHP),
+		fmt.Sprintf("ARM %d", ship.ArmorHP),
+		fmt.Sprintf("SHD %d", ship.ShieldReduction),
+		fmt.Sprintf("ATK %d", ship.Attack),
+		fmt.Sprintf("DEF %d", ship.Defense),
+		fmt.Sprintf("DRV %d", ship.DriveLevel),
+	}
+	for i, label := range labels {
+		t.fnt.Draw(dst, label, float64(tacticalSystemsX+5), float64(tacticalSystemsY+9+i*11), 8,
+			color.RGBA{135, 175, 220, 255})
+	}
+	message := t.log
+	if hint := t.modeHint(); hint != "" {
+		message = hint
+	}
+	t.fnt.Draw(dst, truncateToWidth(t.fnt, message, 7, float64(tacticalSystemsW-8)),
+		float64(tacticalSystemsX+5), float64(tacticalSystemsY+77), 7,
+		color.RGBA{190, 200, 220, 255})
 }
 
 // drawFallbackCombatBar 是 COMBAT.LBX 未提供時的可用控制列。按鈕座標、熱區與原版

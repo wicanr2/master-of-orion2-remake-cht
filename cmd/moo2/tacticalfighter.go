@@ -12,7 +12,7 @@ import (
 
 // tacticalfighter.go:格子戰場上的**戰機中隊**(規則面在 internal/shell/fighter.go)。
 //
-// remake 的戰術戰鬥先前只有艦艇 token;戰機只以「母艦戰力 +N」的形式存在於快速結算裡。
+// remake 的戰術戰鬥先前只有艦艇本體；戰機只以「母艦戰力 +N」的形式存在於快速結算裡。
 // 手冊給了戰機一整套與艦艇不同的規則(飛到目標身上打、打完返航、只有攔截機能纏鬥…),
 // 那些規則要能被看見,就得讓中隊在格子上有自己的位置。
 //
@@ -35,7 +35,9 @@ import (
 // 那幾顆鈕(AUTO/SCAN/BOARD/RETREAT/WAIT/DONE/OPTIONS)各有其原本的意思,
 // 不能拿其中一顆假裝是出擊。先擺在標題列右側的空白處(格線本身佔到 x=600,右邊放不下),
 // 原版指令列做出來之後要搬過去。
-func launchRect() (x, y, w, h int) { return 544, 18, 90, 26 }
+// launchRect 把 remake 的顯式出擊轉接放進 COMBAT 控制甲板的 SPECIALS 區，不再浮在
+// 原版太空戰場右上角。原版逐項 special 選單尚未同構；這個 62×14 熱區明示為可玩 adapter。
+func launchRect() (x, y, w, h int) { return 198, 458, 62, 14 }
 
 // canLaunchFrom 回傳選中的我方艦這一刻能不能派中隊出擊。
 //
@@ -424,7 +426,7 @@ func squadColor(k shell.FighterKind) color.RGBA {
 
 // drawSquadrons 畫場上的中隊:一隊一個小 token,標型別與剩餘架數。
 //
-// 畫在格子的**右下角**,不佔艦艇 token 的位置——一個格子裡可能同時有艦與中隊
+// 畫在隱形規則格位的**右下角**,不佔艦艇 sprite 的位置——同一位置可能同時有艦與中隊
 // (戰機是繞著目標飛的,本來就重疊)。
 func (t *tacticalScreen) drawSquadrons(dst *ebiten.Image) {
 	for _, f := range t.squads {
@@ -462,8 +464,8 @@ func (t *tacticalScreen) drawLaunchButton(dst *ebiten.Image) {
 	vector.StrokeRect(dst, float32(x), float32(y), float32(w), float32(h), 1,
 		color.RGBA{120, 220, 235, 255}, false)
 	drawHoverBorder(dst, float32(x), float32(y), float32(w), float32(h), pointInRect(t.hoverX, t.hoverY, x, y, w, h))
-	textSafeRect{x: x, y: y, w: w, h: h, insetX: 5, insetY: 3}.drawCentered(dst, t.fnt,
-		uiText(t.b.lang, "tactical.fighter.button.launch"), 12, color.RGBA{225, 245, 250, 255})
+	textSafeRect{x: x, y: y, w: w, h: h, insetX: 3, insetY: 1}.drawCentered(dst, t.fnt,
+		uiText(t.b.lang, "tactical.fighter.button.launch"), 9, color.RGBA{225, 245, 250, 255})
 }
 
 // squadronStatusLine 回傳控制列上方要顯示的中隊摘要(沒有中隊就回空字串)。

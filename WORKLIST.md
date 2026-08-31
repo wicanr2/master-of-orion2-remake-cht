@@ -140,6 +140,17 @@
   與無效 index。此切片閉合 `Compute_AI_Data_` 可表示 cache 的建立／消費／釋放邊界；整體移動、
   生產、外交與戰鬥仍各有明示近似，因此 `0xD3D34` 維持 `READY／PARTIAL`。
 
+- [x] **戰術戰鬥原版骨架第一輪對拍（2026-08-31，layout-only）**：以 640×480 原版公開截圖
+  （SHA-256 `77383b8a…f3354`）與 `COMBAT.LBX#0` 的 640×129 真實尺寸固定太空戰場
+  `(0,0,640,351)`／控制甲板 `(0,351,640,129)`。remake 已移除不屬原版骨架的大標題、訊息帶、
+  可見 8×6 格線、逐艦艦名卡與常駐 HP 框；規則格位改為隱形，CMBTSHP 艦艇恢復原生比例，
+  選艦、八槽武器、Systems 與戰機出擊 adapter 回到控制甲板既有區域。Docker＋Xvfb 重生
+  38/38 畫廊並更新 `16_tactical.png`；完整 `cmd/moo2` 與幾何／熱區測試通過。這只關閉固定骨架；
+  原版自由座標、同艦隊／heading／動畫 tick、選取效果與戰術縮圖仍需以 DOSBox 同狀態 640×480
+  幀對拍，未宣稱逐像素完成。證據與 READY 規格見
+  [`docs/re/tactical-screen-layout-audit-20260831.md`](docs/re/tactical-screen-layout-audit-20260831.md) 與
+  [`docs/spec/tactical-screen-layout.md`](docs/spec/tactical-screen-layout.md)。
+
 - [x] **原版回合主鏈拓樸閉合（RE-only，2026-08-28）**：IDA Pro 9.4 重新匯出
   `Next_Turn_Calc_ @ 0x136B3..0x13822`，證實是 52 個直接 call；固定順序、
   兩次 `Do_Colony_Calculations_`、安塔蘭／議會／UI 三類條件 gate、逐玩家領袖招募迴圈，以及
