@@ -174,6 +174,9 @@
   派送的 `sub_ABFF3` 已閉合一般／AI 移動對 raw 雙軸的回寫，因此不另造 Amoeba scripted
   entrance。仍待把自由座標 camera／移動／AI consumer 接入 remake、縮圖繪製函式的獨立
   指令證據與同艦艇設計 fixture，完成前不宣稱逐像素對齊。
+  2026-08-31 已先接 typed `tacticalCamera`：活動艦置中、原版夾制與 20px 基準皆有固定測試，
+  怪物 fixture 與玩家選艦會更新 camera；renderer／hit test／捲動輸入尚未原子切換，狀態為
+  PARTIAL，不以孤立 camera helper 冒稱自由座標玩法完成。
 
 - [x] **原版回合主鏈拓樸閉合（RE-only，2026-08-28）**：IDA Pro 9.4 重新匯出
   `Next_Turn_Calc_ @ 0x136B3..0x13822`，證實是 52 個直接 call；固定順序、

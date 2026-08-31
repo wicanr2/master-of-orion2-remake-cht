@@ -1,6 +1,6 @@
 # 戰術戰鬥畫面骨架規格
 
-狀態：READY（layout-only）
+狀態：READY（layout-only；camera state PARTIAL）
 
 證據：[`tactical-screen-layout-audit-20260831.md`](../re/tactical-screen-layout-audit-20260831.md)
 
@@ -38,6 +38,13 @@
     再以 `sub_49D09` 置中。縮圖點擊與選艦事件也可改變 camera。敵艦由畫面外進入不得另造
     scripted 動畫；`sub_3EE0F`／`sub_ABFF3` 證實正常戰術移動會把像素路徑／佔位候選回寫成
     raw `+0x21/+0x22`，remake 應由同一自由座標移動 consumer 驅動畫面與縮圖。
+
+## Remake 接線狀態
+
+- `tacticalCamera` 已承接活動艦 `(rawX-16,rawY-9)` 置中、`0..49/0..50` 夾制與
+  `(raw-camera)*20` 基準；怪物同狀態建構與玩家改選我方艦會更新此暫態狀態。
+- renderer、hit test、捲動輸入與 AI 自由座標移動尚未原子切換，故 camera state 維持
+  PARTIAL；現行 `ScreenPositionKnown`／格位 fallback 暫時保留，避免出現不可見但可點擊的艦。
 
 ## 驗收
 

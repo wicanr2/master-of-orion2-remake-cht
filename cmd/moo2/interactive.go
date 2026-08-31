@@ -2389,6 +2389,32 @@ type tacticalScreen struct {
 	mountDispatch bool
 	// monsterStar >=0 表示本場敵方是該星的 MonsterGuard；戰後走怪物雙血池回寫。
 	monsterStar int
+	// camera 保存原版戰術世界的 raw 視窗原點。它是暫態顯示狀態，不進存檔；
+	// renderer／hit test 尚未整批切換前，現階段只由活動艦置中與選艦 consumer 更新。
+	camera tacticalCamera
+}
+
+// tacticalCamera 對應 word_1998F0/F2。sub_49D09 以活動點減 (16,9)，
+// 再把 X/Y 分別夾在 0..49／0..50；sub_2F4EE 以每 raw 單位 20px 繪製。
+type tacticalCamera struct {
+	x, y int
+}
+
+func (c *tacticalCamera) centerOnRaw(x, y int) {
+	c.x = min(max(x-16, 0), 49)
+	c.y = min(max(y-9, 0), 50)
+}
+
+func (c tacticalCamera) screenBase(rawX, rawY int) (int, int) {
+	return (rawX - c.x) * 20, (rawY - c.y) * 20
+}
+
+func (t *tacticalScreen) centerCameraOnSelectedShip() {
+	if t.sel < 0 || t.sel >= len(t.player) || !t.player[t.sel].DeployPositionKnown {
+		return
+	}
+	ship := t.player[t.sel]
+	t.camera.centerOnRaw(ship.DeployX, ship.DeployY)
 }
 
 // loadCombatBG 載入戰場星空背景(STARBG.LBX#0,640×480),借 COMBAT.LBX#11 調色盤。
@@ -2592,6 +2618,7 @@ func newTacticalScreenForShips(b *sceneBuilder, p, e []shell.CombatShip, monster
 		// Amoeba 的 raw deployment (55,34) 已由 Deploy_Ships_ 證實；目前 renderer 尚未
 		// 建模原版 camera／進場移動，所以主畫面保留可玩 grid fallback，縮圖消費 raw 點。
 	}
+	t.centerCameraOnSelectedShip()
 	t.launchEnemySquadrons()
 	if b.session.EffectiveGameSettings().ShipInitiative {
 		t.resetInitiativeQueue()
@@ -2845,6 +2872,7 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 			return nil
 		}
 		t.sel = pi
+		t.centerCameraOnSelectedShip()
 		return nil
 	}
 	if ei := shipAt(t.enemy, col, row); ei >= 0 { // 點敵艦 → 依模式:開火 / 掃描 / 登艦

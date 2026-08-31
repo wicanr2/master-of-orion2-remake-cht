@@ -228,3 +228,8 @@ cameraY。敵艦進場也仍需追 record `+0x21/+0x22` 的第一個 runtime wri
 目前沒有證據支持獨立的「Amoeba 進場動畫」狀態。畫面外敵艦透過正常戰術 AI 移動改寫 raw
 座標，再由 camera／renderer 顯示，是現有證據支持的模型；remake 應完成自由座標移動與 AI
 consumer，不應另造只服務同狀態截圖的 scripted entrance。
+
+Remake 映射已開始：`cmd/moo2` 新增暫態 `tacticalCamera`，直接實作已證實的活動艦置中、
+兩軸夾制與 20px 基準；同狀態怪物戰建構完成 raw deployment 後會以目前選中艦初始化，玩家
+改選我方艦也會更新。這一輪刻意未讓 renderer／hit test 消費 camera，因兩者若不同步切換，
+會製造「畫面外仍可用舊格位點擊」的新缺陷。此接線為 **PARTIAL**，不升格為畫面 parity。

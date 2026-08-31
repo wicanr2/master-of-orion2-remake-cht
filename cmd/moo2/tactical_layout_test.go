@@ -60,6 +60,45 @@ func TestTacticalShipFreeCoordinateOverridesGridOnlyForRendering(t *testing.T) {
 	}
 }
 
+func TestTacticalCameraCentersAndClampsLikeOriginal(t *testing.T) {
+	var camera tacticalCamera
+	camera.centerOnRaw(21, 35)
+	if camera.x != 5 || camera.y != 26 {
+		t.Fatalf("Star Base camera=(%d,%d)，want (5,26)", camera.x, camera.y)
+	}
+	if x, y := camera.screenBase(25, 34); x != 400 || y != 160 {
+		t.Fatalf("Frigate 20px base=(%d,%d)，want (400,160)", x, y)
+	}
+	camera.centerOnRaw(-20, -30)
+	if camera.x != 0 || camera.y != 0 {
+		t.Fatalf("camera 下界未夾制：(%d,%d)", camera.x, camera.y)
+	}
+	camera.centerOnRaw(100, 100)
+	if camera.x != 49 || camera.y != 50 {
+		t.Fatalf("camera 上界未夾制：(%d,%d)", camera.x, camera.y)
+	}
+}
+
+func TestMonsterFixtureInitialCameraUsesSelectedRawShip(t *testing.T) {
+	tactical := &tacticalScreen{
+		player: []shell.CombatShip{
+			{DeployX: 25, DeployY: 34, DeployPositionKnown: true},
+			{DeployX: 21, DeployY: 35, DeployPositionKnown: true, OrbitalBase: true},
+		},
+		sel: 1,
+	}
+	tactical.centerCameraOnSelectedShip()
+	if tactical.camera.x != 5 || tactical.camera.y != 26 {
+		t.Fatalf("活動 Star Base camera=(%d,%d)，want (5,26)", tactical.camera.x, tactical.camera.y)
+	}
+
+	tactical.sel = 0
+	tactical.centerCameraOnSelectedShip()
+	if tactical.camera.x != 9 || tactical.camera.y != 25 {
+		t.Fatalf("改選 Frigate camera=(%d,%d)，want (9,25)", tactical.camera.x, tactical.camera.y)
+	}
+}
+
 func TestTacticalMinimapRawProjectionMatchesDeployShipsOracle(t *testing.T) {
 	tests := []struct {
 		x, y         int
