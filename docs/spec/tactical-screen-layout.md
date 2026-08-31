@@ -47,6 +47,8 @@
   PARTIAL；現行 `ScreenPositionKnown`／格位 fallback 暫時保留，避免出現不可見但可點擊的艦。
 - 已有 `ScreenPositionKnown` 的艦先以 renderer 相同中心與完整 60×60 frame 方框命中，再回退
   8×6 格位；這只修正既有自由座標的畫面／點擊不對稱，不代表 raw camera renderer 已接線。
+  原版 `sub_49ED1` 的玩法幾何 extent 為 size 0→10、1..2→20、3..5→30；現行完整 frame
+  點擊框是刻意保留的可用性 adapter，不得標成原版 exact hitbox。
 
 ## 驗收
 

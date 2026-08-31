@@ -238,3 +238,23 @@ Remake 映射已開始：`cmd/moo2` 新增暫態 `tacticalCamera`，直接實作
 依自由中心繪製，點擊卻只查 `Col/Row`。現在 hit test 先使用與 renderer 相同中心及完整
 60×60 frame 半開矩形，再回退 8×6 格位。這項內部測試只證明畫面與點擊共用座標；raw camera
 renderer 與捲動輸入仍未完成。
+
+### `sub_49ED1` 幾何 extent 勘誤（2026-09-01）
+
+為確認 raw renderer 是否還有隱藏 frame 位移，本輪以相同正式 `.i64` 匯出
+`sub_49ED1 @ 0x49ED1..0x49F99`。其 68 個直接 callers 分布於繪製、武器、AI 與碰撞路徑；
+原始指令顯示它把同一值寫入兩個輸出指標，並不讀動畫 tick 或 frame index：
+
+- combat record index 非 0 時，讀 `record+0x25`：raw size 0 回傳 `(10,10)`，1..2 回傳
+  `(20,20)`，3..5 回傳 `(30,30)`；其他值維持 0。
+- record index 0 時，無行星回傳 `(60,60)`；有行星則依 planet size 類別回傳
+  `(30,30)`、`(40,40)`、`(60,60)`、`(70,70)` 或 `(80,80)`。
+
+上述查表與雙輸出寫入為**已證實**；其語意是戰術物件雙軸幾何 extent 為**強推論**，因多個
+碰撞／效果 consumer 一致，但尚未逐一命名全部 callers。舊候選「動畫／frame 內部位移」已被
+無 tick、無 frame 輸入的資料流否定。完整 59×60 LBX frame 仍是 renderer 畫布，extent 與
+透明畫布尺寸不可混成同一欄位。
+
+這項發現使 raw camera renderer 的原子切換仍缺一個明確選擇：原版玩法幾何應用 10/20/30
+extent，現代 UI 點擊可保留完整 frame 的較寬可用區。現行 remake 暫保留 60×60 點擊框作
+可用性 adapter，文件不把它冒稱原版 exact hitbox。

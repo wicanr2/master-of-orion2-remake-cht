@@ -179,6 +179,9 @@
   PARTIAL，不以孤立 camera helper 冒稱自由座標玩法完成。
   同輪後續已讓 `ScreenPositionKnown` 艦艇以 renderer 相同中心及 60×60 frame 方框優先命中，
   修掉「畫在自由座標、只能點舊格位」的不對稱；raw camera renderer／捲動仍列為下一步。
+  2026-09-01 又以 `sub_49ED1 @ 0x49ED1` 排除隱藏動畫位移候選：該函式是 size 0→10、
+  1..2→20、3..5→30 的雙軸幾何 extent（語意強推論、查表已證實）。現行 60×60 點擊框
+  明列為現代可用性 adapter；raw renderer 原子切換仍待把玩法 extent 與 UI hitbox 分層。
 
 - [x] **原版回合主鏈拓樸閉合（RE-only，2026-08-28）**：IDA Pro 9.4 重新匯出
   `Next_Turn_Calc_ @ 0x136B3..0x13822`，證實是 52 個直接 call；固定順序、
