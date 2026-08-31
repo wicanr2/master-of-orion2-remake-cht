@@ -42,3 +42,21 @@
 - 真正逐像素完成仍需由 DOSBox 使用已知存檔擷取未縮放 640×480 原版幀，再建立相同艦隊、
   位置、heading、動畫 tick 與色盤的 remake fixture。公開截圖只能關閉骨架，不關閉同狀態 parity。
 
+## DOSBox-X 實機擷取勘誤（2026-08-31）
+
+本專案現可用 `scripts/capture-original-oracle.sh` 在既有
+`civ1-dosboxx-input:20260830` 映像中重播原版。原始目錄唯讀，DOSBox-X 視窗的 17px 工具選單
+不屬於遊戲 framebuffer；固定裁切 `(0,17,640,480)` 後得到未縮放的 640×480 PNG。腳本同時輸出
+PNG 雜湊、DOSBox-X 版本、裁切契約及輸入檔雜湊，避免日後把桌面截圖或選單列誤當原版畫布。
+
+- `Orion2.exe` SHA-256：
+  `7ae2ac2e5904ca330009af2827279d889906b0b9b7a8854c38eb707a56e955b5`
+- `SAVE10.GAM` SHA-256：
+  `ece2eb06d782078dd0a6f746020a05691355303ceb02bbfbbe2233e987272be1`
+- 工具：DOSBox-X 2026.06.02 SDL1；位址空間不適用，此處是玩家可見動態 oracle，不是反組譯證據。
+
+`SAVE10.GAM` 經主選單 `CONTINUE` 的正常玩家路徑載入後，畫面是星曆 3500.0 的新局，仍停在
+「Enter Home Star Name」對話框；它不是戰鬥前存檔。這項觀察推翻「可直接用 SAVE10 擷取同狀態
+戰鬥幀」的工作假設，但不推翻它作為開局資料 oracle 的既有用途。戰術逐像素 gate 因此仍為
+**未知／阻塞於戰鬥 fixture**：下一步必須在原版的可寫副本中，經正常玩家操作建立戰鬥前存檔，
+再以同一腳本擷取；不得以這份新局畫面或公開不同戰局截圖升格 parity。
