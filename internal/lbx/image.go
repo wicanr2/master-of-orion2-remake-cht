@@ -54,7 +54,10 @@ func DecodeImage(data []byte) (*Image, error) {
 	le := binary.LittleEndian
 	width := int(le.Uint16(data[0:2]))
 	height := int(le.Uint16(data[2:4]))
-	// data[4:6] 未知,略過。
+	// data[4:6] 對應原版 runtime 影像結構 +4 的目前幀。Draw_ @ 0x12A478
+	// 每次繪製後遞增此 word，並以 +6 的 frame count 與 +8 的 frame delay
+	// 做回繞。DecodeImage 回傳不可變幀集合，播放狀態由呼叫端持有，因此不把
+	// 檔內初始值混進 Image；一般資產為 0。
 	frameCount := int(le.Uint16(data[6:8]))
 	frameTime := int(le.Uint16(data[8:10]))
 	flags := le.Uint16(data[10:12])

@@ -24,10 +24,16 @@ ROOTS = [
     0x30062,
     0x34454,
     0x465D0,
+    0x46CC8,
     0x47939,
     0x49043,
     0x49A41,
     0x49D09,
+    0x4446A,
+    0x444EE,
+    0x4A6C5,
+    0x12A478,
+    0x12ACA4,
 ]
 DATA_ROOTS = [0x1998F0, 0x1998F2]
 NAME_PATTERN = re.compile(r"camera|viewport|mini.?map|ship.*center|center.*ship|draw.*combat|combat.*draw", re.I)

@@ -30,6 +30,10 @@
    `0..50`，指定位置置中先減 `(16,9)`。`sub_34454` 另依 heading 與圖形尺寸加入 sprite
    anchor。這是繪製基準而非視覺中心；LBX frame 內部原點尚未閉合前，不得用截圖中心替代
    anchor，也不得直接刪除目前供玩法使用的自由座標 adapter。
+9. `Draw_ @ 0x12A478` 的 x/y 是完整 LBX frame 畫布左上角；底層不會再套中心或 hotspot。
+   一般 `CMBTSHP` 畫布為 59×60，Amoeba `MONSTER#10` 為 59×59。視覺中心只能由
+   `base + anchor + frameSize/2` 計算，透明像素外框不得被裁掉後重新置中。首幀 cameraY
+   gate 尚未閉合，故目前不得用單張截圖硬編 Y 原點。
 
 ## 驗收
 

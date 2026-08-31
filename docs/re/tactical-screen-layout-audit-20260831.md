@@ -182,3 +182,25 @@ camera／sprite center 轉換、畫面外進場移動、縮圖定點公式的 ID
 sprite 中心，以及敵艦由畫面外進場的逐 tick 移動與鏡頭追蹤時序。先前量測的 Frigate
 `(412,133)/(412,174)` 與 Star Base `(340,201)` 是視覺中心，不可拿來反推 camera 或覆蓋
 已證實的 raw 基準公式；remake 在這一層閉合前保留既有可玩自由座標 adapter。
+
+### 底層 Draw 座標與固定 frame 畫布
+
+後續同一份 IDA 資料庫又閉合下列**已證實**關係：
+
+- `Draw_` 原始函式 `sub_12A478 @ 0x12A478..0x12A914` 把 register `eax/edx` 保存為
+  x/y，直接以 `x+image[0]-1`、`y+image[2]-1` 算裁切右下角；`sub_12ACA4 @
+  0x12ACA4..0x12AE00` 也以 `(y+row)*640+x` 寫 framebuffer。傳入座標因此是完整
+  frame 畫布左上角，不是中心，也沒有底層隱藏 hotspot。
+- runtime image `+4` 是目前幀、`+6` 是幀數、`+8` 是 frame delay；`Draw_ @
+  0x12A860..0x12A909` 在繪製後遞增並回繞目前幀。LBX decoder 舊註解把檔內
+  `data[4:6]` 寫成未知，現已訂正其 runtime 對應，但 remake 仍由畫面物件持有播放狀態。
+- 真實 `CMBTSHP.LBX` 的 0..43 一般艦圖均為 59×60、20 幀；`MONSTER.LBX#10`
+  Amoeba 為 59×59、20 幀。這是 archive 解碼所得的已證實資產形狀，不是版本參數猜測。
+- 對 heading 8、最小 size group，`sub_34454` 的 X anchor 是 `-18`。若 cameraX=5，
+  Frigate rawX=25 的 59px frame 視覺中心為 `(25-5)*20-18+59/2=411.5`，與原版量測
+  約 412 收斂。這只交叉驗證 X 鏈；不能反過來把截圖量測升格成 cameraY 證據。
+
+首幀 cameraY 仍為**未知**：`sub_42F7F @ 0x44440..0x4446A` 可依戰場邊界計算位置，
+而 `0x444C8..0x444EE` 在特定 gate 下又會以選中 combat record 呼叫 `sub_49D09`。
+目前尚未閉合該 gate 的初始值與兩條呼叫的先後結果，因此不能僅憑 Frigate Y 中心選定
+cameraY。敵艦進場也仍需追 record `+0x21/+0x22` 的第一個 runtime writer。
