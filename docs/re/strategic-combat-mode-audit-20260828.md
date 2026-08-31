@@ -49,8 +49,10 @@ caller 與外部導覽名稱。正式 `.i64` 唯讀掛載後複製到 `/tmp`；�
 
 ## 持久化與多人同步（已證實）
 
-- `Load_Game_ @ 0x10E2F` 讀取 553-byte game-settings block，最後以 `v51[216]` 寫回
-  `byte_199CB4`；依 `0x199BDC + 216 = 0x199CB4`，它是該 block 的直接欄位。
+- `Load_Game_ @ 0x10E2F` 在 `.GAM` 開頭依序讀 4-byte version、37-byte 名稱、4-byte
+  stardate、1-byte runtime mode，再從**檔案 offset 46**讀取 553-byte game-settings block；最後以
+  `v51[216]` 寫回 `byte_199CB4`。因此戰鬥模式的 `.GAM` 精確檔案 offset 是 `46+216=262`，
+  不是同為 553 bytes 的 `MOX.SET`；後者是數據機設定檔，尺寸相同只屬巧合。
 - `Main_Receive_Message_ @ 0xF5A9F` 可由網路訊息寫入旗標。
 - `Broadcast_Game_Data_Differential_ @ 0xF74CD` 與
   `Decode_Broadcast_Game_Data_Differential_ @ 0xF79F6` 都把旗標位址納入差異同步。

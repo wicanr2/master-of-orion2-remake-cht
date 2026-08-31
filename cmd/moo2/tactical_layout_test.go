@@ -1,6 +1,11 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
+)
 
 func TestTacticalOriginalSkeletonRegionsStayInsideCanvas(t *testing.T) {
 	if combatControlDeckY != 351 || combatControlDeckY+129 != moo2ScreenH {
@@ -13,6 +18,47 @@ func TestTacticalOriginalSkeletonRegionsStayInsideCanvas(t *testing.T) {
 	if tacticalShipInfoY < combatControlDeckY || tacticalSystemsY < combatControlDeckY ||
 		tacticalShipInfoX+tacticalShipInfoW > moo2ScreenW || tacticalSystemsX+tacticalSystemsW > moo2ScreenW {
 		t.Fatal("選艦／Systems 資訊必須完全位於原版控制甲板")
+	}
+}
+
+func TestCombatPlanetAssetMappingMatchesTrilarOracle(t *testing.T) {
+	asset, palette, ok := combatPlanetAssetIndices(gamedata.PlanetClimate(5), gamedata.PlanetSize(2))
+	if !ok || asset != 32 || palette != 35 {
+		t.Fatalf("Trilar III CMBTPLNT 映射錯誤：asset=%d palette=%d ok=%v", asset, palette, ok)
+	}
+}
+
+func TestTacticalShipFreeCoordinateOverridesGridOnlyForRendering(t *testing.T) {
+	ship := shell.CombatShip{Col: 1, Row: 2, ScreenX: 412, ScreenY: 133, ScreenPositionKnown: true}
+	if x, y := tacticalShipScreenCenter(ship); x != 412 || y != 133 {
+		t.Fatalf("自由座標未優先：%.0f,%.0f", x, y)
+	}
+	ship.ScreenPositionKnown = false
+	x, y := tacticalShipScreenCenter(ship)
+	gx, gy, gw, gh := cellRect(1, 2)
+	if x != float64(gx+gw/2) || y != float64(gy+gh/2) {
+		t.Fatalf("格位 fallback 錯誤：%.0f,%.0f", x, y)
+	}
+}
+
+func TestTacticalTargetSurvivesEnemySliceCompactionByID(t *testing.T) {
+	tactical := &tacticalScreen{
+		enemy: []shell.CombatShip{
+			{TacticalID: 11, HP: 0},
+			{TacticalID: 22, HP: 10},
+			{TacticalID: 33, HP: 10},
+		},
+		target: 2,
+	}
+	tactical.compactEnemyCasualties()
+	if tactical.target != 1 || tactical.enemy[tactical.target].TacticalID != 33 {
+		t.Fatalf("敵艦切片壓縮後目標必須依 TacticalID 續接：target=%d enemy=%+v", tactical.target, tactical.enemy)
+	}
+
+	tactical.enemy[tactical.target].HP = 0
+	tactical.compactEnemyCasualties()
+	if tactical.target != 0 || tactical.enemy[tactical.target].TacticalID != 22 {
+		t.Fatalf("目前目標被擊沉後應安全選第一艘存活敵艦：target=%d enemy=%+v", tactical.target, tactical.enemy)
 	}
 }
 

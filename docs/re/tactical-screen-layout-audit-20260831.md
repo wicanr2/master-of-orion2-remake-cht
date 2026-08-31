@@ -36,7 +36,7 @@
 ## Remake 對映與停止線
 
 - 8×6 格位暫時保留為不可見的規則／點擊 adapter；本輪不冒稱原版自由座標移動已完成。
-- renderer 只在太空戰場畫 STARBG、CMBTSHP、戰機、飛彈／特效與低彩度選取環。
+- renderer 只在太空戰場畫 STARBG、CMBTSHP、戰機、飛彈／特效與低彩度目標環。
 - 艦名、武器模式與 typed 艦艇摘要回到原版控制甲板對應區域；戰機顯式出擊按鈕移入
   SPECIALS 區，仍標為可玩 adapter。
 - 真正逐像素完成仍需由 DOSBox 使用已知存檔擷取未縮放 640×480 原版幀，再建立相同艦隊、
@@ -60,3 +60,32 @@ PNG 雜湊、DOSBox-X 版本、裁切契約及輸入檔雜湊，避免日後把�
 戰鬥幀」的工作假設，但不推翻它作為開局資料 oracle 的既有用途。戰術逐像素 gate 因此仍為
 **未知／阻塞於戰鬥 fixture**：下一步必須在原版的可寫副本中，經正常玩家操作建立戰鬥前存檔，
 再以同一腳本擷取；不得以這份新局畫面或公開不同戰局截圖升格 parity。
+
+## 同存檔戰術 oracle（2026-08-31）
+
+已用 `tools/gamfixture` 從上述 `SAVE10.GAM` 產生不入版控的受控副本。工具依 129-byte Ship wire
+格式只把既有 `ship 16`（Amoeba，owner 10）的 `Star/X/Y` 從 `23/43/560` 改成玩家母星
+`29/60/35`，並依 `Load_Game_ @ 0x10E2F` 把 `.GAM` offset 262 從 strategic `1` 改成 tactical
+`0`。全檔實際只有 offsets `262、141261、141263、141265、141266` 五個 bytes 改變；manifest
+保存 before／after 與雜湊。`MOX.SET` 沒有修改。
+
+- fixture `.GAM` SHA-256：
+  `dbf3f05d60562c33f23ca90737de48d0794fd76392a0c8c255485ef0c80bbb35`
+- 原版戰術首幀 SHA-256：
+  `b7ce37465617bc6feb19651d23863e44b800f9f35f3f5f9c54fe3c7f3272ec2e`
+- 動態路徑：主選單 `CONTINUE` → 接受母星名 → `TURN` → 原版顯示 Amoeba 攻擊 Trilar III →
+  進入 `sub_47939` 格子戰術畫面。這證明 fixture 由原版正常 battle-search consumer 消費，
+  不是 remake importer 或 direct-entry 自行解釋。
+
+首幀量測與資產交叉驗證：
+
+- 戰場／控制甲板仍是 `(0,0,640,351)`／`(0,351,640,129)`。
+- Trilar III 行星矩形 `(109,168,108,108)`；真存檔 planet 66 為 `Climate=5、Size=2`，精確對應
+  `CMBTPLNT.LBX#32` 與同 block 調色盤 holder `#35`。
+- 兩艘 Trilarian Frigate 中心約為 `(412,133)`、`(412,174)`；Amoeba 中心約 `(340,201)`。
+  這直接證明原版 renderer 使用自由座標，而不是 remake 舊 8×6 格心。
+- Amoeba 的藍色五幀敵方目標環來自 `COMBAT.LBX#34`（77×77）；較小兩級環為 `#32/#33`。控制甲板同時顯示 Star Base，證明此環不是我方選艦標記。
+
+remake 已接入上述 CMBTPLNT 映射、三組原版敵方目標環與怪物戰首幀自由座標。規則層仍保留 8×6
+adapter；第一次格子移動後 renderer 會明確回退格心，未冒稱自由座標移動規則已完成。Star Base、
+下方面板逐字／逐值、縮圖內容與同艦艇設計仍待後續同狀態 fixture 對齊。

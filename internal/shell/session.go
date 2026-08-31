@@ -1811,7 +1811,12 @@ type CombatShip struct {
 	Name       string
 	HP, MaxHP  int // 艦體結構 HP
 	Attack     int // Beam Attack(BA,命中判定用)
-	Col, Row   int // 格位(8 欄 × 6 列)
+	Col, Row   int // 格位(8 欄 × 6 列)，目前仍供規則層使用。
+	// ScreenX/ScreenY 是原版 640×351 戰場內的自由座標中心。已知時 renderer 不再把
+	// 艦艇硬吸附到 8×6 格心；格位只保留為現行規則 adapter。第一次格子移動後由 UI
+	// 清除 ScreenPositionKnown，直到自由座標移動規則完成。
+	ScreenX, ScreenY    int
+	ScreenPositionKnown bool
 	// Facing 是原版 combat record +0x23 的 16 向 heading。0=右、4=上、
 	// 8=左、12=下；移動時由 tactical UI 依移動向量更新。
 	Facing int

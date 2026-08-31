@@ -2338,6 +2338,7 @@ type tacticalScreen struct {
 	fnt            *uifont.Font
 	player, enemy  []shell.CombatShip
 	sel            int // 選中的我方艦索引(-1=無)
+	target         int // 目前敵方目標索引(-1=無)；原版藍色 COMBAT#32..34 環畫在此艦。
 	round          int
 	log            string
 	over, won      bool
@@ -2345,6 +2346,10 @@ type tacticalScreen struct {
 	rng            *rand.Rand // 戰鬥擲骰(依回合數種子,可重現)
 	bg             *ebiten.Image
 	bar            *ebiten.Image
+	planet         *ebiten.Image
+	planetX        int
+	planetY        int
+	selectionRings [3][]*ebiten.Image
 	res            *assets.Resolver      // 供 shipSprite 延遲載入各艦級 sprite
 	shipSprites    map[int]*ebiten.Image // CMBTSHP 資產索引 → 已解碼 sprite(nil=載入失敗,亦快取)
 	// shipMotionStart 記錄本次移動開始的 remake tick；key 包含敵我側與艦名，
@@ -2411,6 +2416,50 @@ func loadCombatBar(res *assets.Resolver) *ebiten.Image {
 	return ebiten.NewImageFromImage(im.Frames[0].ToRGBA(prov.Embedded, im.KeyColor()))
 }
 
+// loadCombatPlanet 依原版 CMBTPLNT 的 6-entry block 解碼戰術行星：每種氣候前五張
+// 是 Tiny..Huge，block 的第六張是 32 色調色盤 holder。
+func loadCombatPlanet(res *assets.Resolver, climate gamedata.PlanetClimate, size gamedata.PlanetSize) *ebiten.Image {
+	asset, palette, ok := combatPlanetAssetIndices(climate, size)
+	if !ok {
+		return nil
+	}
+	prov, err := decodeAsset(res, "cmbtplnt.lbx", palette)
+	if err != nil || prov.Embedded == nil {
+		return nil
+	}
+	im, err := decodeAsset(res, "cmbtplnt.lbx", asset)
+	if err != nil || len(im.Frames) == 0 {
+		return nil
+	}
+	return ebiten.NewImageFromImage(im.Frames[0].ToRGBA(prov.Embedded, im.KeyColor()))
+}
+
+func combatPlanetAssetIndices(climate gamedata.PlanetClimate, size gamedata.PlanetSize) (asset, palette int, ok bool) {
+	if climate < gamedata.TOXIC || climate > gamedata.GAIA || size < gamedata.TINY_PLANET || size > gamedata.HUGE_PLANET {
+		return 0, 0, false
+	}
+	base := int(climate) * 6
+	return base + int(size), base + 5, true
+}
+
+func loadCombatSelectionRings(res *assets.Resolver) [3][]*ebiten.Image {
+	var out [3][]*ebiten.Image
+	prov, err := decodeAsset(res, "combat.lbx", 11)
+	if err != nil || prov.Embedded == nil {
+		return out
+	}
+	for i, asset := range []int{32, 33, 34} {
+		im, err := decodeAsset(res, "combat.lbx", asset)
+		if err != nil {
+			continue
+		}
+		for _, frame := range im.Frames {
+			out[i] = append(out[i], ebiten.NewImageFromImage(frame.ToRGBA(prov.Embedded, im.KeyColor())))
+		}
+	}
+	return out
+}
+
 // loadCombatShipByIdx 載入 CMBTSHP.LBX 第 idx 個艦艇 sprite 的 frame0,用其所屬色塊的
 // palette-holder(索引 45*(idx/45)+44,內嵌調色盤)上色。見 docs/tech/cmbtshp-ship-sprites.md。
 // keyColor 用資產自身旗標(CMBTSHP flags=0x0000 → false):艦體外圍透明來自未寫入的
@@ -2450,14 +2499,35 @@ func newTacticalScreenForShips(b *sceneBuilder, p, e []shell.CombatShip, monster
 	seed := int64(b.session.Turn*2654435761 + 1013904223)
 	// 開場先算一次狀態效果,否則第一回合的移動力會用未受牽引的速度(第 69 項(戰鬥速度與引擎階))。
 	shell.ApplyTacticalStatusEffects(p, e)
-	t := &tacticalScreen{b: b, fnt: b.fnt, player: p, enemy: e, sel: firstReadyShip(p),
+	t := &tacticalScreen{b: b, fnt: b.fnt, player: p, enemy: e, sel: firstReadyShip(p), target: firstReadyShip(e),
 		log:    tacticalText(b.lang, "tactical.log.initial"),
 		pStart: len(p), eStart: len(e),
 		rng: rand.New(rand.NewSource(seed)),
-		bg:  loadCombatBG(b.res), bar: loadCombatBar(b.res),
+		bg:  loadCombatBG(b.res), bar: loadCombatBar(b.res), planetX: 109, planetY: 168,
 		res: b.res, shipSprites: map[int]*ebiten.Image{}, shipMotionStart: map[string]int{}, combatFX: loadCombatFX(b.res),
 		moveLeft: freshMoveBudgets(p), acted: make([]bool, len(p)), waited: make([]bool, len(p)),
 		monsterStar: monsterStar}
+	t.selectionRings = loadCombatSelectionRings(b.res)
+	if monsterStar >= 0 && b.session != nil {
+		for i, star := range b.session.PlayerColonyStars {
+			if star != monsterStar {
+				continue
+			}
+			if planet := b.session.ColonyPlanet(i); planet != nil {
+				t.planet = loadCombatPlanet(b.res, planet.ClimateID, planet.SizeID)
+			}
+			break
+		}
+		// 同狀態原版 oracle：守方艦在右上縱列，攻擊怪物位於中間。
+		for i := range t.player {
+			t.player[i].ScreenX, t.player[i].ScreenY = 412, 133+i*41
+			t.player[i].ScreenPositionKnown = true
+		}
+		for i := range t.enemy {
+			t.enemy[i].ScreenX, t.enemy[i].ScreenY = 340-i*35, 201+i*35
+			t.enemy[i].ScreenPositionKnown = true
+		}
+	}
 	t.launchEnemySquadrons()
 	if b.session.EffectiveGameSettings().ShipInitiative {
 		t.resetInitiativeQueue()
@@ -2696,6 +2766,7 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 		return nil
 	}
 	if ei := shipAt(t.enemy, col, row); ei >= 0 { // 點敵艦 → 依模式:開火 / 掃描 / 登艦
+		t.target = ei
 		switch t.mode {
 		case tacticalModeScan:
 			t.log = t.scanEnemy(ei)
@@ -2725,6 +2796,7 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 		}
 		sh.Facing = gamedata.CombatFacingForVector(col-sh.Col, row-sh.Row)
 		sh.Col, sh.Row = col, row
+		sh.ScreenPositionKnown = false
 		if t.sel < len(t.moveLeft) {
 			t.moveLeft[t.sel] = budget - need
 		}
@@ -3230,6 +3302,10 @@ func (t *tacticalScreen) fireMultiMountActors(target int, actors []int, endRound
 // compactEnemyCasualties 移除無戰力敵艦並只累加真正擊沉者；登艦俘獲的艦不屬於
 // sub_4B184 的 destroyed hull-class accumulator。
 func (t *tacticalScreen) compactEnemyCasualties() {
+	targetID := -1
+	if t.target >= 0 && t.target < len(t.enemy) {
+		targetID = t.enemy[t.target].TacticalID
+	}
 	alive := t.enemy[:0]
 	for _, ship := range t.enemy {
 		if ship.HP > 0 {
@@ -3241,6 +3317,16 @@ func (t *tacticalScreen) compactEnemyCasualties() {
 		}
 	}
 	t.enemy = alive
+	t.target = -1
+	for i := range t.enemy {
+		if t.enemy[i].TacticalID == targetID {
+			t.target = i
+			break
+		}
+	}
+	if t.target < 0 && len(t.enemy) > 0 {
+		t.target = 0
+	}
 }
 
 // resolveTacticalMissilePointDefense 讓防守艦所有本回合尚未使用的 typed PD 逐門
@@ -3637,8 +3723,8 @@ func (t *tacticalScreen) finishRound(preCount, pAtk int, firedMissile, anyHit bo
 // 常駐 HP 條與矩形框都不是原版戰術畫面的骨架，不能洩漏到 renderer。選中艦只保留一圈
 // 低彩度環；艦名、武器與耐久移到 COMBAT 控制甲板的既有資訊區。
 func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base color.RGBA, selected bool, enemy bool) {
-	x, y, w, h := cellRect(s.Col, s.Row)
-	cx, cy := float64(x+w/2), float64(y+h/2)
+	cx, cy := tacticalShipScreenCenter(s)
+	_, _, w, h := cellRect(s.Col, s.Row)
 	elapsed, moving := t.shipMotionElapsed(s, enemy)
 	if sprite := t.shipSprite(s.SpriteIdx, s.Facing, elapsed, moving); sprite != nil {
 		sb := sprite.Bounds()
@@ -3661,9 +3747,32 @@ func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base co
 			color.RGBA{base.R / 2, base.G / 2, base.B / 2, 255}, false)
 	}
 	if selected {
-		vector.StrokeCircle(dst, float32(cx), float32(cy), 29, 1,
-			color.RGBA{70, 150, 230, 210}, false)
+		ringClass := 0
+		if s.SizeClass >= gamedata.SHIP_CRUISER {
+			ringClass = 1
+		}
+		if s.SizeClass >= gamedata.SHIP_BATTLESHIP {
+			ringClass = 2
+		}
+		frames := t.selectionRings[ringClass]
+		if len(frames) > 0 {
+			ring := frames[(t.tick/5)%len(frames)]
+			op := &ebiten.DrawImageOptions{}
+			op.GeoM.Translate(cx-float64(ring.Bounds().Dx())/2, cy-float64(ring.Bounds().Dy())/2)
+			drawPanelImage(dst, ring, op)
+		} else {
+			vector.StrokeCircle(dst, float32(cx), float32(cy), 29, 1,
+				color.RGBA{70, 150, 230, 210}, false)
+		}
 	}
+}
+
+func tacticalShipScreenCenter(s shell.CombatShip) (float64, float64) {
+	if s.ScreenPositionKnown {
+		return float64(s.ScreenX), float64(s.ScreenY)
+	}
+	x, y, w, h := cellRect(s.Col, s.Row)
+	return float64(x + w/2), float64(y + h/2)
 }
 
 func (t *tacticalScreen) draw(dst *ebiten.Image) {
@@ -3673,11 +3782,16 @@ func (t *tacticalScreen) draw(dst *ebiten.Image) {
 	} else {
 		dst.Fill(color.RGBA{6, 6, 16, 255}) // fallback:原本深藍純色底
 	}
-	for i, s := range t.player {
-		t.drawShip(dst, s, color.RGBA{90, 220, 170, 255}, i == t.sel, false)
+	if t.planet != nil {
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(t.planetX), float64(t.planetY))
+		drawPanelImage(dst, t.planet, op)
 	}
-	for _, s := range t.enemy {
-		t.drawShip(dst, s, color.RGBA{235, 110, 100, 255}, false, true)
+	for _, s := range t.player {
+		t.drawShip(dst, s, color.RGBA{90, 220, 170, 255}, false, false)
+	}
+	for i, s := range t.enemy {
+		t.drawShip(dst, s, color.RGBA{235, 110, 100, 255}, i == t.target, true)
 	}
 	t.drawCombatFX(dst)
 	t.drawSquadrons(dst) // 戰機畫在艦艇之上(它們是繞著目標飛的)

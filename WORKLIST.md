@@ -154,9 +154,11 @@
 - [~] **戰術戰鬥同狀態 DOSBox oracle（2026-08-31）**：新增 Docker-only 原版擷取器，已用
   DOSBox-X 2026.06.02 從真實 `Orion2.exe` 產生去除 17px 工具選單的 640×480 原版畫布，並保存
   執行檔／存檔／PNG 雜湊與擁有權。正常 `CONTINUE` 路徑證實現有 `SAVE10.GAM` 是星曆 3500.0
-  新局且仍要求命名母星，不是戰鬥前 fixture；舊「可直接取戰鬥幀」假設已訂正。剩餘 gate 是在
-  原版可寫副本中經正常玩家操作建立戰鬥前存檔，再固定艦隊、位置、heading 與動畫 tick；完成前
-  只維持 layout-only，不宣稱逐像素對齊。
+  新局且仍要求命名母星，不是戰鬥前 fixture；舊「可直接取戰鬥幀」假設已訂正。現已用
+  `tools/gamfixture` 建立僅五個 byte 差異的 Amoeba／Trilar III tactical fixture，並由原版正常
+  `CONTINUE → TURN → battle search → sub_47939` 取得 640×480 首幀。remake 已接入精確
+  `CMBTPLNT#32/#35` 行星、`COMBAT#32..34` 五幀敵方目標環及該怪物戰首幀自由座標。仍待 Star Base、
+  控制甲板逐值／縮圖、自由座標移動與同艦艇設計 fixture，完成前不宣稱逐像素對齊。
 
 - [x] **原版回合主鏈拓樸閉合（RE-only，2026-08-28）**：IDA Pro 9.4 重新匯出
   `Next_Turn_Calc_ @ 0x136B3..0x13822`，證實是 52 個直接 call；固定順序、
