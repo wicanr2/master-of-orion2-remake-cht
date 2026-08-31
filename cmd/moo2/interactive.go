@@ -2349,6 +2349,9 @@ type tacticalScreen struct {
 	planet         *ebiten.Image
 	planetX        int
 	planetY        int
+	planetDeployX  int
+	planetDeployY  int
+	planetDeployed bool
 	selectionRings [3][]*ebiten.Image
 	res            *assets.Resolver      // 供 shipSprite 延遲載入各艦級 sprite
 	shipSprites    map[int]*ebiten.Image // CMBTSHP 資產索引 → 已解碼 sprite(nil=載入失敗,亦快取)
@@ -2555,6 +2558,7 @@ func newTacticalScreenForShips(b *sceneBuilder, p, e []shell.CombatShip, monster
 		monsterStar: monsterStar}
 	t.selectionRings = loadCombatSelectionRings(b.res)
 	if monsterStar >= 0 && b.session != nil {
+		t.planetDeployX, t.planetDeployY, t.planetDeployed = 10, 34, true
 		for i, star := range b.session.PlayerColonyStars {
 			if star != monsterStar {
 				continue
@@ -2570,15 +2574,23 @@ func newTacticalScreenForShips(b *sceneBuilder, p, e []shell.CombatShip, monster
 			if t.player[i].OrbitalBase {
 				t.player[i].ScreenX, t.player[i].ScreenY = 340, 201
 				t.player[i].ScreenPositionKnown = true
+				t.player[i].DeployX, t.player[i].DeployY = 21, 35
+				t.player[i].DeployPositionKnown = true
 				t.sel = i
 				continue
 			}
 			t.player[i].ScreenX, t.player[i].ScreenY = 412, 133+fleetRow*41
 			t.player[i].ScreenPositionKnown = true
+			t.player[i].DeployX, t.player[i].DeployY = 25, 34+fleetRow*2
+			t.player[i].DeployPositionKnown = true
 			fleetRow++
 		}
-		// 首幀可見的中心艦是 Star Base，不是 Amoeba；怪物的原版首幀座標尚未證實，
-		// 因此保持規則格位 fallback，不再把它猜放到 (340,201) 與基地重疊。
+		for i := range t.enemy {
+			t.enemy[i].DeployX, t.enemy[i].DeployY = 55, 34+i*2
+			t.enemy[i].DeployPositionKnown = true
+		}
+		// Amoeba 的 raw deployment (55,34) 已由 Deploy_Ships_ 證實；目前 renderer 尚未
+		// 建模原版 camera／進場移動，所以主畫面保留可玩 grid fallback，縮圖消費 raw 點。
 	}
 	t.launchEnemySquadrons()
 	if b.session.EffectiveGameSettings().ShipInitiative {
@@ -2867,6 +2879,7 @@ func (t *tacticalScreen) update(in shell.InputState) *origTransition {
 		sh.Facing = gamedata.CombatFacingForVector(col-sh.Col, row-sh.Row)
 		sh.Col, sh.Row = col, row
 		sh.ScreenPositionKnown = false
+		sh.DeployPositionKnown = false
 		if t.sel < len(t.moveLeft) {
 			t.moveLeft[t.sel] = budget - need
 		}
@@ -3851,34 +3864,47 @@ func drawTacticalMinimapCorner(dst *ebiten.Image, x, y float32, right, bottom bo
 // drawTacticalMinimap 補回 COMBAT 控制甲板右下的原版戰場縮圖。背景星點已烘在
 // COMBAT.LBX#0；這裡只疊可由 typed 戰鬥狀態重建的行星、艦艇與目前 640×351 視窗框。
 func (t *tacticalScreen) drawTacticalMinimap(dst *ebiten.Image) {
-	left, top := tacticalMinimapPoint(0, 0)
-	right, bottom := tacticalMinimapPoint(moo2ScreenW, combatControlDeckY)
+	left, top := tacticalMinimapScreenPoint(0, 0)
+	right, bottom := tacticalMinimapScreenPoint(moo2ScreenW, combatControlDeckY)
 	drawTacticalMinimapCorner(dst, left, top, false, false)
 	drawTacticalMinimapCorner(dst, right, top, true, false)
 	drawTacticalMinimapCorner(dst, left, bottom, false, true)
 	drawTacticalMinimapCorner(dst, right, bottom, true, true)
 
 	if t.planet != nil {
-		px, py := tacticalMinimapPoint(float64(t.planetX)+float64(t.planet.Bounds().Dx())/2,
+		px, py := tacticalMinimapScreenPoint(float64(t.planetX)+float64(t.planet.Bounds().Dx())/2,
 			float64(t.planetY)+float64(t.planet.Bounds().Dy())/2)
+		if t.planetDeployed {
+			px, py = tacticalMinimapRawPoint(t.planetDeployX, t.planetDeployY)
+			py += 5 // 行星縮圖圖示約 10px 高；raw 點是部署基準，不是圓心。
+		}
 		vector.DrawFilledCircle(dst, px, py, 4, color.RGBA{194, 155, 205, 255}, false)
 		vector.StrokeCircle(dst, px, py, 5, 1, color.RGBA{84, 67, 111, 255}, false)
 	}
 	for _, ship := range t.player {
-		x, y := tacticalShipScreenCenter(ship)
-		mx, my := tacticalMinimapPoint(x, y)
+		mx, my := tacticalMinimapShipPoint(ship)
 		vector.DrawFilledCircle(dst, mx, my, 1.5, color.RGBA{173, 91, 164, 255}, false)
 	}
 	for _, ship := range t.enemy {
-		x, y := tacticalShipScreenCenter(ship)
-		if ship.MonsterKind != gamedata.MonsterNone && !ship.ScreenPositionKnown && t.monsterStar >= 0 {
-			// 原版同狀態縮圖的橘點位於 (571,416)，反投影約為 (853,192)：在目前
-			// 640px 視窗右側。只用於縮圖呈現，不把單幀推論寫成戰鬥座標狀態。
-			x, y = 853, 192
-		}
-		mx, my := tacticalMinimapPoint(x, y)
+		mx, my := tacticalMinimapShipPoint(ship)
 		vector.DrawFilledCircle(dst, mx, my, 2, color.RGBA{151, 104, 48, 255}, false)
 	}
+}
+
+func tacticalMinimapShipPoint(ship shell.CombatShip) (float32, float32) {
+	if ship.DeployPositionKnown {
+		x, y := tacticalMinimapRawPoint(ship.DeployX, ship.DeployY)
+		if ship.OrbitalBase {
+			y += 3
+		}
+		if ship.MonsterKind != gamedata.MonsterNone {
+			x -= 2
+			y += 3
+		}
+		return x, y
+	}
+	x, y := tacticalShipScreenCenter(ship)
+	return tacticalMinimapScreenPoint(x, y)
 }
 
 func tacticalShipScreenCenter(s shell.CombatShip) (float64, float64) {
@@ -3980,13 +4006,20 @@ const (
 	tacticalSystemsW     = 96
 	tacticalMinimapX     = 507
 	tacticalMinimapY     = 404
+	tacticalMinimapRawY  = 372
 )
 
-// tacticalMinimapPoint 將 640×351 的目前視窗投影到原版控制甲板縮圖。Amoeba／Trilar III
-// 同狀態 oracle 中，行星、Star Base 與兩艘 Frigate 的四個已知點共同收斂為 x*3/40、y/16；
-// 48×22 的四角框也正好對應 640×351 可見區。這是單幀強推論，不冒稱原版內部定點公式。
-func tacticalMinimapPoint(x, y float64) (float32, float32) {
+// tacticalMinimapScreenPoint 是沒有 raw deployment 時的 remake fallback；只保證縮圖仍可用。
+func tacticalMinimapScreenPoint(x, y float64) (float32, float32) {
 	return float32(tacticalMinimapX + x*3/40), float32(tacticalMinimapY + y/16)
+}
+
+// tacticalMinimapRawPoint 消費原版 combat record +0x21/+0x22。6/5 比例由
+// Deploy_Ships_ 的 (10,34)、(21,35)、(25,34/36)、(55,34) 與同狀態縮圖共同收斂；
+// 比例仍是強推論，raw 點本身則是 IDA 已證實。
+func tacticalMinimapRawPoint(x, y int) (float32, float32) {
+	return float32(tacticalMinimapX) + float32(x)*6/5,
+		float32(tacticalMinimapRawY) + float32(y)*6/5
 }
 
 func tacticalSelectionRingClass(ship shell.CombatShip) int {

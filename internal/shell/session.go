@@ -1817,6 +1817,11 @@ type CombatShip struct {
 	// 清除 ScreenPositionKnown，直到自由座標移動規則完成。
 	ScreenX, ScreenY    int
 	ScreenPositionKnown bool
+	// DeployX/DeployY 保存原版 313-byte combat record +0x21/+0x22 的 20px 戰術單位。
+	// 它與 640×351 renderer 的 sprite 中心不同，不能混用；remake 格子移動後必須
+	// 清除 DeployPositionKnown，避免縮圖繼續顯示過期的原版部署點。
+	DeployX, DeployY    int
+	DeployPositionKnown bool
 	OrbitalBase         bool                  // 殖民地軌道基地；不是戰略 Fleet.Ships 成員。
 	MonsterKind         gamedata.SpaceMonster // 非 MonsterNone 時改走 MONSTER.LBX，而非 CMBTSHP。
 	// Facing 是原版 combat record +0x23 的 16 向 heading。0=右、4=上、

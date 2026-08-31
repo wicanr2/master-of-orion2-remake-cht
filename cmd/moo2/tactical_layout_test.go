@@ -60,18 +60,19 @@ func TestTacticalShipFreeCoordinateOverridesGridOnlyForRendering(t *testing.T) {
 	}
 }
 
-func TestTacticalMinimapProjectionMatchesSameStateOracle(t *testing.T) {
+func TestTacticalMinimapRawProjectionMatchesDeployShipsOracle(t *testing.T) {
 	tests := []struct {
-		x, y         float64
+		x, y         int
 		wantX, wantY float32
 	}{
-		{163, 222, 519.225, 417.875}, // Trilar III
-		{340, 201, 532.5, 416.5625},  // Star Base
-		{412, 133, 537.9, 412.3125},  // 第一艘 Frigate
-		{853, 192, 570.975, 416},     // 縮圖可見、主視窗外的 Amoeba 強推論點
+		{10, 34, 519, 412.8}, // 行星 raw deployment；圖示圓心另加 y=5
+		{21, 35, 532.2, 414}, // Star Base raw deployment；圖示圓心另加 y=3
+		{25, 34, 537, 412.8}, // 第一艘 Frigate
+		{25, 36, 537, 415.2}, // 第二艘 Frigate
+		{55, 34, 573, 412.8}, // Amoeba raw deployment；怪物圖示中心另有 (-2,+3)
 	}
 	for _, tt := range tests {
-		gotX, gotY := tacticalMinimapPoint(tt.x, tt.y)
+		gotX, gotY := tacticalMinimapRawPoint(tt.x, tt.y)
 		if gotX != tt.wantX || gotY != tt.wantY {
 			t.Fatalf("minimap(%v,%v)=(%v,%v)，want (%v,%v)", tt.x, tt.y, gotX, gotY, tt.wantX, tt.wantY)
 		}
@@ -84,6 +85,23 @@ func TestTacticalOrbitalBaseUsesMediumSelectionRing(t *testing.T) {
 	}
 	if got := tacticalSelectionRingClass(shell.CombatShip{SizeClass: gamedata.SHIP_BATTLESHIP}); got != 2 {
 		t.Fatalf("一般 Battleship 選艦環 class=%d，want 2", got)
+	}
+}
+
+func TestTacticalMinimapShipPointKeepsRawDeploymentSeparateFromScreenCenter(t *testing.T) {
+	base := shell.CombatShip{
+		DeployX: 21, DeployY: 35, DeployPositionKnown: true,
+		ScreenX: 340, ScreenY: 201, ScreenPositionKnown: true, OrbitalBase: true,
+	}
+	if x, y := tacticalMinimapShipPoint(base); x != 532.2 || y != 417 {
+		t.Fatalf("Star Base raw minimap=(%v,%v)，want (532.2,417)", x, y)
+	}
+	amoeba := shell.CombatShip{
+		DeployX: 55, DeployY: 34, DeployPositionKnown: true,
+		MonsterKind: gamedata.MonsterAmoeba,
+	}
+	if x, y := tacticalMinimapShipPoint(amoeba); x != 571 || y != 415.8 {
+		t.Fatalf("Amoeba raw minimap=(%v,%v)，want (571,415.8)", x, y)
 	}
 }
 
