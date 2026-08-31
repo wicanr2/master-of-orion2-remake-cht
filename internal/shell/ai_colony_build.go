@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
@@ -54,6 +55,57 @@ func (s *GameSession) aiCanBuildOriginalAgent(aiIndex, colony int, out engine.Co
 		return false
 	}
 	return a.Colonies[colony].Population/8+out.NetIndustry-out.PollutionCleanupCost >= 15
+}
+
+// originalAIColonyShipProductQuota 是 raw -12 pseudo-product 在單主力艦隊模型中的 typed
+// 投影。原版配額會掃全部 ship records；remake 同樣計入既有與生產中的殖民船，並只在
+// 至少一顆已知合法擴張候選存在時建立一個 ship slot。多艦隊分派順序仍是明示近似。
+func (s *GameSession) originalAIColonyShipProductQuota(aiIndex int) int {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) {
+		return 0
+	}
+	a := &s.AIPlayers[aiIndex]
+	if !playerStateKnowsTech(a.Player, gamedata.TOPIC_COLD_FUSION, gamedata.TECH_COLONY_SHIP) {
+		return 0
+	}
+	for _, ship := range a.Ships {
+		if (ship.RawTypeKnown && ship.RawType == gamedata.COLONY_SHIP) || ship.Class == ColonyShipClass {
+			return 0
+		}
+	}
+	for _, build := range a.ColonyBuilds {
+		if build.ProductKind == ColonyProductAIColonyShip {
+			return 0
+		}
+	}
+	for _, star := range s.aiExpansionCandidates(aiIndex) {
+		if s.aiCanExpandInto(aiIndex, star) && !s.StarGuardedByMonster(star) {
+			return 1
+		}
+	}
+	return 0
+}
+
+func aiColonyShipProductCost() (int, bool) {
+	action, ok := gamedata.SpecialActionByNameZH(gamedata.ColonyShipActionName)
+	return action.ProductionCost, ok && action.ProductionCost > 0
+}
+
+func (s *GameSession) completeAIColonyShipProduct(aiIndex int) bool {
+	if aiIndex < 0 || aiIndex >= len(s.AIPlayers) {
+		return false
+	}
+	a := &s.AIPlayers[aiIndex]
+	cost, ok := aiColonyShipProductCost()
+	if !ok {
+		return false
+	}
+	name := fmt.Sprintf("%s C-%d", a.Name, len(a.Ships)+1)
+	a.Ships = append(a.Ships, Ship{Name: name, Class: ColonyShipClass,
+		RawType: gamedata.COLONY_SHIP, RawTypeKnown: true, RawMissionKnown: true,
+		ProductionCost: cost})
+	s.syncAICommandPoints(aiIndex)
+	return true
 }
 
 // aiColonyBuildKey 以星系索引保存佇列；舊存檔若缺 ColonyStars，使用不會和合法星系
@@ -1232,6 +1284,8 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 	freighterAssignments := 0
 	agentQuota := s.originalAIAgentProductQuota(aiIndex)
 	agentAssignments := 0
+	colonyShipQuota := s.originalAIColonyShipProductQuota(aiIndex)
+	colonyShipAssignments := 0
 	for i := range a.Colonies {
 		if i >= len(out.Colonies) || out.Colonies[i].NetIndustry <= 0 {
 			continue
@@ -1249,6 +1303,11 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 			} else if agentAssignments < agentQuota && s.aiCanBuildOriginalAgent(aiIndex, i, out.Colonies[i]) {
 				build, ok = ColonyBuild{ProductKind: ColonyProductAIAgent, Cost: aiAgentProductCost}, true
 				agentAssignments++
+			} else if colonyShipAssignments < colonyShipQuota {
+				if cost, known := aiColonyShipProductCost(); known {
+					build, ok = ColonyBuild{ProductKind: ColonyProductAIColonyShip, Cost: cost}, true
+					colonyShipAssignments++
+				}
 			} else {
 				build, ok = chooseAIColonyBuilding(a, i, out, s.Difficulty, s.Turn,
 					s.originalAIStrategicPressureContext(aiIndex, i))
@@ -1267,6 +1326,8 @@ func (s *GameSession) advanceAIColonyBuilds(aiIndex int, out engine.EmpireOutput
 			if a.DefensiveAgents < spyMaxSlots {
 				a.DefensiveAgents++
 			}
+		} else if build.ProductKind == ColonyProductAIColonyShip {
+			s.completeAIColonyShipProduct(aiIndex)
 		} else if !s.applyAICompletedSpecial(aiIndex, i, build.Name) {
 			for len(a.ColonyBuildings) <= i {
 				a.ColonyBuildings = append(a.ColonyBuildings, nil)

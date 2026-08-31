@@ -187,6 +187,112 @@ func TestAIDefensiveAgentsAreNotGrantedByPeriodicFallback(t *testing.T) {
 	}
 }
 
+func prepareAIColonyShipProductTest(t *testing.T) (*GameSession, engine.EmpireOutput) {
+	t.Helper()
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	grantTechnologyApplication(&a.Player, gamedata.TOPIC_COLD_FUSION, gamedata.TECH_COLONY_SHIP)
+	a.Ships = nil
+	a.ColonyBuilds = make(map[int]ColonyBuild)
+	for i := range a.ColonyBuildings {
+		if a.ColonyBuildings[i] == nil {
+			a.ColonyBuildings[i] = make(map[string]bool)
+		}
+		for _, b := range gamedata.AvailableBuildings(a.Player.CompletedTopics) {
+			a.ColonyBuildings[i][b.NameZH] = true
+		}
+		a.ColonyBuildings[i][ColonyBaseBuildName] = true
+	}
+	// 保留至少一顆可殖民、已探索且無怪獸的候選星。
+	found := false
+	for _, star := range s.aiExpansionCandidates(0) {
+		if s.aiCanExpandInto(0, star) && !s.StarGuardedByMonster(star) {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("測試需要合法 AI 擴張候選")
+	}
+	out := engine.EmpireOutput{Colonies: make([]engine.ColonyOutput, len(a.Colonies))}
+	out.Colonies[0].NetIndustry = 30
+	return s, out
+}
+
+func TestOriginalAIColonyShipPseudoProductPersistsAndCompletesShipSlot(t *testing.T) {
+	s, out := prepareAIColonyShipProductTest(t)
+	a := &s.AIPlayers[0]
+	s.advanceAIColonyBuilds(0, out)
+	key := aiColonyBuildKey(a, 0)
+	build := a.ColonyBuilds[key]
+	if build.ProductKind != ColonyProductAIColonyShip || build.Progress != 30 {
+		t.Fatalf("raw -12 應建立 typed ship product：%+v", build)
+	}
+	s = s.snapshot().restore()
+	a = &s.AIPlayers[0]
+	if got := a.ColonyBuilds[key]; got.ProductKind != ColonyProductAIColonyShip || got.Progress != 30 {
+		t.Fatalf("ship slot 產品存讀檔失真：%+v", got)
+	}
+	for len(a.Ships) == 0 {
+		s.advanceAIColonyBuilds(0, out)
+	}
+	if len(a.Ships) != 1 || !a.Ships[0].RawTypeKnown || a.Ships[0].RawType != gamedata.COLONY_SHIP {
+		t.Fatalf("raw -12 完工應建立真正殖民船：%+v", a.Ships)
+	}
+	if got := a.ColonyBuilds[key]; got.ProductKind != "" {
+		t.Fatalf("完工後產品應清空：%+v", got)
+	}
+	// 既有殖民船會把配額降為零，不得下一回合立刻重複排產。
+	s.advanceAIColonyBuilds(0, out)
+	if got := a.ColonyBuilds[key]; got.ProductKind == ColonyProductAIColonyShip {
+		t.Fatalf("已有殖民船不得重複排 raw -12：%+v", got)
+	}
+}
+
+func TestOriginalAIColonyShipProductFeedsNormalRouteAndColonizationConsumer(t *testing.T) {
+	s, out := prepareAIColonyShipProductTest(t)
+	a := &s.AIPlayers[0]
+	for len(a.Ships) == 0 {
+		s.advanceAIColonyBuilds(0, out)
+	}
+	before := len(a.Colonies)
+	if !s.aiLaunchColonizationFleet(0) {
+		t.Fatal("新造殖民船應能進入既有 AI 航線 consumer")
+	}
+	for a.FleetETA > 0 {
+		s.advanceAIFleets()
+	}
+	s.aiExpand(0)
+	if len(a.Colonies) != before+1 {
+		t.Fatalf("抵達後應建立一座真殖民地：%d→%d", before, len(a.Colonies))
+	}
+	for _, ship := range a.Ships {
+		if ship.RawTypeKnown && ship.RawType == gamedata.COLONY_SHIP {
+			t.Fatalf("拓殖後應消耗殖民船：%+v", a.Ships)
+		}
+	}
+}
+
+func TestOriginalAIColonyShipQuotaRequiresTechAndSuppressesDuplicates(t *testing.T) {
+	s := NewDemoSession()
+	a := &s.AIPlayers[0]
+	delete(a.Player.GrantedTechs, gamedata.TECH_COLONY_SHIP)
+	delete(a.Player.CompletedTopics, gamedata.TOPIC_COLD_FUSION)
+	if got := s.originalAIColonyShipProductQuota(0); got != 0 {
+		t.Fatalf("未知 Colony Ship application 不得建立 raw -12 配額：%d", got)
+	}
+	grantTechnologyApplication(&a.Player, gamedata.TOPIC_COLD_FUSION, gamedata.TECH_COLONY_SHIP)
+	a.Ships = []Ship{{Class: ColonyShipClass, RawType: gamedata.COLONY_SHIP, RawTypeKnown: true}}
+	if got := s.originalAIColonyShipProductQuota(0); got != 0 {
+		t.Fatalf("已有殖民船不得重複建立配額：%d", got)
+	}
+	a.Ships = nil
+	a.ColonyBuilds = map[int]ColonyBuild{aiColonyBuildKey(a, 0): {ProductKind: ColonyProductAIColonyShip, Cost: 120}}
+	if got := s.originalAIColonyShipProductQuota(0); got != 0 {
+		t.Fatalf("已有生產中 ship slot 不得重複建立配額：%d", got)
+	}
+}
+
 func TestOriginalAIFixedZeroBuildingScores(t *testing.T) {
 	for _, name := range []string{"異族管理中心", "次元傳送門"} {
 		b, ok := gamedata.BuildingByNameZH(name)

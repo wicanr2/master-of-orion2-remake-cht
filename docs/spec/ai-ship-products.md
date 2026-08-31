@@ -31,7 +31,13 @@ RE-TRACE: dos-orion2-1.31:0xD10EE
    真人外派 Spy 壓力投影，證據等級為強推論。生產中 `ProductKind／Progress／Cost` 已通過
    snapshot 往返，且缺 player slot、封鎖、`netCapacity=14/15` 均有失敗即關閉邊界測試。
    免費週期 Spy 是另一個進攻配置缺口，未混報完成。
-3. 依 pseudo-product → ship slot 契約接 Colony Ship／Outpost Ship／Transport 配額。
+3. （部分完成：Colony Ship）raw `-12` 已使用 typed `ai_colony_ship` 產品保存成本與進度；
+   只有已知 Colony Ship application、沒有既有／生產中殖民船且存在合法擴張候選時建立一份
+   配額。完工建立真正 `RawType=COLONY_SHIP` 的 Ship，通過 snapshot 往返後可由既有
+   `aiLaunchColonizationFleet → aiExpand` 航線抵達、建立殖民地並消耗。原版 ship slot 造價
+   尚未在 remake 同構，現沿用玩家支援艦的 120 PP 明示估值；單主力艦隊也會把新船加入目前
+   艦隊，兩者均不冒稱原版精確。Outpost Ship／Transport 尚未接，因目前缺 AI 前哨站與逐艦
+   地面運輸 consumer，不建立無下游的假完成 Ship。
 4. 依既有 role 0..4 藍圖、case 0 戰力缺額與 case 2 改裝鏈接線；多艦隊資料不足時明示近似。
 
 ## 驗收

@@ -115,6 +115,15 @@
   中途 snapshot、封鎖、未知 player slot 與 `netCapacity=14/15` 邊界；`0xD10EE` 因 Colony／
   Outpost／Transport ship slot、戰鬥艦與 refit 尚未全接，仍維持 `READY／PARTIAL`。
 
+- [x] **AI Colony Ship pseudo-product 三輪（2026-08-31）**：raw `-12` 已由 typed
+  `ColonyProductAIColonyShip` 保存逐殖民地產品與進度；配額要求已知 Colony Ship application、
+  沒有既有／生產中殖民船，且至少存在一顆已探索、可殖民、無怪獸的合法候選。中途 snapshot
+  保留產品；120 PP 完工後建立真正 `RawType=COLONY_SHIP` Ship，正常進入
+  `aiLaunchColonizationFleet → advanceAIFleets → aiExpand`，抵達後新增真殖民地並消耗船，且不會
+  立即重複排產。120 PP 沿用玩家支援艦的明示估值，原版 ship slot 成本與單主力艦隊分派仍是
+  資料模型近似；Outpost／Transport 因沒有 AI 前哨站／逐艦地面運輸 consumer 未假裝完成，
+  `0xD10EE` 維持 `READY／PARTIAL`。
+
 - [x] **原版回合主鏈拓樸閉合（RE-only，2026-08-28）**：IDA Pro 9.4 重新匯出
   `Next_Turn_Calc_ @ 0x136B3..0x13822`，證實是 52 個直接 call；固定順序、
   兩次 `Do_Colony_Calculations_`、安塔蘭／議會／UI 三類條件 gate、逐玩家領袖招募迴圈，以及

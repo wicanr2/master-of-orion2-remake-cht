@@ -2680,7 +2680,8 @@ type ColonyBuild struct {
 type ColonyProductKind string
 
 const (
-	ColonyProductAIAgent ColonyProductKind = "ai_agent"
+	ColonyProductAIAgent      ColonyProductKind = "ai_agent"
+	ColonyProductAIColonyShip ColonyProductKind = "ai_colony_ship"
 )
 
 // TradeGoodsBuildName 是「貿易品」建造佇列選項的名稱。與空字串「不建造」同類——是佇列的
