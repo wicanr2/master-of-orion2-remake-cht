@@ -2352,6 +2352,7 @@ type tacticalScreen struct {
 	selectionRings [3][]*ebiten.Image
 	res            *assets.Resolver      // 供 shipSprite 延遲載入各艦級 sprite
 	shipSprites    map[int]*ebiten.Image // CMBTSHP 資產索引 → 已解碼 sprite(nil=載入失敗,亦快取)
+	monsterSprites map[int]*ebiten.Image // MONSTER 資產 index/frame 組合 → 已解碼 sprite
 	// shipMotionStart 記錄本次移動開始的 remake tick；key 包含敵我側與艦名，
 	// 讓同名艦也不會共用動畫狀態。原版 timer 未由靜態碼追回，這是固定、可重播
 	// 的 CMBTSHP 顯示 adapter。
@@ -2475,18 +2476,62 @@ func loadCombatShipByIdx(res *assets.Resolver, idx int) *ebiten.Image {
 // adapter：只在艦艇剛移動後播放短掃掠，停止後固定在朝向幀。
 func loadCombatShipByIdxFrame(res *assets.Resolver, idx, frame int) *ebiten.Image {
 	palIdx := (idx/45)*45 + 44
-	prov, err := decodeAsset(res, "cmbtshp.lbx", palIdx)
-	if err != nil || prov.Embedded == nil {
-		return nil
-	}
 	im, err := decodeAsset(res, "cmbtshp.lbx", idx)
 	if err != nil || len(im.Frames) == 0 {
+		return nil
+	}
+	// CMBTSHP 的 palette-holder 只覆蓋玩家色段，不是完整 256 色盤。原版先保留
+	// COMBAT#11 基底，再疊目前色塊 holder；直接使用 holder.Embedded 會把艦體共用的
+	// 灰階索引全部變黑，正是同狀態截圖中 Frigate／Star Base 過暗的根因。
+	pal, err := resolvePalette(res, im, paletteChain{{"combat.lbx", 11}, {"cmbtshp.lbx", palIdx}})
+	if err != nil {
 		return nil
 	}
 	if frame < 0 || frame >= len(im.Frames) {
 		frame = 0
 	}
-	return ebiten.NewImageFromImage(im.Frames[frame].ToRGBA(prov.Embedded, im.KeyColor()))
+	return ebiten.NewImageFromImage(im.Frames[frame].ToRGBA(pal, im.KeyColor()))
+}
+
+// combatMonsterAsset 是 MONSTER.LBX 前 13 張真 sprite 的種類映射。資產接觸表以
+// COMBAT#11 基底＋MONSTER#13 局部色盤重建後，可直接辨識 7=Guardian、8=Eel、
+// 9=Crystal、10=Amoeba、11=Hydra、12=Dragon；0..6 是軌道基地尺寸序列。
+func combatMonsterAsset(kind gamedata.SpaceMonster) (int, bool) {
+	switch kind {
+	case gamedata.MonsterGuardian:
+		return 7, true
+	case gamedata.MonsterEel:
+		return 8, true
+	case gamedata.MonsterCrystal:
+		return 9, true
+	case gamedata.MonsterAmoeba:
+		return 10, true
+	case gamedata.MonsterHydra:
+		return 11, true
+	case gamedata.MonsterDragon:
+		return 12, true
+	default:
+		return 0, false
+	}
+}
+
+func loadCombatMonsterFrame(res *assets.Resolver, kind gamedata.SpaceMonster, frame int) *ebiten.Image {
+	asset, ok := combatMonsterAsset(kind)
+	if !ok {
+		return nil
+	}
+	im, err := decodeAsset(res, "monster.lbx", asset)
+	if err != nil || len(im.Frames) == 0 {
+		return nil
+	}
+	pal, err := resolvePalette(res, im, paletteChain{{"combat.lbx", 11}, {"monster.lbx", 13}})
+	if err != nil {
+		return nil
+	}
+	if frame < 0 || frame >= len(im.Frames) {
+		frame = 0
+	}
+	return ebiten.NewImageFromImage(im.Frames[frame].ToRGBA(pal, im.KeyColor()))
 }
 
 func newTacticalScreen(b *sceneBuilder) *tacticalScreen {
@@ -2504,7 +2549,7 @@ func newTacticalScreenForShips(b *sceneBuilder, p, e []shell.CombatShip, monster
 		pStart: len(p), eStart: len(e),
 		rng: rand.New(rand.NewSource(seed)),
 		bg:  loadCombatBG(b.res), bar: loadCombatBar(b.res), planetX: 109, planetY: 168,
-		res: b.res, shipSprites: map[int]*ebiten.Image{}, shipMotionStart: map[string]int{}, combatFX: loadCombatFX(b.res),
+		res: b.res, shipSprites: map[int]*ebiten.Image{}, monsterSprites: map[int]*ebiten.Image{}, shipMotionStart: map[string]int{}, combatFX: loadCombatFX(b.res),
 		moveLeft: freshMoveBudgets(p), acted: make([]bool, len(p)), waited: make([]bool, len(p)),
 		monsterStar: monsterStar}
 	t.selectionRings = loadCombatSelectionRings(b.res)
@@ -2676,6 +2721,24 @@ func (t *tacticalScreen) shipSprite(idx, heading, elapsed int, moving bool) *ebi
 	im := loadCombatShipByIdxFrame(t.res, idx, frame)
 	t.shipSprites[cacheKey] = im // 允許 nil(載入失敗),快取避免每幀重試
 	return im
+}
+
+func (t *tacticalScreen) monsterSprite(kind gamedata.SpaceMonster, heading int) *ebiten.Image {
+	asset, ok := combatMonsterAsset(kind)
+	if !ok {
+		return nil
+	}
+	frame := shell.CMBTSHPFrameForHeading(heading)
+	key := asset*100 + frame
+	if t.monsterSprites == nil {
+		t.monsterSprites = map[int]*ebiten.Image{}
+	}
+	if sprite, cached := t.monsterSprites[key]; cached {
+		return sprite
+	}
+	sprite := loadCombatMonsterFrame(t.res, kind, frame)
+	t.monsterSprites[key] = sprite
+	return sprite
 }
 
 func cellRect(col, row int) (x, y, w, h int) { return gcX0 + col*gcCW, gcY0 + row*gcCH, gcCW, gcCH }
@@ -3732,7 +3795,11 @@ func (t *tacticalScreen) drawShip(dst *ebiten.Image, s shell.CombatShip, base co
 	cx, cy := tacticalShipScreenCenter(s)
 	_, _, w, h := cellRect(s.Col, s.Row)
 	elapsed, moving := t.shipMotionElapsed(s, enemy)
-	if sprite := t.shipSprite(s.SpriteIdx, s.Facing, elapsed, moving); sprite != nil {
+	sprite := t.shipSprite(s.SpriteIdx, s.Facing, elapsed, moving)
+	if s.MonsterKind != gamedata.MonsterNone {
+		sprite = t.monsterSprite(s.MonsterKind, s.Facing)
+	}
+	if sprite != nil {
 		sb := sprite.Bounds()
 		sw0, sh0 := float64(sb.Dx()), float64(sb.Dy())
 		sc := math.Min(1, math.Min(float64(w-4)/sw0, float64(h+6)/sh0))
@@ -3985,9 +4052,35 @@ func (t *tacticalScreen) drawTacticalWeaponPanel(dst *ebiten.Image) {
 		} else if mode == shell.TacticalWeaponOff {
 			col, status = color.RGBA{225, 90, 85, 255}, tacticalText(t.b.lang, "tactical.weapon.mode.off")
 		}
-		label := fmt.Sprintf("%d %s ×%d", i+1, tacticalWeaponDisplayName(t.b, name), count)
+		displayName := tacticalWeaponDisplayName(t.b, name)
+		if t.b.lang == i18n.English && count > 1 {
+			if strings.HasSuffix(displayName, "Cannon") || strings.HasSuffix(displayName, "Missile") {
+				displayName += "s"
+			}
+		}
+		arc := shell.WeaponArcLabelZH(ship.WeaponArc)
+		if i < len(ship.WeaponMounts) {
+			arc = shell.WeaponArcLabelZH(ship.WeaponMounts[i].Arc)
+		}
+		if t.b.lang == i18n.English {
+			arc = shell.WeaponArcLabelEN(ship.WeaponArc)
+			if i < len(ship.WeaponMounts) {
+				arc = shell.WeaponArcLabelEN(ship.WeaponMounts[i].Arc)
+			}
+		}
+		if (i < len(ship.WeaponMounts) && ship.WeaponMounts[i].Arc == gamedata.ARC_MONSTER_360) ||
+			(i >= len(ship.WeaponMounts) && ship.WeaponArc == gamedata.ARC_MONSTER_360) {
+			arc = uiText(t.b.lang, "tactical.weapon.arc.full")
+		}
+		rowKey := "tactical.weapon.row.standard"
+		if i < len(ship.WeaponMounts) && tacticalMountHasMod(ship.WeaponMounts[i], gamedata.ModHeavyMount) {
+			rowKey = "tactical.weapon.row.heavy"
+		} else if i < len(ship.WeaponMounts) && tacticalMountHasMod(ship.WeaponMounts[i], gamedata.ModPointDefense) {
+			rowKey = "tactical.weapon.row.point_defense"
+		}
+		label := fmt.Sprintf(uiText(t.b.lang, rowKey), count, displayName, arc)
 		if ammo != 255 && ammo >= 0 {
-			label += fmt.Sprintf(" [%d]", ammo)
+			label = fmt.Sprintf(uiText(t.b.lang, "tactical.weapon.row.ammo"), count, displayName, ammo)
 		}
 		if mode != shell.TacticalWeaponReady {
 			label += " · " + status
@@ -3998,6 +4091,15 @@ func (t *tacticalScreen) drawTacticalWeaponPanel(dst *ebiten.Image) {
 			drawHoverBorder(dst, float32(r[0]), float32(r[1]), float32(r[2]), float32(r[3]), true)
 		}
 	}
+}
+
+func tacticalMountHasMod(mount shell.ShipWeaponMount, want gamedata.WeaponModCode) bool {
+	for _, mod := range mount.Mods {
+		if mod == string(want) {
+			return true
+		}
+	}
+	return false
 }
 
 // drawTacticalSelectedShipPanel 使用 COMBAT.LBX#0 已有的左側艦名／縮圖與右側 Systems 區，
@@ -4023,6 +4125,31 @@ func (t *tacticalScreen) drawTacticalSelectedShipPanel(dst *ebiten.Image) {
 		fmt.Sprintf("ATK %d", ship.Attack),
 		fmt.Sprintf("DEF %d", ship.Defense),
 		fmt.Sprintf("DRV %d", ship.DriveLevel),
+	}
+	if ship.OrbitalBase {
+		baseRows := []struct {
+			key      string
+			value    int
+			hasValue bool
+		}{
+			{"tactical.system.no_drive", 0, false},
+			{"tactical.system.no_shields", 0, false},
+			{"tactical.system.computer", ship.Attack, true},
+			{"tactical.system.structure", ship.HP, true},
+			{"tactical.system.armor", ship.ArmorHP, true},
+			{"tactical.system.max_speed", 0, true},
+			{"tactical.system.remaining", 0, true},
+		}
+		for i, row := range baseRows {
+			y := float64(tacticalSystemsY + 9 + i*11)
+			t.fnt.Draw(dst, uiText(t.b.lang, row.key), float64(tacticalSystemsX+5), y, 8,
+				color.RGBA{135, 175, 220, 255})
+			if row.hasValue {
+				t.fnt.Draw(dst, fmt.Sprintf("%d", row.value), float64(tacticalSystemsX+82), y, 8,
+					color.RGBA{135, 175, 220, 255})
+			}
+		}
+		return
 	}
 	for i, label := range labels {
 		t.fnt.Draw(dst, label, float64(tacticalSystemsX+5), float64(tacticalSystemsY+9+i*11), 8,

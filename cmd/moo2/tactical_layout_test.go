@@ -32,6 +32,21 @@ func TestCombatPlanetAssetMappingMatchesTrilarOracle(t *testing.T) {
 	}
 }
 
+func TestCombatMonsterAssetMappingUsesMonsterArchive(t *testing.T) {
+	wants := map[gamedata.SpaceMonster]int{
+		gamedata.MonsterGuardian: 7, gamedata.MonsterEel: 8, gamedata.MonsterCrystal: 9,
+		gamedata.MonsterAmoeba: 10, gamedata.MonsterHydra: 11, gamedata.MonsterDragon: 12,
+	}
+	for kind, want := range wants {
+		if got, ok := combatMonsterAsset(kind); !ok || got != want {
+			t.Fatalf("怪物 %d MONSTER.LBX asset=(%d,%v)，want %d", kind, got, ok, want)
+		}
+	}
+	if _, ok := combatMonsterAsset(gamedata.MonsterNone); ok {
+		t.Fatal("MonsterNone 不得誤映射到怪物 sprite")
+	}
+}
+
 func TestTacticalShipFreeCoordinateOverridesGridOnlyForRendering(t *testing.T) {
 	ship := shell.CombatShip{Col: 1, Row: 2, ScreenX: 412, ScreenY: 133, ScreenPositionKnown: true}
 	if x, y := tacticalShipScreenCenter(ship); x != 412 || y != 133 {

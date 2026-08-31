@@ -96,5 +96,23 @@ remake 同狀態診斷由 `-game -tactical-oracle-save <fixture.GAM> -tactical-o
 -shot <out.png> -uiscale 1` 觸發；它走正式 `.GAM` importer、`StartMonsterCombat` 與 renderer，但
 直接進戰術畫面，所以只算 renderer 診斷，不取代上面的原版正常玩家路徑。2026-08-31 第二張輸出
 SHA-256 為 `284b8520b34431bd1dfc4a0ea7e6c8518d16ade4a7b629767241c7693b5913a5`（僅存 `/tmp`，不入版控）。
-該圖證實行星、兩艘 Frigate、Star Base 中心、選艦環與控制甲板 portrait 已對位；剩餘可見差異是
-Frigate／Star Base 調色偏暗、Amoeba sprite／首幀位置，以及控制甲板字型／逐值排列。
+該圖證實行星、兩艘 Frigate、Star Base 中心、選艦環與控制甲板 portrait 已對位；當時剩餘可見
+差異是 Frigate／Star Base 調色偏暗、Amoeba sprite／首幀位置，以及控制甲板字型／逐值排列。
+
+## 第二輪資產與控制甲板勘誤（2026-08-31）
+
+`CMBTSHP` palette-holder 只包含玩家色段；remake 先前直接使用它，透明的其餘索引因而把艦體
+共用灰階抹成黑色。現在固定以 `COMBAT.LBX#11` 為完整基底，再疊當前色塊 holder 的 Alpha 非零
+項。相同 fixture 的 Frigate、Star Base 與 portrait 因此恢復原版可見灰階。這是資產結構與
+同狀態影像共同支持的**強推論**，不是 IDA 已證實的逐指令色盤呼叫順序。
+
+以 `COMBAT#11` 基底加 `MONSTER#13` 局部色盤重建 `MONSTER.LBX` 0..12 接觸表後，可直接辨識
+`7=Guardian、8=Eel、9=Crystal、10=Amoeba、11=Hydra、12=Dragon`，0..6 則是軌道基地尺寸／類型
+序列。remake 已依此**強推論**讓太空怪物走 `MONSTER.LBX`，不再誤用一般艦艇圖；Amoeba 現為
+正確綠色 sprite。該接觸表只保存於 `/tmp`，未提交原版資產。
+
+控制甲板亦改用原版可見的短式武器列與分欄 Systems 值，四列武器及七列系統資料均留在原框內，
+不再讓通用戰鬥訊息覆蓋 Star Base Systems。最終 remake 診斷圖只保存於 `/tmp`，SHA-256 為
+`10c18ea7062ea3e00fe06f51570a6ec7f9139bcd1c282bd8448965ffaff2dfe5`。仍未關閉的玩家可見差異是
+Amoeba 首幀座標、Star Base 精確縮放、戰術
+縮圖內容與自由座標移動規則；沒有原版證據前不得以把怪物任意移出畫面來偽造首幀相似度。

@@ -158,8 +158,10 @@
   `tools/gamfixture` 建立僅五個 byte 差異的 Amoeba／Trilar III tactical fixture，並由原版正常
   `CONTINUE → TURN → battle search → sub_47939` 取得 640×480 首幀。remake 已接入精確
   `CMBTPLNT#32/#35` 行星、`COMBAT#32..34` 五幀我方選艦環及守方首幀自由座標；放大裁切已勘誤
-  `(340,201)` 是 Star Base 而非 Amoeba。Star Base 的已證實早期 loadout 已接入，仍待 Amoeba 座標、
-  控制甲板逐值／縮圖、自由座標移動與同艦艇設計 fixture，完成前不宣稱逐像素對齊。
+  `(340,201)` 是 Star Base 而非 Amoeba。第二輪已修正 `CMBTSHP` 局部色盤誤抹灰階，並由接觸表
+  強推論接入 `MONSTER.LBX#7..12` 六種真怪物圖；Star Base 四列短式武器與 Systems 分欄文字亦已
+  收回原框，不再被通用訊息覆蓋。仍待 Amoeba 首幀座標、Star Base 精確縮放、戰術縮圖、自由
+  座標移動與同艦艇設計 fixture，完成前不宣稱逐像素對齊。
 
 - [x] **原版回合主鏈拓樸閉合（RE-only，2026-08-28）**：IDA Pro 9.4 重新匯出
   `Next_Turn_Calc_ @ 0x136B3..0x13822`，證實是 52 個直接 call；固定順序、

@@ -30,6 +30,11 @@ palette-holder：45*k + 44
 
 ## 顏色與 fallback
 
+每個 `CMBTSHP` 色塊末端的 palette-holder 只覆蓋玩家色段，不是完整 256 色盤。renderer 的
+實際解碼鏈必須先取 `COMBAT.LBX#11` 作基底，再以目前色塊的 holder 覆蓋 Alpha 非零項；只把
+holder 傳給 `ToRGBA` 會讓艦體共用灰階索引變成黑色。這項根因已由 2026-08-31 同存檔原版／
+remake 截圖交叉驗證並修正；它是資產解碼契約，不是額外的玩家配色規則。
+
 玩家的真實 raw picture 直接套用上述公式；敵方若有 `.GAM` 藍圖與顏色欄位也走同一
 條公式。沒有 raw picture 的舊存檔、程序化 demo 或只有抽象戰力的敵艦，才使用
 `CombatSpriteForClass`／`CombatSpriteForStrength` 的小艦到大艦代表索引。代表索引

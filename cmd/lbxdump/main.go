@@ -2,7 +2,7 @@
 //
 // 用法:
 //
-//	lbxdump <file.lbx> <outdir> [--pal <palette.lbx>:<index>] [--max N]
+//	lbxdump <file.lbx> <outdir> [--pal <palette.lbx>:<index>[,...]] [--max N]
 //
 // 有內嵌調色盤的影像直接上色;無內嵌者需以 --pal 指定外部調色盤來源
 // (某 .lbx 內某 index 影像的內嵌調色盤)。
@@ -23,7 +23,7 @@ import (
 )
 
 func main() {
-	palFlag := flag.String("pal", "", "外部調色盤來源 <palette.lbx>:<index>")
+	palFlag := flag.String("pal", "", "外部調色盤疊加鏈 <palette.lbx>:<index>[,...]（前者為基底）")
 	maxAssets := flag.Int("max", 0, "最多處理幾個資產(0 = 全部)")
 	flag.Parse()
 	if flag.NArg() < 2 {
@@ -38,7 +38,7 @@ func main() {
 
 	var extPal *lbx.Palette
 	if *palFlag != "" {
-		p, err := loadExternalPalette(*palFlag)
+		p, err := loadExternalPaletteChain(*palFlag)
 		if err != nil {
 			fatal(fmt.Errorf("載入外部調色盤: %w", err))
 		}
@@ -119,6 +119,28 @@ func loadExternalPalette(spec string) (*lbx.Palette, error) {
 		return nil, fmt.Errorf("該資產無內嵌調色盤")
 	}
 	return im.Embedded, nil
+}
+
+func loadExternalPaletteChain(spec string) (*lbx.Palette, error) {
+	var merged lbx.Palette
+	for _, part := range strings.Split(spec, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		pal, err := loadExternalPalette(part)
+		if err != nil {
+			return nil, err
+		}
+		// DecodeImage 的局部內嵌色盤只在有效範圍把 A 設為 0xff；其餘零值不可
+		// 覆蓋前一層 base palette。
+		for i, c := range pal {
+			if c.A != 0 {
+				merged[i] = c
+			}
+		}
+	}
+	return &merged, nil
 }
 
 func writePNG(name string, img *image.RGBA) error {

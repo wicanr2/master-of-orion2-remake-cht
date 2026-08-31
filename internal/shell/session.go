@@ -1817,7 +1817,8 @@ type CombatShip struct {
 	// 清除 ScreenPositionKnown，直到自由座標移動規則完成。
 	ScreenX, ScreenY    int
 	ScreenPositionKnown bool
-	OrbitalBase         bool // 殖民地軌道基地；不是戰略 Fleet.Ships 成員。
+	OrbitalBase         bool                  // 殖民地軌道基地；不是戰略 Fleet.Ships 成員。
+	MonsterKind         gamedata.SpaceMonster // 非 MonsterNone 時改走 MONSTER.LBX，而非 CMBTSHP。
 	// Facing 是原版 combat record +0x23 的 16 向 heading。0=右、4=上、
 	// 8=左、12=下；移動時由 tactical UI 依移動向量更新。
 	Facing int

@@ -94,7 +94,7 @@ func (s *GameSession) StartMonsterCombat(starIdx int) (player, monsters []Combat
 			DriveLevel: blueprint.Drive, CombatSpeed: blueprint.BaseCombatSpeed,
 			SizeClass: gamedata.CombatShipClass(blueprint.Size), Col: 6, Row: i % TacticalGridRows,
 			Facing: 8, Initiative: gamedata.CombatInitiative(gamedata.ComputerBonus(blueprint.Computer), blueprint.BaseCombatSpeed),
-			SpriteIdx: blueprint.Picture}
+			SpriteIdx: blueprint.Picture, MonsterKind: m.Kind}
 		monsters = append(monsters, ship)
 	}
 	return player, monsters, ""
