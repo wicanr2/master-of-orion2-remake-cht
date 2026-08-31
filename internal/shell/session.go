@@ -5254,43 +5254,15 @@ func (s *GameSession) EndTurn() {
 			s.AIPlayers[i].Player.TreatyIncomeBC = treatyYields[i].AIBC
 			s.AIPlayers[i].Player.TreatyResearch = treatyYields[i].AIResearch
 		}
-		ps := s.AIPlayers[i].Player
-		jobCtx := engine.OriginalAIJobContext{
-			Personality:         s.AIPlayers[i].Personality,
-			LateTech:            aiOriginalLateTechReached(ps),
-			ColonyFoodHalf:      make([]int, len(s.AIPlayers[i].Colonies)),
-			ColonyFoodHalfKnown: make([]bool, len(s.AIPlayers[i].Colonies)),
-			ColonyBlockaded:     make([]bool, len(s.AIPlayers[i].Colonies)),
-		}
-		knownTech := knownTechnologyApplications(ps)
-		for colony := range s.AIPlayers[i].Colonies {
-			var built map[string]bool
-			if colony < len(s.AIPlayers[i].ColonyBuildings) {
-				built = s.AIPlayers[i].ColonyBuildings[colony]
-			}
-			jobCtx.ColonyFoodHalf[colony], jobCtx.ColonyFoodHalfKnown[colony] =
-				originalAIColonyFoodHalf(s.AIPlayers[i].Colonies[colony], built, knownTech)
-			if colony < len(s.AIPlayers[i].ColonyStars) {
-				star, slot := s.AIPlayers[i].ColonyStars[colony], s.AIPlayers[i].PopulationRaceSlot
-				if star >= 0 && star < len(s.Stars) && s.AIPlayers[i].PopulationRaceSlotKnown && slot >= 0 && slot < 8 {
-					jobCtx.ColonyBlockaded[colony] = s.Stars[star].BlockadedMask&(1<<slot) != 0
-				}
-			}
+		turnData, ok := s.buildOriginalAITurnData(i)
+		if !ok { // range loop 保證不會命中；保留失敗即關閉，避免未來 caller 靜默讀零值 cache。
+			continue
 		}
 		// sub_D66B3 在 sub_E2D72 重算後讀本回合帝國產出；因此職務選擇必須和
 		// 最終結算看見同一份難度／事件暫態加成。回傳後只合併職務欄，避免把
 		// GrowthBonusSum 等暫態值永久寫回並在下回合重複疊加。
-		jobInput := s.aiColoniesForTurn(i, s.AIPlayers[i].Colonies)
-		assigned, freighterPressure, exactJobs := engine.ApplyOriginalAIJobsWithTransport(ps, jobInput, jobCtx)
-		colonies := mergeAIJobAssignments(s.AIPlayers[i].Colonies, assigned)
-		if !exactJobs {
-			// 舊 JSON 缺逐種族 profile 或 +0xDD 無法建立時，保留既有可玩 fallback；
-			// 不把這條路徑宣稱為原版忠實。原版可執行檔沒有 AI 回合寫入 player+0x31
-			// 稅率的 producer，因此 fallback 只能代理職務，不能順便套用 remake 的國庫門檻調稅。
-			originalTaxRate := ps.TaxRate
-			ps, colonies = engine.ApplyAIEconomy(ps, s.AIPlayers[i].Colonies, s.AIPlayers[i].Decider)
-			ps.TaxRate = originalTaxRate
-		} else if freighterPressure {
+		ps, colonies, freighterPressure, exactJobs := turnData.applyJobs(s.AIPlayers[i].Decider)
+		if exactJobs && freighterPressure {
 			// sub_D6AD4 只有在運輸壓力旗標成立時才呼叫 Random(10)；不可在無壓力時
 			// 預先求值 eventRoll，否則會改變後續事件的確定性亂數序列。
 			if gain, ok := gamedata.OriginalAIFreighterFleetGain(
@@ -5299,9 +5271,10 @@ func (s *GameSession) EndTurn() {
 				ps.ActiveFreighters += gain
 			}
 		}
-		ps = applyAIDifficultyPlayerInputs(ps, s.Difficulty)
+		turnData.Player = applyAIDifficultyPlayerInputs(ps, s.Difficulty)
 		s.AIPlayers[i].Colonies = colonies
-		out := engine.RunEmpireTurnWithResearchRoller(ps, s.aiColoniesForTurn(i, colonies), s.researchBreakthroughRoll)
+		out := engine.RunEmpireTurnWithResearchRoller(turnData.Player,
+			turnData.economyColonies(s, colonies), s.researchBreakthroughRoll)
 		if turns, ok := gamedata.OriginalNPCFoodDeficitTurns(s.AIPlayers[i].OriginalFoodDeficitTurns, out.TotalFoodHalf); ok {
 			s.AIPlayers[i].OriginalFoodDeficitTurns = turns
 		}

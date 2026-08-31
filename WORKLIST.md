@@ -132,6 +132,14 @@
   平手取低 hull」明示為可重播近似；case 2 改裝、軌道基地與多艦隊分派仍使 `0xD10EE` 保持
   `READY／PARTIAL`。
 
+- [x] **AI 回合 typed cache 生命週期五輪（2026-08-31）**：新增非持久
+  `originalAITurnData`，在每位 AI 的職務分配前建立並於該次迴圈後自然釋放，不加入
+  `GameSession`／`AIOpponent`／`sessionSnapshot`。原版職務排序與最終帝國結算現在共用同一份
+  難度、事件、封鎖與 `colony+0xDD` 投影；職務結果只合併回權威欄位，暫態加成不跨回合累積。
+  五項邊界測試固定 cache 形狀、Hard 難度投影、blockade mask、snapshot 不變、未知輸入 fallback
+  與無效 index。此切片閉合 `Compute_AI_Data_` 可表示 cache 的建立／消費／釋放邊界；整體移動、
+  生產、外交與戰鬥仍各有明示近似，因此 `0xD3D34` 維持 `READY／PARTIAL`。
+
 - [x] **原版回合主鏈拓樸閉合（RE-only，2026-08-28）**：IDA Pro 9.4 重新匯出
   `Next_Turn_Calc_ @ 0x136B3..0x13822`，證實是 52 個直接 call；固定順序、
   兩次 `Do_Colony_Calculations_`、安塔蘭／議會／UI 三類條件 gate、逐玩家領袖招募迴圈，以及

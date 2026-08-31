@@ -64,7 +64,10 @@ RE 完成分母或 remake 範圍，例如 stack probe、stack overflow check、S
   接入 AI 回合，且不作用於玩家；quarter 捨入、士氣／重力先後及 Spy 攻守共同注入尚無完整
   IDA 指令級證據，維持強推論。
 - AI 常態研究已依 `All_AI_Tech_Select_ → sub_DC288 → sub_FD335` 改為一次 application 級
-  估值抽選，raw profile 與研究亂數位置可存檔。AI 生產也已從全帝國單一造艦池改成逐殖民地
+  估值抽選，raw profile 與研究亂數位置可存檔。`Compute_AI_Data_` 的玩家可表示生命週期已用
+  非持久 `originalAITurnData` 接入：職務排序與帝國結算共用同一份難度／事件／封鎖暫態投影，
+  cache 不進 JSON，未知 typed 輸入走有界 fallback。這只閉合資料生命週期，不代表所有下游
+  AI 決策器已原版化。AI 生產也已從全帝國單一造艦池改成逐殖民地
   建築／戰鬥艦產品與進度；戰鬥艦保存 role 0..4 藍圖快照與 typed 造價，完工建立實艦並進入
   快速／格子戰術，但多藍圖 selector 仍是明示可重播近似。建築接上 raw 1..48 可建 gate、
   難度濾門及加權抽選控制流；其中 raw

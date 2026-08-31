@@ -25,5 +25,10 @@ RE-TRACE: dos-orion2-1.31:0xD3D34
 
 - 已接：常態 application 選擇、原版殖民地職務與補農夫、typed 殖民／食物運輸／玩家目標
   producer，以及決定性可存檔亂數流。
+- 已接：`originalAITurnData` 在每位 AI 的職務分配前建立、帝國結算後自然釋放；它不是
+  `GameSession`／`AIOpponent`／`sessionSnapshot` 欄位。職務排序與最終經濟共用同一份難度、
+  事件、封鎖與 `colony+0xDD` typed 輸入；職務回寫只合併持久欄位，暫態加成不跨回合累積。
+  缺逐種族 profile 或未知食物欄位時仍走既有有界 fallback，且不改寫原版沒有 runtime writer
+  的 AI 稅率。
 - 部分接線：整體 AI 經濟、移動、建造、外交與戰鬥仍混合原版規則與明示近似；須依各子系統
   trace row 判定，不能由本規格 READY 升格成 CONFORMED。
