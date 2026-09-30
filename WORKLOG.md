@@ -180,3 +180,10 @@
 - 隔離 dosgolem 依 DRAFT→READY→實作→CONFORMED 建立規格 226，只讓 MOO2 保護模式設定處理 `INT 33h/AX=3`；初始座標與按鍵可由 `SetMouseState` 控制，其他功能和一般 FD2 設定仍拒絕。固定原檔第 5818 步自行重生回傳，整合測試再讀回原檔寫入 record 的 `3、0、320、100`。下個停點第 5830 步 `8F 47 14` 經規格 227 僅擴充受限 `POP dword` 記憶體目的形狀；合成測試驗證非零搬移、段基址、位移與拒絕路徑，固定原檔第 5830 步自行核對 SS:[ESP] 到 record `+14h`、ESP 加 4。`DOSGOLEM_MOO2_EXE=/tmp/ORION2.EXE go test -buildvcs=false ./... -count=1` 全通過，私有輸出 SHA-256 `47dc1f8bd19688d9f2bf5d38637770bba02cdc74cd7f380016b76ffb6c3ea109`；新增 record／POP 整合斷言另以 `-v` 通過。
 - 有界原檔探針現停第 5838 步、dosgolem **重定位 LE 線性位址** `0x15C1D6` 的 `66 8C 03`；原版 **CS:EIP** `0180:003801D6` 的連續 LOG 顯示 `mov [ebx],es`，下一步先核對記憶體效果，再建立受限規格。兩側 EFLAGS、PSP／環境、堆疊位置與 DTA 指標不同；沒有正常玩家畫面或玩法同狀態收據。本輪未改 MOO2 Go 玩法，也未散布原版輸入。原版 EXE、DOSBox-X 完整終端與 Go 探針輸出留未版控工作區；Docker 容器及檔案擁有權於提交前複核。
 - 隔離 dosgolem 分支 `codex/moo2-parity-20260930` 已提交 `27d1f989c660e04f48d8194af8372e1fb1608610` 並推送 `github`；MOO2 主分支文件同輪另行提交推送。改動檔案均屬目前使用者 UID/GID，未發現新 `.md` 同名目錄，檢查時相關一次性 Docker 容器清空。
+
+## 2026-10-01：ES selector 寫回與後續滑鼠服務停點
+
+- 接手兩工作樹均乾淨；知識路由命中復古 remake、原版決定性對拍及 spec 閘門，讀取相應入口與專案現況。固定 1.31 原檔在 DOSBox-X 2026.07.02 SDL2 heavy debugger 的同次啟動 `LOG 2`，於 **CS:EIP** `0180:003801D6` 執行 `66 8C 03`；DS:[EBX] 前後皆 `0188h`。版控 `startup_probe_131.py --es-store` 可重生 LOG、暫存器與前後兩位元組；雜湊、輸入及位址基準已記在研究紀錄。來源等於原目的，沒有宣稱原版的非相等寫入已實測。
+- 隔離 dosgolem 規格 228 經 DRAFT→READY→實作→CONFORMED，只接該單一 ModRM 形狀。合成測試覆蓋不同值、小端序、非零 DS base、界限拒絕與未列形狀拒絕；固定原檔整合測試自行抵達第 5838 步並單步到下一指令。一次性 `golang:1.24-bookworm` 容器以原 ZIP 唯讀掛載，在容器內擷取 EXE，執行 `DOSGOLEM_MOO2_EXE=/tmp/ORION2.EXE go test -buildvcs=false ./... -count=1` 全通過；私有輸出 SHA-256 `78c15a85c6a0902893dfde545d0db82ea8ebc4dfe275812eefed49cee5d1e0d1`。同容器執行 `go run -buildvcs=false ./workplace/moo2-probe /tmp/ORION2.EXE`，私有收據 SHA-256 `dd4ec7d5ac8b04bfc8bb2c8acd977b342f2d6f10654dc6657d379d702f065da7`，下一停點第 6007 步、dosgolem **重定位 LE 線性位址** `0x15C31B` 的 `INT 33h/AX=21h`。
+- 這輪未改 MOO2 Go 玩法；仍無正常玩家畫面或玩法同狀態對拍。下一最小行動是取固定原版 `INT 33h/AX=21h` 的輸入、返回與 caller 消費端，審查是否足以建立受限工具規格。原版 EXE、完整終端及私有診斷留未版控工作區。
+- 隔離 dosgolem 分支提交 `c3cc5d90b235e3466f4a86484c0b3d907432da7d` 並推送至 `github/codex/moo2-parity-20260930`；MOO2 現況文件同輪提交與推送。相關一次性 Docker 容器清空；新增檔案屬目前使用者，未發現新 `.md` 同名目錄。
