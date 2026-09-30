@@ -44,7 +44,7 @@
 
 ### 2026-08-30 盤點結論（目前唯一待辦來源）
 
-- [ ] **原版動態對拍工具選定**：2026-09-30 已複製 `wine-gorgon` 並在隔離分支以 1.31 原版執行檔實測；其 `neinfo` 只接受 Win16／NE，`ORION95.EXE` 是 PE 簽章，`ORION2.EXE` 也不是 NE，故尚無由該工具產出的玩法對拍收據。先決定擴充 PE32 執行器，或改用支援原版格式的執行器完成動態對拍；詳見 [`docs/re/wine-gorgon-compatibility-20260930.md`](docs/re/wine-gorgon-compatibility-20260930.md)。此項是工具相容性閘門，不計入既有玩法矩陣分母。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選 DOS 原版與 `dosgolem`，不擴充 `wine-gorgon` 的 PE32 路線。`dosgolem` 隔離副本已能直接解析未改動 `ORION2.EXE` 內嵌 LE（2 objects、51,363 筆 fixup），並自然執行 5,359 步；在 `0x10FF43` 的 `POP EDX` 因缺少 DOS/4GW 外層呼叫／堆疊脈絡而停下。下一個最小閘門是證實該外層契約並讓原版抵達首個玩家可見檢查點，之後才與 remake 同狀態比較；目前**沒有玩法對拍收據**。詳見 [`docs/re/dosgolem-moo2-intake-20260930.md`](docs/re/dosgolem-moo2-intake-20260930.md)。此項是動態 oracle 工具閘門，不計入既有玩法矩陣分母。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備
