@@ -50,6 +50,12 @@
 
 上述 DPMI 勘誤、版控觀測腳本、固定原檔回歸測試與通用 `SBB` 已在 `dosgolem` 隔離分支提交並推送 `3babfcf9462e9bbf7c7a1c1d67ded0fa0b30bb6b`。下一個最小工具切片是核對並支援已觀測的 `87 FA` 暫存器交換形狀；其後仍須以 dosgolem 真正到達玩家畫面與可重播輸入，才能製作正式對拍收據。此勘誤與既有 197／201／207 規格的歷史說法應一併閱讀；現行待辦只以 `WORKLIST.md` 活表為準。
 
+### 2026-10-01：`87 FA` 通用 CPU 切片
+
+**已證實，限指令形狀**：固定 1.31 `ORION2.EXE` SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`，dosgolem 重定位 LE 線性 `0x15171D` 原始 bytes `87 FA`；DOSBox-X 2026.07.02 SDL2 heavy debugger 在其 CS:EIP `0180:0037571D → 0037571F` 的兩斷點，`EDX=EDI=003EC028`、`EFLAGS=0216` 前後相同。版控 `apps/moo2/tools/startup_probe_131.py --xchg` 的私有 `xchg-registers.json` SHA-256 `69deda4f6e766c9ffba973bea26dcade18e6f6b0b5b6ff5a780036bf6c6fb18d`；原版兩寄存器相等，不能單憑此樣本證實交換方向。依 Intel 手冊的 `87 /r` 編碼與不同值合成測試，`FA` 是 `XCHG EDX,EDI`，旗標不變。工具位址空間、輸入與版本詳見 dosgolem [規格 209](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/209-cpu386-xchg-register-register.md)。
+
+隔離 dosgolem 工具分支已只補 `87 /r` 的 32 位暫存器形式，保留原記憶體形式；未支援的 16 位暫存器形式拒絕。`go test ./internal/cpu386 ./internal/machine -count=1` 與 `go test ./... -count=1` 通過。已綁定 DPMI 的**合成環境診斷**越過先前第 673 步停點，於第 760 步、dosgolem 重定位 LE 線性 `0x1515CA` 的 `F5` 失敗即關閉。`F5` 的原版前後狀態尚未核對；合成 PSP／環境、完整資料消費端及 dosgolem 正常玩家畫面仍待驗證。此輪未改 remake 玩法，也**沒有玩法同狀態對拍**。
+
 ## 舊資料頁基址的勘誤
 
 ## 2026-09-30 通用 CPU 指令續驗
