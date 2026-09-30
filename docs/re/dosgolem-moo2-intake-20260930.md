@@ -92,6 +92,14 @@
 
 [Intel 手冊的 `ENTER` 條目](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-2a-manual.pdf) 與 dosgolem [規格 215](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/215-cpu386-enter-level-zero.md) 將實作限定為無前綴、32 位堆疊、巢狀層級 0。首版為預檢頁面映射額外讀取堆疊，經審查認定不符通用匯流排契約，退回 DRAFT 後移除；修正版以段描述子檢查權限與界限，並以會拒絕堆疊讀取的合成匯流排測試。固定原檔輸入的 `go test -buildvcs=false ./... -count=1` 全通過；已綁定 DPMI、仍用合成 PSP／環境的診斷越過第 2475 步，至第 2512 步、dosgolem 重定位 LE 線性 `0x109FF` 的 `66 3B 4D CE` 停下。**該記憶體比較尚未由原版獨立核對**；沒有正常玩家路徑或與 remake 同狀態玩法收據。
 
+### 2026-10-01：`66 3B 4D CE` 的原版 16 位記憶體比較
+
+**已證實，限固定原版指令樣本**：1.31 `ORION2.EXE` SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`。DOSBox-X 2026.07.02 SDL2 heavy debugger 映像 `fd2-dosbox-x:debug-0d7b272b`（ID `sha256:659e8abbf93646f59a1586341769bd4b8f3cd1c707859d7a5de4c56e4672b582`）於其 **CS:EIP** `0180:002349FF → 0180:00234A03` 的同次 `LOG 2` 記錄 `cmp cx,[ebp-0032] → jl`。進入時 CX=`0000h`、EBP=`003EBB3Ah`、SS=`0188h`，來源 `SS:003EBB08` 兩位元組 `01 00`；離開時 CX／EBP 與來源 bytes 不變，EFLAGS=`0246h → 0297h`。dosgolem 對應的**重定位 LE 線性位址**是 `0x109FF`，bytes `66 3B 4D CE`；兩工具位址基準不同。
+
+版控 `apps/moo2/tools/startup_probe_131.py --cmp-word` 可重生私有 `cmp-word-registers.json` SHA-256 `b4df0818c2059df4bef4a29c76508908e10e05ba9f8730b7102197da1a9b3969`、`cmp-word-logcpu.txt` SHA-256 `eaf818725b21cc1b76ca9830b81f0da46587ac91401a4dd0ee2d652a8f9a4c51`；`cmp-word-before.bin` 與 `cmp-word-after.bin` SHA-256 均為 `47dc540c94ceb704a23875c11273e16bb0b8a87aed84de911f2133568115f254`。首輪擷取曾把來源寫為 DS；檢查位址解碼與 DOSBox-X 的 `ss:[...]` 註記後，腳本改用 SS 並重生全部收據。原版恰好 DS=SS=`0188h`，故數值一致本身不能證明預設段；[Intel 手冊的 `CMP` 條目](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-2a-manual.pdf)、既有 `decodeAddress32` 與不同 DS／SS base 的合成測試補足此界線。原版檔與完整輸出留在未版控工作區。
+
+隔離 dosgolem 工具分支依 [規格 216](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/216-cpu386-cmp-word-register-memory.md) 接入無段覆寫／repeat 的 `66 3B /r` 16 位記憶體來源。合成測試核對 EBP 選 SS、非 EBP 選 DS、記憶體與暫存器不變、段界限及截短位移拒絕；`go test -buildvcs=false ./internal/cpu386 ./internal/machine -count=1` 與固定原檔輸入的 `go test -buildvcs=false ./... -count=1` 全通過。已綁定 DPMI、仍用合成 PSP／環境的診斷由第 2512 步推進至第 2600 步，於 dosgolem 重定位 LE 線性 `0x126570` 的 `66 A9 89 CF` 停下；該 `TEST` 尚未由原版獨立核對。這不是正常玩家路徑或 remake 玩法同狀態對拍，本輪沒有改 remake 玩法。
+
 ## 舊資料頁基址的勘誤
 
 ## 2026-09-30 通用 CPU 指令續驗
