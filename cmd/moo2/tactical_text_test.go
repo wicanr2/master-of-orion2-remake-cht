@@ -6,7 +6,36 @@ import (
 	"testing"
 
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/i18n"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/shell"
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/uifont"
 )
+
+func TestTacticalShipSystemsUseBilingualCatalogAndFitPanel(t *testing.T) {
+	ship := shell.CombatShip{HP: 275, MaxHP: 300, ArmorHP: 140, ShieldReduction: 35,
+		Attack: 65, Defense: 70, DriveLevel: 5}
+	fnt := uifont.LoadBitmapTC()
+	for _, tc := range []struct {
+		lang i18n.Lang
+		want []string
+	}{
+		{i18n.English, []string{"HP 275/300", "ARM 140", "SHD 35", "ATK 65", "DEF 70", "DRV 5"}},
+		{i18n.Traditional, []string{"船體 275/300", "裝甲 140", "護盾 35", "攻擊 65", "防禦 70", "引擎 5"}},
+	} {
+		rows := tacticalShipSystemLabels(tc.lang, ship)
+		if len(rows) != len(tc.want) {
+			t.Fatalf("Systems 列數=%d，預期 %d", len(rows), len(tc.want))
+		}
+		for i, row := range rows {
+			if row != tc.want[i] {
+				t.Errorf("語系 %v 第 %d 列=%q，預期 %q", tc.lang, i, row, tc.want[i])
+			}
+			width, _ := fnt.Measure(row, 8)
+			if width > tacticalSystemsW-10 {
+				t.Errorf("語系 %v 第 %d 列寬 %.1f 超出 Systems 文字框", tc.lang, i, width)
+			}
+		}
+	}
+}
 
 func TestTacticalCoreAndWeaponTextComesFromCatalog(t *testing.T) {
 	keys := []string{

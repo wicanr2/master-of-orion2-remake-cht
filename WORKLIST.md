@@ -1044,7 +1044,7 @@
   [`docs/re/refit-ui-text-audit-20260827.md`](docs/re/refit-ui-text-audit-20260827.md) 與
   [`docs/tech/refit-external-text-spec.md`](docs/tech/refit-external-text-spec.md)、
   [`docs/re/input-box-ui-text-audit-20260827.md`](docs/re/input-box-ui-text-audit-20260827.md) 與
-  [`docs/tech/input-box-external-text-spec.md`](docs/tech/input-box-external-text-spec.md)。2026-09-30 增加 Go 語法樹回歸檢查：production `uiText` 的固定鍵必須在 `ui.json` 同時具有中英文欄位；動態組合鍵仍由各畫面測試驗證。完整 `cmd/moo2` 測試已通過；本檢查不宣稱所有玩家文案已外部化。程式註解、測試文字與除錯日誌不列入玩家文案。
+  [`docs/tech/input-box-external-text-spec.md`](docs/tech/input-box-external-text-spec.md)。2026-09-30 增加 Go 語法樹回歸檢查：production `uiText` 的固定鍵必須在 `ui.json` 同時具有中英文欄位；動態組合鍵仍由各畫面測試驗證。一般艦艇戰術「系統」欄的六列數值已改由雙語 catalog 提供，繁中畫廊抽樣確認文字未重疊或裁切；這只完成該面板的文案，不宣稱所有玩家文案已外部化，也不是原版同狀態對拍。程式註解、測試文字與除錯日誌不列入玩家文案。
 
 - [x] **原版對局內 SETTINGS 分頁**：2026-08-26 已完成原版 13 列畫面、資產、外部雙語文案、
   原版預設值、`.GAM` 匯入與 JSON 往返。IDA 證實

@@ -4269,14 +4269,6 @@ func (t *tacticalScreen) drawTacticalSelectedShipPanel(dst *ebiten.Image) {
 	t.fnt.Draw(dst, truncateToWidth(t.fnt, ship.Name, 9, float64(tacticalShipInfoW-8)),
 		float64(tacticalShipInfoX+4), float64(tacticalShipInfoY+1), 9,
 		color.RGBA{160, 190, 235, 255})
-	labels := []string{
-		fmt.Sprintf("HP %d/%d", ship.HP, ship.MaxHP),
-		fmt.Sprintf("ARM %d", ship.ArmorHP),
-		fmt.Sprintf("SHD %d", ship.ShieldReduction),
-		fmt.Sprintf("ATK %d", ship.Attack),
-		fmt.Sprintf("DEF %d", ship.Defense),
-		fmt.Sprintf("DRV %d", ship.DriveLevel),
-	}
 	if ship.OrbitalBase {
 		baseRows := []struct {
 			key      string
@@ -4302,8 +4294,10 @@ func (t *tacticalScreen) drawTacticalSelectedShipPanel(dst *ebiten.Image) {
 		}
 		return
 	}
+	labels := tacticalShipSystemLabels(t.b.lang, ship)
 	for i, label := range labels {
-		t.fnt.Draw(dst, label, float64(tacticalSystemsX+5), float64(tacticalSystemsY+9+i*11), 8,
+		t.fnt.Draw(dst, truncateToWidth(t.fnt, label, 8, float64(tacticalSystemsW-10)),
+			float64(tacticalSystemsX+5), float64(tacticalSystemsY+9+i*11), 8,
 			color.RGBA{135, 175, 220, 255})
 	}
 	message := t.log
@@ -4313,6 +4307,17 @@ func (t *tacticalScreen) drawTacticalSelectedShipPanel(dst *ebiten.Image) {
 	t.fnt.Draw(dst, truncateToWidth(t.fnt, message, 7, float64(tacticalSystemsW-8)),
 		float64(tacticalSystemsX+5), float64(tacticalSystemsY+77), 7,
 		color.RGBA{190, 200, 220, 255})
+}
+
+func tacticalShipSystemLabels(lang i18n.Lang, ship shell.CombatShip) []string {
+	return []string{
+		fmt.Sprintf(uiText(lang, "tactical.system.ship.hp"), ship.HP, ship.MaxHP),
+		fmt.Sprintf(uiText(lang, "tactical.system.ship.armor"), ship.ArmorHP),
+		fmt.Sprintf(uiText(lang, "tactical.system.ship.shield"), ship.ShieldReduction),
+		fmt.Sprintf(uiText(lang, "tactical.system.ship.attack"), ship.Attack),
+		fmt.Sprintf(uiText(lang, "tactical.system.ship.defense"), ship.Defense),
+		fmt.Sprintf(uiText(lang, "tactical.system.ship.drive"), ship.DriveLevel),
+	}
 }
 
 // drawFallbackCombatBar 是 COMBAT.LBX 未提供時的可用控制列。按鈕座標、熱區與原版
