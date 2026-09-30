@@ -9,7 +9,7 @@
 | `moo2_patch1.31/MOO2-1.31.en.zip` | `908d6b7b37ad580039c5d108bab2c64b28f51ba735485287d284d5f5242b98e5` |
 | ZIP 內 `ORION2.EXE`，2,612,010 bytes | `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f` |
 | 1996 光碟 ZIP 內 `mastori2/Orion2.exe`，2,644,842 bytes | `7ae2ac2e5904ca330009af2827279d889906b0b9b7a8854c38eb707a56e955b5` |
-| `dosgolem` 工具 | `/home/anr2/cht/dosgolem` 起點 Git `cc1ef5611b5eb288cc489ae504f0a7a96fc526bf`；隔離修改在 `workplace/dosgolem/` 的 `codex/moo2-parity-20260930` 分支，格式與入口修正 `a2905dbcc9c14ed0716d618d2f2450a495b4ee78`，CPU 補強 `c32e854bca43c7e3b3ebbdc5caeba4d0ef6e9960`，暫定服務入口 `cc6231bd7f6578d379e1faf31ae4f1214bf917d3` |
+| `dosgolem` 工具 | `/home/anr2/cht/dosgolem` 起點 Git `cc1ef5611b5eb288cc489ae504f0a7a96fc526bf`；隔離修改在 `workplace/dosgolem/` 的 `codex/moo2-parity-20260930` 分支，格式與入口修正 `a2905dbcc9c14ed0716d618d2f2450a495b4ee78`，CPU 補強 `c32e854bca43c7e3b3ebbdc5caeba4d0ef6e9960`，暫定服務入口 `cc6231bd7f6578d379e1faf31ae4f1214bf917d3`，固定原版返回訂正與版控回放 `44e488536bbcfaf079c07779aaa22e91c4f9fe2f` |
 | 執行環境 | `golang:1.24-bookworm` Docker，Go 1.24.13，`--network none`、原版輸入唯讀、目前使用者 UID/GID |
 
 原版 EXE 存於被 Git 忽略的 `workplace/oracle-input/`，原 ZIP 與萃取的 EXE 均未改動。只為診斷曾建立一份標明 `header-probe` 的本機合成副本，將 MZ `0x3C..0x3F` 四 bytes 改成明示的 LE 偏移；正式解析收據已由未改動原版重生，不依賴合成副本。
@@ -27,6 +27,18 @@
 **後續工具補強，同樣僅是診斷**：依 `dosgolem` [199](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/199-cpu386-moo2-segment-prefixes.md) 補 `66 26 8C 1D` 的 ES 覆寫 16 位段暫存器寫入，以及第 50 步 `0x1100CF` 的 `3E BA 50 A1 1C 00`（無記憶體運算元的 `MOV EDX,0x001CA150`，DS 前綴無作用）。合成測試包含不同 ES／DS 描述子 base、word 越界原子拒絕與不變的旗標。1.31／1996 兩版的隔離診斷現在均至第 65 步、dosgolem LE 線性位址 `0x1100FA`，停在 `28 C0 AA AA...` 的未支援 opcode `28`。**前 11 步的正式無服務收據沒有改變**；第 65 步仍借 FD2 專屬服務，只能用來找通用 CPU 缺口，不能說 MOO2 DOS 啟動或玩家流程已通過。
 
 **暫定 MOO2 服務入口**：`dosgolem` [200](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/200-moo2-provisional-protected-dos.md) 新增 `NewMOO2StartupDOS`，把合成最小環境的執行檔名設為 `ORION2.EXE`，並保持 FD2 舊設定不變。兩版真檔經此入口均請求 `AH=30h`、`AX=FF00h`，診斷仍在第 65 步 `0x1100FA` 停住。這個服務入口**暫沿用 FD2 的 DOS/4G selector 與回傳值**，尚無 MOO2 原版服務回傳的獨立證據；`ORION2.EXE` 環境亦是明示的合成輸入。因此它只讓下一個 CPU 缺口可定位，不能將第 65 步升格為正式原版或玩法 parity。正式待查項是 MOO2 的服務回傳與首個玩家可見狀態。
+
+### 2026-09-30：MOO2 DOS/4G 啟動服務的輔助基準訂正
+
+上段「沿用 FD2 回傳、MOO2 回傳未知」是建立暫定入口當下的狀態，**現已被固定 MOO2 1.31 caller 的 DOSBox-X 返回快照訂正**。使用原版 `ORION2-1.31.EXE`，SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`；輔助執行器 `fd2-dosbox-x:debug-0d7b272b`、image ID `sha256:659e8abbf93646f59a1586341769bd4b8f3cd1c707859d7a5de4c56e4672b582`、DOSBox-X 2026.07.02 SDL2 heavy debugger，`core=normal`、`cycles=fixed 12000`、32 MB。原版 EXE 唯讀掛載，僅複製到一次性容器 `/tmp/game/ORION2.EXE`；Xvfb 與 Python PTY 有時限及清理 trap。原始終端與命令在未版控的 `workplace/dosbox-moo2/`；公開庫不加入遊戲 bytes 或完整記憶體擷取。
+
+**已證實，限固定 DOSBox-X 輔助環境及其 `CS:EIP` 位址空間**：以 `BPINT 21 30` 過濾載入器呼叫，在 MOO2 自身 `0180:00333FB5` 的 `CD 21`，`EAX=00003000`、`EBX=50484152`、`DS=SS=0188`、`ES=0028`、`GS=0020`；返回點 `0180:00333FB7` 是 `EAX=00000005`、`EBX=5048FF00`，selector 不變。再於自身 `0180:00334054` 的 `AX=FF00h`、`EDX=0078h` 進入，返回點 `0180:00334056` 為 `EAX=4734FFFF`、`GS=0020`、`EFLAGS=0296`（進入時 `0297`，CF 清除）。這些 DOSBox-X `CS:EIP` 數值**不能**與 dosgolem 的 LE 線性位址 `0x10FFB5` 當同一種位址比較；bytes／呼叫順序是交叉定位依據。詳細固定暫存器表及勘誤見 `dosgolem` [201](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/201-moo2-dos4g-startup-returns.md)。
+
+**被推翻的假設與剩餘限制**：暫定入口原先借 FD2 的 `AX=1606h`、`DS=SS=0160h`，與這次固定 MOO2 返回直接矛盾，現已改成 1.31 的 `EAX=5`、`EBX=5048FF00`、`DS=SS=0188`；第二次呼叫的回傳也已獨立核對。1.31 dosgolem 診斷仍停第 65 步 `0x1100FA` 的未支援 `28 C0`，但此步數不取代 dosgolem 正式正常玩家路徑收據。`ES:[2Ch]` 環境 selector、PSP bytes、合成環境內容及 1996 版獨立回傳仍未知或近似；待 dosgolem 擴充後重生正式收據。**尚無原版與 remake 的玩法或畫面同狀態對拍。**
+
+**工具診斷續記**：`dosgolem` [202](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/202-cpu386-moo2-sub-byte-register.md) 補 `28 C0` 所屬通用 `SUB r/m8,r8` 暫存器形狀，合成測試驗證 byte 方向、旗標與未支援 memory 形狀拒絕。固定 1.31 真檔隔離診斷現至第 72 步、dosgolem LE 線性位址 `0x110102`，停在 `26 66 8E 1D 29 CA 17 00`（ES 覆寫的 16 位段載入）缺口。前述第 65 步為診斷當時停點，保留作歷程；PSP／環境仍有合成假設，**72 步也不能當玩家路徑對拍**。
+
+輔助服務快照已由版控中的 `dosgolem/apps/moo2/tools/startup_probe_131.py` 重新產生；本機 `workplace/dosbox-moo2/startup-registers.json` SHA-256 `341ce45f695a350958a74c7a219b2bcf621ff1d86ac3cfb390d0726356da0a44`，包含兩次呼叫前後的固定雜湊、位址空間與暫存器順序。回放腳本與 `dosbox.conf` 入工具分支，原版 EXE、終端 raw 與私有畫面仍只在本機。每次掛載來源須先確認形態，容器使用 `--rm --network none`、有界資源、目前使用者 UID/GID、Xvfb 清理 trap 及 `timeout 150s`。
 
 ## 舊資料頁基址的勘誤
 

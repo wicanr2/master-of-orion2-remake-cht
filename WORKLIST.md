@@ -44,7 +44,7 @@
 
 ### 2026-08-30 盤點結論（目前唯一待辦來源）
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選 DOS 原版與 `dosgolem`，不擴充 `wine-gorgon` 的 PE32 路線。`dosgolem` 隔離副本已證實原檔 `0x26654` 的內嵌 MZ 才是 LE 資料頁基址；修正後 1.31／1996 版 object 1 入口 `0x10FF18` 都是 `EB 76 WATCOM`，與 IDA 原檔映射一致。兩版無服務 hook 時自然執行至第 11 步 `0x10FFB5` 的 `INT 21h/AH=30h`。上一輪 5,359 步與 `POP EDX` 是錯頁診斷，已撤回。`dosgolem` 已有 MOO2 暫定服務入口與合成 `ORION2.EXE` 環境，兩版隔離診斷均到第 65 步；其 DOS/4G selector／回傳值仍沿用 FD2 平台近似，尚無 MOO2 原版服務回傳證據。下一個最小閘門是核對 MOO2 DOS 服務契約、越過啟動握手並抵達首個玩家可見檢查點，之後才與 remake 同狀態比較；目前**沒有玩法對拍收據**。詳見 [`docs/re/dosgolem-moo2-intake-20260930.md`](docs/re/dosgolem-moo2-intake-20260930.md)。此項是動態 oracle 工具閘門，不計入既有玩法矩陣分母。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選 DOS 原版與 `dosgolem`，不擴充 `wine-gorgon` 的 PE32 路線。`dosgolem` 隔離副本已證實原檔 `0x26654` 的內嵌 MZ 才是 LE 資料頁基址；修正後 1.31／1996 版 object 1 入口 `0x10FF18` 都是 `EB 76 WATCOM`，與 IDA 原檔映射一致。兩版無服務 hook 時自然執行至第 11 步 `0x10FFB5` 的 `INT 21h/AH=30h`。上一輪 5,359 步與 `POP EDX` 是錯頁診斷，已撤回。固定 DOSBox-X 輔助基準已核對 1.31 原版兩次 MOO2 自身服務返回：第一個 `EAX=5`、`EBX=5048FF00`、`DS=SS=0188`，第二個 `EAX=4734FFFF`；推翻先前借 FD2 的版本與 selector，`dosgolem` 入口已訂正。合成環境與 PSP 仍近似；1.31 診斷現停於第 72 步未支援的 ES 覆寫 16 位段載入 `26 66 8E 1D`。下一個最小閘門是補該通用 CPU 指令、核對 MOO2 環境／PSP 消費端並抵達首個玩家可見檢查點，再由 dosgolem 重生正式收據與 remake 同狀態比較；目前**沒有玩法對拍收據**。詳見 [`docs/re/dosgolem-moo2-intake-20260930.md`](docs/re/dosgolem-moo2-intake-20260930.md)。此項是動態 oracle 工具閘門，不計入既有玩法矩陣分母。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備
