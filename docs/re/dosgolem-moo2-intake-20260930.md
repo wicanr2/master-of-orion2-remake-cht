@@ -70,6 +70,14 @@
 
 隔離 dosgolem 工具分支依 READY 規格增加無前綴 32 位記憶體 `83 /1 ib`，`go test ./internal/cpu386 ./internal/machine -count=1` 與固定原檔輸入的 `go test ./... -count=1` 通過。已綁定 DPMI 的**合成環境診斷**越過此處，由第 803 步至第 819 步，在 dosgolem 重定位 LE 線性 `0x13CC50` 的 `0F A9` 失敗即關閉；下一指令的原版行為仍待核對。PSP／環境與完整資料消費端仍未閉合，**沒有正常玩家畫面或玩法同狀態對拍**；本輪未改 remake 玩法。
 
+### 2026-10-01：`0F A9` 的原版堆疊與 MOO2 GS 許可
+
+**已證實，限通用指令形狀與本次 selector 載入**：固定 1.31 `ORION2.EXE` SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`；dosgolem 重定位 LE 線性 `0x13CC50` 的 bytes `0F A9`，對應 DOSBox-X 2026.07.02 SDL2 heavy debugger 的 **CS:EIP** `0180:00360C50 → 0180:00360C52`。輔助映像 `fd2-dosbox-x:debug-0d7b272b` ID `sha256:659e8abbf93646f59a1586341769bd4b8f3cd1c707859d7a5de4c56e4672b582`。同次 `LOG 2` 配合前後堆疊四位元組擷取：`SS=0188h`、`ESP=003EBC50h → 003EBC54h`、`GS=0020h → 0020h`、`SS:[ESP]` 原始 bytes `20 00 00 00`、旗標不變。版控 `apps/moo2/tools/startup_probe_131.py --pop-gs` 可重生私有 `pop-gs-registers.json` SHA-256 `d2b6f5a108d1bf8eb035f20eb024871e5b680efc4a6f95777f09f5ad5a35ce1b`、`pop-gs-logcpu.txt` SHA-256 `4636abf3ae7a64765c94b013718b146dfd56f47a13467987299753f3099cd39e`；前後堆疊檔 SHA-256 均為 `8d71b3faab8201459ad37ef499beb336ba88bdcfa0f51ee6f0a46ec3192d750a`。原始檔及終端輸出仍只在本機。
+
+原版 GS 在指令前後都為 `0020h`，因此不同 selector 的載入效果**不能由這個樣本單獨證明**；以 [Intel 64／IA-32 軟體開發手冊第 2B 卷](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-2b-manual.pdf) 的 `POP GS` 契約與不同值合成測試補足。實作先因服務層拒絕 `0020h → GS` 再停於第 819 步；回到規格 [213](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/213-cpu386-pop-gs.md) 補充審查後，只為 MOO2 profile 開此組合，FD2 profile 及 `0020h → DS／FS` 均維持拒絕。這是載入許可，**GS 描述子 base、limit 與權限未知**。
+
+隔離工具分支 `go test -buildvcs=false ./internal/cpu386 ./internal/machine -count=1` 及固定原檔作輸入的 `go test -buildvcs=false ./... -count=1` 全通過。已綁定 DPMI、仍用合成 PSP／環境的診斷從第 819 步跨過 `0x13CC50`，至第 2460 步、dosgolem 重定位 LE 線性 `0x153E84` 停於帶前綴 `SBB` 不支援；這不是正常玩家路徑或玩法同狀態對拍。下一步核對該指令形狀及對應原版證據，並持續查合成環境與完整資料消費端。
+
 ## 舊資料頁基址的勘誤
 
 ## 2026-09-30 通用 CPU 指令續驗
