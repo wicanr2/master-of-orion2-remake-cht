@@ -3,8 +3,31 @@ package shell
 import (
 	"testing"
 
+	"github.com/wicanr2/master-of-orion2-remake-cht/internal/ai"
 	"github.com/wicanr2/master-of-orion2-remake-cht/internal/gamedata"
 )
+
+func TestStoredStanceCodeDoesNotDependOnTranslation(t *testing.T) {
+	cases := []struct {
+		stance ai.Stance
+		code   string
+	}{
+		{ai.StanceWar, "war"},
+		{ai.StanceHostile, "hostile"},
+		{ai.StanceNeutral, "neutral"},
+		{ai.StanceProposeTrade, "trade"},
+		{ai.StanceProposeAlliance, "alliance"},
+	}
+	for _, tc := range cases {
+		stored := stanceNames[tc.stance]
+		if got := StanceCodeForStoredName(stored); got != tc.code {
+			t.Errorf("舊存檔態勢 %q → %q，預期 %q", stored, got, tc.code)
+		}
+	}
+	if got := StanceCodeForStoredName(""); got != "unknown" {
+		t.Errorf("空態勢應為 unknown，實得 %q", got)
+	}
+}
 
 // TestAudienceOnlyOnStanceChange 釘住觸發規則:**態勢改變**才敲門。
 //

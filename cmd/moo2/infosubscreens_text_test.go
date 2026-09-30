@@ -33,6 +33,52 @@ func TestInfoSubscreenPlayerTextComesFromExternalCatalog(t *testing.T) {
 	}
 }
 
+func TestInfoStanceLabelUsesStoredCodeAndCurrentLanguage(t *testing.T) {
+	for _, tc := range []struct {
+		stored, code string
+	}{
+		{"宣戰", "war"},
+		{"敵視", "hostile"},
+		{"中立", "neutral"},
+		{"提議貿易", "trade"},
+		{"提議結盟", "alliance"},
+		{"", "unknown"},
+	} {
+		for _, lang := range []i18n.Lang{i18n.English, i18n.Traditional} {
+			key := "info.races.stance." + tc.code
+			if got, want := infoStanceLabel(lang, tc.stored), uiText(lang, key); got != want || got == key {
+				t.Errorf("存檔態勢 %q、語系 %v：%q，預期 %q", tc.stored, lang, got, want)
+			}
+		}
+	}
+}
+
+func TestInfoStanceLabelSurvivesChangedTranslation(t *testing.T) {
+	// 先初始化共用 catalog，再暫時換成譯文已更新的版本；舊存檔仍寫「宣戰」。
+	uiText(i18n.Traditional, "info.races.stance.war")
+	original := uiCatalogZH
+	updated := i18n.New(i18n.Traditional)
+	if _, err := updated.LoadJSON(strings.NewReader(`[
+		{"key":"info.races.stance.war","english":"At War","value":"交戰狀態"},
+		{"key":"info.races.stance.unknown","english":"Unknown","value":"未知"}
+	]`)); err != nil {
+		t.Fatal(err)
+	}
+	uiCatalogZH = updated
+	t.Cleanup(func() { uiCatalogZH = original })
+	for _, tc := range []struct {
+		lang i18n.Lang
+		want string
+	}{
+		{i18n.English, "At War"},
+		{i18n.Traditional, "交戰狀態"},
+	} {
+		if got := infoStanceLabel(tc.lang, "宣戰"); got != tc.want {
+			t.Errorf("舊存檔在語系 %v 顯示 %q，預期 %q", tc.lang, got, tc.want)
+		}
+	}
+}
+
 func TestInfoSubscreenStaticTextFitsSafeRects(t *testing.T) {
 	fnt := uifont.LoadBitmapTC()
 	for _, lang := range []i18n.Lang{i18n.English, i18n.Traditional} {

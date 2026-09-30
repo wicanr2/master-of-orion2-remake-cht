@@ -431,13 +431,7 @@ func infoTextList(lang i18n.Lang, prefix string, count int) []string {
 }
 
 func infoStanceLabel(lang i18n.Lang, stored string) string {
-	for _, key := range []string{"war", "hostile", "neutral", "trade", "alliance"} {
-		catalogKey := "info.races.stance." + key
-		if stored == uiText(i18n.Traditional, catalogKey) {
-			return uiText(lang, catalogKey)
-		}
-	}
-	return uiText(lang, "info.races.stance.unknown")
+	return uiText(lang, "info.races.stance."+shell.StanceCodeForStoredName(stored))
 }
 
 func infoAIRelationLabel(lang i18n.Lang, sess *shell.GameSession, i, j int) string {

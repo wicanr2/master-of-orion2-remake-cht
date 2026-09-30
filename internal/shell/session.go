@@ -5693,6 +5693,24 @@ var stanceNames = map[ai.Stance]string{
 	ai.StanceProposeAlliance: "提議結盟",
 }
 
+// StanceCodeForStoredName 將既有存檔的態勢名稱轉為顯示層使用的穩定代碼。
+// StanceName 目前仍是遊戲規則與舊 JSON 的相容欄位；這裡不可依賴可變的譯表文字。
+func StanceCodeForStoredName(name string) string {
+	switch name {
+	case stanceNames[ai.StanceWar]:
+		return "war"
+	case stanceNames[ai.StanceHostile]:
+		return "hostile"
+	case stanceNames[ai.StanceNeutral]:
+		return "neutral"
+	case stanceNames[ai.StanceProposeTrade]:
+		return "trade"
+	case stanceNames[ai.StanceProposeAlliance]:
+		return "alliance"
+	}
+	return "unknown"
+}
+
 // aiExpand 讓第 i 個 AI 佔領一顆無主星:標 Star.Owner=2、OwnedStars++,並用
 // newColonyFromStar(colonization.go,與玩家 ColonizeStar 共用同一套建法)建立真正的
 // engine.ColonyState,append 進 AIOpponent.Colonies + ColonyStars + ColonyBuildings(三者是

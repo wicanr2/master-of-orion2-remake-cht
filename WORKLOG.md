@@ -127,3 +127,10 @@
 - 新增 `startup_probe_131.py --cmp-byte`，在既有 DOSBox-X 隔離映像中以固定 1.31 真檔擷取 `0180:0036C224` 的 `cmp [eax],dl`。原版兩來源均零，記憶體 `00h → 00h`，旗標 `0202h → 0246h`；完整位址、雜湊、工具版本與證據等級見 [`docs/re/dosgolem-moo2-intake-20260930.md`](docs/re/dosgolem-moo2-intake-20260930.md)。原版證據僅涵蓋此零差樣本。
 - dosgolem [規格 220](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/220-cpu386-cmp-rm8-register.md) 經 DRAFT→READY→實作→CONFORMED；無前綴 `38 /r` 記憶體目的改用既有 `decodeAddress32`，另以合成測試驗異值方向、SS／DS、SIB、越界與截短拒絕。`go test -buildvcs=false ./internal/cpu386 ./internal/machine -count=1`、固定原檔輸入的 `go test -buildvcs=false ./... -count=1` 均通過。合成 PSP／環境診斷由第 4168 步至第 4944 步，停於重定位 LE 線性 `0x146903` 的 `26 8A 1E 42 84`；此新停點仍待原版核對，並非正常玩家路徑或玩法同狀態收據。下一步是核對其 ES 覆寫載入，並持續查 PSP／環境及完整資料消費端；本輪未改 remake 玩法。
 - 工具分支已提交並推送 `941e76e` 至 `github/codex/moo2-parity-20260930`。本輪新檔與修改檔、私有擷取均為目前使用者 UID/GID；無 `.md` 同名目錄誤掛，相關一次性 Docker 容器無殘留。原版 EXE 仍只在本機唯讀輸入，完整除錯輸出未加入 Git。
+
+## 2026-10-01：種族資訊頁舊存檔態勢與譯文隔離
+
+- 接手後依復古遊戲路由載入中文顯示／語意隔離入口，文件寫入前核對專案文件職責。發現 `AIOpponent.StanceName` 是既有存檔與 AI 規則使用的中文值，但資訊頁原先用目前 `ui.json` 的繁中譯文辨識它；譯文改字後，舊存檔會落入「未知」。這是程式資料流可證實的顯示缺陷；原版外交規則對齊度未因此改變。
+- 在 `internal/shell` 將五種既有態勢名稱映射為穩定代碼，`cmd/moo2` 資訊頁再以該代碼讀取目前語系文案；不改 `StanceName`、JSON 格式或 AI 判定。新增五種態勢、未知值及譯文從「宣戰」改為「交戰狀態」後仍顯示舊存檔值的回歸測試。
+- `moo2-ebiten` 一次性 Docker 容器以目前 UID/GID、無網路、3 GiB／2 CPU／128 PID，在 Xvfb 下執行 `go test -buildvcs=false ./internal/i18n ./internal/shell ./cmd/moo2 -count=1`；三套件全通過。這是 remake 內部回歸測試，沒有原版同狀態對拍，也沒有 GUI 正常玩家路徑截圖。下一步仍按活表處理 `dosgolem` 正常路徑與玩法證據，不把本次顯示修正算成原版忠實度完成。
+- MOO2 分支 `codex/moo2-wine-gorgon-parity-20260930` 本輪提交並推送；相關一次性容器已清空，六個修改檔均為目前使用者 UID/GID，沒有 `.md` 同名誤掛目錄。原有 root 擁有的 `go.sum`、`lbxinfo` 及部分 `.docker-cache` 未改動。
