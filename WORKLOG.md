@@ -203,3 +203,11 @@
 - 隔離 dosgolem 規格 230 經 DRAFT→READY→實作→CONFORMED，只接受 MOO2 設定下的三個零敏感度值；非零值及一般 FD2 仍拒絕。合成狀態測試與固定原檔第 6126 步整合測試通過。一次性 `golang:1.24-bookworm` 容器以原 ZIP 唯讀掛載，執行 `DOSGOLEM_MOO2_EXE=/tmp/ORION2.EXE go test -buildvcs=false ./... -count=1` 全通過，私有輸出 SHA-256 `a983b838b0b84c14b442a82b127d937f4101c88c5fe6dfc0ce6db6742f536e6a`；`go run -buildvcs=false ./workplace/moo2-probe /tmp/ORION2.EXE` 的私有收據 SHA-256 `aab5a75b6ec1b381e7a7008968ae53844b0e7ce1deed221ef8d8b6872ca7073e`，下一停點為第 6256 步、dosgolem **重定位 LE 線性位址** `0x15C2B2` 的 `INT 10h`。
 - 沒有正常玩家畫面或與 remake 玩法同狀態收據。下一個動態 oracle 行動是取固定原版 `INT 10h` 的實際功能號、返回與 caller 消費端；原版檔案及完整終端只留未版控工作區。
 - 隔離 dosgolem 分支提交 `f96579f80a0ab249ce9a5f8d6f90e8040d8a1aa6` 並推送至 `github/codex/moo2-parity-20260930`；MOO2 現況文件同輪提交推送。相關一次性 Docker 容器清空，新增／修改檔屬目前使用者，未發現新 `.md` 同名目錄。
+
+## 2026-10-01：視訊模式 03h 與合成缺檔路徑
+
+- 知識路由命中復古 remake 規格閘門、DOS 平台來源與文件職責；主專案玩法 RE-first 閘門仍有效。本輪僅修改隔離 dosgolem 啟動工具及證據，未改 MOO2 Go 玩法。
+- 固定 1.31 原檔的 DOSBox-X 輔助探針 `--video-mode-03` 命中 `INT 10h/AX=0003h` 並取得同次返回與 caller 記錄；私有收據、雜湊、位址基準見研究紀錄。隔離 dosgolem 規格 231 經 DRAFT→READY→實作→CONFORMED，只記錄模式 03h，不宣稱畫面已實作。
+- 首次全套測試在原檔整合測試失敗：前一段滑鼠單步未更新測試局部計數，導致預期 6256、實得 6244；補齊 12 個計數後以同一 `golang:1.24-bookworm` 容器與命令乾淨重跑，含原檔 `go test -buildvcs=false ./... -count=1` 全通過，私有輸出 SHA-256 `66f262c63281b32a8d619f190b0d710956ffecdf158624cd0603f796b57921ee`。
+- 初次原檔診斷走到第 10175 步的 `MOV` 報錯；回查確認第 10173 步已有 `INT 21h/AH=4Ch`，屬探針未在退出時停止的錯誤。修正 `workplace/moo2-probe` 後重跑，於第 10173 步以代碼 1 結束，主控台回 `Unable to open mox.set`，私有輸出 SHA-256 `8ee984ad0f300255f41f4259729102a07eb193461cc00b307d35b0a2e2f694d6`。下一步以既有空 `MOX.SET` 輔助收據建立受控成功分支；目前無正常玩家畫面或玩法同狀態對拍。
+- dosgolem 分支 `20e869be0d10f3e39074938969be85368de00ec4` 已推送至 `github/codex/moo2-parity-20260930`。本輪 Docker 均為一次性容器；原版檔案、完整終端及診斷輸出仍只留在未版控工作區。
