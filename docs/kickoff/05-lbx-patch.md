@@ -4,7 +4,7 @@
 > **當時的計畫,不是現況。** 四條全部完成:`internal/lbx` 解碼器、`-data` 逗號串多目錄的覆蓋順序、`docs/tech/version-1.3-1.5-diff.md`、`gamedata.RuleProfile`。
 > **現況只以 `WORKLIST.md` 頂端的剩餘工作表為準**(`docs/re/01-gap-report.md` 是 RE 資料與工程日誌,不是現況)。
 
-> 回答 CLAUDE.md 兩件事:①「patch 如何處理」②「主選單可選版本 1.3 / 1.5」的架構。
+> 回答 AGENTS.md 兩件事:①「patch 如何處理」②「主選單可選版本 1.3 / 1.5」的架構。
 > LBX 解析細節見 `01-openorion2-assessment.md` §1。本文聚焦資料來源與版本策略。
 
 ## 1. 資料來源分層(玩家自備正版)

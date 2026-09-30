@@ -9,7 +9,7 @@
 > 記錄 `cmd/moo2`(ebiten GUI)與 `cmd/moo2sim`(純 Go headless 模擬器)的三平台打包做法,
 > 分兩條互補路徑:
 > - **CI(GitHub Actions)**:`.github/workflows/build-macos.yml`、`.github/workflows/build-desktop.yml`——macOS 必走(cgo + Apple SDK 限制),Linux/Windows 順便補一份雲端建置。
-> - **本機 Docker 路徑**(CLAUDE.md [HARD]:編譯走 Docker)：六支 `package-*` 腳本分別產出公開與本機完整的 Linux、Windows、macOS 包；實際產出與驗證見 §5／§6。macOS 官方簽署／公證仍只能靠 CI 或真 Mac；osxcross 只負責未簽署的結構測試包。
+> - **本機 Docker 路徑**(AGENTS.md [HARD]:編譯走 Docker)：六支 `package-*` 腳本分別產出公開與本機完整的 Linux、Windows、macOS 包；實際產出與驗證見 §5／§6。macOS 官方簽署／公證仍只能靠 CI 或真 Mac；osxcross 只負責未簽署的結構測試包。
 
 ## 0. 為什麼 macOS 要獨立一份 workflow
 
@@ -52,7 +52,7 @@ ebiten 的 macOS backend(`internal/glfw`)是 **CGO + Cocoa/OpenGL**(`cocoa_monit
 
 ## 2. Linux / Windows(`build-desktop.yml`,補足本機跨編困難)
 
-CLAUDE.md 規定「編譯一律走 docker」,本機(Linux dev box)用 `docker/Dockerfile.ebiten` 可以編 **Linux** 版沒問題(docker image 本身就是 Linux)。
+AGENTS.md 規定「編譯一律走 docker」,本機(Linux dev box)用 `docker/Dockerfile.ebiten` 可以編 **Linux** 版沒問題(docker image 本身就是 Linux)。
 
 > **修正(2026-07-03,實測)**:下面原本假設「跨編 Windows GUI 版需要 mingw-w64 + CGO_ENABLED=1」——這個假設**對 ebiten v2.9.9 不成立**,已用本機 docker 實測 + 核對原始碼推翻,詳見 §5.2。`build-desktop.yml` 目前仍裝 `egor-tensin/setup-mingw` 是保守作法(不影響正確性,只是多裝了用不到的工具鏈),之後可簡化成純 `CGO_ENABLED=0` 跨編、拿掉 mingw 安裝步驟,但這屬於 CI workflow 調整,不在本輪「本機 docker 打包腳本」授權範圍內,先記錄於此供下輪處理。
 
@@ -86,7 +86,7 @@ CLAUDE.md 規定「編譯一律走 docker」,本機(Linux dev box)用 `docker/Do
 
 跟 §1–§4 的 CI workflow 不同，這節記錄**本機可重跑、已實際執行並確認產物存在**的六支 Docker 化腳本：
 `scripts/package-appimage*.sh`、`scripts/package-windows*.sh`、`scripts/package-macos*.sh`。它們都遵守
-CLAUDE.md 的 Docker-only 邊界，不裝主機套件、不開網路；可寫容器一律以目前使用者 UID/GID 產出檔案。
+AGENTS.md 的 Docker-only 邊界，不裝主機套件、不開網路；可寫容器一律以目前使用者 UID/GID 產出檔案。
 
 ### 5.1 Linux AppImage(`scripts/package-appimage.sh`)
 

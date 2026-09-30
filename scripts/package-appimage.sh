@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 把 cmd/moo2(ebiten GUI,需 CGO+X11/OpenGL)+ cmd/moo2sim(headless)打包成
-# Linux x86_64 AppImage。全程在 moo2-ebiten docker image 內執行(CLAUDE.md [HARD]:編譯走 docker)。
+# Linux x86_64 AppImage。全程在 moo2-ebiten docker image 內執行(AGENTS.md [HARD]:編譯走 docker)。
 #
 # 用法: scripts/package-appimage.sh
 # 產出: dist-all/MasterOfOrion2-cht-x86_64.AppImage

@@ -217,7 +217,7 @@ CJK 逐字斷行策略不同——`fitText` 是**單行縮排擠壓**,不是換�
 | 可選科技清單(每項最多 4 選 1) | `techname(TNAME_TECH_NONE+_choices[i])`;純研究則 `misctext(BILLTEXT, BILL_PURE_RESEARCH)` | `fnt->renderText(x+12,y,...)`,`tech.cpp:914` | `tech.tsv` / `misc.tsv`(純研究="Pure research"→純研究) | 已完成 |
 | 研究成本標籤 | `LabelWidget` 純數字模板 `"%u RP"`(`tech.cpp:1002`) | `_costLabels[i]`,`(i%2?368:141, ypos[i/2]-13, 86, 14)` | — | 數字模板,`RP` 不譯 |
 
-**按鈕中文化警示(對應專案 CLAUDE.md「按鈕的中文化一定要參考先前的中文化經驗」)**:
+**按鈕中文化警示(對應專案 AGENTS.md「按鈕的中文化一定要參考先前的中文化經驗」)**:
 `ASSET_TECHSEL_AREA_BUTTONS` 這組是 MOO2 原版**烘焙點陣圖按鈕**(領域名稱畫在點陣圖裡,不是文字層),
 和 `master-of-orion`(SDL2 版)/`master-of-magic` 遇過的「按鈕貼圖含英文字」是同一類陷阱。這組按鈕
 **不能靠 `misc.tsv` 翻譯**——`misctext()` 全域都沒有引用這 8 個按鈕的文字(它們是圖,不是

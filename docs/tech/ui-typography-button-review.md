@@ -90,7 +90,7 @@
   無 nearest-neighbor 選項。`font.go:6-7` 註解明講「取代 mom 手動 rasterize+supersample 的做法」。
   **這與 `docs/kickoff/02-cjk-strategy.md` §3.5「[HARD] supersample,不『小字放大』」的斷言不一致**
   ——實際落地並未 supersample,是直接向量 rasterize。本文不在此修正該文件(超出本次交付範圍),
-  但依 CLAUDE.md「每輪盤點文件衝突」的要求在此點名,建議下一輪把 `02-cjk-strategy.md` §3.5
+  但依 AGENTS.md「每輪盤點文件衝突」的要求在此點名,建議下一輪把 `02-cjk-strategy.md` §3.5
   改成反映實際做法(向量直繪已足夠銳利,supersample 非必要),避免這條過期 HARD 規則繼續佔位。
 
 ## 2. 字級層級設計建議

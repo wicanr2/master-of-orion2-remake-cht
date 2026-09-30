@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 在 docker 內編譯(依 CLAUDE.md:編譯一律 docker)。
+# 在 docker 內編譯(依 AGENTS.md:編譯一律 docker)。
 # 用法:scripts/build.sh [go build 目標,預設 ./...]
 set -euo pipefail
 

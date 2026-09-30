@@ -5,7 +5,7 @@
 > **現況只以 `WORKLIST.md` 頂端的剩餘工作表為準**(`docs/re/01-gap-report.md` 是 RE 資料與工程日誌,不是現況)。
 
 > 把 openorion2(C++/SDL2)的架構映射到 go/ebiten。依據見 `01-openorion2-assessment.md`。
-> 註:CLAUDE.md 列的 go/ebiten 參考 `~/master-of-magic` 本機不存在,本文以 openorion2 架構 + ebiten 官方模型推導,待補該參考後回填實戰心得。
+> 註:AGENTS.md 列的 go/ebiten 參考 `~/master-of-magic` 本機不存在,本文以 openorion2 架構 + ebiten 官方模型推導,待補該參考後回填實戰心得。
 >
 > ⚠ **2026-08-08:本文是 kick-off 當時的推導,其中兩條後來沒有執行,也不打算執行**——
 > 「實作滿足 `Screen` 介面的 ebitenScreen」與「`gui.cpp` widget 樹翻譯成 Go」。
@@ -44,7 +44,7 @@
 
 ## 4. 開發/驗證環境(對齊本機授權 + mom 實戰,見 `08` §6)
 
-- **編譯一律 docker**(CLAUDE.md 授權;ebiten 需 GL/X 依賴,容器要備妥 X11/ALSA/xvfb/imagemagick)。
+- **編譯一律 docker**(AGENTS.md 授權;ebiten 需 GL/X 依賴,容器要備妥 X11/ALSA/xvfb/imagemagick)。
 - **[HARD] headless 逐畫面截圖驗證**:`xvfb-run` 跑 → `xdotool` 導航點選單 → `import -window root` 抓圖 → Read 圖校對。**「CI 編譯全綠 ≠ 畫面對」**(mom 血淚),每批改動都截圖。
 - 純資料層用 `go test` 直接驗,不需畫面。
 - **headless gotcha**(mom 已驗):音效要 null PCM 或關音樂(否則 oto ALSA panic);`LIBGL_ALWAYS_SOFTWARE=1`;headless dump/跑要帶 `--frames N`/`timeout`(否則空轉燒 CPU);`CGO_ENABLED=0` 測 font 會 GLFW 未初始化 → 測畫面相關都要 xvfb。

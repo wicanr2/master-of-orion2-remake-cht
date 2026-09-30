@@ -1,6 +1,6 @@
 # UI 界面調整可行性
 
-CLAUDE.md「其他需求」要求獨立討論 UI 界面調整的可行性。本文聚焦「版面/座標/縮放」層級的調整選項,
+AGENTS.md「其他需求」要求獨立討論 UI 界面調整的可行性。本文聚焦「版面/座標/縮放」層級的調整選項,
 與 `docs/tech/cjk-screen-rendering.md`(渲染管線)、`docs/tech/screen-spec-info-research.md`
 (單一畫面的座標/TSV 盤點)互補——那兩份談「怎麼把中文畫上去」,本文談「要不要、能不能動原版版面」。
 

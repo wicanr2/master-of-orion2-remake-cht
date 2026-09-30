@@ -1,6 +1,6 @@
 # patch 1.3(1.31)→ patch 1.5(1.50)規則/數值差異 + 版本 profile 設計建議
 
-> 2026-07-11。目的:為 CLAUDE.md 核心需求「主選單選擇 1.3 或 1.5」打底——先確認**真正需要分版的值有多少**,
+> 2026-07-11。目的:為 AGENTS.md 核心需求「主選單選擇 1.3 或 1.5」打底——先確認**真正需要分版的值有多少**,
 > 再提版本 profile 資料結構。純研究,不改任何程式/資料檔。
 >
 > 方法(rulebook 62/65):以 `moo2_patch1.5/CHANGELOG_150.TXT`(1730 行,1.50.0→1.50.26 全部版本)
@@ -137,7 +137,7 @@
 
 package gamedata
 
-// GameVersion 對應 CLAUDE.md「主選單選擇 1.3 或 1.5」的兩個選項。
+// GameVersion 對應 AGENTS.md「主選單選擇 1.3 或 1.5」的兩個選項。
 type GameVersion int
 
 const (
@@ -226,7 +226,7 @@ func Profile15() RuleProfile {
 
 ## 7. 主選單「選版本」與 profile 的關係(範圍澄清)
 
-CLAUDE.md 要求「主選單選擇版本 1.3 or 1.5」。`RuleProfile` 負責選版本後的規則數值；目前
+AGENTS.md 要求「主選單選擇版本 1.3 or 1.5」。`RuleProfile` 負責選版本後的規則數值；目前
 `cmd/moo2/interactive.go` 已提供主選單切換，`cmd/moo2/versionassets.go` 也把選擇接到
 兩套 LBX 搜尋路徑(`-data13`/`-data15`，未指定時回退共用 `-data`)。`auto` 會讀資料目錄的
 README 版本標記；現有私有資料可證實為 1.31，另以 `MOO2-1.50.26.zip` 的 `patch/150/lbx`

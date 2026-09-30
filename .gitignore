@@ -32,6 +32,7 @@ vendor/
 *.log
 *.tmp
 scratch/
+/workplace/
 
 # docker build 快取
 .docker-cache/

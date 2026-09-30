@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 在 docker 內跑 go test(依 CLAUDE.md:編譯/測試一律 docker)。
+# 在 docker 內跑 go test(依 AGENTS.md:編譯/測試一律 docker)。
 # 用法:scripts/test.sh [額外的 go test 參數]
 #   MOO2_LBX_TEST=/abs/path/to/FILE.LBX scripts/test.sh   # 一併跑真實 .lbx 測試
 set -euo pipefail

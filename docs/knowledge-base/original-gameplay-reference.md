@@ -252,7 +252,7 @@ Research Labs → Reinforced Hull → Auto Factories → Biospheres → Soil Enr
 ## 6. 華人圈討論 / 中文資訊 / 譯名對照
 
 ### 6.1 重要發現:華人圈原生討論「稀薄」,這本身是背景事實
-MoO2 **從未有官方中文版**,華人社群覆蓋遠不如星海爭霸、文明等。搜尋 巴哈姆特/PTT/知乎 直接命中極少,且極易與同名遊戲(星海爭霸2、巴哈姆特2龍之新娘)交叉污染。**本 remake 的繁中化本身即是在填補這塊空缺**,無現成「標準譯名表」可完全照抄——這解釋了為何 CLAUDE.md 要求自建譯名策略(見 `docs/tech/proper-noun-strategy.md`)。
+MoO2 **從未有官方中文版**,華人社群覆蓋遠不如星海爭霸、文明等。搜尋 巴哈姆特/PTT/知乎 直接命中極少,且極易與同名遊戲(星海爭霸2、巴哈姆特2龍之新娘)交叉污染。**本 remake 的繁中化本身即是在填補這塊空缺**,無現成「標準譯名表」可完全照抄——這解釋了為何 AGENTS.md 要求自建譯名策略(見 `docs/tech/proper-noun-strategy.md`)。
 
 ### 6.2 已查到的中文譯名 🟡
 - **遊戲名**:對岸資料庫 indienova 用「**银河霸主 2:安塔瑞斯之战**」(Master of Orion II: Battle at Antares)。本專案沿用「銀河霸主2」為主名(繁體)。

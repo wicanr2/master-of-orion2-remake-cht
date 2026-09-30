@@ -235,6 +235,7 @@ README.md                         玩家入口：遊戲介紹、成果、安裝�
 ├── docs/VERIFICATION-MATRIX.md    測試、畫廊、玩家路徑與原版驗證器（oracle）矩陣
 ├── docs/REMAKE-PLAN.md            架構、垂直切片與交付計畫
 ├── docs/RESEARCH-LOG.md           研究帳本與證據分級
+├── WORKLOG.md                     按日期記錄工作歷程與驗證結果
 └── WORKLIST.md                    唯一活表、停止線與可重現的下一步
 ```
 

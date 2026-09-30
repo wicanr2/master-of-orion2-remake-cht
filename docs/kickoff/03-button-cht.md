@@ -4,7 +4,7 @@
 > **當時的計畫,不是現況。** 按鈕清單化已由 24 份 TSV(5,046 條)取代;`gui.cpp` 按鈕 widget 那條**方向已改**——remake 直繪 + 逐畫面 `hitRegion`,沒有 widget 系統。
 > **現況只以 `WORKLIST.md` 頂端的剩餘工作表為準**(`docs/re/01-gap-report.md` 是 RE 資料與工程日誌,不是現況)。
 
-> CLAUDE.md 特別要求:「按鈕的中文化一定要參考先前的專案經驗,避免重蹈覆轍」。
+> AGENTS.md 特別要求:「按鈕的中文化一定要參考先前的專案經驗,避免重蹈覆轍」。
 > 前作原文:`~/master-of-orion/docs/CJK-DEV-NOTES.md` §3 烘字 SOP、§4 踩雷、速查表。
 
 ## 1. 核心事實:按鈕的英文常是「圖」,不是「字」

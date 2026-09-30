@@ -7,7 +7,7 @@
   `docs/tech/oracle-comparison-20260712.md`，原版入口與停用狀態索引見 `docs/re/01-gap-report.md`。
 - **已證實（remake source）**：`menu()` 左下語言與規則版本列分別使用 `b.tr(...)` 與
   `fmt.Sprintf(b.tr(...))`；固定文案仍內嵌於 Go，繪製只限制 `maxW`，沒有高度契約。
-- **已證實（remake requirement）**：語言切換與 1.3／1.5 規則版本切換由 `CLAUDE.md` 明定，
+- **已證實（remake requirement）**：語言切換與 1.3／1.5 規則版本切換由 `AGENTS.md` 明定，
   點擊後會重建畫面；版本切換另由 `selectGameVersion` 保證規則與資產根同步。
 - **未知／不適用**：沒有證據顯示原版主選單存在這兩條左下控制；它們是 remake 擴充，不能以
   原版六顆按鈕或背景美術推導精確座標、字句或字級。
