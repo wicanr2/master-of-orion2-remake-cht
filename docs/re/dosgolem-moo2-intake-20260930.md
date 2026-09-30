@@ -78,6 +78,12 @@
 
 隔離工具分支 `go test -buildvcs=false ./internal/cpu386 ./internal/machine -count=1` 及固定原檔作輸入的 `go test -buildvcs=false ./... -count=1` 全通過。已綁定 DPMI、仍用合成 PSP／環境的診斷從第 819 步跨過 `0x13CC50`，至第 2460 步、dosgolem 重定位 LE 線性 `0x153E84` 停於帶前綴 `SBB` 不支援；這不是正常玩家路徑或玩法同狀態對拍。下一步核對該指令形狀及對應原版證據，並持續查合成環境與完整資料消費端。
 
+### 2026-10-01：`66 19 C0` 的原版 16 位借位減法
+
+**已證實，限本次通用指令樣本**：固定 1.31 `ORION2.EXE` SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`，dosgolem **重定位 LE 線性位址** `0x153E84` 的原始 bytes `66 19 C0`；DOSBox-X 2026.07.02 SDL2 heavy debugger 映像 `fd2-dosbox-x:debug-0d7b272b`（ID `sha256:659e8abbf93646f59a1586341769bd4b8f3cd1c707859d7a5de4c56e4672b582`）於其 **CS:EIP** `0180:00377E84 → 0180:00377E87` 同次 `LOG 2` 顯示 `sbb ax,ax → pop edi`。原版進入 `EAX=00000600h`、CF=0、ZF=0、AF=1、PF=1，離開 `EAX=0`、CF=0、ZF=1、AF=0、PF=1；樣本沒有驗證 CF=1 或非零高 16 位。版控 `apps/moo2/tools/startup_probe_131.py --sbb-word` 可重生私有 `sbb-word-registers.json` SHA-256 `9c894626819a99de98bde84a95a6365a4544eb0f4779f56ea88e0e4f0b858eb5` 與 `sbb-word-logcpu.txt` SHA-256 `19ba3515c9b318bef01351e27c6d335405e6695c3d6649311ec9f9dc78f5883a`。原版檔與完整終端留在本機。
+
+[Intel 手冊的 `SBB` 條目](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-2b-manual.pdf) 與 dosgolem [規格 214](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/214-cpu386-sbb-rm16-register.md) 限定 `66 19 /r mod=11` 的 16 位暫存器目的形狀。合成測試核對 CF=1、不同暫存器方向、高 16 位保留及未支援形式拒絕；`go test -buildvcs=false ./internal/cpu386 ./internal/machine -count=1` 與固定原檔輸入的 `go test -buildvcs=false ./... -count=1` 全通過。已綁定 DPMI、仍用合成 PSP／環境的診斷越過第 2460 步，至第 2475 步、dosgolem 重定位 LE 線性 `0x1005B` 的 `C8 AC 00 00` 停於未支援 opcode。前段經 `0x13EF5C → 0x10018 → 0x10057`；**這條低位址控制流與 C8 停點尚未由原版獨立核對**，不可直接當下個原版行為需求。正常玩家畫面與 remake 同狀態對拍仍沒有收據。
+
 ## 舊資料頁基址的勘誤
 
 ## 2026-09-30 通用 CPU 指令續驗
