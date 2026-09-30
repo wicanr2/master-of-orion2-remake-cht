@@ -107,3 +107,9 @@
 - 固定 1.31 原檔在 DOSBox-X 的 `0180:002349FF → 00234A03` 同次 `LOG 2` 命中 `66 3B 4D CE`；原版 `CX=0`、`SS:[EBP-32h]=1`、旗標 `0246h → 0297h`，來源不變。初版腳本錯用 DS 擷取，依 `ss:[...]` 註記與解碼器修正為 SS 並重生；原版 DS=SS，故另以 Intel 契約與不同段基址測試驗證預設段。固定輸入、工具版本、位址基準與私有收據雜湊見 [`docs/re/dosgolem-moo2-intake-20260930.md`](docs/re/dosgolem-moo2-intake-20260930.md)。
 - 隔離 dosgolem 分支依 READY 規格 216 補通用 16 位暫存器與 32 位址記憶體來源的 `CMP`；`go test -buildvcs=false ./internal/cpu386 ./internal/machine -count=1`、固定原檔輸入的 `go test -buildvcs=false ./... -count=1` 全通過。已綁定 DPMI 的合成 PSP／環境診斷至第 2600 步、重定位 LE 線性 `0x126570` 的 `66 A9 89 CF` 停點；下一步先核對原版 `TEST` 的位置、輸入與旗標。沒有改 remake 玩法，仍無正常玩家路徑或玩法同狀態對拍。
 - 工具分支提交並推送 `8f30a7e9b18e1fc1023378d8adfd9fa2d4fa551f` 至 `github/codex/moo2-parity-20260930`。原版檔與完整收據維持私有；新檔 UID/GID `1000:1000`，無 root 擁有檔或誤掛 `.md` 目錄，`golang:1.24-bookworm` 與 DOSBox-X 無殘留容器。
+
+## 2026-10-01：`TEST AX,imm16` 與 DTA 呼叫邊界
+
+- 固定 1.31 原檔在 DOSBox-X `0180:0034A570 → 0034A574` 同次 `LOG 2` 命中 `66 A9 89 CF` 對應的 `test ax,CF89`；EAX 不變、旗標 `0206h → 0286h`。依原版輔助收據與 Intel 契約完成 dosgolem 規格 217 的 DRAFT→READY→實作→CONFORMED，新增 `66 A9 iw` 及高半字、旗標、截短立即數、非法前綴測試。`go test -buildvcs=false ./internal/cpu386 ./internal/machine -count=1` 與固定原檔輸入的 `go test -buildvcs=false ./... -count=1` 全通過；合成 PSP／環境診斷移至第 4062 步、重定位 LE 線性 `0x139A53` 的 `CD 21` 停點。
+- DOSBox-X 原版另一有界探針命中對應 `0180:0035DA53 → 0035DA55` 的 `AH=1Ah` 呼叫及返回，暫存器與旗標未變。原版 DTA 指標 `003C3828h`、合成診斷 `001A5828h` 明顯不同；本輪只登記服務邊界，不猜補返回或接入 `AH=4Eh／4Fh`。輸入雜湊、工具版本、兩種位址空間及私有收據 SHA-256 見 [`docs/re/dosgolem-moo2-intake-20260930.md`](docs/re/dosgolem-moo2-intake-20260930.md)。仍無 dosgolem 正常玩家路徑或玩法同狀態對拍；未改 remake 玩法。
+- 隔離 dosgolem 分支提交並推送 `2e4730a` 至 `github/codex/moo2-parity-20260930`。原版與完整擷取只留本機；Docker 來源掛載前已核對、寫入者為目前使用者，相關一次性容器無殘留。下一步核對受保護模式 DTA 指標及首次搜尋消費端，再建立服務規格。

@@ -100,6 +100,14 @@
 
 隔離 dosgolem 工具分支依 [規格 216](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/216-cpu386-cmp-word-register-memory.md) 接入無段覆寫／repeat 的 `66 3B /r` 16 位記憶體來源。合成測試核對 EBP 選 SS、非 EBP 選 DS、記憶體與暫存器不變、段界限及截短位移拒絕；`go test -buildvcs=false ./internal/cpu386 ./internal/machine -count=1` 與固定原檔輸入的 `go test -buildvcs=false ./... -count=1` 全通過。已綁定 DPMI、仍用合成 PSP／環境的診斷由第 2512 步推進至第 2600 步，於 dosgolem 重定位 LE 線性 `0x126570` 的 `66 A9 89 CF` 停下；該 `TEST` 尚未由原版獨立核對。這不是正常玩家路徑或 remake 玩法同狀態對拍，本輪沒有改 remake 玩法。
 
+### 2026-10-01：`66 A9 89 CF` 與下一個 DTA 服務停點
+
+**已證實，限固定原版指令樣本**：1.31 `ORION2.EXE` SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`。DOSBox-X 2026.07.02 SDL2 heavy debugger 映像 `fd2-dosbox-x:debug-0d7b272b`（ID `sha256:659e8abbf93646f59a1586341769bd4b8f3cd1c707859d7a5de4c56e4672b582`）在其 **CS:EIP** `0180:0034A570 → 0180:0034A574` 的同次 `LOG 2` 顯示 `test ax,CF89 → pop es`；原版 EAX=`003EBB00h` 不變、EFLAGS=`0206h → 0286h`。dosgolem 對應 **重定位 LE 線性位址** `0x126570` 的 bytes 為 `66 A9 89 CF`。`BB00h & CF89h = 8B00h`，SF=1、ZF=0、PF=1；CF／OF 的一般規則與 AF 未定義見 [Intel 手冊 TEST 條目](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-2b-manual.pdf) 及 dosgolem [規格 217](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/217-cpu386-test-ax-imm16.md)。版控 `startup_probe_131.py --test-word` 重生私有 `test-word-registers.json` SHA-256 `b907d497708f9af5e4f671ab5b4d3d3d15041aac383b4620c7ba6473ed59f2a5`、`test-word-logcpu.txt` SHA-256 `e624bc4be5bd0f955568077c3f4fcfc711927baf90ba94ca6a85254be805ceab`。
+
+隔離 dosgolem 工具分支補無段覆寫／repeat 的 `66 A9 iw`；合成測試核對高 16 位保留、旗標、截短立即數與前綴拒絕。`go test -buildvcs=false ./internal/cpu386 ./internal/machine -count=1` 及固定原檔輸入的 `go test -buildvcs=false ./... -count=1` 全通過。已綁定 DPMI、仍用合成 PSP／環境的真檔診斷由第 2600 步至第 4062 步，在 dosgolem **重定位 LE 線性位址** `0x139A53` 的 `CD 21` 停下；進入 EAX=`00171A99h`（AH=`1Ah`）、EDX=`001A5828h`，服務層回報未處理。這是工具診斷，不是同狀態玩法收據。
+
+**已證實，限原版 DOSBox-X 輔助呼叫邊界**：版控 `startup_probe_131.py --dta` 在原版 **CS:EIP** `0180:0035DA53 → 0180:0035DA55` 命中 `INT 21h/AH=1Ah`；原版 EAX=`00381A99h`、EDX=`003C3828h`、DS=`0188h`、EFLAGS=`0246h` 前後不變。私有 `dta-registers.json` SHA-256 `3e58143819ae32406a06027591a19bb14abfdf99eec644c8363886ef4048d68b`。兩側呼叫形狀相符，但 EAX 高位及 DTA 位址明顯不同；合成 PSP／環境與完整資料消費端尚未對齊，不能照抄原版指標或從未變旗標推論所有呼叫都成功。下一步須先定義 DTA 指標保存、後續 `AH=4Eh／4Fh` 消費及檔案來源的受保護模式契約，再進入服務規格審查。原版 EXE 與完整終端保持私有，沒有正常玩家畫面或 remake 玩法同狀態對拍。
+
 ## 舊資料頁基址的勘誤
 
 ## 2026-09-30 通用 CPU 指令續驗
