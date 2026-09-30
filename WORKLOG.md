@@ -195,3 +195,11 @@
 - 隔離 dosgolem [規格 229](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/229-moo2-protected-mouse-software-reset.md) 經 DRAFT→READY→實作→CONFORMED，僅允許 MOO2 設定的 `AX=21h`；回傳依同次原版 LOG，內部按鍵／座標重設依 DOSBox-X 原始碼列為平台契約近似。合成測試與固定原檔第 6007 步整合測試均通過；一次性 `golang:1.24-bookworm` 容器以原 ZIP 唯讀掛載，執行 `DOSGOLEM_MOO2_EXE=/tmp/ORION2.EXE go test -buildvcs=false ./... -count=1` 全通過，私有輸出 SHA-256 `ff619b50ad8cf1c146c56b3bdc675c7da01d81f5d55cc1d1cdd6c12f8f63a47e`。同容器執行 `go run -buildvcs=false ./workplace/moo2-probe /tmp/ORION2.EXE`，私有收據 SHA-256 `25ef4143e67248625582e718a6f03e5d677b0233cd68bacd3ecf019b6f270643`，下一停點第 6126 步、dosgolem **重定位 LE 線性位址** `0x15C31B` 的 `INT 33h/AX=1Ah`。
 - 這輪沒有正常玩家畫面或玩法同狀態對拍。下一個動態 oracle 行動是擷取原版 `AX=1Ah` 的輸入、回傳和 caller 消費，再審查是否足以建立受限服務規格；原版輸入、終端及中間 LOG 只留未版控工作區。
 - 隔離 dosgolem 分支提交 `fc3fa4a5e1e3e5ae335186d10b7d4691c5596369` 並推送至 `github/codex/moo2-parity-20260930`；MOO2 現況文件同輪提交推送。相關一次性 Docker 容器清空，新增／修改檔均屬目前使用者，未發現新 `.md` 同名目錄。
+
+## 2026-10-01：滑鼠零敏感度設定與視訊服務停點
+
+- 接手時 MOO2 與隔離 dosgolem 分支皆乾淨；知識路由命中復古 remake 的原版對拍、規格閘門與文件職責。MOO2 玩法 RE 閘門仍開著，這輪只擴充原版執行器與證據，沒有修改 Go 玩法。
+- 版控 `startup_probe_131.py --mouse-function-1a` 在固定 1.31 原檔、DOSBox-X 2026.07.02 SDL2 heavy debugger 中連續重播前三次滑鼠呼叫。第一次完整輸出後外層 `timeout 170s` 結束；分類為驗證逾時設定，改 `timeout 240s` 並以相同映像／命令乾淨重跑，正常退出且三份收據雜湊相同。原版 **CS:EIP** `0180:0038031B → 0038031D` 的 `AX=1Ah` 進入 BX=CX=DX=`0`，返回暫存器與旗標不變，caller 寫入 record；輸入雜湊、私有收據與證據等級見研究紀錄。
+- 隔離 dosgolem 規格 230 經 DRAFT→READY→實作→CONFORMED，只接受 MOO2 設定下的三個零敏感度值；非零值及一般 FD2 仍拒絕。合成狀態測試與固定原檔第 6126 步整合測試通過。一次性 `golang:1.24-bookworm` 容器以原 ZIP 唯讀掛載，執行 `DOSGOLEM_MOO2_EXE=/tmp/ORION2.EXE go test -buildvcs=false ./... -count=1` 全通過，私有輸出 SHA-256 `a983b838b0b84c14b442a82b127d937f4101c88c5fe6dfc0ce6db6742f536e6a`；`go run -buildvcs=false ./workplace/moo2-probe /tmp/ORION2.EXE` 的私有收據 SHA-256 `aab5a75b6ec1b381e7a7008968ae53844b0e7ce1deed221ef8d8b6872ca7073e`，下一停點為第 6256 步、dosgolem **重定位 LE 線性位址** `0x15C2B2` 的 `INT 10h`。
+- 沒有正常玩家畫面或與 remake 玩法同狀態收據。下一個動態 oracle 行動是取固定原版 `INT 10h` 的實際功能號、返回與 caller 消費端；原版檔案及完整終端只留未版控工作區。
+- 隔離 dosgolem 分支提交 `f96579f80a0ab249ce9a5f8d6f90e8040d8a1aa6` 並推送至 `github/codex/moo2-parity-20260930`；MOO2 現況文件同輪提交推送。相關一次性 Docker 容器清空，新增／修改檔屬目前使用者，未發現新 `.md` 同名目錄。
