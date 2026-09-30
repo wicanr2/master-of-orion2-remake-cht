@@ -95,3 +95,9 @@
 - 固定 1.31 原檔在 DOSBox-X 的 `0180:00377E84 → 00377E87` 同次 `LOG 2` 命中 `66 19 C0`，原版 AX=`0600h → 0000h`、CF=0、ZF=`0 → 1`；新版 `--sbb-word` 探針與私有輸出 SHA-256、原版位址基準見 [`docs/re/dosgolem-moo2-intake-20260930.md`](docs/re/dosgolem-moo2-intake-20260930.md)。Intel 契約與合成測試補 CF=1、不同暫存器、高 16 位保留，沒有把未實測組合冒稱原版結果。
 - 隔離 `dosgolem` 分支依規格 214 補 `66 19 /r mod=11`，`go test -buildvcs=false ./internal/cpu386 ./internal/machine -count=1`、固定原檔輸入的 `go test -buildvcs=false ./... -count=1` 通過。已綁定 DPMI 的合成 PSP／環境診斷由第 2460 步前進至第 2475 步，停在重定位 LE 線性 `0x1005B` 的 `C8`；新低位址路徑尚未與原版獨立核對，不作下一個 CPU 規格的已證實依據。這一輪沒有改 remake 玩法，仍無正常玩家路徑或同狀態對拍。
 - 隔離工具分支提交並推送 `c21627b2031c9e6f842ec3aca08224fee3bb2778`；原檔與完整終端輸出留本機。新檔 UID/GID 為 `1000:1000`，沒有 root 擁有檔或誤掛 `.md` 目錄，`golang:1.24-bookworm`、DOSBox-X 無殘留容器。下一步核對 `0x13EF5C → 0x10018 → 0x10057` 的原版控制流及 `C8` 指令位置，再處理工具缺口。
+
+## 2026-10-01：原版低位址控制流與層級 0 `ENTER`
+
+- 固定 1.31 原檔在 DOSBox-X 的有界 `LOG 20` 證實 `0180:00362F5C → 00234018 → 00234057 → 0023405B`；同次 `LOG 2` 加堆疊前後擷取確認 `ENTER 00AC,00` 將舊 EBP 寫到 `SS:003EBC8C`，EBP／ESP 依 4+`00AC` 位移，旗標不變。位址空間、原檔與私有收據 SHA-256 詳見 [`docs/re/dosgolem-moo2-intake-20260930.md`](docs/re/dosgolem-moo2-intake-20260930.md)。這只證實指令與控制流，原版與合成 PSP／環境仍非同狀態。
+- 隔離 `dosgolem` 分支規格 215 先 DRAFT→READY，首版實作測試越過第 2475 步；審查發現為預檢頁面映射額外讀取堆疊，可能改變通用匯流排副作用，因此退回 DRAFT、修訂為段描述子預檢，再 READY→實作→CONFORMED。修正版新增禁止額外堆疊讀取的測試，並涵蓋配置大小、堆疊往返、前綴、段界限及下溢。固定原檔輸入的 `go test -buildvcs=false ./... -count=1` 全通過；同一有界診斷至第 2512 步、重定位 LE 線性 `0x109FF` 的 `66 3B 4D CE` 停點。新比較指令尚未由原版獨立核對；本輪未改 remake 玩法，也沒有正常玩家路徑或玩法同狀態對拍。
+- 工具分支提交並推送 `ac9a129513e4382145fc67fabe7e41b0c690fb6e` 到 `github/codex/moo2-parity-20260930`。原版檔、堆疊檔與完整終端留在未版控工作區；新檔 UID/GID `1000:1000`，沒有 root 擁有檔或誤掛 `.md` 目錄，`golang:1.24-bookworm` 與 DOSBox-X 無殘留容器。下一步先核對 `0x109FF` 的原版記憶體讀值與旗標，再判斷是否建立新規格。

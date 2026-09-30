@@ -84,6 +84,14 @@
 
 [Intel 手冊的 `SBB` 條目](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-2b-manual.pdf) 與 dosgolem [規格 214](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/214-cpu386-sbb-rm16-register.md) 限定 `66 19 /r mod=11` 的 16 位暫存器目的形狀。合成測試核對 CF=1、不同暫存器方向、高 16 位保留及未支援形式拒絕；`go test -buildvcs=false ./internal/cpu386 ./internal/machine -count=1` 與固定原檔輸入的 `go test -buildvcs=false ./... -count=1` 全通過。已綁定 DPMI、仍用合成 PSP／環境的診斷越過第 2460 步，至第 2475 步、dosgolem 重定位 LE 線性 `0x1005B` 的 `C8 AC 00 00` 停於未支援 opcode。前段經 `0x13EF5C → 0x10018 → 0x10057`；**這條低位址控制流與 C8 停點尚未由原版獨立核對**，不可直接當下個原版行為需求。正常玩家畫面與 remake 同狀態對拍仍沒有收據。
 
+### 2026-10-01：低位址控制流與 `ENTER 00AC,00`
+
+**已證實，限固定原版指令形狀與本次執行狀態**：1.31 `ORION2.EXE` SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`。DOSBox-X 2026.07.02 SDL2 heavy debugger 映像 `fd2-dosbox-x:debug-0d7b272b`（ID `sha256:659e8abbf93646f59a1586341769bd4b8f3cd1c707859d7a5de4c56e4672b582`）的 **CS:EIP** `0180:00362F5C` 呼叫 `0180:00234018`，經 `00234057` 及四次 push，進入 `0180:0023405B` 的 `enter 00AC,00`。版控 `apps/moo2/tools/startup_probe_131.py --low-entry` 重生的私有 `low-entry-registers.json` SHA-256 `2fd82053b138d260ed49b1675377f3106f9eb4ccaea8be20fbb0dabcfbc0b6fc`，有界 `low-entry-logcpu.txt` SHA-256 `9d242f4d359cc331fbef1aad02a646ddf72e30a88eb09e7dd7e0641f883b5855`。這直接核對前輪 dosgolem **重定位 LE 線性位址** `0x13EF5C → 0x10018 → 0x10057 → 0x1005B` 的指令順序；兩工具位址基準不同，不能只比數字。
+
+原版同次 `--enter` 的 **CS:EIP** `0180:0023405B → 0180:0023405F`：`SS=0188h`、`ESP=003EBC90h → 003EBBE0h`、`EBP=003EBCA4h → 003EBC8Ch`、`EFLAGS=0246h` 不變，`SS:003EBC8C` 四位元組 `90 20 3A 00 → A4 BC 3E 00`，寫入舊 EBP。私有 `enter-registers.json` SHA-256 `f0081c2f07edfaed125a5dc6b95de4fd404200953c009db55046b3239f4d7169`、`enter-logcpu.txt` SHA-256 `1d458daf1ebe9d383baf105f9e386277909f6443419a21a16ae3beea56331ecb`，前後堆疊檔 SHA-256 `1a2db19b7f6380c9eed28e130e8224fe9245ab0eb0613af0f8254c02341269bf`／`ec5fc2e2555302df262bcda9052310184eda069fbd22cd9ffa4df4a01874d205`。原版 EXE 與完整終端留在未版控工作區。
+
+[Intel 手冊的 `ENTER` 條目](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-2a-manual.pdf) 與 dosgolem [規格 215](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/215-cpu386-enter-level-zero.md) 將實作限定為無前綴、32 位堆疊、巢狀層級 0。首版為預檢頁面映射額外讀取堆疊，經審查認定不符通用匯流排契約，退回 DRAFT 後移除；修正版以段描述子檢查權限與界限，並以會拒絕堆疊讀取的合成匯流排測試。固定原檔輸入的 `go test -buildvcs=false ./... -count=1` 全通過；已綁定 DPMI、仍用合成 PSP／環境的診斷越過第 2475 步，至第 2512 步、dosgolem 重定位 LE 線性 `0x109FF` 的 `66 3B 4D CE` 停下。**該記憶體比較尚未由原版獨立核對**；沒有正常玩家路徑或與 remake 同狀態玩法收據。
+
 ## 舊資料頁基址的勘誤
 
 ## 2026-09-30 通用 CPU 指令續驗
