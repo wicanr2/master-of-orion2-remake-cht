@@ -56,6 +56,14 @@
 
 隔離 dosgolem 工具分支已只補 `87 /r` 的 32 位暫存器形式，保留原記憶體形式；未支援的 16 位暫存器形式拒絕。`go test ./internal/cpu386 ./internal/machine -count=1` 與 `go test ./... -count=1` 通過。已綁定 DPMI 的**合成環境診斷**越過先前第 673 步停點，於第 760 步、dosgolem 重定位 LE 線性 `0x1515CA` 的 `F5` 失敗即關閉。`F5` 的原版前後狀態尚未核對；合成 PSP／環境、完整資料消費端及 dosgolem 正常玩家畫面仍待驗證。此輪未改 remake 玩法，也**沒有玩法同狀態對拍**。
 
+### 2026-10-01：`F5` 與 `21 C8` 通用 CPU 切片
+
+**已證實，限指令形狀**：固定 1.31 原檔 SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`，dosgolem 重定位 LE 線性 `0x1515CA` 的 `F5` 與 `0x1515CD` 的 `21 C8`，分別對應 DOSBox-X 2026.07.02 SDL2 heavy debugger 映像 `fd2-dosbox-x:debug-0d7b272b`（ID `sha256:659e8abbf93646f59a1586341769bd4b8f3cd1c707859d7a5de4c56e4672b582`）的 **CS:EIP** `0180:003755CA` 與 `0180:003755CD`。原版 `F5` 的前後 `EFLAGS=0202h → 0203h`，由版控 `--cmc` 探針重生的私有 `cmc-registers.json` SHA-256 `a77196163f3432ffb787d577d5f761c6f78b8f0877a76dbd2b6c34dec958fe36`；Intel 手冊定義此為只翻轉 CF 的 `CMC`。
+
+**觀測勘誤**：`21 C8` 的兩個獨立 `BP`／`EV` 快照曾顯示 `ECX=0Fh`、前後 `EAX=80h`，無法解釋相與結果。舊私有 JSON SHA-256 `955d273f733e19d92994fead6adfd3acf3eb65ff6b79a1817ad0bfac9c06d018` 只保留追溯，不作值對拍。改在同一次 DOSBox-X 執行中從 `0180:003755CD` 用 `LOG 2` 記錄到 `0180:003755CF`：原版進入 `EAX=80h`、`ECX=FFFFFFFFh`、CF=1／ZF=0／SF=1／PF=1，離開時 `EAX=80h`、`ECX=FFFFFFFFh`、CF=0／ZF=0／SF=0／PF=0，符合 `AND EAX,ECX`。權威私有 `and-logcpu.txt` SHA-256 `1bdb7c5df2801e62c4bd7aee1a7b7bb533b71fe8c1aa19fb92afa9263536755d`；修正版 `and-registers.json` SHA-256 `c5131b8aea15512c7c1deeb42964c1261e4ea8c182a07dd125a818a50c0d7796` 將 `EV` 限為地址定位，另載兩行連續 LOG。原始 bytes、工具位址空間、Intel 指令契約與限制詳見 dosgolem [規格 210](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/210-cpu386-cmc.md)／[規格 211](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/211-cpu386-and-rm32-register.md)。
+
+隔離 `dosgolem` 分支只補無前綴 `F5` 與 `21 /r mod=11` 的通用 CPU 形狀；合成測試與固定原檔輸入的 `go test ./internal/cpu386 ./internal/machine -count=1`、`go test ./... -count=1` 通過。已綁定 DPMI 的**合成環境診斷**由第 760 步推進至第 803 步，在 dosgolem 重定位 LE 線性 `0x151648` 的原始 bytes `83 0E 01` 失敗即關閉；`83 0E 01` 尚未核對原版前後狀態。完整 PSP／環境及遊戲資料消費端仍未閉合，**沒有正常玩家畫面或玩法同狀態對拍**；本輪未改 remake 玩法。
+
 ## 舊資料頁基址的勘誤
 
 ## 2026-09-30 通用 CPU 指令續驗
