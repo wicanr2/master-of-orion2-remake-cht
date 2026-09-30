@@ -64,6 +64,12 @@
 
 隔離 `dosgolem` 分支只補無前綴 `F5` 與 `21 /r mod=11` 的通用 CPU 形狀；合成測試與固定原檔輸入的 `go test ./internal/cpu386 ./internal/machine -count=1`、`go test ./... -count=1` 通過。已綁定 DPMI 的**合成環境診斷**由第 760 步推進至第 803 步，在 dosgolem 重定位 LE 線性 `0x151648` 的原始 bytes `83 0E 01` 失敗即關閉；`83 0E 01` 尚未核對原版前後狀態。完整 PSP／環境及遊戲資料消費端仍未閉合，**沒有正常玩家畫面或玩法同狀態對拍**；本輪未改 remake 玩法。
 
+### 2026-10-01：`83 0E 01` 的原版記憶體寫回
+
+**已證實，限通用 CPU 指令形狀**：固定 1.31 `ORION2.EXE` SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`，dosgolem 重定位 LE 線性 `0x151648` 的 `83 0E 01`，在 DOSBox-X 2026.07.02 SDL2 heavy debugger 映像 `fd2-dosbox-x:debug-0d7b272b`（ID `sha256:659e8abbf93646f59a1586341769bd4b8f3cd1c707859d7a5de4c56e4672b582`）以其 CS:EIP `0180:00375648 → 0037564B` 的同次 `LOG 2` 核對。原版 `DS=0188h`、`ESI=003EC034h`；`MEMDUMPBIN` 擷取 DS:[ESI] 四位元組 `90 00 00 00 → 91 00 00 00`，符合 `OR dword [ESI],01h`。完整位址、符號擴展、旗標與測試邊界見 dosgolem [規格 212](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/212-cpu386-or-rm32-imm8-memory.md)。版控 `startup_probe_131.py --or-memory` 可重生私有收據：`or-memory-registers.json` SHA-256 `333b36bbc93717e6b74a0f0abde417658dcd40b3db47cd750d6fe7b6bc9901d6`，連續 `or-memory-logcpu.txt` SHA-256 `33bff7dea3164d1af83c2c588354fd9c47f078737ea276b2653b8d3e6581781f`，前後位元組檔 SHA-256 分別為 `0e6c738e4fe755a64a276418309bb5dc7e6bf36772bc0238010718e091a780da`／`f00061f6703ccf02a5d5d1ad9d83f2d4db90c9481268364eccdada3e2214d0fe`。原版檔與完整輸出未加入 Git。
+
+隔離 dosgolem 工具分支依 READY 規格增加無前綴 32 位記憶體 `83 /1 ib`，`go test ./internal/cpu386 ./internal/machine -count=1` 與固定原檔輸入的 `go test ./... -count=1` 通過。已綁定 DPMI 的**合成環境診斷**越過此處，由第 803 步至第 819 步，在 dosgolem 重定位 LE 線性 `0x13CC50` 的 `0F A9` 失敗即關閉；下一指令的原版行為仍待核對。PSP／環境與完整資料消費端仍未閉合，**沒有正常玩家畫面或玩法同狀態對拍**；本輪未改 remake 玩法。
+
 ## 舊資料頁基址的勘誤
 
 ## 2026-09-30 通用 CPU 指令續驗
