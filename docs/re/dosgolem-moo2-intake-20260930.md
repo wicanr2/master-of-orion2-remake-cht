@@ -108,7 +108,7 @@
 
 **已證實，限原版 DOSBox-X 輔助呼叫邊界**：版控 `startup_probe_131.py --dta` 在原版 **CS:EIP** `0180:0035DA53 → 0180:0035DA55` 命中 `INT 21h/AH=1Ah`；原版 EAX=`00381A99h`、EDX=`003C3828h`、DS=`0188h`、EFLAGS=`0246h` 前後不變。私有 `dta-registers.json` SHA-256 `3e58143819ae32406a06027591a19bb14abfdf99eec644c8363886ef4048d68b`。兩側呼叫形狀相符，但 EAX 高位及 DTA 位址明顯不同；合成 PSP／環境與完整資料消費端尚未對齊，不能照抄原版指標或從未變旗標推論所有呼叫都成功。下一步須先定義 DTA 指標保存、後續 `AH=4Eh／4Fh` 消費及檔案來源的受保護模式契約，再進入服務規格審查。原版 EXE 與完整終端保持私有，沒有正常玩家畫面或 remake 玩法同狀態對拍。
 
-## 舊資料頁基址的勘誤
+## 2026-10-01：動態服務與 CPU 補證
 
 ### 2026-10-01：受保護模式 DTA 首次搜尋與缺檔勘誤
 
@@ -117,6 +117,12 @@
 **已證實，限受控合成檔案存在樣本**：一次性容器除原版 EXE 外僅新增零位元組 `MOX.SET`（SHA-256 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`），修改時間固定 `1996-01-01 00:00 UTC`。同一呼叫回 EAX=`00380000h`、EFLAGS=`0246h`；DTA `+15h` 屬性 `20h`、`+16h` 時間 `0000h`、`+18h` 日期 `2021h`、`+1Ah` 大小 0、`+1Eh` 名稱 `MOX.SET\0`。`--dta-find-present` 可重生私有暫存器 SHA-256 `ca68fb5618b84b667b749e5fe6874fc2c42a26e3b460c13d6c00cd71a1898e2b`、DTA 後態 `a36f4b577def2164c9b875189aaf1519863de0b7d115f0c7ecaac4f389effe4e`、後續有界控制流 `2a7c41a13ce549af44afff0e9da2943d434a15141f76902652f13342a80b4b7a`。完整擷取與原檔不入 Git。版本化入口在 dosgolem [`startup_probe_131.py`](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/apps/moo2/tools/startup_probe_131.py)；服務契約與未知範圍見 [規格 218](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/218-protected-dos-set-dta.md)／[規格 219](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/219-protected-dos-findfirst-exact.md)。
 
 **強推論／近似**：缺檔保留既有 DTA 結果欄由 [DOSBox-X `SetupSearch`／`SetResult`](https://github.com/joncampbell123/dosbox-x/blob/master/src/dos/dos_classes.cpp) 支持，原版這次舊欄位恰為零；工具另以非零合成欄位測試。檔案修改時間採 UTC 打包，只是明示的環境近似。dosgolem **重定位 LE 線性位址** `0x139A53`、`0x139A59` 對應服務呼叫，數值不與上方 DOSBox-X CS:EIP 混用。固定真檔、合成 PSP／環境診斷經 `AH=1Ah`、`4Eh` 進至第 4168 步，於重定位 LE 線性 `0x148224` 的 `38 10` 停在未支援 CPU byte 比較。PSP／環境與完整遊戲資料未對齊，**沒有正常玩家路徑或 remake 同狀態玩法收據**；`CMP` 的原版對應狀態仍未知。
+
+### 2026-10-01：`38 10` 的原版 byte 比較
+
+**已證實，限本次原版樣本**：同一固定 1.31 `ORION2.EXE` SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`。DOSBox-X 2026.07.02 SDL2 heavy debugger 映像 `fd2-dosbox-x:debug-0d7b272b` ID `sha256:659e8abbf93646f59a1586341769bd4b8f3cd1c707859d7a5de4c56e4672b582`，於其 **CS:EIP** `0180:0036C224 → 0180:0036C226` 同次 `LOG 2` 顯示 `cmp [eax],dl → test al,03`。進入 EAX=`003EC0DCh`、EDX=`0`、DS=`0188h`、EFLAGS=`0202h`；DS:`003EC0DCh` 一位元組 `00h → 00h`，離開 EAX／EDX／DS 不變、EFLAGS=`0246h`。dosgolem 對應 **重定位 LE 線性位址** `0x148224` 的 bytes `38 10 A8 03`；位址基準不同。版控 `startup_probe_131.py --cmp-byte` 重生私有 `cmp-byte-registers.json` SHA-256 `c9763a12d3aa3af48b8c878e97c983ede9c8fb771471f31c1ef8ef90e142b72d`、`cmp-byte-logcpu.txt` SHA-256 `12adee632c97e7ae0d6ddcbd09a393c988602d0329ef7b00c90fe45a3e05e32b`；記憶體前後檔 SHA-256 均為 `6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d`。原檔與完整終端仍在未版控工作區。
+
+**通用契約與界線**：[Intel 手冊的 `CMP` 指令表](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-2a-manual.pdf) 定義 `38 /r` 為 `CMP r/m8,r8`；不同值、EBP／SIB 預設段與失敗處理由手冊、既有位址解碼器及合成測試驗證，**不是這次原版零差樣本證實**。隔離 dosgolem 分支依 [規格 220](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/220-cpu386-cmp-rm8-register.md) 將無前綴記憶體目的路由到 `decodeAddress32`；固定原檔 `go test -buildvcs=false ./... -count=1` 通過。合成 PSP／環境診斷至第 4944 步，在重定位 LE 線性 `0x146903` 的 `26 8A 1E 42 84` 停於未支援 ES 覆寫載入；其原版對應尚**未知**，無正常玩家路徑或同狀態玩法對拍。
 
 ## 2026-09-30 通用 CPU 指令續驗
 
