@@ -468,8 +468,8 @@
   上游帝國陣列仍列近似，不影響已閉合 producer／consumer。
 
 - [~] **玩家可見文案外部化**：2026-08-26 已把既有 `assets/i18n/*.json` 與內嵌副本統一轉為
-  有序 JSON 並移除 `go:embed` 副本，載入器保留 per-source、先出現者優先及原版單位元控制標記契約。剩餘工作是逐畫面
-  移除 `tr(中文, 英文)` 與直接繪製的硬編文案，改以穩定鍵值查詢。多人資訊面板已完成第一個
+  有序 JSON 並移除 `go:embed` 副本，載入器保留 per-source、先出現者優先及原版單位元控制標記契約。目前 production `cmd/moo2` 已無 `.tr(` 呼叫；剩餘工作是逐畫面
+  查核直接繪製的硬編文案及其動態鍵，改以穩定鍵值查詢。多人資訊面板已完成第一個
   垂直切片：IDA 重新確認七個 MULTIGM 狀態共用 loader／draw 與按鈕 helper；`netinfo.go`
   現只保存 `netinfo.*` 語意鍵，中英文標題、狀態與按鈕均由 `assets/i18n/ui.json` 提供，並有
   靜態防回歸與雙語 catalog 測試。自訂種族亦完成第二個切片：正版 `RACESTUF.LBX` asset 0
@@ -1044,7 +1044,7 @@
   [`docs/re/refit-ui-text-audit-20260827.md`](docs/re/refit-ui-text-audit-20260827.md) 與
   [`docs/tech/refit-external-text-spec.md`](docs/tech/refit-external-text-spec.md)、
   [`docs/re/input-box-ui-text-audit-20260827.md`](docs/re/input-box-ui-text-audit-20260827.md) 與
-  [`docs/tech/input-box-external-text-spec.md`](docs/tech/input-box-external-text-spec.md)。程式註解、測試文字與除錯日誌不列入玩家文案。
+  [`docs/tech/input-box-external-text-spec.md`](docs/tech/input-box-external-text-spec.md)。2026-09-30 增加 Go 語法樹回歸檢查：production `uiText` 的固定鍵必須在 `ui.json` 同時具有中英文欄位；動態組合鍵仍由各畫面測試驗證。完整 `cmd/moo2` 測試已通過；本檢查不宣稱所有玩家文案已外部化。程式註解、測試文字與除錯日誌不列入玩家文案。
 
 - [x] **原版對局內 SETTINGS 分頁**：2026-08-26 已完成原版 13 列畫面、資產、外部雙語文案、
   原版預設值、`.GAM` 匯入與 JSON 往返。IDA 證實
