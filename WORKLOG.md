@@ -211,3 +211,10 @@
 - 首次全套測試在原檔整合測試失敗：前一段滑鼠單步未更新測試局部計數，導致預期 6256、實得 6244；補齊 12 個計數後以同一 `golang:1.24-bookworm` 容器與命令乾淨重跑，含原檔 `go test -buildvcs=false ./... -count=1` 全通過，私有輸出 SHA-256 `66f262c63281b32a8d619f190b0d710956ffecdf158624cd0603f796b57921ee`。
 - 初次原檔診斷走到第 10175 步的 `MOV` 報錯；回查確認第 10173 步已有 `INT 21h/AH=4Ch`，屬探針未在退出時停止的錯誤。修正 `workplace/moo2-probe` 後重跑，於第 10173 步以代碼 1 結束，主控台回 `Unable to open mox.set`，私有輸出 SHA-256 `8ee984ad0f300255f41f4259729102a07eb193461cc00b307d35b0a2e2f694d6`。下一步以既有空 `MOX.SET` 輔助收據建立受控成功分支；目前無正常玩家畫面或玩法同狀態對拍。
 - dosgolem 分支 `20e869be0d10f3e39074938969be85368de00ec4` 已推送至 `github/codex/moo2-parity-20260930`。本輪 Docker 均為一次性容器；原版檔案、完整終端及診斷輸出仍只留在未版控工作區。
+
+## 2026-10-01：空設定檔比較與正版資料啟動
+
+- 接手時兩分支乾淨；知識路由命中復古 remake 與規格閘門，載入 `retro-remake-spec-gated-workflow.md`、專案現況及文件職責。本輪只擴充隔離 dosgolem 的 CPU／診斷能力，不改 MOO2 Go 玩法。
+- 版控探針 `--empty-mox-cmp` 從固定 1.31 原檔與受控零位元組 `MOX.SET` 擷取 DOSBox-X 同次 `CMP` 收據；原始 bytes、兩套位址基準、原版／合成來源值與旗標見研究紀錄。dosgolem 規格 232 經 DRAFT→READY→實作→CONFORMED；含固定原檔的 `go test -buildvcs=false ./... -count=1` 全通過，最終乾淨重跑私有輸出 SHA-256 `a6c8319d03cbfbe8cfe6cef27011b170e03d6f2bffe64bbc42a45816bf8cf69e`。空檔後續仍以代碼 1 退出。
+- 查證正版 ZIP 含 553-byte `MOX.SET`，先單檔診斷：20 萬步上限仍在前進，故調整為有界 100 萬步並降低輸出量。完整資料提取首次被三個聲卡子目錄觸發路徑 assertion；修正只取 ZIP 根層檔案後同容器工具鏈乾淨重跑。正版根層 417 檔及官方 1.31 EXE 只在一次性容器暫存區使用，dosgolem 自行執行至第 288215 步的 `66 F7 /0` word 形狀，私有診斷 SHA-256 `c032e24493aef6d936a810d10dfe109b9884de5a78cb5527fdebcaeec63cfb9e`。尚無此新指令的原版同次收據，也無正常玩家畫面或與 remake 同狀態玩法對拍。
+- 隔離 dosgolem 分支提交 `07320bee8e6bfc6eaf5163146432c8d6ed3ea2d1` 並推送至 `github/codex/moo2-parity-20260930`。一次性 Docker 容器皆已結束，新增檔案屬目前使用者，未發現誤建 `.md` 目錄；私有原版資料及輸出未入版控。
