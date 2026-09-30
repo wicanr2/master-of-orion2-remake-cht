@@ -147,3 +147,8 @@
 - 接手確認兩個分支乾淨；知識路由命中原版決定性對拍，讀取 dosgolem 入口、能力矩陣及專案現況，文件寫入前再讀文件職責。發現前輪 `26 8A 1E` 收據把候選 `EV` 前斷點 EBX=`0Fh` 與 `LOG 2` 後態 EBX=`FFFFFF30h` 配成同次指令，與 byte MOV 的高 24 位不變契約矛盾。新增 `--es-byte-load-ev` 以前後斷點重播，矛盾仍在；原因未知。修正 `--es-byte-load` 收據明列 EV／LOG 衝突，原版指令依同次連續 LOG `FFFFFFFFh → FFFFFF30h` 限定解釋。原檔雜湊、工具版本、兩種位址基準及私有輸出雜湊見 [`docs/re/dosgolem-moo2-intake-20260930.md`](docs/re/dosgolem-moo2-intake-20260930.md)。保留舊收據的錯誤形成原因，不把候選前態冒稱同狀態。
 - 隔離 dosgolem 分支新增固定 1.31 真檔、缺檔即跳過的 `TestMOO2ESByteLoadCheckpointWhenProvided`，從 LE entry 與受控合成 PSP／環境自然跑到第 4944 步，單步核對 EBX=`FFFFFFFFh → FFFFFF30h`、來源 `30h`、旗標與來源不變。此處原版 ESI／ESP 與 dosgolem ESI／ESP 各差 `0021DFE0h`，相對差同為 `34h`；只支持單一啟動指令的正規化對照。`DOSGOLEM_MOO2_EXE=/tmp/ORION2.EXE go test -buildvcs=false -v ./internal/machine -run TestMOO2ESByteLoadCheckpointWhenProvided -count=1` 與含固定原檔的 `go test -buildvcs=false ./... -count=1` 通過；後者輸出雜湊見研究紀錄。
 - MOO2 與隔離 dosgolem 分支本輪分別提交並推送。新 `C1 CA 08` 停點的原版對應、原版環境／DTA 與完整資料消費端仍待查；沒有正常玩家畫面或玩法同狀態收據，也未改 remake 玩法。原版 EXE、DOSBox-X 完整終端和 Go 診斷輸出只留未版控工作區；修改檔由目前使用者擁有，相關一次性 Docker 容器已清空，沒有 `.md` 同名誤掛目錄。
+
+## 2026-10-01：原版零輸入 ROR 與 dosgolem 規格 222
+
+- 重新查知識路由表第 53 列，沿用 dosgolem 原版對拍入口。以固定 1.31 原檔及 DOSBox-X 2026.07.02 同次 `LOG 2` 核對 **DOSBox-X CS:EIP** `0180:0036C22D → 0036C230` 的 `ror edx,08`；EDX=`0 → 0`、EFLAGS=`0206h`。原版只覆蓋零輸入，非零與未定義 OF 的契約另由 Intel 手冊和合成測試限定。完整輸入／輸出雜湊與位址基準記在研究紀錄。
+- 隔離 dosgolem 分支依 DRAFT→READY→實作→CONFORMED 新增規格 222，僅接 `C1 /1` 的 32 位暫存器與 `08h`，保留未定義 OF 的原值。固定原檔整合測試從 LE entry 自行重生第 5392 步 `0x14822D` 的零輸入並單步至 `0x148230`；合成診斷進至第 5529 步，在**重定位 LE 線性位址** `0x14701B` 的 `08 E0` 停下，原版對應待查。含固定原檔的 `go test -buildvcs=false ./... -count=1` 全通過，新整合測試另以 `-v` 確認確實執行。此輪未改 remake 玩法，無正常玩家畫面或玩法同狀態對拍。
