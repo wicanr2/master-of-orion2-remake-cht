@@ -187,3 +187,11 @@
 - 隔離 dosgolem 規格 228 經 DRAFT→READY→實作→CONFORMED，只接該單一 ModRM 形狀。合成測試覆蓋不同值、小端序、非零 DS base、界限拒絕與未列形狀拒絕；固定原檔整合測試自行抵達第 5838 步並單步到下一指令。一次性 `golang:1.24-bookworm` 容器以原 ZIP 唯讀掛載，在容器內擷取 EXE，執行 `DOSGOLEM_MOO2_EXE=/tmp/ORION2.EXE go test -buildvcs=false ./... -count=1` 全通過；私有輸出 SHA-256 `78c15a85c6a0902893dfde545d0db82ea8ebc4dfe275812eefed49cee5d1e0d1`。同容器執行 `go run -buildvcs=false ./workplace/moo2-probe /tmp/ORION2.EXE`，私有收據 SHA-256 `dd4ec7d5ac8b04bfc8bb2c8acd977b342f2d6f10654dc6657d379d702f065da7`，下一停點第 6007 步、dosgolem **重定位 LE 線性位址** `0x15C31B` 的 `INT 33h/AX=21h`。
 - 這輪未改 MOO2 Go 玩法；仍無正常玩家畫面或玩法同狀態對拍。下一最小行動是取固定原版 `INT 33h/AX=21h` 的輸入、返回與 caller 消費端，審查是否足以建立受限工具規格。原版 EXE、完整終端及私有診斷留未版控工作區。
 - 隔離 dosgolem 分支提交 `c3cc5d90b235e3466f4a86484c0b3d907432da7d` 並推送至 `github/codex/moo2-parity-20260930`；MOO2 現況文件同輪提交與推送。相關一次性 Docker 容器清空；新增檔案屬目前使用者，未發現新 `.md` 同名目錄。
+
+## 2026-10-01：滑鼠 `INT 33h/AX=21h` 固定原檔收據
+
+- 接手時兩分支乾淨；知識路由命中復古 remake、原版決定性對拍與 spec 閘門，讀取專案現況、dosgolem 能力入口及文件職責。本輪只擴充原版執行器；MOO2 玩法 RE 閘門仍開啟，未改 Go 玩法。
+- 版控 `startup_probe_131.py --mouse-function-21` 以固定 1.31 原檔在 DOSBox-X 2026.07.02 SDL2 heavy debugger 擷取第二次滑鼠呼叫。首輪 `EV` 候選返回與 LOG 矛盾；第二輪 32 指令只進 DOS extender；第三輪返回斷點未清除，LOG 只得一行。清理斷點後在相同隔離映像及命令乾淨重跑，得到同次 **DOSBox-X CS:EIP** `0180:0038031B → 0038031D` 的 `AX=21h → FFFFh`、`BX=0 → 3`，呼叫端寫入 record。舊候選撤回而保留私有輸出，完整雜湊、位址基準與未知邊界見研究紀錄。
+- 隔離 dosgolem [規格 229](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/229-moo2-protected-mouse-software-reset.md) 經 DRAFT→READY→實作→CONFORMED，僅允許 MOO2 設定的 `AX=21h`；回傳依同次原版 LOG，內部按鍵／座標重設依 DOSBox-X 原始碼列為平台契約近似。合成測試與固定原檔第 6007 步整合測試均通過；一次性 `golang:1.24-bookworm` 容器以原 ZIP 唯讀掛載，執行 `DOSGOLEM_MOO2_EXE=/tmp/ORION2.EXE go test -buildvcs=false ./... -count=1` 全通過，私有輸出 SHA-256 `ff619b50ad8cf1c146c56b3bdc675c7da01d81f5d55cc1d1cdd6c12f8f63a47e`。同容器執行 `go run -buildvcs=false ./workplace/moo2-probe /tmp/ORION2.EXE`，私有收據 SHA-256 `25ef4143e67248625582e718a6f03e5d677b0233cd68bacd3ecf019b6f270643`，下一停點第 6126 步、dosgolem **重定位 LE 線性位址** `0x15C31B` 的 `INT 33h/AX=1Ah`。
+- 這輪沒有正常玩家畫面或玩法同狀態對拍。下一個動態 oracle 行動是擷取原版 `AX=1Ah` 的輸入、回傳和 caller 消費，再審查是否足以建立受限服務規格；原版輸入、終端及中間 LOG 只留未版控工作區。
+- 隔離 dosgolem 分支提交 `fc3fa4a5e1e3e5ae335186d10b7d4691c5596369` 並推送至 `github/codex/moo2-parity-20260930`；MOO2 現況文件同輪提交推送。相關一次性 Docker 容器清空，新增／修改檔均屬目前使用者，未發現新 `.md` 同名目錄。
