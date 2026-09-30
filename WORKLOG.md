@@ -134,3 +134,10 @@
 - 在 `internal/shell` 將五種既有態勢名稱映射為穩定代碼，`cmd/moo2` 資訊頁再以該代碼讀取目前語系文案；不改 `StanceName`、JSON 格式或 AI 判定。新增五種態勢、未知值及譯文從「宣戰」改為「交戰狀態」後仍顯示舊存檔值的回歸測試。
 - `moo2-ebiten` 一次性 Docker 容器以目前 UID/GID、無網路、3 GiB／2 CPU／128 PID，在 Xvfb 下執行 `go test -buildvcs=false ./internal/i18n ./internal/shell ./cmd/moo2 -count=1`；三套件全通過。這是 remake 內部回歸測試，沒有原版同狀態對拍，也沒有 GUI 正常玩家路徑截圖。下一步仍按活表處理 `dosgolem` 正常路徑與玩法證據，不把本次顯示修正算成原版忠實度完成。
 - MOO2 分支 `codex/moo2-wine-gorgon-parity-20260930` 本輪提交並推送；相關一次性容器已清空，六個修改檔均為目前使用者 UID/GID，沒有 `.md` 同名誤掛目錄。原有 root 擁有的 `go.sum`、`lbxinfo` 及部分 `.docker-cache` 未改動。
+
+## 2026-10-01：`dosgolem` ES byte 載入與原版輔助收據
+
+- 知識路由命中原版決定性對拍，讀取 dosgolem 的 `README.md`、`CLAUDE.md`、能力矩陣與規格索引；MOO2 與隔離 dosgolem 工作樹開工時均乾淨。固定 1.31 原檔從本機 ZIP 唯讀擷取至一次性 DOSBox-X 容器，SHA-256 核對後以 `startup_probe_131.py --es-byte-load` 擷取原版 **CS:EIP** `0180:0036A903 → 0036A906` 的 `mov bl,es:[esi]`。來源 `30h`、BL 變 `30h`、旗標與來源不變；ES=DS，異段覆寫須另由處理器規格與合成測試驗證。首輪探針誤期待五 byte 指令，依原版實際三 byte 長度修正後以同一隔離映像乾淨重跑；地址、工具版本、輸入與私有收據雜湊見 [`docs/re/dosgolem-moo2-intake-20260930.md`](docs/re/dosgolem-moo2-intake-20260930.md)。
+- 隔離 dosgolem 分支新增 [規格 221](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/221-cpu386-mov-r8-es-memory.md)，按 DRAFT→READY→實作→CONFORMED，讓帶 ES 覆寫的 `8A /r` 記憶體來源使用既有 32 位址解碼器。合成測試核對異段、EBP／SIB、低／高 byte 暫存器及失敗即關閉。`go test -buildvcs=false ./internal/cpu386 ./internal/machine -count=1` 通過；以 `DOSGOLEM_MOO2_EXE=/tmp/ORION2.EXE go test -buildvcs=false ./... -count=1` 重跑全部套件通過，兩個需要固定 MOO2 原檔的測試另以 `-v` 確認執行且通過。
+- 合成 PSP／環境的真檔診斷由第 4944 步至第 5392 步，在 dosgolem **重定位 LE 線性位址** `0x14822D` 的 `C1 CA 08` 停住；新停點原版對應未知。下一個動態 oracle 行動是先核對此指令的原版位置、來源與結果，再評估通用 CPU 規格，同時追查 PSP／環境與完整資料消費端。這輪沒有修改 remake 玩法，沒有 dosgolem 正常玩家畫面或玩法同狀態收據。原版 EXE、完整記憶體與終端資料只留未版控工作區。
+- MOO2 與隔離 dosgolem 分支本輪分別提交並推送；新檔與修改檔均為目前使用者 UID/GID，沒有 `.md` 同名誤掛目錄，相關一次性容器已清空。既有 root 擁有的 `go.sum`、`lbxinfo` 與部分 `.docker-cache` 未改動。
