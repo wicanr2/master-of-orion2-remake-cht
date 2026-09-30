@@ -110,6 +110,14 @@
 
 ## 舊資料頁基址的勘誤
 
+### 2026-10-01：受保護模式 DTA 首次搜尋與缺檔勘誤
+
+**已證實，限 DOSBox-X 2026.07.02 輔助原版樣本**：固定 1.31 `ORION2.EXE` SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`；映像 `fd2-dosbox-x:debug-0d7b272b` ID `sha256:659e8abbf93646f59a1586341769bd4b8f3cd1c707859d7a5de4c56e4672b582`。原版 **CS:EIP** `0180:0035DA53 → 0035DA55` 的 `AH=1Ah` 設 DS:`003C3828h` DTA，接著 `0180:0035DA59 → 0035DA5B` 以 DS:`0038E099h` 的 `MOX.SET`、CX=0 執行 `AH=4Eh`。此處若缺檔，EAX=`00384E99h → 00000012h`、EFLAGS=`0246h → 0247h`；DTA 前 12 bytes 由全零改為 `02 4D 4F 58 00 00 00 00 00 53 45 54`，後 31 bytes 維持零。故「失敗不動 DTA」的 16 位路徑假設**不可套在此受保護路徑**。`--dta-find` 可重生私有 `dta-find-registers.json` SHA-256 `1416ebb092555aa7c40a64ef7972caff19b311934797d8792e9fe7b5b18c529e`、前後 DTA SHA-256 `859732b97382a08583d6a67f5842486505e50bee754bd9b57ac3abf81b9714f2`／`3a702e4d5eedf367556099638460764faa3d587607db9c313319c3ceb1c8f1a7`；下一段有界控制流 SHA-256 `a120eceae2a33819ceb3a6fe2d2c8b2b50e82e2e5604314337745488a55c1060`。
+
+**已證實，限受控合成檔案存在樣本**：一次性容器除原版 EXE 外僅新增零位元組 `MOX.SET`（SHA-256 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`），修改時間固定 `1996-01-01 00:00 UTC`。同一呼叫回 EAX=`00380000h`、EFLAGS=`0246h`；DTA `+15h` 屬性 `20h`、`+16h` 時間 `0000h`、`+18h` 日期 `2021h`、`+1Ah` 大小 0、`+1Eh` 名稱 `MOX.SET\0`。`--dta-find-present` 可重生私有暫存器 SHA-256 `ca68fb5618b84b667b749e5fe6874fc2c42a26e3b460c13d6c00cd71a1898e2b`、DTA 後態 `a36f4b577def2164c9b875189aaf1519863de0b7d115f0c7ecaac4f389effe4e`、後續有界控制流 `2a7c41a13ce549af44afff0e9da2943d434a15141f76902652f13342a80b4b7a`。完整擷取與原檔不入 Git。版本化入口在 dosgolem [`startup_probe_131.py`](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/apps/moo2/tools/startup_probe_131.py)；服務契約與未知範圍見 [規格 218](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/218-protected-dos-set-dta.md)／[規格 219](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/219-protected-dos-findfirst-exact.md)。
+
+**強推論／近似**：缺檔保留既有 DTA 結果欄由 [DOSBox-X `SetupSearch`／`SetResult`](https://github.com/joncampbell123/dosbox-x/blob/master/src/dos/dos_classes.cpp) 支持，原版這次舊欄位恰為零；工具另以非零合成欄位測試。檔案修改時間採 UTC 打包，只是明示的環境近似。dosgolem **重定位 LE 線性位址** `0x139A53`、`0x139A59` 對應服務呼叫，數值不與上方 DOSBox-X CS:EIP 混用。固定真檔、合成 PSP／環境診斷經 `AH=1Ah`、`4Eh` 進至第 4168 步，於重定位 LE 線性 `0x148224` 的 `38 10` 停在未支援 CPU byte 比較。PSP／環境與完整遊戲資料未對齊，**沒有正常玩家路徑或 remake 同狀態玩法收據**；`CMP` 的原版對應狀態仍未知。
+
 ## 2026-09-30 通用 CPU 指令續驗
 
 **已證實（僅限所列指令形狀）**：`dosgolem` 隔離分支依規格 203–206 增量支援 `26 66 8E 1D` 的 ES 覆寫 16 位絕對記憶體段載入、`3E B9` 的 DS 前綴暫存器立即數、`26 3A 10` 的 ES 覆寫 byte 比較，以及 `0F A8` 的 32 位堆疊 `PUSH GS`。合成測試分別核對描述子 base／界限、前綴不影響無記憶體運算元、比較旗標、堆疊寬度與失敗原子性。`go test ./internal/cpu386 ./internal/machine` 通過。輸入仍是 SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f` 的未修改 1.31 EXE；工具的位址基準是 dosgolem 重定位 LE 線性位址。
