@@ -218,3 +218,9 @@
 - 版控探針 `--empty-mox-cmp` 從固定 1.31 原檔與受控零位元組 `MOX.SET` 擷取 DOSBox-X 同次 `CMP` 收據；原始 bytes、兩套位址基準、原版／合成來源值與旗標見研究紀錄。dosgolem 規格 232 經 DRAFT→READY→實作→CONFORMED；含固定原檔的 `go test -buildvcs=false ./... -count=1` 全通過，最終乾淨重跑私有輸出 SHA-256 `a6c8319d03cbfbe8cfe6cef27011b170e03d6f2bffe64bbc42a45816bf8cf69e`。空檔後續仍以代碼 1 退出。
 - 查證正版 ZIP 含 553-byte `MOX.SET`，先單檔診斷：20 萬步上限仍在前進，故調整為有界 100 萬步並降低輸出量。完整資料提取首次被三個聲卡子目錄觸發路徑 assertion；修正只取 ZIP 根層檔案後同容器工具鏈乾淨重跑。正版根層 417 檔及官方 1.31 EXE 只在一次性容器暫存區使用，dosgolem 自行執行至第 288215 步的 `66 F7 /0` word 形狀，私有診斷 SHA-256 `c032e24493aef6d936a810d10dfe109b9884de5a78cb5527fdebcaeec63cfb9e`。尚無此新指令的原版同次收據，也無正常玩家畫面或與 remake 同狀態玩法對拍。
 - 隔離 dosgolem 分支提交 `07320bee8e6bfc6eaf5163146432c8d6ed3ea2d1` 並推送至 `github/codex/moo2-parity-20260930`。一次性 Docker 容器皆已結束，新增檔案屬目前使用者，未發現誤建 `.md` 目錄；私有原版資料及輸出未入版控。
+
+## 2026-10-01：完整資料 F7 解碼與原版黑畫面收據
+
+- 知識路由命中復古 remake 規格閘門；載入 `retro-remake-spec-gated-workflow.md`、專案現況與文件職責。隔離 dosgolem 的 `--full-data-test-word` 探針用相同正版資料／1.31 EXE 設候選斷點，未命中時在私有工作區留下 DOSBox-X 畫面、暫存器紀錄與終端。畫面仍黑，沒有主選單或原版該指令的同狀態收據；證據雜湊見研究紀錄。
+- 對 dosgolem 原第 288215 步的 `66 F7 /0`，依 Intel CPU 契約完成規格 233、受限解碼與段／旗標／失敗測試。一次性 `golang:1.24-bookworm` 容器以固定 1.31 EXE 執行 `DOSGOLEM_MOO2_EXE=/tmp/ORION2.EXE go test -buildvcs=false ./... -count=1` 全通過。完整正版根層 417 檔案診斷自然前進至第 295276 步，再因合成 DOS 記憶體空間不足以代碼 1 退出；私有收據 SHA-256 `c75e200fda4251e97752600df06c84c14d2fbc27eb232afcd50f60936d79e744`。
+- 隔離 dosgolem 分支提交 `774471211bd818e9325bf0653aa3f3de66b5c86a` 並推送至 `github/codex/moo2-parity-20260930`。主專案 Go 玩法未改；正常玩家畫面與玩法同狀態對拍仍未完成。下一輪先釐清合成 DOS 記憶體服務／環境和原版可見啟動結果的關係，再決定是否需要擴充執行器；不得把黑畫面或 Intel CPU 規格當玩法原版收據。一次性 Docker 容器均已結束，新增／修改產物 UID/GID 為 `1000:1000`，未發現誤建 `.md` 目錄；私有資料未入版控。
