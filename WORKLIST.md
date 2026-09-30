@@ -44,7 +44,7 @@
 
 ### 2026-08-30 盤點結論（目前唯一待辦來源）
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選 DOS 原版與 `dosgolem`，不擴充 `wine-gorgon` 的 PE32 路線。`dosgolem` 隔離副本已能直接解析未改動 `ORION2.EXE` 內嵌 LE（2 objects、51,363 筆 fixup），並自然執行 5,359 步；在 LE 線性位址 `0x10FF43` 的 `POP EDX` 因目前初始 stack 頂端無可讀資料而停下。外層啟動脈絡仍是假說；既有 IDA 資料庫的同數值位址指向不同 bytes，須先建立位址對照。下一個最小閘門是證實 LE 入口狀態並讓原版抵達首個玩家可見檢查點，之後才與 remake 同狀態比較；目前**沒有玩法對拍收據**。詳見 [`docs/re/dosgolem-moo2-intake-20260930.md`](docs/re/dosgolem-moo2-intake-20260930.md)。此項是動態 oracle 工具閘門，不計入既有玩法矩陣分母。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選 DOS 原版與 `dosgolem`，不擴充 `wine-gorgon` 的 PE32 路線。`dosgolem` 隔離副本已證實原檔 `0x26654` 的內嵌 MZ 才是 LE 資料頁基址；修正後 1.31／1996 版 object 1 入口 `0x10FF18` 都是 `EB 76 WATCOM`，與 IDA 原檔映射一致。兩版自然執行至第 11 步 `0x10FFB5` 的 `INT 21h/AH=30h`；MOO2 的 DOS 服務尚未接線。上一輪 5,359 步與 `POP EDX` 是錯頁診斷，已撤回。下一個最小閘門是以可核對的 DOS 服務契約越過啟動握手、抵達首個玩家可見檢查點，之後才與 remake 同狀態比較；目前**沒有玩法對拍收據**。詳見 [`docs/re/dosgolem-moo2-intake-20260930.md`](docs/re/dosgolem-moo2-intake-20260930.md)。此項是動態 oracle 工具閘門，不計入既有玩法矩陣分母。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備
