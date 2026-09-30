@@ -40,6 +40,16 @@
 
 輔助服務快照已由版控中的 `dosgolem/apps/moo2/tools/startup_probe_131.py` 重新產生；本機 `workplace/dosbox-moo2/startup-registers.json` SHA-256 `341ce45f695a350958a74c7a219b2bcf621ff1d86ac3cfb390d0726356da0a44`，包含兩次呼叫前後的固定雜湊、位址空間與暫存器順序。回放腳本與 `dosbox.conf` 入工具分支，原版 EXE、終端 raw 與私有畫面仍只在本機。每次掛載來源須先確認形態，容器使用 `--rm --network none`、有界資源、目前使用者 UID/GID、Xvfb 清理 trap 及 `timeout 150s`。
 
+### 2026-09-30：`AH=4Ah` 停點的探針設定勘誤
+
+**舊推論已撤回**：上文在 dosgolem LE 線性位址 `0x15E07C` 的第 554 步 `INT 21h/AH=4Ah`，只發生於未呼叫 `services.AttachMachine(m)` 的合成診斷探針；它不能再列為 MOO2 原版下一個待取回傳。固定 1.31 原檔 SHA-256 仍為 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`。原版 DOSBox-X 2026.07.02 SDL2 heavy debugger（映像 `fd2-dosbox-x:debug-0d7b272b`，ID `sha256:659e8abbf93646f59a1586341769bd4b8f3cd1c707859d7a5de4c56e4672b582`）在 **CS:EIP** `0180:00334072` 的 DPMI `INT 31h/AX=0006h` 返回 `CX:DX=0`、CF 清除；`0180:00334079` 的零基底分支有 ZF=1。修正探針綁定後，dosgolem **重定位 LE 線性** `0x110079` 亦走到 `0x11007D`，原先 `AH=4Ah` 停點消失。新增的固定原檔回歸測試 `TestMOO2AttachedDPMIBaseProbeWhenProvided` 已通過。
+
+版控 [`startup_probe_131.py`](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/apps/moo2/tools/startup_probe_131.py) 只用固定 1.31 EXE 即可重生六個啟動／DPMI 快照；私有輸出 `workplace/dosbox-moo2-dpmi/startup-registers.json` SHA-256 `a334e483d86396c9d026b14c0c580bdae7de46f555cfd6b6914ef68217018562`。前述舊四快照 SHA-256 與錯誤停點仍留在歷史段落，以保留錯誤形成原因。另一次拋棄式畫面試驗才把唯讀 1996 ZIP 的完整資料與唯讀 1.31 EXE 在一次性容器內組裝；DOSBox-X 可顯示片頭，但該畫面只是輔助觀測，不是 dosgolem 正式玩家路徑收據。
+
+由兩次握手返回後擷取的 DOSBox-X 4,096 指令 `CS:EIP` 記錄，在跳過原版環境字串與清空迴圈的長度差後，與已綁定 DPMI 的 dosgolem 順序持續對到其後續啟動程式；原版還命中 `0180:003759EF` 的 `19 C0`。版控腳本 `--sbb` 重生的前後快照為 `EAX=0501h → 0`、`EFLAGS=0246h → 0246h`，私有 `sbb-registers.json` SHA-256 `93082156064ceb921571b445e19b7646b27e809133bd3186c35e2808b27b297b`。通用 CPU [規格 208](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/208-cpu386-sbb-rm32-register.md) 已實作並通過全套 `go test ./...`；固定原檔合成診斷現於 dosgolem LE 線性 `0x15171D` 的 `87 FA` 失敗即關閉，對應 DOSBox-X `CS:EIP 0180:0037571D` 也在有界指令記錄中。兩工具的位址各有基準，不把數字相同視為獨立證據；控制流、原始 bytes 與固定輸入才是對照依據。PSP／環境仍是近似，**尚無玩法或畫面同狀態對拍**。
+
+上述 DPMI 勘誤、版控觀測腳本、固定原檔回歸測試與通用 `SBB` 已在 `dosgolem` 隔離分支提交並推送 `3babfcf9462e9bbf7c7a1c1d67ded0fa0b30bb6b`。下一個最小工具切片是核對並支援已觀測的 `87 FA` 暫存器交換形狀；其後仍須以 dosgolem 真正到達玩家畫面與可重播輸入，才能製作正式對拍收據。此勘誤與既有 197／201／207 規格的歷史說法應一併閱讀；現行待辦只以 `WORKLIST.md` 活表為準。
+
 ## 舊資料頁基址的勘誤
 
 ## 2026-09-30 通用 CPU 指令續驗
