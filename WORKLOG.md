@@ -299,3 +299,13 @@
 - `DOSGOLEM_MOO2_SEPARATE_DOS=1 go run -buildvcs=false ./workplace/moo2-probe /tmp/game/ORION2.EXE --game-dir /tmp/game` 自 LE entry 自然越過 `7／8／1Ah`，目前第 1,546,160 步抵達 `INT 33h/AX=000Ch`；最終私有測試 SHA-256 `fe9cf5242d01be373fdea1c67d9869165446d18bdf267831524cb6af4cf0fd01`、自生診斷 SHA-256 `3f3af2c4aeef4fc15686b2a281ab35d8ac6b7c432c3016205277db6e85f9dfe7`。沒有正常玩家畫面或玩法同狀態對拍。
 - 規格 230 保存歷史零值證據，現行非零拒絕邊界加明示回填及新規格連結；版控 `--check-mouse-spec-backlinks` 檢查原始鍵、狀態及舊規格標記，正常與刪標記必拒絕核對通過。Go 格式、Python 語法、規格索引與 `git diff --check` 通過。
 - 隔離 dosgolem 提交 `438d6cc5971c3e212e0ce949e1ddd61de307f794`，已推送 `github/codex/moo2-parity-20260930`。本輪檔案 UID/GID=`1000:1000`，dosgolem 無 root-owned 產物，主專案無誤建 `.md` 目錄；本專案一次性 Docker 容器均已結束，其他專案容器未碰觸。原版素材、記憶體與完整終端未入版控。下一個最小行動為擷取原版回呼參數、返回與觸發鏈，再審查平台契約；完整 remake 目標持續進行。
+
+## 2026-10-01：滑鼠事件回呼與兩條原檔啟動路徑
+
+- 接手主專案 `7546b7855664d620c4534c2b06ab413046efbc47`、隔離 dosgolem `438d6cc5971c3e212e0ce949e1ddd61de307f794`，起始兩工作樹乾淨。路由命中 dosgolem、規格閘門、平台規格優先及文件職責，載入對應入口；收尾再次核對路由與狀態機。沒有修改 Go remake 玩法或建立發行包。
+- 固定正版根層 417 檔與官方 1.31 EXE，以 DOSBox-X 輔助探針 `--mouse-callback／--mouse-callback-event／--mouse-set-position` 取得註冊、一般滑鼠移動命中、原版座標寫入及八位元組遠返回、位置設定同次返回。只保存足以接線的平台邊界；原版檔案與完整終端留本機。詳細雜湊、位址空間與工具版本見 `docs/re/dosgolem-moo2-intake-20260930.md`。
+- 隔離 dosgolem 規格 255–257 各經 DRAFT→READY 後實作：受控滑鼠事件 FIFO、IF 等待、非重入、獨立有界堆疊及狀態恢復；CS 絕對 word 至 DS 的窄 CPU 形狀；`AX=4` 座標設定且不製造事件。合成回呼實際執行、寫出參數並遠返回，遮罩／按鍵／範圍／容量／重設／解除／架構恢復／既有時鐘 hook／錯誤返回等測試通過。規格 256–257 在限定範圍 CONFORMED；255 的完整座標／游標消費同狀態待驗，維持 READY。
+- 三階段固定 EXE 的 `DOSGOLEM_MOO2_EXE=/tmp/game/ORION2.EXE go test -buildvcs=false ./... -count=1` 均通過。最後一次收尾命令被檔名替換誤改為 `sha257sum`，測試與兩份診斷已成功；保留 `*-257-first*` 私有收據，修正為 `sha256sum` 後以同一映像、資料及命令乾淨重跑通過。一次規格補丁因段落行並非獨立行而拒絕，改用正確上下文後成功，未改產品契約。
+- `DOSGOLEM_MOO2_SEPARATE_DOS=1 go run -buildvcs=false ./workplace/moo2-probe /tmp/game/ORION2.EXE --game-dir /tmp/game` 無事件路徑第 6,216,999 步抵達 `INT 2Fh/AX=160Ah`；另加 `DOSGOLEM_MOO2_MOUSE_EVENT_AFTER_POSITION=1` 的設定後受控事件路徑回呼 started=1／completed=1，第 6,217,034 步抵達同一服務。最終全套測試 SHA-256 `33ca5589160c47f992c5cdeec08b6b65ded02dfc6a03fb705aa698c21a05f26e`、無事件診斷 SHA-256 `3b7e90bfcb64cfdbbbf9f834e7f7bd185ddc6f94fcee56cd8312c5fc812653c2`、受控事件診斷 SHA-256 `5cc4ec566b82857814f12e271e0dedd88f8f283835e9505cac0f7c6dc88324ba`。沒有正常玩家畫面或玩法同狀態完成宣稱。
+- 下一個最小行動為核對 `INT 2Fh/AX=160Ah` 的原版返回與 caller；依公開介面審查最小支援，避免展開 OS 內部研究。完整 remake 與中文化目標持續進行。
+- 隔離 dosgolem 提交 `7a50ae93495ed70d00e5fb2be1e129a569c5ef5f`，已推送 `github/codex/moo2-parity-20260930`，工作樹乾淨。Go 格式、Python 語法、三份規格索引、暫存差異及修改檔 UID/GID=`1000:1000` 核對通過；最初容器標準輸入未連接的稽核沒有執行，補 `docker run -i` 後確認有實際通過輸出。dosgolem 無 root-owned 產物，主專案無誤建 `.md` 目錄；本輪一次性 Docker 容器均已結束，其他專案資源未動。主庫本輪只提交現況／研究／歷程四份文件；正版輸入、記憶體及完整終端未加入 Git。
