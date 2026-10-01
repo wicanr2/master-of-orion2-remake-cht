@@ -435,3 +435,13 @@
 - 640×480 PNG 已實際檢視為白底黑色 Simtex 啟動標誌，首次非黑圖；StartY=0、Bank=2、BankSets=17、Writes=921600、DisplaySets=2。PNG／原版完整資料／終端皆留本機，未加入 Git；尚未進入主選單或玩家操作，不把 CPU 通過寫成完整 remake。
 - 隔離工具已提交 `3a0c6b4cb475acc75588badff6436fd3612800d4`（7 檔），並推送 `github/codex/moo2-parity-20260930`；未推本機來源 `origin`。主庫只更新 CONTEXT／WORKLIST／WORKLOG／既有研究紀錄，研究連結鎖定該工具提交。規格 272 限定 CONFORMED，255 仍 READY，下一步為公開 Jcc／短 JS 實際 SF 與首分支；不深挖 runtime／圖形 helper。
 - 本批 Docker 一次性容器皆結束並清空；隔離副本無 root-owned 檔與錯誤 `.md` 目錄，本輪來源及全部輸出 UID/GID=1000:1000。主庫既有 `go.sum`、`lbxinfo`、`.docker-cache` 的歷史 root 擁有權未改動。
+
+## 2026-10-01：短符號分支與兩條 20.1M 原版路徑
+
+- 開工主庫 `07a8554e2da7ef4915cd94dfd26fafe5b59d9734`、工具 `3a0c6b4cb475acc75588badff6436fd3612800d4`，均乾淨並與遠端一致；命中並載入規格閘門／平台契約／dosgolem 路由，玩法 RE 閘門保持。
+- 規格 273 建檔同次入索引；公開 Jcc 與原版 JS 不取／JNS 取分支、全擷取狀態保持具備後，DRAFT→READY 才新增兩 opcode。兩工具 EAX／ECX／後續旗標初值不同，明列差異；只比 SF 條件，不宣稱整段時間／布局一致。
+- Docker 內 CPU、全套固定原檔 Go 測試、分支全旗標／全位移／環繞／截短／前綴拒絕／狀態保持、原版最小控制流、既有近分支均通過；回填護欄正負例、全部既有回填函式、Python 語法、差異與擁有權核對通過。精確命令與收據在研究入口／規格。
+- 首輪探針碰 8M 上限且該路徑未擷取 PNG，外層雜湊命令退出 1；分類為驗證腳本問題，原始失敗收據另存。修正診斷有限步數及共用 VBE 擷取，無效／超界設定拒絕；相同映像乾淨重跑全套與 16M 兩條路徑通過，實際檢視 MicroProse 展開動畫。16M 仍達上限，續以明示 50M 觀測，不改 CPU／原版輸入／虛擬時間，不重跑已通過全套。
+- 兩條原版路徑在 20,100,561／20,100,596 步停於高位 LE `0x239A42` 的 word XOR，較原 JS 再前進 12,416,487 指令；受控事件回呼已完成。途中 Simtex／MicroProse 圖像成立，當前 PNG 與已檢視黑圖相同；主選單、玩家操作、音效／受控亂數與完整 remake 同狀態未完成。
+- 工具提交 `5307099b55cd239f9ea5badd2ca42a245d951404`（7 檔）已推送 `github/codex/moo2-parity-20260930`，未推本機 `origin`；主庫僅四份現況／歷程文件，研究連結鎖定該工具提交。273 有限 CONFORMED、255 READY；下一步公開 word XOR、DI／旗標及下一 MOV ES，不追平台內部。
+- 本批一次性 Docker 容器收尾時清空；隔離副本無 root-owned 與錯誤 `.md` 目錄、本輪檔案及輸出 UID/GID=1000:1000。主庫歷史 `go.sum`／`lbxinfo`／`.docker-cache` 的 root 擁有權未改。
