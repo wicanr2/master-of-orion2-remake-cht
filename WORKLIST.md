@@ -46,9 +46,9 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選 DOS 原版與 dosgolem，使用本機隔離分支；DOSBox-X 僅作輔助基準。固定原版 EXE、正版 ZIP 根層 417 檔及 `MOX.SET`。規格 255 完整座標／游標消費同狀態仍 READY；256–271 在限定 CPU／平台範圍 CONFORMED。270／271 已接 32 位元記憶體目的與 16 位元記憶體／暫存器目的比較，八來源、完整六旗標、寬度／分段／索引／別名與原版實際 JGE／JL 不取分支已驗；固定原檔全套測試通過。IMUL 未定義 ZF、DIV 旗標／例外、SAR 的 AF、DTA 保留區及平台布局差異仍保留。
-  **目前自然停點**：無事件第 6,822,373 步、設定後事件第 6,822,408 步，均越過兩種比較，在 dosgolem 高位 LE 線性 `0x21CA3D` 的 `66 FF 40 04 A1 A8 42 2A 00 8A 40 0B 24 20 25 FF` 因 word INC 尚未支援而拒絕；EAX=10000h、ECX=1DFh、EDX=0、EFLAGS=282h。無事件 EBX=3DC050h、受控事件 EBX=3DD050h，布局差異明示。StartY=512、Bank=7、BankSets=6、Writes=307200，PNG 仍與已檢視黑圖逐位元相同；尚無正常玩家畫面、音效、受控亂數或 remake 玩法同狀態收據。
-  **下一步**：依公開 CPU INC 契約核對 `66 FF /0`、實際目的 word、CF 保存與後續消費；審查窄規格後由 dosgolem 重跑，不追 runtime／圖形 helper 內部。完整回呼驗證仍須回到正常玩家輸入。詳細收據與差異見 [研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。此項是動態 oracle 工具閘門，不計入玩法矩陣分母。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選 DOS 原版與 dosgolem，使用本機隔離分支；DOSBox-X 僅作輔助基準。固定原版 EXE、正版 ZIP 根層 417 檔及 `MOX.SET`。規格 255 完整座標／游標消費同狀態仍 READY；256–272 在限定 CPU／平台範圍 CONFORMED。272 已接 word 記憶體 INC，固定目的 0→1、CF／五旗標、精確兩 bytes 與下一 A1 載入已核對；固定原檔全套測試通過。部分匯流排寫入、IMUL 未定義 ZF、DIV 旗標／例外、SAR 的 AF、DTA 保留區及平台布局差異仍保留。
+  **目前自然停點**：無事件第 7,684,074 步、設定後事件第 7,684,109 步，均越過 INC 並前進 861,701 指令，在 dosgolem 高位 LE 線性 `0x21C2D6` 的 `78 06 2B C2 79 02 EB EC 5E 61 C3 68 24 00 00 00` 因短 JS 尚未支援而拒絕；EAX=2、EBX=Eh、ECX=10000h、EDX=1、DS／ES／SS=188h、EFLAGS=202h。StartY=0、Bank=2、BankSets=17、Writes=921600、DisplaySets=2；已實際檢視 640×480 Simtex 啟動標誌，首次非黑圖，尚未進入主選單或玩家操作。音效、受控亂數與 remake 玩法同狀態收據未完成；先前布局差異未消失。
+  **下一步**：依公開 CPU Jcc 契約核對短 JS、實際 SF 與第一個分支；DOSBox-X 候選 CS:EIP `0180:003502D6` 尚待擷取。審查窄規格後由 dosgolem 重跑，不追 runtime／圖形 helper 內部。完整回呼驗證仍須回到正常玩家輸入。詳細收據與差異見 [研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。此項是動態 oracle 工具閘門，不計入玩法矩陣分母。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備

@@ -425,3 +425,13 @@
 
 - 隔離 dosgolem 提交 `a1a80765b6b1d527e2874057377afd1caab7a920`，已推送 `github/codex/moo2-parity-20260930` 並回讀相符；本機上游 origin 未回寫。只提交自製 CPU／最小樣本、規格、回填與只讀觀測，原版素材、完整終端／記憶體、gzip 與 PNG 未加入 Git。
 - 新增文字繁體中文、Go 格式、Python 語法、索引、回填正負護欄及全部既有回填函式通過；修改檔與本輪 CPU／全套／兩側原版觀測／PNG 輸出 UID/GID=`1000:1000`。一次性 Docker 容器均已結束，專案掛載篩選無執行中或停止殘留；隔離副本無 root-owned／誤建 .md 目錄。主庫歷史 `go.sum`／`lbxinfo`／`.docker-cache/` 擁有權問題未動，沒有誤建 .md 目錄；未遞迴 chown、未清理其他專案資源。
+
+## 2026-10-01：接通 word 記憶體遞增，原版首次顯示 Simtex 標誌
+
+- 開工主庫 `3d88548eb9deec73c81f72befb0497fbf05351b6`、隔離工具 `a1a80765b6b1d527e2874057377afd1caab7a920`，兩庫工作樹乾淨並與遠端一致。重新比對知識路由，套用規格閘門／公開平台契約／dosgolem 原版對拍，玩法 RE 閘門保持關閉。
+- 建規格 272 同次加入索引；只讀觀測原版 word=0、CF=0，DOSBox-X 有界樣本確認 0→1、282h→202h、下一 A1 實際載入與旗標保持。DRAFT 審查→READY 後才接 word FF /0，保留 /1 DEC。
+- Docker 內 CPU 與固定原檔全套 Go 測試、原版重定位樣本、CF 兩初值與五旗標、分段／索引／環繞／別名、精確兩 bytes、受控讀寫失敗／不發布旗標、既有 DEC／dword INC／DEC 均通過。部分匯流排寫入模型明示，未冒稱原子例外；回填護欄正負例、全部既有回填函式、Python 語法、Git 差異及擁有權均通過。精確命令、雜湊與地址基準見研究入口及規格。
+- 兩條 dosgolem 原版路徑均再前進 861,701 指令，無事件第 7,684,074 步、受控事件第 7,684,109 步，停於高位 LE `0x21C2D6` 的短 JS。擷取本次 EAX=2、EBX=Eh、ECX=10000h、EDX=1、flags=202h；受控回呼完成。
+- 640×480 PNG 已實際檢視為白底黑色 Simtex 啟動標誌，首次非黑圖；StartY=0、Bank=2、BankSets=17、Writes=921600、DisplaySets=2。PNG／原版完整資料／終端皆留本機，未加入 Git；尚未進入主選單或玩家操作，不把 CPU 通過寫成完整 remake。
+- 隔離工具已提交 `3a0c6b4cb475acc75588badff6436fd3612800d4`（7 檔），並推送 `github/codex/moo2-parity-20260930`；未推本機來源 `origin`。主庫只更新 CONTEXT／WORKLIST／WORKLOG／既有研究紀錄，研究連結鎖定該工具提交。規格 272 限定 CONFORMED，255 仍 READY，下一步為公開 Jcc／短 JS 實際 SF 與首分支；不深挖 runtime／圖形 helper。
+- 本批 Docker 一次性容器皆結束並清空；隔離副本無 root-owned 檔與錯誤 `.md` 目錄，本輪來源及全部輸出 UID/GID=1000:1000。主庫既有 `go.sum`、`lbxinfo`、`.docker-cache` 的歷史 root 擁有權未改動。
