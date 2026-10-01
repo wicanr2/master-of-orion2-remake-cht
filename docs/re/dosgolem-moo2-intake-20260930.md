@@ -375,3 +375,13 @@
 **已證實，兩條自生新停點**：無事件第 6,725,897 步、設定後受控事件第 6,725,932 步，均於 **dosgolem 高位 LE 線性** `0x229A59` 的 `CD 21` 拒絕，EAX=`002B4E38h`、DS:EDX=`0188:002BDB38`、CX=`0`。現有受限 `4Eh` 服務在這次輸入未通過，原因與搜尋字串待查，不把它改寫成整項未實作。受控路徑回呼 started=1／completed=1。無事件診斷 SHA-256 `66b324e1fce7d3e260d550eeb7e8c16b7058528074ec3bb7130ed7fdab94eac7`、事件診斷 SHA-256 `dda9b0d9cc2b663a8bef3c4cf6735f19e7c8327c187df6864175d7eb97593732`。
 
 **回填與未知**：規格 259 回填 260，定位／狀態／連結及刪除標記必拒絕護欄通過。規格 258 的段夾具勘誤保留舊輸出來源。仍無正常玩家畫面、音效、受控亂數或 remake 玩法同狀態收據；255 不升格。下一步只抓 `4Eh` 搜尋輸入、DTA 狀態及原版返回，不深挖標準檔案服務內部。
+
+## 2026-10-01：目前目錄前綴的 DOS 搜尋
+
+**已證實，自生輸入與原版輔助返回**：隔離 dosgolem `8f4c579beda504a66aefd74186fa6d1fa8d3d072` 的固定官方 1.31 EXE（SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`）於高位 LE 線性 `0x229A59` 搜尋 `.\simtex.lbx`，CX=0、DS:EDX=`0188:002BDB38`，DTA=`0188:00295828`。正版 ZIP 沒有此檔；既有服務支援不帶前綴的精確檔名，這次因 `'.\'` 被拒絕。私有診斷 SHA-256 `f1865f4101ce2b6e5a3054e2d4d7875a3503a24105c45898e0c717489e0321c1`。
+
+既有 DOSBox-X 2026.07.02 SDL2 heavy debugger 的 `--find-current-directory` 實際捕獲 **CS:EIP** `0180:0035DA59 → 0180:0035DA5B`，原始 `CD 21 E8 AC 65 01 00 89 DA E8 21 00 00 00 59 C3`；同一字串位於 `0188:003EBB18`，DTA=`0188:003C3828`。EAX=`003E4E18h → 12h`，EFLAGS=`246h → 247h`；其餘已擷取暫存器保持。DOSBox-X 是輔助基準，PSP／堆疊／位址與 dosgolem 不同，不宣稱同狀態。DTA 公開結果區保留 DIPLOMAT.LBX；原版保留區 `+0Ch` 由 `04h → 05h`，執行器仍保留此區，差異明示為未知。第一個 caller 依 CF 使用錯誤 `12h`，不深挖檔案 helper。JSON／caller／終端 SHA-256 分別 `d3d2ee93dc1f9f812d81d2ac37ee55e312d427e530b664825c71388389ad987d`／`6b05980307ee4e21811c58da5f8832c0e9a594c224b6ea4bb35892402ec793c6`／`bc81ece31155571252f243c1d1ad0027f94164fc42b476eebf5f9447cf148fcb`；原始資料皆留本機。
+
+**限定實作與驗收**：規格 [261-moo2-dos-findfirst-current-directory.md](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/261-moo2-dos-findfirst-current-directory.md) 先 DRAFT，依 [DOSBox-X 平台來源](https://github.com/joncampbell123/dosbox-x/blob/master/src/dos/dos_files.cpp) 與上述原版返回轉 READY，再實作只在 MOO2 設定消去一次目前目錄前綴；唯讀提供者仍只收到單一 8.3 檔名。成功／缺檔、最大長度、提供者輸入、哨兵、保留欄與拒絕路徑測試通過。固定 EXE、Go 1.24.13 全套 `GOMAXPROCS=2 go test -p 2 -buildvcs=false ./... -count=1` 通過，SHA-256 `c498ec94eab675212c95c76d394bacada8ca6d51f8c88112d9488139b68d6fd9`；CONFORMED 限於前綴、返回與公開結果欄，不包含原版 DTA 保留區逐位元相等。
+
+**已證實，兩條自生新停點**：無事件第 6,725,985 步、設定後受控事件第 6,726,020 步，均到 **dosgolem 高位 LE 線性** `0x114F43`，原始 `66 85 C0 0F 85 F5 00 00 00 B8 17 0C 26 00 31 D2` 因 TEST 的運算元大小前綴 拒絕；EAX=0，受控回呼 started=1／completed=1。診斷 SHA-256 `872b6e8979491ade99b79c5d2aa3e1734bf257b22fc0d9a9dc4293ec288e1f49`／`c27af6189cc321d44b7455abb6f7fa016e575d1ffe97fe40eeef9aa0ecd770c0`。規格 260 回填 261，219 連到延伸範圍；原停點保留為歷史證據。仍無正常玩家畫面、音效、受控亂數與 Go remake 玩法同狀態，255 維持 READY。下一步只依公開 CPU 契約核對此指令的寬度與定義旗標。

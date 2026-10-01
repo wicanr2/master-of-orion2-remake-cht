@@ -335,3 +335,11 @@
 - 固定 EXE 的 `GOMAXPROCS=2 go test -p 2 -buildvcs=false ./... -count=1` 最終全套通過；保留加入樣本前通過及夾具失敗輸出。兩條原檔自然路徑均越過 SAR，下一停點為 `INT 21h/AH=4Eh` 的當前查詢輸入。詳細雜湊、工具與位址空間見研究紀錄及規格 260。
 - `--check-sar-stack-spec-backlinks` 正常與刪除舊標記必拒絕通過，規格 259 回填 260。正常玩家畫面、音效與玩法同狀態收據仍未完成，規格 255 維持 READY。下一步只擷取搜尋輸入、DTA 狀態及原版返回，完整 remake 目標持續進行。
 - 隔離 dosgolem 提交 `8f4c579beda504a66aefd74186fa6d1fa8d3d072`，已推送 `github/codex/moo2-parity-20260930`。Go 格式、Python 語法、規格索引、既有及新增回填護欄、暫存差異核對通過；修改檔及最終測試輸出 UID/GID=`1000:1000`。dosgolem 無 root-owned 殘留，主庫無誤建 `.md` 目錄，相關一次性 Docker 容器均已結束；其他專案資源未動。原版輸入、記憶體與完整終端未入版控。
+
+## 2026-10-01：目前目錄前綴的 DOS 搜尋
+
+- 接手主庫 `f2f88e60d38050b0f7be314cc3405274271e2ce9`、隔離 dosgolem `8f4c579beda504a66aefd74186fa6d1fa8d3d072`，接手時兩工作樹乾淨。路由重新核對 dosgolem、規格閘門、平台規格優先及逆向結論回填入口；未修改 Go remake 玩法或建立發行包。
+- 版控診斷探針記錄 `.\simtex.lbx` 與 DTA，原版 `--find-current-directory` 捕獲同次缺檔 `12h`／CF=1。實際 ZIP 查無該檔，不添加合成素材。規格 261 先 DRAFT，依公開平台來源及原版返回審查後 READY，再接單一前綴；提供者路徑安全不放寬。DTA 保留區原版 `+0Ch` 自增差異明示，不追 helper 內部。
+- 既有容器中固定 EXE 的 `GOMAXPROCS=2 go test -p 2 -buildvcs=false ./... -count=1` 全套通過；兩條自然路徑均越過搜尋，下一停點為高位 LE `0x114F43` 的 `66 85 C0`。測試與診斷雜湊見研究紀錄；規格 261 只在限定返回及公開結果欄 CONFORMED，255 仍 READY，正常玩家畫面／音效／玩法同狀態未完成。
+- 規格 260 回填 261，219 連到延伸範圍。下一步只核對公開 CPU TEST 的位元寬度、旗標及最小支援，完整 remake 目標持續進行。
+- 隔離 dosgolem 提交 `f044744b17821d429275e73c4ebc7b477a957638`，已推送 `github/codex/moo2-parity-20260930`，工作樹乾淨。Python 語法、Go 格式、索引、正常及負向回填護欄、暫存差異通過；修改檔與測試輸出 UID/GID=`1000:1000`，無 root-owned 或誤建 `.md` 目錄殘留。首次指定檔案暫存命令因 `/workplace/` 忽略規則返回非零；回讀 index 確認既有受版控探針與其餘指定七檔均已正確暫存，沒有強制加入診斷產物。本輪一次性容器均已結束；依掛載路徑確認剩餘 Go 容器屬 yuan／fd2，未動其他專案資源。正版素材、完整終端與記憶體未入 Git。
