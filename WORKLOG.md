@@ -241,5 +241,11 @@
 
 - 沿用本輪已載入的規格閘門及文件路由；隔離 dosgolem 規格 235 經 DRAFT→READY，明示高位 LE loader 將 1.31 物件與 fixup 平移 `0xF0000`，為 DOS 記憶體保留低位 arena。原 loader 路徑不變，合成測試驗證 513／176 段落配置、實模式 bus／selector 資料往返、LE 防覆蓋與拒絕邊界；固定原檔測試核對所有支援的 object fixup。`DOSGOLEM_MOO2_EXE=/tmp/ORION2.EXE go test -buildvcs=false ./... -count=1` 全通過，私有輸出 SHA-256 `6ed111b7c3a51af6330c947b8a447ce2a065fcc5f7c91da5137040c8f2582de1`。
 - 完整正版根層 417 檔的明示高位診斷於第 189,580 步成功完成首筆 `0100h` 513 段落配置；第 189,582 步停在 `0300h` 要轉呼叫的實模式 `INT 10h` 未註冊，底層錯誤與未實作計數已記錄。私有輸出 SHA-256 `5dbf8b22cda56a2f77fd0ff498daa3dd5d1a14f7b194f074fe748013708023e8`。原檔第二筆配置尚未自然抵達，故規格 235 維持 READY；下一步從原版取這筆視訊呼叫的輸入／返回／consumer，再決定受限服務。詳細兩套位址基準與前輪勘誤見研究紀錄。
+
+## 2026-10-01：原版 VBE 查詢與隔離執行器前進
+
+- 固定 1.31 EXE／正版根層 417 檔，以 DOSBox-X 2026.07.02 SDL2 heavy debugger 作輔助原版基準，擷取 `4F00h` 的緩衝、返回及 caller，直接 `4F07h` 的零座標返回與 caller，以及兩次 `4F00h` 後 `4F01h/CX=0101h` 的封包和 256 位元組緩衝。第二筆查詢最初被誤設為 `4F01h`；依實際封包改為逐筆記錄並用同一容器乾淨重跑。私有 `real-video-4f01-registers.json` SHA-256 `baafd3f5178954e1d5d24224bf7e98233f62b701cda0088c2554c40f018a1454`，詳細輸入、位址基準、資料效果及雜湊見研究紀錄。
+- 隔離 dosgolem 規格 236、237、238 逐一經 DRAFT→READY→受限實作→CONFORMED；MOO2 專屬路徑回傳 VBE 控制器資訊、零座標顯示起點及模式 0101h 資訊。全套含官方 1.31 EXE 的 `go test -buildvcs=false ./... -count=1` 通過，私有 `workplace/full-test-238.txt` SHA-256 `84406686fb97b0c27f8aa42fe41190c08bc256c6f375a45c7b71b5ec94e4088d`；模式緩衝以原版 256 位元組 SHA-256 比對，其他模式／越界拒絕。
+- `DOSGOLEM_MOO2_SEPARATE_DOS=1 go run -buildvcs=false ./workplace/moo2-probe /tmp/game/ORION2.EXE --game-dir /tmp/game` 從 LE entry 自生執行至第 190,517 步，下一停點為直接 `INT 10h/AX=4F02h`、EBX=`0101h`，私有 `workplace/moo2-probe-238-full-game.txt` SHA-256 `6f5df2e26b65c5935db63cff4751b103182ff75bab09c18314d8a42ed2c70284`。這僅驗收隔離平台服務；正常玩家畫面、第二筆 DOS 配置與玩法同狀態尚未完成。下一步擷取原版 `4F02h` 返回／consumer，再決定最小平台支援。
 - 本輪無 MOO2 Go 玩法變動；正常玩家畫面、玩法同狀態對拍及正式封包均未完成。原版素材與探針終端留在本機私有工作區，不入版控。
 - 隔離 dosgolem 分支的線性回收提交 `c26db33215b0e8df06d4ac748305181edae0ca4d`、高位映射提交 `c6cd74fe187fc7badd12969f821b5bc14ca8b448` 均已推送至 `github/codex/moo2-parity-20260930`。`git diff --check` 通過；新增／修改檔 UID/GID 為 `1000:1000`，dosgolem 工作樹未見 root-owned 檔或 `.md` 同名目錄。`docker ps -a` 無本專案或 dosgolem 殘留容器；主專案既有 root-owned 快取與檔案未動，其他專案容器未碰觸。
