@@ -343,3 +343,11 @@
 - 既有容器中固定 EXE 的 `GOMAXPROCS=2 go test -p 2 -buildvcs=false ./... -count=1` 全套通過；兩條自然路徑均越過搜尋，下一停點為高位 LE `0x114F43` 的 `66 85 C0`。測試與診斷雜湊見研究紀錄；規格 261 只在限定返回及公開結果欄 CONFORMED，255 仍 READY，正常玩家畫面／音效／玩法同狀態未完成。
 - 規格 260 回填 261，219 連到延伸範圍。下一步只核對公開 CPU TEST 的位元寬度、旗標及最小支援，完整 remake 目標持續進行。
 - 隔離 dosgolem 提交 `f044744b17821d429275e73c4ebc7b477a957638`，已推送 `github/codex/moo2-parity-20260930`，工作樹乾淨。Python 語法、Go 格式、索引、正常及負向回填護欄、暫存差異通過；修改檔與測試輸出 UID/GID=`1000:1000`，無 root-owned 或誤建 `.md` 目錄殘留。首次指定檔案暫存命令因 `/workplace/` 忽略規則返回非零；回讀 index 確認既有受版控探針與其餘指定七檔均已正確暫存，沒有強制加入診斷產物。本輪一次性容器均已結束；依掛載路徑確認剩餘 Go 容器屬 yuan／fd2，未動其他專案資源。正版素材、完整終端與記憶體未入 Git。
+
+## 2026-10-01：16 位元暫存器 TEST
+
+- 接手主庫 `ce16ab6821334f9f42f50fd3068ff84a376e8f11`、隔離 dosgolem `f044744b17821d429275e73c4ebc7b477a957638`，兩工作樹乾淨。上一輪分類為實際進展；路由命中 dosgolem、規格閘門、平台規格優先、文件職責及解析回填，已載入入口。既有 image inspect 的 Entrypoint 模板因缺 key 被拒絕，改讀 Config 核對；屬控制面查詢問題，不是工具鏈或產品故障。
+- 規格 262 先 DRAFT，依公開 Intel TEST／旗標契約及固定原檔形狀轉 READY，接全部暫存器 word TEST。`startup_probe_131.py --test-word-register` 取得原版同次架構與第一個 JNZ；最小 bytes／具名暫存器輸入加入回歸，沒有追 runtime helper。
+- 固定 EXE 的 `GOMAXPROCS=2 go test -p 2 -buildvcs=false ./... -count=1` 初次及加入實際樣本後最終全套均通過；兩條自然原檔路徑自行越過 TEST，下一停點為高位 LE `0x222C9E` 的 `OUT DX,AL`，DX=`03C6h`、AL=`FFh`。詳細雜湊與位址空間見研究紀錄與規格 262。
+- 規格 261 回填 262，CPU 範圍 CONFORMED；規格 255 仍 READY，正常玩家畫面／音效／玩法同狀態未完成。下一步核對公開 VGA DAC 及既有調色盤埠路由，完整 remake 目標持續進行。
+- 隔離 dosgolem 提交 `f9e043fb41de8fff6e2ec3b49b0fd0695712af12`，已推送 `github/codex/moo2-parity-20260930`，工作樹乾淨。Python 語法、Go 格式、索引、正常與負向回填護欄、暫存差異通過；本輪修改檔與最終測試輸出 UID/GID=`1000:1000`。無 root-owned 或誤建 `.md` 目錄殘留，本輪一次性容器均已結束；剩餘 Go 容器依掛載確認屬 fd2，未動其他專案。主庫只提交現況／研究／歷程四份文件，原版輸入、記憶體及完整終端不入 Git。
