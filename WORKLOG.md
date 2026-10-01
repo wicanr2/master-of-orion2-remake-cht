@@ -281,3 +281,12 @@
 - 規格 250 依同一流程重用 `InstallLEBIOSClock`，測試覆蓋 tick、既有 hook、CPU 狀態保留與客製向量拒絕。首次編譯的新錯誤訊息漏套件匯入；改用已有 `errors.New`，以同一容器與命令乾淨重跑。`DOSGOLEM_MOO2_EXE=/tmp/game/ORION2.EXE go test -buildvcs=false ./... -count=1` 全通過，輸出 SHA-256 `d57b7d3b9da005b9ae06105bfa2e3bfcf7b11389c92a6c830c5cda109741b91e`。
 - `DOSGOLEM_MOO2_SEPARATE_DOS=1 go run -buildvcs=false ./workplace/moo2-probe /tmp/game/ORION2.EXE --game-dir /tmp/game` 自 LE entry 離開 tick 等待；第 1,545,396 步停於 dosgolem 高位 LE 線性 `0x24C31B` 的 `INT 33h/AX=0000h`。私有收據 SHA-256 `74b73985b73a1f077f2005343fef0168df1d05dbe49d03d8f824369f5105a1b8`。下一最小行動是擷取此服務的原版輸入、返回與消費端，再審查受限滑鼠契約；目前仍無正常玩家畫面、音效或玩法同狀態對拍。
 - 隔離 dosgolem 提交 `fb541129530206f16fda6edc7630b307e0d21ceb`，已推送 `github/codex/moo2-parity-20260930`。`git diff --check`、Go 格式、Python 語法、規格索引與本輪檔案 UID/GID=`1000:1000` 均通過；dosgolem 工作樹無 root-owned 產物或 `.md` 同名目錄。主專案既有 root-owned 快取／檔案未動；本專案一次性 Docker 容器均已結束，其他專案容器未碰觸。正版 ZIP、EXE、記憶體與完整終端均留本機私有工作區，未加入 Git。
+
+## 2026-10-01：滑鼠重設與敏感度查詢
+
+- 接手主專案 `5b59d3bb9d747d30d7a953ca54c1b2568a408a55`、隔離 dosgolem `fb541129530206f16fda6edc7630b307e0d21ceb`，兩分支起始乾淨。路由命中規格閘門、dosgolem 原版對拍與文件職責，載入對應入口；只修改隔離執行器及證據文件，未改 Go remake 玩法。
+- 版控探針 `--mouse-reset`、`--mouse-sensitivity`、`--mouse-sequence` 在固定正版根層 417 檔及官方 1.31 EXE 上，以 DOSBox-X 2026.07.02 SDL2 heavy debugger 輔助擷取原版服務入口、同次返回及 caller record 消費。規格 251／252 逐一經 DRAFT→READY→實作→CONFORMED，補 `INT 33h/AX=0000h` 重設及 `001Bh` 目前敏感度查詢；模式中心是明示的平台規格近似，不宣稱完整滑鼠驅動還原。
+- 初稿曾把舊缺檔探針的零敏感度設定誤套到目前完整資料。逐筆呼叫探針證明兩側目前都先走 `0000h → 001Bh`，查詢回 `50/50/50`，已修正現況並在規格及研究紀錄保留錯誤來源。兩個輔助擷取命令的收尾雜湊仍用舊 `*-logcpu.txt` 名稱而發出缺檔訊息；實際探針成功，改核對已產生的 `*-caller-logcpu.txt`，不是產品故障。
+- 一次性 `golang:1.24-bookworm` 容器以 `DOSGOLEM_MOO2_EXE=/tmp/game/ORION2.EXE go test -buildvcs=false ./... -count=1` 驗證兩階段，全套通過；最終私有測試輸出 SHA-256 `37ba0e0c1c59433302b0079af252c6b479945ff760b49f9a9d7e466ebf89cdb0`。`DOSGOLEM_MOO2_SEPARATE_DOS=1 go run -buildvcs=false ./workplace/moo2-probe /tmp/game/ORION2.EXE --game-dir /tmp/game` 自 LE entry 自然前進至第 1,545,719 步、dosgolem 高位 LE 線性 `0x24C31B` 的 `INT 33h/AX=0007h`，CX=`0`、DX=`04FEh`；輸出 SHA-256 `d630b6db5fc796dc91164b3e15219083ada2f8aed8bf0a7e263eb6b64708e666`。詳細原始輸入、工具版本、位址空間、私有收據及勘誤見 `docs/re/dosgolem-moo2-intake-20260930.md`。
+- 隔離 dosgolem 提交 `792b8d077d1d4611ae8246ddc9d61129e316b67a`，已推送 `github/codex/moo2-parity-20260930`。暫存差異檢查、Go 格式、Python 語法及規格索引核對通過；本輪檔案 UID/GID=`1000:1000`，dosgolem 無 root-owned 產物，主專案未見誤建 `.md` 目錄。本專案一次性 Docker 容器均已結束，其他專案容器保持原狀，原版素材與完整終端未入版控。
+- 下一步只擷取原版 `0007h` 水平範圍設定的輸入、返回與後續使用，審查受限平台規格後由 dosgolem 重生驗證。正常玩家畫面、音效、受控亂數與 remake 玩法同狀態對拍仍未完成，完整 remake 目標持續進行。
