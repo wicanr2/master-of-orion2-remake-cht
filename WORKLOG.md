@@ -309,3 +309,11 @@
 - `DOSGOLEM_MOO2_SEPARATE_DOS=1 go run -buildvcs=false ./workplace/moo2-probe /tmp/game/ORION2.EXE --game-dir /tmp/game` 無事件路徑第 6,216,999 步抵達 `INT 2Fh/AX=160Ah`；另加 `DOSGOLEM_MOO2_MOUSE_EVENT_AFTER_POSITION=1` 的設定後受控事件路徑回呼 started=1／completed=1，第 6,217,034 步抵達同一服務。最終全套測試 SHA-256 `33ca5589160c47f992c5cdeec08b6b65ded02dfc6a03fb705aa698c21a05f26e`、無事件診斷 SHA-256 `3b7e90bfcb64cfdbbbf9f834e7f7bd185ddc6f94fcee56cd8312c5fc812653c2`、受控事件診斷 SHA-256 `5cc4ec566b82857814f12e271e0dedd88f8f283835e9505cac0f7c6dc88324ba`。沒有正常玩家畫面或玩法同狀態完成宣稱。
 - 下一個最小行動為核對 `INT 2Fh/AX=160Ah` 的原版返回與 caller；依公開介面審查最小支援，避免展開 OS 內部研究。完整 remake 與中文化目標持續進行。
 - 隔離 dosgolem 提交 `7a50ae93495ed70d00e5fb2be1e129a569c5ef5f`，已推送 `github/codex/moo2-parity-20260930`，工作樹乾淨。Go 格式、Python 語法、三份規格索引、暫存差異及修改檔 UID/GID=`1000:1000` 核對通過；最初容器標準輸入未連接的稽核沒有執行，補 `docker run -i` 後確認有實際通過輸出。dosgolem 無 root-owned 產物，主專案無誤建 `.md` 目錄；本輪一次性 Docker 容器均已結束，其他專案資源未動。主庫本輪只提交現況／研究／歷程四份文件；正版輸入、記憶體及完整終端未加入 Git。
+
+## 2026-10-01：限定未安裝 Windows 的平台查詢
+
+- 接手主庫 `e5f874d137649c1db0abe1cfdec936c81615dda9`、隔離 dosgolem `7a50ae93495ed70d00e5fb2be1e129a569c5ef5f`，起始工作樹乾淨。路由命中 dosgolem、規格閘門、平台規格優先及文件職責，已載入入口，收尾重新核對路由。未修改 Go remake 玩法或建立發行包。
+- `startup_probe_131.py --windows-version` 取得原版返回及 caller 分支，審查限定契約後接入明示 MOO2 DOS 設定；規格 258 在限定查詢範圍 CONFORMED。其他設定與未知功能仍拒絕，原版資料留本機。
+- 固定原檔全套 `go test -buildvcs=false ./... -count=1` 通過，兩條自然路徑下一停點均為 `INT 31h/AX=0500h`。首次 shell 巢狀引號在容器啟動前被拒絕，修正後乾淨重跑。單項測試初態改具名暫存器索引後以 `GOMAXPROCS=2 go test -p 2 -buildvcs=false ./internal/machine -run TestMOO2WindowsVersionAbsentPreservesState -count=1` 通過；首次重跑程序上限不足，限制平行度修正。其後讀取大型壓縮診斷一次全部展開造成記憶體不足，改逐行串流核對，原診斷不變。文件更新初次錯把反引號跳脫字元保留，定位字串未命中；修正後重跑既有文件編輯。皆為命令／驗證問題，非產品故障。
+- 詳細雜湊、位址空間與工具版本見研究紀錄。完整 remake 目標持續進行；下一步只核對公開 DPMI 記憶體資訊介面及原版返回。
+- 隔離 dosgolem 提交 `68e0ebca82cdcb436c7910bc676a818167215343`，已推送 `github/codex/moo2-parity-20260930`，工作樹乾淨。Go 格式、Python 語法、規格索引及暫存差異檢查通過；本輪修改檔 UID/GID=`1000:1000`，dosgolem 無 root-owned 檔案，主專案無誤建 `.md` 目錄。相關一次性 Docker 容器均已清空；其他專案資源未動，正版素材及完整終端未入版控。

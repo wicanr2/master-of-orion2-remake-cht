@@ -343,3 +343,13 @@
 **已證實，兩條原檔啟動路徑**：無事件原檔由 LE entry 自然越過 `AX=000Ch／4`，第 6,216,999 步停在 **dosgolem 高位 LE 線性** `0x217888` 的 `CD 2F`、AX=`160Ah`，私有 `workplace/moo2-probe-257-full-game.txt.gz` SHA-256 `3b7e90bfcb64cfdbbbf9f834e7f7bd185ddc6f94fcee56cd8312c5fc812653c2`。另在原檔自然設定座標後首次 IF=1 排入明示 `657/189/buttons=0/mickey=0/0`，回呼 started=1／completed=1，返回後第 6,217,034 步抵達同一服務；私有 `workplace/moo2-probe-257-mouse-event.txt.gz` SHA-256 `5cc4ec566b82857814f12e271e0dedd88f8f283835e9505cac0f7c6dc88324ba`。註冊／位置／回呼都由 dosgolem 自行執行，不將 DOSBox-X 圖片包裝成正式收據。
 
 **未知與停止線**：上述只證原檔早期回呼返回，尚未以相同完整初態核對座標／游標消費支線；規格 255 維持 READY，256–257 僅限定指令／位置平台模型 CONFORMED。PSP／環境、堆疊、旗標、實體速度與完整輸入不同，仍無正常玩家畫面、音效、固定亂數或與 remake 的玩法同狀態收據。下一最小行動是核對 `INT 2Fh/AX=160Ah` 的原版返回與 caller，依公開介面契約補受限支援；不追 Windows 平台內部或硬體逐週期考古。
+
+## 2026-10-01：DOS 環境的 Windows 版本查詢
+
+**已證實，原版輔助返回**：固定官方 1.31 EXE SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`、正版根層 417 檔及固定 MOX.SET；DOSBox-X 2026.07.02 SDL2 heavy debugger，既有 `fd2-dosbox-x:debug-0d7b272b` 映像。版控探針 `--windows-version` 捕獲 **DOSBox-X CS:EIP** `0180:0034B888` 的 `CD 2F`、AX=`160Ah`；同次下一指令 `0034B88A` 的全部擷取一般暫存器、段、堆疊及旗標保持。caller 比較 EAX 後跳至 `0034B89C`，略過 Windows 版本保存，恢復暫存器並返回零後繼續初始化。JSON SHA-256 `a35f451af240449b66a8762a05d6798bd4dc49a901fa53b28490e83e92d7904b`、caller LOG SHA-256 `6d787297c2f2aa296b7c4681c6d53fcf0a79bac9749f096dbdb94b8b7ae0a001`、終端 SHA-256 `fc0d6f75a86828ed1c4aabfbf4e7ef04209fe869f51d948c21b5f6f246bf2a77`。原始 bytes、工具版本與定位見 [規格 258](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/258-moo2-windows-version-absence.md)。
+
+**限定平台契約**：[DOSBox-X 多工服務來源](https://dosbox-x.com/doxygen/html/dos__misc_8cpp_source.html) 與原版同次返回相符。隔離 dosgolem `7a50ae93495ed70d00e5fb2be1e129a569c5ef5f` 加本輪實作，只在明示 MOO2 DOS 設定接受低 AX=`160Ah`，保持完整架構欄位，不偽造 AX=0 的 Windows 成功返回；其他設定與未知多工服務仍拒絕。不展開 Windows 或 DOS 多工鏈內部逆向。規格 258 在此限定範圍 CONFORMED，不代表通用 Windows 支援。
+
+**已證實，自生兩條路徑**：Go 1.24.13／既有 `golang:1.24-bookworm`，固定原檔全套 `go test -buildvcs=false ./... -count=1` 通過，私有測試 SHA-256 `1a7ddbe2c287b573ea39b942b954bf9a69ec5a95e7c1842b060c6edd0241196c`。無事件第 6,217,167 步、設定後受控事件第 6,217,202 步停於 **dosgolem 高位 LE 線性** `0x24C315` 的 `CD 31`、AX=`0500h`；無事件診斷 SHA-256 `3522de797c533648583a633a451530536bdc43a6b945edadd5ee76a7341f31d1`、事件診斷 SHA-256 `9fd435c4c06ca6ee936bebfdee48efb0a6eeca360ccc328bee44e642e2303743`。原始資產、記憶體與完整終端留本機私有。
+
+**未知與下一步**：規格 255 仍待完整座標／游標消費同狀態驗證；尚無正常玩家畫面、音效、受控亂數或 remake 玩法收據。下一個最小行動為公開 DPMI 記憶體資訊契約與原版 `0500h` 返回核對，不挖 extender 內部。
