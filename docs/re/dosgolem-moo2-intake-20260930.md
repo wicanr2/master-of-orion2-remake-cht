@@ -353,3 +353,14 @@
 **已證實，自生兩條路徑**：Go 1.24.13／既有 `golang:1.24-bookworm`，固定原檔全套 `go test -buildvcs=false ./... -count=1` 通過，私有測試 SHA-256 `1a7ddbe2c287b573ea39b942b954bf9a69ec5a95e7c1842b060c6edd0241196c`。無事件第 6,217,167 步、設定後受控事件第 6,217,202 步停於 **dosgolem 高位 LE 線性** `0x24C315` 的 `CD 31`、AX=`0500h`；無事件診斷 SHA-256 `3522de797c533648583a633a451530536bdc43a6b945edadd5ee76a7341f31d1`、事件診斷 SHA-256 `9fd435c4c06ca6ee936bebfdee48efb0a6eeca360ccc328bee44e642e2303743`。原始資產、記憶體與完整終端留本機私有。
 
 **未知與下一步**：規格 255 仍待完整座標／游標消費同狀態驗證；尚無正常玩家畫面、音效、受控亂數或 remake 玩法收據。下一個最小行動為公開 DPMI 記憶體資訊契約與原版 `0500h` 返回核對，不挖 extender 內部。
+
+## 2026-10-01：DPMI 可用記憶體資訊及容量消費
+
+**已證實，原版平台返回與最小 consumer**：固定官方 1.31 EXE SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`、正版根層 417 檔及 MOX.SET，既有 DOSBox-X 2026.07.02 SDL2 heavy debugger／`fd2-dosbox-x:debug-0d7b272b`。版控 `startup_probe_131.py --free-memory` 在 **DOSBox-X CS:EIP** `0180:00380315` 擷取 `CD 31`、AX=`0500h`，ES:EDI=`0188:003EBB38` 的 48 bytes 由全零變成記憶體資訊；同次 `00380317` 擷取架構欄位保持。第一個 dword=`01913000h`，另八欄及保留區見 [規格 259](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/259-dpmi-free-memory-information.md)。`0180:00334FD2` 的原始 `[ebp-007C]` 取此第一欄位，加到 EAX=`E810h`，右移十位後由 `0180:00234D5C..00234D68` 做容量檢查。不深挖前一個 runtime 記憶體 helper。
+私有 JSON SHA-256 `0e5b4b0d324a843ce4f4aa06b70d47e7b8d0bfd7951806acb75b3e9a8e7e14ed`、caller LOG `929e2c6aa680b6e3932bc4692131c3b08e37c00c56ae09fd4f59b1d0dd378f80`、外層 consumer LOG `af617b57c1baaf6c28c785774f476f48fb05dec1b6dfec63ae76644a3df286bc`、終端 `83dceb963801edfa98e9e8c014f712627309d4135d09add5ff51f9271660926c`。原版容量是輔助環境返回值，不寫成遊戲規則或 dosgolem 常數。
+
+**限定平台實作與正式自生診斷**：[DPMI 1.0 原始規格第 99–100 頁](https://docs.pcjs.org/specs/dpmi/1991_03_12-DPMI_Spec_v10.pdf) 已定義 48-byte 介面、CF 與未知欄位標記。隔離 dosgolem `68e0ebca82cdcb436c7910bc676a818167215343` 加本輪實作，只回報既有 64 MiB 配置器可兌現的最大連續區塊，其餘未模型化的分頁欄位填未知；屬明示的平台規格近似。有效寫入只清 CF；不支援 buffer 形狀先原子拒絕。合成測試實際配置全部回報容量、釋放／重用、容量耗盡與各種越界／唯讀／不同 backing 拒絕通過。Go 1.24.13，固定 EXE 全套 `GOMAXPROCS=2 go test -p 2 -buildvcs=false ./... -count=1` 通過；測試 SHA-256 `4f556544b654a81516bd019606d95945855e71aa6f1eae55d44c7563b421fc6d`。
+
+**已證實，兩條自然新停點**：無事件第 6,713,034 步、設定後受控事件第 6,713,069 步，均於 **dosgolem 高位 LE 線性** `0x200E5A` 的 `C1 7D F4 04` 明確拒絕，受控路徑回呼 started=1／completed=1。無事件診斷 SHA-256 `e6ce6f569119d6ef82e0b319c6ff98c65acc80c8b17ae2a25f9ded0c5f2596a9`、事件診斷 SHA-256 `7b6bedae196683e1f67dc0af1f2356cadde7e593ea54e92f95bfdce75ae645b7`。規格 258 的舊停點已回填至 259，正常護欄與刪標記必拒絕通過；保留舊收據，不重寫歷史。下一步只核對此窄 CPU 記憶體移位形狀。
+
+**仍未知**：完整座標／游標消費、正常玩家畫面、音效、受控亂數及與 Go remake 的玩法同狀態收據；規格 255 不升格。未比較原版 extender 的容量逐值或全遊戲分頁欄位使用。

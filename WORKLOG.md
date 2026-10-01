@@ -317,3 +317,12 @@
 - 固定原檔全套 `go test -buildvcs=false ./... -count=1` 通過，兩條自然路徑下一停點均為 `INT 31h/AX=0500h`。首次 shell 巢狀引號在容器啟動前被拒絕，修正後乾淨重跑。單項測試初態改具名暫存器索引後以 `GOMAXPROCS=2 go test -p 2 -buildvcs=false ./internal/machine -run TestMOO2WindowsVersionAbsentPreservesState -count=1` 通過；首次重跑程序上限不足，限制平行度修正。其後讀取大型壓縮診斷一次全部展開造成記憶體不足，改逐行串流核對，原診斷不變。文件更新初次錯把反引號跳脫字元保留，定位字串未命中；修正後重跑既有文件編輯。皆為命令／驗證問題，非產品故障。
 - 詳細雜湊、位址空間與工具版本見研究紀錄。完整 remake 目標持續進行；下一步只核對公開 DPMI 記憶體資訊介面及原版返回。
 - 隔離 dosgolem 提交 `68e0ebca82cdcb436c7910bc676a818167215343`，已推送 `github/codex/moo2-parity-20260930`，工作樹乾淨。Go 格式、Python 語法、規格索引及暫存差異檢查通過；本輪修改檔 UID/GID=`1000:1000`，dosgolem 無 root-owned 檔案，主專案無誤建 `.md` 目錄。相關一次性 Docker 容器均已清空；其他專案資源未動，正版素材及完整終端未入版控。
+
+## 2026-10-01：DPMI 可用記憶體資訊
+
+- 接手主庫 `685c1ee097b5c018718e9affee339f5b056e1669`、隔離 dosgolem `68e0ebca82cdcb436c7910bc676a818167215343`，起始乾淨。路由命中 dosgolem、規格閘門、平台規格優先、文件職責及解析回填，載入各入口。未修改 Go remake 玩法或建立發行包。
+- `startup_probe_131.py --free-memory` 取得原版 48-byte 返回區塊、同次架構欄位及外層第一欄位容量消費。規格 259 先 DRAFT，再依公開 DPMI 契約及 caller 審查轉 READY 後接入配置器一致的容量模型；測試與兩條原檔路徑驗收後 CONFORMED。其他分頁欄位保持規格允許的未知，不硬編原版容量。詳細雜湊與位址空間見研究紀錄。
+- 一次性既有 Go 映像，以固定 EXE 的 `GOMAXPROCS=2 go test -p 2 -buildvcs=false ./... -count=1` 全套通過。初稿測試使用不存在的 `Descriptor.Default32` 而編譯失敗，刪除多餘欄位後同命令乾淨重跑，保留第一次私有輸出。原檔無事件／設定後受控事件兩條路徑自行越過 `0500h`，下一停點均為 `C1 7D F4 04`。
+- 舊規格 258 回填 259，探針 `--check-free-memory-spec-backlinks` 正常與刪除標記必拒絕驗證通過。一次補丁因段落非獨立行拒絕，改正確定位套用；一次負向護欄 shell 引號影響搜尋字串，修正後重跑，未改平台契約。
+- 正常玩家畫面、音效與玩法同狀態對拍仍未完成，規格 255 維持 READY。下一步只核對新 CPU 記憶體移位指令形狀，完整 remake 目標持續進行。
+- 隔離 dosgolem 提交 `a6a7b79a60c9656f93b216b539707ff9b52b5671`，已推送 `github/codex/moo2-parity-20260930`，工作樹乾淨。Go 格式、Python 語法、規格索引、正常及負向回填護欄、暫存差異核對通過；本輪修改檔及測試輸出 UID/GID=`1000:1000`。dosgolem 無 root-owned 殘留，主庫無誤建 `.md` 目錄，相關一次性 Docker 容器均已結束；其他專案資源未動。原版輸入、記憶體與完整終端未入版控。
