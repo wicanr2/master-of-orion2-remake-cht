@@ -464,3 +464,12 @@
 - 274→275 回填正負護欄、全部既有回填函式、Python 語法、繁體新增文字、差異與擁有權通過。工具 `3c4bace68829bd16377aeaf30e22631c6ce3cefb`（7 檔）推送 `github/codex/moo2-parity-20260930`，未推本機 origin；主庫只更新四份現況／歷程文件，研究連結鎖定工具提交，版權輸入與完整終端／記憶體／gzip／PNG 未加入 Git。
 - 初次 image inspect 讀取不存在欄位、舊規格檔名猜錯皆為控制面／讀取問題；改讀 Config／實際 258 檔名後繼續，未建重複映像或修改工具 runtime。
 - 本批一次性 Docker 容器收尾清空；隔離工具無 root-owned／誤建 .md 目錄，本輪檔案及輸出 UID/GID=1000:1000。主庫既存 `go.sum`／`lbxinfo`／`.docker-cache` 擁有權未改。下一步依公開硬體契約核對新埠，不深挖 timer driver、ISR／busy-wait 或硬體時鐘。
+
+## 2026-10-01：PIT 模式 2、共享時鐘及探針容量修正
+
+- 開工主庫 `c283b049c6a7b862d9c53658cbe9df3b4ceaf777`、隔離工具 `3c4bace68829bd16377aeaf30e22631c6ce3cefb`，均乾淨。路由命中 dosgolem、規格閘門、平台規格優先及文件分工；沿用逆向重製技能與既有 Docker 映像，未改 Go remake 玩法或建立發行包。
+- 276 同次建檔入索引；原版有限 34h／4Eh／17h 與第一讀取、公開 Intel 8254 合法除數足夠後 READY，再接模式 2 與共享週期。模式編號保留，非法 1 拒絕；時鐘微秒、相位與 IRQ 合併保持明示近似，沒有 timer driver／ISR 考古。186 模式 3 的未測非法邊界與 275 舊停點均回填。
+- `GOMAXPROCS=2 go test -p 2 -buildvcs=false ./internal/machine -run 'Test(PIT0|BIOSClock)' -count=1`、固定官方 EXE 的 `go test -p 2 -buildvcs=false ./... -count=1` 通過。原版輔助有限擷取、全編碼／共享 CPU／週期／拒絕邊界、全部回填正負例與索引／語法／繁體文字／擁有權驗證通過；精確雜湊見研究紀錄及工具規格。
+- 兩次自然探針非零返回，一次完整保存 `signal: killed`；首輪暫存輸出隨容器消失，未保留 cgroup 計數。查明最後 32 筆的 slice 縮容量後持續擴容；100,000 步可重現並驗證固定容量修正，不改原版輸入／CPU 步進。killed 與該缺陷的關聯為強推論；同一 2 GiB 工具鏈乾淨重跑兩條 50M 收據成功，oom／oom_kill=0。控制面曾有路由命令／trap 引號、Go 快取未設與稽核舊檔名錯誤，訂正後通過；不是玩法缺陷。
+- 兩條自然路徑越過設定，仍在高位 LE `0x239B03／0x239B09` 的 CMP／JE 等待，畫面同已檢視黑圖。額外 20.12M 只讀觀測確認預設時鐘多三次、DPMI 實模式 08h／1Ch 與 IVT 皆零、等待來源四 bytes 仍零。276 限定設定／共享週期近似 CONFORMED，255 READY；玩家路徑與 remake 玩法同狀態未完成。下一步只核對 DOS `AH=25h／35h` 向量參數及平台保存／派送，禁止猜補等待結果。
+- 工具提交 `7b288510f8ff578079e73be0435784a9a2e7f720` 已推送 `github/codex/moo2-parity-20260930`，工作樹乾淨。主庫本輪只更新現況、活表、研究與本歷程四檔；公開 Git 不含正版素材、原始終端／記憶體或 PNG。修改檔與輸出 UID/GID=1000:1000，隔離工具無 root-owned／誤建 .md 目錄；主庫歷史 go.sum／lbxinfo／.docker-cache 擁有權問題保持未動。所有本輪一次性容器已結束，掛載篩選無殘留，未清理其他專案映像或容器。
