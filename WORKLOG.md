@@ -251,3 +251,11 @@
 - 隔離 dosgolem 規格 239 經 DRAFT→READY→受限模式設定→CONFORMED；含官方 1.31 EXE 的全套 Go 測試通過，私有 `workplace/full-test-239.txt` SHA-256 `e78f1025caaaacd4ec286585cfc18a0e92afe07dad03de08e18aad186322cb5f`。完整資料自 LE entry 重跑至第 1,151,730 步的 opcode `04h` 停點，私有 `workplace/moo2-probe-239-full-game.txt` SHA-256 `96af49b38b75df1cfd62c08ea9d30ba2f57624841bd9db6851e0b78f13507da6`。這是工具前進，不是玩家畫面或玩法同狀態對拍；下一步核對原檔 bytes 與 CPU 指令契約。
 - 本輪無 MOO2 Go 玩法變動；正常玩家畫面、玩法同狀態對拍及正式封包均未完成。原版素材與探針終端留在本機私有工作區，不入版控。
 - 隔離 dosgolem 分支的線性回收提交 `c26db33215b0e8df06d4ac748305181edae0ca4d`、高位映射提交 `c6cd74fe187fc7badd12969f821b5bc14ca8b448` 均已推送至 `github/codex/moo2-parity-20260930`。`git diff --check` 通過；新增／修改檔 UID/GID 為 `1000:1000`，dosgolem 工作樹未見 root-owned 檔或 `.md` 同名目錄。`docker ps -a` 無本專案或 dosgolem 殘留容器；主專案既有 root-owned 快取與檔案未動，其他專案容器未碰觸。
+
+## 2026-10-01：dosgolem CPU、實模式平台埠與第二 DMA 遮罩
+
+- 路由命中規格閘門、dosgolem 原版對拍及平台硬體規格優先；依 240–242 規格的 DRAFT→READY→實作→CONFORMED 流程，補通用 `ADD AL,imm8`、MOO2 雙模式共用既有 DSP 埠，以及第二組 DMA 控制器 `D4h` 遮罩。未改主專案 Go 玩法或發行包。
+- DOSBox-X 2026.07.02 SDL2 heavy debugger 輔助擷取原版 `04 20` 的同次暫存器／旗標；dosgolem 固定官方 1.31 EXE 的 `go test -buildvcs=false ./... -count=1` 全通過。最終私有測試輸出 `workplace/full-test-242.txt` SHA-256 `63ce81a460661c68c24979ee50e1e3d3720c8c7f9fd309c627f0fd1558e3daf7`。
+- `DOSGOLEM_MOO2_SEPARATE_DOS=1 go run -buildvcs=false ./workplace/moo2-probe /tmp/game/ORION2.EXE --game-dir /tmp/game` 使用正版 ZIP 根層 417 檔與官方 EXE，自 LE 入口自然完成 513／176 段落兩筆配置，越過 `04 20`、DSP `0226h` 與第二 DMA 遮罩 `D4h/05h`，現於 `DPMI 0300h → INT 66h` 的實模式 `1201:0244` 遇到未支援的 `OUT D8h,00h`；私有輸出 SHA-256 `142f0d05f0feea086353bd9cfbd5679f0dda095b9644da82cd8007376c187c06`。詳細原始雜湊、工具、位址空間與各步收據見 `docs/re/dosgolem-moo2-intake-20260930.md`。
+- 以上只證實 dosgolem 平台服務的窄範圍前進。原版與合成 PSP／環境、完整資料流仍不同，沒有正常玩家畫面、音訊或與 remake 玩法同狀態對拍。下一最小行動是查第二 DMA `D8h` 的公開規格並建立獨立平台規格；避免展開 DAC／PIT／DMA 逐週期考古。
+- 隔離 dosgolem 分支提交 `7281a38` 並推送 `github/codex/moo2-parity-20260930`。本輪 `git diff --check`、Go 格式檢查及 Docker 殘留檢查通過；新規格與私有探針輸出為目前使用者 UID/GID，未發現 dosgolem 工作樹的 root-owned 產物或誤建 `.md` 目錄。
