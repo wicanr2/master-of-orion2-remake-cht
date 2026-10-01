@@ -364,3 +364,14 @@
 **已證實，兩條自然新停點**：無事件第 6,713,034 步、設定後受控事件第 6,713,069 步，均於 **dosgolem 高位 LE 線性** `0x200E5A` 的 `C1 7D F4 04` 明確拒絕，受控路徑回呼 started=1／completed=1。無事件診斷 SHA-256 `e6ce6f569119d6ef82e0b319c6ff98c65acc80c8b17ae2a25f9ded0c5f2596a9`、事件診斷 SHA-256 `7b6bedae196683e1f67dc0af1f2356cadde7e593ea54e92f95bfdce75ae645b7`。規格 258 的舊停點已回填至 259，正常護欄與刪標記必拒絕通過；保留舊收據，不重寫歷史。下一步只核對此窄 CPU 記憶體移位形狀。
 
 **仍未知**：完整座標／游標消費、正常玩家畫面、音效、受控亂數及與 Go remake 的玩法同狀態收據；規格 255 不升格。未比較原版 extender 的容量逐值或全遊戲分頁欄位使用。
+
+## 2026-10-01：堆疊 dword 的立即數算術右移
+
+**已證實，原版同次 CPU 樣本**：固定 1.31 `ORION2.EXE` SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`、正版根層 417 檔與 MOX.SET，既有 DOSBox-X 2026.07.02 SDL2 heavy debugger。版控 `--sar-stack-memory` 捕獲 **DOSBox-X CS:EIP** `0180:00334E5A` 的 `C1 7D F4 04`。原始運算元 `SS:[EBP-0Ch]`，EBP=`003EBB84h`、SS=`188h`；`0188:003EBB78` 的 dword=`32 → 2`，下一指令 `00334E5E` 的擷取一般暫存器及段保持。EFLAGS=`246h → 212h`；CF／PF／ZF／SF 與結果相符，AF 與多位 OF 依 [Intel 原始手冊](https://read.seas.harvard.edu/~kohler/class/aosref/i386.pdf) 未定義。原版 AF=1，執行器沿既有策略清 AF，不宣稱完整旗標逐位元相等。下一無條件跳躍到 `0180:00334E6A` 的 CMP 重算旗標；不追所在 helper 的語意。
+私有 JSON SHA-256 `c6030ecb0371d9a5521f4581934d459423a0f2832e9591ad750247eb04e3136b`、caller LOG `7ef34efe2fa2add0e082fd7e4f2b4b9aa19726ffcd68c059d2e23bb02d0af093`、終端 `0be4a8d736a44d0699d876865c96497ce48cbc32d7af218b570ead7f3528bbaa`。首次候選位址換算少 `1000h` 未命中，修正後由實際 bytes 與同次返回確認；原始失敗終端留本機，工具間位址差不單獨當定位證據。
+
+**CPU 實作與測試**：隔離 dosgolem `a6a7b79a60c9656f93b216b539707ff9b52b5671` 加本輪實作，規格 [260-cpu386-sar-stack-dword-immediate.md](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/260-cpu386-sar-stack-dword-immediate.md) 依公開 CPU 契約及原檔形狀先 READY，再接無前綴 ModRM=`7Dh`、SS／EBP／有號 disp8、count 低五位、定義旗標及有界 dword 存取。正負／零／端點、計數 `0/1/4/31/32/33/255`、SS 與 DS 分離、鄰接哨兵、唯讀／越界／未知形狀／截短／寫入拒絕測試通過。原版同次 CPU 輸入的值與定義旗標亦通過。加入樣本的第一次測試用了錯誤段排列，被 SS 可寫檢查拒絕；改具名索引，一併修正規格 258 的同類測試夾具並追加勘誤，服務／CPU production 行為不改。固定 EXE、Go 1.24.13 最終全套 `GOMAXPROCS=2 go test -p 2 -buildvcs=false ./... -count=1` 通過，測試 SHA-256 `12e3a3f78ea25fa3c1c4745b78faaf2b008b0466837bee54e06393b4445c23a4`。
+
+**已證實，兩條自生新停點**：無事件第 6,725,897 步、設定後受控事件第 6,725,932 步，均於 **dosgolem 高位 LE 線性** `0x229A59` 的 `CD 21` 拒絕，EAX=`002B4E38h`、DS:EDX=`0188:002BDB38`、CX=`0`。現有受限 `4Eh` 服務在這次輸入未通過，原因與搜尋字串待查，不把它改寫成整項未實作。受控路徑回呼 started=1／completed=1。無事件診斷 SHA-256 `66b324e1fce7d3e260d550eeb7e8c16b7058528074ec3bb7130ed7fdab94eac7`、事件診斷 SHA-256 `dda9b0d9cc2b663a8bef3c4cf6735f19e7c8327c187df6864175d7eb97593732`。
+
+**回填與未知**：規格 259 回填 260，定位／狀態／連結及刪除標記必拒絕護欄通過。規格 258 的段夾具勘誤保留舊輸出來源。仍無正常玩家畫面、音效、受控亂數或 remake 玩法同狀態收據；255 不升格。下一步只抓 `4Eh` 搜尋輸入、DTA 狀態及原版返回，不深挖標準檔案服務內部。
