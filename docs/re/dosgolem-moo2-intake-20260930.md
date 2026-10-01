@@ -405,3 +405,17 @@
 **已證實，兩條自生下一停點**：同一輸入與分離 DOS arena，無事件第 6,728,365 步、設定後受控事件第 6,728,400 步，均越過遮罩寫入，在 **dosgolem 高位 LE 線性** `0x222CCB` 的 `F6 F3 EE AC F6 E7 B3 64 F6 F3 EE AC F6 E7 B3 64` 拒絕。EAX=0、EBX=`64h`、ECX=`80h`、EDX=`3C9h`、DS／ES／SS=`188h`、EFLAGS=`6h`；受控回呼 started=1／completed=1。通用錯誤寫「F6 記憶體形狀未支援」，實際 ModRM 是暫存器 byte DIV，不誤分類。兩份診斷 SHA-256 `a5836830e9c15f632e22f7a110de950604f7cea87b8d3076c693d3d892ef86ba`／`9adbbef63c5fa11f133f1f16c9785a0d5a4efc5d755b4cc94b8e2b3da4cb8df3`。
 
 **回填與未完成範圍**：規格 262 回填 263，Python 語法、索引、既有護欄與新護欄正常／缺舊標記／缺原始定位必拒絕通過。255 仍 READY，正常玩家畫面、音效、受控亂數及 Go remake 玩法同狀態未驗證；不把 VGA 接通算成玩法矩陣閉合。下一步只核對公開 CPU byte DIV、既有解碼與固定使用點，窄規格審查後接通並重跑。
+
+## 2026-10-01：位元組暫存器的無號除法
+
+**來源與有限規格**：隔離 dosgolem 起始 `3cfd84be85738450b65102f46450d46ae91429f1`，固定官方 1.31 EXE SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`、ZIP 根層 417 檔及 MOX.SET。規格 [264-cpu386-div-byte-register.md](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/264-cpu386-div-byte-register.md) 先 DRAFT 並入索引，依 [Intel 80386 DIV 契約](https://www.ardent-tool.com/CPU/docs/Intel/386/manuals/prref386/DIV.htm) 與既有暫存器／除法錯誤策略審查 READY 後接 `F6 /6` 全部八種 byte 暫存器。先讀來源，商 AL、餘 AH，保存高半部及其餘資料；除法錯誤沿既有 CPU Error 停止，不模擬完整 `#DE`，算術旗標未定義且保留。
+
+**已證實，原版同次商餘與消費**：既有 DOSBox-X 2026.07.02 SDL2 heavy debugger、映像 `sha256:659e8abbf93646f59a1586341769bd4b8f3cd1c707859d7a5de4c56e4672b582`，`--div-byte-register` 命中 **CS:EIP** `0180:00356CCB`，bytes=`F6 F3 EE AC F6 E7 B3 64 F6 F3 EE AC F6 E7 B3 64`，與 dosgolem 高位 LE `0x222CCB` 相同。AX=0、BL=100，下一指令 `0180:00356CCD` 商與餘皆 0、一般暫存器與段保持；第一個 OUT 寫 `03C9h` 的值 0，再至 LODSB。原版 EFLAGS=`46h → 6h`，執行器對該輸入保留 `46h`，未定義 ZF 差異明示；自然 dosgolem 停點輸入本來為 `6h`，不宣稱兩側整段同狀態。完整具名架構、位址基準及限制見規格 264。
+
+JSON／第一個消費 LOG／終端 SHA-256 `35f4e556aedda3256a0b1b509515cfd07e25b888639e68db231e45d842cd18a7`／`de3b1aeafcba322d51f39cb73f75aa4451b6031e0f7695cbb6bf5f5a9447766c`／`bcf95c8e21a007893978e4672515577c5e5bbe73fc80fe0169ab364b44d4f667`。原版素材、完整記憶體及終端留本機；只保存最小 CPU bytes／架構樣本作測試，不追顯示 driver 內部。
+
+**實作與驗收**：八來源、低／高 byte、AL／AH 別名、商 255／溢位、非零餘數、除以零、高半部與資料／段／記憶體保持、旗標策略、拒絕邊界與既有 MUL／TEST 回歸通過；具名原版樣本與第一個 OUT 另驗。Go 1.24.13、映像 `sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac`，加入原版樣本後最終 `DOSGOLEM_MOO2_EXE=/tmp/game/ORION2.EXE GOMAXPROCS=2 go test -p 2 -buildvcs=false ./... -count=1` 全套通過，SHA-256 `5e5a0f83ccfc9296e5748774c79dcc94d8798ac7644fdb51a64d518d3ec50742`；初次全套及 CPU 測試輸出亦保留。規格 264 在商餘、資料保持及消費範圍 CONFORMED，近似限制仍保留，不改 Go remake 玩法。
+
+**已證實，兩條自生下一停點**：同一完整輸入、分離 DOS arena，無事件第 6,738,645 步、設定後受控事件第 6,738,680 步，均越過 byte DIV 及後續調色盤寫入，在 **dosgolem 高位 LE 線性** `0x228C54` 的 `CD 10 61 C3 60 25 FF FF 00 00 33 D2 BB 00 00 00` 拒絕。AX=`4F05h`、BX=0、CX=0、DX=5、DS／ES／SS=`188h`、EFLAGS=`246h`，拒絕後 EIP=`0x228C56`；受控回呼 started=1／completed=1。兩份 gzip 診斷 SHA-256 `1ba0ba7a2b7ee444757fd7e737ecd8a1d93501d1c5bb94150472cc3e83580500`／`fd6e7ba30851994f24da214fbdd147cb5bde144d092322a967c486dcc3371a45`。
+
+**回填與未完成範圍**：規格 263 回填 264；Python 語法、索引、相關護欄正常／缺定位／缺舊標記必拒絕通過。255 仍 READY，正常玩家畫面、音效、受控亂數與 Go remake 玩法同狀態未完成；不把平台依賴接通算成玩法矩陣閉合。下一步只核對公開 VBE `4F05h` 視窗控制、原版使用點與既有模式資訊／顯存模型，不能用成功返回代替顯存區段（bank）切換及實際消費。
