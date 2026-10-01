@@ -229,3 +229,17 @@
 
 - 依新 `AGENTS.md` 入口與知識路由重查現況。隔離 dosgolem 的退出探針加印 DPMI 呼叫與區塊帳本，以相同正版 ZIP 417 個根層檔案及 1.31 EXE 在一次性 `golang:1.24-bookworm` 容器重跑。第 295276 步退出不變；稽核收據 SHA-256 `05a3295912c263601e75dcf1933fd6ad14022edebd9e3a072e4d6f47be165d`。`0100h` 2 次、`0501h` 126 次、`0502h` 122 次，未實作服務為空；初始 LE 映像大於 640 KiB，而低位 DOS 游標從映像後起算，線性釋放也不回收位址。原版相同配置結果仍未知，詳細證據見研究紀錄。
 - 隔離 dosgolem 分支提交 `6c1ffad8b0bafe65e6f37078a948a9fc91b8dc1c` 並推送至 `github/codex/moo2-parity-20260930`。主專案 Go 玩法未改；下一步以 DPMI 1.0 一手規格、原版啟動收據及現有區塊測試界定記憶體模型，再實作、重跑 dosgolem，不能靠擴大上限掩蓋合成環境限制。正常玩家畫面與玩法同狀態對拍仍未完成。
+
+## 2026-10-01：DPMI 線性回收與原版 DOS 配置收據
+
+- 路由命中復古 remake 的規格閘門、dosgolem oracle 與文件職責，載入 `retro-remake-spec-gated-workflow.md`、dosgolem 能力入口及 `project-document-responsibilities.md`。MOO2 的 RE-first 玩法閘門仍開啟；本輪沒有修改 remake Go 玩法。
+- 隔離 dosgolem 規格 234 依 DPMI 1.0 `0501h／0502h` 建立 DRAFT→READY→實作→CONFORMED；補升序空閒區首次適配、合併、獨立控制代號與重用清零。合成測試及固定 1.31 原檔的 `DOSGOLEM_MOO2_EXE=/tmp/ORION2.EXE GOCACHE=/tmp/go-cache go test -buildvcs=false ./... -count=1` 全通過，私有測試輸出 SHA-256 `0c4aa5818a10ca07c604b44f0daf3bfee775b07a02d0718232aeec1666a1e0e7`。
+- 相同正版根層 417 檔案的 dosgolem 完整資料診斷於第 3,947,961 步自然退出；線性空間仍餘 39,150,168 bytes、DOS 空間 0，首筆 `0100h` 請求 513 段落失敗。DOSBox-X 2026.07.02 SDL2 heavy debugger 輔助擷取同一 1.31 EXE 的首次 `0100h` 513 段落請求成功，返回實模式段 `0FE3h`。第一次 `EV` 快照解析錯取舊值，修正解析後以同一容器／資料重跑，保留錯誤私有紀錄供勘誤。兩個執行器的第二筆請求大小已分歧，不宣稱同狀態玩家對拍；完整雜湊、位址空間與兩側數值見研究紀錄。
+- 直接把 DOS 低位游標改小會覆蓋現行 LE 映像；下一個最小可重現行動是先界定低位記憶體與 LE 映像隔離、雙模式存取及防覆蓋測試，再修正 dosgolem `0100h` 並重跑完整資料。正常玩家畫面與玩法同狀態對拍仍未完成；原版素材及完整終端只在本機私有工作區。
+
+## 2026-10-01：高位 LE 與低位 DOS 記憶體隔離
+
+- 沿用本輪已載入的規格閘門及文件路由；隔離 dosgolem 規格 235 經 DRAFT→READY，明示高位 LE loader 將 1.31 物件與 fixup 平移 `0xF0000`，為 DOS 記憶體保留低位 arena。原 loader 路徑不變，合成測試驗證 513／176 段落配置、實模式 bus／selector 資料往返、LE 防覆蓋與拒絕邊界；固定原檔測試核對所有支援的 object fixup。`DOSGOLEM_MOO2_EXE=/tmp/ORION2.EXE go test -buildvcs=false ./... -count=1` 全通過，私有輸出 SHA-256 `6ed111b7c3a51af6330c947b8a447ce2a065fcc5f7c91da5137040c8f2582de1`。
+- 完整正版根層 417 檔的明示高位診斷於第 189,580 步成功完成首筆 `0100h` 513 段落配置；第 189,582 步停在 `0300h` 要轉呼叫的實模式 `INT 10h` 未註冊，底層錯誤與未實作計數已記錄。私有輸出 SHA-256 `5dbf8b22cda56a2f77fd0ff498daa3dd5d1a14f7b194f074fe748013708023e8`。原檔第二筆配置尚未自然抵達，故規格 235 維持 READY；下一步從原版取這筆視訊呼叫的輸入／返回／consumer，再決定受限服務。詳細兩套位址基準與前輪勘誤見研究紀錄。
+- 本輪無 MOO2 Go 玩法變動；正常玩家畫面、玩法同狀態對拍及正式封包均未完成。原版素材與探針終端留在本機私有工作區，不入版控。
+- 隔離 dosgolem 分支的線性回收提交 `c26db33215b0e8df06d4ac748305181edae0ca4d`、高位映射提交 `c6cd74fe187fc7badd12969f821b5bc14ca8b448` 均已推送至 `github/codex/moo2-parity-20260930`。`git diff --check` 通過；新增／修改檔 UID/GID 為 `1000:1000`，dosgolem 工作樹未見 root-owned 檔或 `.md` 同名目錄。`docker ps -a` 無本專案或 dosgolem 殘留容器；主專案既有 root-owned 快取與檔案未動，其他專案容器未碰觸。
