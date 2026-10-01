@@ -46,9 +46,9 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選 DOS 原版與 dosgolem，使用本機隔離分支；DOSBox-X 僅作輔助基準。固定原版 EXE、正版 ZIP 根層 417 檔及 `MOX.SET`。規格 255 完整座標／游標消費同狀態仍 READY；256–267 在限定 CPU／平台範圍 CONFORMED。267 已接 word 暫存器帶符號立即值加法，八目的、全部 imm8、旗標／高半部與原版 CMP／JL 消費已驗；固定原檔全套測試通過。DIV 的 ZF／除法例外、SAR 的 AF、DTA 保留區與平台配置差異仍保留。
-  **目前自然停點**：無事件第 6,738,883 步、設定後事件第 6,738,918 步，均越過 ADD／CMP／JL，在 dosgolem 高位 LE 線性 `0x234B43` 的 `66 F7 EB` 因 word F7 形狀未支援而拒絕；EAX=1、EBX=5、EDX=0。StartY=512、Bank=9、Writes=307200，PNG 與上輪已檢視黑圖逐位元相同；尚無正常玩家畫面、音效、受控亂數或 remake 玩法同狀態收據。
-  **下一步**：依公開 CPU IMUL 契約核對 `66 F7 EB`、有號乘積、CF／OF、未定義旗標策略與原版使用點；審查窄規格後由 dosgolem 重跑，不追 runtime／圖形 helper 內部。完整回呼驗證仍須回到正常玩家輸入。詳細收據與差異見 [研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。此項是動態 oracle 工具閘門，不計入玩法矩陣分母。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選 DOS 原版與 dosgolem，使用本機隔離分支；DOSBox-X 僅作輔助基準。固定原版 EXE、正版 ZIP 根層 417 檔及 `MOX.SET`。規格 255 完整座標／游標消費同狀態仍 READY；256–269 在限定 CPU／平台範圍 CONFORMED。268／269 已接單運算元的 16／32 位元有號暫存器乘法，八來源、完整積／CF／OF、別名、高位與原版存值／XOR 消費已驗；固定原檔全套測試通過。IMUL 未定義 ZF 保存差異、DIV 旗標／除法例外、SAR 的 AF、DTA 保留區及平台布局差異仍保留。
+  **目前自然停點**：無事件第 6,738,950 步、設定後事件第 6,738,985 步，均越過兩種有號乘法，在 dosgolem 高位 LE 線性 `0x234C9A` 的 `39 0D 9B 0D 27 00 0F 8D 01 02 00 00 80 3D 94 0D` 因 CMP dword ModRM 0D 未支援而拒絕；ECX=18h、EAX=EBX=EDX=0。StartY=512、Bank=7、BankSets=6、Writes=307200，PNG 與已檢視黑圖逐位元相同；尚無正常玩家畫面、音效、受控亂數或 remake 玩法同狀態收據。
+  **下一步**：依公開 CPU CMP 契約核對 `39 0D`、實際記憶體輸入、定義旗標與第一個分支；審查窄規格後由 dosgolem 重跑，不追 runtime／圖形 helper 內部。完整回呼驗證仍須回到正常玩家輸入。詳細收據與差異見 [研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。此項是動態 oracle 工具閘門，不計入玩法矩陣分母。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備
