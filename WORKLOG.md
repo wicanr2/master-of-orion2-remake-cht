@@ -266,3 +266,9 @@
 - B0 後誤讀 `0006h` 的診斷由原始 bytes 追至 `0040:0063` 未初始化。規格 246 重用既有 DOS/4GW BIOS 資料區安裝函式，MOO2 啟動接線在成功安裝後才連接 DPMI 與共用埠，衝突直接拒絕。正常安裝、衝突無副作用測試通過；固定 EXE 全套 Go 測試輸出 SHA-256 `7fa4b1acb412bf35c9110a5e94a7349f0dc40a951a396b7b008708b8b5b46f08`。
 - 本輪原檔自行越過 `D8h`、`8Bh`、`B0h` 與原先的 `0006h` 假停點；現行真停點為 dosgolem 實模式 `1201:073F` 的 `IN 0225h`。這些是平台執行器的有界進展，尚無正常玩家畫面或與 Go remake 同狀態玩法收據；本輪未改 remake 玩法。下一最小行動是查 `0225h` 公開平台契約與原檔讀取後的消費端。
 - 隔離 dosgolem 分支提交 `642abfe` 並推送 `github/codex/moo2-parity-20260930`；`git diff --check`、Go 格式檢查及新檔 UID/GID 抽查通過。正式接線後完整資料自生收據 `workplace/moo2-probe-246-full-game.txt.gz` SHA-256 `0b3d80dc9aba63f4973089d855384e24080d8e0f529f18f4caca31e0b508667c`；原版資料與私有終端未加入 Git。
+
+## 2026-10-01：SB16 混音器索引 `32h` 的受限讀寫
+
+- 隔離 dosgolem 的可丟棄探針確認原檔在 `IN 0225h` 前選了索引 `32h`；Creative 原廠指南直接定義 `32h/33h` 的左右數位語音音量、高五位有效及預設 24/31。規格 247 依 DRAFT→READY→實作→CONFORMED，只補這兩個索引的狀態保存，不推論原版實機當次音量或實際聲波。
+- 固定官方 EXE 全套 Go 測試通過，私有輸出 SHA-256 `fe95d9119cde6fb624038c04a132ff9df0694f0031b3e5928c3d78c329d23147`。正版資料自 LE entry 自生越過 `IN 0225h`，實模式呼叫正常返回；現行停點為 dosgolem 高位 LE 線性 `0x25221E` 的 `83 C8 10`，私有收據 SHA-256 `ad3568f83e7a85f70e682484bf392bac3bcd66dce42fd474e1d061b6af3083ca`。下一最小行動是核對 CPU 指令形狀及原版同次消費端，未改 Go remake 玩法。
+- 隔離 dosgolem 分支提交 `8f6bf14` 並推送 `github/codex/moo2-parity-20260930`。`git diff --check`、Go 格式、受控新檔擁有權與專案 Docker 容器殘留檢查均通過；原版 ZIP、EXE 與私有終端未加入 Git。
