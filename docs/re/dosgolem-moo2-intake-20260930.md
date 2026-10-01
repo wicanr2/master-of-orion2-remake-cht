@@ -435,3 +435,19 @@ JSON／caller LOG／完整終端 SHA-256 `b2a8d36a2951d0105908e34769213ef9e3f709
 兩份 gzip SHA-256 `d3fd50d6a07c913cacca03a827ef2d4558abd33a0743e9234f89cda46f4d32fd`／`13a24e91b05a4e7addbff28701ca9b3079acf9e80c7800a719eebea8ea9be558`。零起點索引快照 307,200 bytes 的 SHA-256 均為 `7818f5542a0404157573be6cffc0e0c8e68ce3c0f5d17d07ccdd9313fb700baf`，尚未切到已寫影像，不能當作正常玩家畫面或逐像素收據。
 
 **回填與未完成範圍**：規格 264 回填 265，239 的歷史返回範圍連到新延伸。Python 語法、Go 格式、索引、全部既有回填函式、新護欄正常／缺舊標記／缺定位必拒絕通過。265 僅在有限視窗／共用映射／消費端 CONFORMED，255 維持 READY；正常玩家畫面、音效、受控亂數與 Go remake 玩法同狀態未完成。SAR 的 AF、DIV 的 ZF／除法例外、DTA 保留區與平台差異仍明示。下一步核對非零顯示起點的原版返回及顯存圖像消費，不能把平台接通列為玩法矩陣閉合。
+
+## 2026-10-01：非零 VBE 顯示起點與有效頁消費
+
+**來源與規格**：隔離 dosgolem 起始 `dea1659135461bd75c796657cbaf202674d32b47`，固定官方 1.31 EXE SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`、正版 ZIP 根層 417 檔與固定 MOX.SET。規格 [266-moo2-vbe-display-start.md](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/266-moo2-vbe-display-start.md) 先 DRAFT，依 [VESA VBE 2.0 Rev 1.1，Function 07h，頁 29](https://www.phatcode.net/res/221/files/vbe20.pdf)、既有固定模式及原版同次返回審查 READY 後實作。Y 的單位是掃描線，Y=512 對應顯存 327,680 byte；只處理 X=0、完整頁可容納的有限垂直起點與讀回，標 hardware-spec approximation（硬體規格近似），不追回掃／S3 driver。
+
+**已證實，同次輔助返回**：DOSBox-X 2026.07.02 SDL2 heavy debugger、映像 ID `sha256:659e8abbf93646f59a1586341769bd4b8f3cd1c707859d7a5de4c56e4672b582`，`startup_probe_131.py --vbe-display-start` 命中 **CS:EIP** `0180:0035CCA7 → 0180:0035CCA9`，bytes=`CD 10 61 FC C3 00 00 00 00 60 66 8B 1D 5E 1A 3D`。與 dosgolem 高位 LE `0x228CA7` 前 12 bytes 相同，末段絕對資料位址不同。EAX=`4F07h`、EBX=ECX=ESI=0、EDX=`200h`，返回 EAX=`4Fh`，其餘擷取暫存器／段／EFLAGS=`246h` 保持；caller 為 POPAD／CLD／RET，完整具名架構見 266。此樣本未擷取完整 VRAM 差分。
+
+JSON／caller LOG／終端 SHA-256 `a4cd66a51d17c0c9d503bb36e9940236b3f5f05de539ccdfa7f265a09700c537`／`9ddaaebb3a2ab3fca0aad131a5c0e8acfa5920f96e7b24a5fa62453de5184881`／`730d9888d6a0d951d59a75ae6ed4eb9545cd2edaa61a92ee05e646e6edae1235`。完整原版輸入／終端留本機，最小 bytes／架構服務輸入加入回歸。
+
+**實作與驗收**：有效 Y 只在完整頁／高位／子功能驗證後更新，設定不改顯存或寫入區段。CPU MOV 與 DPMI 映射寫不同頁，索引／RGB 使用同一起點與 DAC／遮罩，快照隔離；讀回高半部保持、Y=2796 最後合法值及 2797 越界、未知形狀拒絕、模式重設回零與歷史啟用前全零返回均通過。Go 1.24.13、映像 ID `sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac`；`go test -buildvcs=false ./internal/machine -run 'TestMOO2(VBE|ProtectedVBE)' -count=1` 及固定原檔 `GOMAXPROCS=2 go test -p 2 -buildvcs=false ./... -count=1` 全套通過，後者 SHA-256 `de01f4ef9623961307f6d7d4a432c0b2a47cd21a9d784be01416776799823bdf`。
+
+**已證實，兩條自生下一停點**：同一完整輸入／分離 DOS arena，`DOSGOLEM_MOO2_SEPARATE_DOS=1 go run -buildvcs=false ./workplace/moo2-probe /tmp/game/ORION2.EXE --game-dir /tmp/game`，另一路加 `DOSGOLEM_MOO2_MOUSE_EVENT_AFTER_POSITION=1`。兩條均自行接受 Y=512，Active=true、Bank=9、StartY=512、BankSets=5、Writes=307200、DisplaySets=1；無事件第 6,738,873 步、設定後事件第 6,738,908 步，在 **dosgolem 高位 LE 線性** `0x234B10` 的 `66 83 C3 18 81 FB E0 01 00 00 7C 13 33 DB 66 BB` 拒絕。EAX=0、EBX=`F0h`、ECX=EDX=0、DS／ES／SS=`188h`、EFLAGS=`246h`、DOS 呼叫 6；拒絕後 EIP=`0x234B13`，受控回呼 started=1／completed=1。
+
+兩份 gzip SHA-256 `edc4f60dcc59ccd1237a0381e1eda792a108f04f9b99e4cf62a95374b2a6ca4a`／`81c282173de1eae0a7161767c7f2715319048a57888379d4d745ab7afd73a019`。有效頁索引 SHA-256 均 `7818f5542a0404157573be6cffc0e0c8e68ce3c0f5d17d07ccdd9313fb700baf`，RGB 均 `0b150fd32588b1daca5569992ebe559c0102c837306b1af4c44d35128ec58366`。兩條命令另設 `DOSGOLEM_MOO2_VBE_PNG=/src/workplace/moo2-vbe-266-full-game.png`／`moo2-vbe-266-mouse-event.png`，兩份 PNG SHA-256 均 `1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622`，已檢視為 640×480 黑色，索引仍全零。不同頁選擇由受控消費端測試驗證；此黑圖不能作正常玩家畫面、原版像素一致或可玩完成證據。
+
+**回填與界線**：237 的歷史全零邊界與 265 的非零停點回填 266；正常／缺定位／缺任一舊標記必拒絕，Python 語法、Go 格式、索引、全部既有回填函式及擁有權驗證通過。上一輪 265 索引仍說原版使用點待核對，本輪依已存在的實際收據修正，沒有重開已完成項。266 僅在有限服務與消費端 CONFORMED，255 仍 READY；正常玩家畫面、音效、受控亂數與 Go remake 玩法同狀態仍未完成。DIV 的 ZF／除法例外、SAR 的 AF、DTA 保留區與平台差異仍明示。下一步核對公開 word ADD、旗標／別名保存與原版使用點。
