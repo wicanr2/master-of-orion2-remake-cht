@@ -272,3 +272,12 @@
 - 隔離 dosgolem 的可丟棄探針確認原檔在 `IN 0225h` 前選了索引 `32h`；Creative 原廠指南直接定義 `32h/33h` 的左右數位語音音量、高五位有效及預設 24/31。規格 247 依 DRAFT→READY→實作→CONFORMED，只補這兩個索引的狀態保存，不推論原版實機當次音量或實際聲波。
 - 固定官方 EXE 全套 Go 測試通過，私有輸出 SHA-256 `fe95d9119cde6fb624038c04a132ff9df0694f0031b3e5928c3d78c329d23147`。正版資料自 LE entry 自生越過 `IN 0225h`，實模式呼叫正常返回；現行停點為 dosgolem 高位 LE 線性 `0x25221E` 的 `83 C8 10`，私有收據 SHA-256 `ad3568f83e7a85f70e682484bf392bac3bcd66dce42fd474e1d061b6af3083ca`。下一最小行動是核對 CPU 指令形狀及原版同次消費端，未改 Go remake 玩法。
 - 隔離 dosgolem 分支提交 `8f6bf14` 並推送 `github/codex/moo2-parity-20260930`。`git diff --check`、Go 格式、受控新檔擁有權與專案 Docker 容器殘留檢查均通過；原版 ZIP、EXE 與私有終端未加入 Git。
+
+## 2026-10-01：OR／XOR 原版樣本與 BIOS 時鐘接線
+
+- 接手主專案 `200f33ed336e0712e0da2a65a7182b63547691b2`，工作樹乾淨；沿用使用者授權的 DOS 原版／dosgolem 路線與隔離分支。知識路由命中規格閘門、硬體規格優先與文件職責，載入對應入口；沒有修改 Go remake 玩法或建立發行包。
+- 固定 1.31 EXE／正版根層 417 檔，以 DOSBox-X 2026.07.02 SDL2 heavy debugger 作輔助樣本，分別執行版控探針 `--or-register-imm8` 與 `--xor-register-imm32`，核對 raw bytes、暫存器與旗標。XOR 首段 LOG 的 PF 顯示與實際 EFLAGS 不同；同斷點續取後確認 PF=1，保留初次收據並記錄來源等級，未採錯誤顯示作測試預期。完整雜湊與位址空間見 `docs/re/dosgolem-moo2-intake-20260930.md`。
+- 隔離 dosgolem 規格 248／249 依 DRAFT→READY→實作→CONFORMED 補兩個 CPU 暫存器形狀；固定原檔全套 Go 測試通過。自然執行抵達八百萬步探針上限，尾端收據定位為等待 BIOS `046Ch` 改變；MOO2 尚未接已有 BIOS 時鐘，不以增加步數上限掩蓋缺口。
+- 規格 250 依同一流程重用 `InstallLEBIOSClock`，測試覆蓋 tick、既有 hook、CPU 狀態保留與客製向量拒絕。首次編譯的新錯誤訊息漏套件匯入；改用已有 `errors.New`，以同一容器與命令乾淨重跑。`DOSGOLEM_MOO2_EXE=/tmp/game/ORION2.EXE go test -buildvcs=false ./... -count=1` 全通過，輸出 SHA-256 `d57b7d3b9da005b9ae06105bfa2e3bfcf7b11389c92a6c830c5cda109741b91e`。
+- `DOSGOLEM_MOO2_SEPARATE_DOS=1 go run -buildvcs=false ./workplace/moo2-probe /tmp/game/ORION2.EXE --game-dir /tmp/game` 自 LE entry 離開 tick 等待；第 1,545,396 步停於 dosgolem 高位 LE 線性 `0x24C31B` 的 `INT 33h/AX=0000h`。私有收據 SHA-256 `74b73985b73a1f077f2005343fef0168df1d05dbe49d03d8f824369f5105a1b8`。下一最小行動是擷取此服務的原版輸入、返回與消費端，再審查受限滑鼠契約；目前仍無正常玩家畫面、音效或玩法同狀態對拍。
+- 隔離 dosgolem 提交 `fb541129530206f16fda6edc7630b307e0d21ceb`，已推送 `github/codex/moo2-parity-20260930`。`git diff --check`、Go 格式、Python 語法、規格索引與本輪檔案 UID/GID=`1000:1000` 均通過；dosgolem 工作樹無 root-owned 產物或 `.md` 同名目錄。主專案既有 root-owned 快取／檔案未動；本專案一次性 Docker 容器均已結束，其他專案容器未碰觸。正版 ZIP、EXE、記憶體與完整終端均留本機私有工作區，未加入 Git。
