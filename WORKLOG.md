@@ -259,3 +259,10 @@
 - `DOSGOLEM_MOO2_SEPARATE_DOS=1 go run -buildvcs=false ./workplace/moo2-probe /tmp/game/ORION2.EXE --game-dir /tmp/game` 使用正版 ZIP 根層 417 檔與官方 EXE，自 LE 入口自然完成 513／176 段落兩筆配置，越過 `04 20`、DSP `0226h` 與第二 DMA 遮罩 `D4h/05h`，現於 `DPMI 0300h → INT 66h` 的實模式 `1201:0244` 遇到未支援的 `OUT D8h,00h`；私有輸出 SHA-256 `142f0d05f0feea086353bd9cfbd5679f0dda095b9644da82cd8007376c187c06`。詳細原始雜湊、工具、位址空間與各步收據見 `docs/re/dosgolem-moo2-intake-20260930.md`。
 - 以上只證實 dosgolem 平台服務的窄範圍前進。原版與合成 PSP／環境、完整資料流仍不同，沒有正常玩家畫面、音訊或與 remake 玩法同狀態對拍。下一最小行動是查第二 DMA `D8h` 的公開規格並建立獨立平台規格；避免展開 DAC／PIT／DMA 逐週期考古。
 - 隔離 dosgolem 分支提交 `7281a38` 並推送 `github/codex/moo2-parity-20260930`。本輪 `git diff --check`、Go 格式檢查及 Docker 殘留檢查通過；新規格與私有探針輸出為目前使用者 UID/GID，未發現 dosgolem 工作樹的 root-owned 產物或誤建 `.md` 目錄。
+
+## 2026-10-01：dosgolem 第二 DMA、SB16 B0 與 BDA 啟動狀態
+
+- 固定 1.31 `ORION2.EXE` 與正版根層 417 檔，隔離 dosgolem 依規格 243／244 補第二 DMA 控制器暫存器及頁埠；規格 245 限定 SB16 `B0 30 00 00` 一個 16 位元 word 的單次傳輸、完成閘門與 IRQ。均採硬體規格近似，沒有逐週期或音訊聽感主張。固定原檔 Go 全套測試在三個階段均通過；收據、雜湊與來源見 `docs/re/dosgolem-moo2-intake-20260930.md`。
+- B0 後誤讀 `0006h` 的診斷由原始 bytes 追至 `0040:0063` 未初始化。規格 246 重用既有 DOS/4GW BIOS 資料區安裝函式，MOO2 啟動接線在成功安裝後才連接 DPMI 與共用埠，衝突直接拒絕。正常安裝、衝突無副作用測試通過；固定 EXE 全套 Go 測試輸出 SHA-256 `7fa4b1acb412bf35c9110a5e94a7349f0dc40a951a396b7b008708b8b5b46f08`。
+- 本輪原檔自行越過 `D8h`、`8Bh`、`B0h` 與原先的 `0006h` 假停點；現行真停點為 dosgolem 實模式 `1201:073F` 的 `IN 0225h`。這些是平台執行器的有界進展，尚無正常玩家畫面或與 Go remake 同狀態玩法收據；本輪未改 remake 玩法。下一最小行動是查 `0225h` 公開平台契約與原檔讀取後的消費端。
+- 隔離 dosgolem 分支提交 `642abfe` 並推送 `github/codex/moo2-parity-20260930`；`git diff --check`、Go 格式檢查及新檔 UID/GID 抽查通過。正式接線後完整資料自生收據 `workplace/moo2-probe-246-full-game.txt.gz` SHA-256 `0b3d80dc9aba63f4973089d855384e24080d8e0f529f18f4caca31e0b508667c`；原版資料與私有終端未加入 Git。
