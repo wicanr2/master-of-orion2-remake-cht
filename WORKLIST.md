@@ -46,9 +46,9 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選 DOS 原版與 dosgolem，使用本機隔離分支；DOSBox-X 僅作輔助基準。固定原版 EXE、正版 ZIP 根層 417 檔及 `MOX.SET`。255 完整座標／游標消費同狀態仍 READY；256–274 限定 CPU／平台範圍 CONFORMED。274 的 word XOR 暫存器、高半部／定義旗標與 MOV ES 消費、固定原檔全套及兩條自然路徑已驗。AF 清除只屬模型近似，兩工具初始布局不同；部分寫入、分支例外、IMUL／DIV／SAR、DTA 保留區限制仍明示。
-  **目前自然停點**：明示 `DOSGOLEM_MOO2_MAX_STEPS=50000000`，無事件第 20,100,563 步、設定後事件第 20,100,598 步，已越過 word XOR 與 MOV ES；停於高位 LE 線性 `0x239A47` 的 `CD 2F 66 89 3D 22 BC 2A 00 66 C7 05 24 BC 2A 00`，INT 2F 未處理；EAX=F1684h、EBX=5、ECX=239F20h、EDX=1、DS／SS=188h、ES=0、EFLAGS=246h。目前 VBE 與已檢視黑圖相同；途中 Simtex／MicroProse 圖像不等於主選單／玩家操作，音效、受控亂數及 remake 玩法同狀態未完成。
-  **下一步**：只依公開 INT 2Fh/AX=1684h 邊界核對實際 caller 的參數、返回與消費，審查窄工具規格後由 dosgolem 重跑；不深入平台、runtime／圖形 helper。診斷入口預設 8M、明示限 1–50M，兩種停止路徑共用 VBE 擷取；需明示較高上限重播目前停點。完整回呼仍須回到正常玩家輸入。[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md) 保存收據，工具閘門不計入玩法分母。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選 DOS 原版與 dosgolem，使用本機隔離分支；DOSBox-X 僅作輔助基準。固定原版 EXE、正版 ZIP 根層 417 檔及 `MOX.SET`。255 完整座標／游標消費同狀態仍 READY；256–275 限定 CPU／平台範圍 CONFORMED。275 的 VTD 空入口查詢已核對完整返回、原版 record 保存／讀取，固定原檔全套及兩條自然路徑通過。工具初始布局不同，部分寫入、分支例外、未定義旗標與 DTA 保留區限制仍明示，不宣稱完整同狀態。
+  **目前自然停點**：明示 `DOSGOLEM_MOO2_MAX_STEPS=50000000`，越過空入口查詢後再前進 835 指令；無事件第 20,101,398 步、設定後事件第 20,101,433 步，於高位 LE 線性 `0x239AE8` 的 `E6 43 EB 00 88 D8 E6 40 EB 00 88 F8 E6 40 A1 48` 因 OUT port 43 未處理而拒絕。EAX=1734h、EBX／EDX=174Eh、ECX=0、DS／ES／SS=188h、flags=246h。受控事件回呼已完成；當前 VBE／PNG 仍同已檢視黑圖，途中啟動標誌不等於主選單／玩家操作，音效、受控亂數及 remake 玩法同狀態未完成。
+  **下一步**：依公開硬體規格核對 43h／34h 呼叫與既有共享平台埠接線，審查窄工具規格後由 dosgolem 重跑；不逆向 timer driver、ISR／busy-wait、runtime 或圖形 helper，不追逐週期時鐘。診斷入口預設 8M、明示限 1–50M，需明示較高上限重播目前停點。完整回呼仍須回到正常玩家輸入。[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md) 保存收據，工具閘門不計入玩法分母。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備

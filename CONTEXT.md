@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-01）** — 使用者選定 dosgolem 對拍固定 1.31 `ORION2.EXE`，DOSBox-X 作輔助基準。隔離副本已接 word 暫存器 XOR，高半部／定義旗標與下一 MOV ES 消費、固定原檔全套 Go 測試及兩條自然路徑已驗；規格 256–274 限定範圍 CONFORMED，255 完整座標／游標消費同狀態仍 READY。明示 50M 上限，無事件第 20,100,563 步、設定後事件第 20,100,598 步停於高位 LE 線性 `0x239A47` 的 `CD 2F`，EAX=F1684h、EBX=5、ES=0、EFLAGS=246h；下一步只核對公開 INT 2Fh/AX=1684h 邊界及實際 caller 參數／返回／消費，不追平台或 helper 內部。途中已檢視 Simtex 標誌及 MicroProse 展開動畫；目前 PNG 與已檢視黑圖逐位元相同，尚未主選單／玩家操作。音效、受控亂數與 Go remake 玩法同狀態未完成。XOR 的 AF 清除為明示模型近似；工具初始布局、部分寫入、分支例外、IMUL／DIV／SAR、DTA 保留區限制保留。267 的原版 JL 動態結果過度聲明已訂正；詳見 `docs/re/dosgolem-moo2-intake-20260930.md` 及唯一活表 `WORKLIST.md`。
+- **DOS 原版動態驗證器（2026-10-01）** — 使用者選定 dosgolem 對拍固定 1.31 `ORION2.EXE`，DOSBox-X 作輔助基準。隔離副本已接未安裝 VTD 的 `INT 2Fh/AX=1684h/BX=5` 空入口查詢，完整返回／高半部／旗標保持、原版 record 保存與讀取、固定原檔全套及兩條自然路徑已驗。256–275 限定範圍 CONFORMED，255 完整座標／游標消費同狀態仍 READY。明示 50M 上限，兩條再前進 835 指令，無事件第 20,101,398 步、設定後事件第 20,101,433 步，停於高位 LE 線性 `0x239AE8` 的 `E6 43`，OUT port 43 未處理；EAX=1734h、EBX／EDX=174Eh、ECX=0、DS／ES／SS=188h、flags=246h。下一步依公開硬體規格核對 43h／34h 及共享平台埠缺口，不逆向 timer driver、ISR／busy-wait 或逐週期時鐘。途中 Simtex／MicroProse 圖像已檢視，當前 PNG 仍同先前黑圖，尚未主選單／玩家操作。音效、受控亂數及 Go remake 玩法同狀態未完成；空入口查詢不等於 Windows／VTD 時間已建模。工具布局、高半部、部分寫入、分支例外、未定義旗標與 DTA 保留區限制維持；267 的原版 JL 過度聲明已訂正。詳見 `docs/re/dosgolem-moo2-intake-20260930.md` 及唯一活表 `WORKLIST.md`。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為
