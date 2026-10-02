@@ -876,3 +876,50 @@ DMA8啟動／自動／stereo／FIFO、rate22050/1、block2048／sampleCredit9261
 工具f6bf96a976fb31e19b19545ae438b3abcb2006fa已推送github隔離分支、回讀一致且乾淨，未推本機origin。309限定CONFORMED；主庫RE閘門保持，完整鍵盤、255游標／299自然OF=1、人耳、主選單／玩家流程／受控亂數及整款remake未驗收。下一步只核對DOS AH2Ah公開日期契約與可重播時計來源，READY後補平台服務、同一固定Esc排程重生；不取主機即時日期猜補、不跳指令或提高上限。原版素材與完整RAM／終端／gzip／PNG仍只留本機忽略目錄。
 
 新停點的服務分類依[Microsoft MS-DOS 3.3 Programmer’s Reference，Function 2AH](https://www.pcjs.org/documents/books/mspl13/msdos/dosref33/)：AH2Ah取作業系統日期，以CX年、DH月、DL日、AL星期回傳。此處只確認分類，尚未指定日期來源或實作；下一輪須沿可重播平台契約審查。
+
+### 2026-10-03 DOS AH2Ah日期、word SUB與原版日期消費
+
+接手主庫538a1f405cdc0c39c4e2d4dbec89e1010425f8f2／工具f6bf96a976fb31e19b19545ae438b3abcb2006fa。路由載入平台規格優先；標準日期語意直接引用[Microsoft MS-DOS 3.3 Programmer’s Reference，Function 2AH](https://www.pcjs.org/documents/books/mspl13/msdos/dosref33/)，word SUB引用[Intel 80386 Programmer’s Reference，SUB](https://www.ardent-tool.com/CPU/docs/Intel/386/manuals/prref386/SUB.htm)。兩份規格經DRAFT、證據審查READY、實作與同狀態驗證才標限定CONFORMED。日期是平台規格近似，不追原版DOS driver或以主機今天猜補。
+
+#### 固定輸入與方法
+
+- 原始ZIP SHA-256 3a28a52f5953ff6d8fc251548940500236752ee19b52b51581e71ec1a3373c2f，官方1.31 patch ZIP 908d6b7b37ad580039c5d108bab2c64b28f51ba735485287d284d5f5242b98e5；417根檔、ORION2.EXE 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，MOX.SET 553 bytes／bfd6855a41760b31156b96114b5b33c88f442ab8f8aae020c1740b3b486a3a80。全部再驗通過。
+- Go1.24.13 linux/amd64，golang:1.24-bookworm映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac。容器network none、UID1000、2GiB／2CPU／128pids，外層600s；原檔／patch唯讀，新鮮解壓到容器/tmp/game。
+- 正式全套DOSGOLEM_MOO2_EXE=/tmp/game/ORION2.EXE go test -p 2 -buildvcs=false ./... -count=1。三組go run -buildvcs=false ./workplace/moo2-probe /tmp/game/ORION2.EXE --game-dir /tmp/game，固定DOSGOLEM_MOO2_MAX_STEPS=50000000、DOSGOLEM_MOO2_SEPARATE_DOS=1、DOSGOLEM_MOO2_HARDWARE_ESCAPE_AT_48000000=1。兩組明示DOSGOLEM_MOO2_CALENDAR_EPOCH=1996-01-01，第二組加既有DOSGOLEM_MOO2_MOUSE_EVENT_AFTER_POSITION=1；第三組不設日期。PNG各寫既有workplace/。
+- 日期只在AttachMachine後、兩時計零且未執行時設定，零時為UTC午夜；每日86400000000µs，以共用虛擬時計推進。DOS年1980–2099、合法Gregorian日曆、午夜與閏日測試通過。機器／時計不一致、超界或未設定即拒絕，不默默固定日期。CalendarState未設定的0只是觀測占位值，實際裝置時計仍58553364µs。
+- 未固定亂數seed，也未宣稱原版與remake亂數同狀態。既有AH2Ch仍為呼叫計數秒占位實作；本切片不宣稱作業系統日期／時間一致。未用測試IRQ1直入、BDA或遊戲欄位注入。
+
+#### 已證實的原版邊界與消費
+
+下列位址均為dosgolem高位LE；SS堆疊位址另標selector:offset，不能當作IDA或檔案偏移。兩組有日期的正式收據在受驗完整核心與裝置狀態一致，之前309基線除明示日期輸入與解壓mtime／DTA四bytes外逐列保持。
+
+| 外層步 | 原版位址／bytes | 真正執行結果 |
+|---|---|---|
+| 48796894 | 0x240A32，CD 21，AH2Ah | virtualMicros58553364；AL=1、CX=07CCh、DX=0101h，完整其他核心／flags216h保持 |
+| 48796895 | 0x240A34，66 81 E9 6C 07 | SUB CX,1900；ECX07CC→0060、flags216→206h |
+| 48796896–48796898 | 0x240A39，88 C5；0x240A3B，C1 E1 10；0x240A3E，66 89 D1 | MOV CH,AL、SHL ECX,16、MOV CX,DX：0160→01600000→01600101h |
+| 48796899 | 0x240A41，89 4C 24 08 | 只改SS0188:002BDB90四bytes為01 01 60 01，其餘32byte觀測窗／核心保持 |
+| 48796930 | 0x240A96，CD 21，AH2Ah | virtualMicros58553400，同一日期、flags246h保持，無午夜跨日 |
+| 48796931 | 0x240A98，66 81 E9 6C 07 | ECX07CC→0060、flags246→206h，其他核心保持 |
+| 48796932–48796934 | 0x240A9D／0x240A9F／0x240AA2 | 原版同一MOV／SHL／MOV形成01600101h |
+| 48796935 | 0x240AA5，89 4C 24 04 | 只改SS0188:002BDB8C四bytes為01 01 60 01，其餘32byte觀測窗／核心保持 |
+
+兩次SUB的CF=0、PF=1、AF=0、ZF=0、SF=0、OF=0以獨立公式檢查，所有65536低word×8暫存器另驗非零高16位保持。原版16條caller完整收據與兩次堆疊寫入已核對；未讀取的外部年份欄位或日期用途仍未知。既有SHL在16位移量下的未定義OF／AF只是平台近似，不以觀測結果證明硬體未定義旗標。
+
+三組PNG SHA-256皆1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622，保持先前已實際檢視的黑色過場，不稱主選單。第三組未設定日期仍在第48796894步、0x240A32拒絕，完整核心保持；除新增唯讀拒絕觀測／PNG檔名與mtime／DTA外，完整終端等於309基線。
+
+#### 測試、收據與範圍
+
+| 本機忽略目錄中的收據 | SHA-256 |
+|---|---|
+| workplace/moo2-311-sub-calendar-tests.txt，六個日期／CPU測試PASS | 8acc8abf35de1678e4c26994c3349036e373c0b7eb4fc955cd83d19c526256b2 |
+| workplace/full-test-311.txt，固定EXE全套PASS | ee661ea0e8fb6e464337402fbeb5a15a009a5a9c4c664abc8d313550b12978b2 |
+| workplace/moo2-probe-311-full-game.txt.gz | 950f0e6690aad7f7546e2dcdcfb8ddd6aeeb4b398aa001c14a483b359d5ba1f8 |
+| workplace/moo2-probe-311-mouse-event.txt.gz | 09b176610ba23b5f6b221564659a3666ed7bd8d2589b2f984a86e3e66ab4bc79 |
+| workplace/moo2-probe-311-unconfigured.txt.gz | 5f736d9fa2d296bc138ba0782212e0b775e78d6a258fb569c1d2dcb57eed2589 |
+
+先前日期消費測試因尚缺word SUB失敗，未放寬斷言；補311後同條測試通過。兩310診斷成功讀日期再停SUB，與全套之後的311正式重跑分開。自製探針loopStep宣告位置編譯失敗，只移動宣告後乾淨重跑；全部成功／診斷／可重現失敗雜湊與精確命令在鎖定310／311，最初未保存的編譯stdout不冒稱已有原始收據。53個回填驗證函式、45個新增移除證據／舊標記／連結負例及兩CLI通過，309日期停點與310 SUB停點同次追加勘誤。
+
+兩組有日期的新停點都是第48797763步、0x210C7E，bytes 66 03 05 A4 BE 29 00，word ADD AX,DS:[0x29BEA4]未支援；部分解碼後EIP0x210C81不代表成功。完整R為F／0／2BDCDC／8／2BDBD4／2BDBE0／284324／2BDCA4，六段8／188／188／0／20／188，flags202h。實際來源word與欄位用途未知；下一條66 A3 A2 BE 29 00到DS:[0x29BEA2]尚未執行。兩時計58554306，IRQ0 started8022／completed8022／failed=false；IRQ7 started304／completed304，DMA完成304／剩2011／credit25200／current4025h／count0FDAh。主選單、正常玩家流程、255游標、299自然OF=1、受控亂數、人耳與整款remake仍未驗收，主庫玩法RE閘門保持。
+
+工具ba3239ce0696f2e9bf898b543cee04a8ff455cab已推送github隔離分支、遠端回讀一致且乾淨，不推本機origin。[鎖定310](https://github.com/wicanr2/dosgolem/blob/ba3239ce0696f2e9bf898b543cee04a8ff455cab/docs/spec/310-moo2-dos-calendar-date.md)及[鎖定311](https://github.com/wicanr2/dosgolem/blob/ba3239ce0696f2e9bf898b543cee04a8ff455cab/docs/spec/311-cpu386-sub-word-register-imm16.md)保存限定CONFORMED與來源雜湊；原版素材、完整RAM／終端／gzip／PNG只留本機。
