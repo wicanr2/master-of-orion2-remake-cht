@@ -795,3 +795,12 @@
 - 新CPU阻塞49442083步、高位LE17122B／00 C3，完整狀態已保存。已實際檢視終圖仍主選單，設定畫面、正常開局與remake同狀態未完成。下一步為公開byte ADD契約與READY／實作／同輸入重生，不追檔案helper內部，不重點或提高cap。
 - 原ZIP／官方patch／417根檔／EXE／MOX.SET重新核對，原始LOG／PNG／素材留忽略workplace。工具e75f5aebed41cccb062609235dd2f0b07ffae371已推送github並回讀一致、工作樹乾淨，未推本機origin；來源／收據與固定連結見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。本輪Docker一次性工作均已退出，工具無root-owned或誤建.md目錄；主庫既有root-owned2709項保持，沒有遞迴修權限。交付前另核對主庫差異與最終HEAD。
 - 提交前文件差異審查發現活表替換邊界過寬，已修正；原RE策略與其餘待辦全文逐字保持，四文件／七私有收據／四鎖定規格／擁有權檢查PASS。問題版本未提交。
+
+## 2026-10-03：byte ADD與記憶體目的
+
+- 上一輪152bd13／e75f5ae為實質進度。本輪載入平台規格優先，文件職責與結論回填沿既有入口；324先READY再改隔離工具CPU，主庫Go玩法RE閘門保持。
+- 補無前綴00 /r暫存器與記憶體目的，成功寫入後才發布六旗標。七新增主測試涵蓋所有byte對／64別名／DS／SS／SIB／界限／Bus與prefix拒絕。定向PASS；固定EXE全套go test -p 2 -buildvcs=false ./... -count=1 PASS，CPU386195.653s／machine6.976s。
+- Docker Go1.24.13固定映像、600s／2GiB／2CPU／128pids／UID1000／network none。先go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe，兩條同44M Esc／日期／50M／separate DOS、只有點擊加正常單次輸入。無點擊全部323基線及PNG保持，點擊舊拒絕前4089列與第一ADD完整核心保持。
+- 原版1暫存器／7記憶體ADD、24續行與CMP／JGE兩方向逐筆PASS。來源BL皆0，這次窗口保持；非零另由平台測試覆蓋。新阻塞49501135／高位LE2130F3／F7 5D D8記憶體NEG，SS來源尚未取樣，不由EAX推測。終圖仍主選單，設定畫面／正常開局與remake同狀態未完成。
+- 首次唯讀呼叫自動核准審查逾時、未建立程序，依回報重試一次成功。前綴稽核初版錯含舊失敗後快照，修正切點並加第一ADD原始核心核對後PASS；正式來源／收據不改，均未寫成產品失敗。61回填函式、原有32／49與新增25負例及兩CLI PASS。
+- 工具f31793166415705c75a81339808372da24cded44已推送github、回讀一致與工作樹乾淨，未推本機origin。來源／私有收據／固定規格連結見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。本輪一次性Docker工作均已退出；工具無root-owned或誤建.md目錄，主庫既有2437檔案／272目錄保持，不遞迴修權限。最小下一步為公開dword記憶體NEG契約與同原版輸入驗證，不重開已驗ADD／CB／FindFirst。

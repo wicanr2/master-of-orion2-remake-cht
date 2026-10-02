@@ -1095,3 +1095,31 @@ Go1.24.13固定映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540
 Go1.24.13固定映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch只讀。建置／原版命令沿322，只換323輸出前綴；兩44M初態、日期、50M、separate DOS預先固定，只有點擊模式加正常點擊旗標。固定EXE DOSGOLEM_MOO2_EXE=/tmp/game/ORION2.EXE go test -p 2 -buildvcs=false ./... -count=1全套通過，CPU386194.255s、machine6.660s。定向搜尋測試先修正測試包裝型別後乾淨重跑，屬測試工具問題。60回填函式、原有32與新49負例及兩CLI通過。CPU來源保持538abd53a40d65cc07b33cbeaf272d3541cd6dd4622c4fa17a5d8244a0521a77；323 startup dbdbba06c9616547ad7beaec251f4aceb8a9b07d44ed6ffab2e53911ec7e972c，probe feb3b80caa1b220aa6ee3c47856bebb70dda40d1b9a47b45d03186b955ffdbc4。
 
 工具e75f5aebed41cccb062609235dd2f0b07ffae371已推送github隔離分支並回讀一致、工作樹乾淨，未推本機origin。[鎖定320](https://github.com/wicanr2/dosgolem/blob/e75f5aebed41cccb062609235dd2f0b07ffae371/docs/spec/320-moo2-button-read-hook-control.md)、[鎖定321](https://github.com/wicanr2/dosgolem/blob/e75f5aebed41cccb062609235dd2f0b07ffae371/docs/spec/321-moo2-menu-mouse-event-consumer.md)、[鎖定322](https://github.com/wicanr2/dosgolem/blob/e75f5aebed41cccb062609235dd2f0b07ffae371/docs/spec/322-moo2-earlier-escape-new-game-continuation.md)、[鎖定323](https://github.com/wicanr2/dosgolem/blob/e75f5aebed41cccb062609235dd2f0b07ffae371/docs/spec/323-moo2-dos-findfirst-question-pattern.md)保存中間與最終來源雜湊、原始定位、限定CONFORMED、命令／收據／近似與未知。完整新遊戲、正常玩家路徑與remake同狀態未完成；下一步依公開CPU契約補00 C3的byte ADD，先READY再實作、全CPU回歸、同44M正常單次輸入重生與有界consumer驗證，不提高cap或重新開已驗CB／FindFirst。
+
+### 2026-10-03 byte ADD與真正記憶體消費
+
+上一輪152bd136b0731b447b838528bf453e267a55727d／工具e75f5aebed41cccb062609235dd2f0b07ffae371為實質進度。本輪命中平台規格優先、文件職責與結論回填，324先DRAFT／READY再改通用CPU與唯讀探針；主庫Go玩法不改。固定官方1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，正版417根檔與MOX.SET、同44M Esc／1996-01-01／50M cap及單次正常NEW GAME輸入保持，沒有新種子、代寫、直接進入helper或加cap。
+
+依[Intel 80386原始ADD契約](https://people.freebsd.org/~jhb/386htm/ADD.htm)，無前綴00 /r同時支援八byte暫存器目的／來源與32位一般位址、DS／SS、disp8／disp32／SIB／no-base的記憶體目的。目的只改一byte；記憶體寫入成功後才發布六旗標。沿既有add8與decodeAddress32，不複製原版helper控制流或猜欄位名，未審查prefix仍拒絕。
+
+**已證實，dosgolem高位LE正常原版**：49442083步17122B／00 C3到17122D，R0／0／1／0／2BDB50／2BDB84／2BDB68／2BDB68與六段8／188／188／0／20／188保持，BL0＋AL0仍0，flags247h→246h。下一MOVSX EAX,DX只EAX0→1，INC EDX只EDX1→2、flags246h→202h。七次171231／00 1C 06到171234，實際DS188:[ESI+EAX]為2BDB69..2BDB6F，BL皆0，目的D5／D4／D5／D5／D5／D5／D5及五byte鄰接窗口保持；六旗標以獨立較寬和、低nibble進位、有號範圍與popcount逐筆核對。這次沒有原版非零寫入樣本，非零由完整平台測試覆蓋，不稱另一個遊戲初態也已對拍。
+
+24原始續行全部無錯；七個171234／66 83 FA 08的CMP DX,8六旗標及七個171238／7D 11的JGE核對，六次不跳、一次跳，最後DX8到17124B。沒有用單一分支或自製fixture代替正常原版入口。兩CB仍started2／completed2、191步、pending0／activefalse；原版問號搜尋與先前事件契約保持。
+
+無點擊全部323列與終圖、點擊舊拒絕前4089列及第一ADD完整輸入保持，只正規化mtime／DTA時間日期四bytes／PNG路徑。首輪稽核誤以guest_cpu_stop作前綴切點，包含其前四個失敗後快照；第一差異正是label=stop。修正到首次失敗快照前並另核對第一ADD核心，乾淨重跑PASS，沒有修改正式來源／收據或放寬資料比較。
+
+正常再前進59052步，新拒絕49501135，高位LE2130F3／F7 5D D8 8B 45 D8 66 3B 45 E0 0F 8D A8 00 00 00，F7／3記憶體NEG尚未支援；fetch後EIP2130F5不表示NEG成功。完整RFFFFFFFF／498AC0／8／47／2BD9B8／2BD9F4／495230／2BDACC，六段8／188／188／0／20／188，flags286h，時計64507253、IRQ7完成432。標準ModR/M對應SS:[EBP-28h]／SS188:2BD9CC，來源RAM未取樣，不能由EAXFFFFFFFF推測。
+
+| 本機忽略收據 | SHA-256 |
+| --- | --- |
+| workplace/dosgolem/workplace/byte-add-324-tests.txt | a48db475b0157766892c6a47f7d333682b4575457fcefa954df4b7968f5a0073 |
+| workplace/dosgolem/workplace/full-test-324.txt | dd00bcf329a9841fa4810d94a30f90c76245bcee66c0718c6073a6862464656a |
+| workplace/dosgolem/workplace/moo2-probe-324-baseline.txt.gz | 6130a9fe5bf084b2128c700c9e10fb821d43bd6ee8a474933015e8272d7eb0e1 |
+| workplace/dosgolem/workplace/moo2-probe-324-click.txt.gz | c9e8b2d3d15c4b8a64fb9ff497513b2a294b67b9a682b5584dc9156d873bf1e3 |
+| workplace/dosgolem/workplace/byte-add-324-backlink-tests.txt | 7e134f37db5edeb23ee21a6258a1e5f0655654d2d29663080460d4ed43f1554b |
+
+Go1.24.13固定映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀。go test -p 2 -buildvcs=false ./internal/cpu386 -run 'TestByteADD00|TestByteRegisterANDADDAndAliases|TestByteADDRegisterImmediate' -count=1 -v PASS，七新增主測試、所有byte對與64暫存器別名、ModR/M／SIB／DS／SS／段末／地址繞回／Bus／prefix拒絕與R／六段／FPU／鄰接RAM通過。固定EXE DOSGOLEM_MOO2_EXE=/tmp/game/ORION2.EXE go test -p 2 -buildvcs=false ./... -count=1全套PASS，CPU386195.653s／machine6.976s。go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe後兩正常流程，環境沿323只換324輸出名稱。61回填函式、原有32／49與新增25負例及兩CLI通過。
+
+CPU來源SHA-256 d3fd7c1125d6ecda2fbc05f021776a0532a820af6babea1f3693dc6608aace4e，probe118203d32391772177dd96e6da2539886618a73bb76f14ec8e161399dc98a985，測試10b6297576161f93de3c7f9b9dc6388b02e2fa1c1d985ff2404a22c8923bc58a。DOS startup／provider／matcher保持323。兩終PNG與已實際檢視的323逐位元相同，點擊仍59f76749db5232f97a6b6f969f56f848c2e89e731d7e3fb30b8786982bca4a81、主選單，設定畫面仍未知。完整LOG／PNG／RAM／原素材留本機，不進Git。
+
+工具f31793166415705c75a81339808372da24cded44已推送github隔離分支並回讀一致、工作樹乾淨，未推本機origin。[鎖定324](https://github.com/wicanr2/dosgolem/blob/f31793166415705c75a81339808372da24cded44/docs/spec/324-cpu386-add-byte-register-memory.md)保存限定CONFORMED、正式輸入／窗口／兩方向、精確來源與未知，323停點同次回填。不將標準CPU工具能力加入玩法分母。下一步依公開NEG契約READY／實作／固定EXE全套與同44M正常單次原版重生，核對實際SS來源與最小caller，不追helper內部、不重點、代寫或加cap。主庫玩法RE閘門及整款remake／中文化目標保持，正常開局／remake同狀態未完成。
