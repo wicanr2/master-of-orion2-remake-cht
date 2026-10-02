@@ -46,9 +46,9 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅作輔助基準。固定官方EXE、正版ZIP根層417檔及MOX.SET。256–302限定CPU／平台CONFORMED，299限公開CPU契約／未有MOO2自然OF=1同狀態收據；277／301已驗自然IRQ0返回，302持續到50M上限且IRQ0全部已開始呼叫皆返回，255完整座標／游標消費仍READY。全部CPU與固定原檔全套已驗；不宣稱完整硬體時鐘、核心布局／跨權限鏈或玩法同狀態。
-  **目前自然終態**：兩個排程持續至50,000,000步診斷上限，根CPU高位LE0x22FCD2，完整R為FFFFFFFF 4000 0 0 2BDB64 2BDBB4 FFFFFFFF 3D6978、段8 188 188 0 20 188、flags246h。沒有step_error／guest_cpu_stop，不把上限當CPU拒絕。兩自然三組完整XCHG／兩高16位與全部旗標保持及下一ROR EBX,8真正完整消費已驗，第一EAX=0A0A0A0Ah／EBX=2E0A0A2Eh，ROR結果2E2E0A0Ah。IRQ0 active=false／failed=false／started7789／completed7789，等待6195；VBE兩PNG同雜湊且已檢視星空／星雲片段，尚未見主選單。C6命令／handled返回／成功caller與來源收據保持，保護模式連續PCM／IRQ7與人耳未驗。受控滑鼠事件分支覆蓋17697、無事件17667，完整終態／圖像相同；255座標／游標、正常操作／受控亂數、299原版自然OF=1及remake玩法同狀態未完成。
-  **下一步**：先核對既有探針與dosgolem的正常鍵鼠輸入支援，在這個啟動流程尾端caller邊界有限唯讀保存完整狀態與平台音訊／時計進度，確認原版所等條件後以正常輸入重播；不猜修等待條件或盲目提高上限。標準CPU／硬體語意用公開契約，不深入helper／runtime／IRQ0 handler／ISR或driver時序、不猜玩法。探針尾端固定32筆，診斷入口預設8M、明示限1–50M。[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)保存收據及近似邊界；工具閘門不計入玩法分母。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅作輔助基準。固定官方EXE、正版ZIP根層417檔及MOX.SET。256–302限定CPU／平台CONFORMED，299未有MOO2自然OF=1同狀態收據，255完整座標／游標仍READY。303有限唯讀觀測已驗，平台契約仍DRAFT；CPU／平台來源未改。已驗全部CPU／固定原檔全套及自然IRQ0返回；不宣稱硬體時鐘、核心布局／跨權限鏈或玩法同狀態。
+  **目前自然終態**：兩個排程至50,000,000步診斷上限，根CPU高位LE0x22FCD2、flags246h，完整R／段及三組XCHG／ROR、IRQ與圖像收據保持302，沒有CPU拒絕。IRQ0 started7789／completed7789，兩PNG同已檢視星空片段，尚未見主選單。303各11快照證實BIOSMicros43985659至52095937、音訊VirtualMicros固定1375，DMA8 active／block剩2048、completions0／PCMBytes0固定；先前DMA16完成1／PCM16Bytes2／IRQ7派送1保持。原版AH2509安裝保護模式IRQ1 8:21C4D8，正常鍵盤尚未接通，未注入按鍵。高位LE0x2A8E54原始四bytes零值，語意與等待因果未知；255座標／游標、正常操作／受控亂數、299自然OF=1、人耳及remake同狀態未完成。
+  **下一步**：以公開Sound Blaster／PIC契約與原版IRQ7向量呼叫邊界，審查保護模式／實模式共用裝置時間、避免重複推進及派送錯誤的窄平台規格，READY後修正並用相同初態重跑。鍵盤另依既有保護模式IRQ1與埠契約建立正常輸入，不用BIOS入隊替代。未證實等待因果前不猜欄位用途、不跳指令或盲目提高上限；不追helper／runtime／driver／ISR／busy-wait。探針固定有限快照及尾端32筆，入口預設8M、明示限1–50M。[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)保存303收據與近似邊界；工具閘門不計入玩法分母。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備

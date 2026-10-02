@@ -789,3 +789,23 @@ VBE Bank9／StartY512／BankSets497／Writes4744640／DisplaySets7，indexed SHA
 CPU收據SHA-256 d05045f43ddfdf2021e0a6eee727ac4463aa7fe29310821169828fdd1ba75dbb；固定EXE全套263845c9b6cd1109b941dcf14740b3b19926bb0b4e94385d9073271f3b99f8cc；兩自然gzip fe3472fa0d7766a761b3b5f7cc5fab8cc22a296a16d0e947e3a093a62826be87／ae21d6b88b831f10addae20471effd45d0ce0e163de3d9067d0840829f4f44e9。來源／CPU／probe／新測試、真正前態、公開Intel契約與全部精確命令見[鎖定規格302](https://github.com/wicanr2/dosgolem/blob/9e6ee8cea7e40fdf13528fdae6b7959361708aaa/docs/spec/302-cpu386-xchg-ax-word-register.md)。原版ZIP／patch／417根檔／EXE／MOX.SET雜湊再核對一致；原始素材及完整終端／記憶體／gzip／PNG留本機。
 
 293–301九份舊停點及索引同次回填，45個回填函式／36項新缺證據負例／CLI與兩自然完整消費、IRQ持續返回／50M上限核對通過。工具提交9e6ee8cea7e40fdf13528fdae6b7959361708aaa已推送github隔離分支並回讀一致，不推本機origin。下一步先核對既有正常鍵鼠入口與尾端caller的有限唯讀狀態／平台音訊與時計進度，確認所等條件後以原版正常輸入重播；不猜修等待或盲提高上限，不追helper／runtime／driver／ISR硬體時序，不改主庫玩法。
+
+
+## 2026-10-02：晚期啟動的平台時計與正常輸入邊界
+
+已證實：工具基線9e6ee8cea7e40fdf13528fdae6b7959361708aaa，303只加11筆有限唯讀平台快照，CPU及三份平台來源與302雜湊保持。固定官方1.31 EXE、417原檔及MOX.SET，以相同Go1.24.13映像／600秒／2GiB／2CPU／128pids／UID:GID1000:1000／network none，兩自然至50M上限，未注入按鍵／資料或改時計／IRQ橋接。完整初終態／三組XCHG與ROR／IRQ0／圖像收據與302一致，排除新增快照、PNG輸出名、解壓mtime及DOS DTA時間日期四bytes；檔案內容及尺寸未變。
+
+| outer_step | BIOSClock.Micros | LEDeviceState.VirtualMicros | DMA8剩bytes／完成／PCMBytes |
+| --- | --- | --- | --- |
+| 42347255 | 43985659 | 1375 | 2048／0／0 |
+| 42603292 | 44292269 | 1375 | 2048／0／0 |
+| 48000000 | 49985912 | 1375 | 2048／0／0 |
+| 50000000 | 52095937 | 1375 | 2048／0／0 |
+
+DMA8啟動／自動／stereo／FIFO、rate22050/1、block2048／sampleCredit926100保持。LEOPLPorts.AdvanceRealMode才推進裝置時間，保護模式BIOSClock.advance沒有接這條鏈；自然快照證實音訊裝置進度未隨保護模式前進。先前實模式DMA16Completions1／PCM16Bytes2／IRQ7Deliveries1仍在，不稱整段無IRQ7。這些是工具缺件證據，原版目前等待是否因此造成仍未知，時間只屬既有近似。
+
+原版高位LE0x239833的DOS AH2509以DS=8／EDX=21C4D8h安裝保護模式IRQ1。全部快照鍵盤未安裝、讀取／入隊與60h／61h／64h埠讀取零，BDA queue bytes1E001E00，實模式INT09／absolute IVT09零；工具正常鍵盤入口尚未接。受控滑鼠第1612067步注入x657／y189／buttons0，回呼started1／completed1，沒有按鍵。BIOS入隊不能代替未驗的保護模式IRQ1消費，不追handler內部。高位LE0x231AE4／0x231AEB／0x22FCD2各兩筆晚期快照的原始0x2A8E54四bytes皆零，只記比較條件，欄位語意及等待因果未知。
+
+兩自然仍是根CPU高位LE0x22FCD2、flags246h，無CPU拒絕，IRQ0 started7789／completed7789，PNG同已檢視星空片段，主選單未見。兩gzip SHA-256 a4920940f3006218f9fdfb6d33085d7d7e18c4bc6095adffe8e31c3e62e23a28／c8f8517db2c90c06e9f109f8a9789fd392d7d430b941841ac18fca896f945db5；兩PNG同SHA-256 d648932f847a2fe5b87723b6537f76e816d64fb60e05c13321d15ede50f3b21b。原版輸入、來源、probe與全部精確命令及證據等級見[鎖定規格303](https://github.com/wicanr2/dosgolem/blob/90b9f4acb3c7e55829973c51a39fe12cb2129df3/docs/spec/303-moo2-late-startup-platform-observation.md)。完整終端／記憶體／gzip／PNG與原版素材留本機，不散布原版美術。
+
+完整收據／五來源雜湊／11快照／AH2509核對通過，45個既有回填函式／36項缺證據負例及CLI保持。工具90b9f4acb3c7e55829973c51a39fe12cb2129df3已推送隔離分支並回讀一致，不推本機origin。303觀測已驗但平台契約仍DRAFT，未證明等待解除；下一步以公開Sound Blaster／PIC及原版IRQ7向量呼叫邊界審查共用裝置時間與正確派送，READY後實作，鍵盤另依保護模式IRQ1／埠契約處理。255、299自然OF=1、主選單／正常玩家路徑／受控亂數、人耳與整款remake仍未驗收，主庫玩法RE閘門保持。
