@@ -923,3 +923,29 @@ DMA8啟動／自動／stereo／FIFO、rate22050/1、block2048／sampleCredit9261
 兩組有日期的新停點都是第48797763步、0x210C7E，bytes 66 03 05 A4 BE 29 00，word ADD AX,DS:[0x29BEA4]未支援；部分解碼後EIP0x210C81不代表成功。完整R為F／0／2BDCDC／8／2BDBD4／2BDBE0／284324／2BDCA4，六段8／188／188／0／20／188，flags202h。實際來源word與欄位用途未知；下一條66 A3 A2 BE 29 00到DS:[0x29BEA2]尚未執行。兩時計58554306，IRQ0 started8022／completed8022／failed=false；IRQ7 started304／completed304，DMA完成304／剩2011／credit25200／current4025h／count0FDAh。主選單、正常玩家流程、255游標、299自然OF=1、受控亂數、人耳與整款remake仍未驗收，主庫玩法RE閘門保持。
 
 工具ba3239ce0696f2e9bf898b543cee04a8ff455cab已推送github隔離分支、遠端回讀一致且乾淨，不推本機origin。[鎖定310](https://github.com/wicanr2/dosgolem/blob/ba3239ce0696f2e9bf898b543cee04a8ff455cab/docs/spec/310-moo2-dos-calendar-date.md)及[鎖定311](https://github.com/wicanr2/dosgolem/blob/ba3239ce0696f2e9bf898b543cee04a8ff455cab/docs/spec/311-cpu386-sub-word-register-imm16.md)保存限定CONFORMED與來源雜湊；原版素材、完整RAM／終端／gzip／PNG只留本機。
+
+### 2026-10-03 word ADD 來源、真正寫回與原版載入畫面
+
+主庫基線fb7461f138e7a1efc44ad7eb2afc8a83cab1adc8／工具ba3239ce0696f2e9bf898b543cee04a8ff455cab。路由命中平台規格優先、規格流程與結論回填；來源引用[Intel 80386 Programmer’s Reference，ADD](https://www.ardent-tool.com/CPU/docs/Intel/386/manuals/prref386/ADD.htm)，標準CPU語意不深挖遊戲runtime helper。固定官方1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，原始ZIP／patch／417根檔／MOX.SET雜湊保持並再次核對。工具Go1.24.13／golang:1.24-bookworm固定映像，2GiB／2CPU／128pids／UID1000／network none／600s，原檔及patch唯讀、/tmp/game乾淨組合。
+
+312經DRAFT唯讀診斷，原CPU來源保持311 SHA-256 cfe5bc387aee00907acd897c3c6b77a5e4186828250e53fbc0513d0e40b504e1。正常48M Esc／明示1996-01-01初態在高位LE0x210C7E讀DS0188:0029BEA0窗口0F00000002000200；來源word0002h、AX000Fh，其餘完整核心／RAM／拒絕保持。診斷gzip 8f0c14193c36e21a76b16af706dd7d7a3ce44d72fd1288421c95181d2b97a778，除新增觀測、PNG名稱及mtime／DTA四bytes外完整等於311。公開03 /r與既有32bit effective address／readSegment16足以READY後接word記憶體來源，完整取得才用add16，不改玩家玩法或猜資料用途。
+
+**已證實，dosgolem正常入口重生**：兩明示日期流程第48797763步，0x210C7E的66 03 05 A4 BE 29 00真正得到EAX00000011、flags216h，獨立六旗標CF0／PF1／AF1／ZF0／SF0／OF0及全部其他核心／來源只讀已驗。第48797764步0x210C85的66 A3 A2 BE 29 00只寫DS0188:0029BEA2兩bytes11 00，窗口變0F00110002000200；來源與其餘六bytes／R／六段／flags保持。後續0x210C8B的BB 00 01 00 00令EBX8→100，0x210C90的8B 45 F4觀測EAX11→4；後者SS來源未另存窗口，其欄位用途未知。全部四caller／311前基線、核心／時計／音訊與IRQ7／VBE兩排程一致。
+
+兩排程原先有／無既有受控滑鼠事件，現在各完成1／0回呼，不能聲稱整體初態相同。首次稽核誤要求mouse_started／completed相等，查明只有這兩個計數不同後，依已明示初態各驗1／0，其餘被比較欄位保持嚴格一致，未改CPU／平台或遊戲資料。255完整座標／游標與玩家操作仍未驗收。第三組不設定日曆，完整終端除mtime／DTA與PNG名稱外保持311的0x240A32拒絕，沒有word ADD觀測或默認日期。
+
+兩組新停點第48919460步、高位LE0x14E3DE，bytes66 81 F9 D4 00 0F 8C 45 FF FF FF E8 D0 04 0A 00；word CMP CX,00D4h尚未支援，CX0001h、完整R为FFFFFFFF／1／958／29BE7C／2BDBA4／2BDBD0／2600CD／2BDC2C，六段8／188／188／0／20／188，flags293h。EIP14E3E1是部分解碼，非比較成功；後續0F 8C有號分支尚未執行。兩時計58965328、IRQ0 started8059／completed8059／failed=false，IRQ7 started312／completed312；DMA完成312／剩269／credit95400／current46F3h／count090Ch。裝置irq7_deliveries313含先前16位傳輸，不混用完成數。
+
+兩PNG SHA-256 2d0d564f814e49eab6081862f52467b1a7b232c026d3632fd2c7d97c42545e65，已實際檢視原版Loading Master of Orion II載入畫面與中央游標，主選單仍未驗。VBE Bank7／StartY512／BankSets731／Writes5696552／DisplaySets9。第三PNG保持已檢視黑色過場1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622，不把三圖都稱同一結果。
+
+| 本機忽略目錄收據 | SHA-256 |
+| --- | --- |
+| workplace/moo2-312-add-memory-tests.txt，三新CPU／三既有ADD回歸PASS | ca5f3b75d5f344dd147483f67a9bfdefeee1afe7c5cb8fdef3e75a36bd1afe9d |
+| workplace/full-test-312.txt，固定EXE全套PASS | a8ed7290acc8531000959f85d968bfa137237a9d8fa448707838d7f56ccebfc7 |
+| workplace/moo2-probe-312-full-game.txt.gz | 35b61654a285c65c619fee17cd49c86720e2fc0def4d405c06552bdfe04d4fc9 |
+| workplace/moo2-probe-312-mouse-event.txt.gz | 32274bc6d48f28dad1567c74ee515e3a7867f4a8c12b2764c830c79abe6ebb14 |
+| workplace/moo2-probe-312-unconfigured.txt.gz | d2d1475f15c94cccd43c012f98427571475c444548decff883f34a73aa7de904 |
+
+全部八目的／全word／49組邊界與獨立六旗標、完整非零FPU／RAM保持、地址／只讀／拒絕及真正寫回測試通過。首輪自製測試誤用不存在FPU欄位，只改為實際完整欄位後同命令重跑；保留編譯失敗收據，不當作產品玩法缺陷。正式命令沿310，輸出311改312，固定EXE全套後順序三組go run，明示日期、50M上限、48M Esc、有／無既有事件／第三未設定均保持，不啟用私有IRQ1直入。全部54回填函式、31新增缺證據／狀態／舊標記／連結負例及CLI通過，309／310／311同一ADD停點追加勘誤。
+
+工具f2d982a7d9383a2b536d9540cb5b8b9e860f6284已推送github隔離分支、遠端回讀一致且乾淨，未推本機origin。[鎖定312](https://github.com/wicanr2/dosgolem/blob/f2d982a7d9383a2b536d9540cb5b8b9e860f6284/docs/spec/312-cpu386-add-word-memory-source.md)保存限定CONFORMED、來源／工具／輸入、精確命令、全部成功／診斷／失敗雜湊與近似。原始素材與完整RAM／終端／gzip／PNG只留本機。AH2Ch／RNG、255／299自然OF=1、人耳、完整鍵盤、主選單／正常玩家流程與remake同狀態未驗，主庫玩法RE閘門保持。下一步限定word CMP及原有有號分支，不深入helper或提高上限。
