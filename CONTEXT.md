@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-01）** — 使用者選定 dosgolem 對拍固定 1.31 `ORION2.EXE`，DOSBox-X 僅作輔助基準。隔離副本已補標準 CS 記憶體 CMP 與 CS 絕對 word 載入 ES；256–276、278／279 限定 CPU／平台範圍 CONFORMED，255 及 277 完整 IRQ0／模式 2 等待仍 READY。有限原版單指令資料／完整旗標與全部 CPU、固定原檔全套通過；現行兩個自然排程條件原版 IRQ0 已成功返回五次，第六次於第 1,231,392 步在高位 LE `0x244E9C` 的 `CB` 遠返回拒絕，started=6／completed=5，完整外層狀態恢復 `0x246596`。PIT 模式 3／Reload=14916，DS offset `0x271148` 仍零；完整等待、主選單／正常操作、音效、受控亂數與 Go remake 玩法同狀態尚未完成。事件條件 requested=true／injected=false，兩條都在實際注入前停止，不算兩條玩家輸入分支驗收。現行 PNG 同已檢視黑圖，早期標誌圖仍是歷史。下一步只按公開 CPU RET 契約補標準 CB 的有限輸入／返回驗證後自然重跑，不解 ISR、driver／busy-wait、逐週期時鐘或猜寫等待值。私有布局、時計與完整 IRQ 鏈保持明示近似／未知；工具提交 `0e6a69b0ca1971bc9235fb9727bc26d6e57eb2ed`，深層證據見 `docs/re/dosgolem-moo2-intake-20260930.md`，可執行事項只在 `WORKLIST.md`。
+- **DOS 原版動態驗證器（2026-10-02）** — 使用者選定 dosgolem 對拍固定 1.31 ORION2.EXE，DOSBox-X 僅作輔助基準。隔離副本已補同權限 32 位 CB 遠返回；256–276、278–280 限定 CPU／平台 CONFORMED，255 及 277 完整 IRQ0／模式 2 等待仍 READY。有限原版框架／完整返回、全部 CPU 與固定原檔全套通過。兩個自然排程第 1,231,392 步都越過高位 LE 0x244E9C 的 CB，返回合成平台 CS:EIP 0108:00326008、ESP=FF4h，接著由既有預設核心鏈未建模護欄拒絕；外層完整恢復 0x246596。started=6／completed=5，PIT 模式 3／Reload=14916，DS offset 0x271148 仍零，事件 requested=true／injected=false；不能當完整等待或兩條玩家分支已驗。PNG 同已檢視黑圖，早期標誌仍是歷史。下一步只依公開 DOS/4GW chaining／結束鏈介面建立新受限平台規格，READY 後實作；不解 ISR／driver／busy-wait、不猜寫等待值或追逐週期。主選單／正常操作、音效、受控亂數與 Go remake 玩法同狀態尚未完成；工具提交 3e260dcf2215228d840b98242c1226ab7f902456，深層證據見 docs/re/dosgolem-moo2-intake-20260930.md，可執行事項只在 WORKLIST.md。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為
