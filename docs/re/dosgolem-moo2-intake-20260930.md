@@ -1017,3 +1017,25 @@ Go1.24.13固定映像，600s／2GiB／2CPU／128pids／UID1000／network none，
 輔助Go量測首輪asm fork受64pids限制，明示GOMAXPROCS2／go run -p2後同映像乾淨重跑通過，屬工具環境；原版流程與素材不改。57回填函式、21缺定位／終態／收據／314勘誤負例與CLI通過。新probe SHA-256 546c234534a8f82e3a5e37de82e95fc46d220af0e428184ac2eafbaf64fc530d，CPU／平台source與314保持。
 
 工具f1c2fa57675991080e2da3d1f5008b9b49f209bc已推送github隔離分支，回讀一致且乾淨，未推本機origin。[鎖定315](https://github.com/wicanr2/dosgolem/blob/f1c2fa57675991080e2da3d1f5008b9b49f209bc/docs/spec/315-moo2-menu-slide-observation.md)保存限定CONFORMED、逐幀定位／工具、命令／收據與314勘誤。原素材／快照／完整終端留本機；303整體DRAFT、255游標READY、299自然OF=1、AH2Ch／RNG、人耳、完整主選單／玩家路徑與remake同狀態未完成，主庫玩法RE閘門保持。下一步先定明示46M Esc獨立排程契約，再沿既有IRQ1驗正常輸入，與48M基線分開，不提高50M上限或代寫／跳動畫。
+
+### 2026-10-03 明示46M Esc與原版主選單按鈕
+
+基線主庫655dd1832a76200f02e659400757aa9b67b5941e／工具f1c2fa57675991080e2da3d1f5008b9b49f209bc。平台規格優先，沿307已證的控制器／原版IRQ1；316審查READY後只改探針輸入參數與快照門檻，CPU／平台／主庫玩法不改。固定官方1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f；原ZIP／patch／417根檔／MOX.SET再驗保持。
+
+**已證實，dosgolem高位LE正常入口**：預先固定DOSGOLEM_MOO2_HARDWARE_ESCAPE_STEP=46000000，日期1996-01-01零時，50M cap，兩初態有／無既有受控滑鼠分開。46000000步0x257BC3排01／81，原版8:21C4D8各97／77步CF返回8:21C573，實際60h讀取與20h EOI；正常原caller續行257BC8／257BCA。排隊前每一原始列與315對應初態前綴保持，沒有宿主代寫欄位或直接呼叫handler。
+
+兩46M到50M高位LE0x2385AC，無未支援指令，完整R／六段／flags246h及裝置相同，時計64282188、IRQ0完成8401、IRQ7完成427。有／無既有受控回呼1／0與allocator selector差異保留，與48M不同輸入時點不冒稱同初態。VBE Bank2／StartY0／BankSets848／Writes15212758／DisplaySets40；兩圖逐位元相同87fabf21f7be22d264f83390bdb4d39f09098516191c3a17c51815452856645e，已實際檢視CONTINUE／LOAD GAME／NEW GAME／MULTI PLAYER／HALL OF FAME／QUIT GAME六按鈕文字完整可見，動畫停穩、點擊與新遊戲未驗。完整第40換頁步數未取樣，不用終圖猜最早可點時點。
+
+11真實CLI負例在讀不存在EXE前exit2，stdout空，含範圍／格式／溢位／8M預設超界及新舊開關互斥。四正常流程完成：兩46M／日期、第三48M／無日期，第四48M／日期／無事件legacy-baseline。48M與無日期的每一原始列及終圖完整保持315，僅mtime／DTA四bytes／PNG路徑正規化。47張快照全部readonly=true、雜湊核對；46M第8..21的索引／RGB／PNG與315同頁保持，時計與步數分開。
+
+| 本機忽略收據 | SHA-256 |
+| --- | --- |
+| workplace/moo2-316-escape-config-tests.txt | 55f6fa2f53c58f507b95dd9aa62a7e935da4050e0649da4d9a3fd01c041f8379 |
+| workplace/moo2-probe-316-full-game.txt.gz | 06d0fe6d2cb2e4bfa676ab67a514f5165a33e4cfc6d458e83975976626108209 |
+| workplace/moo2-probe-316-mouse-event.txt.gz | c820da5c2d3e2f11be4d1fe09932d2880210a7d3946c13b8a6183b7ba78d337a |
+| workplace/moo2-probe-316-unconfigured.txt.gz | e4cef3b724b933508b331a6746c3ec11bbfc7464d126a30f14b76801329363a3 |
+| workplace/moo2-probe-316-legacy-baseline.txt.gz | 32306c41cd16d801f2dd99cca5c03b7584e1d2406eabf1793d8e0c6412d83a60 |
+
+Go1.24.13固定映像、600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀。命令沿315、輸出316，先建probe驗11拒絕，再四go run；CPU／平台未改，314全套PASS沿用，不重跑硬體語料。58回填函式／26缺證據負例及CLI通過，315追加新排程收據，保留其原48M部分滑入。新probe SHA-256 57399685a537099ed8871151e9d79d07c4570d94a1f3f498a77efcd0e60efdaa。
+
+工具cbc63f6ad19f17ca8eda81c1ab44f6852fb383e9已推送github隔離分支，回讀一致且乾淨，未推本機origin。[鎖定316](https://github.com/wicanr2/dosgolem/blob/cbc63f6ad19f17ca8eda81c1ab44f6852fb383e9/docs/spec/316-moo2-configured-hardware-escape-schedule.md)保存限定CONFORMED、精確命令／來源／收據與邊界。原素材／完整RAM／終端／PNG留本機；255完整游標、303整體DRAFT、299自然OF=1、AH2Ch／RNG、人耳、主選單點擊／正常玩家路徑與remake同狀態未完成，主庫玩法RE閘門保持。下一步先核對第40換頁的實際步數與NEW GAME可點條件，定單次正常滑鼠輸入READY契約，保留46M／48M基線與50M cap，不猜熱區／代寫資料或跳動畫。
