@@ -995,3 +995,25 @@ Go1.24.13固定映像、600s／2GiB／2CPU／128pids／UID1000／network none，
 Go1.24.13固定映像，600s／2GiB／2CPU／128pids／UID1000／network none，原檔／patch唯讀；命令沿313，輸出314，全套後三正常go run。56回填函式、31新負例及CLI通過，309–313同一AX0014h停點同次追加勘誤。護欄首輪因位址文字缺完整冒號形式拒絕，補正文件後通過，程式與正式來源／收據不改。
 
 工具9a2c7a21b0901ac8acc1f4387729ce25072b5fd9已推送github隔離分支，回讀一致且乾淨，未推本機origin。[鎖定314](https://github.com/wicanr2/dosgolem/blob/9a2c7a21b0901ac8acc1f4387729ce25072b5fd9/docs/spec/314-moo2-protected-mouse-callback-exchange.md)保存源碼雜湊、公開契約、精確命令與限定CONFORMED。原始素材／完整RAM／終端／PNG留本機。303整體DRAFT、255完整游標READY、299自然OF=1、AH2Ch／RNG、人耳、完整主選單／玩家路徑及remake同狀態未完成，主庫玩法RE閘門保持。下一步在50M內補主選單滑入的有界唯讀階段觀測，辨識正常等待／輸入條件，不提高上限、代寫資料或跳動畫。
+
+### 2026-10-03 主選單逐換頁觀測與314終態勘誤
+
+基線主庫11573fef0d26c84895bf98c511cf2d8f98fdc4fa／工具9a2c7a21b0901ac8acc1f4387729ce25072b5fd9。路由載入平台規格優先、文件職責與結論回填；固定1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，原ZIP／patch／417根檔／MOX.SET再驗保持。315只補唯讀快照，不改Go remake、CPU或平台。
+
+**追加勘誤，已證實**：上一節314所寫「沒有完整R／六段／IRQ7上限快照」錯誤。其兩原始gzip實際含late_startup_platform label=terminal、irq7_passdown_state label=terminal及step_limit_registers；前輪只搜尋limit／step_limit標籤漏讀terminal。本輪完整核對R3530C4／0／F3／1／2BDB10／2BDB68／4F6F42／353316，六段8／188／188／0／20／188，flags206h；IRQ7 started388／completed388，DMA完成388、剩1742、credit371200。裝置irq7_deliveries389另含先前16位傳輸，不混用。完整兩終態除既有受控mouse_started／completed0／1外逐列相同，allocator selector／unique_sites差異仍保留，不把不同初態說成同初態。工具314現行斷言與回填已修正，舊收據及此處歷史索引保持。
+
+315以明示DOSGOLEM_MOO2_VBE_FRAME_PREFIX在outer_step≥48M、真正INT10／AX4F07成功換頁後擷取最多16張，並用完整R／段／EIP／flags／FPU／VBE讀取前後核對不突變。Go1.24.13固定映像、600s／2GiB／2CPU／128pids／UID1000／network none；命令沿314，移除來源未改且已PASS的全套測試、輸出315並明示各條件快照prefix。兩epoch1996-01-01／48M Esc／50M cap，有／無既有事件分開，第三不設日期，原檔與patch唯讀。
+
+三正式流程完成，兩組各14張第8..21換頁、第三1張，共29張，全readonly=true。逐張PNG雜湊與兩序列完整CPU／段／flags／時計／VBE逐列核對。只移除新增menu_slide_phase列，再按既有mtime／DTA四bytes／終圖檔名正規化後，三流程每一既有314列完全相同。主選單尚未完整展開，沒有新正常點擊驗收。
+
+已實際檢視10／16／21畫面：49512086步／60909981µs為標題背景，49756873步／61670846µs為右側邊緣，49967220步／62395438µs為部分主選單。固定像素區域x=[500,640)、y=[110,350)，相對第10張RGBA逐點量測，末五張17..21變動區左緣619／608／596／583／571，變動點3852／6193／8718／11726／14364。支持到50M動畫仍有進展的強推論，不用量圖值補玩法規則。第21換頁圖0e5f213ed365098b07e2fe92bc5d8259fc6a13081b413d51c3edb1bc0293db4f與終圖8f7791ae57649991fbf9bf3a86fdacab602e792f39a9b3d57ae691484a754d47為不同取樣時點；不混成同狀態。
+
+| 本機忽略收據 | SHA-256 |
+| --- | --- |
+| workplace/moo2-probe-315-full-game.txt.gz | 91ff5b147572fc6a7dbe706c3e19f832fdd3ab61b8c7ed6a0e2c29a9cc6ba779 |
+| workplace/moo2-probe-315-mouse-event.txt.gz | 6d53ab8d999c22f89814fa2793316a59ffada212f6fe14639cfc904e270f9926 |
+| workplace/moo2-probe-315-unconfigured.txt.gz | 4895e5e54aa52d12d0333f1fc1cec86bfeb5121957dbadfc0316ee9962f7a701 |
+
+輔助Go量測首輪asm fork受64pids限制，明示GOMAXPROCS2／go run -p2後同映像乾淨重跑通過，屬工具環境；原版流程與素材不改。57回填函式、21缺定位／終態／收據／314勘誤負例與CLI通過。新probe SHA-256 546c234534a8f82e3a5e37de82e95fc46d220af0e428184ac2eafbaf64fc530d，CPU／平台source與314保持。
+
+工具f1c2fa57675991080e2da3d1f5008b9b49f209bc已推送github隔離分支，回讀一致且乾淨，未推本機origin。[鎖定315](https://github.com/wicanr2/dosgolem/blob/f1c2fa57675991080e2da3d1f5008b9b49f209bc/docs/spec/315-moo2-menu-slide-observation.md)保存限定CONFORMED、逐幀定位／工具、命令／收據與314勘誤。原素材／快照／完整終端留本機；303整體DRAFT、255游標READY、299自然OF=1、AH2Ch／RNG、人耳、完整主選單／玩家路徑與remake同狀態未完成，主庫玩法RE閘門保持。下一步先定明示46M Esc獨立排程契約，再沿既有IRQ1驗正常輸入，與48M基線分開，不提高50M上限或代寫／跳動畫。

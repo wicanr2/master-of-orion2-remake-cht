@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-03）**：使用者選定dosgolem對拍固定1.31 ORION2.EXE，DOSBox-X僅作輔助基準。304–314限定CONFORMED，正常48M Esc、遠CALL／CB、D0／D4、明示日期、word SUB／ADD／CMP及JL保持。AX0014h的24次正常交換與前三次C3返回已驗，ES:EDX=0008:002136D1，mask1／2Bh正常交換。兩設定日期流程無未支援指令，均到50M上限、高位LE0x23856E，時計62461366、IRQ0完成8383；兩圖逐位元相同，主選單面板已部分滑入，完整展開／操作未驗。有／無既有受控回呼1／0分開驗，第三未設定日期完整保持0x240A32拒絕。32位元交換與佇列時序是platform-spec approximation；255完整游標、303整體觀測、299自然OF=1、AH2Ch／RNG、人耳、完整鍵盤／玩家流程與remake同狀態未完成，主庫玩法RE閘門保持。工具9a2c7a21b0901ac8acc1f4387729ce25072b5fd9已推送；鎖定314及邊界見docs/re/dosgolem-moo2-intake-20260930.md，可執行事項只在WORKLIST.md。
+- **DOS 原版動態驗證器（2026-10-03）**：使用者選定dosgolem對拍固定1.31 ORION2.EXE，DOSBox-X僅作輔助基準。304–314限定CPU／平台CONFORMED，315唯讀觀測限定CONFORMED。正常48M Esc、AX0014h的24次交換與三次C3返回保持；兩設定日期流程到50M高位LE0x23856E，完整R／六段／flags206h相同，時計62461366、IRQ0完成8383、IRQ7完成388。315三原版共29張換頁快照，全部既有314列保持，兩14張序列逐位元相同，已檢視面板持續滑入，完整展開／操作未驗。有／無既有受控回呼1／0及allocator selector差異保留，未設定日期完整保持0x240A32拒絕。32位元交換／佇列時序為platform-spec approximation；255完整游標、303整體、299自然OF=1、AH2Ch／RNG、人耳、完整玩家路徑與remake同狀態未完成，主庫玩法RE閘門保持。工具f1c2fa57675991080e2da3d1f5008b9b49f209bc已推送，鎖定315／314勘誤見docs/re/dosgolem-moo2-intake-20260930.md，可執行事項只在WORKLIST.md。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為
