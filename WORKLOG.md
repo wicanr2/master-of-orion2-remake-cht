@@ -585,3 +585,14 @@
 - 首次CPU失敗是測試Bus拒絕全部byte，修正指定byte的失敗測試，CPU不變乾淨重跑通過。首次原版診斷包裝Bus破壞DPMI的身分驗證，提早INT31/0500h收據不計OR驗收；改觀察SegmentRead8、原樣轉送既有返回值並保持Bus後重跑。未變高byte的讀取不當成新增bit13消費，再收窄診斷取得真正完整dword MOV。CPU與DPMI不再改；完整失敗／有效收據與精確命令集中在295。
 - 38個回填函式、兩份舊規格各四項缺證據負例／CLI、兩自然完整OR／JMP／MOV／TEST與新停點的獨立算術核對通過；原始ZIP／patch／固定EXE雜湊、索引／語法／繁體字／UID及git diff --check通過。第42,347,254步停實模式OUT 022Ch／C6h，IRQ0 completed=6173／等待值4579，主選單／正常玩家路徑、音效／受控亂數與整款remake未完成。
 - 工具九檔提交418ca3cf6d874e24127da24c0ba66e9fafecf6e7已推送github/codex/moo2-parity-20260930，回讀遠端一致，未推本機origin。主庫更新唯一現況表與既有歷程／研究入口，鎖定工具提交；原版素材與完整終端／記憶體／gzip／PNG留本機。下一步公開SB16 DSP／DMA與sample duration契約加有限原版參數，審查READY再實作；不深挖driver／ISR／硬體時序。Docker按Go映像與moo2名稱分開核對，本批一次性容器已退出移除，未清理其他專案或映像。
+
+## 2026-10-02：接續 SB16 C6h 自動初始化 DMA
+
+- 開工主庫eac4a998ba1a4dc4d0a515eb9ab510c3670652da／工具418ca3cf6d874e24127da24c0ba66e9fafecf6e7乾淨，上一輪OR／完整MOV消費已推送。沿用平台規格優先／規格閘門、dosgolem、文件職責與後續回填路由及逆向重製技能，主庫玩法RE閘門不變。
+- 296同次DRAFT＋索引，有限非自然參數探針取得C6 20 FF 07／22050Hz／4096byte DMA ring，公開Creative命令、每channel／TimeConstant與sample duration契約審查READY後實作。只接DSP／8位DMA，不改CPU或主庫玩法，不追driver／ISR／硬體逐週期。
+- 全部CPU／機器層與固定官方EXE全套首次通過。條件時鐘獨立取樣數、46440µs首DSP block／92880µs ring重載、8／16位IRQ隔離、確認／EOI／IRET、mask／reset及拒絕／來源邊界已驗。兩自然原版接受完整C6、實模式333步返回，MOV EBX成功值0／CMP／JZ進0x2454E7成功分支；完整外層R／段／封包差異通過，296才限定CONFORMED。
+- 首份正式來源診斷誤取呼叫前未設定的DMA，改取返回後base／page，同映像／命令重生兩自然，執行結果不變，舊收據保留而不當C6來源證據。返回21µs／信用926100尚未到第一sample，PCMBytes=0；條件pattern不能替代原版保護模式連續PCM／IRQ7、人耳或正常玩家路徑驗收。
+- 全部39個回填函式、三份舊停點共15項缺證據負例／CLI、兩自然獨立時間／封包／caller／新停點稽核通過，原始ZIP／patch／EXE雜湊再核對。第42,347,639步轉停高位LE0x257662的dword ROR立即數10h；IRQ0 completed=6173／等待值4579、PNG同已檢視黑圖。255／主選單／正常玩家路徑、保護模式音訊／IRQ7、受控亂數與整款remake未完成。
+- 工具12檔提交56e1ff979b517740bf056668ee90800bfac27321推送github/codex/moo2-parity-20260930，未推本機origin；主庫只更新四份現況／歷程／既有研究入口，證據鎖定工具提交。原版素材及完整終端／記憶體／gzip／PNG留本機，來源／輸出UID:GID1000:1000，工具無root-owned／誤建.md目錄，主庫歷史root-owned不動。本批一次性容器已退出移除；Go映像的0da5d78f687c掛載皆屬fd2，保留其他專案工作與映像。
+
+主庫四檔現況／鎖定證據／繁體字／UID／唯一AGENTS與git diff --check通過，歷史root-owned仍2709筆。工具遠端回讀56e1ff979b517740bf056668ee90800bfac27321與本機一致。

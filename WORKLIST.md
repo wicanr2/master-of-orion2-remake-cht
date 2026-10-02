@@ -46,9 +46,9 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅作輔助基準。固定官方EXE、正版ZIP根層417檔及MOX.SET。256–295限定CPU／平台CONFORMED；277原版IRQ0返回與模式2等待已閉合，255完整座標／游標消費仍READY。全部CPU與固定原檔全套已驗；不宣稱完整硬體時鐘、核心布局／跨權限鏈或玩法同狀態。
-  **目前自然停點**：兩個排程第 42,347,254 步停高位LE0x2454AE，bytes CD 31 8B 5D 14，AX=0300h／BX=0066h；實模式INT66從1201:016A前進230步停1201:05D9，OUT 022Ch／C6h尚未支援。原版記憶體dword OR已將DS:00325864由40h寫成2040h，再由MOV EAX讀取完整2040h；AF清除／逐byte Bus錯誤與單次Step／IRQ模型明示。IRQ0 started=completed=6173、active=false／failed=false，DS:offset 0188:00271148=E3 11 00 00。受控滑鼠事件已注入x=657／y=189，仍不算完整座標／游標或正常玩家分支；最終PNG同已檢視黑圖。主選單／正常操作／音效／受控亂數及remake同狀態未完成。
-  **下一步**：按公開SB16 DSP／DMA與sample duration契約，保存有限原版C6h參數與caller，審查READY後接平台模型並重跑兩個自然排程。不解driver／ISR／DAC／PIT硬體wall-clock、runtime或圖形helper，不猜補欄位用途／玩法。探針尾端固定32筆，診斷入口預設8M、明示限1–50M。[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)保存收據及近似邊界；工具閘門不計入玩法分母。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅作輔助基準。固定官方EXE、正版ZIP根層417檔及MOX.SET。256–296限定CPU／平台CONFORMED；277原版IRQ0返回與模式2等待已閉合，255完整座標／游標消費仍READY。全部CPU與固定原檔全套已驗；不宣稱完整硬體時鐘、核心布局／跨權限鏈或玩法同狀態。
+  **目前自然停點**：兩個排程第 42,347,639 步停高位LE0x257662，bytes C1 CA 10 A2 C0 26 27 00，dword ROR立即數10h尚未支援。原版SB16 C6 20 FF 07已接受，實模式333步返回、原版MOV／CMP／JZ進成功分支；DMA ring物理14000h／4096bytes／全80h，返回只有21µs／信用926100、PCMBytes=0。條件實模式block／ring／IRQ測試通過；保護模式連續PCM／IRQ7與人耳未驗。IRQ0 started=completed=6173、active=false／failed=false，DS:offset 0188:00271148=E3 11 00 00。受控事件已注入x657／y189，仍不算完整座標／游標或正常玩家分支；PNG同已檢視黑圖。主選單／正常操作／受控亂數及remake同狀態未完成。
+  **下一步**：按公開ROR計數／旗標契約，保存有限唯讀原版完整初態與下一消費端，審查READY後接裸dword ROR立即數形式，再重跑兩個自然排程。不解driver／ISR／DAC／PIT硬體wall-clock、runtime或圖形helper，不猜欄位用途／玩法。探針尾端固定32筆，診斷入口預設8M、明示限1–50M。[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)保存收據及近似邊界；工具閘門不計入玩法分母。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備

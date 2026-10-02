@@ -703,3 +703,15 @@ word JSON／消費 LOG／終端 SHA-256 `50c8e64a5a3905af139746bd6398f0b2a9716ce
 新停點：兩自然第42,347,254步高位LE0x2454AE的INT31/0300h，AX0300h／BX0066h。實模式INT66入口1201:016A，前進230步停1201:05D9，OUT 022Ch／C6h未支援、Returned=false；外層INT31未處理由這個內層錯誤造成。IRQ0 started=completed=6173，等待DS:00271148=E3 11 00 00即4579；PIT模式2／Reload5966／Generation5，Micros43985557／Deliveries6193／Pending=false／InService=false。VBE Bank7／StartY512／BankSets447／Writes4353364／DisplaySets7，兩PNG同已檢視黑圖SHA-256 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622。受控事件已注入x657／y189；255、主選單／正常玩家路徑、音效／受控亂數及整款remake仍未驗收。
 
 兩自然gzip SHA-256 2d8bb4b224cdbb24440177d6ae4856de345b7602b36323f2f280c4eca862dac1／3c1bd060f88f34ca1aaf9d4055571b830ecfef834dcbb416b4d1af818925fdce，CPU收據9333cc23374ef3409423be5d3b98b6210e3d2e9fe0fe7a7380f1c9fcc4f20ee3，固定EXE全套6ab325d7a816db9a928a9429be55ae94e0e56aa8e06db12d24a1b6f86d3fae11。原始ZIP／patch／EXE固定雜湊再次核對一致；素材、完整記憶體／終端與PNG不公開。工具提交418ca3cf6d874e24127da24c0ba66e9fafecf6e7已推送github隔離分支並回讀一致，未推本機origin。下一步公開SB16 DSP／DMA與sample duration契約及有限原版參數，審查READY後實作；不解driver／ISR／DAC／PIT硬體wall-clock，不猜欄位／玩法。主庫玩法RE閘門不變。
+
+## 2026-10-02：SB16 C6h 命令與原版成功返回
+
+已證實：基線工具418ca3cf6d874e24127da24c0ba66e9fafecf6e7，296同次DRAFT＋索引、有限非自然參數探針與公開Creative DSP／DMA／sample duration契約審查READY後實作。原版四byte C6 20 FF 07為無號立體聲、22050Hz／每block2048個8位sample，DMA1 mode58h／mask0Dh／地址4000h／count0FFFh／page1，即物理14000h的4096byte ring。四mode／全部length語法、條件實模式取樣數／40h與41h區別／block與ring／IRQ／拒絕邊界已驗；hardware-spec approximation明示，不做逐週期或人耳聲明。
+
+兩原版自然排程高位LE0x2454AE接受完整命令，實模式INT66入口1201:016A前進333步返回FFFF:FFF0，Returned=true／Error空；完整外層R／段／flags206h保持，50byte封包只有offset29由04h→00h。原版第42,347,256步高位LE0x2454B3的MOV EBX讀取成功值0，下一CMP令flags246h，JZ自然跳0x2454E7；兩排程完整caller相同。回填293／294／295停點、39個回填函式／15項缺證據負例／CLI及兩自然獨立稽核通過，296限定CONFORMED。
+
+來源收據更正：呼叫前第一DMA尚未設定，不能以地址0／count0作C6來源；改取返回後DMABase／page，4096byte全80h的SHA-256 78aacbc3fb34efb8ffa5467b931291ec2bdf5e19564fc45fe97b5affbc893dc6。返回VirtualMicros1375，最後參數1354，21µs×44100=926100信用，小於首sample門檻，PCMBytes=0／DMA完成0／無8位IRQ；原版PCM真實消費與保護模式連續PCM／IRQ7仍未知。條件pattern測試在46440µs首block、92880µs ring重載，不把它當原版播放完成。完整命令、公開原廠來源、實作／測試／有效及更正前收據雜湊見[鎖定規格296](https://github.com/wicanr2/dosgolem/blob/56e1ff979b517740bf056668ee90800bfac27321/docs/spec/296-sb16-c6-auto-init-dma.md)。
+
+新停點：兩自然第42,347,639步高位LE0x257662，bytes C1 CA 10 A2 C0 26 27 00 66 8B C2 C1 CA 10 39 11，dword ROR立即數10h缺件。IRQ0 started=completed=6173／等待4579，PIT模式2／Reload5966／Generation5，BIOSClock Micros43986044／Deliveries6193／Pending=false／InService=false，兩PNG同已檢視黑圖。受控滑鼠事件仍在第1612067步注入x657／y189；255座標／游標、主選單／正常玩家路徑、保護模式音訊／IRQ7、人耳、受控亂數及整款remake未驗收。
+
+有效兩gzip SHA-256 51a438fd826c55922c2115a1c77918be0d313ef14cf0e6c5b06c72a8689b8f42／a05791a08f8ee36df2cbc244076ffb005fed3b31cafa054291d19f1cc82272c9；CPU／機器層收據bdc4a5adc9db1fc42bb1ca13fccfb680c750146c7e4aa5feb3a1e23c128bfb2b、固定EXE全套eaa30a613877d185e9ba095078f73c32bee44c18cdd61f00cdf5a3f9688545bd。ZIP／patch／EXE固定雜湊再核對；素材、完整終端／記憶體／PNG不公開。工具提交56e1ff979b517740bf056668ee90800bfac27321沿既有授權推送github隔離分支，不推本機origin。下一步公開ROR計數／旗標契約與有限唯讀初態，審查READY後補窄CPU形式；主庫玩法RE閘門不變。
