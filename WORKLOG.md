@@ -698,3 +698,13 @@
 主庫原HEAD／四檔現況、限定範圍／鎖定306證據／唯一活表、繁體字／UID／唯一AGENTS及git diff --check通過，原始ZIP／patch／417根檔／固定EXE／MOX.SET雜湊再核對一致。歷史root-owned仍2709筆不動；工具HEAD與遠端4eb97f6277121e528a2d3ce594dbb1967d16382e一致且工作樹乾淨。Go映像ID仍sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，最後Go映像及moo2名稱清查皆空，沒有清理其他專案或映像。
 
 主庫3b573fd99eb75cf36b830538eded54a30c1d8b72已推送並回讀一致，兩庫工作樹乾淨。推送後再次清查，本輪容器仍已移除，moo2名稱清查空；新出現的vigilant_elgamal已核對掛載屬另一FD2專案，保留未操作，不把所有Go容器皆空當持續狀態。
+
+
+### 2026-10-03 正常Esc IRQ1、FF 1D遠呼叫與原版caller續行
+
+- 接手主庫HEAD dfdeca2e8aa6193d7ee7421dbdc2b45aeb5ccb72／工具4eb97f6277121e528a2d3ce594dbb1967d16382e，兩工作樹乾淨。路由命中平台規格優先、dosgolem對拍與結論回填，沿既有remake逆向技能。主庫玩法RE閘門不變。
+- 307先DRAFT診斷，定位原版IRQ1正常入口與FF 1D CPU缺件；308公開Intel契約READY後接裸間接遠CALL，完整指標／堆疊／外層與真正CB消費通過。兩自然50M控制基線保持，私有診斷與正常輸入收據分開。
+- 公開BIOS／controller／PIC／DOS/4GW契約與97／77步原始入口／返回足以READY後，實作正常Esc 01／81硬體隊列、host私有堆疊、真實default遠CALL服務、20h IRR／ISR與EOI。全部核心／FPU／兩模式／IRQ0優先巢狀、閘門／容量／非法碼、框架／descriptor污染與失敗停止通過。第一次PIC測試接錯讀取位置及BIOS診斷編譯型別錯誤，按契約修正後同容器命令重跑，失敗收據保留，未放寬斷言。
+- 最終Go1.24-bookworm映像、network none／2GiB／2CPU／128pids／UID1000／600s，以417原檔與固定EXE執行go test -p 2 -buildvcs=false ./... -count=1通過。兩正常go run -buildvcs=false ./workplace/moo2-probe，DOSGOLEM_MOO2_MAX_STEPS=50000000、DOSGOLEM_MOO2_SEPARATE_DOS=1、DOSGOLEM_MOO2_HARDWARE_ESCAPE_AT_48000000=1，有／無既有受控滑鼠各一次。正常送鍵前完整基線保持，IRQ1各97／77步返回，原caller真實ADD／MOV續行。首輪與最終重跑逐列一致；50回填函式／35新負例／兩CLI通過。
+- 新停點第48354467步，外層高位LE0x217AD8、IRQ7實模式1201:05DA第77步，OUT022C=D0未支援。兩時計58057009、IRQ7 started303／completed302、IRQ0完成7927，兩PNG已檢視黑色過場，主選單未見。307／308限定CONFORMED，不稱完整鍵盤或玩家流程。完整來源／命令／收據與近似集中在工具307／308；原版素材、完整RAM／終端／gzip／PNG留本機。
+- 工具00ad7c645b19b51a8697e2deae85d8a5019dd657已推送github隔離分支並回讀一致，工作樹乾淨，未推本機origin。主庫只更新既有四文件。下一步公開DSP D0的8位DMA暫停契約與同一固定輸入排程，不深挖driver／ISR／DAC時序、不改玩法。17:58:40 UTC清查本輪有界Docker均退出移除，Go工具映像相關容器清查空；未清理其他專案或映像。

@@ -841,3 +841,20 @@ DMA8啟動／自動／stereo／FIFO、rate22050/1、block2048／sampleCredit9261
 兩PNG SHA-256 535e27c45ba579132ef36398335f0c773aa4889473d8336f7180184290e7e975，已實際檢視星空片段，主選單未見。自然兩gzip SHA-256 7a984c68b925623589aa6dae45973ef8431b98b72df65523dbed65eaeb485720／d4526b29dc51b057566604e4538c0adb4c379b06ad005a589e38d59a2a84506e，固定EXE全套43bf923f2d3c8d7d01a9d231fd5f2cc273c9157c945108c197fac3c15bf32bf8。精確來源／輸入／命令／返回消費及範圍見[鎖定規格306](https://github.com/wicanr2/dosgolem/blob/4eb97f6277121e528a2d3ce594dbb1967d16382e/docs/spec/306-cpu386-xor-al-imm8.md)。
 
 十二份音訊邊界與305 XOR停點回填，48個回填函式／132項缺證據負例／CLI與完整兩自然獨立時計／真正RET／MOV消費稽核通過。工具4eb97f6277121e528a2d3ce594dbb1967d16382e已推送隔離分支並回讀一致，不推本機origin。304–306限定CONFORMED，303正常輸入觀測仍DRAFT，原版AH2509的保護模式IRQ1 8:21C4D8已保存而正常鍵盤尚未接通，60／61／64埠讀取零。下一步依公開鍵盤／PIC／DOS/4GW契約保存有界原版入口／返回，達READY後補正常輸入；不以BIOS入隊替代IRQ1、跳指令或提高50M上限，不深入driver／ISR／busy-wait。255／299自然OF=1、等待欄位語意、主選單／正常玩家路徑／受控亂數、人耳及整款remake仍未驗收，主庫玩法RE閘門保持。原版素材與完整收據留本機，不公開原版資產。
+
+
+## 2026-10-03：正常Esc IRQ1與間接遠呼叫
+
+工具基線4eb97f6277121e528a2d3ce594dbb1967d16382e；原始ZIP／patch／固定1.31 EXE與417檔／MOX.SET沿既有雜湊，Go1.24.13 linux/amd64。路由再次命中平台規格優先／正常dosgolem oracle／跨規格回填，依公開IBM／Intel／OpenWatcom契約，不追driver／ISR內部。
+
+307先DRAFT，在正式50M基線及PNG後執行有界可丟棄診斷，捕捉原版AH2509的8:21C4D8入口。兩診斷第13步拒絕高位LE0x21C4EE的FF 1D DC 42 2A 00，尚未讀鍵盤或改遊戲RAM。308依公開Intel裸FF 1D、同RPL／平坦已知CS契約審查READY後接CPU。真正DS:2A42DC六byte 09 60 32 00 08 01、8byte返回框架F4 C4 21 00 08 00 00 00與完整外層已驗；自製測試實際執行既有CB消費此框架。正式診斷抵達108:326009預設IRQ1鏈時仍拒絕，與BIOS服務證據分開。
+
+公開IBM INT09／環形BDA與無修飾Esc近似下，兩診斷01／81走97／77步，均抵達原始8:21C573 CF；真實遠CALL後只模擬default09服務，遊戲wrapper自行寫2A42AC／AD及2A42E2／E4。證據足以READY後，正式用controller output／PIC pending／in-service與host私有4KiB堆疊，從正常外層入隊；未借用client0501、直接呼叫ISR或注入遊戲欄位。完整caller／FPU／兩CPU模式、IF／遮罩／PIC優先序／IRQ0真實巢狀、來源／向量／框架／descriptor污染、容量／非法碼及失敗持續停止通過。首次PIC接線測試失敗，只依公開契約修20h讀取位置；BIOS診斷首輪編譯誤用Enqueue的error回傳型別，只修探針，均保留收據並乾淨重跑。
+
+**已證實，dosgolem正常入口自行重生**：兩自然固定外層48000000步排controller 01／81；正常48M前所有收據沿無鍵盤308基線逐列保持，僅排除解壓mtime／DTA四bytes。IRQ1 8:21C4D8各97／77步抵達8:21C573，讀60h與20h EOI各一次，started2／completed2。48000000步的原caller高位LE0x215880 ADD EAX,EDX實際得到2C01A8／flags202h、EIP215882；48000001步的MOV AX,[EAX]實際得到2CFFFF／EIP215885，完整其他R／六段保持。
+
+兩自然第48354467步，外層高位LE0x217AD8、IRQ7實模式1201:05DA第77步，真正OUT022C=D0尚未支援。IRQ7 started303／completed302，已經原版EOI／22E後停於新命令；IRQ0 started7927／completed7927、failed=false。兩時計58057009，DMA完成303／block剩2045／信用461100；60h兩次、BIOS字元一次且wrapper已清head／tail。兩PNG SHA-256 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622，實際檢視黑色過場，主選單未見。DPMI RealModeLast是先前已完成封包，不拿它當新D0原版入口。
+
+最終全套SHA-256 4a9eb936bc0c33fe18376e11297e806d994421c44831bcbbd5d070b88b18900a，兩正常gzip 9a8aad65b88d1748431eb8ddfb17733a7a342cf255f4f0147db6a4b49a957753／430349cf9d921862d40f73bce9d2f0e65bb9a36a571ed4b51072ba1688801e59。首輪與最後正常重跑逐列保持；完整caller／遠CALL／CB消費、50回填函式／35個新增缺證據與舊回填負例、兩CLI通過。303／305／306的有限Esc未知與307的FF停點同次回填，其他未知不冒稱閉合。來源／全部有效與失敗收據／命令及CPU／平台近似見[鎖定307](https://github.com/wicanr2/dosgolem/blob/00ad7c645b19b51a8697e2deae85d8a5019dd657/docs/spec/307-moo2-protected-keyboard-irq1.md)與[鎖定308](https://github.com/wicanr2/dosgolem/blob/00ad7c645b19b51a8697e2deae85d8a5019dd657/docs/spec/308-cpu386-call-far-indirect-absolute.md)。
+
+工具00ad7c645b19b51a8697e2deae85d8a5019dd657已推送github隔離分支並回讀一致，未推本機origin。307／308限定CONFORMED；完整鍵盤、255／299自然OF=1、主選單／正常玩家流程／受控亂數、人耳與整款remake未完成。下一步只按公開DSP D0暫停8位DMA契約補平台缺件，再同排程重生，不深入硬體driver／ISR／忙等，不改主庫玩法RE閘門。原始素材與完整RAM／終端／gzip／PNG留本機，不提交或公開。
