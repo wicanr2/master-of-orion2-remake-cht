@@ -1039,3 +1039,29 @@ Go1.24.13固定映像，600s／2GiB／2CPU／128pids／UID1000／network none，
 Go1.24.13固定映像、600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀。命令沿315、輸出316，先建probe驗11拒絕，再四go run；CPU／平台未改，314全套PASS沿用，不重跑硬體語料。58回填函式／26缺證據負例及CLI通過，315追加新排程收據，保留其原48M部分滑入。新probe SHA-256 57399685a537099ed8871151e9d79d07c4570d94a1f3f498a77efcd0e60efdaa。
 
 工具cbc63f6ad19f17ca8eda81c1ab44f6852fb383e9已推送github隔離分支，回讀一致且乾淨，未推本機origin。[鎖定316](https://github.com/wicanr2/dosgolem/blob/cbc63f6ad19f17ca8eda81c1ab44f6852fb383e9/docs/spec/316-moo2-configured-hardware-escape-schedule.md)保存限定CONFORMED、精確命令／來源／收據與邊界。原素材／完整RAM／終端／PNG留本機；255完整游標、303整體DRAFT、299自然OF=1、AH2Ch／RNG、人耳、主選單點擊／正常玩家路徑與remake同狀態未完成，主庫玩法RE閘門保持。下一步先核對第40換頁的實際步數與NEW GAME可點條件，定單次正常滑鼠輸入READY契約，保留46M／48M基線與50M cap，不猜熱區／代寫資料或跳動畫。
+
+### 2026-10-03 原版選單正常滑鼠與CB寫後
+
+基線主庫df8d8792a482f817f1a7b38bd08ba8b1c1845c91／工具cbc63f6ad19f17ca8eda81c1ab44f6852fb383e9。路由平台規格優先，317–319先READY再改自製探針；CPU／平台與主庫Go玩法保持。固定1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，原ZIP／patch／417根檔／MOX.SET重新核對。
+
+**已證實，dosgolem高位LE正常輸入**：46M Esc／1996-01-01／50M，無早期滑鼠事件。第40換頁49882420／63906833µs、callsite228CA7、PNG dc938ac71e2a617ec9a6c2d75029f689de6aaf985530a030713195e0c566b15d，實際檢視六按鈕全見。剩117580步，不假設動畫或熱區已驗。
+
+沿255原版CX右移一位的已證消費，以畫面500／229送正常API1000／229／buttons1，outer49882421、caller228CA9；32350µs後49883408／caller2354D1送1002／229／buttons0。原版8:2136D1兩入口AX3／5、BX1／0、CX3E8／3EA、DXE5，真正2137F2的CB各於49882522／49883496返回原caller。191步無錯，完整R／六段／flags246h／207h恢復。原始213741的66 A3 1A 12 2A 00目的2A121A，319兩CB後兩byte實際0100／0000；保留地址，不補主選單consumer名稱。
+
+**未知**：50M點擊終態2385AF、時計64282188，已檢視PNG 0c45ba73ddfe850693520f5aee093c1c188ab118df9c51570521cfe3fc0ddad9仍主選單，只有NEW GAME上的游標可見。mask1不證按鈕啟動。319目標讀取零筆，覆蓋沒有真實正對照，不推論按住期間沒有讀取；直接Bus與實際新遊戲設定尚未驗。
+
+319首輪掛勾在startup前安裝且要求委派ok，經原始程式核對才確認startup覆蓋、普通RAM false後走Bus；保留原始控制收據。修正為按下時接現存8／16位元委派與OR鏈、不改Bus身分後，同映像／同命令／同輸入重跑，仍不把零取樣當成不存在consumer。這是觀測工具缺口；原版兩輪均正常到cap，沒有CPU或產品失敗。
+
+| 本機忽略原始收據 | SHA-256 |
+| --- | --- |
+| workplace/moo2-probe-317-full-game.txt.gz | 35e2604c0d223e7170e6774dee33c67828992269d75ab41bb0c7607c26c1d0b7 |
+| workplace/moo2-probe-318-click.txt.gz | f49d8ab7c7cc6c88c7229d0dfac0d23e01d4d02da4e286086793cba217ab744a |
+| workplace/moo2-probe-318-baseline.txt.gz | f3f80f78409e490f1c4a0a0d1ffca00194eab0b0b614d7a61d1f436e3573ab24 |
+| workplace/moo2-probe-319-segment8-control.txt.gz | eb850aa6e18dc4faf47134368dd4289962a2b9153cef24cf1ff940c5a31ab617 |
+| workplace/moo2-probe-319-click.txt.gz | 597266974b32440f35818cc672464573202bb997ebcf3dd29a7d2fd65bf8ac9e |
+
+316全部舊列與終圖保持317；無點擊模式全部317列與終圖保持；點擊前完整前綴保持，修正319全部318列與終圖保持。mtime／DTA四bytes／PNG路徑是唯一正規化，原始RAM／allocator差異不抹掉。59回填函式／32缺證據負例與CLI通過。
+
+Go1.24.13固定映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀。go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe後/tmp/moo2-probe /tmp/game/ORION2.EXE --game-dir /tmp/game；46M Esc／日期／50M／separate DOS固定，點擊模式只加DOSGOLEM_MOO2_NEW_GAME_CLICK_AFTER_DISPLAY40=1。CPU／平台未改，314固定EXE全套PASS仍適用，沒有以工程自洽冒稱原版玩法parity。最終probe SHA-256 2cab77b5f3ddcb4a6dcc024e4a0b07462ee63a8be660ab662d71fb46ee4f6a10。
+
+工具062670051203076ff688d36a390f46dd8a7883c6推送github並回讀一致，未推本機origin。[鎖定317](https://github.com/wicanr2/dosgolem/blob/062670051203076ff688d36a390f46dd8a7883c6/docs/spec/317-moo2-menu-display40-observation.md)、[鎖定318](https://github.com/wicanr2/dosgolem/blob/062670051203076ff688d36a390f46dd8a7883c6/docs/spec/318-moo2-new-game-normal-click.md)、[鎖定319](https://github.com/wicanr2/dosgolem/blob/062670051203076ff688d36a390f46dd8a7883c6/docs/spec/319-moo2-new-game-button-consumer.md)保存原始定位、精確返回／寫後及明示未知。主庫玩法RE閘門保持，完整新遊戲／正常玩家路徑／remake同狀態未完成；下一步先補真正讀取請求數與路徑正對照，不反覆換鍵、點擊或提高cap。
