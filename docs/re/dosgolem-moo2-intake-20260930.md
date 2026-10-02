@@ -973,3 +973,25 @@ DMA8啟動／自動／stereo／FIFO、rate22050/1、block2048／sampleCredit9261
 Go1.24.13固定映像、600s／2GiB／2CPU／128pids／UID1000／network none，原檔／patch唯讀，/tmp/game乾淨組合固定417根檔與官方EXE。命令沿312，輸出313；全套後三組go run，日期／Esc／受控滑鼠條件保持，未啟用私有IRQ1直入。新CMP三測試及ADD／SUB六回歸、八來源全word／49邊界、獨立六旗標、完整非零FPU／核心、真正JL的45組有號／相等／溢位與拒絕全通過。55回填函式、33新增缺證據／狀態／舊標記／連結負例及CLI通過；309–312同一CMP停點追加勘誤。
 
 工具0cc36241a3523df865d9b8f336d70c124bc7093c已推送github隔離分支、遠端回讀一致且乾淨，未推本機origin。[鎖定313](https://github.com/wicanr2/dosgolem/blob/0cc36241a3523df865d9b8f336d70c124bc7093c/docs/spec/313-cpu386-cmp-word-register-imm16.md)保存限定CONFORMED、來源雜湊、公開契約、命令與收據。原始素材與完整RAM／終端／gzip／PNG只留本機。滑鼠AX0014h、255／299自然OF=1、AH2Ch／RNG、人耳、完整鍵盤、主選單／玩家路徑與remake同狀態未驗，主庫玩法RE閘門保持。下一步公開滑鼠API與既有callback儲存，不深挖driver、代寫遊戲資料或提高上限。
+
+### 2026-10-03 滑鼠回呼交換與主選單面板滑入
+
+基線主庫1491008edf177b29d767e25f620de35759e7cfce／工具0cc36241a3523df865d9b8f336d70c124bc7093c。命中平台規格優先，依[Microsoft Mouse原廠手冊，頁107](https://www.bitsavers.org/pdf/microsoft/mouse/Microsoft_Mouse_Programmers_Reference_1989.pdf)的Function20交換／返回舊值契約；[Watcom11.0c，頁129–130](https://openwatcom.org/ftp/archive/11.0c/docs/cprogguide.pdf)只明示0Ch的ES:EDX，不冒稱其已證14h的32位元擴充。314依固定原版實際ES:EDX與既有255模型，審查READY後接平台服務，32位元與佇列時序標為platform-spec approximation。
+
+**已證實，dosgolem高位LE正常入口重生**：固定1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，原ZIP／patch／417根檔／MOX.SET再核對保持。兩明示1996-01-01／48M Esc／50M上限流程各24次AX0014h成功。前三次舊／新目標皆0008:002136D1，遮罩1→1、1→2B、2B→1，返回CX1／1／2Bh。三次真正C3在49564006／49564388／49602023步由0x24C31D返回0x24C1AE，ESP002BDA88→002BDA8C，R其餘／六段／flags6h保持。原始SS窗口首dword正是返回地址；後四步只觀測框架建立與參數指標讀取，未擷取返回值後續寫回，不深挖helper。
+
+兩組均到step_limit=50000000 eip=0x23856E，無step_error／guest_cpu_stop。時計62461366、IRQ0完成8383，VBE Bank7／StartY512／BankSets815／Writes9385664／DisplaySets21；兩末尾窗口與VBE相同。沒有完整R／六段／IRQ7上限快照。受控初態各0／1回呼且allocator selector／unique_sites不同，差異未抹除。313交換前完整前綴及第三未設定日期全流程，僅mtime／DTA四bytes／PNG名稱正規化後保持。
+
+兩PNG SHA-256 8f7791ae57649991fbf9bf3a86fdacab602e792f39a9b3d57ae691484a754d47，逐位元相同，已實際檢視原版主選單面板從右側部分滑入；完整展開／點擊未驗。第三圖保持黑色過場1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622，無日期仍在0x240A32拒絕。
+
+| 本機忽略收據 | SHA-256 |
+| --- | --- |
+| workplace/moo2-314-mouse-exchange-tests.txt，四新／六回歸PASS | e9baa0f79237394f0d5e217bb71d15033a713cf629ea6bfd98e53eed20fbd6f1 |
+| workplace/full-test-314.txt，固定EXE全套PASS | 12df9650c1fa427bce3f0d1e73a9aeda2f81ac905a47187ac0c029218df186fb |
+| workplace/moo2-probe-314-full-game.txt.gz | 41923df89d7657f6ceb015cb740c6d426e09d0892ab4968a59f414cb53141b30 |
+| workplace/moo2-probe-314-mouse-event.txt.gz | a912b61514f85eb348271958666486ee991b80fc5a6b331a5acbb6ababd4dfe9 |
+| workplace/moo2-probe-314-unconfigured.txt.gz | 053d2d831055b737673985b6ddf48ea50e1bf7dd2646b0c56b94de3fe83eedbb |
+
+Go1.24.13固定映像，600s／2GiB／2CPU／128pids／UID1000／network none，原檔／patch唯讀；命令沿313，輸出314，全套後三正常go run。56回填函式、31新負例及CLI通過，309–313同一AX0014h停點同次追加勘誤。護欄首輪因位址文字缺完整冒號形式拒絕，補正文件後通過，程式與正式來源／收據不改。
+
+工具9a2c7a21b0901ac8acc1f4387729ce25072b5fd9已推送github隔離分支，回讀一致且乾淨，未推本機origin。[鎖定314](https://github.com/wicanr2/dosgolem/blob/9a2c7a21b0901ac8acc1f4387729ce25072b5fd9/docs/spec/314-moo2-protected-mouse-callback-exchange.md)保存源碼雜湊、公開契約、精確命令與限定CONFORMED。原始素材／完整RAM／終端／PNG留本機。303整體DRAFT、255完整游標READY、299自然OF=1、AH2Ch／RNG、人耳、完整主選單／玩家路徑及remake同狀態未完成，主庫玩法RE閘門保持。下一步在50M內補主選單滑入的有界唯讀階段觀測，辨識正常等待／輸入條件，不提高上限、代寫資料或跳動畫。
