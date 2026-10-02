@@ -949,3 +949,27 @@ DMA8啟動／自動／stereo／FIFO、rate22050/1、block2048／sampleCredit9261
 全部八目的／全word／49組邊界與獨立六旗標、完整非零FPU／RAM保持、地址／只讀／拒絕及真正寫回測試通過。首輪自製測試誤用不存在FPU欄位，只改為實際完整欄位後同命令重跑；保留編譯失敗收據，不當作產品玩法缺陷。正式命令沿310，輸出311改312，固定EXE全套後順序三組go run，明示日期、50M上限、48M Esc、有／無既有事件／第三未設定均保持，不啟用私有IRQ1直入。全部54回填函式、31新增缺證據／狀態／舊標記／連結負例及CLI通過，309／310／311同一ADD停點追加勘誤。
 
 工具f2d982a7d9383a2b536d9540cb5b8b9e860f6284已推送github隔離分支、遠端回讀一致且乾淨，未推本機origin。[鎖定312](https://github.com/wicanr2/dosgolem/blob/f2d982a7d9383a2b536d9540cb5b8b9e860f6284/docs/spec/312-cpu386-add-word-memory-source.md)保存限定CONFORMED、來源／工具／輸入、精確命令、全部成功／診斷／失敗雜湊與近似。原始素材與完整RAM／終端／gzip／PNG只留本機。AH2Ch／RNG、255／299自然OF=1、人耳、完整鍵盤、主選單／正常玩家流程與remake同狀態未驗，主庫玩法RE閘門保持。下一步限定word CMP及原有有號分支，不深入helper或提高上限。
+
+### 2026-10-03 word CMP 旗標、JL 兩方向與標題背景
+
+基線主庫b98d6f0e3f11d6a2dba7ab637ad637f5215f9c5e／工具f2d982a7d9383a2b536d9540cb5b8b9e860f6284。路由載入平台規格優先；原始定位沿固定官方1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f。原始ZIP／patch／417根檔／MOX.SET再驗保持。平台契約引用[Intel CMP](https://www.ardent-tool.com/CPU/docs/Intel/386/manuals/prref386/CMP.htm)與[Jcc](https://www.ardent-tool.com/CPU/docs/Intel/386/manuals/prref386/Jcc.htm)，不分析runtime helper或猜CX欄位用途。313 DRAFT／原版與公開契約審查READY後，只補word暫存器group7，完整iw後用sub16改六旗標、來源不寫回；其他word memory／dword／prefix不擴張。
+
+**已證實，dosgolem高位LE的正常入口自行重生**：兩明示1996-01-01流程固定48M Esc／50M上限。第48919460與48919797步的0x14E3DE，66 81 F9 D4 00，CX1／2比212，flags293h→297h；下一0x14E3E3的0F 8C 45 FF FF FF都真正跳0x14E32E。第48992578步CX00D4h，flags293h→246h；下一JL不跳，落0x14E3E9。前兩筆CF1／PF1／AF1／ZF0／SF1／OF0，邊界CF0／PF1／AF0／ZF1／SF0／OF0，以獨立借位／popcount／有號範圍公式核對。全部R／六段／SS0188:002BDBA4的32byte窗口保持，原版目的高word0，非零高word由全word／八來源測試補足。
+
+正常原版六筆CMP／JL、完整312前基線與外層total212／sample_groups3／boundary212_observed=true已核對。不把未捕捉迭代當逐值對拍。兩初態受控滑鼠有／無事件，各完成1／0回呼，其餘受驗核心／音訊／時計／IRQ與VBE一致。第三未設定日曆，除新增唯讀total0、PNG名稱與mtime／DTA四bytes外完整保持312的0x240A32拒絕，沒有默認日期或CMP抽樣。
+
+新停點兩設定皆第49564005步、高位LE0x24C31B的CD 33，AX0014h尚未支援。R為14／1／2136D1／0／2BDA88／2A0000／0／0，六段8／0／8／0／20／188，flags6h；mouse_service完整輸入／輸出與flags保持handled=false，EIP24C31D僅INT fetch，下一C3尚未執行。兩時計61027457，IRQ0 started8251／completed8251／failed=false，IRQ7 started357／completed357；DMA完成357／剩1490／credit984300／current4A2Eh／count05D1h。裝置irq7_deliveries358另含先前16位傳輸，不混為保護模式完成數。
+
+兩PNG SHA-256 5145cdfe5e66f25f9c78f9460256152cfa914d2ac22b17a89dded2b1717f3a37，逐位元相同，已實際檢視原版Master of Orion II標題背景與游標，主選單按鈕未見。VBE Bank2／StartY0／BankSets738／Writes6003978／DisplaySets10。第三圖保持黑色過場1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622，不將三圖當作相同結果。
+
+| 本機忽略目錄收據 | SHA-256 |
+| --- | --- |
+| workplace/moo2-313-cmp-imm16-tests.txt，九個目標／回歸PASS | fd354238907ab735a9bcae1dfd197eae39fd03757751e9b4798338d656f7100f |
+| workplace/full-test-313.txt，固定EXE全套PASS | e1bf0db1fb8c96e8f971ed6635b73fd0ad0d5f601f1905480de0f924e380cf73 |
+| workplace/moo2-probe-313-full-game.txt.gz | 9ecb69d4db8d3e563ecf0437aa6c94ef20bf81cae8616054f3fcb50429380785 |
+| workplace/moo2-probe-313-mouse-event.txt.gz | 024cb32aacccb303f6b58054e277c5a14e989ca79d426f8a25ef02790c40f895 |
+| workplace/moo2-probe-313-unconfigured.txt.gz | 1d9d785ac3189d58aab71527bb80f8335655a4d024e28e72b395f6926241e958 |
+
+Go1.24.13固定映像、600s／2GiB／2CPU／128pids／UID1000／network none，原檔／patch唯讀，/tmp/game乾淨組合固定417根檔與官方EXE。命令沿312，輸出313；全套後三組go run，日期／Esc／受控滑鼠條件保持，未啟用私有IRQ1直入。新CMP三測試及ADD／SUB六回歸、八來源全word／49邊界、獨立六旗標、完整非零FPU／核心、真正JL的45組有號／相等／溢位與拒絕全通過。55回填函式、33新增缺證據／狀態／舊標記／連結負例及CLI通過；309–312同一CMP停點追加勘誤。
+
+工具0cc36241a3523df865d9b8f336d70c124bc7093c已推送github隔離分支、遠端回讀一致且乾淨，未推本機origin。[鎖定313](https://github.com/wicanr2/dosgolem/blob/0cc36241a3523df865d9b8f336d70c124bc7093c/docs/spec/313-cpu386-cmp-word-register-imm16.md)保存限定CONFORMED、來源雜湊、公開契約、命令與收據。原始素材與完整RAM／終端／gzip／PNG只留本機。滑鼠AX0014h、255／299自然OF=1、AH2Ch／RNG、人耳、完整鍵盤、主選單／玩家路徑與remake同狀態未驗，主庫玩法RE閘門保持。下一步公開滑鼠API與既有callback儲存，不深挖driver、代寫遊戲資料或提高上限。
