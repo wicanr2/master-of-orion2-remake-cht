@@ -46,9 +46,9 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅作輔助基準。固定官方EXE、正版ZIP根層417檔及MOX.SET。256–302限定CPU／平台CONFORMED，299未有自然OF=1同狀態收據，255完整座標／游標仍READY。304兩模式裝置時計接線／首block真實PCM已驗，規格仍READY；保護模式IRQ7正式轉送／返回待補。機器層／固定原檔全套通過，CPU／啟動來源未改，不宣稱硬體wall-clock、核心布局／跨權限鏈或玩法同狀態。
-  **目前自然終態**：兩排程設定50,000,000步上限，第42356668步根CPU高位LE0x257FC9停在保護模式IRQ7平台缺件，並非未知CPU opcode。完整R為120 325B80 3258C8 120 2BDB58 2BDB6C 325BA0 325CE1、段8 188 188 0 20 188、flags206h。兩時計44032078，從C6返回43985659前進46419µs，首block2048個80h、DMA完成1／地址4800h／count7FFh／信用4000，DSP與PIC pending保留、IRQ7派送仍1。實際absolute IVT1201:0682／線性0x12692，DPMI實模式0F與DOS保護模式0F零。IRQ0 started6176／completed6176、failed=false，等待原始E6 11 00 00。目前PNG同較早黑圖，首IRQ7在星空前停止；302／303星空與50M不是304終態。正常鍵盤、255游標、主選單／正常玩家操作／受控亂數、299自然OF=1、人耳及remake同狀態未完成。
-  **下一步**：依公開DOS/4GW框架及已保存absolute IVT1201:0682建立窄IRQ7派送／返回契約，先有限保存原版入口／出口與來源確認、EOI／IRET條件，達READY才接線並用相同初態重跑。DPMI與DOS保護向量零值保留，不猜轉送目標、不抑制pending來跑過等待。鍵盤另依保護模式IRQ1／埠契約建立正常輸入，不用BIOS入隊代替；不猜欄位用途、跳指令或提高上限，不深入driver／ISR／busy-wait。探針有界快照及尾端32筆，入口預設8M、明示限1–50M。[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)保存304首block／IRQ7收據與近似邊界；工具閘門不計入玩法分母。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅作輔助基準。固定官方EXE、正版ZIP根層417檔及MOX.SET。256–302、304–306限定CPU／平台CONFORMED，303觀測仍DRAFT、299未有自然OF=1同狀態收據、255完整座標／游標仍READY。共用裝置時計、真正IRQ7／EOI／22E／IRET及裸34 ib的XOR AL與原版RET／MOV消費已驗，全部CPU／固定原檔全套通過；不宣稱硬體wall-clock、DOS/4GW核心exact或玩法同狀態。
+  **目前自然終態**：兩排程均到50,000,000步上限，高位LE0x21588F，沒有未知CPU／平台拒絕。完整R為FFFFFFFF 108 178 15A 2BDB70 2BDB90 46 260C2B、段8 188 188 0 20 188、flags246h。兩時計61913470，IRQ7 started386／completed386、IRQ7Deliveries387含較早一次，IRQ0 started8411／completed8411、failed=false。取樣總量790617／信用391200、DMA完成386／block剩1959／current4059h／countFA6h，PCM記錄限65536byte。兩PNG相同並已檢視星空片段，主選單未見。正常鍵盤、255游標、正常玩家操作／受控亂數、299自然OF=1、人耳及remake同狀態未完成。
+  **下一步**：依原版已安裝保護模式IRQ1 8:21C4D8與公開8042／PIC／DOS/4GW契約，補正常鍵盤輸入的有界原版入口／返回收據，審查READY後實作，從正常路徑重播；不以BIOS隊列注入代替60h／IRQ1。不猜等待欄位用途、跳指令或提高上限，不深入driver／ISR／busy-wait。探針有界快照及尾端32筆，入口預設8M、明示限1–50M。[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)保存鎖定305／306收據與近似邊界；工具閘門不計入玩法分母。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備

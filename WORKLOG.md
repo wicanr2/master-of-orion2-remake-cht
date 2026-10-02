@@ -680,3 +680,19 @@
 主庫四檔304現況／鎖定證據／繁體字／UID／唯一AGENTS及git diff --check通過，原始ZIP／patch／417根檔／固定EXE／MOX.SET雜湊再核對一致，歷史root-owned仍2709筆不動。工具遠端回讀089f51f13149dd2a1b2c08c6b24ec639d0c78788與本機一致且工作樹乾淨；來源／輸出UID:GID1000:1000。本輪有界容器均已退出移除，moo2名稱清查空，Go映像中的confident_williams為已確認另一FD2專案，保留未操作，沒有清理其他專案或映像。
 
 最後再次清查：Go映像與moo2名稱皆空，先前另一FD2容器已自行結束，未由本輪停止或刪除。主庫d26f1b8e770e82af1148abcd9e6559e62b18477c已推送並回讀一致。
+
+
+## 2026-10-03：原版 IRQ7 返回與 XOR AL 正常消費
+
+- 開工主庫3d20cac1b3d1b2fe44922738dd97d3e2c315f42e／工具089f51f13149dd2a1b2c08c6b24ec639d0c78788乾淨，前輪304首block與明確IRQ7停點屬實際進展。路由命中平台規格優先、dosgolem、規格閘門／文件職責與結論回填，載入對應入口，沿用逆向重製技能；主庫玩法RE閘門不變。
+- 305先DRAFT／索引，依Open Watcom公開passdown與核心私有16位元堆疊做可丟棄有界診斷。兩固定原版都從實際IVT1201:0682執行73步，原版OUT20h EOI、IN22Eh來源確認及IRET返回成功。診斷在304正式停止收據／PNG之後執行，額外1tick及client0100配置明標，未當正式正常路徑收據。首次編譯因Go預設平行度與64pids耗盡程序，同映像改GOMAXPROCS=2／-p2乾淨通過，分類為工具資源設定。
+- READY審查後正式轉送採獨立實模式CPU、主機allocDOS私有4KiB堆疊一次配置重用、真正IVT與共用派送框架；不假呼叫DPMI0300、不增加dispatch tick，不改client DOS block／dosLast／descriptor。caller完整32位R／六段／旗標／EIP／FPU成功或失敗保持，原版資料與I/O真實寫入保留。未支援CPU／埠／INT／HLT／超時／錯誤frame或EOI明確停止並持續拒絕後續執行。寄存器映射與1µs時計明標平台近似，不反組譯ISR。
+- 自製ISR／完整硬體frame、caller／FPU／原堆疊保持、9步加外層一次／堆疊重用／client帳本保持、IF／PIC／IRQ0互斥及向量／段／配置驗界、八類失敗與持續停止通過。首輪fixture沿舊測試高位映像而缺低位DOS arena，正確配置失敗；核對setLimits後只修自製fixture入口，production不加特例，保留失敗收據，同命令重跑通過。
+- 固定EXE全套及兩正式自然通過首IRQ7：outer_step42356668、高位LE0x257FC9，原版73步EOI／22E／IRET後caller正常下一指令到0x257FCD；兩時計44032151=44032078+73、PCM2051／信用223300。兩自然連續14次轉送返回、PCM29175／信用60600後，第42488059步高位LE0x247BE1原始34 01 C3停在未支援XOR AL,1。工具305提交dcf764ed14d1b141948968fd8ebc596ee3dec851已推送並回讀一致。
+- 306先DRAFT／索引，以305完整R／段／flags297h與Intel裸34 ib、五定義旗標及AF未定義契約審查READY後，只接CPU裸AL立即值。256×256×兩初始旗標由獨立逐bit與bit計數驗結果／五旗標，AF清除另驗模型；高24位／完整外層／FPU／記憶體、截短及11種前綴拒絕均通過。固定EXE全部CPU／機器層通過。
+- 兩自然三組原版AL為1→0、0→1、1→0，flags297h→246h／202h→202h／297h→246h；RET真正讀SS:ESP的DF 1A 23 00回0x231ADF，ESP加4，caller再ADD ESP,4後，0x231AE2的MOV ESI,EAX真正得到0／1／0。全部R／段與旗標完整核對。305首XOR前收據逐列保持，僅排除解壓mtime／DTA四bytes；有限唯讀探針不注入資料／CPU／鍵盤或提高50M上限。
+- 兩自然都到50M無未知CPU／平台拒絕，高位LE0x21588F、兩時計61913470。IRQ7 started386／completed386，最後73步EOI／22E／IRET成功；IRQ0 started8411／completed8411、failed=false。從C6信用與時計獨立整除取樣790617／餘391200，386個2048byte block／4096byte ring吻合，PCM只記錄前65536byte，不混稱總傳輸量。兩PNG相同且實際檢視為星空片段，主選單未見；鍵盤未安裝、60／61／64埠讀取零。
+- 十二份音訊邊界與305的XOR停點同次回填，全部48回填函式／132項缺證據負例／CLI、完整原版R／段／RET／MOV鏈與DMA時計稽核通過。繁體字稽核先修新增測試訊息；後來抓到CPU舊來源的混字，稽核改只檢查本輪新增CPU行，不修改無關舊碼。工具306提交4eb97f6277121e528a2d3ce594dbb1967d16382e已推送並回讀一致，不推本機origin。精確輸入／來源／命令／有效及失敗收據雜湊集中鎖定305／306；正版素材、完整終端／記憶體／gzip／PNG留本機，只公開自製來源／測試與有限文字證據。
+- 主庫只更新四份現況／歷程／既有研究入口，沒有修改Go/Ebitengine玩法。304–306限定CONFORMED，正常鍵盤IRQ1、255／299自然OF=1、人耳／主選單／正常玩家路徑／受控亂數與整款remake仍未完成。下一步按原版IRQ1 8:21C4D8補有界正常鍵盤平台契約，不以BIOS入隊代替。17:02:52 UTC清查本輪有界容器均退出移除，Go映像與moo2名稱清查皆空；先前另一FD2專案容器competent_boyd已核對掛載，保留未操作，後來自行結束，未清理其他專案或映像。
+
+主庫原HEAD／四檔現況、限定範圍／鎖定306證據／唯一活表、繁體字／UID／唯一AGENTS及git diff --check通過，原始ZIP／patch／417根檔／固定EXE／MOX.SET雜湊再核對一致。歷史root-owned仍2709筆不動；工具HEAD與遠端4eb97f6277121e528a2d3ce594dbb1967d16382e一致且工作樹乾淨。Go映像ID仍sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，最後Go映像及moo2名稱清查皆空，沒有清理其他專案或映像。

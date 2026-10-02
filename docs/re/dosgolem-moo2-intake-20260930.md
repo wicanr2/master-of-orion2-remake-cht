@@ -826,3 +826,18 @@ DMA8啟動／自動／stereo／FIFO、rate22050/1、block2048／sampleCredit9261
 最後只補PCM雜湊與原始入口的唯讀診斷，同命令重生兩自然，與before-pcm-diagnostic收據僅差兩列／解壓mtime／DTA時間日期四bytes，平台／CPU未改。有效兩gzip SHA-256 ec4abf4f565e6cf1ea3ec1b210e414b459d00a6ac8e80da0307e3c323dcb3de0／d89716bc0d1482670ea1eb5cf1709475ef31bbeff0930cb86af34ef407369fda；機器層收據bff247d74ad4200f631ebd7edcccfebed4f72a47f325b7359396fc2a2d6d7c0e，固定EXE全套163b0f2bfa8e8ad2b6efe1f831c7ab35173e1682f82dbf134f4b9fe63c1c79c2。全部來源／輸入／公開平台契約／失敗及有效收據雜湊與命令見[鎖定規格304](https://github.com/wicanr2/dosgolem/blob/089f51f13149dd2a1b2c08c6b24ec639d0c78788/docs/spec/304-le-shared-device-clock.md)。
 
 十一份較早音訊邊界同次回填，46個回填函式／80項缺證據負例／CLI及兩自然完整首block／PCM／pending／原始向量稽核通過。工具089f51f13149dd2a1b2c08c6b24ec639d0c78788已推送隔離分支並回讀一致，不推本機origin。304保持READY，首block時間接線已驗，正式IRQ7轉送／來源確認／EOI／IRET返回仍待窄契約；主庫玩法RE閘門、255／299自然OF=1、正常鍵盤／主選單／正常玩家路徑／受控亂數、人耳及整款remake限制保持。原版素材、完整終端／記憶體／gzip／PNG留本機，不公開原版資產。
+
+
+## 2026-10-03：IRQ7 正式返回與 XOR AL 的原版 caller 消費
+
+工具基線089f51f13149dd2a1b2c08c6b24ec639d0c78788。305先做明示診斷，兩固定原版從absolute IVT1201:0682／實模式線性0x12692執行73步，實際OUT20h EOI、IN22Eh確認來源及IRET返回。診斷額外1tick與client0100私有堆疊配置明標，與正式收據分開。公開DOS/4GW passdown／私有16位元堆疊與實際入口／出口足以審查READY後，正式用獨立實模式CPU與host allocDOS私有4KiB堆疊重用，保持完整protected caller／FPU／原堆疊，來源確認與EOI由原版I/O完成，失敗後持續明確拒絕。寄存器映射與1µs工具時計是平台近似，不稱DOS/4GW核心或逐週期exact。
+
+正式兩自然第42356668步高位LE0x257FC9，73步返回後原caller下一指令到0x257FCD，兩時計44032151、PCM2051／信用223300。連續14次IRQ7返回、PCM29175／信用60600後，第42488059步高位LE0x247BE1原始34 01 C3停在XOR AL,1。來源／固定EXE／兩正式與診斷收據／失敗fixture及窄驗收見[鎖定規格305](https://github.com/wicanr2/dosgolem/blob/dcf764ed14d1b141948968fd8ebc596ee3dec851/docs/spec/305-moo2-irq7-real-mode-passdown.md)。
+
+306以原始完整R／段／flags297h與公開Intel XOR契約審查READY後，只接裸34 ib，五定義旗標正確、AF清除保留工具近似。全部byte配對／兩初始旗標、目的外24位與完整外層／FPU／記憶體保持、前綴／截短拒絕及固定EXE全套通過。兩自然三組AL 1→0／0→1／1→0，flags297h→246h／202h→202h／297h→246h；原始C3真正讀SS:ESP的DF 1A 23 00回高位LE0x231ADF、ESP加4，caller的ADD ESP,4後，0x231AE2的MOV ESI,EAX實際得到0／1／0。完整R／段／旗標與305前段逐列保持已核對，沒有CPU／遊戲資料或鍵盤注入。
+
+兩自然均到50M上限無未知CPU／平台拒絕，高位LE0x21588F、R=FFFFFFFF 108 178 15A 2BDB70 2BDB90 46 260C2B、段8 188 188 0 20 188、flags246h。兩時計61913470，IRQ7 started386／completed386、IRQ7Deliveries387含較早1次，IRQ0 started8411／completed8411、failed=false。C6信用926100加(61913470−43985659)×44100獨立整除得790617 sample／餘391200，386個2048byte block、ring current4059h／countFA6h、block剩1959一致；PCM只記錄前65536byte，不能外推整段人耳或音訊完成。
+
+兩PNG SHA-256 535e27c45ba579132ef36398335f0c773aa4889473d8336f7180184290e7e975，已實際檢視星空片段，主選單未見。自然兩gzip SHA-256 7a984c68b925623589aa6dae45973ef8431b98b72df65523dbed65eaeb485720／d4526b29dc51b057566604e4538c0adb4c379b06ad005a589e38d59a2a84506e，固定EXE全套43bf923f2d3c8d7d01a9d231fd5f2cc273c9157c945108c197fac3c15bf32bf8。精確來源／輸入／命令／返回消費及範圍見[鎖定規格306](https://github.com/wicanr2/dosgolem/blob/4eb97f6277121e528a2d3ce594dbb1967d16382e/docs/spec/306-cpu386-xor-al-imm8.md)。
+
+十二份音訊邊界與305 XOR停點回填，48個回填函式／132項缺證據負例／CLI與完整兩自然獨立時計／真正RET／MOV消費稽核通過。工具4eb97f6277121e528a2d3ce594dbb1967d16382e已推送隔離分支並回讀一致，不推本機origin。304–306限定CONFORMED，303正常輸入觀測仍DRAFT，原版AH2509的保護模式IRQ1 8:21C4D8已保存而正常鍵盤尚未接通，60／61／64埠讀取零。下一步依公開鍵盤／PIC／DOS/4GW契約保存有界原版入口／返回，達READY後補正常輸入；不以BIOS入隊替代IRQ1、跳指令或提高50M上限，不深入driver／ISR／busy-wait。255／299自然OF=1、等待欄位語意、主選單／正常玩家路徑／受控亂數、人耳及整款remake仍未驗收，主庫玩法RE閘門保持。原版素材與完整收據留本機，不公開原版資產。
