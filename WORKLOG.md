@@ -506,3 +506,11 @@
 - 281 同次 DRAFT＋索引，有限原版 BDA+1 反例推翻「只返回」候選；公開 BIOS tick／EOI 契約審查後 READY 才實作。平台及固定官方 EXE 全套通過；兩個自然排程自行完成 1,595 次原版 IRQ0 返回，等待值變為 1 並退出模式 2 等待。281／受限 277 CONFORMED，255 READY；受控事件已注入，正常玩家操作／主選單與整款 remake 仍未完成。下一停點是 PIT 通道 0 的 count latch。
 - 24 個回填函式、新四項缺證據負例、有限原版邊界護欄及既有 CMP／PIT AST 護欄通過。scope／舊規格路徑猜錯及公開原始碼 Cache miss 是讀取問題，使用實際檔名與官方公開參考後繼續，沒有重建工具映像或深挖 ISR。核心布局／IF 與 EOI 仍明示平台近似。
 - 工具 11 檔提交 9b8d1a07121fab929fc94a7f529449beb0d49742 已推送 github/codex/moo2-parity-20260930，未推本機 origin；主庫只更新 CONTEXT／WORKLIST／WORKLOG／既有研究入口四檔，深層連結鎖定工具提交。原版素材與完整終端／記憶體／gzip／PNG 留本機，所有本輪來源／輸出 UID/GID=1000:1000；工具無 root-owned／誤建 .md 目錄，主庫歷史 go.sum／lbxinfo／.docker-cache 不動。本批一次性容器已退出移除，未清理其他專案或映像。
+
+
+## 2026-10-02：接續計數鎖存與 E4 原版讀取
+
+- 281 主庫 checkpoint 03a9fde13e4dc06fc07e8ad0954b75d114b74b32／工具 9b8d1a07121fab929fc94a7f529449beb0d49742 推送後繼續同一目標。282／283 分別 DRAFT＋索引、公開 Intel PIT／IN 契約與實際自然停點審查、READY 後實作；限定 CONFORMED。平台、全部 CPU 與固定官方 EXE 全套通過，原版兩個自然排程自行消費凍結低高計數，再停 byte 記憶體 SUB，沒有修改主庫玩法或注入遊戲值。
+- 初次新測試樣板容量不足，修正容量／共享 I/O 接線後揭露 E4 CPU 缺件；第二次失敗重查知識路由，先以既有 EC 隔離平台，再用自然 E4 命中與公開契約完成 CPU gate。同映像乾淨重跑通過，兩份失敗收據保留；沒有增加硬體／driver 考古。26 個回填函式、新六負例／CLI、兩排程三筆 latch／兩次 IN 狀態及索引／繁體字／UID 通過。
+- 工具 13 檔提交 c58709c5ffc8841a22112ad1ea8016890f87d9e5 已推送 github/codex/moo2-parity-20260930，未推本機 origin。git add 對父目錄被忽略但已受版控的探針產生提醒，精確暫存 13 檔仍完整，核對後提交；沒有強制加入其他 workplace 原始輸出。主庫只更新四份現況／歷程／既有研究入口，深層連結鎖定工具提交。
+- 原版素材、完整記憶體／終端／gzip／PNG 留本機；本輪來源與輸出 UID/GID=1000:1000，工具無 root-owned／誤建 .md 目錄，主庫歷史 go.sum／lbxinfo／.docker-cache 不動。一次性容器已退出移除，未清理其他專案或映像。主選單與正常玩家路徑、音效／受控亂數及整款 remake 尚未完成；下一步是公開標準 byte SUB CPU 契約。
