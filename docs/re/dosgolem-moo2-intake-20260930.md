@@ -772,3 +772,20 @@ VBE Bank9／StartY512／BankSets452／Writes4660564／DisplaySets7，indexed SHA
 CPU收據SHA-256 7ee5e1795791547f35233adb0b578dac033107368ca5690d6a8e9b6ae331956e；固定EXE全套4df4f49481a1f920ac0812d4694c98bf8d70a9ba9d8fa2f327b7d0bce0ffb7ac；兩自然gzip ccd184dd64aa984b77e21b6624fca6a7407c95b938dfa959203af32ef0901c13／339eb37ec3be286d6e42b95e7f87d8913ad9423cbf381052a77993fc3025b27b；第一次CPU失敗59cd8a70fec7de6e18004bad33361b885d01b8972205574e2aa11120e44fb73b。來源／CPU／probe／新測試、前態、公開Intel來源及精確命令見[鎖定規格301](https://github.com/wicanr2/dosgolem/blob/d013029fcddf4da8e8d7650660897223e6fa67ca/docs/spec/301-cpu386-xor-word-register-imm8.md)。原始ZIP／patch／417根檔／固定EXE／MOX.SET雜湊再核對一致；原版素材及完整終端／記憶體／gzip／PNG留本機。
 
 293–300舊停點與索引同次回填，44個回填函式／32項新缺證據負例、CLI與兩自然完整XOR／真正堆疊消費／IRQ0返回及新停點獨立稽核通過。工具提交d013029fcddf4da8e8d7650660897223e6fa67ca已推送github隔離分支並回讀一致，不推本機origin。下一步只保存XCHG真正完整前態與下一ROR消費，依公開word交換／高16位與旗標保持契約審查窄CPU規格，不追helper／IRQ0 handler／ISR／driver硬體時序，不改主庫玩法。
+
+
+## 2026-10-02：word XCHG 與原版星空圖像
+
+已證實：工具基線d013029fcddf4da8e8d7650660897223e6fa67ca，302同次DRAFT＋索引，以未改CPU兩自然真正完整前態與公開Intel word交換／兩高16位及全部旗標保持契約審查READY後，只補66 91–97。三固定位址各最多三筆唯讀StepHook原樣轉送既有hook，不替換CPU／Bus／時計／IRQ橋接、不注入資料或跳指令。全部CPU與固定EXE全套首次通過，原高低word整除拆解／交換與完整保持、拒絕／既有byte及dword XCHG、NOP已驗。
+
+兩自然各三組完整XCHG→ROR→RET邊界一致，第一前態outer_step42603292、高位LE0x256171，完整R依EAX ECX EDX EBX ESP EBP ESI EDI為A0A0A2E 2E0A40C0 2E0A2E0A 2E0A0A0A 2BDB6C 6EE4 70E2D2 3471A0、段8 188 188 0 20 188、flags206h，與未改CPU兩自然相同。XCHG後0x256173的完整EAX0A0A0A0Ah／EBX2E0A0A2Eh，兩高16位與其他R／段及全部旗標保持；下一ROR EBX,8後0x256176的完整EBX2E2E0A0Ah／flags206h。後兩組前態步數42616626／42621546，完整EBX100A0A0Ah、AX0A10h交換後EBX100A0A10h，下一完整ROR結果10100A0Ah，其他R／段保持。原值交換與逐次整除循環獨立核對後302限定CONFORMED；多位OF未定義保留只屬297工具模型，RET只記邊界，不追helper／caller內部。
+
+兩自然都至step_limit=50000000 eip=0x22FCD2，完整R為FFFFFFFF 4000 0 0 2BDB64 2BDBB4 FFFFFFFF 3D6978、段8 188 188 0 20 188、flags246h，bytesFF 0D 40 8E 2A 00 89 F0 5D 5F 5E C3 57 55 8B 15。沒有step_error／guest_cpu_stop，不把診斷上限寫成CPU拒絕。無事件unique_sites17667，受控滑鼠事件17697；首次稽核誤要求兩分支覆蓋數相同，依各輸入實際值修正後用同一收據通過，沒有修改CPU或重跑原版。
+
+終態IRQ0 active=false／failed=false／started7789／completed7789，等待DS:00271148=33 18 00 00即6195；PIT mode2／Reload5966／Generation5、BIOSClock Micros52095937／Deliveries7809／Pending=false／InService=false。C6命令／handled返回／成功caller與來源SHA保持，保護模式連續PCM／IRQ7及人耳仍未知；工具時間不稱硬體wall-clock一致。
+
+VBE Bank9／StartY512／BankSets497／Writes4744640／DisplaySets7，indexed SHA-256 8c5886995a63e609e0b33bd49e49a331d7de452437485428d9919c60461fa98c；RGB SHA-256 8f688f78c811b308a51b62769add0f23e00718eda758a10e54318ef369122bf7，兩PNG同SHA-256 d648932f847a2fe5b87723b6537f76e816d64fb60e05c13321d15ede50f3b21b。已檢視圖像，中央有星空／星雲片段，未見主選單；原圖留本機，未公開原版美術。事件第1612067步注入x657／y189／buttons0，255完整座標／游標、正常玩家操作／受控亂數、299原版自然OF=1與整款remake仍未驗收。
+
+CPU收據SHA-256 d05045f43ddfdf2021e0a6eee727ac4463aa7fe29310821169828fdd1ba75dbb；固定EXE全套263845c9b6cd1109b941dcf14740b3b19926bb0b4e94385d9073271f3b99f8cc；兩自然gzip fe3472fa0d7766a761b3b5f7cc5fab8cc22a296a16d0e947e3a093a62826be87／ae21d6b88b831f10addae20471effd45d0ce0e163de3d9067d0840829f4f44e9。來源／CPU／probe／新測試、真正前態、公開Intel契約與全部精確命令見[鎖定規格302](https://github.com/wicanr2/dosgolem/blob/9e6ee8cea7e40fdf13528fdae6b7959361708aaa/docs/spec/302-cpu386-xchg-ax-word-register.md)。原版ZIP／patch／417根檔／EXE／MOX.SET雜湊再核對一致；原始素材及完整終端／記憶體／gzip／PNG留本機。
+
+293–301九份舊停點及索引同次回填，45個回填函式／36項新缺證據負例／CLI與兩自然完整消費、IRQ持續返回／50M上限核對通過。工具提交9e6ee8cea7e40fdf13528fdae6b7959361708aaa已推送github隔離分支並回讀一致，不推本機origin。下一步先核對既有正常鍵鼠入口與尾端caller的有限唯讀狀態／平台音訊與時計進度，確認所等條件後以原版正常輸入重播；不猜修等待或盲提高上限，不追helper／runtime／driver／ISR硬體時序，不改主庫玩法。

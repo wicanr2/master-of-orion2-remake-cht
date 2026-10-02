@@ -638,3 +638,16 @@
 - 主庫只更新四份現況／歷程／既有研究入口，不修改Go／Ebitengine玩法。來源／輸出UID:GID1000:1000，工具無root-owned／誤建.md目錄，主庫歷史root-owned不動。本批一次性容器均已退出移除；Go映像清查曾見短暫容器，讀取掛載前已自行移除，未確認歸屬，未停止或刪除它。下一步只保存XCHG真正完整前態與下一ROR消費，按公開CPU契約審查窄word暫存器形式，不追helper／ISR／driver硬體內部。
 
 主庫四檔現況／鎖定證據／繁體字／UID／唯一AGENTS及git diff --check通過，歷史root-owned仍2709筆。工具遠端回讀d013029fcddf4da8e8d7650660897223e6fa67ca與本機一致。最後docker ps -a依Go映像與moo2名稱核對皆空。
+
+
+## 2026-10-02：word XCHG 原版消費與星空畫面
+
+- 開工主庫b0b5a4ab86594466673df7f2f6f192cead05f3b8／工具d013029fcddf4da8e8d7650660897223e6fa67ca乾淨，上一輪word XOR／PUSH及IRQ0返回已推送。路由命中平台契約／規格閘門、dosgolem、文件職責與結論回填，沿用逆向重製技能；主庫玩法RE閘門不變。
+- 302同次DRAFT＋索引，以未改CPU兩自然真正完整初態及公開Intel交換／兩高16位／全部旗標保持契約審查READY後，只補66 91–97。七目的／全部AX低word與對側同值、補集／45邊界配對／64初算術旗標與32旗標bit、補集，以整除拆原高低word獨立核對完整保持及拒絕／既有byte、dword XCHG與NOP。三固定位址各最多三筆唯讀hook原樣轉送，不替換CPU／Bus／IRQ橋接或時計、不注入資料或跳指令；全部CPU及固定EXE全套首次通過。
+- 兩自然各三組完整XCHG→ROR→RET邊界相同，第一真正初態與未改CPU相同。XCHG令完整EAX0A0A0A0Ah／EBX2E0A0A2Eh、flags206h，兩高16位與其他完整R／段保持；下一ROR EBX,8真實消費完整來源，結果2E2E0A0Ah。後兩組完整來源100A0A0Ah／AX0A10h亦驗交換與完整ROR結果10100A0Ah；原值交換及逐次整除循環核對後302限定CONFORMED，多位OF未定義保留只屬297工具模型，RET只記邊界。
+- 兩自然持續至50M診斷上限、根CPU高位LE0x22FCD2，沒有step_error／guest_cpu_stop，完整R／段／flags246h相同。IRQ0 started7789／completed7789／failed=false，等待6195；VBE兩PNG相同，已檢視星空／星雲片段，尚未見主選單。C6命令／handled返回／caller及來源SHA保持，保護模式PCM／IRQ7、人耳、255／正常玩家路徑／受控亂數、299原版自然OF=1與整款remake限制保持。工具時計不當硬體wall-clock證據，上限不當CPU拒絕。
+- 首次收據稽核誤要求無事件／受控事件unique_sites相同，實際17667／17697；依兩輸入實際分支覆蓋值修正後以同一收據重跑通過，沒有修改CPU／重跑原版或當產品失敗。293–301九份舊停點及索引回填，45個回填函式／36項新缺證據負例／CLI與兩自然完整消費、IRQ持續返回與上限獨立核對通過。
+- 工具16檔提交9e6ee8cea7e40fdf13528fdae6b7959361708aaa已推送github隔離分支並回讀一致，不推本機origin。原始ZIP／patch／417根檔／EXE／MOX.SET再核對一致，精確來源／CPU／probe／測試與有效收據雜湊及命令集中鎖定302；原版素材／完整終端／記憶體／gzip／PNG留本機。主庫只更新四份現況／歷程／既有研究入口，不修改Go／Ebitengine玩法。
+- 來源／輸出UID:GID1000:1000，工具無root-owned／誤建.md目錄，主庫歷史root-owned不動。本批一次性容器均已退出移除，Go映像與moo2名稱核對皆空，未清理其他專案／映像。下一步核對正常鍵鼠入口，有限唯讀觀測尾端caller狀態與平台音訊／時計進度；不猜修等待、盲提高上限或深入helper／driver／ISR硬體內部。
+
+主庫四檔現況／鎖定證據／繁體字／UID／唯一AGENTS及git diff --check通過，歷史root-owned仍2709筆。工具遠端回讀9e6ee8cea7e40fdf13528fdae6b7959361708aaa與本機一致。最後docker ps -a依Go映像與moo2名稱核對皆空。
