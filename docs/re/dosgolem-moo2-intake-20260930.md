@@ -741,3 +741,17 @@ word JSON／消費 LOG／終端 SHA-256 `50c8e64a5a3905af139746bd6398f0b2a9716ce
 CPU收據SHA-256 198c7c11abee84f928fea00f4da39d50b225ec29767bbd212d0cb92f53a16187；固定EXE全套f851638ad1926ee142d9c438160f7ba8475a59ebfdb2950dcd5565d386b7e9fb；兩自然gzip f6984adbd0f227ce8a0034c61189ae384aff2353ae9a3eb14be9872d5e51fd55／ced6336a1ae88b4d90905a4e4789451e346a1a7d94f7b56b397a7e61b7334b32；第一次CPU失敗7c672d84df30bdd041903bc7812b6bb839f000de01222b8af640520eaba52b33。來源／CPU／probe／新測試、前態、公開Intel來源及全部精確命令見[鎖定規格298](https://github.com/wicanr2/dosgolem/blob/a44c7eaae7f4ac3143a04f183f62ecf91190e124/docs/spec/298-cpu386-shl-dword-register-one.md)與[鎖定規格299](https://github.com/wicanr2/dosgolem/blob/a44c7eaae7f4ac3143a04f183f62ecf91190e124/docs/spec/299-cpu386-c1-dword-single-shift-overflow.md)。原始ZIP／patch／417根檔／固定EXE／MOX.SET雜湊再核對一致；素材及完整終端／記憶體／gzip／PNG留本機。
 
 293–297與186／298同次回填，42個回填函式／28項新缺證據負例、兩個CLI與兩自然完整鏈核對通過。工具提交a44c7eaae7f4ac3143a04f183f62ecf91190e124已推送github隔離分支並讀回一致，不推本機origin。下一步僅保存ADC真正完整初態與下一消費，依公開六定義旗標契約審查窄CPU規格；不深入IRQ0 handler／ISR／driver硬體時序／runtime、不改主庫玩法。255／主選單／正常玩家路徑、受控亂數與整款remake未完成。
+
+## 2026-10-02：ADC 原版索引 ADD 的真實來源
+
+已證實：工具基線a44c7eaae7f4ac3143a04f183f62ecf91190e124，300同次DRAFT＋索引，以未改CPU的兩自然真正IRQ0完整前態及公開Intel六定義旗標／來源目的別名／保持與拒絕契約審查READY後，補裸13 /r、mod11。四個固定指令位址各最多三筆唯讀StepHook原樣轉送既有hook，不替換CPU／Bus／時計／IRQ橋接、不注入資料或跳指令。全部CPU與固定官方EXE全套首次通過，六旗標／完整R／段／FPU／記憶體與非算術旗標保持及拒絕／既有ADD／SUB／CMP／SBB回歸已驗。
+
+兩自然各三組四筆完整ADC→索引ADD→MOVSX鏈相同，全部outer_step42349111在外層0x2571C9的同次IRQ0內，不能冒稱IRQ內指令序號或總呼叫數。高位LE0x25179F第一真正前態完整R依EAX ECX EDX EBX ESP EBP ESI EDI為0 0 3D69C0 0 2723D8 0 71E1D0 3C6038，段8 188 188 0 20 188、flags847h；與未改CPU兩自然相同。第二／第三前態完整R為0 80000000 3D69C0 0 2723D8 0 71E1D2 3C6040及0 0 3D69C0 0 2723D8 0 71E1D2 3C6048，flags86h／847h。
+
+原CF1／0／1令ADC結果EBP1／0／1，flags2／46h／2、目的外R／段保持。下一0x2517A1的03 34 AD 40 2D 27 00以EBP×4索引，讀DS:00272D44 dword2或DS:00272D40 dword0，兩來源八bytes始終00000000 02000000。真正ADD後0x2517A8的完整ESI依次0071E1D2h／0071E1D2h／0071E1D4h、flags6，其他R／段保持；0x2517AB的MOVSX才把EBP覆寫0，ESI及flags6保持。獨立無號總和／有號範圍／低nibble進位與PF計數核對來源／索引0、1與完整結果後300限定CONFORMED，不猜欄位用途。
+
+兩自然同outer_step42349111在外層0x2571C9的IRQ0內轉停高位LE0x24678C，bytes66 83 F7 01 57 50 E8 6A BA 00 00 A1 EC 15 2B 00，word XOR DI,1缺件。內層解碼錯誤CS:EIP0008:0024678F、R為325048 3D6978 3D69C0 1 272400 FC4 0 0、段8 188 188 0 20 188、flags46h；下一真正前態仍待有限唯讀，不把錯誤後態當前態。IRQ0 started6174／completed6173／active=false／failed=true，完整返回未知。PIT mode2／Reload5966／Generation5，BIOSClock Micros44005445／Deliveries6194／Pending=true／InService=false、等待4579；工具時鐘不當硬體wall-clock對齊證據。
+
+C6實模式333步成功返回／來源收據與兩PNG先前已檢視黑圖雜湊保持；保護模式連續PCM／IRQ7、人耳、255／主選單／正常玩家路徑／受控亂數與整款remake未完成，299原版自然OF=1同狀態收據限制保持。CPU收據SHA-256 1909949178aad7344e64788a254c4141990a4e2fcea26c90462efac491c75513；固定EXE全套f8de03a799e482ecb7490ca8876bf9f9b0198c41da5f1ce607c126b828d65302；兩自然gzip 039cae78c78a4cacd0371db655eee68c0ed1a8e537a70b10bab54ec56fc51e11／aa7729a378fdee9cc98defc0c18991e1579843de64e5261576ce4fcbeb363083。完整來源／CPU／probe／新測試、前態、公開Intel來源與全部精確命令見[鎖定規格300](https://github.com/wicanr2/dosgolem/blob/752abc607e04b87d830d4a6451af9e51dfc26b78/docs/spec/300-cpu386-adc-dword-register.md)。原始ZIP／patch／417根檔／固定EXE／MOX.SET再核對一致；素材及完整終端／記憶體／gzip／PNG留本機。
+
+293–299舊停點與索引同次回填，43個回填函式／七份28項缺證據負例、CLI及兩自然完整資料鏈核對通過。工具提交752abc607e04b87d830d4a6451af9e51dfc26b78已推送github隔離分支並讀回一致，不推本機origin。下一步僅保存word XOR真正完整前態與PUSH消費，依公開低16位／立即數符號延伸與旗標契約審查窄CPU規格；不深入IRQ0 handler／ISR／driver硬體時序／runtime，不改主庫玩法。

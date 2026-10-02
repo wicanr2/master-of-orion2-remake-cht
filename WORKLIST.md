@@ -46,9 +46,9 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅作輔助基準。固定官方EXE、正版ZIP根層417檔及MOX.SET。256–299限定CPU／平台CONFORMED，299限公開CPU契約／未有MOO2自然OF=1同狀態收據；277既有原版IRQ0返回與模式2等待樣本已閉合，255完整座標／游標消費仍READY。全部CPU與固定原檔全套已驗；不宣稱完整硬體時鐘、核心布局／跨權限鏈或玩法同狀態。
-  **目前自然停點**：兩個排程第 42,349,111 步外層高位LE0x2571C9的IRQ0呼叫內，下一缺件為高位LE0x25179F、bytes 13 ED 03 34 AD 40 2D 27 00，ADC EBP,EBP未支援。兩自然IRQ0內SHL令EAX仍0／EBX1→2，TEST來源3 AND 8=0、JZ跳過第二組SHL，原版A3／89 1D存EAX0／EBX2至DS:00272D40／DS:00272D44已驗。完整R／段保持，D1非零AF清除與C1多位OF清除僅屬工具模型；C1單位OF漏設反例已修，未有原版自然OF=1收據。IRQ0 started6174／completed6173、active=false／failed=true，等待4579，舊返回樣本不代表所有分支閉合。C6返回／caller及條件DMA模型已驗，保護模式連續PCM／IRQ7與人耳未驗。事件已注入x657／y189，仍不算255完整座標／游標或正常玩家路徑；PNG同已檢視黑圖。主選單／正常操作／受控亂數及remake同狀態未完成。
-  **下一步**：保存0x25179F的13 ED真正IRQ0內完整唯讀前態／下一資料消費，按公開ADC結果／六定義旗標審查READY後補裸dword暫存器形式並重跑兩自然。不深入IRQ0 handler／ISR、driver／DAC／PIT硬體wall-clock、runtime或圖形helper，不猜欄位用途／玩法。探針尾端固定32筆，診斷入口預設8M、明示限1–50M。[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)保存收據及近似邊界；工具閘門不計入玩法分母。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅作輔助基準。固定官方EXE、正版ZIP根層417檔及MOX.SET。256–300限定CPU／平台CONFORMED，299限公開CPU契約／未有MOO2自然OF=1同狀態收據；277既有原版IRQ0返回與模式2等待樣本已閉合，255完整座標／游標消費仍READY。全部CPU與固定原檔全套已驗；不宣稱完整硬體時鐘、核心布局／跨權限鏈或玩法同狀態。
+  **目前自然停點**：兩個排程第 42,349,111 步外層高位LE0x2571C9的IRQ0呼叫內，下一缺件為高位LE0x24678C、bytes 66 83 F7 01 57 50 E8 6A BA 00 00，word XOR DI,1未支援。兩自然三組完整ADC／六定義旗標及索引ADD真實消費已驗，原CF1／0／1令EBP1／0／1，分別讀dword2／0／2，完整ESI為0071E1D2h／0071E1D2h／0071E1D4h、flags6；下一MOVSX才覆寫EBP，目的外R／段保持。原版SHL／兩dword寫回已驗，C1單位OF反例已修但未有原版自然OF=1收據。IRQ0 started6174／completed6173、active=false／failed=true，等待4579，舊返回樣本不代表所有分支閉合。C6返回／caller及條件DMA模型已驗，保護模式連續PCM／IRQ7與人耳未驗。事件已注入x657／y189，仍不算255完整座標／游標或正常玩家路徑；PNG同已檢視黑圖。主選單／正常操作／受控亂數及remake同狀態未完成。
+  **下一步**：保存0x24678C的66 83 F7 01真正IRQ0內完整唯讀前態／下一PUSH消費，按公開word XOR立即數的符號延伸／低16位與定義旗標、AF模型審查READY後補窄暫存器形式並重跑兩自然。不深入IRQ0 handler／ISR、driver／DAC／PIT硬體wall-clock、runtime或圖形helper，不猜欄位用途／玩法。探針尾端固定32筆，診斷入口預設8M、明示限1–50M。[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)保存收據及近似邊界；工具閘門不計入玩法分母。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備
