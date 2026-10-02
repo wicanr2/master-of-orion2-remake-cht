@@ -621,3 +621,13 @@ word JSON／消費 LOG／終端 SHA-256 `50c8e64a5a3905af139746bd6398f0b2a9716ce
 - **目前前沿**：兩個排程均第 20,637,037 步停高位 LE 0x254249，bytes 80 2D C0 26 27 00 08 C1 ED 08 8A C3 EB 26 8A 0D，byte 記憶體 SUB 的 80／ModRM 2D 未支援；EAX=80000000h、EBX=31488h、ECX=6BBC7Ch、EDX=272610h、DS／ES／SS=188h、flags=212h。只記標準 CPU 缺件，不推定資料欄位用途。IRQ0 started=completed=1595，等待值1；PIT Mode=2／Reload=5966／Generation=5、readPending=false、Micros=21094625／Deliveries=1615。事件條件已實際注入，但完整游標／玩家操作未驗。
 - 自然 gzip SHA-256 a4cadecfd90e37dafc30fb8cd472169cd216039956a479f5ea45a933fc77f468／9a3554fc9a7023fa375c814b6685574c5fa03aa83b4b3069df06a657a0efb181；兩 PNG 同已檢視黑圖 SHA-256 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622，完整原版資料／終端／gzip／PNG 留本機。
 - **回填／下一步**：26 個回填函式、新六項缺證據負例／實際 CLI、兩條件三筆 latch／兩次 IN 的實際收據與繁體字／索引／UID 稽核通過。276／281／282 舊停點已回填；282／283 限定 CONFORMED、255 READY。下一步依公開 SUB 契約建立 byte 記憶體目的／imm8 的新窄規格，READY 後實作，不深挖 driver／ISR／runtime 或猜補玩法。主選單、正常玩家路徑、音效、受控亂數與 Go remake 同狀態仍未完成。
+
+
+## 2026-10-02：byte 記憶體 SUB 的原版後態
+
+- 工具基線 c58709c5ffc8841a22112ad1ea8016890f87d9e5；[規格 284](https://github.com/wicanr2/dosgolem/blob/c1c8e731c4bcb0a5fda529f43e066508db74ba49/docs/spec/284-cpu386-sub-byte-memory-imm8.md) 保存 DRAFT／READY 審查、原始 byte 與限定 CONFORMED 收據。只補標準 CPU 記憶體目的，不改主庫玩法，未推定 DS 欄位用途或解 runtime／driver／ISR。
+- **已證實，工程驗證**：Go 1.24.13／既有工具映像；全部 256×256×兩種旗標、ModRM／SIB／DS／SS／地址繞回及讀写失敗／前綴拒絕通過。前綴負例用所有段均可寫的初態排除未知段掩蓋。CPU 全套及固定官方 EXE 全套通過，SHA-256 3e507d508afaf2049fa06cff5e2eb88019155f99dfaddc79a78ab54371877d5e／92fc976dd96d5d1f659b4b26e7d620e7740f6d3abb0c41f0980c17488a077fe1。
+- **已證實，dosgolem 自行重生**：沿既有 50M／分離 DOS／417 原檔／固定 MOX.SET，有無受控滑鼠事件兩條件。高位 LE 0x254249、原始 bytes 80 2D C0 26 27 00 08，DS:002726C0 byte=16h，第 20,637,038 步 0x254250 byte=0Eh；完整 R／段保持、flags=212h。第二次 byte=0Dh→05h、flags=202h→206h，同樣保持 R／段。沒有注入目的 byte、遊戲計時或亂數；此有限 CPU 後態不等於跨原版完整玩法同狀態。
+- **目前前沿**：兩條第 20,637,097 步停高位 LE 0x25425F，bytes 80 05 C0 26 27 00 18 8A C3 8B 1E FE C9 8B EB D3，byte 記憶體 ADD／imm8 缺件。IRQ0 started=completed=1595、active=false／failed=false，等待值仍1，Micros=21094685。事件條件第 1,612,067 步已注入 x=657／y=189，仍不是完整座標／游標或玩家操作驗收。
+- 自然 gzip SHA-256 01efe7de89d0f2968720aa52ad742093d3fc5864624b19d782b326cc91703b06／ceb730b6fb5002e0e32f02a868e6363f05a20148834399cf2582cf402783486f；兩 PNG 仍同已檢視黑圖 SHA-256 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622。原版素材、完整終端／記憶體／gzip／PNG 留本機，只有自製來源、測試與文字證據公開。
+- 工具提交 c1c8e731c4bcb0a5fda529f43e066508db74ba49 已推送 github 隔離分支；全部 27 個回填函式、新四項缺證據負例／CLI 與兩排程 byte／完整狀態稽核通過。255 READY，主選單／正常玩家路徑、音效／受控亂數及整款 remake 未完成；下一步只按公開 ADD 契約與只讀 byte 建窄 CPU 規格。
