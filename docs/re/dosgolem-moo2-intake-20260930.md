@@ -1151,3 +1151,27 @@ Go1.24.13固定映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540
 CPU來源SHA-256 1448f29f24dad35e83575189055dc15dd7ac9db2b3529c6d450f03baf91c97b1，probe2f58792f30d6fea061861baacef317f55a0eb503b5a0d1acbec0fca131eb8844，測試ab4330e73511963f050c82d086384cb0095658e9ed9fe200070d314bb42aa436。startup、read-only provider與問號matcher保持324。兩終圖與實際檢視的323／324逐位元相同：無點擊11ec0ed15a4c874d36c94a824af73eb71dc6937dfe3bd568450943861db89927、點擊59f76749db5232f97a6b6f969f56f848c2e89e731d7e3fb30b8786982bca4a81；仍主選單，設定畫面仍未知。原素材／完整LOG／PNG／RAM留本機，不進Git。
 
 工具31ca939e73203bafa2f55d7d23ae6115e9dc54c2已推送github隔離分支、回讀一致與工作樹乾淨，未推本機origin。[鎖定325](https://github.com/wicanr2/dosgolem/blob/31ca939e73203bafa2f55d7d23ae6115e9dc54c2/docs/spec/325-cpu386-neg-dword-memory.md)保存限定CONFORMED、正式來源與未知。下一步在同44M單次正常輸入與50M上限下增加後段唯讀、有界進度／畫面觀測，核對最小阻塞；不追helper內部、不加cap、重點、代寫或先調整輸入。主庫玩法RE閘門及整款remake／中文化目標保持，正常開局／remake同狀態、AH2Ch／RNG與人耳未完成。
+
+### 2026-10-03 NEW GAME後段唯讀進度與實際來源定位
+
+上一輪主庫6cc6dc6dbc2610a041394bfda71bb829c3f4e3e3／工具31ca939e73203bafa2f55d7d23ae6115e9dc54c2已驗NEG。本輪命中平台規格優先與文件職責，326先DRAFT／READY，再只改原版探針唯讀觀測；CPU／平台及主庫玩法保持。固定官方1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f、原417根檔／MOX.SET、同44M Esc／1996-01-01／50M cap／separate DOS與單次正常NEW GAME輸入不改。
+
+**已證實，dosgolem高位LE正常原版**：49500000／49600000／49700000／49800000／49900000／50000000六時點全為readonly=true；CPU、完整FPU、VBE與完整RAM前後保持。EIP依序2132B0／22F1F9／2131AD／21333E／2132BF／21334F，ESI495230／495230／495230／4952B0／4952B0／4953AA，R／堆疊與六個RAM雜湊不同。五後續區段各100000真正Step，unique_sites494／618／623／467／1326；前十位址按次數降序、地址升序固定，前四熱門2132E0／2132E2／2132E5／2132EA，各段次數2860／2021／2573／2816／2566。
+
+六時點DisplaySets42、BankSets797、Writes16194454、Bank4／StartY0完全相同；五組相鄰及首末不同像素皆0。索引SHA b6fb8d68a422788d78e693eca398cab0e54c46127bc49de42c10d18c3aae9cb3，RGB efce8f0dd2eb63e07b25b6933808b2e18d6cc606419a867f292a8b37b44e05c6，六PNG皆59f76749db5232f97a6b6f969f56f848c2e89e731d7e3fb30b8786982bca4a81。首末兩圖已實際檢視，主選單與NEW GAME游標可見，設定畫面仍未知。這些只證明有界區間畫面未改與核心狀態有變，不證明loop正確、最終必然完成或產品掛起。
+
+既有末尾32步已含真正213345／8B 15 74 BE 29 00讀DS:29BE74指標、21334B／01 D0、21334D／8A 00讀DS:[EAX] byte，21334F／88 45 F8寫SS:[EBP-8]；之後2132E0／31 C0、2132E2／8A 45 F8、2132E5／3D 80 00 00 00、2132EA／0F 84 64 00 00 00及JLE分支。前一輸入84h使JE／JLE未跳、低7bit4；最末AL42h已見。真正來源指標、讀取窗口、目的RAM與完整分支flags尚未另取樣，仍未知。DS:[ESI]窗口六次為零只描述該取樣地址，不當作這組DS:[EAX]指令來源，也不推字型／素材故障或追完整renderer。
+
+| 本機忽略收據／腳本 | SHA-256 |
+| --- | --- |
+| workplace/dosgolem/workplace/moo2-probe-326-baseline.txt.gz | d37cf5c32298e69e38648ac9d70045d6501e188d56f1e7bb3fa2efb6a1877612 |
+| workplace/dosgolem/workplace/moo2-probe-326-click.txt.gz | fa3d71704a13552e22ef0b04b5700afc9264934ed709a1c8134b5bb8b76782dc |
+| workplace/dosgolem/workplace/post-click-326-parity-tests.txt | d9e9c2b7ab2386e6ae4d49b02b2070ebbd8742599a33a1424a71f5386f9da6e0 |
+| workplace/dosgolem/workplace/post-click-326-verify.py | c0c40c21aa0ef315f64463cd9925a9cd7e56ec2383e1424caf4dc4aadf1f36c7 |
+| workplace/dosgolem/workplace/post-click-326-backlink-tests.txt | 434fc2536d4b96a9e68e762dc36f81b712dcf0e51ac95d1b776dd01632c94f62 |
+
+Go1.24.13固定映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀重建417根檔。go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe後沿325兩正式正常流程，只換326輸出名；完整環境見鎖定326。獨立python3 workplace/post-click-326-verify.py驗全部3847／4202列與兩終圖保持、六PNG CRC／640×480 RGB／SHA、窗口與每區段計數排序通過，僅mtime／DTA四bytes／PNG路徑正規化。63回填函式、原有32／49／25／27與新增27負例、兩CLI通過。
+
+probe SHA-256 034e6a2c85a3cbbb93d9c7b762d3ba5aea070ec2fc126f82fef30bc913841512；CPU仍1448f29f24dad35e83575189055dc15dd7ac9db2b3529c6d450f03baf91c97b1，startup／provider／matcher保持325，325固定EXE完整Go測試仍有效，不重跑未改的CPU。原ZIP／patch／417根檔／EXE／MOX.SET再次核對PASS。全部原版素材／LOG／PNG／RAM留忽略workplace，不進Git。
+
+工具ca437d1b17135d511b52e7fb40591b7ea12176c4已推送github隔離分支、回讀一致與工作樹乾淨，未推本機origin。[鎖定326](https://github.com/wicanr2/dosgolem/blob/ca437d1b17135d511b52e7fb40591b7ea12176c4/docs/spec/326-moo2-post-click-progress-observation.md)保存限定CONFORMED、六時點與實際來源邊界，325後段待辦同次回填。下一步沿同輸入與50M cap，核對真正DS:29BE74→DS:[EAX]→SS:[EBP-8]與CMP／JE／JLE的最小資料消費，必要時記目的RAM寫回；不追helper內部，不加cap、重點、代寫或先調整輸入。主庫玩法RE閘門、AH2Ch／RNG、人耳、正常開局與remake同狀態未完成。
