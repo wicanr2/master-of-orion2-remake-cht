@@ -715,3 +715,15 @@ word JSON／消費 LOG／終端 SHA-256 `50c8e64a5a3905af139746bd6398f0b2a9716ce
 新停點：兩自然第42,347,639步高位LE0x257662，bytes C1 CA 10 A2 C0 26 27 00 66 8B C2 C1 CA 10 39 11，dword ROR立即數10h缺件。IRQ0 started=completed=6173／等待4579，PIT模式2／Reload5966／Generation5，BIOSClock Micros43986044／Deliveries6193／Pending=false／InService=false，兩PNG同已檢視黑圖。受控滑鼠事件仍在第1612067步注入x657／y189；255座標／游標、主選單／正常玩家路徑、保護模式音訊／IRQ7、人耳、受控亂數及整款remake未驗收。
 
 有效兩gzip SHA-256 51a438fd826c55922c2115a1c77918be0d313ef14cf0e6c5b06c72a8689b8f42／a05791a08f8ee36df2cbc244076ffb005fed3b31cafa054291d19f1cc82272c9；CPU／機器層收據bdc4a5adc9db1fc42bb1ca13fccfb680c750146c7e4aa5feb3a1e23c128bfb2b、固定EXE全套eaa30a613877d185e9ba095078f73c32bee44c18cdd61f00cdf5a3f9688545bd。ZIP／patch／EXE固定雜湊再核對；素材、完整終端／記憶體／PNG不公開。工具提交56e1ff979b517740bf056668ee90800bfac27321沿既有授權推送github隔離分支，不推本機origin。下一步公開ROR計數／旗標契約與有限唯讀初態，審查READY後補窄CPU形式；主庫玩法RE閘門不變。
+
+## 2026-10-02：dword ROR 全部立即數與原版 MOV 消費
+
+已證實：工具基線56e1ff979b517740bf056668ee90800bfac27321，297同次DRAFT＋索引，未改CPU的兩自然完整初態與公開Intel契約審查READY後，擴充裸C1 /1、mod11的全部imm8遮罩計數。兩自然初態相同，高位LE0x257662／C1 CA 10，完整R依EAX ECX EDX EBX ESP EBP ESI EDI為347010 6BB370 AFF0AFF 74A 2BDB70 2215 711120 347094、段8 188 188 0 20 188、flags297h。全部CPU及固定官方EXE全套首次通過，完整R／段／FPU／記憶體保持、零計數與單位OF及拒絕邊界已驗，多位OF保留僅為工具模型。
+
+兩自然各自重生兩組ROR→A2→MOV AX,DX→ROR。第一組第42,347,639步ROR使EDX仍0AFF0AFFh、CF=0／模型flags296h，完整其他R／段保持。第42,347,642步高位LE0x25766D已完成原版0x25766A的66 8B C2，MOV AX,DX真實消費後完整EAX=00340AFFh；其他R／段／flags保持。第二組第42,348,715步開始，相同EDX／CF與消費規則，EAX由0A0A0A06h轉0A0A0AFFh。第二ROR均執行成功；獨立單bit整除oracle核對完整兩組鏈後297限定CONFORMED，未把隔離測試當正常玩家路徑。
+
+兩自然第42,349,111步外層高位LE0x2571C9的StepHook內，原版IRQ0分支停止高位LE0x2520B7，bytes D1 E0 D1 E3 F7 05 28 2D 27 00 08 00 00 00 74 04；D1 /4的SHL EAX,1缺件。內層解碼後CS:EIP=0008:002520B9，完整R為0 3D6978 8000 1 2723E0 2723F4 1 325048／段8 188 188 0 20 188／flags2；外層EIP不當缺件位址。IRQ0 started6174／completed6173／active=false／failed=true，等待DS:00271148仍4579；277舊返回樣本不擴張到全部IRQ0分支。PIT模式2／Reload5966／Generation5，BIOSClock Micros43987979／Deliveries6194／Pending=false／InService=false，兩PNG同已檢視黑圖。C6返回／來源收據保持，保護模式連續PCM／IRQ7、人耳、255／主選單／正常玩家路徑／受控亂數與整款remake仍未驗收。
+
+固定輸入、公開來源、全部命令、CPU／probe／測試SHA-256與前態摘要腳本問題見[鎖定規格297](https://github.com/wicanr2/dosgolem/blob/4cdf20e347500a5c996b955831e35ef68ca556e0/docs/spec/297-cpu386-ror-dword-register-imm8.md)。有效兩自然gzip SHA-256 21fe3aeec9f3ece1b9721b7fb067c1acfb3136343ef2ce27b193bdeeb4057768／8519d0012606a941046b6504bd06be289ce6b687e4471b09d000fad07f496c1f；CPU收據ff42f53fbaf8928ca27521c3cc7999089c454e315d4597f42b00221b0e45b4d5／固定EXE全套1df3ef49982e47055e92dae7496b219992cd812e79c50b7a28f8e92b9b8badd5。222／288與293–296回填已維護，40個回填函式／24項缺證據負例／CLI及兩自然獨立資料鏈稽核通過。原始ZIP／patch／EXE雜湊再核對一致，素材及完整終端／記憶體／PNG不公開。
+
+工具提交4cdf20e347500a5c996b955831e35ef68ca556e0已推送github隔離分支，不推本機origin；下一步依公開D1 /4單位SHL／旗標與完整唯讀初態審查READY，再補窄CPU形式。只跨過標準CPU缺件，不深入IRQ0 handler／ISR／driver／硬體時序、不猜用途或改主庫玩法。
