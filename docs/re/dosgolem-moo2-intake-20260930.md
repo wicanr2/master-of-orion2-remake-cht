@@ -1123,3 +1123,31 @@ Go1.24.13固定映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540
 CPU來源SHA-256 d3fd7c1125d6ecda2fbc05f021776a0532a820af6babea1f3693dc6608aace4e，probe118203d32391772177dd96e6da2539886618a73bb76f14ec8e161399dc98a985，測試10b6297576161f93de3c7f9b9dc6388b02e2fa1c1d985ff2404a22c8923bc58a。DOS startup／provider／matcher保持323。兩終PNG與已實際檢視的323逐位元相同，點擊仍59f76749db5232f97a6b6f969f56f848c2e89e731d7e3fb30b8786982bca4a81、主選單，設定畫面仍未知。完整LOG／PNG／RAM／原素材留本機，不進Git。
 
 工具f31793166415705c75a81339808372da24cded44已推送github隔離分支並回讀一致、工作樹乾淨，未推本機origin。[鎖定324](https://github.com/wicanr2/dosgolem/blob/f31793166415705c75a81339808372da24cded44/docs/spec/324-cpu386-add-byte-register-memory.md)保存限定CONFORMED、正式輸入／窗口／兩方向、精確來源與未知，323停點同次回填。不將標準CPU工具能力加入玩法分母。下一步依公開NEG契約READY／實作／固定EXE全套與同44M正常單次原版重生，核對實際SS來源與最小caller，不追helper內部、不重點、代寫或加cap。主庫玩法RE閘門及整款remake／中文化目標保持，正常開局／remake同狀態未完成。
+
+### 2026-10-03 dword記憶體NEG與原版真正寫回
+
+上一輪主庫ea1ff9d5350794c75a50fe8bef3adbf3265f161c／工具f31793166415705c75a81339808372da24cded44為已驗ADD進度。本輪命中平台規格優先及文件職責，325先DRAFT／READY，再修改隔離工具通用CPU與原版唯讀探針；主庫Go玩法RE-first閘門保持。固定官方1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f、原417根檔與MOX.SET、同44M Esc／1996-01-01／50M cap和單次正常NEW GAME輸入不改。
+
+依據[Intel 80386原始NEG契約](https://www.ardent-tool.com/CPU/docs/Intel/386/manuals/prref386/NEG.htm)及[附錄C的六旗標表](https://www.ardent-tool.com/CPU/docs/Intel/386/manuals/prref386/appc.htm)，只補無前綴F7 /3 mod0..2的32位記憶體目的，沿既有DS／SS、ModR/M／SIB與描述子。完整目的寫回後才發布flags；沿既有sequential Bus近似，晚期寫錯可留下已寫byte前綴，flags／R不發布，不稱全CPU例外或rollback。未審查prefix保持拒絕。原ESP測試「wrong SIB」實為合法EBP形狀，325明示擴充、改驗LOCK；084／180／324與索引、守衛同次回填，歷史FD2及324未取樣收據保留。
+
+**已證實，dosgolem高位LE正常原版**：49501135／49520331／49576598步的2130F3／F7 5D D8皆到2130F6。實際SS188:2BD9CC來源FFFFFFFFh→1h、flags286h→213h，八R與六段保持；16byte窗口從SS188:2BD9C8起，僅目的四byte改變，SS188:2BD9D4比較word為0008h。完整RFFFFFFFF／498AC0／8／47／2BD9B8／2BD9F4／495230／2BDACC，六段8／188／188／0／20／188；來源由真正RAM取樣，沒有從EAX推測。
+
+九原版續行全部無錯：2130F6／8B 45 D8的MOV EAX,SS:[EBP-28h]把EAX變1、flags213h保持；2130F9／66 3B 45 E0的CMP AX,SS:[EBP-20h]以0001h比較0008h，flags213h→297h，其餘核心與窗口保持；2130FD／0F 8D A8 00 00 00的JGE三次不跳至213103。跳轉方向未實際發生，仍未知，不稱另一個遊戲初態已對拍。
+
+無點擊全部324列／終圖保持；點擊舊首個失敗後快照前4123列與第一NEG完整核心保持，僅mtime／DTA日期時間四bytes／PNG路徑正規化。兩CB仍191步、started2／completed2、pending0／activefalse。點擊到50M上限，高位LE21334F／88 45 F8 EB 8C FF 45 E8 0F BF 45 D0 01 45 CC E9，完整R3DD302／0／3DA3D4／42／2BD948／2BD998／4953AA／2BDACC、六段保持、flags216h、26937個unique_sites。沒有新CPU拒絕；這是有界執行終點，不猜成正常開局完成或產品卡死。無點擊仍238573／24693個sites。
+
+| 本機忽略收據／腳本 | SHA-256 |
+| --- | --- |
+| workplace/dosgolem/workplace/neg-dword-325-tests.txt | a48cd9c18945224c5610961b38058ade0f272b3016471b7d57e6cec6ceab8520 |
+| workplace/dosgolem/workplace/full-test-325.txt | f98aa39690cc448441483c927be79f48d73dc943970819136b4d7e8ace851d03 |
+| workplace/dosgolem/workplace/moo2-probe-325-baseline.txt.gz | 42adfe85b088d25bb3a4e3856d7f8c2187f001253759b9f194c4e123572c552f |
+| workplace/dosgolem/workplace/moo2-probe-325-click.txt.gz | 5c269c7fbd6360ad5248da763e2f57f302ea3b837e48a41d1896cb73a16a1d7b |
+| workplace/dosgolem/workplace/neg-dword-325-backlink-tests.txt | 02e589623a7b22418ead00bb74525b1622d6d8c1ab3c26cd5497f3559ffe8628 |
+| workplace/dosgolem/workplace/neg-dword-325-parity-tests.txt | b7bd5bca62c91c69c0d784d57e7e1b7177f6acb0bb429c1a287ef28a4e645a84 |
+| workplace/dosgolem/workplace/neg-dword-325-verify.py | f13094e9dfc2c75bd089a60b6cbb4f35f459eaf1840a2979a78be53695ea0e83 |
+
+Go1.24.13固定映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀。定向go test -p 2 -buildvcs=false ./internal/cpu386 -run 'TestNegDword|TestNegStackDisp8Dword|TestNegRegister32|TestNegByte' -count=1 -v PASS，六新增主測試覆蓋獨立flags、值域與所有ModR/M／SIB／DS／SS／每byte讀寫失敗／界限／繞回／prefix／截短與R／六段／FPU／鄰接RAM保持。固定EXE DOSGOLEM_MOO2_EXE=/tmp/game/ORION2.EXE go test -p 2 -buildvcs=false ./... -count=1全套PASS，CPU386143.926s／machine3.148s。先go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe，再兩正常流程，完整環境與來源見鎖定325；本機可重播python3 workplace/neg-dword-325-verify.py獨立驗真正來源／寫回／flags／最小消費及前綴／終圖。62回填函式、原有32／49／25與325新增27負例、三CLI通過。
+
+CPU來源SHA-256 1448f29f24dad35e83575189055dc15dd7ac9db2b3529c6d450f03baf91c97b1，probe2f58792f30d6fea061861baacef317f55a0eb503b5a0d1acbec0fca131eb8844，測試ab4330e73511963f050c82d086384cb0095658e9ed9fe200070d314bb42aa436。startup、read-only provider與問號matcher保持324。兩終圖與實際檢視的323／324逐位元相同：無點擊11ec0ed15a4c874d36c94a824af73eb71dc6937dfe3bd568450943861db89927、點擊59f76749db5232f97a6b6f969f56f848c2e89e731d7e3fb30b8786982bca4a81；仍主選單，設定畫面仍未知。原素材／完整LOG／PNG／RAM留本機，不進Git。
+
+工具31ca939e73203bafa2f55d7d23ae6115e9dc54c2已推送github隔離分支、回讀一致與工作樹乾淨，未推本機origin。[鎖定325](https://github.com/wicanr2/dosgolem/blob/31ca939e73203bafa2f55d7d23ae6115e9dc54c2/docs/spec/325-cpu386-neg-dword-memory.md)保存限定CONFORMED、正式來源與未知。下一步在同44M單次正常輸入與50M上限下增加後段唯讀、有界進度／畫面觀測，核對最小阻塞；不追helper內部、不加cap、重點、代寫或先調整輸入。主庫玩法RE閘門及整款remake／中文化目標保持，正常開局／remake同狀態、AH2Ch／RNG與人耳未完成。

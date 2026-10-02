@@ -804,3 +804,13 @@
 - 原版1暫存器／7記憶體ADD、24續行與CMP／JGE兩方向逐筆PASS。來源BL皆0，這次窗口保持；非零另由平台測試覆蓋。新阻塞49501135／高位LE2130F3／F7 5D D8記憶體NEG，SS來源尚未取樣，不由EAX推測。終圖仍主選單，設定畫面／正常開局與remake同狀態未完成。
 - 首次唯讀呼叫自動核准審查逾時、未建立程序，依回報重試一次成功。前綴稽核初版錯含舊失敗後快照，修正切點並加第一ADD原始核心核對後PASS；正式來源／收據不改，均未寫成產品失敗。61回填函式、原有32／49與新增25負例及兩CLI PASS。
 - 工具f31793166415705c75a81339808372da24cded44已推送github、回讀一致與工作樹乾淨，未推本機origin。來源／私有收據／固定規格連結見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。本輪一次性Docker工作均已退出；工具無root-owned或誤建.md目錄，主庫既有2437檔案／272目錄保持，不遞迴修權限。最小下一步為公開dword記憶體NEG契約與同原版輸入驗證，不重開已驗ADD／CB／FindFirst。
+
+## 2026-10-03：32位記憶體NEG與正常續行
+
+- 上一輪主庫ea1ff9d5350794c75a50fe8bef3adbf3265f161c／工具f31793166415705c75a81339808372da24cded44已驗ADD。本輪載入平台規格優先、文件職責；325先DRAFT／READY，再改通用CPU，主庫Go玩法RE-first閘門保持。
+- 補無前綴F7 /3一般32位記憶體NEG，保留描述子與逐byte Bus近似，全部寫回成功後才發布六旗標。六新增主測試與ESP／暫存器回歸通過；合法EBP SIB納入後，原錯誤SIB負例改驗LOCK，084／180／324及索引回填。
+- Docker Go1.24.13固定映像、600s／2GiB／2CPU／128pids／UID1000／network none。定向PASS；固定EXE DOSGOLEM_MOO2_EXE=/tmp/game/ORION2.EXE go test -p 2 -buildvcs=false ./... -count=1 全套PASS，CPU386143.926s／machine3.148s。go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe後，兩流程沿同44M Esc／1996-01-01／50M cap／separate DOS與單次正常NEW GAME輸入重生。
+- 原版三次2130F3／F7 5D D8真正SS188:2BD9CC由FFFFFFFFh→1h，flags286h→213h；九MOV／CMP／JGE不跳續行與窗口／完整核心逐筆PASS，跳轉方向仍未知。無點擊全部324基線／兩終圖、點擊舊拒絕前4123列與第一NEG核心保持。兩CB仍191步、started2／completed2；點擊到50M／高位LE21334F，無新CPU拒絕，設定畫面仍未知。
+- 62回填函式、原有32／49／25與新增27缺證據負例、三CLI PASS；本機獨立重播腳本與收據留忽略workplace。原版ZIP／patch／417根檔／EXE／MOX.SET雜湊再核對PASS。該來源稽核首次呼叫誤將已含here-document的shell腳本再包入Python，修正呼叫後在相同容器工具鏈乾淨重跑；來源與產品未改，不列產品缺陷。
+- 工具31ca939e73203bafa2f55d7d23ae6115e9dc54c2已推送github隔離分支，回讀一致且工作樹乾淨，未推本機origin。精確來源／輸入／七私有收據及鎖定規格見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。一次性Docker工作已退出，無本專案遺留容器；其他專案保留。新檔UID:GID1000:1000，工具root-owned／誤建.md目錄自檢空；主庫既有2437檔案／272目錄保持，不遞迴修權限。
+- 最小下一步為同50M上限與單次正常輸入的後段唯讀、有界進度／畫面觀測，查明設定畫面未出現的最小阻塞。不加cap、重點、代寫或先調整輸入；正常開局、remake同狀態與整款中文化未完成。
