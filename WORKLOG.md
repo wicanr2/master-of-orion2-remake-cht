@@ -563,3 +563,10 @@
 - 290 同次 DRAFT＋索引、原版完整 CH／CL／下一 OR 初態與公開 CPU／未定義近似審查 READY 後實作；全部 CPU／固定 EXE 全套通過，但下一記憶體 OR 缺件，290 保持 READY。291 再以兩份未改 OR 的完整初態審查 READY 後實作，兩自然排程三組 SHL→OR→ADD 完整資料鏈通過，才一併限定 CONFORMED。兩項所有回歸首次通過；沒有修改主庫玩法或猜用途。
 - 八 byte 目的／全部來源與 CL／別名、八 OR 來源／全部 byte 配對、全 ModRM／SIB／DS／SS／地址繞回及拒絕／保持已驗。34 個回填函式、各四項缺證據負例／兩 CLI、兩排程完整資料鏈與索引／語法／繁體字／UID 通過。啟動推進到第 39,983,174 步，下一 F3 AF 的 REPE SCASD 缺件；IRQ0 自行完成5675次、等待值4081，主選單／正常玩家路徑與整款 remake 未完成。
 - 工具十檔提交 0c6d53b869cb52fd716d95c868326244614abbf1 已推送 github/codex/moo2-parity-20260930，回讀遠端提交一致，未推本機 origin。主庫只更新四份現況／歷程／既有研究入口，證據連結鎖定工具提交。原版素材與完整終端／記憶體／gzip／PNG 留本機；本輪來源／輸出 UID/GID=1000:1000，工具無 root-owned／誤建 .md 目錄，主庫歷史 go.sum／lbxinfo／.docker-cache 不動。本批一次性容器已退出移除，未清理其他專案或映像。
+
+## 2026-10-02：接續 REPE SCASD 與原版真實讀取
+
+- 主庫 fbedb135060c021b9dac8ff70007f669c784c68c／工具0c6d53b869cb52fd716d95c868326244614abbf1 乾淨且遠端一致。沿用平台規格優先／規格閘門、dosgolem、文件職責與回填路由及逆向重製技能。292同次 DRAFT＋索引，未改CPU的完整R／段／8192 bytes掃描資料與公開Intel契約審查 READY 後才實作；主庫玩法 RE 閘門保持關閉。
+- Intel80386 REP偽碼與文字退出條件矛盾，以正式SDM確認。READY文件寫入的自動權限審查逾時且未執行，改用工作區檔案編輯完成；主庫首次提交遇sandbox的Git中繼資料唯讀，依既有授權用主機Git權限完成。分析／測試／原版執行仍全在Docker。
+- 全部CPU／固定官方EXE全套首次通過，兩自然排程比較59次，完整ECX=7C5h／EDI=6BBD4Ch／flags=206h，再由SUB EDI,4／MOV EAX,[EDI]真實讀取FFFFFBFFh，其他完整R／段保持。六旗標全定義；單次Step／內部IRQ與Error／restart等工具模型界限仍明示。292限定CONFORMED，第39,983,178步轉停高位LE0x25489C的83 F0 FF。IRQ0 completed=5675、等待值4081，主選單／正常玩家路徑與整款remake未完成。
+- 35個回填函式、新四項缺證據負例／CLI、兩排程完整SCASD→SUB→MOV資料鏈與索引／語法／繁體字／UID通過。工具八檔提交e914184166c2397dba5041617793a58e42f2f927已推送github隔離分支，遠端回讀一致，未推本機origin。主庫四份現況／歷程／既有研究入口與鎖定證據同次更新。原版素材及完整終端／記憶體／gzip／PNG留本機，來源／輸出UID:GID=1000:1000；工具無root-owned／誤建.md目錄，主庫歷史root-owned不動。本批容器已退出移除，未清理其他專案／映像。
