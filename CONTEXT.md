@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-03）**：使用者選定dosgolem對拍固定1.31 ORION2.EXE，DOSBox-X僅作輔助基準。304–308限定CONFORMED；正常controller在外層48000000步排Esc 01／81，原版IRQ1 8:21C4D8各97／77步抵達8:21C573、真實60h／EOI，返回後原caller的ADD與MOV正常續行。裸FF 1D遠CALL及既有CB真正消費也通過。兩自然第48354467步外層高位LE0x217AD8、IRQ7實模式1201:05DA第77步，真正OUT022C=D0拒絕；兩時計58057009，IRQ0完成7927、IRQ7完成302／開始303。影像已檢視黑色過場，主選單未見。無鍵盤控制基線仍50M／星空片段；完整鍵盤、255／299自然OF=1、等待欄位、人耳、主選單／正常玩家流程／受控亂數與remake同狀態未驗收，玩法RE閘門保持。BIOS／controller／DOS/4GW橋接與1µs時序是明示平台近似。工具00ad7c645b19b51a8697e2deae85d8a5019dd657已推送；證據見docs/re/dosgolem-moo2-intake-20260930.md，可執行事項只在WORKLIST.md。
+- **DOS 原版動態驗證器（2026-10-03）**：使用者選定dosgolem對拍固定1.31 ORION2.EXE，DOSBox-X僅作輔助基準。304–309限定CONFORMED；正常48M controller Esc 01／81與原版IRQ1／FF 1D／CB消費保持。真正D0暫停、102步原版IRQ7返回、450096µs來源保持、後續D4／INT66成功與六條caller已驗。兩自然新停點第48796894步高位LE0x240A32、DOS INT21／AH2Ah日期服務未支援，兩時計58553364，IRQ0完成8022、IRQ7完成303。影像與已檢視黑色過場逐位元相同，主選單未見。完整鍵盤、255／299自然OF=1、人耳、主選單／正常玩家流程／受控亂數及remake同狀態未驗收，玩法RE閘門保持。BIOS／controller／DOS/4GW與1µs／分數音訊時間是明示平台近似。工具f6bf96a976fb31e19b19545ae438b3abcb2006fa已推送；來源與鎖定309見docs/re/dosgolem-moo2-intake-20260930.md，可執行事項只在WORKLIST.md。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為

@@ -858,3 +858,21 @@ DMA8啟動／自動／stereo／FIFO、rate22050/1、block2048／sampleCredit9261
 最終全套SHA-256 4a9eb936bc0c33fe18376e11297e806d994421c44831bcbbd5d070b88b18900a，兩正常gzip 9a8aad65b88d1748431eb8ddfb17733a7a342cf255f4f0147db6a4b49a957753／430349cf9d921862d40f73bce9d2f0e65bb9a36a571ed4b51072ba1688801e59。首輪與最後正常重跑逐列保持；完整caller／遠CALL／CB消費、50回填函式／35個新增缺證據與舊回填負例、兩CLI通過。303／305／306的有限Esc未知與307的FF停點同次回填，其他未知不冒稱閉合。來源／全部有效與失敗收據／命令及CPU／平台近似見[鎖定307](https://github.com/wicanr2/dosgolem/blob/00ad7c645b19b51a8697e2deae85d8a5019dd657/docs/spec/307-moo2-protected-keyboard-irq1.md)與[鎖定308](https://github.com/wicanr2/dosgolem/blob/00ad7c645b19b51a8697e2deae85d8a5019dd657/docs/spec/308-cpu386-call-far-indirect-absolute.md)。
 
 工具00ad7c645b19b51a8697e2deae85d8a5019dd657已推送github隔離分支並回讀一致，未推本機origin。307／308限定CONFORMED；完整鍵盤、255／299自然OF=1、主選單／正常玩家流程／受控亂數、人耳與整款remake未完成。下一步只按公開DSP D0暫停8位DMA契約補平台缺件，再同排程重生，不深入硬體driver／ISR／忙等，不改主庫玩法RE閘門。原始素材與完整RAM／終端／gzip／PNG留本機，不提交或公開。
+
+### 2026-10-03 DSP D0／D4、原版 IRQ7 返回與日期服務新停點
+
+接手主庫87547eafa6ce8e198f845bfe419d6231975d8bf5／工具00ad7c645b19b51a8697e2deae85d8a5019dd657，工作樹乾淨。路由命中平台規格優先、dosgolem對拍與結論回填。原廠Creative Hardware Programming Guide印刷頁6-24／6-26明定D0停止8位DMA請求、D4恢復；309經DRAFT與證據審查READY才實作。只接active8傳輸，保留位置、block剩餘、分數信用與IRQ，兩種CPU時計繼續；idle與其他位寬明確拒絕。沒有改CPU、鍵盤橋接、主庫玩法或猜補遊戲記憶體。時間、FIFO與分數模型是hardware-spec approximation。
+
+全部固定EXE全套通過：Go1.24.13／golang:1.24-bookworm固定映像、UID1000、network none、2GiB／2CPU／128pids、外層600s、417原檔與官方1.31 EXE。四個DMA控制測試通過；首次未使用import編譯失敗，第二次40h信用單位預期錯誤，只修自製測試後以同容器契約重跑，兩失敗收據保留。未放寬斷言或調硬體時鐘。
+
+**已證實，dosgolem正常入口重生**：仍用50M上限與固定48000000步controller Esc 01／81，有／無既有受控滑鼠兩排程。D0前完整307正常基線保持，只排除解壓mtime／DTA四bytes與新觀測欄位。第48354467步真正D0令pause false→true，其餘完整裝置狀態保持；原版實模式IRQ7從1201:0682執行102步到FFFF:FFF0，返回核心與flags保持，started303／completed303。外層高位LE0x217AD8成功續行到0x217ADF；後三條MOV／ADD／IMUL的完整核心消費已驗。
+
+第48782970步原版真正送D4，VirtualMicros58507105；與D0相隔450096µs，來源current4803h／count07FCh、剩2045、credit461100保持。D4只解除pause，原版INT66實模式1201:016A的93步成功返回與caller三條MOV／CMP／JZ到高位LE0x2454E7已驗。返回後21µs真正傳1sample並保留credit387200；至新終態依獨立公式傳2040samples，地址4FFBh／count0004h、剩5、credit483000。PCM快照65536是既有觀測上限，不冒稱總sample或人耳驗收。
+
+兩自然新停點為第48796894步高位LE0x240A32的CD 21，EAX002B2AA8h，DOS AH2Ah日期服務尚未支援；EIP240A34不能當作服務成功。兩時計58553364、IRQ0 started8022／completed8022／failed=false，IRQ7仍303／303。兩PNG與已檢視黑色過場逐位元相同，SHA-256 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622，主選單未見。
+
+全套SHA-256 ad62917158674edccdd3df730566735e16845a757c1fc8ac5f3c5f7d61e52da0；兩正常gzip a33b5da6a93a996cd1cf6653455c39605fc4aaad9e539cf0cefcfce5d6abe28a／07a99506c2c6789cabf3ada4d365431cf977aa37e5509114302bd28708faf25e。獨立審查驗完整前基線／僅pause快照／102步真正IRQ7返回／450096µs來源保持／D4與六條caller／2040samples及兩排程一致。51回填函式與27個新增缺證據／較早標記或連結移除負例、309 CLI通過；303／305／306／307同次追加勘誤。詳細公開來源／輸入／命令／所有有效與失敗收據見[鎖定309](https://github.com/wicanr2/dosgolem/blob/f6bf96a976fb31e19b19545ae438b3abcb2006fa/docs/spec/309-sb16-pause-resume-dma8.md)。
+
+工具f6bf96a976fb31e19b19545ae438b3abcb2006fa已推送github隔離分支、回讀一致且乾淨，未推本機origin。309限定CONFORMED；主庫RE閘門保持，完整鍵盤、255游標／299自然OF=1、人耳、主選單／玩家流程／受控亂數及整款remake未驗收。下一步只核對DOS AH2Ah公開日期契約與可重播時計來源，READY後補平台服務、同一固定Esc排程重生；不取主機即時日期猜補、不跳指令或提高上限。原版素材與完整RAM／終端／gzip／PNG仍只留本機忽略目錄。
+
+新停點的服務分類依[Microsoft MS-DOS 3.3 Programmer’s Reference，Function 2AH](https://www.pcjs.org/documents/books/mspl13/msdos/dosref33/)：AH2Ah取作業系統日期，以CX年、DH月、DL日、AL星期回傳。此處只確認分類，尚未指定日期來源或實作；下一輪須沿可重播平台契約審查。

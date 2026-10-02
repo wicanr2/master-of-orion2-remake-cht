@@ -46,9 +46,9 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅作輔助基準。固定官方EXE、正版ZIP根層417檔及MOX.SET。256–302、304–308限定CPU／平台CONFORMED，303整體觀測仍DRAFT、299未有自然OF=1同狀態收據、255完整座標／游標仍READY。正常controller的Esc 01／81、原版IRQ1與真正caller續行、裸FF 1D遠CALL／CB消費及全部CPU／固定原檔全套已驗；不宣稱硬體wall-clock、DOS/4GW核心exact或玩法同狀態。
-  **目前正常Esc終態**：兩排程固定在外層48000000步排01／81，原版IRQ1各97／77步至8:21C573，60h／EOI與started2／completed2成功；原caller的ADD／MOV依序到高位LE0x215882／0x215885。第48354467步，外層高位LE0x217AD8、IRQ7實模式1201:05DA第77步，真正OUT022C=D0尚未支援。兩時計58057009，IRQ0完成7927／failed=false，IRQ7 started303／completed302，DMA完成303／block剩2045／信用461100。兩PNG相同且已檢視黑色過場，主選單未見。無鍵盤控制基線仍50M／星空片段。完整鍵盤、255游標、正常玩家操作／受控亂數、299自然OF=1、人耳及remake同狀態未完成。
-  **下一步**：只按公開Sound Blaster DSP的D0暫停8位DMA契約，保留OUT022C與1201:05DA原始邊界、審查READY後補平台缺件，再重跑同一48000000步正常Esc排程；不深挖driver／ISR／DAC／PIT時序、猜等待欄位、跳指令或提高上限。探針預設8M、明示限1–50M。[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)保存鎖定307／308收據與近似邊界；工具閘門不計入玩法分母。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅作輔助基準。固定官方EXE、正版ZIP根層417檔及MOX.SET。256–302、304–309限定CPU／平台CONFORMED，303整體觀測仍DRAFT、299未有自然OF=1同狀態收據、255完整座標／游標仍READY。正常Esc IRQ1、FF 1D遠CALL／CB與D0／D4／原版IRQ7返回及固定原檔全套已驗；不宣稱硬體wall-clock、DOS/4GW核心exact或玩法同狀態。
+  **目前正常Esc終態**：兩排程固定外層48000000步排01／81；真正D0／102步原版IRQ7返回，暫停450096µs保留地址／剩餘／信用，後續D4與93步INT66成功及六條caller已驗。新停點第48796894步、高位LE0x240A32的CD 21，EAX002B2AA8h，DOS AH2Ah日期服務尚未支援。兩時計58553364，IRQ0 started8022／completed8022／failed=false，IRQ7完成303。兩PNG與已檢視黑色過場逐位元相同，主選單未見。完整鍵盤、255游標、正常玩家操作／受控亂數、299自然OF=1、人耳及remake同狀態未完成。
+  **下一步**：只核對DOS INT21／AH2Ah公開日期服務契約、既有可重播時計與原版0x240A32邊界，審查READY後補平台服務，再重跑同一48M正常Esc排程；不猜主機即時日期、注入遊戲狀態、跳指令或提高上限。探針預設8M、明示限1–50M。[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)保存鎖定309收據與近似邊界；工具閘門不計入玩法分母。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備

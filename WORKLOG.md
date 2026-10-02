@@ -708,3 +708,12 @@
 - 最終Go1.24-bookworm映像、network none／2GiB／2CPU／128pids／UID1000／600s，以417原檔與固定EXE執行go test -p 2 -buildvcs=false ./... -count=1通過。兩正常go run -buildvcs=false ./workplace/moo2-probe，DOSGOLEM_MOO2_MAX_STEPS=50000000、DOSGOLEM_MOO2_SEPARATE_DOS=1、DOSGOLEM_MOO2_HARDWARE_ESCAPE_AT_48000000=1，有／無既有受控滑鼠各一次。正常送鍵前完整基線保持，IRQ1各97／77步返回，原caller真實ADD／MOV續行。首輪與最終重跑逐列一致；50回填函式／35新負例／兩CLI通過。
 - 新停點第48354467步，外層高位LE0x217AD8、IRQ7實模式1201:05DA第77步，OUT022C=D0未支援。兩時計58057009、IRQ7 started303／completed302、IRQ0完成7927，兩PNG已檢視黑色過場，主選單未見。307／308限定CONFORMED，不稱完整鍵盤或玩家流程。完整來源／命令／收據與近似集中在工具307／308；原版素材、完整RAM／終端／gzip／PNG留本機。
 - 工具00ad7c645b19b51a8697e2deae85d8a5019dd657已推送github隔離分支並回讀一致，工作樹乾淨，未推本機origin。主庫只更新既有四文件。下一步公開DSP D0的8位DMA暫停契約與同一固定輸入排程，不深挖driver／ISR／DAC時序、不改玩法。17:58:40 UTC清查本輪有界Docker均退出移除，Go工具映像相關容器清查空；未清理其他專案或映像。
+
+### 2026-10-03 DSP 8 位元 DMA 暫停恢復與正常原版續行
+
+- 接手主庫87547eafa6ce8e198f845bfe419d6231975d8bf5／工具00ad7c645b19b51a8697e2deae85d8a5019dd657，兩工作樹乾淨。路由命中平台規格優先、dosgolem對拍與結論回填，沿既有remake逆向技能；玩法RE閘門不變。
+- 309依Creative原廠D0／D4契約先DRAFT、審查READY後接active8傳輸的pause／resume，保留DMA位置、剩餘、分數信用與IRQ；idle／其他命令拒絕。只改隔離工具的DSP／裝置時計閘門與自製唯讀探針，CPU與主庫玩法不改。
+- 四個DSP／DMA控制測試與固定官方EXE全部go test -p 2 -buildvcs=false ./... -count=1通過。首輪自製測試未使用import與40h信用預期單位兩次失敗，只修測試後按同一容器契約乾淨重跑，不調時鐘或放寬斷言；失敗收據保留。
+- 600s／2GiB／2CPU／128pids／UID1000／network none，以417原檔與固定EXE重生兩組50M上限、48M正常Esc。真正D0／102步原版IRQ7返回、450096µs暫停來源保持、後續D4／93步INT66成功與六條真正caller已驗；原版新停點第48796894步高位LE0x240A32、DOS INT21／AH2Ah。兩時計58553364，IRQ0完成8022、IRQ7完成303；兩圖與已檢視黑色過場逐位元相同，主選單未見。獨立樣本公式及兩排程受驗完整狀態一致，51回填函式／27新增負例與CLI通過。
+- 工具f6bf96a976fb31e19b19545ae438b3abcb2006fa已推送github隔離分支，回讀一致且乾淨，未推本機origin。主庫只更新既有四文件，詳細鎖定309／全部輸入、命令、收據與近似見研究紀錄。原始ZIP／patch／417根檔／EXE／MOX.SET雜湊再次通過。
+- 本輪所有有界Go容器均正常退出移除；18:27:38 UTC的Go映像容器清查空，工具find . -user root -o -type d -name '*.md'空，新檔及收據1000:1000。未清理其他專案、映像或主庫既有root-owned檔。下一步公開DOS AH2Ah日期契約與可重播來源，不猜即時日期、不深入音效ISR／硬體時序。整款remake與主選單仍未完成。
