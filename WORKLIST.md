@@ -46,9 +46,9 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅作輔助基準。固定官方EXE、正版ZIP根層417檔及MOX.SET。256–302限定CPU／平台CONFORMED，299未有MOO2自然OF=1同狀態收據，255完整座標／游標仍READY。303有限唯讀觀測已驗，平台契約仍DRAFT；CPU／平台來源未改。已驗全部CPU／固定原檔全套及自然IRQ0返回；不宣稱硬體時鐘、核心布局／跨權限鏈或玩法同狀態。
-  **目前自然終態**：兩個排程至50,000,000步診斷上限，根CPU高位LE0x22FCD2、flags246h，完整R／段及三組XCHG／ROR、IRQ與圖像收據保持302，沒有CPU拒絕。IRQ0 started7789／completed7789，兩PNG同已檢視星空片段，尚未見主選單。303各11快照證實BIOSMicros43985659至52095937、音訊VirtualMicros固定1375，DMA8 active／block剩2048、completions0／PCMBytes0固定；先前DMA16完成1／PCM16Bytes2／IRQ7派送1保持。原版AH2509安裝保護模式IRQ1 8:21C4D8，正常鍵盤尚未接通，未注入按鍵。高位LE0x2A8E54原始四bytes零值，語意與等待因果未知；255座標／游標、正常操作／受控亂數、299自然OF=1、人耳及remake同狀態未完成。
-  **下一步**：以公開Sound Blaster／PIC契約與原版IRQ7向量呼叫邊界，審查保護模式／實模式共用裝置時間、避免重複推進及派送錯誤的窄平台規格，READY後修正並用相同初態重跑。鍵盤另依既有保護模式IRQ1與埠契約建立正常輸入，不用BIOS入隊替代。未證實等待因果前不猜欄位用途、不跳指令或盲目提高上限；不追helper／runtime／driver／ISR／busy-wait。探針固定有限快照及尾端32筆，入口預設8M、明示限1–50M。[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)保存303收據與近似邊界；工具閘門不計入玩法分母。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅作輔助基準。固定官方EXE、正版ZIP根層417檔及MOX.SET。256–302限定CPU／平台CONFORMED，299未有自然OF=1同狀態收據，255完整座標／游標仍READY。304兩模式裝置時計接線／首block真實PCM已驗，規格仍READY；保護模式IRQ7正式轉送／返回待補。機器層／固定原檔全套通過，CPU／啟動來源未改，不宣稱硬體wall-clock、核心布局／跨權限鏈或玩法同狀態。
+  **目前自然終態**：兩排程設定50,000,000步上限，第42356668步根CPU高位LE0x257FC9停在保護模式IRQ7平台缺件，並非未知CPU opcode。完整R為120 325B80 3258C8 120 2BDB58 2BDB6C 325BA0 325CE1、段8 188 188 0 20 188、flags206h。兩時計44032078，從C6返回43985659前進46419µs，首block2048個80h、DMA完成1／地址4800h／count7FFh／信用4000，DSP與PIC pending保留、IRQ7派送仍1。實際absolute IVT1201:0682／線性0x12692，DPMI實模式0F與DOS保護模式0F零。IRQ0 started6176／completed6176、failed=false，等待原始E6 11 00 00。目前PNG同較早黑圖，首IRQ7在星空前停止；302／303星空與50M不是304終態。正常鍵盤、255游標、主選單／正常玩家操作／受控亂數、299自然OF=1、人耳及remake同狀態未完成。
+  **下一步**：依公開DOS/4GW框架及已保存absolute IVT1201:0682建立窄IRQ7派送／返回契約，先有限保存原版入口／出口與來源確認、EOI／IRET條件，達READY才接線並用相同初態重跑。DPMI與DOS保護向量零值保留，不猜轉送目標、不抑制pending來跑過等待。鍵盤另依保護模式IRQ1／埠契約建立正常輸入，不用BIOS入隊代替；不猜欄位用途、跳指令或提高上限，不深入driver／ISR／busy-wait。探針有界快照及尾端32筆，入口預設8M、明示限1–50M。[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)保存304首block／IRQ7收據與近似邊界；工具閘門不計入玩法分母。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備

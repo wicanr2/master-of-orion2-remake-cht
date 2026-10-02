@@ -665,3 +665,16 @@
 主庫首次繁體字稽核抓到新增活表的時鐘混字，已修正後以同一命令重跑；分類為文件校對，非產品缺陷。
 
 主庫四檔現況／鎖定303證據／繁體字／UID／唯一AGENTS及git diff --check通過，原始ZIP／patch／417根檔／固定EXE／MOX.SET雜湊再核對一致，歷史root-owned仍2709筆不動。工具遠端回讀90b9f4acb3c7e55829973c51a39fe12cb2129df3與本機一致且工作樹乾淨；來源／輸出UID:GID1000:1000。本批一次性容器均已退出移除，最後Go映像與moo2名稱清查皆空，未清理其他專案或映像。
+
+
+## 2026-10-03：共用 DMA 時計與首個原版 IRQ7
+
+- 開工主庫4e77399672e4e5988e8081ece62e5572c2e27ba2／工具90b9f4acb3c7e55829973c51a39fe12cb2129df3乾淨，前輪303唯讀觀測已推送，屬實際進展。路由命中平台規格優先、dosgolem、規格閘門／文件職責與結論回填，載入入口，沿用逆向重製技能。初讀猜錯閘門入口檔名後依路由實際檔名補讀；主庫玩法RE閘門不變。
+- 304同次DRAFT／索引，以303完整原版初態、Creative取樣率／block與Intel／Open Watcom模式框架審查READY後，只補兩CPU模式的裝置時計。共用advanceDMA保留既有1µs近似／實模式順序、來源驗界／速率／block及ring，IF／PIC只阻擋派送；未建模保護模式IRQ7保留pending、三種原始向量與CPU現場明確停止，不假用實模式框架操作保護模式CPU，不丟中斷跑過等待。CPU與啟動來源未改。
+- 新增測試以兩真實CPU交錯指令及整除sample數核對四mode／三rate、40h已含channels、遮罩／reset／來源超界、16位單word、IRQ0巢狀計數，以及IRQ7的IF／PIC／服務中閘門與完整CPU／FPU／堆疊保持。首輪自製fixture漏設實模式CS=0造成匯流排越界，核對cpu.Reset後只修測試初態並驗bus.err，平台來源不改，失敗收據保留。同映像／命令重跑機器層通過，固定官方EXE全套首次通過，全部CPU亦通過。
+- 兩自然完成首block後，第42356668步、高位LE0x257FC9停在保護模式IRQ7。兩時計由C6返回43985659至44032078，原信用926100加46419×44100獨立整除得2048 samples、餘數4000；DMA完成1、current4800h／count7FFh，block重載2048但ring未重載。最後補有限唯讀PCM雜湊／16byte入口後兩自然同命令重生，完整收據只多兩列、解壓mtime／DTA時間日期四bytes，平台／CPU未改、未重跑未變全套。
+- 實際PCM2048個80h、SHA-256 88ed1a04cb43fe65827d1cd9ef6d24a736108730b1ce6315d4d3ca79b6a0d140，與已保存原版buffer一致；靜音buffer不當人耳驗收。absolute IVT0F1201:0682／實模式線性0x12692，DPMI實模式0F及DOS保護模式0F零，入口原始16bytes保存，不追ISR內部。DSP／PIC pending=true、IRQ7Deliveries仍1，未假稱新IRQ7成功；IRQ0 started6176／completed6176／failed=false，等待原始E6 11 00 00。PNG同較早黑圖，首IRQ7在星空前停止；302／303的星空與50M屬較早未推音訊時計基線，不混作本輪終態。
+- 十一份較早音訊邊界與索引同步回填，全部46個回填函式／80項缺證據負例／CLI、原版完整時間／PCM／向量與pending稽核通過。工具19檔提交089f51f13149dd2a1b2c08c6b24ec639d0c78788已推送github/codex/moo2-parity-20260930並回讀一致，不推本機origin。來源／測試／失敗與有效收據雜湊及精確命令集中鎖定304；正版輸入及原版素材、完整終端／記憶體／gzip／PNG留本機，只公開自製程式／測試與有限文字證據。
+- 主庫只更新四份現況／歷程／既有研究入口。304保持READY，時間到首block已驗，正式IRQ7轉送／返回、正常鍵盤、主選單／正常玩家路徑／受控亂數、人耳及整款remake仍未完成。下一步依公開DOS/4GW及實際IVT補窄派送契約，READY後實作，不改玩法、等待值或提高上限，不深入driver／ISR／busy-wait。本輪測試及兩批自然重播的有界容器已退出移除；另FD2 oracle容器已核對掛載歸屬，保留未操作，沒有清理其他專案或映像。
+
+主庫四檔304現況／鎖定證據／繁體字／UID／唯一AGENTS及git diff --check通過，原始ZIP／patch／417根檔／固定EXE／MOX.SET雜湊再核對一致，歷史root-owned仍2709筆不動。工具遠端回讀089f51f13149dd2a1b2c08c6b24ec639d0c78788與本機一致且工作樹乾淨；來源／輸出UID:GID1000:1000。本輪有界容器均已退出移除，moo2名稱清查空，Go映像中的confident_williams為已確認另一FD2專案，保留未操作，沒有清理其他專案或映像。

@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-02）**：使用者選定dosgolem對拍固定1.31 ORION2.EXE，DOSBox-X僅作輔助基準。隔離副本256–302限定CPU／平台CONFORMED；299未有MOO2自然OF=1同狀態收據，255完整座標／游標仍READY。303唯讀觀測已驗，平台契約仍DRAFT；CPU與平台來源未改，兩自然各11快照，原有完整收據與302保持。兩次到50M診斷上限、根CPU高位LE0x22FCD2，無CPU拒絕；IRQ0 started7789／completed7789，PNG同已檢視星空片段，尚未見主選單。已證實BIOSMicros43985659至52095937，音訊VirtualMicros固定1375，DMA8已啟動但剩2048／completions0／PCMBytes0未前進。先前實模式DMA16完成1／PCM16Bytes2／IRQ7派送1保持，不稱從未派送。原版DOS AH2509安裝保護模式IRQ1 8:21C4D8，工具正常鍵盤入口未接；未注入按鍵，caller欄位語意及等待因果未知。工具時間不稱硬體wall-clock一致，保護模式連續PCM／IRQ7、人耳、正常玩家路徑／受控亂數及remake同狀態未完成，主庫玩法RE閘門不變。工具提交90b9f4acb3c7e55829973c51a39fe12cb2129df3；深層證據見docs/re/dosgolem-moo2-intake-20260930.md，可執行事項只在WORKLIST.md。
+- **DOS 原版動態驗證器（2026-10-03）**：使用者選定dosgolem對拍固定1.31 ORION2.EXE，DOSBox-X僅作輔助基準。256–302限定CPU／平台CONFORMED，299自然OF=1及255完整座標／游標限制保持。304共用兩CPU模式裝置時間已接線，機器層／固定EXE全套與兩自然首block真正PCM2048個80h已驗；規格仍READY，保護模式IRQ7正式轉送／返回未完成。C6返回後兩時計43985659至44032078，獨立整除取樣2048／信用4000；第42356668步根CPU高位LE0x257FC9停在IRQ7，實際absolute IVT1201:0682／實模式線性0x12692，DPMI實模式0F及DOS保護模式0F零，pending保留、IRQ7Deliveries仍1。IRQ0 started6176／completed6176、failed=false。目前PNG同較早黑圖，首個IRQ7在星空前停止；302／303星空及50M屬未推裝置時計的較早基線。工具時間是硬體規格近似，等待因果、IRQ7連續PCM、鍵盤IRQ1、人耳、主選單／正常玩家路徑／受控亂數及remake同狀態未驗收，主庫玩法RE閘門不變。工具提交089f51f13149dd2a1b2c08c6b24ec639d0c78788；深層證據見docs/re/dosgolem-moo2-intake-20260930.md，可執行事項只在WORKLIST.md。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為

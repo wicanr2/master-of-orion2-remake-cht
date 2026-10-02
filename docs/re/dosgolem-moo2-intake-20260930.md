@@ -809,3 +809,20 @@ DMA8啟動／自動／stereo／FIFO、rate22050/1、block2048／sampleCredit9261
 兩自然仍是根CPU高位LE0x22FCD2、flags246h，無CPU拒絕，IRQ0 started7789／completed7789，PNG同已檢視星空片段，主選單未見。兩gzip SHA-256 a4920940f3006218f9fdfb6d33085d7d7e18c4bc6095adffe8e31c3e62e23a28／c8f8517db2c90c06e9f109f8a9789fd392d7d430b941841ac18fca896f945db5；兩PNG同SHA-256 d648932f847a2fe5b87723b6537f76e816d64fb60e05c13321d15ede50f3b21b。原版輸入、來源、probe與全部精確命令及證據等級見[鎖定規格303](https://github.com/wicanr2/dosgolem/blob/90b9f4acb3c7e55829973c51a39fe12cb2129df3/docs/spec/303-moo2-late-startup-platform-observation.md)。完整終端／記憶體／gzip／PNG與原版素材留本機，不散布原版美術。
 
 完整收據／五來源雜湊／11快照／AH2509核對通過，45個既有回填函式／36項缺證據負例及CLI保持。工具90b9f4acb3c7e55829973c51a39fe12cb2129df3已推送隔離分支並回讀一致，不推本機origin。303觀測已驗但平台契約仍DRAFT，未證明等待解除；下一步以公開Sound Blaster／PIC及原版IRQ7向量呼叫邊界審查共用裝置時間與正確派送，READY後實作，鍵盤另依保護模式IRQ1／埠契約處理。255、299自然OF=1、主選單／正常玩家路徑／受控亂數、人耳與整款remake仍未驗收，主庫玩法RE閘門保持。
+
+
+## 2026-10-03：兩種 CPU 模式的裝置時間與首個 IRQ7
+
+已證實：工具基線90b9f4acb3c7e55829973c51a39fe12cb2129df3，304以303的原版C6返回與固定DMA初態、Creative取樣率／block及Intel／Open Watcom模式框架公開契約審查READY後，接共用advanceDMA與保護模式裝置時計。既有1µs近似、實模式順序／來源／rate／block／ring保持，CPU與啟動來源未改。未知保護模式IRQ7保持pending、原始向量與CPU現場明確停止，不用實模式框架猜轉送或抑制中斷跑過等待。四mode／三rate、交錯兩真實CPU、40h已含channels、mask／reset／來源超界、16位單word、IRQ0巢狀時計及IRQ7完整CPU／FPU／堆疊保持已驗，機器層與固定EXE全套通過。首輪測試fixture漏設實模式CS=0後只修測試初態、另驗匯流排錯誤，同命令重跑通過，失敗收據保留。
+
+兩自然用同一固定官方1.31 EXE、fresh417原檔／MOX.SET、Go1.24.13映像、600秒／2GiB／2CPU／128pids／UID:GID1000:1000／network none。不注入CPU／資料／鍵盤／時計／IRQ，不提高50M上限。C6返回outer_step42347255、高位LE0x2454B0的完整R／段／flags206h及DMA狀態保持303，只將音訊時計接到BIOSMicros43985659；初始信用926100、rate22050/1／stereo、block2048、物理14000h／4096byte ring保持。
+
+第42356668步高位LE0x257FC9，完整R依EAX ECX EDX EBX ESP EBP ESI EDI為120 325B80 3258C8 120 2BDB58 2BDB6C 325BA0 325CE1、段8 188 188 0 20 188、flags206h。兩時計44032078，增加46419µs，(926100+46419×44100)整除1000000得2048 samples、餘數4000。DMACompletions1／PCMBytes2048，current4800h／count7FFh、DSP block重載2048，DMA ring未重載；首block含先前實模式21µs合計46440µs，僅為硬體規格近似。
+
+實際PCM2048個80h，SHA-256 88ed1a04cb43fe65827d1cd9ef6d24a736108730b1ce6315d4d3ca79b6a0d140，16byte prefix同80h，獨立雜湊核對符合296的原版靜音buffer。這是已傳輸的原始byte證據，不當人耳驗收。DSPIRQPending／PICPending=true、PICInService=false、IRQ7Deliveries仍1，前一實模式DMA16Completions1／PCM16Bytes2保持，沒有新IRQ7成功派送。IRQ0 active=false／failed=false／started6176／completed6176，BIOS Deliveries6196，等待原始DS:00271148=E6 11 00 00。
+
+平台錯誤明確記錄absolute IVT0F=12010682，即1201:0682、實模式線性0x12692；DPMI實模式0F與DOS保護模式0F皆零。入口原始16bytes為2E FF 06 30 00 E8 5D FD 72 03 E9 95 00 E8 69 FD，只作定位，不追driver／ISR內部。它是未建模的保護模式IRQ7轉送，不是未知CPU opcode。兩PNG同較早已檢視黑圖SHA-256 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622，首次IRQ7在星空繪製前停止；302／303的星空與50M不能作本版終態。主選單未見，等待因果／正常玩家路徑仍未知。
+
+最後只補PCM雜湊與原始入口的唯讀診斷，同命令重生兩自然，與before-pcm-diagnostic收據僅差兩列／解壓mtime／DTA時間日期四bytes，平台／CPU未改。有效兩gzip SHA-256 ec4abf4f565e6cf1ea3ec1b210e414b459d00a6ac8e80da0307e3c323dcb3de0／d89716bc0d1482670ea1eb5cf1709475ef31bbeff0930cb86af34ef407369fda；機器層收據bff247d74ad4200f631ebd7edcccfebed4f72a47f325b7359396fc2a2d6d7c0e，固定EXE全套163b0f2bfa8e8ad2b6efe1f831c7ab35173e1682f82dbf134f4b9fe63c1c79c2。全部來源／輸入／公開平台契約／失敗及有效收據雜湊與命令見[鎖定規格304](https://github.com/wicanr2/dosgolem/blob/089f51f13149dd2a1b2c08c6b24ec639d0c78788/docs/spec/304-le-shared-device-clock.md)。
+
+十一份較早音訊邊界同次回填，46個回填函式／80項缺證據負例／CLI及兩自然完整首block／PCM／pending／原始向量稽核通過。工具089f51f13149dd2a1b2c08c6b24ec639d0c78788已推送隔離分支並回讀一致，不推本機origin。304保持READY，首block時間接線已驗，正式IRQ7轉送／來源確認／EOI／IRET返回仍待窄契約；主庫玩法RE閘門、255／299自然OF=1、正常鍵盤／主選單／正常玩家路徑／受控亂數、人耳及整款remake限制保持。原版素材、完整終端／記憶體／gzip／PNG留本機，不公開原版資產。
