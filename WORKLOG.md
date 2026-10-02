@@ -625,3 +625,16 @@
 - 同第42,349,111步外層0x2571C9的IRQ0內，下一停點為高位LE0x24678C的66 83 F7 01、XOR DI,1。IRQ0 started6174／completed6173／failed=true，等待4579，PNG同已檢視黑圖，完整IRQ0返回未知。255／主選單／正常玩家路徑、保護模式PCM／IRQ7、人耳／受控亂數及整款remake未驗收；不深入ISR／driver硬體時序。
 - 293–299舊停點與索引同步回填，43個回填函式／七份28項缺證據負例、CLI及兩自然三組資料鏈獨立稽核通過。初讀006檔名不符後依實際檔名補讀，未當產品失敗。原始ZIP／patch／417根檔／固定EXE／MOX.SET雜湊再核對一致；命令／來源／CPU／probe／測試與前態及有效收據雜湊集中工具300。
 - 工具14檔提交752abc607e04b87d830d4a6451af9e51dfc26b78已推送github/codex/moo2-parity-20260930並讀回一致，不推本機origin。主庫只更新四份現況／歷程／既有研究入口，原版素材及完整終端／記憶體／gzip／PNG留本機。工具來源／輸出UID:GID1000:1000、無root-owned／誤建.md目錄，主庫歷史root-owned不動；Go映像與moo2名稱皆無殘留容器，本批一次性容器已退出移除，未清理其他專案／映像。
+
+
+## 2026-10-02：word XOR 原版堆疊消費與 IRQ0 返回
+
+- 開工主庫702b6b39f18312b28603d7a7334feb1143ada2e7／工具752abc607e04b87d830d4a6451af9e51dfc26b78，上一輪ADC索引消費已推送。路由命中平台契約／規格閘門、dosgolem、文件職責與結論回填，沿用已載入入口及逆向重製技能；主庫玩法RE閘門不變。
+- 301同次DRAFT＋索引，未改CPU的兩自然真正完整IRQ0初態與公開word XOR／五定義旗標／AF模型、PUSH契約審查READY後才補66 83 /6、mod11。全部低word／imm8配對、八目的／45邊界／64初旗標，獨立逐bit比較／整除符號延伸／PF位元計數核對高16位、完整保持與未知拒絕。四固定位址各最多三筆唯讀hook原樣轉送，不替換CPU／Bus／IRQ橋接或時計、不注入資料或跳指令。
+- 首次301新指令及隔離PUSH測試通過，舊293負例仍拒絕已合法word形式、新byte XOR回歸誤期望保留AF而失敗。依既有286清AF模型修正新增期望，267／293的word XOR舊負例由全部word正例接替；CPU未再次修改。失敗收據保留，同映像／命令乾淨重跑全部CPU通過，固定官方EXE全套通過。
+- 兩自然各一組完整XOR→PUSH EDI→PUSH EAX一致，XOR令EDI=1／flags2；PUSH EDI寫SS:002723FC完整dword由003D6978h變1，PUSH EAX寫SS:002723F8由00246752h變00325048h。ESP每次減4、其他完整R／段與flags保持；真正原版寫入及初態匹配獨立核對後301限定CONFORMED。
+- 這次IRQ0已返回，終態active=false／failed=false／started6228／completed6228，等待4634。兩自然前進254181步，在第42603292步停根CPU高位LE0x256171的66 93、XCHG AX,BX。VBE indexed已變化，PNG仍同已檢視黑圖；工具時鐘不稱硬體wall-clock一致。C6返回／來源收據保持；255／主選單／正常玩家路徑、保護模式PCM／IRQ7、人耳／受控亂數、299原版自然OF=1與整款remake限制保持。
+- 293–300舊停點及索引同步回填，44個回填函式／32項新缺證據負例／CLI及兩自然完整XOR／PUSH寫入／IRQ0返回／新停點獨立核對通過。工具17檔提交d013029fcddf4da8e8d7650660897223e6fa67ca已推送github/codex/moo2-parity-20260930並回讀一致，不推本機origin。完整來源、有效／失敗收據雜湊與精確命令集中鎖定301；原始ZIP／patch／417根檔／EXE／MOX.SET再核對一致，原版素材及完整終端／記憶體／gzip／PNG留本機。
+- 主庫只更新四份現況／歷程／既有研究入口，不修改Go／Ebitengine玩法。來源／輸出UID:GID1000:1000，工具無root-owned／誤建.md目錄，主庫歷史root-owned不動。本批一次性容器均已退出移除；Go映像清查曾見短暫容器，讀取掛載前已自行移除，未確認歸屬，未停止或刪除它。下一步只保存XCHG真正完整前態與下一ROR消費，按公開CPU契約審查窄word暫存器形式，不追helper／ISR／driver硬體內部。
+
+主庫四檔現況／鎖定證據／繁體字／UID／唯一AGENTS及git diff --check通過，歷史root-owned仍2709筆。工具遠端回讀d013029fcddf4da8e8d7650660897223e6fa67ca與本機一致。最後docker ps -a依Go映像與moo2名稱核對皆空。
