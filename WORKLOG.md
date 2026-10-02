@@ -577,3 +577,11 @@
 - 293同次DRAFT＋索引、完整唯讀初態及公開符號延伸／定義五旗標／AF近似審查READY後實作。首次CPU失敗是新附帶ADD回歸AF預期算錯，CPU未改；修正低四位無進位的207h後同映像／命令全部重跑通過，失敗收據保留。固定EXE與兩自然XOR後態通過，但BSF缺件，293保持READY。
 - 294同次DRAFT＋索引，以未改BSF的兩自然完整初態與正式Intel SDM審查READY後實作。全64來源目的／別名、全部低16位、置1位置／旗標與拒絕／保持通過；全部CPU、固定EXE全套及兩自然XOR→BSF→ADD→word MOV完整資料鏈通過，293／294才一併限定CONFORMED。原版把索引Ah消費成74Ah並存回DS:002726D0，第41,223,220步轉停0x23C36B的記憶體dword OR，IRQ0 completed=5936／等待值4342。主選單／正常玩家路徑及整款remake未完成。
 - 37個回填函式、各四項缺證據負例／兩CLI、兩自然完整資料鏈與索引／語法／繁體字／UID通過；原始ZIP／patch／EXE雜湊重查一致。工具十檔提交a899e9e7e4f397d17054bdccae97faa0f6cf963c已推送github隔離分支，遠端回讀一致，未推本機origin。主庫只更新四份現況／歷程／既有研究入口，原版素材與完整終端／記憶體／gzip／PNG留本機。本輪來源／輸出UID:GID=1000:1000，工具無root-owned／誤建.md目錄，主庫歷史root-owned不動；本批一次性容器已退出移除，未清理其他專案／映像。
+
+## 2026-10-02：接續記憶體 dword OR 與完整讀取
+
+- 開工主庫0b0faf6df8f46823eab81f620aa380e670e56923／工具a899e9e7e4f397d17054bdccae97faa0f6cf963c乾淨且遠端一致；上一輪XOR／BSF已推送。沿用平台規格優先／規格閘門、dosgolem、文件職責與回填路由及逆向重製技能，主庫玩法RE閘門保持關閉。
+- 295同次DRAFT＋索引，未改CPU的完整R／段／目的dword與公開OR、五定義旗標／AF及逐byte錯誤模型審查READY後，只改通用記憶體解碼。全部CPU及固定EXE全套通過，兩自然40h→2040h寫回與MOV EAX真正讀取完整2040h後才限定CONFORMED；沒有遊戲位址特例，沒有修改主庫玩法。
+- 首次CPU失敗是測試Bus拒絕全部byte，修正指定byte的失敗測試，CPU不變乾淨重跑通過。首次原版診斷包裝Bus破壞DPMI的身分驗證，提早INT31/0500h收據不計OR驗收；改觀察SegmentRead8、原樣轉送既有返回值並保持Bus後重跑。未變高byte的讀取不當成新增bit13消費，再收窄診斷取得真正完整dword MOV。CPU與DPMI不再改；完整失敗／有效收據與精確命令集中在295。
+- 38個回填函式、兩份舊規格各四項缺證據負例／CLI、兩自然完整OR／JMP／MOV／TEST與新停點的獨立算術核對通過；原始ZIP／patch／固定EXE雜湊、索引／語法／繁體字／UID及git diff --check通過。第42,347,254步停實模式OUT 022Ch／C6h，IRQ0 completed=6173／等待值4579，主選單／正常玩家路徑、音效／受控亂數與整款remake未完成。
+- 工具九檔提交418ca3cf6d874e24127da24c0ba66e9fafecf6e7已推送github/codex/moo2-parity-20260930，回讀遠端一致，未推本機origin。主庫更新唯一現況表與既有歷程／研究入口，鎖定工具提交；原版素材與完整終端／記憶體／gzip／PNG留本機。下一步公開SB16 DSP／DMA與sample duration契約加有限原版參數，審查READY再實作；不深挖driver／ISR／硬體時序。Docker按Go映像與moo2名稱分開核對，本批一次性容器已退出移除，未清理其他專案或映像。
