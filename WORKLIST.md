@@ -46,9 +46,9 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選 DOS 原版與 dosgolem，使用本機隔離分支；DOSBox-X 僅作輔助基準。固定官方 EXE、正版 ZIP 根層 417 檔及 MOX.SET。256–292 限定 CPU／平台 CONFORMED；277 的原版 IRQ0 返回與模式 2 等待已閉合，255 完整座標／游標消費仍 READY。全部 CPU 與固定原檔全套已驗；不宣稱完整硬體時鐘、核心布局／跨權限鏈或玩法同狀態。
-  **目前自然停點**：兩個排程第 39,983,178 步停高位 LE 0x25489C，bytes 83 F0 FF，暫存器 XOR／imm8 未支援；EAX=FFFFFBFFh、ECX=7C5h、ES=188h、flags=206h。REPE SCASD 從原始8192 bytes資料比較59次，完整後態與 SUB／MOV 真實讀取消費已驗，六算術旗標全定義；單次 Step／內部 IRQ／Error 與 restart 模型界限明示。IRQ0 started=completed=5675、active=false／failed=false，DS:offset 0188:00271148=F1 0F 00 00。受控滑鼠事件已注入 x=657／y=189，仍不算完整座標／游標或正常玩家分支；最終 PNG 同已檢視黑圖。主選單／正常操作／音效／受控亂數及 remake 同狀態未完成。
-  **下一步**：按公開 XOR／imm8 符號延伸及旗標與拒絕邊界建立暫存器目的窄 CPU 規格，保存唯讀完整初態，審查 READY 後實作及重跑兩個自然排程；不翻譯 ISR、不解 timer driver／busy-wait、runtime 或圖形 helper、不猜補欄位用途／玩法或追逐週期。探針尾端固定 32 筆，診斷入口預設 8M、明示限 1–50M。[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md) 保存收據及近似邊界；工具閘門不計入玩法分母。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選 DOS 原版與 dosgolem，使用本機隔離分支；DOSBox-X 僅作輔助基準。固定官方 EXE、正版 ZIP 根層 417 檔及 MOX.SET。256–294 限定 CPU／平台 CONFORMED；277 的原版 IRQ0 返回與模式 2 等待已閉合，255 完整座標／游標消費仍 READY。全部 CPU 與固定原檔全套已驗；不宣稱完整硬體時鐘、核心布局／跨權限鏈或玩法同狀態。
+  **目前自然停點**：兩個排程第 41,223,220 步停高位 LE 0x23C36B，bytes 09 86 84 03 00 00，記憶體dword OR未支援；EAX=2000h、ECX=Dh、EDX=6A0h、ES=188h、flags=206h，目的DS:[ESI+384h]完整資料待唯讀觀測。符號延伸dword XOR／BSF的完整資料已由ADD／word MOV消費並存回DS:002726D0=074Ah；AF清除、BSF未定義旗標／零來源目的與單次Step／IRQ／Error模型界限明示。IRQ0 started=completed=5936、active=false／failed=false，DS:offset 0188:00271148=F6 10 00 00。受控滑鼠事件已注入x=657／y=189，仍不算完整座標／游標或正常玩家分支；最終PNG同已檢視黑圖。主選單／正常操作／音效／受控亂數及remake同狀態未完成。
+  **下一步**：按公開OR／32位ModRM與段、定義五旗標／未定義AF及拒絕邊界建立記憶體目的窄CPU規格，保存完整唯讀初態，審查READY後實作及重跑兩個自然排程；不翻譯ISR、不解timer driver／busy-wait、runtime或圖形helper、不猜補欄位用途／玩法或追逐週期。探針尾端固定32筆，診斷入口預設8M、明示限1–50M。[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)保存收據及近似邊界；工具閘門不計入玩法分母。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備
