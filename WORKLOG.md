@@ -498,3 +498,11 @@
 - 有限擷取 300 秒命令乾淨退出 0；後加完整保持／框架護欄以既有原版收據與實際 AST 正負例驗證。279／277 歷史停點回填，全部 23 個回填函式／新四項負例、既有 CMP／PIT 護欄、Python 語法／索引／擁有權通過。初次負例只刪第一處而另一處仍在，訂正為全刪後通過；image inspect、read32／舊檔名猜測均屬控制面／讀取問題，沒有改工具 runtime 或另建映像。
 - 工具提交 3e260dcf2215228d840b98242c1226ab7f902456（8 檔）已推送 github/codex/moo2-parity-20260930，未推本機 origin。主庫只更新 CONTEXT／WORKLIST／WORKLOG／既有研究入口四檔，研究連結鎖定工具提交。原版素材／完整終端／記憶體／gzip／PNG 留本機；本輪來源及輸出 UID/GID=1000:1000，工具無 root-owned／誤建 .md 目錄。主庫歷史 go.sum／lbxinfo／.docker-cache 擁有權未動；本批一次性 Docker 容器已清空，沒有清理其他專案或映像。
 - 下一步只按公開 DOS/4GW chaining／結束鏈介面建立新受限平台契約，READY 後才接合法完成／拒絕條件與自然重跑，不深挖 ISR／driver／busy-wait、不追逐週期或注入等待值。
+
+
+## 2026-10-02：原版 IRQ0 結束鏈與模式 2 等待閉合
+
+- 開工主庫 879f052bc188cbcd75ceea26820b9587c1d11983、工具 3e260dcf2215228d840b98242c1226ab7f902456；沿用既有 push 授權及逆向重製技能，載入規格閘門／平台優先／dosgolem、文件職責與結論回填入口。主庫玩法 RE 閘門保持關閉。
+- 281 同次 DRAFT＋索引，有限原版 BDA+1 反例推翻「只返回」候選；公開 BIOS tick／EOI 契約審查後 READY 才實作。平台及固定官方 EXE 全套通過；兩個自然排程自行完成 1,595 次原版 IRQ0 返回，等待值變為 1 並退出模式 2 等待。281／受限 277 CONFORMED，255 READY；受控事件已注入，正常玩家操作／主選單與整款 remake 仍未完成。下一停點是 PIT 通道 0 的 count latch。
+- 24 個回填函式、新四項缺證據負例、有限原版邊界護欄及既有 CMP／PIT AST 護欄通過。scope／舊規格路徑猜錯及公開原始碼 Cache miss 是讀取問題，使用實際檔名與官方公開參考後繼續，沒有重建工具映像或深挖 ISR。核心布局／IF 與 EOI 仍明示平台近似。
+- 工具 11 檔提交 9b8d1a07121fab929fc94a7f529449beb0d49742 已推送 github/codex/moo2-parity-20260930，未推本機 origin；主庫只更新 CONTEXT／WORKLIST／WORKLOG／既有研究入口四檔，深層連結鎖定工具提交。原版素材與完整終端／記憶體／gzip／PNG 留本機，所有本輪來源／輸出 UID/GID=1000:1000；工具無 root-owned／誤建 .md 目錄，主庫歷史 go.sum／lbxinfo／.docker-cache 不動。本批一次性容器已退出移除，未清理其他專案或映像。
