@@ -650,3 +650,12 @@ word JSON／消費 LOG／終端 SHA-256 `50c8e64a5a3905af139746bd6398f0b2a9716ce
 - 286 自然 gzip SHA-256 ee93f0ae4120843bf105d14ca5c7f60971fac7f29d3129e743318c1ac6c5bafc／01118b0985ecbc60bed4cf5be32bf718a637f7353241f18d257486e8d5e76489；287 為 b3341128e31fbed5f8fd3f191a7de03967a537cb870f50377dbf59d6caf6b004／c146fc6aae759c1e114fbcd237a9c460571f9e36cfb6072b7b45c95592ed8fa5。較晚第 20,651,512 步到 0x2544CB 的狀態不混作第一分支樣本。
 - **目前前沿**：兩條第 20,651,583 步停高位 LE 0x254510，bytes C1 C0 08 66 39 05 E0 27 27 00 75 07 33 C0 89 7A，dword EAX 左循環移位／imm8 缺件，EAX=02000000h／flags=286h。IRQ0 started=completed=1598、等待值4、Micros=21109931。兩 PNG 仍同已檢視黑圖 SHA-256 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622；255 完整座標／游標仍 READY，主選單／正常玩家路徑、音效／受控亂數與整款 remake 未完成。
 - 工具提交 30faf6eb5643aac18d197c64804f81c18293876b 與 4d7ae6c2176feda4c61e47ee2db41695a25c2208 已推送 github 隔離分支。兩項舊停點／索引回填，各自四項缺證據負例／CLI、原版完整後態及全部 30 個回填函式通過；原版素材與完整終端／記憶體／gzip／PNG 留本機。下一最小行動按公開 ROL 計數／CF／OF 與未定義邊界建窄 CPU 規格。
+
+
+## 2026-10-02：dword 暫存器 ROL 的原版後態
+
+- 工具基線 4d7ae6c2176feda4c61e47ee2db41695a25c2208；[規格 288](https://github.com/wicanr2/dosgolem/blob/c605a7f13e00c061d09f14bbf7583c201335f980/docs/spec/288-cpu386-rol-dword-register-imm8.md) 保存公開 Intel 計數／旗標契約、完整唯讀初態與 READY 審查及限定 CONFORMED 收據。只新增裸 C1 /0 的通用 dword 暫存器形式，不改主庫玩法；多位 OF 未定義，保留只屬工具近似。
+- **已證實，工程驗證**：八目的／全部256計數／32位邊界與每 bit／補集／CF／OF 四組合／保持旗標兩初態、完整外層保持與截短／前綴／記憶體拒絕通過；既有 word ROL／dword ROR 保持。全部 CPU 與固定官方 EXE 全套通過，SHA-256 1abfe7dcb15a6419bb53484c49815b8432aa3ba1e482d513c76d82202e198c22／de3e2f0f9e1a7af3ca5379ab9518b4dbecf3ac2533d81a22be1db185c4aab8db。
+- **已證實，dosgolem 自行重生**：固定官方 EXE／417 原檔／MOX.SET、有無受控滑鼠事件兩自然條件。高位 LE 0x254510→0x254513，三筆 EAX=02000000h→2h、11000003h→311h、D4000000h→D4h，完整目的外 R／段保持，CF=0／1／0。下一 word 比較自行消費資料、到 0x25451A 的 flags=293h；該旗標屬比較後態。自然 gzip SHA-256 c08ea3956f0eb327e05d87a4900ced02ba29f1b1f3fab853748ba090aaff9992／8d72e98ab94cd187ba69133e23d70f088e2fa5d76741a4973d18803086875c93。
+- **目前前沿**：兩條第 26,396,706 步停高位 LE 0x2545EF，bytes F6 D9 8A D1 89 54 AF FC 4D 75 A3 5D C3 87 DB 87，byte CL NEG 缺件，ECX=FFFFFFF6h／flags=297h。IRQ0 started=completed=2810、等待值1216、Micros=27167604。兩 PNG 同已檢視黑圖 SHA-256 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622；255 完整座標／游標仍 READY，主選單／正常玩家路徑、音效／受控亂數及整款 remake 未完成。
+- 工具八檔提交 c605a7f13e00c061d09f14bbf7583c201335f980 已推送 github 隔離分支。287 舊停點／索引同步回填，31 個回填函式、新四項缺證據負例／CLI 與兩排程三筆完整後態通過。原版素材與完整終端／記憶體／gzip／PNG 留本機；下一最小行動按公開 NEG 契約保存完整初態並建立窄 CPU 規格。
