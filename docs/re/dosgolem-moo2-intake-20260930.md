@@ -3374,3 +3374,59 @@ python3 workplace/new-game-368-verify.py
 Go1.24.13 Docker映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀。原版與同步監測均terminal，容器自動移除，兩專案掛載filter無執行中／停止容器；既有root-owned2437檔／272目錄保持，無新增root-owned或.md目錄。
 
 下一步依原169E49／20D0另立byte AND規格，先READY再補CPU register-source能力、原AND／下一POP／RET與原前綴保持；同正常輸入續行，不增點擊或改cap。主庫玩法RE-first保持。正式讀檔／存檔內容／typed旗色／完整開局／RNG／音訊與remake同狀態仍未知。
+
+## 2026-10-04：369原AND／POP／RET與180M母星命名終態
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址空間dosgolem_high_le。工具起始62cd4911727f17042cb5f8ce98e10b0fe80331ac，CPU b8c1844163fddd7e3557e19fc51abcb9bcb9c1d021fd415dae376b2afbb9c72b；READY後只增加裸20 /r分支與自製測試，CPU變為a39e5b9f74e026fc1c2514d733808e94920b6789d1b68ef8eb8960dc72df5350，窄測331d33f4a0f22ff524fa6d37d0fba73c7070729333c73d45bfc46c98019cca38。來源418檔、1996日期、可寫state、180M與368所有正常輸入保持，日期不是seed。Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac；600s／2GiB／2CPU／128pids／UID1000／network none、原ZIP及patch唯讀。
+
+### 已證實與工程模型
+
+原165113094在169E49執行20D0。R=[18900 0 601 F 2BDB00 2BDB34 1 FFFFFFEC]、段=[8 188 188 0 20 188]、flags216h；AND AL00,DL01=00，完整R不變、EIP169E4B、flags246h。CF／OF／SF0、ZF／PF1與[Intel80386 AND](https://www.ardent-tool.com/CPU/docs/Intel/386/manuals/prref386/AND.htm)一致；[附錄C](https://www.ardent-tool.com/CPU/docs/Intel/386/manuals/prref386/appc.htm)的AF未定義，清0只沿工具模型，不稱硬體逐值一致。
+
+原165113095在169E4B執行59 POP ECX，真實SS188:ESP2BDB00給ECX0F，ESP2BDB04／EIP169E4C。下一165113096 C3依真實stack返回14DC1E、ESP2BDB08；其餘R／段／flags246h保持。三步完整FPU127F／status0／depth0／八stack bits0、RAM保持，observer readonly／step_ram_unchanged true、error nil，callback12／12及IRQ43071／43071完成且inactive。工程測試合成stack與此原native證據分開。
+
+CPU窄測1.011s通過，memory八來源×256×256×兩flags初態1048576組，全部register重疊／ModRM／SIB／相異DS SS／wrap／段末／截短／未知段／唯讀／bus拒絕與成功發布flag契約。固定官方EXE乾淨Go全套通過，CPU38660.343s／machine1.861s；未導入8088外部資料，不外推驗收。剝除新分支回到原CPU，三私有observer逆轉為368，其他公開internal及probe保持。
+
+### 原玩家終點與未知
+
+原guest一次實際step_limit180000000／EIP235AA3／unique_sites53798，沒有guest_cpu_stop、step_error、dos_exit。終圖已親看：星圖背後、Enter Home Star Name視窗、Sol候選與ACCEPT，名稱尚未確認。PNG SHA-256 4ef5ef10d460497a6042c3df9f24149ceea8b9ddafd2d1d76580ef64f9094686。
+
+180M虛擬418789381µs，R=[0 18 0 0 2BD3A8 2BD3D8 3CA527 34CFD9]、段=[8 188 188 0 20 188]、flags246h，FPU127F／status0／depth0／八stack bits0。VBE bank9／startY512／sets4023／writes52675030／display93；callback12／12、IRQ47499／47499完成且inactive，IF1。實際table298848／count3／stride55／165bytes SHA-256 d12f33061ee90916f4c35c9ee5177fc4e3760fb4ca791f572935e139c084d2ff、globals69a0c2f011924ac7d4f6960ddb98df646f158d49b48f0f43ed72c92cfa0956b9、header1eb307e414824282e81d17faf0ac5ab6752ae0f074ecd526f3cb4ce16847011c，只讀RAM前後009974bbd52333341aad90e02cb7fca96a902f8db174d5ad5df8931a937ac457保持。候選字串的記憶體與原ACCEPT返回契約待下一窄任務，不從圖像猜持久writer或重用旗色guard。
+
+SAVE10.GAM208000／SHA-256 0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d，MOX.SET553／de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f，sound.lbx4250888／3f0354ac5c1b13a3c5c4fd098c2cbc22af37b71e74fc95e582782c22024c449d；三檔UID／GID1000。550s有界監測同guest只讀state，最後副本與終態及368一致；中途truncate與部分寫入不當終態。原418來源前後保持。正式讀檔／內容語意／名稱及旗色持久writer／完整開局／RNG與remake同狀態未驗，主庫玩法RE-first保持。
+
+### 驗證窗口與回填
+
+368拒絕前11017共通原列與37PNG保持，新39PNG；原mtime／DTA及每輪RAMhash沿既有正規化。save_dos_diagnostic保留DOS服務是否改RAM的關係，observer只讀不代表3F服務不寫RAM。首次驗證誤設RAM相同而失敗，修正該判準；第二次誤含舊CPU拒絕專屬四筆terminal列，修正窗口至late_startup_platform label=stop前。前11017列始終相同，兩次均為重讀同native收據，沒有重跑guest／調參挑結果。
+
+四CLI拒絕及合法缺EXE正對照保持。369 CONFORMED只限CPU／原consumer與180M續行；339／341／362／367／368以官方EXE／dosgolem_high_le:169E49／20D0不可變鍵追加回填，歷史拒絕來源保留，不升格舊唯讀same-state。
+
+| 本機忽略來源／收據 | SHA-256 |
+|---|---|
+| full-test-369.txt | 9b7928672f6dc4cf9f52698dc413b7fc572874a92df4cd869b2bf671762bfdfd |
+| moo2-369-overlay-frame-extended-180000000.png | 4ef5ef10d460497a6042c3df9f24149ceea8b9ddafd2d1d76580ef64f9094686 |
+| moo2-and-byte-369.go | a8a30a4b3fa124e0ffc9c2555907df8e607ce20d232f890326292983365aebbd |
+| moo2-probe-369-overlay.txt.gz | 59254d0a66659a475cf28d20be1d32ec4fcd131c424cd1ea9745fa225446b631 |
+| moo2-save-state-369-mox.set | de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f |
+| moo2-save-state-369-save10.gam | 0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d |
+| moo2-save-state-369.json | 50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705 |
+| moo2-vbe-369-overlay.png | 4ef5ef10d460497a6042c3df9f24149ceea8b9ddafd2d1d76580ef64f9094686 |
+| new-game-369-cli-tests.txt | f7bc407d133dd1cdb56fcb8aa6377e508459429adc0ec583216ba2c8088e545d |
+| new-game-369-cpu-patch.json | 428a22c26cd5969208c1e602886b4599f8a7f2cedb53a58e6ed301bc0f1d0b04 |
+| new-game-369-cpu-tests.txt | 6b7c6322229e4441a6c3a11a8573491f697732c498a420492eced9035aeafd1d |
+| new-game-369-full-run-output.txt | 9b7928672f6dc4cf9f52698dc413b7fc572874a92df4cd869b2bf671762bfdfd |
+| new-game-369-full-run.sh | 8764d3f3c8a115b9a824a7db31a6c93e80b3381a404b56a721c0e1e082e2ef4c |
+| new-game-369-probe-patches.json | ce8336bea155a82761291246d368f28f6e2094b8d498f51902d0819eb5592ac2 |
+| new-game-369-ready-review-tests.txt | 4b84db379c967b6365ebabed3b0f0d7ba3f861c9b35048baa22bdf7af94dbd87 |
+| new-game-369-ready-review.py | 3180d509167ef4dda0d2720b5745a3b6cd205393d23012626f7c9b84c4ec1120 |
+| new-game-369-run-output.txt | cb4550c129ac263a8190428c4a796c8c1b618186e585278940ea43f6bcf6c09b |
+| new-game-369-run.sh | ed316b27c4184246c5e5b10c1e259d4bb31c53a00c668a05a99f0650c68e0c1f |
+| new-game-369-state-capture-output.txt | 9332dea0878e8d161b0c361a816571d5946567602223ec6dadb95d15d9cd9ab3 |
+| new-game-369-state-capture.json | 5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d |
+| new-game-369-state-capture.py | f9f53efa9ae68a44d5da7ce6daed219c7b3482a691b3b38cc5974a75cc4079fb |
+| new-game-369-tests.txt | d54a66147244069afd12b6af35fd881d0def96124df6489c5f10ce68df0486da |
+| new-game-369-verify.py | 02d4bf970503de32916908ba90b5a5bfdf142a6de1925c66fc6e30fb776b2a51 |
+
+23份均在workplace/dosgolem/workplace/，雜湊與UID／GID1000核對。工具eca6a803aba5176b87f27c5defd1146ff121c226已推送github，公開自製CPU／測試／規格與索引／五份回填。原LOG／PNG／RAM／state留在本機忽略目錄。
+
+下一步核對180M實際表、候選字串與原返回端，建立母星命名正常ACCEPT的READY契約後再輸入及受控release。原run／full-run／review／verify精確入口見工具369規格；不加cap、不代寫核心、不把星圖出現當整段開局完成。

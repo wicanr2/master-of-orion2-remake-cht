@@ -1268,3 +1268,13 @@ Docker命令 `python3 workplace/new-game-367-ready-review.py`、`bash workplace/
 實際Docker命令 `python3 workplace/new-game-368-ready-review.py`、`bash workplace/new-game-368-run.sh`、`python3 workplace/new-game-368-verify.py` 通過；同步捕捉state的精確monitor命令等價保存為私有new-game-368-state-capture.py，不公開原state／LOG／PNG／RAM與素材。18份收據雜湊見研究入口。工具62cd4911727f17042cb5f8ce98e10b0fe80331ac已推送github隔離分支，主庫起點2e2562f31d9541bf62af63a667af4b47ed3302a4。
 
 本輪主庫只更新DOS活表／CONTEXT單行，歷程與研究追加。原版與有界monitor均已terminal，容器自動移除，兩個專案掛載filter無執行中或停止容器；既有root-owned2437檔／272目錄保持，無新增root-owned或.md目錄。下一步為20D0 byte AND建立READY契約後補CPU及原consumer。主庫玩法RE-first保持，正式讀檔／旗色持久語意／完整開局／RNG與remake同狀態未驗。
+
+## 2026-10-04：369 byte AND工具能力與原版180M續行
+
+原368的169E49／20D0阻塞經Intel80386契約及原核心審查後READY，新增裸20 /r分支與獨立窄測。原165113094正常AND AL00,DL01=00，下一POP ECX與RET依同guest真實stack通過；五定義flags已證實，AF清0僅工具模型。完整核心／FPU／RAM保持，三有界observer可逆；其他公開internal／probe不變。窄測1.011s、固定官方EXE Go全套CPU38660.343s／machine1.861s通過。
+
+相同正常輸入一次重跑真正達180M／EIP235AA3，無guest_cpu_stop／step_error／dos_exit。終圖親看星圖上的Enter Home Star Name與Sol候選，尚未正常確認。368拒絕前11017共通列及37PNG保持，本輪39PNG；原418來源保持，state監測副本與368終態一致，四CLI拒絕與正對照通過。首次驗證把只讀observer誤當DOS3F服務也不改RAM，修正為保留服務改RAM關係；另將比較窗口止於舊拒絕專屬四terminal列前。僅重讀同收據，guest未重跑。
+
+實際Docker命令 `python3 workplace/new-game-369-ready-review.py`、`bash workplace/new-game-369-full-run.sh`、`bash workplace/new-game-369-run.sh`、`python3 workplace/new-game-369-verify.py` 通過；有界monitor與原guest由同run擁有與清理。工具eca6a803aba5176b87f27c5defd1146ff121c226已推送github隔離分支，主庫起點283b8c63b195938220eda3a91a2cb8a1e6bf12ca。公開自製CPU／測試／spec／索引／五份回填，23份私有收據雜湊見研究入口；原LOG／PNG／RAM／state不入Git。
+
+主庫只改DOS活表及CONTEXT單行，歷程與研究追加。兩個掛載filter無執行中或停止容器；既有root-owned2437檔／272目錄保持，無新增root-owned或.md目錄。下一步核對原180M實際165byte命名表、候選字串與返回端，先READY再接正常ACCEPT。主庫玩法RE-first保持，正式讀檔／持久語意／完整開局／RNG與remake同狀態未驗。
