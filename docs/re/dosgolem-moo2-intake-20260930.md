@@ -2089,3 +2089,65 @@ READY審查後才接正式兩區塊，正式只更名private的348標記，執�
 | new-game-348-frames.json | 79a5115a26fafec11dd48bcf5c89b62ed8a86e6f0596cde819545dda104b2bcd |
 
 原版、IDA與驗證容器皆結束移除，新來源／收據1000:1000，工具樹無root-owned／.md目錄；主庫只更新四文件，其餘活表保持，歷史root-owned不修動。下一步維持160M，觀察16BADE→16AD13正常入口參數、框架與生成呼叫邊界，不猜欄位用途或直接提高cap。整款remake／中文化目標仍活躍。
+
+## 2026-10-03：349後續生成原入口與外層等待
+
+起點主庫ff2c377b2e3a08faba7f3d600a0e547759c4bcdc／工具9afe6570dc3e49e354b9a9ec07360125682b3d67。現工具07611f5808e53eb40a61cc8a94489045b0ff0686已推送github隔離分支；限定契約見[349](https://github.com/wicanr2/dosgolem/blob/07611f5808e53eb40a61cc8a94489045b0ff0686/docs/spec/349-moo2-generation-entry.md)。主庫RE-first保持。
+
+### 證據等級與原流程
+
+- **已證實，原CALL**：153878499 dosgolem_high_le:16BADE E8 30 F2 FF FF呼叫16AD13，153878500到原入口。EAX2BDB78=caller EBP2BDBA0-28h，EDX147D9=83929；原SS188:ESP2BDB74存E3BA1600。四PUSH／ENTER 0BF8h後153878505的EBP2BDB60／ESP2BCF68，原參數保持，欄位用途未知。
+- **已證實，三直接返回**：原16AD34→17E5C5於153878512呼叫、153878623回16AD39；16AD56→17E5C5於153878632呼叫、153878743回16AD5B，各111步、ESP2BCF60保持。16ADFB→17EFE1於153881393呼叫、153979600回16AE00，98207步，ESP2BCF48→2BCF60。固定IDA linear EA的8F052 C2 18 00／file offset1132198清理24byte，不能預設每次CALL返回ESP不變。
+- **已證實，首次距離返回**：153994840的16AE7F E8 30 02 00 00→16B0B4，原AX1／DX3，153994869到16AE84回EAX1CC4D=117837，29原步。原IDA sub_7B0B4有28指令，以71h stride讀兩records的signed word +0Fh／+11h，差值平方再相加。只閉合距離平方形式及一次原返回，records名稱、座標單位、完整規則及remake對齊未驗。
+- **已證實，原定位**：固定IDA sub_7AD13邊界7AD13..7B020／216指令，唯一direct caller7BADE／file offset1052978 E8 30 F2 FF FF；入口offset1049447。sub_7B0B4範圍7B0B4..7B0FB／28指令，RET7B0FA C3／offset1050446。原名、EA、file offset、operand、bytes保持，與dosgolem原CALL／框架逐項核對，工具與基準分開標明，不外推其他版本。
+- **已證實，限定等待**：13事件，0..11及16已見、12..15未見，returned=false。160M原EIP17FD04／unique_sites39434／無新CPU拒絕，原外層slot16BAE3仍在，未捕捉16B01F RET或16BAE3返回。只稱本觀察範圍pending，不冒稱配置完成或CPU故障。
+- **未知**：外層迭代實際上限與剩餘工作、16AE07重繪、參數／frame欄位用途、文字renderer／母星配置規則、持久姓名／旗色writer、完整生成／開局、存檔、RNG、人耳及remake同狀態。
+
+全部10542原348列／36PNG及160M終態保持，沿既有mtime／DTA／每次RAM規則比較，原home_return_observation的RAM before／after各次相等，不要求跨次RAM SHA相同。新13事件核心／Bus／FPU／VBE與完整RAM readonly。原PNG c7534b8f40b51b8377d255d66e6dd759dfb3d427fa6fccc6ee7d8c3999b32bca／RGB4a1d9efc9d15da575e330128f22d27e97f6d6616ac1b4184ec94efc2bd27f2c9，仍配置母星圖。原99M press／99084355 release、160M cap、原日期保持，無代寫／重送；固定日期不是seed，exit0只表示cap。
+
+### 工具、命令與驗證
+
+Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，IDA9.4 locked-v1 image sha256:6f6d59af49d0008c4109a5295b5f374bdc007e2d1ab28cb9de08779584de2780。沿已驗UID1000組合，三次原EXE一次性DB的非空JSON／schema1／固定input SHA／UID1000通過；idat exit1不當失敗，正式.i64唯讀。
+
+原ZIP3a28a52f5953ff6d8fc251548940500236752ee19b52b51581e71ec1a3373c2f、patch908d6b7b37ad580039c5d108bab2c64b28f51ba735485287d284d5f5242b98e5、官方ORION2.EXE4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，417根檔／MOX.SET553bytes bfd6855a41760b31156b96114b5b33c88f442ab8f8aae020c1740b3b486a3a80。原ZIP／patch／正式DB唯讀，network none／--user1000／2GiB／2CPU／128pids；原版timeout450s，正式8M／CLI180s，IDA90s，輸出只寫workplace／tmp。
+
+容器內：bash workplace/new-game-349-run.sh／new-game-349-off-run.sh；private沿IRQ1／IRQ7三檔入口，正式go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe。python3 workplace/new-game-349-verify.py／new-game-349-source-verify.py／new-game-349-backlink-verify.py PASS；公開python3 apps/moo2/tools/startup_probe_131.py --check-generation-entry-spec-backlinks PASS。86項回填、新349的32缺證據／狀態／較早回填／索引負例與既有負例通過。
+
+READY證據審查後正式只更名349標記，執行語句與已驗private相同；逆轉兩區塊逐byte保持348。private fe1b7a036bcedfd0bc26705cb86b1fcd26973ae28fbac7058f5a1d64eac8f9dc／正式f2826d243f01ff4b6659aa45d4faae635d218dc779e8357b486f04b5870471be／CPU b5c8bd900047e8f018ad66edaf5ae8e1009e9f6d04ec89dea4000c27f3326b30保持。正式關閉8M1693原列／PNG保持，無新觀察；68舊CLI負例及100M／120M／160M參數正對照保持。8M不取代160M，未重跑120M或無關CPU全套，既有回歸只稱歷史已驗。348已回填，尾端仍把已命中CALL列未知的殘留已刪除；歷史保存slot的證據保持。
+
+初版核算猜28指令為29而拒絕，原腳本／stderr保留並重現exit1；另外按原C21800修正第三CALL的24byte清理。CPU／private執行語句未改，不列產品缺陷。原CALL也計一原步，29原步返回不證明callee有29指令。
+
+### 本機忽略來源與收據
+
+均位於workplace/dosgolem/workplace/，原EXE／LBX／RAM／LOG／PNG／私有IDA腳本不入Git。36PNG manifest只記本機雜湊。
+
+| 收據／核算 | SHA-256 |
+| --- | --- |
+| moo2-349-ida-generation-entry.py | c4f6fd6abb0fd757447cc4d33450057b3901ffc3c53305a169477e59e7b93a42 |
+| moo2-349-ida-generation-entry.json | 46f87208bd5896c95af4598c1e1cfbea6fe23114841eb9852462b0c29b153428 |
+| moo2-349-ida-generation-nested.py | 603f5a87dbeee3203ae3c0e866f82f1998fee198fb31e0b1b95d532f2b3d3f22 |
+| moo2-349-ida-generation-nested.json | 07944763f6098d52665442faae7729a3b1cf1811cb4a98980c79100bdcfc8a6a |
+| moo2-349-ida-ui-ret.py | f8b9754475957a5c9ca09ce98161546efc72ee4b48a38205e87a78f4c35943e7 |
+| moo2-349-ida-ui-ret.json | 0c16013bacada3769016549c3a30cfe12ddc2ea72b3829d20ff77256969b0dec |
+| moo2-349-generation-entry.go | fe1b7a036bcedfd0bc26705cb86b1fcd26973ae28fbac7058f5a1d64eac8f9dc |
+| moo2-probe-349-generation-entry.txt.gz | c47496ca8f677245371ca239a5a945baf7f56747e0cbd7e2471d81c55e24126d |
+| moo2-vbe-349-generation-entry.png | c7534b8f40b51b8377d255d66e6dd759dfb3d427fa6fccc6ee7d8c3999b32bca |
+| new-game-349-run.sh | 573f9a810a93136e7a5a78dfdb8d29242c3c481c98ac7d46007db3e5b981a97a |
+| new-game-349-verify.py | 16d3e5bc7a4d83a015953b819ca4b5727b017887e30b0350e52c0952f932341c |
+| new-game-349-tests.txt | a7e3f2e45420a231c00270496b8b4b3f6dbc19c455edde78c5281d360184ceca |
+| new-game-349-attempt1-verify.py | 92335a08ba904116c43ace623338adae1decb5872986db2ee62a4e631feab304 |
+| new-game-349-attempt1-tests.txt | 5915c4337c93e40c5141b6768754cc4313c1fb1fd50f533cb193e5e2a51bb5d3 |
+| new-game-349-attempt1-verify-output.txt | 4c5c68a11c199e993db2d08da691f6ef2ebe4225d2f771ed694ca70509e91139 |
+| new-game-349-source-verify.py | 1c291c9852cee4cd85d767f47dfc13fd33a4166b1ebb76c1a1e945bc9719faf2 |
+| new-game-349-source-tests.txt | 8cc211bb15558b6950cfc0a183b951fdd8238a2860ef46fb09846281d43e4399 |
+| new-game-349-off-run.sh | fb90870320e62dcc800601f43bd201be8c7259ba187d01e42ac5d2847544a43c |
+| new-game-349-off-cli-tests.txt | 7d720ece028de31c0f318e14ac3aa0eaf3a62300093ab5410538b8b4007df7f1 |
+| moo2-probe-349-off-old.txt | faeb64440db8b4a958ea16263211a19f5a0723f5a64dbaef12f52886901812f9 |
+| moo2-probe-349-off-new.txt | 0e6bfc4639a8292e1b66db5fdd325f8ea73165ff50306c380907946bbb301d68 |
+| moo2-vbe-349-off-old.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| moo2-vbe-349-off-new.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| new-game-349-backlink-verify.py | 22d2e06a78f4530bc63ad6d01537ba1c2c1d228dadc8e44e692b6e466f8cfc1c |
+| new-game-349-backlink-tests.txt | 7091c1cf8e1e8435873cfa8ec2baa81b78ad531d9432fd5bbfad253badee99e9 |
+| new-game-349-frames.json | 661ebbf70b113592d12355fa40b2632acbfdc68feea7116b2ce315b96584d098 |
+
+原版、IDA與驗證容器皆結束移除，輸出1000:1000，工具樹無root-owned／.md目錄；主庫只更新四文件，其餘活表保持，歷史root-owned不修動。下一步維持160M核對dosgolem_high_le:16AD7D／16AF1B..16AF23外層迭代、IDA word_19199A實際上限與16AE07重繪，再依進度決定續行預算，不猜欄位用途或盲提高cap。整款remake／中文化目標仍活躍。

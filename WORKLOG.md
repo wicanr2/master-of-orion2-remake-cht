@@ -1058,3 +1058,13 @@
 - 初次來源逆轉漏移除兩個新增空行；diff只剩空行，修正核算後通過，原執行語句未改。Docker metadata的Go User欄位不存在，改獨立核對image ID，--user仍明定UID1000；不作產品缺陷。未重跑120M或無關CPU全套。
 - 命令及21份忽略來源／收據雜湊見研究紀錄。工具9afe6570dc3e49e354b9a9ec07360125682b3d67已推送github隔離分支並核對遠端，未推本機origin；主庫本輪四文件隨後提交推送。原EXE／LBX／RAM／LOG／PNG／私有IDA腳本不入Git。
 - Docker原版、IDA與驗證程序皆有界並結束移除；新來源／收據1000:1000，工具樹無root-owned／.md目錄，主庫歷史root-owned不修動。下一步維持160M捕捉16BADE→16AD13正常參數與生成邊界；完整生成／開局、正式writer、RNG、人耳與remake同狀態未知，整款remake／中文化目標活躍。
+
+## 2026-10-03：後續生成原入口與直接返回，外層仍等待
+
+- 起點主庫ff2c377b2e3a08faba7f3d600a0e547759c4bcdc／工具9afe6570dc3e49e354b9a9ec07360125682b3d67。上一輪完成348並推送，屬進展；本輪沿dosgolem／IDA9.4／規格閘門／回填／文件職責入口。
+- 349先DRAFT，由固定1.31建立三次一次性IDA DB，正式.i64唯讀。原sub_7AD13有216指令、唯一caller7BADE；直接距離callee7B0B4有28指令，第三子呼叫末尾8F052 C21800清理24byte。原名、EA、file offset、bytes與operand保持，非空JSON／schema1／input SHA／UID1000通過，idat exit1不當失敗。
+- private正常160M捕捉153878499原16BADE CALL、次步16AD13入口、四PUSH／ENTER後框架。EAX=caller BP-28h、EDX147D9保持，原slot16BAE3；三直接子呼叫返回，首次距離AX1／DX3→EAX1CC4D在29原步返回。外層RET及16BAE3返回未見。
+- 全部10542原348列／36PNG保持，13事件readonly，160M仍配置母星圖。初版核算猜28指令為29而拒絕，腳本／stderr保留並重現exit1；另按原C21800修正第三CALL的24byte清理，不改CPU或private執行語句。
+- READY審查後正式只更名349標記，逆轉兩區塊逐byte保持348，CPU／平台不改。正式關閉8M1693原列／PNG、68舊CLI負例與正對照、86回填／新349的32負例與既有負例通過，限定CONFORMED。348已回填，並刪除尾端仍把已命中CALL列未知的殘留斷言。
+- 命令、26份本機來源／收據雜湊見研究紀錄。原EXE／LBX／RAM／LOG／PNG／私有IDA腳本不入Git。工具a279ce5的診斷及07611f5的現況勘誤已推送，完整HEAD07611f5808e53eb40a61cc8a94489045b0ff0686核對遠端，未推本機origin；主庫四文件隨後提交推送。
+- 原版、IDA與驗證容器有界並已結束移除，輸出1000:1000，工具樹無root-owned／.md目錄，主庫歷史root-owned不修動。未重跑120M或無關CPU全套。下一步維持160M核對外層迭代／實際上限／重繪，再決定續行預算；母星配置與完整開局、正式writer、RNG、人耳及remake同狀態未知，整款remake／中文化目標活躍。

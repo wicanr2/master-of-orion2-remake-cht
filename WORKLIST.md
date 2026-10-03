@@ -46,12 +46,12 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–348為限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
-  **目前狀態**：348原進度函式與caller零分支已驗。149825343原16B985 CALL、次步16C78E入口；153214295原16BD86 C3 RET，153214296返回16B98A。原五POP恢復保存暫存器，ESP2BDB74→2BDB78、EBP恢復2BDBA0。caller SS188:2BDB98 word0000／flags246h／ZF1，原JNZ不跳，153214298到16B995。160M仍「Placing home worlds...」／17FD04／unique_sites39434／無新CPU拒絕，生成完成／完整開局未驗。
-  **資料與正常輸入**：原共享尾端及CALL／CMP／JNZ bytes由固定1.31的IDA linear EA與dosgolem_high_le逐項核對，工具位址基準分開保存。callee的EBP-8 raw7779與caller word0000屬不同框架，不混用。保持99M按下／99084355放開、160M預算與原日期，無代寫／重送；固定日期不是seed。
-  **驗證**：全部10530原347列／36PNG保持，沿既有mtime／DTA／每次RAM規則比較；11事件核心／Bus／FPU／VBE及完整RAM readonly。正式與已驗private只更名348標記，兩區塊及新增空行逆轉逐byte保持347，CPU／平台未改。正式8M關閉1693原列／PNG、68舊CLI負例與正對照、85項規格回填／新348的27負例／既有負例通過。未重跑120M或無關CPU全套，既有回歸只稱歷史已驗。工具9afe6570dc3e49e354b9a9ec07360125682b3d67已推送github隔離分支，未推本機origin；21份本機來源／收據與實際命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
-  **下一步**：維持160M，觀察原16BADE→16AD13的正常入口參數、框架及生成呼叫邊界。160M的保存返回槽16BAE3與IDA原CALL只支持較晚呼叫的強推論，不代表實際CALL命中；先取原流程證據，不猜欄位用途或提高cap。
-  **未知／不混入本輪**：主庫玩法RE閘門保持；typed種族特性、持久名稱／旗色正式writer、文字renderer／母星配置規則、生成完成／完整開局及remake同狀態未驗。共享20DDDB仍未命中。DPMI外部cb_smoke、兩個舊探針PE格式、AH2Ch／RNG／人耳及Windows／macOS實機未驗。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–349為限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
+  **目前狀態**：349原後續CALL已命中。153878499原16BADE→16AD13，EAX2BDB78=caller BP-28h、EDX147D9，次步進原callee；四PUSH／ENTER後EBP2BDB60／ESP2BCF68，原slot16BAE3。前三直接CALL均正常返回，首次16AE7F→16B0B4以AX1／DX3輸入，153994869到16AE84返回EAX1CC4D／29原步。160M外層returned=false，仍「Placing home worlds...」／17FD04／unique_sites39434／無新CPU拒絕，生成完成／完整開局未驗。
+  **資料與正常輸入**：固定IDA原sub_7AD13有216指令、唯一caller7BADE；sub_7B0B4為28指令的兩records signed word差值平方相加。第三子呼叫原8F052 C21800清理24byte，實際ESP2BCF48→2BCF60；工具位址基準分開記載。原參數／欄位用途及距離座標單位未知，沒有猜補規則。99M按下／99084355放開、160M預算與原日期保持，無代寫／重送，固定日期不是seed。
+  **驗證**：全部10542原348列／36PNG保持，沿既有mtime／DTA／每次RAM規則比較；13事件核心／Bus／FPU／VBE及完整RAM readonly。正式與已驗private只更名349標記，兩區塊逆轉逐byte保持348，CPU／平台不改。正式8M關閉1693原列／PNG、68舊CLI負例與正對照、86項規格回填／新349的32負例／既有負例通過。未重跑120M或無關CPU全套，既有回歸只稱歷史已驗。工具07611f5808e53eb40a61cc8a94489045b0ff0686已推送github隔離分支，未推本機origin；26份本機來源／收據與實際命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
+  **下一步**：維持160M，核對dosgolem_high_le:16AD7D／16AF1B..16AF23外層遞增、IDA word_19199A的原實際上限及16AE07重繪邊界，再依進度決定續行預算。外層RET未見，不能由子呼叫返回或保存slot推定完成，不逐行翻譯helper、不猜欄位用途或盲提高cap。
+  **未知／不混入本輪**：主庫玩法RE閘門保持；typed種族特性、持久名稱／旗色正式writer、外層迭代上限、文字renderer／母星配置規則、生成完成／完整開局及remake同狀態未驗。共享20DDDB仍未命中。DPMI外部cb_smoke、兩個舊探針PE格式、AH2Ch／RNG／人耳及Windows／macOS實機未驗。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備
