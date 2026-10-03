@@ -915,3 +915,11 @@
 - 同ready原版到100M無新CPU拒絕，NEW GAME設定頁PNG人工確認；334黑屏與CPU拒絕由新收據解除。原正常press／release、第2筆store與callback4／4保持，ACCEPT、完整開局與remake同狀態未驗。下一步保存設定頁按鈕表與ACCEPT正常輸入前置。
 - 72回填函式、既有負例與新增26缺證據負例、兩CLI通過；來源／新收據1000:1000、gofmt／Git差異檢查通過。startup／provider／matcher保持334；工具root-owned／誤建.md目錄自檢空。Docker兩工作區掛載篩選空，沒有本輪遺留容器，未清理其他專案。
 - 工具74f574a78927f6bacdec95ea0519c83078bc71df已推送github隔離分支，遠端回讀一致、工作樹乾淨，未推本機origin；固定335與十私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。主庫RE-first與整款remake／中文化目標保持，主庫本輪四文件與十私有收據核對通過，既有root-owned 2437檔／272目錄保持，本輪未新增root-owned或.md目錄。
+
+## 2026-10-03：原版正常ACCEPT與選族頁
+
+- 起點主庫da52def1be5f3ae36ea713f2c0318054fd9a6c53／工具74f574a78927f6bacdec95ea0519c83078bc71df。命中dosgolem／GUI輸入／規格閘門／文件職責路由；336先DRAFT取得原17筆表，扣三新列後8146舊ready列與全部圖保持，935bytes三份相同與原ACCEPT候選足夠後READY。只增明示SETUP_ACCEPT_CLICK=1與80M前置，不代寫原選擇。
+- 初態一次600s；正式五原版各情境一次900s外層逾時，固定Go1.24.13 Docker／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀重建417檔。原版每條仍100M cap；go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe；python3 workplace/new-game-336-verify.py PASS：四舊基線3847／4829／6769／8146列及102PNG保持，額外80M輸入前6145原列保持。
+- 80000000 press／80011248 release，差42912微秒，callback6／6完成；80124668原20DDDB word0000→0F00，index15實際選擇已核對。原版同100M到21595F、無新CPU拒絕，SELECT RACE選族頁PNG人工確認。已保存90M／100M原16筆表供下一正常選擇；種族／完整開局與remake同狀態仍未知。
+- 15新增CLI拒絕與有效正對照、同binary舊334 14拒絕與正對照、73回填函式與新增28缺證據負例、兩CLI通過。CPU／startup／provider／matcher保持335，335固定EXE全套仍有效；gofmt／Git差異及新來源／收據1000:1000通過。工具root-owned／誤建.md目錄自檢空，Docker兩工作區掛載篩選空，沒有本輪遺留容器，未清理其他專案。
+- 工具7c84f3931953cf3c9ffcbdc0718852e9c700b3ba已推送github隔離分支，遠端回讀一致、未推本機origin；固定336與十三私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。主庫RE-first與整款remake／中文化目標保持，主庫四文件與十三私有收據核對通過，既有root-owned 2437檔／272目錄保持，本輪未新增root-owned或.md目錄。下一步只核對原16筆選族表與正常輸入前置，不重開ACCEPT或SCASW。

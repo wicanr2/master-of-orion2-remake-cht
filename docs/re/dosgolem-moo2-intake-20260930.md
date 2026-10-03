@@ -1418,3 +1418,39 @@ python3 workplace/new-game-335-verify.py PASS：無旗標全部3847／4829／676
 CPU SHA-256 967de02753e0dce276413fe67a085e6df16789b52c948999d30ed26c3bb4e6a4；repne_scasw_test.go SHA-256 f8e512f4d57cc18e1eb3933f448f7c5493f3e4a2b224c3da72d00d8eecfac97d；probe SHA-256 63d47d60e38e0d2489aadda95aef334f3d66005c72cde96dd893f5d71f272979。startup／provider／matcher逐位元保持334，原輸入與新來源／收據1000:1000核對通過。工具root-owned／誤建.md目錄自檢空；Docker兩工作區掛載篩選空，沒有本輪遺留容器，未清理其他專案。
 
 **未知與下一步**：只保存原設定頁按鈕表與ACCEPT正常輸入前置；不重開已完成SCASW、原掃描helper或renderer。ACCEPT、選族、完整正常開局、正式RNG、remake同狀態及整款中文化未驗。主庫RE-first、255完整游標、303整體DRAFT、299自然OF=1、AH2Ch／RNG／人耳保持。
+
+### 2026-10-03 原版正常ACCEPT與選族頁
+
+工具7c84f3931953cf3c9ffcbdc0718852e9c700b3ba已推送github隔離分支，遠端回讀一致、未推本機origin。固定規格[336](https://github.com/wicanr2/dosgolem/blob/7c84f3931953cf3c9ffcbdc0718852e9c700b3ba/docs/spec/336-moo2-setup-accept-normal-click.md)，335與公開索引已回填。主庫起點da52def1be5f3ae36ea713f2c0318054fd9a6c53；官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址均dosgolem高位LE。
+
+**已證實，原設定頁表與前置**：335已正常進設定頁；336先補原333觀測器count≤16的限制，另保存80M／90M／100M原17筆表，不修改舊觀測行。原DS188:26C480 pointer298848／DS:29BE0E count17／bias0／stride55，完整935bytes三份相同，SHA-256 2a18a0213dcb1d539de3175c8356b8c8b886c1d61b38f63795b3fa1859a3f52f。原index15範圍433／392／527／414，原80M EIP22F1FB／完整R／六段／flags213h、callback4／4與IRQ16965／16965非活動、原設定頁RGB吻合。扣三新列後全部8146原335 ready列與圖片保持；原表與輸入初態足夠後336才READY。
+
+**已證實，正常ACCEPT消費**：固定80000000 press、virtual_micros125567232、x960／y400／buttons1，正常callback座標480／400；release實際80011248、virtual_micros125610144、x962／y400／buttons0，原座標481／400，差42912微秒。只經InjectMouseEvent，兩點只命中原index15，不代寫RAM／EIP／選擇。80124668原20DDDB執行66A3A6C42600，EAXFh、DS188:26C4A6 word0000→0F00、下一EIP20DDE1；R=[F 0 339 0 2BDB14 2BDB7C 0 2B0001]／段=[8 188 188 0 20 188]／flags297h保持，callback6／6與IRQ17000／17000完成、皆非活動／非failed、error=nil。原store與下一畫面共同證實ACCEPT消費，不能只用幾何交集宣稱成功。
+
+**已證實，SELECT RACE選族頁**：原版同100M cap到原21595F，無新CPU拒絕。終態R=[7F 1A8 341DF4 8A 2BDA7C 2BDA9C D 1A]／段=[8 188 188 0 20 188]／flags212h。實際640×480 PNG人工確認SELECT RACE與種族／Custom按鈕，滑鼠留在Custom附近不能當已選任何種族。90M／100M原count16／pointer298848／bias0，完整880bytes相同，SHA-256 f03515b12cb289bfcfe49b46d5cf8619f8f4e300ccfd1bd4ca43107f1c313ade，保存作下一正常輸入來源，欄位用途未完整推定。
+
+本機忽略PNG workplace/dosgolem/workplace/moo2-vbe-336-accept.png SHA-256 7aec4ca6aad1f948560e184695bd3b415b1145ad9778e536da14a60e11d61861；RGB SHA-256 9d8c0a1acb3b96200296f789bb13c6877067f6165ec608a7e019506036832dfc。原版素材／LOG／RAM不公開，這不是remake同狀態對照圖。
+
+固定Go1.24.13映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac／Docker2GiB／2CPU／128pids／UID1000／network none；原ZIP／patch唯讀重建417根檔／官方EXE。初態蒐證一次600s，正式五情境各一次900s外層有界逾時，原版各條仍100M cap。go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe；沿335四基線換336輸出名，加DOSGOLEM_MOO2_SETUP_ACCEPT_CLICK=1獨立情境，不提高cap或改舊事件。日期1996-01-01不是seed。
+
+python3 workplace/new-game-336-verify.py PASS：四舊情境3847／4829／6769／8146原列除既定mtime／DTA四byte／PNG路徑／每次RAM雜湊保持335，ready只扣三新唯讀列，102PNG逐位元保持；新ACCEPT額外80M輸入前6145原列保持獨立ready，原表／RGB／核心前置與實際store核算通過。新正常輸入後不同狀態不冒充同狀態。python3 workplace/new-game-336-cli-verify.py：15無效值／缺依賴在讀EXE前exit2、有效正對照通過；同新binary舊334 CLI 14拒絕與正對照保持。73回填函式、既有缺證據負例與新增28負例、兩CLI通過。
+
+| 本機忽略收據／腳本 | SHA-256 |
+| --- | --- |
+| workplace/dosgolem/workplace/moo2-probe-336-input.txt.gz | ec8f0867e944a0323813316b3805e21c1e220c654b0f6651826b210cb6d043fb |
+| workplace/dosgolem/workplace/new-game-336-input-verify.py | e22d9aa59b4b5cc855b0777f6dc5537ee05f8cf83137c9255b8167d6e8b402ff |
+| workplace/dosgolem/workplace/new-game-336-input-tests.txt | 7802819d83ad8c61b7c49d63b7bed05f58e20ed0b011408855331cb5241770f3 |
+| workplace/dosgolem/workplace/moo2-probe-336-baseline.txt.gz | bde1882211515e81d17abd98f9c2a49fa8cbe3f11939c80cd88680da69f3fedb |
+| workplace/dosgolem/workplace/moo2-probe-336-click.txt.gz | 29445900c269635d1c47877d42eed2f3d4f8cc4effb7c0b318d33c4a280a57f1 |
+| workplace/dosgolem/workplace/moo2-probe-336-extended.txt.gz | 08cbf2b2994d353033ec84c22df2f9e0a03e21227e7a817ae0447b915583c0ff |
+| workplace/dosgolem/workplace/moo2-probe-336-ready.txt.gz | e3f22c215074a9d3911971a9bdadc76414e569162c868f224ffd23f6d0abbbfc |
+| workplace/dosgolem/workplace/moo2-probe-336-accept.txt.gz | a8c64e4519ac73c78578e3d953257c6cd8d19b5be1345899f15cab0c0b86a252 |
+| workplace/dosgolem/workplace/new-game-336-verify.py | da6336609bb79a5887b383a2505ed4f7f4f4cfa927aa59b9a46f924d9b5d7083 |
+| workplace/dosgolem/workplace/new-game-336-parity-tests.txt | a7488a255580640aef0af2a8b67d1c9572ff7f81e6c9bc0007350e48eee4db0d |
+| workplace/dosgolem/workplace/new-game-336-cli-verify.py | f63589c59f6a91749537d75453af4bf8da6883776e02849ae006d6c9f4bb678b |
+| workplace/dosgolem/workplace/new-game-336-cli-tests.txt | 503b4534840a44fe81a235244c8ea4e2393610ed8458b2b23f2719db66efc313 |
+| workplace/dosgolem/workplace/new-game-336-backlink-tests.txt | 4d79d60bd98d9b0eddf69c3a4a855e10077477f90632cf1252ae78f240d42e74 |
+
+新probe SHA-256 cfcc89585eb163e67c3043202501f957708b4818985ddbd6d4b1f2138c635b19；CPU SHA-256 967de02753e0dce276413fe67a085e6df16789b52c948999d30ed26c3bb4e6a4。CPU／startup／provider／matcher逐位元保持335，335固定EXE Go全套仍有效，但不涵蓋整款原版玩法。來源／新收據1000:1000、gofmt與Git差異檢查通過。工具root-owned／誤建.md目錄自檢空，Docker兩工作區掛載篩選空，沒有本輪遺留容器，未清理其他專案。
+
+**未知與下一步**：只獨立解碼已保存90M／100M的原16筆選族表與正常種族輸入前置，再依新READY規格送一次正常選擇。不重開已完成ACCEPT／SCASW，不深入renderer或原helper。種族選擇、名稱輸入、完整正常開局、正式RNG與remake同狀態未驗；主庫RE-first、255完整游標、303整體DRAFT、299自然OF=1、AH2Ch／RNG／人耳保持。
