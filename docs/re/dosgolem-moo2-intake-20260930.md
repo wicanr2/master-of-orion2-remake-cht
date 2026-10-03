@@ -2920,3 +2920,62 @@ Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce617
 | new-game-359-cli-tests.txt | 0c39c7d30d26388473df3e31ad7be38651d38f98677857d9e5a9de59a4aaac43 |
 | new-game-359-backlink-verify.py | a1e23ad060dd3d78f8905f402fb18ce9b2c1e36fdd0ade59090f1375482210d1 |
 | new-game-359-backlink-tests.txt | 10dcf5f100ca93d8aeded6fc51ab5d6a627991944d2b66c8328907d8eecd6edf |
+
+
+## 2026-10-04：360 word CWD與原SUB／SAR消費
+
+路由：dosgolem原版oracle／spec-gated-workflow／re-resolution-backlinks／project-document-responsibilities，寫結論前再核對。沿固定官方DOS1.31 EXE 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，原180M與單次正常輸入，不增加cap／跳指令／代寫／重送／深入helper。工具a16e94c4c15e5c78760cc670cb4f6766457a5f67已推送github隔離分支，精確遠端核對，未改上游/home/anr2/cht/dosgolem。
+
+完整規格與命令：[360限定CONFORMED](https://github.com/wicanr2/dosgolem/blob/a16e94c4c15e5c78760cc670cb4f6766457a5f67/docs/spec/360-cpu386-cwd-word.md)。DRAFT先以未改CPU取原AX／DX、FPU與RAM，輸入驗證通過才READY，僅實作工具word CWD；主庫玩法RE-first保持。
+
+### 已證實與工程驗證
+
+- 未改CPU全部10859原359列／36PNG、正式10789共通正常列／35frames保持，同一原完整R／段／flags／FPU原bits及code16核對。
+- 原164984957在1D2A33的66 99，以AX0001符號正／DX0000→0000，完整flags246h、EIP1D2A35與其餘R／段／FPU／RAM保持。
+- 原164984958的66 2B C2讀真正DX低word，以SUB AX0001-DX0000=0001，六定義flags CF0／OF0／SF0／ZF0／AF0／PF0、flags202h與EIP1D2A38。原164984959的66 D1 F8讀AX1，SAR AX0001→0000，CF1／OF0／SF0／ZF1／PF1、EIP1D2A3B／EAX0，其他R／段／FPU／RAM保持。SAR AF不列原版parity，完整flags202h→247h只是觀測工具模型。
+- 三步FPU控制127F／status0／depth0／八stack bits0與全部RAM保持；readonly true／error nil／callback12／12／IRQ42073／42073、pending0／非active／非failed。原AX正且舊DX已0，不稱原負AX／EDX高word或非零舊DX動態已驗。
+- CPU只移除99的operand16早拒絕並新增五行word CWD；逆轉逐byte為359，裸CDQ原一行／word SUB與SAR／flags helper不改。三observer逆轉11d9aad原probe，十三舊測試完全保持。
+- 獨立signed數值範圍與little-endian視圖，16777216個65536 AX×64算術flags×四EAX／EDX高word哨兵，源高位符號相反也依AX，完整flags／EAX／EDX高word／其他R／段／nonzero FPU／RAM保持。全部32flags位元×16邊界AX、截短每byte／合法來源prefix拒絕、裸CDQ／十組CWD→SUB→SAR正負奇偶來源通過。
+- 窄測0.828s／固定原EXE乾淨Go全套CPU38699.385s／machine1.679s；缺8088語料不算386硬體驗收。關閉8M1693原列／PNG另比前輪359原收據，68舊CLI＋32新180M負例與100M／120M／160M／180M正對照；97守衛與新360的42＋24缺證據負例及較早負例通過。本輪CPU／原版／驗證均未失敗後挑選guest結果。
+
+### 新停止與限制
+
+原168496272於dosgolem_high_le input2376CB bytesC1 0D C4 0F 27 00 08 A1 C4 0F 27 00 4E 74 46 25拒絕memory dword ROR，after2376CD只取opcode／ModRM，未取disp32／imm8／source。R=[18181818 0 110 5C 2BD5D8 2BD648 69 34B94C]／段=[8 188 188 0 20 188]／flags202h。目的DS188:270FC4／imm08，原dword未知，不能以EAX18181818猜source；尚未達180M。下一步取原dword／相鄰資料與下一A1同址真正load，審查C1 /1 memory ROR，沿同180M。
+
+finalPNG逐byte保持359，SHA-256 1f757f5b16fe492795accf198c8db851443a062450e7f37ecf465c7eae3b6457／RGB04fef4b6a6d6c6c485ef1ce0a82ea71591956cdd3b7cd37b8d1082a023e20e17，沿354人工檢視主要黑底與小型方形圖形，未見完整地圖。固定1996日期不是seed；原負AX／EDX高word、新ROR來源與正常消費、正式writer／RNG、完整生成／開局與remake同狀態未知，不新增主庫玩法spec或修改玩法。
+
+CPU SHA-256 ed94eaf7e9c363e8a2c89d5410b30a9e653a60532d31654ee91c14d042f75337；新測試bad93e84a75a9e4a7e77c74e904a10a74ed23e82c0919b0ae006581c28b72181；正式probe8d65d37030f58fb8fd034b2396d9da00c3617987211e750da517cdc8b3c1bd9c。來源helper與其他舊CPU測試保持，不把工程自洽當原版全值域硬體對拍。
+
+### 私有收據與隔離狀態
+
+Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀。原EXE／LOG／PNG／RAM與私有腳本留忽略workplace，只公開自製CPU／測試／probe／規格／索引／守衛及雜湊。工具樹乾淨／專案容器0，既有root-owned2437檔／272目錄保持，不做遞迴修復。主庫只改CONTEXT的DOS單行與WORKLIST的DOS活表、追加WORKLOG與本檔，其他活表全文保持。
+
+| 本機檔名 | SHA-256 |
+|---|---|
+| moo2-cwd-word-360.go | 8d65d37030f58fb8fd034b2396d9da00c3617987211e750da517cdc8b3c1bd9c |
+| moo2-probe-360-input.txt.gz | 4143ae1c60ec3957ca373d4ac1be397ec9932daaa384ad997ab07f2b3820cd99 |
+| moo2-vbe-360-input.png | 1f757f5b16fe492795accf198c8db851443a062450e7f37ecf465c7eae3b6457 |
+| new-game-360-input-run.sh | 26e87efec02f945cd3b7f5fe59f5782f8a3106e2251b426ac082b93994686eae |
+| new-game-360-input-run-output.txt | bf41f1ab66bfc8d33bb80e36994128fd89aab7928e5e88c89af923bcff1927d2 |
+| new-game-360-input-verify.py | c261f469f17d48aefa68c1253d8f221037cff2180638248b6f89e47a3f8d6990 |
+| new-game-360-input-tests.txt | c1a14e9f83aab4afbe67045390dd2a317758fe6b2db3535853378fc2c488588e |
+| moo2-probe-360-formal.txt.gz | a05e0f46fe83e5fb048112cef174471599185d7a1c20f11d3a623565ddb156e3 |
+| moo2-vbe-360-formal.png | 1f757f5b16fe492795accf198c8db851443a062450e7f37ecf465c7eae3b6457 |
+| new-game-360-formal-run.sh | cef6c7cdf5dab4880504c41409153d8604f9a5caaa6360b4500fb54a9c69fcac |
+| new-game-360-formal-run-output.txt | ceac0b93c9af0ec069eb7063359f029b6e129ed430b6062b0672afd39f187178 |
+| new-game-360-formal-verify.py | 0aa89c540754008531d111fba662e1a0a8d3af3898980942f56c4f46fd3b743d |
+| new-game-360-formal-tests.txt | d8696c2be76aa43b67e8003b078cb92dbb858d027b762cd4ee5a83426b12b90a |
+| new-game-360-unit-tests.txt | dc141c466dd16697abf74895e64e160216a95629cabec5296b4fedb500ccbe89 |
+| new-game-360-full-run.sh | 6a790107b572abfa549210758fcea49907a2e0c281f6466df0b9aa706a9659dd |
+| full-test-360.txt | 7a638098bb95b91ee21387d09949d76e590ba9225be9eb0a5cbf07eba236936f |
+| new-game-360-source-verify.py | 6127647b58f12bb3680f3f87e38f5dd7a941335a84ea83d42a2cbaec5cc29e5e |
+| new-game-360-source-tests.txt | bf3d0a64c1d6c6b50911a3241c276a668ad1ae4e38a5ad0385bc853124d0a200 |
+| new-game-360-off-run.sh | d46319f88606f40c6ad16affc6346146380fdfd0ac090cd31bcc447282228ce5 |
+| new-game-360-off-cli-tests.txt | a5eabaf6f165680e4e73a808efc13d87da68f29a4c55ca63bd6bf4ec96c09dff |
+| moo2-probe-360-off-old.txt | c0b9bdf2b2e95878b6d6a34053f9da63395e752b3925ab774ea2a207acaa5726 |
+| moo2-probe-360-off-new.txt | 67c25bdf682de6e28276dd5437be8f412d70deed8ec3c0b6ac5a495bb29b0aff |
+| moo2-vbe-360-off-old.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| moo2-vbe-360-off-new.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| new-game-360-cli-tests.txt | 0c39c7d30d26388473df3e31ad7be38651d38f98677857d9e5a9de59a4aaac43 |
+| new-game-360-backlink-verify.py | a12abc12f0390921488c2be3a32f5e508daf528461918e95df6fe349c650edd4 |
+| new-game-360-backlink-tests.txt | 2f15caa9dd2a0509fc267e29461e2bf074c6446ca62cc43a8bc5325cb746f390 |

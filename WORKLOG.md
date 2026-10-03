@@ -1197,3 +1197,12 @@
 - DRAFT10845原列／36PNG、正式10775正常列／35frames、窄測0.685s／固定原EXE乾淨Go全套CPU38682.239s／machine3.104s、關閉8M1693列／PNG、CLI與96守衛／新41＋22負例通過。三項測試／環境失敗已修正後乾淨重跑，原正式guest結果未重跑挑選。
 - 原164984957於1D2A33拒絕66 99 CWD，AX0001／DX0000，after1D2A35／flags246h，未達180M。下一步取CWD與下一SUB／shift，維持輸入和cap；原非零SUB來源／借位／溢位、目的word reader、正式writer／RNG／完整開局與remake同狀態未知。
 - 四文件更新與27份私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。工具樹乾淨、專案容器0；既有root-owned檔案2437／目錄272維持，沒有新增.md目錄。
+
+
+## 2026-10-04：360限定word CWD與原SUB／SAR
+
+- 工具a16e94c4c15e5c78760cc670cb4f6766457a5f67已推送github的codex/moo2-parity-20260930，遠端精確HEAD相同。只接cpu386 66 99 word CWD，裸CDQ／word SUB與SAR／flags helper及十三舊測試保持，主庫玩法不改。
+- 原164984957 AX1／DX0與完整flags246h、164984958 SUB讀DX得AX1／六flags202h、164984959 SAR讀AX1→0與五定義flags／EIP1D2A3B已驗。三步RAM／FPU原bits保持，SAR AF不列原版parity。
+- DRAFT10859列／36PNG、正式10789正常列／35frames、16777216工程全值域、高word與64flags、窄測0.828s／固定原EXE乾淨Go全套CPU38699.385s／machine1.679s、前輪359原8M收據／CLI、97守衛及新42＋24負例通過。
+- 新原168496272在2376CB拒絕memory dword ROR，DS188:270FC4來源未知／imm08，after2376CD未取disp／imm或source，未達180M。下一步取原dword與下一A1真正load，維持輸入和cap，不猜目的。
+- 四文件與27份私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。工具樹乾淨／專案容器0；原負AX／EDX高word、新ROR、正式writer／RNG／完整開局與remake同狀態未知；主庫RE-first保持。
