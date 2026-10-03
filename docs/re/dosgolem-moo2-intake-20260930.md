@@ -1896,3 +1896,63 @@ private v2／正式source SHA-256 03bb2adb3414b8801f35ea25398a1cffc239befd4994f4
 **未知與下一步**：保留120M基準，另建立固定160M的明示診斷分支，先指定120M同狀態收據／160M有界終態，再DRAFT→READY後同正常input續行。160M是一次性預算，不保證生成完成；若仍同頁先找生成producer／狀態變化，不連續盲加cap或重送。正式writer、typed種族特性、生成完成／完整開局、正式RNG、人耳與remake同狀態未驗，主庫RE-first與整款remake／中文化目標仍活躍。
 
 主庫四文件、18份私有來源／收據、工具精確HEAD與官方輸入雜湊核對通過，其餘活表全文保持。既有root-owned 2437檔／272目錄保持，本輪未新增root-owned或.md目錄；兩工作區掛載篩選Docker容器空，成功與逾時工作均已清理。
+
+## 2026-10-03：346固定160M診斷同狀態、第三RET與配置母星原圖
+
+起點主庫8f5dbc7b3eb2b3e93f8bd7262e2ff476ea2bd660／工具a666ae584ba4df9468c233af2a07823229b12e09。規格沿工具[346](../../../workplace/dosgolem/docs/spec/346-moo2-universe-160m-normal-continuation.md)，現工具92d25f387d2ff18919ec65da2d85c7ce1566d7db已推送github隔離分支；所有原位址dosgolem_high_le，並非DOSBox位址或EXE檔案偏移。主庫RE-first保持。
+
+### 證據等級與界線
+
+- **已證實**：固定160M只由新明示旗標且完整正常輸入依賴鏈開放，原100M／120M契約保持。四346區塊／五guard逆轉逐byte等於345，CPU／平台未改。
+- **已證實**：預設120M全部9085原345列／32PNG保持；160M到120M前全部9028可比原列／31原frame保持。依既有mtime／DTA／每次RAM SHA規則正規化，原terminal不改名當新收據。新120M觀察在下一CPU.Step之前，完整R／六段／flags／FPU／VBE／clock／callback／IRQ與原同點保持。
+- **已證實**：第三group於120083995，17FD1E C2 14 00→17F037，stack37F01700、ESP2BD9F8→2BDA10，其他R／六段／flags246h保持。from119946572共137423原步。原120M第三pending仍正確，本輪延後取得RET，三waiting全false；不推論所有生成helper已完成。
+- **已證實**：150M仍「Generating Universe...」，160M原640×480圖為「Placing home worlds...」，人工檢視130M／140M／150M／160M。僅知文字變化在150M至160M之間，不猜producer原位址或生成規則。
+- **未知**：正式姓名／旗色writer、文字producer與caller、typed種族特性、完整生成／開局、存檔、正式RNG、人耳與remake同狀態。固定日期不是seed，probe exit0只是固定上限。
+
+120M R=[48 8 1 5 2BD9D0 2BD9EC 2BDA74 F]／seg=[8 188 188 0 20 188]／flags297h／EIP17FCE4；FPU control127F／status0／depth0／stack0。VBE Bank4／StartY0／BankSets1685／Writes36595476／DisplaySets50，virtual_micros227500108；callback12／12，IRQ28643／28643，BIOS deliveries28663另列；RAM readonly、原第三pending保持。其餘完整platform欄位逐欄比對，無跨次全RAM逐byte聲明。
+
+160M終態R=[6D 0 5 4 2BCEE8 2BCF04 2BDB44 F]／六段相同／flags207h／EIP17FD04／unique_sites39434，原bytes66 0F B6 4D 1C 66 39 CA 7C D3 40 66 3B 45 E4 7C。FPU control127F／status0／depth0／stack0，virtual_micros349146004；VBE Bank7／StartY512／BankSets2328／Writes46391556／DisplaySets77。130M／140M／150M／160M四checkpoint RAM before／after相同，35frame加final共36真實PNG。final等於160M原frame，RGB4a1d9efc9d15da575e330128f22d27e97f6d6616ac1b4184ec94efc2bd27f2c9、PNG c7534b8f40b51b8377d255d66e6dd759dfb3d427fa6fccc6ee7d8c3999b32bca。160M共10523原列、無新CPU拒絕；完整開局未驗。
+
+### 可重生工具與實際驗證
+
+Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac；原版每側timeout450s／network none／2GiB／2CPU／128pids／UID1000，原ZIP／patch唯讀。ZIP3a28a52f5953ff6d8fc251548940500236752ee19b52b51581e71ec1a3373c2f、patch908d6b7b37ad580039c5d108bab2c64b28f51ba735485287d284d5f5242b98e5、EXE4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f、MOX.SET553bytes bfd6855a41760b31156b96114b5b33c88f442ab8f8aae020c1740b3b486a3a80。fresh417根檔各重生一次，guest唯讀檔案provider。
+
+CPU SHA b5c8bd900047e8f018ad66edaf5ae8e1009e9f6d04ec89dea4000c27f3326b30；正式probe SHA b389f6c6b661e534b92e0be060c31921c2251735594187c7ed842a2f1f12f7e2。容器內go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe；兩次實際命令完整保存為本機workplace/new-game-346-run-120.sh與new-game-346-run-160.sh，檔案provider、原99M press／99084355 release保持。第二側只額外UNIVERSE_CONTINUE_160M=1／MAX_STEPS=160000000。沒有注入guest選擇、重送或略過生成。
+
+python3 workplace/new-game-346-ready-verify.py／new-game-346-source-verify.py／new-game-346-cli-verify.py／new-game-346-verify.py／new-game-346-backlink-verify.py PASS；公開python3 apps/moo2/tools/startup_probe_131.py --check-universe-continuation-spec-backlinks PASS。新CLI29負例在讀EXE前exit2，舊338的17／339的22負例及100M／120M正對照保持。83項規格回填、新346的23負例與所有舊負例通過；CPU未改，本輪不重跑無關Go全套。344固定EXE全套只當既有回歸。
+
+初次run腳本CAP代換誤改HARDWARE_ESCAPE_STEP，兩次在讀EXE前拒絕、原版未執行。原rejected raw／gzip保存；修正命令後相同容器／公開source乾淨重跑完成。這是執行腳本問題，沒有新產品缺陷。345過期下一步回填346，同時保存完整歷史證據索引。
+
+### 本機忽略來源與收據
+
+以下均位於workplace/dosgolem/workplace/，不入Git；68張原圖manifest只記本機雜湊，不散布PNG。
+
+| 收據／核算 | SHA-256 |
+| --- | --- |
+| new-game-346-ready-verify.py | 3f57e33ac48b2f7c2d50e9f84ca72142617fd642929c6daccb9f232fa53c08a5 |
+| new-game-346-ready-tests.txt | 2dc21fe750aa318c262d3d82286b37f22adf7a3f69b3f6cab7412a3f56e7db48 |
+| new-game-346-source-verify.py | 0b36c270f693cda3e8568a7f545ebec8850ffd98abe6a4dfa780707c069522b7 |
+| new-game-346-source-tests.txt | 3fae2a65f8aa3f5d4578fa6ae19f2c9bf1fb359ba1673638501968f85cbe673f |
+| new-game-346-cli-verify.py | fa18280fad37abc1c8bab98e8d53e1d7c824bbbad640009f78eda64b77c0c79c |
+| new-game-346-cli-tests.txt | 8b1443a99376737876f15ec2b99afee310602a31733b8377000feeac1e44d8f8 |
+| new-game-346-old338-cli-tests.txt | c5d03a8a5858cdeb915036ef21e2a8f0f3627b6007bfbe3e54c3745fb624b6b1 |
+| new-game-346-old339-cli-tests.txt | e4461c40e971daf4de8338567b57b68f0945355ed595b7c5c09620a2590be774 |
+| new-game-346-run-120.sh | 67af7bb351387ccc2f58f41f2b14a58db005eafe6a407a0d2e22793d27163e66 |
+| new-game-346-run-160.sh | adeb31446d7297b6c6feeded05b615d0e3dc5bed2f2f7c0a9eb5402af09eba1c |
+| moo2-probe-346-120.raw.txt | 00c7be8ca72851f793879eac0414edb795f98b001aa769d34ee8c0a7c6ad4eb1 |
+| moo2-probe-346-160.raw.txt | 149c5c3f99ef56be28d84dc49e940d36b41c96d4919fc42cd97ea47b9ca657a5 |
+| moo2-probe-346-120.txt.gz | f8a87f0a377ccc16d53526263bbe2751cf90accfa43da9b4e9db0302385209dd |
+| moo2-probe-346-160.txt.gz | 09038decb752495dfc75519e89dc8f0cedec997a42fe02c467085fd130d869af |
+| moo2-vbe-346-120.png | d0e387dc900c9955d82dc9c6b21a533d581ac383ba36abca9ce2de28b290f13a |
+| moo2-vbe-346-160.png | c7534b8f40b51b8377d255d66e6dd759dfb3d427fa6fccc6ee7d8c3999b32bca |
+| new-game-346-verify.py | 76cc426525a1a6ce04fb2c6e7ed46c50127ebb7d5285295790eba88c2436c698 |
+| new-game-346-tests.txt | 51a032f667f7fd516274638474f53b01deb5a79d07f37f9f58ac02b8c192eb0b |
+| new-game-346-backlink-verify.py | 1f773cef7c8db3496e749658244ce4eae5a34b21566a275609b9fc5f4f56c7e8 |
+| new-game-346-backlink-tests.txt | 0b7a0ab2dfee09a5829c44e10d215d65e47fe009a910de4b53e23d3b03a2dd4a |
+| moo2-probe-346-cli-rejected-120.raw.txt | 531247bf00fd36b424407cf703a6460b06e5fc7deec8d03f7e096e95cee5f8aa |
+| moo2-probe-346-cli-rejected-160.raw.txt | 108e19d356c0b577c4ebb15ab6ca32aa18917196bd37f0eec2db7b234294e1b3 |
+| moo2-probe-346-cli-rejected-120.txt.gz | 13783d6f70719c0ad0ec999a76cfcd695f0e9768a6cdd10994b55bb1c8643fdd |
+| moo2-probe-346-cli-rejected-160.txt.gz | 56d6959c3ae0202b375c3f764047f1bd436a568ebed6c669f11118a4870ef58f |
+| new-game-346-frames.json | 008b17b9ed7b033fba7a33c77e47964527f9a9ff4bcd7d6eb52d4e035da47359 |
+
+兩個原版容器已結束並移除，工具掛載相關容器空；新來源與收據1000:1000，工具樹無root-owned／.md目錄。主庫本輪只更新四文件，其餘活表保持，歷史root-owned不修動。下一步維持160M預算，用150M至160M文字變化定位最小producer／caller與狀態，先DRAFT觀測，不直接提高cap或重送。整款remake／中文化目標仍活躍。

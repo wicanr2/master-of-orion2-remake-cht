@@ -1023,3 +1023,15 @@
 - 主庫只更新CONTEXT一行／WORKLIST正常路徑活表，追加本WORKLOG與既有研究紀錄；玩法與其餘活表保持。下一步保留120M基準，先為固定160M明示診斷分支指定同狀態／有界終態規格，READY後續行。若仍同頁先查生成狀態，不盲加cap。正式writer、生成完成／完整開局、RNG與remake同狀態未驗，主庫RE-first與整款remake／中文化目標保持。
 
 主庫四文件、18份私有來源／收據、工具精確HEAD與官方輸入雜湊核對通過，其餘活表全文保持。既有root-owned 2437檔／272目錄保持，本輪未新增root-owned或.md目錄；兩工作區掛載篩選Docker容器空，成功與逾時工作均已清理。
+
+## 2026-10-03：固定160M續行、第三正常返回與配置母星階段
+
+- 起點主庫8f5dbc7b3eb2b3e93f8bd7262e2ff476ea2bd660／工具a666ae584ba4df9468c233af2a07823229b12e09。命中dosgolem、正常玩家路徑、規格閘門、逆向回填與文件職責路由，沿既有入口。346先DRAFT，核對345不可變收據後READY，才實作明示固定診斷預算。
+- 新旗標DOSGOLEM_MOO2_UNIVERSE_CONTINUE_160M只接受1及完整160M情境。四區塊／五guard以外source保持345，CPU／平台未改。兩側均fresh417正版根檔、官方1.31 EXE與原MOX.SET；原ZIP／patch唯讀。
+- 第一次啟動腳本把CAP字串換成數字時誤改HARDWARE_ESCAPE_STEP；兩側在讀EXE前exit2，原版未啟動。原rejected raw／gzip保存，修正腳本後兩個450s有界容器各乾淨完成，不當CPU／玩法失敗。
+- 同公開source重生預設120M與明示160M。預設9085原345列／32PNG保持；明示分支到120M前9028可比原列／31原frame保持，只允許cap配置header與新增觀察紀錄。新120M完整核心／FPU／VBE／clock／callback／IRQ／第三pending通過同狀態核對，RAM唯讀；DTA與每次RAM雜湊差異沿既有mtime正規化，不稱全RAM跨次相等。
+- 第三group於120083995原17FD1E C21400返回17F037，ESP2BD9F8→2BDA10，其他R／六段／flags246h不變。130M／140M／150M／160M快照通過；150M仍Generating Universe...，160M人工原圖已Placing home worlds...。160M無新CPU拒絕、到固定上限17FD04／unique_sites39434；不是完整開局通過。
+- 新CLI29負例與160M正對照、舊338的17／339的22負例及100M／120M正對照通過。83項公開規格回填、新346的23缺證據／狀態／回填／索引負例及全部舊負例通過；345只更新過期下一步，保留其歷史證據索引。CPU未改，未重跑無關Go全套。
+- 實際命令、25份本機來源／核算雜湊及68張PNG manifest見研究紀錄。公開只含probe／spec／索引／guard，原LOG／PNG／ZIP／EXE不入Git。工具92d25f387d2ff18919ec65da2d85c7ce1566d7db已推送github隔離分支並核對遠端，未推本機origin；主庫本輪四文件隨後提交推送。
+- Docker：兩個原版與檢查容器皆移除，工具掛載相關容器空；工具樹無root-owned／.md目錄。本輪新收據1000:1000，主庫歷史root-owned不修動。停止前核對HEAD與兩工作樹。
+- 下一步維持160M預算，追150M至160M配置母星文字producer／caller和最小狀態，不直接提高cap或重送。正式writer、完整生成／開局、RNG、人耳與remake同狀態仍未知，主庫RE-first保持，整款remake／中文化目標活躍。
