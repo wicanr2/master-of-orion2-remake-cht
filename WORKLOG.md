@@ -1106,3 +1106,16 @@
 - 未知：原word輸入／寫回、正式writer、資料語意、完整配置／開局、RNG與remake同狀態。下一步建立word記憶體AND窄CPU規格並以相同180M正常路徑驗證。remake／中文化目標仍活躍。
 
 本輪輸出1000:1000、工具root-owned零；主庫既有2437檔／272目錄不修動，沒有新增root-owned或.md目錄。收尾核對兩庫精確HEAD／遠端／工作樹與專案Docker清理。
+
+## 2026-10-03：353 接通word記憶體AND與原三步消費
+
+起點主庫ed55a4b87cbd31ab8d2bf55cb5dbcc013b20ed47／工具8ef52b1fc372bf96267d964f8b1ba903594d95c6。上一輪已推送原35迭代與RET，屬實際進展。本輪命中dosgolem對拍、CPU規格閘門、回填與文件職責，沿已載入技能／入口；依Intel 80386原廠AND及第3.4.1節契約。主庫RE-first保持，不修改玩法。
+
+- DRAFT未改CPU正常180M量原DS188:5AA050 word0000，全部10793原352列／36PNG及readonly／RAM保持。原來源可讀、ISA充分後審查READY，才新增21行通用CPU分支與三個observer；沒有位址特例或guest代寫。
+- 已證實：原163795435..163795437的AND word0000／SHL EDX0／OR dword0均返回nil，EIP依序103BFF／103C02／103C05、flags246h，完整R／段／來源相鄰／stack及RAM保持。原零→零不證明Bus寫次數，受控CPU成功零／非零兩bytes與逐byte拒絕另驗；AF與多位SHL OF只驗工具模型。
+- 已證實：入口前10723原共通列／36PNG、source逆轉、窄測0.312s、固定原EXE乾淨Go全套CPU38677.939s／machine1.449s、關閉8M1693列／PNG、68舊＋32新CLI負例、90項回填／新353的33負例及較早負例通過。8088實機語料缺檔，不算386硬體驗收；沒有新IDA或120M整流程重跑。
+- 原164321317在223E93的86 06 memory byte XCHG拒絕，after223E95只解碼，未達180M。原ESI2BD8A8／ALFF、EDI2BD97A已記錄；目的byte與STOSB初態待下一窄切片捕捉。完整生成／開局、正式writer、RNG與remake同狀態未驗。
+- 初版formal核算將四項stop診斷算進原AND前，10727對10723拒絕。保留腳本／輸出並重現exit1；按實際stop切點與四項精確類型修正後嚴格核算通過，未改原收據／CPU或重擲結果。屬驗證腳本邊界問題。
+- 工具c7086292bf476be63a406131632c9cf8c4780ab6已推送github/codex/moo2-parity-20260930並核對遠端，未推本機origin；353限定CONFORMED、352未知已回填。30份本機收據與實際命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步原byte memory XCHG／STOSB最小契約，維持180M。
+
+本輪來源1000:1000、工具root-owned／.md目錄零，主庫既有2437檔／272目錄保持。原版、全套與回歸容器均有界結束移除；收尾核對兩庫精確HEAD／遠端與工作樹。remake／中文化目標仍活躍。

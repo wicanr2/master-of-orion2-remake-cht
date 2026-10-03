@@ -2358,3 +2358,92 @@ python3 workplace/new-game-352-backlink-verify.py
 輸出1000:1000，工具root-owned／.md目錄零；主庫既有2437檔／272目錄保持，本輪不新增或遞迴修權限。原版與正式回歸容器均有界並結束移除；兩庫遠端與精確HEAD在收尾核對。
 
 下一步建立66 81 /4 word記憶體AND窄CPU規格，驗解碼／16bit寫回／flags／相鄰bytes與拒絕邊界，再以相同180M正常輸入捕捉原word及後續消費端。全生成、完整開局、正式writer、RNG、人耳與remake同狀態未驗；不繼續提高預算或深挖繪圖／runtime helper。
+
+## 2026-10-03：353 word記憶體AND、原三步與新memory byte XCHG停止
+
+路由命中dosgolem對拍／CPU規格閘門／回填／文件職責，沿已載入逆向技能與入口。起點主庫ed55a4b87cbd31ab8d2bf55cb5dbcc013b20ed47／工具8ef52b1fc372bf96267d964f8b1ba903594d95c6。工具結果[c708629](https://github.com/wicanr2/dosgolem/commit/c7086292bf476be63a406131632c9cf8c4780ab6)，完整HEAD c7086292bf476be63a406131632c9cf8c4780ab6；[353規格](https://github.com/wicanr2/dosgolem/blob/c7086292bf476be63a406131632c9cf8c4780ab6/docs/spec/353-cpu386-and-word-memory-imm16.md)限定CONFORMED，352未知已回填。主庫RE-first保持，整款remake／中文化尚未完成。
+
+### 契約、已證實與未知
+
+[Intel 80386原廠AND](https://www.ardent-tool.com/CPU/docs/Intel/386/manuals/prref386/AND.htm)列81 /4 iw的word完整立即值與寫回；[第3.4.1節](https://www.ardent-tool.com/CPU/docs/Intel/386/manuals/prref386/s03_04.htm)明示OF／CF清零、SF／ZF／PF更新、AF未定義。不深挖driver或逐週期硬體。不以相同日期冒稱亂數seed。
+
+DRAFT未改CPU，沿352相同180M完整正常輸入捕捉dosgolem_high_le:103BF9首遇：163795435完整R=[0 0 0 5AA044 2BDB08 2BDB2C 0 0]、段=[8 188 188 0 20 188]、flags246h。DS188:5AA04F八bytes全零，目的word DS188:5AA050為0000；SS188:2BDB08四bytes01000000。callback12／12、IRQ41715／41715非活動、pending0；readonly與RAM保持。全部10793原352列／36PNG保持，三區塊逆轉source逐byte保持352。原完整word來源可讀與ISA充分，才READY實作。
+
+**已證實，原三步**：163795435的66 81 63 0C 7F FE執行word0000 AND FE7F→0000，EIP103BFF；163795436原C1E207的EDX0左移7仍0，EIP103C02；163795437原09530C的DS同offset dword0 OR EDX0→0，EIP103C05。三步flags246h、完整R／段／來源相鄰bytes／stack與完整RAM保持，readonly=true／error nil／ram_changes=[]。原零→零沒有Bus寫次數trace，通用成功兩byte寫入由CPU受控Bus測試另驗；AF與多位SHL的OF只驗工具模型，不宣稱硬體定值。
+
+**已證實，保持與CPU回歸**：正式入口前10723原共通正常列／36PNG與同一原word／R／段／flags／stack保持；不把舊stop診斷算作指令前原事件。CPU僅新增21行66 81 /4 memory word分支、成功writeSegment16後才發布邏輯旗標；逆轉逐byte保持352。unknown selector／唯讀／段外／讀失敗保持旗標與RAM；第二Bus byte寫失敗保留已寫低byte且旗標保持，只沿工具模型，不宣稱硬體exception原子重啟。原81 word register／memory CMP、83 AND register保持。observer三區塊逆轉保持352，平台／8088 CPU不改。
+
+獨立逐bit交集／五旗標oracle：全部65536 word來源配原mask、65536低byte配對、16位單bit／補數／高位／零與64個初旗標組合；全部ModRM／SIB相異DS／SS、ESP忽略index／無base DS、非對齊／負disp8／32位繞回／最後完整word、相鄰byte；prefix／截短／逐byte讀寫拒絕與成功零／非零實際兩寫全部通過。窄測0.312s，固定DOSGOLEM_MOO2_EXE的乾淨Go全套CPU38677.939s／machine1.449s通過。8088語料缺檔skip不算實機驗收，沒有386實機語料。
+
+**已證實，新停止**：164321317原dosgolem_high_le input223E93 bytes86 06 AA 46 4A 75 F7 07 C3 56 57 06 0F A0 0F A8，錯誤「XCHG byte僅支援暫存器」。ModRM06為DS:[ESI]與AL，原交換尚未執行；after223E95只解碼。原R=[FF 0 2 2BD976 2BD730 2BD888 2BD8A8 2BD97A]、段=[8 188 188 0 20 188]、flags202h。目的DS188:2BD8A8 byte及後續ES188:EDI2BD97A的STOSB初態未捕捉，資料語意未知。requested budget180000000、actual stop164321317，尚未達180M；probe exit0只代表錯誤收尾。
+
+原finalPNG仍d493c2b5628d55381176c9e676586ab8940fd62544302195b59570b6136e6ba6／RGB5a416d1db0fa55dc3523c99212ceb813056dda787a301b5e8d26bf799d058b59；本輪沒有新正常開局或人眼畫面驗收。完整母星配置／開局、正式writer、RNG、人耳與remake同狀態仍未知。
+
+初版formal核算切在舊guest_cpu_stop，納入四項stop診斷：late_startup_platform／irq7_passdown_state／protected_dma_pcm／irq7_real_entry；10727對10723的長度斷言拒絕。初次腳本／tests／stderr保留並重現exit1；按實際late_startup_platform label=stop與四項精確類型修正後，原10723列及三步嚴格核算通過。不修改CPU、raw或原收據，不為選結果重跑原版；分類為驗證腳本邊界問題。
+
+### 命令、環境與私有收據
+
+Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac。Docker --rm／network none／UID1000／2GiB／2CPU／128pids，原版兩次各600s、全套600s、8M／CLI與窄測180s；原ZIP及patch唯讀。原ZIP根層417檔／MOX.SET／99M按下與99084355放開／1996日期／44M硬體逃逸保持，沒有資料代寫／跳呼叫／換Bus或重送。
+
+固定DOS1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f。CPU1bfd9e0c7a63453549a7ab1e081d7d669ea8f38c0388e94743f9e0b0049793b1；自製測試02d55bbfac7846cc578101052f5186b62720b6fd0dd3faf95c2e387a56553ef5；probe848dba4c436357de62902e5f4185177bf2b5912decc832d0cd22ba1f34d8624f。沒有本輪新IDA或120M整流程重跑。
+
+```text
+bash workplace/new-game-353-input-run.sh
+python3 workplace/new-game-353-input-verify.py
+  未改CPU10793原列／36PNG與原word初態 PASS
+go test -p 2 -buildvcs=false ./internal/cpu386 -run 'TestANDWordMemoryImmediate|TestANDWordRegisterSignedImmediate|TestCMPWord|TestSUBWord|TestADDWord' -count=1 -v
+  獨立CPU窄測與舊word契約 PASS
+bash workplace/new-game-353-full-run.sh
+  固定原EXE乾淨Go全套 PASS
+bash workplace/new-game-353-formal-run.sh
+python3 workplace/new-game-353-formal-verify.py
+  原10723共通前綴／36PNG／三步／新XCHG停止 PASS
+python3 workplace/new-game-353-source-verify.py
+  僅21行CPU與三observer區塊／逆轉逐byte保持352 PASS
+bash workplace/new-game-353-off-run.sh
+  關閉8M1693列／PNG、68舊CLI＋32新CLI負例及正對照 PASS
+python3 workplace/new-game-353-backlink-verify.py
+python3 apps/moo2/tools/startup_probe_131.py --check-and-word-memory-spec-backlinks
+  90項規格回填／新353的33負例與較早負例 PASS
+```
+
+乾淨全套：git ls-files -z | tar --null -T - -cf - | tar xf - -C /tmp/test-src，再複製本輪新自製CPU測試；避免歷史探索main污染，未移動或改寫舊探索檔。關閉8M以352原probe與353新probe同新CPU比較，兩者在本輪AND入口前，source逆轉與正式正常前綴另證CPU舊行為保持。
+
+以下30份本機來源／收據在工具忽略workplace；原EXE／LBX／RAM／LOG／PNG／私有腳本不入Git。公開只提交通用CPU、測試、診斷、規格、索引、守衛與雜湊。
+
+| 收據／核算 | SHA-256 |
+| --- | --- |
+| moo2-and-word-353.go | 848dba4c436357de62902e5f4185177bf2b5912decc832d0cd22ba1f34d8624f |
+| moo2-probe-353-input.txt.gz | bf7cf698bf7c6cb1bc8e8e4cdf60f2f748801332b6375fdd83f0535204625c20 |
+| moo2-vbe-353-input.png | d493c2b5628d55381176c9e676586ab8940fd62544302195b59570b6136e6ba6 |
+| new-game-353-input-run.sh | d948eee16e1bd8995ae2ff705efa813a5ec3be89e19e6c9e5f74515fa95af50d |
+| new-game-353-input-run-output.txt | d361590f9c5d03f14079df3afb60b85517179650af054dc4c717f91d54667963 |
+| new-game-353-input-verify.py | 5c35378e2be730e0af658635c890d7dcfb4b561f2f41fad95ffeae5273d8c8b7 |
+| new-game-353-input-tests.txt | e936db7ab38cc5afb5708afd958d578e0062337af64252a65f747291d8c8c92e |
+| moo2-probe-353-formal.txt.gz | 5e9ca79374c2a67298872b3b2d04d210d9241035d2644899182ebff3b28433a9 |
+| moo2-vbe-353-formal.png | d493c2b5628d55381176c9e676586ab8940fd62544302195b59570b6136e6ba6 |
+| new-game-353-formal-run.sh | a98d928282e41760ac89009df9513396149cff59decf74fb2aec7d3fa94325e1 |
+| new-game-353-formal-run-output.txt | 1acc8ab3b8f6ac60b66cf8193af680905f20d45b9fe497df0e9c32b69b391f99 |
+| new-game-353-formal-verify.py | b1754dec76a12174c7bc0e81cca5845b0e3822bd8a1d16cbc833a6879367a667 |
+| new-game-353-formal-tests.txt | 9d7617a2e3deb70e4bd7a284bbb840eda16bc3b8876f75edc09bcfa3c618a42c |
+| moo2-353-cpu-narrow-tests.txt | 62d999ac687acb10705a7dfdfcd1e3ab2a0d97d9e1b548392d01d7b23d872ec7 |
+| new-game-353-full-run.sh | 9acf4d81d65ecbafc793d6d57dc142e3d3b8d54e9e53ed549e27500bdfbec11d |
+| full-test-353.txt | 16f9e86bd4b984eef315f5e5fb4497cf7bc77dd55b4a719061ad76ff035128fb |
+| new-game-353-source-verify.py | 3f20a61abf8b010d0090e1daa423dc5cabc4e7b71f87cb4174a7638d8d6dbbb2 |
+| new-game-353-source-tests.txt | b185ef0fa306a8519c42b6a59f072f5a45f14f80f869a25d24cc3838aeb0b5af |
+| new-game-353-off-run.sh | a535eea06ec74fa44e764bd80d7ffab4a591ca9fdbc2b7fa7bddf48144578cd8 |
+| new-game-353-off-cli-tests.txt | a5eabaf6f165680e4e73a808efc13d87da68f29a4c55ca63bd6bf4ec96c09dff |
+| moo2-probe-353-off-old.txt | ca3296c1e76ebca60c1bdd7edec596b0aa8ed73611874183256b3d865c1e9cdc |
+| moo2-probe-353-off-new.txt | 721b10698c61acb1cf5a86901e8e220ae1975f7e58b3e1ca9f0638d3a538e662 |
+| moo2-vbe-353-off-old.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| moo2-vbe-353-off-new.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| new-game-353-cli-tests.txt | 0c39c7d30d26388473df3e31ad7be38651d38f98677857d9e5a9de59a4aaac43 |
+| new-game-353-attempt1-verify.py | ec899e6027caf0852ecf2fdf86f9ab40bf77bbc902dd6bbaa8098e3d481ddcdb |
+| new-game-353-attempt1-tests.txt | a2a4c3afb986d052f64f24b2d54748628518941f36b592a2c44cc1b7573435fc |
+| new-game-353-attempt1-verify-output.txt | 40d9fbbed66ee080b1f6d5e4107ebdb0e6ced366041f54704429354839aee198 |
+| new-game-353-backlink-verify.py | 08adcb15b06cfa3436dc1640a2d4e8b4c6b0a492c36c2e55d53594a8438df934 |
+| new-game-353-backlink-tests.txt | 0f8df807f7b5c18644d12f066cff38d3c7d9628b43d23fef4826cbe5fef361d2 |
+
+來源／收據1000:1000，工具root-owned／.md目錄零；主庫歷史2437檔／272目錄保持，本輪不新增或遞迴修權限。原版、全套與回歸容器有界且已結束移除；精確HEAD／遠端與工作樹於收尾核對。
+
+下一步為86 /r memory byte XCHG做窄CPU切片：先捕捉原DS:[ESI]／AL與ES:EDI的STOSB前狀態，審查byte交換／旗標保持／寫入邊界，再以同一180M正常輸入核對交換與下一byte store。不提高cap，不深入helper；完整生成／開局與remake同狀態未驗。
