@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-03）**：355已接通02 /r byte記憶體來源ADD。原164560803..164560807四SS來源00加到AL00與第五目的ADD零結果、flags202h→246h／精確EIP／RAM保持已驗；原非零加法／進位未驗。DRAFT10829原列／36PNG、正式10759正常列／35frames保持，固定原EXE乾淨Go全套CPU386123.004s通過。原164561579停於1CE387的0F94 memory目的，after1CE38A只解碼，尚未達180M；完整開局未驗。finalPNG與354相同，主要黑底且未見完整地圖。工具8273d887f5387c23d9ae13056ae2ad1e263aeee0已推送github隔離分支，證據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步取SS188:2BD834 byte／flags246h與後續消費，接通標準SETcc memory byte目的；正式writer、RNG與remake同狀態未知，主庫玩法RE閘門保持。
+- **DOS 原版動態驗證器（2026-10-03）**：356已接通16標準SETcc的memory byte目的。原164561579的SS188:2BD834 byte41→01／唯一RAM差異、flags246h保持與下一JMP1CE61E已驗；第三CMP來源與byte1 reader未驗。DRAFT10834原列／36PNG、正式10764正常列／35frames保持，固定原EXE乾淨Go全套CPU386137.976s通過。原164567987停於1CF90A的66 6B word IMUL，after1CF90C只解碼，尚未達180M；完整開局未驗。finalPNG保持主要黑底、未見完整地圖。工具442eef487fa03be9ef0f793e233396120c56973b已推送github隔離分支，證據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步取DS188:5A2084來源word與DI／imm05，審查word IMUL低16bits／CF／OF與正常消費；主庫玩法RE閘門保持，正式writer、RNG與remake同狀態未知。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為

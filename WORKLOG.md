@@ -1146,3 +1146,17 @@
 - 工具8273d887f5387c23d9ae13056ae2ad1e263aeee0已推送github/codex/moo2-parity-20260930並核對遠端，未推本機origin；355限定CONFORMED、354／353／352目前未知與索引已回填。29份本機來源／收據與實際命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步取原0F94目的byte與正常消費，不增加cap或深入helper。
 
 正式writer、資料語意、完整生成／開局、RNG與remake同狀態仍未知；remake／中文化目標活躍。本輪來源／收據1000:1000，工具root-owned／.md目錄零；主庫既有2437檔／272目錄保持。原版、全套與回歸容器有界結束移除，交接核對兩庫精確HEAD／遠端與工作樹。
+
+
+## 2026-10-03：356 接通標準SETcc記憶體目的與原SETE寫回
+
+起點主庫ba3800608f7e55ad0a293104a57df9b41dc78669／工具8273d887f5387c23d9ae13056ae2ad1e263aeee0。上一輪ADD與推送完成，屬實際進展。本輪路由命中dosgolem對拍、CPU規格閘門、回填與文件職責，沿已載入逆向技能與Intel SETcc契約。主庫RE-first保持，不改玩法。
+
+- DRAFT未改CPU正常180M取SS188:2BD834 byte41／相鄰004100、flags246h，全部10834原355列／36PNG與readonly／RAM保持。byte與ISA充分後READY，CPU移除3行早拒絕並加11行通用純write，原條件表／register／Jcc保持；兩舊memory負例明確限定未知selector，完整新正例補有效memory。
+- 原164561579 SS41→01／唯一下標2BD834變更、EIP1CE38B、flags246h保持與164561580下一JMP1CE61E已驗；第三CMP只觀測，dword來源與byte1 reader未驗，不宣稱原三步規則全對拍。
+- 4194304個memory真值／初byte組合、全地址形狀／純write／相同值仍寫／拒絕保持／非零FPU及舊register、Jcc通過。窄測7.994s，固定原EXE乾淨Go全套CPU386137.976s／machine1.755s，8M1693列／PNG，68舊＋32新CLI負例及正對照，93項回填／新356的37＋10負例與較早負例通過；缺8088語料不算386實機驗收。
+- 原164567987在1CF90A的66 6B word IMUL拒絕，after1CF90C只解碼，DS188:5A2084來源word未知、flags206h；尚未達180M。finalPNG保持355主要黑底與小型方形圖形，未見完整地圖，不算完整開局。
+- 初態兩步probe與原run內容已保存，READY後正式診斷三步，舊LOG／PNG不重寫；原命令內容／新重生入口分列。沒有CPU／正式原版／驗證失敗後挑選收據；明列來源建置避免並行暫存main。
+- 工具442eef487fa03be9ef0f793e233396120c56973b已推送github/codex/moo2-parity-20260930並核對遠端，未推本機origin；356限定CONFORMED、六份較早unknown與索引已回填。29份本機來源／收據及實際命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步取word IMUL來源／DI／imm05及正常消費，沿同180M，不增加cap或深挖helper。
+
+第三CMP數值／byte1 reader、資料語意、正式writer、完整生成／開局、RNG與remake同狀態未知，remake／中文化目標活躍。本輪來源／收據1000:1000，工具root-owned／.md目錄零，主庫既有2437檔／272目錄保持；原版、全套與回歸容器有界結束移除，交接核對兩庫精確HEAD／遠端與工作樹。
