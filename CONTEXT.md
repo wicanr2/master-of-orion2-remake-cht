@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-04）**：367已驗可寫Strader正常ACCEPT，原95008897／dosgolem_high_le:20DDDB實寫word0000→0100，99M進入旗色選擇頁。一次正常press／release，原418來源保持、state仍僅sound.lbx；公開CPU／DOS／provider／probe保持。首次50M錯置診斷已保留並修正，不當玩家結果。工具a649d0b9d035eec8d8f57235b7e54a30cd7848bd已推送github，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步依99M真實550byte表與完整CPU／FPU／callback／IRQ另立紅旗正常輸入契約，保留339唯讀guard。主庫玩法RE閘門保持，持久名稱／正式存檔／完整開局／RNG與remake同狀態未驗。
+- **DOS 原版動態驗證器（2026-10-04）**：368已驗可寫旗色正常press／原poll／兩GUI返回後release；原SAVE10.GAM寫208000bytes與兩次MOX.SET寫553bytes正常close，隔離副本與終態雜湊一致。原418來源保持，公開CPU／DOS／provider／probe不變。原165113094於dosgolem_high_le:169E49 bytes20D0拒絕AND byte，未達180M。工具62cd4911727f17042cb5f8ce98e10b0fe80331ac已推送github，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步依原核心與bytes建立byte AND規格、補CPU與正常consumer，再沿同輸入續行。主庫RE閘門保持，正式讀檔／旗色持久語意／完整開局／RNG與remake同狀態未驗。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為

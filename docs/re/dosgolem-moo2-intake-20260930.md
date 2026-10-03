@@ -3319,3 +3319,58 @@ python3 workplace/new-game-367-verify.py
 均於既有Go1.24.13 Docker執行，image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP與patch只讀。原版容器已自動移除，兩個專案掛載filter無執行中或停止容器；既有root-owned2437檔／272目錄保持，無新增root-owned或.md目錄。
 
 原資料→完整表／候選→正常press／release→共享store→旗色UI限定接通。未知：typed名稱、正式名稱持久writer／旗色選擇／正式存檔／完整開局／RNG／音訊與remake同狀態。180M參數保持但99M診斷停止不稱180M完成；主庫RE-first保持。下一步以99M完整550byte表／globals／header／CPU／FPU／RGB／callback與IRQ，另立紅旗正常press／原INT33h poll／GUI selection／release契約並審查，不只換hash或挑時刻放寬339唯讀guard。
+
+## 2026-10-04：368正常旗色輸入與原成功寫檔，169E49的新CPU拒絕
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址空間dosgolem_high_le；原ZIP417根檔加官方EXE共418檔，MOX.SET／1996-01-01／180M與先前正常輸入保持。日期不是seed。工具起始a649d0b9d035eec8d8f57235b7e54a30cd7848bd，公開internal／CPU／DOS／provider／probe保持。新版368為隔離輸入試作，原339唯讀guard不改。
+
+### 已證實的正常流程與範圍
+
+沿367真實99M完整550bytes／globals／header／CPU／FPU／VBE／RGB／clock／callback／IRQ審查後READY。一次press99000000／185561342µs，99103163原24C31B的INT33 AX3返回BX1／CX276／DX190；99103343與99103698原214104 RET20DB5B／20E165返回AX1。原SS188:ESP2BD998 stack top5BDB2000／65E12000，完整R只ESP+4、六段與flags202h保持，原observer readable／readonly／valid true、error nil。99103699／185890422µs首次合法mask1 release，持按329080µs、callback11／11完成。沒有代寫CPU／選擇／RAM、沒有重送或重跑guest。
+
+原160M Placing home worlds已親看。165058686、原237024的SAVE10.GAM 3D01返回handle9／CF0，165058731原237093的40／CX0 truncate；13筆40含truncate，238310各筆完整EAX等於請求ECX，合計208000bytes，原3E正常close。另兩次MOX.SET開檔／truncate／40寫553bytes／正常close。99筆DOS診斷全部handled且CF0。這已解出可寫原寫檔成功的玩家阻塞，未證正式讀檔或存檔內容語意。
+
+state終態SAVE10.GAM208000bytes／SHA-256 0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d、MOX.SET553bytes／de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f，sound.lbx4250888bytes／3f0354ac5c1b13a3c5c4fd098c2cbc22af37b71e74fc95e582782c22024c449d與367及原ZIP相同。三檔UID／GID1000，原418來源前後SHA-256保持。原guest存活時在同bounded容器內Docker exec只讀state，另存變動檔副本；原guest退出後最後副本逐份與run終態清單hash／bytes一致，中途0bytes／部分寫入不當終態。監測400s有界，精確命令等價保存私有new-game-368-state-capture.py，未改guest或state檔。
+
+### 新能力缺口與未知
+
+原165113094在169E49拒絕bytes20 D0 59 C3 53 51 89 C1；EAX18900／ECX0／EDX601／EBX0F／ESP2BDB00／EBP2BDB34／ESI1／EDIFFFFFFEC，段=[8 188 188 0 20 188]、flags216h。ModRM D0對應AND AL,DL，這個正常consumer結果未知。probe exit0但明確guest_cpu_stop／step_error存在，沒有step_limit或dos_exit；未達180M。終圖黑底游標已親看，原旗色共享20DDDB store未命中，正式旗色持久writer未知。
+
+### 驗證與回填
+
+367前99M的7846原共通列依352既有mtime／DTA／每輪只讀RAMhash正規化、30PNG逐byte保持；全550byte表、完整CPU／FPU／VBE／RGB／callback／IRQ與clock保持。三私有變更逆轉為367，公開internal與probe保持；四CLI拒絕與合法缺EXE正對照通過。初次READY腳本誤拼診斷名稱，guest前依原source修正後重讀同367收據通過，原guest一次。339／341／362／367已附不可變原定位與限定回填，舊唯讀收據保持，不把可寫流程當舊same-state。
+
+| 本機忽略來源／收據 | SHA-256 |
+|---|---|
+| moo2-368-overlay-frame-extended-160000000.png | c7534b8f40b51b8377d255d66e6dd759dfb3d427fa6fccc6ee7d8c3999b32bca |
+| moo2-banner-red-368.go | ac013d424348917b2178ccf44d425669731d19ca314ad71a249f1e47023402f4 |
+| moo2-probe-368-overlay.txt.gz | 8cf7b6f1e75b7759e3e40c8a7574cbf85150a7269bd1e99fdb3fae4445d882cd |
+| moo2-save-state-368-mox.set | de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f |
+| moo2-save-state-368-save10.gam | 0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d |
+| moo2-save-state-368.json | 50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705 |
+| moo2-vbe-368-overlay.png | 1f757f5b16fe492795accf198c8db851443a062450e7f37ecf465c7eae3b6457 |
+| new-game-368-cli-tests.txt | f7bc407d133dd1cdb56fcb8aa6377e508459429adc0ec583216ba2c8088e545d |
+| new-game-368-data-hashes.json | 46add69fbddc4b2805b22bd6f590c8581b37aa7581d7f4ccafce02173e097b82 |
+| new-game-368-patches.json | 005d803b8855a66259d60a1d767a5bb0575858c076ed59088412a4c4b84d200b |
+| new-game-368-ready-review-tests.txt | c454988ebdecfc38d1c52b5b659724f672e917f7a810e43c87d994d876662430 |
+| new-game-368-ready-review.py | 487fd42694ac2324aba6c8053ecd6818e246076f15af8c8c0545c2cb0ce2ba97 |
+| new-game-368-run-output.txt | 4c4d2e3ed0fdbb3eeb6dd3aeb061b537367214a733afe97fc6360ab6484c99f9 |
+| new-game-368-run.sh | bb101a3bf3c22781071b0c0567bd4cb7e0d5dc7f65ed1f703e90c984e76df44c |
+| new-game-368-state-capture.json | 5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d |
+| new-game-368-state-capture.py | 5754b764b86bc93587d84761dd3c9367c4a625e5acb3355e93d73d8d2e53a8e9 |
+| new-game-368-tests.txt | cc818c2a534656e0c69d2bd9fa772a31ced7d68a7f44882b7d8614d7ebaaedf3 |
+| new-game-368-verify.py | ac3864d78b6d36748cc371f8d4bddde575503a2665f6e13792afe236c1bbce52 |
+
+18份均在workplace/dosgolem/workplace/，雜湊及UID／GID1000核對。原LOG／PNG／RAM／state bytes與版權素材不提交。公開只交368規格／索引／四舊規格回填，工具62cd4911727f17042cb5f8ce98e10b0fe80331ac已推送github隔離分支。
+
+### 實際命令與交接
+
+```text
+python3 workplace/new-game-368-ready-review.py
+bash workplace/new-game-368-run.sh
+python3 workplace/new-game-368-verify.py
+```
+
+Go1.24.13 Docker映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀。原版與同步監測均terminal，容器自動移除，兩專案掛載filter無執行中／停止容器；既有root-owned2437檔／272目錄保持，無新增root-owned或.md目錄。
+
+下一步依原169E49／20D0另立byte AND規格，先READY再補CPU register-source能力、原AND／下一POP／RET與原前綴保持；同正常輸入續行，不增點擊或改cap。主庫玩法RE-first保持。正式讀檔／存檔內容／typed旗色／完整開局／RNG／音訊與remake同狀態仍未知。

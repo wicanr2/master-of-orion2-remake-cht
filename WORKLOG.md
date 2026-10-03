@@ -1258,3 +1258,13 @@ Docker實際命令 `python3 workplace/new-game-365-ready-review.py`、`bash work
 Docker命令 `python3 workplace/new-game-367-ready-review.py`、`bash workplace/new-game-367-run.sh`、`python3 workplace/new-game-367-verify.py` 通過。四CLI無效值／缺依賴及合法缺EXE正對照通過，原418檔前後SHA-256保持，state仍僅與原ZIP相同的sound.lbx，沒有SAVE10.GAM。14份新私有收據與首次32檔索引見研究入口，原LOG／PNG／RAM與版權素材不入Git。
 
 工具a649d0b9d035eec8d8f57235b7e54a30cd7848bd已推送github隔離分支，主庫起始f32ec3e01d7be09b9f6c1e50212607e64acb07eb。本輪主庫只改DOS活表／CONTEXT單行並追加歷程／研究。原版執行容器已自動移除，專案掛載filter無執行中或停止容器；既有root-owned2437檔／272目錄保持，無新增root-owned或.md目錄。下一步以99M真實旗色初態另立正常紅旗契約，保留339guard。名稱持久writer／正式存檔／旗色選取／完整開局／RNG與remake同狀態未驗，主庫RE-first保持。
+
+## 2026-10-04：368可寫旗色正常輸入、原成功寫檔與新20D0拒絕
+
+依367真實99M完整550byte表／CPU／FPU／VBE／clock／callback／IRQ審查後READY，保留339唯讀guard與339–341原poll／兩RET／release。原99103163正常pressed查詢、99103343及99103698兩GUI返回AX1，99103699首次合法放開，持按329080µs。原160M Placing home worlds已親看；原SAVE10.GAM 3D01返回handle9／CF0，truncate／完整208000bytes寫入／正常close；另兩次MOX.SET553bytes正常寫入與close。同guestDocker exec有界只讀state監測，副本與終態SHA-256／bytes一致，原418來源保持。共享旗色store未命中，持久語意未知。
+
+原165113094在dosgolem_high_le:169E49 bytes20 D0拒絕opcode20，完整核心與下一bytes已取；CPU未改，終圖黑底游標已親看。exit0包含真正guest_cpu_stop／step_error，不稱180M或完整開局。7846舊列與30PNG保持、四CLI拒絕及正對照、三私有變更逆轉與公開全部internal／probe保持通過。初次READY審查錯拼診斷名稱，在guest前依原source修正，原guest一次沒有重擲。
+
+實際Docker命令 `python3 workplace/new-game-368-ready-review.py`、`bash workplace/new-game-368-run.sh`、`python3 workplace/new-game-368-verify.py` 通過；同步捕捉state的精確monitor命令等價保存為私有new-game-368-state-capture.py，不公開原state／LOG／PNG／RAM與素材。18份收據雜湊見研究入口。工具62cd4911727f17042cb5f8ce98e10b0fe80331ac已推送github隔離分支，主庫起點2e2562f31d9541bf62af63a667af4b47ed3302a4。
+
+本輪主庫只更新DOS活表／CONTEXT單行，歷程與研究追加。原版與有界monitor均已terminal，容器自動移除，兩個專案掛載filter無執行中或停止容器；既有root-owned2437檔／272目錄保持，無新增root-owned或.md目錄。下一步為20D0 byte AND建立READY契約後補CPU及原consumer。主庫玩法RE-first保持，正式讀檔／旗色持久語意／完整開局／RNG與remake同狀態未驗。
