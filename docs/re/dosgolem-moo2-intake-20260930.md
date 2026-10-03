@@ -3531,3 +3531,68 @@ index1+24→261AC2原16byte窗口首byte00並含BUFFER0，SHA-256 2c9d54f6d98794
 18份均在workplace/dosgolem/workplace/，SHA-256與UID／GID1000核對。工具c39af543efa47387b1fd96f86038d08f940f42c6已推送github，公開自製371規格／索引與三回填；原LOG／PNG／RAM／state留本機忽略目錄。精確READY審查／run／verify入口見工具371規格。
 
 下一步依原174213914／1749C0 F6EC與完整核心、Intel ISA建立byte IMUL READY規格，補獨立CPU窄測與原consumer，保持180M及所有既有輸入再續行。主庫玩法RE-first保持，正式名稱與旗色持久語意／讀檔／完整開局／seed與remake同狀態未驗。
+
+## 2026-10-04：372 byte IMUL原consumer與母星確認後180M星圖
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址空間dosgolem_high_le。起始工具c39af543efa47387b1fd96f86038d08f940f42c6，交付工具e57e9e063b1713b087423a78bef1349237c3d4b0已推送github；[372限定規格](https://github.com/wicanr2/dosgolem/blob/e57e9e063b1713b087423a78bef1349237c3d4b0/docs/spec/372-cpu386-imul-byte-source.md)與五份回填保留歷史正文。公開自製CPU／窄測／NEG拒絕判準／規格／索引，原資料、LOG／PNG／RAM／state及probe不入Git。Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac；600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀。
+
+### 已證實原正常consumer
+
+- 原174213914、1749C0 F6EC，R=[FF01 1A5 2 8 2BD488 2BD4E0 171C80 2BD4E0]、段=[8 188 188 0 20 188]、flags246h，FPU127F／status0／depth0／八stack bits0。原AL01乘AHFF得到AXFFFF，EIP1749C2；只有EAX低16改變，CF／OF0。
+- 原174213915、1749C2 A2 06 1F 28 00，DS188:281F06真正舊byte01→FF，EIP1749C7；全RAM比較只有此一byte改變，完整核心／FPU保持。
+- 原174213916、1749C7 E9 33 F3 FF FF，按原signed disp獨立核算返回173CFF，完整核心／RAM保持。三observer只讀、error nil，callback14／14與IRQ45735／45735完成且inactive。
+- [Intel80386 IMUL](https://www.ardent-tool.com/CPU/docs/Intel/386/manuals/prref386/IMUL.htm)及[旗標附錄](https://www.ardent-tool.com/CPU/docs/Intel/386/manuals/prref386/appc.htm)給CF／OF與未定義邊界。SF／ZF／AF／PF保留是工具模型，不能稱原硬體逐值一致。目標byte用途仍未知；工程fixture舊55不冒充本原native舊01。
+
+### 實際180M與完整表
+
+相同371輸入／日期／180M cap，原guest一次。實際step_limit=180000000／EIP2176C5／unique_sites54239，無guest_cpu_stop／step_error／dos_exit。R=[35017C 70 39C17C 70 2BD478 2BD4C0 39C17C 35017C]、六段同上、flags202h、FPU同上，虛擬414027099µs，IF1；callback14／14與IRQ47425／47425已返回。VBE bank9／startY512／sets2927／writes55120744／display93。
+
+終圖已親看正常星圖、Sol／3500.0、底部COLONIES／PLANETS／FLEETS／ZOOM／LEADERS／RACES／INFO與TURN。命名視窗消失；星圖控制尚未另送正常輸入驗收，不稱完整開局完成。PNG SHA-256 beb773bf0623f56bc9b2be697c6e0e472abebd8fa4c319f15e6074291bb7a832，RGB 9b433167360cbfa77c0422b5ba6848db3efba59cd7d168738e0f62d7dd03200f。
+
+既有dumpSetupTable在cap取得DS188:298848、count23／stride55／1265bytes，只讀表SHA-256 4392f446efbdd96acafbfba8ee39cc0e8ac67a2388119df5bfbfef14a89ab15a，globals 6ff76fc0f447a300d6468cb76bc2acc884bd9b0e544c01f0ad101d76ee6d1dfe，header 35d7cde9f525f64e4d64ea3bdaa7bf3ee2770440c7ecb8cbe2f3fc954aff8cda。完整快照前後R／段／flags／FPU／RAM保持；沒有擴充舊count≤16 observer，後者table_readable=false仍是觀察界限。先前完整23物件未取的缺口由同native另一既有入口補齊。
+
+### 工程驗證、來源與回填
+
+裸F6 /5 register及memory來源新增分支逆轉後逐byte等於c39af54的CPU；CPU SHA-256 1d8a4d8252372c97d8e873ba13c3ab3670796527dcd6d74de52e8cbf226e068c。獨立重複加法、[-128,127]範圍與little-endian lane窄測0.212s通過，1048576 register fixtures／131072 memory值、全ModRM／SIB、DS SS、唯讀／wrap／段末、截短／prefix及讀失敗發布。FPU用非零fixture，memory乘法不得寫入。新測試SHA-256 08e22ec33fba14abed76eb3f4c86f07ebd1e9cfcc54d66dd9103a94c15ad2dc4。
+
+首次Go全套只有289舊NEG拒絕fixture要求F6E8失敗；移除唯一過期樣本，F6 /1、/2、/7與memory NEG護欄保持，測試SHA-256 6248ee23037b32db47c8d68baec8bf84731886cad7d95102c3540123e68fd042。相同容器／命令乾淨重跑固定官方EXE全套通過，CPU38657.925s／machine1.699s，首失敗收據保留。全套後新測試僅兩中文字改成繁體，實作與斷言保持；未掛8088外部資料，不外推其驗收。其餘公開internal及probe保持，主庫玩法未改。
+
+三私有新增區段逆轉後精確等於371；371拒絕前11645共通原列按既有mtime／DTA與每輪RAMhash正規化保持，38PNG逐byte保持，本輪39PNG。六CLI拒絕與mode on／off缺EXE兩正對照保持；新驗證首次與擴充cap／完整表／回填檢查皆通過，原guest沒有重啟。
+
+SAVE10.GAM208000bytes／0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d、MOX.SET553bytes／de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f、sound.lbx4250888bytes／3f0354ac5c1b13a3c5c4fd098c2cbc22af37b71e74fc95e582782c22024c449d保持。有界同guest副本與終態及371一致，三檔UID／GID1000；原418來源前後保持。監測owned、有界550s，outer600s；所有程序terminal，相關執行中／停止Docker容器為零。既有主庫root-owned2437檔／272目錄保持，不修復未涉檔案。
+
+367／369／370／371追加原F6EC／正常星圖及完整表回填，289追加工程拒絕判準回填；全保留舊正文。分開原ISA定義／工具未定義flags模型／原native／工程fixture，不把新consumer當舊其它點擊上下文。
+
+### 私有收據
+
+以下位於workplace/dosgolem/workplace/，不入公開Git：
+
+| 檔案 | SHA-256 |
+|---|---|
+| full-test-372-first-failure.txt | c8cca171857b16523756e2cfb693253f5ca801d1e359d186d4e53a251fcdd300 |
+| full-test-372.txt | be9a4c6301c81c392aa52bbc9de2e345c25d837db1d688a8b29c4c14852d15a3 |
+| moo2-372-overlay-frame-extended-180000000.png | beb773bf0623f56bc9b2be697c6e0e472abebd8fa4c319f15e6074291bb7a832 |
+| moo2-imul-byte-372.go | 3de3b64fc461fe5e9b2cf2a29e1d4a0c9d5e230a9fdf8b9c7d959bd4c224a205 |
+| moo2-probe-372-overlay.txt.gz | 3b78e609532aa8cd75936ad76128f401da3a29060e206a88e801ca6b24eed910 |
+| moo2-save-state-372-mox.set | de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f |
+| moo2-save-state-372-save10.gam | 0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d |
+| moo2-save-state-372.json | 50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705 |
+| moo2-vbe-372-overlay.png | beb773bf0623f56bc9b2be697c6e0e472abebd8fa4c319f15e6074291bb7a832 |
+| new-game-372-cli-tests.txt | e23e63ea4e37e0f0823fda228ce807b3cdac82cc8d2c63c2bf2d1afb1a2312af |
+| new-game-372-cpu-branch.txt | 55e9ad252e540e3f1e22c4460b4ce5a9de03d514d43252f1670df74e051255da |
+| new-game-372-cpu-tests.txt | 29ea4110b337460eaac7d074c42c812afd6a52691b565d2f25eff1d04a362d1e |
+| new-game-372-full-run.sh | a4bf19eba75c6b22df6a0b7435399874d428f8c209221f86a6a6590206163a69 |
+| new-game-372-patches.json | 16a1ef0c8832e8c6ffb30f1c2fe8eb4043aaa5d8b19f58fd563edb910159f3ce |
+| new-game-372-ready-review-tests.txt | f343dd68b926087145c90f86c26bcca3bc86137beee9ae48013ec6bdbb476e46 |
+| new-game-372-ready-review.py | ce9864a3eff0fd7435d1a9503c80b21dbe9c1d33922f21bda61e4b018dd27472 |
+| new-game-372-run-output.txt | 884fe62f0b4d63fb72e11fec0c2e93b080bbfc5511f4d1d38647bd704797b36b |
+| new-game-372-run.sh | 66a1df5d644c17e4f6d929064b9aad10dac0fa2c6728f8d438e402bec4baac51 |
+| new-game-372-state-capture-output.txt | 9332dea0878e8d161b0c361a816571d5946567602223ec6dadb95d15d9cd9ab3 |
+| new-game-372-state-capture.json | 5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d |
+| new-game-372-state-capture.py | 93bcc27910bb1271e1836a0301d8987877e1580a412858a97e1a0ed0d3717940 |
+| new-game-372-tests.txt | b6de5fc5ff6b5be092915da3d40d8b869652f499c7a8c081fa3d96b52750f540 |
+| new-game-372-verify.py | 52eaa125a91cc85002653cd653dd8b98820b4c8aef7795dc80d184478b29cd8d |
+
+實際Docker命令依序new-game-372-ready-review.py、裸byte IMUL窄測、new-game-372-full-run.sh、new-game-372-run.sh、new-game-372-verify.py；READY審查在CPU編輯前，原guest一次，full過期判準修正後以同命令重跑。深層契約與逐步結果見上方372工具規格。
+
+下一步以180M正常星圖及23物件核對首個COLONIES來源、矩形、callback與安全輸入前置，先有界只讀，再READY正常裝置輸入。主庫玩法RE-first保持；正式存讀語意、typed名稱／旗色持久writer、母星配置、星圖正常控制、完整開局、RNG及remake同狀態未驗。固定1996日期不是seed。

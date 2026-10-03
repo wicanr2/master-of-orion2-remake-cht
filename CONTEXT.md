@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-04）**：371已驗母星Sol正常press／原pressed查詢／首次安全release，原20DDDB共享選取word0000→0100、候選保持，命名視窗消失並回到星圖。170M前11435共通原列與38PNG保持，原418來源與state副本保持；公開CPU／DOS／probe不變。後續174213914在1749C0／F6EC遇byte IMUL能力拒絕，未達180M。工具c39af543efa47387b1fd96f86038d08f940f42c6已推送github，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步依原核心與ISA建立byte IMUL READY規格，補CPU及原正常consumer。主庫RE閘門保持，正式持久語意／讀檔／完整開局／RNG與remake同狀態未驗。
+- **DOS 原版動態驗證器（2026-10-04）**：372已補byte IMUL，原174213914的F6EC得到AXFFFF，下一A2只寫DS188:281F06 byte01→FF，E9正常返回173CFF。沿371正常母星確認達180M／2176C5，無CPU拒絕；終圖正常星圖已親看，既有入口取得23物件完整表。11645共通原列、38PNG與原418來源／state保持，固定官方EXE Go全套通過。工具e57e9e063b1713b087423a78bef1349237c3d4b0已推送github，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步核對COLONIES來源與安全正常輸入前置。主庫RE閘門保持，正式存讀語意／完整開局／RNG與remake同狀態未驗。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為

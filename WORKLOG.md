@@ -1298,3 +1298,23 @@ Docker命令 `python3 workplace/new-game-367-ready-review.py`、`bash workplace/
 370點擊前11435共通原列與38PNG保持，六私有patch逆轉、公開internal／CPU／DOS／probe保持，六CLI拒絕及兩正對照通過。原guest一次，原418來源保持，state副本／終態與370一致、UID GID1000。實際Docker入口 `python3 workplace/new-game-371-ready-review.py`、`bash workplace/new-game-371-run.sh`、`python3 workplace/new-game-371-verify.py` 通過。公開371規格／索引與367／369／370回填，18份私有收據見研究入口；原LOG／PNG／RAM／state不入Git。
 
 工具c39af543efa47387b1fd96f86038d08f940f42c6已推送github；主庫起點fd7d4e72fb3a7197a7ba999a0eb23f0b03d71fcb。主庫只更新DOS活表及CONTEXT單行，歷程與研究追加。原guest及有界監測均terminal，兩專案掛載filter無殘留容器，root-owned2437檔／272目錄保持，無新增root-owned或.md目錄。下一步為F6EC建立CPU READY契約、獨立窄測及原consumer後相同輸入續跑。主庫玩法RE-first保持，正式名稱與旗色持久writer／讀檔／完整開局／seed與remake同狀態未驗。
+
+## 2026-10-04：372 byte IMUL、原consumer與180M正常星圖
+
+372經DRAFT／原371完整核心及Intel80386契約審查後READY，只新增工具裸F6 /5。獨立重複加法／有號範圍／little-endian oracle驗八register別名及memory來源，窄測0.212s通過。首次固定官方EXE Go全套只有289舊NEG拒絕fixture把F6E8當未知group；移除唯一過期樣本，原F6 /1、/2、/7與memory NEG護欄保持。相同容器及命令乾淨重跑CPU38657.925s／machine1.699s通過，首失敗收據保留。
+
+原guest沿371同正常輸入只跑一次，180M／1996日期保持。174213914原1749C0 F6EC得到AXFFFF，下一A2只寫DS188:281F06 byte01→FF，原E9返回173CFF；全R／段／flags／FPU及全RAM效果有原三步只讀收據。實際達180M／2176C5／unique_sites54239，無CPU拒絕，終圖正常星圖已親看。既有dumpSetupTable取23物件1265bytes，未放寬舊count≤16 guard。原完整開局、正式存讀語意與remake同狀態仍未驗。
+
+371拒絕前11645共通原列與38PNG保持，原418來源／state保持；本輪39PNG。CPU新增分支及三私有區段可逆，289測試單項更新，其餘公開internal／DOS／probe保持；六CLI拒絕與兩正對照通過。367／369／370／371追加原F6EC及完整表回填，289追加測試契約回填，歷史正文保持。
+
+實際Docker入口依序：
+```text
+python3 workplace/new-game-372-ready-review.py
+go test -p 2 -buildvcs=false ./internal/cpu386 -run 'TestIMULByte372' -count=1
+bash workplace/new-game-372-full-run.sh
+bash workplace/new-game-372-run.sh
+python3 workplace/new-game-372-verify.py
+```
+READY審查在CPU編輯前執行；全套失敗後同命令重跑，原guest沒有重跑。Go1.24.13／network none／600s／2GiB／2CPU／128pids／UID1000，原ZIP／patch唯讀。實際原命令／輸出／23收據雜湊掛[既有研究入口](docs/re/dosgolem-moo2-intake-20260930.md)。工具e57e9e063b1713b087423a78bef1349237c3d4b0已推送github，主庫只改四份現況／歷程文件。Docker專案相關執行中／停止容器為零；主庫既有root-owned2437檔／272目錄保持。主庫基線95e9325dab29a7773a5ddf6f084202b68f10d490，提交後精確HEAD見Git。
+
+下一步核對180M星圖COLONIES控制的來源與安全正常輸入前置，再READY測正常裝置輸入。主庫玩法RE-first保持，不猜typed／持久欄位。原字串用途未知、RNG未固定；日期不是seed。
