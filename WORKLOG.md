@@ -941,3 +941,14 @@
 - python3 workplace/new-game-338-verify.py PASS：六舊情境3847／4829／6769／8149／7752／9030原列與162PNG保持，新輸入前7523原列保持獨立humans；原表／候選32bytes／核心／RGB獨立核算通過。新版17新CLI拒絕與正對照、同binary舊337 16拒絕與正對照、75項規格檢查與新338 26負例、337 27負例及兩CLI通過。CPU／平台保持335，本輪未重跑Go全套。
 - 工具 0c88d04cb59d2b7bfc716e953cc529c54b5fb6e2 已推送github隔離分支，遠端回讀一致，未推本機origin；十八份私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。新來源與收據1000:1000，gofmt／Git差異通過，工具root-owned與誤建.md目錄空，Docker兩工作區掛載篩選空。主庫四文件、十八份收據與原始ZIP／patch雜湊核對通過，其餘活表全文保持；既有root-owned 2437檔／272目錄保持，本輪未新增root-owned或.md目錄。
 - 下一步取得較早旗幟頁、原10筆表與正常選色前置。原預設名稱確認及下一頁已驗；typed種族特性、正式名稱writer、選色、完整開局、正式RNG與remake同狀態未知。主庫RE-first及整款remake／中文化目標保持。
+
+## 2026-10-03：旗幟正常按鍵查詢已驗，選色未完成
+
+- 起點主庫f079ef801ab20d3ab1949ad9ee8d5e9693ee9eea／工具0c88d04cb59d2b7bfc716e953cc529c54b5fb6e2。命中dosgolem、GUI、規格閘門、文件職責與回填路由。339先DRAFT，98M／99M唯讀蒐證保持全部7874原ruler列與30PNG；98M尚一筆初始化表，99M才完整十筆。READY後不更動原初態或正式玩法預設。
+- 新輸入三版各由新鮮417根檔／官方EXE重生一次：初版99M正常短按、100M仍旗幟頁；同短按延長120M、7837原100M前列保持，但仍未推進。兩次都保存來源與負收據，退回DRAFT查證，不稱選色成功。
+- 收據直接確認短按期間原AX3輪詢為0次、放開後492次只讀到buttons0。重查GUI路由及既有INT33／InjectMouseEvent後重新READY，只加「首次原正常查詢確實讀到pressed」的放開閘門。最新99000000按下、99083819返回BX1／CX276／DX190、99083854首次合法mask1放開，差245291微秒；callback12／12與IRQ28866／28866完成。
+- 原版120M到228DDC，仍SELECT BANNER COLOR，沒有新CPU拒絕；共享20DDDB未命中。339限定CONFORMED只涵蓋原表、正常查詢與放開，選色消費／下一頁／持久旗色仍未知，不計入玩法完成分母。下一步只保存原pressed查詢後的有界正常GUI消費與返回框架，不再調cap、換時點或盲重送。
+- Docker外層300s／2GiB／2CPU／128pids／UID1000／network none，Go1.24.13，原ZIP／patch唯讀，go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe。新99M前7708原列及28PNG、完整表／核心／RGB／pressed順序通過；22新CLI拒絕及120M／100M正對照、同binary舊338 17拒絕及正對照、76規格回填、新339 26缺證據負例、338 26負例與兩CLI通過。未重跑未受影響六基準／Go全套；CPU／平台保持335，來源六有界區塊／五guard逆轉後逐位元保持338。
+- 工具7d569e0392fd9061576da8395d3c8b4d10e0886d已推送github隔離分支，遠端回讀一致，未推本機origin；22份新私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。來源／新收據1000:1000、gofmt／Git差異通過，工具root-owned／誤建.md目錄空，Docker兩工作區掛載篩選空。主庫RE-first及整款remake／中文化目標保持。
+
+主庫四文件、22私有收據、精確工具HEAD與原ZIP／patch雜湊核對通過，其餘活表全文保持。既有root-owned 2437檔／272目錄保持，本輪未新增root-owned或.md目錄。

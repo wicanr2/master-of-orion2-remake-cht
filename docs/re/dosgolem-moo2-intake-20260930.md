@@ -1541,3 +1541,61 @@ python3 workplace/new-game-338-cli-verify.py PASS：17無效值／缺依賴在�
 來源與新收據1000:1000、gofmt／Git差異通過，工具root-owned／誤建.md目錄空，Docker兩工作區掛載篩選空，本輪容器已清理。
 
 **未知與下一步**：只取得同ruler情境較早旗幟頁、原10筆表與正常選色前置，再依新READY規格送一次可重播的色彩fixture。預設名稱正常確認與旗幟頁已驗；正式持久名稱writer、旗幟選擇、typed種族特性、完整開局、正式RNG與remake同狀態未知。主庫RE-first保持，不重開已完成的名稱放開／設定ACCEPT／SCASW，不深入renderer／helper。
+
+### 2026-10-03 原旗幟正常輸入與按鍵查詢，選色未完成
+
+工具起點0c88d04cb59d2b7bfc716e953cc529c54b5fb6e2，主庫起點f079ef801ab20d3ab1949ad9ee8d5e9693ee9eea；工具7d569e0392fd9061576da8395d3c8b4d10e0886d已推送github隔離分支，遠端回讀一致，未推本機origin。公開[339旗幟正常輸入與按鍵查詢](https://github.com/wicanr2/dosgolem/blob/7d569e0392fd9061576da8395d3c8b4d10e0886d/docs/spec/339-moo2-banner-red-normal-click.md)只限定原表／正常按鍵查詢／放開CONFORMED，不把它算成原選色或主庫玩法完成。官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址空間dosgolem_high_le，工具Go1.24.13與映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac保持。原ZIP／patch唯讀，每次重建新鮮417根檔及MOX.SET；固定日期1996-01-01不是seed。
+
+**已證實，原輸入前置**：可丟棄唯讀probe保存98M／99M，剝除6新列後全部7874原ruler列與30PNG保持338。98M只有count1／55bytes，99M才有count10／550bytes；後者表SHA-256 978afb91aaed9e0cb37672a66352e2ae515b382d5b6f472da9238e09fb650dfb、RGB 8c2c573c08ebf4bce0b4e166d4268fb6fcf90f35dd27fbbb2de614b26f187f15。原pointer298848／bias0／stride55，index1 rect96／144／179／242。紅旗對應與原選色結果仍分開，座標命中不算原選擇成功。
+
+**未推進收據**：初版來源4e628d389e2910f7dea1c5bdacff3372e863b49524487125c4dfff3586268662，99M按下／99019204放開、差20000微秒，原100M仍旗幟頁。回DRAFT只延長相同短按至120M，來源6c63547a372fd329bc58351928d0e8dc2a7806a45461ce9d5a049e659c05fe63，全部7837原100M前列保持，仍旗幟頁，沒有新CPU拒絕。兩份負收據及來源保留。
+
+直接解析第二份原收據，press到release原INT33 AX3輪詢0次，release後492次皆buttons0。核對現存internal/machine/le_startup.go的AX3把正常裝置mouseButtons返回BX低word、x／y返回CX／DX；InjectMouseEvent來源internal/machine/le_mouse_callback.go不變。回DRAFT再READY，probe只等待首次原正常callsite24C31B查詢確實讀到pressed，再按既有回呼／IF／IRQ／20ms前置放開，不移動按下時點、不重送、不代寫CPU／RAM／選擇。
+
+**已證實，原正常按鍵查詢與放開**：99000000、177207342微秒、x276／y190／buttons1／mask2B按下；99083819、177452599微秒原24C31B返回BX低word1／CX276／DX190；99083854、177452633微秒、x278／y190／buttons0／mask1首次合法放開，差245291微秒。完整原查詢前後R／六段／flags保存並核算；終態callback12／12、IRQ28866／28866完成且非活動／未failed。共享20DDDB未命中，持久旗色writer仍未知。
+
+原版120M到228DDC，R=[74 EE CF 89 2BD9B8 2BDA14 2C0B9C 2C040E]、段=[8 188 188 0 20 188]、flags216h；原PNG仍SELECT BANNER COLOR，與初版未推進PNG逐位元相同。PNG SHA-256 fdcfce7eb7a39bfa24641a15309ec035208efa205c394173c5cdde37e5e6ec11、RGB 8f140b5eb4f65e2ed42744f269e5e2505a395feefb91b7dc2c829a81e398cb97。120M完整十筆表／FPU／VBE與只讀RAM收據保留，不從游標更新猜正式旗色。
+
+最新source SHA-256 d131475620cda95f77a6c9846dc7a494a5a60bae778196c6ea49555a79b5d4f3；六有界旗標區塊／五guard及訊息逆轉後逐位元保持338，CPU／startup／provider／matcher／mouse callback保持335。較早六條基準與全套Go沿既有335／338收據，本輪未重跑、不冒充339重生。新來源的正常情境只重生一次；Docker每次300s／2GiB／2CPU／128pids／UID1000／network none。
+
+容器內主要命令：
+
+```text
+go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe
+DOSGOLEM_MOO2_CALENDAR_EPOCH=1996-01-01 DOSGOLEM_MOO2_HARDWARE_ESCAPE_STEP=44000000 DOSGOLEM_MOO2_MAX_STEPS=120000000 DOSGOLEM_MOO2_SEPARATE_DOS=1 DOSGOLEM_MOO2_NEW_GAME_CLICK_AFTER_DISPLAY40=1 DOSGOLEM_MOO2_MENU_READY_CLICK=1 DOSGOLEM_MOO2_SETUP_ACCEPT_CLICK=1 DOSGOLEM_MOO2_RACE_HUMANS_CLICK=1 DOSGOLEM_MOO2_RULER_NAME_ACCEPT_CLICK=1 DOSGOLEM_MOO2_BANNER_RED_CLICK=1 DOSGOLEM_MOO2_VBE_FRAME_PREFIX=/src/workplace/moo2-339-red-frame DOSGOLEM_MOO2_VBE_PNG=/src/workplace/moo2-vbe-339-red.png /tmp/moo2-probe /tmp/game/ORION2.EXE --game-dir /tmp/game
+python3 workplace/new-game-339-verify.py
+python3 workplace/new-game-339-cli-verify.py
+python3 workplace/new-game-339-source-verify.py
+python3 workplace/new-game-339-backlink-verify.py
+```
+
+核算PASS：99M額外輸入前7708原列及28既有PNG保持，原表／globals／header／完整核心／RGB與獨立readonly ruler一致，首次AX3輸出與正常順序吻合。22新CLI拒絕與120M／100M正對照、同binary舊338 17拒絕與正對照、76項文件回填、新339 26缺證據負例、338 26負例及兩CLI通過。只證明原裝置／查詢契約；原選色消費與下一頁仍未證實。
+
+| 本機忽略來源／收據／核算 | SHA-256 |
+| --- | --- |
+| workplace/dosgolem/workplace/moo2-probe-339-input.txt.gz | 3f1e74f87087527db0dab08a7ae877015f021bf26b098c18e7d067c52a64d93c |
+| workplace/dosgolem/workplace/moo2-banner-339-input.go | f30e296ee52f359a1cf04308ffa7c10bd643d57a9e70239d39a0eede912017e8 |
+| workplace/dosgolem/workplace/new-game-339-input-verify.py | 5e86ed732e266dacec88154f2c92fcfd37196c76fa4ccbd83874e2a6b4224341 |
+| workplace/dosgolem/workplace/new-game-339-input-tests.txt | 70c2f1af8e5a1edfd4a5088311d1db6108ed0c5aaa85c68cf31de637d9c14794 |
+| workplace/dosgolem/workplace/moo2-banner-339-early.go | 4e628d389e2910f7dea1c5bdacff3372e863b49524487125c4dfff3586268662 |
+| workplace/dosgolem/workplace/moo2-probe-339-early.txt.gz | a88b8631f68504f9a373f07a1a77910736ca4a58e09285cc9981369ee0483cc4 |
+| workplace/dosgolem/workplace/moo2-vbe-339-early.png | fdcfce7eb7a39bfa24641a15309ec035208efa205c394173c5cdde37e5e6ec11 |
+| workplace/dosgolem/workplace/new-game-339-early-parity-tests.txt | 9cb29e6a9e5947c177fc20d4beff735caad31af02b8c8e97f28fe04068360237 |
+| workplace/dosgolem/workplace/moo2-banner-339-extended.go | 6c63547a372fd329bc58351928d0e8dc2a7806a45461ce9d5a049e659c05fe63 |
+| workplace/dosgolem/workplace/moo2-probe-339-extended.txt.gz | 559b388072eb7c8d9976b8de4f9c137b2d17dde9ef748630ce7a887100b1df8b |
+| workplace/dosgolem/workplace/moo2-vbe-339-extended.png | fdcfce7eb7a39bfa24641a15309ec035208efa205c394173c5cdde37e5e6ec11 |
+| workplace/dosgolem/workplace/new-game-339-extended-parity-tests.txt | 2030fffc23bec8d03e485feaab79e3f97847720dfdfd149c2c3a1ed23fc8b478 |
+| workplace/dosgolem/workplace/moo2-probe-339-red.txt.gz | 9505df160613d748632e9e43a7e47e73945e9ed56948a9e66f951fbd9ed49965 |
+| workplace/dosgolem/workplace/moo2-vbe-339-red.png | fdcfce7eb7a39bfa24641a15309ec035208efa205c394173c5cdde37e5e6ec11 |
+| workplace/dosgolem/workplace/new-game-339-verify.py | 9e0f1b9faaaf01f793b8c899146d64d285fe33e3c7327487ec3998dd46fecfcb |
+| workplace/dosgolem/workplace/new-game-339-parity-tests.txt | f89eb1f61495c194d3889c4536b0bcedd720189ea957b9431dda1c108a2d26c8 |
+| workplace/dosgolem/workplace/new-game-339-cli-verify.py | d4b4430e1654c5b2e1170394e19a05642ce229d4658e3ce44084c6b599a8b441 |
+| workplace/dosgolem/workplace/new-game-339-cli-tests.txt | e4461c40e971daf4de8338567b57b68f0945355ed595b7c5c09620a2590be774 |
+| workplace/dosgolem/workplace/new-game-339-source-verify.py | 80b75e90c3304f4259a52697c2b0d757de7c474881d2fa6461b0a4b56e0e37d4 |
+| workplace/dosgolem/workplace/new-game-339-source-tests.txt | 5b209298ebaf57ffe253112aa7357875b4443d71c126a9d9f8f1038821fc7f48 |
+| workplace/dosgolem/workplace/new-game-339-backlink-tests.txt | 3499c8deb32ad69c4bfb6acea4332039308806d913a265b3cec0cd34463fc4b1 |
+| workplace/dosgolem/workplace/new-game-339-backlink-verify.py | e5e11057102f59e863b5b21491248f275500049ce6933da9b102eecbc32650a5 |
+
+原來源與22份新收據1000:1000，gofmt／Git差異通過，工具root-owned與誤建.md目錄空，Docker兩工作區掛載篩選空。原版素材／PNG／LOG／RAM留本機忽略workplace，不公開。
+
+**未知與下一步**：只保存首個原pressed查詢後最多192個非callback／非IRQ的正常GUI步、原事件／選擇及返回框架，解釋正常輸入未推進的原因；不再提高cap、移動時點或盲重送。持久名稱／旗色writer、typed種族特性、完整開局、正式RNG及remake同狀態未知。主庫RE-first及完成整款remake／中文化目標保持。
