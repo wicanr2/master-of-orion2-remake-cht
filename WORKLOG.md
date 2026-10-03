@@ -1047,3 +1047,14 @@
 - 實際命令及37份本機來源／核算雜湊見研究紀錄。未重跑120M或無關Go全套，歷史346同狀態與344固定EXE全套不冒稱本輪新跑。原EXE／LBX／LOG／PNG／私有IDAPython留忽略workplace，不入Git。
 - 工具53243f6d5633380f456a9c27faedf908cbade675已推送github隔離分支並核對遠端，未推本機origin；主庫本輪四文件隨後提交推送。新來源／收據1000:1000，工具樹無root-owned／.md目錄；原版、IDA與驗證容器有界並收尾清理，主庫歷史root-owned不修動。
 - 下一步維持160M預算，觀察16C78E正常返回16B98A及後續word[EBP-8]分支。欄位用途、正式writer、母星配置規則、完整生成／開局、RNG、人耳與remake同狀態未知；主庫RE-first保持，整款remake／中文化目標活躍。
+
+## 2026-10-03：原進度函式RET與上層零分支
+
+- 起點主庫c6b990d5246414cf895422b8df14cd30cc03a5db／工具53243f6d5633380f456a9c27faedf908cbade675。上一輪完成347並推送，屬進展。本輪命中dosgolem、IDA9.4、規格閘門、逆向回填及文件職責，沿既有入口。
+- 348先DRAFT，固定原EXE與正常160M輸入重播。兩次一次性IDA DB保存原sub_7C78E邊界／103指令、共享LEAVE／五POP／C3及caller CMP／JNZ；非空JSON／schema1／固定input SHA／UID1000通過，idat exit1不當失敗，正式.i64唯讀。
+- private觀察捕捉149825343 CALL、次步原入口、153214295 C3 RET與次步16B98A。原保存五暫存器恢復、ESP＋4／caller EBP恢復；SS188:2BDB98 word0000使16B98F原JNZ不跳，153214298到16B995。callee local7779是另一框架，不混用。
+- 全部10530原347列／36PNG保持，11事件核心／Bus／FPU／VBE與完整RAM readonly。160M仍原配置母星圖，完整生成／開局未驗。終態返回槽16BAE3及固定IDA的16BADE→16AD13只標強推論，下一輪需實際CALL證據。
+- READY證據審查後正式兩區塊只更名348標記，執行語句與private相同；來源逆轉逐byte保持347，CPU／平台不改。正式關閉8M的1693原列／PNG、68舊CLI負例與正對照通過。85項回填、新348的27缺證據負例與既有負例通過，347已回填，限定CONFORMED。
+- 初次來源逆轉漏移除兩個新增空行；diff只剩空行，修正核算後通過，原執行語句未改。Docker metadata的Go User欄位不存在，改獨立核對image ID，--user仍明定UID1000；不作產品缺陷。未重跑120M或無關CPU全套。
+- 命令及21份忽略來源／收據雜湊見研究紀錄。工具9afe6570dc3e49e354b9a9ec07360125682b3d67已推送github隔離分支並核對遠端，未推本機origin；主庫本輪四文件隨後提交推送。原EXE／LBX／RAM／LOG／PNG／私有IDA腳本不入Git。
+- Docker原版、IDA與驗證程序皆有界並結束移除；新來源／收據1000:1000，工具樹無root-owned／.md目錄，主庫歷史root-owned不修動。下一步維持160M捕捉16BADE→16AD13正常參數與生成邊界；完整生成／開局、正式writer、RNG、人耳與remake同狀態未知，整款remake／中文化目標活躍。
