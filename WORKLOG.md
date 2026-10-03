@@ -1119,3 +1119,16 @@
 - 工具c7086292bf476be63a406131632c9cf8c4780ab6已推送github/codex/moo2-parity-20260930並核對遠端，未推本機origin；353限定CONFORMED、352未知已回填。30份本機收據與實際命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步原byte memory XCHG／STOSB最小契約，維持180M。
 
 本輪來源1000:1000、工具root-owned／.md目錄零，主庫既有2437檔／272目錄保持。原版、全套與回歸容器均有界結束移除；收尾核對兩庫精確HEAD／遠端與工作樹。remake／中文化目標仍活躍。
+
+## 2026-10-03：354 接通byte記憶體XCHG與原STOSB寫回
+
+起點主庫fc4c448a1c2b53d2eb990db1d45f44166b884ce6／工具c7086292bf476be63a406131632c9cf8c4780ab6。上一輪完成word AND並推送，屬實際進展。本輪命中dosgolem對拍、CPU規格閘門、回填與文件職責，沿已載入技能／入口與Intel 80386原廠XCHG契約。主庫RE-first保持，不改玩法。
+
+- DRAFT未改CPU取原DS188:2BD8A8 byte0E／ALFF與ES188:2BD97A byteFF／DF0，全部10812原353列／36PNG及readonly／RAM保持。資料可讀與ISA充分後審查READY，才用16行通用memory交換替換1行拒絕與三個observer；原register路徑、平台不改。
+- 已證實：原164321317 DS0E→FF／ALFF→0E、EIP223E95；164321318原STOSB ESFF→0E／EDI增1／EIP223E96，flags202h與六段保持。兩步完整RAM差異各限一byte，相鄰資料保持，非零原寫回與後續消費已驗。未驗硬體lock波形／多CPU仲裁，顯式F0仍拒絕。
+- 已證實：原入口前10742共通正常列／35frames保持；獨立窄測0.710s、固定原EXE乾淨Go全套CPU386150.111s／machine1.864s、關閉8M1693列／PNG、68舊＋32新CLI負例、91項回填／新354的34負例／352另2與較早負例通過。缺8088語料不算386實機驗收。沒有新IDA、120M整流程或失敗後挑選重跑。
+- 原164560803在1CDD0F的02 45 F8 ADD AL,SS:[EBP-8]拒絕，after1CDD11只解碼，來源byte未知。較晚finalPNG已變，人工確認640×480主要黑底與小型方形圖形，未見完整地圖，不算正常開局；尚未達180M。
+- 工具1f155175b2c77e6ee133ef609f43b758d7e0eed8已推送github/codex/moo2-parity-20260930並核對遠端，未推本機origin；354限定CONFORMED、352／353未知已回填。27份本機來源／收據、原地址基準與命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
+- 下一步原02 /r byte ADD記憶體來源，先取SS188:2BDB3C／AL0及後續原消費，沿相同180M。正式writer、資料語意、完整生成／開局、RNG與remake同狀態未知，remake／中文化目標仍活躍。
+
+本輪來源／收據1000:1000，工具root-owned／.md目錄零，主庫既有2437檔／272目錄保持。原版、全套與回歸容器均有界結束移除；收尾核對兩庫精確HEAD／遠端與工作樹。

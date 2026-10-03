@@ -2447,3 +2447,91 @@ python3 apps/moo2/tools/startup_probe_131.py --check-and-word-memory-spec-backli
 來源／收據1000:1000，工具root-owned／.md目錄零；主庫歷史2437檔／272目錄保持，本輪不新增或遞迴修權限。原版、全套與回歸容器有界且已結束移除；精確HEAD／遠端與工作樹於收尾核對。
 
 下一步為86 /r memory byte XCHG做窄CPU切片：先捕捉原DS:[ESI]／AL與ES:EDI的STOSB前狀態，審查byte交換／旗標保持／寫入邊界，再以同一180M正常輸入核對交換與下一byte store。不提高cap，不深入helper；完整生成／開局與remake同狀態未驗。
+
+## 2026-10-03：354 byte記憶體XCHG、原STOSB與新ADD停止
+
+路由命中dosgolem對拍／CPU規格閘門／回填／文件職責，沿已載入逆向技能與入口。起點主庫fc4c448a1c2b53d2eb990db1d45f44166b884ce6／工具c7086292bf476be63a406131632c9cf8c4780ab6。工具結果[1f15517](https://github.com/wicanr2/dosgolem/commit/1f155175b2c77e6ee133ef609f43b758d7e0eed8)，完整HEAD 1f155175b2c77e6ee133ef609f43b758d7e0eed8；[354規格](https://github.com/wicanr2/dosgolem/blob/1f155175b2c77e6ee133ef609f43b758d7e0eed8/docs/spec/354-cpu386-xchg-byte-memory-register.md)限定CONFORMED，較早352／353未知已回填。主庫RE-first保持，整款remake／中文化尚未完成。
+
+### 公開契約與未改CPU原初態
+
+[Intel 80386原廠XCHG](https://www.ardent-tool.com/CPU/docs/Intel/386/manuals/prref386/XCHG.htm)列86 /r為byte register與memory交換、旗標全部保持；不可寫／段外拒絕。memory XCHG硬體上即使無F0也有bus lock。本工具只處理單CPU的單Step邏輯交換，期間不插入機器tick；未驗lock電氣波形、多CPU仲裁或跨執行緒atomic，顯式F0仍拒絕。不深挖硬體實作。
+
+DRAFT未改CPU，同353完整180M正常輸入取原dosgolem_high_le:223E93首遇。164321317原R=[FF 0 2 2BD976 2BD730 2BD888 2BD8A8 2BD97A]／段=[8 188 188 0 20 188]／flags202h，DF0；DS188:2BD8A7三bytes FF0E00，來源byte DS188:2BD8A8=0E，ALFF。ES188:2BD979三bytes00FFFF，STOSB目的ES188:2BD97A=FF。readonly與完整RAM保持、callback12／12及IRQ41873／41873非活動／pending0；原仍拒絕在after223E95。全部10812原353列／36PNG保持，三區塊逆轉source逐byte保持353；資料可讀與ISA充分，才審查READY實作。
+
+### 原兩步、回歸與新停止
+
+**已證實，原兩步**：164321317原86 06交換DS0E→FF／ALFF→0E，EIP223E95；來源window FF0E00→FFFF00，ES目的window00FFFF保持。原RAM只有index2BD8A8改0E→FF。164321318原AA將AL0E寫ES188:2BD97A，ESFF→0E、EDI2BD97A→2BD97B、EIP223E96；目的window00FFFF→000EFF，來源FFFF00保持。原RAM只有index2BD97A改FF→0E。兩步完整R各只變AL或EDI、段與flags202h保持；readonly=true／error nil，完整RAM差異各一byte，兩側相鄰byte保持。這是實際非零寫回，未猜欄位用途或caller語意。
+
+**已證實，正常前綴與CPU**：原首遇前10742共通正常列／35既有frames與同一原DS來源／AL／ES目的保持。舊四項stop診斷不列正常前綴；DRAFT保持全部10812／36PNG與正式保持10742／35frames分開。CPU只以16行memory分支替換1行拒絕，readSegment8／writeSegment8成功後才發布來源reg8；有效地址和reg8來源在發布前固定，覆蓋AL／AH與base／index別名。失敗不發布R／旗標，自製fail-before-write Bus保持RAM，不假稱任意外部Bus可回滾。原86 register交換、平台與8088 CPU不改；正式probe與已驗private相同，三區塊逆轉保持353。
+
+8來源byte register全部256×256配對，以獨立little-endian四byte視圖核算，所有ModRM／SIB／DS與SS相異／base與index別名／ESP忽略index／無base DS／負disp8／32位繞回／最後byte／相鄰資料、64旗標組合與非零FPU通過。成功相同byte仍一寫；未知／唯讀／段外／線性溢位／讀或寫Bus拒絕、prefix與截短、原86 register64配對通過。窄測0.710s，固定DOSGOLEM_MOO2_EXE的乾淨Go全套CPU386150.111s／machine1.864s通過。缺8088實機語料不算386硬體驗收。
+
+**已證實，新停止**：164560803於原dosgolem_high_le input1CDD0F bytes02 45 F8 02 45 E4 02 45 FC 02 45 E0 00 43 07 8A，錯誤「byte運算記憶體形式尚未支援」。首三bytes為ADD AL,SS:[EBP-8]；SS188／EBP2BDB44，來源offset2BDB3C、AL0，原byte值未知。after1CDD11只解碼，ADD未執行。原R=[0 5A2044 5AA044 5AA5E8 2BDB18 2BDB44 2 0]／段=[8 188 188 0 20 188]／flags202h。actual stop164560803、requested budget180000000，尚未達180M；probe exit0只代表錯誤收尾，不是完成。
+
+**已證實，視覺邊界**：較晚原finalPNG為1f757f5b16fe492795accf198c8db851443a062450e7f37ecf465c7eae3b6457，RGB04fef4b6a6d6c6c485ef1ce0a82ea71591956cdd3b7cd37b8d1082a023e20e17，確實不同於舊353final。Docker讀原PNG轉base64後視覺檢視，640×480主要為黑底，僅小型方形圖形可見，其用途未知；未見完整地圖，不算完整開局／GUI驗收。舊35frames保持只指原入口前，不把新圖包裝成同一終態。
+
+**未知**：原SS byte加法來源／後續消費、資料語意、正式writer、完整生成／開局、RNG、人耳與remake同狀態。固定日期不是seed；沒有CPU位址特例、guest代寫／跳呼叫或重送。沒有新IDA、120M整流程重跑或失敗後挑選原版結果。
+
+### 命令、環境與私有收據
+
+Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac。Docker --rm／network none／UID1000／2GiB／2CPU／128pids，原版兩次各600s、乾淨全套600s、8M／CLI與窄測180s；原ZIP及patch唯讀。417根層檔／MOX.SET／99M按下與99084355放開／1996日期／44M硬體逃逸保持。
+
+固定DOS1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f。CPU3b4f3dc4e3054bd92ce252f54202414c47dcc501257be7d0cf538c02ea449132；自製測試527846c29fc2b3da8043053ed8bdbf587c616db3216a6a4ccc13a1d9e51359ce；probe9c15f43b426eef78dbc983cf840df926b73817ecbbc5eea3d364a4fbb7e82d26。
+
+```text
+bash workplace/new-game-354-input-run.sh
+python3 workplace/new-game-354-input-verify.py
+  未改CPU10812原列／36PNG與原DS byte0E／ALFF／ES目的FF PASS
+go test -p 2 -buildvcs=false ./internal/cpu386 -run 'TestXCHGByte' -count=1 -v
+  獨立CPU byte交換與舊register契約 PASS
+bash workplace/new-game-354-full-run.sh
+  乾淨固定原EXE Go全套 PASS
+bash workplace/new-game-354-formal-run.sh
+python3 workplace/new-game-354-formal-verify.py
+  10742共通前綴／35frames／原兩步／新ADD停止與finalPNG變化 PASS
+python3 workplace/new-game-354-source-verify.py
+  CPU16行替換1拒絕與三observer區塊／逆轉逐byte保持353 PASS
+bash workplace/new-game-354-off-run.sh
+  關閉8M1693列／PNG、68舊CLI＋32新CLI負例與正對照 PASS
+python3 workplace/new-game-354-backlink-verify.py
+python3 apps/moo2/tools/startup_probe_131.py --check-xchg-byte-memory-spec-backlinks
+  91項回填／新354的34負例／352另2及較早負例 PASS
+```
+
+乾淨全套從git ls-files -z打包至/tmp/test-src，再複製本輪新CPU測試，未帶入歷史探索main。關閉8M以353原probe及354新probe同新CPU比較，兩者在本輪交換入口前；source逆轉與正式正常前綴另證舊行為保持。formal的新停止／PNG變化依據同一原收據補嚴格斷言重讀，沒有為選結果重跑原版。
+
+以下27份本機來源／收據在工具忽略workplace；原EXE／LBX／RAM／LOG／PNG與私有腳本不入Git。公開只保存通用CPU、測試、診斷、規格、索引、守衛與雜湊。
+
+| 收據／核算 | SHA-256 |
+| --- | --- |
+| moo2-xchg-byte-354.go | 9c15f43b426eef78dbc983cf840df926b73817ecbbc5eea3d364a4fbb7e82d26 |
+| moo2-probe-354-input.txt.gz | 27f670f8c55613750722c2e6535f1f56b6a1dbf9864dda8bd4f9141853871b0c |
+| moo2-vbe-354-input.png | d493c2b5628d55381176c9e676586ab8940fd62544302195b59570b6136e6ba6 |
+| new-game-354-input-run.sh | d4be4a474c9dd88c40570c0825ab18bbec7c0b466f201f845fcb8a8042d09ece |
+| new-game-354-input-run-output.txt | 63317953747d1219878a0a322dec995adcc33e6a389b782dee9739f843819e1b |
+| new-game-354-input-verify.py | 14c3819d8c6d19c899af56b362fc85310b4172628042490c9b8223825d503564 |
+| new-game-354-input-tests.txt | 1066544c02d6d09839a7f95527787382420b1a5c69db490fe59d0e0be629db1f |
+| moo2-probe-354-formal.txt.gz | 7fe5e0408b1a24d44fcb8b02d3f618f218370aaa917648519d2d518cc1be5e43 |
+| moo2-vbe-354-formal.png | 1f757f5b16fe492795accf198c8db851443a062450e7f37ecf465c7eae3b6457 |
+| new-game-354-formal-run.sh | 56b50477e63a82e9156df24235b1c94aa9404027f81296cac36b92867715b838 |
+| new-game-354-formal-run-output.txt | 8a2ee512fb30d871f36f75de0a6ff8fdba1bc42031be389fdb8984edd1d57d4c |
+| new-game-354-formal-verify.py | 913a781bb8c07d74fa686f8ffa9e5f75e214c723b7975fa22bac82bff1ac8a73 |
+| new-game-354-formal-tests.txt | 890a4ad081f9bdeb99f02628a7b0ffcafa0b1a338ed57c4b90dccb40076b18a3 |
+| moo2-354-cpu-narrow-tests.txt | ac15f0602ad562d675a37433a727637d4f2c8d652ebec28545d981b139893d48 |
+| new-game-354-full-run.sh | 29b29794f8b03e782186b3424e82ca2b2e030a43e1cccc7fd32bd1859f2d1925 |
+| full-test-354.txt | ee150537f153e610e107754d74cb6de3abca7daad880a7927495d5fd80449393 |
+| new-game-354-source-verify.py | e3db16dcf472815aab97aa3964f4a9e5ac68315a4e61d1f05d1b2aa67eccc462 |
+| new-game-354-source-tests.txt | 11cb4362cd90f937579beeced8b5c8c20ec3663fb01925a7ec6ecded0f1092d0 |
+| new-game-354-off-run.sh | 6cb00aa78d1c491d49d1e752f427ad65bffb57b84bbc46b93fb460bc28df4a38 |
+| new-game-354-off-cli-tests.txt | a5eabaf6f165680e4e73a808efc13d87da68f29a4c55ca63bd6bf4ec96c09dff |
+| moo2-probe-354-off-old.txt | 4c797d9053666d7d54370c71a72af0ddf3dc3eacd36d3c0cb6556fdf83697624 |
+| moo2-probe-354-off-new.txt | 2e1bcbf17cd47568407dc42200aa8c0431ebc25ded2ba66134f76316f3b914dc |
+| moo2-vbe-354-off-old.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| moo2-vbe-354-off-new.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| new-game-354-cli-tests.txt | 0c39c7d30d26388473df3e31ad7be38651d38f98677857d9e5a9de59a4aaac43 |
+| new-game-354-backlink-verify.py | 2800ded3b650d67cb6a16bb91ceb3a4acfffc2a349a24a4d08418ce2390130d6 |
+| new-game-354-backlink-tests.txt | 1212830700af6cfbab65c597d0856168ae0b35fc00dfecc858cb5688e28f1b2b |
+
+來源／收據1000:1000、工具root-owned／.md目錄零；主庫歷史2437檔／272目錄保持，本輪不新增或遞迴修權限。原版、全套與回歸容器有界且已結束移除，精確HEAD／遠端／工作樹於收尾核對。
+
+下一步為02 /r byte ADD register,memory建立窄CPU切片，先捕捉原SS188:2BDB3C／AL0與後續原byte來源，再審查通用加法／六算術旗標／source唯讀／地址別名／失敗不發布。沿同一180M正常輸入驗原消費，不提高cap，不深入helper；完整生成／開局及remake同狀態仍未驗。
