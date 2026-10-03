@@ -1188,3 +1188,12 @@
 - 工具a995e5d62249aef97f73cc52e11176acc6e3218b已推送github/codex/moo2-parity-20260930並核對遠端，未推本機origin。358限定CONFORMED、十一較早入口與現行unknown／索引／守衛已回填。27份本機來源／收據與實際命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
 
 下一步擷取1D0944目的word／AX來源、正常POP／RET消費並審查word SUB，沿同180M，不增加cap或深入helper。原非零NEG／溢位、CMP數值／NEG word reader、正式writer、資料語意、完整生成／開局、RNG與remake同狀態未知，remake／中文化目標持續。本輪來源／收據1000:1000，工具root-owned／.md目錄零，主庫既有2437檔／272目錄保持；本輪容器有界結束並移除，交接核對兩庫精確HEAD／遠端與工作樹。
+
+
+## 2026-10-04：359限定word SUB與原三POP／RET
+
+- 工具11d9aad0d10bcf51ac75f9ee23611acfe2fd7e9b已推送github的codex/moo2-parity-20260930，精確遠端HEAD相同。只接cpu386 66 29 /r word目的，既有ADD／其他SUB與十一舊測試逐byte保持；主庫Go／Ebitengine玩法不改。
+- 原164610300的DS188:5AA6D1 word0003-AX0與六flags206h、164610301–164610304三POP／RET真正SS槽／EIP1D1E0B／ESP2BDB5C已驗，五步RAM與固定窗口保持；POP／RET不是目的word reader，原同值Bus寫次數未取。
+- DRAFT10845原列／36PNG、正式10775正常列／35frames、窄測0.685s／固定原EXE乾淨Go全套CPU38682.239s／machine3.104s、關閉8M1693列／PNG、CLI與96守衛／新41＋22負例通過。三項測試／環境失敗已修正後乾淨重跑，原正式guest結果未重跑挑選。
+- 原164984957於1D2A33拒絕66 99 CWD，AX0001／DX0000，after1D2A35／flags246h，未達180M。下一步取CWD與下一SUB／shift，維持輸入和cap；原非零SUB來源／借位／溢位、目的word reader、正式writer／RNG／完整開局與remake同狀態未知。
+- 四文件更新與27份私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。工具樹乾淨、專案容器0；既有root-owned檔案2437／目錄272維持，沒有新增.md目錄。

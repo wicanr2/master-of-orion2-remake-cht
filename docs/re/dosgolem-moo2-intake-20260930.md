@@ -2860,3 +2860,63 @@ CPU SHA-256 9840611ea0e3ae22ece69fd1f6f545dd08a316d1ed87247bbe061bf3f7f09522、�
 | new-game-358-backlink-tests.txt | 460a5e9c5b2a48db1f4dc21138eefdf436c303f1b34f787c4a10c170f6b329b9 |
 
 來源／收據1000:1000，工具root-owned／.md目錄零，主庫既有2437檔／272目錄保持；本輪原版／全套／回歸容器有界結束並移除。下一步取1D0944的目的word／來源AX、後續POP／RET消費，審查29 /r word SUB，沿180M不增加cap或跳指令／代寫／重送／深入helper；收尾核對兩庫精確HEAD／遠端與工作樹。
+
+
+## 2026-10-04：359 word暫存器來源SUB與原三POP／RET
+
+路由：dosgolem原版oracle／spec-gated-workflow／re-resolution-backlinks／project-document-responsibilities；原版仍固定官方DOS1.31 EXE 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f。沿原180M與單次正常輸入，不提高cap／跳指令／代寫／重送／深入helper。工具11d9aad0d10bcf51ac75f9ee23611acfe2fd7e9b已推送github隔離分支，遠端精確核對；未改上游/home/anr2/cht/dosgolem。
+
+規格與完整命令：[359限定CONFORMED](https://github.com/wicanr2/dosgolem/blob/11d9aad0d10bcf51ac75f9ee23611acfe2fd7e9b/docs/spec/359-cpu386-sub-word-register-source.md)。DRAFT未改CPU先取目的與真正SS槽，再READY實作，原輸入於CPU改動前核對；其驗證後以/tmp舊CPU a995e5d快照保存重驗輸出，沒有重跑guest。主庫玩法RE-first仍關閉。
+
+### 已證實與工程驗證
+
+- 未改CPU10845原358列／36PNG與正式10775共通正常列／35frames保持。
+- 原164610300在1D0944的66 29 83 E9 00 00 00，DS188:5AA6D1 word0003-AX0000=0003，六flags CF0／OF0／SF0／ZF0／AF0／PF1，flags206h、EIP1D094B與相鄰00／0E保持。
+- 原164610301／164610302／164610303三POP按SS188:2BDB4C真正槽到EDX0000000E／ECX005AA5E8／EBX00000000，ESP逐dword；164610304 RET按001D1E0B槽，EIP1D1E0B／ESP2BDB5C。其餘R／段／flags與固定窗口／全部RAM保持。五步callback12／12／IRQ41960／41960、readonly true／error nil／pending0／非active／非failed。
+- POP／RET不是目的word reader。原同值Bus寫次數未取；工程另驗來源0仍兩write，不以無RAM差異冒充原寫trace。原非零SUB來源／借位／溢位未由此路徑驗證。
+- CPU只新增29 word分支與移除該早拒絕；來源／目的別名先取舊值，register高word保持，memory兩byte成功後才發布六flags。逆轉逐byte保持358，既有ADD／其他SUB／flags helper與十一舊測試不改；三只讀observer逆轉原probe。既有66 2B word原已支援，本輪不改。
+- 獨立整數差／modulo／signed範圍／nibble借位／低byte位元計數與little-endian視圖，2097152 memory全來源×邊界目的×兩flags、1048576八register別名全值域×兩flags，另全src／dst邊界配對與131072 memory八來源×64flags×邊界配對。全ModRM／SIB／DS／SS、signed位移／繞回／unaligned／last word、合法memory目的prefix／截短、各byte read／write失敗與nonzero FPU通過。第二byte晚期部分寫可先改第一byte，但不發布R／flags／FPU，非硬體restart或任意Bus回滾。
+- 窄測0.685s、固定官方原EXE乾淨Go全套CPU38682.239s／machine3.104s；缺8088語料不算386硬體驗收。關閉8M1693原列／PNG，68舊CLI＋32新180M負例與100M／120M／160M／180M正對照；96規格守衛與新41＋22缺證據負例、較早負例均通過。
+- 首次窄測把既有2B word誤設拒絕，回查原分支／原測試後改保持性驗證。關閉腳本第一次錯用未掛原始資料入口，改完整既有入口；新停止驗證的bytes空白欄位以完整尾碼比對修正。三者都乾淨重跑，不把測試或環境問題寫成產品缺陷，也未重跑挑選原guest結果。
+
+### 新停止與限制
+
+原164984957在dosgolem_high_le input1D2A33 bytes66 99 66 2B C2 66 D1 F8 98 01 C7 81 FF FF 7F 00拒絕operand16 CWD，after1D2A35只取prefix／opcode。R=[1 0 0 5A2EED 2BDB24 2BDB58 5A2EED A]／段=[8 188 188 0 20 188]／flags246h，AX0001／DX0000；尚未達180M。下一步最多三步只讀診斷取CWD前後與下一SUB／shift的R／段／flags／RAM，審查99 word sign-extension，沿同180M。
+
+finalPNG逐byte保持358，SHA-256 1f757f5b16fe492795accf198c8db851443a062450e7f37ecf465c7eae3b6457／RGB04fef4b6a6d6c6c485ef1ce0a82ea71591956cdd3b7cd37b8d1082a023e20e17；沿354人工檢視主要黑底與小型方形圖形，未見完整地圖。固定1996日期不是seed；目的word reader／欄位語意、CWD正常消費、正式writer／RNG／完整生成開局與remake同狀態仍未知，不新增玩法spec或修改主庫玩法。
+
+CPU SHA-256 995f059949b7caac9618ab8b2513999b64b4cb2c928bd608da96eff171d3a8d1；新測試a7a6cb7e44c56b3f49a035c0bcbf87978196c63a59f294ff88a0d9de57b6d0bd；正式probe1d72d00195ff24b6c9e2ba6e48385c6c40e222a5e2e4417f2a21e39984b8434d；舊NEG／word IMUL／SETcc／ADD／XCHG／AND測試保持。
+
+### 私有收據與隔離狀態
+
+Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac；原版與全套600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀。原EXE／LOG／PNG／RAM與私有腳本留忽略workplace，只公開自製程式、規格／索引／守衛及雜湊。工具樹乾淨／專案容器0，既有root-owned2437檔／272目錄保持，不做遞迴修復。主庫只改CONTEXT的DOS單行、WORKLIST的DOS活表、追加WORKLOG與本研究檔，其他活表全文保持。
+
+| 本機檔名 | SHA-256 |
+|---|---|
+| moo2-sub-word-359.go | 1d72d00195ff24b6c9e2ba6e48385c6c40e222a5e2e4417f2a21e39984b8434d |
+| moo2-probe-359-input.txt.gz | 45694965a26be50c4581fa5cc5862d45adcf17a9c6d102efc323b2ce4dd749e6 |
+| moo2-vbe-359-input.png | 1f757f5b16fe492795accf198c8db851443a062450e7f37ecf465c7eae3b6457 |
+| new-game-359-input-run.sh | c4ad45371017abc0bf2e32552c81f73e2f86f6a538cd376c78985ae29c1b9f7f |
+| new-game-359-input-run-output.txt | 93be53dc55c5eb22a08e4f683347c0965363ab7ce86ef29d9a5d558f2fc69958 |
+| new-game-359-input-verify.py | 0799b673cd025fbf37ac0fb63602270899ba3d2401db362f91f968379020ba81 |
+| new-game-359-input-tests.txt | 40ec9df86a3be0dc6d05a2b36adb1439cb1ce3fa6b2a50afa940891748885be3 |
+| moo2-probe-359-formal.txt.gz | a5421d88e46dea38d24ad92c49d8abd1a46ed341d93e25ead73efcfcd09ec856 |
+| moo2-vbe-359-formal.png | 1f757f5b16fe492795accf198c8db851443a062450e7f37ecf465c7eae3b6457 |
+| new-game-359-formal-run.sh | 3e6927213c8f81cae873d1cb95ebb027d1a471dabb13f232ce0f93564558556b |
+| new-game-359-formal-run-output.txt | 242535a7b416cfa9a90593cc8b9186aa835a80b6a2b7a3df27d781db04b5635f |
+| new-game-359-formal-verify.py | 427c829e0ac23972ad1820ad2b41a5f4449fc95d5009f2e6331eaf8fdb9f3a37 |
+| new-game-359-formal-tests.txt | 289344414b72db164dbe3bfe2a81a21f725bc26a0924a2d09a75f0e42ab45bc1 |
+| new-game-359-unit-tests.txt | d82c13509fce2ecd11968c1b06f1e4786689734b359a0a2c532bb816d774277e |
+| new-game-359-full-run.sh | 7a2b9ef3c96f6b59233f785e51090974c8becdbb1de5f675b7f1e492bd91b085 |
+| full-test-359.txt | f341b54cc3b33ecc90c7900fb9b1a9a29033434b3d2c62e2a56868d799cec0c7 |
+| new-game-359-source-verify.py | c6c4284f241d4ac1fb7a1327c1df25289c1d4b731003b2a39ea160ce1ede3de7 |
+| new-game-359-source-tests.txt | 7d08bc04f2726e0a7f7e822f19a580eda7b98326ccba31c6d4252668913890b6 |
+| new-game-359-off-run.sh | d87864b67b10fa9a206fb4ce98a29d7573ac7de562773fc149bc5c01f3b4a612 |
+| new-game-359-off-cli-tests.txt | a5eabaf6f165680e4e73a808efc13d87da68f29a4c55ca63bd6bf4ec96c09dff |
+| moo2-probe-359-off-old.txt | e488250f0b4f940dae079332df4ee18ad431691c799e8d0408511de55bf76c7f |
+| moo2-probe-359-off-new.txt | 65d95947d29cf69464ede23a4a770b40c5dd6450ddc8dd045074b0002ca836d2 |
+| moo2-vbe-359-off-old.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| moo2-vbe-359-off-new.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| new-game-359-cli-tests.txt | 0c39c7d30d26388473df3e31ad7be38651d38f98677857d9e5a9de59a4aaac43 |
+| new-game-359-backlink-verify.py | a1e23ad060dd3d78f8905f402fb18ce9b2c1e36fdd0ade59090f1375482210d1 |
+| new-game-359-backlink-tests.txt | 10dcf5f100ca93d8aeded6fc51ab5d6a627991944d2b66c8328907d8eecd6edf |
