@@ -1199,3 +1199,27 @@ probe SHA-256 034e6a2c85a3cbbb93d9c7b762d3ba5aea070ec2fc126f82fef30bc913841512�
 Go1.24.13映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀重建417根檔。go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe，再沿326完整兩流程，只換327輸出名；全部環境見鎖定327及326。probe SHA-256 73ff02f6b4885207c029c99efa1c1920053e03b3fb2cbafc53db032ca2aef3d2，CPU仍1448f29f24dad35e83575189055dc15dd7ac9db2b3529c6d450f03baf91c97b1，startup／provider／matcher與325逐位元保持，325固定EXE全套PASS仍有效。64回填函式、原有32／49／25／27／27與327新增34缺證據負例、兩CLI PASS。原ZIP／patch／417根檔／EXE／MOX.SET再核對PASS。原版LOG／PNG／RAM留本機忽略workplace，不進Git。
 
 工具b6fc71c0ba5a426a7c496fc3a5bd342cca1515ec已推送github隔離分支，回讀一致與工作樹乾淨，未推本機origin。[鎖定327](https://github.com/wicanr2/dosgolem/blob/b6fc71c0ba5a426a7c496fc3a5bd342cca1515ec/docs/spec/327-moo2-post-click-source-consumer.md)保存限定CONFORMED與觀測限制，326真正來源待辦同次回填。下一步先查既有VBE服務與正常trace，核對目的RAM的最小畫面發布契約及是否被消費；未找到實際玩家阻塞不擴大RE，不追完整renderer，不加cap／重點／代寫／先調輸入。正常開局、remake同狀態、主庫玩法RE閘門、AH2Ch／RNG／人耳未知保持。
+
+### 2026-10-03 後段目的RAM取用與VBE發布監測
+
+前輪主庫5bb8e0aeb1573409e9a983be81d3058874d7291d／工具b6fc71c0ba5a426a7c496fc3a5bd342cca1515ec。平台規格優先與文件職責已載入，328先DRAFT／READY。只改原版probe，在49500000包裝CPU Bus，每個真正請求只轉呼叫原Bus一次、值與錯誤透傳；CPU／平台／VBE服務來源逐位元保持。原版來源、417根檔、官方EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f、44M Esc／1996-01-01／50M cap與單次正常輸入保持。
+
+**已證實，dosgolem高位LE、固定正常單次點擊**：49500000..50000000恰500000真正CPU.Step；5775248讀／686978寫／errors=0。DS188 descriptor.Base=0、Limit=FFFFFFFFh，兩目標linear499300h／499303h，target_reads=[0 0]、target_writes=[3 5]；來源3DDD67h..3DDD71h共11byte、source_reads=154。前四源MOV值02h／82h／02h／02h，前三筆與327真正MOV核心吻合；兩目標最早MOV與327 AL／五byte窗口正對照吻合。包裝在真正CPU.Step內啟用，快照不計數、終態bus_matches=true。
+
+499300h三筆寫於49500071／49575709／49910819，前兩筆213336寫FDh、第三筆2176A1寫00h。499303h前四筆於49500122／49557015／49575760／49614173，皆213336，寫值FDh／FDh／FDh／D5h；第五次只計數不猜值。前輪327兩筆原值FDh取樣不因此被推翻，後來改寫不當作素材故障或畫面已發布。
+
+兩端VBEState皆Bank4／StartY0／BankSets797／Writes16194454／DisplaySets42；vbe_writes=0與Writes差額0對帳通過，六後段PNG與終點PNG仍59f76749db5232f97a6b6f969f56f848c2e89e731d7e3fb30b8786982bca4a81，設定畫面仍未知。零CPU Bus讀回只限此區間／路徑，平台服務直接RAM讀、較早較晚取用、完整renderer不在覆蓋內，不稱資料永不被消費或原版掛起。因真正來源與目的正對照存在，零讀回不能解釋成觀測未安裝。
+
+| 本機忽略收據／腳本 | SHA-256 |
+| --- | --- |
+| workplace/dosgolem/workplace/moo2-probe-328-baseline.txt.gz | 5fecae395d6bda9def947025d4571974abc5121adea2708ad94cd213f51958d9 |
+| workplace/dosgolem/workplace/moo2-probe-328-click.txt.gz | 09ae500cc236aba3c661aa967720b7fe861ffc30fbb9ca83c2de188ca8633878 |
+| workplace/dosgolem/workplace/post-click-publish-328-verify.py | 90c8908f6cc691c6c464a2a9d2124b2ce2a071c6ca722a3cf2b654aee38b38f8 |
+| workplace/dosgolem/workplace/post-click-publish-328-parity-tests.txt | 332849a1cbf7bb63338fbb9b0283a319eea05d088e6def28fd5f0182cfefd818 |
+| workplace/dosgolem/workplace/post-click-publish-328-backlink-tests.txt | aab8c33aa44a17a15d66de7d707d38eff4f1da3eef72a4abd203c2fbd123d9b7 |
+
+Go1.24.13固定映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac；600s／2GiB／2CPU／128pids／UID1000／network none。原ZIP／patch唯讀乾淨重建417根檔，go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe後沿327兩正常流程，只換328輸出名。python3 workplace/post-click-publish-328-verify.py PASS：未點擊全部3847列／點擊全部4369列除327既定正規化保持，六快照各自前後RAM相同與readonly=true，六後段PNG／兩終PNG逐位元保持，沒有新CPU拒絕。未保存跨次完整RAM差異，不宣稱跨次RAM相同。65回填函式、原有32／49／25／27／27／34與328新增31缺證據負例、兩CLI PASS。
+
+probe SHA-256 5590a5cad4663dcb91df9124648f04b2a70a6d4a25b9799d0082df262a76f0b5；CPU仍1448f29f24dad35e83575189055dc15dd7ac9db2b3529c6d450f03baf91c97b1，startup／provider／matcher與VBE服務逐位元保持，325固定EXE全套PASS沿用。原ZIP／patch／417根檔／EXE／MOX.SET再核對PASS，gofmt與擁有權通過；原版素材／LOG／PNG／RAM保持本機忽略，不進Git。
+
+工具963a57228f429b8e028570f9d4c1c9cfddf16837已推送github隔離分支、回讀一致與工作樹乾淨，未推本機origin。[鎖定328](https://github.com/wicanr2/dosgolem/blob/963a57228f429b8e028570f9d4c1c9cfddf16837/docs/spec/328-moo2-post-click-publish-monitor.md)保存限定CONFORMED與覆蓋範圍，327最小發布待辦同次回填。50M基線已到上限無新CPU拒絕，沒有足夠證據把問題路由為CPU／素材／renderer故障；下一步另建DRAFT／READY有界續行觀測，保留原50M正式基線與同44M Esc／單次輸入，不能把不同終態混稱同狀態。不追整個helper或猜規則，正常開局／remake同狀態、主庫玩法RE閘門、AH2Ch／RNG／人耳未知保持。
