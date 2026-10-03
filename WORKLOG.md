@@ -1238,3 +1238,13 @@ Docker內執行 `bash workplace/new-game-363-pair-run.sh`、`python3 workplace/n
 Docker命令 `python3 workplace/new-game-364-ready-review.py`、`bash workplace/new-game-364-run.sh`、`python3 workplace/new-game-364-verify.py` 全部通過。6270原共通列依352正規化、27PNG保持，原precondition所有欄位保持，原336唯讀guard不改，新profile核對實際完整表／五窗口。四CLI拒絕與合法參數正對照通過；原418檔前後SHA-256保持，state仍僅與原ZIP相同的sound.lbx。產生腳本括號筆誤在guest前修正，原guest未重跑；16byte觀察窗口只取該指令六byte核對。公開CPU／DOS／provider／probe與所有internal不變，三私有區塊可逆。
 
 工具98950c28961c0f89ed63304cd131477d083c85b7已推送github；起始主庫f731b75b01861a08e2e2b0df03ec86009a145a7b。主庫本輪只更新DOS活表／CONTEXT單行與追加歷程及研究，11份私有收據雜湊見研究入口，原LOG／PNG／資產不入Git。原版執行容器已自動移除，兩個專案掛載filter均無執行中或停止容器。下一步依新90M完整880byte表審查可寫Humans輸入。主庫RE-first保持，正式存檔／完整開局／RNG／remake同狀態未驗。
+
+## 2026-10-04：365正常Humans與366名稱readiness
+
+365依364原90M真實880byte表／唯一Humans幾何審查後READY。原正常press90000000／162623172µs、release90008107／162662935µs，差39763µs，callback7／7後首次放開。原90066074於dosgolem_high_le:20DDDB寫word0000→0700，R／段／flags保持、callback8／8、IRQ20889／20889非活動且非failed，95M原Strader名稱頁已親看並與338原PNG相同。6956舊列／28PNG與原來源保持，原337唯讀guard不改。
+
+366只讀追95M flags12h／IF關閉與mask1：每原指令重算平台安全條件，95000065／234A49／flags216h自然恢復readiness。globals／header／165bytes原表／32byte候選與RGB保持，CPU／FPU／RAM只讀；64筆邊界樣本有界，offset64未列，不偽造逐步完整欄位。停止收據與受審查的first-stop程式共同核對，同guestdefer終態另取mask1／callback8／8，終點精確IRQ計數未直接保存。7662舊列／29PNG保持，未送名稱／旗色輸入。初次CLI核對把ready的read子字串誤判為讀檔，原exit2正確，確認尚未啟動guest後修正腳本；原guest只執行一次。
+
+Docker實際命令 `python3 workplace/new-game-365-ready-review.py`、`bash workplace/new-game-365-run.sh`、`python3 workplace/new-game-365-verify.py`、`bash workplace/new-game-366-run.sh`、`python3 workplace/new-game-366-verify.py` 全部通過，各項四CLI拒絕與合法值正對照通過。原418檔SHA-256保持，state仍僅與原ZIP相同的sound.lbx，沒有SAVE10.GAM。公開CPU／DOS／provider／probe及全部internal不變，私有修改可逆。
+
+工具bdac0e0與94b15847606ff4c90635ba90d2c38388a86a2535已推送github隔離分支；主庫起始aa44de78f60bfbcf4ac9dc61e35a3e37305e5301。本輪主庫只更新DOS活表／CONTEXT單行並追加工作與研究，23份本機收據雜湊見研究入口，原LOG／PNG／資產不提交。原版容器已自動移除，兩個專案掛載filter均無執行中或停止容器。下一步依95000065真實初態另立名稱確認契約；持久名稱／正式存檔／完整開局／RNG與remake同狀態未驗，主庫RE-first保持。

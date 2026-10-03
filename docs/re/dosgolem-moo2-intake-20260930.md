@@ -3205,3 +3205,72 @@ python3 apps/moo2/tools/startup_probe_131.py --check-overlay-setup-source-spec-b
 ### 交接
 
 工具98950c28961c0f89ed63304cd131477d083c85b7已推送github隔離分支，主庫玩法RE-first保持。原版執行容器已自動移除；兩個專案掛載filter均無執行中與停止容器。下一步以本次90M真實880byte表／完整初態與既有337幾何，另立可寫Humans正常輸入規格，原唯讀race guard保持；正常store與名稱頁未驗前不外推成功。
+
+## 2026-10-04：365正常Humans與366名稱readiness
+
+主庫起始aa44de78f60bfbcf4ac9dc61e35a3e37305e5301，工具成果[365正常選族](https://github.com/wicanr2/dosgolem/blob/94b15847606ff4c90635ba90d2c38388a86a2535/docs/spec/365-moo2-overlay-race-humans.md)與[366只讀readiness](https://github.com/wicanr2/dosgolem/blob/94b15847606ff4c90635ba90d2c38388a86a2535/docs/spec/366-moo2-name-ready-boundary.md)。原官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f；ZIP417根檔另加官方EXE共418檔，MOX.SET／1996-01-01／180M參數與原先正常輸入保持，日期不是seed。原位址均dosgolem_high_le。
+
+### 365正常選族，限定已證實
+
+原90M完整880bytes表與唯一index7幾何351,330–473,374、完整CPU／FPU／RGB／callback6／6／IRQ20869／20869，直接用364原收據審查後READY。只送一次正常press x824／y352／buttons1於90000000／162623172µs；release x826／y352／buttons0於90008107／162662935µs，差39763µs，回呼7／7完成後首次可送。原target8:2136D1已由實際輸入收據核對，不從舊80M推定。
+
+原90066074／20DDDB六byte66A3A6C42600，DS188:26C4A6 word0000→0700，下一20DDE1，R=[7 50A004 181 298848 2BDA2C 2BDA94 D 1A]／段=[8 188 188 0 20 188]／flags297h保持；callback8／8與IRQ20889／20889非活動且非failed，error=nil。16byte觀察窗口只取六byte指令作核對，其餘原bytes仍留私有收據，不把窗口當一條指令。
+
+95M名稱表3筆／pointer298848／stride55／完整165bytes SHA-256 db67c471ba6a34a66146e083662f4c134c192e2371a807ec9647327558a7fd1b，與唯讀338表不同。index2+24原28439D的32byte候選為Strader補零，可讀且CPU／FPU／VBE／RAM保持；只證文字編輯候選，不稱正式持久名稱writer。2026-10-04親看原640×480 Enter Ruler Name、Strader與ACCEPT，RGB2646a7ef25939869ede60aa35bcd97d649b906fd2cc287d08deb6c2d8058cc12／PNG e1c739f5aeaf47a6cfdca4749b14509ec2592b65974fa6669e9347c491a52a36與338原95M圖相同。原95000000 EIP22F263／R=[20 2BD8C8 2A38E0 2A38E0 2BD8C8 2BD8E4 33 28439D]／段=[8 188 188 0 20 188]／flags12h，IF關閉、callback mask1／8／8、IRQ22338／22338非活動非failed。這與舊338的95M前置不同，不能只換表hash送輸入。
+
+365前90M6956共通原364列依352既有mtime／DTA／每輪只讀診斷RAMhash正規化保持，28PNG逐byte保持；原337唯讀race guard仍false且未改，獨立profile核對真表／CPU／FPU／IRQ才true。三區塊與兩診斷條件逆轉為364，公開CPU／DOS／provider／probe及全部internal保持；四CLI拒絕與合法值正對照通過。原guest一次，未送名稱確認。
+
+| 本機檔名 | SHA-256 |
+|---|---|
+| new-game-365-ready-review.py | 6a8d76b95307a3e4af245eda3b36bcb11838ed7fc9cab6d6dd5d419c07242b4f |
+| new-game-365-ready-review-tests.txt | b72821308ab7330bf5032ce58805e624a5e4b3141ad2687ad908dc002b9302d8 |
+| moo2-overlay-humans-365.go | 78ebe0f2180bb4ebcc8895543e3f4b3607927a5ee55572de0ca5d8a4d0e0b0a2 |
+| new-game-365-patches.json | 1f9d35e403088e452da10a355c7cfab1e6edf54973bdfdc7e2cf5026481b1b84 |
+| new-game-365-run.sh | f1dc742bd448941a5830cb25c886a63778469c2622e7b19dff6a4d8fb1afce09 |
+| new-game-365-run-output.txt | 06632b1e5beb8577072d0a803553912f6d38ad529cb63f3af689afd883a6614a |
+| new-game-365-cli-tests.txt | 7e323a6a2e8c352aeb94f038f92b5504ee495ca4b344a639b7549773dbe04a1e |
+| moo2-probe-365-overlay.txt.gz | 89f17f037e6b8d840ba082e11bbb7da96992c9ded103b09b9c7be43990e83133 |
+| moo2-save-state-365.json | e35322cba18956bcd245e4091932c822f9460271deda20ddda8b7722aa1375bc |
+| new-game-365-verify.py | 93de3d5d145c9188bf1c13cddcb75b4bdf3de9279fe7110f84330c37d14b6ac1 |
+| new-game-365-tests.txt | 5afa1124b9e65f7b04b9cbd03388f96d682ddd6f44332c5c89e392ab7fa31a0b |
+| moo2-365-overlay-frame-extended-95000000.png | e1c739f5aeaf47a6cfdca4749b14509ec2592b65974fa6669e9347c491a52a36 |
+
+### 366自然恢復平台readiness，限定已證實
+
+從95M起最多4096原指令、每步重算既有平台安全條件：IF開、target8:2136D1／mask1或2B、pending0／callback非活動、IRQ非活動且非failed。沒有輸入或修改IF，不skip CPU.Step。前64筆95000000–95000063逐步邊界均ready=false；offset64超出64筆記錄未打印，不偽造該列。受審查的first-stop每步判定、首次true即return，實際95000065停止ready=true；來源四替換可逆及native停止收據核對。未要求逐行翻譯內部helper。
+
+原95000065 EIP234A49／R=[3 1 210160 2BD8C8 2BD8DC 2BD8E4 2843A5 28439D]／段=[8 188 188 0 20 188]／flags216h，IF已自然開啟；FPU127F／status0／depth0／八stack bits0，原globals／header／165bytes表／32bytes候選與RGB保持95M，VBE Active／Bank4／StartY0／DisplaySets48保持。原readiness快照CPU／FPU／VBE／整RAM自身前後保持。同guest只讀defer終態另證mask1／pending0／callback非活動／8／8，沒有名稱press／release。終點精確IRQ計數未直接列出，非活動／非failed由ready判定與受審查原工具程式核對，不把95M的22338／22338寫成終點直接收據。
+
+366前95M7662原365共通列依既有正規化保持，29PNG逐byte保持，原95M前置／候選亦保持。首次CLI驗證因ready含read子字串而誤判原正常拒絕，原exit2正確、guest未啟動；確認raw檔尚不存在後修正同腳本，原guest只首次執行一次。四CLI無效值／缺依賴在讀EXE前拒絕，合法值越過閘門後缺EXE明確失敗。核對64筆邊界與defer終態時直接讀同收據，未重跑原版。
+
+既有平台契約internal/machine/le_mouse_callback.go:123，位置變化flags1／按下2／放開4，flags&mask非零才排回呼、裝置按鍵與位置仍更新；dispatcher遇IF關閉不派發。mask1下新位置與按下可產生flags3並排回呼，這只證平台契約，原名稱確認成功尚未驗。原338唯讀guard保持，不單純換hash放行原95M。
+
+| 本機檔名 | SHA-256 |
+|---|---|
+| moo2-name-ready-366.go | 2988ba33477cc973b9daba38a94804a21903bd9a6318108024376faba65b712c |
+| new-game-366-patches.json | 40501475fbfda45c7bac976fcdc2e6e89c1e5dfc981f7fd2476716b8c25157c9 |
+| new-game-366-run.sh | 39131b221de304b0ca8154147e7ef262dfe39734a86706582d5be00e163fadeb |
+| new-game-366-cli-first.txt | 28f43f09125af7f46276da789bfa4027a4e96b505db656dd4accb08cb28461fa |
+| new-game-366-run-output.txt | bd590e0ba7de887112e246b273fbdb4f258b36d8d994d031efd8ef87e2dbe415 |
+| new-game-366-cli-tests.txt | 552eda2f737327ec1d4ff956837f2291493c96a0955b80fe7b91a901215536aa |
+| moo2-probe-366-overlay.txt.gz | 6e1eff8cb6b876047130faf0388c575a38096c58b2304c9315c7968212e9707d |
+| moo2-save-state-366.json | e35322cba18956bcd245e4091932c822f9460271deda20ddda8b7722aa1375bc |
+| new-game-366-verify.py | 0f1e17cf3e635fd49bd9659f46cac07fcdcb2c0ae7129eade7db32ea62d9b38c |
+| new-game-366-tests.txt | db28d2402badc34544eddd3f3b11c6c6783af0d5fdd27f74faab19875f313ce0 |
+| moo2-366-overlay-frame-extended-95000000.png | e1c739f5aeaf47a6cfdca4749b14509ec2592b65974fa6669e9347c491a52a36 |
+
+### 命令、來源與交接
+
+上述23份檔案均在忽略 `workplace/dosgolem/workplace/`，SHA-256與UID／GID1000已核對。原PNG／LOG／資產／state不加入Git。Go1.24.13 Docker映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac；600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀，隔離工具與state在容器/tmp。
+
+```text
+python3 workplace/new-game-365-ready-review.py
+bash workplace/new-game-365-run.sh
+python3 workplace/new-game-365-verify.py
+bash workplace/new-game-366-run.sh
+python3 workplace/new-game-366-verify.py
+```
+
+均於Docker通過。每次原418來源檔guest前後SHA-256保持；state與364相同，僅sound.lbx4250888bytes／SHA-256 3f0354ac5c1b13a3c5c4fd098c2cbc22af37b71e74fc95e582782c22024c449d／UID與GID1000，原ZIP同bytes。沒有SAVE10.GAM，未達正式存檔成功、typed種族／持久名稱／旗色、完整開局、RNG、人耳或remake同狀態。
+
+工具bdac0e0與94b15847606ff4c90635ba90d2c38388a86a2535已推送github隔離分支。原版工作容器已自動移除，兩個專案掛載filter均無執行中或停止容器。下一步依原95000065真實初態另立名稱確認DRAFT，審查按下mask1與一次正常press／release，仍實讀IF／target／callback／IRQ安全條件；不以任意時刻試到成功，不深挖helper。主庫玩法RE-first保持。

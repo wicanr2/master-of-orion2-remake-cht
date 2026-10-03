@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-04）**：364已驗隔離可寫profile的一次正常ACCEPT，原80119128／dosgolem_high_le:20DDDB將DS188:26C4A6 word0000→0F00，90M進入SELECT RACE選族頁，RGB／PNG與既有原圖相同。前6270共通列及27PNG保持，原418檔未變，state仍僅sound.lbx，未有SAVE10.GAM。原336唯讀guard保持，獨立profile使用363完整表／五窗口／CPU／FPU／IRQ前置，公開CPU／DOS／provider／probe未改。工具98950c28961c0f89ed63304cd131477d083c85b7已推送github，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步依新90M完整880byte表另立可寫Humans正常輸入規格。主庫玩法RE閘門保持，正式存檔／完整開局／RNG與remake同狀態未驗。
+- **DOS 原版動態驗證器（2026-10-04）**：365已驗可寫正常Humans選擇，原90066074／dosgolem_high_le:20DDDB實寫word0000→0700，95M進入Strader名稱頁。366核對95M flags12h／IF關閉，原程式自然再執行65指令到95000065／234A49／flags216h恢復平台readiness，表／候選／RGB保持，未送名稱輸入。原來源418檔未變，state仍僅sound.lbx；公開CPU／DOS／provider／probe保持。工具94b15847606ff4c90635ba90d2c38388a86a2535已推送github，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步依首個ready真實初態另立正常名稱確認契約，保留原338唯讀guard。主庫玩法RE閘門保持，持久名稱／正式存檔／完整開局／RNG與remake同狀態未驗。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為
