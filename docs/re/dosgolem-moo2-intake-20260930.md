@@ -1326,3 +1326,30 @@ probe SHA-256 32f37ac91a6758e6794f30882a5184228836b5ad84317058b51828a3b336a2a4�
 **330歷史註記勘誤**：該節舊SS20h誤把GS當SS。internal/cpu386/cpu.go的段順序CS／DS／ES／FS／GS／SS，原段陣列[8 188 188 0 20 188]與return_selector=188證實SS188h。三次RET的原SS188偏移／bytes依序為47863859：2BDAD4／69DB2000→20DB69；47864842：2BDAB0／97912000→209197；47864848：2BDAD4／F2DD2000→20DDF2。原檔名／位址／bytes／雜湊與330歷史收據不變，本勘誤不重新推定函式語意。工具330現行規格附同一勘誤。
 
 **未知與下一步**：正常開局／NEW GAME指令仍未知。唯讀核對當前實際註冊表／全畫面index8與可見主選單的關係，以及20DDF7正常返回；不猜title skip／輸入過早／指令意義，不提高原流程cap、不改點擊時長、不重點、不深挖209325或整個renderer。主庫玩法RE閘門、255完整游標、303整體DRAFT、299自然OF=1、AH2Ch／RNG／人耳及remake同狀態保持。Docker兩掛載清查空，工具root-owned／誤建.md目錄自檢空，其他專案未清理。
+
+### 2026-10-03 原表更換與正常20DDF7返回
+
+工具d6688b01f7a5306bc6d271e06c4a5eb48a1eb430已推送github隔離分支，遠端回讀一致、工作樹乾淨，未推本機origin；固定規格[333](https://github.com/wicanr2/dosgolem/blob/d6688b01f7a5306bc6d271e06c4a5eb48a1eb430/docs/spec/333-moo2-menu-table-return.md)，332已回填。主庫起點178d9bf932828aeb5ddf159f9f9d75e3d44d2949。官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址均dosgolem高位LE。
+
+**已證實，原CALL自然返回與原表**：47864850首callee Step前，R／段／flags、原globals／header／固定frame／新return bytes與code逐項對接332最後實際CALL。47990733實際EIP20DDF7／SS188／ESP2BDAD8，R=[3CE038 1DF 2100E5 E5 2BDAD8 2BDB40 0 7]、flags293h，新return bytes F7DD2000；callback2／2與IRQ7816／7816均非活動。CALL47864849與返回觀察相隔125884外層Step，未觀察callee逐指令；332原8192只是觀察界限，沒有新CPU拒絕。原caller最終RET仍未核對，不把此callee返回當整個選單命令完成。
+
+開始與返回的DS188:26C480 pointer298848／DS:29BE0E count9／bias0／55byte stride，完整495bytes相同，SHA-256 d04abf3b20ccb6058d571a8092aa113242ddd8fd3ddefc42fc79d6cfff2a3a08。index1..8前8bytes與331／332實際來源一致：前6範圍左界10／20／30／40／50／60、右界25／35／45／55／65／75；index7四界5000、index8全畫面0／0／639／479，index0全零。完整index8在此時+8..+9為0700，不能把後來快照當332兩次MOV先前缺高word的原始收據。
+
+50M／100M終態保持同一pointer298848但count7、bias0，完整385bytes逐位元相同，SHA-256 776c6e6e61a5b17529ff383cae79a194edc17c7cf0b9a11f3dc8fc8841339183。index0四界0；index1為415／172／567／193，index2為415／217／567／238，index3為415／240／567／260，index4為415／262／567／283，index5為415／285／567／306，index6四界5000。開始／自然返回／終態各3份新快照唯讀通過，原frame之後被正常呼叫覆用，不把終態return槽當原CALL仍活動。
+
+**強推論，僅顯示位置**：人工查看50M原版PNG，終態index2範圍涵蓋NEW GAME字樣與500／229；以原word幾何比較只有index2命中。這不是新增原版點擊、handler語意或NEW GAME指令已執行的證據。先前唯一正常點擊實際消費時使用9筆表並選中全畫面index8；之後才觀察到7筆正式選單範圍，精確更換時點／producer與type／handler未知。
+
+Docker固定Go1.24.13映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，600s／2GiB／2CPU／128pids／UID1000／network none；原ZIP／patch唯讀重建417檔，go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe，沿332兩50M與獨立100M環境換333輸出名各一次。python3 workplace/new-game-333-verify.py PASS：全部3847／4825／6765舊列除既定mtime／DTA四byte／PNG路徑／每次RAM雜湊保持，72PNG逐位元保持，332 terminal未改；共同開始與返回快照保持。只讀RAM前後一致，不宣稱跨次完整RAM相同。70回填函式、既有負例及新增35缺證據負例、兩CLI通過。
+
+| 本機忽略收據／腳本 | SHA-256 |
+| --- | --- |
+| workplace/dosgolem/workplace/moo2-probe-333-baseline.txt.gz | 0157ca8aaf9998e13068830b69624850fbd77fe51ee64dafe9e66aca01b3161e |
+| workplace/dosgolem/workplace/moo2-probe-333-click.txt.gz | f268d7b9285eb35b86246d465d6968d82e01c86eb5d2aea3ff24867a6d9ff723 |
+| workplace/dosgolem/workplace/moo2-probe-333-extended.txt.gz | 690cd85a374102025fd8092950ad11d66ddb5ccc62a8305cd3f85e5e4a931c82 |
+| workplace/dosgolem/workplace/new-game-333-verify.py | db1dc3e53c34a40105f34a8549c2a73caf44232e95de858d9e022e4ac192ccaa |
+| workplace/dosgolem/workplace/new-game-333-parity-tests.txt | 3ab912b9a2e8cb2b80511007dc4853875617e6388e713fc88083f7fbab83f16d |
+| workplace/dosgolem/workplace/new-game-333-backlink-tests.txt | b1eec641549e6ed249dcaf60a008abd3d1bb7b0d0e68d4332cba2808590282da |
+
+probe SHA-256 fbd038f68ad029c1427cebf5baa852df0c2d90649554c38a95f10964f7ca0b57；CPU SHA-256 1448f29f24dad35e83575189055dc15dd7ac9db2b3529c6d450f03baf91c97b1。CPU／startup／provider／matcher／CLI保持，325固定EXE全套與329 CLI有效。原ZIP／patch／MOX.SET／417檔與來源／收據1000:1000再核對，原版素材／LOG／PNG／RAM不公開。
+
+**未知與下一步**：正常開局／NEW GAME指令仍未知；保留44M與單次短按舊基線，另立實際7筆表就緒後的一次正常press／release情境，先確認原表與第2筆範圍，再驗實際caller消費與玩家可見後續。不是改正式遊戲或代寫狀態；不提高100M cap，不深挖209325或整個renderer。主庫玩法RE閘門、255完整游標、303整體DRAFT、299自然OF=1、AH2Ch／RNG／人耳及remake同狀態保持。Docker兩掛載清查空，工具root-owned／誤建.md目錄自檢空，其他專案未清理。

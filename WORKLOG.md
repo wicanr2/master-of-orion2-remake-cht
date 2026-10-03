@@ -887,3 +887,12 @@
 - 69回填函式、既有32／49／25／27／27／34／31／36／31／37及新增34缺證據負例、兩CLI通過；原ZIP／patch／EXE／MOX.SET／417檔、CPU／平台來源、gofmt及新來源／收據1000:1000通過。330 SS20h舊註記的SS188h勘誤追加研究紀錄，保留歷史原定位與收據。
 - 工具3580b3e26181ff0978fc7ed0b2c45f8c685f76e3已推送github隔離分支，遠端回讀一致、工作樹乾淨，未推本機origin。六私有收據及鎖定332見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。主庫RE-first與整款remake／中文化目標保持。
 - Docker兩掛載篩選空，工具root-owned／誤建.md目錄自檢空，其他專案未清理。本輪主庫只改四現況／工作／研究文件，既有root-owned 2437檔／272目錄保持；主庫提交、遠端回讀及清理狀態於輪末核對。
+
+## 2026-10-03：原表更換與正式選單位置
+
+- 起點主庫178d9bf932828aeb5ddf159f9f9d75e3d44d2949／工具3580b3e26181ff0978fc7ed0b2c45f8c685f76e3。命中dosgolem／規格閘門／文件職責，333先DRAFT／READY，只新增最多16份原表快照與既有cap內的自然EIP／SS／ESP返回觀察。原CPU／平台／CLI、輸入與舊332終態不改。
+- 固定Go1.24.13映像／600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀重建417檔；go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe，沿332三流程換333輸出各一次。python3 workplace/new-game-333-verify.py PASS：全部3847／4825／6765舊列與72PNG保持，兩預算共同新快照一致、readonly通過。沒有新CPU拒絕。
+- 47990733原CALL正常返回20DDF7／SS188／ESP2BDAD8，開始與返回完整9筆表保持；50M／100M同指標298848已更換相同7筆表。終態第2筆範圍415／217／567／238幾何命中500／229，人工查看PNG強推論對應NEW GAME；實際NEW GAME指令未驗。下一步保留舊基線，新增7筆表就緒後的一次正常點擊，不提高100M cap，不深挖整個callee。
+- 70回填函式、既有32／49／25／27／27／34／31／36／31／37／34與新增35缺證據負例、兩CLI PASS。CPU／startup／provider／matcher／CLI保持，325固定EXE全套及329 CLI有效；原ZIP／patch／EXE／MOX.SET／417檔、gofmt、Git差異及新來源／收據1000:1000核對通過。
+- 工具d6688b01f7a5306bc6d271e06c4a5eb48a1eb430已推送github隔離分支，遠端回讀一致與工作樹乾淨，未推本機origin。六收據及鎖定333見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。主庫玩法RE-first與完整remake／中文化目標保持。
+- Docker兩工作區掛載篩選空，工具root-owned／誤建.md目錄自檢空，其他專案未清理；主庫本輪四文件與既有root-owned 2437檔／272目錄於輪末核對，沒有新增root-owned。
