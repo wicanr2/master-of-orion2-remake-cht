@@ -46,13 +46,13 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–373為限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
-  **目前狀態**：372原F6EC→A2唯一byte01→FF→E9正常返回及母星確認後180M星圖保持。373只加一筆180M只讀snapshot，原完整23物件DS188:298848／stride55／1265bytes保持；邏輯43,450唯一命中index10矩形17,434–79,471，與畫面COLONIES對應仍為強推論，沒有送新的COLONIES輸入。
-  **已取來源與安全前置**：index10+24→DS188:261716的32bytes首byte00，+32→2801A9的16bytes全0，+44→3ED894的16bytes已取，+40為0；用途與型別未知。index1–5的+24窗口所讀首NUL前文字EINSTEIN／MOOLA／MENLO／ISEEALL／SCORE、矩形全-1，不當COLONIES標籤或熱區。八窗口224bytes可讀。target8:2136D1、mask2B／pending0／inactive、callback14／14與IRQ47425／47425完成且非failed；IF1，快照前後完整核心／FPU／clock／VBE／callback／IRQ／RAM保持。
-  **實際180M**：step_limit=180000000／EIP2176C5／unique_sites54239，無guest_cpu_stop／step_error／dos_exit；R=[35017C 70 39C17C 70 2BD478 2BD4C0 39C17C 35017C]、段=[8 188 188 0 20 188]、flags202h、FPU127F／status0／depth0／八stack bits0，虛擬414027099µs。正常星圖與372終圖逐byte保持；完整開局及星圖控制操作未驗。
-  **驗證與交付**：372全部12047共通原列按既有mtime／DTA／每輪RAMhash正規化保持，IMUL ram_effect仍保留hash是否改變與changed_bytes關係；39PNG及final保持。兩私有區段可逆，全公開internal／CPU／DOS／probe保持e57e9e0；沿372固定EXE全套，沒有新CPU行為。六CLI拒絕及兩正對照、原418來源前後SHA-256、有界同guest副本與state終態／UID GID保持，原guest一次。工具f92dd15be1f5bf94d193d9bfc0367f2baa5793a8已推送github，18份私有收據雜湊見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)，372舊正文已追加回填。主庫玩法未改。
-  **下一步**：以本180M完整前置審查獨立COLONIES正常一次press、原AX3查詢、首安全release與原選取consumer；邏輯43,450對應既有physical x86,y450，仍須READY，不代寫選取word或核心／RAM。為新輸入明示有界後續觀察預算與模式，不修改本373收據或加cap挑結果。不深挖renderer／runtime helper，1996固定日期不是seed。
-  **未知／不混入本輪**：主庫玩法RE閘門保持；正式讀檔／存檔內容語意／typed名稱及旗色持久writer、五窗口完整物件、其他未驗CPU分支、typed種族特性、母星配置、星圖控制正常操作、完整開局與remake同狀態未驗。DPMI外部cb_smoke、兩舊探針PE格式、AH2Ch／RNG／人耳與Windows／macOS實機未驗。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–374為限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
+  **目前狀態**：374依373完整180M表／八原窗口／核心／FPU／clock／RGB／callback前置一次正常press x86,y450／414027099µs。原180010886在dosgolem_high_le:24C31B的INT33 AX3返回BX1／CX86／DX450，180010921／414069959µs首次安全release x88,y450，持按42860µs，callback15／15與IRQ47428／47428已返回。邏輯43,450與44,450均唯一命中23物件index10。
+  **原選取consumer已驗**：180020238在20DDDB原66A3A6C42600真正寫DS188:26C4A6 word0000→0A00，EIP20DDE1，完整R=[A 0 226 FFFFFFFF 2BD450 2BD4B8 FFFFFFFF 2BDC2C]／段／flags202h／FPU保持。原兩214104 RET 180019489→20DB5B、180144100→174742按真實stack核算ESP+4，AX0／flags246h保持，未寫成AX10。這是正常星圖選取10，不推定名稱持久欄位或殖民地內容。
+  **實際185M與畫面未知**：新COLONIES模式cap固定185000000、180M後5M觀察，舊mode off維持180M與guard。step_limit=185000000／EIP223A71／unique_sites55872，無guest_cpu_stop／step_error／dos_exit。R=[0 0 0 0 2BD720 2BD980 0 2BDC2C]、段=[8 188 188 0 20 188]、flags206h、FPU127F／status0／depth0／八stack bits0，虛擬424485517µs，callback16／16與IRQ48857／48857已返回。終圖已親看全黑；RGB全零，indexed非全零，色盤與轉頁邊界待查，不稱列表開啟或產品缺陷。header count20／stride55／pointer298848，舊count≤16 observer不擷取，完整1100byte表未取。
+  **驗證與交付**：373正常新輸入前11981共通原列及39PNG保持，僅兩處maxSteps宣告按baseline180M正規化；新185M cap與5M窗口另核對，沒有忽略預算。八私有patch可逆，全部公開internal／CPU／DOS／probe保持f92dd15，沿372固定EXE全套。13CLI拒絕與新mode on及舊mode off home on／off三正對照通過。擴充終態驗證的非空parser不能讀records=空，改明示空欄位判準後同收據通過，沒有原guest重跑。原418來源、state終態及同guest副本與373一致，UID GID1000。工具20fd1507c45a053860b0ad50ad9f9f86049566ad已推送github，20份私有收據雜湊見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)，四份規格追加回填，主庫玩法未改。
+  **下一步**：保持同185M與正常輸入，先取20物件完整1100byte表、當前code16／SS:ESP stack16及有界索引使用集合／RGB對應。沿internal/machine/moo2_vbe_video.go的VBEIndexed／VBERGB只讀API與既有dumpSetupTable count≤64入口，另審查固定185M取樣條件，不放寬舊count≤16 guard；釐清正常轉頁邊界，不盲目加cap求通過、不深挖DAC／PIT／driver或renderer helper。1996固定日期不是seed。
+  **未知／不混入本輪**：主庫玩法RE閘門保持；正式讀檔／存檔內容語意／typed名稱及旗色持久writer、五窗口完整物件、其他未驗CPU分支、typed種族特性、母星配置、COLONIES列表內容及正常操作／其他星圖控制、完整開局與remake同狀態未驗。DPMI外部cb_smoke、兩舊探針PE格式、AH2Ch／RNG／人耳與Windows／macOS實機未驗。
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備
 > 原始函式／位址、輸入狀態、規則或資料表、玩家可見 consumer、證據等級與明確未知項。

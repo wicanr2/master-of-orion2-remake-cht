@@ -3647,3 +3647,64 @@ SAVE10.GAM208000bytes／0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d2
 實際Docker入口依序new-game-373-ready-review.py、new-game-373-run.sh、new-game-373-verify.py；READY審查在新增observer前，八窗口計數修正為224bytes後才實作。372正文同次追加回填，深層來源與每筆窗口雜湊見上方373工具規格。
 
 下一步以本180M前置審查獨立COLONIES一次正常press、原AX3查詢、首安全release與原選取consumer。邏輯43,450依既有2:1橫向裝置尺度對應physical x86,y450，仍須READY審查，不代寫原選取word或核心／RAM。新輸入需另明示有界後續預算與模式，不修改本373的180M收據或加cap挑結果。主庫玩法RE-first保持；正式存讀語意／typed名稱與旗色持久writer／母星配置／星圖操作／完整開局／RNG與remake同狀態未驗。1996固定日期不是seed。
+
+## 2026-10-04：374正常COLONIES輸入、原選取10與185M黑終圖
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址空間dosgolem_high_le，基線工具f92dd15be1f5bf94d193d9bfc0367f2baa5793a8，公開CPU保持1d8a4d8252372c97d8e873ba13c3ab3670796527dcd6d74de52e8cbf226e068c。工具20fd1507c45a053860b0ad50ad9f9f86049566ad已推送github，見[374限定正常輸入規格](https://github.com/wicanr2/dosgolem/blob/20fd1507c45a053860b0ad50ad9f9f86049566ad/docs/spec/374-moo2-star-map-colonies-click.md)；公開規格／索引及四份回填，所有internal／CPU／DOS／probe保持。原資料、LOG／PNG／RAM／state及probe不入Git。
+
+### 已證實正常輸入與原consumer
+
+373完整180M來源、八窗口hash、RGB／核心／FPU／clock與target／IRQ一次對接，邏輯43,450／44,450唯一命中23物件index10矩形17,434–79,471。原180000000正常press x86,y450／buttons1、414027099µs，target8:2136D1／mask2B／pending0／inactive、callback14／14與IRQ47425／47425完成。
+
+原180010886、24C31B的INT33 AX3真正返回BX1／CX86／DX450，段與flags16h保持。180010921／414069959µs首次符合安全條件release x88,y450／buttons0，持按42860µs，IF1、mask1、callback15／15與IRQ47428／47428完成且inactive；沒有重送、代寫原核心／RAM或選取結果。
+
+180019489原214104 C3依SS188:ESP2BD44C stack返回20DB5B，ESP+4／AX0／flags246h保持。180020238原20DDDB／66A3A6C42600真正寫DS188:26C4A6 word0000→0A00，EIP20DDE1，R=[A 0 226 FFFFFFFF 2BD450 2BD4B8 FFFFFFFF 2BDC2C]、段／flags202h／FPU保持，原選取10已證實。180144100第二214104 RET依SS188:ESP2BD3A0 stack返回174742、ESP2BD3A4，AX0／flags246h及word0A00保持。首store與最多三RET只命中兩RET，未猜額外返回或AX10。原三consumer快照均只讀；既有raw32窗口保持，不推定新列表資料或正式名稱writer。
+
+### 固定185M、黑畫面與觀察界限
+
+新COLONIES模式cap固定185M，180M後只觀察5M；mode off維持373全部180M與guard，新185M由完整依賴限定，沒有增加cap求過。實際step_limit=185000000／EIP223A71／unique_sites55872，無guest_cpu_stop／step_error／dos_exit。R=[0 0 0 0 2BD720 2BD980 0 2BDC2C]、段=[8 188 188 0 20 188]、flags206h／IF1、FPU127F／status0／depth0／八stack bits0，虛擬424485517µs；callback16／16與IRQ48857／48857完成且inactive／非failed。colonies_terminal pressed／released／polled／store_seen true、returns2。
+
+終PNG已親看全黑，SHA-256 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622。RGB SHA-256 0b150fd32588b1daca5569992ebe559c0102c837306b1af4c44d35128ec58366等於921600個零byte；indexed307200bytes SHA-256 4d46c5beedd237ddba268a74a01d8c33a4a0323fb52213a2e5d5b6ea4d688d43，與全零indexed的7818f5542a0404157573be6cffc0e0c8e68ce3c0f5d17d07ccdd9313fb700baf不同。已證實索引畫面非全0／RGB全0；色盤與轉頁邊界待查，不能稱列表正常開啟，也未證產品缺陷。
+
+VBE bank4／startY0／sets2941／writes55575758／display94。新header count20／stride55／pointer298848，舊count≤16 observer明示不擷取，records空；目前1100bytes完整新表未取，既有cap入口的10M條件在185M未命中。舊menuFrame與return仍為較早caller，不當目前223A71 frame來源。正常選取到新header已驗，殖民地畫面與內容仍未知。
+
+### 驗證與回填
+
+373到180M source snapshot為止11981共通原列與39PNG保持。只將universe_continuation_config及hardware_keyboard_schedule兩處maxSteps在比較前正規化為已驗180M baseline，新增colonies_continuation_config明示baseline180M／cap185M／window5M；實際新185M另核對。舊180M cap terminal rows不混入新輸入後比較。mtime／DTA／每輪RAMhash沿既有契約，IMUL ram_effect保留changed_bytes與hash是否相等關係。
+
+八私有patch逆轉後精確等於373，所有公開internal／CPU／DOS／probe保持f92dd15；沿372固定EXE全套，另建置本probe，不重跑無關CPU測試。13CLI拒絕、mode on185M及舊mode off180M的home on／off三正對照通過，185M只由完整新模式使用。原guest一次，沒有重啟或挑結果。
+
+初版原輸入驗證通過；擴充終態的非空parser讀records=空失敗，改為明示空欄位判準後同收據通過，保留首失敗輸出。這是驗證parser修正，沒有修改原native結果、程式或guard。367／371／372／373追加shared word選取10的新星圖上下文，保留舊正文與其它名稱確認／持久未知。
+
+原418來源前後SHA-256保持。SAVE10.GAM208000bytes／0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d、MOX.SET553bytes／de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f、sound.lbx4250888bytes／3f0354ac5c1b13a3c5c4fd098c2cbc22af37b71e74fc95e582782c22024c449d保持，終態與373一致；同guest有界副本與終態及UID GID1000核對。Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，network none／600s／2GiB／2CPU／128pids／UID1000，原ZIP／patch唯讀、owned監測550s／trap收尾。所有程序terminal，相關Docker執行中及停止容器為零；既有root-owned2437檔／272目錄保持。
+
+### 私有收據
+
+以下位於workplace/dosgolem/workplace/，不入公開Git：
+
+| 檔案 | SHA-256 |
+|---|---|
+| moo2-374-overlay-frame-extended-180000000.png | beb773bf0623f56bc9b2be697c6e0e472abebd8fa4c319f15e6074291bb7a832 |
+| moo2-colonies-click-374.go | 068ba87dbc9485f3f96607393287815318af7812e75c121ab5fd77f78d09c4f8 |
+| moo2-probe-374-overlay.txt.gz | 251a8f37a090a5d37f9e02dec128f7cedd08fbc208151e49c78fc9dafb646bd7 |
+| moo2-save-state-374-mox.set | de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f |
+| moo2-save-state-374-save10.gam | 0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d |
+| moo2-save-state-374.json | 50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705 |
+| moo2-vbe-374-overlay.png | 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622 |
+| new-game-374-cli-tests.txt | 2dbf20d4bdf4311e15de13d3a416bfe1f5043e9675a59e320dd49ec4569ecb61 |
+| new-game-374-patches.json | ae787147e5944122065c4ddbbe8a19333688725476ad3cc4ff1a7f96abebe072 |
+| new-game-374-ready-review-tests.txt | 79574aff1345c9f9b68f211e17bb27cdaba4776ba56702c6e92cc05c367c84bd |
+| new-game-374-ready-review.py | d45760eafcd72d79ee3e21e16dd92acf67496b6ac438a2c25768bbb4817073a6 |
+| new-game-374-run-output.txt | 8ac679ac86da8a834c40ec8c195b1e888026cfd6fb2c2c352f6df02aeae443cb |
+| new-game-374-run.sh | f5cc1112fc1da075e3eb91c2a5afe1bf42789b0c8cd0da8d058d6f004b12a67a |
+| new-game-374-state-capture-output.txt | 9332dea0878e8d161b0c361a816571d5946567602223ec6dadb95d15d9cd9ab3 |
+| new-game-374-state-capture.json | 5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d |
+| new-game-374-state-capture.py | 876a39f3725e1356ba28ff3422f0a9e689d1299656cbe2157bc8a4d62c153ef9 |
+| new-game-374-tests-terminal-parser-first-failure.txt | 6d61755220687b3c5ad037bb6285ce941871e0e1cea511971774676a4a4b0a02 |
+| new-game-374-tests.txt | 202724dc4a5a8836c27a920ae6a68f3e83c99f12580090467df51756dc474558 |
+| new-game-374-verify.py | 9ae54694b8b30b33f4350b42f7914703f32a4d1537a2e36021df7e1ca950e53d |
+| new-game-374-window-hashes.json | 6904a18ee3e8deca39c2cf0aca8d4f26fc380817e05e30fa29ee09217af08da0 |
+
+實際Docker命令依序new-game-374-ready-review.py、new-game-374-run.sh、new-game-374-verify.py；READY審查在私有新模式前，原guest一次。原輸入與末態逐值、四份回填及深層契約見上方374工具規格。
+
+下一步保持相同185M與正常輸入，先取20物件完整1100byte表、當前code16／SS:ESP stack16及有界索引使用集合／RGB對應。沿internal/machine/moo2_vbe_video.go的VBEIndexed／VBERGB只讀API與既有dumpSetupTable count≤64入口，另審查185M固定取樣，不放寬舊count≤16 guard。釐清正常轉頁邊界，不盲目擴cap求過、不深入DAC／PIT／driver或renderer helper。主庫玩法RE-first保持，列表內容與正常操作、正式存讀語意／typed名稱旗色持久writer／母星配置／完整開局／RNG與remake同狀態未驗；1996固定日期不是seed。

@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-04）**：373沿372正常星圖180M，只新增一筆只讀來源。COLONIES畫面位置邏輯43,450唯一命中23物件index10矩形17,434–79,471；原+24／+32／+44窗口、target8:2136D1／mask2B／callback14／14／IRQ47425／47425與完整核心／FPU／clock／RGB已取。12047共通原列、39PNG及原418來源／state保持，公開CPU／DOS／probe不變。工具f92dd15be1f5bf94d193d9bfc0367f2baa5793a8已推送github，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步審查正常COLONIES一次press／查詢／release及consumer；尚未點擊，畫面對應強推論。主庫RE閘門保持，正式存讀語意／完整開局／RNG與remake同狀態未驗。
+- **DOS 原版動態驗證器（2026-10-04）**：374已驗COLONIES座標一次正常press／原pressed查詢／首安全release，原20DDDB共享選取word0000→0A00及兩RET保持核心／FPU。固定新模式185M、後續5M，無CPU拒絕；終RGB全0、indexed非全0，header20物件全表未取，殖民地列表未驗。180M前11981共通原列／39PNG與原418來源／state保持，公開CPU／DOS／probe不變。工具20fd1507c45a053860b0ad50ad9f9f86049566ad已推送github，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步保持185M取完整20表與索引／RGB對應，釐清轉頁邊界。主庫RE閘門保持，正式存讀語意／完整開局／RNG與remake同狀態未驗。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為
