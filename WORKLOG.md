@@ -1214,3 +1214,11 @@
 - DRAFT11019列／36PNG、正式10949正常列／35frames、1212416工程矩陣、窄測1.025s／固定原EXE乾淨Go全套CPU38660.001s／machine1.824s、前輪360原8M收據／CLI、98守衛及新39＋28負例通過。核對腳本空陣列問題修正後讀同收據，guest未重跑。
 - 原版自然到180M無CPU拒絕，終圖顯示旗色選單的Error saving game／Permission denied。下一步取失敗DOS呼叫／檔名／mode／errno，再審查既有隔離覆蓋層，維持cap與唯讀原版來源；完整開局仍未驗。
 - 四文件與27份私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。工具樹乾淨／專案容器0；正式writer／RNG與remake同狀態未知，主庫RE-first保持。
+
+## 2026-10-04：362定位原SAVE10唯讀開寫拒絕
+
+- 工具4f9c45be2017904ea42d86ef9b7ae692388eee08已推送github隔離分支，遠端精確HEAD相同。公開只加兩個有界唯讀DOS診斷區塊，全部internal／CPU／DOS／provider及舊測試保持361。
+- 原165025480／dosgolem_high_le:237024的3D01／DS188:2BDB68／SAVE10.GAM回AX5／CF1、flags202h→203h與RAM保持，已定位provider缺WriteFileProvider；不稱AH40寫入失敗。
+- 128診斷、14498正規化原列／38PNG、99守衛及新29＋32負例通過。mtime直比、NUL長度與逆轉空行屬驗證問題，修正後讀同guest收據／乾淨重跑測試，未挑選原版結果。
+- 可寫試作窄測0.053s／固定原EXEGo全套CPU386130.397s／machine1.643s通過，但原版在80M完整表guard拒絕，未送ACCEPT／未到存檔，沒有state寫入收據。五個+44四byte窗口各增8000h，RGB相同且前段執行已改變，所指內容未知。試作退回本機DRAFT，公開維持唯讀，原失敗收據保留。
+- 下一步取初段開檔與80M五窗口候選位址的內容，不改guard或點擊時刻。36份本機來源／收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。工具樹乾淨／專案容器0；正式存檔／完整開局／RNG與remake同狀態未驗，主庫RE-first保持。

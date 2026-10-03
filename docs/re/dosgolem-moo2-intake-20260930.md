@@ -3040,3 +3040,69 @@ Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce617
 | new-game-361-cli-tests.txt | 0c39c7d30d26388473df3e31ad7be38651d38f98677857d9e5a9de59a4aaac43 |
 | new-game-361-backlink-verify.py | 6791241d913126c88dfd4127634a237abd0965268b18e91949910f2dbefdd7b8 |
 | new-game-361-backlink-tests.txt | 53eccf8b9d3282363b85031e24a17d83ebe14c6dd7f0bacbb3913e2e623a969b |
+
+## 2026-10-04：362原SAVE10唯讀開寫拒絕與可寫DRAFT邊界
+
+路由：dosgolem原版oracle／spec-gated-workflow／re-resolution-backlinks／project-document-responsibilities，寫結論前再核對。工具4f9c45be2017904ea42d86ef9b7ae692388eee08已推送github隔離分支，精確遠端核對，上游/home/anr2/cht/dosgolem未修改。固定DOS1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f、417根檔與同180M，固定1996不是seed，未增加cap／注入／代寫或重送。
+
+完整證據與實際命令：[362限定唯讀CONFORMED／可寫DRAFT](https://github.com/wicanr2/dosgolem/blob/4f9c45be2017904ea42d86ef9b7ae692388eee08/docs/spec/362-moo2-save-permission-boundary.md)。主庫玩法RE-first保持。
+
+### 已證實
+
+- 原165025480在dosgolem_high_le:237024的INT21 AX3D01，DS188:2BDB68字串SAVE10.GAM可讀NUL終止。原R=[3D01 270E74 2BDB68 42 2BD6AC 2BDB1E 2BDB68 FFFFFFFF]／段=[8 188 188 0 20 188]／flags202h；handled true，AX0005／CF1／flags203h，其他R／段與全部RAM保持。
+- 唯讀provider無WriteFileProvider，openReadOnly型別檢查拒絕。這次是開寫失敗，不是AH40失敗，也不要求AH3C新建；ZIP已有SAVE10.GAM。拒絕早於361的168496272 ROR，後段合法CPU契約不能當生成成功證據。
+- 未改CPU／DOS／provider的128有界唯讀診斷，361全部14498列依352既有mtime／DTA／每輪RAM診斷雜湊正規化保持、38PNG逐byte保持，各次診斷自身CPU／RAM／FPU／VBE保持。首次直比因重新解壓mtime不同失敗，改用既有正規化讀同收據通過，不稱跨輪RAM全相同。原guest未重跑挑選。
+- 公開probe只加兩診斷區塊，可逆轉361。所有internal／CPU／DOS服務／provider及舊測試逐byte保持361。99守衛與新29＋32缺證據負例及全部較早負例通過，17較早規格回填。
+
+### 可寫試作未通過玩家驗收
+
+沿既有overlay接空state並委派base清單，窄測0.053s、既有overlay0.037s、固定原EXE乾淨Go全套CPU386130.397s／machine1.643s、原8M1693列／PNG／68舊＋32新CLI與五state拒絕／空state正對照通過。新列舉測試僅由窄測執行，全套測原有已追蹤程式與測試。首次窄測NUL欄位長度誤寫12byte而實際11byte，及逆轉腳本多一空行，均修正驗證後通過，不記成產品缺陷。
+
+原版overlay試跑exit1，在80M setup_accept_precondition valid=false停止，panic「設定頁ACCEPT點擊的原表或輸入條件不符」，未送ACCEPT press、未到165M存檔、無finalPNG及state正式寫入收據。RGB3bbe6c339cfbc74e84b3210bccfdc4574073b4d308ef9b90a1720cc5c74e623e、globals／header及幾何保持。935bytes七byte不同，index=[650,651,705,760,761,815,870]；record11–15的+44四byte窗口從004AFA3C／004B0D14／004AE634／004B2084／004B3294各增8000h，其他表內容逐byte保持。第1177共通列已不同，唯讀1260000 EIP24659F／overlay1410000 EIP238291。heap地址解釋為強推論，所指內容與消費未知，不能稱已證實標籤指標或同初態。
+
+可寫profile回DRAFT，試作與新列舉方法／測試只留忽略workplace，公開不接state旗標與新方法，原336完整表guard與點擊時刻保持。原失敗收據保留，沒有挑成功guest重跑。容器exit後state未保留，不能聲稱原版正式寫入或全部來源檔案不變已驗。下一步有界保存初段開檔mode／路徑／結果與80M五窗口候選位址的內容，每側五個最多128byte／NUL視窗，依原描述符及只讀狀態驗證，再審查READY正常輸入契約。
+
+歷史formal/full/source/off腳本記錄當輪試作版本。未來明示重生試作使用workplace/new-game-362-prototype-rerun.sh，容器/tmp從固定361 Git源碼與已雜湊試作另建source；不覆寫舊收據，本輪未執行重生入口。正式存檔writer／內容、RNG／完整生成／開局與remake同狀態未驗。原EXE／PNG／LOG／RAM與存檔不進Git。
+
+### 私有收據與清理
+
+Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀。公開probe SHA-256 63b0182fc7311d4e0760dc29906419a1480ea3fa12faf1e58067f61775104bb1，與可寫試作f1f2be8d3a2a15cb0fa0d7013b64f8ed97d9798f5b9a2b6d85b69f570602043a分開。工具樹乾淨／專案容器0；既有root-owned2437檔／272目錄保持，本輪不新增root-owned或.md目錄。主庫只改CONTEXT的DOS單行與WORKLIST的DOS活表、追加WORKLOG與本檔，其他活表全文保持。
+
+| 本機檔名 | SHA-256 |
+|---|---|
+| moo2-save-diagnostic-362.go | 63b0182fc7311d4e0760dc29906419a1480ea3fa12faf1e58067f61775104bb1 |
+| moo2-save-overlay-362.go | f1f2be8d3a2a15cb0fa0d7013b64f8ed97d9798f5b9a2b6d85b69f570602043a |
+| overlay-files-362-prototype.txt | 3c775f009959f54ae6572c854e0b8b049ea7dd4f8c9228345a1297b611daf21a |
+| moo2-overlay-enumeration-362-prototype.txt | 38d4f013df53e422349e67861c5d6258047210c8e040c80f74cf5b1e73a7db00 |
+| moo2-probe-362-input.txt.gz | f05a445160916c9da6b70ad85d24c18733b7a6d7c6ac1a21921d7e6b9d5669b3 |
+| moo2-vbe-362-input.png | 679f08239fe789c2f1ae82b5fa9a72a08cad884aa8d12f756a3fd9badf7f4c3a |
+| new-game-362-input-run.sh | b1c3c4c536155b65e117b3b7b407a5d7472cfec3549b1ebc5bcbb8a7502f6c78 |
+| new-game-362-input-run-output.txt | 3408cddb753c02c6e95d87091a117c6bad045d1c1153147744c690af2b5516e6 |
+| new-game-362-input-verify.py | cff7c6c7ba8af38a387ac150281a1b41ca337567dc10834488f6ac02e1723869 |
+| new-game-362-input-tests.txt | b3706925e325823f7a242a097307f4183bc638e1e746462119f64142104e16c1 |
+| moo2-probe-362-formal.txt.gz | 5bc986900a6f8fcd2a5089f93dfbd83a7540a9bb4fac729832b8054770155a62 |
+| new-game-362-formal-run.sh | 055464dec165a7d72e72f932ba785491056c59cf92e953ce9fa61c94b5527321 |
+| new-game-362-formal-run-output.txt | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 |
+| new-game-362-prototype-rerun.sh | 5495873d6065a8fa898ae84255b77c067c4ef6a0131b9a4014742687ea06425e |
+| new-game-362-unit-first.txt | 97cc21a2f46984c6226404181374bc6082a68f7fd502bccfc6004082d1c32c74 |
+| new-game-362-unit-tests.txt | a0b221267f1587d9433d39356146322498bd0d34fc30e7a0b3d5b767ddc8831a |
+| new-game-362-existing-overlay-tests.txt | 03b8dca9b60bee4420a1a8eaa1787f313051b59e7a91a69d4f36b98a04a9cdbf |
+| new-game-362-full-run.sh | b705b197af9db444118f4f65298ba633262f98347e3e334c242e018f2d5fe516 |
+| full-test-362.txt | 0a338e0ec95dde8f75872e4d3e2504b1ca6a512fea32310dfca6c5a161c3461a |
+| new-game-362-source-verify.py | 86dc0ae849b90d8554cc9d6946913e8c6f9cb4809e5fad1035e410ac23673620 |
+| new-game-362-source-tests.txt | 8ae6b6cf1db5d9d3d3849fb67933d60648e06fdf93fedfe0febf9ef6ee9565f9 |
+| new-game-362-live-source-verify.py | 620be2d788ae58a3cf1d3ebba7d809114fe8bc9dde9288094d9852d5cfb50cf2 |
+| new-game-362-live-source-tests.txt | 3a754db108d9bf58f783ce382bf1185c82b0d6b50afb2218e2b0be2ceb130504 |
+| new-game-362-result-verify.py | 4ce178708f6d42efee1671bea33121bef400c3c68a5121ab2f00b26cc8dbffbe |
+| new-game-362-result-tests.txt | 0bf1e660d5cbbd4150ddbca0aa3848f2ea636870b95d4529eb6a0085b66b7948 |
+| new-game-362-off-run.sh | 599c293f3bd9d6b8359fe34bde7feefdb7e0b4c92ba7cc2deded301fcc9005cb |
+| new-game-362-off-cli-tests.txt | 02243db97e3e984c4b4f4e43aa3b58aa773c4caf35ca7fc6b31c2125b0cdc70d |
+| new-game-362-state-cli-verify.py | 81a4bc54cbe240756991c0dc0fb9592d51cd015c4c3a2e392c040c4fcdee8211 |
+| new-game-362-state-cli-tests.txt | 13eefb0e4c8a34ff6e80e77f933661db278f9c7b98a7ec49243334069424e177 |
+| moo2-probe-362-off-old.txt | 3f9009096ed960d8ce3edc5fe8c1f0a26606bcc3ad74fdd050bf965ef2dcf515 |
+| moo2-probe-362-off-new.txt | 696ba37cc2a6ddb15e8adb7dedef3c2c1ff7677223719d0fa59b796882288317 |
+| moo2-vbe-362-off-old.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| moo2-vbe-362-off-new.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| new-game-362-cli-tests.txt | 0c39c7d30d26388473df3e31ad7be38651d38f98677857d9e5a9de59a4aaac43 |
+| new-game-362-backlink-verify.py | 8f065021b447755d27ba85e07b0a1f4f64edbe22eef2a1fc7c0d93e8d0c2d420 |
+| new-game-362-backlink-tests.txt | 44b1392d7f74613becf5bf2fafe80b9537002244b9055524118642b84799aa43 |
