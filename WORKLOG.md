@@ -1288,3 +1288,13 @@ Docker命令 `python3 workplace/new-game-367-ready-review.py`、`bash workplace/
 實際Docker入口 `python3 workplace/new-game-370-ready-review.py`、`bash workplace/new-game-370-run.sh`、`python3 workplace/new-game-370-verify.py` 通過。工具46ae96f788d4242da161d833add26cdedd9f4c32已推送github隔離分支；主庫起點b1ce76439da49ac05cf120108be0bd04cd48bac0。19份私有收據雜湊見研究入口，原LOG／PNG／RAM／state不入Git。公開370規格／索引及369回填，主庫只更新DOS活表及CONTEXT單行，歷程與研究追加。
 
 原guest與監測均terminal，兩專案掛載filter無殘留容器，root-owned2437檔／272目錄保持，無新增root-owned或.md目錄。下一步依已取170M完整前置審查正常母星ACCEPT／release READY契約，保持180M，不代寫核心／RAM。主庫玩法RE-first保持，正式名稱及旗色持久writer、讀檔、完整開局與remake同狀態未驗。
+
+## 2026-10-04：371正常母星名稱確認與新F6EC拒絕
+
+371沿370真實170M完整前置審查後READY，只新增一次正常母星ACCEPT。原170015047 pressed查詢讀到BX1／CX550／DX260，170015082首安全release，持按47435µs。170024419原20DDDB／66A3A6C42600實寫DS188:26C4A6 word0000→0100，Sol候選及核心／FPU保持；三筆正常RET按真實stack核算，AX0不寫成AX1。命名視窗消失、星圖顯示Sol／3500.0已親看；共享store不等於正式名稱writer。
+
+後續174213914在dosgolem_high_le:1749C0 bytesF6EC拒絕有號byte IMUL。原完整R／段／flags246h／FPU已取，CPU未改；exit0有guest_cpu_stop／step_error，未達180M。終態count23超過既有觀察器count≤16，完整表未取，這是觀察界限，不是產品資料失敗。
+
+370點擊前11435共通原列與38PNG保持，六私有patch逆轉、公開internal／CPU／DOS／probe保持，六CLI拒絕及兩正對照通過。原guest一次，原418來源保持，state副本／終態與370一致、UID GID1000。實際Docker入口 `python3 workplace/new-game-371-ready-review.py`、`bash workplace/new-game-371-run.sh`、`python3 workplace/new-game-371-verify.py` 通過。公開371規格／索引與367／369／370回填，18份私有收據見研究入口；原LOG／PNG／RAM／state不入Git。
+
+工具c39af543efa47387b1fd96f86038d08f940f42c6已推送github；主庫起點fd7d4e72fb3a7197a7ba999a0eb23f0b03d71fcb。主庫只更新DOS活表及CONTEXT單行，歷程與研究追加。原guest及有界監測均terminal，兩專案掛載filter無殘留容器，root-owned2437檔／272目錄保持，無新增root-owned或.md目錄。下一步為F6EC建立CPU READY契約、獨立窄測及原consumer後相同輸入續跑。主庫玩法RE-first保持，正式名稱與旗色持久writer／讀檔／完整開局／seed與remake同狀態未驗。

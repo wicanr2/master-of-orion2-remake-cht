@@ -3478,3 +3478,56 @@ index1+24→261AC2原16byte窗口首byte00並含BUFFER0，SHA-256 2c9d54f6d98794
 19份均在workplace/dosgolem/workplace/，SHA-256與UID GID1000已核對。工具46ae96f788d4242da161d833add26cdedd9f4c32已推送github，公開自製370規格／索引／369回填，原LOG／PNG／RAM／state留本機忽略目錄。精確run／review／verify入口見370規格。
 
 下一步以170M完整前置、Sol候選與唯一index1熱區審查正常ACCEPT press x550,y260／受控release x552,y260的READY契約。保持180M與既有正常輸入，不套舊ruler／banner guard，不代寫核心／RAM；共享選取store或原返回是否命中依實測，不深挖與玩家阻塞無關的renderer／helper。
+
+## 2026-10-04：371母星正常ACCEPT與1749C0新F6EC阻塞
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址空間dosgolem_high_le。起始工具46ae96f788d4242da161d833add26cdedd9f4c32，CPU保持a39e5b9f74e026fc1c2514d733808e94920b6789d1b68ef8eb8960dc72df5350，所有公開internal／DOS／provider／probe不變。沿370可寫正常輸入／180M／1996日期，日期不是seed。Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac；600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀。
+
+### 已證實的玩家流程
+
+原170M完整370前置通過，一次press170000000／386324835µs／x550,y260／buttons1；原170015047、24C31B正常INT33 AX3返回BX1／CX550／DX260、段／flags12h保持。170015082／386372270µs首次合法release x552,y260／buttons0，持按47435µs，mask1／IF1／pending0／inactive、callback13／13、IRQ44497／44497完成。沒有重送、代寫核心／RAM或修改候選。
+
+原170024038在214104 C3依SS188:ESP2BD364真實stack返回20DB5B，完整R只ESP+4，AX0／flags246h／段／FPU保持。170024419原20DDDB六byte66A3A6C42600實寫DS188:26C4A6 word0000→0100，EIP20DDE1；R=[1 1 37 8 2BD368 2BD3D0 2843A1 28439D]及六段／flags297h／FPU、32byteSol候選保持，callback14／14與IRQ44498／44498非活動非failed。後兩RET 171940309→20DB5B、172067022→174742均按真實stack核算ESP+4，AX0／flags246h保持，不推定caller名稱。
+
+正常命名視窗消失、星圖顯示Sol及3500.0已親看，終PNG SHA-256 c577873bc2e015667734ff050d4601a24ac2daac5e5b4b5a94e4650df2c1773b。原資料表／Sol候選→正常press／poll／release→共享選取store→星圖的垂直鏈已驗；正式星名持久writer、存讀及完整開局仍未知。
+
+### 新拒絕與觀察界限
+
+原174213914、1749C0 bytesF6 EC A2 06 1F 28 00拒絕F6 ModRM EC。after EIP1749C2，R=[FF01 1A5 2 8 2BD488 2BD4E0 171C80 2BD4E0]、段=[8 188 188 0 20 188]、flags246h，FPU127F／status0／depth0／八stack bits0。原虛擬397790869µs，VBE bank9／startY512／sets2837／writes52762744／display93；home terminal pressed／released／polled／store_seen true、三returns、callback14／14／pending0／inactive。CPU拒絕只fetch opcode與ModRM，指令結果尚未執行。
+
+[Intel80386 IMUL](https://www.ardent-tool.com/CPU/docs/Intel/386/manuals/prref386/IMUL.htm)定義F6 /5為有號AL×r/m8→AX，CF／OF依符號延伸條件、其餘算術flags未定義。EC為AH來源，ISA辨識已證實；原AL01／AHFF已取，原native結果仍待補工具後取得，不把ISA導出或綠測試稱原版結果。本輪CPU未改。probe exit0但有guest_cpu_stop／step_error，沒有step_limit或dos_exit，未達180M／完整開局。
+
+終態header count23、stride55，既有new_game_menu_table_snapshot限制count≤16，因此table_readable=false、records空；這是觀察器拒絕擷取的界限，不是已證實表格不可讀、資產越界或產品缺陷。完整23物件未取，不放寬舊guard或改資料型別。
+
+### 驗證與回填
+
+370點擊前11435共通原列按既有mtime／DTA及每輪只讀RAMhash正規化保持，38PNG逐byte保持；完整170M表／候選／核心／FPU／VBE／clock／callback IRQ精確對接。六私有patch逆轉為370，公開internal／CPU／DOS／probe保持，六CLI拒絕與合法模式開／關缺EXE兩正對照通過。原guest一次，沒有驗證腳本失敗或重啟選結果。
+
+原418來源前後保持，state副本／終態與370相同，SAVE10.GAM208000bytes、MOX.SET553bytes、sound.lbx4250888bytes，UID／GID1000，實際hash見下表。原guest與550s有界monitor同run擁有與trap清理，terminal後無殘留容器。沒有新CPU碼，沿369固定EXE全套收據，另建置本正常輸入probe。
+
+371限定CONFORMED正常母星確認、共享store與星圖／新拒絕；367／369／370追加不可變候選及原20DDDB／bytes／DS:26C4A6回填，舊統治者與旗色上下文保持，不當same-state或正式持久名稱writer解答。私有驗證核對三回填入口與原位址／bytes，缺項即失敗。
+
+| 本機忽略來源／收據 | SHA-256 |
+|---|---|
+| moo2-371-overlay-frame-extended-170000000.png | 410c764d6bc1e928af3100cae79431bc03e152d83330ebd94b29c6fa0523c862 |
+| moo2-home-name-accept-371.go | 002b8406497c5c6d131d3ca059828ca918bdb829587f340f605a8c7af1c3b7d7 |
+| moo2-probe-371-overlay.txt.gz | 20a23fdb18adaef0b149d490bdf7c2224fe8890c5f131dea402e4a163f80a689 |
+| moo2-save-state-371-mox.set | de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f |
+| moo2-save-state-371-save10.gam | 0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d |
+| moo2-save-state-371.json | 50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705 |
+| moo2-vbe-371-overlay.png | c577873bc2e015667734ff050d4601a24ac2daac5e5b4b5a94e4650df2c1773b |
+| new-game-371-cli-tests.txt | e23e63ea4e37e0f0823fda228ce807b3cdac82cc8d2c63c2bf2d1afb1a2312af |
+| new-game-371-patches.json | d8fdaa346b6aeb3d6c7bad4d9b8df847e0e8c07a23126028dd3b28ceebbfa961 |
+| new-game-371-ready-review-tests.txt | 375fef9620bba6b29cec9514ddec2847ab07dbffefae55b9ea1429ad7264dfb7 |
+| new-game-371-ready-review.py | 3441389db8b415559a84e148f5445abb358e7286652f82ef017ddc7c60df43fc |
+| new-game-371-run-output.txt | 8209e34ebabed029b9801ca26220d1506a58144f918015d216f056f6055ae557 |
+| new-game-371-run.sh | 8ee629a0fc4b985243b4a20f9f9c70ac72d06bef141314c50b9f34b786bbb0a7 |
+| new-game-371-state-capture-output.txt | 4e9e700c2ba93e7b5419aa50d201f6f01e55e4e39ed41951f50610daa299cd4e |
+| new-game-371-state-capture.json | 5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d |
+| new-game-371-state-capture.py | 5ce23c2b2e364a9ef14f4c410806c0354d2d3b918a8483e4a79d6863d3096d75 |
+| new-game-371-tests.txt | cd0a380b027e82e49993dd7cc32eb50b5eb87e201f6b0c2d05bf46c058e0ca0c |
+| new-game-371-verify.py | c5c6c500c255d7ffb29143a048899d05692cb05fce406d1ccbc70366581de4fe |
+
+18份均在workplace/dosgolem/workplace/，SHA-256與UID／GID1000核對。工具c39af543efa47387b1fd96f86038d08f940f42c6已推送github，公開自製371規格／索引與三回填；原LOG／PNG／RAM／state留本機忽略目錄。精確READY審查／run／verify入口見工具371規格。
+
+下一步依原174213914／1749C0 F6EC與完整核心、Intel ISA建立byte IMUL READY規格，補獨立CPU窄測與原consumer，保持180M及所有既有輸入再續行。主庫玩法RE-first保持，正式名稱與旗色持久語意／讀檔／完整開局／seed與remake同狀態未驗。
