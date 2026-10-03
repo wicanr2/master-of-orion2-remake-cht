@@ -824,3 +824,14 @@
 - 真正末尾來源已定位DS:29BE74→DS:[EAX]→SS:[EBP-8]及CMP／JE／JLE；來源指標、窗口與完整flags／目的寫回待最小取樣。ESI零窗口不當作此來源，不猜素材故障。63回填函式、原有32／49／25／27與326新增27缺證據負例、兩CLI PASS。
 - 工具ca437d1b17135d511b52e7fb40591b7ea12176c4已推送github隔離分支、回讀一致與工作樹乾淨，未推本機origin。[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)保存五私有收據、固定規格與來源。新來源／六PNG／收據1000:1000；工具root-owned／誤建.md目錄自檢空，主庫既有2437檔案／272目錄保持。本輪一次性Docker工作已退出，無本專案遺留容器，其他專案保留。
 - 下一步沿同50M上限與正常單次輸入，核對真實來源／分支與必要的目的RAM寫回，不追完整renderer，不加cap、重點、代寫或先改輸入。正常開局與remake同狀態、整款remake／中文化目標保持。
+
+## 2026-10-03：後段實際來源與原值寫回
+
+- 前輪主庫a7f0c5df0b6b736766624829428a3cdab1d85d3b／工具ca437d1b17135d511b52e7fb40591b7ea12176c4。平台規格優先入口保持，327先DRAFT／READY，只改原版探針觀測。
+- 同44M Esc／1996-01-01／50M cap與正常單次輸入重生兩流程，六組02h／80h／82h的指標、來源MOV、局部寫回與CMP／JE／JLE通過。160實際步保存，90步獨立核對，70步只記錄。兩次DS188:499300h／499303h寫FDh，中心原本就是FDh；80h後續與映射表來源未驗，不追完整helper。
+- Docker Go1.24.13固定映像，600s／2GiB／2CPU／128pids／UID1000／network none。原ZIP／patch唯讀重建417檔，go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe，再沿326兩正式流程換327輸出；CPU／平台保持，325固定EXE全套PASS沿用。
+- 初次獨立比較因六點完整RAM跨次雜湊不同停止；差異原因未證實。修正驗證腳本，明示正規化每次RAM雜湊，各次readonly與前後相同仍檢查；不宣稱跨次全部RAM保持。python3 workplace/post-click-source-327-verify.py乾淨重跑PASS：全部3847／4208列除明示正規化保持、六後段PNG與兩終圖逐位元保持，沒有新CPU拒絕，設定畫面仍未知。
+- 64回填函式、原有32／49／25／27／27與新34缺證據負例、--check-post-click-source-spec-backlinks與--check-post-click-progress-spec-backlinks兩CLI PASS。ZIP／patch／417根檔／EXE／MOX.SET再核對，gofmt與CPU／平台逐位元保持PASS。
+- 工具b6fc71c0ba5a426a7c496fc3a5bd342cca1515ec已推送github隔離分支、回讀精確一致與工作樹乾淨，未推本機origin。五私有收據與鎖定規格見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。工具root-owned／誤建.md目錄自檢空，新來源與收據1000:1000。
+- 下一步查既有VBE服務與正常trace，核對目的RAM的最小畫面發布契約，不加cap／重點／代寫／先改輸入。正常開局與remake同狀態未完成，主庫玩法RE閘門與整款remake／中文化目標保持。
+- 主庫四文件／五私有收據／鎖定327／其餘活表全文保持／來源雜湊與擁有權核對PASS；既有root-owned2437檔案／272目錄保持。Docker ps -a分別以主庫與隔離工具鏈掛載路徑篩選皆空，本輪沒有遺留容器，其他專案未清理。

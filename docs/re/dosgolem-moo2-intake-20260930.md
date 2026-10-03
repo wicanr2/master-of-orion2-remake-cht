@@ -1175,3 +1175,27 @@ Go1.24.13固定映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540
 probe SHA-256 034e6a2c85a3cbbb93d9c7b762d3ba5aea070ec2fc126f82fef30bc913841512；CPU仍1448f29f24dad35e83575189055dc15dd7ac9db2b3529c6d450f03baf91c97b1，startup／provider／matcher保持325，325固定EXE完整Go測試仍有效，不重跑未改的CPU。原ZIP／patch／417根檔／EXE／MOX.SET再次核對PASS。全部原版素材／LOG／PNG／RAM留忽略workplace，不進Git。
 
 工具ca437d1b17135d511b52e7fb40591b7ea12176c4已推送github隔離分支、回讀一致與工作樹乾淨，未推本機origin。[鎖定326](https://github.com/wicanr2/dosgolem/blob/ca437d1b17135d511b52e7fb40591b7ea12176c4/docs/spec/326-moo2-post-click-progress-observation.md)保存限定CONFORMED、六時點與實際來源邊界，325後段待辦同次回填。下一步沿同輸入與50M cap，核對真正DS:29BE74→DS:[EAX]→SS:[EBP-8]與CMP／JE／JLE的最小資料消費，必要時記目的RAM寫回；不追helper內部，不加cap、重點、代寫或先調整輸入。主庫玩法RE閘門、AH2Ch／RNG、人耳、正常開局與remake同狀態未完成。
+
+### 2026-10-03 後段實際來源、三類分支與原值寫回
+
+上一輪主庫a7f0c5df0b6b736766624829428a3cdab1d85d3b／工具ca437d1b17135d511b52e7fb40591b7ea12176c4已驗六時點觀測。本輪沿平台規格優先入口，327先DRAFT／READY，再只改原版探針唯讀觀測；CPU／平台與主庫玩法保持。官方1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f、乾淨417根檔／MOX.SET、44M Esc／1996-01-01／50M cap／separate DOS與單次NEW GAME正常輸入完全保持。
+
+**已證實，dosgolem高位LE正常原版**：DS188:29BE74原始D4A33D00→指標3DA3D4h；213345／8B 15 74 BE 29 00→21334B／01 D0→21334D／8A 00真正MOV與預讀來源一致，21334F／88 45 F8寫SS:[EBP-8]。六組於49500045／49500076／49500096／49500158／49500249／49500331開始，index3993h／3994h／3995h／3997h／399Ah／399Dh、DS來源3DDD67h／3DDD68h／3DDD69h／3DDD6Bh／3DDD6Eh／3DDD71h，byte依序02h／82h／02h／80h／82h／80h。分類條件執行前固定，各類前兩組，groups=[2 2 2 0]。
+
+六組真正Step數27／20／27／33／20／33，160步連續R／六段／flags／堆疊保存，90步獨立核對，70步只保存原始續行。CMP／JE四次不跳、兩次跳；JLE兩次跳／兩次不跳，82h經兩次AND變2h與局部dword加2已驗。80h兩組在33步預定budget止於2132DB→2132DD，後續未驗，不延長追整個helper。XOR／AND未定義AF沿工具清除近似，不能稱硬體exact。
+
+兩組02h真正213336／88 02將AL=FDh寫DS188:499300h與499303h；五byte窗口FDFDFD00FD→FDFDFD00FD及00FDFDFD00→00FDFDFD00。中心原本就是FDh，寫回與鄰接保持已驗，不稱值改變。213330／8A 80 7B BE 29 00映射表來源未另取樣，不猜素材用途。目的RAM不是畫面發布證據，六後段PNG與兩終圖保持326，DisplaySets42／Writes16194454不變，設定畫面仍未知。
+
+初次獨立比較因六點完整RAM雜湊不同而失敗；各次ram_before_sha256=ram_after_sha256及readonly=true，R／段／flags／窗口／計數／VBE／原事件保持。未保存跨次完整RAM差異，不判定差異來源，不宣稱跨次全部RAM保持。審查後明示正規化每次RAM雜湊，只驗各次快照不突變；新來源觀測copy方向／探針局部狀態另經程式審查，沒有guest寫入或額外Bus／hook請求。修正後獨立python3 workplace/post-click-source-327-verify.py PASS：無點擊全部3847列、點擊全部4208列，除mtime／DTA日期時間四byte／PNG路徑／每次RAM雜湊外保持326，六快照各次readonly及六PNG／兩終PNG逐位元保持，沒有新CPU拒絕。
+
+| 本機忽略收據／腳本 | SHA-256 |
+| --- | --- |
+| workplace/dosgolem/workplace/moo2-probe-327-baseline.txt.gz | c781b232058e3ca2c157a14c685ee44c12db851c00c6ed97d7f92344e9377d45 |
+| workplace/dosgolem/workplace/moo2-probe-327-click.txt.gz | 6e46e29082ceff5cdcab14668c113b89ac8e43f0ba19f7ef2e562e613db564a5 |
+| workplace/dosgolem/workplace/post-click-source-327-verify.py | f994ed0fabea7ad5eca2e51acc088c3988443670952be3258ec3f6990ab89d77 |
+| workplace/dosgolem/workplace/post-click-source-327-parity-tests.txt | 15fef4b3ed0dd796418a71a1cc2c52bb1826373392ff665f7c8bd27516957664 |
+| workplace/dosgolem/workplace/post-click-source-327-backlink-tests.txt | fc4f283990fae78884bce4c74056d1ed572d660118fb46b5581ae1c7c62b748a |
+
+Go1.24.13映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀重建417根檔。go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe，再沿326完整兩流程，只換327輸出名；全部環境見鎖定327及326。probe SHA-256 73ff02f6b4885207c029c99efa1c1920053e03b3fb2cbafc53db032ca2aef3d2，CPU仍1448f29f24dad35e83575189055dc15dd7ac9db2b3529c6d450f03baf91c97b1，startup／provider／matcher與325逐位元保持，325固定EXE全套PASS仍有效。64回填函式、原有32／49／25／27／27與327新增34缺證據負例、兩CLI PASS。原ZIP／patch／417根檔／EXE／MOX.SET再核對PASS。原版LOG／PNG／RAM留本機忽略workplace，不進Git。
+
+工具b6fc71c0ba5a426a7c496fc3a5bd342cca1515ec已推送github隔離分支，回讀一致與工作樹乾淨，未推本機origin。[鎖定327](https://github.com/wicanr2/dosgolem/blob/b6fc71c0ba5a426a7c496fc3a5bd342cca1515ec/docs/spec/327-moo2-post-click-source-consumer.md)保存限定CONFORMED與觀測限制，326真正來源待辦同次回填。下一步先查既有VBE服務與正常trace，核對目的RAM的最小畫面發布契約及是否被消費；未找到實際玩家阻塞不擴大RE，不追完整renderer，不加cap／重點／代寫／先調輸入。正常開局、remake同狀態、主庫玩法RE閘門、AH2Ch／RNG／人耳未知保持。
