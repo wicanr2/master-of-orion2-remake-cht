@@ -932,3 +932,12 @@
 - 新增 16 個 CLI 拒絕案例與有效正對照、同一 binary 的舊 336 CLI 15 個拒絕案例與正對照、74 項文件檢查及新增 27 個缺證據負例、兩個 CLI 通過。CPU／startup／provider／matcher 保持 335；本輪未重新執行 Go 全套。來源／新收據 1000:1000、gofmt 與 Git 差異通過。工具 root-owned／誤建 .md 目錄自檢空；Docker 兩工作區掛載篩選空，沒有本輪遺留容器。
 - 工具 0633c346ce2ca1156ab26c1dbc533ec0e43920e0 已推送 github 隔離分支，遠端回讀一致，未推本機 origin；十三份私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。主庫四文件、十三份私有收據與原始 ZIP／patch 雜湊核對通過，既有 root-owned 2437 檔／272 目錄保持，本輪未新增 root-owned 或 .md 目錄。主庫 RE-first 與整款 remake／中文化目標保持。
 - 下一步保存較早時點的名稱頁、原名稱緩衝區與正常確認前置。名稱確認、typed 種族特性、完整開局、正式 RNG 與 remake 同狀態仍未驗。
+
+## 2026-10-03：原版正常名稱確認與旗幟頁
+
+- 起點主庫 5c1b6a4a42d3ff8fc69125d00587cd66277eef96／工具 0633c346ce2ca1156ab26c1dbc533ec0e43920e0。命中 dosgolem、GUI 還原、規格閘門與文件職責路由。338 先 DRAFT，私有唯讀探針補齊 IRQ 建置依賴後蒐證一次；原 95M／97M／100M 名稱表 165 bytes 相同，9030 原列與 30 PNG 保持，來源足夠後 READY。名稱候選的字串長度驗證修正後，直接讀既有收據，未重跑原版。
+- 初版七情境由乾淨 417 根檔各重生一次，Docker 外層900s／2GiB／2CPU／128pids／UID1000／network none、Go1.24.13、原 ZIP／patch 唯讀，每條仍 100M cap。名稱按下後原 mask1，探針仍要求 mask2B，因此未放開；沒有新 CPU 拒絕。保存首次來源及收據，退回 DRAFT 核對 InjectMouseEvent 後重新 READY。修訂僅位於 rulerAccept 明示分支，不重跑六條未受影響基準。
+- 新版只重生 ruler 與新舊 CLI，Docker 外層300s。go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe。95000000 按下／95015426 放開，差47572微秒；callback10／10 完成，同100M到228E0E、無新CPU拒絕。SELECT BANNER COLOR 八色頁人工確認，原10筆／550bytes表已保存。共享20DDDB沒有命中，正式持久名稱writer仍未知。
+- python3 workplace/new-game-338-verify.py PASS：六舊情境3847／4829／6769／8149／7752／9030原列與162PNG保持，新輸入前7523原列保持獨立humans；原表／候選32bytes／核心／RGB獨立核算通過。新版17新CLI拒絕與正對照、同binary舊337 16拒絕與正對照、75項規格檢查與新338 26負例、337 27負例及兩CLI通過。CPU／平台保持335，本輪未重跑Go全套。
+- 工具 0c88d04cb59d2b7bfc716e953cc529c54b5fb6e2 已推送github隔離分支，遠端回讀一致，未推本機origin；十八份私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。新來源與收據1000:1000，gofmt／Git差異通過，工具root-owned與誤建.md目錄空，Docker兩工作區掛載篩選空。主庫四文件、十八份收據與原始ZIP／patch雜湊核對通過，其餘活表全文保持；既有root-owned 2437檔／272目錄保持，本輪未新增root-owned或.md目錄。
+- 下一步取得較早旗幟頁、原10筆表與正常選色前置。原預設名稱確認及下一頁已驗；typed種族特性、正式名稱writer、選色、完整開局、正式RNG與remake同狀態未知。主庫RE-first及整款remake／中文化目標保持。
