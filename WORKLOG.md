@@ -857,3 +857,13 @@
 - 工具2bfb2db0f860d115cb0e96e9d1e5938a89a25c23已推送github隔離分支、回讀精確一致與工作樹乾淨，未推本機origin。七私有收據與鎖定329見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)；新來源／收據／PNG1000:1000，工具root-owned／誤建.md目錄自檢空。
 - 下一步核對按下／放開與主選單事件讀取時序／最小NEW GAME激活，先證實實際阻塞，不繼續加預算，不追完整renderer／helper。正常開局與remake同狀態仍未完成，整款remake／中文化目標與主庫玩法RE閘門保持。
 - 主庫四文件／七私有收據／鎖定329／其餘活表全文保持與來源雜湊核對PASS；既有root-owned2437檔案／272目錄保持。Docker ps -a以主庫與工具鏈掛載路徑篩選皆空，本輪無遺留容器，其他專案未清理。
+
+## 2026-10-03：正常按下事件返回與上層非零分支
+
+- 起點主庫870708cd415c38a69eed55a9d43cbf2391e19e24／工具2bfb2db0f860d115cb0e96e9d1e5938a89a25c23。命中dosgolem、平台規格優先與文件職責；結論前重核Watcom helper停止線。330先DRAFT／READY，只改原版probe唯讀觀察，主庫玩法保持。
+- 初次第二組進入callee後的Jcc被標成caller，未採作正式上層收據；回到DRAFT補RET後首CALL立即停止及新stack return核對，再READY。初次收據保留本機330-initial。同Docker／命令乾淨重跑三流程；規格讀取誤用檔名與一次heredoc結尾錯誤均為工具操作，已核對落盤狀態並修正，不當產品缺陷。
+- Docker固定Go1.24.13映像、600s／2GiB／2CPU／128pids／UID1000／network none；原ZIP／patch唯讀重建417檔，go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe，再沿329原兩50M與獨立100M環境換330輸出名。python3 workplace/new-game-330-verify.py PASS：全部3847／4382／6322舊列除既定正規化保持、72PNG逐位元保持，兩組32步獨立核算且50M／100M完整新列相同。
+- 兩個放開後保留的按下事件均返回EAX1；213C83 RET到20DB69，TEST／JNE採非零臂到20DB87。另一組雙RET後CALL209325停止，不追helper。NEW GAME指令與正常開局仍未知，下一步只追20DB87按鈕判定／指令值，不需先延長點擊。
+- 67回填函式、既有32／49／25／27／27／34／31／36與新增31缺證據負例、--check-event-return-spec-backlinks與--check-bounded-new-game-spec-backlinks兩CLI PASS。CPU／平台／CLI保持，325固定EXE全套與329 CLI仍有效；原ZIP／patch／417檔／EXE／MOX.SET、gofmt、git diff --check、來源與收據1000:1000核對通過。
+- 工具34d758498f931d9dc155c4ca93309dd98646328e已推送github隔離分支、遠端回讀精確一致與工作樹乾淨，未推本機origin。六私有收據與鎖定330見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。主庫RE-first與整款remake／中文化目標保持。
+- 四文件／六私有收據／鎖定330／其餘活表全文保持與來源雜湊核對PASS。主庫既有root-owned2437檔案／272目錄保持，沒有新增root-owned或誤建.md目錄。Docker ps -a以主庫與工具鏈掛載路徑篩選皆空，工具root-owned／誤建.md目錄自檢空；本輪沒有遺留容器，未清理其他專案。
