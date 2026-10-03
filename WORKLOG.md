@@ -1318,3 +1318,19 @@ python3 workplace/new-game-372-verify.py
 READY審查在CPU編輯前執行；全套失敗後同命令重跑，原guest沒有重跑。Go1.24.13／network none／600s／2GiB／2CPU／128pids／UID1000，原ZIP／patch唯讀。實際原命令／輸出／23收據雜湊掛[既有研究入口](docs/re/dosgolem-moo2-intake-20260930.md)。工具e57e9e063b1713b087423a78bef1349237c3d4b0已推送github，主庫只改四份現況／歷程文件。Docker專案相關執行中／停止容器為零；主庫既有root-owned2437檔／272目錄保持。主庫基線95e9325dab29a7773a5ddf6f084202b68f10d490，提交後精確HEAD見Git。
 
 下一步核對180M星圖COLONIES控制的來源與安全正常輸入前置，再READY測正常裝置輸入。主庫玩法RE-first保持，不猜typed／持久欄位。原字串用途未知、RNG未固定；日期不是seed。
+
+## 2026-10-04：373正常星圖COLONIES來源與callback前置
+
+373依372原完整23表、唯一index10矩形、完整核心／FPU／cap／PNG及CPU hash審查轉READY，只在180M既有cap快照後新增一筆只讀觀察。原index10的+24／+32／+44窗口、callback target8:2136D1／mask2B／14／14及IRQ47425／47425已取，224bytes八窗口可讀；+40實際0，維持原offset與未知型別。邏輯43,450唯一命中17,434–79,471，和COLONIES對應強推論，沒有送新輸入。
+
+372全部12047共通原列、39PNG及final保持，完整核心／FPU／clock／VBE／callback／IRQ／RAM前後保持。兩私有區段可逆，全部公開internal／CPU／DOS／probe保持e57e9e0，沿372固定官方EXE全套，未重跑無關CPU測試。六CLI拒絕與兩正對照、原418來源及state終態／同guest副本／UID GID保持，原guest一次。首次驗證及追加回填檢查均通過。
+
+實際Docker命令：
+```text
+python3 workplace/new-game-373-ready-review.py
+bash workplace/new-game-373-run.sh
+python3 workplace/new-game-373-verify.py
+```
+Go1.24.13／network none／600s／2GiB／2CPU／128pids／UID1000，原ZIP／patch唯讀，owned監測550s與trap收尾。18份私有收據SHA-256掛[既有研究入口](docs/re/dosgolem-moo2-intake-20260930.md)，公開規格／索引與372追加回填。工具f92dd15be1f5bf94d193d9bfc0367f2baa5793a8已推送github，主庫只改四份現況／歷程文件；基線70043e75469a24fe7dc9d353566f89d23d9e782f，提交後精確HEAD見Git。Docker專案相關執行中／停止容器為零，既有root-owned2437檔／272目錄保持。
+
+下一步審查COLONIES正常press／原查詢／首安全release與consumer，明示新輸入所需有界後續窗口。不修改本373的180M收據、不代寫原核心或RAM。主庫玩法RE-first保持；正式存讀語意／完整開局／RNG與remake同狀態未驗。

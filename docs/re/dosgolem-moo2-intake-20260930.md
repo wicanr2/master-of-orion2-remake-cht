@@ -3596,3 +3596,54 @@ SAVE10.GAM208000bytes／0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d2
 實際Docker命令依序new-game-372-ready-review.py、裸byte IMUL窄測、new-game-372-full-run.sh、new-game-372-run.sh、new-game-372-verify.py；READY審查在CPU編輯前，原guest一次，full過期判準修正後以同命令重跑。深層契約與逐步結果見上方372工具規格。
 
 下一步以180M正常星圖及23物件核對首個COLONIES來源、矩形、callback與安全輸入前置，先有界只讀，再READY正常裝置輸入。主庫玩法RE-first保持；正式存讀語意、typed名稱／旗色持久writer、母星配置、星圖正常控制、完整開局、RNG及remake同狀態未驗。固定1996日期不是seed。
+
+## 2026-10-04：373正常星圖COLONIES來源與安全前置
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址空間dosgolem_high_le，工具基線e57e9e063b1713b087423a78bef1349237c3d4b0，CPU保持1d8a4d8252372c97d8e873ba13c3ab3670796527dcd6d74de52e8cbf226e068c。工具f92dd15be1f5bf94d193d9bfc0367f2baa5793a8已推送github，見[373限定來源規格](https://github.com/wicanr2/dosgolem/blob/f92dd15be1f5bf94d193d9bfc0367f2baa5793a8/docs/spec/373-moo2-star-map-colonies-source.md)。公開本規格／索引與372追加回填，全部公開internal／DOS／probe保持；原LOG／PNG／RAM／state及probe不入Git。
+
+### 已證實來源與未知邊界
+
+原180M的DS188:298848完整23物件／stride55／1265bytes保持372，SHA-256 4392f446efbdd96acafbfba8ee39cc0e8ac67a2388119df5bfbfef14a89ab15a。按原前8bytes四signed word矩形，邏輯43,450只命中index10矩形17,434–79,471；與原圖COLONIES對應為強推論，正常選取consumer尚未驗。
+
+index10+24→DS188:261716共32bytes首byte00、SHA-256 487a51bcf042e9ed41e13586fbf0e823b3fa9bc77dae18296d9d34c95739de53；+32→2801A9共16bytes全0、374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb；+44→3ED894原16bytes、c36adafdfcf829c80935633c82a6fe2bf9d24469ce4ae188bc6881dfe21dade2。原+40為0，維持原offset與bytes，不推定圖片、標籤或正式資料型別。
+
+index1–5的+24原窗口26A104／26A10D／26A113／26A119／26A12B，首NUL前文字EINSTEIN／MOOLA／MENLO／ISEEALL／SCORE已直接取得；矩形全-1，沒有當成底部COLONIES熱區。八窗口224bytes可讀，原字串用途未知，不追handler或renderer。各32byte窗口雜湊見373規格與私有驗證輸出。
+
+原callback target8:2136D1，mask2B、pending0／inactive、callback14／14與IRQ47425／47425完成且非failed，IF1。R=[35017C 70 39C17C 70 2BD478 2BD4C0 39C17C 35017C]、段=[8 188 188 0 20 188]、flags202h、FPU127F／status0／depth0／八stack bits0，虛擬414027099µs。code16與SS188:ESP2BD478 stack16已取；快照前後完整核心／FPU／clock／VBE／callback／IRQ／全RAM保持。只有一筆star_map_source_snapshot，valid／readonly true，colonies_press_sent=false。
+
+### 正常重播驗證
+
+原guest一次，所有372正常輸入／日期／state／180M cap保持，實際step_limit=180000000／EIP2176C5／unique_sites54239，無guest_cpu_stop／step_error／dos_exit。372全部12047共通原列按既有mtime／DTA與每輪RAMhash正規化保持；IMUL ram_effect維持changed_bytes與hash是否相等的關係，只正規化每輪值。39PNG及final逐byte保持，終PNG beb773bf0623f56bc9b2be697c6e0e472abebd8fa4c319f15e6074291bb7a832，RGB 9b433167360cbfa77c0422b5ba6848db3efba59cd7d168738e0f62d7dd03200f。原372已親看的正常星圖保持，沒有將觀察寫成新的COLONIES點擊。
+
+function及單一cap call兩私有區段逆轉後逐byte等於372，全部公開internal／CPU／DOS／probe保持e57e9e0，沿372固定官方EXE全套收據，不重跑無關CPU測試。六CLI拒絕與合法mode on／off缺EXE兩正對照保持；首次驗證、完整回填與索引檢查通過，未重啟或挑結果。
+
+SAVE10.GAM208000bytes／0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d、MOX.SET553bytes／de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f、sound.lbx4250888bytes／3f0354ac5c1b13a3c5c4fd098c2cbc22af37b71e74fc95e582782c22024c449d保持，同guest有界副本與終態及372一致，UID GID1000；原418來源前後SHA-256保持。Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，network none／600s／2GiB／2CPU／128pids／UID1000，原ZIP／patch唯讀，owned監測550s／trap清理。所有程序terminal，相關Docker執行中及停止容器為零，既有root-owned2437檔／272目錄保持。
+
+### 私有收據
+
+以下位於workplace/dosgolem/workplace/，不入公開Git：
+
+| 檔案 | SHA-256 |
+|---|---|
+| moo2-373-overlay-frame-extended-180000000.png | beb773bf0623f56bc9b2be697c6e0e472abebd8fa4c319f15e6074291bb7a832 |
+| moo2-probe-373-overlay.txt.gz | dbb1b5c634b31c1bdba2938450a0d325e274bc75969dc75a3235d33c79da0475 |
+| moo2-save-state-373-mox.set | de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f |
+| moo2-save-state-373-save10.gam | 0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d |
+| moo2-save-state-373.json | 50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705 |
+| moo2-star-map-source-373.go | a87ebf311db6ce15cb919176705ff6c89bad252b14579893150db045199ddb4d |
+| moo2-vbe-373-overlay.png | beb773bf0623f56bc9b2be697c6e0e472abebd8fa4c319f15e6074291bb7a832 |
+| new-game-373-cli-tests.txt | e23e63ea4e37e0f0823fda228ce807b3cdac82cc8d2c63c2bf2d1afb1a2312af |
+| new-game-373-patches.json | 9c04d40a45cf6cc97920a0665d84c3b26befc830372828bbada3b3bf55f323b2 |
+| new-game-373-ready-review-tests.txt | 30b225e902ce249aa492dc0572e5d4eee7e0da4f6b8bde187cbd473b33b0bb31 |
+| new-game-373-ready-review.py | 8edd62169c447618bf6b9ebc406320f74e8054c8d217ff80a775908e36b7b108 |
+| new-game-373-run-output.txt | d6dfe3cc91ba02036b3acdbc19314b7ee79676e58b00b1129ecad1340d5b6f62 |
+| new-game-373-run.sh | 846f63733f1a07b4d96998ef5c9e670f3bb22a1e7d55bf2b09099f7c07ca4d65 |
+| new-game-373-state-capture-output.txt | 9332dea0878e8d161b0c361a816571d5946567602223ec6dadb95d15d9cd9ab3 |
+| new-game-373-state-capture.json | 5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d |
+| new-game-373-state-capture.py | dfd358762f7137f1e895f23623cf3c69eba025e54e5e1d0203a6123f8b38d58d |
+| new-game-373-tests.txt | 4ada99ccb04431049cd714cb92a1403a0d2f5d01d7df024c0ef9405c1d5b74b2 |
+| new-game-373-verify.py | 2c69315ac167cb7121eb5d59c45f18c64ef568e3d13d5391c5a1e8786f3cd71d |
+
+實際Docker入口依序new-game-373-ready-review.py、new-game-373-run.sh、new-game-373-verify.py；READY審查在新增observer前，八窗口計數修正為224bytes後才實作。372正文同次追加回填，深層來源與每筆窗口雜湊見上方373工具規格。
+
+下一步以本180M前置審查獨立COLONIES一次正常press、原AX3查詢、首安全release與原選取consumer。邏輯43,450依既有2:1橫向裝置尺度對應physical x86,y450，仍須READY審查，不代寫原選取word或核心／RAM。新輸入需另明示有界後續預算與模式，不修改本373的180M收據或加cap挑結果。主庫玩法RE-first保持；正式存讀語意／typed名稱與旗色持久writer／母星配置／星圖操作／完整開局／RNG與remake同狀態未驗。1996固定日期不是seed。
