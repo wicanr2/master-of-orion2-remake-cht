@@ -2282,3 +2282,79 @@ python3 apps/moo2/tools/startup_probe_131.py --check-generation-completion-spec-
 | new-game-351-frames.json | 77c5cc266bb737831784fc814d9d3fbd356db8a74e192d53c201ab59fd27d1b7 |
 
 主庫只更新目前狀態表與追加歷程。下一步建立固定180M正常續行，核對160M前同一原狀態／進度／畫面，再追出口、後段、RET與正常玩家畫面。兩庫收尾核對精確HEAD／遠端／乾淨工作樹及專案Docker清理；本輪UID1000，工具root-owned零，主庫既有2437檔／272目錄保持，沒有新增root-owned或.md目錄。
+
+## 2026-10-03：352 明示180M正常續行、原RET與新CPU拒絕
+
+路由命中dosgolem對拍／規格閘門／回填，沿已載入入口及固定IDA349匯出。起點主庫6379a13d3121fbaaca0eb82137c08a4bc3849ecb／工具ffc7e16a6ed34a279418982dbe5131e328ec7162。工具結果[8ef52b1](https://github.com/wicanr2/dosgolem/commit/8ef52b1fc372bf96267d964f8b1ba903594d95c6)，完整HEAD 8ef52b1fc372bf96267d964f8b1ba903594d95c6；[352規格](https://github.com/wicanr2/dosgolem/blob/8ef52b1fc372bf96267d964f8b1ba903594d95c6/docs/spec/352-moo2-generation-180m-continuation.md)限定CONFORMED，較早349／350／351已回填。主庫RE-first保持，整款remake／中文化尚未完成。
+
+### 原版已證實與未知邊界
+
+以下動態位址均為dosgolem_high_le，不與IDA linear EA混用。原16AD7D head的SI1..35連續，無重複／回跳。SI27在160267006，SI35在163345051；163755070原16AF1C CMP比較SI36與DS188:28199A raw2400／signed36，163755071原16AF23 JL不跳，163755072到16AF29出口。原16AF35後段在163755075進入，163778142到16AF68／DX48h，163778144到16AF6E／EAX22h，JLE不跳。
+
+163778780到原16B014／EAX5，原30C0清AL，EB02跳過16B018 B001。163778782到16B01A／EAX0，163778787原16B01F C3 RET的ESP2BDB74／EBP2BDBA0／topstack E3BA1600；163778788回16BAE3／ESP2BDB78／EAX0。原163779084到16BAEC，次步JZ到16BB00。heads35／events46／full=false／outer_returned=true；AL1入口未見。AL0返回不等於完整生成、成功開局或配置規則已對拍。
+
+新停點：163795435原103BF9 bytes66 81 63 0C 7F FE C1 E2 07 09 53 0C EB 2B A1 18，錯誤「81 word形狀尚未支援」。前六bytes解碼為AND word [EBX+0Ch], FE7Fh；EBX5AA044／DS188，目標是segment offset DS188:5AA050。拒絕後EIP103BFC僅為decode已取ModRM的位置，不表示後續指令執行。原word輸入／寫回尚未捕捉；資料語意、後續消費端、正式writer、完整生成／開局、RNG與remake同狀態仍未知。
+
+要求預算180000000，CPU在163795435拒絕，final readonly觀察記163795436；沒有step_limit或dos_exit。probe exit0是main處理step_error後返回，不稱預算完成。finalPNG由dosgolem自行產生，SHA-256 d493c2b5628d55381176c9e676586ab8940fd62544302195b59570b6136e6ba6；沒有可靠的人眼檢視或完整玩家路徑驗收。
+
+### 契約與驗證
+
+新增DOSGOLEM_MOO2_UNIVERSE_CONTINUE_180M=1，須依賴舊160M旗標與完整正常banner路徑、MAX_STEPS=180000000。新旗標只接受1；舊160M契約保持。記錄實際budget，180M不冒稱160M。原正常99M按下／99084355放開、1996-01-01日期及硬體逃逸44M不改；日期不是seed。沒有guest代寫、跳呼叫、重送輸入或換CPU／Bus。
+
+160M前10532共通列保持，只正規化兩個實際預算宣告、既有mtime／DTA／每次RAM／path。舊35 frames加160M final共36PNG保持；新160M checkpoint的CPU／segment／EIP／flags／完整FPUstack／code16／stack96／frame128／input64／slot4／VBE與indexed／RGB／callback／IRQ逐欄相同。每個觀察的activationPeek與完整RAM前後相同；不宣稱跨執行完整RAM SHA相同，也不說180M保留舊351所有10598列的stop footer。
+
+DRAFT private原實測後READY審查，正式只更名352標記，執行語句與已驗private相同；new-game-352-patches.json逆轉全部替換逐byte保持351。CPU／平台保持，關閉旗標8M原1693列／PNG保持，68舊CLI及32新CLI拒絕案例／正對照通過。89項規格回填、新352的30負例與349／350另4負例及既有負例通過。未新執行IDA、未重跑120M或無關CPU全套。
+
+初次核算在IRQ key迴圈使用a／b，覆寫共通列list變數；附加10532列斷言因而拒絕。保存初次腳本／tests／stderr，確定重現exit1；只改IRQ迴圈變數名，保留原嚴格斷言、private來源、raw、CPU與平台，乾淨重跑通過。這是驗證腳本錯誤，不是遊戲缺陷。
+
+### 命令、環境與私有收據
+
+Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac。Docker --rm／network none／UID1000／2GiB／2CPU／128pids，原版外層timeout600s，正式8M／CLI180s；原ZIP及patch只讀。固定DOS1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，417根層檔與MOX.SET輸入保持。
+
+正式probe SHA-256 c49edc0afcb44dfec22139043afb887a72a70b83d172a165d6869ac9a54be4a1；CPU b5c8bd900047e8f018ad66edaf5ae8e1009e9f6d04ec89dea4000c27f3326b30。固定IDA349原匯出僅重用，不宣稱本輪IDA新執行。
+
+```text
+bash workplace/new-game-352-run.sh
+  probe exit0；原163795435 CPU拒絕，未達180M
+python3 workplace/new-game-352-verify.py
+  160M前10532共通列／36PNG／原160M同一狀態／原RET／新81拒絕 PASS
+python3 workplace/new-game-352-source-verify.py
+  正式只更名352標記／逆轉逐byte保持351／CPU平台保持 PASS
+bash workplace/new-game-352-off-run.sh
+  關閉8M1693列／PNG、68舊CLI＋32新CLI負例／正對照 PASS
+python3 workplace/new-game-352-backlink-verify.py
+  89項回填／新352的30負例／較早另4負例及既有負例 PASS
+```
+
+正式關閉測試建置使用go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe。以下來源／收據均在工具忽略workplace，原EXE／LBX／RAM／LOG／PNG／私有腳本不入Git。公開只保存自製診斷／規格／索引／守衛與雜湊；IDA檔是重用來源。
+
+| 收據／核算 | SHA-256 |
+| --- | --- |
+| moo2-349-ida-ui-ret.json | 0c16013bacada3769016549c3a30cfe12ddc2ea72b3829d20ff77256969b0dec |
+| moo2-352-continuation.go | 7e03730549d3b9d74f160becde2780e31251b9b1d1437ad3c5181240b191152b |
+| moo2-probe-352-continuation.txt.gz | db7630f02daaac46f0a2d45da1813a319d27e14e48c77c7b07a75a97b338c60f |
+| moo2-vbe-352-continuation.png | d493c2b5628d55381176c9e676586ab8940fd62544302195b59570b6136e6ba6 |
+| new-game-352-run.sh | 94f2aa11cd4897af8ed9337adb0d2bcb48a35f9ef845e57eb1b6085b7f2a01b4 |
+| new-game-352-verify.py | e31817cc2b71b7df2fb1944dce6166318aa1237ece1c76d8e275417135ff0dbb |
+| new-game-352-tests.txt | 798aa04bf026fa1b99af5815065506f1189a7b2e56d04886414453e7d5b65754 |
+| new-game-352-source-verify.py | f53b017083b2749e04ccba39da8e2307f785ca5e2af566748dc806f330c48d9c |
+| new-game-352-source-tests.txt | f9ab870f8ce6d2eee6f91be4fecb86fc51eab23a23a9890826b2e2cce48a7cff |
+| new-game-352-off-run.sh | e6dd0e59c2d3cdf15024697454fe138df6c42f661c1f46f3d81062e6c8740246 |
+| new-game-352-off-cli-tests.txt | a5eabaf6f165680e4e73a808efc13d87da68f29a4c55ca63bd6bf4ec96c09dff |
+| moo2-probe-352-off-old.txt | d5d6210c5e646dd9b39e5547c986cd552099d9ababead60d858d9a3cfe7a82cf |
+| moo2-probe-352-off-new.txt | cf37120a71d5f990a3018b630c4b3a6454e397d2fa235b24679ad811defa4d36 |
+| moo2-vbe-352-off-old.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| moo2-vbe-352-off-new.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| new-game-352-backlink-verify.py | 29323d3879ef89ef69b0f13f8426fa2c75b1c72aab1af638c5547cbf006c2863 |
+| new-game-352-backlink-tests.txt | 72a022f287c95347684deb10b1c9dd627ebd184962880627cbd186ae77c6f66f |
+| new-game-352-frames.json | e20e80211f7a9a28d974451ac23ce6f43cd4ae93e7e69d5c56ed8b1e33f13ff9 |
+| new-game-352-patches.json | cdd4bd25a4836607eb32381a2fb9bdf7607910e8059cccb20c7cdfce72e2a33f |
+| new-game-352-cli-verify.py | aa13e74dfee1e0b0119650bf5bcb5af87eeedba0ae236e4a7d1a64c4c02973ef |
+| new-game-352-cli-tests.txt | 0c39c7d30d26388473df3e31ad7be38651d38f98677857d9e5a9de59a4aaac43 |
+| new-game-352-attempt1-verify.py | c88d35f658a09cf5663c16e0744e82e78eb70e22e09a93f908e57f5774ad7163 |
+| new-game-352-attempt1-tests.txt | 38ff0861e4b9e06c158d148eab8af7eab4804d8ee9f5ff4c84167051611abcf9 |
+| new-game-352-attempt1-verify-output.txt | 9f7b7da0a8992dd918da5c9800a341794e870d3d3bdbc28ff5129b5539963772 |
+
+輸出1000:1000，工具root-owned／.md目錄零；主庫既有2437檔／272目錄保持，本輪不新增或遞迴修權限。原版與正式回歸容器均有界並結束移除；兩庫遠端與精確HEAD在收尾核對。
+
+下一步建立66 81 /4 word記憶體AND窄CPU規格，驗解碼／16bit寫回／flags／相鄰bytes與拒絕邊界，再以相同180M正常輸入捕捉原word及後續消費端。全生成、完整開局、正式writer、RNG、人耳與remake同狀態未驗；不繼續提高預算或深挖繪圖／runtime helper。

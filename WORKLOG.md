@@ -1093,3 +1093,16 @@
 - 未知：SI27以後、全部出口／後段／RET、正式writer、完整配置／開局、RNG與remake同狀態。下一步以固定180M核對160M同一原狀態，再追原出口／返回與正常玩家畫面；不深入runtime或繪圖helper。remake／中文化目標仍活躍。
 
 收尾核對兩庫精確HEAD／遠端／工作樹與專案Docker清理。本輪UID1000、工具root-owned零；主庫既有2437檔／272目錄保持，沒有新增root-owned或.md目錄。
+
+## 2026-10-03：352 原生成返回與新word記憶體AND停點
+
+起點主庫6379a13d3121fbaaca0eb82137c08a4bc3849ecb／工具ffc7e16a6ed34a279418982dbe5131e328ec7162。路由命中dosgolem對拍、規格閘門與回填，沿已載入入口與固定IDA349匯出。主庫RE-first保持；本輪只增加明示180M診斷契約，CPU／平台／玩法與正常輸入不改。
+
+- 已證實：原SI1..35連續，163755070比較signed36，原JL不跳並退出迴圈；後段DX72／AX34，原XOR AL後AL0。163778787原C3 RET於次步回16BAE3，caller比較後原JZ到16BB00。只確認此callee返回，不宣稱完整生成或開局。
+- 已證實：163795435於原103BF9的66 81 63 0C 7F FE拒絕，屬word記憶體AND尚未支援。EBX5AA044／DS188，目標offset5AA050／immFE7F；拒絕後103BFC是解碼停點。probe exit0並非180M cap或完成，final觀察在163795436。
+- 已證實：160M前10532共通列／36PNG、同一原CPU／FPU／輸入等狀態、readonly checkpoint及46事件保持；正式來源逆轉保持351。關閉8M1693列／PNG、68舊CLI＋32新CLI負例、89項回填／新352的30負例／較早另4負例通過。沒有新IDA、120M或CPU全套重跑。
+- 初次核算腳本的IRQ迴圈覆寫共通列變數，10532列斷言拒絕；保留腳本／輸出並重現exit1。只改變數名，嚴格斷言、原收據與CPU不改，乾淨重播全部通過。分類為驗證腳本問題。
+- 工具8ef52b1fc372bf96267d964f8b1ba903594d95c6已推送github/codex/moo2-parity-20260930並核對遠端，未推本機origin。349／350／351現況已回填，352限定CONFORMED。24份忽略收據、命令與雜湊見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
+- 未知：原word輸入／寫回、正式writer、資料語意、完整配置／開局、RNG與remake同狀態。下一步建立word記憶體AND窄CPU規格並以相同180M正常路徑驗證。remake／中文化目標仍活躍。
+
+本輪輸出1000:1000、工具root-owned零；主庫既有2437檔／272目錄不修動，沒有新增root-owned或.md目錄。收尾核對兩庫精確HEAD／遠端／工作樹與專案Docker清理。
