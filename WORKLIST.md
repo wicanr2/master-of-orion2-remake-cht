@@ -46,13 +46,12 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–363為限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
-  **目前狀態**：363早期開檔與五窗口已驗。原1192795在dosgolem_high_le:237024執行INT21 AX3D02，DS188:26C3AF指sound.lbx；兩側呼叫前完整R／段／flags202h與RAM相同。唯讀provider回AX5／CF1／flags203h，overlay真handle5／CF0／flags202h，其他R／段／此次RAM保持。同AX5不代表同結果；這是已捕捉最早前段差異，未審計所有runtime。後續fonts.lbx及orioncd.ini step／handle改變，不能要求跨側整體狀態相同。
-  **80M設定頁與可寫情境**：原表pointer298848／count17／stride55。record11–15的+44四byte候選位址各增8000h，原DS188所指前128bytes逐byte相同且可讀、首NUL均offset1；完整物件長度／消費端／角色仍未知。唯讀及overlay完整935bytes hash分開保存，不忽略指標差異；RGB相同。親看原overlay 640×480設定頁，ACCEPT熱區433,392–527,414包含480,400。額外32KiB配置導致搬移為強推論，不追allocator。原336 guard仍唯讀true／overlay false，本輪只讀快照後停止，沒有ACCEPT press／release。
-  **來源與存檔邊界**：兩側原418檔guest前後SHA-256完全保持。overlay state只有sound.lbx 4250888bytes／UID及GID1000，與原ZIP及本機保留副本逐byte相同；未有SAVE10.GAM，不稱存檔成功。362原165025480／237024的SAVE10.GAM 3D01唯讀拒絕仍已驗；361 memory ROR／A1已接通，唯讀180M終圖存檔錯誤仍未解。公開internal／CPU／DOS服務／provider／probe逐byte保持4f9c45b，可寫試作只留忽略workplace，主庫玩法未改。
-  **驗證**：每側八個前2M AH3D開檔與五個128byte窗口，完整CPU／FPU／VBE／RAM檢查只讀。各自6148／6271舊列依352既有mtime／DTA／每輪診斷RAM雜湊正規化保持，各27PNG逐byte保持，不稱跨側全RAM相同。核對腳本原先把27張快照寫28，改為明示27檔名集合後讀同guest收據通過，沒有重跑挑結果。來源ZIP／state逐byte另核對通過；100項規格回填、新37＋34負例及全部較早負例通過。工具04a96f09538a6b01907685f6f56a8d7de154cde1已推送github隔離分支，14份本機腳本／收據及命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
-  **下一步**：建立獨立DRAFT可寫profile正常ACCEPT輸入，使用363觀察到的完整overlay935byte hash及五窗口／RGB，沿原80M、hotspot／callback／IRQ／IF前置，不改336唯讀guard、不mask位址或套任意位移、不調時刻。證據審查到READY後只送一次正常press／release，保存真正選擇store與90M選族表，再審查後續輸入。固定1996不是seed，原180M參數保持，不增加cap／注入／代寫存檔／深入helper。
-  **未知／不混入本輪**：主庫玩法RE閘門保持；可寫正常ACCEPT與後續玩家輸入、完整物件／角色／原消費端、正式存檔writer／內容、其他ROR及算術分支、typed種族特性、持久名稱／旗色、完整地圖／重繪、母星配置規則、生成完成／完整開局及remake同狀態未驗。共享20DDDB仍未命中。DPMI外部cb_smoke、兩舊探針PE格式、AH2Ch／RNG／人耳與Windows／macOS實機未驗。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–364為限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
+  **目前狀態**：364隔離可寫profile的正常ACCEPT及90M選族頁已驗。80M原完整935byte表、五個+44真實位址的128byte SHA、RGB／CPU／FPU／callback4／4／IRQ17901／17901前置通過，一次正常press／release，原336唯讀guard仍false且未改。原80119128在dosgolem_high_le:20DDDB執行66A3A6C42600，DS188:26C4A6 word0000→0F00，下一20DDE1，R／段／flags保持，callback6／6及IRQ17934／17934非活動且非failed。90M原SELECT RACE，親看十四種族／Custom按鈕；RGB及PNG與既有原選族頁相同，不代表選中Custom或種族。
+  **來源與邊界**：90M新原表16筆／pointer298848／stride55／bias0，完整880bytes SHA-256 eca22108024dbc103f8de8257b32321b0b2e39fcd6bb8435cb4dc0ba73e29396，與舊唯讀表不同。原418檔guest前後SHA-256保持，state與363完全相同，僅sound.lbx4250888bytes且原ZIP內容相同；未有SAVE10.GAM。362唯讀SAVE10.GAM 3D01拒絕與361 memory ROR／A1仍已驗，正式存檔與完整開局未解。公開CPU／DOS／provider／probe及全部internal保持；私有profile三區塊可逆為362試作，主庫玩法未改。
+  **驗證**：前80M的6270共通列依352既有mtime／DTA／每輪診斷RAMhash正規化、27PNG逐byte保持；80M原precondition各欄保持，valid只由獨立完整表五窗口profile變true，不mask位址／套任意位移／調時刻。release原80013765／virtual_micros133507499，距press45356µs且回呼5／5完成。四CLI無效值／缺依賴在讀EXE前exit2，合法值通過後缺EXE明確失敗。來源／state／只讀原90M快照與既有363規格守衛通過，原guest一次，沒有挑選成功重跑。工具98950c28961c0f89ed63304cd131477d083c85b7已推送github，11份本機收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
+  **下一步**：依新90M完整880byte表、原圖、初態與既有337正常Humans輸入契約，另立DRAFT可寫Humans profile，審查到READY才送一次press／release；保存真正選擇store及名稱頁原表。原唯讀race guard保持，不改時刻／mask位址／代寫選擇。固定1996不是seed，原180M參數保持，90M明示診斷停止不稱180M完成；未送race或後續輸入。
+  **未知／不混入本輪**：主庫玩法RE閘門保持；可寫Humans與後續輸入、五窗口完整物件／角色／消費端、正式存檔writer／內容、其他ROR及算術分支、typed種族特性、持久名稱／旗色、完整地圖／重繪、母星配置規則、生成完成／完整開局及remake同狀態未驗。共享20DDDB仍未命中。DPMI外部cb_smoke、兩舊探針PE格式、AH2Ch／RNG／人耳與Windows／macOS實機未驗。
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備
 > 原始函式／位址、輸入狀態、規則或資料表、玩家可見 consumer、證據等級與明確未知項。

@@ -1230,3 +1230,11 @@
 Docker內執行 `bash workplace/new-game-363-pair-run.sh`、`python3 workplace/new-game-363-pair-verify.py`、`python3 workplace/new-game-363-state-source-verify.py`、`python3 workplace/new-game-363-backlink-verify.py`，全部通過。各側一次guest止於80M只讀快照；6148／6271舊列依352既有正規化、各27PNG保持，八開檔／五窗口／全狀態自檢只讀。PNG數量初設28，修正成明示27集合後讀同收據，未重跑。兩側原418來源檔完全保持，state只sound.lbx且與原ZIP4250888bytes逐byte相同。100項回填及新37＋34缺證據負例通過，沒有新的Go／CPU／DOS／provider／公開probe變更。
 
 隔離工具04a96f09538a6b01907685f6f56a8d7de154cde1已推送github；本輪主庫只改DOS活表／CONTEXT單行並追加工作與研究紀錄。原版PNG／LOG／資產窗口與sound副本留忽略workplace，不提交。主庫起始HEAD088df139965dfc699b56efb4b577d87eae4e0f77；精確私有收據見研究入口。下一步是獨立可寫profile的ACCEPT規格審查，原336唯讀guard保持。正式存檔／完整開局／RNG／remake同狀態未驗，主庫RE-first保持。
+
+## 2026-10-04：364可寫ACCEPT與90M選族頁
+
+沿363原收據建立獨立DRAFT工具profile，實際原表／五窗口／CPU／FPU／callback／IRQ及唯一熱區審查後READY。隔離試作只送一次正常ACCEPT，press80000000／133462143µs、release80013765／133507499µs，差45356µs且回呼5／5完成。原80119128在dosgolem_high_le:20DDDB實際66A3A6C42600寫word0000→0F00，R／段／flags保持，callback6／6，IRQ17934／17934保持；90M原SELECT RACE圖片親看確認，與舊原選族頁PNG逐byte相同。未送race，未驗存檔或完整開局。
+
+Docker命令 `python3 workplace/new-game-364-ready-review.py`、`bash workplace/new-game-364-run.sh`、`python3 workplace/new-game-364-verify.py` 全部通過。6270原共通列依352正規化、27PNG保持，原precondition所有欄位保持，原336唯讀guard不改，新profile核對實際完整表／五窗口。四CLI拒絕與合法參數正對照通過；原418檔前後SHA-256保持，state仍僅與原ZIP相同的sound.lbx。產生腳本括號筆誤在guest前修正，原guest未重跑；16byte觀察窗口只取該指令六byte核對。公開CPU／DOS／provider／probe與所有internal不變，三私有區塊可逆。
+
+工具98950c28961c0f89ed63304cd131477d083c85b7已推送github；起始主庫f731b75b01861a08e2e2b0df03ec86009a145a7b。主庫本輪只更新DOS活表／CONTEXT單行與追加歷程及研究，11份私有收據雜湊見研究入口，原LOG／PNG／資產不入Git。原版執行容器已自動移除，兩個專案掛載filter均無執行中或停止容器。下一步依新90M完整880byte表審查可寫Humans輸入。主庫RE-first保持，正式存檔／完整開局／RNG／remake同狀態未驗。

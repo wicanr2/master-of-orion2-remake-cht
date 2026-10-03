@@ -3156,3 +3156,52 @@ python3 workplace/new-game-363-backlink-verify.py
 ### 目前閘門
 
 工具成果04a96f09538a6b01907685f6f56a8d7de154cde1已推送github隔離分支；主庫RE-first保持。下一步另立DRAFT可寫profile正常ACCEPT規格，使用已觀察完整overlay935bytes hash及五窗口／RGB／原hotspot／callback／IRQ／IF，不改336唯讀guard、不mask位址／套任意+8000h／調時刻。證據足夠才READY，正常press／release各一次後取真正store及90M選族表，再審查後續輸入。正式存檔、完整開局、RNG、音訊與remake同狀態仍未知。
+
+## 2026-10-04：364可寫覆蓋層正常ACCEPT與90M選族頁
+
+主庫起始f731b75b01861a08e2e2b0df03ec86009a145a7b；工具成果[364限定規格](https://github.com/wicanr2/dosgolem/blob/98950c28961c0f89ed63304cd131477d083c85b7/docs/spec/364-moo2-overlay-setup-accept.md)。原ZIP417根檔另加官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f共418檔，MOX.SET／1996／原180M參數與正常先前輸入保持。日期不是seed，所有原位址為dosgolem_high_le。
+
+### DRAFT → READY → 限定驗收
+
+原363覆蓋層的完整935byte表及五窗口／RGB／完整R／段／EIP／flags／FPU／callback4／4／IRQ17901／17901、唯一ACCEPT熱區逐項核對，同原收據通過才READY。原336唯讀guard不改，另以私有profile核對真實overlay全表SHA-256 49374b4c6dfd2d1d8231cfc137e1b5b7d86c7ec49f6fdf3be7417480d0da948b；五個+44值與前128byte SHA照363逐項檢查，沒有忽略欄位／加任意位移／調點擊時刻。完整物件／角色仍未知，不追allocator／renderer考古。
+
+**已證實**：原80000000正常press x960／y400／buttons1，virtual_micros133462143；80013765於133507499 release x962／y400／buttons0，差45356µs且正常回呼5／5完成後首次送。原80119128在20DDDB執行六byte66A3A6C42600，DS188:26C4A6 word0000→0F00，下一20DDE1；R=[F 0 339 0 2BDB14 2BDB7C 0 2B0001]／段=[8 188 188 0 20 188]／flags297h保持，callback6／6、IRQ17934／17934非活動且非failed、error=nil。16byte觀察窗口另含後續原bytes，核對只取此六byte指令。
+
+90M完整16筆原表／pointer298848／stride55／bias0可讀，880bytes SHA-256 eca22108024dbc103f8de8257b32321b0b2e39fcd6bb8435cb4dc0ba73e29396，與唯讀336舊表不同。EIP228E0B／R=[77 116 FA 95 2BD9F0 2BDA4C 2C0C4A 2C04BC]／段=[8 188 188 0 20 188]／flags287h，FPU127F／status0／depth0／八stack0，callback6／6／mask2Bh／pending0／非活動，IRQ20869／20869非活動且非failed；原表及PNG擷取自身整RAM／CPU／FPU／VBE保持。虛擬時間162623172µs。RGB 9d8c0a1acb3b96200296f789bb13c6877067f6165ec608a7e019506036832dfc、PNG 7aec4ca6aad1f948560e184695bd3b415b1145ad9778e536da14a60e11d61861與336舊原選族頁相同。2026-10-04親看原SELECT RACE畫面，十四種族／Custom按鈕完整；游標在Custom附近不證明已選Custom。此處明示diagnostic stop，未送race，不稱180M完成。
+
+原418來源檔guest前後逐檔SHA-256保持；state與363清單完全相同，只有sound.lbx4250888bytes／SHA-256 3f0354ac5c1b13a3c5c4fd098c2cbc22af37b71e74fc95e582782c22024c449d／UID及GID1000，沒有SAVE10.GAM。本輪未達原存檔writer與內容，存檔成功、完整開局／RNG／音訊／remake同狀態仍未知。
+
+### 命令與結果
+
+Docker沿Go1.24.13映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac；600s／2GiB／2CPU／128pids／UID1000／network none，來源唯讀，工具及state在容器/tmp。三私有區塊逆轉為362原試作通過，公開CPU／DOS／provider／probe及所有internal未變。
+
+```text
+python3 workplace/new-game-364-ready-review.py
+bash workplace/new-game-364-run.sh
+python3 workplace/new-game-364-verify.py
+python3 apps/moo2/tools/startup_probe_131.py --check-overlay-setup-source-spec-backlinks
+```
+
+全部通過。80M前6270共通列扣363早期診斷且不含precondition自身，依352既有mtime／DTA／每輪診斷RAMhash正規化保持，27PNG逐byte保持；原precondition各欄保持、原唯讀guard false，新profile依觀察表與五窗口 true。四CLI無效值／缺依賴在讀EXE前拒絕，合法值越過閘門後缺EXE明確失敗。產生腳本括號筆誤在原guest前修正，原guest一次、未重跑挑結果。公開規格只限定隔離ACCEPT／選族頁，完整可寫玩家路徑仍未驗。
+
+### 私有收據
+
+位於 `workplace/dosgolem/workplace/`，11份SHA-256與UID及GID1000已核對。原版LOG／PNG／資產不提交，公開只保存自製規格與雜湊。
+
+| 本機檔名 | SHA-256 |
+|---|---|
+| new-game-364-ready-review.py | 2a2d04a7fb38ab94aaf7162d82693d0681f3c933be2e295ecc62fa51da152e79 |
+| new-game-364-ready-review-tests.txt | 183e0384896f54b31b34fbcc6d6439b2abbc5ca901eb547ba606ea18751f46a7 |
+| moo2-overlay-accept-364.go | 567ba02b76e90abc00e9bb921d73924a7a4ea99563b386223209006695b16e28 |
+| new-game-364-run.sh | ddcd3450bc97e3500e612a82597a25b7784b5277bca104e7eabcad5b0eedf9db |
+| new-game-364-run-output.txt | 9d3097bc1c26b3c44ce7a9620be44167be03519a9e7c0c69efb56c1d28960f50 |
+| new-game-364-cli-tests.txt | a24e047c8bfbc281dd85f7c9c2cb609f5b82805b149f1d3474a87043556c0645 |
+| moo2-probe-364-overlay.txt.gz | cba0542dce180527e2a6a258e7977b9c2b5b153231e1d7f89bb8ac17ce93fc8d |
+| moo2-save-state-364.json | e35322cba18956bcd245e4091932c822f9460271deda20ddda8b7722aa1375bc |
+| new-game-364-verify.py | d7dbfe076b5aed280b221f1fc0e9d440cbe89c074afede410ec372711bb8cb49 |
+| new-game-364-tests.txt | 8a3ed1fdf3f2edb42ca7cb852d54f4c83fc9b1e912bd7a550968bcc74a6626a2 |
+| moo2-364-overlay-frame-extended-90000000.png | 7aec4ca6aad1f948560e184695bd3b415b1145ad9778e536da14a60e11d61861 |
+
+### 交接
+
+工具98950c28961c0f89ed63304cd131477d083c85b7已推送github隔離分支，主庫玩法RE-first保持。原版執行容器已自動移除；兩個專案掛載filter均無執行中與停止容器。下一步以本次90M真實880byte表／完整初態與既有337幾何，另立可寫Humans正常輸入規格，原唯讀race guard保持；正常store與名稱頁未驗前不外推成功。
