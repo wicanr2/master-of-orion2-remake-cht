@@ -1132,3 +1132,17 @@
 - 下一步原02 /r byte ADD記憶體來源，先取SS188:2BDB3C／AL0及後續原消費，沿相同180M。正式writer、資料語意、完整生成／開局、RNG與remake同狀態未知，remake／中文化目標仍活躍。
 
 本輪來源／收據1000:1000，工具root-owned／.md目錄零，主庫既有2437檔／272目錄保持。原版、全套與回歸容器均有界結束移除；收尾核對兩庫精確HEAD／遠端與工作樹。
+
+
+## 2026-10-03：355 接通byte記憶體來源ADD與原五步零值消費
+
+起點主庫2031d07b7890ede231f21e8ff0e5e956116a3d7a／工具1f155175b2c77e6ee133ef609f43b758d7e0eed8。上一輪XCHG／STOSB與推送完成，屬實際進展。本輪命中dosgolem對拍、CPU規格閘門、證據回填與文件職責，沿已載入逆向技能與Intel 80386原廠ADD契約，主庫RE-first保持，不改玩法。
+
+- DRAFT未改CPU正常180M取四SS來源byte00／AL00與DS目的00，全部10829原354列／36PNG／readonly與RAM保持。ISA與原資料充分後READY，再以16行通用02 memory分支替換拒絕；三observer逆轉逐byte保持354，不改22 memory或平台。
+- 原164560803..164560807四memory來源ADD及第五目的ADD零結果、flags202h→246h／EIP1CDD1E／RAM與相鄰窗口保持已驗；沒有原非零加法／進位或Bus寫次數trace，不把00→00當非零寫回。八byte register全部配對及六flags、地址別名、唯讀無寫、拒絕不發布與非零FPU另以獨立oracle驗證。
+- 正式10759共通正常列／35frames、窄測4.089s、乾淨固定原EXE Go全套CPU386123.004s／machine2.959s、關閉8M1693列／PNG、68舊＋32新CLI負例與正對照、92項回填／新355的32＋4負例與較早負例通過。缺8088語料不算386實機驗收。
+- 8M首次建置誤納並行formal的暫存Go main而拒絕，未跑原版；保存attempt1後改明列來源，同image／同8M與CLI乾淨重跑通過。屬共享暫存檔／驗證腳本問題，CPU全套與正式原版收據未挑選替換。
+- 原164561579在1CE387的0F94 memory目的拒絕，after1CE38A只解碼、SS188:2BD834 byte未知，flags246h。尚未達180M。finalPNG與354逐byte相同，主要黑底、未見完整地圖，不算完整開局。
+- 工具8273d887f5387c23d9ae13056ae2ad1e263aeee0已推送github/codex/moo2-parity-20260930並核對遠端，未推本機origin；355限定CONFORMED、354／353／352目前未知與索引已回填。29份本機來源／收據與實際命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步取原0F94目的byte與正常消費，不增加cap或深入helper。
+
+正式writer、資料語意、完整生成／開局、RNG與remake同狀態仍未知；remake／中文化目標活躍。本輪來源／收據1000:1000，工具root-owned／.md目錄零；主庫既有2437檔／272目錄保持。原版、全套與回歸容器有界結束移除，交接核對兩庫精確HEAD／遠端與工作樹。

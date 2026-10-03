@@ -2535,3 +2535,84 @@ python3 apps/moo2/tools/startup_probe_131.py --check-xchg-byte-memory-spec-backl
 來源／收據1000:1000、工具root-owned／.md目錄零；主庫歷史2437檔／272目錄保持，本輪不新增或遞迴修權限。原版、全套與回歸容器有界且已結束移除，精確HEAD／遠端／工作樹於收尾核對。
 
 下一步為02 /r byte ADD register,memory建立窄CPU切片，先捕捉原SS188:2BDB3C／AL0與後續原byte來源，再審查通用加法／六算術旗標／source唯讀／地址別名／失敗不發布。沿同一180M正常輸入驗原消費，不提高cap，不深入helper；完整生成／開局及remake同狀態仍未驗。
+
+
+## 2026-10-03：355 原byte記憶體來源ADD與零值正常消費
+
+路由命中dosgolem對拍、規格閘門、證據回填與文件職責；依既有入口與逆向技能前進。上一輪XCHG／STOSB已完成並推送，本輪為新CPU缺口，主庫RE-first保持。原檔／手冊／私有分析只讀，不改Go／Ebitengine玩法，不深挖helper。
+
+### 來源、基準與推論等級
+
+- 官方DOS1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f；原ZIP3a28a52f5953ff6d8fc251548940500236752ee19b52b51581e71ec1a3373c2f、patch ZIP908d6b7b37ad580039c5d108bab2c64b28f51ba735485287d284d5f5242b98e5。根層417檔／MOX.SET與固定1996日期保持，日期不是seed。
+- dosgolem原始位址基準dosgolem_high_le，工具起點1f155175b2c77e6ee133ef609f43b758d7e0eed8、主庫2031d07b7890ede231f21e8ff0e5e956116a3d7a；現工具8273d887f5387c23d9ae13056ae2ad1e263aeee0已推送github隔離分支並核對遠端，未推本機origin。使用/home/anr2/cht/dosgolem的隔離副本workplace/dosgolem，能力／用法見其README.md／CLAUDE.md。
+- [Intel 80386原廠ADD](https://www.ardent-tool.com/CPU/docs/Intel/386/manuals/prref386/ADD.htm)為通用02 /r與六算術旗標契約。通用CPU沒有遊戲位址或資料代寫；沒有新IDA研究。工具CPU規格[355](https://github.com/wicanr2/dosgolem/blob/8273d887f5387c23d9ae13056ae2ad1e263aeee0/docs/spec/355-cpu386-add-byte-memory-source.md)為入口，352／353／354與000-index同次回填，限定CONFORMED。
+- Go1.24.13 Docker image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac已核對，UID1000／network none／2GiB／2CPU／128pids，原ZIP／patch唯讀。原版／乾淨全套600s，窄測／8M與CLI180s。原EXE／LOG／PNG／RAM與私有腳本留忽略workspace；公開自製CPU／測試／診斷／規格／索引／守衛與雜湊。
+- **已證實**：DRAFT未改CPU10829原354列／36PNG／readonly與RAM保持；原四SS來源00／AL00與目的00可讀才READY。正式首遇前10759共通正常列／35frames保持，同一R／四source byte／目的窗口已驗。
+- **已證實**：原164560803..164560806於1CDD0F／12／15／18的02 45 F8／E4／FC／E0，以SS188:2BDB3C／2BDB28／2BDB40／2BDB24四byte00加到AL00，首flags202h→246h；164560807原00 43 07把AL00加到DS188:5AA5EF byte00，EIP1CDD1E／flags246h。五步R／段／相鄰窗口／完整RAM保持，readonly=true／error nil，callback12／12、IRQ41945／41945非活動。原零結果不證原非零加法／進位；沒有Bus寫次數trace，不把00→00冒稱非零寫回。
+- **已證實**：原164561579於input1CE387 bytes0F 94 45 F4 E9 8E 02 00 00 83 EF 04 F6 47 01 02拒絕；after1CE38A只解碼、SS188:[EBP-12] offset2BD834 byte未知。R=[5AA5F4 0 0 256 2BD36C 2BD840 5AA5E8 5AA614]／段=[8 188 188 0 20 188]／flags246h。actual stop164561579未達requested180000000，probe exit0是錯誤收尾。
+- **已證實**：finalPNG仍1f757f5b16fe492795accf198c8db851443a062450e7f37ecf465c7eae3b6457／RGB04fef4b6a6d6c6c485ef1ce0a82ea71591956cdd3b7cd37b8d1082a023e20e17，逐byte保持354。沿354人工檢視主要黑底與小型方形圖形，未見完整地圖，不算完整開局。
+- **已證實，工程契約**：八byte register全256×256與兩初態、64flags組合、完整ModRM／SIB與DS／SS、地址別名、負disp8／繞回／最後byte、唯讀來源零Bus寫／拒絕不發布／非零FPU；原02／22 register保持、22 memory仍拒絕。獨立較寬和／nibble進位／signed範圍／popcount與little-endian byte視圖未調CPU add8。窄測4.089s及固定原EXE乾淨全套CPU386123.004s／machine2.959s通過；缺8088語料不是386實機驗收。
+- **已證實，回歸**：8M1693原列／PNG、68舊CLI＋32新CLI負例與100M／120M／160M／180M正對照、92項回填／新355的32＋4負例及較早負例通過。CPU16行02分支替換1行拒絕、三observer逆轉逐byte保持354，平台／8088 CPU不改。
+- **環境／腳本修正**：8M attempt1套件建置誤納並行formal的暫存main而拒絕，未執行8M。保存失敗腳本／輸出，改明列main.go／irq1_prototype.go／irq7_prototype.go，同image／同命令乾淨重跑通過。不是產品缺陷；正式原版、CPU全套沒有失敗後挑選收據。
+- **未知**：原非零ADD／進位、0F94目的byte與後續消費、資料語意、正式writer、完整母星配置／生成／開局、RNG、人耳、remake同狀態及Windows／macOS實機。主庫玩法RE閘門保持。
+
+### 實際命令與收據
+
+下列相對路徑均位於隔離工具workplace/dosgolem。
+```text
+bash workplace/new-game-355-input-run.sh
+python3 workplace/new-game-355-input-verify.py
+  未改CPU10829原354列／36PNG／四00來源與原拒絕 PASS
+go test -p 2 -buildvcs=false ./internal/cpu386 -run 'TestADDByteSource' -count=1 -v
+  全byte配對／六flags／地址別名／唯讀無寫與拒絕邊界 PASS
+bash workplace/new-game-355-full-run.sh
+  乾淨固定原EXE Go全套 PASS
+bash workplace/new-game-355-formal-run.sh
+python3 workplace/new-game-355-formal-verify.py
+  10759共通正常列／35frames／原五步零值／新0F94停止／finalPNG保持 PASS
+python3 workplace/new-game-355-source-verify.py
+  CPU16行分支與三observer逆轉逐byte保持354 PASS
+bash workplace/new-game-355-off-run.sh
+  修明列來源後同8M1693列／PNG與68舊＋32新CLI負例／正對照 PASS
+python3 workplace/new-game-355-backlink-verify.py
+python3 apps/moo2/tools/startup_probe_131.py --check-add-byte-source-spec-backlinks
+  92項回填／新355的32＋4負例與較早負例 PASS
+```
+
+
+
+CPU SHA-256 125674de469ef82d4abe457190e28eb0c75b88aca8a876349b395165e77c79e1；新測試3ccaf15df8f8ee1163465e7b41ae862ff26352f92a8f477fa554ba87e131c2c1；probe c872e72ed84611c4bb98fa8d9958e8e0036eafed28663d1172f209edf2666d54。
+
+| 本機來源／收據 | SHA-256 |
+| --- | --- |
+| moo2-add-source-355.go | c872e72ed84611c4bb98fa8d9958e8e0036eafed28663d1172f209edf2666d54 |
+| moo2-probe-355-input.txt.gz | 0c301fbf7d191d27e123b5a0ce826460f88e3bf9d711c2a1046eb14d8d17e443 |
+| moo2-vbe-355-input.png | 1f757f5b16fe492795accf198c8db851443a062450e7f37ecf465c7eae3b6457 |
+| new-game-355-input-run.sh | f2ed9c42ca381d4f451864fc3ffedd2658e8ad2dacecfdcf27f8247ef1684f1a |
+| new-game-355-input-run-output.txt | 3fa48b72e10393532f945d84d58a269dc42307a767ccdc38eddd6de30bde588d |
+| new-game-355-input-verify.py | 903433d9d1df6e0aaa436a4d487754b32d2a9be8ea3b7464aacad99a867e8ad8 |
+| new-game-355-input-tests.txt | 70fa7d7740252ef9f42c743e0c191502e5192a44e8f9c5bfd4b8fb89af47406c |
+| moo2-probe-355-formal.txt.gz | 58c0834c577fe6a8a32b64ad82567f231e3ae56b314ce21a616d506475bb4454 |
+| moo2-vbe-355-formal.png | 1f757f5b16fe492795accf198c8db851443a062450e7f37ecf465c7eae3b6457 |
+| new-game-355-formal-run.sh | 1de0400f464ed73539d32a1da7370d8d803550fc6d3702e1b34edd8827448f30 |
+| new-game-355-formal-run-output.txt | d216742120da1aade2164ebc5d38306dfe3979dd0c866b5a8036e0378d7765a0 |
+| new-game-355-formal-verify.py | 339f7cd6d40024c31ba87369debee4b1ac63f54cffc68b30819ab352209a6d4b |
+| new-game-355-formal-tests.txt | 4dc98de74d75ad7bb000a46b9ee42d19c56397e4736cbc089b65c71e8ba6ea27 |
+| moo2-355-cpu-narrow-tests.txt | 1b71347efae7958e54a7fadb8169a9b8e56a57af24108a64dbf5fbccda959385 |
+| new-game-355-full-run.sh | 67aed4dd8cb4d7d31f9e1fa04f1a21b7383f3c6528893cf4f465f92dc0b8ecc4 |
+| full-test-355.txt | 336f8b09bdd31fba5da14c5b72a2fbc594cf0729f50b87953f548b9ff062467d |
+| new-game-355-source-verify.py | dee62839f9620cee20d06b2bd772345642603f22ebc28530ebae1dcf18829568 |
+| new-game-355-source-tests.txt | 14e7d812eb4f30208c887780b1c80af65e9be489436c91e8b94a5576e4abf4b6 |
+| new-game-355-off-run.sh | 65df3aff5021caa6d926c3e5690b6605a3d2ba1e6e50d38b18bf70f935fe9b43 |
+| new-game-355-off-cli-tests.txt | a5eabaf6f165680e4e73a808efc13d87da68f29a4c55ca63bd6bf4ec96c09dff |
+| moo2-probe-355-off-old.txt | 30515f0274bda6c1bfd233531dee79e0dcedd18e11e98d12223ffa260324f028 |
+| moo2-probe-355-off-new.txt | e009646a55c98984e0535808d87441277c50d0fe97a7beade9658514d1f15374 |
+| moo2-vbe-355-off-old.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| moo2-vbe-355-off-new.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| new-game-355-cli-tests.txt | 0c39c7d30d26388473df3e31ad7be38651d38f98677857d9e5a9de59a4aaac43 |
+| new-game-355-backlink-verify.py | 2fa45fae3fbdb0e5f3cd47b6b59b86391d95a7c3993dfea4bc36a088ac2f694e |
+| new-game-355-backlink-tests.txt | 2d37edfccf2a0a4d2fda48942e960387daa915af59b2604c3ba4dd6cfc096db0 |
+| new-game-355-off-attempt1-run.sh | 2ac94e8e0ba001a75813c882a457dc0ac2cd58e208e594ca1abbd66580524faf |
+| new-game-355-off-attempt1-output.txt | da277346d8fa7f358ee1d958e3d5c6ab6edb08bc4a13f9bba3eb54810c78eb32 |
+
+來源／收據1000:1000，工具root-owned／.md目錄零，主庫既有2437檔／272目錄保持。原版、全套與回歸容器有界結束移除；收尾核對兩庫精確HEAD／遠端與工作樹。下一步只捕捉原1CE387的SS188:2BD834目的byte／相鄰資料、flags246h與後續消費，審查通用SETcc memory byte目的及寫回拒絕契約，沿同180M，不提高cap或深入helper；完整生成／開局與remake同狀態未驗。

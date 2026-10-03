@@ -46,13 +46,12 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–354為限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
-  **目前狀態**：354通用byte記憶體XCHG已接通。原164321317的DS188:2BD8A8 byte0E與ALFF交換，DS0E→FF／ALFF→0E、EIP223E95；164321318原STOSB寫ES188:2BD97A FF→0E，EDI2BD97A→2BD97B、EIP223E96。兩步flags202h／六段保持、R各只變AL或EDI，完整RAM差異各一byte、相鄰窗口保持，readonly=true、error nil。硬體implicit bus lock只引原廠契約；工具單CPU Step邏輯交換已驗，未驗多CPU仲裁或lock波形，顯式F0仍拒絕。
-  **新停止與正常輸入**：原164560803於dosgolem_high_le:1CDD0F bytes02 45 F8 02 45 E4 02 45 FC 02 45 E0 00 43 07 8A，byte ADD記憶體來源尚未支援；after1CDD11只解碼，ADD未執行。原R=[0 5A2044 5AA044 5AA5E8 2BDB18 2BDB44 2 0]／SS188／flags202h；首operand是AL0與SS:[EBP-8]，來源offset2BDB3C byte未知。尚未達180M；99M按下／99084355放開與固定1996日期不改，日期不是seed；無代寫／跳呼叫／重送。
-  **驗證**：DRAFT未改CPU全部10812原353列／36PNG保持；READY後正式入口前10742共通正常列／35frames與同一原DS byte／AL／ES窗口保持。CPU以16行memory分支替換1行拒絕，probe三觀察區塊逆轉逐byte保持353，平台／8088 CPU不改。窄測0.710s及乾淨固定原EXE Go全套CPU386150.111s／machine1.864s通過；缺8088語料不算硬體驗收。關閉8M1693原列／PNG、68舊CLI＋32新CLI負例與正對照、91項規格回填／新354的34負例／352另2負例及較早負例通過。finalPNG因較晚原狀態改變，640×480主要黑底與小型方形圖形，未見完整地圖，不算正常開局驗收。工具1f155175b2c77e6ee133ef609f43b758d7e0eed8已推送github隔離分支，未推本機origin；27份本機來源／收據與命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
-  **下一步**：為02 /r byte ADD register,memory建立窄CPU規格，先取原SS:[EBP-8]／AL及後續原byte來源，再驗byte加法／六算術旗標／source唯讀／地址別名／拒絕不發布，沿同180M正常輸入核對原消費。完成後重跑CPU386與固定原EXE Go全套，不提高預算或深入helper。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–355為限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
+  **目前狀態**：355通用02 /r memory byte來源ADD已接通。原164560803..164560806在1CDD0F／12／15／18，SS188:2BDB3C／2BDB28／2BDB40／2BDB24四byte皆00，加到AL00仍00；首flags202h→246h，後三246h保持。164560807原1CDD1B的00 43 07，以AL00加到DS188:5AA5EF byte00，結果00、EIP1CDD1E／flags246h。五步R／六段／相鄰窗口與完整RAM保持、readonly=true／error nil、callback12／12及IRQ41945／41945非活動。這是原零值消費，原非零加法／進位未驗，沒有Bus寫次數trace。
+  **新停止與正常輸入**：原164561579於dosgolem_high_le:1CE387 bytes0F 94 45 F4 E9 8E 02 00 00 83 EF 04 F6 47 01 02拒絕，after1CE38A只解碼，memory目的SS188:[EBP-12] offset2BD834 byte未知。原R=[5AA5F4 0 0 256 2BD36C 2BD840 5AA5E8 5AA614]／段=[8 188 188 0 20 188]／flags246h，原未執行，尚未達180M。99M按下／99084355放開、固定1996日期／180M保持，日期不是seed；無代寫／跳呼叫／重送。
+  **驗證**：DRAFT未改CPU全部10829原354列／36PNG保持；正式首遇前10759共通正常列／35frames及四原來源／AL／目的窗口保持。CPU以16行02 memory分支替換1行拒絕，probe三observer逆轉逐byte保持354；22 memory仍拒絕，平台／8088 CPU不改。八byte register全部256×256、六flags／地址別名／唯讀無寫／拒絕不發布與非零FPU通過；窄測4.089s、固定原EXE乾淨Go全套CPU386123.004s／machine2.959s通過，缺8088語料不算硬體驗收。關閉8M1693原列／PNG、68舊CLI＋32新CLI負例與正對照、92項規格回填／新355的32負例／兩份較早回填另4與既有負例通過。8M首次建置誤納並行暫存main，保存attempt1後改明列來源，同容器／同命令重跑通過；屬驗證腳本問題。finalPNG逐byte與354保持，主要黑底且未見完整地圖，不算開局驗收。工具8273d887f5387c23d9ae13056ae2ad1e263aeee0已推送github隔離分支，未推本機origin；29份本機來源／收據與命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
+  **下一步**：先捕捉原1CE387的SS188:2BD834目的byte與相鄰資料、flags246h及後續原消費；沿既有16標準條件ISA審查通用memory byte目的、地址別名／唯讀拒絕／寫回失敗不發布。沿同180M正常輸入驗原消費，不提高cap或深入helper。
   **未知／不混入本輪**：主庫玩法RE閘門保持；typed種族特性、持久名稱／旗色正式writer、資料語意、完整地圖與後續重繪、母星配置規則、生成完成／完整開局及remake同狀態未驗。共享20DDDB仍未命中。DPMI外部cb_smoke、兩個舊探針PE格式、AH2Ch／RNG／人耳及Windows／macOS實機未驗。
-
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備
 > 原始函式／位址、輸入狀態、規則或資料表、玩家可見 consumer、證據等級與明確未知項。
