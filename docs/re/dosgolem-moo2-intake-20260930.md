@@ -1223,3 +1223,31 @@ Go1.24.13固定映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540
 probe SHA-256 5590a5cad4663dcb91df9124648f04b2a70a6d4a25b9799d0082df262a76f0b5；CPU仍1448f29f24dad35e83575189055dc15dd7ac9db2b3529c6d450f03baf91c97b1，startup／provider／matcher與VBE服務逐位元保持，325固定EXE全套PASS沿用。原ZIP／patch／417根檔／EXE／MOX.SET再核對PASS，gofmt與擁有權通過；原版素材／LOG／PNG／RAM保持本機忽略，不進Git。
 
 工具963a57228f429b8e028570f9d4c1c9cfddf16837已推送github隔離分支、回讀一致與工作樹乾淨，未推本機origin。[鎖定328](https://github.com/wicanr2/dosgolem/blob/963a57228f429b8e028570f9d4c1c9cfddf16837/docs/spec/328-moo2-post-click-publish-monitor.md)保存限定CONFORMED與覆蓋範圍，327最小發布待辦同次回填。50M基線已到上限無新CPU拒絕，沒有足夠證據把問題路由為CPU／素材／renderer故障；下一步另建DRAFT／READY有界續行觀測，保留原50M正式基線與同44M Esc／單次輸入，不能把不同終態混稱同狀態。不追整個helper或猜規則，正常開局／remake同狀態、主庫玩法RE閘門、AH2Ch／RNG／人耳未知保持。
+
+### 2026-10-03 正常NEW GAME的獨立100M有界續行
+
+起點主庫2cb1504010ccc2a1c566e920c15244b9df294129／工具963a57228f429b8e028570f9d4c1c9cfddf16837。命中並載入平台規格優先與文件分工，329先DRAFT／READY，只改原版probe預算閘門與最多六唯讀快照；CPU／平台／主庫玩法保持。固定官方1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f、原417根檔／MOX.SET、44M Esc／1996-01-01與單次正常按下／放開不改。50M舊收據保留，100M是獨立觀測，不把不同終態混稱同狀態。
+
+14 CLI負例PASS，拒絕發生在EXE讀取前；三真實EXE正例PASS。python3 workplace/new-game-329-verify.py核對50M未點擊全部3847列、點擊全部4382列除328既定正規化保持，六後段PNG／兩終圖逐位元保持。100M同50M前綴4335列保持，只另正規化明示預算；50M核心／VBE／Bus／CB快照與原基線吻合。跨次完整RAM一致不宣稱，各快照前後完整RAM與CPU／FPU／VBE／Bus保持readonly=true。
+
+**已證實，dosgolem高位LE原入口與正常單次輸入**：47850592按下／47851578放開，六點50／60／70／80／90／100M全部不突變，完整FPU控制127Fh／status0／depth0／八槽0。EIP依序21334F／213311／2131BC／213239／21332A／213321，虛擬µs65660599／83672515／102038657／120423628／138808801／157193966。最終100M／flags297h／unique_sites27018，沒有新CPU拒絕，仍兩CB開始／完成2、callback_samples191。
+
+BankSets797／797／802／807／812／817，Writes16194454／16194454／16207094／16220318／16233406／16246494，DisplaySets42、Bank4／StartY0維持。Bus VBE累計0／0／12640／25864／38952／52040，與Writes差額完全吻合；終態監測50500000真正Step，讀444340260／寫54307571／errors0，target_reads=[2 2]／target_writes=[446 423]、source_reads19481。328的50M零讀回與零提交僅限原區間，較晚確有讀回和顯存寫入，不能延伸成永不發布。
+
+六PNG經CRC與640×480RGB／SHA核對；相鄰不同像素0／186／408／484／891，變化全落在x66..273／y414..422。50M與100M兩圖實際檢視，仍主選單六按鈕與NEW GAME游標；下方由空區變成Game Design／Steve Barcia致謝。最終PNG0ff69fc4f60431f01fb2dcadfbc7ee97b5378e87f0bdda3ff7eeff8fe2d4e363，設定畫面仍未知。較晚畫面變化不是完整renderer正確或NEW GAME指令激活的證據。
+
+| 本機忽略收據／腳本 | SHA-256 |
+| --- | --- |
+| workplace/dosgolem/workplace/moo2-probe-329-baseline.txt.gz | 553cca0bcd9ba0b44bb2284877345efa1f0c6f25bb85354ee64bb1514f150bc4 |
+| workplace/dosgolem/workplace/moo2-probe-329-click.txt.gz | 07aa81ac86c5e142fc11c99530907424241aadd320800c9a855625a67ab78f64 |
+| workplace/dosgolem/workplace/moo2-probe-329-extended.txt.gz | c7dc2bb37a5292f588d3027cc7d99ac1e682d618bf8259dfc067bb6f533793c5 |
+| workplace/dosgolem/workplace/new-game-329-cli-tests.txt | 365aaaa3a75ae05c12a430aa58310fd86ee8897e9444cc9bf931af4a95021989 |
+| workplace/dosgolem/workplace/new-game-329-verify.py | 1e10a48db678caf3ed6a40ba4c6021fc6f8012729928a0c65dfc853ae240902c |
+| workplace/dosgolem/workplace/new-game-329-parity-tests.txt | 8c041b02e2ac4594e2c3db9d0e47ee706bc3badd65d3c71d458e155796b97b98 |
+| workplace/dosgolem/workplace/new-game-329-backlink-tests.txt | f2538841315d8d53db30eb0aaee340e72eb741bc32b5fe39c9b05eb1d9c6bb9d |
+
+Go1.24.13固定映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac；600s／2GiB／2CPU／128pids／UID1000／network none，ZIP／patch唯讀乾淨重建417根檔。go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe；先python3 workplace/new-game-329-cli-verify.py，然後沿328兩50M正常環境換329輸出名，再同點擊環境MAX_STEPS=100000000輸出329-extended。完整命令與環境見鎖定329。66回填函式、原有32／49／25／27／27／34／31與329新增36缺證據負例、兩CLI PASS。原ZIP／patch／417根檔／EXE／MOX.SET再核對PASS，gofmt／擁有權與來源保持PASS。
+
+probe SHA-256 83154a870ee955744d847c26eb25ba94404eb718ec4ffcdeec5984e7a27a89bf，CPU仍1448f29f24dad35e83575189055dc15dd7ac9db2b3529c6d450f03baf91c97b1；startup／provider／matcher／VBE來源保持328，325固定EXE全套仍有效。原版素材／LOG／PNG／RAM保持本機忽略，不進Git。
+
+工具2bfb2db0f860d115cb0e96e9d1e5938a89a25c23已推送github隔離分支、回讀一致與工作樹乾淨，未推本機origin。[鎖定329](https://github.com/wicanr2/dosgolem/blob/2bfb2db0f860d115cb0e96e9d1e5938a89a25c23/docs/spec/329-moo2-bounded-new-game-continuation.md)保存限定CONFORMED，328有界續行待辦同次回填。下一步改查按下／放開與首個主選單事件讀取的最小NEW GAME激活，不繼續加預算、不追整個renderer。事件覆寫、熱區錯誤或特定激活條件仍是假說，取到原始讀寫與branch證據前不修改測試輸入或玩法。正常開局／remake同狀態、主庫RE-first、AH2Ch／RNG／人耳未知保持。

@@ -846,3 +846,14 @@
 - 工具963a57228f429b8e028570f9d4c1c9cfddf16837已推送github隔離分支，回讀精確一致與工作樹乾淨，未推本機origin。五私有收據與鎖定328見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
 - 下一步另建有界續行觀測規格，保留50M正式基線與同44M Esc／單次輸入；不能因未達設定畫面而追整個renderer或猜CPU錯誤。正常開局／remake同狀態與整款remake／中文化目標保持。
 - 主庫四文件／五私有收據／鎖定328與其餘活表全文保持核對PASS，既有root-owned2437檔案／272目錄保持。Docker ps -a以主庫與工具鏈掛載路徑篩選皆空，本輪無遺留容器，未清理其他專案。
+
+## 2026-10-03：獨立100M續行與原50M保持
+
+- 起點主庫2cb1504010ccc2a1c566e920c15244b9df294129／工具963a57228f429b8e028570f9d4c1c9cfddf16837。平台規格優先與文件分工已核對，329先DRAFT／READY。只改probe預算閘門與100M模式最多六點唯讀快照，CPU／平台與主庫玩法保持。
+- Docker固定Go1.24.13映像、600s／2GiB／2CPU／128pids／UID1000／network none；唯讀ZIP／patch重建417檔，go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe，再python3 workplace/new-game-329-cli-verify.py、兩50M原基線與獨立100M單次正常點擊。14 CLI負例皆EXE讀取前exit2，三真實EXE正例通過。
+- python3 workplace/new-game-329-verify.py PASS：50M全部3847／4382列與六後段PNG／兩終圖除既定正規化保持，100M同50M前綴4335列／核心／Bus／CB／VBE快照保持；六新PNG CRC／640×480 RGB／SHA、CPU／FPU／RAM／Bus不突變通過。
+- 100M無新CPU拒絕，較晚兩目標各讀2次、VBE新寫52040與服務差額吻合；相鄰像素差0／186／408／484／891，變化在下方致謝文字區。50M／100M兩圖實際查看，仍主選單，NEW GAME激活與設定畫面未知。
+- 66回填函式、原有32／49／25／27／27／34／31與新36缺證據負例、--check-bounded-new-game-spec-backlinks與--check-post-click-publish-spec-backlinks兩CLI PASS。原ZIP／patch／417根檔／EXE／MOX.SET再核對、gofmt與來源保持通過。
+- 工具2bfb2db0f860d115cb0e96e9d1e5938a89a25c23已推送github隔離分支、回讀精確一致與工作樹乾淨，未推本機origin。七私有收據與鎖定329見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)；新來源／收據／PNG1000:1000，工具root-owned／誤建.md目錄自檢空。
+- 下一步核對按下／放開與主選單事件讀取時序／最小NEW GAME激活，先證實實際阻塞，不繼續加預算，不追完整renderer／helper。正常開局與remake同狀態仍未完成，整款remake／中文化目標與主庫玩法RE閘門保持。
+- 主庫四文件／七私有收據／鎖定329／其餘活表全文保持與來源雜湊核對PASS；既有root-owned2437檔案／272目錄保持。Docker ps -a以主庫與工具鏈掛載路徑篩選皆空，本輪無遺留容器，其他專案未清理。
