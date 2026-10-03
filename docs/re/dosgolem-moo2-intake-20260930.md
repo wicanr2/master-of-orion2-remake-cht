@@ -1299,3 +1299,30 @@ probe SHA-256 931bb9d364a144460f2b358543f36e110f07e732020b80f69cadc5a6dbcdbdc1�
 probe SHA-256 05592edc1f377a163687a09f82ef2d1293e94d3577b8bf26ee5c41d2c80b3e23；CPU SHA-256 1448f29f24dad35e83575189055dc15dd7ac9db2b3529c6d450f03baf91c97b1。原版素材及LOG／PNG／RAM不公開，來源／收據1000:1000。
 
 **未知與下一步**：正常開局／NEW GAME指令仍未知；優先同輪核對index2..8後續判定、完整caller返回／命中項與目前主選單的關係，不提高原流程cap、不改點擊時長、不重點，不追callee或完整renderer。主庫玩法RE閘門、255完整游標、303整體DRAFT、299自然OF=1、AH2Ch／RNG／人耳與remake同狀態保持。Docker兩掛載路徑清查皆空，工具root-owned／誤建.md目錄自檢空，其他專案未清理。
+
+### 2026-10-03 完整範圍命中與後續CALL
+
+工具3580b3e26181ff0978fc7ed0b2c45f8c685f76e3已推送github隔離分支、遠端回讀一致與工作樹乾淨，未推本機origin；固定規格[332](https://github.com/wicanr2/dosgolem/blob/3580b3e26181ff0978fc7ed0b2c45f8c685f76e3/docs/spec/332-moo2-button-tail-return.md)，331已回填。主庫起點1c114dcd23bd06d4acdf52d1950d3885576723b6。
+
+**已證實，固定1.31正常單次輸入的有界caller樣本**：位址均dosgolem高位LE，官方EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f。47864196..47864849含313實際caller步、341省略callee步。DS188:26C480 dword298848、DS:29BE0E word9、DS:29BE12 dword0與55byte stride保持；index1..6右界25／35／45／55／65／75均小於x500，index7左界5000大於x500，實際分支拒絕；index8來源DS:298A00八bytes000000007F02DF01，四word0／0／639／479，命中x500／y229全部四比較。47864490的20DD3B保存局部8到初始SS188:EBP2BDB40-14h，47864503的20DDDB、66A3A6C42600保存word8到DS:26C4A6。原八項決策已取得，但全畫面項8與可見NEW GAME按鈕的關係未知。
+
+47864507的20DDED CALL208FD4實際參數EAX8／EDX500／EBX229，return20DDF2與ESP-4已驗；47864849正常返回SS188／ESP2BDAD8／EIP20DDF2、EAX1，省略341 callee步。同一步20DDF2 CALL209325，新return20DDF7已驗，caller RET未取得。terminal為samples313／max_samples384／max_outer_steps8192、waiting=true、return_selector188／return_esp2BDAD8／return_eip20DDF7／outer_budget；觀察停止後原程式仍完成50M／100M，沒有新CPU拒絕，畫面保持主選單及credits。8192是觀察界限，不是產品失敗。
+
+**來源限制**：313步的控制／R／六段／EIP／定義flags／數學核算通過；311完整來源、2 MOV僅低word來源已驗、1 IRQ堆疊寫回未重建。20DD2D／20DDCB的8B4006讀DS:[EAX+6] dword，原8byte窗口只含低word479，未捕捉高word；實際EAX701DFh／SAR16得到7可核算，但不稱完整typed record已證實。47864432完成IRQ7777→7778造成堆疊差異，原bytes保留而未重建ISR寫回。初次觀察器將其誤判轉向，回DRAFT／READY修正成對完成增量，同容器命令乾淨重跑；332-initial保留，不改CPU或IRQ平台服務。
+
+Docker固定Go1.24.13映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀重建417檔。go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe，沿331兩50M與獨立100M正式環境換332輸出名；python3 workplace/new-game-332-verify.py PASS：全部3847／4511／6451舊列除既定mtime／DTA四byte／PNG路徑／每次RAM雜湊外保持331，72PNG逐位元保持，舊331 terminal逐字保持。兩預算完整313新列相同；只讀快照保持，不宣稱跨次完整RAM一致。69回填函式、既有負例及新增34缺證據負例、兩CLI通過。CPU／平台／CLI未改，325固定EXE全套及329 CLI有效。
+
+| 本機忽略收據／腳本 | SHA-256 |
+| --- | --- |
+| workplace/dosgolem/workplace/moo2-probe-332-baseline.txt.gz | d8d129deb83dcf71adf8cd46772e22206cbacf61be7f3723600d6e2de5bb2a55 |
+| workplace/dosgolem/workplace/moo2-probe-332-click.txt.gz | f38048de3d96cc1db43b68f092ebd55fb0cf3443af57ca30a11436cb68d4e501 |
+| workplace/dosgolem/workplace/moo2-probe-332-extended.txt.gz | cfb76ca5490e2dfa89cd74404f2c9a33bd48969fe4a4dcf49875273b3dbdc509 |
+| workplace/dosgolem/workplace/new-game-332-verify.py | dd9ade15018780b0284232a058eec81678cf17446e1acb9979b2c19d2a3dde08 |
+| workplace/dosgolem/workplace/new-game-332-parity-tests.txt | 9744908cee05cf75cf9e788cde86f96cadb1baff6a2cbb933fd48e20a50ab418 |
+| workplace/dosgolem/workplace/new-game-332-backlink-tests.txt | 66e47bb4a8605e2bcf02e2886f899bb446fab9de363f33bf5d7ffeb31ecff658 |
+
+probe SHA-256 32f37ac91a6758e6794f30882a5184228836b5ad84317058b51828a3b336a2a4；CPU SHA-256 1448f29f24dad35e83575189055dc15dd7ac9db2b3529c6d450f03baf91c97b1。原ZIP／patch／MOX.SET／417檔保持，來源／收據1000:1000，原版素材及LOG／PNG／RAM不公開。
+
+**330歷史註記勘誤**：該節舊SS20h誤把GS當SS。internal/cpu386/cpu.go的段順序CS／DS／ES／FS／GS／SS，原段陣列[8 188 188 0 20 188]與return_selector=188證實SS188h。三次RET的原SS188偏移／bytes依序為47863859：2BDAD4／69DB2000→20DB69；47864842：2BDAB0／97912000→209197；47864848：2BDAD4／F2DD2000→20DDF2。原檔名／位址／bytes／雜湊與330歷史收據不變，本勘誤不重新推定函式語意。工具330現行規格附同一勘誤。
+
+**未知與下一步**：正常開局／NEW GAME指令仍未知。唯讀核對當前實際註冊表／全畫面index8與可見主選單的關係，以及20DDF7正常返回；不猜title skip／輸入過早／指令意義，不提高原流程cap、不改點擊時長、不重點、不深挖209325或整個renderer。主庫玩法RE閘門、255完整游標、303整體DRAFT、299自然OF=1、AH2Ch／RNG／人耳及remake同狀態保持。Docker兩掛載清查空，工具root-owned／誤建.md目錄自檢空，其他專案未清理。

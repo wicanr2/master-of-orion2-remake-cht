@@ -877,3 +877,13 @@
 - 68回填函式、既有32／49／25／27／27／34／31／36／31與新37缺證據負例、--check-button-branch-spec-backlinks／--check-event-return-spec-backlinks兩CLI PASS。CPU／平台／CLI保持，325固定EXE全套與329 CLI有效；原ZIP／patch／EXE／MOX.SET／417檔、gofmt、Git差異與來源／收據1000:1000核對通過。
 - 工具a48f536a1132731c1b055e4419854642177b1c5e已推送github隔離分支、遠端回讀精確一致與工作樹乾淨，未推本機origin。六私有收據與鎖定331見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。正常開局／NEW GAME指令與remake同狀態仍未完成，主庫RE-first與整款remake／中文化目標保持。
 - 四文件／六私有收據／鎖定331／其餘活表全文保持與來源雜湊核對PASS。主庫既有root-owned2437檔案／272目錄保持，沒有新增root-owned或誤建.md目錄。Docker ps -a以主庫與工具鏈掛載路徑篩選皆空，工具root-owned／誤建.md目錄自檢空；本輪沒有遺留容器，未清理其他專案。
+
+## 2026-10-03：完整範圍命中與後續CALL
+
+- 起點主庫1c114dcd23bd06d4acdf52d1950d3885576723b6／工具a48f536a1132731c1b055e4419854642177b1c5e。命中dosgolem、規格閘門、平台停止線及文件職責，沿用逆向重製技能。332先DRAFT／READY，只續原caller觀察；主庫玩法保持。
+- 初次237步把已完成IRQ7777→7778誤判為轉向，回DRAFT只修觀察器的成對增量分類，再READY。同Docker命令乾淨重跑三正常流程，初次收據留332-initial，CPU／平台／CLI／原輸入與流程cap未改。
+- 固定Go1.24.13映像／600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀重建417檔。go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe；python3 workplace/new-game-332-verify.py PASS。全部3847／4511／6451舊列與72PNG保持，舊331 terminal保持；新313步與341省略callee步兩預算一致，311完整來源、2 MOV僅低word來源已驗、1 IRQ堆疊寫回未重建，未宣稱全記憶體精確一致。
+- index1..6右界拒絕、index7左界拒絕、index8全畫面範圍命中x500／y229，實際選中8。CALL208FD4正常返回EAX1，CALL209325待20DDF7返回；8192只停觀察，沒有新CPU拒絕。下一步核對原註冊表與可見主選單關係及正常返回，不猜指令、不改輸入或流程cap。NEW GAME與正常開局仍未知。
+- 69回填函式、既有32／49／25／27／27／34／31／36／31／37及新增34缺證據負例、兩CLI通過；原ZIP／patch／EXE／MOX.SET／417檔、CPU／平台來源、gofmt及新來源／收據1000:1000通過。330 SS20h舊註記的SS188h勘誤追加研究紀錄，保留歷史原定位與收據。
+- 工具3580b3e26181ff0978fc7ed0b2c45f8c685f76e3已推送github隔離分支，遠端回讀一致、工作樹乾淨，未推本機origin。六私有收據及鎖定332見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。主庫RE-first與整款remake／中文化目標保持。
+- Docker兩掛載篩選空，工具root-owned／誤建.md目錄自檢空，其他專案未清理。本輪主庫只改四現況／工作／研究文件，既有root-owned 2437檔／272目錄保持；主庫提交、遠端回讀及清理狀態於輪末核對。
