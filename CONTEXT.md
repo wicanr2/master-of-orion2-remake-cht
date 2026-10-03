@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-04）**：357已接通66 6B／69 word立即值IMUL。原164567987的DS188:5A2084 word0000×5=0，EDI005AA5F4→005A0000／高word005A保持、定義CF／OF0與後面兩MOV dword0→0已驗；兩MOV不消費DI，其他flags206h保存只屬工具近似。DRAFT10837原列／36PNG、正式10767正常列／35frames保持，固定原EXE乾淨Go全套CPU386121.065s通過。原164568139停於1CFD3F的66 F7 /3 word memory NEG，after1CFD42只解碼／未取位移與source，尚未達180M；完整開局未驗。finalPNG保持主要黑底與小型方形圖形，未見完整地圖。工具a7f175f3bfadcc6d9d56a78e23c0eabf2cbe2442已推送github隔離分支，證據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步取DS188:5A207C來源word與自然分支／消費，審查NEG；主庫玩法RE閘門保持，正式DI reader、正式writer、RNG與remake同狀態未知。
+- **DOS 原版動態驗證器（2026-10-04）**：358已接通66 F7 /3 word暫存器／記憶體NEG。原164568139的DS188:5A207C word0000→0000、六定義flags246h與下一EB09到1CFD4E已驗；第三CMP來源未取，第四JE只按觀測ZF0驗不跳到1CFD5B，不稱NEG word reader。DRAFT10840原列／36PNG、正式10770正常列／35frames保持，固定原EXE乾淨Go全套CPU38666.221s通過。原164610300停於1D0944的66 29 word SUB memory目的，after1D0946只解碼／未取ModRM或source，尚未達180M；完整開局未驗。finalPNG保持主要黑底與小型方形圖形，未見完整地圖。工具a995e5d62249aef97f73cc52e11176acc6e3218b已推送github隔離分支，證據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步取DS188:5AA6D1目的word／來源AX0及後續POP／RET消費，審查word SUB；主庫玩法RE閘門保持，原非零NEG／溢位、CMP數值、正式writer、RNG與remake同狀態未知。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為

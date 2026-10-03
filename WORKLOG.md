@@ -1174,3 +1174,17 @@
 - 工具a7f175f3bfadcc6d9d56a78e23c0eabf2cbe2442已推送github/codex/moo2-parity-20260930並核對遠端，未推本機origin。357限定CONFORMED、九份較早入口與現行unknown、索引／守衛已回填；29份本機來源／收據及命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。CPU與probe逆轉保持356，六舊測試不變。
 
 下一步擷取原1CFD3F word NEG來源與自然分支／消費，沿同180M，不增加cap或深入helper。正式DI reader、資料語意、正式writer、完整生成／開局、RNG與remake同狀態未知，remake／中文化目標持續。本輪來源／收據1000:1000，工具root-owned／.md目錄零，主庫既有2437檔／272目錄保持；各本輪容器有界結束並移除，收尾核對兩庫精確HEAD／遠端與工作樹。
+
+
+## 2026-10-04：358 接通word NEG與原零值／自然分支
+
+起點主庫3b9ec0266baac64d5d6cc80ee4405afd73c4d6e9／工具a7f175f3bfadcc6d9d56a78e23c0eabf2cbe2442。上一輪IMUL與推送完成，屬實際進展。路由命中dosgolem對拍、CPU規格閘門、回填與文件職責；沿既有逆向技能，主庫RE-first保持，不改玩法。
+
+- DRAFT未改CPU沿同180M，取DS188:5A207C word0000與相鄰十二bytes、SS二十bytes，全部10840原357列／36PNG／readonly與RAM保持。原來源／Intel契約充分才READY；新增24行word NEG register／memory，六算術flags完整定義。
+- 原164568139 word0000→0000／flags246h與EIP1CFD43，164568140下一EB09自然到1CFD4E已驗。第三CMP來源SS:[EBP-564]未取，數值／NEG word reader未驗；第四JE按觀測ZF0不跳到1CFD5B，flags206h保持。四步R／段／RAM與source／frame保持、callback12／12、IRQ41948／41948非活動。原同值寫Bus次數未取；非零NEG與8000溢位由工程測試覆蓋，不升格原動態。
+- 4194304個memory×flags、1048576個register×來源×flags案例、全地址／高word／nonzero FPU、每byte失敗與晚期部分寫不發布flags、prefix／截短通過。325舊66負例限定未知selector，268舊word NEG register負例加segment prefix，新全值域正例接合法word；兩修改與CPU／probe可逆轉回357，七舊測試不改。
+- 窄測6.224s、固定原EXE乾淨Go全套CPU38666.221s／machine1.331s，正式10770正常前綴／35frames、8M1693列／PNG、68舊＋32新CLI負例／正對照、95項回填／新358的41＋20負例與較早負例通過。缺8088語料不算386硬體驗收，沒有CPU／原版／驗證失敗後挑收據。
+- 原164610300在1D0944的66 29 word SUB memory目的拒絕，after1D0946只解碼／未取ModRM或source，DS188:5AA6D1目的word未知／來源AX0；未達180M。finalPNG逐byte保持357，主要黑底與小型方形圖形，未見完整地圖。
+- 工具a995e5d62249aef97f73cc52e11176acc6e3218b已推送github/codex/moo2-parity-20260930並核對遠端，未推本機origin。358限定CONFORMED、十一較早入口與現行unknown／索引／守衛已回填。27份本機來源／收據與實際命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
+
+下一步擷取1D0944目的word／AX來源、正常POP／RET消費並審查word SUB，沿同180M，不增加cap或深入helper。原非零NEG／溢位、CMP數值／NEG word reader、正式writer、資料語意、完整生成／開局、RNG與remake同狀態未知，remake／中文化目標持續。本輪來源／收據1000:1000，工具root-owned／.md目錄零，主庫既有2437檔／272目錄保持；本輪容器有界結束並移除，交接核對兩庫精確HEAD／遠端與工作樹。
