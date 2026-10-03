@@ -1278,3 +1278,13 @@ Docker命令 `python3 workplace/new-game-367-ready-review.py`、`bash workplace/
 實際Docker命令 `python3 workplace/new-game-369-ready-review.py`、`bash workplace/new-game-369-full-run.sh`、`bash workplace/new-game-369-run.sh`、`python3 workplace/new-game-369-verify.py` 通過；有界monitor與原guest由同run擁有與清理。工具eca6a803aba5176b87f27c5defd1146ff121c226已推送github隔離分支，主庫起點283b8c63b195938220eda3a91a2cb8a1e6bf12ca。公開自製CPU／測試／spec／索引／五份回填，23份私有收據雜湊見研究入口；原LOG／PNG／RAM／state不入Git。
 
 主庫只改DOS活表及CONTEXT單行，歷程與研究追加。兩個掛載filter無執行中或停止容器；既有root-owned2437檔／272目錄保持，無新增root-owned或.md目錄。下一步核對原180M實際165byte命名表、候選字串與返回端，先READY再接正常ACCEPT。主庫玩法RE-first保持，正式讀檔／持久語意／完整開局／RNG與remake同狀態未驗。
+
+## 2026-10-04：370母星Sol候選與兩正常時點只讀觀察
+
+沿369實際170M／180M原表審查後READY，只補兩個只讀snapshot，不送新輸入或改CPU／cap。原DS188:298848 index2+24指向28439D，32byte為Sol補零，兩時點保持。index1+24→261AC2的16byte首byte00且含BUFFER0，否定直接ACCEPT標籤推定，label_*只供導覽。170M正常命名畫面已親看，完整核心／FPU／clock／VBE／RGB／code／stack與target8:2136D1、mask2B／callback12／12、IRQ44492／44492已取。
+
+369全14282共通列按既有正規化保持，39frames及final PNG逐byte保持，三取樣patch可逆且公開internal／probe保持。原guest一次真180M／EIP235AA3，無CPU停止；state最終副本與369終態一致、原418來源保持。初次驗證誤要求170M／180M globals相同，原26C4C6自然02→01，兩時點各與369同原時點一致；修正該跨時點假設後重讀同收據通過，未重跑guest。
+
+實際Docker入口 `python3 workplace/new-game-370-ready-review.py`、`bash workplace/new-game-370-run.sh`、`python3 workplace/new-game-370-verify.py` 通過。工具46ae96f788d4242da161d833add26cdedd9f4c32已推送github隔離分支；主庫起點b1ce76439da49ac05cf120108be0bd04cd48bac0。19份私有收據雜湊見研究入口，原LOG／PNG／RAM／state不入Git。公開370規格／索引及369回填，主庫只更新DOS活表及CONTEXT單行，歷程與研究追加。
+
+原guest與監測均terminal，兩專案掛載filter無殘留容器，root-owned2437檔／272目錄保持，無新增root-owned或.md目錄。下一步依已取170M完整前置審查正常母星ACCEPT／release READY契約，保持180M，不代寫核心／RAM。主庫玩法RE-first保持，正式名稱及旗色持久writer、讀檔、完整開局與remake同狀態未驗。

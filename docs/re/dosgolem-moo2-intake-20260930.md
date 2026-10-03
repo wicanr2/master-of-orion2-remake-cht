@@ -3430,3 +3430,51 @@ SAVE10.GAM208000／SHA-256 0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a2
 23份均在workplace/dosgolem/workplace/，雜湊與UID／GID1000核對。工具eca6a803aba5176b87f27c5defd1146ff121c226已推送github，公開自製CPU／測試／規格與索引／五份回填。原LOG／PNG／RAM／state留在本機忽略目錄。
 
 下一步核對180M實際表、候選字串與原返回端，建立母星命名正常ACCEPT的READY契約後再輸入及受控release。原run／full-run／review／verify精確入口見工具369規格；不加cap、不代寫核心、不把星圖出現當整段開局完成。
+
+## 2026-10-04：370母星候選來源與正常輸入前置
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址空間dosgolem_high_le。起始工具eca6a803aba5176b87f27c5defd1146ff121c226，CPU保持a39e5b9f74e026fc1c2514d733808e94920b6789d1b68ef8eb8960dc72df5350，公開internal／probe皆不變。沿369可寫正常輸入、180M、1996固定日期與原418來源，日期不是seed。Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac；600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀。
+
+### 已證實的來源與前置
+
+同guest170M及180M只讀原DS188:298848 count3／stride55的完整165byte表、index2+24→28439D的32byte候選均可讀；候選Sol加NUL補零，SHA-256 6919c6ec1f4751149ac2653bf5decc4881f64d5b997fb2cac85cf8f4c175f30d，兩時點保持。table SHA-256 d12f33061ee90916f4c35c9ee5177fc4e3760fb4ca791f572935e139c084d2ff、header1eb307e414824282e81d17faf0ac5ab6752ae0f074ecd526f3cb4ce16847011c保持。候選是輸入緩衝區，正式星名欄位／writer仍未知。
+
+index1+24→261AC2原16byte窗口首byte00並含BUFFER0，SHA-256 2c9d54f6d98794161cf52a7d394dc84cca138e8c6793f82b56577d7e8c7c7699；不是直接ACCEPT字串，診斷label_*只作導覽，不給欄位已證實語意。index1矩形227,246–324,273對應畫面ACCEPT為強推論，275,260與276,260唯一落入該矩形，正常點擊consumer待實測。
+
+170M原EIP235948／R=[0 18 0 0 2BD3C4 2BD3F8 2A206E 34F062]／段=[8 188 188 0 20 188]／flags293h／IF1、FPU127F／status0／depth0／八stack bits0，虛擬386324835µs。VBE bank9／startY512／sets2793／writes51487286／display93，target8:2136D1、mask2B／pending0／inactive／callback12／12、IRQ44492／44492非活動非failed。code16／SS:ESP stack16、完整globals／header／表／候選／RGB已取，核心／FPU／VBE／整RAM／callback IRQ前後不變。170M原Enter Home Star Name／Sol／ACCEPT親看，PNG410c764d6bc1e928af3100cae79431bc03e152d83330ebd94b29c6fa0523c862，RGB677ff4d0508dd2470b05ab122639815b8382cdc8f2146f83f0e821536c3ad16e。
+
+180M原核心與終圖逐值／逐byte保持369，callback12／12與IRQ47499／47499已返回。170M globals SHA-256 3e2f27c3b1dfa465b3f915b3a6a14427ebd8eba8ecc18023d89513014896c3b1、180M69a0c2f011924ac7d4f6960ddb98df646f158d49b48f0f43ed72c92cfa0956b9，只有DS188:26C4C6由02→01，語意未知。兩時點各與369相同原時點保持，不要求跨時點自然狀態不變。
+
+### 驗證與限定範圍
+
+369全14282共通原列按既有mtime／DTA與每輪RAMhash正規化保持，39frames及final PNG逐byte保持；新兩筆snapshot均只讀且對接原時點完整前置。三私有patch逆轉為369，公開internal／probe逐byte保持eca6a80；四CLI拒絕及合法缺EXE正對照保持。原guest一次真step_limit180000000／EIP235AA3／unique_sites53798，沒有CPU停止／step_error／dos_exit，未送母星確認。
+
+初版驗證在全共通列與畫面已保持後，因錯要求跨時點globals相同而失敗。依369／370同170M與180M收據的26C4C6差異，改為逐時點核對，僅重讀收據未重啟guest。原state副本與終態及369一致，SAVE10.GAM208000bytes、MOX.SET553bytes、sound.lbx4250888bytes，UID GID1000；原418來源前後保持。原guest及550s有界監測由同run擁有／trap清理，終止後無殘留容器。
+
+370限定CONFORMED只讀來源；369已追加候選不可變鍵回填，私有驗證檢查原指標／byte形狀、文件及勘誤入口，缺項即失敗。主庫玩法RE-first保持；正常確認、正式名稱及旗色持久writer／正式讀檔／完整開局／seed／remake同狀態未驗。
+
+| 本機忽略來源／收據 | SHA-256 |
+|---|---|
+| moo2-370-overlay-frame-extended-170000000.png | 410c764d6bc1e928af3100cae79431bc03e152d83330ebd94b29c6fa0523c862 |
+| moo2-370-overlay-frame-extended-180000000.png | 4ef5ef10d460497a6042c3df9f24149ceea8b9ddafd2d1d76580ef64f9094686 |
+| moo2-home-name-source-370.go | 913775ad75aaee70331a967d05c92662e465615be25582a2e42941b35c2ddb73 |
+| moo2-probe-370-overlay.txt.gz | 0c650a8610291fb3d5c141fce339f8c24850a7dd0c70f0b173febb566116fed2 |
+| moo2-save-state-370-mox.set | de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f |
+| moo2-save-state-370-save10.gam | 0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d |
+| moo2-save-state-370.json | 50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705 |
+| moo2-vbe-370-overlay.png | 4ef5ef10d460497a6042c3df9f24149ceea8b9ddafd2d1d76580ef64f9094686 |
+| new-game-370-cli-tests.txt | f7bc407d133dd1cdb56fcb8aa6377e508459429adc0ec583216ba2c8088e545d |
+| new-game-370-patches.json | 69deb738e8fdfb1d1a44176d6bee5d9ed280779f4a8fe8c8adbbd5dff4bf08e2 |
+| new-game-370-ready-review-tests.txt | dba2470062f5175805af15647c19ca4535eeeed20be825a7c6060700f74617b9 |
+| new-game-370-ready-review.py | d407becfeae0b1b591ad1f1103982d933d4f337f1cdd8977c5f0966a96156ef6 |
+| new-game-370-run-output.txt | d5796d3892d09d820efd19c1dbf7162345979e9752cf468ecfe44786d52cd6db |
+| new-game-370-run.sh | 35aebfa0aa024c120e5dfa727cfd0e6bd9b1945d26ad6f58ab4eee3d97f43356 |
+| new-game-370-state-capture-output.txt | 9332dea0878e8d161b0c361a816571d5946567602223ec6dadb95d15d9cd9ab3 |
+| new-game-370-state-capture.json | 5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d |
+| new-game-370-state-capture.py | 5b96496ce14c52badedc493f3e3462b4b939f0d61f67a9a62acc3427a632f836 |
+| new-game-370-tests.txt | a9101fd6c9fc7654a081d56d21caa861a696eb658fe6a0b754c6c7922dc0d99e |
+| new-game-370-verify.py | e6252d25e2a1bcc3bb557ce7d3495b68add4ec976830a5edb14fbe297717d72f |
+
+19份均在workplace/dosgolem/workplace/，SHA-256與UID GID1000已核對。工具46ae96f788d4242da161d833add26cdedd9f4c32已推送github，公開自製370規格／索引／369回填，原LOG／PNG／RAM／state留本機忽略目錄。精確run／review／verify入口見370規格。
+
+下一步以170M完整前置、Sol候選與唯一index1熱區審查正常ACCEPT press x550,y260／受控release x552,y260的READY契約。保持180M與既有正常輸入，不套舊ruler／banner guard，不代寫核心／RAM；共享選取store或原返回是否命中依實測，不深挖與玩家阻塞無關的renderer／helper。

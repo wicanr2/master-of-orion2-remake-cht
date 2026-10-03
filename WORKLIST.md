@@ -46,12 +46,12 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–369為限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
-  **目前狀態**：369補裸20 /r；原165113094、dosgolem_high_le:169E49的20D0正常AND AL00,DL01=00，EIP169E4B／flags246h，完整R保持。原165113095的59依真實stack令ECX0F／ESP2BDB04，下一C3返回14DC1E／ESP2BDB08，其餘核心／FPU／RAM保持，callback12／12與IRQ43071／43071完成。五定義flags已證實，AF清0僅工具模型。
-  **正常輸入與寫檔已驗**：沿368可寫profile、正常紅旗press／poll／兩GUI返回／release，不新增輸入或改cap。SAVE10.GAM正常寫208000bytes與MOX.SET兩次553bytes後close；369同guest只讀監測副本與終態一致，所有state與368相同，UID／GID1000、原418來源前後SHA-256保持。正式讀檔及內容語意未驗。
-  **目前玩家終點**：真正step_limit180000000／EIP235AA3／unique_sites53798，沒有guest_cpu_stop／step_error／dos_exit。星圖上的Enter Home Star Name、Sol候選與ACCEPT已親看，尚未確認母星名稱。原表298848／count3／stride55共165bytes，完整CPU／FPU／clock／VBE／callback／IRQ只讀收據已保存，不能套用舊旗色550byteguard。
-  **來源與驗證**：368拒絕前11017共通原列按既有正規化保持，37PNG逐byte保持；本輪39PNG、四CLI拒絕與正對照通過。1048576組memory值等CPU窄測1.011s及固定官方EXE Go全套通過，CPU38660.343s／machine1.861s。新增CPU分支與三私有observer可逆，其他公開internal／probe保持；原guest一次。工具eca6a803aba5176b87f27c5defd1146ff121c226已推送github，23份私有收據雜湊見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。主庫玩法未改。
-  **下一步**：核對369原180M命名表、候選字串、完整核心與原返回端，先READY再加入母星名稱正常ACCEPT與受控release。首次匹配失敗即停，不代寫核心／RAM或重送。1996固定日期不是seed。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–370為限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
+  **目前狀態**：369裸20 /r已通過原AND／POP／RET與固定EXE Go全套。370同正常輸入只補170M／180M只讀快照；原DS188:298848 index2+24→28439D的32byte為Sol補零，候選SHA-256 6919c6ec1f4751149ac2653bf5decc4881f64d5b997fb2cac85cf8f4c175f30d，兩時點一致。index1+24→261AC2的16byte不是直接ACCEPT字串，物件語意仍未知。
+  **正常輸入與寫檔已驗**：沿368紅旗press／poll／兩GUI返回／release，370不新增輸入或改cap。SAVE10.GAM208000bytes、MOX.SET553bytes、sound.lbx4250888bytes，370同guest只讀監測副本與終態及369一致，UID／GID1000、原418來源保持。正式讀檔及內容語意未驗。
+  **母星確認前置已取**：原170M EIP235948／R=[0 18 0 0 2BD3C4 2BD3F8 2A206E 34F062]／段=[8 188 188 0 20 188]／flags293h／IF1、FPU127F／status0／depth0／八stack bits0，虛擬386324835µs；target8:2136D1、mask2B／pending0／inactive／callback12／12、IRQ44492／44492非活動非failed。table298848／count3／stride55／165bytes，候選／RGB／code／stack已取。170M原Enter Home Star Name／Sol／ACCEPT親看，index1矩形227,246–324,273對應ACCEPT為強推論，正常consumer待驗。
+  **目前玩家終點與驗證**：真step_limit180000000／EIP235AA3／unique_sites53798，無CPU停止／step_error／dos_exit，母星尚未確認。369全14282共通原列與39frames及final PNG保持，三私有取樣patch可逆、全部公開internal／probe保持；四CLI拒絕與正對照通過，原guest一次。工具46ae96f788d4242da161d833add26cdedd9f4c32已推送github，19份私有收據雜湊見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。主庫玩法未改。
+  **下一步**：依370原170M完整前置及候選、唯一index1熱區，審查一次正常母星ACCEPT press x550,y260與受控release x552,y260的READY契約。原座標275／276,y260，不代寫核心／RAM，不套舊ruler或banner guard，維持180M與既有輸入。正常consumer／共享選取store是否命中按實測記錄，首次匹配失敗即停。1996固定日期不是seed。
   **未知／不混入本輪**：主庫玩法RE閘門保持；正式讀檔／存檔內容語意／typed名稱及旗色持久writer、五窗口完整物件、其他未驗CPU分支、typed種族特性、完整地圖／重繪、母星配置、完整開局與remake同狀態未驗。DPMI外部cb_smoke、兩舊探針PE格式、AH2Ch／RNG／人耳與Windows／macOS實機未驗。
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備
