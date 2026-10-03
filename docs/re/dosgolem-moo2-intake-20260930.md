@@ -1808,3 +1808,44 @@ CPU SHA-256 76f4b7b3f97156f9422d32e894e55579286f85d2c8b39a26eb90887fa22cc88f，�
 來源／收據1000:1000、gofmt／Git差異與版權邊界通過；工具root-owned／誤建.md目錄空，主庫既有2437root-owned檔／272目錄保持。本輪沒有新增root-owned／誤建.md；兩工作區掛載篩選Docker容器空，未留背景程序。
 
 **未知與下一步**：以原17D5A0 SETG為入口核對剩餘標準SETcc register條件，保存完整初態／AL／flags與下一88 C2最小消費，走DRAFT→READY、同正常input／120M與固定EXE全套。正式姓名／旗色writer、typed種族特性、生成完成／完整開局、正式RNG、人耳及remake同狀態未驗。主庫玩法RE閘門保持，整款remake／中文化目標仍活躍。
+
+### 2026-10-03 標準SETcc暫存器條件已補，原SETG／MOV通過，同120M無新CPU拒絕
+
+主庫起點95dc2470e396bd902fa527c083d86a6f4a220d6c，工具起點eddee109e0d0d59e311f5c30e26961f84ee36560；工具d5127adc64a04af79796d933aec73413bbcfd824已推送github隔離分支且遠端回讀一致，未推本機origin。公開[344標準SETcc與原兩步](https://github.com/wicanr2/dosgolem/blob/d5127adc64a04af79796d933aec73413bbcfd824/docs/spec/344-cpu386-setcc-byte-register.md)限定CONFORMED，只涵蓋公開CPU契約與原實測SETG／MOV。340／341／342／343及索引／護欄同次回填，不計入主庫玩法分母。
+
+官方DOS1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，原位址dosgolem_high_le。原ZIP 3a28a52f5953ff6d8fc251548940500236752ee19b52b51581e71ec1a3373c2f，patchZIP908d6b7b37ad580039c5d108bab2c64b28f51ba735485287d284d5f5242b98e5；fresh417根檔、MOX.SET553bytes SHA-256 bfd6855a41760b31156b96114b5b33c88f442ab8f8aae020c1740b3b486a3a80。Go1.24.13 Docker image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，固定1996日期不是RNG seed。
+
+**已證實，輸入與原兩步**：343不可變收據fffa5bf9edfa2a4c3fdbece2852a0069a3307fe6b96bf9ded086fb73cf35ed9b已有完整R／六段／flags／FPU，344重查0F9F先fetch extended後拒絕、未fetch ModRM或發布目的／flags，資料足夠後READY；不是新StepHook之前caller捕捉，不多跑相同拒絕。正式113628944原SETG完整before R=[E6 3 1FA FFFF0000 2BDA08 2BDA38 0 1]與舊解碼器初態相同，flags293h即ZF0／SF1／OF0，條件false，AL E6→0／EIP17D5A3。下一113628945原88C2令DL FA→0、EDX1FA→100／EIP17D5A5。其他R／六段／全部flags293h、FPU control127F／status0／depth0／八stack bits全0、RAM／VBE保持，兩筆readonly真、callback12／12及IRQ26735／26735非活動、pending0、error nil。一次臂兩步，沒有目的記憶體write特例、代寫資料或EIP。
+
+新CPU入口前8180原343列／30PNG逐位元保持，原343 SETLE兩步／唯一SS實際write與342 TEST三步、341全部正常輸入保持。CPU只擴張裸register SETcc16條件，逆轉小區塊逐byte保持343、Jcc未改；probe三有界observer逆轉後逐byte保持343、Bus／hooks／calendar／120M cap／輸入未改。343其他條件拒絕負例明確改為字面真值正例，所有原SETLE／prefix／memory／CMP／store測試保持。
+
+**已證實，獨立CPU契約**：524,288組完整32旗標×AF兩向×兩context×16opcode×八目的×八unused欄×四代表byte；65,536組全部256初byte×16opcode×八目的×兩flags。以16個字面32bit真值位圖核對，獨立於CPU布林表，驗高低byte鄰居／其餘24位、完整R／段／FPU／flags／RAM保持與零writes。77筆32bit值全部配對×10比較條件×AL／AH，共118,580組數學signed／unsigned CMP→SETcc；512組Jcc直接對字面真值。保留原SETLE的2,097,152組與47,432 signedCMP及store失敗回歸。截短、全memory ModRM、11prefix及相鄰0FA2／0FA3保持拒絕。外部386／8088實機語料未取得，不稱硬體語料或逐週期對拍。
+
+**已證實，實際終態**：同120M上限到17FCE4、unique_sites37433，無新CPU拒絕，終R=[48 8 1 5 2BD9D0 2BD9EC 2BDA74 F]、flags297h。最後32步包含17FCC3..17FD13迴圈及計數指令，未證實生成完成或持久writer。原640×480終圖重新人工檢視仍「Generating Universe...」，PNG d0e387dc900c9955d82dc9c6b21a533d581ac383ba36abca9ce2de28b290f13a、RGB3eeb511abe9d33ff110ce8e478b7d2c5073d36d6775a56622e64651ca8c63fce。舊343相同圖bytes的判定不沿用，不將新游標／圖bytes當新玩家頁。probe exit0不能當完整開局通過，共享20DDDB仍未命中。
+
+實際命令：go test -p 2 -buildvcs=false ./internal/cpu386 -run 'TestSETcc|TestSETLE' -count=1 PASS，5.386s；固定DOSGOLEM_MOO2_EXE=/tmp/game/ORION2.EXE的go test -p 2 -buildvcs=false ./... -count=1 PASS，cpu386143.652s／machine5.679s。全套以git ls-files -z | tar --null -T - -cf - | tar xf - -C /tmp/test-src加cp internal/cpu386/setcc_byte_register_test.go及現存testdata建立，避免忽略探索main污染；未重寫歷史來源。
+
+原版本輪只重生一次，go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe，沿341固定calendar／44M Esc／分離DOS／NEW_GAME／MENU_READY／SETUP_ACCEPT／RACE_HUMANS／RULER_NAME_ACCEPT／BANNER_RED旗標及MAX_STEPS120000000。Docker原版300s／全套600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀。python3 workplace/new-game-344-input-verify.py／new-game-344-source-verify.py／new-game-344-formal-verify.py／new-game-344-backlink-verify.py PASS；輸入audit於未改CPU階段核對。81項回填、新344的25缺證據負例與其餘三份較早回填6負例、343的26／342的25與340另兩／341的29／340的28／338及339各26負例通過；338 CLI17無效／正對照、339 CLI22無效／120M與100M正對照保持。
+
+CPU SHA-256 b5c8bd900047e8f018ad66edaf5ae8e1009e9f6d04ec89dea4000c27f3326b30，setcc_byte_register_test.go722ea60398d646b4934148ba31067493e0123daca13cc06cfe1d2a3cb93a4cf2，343測試擴張版a282a1b7b4fc188dc450d4cffcffadd9157e0d8667db5fb0c02573e852ca0b60，正式probe5909237597f3dd80599d85597180bd44e628372f92dcd62573f493d0298dfcd4。原素材／圖／LOG／RAM留本機忽略workplace，不入Git。
+
+| 本機忽略來源／收據 | SHA-256 |
+| --- | --- |
+| workplace/dosgolem/workplace/new-game-344-input-verify.py | 804bdded426e4d3ff9beab8279158b73adacc0236140ce79c5a1e3f5e17619af |
+| workplace/dosgolem/workplace/new-game-344-input-tests.txt | a173f81e49deb943e361509369a6fa35568ddbe776db8e02e18486dd0e146a88 |
+| workplace/dosgolem/workplace/moo2-probe-344-red.txt.gz | 2724628fa913674f41df2af004c3ec4863b02cfb105695c6864f1bd35f4610a9 |
+| workplace/dosgolem/workplace/moo2-vbe-344-red.png | d0e387dc900c9955d82dc9c6b21a533d581ac383ba36abca9ce2de28b290f13a |
+| workplace/dosgolem/workplace/new-game-344-cpu-tests.txt | 477b24311933a5af41b1c84e2cdcec56003384c8738b7380b302860e1401a88b |
+| workplace/dosgolem/workplace/full-test-344.txt | b7bcf138095b48d20b4a8ca1f43b8f60531a80ae59c6243463f3de52d6e38554 |
+| workplace/dosgolem/workplace/new-game-344-formal-verify.py | ab6233d11b6cccabc11027275f4d9183aba27402205659e7e5068368f22c25fe |
+| workplace/dosgolem/workplace/new-game-344-formal-tests.txt | 8de44fc29170e33c7d1bc9508405fcbf26e66b4379e5841ce3028d9f00ce8947 |
+| workplace/dosgolem/workplace/new-game-344-source-verify.py | 71f92f1579a000ff8509835534e36dde253188cba1a79e80d6415ca4ea8f3c67 |
+| workplace/dosgolem/workplace/new-game-344-source-tests.txt | 92d21a4cfb9882b5c2438a99150fbefc53f87235092ebad131a66e6a60245da0 |
+| workplace/dosgolem/workplace/new-game-344-backlink-verify.py | b866c737eabfa1f96f8ef323d4eeb387ce8ae97673013ab5a0a06c4612962d29 |
+| workplace/dosgolem/workplace/new-game-344-backlink-tests.txt | 8cd1a7082b4ef0ae71f0338672a08a9b25758462d05f275b45e50d80ee4bd85e |
+| workplace/dosgolem/workplace/new-game-344-old338-cli-tests.txt | c5d03a8a5858cdeb915036ef21e2a8f0f3627b6007bfbe3e54c3745fb624b6b1 |
+| workplace/dosgolem/workplace/new-game-344-old339-cli-tests.txt | e4461c40e971daf4de8338567b57b68f0945355ed595b7c5c09620a2590be774 |
+
+**未知與下一步**：在目前120M正常流程的17FCC3..17FD13範圍保存有界唯讀計數／caller／退出條件，先判斷宇宙生成是否正常推進或有阻塞，再決定續跑預算。保持原正常輸入，不盲提高cap、重送或深挖無關helper。持久姓名／旗色writer、typed種族特性、生成完成／完整開局、正式RNG、人耳與remake同狀態未驗。主庫玩法RE閘門保持，整款remake／中文化目標仍活躍。
+
+主庫四文件、14份私有來源／收據、工具精確HEAD與官方輸入雜湊核對通過，其餘活表全文保持。既有root-owned 2437檔／272目錄保持，本輪未新增root-owned或.md目錄；兩工作區掛載篩選Docker容器空，未留背景程序。

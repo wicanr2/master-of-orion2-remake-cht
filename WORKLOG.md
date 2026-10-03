@@ -997,3 +997,16 @@
 - 工具eddee109e0d0d59e311f5c30e26961f84ee36560已推送github隔離分支，遠端回讀一致，未推本機origin。17份來源／收據／核算hash、官方輸入與實際命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。公開只提交CPU／自製測試／spec／probe，不含原素材。
 - 主庫只更新CONTEXT一行／WORKLIST正常路徑活表，追加WORKLOG與既有研究紀錄，其他活表與玩法保持。新來源／收據1000:1000、gofmt／Git差異通過，工具root-owned／誤建.md目錄空，主庫既有2437root-owned檔／272目錄保持；兩工作區掛載篩選Docker容器空。
 - 下一步以原SETG停點補剩餘標準SETcc register條件、完整初態與下一88 C2，走DRAFT→READY、同輸入／120M續行與固定EXE全套。正式writer、生成完成／完整開局、RNG與remake同狀態未驗，主庫RE-first與整款remake／中文化目標保持。
+
+## 2026-10-03：完整標準SETcc暫存器條件與原SETG／MOV
+
+- 起點主庫95dc2470e396bd902fa527c083d86a6f4a220d6c／工具eddee109e0d0d59e311f5c30e26961f84ee36560。命中CPU平台契約、規格閘門、dosgolem、文件職責與逆向回填。344先DRAFT，直接重查343不可變完整停止收據與0F9F拒絕路徑；未fetch ModRM或發布目的／flags，完整輸入充分後READY，不再重跑同一拒絕。
+- 補完整16個裸register SETcc。原113628944 SETG AL E6→0、EIP17D5A3；下一113628945 MOV DL FA→0、EDX1FA→100、EIP17D5A5，完整其餘R／段／flags293h／FPU／RAM／VBE保持。兩筆readonly真，callback12／12、IRQ26735／26735非活動，budget一次臂兩步。
+- 新CPU入口前8180原343列／30PNG保持，原343 SETLE／實際SS write與342 TEST三步保持。CPU小區塊逆轉後逐byte保持343，Jcc未改；probe三有界observer逆轉後保持343，原input／calendar／120M cap／Bus／hooks未改。舊343其他條件拒絕負例明確改為字面真值正例，其餘全部保持。
+- 524,288組完整旗標／別名／unused欄、65,536組全部初byte、118,580組數學signed／unsigned CMP→SETcc與512組Jcc字面真值核算PASS；原SETLE／SETE／SETNE／SS byte兩方向及失敗回歸PASS。窄測5.386s，固定EXE乾淨來源Go全套PASS，cpu386143.652s／machine5.679s。81項回填、344新增25缺證據與其餘三份回填6負例、343的26／342的25與340另兩／341的29／340的28／338及339各26負例、兩CLI通過。
+- 原版只重生一次，120M到17FCE4且無新CPU拒絕，終圖仍宇宙生成；生成完成／完整開局未驗。最新PNG不同於343，已重新人工檢視並保存新hash；不把游標／畫面bytes變化當新玩家頁。最後32步保存17FCC3..17FD13迴圈，但未推定其用途或宣稱正常生成完成。
+- Docker原版300s／全套600s／2GiB／2CPU／128pids／UID1000／network none，Go1.24.13固定image、原ZIP／patch唯讀、新鮮417根檔／官方EXE／MOX.SET。14份私有來源／收據及實際命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。外部386／8088實機語料未取得，固定日期不是RNG seed。
+- 工具d5127adc64a04af79796d933aec73413bbcfd824已推送github隔離分支，遠端回讀一致，未推本機origin。公開只提交CPU／自製測試／spec／probe，四份較早規格及索引／guard同次回填，原素材留本機。來源／新收據1000:1000、gofmt／Git差異與原官方輸入雜湊核對通過，工具root-owned／誤建.md目錄空。
+- 主庫僅更新CONTEXT一行／WORKLIST正常路徑活表，追加本WORKLOG與既有研究紀錄，其他活表與玩法保持。下一步有界唯讀核對生成迴圈進度與退出條件，先判斷進展或阻塞，再決定續跑預算。正式writer、生成完成／完整開局、RNG與remake同狀態未驗，主庫RE-first與整款remake／中文化目標保持。
+
+主庫四文件、14份私有來源／收據、工具精確HEAD與官方輸入雜湊核對通過，其餘活表全文保持。既有root-owned 2437檔／272目錄保持，本輪未新增root-owned或.md目錄；兩工作區掛載篩選Docker容器空，未留背景程序。
