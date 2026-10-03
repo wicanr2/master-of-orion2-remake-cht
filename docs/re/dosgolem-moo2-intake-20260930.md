@@ -1650,3 +1650,70 @@ python3 workplace/new-game-340-backlink-verify.py
 新檔1000:1000，gofmt／Git差異通過，工具root-owned／誤建.md目錄空，Docker兩工作區掛載篩選空，本輪沒有遺留容器。
 
 **下一步**：只保存340同輸入下原20DB5B之後最多192個非callback／IRQ正常步、實際20DB5E分支與原返回框架。原選色消費、持久名稱／旗色writer、typed種族特性、完整開局、正式RNG及remake同狀態未知；保持120M、原輸入與READY閘門，不盲調cap或重送，不深挖原helper。主庫RE-first與完成整款remake／中文化目標保持。
+
+### 2026-10-03 原後段按鍵返回已驗，續行揭露85 82記憶體TEST缺口
+
+主庫起點f93e17de0f1268a2bd6251da3afe1fc654ff6c4b，工具起點0b141e6cf2a00d86c028054c68d247c9e526a5c0；工具b07cda7188d7139da612f143ba68ea13cca21958已推送github隔離分支，遠端回讀一致，未推本機origin。公開[341原後段按鍵返回](https://github.com/wicanr2/dosgolem/blob/b07cda7188d7139da612f143ba68ea13cca21958/docs/spec/341-moo2-banner-after-gui-return.md)限定CONFORMED只涵蓋原正常分支／後段按鍵返回與放開，原旗色結果／下一頁／完整開局未驗。340及索引／回填guard同次修正，不計入主庫玩法分母。
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址空間dosgolem_high_le。Go1.24.13、映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac。正版ZIP 3a28a52f5953ff6d8fc251548940500236752ee19b52b51581e71ec1a3373c2f，官方patch ZIP 908d6b7b37ad580039c5d108bab2c64b28f51ba735485287d284d5f5242b98e5；原ZIP／patch唯讀，各次新鮮417根檔／MOX.SET／固定EXE。固定日期1996-01-01不是seed。
+
+**已證實，原GUI非零分支與再次查詢**：第一獨立192步在原RET20DB5B返回1後臂一次，99093561 TEST AX,AX、99093562原20DB5E JNZ20E0BF確實跳。20E0BF再CALL214075，99093649原24C31B AX3返回BX0／CX278／DX190；99093699原214104 RET20E0C4返回0，原topC4E02000與完整R只ESP+4已驗。20E0CB CMP EAX,2後20E0CE JNE20E12B跳，原X getter213ABA返回139至20E130，20E133 CALL213AE7返回點是20E138。只跨過Watcom helper，不深挖內部。
+
+**已證實，原位置返回與後段按鍵分支**：第二獨立192步從第一次原20E138入口開始。99093771原Y返回AX190，SS188:EBP2BDA04、原SS:2BD9C4 locals偏移8／12為139／190；20E13B CMP DS:26C4E2 word,0為等，20E143 JNZ不跳，20E145寫word1，20E151／20E15A寫原139／190至DS:26C4DE／26C4E0。這些只記原定位，正式旗色writer未知。
+
+20E160 CALL214075，99093865原24C31B再查按鍵返回0；99093915原214104 RET20E165返回0，SS188:ESP2BD998 top65E12000、完整R只ESP+4、六段與flags246h保持。20E165 TEST AX,AX後，99093917原20E168 bytes0F847D030000 JZ到20E4EB。已證實按鍵0走後段分支；保持到這個原caller返回1能否選色，在實作前仍標強推論，沒有猜補持久資料。
+
+兩份private source各剝除五個區塊後逐位元保持340；每份剝除194新增列後全部9968原340列與32PNG保持。兩份各192筆完整readable／readonly、前後非callback／IRQ、一次臂並耗盡；第二份另保存原SS:EBP-64 locals64 raw。第一次prototype的post位置在建置前修正，沒有以錯誤觀測跑原版；runtime只各重生一次。完整兩包與最小bytes／stack／分支核算通過，見24份收據表。
+
+**READY後實作與已驗輸入**：正式source只增三有界後段RET觀測及一個本fixture release前置，不改原CPU／平台／主庫玩法。99000000按下與99083819首個AX3、99083999首個RET20DB5B保持。99084354原214104 RET20E165返回EAX低word1，SS188:ESP2BD998 top65E12000、完整R只ESP加4、六段與flags202h保持、readable／readonly／valid true、error nil。99084355／177453134微秒首次合法mask1放開，原177207342微秒按下，相差245792微秒；x276／190按下、x278／190放開、target8:2136D1與原callback11／11完整前置不變，終態callback12／12。
+
+**實際CPU負結果**：原版未到120M上限，step99415524原184694 bytes85 82 19 52 26 00拒絕，error=TEST dword ModRM 82 尚未支援；拒絕前EAX=EDX=0、flags202h、DS／ES／SS188h。CPU讀opcode與ModRM後error行EIP184696，原輸入位置仍184694，兩位址不混用。靜態解碼為TEST dword [EDX+265219],EAX，正式source欄位與SETNE／RET消費仍待下一切片。終圖人工確認全黑，PNG SHA-256 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622，RGB 0b150fd32588b1daca5569992ebe559c0102c837306b1af4c44d35128ec58366等於640×480×3全零像素。共享20DDDB未命中，原旗色結果／持久writer／下一頁未驗。probe exit0仍有guest_cpu_stop／step_error，不當正常流程通過。
+
+正式source SHA-256 16f40cba5262cb7765fdfd8c8478b95d31a7ff38f40438dc255e2d96b6fcef2c，三區塊／一個release逆轉後逐位元保持340。首次source核算腳本逆轉字串誤寫，修正腳本後重讀同來源PASS，未重跑原版，不是產品缺陷。正式7708原列／28PNG／完整550bytes表、核心／RGB、兩RET／首次合法release與CPU負結果核算PASS，沒有把它稱成選色完成。
+
+每個原版情境Docker300s／2GiB／2CPU／128pids／UID1000／network none；兩份探索與正式fixture各重生一次。容器內主要命令：
+
+```text
+go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe
+DOSGOLEM_MOO2_CALENDAR_EPOCH=1996-01-01 DOSGOLEM_MOO2_HARDWARE_ESCAPE_STEP=44000000 DOSGOLEM_MOO2_MAX_STEPS=120000000 DOSGOLEM_MOO2_SEPARATE_DOS=1 DOSGOLEM_MOO2_NEW_GAME_CLICK_AFTER_DISPLAY40=1 DOSGOLEM_MOO2_MENU_READY_CLICK=1 DOSGOLEM_MOO2_SETUP_ACCEPT_CLICK=1 DOSGOLEM_MOO2_RACE_HUMANS_CLICK=1 DOSGOLEM_MOO2_RULER_NAME_ACCEPT_CLICK=1 DOSGOLEM_MOO2_BANNER_RED_CLICK=1 DOSGOLEM_MOO2_VBE_FRAME_PREFIX=/src/workplace/moo2-341-red-frame DOSGOLEM_MOO2_VBE_PNG=/src/workplace/moo2-vbe-341-red.png /tmp/moo2-probe /tmp/game/ORION2.EXE --game-dir /tmp/game
+python3 workplace/new-game-341-verify.py
+python3 workplace/new-game-341-tail-verify.py
+python3 workplace/new-game-341-semantic-verify.py
+python3 workplace/new-game-341-tail-semantic-verify.py
+python3 workplace/new-game-341-formal-verify.py
+python3 workplace/new-game-341-source-verify.py
+python3 workplace/new-game-341-backlink-verify.py
+```
+
+同新版binary舊338 CLI17拒絕及正對照、339 CLI22拒絕與120M／100M正對照；78項規格回填、341新增29缺證據負例、340 28負例、338／339各26負例與兩CLI通過。未重跑未受影響六個舊基準／Go全套，CPU保持335，不冒充本輪重生。
+
+| 本機忽略來源／收據／核算 | SHA-256 |
+| --- | --- |
+| workplace/dosgolem/workplace/moo2-gui-after-341.go | 567a769ac4d0419cb9f82745652705577015ea56bc83773bc893b8c312f83973 |
+| workplace/dosgolem/workplace/moo2-probe-341-trace.txt.gz | 90f6c34305a588cc42759639f771065b3c59ec4128fef445c0e9b91b219cee47 |
+| workplace/dosgolem/workplace/moo2-vbe-341-trace.png | fdcfce7eb7a39bfa24641a15309ec035208efa205c394173c5cdde37e5e6ec11 |
+| workplace/dosgolem/workplace/new-game-341-verify.py | 250b770595bd52a5be409fab5e277392f5e0c85d214e247b500edd46bff44b4d |
+| workplace/dosgolem/workplace/new-game-341-tests.txt | edde141d6857b5fbf8d77b78f92f94aea84589888c611e8bcef807536e93d6b6 |
+| workplace/dosgolem/workplace/new-game-341-semantic-verify.py | ffee726e9651ebb7ed2aca47c7b0ce2e94a0dfb9acb49099087c0269cd199c32 |
+| workplace/dosgolem/workplace/new-game-341-semantic-tests.txt | 8e96b2ccf83403b1ebe0f8ab3edc408bcc7774f14a291dff9d1edb41c4099da6 |
+| workplace/dosgolem/workplace/moo2-gui-tail-341.go | d6c6213e03b1f427da6feef78180255ff2ccc22ea7e396f7543bc02acadae31d |
+| workplace/dosgolem/workplace/moo2-probe-341-tail.txt.gz | 5add8c37fbd9849eddfca09950f4d0c4dfca077cd439f038cdf144633ec55618 |
+| workplace/dosgolem/workplace/moo2-vbe-341-tail.png | fdcfce7eb7a39bfa24641a15309ec035208efa205c394173c5cdde37e5e6ec11 |
+| workplace/dosgolem/workplace/new-game-341-tail-verify.py | 51ea3347af4071a2a7dc05e297a7fd74d88f46cdbaa5844375fe01eff97a25b7 |
+| workplace/dosgolem/workplace/new-game-341-tail-tests.txt | 6ca1dc5ae73a71e2a9487dfe7d4bbe8d14c0702c5f2b2b48c7ba8b3279cac498 |
+| workplace/dosgolem/workplace/new-game-341-tail-semantic-verify.py | 970c4d2557d1061103133c88e51f2a66d8c08cb4960f434fe3d6c6a3ddce52bc |
+| workplace/dosgolem/workplace/new-game-341-tail-semantic-tests.txt | c3e9f640232e0c842ea31d7b89e324a1c561d035e8deef7c719541db0d7ccfa1 |
+| workplace/dosgolem/workplace/moo2-probe-341-red.txt.gz | 9e6dc06295aaf43383350abb53e8e9a4e0f883ff261ebbc54cc728e2173e7656 |
+| workplace/dosgolem/workplace/moo2-vbe-341-red.png | 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622 |
+| workplace/dosgolem/workplace/new-game-341-formal-verify.py | 8d5b4e13b276d4453c5dc6035fb38d6e5a515b15eb1f788c02fbd3aea56d4c83 |
+| workplace/dosgolem/workplace/new-game-341-formal-tests.txt | ed93fd3d40d0ed61dc392c709a21903e8d6c71b08c2f1a1f454468b17fcfe760 |
+| workplace/dosgolem/workplace/new-game-341-source-verify.py | 3e536a4eb29413605a84c3c641a1bc5a5c631d50dad59f73143e6b4c7e8afc13 |
+| workplace/dosgolem/workplace/new-game-341-source-tests.txt | 76ee9a8e95dc52a7624e81dee4afbce0c413d51c8f2221f83034d821aed13284 |
+| workplace/dosgolem/workplace/new-game-341-backlink-verify.py | 0acc309787fa1c2e1bda21ba0a8d65810bd2e55d27f0454160159d66a98be58f |
+| workplace/dosgolem/workplace/new-game-341-backlink-tests.txt | 878c94271001c71f87e930d866cd28f5429285707c00484543588ded3b48f7aa |
+| workplace/dosgolem/workplace/new-game-341-old338-cli-tests.txt | c5d03a8a5858cdeb915036ef21e2a8f0f3627b6007bfbe3e54c3745fb624b6b1 |
+| workplace/dosgolem/workplace/new-game-341-old339-cli-tests.txt | e4461c40e971daf4de8338567b57b68f0945355ed595b7c5c09620a2590be774 |
+
+24份來源／收據與新檔1000:1000，gofmt／Git差異通過，工具root-owned／誤建.md目錄空，Docker兩工作區掛載篩選空，沒有本輪遺留容器。原素材／PNG／LOG／RAM與private prototype留本機忽略workplace，不公開。
+
+**下一步**：先核對CPU386 TEST與記憶體operand契約，保存原85 82 @184694有效位址／source／mask／flags及SETNE／RET最小消費，經DRAFT→READY補支援，再按同341輸入續行與固定EXE完整CPU測試。保持120M與原輸入，不因全黑調GUI座標、cap或重送。原旗色結果、持久名稱／旗色writer、typed種族特性、下一頁／完整開局、正式RNG與remake同狀態未知，主庫RE-first與整款remake／中文化目標保持。

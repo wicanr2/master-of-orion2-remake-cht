@@ -964,3 +964,15 @@
 - 下一步只保存原20DB5B後最多192個非callback／IRQ正常步與實際20DB5E分支。原選色消費、持久名稱／旗色writer、typed種族特性、完整開局、正式RNG及remake同狀態未知，不盲調cap或重送。
 
 主庫四文件、15份私有來源／收據、工具精確HEAD、原ZIP／patch與CPU來源核對通過，其餘活表全文保持。既有root-owned 2437檔／272目錄保持，本輪未新增root-owned或.md目錄；Docker兩工作區掛載篩選空。
+
+## 2026-10-03：原後段按鍵返回已驗，續行揭露記憶體TEST缺口
+
+- 起點主庫f93e17de0f1268a2bd6251da3afe1fc654ff6c4b／工具0b141e6cf2a00d86c028054c68d247c9e526a5c0。前輪已改變正式source與原證據，分類為進展；本輪命中dosgolem、GUI、規格閘門、文件職責與回填路由。341先DRAFT，兩份獨立private prototype各保存192正常步，全部9968原340列與32PNG保持。
+- 原20DB5E確實走非零分支，原X139／Y190與raw locals已驗；後段20E160又CALL214075、RET20E165返回0，20E168 JZ跳20E4EB。原GUI收到第一個1仍不足以保證後段按鍵狀態。兩份source／bytes／stack／分支核算足夠後READY，只增加後段正常RET返回閘門，不改CPU／平台或主庫玩法。
+- 正式fixture重生一次：99000000按下保持，99084354原RET20E165返回1、完整框架／核心／readonly valid，99084355首次合法mask1放開，差245792微秒；callback12／12完成。原版step99415524在184694 bytes85 82 19 52 26 00拒絕，error=TEST dword ModRM 82尚未支援，未達120M；終圖全黑，共享20DDDB未命中。probe exit0不當正常流程成功，原旗色結果與開局未驗。
+- 每個原版情境Go1.24.13 Docker外層300s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀，新鮮417根檔／固定EXE／MOX.SET。兩份探索／一份正式重播各一次，固定日期不是seed。go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe。
+- 正式7708原列／28PNG／完整表及兩RET／release／CPU負結果核算PASS。source三區塊／一個release逆轉後保持340；初版source核算腳本逆轉字串誤寫，修正後重讀同來源PASS，未重跑原版。舊338 CLI17拒絕及正對照、339 CLI22拒絕與120M／100M正對照，78項規格回填、341新增29缺證據負例、340 28負例、338／339各26負例及兩CLI通過。未重跑未受影響六基準／Go全套。
+- 工具b07cda7188d7139da612f143ba68ea13cca21958已推送github隔離分支，遠端回讀一致，未推本機origin；24份來源／收據／核算見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。新檔1000:1000、gofmt／Git差異通過，工具root-owned／誤建.md目錄空，Docker兩工作區掛載篩選空，沒有本輪遺留容器。
+- 下一步先保存原85 82 @184694有效位址／source／mask／flags及SETNE／RET最小消費，經DRAFT→READY補CPU支援，保持同341輸入續行與固定EXE完整CPU測試。持久名稱／旗色writer、原旗色結果、下一頁／完整開局、RNG及remake同狀態未知，主庫RE-first與整款remake／中文化目標保持。
+
+主庫四文件、24份私有來源／收據、工具精確HEAD、原ZIP／patch與CPU來源核對通過，其餘活表全文保持。既有root-owned 2437檔／272目錄保持，本輪未新增root-owned或.md目錄；Docker兩工作區掛載篩選空。
