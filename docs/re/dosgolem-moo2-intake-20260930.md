@@ -3708,3 +3708,53 @@ VBE bank4／startY0／sets2941／writes55575758／display94。新header count20�
 實際Docker命令依序new-game-374-ready-review.py、new-game-374-run.sh、new-game-374-verify.py；READY審查在私有新模式前，原guest一次。原輸入與末態逐值、四份回填及深層契約見上方374工具規格。
 
 下一步保持相同185M與正常輸入，先取20物件完整1100byte表、當前code16／SS:ESP stack16及有界索引使用集合／RGB對應。沿internal/machine/moo2_vbe_video.go的VBEIndexed／VBERGB只讀API與既有dumpSetupTable count≤64入口，另審查185M固定取樣，不放寬舊count≤16 guard。釐清正常轉頁邊界，不盲目擴cap求過、不深入DAC／PIT／driver或renderer helper。主庫玩法RE-first保持，列表內容與正常操作、正式存讀語意／typed名稱旗色持久writer／母星配置／完整開局／RNG與remake同狀態未驗；1996固定日期不是seed。
+
+## 2026-10-04：375完整20表與原DAC全零色彩來源
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址空間dosgolem_high_le，工具基線20fd1507c45a053860b0ad50ad9f9f86049566ad，公開CPU保持1d8a4d8252372c97d8e873ba13c3ab3670796527dcd6d74de52e8cbf226e068c。工具03dcee257142e790661be653e9ba6102136d162a已推送github，見[375限定只讀規格](https://github.com/wicanr2/dosgolem/blob/03dcee257142e790661be653e9ba6102136d162a/docs/spec/375-moo2-colonies-color-source.md)。公開本規格／索引／374回填，全部internal／CPU／DOS／probe保持；原LOG／PNG／RAM／state及私有probe／getter不入Git。
+
+### 已證實與未知
+
+保持374正常COLONIES press／poll／release、原共享選取10與相同185M，原guest一次；未增加cap或輸入。新DS188:298848／count20／bias0／stride55完整1100byte表取得，SHA-256 d308de8fbcf9736ce8b4edb64e7c93b3e0cad2bfb8d7024da0776fef36235387。globals192／header16保持374，未推定新物件語意。當前EIP223A71的code16=C1E0028B8014392A000345A88A0025FF，SS188:ESP2BD720 stack16全0，不使用舊menuFrame套用目前frame。
+
+同VBE device的rawDAC768bytes全0，maskFF，mapped palette768bytes亦全0，兩者SHA-256均ef115a0e0c15cdc41958ca46b5b14b456115f4baec5e3ca68599d2a8f435e3b8。256bin histogram共307200pixels，index0有294477、其餘12723非0；使用索引集合與RGB樣本逐值核對。以逐bit除法與算術擴展獨立核算既有Palette()，全部pixel RGB符合索引映射。indexed SHA-256 4d46c5beedd237ddba268a74a01d8c33a4a0323fb52213a2e5d5b6ea4d688d43、RGB SHA-256 0b150fd32588b1daca5569992ebe559c0102c837306b1af4c44d35128ec58366、black PNG SHA-256 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622保持。
+
+已證實黑色輸出由當前全零DAC映出，mask並未把所有索引限制到0。色盤何時歸零、是否正常轉頁中間態與後續恢復仍未知，不能稱列表開啟或產品缺陷。此契約只驗工具當前色彩映射，不稱硬體逐週期或逐波形對齊。
+
+### 驗證與保存
+
+實際step_limit=185000000／EIP223A71／unique_sites55872，無guest_cpu_stop／step_error／dos_exit。R=[0 0 0 0 2BD720 2BD980 0 2BDC2C]、段=[8 188 188 0 20 188]、flags206h／IF1、FPU127F／status0／depth0／八stack bits0，clock424485517µs；VBE bank4／startY0／sets2941／writes55575758／display94。callback target8:2136D1／mask2B／pending0／inactive、16／16與IRQ48857／48857完成且非failed。完整核心／FPU／clock／VBE／callback target與state／IRQ／device State／ports Reads與Writes map及Log長度4096／rawDAC／mapped palette／mask前後保持，全RAM前後hash一致。兩新observer只讀有效；getter不呼叫IO或InstallLEVideo。
+
+374全部12253共通原列／39frames及black final保持，只有185M完整表與一筆色彩快照新增；mtime／DTA／每輪RAMhash沿既有比較契約，IMUL ram_effect保持changed_bytes與hash相等關係。三私有patch逆轉精確等於374，全部公開internal／CPU／DOS／probe保持20fd150。13CLI拒絕及三正對照保持，沒有新CPU行為，沿372固定EXE全套，另建置private probe，不重跑無關測試。374正文保留並追加375回填，索引同次更新。
+
+原418來源保持，SAVE10.GAM208000bytes／0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d、MOX.SET553bytes／de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f與sound.lbx4250888bytes／3f0354ac5c1b13a3c5c4fd098c2cbc22af37b71e74fc95e582782c22024c449d保持；終態與374一致，同guest有界副本及UID GID1000核對。固定日期不是seed。
+
+Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，Docker network none／600s／2GiB／2CPU／128pids／UID1000，原ZIP／patch唯讀、owned監測550s／trap收尾。實際入口依序new-game-375-ready-review.py、new-game-375-run.sh、new-game-375-verify.py，READY在私有實作前，native一次。相關Docker容器清理，既有root-owned2437檔／272目錄保持。
+
+### 私有收據
+
+以下位於workplace/dosgolem/workplace/，不入公開Git：
+
+| 檔案 | SHA-256 |
+|---|---|
+| moo2-375-overlay-frame-extended-180000000.png | beb773bf0623f56bc9b2be697c6e0e472abebd8fa4c319f15e6074291bb7a832 |
+| moo2-colonies-color-375.go | 20d14f37740a286cf538d606de5298bdeecaf9f77cefd3bea7ec6c21f97ca1f1 |
+| moo2-probe-375-overlay.txt.gz | 0302d7e2ba4c7aa725566897d6637d4fd84128df9a5fe682269d1163304c3874 |
+| moo2-save-state-375-mox.set | de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f |
+| moo2-save-state-375-save10.gam | 0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d |
+| moo2-save-state-375.json | 50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705 |
+| moo2-vbe-375-overlay.png | 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622 |
+| new-game-375-cli-tests.txt | 2dbf20d4bdf4311e15de13d3a416bfe1f5043e9675a59e320dd49ec4569ecb61 |
+| new-game-375-patches.json | c85eb5fc11a6cf3b9ff35340ee8695aa4226c6ce436181ace3e0f37f8529b54e |
+| new-game-375-ready-review-tests.txt | 393dee8c97be932e7d4753b9e2bcd67199529a89cfb2bb96ea686d61ad4b05a7 |
+| new-game-375-ready-review.py | 87103271d48c28d7b399b5c8cf0afc3b443b1e9de2786a84e7fc28f6bfea03fa |
+| new-game-375-run-output.txt | c3c7ccedf5b7c9e04d09e7d41175ac95b61793d40d9b693f5bf9db82d0635029 |
+| new-game-375-run.sh | 4e1dde60e673e4097aaeedbfa85d4e594b711b432ac141be952bfd5477336db1 |
+| new-game-375-state-capture-output.txt | 9332dea0878e8d161b0c361a816571d5946567602223ec6dadb95d15d9cd9ab3 |
+| new-game-375-state-capture.json | 5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d |
+| new-game-375-state-capture.py | 3431ddb64ea971b82ce274ef30d3d4cdaed8af463f8259840f40831ff86cc196 |
+| new-game-375-tests.txt | fb2ed2604b605b365542badd8a18732f3e207b2c0bffe325632ff7bc35fb7326 |
+| new-game-375-verify.py | ba133ad57d1faefb80472bc70ad9bf8046d164372c5105e1049f30373c90ff70 |
+| moo2-palette-snapshot-375-prototype.txt | 69da24f32ed36f2791689bb05e2f2ffe35aa9167c5cb7d3369728fefea0e3db7 |
+
+下一步保持相同輸入與185M，審查internal/machine/machine.go的DAC ports既有寫入入口，再以有界私有只讀觀察保存180M起到185M的DAC寫入總數、首個全零與最近寫入邊界及其原核心／clock。只觀察既有寫入，不添加IO、色盤修補、輸入或盲目擴cap，不深入DAC／PIT／driver或renderer helper。主庫玩法RE-first保持；殖民地列表內容與正常操作／正式存讀語意／typed名稱旗色持久writer／母星配置／完整開局／RNG與remake同狀態未驗。
