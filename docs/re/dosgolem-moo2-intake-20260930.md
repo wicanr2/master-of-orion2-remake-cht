@@ -1274,3 +1274,28 @@ probe SHA-256 83154a870ee955744d847c26eb25ba94404eb718ec4ffcdeec5984e7a27a89bf�
 probe SHA-256 931bb9d364a144460f2b358543f36e110f07e732020b80f69cadc5a6dbcdbdc1；CPU SHA-256 1448f29f24dad35e83575189055dc15dd7ac9db2b3529c6d450f03baf91c97b1。原版素材與LOG／PNG／RAM不公開，僅自製來源與有限文字證據提交。
 
 **未知與下一步**：NEW GAME指令激活與正常開局仍未知。20DB87非零臂尚未連到按鈕命中／指令值，下一窄觀察只追這條分支，不改輸入、不重點、不繼續加預算，不追整個renderer或compiler helper。100M仍主選單；主庫玩法RE閘門、255完整座標／游標、303整體DRAFT、299自然OF=1、AH2Ch／RNG／人耳與remake同狀態保持未知。Docker兩掛載路徑清查皆空，工具root-owned／誤建.md目錄自檢空，其他專案未清理。
+
+### 2026-10-03 非零事件caller與第一筆範圍跳過
+
+工具a48f536a1132731c1b055e4419854642177b1c5e已推送github隔離分支、遠端回讀一致與工作樹乾淨，未推本機origin；固定規格[331](https://github.com/wicanr2/dosgolem/blob/a48f536a1132731c1b055e4419854642177b1c5e/docs/spec/331-moo2-button-branch-call-return.md)，330已回填入口。主庫起點4c04e57bfad75c6a75ac378ba31541cd822174a7。
+
+**已證實，固定1.31正常單次輸入與有限caller樣本**：位址均dosgolem高位LE。47863862..47864195包含96實際caller步與238省略callee步；五次正常返回的EIP／SS／ESP吻合，省略[32,32,32,104,38]步，EAX[1,500,229,260001h,0]，只保存caller消費，不深入被呼叫函式。原版收到x500／y229，DS188:26C480原dword指標298848／DS:29BE0E word9／DS:29BE12 dword0，index*37h是55byte stride。index1實際讀DS:29887F八byte0A00140019002300，四word10／20／25／35；index2讀DS:2988B6的14001E0023002D00，四word20／30／35／45。實際來源與MOV寫回已獨立核算，不把它們直接命名為可見NEW GAME按鈕。
+
+47864164於20DCE5 CMP EDX500,EAX25令flags216h，20DCE7 JLE不跳、20DCE9 E9到20DDAE，INC將初始SS:EBP2BDB40-44h的index1→2。**僅第一筆因x500>25被跳過已證實**，尚未走該筆y判定。sample_budget在第96樣本、index2讀完四word後停止，未達caller RET；不稱全部範圍不命中、NEW GAME被丟棄或原資料錯誤。
+
+固定官方1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，原ZIP／patch／MOX.SET與417根檔保持。Docker Go1.24.13固定映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，600s／2GiB／2CPU／128pids／UID1000／network none，原輸入唯讀；先go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe，再沿330兩50M與獨立100M環境換331輸出名。python3 workplace/new-game-331-verify.py PASS：全部3847／4414／6354列除既定mtime／DTA四byte／PNG路徑／每次RAM雜湊外保持330，72PNG逐位元保持。全部96 caller步的原bytes／R／六段／EIP／定義flags／來源與寫回獨立核算；readonly與callback2／2、caller步IRQ無介入、兩預算完整新列相同。IMUL只驗定義CF／OF，SAR16的AF／OF未定義，不混入契約。CPU／平台／CLI保持，325固定EXE全套與329 CLI有效，沒有新CPU拒絕。
+
+初次缺來源窗口的331-initial三收據僅作定位線索；回DRAFT／READY補直接有界RAM peek，同容器命令乾淨重跑，不改輸入。68回填函式、既有負例與新增37缺證據負例、兩CLI通過。
+
+| 本機忽略收據／腳本 | SHA-256 |
+| --- | --- |
+| workplace/dosgolem/workplace/moo2-probe-331-baseline.txt.gz | a74ea3d6d2d0af74126ba3df8a8b9e5617464883fc3617d82e5e21ba8ce0b87b |
+| workplace/dosgolem/workplace/moo2-probe-331-click.txt.gz | 7ec5479ec14b80b6790b08b495e7d1ad0cd6953aa2f857e3b5b135af543a9a88 |
+| workplace/dosgolem/workplace/moo2-probe-331-extended.txt.gz | ec2a35b53c8e20fa1dbecf205b5f12d241c0fe69a907d233fce8895e5d1265c8 |
+| workplace/dosgolem/workplace/new-game-331-verify.py | 58094ab282f5e2e0c35212a3500b801f83c658d492fe16c7449f40dce821bbf9 |
+| workplace/dosgolem/workplace/new-game-331-parity-tests.txt | 2b224220f0a6d7d5c08b30905c95ed37a229ba8cfa08222891608b38075fa251 |
+| workplace/dosgolem/workplace/new-game-331-backlink-tests.txt | e1ceaca0b3593d9ae9d8b7daeee07b2b42cbe91ca7ab10e8261620885881bb15 |
+
+probe SHA-256 05592edc1f377a163687a09f82ef2d1293e94d3577b8bf26ee5c41d2c80b3e23；CPU SHA-256 1448f29f24dad35e83575189055dc15dd7ac9db2b3529c6d450f03baf91c97b1。原版素材及LOG／PNG／RAM不公開，來源／收據1000:1000。
+
+**未知與下一步**：正常開局／NEW GAME指令仍未知；優先同輪核對index2..8後續判定、完整caller返回／命中項與目前主選單的關係，不提高原流程cap、不改點擊時長、不重點，不追callee或完整renderer。主庫玩法RE閘門、255完整游標、303整體DRAFT、299自然OF=1、AH2Ch／RNG／人耳與remake同狀態保持。Docker兩掛載路徑清查皆空，工具root-owned／誤建.md目錄自檢空，其他專案未清理。

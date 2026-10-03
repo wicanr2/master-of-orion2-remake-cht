@@ -867,3 +867,13 @@
 - 67回填函式、既有32／49／25／27／27／34／31／36與新增31缺證據負例、--check-event-return-spec-backlinks與--check-bounded-new-game-spec-backlinks兩CLI PASS。CPU／平台／CLI保持，325固定EXE全套與329 CLI仍有效；原ZIP／patch／417檔／EXE／MOX.SET、gofmt、git diff --check、來源與收據1000:1000核對通過。
 - 工具34d758498f931d9dc155c4ca93309dd98646328e已推送github隔離分支、遠端回讀精確一致與工作樹乾淨，未推本機origin。六私有收據與鎖定330見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。主庫RE-first與整款remake／中文化目標保持。
 - 四文件／六私有收據／鎖定330／其餘活表全文保持與來源雜湊核對PASS。主庫既有root-owned2437檔案／272目錄保持，沒有新增root-owned或誤建.md目錄。Docker ps -a以主庫與工具鏈掛載路徑篩選皆空，工具root-owned／誤建.md目錄自檢空；本輪沒有遺留容器，未清理其他專案。
+
+## 2026-10-03：caller判定範圍與第一筆跳過
+
+- 起點主庫4c04e57bfad75c6a75ac378ba31541cd822174a7／工具34d758498f931d9dc155c4ca93309dd98646328e。命中dosgolem、規格閘門與文件職責；沿用逆向重製技能與helper停止線。331先DRAFT／READY，只改probe唯讀觀察，主庫玩法保持。
+- 初次96步缺DS:26C480／29BE0E與DS:[EAX]來源bytes，回DRAFT補有界窗口，再READY。初次三收據留331-initial；同容器／命令乾淨重跑三正常流程，不改輸入。正式程序省略callee內部Step，只在原EIP／SS／ESP返回後續觀察，記明238省略步，不當作全連續trace。
+- Docker固定Go1.24.13映像、600s／2GiB／2CPU／128pids／UID1000／network none；原ZIP／patch唯讀重建417檔，go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe，沿330兩50M與獨立100M環境換331輸出名。python3 workplace/new-game-331-verify.py PASS：全部3847／4414／6354舊列除既定正規化保持、72PNG逐位元保持，全部96 caller步／五自然返回／原bytes與定義flags／寫回獨立核算通過，兩預算完整新列相同。
+- 原版返回x500／y229，實際表指標298848／count9／55byte stride；index1四word10／20／25／35，index2為20／30／35／45。第一筆因x500>25而JLE不跳，續查index2。sample96停在index2讀取之後，caller RET與最終命中未取得，不稱整個表不命中或資料錯誤。下一步核對index2..8同輪判定、caller返回及目前主選單的關係，不改點擊時長或原流程cap。
+- 68回填函式、既有32／49／25／27／27／34／31／36／31與新37缺證據負例、--check-button-branch-spec-backlinks／--check-event-return-spec-backlinks兩CLI PASS。CPU／平台／CLI保持，325固定EXE全套與329 CLI有效；原ZIP／patch／EXE／MOX.SET／417檔、gofmt、Git差異與來源／收據1000:1000核對通過。
+- 工具a48f536a1132731c1b055e4419854642177b1c5e已推送github隔離分支、遠端回讀精確一致與工作樹乾淨，未推本機origin。六私有收據與鎖定331見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。正常開局／NEW GAME指令與remake同狀態仍未完成，主庫RE-first與整款remake／中文化目標保持。
+- 四文件／六私有收據／鎖定331／其餘活表全文保持與來源雜湊核對PASS。主庫既有root-owned2437檔案／272目錄保持，沒有新增root-owned或誤建.md目錄。Docker ps -a以主庫與工具鏈掛載路徑篩選皆空，工具root-owned／誤建.md目錄自檢空；本輪沒有遺留容器，未清理其他專案。
