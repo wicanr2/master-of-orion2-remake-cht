@@ -1762,3 +1762,49 @@ python3 workplace/new-game-341-backlink-verify.py
 工具root-owned／誤建.md目錄空，main既有2437root-owned檔／272目錄保持，本輪source／收據1000:1000，未新增root-owned／誤建.md；兩工作區掛載篩選Docker容器空。gofmt／Git差異／版權邊界通過。
 
 **未知與下一步**：只核對0F9E SETLE公開條件與既有SETcc，保存原17D536完整初態／flags／AL與下一byte store最小消費，DRAFT→READY後補通用CPU能力，按同輸入／120M與固定EXE全套續行。正式姓名／旗色writer、typed種族特性、生成完成／完整開局、正式RNG／人耳與remake同狀態未驗；主庫玩法RE閘門保持，沒有重開已完成CPU切片。整款remake／中文化仍是活躍目標。
+
+### 2026-10-03 SETLE與原SS byte實際寫入已驗，續行揭露SETG缺口
+
+主庫起點ea13175382677216babef8a9b21801e2273d7f44，工具起點0c6e871167259c382c6dac2288ace552c33e2319；工具eddee109e0d0d59e311f5c30e26961f84ee36560已推送github隔離分支，遠端回讀一致，未推本機origin。公開[343 SETLE與SS byte寫入](https://github.com/wicanr2/dosgolem/blob/eddee109e0d0d59e311f5c30e26961f84ee36560/docs/spec/343-cpu386-setle-byte-register.md)限定CONFORMED，只閉合標準CPU與原兩步，生成完成／完整開局、正式writer與remake同狀態未驗。342／341／340與索引及guard同次回填，不計入主庫玩法分母。
+
+官方DOS1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，所有原位址dosgolem_high_le；Go1.24.13固定Docker image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac。原ZIP 3a28a52f5953ff6d8fc251548940500236752ee19b52b51581e71ec1a3373c2f，官方patchZIP 908d6b7b37ad580039c5d108bab2c64b28f51ba735485287d284d5f5242b98e5；各次新鮮417根檔／MOX.SET553bytes SHA-256 bfd6855a41760b31156b96114b5b33c88f442ab8f8aae020c1740b3b486a3a80。固定1996-01-01不是RNG seed。
+
+**已證實，原初態與READY**：343先DRAFT。113628909原17D536完整R=[28 FFFFFFDA 0 FFFFFFC2 2BDA08 2BDA38 0 1]、六段=[8 188 188 0 20 188]、flags206h。SS188:EBP2BDA38-5的四bytes01000000，目的SS:2BDA34原byte0；stack SS188:ESP2BDA08四bytes040F0000。private兩步budget只臂一次，未改CPU同拒絕、EIP17D538，全部8237原342列／31PNG保持，完整CPU／FPU／VBE與RAM的observerreadonly通過。Intel現行SDM的SETLE為ZF=1或SF≠OF，所有flags保持；80386鏡像SETLE列and錯、同行SETNG用or，採現行公開契約。完整原來源與契約充分後才READY，欄位用途未知。
+
+**已證實，原SETLE與byte消費**：CPU只增加裸0F9E八個byte寄存器。113628909原SETLE條件false，AL28→0、EAX28→0、EIP17D539；113628910原88 45 FC成功，EIP17D53C，唯一setle_bus_write為linear2BDA34／value0／error nil，位於兩筆消費紀錄間。目的是0→0，所以只有RAM不變不足以證實write；既有Bus observer在原Write8只forward一次後，於兩步budget內保存實際address／value／error。兩步其他R／六段／FPU／所有flags206h／RAM／四byte窗／stack保持，callback12／12、IRQ26735／26735非活動，pending0／readonly真。private三／正式五observer區塊逆轉後source保持342，CPU逆轉新增條件式／註解後保持342；沒有代寫資料或EIP。
+
+正式新CPU入口前8177原342列／30PNG保持，原341全部press／release與原342 TEST三步保持。原input／1996calendar／120M cap未改；未因0→0假驗收調參，也沒有原版重送或深入helper。
+
+**已證實，新CPU拒絕與畫面邊界**：113628944原17D5A0 bytes0F 9F C0 88 C2 80 7D FC 00 75 0E 80 7D F4 00 75拒絕，error=0F 9F 尚未支援。原起點17D5A0、解碼後EIP17D5A2，EAXE6／EBXFFFF0000／ECX3／EDX1FA、flags293h。尚未120M，probe shell exit0不能當正常開局通過。終640×480原PNG逐位元保持342「Generating Universe...」，SHA-256 e975c476784977be084da3abb7601363bf290c74b96b26d56fc1af0994dd7dd0、RGB353171a9bce8ad97f55e3ee444a0f9f8017bf44e531b5616f42393ff976ddf69；沿342相同hash的人工確認，不把同一畫面重算新玩家功能。原共享20DDDB未命中，持久writer未知。
+
+**獨立規則驗證**：2,097,152組八byte目的／unused reg欄／256初byte／64算術flags／兩context，以字面8列真值表與little-endian byte陣列驗所有core／flags與鄰居保持、零writes。77筆32位值全部配對×八目的共47,432組CMP→SETLE，以int64有號差／溢位範圍核算ZF／SF／OF，再以數學≤核算目的，不呼叫CPU condition helper。原SETE／SETNE保持、截短／memory全ModRM／11prefix／其他SETcc仍拒絕；下一SS byte兩方向、DS分離、段末／readonly／未知／Bus寫失敗回歸通過。外部386／8088實機語料未取得，不宣稱硬體語料或逐週期對拍。
+
+實際命令：go test -p 2 -buildvcs=false ./internal/cpu386 -run 'TestSETLERegister|TestTESTDwordMemory|TestTESTDwordRegisterImmediate' -count=1 -v PASS，cpu3864.352s；固定DOSGOLEM_MOO2_EXE=/tmp/game/ORION2.EXE的go test -p 2 -buildvcs=false ./... -count=1 PASS，cpu386189.431s、machine5.732s。全套從/tmp/test-src乾淨版控輸入加本輪新自製測試與現存testdata執行，以git ls-files -z | tar --null -T - -cf - | tar xf - -C /tmp/test-src與cp internal/cpu386/setle_byte_register_test.go建立，避免忽略探索main污染；沒有重寫舊探索檔或其hash。
+
+兩次原版為private初態與READY後正式CPU，各一次fresh417根檔／固定EXE／MOX.SET。go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe，沿341固定calendar／44M Esc／分離DOS／NEW_GAME／MENU_READY／SETUP_ACCEPT／RACE_HUMANS／RULER_NAME_ACCEPT／BANNER_RED旗標／MAX_STEPS120000000。Docker原版300s／全套600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀。80項回填、343新增26負例、342的25與340另兩負例、341的29／340的28／338及339各26負例，舊338 CLI17無效與正對照、339 CLI22無效與120M／100M正對照通過。未重跑未受影響六舊情境。
+
+CPU SHA-256 76f4b7b3f97156f9422d32e894e55579286f85d2c8b39a26eb90887fa22cc88f，自製setle_byte_register_test.go 91f13f6f7f5773b6f27367d3f94a9299600ce84f4437750a4f8390dbdff99d5c，正式probe c304dbac8a0689e83560529b1fb7acc4cd46ef87298c5077125ea2d2cbd6fca9。原PNG／LOG／RAM／private source留本機忽略workplace，不入Git。
+
+| 本機忽略來源／收據 | SHA-256 |
+| --- | --- |
+| workplace/dosgolem/workplace/moo2-setle-343.go | f7bdd7a9f44b6b94aaa8f8430e9c0391d8bb8ff91dca988eb138805a76d49622 |
+| workplace/dosgolem/workplace/moo2-probe-343-input.txt.gz | 3d7697eeec4e3bf79f6fa933c9c2461ca922a6383f2b9638f709cfaed6383aaa |
+| workplace/dosgolem/workplace/moo2-vbe-343-input.png | e975c476784977be084da3abb7601363bf290c74b96b26d56fc1af0994dd7dd0 |
+| workplace/dosgolem/workplace/new-game-343-input-verify.py | 8d45747a105e964ba682da28c7449403278b96e4c22a42c71060dd9a0b628f4a |
+| workplace/dosgolem/workplace/new-game-343-input-tests.txt | 947caf2ec23f6bbaa20eb0892119ad8d9f304a5dddb43660b42144715a88fcb4 |
+| workplace/dosgolem/workplace/moo2-probe-343-red.txt.gz | fffa5bf9edfa2a4c3fdbece2852a0069a3307fe6b96bf9ded086fb73cf35ed9b |
+| workplace/dosgolem/workplace/moo2-vbe-343-red.png | e975c476784977be084da3abb7601363bf290c74b96b26d56fc1af0994dd7dd0 |
+| workplace/dosgolem/workplace/moo2-343-cpu-narrow-tests.txt | 58fc527d088242338c7e26d45213492c39b3e9c5e2e6eb1b61e52deadf87c46d |
+| workplace/dosgolem/workplace/full-test-343.txt | 025ca761a9bffc3a248275548ec218ceac829409b5ed63f54991057c97a8e19b |
+| workplace/dosgolem/workplace/new-game-343-formal-verify.py | d894d095885725194902ad71eb43674fea881039d1b09ead0968d630a246e2d9 |
+| workplace/dosgolem/workplace/new-game-343-formal-tests.txt | 02411ef852fd4264190bc32c83c36267888f0859cea877fe35fafc9ef84e17e4 |
+| workplace/dosgolem/workplace/new-game-343-source-verify.py | ea31be2f0852cfb10aac272c595fc5cfc34726e833015620c9b759197dfec617 |
+| workplace/dosgolem/workplace/new-game-343-source-tests.txt | 272def4e6dfc55e47d6889da34ad152d83d57d68be3fbff995794dc29ed7fcba |
+| workplace/dosgolem/workplace/new-game-343-backlink-verify.py | 1cfd101d8f127aa499bbbfd768266b55dfd672ba6642202ea63cc14a60911b59 |
+| workplace/dosgolem/workplace/new-game-343-backlink-tests.txt | e2ca5ba480a18704f04880ac5dbfc90cb5dbcdf2dd185996635a52833a183161 |
+| workplace/dosgolem/workplace/new-game-343-old338-cli-tests.txt | c5d03a8a5858cdeb915036ef21e2a8f0f3627b6007bfbe3e54c3745fb624b6b1 |
+| workplace/dosgolem/workplace/new-game-343-old339-cli-tests.txt | e4461c40e971daf4de8338567b57b68f0945355ed595b7c5c09620a2590be774 |
+
+來源／收據1000:1000、gofmt／Git差異與版權邊界通過；工具root-owned／誤建.md目錄空，主庫既有2437root-owned檔／272目錄保持。本輪沒有新增root-owned／誤建.md；兩工作區掛載篩選Docker容器空，未留背景程序。
+
+**未知與下一步**：以原17D5A0 SETG為入口核對剩餘標準SETcc register條件，保存完整初態／AL／flags與下一88 C2最小消費，走DRAFT→READY、同正常input／120M與固定EXE全套。正式姓名／旗色writer、typed種族特性、生成完成／完整開局、正式RNG、人耳及remake同狀態未驗。主庫玩法RE閘門保持，整款remake／中文化目標仍活躍。

@@ -46,11 +46,11 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–342為限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
-  **目前狀態**：342記憶體TEST與原SETNE AL／RET三步已驗，正常輸入後原版已進到「Generating Universe...」畫面。原113628909於dosgolem_high_le:17D536 bytes0F9EC0拒絕，錯誤為0F 9E 尚未支援；解碼後EIP17D538、flags206h。這是新CPU能力缺口，完整開局未驗。
-  **正常輸入與原消費**：保持341原99M按下／99084355首次合法放開、245792微秒與120M cap。99415524原184694讀DS188:265219四bytes01000000、mask EAX0，交集0、flags202h→246h到18469A；下一SETNE AL0到18469D，RET讀SS188:2BDB68四bytesE3461800、只ESP加4到2BDB6C並返回1846E3。三步完整R／段／RAM／來源／stack與readonly已核算；callback12／12、IRQ22676／22676。沒有代寫選擇／資料或提高cap。
-  **驗證**：未改CPU private初態全部7849原341列與29PNG保持；正式新入口前7789原341列與28PNG保持。CPU只增加85 memory分支，三個有界唯讀observer以外probe保持不可變341。窄測與固定原EXE乾淨來源Go全套通過，CPU38655.710s；首次全套被忽略探索main污染，隔離乾淨來源後同命令重跑通過。79項規格回填、342的25缺證據負例及340另兩負例、341的29／340的28／338及339各26負例與兩CLI通過。外部8088實機語料缺檔，不宣稱硬體語料對拍。工具0c6e871167259c382c6dac2288ace552c33e2319已推送github隔離分支，未推本機origin；18份來源／收據／核算與實際命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
-  **下一步**：核對公開SETLE與既有SETcc，保存原17D536完整初態／flags／AL及下一原byte store最小消費，經DRAFT→READY補通用CPU能力，再按同341輸入續行與固定EXE完整CPU測試。保持120M與既有輸入，不深挖原helper。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–343為限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
+  **目前狀態**：343通用SETLE寄存器與原SS byte實際write已驗。原113628944於dosgolem_high_le:17D5A0 bytes0F9FC0拒絕，錯誤為0F 9F 尚未支援；解碼後EIP17D5A2、flags293h。終圖逐位元保持「Generating Universe...」，生成完成／完整開局未驗。
+  **正常輸入與原消費**：保持341原99M按下／99084355首次合法放開、245792微秒與120M cap，原342 TEST／SETNE／RET三步保持。113628909原17D536 SETLE按flags206h的ZF／SF／OF均0令AL28→0、EIP17D539；113628910原88 45 FC真實Bus write linear2BDA34、value0、error nil，EIP17D53C。目的byte原本0，window01000000前後保持；唯一實際write事件證實0→0確有寫入，不能只看RAM不變。兩步完整R／段／FPU／flags206h／RAM／stack與鄰居保持，callback12／12、IRQ26735／26735非活動、readonly真。沒有代寫選擇或提高cap。
+  **驗證**：未改CPU private初態全部8237原342列與31PNG保持；正式新入口前8177原342列與30PNG、全部原正常輸入保持。CPU只增加SETLE register條件，private三／正式五有界observer以外probe保持不可變342、Bus只forward一次。2,097,152個真值／byte組合、47,432個數學signedCMP→SETLE、原SETE／SETNE與SS byte失敗回歸通過；窄測4.352s、固定原EXE乾淨來源Go全套通過，CPU386189.431s。80項規格回填、343新增26缺證據負例、342的25與340另兩負例、341的29／340的28／338及339各26負例與兩CLI通過。外部386／8088實機語料未取得，不宣稱硬體語料對拍。工具eddee109e0d0d59e311f5c30e26961f84ee36560已推送github隔離分支，未推本機origin；17份來源／收據／核算與實際命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
+  **下一步**：以原17D5A0的SETG停點為入口，核對公開SETG及其餘標準SETcc暫存器條件，保存完整初態／flags／AL與下一原88 C2最小消費，經DRAFT→READY補通用CPU條件，再固定同341輸入／120M與原EXE全套續行。不深挖原helper。
   **未知／不混入本輪**：主庫玩法RE閘門保持；typed種族特性、持久名稱／旗色正式writer、生成完成／完整開局及remake同狀態未驗。共享20DDDB仍未命中。DPMI外部cb_smoke、兩個舊探針PE格式、AH2Ch／RNG／人耳及Windows／macOS實機未驗。固定日期不是seed。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以

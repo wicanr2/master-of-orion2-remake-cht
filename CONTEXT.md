@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-03）**：342已補記憶體TEST，原三步消費與正常「Generating Universe...」畫面已驗；後續於17D536的0F9E拒絕，完整開局未驗。固定EXE乾淨來源全套通過，工具0c6e871167259c382c6dac2288ace552c33e2319已推送github隔離分支。證據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步保存原SETLE初態及下一byte store，經DRAFT→READY補通用CPU能力，保持同輸入與120M。正式writer、生成完成、RNG與remake同狀態未知，主庫玩法RE閘門保持。
+- **DOS 原版動態驗證器（2026-10-03）**：343已補SETLE，原AL28→0與下一SS:2BDA34實際byte write 0已核算；同輸入後續於17D5A0的0F9F拒絕，仍為宇宙生成圖，完整開局未驗。固定EXE乾淨來源全套通過，工具eddee109e0d0d59e311f5c30e26961f84ee36560已推送github隔離分支，證據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步以SETG停點補剩餘標準SETcc暫存器條件，保存完整初態與下一88 C2，走DRAFT→READY／同輸入120M。正式writer、生成完成、RNG與remake同狀態未知，主庫玩法RE閘門保持。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為

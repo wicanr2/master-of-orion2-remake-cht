@@ -986,3 +986,14 @@
 - 工具0c6e871167259c382c6dac2288ace552c33e2319已推送github隔離分支，遠端回讀一致，未推本機origin。18份原來源／收據／核算hash、官方原ZIP／patch／EXE／MOX.SET、實際命令與未知邊界見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。公開只提交通用CPU／自製測試／spec與probe，原素材留本機。
 - 主庫僅更新CONTEXT一行／WORKLIST正常路徑活表、追加本WORKLOG與既有研究紀錄，其他活表及玩法保持。source／新收據1000:1000、gofmt／Git差異通過，工具root-owned／誤建.md目錄空，main既有2437檔／272目錄保持；兩工作區掛載篩選Docker容器空。
 - 下一步保存原SETLE完整初態與下一原byte store，依公開CPU契約走DRAFT→READY並固定同輸入續行。正式writer、生成完成／完整開局、RNG與remake同狀態未驗，主庫RE-first與整款remake／中文化目標保持。
+
+## 2026-10-03：SETLE與原SS byte實際寫入
+
+- 起點主庫ea13175382677216babef8a9b21801e2273d7f44／工具0c6e871167259c382c6dac2288ace552c33e2319。命中CPU平台契約、規格閘門、dosgolem、文件職責與逆向回填。343先DRAFT，原flags206h／完整R／六段／SS目的窗與stack唯讀保存，全部8237原342列／31PNG保持；Intel公開SETLE採ZF=1或SF≠OF，指出舊鏡像and錯，契約與來源足夠後READY。
+- 補通用SETLE register，原113628909 AL28→0、EIP17D539、flags206h與其他核心／RAM保持；113628910下一SS byte實際Bus write linear2BDA34／value0／error nil、EIP17D53C、目的0→0及鄰居保持。因原byte0，額外保存真實write，不以RAM不變冒充消費。private三／正式五有界observer逆轉後source保持342，Bus只forward一次，原input／calendar／120M cap不改。
+- 正式新CPU前8177原342列／30PNG與全部正常輸入保持。113628944原17D5A0的0F9F拒絕、flags293h，終圖逐位元保持宇宙生成圖，原生成完成／完整開局與writer未驗；probe exit0不能當完整開局通過。沒有重送、調GUI或深入helper。
+- 2,097,152組byte／truth／flags與47,432組數學signedCMP→SETLE、core／SETE／SETNE保持、nextSS byte兩向及失敗回歸PASS。窄測4.352s、固定EXE乾淨來源Go全套PASS，cpu386189.431s、machine5.732s；外部386／8088實機語料未取得，不稱硬體語料驗收。80項回填、343新增26缺證據負例、342的25與340另兩負例、341的29／340的28／338及339各26負例與兩CLI通過。
+- Docker原版300s／全套600s／2GiB／2CPU／128pids／UID1000／network none，Go1.24.13固定映像、原ZIP／patch唯讀，各次新鮮417根檔／官方EXE／MOX.SET。原版private初態／READY後正式各一次，未重跑六舊情境，固定日期不是seed。
+- 工具eddee109e0d0d59e311f5c30e26961f84ee36560已推送github隔離分支，遠端回讀一致，未推本機origin。17份來源／收據／核算hash、官方輸入與實際命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。公開只提交CPU／自製測試／spec／probe，不含原素材。
+- 主庫只更新CONTEXT一行／WORKLIST正常路徑活表，追加WORKLOG與既有研究紀錄，其他活表與玩法保持。新來源／收據1000:1000、gofmt／Git差異通過，工具root-owned／誤建.md目錄空，主庫既有2437root-owned檔／272目錄保持；兩工作區掛載篩選Docker容器空。
+- 下一步以原SETG停點補剩餘標準SETcc register條件、完整初態與下一88 C2，走DRAFT→READY、同輸入／120M續行與固定EXE全套。正式writer、生成完成／完整開局、RNG與remake同狀態未驗，主庫RE-first與整款remake／中文化目標保持。
