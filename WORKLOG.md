@@ -1010,3 +1010,16 @@
 - 主庫僅更新CONTEXT一行／WORKLIST正常路徑活表，追加本WORKLOG與既有研究紀錄，其他活表與玩法保持。下一步有界唯讀核對生成迴圈進度與退出條件，先判斷進展或阻塞，再決定續跑預算。正式writer、生成完成／完整開局、RNG與remake同狀態未驗，主庫RE-first與整款remake／中文化目標保持。
 
 主庫四文件、14份私有來源／收據、工具精確HEAD與官方輸入雜湊核對通過，其餘活表全文保持。既有root-owned 2437檔／272目錄保持，本輪未新增root-owned或.md目錄；兩工作區掛載篩選Docker容器空，未留背景程序。
+
+## 2026-10-03：宇宙生成迴圈有界進度與兩個正常返回
+
+- 起點主庫33fafba87b14e1bcec47a89df79dc33641bdc6a0／工具d5127adc64a04af79796d933aec73413bbcfd824。上一輪有實際CPU與原續行進展。本輪命中dosgolem、正常玩家路徑、規格閘門、文件職責與逆向回填；345先DRAFT，只蒐證正常原迴圈與返回，不解完整helper。
+- private首次單檔build缺IRQ原型，原版未啟動；沿341三檔入口修正。外層300s／450s兩次逾時，第二次持續保存raw LOG，495原步／8444可比列與60partial PNG保存，不當CPU或玩法失敗。原EBP+4候選是2BDA74，原PUSH／ENTER框架顯示返回應在+12；錯誤候選及未捕捉RET的負結果保留。
+- 65,818,624-byte RAM的12次SHA-256實測1.029894684s，逐步2304次額外約3m17.739779328s。改為各group arm／首末步／RET前後明示抽樣、其他步ram_checked=false，cold buffers移至state。CPU／input／120M cap不改，相同300s容器乾淨重跑成功，不以提高遊戲步數掩蓋逾時。
+- 三組各192步共576，原比較界值18／66／87，45次INC／51次CMP／51次JL／60次MOVSX／48次MOVZX數學核算PASS。114058778與117106151的原17FD1E C21400真正返回17F037，原stack37F01700、ESP2BD9F8→2BDA10、完整其他R／六段／flags246h保持。第三組120M仍pending，生成完成／完整開局未驗。
+- 全部8503原344列／32PNG保持，原完整正常輸入與SETG／MOV、SETLE實際SS write、TEST三步保持。兩份private／正式三區塊逆轉後保持344；READY後正式source逐byte等於已驗v2，不重跑相同充分原流程。CPU／平台未改，不重跑無關Go全套；上輪固定EXE全套只是既有回歸。
+- 82項回填、新345的27缺證據／抽樣／pending／狀態／索引負例與其餘四份較早回填8負例、所有舊負例通過。公開source同binary的338 CLI17無效／正對照、339 CLI22無效／100M及120M正對照通過。18份私有來源／收據／核算hash與命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
+- 工具a666ae584ba4df9468c233af2a07823229b12e09已推送github隔離分支，遠端回讀一致，未推本機origin。公開只提交有界probe／spec／索引／回填／guard，不含原素材。來源與收據1000:1000、gofmt／Git差異通過，工具root-owned／誤建.md目錄空，所有容器已清理。
+- 主庫只更新CONTEXT一行／WORKLIST正常路徑活表，追加本WORKLOG與既有研究紀錄；玩法與其餘活表保持。下一步保留120M基準，先為固定160M明示診斷分支指定同狀態／有界終態規格，READY後續行。若仍同頁先查生成狀態，不盲加cap。正式writer、生成完成／完整開局、RNG與remake同狀態未驗，主庫RE-first與整款remake／中文化目標保持。
+
+主庫四文件、18份私有來源／收據、工具精確HEAD與官方輸入雜湊核對通過，其餘活表全文保持。既有root-owned 2437檔／272目錄保持，本輪未新增root-owned或.md目錄；兩工作區掛載篩選Docker容器空，成功與逾時工作均已清理。

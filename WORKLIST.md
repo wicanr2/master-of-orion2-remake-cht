@@ -46,11 +46,12 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–344為限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
-  **目前狀態**：344完整16個標準SETcc暫存器條件與原SETG／下一MOV已驗。同120M cap到dosgolem_high_le:17FCE4、unique_sites37433，無新CPU拒絕。終圖人工檢視仍「Generating Universe...」，生成完成／完整開局未驗。
-  **正常輸入與原消費**：保持341原99M按下／99084355首次合法放開、245792微秒與120M cap，原342 TEST三步及343 SETLE／唯一SS byte實際write保持。113628944原17D5A0 SETG按flags293h的ZF0／SF1／OF0令AL E6→0、EIP17D5A3；113628945下一88C2令DL FA→0、EDX1FA→100、EIP17D5A5。其他R／六段／全部flags293h／FPU／RAM／VBE保持，callback12／12、IRQ26735／26735非活動、readonly真。沒有代寫選擇、重送或提高cap。
-  **驗證**：直接核對343不可變完整停止收據與0F9F拒絕路徑為READY輸入，沒有多跑一次相同拒絕。新入口前8180原343列／30PNG與全部正常輸入保持；CPU只擴張裸register SETcc16條件、Jcc未改，probe三有界observer以外來源保持343。524,288個真值／旗標／別名／unused欄組合、65,536個全部初byte組合、118,580個數學signed／unsigned CMP→SETcc與512個Jcc字面真值核算，原SETLE及store失敗回歸通過；窄測5.386s、固定EXE乾淨來源Go全套通過，CPU386143.652s。81項規格回填、344的25缺證據負例與其餘三份較早回填6負例、全部舊負例及兩CLI通過。外部386／8088實機語料未取得，不宣稱硬體語料對拍。工具d5127adc64a04af79796d933aec73413bbcfd824已推送github隔離分支，未推本機origin；14份來源／收據／核算與實際命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
-  **下一步**：在目前120M正常流程的17FCC3..17FD13範圍保存有界唯讀計數／caller／退出條件，先判斷宇宙生成是否正常推進或有阻塞，再決定續跑預算。保持原正常輸入，不盲提高cap、重送或深挖無關helper。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–345為限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
+  **目前狀態**：345三組各192步共576，原迴圈計數／分支與兩次正常RET已驗。第三組在120M仍pending，終態保持dosgolem_high_le:17FCE4／unique_sites37433／無新CPU拒絕，仍「Generating Universe...」。生成完成／完整開局未驗。
+  **正常輸入與原消費**：保持341原99M按下／99084355放開、245792微秒與120M cap；原342 TEST、343 SETLE實際SS write與344 SETG／MOV保持。原17FC82先PUSH兩個寄存器再ENTER，返回位址在EBP+12；114058778與117106151的17FD1E C21400實際返回17F037，stack37F01700、ESP2BD9F8→2BDA10，其他R／六段／flags246h保持。三組AX比較界值18／66／87只稱原比較值，不當生成百分比；第三例未捕捉RET。沒有代寫選擇、重送或提高cap。
+  **驗證**：全部8503原344列／32PNG逐位元保持；45次INC／51次CMP／51次JL／60次MOVSX／48次MOVZX以數學及字面真值表核算。兩份private／正式三有界區塊以外source保持344，正式source逐byte等於已驗v2，CPU／平台未改。每筆核心／Bus／FPU／VBE readonly，完整RAM在arm／首末步／RET抽樣，其他570步明示ram_checked=false，不稱每步全RAM驗收。82項規格回填、新345的27缺證據／抽樣／pending負例與其餘四份較早回填8負例、全部舊負例及兩CLI通過。CPU未改，本輪未重跑無關Go全套；固定EXE上輪全套只是既有回歸。工具a666ae584ba4df9468c233af2a07823229b12e09已推送github隔離分支，未推本機origin；18份來源／收據／核算與實際命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
+  **環境修正**：private初建置缺IRQ依賴，原版未啟動。300s／450s兩次外層逾時，保留60partial圖與495步，不當產品缺陷或120M完成。完整RAM逐步雜湊實測額外約3m18s，改為明示抽樣並修正PUSH／ENTER返回候選後，同300s容器／120M原步數乾淨重跑PASS。
+  **下一步**：保留120M基準，為固定160M的明示診斷分支指定120M同狀態收據與160M有界終態，再DRAFT→READY後同正常輸入續行。160M只是一次性觀測預算，不保證生成完成；若仍同頁，先找生成producer／狀態變化，不連續盲提高cap或重送。
   **未知／不混入本輪**：主庫玩法RE閘門保持；typed種族特性、持久名稱／旗色正式writer、生成完成／完整開局及remake同狀態未驗。共享20DDDB仍未命中。DPMI外部cb_smoke、兩個舊探針PE格式、AH2Ch／RNG／人耳及Windows／macOS實機未驗。固定日期不是seed。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
