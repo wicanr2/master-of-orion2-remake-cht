@@ -1160,3 +1160,17 @@
 - 工具442eef487fa03be9ef0f793e233396120c56973b已推送github/codex/moo2-parity-20260930並核對遠端，未推本機origin；356限定CONFORMED、六份較早unknown與索引已回填。29份本機來源／收據及實際命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步取word IMUL來源／DI／imm05及正常消費，沿同180M，不增加cap或深挖helper。
 
 第三CMP數值／byte1 reader、資料語意、正式writer、完整生成／開局、RNG與remake同狀態未知，remake／中文化目標活躍。本輪來源／收據1000:1000，工具root-owned／.md目錄零，主庫既有2437檔／272目錄保持；原版、全套與回歸容器有界結束移除，交接核對兩庫精確HEAD／遠端與工作樹。
+
+
+## 2026-10-04：357 接通word立即值IMUL並驗原零積與兩MOV
+
+起點主庫c7bd82f131c9afa5152466ce58ff1ea35b7e4b40／工具442eef487fa03be9ef0f793e233396120c56973b。上一輪SETcc與推送完成。本輪路由命中dosgolem對拍、CPU規格閘門、回填與文件職責，沿既有逆向技能與Intel IMUL契約；主庫RE-first保持，不改玩法。
+
+- 2026-10-03的DRAFT未改CPU沿同180M，取DS188:5A2084 word0000與SS frame二十bytes，全部10837原356列／36PNG、只讀與RAM保持。來源／ISA充分後READY；新增16位立即值IMUL，既有32位與其他乘法保持。
+- 原164567987 word0000×5=0，EDI005AA5F4→005A0000／高word005A保持、CF／OF0；後面兩MOV dword0→0、EIP1CF91D與RAM保持已驗。兩MOV不消費DI，未定義旗標保存只屬工具近似；原非零／overflow與正式DI reader未驗。
+- 33554432個imm8案例、2097152個imm16案例、全地址形狀／別名／nonzero FPU與拒絕保持通過。第一次截短測試誤用CS描述符，取指直接讀Bus；改成第一個缺byte Bus失敗後同命令4.372s通過，保留7.631s失敗輸出。READY初稿高word分組誤寫已更正005A，獨立byte視圖與正式原輸出一致；CPU不受文字錯誤影響。
+- 固定原EXE乾淨Go全套CPU386121.065s／machine1.556s；正式10767正常前綴／35frames、8M1693列／PNG、68舊＋32新CLI負例／正對照、94項回填／新357的38＋16負例及較早負例通過。首次守衛缺完整164567989步號，補文件縮寫後重跑，摘要保留；CPU與原收據不改。缺8088語料不算386實機驗收。
+- 原164568139在1CFD3F的66 F7 /3 word memory NEG拒絕，after1CFD42只解碼／未取disp8或source，DS188:5A207C word未知，尚未達180M。finalPNG逐byte保持356，沿354已檢視主要黑底與小型方形圖形，未見完整地圖。
+- 工具a7f175f3bfadcc6d9d56a78e23c0eabf2cbe2442已推送github/codex/moo2-parity-20260930並核對遠端，未推本機origin。357限定CONFORMED、九份較早入口與現行unknown、索引／守衛已回填；29份本機來源／收據及命令見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。CPU與probe逆轉保持356，六舊測試不變。
+
+下一步擷取原1CFD3F word NEG來源與自然分支／消費，沿同180M，不增加cap或深入helper。正式DI reader、資料語意、正式writer、完整生成／開局、RNG與remake同狀態未知，remake／中文化目標持續。本輪來源／收據1000:1000，工具root-owned／.md目錄零，主庫既有2437檔／272目錄保持；各本輪容器有界結束並移除，收尾核對兩庫精確HEAD／遠端與工作樹。

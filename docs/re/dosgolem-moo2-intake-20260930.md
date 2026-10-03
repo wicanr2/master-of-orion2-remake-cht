@@ -2700,3 +2700,84 @@ DRAFT實際input-run內容保存於new-game-356-input-original-run.sh；重生�
 | new-game-356-input-original-run.sh | 6d9362371bb4fa2701a5ee07e2481203f8fb419232268d3f6de9211e65d31ce4 |
 
 來源／收據1000:1000，工具root-owned／.md目錄零，主庫既有2437檔／272目錄保持；原版、全套與回歸容器有界結束移除，收尾核對兩庫精確HEAD／遠端與工作樹。下一步取DS188:5A2084來源word與DI／imm05及原消費，審查word IMUL低16bits／CF與OF、其他旗標未定義邊界／高16bits保持／拒絕不發布，沿同180M，不增加cap或深挖helper。完整生成／開局與remake同狀態未驗。
+
+
+## 2026-10-04：357 原word立即值IMUL與兩MOV零寫
+
+路由命中dosgolem對拍、CPU規格閘門、證據回填與文件職責；沿既有逆向技能，主庫RE-first保持。原版主要執行器/home/anr2/cht/dosgolem，使用隔離副本workplace/dosgolem；能力與用法見其README.md／CLAUDE.md。原EXE／LOG／PNG／RAM與私有腳本不公開，公開自製CPU／測試／probe／spec／索引／守衛與雜湊。
+
+### 來源與已驗範圍
+
+- 工具起點442eef487fa03be9ef0f793e233396120c56973b／主庫c7bd82f131c9afa5152466ce58ff1ea35b7e4b40；現工具a7f175f3bfadcc6d9d56a78e23c0eabf2cbe2442已推送github隔離分支並核對遠端，未推本機origin。[規格357](https://github.com/wicanr2/dosgolem/blob/a7f175f3bfadcc6d9d56a78e23c0eabf2cbe2442/docs/spec/357-cpu386-imul-word-immediate.md)為入口，356／355／354／353／352／344／343／268／269與000-index同次回填；限定CPU與原零積／兩MOV，未當完整開局。
+- 官方DOS1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f；原ZIP3a28a52f5953ff6d8fc251548940500236752ee19b52b51581e71ec1a3373c2f、patch908d6b7b37ad580039c5d108bab2c64b28f51ba735485287d284d5f5242b98e5、417根檔及MOX.SET保持。固定1996日期不是seed；99M按下／99084355放開與180M保持。
+- [Intel 80386 IMUL](https://www.ardent-tool.com/CPU/docs/Intel/386/manuals/prref386/IMUL.htm)定義signed word來源×sign-extended imm8／signed imm16、低word目的與signed範圍的CF／OF；SF／ZF／AF／PF未定義。沿268與既有工具保留政策，標示工具近似，沒有新IDA／遊戲位址特例。
+- Go1.24.13 Docker image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac、UID1000／network none／2GiB／2CPU／128pids；原ZIP／patch唯讀。原版及乾淨全套600s，窄測／8M與CLI180s。位址基準均dosgolem_high_le，DS／SS selector188。
+- **已證實，原擷取**：2026-10-03未改CPU的DRAFT10837原356列／36PNG、只讀／RAM與三observer逆轉保持。原164567987 DS188:5A2083四byte00000000，真正word DS188:5A2084=0000；SS188:2BDB28二十byte FFFFFFFF00000000000000000000000080091D00，來源／ISA充分才READY。
+- **已證實，正式三步**：10767共通正常列／35frames／原R／六段／flags／code24／source四byte／frame二十byte保持。164567987 input1CF90A的66 6B 7B 40 05把word0000×5=0寫DI A5F4→0000、EDI005AA5F4→005A0000／高word005A保持，EIP1CF90F、CF／OF0。164567988／164567989兩C7把SS188:2BDB2C／2BDB34 dword0→0、EIP1CF916／1CF91D。三步ram_changes=[]／readonly true／error nil、callback12／12、IRQ41948／41948非活動／非failed／pending0。兩MOV不消費DI，沒有原Bus寫次數trace。
+- **已證實，工程契約**：33554432個來源word×imm8×兩旗標、2097152個imm16×16 signed邊界來源×兩旗標，以獨立signed範圍與little-endian視圖核算；八目的×八register來源別名、全ModRM／SIB／DS／SS、唯讀來源／last word／線性溢位／第一與第二byte讀失敗／截短立即數／prefix及非零FPU通過。CPU移除word早拒絕加獨立width16分支，逆轉逐byte保持356；六舊測試／平台與8088 CPU不改，三observer逆轉保持356。
+- **工具近似**：三步flags206h只驗定義CF／OF0，其餘旗標保存不當原硬體parity。原來源為零；非零積／負值／overflow由公開ISA工程測試覆蓋，正式原動態未驗。兩MOV零寫不當DI reader。READY初稿誤分組高word為5AA5已更正005A；CPU與獨立byte視圖及正式輸出皆為005A0000。
+- **已證實，驗證與失敗**：窄測第一次7.631s在op6B cut1失敗，原因測試誤用CS描述符限制取指。取指直接讀Bus；以Bus拒絕第一個缺byte且來源完整可讀修正後，同命令4.372s通過，原失敗輸出保留。固定官方EXE乾淨Go全套CPU386121.065s／machine1.556s通過；缺8088硬體語料不算386實機驗收。8M1693列／PNG與68舊＋32新CLI負例、100M／120M／160M／180M正對照保持。94項回填、新357的38＋16缺證據負例與較早負例通過；首次文件縮寫缺完整164567989拒絕後補步號，同命令重跑，拒絕摘要保留，CPU／原收據不變。
+- **已證實，新停止**：原164568139 input1CFD3F bytes66 F7 5B 38 EB 09 8B 55 E4 29 C2 66 89 53 38 83拒絕word memory NEG，after1CFD42只解碼，未取disp8或source。R=[0 0 4 5A2044 2BD920 2BDB54 0 0]／段=[8 188 188 0 20 188]／flags246h；DS188:[EBX+38h] offset5A207C word未知。actual164568139未達requested180000000；probe exit0是CPU錯誤收尾。
+- **已證實，圖像界線**：finalPNG逐byte保持356，SHA-256 1f757f5b16fe492795accf198c8db851443a062450e7f37ecf465c7eae3b6457／RGB04fef4b6a6d6c6c485ef1ce0a82ea71591956cdd3b7cd37b8d1082a023e20e17；沿354人工檢視主要黑底與小型方形圖形，未見完整地圖，不算開局完成。
+- **未知**：正式DI reader、原非零IMUL／signed overflow、新NEG來源與後續消費、第三CMP數值／byte1 reader、資料語意、正式writer、完整母星配置／生成／開局、RNG、人耳、remake同狀態與Windows／macOS實機。主庫玩法RE閘門保持。
+
+### 命令與私有收據
+
+下列相對路徑均位於workplace/dosgolem，DRAFT兩命令是CPU442eef4時的歷史擷取，重生DRAFT須用該CPU與357只讀observer。
+```text
+bash workplace/new-game-357-input-run.sh
+python3 workplace/new-game-357-input-verify.py
+  未改CPU10837原356列／36PNG／word0000與frame／原拒絕 PASS
+go test -p 2 -buildvcs=false ./internal/cpu386 -run TestIMUL -count=1
+  attempt1 截短fixture失敗，Bus缺byte修正後4.372s PASS
+bash workplace/new-game-357-full-run.sh
+  固定原EXE乾淨Go全套 PASS
+bash workplace/new-game-357-formal-run.sh
+python3 workplace/new-game-357-formal-verify.py
+  10767正常前綴／35frames／原word IMUL／兩MOV零寫／新NEG停止 PASS
+python3 workplace/new-game-357-source-verify.py
+  width16分支／三observer逆轉保持356、六舊測試不變 PASS
+bash workplace/new-game-357-off-run.sh
+  8M1693列／PNG與68舊＋32新CLI負例／正對照 PASS
+python3 workplace/new-game-357-backlink-verify.py
+python3 apps/moo2/tools/startup_probe_131.py --check-imul-word-immediate-spec-backlinks
+  94項回填／新357的38＋16負例與較早負例 PASS
+```
+
+CPU SHA-256 94fab7c6e4389ce205c485dd498607f1442c20b3b7999212812f7e622fff4bf2、新測試628915d9b97a671bce0639d43e7644ec91a07563123c09e5cc4ce6c225291036、正式probe e08cf955cfb1b543f62a8cb573d2b6784630dc2bdc44f06fe47820a008cba2a7。input observer與正式相同，診斷budget均三步，沒有重寫舊LOG／PNG或提高cap。第一次截短失敗為實際輸出，第一次回填守衛拒絕存摘要，均與通過收據分列。
+
+94項規格回填全過；新357的38項缺證據／限定範圍／狀態／356回填／索引負例、其餘八份較早回填另16及舊負例全過。首次步號縮寫拒絕摘要另存attempt1，CPU與原收據不變。來源／收據均1000:1000，工具root-owned／.md目錄零。
+
+| 本機來源／收據 | SHA-256 |
+| --- | --- |
+| moo2-imul-word-357.go | e08cf955cfb1b543f62a8cb573d2b6784630dc2bdc44f06fe47820a008cba2a7 |
+| moo2-probe-357-input.txt.gz | 47e10ec4128cb451881b59741a9f46ebdff374cdd27409b8834edafad4d4fc0b |
+| moo2-vbe-357-input.png | 1f757f5b16fe492795accf198c8db851443a062450e7f37ecf465c7eae3b6457 |
+| new-game-357-input-run.sh | d8e2e70d86ed132223d836591af364cc94798a7c79e97c0c64c059d27064d0c3 |
+| new-game-357-input-run-output.txt | de768f16a275eed1b0aea16376f2b912c69c608592a2f607ad2d199f4840bb39 |
+| new-game-357-input-verify.py | 211548c27443824d4c0776e47045459a99ebd44e595a1575d05cc5d1fc421ff6 |
+| new-game-357-input-tests.txt | 315f1767ae0a5d03a245c1d87759f9a16d9007539b6ce04cce3e472f0b977f56 |
+| moo2-probe-357-formal.txt.gz | 464f05e17bb736116a05a8f18d81edf45a9edcd0f40e4d3fd82c41b937822b71 |
+| moo2-vbe-357-formal.png | 1f757f5b16fe492795accf198c8db851443a062450e7f37ecf465c7eae3b6457 |
+| new-game-357-formal-run.sh | 5baa5359f7b8a6ae721585a475e9da3d33df08809a53c800d4dcdc494aa80cf1 |
+| new-game-357-formal-run-output.txt | 5c4821ee66c0580a83900be3c096977f43471946a3767e1a9adb19f88a04c89b |
+| new-game-357-formal-verify.py | 765061983c4fcc3e906389efe7fd982d415916ef03106d5cbe6d1432fd2b14ce |
+| new-game-357-formal-tests.txt | 2835387eca804693752d275f41e7c34a8c227ae074a788181058ee77edd9654a |
+| new-game-357-unit-tests.txt | 33d4dc610a69ab1ba9663ad9ad2863e0b6c8a37cbf1e38e617ee693c3dba5883 |
+| new-game-357-full-run.sh | 2277cfdca014a70dbd902dc3eae95e3268c7cb2789ff0037035e3020b30d565b |
+| full-test-357.txt | 114cc77fa894252e3fcc3a20b57a4992690101f642e00d1532f9c6c733730a16 |
+| new-game-357-source-verify.py | eade6f79cc4ad877e18a912ec5b5c02ac496d0cb0857922e84976d433ae03e99 |
+| new-game-357-source-tests.txt | 0207dbe9a870631abca1548e17d591ba6e559d9c1f05f6537313bd2762afb4de |
+| new-game-357-off-run.sh | f697bb45bc9c9bc9d71847e7ee9fc6e0a01d98083fa20e17db25c3ffaf8c50ad |
+| new-game-357-off-cli-tests.txt | a5eabaf6f165680e4e73a808efc13d87da68f29a4c55ca63bd6bf4ec96c09dff |
+| moo2-probe-357-off-old.txt | 3b1453f36f0ce3d75a1bee99c2d5de4aec4ac463b60417134e753130e3297b36 |
+| moo2-probe-357-off-new.txt | f438eea44fd91d5267b2a6f77693434fe039a638dc21fa58f69a81a5448ffb09 |
+| moo2-vbe-357-off-old.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| moo2-vbe-357-off-new.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| new-game-357-cli-tests.txt | 0c39c7d30d26388473df3e31ad7be38651d38f98677857d9e5a9de59a4aaac43 |
+| new-game-357-backlink-verify.py | 9c20c505262dc71b14e1f9ddbc7f07c6d85c770b340fa2773bbc52b898b9d44d |
+| new-game-357-backlink-tests.txt | 0870d186f33b7775bac8d228a186e72275f5e1c95d2ff8791d4f047a84801ec6 |
+| new-game-357-unit-tests-attempt1.txt | d31e60ddb220607f0f5ab62749843d20e1113f177505cc8003c514bb9f373e29 |
+| new-game-357-backlink-tests-attempt1.txt | a11e1282fe16a014f6d6f7f79e9d61d37ff991d4f1122fc96c3fb3ef8e38aa9e |
+
+來源／收據1000:1000，工具root-owned／.md目錄零，主庫既有2437檔／272目錄保持；本輪原版／全套／回歸容器有界結束並移除。下一步擷取1CFD3F的DS188:5A207C word NEG與相鄰bytes、自然EB09分支／消費，按公開ISA審查，沿180M不增加cap／不跳指令或代寫／重送／深入helper；收尾核對兩庫精確HEAD／遠端與工作樹。
