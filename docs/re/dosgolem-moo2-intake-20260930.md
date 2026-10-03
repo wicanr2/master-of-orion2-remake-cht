@@ -3274,3 +3274,48 @@ python3 workplace/new-game-366-verify.py
 均於Docker通過。每次原418來源檔guest前後SHA-256保持；state與364相同，僅sound.lbx4250888bytes／SHA-256 3f0354ac5c1b13a3c5c4fd098c2cbc22af37b71e74fc95e582782c22024c449d／UID與GID1000，原ZIP同bytes。沒有SAVE10.GAM，未達正式存檔成功、typed種族／持久名稱／旗色、完整開局、RNG、人耳或remake同狀態。
 
 工具bdac0e0與94b15847606ff4c90635ba90d2c38388a86a2535已推送github隔離分支。原版工作容器已自動移除，兩個專案掛載filter均無執行中或停止容器。下一步依原95000065真實初態另立名稱確認DRAFT，審查按下mask1與一次正常press／release，仍實讀IF／target／callback／IRQ安全條件；不以任意時刻試到成功，不深挖helper。主庫玩法RE-first保持。
+
+## 2026-10-04：367可寫Strader正常ACCEPT與99M旗色頁
+
+**已證實，限定正常名稱確認**：官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，原ZIP417根檔另加官方EXE共418檔，MOX.SET／1996-01-01／180M參數保持，1996不是seed。位址空間dosgolem_high_le。工具起始94b15847606ff4c90635ba90d2c38388a86a2535，公開CPU／DOS／provider／probe與全部internal保持，362可寫overlay／365Humans與367私有profile僅在容器/tmp組合。
+
+READY前直接審查366同guest首個95000065自然ready收據，完整CPU／FPU／165byte表／globals／header／32byte Strader／RGB與唯一ACCEPT矩形保持。95M flags12h／IF關閉不送輸入，65原指令自然恢復；獨立profile在95000065原EIP234A49／flags216h、callback mask1／8／8、IRQ22338／22338非活動且非failed通過，原338唯讀guard false保持。一次press x640／239／buttons1在175812740µs，release95013578／175858124µs／x642／239／buttons0，相差45384µs，放開前callback9／9正常完成。未改IF／RAM／選擇／EIP。
+
+原95008897、20DDDB六byte66A3A6C42600真正寫DS188:26C4A6 word0000→0100，下一EIP20DDE1，R／六段／flags297h與候選Strader保持，callback9／9、IRQ22340／22340非活動且非failed。共享GUI選擇欄位已證實，不外推正式名稱writer。原99M SELECT BANNER COLOR已親看，RGB8c2c573c08ebf4bce0b4e166d4268fb6fcf90f35dd27fbbb2de614b26f187f15，實際count10／stride55全550bytes可讀，CPU／FPU與RAM只讀。EIP23857C、R=[347B20 0 4B 1 2BD9B8 2BDA14 6AE528 347B6C]、六段=[8 188 188 0 20 188]、flags206h，FPU127F／status0／depth0／八stack bits0，callback mask2B／10／10、IRQ23503／23503非活動且非failed。原339唯讀旗色guard false保持，99M診斷停止，BANNER_RED輸入未送。
+
+**環境／驗證腳本勘誤**：第一次生成器匹配早期defer並把旗色診斷插到50M menu分支，尚未送名稱輸入即diagnostic return。該次Go／patches／run／CLI／原LOG／state／24PNG共32檔原樣保留，逐份SHA-256與UID／GID1000核對，以new-game-367-first-receipts.json索引。改用唯一執行期條件與99M／550bytes範圍斷言，同Docker與同參數乾淨重跑；名稱輸入只在修正後guest送一次，不重擲結果。首次不包裝為99M或正常玩家完成。驗證初次把舊365在95M停止之後一筆原INT33h列入共同前綴，7662／7663長度不同、共通列相同；按共同95M候選快照終點修正，guest未再跑。原輸入收據和結果沒有變。
+
+**驗證**：365前95M的7662共通列按352既有mtime／DTA／每輪只讀RAMhash正規化，29PNG逐byte保持；366首個readiness CPU／完整表／候選／RGB保持。四CLI拒絕與合法值越過前置後的缺EXE正對照通過。九私有替換逆轉為365，公開internal與probe保持。原418檔guest前後SHA-256保持，state同366僅sound.lbx4250888bytes／SHA-256 3f0354ac5c1b13a3c5c4fd098c2cbc22af37b71e74fc95e582782c22024c449d／UID與GID1000，原ZIP同bytes，沒有SAVE10.GAM。
+
+### 本機私有收據SHA-256
+
+| 文件 | SHA-256 |
+|---|---|
+| moo2-367-overlay-frame-extended-99000000.png | 96efbd1ce6538c27b019cc6713fe7397d6d0fde7a63c7e01cb82023f75614c67 |
+| moo2-probe-367-overlay.txt.gz | 4e241f99d868c28cde3107d884b68136769d8dd9bb158021edbc2f9547d34725 |
+| moo2-ruler-accept-367.go | 0f49ac8cdfb3a1850b5d32f6de86b5dd216ef4cb144e3416aa4c581bef700c38 |
+| moo2-save-state-367.json | e35322cba18956bcd245e4091932c822f9460271deda20ddda8b7722aa1375bc |
+| new-game-367-cli-tests.txt | 552eda2f737327ec1d4ff956837f2291493c96a0955b80fe7b91a901215536aa |
+| new-game-367-data-hashes.json | 0510e9168f7137fd1a1d5551ee7b4e84122e9c4321d2db58085aa448b5e7c40c |
+| new-game-367-first-receipts.json | 98710ea3cc2bf068c48bd15ab1d0ad5344060aaba07874733421418506784de2 |
+| new-game-367-patches.json | 1b434c2da34079037b9240916e7135107408eec0cb28f101225c6da11be47388 |
+| new-game-367-ready-review-tests.txt | c122807494b5e12fa430d945289c80c50168479dd7ef8e219a0239dd5c3e1efa |
+| new-game-367-ready-review.py | ab6b08790ef6e8c925984ad397226216007e890b8186e8ed9dedb88227e7bf69 |
+| new-game-367-run-output.txt | b6055c293bf323cd1f2752684b096f615843cbc9f24fea742fa269d45242dbe8 |
+| new-game-367-run.sh | 746424ff56b9d4a888278b45d82be8781e2113f92b4dcff6becb090f28e43d87 |
+| new-game-367-tests.txt | 458c0c10022164a9e7ff4225331bd8884cf5ec5fce0b44c11dcfd7accda7a60f |
+| new-game-367-verify.py | 23cbecb0c4572aa304bfc54a55c1d1b60233fd813ece9e93886eb31af7a13969 |
+
+上述14份在忽略workplace/dosgolem/workplace/，SHA-256與UID／GID1000核對，首次32檔由其獨立索引保存。原PNG／LOG／RAM／版權素材不入Git。工具規格367、索引與338／365／366回填已提交a649d0b9d035eec8d8f57235b7e54a30cd7848bd並推送github隔離分支。
+
+### 命令與下一步
+
+```text
+python3 workplace/new-game-367-ready-review.py
+bash workplace/new-game-367-run.sh
+python3 workplace/new-game-367-verify.py
+```
+
+均於既有Go1.24.13 Docker執行，image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP與patch只讀。原版容器已自動移除，兩個專案掛載filter無執行中或停止容器；既有root-owned2437檔／272目錄保持，無新增root-owned或.md目錄。
+
+原資料→完整表／候選→正常press／release→共享store→旗色UI限定接通。未知：typed名稱、正式名稱持久writer／旗色選擇／正式存檔／完整開局／RNG／音訊與remake同狀態。180M參數保持但99M診斷停止不稱180M完成；主庫RE-first保持。下一步以99M完整550byte表／globals／header／CPU／FPU／RGB／callback與IRQ，另立紅旗正常press／原INT33h poll／GUI selection／release契約並審查，不只換hash或挑時刻放寬339唯讀guard。

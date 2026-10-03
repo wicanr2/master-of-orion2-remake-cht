@@ -1248,3 +1248,13 @@ Docker命令 `python3 workplace/new-game-364-ready-review.py`、`bash workplace/
 Docker實際命令 `python3 workplace/new-game-365-ready-review.py`、`bash workplace/new-game-365-run.sh`、`python3 workplace/new-game-365-verify.py`、`bash workplace/new-game-366-run.sh`、`python3 workplace/new-game-366-verify.py` 全部通過，各項四CLI拒絕與合法值正對照通過。原418檔SHA-256保持，state仍僅與原ZIP相同的sound.lbx，沒有SAVE10.GAM。公開CPU／DOS／provider／probe及全部internal不變，私有修改可逆。
 
 工具bdac0e0與94b15847606ff4c90635ba90d2c38388a86a2535已推送github隔離分支；主庫起始aa44de78f60bfbcf4ac9dc61e35a3e37305e5301。本輪主庫只更新DOS活表／CONTEXT單行並追加工作與研究，23份本機收據雜湊見研究入口，原LOG／PNG／資產不提交。原版容器已自動移除，兩個專案掛載filter均無執行中或停止容器。下一步依95000065真實初態另立名稱確認契約；持久名稱／正式存檔／完整開局／RNG與remake同狀態未驗，主庫RE-first保持。
+
+## 2026-10-04：367可寫名稱正常確認與旗色頁
+
+沿366首個自然ready審查獨立profile後READY。原95000065正常ACCEPT，press／release相差45384µs，回呼9／9完成；原95008897、dosgolem_high_le:20DDDB六byte66A3A6C42600寫DS188:26C4A6 word0000→0100，R／段／flags與Strader候選保持。99M原SELECT BANNER COLOR已親看，完整550byte表／CPU／FPU／RAM只讀，callback10／10、IRQ23503／23503；未送旗色。原338與339唯讀guard保持。
+
+首次生成器匹配defer與較早if分支，診斷錯置50M，尚未送名稱輸入；原32份收據保留。改以唯一執行期條件並核對99M及550byte取樣，同Docker／參數乾淨重跑，名稱輸入只送一次，不挑結果。驗證初次把95M後一筆自然INT33h併入舊365停止前綴，核對共通快照後修正比較終點，未重跑guest。7662原共通列／29PNG保持，366首個ready初態保持，九私有替換可逆，公開CPU／DOS／provider／probe及全部internal保持。
+
+Docker命令 `python3 workplace/new-game-367-ready-review.py`、`bash workplace/new-game-367-run.sh`、`python3 workplace/new-game-367-verify.py` 通過。四CLI無效值／缺依賴及合法缺EXE正對照通過，原418檔前後SHA-256保持，state仍僅與原ZIP相同的sound.lbx，沒有SAVE10.GAM。14份新私有收據與首次32檔索引見研究入口，原LOG／PNG／RAM與版權素材不入Git。
+
+工具a649d0b9d035eec8d8f57235b7e54a30cd7848bd已推送github隔離分支，主庫起始f32ec3e01d7be09b9f6c1e50212607e64acb07eb。本輪主庫只改DOS活表／CONTEXT單行並追加歷程／研究。原版執行容器已自動移除，專案掛載filter無執行中或停止容器；既有root-owned2437檔／272目錄保持，無新增root-owned或.md目錄。下一步以99M真實旗色初態另立正常紅旗契約，保留339guard。名稱持久writer／正式存檔／旗色選取／完整開局／RNG與remake同狀態未驗，主庫RE-first保持。
