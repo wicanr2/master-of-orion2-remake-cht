@@ -2220,3 +2220,65 @@ python3 apps/moo2/tools/startup_probe_131.py --check-generation-iteration-spec-b
 | new-game-350-frames.json | 53151cd1754678ba3c5a702351d0c629782aa222d9cfb01b8dc3131ff6de6bc3 |
 
 主庫只更新目前狀態表與追加歷程。下一步維持160M，取原16AF29出口／16AF35後段及16B01F RET／16BAE3返回邊界，再依實際工作量調整預算；不深挖runtime或圖形helper。兩庫收尾核對精確HEAD／遠端／乾淨工作樹與Docker容器清理；本輪輸出UID1000、工具root-owned零、主庫既有2437檔／272目錄保持，沒有.md目錄。
+
+## 2026-10-03：351 原連續SI迭代與160M截斷證據
+
+路由命中dosgolem對拍／規格閘門／回填，沿已載入入口及固定IDA349原匯出。起點主庫ac2784ad7fcac666da2b6f2aa0779d88163d6b79／工具025629e9fe5de8e29abe81aa08c67ad37a8ff161。工具結果[ffc7e16](https://github.com/wicanr2/dosgolem/commit/ffc7e16a6ed34a279418982dbe5131e328ec7162)，完整HEAD ffc7e16a6ed34a279418982dbe5131e328ec7162；[351規格](https://github.com/wicanr2/dosgolem/blob/ffc7e16a6ed34a279418982dbe5131e328ec7162/docs/spec/351-moo2-generation-completion-boundary.md)限定CONFORMED。主庫RE-first保持，整款remake／中文化尚未完成。
+
+**已證實**：原dosgolem_high_le:16AD7D的26個head，SI嚴格為1..26，無回跳／重複；153880145到159926951共6046806原步。25個head間隔151326..338347，整體耗時增長但非每次嚴格增加。160M只讓第26次再續73049步，原SI36比較、16AF29出口、16AF35..16AF6E後段、16B014／16B018結果入口、16B01A epilog、16B01F RET與16BAE3 caller返回皆未見。
+
+**已證實**：每個原head EBP2BDB60／ESP2BCF60，bound依原relocated bytes66 3B 35 9A 19 28 00讀DS188:28199A raw2400／signed36。27事件readonly、heads26／events27／full=false，最大72heads＋11邊界＋終態1筆；沒有觀察飽和。終態160000000／17FD04／unique_sites39434／outer_returned=false／無新CPU拒絕。terminal ESI2BDB44屬nested框架，不作外層SI。
+
+固定IDA9.4 linear EA sub_7AD13的原7AF29 B9FFFFFFFF、7AF35 E884390800、7AF68 0FBFC1、7AF6E 0F8EA4000000、7B014 30C0、7B018 B001、7B01A C9、7B01F C3／file offset／operand與原名保持；本輪只重用349匯出，不執行新IDA或改正式DB。實際dosgolem_high_le定位另記，不因靜態有RET即宣稱動態完成。
+
+**強推論**：連續26次工作量支持下一次固定180M有限續行，加20M供原SI26..35及後段探索。20M約為10個最大已量間隔338347的5.9倍，屬選定探索餘量，不是剩餘時間上限。後段／重入／完整開局仍未知，不盲提高cap或跳過生成。
+
+**未知**：SI27以後、全部迭代出口／後段選取／重入／RET／caller16BAE3、後續重繪、正式writer、原欄位語意、完整配置／開局、RNG與remake同狀態。固定1996-01-01不是seed，不宣稱受控亂數parity。
+
+全部10570原350列／36PNG依既有mtime／DTA／每次RAM規則保持。DRAFT private實測／獨立核算後先READY審查，正式只更名351標記；來源逆轉逐byte保持350，CPU／平台／原輸入／160M cap不改。正式關閉8M1693原列／PNG、68舊CLI負例與100M／120M／160M正對照、88項回填／新351的25負例及既有負例通過。沒有CPU修正、IDA重跑、120M重跑或CPU全套。
+
+### 命令、環境與私有收據
+
+Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，Docker --rm／network none／UID1000／2GiB／2CPU／128pids及450s原版外層timeout；正式8M／CLI180s，原ZIP／patch只讀。原417檔／MOX.SET／99M按下與99084355放開／calendar與160M cap保持；無代寫／hook／換Bus或重送。
+
+官方DOS1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f；CPU b5c8bd900047e8f018ad66edaf5ae8e1009e9f6d04ec89dea4000c27f3326b30；正式probe6cc3c65f7648e9582713a69fd51fa13a2d2a824cdec79204a7c88e90b22a183c。finalPNG c7534b8f40b51b8377d255d66e6dd759dfb3d427fa6fccc6ee7d8c3999b32bca／RGB4a1d9efc9d15da575e330128f22d27e97f6d6616ac1b4184ec94efc2bd27f2c9仍「Placing home worlds...」。
+
+```text
+bash workplace/new-game-351-run.sh
+  原160M exit0；heads26／events27／full=false／outer_returned=false
+python3 workplace/new-game-351-verify.py
+  全部10570原350列／36PNG／SI1..26連續／160M截斷／來源逆轉 PASS
+python3 workplace/new-game-351-source-verify.py
+  正式只更名351標記／兩區塊逆轉逐byte保持350／CPU平台保持 PASS
+bash workplace/new-game-351-off-run.sh
+  原關閉8M1693列／PNG與68舊CLI負例及正對照 PASS
+python3 workplace/new-game-351-backlink-verify.py
+  88項回填／新351的25缺證據與限定範圍等負例／既有負例 PASS
+python3 apps/moo2/tools/startup_probe_131.py --check-generation-completion-spec-backlinks
+  原連續進度／160M截斷／未見出口／較早回填 PASS
+```
+
+正式關閉測試建置使用 go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe。以下收據在工具忽略workplace；原EXE／LBX／RAM／LOG／PNG／私有腳本不入Git，公開只保存自製診斷／規格／索引／守衛與雜湊。IDA檔是重用來源，不宣稱本輪新執行。
+
+| 收據／核算 | SHA-256 |
+| --- | --- |
+| moo2-349-ida-ui-ret.json | 0c16013bacada3769016549c3a30cfe12ddc2ea72b3829d20ff77256969b0dec |
+| moo2-351-completion.go | 185d611e3cccf08c5b4a0d2c423766e7dcb5bf0e1119bcb02475a9edda3b5465 |
+| moo2-probe-351-completion.txt.gz | 389a328d590e406bf2a09134cbc864476bcee5ee31e09288e82a1c51fb65db95 |
+| moo2-vbe-351-completion.png | c7534b8f40b51b8377d255d66e6dd759dfb3d427fa6fccc6ee7d8c3999b32bca |
+| new-game-351-run.sh | 25acc19b3a0b9cf04d5eb82b1c9df952dba988c433ac463cddcb965f3165beae |
+| new-game-351-verify.py | 6910cd202514cf6b5a5ac333ae3507feebd86cbdf85d012dfbf18d26825cbe92 |
+| new-game-351-tests.txt | 83c52d22e97fb63c4a13bebdec6d2158af7fc5a012c8cc8894ba6c0f3fcfd2ae |
+| new-game-351-source-verify.py | 90b8631a7ec629c9b305f4dfd19da6d9852fa0ea3ae6c7bd21d31e7c0f52f2b4 |
+| new-game-351-source-tests.txt | c5399648a97935aa06578278eedee83a817f58f9e725a8a501688b94eef9e202 |
+| new-game-351-off-run.sh | 923783a3c35a606ecc795e92dc3d3d4188d90f7f314273f4d8a2fd80c9eced0e |
+| new-game-351-off-cli-tests.txt | 7d720ece028de31c0f318e14ac3aa0eaf3a62300093ab5410538b8b4007df7f1 |
+| moo2-probe-351-off-old.txt | b26779d13b2b12e3bc94db2813b50f0b1920e1dc2b4d4ade45e62e480e6b44c7 |
+| moo2-probe-351-off-new.txt | bd693fc70584776eadc2835d35d072a58b625781a3ae52def9e81c51a510ed69 |
+| moo2-vbe-351-off-old.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| moo2-vbe-351-off-new.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| new-game-351-backlink-verify.py | 48c5f0b652b55799313da611b25391d0c239df15f1aa17b33447aab8f08fc2de |
+| new-game-351-backlink-tests.txt | afd425de1526b803e70c395ff059efbf2e9eee1b63420ba946d29b44e8a1e694 |
+| new-game-351-frames.json | 77c5cc266bb737831784fc814d9d3fbd356db8a74e192d53c201ab59fd27d1b7 |
+
+主庫只更新目前狀態表與追加歷程。下一步建立固定180M正常續行，核對160M前同一原狀態／進度／畫面，再追出口、後段、RET與正常玩家畫面。兩庫收尾核對精確HEAD／遠端／乾淨工作樹及專案Docker清理；本輪UID1000，工具root-owned零，主庫既有2437檔／272目錄保持，沒有新增root-owned或.md目錄。
