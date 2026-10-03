@@ -906,3 +906,12 @@
 - 14新增CLI拒絕與有效正對照、71回填函式、既有32／49／25／27／27／34／31／36／31／37／34／35與新增33缺證據負例、兩CLI通過；原ZIP／patch／EXE／MOX.SET／417檔、gofmt／Git差異及新來源／收據1000:1000通過。CPU／startup／provider／matcher未改；325固定EXE既有全套不涵蓋新拒絕。
 - 工具4501b831842f33ee5a0388b3018ae0c240949bc3已推送github隔離分支，遠端回讀一致、工作樹乾淨，未推本機origin；鎖定334與九私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。主庫RE-first與整款remake／中文化目標保持。
 - Docker兩工作區掛載篩選空，工具root-owned／誤建.md目錄自檢空；進度讀取時原容器已自動移除，原PTY隨後回報完成，未重啟或重點。其他專案未清理，主庫本輪四文件及既有root-owned 2437檔／272目錄於輪末核對。
+
+## 2026-10-03：REPNE SCASW修正與原版設定頁
+
+- 起點主庫884dec265c8ecef9390d1e8d0aa3574819e9b7f7／工具4501b831842f33ee5a0388b3018ae0c240949bc3。命中CPU公開契約／dosgolem／規格閘門／文件職責路由；335先DRAFT保存未改CPU完整初態，再READY實作通用F2＋16位AF。主庫玩法保持。
+- 自製公開Intel契約與獨立算術oracle涵蓋92416組合及方向／多元素／高ECX／EDI繞回／逐byte故障／前綴拒絕。CPU窄測試PASS 0.266s；固定EXE Go全套PASS，cpu386 106.777s。不稱386實機逐週期驗證。
+- 同334四原版各一次乾淨重生，Go1.24.13固定Docker／600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀重建417檔，輸入與100M cap不改。python3 workplace/new-game-335-verify.py PASS：三舊基線3847／4829／6769列及72PNG保持，ready入口前5833原列保持；原F266AF結果ECX3／EDI1F3587與下一MOV EAX64h獨立核算。
+- 同ready原版到100M無新CPU拒絕，NEW GAME設定頁PNG人工確認；334黑屏與CPU拒絕由新收據解除。原正常press／release、第2筆store與callback4／4保持，ACCEPT、完整開局與remake同狀態未驗。下一步保存設定頁按鈕表與ACCEPT正常輸入前置。
+- 72回填函式、既有負例與新增26缺證據負例、兩CLI通過；來源／新收據1000:1000、gofmt／Git差異檢查通過。startup／provider／matcher保持334；工具root-owned／誤建.md目錄自檢空。Docker兩工作區掛載篩選空，沒有本輪遺留容器，未清理其他專案。
+- 工具74f574a78927f6bacdec95ea0519c83078bc71df已推送github隔離分支，遠端回讀一致、工作樹乾淨，未推本機origin；固定335與十私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。主庫RE-first與整款remake／中文化目標保持，主庫本輪四文件與十私有收據核對通過，既有root-owned 2437檔／272目錄保持，本輪未新增root-owned或.md目錄。
