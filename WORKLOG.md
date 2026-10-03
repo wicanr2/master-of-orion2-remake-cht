@@ -976,3 +976,13 @@
 - 下一步先保存原85 82 @184694有效位址／source／mask／flags及SETNE／RET最小消費，經DRAFT→READY補CPU支援，保持同341輸入續行與固定EXE完整CPU測試。持久名稱／旗色writer、原旗色結果、下一頁／完整開局、RNG及remake同狀態未知，主庫RE-first與整款remake／中文化目標保持。
 
 主庫四文件、24份私有來源／收據、工具精確HEAD、原ZIP／patch與CPU來源核對通過，其餘活表全文保持。既有root-owned 2437檔／272目錄保持，本輪未新增root-owned或.md目錄；Docker兩工作區掛載篩選空。
+
+## 2026-10-03：記憶體TEST與原版宇宙生成畫面
+
+- 起點主庫34ace3c4ed5b4418882f6ab83cdf176a3cd325c7／工具b07cda7188d7139da612f143ba68ea13cca21958。路由命中dosgolem、CPU平台契約、規格閘門、文件職責與逆向回填；342先DRAFT，未改CPU原來源1／mask0／stack返回1846E3與完整readonly取得，全部7849原341列／29PNG保持後審查READY。
+- 通用memory85唯讀TEST已接線，原99415524交集0／flags246h／SETNE AL0／RET1846E3三步核算通過；正式新入口前7789原341列／28PNG、341完整正常輸入／120M cap保持。原版實際進到「Generating Universe...」，113628909於17D536的0F9E拒絕；原完整開局未驗，沒有代寫遊戲資料、重送或提高cap。
+- CPU窄測0.909s與固定EXE乾淨來源Go全套通過，cpu38655.710s、machine2.914s。初版CPU簽名錯誤建置即拒絕；全套初跑受忽略workplace探索main污染，乾淨版控來源加新測試後相同命令重跑PASS。初核算把舊stop診斷當入口前列，修正邊界後重讀同收據PASS，未重跑原版。8088外部實機語料缺檔，不當作硬體語料通過。
+- Docker原版300s／全套600s／2GiB／2CPU／128pids／UID1000／network none，Go1.24.13／固定映像、原ZIP／patch唯讀與新鮮417根檔。新CPU全ModRM／SIB、唯讀及fault／prefix／寄存器保持／SETNE及RET兩方向已驗，79項回填、342新增25負例及340另兩負例、341的29／340的28／338及339各26負例與兩CLI通過。
+- 工具0c6e871167259c382c6dac2288ace552c33e2319已推送github隔離分支，遠端回讀一致，未推本機origin。18份原來源／收據／核算hash、官方原ZIP／patch／EXE／MOX.SET、實際命令與未知邊界見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。公開只提交通用CPU／自製測試／spec與probe，原素材留本機。
+- 主庫僅更新CONTEXT一行／WORKLIST正常路徑活表、追加本WORKLOG與既有研究紀錄，其他活表及玩法保持。source／新收據1000:1000、gofmt／Git差異通過，工具root-owned／誤建.md目錄空，main既有2437檔／272目錄保持；兩工作區掛載篩選Docker容器空。
+- 下一步保存原SETLE完整初態與下一原byte store，依公開CPU契約走DRAFT→READY並固定同輸入續行。正式writer、生成完成／完整開局、RNG與remake同狀態未驗，主庫RE-first與整款remake／中文化目標保持。
