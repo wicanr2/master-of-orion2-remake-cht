@@ -1454,3 +1454,41 @@ python3 workplace/new-game-336-verify.py PASS：四舊情境3847／4829／6769�
 新probe SHA-256 cfcc89585eb163e67c3043202501f957708b4818985ddbd6d4b1f2138c635b19；CPU SHA-256 967de02753e0dce276413fe67a085e6df16789b52c948999d30ed26c3bb4e6a4。CPU／startup／provider／matcher逐位元保持335，335固定EXE Go全套仍有效，但不涵蓋整款原版玩法。來源／新收據1000:1000、gofmt與Git差異檢查通過。工具root-owned／誤建.md目錄自檢空，Docker兩工作區掛載篩選空，沒有本輪遺留容器，未清理其他專案。
 
 **未知與下一步**：只獨立解碼已保存90M／100M的原16筆選族表與正常種族輸入前置，再依新READY規格送一次正常選擇。不重開已完成ACCEPT／SCASW，不深入renderer或原helper。種族選擇、名稱輸入、完整正常開局、正式RNG與remake同狀態未驗；主庫RE-first、255完整游標、303整體DRAFT、299自然OF=1、AH2Ch／RNG／人耳保持。
+
+### 2026-10-03 原版正常人類選擇與統治者名稱頁
+
+工具 0633c346ce2ca1156ab26c1dbc533ec0e43920e0 已推送 github 隔離分支，遠端回讀一致，未推本機 origin。固定規格 [337](https://github.com/wicanr2/dosgolem/blob/0633c346ce2ca1156ab26c1dbc533ec0e43920e0/docs/spec/337-moo2-race-humans-normal-click.md)，336 與公開索引已回填。主庫起點 40e3a404d22636ae85826d0a0da8da182e8ce457；官方 1.31 ORION2.EXE SHA-256 為 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址空間均為 dosgolem_high_le。原版素材、LOG、PNG 與 RAM 留在忽略的 workplace，不公開。
+
+**已證實，原選族表與前置**：獨立核對既有 336 ACCEPT 收據 a8c64e4519ac73c78578e3d953257c6cd8d19b5be1345899f15cab0c0b86a252。90M／100M 的原表 count16、DS188:26C480 pointer298848、DS:29BE0E、bias0、stride55，完整 880 bytes 相同，SHA-256 f03515b12cb289bfcfe49b46d5cf8619f8f4e300ccfd1bd4ca43107f1c313ade。index7 原位址 2989C9，範圍 351／330／473／374；對照 Humans 按鈕為強推論。兩個候選點 412／352、413／352 都只命中第 7 筆。90M 原 EIP238576、R=[369321 7A 2D 0 2BD9F0 2BDA4C 502022 369321]、段=[8 188 188 0 20 188]、flags206h，callback6／6 與 IRQ19929／19929 完成且非活動、非 failed；FPU 控制字127F／status0／depth0，VBE Active=true／StartY512／DisplaySets47，RGB SHA-256 9d8c0a1acb3b96200296f789bb13c6877067f6165ec608a7e019506036832dfc。完整原 RAM、表與核心狀態唯讀核算通過後才 READY。其他欄位用途仍未知。
+
+**已證實，正常第 7 筆選擇**：固定 press90000000、virtual_micros154693274、x824／y352／buttons1，原座標412／352；release90010495、virtual_micros154735567、x826／y352／buttons0，原座標413／352，差42293微秒。正常 callback7／7 完成後首次可送時放開，只經 InjectMouseEvent，不代寫 RAM、EIP 或種族。90056672 原20DDDB 實際執行66A3A6C42600，EAX7、DS188:26C4A6 word0000→0700、下一EIP20DDE1；完整 R=[7 502004 181 298848 2BDA2C 2BDA94 D 1A]、段=[8 188 188 0 20 188]、flags297h 保持，callback8／8 與 IRQ19946／19946 完成，error=nil。原選族表第 7 筆確實選中；typed 種族／trait producer 不在本輪驗收。
+
+**已證實，統治者名稱頁**：同100M cap到215DEE，無新CPU拒絕。終態 R=[6 178 DDE0 7 2BD94C 2BD970 2843A5 28439D]、段=[8 188 188 0 20 188]、flags206h、callback8／8 完成。640×480 原 PNG 人工確認 Enter Ruler Name、預設 Strader 與 ACCEPT；末尾底線只視為畫面字形，不當作名稱緩衝區字元。本機 workplace/dosgolem/workplace/moo2-vbe-337-humans.png SHA-256 7f1725d8669cacd9758350420bb60e4dcf6f01c8139ad422edc1e49b3577fc61；RGB SHA-256 3e264c7fbd003a8e24cfea2e4fc0e019d9ee096a760c467634b44a6ef37a9fc9。
+
+原100M名稱表 count3／pointer298848／bias0／stride55，完整165bytes SHA-256 f3dc28cf153edf625b154c5864b3040cddd52fc9ade2a0cfd2a256b80789d0a7、readonly=true，IRQ22901／22901 完成。index1 範圍273／225／371／253 對照 ACCEPT 為強推論；index2 範圍211／179／313／205 的文字欄位語意未知。終態不能充當同100M上限內的輸入前置，沒有送出名稱確認或代寫文字。
+
+固定 Go1.24.13 映像 sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac；Docker 外層900s／2GiB／2CPU／128pids／UID1000／network none，原 ZIP／patch 唯讀重建417根檔。六個原版情境各重生一次，原版每條仍100M cap。go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe；沿336五條基準改337輸出名，新增 RACE_HUMANS_CLICK=1 的獨立情境。固定日期1996-01-01不是seed。
+
+python3 workplace/new-game-337-verify.py PASS：五條舊情境3847／4829／6769／8149／7752原列，除既定mtime／DTA四byte／PNG路徑／每次RAM雜湊正規化外保持336，全部132PNG逐位元保持。本輪不扣336已存在的setup_table_snapshot三列。新humans於90M額外輸入前6821原列保持獨立ACCEPT。原表、RGB、核心前置與原store獨立核算通過；輸入後不同狀態不冒充同狀態。
+
+python3 workplace/new-game-337-cli-verify.py PASS：16無效值／缺依賴在讀EXE前exit2；有效正對照越過參數閘門後，缺EXE明確失敗。同新binary舊336 CLI的15個拒絕案例與正對照保持。74項文件檢查、新增27個缺證據／狀態／索引負例與兩個CLI通過。
+
+| 本機忽略收據／腳本 | SHA-256 |
+| --- | --- |
+| workplace/dosgolem/workplace/new-game-337-input-verify.py | 3d3db6ccaf6bf48ab934f148bf31ec8f2d166c8568811bb5d032996163b36c57 |
+| workplace/dosgolem/workplace/new-game-337-input-tests.txt | 4ac2d0b56904d9fba8323c5ceb184ed9e5e0d5fb40abf1ecfc9415f2b02abf2a |
+| workplace/dosgolem/workplace/moo2-probe-337-baseline.txt.gz | 2b86481ae22b7c4cf675ac169890a33b63b574dad642c150a0ffd7b3a0b40b3e |
+| workplace/dosgolem/workplace/moo2-probe-337-click.txt.gz | 32e007ef3550b70775faa8a89362e0c963bc2ec542b9cf88818b1ebfb3cc2c45 |
+| workplace/dosgolem/workplace/moo2-probe-337-extended.txt.gz | b6e5177086d2477db952c78774cbc72e92e93c3a7a72102273ff8984682deaba |
+| workplace/dosgolem/workplace/moo2-probe-337-ready.txt.gz | ca2aa612913c9ef5d90666576039ddccc28c541fc2aa7e610b048bb12de0861b |
+| workplace/dosgolem/workplace/moo2-probe-337-accept.txt.gz | 5a0ad464cc663be9701bad5314f4c82308a310c19e9b8bb2bba0dcbce23f5c40 |
+| workplace/dosgolem/workplace/moo2-probe-337-humans.txt.gz | 541d0032fa9711a65fe00f62018cf00bea7a78daed46dc06ce79fe8b5de20e45 |
+| workplace/dosgolem/workplace/new-game-337-verify.py | 95ff52a16ae185bd989a74e4bff962758d08884680eebe7d4dfb7c462450c134 |
+| workplace/dosgolem/workplace/new-game-337-parity-tests.txt | 9b41ace6e35830796bade6341a10688f7800bbd37522b5172e124826709ae30f |
+| workplace/dosgolem/workplace/new-game-337-cli-verify.py | 5c12da132ba19c3139c0014f6513b6d4755d4e1c74310e4e0e8e095c32663dd6 |
+| workplace/dosgolem/workplace/new-game-337-cli-tests.txt | 22d72c914180b92bec7ae33148f59702fe53d1d839221c0d51dc25aef271fce1 |
+| workplace/dosgolem/workplace/new-game-337-backlink-tests.txt | 9b9c07085f859ad64350ee7ea8fc919cab4d0dee989eebbe5d6b5df4cd52844f |
+
+新 probe SHA-256 6d13d37c144e35cea19a2decc1b623b4d24023d07cee341a25d4ff5f5ba93712；CPU SHA-256 967de02753e0dce276413fe67a085e6df16789b52c948999d30ed26c3bb4e6a4。CPU／startup／provider／matcher 逐位元保持335，335固定EXE的Go全套仍有效，本輪沒有重跑全套，也不外推整款玩法parity。新來源與收據1000:1000，gofmt／Git差異通過；工具root-owned／誤建.md目錄自檢空，Docker兩工作區掛載篩選空。
+
+**未知與下一步**：在同humans情境較早正常時點唯讀保存名稱頁、165bytes原表、原名稱緩衝區及ACCEPT可接受輸入前置，再依新READY規格正常確認。本輪未確認名稱；typed種族特性、完整開局、正式RNG與remake同狀態未知，主庫RE-first保持。不重開已完成選族／ACCEPT／SCASW，不深挖renderer或原helper。

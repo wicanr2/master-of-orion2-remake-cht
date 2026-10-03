@@ -46,12 +46,12 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–336是限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
-  **目前狀態**：336正常ACCEPT消費已證實。原設定頁17筆表／935bytes於80M／90M／100M完全相同，index15範圍433／392／527／414。固定80000000 press x960／y400、80011248 release x962／y400，差42912微秒，只經InjectMouseEvent；原座標480／400與481／400命中第15筆。80124668原高位LE20DDDB實際word0000→0F00、下一EIP20DDE1，完整R／段／flags297h保持，callback6／6及IRQ17000／17000完成。
-  **正常玩家畫面**：保留44M Esc／1996-01-01、47850592／47851578與MENU_READY_CLICK=1的50000000／50011955原輸入。新明示SETUP_ACCEPT_CLICK=1依原表／RGB／callback／IRQ核對後送一次ACCEPT，沒有代寫選擇。原版同100M cap到21595F，無新CPU拒絕；實際640×480 PNG人工確認SELECT RACE選族頁。種族選擇、名稱輸入與完整開局未驗。
-  **驗證**：四舊情境3847／4829／6769／8146原列除既定正規化保持335，全部102PNG逐位元保持；ACCEPT額外80M輸入前6145原列保持獨立ready。完整原表／R／段／EIP／flags／RGB前置與原store寫回獨立核算，15新增CLI拒絕與有效正對照、舊334 14拒絕與正對照、73回填函式及新增28缺證據負例、兩CLI通過。CPU／startup／provider／matcher逐位元保持335，335固定EXE Go全套仍有效，不能據此宣稱完整玩法parity。工具7c84f3931953cf3c9ffcbdc0718852e9c700b3ba已推送github隔離分支；命令與十三私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
-  **下一步**：只解碼已保存90M／100M的原16筆選族表與正常種族輸入前置，再依新READY規格送一次正常選擇。336各條保持100M cap；不重開已完成ACCEPT／SCASW，不深入renderer或原helper。
-  **未知／不混入本輪**：主庫玩法RE閘門保持；DPMI外部cb_smoke、兩舊探針PE格式、AH2Ch／RNG／人耳及Windows／macOS實機未驗。固定日期不是seed，336是原版正常局部輸入與選族頁驗收，remake同狀態未驗。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選 DOS 原版與 dosgolem，使用本機隔離分支；DOSBox-X 僅輔助。固定官方 EXE、正版 ZIP 根層 417 檔與 MOX.SET。256–302、304–337 是限定 CPU／平台／觀察與輸入驗收，不計入玩法分母；303 整體仍 DRAFT、299 自然 OF=1 同狀態與 255 完整座標／游標仍未驗。
+  **目前狀態**：337 正常選族表第 7 筆已選中。原 90M／100M 的 16 筆表完整 880 bytes 相同，index7 範圍 351／330／473／374。固定 90000000 按下、90010495 放開，原座標 412／352 與 413／352 只命中第 7 筆，差 42293 微秒。90056672 原高位 LE 20DDDB 實際執行 word0000→0700，下一 EIP20DDE1；完整暫存器、段與 flags297h 保持，callback8／8 及 IRQ19946／19946 完成。
+  **正常玩家畫面**：保留 44M Esc／1996-01-01、47850592／47851578、50000000／50011955 與 80000000／80011248 的原輸入。新增明示 RACE_HUMANS_CLICK=1，依原表、RGB、callback 與 IRQ 核對後只經 InjectMouseEvent 送一次正常選擇。原版同 100M cap 到 215DEE，無新 CPU 拒絕；實際 PNG 人工確認 Enter Ruler Name、預設 Strader 與 ACCEPT。名稱表 count3、完整 165 bytes 已保存，index1 對應 ACCEPT 為強推論；名稱緩衝區、確認寫回與完整開局未驗。
+  **驗證**：五條舊情境 3847／4829／6769／8149／7752 原列除既定正規化保持 336，全部 132 張 PNG 逐位元保持；humans 額外 90M 輸入前 6821 原列保持獨立 ACCEPT。原表、核心前置與原 store 寫回獨立核算；新增 16 個 CLI 拒絕案例及有效正對照、舊 336 的 15 個拒絕案例與正對照、74 項文件檢查、新增 27 個缺證據負例與兩個 CLI 通過。CPU／startup／provider／matcher 逐位元保持 335；沒有重新執行 Go 全套，335 固定 EXE 測試不外推完整玩法 parity。工具 0633c346ce2ca1156ab26c1dbc533ec0e43920e0 已推送 github 隔離分支；命令與十三份私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
+  **下一步**：在相同 humans 情境的較早正常時點，唯讀保存名稱頁、165 bytes 原表、原名稱緩衝區與 ACCEPT 可接受輸入前置，再依新 READY 規格正常確認。保持 100M cap；不重開已完成的選族、ACCEPT／SCASW，不深入 renderer 或原 helper。
+  **未知／不混入本輪**：主庫玩法RE閘門保持；typed 種族特性、名稱確認、完整正常開局與 remake 同狀態未驗。DPMI 外部 cb_smoke、兩個舊探針的 PE 格式、AH2Ch／RNG／人耳及 Windows／macOS 實機未驗。固定日期不是 seed。
 
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以

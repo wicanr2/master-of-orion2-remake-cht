@@ -923,3 +923,12 @@
 - 80000000 press／80011248 release，差42912微秒，callback6／6完成；80124668原20DDDB word0000→0F00，index15實際選擇已核對。原版同100M到21595F、無新CPU拒絕，SELECT RACE選族頁PNG人工確認。已保存90M／100M原16筆表供下一正常選擇；種族／完整開局與remake同狀態仍未知。
 - 15新增CLI拒絕與有效正對照、同binary舊334 14拒絕與正對照、73回填函式與新增28缺證據負例、兩CLI通過。CPU／startup／provider／matcher保持335，335固定EXE全套仍有效；gofmt／Git差異及新來源／收據1000:1000通過。工具root-owned／誤建.md目錄自檢空，Docker兩工作區掛載篩選空，沒有本輪遺留容器，未清理其他專案。
 - 工具7c84f3931953cf3c9ffcbdc0718852e9c700b3ba已推送github隔離分支，遠端回讀一致、未推本機origin；固定336與十三私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。主庫RE-first與整款remake／中文化目標保持，主庫四文件與十三私有收據核對通過，既有root-owned 2437檔／272目錄保持，本輪未新增root-owned或.md目錄。下一步只核對原16筆選族表與正常輸入前置，不重開ACCEPT或SCASW。
+
+## 2026-10-03：原版正常人類選擇與統治者名稱頁
+
+- 起點主庫 40e3a404d22636ae85826d0a0da8da182e8ce457／工具 7c84f3931953cf3c9ffcbdc0718852e9c700b3ba。命中 dosgolem、GUI 輸入、規格閘門與文件職責路由。337 先 DRAFT，獨立核對既有 336 的原 16 筆表與 90M 核心狀態，來源足夠後 READY；只新增明示 RACE_HUMANS_CLICK=1，沒有修改 CPU／平台或主庫玩法。
+- 正式六個原版情境各重生一次，Docker 外層 900s／2GiB／2CPU／128pids／UID1000／network none，Go1.24.13，原 ZIP／patch 唯讀重建 417 根檔。原版每條仍 100M cap；go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe。初態沿用既有正式收據，不重跑相同初態。
+- python3 workplace/new-game-337-verify.py PASS：五條舊基準 3847／4829／6769／8149／7752 列與 132 張 PNG 保持，額外 90M 輸入前 6821 原列保持獨立 ACCEPT。90000000 按下／90010495 放開，差 42293 微秒；90056672 原 20DDDB word0000→0700，callback8／8 完成。原版同 100M 到 215DEE、無新 CPU 拒絕；Enter Ruler Name、預設 Strader 與 ACCEPT 已人工確認。
+- 新增 16 個 CLI 拒絕案例與有效正對照、同一 binary 的舊 336 CLI 15 個拒絕案例與正對照、74 項文件檢查及新增 27 個缺證據負例、兩個 CLI 通過。CPU／startup／provider／matcher 保持 335；本輪未重新執行 Go 全套。來源／新收據 1000:1000、gofmt 與 Git 差異通過。工具 root-owned／誤建 .md 目錄自檢空；Docker 兩工作區掛載篩選空，沒有本輪遺留容器。
+- 工具 0633c346ce2ca1156ab26c1dbc533ec0e43920e0 已推送 github 隔離分支，遠端回讀一致，未推本機 origin；十三份私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。主庫四文件、十三份私有收據與原始 ZIP／patch 雜湊核對通過，既有 root-owned 2437 檔／272 目錄保持，本輪未新增 root-owned 或 .md 目錄。主庫 RE-first 與整款 remake／中文化目標保持。
+- 下一步保存較早時點的名稱頁、原名稱緩衝區與正常確認前置。名稱確認、typed 種族特性、完整開局、正式 RNG 與 remake 同狀態仍未驗。
