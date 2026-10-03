@@ -1956,3 +1956,80 @@ python3 workplace/new-game-346-ready-verify.py／new-game-346-source-verify.py�
 | new-game-346-frames.json | 008b17b9ed7b033fba7a33c77e47964527f9a9ff4bcd7d6eb52d4e035da47359 |
 
 兩個原版容器已結束並移除，工具掛載相關容器空；新來源與收據1000:1000，工具樹無root-owned／.md目錄。主庫本輪只更新四文件，其餘活表保持，歷史root-owned不修動。下一步維持160M預算，用150M至160M文字變化定位最小producer／caller與狀態，先DRAFT觀測，不直接提高cap或重送。整款remake／中文化目標仍活躍。
+
+## 2026-10-03：347原進度文字、正常查詢與NUL複製
+
+起點主庫6e32fabf24833d6fa2811160d0bfcaed46420e56／工具92d25f387d2ff18919ec65da2d85c7ce1566d7db。現工具53243f6d5633380f456a9c27faedf908cbade675已推送github隔離分支；詳見工具[347](https://github.com/wicanr2/dosgolem/blob/53243f6d5633380f456a9c27faedf908cbade675/docs/spec/347-moo2-home-worlds-text-source.md)。主庫RE-first保持。
+
+### 證據等級
+
+- **已證實，原資料**：HESTRNGS.LBX SHA-256 a3193f56d12ae512ab8a78cc50aba9df44d6d614a4cc23b14ec7b9f1b09cbf30，archive count1／entry2048..15573／raw1×13521；配置母星檔案offset9646／payload7594／NUL ordinal161，生成宇宙offset11729／payload9677／ordinal242。MSGENG.LBX ee70bd446054139101b5187861af24590bc2b46a30736a52b9a09eb27b6d3096，entry2048..410244／raw384×1063；兩文字在record161或242＋63。原ZIP與官方1.31 patch對應檔逐byte相同。這些是檔案offset，不與CPU或IDA混列。
+- **已證實，原查詢與複製**：索引242在102875194的dosgolem_high_le:17DCA5 E8 E6 CC FE FF呼叫16A990，102875207返回27D9E9，102875330於17DCBA完成NUL複製。索引161在152598605的16C8A3 E8 E8 E0 FF FF呼叫16A990，152598618返回27D1C6，152598741於16C8B6完成。兩次真正CALL返回各13步；來源48-byte窗口連後一段字串與HESTRNGS相同，目的2842F4由原CPU寫入。兩來源指標等於27B41C＋原payload offset。
+- **已證實，完成邊界**：原POP EDI之前才完成，兩ESI各source＋24，EDI28430C、AL0／flags246h／ZF1。原CMP與JNZ已通過、NUL已讀寫，不用既有零值冒稱複製完成。六事件核心／Bus／FPU／VBE及完整RAM readonly；只讀窗口，不注入guest狀態，copy等待各256原步。
+- **已證實，實際呼叫端**：IDA linear EA的sub_7C78E prolog53 51 52 56 57 C8 10 00 00，對應已核對的dosgolem_high_le:16C78E，五PUSH再ENTER。原SS188:EBP2BDB5C＋24四bytes8AB91600保存16B98A，對應IDA caller7B985的E8 04 0E 00 00。本次實際caller16B985，另一靜態caller16AE07未當實際命中；尚未捕捉16C78E最終RET。
+- **強推論，實際來源檔**：IDA sub_7A816的HESTRNGS.LBX引用／34D1h長度，加上原RAM相鄰文字布局，支持英文blob由該檔載入；本輪未另攔截file read。只有實際比對的來源bytes與正常查詢稱已證實。
+- **未知**：16C78E最終RET、其後word[EBP-8]欄位用途、文字renderer、母星配置規則、持久姓名／旗色writer、完整生成／開局、存檔、RNG、人耳與remake同狀態。
+
+IDA linear EA sub_7A990..7A9B0有12指令，讀word_1912FC並加byte_18B41C；本輪核對的dosgolem_high_le定位為16A990..16A9B0、2812FC與27B41C。IDA原名稱／原operand／file offset／bytes保持；每列工具／基準分開記載，本輪F0000映射只套用已核對的入口、RET、PUSH、CALL及資料指標，不外推其他版本或位址。lookup_call的source_offset0是尚未取得來源指標的佔位，並非空字串查詢結果；負值／397以上分支只有靜態證據，未列為本輪動態驗收。
+
+### 保持與實際命令
+
+全部10523原346列／36PNG保持，沿mtime／DTA／每次RAM SHA正規化，不把原terminal換名當收據。160M終態仍17FD04／unique_sites39434／無新CPU拒絕，原PNG c7534b8f40b51b8377d255d66e6dd759dfb3d427fa6fccc6ee7d8c3999b32bca、RGB4a1d9efc9d15da575e330128f22d27e97f6d6616ac1b4184ec94efc2bd27f2c9，沿346已人工判讀的配置母星原圖，不當新玩家頁或完整開局通過。
+
+Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac；IDA9.4 image sha256:6f6d59af49d0008c4109a5295b5f374bdc007e2d1ab28cb9de08779584de2780。Go原版每次timeout450s／network none／2GiB／2CPU／128pids／UID1000；IDA一次性DB timeout90s或120s／同資源，原ZIP／patch／正式.i64唯讀，輸出只寫workplace或tmp。原ZIP3a28a52f5953ff6d8fc251548940500236752ee19b52b51581e71ec1a3373c2f、patch908d6b7b37ad580039c5d108bab2c64b28f51ba735485287d284d5f5242b98e5、EXE4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f、417根檔／MOX.SET553bytes bfd6855a41760b31156b96114b5b33c88f442ab8f8aae020c1740b3b486a3a80。固定日期不是seed。
+
+DRAFT階段private v2六事件與完整160M原流程核對通過，READY後才把兩有界區塊接到正式診斷。正式只比private v2多defer的universe160關閉守衛；旗標1觀察語句相同，兩區塊逆轉逐byte保持346。正式source ca5643c8d598cb705914cbbcfdc79ef571c6d603960b9395f552c7defe52c546，private v2 644805a449403684a68da0b2a0ee85c987d2e8a7e5e0bd4099189c0bce3059ce；CPU b5c8bd900047e8f018ad66edaf5ae8e1009e9f6d04ec89dea4000c27f3326b30未改。
+
+private建置沿IRQ1／IRQ7三檔入口，原版完整命令保存workplace/new-game-347-run.sh；正式go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe與旗標關閉8M／CLI命令保存new-game-347-off-run.sh。正式8M關閉基準1693原列／PNG保持，沒有新增觀察，終態235826／unique_sites10813；它只驗啟動與關閉守衛，不取代正常160M。python3 workplace/new-game-347-verify.py／new-game-347-source-verify.py／new-game-347-off-verify.py／new-game-347-backlink-verify.py PASS；公開python3 apps/moo2/tools/startup_probe_131.py --check-progress-text-spec-backlinks PASS。84項回填、新347的28負例與345另兩負例、所有舊負例通過。三舊CLI共68負例與100M／120M／160M正對照通過。未重跑120M或無關Go全套，歷史346同狀態與344全套不當本輪新跑。
+
+### 失敗分類及勘誤
+
+初次可丟棄LE匯出器猜RAM上限400000，超過初始2874576-byte容量而panic，未執行CPU。主庫既有IDA DB輸入7ae2ac2e5904ca330009af2827279d889906b0b9b7a8854c38eb707a56e955b5不符固定1.31，拒作oracle；重新建一次性DB，以非空JSON／schema／5365函式／固定input SHA／UID1000驗證，不以idat exit1或stdout空判失敗。初次IDAPython API放錯模組，保留attempt1並改為ida_loader後重跑。
+
+private v1目的buffer的既有NUL讓生成文字copy_complete在102875322提早八步，獨立ESI／EDI核算拒絕；原log／腳本保留。v2在原POP EDI之前、指標跨NUL／AL0／flags246h才完成，102875330及152598741通過。同160M固定預算乾淨重跑，沒有把觀察錯誤寫成CPU或玩法缺陷。
+
+### 本機忽略來源及收據
+
+以下均位於workplace/dosgolem/workplace/，原EXE／LBX／LOG／PNG／私有腳本不入Git。36PNG manifest只記本機雜湊。
+
+| 收據／核算 | SHA-256 |
+| --- | --- |
+| new-game-347-text-search.py | 7a83ff0e1ae7d04567e08920eb6d1835794e873d9ea44d0886b8dc135bbf5e25 |
+| new-game-347-text-search.json | 5286b807104ebc75644110c27bdb62dbb265c77b3420cd6a90c245fcf43d6657 |
+| new-game-347-lbx-shape.py | c4bb727ac68e940ab6a4a6fc5e633e0634a346f6157e26f4ecf212821ee718b6 |
+| new-game-347-lbx-shape.json | ebc5a68fc1d68da73d5179311037d5f3265a3996b1655a08082757ceda52cbbb |
+| moo2-347-ida-existing-db.json | 3521023087e238592469a6dfb2d876e3652f6f9154e02efa9b6bb7aab68ae997 |
+| moo2-347-ida-min.py | b2b9ec6cdbcbc8178d107073b41a0c822cedc76e471894ab85b3bbb0810468a1 |
+| moo2-347-ida-min.json | 48e6ca489165f4ebac6731e4a9dd9b4260759e78e4e1883edd48e8eeda2125cc |
+| moo2-347-ida-literals.py | b548cd1bda9d744f8d64080994a845cc34cdf7f0c1429e4b55435e149b660047 |
+| moo2-347-ida-literals.json | 78b4e716b1426e89d9105574397cd1e6a4f555772a1ce55bea3bcb1d9d963ea9 |
+| moo2-347-ida-literals-attempt1.py | 57de283eeea29f6bb292a6b0e41d8234f5455bf23a682ebd762d1e7e557964fd |
+| moo2-347-ida-literals-attempt1.log | 5227c159fd7b0eea37983aafe45f972616ce9c70669923b0a993f9b7d93b511c |
+| moo2-347-ida-text-consumer.py | 4648e3fc6b470a8d3c184f3f9e6098eb7a5e6d239dd01b7b85d0285d6ffe98d2 |
+| moo2-347-ida-text-consumer.json | 5970160c8aa070bcb282ad8934a3b8213ff31baff74d94749d77df8e54a64b18 |
+| moo2-347-ida-init-caller.py | 7fd53c6ba4f0252f68805b692242c50ca0c269781cefc441eb92cd2aadce95c2 |
+| moo2-347-ida-init-caller.json | 84465efbc4891edadf700252a35891e53054372d30eb2487fb004e7de28db92e |
+| moo2-347-load.go | 5e2a78987c12072862a70f70353c44beab31edae64a92f883863c63c4a8652c6 |
+| moo2-347-text-attempt1.go | cced941c35c9011bd6f45190459d77433eba16e2be7cf0a973546befdf48d943 |
+| moo2-probe-347-attempt1.txt.gz | ce652c3e6f0fd8040fd53c246c4c17f95460ffdf78942cbf2fc6a5050521a3c5 |
+| new-game-347-attempt1-tests.txt | 1447c07cc2cdd16c13c8281a8173fec14b4108cd7f2f1d8a681b8e5ead06be99 |
+| moo2-347-text.go | 644805a449403684a68da0b2a0ee85c987d2e8a7e5e0bd4099189c0bce3059ce |
+| moo2-probe-347-text.txt.gz | 3e90425b497fcb452e72a5066a88fcc402042e7fe163342fe6c697a08954d87e |
+| moo2-vbe-347-text.png | c7534b8f40b51b8377d255d66e6dd759dfb3d427fa6fccc6ee7d8c3999b32bca |
+| new-game-347-verify.py | 5a466ebc9fa1311a12134811a994e5d3b699a6642d4048d07f2c97bd4a28c899 |
+| new-game-347-tests.txt | 1799ba5f1447ed213c5b2003c75ee7bf6fe708e9c0447b6e1fff72926bb64f4c |
+| new-game-347-source-verify.py | 260eea59425e2899a9b84e95139f8b3ba4174136a6eba044caa5192764a5181b |
+| new-game-347-source-tests.txt | ba08223bfa0707adb11b84c60ef6df7555cb85efd218177e7c49c653f79e817a |
+| new-game-347-off-verify.py | b9dff364d976d09a4f0ecf846d4b2ed09449caafbc16d2d5c7c716d65a9c9824 |
+| new-game-347-off-cli-tests.txt | 12f8c09ab7c76599b2fc8ab0fdedadb9bec8c10f2b9ea2b1ed80bb5c67248505 |
+| moo2-probe-347-off-old.txt | dccb3bbc64a3c1fd1b7d003274f4951676ac7c6ed0517903aedf574049930e39 |
+| moo2-probe-347-off-new.txt | f651d1c0d023eed50f75fa62b191bbf7a93db4d2b6ae4ea8f8511b11becae460 |
+| moo2-vbe-347-off-old.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| moo2-vbe-347-off-new.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| new-game-347-run.sh | 4755cd82aaf0ca4c5d51c7af229fd267c0fac2bcbcb966ab645671a33fe0742f |
+| new-game-347-off-run.sh | c951a79e48e1645ed63ec27c9a6bf033f970df9b25dcddd2646c1229f08ecfdb |
+| new-game-347-backlink-verify.py | c6f952b1823132ab87b5c353d3a863f73920edbb7166bee70ae5faf7f3e84eb8 |
+| new-game-347-backlink-tests.txt | 517b4d757e0589df38f71a3eda0e74d9b34ff02b199cfd514afa3f200fea5e31 |
+| new-game-347-frames.json | c5a76825087036f3581e0ebf03dd99147e834a659c323ae02502756f64d64ea3 |
+
+新來源／收據1000:1000，工具樹無root-owned／.md目錄，原版與IDA容器均結束移除；主庫只更新四文件、其餘活表保持，歷史root-owned不修動。下一步維持160M，觀察16C78E正常返回16B98A及其後word[EBP-8]分支，原欄位用途未知，不猜補規則或提高cap。整款remake／中文化目標仍活躍。

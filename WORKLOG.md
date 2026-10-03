@@ -1035,3 +1035,15 @@
 - 實際命令、25份本機來源／核算雜湊及68張PNG manifest見研究紀錄。公開只含probe／spec／索引／guard，原LOG／PNG／ZIP／EXE不入Git。工具92d25f387d2ff18919ec65da2d85c7ce1566d7db已推送github隔離分支並核對遠端，未推本機origin；主庫本輪四文件隨後提交推送。
 - Docker：兩個原版與檢查容器皆移除，工具掛載相關容器空；工具樹無root-owned／.md目錄。本輪新收據1000:1000，主庫歷史root-owned不修動。停止前核對HEAD與兩工作樹。
 - 下一步維持160M預算，追150M至160M配置母星文字producer／caller和最小狀態，不直接提高cap或重送。正式writer、完整生成／開局、RNG、人耳與remake同狀態仍未知，主庫RE-first保持，整款remake／中文化目標活躍。
+
+## 2026-10-03：原進度文字來源、NUL複製與配置母星呼叫端
+
+- 起點主庫6e32fabf24833d6fa2811160d0bfcaed46420e56／工具92d25f387d2ff18919ec65da2d85c7ce1566d7db。上一輪取得160M配置母星圖與第三RET，屬進展；本輪命中dosgolem、正常玩家路徑、IDA9.4、規格閘門、逆向回填與文件職責，沿既有入口。
+- 347先DRAFT。核對兩LBX的archive count1、實際header／邊界，原索引161／242與檔案offset；正式1.31與原ZIP的兩檔相同。主庫既有IDA DB輸入7ae2…不符固定4e11…，拒用；以官方1.31重建一次性DB，非空JSON／schema／5365函式／input SHA／UID1000通過。idat exit1不取代產物驗證。
+- 初次可丟棄LE匯出器猜400000 RAM上限而越界，未執行CPU；IDAPython初次API模組錯誤修正為ida_loader。原腳本與失敗紀錄保留，原正式DB唯讀、不改名。
+- private v1取得兩原查詢返回，但目的緩衝區原有NUL讓生成文字copy_complete提早八步。獨立ESI／EDI核算拒絕；v2必須到原POP EDI且指標跨NUL／AL0／flags246h。同160M正常輸入乾淨重跑，原索引242複製102875330完成，161複製152598741完成。
+- 六事件readonly，全部10523原346列／36PNG保持。配置母星原五PUSH再ENTER、SS188:EBP＋24的8AB91600保存返回位址16B98A，定位實際caller16B985；尚未捕捉callee最終RET。160M無新CPU拒絕，仍配置母星圖，完整生成／開局未驗。
+- 證據審查READY後才把兩有界區塊接到正式診斷；正式只比v2多旗標關閉defer守衛。正式關閉8M的1693原列／PNG保持、68個舊CLI負例與正對照通過。84項回填、新347的28負例、345另兩負例與全部舊負例通過；兩區塊逆轉逐byte保持346，CPU／平台不改。
+- 實際命令及37份本機來源／核算雜湊見研究紀錄。未重跑120M或無關Go全套，歷史346同狀態與344固定EXE全套不冒稱本輪新跑。原EXE／LBX／LOG／PNG／私有IDAPython留忽略workplace，不入Git。
+- 工具53243f6d5633380f456a9c27faedf908cbade675已推送github隔離分支並核對遠端，未推本機origin；主庫本輪四文件隨後提交推送。新來源／收據1000:1000，工具樹無root-owned／.md目錄；原版、IDA與驗證容器有界並收尾清理，主庫歷史root-owned不修動。
+- 下一步維持160M預算，觀察16C78E正常返回16B98A及後續word[EBP-8]分支。欄位用途、正式writer、母星配置規則、完整生成／開局、RNG、人耳與remake同狀態未知；主庫RE-first保持，整款remake／中文化目標活躍。
