@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-04）**：362已定位原165025480／dosgolem_high_le:237024的INT21 3D01開寫SAVE10.GAM，唯讀provider回AX5／CF1、其他R／段與RAM保持。128唯讀診斷與14498正規化舊列／38PNG通過；361的memory ROR及真正A1仍已驗。可寫overlay試跑在80M設定頁完整表guard拒絕，五個+44四byte窗口各增8000h、RGB相同而前段流程改變，所指內容未知；試作退出公開path，維持唯讀。工具4f9c45be2017904ea42d86ef9b7ae692388eee08已推送github隔離分支，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步有界取初段開檔與這五窗口候選位址的內容，不改guard或點擊時刻。主庫玩法RE閘門保持，正式存檔／完整開局／RNG與remake同狀態未驗。
+- **DOS 原版動態驗證器（2026-10-04）**：363已核對原1192795／dosgolem_high_le:237024的SOUND.LBX 3D02開檔，同原初態唯讀AX5／CF1、overlay真handle5／CF0。80M五個+44候選位址各增8000h，所指前128byte逐byte相同，完整物件／角色仍未知。兩側各自6148／6271舊列及各27PNG保持，原418來源檔未變；state僅有內容等於原ZIP的sound.lbx。工具04a96f09538a6b01907685f6f56a8d7de154cde1已推送github隔離分支，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步另立可寫profile正常ACCEPT規格，使用已觀察完整935byte表hash／五窗口／RGB與原輸入前置，不改336唯讀guard或點擊時刻。主庫玩法RE閘門保持，正式存檔／完整開局／RNG與remake同狀態未驗。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為

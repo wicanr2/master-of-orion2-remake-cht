@@ -3106,3 +3106,53 @@ Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce617
 | new-game-362-cli-tests.txt | 0c39c7d30d26388473df3e31ad7be38651d38f98677857d9e5a9de59a4aaac43 |
 | new-game-362-backlink-verify.py | 8f065021b447755d27ba85e07b0a1f4f64edbe22eef2a1fc7c0d93e8d0c2d420 |
 | new-game-362-backlink-tests.txt | 44b1392d7f74613becf5bf2fafe80b9537002244b9055524118642b84799aa43 |
+
+## 2026-10-04：363覆蓋層前段開檔與設定頁五窗口
+
+起始主庫088df139965dfc699b56efb4b577d87eae4e0f77；公開工具4f9c45be2017904ea42d86ef9b7ae692388eee08，成果[363限定規格](https://github.com/wicanr2/dosgolem/blob/04a96f09538a6b01907685f6f56a8d7de154cde1/docs/spec/363-moo2-overlay-startup-and-setup-source.md)。CPU／DOS服務／provider／全部internal及公開probe保持起始版，公開probe SHA-256 63b0182fc7311d4e0760dc29906419a1480ea3fa12faf1e58067f61775104bb1。官方ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f；所有原位址為dosgolem_high_le。
+
+**已證實**：原1192795／237024 INT21 AX3D02，DS188:26C3AF的sound.lbx，兩側R=[3D02 270E26 26C3AF 43 2BDB34 2BDB9C 26C3AF FFFFFFFF]／段=[8 188 188 0 20 188]／flags202h與RAM SHA-256 d89e8bbe89447eaa4834b9b9a9cf102146b5d77d3d4b901545d71aa3e1f84c34相同。唯讀AX5 CF1／203h拒絕，overlay真handle5 CF0／202h成功，其他R／段／RAM保持；同AX5不能視為相同。這是前2M最多64筆中的八個AH3D所捕捉最早差異。八筆無AH40，不外推2–80M無寫入。後續fonts.lbx／orioncd.ini step及handle改變。
+
+80M表pointer298848／17筆／stride55，兩側935byte hash原2a18a0213dcb1d539de3175c8356b8c8b886c1d61b38f63795b3fa1859a3f52f／overlay49374b4c6dfd2d1d8231cfc137e1b5b7d86c7ec49f6fdf3be7417480d0da948b。record11–15的+44四byte候選值各增8000h，原DS188 descriptor所指128byte可讀且逐byte相同，首NUL在offset1，不能以NUL截斷二進位資料。窗口逐項原值／overlay值與SHA-256見上述固定363規格，不公開原bytes。RGB仍3bbe6c339cfbc74e84b3210bccfdc4574073b4d308ef9b90a1720cc5c74e623e；各側CPU／FPU／VBE／RAM自檢前後保持，不聲稱兩側完整狀態相同。**強推論**：額外32KiB配置引起位移；未追allocator。**未知**：完整物件長度／角色／消費端。
+
+兩側原418檔guest前後SHA-256保持。overlay state只有sound.lbx，4250888bytes、UID及GID1000、SHA-256 3f0354ac5c1b13a3c5c4fd098c2cbc22af37b71e74fc95e582782c22024c449d，另讀原ZIP比對完整bytes及本機保留副本通過。未有SAVE10.GAM，不稱存檔成功。私有副本／128byte窗口／所有原PNG及LOG不入Git，不散布。
+
+2026-10-04親看原overlay 80M PNG：NEW GAME設定頁640×480，Tutor／Medium／Average／5 Players／Average，Tactical Combat未勾，Random Events與Antaran Attacks勾選；ACCEPT完整，原433,392–527,414包含480,400。只驗當前設定頁，沒有送ACCEPT。
+
+### 命令及限定結果
+
+既有Go1.24.13映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac；Docker600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP及patch唯讀；隔離來源及state在容器/tmp，自製輸出在忽略workplace。
+
+```text
+bash workplace/new-game-363-pair-run.sh
+python3 workplace/new-game-363-pair-verify.py
+python3 workplace/new-game-363-state-source-verify.py
+python3 workplace/new-game-363-backlink-verify.py
+```
+
+兩側各一次原guest，解析180M情境但80M快照後明示診斷停止exit0，不是180M完成。唯讀6148／overlay6271既有列依352的mtime／DTA／每輪診斷RAMhash正規化保持，各27PNG逐byte保持，原guard唯讀true／overlay false。原核對腳本把27張寫28，修正明示27檔集合後讀同收據通過，沒有guest重跑。八早期開檔／五窗口／全狀態快照只讀通過，三診斷區塊逆轉為各自362來源通過。100項規格回填、新37＋34及較早全部缺證據負例通過。
+
+### 私有收據
+
+所有檔案位於 `workplace/dosgolem/workplace/`，SHA-256與UID／GID1000已核對。PNG／LOG／state只留本機。
+
+| 本機檔名 | SHA-256 |
+|---|---|
+| moo2-setup-source-363-readonly.go | 606dd5927f9315cdbf92ecf6132783137b936e44d609f38be6de69c9d87a0b5c |
+| moo2-setup-source-363-overlay.go | 8d956c8851556391e01f85c3a8e3a4676acf5341e406c7773ffeda1292af0820 |
+| new-game-363-pair-run.sh | 35bfda9d39e56477125bb9f6505b1ce694958666a171cece3495e4bbcf8e8432 |
+| new-game-363-pair-run-output.txt | 6c7c5f09bf978b013fd5fe4d74ab33aaecd606ead07f24d4646e3819890a71c9 |
+| moo2-probe-363-readonly.txt.gz | bebf7c93f2a802cc1c6241985eafe0b8955cbfc034fa76f39ef679b0f91dfe6e |
+| moo2-probe-363-overlay.txt.gz | 72f5cc29637de198914526676953f53c99fb333c20f5dafa449d921fe7c11811 |
+| moo2-save-state-363.json | e35322cba18956bcd245e4091932c822f9460271deda20ddda8b7722aa1375bc |
+| new-game-363-pair-verify.py | 65afec78a9563a1e9df3f212fbd681af47e38b443b83034022c539d653073579 |
+| new-game-363-pair-tests.txt | a74b63c1c9d88fb73a41376e7ec26508b93cdbe18150b766190275516b22c03e |
+| new-game-363-state-source-verify.py | ded59fb88373f6f142a5855e79c71155528ecfe0398c93c254214ca547519e76 |
+| new-game-363-state-source-tests.txt | 1e4a74c2a520e13a297711e93f87d753cd63e6db531045fe137a5df55bab5315 |
+| new-game-363-backlink-verify.py | 6cac016298bcce7b2c3d5ffee8633f3b9e41461f78045c018b76d47354e4aedc |
+| new-game-363-backlink-tests.txt | d3cb9da7430e763f13edd98f0979ec5cb882af3d107e1e1c7a374811b56a72d1 |
+| moo2-363-overlay-frame-extended-80000000.png | 1507dfb323dd4614fee5eb1523ab60c5652c7eb2a7fa6c53182772b5bdc64908 |
+
+### 目前閘門
+
+工具成果04a96f09538a6b01907685f6f56a8d7de154cde1已推送github隔離分支；主庫RE-first保持。下一步另立DRAFT可寫profile正常ACCEPT規格，使用已觀察完整overlay935bytes hash及五窗口／RGB／原hotspot／callback／IRQ／IF，不改336唯讀guard、不mask位址／套任意+8000h／調時刻。證據足夠才READY，正常press／release各一次後取真正store及90M選族表，再審查後續輸入。正式存檔、完整開局、RNG、音訊與remake同狀態仍未知。

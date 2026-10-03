@@ -1222,3 +1222,11 @@
 - 128診斷、14498正規化原列／38PNG、99守衛及新29＋32負例通過。mtime直比、NUL長度與逆轉空行屬驗證問題，修正後讀同guest收據／乾淨重跑測試，未挑選原版結果。
 - 可寫試作窄測0.053s／固定原EXEGo全套CPU386130.397s／machine1.643s通過，但原版在80M完整表guard拒絕，未送ACCEPT／未到存檔，沒有state寫入收據。五個+44四byte窗口各增8000h，RGB相同且前段執行已改變，所指內容未知。試作退回本機DRAFT，公開維持唯讀，原失敗收據保留。
 - 下一步取初段開檔與80M五窗口候選位址的內容，不改guard或點擊時刻。36份本機來源／收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。工具樹乾淨／專案容器0；正式存檔／完整開局／RNG與remake同狀態未驗，主庫RE-first保持。
+
+## 2026-10-04：363覆蓋層前段開檔與五窗口
+
+已證實原1192795／dosgolem_high_le:237024的SOUND.LBX 3D02，兩側同原R／段／flags與RAM，唯讀拒絕AX5 CF1、overlay真handle5 CF0。80M record11–15的+44候選值各增8000h，但原descriptor所指前128bytes逐byte相同；完整物件／角色／消費未知。額外32KiB配置造成位移為強推論，沒有追allocator。親看dosgolem原overlay 80M設定頁，ACCEPT完整且原熱區包含480,400。
+
+Docker內執行 `bash workplace/new-game-363-pair-run.sh`、`python3 workplace/new-game-363-pair-verify.py`、`python3 workplace/new-game-363-state-source-verify.py`、`python3 workplace/new-game-363-backlink-verify.py`，全部通過。各側一次guest止於80M只讀快照；6148／6271舊列依352既有正規化、各27PNG保持，八開檔／五窗口／全狀態自檢只讀。PNG數量初設28，修正成明示27集合後讀同收據，未重跑。兩側原418來源檔完全保持，state只sound.lbx且與原ZIP4250888bytes逐byte相同。100項回填及新37＋34缺證據負例通過，沒有新的Go／CPU／DOS／provider／公開probe變更。
+
+隔離工具04a96f09538a6b01907685f6f56a8d7de154cde1已推送github；本輪主庫只改DOS活表／CONTEXT單行並追加工作與研究紀錄。原版PNG／LOG／資產窗口與sound副本留忽略workplace，不提交。主庫起始HEAD088df139965dfc699b56efb4b577d87eae4e0f77；精確私有收據見研究入口。下一步是獨立可寫profile的ACCEPT規格審查，原336唯讀guard保持。正式存檔／完整開局／RNG／remake同狀態未驗，主庫RE-first保持。
