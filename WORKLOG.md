@@ -952,3 +952,15 @@
 - 工具7d569e0392fd9061576da8395d3c8b4d10e0886d已推送github隔離分支，遠端回讀一致，未推本機origin；22份新私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。來源／新收據1000:1000、gofmt／Git差異通過，工具root-owned／誤建.md目錄空，Docker兩工作區掛載篩選空。主庫RE-first及整款remake／中文化目標保持。
 
 主庫四文件、22私有收據、精確工具HEAD與原ZIP／patch雜湊核對通過，其餘活表全文保持。既有root-owned 2437檔／272目錄保持，本輪未新增root-owned或.md目錄。
+
+## 2026-10-03：原GUI按鍵返回已驗，旗幟選色仍未完成
+
+- 起點主庫3526b6da8334626a992cfa3c13689b318befb664／工具7d569e0392fd9061576da8395d3c8b4d10e0886d。命中dosgolem、GUI、規格閘門、文件職責與回填路由。340先DRAFT，私有readonly探針保存192正常步；全部10012原339列與32PNG保持，原source剝除5個trace區塊後保持339。
+- 原339首個AX3讀到1之後，20DB56 caller又呼叫214075；第二次查詢與214104 RET到20DB5B均返回0，20DB5E JNZ不跳。原框架證據足夠後重新READY，只增加明示旗幟fixture的GUI按鍵返回閘門，不修改CPU／平台或主庫玩法。
+- 正式340重生一次：99M按下保持，99083819首次查詢1，99083999原RET返回1，完整stack／核心／readonly已核對，99084000首次合法mask1放開，差245437微秒。120M到228E00，callback12／12及IRQ28866／28866完成，仍SELECT BANNER COLOR，無新CPU拒絕；共享20DDDB未命中。只證實原GUI按鍵返回，不能稱選色或開局完成。
+- Go1.24.13 Docker每次外層300s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀，新鮮417根檔／固定EXE／MOX.SET。go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe。7708原列／28PNG／完整原表及RET-release核算通過；核算誤取checkpoint IRQ欄位，改讀同收據setup_table_snapshot後PASS，未重跑原版。3有界觀測及一個release前置之外全部來源保持339。
+- 同binary舊338 CLI17拒絕及正對照、339 CLI22拒絕及120M／100M正對照，77項規格回填、340新增28缺證據負例、338／339各26負例及三CLI通過。未重跑未受影響六基準／Go全套。工具0b141e6cf2a00d86c028054c68d247c9e526a5c0已推送github隔離分支，遠端回讀一致，未推本機origin；15份來源／收據／核算見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
+- 新檔1000:1000、gofmt／Git差異通過，工具root-owned／誤建.md目錄空，Docker兩工作區掛載篩選空。主庫四文件、原來源／收據與其餘活表核對後提交；主庫RE-first與整款remake／中文化目標保持。
+- 下一步只保存原20DB5B後最多192個非callback／IRQ正常步與實際20DB5E分支。原選色消費、持久名稱／旗色writer、typed種族特性、完整開局、正式RNG及remake同狀態未知，不盲調cap或重送。
+
+主庫四文件、15份私有來源／收據、工具精確HEAD、原ZIP／patch與CPU來源核對通過，其餘活表全文保持。既有root-owned 2437檔／272目錄保持，本輪未新增root-owned或.md目錄；Docker兩工作區掛載篩選空。
