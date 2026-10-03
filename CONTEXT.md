@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-04）**：360已接通66 99 word CWD。原164984957的AX0001／DX0000及完整flags246h、下一SUB讀DX得AX1／六flags202h、SAR讀AX1→0／五定義flags與EIP1D2A3B已驗；SAR的AF不列原版parity。DRAFT10859原列／36PNG、正式10789正常列／35frames、完整FPU原bits與RAM保持，固定原EXE乾淨Go全套CPU38699.385s通過。原168496272停於2376CB的C1 /1 memory ROR，after2376CD未取disp／imm或source，DS188:270FC4原dword未知／imm08；尚未達180M，完整開局未驗。finalPNG仍主要黑底與小型方形圖形，未見完整地圖。工具a16e94c4c15e5c78760cc670cb4f6766457a5f67已推送github隔離分支，證據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步取ROR原dword／相鄰資料與下一A1同址真正load；主庫玩法RE閘門保持，原負AX／EDX高word、新ROR來源與消費、正式writer／RNG與remake同狀態未知。
+- **DOS 原版動態驗證器（2026-10-04）**：361已接通C1 /1 memory dword ROR，原168496272的DS188:270FC4 dword000B1818→18000B18／CF0／EIP2376D2，下一A1真正load到EAX18000B18／EIP2376D7已驗；count8 OF未定義，只保留工具模型。正式10949正常列／35frames保持，固定原EXE乾淨Go全套通過。原版同180M沒有CPU拒絕，終圖為旗色選單與Error saving game／Permission denied，完整開局未驗。工具5a2170cfc18b40e890a21dcdcbb10605f084b57d已推送github隔離分支，證據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步取失敗DOS呼叫／檔名／mode／errno，再審查既有OpenDirectoryOverlayFiles的隔離state目錄；主庫玩法RE閘門保持，正式writer／RNG與remake同狀態未知。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為

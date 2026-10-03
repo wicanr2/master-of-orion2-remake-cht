@@ -2979,3 +2979,64 @@ Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce617
 | new-game-360-cli-tests.txt | 0c39c7d30d26388473df3e31ad7be38651d38f98677857d9e5a9de59a4aaac43 |
 | new-game-360-backlink-verify.py | a12abc12f0390921488c2be3a32f5e508daf528461918e95df6fe349c650edd4 |
 | new-game-360-backlink-tests.txt | 2f15caa9dd2a0509fc267e29461e2bf074c6446ca62cc43a8bc5325cb746f390 |
+
+## 2026-10-04：361 memory ROR與原A1消費
+
+路由：dosgolem原版oracle／spec-gated-workflow／re-resolution-backlinks／project-document-responsibilities，寫結論前再核對。沿固定官方DOS1.31 EXE 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f、同180M與單次正常輸入，未增加cap／跳指令／代寫／重送／深入helper。工具5a2170cfc18b40e890a21dcdcbb10605f084b57d已推送github隔離分支，精確遠端核對，未改上游/home/anr2/cht/dosgolem。
+
+完整規格、命令與證據：[361限定CONFORMED](https://github.com/wicanr2/dosgolem/blob/5a2170cfc18b40e890a21dcdcbb10605f084b57d/docs/spec/361-cpu386-ror-dword-memory-imm8.md)。DRAFT未改CPU取原目的與相鄰資料，11019原360列／36PNG保持才READY；主庫玩法RE-first保持。
+
+### 已證實與工程驗證
+
+- 原168496272／dosgolem_high_le:2376CB的C1 0D C4 0F 27 00 08，DS188:270FC4來源000B1818不同於EAX18181818，ROR8→18000B18、CF0／EIP2376D2。RAM僅270FC5／270FC6／270FC7不同，首byte及左右0000保持；不把三個差異當三次Bus寫入。
+- 原168496273的A1 C4 0F 27 00真正讀新目的，EAX18181818→18000B18／EIP2376D7，其他R／六段／FPU／flags202h及全部RAM保持。兩步readonly true／error nil／callback12／12／IRQ43075／43075非active／非failed／pending0，FPU127F／status0／depth0／八stack bits0保持。
+- count8 OF未定義，完整flags202h只驗沿297保留工具模型；非CF及非count1 OF的flags保持。原count0／count1 OF／CF1未由本路徑驗證。
+- 正式10949共通正常列／35frames保持。CPU只加memory分支，逆轉為a16e94c原CPU；三observer與297舊負例未知DS限定也可逆轉。十四其他舊測試與297 oracle保持。1212416個74來源×256imm8×64算術flags，以原單bit整除循環oracle獨立核算；ModRM／SIB／DS／SS、masked0零write／其他count四write、失敗與截短／prefix拒絕通過。
+- count0先驗可讀可寫及讀目的，是工具政策，真硬體Bus行為不列parity。四byte晚期失敗可能先寫前bytes但不發布R／flags／FPU，不稱Bus rollback或硬體restart。
+- 窄測1.025s、固定原EXE乾淨Go全套CPU38660.001s／machine1.824s、關閉8M1693原列／PNG及前輪360原收據、68舊＋32新CLI負例／正對照、98守衛及新39＋28缺證據負例與全部舊負例通過。缺8088語料不算386硬體驗收。核對腳本原arr拒空[]，修正後讀同收據通過，原guest未重跑挑選。
+
+### 180M端點與下一個玩家阻塞
+
+同輸入達step_limit180000000／EIP215DCA／R=[FFFFFFFF D6 2C0864 A5 2BD630 2BD654 FC D8]／段=[8 188 188 0 20 188]／flags202h，bytes89 45 F4 83 7D F4 FF 74 35 8B 55 EC C1 E2 02 A1；無guest_cpu_stop／step_error／DOS exit，不稱完整開局。
+
+finalPNG SHA-256 679f08239fe789c2f1ae82b5fa9a72a08cad884aa8d12f756a3fd9badf7f4c3a／RGB0d093a071c686fc389622b2bc2d80a30d2a051a8162ef819fb2d4976484c57c5。2026-10-04人工檢視：SELECT BANNER COLOR上有Error saving game／Permission denied及CLOSE，未見完整星圖。終圖已改變，不再將現況稱主要黑底或與360相同。
+
+已證實工具政策：probe使用ReadOnlyFileProvider／OpenDirectoryReadOnlyFiles，le_startup.go的writeFile要求io.Writer，唯讀提供者拒寫。已有overlay_files.go的machine.OpenDirectoryOverlayFiles(basePath,statePath)及保持來源／寫入／截斷測試。終圖權限錯誤與此政策相關為強推論，真正DOS呼叫／檔名／mode／errno尚未知。下一步先有界唯讀擷取失敗契約，再審查既有覆蓋層與容器新state目錄，原版來源唯讀，不建重複檔案系統或代寫存檔。
+
+固定1996日期不是seed；原其他count／CF1／count1 OF／硬體Bus、多位OF、存檔呼叫與內容、正式writer／RNG、完整生成／開局與remake同狀態未知。主庫RE-first保持。
+
+CPU SHA-256 b8c1844163fddd7e3557e19fc51abcb9bcb9c1d021fd415dae376b2afbb9c72b；新測試96bee4520e99c09b5edb8cda11de95fbf745811f15c1b9545c1ccc56f4663ab1；297修改後測試8e0e36c37f5f3a0469475ec4f5b6c19693964986cf437acafc1f6e2cfc3a1bca；正式probe4fd257a6edf9a3460af7f7d792ab2624474f0fd7070f3eb5ef9877d2357cd787。
+
+### 私有收據與隔離狀態
+
+Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀。原EXE／LOG／PNG／RAM與私有腳本留忽略workplace，只公開自製CPU／測試／probe／規格／索引／守衛及雜湊。工具樹乾淨／專案容器0，既有root-owned2437檔／272目錄保持，不做遞迴修復。主庫只改CONTEXT的DOS單行與WORKLIST的DOS活表、追加WORKLOG與本檔，其他活表全文保持。
+
+| 本機檔名 | SHA-256 |
+|---|---|
+| moo2-ror-memory-361.go | 4fd257a6edf9a3460af7f7d792ab2624474f0fd7070f3eb5ef9877d2357cd787 |
+| moo2-probe-361-input.txt.gz | 40eb10b9ba8e3fd07c94d2a9e2bd632b9cb990e5d96da65e6e007aa6360f6e96 |
+| moo2-vbe-361-input.png | 1f757f5b16fe492795accf198c8db851443a062450e7f37ecf465c7eae3b6457 |
+| new-game-361-input-run.sh | 9192a27b6fc1479dff1d346e1151bdd2aedf493862a19814df491686fb5ff6e7 |
+| new-game-361-input-run-output.txt | 283ad3d4dd868fb4d4c13a59ead2fdbf6fad7fef90314750de8bd391cb3e37c5 |
+| new-game-361-input-verify.py | 51b5a2fd56c5c4f76e8cfe64af7b192caf96ebe04a820d43c5c995e73523d71b |
+| new-game-361-input-tests.txt | 2da58bb8da84644d5d8e0a21e56c465d784a07875b9aa5fe1e414316d759af04 |
+| moo2-probe-361-formal.txt.gz | 40fb333d1aaeb9160779b6fe56b439b390d19b9d6f6ddfb7d50ec7d577eff512 |
+| moo2-vbe-361-formal.png | 679f08239fe789c2f1ae82b5fa9a72a08cad884aa8d12f756a3fd9badf7f4c3a |
+| new-game-361-formal-run.sh | d35f4426c1d2e503b9767803a9ad94f49c1c7abcbf11d7a27e0728e1ef3979b5 |
+| new-game-361-formal-run-output.txt | f3d230940aeea63afd71fea139439828044dfc4ef9d7ed1cc0522c1cc9b91856 |
+| new-game-361-formal-verify.py | 0394ba2ae1dc00b53989458efa79609db75eb1d62f3cb0fc86d0ea9c0a1f6f7d |
+| new-game-361-formal-tests.txt | 2df647f060a30cb14a75590cf058df3c5d33f43f55c366cdd3cb30918cfc050a |
+| new-game-361-unit-tests.txt | 4f22548c265fcd52aa5cdc964d6ae17a6b83d979e14990f779aa635e1e2c0da6 |
+| new-game-361-full-run.sh | c7301ef7b3537e267a36707097a02063b35dd9f02a82954ff74dd336c9a387dc |
+| full-test-361.txt | 965899b1f79e4a78f356155613b1da31feb50f65f3104a74f3f48c040a1aa081 |
+| new-game-361-source-verify.py | 9bf3f08a2f558948bdec8785b1539cee4f07db3e9964e4c550dcf2a0559fe8d0 |
+| new-game-361-source-tests.txt | a20d4eca2b0a176498b862e7abef057a09483ea6aa460d0854ffd393482de270 |
+| new-game-361-off-run.sh | 29534b33231463f3aa9b51374f7ab98208ae0262e61aeefb73d87a981b0b9a0e |
+| new-game-361-off-cli-tests.txt | a5eabaf6f165680e4e73a808efc13d87da68f29a4c55ca63bd6bf4ec96c09dff |
+| moo2-probe-361-off-old.txt | 9db2981eb8655004c1697457522407cce118170997414a5156c97e3e0fae4f7a |
+| moo2-probe-361-off-new.txt | d13916fa91b68d8150a9bef1747abff488ef9944c0325fd44b8e1191ecc1aa86 |
+| moo2-vbe-361-off-old.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| moo2-vbe-361-off-new.png | dd4c21dd11e57ec86ef759182fd3ebadd6b53870b54de1ef192e2553820286db |
+| new-game-361-cli-tests.txt | 0c39c7d30d26388473df3e31ad7be38651d38f98677857d9e5a9de59a4aaac43 |
+| new-game-361-backlink-verify.py | 6791241d913126c88dfd4127634a237abd0965268b18e91949910f2dbefdd7b8 |
+| new-game-361-backlink-tests.txt | 53eccf8b9d3282363b85031e24a17d83ebe14c6dd7f0bacbb3913e2e623a969b |

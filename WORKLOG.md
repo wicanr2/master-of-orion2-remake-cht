@@ -1206,3 +1206,11 @@
 - DRAFT10859列／36PNG、正式10789正常列／35frames、16777216工程全值域、高word與64flags、窄測0.828s／固定原EXE乾淨Go全套CPU38699.385s／machine1.679s、前輪359原8M收據／CLI、97守衛及新42＋24負例通過。
 - 新原168496272在2376CB拒絕memory dword ROR，DS188:270FC4來源未知／imm08，after2376CD未取disp／imm或source，未達180M。下一步取原dword與下一A1真正load，維持輸入和cap，不猜目的。
 - 四文件與27份私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。工具樹乾淨／專案容器0；原負AX／EDX高word、新ROR、正式writer／RNG／完整開局與remake同狀態未知；主庫RE-first保持。
+
+## 2026-10-04：361限定memory ROR與原A1消費
+
+- 工具5a2170cfc18b40e890a21dcdcbb10605f084b57d已推送github隔離分支，遠端精確HEAD相同。只加C1 /1 memory dword ROR，既有register分支與flags helper保持，297三舊負例明示未知DS；主庫玩法不改。
+- 原DS188:270FC4的000B1818 ROR8→18000B18／CF0／EIP2376D2，下一A1真正load到EAX18000B18／EIP2376D7已驗。RAM只差270FC5／270FC6／270FC7，其他狀態保持；多位OF只驗工具模型。
+- DRAFT11019列／36PNG、正式10949正常列／35frames、1212416工程矩陣、窄測1.025s／固定原EXE乾淨Go全套CPU38660.001s／machine1.824s、前輪360原8M收據／CLI、98守衛及新39＋28負例通過。核對腳本空陣列問題修正後讀同收據，guest未重跑。
+- 原版自然到180M無CPU拒絕，終圖顯示旗色選單的Error saving game／Permission denied。下一步取失敗DOS呼叫／檔名／mode／errno，再審查既有隔離覆蓋層，維持cap與唯讀原版來源；完整開局仍未驗。
+- 四文件與27份私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。工具樹乾淨／專案容器0；正式writer／RNG與remake同狀態未知，主庫RE-first保持。
