@@ -1353,3 +1353,35 @@ Docker固定Go1.24.13映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53
 probe SHA-256 fbd038f68ad029c1427cebf5baa852df0c2d90649554c38a95f10964f7ca0b57；CPU SHA-256 1448f29f24dad35e83575189055dc15dd7ac9db2b3529c6d450f03baf91c97b1。CPU／startup／provider／matcher／CLI保持，325固定EXE全套與329 CLI有效。原ZIP／patch／MOX.SET／417檔與來源／收據1000:1000再核對，原版素材／LOG／PNG／RAM不公開。
 
 **未知與下一步**：正常開局／NEW GAME指令仍未知；保留44M與單次短按舊基線，另立實際7筆表就緒後的一次正常press／release情境，先確認原表與第2筆範圍，再驗實際caller消費與玩家可見後續。不是改正式遊戲或代寫狀態；不提高100M cap，不深挖209325或整個renderer。主庫玩法RE閘門、255完整游標、303整體DRAFT、299自然OF=1、AH2Ch／RNG／人耳及remake同狀態保持。Docker兩掛載清查空，工具root-owned／誤建.md目錄自檢空，其他專案未清理。
+
+### 2026-10-03 正式選單正常點擊與F2 SCASW拒絕
+
+工具4501b831842f33ee5a0388b3018ae0c240949bc3已推送github隔離分支，遠端回讀一致、工作樹乾淨，未推本機origin；固定規格[334](https://github.com/wicanr2/dosgolem/blob/4501b831842f33ee5a0388b3018ae0c240949bc3/docs/spec/334-moo2-ready-menu-normal-click.md)，333已回填。主庫起點6dbb1879f0c9ab6642aa0de3d8c1b504a800248c。官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址均dosgolem高位LE。
+
+**已證實，正式選單局部消費**：獨立ready100M情境保留44M Esc與舊47850592／47851578輸入，另在固定50000000核對原DS188:26C480 pointer298848／DS:29BE0E count7／bias0／stride55。完整385bytes逐位元對接333終態，SHA-256 776c6e6e61a5b17529ff383cae79a194edc17c7cf0b9a11f3dc8fc8841339183，第2筆415／217／567／238。R／段／EIP21334F／flags216h與333同50M checkpoint一致、peek readonly=true；callback2／2、IRQ8415／8415皆非活動才送額外press。
+
+50000000 press：virtual_micros65660599／x1000／y229／buttons1；50011955 release：virtual_micros65691938／x1002／buttons0，差31339微秒，沿正常20ms與回呼完成契約首次可送時放開，不以固定986外層Step代替虛擬時間。全部只經InjectMouseEvent，未代寫EIP／RAM／索引。終態callback4／4、pending0／active=false。61538983於20DDDB執行66A3A6C42600，原EAX2、DS188:26C4A6 word0000→0200，下一EIP20DDE1；R／六段／flags297h保持，callback4／4與IRQ11675／11675非活動，error=nil。原store來源與寫回獨立驗證，已證實原版選中正式第2筆，不能把局部消費當完整新遊戲完成。
+
+**新CPU阻塞已證實**：76658331於1F3640 bytes F2 66 AF 8B 45 FC 01 F0 48 2E FF 24 8D 8B 35 1F，被「F2 prefix 只支援 SCASB／MOVSB／MOVSD」拒絕。原起始EAX2／ESP2BDA0C，錯誤後EIP1F3643／ECX9／flags246h、DS／ES／SS188；protected IRQ15961／15961完成。REPNE SCASW尚未支援，是下一個CPU能力缺口；原情境在此停止、未到100M。VBE StartY512／DisplaySets43，最終640×480原PNG人工查看全黑，設定頁與完整正常開局未知。此處不深挖原函式或假設其玩法用途。
+
+本機忽略PNG workplace/dosgolem/workplace/moo2-vbe-334-ready.png SHA-256 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622；RGB SHA-256 0b150fd32588b1daca5569992ebe559c0102c837306b1af4c44d35128ec58366，indexed SHA-256 7818f5542a0404157573be6cffc0e0c8e68ce3c0f5d17d07ccdd9313fb700baf。不是remake對照圖，不公開原版素材。
+
+固定Go1.24.13映像sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀重建417檔。go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe；前三條沿333換334輸出名，第四條沿獨立100M增DOSGOLEM_MOO2_MENU_READY_CLICK=1，各一次。初次腳本輪次替換誤改預期EXE雜湊，輸入檢查停止／未啟動原版，修正腳本後同隔離設定乾淨重跑，不記產品缺陷。
+
+python3 workplace/new-game-334-verify.py PASS：無旗標全部3847／4829／6769舊列除既定mtime／DTA四byte／PNG路徑／每次RAM雜湊保持333，72PNG逐位元保持；ready額外輸入前4780原列保持333獨立100M。新輸入後不同狀態不互比為同狀態。python3 workplace/new-game-334-cli-verify.py：14無效值／缺依賴在讀EXE前exit2通過，有效情境正對照越過參數閘門後缺原EXE明確失敗。71回填函式、既有負例及新增33缺證據負例、兩CLI通過。
+
+| 本機忽略收據／腳本 | SHA-256 |
+| --- | --- |
+| workplace/dosgolem/workplace/moo2-probe-334-baseline.txt.gz | 89af01a886da66931c694b5de618b1fa9f16e6adb9cae4fac11d7ca9402104bf |
+| workplace/dosgolem/workplace/moo2-probe-334-click.txt.gz | 4b8eaa813db115852c5f965e7fc7f482fbcb1d76e45bdc55523ae7c67e5916f0 |
+| workplace/dosgolem/workplace/moo2-probe-334-extended.txt.gz | ac175972abd192de3cf816eb1bf427b77a42c3cf32cd95419cbe81e4c2b09738 |
+| workplace/dosgolem/workplace/moo2-probe-334-ready.txt.gz | 23c850a0b1f444da6975a300cd890f9d4022a5223db01a2b764617d1df21baa1 |
+| workplace/dosgolem/workplace/new-game-334-verify.py | 02b8a7e1451cdbf7d608048f61bf8bce900645e809f0f6802faffc446318d229 |
+| workplace/dosgolem/workplace/new-game-334-parity-tests.txt | 807639d9171e392e4c92623a2623dcb3a3447b5119a2bbbbda7720c0d8c08f6a |
+| workplace/dosgolem/workplace/new-game-334-cli-verify.py | 10771963a67d238c3528a1cba08f10bcb383c4a8123b5b74794e8428822ab8fe |
+| workplace/dosgolem/workplace/new-game-334-cli-tests.txt | 5b7e3ab2e595ba8396c74593efeb62daca5ef46729048bcf0625809d4ebd6ac2 |
+| workplace/dosgolem/workplace/new-game-334-backlink-tests.txt | b1e9b6ea218e367510eadf5f1c1a323bd66361af655b8d001c19d4d94d857dc2 |
+
+probe SHA-256 f58f52154c18389dea984d83d746980327529fd5d0150896d34734433efef8d3；CPU SHA-256 1448f29f24dad35e83575189055dc15dd7ac9db2b3529c6d450f03baf91c97b1。CPU／startup／provider／matcher未改，325固定EXE既有全套有效而未涵蓋新拒絕。原ZIP／patch／MOX.SET／417檔與來源／收據1000:1000核對，原版素材／LOG／PNG／RAM不公開。
+
+**未知與下一步**：設定頁、完整正常開局、正式RNG與remake同狀態未驗。只補CPU的F2／66／AF字串指令，以既有[099-cpu386-repne-scasb](https://github.com/wicanr2/dosgolem/blob/4501b831842f33ee5a0388b3018ae0c240949bc3/docs/spec/099-cpu386-repne-scasb.md)、[292-cpu386-repe-scasd](https://github.com/wicanr2/dosgolem/blob/4501b831842f33ee5a0388b3018ae0c240949bc3/docs/spec/292-cpu386-repe-scasd.md)與處理器規格／硬體語料驗證ECX／EDI／DF／ZF與定義旗標；再重跑同一ready情境生成新原版收據，不代寫結果、不增加輸入或提高100M cap，不深挖1F3640或整個renderer。主庫RE-first／255完整游標／303整體DRAFT／299自然OF=1／AH2Ch／RNG／人耳保持。Docker兩掛載清查空，工具root-owned／誤建.md目錄自檢空，其他專案未清理。

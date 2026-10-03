@@ -896,3 +896,13 @@
 - 70回填函式、既有32／49／25／27／27／34／31／36／31／37／34與新增35缺證據負例、兩CLI PASS。CPU／startup／provider／matcher／CLI保持，325固定EXE全套及329 CLI有效；原ZIP／patch／EXE／MOX.SET／417檔、gofmt、Git差異及新來源／收據1000:1000核對通過。
 - 工具d6688b01f7a5306bc6d271e06c4a5eb48a1eb430已推送github隔離分支，遠端回讀一致與工作樹乾淨，未推本機origin。六收據及鎖定333見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。主庫玩法RE-first與完整remake／中文化目標保持。
 - Docker兩工作區掛載篩選空，工具root-owned／誤建.md目錄自檢空，其他專案未清理；主庫本輪四文件與既有root-owned 2437檔／272目錄於輪末核對，沒有新增root-owned。
+
+## 2026-10-03：正式選單點擊與REPNE SCASW缺口
+
+- 起點主庫6dbb1879f0c9ab6642aa0de3d8c1b504a800248c／工具d6688b01f7a5306bc6d271e06c4a5eb48a1eb430。命中dosgolem／規格閘門／原版GUI／文件職責路由，334先DRAFT／READY，只加明示選單就緒情境；主庫玩法保持。
+- 初次重播腳本更新輸出輪次誤改預期EXE雜湊，輸入檢查停止，未啟動原版；修正腳本後同Docker設定乾淨重跑。Go1.24.13固定映像／600s／2GiB／2CPU／128pids／UID1000／network none，原ZIP／patch唯讀重建417檔，go build -p 2 -buildvcs=false -o /tmp/moo2-probe ./workplace/moo2-probe；沿333三基線換334名各一次，加ready情境一次。
+- python3 workplace/new-game-334-verify.py PASS：無旗標全部3847／4829／6769舊列與72PNG保持；新情境50M額外輸入前4780原列保持。7筆表／385bytes符合後50000000 press、50011955 release，相隔31339微秒，callback4／4完成；61538983原20DDDB實際word0000→0200，選中第2筆已證實。
+- 後續76658331原1F3640的F2 66 AF被CPU拒絕，最終PNG全黑，未到100M或新遊戲設定頁。下一步補REPNE SCASW硬體契約與CPU驗證，再沿同ready情境重跑；不增加輸入／cap，不深挖原函式。完整正常開局與remake同狀態未完成。
+- 14新增CLI拒絕與有效正對照、71回填函式、既有32／49／25／27／27／34／31／36／31／37／34／35與新增33缺證據負例、兩CLI通過；原ZIP／patch／EXE／MOX.SET／417檔、gofmt／Git差異及新來源／收據1000:1000通過。CPU／startup／provider／matcher未改；325固定EXE既有全套不涵蓋新拒絕。
+- 工具4501b831842f33ee5a0388b3018ae0c240949bc3已推送github隔離分支，遠端回讀一致、工作樹乾淨，未推本機origin；鎖定334與九私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。主庫RE-first與整款remake／中文化目標保持。
+- Docker兩工作區掛載篩選空，工具root-owned／誤建.md目錄自檢空；進度讀取時原容器已自動移除，原PTY隨後回報完成，未重啟或重點。其他專案未清理，主庫本輪四文件及既有root-owned 2437檔／272目錄於輪末核對。
