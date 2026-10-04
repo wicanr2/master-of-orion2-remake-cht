@@ -5602,3 +5602,30 @@ python3 workplace/new-game-416-document-gate.py
 | new-game-416-dispatch-source-result.json | 9d9f7bd8797cd2039d82051a3f3924ffc05cc377c04e6f1539bfe1686df3e3b8 |
 | new-game-417-source-result.json | 45226fa95d65df8174aff8a9873e98046f8c89eb0b0b510a420319098fe47886 |
 | new-game-417-ready-review.json | 266e7e008a4a867c4782cac095fdb2daa9f2b48dc252536eaae34f2d7596d8aa |
+
+
+## 2026-10-05：417原存檔頁首次顯示
+
+### 已證實的原版續行
+
+輸入為官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f、正版ZIP根層417檔與patch覆蓋共418輸入。Go1.24.13工具及IDA Pro9.4既有來源；IDA linear EA、dosgolem_high_le runtime＝EA＋F0000h、file offset分列，重定位獨立核對。私有原版觀察器與生成器入口在既有workplace/dosgolem/workplace/new-game-417-generator.py／run.sh／verify.py，公開契約在工具docs/spec/417-moo2-save-page-display-continue.md及000-index.md。
+
+唯一session74131 outer／probe exit0，完整416 terminal與9phase、415及全部祖先保持。238143403在runtime207261執行C3，真SS槽16E202；238143404唯一下一Step自然返回、ESP＋4、實際EAX0，未強制結果。238143422／455／187171觀測原16E498／16E49D／16E4A2 CALL，不推定callee繪圖語意。238251948第一VBE DisplaySets107→108，末態runtime228CA9；8個phase全只讀，零新裝置輸入，240M上限保持。
+
+實際PNG SHA-256 ee59ac6fdce06a1a7e391ea30607abc2ceef5789355e178f0a23c07d81ebfb67，人工view_image可見九個empty slot、Auto Save、SAVE／CANCEL，原星圖與GAME標題保持。原416停在首次reader之前的GAME圖片保存其實際時點，不覆寫舊證據。VBE更新與頁面可見分別核對，不宣稱remake逐像素對拍。
+
+### 原始定位與未知
+
+當次原DS:284038保存pointer4516E0，0x234原bytes已捕捉；相對+38h十個word為1..10、+7Ch為11..20、+232h為21。25×55byte控件表仍為hash0400259e495af6e8bf475e1d5c63e55118459ca94f0bfc9a716a3b959c44b1e1。原offset／pointer／bytes與比較consumer已證實；控件矩形與畫面可建立位置關聯，正式選格、文字編輯、SAVE結果及儲存資料語意尚未經正常輸入驗證，維持未知。
+
+275CLI含225拒絕／50正對照、10個反轉patch、六份逐bytes重生通過。原418檔與SAVE10／MOX保持、覆蓋層無差異，cgroup峰值2012610560bytes、oom／oom_kill增量0；Docker相關容器為空，root-owned基準2437檔／272目錄與零.md目錄已核對。
+
+收據SHA-256：
+
+- moo2-colony-return-417.go：374fde64425b2f1407f7617c7bafd08e4ee6fbda27c1ccd36599820930631114
+- new-game-417-save-display-events.json：167826fde33e1cca1647602118901831b09c009c1f416867db179c05f8879184
+- new-game-417-save-display-terminal.json：c83f5d47d8099f4cb25846ea7c0d6b3bf17c1dc350385fb2901872be95acbcea
+- new-game-417-verification-result.json：ad12357f0391004ae74db649a52456873d28dd33b1c3f33c3970c42652f26eb8
+- new-game-417-readonly-bindings-review.json：fd91191cb66db8f44076de84697f2ed5e893423dbab39942cc16095c9747bd1b
+
+完整收據索引workplace/417-continuation-receipt-index.json共2033份，原417-current的1619份hash保持。來源、EXE、私有Go、JSON、PNG與state本機忽略，公開僅自撰工具文件。工具HEAD 0cd0bc3b13ae7b068dcc07cde077685a7eddc442 已推送。417 CONFORMED只限首次原顯示與實際存檔頁可見；正式選格／命名／存讀與remake同狀態未驗，主庫玩法RE-first保持。下一步只核對第一空格kind11與兩組ID的輸入consumer，再審查正常有界輸入。

@@ -2143,3 +2143,18 @@ python3 workplace/new-game-416-document-gate.py
 417經既有原CALL／分支、完整416末態與VBE107／實際未刷新PNG審查至READY。只觀察第一次原VBE顯示更新，原reader若自然返回就記錄真值，不預填0、不強制分支或新增輸入，240M保持；尚無417 Go或guest。顯示計數變化本身不能證明存檔頁正確可見，須另看原PNG。
 
 收尾稽核：容器內python3 workplace/417-main-audit.py通過；四份自撰主庫文件、工具乾淨且已推送、本輪1619及較早1195／804／373／371／110／45／53／39份收據保持。root-owned基線2437檔／272目錄、零.md目錄及git diff --check通過。416僅控件／第一reader CONFORMED，原PNG仍為GAME；417 READY尚無Go或guest，主庫玩法／公開CPU保持。Docker三個專案volume filter無容器，沒有新image。
+
+
+## 2026-10-05：417原存檔頁首次顯示與可見畫面
+
+- 目標：沿完整416第一reader末態，只讀觀察原VBE首次更新與原物件ID；不修改主庫玩法／公開CPU或新增原輸入。
+- 前置：10個可反轉patch、275CLI含225拒絕／50正對照、六份逐bytes重生與唯一Step／getter核對通過。原417 READY收據凍結，追加範圍以readonly-bindings-review獨立審查。
+- 命令：既有Go1.24.13 image、network none、UID/GID1000、原ZIP／patch唯讀；timeout --kill-after=15s 1200s、3GiB／2CPU／128pids、GOMEMLIMIT1GiB，執行bash workplace/new-game-417-run.sh。唯一guest session74131 outer／probe exit0，不重跑。另以90s／2GiB／1CPU容器執行python3 workplace/new-game-417-verify.py，session12375 exit0。
+- 已驗：完整416末態／9phase與祖先保持；238143403／404原reader真SS返回16E202、ESP＋4、實際EAX0。238251948第一VBE107→108，8個新phase全只讀。實際PNG以view_image人工檢視，可見九個empty slot、Auto Save與SAVE／CANCEL；數值與視覺分開。
+- 原4516E0物件0x234bytes與兩組word ID1..10／11..20、+232h＝21只讀捕捉；正式控件編輯／保存語意仍未知，不以位置關聯代替實際輸入。
+- 原418輸入與SAVE10／MOX保持、覆蓋層無差異；cgroup峰值2012610560bytes，oom／oom_kill增量0。唯一容器moo2-save-417-20261005已由--rm移除，專案相關docker ps -a為空。收據與原版素材仍Git忽略。
+- 工具分支HEAD 0cd0bc3b13ae7b068dcc07cde077685a7eddc442 已推送github/codex/moo2-parity-20260930。主庫只更新既有四份交接文件；提交／推送後精確HEAD、工作樹與清理狀態保存workplace/417-continuation-final-state.json。
+- 邊界：417只限原首次顯示及頁面可見CONFORMED，未驗正式選格／命名／存讀及remake同狀態，完整remake目標仍進行中。
+- 下一步：核對當次第一空格kind11、兩組ID的正常輸入分派及consumer；來源足夠後審查有界原輸入，主庫RE-first保持。
+
+收尾稽核：python3 workplace/417-continuation-main-audit.py通過，2033份本輪索引與全部祖先合併3012份獨立hash核對。四份自撰文件與工具已推送狀態核對，root-owned基準2437檔／272目錄、零.md目錄及git diff --check通過；主庫玩法與CPU保持，沒有新增image。
