@@ -1603,3 +1603,33 @@ source verify由run.sh在82CLI後、guest前執行。沿Go1.24.13 image sha256:1
 工具3e2290007d5d0163346b4150c7e8cc625b1e0166已推送github，公開五份自撰文件，383／384／385按同一不可變定位追加回填；385錯誤觀察器仍DRAFT。37份私有主要收據SHA-256見[研究入口](docs/re/dosgolem-moo2-intake-20260930.md)。主庫只改四份現況／歷程文件，基線0910ddd90ef84b0b81533ab6ff8cf5e01672c7b0；提交後精確HEAD見Git。收尾核對擁有權／兩庫狀態／Docker，既有root-owned2437檔及272目錄保持，無.md目錄。
 
 下一步387追原sub_1171AB與kind6座標消費及按下／放開契約，證據足夠才訂一次正常人口操作觀察。原回呼讀值完成不外推人口選取／放置、正式存讀、完整開局／RNG或remake同狀態。
+
+## 2026-10-04：387職業列條件座標與持按／放開來源
+
+386已推送且分類progress，正確回呼與原首輸入前置已驗。開工核對AGENTS／CONTEXT／HONEST-STATUS／唯一活表及兩庫乾淨HEAD；路由命中復古GUI、spec閘門及resolution backlink，沿已載入逆向及IDA技能。主庫RE-first保持，本輪不改玩法／CPU，不啟動guest或送人口輸入。
+
+五個有界IDA查詢定位原1171AB、1236D1座標producer、123ABA／123AE7 getter、裝置range初始化、123D53事件座標、持按選取器113FB9與11CEF5玩家分支切片。2562筆rows／2091原EA、514筆fixup差異對原EXE及LE51363 records通過；file offsets／file bytes／IDA relocated bytes分存bytes index。11CEF5有1550項，只保留頭尾及生命週期／press切片，caller最多32並保留截斷，不深挖共享繪圖及平台helper。
+
+原callback1236D1在兩個原旗標為0時，把ECX低word作signed SAR1成GUI X，Y保存EDX低word，1237F2／CB為遠返回；對應runtime8:2136D1與386原target一致。原X／Y runtime2A3A38／2A3A36、旗標26C51A／26C51C；Y不是2A3A3A區域暫存。原初始化range為2×(width−1)、height−1。持按選取器是113FB9，事件分支另讀123BC1／123BEE座標。AX3為0後11E4EB對kind6在11E508呼叫1192D1，11E50D清共享選取；不是送一次pressed poll就證明人口已消費。
+
+DRAFT與索引、固定來源及完整386前置審查後READY，才建立只讀模型。13 signed X／3range／6原人口列first-match樣本通過，387 SOURCE PASS；均為來源推導，沒有原guest實測。原386首輸入／36表／正確callback及385／386收據、公開internal／CPU／DOS／原probe保持。實際旗標／寬高／座標／事件／按鍵與17C4E4未捕捉，是下一個有界raw前置；不預填0或送660,77候選。
+
+RE verifier首次誤在唯讀mount建檔，未寫出檔案；改用既有可寫clone後相同原來源通過，分類環境問題。五次外層IDA均exit0，idat exit1以有效非空JSON／schema／固定EXE hash／5365函式／UID1000另驗，不能單靠exit1判定。本輪無新image或原始.i64改動。
+
+實際Docker入口：
+```text
+bash /out/new-game-387-ida-run.sh
+bash /out/new-game-387-ida-producers-run.sh
+bash /out/new-game-387-ida-mouse-run.sh
+bash /out/new-game-387-ida-lifecycle-run.sh
+bash /out/new-game-387-ida-press-run.sh
+python3 workplace/new-game-387-re-verify.py
+python3 workplace/new-game-387-ready-review.py
+python3 workplace/new-game-387-source-verify.py
+python3 workplace/new-game-387-document-gate.py
+```
+IDA image sha256:6f6d59af49d0008c4109a5295b5f374bdc007e2d1ab28cb9de08779584de2780，120s／2GiB／2CPU／128pids、patch唯讀、tmp DB一次性。Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，來源／文件30s／512MiB／1CPU／64pids。全部network none／UID/GID1000，私有輸出擁有權核對；本輪容器已結束。
+
+工具1d0d128c52a7de357a41a19b8bcbb2513bc70e46已推送github，公開五份自撰文件，379／383／386正文保留並追加不可變定位回填。34份私有主要收據SHA-256見[研究入口](docs/re/dosgolem-moo2-intake-20260930.md)，原EXE／JSON／LOG／bytes／state不公開。主庫只改四份現況／歷程文件，基線06664fead4ccccc5d1f739196479d87d023c1f1c；提交後精確HEAD見Git。收尾核對兩庫／擁有權／Docker，既有root-owned2437檔及272目錄保持，無.md目錄。
+
+下一步388在原205804505完整首輸入及正確callback守衛後，維持同輸入與210M，補讀動態旗標／range／座標／按鍵raw前置，再訂一次人口列press／持按消費／安全release。source-only完成不外推人口變更、正式存讀、完整開局／RNG或remake同狀態。

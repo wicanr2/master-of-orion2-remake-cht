@@ -4477,3 +4477,64 @@ READY先於11個可逆private patches，mode off精確逆回385，mode on保持�
 | `new-game-386-upper-source200.json` | `57d1a4af24af8a4cae14e1b64feb6fdc161e8b6f8aa9b36cd5568c4eac0204b5` |
 | `new-game-386-verification.txt` | `0f7ed558d4ba722459ec7d03593a93165bcc42193c190d721017182d40c577d9` |
 | `new-game-386-verify.py` | `3866f17927c48e400b1c1cea578bfa9faed8dddb0935029fc0129c9069221a7f` |
+
+## 2026-10-04：387職業列條件座標、原CB與持按／放開來源
+
+官方1.31 ORION2.EXE SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`，工具基線3e2290007d5d0163346b4150c7e8cc625b1e0166，新工具1d0d128c52a7de357a41a19b8bcbb2513bc70e46已推送github。見[387限定來源核對](https://github.com/wicanr2/dosgolem/blob/1d0d128c52a7de357a41a19b8bcbb2513bc70e46/docs/spec/387-moo2-colonies-input-coordinates.md)，379／383／386與索引回填；主庫玩法閘門保持。
+
+### 原定位、來源等級與停止線
+
+- **已證實，IDA Pro9.4 linear EA靜態**：原1236D1..1237F3／74項保存ECX及EDX；word_17C51A與+2皆0時，123729 MOVSX、12372D／D1F8 SAR1、12372F存GUI X，123738存Y。1237F2／CB為遠返回，runtime8:2136D1與既有386target一致。未修改CPU／dispatcher，不外推一般CB分支完成。
+- **已證實，條件位移**：IDA1B3A38／1B3A36投影runtimeDS188:2A3A38／2A3A36；旗標26C51A／26C51C，width／height26C534／26C538。1B3A3A是區域索引暫存，不當Y。原123D53保存事件座標到1B121C／1B121E，與目前X／Y分開。原123491初始化INT33 range X=2×(width−1)、Y=height−1；不能以初始化清旗標取代首輸入實際取樣。
+- **已證實，持按與放開來源**：原124075的AX3按鍵分支AND3；11DB5E非0跳持按入口11E0BF，讀目前X／Y；事件路徑則讀保存的事件座標。受17C4E4控制的11E1A7呼叫113FB9，原signed含端點及index1 first-match保持。11E160 AX3為0後到11E4EB，kind6在11E508呼叫1192D1、11E50D清共享選取。人口操作真正觸發或job變更仍未知。
+
+五個查詢共2562筆rows／2091原EA、514筆file與IDA bytes差異，全沿原LE2objects／365pages／51363 records獨立核對；原file offset／原bytes／relocated bytes／IDA EA／runtime投影各自保存。11CEF5共1550項僅查玩家所需頭尾與切片，不稱整函式已解；caller最多32並明示截斷，直接xref不涵蓋全部間接讀寫。原385／386收據及原EXE不改。
+
+### 只讀驗收與未知前置
+
+READY審查先於只讀模型，13 signed X／3range／6kind6 first-match模型通過，387 SOURCE PASS及backlink通過。660,77→330,77模型先1，只在原旗標及裝置range條件成立時可作候選；本輪沒有guest或新輸入。完整386首輸入／36表／正確callback及public internal／CPU／DOS／原probe保持。
+
+**未知，阻塞人口輸入**：386原首輸入未捕捉26C51A／26C51C、width／height、目前及事件座標／按鍵與17C4E4；不補0、不把事件座標當目前座標或由模型直接送輸入。下一步388沿同輸入與210M、205804505完整首輸入及正確callback守衛，補取raw前置與裝置range，才訂一次正常press／持按消費／安全release契約。固定日期不是seed；人口變更／正式存讀／完整開局／RNG及remake同狀態未驗。
+
+RE verifier初次寫唯讀mount受拒，改可寫工作樹後同來源通過，屬環境問題；未寫原資料或改定位。五次外層IDA exit0，idat exit1另以有效非空JSON／schema／hash／5365函式／UID1000核對。本輪沒有新image、guest或原.i64修改。固定Docker image／有界資源及實際命令見WORKLOG，network none／原patch唯讀／UID1000，相關一次性容器已結束。
+
+### 387 私有收據SHA-256
+
+路徑根為本機忽略的`workplace/dosgolem/workplace/`，下表34份全部UID/GID1000。原JSON／LOG／bytes index與私有腳本不公開，公開只保存自撰來源文件。
+
+| 收據 | SHA-256 |
+|---|---|
+| `moo2-387-ida-input-coordinates.json` | `46cef48565fb7dbe1cfdd24196633fa247cb5f987546d64f95c96bdf9778fb25` |
+| `moo2-387-ida-input-coordinates.log` | `cfcc1f46bbea15bc1af3d3410c699b5202eb0e0a6d776541d6cd108ec5f97017` |
+| `moo2-387-ida-input-coordinates.py` | `589ade57ff3368d9b5f121331b33605678d76ea82e50f8973e32225df1cf0f30` |
+| `moo2-387-ida-input-coordinates.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-387-ida-input-producers.json` | `57956677515b28b1d6a13ad5c40613d37fa7ee0daa8be3bd678988d20f08f64c` |
+| `moo2-387-ida-input-producers.log` | `9b1d5e17de27420a46590c755b227656ccd8904ff1ba8b073993ee2942deb23a` |
+| `moo2-387-ida-input-producers.py` | `06f80a038b6e86ba69cd535bc871c622863ee4c17abdf626bdbdbd106536cd66` |
+| `moo2-387-ida-input-producers.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-387-ida-mouse-values.json` | `2a8be485cb25931616b6f1d28c9f48a3389704cc259799190e37b5acefca315e` |
+| `moo2-387-ida-mouse-values.log` | `00890d62902a5bb74934874de1eea4c3de5c897262b306e7b2bcd8dcb0de6e38` |
+| `moo2-387-ida-mouse-values.py` | `577ca59cd10c1b70b03e300d9bcba47a1f2719de64eab1a5eb394c0dd7797a5f` |
+| `moo2-387-ida-mouse-values.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-387-ida-press-route.json` | `2a43bd3323e4541dc30b9e635f4bbe9d09263b2c652d7e37eda51fa72eeb56a2` |
+| `moo2-387-ida-press-route.log` | `4617401c4f99f39c1d37034f437029385d0db19027620d455dbffdda453ef2e9` |
+| `moo2-387-ida-press-route.py` | `6ced1a505cae7d613d8a03187f123540d0f5ac8e852769f73591da5d7d1d1487` |
+| `moo2-387-ida-press-route.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-387-ida-type6-lifecycle.json` | `28320e29d5f9528c45178724e6e56f9433f999721657cdab4615f226ed237a60` |
+| `moo2-387-ida-type6-lifecycle.log` | `f5d9e5c4d36e47a2afe08c142ba3b01dba0c7ccc024adc7439c7ae1d7e01adfd` |
+| `moo2-387-ida-type6-lifecycle.py` | `047258f56f0111fd78d286a026a86d4a0342371f5abeb55390b4f47a717c064f` |
+| `moo2-387-ida-type6-lifecycle.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-387-source-byte-index.json` | `6cc21e6aaa326ce8879d4a4dd2c16f68efac84a59ee75a37d04158ae9764b8b9` |
+| `new-game-387-document-gate-tests.txt` | `62a8d0ad9a712ae80167ce7bfe3d8f06bee32815321b7c4a252585cf68bde89b` |
+| `new-game-387-document-gate.py` | `1334f1065b55cf631ee1bd6efbce4eb5a9239009294ad338d62e082f0c7c0be6` |
+| `new-game-387-ida-lifecycle-run.sh` | `6967717257c6c66a67fd5b21078205f2633e01c373f13b284d5e8e837f305096` |
+| `new-game-387-ida-mouse-run.sh` | `8bae69b3c1690ad2ca0470ea2667fa46c66862c3b841d76154f3b9f67d31c252` |
+| `new-game-387-ida-press-run.sh` | `5ea5dacc8448bf2b0e5337ad482c8385cf89bf7f958c9de0d4254d7100ec1b8c` |
+| `new-game-387-ida-producers-run.sh` | `68e3c779f701f03be7809a5c8dad21439ffafb0586661101ccd3de86369034f0` |
+| `new-game-387-ida-run.sh` | `5f78eaed02d0701cb476a7887fb8a8030ffa6c7bfd26956f1aec2817a4b472bd` |
+| `new-game-387-re-tests.txt` | `e9cf93e679dc3fa9770b296185635a63e681879a8048e65e8fd451cb11e2dd60` |
+| `new-game-387-re-verify.py` | `7ab3bd53138a77b44d45ca38c73682335f4a3e9ed3094cac4c17d83db5706d41` |
+| `new-game-387-ready-review-tests.txt` | `31a6cd90460a9228e7e4aac44d786a8f16cb577a8ffad4741cb0231422365ec9` |
+| `new-game-387-ready-review.py` | `408b59e2a420cd5703668f5ebcf0bc75ea25435a19e923548598eaa1eaddf6db` |
+| `new-game-387-source-tests.txt` | `865117e612de24f648f9ccd4f3f5ea3e538b50c5f0a4121e7b2198176752d442` |
+| `new-game-387-source-verify.py` | `5dd05a928513bcdbb5eb960334a245af028f03b63e049b5756d6524ef0169304` |
