@@ -4134,3 +4134,64 @@ IDA image `sha256:6f6d59af49d0008c4109a5295b5f374bdc007e2d1ab28cb9de08779584de27
 | `new-game-381-state-capture.py` | `f0db3ea43987038ca0c7a2e4065dd2d4e2e5bf1d40f1ee0e0df3e625f24122b4` |
 | `new-game-381-verification.txt` | `1965648ec736484bab9039fefaabc817160ab683751a685c8bb4ab8515682a37` |
 | `new-game-381-verify.py` | `7463bf4e7fa48bbcb8c0dd315621458ea55a7f240090bc730a38c701a90db119` |
+
+## 2026-10-04：382原父返回槽、自然RET與殖民地畫面
+
+官方1.31 ORION2.EXE SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`。工具基線a03c322d28002bb0e11d5d5109d5833a17114d04，新工具1929523731e5f1af2c1bbb446cdfd89e28401af4已推送github，見[382限定規格](https://github.com/wicanr2/dosgolem/blob/1929523731e5f1af2c1bbb446cdfd89e28401af4/docs/spec/382-moo2-colonies-upper-continuation.md)。原EXE、LOG／journal／PNG／RAM／state與private probe維持本機忽略workplace；公開只有四份自撰來源與回鏈文件，CPU／internal／DOS／原probe不改。主庫RE-first閘門保持。
+
+### 原定位與分級
+
+- **已證實，靜態及原bytes**：IDA Pro9.4／IDA linear EA sub_133237為133237..1334BB／184項。133277比較EBP-20h與100h、133288增；133294比較EBP-1Ch與10h、1332A2增，256×16有界。1334B2／89EC及6pop後1334BA／C3退出，返回槽為父EBP+18h。26個直接E8及原file offset由官方EXE獨立核對，不深入palette演算法。
+- **已證實，原200M只讀框架**：dosgolem_high_le原SS188:2BDB9C父框架32bytes為`C8DB2B0000002B00576AE730FF00000000000000000400008E071B0000000000`，原EBP-20h的raw117／1／0保持381。原槽2BDBB4=1B078E唯一吻合IDA C0789／file offset1334749／E8A92A0700→sub_133237，下一C078E映射1B078E，直接上層為sub_C058A／C058A..C0965／215項。按實際原槽定位，不以COLONY.LBX字串選caller。
+- **已證實，原自然RET**：203011820／463667422µs，原2234BA C3讀真stack `8E071B00000000000000000000FFFFFF`，返回1B078E、ESP2BDBB4→2BDBB8，其他R、段、flags246h、FPU127F／status0／depth0／8bits及RAM保持，clock增1µs；callback18／18、IRQ54032／54032不活躍。此收據證明當前父自然返回；未把所有共用上層或child每次返回外推成已驗。
+- **已證實，原可見畫面**：205281523／222F4F首DAC非0為1，RGB仍0。實際210000000 step_limit／228DF6／483821442µs，沒有CPU拒絕或DOSexit；終圖親看Colony of Sol II、Pop8,000k、職業列與殖民地地景。raw DAC756非0、indexed288944非0、RGB681553非0；RGB SHA-256 `1135b9bc7686966d5fdf0992aa02e35cf73cc0a82bc20ce660d864eac78f7364`，PNG SHA-256 `1a0e7551173173b43897be18ccf5295755ca80b222be7dc6dbca0b1d986c8c03`。VBE bank4／startY0／banksets3083／writes58605678／displaysets98，callback18／18與IRQ56102／56102不活躍。
+- **已證實，raw物件表**：DS188:298848 count36／bias0／stride55完整1980bytes，SHA-256 `5a6102f64d586c1978a37d8c5b034caf99783c44ba8ca5eb96896780c8b334db`。UI出現不證明操作全可用。**未知**：人口調整與typed正式狀態寫入、保存／讀取語意、完整開局、RNG與remake同狀態；固定日期不是seed。
+
+### 同來源、驗證及停止線
+
+382 READY之前固定26直接CALL、原bytes／file offsets、有界退出及381完整200M前置已核對。九private patch可逆回381；mode off保持200M與原34CLI，mode on明示一次210M窗口，不增加輸入。46CLI為38拒絕與8正對照，原guest只有一次。原200M完整核心／FPU／clock／表／DAC／PNG保持；12962列至舊收尾前保持，35876 DAC事件前綴逐項保持。新49246事件獨立從原DAC重播，ports counts336／82037／246111與末態逐項核對；PNG filter／CRC／palette／histogram獨立核對，包括首DAC非0仍黑。原418來源、SAVE10.GAM／MOX.SET／sound.lbx及同guest副本保持，UID/GID1000。
+
+首次驗證器誤找不存在的200M color_source標記，改用原restore_terminal；第二次漏沿381既有row journal封裝hash正規化。真正195M核心／FPU／clock／table／DAC／PNG與journal內容已獨立核對，才正規化含每輪RAMhash的封裝hash，沒有忽略核心或像素。沿同收據通過完整核對及380／381追加回鏈護欄。原guest、收據、輸入與預算未改；第二失敗輸出與腳本保存second-check，本節保留首次失敗原因。
+
+實際容器命令沿381同版本及掛載；IDA image `sha256:6f6d59af49d0008c4109a5295b5f374bdc007e2d1ab28cb9de08779584de2780`，Go1.24.13 image `sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac`，network none／UID1000：
+- IDA120s／2GiB／2CPU／128pids：`bash /out/new-game-382-ida-run.sh`，官方patch唯讀、tmp一次性DB；schema1／5365函式／184項／hash與UID通過，idat exit1不作判準。
+- 來源審查30s／512MiB／1CPU／64pids：`python3 workplace/new-game-382-ready-review.py`；通過后生成private probe。
+- 原guest600s／2GiB／2CPU／128pids，owned PID550s／trap：`bash workplace/new-game-382-run.sh > workplace/new-game-382-run-output.txt 2>&1`。session34285 exit0，實際guest step_limit210M獨立紀錄。
+- 驗證90s／1536MiB／1CPU／128pids：`python3 workplace/new-game-382-verify.py > workplace/new-game-382-verification.txt 2>&1`，同一收據，末次只新增回鏈護欄。
+- 自撰文件及版權輸入／UID差异檢查通過；一次性本項目容器結束，主库收尾核對root-owned基线，不清理共享主機其他項目。
+
+下一步保持210M原來源，核對36筆物件表的職業列熱區、原輸入消費端與callback安全前置。來源充分后才订人口操作觀察契约，不盲增cap或深入renderer／palette／DAC／PIT helper。
+
+### 382 私有收據SHA-256
+
+路徑根為本機忽略的`workplace/dosgolem/workplace/`，不公開原log、RAW／PNG／RAM／journal／state或私有工具。全部UID/GID1000；39個正常沿途frame及舊200M PNG另逐byte核對，不重複列於下表。
+
+| 收據 | SHA-256 |
+|---|---|
+| `moo2-382-ida-upper-source.json` | `cdcb10ddd0fdcc31da4ef8229134ce3b0fc77fb9d52a784cb11c00a21bc0543b` |
+| `moo2-382-ida-upper-source.py` | `603a738627f69362e4ae4a180bd736a7c19e19917dc33394930515225de47ffb` |
+| `new-game-382-ida-run.sh` | `182362154ccf863118bd8d7c8497115d01927133076033283c95b89f05523dae` |
+| `new-game-382-ready-review.py` | `cf9c1240b429bff87c5b565dcd4a3e3cedf1dbcf9be14eb0c003855114e63c46` |
+| `new-game-382-ready-review-tests.txt` | `8638cd8b0ac189626d3a913feb792080227fc03e9618a81964a50fa2b4858049` |
+| `new-game-382-generate.py` | `49dcc40c70b8d584d33aaedcf5ff4e840c0b4836f56499dad76d37fc18f848e4` |
+| `new-game-382-patches.json` | `7b3066f623bf334abca0cd2595c782861f98aebfd4865f1b0f4b00b5e6006dc9` |
+| `moo2-colonies-upper-382.go` | `a9e16e7e8e0cd1f0c779b4981789aeb0930de472865eba18cb6d10ce77882d96` |
+| `new-game-382-run.sh` | `0c5d62cc1f2ab9366758a956db05c6de1c85b47a4af342ec3a2af0c92d6f80eb` |
+| `new-game-382-run-output.txt` | `5857f3cd75df05d395ae20120fe3a96d2b7009235b14d13a39cf759c31dfe52c` |
+| `new-game-382-source-verify.py` | `487ddbe18fa652344b48a5e62355e05368eb7f087d5c99d17da95b636f58369c` |
+| `new-game-382-source-tests.txt` | `e0b971a57158014ca8130431a62afb8febd4a12d546518f80a721667edfc3783` |
+| `new-game-382-cli-tests.txt` | `2476578bcff4f3ef37d6caa1f76152a3f7a489e1b4761b1958ed61ccb7f03514` |
+| `new-game-382-verify.py` | `bdebe1cef521cc76282eb8613c43555ef11abad911ae904ca5f0eff86f4bdb86` |
+| `new-game-382-verification.txt` | `34a71953a87aa6ee37ce3a3204605fe05a4d9d071aa5760ba8ab868c810e2aca` |
+| `new-game-382-verification.second-check.txt` | `a3e5401af03ed4647450b4ae8429ec993addefda4dd9a798a77b3e4265c33066` |
+| `new-game-382-verify.second-check.py` | `c1a35efc9690e9df3e1f5588fc5a9929e914cdb7ce94f15b1c318b37e81ddee8` |
+| `moo2-probe-382-overlay.txt.gz` | `fb6da45a85e9f431f34fc5b016e253e59bdace493bc7cc067bc3ace8f8bd2416` |
+| `new-game-382-restore-journal.json` | `cfffc3f5d60bd04fb3807f256cb4998da32a92cfa2669b3e328e36192d3ffacf` |
+| `new-game-382-upper-source200.json` | `0ee80b04d3d5310f9a425c051130bde5f488dc0a3e3529d02aa17b5556738ab4` |
+| `new-game-382-upper-return.json` | `5079802ec98ba5702cb16565244f0b521419734c55f37cc90f7d44273930254f` |
+| `new-game-382-row-baseline.json` | `47b9d059620730767e26c6a66765c29676ca69b193033473600cf4c6dfd18bb4` |
+| `moo2-382-terminal.png` | `1a0e7551173173b43897be18ccf5295755ca80b222be7dc6dbca0b1d986c8c03` |
+| `moo2-382-upper-source200.png` | `1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622` |
+| `moo2-382-upper-first-restore.png` | `1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622` |
+| `moo2-save-state-382.json` | `50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705` |
+| `new-game-382-state-capture.json` | `5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d` |

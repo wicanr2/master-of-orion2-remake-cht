@@ -1471,3 +1471,24 @@ Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce617
 工具6e3dc0cb0e6019884bc3540a6c10598da2e1248c與繁體用字訂正a03c322d28002bb0e11d5d5109d5833a17114d04已推送github既有分支。首次push被自動審核拒絕，理由為目的地尚未核實；核對本機來源與clone皆指向wicanr2/dosgolem.git、唯讀ls-remote為原5d3f5b8，並確認三份公開文件／69行無私有收據後，相同命令審核通過。主庫本輪只更新CONTEXT的DOS行、WORKLIST唯一DOS活表與兩份歷史追加；提交／push前核對exact範圍、版權與全部私有SHA-256。
 
 實際容器入口及46份私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。所有寫入UID/GID1000；相關Go與IDA容器已清空，既有root-owned2437檔／272目錄保持，沒有.md目錄。無新image。200M仍黑／count1空表，不宣稱殖民地畫面、完整開局、正式存讀、RNG或remake同狀態完成。下一步：只查IDA linear EA sub_133237的直接上層CALL／返回邊界與正常畫面建立入口，使用同200M原SS188:2BDB78=22341C及保存EBP2BDB9C作錨；來源充分後才決定一次有界畫面完成觀察，不延伸palette／renderer／DAC／PIT helper或盲增cap。
+
+## 2026-10-04：382原上層自然返回與可見殖民地畫面
+
+先由固定官方EXE的IDA Pro9.4核對sub_133237有界退出、26直接CALL與原父框架契約，再READY及修改private observer。保持原Sol II行輸入；200M原父槽SS188:2BDBB4=1B078E唯一命中IDA C0789。203011820原2234BA C3自然返回1B078E／ESP+4已證實，其餘核心／FPU與RAM保持。205281523首非0DAC仍黑，210M終圖親看可見Colony of Sol II，36筆完整物件表取得。尚未驗人口操作、正式存讀或remake同狀態。
+
+原guest一次，明示200M→210M的一次10M觀察，沒有新輸入、重啟或增加cap挑结果。原200M完整前置／12962列／35876 DAC與所有舊PNG保持；新49246 DAC獨立重播、PNG獨立解碼／CRC／palette／histogram、46CLI、九patch逆轉381與原418來源／state／同guest副本通過。public internal／CPU／DOS／原probe保持a03c322。
+
+驗證器首次錯找不存在的200M color_source標記，第二次漏沿381既有row journal封裝hash正規化；逐項原核心與畫面已獨立驗證後才修正。原收據不改，沿同收據完成驗收及回鏈護欄。Git格式檢查另移除新文件EOF空白行，沒有功能變更。
+
+實際Docker入口：
+```text
+bash /out/new-game-382-ida-run.sh
+python3 workplace/new-game-382-ready-review.py
+bash workplace/new-game-382-run.sh
+python3 workplace/new-game-382-verify.py
+```
+沿381既有IDA locked-v1及Go1.24.13 image、network none、UID/GID1000；IDA120s／2GiB／2CPU／128pids、native600s及owned監測550s／2GiB／2CPU／128pids、驗證90s／1536MiB／1CPU／128pids，原ZIP與patch唯讀。來源審查／建置／CLI首次通過，原native session34285 exit0；exit0不代表guest完成，實際step_limit210M已另核對。
+
+工具1929523731e5f1af2c1bbb446cdfd89e28401af4已推送github，公開四份自撰規格／索引／380與381回填，私有收據SHA-256見[研究入口](docs/re/dosgolem-moo2-intake-20260930.md)。主庫僅改四份現況／歷程文件，基線9d0b38403fbb88c1b8aba8e4930f5237a4a8ecff，提交後精確HEAD見Git。Go及IDA本專案容器已結束；收尾稽核通過，既有root-owned2437檔／272目錄保持，無.md目錄。
+
+下一步保持210M原來源，核對36筆物件表的職業列熱區、原輸入消費端與callback安全前置。主庫玩法RE-first保持；人口操作、正式存讀、完整開局、RNG及remake同狀態未知，固定日期不是seed。

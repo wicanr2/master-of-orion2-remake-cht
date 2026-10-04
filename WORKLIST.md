@@ -46,12 +46,12 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–381為限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
-  **已驗正常玩家輸入**：母星確認與星圖COLONIES正常press／poll／release已驗。378補SUB AL並通過固定官方EXE CPU386／machine全套，同195M顯示Sol II列表；379核對first-match，380正常行輸入由原20DDDB writer寫word0→13。不把13當typed colony id或持久欄位。
-  **本輪來源與觀察**：381先由IDA序言／尾端確認sub_1338C9的260h區域空間與EBP+10h返回槽，再沿380相同輸入及200M只讀32bytes原框架。SS188:2BDB78讀得22341C，保存EBP2BDB9C；吻合IDA 133417的E8AD040000→sub_1338C9，caller屬sub_133237。原ESP首值21A6F3不是本函式返回槽。原槽值與靜態CALL已證實，當前呼叫鏈強推論；自然RET與殖民地UI仍未驗。
-  **驗證與交付**：完整13032原列、35876 DAC事件、非新增final、所有舊PNG與原418來源／state／同guest副本保持；原34CLI逐byte保持。兩private patches逆轉精確回380，public internal／CPU／DOS／原probe不改。修正私有建置scope後原guest僅一次，cap維持200M。終圖仍黑／count1空表，不當產品缺陷或完成轉頁。工具a03c322d28002bb0e11d5d5109d5833a17114d04已推送github；收據與380追加回填見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
-  **下一步**：只查IDA linear EA sub_133237的直接上層CALL／返回邊界與正常畫面建立入口，使用同200M原SS188:2BDB78=22341C及保存EBP2BDB9C作錨；來源充分後才決定一次有界畫面完成觀察，不延伸palette／renderer／DAC／PIT helper或盲增cap。固定日期不是seed。
-  **未知／不混入本輪**：主庫玩法RE閘門保持；正式讀檔／存檔內容語意／typed名稱及旗色持久writer、五窗口完整物件、其他未驗CPU分支、typed種族特性、母星配置、COLONIES其他列表操作／殖民地正常畫面／人口調整／其他星圖控制、完整開局與remake同狀態未驗。DPMI外部cb_smoke、兩舊探針PE格式、AH2Ch／RNG／人耳與Windows／macOS實機未驗。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–382為限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
+  **已驗正常玩家輸入**：母星確認、星圖COLONIES、Sol II名稱行的press／原AX3 poll／安全release及原選取13已驗。382保持相同輸入，只觀察既有200M來源後的自然返回與畫面；13仍為原UI選取值，不命名typed colony id或持久欄位。
+  **本輪來源與觀察**：IDA原sub_133237兩層256×16有界及6pop RET先經READY；原SS188:2BDBB4=1B078E唯一吻合IDA C0789 CALL，直接上層為sub_C058A。203011820原2234BA C3自然按真stack返回1B078E／ESP+4，其餘R／段／flags／FPU及RAM保持。205281523首DAC非0仍黑，實際210M終圖可見Colony of Sol II／職業列／地景，count36／stride55完整表取得；UI出現與人口操作通過分開。
+  **驗證與交付**：12962列至舊200M收尾前、35876 DAC事件、完整同200M核心／FPU／clock／table／DAC／PNG與所有舊PNG保持。新完整49246 DAC事件獨立重播、末PNG filter／CRC／palette／histogram與原418來源／state／同guest副本核對；46CLI、九patch逆轉381通過，public internal／CPU／DOS／原probe不變。原guest只跑一次210M；兩次驗證腳本標記／封裝hash問題修正後沿同收據通過，無新輸入、重啟或盲增cap。工具1929523731e5f1af2c1bbb446cdfd89e28401af4已推送github；380／381保留正文並追加回填，詳見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
+  **下一步**：保持210M原來源，核對36筆物件表的職業列熱區、原輸入消費端與callback安全前置；來源充分後才訂人口操作觀察契約。不深入renderer／palette／DAC／PIT helper，固定日期不是seed。
+  **未知／不混入本輪**：主庫玩法RE閘門保持；人口調整、正式讀檔／存檔內容語意、typed名稱及旗色持久writer、五窗口完整物件、其他未驗CPU分支、typed種族特性、母星配置、COLONIES其他列表操作／其他星圖控制、完整開局與remake同狀態未驗。DPMI外部cb_smoke、兩舊探針PE格式、AH2Ch／RNG／人耳與Windows／macOS實機未驗。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備
