@@ -5444,3 +5444,28 @@ python3 workplace/new-game-404-document-gate.py > workplace/new-game-404-documen
 | failed1-406-manifest.json | 889345ee327998bd5031442b4ea606fbc3aba337a1d463d158ab0d2d0dbd3018 |
 | failed2-406-manifest.json | 9fd232d6cbd1ed7977bb0572150e4619db6faa4ff57141dd145491645c181867 |
 | failed3-406-manifest.json | 7a386b6fc0069ec25724429465cfb18d10bfa3d380a04d608a15f63314f3a7c6 |
+
+## 2026-10-05：409原外層真RET與410末態最小來源
+
+原輸入沿官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f、417根層檔與patch，合計418唯讀輸入。Go1.24.13 image SHA-256 1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac；IDA9.4 locked-v1 image SHA-256 6f6d59af49d0008c4109a5295b5f374bdc007e2d1ab28cb9de08779584de2780。IDA linear EA、runtime＝EA+F0000h與file offset分列。工具HEAD ee2602e8f9f7292548036670bc300224076f2b07已推送；主庫玩法與公開CPU／DOS保持。
+
+已證實：409完整七phase與舊正常玩家前置保持，225CLI及來源／獨立數值驗證通過。原正常GAME press／selector6／release保持，新增裝置輸入0。226846742 runtime173D05／真SS ESP2BD38C讀到target174BC9，唯一下一Step226846743的ESP2BD390通過；不能拿它取代外層。227146859 runtime17651B返回EAX6與ESP2BD4FC，原191830／191A08／191A10 writer實際寫0／8／0。227148164真外層RET槽2BDBE0讀到1004BC，227148165同CS／SS及ESP＋4通過；227148175原104A6 CALL8012F，下一Step到17012F、真return1004AB與ESP−4通過。這補解較早[408框架來源](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/408-moo2-star-map-frame-source.md)的實際target；較早原收據保持，不改寫歷史失敗。
+
+未知：230M正常上限停止在runtime21F7C1，控件建立、case0與真正7DD77正常reader未到。實際原PNG人工檢視仍為星圖，沒有GAME選單，與numeric verifier分開；正常存讀與remake同狀態未驗。[409完整觀察契約](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/409-moo2-game-outer-frame-continue.md)保持DRAFT，不用外層返回縮小完成條件。沒有panic、CPU stop或step error證據。
+
+[410最小來源](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/410-moo2-menu-frontier-source.md)兩窄IDA678列／609EA／89fixup差異，原file bytes與IDA重定位bytes分列；2object／365page／51363fixup records核對。原84BC4 CALL87BAE與84BC9返回定位核對。原12F7C1屬sub_12F578的byte-copy循環，原入口與RET框架支持末態EBP2BD934／ESP2BD888、真RET槽2BD948。實際helper target／caller未知；static menu dependency80211→7EDF2→12F578不等於當次caller，不深入格式或renderer內部。
+
+[411只讀續行](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/411-moo2-game-frontier-continue.md)經DRAFT→來源／只讀審查→READY，尚無411 Go或guest。先重生並完整凍結409的230M terminal與15phase，再只讀當次真RET槽及原target，按trueSS／SP握手追自然返回；新有界240M不改寫409的上限與原收據，不以步數推論會到reader。主庫RE-first保持。
+
+原418檔與SAVE10／MOX保持。原session79227殼層exit0、15個新phase唯讀與原Code16／LE fixups核對；cgroup峰值1479024640bytes、oom／oom_kill增量0。六份生成器產物在容器暫存區逐bytes重生一致，沒有為畫面重跑guest。371份本輪私有收據索引workplace/411-current-receipt-index.json；所有原檔、Go／PNG／JSON／LOG Git忽略。兩IDA殼層exit0／idat_exit1、非空JSON／5365函式、固定hash與UID1000核對；全部handle terminal，Docker清理完成。
+
+| 本機收據 | SHA-256 |
+| --- | --- |
+| moo2-colony-return-409.go | 0f06450a25d71fdeebdccb9ba0b13695d3d9ff21c93d4c036d06d785daa9fa24 |
+| new-game-409-outer-events.json | a12e2882d1b2a429bf2f75ee5c9da7269b6cb6fdaa86d264335d5f0b7dba3e74 |
+| new-game-409-outer-terminal.json | 84af7158ef52528a32c1279e5287bbe3197864540121ab8d643e1cde82479f19 |
+| new-game-409-verification-result.json | 7a8e8beaa4499869a258d6c79f4b3111f114c615de8d26434e55685e552ecd95 |
+| new-game-409-visual-review.json | 09cd80a7e9238adfad7b441daa762917af92e7c21c96b22f6668c77870ce8da6 |
+| new-game-410-source-result.json | 5f42165fce08afced0c13c4da4945c911768a549ac834e383ae78a0d1bdf1c6f |
+| new-game-411-ready-review.json | 2a8811caa0a62aa1b2fe178f8ad1c9c619da218947d7a6deb458ea84138a44cc |
+| moo2-409-writes-place-return-outer-terminal.png | 16f963bae4e60486d59eda15cca5b0747ecf34b8e68bc54fe4c6f777f0577594 |
