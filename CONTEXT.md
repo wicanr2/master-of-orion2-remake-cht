@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-04）**：390已定位正常選取後的8個record差異：原B9CAF清四槽bit1，17AABB=1／17A974=4，尚未走放置分支。69實際變更、79只讀frame、完整389結果及118CLI通過；首輪DS觀察守衛失敗已保留並修正。工具574f8e60998bb74c1a5add54e0cd5c362386c9ff已推送github，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步391捕捉下一原輸入點，再驗第二列放置；主庫RE閘門保持。
+- **DOS 原版動態驗證器（2026-10-04）**：391來源審查確認選取後改成37表／kind7，不能沿用kind6 held回呼作release守衛；原cached按鍵getter與s.calls計數用途已錨定。238原bytes及原390反例通過，無新guest或輸入。工具b17eb21c212deb1f95cef54f1399d7b35efd8bdf已推送github，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步392由原getter返回與新座標／callback完成安排正常放置；主庫RE閘門保持。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為

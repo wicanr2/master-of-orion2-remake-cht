@@ -1723,3 +1723,32 @@ Go1.24.13既有image／network none／UID/GID1000，原ZIP／patch唯讀；nativ
 391先捕捉選取後下一個原輸入點1B0845，核對原17AABB=1、17A974=4及第二列signed熱區；條件成立才以正常裝置660,107一次按下及安全放開，驗證BF6ED→B9E94與四槽是否恢復。不得直接改bit／派送ID，不把210M中途renderer末態當可按輸入點。 主庫RE-first保持；正式配置／放置／存讀／完整開局及remake同狀態未知。
 
 提交前執行python3 workplace/main-audit-390-final.py，390 MAIN AUDIT PASS：四份文件範圍、53份新與275份舊收據、88份失敗產物、工具已推送且乾淨、公開CPU／DOS保持，root-owned 2437檔／272目錄與零.md目錄保持。git diff --check通過。
+
+## 2026-10-04：391確認選取後kind7與放開來源
+
+上一輪390分類progress，已有實際writer與完整原結果。開工核對AGENTS、CONTEXT、HONEST-STATUS、唯一活表及乾淨兩庫HEAD；路由命中復古GUI、spec閘門、resolution backlink與文件職責，沿逆向及既有IDA9.4技能。主庫基線3fae9a35be452702561d4e41674f38c5f4e916af，工具基線574f8e60998bb74c1a5add54e0cd5c362386c9ff。
+
+初稿以390前的36表／kind6提出放置，READY審查AssertionError由原390的table_count37否定；沒有生成觀察器或新guest。初稿及拒絕保留，回到來源查證，不將審查錯誤歸為CPU缺陷。390原首輸入36表／kind6，210M選取後為37表／kind7，整表2035bytes，SHA-256 d1c13ea6764aab2848addf42cadb7166030d2a5421fd0f8533b9b33773842524。三列signed矩形為310,60..510,88／310,90..510,118／310,120..510,148，pointer沿2879DA／DC／DE。裝置660,107經SAR1成GUI330,107，當次first-hit2。
+
+原11E1EC／11E334／11E503只讓kind6呼叫1192D1，kind7略過held與release場景CALL，仍清共享active；11E582到11E69D，依var_30在11E6D6選正index或11E6E2選負index。原11DB87呼叫123C1B，123C33讀cached word_1B1222，runtime位移2A1222，123C47近返回；390末態cached1與裝置buttons0同時存在，不把cache當新press完成。snapshot的calls取s.calls，源碼證實它是啟動服務計數，不是AX3 poll次數。
+
+兩次窄IDA查詢session65314／16408 exit0，原schema／固定EXE／非空238列與UID1000核對。原MZ／LE、2object／365page／51363fixup records及238列／238EA／27重定位差異獨立通過。SOURCE PASS另核對九個熱區含端點、原y92 first-hit由1成2、原cached1／device0及公開CPU保持。source-only READY後CONFORMED；原390及較早native receipts不改。
+
+工具編排有兩次在工具呼叫前拒絕的JavaScript語法／sh作用域錯誤，修正後重送來源讀取與文件寫入；不影響已驗原資料，沒有guest重跑。既有技能安裝連結的權威IDA入口已於前輪載入，沿locked-v1相同image／UID。
+
+實際Docker入口：
+```text
+bash /out/new-game-391-ida-run.sh > /out/new-game-391-ida-output.txt 2>&1
+bash /out/new-game-391-button-ida-run.sh > /out/new-game-391-button-ida-output.txt 2>&1
+python3 workplace/new-game-391-byte-verify.py > workplace/new-game-391-byte-tests.txt 2>&1
+python3 workplace/new-game-391-source-verify.py > workplace/new-game-391-source-tests.txt 2>&1
+python3 workplace/new-game-391-finalize.py
+python3 workplace/new-game-391-document-gate.py > workplace/new-game-391-document-gate-tests.txt 2>&1
+```
+初稿審查另執行new-game-391-ready-review.py並保留first版與拒絕輸出；原源碼欄位搜索使用容器grep及Python。Go1.24.13／network none／UID1000，patch唯讀；來源核對90s／2GiB／1CPU，文件30s／512MiB／1CPU／64pids；IDA既有locked-v1，120s／2GiB／2CPU／128pids，原EXE解壓到容器tmp。無新image、native、輸入或Go實作。專案容器清單為空，保留其他專案。
+
+工具b17eb21c212deb1f95cef54f1399d7b35efd8bdf已推送github，五份自撰來源／回填文件；主庫僅四份現況／歷程文件。主庫本輪精確HEAD見Git提交，交付前核對private receipts／擁有權／Docker。
+
+392先保持完整390至210M，再有界捕捉原1B0845及當次37表／kind7／first-hit2、17AABB=1／17A974=4與安全裝置；正常660,107 press後觀察213C1B依真SS返回20DB8C的低AX1及當次新座標、callback完成、安全IRQ與至少20ms，再release。不得等待kind6 held場景或以calls增加為消費閘門；實際selector／BF6ED→B9E94、record與原畫面另驗。 正式放置／職務、存讀與remake同狀態未驗，RE-first保持。
+
+提交前執行python3 workplace/main-audit-391-final.py，391 MAIN AUDIT PASS：四份文件範圍、27份新與328份舊收據、88份失敗產物、工具已推送且乾淨、公開CPU／DOS保持；kind7／238EA／27重定位差異，沒有新guest。root-owned 2437檔／272目錄與零.md目錄保持。git diff --check通過。

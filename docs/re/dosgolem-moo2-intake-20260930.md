@@ -4753,3 +4753,55 @@ DRAFT／固定來源與前置審查後READY，再生成可逆private實作；106
 | `new-game-390-verification.txt` | `524195e71cbf64a74ce96a46d5d77af0dbb5796fff31ec12447b0885712645f3` |
 | `new-game-390-verify.py` | `ea081e0e0f04cb4fc075d4f15195e18633b9815cec88531d728f9821e83918f7` |
 | `new-game-390-writes-result.json` | `d59e5662faede544d097e7f45d9243fafdbf552041bf83a2e3f285cef63d46dd` |
+
+## 2026-10-04：391選取後kind7職業列及按下／放開來源
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f；工具基線574f8e60998bb74c1a5add54e0cd5c362386c9ff，新工具b17eb21c212deb1f95cef54f1399d7b35efd8bdf已推送github，見[391限定RE來源](https://github.com/wicanr2/dosgolem/blob/b17eb21c212deb1f95cef54f1399d7b35efd8bdf/docs/spec/391-moo2-colonies-pop-place.md)。原IDA9.4 linear EA／file offset／dosgolem_high_le分開保存，runtime投影加F0000h。
+
+### 原390控件表反例
+
+**已證實，原控件表及輸入幾何**：390原首輸入36表／kind6，210M選取後為37表／kind7，整表2035bytes，SHA-256 d1c13ea6764aab2848addf42cadb7166030d2a5421fd0f8533b9b33773842524。三列signed矩形為310,60..510,88／310,90..510,118／310,120..510,148，pointer沿2879DA／DC／DE。裝置660,107經SAR1成GUI330,107，當次first-hit2。 原37表由pop-terminal及scene-source210共同核對，沒有替換原畫面或RAM。原36表仍屬於205804505，不能套用到選取後。
+
+**已證實，原來源分派與欄位來源**：原11E1EC／11E334／11E503只讓kind6呼叫1192D1，kind7略過held與release場景CALL，仍清共享active；11E582到11E69D，依var_30在11E6D6選正index或11E6E2選負index。原11DB87呼叫123C1B，123C33讀cached word_1B1222，runtime位移2A1222，123C47近返回；390末態cached1與裝置buttons0同時存在，不把cache當新press完成。snapshot的calls取s.calls，源碼證實它是啟動服務計數，不是AX3 poll次數。 原控制流是靜態證據，當次selector、按下／放開及配置結果未知，不宣稱正常放置完成。
+
+### 來源驗證與推論邊界
+
+初稿READY審查被37表拒絕，原DRAFT與AssertionError保存；尚未生成private observer或新guest。兩窄IDA匯出238列／238EA／27原file bytes與IDA重定位差異、MZ／LE／2object／365page／51363fixup records通過。原390表／cached與device反例、九個含端點正對照、y92 first-hit1→2反例、原getter及service counter程式碼通過；383／388／390追加不可變鍵回填，舊正文與收據保持。
+
+**強推論，待正常輸入驗證**：392先保持完整390至210M，再有界捕捉原1B0845及當次37表／kind7／first-hit2、17AABB=1／17A974=4與安全裝置；正常660,107 press後觀察213C1B依真SS返回20DB8C的低AX1及當次新座標、callback完成、安全IRQ與至少20ms，再release。不得等待kind6 held場景或以calls增加為消費閘門；實際selector／BF6ED→B9E94、record與原畫面另驗。 此候選放開條件由已證實來源導出，仍要觀察實際原getter返回及新座標，不能只讀cached1或s.calls就標消費完成。
+
+沒有新native／裝置輸入／Go或主庫玩法變更，不增加玩法分母。正式職務／放置、跨殖民地、存讀、完整開局、RNG及remake同狀態未知；固定日期不是seed。Docker入口及腳本失敗分類見WORKLOG，專案容器已清理。
+
+### 391 私有收據SHA-256
+
+本機忽略根workplace/dosgolem/workplace/，下列27份UID/GID1000收據。原EXE／IDA／JSON／原畫面及初稿只留本機，不公開。
+
+| 收據 | SHA-256 |
+|---|---|
+| `moo2-391-ida-button-value.json` | `fb04bbb07f06deb274306f8003419e822ea579ca11f85bfd340703d3c32e074d` |
+| `moo2-391-ida-button-value.log` | `408405b4b3e00bdc282d93f09789e07d008dc575aeb682aa590803b9f62952b6` |
+| `moo2-391-ida-button-value.py` | `223dd55d5ff20c1ae56f3b45ee49516bc5dd2cc2ed86d2bda40d7e01125976b6` |
+| `moo2-391-ida-button-value.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-391-ida-kind7-input.json` | `8dbb018a2720de9fed058d21173590a216c816fa0f89bbde91906a307167e804` |
+| `moo2-391-ida-kind7-input.log` | `d52846499b1dd20ef7f3f97f04125ba3f1d22b0bacbb10a4904f98a4f0005132` |
+| `moo2-391-ida-kind7-input.py` | `169c7536111ee134c6565d6bfaa9edd1f7a885306299cb83ccadb3a88e2e03fb` |
+| `moo2-391-ida-kind7-input.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-391-source-byte-index.json` | `29efff82099bbf1335f112a3b2ac4f4661549dbbb223674d75b659b9b950ecb1` |
+| `new-game-391-button-ida-output.txt` | `35951b6fe740749f8a7c0d3c53ca9c6225e049e9616ca883b6bbef53a8b3b9bd` |
+| `new-game-391-button-ida-run.sh` | `75ea9c692f669f2af7b40e1f45e48a6046e63442ded3333d4a2d62ff76c8de87` |
+| `new-game-391-byte-tests.txt` | `d262edf7b3a77372b779c6f6cc1bdd8a2591609b27a3c7e6ab990c2ca980b6f6` |
+| `new-game-391-byte-verify.py` | `dfab9f0e749cf8577771dce442aa1db8674ef19cfc5757237533800a4f998cfb` |
+| `new-game-391-document-gate-tests.txt` | `cdcff3a4c8e2db2397808c183e4ac88439ebfc5e404be6ea276bdbe5855833fd` |
+| `new-game-391-document-gate.py` | `14cc2e32cf1d8598956ad7d6ae66123c9a4bb116d62eb17e9ea02154338f9a5e` |
+| `new-game-391-finalize.py` | `0e6834b5cae84ac29634d3cbdf79e31b638802e23e8f5e24af7e77f302321e24` |
+| `new-game-391-first-draft.txt` | `bc4e5cdcb3c44e708043cdd61e5ab760174dad61b0030b59e20468cca19ea0c6` |
+| `new-game-391-ida-output.txt` | `f1e994234c36a8b469459801298258e676526a6f6a5cc45f849c831e11031d64` |
+| `new-game-391-ida-run.sh` | `f3c2edd99ba8aaff6b175045fdb010fc68f6d368432cdb377c453c8f0f442d99` |
+| `new-game-391-ready-review-tests.first.txt` | `b07f19ad67656984aef27cb39b2115ef63dde11ebae79144de9796bc5d6303d3` |
+| `new-game-391-ready-review-tests.txt` | `b07f19ad67656984aef27cb39b2115ef63dde11ebae79144de9796bc5d6303d3` |
+| `new-game-391-ready-review.first.py` | `98b48bee2a5254fea38bc2e217b6eaa81f568b67f1996ebc8f72b1c760d61b9f` |
+| `new-game-391-ready-review.py` | `98b48bee2a5254fea38bc2e217b6eaa81f568b67f1996ebc8f72b1c760d61b9f` |
+| `new-game-391-result.json` | `5a6ccfbb60b06a755791c11dbb6fc07df2faf6559bd762f076772def6baeb6bc` |
+| `new-game-391-source-tests.txt` | `110235da89affdfd9d7e9ab060d3f079f28be2a7c91af9619470d54e9a36f63d` |
+| `new-game-391-source-verify.first.py` | `12b011d11aeabb5d1f597df2f887a0f418d8cb96d4c0987f54462dc1efcb87d7` |
+| `new-game-391-source-verify.py` | `84b36e8c4b9ddb46b16f53ddfd0b79ed3017fee8be749c2665ab2cebf8b928b2` |
