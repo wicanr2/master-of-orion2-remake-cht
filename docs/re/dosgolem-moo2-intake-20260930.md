@@ -5560,3 +5560,45 @@ python3 workplace/new-game-415-verify.py > workplace/new-game-415-verify-tests.t
 | new-game-415-verification-result.json | b5118f6400b9394f2dfdb962ea0bee2603aec5ef747ead9a2c88b6ca63fbf975 |
 | new-game-415-visual-review.json | 43bc045f7c2a976ac04e3046d52cdc018a3f8f72715f75c89fba52dd19ab8c58 |
 | new-game-415-conformance-review.json | 77e85054610445b407a356a72d611b8af0d821d400fbc3918de2102b745d58bb |
+
+## 2026-10-05：416控件／reader已驗，417原顯示待驗
+
+工具HEAD c92fbf3a8dce6071421f03814e4c4868b0dc7fe0已推送原分支；公開只更新五份自撰工具文件，主庫玩法與公開CPU／probe保持，DOS差異仍只允許414兩檔。416經DRAFT→來源／範圍審查→READY，私有觀察器12個反轉patch、唯一Step／原getter、零新裝置輸入、265CLI含217拒絕／48正對照、六份逐bytes重生通過。固定archive明示copy公開414平台輸入，其hash保持。
+
+唯一原session56044，outer及probe exit0。完整415 terminal與18＋4phase、411／409及全部祖先保持；238113912只解除工具停止旗標，沒有guest寫入。238114944原16E1E6 CALL、238114945真SS到16D061，SP−4／return16E1EB。238142546原16D891 C3、238142547自然返回16E1EB，SP＋4；238142548原分支自然走零。238142550原16E1FD CALL、238142551真SS到2071AB、return16E202，9個新phase全只讀。獨立LE bytes／fixups與完整末態驗證通過。
+
+當次25×55bytes表pointer298848／bias0，hash 0400259e495af6e8bf475e1d5c63e55118459ca94f0bfc9a716a3b959c44b1e1。包含十個kind11、十個kind7及兩個底部kind0矩形；實際語意與物件ID尚未映射。原PNG人工仍是GAME面板與SAVE游標，hash與415相同，存檔頁尚未刷新。416只限控件建立／第一reader CONFORMED，正式存讀與remake同狀態未驗。
+
+附帶一次最小IDA查詢，reader返回後48指令與同玩家函式分支，62列／59EA／12fixup通過原LE／file bytes核對。原BX與物件+38h／+7Ch十列word及+232h比較已證實，slot與控件名稱未知。IDA殼層exit0／idat_exit1、固定EXE hash／5365函式／非空JSON及UID1000通過；不研究callee或標準helper。結果首次寫入誤用唯讀掛載，失敗收據保存，改用可寫容器同來源核對通過；沒有重跑guest或IDA。初次工具READY審核判為跨越主庫RE-first，補查主庫玩法限制、工具READY規範及活表下一步後，同操作獲准，正式玩法閘門保持。
+
+實際容器內命令：
+
+```text
+python3 workplace/new-game-416-generator.py
+bash /tmp/416-preflight.sh
+bash workplace/new-game-416-run.sh > workplace/new-game-416-run-output.txt 2>&1
+python3 workplace/new-game-416-verify.py > workplace/new-game-416-verify-tests.txt 2>&1
+bash new-game-416-ida-run.sh > new-game-416-ida-run-output.txt 2>&1
+python3 workplace/new-game-416-byte-verify.py
+python3 workplace/new-game-416-dispatch-source-verify.py
+python3 workplace/new-game-416-document-gate.py
+```
+
+沿Go1.24.13與IDA9.4既有image、UID/GID1000、network none、原ZIP／patch唯讀。原guest1200s／kill-after15s、state1150s／3GiB／2CPU／128pids／GOMEMLIMIT1GiB，240M邏輯上限保持；cgroup峰值1725698048bytes、oom／oom_kill增量0。IDA120s／2GiB／2CPU，bytes90s／2GiB／1CPU；418輸入與SAVE10／MOX保持，覆蓋層無新差異。所有handle已終止，沒有新image；原EXE／Go／PNG／JSON／LOG仍忽略。本輪索引workplace/417-current-receipt-index.json共1619份；較早1195／804／373／371／110／45／53／39份及原失敗收據保持。
+
+417經既有原CALL／分支、完整416末態與VBE107／實際未刷新PNG審查至READY。只觀察第一次原VBE顯示更新，原reader若自然返回就記錄真值，不預填0、不強制分支或新增輸入，240M保持；尚無417 Go或guest。顯示計數變化本身不能證明存檔頁正確可見，須另看原PNG。
+
+官方1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f；Go1.24.13 image SHA-256 1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac、IDA9.4 image SHA-256 6f6d59af49d0008c4109a5295b5f374bdc007e2d1ab28cb9de08779584de2780。IDA linear EA、runtime＝EA＋F0000h及file offset分列，原操作與seed條件不更改，不把固定日期當RNG seed。
+
+[416限定驗證](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/416-moo2-save-page-input-continue.md)與[417唯讀顯示契約](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/417-moo2-save-page-display-continue.md)保留畫面與完整存讀限制，413／415已回鏈。
+
+| 本機收據 | SHA-256 |
+| --- | --- |
+| moo2-colony-return-416.go | d49ea3616cee52bf17638089f866c956e2f06b5387cfae691b10b6c6552205e9 |
+| new-game-416-save-page-events.json | 5b039dacf6d3045206f490ded8224634572a4a0f95bb813d61d055d442a8482d |
+| new-game-416-save-page-terminal.json | bfb51eaa961768b594d3379e216519842ad70fc798161bcff987928aaeabc599 |
+| new-game-416-verification-result.json | a6ca744d153442ddea68545ec9fd2b77edb78a864f886f704f3eb30c9195915c |
+| new-game-416-visual-review.json | 0d1d811874c9ca19d1a2b0eca9c240b00fb0a3c446514b75c9b5c5ecad6a89bb |
+| new-game-416-dispatch-source-result.json | 9d9f7bd8797cd2039d82051a3f3924ffc05cc377c04e6f1539bfe1686df3e3b8 |
+| new-game-417-source-result.json | 45226fa95d65df8174aff8a9873e98046f8c89eb0b0b510a420319098fe47886 |
+| new-game-417-ready-review.json | 266e7e008a4a867c4782cac095fdb2daa9f2b48dc252536eaae34f2d7596d8aa |
