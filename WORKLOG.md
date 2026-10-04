@@ -1789,3 +1789,27 @@ python3 workplace/new-game-393-document-gate.py > workplace/new-game-393-documen
 工具ddaf4d80291eb33e759fb01695018c3960786b7a已推送github，僅十份自撰文件，八個舊規格回填與索引保持；393限定CONFORMED、392拒絕候選DRAFT、385舊觀察器DRAFT保持。主庫僅一條CONTEXT、唯一DOS活表及追加WORKLOG／研究紀錄；精確本輪HEAD見Git。交付前核對收據、原失敗產物、兩庫／Docker與root-owned基線。下一步394先核對原BA5DA的slot word職務位元及其實際consumer，保持原record定位／raw bytes／推論等級；再判斷正常存讀的最小原玩家路徑。不撰寫主庫玩法規格或改Go行為，RE-first仍待全部玩法證據閉合及使用者確認。
 
 提交前python3 workplace/main-audit-393-final.py通過：四份文件精確範圍、92份新／355份舊收據、88／175／184份失敗產物保持；工具已推送乾淨，公開CPU／DOS不變。50個實際Step變更／13個record差異／83列53EA8fixup及正常下一輸入點通過，root-owned 2437檔／272目錄、零.md目錄保持。git diff --check通過。
+
+
+## 2026-10-04：394人口職務位元與產出consumer
+
+主庫基線67089eac86ea8fd26a567c45fdb7d3aa5a4db6a1、工具ddaf4d80291eb33e759fb01695018c3960786b7a，兩庫乾淨。重讀AGENTS、CONTEXT、HONEST-STATUS與活表；路由命中原版GUI、IDA位址證據與文件職責，載入retro-gui-restoration、逆向技能evidence-and-re／spec閘門及既有IDA9.4技能／工具入口。主庫玩法RE-first保持。
+
+兩次窄IDA查BA5DA正常寫入邊界88指令、DE280篩選／輸入／迴圈、三產出caller與存讀入口caller。session60382及49346殼層exit0，idat_exit1均保存；最小非空schema／5365函式／固定EXE／UID1000與獨立原bytes通過。首次bytes核對session21065通過181列／179EA／7fixup差異；新增查詢後session71968通過300列／294EA／9fixup差異。16個既有別版原檔錨點逐bytes相符，不以相同EA宣稱兩版全部相同。
+
+收據SOURCE + ACTUAL SLOT CONSUMER PASS：BA6DF清職務第7、8位，BA6E8回寫，BA6EF設第9位，DE393以第9位篩選產出。三caller送job0／1／2。原八槽保持，農夫／工人／科學家4／2／2→選取暫停0／2／2→配置0／6／2；八次實際writer與完整393全部50變更重建通過。文件DOCUMENT GATE PASS；job3、跨殖民地、正常存讀及remake同狀態仍未知。802CC存檔／802C2讀檔／81136主選單讀檔只核對call邊界，switch case2／3列強推論，不派送ID。
+
+實際Docker入口：
+
+```text
+bash /out/new-game-394-ida-run.sh > /out/new-game-394-ida-output.txt 2>&1
+bash /out/new-game-394-binding-ida-run.sh > /out/new-game-394-binding-ida-output.txt 2>&1
+python3 workplace/new-game-394-byte-verify.py > workplace/new-game-394-byte-tests.txt 2>&1
+python3 workplace/dosgolem/workplace/new-game-394-verify.py > workplace/dosgolem/workplace/new-game-394-verification.txt 2>&1
+python3 workplace/new-game-394-document-gate.py > workplace/new-game-394-document-gate-tests.txt 2>&1
+```
+一次唯讀schema檢查錯取390 terminal的ranges而KeyError；390實際使用record，修正欄位後通過，屬讀取腳本問題。一次文件編排JavaScript因Markdown fence在工具呼叫前SyntaxError，未執行編輯；改用字元建立fence後完成。兩者均未重跑guest，不歸為原CPU缺陷。
+
+原patch唯讀，Go1.24.13／IDA locked-v1既有image，UID/GID1000、network none；IDA120s／2GiB／2CPU／128pids，bytes核對90s／2GiB／1CPU，收據及文件核對30s／512MiB／1CPU／64pids。無新image、guest、裝置輸入或Go改動。工具a11095c650962323492f7cab4e4603fdf62f9084已推送github，五份自撰RE／索引／歷史追加；主庫只更新四份現況／歷程文件，原EXE／JSON／PNG／LOG／private scripts保持忽略。精確主庫HEAD見提交紀錄，收尾另驗工作樹、擁有權及Docker清理。395先查COLONIES返回與原options讀存控件，未達READY不送存檔事件。
+
+提交前執行python3 workplace/main-audit-394-final.py，session34012 exit0，394 MAIN AUDIT PASS：四文件／唯一DOS活表／追加歷史、20新收據hash與5個固定原版輸入、工具已推送且乾淨、公開CPU／DOS保持、8個writer／八槽與300列294EA9fixup核對通過。root-owned 2437檔／272目錄與零.md目錄保持。專案Docker兩個volume filter皆空，沒有新image或遺留容器；git diff --check通過。

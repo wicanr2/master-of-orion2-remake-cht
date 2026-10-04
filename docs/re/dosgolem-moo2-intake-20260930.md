@@ -4916,3 +4916,47 @@ DRAFT／固定來源與前置審查後READY，再生成可逆private實作；106
 | `new-game-393-upper-source200.json` | `601c9ba2fa5c8964a3115442525c0c23d50f00ad48522b17dd6d8244616d4715` |
 | `new-game-393-verification.txt` | `c8448cf0fa8957dc7699ba537737ffa011fe474d66ebb3b4e41672dfd5e42090` |
 | `new-game-393-verify.py` | `310c8c4d4133aa1bd0fe8bfa4ef4410268e8bd18fd85e3753a08e1822b018ca3` |
+
+
+## 2026-10-04：394原人口槽位職務與產出gate
+
+工具a11095c650962323492f7cab4e4603fdf62f9084已推送github，入口[394人口槽位職務與產出讀取端](https://github.com/wicanr2/dosgolem/blob/a11095c650962323492f7cab4e4603fdf62f9084/docs/spec/394-moo2-pop-slot-consumers.md)。官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f；IDA Pro9.4 linear EA，dosgolem_high_le runtime code／data投影另加F0000h，file offset與IDA重定位bytes分列，原始名稱／operand保持。
+
+**已證實**：BA5E1／BA5E3／BA5E6保存colony／slot／job；BA6DF以FE7Fh清word第7、8位，BA6DC取job兩位，BA6E5／BA6E8移7並OR回slot，BA6EF設第9位。DE393測試slot+1 byte的bit1，未設者不計產出；DE39F／DE3A6移17h再移1Eh抽職務，DE3A9比較指定值，DE3FA綁定當筆record／slot／job到DE22C。DE6FA／DEEA5／DFFE8三caller的EDX=0／1／2，接農夫／工人／科學家產出。DE376的record+0Ah及DE37A／DE390／DE61E／DE621構成4-byte slot count迴圈。
+
+原390／393收據hash保持；四個完整原範圍重建393全部50變更，八次BA6E8／BA6EF原runtime bytes、EDX80h／SI1、每槽地址與其餘位元核對。record 5B25E8的+0Ah一直08；四槽0200h→選取0000h→配置0080h→0280h。原選取時4000k不證明刪除人口，此次是四農夫暫停計入產出後改派工人。
+
+| 原階段 | 農夫 | 工人 | 科學家 | slot count |
+| --- | ---: | ---: | ---: | ---: |
+| 390選取前 | 4 | 2 | 2 | 8 |
+| 390選取後／393按下前 | 0 | 2 | 2 | 8 |
+| 393配置返回／下一輸入 | 0 | 6 | 2 | 8 |
+
+兩次窄IDA300列／294EA／9fixup差異，原MZ26654／LE292E4／2object／365page／51363原fixup records獨立核對。兩次殼層exit0、idat_exit1保持；非空schema／固定hash／UID1000及全部原file bytes／重定位bytes通過。既有主庫產出研究原檔SHA-256 7ae2ac2e5904ca330009af2827279d889906b0b9b7a8854c38eb707a56e955b5，只連回16個逐bytes相符錨點，不宣稱兩版整函式相同。
+
+**已證實的存讀來源**：802CC呼叫7E154，802C2呼叫7DA76，81136呼叫804B7。**強推論**：IDA switch註記case2／3對應遊戲中讀存，原jump-table值／正常控件輸入未驗。**未知**：job3、全部拒絕文案／helper內部、+0Bh／C8h正式名稱、跨殖民地、正常存讀與remake同狀態。本輪沒有新guest／輸入／Go改動；SAVE10／MOX保持不等於正常存讀通過。395先查COLONIES返回及options入口／安全輸入條件，不直接派送case ID或寫RAM，主庫RE-first保持。
+
+以下20份新本機忽略收據在workplace/dosgolem/workplace，均UID/GID1000。公開只有自撰文件與hash；原EXE／IDA／JSON／PNG／LOG與private scripts不入Git。較早原版及失敗收據保持原hash。
+
+| 本機檔名 | SHA-256 |
+| --- | --- |
+| `moo2-394-ida-job-binding.json` | `b94db0c36a1975fcfca69219eb51ad3efd51d8354dd6f4aa495b27434d771169` |
+| `moo2-394-ida-job-binding.log` | `c81211d19f82f4a51d00eaefb64e1d18fd44fb33bac082719a482939123344ca` |
+| `moo2-394-ida-job-binding.py` | `f3d7bf2a88ce5d08f4cf3bc7eb690e738bb17f6e02d520c4951160c3e483d492` |
+| `moo2-394-ida-job-binding.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-394-ida-slot-consumers.json` | `fee60edc26f1a92376751f6813d243539ccaccd640bc3193d6e88207ed2c2f86` |
+| `moo2-394-ida-slot-consumers.log` | `6c39549b5f793b4dd944c39190f0a6f28e9c96385af283702941c402cf175338` |
+| `moo2-394-ida-slot-consumers.py` | `5effb3ca0bcfcc8d938d1b9ad83d1f6182acd7befc8142315289a895542296a2` |
+| `moo2-394-ida-slot-consumers.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-394-source-byte-index.json` | `9118305ec07b39551e027af067cf0fb3fa6b8211af7b506d36ebb829ae7cf16d` |
+| `new-game-394-binding-ida-output.txt` | `2837fa1495c870223d0a26fc76aba7e6fc9e138190913f3bc46012d00982e7e7` |
+| `new-game-394-binding-ida-run.sh` | `84c18e7bfaddb31688e6a8e580a72fc36d35edfc3474d506bb69723c4b8c7154` |
+| `new-game-394-byte-tests.txt` | `3cb0fd3b9bc8a45ea815c4421285a16c71cb4ba37f3b7bbfb949a2ef3b75e7b1` |
+| `new-game-394-byte-verify.py` | `7ab8f596a166c5a1872de5764fb5eee9deb4b03d53dabb4ab801ca53bf7f93ac` |
+| `new-game-394-document-gate-tests.txt` | `75340f04cae1f9106d3fc857101ddfb37552dd068107e8e9d1a8c2c9b00cf6c9` |
+| `new-game-394-document-gate.py` | `d3cb64fd3e606adc34d74e0825d1bea0069efdc064069c1608ddc935f8590c29` |
+| `new-game-394-ida-output.txt` | `c672c2705604f5d903cd9f7ef31cd22199387c287116f7090692fce43fd9de2f` |
+| `new-game-394-ida-run.sh` | `286c15e5d0fc24bf7e53d1465eed2bfb82681eb8dfee89d479d7b96b7bbad956` |
+| `new-game-394-result.json` | `8218e484a075e1769121e68581eb3705efb67d6d36a3910c01656ab6f9f79b99` |
+| `new-game-394-verification.txt` | `00a7610adfa2543f9e0f18c630194abcb3ecb8d282a44c73880e0a3c7aad41b7` |
+| `new-game-394-verify.py` | `4f62b42395b2b147b8f7b023bf3628d3f0753279eb6f0fa4ec6c2fc60c5b4b91` |
