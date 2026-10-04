@@ -1419,3 +1419,21 @@ python3 workplace/new-game-378-verify.py
 Go1.24.13／network none／600s／2GiB／2CPU／128pids／UID1000，原ZIP／patch唯讀、owned監測550s／trap收尾。工具d2df07fb795875ffdcdd2b8566ae6ecadc073070已推送github，公開CPU／自製測試／規格／索引與377回填；31份私有收據SHA-256見[既有研究入口](docs/re/dosgolem-moo2-intake-20260930.md)。主庫僅四份現況／歷程文件，基線de43636b754208aa33b4371f468fefc5b238c5b4，提交後精確HEAD見Git。相關Docker容器清理，既有root-owned2437檔／272目錄保持。
 
 下一步以195M可見Sol II與同時取得的20物件表，核對正常列表行的熱區／原選取來源及callback前置，再建立一次正常press／原AX3 poll／安全release的限定驗證。不增加cap或猜欄位，不深挖DAC／PIT／renderer helper。主庫玩法RE-first保持，正式存讀／完整開局／RNG與remake同狀態未驗，固定日期不是seed。
+
+## 2026-10-04：379殖民地名稱行的原第一命中來源
+
+重用378完整195M收據與可見Sol II列表；固定官方1.31 EXE在IDA9.4 locked-v1重建一次性DB，原signed含端點矩形、index遞增與首次命中直接離開已核對。logical43,48／44,48命中13及19，原順序先13；右上角101,35另命中16，仍先13。10邊界與13前置漂移拒絕通過，完整195M核心／FPU／IF／callback IRQ與table／PNG hash保持。本輪沒有新guest或玩家輸入，未把預期13當原選取成功。
+
+首次IDA anchor把214104錯換為114104，與原C3不符；按F0000h映射修正到124104及callback1236D1後重建一次性DB，真正RET／邊界吻合。主選取11CEF5匯出保持。初版邊界oracle漏列101,35的重疊16，被驗證拒絕；按原表修正並保留首失敗。兩者為研究定位／驗證預期問題，CPU、原版收據與輸入不改。
+
+實際容器入口：
+```text
+bash /out/new-game-379-ida-run.sh
+python3 workplace/new-game-379-ready-review.py
+python3 workplace/new-game-379-source-verify.py
+```
+IDA image6f6d59af49d0／UID1000／network none／120s／2GiB／2CPU／128pids，官方patch唯讀掛/patch，既有工具workplace掛/out，tmp DB不持久。非空JSON／schema1／EXE hash／5365函式／擁有權通過，idat exit1不作判準。Python只讀核對沿既有Go1.24.13 image，30s／512MiB／1CPU／64pids。
+
+工具c6d319edf0f8a8bacfdc1a53d2eb39a5a53205c1已推送github，公開379來源規格／索引與378回填，其它public internal／CPU／DOS／probe保持d2df07f。16份私有收據SHA-256見[研究入口](docs/re/dosgolem-moo2-intake-20260930.md)。主庫僅四份現況／歷程文件，基線68532b9d3e60e7c8f49d850cfef4d6456595a982，提交後精確HEAD見Git。相關Docker容器清理，既有root-owned2437檔／272目錄保持。
+
+下一步依379已核對的195M完整來源與原first-match順序，建立Sol II行一次正常press／原AX3 pressed poll／首安全release的獨立READY契約，明示新玩家輸入的固定後續預算；先驗原index13選取store，再記實際畫面。logical43,48／44,48對應physical86,48／88,48，不代寫word13或跳handler，不重啟／重擲／加cap挑結果。主庫玩法RE-first保持；正式存讀／完整開局／RNG與remake同狀態未驗，固定日期不是seed。

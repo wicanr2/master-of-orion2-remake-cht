@@ -3946,3 +3946,42 @@ Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce617
 | moo2-dac-journal-376-prototype.txt | df69292f30e77a6b5b7c3c550edff42d8775c804cb2c16a5d2a4838d0ddd46e9 |
 
 已證實：本CPU ISA範圍、四自然consumer、原事件序列與195M可見列表。未知：列表行操作、共享word重設writer、typed欄位與完整玩家開局。主庫玩法RE-first保持，未宣稱remake同狀態對拍或完成。
+
+## 2026-10-04：379殖民地Sol II行的原第一命中與195M前置
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f；工具來源d2df07fb795875ffdcdd2b8566ae6ecadc073070，新工具c6d319edf0f8a8bacfdc1a53d2eb39a5a53205c1已推送github，見[379限定來源規格](https://github.com/wicanr2/dosgolem/blob/c6d319edf0f8a8bacfdc1a53d2eb39a5a53205c1/docs/spec/379-moo2-colonies-row-source.md)。本輪只讀重用378既有收據，加固定官方EXE的IDA查詢，沒有新native、輸入、cap、RNG或state寫入；public internal／CPU／DOS／原probe保持。
+
+**已證實，原靜態選取規則**：IDA Pro9.4／linear EA sub_11CEF5 11CEF5..11E718，11DC51從index1開始、11DC5B比較count／11DC62 JGE離開、37h stride；四signed word與原有符號bias、含端點矩形。非raw type14首次命中在11DD3B 8945EC保存index，11DD3E EB76直接離開掃描，不繼續到較後物件。raw type非11經11DDD4 JNZ，11DDDB 66A3A6C41700寫IDA word_17C4A6。原runtime定位另標dosgolem_high_le:20DDDB／66A3A6C42600，指令EA與資料operand的LE重定位均加F0000h。真正RET為runtime214104／C3，對應IDA124104／C3、sub_124075 124075..124105／38指令；runtime callback8:2136D1對應IDA sub_1236D1 1236D1..1237F3／74指令。原名、file offset、operand與bytes全保留，未改名或追runtime內部。
+
+**已證實，raw表及靜態導出**：378的DS188:298848／20表／stride55／1100bytes hash3c6bd2afa22a4ac6500ce62df53ea9bfe88dd4713423922949d23f179820471c。index13原矩形12,35–101,65／type7，index19矩形0,0–639,479。logical43,48／44,48均命中13+19，原第一項13；四內角第一項仍13，右上角101,35另與16重疊。11,48／43,34／43,66只命中19，102,48先16。record13 +24／+28／+32／+44的261716／0132h／2801A9／4015EC只保留原值，不命名typed colony id或callback，不取新pointer窗口。
+
+**強推論**：原矩形與可見Sol II名稱區相符。**未知**：實際pressed poll、word13 store、單／雙擊、轉入殖民地、人口調整與共享word生命週期。本來源的預期13不當實際玩家選取結果。
+
+378完整195M actual_boundary／step_limit／EIP22C8BA、R=[264C6C 4C 3E7D8BA 26A98C 2BD4E0 2BD50C 5 1]、段[8 188 188 0 20 188]、flags283h／IF1、FPU127F／status0／depth0／八stack bits0、clock447368391µs與readonly snapshot已核對。callback8:2136D1／mask2B／pending0／inactive／16／16；IRQ51746／51746、inactive／非failed。終PNG d3c775f1b8594e8313c27b5bd9e363dfb6e3210ca05f0f17136b36409b7a67ba、DAC588非0／indexed296428／RGB759775非0保持。10邊界與13前置漂移拒絕、全部public internal／CPU／probe逐byte保持及378正文保留／backlink／索引通過。
+
+首次IDA查詢anchor換算錯，把runtime214104寫成IDA114104，callback也錯位；C3不吻合，first-query完整留存。按runtime減F0000h修正到124104／1236D1後，相同官方EXE重建一次性DB，真正RET與函式邊界吻合，主選取11CEF5全部1550 rows匯出與首查詢一致。初版邊界oracle漏列101,35同時命中16，被原表解析拒絕，修正為13+16+19；第一項仍13，首失敗保留。沒有改原表或CPU來讓預期成立。
+
+IDA9.4 image sha256:6f6d59af49d0008c4109a5295b5f374bdc007e2d1ab28cb9de08779584de2780，UID1000／network none／120s／2GiB／2CPU／128pids，官方patch唯讀/patch、既有工具workplace輸出/out、一次性DB在/tmp。入口new-game-379-ida-run.sh；非空JSON schema1／EXE hash／5365函式／UID1000通過，idat exit1不作判準，stdout空不作失敗。READY審查後才建立只讀驗證器，入口new-game-379-ready-review.py／new-game-379-source-verify.py，Go1.24.13 image／30s／512MiB／1CPU／64pids。沿378固定官方EXE CPU386／machine全套收據，不重跑無關測試；正式.i64、原遊戲來源與state不變。
+
+以下16份位於workplace/dosgolem/workplace/，不入公開Git，含兩份重用的378來源：
+
+| 檔案 | SHA-256 |
+|---|---|
+| moo2-379-ida-list-input.py | 9b09c3ab136cd4f4ba564c238ec75c312c455cf56f0face50df8e537a41c7ed6 |
+| moo2-379-ida-list-input.json | a006c2e57f9f12c563c7c8fe3254ddc388e9db6c68221fb6eb2b4d93a548dc26 |
+| moo2-379-ida-list-input.log | bd7f4000aa9de0dcfeb58d83a208bc07d79befdec5d529d8e35d92bff376a8eb |
+| moo2-379-ida-list-input.stdout.txt | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 |
+| moo2-379-ida-list-input-first-query.py | 96486d5f8d0e3ab422ee6ca59771800faf86bde81b0c1735f8b911a72cb4ddc9 |
+| moo2-379-ida-list-input-first-query.json | c3fd822b3689f07987ba68b6b4c0257b4a1b1e4711775dc2cde42339be417902 |
+| moo2-379-ida-list-input-first-query.log | 390b6acf40ad029c30004ca301017bc66ce78acc966523feed9a8654e646a797 |
+| moo2-379-ida-list-input-first-query.stdout.txt | e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 |
+| new-game-379-ida-run.sh | 089969c1f0907eca1b78350cef73cdf2ee16176579c91aeece2b54437e9ba546 |
+| new-game-379-ready-review.py | 98cba94fb5cb066b1bc06d496448922f1661060364688c712b37753e0883a4ec |
+| new-game-379-ready-review-tests.txt | 68367e6ce908ef7db7a89a85bb0d551263af7f95a7ccb6cb39d27653d5e147d2 |
+| new-game-379-source-verify.py | 1685869bb0a59313c6f9d76c93c8d1134d8a68af389fb4df7282b934b015a0b8 |
+| new-game-379-source-tests.txt | 1d32e811b4d8b24a3546db4af0691ef00c6eea1d73fefbc6ff149100572faa5e |
+| new-game-379-source-tests-first-failure.txt | e8dfbb0d2da4e3ccb3463fae252b1b15d6fc670f455b809a8253bf7579c37a3c |
+| new-game-378-restore-journal.json | 825e88b325d7ee2b0fe5c2f99c35dd6a693216e953e7052336a5486d1943ae0c |
+| moo2-378-terminal.png | d3c775f1b8594e8313c27b5bd9e363dfb6e3210ca05f0f17136b36409b7a67ba |
+
+下一步依379已核對的195M完整來源與原first-match順序，建立Sol II行一次正常press／原AX3 pressed poll／首安全release的獨立READY契約，明示新玩家輸入的固定後續預算；先驗原index13選取store，再記實際畫面。logical43,48／44,48對應physical86,48／88,48，不代寫word13或跳handler，不重啟／重擲／加cap挑結果。主庫玩法RE-first保持；正式存讀／完整開局／RNG與remake同狀態未驗，固定日期不是seed。

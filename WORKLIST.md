@@ -46,12 +46,13 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–378為限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–379為限定CPU／平台／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
   **已驗正常COLONIES輸入及降色**：374正常press／原AX3 poll／42860µs後首安全release，原20DDDB／66A3A6C42600寫DS188:26C4A6 word0000→0A00，兩214104 RET按真實stack返回20DB5B／174742。376獨立重播11輪降色，182566943／419464025µs全零。選取10與降色已證實，378較後共享word為0000，生命週期writer未知，不推定持久欄位或列表typed內容。
   **目前CPU與正常畫面**：378先建立READY規格、舊2C17單一RED，再補naked2C；共393216組、64種初flags邊界、fetch失敗／prefix能力拒絕／EIP wrap及固定官方EXE的CPU386／machine全套通過。原188532362在dosgolem_high_le:1F455D自然AL1Ah→03h／flags206h，CMP→293h／JA未跳／MOVZX四consumer保持其它核心／FPU及RAM。原195000000達step_limit／EIP22C8BA，無CPU stop或DOS exit，沒有追加輸入或增加cap。
   **窗口與畫面來源**：原377共通12393列至2C、完整185M baseline／39frames與黑PNG、12300 DAC事件前綴保持。全部24601 DAC事件獨立重播，三埠25／6144／18432筆一致。首非0write在189322149／432332347µs／222CCE／3C9=04h，當時RGB仍黑；195M終DAC588非0、indexed296428非0、RGB759775非0，終PNG親看顯示Sol II殖民地列表，獨立PNG解碼與palette histogram映色通過。20表1100bytes與377停止表相同，10個較早raw byte變化語意仍未知；第三RET在189574450按真實stack回20DB5B，AX0／完整其它核心保持。
+  **目前列表行來源**：379重用378完整195M收據，原20表index13矩形12,35–101,65／raw type7；logical43,48與44,48幾何命中13及19，但IDA原索引遞增、首命中直接離開，所以先13。右上角101,35另命中16，仍先13；不要求整表唯一幾何命中。10邊界與13前置漂移拒絕通過，IF1／callback16與IRQ51746均已返回。Sol II名稱區對應為強推論，原pressed poll／word13／行操作仍未驗。本輪沒有新guest、cap、輸入或CPU改動。工具c6d319edf0f8a8bacfdc1a53d2eb39a5a53205c1已推送github，來源／16份收據與首次查詢及邊界oracle失敗分類見研究紀錄。
   **驗證與交付**：五private patch逆轉377，public CPU只新增2C區段並可逆回168b91b，其它internal／原probe保持；18CLI拒絕4正對照、原418來源／state／同guest副本與UID GID1000保持，原guest一次。首次測試wrapper誤加Bus不存在方法，編譯在測試前失敗；移除後保存真正舊core RED與新綠結果。工具d2df07fb795875ffdcdd2b8566ae6ecadc073070已推送github，31份私有收據雜湊見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)，377正文保留並追加378，主庫玩法未改。
-  **下一步**：以195M可見Sol II與同時取得的20物件表，核對正常列表行的熱區／原選取來源及callback前置，再建立一次正常press／原AX3 poll／安全release的限定驗證。不增加cap或猜欄位，不深挖DAC／PIT／renderer helper。固定日期不是seed。
+  **下一步**：依379已核對的195M完整來源與原first-match順序，建立Sol II行一次正常press／原AX3 pressed poll／首安全release的獨立READY契約，明示新玩家輸入的固定後續預算；先驗原index13選取store，再記實際畫面。logical43,48／44,48對應physical86,48／88,48，不代寫word13或跳handler，不重啟／重擲／加cap挑結果。固定日期不是seed。
   **未知／不混入本輪**：主庫玩法RE閘門保持；正式讀檔／存檔內容語意／typed名稱及旗色持久writer、五窗口完整物件、其他未驗CPU分支、typed種族特性、母星配置、COLONIES列表正常操作／人口調整／其他星圖控制、完整開局與remake同狀態未驗。DPMI外部cb_smoke、兩舊探針PE格式、AH2Ch／RNG／人耳與Windows／macOS實機未驗。
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
 > [`docs/re/parity-matrix.tsv`](docs/re/parity-matrix.tsv) 的玩家玩法列為分母；每列必須具備
