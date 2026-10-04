@@ -1544,3 +1544,36 @@ python3 workplace/new-game-384-document-gate.py > workplace/new-game-384-documen
 工具0a6c7f97c75262c1d36098f5d6763918e91e2305已推送github，公開只有索引、384自撰契約與383追加回鏈。32份私有收據SHA-256見[研究入口](docs/re/dosgolem-moo2-intake-20260930.md)。主庫只改四份現況／歷程文件，基線d6e4933c116fefdc8a4610773c3ed77ce810d686；提交後精確HEAD見Git。收尾核對擁有權、兩庫狀態與Docker；既有root-owned2437檔／272目錄保持，無.md目錄，本輪容器已結束。
 
 下一步只查原sub_C058A的C07C1→sub_BF456返回邊界與回呼設置，不送人口輸入，不盲增cap或深入共享renderer。正式人口操作／存讀／完整開局／RNG與remake同狀態未驗，固定日期不是seed。
+
+## 2026-10-04：385原場景設置與首輸入、回呼runtime地址勘誤
+
+384已推送並分類progress。開工核對唯一現況表與兩庫Git，命中復古GUI、spec閘門與文件回鏈入口。主庫RE-first保持，本輪只有原版來源、私有觀察與文件訂正。
+
+沿固定官方1.31 ORION2.EXE與IDA9.4一次性資料庫核對BF456／C058A／1191CA；分別43／215／31項，1191CA的205 direct callers只匯出32並標截斷。327筆來源紀錄／325原EA、71筆含fixup差異核對通過，原LE2objects／365pages／51363 fixup保持。私有RE輸出的「8份IDA」標籤沿用舊字樣，本輪實際僅新增一份查詢。原file bytes、file offset、IDA linear EA與dosgolem_high_le分列。
+
+先DRAFT→READY審查，才生成8個可逆private patches及70CLI。原guest僅一次，session26846 exit0，明示200–220M有界觀察；原210M守衛通過，沒有新輸入、重啟或CPU改動。原210M完整核心／FPU／clock／callback IRQ／36表／DAC／journal／39frames／PNG、418來源／state與副本保持。
+
+原BF456於203219421由1AF4FF／C3依真SS stack返回1B07C6；203219427到1B07E1，EAX1AED21；203219451原2091EA執行A340882900，203219467由209225／C3返回1B07E6。首正常輸入CALL在205804505／1B0845，PNG與原210M相同。兩次RET的ESP+4／其他核心／FPU／RAM保持通過。
+
+原A3實際寫DS188:298840，IDA dword_1A8840加F0000h也為298840。384及385觀察器卻讀2A8840，算錯10000h；原零raw值保持，但撤回scene callback0語意。錯誤排除範圍導致store其他RAM保持檢查失敗，不當CPU缺陷。正確位移實際讀回及全RAM僅改正確四bytes未知；EAX寫入只列強推論。原current／pool／361record／三word／enable與水平偏移保持，先前仍需等待設置的推論被原時序否定。
+
+獨立驗證session93305 exit0，SAFE EVIDENCE PASS限返回／首輸入／舊前置，ADDRESS MODEL REJECTED保留回呼模型失敗。原385收據與private Go不改，不靠重跑取得綠色；契約READY退回DRAFT，383與384只追加勘誤，索引移除目前錯誤斷言。來源及CLI是在原READY階段通過，DRAFT後不重新啟動錯誤觀察器。
+
+三項環境／腳本問題已保留：RE verifier最初寫入唯讀mount，改用既有可寫工作樹；生成器首版marshal定位到三處，在寫Go前拒絕，改唯一payload定位；獨立驗證首版Python重新序列化改變Go事件key順序與HTML escape，改核對原journal事件文字切片。沒有改guest或原收據，也沒有把它們記作產品問題。
+
+實際Docker入口：
+```text
+bash /out/new-game-385-ida-run.sh
+python3 workplace/new-game-385-re-verify.py
+python3 workplace/new-game-385-ready-review.py
+python3 workplace/new-game-385-generate.py
+python3 workplace/new-game-385-source-verify.py
+bash workplace/new-game-385-run.sh > workplace/new-game-385-run-output.txt 2>&1
+python3 workplace/new-game-385-verify.py > workplace/new-game-385-verification.txt 2>&1
+python3 workplace/new-game-385-document-gate.py > workplace/new-game-385-document-gate-tests.txt
+```
+生成器及來源檢查由容器執行，原文保存在私有workplace。Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac；IDA9.4 locked-v1 image sha256:6f6d59af49d0008c4109a5295b5f374bdc007e2d1ab28cb9de08779584de2780。network none／UID/GID1000，原ZIP／patch唯讀；IDA120s／2GiB／2CPU／128pids，native600s／2GiB／2CPU／128pids及owned PID550s／trap，驗證90s／2GiB／1CPU，文件30s／512MiB／1CPU／64pids。沒有新image，相關容器已結束。
+
+工具3842529eb5dff704adf3d33b6c4f5720ebe9cbb4已推送github，只改四份自撰文件；45份主要私有收據SHA-256見[研究入口](docs/re/dosgolem-moo2-intake-20260930.md)。主庫只改四份現況／歷程文件，基線68ee2f7beafd94f7a8ef87d8957ee615a9c4e0d2；提交後精確HEAD見Git。收尾核對兩庫狀態／擁有權／Docker，既有root-owned2437檔及272目錄保持，無.md目錄。
+
+下一步386修正DS188:298840只讀觀察，依原A3及已定位首輸入完整狀態作守衛；維持原輸入與210M，不再等待或盲增cap。人口正常選取／放置、正式存讀、完整開局／RNG與remake同狀態未驗。

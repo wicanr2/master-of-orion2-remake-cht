@@ -4341,3 +4341,76 @@ READY初版把115988／668902間接寫入當成需有relocation，來源審查�
 | `new-game-384-verification.txt` | `dc35e109e8dc5cb2a6aaa062d25fe53d7d917a75ec1cb5d87db25bb470211b8a` |
 | `new-game-384-verify.first-check.py` | `277550d54ed0457b52fddf5ab9a5df8ec5dd181b10dc73b280237172f0116da5` |
 | `new-game-384-verify.py` | `05b2d85633fc9bcc1a3b3201ba7fcd819289bd79486e431161f2facc0d3a93ba` |
+
+## 2026-10-04：385原返回／首次正常輸入與回呼runtime地址勘誤
+
+官方1.31 ORION2.EXE SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`；IDA Pro9.4 linear EA、原file offset及dosgolem_high_le各自標明。工具基線0a6c7f97c75262c1d36098f5d6763918e91e2305，新工具3842529eb5dff704adf3d33b6c4f5720ebe9cbb4已推送github。見[385限定觀察契約](https://github.com/wicanr2/dosgolem/blob/3842529eb5dff704adf3d33b6c4f5720ebe9cbb4/docs/spec/385-moo2-colonies-scene-ready.md)，383／384與索引同步回鏈。主庫玩法閘門保持。
+
+### 來源、原時序與訂正等級
+
+新增一份IDA查詢，327筆來源／325原EA、71筆fixup差異核對原LE51363 records；原來源與重定位bytes保存新bytes index。sub_BF456／C058A／1191CA原範圍及CALL／RET保存，1191CA的205 direct callers只匯出32並明示截斷，不深入renderer或平台helper。
+
+- **已證實，dosgolem_high_le**：原BF456真RET203219421／1AF4FF→1B07C6；原scene CALL203219427／1B07E1，EAX1AED21；原store203219451／2091EA→2091EF；原setup真RET203219467／209225→1B07E6。兩次RET的真SS stack、ESP+4、其他核心／FPU／RAM保持通過。
+- **已證實，地址勘誤**：原runtime code `A340882900`指定DS188:298840，符合IDA dword_1A8840加F0000h。384及385觀察器誤用2A8840，偏差10000h。歷史384收據成功讀得2A8840四bytes零的事實不改；撤回「scene callback0」欄位語意。store的其他RAM不變檢查使用錯誤排除範圍，不當CPU缺陷。
+- **強推論**：原A3將EAX1AED21寫到298840。**未知**：正確位移實際讀回與全RAM僅改實際store四bytes的證明，舊收據未捕捉的bytes不補寫。
+- **已證實，首正常輸入入口**：205804505／virtual471004699µs到1B0845／E861690500，完整原frame及只讀窗口保存；count36／RGB非零681553。PNG SHA-256 `1a0e7551173173b43897be18ccf5295755ca80b222be7dc6dbca0b1d986c8c03`與原210M相同。原current raw4／pool5B2044／361byte record5B25E8、三word310及其他正確定位欄位保持。先前「尚需等待setup」推論被本次原時序否定，210M已涵蓋首輸入。
+
+### 驗收範圍及停止線
+
+READY先於private實作；8patch逆回384，70CLI為58拒絕及12正對照。原guest一次，明示220M窗口，無新滑鼠輸入、CPU／DOS／main玩法改動；原210M完整前置／journal／39frames／DAC／PNG／418來源／state與副本保持。獨立驗證session93305 exit0，SAFE EVIDENCE PASS限定原返回與首輸入，ADDRESS MODEL REJECTED明示地址模型失敗；385契約回DRAFT。原Go／JSON／PNG／journal不修改、不重跑求綠，383／384保留正文追加勘誤，現況表移除錯誤callback0斷言。
+
+首次驗證重新序列化Go事件造成key順序及HTML escape雜湊差異，改核對原journal事件文字切片，同一收據通過；首腳本與失敗輸出保留。其他生成器唯一定位與唯讀mount問題、命令及資源限額見WORKLOG。所有工作在既有Go1.24.13及IDA9.4鎖版Docker內，network none／UID1000，原資料唯讀，程序有界及trap；沒有新image或遺留本輪容器。
+
+下一步386先依原A3運算元修正DS188:298840只讀觀察與守衛，再在原205804505首輸入完整狀態驗正確callback讀值，維持原輸入與210M。人口輸入的座標契約仍待證據，不猜倍率、不盲增cap、不深入renderer／palette／DAC／PIT。固定日期不是RNG seed；正常人口變更、正式存讀、完整開局及remake同狀態仍未知。
+
+### 385 私有收據SHA-256
+
+路徑根為本機忽略的`workplace/dosgolem/workplace/`，下表45份UID/GID1000。只列主要來源、腳本、收據與五個末段PNG；完整39frames及遊戲副本已獨立核對。原資料／收據／private Go不公開。
+
+| 收據 | SHA-256 |
+|---|---|
+| `moo2-385-ida-scene-ready.json` | `12aea3957cdb776dbdeb41e65f58b1a0213179528d8d48d6dbe55c04d367b159` |
+| `moo2-385-ida-scene-ready.log` | `0e19178e36367d87358fd5ec1e406ed1a4a6e27030cd428da636efcfcb9bc460` |
+| `moo2-385-ida-scene-ready.py` | `df29ffe1655e1731af0d90814548cdbc0bab7d75051597adfcab9d95a210881a` |
+| `moo2-385-ida-scene-ready.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-385-scene-input.png` | `1a0e7551173173b43897be18ccf5295755ca80b222be7dc6dbca0b1d986c8c03` |
+| `moo2-385-scene-source210.png` | `1a0e7551173173b43897be18ccf5295755ca80b222be7dc6dbca0b1d986c8c03` |
+| `moo2-385-source-byte-index.json` | `6518e6ee91ea85407d37b9879c0cea9b1a847fc4f3d7baeb49d0d5240102f58d` |
+| `moo2-385-terminal.png` | `1a0e7551173173b43897be18ccf5295755ca80b222be7dc6dbca0b1d986c8c03` |
+| `moo2-385-upper-first-restore.png` | `1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622` |
+| `moo2-385-upper-source200.png` | `1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622` |
+| `moo2-colonies-scene-ready-385.go` | `c228e3757acd0101001bcc2970762380d0441c2205d00b58d535e83b07834d30` |
+| `moo2-probe-385-overlay.txt.gz` | `e86363caf6d0adfbcf5caa98b221bb57d293fa7c6b4a853262e198eefabf1029` |
+| `moo2-save-state-385.json` | `50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705` |
+| `new-game-385-baseline-dac-journal.json` | `3c4b88a7a732630116aa8eae8d71628de2ce5b9c9a983424c991bf7e0cb66b79` |
+| `new-game-385-cli-tests.txt` | `0c1619e2a6ab235eb633ec859665b6d5e0bcc7f7c5851afc5632404202644589` |
+| `new-game-385-document-gate-tests.txt` | `de3c1c0825b19b2f0541a2344c2b9bc55996539a58ea354bc08ecaea10028d68` |
+| `new-game-385-document-gate.py` | `710ea75eda0d1abb2fa486c6e7bda0c32eced06b6785ecf8bd3a363aae3c2129` |
+| `new-game-385-generate.first-check.py` | `dc06687dcd281cc1902c828ebffd56ab9bb461dfe11af459e0befdfa05584fc4` |
+| `new-game-385-generate.first-check.txt` | `282b6cfacffaf2f6f1f9f201c7e2048ff14f8fa998bcda9ce89a931d1b6a12c7` |
+| `new-game-385-generate.py` | `47f316001322831cdd43b5c96f0c12234241b3d6defd02c044bcabb855c469f8` |
+| `new-game-385-ida-run.sh` | `210cb2579c2eac493167135398fae6391561e99b88f13d11170f4616d2bfa4e0` |
+| `new-game-385-job-source.json` | `baaad3576197182d38004615f93d00af5b221d4c46ff2b97db9f1cba15103290` |
+| `new-game-385-patches.json` | `d136779cb62542128f3a8b9b1e1084e0f97c7fd7778fccbb2b6172d71e872cca` |
+| `new-game-385-re-tests.txt` | `1e4b367880cb99ed61c10b2ef7ab90ebf3164c34f415c73531a2d19df65e6763` |
+| `new-game-385-re-verify.py` | `182381d42db2e2d9694fdfe762a2db164f1cbbe3dbbc2c5da12b8c474e5031db` |
+| `new-game-385-ready-review-tests.txt` | `257fdff3d82d633ee9c8ca45395fb7de658da7b6aefe75a5da24a471df4ba7ad` |
+| `new-game-385-ready-review.py` | `5e4b4b49ec10964b25e92886c5c8e9f54e411960fcade1a6e9f9f08cc1ce3d1b` |
+| `new-game-385-restore-journal.json` | `ba3072b5c04eb34f46d13adde7cbdc7b47630424d7aae35b2d49a553f70279bb` |
+| `new-game-385-row-baseline.json` | `e17d39cba4a507247e0a6b46eae86fa847f364dadd8ee630c441214924125b67` |
+| `new-game-385-run-output.txt` | `0f38389ce269dddc1939bc3e4093cf2de770c20fa091cccf809628edaa4883b3` |
+| `new-game-385-run.sh` | `f3688b9b6ab0605c2329de2006e80b68ce869890b89f8ed3969168814d79f446` |
+| `new-game-385-scene-input-source.json` | `1d863e75ef8afb9d80f756abf394de556a2d808682b1cc60f74504d559175c44` |
+| `new-game-385-scene-input.json` | `4e0a112574c9fae4e1e5bb6b27a625a23ca887d07859dfa9dd1ea0abb7412f84` |
+| `new-game-385-scene-source210.json` | `07314efca204bdfe67825da8be8d0705724945251072f23eeecefd0e2d27dff0` |
+| `new-game-385-source-tests.txt` | `5398a6a98822756cc588bff3a820f83d320198cc7830ab2ab582c3d857e7eab9` |
+| `new-game-385-source-verify.py` | `74634c4a2dc76722123cb2c0870579018da6dfc98ee57f80e6847357c16e676e` |
+| `new-game-385-state-capture-output.txt` | `9332dea0878e8d161b0c361a816571d5946567602223ec6dadb95d15d9cd9ab3` |
+| `new-game-385-state-capture.json` | `5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d` |
+| `new-game-385-state-capture.py` | `9c7995624c7c15eb327d0cdaa5598513b57930fe6564d3901ef736a73f0d9758` |
+| `new-game-385-upper-return.json` | `5079802ec98ba5702cb16565244f0b521419734c55f37cc90f7d44273930254f` |
+| `new-game-385-upper-source200.json` | `dbc1d601442f6f5eb5a9efa08b2526ec0c12ad4d65dfea9954ffe509d2fbe37c` |
+| `new-game-385-verification.first-check.txt` | `d3457904cbcc4388897f402e81b27bd90e353ead596d35514a5d151a14b482b0` |
+| `new-game-385-verification.txt` | `f09541a5e585ab028afb03c953a370efda61c1708ec32421ec40bb53ed3a0105` |
+| `new-game-385-verify.first-check.py` | `0dd1589cef2c987948642d877fca2093607604fb4f982bd53afd31ac820ea7c9` |
+| `new-game-385-verify.py` | `07e02abddd0ab0622f1c2001288a635e11ba431cae37dc952df710c27d7c8f70` |
