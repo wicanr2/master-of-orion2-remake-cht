@@ -1366,3 +1366,19 @@ python3 workplace/new-game-375-verify.py
 Go1.24.13／network none／600s／2GiB／2CPU／128pids／UID1000，原ZIP／patch唯讀、owned監測550s／trap收尾。19份私有收據SHA-256見[既有研究入口](docs/re/dosgolem-moo2-intake-20260930.md)，工具03dcee257142e790661be653e9ba6102136d162a已推送github，374正文保留並追加回填。主庫只改四份現況／歷程文件；基線8a0985c7beabe2ecc190bf14fa546fe3653572a2，提交後精確HEAD見Git。相關Docker容器清理；既有root-owned2437檔／272目錄保持。
 
 下一步保持相同輸入與185M，審查internal/machine/machine.go的DAC ports既有寫入入口，再以有界私有只讀觀察保存180M起到185M的DAC寫入總數、首個全零與最近寫入邊界及其原核心／clock。只觀察既有寫入，不添加IO、色盤修補、輸入或盲目擴cap，不深入DAC／PIT／driver或renderer helper。主庫玩法RE-first保持，正式存讀／完整開局／RNG與remake同狀態未驗，固定日期不是seed。
+
+## 2026-10-04：376正常轉頁窗口DAC降色與歸零序列
+
+376保持375正常輸入與185M，原guest一次。從180M press前原DAC592非0值保存實際device寫入序列，11275事件獨立算術重播通過；11輪maskFF／index0..255／768色值均單調不增。首次全0與末DAC事件同為device sequence290512、loop觀察182566943／419464025µs／目前EIP222D1C，到185M沒有新DAC write。原降色來源已證實，恢復／轉頁完成與列表正常操作未驗。
+
+375全部12255共通原列／39frames／黑終圖與兩只讀快照保持，只多journal摘要。每group hash／非0數／index／phase／mask／ports累計與終態核對；四patch逆轉375、private getter純讀，public internal／CPU／DOS／probe不變。原來源／state／同guest副本與UID GID1000、13CLI拒絕與三正對照通過。沿372固定官方EXE全套，不重跑無關CPU測試。
+
+實際Docker入口：
+```text
+python3 workplace/new-game-376-ready-review.py
+bash workplace/new-game-376-run.sh
+python3 workplace/new-game-376-verify.py
+```
+Go1.24.13／network none／600s／2GiB／2CPU／128pids／UID1000，原ZIP／patch唯讀、owned監測550s／trap收尾。工具3295ddcac19dfbbebed167a490cebed7859c86a2已推送github，374／375正文保留並追加376回填。21份私有收據SHA-256見[既有研究入口](docs/re/dosgolem-moo2-intake-20260930.md)，原事件與rawDAC維持本機。主庫僅四份現況／歷程文件，基線fc54d5b2031a4d3b0690cfe0a50befaa9dd0b7c7，提交後精確HEAD見Git。相關Docker容器清理，既有root-owned2437檔／272目錄保持。
+
+下一步以376已證實的11輪單調降色與182566943歸零為來源，先審查新的轉頁觀察契約：保留185M完整前置，限定追加一次10M窗口至195M，追首個恢復非0色值的DAC寫入並保存原核心／clock與可見頁；未恢復時記錄實際邊界，不以加碼重跑求過。不得代寫palette、增加玩家輸入或深入DAC／PIT／driver及renderer helper。主庫玩法RE-first保持，正式存讀／完整開局／RNG與remake同狀態未驗；固定日期不是seed。

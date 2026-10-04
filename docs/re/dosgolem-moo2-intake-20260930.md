@@ -3758,3 +3758,67 @@ Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce617
 | moo2-palette-snapshot-375-prototype.txt | 69da24f32ed36f2791689bb05e2f2ffe35aa9167c5cb7d3369728fefea0e3db7 |
 
 下一步保持相同輸入與185M，審查internal/machine/machine.go的DAC ports既有寫入入口，再以有界私有只讀觀察保存180M起到185M的DAC寫入總數、首個全零與最近寫入邊界及其原核心／clock。只觀察既有寫入，不添加IO、色盤修補、輸入或盲目擴cap，不深入DAC／PIT／driver或renderer helper。主庫玩法RE-first保持；殖民地列表內容與正常操作／正式存讀語意／typed名稱旗色持久writer／母星配置／完整開局／RNG與remake同狀態未驗。
+
+## 2026-10-04：376原DAC降色、歸零與末寫入邊界
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址空間dosgolem_high_le，工具基線03dcee257142e790661be653e9ba6102136d162a，公開CPU保持1d8a4d8252372c97d8e873ba13c3ab3670796527dcd6d74de52e8cbf226e068c。工具3295ddcac19dfbbebed167a490cebed7859c86a2已推送github，見[376限定DAC序列規格](https://github.com/wicanr2/dosgolem/blob/3295ddcac19dfbbebed167a490cebed7859c86a2/docs/spec/376-moo2-colonies-dac-write-journal.md)。公開本規格／索引與374／375回填，全部internal／CPU／DOS／probe保持；原序列／rawDAC／LOG／PNG／RAM／state及private probe／getter不入Git。
+
+### 已證實的原降色與未知恢復
+
+180M正常COLONIES press前原DAC有592非0值，SHA-256 ddf4dd57bc57ded0c9deddf28069189396b21f3c855841debfe98a1f482d5292、maskFF。既有LEOPLPorts.Log只保存最早4096筆，本輪從同VBE device完整PortLog讀取有界增量，保存原sequence／port／value／device Step；device Step不當outer step，loop現在EIP不當內部write原執行位址。
+
+完整11275group／11275DAC事件，3C6／3C8／3C9為11／2816／8448筆。從初始DAC／mask／index／phase獨立以除法／餘數重播，全部group rawDAC hash／非0數／mask／index／phase／ports三埠累計與終態一致。11輪均maskFF／index0..255／768色值，所有值相對初態與前次單調不增；這是數值來源已證實，不宣稱硬體逐週期或轉頁完成。
+
+| 輪 | 起觀察step | 末觀察step | 末非0色值數 |
+|---|---|---|---|
+| 1 | 182482821 | 182489427 | 592 |
+| 2 | 182490806 | 182497412 | 583 |
+| 3 | 182498793 | 182505399 | 583 |
+| 4 | 182506486 | 182513092 | 583 |
+| 5 | 182514179 | 182520785 | 583 |
+| 6 | 182521872 | 182528478 | 583 |
+| 7 | 182529565 | 182536171 | 571 |
+| 8 | 182537258 | 182543864 | 554 |
+| 9 | 182544951 | 182551557 | 545 |
+| 10 | 182552644 | 182559250 | 496 |
+| 11 | 182560337 | 182566943 | 0 |
+
+首次全0與末DAC事件同為sequence290512／port3C9／value0、loop觀察182566943／419464025µs、目前EIP222D1C。R=[0 1 7003C9 64 2BD99C 2BDBD0 2A3758 2BDC2C]、段=[8 188 188 0 20 188]、flags6h，FPU127F／status0／depth0／八stack bits0；target8:2136D1／mask2B／pending0／inactive、callback16／16與IRQ48162／48162已返回且非failed。VBE bank9／startY512／sets2935／writes55268558／display93。寫入後loop邊界保存目前核心／clock，未猜每write精確時間。
+
+182566943後到185M沒有DAC寫入。原185M／223A71、flags206h／clock424485517µs與完整核心／FPU／VBE／callback16／16／IRQ48857／48857、20表及全零DAC／maskFF保持375。降色到零已證實；色盤恢復、正常轉頁與列表內容仍未知，不稱黑圖是列表完成或產品缺陷。
+
+### 驗證與收據
+
+375全部12255共通原列／39frames／black final與兩只讀快照保持，只有一筆新journal摘要。375色彩快照RAMhash逐輪正規化，前後相等／只讀與其餘bytes／RGB hash保持。四私有patch逆轉精確等於375，public internal／CPU／DOS／probe保持03dcee2；13CLI拒絕與三正對照、原418來源／state／同guest副本／UID GID1000通過。沒有新CPU行為，沿372固定官方EXE全套，另建置probe，不重跑無關測試。
+
+增量getter前後完整R／段／flags／FPU／clock／VBE／callback與IRQ／device／ports map與早期Log／完整journal／DAC／mask／index／phase保持，初態和終cap另驗全RAMhash；length getter純讀，不呼叫IO或Restore，不代寫模型。最大delta4096／事件和group262144界限未超出。374／375正文保留並追加376，索引與backlink驗證通過。
+
+原guest一次，原SAVE10.GAM208000bytes／0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d、MOX.SET553bytes／de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f與sound.lbx4250888bytes／3f0354ac5c1b13a3c5c4fd098c2cbc22af37b71e74fc95e582782c22024c449d保持。Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac、network none／600s／2GiB／2CPU／128pids／UID1000，原ZIP／patch唯讀、owned監測550s／trap收尾。實際入口依序new-game-376-ready-review.py、new-game-376-run.sh、new-game-376-verify.py，READY在私有實作前；相關Docker容器清理，既有root-owned2437檔／272目錄保持。固定日期不是seed。
+
+以下21份位於workplace/dosgolem/workplace/，不入公開Git：
+
+| 檔案 | SHA-256 |
+|---|---|
+| moo2-376-overlay-frame-extended-180000000.png | beb773bf0623f56bc9b2be697c6e0e472abebd8fa4c319f15e6074291bb7a832 |
+| moo2-colonies-dac-journal-376.go | ef19ab41906cf84aec2a8498e82e91deae9f7c4cc0d8fd0df3be87ac15940507 |
+| moo2-probe-376-overlay.txt.gz | c79298f8e2bd24283593a0c24e9c2c1005a08cba8f4cb57d52d9a1a7d350529d |
+| moo2-save-state-376-mox.set | de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f |
+| moo2-save-state-376-save10.gam | 0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d |
+| moo2-save-state-376.json | 50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705 |
+| moo2-vbe-376-overlay.png | 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622 |
+| new-game-376-cli-tests.txt | 2dbf20d4bdf4311e15de13d3a416bfe1f5043e9675a59e320dd49ec4569ecb61 |
+| new-game-376-patches.json | 2eee0f5d63561346e928a9c0f38ccf6cb0d66fb087f3115960d05699b65313eb |
+| new-game-376-ready-review-tests.txt | bebc250bbc1974165b414d1fd27b9e63e3a2818a7c0d033100ed5ab8858282ff |
+| new-game-376-ready-review.py | 9a284d301e98ff8216b6330b2097b2b925605833e32d40b2f802f9877422b2b0 |
+| new-game-376-run-output.txt | 0281065dab51441d91a7dd15b0de89726a3ae1649a1fc786edc99c8a7c8192ff |
+| new-game-376-run.sh | 68a91e84eef2a66839c6515ddd80ee2f727a76e6dc32d8b4ed4df12375548e70 |
+| new-game-376-state-capture-output.txt | 9332dea0878e8d161b0c361a816571d5946567602223ec6dadb95d15d9cd9ab3 |
+| new-game-376-state-capture.json | 5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d |
+| new-game-376-state-capture.py | cc197ea5bceeb15723ace565b0bfa525f3df4e357edeb077b35f2036aa130035 |
+| new-game-376-tests.txt | 8a6503c9d9e969ecf7ed5ac26d70a7eeeee9c525660e74a25b117a37286e6aa8 |
+| new-game-376-verify.py | f138637397d6f65f60f3df63bb7b6b6e9539cb978661f9c62f806d1b5163f654 |
+| moo2-dac-journal-376-prototype.txt | df69292f30e77a6b5b7c3c550edff42d8775c804cb2c16a5d2a4838d0ddd46e9 |
+| new-game-376-dac-journal.json | 574b0bba3f916f6994a13717437f0ba9f58e0af451a6cc8565b20bada50f9e83 |
+| moo2-palette-snapshot-375-prototype.txt | 69da24f32ed36f2791689bb05e2f2ffe35aa9167c5cb7d3369728fefea0e3db7 |
+
+下一步以376已證實的11輪單調降色與182566943歸零為來源，先審查新的轉頁觀察契約：保留185M完整前置，限定追加一次10M窗口至195M，追首個恢復非0色值的DAC寫入並保存原核心／clock與可見頁；未恢復時記錄實際邊界，不以加碼重跑求過。不得代寫palette、增加玩家輸入或深入DAC／PIT／driver及renderer helper。主庫玩法RE-first保持，殖民地列表正常操作／正式存讀／typed名稱旗色持久writer／母星配置／完整開局／RNG與remake同狀態未驗。
