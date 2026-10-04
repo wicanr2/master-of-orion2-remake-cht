@@ -4960,3 +4960,183 @@ DRAFT／固定來源與前置審查後READY，再生成可逆private實作；106
 | `new-game-394-result.json` | `8218e484a075e1769121e68581eb3705efb67d6d36a3910c01656ab6f9f79b99` |
 | `new-game-394-verification.txt` | `00a7610adfa2543f9e0f18c630194abcb3ecb8d282a44c73880e0a3c7aad41b7` |
 | `new-game-394-verify.py` | `4f62b42395b2b147b8f7b023bf3628d3f0753279eb6f0fa4ec6c2fc60c5b4b91` |
+
+
+## 2026-10-04：395原跳表與397正常RETURN
+
+原官方1.31 ORION2.EXE SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`。IDA9.4 linear EA，runtime投影另加F0000h，file offset／原bytes／LE重定位分列。395共436列／358EA／117fixup差異，原4與43-entry跳表及九個RETURN18熱區邊界通過。8011F的mode2經802C2呼叫7DA76讀檔，mode3經802CC呼叫7E154存檔，由394強推論升為已證實。只證靜態分支，不證正常GUI存讀。
+
+397在212606147正常release，elapsed47384µs；213103590原C058A依真SS返回1004EF，ESP+4及相同SS。16phase／PNG與按下／放開前後RAM／core相同通過，完整393的15phase／50writer／65PNG及固定396前五phase保持。原215M末態1A5051仍顯示殖民地，2071AB下一輸入沒有觀測；畫面切換、正常存讀及remake同狀態未驗。418原輸入及SAVE10／MOX副本保持，固定日期不是seed。
+
+```json
+{
+  "schema": 1,
+  "source396_first5_unchanged": true,
+  "source393_full_unchanged": true,
+  "actual_boundary": 215000000,
+  "reason": "step_limit",
+  "pressed": true,
+  "consumed": true,
+  "released": true,
+  "exit_seen": true,
+  "colony_returned": true,
+  "next_normal_input": false,
+  "true_return_target": "0x1004ef",
+  "events": [
+    {
+      "kind": "place-return-press-before",
+      "step": 212590909,
+      "eip": "0x1b0845"
+    },
+    {
+      "kind": "place-return-press-after",
+      "step": 212590909,
+      "eip": "0x1b0845"
+    },
+    {
+      "kind": "place-return-selector-entry",
+      "step": 212596669,
+      "eip": "0x203fb9"
+    },
+    {
+      "kind": "place-return-selector-return",
+      "step": 212597711,
+      "eip": "0x20e1ac"
+    },
+    {
+      "kind": "place-return-selector-release-guard-rejected",
+      "step": 212597711,
+      "eip": "0x20e1ac"
+    },
+    {
+      "kind": "place-return-press-consumed",
+      "step": 212606147,
+      "eip": "0x1aceab"
+    },
+    {
+      "kind": "place-return-release-before",
+      "step": 212606147,
+      "eip": "0x1aceab"
+    },
+    {
+      "kind": "place-return-release-after",
+      "step": 212606147,
+      "eip": "0x1aceab"
+    },
+    {
+      "kind": "place-return-gate-20E4EB",
+      "step": 213068102,
+      "eip": "0x20e4eb"
+    },
+    {
+      "kind": "place-return-gate-20E50D",
+      "step": 213068111,
+      "eip": "0x20e50d"
+    },
+    {
+      "kind": "place-return-gate-20E516",
+      "step": 213068112,
+      "eip": "0x20e516"
+    },
+    {
+      "kind": "place-return-gate-1B08CA",
+      "step": 213102567,
+      "eip": "0x1b08ca"
+    },
+    {
+      "kind": "place-return-gate-1B0960",
+      "step": 213103582,
+      "eip": "0x1b0960"
+    },
+    {
+      "kind": "place-return-near-before",
+      "step": 213103589,
+      "eip": "0x1aad9f"
+    },
+    {
+      "kind": "place-return-colony-returned",
+      "step": 213103590,
+      "eip": "0x1004ef"
+    },
+    {
+      "kind": "place-return-terminal",
+      "step": 215000000,
+      "eip": "0x1a5051"
+    }
+  ],
+  "png": "741bb4ca62f46653dc9c65d0b3d6639b93cbf9c8b71758e3864988105de89ee1",
+  "formal_save_load_verified": false,
+  "remake_same_state_verified": false,
+  "release_elapsed_us": 47384
+}
+```
+
+首次396 overlay_probe_exit137，已到固定393結果但未送RETURN，239份失敗產物保存。兩份48036591-byte terminal在新增守衛同時展開／複製，記憶體壓力為強推論；Docker未查得OOM事件，不能稱已確證OOM。READY只把新增守衛改為逐token串流SHA-256，原固定檔SHA核對，僅略三個RAM雜湊鍵；full393正對照及value／type／nested突變拒絕通過。同資源／同入口／原215M乾淨重跑，原getter與唯一Step保持，公開CPU／DOS及主庫Go玩法不改。
+
+工具ba7dd46630aee381f0a15051fbd103ef9c0c3ea4已推送github，395限定RE、396即時放開候選DRAFT、397限定正常RETURN；394／393／395／396解決回鏈及索引同步，385／392DRAFT保持。原資料／JSON／PNG／LOG／private Go僅留本機忽略workplace/dosgolem/workplace，自撰文件及hash公開。正常存讀、跨殖民地、remake同狀態仍未知；398先查1004EF返回後控制流及1A5051等待，不直接派送ID或寫RAM，RE-first保持。
+
+| 本機檔名 | SHA-256 |
+| --- | --- |
+| `failed1-396-manifest.json` | `fcfd29dee77e26c4c360a874fff2ded1ea12352ef1601199b036c658bb185423` |
+| `failed1-397-manifest.json` | `f0471b08e58e2973e5e395bd7ae8479c419b129fdbbcd3b6fc5ee636e6d199a2` |
+| `moo2-395-ida-player-return-options.json` | `f8698e6a8a41d9599f78a1857932ee2cd4f06d177145472a8fea8af47376e53f` |
+| `moo2-395-ida-player-return-options.log` | `abb1274f24d8cc8855fda14ace37c5bd227a7f9cf7fc328dc412bd209f83ed58` |
+| `moo2-395-ida-player-return-options.py` | `c515b0bc205ce902c8077327cf8aaa547dae6f05e8149b473412c70549f608fd` |
+| `moo2-395-ida-player-return-options.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-395-ida-return-switch-values.json` | `038d320fee085ddb2889f9e8cfc1d557a9fa81036f940306e1449e579aeb4f8b` |
+| `moo2-395-ida-return-switch-values.log` | `183c50856abafa0cc4b5eface18085e5441e5d798b7e7a3e7dd5656137edd9f0` |
+| `moo2-395-ida-return-switch-values.py` | `9473f39963cecd45d2de1131137458b7aa14a5ba1d006a9ce880bcb8deec4247` |
+| `moo2-395-ida-return-switch-values.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-395-source-byte-index.json` | `6f5faf5ad96d2a2344debc3c3a6cc360b47e9fa972d8bc0aa605993347c56b69` |
+| `moo2-colony-return-396.go` | `ed75f3fb65ff48372ec781ce8149a5b53cdbb577bea6359f24de4df417e6ada5` |
+| `moo2-colony-return-397.go` | `6ef58e19e94671a0a4281cc9147e6e9ec9d9bf78816631f52621e7e0fe201f94` |
+| `moo2-probe-396-overlay.txt.gz` | `74b85d04d1b5edc0e0066e4c4cf9b9d527c8d557281338ab1cdf16580d8b04a6` |
+| `moo2-probe-397-overlay.txt.gz` | `e675f05810bc191faa5f06e0161bcdcf6d6e53e887d186e22ed2839194d88b2e` |
+| `moo2-save-state-396-mox.set` | `de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f` |
+| `moo2-save-state-396-save10.gam` | `0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d` |
+| `moo2-save-state-396.json` | `50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705` |
+| `moo2-save-state-397-mox.set` | `de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f` |
+| `moo2-save-state-397-save10.gam` | `0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d` |
+| `moo2-save-state-397.json` | `50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705` |
+| `new-game-395-byte-tests.txt` | `184014bf562a7b01f988f65bc44f6e63383527d34e1d724c3e2e4d26cd86496a` |
+| `new-game-395-byte-verify.py` | `6e7e370c47ffea98ea848ba5a3dcd446f1965838ad28760bbb637a7f2b4cce27` |
+| `new-game-395-document-gate-tests.txt` | `094cc8e62a49175169d4ea646dc44ce1049bd608ff4a305250c3924a11a78e54` |
+| `new-game-395-document-gate.py` | `31be51862b17b414afb358496ac9a9373097c6b21a20bb73c88bbbaf8183f015` |
+| `new-game-395-ida-output.txt` | `ce7471d4f352db93c504a7e8d90b0753368532402783a0a1d3a8174658c64e86` |
+| `new-game-395-ida-run.sh` | `0b9cb9de0bdbb22a86a2c38a36219b4d060bb4fddd8229e9647d10bd729b8e6a` |
+| `new-game-395-ida-validation-rejected.txt` | `ce7471d4f352db93c504a7e8d90b0753368532402783a0a1d3a8174658c64e86` |
+| `new-game-395-ida-validation.txt` | `5e5a84be618c9a56b2f13e2dd65a4fcdb7cdcf5284da0511011cb7caa8229986` |
+| `new-game-395-result.json` | `98e55c0eda2b655bbb4e206976e0b695507fea66f6cc22b30121bc1b7e6cb4ef` |
+| `new-game-395-source-tests.txt` | `3a656b7c7b07f1636581c06e54ef33bc680234688d242d3a0c2a1bd7b0e45eb3` |
+| `new-game-395-source-verify.py` | `dfe5dd84127c8d7fe175bf7d96d4f449bd0ac6d50edd24df22904d4ea9eb45fc` |
+| `new-game-395-switch-ida-output.txt` | `2125e3e849a06beb90cd6abcb898f9ee39539955650da7b18e658edce0f12156` |
+| `new-game-395-switch-ida-run.sh` | `4845181bc4a3701373352501ffe1328dedcdf75f6dad6c3c40acf58a69044078` |
+| `new-game-396-cli-tests.txt` | `e62ad87d3ef98ae326e50ecd47f2384fe1c2a6c99a31c01a580b28beb390121d` |
+| `new-game-396-generator.py` | `d7a5d6c5fe4b22b121f4acdd7171e9fe138890112f618f8f62db8ca578fa1947` |
+| `new-game-396-patches.json` | `c1d6a919254f7f4e72e19380493345299ec1d4cc139bc39ca099e2e3d8baa7ca` |
+| `new-game-396-ready-review-tests.txt` | `818f2b608253e9329ac09b05e99c814d9896f9c03051f72fa4b0d7e462f7a420` |
+| `new-game-396-result.json` | `88a635a36890c04c4c931c8f1dc0dbfc618d2ff6c08b21932a8fa9093f95a0fd` |
+| `new-game-396-return-events.json` | `e095ced17ff9cc56c7222715ab6addaceb0130172825873d4bee567b77ff2c5e` |
+| `new-game-396-return-terminal.json` | `a9449f25b51366f6b00337e4913700ceaf14e1612be72ea926b16b9a332e16ff` |
+| `new-game-396-run.sh` | `c7c020701a88c977831ccc382619ca0229d20e3918b6f3df4fbb6a4d350abe7b` |
+| `new-game-396-source-tests.txt` | `12bf1e9415d8a24c79b53b2349d0ac93757ca68992f6a48a467102f4c1daec67` |
+| `new-game-396-source-verify.py` | `67d90337d1721431abfa1e984b60f6a6bf7a127e7c8ef873ca47d111b28f1f14` |
+| `new-game-396-stream-test.py` | `7590cab1fbca9ddbc808cb63c9e0a67bdc0fddbe6a31fe5ad7fd65c8a02e300f` |
+| `new-game-396-stream-tests.txt` | `93f4c895b80c4b994d23fbfc8c41de6e34ef566c4167a36da7614332b1af82ba` |
+| `new-game-396-verification.txt` | `4a1e5ac110161f3f92fa0626a136980d2c38ac2e9b320acf5bbcecf6dc013ae1` |
+| `new-game-396-verify.py` | `fd480cfe538a78ab1d9d5d724738c19b4be4d512fbfb1642f6e58a92438aeec8` |
+| `new-game-397-cli-rejected.txt` | `a603d1168134cebf9c2b5b0c7d976ba9fa825964f61d99cb8361831aef43acae` |
+| `new-game-397-cli-tests.txt` | `ea75d92ae74a1342281fd0406d0889a6a963629ad056123fc8c7946766ec8891` |
+| `new-game-397-document-gate-tests.txt` | `18cd78d69a0930b53047ca1316d958133a70c773dd992a5c025c05441e976672` |
+| `new-game-397-document-gate.py` | `cab118ac7cf71b9317ed541fb4be32c4d51d5cec95bd404457fc738edf58bf1b` |
+| `new-game-397-generator.py` | `995ab014266e900990a77300980d6ba65e196a130b555567ebf93a23831fe62d` |
+| `new-game-397-patches.json` | `6b87018679240283790eb36098dada18b0f1250797a8a2d072540e2039bdc648` |
+| `new-game-397-ready-review-tests.txt` | `d1a28a03ad914c18fd86d10688d9d034e7ae3b28617e69ea7c231fabfc257ed6` |
+| `new-game-397-result.json` | `9965536395acaa8871df3436114ff33c7719d2dffd9b90567b718aa5e1ecadd6` |
+| `new-game-397-return-events.json` | `b42e9e4000764edf45af45318de558ec2fb30a274cf76ac4663e3e5f18cb4c2d` |
+| `new-game-397-return-terminal.json` | `d6ecbf67eb19ec92c36a4ff288f6faf11c02c26d1b8de64f11c2f78f14cf73f6` |
+| `new-game-397-run.sh` | `afd6d5a81d8fe1ad7f3286f90d931edb7c4f4e0b501516950f7ec4b1a005d282` |
+| `new-game-397-source-tests.txt` | `4ff3057494e206a4445cd9a4ae391c3da3019faa4a44fda72644f4c9bf2e32f5` |
+| `new-game-397-source-verify.py` | `8d728ee0c4c87d6a929a1ddaf28299a4046e3d566db69c0ff3b31ebe9e3c17a2` |
+| `new-game-397-verification.txt` | `4c809e17df7b88db5c5b7223a47e90f2fa68f084cc33b37bfc0fe9ef978b4812` |
+| `new-game-397-verify.py` | `51452e7acd7570ec24ab040e22673c474bce61192fdd108bcaa0ab780432c0a3` |

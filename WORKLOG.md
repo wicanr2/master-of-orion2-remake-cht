@@ -1813,3 +1813,37 @@ python3 workplace/new-game-394-document-gate.py > workplace/new-game-394-documen
 原patch唯讀，Go1.24.13／IDA locked-v1既有image，UID/GID1000、network none；IDA120s／2GiB／2CPU／128pids，bytes核對90s／2GiB／1CPU，收據及文件核對30s／512MiB／1CPU／64pids。無新image、guest、裝置輸入或Go改動。工具a11095c650962323492f7cab4e4603fdf62f9084已推送github，五份自撰RE／索引／歷史追加；主庫只更新四份現況／歷程文件，原EXE／JSON／PNG／LOG／private scripts保持忽略。精確主庫HEAD見提交紀錄，收尾另驗工作樹、擁有權及Docker清理。395先查COLONIES返回與原options讀存控件，未達READY不送存檔事件。
 
 提交前執行python3 workplace/main-audit-394-final.py，session34012 exit0，394 MAIN AUDIT PASS：四文件／唯一DOS活表／追加歷史、20新收據hash與5個固定原版輸入、工具已推送且乾淨、公開CPU／DOS保持、8個writer／八槽與300列294EA9fixup核對通過。root-owned 2437檔／272目錄與零.md目錄保持。專案Docker兩個volume filter皆空，沒有新image或遺留容器；git diff --check通過。
+
+
+## 2026-10-04：395原存讀來源與397正常RETURN
+
+基線主庫dfb9676ebb1435ce2927bbaec3730a9df9572738、工具a11095c650962323492f7cab4e4603fdf62f9084。路由命中原GUI、IDA、規格閘門、文件職責及逆向回鏈；沿已載入契約。395原來源436列／358EA／117fixup、跳表及九個熱區通過，394補證回鏈。主庫RE-first與Go玩法／公開CPU／DOS保持。
+
+首次396 session19733 exit1／overlay_probe_exit137，未送RETURN，固定393末態外部完整比對相同。239份178985623-byte產物與manifest保存，hash通過。48MB JSON同時展開造成記憶體壓力為強推論，Docker未查得OOM事件；未當作CB或原CPU缺陷。READY窄改串流守衛，full393及三種非雜湊突變拒絕通過；154CLI含128拒絕／26正對照、精確反轉固定393、原getter與唯一Step保持。同入口第二次原guest session31572完整驗證原press與selector真返回，7357µs即時放開守衛拒絕，維持held至215M；未宣稱返回完成。397依固定396前五phase，首次安全20ms才正常release，原guest session63484，900s／state850s／2GiB／2CPU／128pids及原215M保持。
+
+397在212606147正常release，elapsed47384µs；213103590原C058A依真SS返回1004EF，ESP+4及相同SS。16phase／PNG與按下／放開前後RAM／core相同通過，完整393的15phase／50writer／65PNG及固定396前五phase保持。原215M末態1A5051仍顯示殖民地，2071AB下一輸入沒有觀測；畫面切換、正常存讀及remake同狀態未驗。418原輸入及SAVE10／MOX副本保持，固定日期不是seed。
+
+隔離執行入口及已執行命令摘要：
+
+```text
+bash /out/new-game-395-ida-run.sh
+bash /out/new-game-395-switch-ida-run.sh
+python3 workplace/new-game-395-byte-verify.py
+python3 workplace/new-game-395-source-verify.py
+python3 workplace/new-game-395-document-gate.py
+python3 workplace/new-game-396-generator.py
+python3 workplace/new-game-396-source-verify.py
+go run /tmp/396-stream-test.go
+bash workplace/new-game-396-run.sh > workplace/new-game-396-run-output.txt 2>&1
+python3 workplace/new-game-396-verify.py > workplace/new-game-396-verification.txt 2>&1
+python3 workplace/new-game-397-generator.py
+python3 workplace/new-game-397-source-verify.py
+bash workplace/new-game-397-run.sh > workplace/new-game-397-run-output.txt 2>&1
+python3 workplace/new-game-397-verify.py > workplace/new-game-397-verification.txt 2>&1
+```
+
+串流測試先以inline Python取出實際helper產生/tmp/396-stream-test.go，後保存同內容workplace/new-game-396-stream-test.py供重生。395首輪IDA後處理raw target缺meta誤拒KeyError，核對既有非空JSON通過，不重跑IDA；第二次IDA殼層0／idat_exit1保存。唯讀查詢meta=None及容器內rg缺件、文件編排JavaScript SyntaxError，397首次CLI正對照誤設缺檔退出值1而原panic為2，在guest前拒絕；修正後session38119又被私有全字串改名污染固定值35039662的選族守衛拒絕，45份10398299-byte產物保存。改名限縮為檔名前綴，新增精確基底及數值保持守衛，session63484同入口乾淨重跑。以上皆屬腳本／環境；修正查詢或編排後繼續，未歸為產品缺陷。
+
+既有Go1.24.13／IDA locked-v1，UID/GID1000、network none，原ZIP／patch唯讀。IDA120s／2GiB／2CPU／128pids，串流及驗證90s／2GiB／1CPU，來源與文件30s／512MiB／1CPU／64pids。沒有新image或主機工作負載。工具ba7dd46630aee381f0a15051fbd103ef9c0c3ea4已推送，公開僅自撰規格及回鏈。收尾稽核另記Git／Docker／擁有權；398先核對1004EF返回後控制流及1A5051等待，正常存讀及remake同狀態未驗。
+
+提交前python3 workplace/main-audit-397-final.py，session19055 exit0，397 MAIN AUDIT PASS：四份自撰文件、唯一DOS活表、追加歷史、63份新收據hash與固定舊輸入、239／45份失敗產物保持，工具ba7dd46630aee381f0a15051fbd103ef9c0c3ea4已推送且乾淨；公開CPU／DOS與主庫Go玩法保持。原47384µs正常放開、1004EF真返回及436列358EA117fixup核對通過；原215M末態PNG SHA-256 741bb4ca62f46653dc9c65d0b3d6639b93cbf9c8b71758e3864988105de89ee1視覺確認仍為殖民地。root-owned 2437檔／272目錄及零.md目錄保持；git diff --check通過。本輪一次性容器全數結束，沒有新image，精確主庫HEAD與最終工作樹／Docker狀態於Git提交後另核對。
