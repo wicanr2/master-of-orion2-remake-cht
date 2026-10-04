@@ -1661,3 +1661,32 @@ source verify由run.sh在94CLI後、guest前執行。沿Go1.24.13 image sha256:1
 工具011fe510aa8cf74a00d26b7bbc7d65b6094f04bc已推送github，公開五份自撰文件，383／386／387按不可變鍵追加回填，385原錯誤觀察器仍DRAFT。35份主要私有收據SHA-256見[研究入口](docs/re/dosgolem-moo2-intake-20260930.md)。主庫只改四份現況／歷程文件，基線be66c792c8e3e51a7fe42a83d791046c423cbc07；提交後精確HEAD見Git。收尾核對兩庫狀態／擁有權／Docker，既有root-owned2437檔及272目錄保持，無.md目錄。
 
 下一步389固定本次完整首輸入、原旗標及range，建立一次正常職業列press觀察契約；候選裝置660,77按原signed SAR1為GUI330,77，原36表先命中kind6 index1。先追原持按選取與1192D1／場景回呼，依實際消費點安全release；不把候選命中當人口變更或預設職業語意。 主庫玩法RE閘門保持，正式人口變更／存讀／完整開局／RNG與remake同狀態未驗。
+
+## 2026-10-04：389正常職業列按下／放開與人口原始差異
+
+388已推送，分類progress。開工核對AGENTS／CONTEXT／HONEST-STATUS／唯一活表及兩庫乾淨HEAD；路由命中復古GUI、spec閘門及resolution backlink，沿已載入逆向技能。DRAFT及索引、固定388完整首輸入／raw／device、原36表first-hit1、持按CALL／callback operand／near RET／release CALL／CB與安全條件審查後READY，才生成可逆private observer。私有純只讀388裝置方法保持；建置前補入明示SS匹配，106CLI及source gate在guest前通過。mode off精確逆回388；mode on同210M，僅既有裝置方法送一次按下及一次放開。
+
+原guest一次，session64247 exit0，210000000／step_limit。原205804505完整首輸入／raw／device守衛後，正常裝置660,77／buttons1按下；205813953進入runtime203FB9，205814268依真SS返回20E1AC，EAX1。205815045進入1AED21，206207980依真SS及ESP+4返回2092F9；同一步IF、pending0／inactive／IRQ安全及至少20ms條件成立後送buttons0放開。206264647到20E4EB零按鍵分支，206264656到20E508 kind6 CALL；206264681再次場景入、206658139返回2092F9。206658146／147執行20E50D清共享active並到20E516。15事件與所有取樣前後狀態、RAM及device均只讀，19個裝置回呼完成。
+
+原DS188 current4／pool5B2044／record5B25E8的361bytes，在press至active-clear-after206658147全部保持；210M終態出現8個差異：+0Bh FF→02、+0Dh／11h／15h／19h 02→00、+C8h 49→B9、+C9h 00→FE、+E7h 08→00。三個UI pointer words由310／310／310變330／310／310。這是原raw實測，正式職務、選取群及放置語意仍未知。
+
+正常玩家路徑的原PNG人工核對：首輸入顯示Colony of Sol II、Pop 8,000k (+73k)；210M顯示Research Colony of Sol II、Pop 4,000k (-327k)。終圖SHA-256 6be8a5cf20dbdfaca8c2471e407e9e70607c8201ff3633c261ebd9e5b71cdf26，末態EIP1A5042／482658319µs。顯示差異已觀察，不用它命名原欄位或宣稱人口配置完成。
+
+獨立驗證首兩次漏掉解壓縮mtime及DOS DTA時間／日期。連續同類拒絕後回查平台規格入口、既有338比較規則及le_startup.go的0x16／0x18欄位；最後只排除mtime和DTA0x16..0x19，保留attribute、size、name及其餘bytes。完整首輸入／raw／device、13,233列共同日誌與49,210個press前DAC groups另行比對；每次RAM雜湊只依既有跨run規則排除，不遮玩法結果。三次驗證都讀同一批原收據，沒有guest重跑或原observer／CPU改動。 最終獨立驗證session90064 exit0，389 EVIDENCE PASS及389 INPUT CONTRACT PASS；42份主要私有收據hash見研究入口。另以actual state副本的hash／size／UID1000對manifest及388核對，389 SOURCE STATE PASS，418原輸入與SAVE10／MOX保持；正式存檔語意未驗。較早只讀搜尋腳本首版誤讀空functions陣列，未寫輸出；改讀既有bytes index與正確schema，屬腳本問題。
+
+實際Docker入口：
+```text
+python3 workplace/new-game-389-ready-review.py
+python3 workplace/new-game-389-generator.py
+bash workplace/new-game-389-run.sh > workplace/new-game-389-run-output.txt 2>&1
+python3 workplace/new-game-389-verify.py > workplace/new-game-389-verification.txt 2>&1
+python3 workplace/new-game-389-state-verify.py > workplace/new-game-389-state-tests.txt
+python3 workplace/new-game-389-finalize.py
+python3 workplace/new-game-389-document-gate.py > workplace/new-game-389-document-gate-tests.txt
+python3 workplace/main-audit-389-final.py
+```
+SS守衛及CLI私有調整以容器Python標準輸入完成，保存在可逆patches、final Go及run.sh。source verify由run.sh在106CLI後、guest前執行。沿Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，network none／UID/GID1000，原ZIP／patch唯讀；native600s／2GiB／2CPU／128pids、capture550s及owned PID trap；驗證90s／2GiB／1CPU，文件30s／512MiB／1CPU／64pids。沒有IDA／新image，相關一次性容器已結束。
+
+工具d2c3519528cc475d4c891990e72449a0698fd5bd已推送github，公開五份自撰文件，383／387／388追加不可變鍵回填與索引更新。主庫只改四份現況／歷程文件，基線65f93c9b957e4dde99a93361f8aa2d86a8cf8df7；提交後精確HEAD見Git。收尾核對兩庫／擁有權／Docker，既有root-owned2437檔及272目錄保持，無.md目錄。
+
+下一步390沿同輸入及210M，追查206658147之後原C086E→C02F9與B9C3D／B9E94的最小正式寫入鏈，定位這8個record差異與可放置狀態；取得證據才訂一次跨職業列放置。不假設8,000k→4,000k已完成換職或刪除人口，不盲增cap或深挖renderer／平台helper。 主庫RE-first保持，正式人口配置／存讀／完整開局／RNG及remake同狀態未驗。
