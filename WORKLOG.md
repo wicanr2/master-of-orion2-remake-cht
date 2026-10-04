@@ -1382,3 +1382,21 @@ python3 workplace/new-game-376-verify.py
 Go1.24.13／network none／600s／2GiB／2CPU／128pids／UID1000，原ZIP／patch唯讀、owned監測550s／trap收尾。工具3295ddcac19dfbbebed167a490cebed7859c86a2已推送github，374／375正文保留並追加376回填。21份私有收據SHA-256見[既有研究入口](docs/re/dosgolem-moo2-intake-20260930.md)，原事件與rawDAC維持本機。主庫僅四份現況／歷程文件，基線fc54d5b2031a4d3b0690cfe0a50befaa9dd0b7c7，提交後精確HEAD見Git。相關Docker容器清理，既有root-owned2437檔／272目錄保持。
 
 下一步以376已證實的11輪單調降色與182566943歸零為來源，先審查新的轉頁觀察契約：保留185M完整前置，限定追加一次10M窗口至195M，追首個恢復非0色值的DAC寫入並保存原核心／clock與可見頁；未恢復時記錄實際邊界，不以加碼重跑求過。不得代寫palette、增加玩家輸入或深入DAC／PIT／driver及renderer helper。主庫玩法RE-first保持，正式存讀／完整開局／RNG與remake同狀態未驗；固定日期不是seed。
+
+## 2026-10-04：377降色後有界續跑與原2C17停止
+
+377先核對376完整185M前置，原MAX_STEPS guard保持185M，另runSteps195M、一次10M。原guest一次，實際188532362在1F455D／2C17因未支援2C停止；EIP抓opcode後1F455E，不是SUB已執行，沒有195M step_limit。窗口新增一輪1025筆全零DAC事件，首非0恢復未命中，終PNG親看仍黑。20表有10個raw byte自然變化，語意未知。
+
+376共通12188列至185M journal／11275 baseline groups／39frames與黑PNG保持；後續完整12300 DAC事件獨立重播，baseline／終PNG獨立解碼RGB及palette histogram映色通過。八patch可逆回376，public internal／CPU／DOS／probe不變；18CLI拒絕4正對照、原418來源／state／同guest副本／UID GID1000保持。沿372固定官方EXE全套，未重跑無關CPU測試。
+
+私有生成第一次外層here-document與內嵌PY重名，Python syntax在執行前失敗；更名外層PY_GEN_377後同內容成功。此為腳本界符問題，原guest尚未啟動；首失敗摘要保留，native只啟動一次。
+
+實際Docker入口：
+```text
+python3 workplace/new-game-377-ready-review.py
+bash workplace/new-game-377-run.sh
+python3 workplace/new-game-377-verify.py
+```
+Go1.24.13／network none／600s／2GiB／2CPU／128pids／UID1000，原ZIP／patch唯讀、owned監測550s／trap收尾。工具168b91b9a8cb08a36f9517ae031a98239f841161已推送github，376正文保留並追加377。25份私有收據SHA-256見[既有研究入口](docs/re/dosgolem-moo2-intake-20260930.md)，主庫僅四份現況／歷程文件，基線8abae2ab000083e0a34fe97d7ce98d9a9905af2b，提交後精確HEAD見Git。相關Docker容器清理，既有root-owned2437檔／272目錄保持。
+
+下一步依原dosgolem_high_le:1F455D／2C17與188532362完整來源，建立CPU386 SUB AL,imm8規格，核對Intel SDM契約及既有byte SUB旗標模型；READY後補2C、獨立256×256輸入及EAX高24bit／其它核心與非算術flags保持、立即數fetch失敗驗收，再重播相同377窗口，不再擴cap。主庫玩法RE-first保持，列表正常操作／正式存讀／完整開局／RNG與remake同狀態未驗，固定日期不是seed。

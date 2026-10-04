@@ -3822,3 +3822,61 @@ Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce617
 | moo2-palette-snapshot-375-prototype.txt | 69da24f32ed36f2791689bb05e2f2ffe35aa9167c5cb7d3369728fefea0e3db7 |
 
 下一步以376已證實的11輪單調降色與182566943歸零為來源，先審查新的轉頁觀察契約：保留185M完整前置，限定追加一次10M窗口至195M，追首個恢復非0色值的DAC寫入並保存原核心／clock與可見頁；未恢復時記錄實際邊界，不以加碼重跑求過。不得代寫palette、增加玩家輸入或深入DAC／PIT／driver及renderer helper。主庫玩法RE-first保持，殖民地列表正常操作／正式存讀／typed名稱旗色持久writer／母星配置／完整開局／RNG與remake同狀態未驗。
+
+## 2026-10-04：377完整185M前置後的原2C17 CPU停止
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址空間dosgolem_high_le，工具基線3295ddcac19dfbbebed167a490cebed7859c86a2，公開CPU保持1d8a4d8252372c97d8e873ba13c3ab3670796527dcd6d74de52e8cbf226e068c。工具168b91b9a8cb08a36f9517ae031a98239f841161已推送github，見[377限定續跑規格](https://github.com/wicanr2/dosgolem/blob/168b91b9a8cb08a36f9517ae031a98239f841161/docs/spec/377-moo2-colonies-restore-continuation.md)；公開本規格／索引與376回填，public internal／CPU／DOS／probe保持，原事件／PNG／LOG／RAM／state及private probe／getter不入Git。
+
+### 已證實的實際邊界
+
+保持正常180M COLONIES輸入與376完整185M前置，原MAX_STEPS參數仍185M，另runSteps195M／一次10M明示。原376共通12188列至185M journal／11275 baseline groups／39frames與黑PNG保持，baseline續跑標記另核對，沒有把guest稱185M停止或把後續terminal totals當185M相同。
+
+185M後原188259170／430366579µs至188265776／430373460µs又寫一輪maskFF／index0..255／768零值，共1025事件；rawDAC一直全0，首非0恢復與first-restore PNG均不存在。全部12300group／12300事件、三埠12／3072／9216筆獨立算術重播至終DAC／mask／index／phase／ports累計通過。
+
+原188532362在1F455D，原16bytes2C173C080F87ED0000000FB6C02EFF24。原guest_cpu_stop與step_error明示opcode2C未支援；工具抓opcode後EIP1F455E，不能當SUB已執行。實際reason=cpu_stop／actual_boundary188532362，沒有step_limit=195M；probe exit0不是guest成功。ISA名稱已交叉核對[Intel SDM Vol.2B](https://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-vol-2b-manual.pdf)的SUB條目4-654頁，2C ib為SUB AL,imm8，旗標與實作留下一規格，不猜後續CMP／Jcc／jump table語意。
+
+停止R=[1A 0 2BD800 D 2BAFC8 2BD8A0 29E1D8 2BD348]、段=[8 188 188 0 20 188]、flags206h／FPU127F／status0／depth0／八stack bits0、clock430866468µs，target8:2136D1／mask2B／pending0／inactive、callback16／16與IRQ49858／49858已返回且非failed。後移1F455E的code16=173C080F87ED0000000FB6C02EFF2485，SS188:ESP2BAFC8 stack16=1AD82B00000000000D000000F5401F00；原定位與bytes保持，不補frame語意。
+
+終indexed12723非0，DAC全0／maskFF與RGB全0；終PNG親看仍黑，indexed／RGB／PNG hashes與185M相同。VBE bank4／startY0／sets2941／writes55575758／display94保持。20表DS188:298848／stride55完整1100bytes終SHA-256 3c6bd2afa22a4ac6500ce62df53ea9bfe88dd4713423922949d23f179820471c，與185M有10個raw byte自然變化，語意未知，不把header20當整表不變。
+
+### 驗證與失敗分類
+
+八patch逆轉精確回376，public internal／CPU／DOS／probe保持3295ddc，18CLI拒絕與4正對照通過。baseline和終PNG以獨立標準PNG filter／CRC／RGB hash／非0數解碼，palette獨立算術及256bin histogram映色一致；首恢復不存在與實際CPU stop另核對。全新取樣核心／FPU／clock／RAM／VBE／callback與IRQ／device／ports／journal／DAC前後保持。376正文保留追加377，索引及backlink通過。
+
+原418來源、state終態與同guest有界副本／UID GID1000保持。SAVE10.GAM208000bytes／0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d、MOX.SET553bytes／de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f與sound.lbx4250888bytes／3f0354ac5c1b13a3c5c4fd098c2cbc22af37b71e74fc95e582782c22024c449d保持。原guest一次；無新CPU行為，沿372固定官方EXE全套，不重跑無關測試，固定日期不是seed。
+
+私有生成首次外層here-document與內嵌PY界符重名，Python收到截斷內容，在執行前syntax失敗；更名外層為PY_GEN_377，同內容成功且八patch逆轉通過。此為腳本界符問題，當時未實作／未起guest；首失敗摘要留存，不歸因產品／CPU。
+
+Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，network none／600s／2GiB／2CPU／128pids／UID1000，原ZIP／patch唯讀、owned監測550s／trap收尾。實際入口依序new-game-377-ready-review.py、new-game-377-run.sh、new-game-377-verify.py，READY在私有實作前。相關Docker容器清理，既有root-owned2437檔／272目錄保持。
+
+以下25份位於workplace/dosgolem/workplace/，不入公開Git：
+
+| 檔案 | SHA-256 |
+|---|---|
+| moo2-377-overlay-frame-extended-180000000.png | beb773bf0623f56bc9b2be697c6e0e472abebd8fa4c319f15e6074291bb7a832 |
+| moo2-colonies-restore-377.go | e7b99e7c0f93a7ef386ac09e16f9e2cb23d80a16815bdac9900a95626629c2c8 |
+| moo2-probe-377-overlay.txt.gz | ac98bca6c9e88c4e546078182001ab58de76b29400060e8c7c11168bd41b68f7 |
+| moo2-save-state-377-mox.set | de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f |
+| moo2-save-state-377-save10.gam | 0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d |
+| moo2-save-state-377.json | 50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705 |
+| moo2-vbe-377-overlay.png | 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622 |
+| new-game-377-cli-tests.txt | ae64c7e607a57e1a3d334d200bfe6d52ab92a0a46fbcb955720d8200e833b19d |
+| new-game-377-patches.json | 1fb387ff6ff73553869cfbd92f667365216178f0b43c8cd6d986087584030b93 |
+| new-game-377-ready-review-tests.txt | d462ef12bd0fe9a1233f7612d1275211eb959bd02220ce1131277d5e0589e053 |
+| new-game-377-ready-review.py | c4ea0f55950a075a418b0f9782bbe7a424ecbf608bb452eeec63e104584da748 |
+| new-game-377-run-output.txt | d962358ee82d021b06981eff74601c7bbf470ad02e59897be5e05901a63775b8 |
+| new-game-377-run.sh | abf96ad8ff28380bba144044d851fffdad6332d7a01e673b233ac90eb04b0121 |
+| new-game-377-state-capture-output.txt | 9332dea0878e8d161b0c361a816571d5946567602223ec6dadb95d15d9cd9ab3 |
+| new-game-377-state-capture.json | 5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d |
+| new-game-377-state-capture.py | bbbe5b1f83202ab67455bbd5d339b490b21f88e61d8f54c5537f04266078fb3b |
+| new-game-377-tests.txt | db96c06842adfb491b007ce9847a4b89a12bbf852e397edf71c6a09a9e60cb3d |
+| new-game-377-verify.py | 56db8cb42f72292f1b576ad854cbabd6f31459a346a52757cce427e2b5192630 |
+| moo2-palette-snapshot-375-prototype.txt | 69da24f32ed36f2791689bb05e2f2ffe35aa9167c5cb7d3369728fefea0e3db7 |
+| moo2-dac-journal-376-prototype.txt | df69292f30e77a6b5b7c3c550edff42d8775c804cb2c16a5d2a4838d0ddd46e9 |
+| new-game-377-baseline-dac-journal.json | 21949db91355df74e56b2e1d142232bfa393c69dd3ca3a959fe97cd37693f13b |
+| new-game-377-restore-journal.json | e8ec5bc7c3b368c0d5807eea2303c7c75182a01161d7cf9c62b90e75dddffd83 |
+| moo2-377-baseline185.png | 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622 |
+| moo2-377-terminal.png | 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622 |
+| new-game-377-generation-heredoc-first-failure.txt | ee782398d36bf2039cb76f16f65f141424558fef9cb8b43a16102c172d66fd8d |
+
+下一步依原dosgolem_high_le:1F455D／2C17與188532362完整來源，建立CPU386 SUB AL,imm8規格，核對Intel SDM契約及既有byte SUB旗標模型；READY後補2C、獨立256×256輸入及EAX高24bit／其它核心與非算術flags保持、立即數fetch失敗驗收，再重播相同377窗口，不再擴cap。主庫玩法RE-first保持，殖民地列表正常操作／正式存讀／typed名稱旗色持久writer／母星配置／完整開局／RNG與remake同狀態未驗。
