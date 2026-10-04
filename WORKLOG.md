@@ -1752,3 +1752,40 @@ python3 workplace/new-game-391-document-gate.py > workplace/new-game-391-documen
 392先保持完整390至210M，再有界捕捉原1B0845及當次37表／kind7／first-hit2、17AABB=1／17A974=4與安全裝置；正常660,107 press後觀察213C1B依真SS返回20DB8C的低AX1及當次新座標、callback完成、安全IRQ與至少20ms，再release。不得等待kind6 held場景或以calls增加為消費閘門；實際selector／BF6ED→B9E94、record與原畫面另驗。 正式放置／職務、存讀與remake同狀態未驗，RE-first保持。
 
 提交前執行python3 workplace/main-audit-391-final.py，391 MAIN AUDIT PASS：四份文件範圍、27份新與328份舊收據、88份失敗產物、工具已推送且乾淨、公開CPU／DOS保持；kind7／238EA／27重定位差異，沒有新guest。root-owned 2437檔／272目錄與零.md目錄保持。git diff --check通過。
+
+## 2026-10-04：392／393正常kind7放開與配置函式返回
+
+主庫基線5adff55d2b6079458f0cf5ebe271be8f58883201，工具b17eb21c212deb1f95cef54f1399d7b35efd8bdf。沿復古GUI、spec閘門、resolution backlink及文件職責路由與逆向／既有IDA9.4技能。連續core守衛拒絕後重讀GUI入口及實際CPU／callback契約，不調參猜通過。
+
+392首個來源護欄抓到新舊收據都讀390，尚未guest；六份source-rejected產物保存。第一次guest session17614 exit1，210272551正常press後，210272553原callback SS158／ESPFF8僅8-byte合法尾端，原16-byte observer拒絕；175份failed-392及manifest保存。實際getter測試後第二次guest session22864 exit1：210280976／977原1237D9 MOV SS,DX後、1237DB MOV ESP,EAX前，SS158／ESP2A1E2B暫時不可讀；184份failed2-392保存。兩次完整390凍結／正常press已驗，無CPU缺陷證據。原387 bytes、callback4KiB descriptor及實際暫存器反例證實真因，只追必要平台契約。
+
+私有被動core記CodeBytes／StackBytes，不可讀stack標0，padding不當原bytes；strict near槽仍強制4-byte。抽取的實際getter測試、正常8／4／16-byte、unknown0／strict拒絕及RAM／CPU只讀通過，與執行中Go綁定相同。新增增量writer及至多16個unknown stack EIP。兩次建置拒絕分別為局部型別宣告順序及data陣列與JSON同名；兩次都在guest前，輸出保存。回歸fixture縮短RAM時連code移除另修正，非產品缺陷。來源護欄與142CLI均在guest前；腳本TC gate誤把「格／算」納入簡體集合亦已修正。未修改公開CPU／DOS。
+
+392第三次guest session30226 exit0，原215M held窗口只有5phase／22個17AAB9的2／0變更，record末值不變。getter入口候選至20DB8C未觀測，consumed／released／placement_returned均false，392回DRAFT。獨立驗證session10613 exit0，不強造release通過。原selector真SS返20E1AC／EAX2、新GUI330,107、callback20／20、安全IRQ與41,697µs成393來源。393 READY先於新Go；第四次guest session89860 exit0，完整390與392前4phase保持，210282377正常release，210285765／766進BF6ED／B9E94，210305813真SS返BF6F2，212590909下一1B0845提前停止。沒有第五次guest。
+
+393獨立驗證session84691 exit0；五個缺來源實際writer以IDA session52800補證，各八個鄰近指令，殼層exit0但idat_exit1，非空JSON／schema／固定EXE／UID及獨立原bytes均通過，保留內層退出值，不用shell0覆蓋。原LE／2object／365page／51363fixups，83列／53EA／8差異；全部50個runtime writer投影及原bytes核對。最終同一批收據驗證session56695 exit0，15phase／65frame與PNG、13個record差異重建、原state副本保持，無新guest。正式job欄位及正常存讀未驗，固定日期不是seed。
+
+Docker實際入口：
+```text
+python3 workplace/new-game-392-ready-review.py
+python3 workplace/new-game-392-generator.py
+bash workplace/new-game-392-run.sh > workplace/new-game-392-run-output.txt 2>&1
+python3 workplace/new-game-392-core-test.py > workplace/new-game-392-core-tests.txt 2>&1
+python3 workplace/new-game-392-core-binding.py > workplace/new-game-392-core-binding-tests.txt
+python3 workplace/new-game-392-failed-verify.py > workplace/new-game-392-failed-tests.txt 2>&1
+python3 workplace/new-game-392-failed2-verify.py > workplace/new-game-392-failed2-tests.txt 2>&1
+python3 workplace/new-game-392-verify.py > workplace/new-game-392-verification.txt 2>&1
+python3 workplace/new-game-393-ready-review.py
+python3 workplace/new-game-393-generator.py
+bash workplace/new-game-393-run.sh > workplace/new-game-393-run-output.txt 2>&1
+python3 workplace/new-game-393-verify.py > workplace/new-game-393-verification.txt 2>&1
+bash /out/new-game-393-ida-run.sh > /out/new-game-393-ida-output.txt 2>&1
+python3 workplace/new-game-393-byte-verify.py > workplace/new-game-393-byte-tests.txt 2>&1
+python3 workplace/new-game-393-finalize.py
+python3 workplace/new-game-393-document-gate.py > workplace/new-game-393-document-gate-tests.txt 2>&1
+```
+每個退出值／PASS逐項核對。392初兩次native沿600s／state550s；依測得210M約10分鐘，392第三次及393外層改900s／state850s涵蓋新增5M，指令上限仍215M，未改虛擬時序或重擲。所有native用既有Go1.24.13 image、2GiB／2CPU／128pids、UID/GID1000／network none，原ZIP／patch唯讀，owned PID trap。來源／獨立驗證90s／2GiB／1CPU，文件30s／512MiB／1CPU／64pids；IDA locked-v1既有image120s／2GiB／2CPU／128pids。無新image或主機工作負載，所有clone掛載一次性容器已結束。
+
+工具ddaf4d80291eb33e759fb01695018c3960786b7a已推送github，僅十份自撰文件，八個舊規格回填與索引保持；393限定CONFORMED、392拒絕候選DRAFT、385舊觀察器DRAFT保持。主庫僅一條CONTEXT、唯一DOS活表及追加WORKLOG／研究紀錄；精確本輪HEAD見Git。交付前核對收據、原失敗產物、兩庫／Docker與root-owned基線。下一步394先核對原BA5DA的slot word職務位元及其實際consumer，保持原record定位／raw bytes／推論等級；再判斷正常存讀的最小原玩家路徑。不撰寫主庫玩法規格或改Go行為，RE-first仍待全部玩法證據閉合及使用者確認。
+
+提交前python3 workplace/main-audit-393-final.py通過：四份文件精確範圍、92份新／355份舊收據、88／175／184份失敗產物保持；工具已推送乾淨，公開CPU／DOS不變。50個實際Step變更／13個record差異／83列53EA8fixup及正常下一輸入點通過，root-owned 2437檔／272目錄、零.md目錄保持。git diff --check通過。
