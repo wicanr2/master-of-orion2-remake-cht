@@ -1,6 +1,7 @@
 # 銀河霸主 II remake 誠實現況
 
-> 更新：2026-08-30。本文只描述目前狀態；剩餘工作的唯一活表是
+> 更新：2026-10-05。本輪核對先進文明、初始國庫及 AI profile 的現行實作。
+> 其餘項目須沿證據來源核對；剩餘工作的唯一活表是
 > [`WORKLIST.md`](../WORKLIST.md)，原版證據邊界以
 > [`docs/re/parity-matrix.tsv`](re/parity-matrix.tsv) 為準。
 
@@ -34,12 +35,15 @@ RE 完成分母或 remake 範圍，例如 stack probe、stack overflow check、S
 - 議會人口票數與召開排程已根據靜態反組譯證據修正；候選人、棄權與外交投票精確公式仍待閉合。
 - 客製種族選項已寫入 `CustomRaceTraits` 並參與存檔與玩法消費；AI 也已
   保存 `RaceIndex` 並在研究、地面戰、殖民與外交部分路徑消費種族特性。
-- Advanced Civilization 的全圖行星分配已由 IDA 閉合；Money 的初始國庫、Cybernetic／
-  Lithovore 的行星／殖民地 worth、raw NPC profile 權重與科技 category 0 倍率也已有精確
-  證據。後續已把三組 NPC raw profile 與 `Calc_Tech_Value_` 的全部 trait direct site 擴充成
-  完整權重／倍率表。source 並非全空：profile 產生器、存讀與科技估值共同鏈已部分接線；但
-  四候選初值與 Ship Defense／Attack index 已證實不符，故仍是 PARTIAL。Advanced
-  Civilization 全圖分配器與 Money 初始國庫則是 MISSING。raw profile／category 正式名稱未知。
+- 先進文明（Advanced Civilization）的全圖行星分配與 Money 初始國庫已接入正式新遊戲的
+  種族完成流程，玩家與 AI 都會套用。AI profile 四候選初值已修為 `[2,1,2,1]`，
+  Ship Defense／Attack 的 raw index 亦已訂正；profile 與科技估值共同鏈的上游錯誤已修正。
+  [追溯表](re/remake-traceability.tsv) 的 `0x62C70`、`0xE5832`、`0x589D6`、`0xFC845`
+  列為 `CONFORMED／INTERNAL`。這代表依靜態證據接線與內部驗證，原版全域 PRNG
+  位元序及完整同狀態流程仍未證明。raw profile／category 正式名稱仍未知。
+  Cybernetic／Lithovore 的行星／殖民地 worth、raw NPC profile 權重與科技 category 0
+  倍率已有原版證據；三組 profile 與 `Calc_Tech_Value_` 的 trait consumer 權重／倍率表
+  保留在[逆向稽核](re/ai-trait-profile-tech-homeworld-audit-20260830.md)。
 - Stealthy Ships 的星圖、AI、自動設計、profile 與科技估值 direct consumer 已閉合；IDA 證據
   顯示三種匿蹤裝置不向快速結算提供通用數值，但其 bitfield 會進入格子戰術記錄。現有資料流
   強推論否定 trait 與裝置的戰鬥等價；raw 6／23 的格子狀態機、10 回合倒數、目標合法性、

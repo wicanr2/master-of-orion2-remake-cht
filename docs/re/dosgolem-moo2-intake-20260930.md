@@ -5629,3 +5629,33 @@ python3 workplace/new-game-416-document-gate.py
 - new-game-417-readonly-bindings-review.json：fd91191cb66db8f44076de84697f2ed5e893423dbab39942cc16095c9747bd1b
 
 完整收據索引workplace/417-continuation-receipt-index.json共2033份，原417-current的1619份hash保持。來源、EXE、私有Go、JSON、PNG與state本機忽略，公開僅自撰工具文件。工具HEAD 0cd0bc3b13ae7b068dcc07cde077685a7eddc442 已推送。417 CONFORMED只限首次原顯示與實際存檔頁可見；正式選格／命名／存讀與remake同狀態未驗，主庫玩法RE-first保持。下一步只核對第一空格kind11與兩組ID的輸入consumer，再審查正常有界輸入。
+
+
+## 2026-10-05：418原存檔格與名稱consumer
+
+### 輸入與已證實資料流
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f。IDA Pro9.4 linear EA、dosgolem_high_le runtime＝EA＋F0000h、原file offset與LE relocation分列。一次窄IDA保存原sub_7E154的260指令；通用input從原379來源選取，所有915列／891EA／151fixup獨立原EXE核對。原函式與runtime／檔案bytes不混用，callee與runtime helper內部未追。
+
+417當次原4516E0物件及25項表保持；原+38h／4Ah／6Eh／70h／7Ch／232h分別為1／10／22／24／11／21。十個kind11名稱控件的+18h pointer為2816BE＋37×zero-based row，+2Ah raw1E0000h。13個inclusive first-hit案例核對端點、名稱／資訊交界、SAVE與CANCEL：裝置400,54→GUI200,54→ID1；430,373→GUI215,373→ID21。
+
+原7E226將reader低word對第一組ID，7E23A寫DX到原[EBP+6Ah]；7E240處理另一組ID。原11E3A6設word_17C4CA＝1，11E3B2將ID寫入原word[dword_17C4CE+2]；ASCII writer11D9B2寫byte_1A871C[index]及11D9BC的後續NUL。原SAVE ID21的selected有效區間0..9、37-byte stride、空／預設／編輯名稱分支與7E3F4 CALL1160B的signed參數已錨定；runtime16E3F4→10160B、真return16E3F9。
+
+原ID／pointer／bytes／比較與writer／CALL資料流為已證實。「保存入口」的玩家用途為強推論，內部檔案writer、成功回饋及正式正常選格／命名／存讀仍未知。沒有新guest，來源CONFORMED不等於實際保存或remake對拍。
+
+### 419工具驗證與交付邊界
+
+419原稿與READY來源審查分開保存，固定完整417末態與8phase及原418 bytes，只允許私有原版觀察器。下一輪等待實際正常reader後，第一格與SAVE兩次正常press／release，附原local、名稱record與文字buffer，不派送ID／代寫名稱。原CALL到10160B、真SS／ESP−4與實際參數0後停止，不執行未知callee或聲稱正式寫檔。新後段245M，原417的240M停止收據保持；尚無419 Go／guest，鍵盤命名仍另驗。
+
+工具公開入口docs/spec/418-moo2-save-slot-name-input-source.md與419-moo2-save-first-slot-submit.md，同次000-index掛載。私有入口沿既有workplace/dosgolem/workplace/new-game-418-ida-run.sh、new-game-418-byte-verify.py與new-game-418-source-verify.py、moo2-418-ida-save-slot-name-owner.json、moo2-418-source-reused-input.json與new-game-419-ready-review.json，原碼／JSON／bytes本機忽略。IDA session29387 wrapper0／idat1、非空JSON／5365函式及固定hash保存；獨立bytes session33568 exit0，來源／文件gate通過。
+
+
+| 收據 | SHA-256 |
+|---|---|
+| moo2-418-ida-save-slot-name-owner.json | 4214bf79697605768badc8b783ec4a0cfb0a66efdac151680a287e7c40bf718e |
+| moo2-418-source-reused-input.json | 03aed99847281c8fb3885cb6d35ebe3a4e910f7f861ad899c74ffee9c32c8e79 |
+| moo2-418-source-byte-index.json | be2efb07b061715792c539a87d968ac2863c868093e95db0bf288f99147fb7dc |
+| new-game-418-source-result.json | 9bf8779c6c8cdd960c3707faf4af4539a6ffd4ee2318d1077a9faa5a4298853a |
+| new-game-419-ready-review.json | 983a6065ddaa142dbe14b20d35ba00fda35eb2fad3bd839302b1145b6c8706d6 |
+
+工具HEAD 4cdc5c6cd801a3ed5a892a94a658fc05d7ca7560 已推送，主庫玩法與公開CPU／probe保持。完整2052份索引workplace/419-current-receipt-index.json保持較早417-continuation的2033份及所有祖先。原418輸入、SAVE10／MOX及畫面收據未改，固定日期不當作RNG seed。Docker相關volume filter為空，root-owned基準2437檔／272目錄及零.md目錄核對通過；精確HEAD保存workplace/419-final-state.json。

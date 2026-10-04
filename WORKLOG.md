@@ -2158,3 +2158,20 @@ python3 workplace/new-game-416-document-gate.py
 - 下一步：核對當次第一空格kind11、兩組ID的正常輸入分派及consumer；來源足夠後審查有界原輸入，主庫RE-first保持。
 
 收尾稽核：python3 workplace/417-continuation-main-audit.py通過，2033份本輪索引與全部祖先合併3012份獨立hash核對。四份自撰文件與工具已推送狀態核對，root-owned基準2437檔／272目錄、零.md目錄及git diff --check通過；主庫玩法與CPU保持，沒有新增image。
+
+
+## 2026-10-05：418存檔格／名稱輸入來源與419正常提交契約
+
+- 目標：接續原可見存檔頁，錨定第一格、文字buffer、SAVE分派與原保存CALL，不改主庫玩法。
+- 原來源：一次IDA Pro9.4匯出sub_7E154的260個玩家指令；通用selector／kind11／ASCII／release從原moo2-379-ida-list-input-first-query.json只讀選取，不重新分析helper。
+- 命令：既有IDA image、network none、UID/GID1000、patch唯讀，timeout120s／2GiB／2CPU／128pids執行bash /out/new-game-418-ida-run.sh，session29387 wrapper exit0；idat實際exit1與非空JSON／5365函式／固定hash記錄。另以既有Go1.24.13 image、timeout90s／2GiB／1CPU執行python3 workplace/new-game-418-byte-verify.py，session33568 exit0。new-game-418-source-verify.py與document-gate.py通過，沒有新guest。
+- 已證實：915列／891EA／151fixup獨立原bytes核對、13個含端點first-hit案例；控件1為kind11，control+18h對應37-byte名稱record，原選格writer與SAVE ID21接受0..9，7E3F4 CALL1160B參數資料流已錨定。
+- 證據等級：原ID／bytes／pointer／比較與CALL已證實；「保存callee入口」的玩家用途為強推論，內部檔案writer與成功回饋未知。正式選格／命名／保存與remake同狀態未驗。
+- 419經來源與範圍審查至READY，只允許私有原版工具正常第一格與SAVE兩次click，到原保存CALL入口後停止；新245M後段保留原417的240M收據，不猜補輸入結果或代寫RAM。尚無419 Go／guest。
+- 工具HEAD 4cdc5c6cd801a3ed5a892a94a658fc05d7ca7560 已推送github/codex/moo2-parity-20260930。公開只提交五份自撰工具文件；新原碼／IDA JSON與私有收據本機忽略。主庫更新既有四份交接文件與HONEST-STATUS的過期斷言，推送後精確HEAD保存workplace/419-final-state.json。
+- Docker專案volume filter為空，沒有新image。完整收據索引workplace/419-current-receipt-index.json共2052份，較早2033份保持；root-owned基準2437檔／272目錄與零.md目錄已核對，精確工作樹由最終狀態保存。
+- 下一步：實作419 READY觀察器、前置建置與CLI／六份重生，再以唯一原guest正常選格與SAVE到入口；主庫RE-first保持，完整remake目標繼續。
+
+現況勘誤：核對正式finalize呼叫端、先進文明／Money規則、AI profile權重與index及四列追溯表後，移除HONEST-STATUS仍稱MISSING／錯誤PARTIAL的舊斷言。四列目前為CONFORMED／INTERNAL，原版全域PRNG與完整同狀態仍未證明；不變更歷史儀表板數字。檔案hash與核對範圍保存workplace/419-status-source-review.json，沒有改Go或新增runtime完成聲明。
+
+收尾稽核：python3 workplace/419-main-audit.py通過，2052份本輪索引與全部祖先合併3031份hash核對。工具已推送且工作樹乾淨、419 READY來源釘選與無Go／guest核對，五份主庫文件含HONEST-STATUS勘誤；root-owned基準2437檔／272目錄、零.md目錄與git diff --check通過。
