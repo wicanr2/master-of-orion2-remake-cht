@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-04）**：378補SUB AL,imm8與原四consumer，同195M已顯示Sol II列表；CPU386／machine全套通過。379重用完整收據並用IDA9.4核對原第一命中順序，名稱區預期index13，正常行點擊仍未驗。工具c6d319edf0f8a8bacfdc1a53d2eb39a5a53205c1已推送github，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步驗一次正常press／poll／release與原選取store。主庫RE閘門保持；正式存讀／完整開局／RNG與remake同狀態未驗。
+- **DOS 原版動態驗證器（2026-10-04）**：380在195M完整前置後正常點擊Sol II行，原press／AX3 poll／安全release與20DDDB writer把word0→13均通過。一次200M窗口無CPU拒絕，末圖仍黑／count1空表，殖民地畫面未驗。34CLI、完整DAC／PNG與原418來源／state／副本保持通過，public CPU不改。工具5d3f5b80373c4872e1401366d3b5dd482577252a已推送github，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步核對200M畫面建立的上層來源。主庫RE閘門保持；正式存讀／完整開局／RNG與remake同狀態未驗。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為

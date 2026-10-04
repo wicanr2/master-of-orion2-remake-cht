@@ -1437,3 +1437,23 @@ IDA image6f6d59af49d0／UID1000／network none／120s／2GiB／2CPU／128pids，
 工具c6d319edf0f8a8bacfdc1a53d2eb39a5a53205c1已推送github，公開379來源規格／索引與378回填，其它public internal／CPU／DOS／probe保持d2df07f。16份私有收據SHA-256見[研究入口](docs/re/dosgolem-moo2-intake-20260930.md)。主庫僅四份現況／歷程文件，基線68532b9d3e60e7c8f49d850cfef4d6456595a982，提交後精確HEAD見Git。相關Docker容器清理，既有root-owned2437檔／272目錄保持。
 
 下一步依379已核對的195M完整來源與原first-match順序，建立Sol II行一次正常press／原AX3 pressed poll／首安全release的獨立READY契約，明示新玩家輸入的固定後續預算；先驗原index13選取store，再記實際畫面。logical43,48／44,48對應physical86,48／88,48，不代寫word13或跳handler，不重啟／重擲／加cap挑結果。主庫玩法RE-first保持；正式存讀／完整開局／RNG與remake同狀態未驗，固定日期不是seed。
+
+## 2026-10-04：380正常Sol II行選取13與200M黑終圖
+
+379完整195M來源經READY審查後，private mode明示新玩家輸入的200M／一次5M窗口。原195M source通過，一次physical86,48 press／原AX3 poll／physical88,48安全release，持按469732µs。原195225486 RET按真實stack返回20DB5B／AX0，195226311在20DDDB／66A3A6C42600寫DS188:26C4A6 word0→13；正常行選取已證實。原guest一次，沒有重啟／重擲或增加cap挑結果。
+
+實際step_limit200M／EIP223A23，無CPU拒絕；200M終PNG親看黑，indexed／DAC／RGB全0、table count1／55零bytes。新點擊後11輪11275 DAC事件單調降色，196376553／450990327µs首全0與末write；殖民地正常畫面尚未驗，沒有把轉頁中間態稱為產品缺陷或完成。
+
+378共通12701列至195M、39frames、185M／首恢復PNG、24601事件前綴及195M可見frame／PNG保持；完整35876事件獨立重播與PNG／palette映色核對通過。14patch逆轉精確回378，所有public internal／CPU／DOS／原probe保持；34CLI拒絕與正對照、原418來源／state／同guest副本及UID GID1000保持。沒有新CPU行為，沿378固定官方EXE CPU386／machine全套，不重跑無關測試。
+
+實際容器入口：
+```text
+python3 workplace/new-game-380-ready-review.py
+bash workplace/new-game-380-run.sh
+python3 workplace/new-game-380-verify.py
+```
+Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，network none／600s／2GiB／2CPU／128pids／UID1000，原ZIP／patch唯讀、owned監測550s／trap收尾；收據驗證90s／1536MiB／1CPU／128pids。兩次驗證只重讀同一收據，沒有重跑原版。
+
+工具5d3f5b80373c4872e1401366d3b5dd482577252a已推送github，公開380限定規格／索引及378／379回填。29份私有收據SHA-256見[研究入口](docs/re/dosgolem-moo2-intake-20260930.md)，主庫僅四份現況／歷程文件，基線157f583b47b8682910eec5da7b95293b9b3ab2ba，提交後精確HEAD見Git。相關Docker容器清理，既有root-owned2437檔／272目錄保持。
+
+下一步依200M原完整核心、count1／55零bytes、當前dosgolem_high_le:223A23 code與SS188:2BD908 stack16，只追正常畫面建立所需的最小上層來源；先核對21A6F3是否真為該路徑的return定位及原呼叫邊界，再由來源決定下一個有界畫面觀察，不盲目加cap或深挖renderer／DAC／PIT helper。主庫玩法RE-first保持；人口調整／正式存讀／完整開局／RNG與remake同狀態未驗，固定日期不是seed。

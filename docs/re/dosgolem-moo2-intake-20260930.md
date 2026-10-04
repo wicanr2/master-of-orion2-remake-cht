@@ -3985,3 +3985,71 @@ IDA9.4 image sha256:6f6d59af49d0008c4109a5295b5f374bdc007e2d1ab28cb9de08779584de
 | moo2-378-terminal.png | d3c775f1b8594e8313c27b5bd9e363dfb6e3210ca05f0f17136b36409b7a67ba |
 
 下一步依379已核對的195M完整來源與原first-match順序，建立Sol II行一次正常press／原AX3 pressed poll／首安全release的獨立READY契約，明示新玩家輸入的固定後續預算；先驗原index13選取store，再記實際畫面。logical43,48／44,48對應physical86,48／88,48，不代寫word13或跳handler，不重啟／重擲／加cap挑結果。主庫玩法RE-first保持；正式存讀／完整開局／RNG與remake同狀態未驗，固定日期不是seed。
+
+## 2026-10-04：380正常Sol II行press／poll／release與原選取13
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址空間dosgolem_high_le，工具來源c6d319edf0f8a8bacfdc1a53d2eb39a5a53205c1。工具5d3f5b80373c4872e1401366d3b5dd482577252a已推送github，見[380限定規格](https://github.com/wicanr2/dosgolem/blob/5d3f5b80373c4872e1401366d3b5dd482577252a/docs/spec/380-moo2-colonies-row-click.md)。公開CPU／internal／DOS／原probe保持；CPU hash736d95e801e8e9658078671af8148a79896d805cc7a8baa42f8881574e562080，本輪只改忽略workplace的觀測／裝置輸入探針，原資料與GUI未代寫。
+
+狀態：**CONFORMED，限定正常Sol II行press／poll／release與原選取13**。殖民地畫面仍未驗，200M終圖為黑，不稱完整行操作或開局完成。
+
+原378共通12701列至195M保持，只有新row config與195M來源標記另核對。完整185M baseline及39frames、首恢復PNG與24601 DAC前綴保持；新195M baseline-row PNG逐byte等於378可見列表終圖，完整core／FPU／clock／VBE／table／code／stack與device來源保持。沒有拿不同終點的callback18或DAC35876稱195M同狀態。
+
+195000000／447368391µs source_ready／valid／readonly true，target8:2136D1／mask2B／pending0／inactive、callback16／16與IRQ51746／51746已返回。一次press physical86,48／buttons1／delta0,0；原195216883在24C31B的INT33 AX3返回BX1／CX86／DX48，段與flags16h保持。195216918／447838123µs首安全release physical88,48／buttons0，持按469732µs；mask1／pending0／IF1、callback17／17與IRQ51807／51807完成且inactive。只送此一次press與release，不注入結果。
+
+原195225486、dosgolem_high_le:214104 C3按SS188:ESP2BD920原stack首word5BDB2000返回20DB5B，ESP+4、AX0／flags246h與其它核心／FPU保持，word0000保持。原195226311在20DDDB／66A3A6C42600真正寫DS188:26C4A6 word0000→0D00，EIP20DDE1；R=[D 0 2CB 400 2BD924 2BD98C 0 2BDC2C]、flags297h及完整其它核心／FPU保持。原store13已證實，Sol II名稱區的正常選取鏈已驗，不把13當typed colony id或持久欄位。raw32候選窗口仍為原Sol字串／原bytes，保持不命名正式資料。最多三RET只命中一筆，不預填額外返回。
+
+實際step_limit200000000／EIP223A23／unique_sites60185，無guest_cpu_stop／step_error／dos_exit；完整35876 DAC事件獨立重播至實際末態，三埠3C6／3C8／3C9計36／8960／26880筆。新點擊後11275事件為11輪maskFF／index0..255／768色值，從196292723／450713469µs開始，逐component單調不增；首全0與末write同在196376553／450990327µs、device sequence315113、當前EIP222D1C。200M前未恢復色彩；只稱本收據降色，不追DAC／PIT／driver逐週期。
+
+終indexed307200bytes全0、DAC768bytes全0／maskFF、RGB921600bytes全0，獨立PNG filter／CRC／RGB hash及palette histogram映色核對。PNG親看全黑，hash1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622。VBE bank5／startY512／sets3031／writes57388844／display97，與195M分開記錄。原表DS188:298848 count1／bias0／stride55、record0的55bytes全0，hash02779466cdec163811d078815c633f21901413081449002f24aa3e80f0b88ef7；不是舊20表不變，也不猜新的正式控制項。
+
+原200M R=[2A375C 0 A4 15 2BD908 2BDB68 30E76A57 2B0000]、段[8 188 188 0 20 188]、flags202h／IF1、FPU127F／status0／depth0／八stack bits0、clock458239660µs，callback8:2136D1／mask2B／pending0／inactive、18／18與IRQ53180／53180完成且非failed。當前code16=0345A88A0025FF000000C1E0028A805A，SS188:ESP2BD908 stack16=F3A6210000010000AE01000000010000；只保存定位，不把首stack值21A6F3當已證實caller。
+
+14private patches逆轉精確回378，所有公開internal／CPU／DOS／原probe保持c6d319e。18舊CLI拒絕／4正對照保持，新增10拒絕／2正對照共34通過；mode off仍195M，mode on是明示新玩家輸入的200M。完整DAC／PNG／195M前置與原store／RET只讀保護通過。原guest一次，沒有首失敗或重啟，不增加cap挑結果。沒有新CPU行為，沿378固定官方EXE CPU386／machine全套，不重跑無關測試。
+
+原418來源前後保持，SAVE10.GAM208000bytes／0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d、MOX.SET553bytes／de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f與sound.lbx4250888bytes／3f0354ac5c1b13a3c5c4fd098c2cbc22af37b71e74fc95e582782c22024c449d保持；同guest副本與終state／UID GID1000核對。這不證正式玩家存讀內容或持久選取欄位。
+
+| 不可變鍵 | 新語意與等級 | 舊規格 | 回填 |
+|---|---|---|---|
+| 官方1.31／195M表hash3c6bd2…／index13；dosgolem_high_le20DDDB／DS188:26C4A6 | 正常行press／poll／release與原writer13已證實；200M黑圖，新UI未知 | 378、379 | 分開來源預期、原選取與未驗殖民地畫面，保留舊收據 |
+
+378／379正文保留並追加380，索引與backlink同次驗證；較早其它選取上下文不由本row13外推。原LOG／PNG／RAM／journal／state及private probe維持本機，Docker清理與收據連主庫研究入口。
+
+下一步依200M原完整核心、count1／55零bytes、當前223A23 code與SS188:2BD908 stack16，只追正常畫面建立所需的最小上層來源；先核對21A6F3是否真為該路徑的return定位與其原呼叫邊界，再由來源決定下一個有界畫面觀察，不盲目加cap或深挖renderer／DAC／PIT helper。主庫玩法RE-first保持，人口調整／正式存讀／完整開局／RNG與remake同狀態未驗，固定日期不是seed。
+
+Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，network none／600s／2GiB／2CPU／128pids／UID1000，原ZIP／patch唯讀，owned監測550s／trap收尾。READY前核對379來源，實際入口new-game-380-ready-review.py、new-game-380-run.sh、new-game-380-verify.py。收據驗證90s／1536MiB／1CPU／128pids，兩次只重讀相同收據。首次通過，沒有腳本、CPU或guest失敗。正式.i64未改，不作新IDA或無關CPU全套；原CSV／LOG／PNG／RAM／journal／state及private probe／getter不入Git。
+
+以下29份位於workplace/dosgolem/workplace/，不入公開Git，含兩份重用的getter來源：
+
+| 檔案 | SHA-256 |
+|---|---|
+| moo2-380-overlay-frame-extended-180000000.png | beb773bf0623f56bc9b2be697c6e0e472abebd8fa4c319f15e6074291bb7a832 |
+| moo2-colonies-row-380.go | cd0e0ff62e9abc30bee6aae02d47801dd55c3d3f229337c3dbf2e87228d4b27c |
+| moo2-probe-380-overlay.txt.gz | b8588d8984adede9b706a0b4dc9ccbc3b9d299960cc95624bde2eb9b49979fe3 |
+| moo2-save-state-380-mox.set | de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f |
+| moo2-save-state-380-save10.gam | 0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d |
+| moo2-save-state-380.json | 50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705 |
+| moo2-vbe-380-overlay.png | 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622 |
+| new-game-380-cli-tests.txt | dc58311eac04c67975f95465bcd93ae3a16168772ef171dd261e2266157272ce |
+| new-game-380-patches.json | 5467aef830a138c09b8c1cb7f500112d4ab700a6ac77a716e5cd34dc7a55a35a |
+| new-game-380-ready-review-tests.txt | a0dfd9d12c8b8a33cb958d6cae0c229e1e015d07fa92f4b12603e1cc5f2bf49e |
+| new-game-380-ready-review.py | a6f1cf48807088a921938f296c2c6c08a75985514d76deb804966a0dd1575899 |
+| new-game-380-run-output.txt | fc3e77e860916ae74083b4666effba6dfcbd4bf178ea0dfc6792285be7b08d9a |
+| new-game-380-run.sh | 09f343ee3cdcd76910da893f4ae4b81825e92651480aca1f8cccfb95eeea5752 |
+| new-game-380-state-capture-output.txt | 4e9e700c2ba93e7b5419aa50d201f6f01e55e4e39ed41951f50610daa299cd4e |
+| new-game-380-state-capture.json | 5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d |
+| new-game-380-state-capture.py | fcd66b36f2c23ac1606b5e7f0b3d816f39ac6c2946b85f0d2b8d4ba5bc9204ce |
+| new-game-380-source-tests.txt | 90b2da3d6fd61bd9fc05d78c5f330f7625bed00fecb6c6ae29cae45aeb5748a8 |
+| new-game-380-source-verify.py | 2838783bdfbf6907cfa631ce87c0d263a0dc488be8b28a0a8c2469137809befc |
+| new-game-380-verification.txt | 86f6edb7f1aca012ea2145b02e49a210392e585aaaf6a0bba0b5ca5a89bc92b1 |
+| new-game-380-verify.py | 0a527c154697ba031b40c6d4056a26ce1f8dbc388bede569924a809d94031299 |
+| new-game-380-baseline-dac-journal.json | f8fd3dacba516528a5877e1db81ac547aaaaeb6679dfe9a64fc4c2127a4e48d0 |
+| new-game-380-restore-journal.json | 009108c483e0c490a322d213f56938ab319547f17805c299af3047c47b5b4cab |
+| new-game-380-row-baseline.json | 4159e29168b365f6fd9367e0775093d20c01588c2f9576a6e4fb79c7877f7e93 |
+| moo2-380-baseline185.png | 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622 |
+| moo2-380-first-restore.png | 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622 |
+| moo2-380-row-baseline195.png | d3c775f1b8594e8313c27b5bd9e363dfb6e3210ca05f0f17136b36409b7a67ba |
+| moo2-380-terminal.png | 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622 |
+| moo2-palette-snapshot-375-prototype.txt | 69da24f32ed36f2791689bb05e2f2ffe35aa9167c5cb7d3369728fefea0e3db7 |
+| moo2-dac-journal-376-prototype.txt | df69292f30e77a6b5b7c3c550edff42d8775c804cb2c16a5d2a4838d0ddd46e9 |
+
+已證實：本正常行選取13、原RET／writer、完整前置、降色末態與state保持。未知：新殖民地正常畫面、人口調整、typed資料語意與正式存讀。下一步為200M正常畫面建立的最小上層來源核對，未宣稱remake玩法同狀態或整款完成。
