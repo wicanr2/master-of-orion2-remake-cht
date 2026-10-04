@@ -4414,3 +4414,66 @@ READY先於private實作；8patch逆回384，70CLI為58拒絕及12正對照。�
 | `new-game-385-verification.txt` | `f09541a5e585ab028afb03c953a370efda61c1708ec32421ec40bb53ed3a0105` |
 | `new-game-385-verify.first-check.py` | `0dd1589cef2c987948642d877fca2093607604fb4f982bd53afd31ac820ea7c9` |
 | `new-game-385-verify.py` | `07e02abddd0ab0622f1c2001288a635e11ba431cae37dc952df710c27d7c8f70` |
+
+## 2026-10-04：386原回呼地址讀回與首輸入前置
+
+官方1.31 ORION2.EXE SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`；工具基線3842529eb5dff704adf3d33b6c4f5720ebe9cbb4，新工具3e2290007d5d0163346b4150c7e8cc625b1e0166已推送github。見[386限定只讀驗收](https://github.com/wicanr2/dosgolem/blob/3e2290007d5d0163346b4150c7e8cc625b1e0166/docs/spec/386-moo2-colonies-callback-read.md)，383–385與索引按同一不可變定位回填；原385錯誤觀察器仍DRAFT。主庫玩法RE閘門保持。
+
+### 已證實範圍與歷史訂正
+
+- **已證實，原A3**：IDA Pro9.4 linear EA 1191EA／A340881A00寫dword_1A8840；dosgolem_high_le原203219451／2091EA執行A340882900指定DS188:298840，符合加F0000h。原file offset／bytes／fixup沿385 bytes index，不混用位址基準。本輪沒有新IDA或原EXE改動。
+- **已證實，原讀回與全RAM**：正確地址四bytes由55451700變21ED1A00，raw由174555變1AED21，後值等於原EAX。原Step後EIP2091EF，實際store_linear298840；對Step前整RAM的observer副本只替換這四bytes，再與Step後hash全等，其他RAM保持。observer不代寫guest。原兩個RET及四事件時序保持385。
+- **已證實，首輸入前置**：205804505／1B0845完整原385 frame守衛通過，只排除跨run ram_sha256；第9只讀窗口298840為21ED1A00。原8窗口／current raw4／pool5B2044／361byte record5B25E8／三word310保持，before=after與RAM前後hash全等。PNG SHA-256 `1a0e7551173173b43897be18ccf5295755ca80b222be7dc6dbca0b1d986c8c03`與原210M及385首次輸入相同。
+- **歷史界線**：384／385的2A8840零raw讀值不改，維持未分類資料；正確首輸入callback讀回及此次store範圍已由未知／強推論升為已證實。不是原384在210M已讀到正確欄位，也不外推其他callback生命週期或人口操作。沒有CPU缺陷證據，原385 Go／journal／PNG與state保持。
+
+### 一次原版與驗收
+
+READY先於11個可逆private patches，mode off精確逆回385，mode on保持原輸入與210M；82CLI為68拒絕與14正對照，原70逐項保持。原guest一次，session78051 exit0，actual_boundary及run_limit210000000／step_limit；完整382／384原210M核心／FPU／clock／callback IRQ／36表／DAC／journal／39frames／PNG／418來源／state及副本保持。獨立驗證session12161 exit0，386 CONFORMED SCOPE PASS只限正確回呼、實際四bytes寫入與首輸入前置，不是remake原版整段同狀態。
+
+兩次生成器縮排定位失敗皆在寫Go前停止，版本與分類摘要保留；回查閘門入口及全部原縮排後生成。沒有guest重跑、改原收據或增加預算。原EXE／JSON／LOG／PNG／RAM／state／private Go留本機忽略目錄，公開只有五份自撰工具文件。來源檢查／CLI、native及驗證命令、固定image及限額見WORKLOG；network none／UID1000／原資料唯讀，程序有界及trap，本輪無新image或遺留容器。
+
+下一步387由原sub_1171AB及kind6消費端補齊座標到職業列熱區／暫存的來源鏈與按下／放開契約；證據足夠才建立一次正常人口選取／放置觀察。不猜倍率或job語意、不盲增cap、不追renderer／DAC／PIT。固定日期不是seed，人口正常操作／正式存讀／完整開局／RNG與remake同狀態仍未知。
+
+### 386 私有收據SHA-256
+
+路徑根為本機忽略的`workplace/dosgolem/workplace/`，下表37份全部UID/GID1000。只列主要腳本、收據及五個末段PNG；原39frames及遊戲資料副本已逐byte核對。私有內容不公開。
+
+| 收據 | SHA-256 |
+|---|---|
+| `moo2-386-scene-input.png` | `1a0e7551173173b43897be18ccf5295755ca80b222be7dc6dbca0b1d986c8c03` |
+| `moo2-386-scene-source210.png` | `1a0e7551173173b43897be18ccf5295755ca80b222be7dc6dbca0b1d986c8c03` |
+| `moo2-386-terminal.png` | `1a0e7551173173b43897be18ccf5295755ca80b222be7dc6dbca0b1d986c8c03` |
+| `moo2-386-upper-first-restore.png` | `1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622` |
+| `moo2-386-upper-source200.png` | `1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622` |
+| `moo2-colonies-callback-read-386.go` | `3a050603540f9da42345ca0726b089952177e20cedfeadfd4884e33c92532e92` |
+| `moo2-probe-386-overlay.txt.gz` | `5fe3cfd30f2e3e365aec16a8114bce86bb8716cb25f5897dec0f04b0654d6287` |
+| `moo2-save-state-386.json` | `50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705` |
+| `new-game-386-baseline-dac-journal.json` | `75cc0d208cc64f339fed430e66dd6b084cb4e01765f1548ee251e33cd92a9556` |
+| `new-game-386-cli-tests.txt` | `7f4e01b64d98b60429a5dce665be01241aa98816271edda5669c01d07e96a5f6` |
+| `new-game-386-document-gate-tests.txt` | `e42b45ece289adcf2144749256d136a59a9c53d2e6a8f76bea9f735e1f50c14c` |
+| `new-game-386-document-gate.py` | `2e5eaf0eeac7a486ec0912feb8057cdc1dd61d9eb38092c314261cbd584fbe9c` |
+| `new-game-386-generate.first-check.py` | `fa90858b520553a5d4de15a07e0ffc712ebd65fe6519ad4f4a97773c5ad50a77` |
+| `new-game-386-generate.first-check.txt` | `f6376c1c83464f0ee8be34567090351e53b47a3b227db212cb0e854776f33d78` |
+| `new-game-386-generate.py` | `ceb34be8dd3bc62e11e8d654706d4d5376d334dde8c6e0de8a84194fac665d10` |
+| `new-game-386-generate.second-check.py` | `6b8aa4451fca9e65de3af493dcdc39feeb010aeaa40137c0ec59995704c13568` |
+| `new-game-386-generate.second-check.txt` | `51ceb935f679909f1808c53a8ad5261d1ab42acb71794f98f5bbd5ef7a0a7e12` |
+| `new-game-386-job-source.json` | `d64da30e8ed57a309883105de5a3c5113a1085c8e6b53ed45fca697d939e341c` |
+| `new-game-386-patches.json` | `4905eca7b3bc120ddaefaeca752f914b9d56e0e1a70eb83ed42232c2fbffc9d9` |
+| `new-game-386-ready-review-tests.txt` | `f723810a9dca9f092c7017f787097864fb712989f0395020c5ffed7c6df523d4` |
+| `new-game-386-ready-review.py` | `bae96bd6274bd2a0746893ef7a2df2e38a8ca942c6c4ce31e033969d7fa567d4` |
+| `new-game-386-restore-journal.json` | `26b0c793b2de68c86d61683e755a15ba5dcbc6431f0f99aec3270c71a843ca75` |
+| `new-game-386-row-baseline.json` | `ca4bbf80c1c431e4d924ed48279e9d2d618fabf347f7bf66d8328cb2532c543a` |
+| `new-game-386-run-output.txt` | `6f93f285ca23cd175ee1c821f880905cf615bd0e8af8d6a78f8c827463fb054d` |
+| `new-game-386-run.sh` | `a1206604cc64f39928a7518acaf4fb458eac643ae2e09a3273dcecc17d0e28c5` |
+| `new-game-386-scene-input-source.json` | `799c63ee4d5b30cf0c524a856546b8418a9f5e262fba52c97ea89cb72616d540` |
+| `new-game-386-scene-input.json` | `aa6728601569f07b6ed5022d0a7fa5c1f5291fa3e18592e40a7e84415c5c715f` |
+| `new-game-386-scene-source210.json` | `781a32c6ceaf62edb3b6ce5afc91676bfb1cd84fe2ea72d3e6fd369ee487cd7a` |
+| `new-game-386-source-tests.txt` | `89f08500a9027219f59c6bb1ea5b1f9a1de88e3ccd17dfae769819940ae373e0` |
+| `new-game-386-source-verify.py` | `78513a6850d732b1222d9d0ca8068086a640d4b68966ed59d593ba156d68108f` |
+| `new-game-386-state-capture-output.txt` | `9332dea0878e8d161b0c361a816571d5946567602223ec6dadb95d15d9cd9ab3` |
+| `new-game-386-state-capture.json` | `5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d` |
+| `new-game-386-state-capture.py` | `717dc8f1500f58a81ce070b3b96dbf0097d619df2d7fdd3d6268eeb0b583f844` |
+| `new-game-386-upper-return.json` | `5079802ec98ba5702cb16565244f0b521419734c55f37cc90f7d44273930254f` |
+| `new-game-386-upper-source200.json` | `57d1a4af24af8a4cae14e1b64feb6fdc161e8b6f8aa9b36cd5568c4eac0204b5` |
+| `new-game-386-verification.txt` | `0f7ed558d4ba722459ec7d03593a93165bcc42193c190d721017182d40c577d9` |
+| `new-game-386-verify.py` | `3866f17927c48e400b1c1cea578bfa9faed8dddb0935029fc0129c9069221a7f` |

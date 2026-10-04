@@ -1577,3 +1577,29 @@ python3 workplace/new-game-385-document-gate.py > workplace/new-game-385-documen
 工具3842529eb5dff704adf3d33b6c4f5720ebe9cbb4已推送github，只改四份自撰文件；45份主要私有收據SHA-256見[研究入口](docs/re/dosgolem-moo2-intake-20260930.md)。主庫只改四份現況／歷程文件，基線68ee2f7beafd94f7a8ef87d8957ee615a9c4e0d2；提交後精確HEAD見Git。收尾核對兩庫狀態／擁有權／Docker，既有root-owned2437檔及272目錄保持，無.md目錄。
 
 下一步386修正DS188:298840只讀觀察，依原A3及已定位首輸入完整狀態作守衛；維持原輸入與210M，不再等待或盲增cap。人口正常選取／放置、正式存讀、完整開局／RNG與remake同狀態未驗。
+
+## 2026-10-04：386原回呼正確地址與首輸入只讀前置
+
+385已推送，分類progress；新證據已改變下一步，回呼原零值語意撤回。開工核對AGENTS／CONTEXT／HONEST-STATUS／唯一活表、兩庫HEAD及乾淨工作樹；沿已載入復古GUI與spec閘門，新增文件前核對職責，回填前載入resolution backlink。主庫RE-first保持。
+
+386先DRAFT／索引與固定385原A3、IDA+F0000h投影及完整首輸入收據審查，再READY及11個private patches。新CALLBACK_READ只接受1並要求原SCENE／JOB等前置；mode off逆回385，mode on取消額外10M，固定原輸入與210M。82CLI為68拒絕及14正對照，原70逐項保持。public CPU／DOS／internal／原probe不改。
+
+原guest僅一次，session78051 exit0，actual_boundary及run_limit均210000000／step_limit；末態228DF6／483821442µs。203219451原2091EA的A340882900指定DS188:298840；原回呼由55451700變21ED1A00／raw1AED21，等於EAX。依實際moffs及descriptor Base求linear，observer自身Step前RAM副本只替換實際四bytes後與Step後整RAM hash相同。observer沒有代寫guest或修正EAX；全RAM其他bytes保持已證實。
+
+原兩個真RET及四事件時序與385保持。首正常輸入205804505／1B0845先經固定385完整frame守衛，僅排除跨run ram_sha256；第9只讀窗298840為21ED1A00，原8窗口／current／pool／361record／三word與舊raw保持，snapshot before=after及RAM前後hash全等。獨立驗證session12161 exit0，386 CONFORMED SCOPE PASS限定此次原A3與首輸入；完整382／384原210M核心／FPU／clock／callback IRQ／36表／DAC／journal／39frames／PNG／418來源／state及副本保持。沒有原guest重跑或新增人口輸入。
+
+生成器前兩次因原Go縮排與字串定位不符，在寫Go前拒絕；連續同類失敗後回查spec路由，檢查剩餘全部原縮排，再生成。首／次版本與分類摘要留first-check及second-check；原385 Go及收據不變。這是腳本定位問題，不當產品故障。獨立驗證第一次即通過，不追加可選CPU／renderer測試。
+
+實際Docker入口：
+```text
+python3 workplace/new-game-386-ready-review.py
+python3 workplace/new-game-386-generate.py
+bash workplace/new-game-386-run.sh > workplace/new-game-386-run-output.txt 2>&1
+python3 workplace/new-game-386-verify.py > workplace/new-game-386-verification.txt 2>&1
+python3 workplace/new-game-386-document-gate.py > workplace/new-game-386-document-gate-tests.txt
+```
+source verify由run.sh在82CLI後、guest前執行。沿Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，network none／UID/GID1000；原ZIP及patch唯讀。native600s／2GiB／2CPU／128pids、owned guest與capture由550s監測及trap收尾；驗證90s／2GiB／1CPU，來源／文件30s／512MiB／1CPU／64pids。本輪沒有IDA／新image，相關一次性容器已結束。
+
+工具3e2290007d5d0163346b4150c7e8cc625b1e0166已推送github，公開五份自撰文件，383／384／385按同一不可變定位追加回填；385錯誤觀察器仍DRAFT。37份私有主要收據SHA-256見[研究入口](docs/re/dosgolem-moo2-intake-20260930.md)。主庫只改四份現況／歷程文件，基線0910ddd90ef84b0b81533ab6ff8cf5e01672c7b0；提交後精確HEAD見Git。收尾核對擁有權／兩庫狀態／Docker，既有root-owned2437檔及272目錄保持，無.md目錄。
+
+下一步387追原sub_1171AB與kind6座標消費及按下／放開契約，證據足夠才訂一次正常人口操作觀察。原回呼讀值完成不外推人口選取／放置、正式存讀、完整開局／RNG或remake同狀態。

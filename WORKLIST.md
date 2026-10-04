@@ -46,11 +46,11 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–384為限定CPU／平台／來源／觀察與輸入驗收，385原返回及首輸入已驗但回呼投影被拒絕，整份契約回DRAFT，均不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
-  **已驗正常玩家輸入**：母星確認、星圖COLONIES、Sol II名稱行的press／原AX3 poll／安全release及原選取13已驗。382原上層自然返回後，210M可見Colony of Sol II與36筆完整表。385確認BF456於203219421真RET到1B07C6、setup於203219467真RET到1B07E6，首次正常輸入CALL於205804505到1B0845，PNG與原210M相同；並未執行人口選取／放置。原UI選取13與current raw4各自保存。
-  **目前原前置與勘誤**：三個kind6 pointer2879DA／DC／DE均word310，不命名職業數量。current raw4／pool5B2044／完整361byte record5B25E8及enable26C48C=1／水平偏移29BE14=0定位保持。原2091EA的A340882900寫DS188:298840，亦符合IDA1A8840加F0000h；觀察器錯讀2A8840，偏差10000h。舊raw零值保持，撤回scene callback0語意；正確298840讀回及全RAM僅改實際store四bytes的證明未知。EAX1AED21寫入只列強推論，不當CPU缺陷。
-  **驗證與交付**：原READY審查先於8個可逆private patch，精確逆回384；70CLI為58拒絕及12正對照，舊58保持。原guest一次，明示一次220M窗口，沒有新輸入或重啟；完整原210M前置、journal／39frames／DAC／PNG／418來源／state與副本保持。獨立驗證SAFE EVIDENCE PASS限定原返回及首輸入，ADDRESS MODEL REJECTED明示地址失敗；DRAFT禁止沿錯誤觀察器啟動新guest。公開internal／CPU／DOS／原probe及主庫玩法不變。工具3842529eb5dff704adf3d33b6c4f5720ebe9cbb4已推送github，383／384追加勘誤，45份主要私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
-  **下一步**：386依原A3運算元校正298840的只讀觀察與守衛，沿已定位205804505首輸入狀態驗正確讀值，維持原輸入與210M。首次輸入早於210M，不再加cap或等待場景；不猜座標倍率、不送人口輸入或深入共享renderer／palette／DAC／PIT helper。固定日期不是seed。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–384及386為限定CPU／平台／來源／觀察與輸入驗收；385原返回與首輸入已驗但原回呼觀察器仍DRAFT，均不計入玩法分母。303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
+  **已驗正常玩家輸入**：母星確認、星圖COLONIES、Sol II名稱行的press／原AX3 poll／安全release及原選取13已驗。382原上層自然返回後，210M可見Colony of Sol II與36筆完整表。386保持385兩個原真RET及四事件時序；首次正常輸入CALL205804505／1B0845的完整原frame守衛通過，PNG與原210M相同。尚未執行人口選取／放置；原UI選取13與current raw4各自保存。
+  **目前正確回呼與前置**：原203219451／2091EA的A340882900指定DS188:298840，符合IDA1A8840加F0000h。386實際讀值由55451700變21ED1A00／raw1AED21，等於EAX；原Step外全RAM保持，首次輸入正確第9窗仍21ED1A00。原2A8840零值為未分類舊raw，不當回呼或CPU缺陷。current raw4／pool5B2044／361byte record5B25E8、三word310及原enable／水平偏移保持，不命名正式職業數量。
+  **驗證與交付**：386 READY先於11個可逆private patch，精確逆回385；82CLI為68拒絕及14正對照，原70逐項保持。原guest一次，維持原輸入與210M，沒有重啟或新增人口輸入。完整382／384核心／FPU／clock／callback IRQ／36表／DAC／journal／39frames／PNG／418來源／state及副本保持；獨立驗證386 CONFORMED SCOPE PASS僅限正確回呼讀值、實際四bytes寫入及首輸入前置。公開internal／CPU／DOS／原probe與主庫玩法不變。工具3e2290007d5d0163346b4150c7e8cc625b1e0166已推送github，383–385追加回填與索引；37份主要私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
+  **下一步**：387從原首輸入CALL的sub_1171AB及既有kind6消費端，補齊原滑鼠座標到職業列熱區／暫存的來源鏈與按下／放開契約。證據足夠才建立一次正常人口選取／放置觀察，不猜座標倍率或job語意，不盲增cap或深入共享renderer／palette／DAC／PIT helper；固定日期不是seed。
   **未知／不混入本輪**：主庫玩法RE閘門保持；人口調整、正式讀檔／存檔內容語意、typed名稱及旗色持久writer、五窗口完整物件、其他未驗CPU分支、typed種族特性、母星配置、COLONIES其他列表操作／其他星圖控制、完整開局與remake同狀態未驗。DPMI外部cb_smoke、兩舊探針PE格式、AH2Ch／RNG／人耳與Windows／macOS實機未驗。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
