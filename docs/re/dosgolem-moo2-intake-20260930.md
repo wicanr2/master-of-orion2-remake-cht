@@ -5221,3 +5221,101 @@ python3 workplace/new-game-400-document-gate.py
 | `new-game-400-document-gate-tests.txt` | `dda147bddd67455f75f907a35a6dba766463ceda1de8647b8b91b2bfc34a4b19` |
 
 提交前執行python3 workplace/main-audit-400-final.py，exit0，400 MAIN AUDIT PASS：四份自撰文件、唯一DOS活表、追加歷史、39新收據hash及固定舊輸入、工具959e108084ad465389e9c7470a7c3408f84456bf已推送且乾淨；公開CPU／DOS與主庫玩法保持。完整44項原表、398的320列及400的404列來源、399只讀raw20與完整397保持通過。實際父入口、下一輸入、正常存讀與remake同狀態仍未知。root-owned 2437檔／272目錄及零.md目錄保持，git diff --check通過；本輪容器均已結束，無新image。精確主庫HEAD與最終工作樹／Docker狀態在提交後另核對。
+
+
+## 2026-10-04：401–402原父層輸入與殖民地列表自然返回
+
+基線主庫a18897eb5e6421726ec05a4bb5e30c122280b2f2、工具959e108084ad465389e9c7470a7c3408f84456bf；接手時兩庫乾淨。路由命中復古遊戲RE、原GUI、IDA、READY閘門、文件職責與逆向回鏈，沿用已載入契約。
+
+401新增一份窄IDA，43列／43EA／11fixup差異與原MZ／LE、2object／365page／51363fixup records獨立核對。原C2C5A CALLB4EF6、下一C2C5F及sub_C2B72 owner保留原EA；C2259初始化只保存邊界，不猜返回時刻。官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f。工具Go1.24.13／Python3.11／IDA9.4 locked-v1；IDA linear EA、runtime＝EA+F0000h及原file offset分列。
+
+401沿READY只讀觀察器與固定399 Go，原guest session93429 exit0、185CLI含153拒絕／32正對照，19phase全只讀；獨立驗證session80541 exit0。已證實：213103600原1050C CALL後，213103601真SS到C4562，同CS8／SS188h、SP−4與返回槽runtime100511通過。B4EF6有12次entry、10次RET1Ch自然返回、11823次B5051命中，所有實際RET的唯一下一Step／真SS／ESP+32通過。兩個active frame在215M保持，不把末態篩選EIP稱停死或輸入等待。原caller target為runtime1B2C5F及遞迴1A4F44，不從C53C9靜態caller補虛構call chain。
+
+402經DRAFT→READY審查，精確反轉固定401的20個patch，唯一原CPU.Step／getter／裝置輸入數保持。195CLI含161拒絕／34正對照，保留185前綴，exact copied build input與全部新輸出名稱守衛通過。原guest session23489 exit0，獨立驗證session44403 exit0；先凍結並逐欄位保持完整401 parent／399 mode／397 return的215M前置，僅略既定三個RAM雜湊鍵，才進230M有界窗口。
+
+已證實：222329888在runtime1B472A原CALL，222329889自然到2071AB父層正常輸入並提前停止；同CS8／SS188h、SP−4及真返回槽1B472F通過，4個新phase與原EXE／LE重定位16-byte code window獨立核對。原控件表runtime0x298848／count20／stride55，VBE StartY0／DisplaySets102。實際原PNG SHA-256 299868824b0ea14741bbcd781a8aa353c8344ef29bd5997f50f5be6d211de8c2已回COLONIES列表，Sol II可見農夫欄空、6工人／2科學家。人工圖像檢視另存new-game-402-visual-review.json；數值verifier的visual_transition_verified仍false，未假稱程式自動視覺驗證。只驗原版自身正常返回，remake同狀態及正常存讀仍未驗。原record+C8正式名稱仍未定型，不因畫面同數值就命名。
+
+同一402末態1100原bytes的表解碼，raw3／kind0矩形531,445..615,470，GUI590,468→裝置1180,468，九個含端點／外側first-hit案例通過。強推論：raw3幾何對應原PNG RETURN；實際選取返回值尚未驗。舊18現為378,34..510,64上方欄位。下一403先核對C4343 handler及當次17B0EE／17B0F0與1985AC，再建READY正常press／release契約；正常星圖返回後才追options／存讀。不直接派送ID、代寫RAM或深挖renderer／DAC／PIT／平台helper。
+
+401第一次runner仍編譯399 Go，session51344 exit1，parent_value CLI在原guest前拒絕；failed1-401三份產物及manifest保留。修正明確Go檿名與copied build input守衛後185CLI通過。成功401 guest執行中發現native／state輸出仍用399名稱，保留原399 gzip與manifest，未中止或重跑；terminal後核對實際401 marker／source，另存401日誌與manifest、還原原399 gzip／raw／manifest。實際執行script另存new-game-401-executed-run.sh，現行乾淨重生runner全名已修正。原399 gzip SHA-256 ba5e0cbf4568c8677bfbd501f51c206ff7c96a41b6bd197ab7faa1c234177398及39份較早400索引逐hash保持。這是runner接線問題，無原CPU缺陷證據；獨立verifier執行前核對cpu.go的ESP4／SegCS0／SegSS5。
+
+原418輸入、SAVE10／MOX副本與394固定較早收據保持；固定日期不是seed。工具9c588a41508e038d5654903c1cb04a830875bd32已推送github，七份自撰RE／索引／回鏈文件；EXE／原PNG／JSON／private Go不公開。主庫RE-first與玩法、公開CPU／DOS保持，本輪分類progress。
+
+實際Docker命令：
+
+```text
+bash /out/new-game-401-ida-run.sh
+python3 workplace/new-game-401-byte-verify.py
+python3 workplace/new-game-401-ready-review.py
+python3 workplace/new-game-401-generator.py
+bash workplace/new-game-401-run.sh > workplace/new-game-401-run-output.txt 2>&1
+python3 workplace/new-game-401-source-verify.py
+python3 workplace/new-game-401-verify.py > workplace/new-game-401-verify-tests.txt
+python3 workplace/new-game-402-ready-review.py
+python3 workplace/new-game-402-generator.py
+bash workplace/new-game-402-run.sh > workplace/new-game-402-run-output.txt 2>&1
+python3 workplace/new-game-402-source-verify.py
+python3 workplace/new-game-402-verify.py > workplace/new-game-402-verify-tests.txt
+python3 workplace/new-game-402-table-verify.py > workplace/new-game-402-table-tests.txt
+python3 workplace/new-game-402-document-gate.py > workplace/new-game-402-document-gate-tests.txt
+```
+
+既有Go1.24-bookworm及IDA9.4 locked-v1，UID/GID1000、network none、原ZIP／patch唯讀。原guest900s／state850s／2GiB／2CPU／128pids及owned PID trap；IDA120s／2GiB／2CPU／128pids，bytes90s／2GiB／1CPU；來源／文件30s／512MiB／1CPU／64pids。401與402原guest均已terminal，沒有持續程序；Docker兩個專案volume filter皆空，沒有新image。提交前核對工作樹、hash、忽略／權利分類與擁有權。原較早root-owned基線2437檔／272目錄保持，沒有.md目錄，不做廣域chown。
+
+### 401–402本機私有收據索引
+
+| 本機檔名 | SHA-256 |
+| --- | --- |
+| `moo2-401-ida-slot-parent.py` | `11d4dbb2500fe13c9931782dcba56ac4bbfa9207c6a69e5609c38bb9ed7e5971` |
+| `moo2-401-ida-slot-parent.json` | `99186b26f6d26b1453484b564f719965b0084b8af1b6bfa6452ab41ec81f4fea` |
+| `moo2-401-source-byte-index.json` | `42a8d8382fe12782540f99159b11f38ec51e5594c56a03d954c1f3ce0c4c9a34` |
+| `new-game-401-byte-verify.py` | `82f5d3355b2accaa4947b738ea6708d406d6b5d12514fba592ddcd561d8cc2d1` |
+| `new-game-401-byte-tests.txt` | `baeb38b5e4a5943eeebcb9c228d9402e5f8180133151712f6d73b4b6cce1dcc3` |
+| `new-game-401-ready-review.py` | `09f68e340115b65d41304f6deaf9c3aaa4a2aba49aa575905f1e181157e93be4` |
+| `new-game-401-ready-review-tests.txt` | `b33499481db9825c7635e263af91b0c409b663cb2748aa79f06fc61857348a86` |
+| `moo2-colony-return-401.go` | `1593aa58a873d8c2b3a2d5b961d7115e449f9b1b2bb97deab8546b76376763fa` |
+| `new-game-401-generator.py` | `8900e337d0d216177b2863fd86b6f8bfc0702d31d27b1ab16785a85b1739ac33` |
+| `new-game-401-patches.json` | `47c8b0fb79d06adf8be56192c08b14f8b81c61454ee0af31e39f9d9776e3ea86` |
+| `new-game-401-run.sh` | `da10db1c55bdefac8b92304f01491cc7f277d3880bd2fc350b6883544120f017` |
+| `new-game-401-executed-run.sh` | `f55b1e2f1380ffe6d6b588b3a04248a0d36dc71a1d8c521b2de122ece34bf6c2` |
+| `new-game-401-run-output.txt` | `18f4c06197f8d7082fc4a035897a369e459ec27e84a20d31b370ec10ea05b627` |
+| `new-game-401-cli-tests.txt` | `20ad383c103ac4dcb70a37ffccb4599af5dfc370d96d8b89c9670c3514b37efc` |
+| `new-game-401-source-verify.py` | `71727666df61179ffbfadcf1cccbd14483229e529b663931edaf7fbbb5dc00ed` |
+| `new-game-401-source-tests.txt` | `a2a40219703be9fbcf4a63b0a1cd58187c226982feb0d0427c8370e28279cc7b` |
+| `moo2-probe-401-overlay.txt.gz` | `b85134b530df2a149e5e273509beeb73300641b8eb461144e3cf2def74081a00` |
+| `new-game-401-parent-events.json` | `3a4a1a91ede5b3474642733e84c44298de5d33cd74446bf969e6d4e46e0b78bd` |
+| `new-game-401-parent-terminal.json` | `5b340590cc6a2d3d0d11125ae770db4dc6bd5a1aa71d1d8a68d00ee8f6033f99` |
+| `new-game-401-verify.py` | `7de1dbd4ef42deca38970997fa10df4fb1d052329fc0e3ae757402efa80d70aa` |
+| `new-game-401-verify-tests.txt` | `8941f53555a5148ff230f63814bb676bdf0c6158dcc44bc9540b05825ffab688` |
+| `new-game-401-result.json` | `f2c5b6a27388a8731433d3f5eaf5003aa1fa792e93a603b5414bafad40f206b3` |
+| `failed1-401-manifest.json` | `23046edd15da4cb0da1d30ea62977716e7a9f4f69acfabb4de532310614ac064` |
+| `failed1-401-new-game-401-run.sh` | `e6726ad96bb6b9da76e5f20068fa29127094631044d1d4a22372358815930ead` |
+| `failed1-401-new-game-401-run-output.txt` | `5b7492b0ed8dd0645208d503ce146f89c9ff00bde03fdf01a4c49a2376f36162` |
+| `failed1-401-new-game-401-cli-tests.txt` | `698495f4538b7b7dd785615be17c3a49dea2f4a61e2efe2728c4176ede708f97` |
+| `held399-before401-moo2-probe-399-overlay.txt.gz` | `ba5e0cbf4568c8677bfbd501f51c206ff7c96a41b6bd197ab7faa1c234177398` |
+| `held399-before401-moo2-save-state-399.json` | `50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705` |
+| `moo2-save-state-401.json` | `50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705` |
+| `new-game-402-ready-review.py` | `bb7a81674ae58d1926c451b645c9e3049f9f50ea29a38e9f9827326fc8fd0bcb` |
+| `new-game-402-ready-review-tests.txt` | `ff710959c821cd0af3c111f4dd530eef5e922bc7ff9ed7ef38cd7d3c2c9e8783` |
+| `moo2-colony-return-402.go` | `f86a2e5e97d36a0abc42f14b10de00dc91f78ad884961f2385d53f7a793b5ad4` |
+| `new-game-402-generator.py` | `be1c8286ac6e65e35e34191dc05f5afcb2692a0efdce9c7737807428c68f6103` |
+| `new-game-402-patches.json` | `6cdc2213cf15d0db7c6088038112b6596ce121004d2fe2d46edb31573bb17983` |
+| `new-game-402-run.sh` | `f7b48a9c3b12cc4c4a328a5217349034b15294d09f596faf525959b565f5e738` |
+| `new-game-402-run-output.txt` | `60d7dbaddee29a32c0e4b9c9d8a66c847805b25b0549b4467b38062e91925041` |
+| `new-game-402-cli-tests.txt` | `033832d82c5f7641194fd93bf266501eb04a22c087a5460d04376c3216e68d36` |
+| `new-game-402-source-verify.py` | `ef857f90e82e262fa8fd66ffb8a6794f433025894c9201e486409cb0a90dd010` |
+| `new-game-402-source-tests.txt` | `795fea1acfa5010d97bbb1fc2fc698728f269908792beb1b31ee18a4c1a19519` |
+| `moo2-probe-402-overlay.txt.gz` | `6b11c6ff3330bc47f847143a627e805331e97a9fe9aa2a15e2e3cbf56015abd2` |
+| `new-game-402-continue-events.json` | `e9c9b89a44a9202d9318e9e4b15b14fbc91ac05cce67a7c632dfddc25888b987` |
+| `new-game-402-continue-terminal.json` | `0f39a119df80abe95a1eb3c8f9f8aa62e897cc9e2f19673c33b2f6bb2f3e3e11` |
+| `new-game-402-verify.py` | `0dc21d4a92e39cd4557196ec2496201a713dd376a6b2249eeeaf1a21975af2bd` |
+| `new-game-402-verify-tests.txt` | `7247aa0a56c534260494bd98e2511edfb1852819a0fa7cdd0c2f65161e5da2af` |
+| `new-game-402-result.json` | `e52590082e1d75606a81d3d23850f225c51e3b056569c86f1777732c70459487` |
+| `new-game-402-visual-review.json` | `f149f443d2c907db66c391272ab183865c16229c39a49c279f9dc451e3e89007` |
+| `new-game-402-table-verify.py` | `a4f5c5d9e40351ba30b21a990c6236eb42170cdd14e45e9f5d1c44a34a483ba8` |
+| `new-game-402-table-tests.txt` | `6e1309111fca77171df737b092d9d251a116849fbde5a7b0f0bdd93d1d92f9d7` |
+| `new-game-402-table-result.json` | `44634fe0a6be36d548cf05f6afcc886a75538baab608c90750d3e15c8613de80` |
+| `new-game-402-document-gate.py` | `9844da537fb03d7c9402ab782296ae852300e84cfbc54af5b7b52e82646c88c4` |
+| `new-game-402-document-gate-tests.txt` | `0ecfc1eedaddc5729827873432c4588267ae996ea7e40caa8eefaa6c293d6de8` |
+| `moo2-save-state-402.json` | `50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705` |
+| `moo2-402-writes-place-return-continue-terminal.png` | `299868824b0ea14741bbcd781a8aa353c8344ef29bd5997f50f5be6d211de8c2` |
