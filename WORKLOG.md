@@ -1847,3 +1847,40 @@ python3 workplace/new-game-397-verify.py > workplace/new-game-397-verification.t
 既有Go1.24.13／IDA locked-v1，UID/GID1000、network none，原ZIP／patch唯讀。IDA120s／2GiB／2CPU／128pids，串流及驗證90s／2GiB／1CPU，來源與文件30s／512MiB／1CPU／64pids。沒有新image或主機工作負載。工具ba7dd46630aee381f0a15051fbd103ef9c0c3ea4已推送，公開僅自撰規格及回鏈。收尾稽核另記Git／Docker／擁有權；398先核對1004EF返回後控制流及1A5051等待，正常存讀及remake同狀態未驗。
 
 提交前python3 workplace/main-audit-397-final.py，session19055 exit0，397 MAIN AUDIT PASS：四份自撰文件、唯一DOS活表、追加歷史、63份新收據hash與固定舊輸入、239／45份失敗產物保持，工具ba7dd46630aee381f0a15051fbd103ef9c0c3ea4已推送且乾淨；公開CPU／DOS與主庫Go玩法保持。原47384µs正常放開、1004EF真返回及436列358EA117fixup核對通過；原215M末態PNG SHA-256 741bb4ca62f46653dc9c65d0b3d6639b93cbf9c8b71758e3864988105de89ee1視覺確認仍為殖民地。root-owned 2437檔／272目錄及零.md目錄保持；git diff --check通過。本輪一次性容器全數結束，沒有新image，精確主庫HEAD與最終工作樹／Docker狀態於Git提交後另核對。
+
+
+## 2026-10-04：398–400原RETURN分派20與父入口來源
+
+基線主庫5d4595f69b3ad4d3a5c94fde6bfec8fd92853c8b、工具ba7dd46630aee381f0a15051fbd103ef9c0c3ea4。路由命中原GUI、IDA、規格閘門、文件職責與逆向回鏈，沿用已載入契約。398兩次窄IDA共320列／298EA／84fixup差異；原103EB..1049B完整44項與AX≤2Bh相符，從固定EXE及44個LE fixup獨立重建，395前43項保持、raw43→106AF。395先前43項是前綴，現行入口已修正，原收據不覆寫。
+
+原輸入ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f。工具IDA Pro 9.4／Go1.24.13／Python3.11；原EA使用IDA linear EA，runtime投影為EA+F0000h，原file offset與LE fixup另列，不混用位址基準。
+
+399沿READY只讀觀察器、精確檿名改名及固定397基底；175CLI含145拒絕／30正對照、唯一原Step／原getter／裝置輸入數保持。原guest session76282 exit0，215M cap不改；11個新只讀phase的core／RAM／device前後及PNG、原MOV bytes與唯一Step差異通過，完整397的16phase／terminal逐欄位保持，僅略既定三個RAM雜湊鍵。原418輸入及SAVE10／MOX副本保持，固定日期不是seed。
+
+已證實：原C093A runtime1B093A於213103514→515把191A08從1恢復20；原104EF runtime1004EF於213103590→591把191F19從20設1。原runtime1006A7在213103599的EAX20。完整44項原表raw20→1050C CALL C4562。強推論：下一父分支為C4562；399未直接取樣該入口，不宣稱實際entry已驗。原215M仍1A5051，PNG SHA-256 741bb4ca62f46653dc9c65d0b3d6639b93cbf9c8b71758e3864988105de89ee1與397相同。
+
+400兩窄IDA殼層exit0／idat_exit1，非空JSON／5365函式／固定SHA／UID1000通過；原404列／229EA／113fixup差異與2object／365page／51363原fixup records核對通過。完整135指令sub_C4562 C4562..C47C1保存原輸入／返回邊界：C472A CALL1171AB、C4740 CALLC4343、C4792回輸入迴圈及C47C0 RET。原C541C CALLB4EF6位於C53C9，direct callerC54D6；只保存caller定位，不猜未取樣call chain。398證明B5051是槽位篩選，不稱輸入等待。400無新guest、Go修改或裝置輸入。
+
+原GUI／下一輸入、正常存讀及remake同狀態未驗。主庫RE-first保持；公開CPU／DOS及主庫玩法程式不改，未把未知當CB指令缺陷。工具959e108084ad465389e9c7470a7c3408f84456bf已推送github，六份自撰RE／索引／回鏈；原JSON／EXE／PNG／LOG／private Go保持本機忽略。下一401先建最小只讀READY契約，保持完整399／397及215M，捕捉原1050C／C4562入口、B4EF6真SS caller與C472A／1171AB；不新增裝置輸入、代寫RAM或延長cap。
+
+實際Docker命令：
+
+```text
+bash /out/new-game-398-ida-run.sh
+bash /out/new-game-398-mode-ida-run.sh
+python3 workplace/new-game-398-byte-verify.py
+python3 workplace/new-game-398-table-verify.py
+python3 workplace/new-game-399-generator.py
+python3 workplace/new-game-399-source-verify.py
+bash workplace/new-game-399-run.sh > workplace/new-game-399-run-output.txt 2>&1
+python3 workplace/new-game-399-verify.py > workplace/new-game-399-verify-tests.txt
+bash /out/new-game-400-ida-run.sh
+bash /out/new-game-400-flow-ida-run.sh
+python3 workplace/new-game-400-byte-verify.py
+python3 workplace/new-game-400-source-verify.py
+python3 workplace/new-game-400-document-gate.py
+```
+
+既有Go1.24.13與IDA9.4 locked-v1，UID/GID1000、network none、原ZIP／patch唯讀。IDA120s／2GiB／2CPU／128pids，原guest900s／state850s／2GiB／2CPU／128pids及owned PID trap，bytes90s／2GiB／1CPU，來源／文件30s／512MiB／1CPU／64pids。兩次讀取查詢使用錯誤容器路徑，及容器缺rg已改用正確/knowledge路徑與grep；399來源映射補驗及400第二次窄查詢均使用既有收據，沒有重跑399 guest。以上是讀取環境問題，未列為產品缺陷。Docker兩個專案volume filter皆空，沒有新image或遺留容器。提交前再核對工作樹、證據hash、權利分類與擁有權。
+
+提交前執行python3 workplace/main-audit-400-final.py，exit0，400 MAIN AUDIT PASS：四份自撰文件、唯一DOS活表、追加歷史、39新收據hash及固定舊輸入、工具959e108084ad465389e9c7470a7c3408f84456bf已推送且乾淨；公開CPU／DOS與主庫玩法保持。完整44項原表、398的320列及400的404列來源、399只讀raw20與完整397保持通過。實際父入口、下一輸入、正常存讀與remake同狀態仍未知。root-owned 2437檔／272目錄及零.md目錄保持，git diff --check通過；本輪容器均已結束，無新image。精確主庫HEAD與最終工作樹／Docker狀態在提交後另核對。

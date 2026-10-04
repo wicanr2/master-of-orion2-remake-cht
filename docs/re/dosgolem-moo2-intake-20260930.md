@@ -5140,3 +5140,84 @@ DRAFT／固定來源與前置審查後READY，再生成可逆private實作；106
 | `new-game-397-source-verify.py` | `8d728ee0c4c87d6a929a1ddaf28299a4046e3d566db69c0ff3b31ebe9e3c17a2` |
 | `new-game-397-verification.txt` | `4c809e17df7b88db5c5b7223a47e90f2fa68f084cc33b37bfc0fe9ef978b4812` |
 | `new-game-397-verify.py` | `51452e7acd7570ec24ab040e22673c474bce61192fdd108bcaa0ab780432c0a3` |
+
+
+## 2026-10-04：398–400原RETURN分派20與父入口來源
+
+基線主庫5d4595f69b3ad4d3a5c94fde6bfec8fd92853c8b、工具ba7dd46630aee381f0a15051fbd103ef9c0c3ea4。路由命中原GUI、IDA、規格閘門、文件職責與逆向回鏈，沿用已載入契約。398兩次窄IDA共320列／298EA／84fixup差異；原103EB..1049B完整44項與AX≤2Bh相符，從固定EXE及44個LE fixup獨立重建，395前43項保持、raw43→106AF。395先前43項是前綴，現行入口已修正，原收據不覆寫。
+
+原輸入ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f。工具IDA Pro 9.4／Go1.24.13／Python3.11；原EA使用IDA linear EA，runtime投影為EA+F0000h，原file offset與LE fixup另列，不混用位址基準。
+
+399沿READY只讀觀察器、精確檿名改名及固定397基底；175CLI含145拒絕／30正對照、唯一原Step／原getter／裝置輸入數保持。原guest session76282 exit0，215M cap不改；11個新只讀phase的core／RAM／device前後及PNG、原MOV bytes與唯一Step差異通過，完整397的16phase／terminal逐欄位保持，僅略既定三個RAM雜湊鍵。原418輸入及SAVE10／MOX副本保持，固定日期不是seed。
+
+已證實：原C093A runtime1B093A於213103514→515把191A08從1恢復20；原104EF runtime1004EF於213103590→591把191F19從20設1。原runtime1006A7在213103599的EAX20。完整44項原表raw20→1050C CALL C4562。強推論：下一父分支為C4562；399未直接取樣該入口，不宣稱實際entry已驗。原215M仍1A5051，PNG SHA-256 741bb4ca62f46653dc9c65d0b3d6639b93cbf9c8b71758e3864988105de89ee1與397相同。
+
+400兩窄IDA殼層exit0／idat_exit1，非空JSON／5365函式／固定SHA／UID1000通過；原404列／229EA／113fixup差異與2object／365page／51363原fixup records核對通過。完整135指令sub_C4562 C4562..C47C1保存原輸入／返回邊界：C472A CALL1171AB、C4740 CALLC4343、C4792回輸入迴圈及C47C0 RET。原C541C CALLB4EF6位於C53C9，direct callerC54D6；只保存caller定位，不猜未取樣call chain。398證明B5051是槽位篩選，不稱輸入等待。400無新guest、Go修改或裝置輸入。
+
+原GUI／下一輸入、正常存讀及remake同狀態未驗。主庫RE-first保持；公開CPU／DOS及主庫玩法程式不改，未把未知當CB指令缺陷。工具959e108084ad465389e9c7470a7c3408f84456bf已推送github，六份自撰RE／索引／回鏈；原JSON／EXE／PNG／LOG／private Go保持本機忽略。下一401先建最小只讀READY契約，保持完整399／397及215M，捕捉原1050C／C4562入口、B4EF6真SS caller與C472A／1171AB；不新增裝置輸入、代寫RAM或延長cap。
+
+實際Docker命令：
+
+```text
+bash /out/new-game-398-ida-run.sh
+bash /out/new-game-398-mode-ida-run.sh
+python3 workplace/new-game-398-byte-verify.py
+python3 workplace/new-game-398-table-verify.py
+python3 workplace/new-game-399-generator.py
+python3 workplace/new-game-399-source-verify.py
+bash workplace/new-game-399-run.sh > workplace/new-game-399-run-output.txt 2>&1
+python3 workplace/new-game-399-verify.py > workplace/new-game-399-verify-tests.txt
+bash /out/new-game-400-ida-run.sh
+bash /out/new-game-400-flow-ida-run.sh
+python3 workplace/new-game-400-byte-verify.py
+python3 workplace/new-game-400-source-verify.py
+python3 workplace/new-game-400-document-gate.py
+```
+
+既有Go1.24.13與IDA9.4 locked-v1，UID/GID1000、network none、原ZIP／patch唯讀。IDA120s／2GiB／2CPU／128pids，原guest900s／state850s／2GiB／2CPU／128pids及owned PID trap，bytes90s／2GiB／1CPU，來源／文件30s／512MiB／1CPU／64pids。兩次讀取查詢使用錯誤容器路徑，及容器缺rg已改用正確/knowledge路徑與grep；399來源映射補驗及400第二次窄查詢均使用既有收據，沒有重跑399 guest。以上是讀取環境問題，未列為產品缺陷。Docker兩個專案volume filter皆空，沒有新image或遺留容器。提交前再核對工作樹、證據hash、權利分類與擁有權。
+
+### 本輪私有收據索引
+
+| 本機檔名 | SHA-256 |
+| --- | --- |
+| `moo2-398-ida-return-parent-boundary.json` | `8c4c514be8d4fe8cbc9c213bb7438ad1a89af3f416448c0b304d4a6b7d72f747` |
+| `moo2-398-ida-mode-restore-boundary.json` | `1aa344c16da92ff68cc143a9769488aa65b99836a2b098471f3d972e1e64ed25` |
+| `moo2-398-source-byte-index.json` | `af5b8d8c6bc2c704d1ff48a8341ca145d13f6f134e30716c3912e3fda6df85d6` |
+| `moo2-398-full-dispatch-table.json` | `f0ae8fdd28c70c3e44e85888f012f83d7dea0c5ec5beac5a17e14d1ac26c633f` |
+| `new-game-398-byte-tests.txt` | `787032cf47525224bcdd34ca41e2d9de8eacffa39d3e97b84d2fce171272cb6d` |
+| `new-game-398-table-tests.txt` | `78d574a8e34fd7383a160dddd68d6ec7e5deee5dd12f7378dbd017e02717c9ab` |
+| `new-game-398-byte-verify.py` | `8d87bcaeb5a9b140ccbc80bba63bb4d1cfac2f1f5cb18518962059a1bb1fc872` |
+| `new-game-398-table-verify.py` | `f8a1c13a366cf32ca361d4cd2c8ec547dbd24fdff29b640ee717970bbcc2d78b` |
+| `moo2-colony-return-399.go` | `2256ab0cd3ba70900b773612ec2cd57bbad0d1ffd98c597df75bd63d4f24c642` |
+| `new-game-399-generator.py` | `f4dd7b20020a0ab1720ca25b8a5060ae892d9d34a7cf160a2f30ce09b15cc91c` |
+| `new-game-399-patches.json` | `9784598a28f86a3e24fd780fdad7b72544bca01d4ff677ecde21e4f7627eda55` |
+| `new-game-399-cli-tests.txt` | `698495f4538b7b7dd785615be17c3a49dea2f4a61e2efe2728c4176ede708f97` |
+| `new-game-399-ready-review-tests.txt` | `e118dd19556ac37eca81f39a74b4091665261119a02bfa6d6f56508d79c4a23b` |
+| `new-game-399-source-verify.py` | `1c8ee0462066ed6a66d3c62ba80e52591ddc7d200cd0751dab950b0a6a2345f0` |
+| `new-game-399-source-tests.txt` | `4ea4b65de69e1d7bc36a9c67bd1040e67aedfa7dad0c5a9b9da67fb2e10e1245` |
+| `new-game-399-run.sh` | `ee06aa43c378ce48f03f7f0f21237f1e14095912f8f7f9bbec1bd4b4300d413b` |
+| `new-game-399-run-output.txt` | `e6250f4effbba2c1eb0996d64132978493aa01d0103fad81fc180f665d4f45a0` |
+| `moo2-probe-399-overlay.txt.gz` | `ba5e0cbf4568c8677bfbd501f51c206ff7c96a41b6bd197ab7faa1c234177398` |
+| `new-game-399-mode-events.json` | `09db2d1b3c1ab6aa4fac5d387ecc3f47b901904d591782b291d19ef4b25c0dc6` |
+| `new-game-399-mode-terminal.json` | `b7d1b942581e56f5de8dcc01e7f71776305d094acdd6895120e0189e261764fe` |
+| `new-game-399-return-terminal.json` | `e73b88c767f2886736cb8e8162e2ec14ac7cc4dc6928da4fcbc9a7d41fe83511` |
+| `new-game-399-verify.py` | `f378979895fbb171d99471b673088916f16e729e43e565d0ae72c8b79c08cf17` |
+| `new-game-399-verify-tests.txt` | `3be8a37c7ee9f45038e7f9c9a6a26133e0b48ec816e9ab12b726b0611b8368cd` |
+| `new-game-399-result.json` | `dc43aa4a24f115da6aa29c273b2d322b8e359577b6ea4560eca32520ff714f9c` |
+| `moo2-save-state-399.json` | `50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705` |
+| `moo2-save-state-399-save10.gam` | `0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d` |
+| `moo2-save-state-399-mox.set` | `de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f` |
+| `moo2-400-ida-return-parent.py` | `74c9f1ac667b1e9fbb42b7e18bd3a8740d77968df4d3aeba96c1208ce041201d` |
+| `moo2-400-ida-return-parent.json` | `7e0c5bdbe3db9bbe98794d74e00fbe5835dfcb048975b0304f0380a48a41bb1b` |
+| `moo2-400-ida-parent-flow.py` | `061c50d3537b2b5a6039c4b8ecec63b76f13a6239cbab114b37dfae44a794aa8` |
+| `moo2-400-ida-parent-flow.json` | `61de4c6de2408ff9a22ea45fd2ef222c40360aeced07d7273b8f2a8afafda86e` |
+| `moo2-400-source-byte-index.json` | `8a7d5b59b1dce4aa921df4043b641026a588ef29268a5ed680405ae8dffa0dec` |
+| `new-game-400-byte-verify.py` | `2aa1a36804f5813bd06bf30d2dece39723d7126aaf6bd5e3f7817c47ad83b26b` |
+| `new-game-400-byte-tests.txt` | `6c8363e6d42e440b76f5bf537b6805ae41e55f6f678ba7b03ddd7409e964f5c1` |
+| `new-game-400-source-verify.py` | `3938a19f9b1ea468897fa0a6f821d9bca012a83b81e5998bdde11bfe01e570e3` |
+| `new-game-400-source-tests.txt` | `7bec41a8f5f7a80a18800278a8490cc43432606d440e7652e8690957c7bcc316` |
+| `new-game-400-result.json` | `c95eebf9ab443a0f5f1f922e8ea6bbe950c27dc5982518fda96db2dfd8fa19df` |
+| `new-game-400-document-gate.py` | `ded7035a9e2de8e1700e2dbc3fc8966d0f79c37ea8eb0648aae54ef3b87e3453` |
+| `new-game-400-document-gate-tests.txt` | `dda147bddd67455f75f907a35a6dba766463ceda1de8647b8b91b2bfc34a4b19` |
+
+提交前執行python3 workplace/main-audit-400-final.py，exit0，400 MAIN AUDIT PASS：四份自撰文件、唯一DOS活表、追加歷史、39新收據hash及固定舊輸入、工具959e108084ad465389e9c7470a7c3408f84456bf已推送且乾淨；公開CPU／DOS與主庫玩法保持。完整44項原表、398的320列及400的404列來源、399只讀raw20與完整397保持通過。實際父入口、下一輸入、正常存讀與remake同狀態仍未知。root-owned 2437檔／272目錄及零.md目錄保持，git diff --check通過；本輪容器均已結束，無新image。精確主庫HEAD與最終工作樹／Docker狀態在提交後另核對。
