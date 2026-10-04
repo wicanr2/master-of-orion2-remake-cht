@@ -1492,3 +1492,30 @@ python3 workplace/new-game-382-verify.py
 工具1929523731e5f1af2c1bbb446cdfd89e28401af4已推送github，公開四份自撰規格／索引／380與381回填，私有收據SHA-256見[研究入口](docs/re/dosgolem-moo2-intake-20260930.md)。主庫僅改四份現況／歷程文件，基線9d0b38403fbb88c1b8aba8e4930f5237a4a8ecff，提交後精確HEAD見Git。Go及IDA本專案容器已結束；收尾稽核通過，既有root-owned2437檔／272目錄保持，無.md目錄。
 
 下一步保持210M原來源，核對36筆物件表的職業列熱區、原輸入消費端與callback安全前置。主庫玩法RE-first保持；人口操作、正式存讀、完整開局、RNG及remake同狀態未知，固定日期不是seed。
+
+## 2026-10-04：383殖民地職業列來源與LE重定位核對
+
+沿既有復古GUI還原、RE技能及文件職責入口，保持主庫RE-first。固定官方1.31 EXE，八份IDA Pro9.4查詢保留原名稱／EA／運算元／bytes／file offsets與xref邊界。三個kind6控制的原熱區、+18h word與+20h pointer、11C2CF→1156E2及115988暫存寫入已錨定；場景回呼與人口選取／放置鏈僅作來源候選，正式人口操作未驗。本輪沒有guest執行、新輸入、cap變更或CPU改動。
+
+獨立核對4349筆指令紀錄／3578原EA、674筆含fixup紀錄；原MZ26654／LE292E4、2objects／365pages／51363原重定位記錄逐筆驗證。16熱區端點與8水平模型通過，只證明來源推導。原382完整210M核心／FPU／clock／callback IRQ／36表／PNG與journal保持。公開internal／CPU／DOS／原probe保持1929523。
+
+驗證器首次把IDA已重定位bytes直接當原file bytes，在BF80E被拒絕；以原fixup record獨立重建後同來源通過。LE初版讀錯外層MZ入口，沿既有原26654測試入口修正。原失敗腳本與輸出保留，沒有改EXE、guest收據或刪除bytes差異。空switch查詢是比較樹的查詢方式不適用，沿原CMP定位；不是原分支缺失。
+
+實際Docker入口：
+```text
+bash /out/new-game-383-ida-run.sh
+bash /out/new-game-383-ida-ownership-run.sh
+bash /out/new-game-383-ida-consumers-run.sh
+bash /out/new-game-383-ida-worker-run.sh
+bash /out/new-game-383-ida-mutation-run.sh
+bash /out/new-game-383-ida-dispatch-run.sh
+bash /out/new-game-383-ida-pick-run.sh
+bash /out/new-game-383-ida-contract-run.sh
+go run workplace/moo2-383-le-inspect.go
+python3 workplace/new-game-383-source-verify.py
+```
+沿既有IDA locked-v1 image與Go1.24.13 image，network none／UID/GID1000，原patch唯讀。IDA每次120s／2GiB／2CPU／128pids；Go來源讀取與Python核對均有外層逾時及資源限額。八份IDA schema1／5365函式／EXE hash及輸出擁有權通過；idat exit1以非空有效JSON另核對。末次驗證session85427 exit0，六項PASS，沒有重跑原版。
+
+工具來源提交62b65ae50fefafbeaafba433216e3d3edac07e72及索引／繁體訂正b331bb640e4932dc59f5e4da694c63530132f4c1已推送github，公開只有三份自撰文件。索引382的舊UI未知已改為畫面已驗／人口操作未驗。50份私有收據SHA-256見[研究入口](docs/re/dosgolem-moo2-intake-20260930.md)，原EXE／JSON／LOG／PNG／RAM／state維持本機忽略目錄。
+
+主庫僅改四份現況／歷程文件，基線4677bb9c35ede4f0ae9b661238d62e1fcae3cff5；提交後精確HEAD見Git。收尾核對工具已推送且工作樹乾淨、收據UID/GID1000、既有root-owned2437檔／272目錄及無.md目錄；本專案一次性Docker容器已結束。下一步保持同210M建立只讀pointer／current colony／pool／record／callback觀察契約，先取得原前置再訂人口正常操作；固定日期不是seed，正式人口變更與remake同狀態未驗。

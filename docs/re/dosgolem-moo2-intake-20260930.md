@@ -4195,3 +4195,85 @@ IDA image `sha256:6f6d59af49d0008c4109a5295b5f374bdc007e2d1ab28cb9de08779584de27
 | `moo2-382-upper-first-restore.png` | `1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622` |
 | `moo2-save-state-382.json` | `50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705` |
 | `new-game-382-state-capture.json` | `5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d` |
+
+## 2026-10-04：383殖民地職業列輸入來源與原重定位記錄
+
+固定官方1.31 ORION2.EXE SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`；工具基線1929523731e5f1af2c1bbb446cdfd89e28401af4，已推送工具b331bb640e4932dc59f5e4da694c63530132f4c1。完整來源與分級見[383限定來源文件](https://github.com/wicanr2/dosgolem/blob/b331bb640e4932dc59f5e4da694c63530132f4c1/docs/spec/383-moo2-colonies-job-control-source.md)，由工具索引與382回鏈進入。主庫玩法閘門保持，沒有新guest、輸入、預算或公開CPU改動。
+
+### 原定位與證據等級
+
+- **已證實，原表及靜態來源**：原210M DS188:298848的36筆／stride55／1980bytes保持，SHA-256 `5a6102f64d586c1978a37d8c5b034caf99783c44ba8ca5eb96896780c8b334db`。index1／2／3均kind6，矩形依次310,62..518,92／310,92..518,122／310,122..518,152，+20h pointers2879DA／2879DC／2879DE。sub_11CEF5含端點、從前列first-match，330,92先1、330,122先2；16邊界模型通過。沒有新原滑鼠輸入，不能稱原index1選取成功。
+- **已證實，IDA linear EA**：sub_115478在115560／66894218存word +18h、11557B存word +1Ch、11561C存kind6、115638存pointer +20h。+18h word310與+1Ch word510是原上下界；不把+18h完整dword280136當pointer，高word40保持raw。11B0B8／0F8604120000到11C2C2，狀態1時11C2CF／E80E94FFFF到sub_1156E2；115982讀+20h，115988／668902間接寫word。8水平模型通過，原pointer值及持按時序未知。
+- **已證實，靜態場景回呼**：sub_C058A的C07D2傳sub_BED21，C07E1呼叫sub_1191CA；1191EA寫dword_1A8840並啟用word_17C48C，1192F3間接呼叫。11E1F1／11E33B／11E508的kind6持按分支使用此回呼。**強推論**：BF627、B4EF6 mode3／4與B9C3D／B9E94為原人口選取／放置鏈；目前210M實際callback、mode及正式人口變更尚未觀察。
+- **已證實，最小用途分類**：BC928只清word_17AAB9；B9CE3比較packed值而不寫人口；BB1FA重設游標狀態，三者不命名job writer。B9C3D在B9CAF對原pool+169h×colony+4×slot+0Dh執行AND FDh，B9E94含bitmap／record寫入及轉移分支。只保留人口觀察候選，不深挖無關轉移，不宣稱當前同殖民地換職成功。
+
+### bytes、原地址空間與核對
+
+IDA Pro9.4使用IDA linear EA；原檔另存file offset，執行器另用dosgolem_high_le。原EXE內嵌MZ26654／LE292E4，2objects基址10000h與170000h、365pages及51363筆原fixup record由原file bytes逐筆核對。既有Go InspectLEInMZ僅讀typed header，Python再獨立核對原header／object／page／fixup offsets、signed source offset與target，重建已重定位code bytes。4349筆紀錄／3578原EA通過，其中674筆bytes差異均有實際fixup覆蓋。私有bytes index逐項保存原file bytes、IDA bytes、raw relocation record、record file offset與原target；沒有推測性改名。
+
+首次錯誤模型把全部IDA bytes當磁碟bytes，BF80E原IDA `803DC8AA170000`與file offset1330786的`803DC8AA000000`不同；原object2基址170000h解釋實際fixup。初版LE入口誤讀外層MZ，沿既有le_machine_test.go中的26654入口修正。失敗腳本／輸出保存first-check／first-layout；同原來源通過，未修改原EXE或收據。空switch查詢只表示此段是CMP分派樹。
+
+末次來源驗證六項PASS：原LE records；8份IDA schema／hash／兩種bytes；kind6比較樹／欄位／場景；原210M完整核心／FPU／clock／callback IRQ／36表／PNG及24模型；public code不變／無新guest；383限定狀態／382正文與回鏈／索引。原382 journal SHA-256 `cfffc3f5d60bd04fb3807f256cb4998da32a92cfa2669b3e328e36192d3ffacf`保持。此次CONFORMED僅來源與舊收據，正常人口操作未知。
+
+### 工具與下一個最小動作
+
+八份IDA查詢的實際啟動命令見WORKLOG本輪，IDA image `sha256:6f6d59af49d0008c4109a5295b5f374bdc007e2d1ab28cb9de08779584de2780`，每次120s／2GiB／2CPU／128pids。Go1.24.13 image `sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac`；`go run workplace/moo2-383-le-inspect.go`與`python3 workplace/new-game-383-source-verify.py`只讀固定來源，沒有guest。全部Docker network none／UID/GID1000，原patch唯讀。有效非空IDA JSON、schema1／5365函式／hash及ownership核對通過，idat exit1不當產品失敗。
+
+下一步建立384只讀觀察契約，維持同輸入與210M完整核心／畫面守衛，補讀三個pointer值、原current colony／pool／完整361byte record與場景callback。取得可重播前置後才訂一次正常人口選取／放置；不盲增cap或追renderer／palette／DAC／PIT helper。固定日期不是RNG seed，正式存讀、完整開局與remake同狀態仍未知。
+
+### 383 私有收據SHA-256
+
+路徑根為本機忽略的`workplace/dosgolem/workplace/`。以下50份全部UID/GID1000；原JSON／LOG／bytes／state與私有腳本不公開。原382 PNG沒有重生。
+
+| 收據 | SHA-256 |
+|---|---|
+| `moo2-383-ida-colony-consumers.json` | `5dbfc0b0af389afe10bab0a4ad4d6094dd13588f26d054cedb0f295f7316887e` |
+| `moo2-383-ida-colony-consumers.log` | `1574c4442dc1d58dc5e25d025402a33ff831f3b4bdfead6872e9b5a8a188a73f` |
+| `moo2-383-ida-colony-consumers.py` | `170664c48483fc3a232dae761fa87cebeaed547666288596bdc6b604f1e88378` |
+| `moo2-383-ida-colony-consumers.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-383-ida-colony-input.json` | `8013da440d64e8c944152236c477199433250a4c521b2e9759366b3d493bf3d0` |
+| `moo2-383-ida-colony-input.log` | `e68b12be2383bf8501016ad382113cbd52c1b473afd5b3c44c22cd99813bcdb6` |
+| `moo2-383-ida-colony-input.py` | `5731ca220980c81e1077dde38b5b2bca00caf2923dd60b7045891e9de2719842` |
+| `moo2-383-ida-colony-input.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-383-ida-input-ownership.json` | `1603c05183d35fb179a2a17ce1854acd9463b847bd1ffeda948f1e6bdebf5988` |
+| `moo2-383-ida-input-ownership.log` | `87919c50ee070d175636a4cf69860239880359c96518ba5698ba87d6e5bfe0a9` |
+| `moo2-383-ida-input-ownership.py` | `acf195741bc384bd793c79d03b797a4753a975e236b30b7f7001488586cfe10d` |
+| `moo2-383-ida-input-ownership.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-383-ida-job-mutation.json` | `fa02fe1acd0990af66b2969da7fcb3f3f06b079774e4eb551a999bbe91a24c4d` |
+| `moo2-383-ida-job-mutation.log` | `12791c737e5f819a8257e3dd8caeb65512b993da49590f3a30171c4ff54260c1` |
+| `moo2-383-ida-job-mutation.py` | `1ba0d8ed219e8444756b9357c0f78d4abb23a67e1edb20a7cfc2a0bac7894776` |
+| `moo2-383-ida-job-mutation.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-383-ida-pop-contract.json` | `391a3e91c551efcecc3dbfd1497e6c777673c9f9213ef541429caf6d2c928479` |
+| `moo2-383-ida-pop-contract.log` | `dee9cdd9c7f15054252cf1a7d08561db13958eebe0875567a99f92ba1b03ce7c` |
+| `moo2-383-ida-pop-contract.py` | `c5dcd9ff3701ec38437e060a7adbe219ea786166c03ce9763af4c52d0d04a6a3` |
+| `moo2-383-ida-pop-contract.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-383-ida-pop-pick.json` | `fa59f0b7ce497ecc93ddac1a9996072c595b4e67f6e99f03191cbdf109db8719` |
+| `moo2-383-ida-pop-pick.log` | `25edc31685339ed3b300d14c70bc33b6f7679807ec1e8c152f10f59a282927bf` |
+| `moo2-383-ida-pop-pick.py` | `66499c07b98a6377bede6ce181293b10eb58d13a13a1ffb8b15e9ba937958f56` |
+| `moo2-383-ida-pop-pick.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-383-ida-type6-dispatch.json` | `5c237411a5bfd0c3302d8de287e3a883070c5bdb9f2f28e3234ec1e380b3dd65` |
+| `moo2-383-ida-type6-dispatch.log` | `25623b8f3c1156c0c470dc2d476a1b8035750aaa3827ee319b14bcb26fcfb4a7` |
+| `moo2-383-ida-type6-dispatch.py` | `c59d6097ff195342856d989b6d145bebaea8ef1f091e9d3c3a2645d3bd3bd7ec` |
+| `moo2-383-ida-type6-dispatch.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-383-ida-worker-writes.json` | `e63ce45805876fc191e88ba65edaf6034d258f05394beb07dacdb94c4ba665e4` |
+| `moo2-383-ida-worker-writes.log` | `e18bf9777e5b22f2c1d6e474c4a4809ff164b6e4c21f45c5414e22864bc7531d` |
+| `moo2-383-ida-worker-writes.py` | `45a10c4b08f63a96fbcabeb321826dd2217d989b45967b141ec1bd4457190be4` |
+| `moo2-383-ida-worker-writes.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-383-le-inspect.first-layout.go` | `d6169c1bcbd1a53685cec97c887e7dc1934e649519a18e9a88e64a5f240aab46` |
+| `moo2-383-le-inspect.go` | `9c7803100c86174b6ddf41d9337838794c220048789b75f4f063052e1642483e` |
+| `moo2-383-original-le-fixups.json` | `861f46cdef3ab27dd088a72cb0c6b2b1d62ee35285cd23c1995ef24a28602aa4` |
+| `moo2-383-source-byte-index.json` | `6d98888ead1909383ae3b7322f2f7518527c802d0800059ca93f3ce4f51495d9` |
+| `new-game-383-ida-consumers-run.sh` | `167c21982f5ab3bec8c9f6fc71944e96c845f971fd2f9d6d22c4476b82ad3b8a` |
+| `new-game-383-ida-contract-run.sh` | `144b6a6501ac829e287ba0ce41f7360155f23ed7988e7263f808a0cf7633b30b` |
+| `new-game-383-ida-dispatch-run.sh` | `e60b71a84d854fabc06a76f462de0aa7988ec09dcee608315c35bde46e4a9cb9` |
+| `new-game-383-ida-mutation-run.sh` | `e3a8c2cfdd6c598d900918f4ea5045869c1e5d7ec02c38c860490871497dc62d` |
+| `new-game-383-ida-ownership-run.sh` | `d93a3fe7f78135617111dd442dbb7331666bcc45d85802eacb0e8fa3ac732af4` |
+| `new-game-383-ida-pick-run.sh` | `ec4ac92d4f913f3a976ad0f6f0fa94b5fa6dc1367fd425791335738c45f04ed6` |
+| `new-game-383-ida-run.sh` | `d3069febd5d654e30584d7da1cb3a1cc4a2556dfe8cd23e0f102044884ccad03` |
+| `new-game-383-ida-worker-run.sh` | `eee0b368d23bff432291282cc082e651bee6db220d4bb4575950c850bb343334` |
+| `new-game-383-le-inspect.first-layout.txt` | `a46b432f80f42dace5e473cec4f0d87a0821663faed876edc32064a4876b87ff` |
+| `new-game-383-le-inspect.txt` | `ed9acf3368915a38b3853aa31ae6d7c8ce578cd6dfe65f83fcab4438f3a55dcf` |
+| `new-game-383-source-tests.first-check.txt` | `ec20fcc14736f121b86a6effe074971c5da2fc097fa15b79b2ddd1899e8f0cd5` |
+| `new-game-383-source-tests.txt` | `91b0f2aa5f3df89b6925a404a89d869660562f3108ad168b11edca232f5e5fd9` |
+| `new-game-383-source-verify.first-check.py` | `8d880eac635a4df6dfc48a13f3260a407a7bb22681cfe623dfba95e0e06d032c` |
+| `new-game-383-source-verify.py` | `21b33c85343f309f9c169c90d11d28f639da4dbc752ba35b091f47a505a37e36` |
