@@ -1690,3 +1690,36 @@ SS守衛及CLI私有調整以容器Python標準輸入完成，保存在可逆pat
 工具d2c3519528cc475d4c891990e72449a0698fd5bd已推送github，公開五份自撰文件，383／387／388追加不可變鍵回填與索引更新。主庫只改四份現況／歷程文件，基線65f93c9b957e4dde99a93361f8aa2d86a8cf8df7；提交後精確HEAD見Git。收尾核對兩庫／擁有權／Docker，既有root-owned2437檔及272目錄保持，無.md目錄。
 
 下一步390沿同輸入及210M，追查206658147之後原C086E→C02F9與B9C3D／B9E94的最小正式寫入鏈，定位這8個record差異與可放置狀態；取得證據才訂一次跨職業列放置。不假設8,000k→4,000k已完成換職或刪除人口，不盲增cap或深挖renderer／平台helper。 主庫RE-first保持，正式人口配置／存讀／完整開局／RNG及remake同狀態未驗。
+
+## 2026-10-04：390定位職業列選取後的原寫入鏈
+
+基線93648beddaccdb5b41a12e4165f68c01226d2d15與工具d2c3519528cc475d4c891990e72449a0698fd5bd，兩庫乾淨。路由命中復古GUI、spec閘門、resolution backlink及文件職責；沿逆向技能，必要的實際writer補用IDA9.4技能及權威工具契約。READY前固定389完整前置／終態及383原bytes，私有Go可逆，CPU／DOS及主庫玩法保持。
+
+首輪觀察器以目前DS必須188誤拒，session94008 exit1，原失敗88份產物按failed-390前綴及manifest保留；無原CPU缺陷證據。改監看固定descriptor188，實際getter隔離測試重現舊拒絕並證實三種DS切換、只讀及越界拒絕；DRAFT→修正版READY後同命令／同輸入／210M乾淨重跑。修正版session42905 exit0；獨立驗證session84523 exit0，同一批收據，無第三次guest。 私有getter在原Step前後直接讀已驗RAM，不掛新Bus，不新增輸入；118CLI、source gate先於每次guest。修正版監看固定descriptor188，以實際current4／pool5B2044守衛原record。首次失敗產物88份及manifest保持；275份較早主要receipt SHA／UID1000核對通過。
+
+修正版原210M／step_limit保持389全部15事件、完整日誌與DAC journal、末態EIP1A5042／482658319µs及原PNG。206659890到C086E、206659891到C02F9、206660054到C0337、206660055到BF627。206697288原BF681將17AABB由0設1；206697307原B9C81把17A974由FFFF設4。原B9CAF於206697426／545／664／783依序將record+0Dh／11h／15h／19h的bit1清除，02→00。BF6ED及B9E94未到達，限定此次走選取分支。
+
+69個實際Step變更重建四個監看範圍終值；8個首末record差異均定位。+E7h的word由原DE727在206700878寫0；+C8h先由原E19C6在206704020寫FE70h，再由E1CD9在206704659加到FEB9h，後續重算保持FEB9h；+0Bh由E1E64在206704718將FF改02。另有+EFh／F2h／FCh／104h等先清除再重建的中間值，首末比較不會顯示，均保留實際byte變更。record+0Ah原08保持；原+0B／C8／E7正式名稱與職務數量仍未定型。
+
+新增一次窄IDA9.4查詢，16個未索引實際writer定位，233列／212個EA／14筆重定位差異；原MZ／LE、2object／365page／51363fixup records獨立核對。保留原始函式名、EA、file offset及bytes，runtime投影分開；__STOSB／__STOSD只保存實際清除writer與呼叫邊界，不追平台helper。 IDA session77513 exit0，獨立LE／原bytes核對通過；完整原389 journal／日誌／15人口事件保持，69Step變更重建四範圍全部終值。79個新只讀frame及PNG逐張綁定雜湊；原418輸入與SAVE10／MOX實際副本hash／size／UID1000保持。固定日期不是seed，沒有新RNG或正式存檔語意驗證。
+
+Docker內實際入口：
+```text
+bash workplace/new-game-390-run.sh > workplace/new-game-390-run-output.txt 2>&1
+python3 workplace/new-game-390-getter-test.py > workplace/new-game-390-getter-tests.txt 2>&1
+bash /out/new-game-390-ida-run.sh > /out/new-game-390-ida-output.txt 2>&1
+python3 workplace/new-game-390-byte-verify.py > workplace/new-game-390-byte-tests.txt 2>&1
+python3 workplace/new-game-390-verify.py > workplace/new-game-390-verification.txt 2>&1
+python3 workplace/new-game-390-state-verify.py > workplace/new-game-390-state-tests.txt 2>&1
+python3 workplace/new-game-390-finalize.py
+python3 workplace/new-game-390-document-gate.py > workplace/new-game-390-document-gate-tests.txt 2>&1
+```
+原run.sh第一輪失敗後保留，getter測試與修正版READY後同命令乾淨重跑一次；無第三次guest。初次私有生成及守衛改動用容器Python標準輸入，完整final Go／可逆patches／generator保存，文件gate在記憶體比對generator與final Go相同。byte與原結果／state驗證逐項讀取PASS，沒有把shell最後一個exit當前項成功。
+
+Go1.24.13既有image／network none／UID/GID1000，原ZIP／patch唯讀；native600s／2GiB／2CPU／128pids、capture550s與owned PID trap；驗證90s／2GiB／1CPU，文件30s／512MiB／1CPU／64pids。IDA locked-v1既有image，120s／2GiB／2CPU／128pids，原EXE解壓到容器tmp；只輸出私有窄來源，無新image或主機工作負載。Docker專案掛載的容器清單已空，未清理其他專案。
+
+工具574f8e60998bb74c1a5add54e0cd5c362386c9ff已推送github，公開四份自撰文件。主庫只更新一條CONTEXT、唯一DOS活表與追加歷程／證據，公開原資料及private Go未入Git。主庫本輪精確HEAD由Git提交紀錄取得，收尾檢查兩庫乾淨及Docker／檔案擁有權。
+
+391先捕捉選取後下一個原輸入點1B0845，核對原17AABB=1、17A974=4及第二列signed熱區；條件成立才以正常裝置660,107一次按下及安全放開，驗證BF6ED→B9E94與四槽是否恢復。不得直接改bit／派送ID，不把210M中途renderer末態當可按輸入點。 主庫RE-first保持；正式配置／放置／存讀／完整開局及remake同狀態未知。
+
+提交前執行python3 workplace/main-audit-390-final.py，390 MAIN AUDIT PASS：四份文件範圍、53份新與275份舊收據、88份失敗產物、工具已推送且乾淨、公開CPU／DOS保持，root-owned 2437檔／272目錄與零.md目錄保持。git diff --check通過。

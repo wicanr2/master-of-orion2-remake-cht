@@ -4673,3 +4673,83 @@ DRAFT／固定來源與前置審查後READY，再生成可逆private實作；106
 | `new-game-389-verify-first-check.py` | `d9a1de69ba98407da5d5849ebdc90aa05f95e499db1f1feb2ee7b92a182529fd` |
 | `new-game-389-verify-second-check.py` | `ff3ca3dae01d950aa802552140a0a1086b4fbfb1ee751a416452da674a149d06` |
 | `new-game-389-verify.py` | `c6e931ce1bc56566507ad17436294683ac11ab50020f90efaeff15e9b38e5b2d` |
+
+## 2026-10-04：390原職業列選取的正式記錄寫入
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f；工具基線d2c3519528cc475d4c891990e72449a0698fd5bd，新工具574f8e60998bb74c1a5add54e0cd5c362386c9ff已推送github，見[390限定寫入契約](https://github.com/wicanr2/dosgolem/blob/574f8e60998bb74c1a5add54e0cd5c362386c9ff/docs/spec/390-moo2-colonies-pop-writes.md)。原IDA9.4 linear EA／file offset／dosgolem_high_le投影分開保存；原程式與資料投影加F0000h。
+
+### 已證實的原玩家選取路徑
+
+修正版原210M／step_limit保持389全部15事件、完整日誌與DAC journal、末態EIP1A5042／482658319µs及原PNG。206659890到C086E、206659891到C02F9、206660054到C0337、206660055到BF627。206697288原BF681將17AABB由0設1；206697307原B9C81把17A974由FFFF設4。原B9CAF於206697426／545／664／783依序將record+0Dh／11h／15h／19h的bit1清除，02→00。BF6ED及B9E94未到達，限定此次走選取分支。
+
+69個實際Step變更重建四個監看範圍終值；8個首末record差異均定位。+E7h的word由原DE727在206700878寫0；+C8h先由原E19C6在206704020寫FE70h，再由E1CD9在206704659加到FEB9h，後續重算保持FEB9h；+0Bh由E1E64在206704718將FF改02。另有+EFh／F2h／FCh／104h等先清除再重建的中間值，首末比較不會顯示，均保留實際byte變更。record+0Ah原08保持；原+0B／C8／E7正式名稱與職務數量仍未定型。
+
+原記錄仍361bytes，+0Ah原08保持。已證實的是此原分支清除四槽bit1及隨後重算，不宣稱四槽正式職務名稱、人口刪除或完成放置。原PNG保持389首輸入及末態，終圖6be8a5cf20dbdfaca8c2471e407e9e70607c8201ff3633c261ebd9e5b71cdf26。
+
+### 來源與只讀驗證
+
+新增一次窄IDA9.4查詢，16個未索引實際writer定位，233列／212個EA／14筆重定位差異；原MZ／LE、2object／365page／51363fixup records獨立核對。保留原始函式名、EA、file offset及bytes，runtime投影分開；__STOSB／__STOSD只保存實際清除writer與呼叫邊界，不追平台helper。 全部69個實際writer皆可回查原bytes，unknown writer為空。79個新增frame／PNG、原388首輸入／raw／device及389全部正常事件、完整日誌與DAC journal保持。取樣前後RAM／core／device相同；變更由原唯一CPU.Step發生，觀察器不Step、不改Bus或guest RAM。118CLI及可逆source gate通過。原418輸入、SAVE10／MOX實際副本保持，正式存檔語意未驗。
+
+首輪觀察器以目前DS必須188誤拒，session94008 exit1，原失敗88份產物按failed-390前綴及manifest保留；無原CPU缺陷證據。改監看固定descriptor188，實際getter隔離測試重現舊拒絕並證實三種DS切換、只讀及越界拒絕；DRAFT→修正版READY後同命令／同輸入／210M乾淨重跑。修正版session42905 exit0；獨立驗證session84523 exit0，同一批收據，無第三次guest。 所有失敗來源／日誌／圖片／state雜湊由failed-390-manifest.json綁定，舊275份主要收據保持。環境、命令、清理及版本見WORKLOG；主庫玩法RE閘門不變。
+
+391先捕捉選取後下一個原輸入點1B0845，核對原17AABB=1、17A974=4及第二列signed熱區；條件成立才以正常裝置660,107一次按下及安全放開，驗證BF6ED→B9E94與四槽是否恢復。不得直接改bit／派送ID，不把210M中途renderer末態當可按輸入點。 原第二列來源矩形與first-match沿387；同狀態輸入還要核對當次裝置、IRQ與callback，不以局部測試代替正常放置。
+
+### 390 私有收據SHA-256
+
+本機忽略根workplace/dosgolem/workplace/，下列53份主要收據均UID/GID1000。79個PNG另綁在pop-writes.json並逐張核對；88個原失敗產物綁在failed-390-manifest.json。原EXE／JSON／PNG／LOG／RAM／state／IDA及private Go不公開。
+
+| 收據 | SHA-256 |
+|---|---|
+| `failed-390-manifest.json` | `a0a9f5b8a8fd1570c050d35952045bf9ea86f5a06828c734b67edff5c0ef2cad` |
+| `moo2-390-ida-actual-writes.json` | `480824e90a8a37712bffe29ebf79828edaed6d19dd91a9fa5a2d2f2b1c9dbdfd` |
+| `moo2-390-ida-actual-writes.log` | `6abd105157da1bd1b6f04932b181be21a024687954c8a603923dec0bfb49f8a7` |
+| `moo2-390-ida-actual-writes.py` | `c1a2a107b0483d428092257f21708aa358897436183f27a480746269a49d8dc1` |
+| `moo2-390-ida-actual-writes.stdout.txt` | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
+| `moo2-390-source-byte-index.json` | `1c4dfd2c492bd26ab53fc2dab0c5c00e1edd3d06798c10023eff34798388278a` |
+| `moo2-colonies-pop-writes-390.go` | `ec043c8fe60c741f99a6ac8ae6a6db2295b84bd4aa306b95ca829331bbf4fa18` |
+| `moo2-pop-getter-390.go` | `5cc4603d4f256207b6fcd4d3c7a2db8082da9adba0307d0d6773ab56476965ad` |
+| `moo2-probe-390-overlay.txt.gz` | `aa3cc52cd6d43fea71a0e8c2debd77359c6d0474565aeba4f1fa26b1e2091cba` |
+| `moo2-save-state-390-mox.set` | `de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f` |
+| `moo2-save-state-390-save10.gam` | `0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d` |
+| `moo2-save-state-390.json` | `50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705` |
+| `new-game-390-baseline-dac-journal.json` | `16c091fec130bb60270c229b27d8dabe83116dc231fb3b93b4dccc2bd350489e` |
+| `new-game-390-byte-tests.txt` | `983c99673d37415caa9bc5dd438b4ec910bb9c79d796dbe230418a4c5f1634f3` |
+| `new-game-390-byte-verify.py` | `2725cb87406c192f1ec090ade4dbf92d0efc33b215fb023a435c53134e84a529` |
+| `new-game-390-cli-tests.txt` | `9f6a0ba025bd44cf216911c7e16fea2a366c37e52bc2c0b1c81b38dfe9740dd5` |
+| `new-game-390-document-gate-tests.txt` | `c69c9cd4fcc859abd95f59cbe851d8bbc820b2b3227a52272ab121c1332f6e9e` |
+| `new-game-390-document-gate.py` | `7638a8a2902f2d751aacb662177009d272edfdb9c1e08714c8aee6a65d2629ae` |
+| `new-game-390-finalize.py` | `1f250c68d67afe889abc293f097b0022b1e907b8752bdc66ae012e1650254194` |
+| `new-game-390-generator.py` | `fbc8c8aba3491c86710eb58b3a1ef1f7d46ab45540eab0c62316eb03e9ded60c` |
+| `new-game-390-getter-test.py` | `5524530ed0edb7929595fd53aafad8158211ade37ce65a113ebea60903361c2e` |
+| `new-game-390-getter-tests.txt` | `570f9f7a82ac7511b0fa1e90f682251fa93a11bb7aa1f236166679c15d03d76d` |
+| `new-game-390-history-audit.txt` | `2919f8f33bf84e5e614daad4dbf45f39f215a986b2d9deaa3de29fca830b670b` |
+| `new-game-390-ida-output.txt` | `453b20b6b9778963e82a54de8faea90176b0856ab91784d6b9a58817a72be75f` |
+| `new-game-390-ida-run.sh` | `aec16a4150a65b26dd9f3c962ffd6fbea8b61e6309090a3fba2f6c835dccb59d` |
+| `new-game-390-mouse-source.json` | `da8e74c4520d1b993df6cbfc1d35b887d8d689cd69510b039825c472c741ca36` |
+| `new-game-390-patches.json` | `05b4045a1f4913d6b274a789132155d4e5343980342bb6dd9b4b8e70cc7778ed` |
+| `new-game-390-pop-events.json` | `531ff59d427c8af6960dd886b1fc66e0cef3d680e23f3adaa176af2d73183454` |
+| `new-game-390-pop-terminal.json` | `8510fe25f71add56aee28ea6621f3475d40fb68470c343a1ad9d140e4e49f996` |
+| `new-game-390-pop-writes.json` | `fe71dc8a45063a6dd28565b40a25705796ca049e2fbec5f825922482e80431f3` |
+| `new-game-390-ready-review-tests.txt` | `011c4da5f06657442796cf7d6bda594b7d41486a8794b45ce47dc51aa6ab1bf9` |
+| `new-game-390-ready-review.py` | `a57fbdea98627eb19d088f00138539b7b5b96d3175ba1e571ac9f144f8815eb3` |
+| `new-game-390-restore-journal.json` | `6e26225a7ae3ca08fc8796a71bc89cf56587532dc5565407e32a23a005b626b3` |
+| `new-game-390-result.json` | `123e26d1cefac6329a981ed0c80cea7a8860189d7b74b30b1f1a00091dbf55be` |
+| `new-game-390-row-baseline.json` | `f635eb0c1051d239525320e0e99e5c3eb5836f5852ca1f99a7b71818fc0a1295` |
+| `new-game-390-run-output.txt` | `6be5d92b236aa79e4e7c3f9f17810129420a19fd1a184eb4cd9b1ed2b70992e1` |
+| `new-game-390-run.sh` | `0b166d7e1010d6d1df8e6c120dea0629efd0115362da22fba8d4122cd9dc43bc` |
+| `new-game-390-scene-input-source.json` | `0a1d2b69512c6e11f4000b7c1b2fdf84f55ecf1d8f4f20d520c502b1e768a813` |
+| `new-game-390-scene-input.json` | `cc9832c6555edd6767d6b36f670428e27097fbe65747c2c5b76b287313a96024` |
+| `new-game-390-scene-source210.json` | `788e56eb77a20cde377b31ef89301bf73078cc64c27dd3bf7e6592548c84958a` |
+| `new-game-390-source-tests.txt` | `4f584001875c60ec2232069d63367692518083ebd7aa775fc02a0dbeadd08fb3` |
+| `new-game-390-source-verify.py` | `15e983474d9d04d24471e3c8a215d92d0762b261e792807d72a4106e9d0616fd` |
+| `new-game-390-state-capture-output.txt` | `9332dea0878e8d161b0c361a816571d5946567602223ec6dadb95d15d9cd9ab3` |
+| `new-game-390-state-capture.json` | `5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d` |
+| `new-game-390-state-capture.py` | `8e913cd876862af029f9975b4f62269f766096590961f160c108a8b30196410e` |
+| `new-game-390-state-tests.txt` | `5fe79a160d39cee12b3fbfd566d877d7b44c203393c790b90521826213e2a4d5` |
+| `new-game-390-state-verify.py` | `c12b94765e3274de0c7a398d1fdf90a9258e78db0079d98c062b742281c29526` |
+| `new-game-390-summary.json` | `e3517341a9f0bfb43c7e93301bbf7219d100175bfbe5b290140e474453fbccc7` |
+| `new-game-390-upper-return.json` | `5079802ec98ba5702cb16565244f0b521419734c55f37cc90f7d44273930254f` |
+| `new-game-390-upper-source200.json` | `cf5772512116874b443534547d50c057e87794d9e095709fad1d9e7715cbd1f8` |
+| `new-game-390-verification.txt` | `524195e71cbf64a74ce96a46d5d77af0dbb5796fff31ec12447b0885712645f3` |
+| `new-game-390-verify.py` | `ea081e0e0f04cb4fc075d4f15195e18633b9815cec88531d728f9821e83918f7` |
+| `new-game-390-writes-result.json` | `d59e5662faede544d097e7f45d9243fafdbf552041bf83a2e3f285cef63d46dd` |
