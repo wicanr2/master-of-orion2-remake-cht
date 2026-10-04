@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-04）**：377保持376完整185M前置與39PNG，明示一次10M至195M窗口，實際原188532362在1F455D／2C17因未支援2C停止，沒有195M step_limit。新增1025筆全零DAC事件，首恢復未命中，終圖仍黑；20表有10個raw byte變化，語意未知。原418來源／state保持，public CPU／DOS／probe不變。工具168b91b9a8cb08a36f9517ae031a98239f841161已推送github，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步補SUB AL,imm8並驗原consumer，同窗口不再擴cap。主庫RE閘門保持，列表操作／正式存讀／完整開局／RNG與remake同狀態未驗。
+- **DOS 原版動態驗證器（2026-10-04）**：378補SUB AL,imm8，393216組與固定官方EXE的CPU386／machine全套通過；原2C17及後續四consumer自然完成。同195M窗口已到step_limit、殖民地列表顯示Sol II，首非0DAC write本身仍是黑圖。377完整前置／39PNG與原418來源／state保持。工具d2df07fb795875ffdcdd2b8566ae6ecadc073070已推送github，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步核對列表行熱區並驗正常操作。主庫RE閘門保持；正式存讀／完整開局／RNG與remake同狀態未驗。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為

@@ -1400,3 +1400,22 @@ python3 workplace/new-game-377-verify.py
 Go1.24.13／network none／600s／2GiB／2CPU／128pids／UID1000，原ZIP／patch唯讀、owned監測550s／trap收尾。工具168b91b9a8cb08a36f9517ae031a98239f841161已推送github，376正文保留並追加377。25份私有收據SHA-256見[既有研究入口](docs/re/dosgolem-moo2-intake-20260930.md)，主庫僅四份現況／歷程文件，基線8abae2ab000083e0a34fe97d7ce98d9a9905af2b，提交後精確HEAD見Git。相關Docker容器清理，既有root-owned2437檔／272目錄保持。
 
 下一步依原dosgolem_high_le:1F455D／2C17與188532362完整來源，建立CPU386 SUB AL,imm8規格，核對Intel SDM契約及既有byte SUB旗標模型；READY後補2C、獨立256×256輸入及EAX高24bit／其它核心與非算術flags保持、立即數fetch失敗驗收，再重播相同377窗口，不再擴cap。主庫玩法RE-first保持，列表正常操作／正式存讀／完整開局／RNG與remake同狀態未驗，固定日期不是seed。
+
+## 2026-10-04：378補SUB AL與原殖民地列表恢復
+
+378先核對377原2C17完整停態與Intel SDM，再建READY規格。真正舊core單一RED後補naked2C，393216組、64種初flags邊界、fetch失敗／工具prefix拒絕／EIP wrap及固定官方EXE的CPU386／machine全套通過。首次wrapper誤加Read8／Write8 Bus不存在的Write16／Write32，編譯在測試前失敗；移除後才保存真正RED，不把編譯失敗當CPU證據。
+
+相同正常輸入與一次195M窗口，原188532362自然SUB AL1Ah→03h／flags206h、CMP→293h／JA未跳／MOVZX四consumer通過，195000000達step_limit／EIP22C8BA。首非0DAC在189322149但首恢復PNG仍黑，195M終PNG親看顯示Sol II殖民地列表。全部24601 DAC事件獨立重播與PNG／palette映色核對通過；未驗列表操作或人口調整。
+
+377至2C共通12393列、完整185M前置／39frames／黑PNG與12300 DAC事件前綴保持。五private patch可逆回377，public CPU單一2C區段可逆回168b91b，其它internal／原probe保持；18CLI拒絕4正對照與原418來源／state／同guest副本保持，原guest一次，沒有增加cap。第三RET、20表與共享word0000另保存，較早選取10不當持久結果。
+
+實際Docker入口：
+```text
+python3 workplace/new-game-378-ready-review.py
+bash workplace/new-game-378-cpu-tests.sh
+bash workplace/new-game-378-run.sh
+python3 workplace/new-game-378-verify.py
+```
+Go1.24.13／network none／600s／2GiB／2CPU／128pids／UID1000，原ZIP／patch唯讀、owned監測550s／trap收尾。工具d2df07fb795875ffdcdd2b8566ae6ecadc073070已推送github，公開CPU／自製測試／規格／索引與377回填；31份私有收據SHA-256見[既有研究入口](docs/re/dosgolem-moo2-intake-20260930.md)。主庫僅四份現況／歷程文件，基線de43636b754208aa33b4371f468fefc5b238c5b4，提交後精確HEAD見Git。相關Docker容器清理，既有root-owned2437檔／272目錄保持。
+
+下一步以195M可見Sol II與同時取得的20物件表，核對正常列表行的熱區／原選取來源及callback前置，再建立一次正常press／原AX3 poll／安全release的限定驗證。不增加cap或猜欄位，不深挖DAC／PIT／renderer helper。主庫玩法RE-first保持，正式存讀／完整開局／RNG與remake同狀態未驗，固定日期不是seed。

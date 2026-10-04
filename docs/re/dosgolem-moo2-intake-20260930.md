@@ -3880,3 +3880,69 @@ Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce617
 | new-game-377-generation-heredoc-first-failure.txt | ee782398d36bf2039cb76f16f65f141424558fef9cb8b43a16102c172d66fd8d |
 
 下一步依原dosgolem_high_le:1F455D／2C17與188532362完整來源，建立CPU386 SUB AL,imm8規格，核對Intel SDM契約及既有byte SUB旗標模型；READY後補2C、獨立256×256輸入及EAX高24bit／其它核心與非算術flags保持、立即數fetch失敗驗收，再重播相同377窗口，不再擴cap。主庫玩法RE-first保持，殖民地列表正常操作／正式存讀／typed名稱旗色持久writer／母星配置／完整開局／RNG與remake同狀態未驗。
+
+## 2026-10-04：378 SUB AL四consumer與原列表恢復
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址空間dosgolem_high_le，工具來源168b91b9a8cb08a36f9517ae031a98239f841161；新工具d2df07fb795875ffdcdd2b8566ae6ecadc073070已推送github，見[378限定規格](https://github.com/wicanr2/dosgolem/blob/d2df07fb795875ffdcdd2b8566ae6ecadc073070/docs/spec/378-cpu386-sub-al-immediate.md)。公開CPU SHA-256 736d95e801e8e9658078671af8148a79896d805cc7a8baa42f8881574e562080，自製測試ad24baa3a5dc7447b8cd967e1789796465228ca1c0e3ac49d5a10b7af80b8d87；CPU僅新增2C，既有sub8／其它opcode及DOS／probe保持。
+
+狀態：**CONFORMED，限定naked2C、原四步consumer及同195M窗口**。正式CPU只新增2C入口，既有sub8與其它opcode保持；不是整個CPU或remake玩法驗收。
+
+舊core單一原2C17測試先RED，明示opcode尚未支援。新入口通過393216組、64種初算術flags的5184組邊界、原完整核心四步、fetch截斷與拒絕、工具prefix邊界及EIP wrap。固定官方EXE重跑internal/cpu386與internal/machine全套通過，沒有MOO2 skip。首次測試wrapper誤加Bus不存在的Write16／Write32，編譯在測試前失敗；讀回Read8／Write8契約後移除，首失敗另存。真正RED與後續綠測試分開，不把編譯失敗當CPU證據。
+
+原188532362在dosgolem_high_le:1F455D自然執行2C17，AL1Ah→03h／flags206h；下一3C08產生293h，0F87ED000000未跳、EIP1F4567，0FB6C0後EAX03h／EIP1F456A。四步其它R／段／FPU／SS:ESP stack與RAM保持，callback16／16、IRQ49858／49858均已返回且inactive／非failed。原R與RAM未注入，沒有追加玩家輸入；這四步結果已證實，不猜jump table用途。
+
+原377共通12393列至2C入口保持，完整185M DAC baseline、39frames及黑PNG保持；377已有12300事件前綴保持。相同一次195M上限實際到step_limit195000000／EIP22C8BA，無CPU stop或DOS exit。全部24601 DAC事件獨立重播，三埠3C6／3C8／3C9計25／6144／18432筆，終DAC／mask／index／phase及ports累計一致。
+
+首非0DAC write為sequence292693／原189322149／432332347µs／dosgolem_high_le:222CCE／3C9=04h。首恢復快照僅一個DAC值非0，當時RGB仍全黑；不能把這個write當可見畫面恢復。195M終DAC588個非0、indexed296428非0、RGB759775非0，獨立PNG解碼與palette histogram映色一致。終PNG SHA-256 d3c775f1b8594e8313c27b5bd9e363dfb6e3210ca05f0f17136b36409b7a67ba，親看殖民地列表顯示Sol II與人口圖示；不稱列操作、轉入殖民地或人口調整已驗。185M、首非0與終PNG分開保留。
+
+20物件表DS188:298848／stride55／1100bytes，終SHA-256 3c6bd2afa22a4ac6500ce62df53ea9bfe88dd4713423922949d23f179820471c，與377停止表相同；185M至377的10個raw byte變化仍語意未知。既有collector另自然取得第三個214104 RET，原189574450按SS188:2BD920實際stack返回20DB5B，AX0、flags246h與完整其它核心／FPU保持，這次共享word為0000，不把早先選取10宣稱持久不變，也不猜重設writer。
+
+五私有patch逆轉精確回377，CPU單一2C新增區段逆轉精確回168b91b，其它公開internal與原probe保持。18CLI拒絕／4正對照、原418來源與state、同guest副本及UID GID1000保持，原guest一次。完整readonly取樣前後狀態與PNG／原序列核對通過，原LOG／PNG／journal／RAM／state不入Git。
+
+| 不可變鍵 | 新語意與等級 | 舊規格 | 回填 |
+|---|---|---|---|
+| 官方1.31／同195M上限／1F455D 2C17 | SUB與四consumer自然完成，195M可見殖民地列表，已證實於本收據 | 377 | 追加恢復結果，保留舊缺opcode與黑圖歷史 |
+
+[377](https://github.com/wicanr2/dosgolem/blob/d2df07fb795875ffdcdd2b8566ae6ecadc073070/docs/spec/377-moo2-colonies-restore-continuation.md)正文保留並追加378，索引與backlink同次核對。CPU／原平台／時序範圍保持，Docker容器收尾；收據SHA-256與實際命令連主庫既有研究入口。
+
+下一步以195M可見Sol II與同時取得的20物件表，核對正常列表行的熱區／原選取來源及callback前置，再建立一次正常press／原AX3 poll／安全release的限定驗證。不增加cap或猜欄位，不深挖DAC／PIT／renderer helper。主庫玩法RE-first保持；列表操作／正式存讀／完整開局／RNG與remake同狀態未驗，固定日期不是seed。
+
+原418來源與state、同guest副本保持。SAVE10.GAM208000bytes／0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d、MOX.SET553bytes／de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f、sound.lbx4250888bytes／3f0354ac5c1b13a3c5c4fd098c2cbc22af37b71e74fc95e582782c22024c449d保持。原資料、LOG／PNG／RAM／journal／state及private probe／getter不入公開Git。Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac，network none／600s／2GiB／2CPU／128pids／UID1000；實際入口依序new-game-378-ready-review.py、new-game-378-cpu-tests.sh、new-game-378-run.sh、new-game-378-verify.py。原ZIP／patch唯讀，owned監測550s／trap收尾，native一次。提交後驗證器對新納入版控的自製測試明示其hash，舊internal仍逐byte保持；相同收據重新核對通過，沒有重跑guest。
+
+以下31份位於workplace/dosgolem/workplace/，不入公開Git：
+
+| 檔案 | SHA-256 |
+|---|---|
+| moo2-378-overlay-frame-extended-180000000.png | beb773bf0623f56bc9b2be697c6e0e472abebd8fa4c319f15e6074291bb7a832 |
+| moo2-sub-al-378.go | 4f9e7a3a1e942bbcc88c59fd512fa47ee93a0e9cfe073beff8c445c1d84ae9c1 |
+| moo2-probe-378-overlay.txt.gz | af0e9c8d017208017cfab0be515203175b66b295e491dc2b138cceb844615a58 |
+| moo2-save-state-378-mox.set | de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f |
+| moo2-save-state-378-save10.gam | 0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d |
+| moo2-save-state-378.json | 50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705 |
+| moo2-vbe-378-overlay.png | d3c775f1b8594e8313c27b5bd9e363dfb6e3210ca05f0f17136b36409b7a67ba |
+| new-game-378-cli-tests.txt | ae64c7e607a57e1a3d334d200bfe6d52ab92a0a46fbcb955720d8200e833b19d |
+| new-game-378-patches.json | ab7709a3b0e0cb8c02504a5bf1f84d75b11e68002d3170094e6dd908c9f3f21a |
+| new-game-378-ready-review-tests.txt | 6d3463f0968c2ea411d082b17d788a55ec2d84596f50c59870af3b8e67ee5ba8 |
+| new-game-378-ready-review.py | e0404e293a79d0800c36ffb2ece665f882a7656040bc83c85b7e2b9e1e5bbba8 |
+| new-game-378-run-output.txt | 16447a4beee89fd24aad0a981e39dbf08a5124e16b1b490f28cfda2055ab0a40 |
+| new-game-378-run.sh | bfdf357eb434494e087992e6154e87e22764250301a922c94d16f836d68cf06a |
+| new-game-378-state-capture-output.txt | 9332dea0878e8d161b0c361a816571d5946567602223ec6dadb95d15d9cd9ab3 |
+| new-game-378-state-capture.json | 5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d |
+| new-game-378-state-capture.py | dbf6926132a6d72563894b774002604a6b3265dcb5f270e9e515963822736654 |
+| new-game-378-verification.txt | 86d3ad8077fec36c834d1e3dc9fa6ef9bfa83d57c07da2c063e3dc92ee91b0a7 |
+| new-game-378-verify.py | a9e7e92d0411174289c0b2fbec4f727968697fa64fa216c9991fce3aaa092792 |
+| new-game-378-baseline-dac-journal.json | bd49185311781922b9acc2b69d6cd0af8d5f2192875db63876bc0eaa2ff1162e |
+| new-game-378-restore-journal.json | 825e88b325d7ee2b0fe5c2f99c35dd6a693216e953e7052336a5486d1943ae0c |
+| new-game-378-cpu-patch.json | a50940c33ef8d340b1eabacfb2026de142027b18c7585b36c3866ee2b589407c |
+| new-game-378-cpu-red-build-first-failure.txt | 06e73c58621ac476395e0a8d354c54d0d9d143c8303eb71ad5de3160448a951f |
+| new-game-378-cpu-red-tests.txt | 7f3e98a8c5a7514b78805ba7df90a8d989d4f95d02234d5f7248e81d8188fb46 |
+| new-game-378-cpu-tests-output.txt | f1e16ae4ab52508980aa0ec11e8140c325faa35028916ee443d86d2c063094f1 |
+| new-game-378-cpu-tests.sh | de4698dd6650914a3dd53e3979fb135b127530631c790da93c0f6680deef3c5d |
+| new-game-378-cpu-tests.txt | 5254cc3a60d9da21b8a766170831bd4d2082d9c202fdadedad4ab19931c2648d |
+| moo2-378-baseline185.png | 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622 |
+| moo2-378-first-restore.png | 1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622 |
+| moo2-378-terminal.png | d3c775f1b8594e8313c27b5bd9e363dfb6e3210ca05f0f17136b36409b7a67ba |
+| moo2-palette-snapshot-375-prototype.txt | 69da24f32ed36f2791689bb05e2f2ffe35aa9167c5cb7d3369728fefea0e3db7 |
+| moo2-dac-journal-376-prototype.txt | df69292f30e77a6b5b7c3c550edff42d8775c804cb2c16a5d2a4838d0ddd46e9 |
+
+已證實：本CPU ISA範圍、四自然consumer、原事件序列與195M可見列表。未知：列表行操作、共享word重設writer、typed欄位與完整玩家開局。主庫玩法RE-first保持，未宣稱remake同狀態對拍或完成。
