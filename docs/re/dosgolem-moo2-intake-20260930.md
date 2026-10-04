@@ -4538,3 +4538,65 @@ RE verifier初次寫唯讀mount受拒，改可寫工作樹後同來源通過，�
 | `new-game-387-ready-review.py` | `408b59e2a420cd5703668f5ebcf0bc75ea25435a19e923548598eaa1eaddf6db` |
 | `new-game-387-source-tests.txt` | `865117e612de24f648f9ccd4f3f5ea3e538b50c5f0a4121e7b2198176752d442` |
 | `new-game-387-source-verify.py` | `5dd05a928513bcdbb5eb960334a245af028f03b63e049b5756d6524ef0169304` |
+
+## 2026-10-04：388原首輸入raw及裝置範圍只讀前置
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f；工具基線1d0d128c52a7de357a41a19b8bcbb2513bc70e46，新工具011fe510aa8cf74a00d26b7bbc7d65b6094f04bc已推送github，見[388只讀契約](https://github.com/wicanr2/dosgolem/blob/011fe510aa8cf74a00d26b7bbc7d65b6094f04bc/docs/spec/388-moo2-colonies-mouse-source.md)。主庫玩法RE閘門保持。
+
+### 原定位與證據等級
+
+**已證實，限定此次原首輸入取樣**：原205804505／1B0845首輸入：DS188:26C51A／26C51C為0／0，width／height為640／480。目前GUI X／Y=43／48，保存事件X／Y=43／48，按鍵word=0，持按閘門26C4E4=1，共享active word26C4A6=0。裝置x／y／buttons=86／48／0，X range=0..1278，Y range=0..479，range設定旗標=True／True。
+
+IDA Pro9.4 linear EA原17C51A／17C51C、17C534／17C538、1B3A38／1B3A36、1B121A及17C4E4的原bytes／fixups沿387 index；dosgolem_high_le資料投影加F0000h，本次DS188窗口與descriptor各自保存。2A3A34的+2為Y、+4為X、+6不當Y；完整8窗raw見工具388表，不替未知相鄰words命名。原正確callback298840保持21ED1A00。
+
+裝置range的set／signed minimum及maximum直接取自MOO2StartupDOS嵌入的FD2StartupDOS私有欄位。私有純取值方法只存在一次性source-overlay，不取代公開Handle、InjectMouseEvent或DOS功能；device calls=13及其餘欄位前後全等。原兩旗標0及裝置範圍支持387條件X÷2，這是當次前置，不能外推所有場景或job語意。
+
+### 驗證與停止線
+
+READY審查先於可逆private實作。94CLI含原82逐項保持、78拒絕及16正對照。原guest一次／同原輸入／210M，原385與固定386完整首輸入守衛均通過；新8窗及descriptor可讀，整體state／RAM及device before=after，完整core／FPU／clock／callback IRQ／VBE／DAC保持。獨立核對原journal／39frames／PNG／418來源／state及副本、原9窗／record／pointer words保持，388 MOUSE SOURCE PASS。沒有新人口輸入或CPU／DOS／主庫玩法變動。
+
+383／386／387正文及舊收據保留，追加不可變鍵回填，索引同步；385錯誤觀察器保持DRAFT。回填腳本首版在執行前SyntaxError，沒有改文件；保存first-check，修正字串後同入口通過，不重跑guest。Docker資源／image與命令見WORKLOG，network none／原輸入唯讀／UID1000，相關一次性容器已結束。
+
+下一步389固定本次完整首輸入、原旗標及range，建立一次正常職業列press觀察契約；候選裝置660,77按原signed SAR1為GUI330,77，原36表先命中kind6 index1。先追原持按選取與1192D1／場景回呼，依實際消費點安全release；不把候選命中當人口變更或預設職業語意。 正式人口變更／存讀／完整開局／RNG及remake同狀態未知；固定日期不是seed。停止於一次可重播玩家操作所需證據，不深入平台helper或DAC／PIT。
+
+### 388 私有收據SHA-256
+
+路徑根為本機忽略的workplace/dosgolem/workplace/，下表35份均UID/GID1000。原JSON／LOG／PNG／RAM／state與private Go不公開，公開只提交自撰文件及雜湊索引。
+
+| 收據 | SHA-256 |
+|---|---|
+| `moo2-colonies-mouse-source-388.go` | `b154cdaa17035a0a9a69025f8b7ef88972f6984eaae52a6a70ec2f27166e528f` |
+| `moo2-mouse-read-388-prototype.txt` | `2579c35f375ad5b50684c2478e2961858bf9d36827cf7a1cbc9ae0ea5f44d3bf` |
+| `moo2-probe-388-overlay.txt.gz` | `60692add9125290f1a4d23c324f0a9c15b957824796bdc042a0ffcac619fc7d8` |
+| `moo2-save-state-388-mox.set` | `de8554b3284c9f9065efe6e4f2dfa71ab0c7e732e75eaea0d0ecf465ab86409f` |
+| `moo2-save-state-388-save10.gam` | `0cf71fc5368861758da5a5dffbd791f8b711a48cfd295572eb9a21d27dea0f4d` |
+| `moo2-save-state-388.json` | `50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705` |
+| `new-game-388-baseline-dac-journal.json` | `96511830c84201e6f69e88132c1f68a5f6630ae1d3ff4dceecbcb014356fddbc` |
+| `new-game-388-cli-tests.txt` | `6599c3a248907230accb317d93d663b8c16266e8ff11a89393ab9e4bb2b1360b` |
+| `new-game-388-document-gate-tests.txt` | `2bf97a6d1cb9f18ffa655b29216e45e81372e8bf733a1e4bcd5ab0f65027dc88` |
+| `new-game-388-document-gate.py` | `d1bb848eaba39ec0b019906cf332f9204dbe5e9fdcfa564889f1a60e44c801b2` |
+| `new-game-388-finalize-first-check.py` | `3cd377c9f0b781d97e041c51604df1e4097f8fce1aebc04a9076eca7d55f67d1` |
+| `new-game-388-finalize-first-check.txt` | `cb3af52bc9c8a0a31537a2a88227d3543e90fa0d57620af8a2d6c7571f1a4ec4` |
+| `new-game-388-finalize.py` | `cfd2d007e5400130fa5e3a558f7594606b7754f7f41b69d664471987d1225712` |
+| `new-game-388-generator.py` | `7da984dad2cbdfba2f0840e838c8c9cd9d8d8c75664d909dfef3412873f76ed8` |
+| `new-game-388-job-source.json` | `fa7417b3e4d4840b1ed11aa9f9f1ab7ba8c7b19f514f82f29aaca204b7cdb791` |
+| `new-game-388-mouse-source.json` | `650876e32fe41394fe85ae2b7dc871ccc7de551a72153fe16d2f0fee6beee49d` |
+| `new-game-388-patches.json` | `77b8722606e2f26a5b4da2408890266aa6a52b71ed720a023fd3189ebe14bbac` |
+| `new-game-388-ready-review-tests.txt` | `c9ba784c36af1aff3399bff04a05b08cc42eaf3c8bcf85af70ac28d53cb4f999` |
+| `new-game-388-ready-review.py` | `f017245003091f7047d8b561adc21a74d9bdb27e51b36c4c299f02ec28f22e1b` |
+| `new-game-388-restore-journal.json` | `242d8a9b44f5a1e522fc3f181308c86b439f61c46493c08233b4e1bafb5b2cb5` |
+| `new-game-388-row-baseline.json` | `5eed5d028ba567d6787270f79fd3ac8568362890f0df45f86a5fd3a4bf682765` |
+| `new-game-388-run-output.txt` | `7c4cea5c76a9f826aed89f0b81d2258e482adbbcf0a57de03ffcdc708d0710d8` |
+| `new-game-388-run.sh` | `0b4470d13814b2bf72e74cd2ecc0906abd32a4ae83c57b4a758fc1a48c1da85e` |
+| `new-game-388-scene-input-source.json` | `4080b7003e445827be4a977c5f46c050cd7dfc090096a1cb452404f75c4ca1d7` |
+| `new-game-388-scene-input.json` | `ddf8a2eea05482b2c3abc105c05d0a38b3d2252b6da3b467851b7ffbf0f0c791` |
+| `new-game-388-scene-source210.json` | `ea111350790e4cc9c288a4b62077ae959304a3f402dd760c1f28e1208eccd36c` |
+| `new-game-388-source-tests.txt` | `c31311cdccc61ca2c6336fdb091ccc553c09cd9b104d380481159f3039311a20` |
+| `new-game-388-source-verify.py` | `09d81a7cda83c02c3af1f1c6f926ef0659c92e476ed9859ee159f89b7c697cc6` |
+| `new-game-388-state-capture-output.txt` | `9332dea0878e8d161b0c361a816571d5946567602223ec6dadb95d15d9cd9ab3` |
+| `new-game-388-state-capture.json` | `5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d` |
+| `new-game-388-state-capture.py` | `14ed1fc3ce0b0757d3ec25c52aa9808f5bc55faac629a63d14aec6d72a7e7957` |
+| `new-game-388-upper-return.json` | `5079802ec98ba5702cb16565244f0b521419734c55f37cc90f7d44273930254f` |
+| `new-game-388-upper-source200.json` | `c77864fdbab6c311cfc6fd56419e5135c9e3579679a258fb303b5ed8c32fcb4d` |
+| `new-game-388-verification.txt` | `75460b63256feac28a00167cc383bb4c147d72b9b7e591ab23e5f202bed6fe28` |
+| `new-game-388-verify.py` | `9876ed14844dfcb72c37bd577df511bf95edf535912bc501d56aa38586345fb0` |

@@ -46,12 +46,12 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–384、386–387為限定CPU／平台／來源／觀察與輸入驗收；385原返回與首輸入已驗但原回呼觀察器仍DRAFT，均不計入玩法分母。303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
-  **已驗正常玩家輸入**：母星確認、星圖COLONIES、Sol II名稱行的press／原AX3 poll／安全release及原選取13已驗。382原上層自然返回後，210M可見Colony of Sol II與36筆完整表；386首次正常輸入205804505／1B0845的完整原frame守衛與正確callback讀回通過。原UI選取13與current raw4各自保存；人口選取／放置尚未執行。
-  **目前條件座標及生命週期來源**：原callback1236D1／runtime8:2136D1，在word_17C51A及+2均0時，ECX低word經MOVSX／SAR1存GUI X，EDX低word存Y；原1237F2／CB定位保持。X／Y在DS188:2A3A38／2A3A36，旗標26C51A／26C51C，width／height26C534／26C538。初始化X range上界2×(width−1)。持按實際選取器sub_113FB9按原36表signed含端點first-match；AX3為0後到11E4EB，kind6於11E508再呼叫1192D1、11E50D清共享選取。這是靜態來源，不是人口操作完成。
-  **既有前置與未知**：386正確DS188:298840由55451700變21ED1A00／1AED21，全RAM僅原四bytes改變，首輸入仍21ED1A00；current raw4／pool5B2044／361byte record5B25E8／三word310及原8窗口保持。原2A8840零raw維持未分類。386未捕捉本輪新旗標／寬高／目前與事件座標／按鍵／17C4E4；不能猜0、把事件座標當目前座標，或直接據660,77模型送人口輸入。
-  **驗證與交付**：五份IDA固定原EXE，2562筆rows／2091原EA、514筆fixup差異與LE51363 records獨立核對；11CEF5原1550項只查玩家所需切片，caller最多32並明示截斷。READY先於13 signed X／3range／6人口列first-match只讀模型，來源與回鏈通過。公開internal／CPU／DOS／原probe、原385／386收據與原36表不變，本輪沒有guest或新增輸入。工具1d0d128c52a7de357a41a19b8bcbb2513bc70e46已推送github，379／383／386追加回填，387僅source-only CONFORMED；34份主要私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
-  **下一步**：388維持原輸入與210M，固定205804505完整首輸入與正確callback守衛後，補讀原旗標／寬高／座標／事件／按鍵及裝置range，只讀驗明可比較前置。取得前置才訂一次正常人口press／持按消費／安全release，不盲增cap、不猜job語意、不深入共享renderer／DAC／PIT helper；固定日期不是seed。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–384、386–388為限定CPU／平台／來源／觀察與輸入驗收；385錯誤回呼觀察器仍DRAFT，均不計入玩法分母。303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標未驗。
+  **已驗正常玩家輸入**：母星確認、星圖COLONIES、Sol II名稱行的press／原AX3 poll／安全release及原選取13已驗。382原上層自然返回後，210M可見Colony of Sol II與36筆完整表；386首次正常輸入205804505／1B0845及正確callback讀回通過。原UI選取13與current raw4各自保存；人口選取／放置尚未執行。
+  **目前座標與生命週期證據**：387原callback1236D1／CB在兩旗標皆0時對ECX低word做signed SAR1成GUI X，保存原Y；持按實際選取器113FB9按原36表first-match。AX3為0後，kind6於11E508呼叫1192D1、11E50D清共享選取。388在完整原首輸入守衛後讀到旗標0／0、width／height640／480，目前及保存事件座標43,48、按鍵word0、26C4E4閘門1及26C4A6共享active0。裝置86,48／buttons0，X range0..1278及Y0..479，兩range均已設定。條件與範圍已原版補驗，實際持按／放開消費與人口變更仍未知。
+  **既有前置保持**：正確DS188:298840仍21ED1A00／1AED21；原A3全RAM僅四bytes改變證據保持，舊2A8840 raw未分類。原9窗、current4／pool5B2044／361byte record5B25E8／三word310保持；新8窗與device、core／FPU／clock／callback IRQ／VBE／DAC／RAM前後一致。310等word不命名正式job數量。
+  **驗證與交付**：READY審查先於可逆private observer與純只讀裝置方法；94CLI含78拒絕及16正對照，原82逐項保持。原guest一次固定210M／step_limit，獨立核對完整原journal／39frames／PNG／418來源檔／state及副本保持。公開internal／CPU／DOS／原probe與主庫玩法不改。工具011fe510aa8cf74a00d26b7bbc7d65b6094f04bc已推送github；388限定只讀CONFORMED，383／386／387追加回填，35份主要私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
+  **下一步**：389固定完整首輸入、旗標與range，訂一次正常職業列press觀察契約；候選裝置660,77對應GUI330,77，原36表先命中kind6 index1。追原持按選取及1192D1／場景回呼，依實際消費點安全release，不把候選命中當人口變更。維持有界預算，不深入共享renderer／DAC／PIT helper；固定日期不是seed。
   **未知／不混入本輪**：主庫玩法RE閘門保持；人口調整、正式讀檔／存檔內容語意、typed名稱及旗色持久writer、五窗口完整物件、其他未驗CPU分支、typed種族特性、母星配置、COLONIES其他列表操作／其他星圖控制、完整開局與remake同狀態未驗。DPMI外部cb_smoke、兩舊探針PE格式、AH2Ch／RNG／人耳與Windows／macOS實機未驗。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以

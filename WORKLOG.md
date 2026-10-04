@@ -1633,3 +1633,31 @@ IDA image sha256:6f6d59af49d0008c4109a5295b5f374bdc007e2d1ab28cb9de08779584de278
 工具1d0d128c52a7de357a41a19b8bcbb2513bc70e46已推送github，公開五份自撰文件，379／383／386正文保留並追加不可變定位回填。34份私有主要收據SHA-256見[研究入口](docs/re/dosgolem-moo2-intake-20260930.md)，原EXE／JSON／LOG／bytes／state不公開。主庫只改四份現況／歷程文件，基線06664fead4ccccc5d1f739196479d87d023c1f1c；提交後精確HEAD見Git。收尾核對兩庫／擁有權／Docker，既有root-owned2437檔及272目錄保持，無.md目錄。
 
 下一步388在原205804505完整首輸入及正確callback守衛後，維持同輸入與210M，補讀動態旗標／range／座標／按鍵raw前置，再訂一次人口列press／持按消費／安全release。source-only完成不外推人口變更、正式存讀、完整開局／RNG或remake同狀態。
+
+## 2026-10-04：388原首輸入raw與裝置範圍只讀驗證
+
+387已推送且分類progress。開工核對AGENTS／CONTEXT／HONEST-STATUS／唯一活表及兩庫乾淨HEAD；路由命中復古GUI、spec閘門及resolution backlink，沿已載入逆向技能。文件職責先核對，主庫RE-first保持。
+
+DRAFT及索引、固定原387 bytes／386首輸入與正確callback／裝置欄位來源審查後READY，才生成可逆private observer。新MOUSE_SOURCE只接受1，要求原CALLBACK／SCENE／JOB／upper／row／restore、185M及state前置；mode off精確逆回386，mode on固定原210M。原82CLI保持，新增10拒絕及2正對照，共94。私有overlay的MouseReadSnapshot388只取現有欄位，不Handle／Step／IO／送事件或改guest RAM。descriptor取樣在建置前改用既有Descriptors map；公開CPU／DOS／internal／原probe不改。
+
+原guest一次，session58166 exit0；run_limit與actual_boundary均210000000／step_limit，末態228DF6／483821442µs。完整385及固定386首輸入守衛後，在205804505讀原8窗及device。原205804505／1B0845首輸入：DS188:26C51A／26C51C為0／0，width／height為640／480。目前GUI X／Y=43／48，保存事件X／Y=43／48，按鍵word=0，持按閘門26C4E4=1，共享active word26C4A6=0。裝置x／y／buttons=86／48／0，X range=0..1278，Y range=0..479，range設定旗標=True／True。
+
+獨立核對session91475 exit0，388 MOUSE SOURCE PASS；完整core／FPU／clock／callback IRQ／VBE／DAC／RAM與device前後相同，原386的9窗及record／pointer words、原210M journal／39frames／PNG／418來源／state及副本保持。沒有新人口輸入或guest重跑。候選職業列輸入前置已可比較，人口變更仍未驗。
+
+文件回填首版Python字串接合SyntaxError，在執行前拒絕，沒有修改文件；後續文件閘門拒絕尚為READY的狀態。保留first-check，修正字串後用同一容器入口完成回填與閘門，不改observer、原guest或收據，分類腳本問題。主庫稽核首兩版各因文件採「未知」或「未驗」而拒絕；回查文件職責後改核對兩種明示邊界，原資料與產品碼不變。
+
+實際Docker入口：
+```text
+python3 workplace/new-game-388-ready-review.py
+python3 -  # 生成器本文保存於 workplace/new-game-388-generator.py
+bash workplace/new-game-388-run.sh > workplace/new-game-388-run-output.txt 2>&1
+python3 workplace/new-game-388-verify.py > workplace/new-game-388-verification.txt 2>&1
+python3 workplace/new-game-388-finalize.py
+python3 workplace/new-game-388-document-gate.py > workplace/new-game-388-document-gate-tests.txt
+python3 workplace/main-audit-388-final.py
+```
+source verify由run.sh在94CLI後、guest前執行。沿Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac；network none／UID/GID1000，原ZIP及patch唯讀。native600s／2GiB／2CPU／128pids，owned guest及capture以550s監測與trap收尾；驗證90s／2GiB／1CPU，文件30s／512MiB／1CPU／64pids。沒有IDA查詢或新image，相關一次性容器已結束。
+
+工具011fe510aa8cf74a00d26b7bbc7d65b6094f04bc已推送github，公開五份自撰文件，383／386／387按不可變鍵追加回填，385原錯誤觀察器仍DRAFT。35份主要私有收據SHA-256見[研究入口](docs/re/dosgolem-moo2-intake-20260930.md)。主庫只改四份現況／歷程文件，基線be66c792c8e3e51a7fe42a83d791046c423cbc07；提交後精確HEAD見Git。收尾核對兩庫狀態／擁有權／Docker，既有root-owned2437檔及272目錄保持，無.md目錄。
+
+下一步389固定本次完整首輸入、原旗標及range，建立一次正常職業列press觀察契約；候選裝置660,77按原signed SAR1為GUI330,77，原36表先命中kind6 index1。先追原持按選取與1192D1／場景回呼，依實際消費點安全release；不把候選命中當人口變更或預設職業語意。 主庫玩法RE閘門保持，正式人口變更／存讀／完整開局／RNG與remake同狀態未驗。
