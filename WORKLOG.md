@@ -2056,3 +2056,37 @@ python3 workplace/new-game-412-document-gate.py
 沿Go1.24.13既有image、UID/GID1000、network none、原ZIP／patch唯讀。guest900s／state850s／3GiB／2CPU／128pids、GOMEMLIMIT1GiB、owned PID trap與cgroup收據保持。原418檔及SAVE10／MOX保持；cgroup峰值1501089792bytes、oom／oom_kill增量0。來源／文件30s／512MiB／1CPU；獨立數值90s／2GiB／1CPU。本輪373份私有收據索引workplace/412-current-receipt-index.json；較早371／110／45／53／39份及972份失敗原guest hash保持。所有原EXE／PNG／Go／JSON／LOG Git忽略，沒有為畫面或檔名重跑guest。
 
 收尾稽核：容器內python3 workplace/412-main-audit.py通過。四份自撰文件、唯一DOS活表next412與追加式歷史核對；373份新及371／110／45／53／39份較早收據、972份失敗原guest hash保持。工具乾淨且已推送，主庫玩法及公開CPU／DOS保持；411限定原GAME輸入CONFORMED、412 READY尚無Go或guest，409／406保持DRAFT。root-owned基線2437檔／272目錄保持，沒有.md目錄；git diff --check通過，Docker三個專案volume filter無容器，沒有新image。
+
+## 2026-10-05：正常SAVE輸入與保護模式DOS屬性查詢
+
+工具分支codex/moo2-parity-20260930，HEAD 9e4c7bd4e2f1baaf205fbbb4bf680001f9270189已推送github。主庫只更新四份自撰文件，玩法RE-first保持。公開工具差異相對a03c322d28002bb0e11d5d5109d5833a17114d04只新增internal/machine/le_startup.go及其測試中的414保護模式平台查詢；CPU解碼與公開probe保持。
+
+412私有Go SHA-256 6ad43493b3adc0ff46669e1299e755f243f57ef1e8d138cb1137ec4a0f609a67；9個反轉patch、唯一Step／原getter與兩個正常裝置呼叫、245CLI含201拒絕／44正對照通過，完整235前綴保持。六份產物在容器暫存區逐bytes再生一致。原唯一session26701，完整411／409及全部祖先保持；actual enable word0後236253170正常press458,81,1，236263779 C3真SS槽20E1AC、236263780唯一下一Step返回EAX3及GUI229,81。236264659 elapsed43132µs、callback24／24且idle後正常release，CPU／RAM保持；236282811原reader C3槽16DD7C、236282812自然返回EAX3與ESP＋4，原7DF29 writer逐Step寫mode3。15phase全只讀、原Code16／LE fixups及PNG hash獨立核對。
+
+238069860原219E75 bytes CD21／AX4300／DS188h／EDX2BD904未支援，拒絕後EIP219E77；當次檔名未取樣，存檔入口未到。outer900s exit124，原probe exit0但cpu_stop／step_error明確，resource-after／gzip／state manifest完整；Docker容器已刪除，沒有第二個guest。原PNG人工仍為GAME面板、游標在SAVE，數值與人工分開。412完整契約回DRAFT；389份原產物及manifest按failed1-412保存，完整15phase與terminal不改寫；14個已成功phase另給415凍結。
+
+413單次窄IDA225列／135EA／26fixup，原2object／365page／51363fixup獨立重建。原7E154入口、7E1E6→7D061控件建立與7E1FD→1171AB第一正常輸入來源核對；不深挖標準helper。IDA殼層exit0／idat_exit1、固定EXE hash／非空JSON／5365函式及UID1000通過。
+
+414經DRAFT→Microsoft公開契約及現有普通檔模型審查→READY，接通MOO2保護模式AH43／AL0唯讀查詢；完整32位EDX、NUL／260bytes、真provider與2／3／5錯誤回傳，非輸出狀態／RAM／來源保持。普通檔CX20h沿既有平台近似，不宣稱原FAT屬性exact。12案例、internal/machine／dos／dosfile套件與核心／命令程式建置通過，工程CONFORMED，原玩家續行未驗。首輪測試誤設ECX索引及constructor已初始化表，fixture／輸出與manifest保存後只修測試；go build ./...誤含忽略的私有workplace Go，失敗保存，按建置範圍重核通過。沒有重跑原guest。
+
+實際容器內命令：
+
+```text
+python3 workplace/new-game-412-generator.py
+bash workplace/new-game-412-run.sh > workplace/new-game-412-run-output.txt 2>&1
+python3 workplace/new-game-412-implementation-source-verify.py
+python3 workplace/new-game-412-verify.py > workplace/new-game-412-verify-tests.txt 2>&1
+bash new-game-413-ida-run.sh > new-game-413-ida-run-output.txt 2>&1
+python3 workplace/new-game-413-byte-verify.py
+python3 workplace/new-game-413-source-verify.py
+go test ./internal/machine -run TestMOO2ProtectedFileAttributes -count=1 -v
+go test -p 2 ./internal/machine ./internal/dos ./internal/dosfile -count=1
+go build -p 2 ./internal/... ./cmd/...
+python3 workplace/new-game-415-document-gate.py
+```
+
+原418檔與SAVE10／MOX保持，覆蓋層無新差異。沿Go1.24.13與IDA9.4既有image、UID1000、network none、原ZIP／patch唯讀；guest900s／state850s／3GiB／2CPU／128pids／GOMEMLIMIT1GiB，cgroup峰值1518264320bytes、oom／oom_kill增量0。IDA120s／2GiB；bytes90s／2GiB／1CPU；測試有界180／240s與2GiB／2CPU；其餘來源／文件30s／512MiB。全部handle已終止，Docker三個專案volume filter無容器，沒有新image。本輪804份收據索引workplace/415-current-receipt-index.json；較早373／371／110／45／53／39份及972份失敗原guest hash保持，原檔與所有私有Go／PNG／JSON／LOG忽略。
+
+415經DRAFT→來源／平台build input與邊界審查→READY，尚無Go或guest。只凍結原成功14phase，明示414平台建置輸入及真正檔名／CF返回，不改原拒絕。240M與虛擬時間保持，工具外層改1200s／state1150s、kill-after15s以補足outer124；不把工具等待時間當玩法。正常保存／讀取與remake同狀態未驗。
+
+收尾稽核：容器內python3 workplace/415-main-audit.py通過。四份自撰文件、唯一DOS活表next415、追加式歷史與工具乾淨且已推送核對；804份新收據、較早373／371／110／45／53／39份、389份新失敗原guest及972份較早失敗hash保持。主庫玩法不變，公開工具差異只允許414平台與測試兩檔；412正常SAVE輸入已驗而完整契約DRAFT，414工程CONFORMED，415 READY尚無Go或guest。root-owned基線2437檔／272目錄保持，沒有.md目錄；git diff --check通過，Docker三個專案volume filter無容器。

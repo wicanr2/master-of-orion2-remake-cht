@@ -5494,3 +5494,34 @@ python3 workplace/new-game-404-document-gate.py > workplace/new-game-404-documen
 | new-game-412-source-result.json | 0785d7c8072a5cd0ddf195ed6349a4763afee4947cad9b0ae3f474625179e36c |
 | new-game-412-ready-review.json | c7af27ff1b32245d40420ea1da8667b3b429ccc6603c74f10446285c7e8a9698 |
 | moo2-411-writes-place-return-frontier-terminal.png | 9c4e1dd9c34470082332b5eeda274a005d4a37f7cdc01e3ed22a63352cad8073 |
+
+## 2026-10-05：412原SAVE消費與414平台查詢缺口
+
+固定官方1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f；IDA9.4 linear EA、runtime dosgolem_high_le＝EA＋F0000h與file offset分列。Go1.24.13 image SHA-256 1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac、IDA9.4 locked-v1 image SHA-256 6f6d59af49d0008c4109a5295b5f374bdc007e2d1ab28cb9de08779584de2780保持。工具HEAD 9e4c7bd4e2f1baaf205fbbb4bf680001f9270189已推送；主庫玩法保持，工具新增414保護模式只讀服務，CPU／公開probe保持。
+
+已證實：[412原SAVE輸入](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/412-moo2-menu-save-normal-input.md)完整411／409及祖先保持，actual enable0、236253170正常press、236263780原selector真SS／下一Step返回3、新GUI229,81。236264659正常release、43132µs／callback24與idle；236282812原reader真SS返回16DD7C、EAX3／ESP＋4，原7DF29逐Step寫mode3。245CLI、9patches／唯一Step／原getter、兩個裝置呼叫、15只讀phase與原Code16／LE fixups通過。
+
+已證實的限制：238069860原runtime219E75 bytes CD21、AX4300／DS188h／EDX2BD904未支援；拒絕後219E77，原檔名未知，沒有到存檔子入口。outer124與probe0分列，probe記錄cpu_stop／step_error；after resource／gzip／state manifest完整，沒有panic或OOM證據。原PNG人工仍為GAME面板／游標在SAVE，存檔頁未到，與數值分開。412仍DRAFT，389份產物及manifest保存；原418檔／SAVE10／MOX及覆蓋層保持，cgroup峰值1518264320bytes、oom增量0。
+
+[413原存檔子頁來源](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/413-moo2-save-entry-input-source.md)窄IDA225列／135EA／26fixup獨立核對，入口7E154、控件CALL7E1E6→7D061及第一reader7E1FD→1171AB已錨定；本篇沒有新guest，不研究平台helper內部。
+
+[414平台修正](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/414-moo2-protected-file-attributes.md)採Microsoft出版《The MS-DOS Encyclopedia》[Function43H公開契約](https://www.pcjs.org/documents/books/mspl13/msdos/encyclopedia/section5/)及既有008／findFirstExact普通檔archive20h近似。只支援MOO2保護模式AL0的真provider唯讀查詢，完整EDX與錯誤／非輸出狀態保持；不擴張AL1、FD2與實模式。12案例／三套件／核心與命令程式建置通過，僅工程CONFORMED，原FAT／當次路徑與原玩家續行未驗。測試fixture及build範圍兩種驗證問題各留失敗收據，不列產品缺陷。
+
+[415下一原續行](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/415-moo2-save-attributes-continue.md)經DRAFT審查至READY，明示受版控le_startup.go為固定archive建置輸入，凍結原成功14phase，不重寫原拒絕。取樣真正DS:EDX／檔名／CF返回、240M上限保持；外層1200s／state1150s／kill-after15s只補工具時間邊界。尚無415 Go或guest，正式存讀與remake同狀態未驗。
+
+本輪804份私有收據由workplace/415-current-receipt-index.json索引；較早373／371／110／45／53／39份及972份失敗原guest hash保持。原檔與私有Go／PNG／JSON／LOG忽略，所有handle terminal，Docker清理完成，無新image。
+
+| 本機收據 | SHA-256 |
+| --- | --- |
+| moo2-colony-return-412.go | 6ad43493b3adc0ff46669e1299e755f243f57ef1e8d138cb1137ec4a0f609a67 |
+| new-game-412-save-events.json | 5fbf3cc32cc79026922a82638cf79572a0b6b7e549329673e191957f8e634b8f |
+| new-game-412-save-terminal.json | 3f24102813ede84f53c9672c12908b9c1fe14c6a596648e2a4a5f1dc648a4e1b |
+| new-game-412-verification-result.json | 6ca88e6a4a7cff737bc6c5fa914eb7af0141bd161248f62b750d88f893ee4b2a |
+| new-game-412-visual-review.json | de4f3d69702580922a9d0ff13bdf3e490ceffe9c1ad41e94e6bb03614a6975bc |
+| failed1-412-manifest.json | c38274d70df5609fa38960331e85cc2a08dcbda1e5688b584734e85d3274414b |
+| new-game-413-source-result.json | 52668ebda334c699bc18b40d6ede692a9f69bee41474538d23dec0444d255b5a |
+| new-game-414-target-tests.txt | 715ef67effe156f390638c152f682984c6b2afe340708536a3ca0337b3f27725 |
+| new-game-414-package-tests.txt | ac9d04edb03ccd93481250fcdc3ebf8a985400901d4e2b8cbebc1d78a0383355 |
+| new-game-414-build-tests.txt | 4a36a627307b672c6c2c43474a1f18b4bfa1861510af260a2beecd383944efe0 |
+| new-game-415-source412-prefix.json | 659439b2d39da39d0b1cc59f2e4219a4781faaa855cf324c505c889b53710af4 |
+| new-game-415-ready-review.json | dd3181243447c5e2b1baee488d6d3536ce2db7a92841f6ff891390721de57b11 |
