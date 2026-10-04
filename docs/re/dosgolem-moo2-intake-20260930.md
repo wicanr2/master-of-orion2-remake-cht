@@ -5409,3 +5409,38 @@ python3 workplace/new-game-404-document-gate.py > workplace/new-game-404-documen
 | `failed1-404-new-game-404-generator.py` | `9d2735c20f36db1927956d62339306f70f63f5197737b42bc7cb0af3d8658125` |
 | `failed1-404-new-game-404-run.sh` | `a5fbb30f7ae44d8c51544eacfc23440576fd9e1335ad3509850af5fe959cd70a` |
 | `failed1-404-new-game-404-run-output.txt` | `0294ec2350064488959f94ba34070cb61d38bb502fc15e6a186c60d3d67d1958` |
+
+## 2026-10-05：405–409 原GAME輸入與外層框架交接
+
+工具已推送HEAD de7456f0d5f9f5c01232a7b0028c8488e0a998de。原1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f；IDA9.4 linear EA、runtime＝EA+F0000h與原file offset分列。
+
+- [405 GAME來源](https://github.com/wicanr2/dosgolem/blob/de7456f0d5f9f5c01232a7b0028c8488e0a998de/docs/spec/405-moo2-star-map-game-source.md)
+- [406正常輸入與拒絕](https://github.com/wicanr2/dosgolem/blob/de7456f0d5f9f5c01232a7b0028c8488e0a998de/docs/spec/406-moo2-star-map-game-input.md)
+- [407真選單輸入讀取端](https://github.com/wicanr2/dosgolem/blob/de7456f0d5f9f5c01232a7b0028c8488e0a998de/docs/spec/407-moo2-menu-control-input-source.md)
+- [408框架來源](https://github.com/wicanr2/dosgolem/blob/de7456f0d5f9f5c01232a7b0028c8488e0a998de/docs/spec/408-moo2-star-map-frame-source.md)
+- [409 READY只讀契約](https://github.com/wicanr2/dosgolem/blob/de7456f0d5f9f5c01232a7b0028c8488e0a998de/docs/spec/409-moo2-game-outer-frame-continue.md)
+
+來源405／407／408與原byte index各自保留，計597／515／66列、475／451／57個EA、187／121／15列重定位差異。原2object／365page／51363fixup records逐筆核對。
+
+完整404／402／401／399／397凍結、215CLI含177拒絕／38正對照及8個可反轉patch。225305800正常裝置press560,13,1，225315546原113FB9真SS返回20E1AC／EAX6／GUI280,13，225323360安全release、49572µs。七個新phase的core／device／RAM只讀、原Code16／LE fixups與PNG hash核對。當次三word6／0／34，原418檔與SAVE10／MOX保持。limited verifier exit0，實際原PNG人工檢視另存：仍為星圖，游標在GAME，沒有選單。406完整契約仍DRAFT，不稱外層返回、選單輸入、正式存讀或remake同狀態已驗。
+
+408證實ENTER6CC與EBP減82；原首輸入ESP2BD4F8／EBP2BDB46算外層RET槽2BDBE0。226846736的tail ESP2BD378異於外層保存暫存器2BDBCC。另一活動框架為強推論；實際caller與精確停止step未知。409經DRAFT→來源／只讀審查→READY，尚無409 Go或guest；下一步凍結七phase，只讀續行、無新裝置輸入、不預填1004BC，原230M上限不延長。
+
+第三輪3GiB／GOMEMLIMIT1GiB下cgroup峰值2119880704bytes，oom／oom_kill增量0。Go1.24.13官方runtime/extern.go的工具軟上限契約與hash在resource收據；未把第二輪SIGKILL回填成確診OOM。生成器在容器暫存區重建Go／patches／runner／source verifier／state capture／resource capture，六份bytes一致。只有三次原guest，沒有為畫面或檔名重跑。
+
+
+110份新收據全在本機忽略工作區，完整hash index為workplace/408-current-receipt-index.json。failed1／2／3的406 manifest分別覆蓋318／321／333份原產物，保存所有失敗與第二輪較晚殘留分類；較早45／53／39份hash保持。原EXE／PNG／JSON／LOG／private Go及存檔副本不公開。原CPU／DOS與主庫Go未變。
+
+| 代表性本機收據 | SHA-256 |
+| --- | --- |
+| moo2-colony-return-406.go | 36496a3f9ca1ba8a3f126e8ee2f234454be5fdb4403bf11dc48a89f6017141ff |
+| new-game-406-game-events.json | 21b367cb55a1e8508dbeb2092ca50df75d5e261b4717cc730619482916745156 |
+| new-game-406-limited-result.json | 7b1567724fe1c583769c70dc45d96359260b5a17f6f5c488c718235020913e18 |
+| new-game-406-resource-result.json | 6ac124b002d63310a5037b1d0bf568a39e80416fb41b83cbeb8f2ba8b3d38e78 |
+| new-game-405-result.json | d16199891b36fdfae8633da52b59e6ad0eb55235ad5b372e85695a87f5014394 |
+| new-game-407-result.json | 6f20a114b2d69608fa90b543338eaa9e53aea6907185044629e2b10a1b012ba9 |
+| new-game-408-result.json | 18d2141c538a00c81e5f6a6eebf53edbc8021dd91f3c0ffa28cc4b9d32847a30 |
+| new-game-409-ready-review.json | 076611f219b0473fee125cf2acca60d618921651ada47be0044393d68af64b4e |
+| failed1-406-manifest.json | 889345ee327998bd5031442b4ea606fbc3aba337a1d463d158ab0d2d0dbd3018 |
+| failed2-406-manifest.json | 9fd232d6cbd1ed7977bb0572150e4619db6faa4ff57141dd145491645c181867 |
+| failed3-406-manifest.json | 7a386b6fc0069ec25724429465cfb18d10bfa3d380a04d608a15f63314f3a7c6 |

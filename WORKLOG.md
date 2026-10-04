@@ -1968,3 +1968,38 @@ python3 workplace/new-game-404-document-gate.py > workplace/new-game-404-documen
 既有Go1.24-bookworm及IDA9.4 locked-v1，UID/GID1000、network none、原ZIP／patch唯讀。原guest900s／state850s／2GiB／2CPU／128pids及owned PID trap；IDA120s／2GiB／2CPU／128pids，bytes90s／2GiB／1CPU；來源／文件30s／512MiB／1CPU／64pids。兩次IDA、私有build及唯一新guest皆terminal；Docker兩個專案volume filter無容器，沒有新image。提交前核對工作樹、hash、忽略／權利分類與擁有權。
 
 收尾稽核：容器內python3 workplace/404-main-audit.py通過。四份自撰文件、唯一DOS活表與next405、45份新收據、53份較早402與39份400收據hash、工具乾淨且已推送、玩法／CPU／DOS保持均通過。UID1000與root-owned基線2437檔／272目錄保持，沒有.md目錄；git diff --check通過，Docker專案volume filter無容器。
+
+## 2026-10-05：原GAME正常輸入、選單輸入讀取端來源與外層作用域
+
+工具分支codex/moo2-parity-20260930，HEAD de7456f0d5f9f5c01232a7b0028c8488e0a998de已推送github。主庫本輪只更新四份自撰文件，玩法RE-first保持；原CPU／DOS與公開probe相對a03c322d28002bb0e11d5d5109d5833a17114d04無差異。來源405／407／408分別597／515／66列、475／451／57個EA、187／121／15列原file bytes與IDA重定位bytes不同。原1.31 EXE hash與2object／365page／51363fixup records獨立重建，原始名稱、位址基準與bytes保留。7D061是控件建立，7DD77→1171AB才是mode0正常輸入讀取端，原定位名稱的分類已回填。
+
+406三輪皆殼層exit1：7418在新press前被原34／契約0拒絕；61174在210420000後SIGKILL137，舊OOM旗標未知；10879在正常GAME press／selector6／release後，將另一SP位置的共用83D05套入外層返回位址檢查而拒絕。三輪318／321／333份產物與manifest保存；第二輪較晚檔明示為殘留。source405首查起點87643與407驗證器BX／DX編碼錯誤各保存失敗，重核同一原source。沒有原CPU缺陷證據。
+
+已驗：完整404／402／401／399／397凍結、215CLI含177拒絕／38正對照及8個可反轉patch。225305800正常裝置press560,13,1，225315546原113FB9真SS返回20E1AC／EAX6／GUI280,13，225323360安全release、49572µs。七個新phase的core／device／RAM只讀、原Code16／LE fixups與PNG hash核對。當次三word6／0／34，原418檔與SAVE10／MOX保持。limited verifier exit0，實際原PNG人工檢視另存：仍為星圖，游標在GAME，沒有選單。406完整契約仍DRAFT，不稱外層返回、選單輸入、正式存讀或remake同狀態已驗。
+
+408證實ENTER6CC與EBP減82；原首輸入ESP2BD4F8／EBP2BDB46算外層RET槽2BDBE0。226846736的tail ESP2BD378異於外層保存暫存器2BDBCC。另一活動框架為強推論；實際caller與精確停止step未知。409經DRAFT→來源／只讀審查→READY，尚無409 Go或guest；下一步凍結七phase，只讀續行、無新裝置輸入、不預填1004BC，原230M上限不延長。
+
+第三輪3GiB／GOMEMLIMIT1GiB下cgroup峰值2119880704bytes，oom／oom_kill增量0。Go1.24.13官方runtime/extern.go的工具軟上限契約與hash在resource收據；未把第二輪SIGKILL回填成確診OOM。生成器在容器暫存區重建Go／patches／runner／source verifier／state capture／resource capture，六份bytes一致。只有三次原guest，沒有為畫面或檔名重跑。
+
+實際容器內命令：
+
+```text
+python3 workplace/new-game-405-byte-verify.py
+python3 workplace/new-game-405-source-verify.py
+python3 workplace/new-game-406-generator.py
+bash workplace/new-game-406-run.sh > workplace/new-game-406-run-output.txt 2>&1
+python3 workplace/new-game-406-prepress-verify.py
+python3 workplace/new-game-406-limited-verify.py > workplace/new-game-406-limited-tests.txt
+bash workplace/new-game-407-ida-run.sh
+bash workplace/new-game-407-mode0-ida-run.sh
+python3 workplace/new-game-407-byte-verify.py
+python3 workplace/new-game-407-source-verify.py
+bash workplace/new-game-408-ida-run.sh
+python3 workplace/new-game-408-byte-verify.py
+python3 workplace/new-game-408-source-verify.py
+python3 workplace/new-game-408-document-gate.py
+```
+
+405的四個IDA入口詳見source405，本輪每個原JSON與殼層輸出均存hash。沿既有Go1.24-bookworm及IDA9.4 locked-v1，UID/GID1000、network none、原ZIP／patch唯讀。guest900s／state850s／2CPU／128pids與owned PID trap；IDA120s／2GiB、bytes90s／2GiB，來源／文件30s／512MiB。所有guest、IDA及驗證handle terminal；Docker兩個專案volume filter無容器，沒有新image。110份新收據由workplace/408-current-receipt-index.json保存，較早45／53／39份hash保持。原資料／私有Go與所有收據Git忽略。
+
+收尾稽核：容器內python3 workplace/408-main-audit.py通過。四份自撰文件、唯一DOS活表與next409、110份新收據與較早凍結收據、972份失敗原guest產物hash、工具乾淨且已推送均核對。玩法與公開CPU／DOS保持；406為DRAFT，409為READY且尚未實作。UID1000與root-owned基線2437檔／272目錄保持，沒有.md目錄。git diff --check通過，Docker專案volume filter無容器。
