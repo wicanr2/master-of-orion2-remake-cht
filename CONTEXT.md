@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-04）**：383核對三列職業控制的原熱區、kind6暫存寫入與場景回呼來源；4,349筆指令紀錄及51,363筆原LE重定位記錄通過獨立核對。382原210M可見殖民地畫面與完整核心／表／PNG保持，本輪沒有新guest、輸入或CPU改動。工具b331bb640e4932dc59f5e4da694c63530132f4c1已推送github，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步維持210M補只讀pointer值、原current colony／pool／record與callback；人口操作、正式存讀／完整開局／RNG與remake同狀態未驗，主庫RE閘門保持。
+- **DOS 原版動態驗證器（2026-10-04）**：384沿同輸入與210M取得三個原控制word310、current raw4／pool5B2044／361byte record5B25E8。完整382核心／表／journal／PNG／state保持，沒有新CPU改動；scene callback2A8840=0而enable26C48C=1均可讀，安全人口操作前置仍未知。工具0a6c7f97c75262c1d36098f5d6763918e91e2305已推送github，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。下一步只核對原C07C1→sub_BF456返回及C07D2／C07E1回呼設置，不直接送輸入或加cap；正式人口操作／存讀／完整開局／RNG與remake同狀態未驗，主庫RE閘門保持。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為

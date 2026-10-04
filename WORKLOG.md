@@ -1519,3 +1519,28 @@ python3 workplace/new-game-383-source-verify.py
 工具來源提交62b65ae50fefafbeaafba433216e3d3edac07e72及索引／繁體訂正b331bb640e4932dc59f5e4da694c63530132f4c1已推送github，公開只有三份自撰文件。索引382的舊UI未知已改為畫面已驗／人口操作未驗。50份私有收據SHA-256見[研究入口](docs/re/dosgolem-moo2-intake-20260930.md)，原EXE／JSON／LOG／PNG／RAM／state維持本機忽略目錄。
 
 主庫僅改四份現況／歷程文件，基線4677bb9c35ede4f0ae9b661238d62e1fcae3cff5；提交後精確HEAD見Git。收尾核對工具已推送且工作樹乾淨、收據UID/GID1000、既有root-owned2437檔／272目錄及無.md目錄；本專案一次性Docker容器已結束。下一步保持同210M建立只讀pointer／current colony／pool／record／callback觀察契約，先取得原前置再訂人口正常操作；固定日期不是seed，正式人口變更與remake同狀態未驗。
+
+## 2026-10-04：384同210M殖民地控制前置的只讀快照
+
+上一輪383已推送並完成來源核對，分類為progress。開工核對AGENTS／CONTEXT／HONEST-STATUS／唯一活表及Git現況；命中復古GUI、spec閘門與回鏈入口，主庫RE-first保持。384先DRAFT及索引、固定382完整210M／383原bytes審查通過，才READY及生成五個可逆private patch；沒有改公開CPU、DOS或主庫玩法。
+
+原guest僅一次，session6185 exit0；實際guest是step_limit210000000／228DF6／483821442µs。保持同輸入與cap，完整382原核心／FPU／clock／callback IRQ／36表／DAC／journal及全部舊PNG、原418來源與state／副本核對通過。58CLI為48拒絕與10正對照，原46逐項保持；快照before=after且本run RAM hash前後相等。
+
+三個控制pointer word均310，current raw4、pool5B2044、完整361byte record5B25E8取得；不把原選取13混為current raw4，不命名job數量。scene callback2A8840原值0、enable26C48C為1均可讀。這個實際前置改變下一步：先追原C07C1→sub_BF456返回及C07D2／C07E1回呼設置，不能直接據熱區送人口操作。
+
+兩次失敗均分類為腳本：READY初版對115988間接WORD指令誤要求relocation；修正條件後同來源通過。獨立驗證首次exec來源檢查覆蓋日誌變數b，TypeError發生於原日誌迭代；隔離namespace後同一收據通過全部驗收，session58828 exit0。首腳本／輸出保留first-check，沒有重跑guest、修改原收據或加cap。CONFORMED後再跑來源及文件回鏈閘門通過，來源閘門可接受已核對的完成狀態。
+
+實際Docker入口：
+```text
+python3 workplace/new-game-384-ready-review.py
+python3 - <<'PY_384_GEN'
+bash workplace/new-game-384-run.sh > workplace/new-game-384-run-output.txt 2>&1
+python3 workplace/new-game-384-verify.py > workplace/new-game-384-verification.txt 2>&1
+python3 workplace/new-game-384-source-verify.py > workplace/new-game-384-source-tests.txt
+python3 workplace/new-game-384-document-gate.py > workplace/new-game-384-document-gate-tests.txt
+```
+生成器由容器heredoc執行，原文保存於私有new-game-384-generate.py。沿既有Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac；network none／UID/GID1000，原ZIP與patch唯讀。來源／文件檢查30s／512MiB／1CPU／64pids，native600s／2GiB／2CPU／128pids及owned PID550s／trap，驗證90s／2GiB／1CPU／128pids。本輪沒有IDA或新image。
+
+工具0a6c7f97c75262c1d36098f5d6763918e91e2305已推送github，公開只有索引、384自撰契約與383追加回鏈。32份私有收據SHA-256見[研究入口](docs/re/dosgolem-moo2-intake-20260930.md)。主庫只改四份現況／歷程文件，基線d6e4933c116fefdc8a4610773c3ed77ce810d686；提交後精確HEAD見Git。收尾核對擁有權、兩庫狀態與Docker；既有root-owned2437檔／272目錄保持，無.md目錄，本輪容器已結束。
+
+下一步只查原sub_C058A的C07C1→sub_BF456返回邊界與回呼設置，不送人口輸入，不盲增cap或深入共享renderer。正式人口操作／存讀／完整開局／RNG與remake同狀態未驗，固定日期不是seed。

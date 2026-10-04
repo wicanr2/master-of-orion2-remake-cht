@@ -46,11 +46,11 @@
 
 - [x] **種族資訊頁態勢譯文與存檔值隔離（2026-10-01）**：既有 `StanceName` 保留舊 JSON 與 AI 規則使用的名稱；資訊頁先轉為穩定態勢代碼，再從 `assets/i18n/ui.json` 取目前語系文案。五種態勢、未知值及譯文改字後讀取舊存檔的回歸測試已通過。此項只修正顯示，不宣稱外交規則與原版對齊。
 
-- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–383為限定CPU／平台／來源／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
-  **已驗正常玩家輸入**：母星確認、星圖COLONIES、Sol II名稱行的press／原AX3 poll／安全release及原選取13已驗。382原上層自然返回後，210M可見Colony of Sol II與36筆完整物件表；383只核對同收據與靜態來源，沒有新操作。13仍為原UI選取值，不命名typed colony id或持久欄位。
-  **本輪來源**：index1／2／3為kind6，熱區矩形含端點且原first-match先取前列。原+18h為word310，+1Ch為word510，+20h才是UI暫存pointer；不把整個+18h dword當pointer。IDA linear EA 11B0B8的比較樹到11C2C2，11C2CF呼叫sub_1156E2，115988間接寫pointer的word。場景回呼與選取／放置來源已定位，實際pointer值、執行分支及正式人口變更未驗。
-  **驗證與交付**：固定官方EXE、8份IDA schema／5365函式、4349筆紀錄／3578原EA及674含fixup紀錄通過。原MZ26654／LE292E4、2objects／365pages／51363重定位記錄由原file bytes獨立核對，IDA重定位bytes與file bytes分存；16熱區邊界與8水平模型通過，只屬來源模型。原382完整210M核心／FPU／clock／callback IRQ／36表／PNG及journal保持；public internal／CPU／DOS／原probe不變，沒有guest重跑、新輸入或cap變更。工具b331bb640e4932dc59f5e4da694c63530132f4c1已推送github，公開來源文件與回鏈，私有50份收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
-  **下一步**：先建立384只讀觀察契約，保持同輸入與210M，補讀三個原pointer值、current colony／pool／361byte record與場景callback。取得可回播前置後才訂一次正常人口選取／放置契約，不盲增cap或深入renderer／palette／DAC／PIT helper；固定日期不是seed。
+- [ ] **`dosgolem` 的 MOO2 1.31 正常玩家路徑對拍**：使用者已選DOS原版與dosgolem，使用本機隔離分支；DOSBox-X僅輔助。固定官方EXE、正版ZIP根層417檔與MOX.SET。256–302、304–384為限定CPU／平台／來源／觀察與輸入驗收，不計入玩法分母；303整體仍DRAFT、299自然OF=1同狀態與255完整座標／游標仍未驗。
+  **已驗正常玩家輸入**：母星確認、星圖COLONIES、Sol II名稱行的press／原AX3 poll／安全release及原選取13已驗。382原上層自然返回後，210M可見Colony of Sol II與36筆完整表；384保持原輸入及210M，只讀補前置。原UI選取13與current raw4各自保存，不混為typed colony id或持久欄位。
+  **本輪原前置**：三列kind6的原+20h pointer2879DA／DC／DE均word310／3601，不命名職業數量。DS188:2877A8 current raw4、27AB18 pool5B2044，完整361byte record在5B25E8；8個raw窗口及三word均可讀。scene callback2A8840=0、enable26C48C=1、水平偏移29BE14=0已驗。靜態C07C1先呼叫sub_BF456，C07D2／C07E1才送sub_BED21並設回呼；本次設置時序與安全輸入狀態未知，畫面可見不等於人口操作可驗。
+  **驗證與交付**：READY先於五個可逆private patch，精確逆回382；原46CLI逐項保持，新58CLI為48拒絕及10正對照。原guest一次且實際step_limit210M，完整382核心／FPU／clock／callback IRQ／36表／DAC／journal與所有舊PNG、原418來源及state／副本保持；快照before=after且RAM前後hash相等。public internal／CPU／DOS／原probe不變，沒有新輸入、重啟或cap變更。工具0a6c7f97c75262c1d36098f5d6763918e91e2305已推送github，384僅只讀來源CONFORMED、383正文保留追加回鏈；32份私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。
+  **下一步**：只核對原sub_C058A的C07C1→sub_BF456返回邊界與C07D2／C07E1回呼設置，保持210M原callback0前置。來源足夠後才建立一次有界等待／安全輸入契約，不直接送人口輸入、加cap或深入共享renderer／palette／DAC／PIT helper；固定日期不是seed。
   **未知／不混入本輪**：主庫玩法RE閘門保持；人口調整、正式讀檔／存檔內容語意、typed名稱及旗色持久writer、五窗口完整物件、其他未驗CPU分支、typed種族特性、母星配置、COLONIES其他列表操作／其他星圖控制、完整開局與remake同狀態未驗。DPMI外部cb_smoke、兩舊探針PE格式、AH2Ch／RNG／人耳與Windows／macOS實機未驗。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以

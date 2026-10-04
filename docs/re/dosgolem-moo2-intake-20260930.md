@@ -4277,3 +4277,67 @@ IDA Pro9.4使用IDA linear EA；原檔另存file offset，執行器另用dosgole
 | `new-game-383-source-tests.txt` | `91b0f2aa5f3df89b6925a404a89d869660562f3108ad168b11edca232f5e5fd9` |
 | `new-game-383-source-verify.first-check.py` | `8d880eac635a4df6dfc48a13f3260a407a7bb22681cfe623dfba95e0e06d032c` |
 | `new-game-383-source-verify.py` | `21b33c85343f309f9c169c90d11d28f639da4dbc752ba35b091f47a505a37e36` |
+
+## 2026-10-04：384原210M人口控制前置快照
+
+官方1.31 ORION2.EXE SHA-256 `4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f`；工具基線b331bb640e4932dc59f5e4da694c63530132f4c1，新工具0a6c7f97c75262c1d36098f5d6763918e91e2305已推送github。見[384限定只讀契約](https://github.com/wicanr2/dosgolem/blob/0a6c7f97c75262c1d36098f5d6763918e91e2305/docs/spec/384-moo2-colonies-job-source-snapshot.md)，工具索引及383回鏈均可進入；主庫玩法閘門保持。
+
+### 已驗原raw前置
+
+- **已證實，dosgolem_high_le／DS188**：2877A8原dword `04000000`為current raw4，27AB18原pointer `44205B00`為5B2044。按原361byte stride取得record5B25E8，完整bytes SHA-256 `6fff16d8ffc032a510cf5ef745b4d5c862010078ea57a71a48537b450e111da0`。原UI選取13與current raw4各自保存，不當同一typed id。
+- **已證實，原三pointer**：2879DA／DC／DE各2bytes皆 `3601`，原word310。2879D4的18bytes為 `030001000100360136013601010002000300`；保持raw，沒有將3／1／1或310命名職務數量。8個原窗口與完整record／三word均可讀，64-bit record算式與descriptor／RAM界限通過，沒有猜typed colony id上限。
+- **已證實，原scene欄位**：DS188:2A8840四bytes `00000000`，26C48C兩bytes `0100`，29BE14兩bytes `0000`。enable與完整原globals重疊bytes核對，水平偏移與原header重疊核對；零pointer來自成功讀取，沒有使用fallback。
+- **已證實，IDA Pro9.4 linear EA靜態先後**：383原來源中的C07C1／E890ECFFFF先呼叫sub_BF456；C07D2／B821ED0B00送sub_BED21到EAX，C07E1／E8E4890500呼叫sub_1191CA，1191EA／A340881A00寫dword_1A8840。原file offset、file bytes與已套fixup bytes留383 bytes index，不與runtime位移混用。**未知**：本次設置／還原時序、callback為0的原因與安全人口輸入前置；不能由靜態CALL宣稱實際已觸發。
+
+### 同來源與只讀驗收
+
+384先DRAFT→READY，才生成私有觀察器。五patch精確逆回382，mode off保持382，mode on保持同輸入與210M，12新增CLI與原46共58／48拒絕及10正對照。原guest僅一次，session6185 exit0；實際step_limit210M／228DF6／483821442µs，無新輸入或cap變更。快照於既有terminal後捕捉一次，完整terminal與固定382比較，只按既有規則跨run排除per-run RAM hash；本run整個RAM前後hash必須相等。
+
+獨立驗證保持完整382 journal、全部原列、所有舊PNG、36表／原核心／FPU／clock／callback IRQ／DAC及palette、418來源／state與同guest副本。快照before=after、原pointer與重疊窗口及361record界限核對通過。原382 journal SHA-256 `cfffc3f5d60bd04fb3807f256cb4998da32a92cfa2669b3e328e36192d3ffacf`不變；原終PNG SHA-256 `1a0e7551173173b43897be18ccf5295755ca80b222be7dc6dbca0b1d986c8c03`保持。公開internal／CPU／DOS／原probe不改，本輪沒有CPU行為或新IDA。
+
+READY初版把115988／668902間接寫入當成需有relocation，來源審查拒絕後按原指令修正。驗證器首次exec來源檢查覆蓋b，日誌迭代TypeError；隔離namespace後沿同收據完成全套。首腳本／輸出保存first-check。原EXE、定位、guest收據、輸入與預算未改。CONFORMED限定只讀原前置，383舊正文保持並追加不可變定位回填，文件閘門通過；人口正常操作仍未知。
+
+### 工具、停止線與下一步
+
+實際命令及生成方式見WORKLOG本輪。Go1.24.13 image `sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac`；network none／UID1000，原ZIP及patch唯讀，native600s／2GiB／2CPU／128pids，owned guest及capture PID由550s監測／trap收尾。驗證90s／2GiB／1CPU／128pids；來源／文件30s／512MiB／1CPU／64pids。相關容器結束，沒有新image，私有輸出擁有權核對通過。
+
+下一步只核對原sub_C058A的C07C1→sub_BF456返回邊界及C07D2／C07E1回呼設置，保留同210M原callback0前置；來源充分才建立一次有界等待／安全輸入契約。不直接送人口輸入、加cap或深入共享renderer／palette／DAC／PIT helper。固定日期不是seed，正式人口調整／存讀／完整開局與remake同狀態未知。
+
+### 384 私有收據SHA-256
+
+路徑根為本機忽略的`workplace/dosgolem/workplace/`，下表32份全部UID/GID1000。沿途39frames、完整保存的遊戲資料副本與其他舊PNG已逐byte核對，表內只列主要來源、腳本、收據與三個末段PNG；不公開原JSON／LOG／RAM／state或私有程式。
+
+| 收據 | SHA-256 |
+|---|---|
+| `moo2-384-terminal.png` | `1a0e7551173173b43897be18ccf5295755ca80b222be7dc6dbca0b1d986c8c03` |
+| `moo2-384-upper-first-restore.png` | `1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622` |
+| `moo2-384-upper-source200.png` | `1610444d26adb3135e7e933dd44912044bb636728af59c70e614945278d3c622` |
+| `moo2-colonies-job-source-384.go` | `2a98fbd0b51cac2ff4cc87a4ff828d8aafce14c979a88398fc3ae993ca029bd2` |
+| `moo2-probe-384-overlay.txt.gz` | `761fce460fc4ac4df829a44ce2bf791c43355a63b1a6872158cb3bfd87c948ad` |
+| `moo2-save-state-384.json` | `50d4793b97dc0a0b1471ecf9f0ec52f5862976d0a1bef454675f09eef599e705` |
+| `new-game-384-baseline-dac-journal.json` | `a0dec3c1afdaa02874f6a4b3745f874114eaa4cb7a0783cace3287fbad692093` |
+| `new-game-384-cli-tests.txt` | `991c4159a634cecc94e0798d8292e5883e9a28fd4e3b875850dfc44921fbb753` |
+| `new-game-384-document-gate-tests.txt` | `d36630869803bba0311ac3fa52bc2cba16f995b83c50cd8ff111b271f431a4b4` |
+| `new-game-384-document-gate.py` | `f3511d6336cfaebf60ab1653ddc24ec7626ce6801b5295d75dd3d2da2aabb4ca` |
+| `new-game-384-generate.py` | `61667016caa3dfc4b03a8c64d74282e9efd65543d22b7f8d839a1533239b0965` |
+| `new-game-384-job-source.json` | `a16f4c6d194400e1823687ef72eb969bfd7b4bcf8662a04be830877a6efe881d` |
+| `new-game-384-patches.json` | `3c6cc1dac1812959c052fcc52fb8f6c2f16f6b34a92f050ce3fbc584c163a517` |
+| `new-game-384-ready-review-tests.txt` | `b2592932031114de814da4082149718b95fd7e438c1cf520dac2672f7353eb06` |
+| `new-game-384-ready-review.first-check.py` | `3622c8e188b275ebc08f3377562a93211ec5260d6775234d44f5b3f704035cf3` |
+| `new-game-384-ready-review.first-check.txt` | `1025953f3a20e0a201aff58cc40b7c9838032319887835f7d6b3d56ae650eedf` |
+| `new-game-384-ready-review.py` | `49fecf2b60c1a3da8882371f0a3d295c9e97404bfc7d3be70e43095323c8a6f5` |
+| `new-game-384-restore-journal.json` | `d77fb990e1869abcb7fa305fb7b496f77778ea50fc4f146a7d5ec7bce74a99d7` |
+| `new-game-384-row-baseline.json` | `8d6aef77dd334ded646e017641b9168e9e6e04e7ecddb61bf1690ce1c820bfbe` |
+| `new-game-384-run-output.txt` | `d5ff2ea5ecd5125017419ec9e053d0f7ff3151f8a43935e17cd3f1dfb4a8371a` |
+| `new-game-384-run.sh` | `23958d06cb57e46a79e7670c2891e137fb84a6d04f15783acc8d1a3b3b8bdc58` |
+| `new-game-384-source-tests.txt` | `7d41fe9ebacde83cf809038e4a45b091f637263ae6c668f90f6e5e316cab4645` |
+| `new-game-384-source-verify.py` | `e8a9628f4cee51f3c35e6cb2347e1026111965d30d1d5f043fd3c0c661a540fb` |
+| `new-game-384-state-capture-output.txt` | `9332dea0878e8d161b0c361a816571d5946567602223ec6dadb95d15d9cd9ab3` |
+| `new-game-384-state-capture.json` | `5502c93ab78d1b87641a44ba6d8931b546673bdeb39ae35bb6482c037616fa3d` |
+| `new-game-384-state-capture.py` | `fb78faca20aac783036cc376b60389d9e6e12c76cceda6f6ce9e4bfb01de9cd0` |
+| `new-game-384-upper-return.json` | `5079802ec98ba5702cb16565244f0b521419734c55f37cc90f7d44273930254f` |
+| `new-game-384-upper-source200.json` | `bfee503987c247d57f02d8ed413bc007e7ffe7bd99932685dc118c97a4224ae6` |
+| `new-game-384-verification.first-check.txt` | `c01279a9f3fe78ff9d15ef699cef395d8d64d3bb5bad3dc8d57df507ad82203c` |
+| `new-game-384-verification.txt` | `dc35e109e8dc5cb2a6aaa062d25fe53d7d917a75ec1cb5d87db25bb470211b8a` |
+| `new-game-384-verify.first-check.py` | `277550d54ed0457b52fddf5ab9a5df8ec5dd181b10dc73b280237172f0116da5` |
+| `new-game-384-verify.py` | `05b2d85633fc9bcc1a3b3201ba7fcd819289bd79486e431161f2facc0d3a93ba` |
