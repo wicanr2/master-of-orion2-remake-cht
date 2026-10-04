@@ -5525,3 +5525,38 @@ python3 workplace/new-game-404-document-gate.py > workplace/new-game-404-documen
 | new-game-414-build-tests.txt | 4a36a627307b672c6c2c43474a1f18b4bfa1861510af260a2beecd383944efe0 |
 | new-game-415-source412-prefix.json | 659439b2d39da39d0b1cc59f2e4219a4781faaa855cf324c505c889b53710af4 |
 | new-game-415-ready-review.json | dd3181243447c5e2b1baee488d6d3536ce2db7a92841f6ff891390721de57b11 |
+
+## 2026-10-05：415缺檔分支與原存檔入口
+
+工具HEAD 2137e39c4a599d8c64c1369492f015014739901f已推送原分支。415經READY後完成私有觀察器，7個精確反轉patch／唯一CPU.Step／原getter、255CLI含209拒絕及46正對照與六份逐bytes重生通過。固定archive明示加入公開414平台輸入，hash 0d1860f0c22c7583e25865cfa5697dc54b11061efb0a38b8e1feceb85f40b90d核對。前置建置未啟動guest，只有一次原session56037；outer及probe exit0。
+
+完整411／409、406及所有較早前置、412成功14phase保持。238069860原runtime219E75／AX4300、DS188h／EDX2BD904，NUL路徑SAVE1.GAM，bytes 53415645312E47414D00。此檔在原417根檔及patch／覆蓋層中不存在；238069861唯一下一Step到219E77回AX2／CF1，CX與全部非輸出暫存器／segment／RAM／裝置保持。原版處理缺檔後繼續，沒有清CF或預填成功。
+
+238113911原runtime1702CC CALL，238113912真SS到16E154、ESP−4／return1702D1；沿原SAVE press／selector3／43132µs release、reader返回與mode3 writer，沒有新增裝置輸入。獨立驗證重建LE bytes／fixups，18個SAVE及4個屬性phase全只讀；實際檔案集合與前後狀態通過。原PNG人工仍為GAME面板及SAVE游標，存檔頁尚未繪製。415僅此契約CONFORMED；412原拒絕與DRAFT不改寫，414普通檔20h仍是平台近似。主庫玩法及公開CPU／probe保持，正式存讀與remake同狀態未驗。
+
+本輪驗證入口：
+
+```text
+python3 workplace/new-game-415-generator.py
+bash /tmp/415-preflight.sh
+bash workplace/new-game-415-run.sh > workplace/new-game-415-run-output.txt 2>&1
+python3 workplace/new-game-415-implementation-source-verify.py
+python3 workplace/new-game-415-verify.py > workplace/new-game-415-verify-tests.txt 2>&1
+```
+
+沿Go1.24.13既有image、UID/GID1000、network none、唯讀原ZIP／patch、3GiB／2CPU／128pids／GOMEMLIMIT1GiB；工具外層1200s／kill-after15s、state1150s，虛擬時間與240M上限保持。cgroup峰值1841967104bytes、oom／oom_kill增量0；418原輸入與SAVE10／MOX保持，覆蓋層無新差異。所有handle已終止，沒有重跑原guest。私有收據索引workplace/415-continuation-receipt-index.json共1195份；較早804份及其祖先、972份較早失敗原guest保持。原版資料與Go／PNG／JSON／LOG仍忽略。
+
+下一步依[413來源](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/413-moo2-save-entry-input-source.md)，建立415完整入口到第一個正常存檔頁reader的窄觀察規格；不得以入口替代頁面或保存驗收。
+
+原1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f；Go1.24.13 image SHA-256 1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac。IDA linear EA、dosgolem_high_le runtime＝EA＋F0000h、file offset分列，未開新IDA分析。本輪結果是原版平台邊界與玩家CALL的已證實證據，完整保存／讀取及remake同狀態仍未知。
+
+[415限定契約](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/415-moo2-save-attributes-continue.md)與412／414回鏈已更新。
+
+| 本機收據 | SHA-256 |
+| --- | --- |
+| moo2-colony-return-415.go | 63237795ea000ded0675c7886738f1196db1877cabdc9cc1961eb95a91eaadfb |
+| new-game-415-save-events.json | 1a2023911f78c1eb3e5bf610c8b0ae2f9f747e878fa32c8f303fdc8c1e2a2d69 |
+| new-game-415-attributes-events.json | 3dedcd3ed3dd67641d50e79e43f7d48f5bb0a283725c5f4e374205203e923fce |
+| new-game-415-verification-result.json | b5118f6400b9394f2dfdb962ea0bee2603aec5ef747ead9a2c88b6ca63fbf975 |
+| new-game-415-visual-review.json | 43bc045f7c2a976ac04e3046d52cdc018a3f8f72715f75c89fba52dd19ab8c58 |
+| new-game-415-conformance-review.json | 77e85054610445b407a356a72d611b8af0d821d400fbc3918de2102b745d58bb |

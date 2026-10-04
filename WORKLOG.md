@@ -2090,3 +2090,27 @@ python3 workplace/new-game-415-document-gate.py
 415經DRAFT→來源／平台build input與邊界審查→READY，尚無Go或guest。只凍結原成功14phase，明示414平台建置輸入及真正檔名／CF返回，不改原拒絕。240M與虛擬時間保持，工具外層改1200s／state1150s、kill-after15s以補足outer124；不把工具等待時間當玩法。正常保存／讀取與remake同狀態未驗。
 
 收尾稽核：容器內python3 workplace/415-main-audit.py通過。四份自撰文件、唯一DOS活表next415、追加式歷史與工具乾淨且已推送核對；804份新收據、較早373／371／110／45／53／39份、389份新失敗原guest及972份較早失敗hash保持。主庫玩法不變，公開工具差異只允許414平台與測試兩檔；412正常SAVE輸入已驗而完整契約DRAFT，414工程CONFORMED，415 READY尚無Go或guest。root-owned基線2437檔／272目錄保持，沒有.md目錄；git diff --check通過，Docker三個專案volume filter無容器。
+
+## 2026-10-05：原SAVE屬性查詢與真入口續行
+
+工具HEAD 2137e39c4a599d8c64c1369492f015014739901f已推送原分支。415經READY後完成私有觀察器，7個精確反轉patch／唯一CPU.Step／原getter、255CLI含209拒絕及46正對照與六份逐bytes重生通過。固定archive明示加入公開414平台輸入，hash 0d1860f0c22c7583e25865cfa5697dc54b11061efb0a38b8e1feceb85f40b90d核對。前置建置未啟動guest，只有一次原session56037；outer及probe exit0。
+
+完整411／409、406及所有較早前置、412成功14phase保持。238069860原runtime219E75／AX4300、DS188h／EDX2BD904，NUL路徑SAVE1.GAM，bytes 53415645312E47414D00。此檔在原417根檔及patch／覆蓋層中不存在；238069861唯一下一Step到219E77回AX2／CF1，CX與全部非輸出暫存器／segment／RAM／裝置保持。原版處理缺檔後繼續，沒有清CF或預填成功。
+
+238113911原runtime1702CC CALL，238113912真SS到16E154、ESP−4／return1702D1；沿原SAVE press／selector3／43132µs release、reader返回與mode3 writer，沒有新增裝置輸入。獨立驗證重建LE bytes／fixups，18個SAVE及4個屬性phase全只讀；實際檔案集合與前後狀態通過。原PNG人工仍為GAME面板及SAVE游標，存檔頁尚未繪製。415僅此契約CONFORMED；412原拒絕與DRAFT不改寫，414普通檔20h仍是平台近似。主庫玩法及公開CPU／probe保持，正式存讀與remake同狀態未驗。
+
+實際容器內命令：
+
+```text
+python3 workplace/new-game-415-generator.py
+bash /tmp/415-preflight.sh
+bash workplace/new-game-415-run.sh > workplace/new-game-415-run-output.txt 2>&1
+python3 workplace/new-game-415-implementation-source-verify.py
+python3 workplace/new-game-415-verify.py > workplace/new-game-415-verify-tests.txt 2>&1
+```
+
+沿Go1.24.13既有image、UID/GID1000、network none、唯讀原ZIP／patch、3GiB／2CPU／128pids／GOMEMLIMIT1GiB；工具外層1200s／kill-after15s、state1150s，虛擬時間與240M上限保持。cgroup峰值1841967104bytes、oom／oom_kill增量0；418原輸入與SAVE10／MOX保持，覆蓋層無新差異。所有handle已終止，沒有重跑原guest。私有收據索引workplace/415-continuation-receipt-index.json共1195份；較早804份及其祖先、972份較早失敗原guest保持。原版資料與Go／PNG／JSON／LOG仍忽略。
+
+下一步依[413來源](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/413-moo2-save-entry-input-source.md)，建立415完整入口到第一個正常存檔頁reader的窄觀察規格；不得以入口替代頁面或保存驗收。
+
+收尾稽核：容器內python3 workplace/415-continuation-main-audit.py通過；四份自撰文件、1195份本輪索引及較早804／373／371／110／45／53／39份收據、root-owned基線2437檔／272目錄及零.md目錄核對。git diff --check通過，工具乾淨且已推送，主庫玩法及公開CPU／probe保持。Docker三個專案volume filter無容器，沒有新image。
