@@ -5469,3 +5469,28 @@ python3 workplace/new-game-404-document-gate.py > workplace/new-game-404-documen
 | new-game-410-source-result.json | 5f42165fce08afced0c13c4da4945c911768a549ac834e383ae78a0d1bdf1c6f |
 | new-game-411-ready-review.json | 2a8811caa0a62aa1b2fe178f8ad1c9c619da218947d7a6deb458ea84138a44cc |
 | moo2-409-writes-place-return-outer-terminal.png | 16f963bae4e60486d59eda15cca5b0747ecf34b8e68bc54fe4c6f777f0577594 |
+
+## 2026-10-05：411原GAME正常輸入與412儲存按鈕來源
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f保持。IDA9.4 linear EA、dosgolem_high_le runtime＝EA＋F0000h與file offset分列；本輪沒有新IDA查詢。Go1.24.13 image SHA-256 1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce6173ea77ac；工具HEAD 193390f1d70ba1cd34c784a18734e142d2fc378e已推送，主庫玩法及公開CPU／DOS保持。
+
+已證實：[411原GAME續行](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/411-moo2-game-frontier-continue.md)完整凍結409的230M原末態與15phase後，230237065 runtime21F7E5真SS slot2BD948讀出16EE5E，230237066同CS／SS及ESP＋4自然返回。此實際返回與原7EE59 CALL12F578定位相符，補解410的未知caller，不追helper內部格式。236250619原8028F CALL7D061、236253032原7D891真RET、236253039原802AE CALL7DD41與236253169原7DD77 CALL1171AB全部唯一下一Step握手通過。236253170 runtime2071AB、ESP2BD704、trueSS return16DD7C為第一正常GAME輸入點，立即早停。
+
+原11項／605bytes控件表、物件4516E0及binding保存；原PNG人工檢視可見GAME面板、SAVE GAME／LOAD GAME／RETURN，與數值驗證分開。235CLI、11個可反轉patch、原getter／唯一Step、零新裝置輸入通過。完整較早前置與原418檔／SAVE10／MOX保持；唯一原session60197 exit0，12phase全只讀，六份生成器產物逐bytes重生一致。cgroup峰值1501089792bytes，oom／oom_kill增量0。
+
+已證實：[412正常SAVE GAME契約](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/412-moo2-menu-save-normal-input.md)核對原7D1BB物件+2Ah writer及當次3；SAVE矩形184,68..274,95，GUI229,81／device458,81，九個中心／端點／界外first-hit案例通過。原7DF12比較binding，7DF18比較word1919E4是否0，7DF20非零到提示；零才經7DF29寫mode3。原802CC CALL7E154、返回802D1來源已核對。
+
+未知：當次enable word尚未取樣；412執行前必須只讀，非零就拒絕，不能注入0。DRAFT→來源／契約審查→READY，尚無412 Go或guest。正常SAVE press／release、case3真CALL、存檔頁／檔案內容、讀檔及remake同狀態未驗。411限定原正常選單入口CONFORMED，409原230M完整契約仍DRAFT，主庫RE-first保持。
+
+既有Docker與UID1000、network none、原輸入唯讀、240M上限及3GiB／GOMEMLIMIT1GiB保持。全部guest與驗證handle終止，沒有新image或多跑guest。本輪373份收據由workplace/412-current-receipt-index.json索引，原EXE／PNG／Go／JSON／LOG忽略。較早371／110／45／53／39份及972份失敗原guest hash保持。
+
+| 本機收據 | SHA-256 |
+| --- | --- |
+| moo2-colony-return-411.go | f789844c77cc8cc0e6651d6ec4726647300b4590fdf1e480d540d79e763c49a2 |
+| new-game-411-frontier-events.json | dd32a754b6fe38627153053e365a65ec7ba6e6865a2f3b672d4ffb8a26180e4c |
+| new-game-411-frontier-terminal.json | ec239a46d0c0bea9edfbdeb968e11d717a5a8798776ccf7d280bf9b7b209a1f0 |
+| new-game-411-verification-result.json | 9b06795bffe062d0e8e074c1fbb0d9ce77258cc8e0f2fce855892a8f3e1bb803 |
+| new-game-411-visual-review.json | 953138efbb97403457922cda4c50cc0d7d6d0dbbcc5518a22ba3f3bbb6f38f8e |
+| new-game-412-source-result.json | 0785d7c8072a5cd0ddf195ed6349a4763afee4947cad9b0ae3f474625179e36c |
+| new-game-412-ready-review.json | c7af27ff1b32245d40420ea1da8667b3b429ccc6603c74f10446285c7e8a9698 |
+| moo2-411-writes-place-return-frontier-terminal.png | 9c4e1dd9c34470082332b5eeda274a005d4a37f7cdc01e3ed22a63352cad8073 |

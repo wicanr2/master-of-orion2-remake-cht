@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-05）**：409完整七phase與舊前置保持；真SS較低返回174BC9、first-input返回EAX6、原mode8、外層返回1004BC及8012F入口已驗。230M末態仍為星圖，控件建立與正常reader未到，409保持DRAFT。410只核對原12F7C1最小byte-copy與RET框架。工具ee2602e8f9f7292548036670bc300224076f2b07已推送github，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。411已READY，下一步先凍結完整230M末態再只讀續行，無新裝置輸入；正常存讀與remake同狀態未驗，主庫RE閘門保持。
+- **DOS 原版動態驗證器（2026-10-05）**：411保持完整409的230M末態與15phase；真SS helper自然返回16EE5E、原控件建立／case0與236253170第一正常GAME輸入已驗，實際11表及原GAME面板可見。工具193390f1d70ba1cd34c784a18734e142d2fc378e已推送github，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。412正常SAVE GAME已READY，先只讀啟用word再送正常按下與放開，到原case3入口停止；尚無412 Go或guest。正常存讀與remake同狀態未驗，409舊完整契約仍DRAFT，主庫RE閘門保持。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為

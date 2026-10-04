@@ -2031,3 +2031,28 @@ python3 workplace/new-game-411-document-gate.py
 沿既有Go1.24.13 image與IDA9.4 locked-v1、UID/GID1000、network none、原ZIP／patch唯讀。guest900s／state850s／3GiB／2CPU／128pids、GOMEMLIMIT1GiB、owned PID trap與cgroup收據保持；IDA120s／2GiB／2CPU／128pids，bytes90s／2GiB／1CPU，其他來源／文件30s／512MiB／1CPU。兩IDA殼層exit0／idat_exit1，固定原hash、非空JSON與5365函式通過；所有handle terminal，Docker專案volume filter無容器，沒有新image。371份本輪私有收據由workplace/411-current-receipt-index.json索引，原資料與私有Go／PNG／JSON／LOG忽略。
 
 收尾稽核：容器內python3 workplace/411-main-audit.py通過。四份自撰文件、唯一DOS活表next411、追加式歷史、371份新與先前110／45／53／39份凍結收據、972份較早失敗原guest產物hash、工具乾淨且已推送均核對。原mode writer的立即數、目的位址、唯一下一Step及實際0／8／0值獨立核對；409保持DRAFT、410限定來源CONFORMED、411 READY且尚無Go或guest。root-owned基線2437檔／272目錄保持，沒有.md目錄，git diff --check通過；Docker三個專案volume filter無容器。首次稽核器誤去除git狀態首欄空白，兩份失敗腳本／輸出保存後修正解析，重核同一收據；沒有重跑原guest。
+
+## 2026-10-05：原GAME面板與第一正常輸入入口
+
+工具分支codex/moo2-parity-20260930，HEAD 193390f1d70ba1cd34c784a18734e142d2fc378e已推送github。主庫只更新四份自撰文件，玩法RE-first保持；公開CPU／DOS及probe相對a03c322d28002bb0e11d5d5109d5833a17114d04無差異。411私有觀察器的11個精確反轉patch、235CLI含193拒絕／42正對照、唯一Step／原getter與零新裝置呼叫通過，六份生成器產物逐bytes重生一致。
+
+唯一guest session60197殼層exit0，在236253170原2071AB第一正常GAME輸入點提早停止。完整409的230M terminal與15phase、406七phase與404／402／401／399／397全部保持。12個新只讀phase的core／device／RAM／原Code16與LE fixups獨立核對。230237065原helper RET槽2BD948實際讀出16EE5E，下一Step同CS／SS及ESP＋4通過；原8028F CALL7D061、7D891 RET、802AE CALL7DD41與7DD77 CALL1171AB全部握手通過。236253170真SS return16DD7C。
+
+原實際11項／605bytes控件表、物件+28h／2Ah／30h／32h的1／3／5／6均保存。原PNG人工檢視可見GAME面板及SAVE GAME／LOAD GAME／RETURN，收據與數值驗證分開。411限定正常原選單入口CONFORMED；409舊230M完整契約仍DRAFT，不把較晚續行寫回舊原末態。正常存讀與remake同狀態仍未驗，固定日期不是RNG seed。
+
+412從既有395／407及411原收據核對SAVE GAME的binding3、正常device458,81及九個first-hit案例，沒有新IDA或guest。原7DF18的enable word1919E4當次值未知，必須只讀通過0才點擊；原7DF29／802CC→7E154來源核對。DRAFT原稿及來源審查後READY，尚無412 Go或guest；限定正常press／安全release及case3真CALL入口，不預稱保存頁或檔案寫入成功。
+
+實際容器內命令：
+
+```text
+python3 workplace/new-game-411-generator.py
+bash workplace/new-game-411-run.sh > workplace/new-game-411-run-output.txt 2>&1
+python3 workplace/new-game-411-source-verify.py
+python3 workplace/new-game-411-verify.py > workplace/new-game-411-verify-tests.txt 2>&1
+python3 workplace/new-game-412-source-verify.py > workplace/new-game-412-source-tests.txt
+python3 workplace/new-game-412-document-gate.py
+```
+
+沿Go1.24.13既有image、UID/GID1000、network none、原ZIP／patch唯讀。guest900s／state850s／3GiB／2CPU／128pids、GOMEMLIMIT1GiB、owned PID trap與cgroup收據保持。原418檔及SAVE10／MOX保持；cgroup峰值1501089792bytes、oom／oom_kill增量0。來源／文件30s／512MiB／1CPU；獨立數值90s／2GiB／1CPU。本輪373份私有收據索引workplace/412-current-receipt-index.json；較早371／110／45／53／39份及972份失敗原guest hash保持。所有原EXE／PNG／Go／JSON／LOG Git忽略，沒有為畫面或檔名重跑guest。
+
+收尾稽核：容器內python3 workplace/412-main-audit.py通過。四份自撰文件、唯一DOS活表next412與追加式歷史核對；373份新及371／110／45／53／39份較早收據、972份失敗原guest hash保持。工具乾淨且已推送，主庫玩法及公開CPU／DOS保持；411限定原GAME輸入CONFORMED、412 READY尚無Go或guest，409／406保持DRAFT。root-owned基線2437檔／272目錄保持，沒有.md目錄；git diff --check通過，Docker三個專案volume filter無容器，沒有新image。
