@@ -1457,3 +1457,17 @@ Go1.24.13 image sha256:1a6d4452c65dea36aac2e2d606b01b4a029ec90cc1ae53890540ce617
 工具5d3f5b80373c4872e1401366d3b5dd482577252a已推送github，公開380限定規格／索引及378／379回填。29份私有收據SHA-256見[研究入口](docs/re/dosgolem-moo2-intake-20260930.md)，主庫僅四份現況／歷程文件，基線157f583b47b8682910eec5da7b95293b9b3ab2ba，提交後精確HEAD見Git。相關Docker容器清理，既有root-owned2437檔／272目錄保持。
 
 下一步依200M原完整核心、count1／55零bytes、當前dosgolem_high_le:223A23 code與SS188:2BD908 stack16，只追正常畫面建立所需的最小上層來源；先核對21A6F3是否真為該路徑的return定位及原呼叫邊界，再由來源決定下一個有界畫面觀察，不盲目加cap或深挖renderer／DAC／PIT helper。主庫玩法RE-first保持；人口調整／正式存讀／完整開局／RNG與remake同狀態未驗，固定日期不是seed。
+
+## 2026-10-04：381 同200M原堆疊框架定位
+
+承接主庫76bd674e10745561e43c53832d51d5ff99083b4c與工具5d3f5b80373c4872e1401366d3b5dd482577252a，沿既有復古RE／文件職責／resolution-backlink路由；主庫玩法閘門保持。IDA9.4固定官方EXE的序言、尾端、七直接CALL及file offsets通過獨立核對，381先DRAFT→READY，才寫private觀察器。
+
+原380輸入及200M cap保持；只在terminal既有只讀保護內讀32bytes原SS:EBP。真正SS188:2BDB78=22341C，保存EBP2BDB9C，吻合sub_133237內IDA 133417的直接CALL。ESP首值21A6F3位於本函式260h區域空間。原槽值／靜態CALL已證實，當前caller鏈強推論，自然RET及UI未驗。
+
+原guest一次；完整13032原列、35876 DAC事件、非新增final、全部舊PNG、34CLI、418來源與state／副本保持。兩private patches可逆回380，公開internal／CPU／DOS／probe不改，沿378固定官方EXE CPU386／machine測試，不重跑無關測試。381限定CONFORMED，380正文保留追加回填，舊stack offset在不同生命週期的322／323／348／349／352不受影響。
+
+例外分類：IDA第一查詢引用數上限與第二查詢缺少函式邊界，原查詢保留first-query，修成明示bounded及unknown；私有建置guard使用不可見ports而中止，沒有guest，改用既有只讀snapshot clock後同命令重跑。一次函式編排的const賦值錯誤與只讀查詢的heredoc結尾錯誤修正；不當產品缺陷。驗證器在同份原收據跑兩次，第二次加380回填與實際槽值護欄，均通過；沒有native重啟求過。
+
+工具6e3dc0cb0e6019884bc3540a6c10598da2e1248c與繁體用字訂正a03c322d28002bb0e11d5d5109d5833a17114d04已推送github既有分支。首次push被自動審核拒絕，理由為目的地尚未核實；核對本機來源與clone皆指向wicanr2/dosgolem.git、唯讀ls-remote為原5d3f5b8，並確認三份公開文件／69行無私有收據後，相同命令審核通過。主庫本輪只更新CONTEXT的DOS行、WORKLIST唯一DOS活表與兩份歷史追加；提交／push前核對exact範圍、版權與全部私有SHA-256。
+
+實際容器入口及46份私有收據見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。所有寫入UID/GID1000；相關Go與IDA容器已清空，既有root-owned2437檔／272目錄保持，沒有.md目錄。無新image。200M仍黑／count1空表，不宣稱殖民地畫面、完整開局、正式存讀、RNG或remake同狀態完成。下一步：只查IDA linear EA sub_133237的直接上層CALL／返回邊界與正常畫面建立入口，使用同200M原SS188:2BDB78=22341C及保存EBP2BDB9C作錨；來源充分後才決定一次有界畫面完成觀察，不延伸palette／renderer／DAC／PIT helper或盲增cap。
