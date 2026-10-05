@@ -2198,3 +2198,16 @@ python3 workplace/new-game-416-document-gate.py
 - 421限定來源CONFORMED，422私有觀察READY；舊418／419／420回鏈及索引同輪更新。新契約先保持完整420再零新輸入續行，250M／1200s到原檔案請求／返回或實際拒絕，不授權猜補平台；尚無422 Go／guest。公開僅自撰工具／四份主庫文件，原碼／bytes與私有JSON本機忽略。
 - 工具HEAD c6388180b95adfea5a61c509a57dd86e9e2e9d40已推送github分支，六份自撰文件與來源／回鏈gate通過；主庫本輪只更新四份交接文件，無Go／玩法變更。
 - 收尾python3 workplace/421-main-audit.py通過，本輪3415份與全部祖先合併4394份雜湊保持；八份主庫來源、420完整收據與422來源釘選保持。root-owned基準2437檔／272目錄、零.md目錄及三個Docker volume filter為空。精確HEAD／清理與下一步保存workplace/421-final-state.json。
+
+## 2026-10-05：422原存檔交易有界執行
+
+- 命中spec閘門，沿422 READY。私有觀察器完整420末態／26phase／PNG凍結後才解除停止；零新玩家輸入，原CPU／DOS／主庫玩法不改。
+- 9個反轉patch、305CLI249拒絕／56正對照、唯一Step／原getter、55個檔案CALL來源定位與六份逐bytes重生通過；獨立verifier在guest前撰寫，15份輸入SHA由one-guest-ready固定。
+- 命令：既有Go1.24.13 image、UID1000／network none／3GiB／2CPU／128pids／GOMEMLIMIT1GiB／1200s外層與1150s owned capture，執行bash workplace/new-game-422-run.sh。唯一session2981執行中，沒有第二個guest。
+- 既有4394份收據與八份主庫來源SHA核對通過，保存workplace/422-source-audit-result.json；目前原檔案結果仍未驗，不由建置／CLI／重生宣稱保存成功。
+
+- 實際結果：唯一session2981 outer0／probe0，238506393原237107h bytes CD21／AX3C80／CX0拒絕；probe捕捉末態的exit0不代表存檔成功。原SAVE1.GAM／wb buffer、先前AH3D缺檔AX2／CF1與8個只讀phase已驗；fopen未返回，零fwrite／close，正常owner返回未到。
+- 獨立驗證：90s／2GiB／1CPU同Go image執行python3 workplace/new-game-422-verify.py，session41436 exit1，原因是source419與420同名terminal的截圖前綴；原失敗輸出與verifier保持。另存verify-v2與correction-review後在同界限執行，session94483 exit0；31份祖先event／terminal與原PNG、15份SHA及數值核對通過，不重跑guest。
+- 原PNG以view_image人工檢視，仍為空格、Auto Save與SAVE游標，沒有成功回饋。原418輸入與SAVE10／MOX保持、overlay無差異、無SAVE1.GAM；cgroup峰值1782833152bytes／OOM增量0。500份完整當次失敗與manifest保持，422限定請求／拒絕觀察CONFORMED。
+- 下一平台規格423依Microsoft《The MS-DOS Encyclopedia》Function3CH及原請求審查至READY，僅接MOO2保護模式CX0、普通檔與明示可寫overlay；尚無Go變更或新guest，不追C runtime內部。原稿／READY review分開保存，000-index與四份舊規格回鏈同次更新。
+- 七份自撰工具文件gate通過並推送，工具HEAD 68b43de401dc5c24509cb9123a87e767d1c6a9c8；主庫八份玩法／狀態來源保持，只改既有四份交接文件。一次文件查核的自動審查逾時，允許的唯一重試成功，沒有權限阻塞。唯一guest容器已由--rm移除，完整remake仍未完成。

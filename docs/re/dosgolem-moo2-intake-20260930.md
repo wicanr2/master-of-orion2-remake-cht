@@ -5714,3 +5714,17 @@ python3 workplace/new-game-416-document-gate.py
 | new-game-422-ready-review.json | 3fcdf87531ce1885dbfcea0c18500904afcf87e34a795a0d1f7d2393490c4067 |
 
 工具HEAD c6388180b95adfea5a61c509a57dd86e9e2e9d40已推送。本輪3415份索引與全部祖先合併4394份雜湊核對，原420／417與失敗資料保持，三個Docker volume filter清空；root-owned基準2437檔／272目錄與零.md目錄不變。
+
+## 2026-10-05：422原存檔檔案請求與AH3C拒絕
+
+沿422 READY與原官方1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址空間dosgolem_high_le。305CLI249拒絕／56正對照、9個可反轉patch、唯一Step／原getter、零新輸入與六份逐bytes重生通過。15份原執行前SHA釘選，唯一session2981 outer／probe均0；probe保存未支援服務末態，不把exit0寫成成功。
+
+238505421完整420的26phase／末態先凍結後自然續行；原1016A0 CALL fopen_→21685D真SS／ESP−4及實際buffer SAVE1.GAM、wb已證實。238506360原237024h bytes CD21／AX3D01／DS188h／EDX2BD894h缺檔，下一Step回AX2／CF1。238506393原237107h bytes CD21／AX3C80／CX0／同一路徑請求建立檔案；FD2StartupDOS尚無AH3C保護模式路由，拒絕後EIP237109h。8個新phase全只讀，fopen未返回、零fwrite／fclose，owner返回與下一reader未到，正式存檔未完成。
+
+獨立verifier初次session41436 exit1，只因祖先source419與420的同名terminal應使用不同PNG前綴；保留原腳本、15份釘選SHA與失敗輸出後另存verify-v2，session94483 exit0。31份祖先event／terminal、專屬source420及原source419PNG核對通過，沒有再跑guest。原PNG另以view_image檢視，仍顯示九個空格／Auto Save，游標在SAVE，沒有保存成功回饋。
+
+原418個base全部保持、SAVE10／MOX副本與overlay內容無差異，沒有SAVE1.GAM；cgroup峰值1782833152bytes、OOM增量0，owned capture完成、原guest容器移除。500份當次完整失敗以failed1-422-manifest.json固定；原素材／Go／JSON／PNG／存檔本機忽略。
+
+公開[422](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/422-moo2-save-callee-continue.md)限定實際檔案請求與拒絕觀察CONFORMED，四份舊規格回鏈已更新。[423](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/423-moo2-protected-create-file.md)依Microsoft出版[MS-DOS Encyclopedia SectionV Function3CH](https://www.pcjs.org/documents/books/mspl13/msdos/encyclopedia/section5/)與實際AX3C80／CX0請求審查READY，只接保護模式普通檔建立與可寫overlay；尚無Go或新guest，不逆向標準library。
+
+本機入口new-game-422-generator.py、run.sh、implementation-source-verify.py、verify-v2.py、verification-result／conformance-review／visual-review／verifier-correction-review與423-draft-spec／ready-review；主庫索引workplace/422-current-receipt-index.json、審核422-main-audit.py／result與精確狀態422-final-state.json。工具HEAD 68b43de401dc5c24509cb9123a87e767d1c6a9c8已推送；正式存讀、鍵盤命名與remake同狀態未驗，主庫RE-first保持。
