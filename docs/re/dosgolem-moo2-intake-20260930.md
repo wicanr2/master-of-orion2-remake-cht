@@ -5740,3 +5740,18 @@ python3 workplace/new-game-416-document-gate.py
 公開[423](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/423-moo2-protected-create-file.md)限定工程CONFORMED；原422完整500份失敗與15份執行前SHA保持。[424](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/424-moo2-save-create-continue.md)READY限定私有原版續行，先核對完整420／祖先與422前六phase／PNG，再自然執行原AH3C、寫入與close／owner返回；422最後兩個拒絕phase保留原檔。受控metadata provider須保留原419的mtime讀取並追加423同一建立能力，不能覆蓋掉新能力或移除原輸入條件。尚無424 Go或新guest，正式存讀／鍵盤命名／remake同狀態仍未知。
 
 工具HEAD a3c769002df27c152b789255139fb9de9a5039a6已推送，八份自撰source／spec與入口／回鏈gate通過；主庫只改四份既有交接文件。收據入口workplace/dosgolem/workplace/new-game-423-engineering-result.json、new-game-423-document-gate.py／tests與new-game-424-ready-review.json；主庫索引workplace/423-current-receipt-index.json、423-main-audit.py／result與精確HEAD／清理狀態423-final-state.json。
+
+
+## 2026-10-05：424原SAVE檔案交易與返回前提訂正
+
+來源仍為官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f；Go1.24.13及IDA Pro9.4既有匯出。動態位址為dosgolem_high_le，靜態為IDA linear EA，runtime加F0000h；本輪沒有新IDA或第二個guest。
+
+**已證實，檔案交易。** 238506393原237107h／AH3C返回AX9／CF0，非輸出狀態保持。fopen的原SAVE1.GAM／wb與真RET返回2559630；53次fwrite有序完整buffer共208000bytes與實際SAVE1.GAM逐bytes相同，SHA-256 2e587bf7437efcf73ffe0928276cd36ea9f848da63249fb2c6a64c3db349b375。原fclose真RET0、238518704→238518705的10160A近RET到16E3F9已驗。MOX.SET553bytes實際變更、SAVE10／sound及418個唯讀base保持。這不證明正常玩家返回或讀回。
+
+**已證實，靜態返回前提須訂正。** 原418匯出及獨立LE bytes的IDA EA7E41F設原[EBP+72h]=1，7E492回7E1F2，7E1F7非零分支到7E4AC而略過7E1FD reader。7E505／7E50B／7E50C回原共用尾端7DA0D。正常上一層consumer、實際reader及可操作末態仍未知；不提高上限找同頁reader。
+
+**工具／證據限制。** 唯一原session74232外層exit137後容器仍執行，最後自行到250M／238611h、probe0並完整after-capture後移除，1200s生命週期契約未通過。1150s state capture不限制guest。cgroup峰值1475690496bytes、OOM0。原verifier因PNG同kind覆寫exit1；原碼及16份SHA不改。verify-v2在同image僅核對同次moo2-424-原PNG，172事件檔名碰撞、48事件圖片bytes未留存，370事件同hash仍存；418只讀數值與CALL／RET核對通過，完整420／祖先與422前六phase／專用PNG保持。正常玩家返回與完整PNG驗收不通過。末態人工可見星圖／GAME及SAVE按鈕，沒有slot列表，不能當可操作成功。
+
+公開[424規格結果](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/424-moo2-save-create-continue.md)整體回DRAFT，八份既有工具spec／索引及回鏈已推送 de5c689b315d86bd88d60285ed09c073d538c39c。私有入口workplace/dosgolem/workplace/new-game-424-verification-result.json、verify-v2.py／output、file-return-review.py／output、file-transaction-review.json、return-premise-review.json、png-retention-review.json、lifecycle-review.json、failed2-424-manifest.json及document-gate-v2.py。原資料／save／JSON／PNG不公開，主庫RE-first保持。
+
+下一最小行動：查既有7DA0D與上一層caller／reader來源，修正下一驗收條件；唯一PNG檔名與容器內owned timeout經READY審查後才跑新觀察。正常讀回／鍵盤命名／remake同狀態未驗。現行收據索引workplace/424-current-receipt-index.json，主庫audit／精確HEAD及清理狀態由424-main-audit-result.json與424-final-state.json記錄。

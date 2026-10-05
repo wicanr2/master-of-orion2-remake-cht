@@ -2222,3 +2222,23 @@ python3 workplace/new-game-416-document-gate.py
 - 原指令的AX3C80不是新子功能，依Microsoft Function3CH標準忽略AL；只驗平台契約，不追標準C runtime內部。工程測試不替代原版玩家保存驗收。
 
 收尾稽核：python3 workplace/423-main-audit.py，session82892 exit0；4430份目前索引與全部祖先合併5409份SHA保持，八份主庫玩法／狀態來源保持，root-owned基準2437檔／272目錄、零.md目錄及git diff --check通過。工具乾淨且已推送，三個Docker volume filter均空，沒有新image；精確兩庫HEAD／工作樹與下一步保存workplace/423-final-state.json。
+
+## 2026-10-05：424原正常保存續行
+
+- 沿424 READY實作私有觀察器，6個精確反轉patch、唯一Step／原getter與零新輸入；完整420／祖先及422前六phase／PNG在AH3C前先凍結，不製造或改寫原拒絕。私有419 metadata僅追加423 public同一Create能力，原受控mtime與bytes保持。
+- 首次preflight session25734 exit1，315CLI已過，來源檢查拒絕共用VBE filename未換前綴；五份原失敗固定failed1-424-manifest，修正生成器routing後同image／命令重跑24872 exit0，沒有guest。六份輸出加metadata在隔離/tmp逐bytes重生通過。
+- 獨立new-game-424-verify.py在執行前撰寫，按原CALL／RET配對與有序buffer驗實際file，不從fwrite static site數假定dynamic呼叫數。16份輸入SHA由one-guest-ready固定。
+- 命令：既有Go1.24.13 image、UID1000／network none／3GiB／2CPU／128pids／GOMEMLIMIT1GiB／1200s外層與1150s owned capture，bash workplace/new-game-424-run.sh，唯一session74232執行中；正式存檔／正常讀回與remake同狀態仍未驗。
+
+
+### 424末態、獨立驗證與規格訂正
+
+- 唯一原session74232外層退出137；容器其後仍被觀察為Up21minutes，原guest最後達250M／runtime238611步數上限、probe0。1150s只限制state capture，未限制guest；完整after-capture完成後--rm自行移除。後續exec／stop均No such container，未送SIGSTOP或人工停止。1200s生命週期契約不通過，OOM／OOM kill0、峰值1475690496bytes。
+- 原SAVE1.GAM208000bytes／SHA-256 2e587bf7437efcf73ffe0928276cd36ea9f848da63249fb2c6a64c3db349b375；53個原fwrite site各一次、返回count且有序buffer逐bytes一致。原AH3C AX9／CF0、非輸出狀態保持；fopen返回2559630，fclose0，238518705原10160A真RET到16E3F9。MOX.SET變更為553bytes／3ee8d483cbeaef249414b420d946e4178fa1dc26f296d801efe6310e228f9e61，未還原隱藏。418個base／SAVE10／sound保持。
+- 原獨立verifier session26894 exit1，重複kind檔名覆寫PNG；原碼及16份執行前SHA保持。同Go image／UID1000／network none／120s／2GiB，python3 workplace/new-game-424-verify-v2.py，session82953 exit0：31份祖先、420的26phase、422前六phase及418只讀數值／原碼／CALL／RET通過。同次原生PNG有172檔名碰撞，370事件圖片仍可驗hash、48事件bytes未留存；完整PNG驗收不通過，沒有重跑guest或借舊圖。
+- python3 workplace/new-game-424-file-return-review.py，session2f8a93 exit0，原MZ／LE bytes核對既有418來源。IDA EA7E41F設原[EBP+72h]=1，7E492回7E1F2的非零分支到7E4AC，略過原7E1FD reader；尾端7E50C跳7DA0D。原SAVE後同頁reader預期有誤，正常上一層返回仍未知，424整體回DRAFT。所有位址保留原定位；不追C runtime內部。
+- 實際terminal PNG已人工檢視，星圖／GAME背景與SAVE按鈕可見，slot列表不在畫面；不宣稱可操作、名稱刷新或正式UI完成。正常讀回、鍵盤命名、remake同狀態與完整remake仍未驗。
+- 625份當次原產物與失敗verifier固定failed2-424-manifest.json；新增有限驗證、檔案交易、返回前提、PNG留存及生命週期review均由424公開spec回鏈。文件gate首次誤改封存前已存在的prepared audit，SHA拒絕；保存失敗輸出、原audit精確復原，另存gate-v2後通過，原manifest不改。
+- 工具八份自撰文件gate-v2通過並推送HEAD de5c689b315d86bd88d60285ed09c073d538c39c，public四份平台source保持，CPU／主庫玩法沒有新增變更。下一最小行動為上一層reader來源及唯一PNG檔名／容器內owned timeout的READY審查。
+
+收尾稽核：python3 workplace/424-main-audit.py，session58341 exit0；5067份目前索引與祖先合併6046份SHA保持，八份主庫來源、root-owned基準2437檔／272目錄、零.md目錄與git diff --check通過。工具乾淨且已推送；Docker專案容器清單空，沒有新增image。主庫只改四份既有文件；精確兩庫HEAD與清理狀態保存workplace/424-final-state.json。
