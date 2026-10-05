@@ -5766,3 +5766,28 @@ python3 workplace/new-game-416-document-gate.py
 命令／結果：IDA session91096 wrapper0／idat1，非空JSON／固定EXE SHA／5365函式／UID1000通過；Go1.24.13容器python3 workplace/new-game-425-source-verify.py退出0。公開[425來源規格](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/425-moo2-save-parent-return-source.md)只限來源CONFORMED，000-index／424回鏈及三份自撰文件gate同次通過，工具HEAD 9908ec3d61cd5377b327eb108f721730ba338dd2已推送。
 
 本機入口workplace/dosgolem/workplace/new-game-425-source-result.json／source-verify.py／source-tests.txt、source-plan.json、moo2-425-ida-save-parent-source.py／json／log／stdout與ida-run.sh／output。原JSON／反組譯不公開；主庫僅四份既有文件，RE-first保持。下一窄查詢只取8012F直接caller及局部call前後／reader路由；425-current-receipt-index.json、425-main-audit-result.json及425-final-state.json為目前索引／清理交接入口。
+
+
+## 2026-10-05：426原caller與427父層返回觀察器
+
+來源仍為官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f。IDA Pro9.4／locked-v1兩窄查詢，135列／108EA與44項原table經原MZ／LE／fixup核對；位址為IDA linear EA、runtime各加F0000h，file offset另記。唯一104A6 CALL8012F、return104AB及主分派10687／106A7已證實，1068F讀原word191A08；沒有直接1171AB reader。只限來源CONFORMED，不外推實際SAVE後正常輸入。
+
+[427觀察器](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/427-moo2-save-parent-return-observation.md)READY後建置，11反轉patch／唯一Step／原getter／零新狀態及輸入、325CLI265拒絕／60正對照、五份重生通過。實際PNG archive closure保留同kind的兩張原圖並拒絕碰撞；GNU timeout四個程序群組及capture工程案例通過，限工程CONFORMED。原427生成／測試兩組失敗與24份v1啟動快照保存failed1／2／3-427；native不重跑工程收據，v2固定24份SHA。
+
+唯一原session23415／容器f36706eefe17自然到250M上限，外層及owned腳本退出0，耗時938.771s，容器已移除。完整420／祖先與422前六phase／專用PNG保持。原parent entry17012F在227148176命中，真SS1004AB相符；但parent返回及第一場景分派未到，整體427回DRAFT。原424的16份SHA及625份失敗保持，正常下一input、存讀往返與remake同狀態未驗。
+
+公開[426來源](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/426-moo2-save-parent-caller-dispatch-source.md)與427／000-index及424／425回鏈，五份自撰文件gate通過，工具HEAD cd597ad1484a99506d9008de8d5cdb21803ab07a已推送。本機入口new-game-426-source-result.json／source-verify.py／tests及resolution-backlinks.json；427入口one-guest-ready-v2.json、verify.py、implementation-source-verify.py／tests、tooling-engineering-result.json、regeneration-result.json、prelaunch-correction-review.json、launch.json與最終owned-lifecycle-result.json。原JSON／PNG／Go／save不公開；主庫RE-first保持。
+
+## 2026-10-05：427末態驗證與428支援候選邊界
+
+**已證實，限定檔案交易。** 427同一次原guest的53個原fwrite call site／53次實際buffer，全部return=count。208000bytes有序合成逐bytes等於實際SAVE1.GAM，SHA-256 2e587bf7437efcf73ffe0928276cd36ea9f848da63249fb2c6a64c3db349b375；原close真return0及callee返回16E3F9已驗。原base418檔保持；MOX.SET553bytes變更照實記錄。這不代表正式存讀往返通過。
+
+**已證實，限定原觀察。** 418phase各有獨立原生PNG、418不同路徑逐hash核對。250M末態EIP238B82、576422528µs；最後PNG與424相同，人工可見星圖／GAME及SAVE按鈕、slot列表消失，不能證明正常輸入。父層返回、分派與下一reader皆未到。獨立verifier session54111退出0，只核對已到達範圍，full_spec_conformed=false。
+
+**已證實，限定生命週期。** unique guest_attempt1，owned整批938.771s完成／退出0，低於1150s guest及1300s整批；沒有實際送TERM／KILL。四個信號工程案例與原生完成分開。cgroup峰值1844297728bytes、OOM增量0，moo2容器清查空。24份v2執行前SHA保持；failed4-427-manifest.json凍結1080份原生／工程產物，conformance-review明記整體DRAFT。
+
+**428靜態來源。** 重新載入compiler／runtime分流與文件職責，只以IDA Pro9.4／locked-v1查末態函式邊界、入口及直接caller。原EXE SHA沿426；IDA linear EA與dosgolem_high_le分開，runtime=IDA+F0000h，file offset另存。129列／111EA、原MZ／LE／51363fixup獨立核對，指令fixup差異0。IDA session10248 wrapper0／idat1，非空JSON／5365函式／UID1000已驗；source verifier session88203退出0。首輪verifier漏掛/patch，在原LE讀取前失敗；同腳本使用既有正確掛載乾淨重跑，屬環境問題。
+
+已證實：427的238B82在原sub_1489F4／1489F4..148C33，靜態direct caller12A34B／12A7E7；424的238611在原sub_148605／148605..14861D，direct caller1487C0／148BE3／148BF9。原byte搬移略過零來源的目的寫入，caller目的逐列加280h即640bytes。圖像／掃描線支援分類為強推論，IDA library flag未設，不能當已證實C runtime或此次runtime caller。parent局部退出旗標與保存後玩家consumer仍未知。沒有新guest或CPU改動，不提高原上限。
+
+公開入口[427結果](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/427-moo2-save-parent-return-observation.md)及[428來源](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/428-moo2-save-terminal-support-boundary.md)，000-index與424／425／426同輪回鏈。本機new-game-427-conformance-review.json／verification-result.json／owned-lifecycle-result.json／failed4-427-manifest.json及new-game-428-source-result.json／source-verify.py／tests-with-patch.txt。現行收據索引workplace/428-current-receipt-index.json；精確HEAD與工作樹／容器清理見428-final-state.json。下一最小行動只追原parent局部退出旗標及保存後玩家consumer，不深入掃描線helper。主庫RE-first保持，原Go／JSON／PNG／save不公開。

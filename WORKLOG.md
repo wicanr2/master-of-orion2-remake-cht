@@ -2253,3 +2253,22 @@ python3 workplace/new-game-416-document-gate.py
 - 下一最小行動：IDA對8012F的直接caller及call前後局部上下文／正常reader，另訂唯一PNG與owned timeout的觀察READY。未知不以換位址或加步數補洞。
 
 425收尾稽核：python3 workplace/425-main-audit.py，session63294 exit0；5079份目前索引合併祖先6058份SHA保持，八份主庫來源、root-owned基準2437檔／272目錄及零.md目錄通過。三個專案volume的Docker容器清單均空，沒有新增image；工具乾淨且已推送。精確兩庫HEAD、工作樹及下一動作保存workplace/425-final-state.json。
+
+
+## 2026-10-05：426原parent直接caller與427觀察器
+
+- 接續425乾淨／已推送checkpoint，命中spec-gated-workflow及resolution-backlinks路由。兩次IDA只取8012F直接caller與10687恢復分派局部，sessions73043／36378 wrapper0、idat1，固定原EXE SHA／5365函式／UID1000通過。Go1.24.13容器python3 workplace/new-game-426-source-verify.py退出0；135列／108EA、44項CS原表及全部原LE bytes核對，指令fixup差異0。
+- 已證實來源：原104A6 CALL8012F／return104AB，104AB原byte191F19=8、104B2到10687，1068F讀原word191A08，106A7讀原44項table103EB。runtime各加F0000h。沒有direct1171AB reader；原SAVE後父層真返回、scene值／target與正常input仍未知，主庫Go及CPU解碼未改。
+- 427原稿／READY review分開釘選。私有Go由原424經11個可反轉patch建立，原getter、唯一CPU.Step、注入數與250M／512保持；各callee phase依ordinal／step／kind留存獨立PNG，O_EXCL拒絕碰撞。GNU coreutils9.1實測help／version及四個程序群組案例為工具契約；不深挖runtime。官方GNU網頁擷取逾時，使用容器內實際help及工程結果作來源。
+- 第一生成器trap引用SyntaxError在執行前發現，failed1-427兩份保存；修正後生成通過。PNG工程harness把Go文字轉義全域換成換行而失敗，原測試／輸出保存failed2-427；刪除錯誤替換後同image／命令session14500退出0。兩張不同原生PNG的同kind留存／O_EXCL碰撞、普通完成0／TERM124／忽略TERM的KILL／外部TERM及原capture收尾均通過；工程測試不當原guest。
+- preflight session1049退出0，325CLI265拒絕／60正對照、原315前綴與source gate通過。五份產物隔離重生逐bytes一致。啟動前發現native會重跑工程測試改寫耗時收據，原24份輸入與v1READY完整保存failed3-427-manifest；native改驗既有工程SHA，重生及同前置命令session16408退出0。調度工具的一次模板解析失敗沒有執行shell、檔案或guest。
+- 獨立new-game-427-verify.py在guest前固定：由原LE／fixup重建原碼與table，真CALL／RET、完整source420／422六phase、每事件唯一PNG及有序buffer／實際file另核對；不用生成器target表作oracle。v2固定24份SHA，沒有覆寫原424的16份／625份失敗。
+- 唯一原session23415／容器moo2-save-427-20261005、ID f36706eefe17已啟動。既有Go1.24.13 image、UID1000／network none／3GiB／2CPU／128pids／GOMEMLIMIT1GiB；容器內guest timeout1150s／KILL-after5、整批owned1300s，外層1450s。原250M步數上限不加長。實際輸出、原parent返回／dispatch與after-capture待末態核對，沒有第二個guest。
+- 五份自撰工具文件／入口／回鏈及24v2pins／原失敗gate通過，工具HEAD cd597ad1484a99506d9008de8d5cdb21803ab07a已推送。主庫只更新四份既有交接文件；正式正常input、讀回、鍵盤命名與remake同狀態未驗，主庫RE-first保持。
+
+## 2026-10-05：427原版觀察收尾與428末態邊界
+
+- 原唯一session23415自然到預定250M，外層及owned腳本退出0、耗時938.771s，容器moo2-save-427-20261005已移除。parent entry／真SS1004AB已驗，parent返回及分派未到，427整體DRAFT。保存53次buffer／208000bytes、close0與callee返回已驗；418不同路徑PNG完整。獨立verifier session54111退出0，僅已到範圍。OOM0／峰值1844297728bytes。1080份實際產物及24份v2輸入SHA凍結，不重跑guest。
+- 重新載入compiler-runtime-helper-triage／文件職責與IDA技能。單次窄IDA session10248，只取238B82／238611對應原函式邊界與直接caller；129列／111EA／指令fixup差異0，官方原LE獨立驗證session88203退出0。首輪漏掛/patch的verifier失敗保留，使用同腳本及正確掛載重跑，無產品或CPU缺陷證據。wrapper0／idat1，依非空JSON、5365函式與原SHA判定。
+- 圖像／掃描線支援語意只列強推論，實際caller與parent退出仍未知。不深挖helper、不延長上限。公開只改六份自撰spec／索引，主庫只更新四份交接文件，主Go／原四份平台源碼保持。原SAVE／EXE／PNG／JSON不推送。
+- 驗證入口：new-game-427-conformance-review.json、new-game-428-source-result.json／source-tests-with-patch.txt、428-main-audit-result.json及428-final-state.json。下一只查parent局部退出旗標與保存callee後玩家consumer。RE-first保持，整款remake未完成。

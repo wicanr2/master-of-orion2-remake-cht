@@ -74,7 +74,9 @@
   **423普通檔建立平台修正**：MOO2保護模式AH3C／CX0接入可選CreateFileProvider，普通檔建立／截斷只在state，唯讀base與原OpenWrite保持；原AL80不誤當子功能，非輸出CPU／RAM與拒絕副作用已驗。33子案例／三種AL、internal/machine／dos／dosfile與核心／命令程式建置通過；限定工程CONFORMED，沒有新原guest、CPU解碼或主庫玩法變更。工具HEAD a3c769002df27c152b789255139fb9de9a5039a6已推送，原422完整500份失敗與15份執行前SHA保持。
   **424原保存交易已驗，整體DRAFT**：唯一session74232原AH3C成功、AX9／CF0與非輸出狀態保持。53次fwrite buffer共208000bytes與實際SAVE1.GAM逐bytes一致、fclose0、238518705真RET到16E3F9已驗；MOX實際變更照存，418個base／SAVE10／sound保持。完整420／祖先、422前六phase／專用PNG與16份SHA保持，315CLI與七份重生通過。418只讀phase數值核對；172事件PNG檔名覆寫、48事件圖片未留存。外層137後容器仍运行，最後達250M／238611步數上限、probe0、after-capture完整並自行移除，峰值1475690496bytes／OOM0。原同頁16E1FD reader前提被退出分支推翻；檔案交易完成不當作正常玩家返回、UI或存讀往返完成。工具HEAD de5c689b315d86bd88d60285ed09c073d538c39c已推送。
   **425原SAVE parent來源**：單次窄IDA已定位原415真stack return1702D1對應IDA802CC CALL7E154。原sub_8012F完整146列／146EA、四case表與七列共用尾端獨立LE bytes通過；原[EBP-0Ch]位址傳給子頁，802E6／802EB消費局部值決定回圈。僅來源CONFORMED，沒有新guest，實際父層值／返回與下一輸入仍未知。工具HEAD 9908ec3d61cd5377b327eb108f721730ba338dd2已推送。
-  **下一步**：只取IDA對8012F的直接caller、call前後局部上下文及正常reader路由，先修正返回驗收條件；唯一PNG檔名及容器內owned timeout另審READY後才建新觀察器，不重跑424或提高上限追成功。正式存讀、鍵盤命名與remake同狀態未驗，主庫RE-first保持。
+  **426原parent直接caller與場景分派**：兩次窄IDA、135列／108EA與44項原CS table獨立LE核對；原8012F唯一caller104A6，父層return1004AB，104AB／104B2回主分派10687／106A7，沒有直接1171AB reader。僅來源CONFORMED，主場景實際值／target與正常下一input仍未知。
+  **427原parent返回觀察未通過**：唯一原250M／step_limit，parent entry／真SS1004AB已驗，parent返回及分派未到，整體DRAFT。53次buffer合成208000bytes等於SAVE1.GAM、close0及callee返回已驗；418獨立PNG保持。owned腳本938.771s退出0、OOM0、容器已移除；24份v2輸入SHA與1080份本次產物凍結。428窄來源129列／111EA核對通過，末態為圖像支援候選強推論；下一只追parent局部退出旗標及保存後玩家consumer，不深入helper或提高250M。正常輸入／存讀往返／remake同狀態未驗。
+  **下一步**：等待目前唯一原guest終態，核對原parent真SS RET／44項table與實際dispatch target、有序buffer／file及各phase唯一PNG；時間與容器收尾另驗。未知或逾時照存，不提高步數追成功、不重啟同次guest。正式正常input／存讀與remake同狀態仍未驗，主庫RE-first保持。
   **未知／不混入本輪**：主庫玩法RE閘門保持；job3與跨殖民地、remake人口配置、讀檔／存檔內容語意、typed名稱及旗色持久writer、五窗口完整物件、其他未驗CPU分支、typed種族特性、母星配置、COLONIES其他列表操作／星圖控制、完整開局與remake同狀態未驗。DPMI外部cb_smoke、兩舊探針PE格式、AH2Ch／RNG／人耳與Windows／macOS實機未驗。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
