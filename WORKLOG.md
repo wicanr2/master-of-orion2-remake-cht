@@ -2189,3 +2189,12 @@ python3 workplace/new-game-416-document-gate.py
 - 命令：同容器界限執行bash workplace/new-game-420-run.sh；獨立python3 workplace/new-game-420-verify.py，session61489 exit0。26個只讀phase、四次正常裝置操作、原selected FFFF→0、reader 1／21及238505421真CALL到10160B／參數0通過；callee未執行。原名稱僅在記憶體生成，PNG仍顯示空格，不稱為保存成功。峰值1679069184bytes／OOM增量0，原輸入／副本與overlay內容保持。
 - 原419失敗不覆寫，420限定CONFORMED；417／418／419回鏈與索引更新。五份工具自撰文件檢查通過並推送，四份主庫文件完成當次核對；完整新收據索引、公開CPU兩檔既有差異與八份主庫來源雜湊保持。Docker相關容器清空、root-owned基準2437檔／272目錄與零.md目錄保持。下一步只做sub_1160B窄RE，不解除主庫玩法閘門。
 - 收尾命令python3 workplace/420-main-audit.py通過，本輪3383份索引及全部祖先合併4362份雜湊保持；主庫來源八份與419／420執行前輸入釘選通過。Docker兩個volume filter均為空。
+
+## 2026-10-05：421原保存交易來源與422有界觀察契約
+
+- 上輪為進度：原正常選格／SAVE到callee驗證與推送已完成。本輪核對兩庫HEAD／工作樹乾淨，沿GUI、spec、IDA與文件分工入口，主庫玩法閘門不變。
+- IDA9.4 readonly patch、UID1000／network none／2GiB／2CPU／128pids／120s；命令bash new-game-421-ida-run.sh與tail-ida-run.sh。首次session90367為腳本SyntaxError、無JSON或guest，四份失敗保存；修正compile後同image重跑，46589／46225 wrapper0／idat1，固定SHA與非空5365函式核對通過。
+- 獨立命令python3 workplace/new-game-421-byte-verify.py及source-verify.py，session70209 exit0：原51363fixup、526列／447EA／64重定位差異、四組字串、六caller、53個fwrite CALL及原尾端核對。原420完整輸入保持，沒有新guest；實際檔案與close／返回仍未驗。
+- 421限定來源CONFORMED，422私有觀察READY；舊418／419／420回鏈及索引同輪更新。新契約先保持完整420再零新輸入續行，250M／1200s到原檔案請求／返回或實際拒絕，不授權猜補平台；尚無422 Go／guest。公開僅自撰工具／四份主庫文件，原碼／bytes與私有JSON本機忽略。
+- 工具HEAD c6388180b95adfea5a61c509a57dd86e9e2e9d40已推送github分支，六份自撰文件與來源／回鏈gate通過；主庫本輪只更新四份交接文件，無Go／玩法變更。
+- 收尾python3 workplace/421-main-audit.py通過，本輪3415份與全部祖先合併4394份雜湊保持；八份主庫來源、420完整收據與422來源釘選保持。root-owned基準2437檔／272目錄、零.md目錄及三個Docker volume filter為空。精確HEAD／清理與下一步保存workplace/421-final-state.json。

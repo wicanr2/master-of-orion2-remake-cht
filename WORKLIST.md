@@ -69,7 +69,8 @@
   **418存檔格與名稱輸入來源**：一次窄IDA匯出原sub_7E154的260指令，通用selector／kind11／ASCII／release重用既有來源；915列／891EA／151fixup及13個inclusive first-hit案例通過。當次原控件1／kind11與37-byte名稱pointer、兩組ID、原[EBP+6Ah]選格writer、ID21的0..9分支與7E3F4 CALL1160B已錨定；保存callee用途為強推論，實際檔案writer未知。沒有新guest／原輸入，418只限來源CONFORMED。工具4cdc5c6cd801a3ed5a892a94a658fc05d7ca7560已推送，主庫玩法及CPU保持。
   **419第一格與工具守衛**：唯一原session1794 outer1／probe2，完整417八phase／terminal與所有祖先保持；285CLI、六份重生及六項日期測試通過。238285408正常400,54 press；238295560／561原selector依C3真SS返回20E1AC、ESP＋4／EAX1已驗。九個phase全只讀；原mask1、callback25／25 idle／pending0遭工具額外2Bh條件拒絕，沒有派送release或SAVE，selected仍FFFF／editor未啟用。工具問題不記成CPU缺陷，419由420接替；436份完整失敗與原來源保存。
   **420正常第一格與SAVE入口**：唯一session64443 outer0／probe0，獨立verifier session61489 exit0。完整419九phase／失敗末態先核對，正常mask1 release後原16E23A將selected由FFFF設0；兩個reader真RET返回1／21。238505421原16E3F4 CALL依真SS到10160B、return16E3F9／ESP−4／參數0後停止，callee未執行。26個只讀phase、四次正常裝置操作與295CLI／六份重生通過；記憶體生成名稱，但畫面仍顯示空格。限定原版輸入CONFORMED，工具9fef15c4974bab36a4cdbd0097ee0328c9c81830已推送。
-  **下一步**：以窄IDA查原sub_1160B的玩家存檔資料流、第一檔案請求／範圍與返回邊界，略過C runtime／平台helper內部；RE與READY審查後再開新有界原guest續行。正式檔案保存／讀取、鍵盤命名及remake同狀態仍未驗，主庫RE-first保持。
+  **421原存檔交易來源**：兩次窄IDA、526列／447EA／64fixup與四組原字串獨立核對。原sub_1160B有六caller，已定位SAVE檔名／wb、53個fwrite CALL、首E0000000與37-byte名稱配置、fclose及共用115FE尾端；保存來源已驗，實際檔案寫入與close／返回尚未實測。首次腳本SyntaxError四份失敗保存，同image修正後通過；沒有新guest、公開CPU或主庫Go變更。
+  **下一步**：422私有有界原版觀察READY，維持完整420的26phase／terminal及所有祖先與原輸入，零新裝置操作；觀察原fopen／fwrite／fclose、原DOS請求與真返回到下一SAVE owner reader。250M／1200s內保存實際結果或拒絕，不猜補平台支援。先建置、305CLI預定、六份重生及獨立verifier，才跑唯一新guest；尚無422 Go／guest。正式存讀、鍵盤命名與remake同狀態未驗，主庫RE-first保持。
   **未知／不混入本輪**：主庫玩法RE閘門保持；job3與跨殖民地、remake人口配置、讀檔／存檔內容語意、typed名稱及旗色持久writer、五窗口完整物件、其他未驗CPU分支、typed種族特性、母星配置、COLONIES其他列表操作／星圖控制、完整開局與remake同狀態未驗。DPMI外部cb_smoke、兩舊探針PE格式、AH2Ch／RNG／人耳與Windows／macOS實機未驗。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以

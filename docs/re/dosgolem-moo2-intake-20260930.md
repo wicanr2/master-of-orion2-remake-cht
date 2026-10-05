@@ -5689,3 +5689,28 @@ python3 workplace/new-game-416-document-gate.py
 公開[420](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/420-moo2-save-release-guard-correction.md)限定正常原版選格／SAVE到callee入口CONFORMED；417／418／419與000-index同次回鏈。私有入口沿new-game-420-generator.py、run.sh、verify.py、ready-review／one-guest-ready／conformance-review／visual-review／resolution-backlinks.json及source419收據，原碼／JSON／PNG本機忽略。工具HEAD 9fef15c4974bab36a4cdbd0097ee0328c9c81830已推送。
 
 本輪完整索引保存workplace/420-current-receipt-index.json，審核入口workplace/420-main-audit.py及結果420-main-audit-result.json；精確HEAD與清理狀態保存workplace/420-final-state.json。下一步只追原sub_1160B玩家存檔資料流與首檔案請求，通過RE與READY後才續行。正式存讀、鍵盤命名與remake同狀態未驗，主庫RE-first不變。
+
+
+## 2026-10-05：421原存檔檔案與資料來源
+
+命中原GUI還原、規格閘門、IDA9.4、文件分工與舊規格回鏈路由，沿既有工具image與唯讀官方1.31 patch。固定ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，IDA linear EA、file offset與dosgolem_high_le的F0000h投影分開。原420已在238505421到10160Bh／EAX0，沒有新guest。
+
+兩次窄IDA查詢只取sub_1160B的380指令／六caller與115FEh附近13列共用尾端，不追標準函式庫。IDA116A0h CALL fopen_，原SAVE加slot+1與.GAM，原mode字串wb；對420的slot0來源導出SAVE1.GAM，實際buffer仍未觀測。53個fwrite CALL含首local E0000000、37-byte名稱record、後續原buffer與padding配置，11BCBh CALL fclose_後走115FEh共用尾端。這是來源證據，不是53次成功寫入或保存完成。第一size4／count1在opaque sub_8F855前配置，實際呼叫參數仍待動態確認。
+
+原MZ26654h／LE292E4h／2object／365page／51363fixup獨立重建；526列／447EA／64處IDA重定位差異通過。SAVE／.GAM／wb／錯誤字串同時比原bytes與IDA引用。共享尾端歸在原sub_10E2F，保留原名；原file offset617566的C3為直接x86近RET bytes，不冒充未匯出的IDA列。私有入口new-game-421-ida-run.sh、tail-ida-run.sh、byte-verify.py、source-verify.py與source-result／review／resolution-backlinks.json。
+
+首次IDA session90367沒有JSON，原因是匯出腳本換行字串SyntaxError；四份失敗與manifest按failed1-421保存。修正前先compile檢查，沿同image／UID／命令重跑，session46589與46225 wrapper0／idat實際exit1、非空JSON／5365函式與固定SHA保持。獨立驗證session70209 exit0。沒有產品或CPU缺陷證據。
+
+公開[421](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/421-moo2-save-callee-file-source.md)限定來源CONFORMED；418／419／420同次回填與000-index掛載。[422](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/422-moo2-save-callee-continue.md)私有原版續行READY，完整420先凍結、零新輸入，記錄fopen／fwrite／fclose與DOS實際請求、close／真返回或拒絕。新後段250M／1200s，不覆寫420的245M停止契約，不授權猜補DOS或CPU。尚無422 Go／guest。
+
+收據入口沿workplace/dosgolem/workplace/；本輪索引、審核與精確HEAD保存workplace/421-current-receipt-index.json、421-main-audit.py／result與421-final-state.json。正式存讀、鍵盤命名、成功GUI與remake同狀態未驗，主庫RE-first保持。
+
+| 本輪收據 | SHA-256 |
+|---|---|
+| moo2-421-ida-save-callee.json | eb7dd0d9130183475fca17f18cb4d8a1fe1fe896e6c08794226ee687f97b28b0 |
+| moo2-421-ida-save-callee-tail.json | a2fd85c85497772e1b2d1fb9a2551533ae1a0dd7e299869bcd8644028e1eb9b8 |
+| moo2-421-source-byte-index.json | 853a2db70745df0b5726de41c949e0becd0b2dbb190fbaf3c5c196b25ee186d9 |
+| new-game-421-source-result.json | 553b4d8365770f421d011a2276a4d70ce7821df80cafd5e97a2ecb54e476b1a4 |
+| new-game-422-ready-review.json | 3fcdf87531ce1885dbfcea0c18500904afcf87e34a795a0d1f7d2393490c4067 |
+
+工具HEAD c6388180b95adfea5a61c509a57dd86e9e2e9d40已推送。本輪3415份索引與全部祖先合併4394份雜湊核對，原420／417與失敗資料保持，三個Docker volume filter清空；root-owned基準2437檔／272目錄與零.md目錄不變。
