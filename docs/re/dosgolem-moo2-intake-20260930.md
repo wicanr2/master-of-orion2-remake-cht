@@ -5728,3 +5728,15 @@ python3 workplace/new-game-416-document-gate.py
 公開[422](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/422-moo2-save-callee-continue.md)限定實際檔案請求與拒絕觀察CONFORMED，四份舊規格回鏈已更新。[423](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/423-moo2-protected-create-file.md)依Microsoft出版[MS-DOS Encyclopedia SectionV Function3CH](https://www.pcjs.org/documents/books/mspl13/msdos/encyclopedia/section5/)與實際AX3C80／CX0請求審查READY，只接保護模式普通檔建立與可寫overlay；尚無Go或新guest，不逆向標準library。
 
 本機入口new-game-422-generator.py、run.sh、implementation-source-verify.py、verify-v2.py、verification-result／conformance-review／visual-review／verifier-correction-review與423-draft-spec／ready-review；主庫索引workplace/422-current-receipt-index.json、審核422-main-audit.py／result與精確狀態422-final-state.json。工具HEAD 68b43de401dc5c24509cb9123a87e767d1c6a9c8已推送；正式存讀、鍵盤命名與remake同狀態未驗，主庫RE-first保持。
+
+## 2026-10-05：423普通檔建立接線與工程驗證
+
+原422的runtime237107h／CD21／AX3C80／CX0／DS188h／EDX2BD894h、SAVE1.GAM已證實；工具欠缺AH3C平台路由。依Microsoft出版[MS-DOS Encyclopedia SectionV Function3CH](https://www.pcjs.org/documents/books/mspl13/msdos/encyclopedia/section5/)，只接MOO2保護模式普通檔建立契約，AL不被當子功能。固定官方1.31 EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f；位址空間dosgolem_high_le，沒有新IDA或原guest。
+
+四份tool Go變更為le_startup.go／overlay_files.go與各自測試。CreateFileProvider為可選能力，唯讀provider回AX5／CF1，路徑讀完整32位EDX；普通檔只建立／截斷在state並配置原handle表。滿表先拒絕，不能先截檔；nil／錯誤檔、非法8.3／裝置名、symlink／目錄／重複大小寫拒絕，非輸出CPU／RAM保持。原base同名檔不複製或改寫，OpenWrite仍不建立缺檔。FD2、非零CX屬性與實模式保持未處理，沒有CPU解碼或主庫玩法修改。
+
+33個子案例與三種AL80／00／FF、實際新檔bytes／原AH40寫入及AH3E關閉、handle重用、高位pointer與各種拒絕副作用通過；相關三套件及核心／命令程式建置通過。Docker界限Go1.24.13、UID1000／network none／2GiB／2CPU／128pids／240s；sessions43951與95786 exit0，來源與輸出hash固定new-game-423-engineering-result.json。這是公開DOS契約與平坦overlay近似的工程證據，不是原FAT屬性、原SAVE1.GAM或正常讀回對拍。
+
+公開[423](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/423-moo2-protected-create-file.md)限定工程CONFORMED；原422完整500份失敗與15份執行前SHA保持。[424](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/424-moo2-save-create-continue.md)READY限定私有原版續行，先核對完整420／祖先與422前六phase／PNG，再自然執行原AH3C、寫入與close／owner返回；422最後兩個拒絕phase保留原檔。受控metadata provider須保留原419的mtime讀取並追加423同一建立能力，不能覆蓋掉新能力或移除原輸入條件。尚無424 Go或新guest，正式存讀／鍵盤命名／remake同狀態仍未知。
+
+工具HEAD a3c769002df27c152b789255139fb9de9a5039a6已推送，八份自撰source／spec與入口／回鏈gate通過；主庫只改四份既有交接文件。收據入口workplace/dosgolem/workplace/new-game-423-engineering-result.json、new-game-423-document-gate.py／tests與new-game-424-ready-review.json；主庫索引workplace/423-current-receipt-index.json、423-main-audit.py／result與精確HEAD／清理狀態423-final-state.json。

@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-05）**：420正常選格／SAVE到callee、421保存交易來源保持。422唯一session2981完成，完整420先凍結後零新輸入自然續行；SAVE1.GAM／wb實際buffer與原AH3D缺檔AX2／CF1已驗。238506393原237107h／AX3C80／CX0請求建立檔案，工具AH3C未處理；沒有fwrite／close／正常返回或SAVE1.GAM。8個只讀phase、305CLI及六份重生、獨立verify-v2通過；初次截圖前綴驗證錯誤保留，原guest未重跑。500份完整失敗保存，423普通檔建立平台規格READY、尚無Go或guest。工具HEAD 68b43de401dc5c24509cb9123a87e767d1c6a9c8已推送，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。正式存讀、鍵盤命名及remake同狀態未驗，主庫RE-first保持。
+- **DOS 原版動態驗證器（2026-10-05）**：422已驗SAVE1.GAM／wb實際buffer與原AH3C拒絕，完整500份失敗保持，正式保存未完成。423已接MOO2保護模式AH3C／CX0的普通檔建立能力，只寫明示overlay；33子案例／三種AL、相關套件與核心建置通過，限定平台工程CONFORMED，沒有新原guest或CPU解碼變更。424私有續行READY，完整420／祖先與422前六phase／PNG先核對，再零新輸入觀察實際建立／寫入／close與原返回；尚無424 Go／guest。工具HEAD a3c769002df27c152b789255139fb9de9a5039a6已推送，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。正式存讀、鍵盤命名及remake同狀態未驗，主庫RE-first保持。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為

@@ -71,7 +71,8 @@
   **420正常第一格與SAVE入口**：唯一session64443 outer0／probe0，獨立verifier session61489 exit0。完整419九phase／失敗末態先核對，正常mask1 release後原16E23A將selected由FFFF設0；兩個reader真RET返回1／21。238505421原16E3F4 CALL依真SS到10160B、return16E3F9／ESP−4／參數0後停止，callee未執行。26個只讀phase、四次正常裝置操作與295CLI／六份重生通過；記憶體生成名稱，但畫面仍顯示空格。限定原版輸入CONFORMED，工具9fef15c4974bab36a4cdbd0097ee0328c9c81830已推送。
   **421原存檔交易來源**：兩次窄IDA、526列／447EA／64fixup與四組原字串獨立核對。原sub_1160B有六caller，已定位SAVE檔名／wb、53個fwrite CALL、首E0000000與37-byte名稱配置、fclose及共用115FE尾端；保存來源已驗，實際檔案寫入與close／返回尚未實測。首次腳本SyntaxError四份失敗保存，同image修正後通過；沒有新guest、公開CPU或主庫Go變更。
   **422原存檔交易請求與拒絕**：唯一session2981 outer／probe0但原AH3C未處理，不當成功；獨立verify-v2 exit0。完整420的26phase／末態與祖先保持，8個新phase全只讀、零新裝置輸入。原filename SAVE1.GAM／mode wb、AH3D缺檔AX2／CF1已驗；238506393原237107h bytes CD21／AX3C80／CX0拒絕，沒有fwrite／close／owner返回及新檔。305CLI249拒絕／56正對照、9反轉patch與六份重生通過；原verifier與15個執行前SHA保持，初次source419截圖前綴錯誤只修驗證，500份當次失敗保存。原418輸入／SAVE10／MOX保持、overlay無差異，峰值1782833152bytes／OOM0；422只限原請求與拒絕觀察CONFORMED。
-  **下一步**：423 AH3C／CX0普通檔建立平台規格READY，依Microsoft契約與原實際請求接入可寫overlay；先做工程測試及建置，再另審查原版續行。尚無423 Go或新guest；正式存讀、鍵盤命名與remake同狀態未驗，主庫RE-first保持。
+  **423普通檔建立平台修正**：MOO2保護模式AH3C／CX0接入可選CreateFileProvider，普通檔建立／截斷只在state，唯讀base與原OpenWrite保持；原AL80不誤當子功能，非輸出CPU／RAM與拒絕副作用已驗。33子案例／三種AL、internal/machine／dos／dosfile與核心／命令程式建置通過；限定工程CONFORMED，沒有新原guest、CPU解碼或主庫玩法變更。工具HEAD a3c769002df27c152b789255139fb9de9a5039a6已推送，原422完整500份失敗與15份執行前SHA保持。
+  **下一步**：424原正常保存續行READY，先實作私有觀察器，315CLI／六份重生／唯一Step與原getter／零新CPU或裝置寫入／獨立verifier／平台及metadata來源釘選通過後，跑唯一250M／1200s原guest。完整420／祖先及422前六phase先凍結，原最後兩個拒絕phase保持原檔，不冒充新成功。尚無424 Go／guest；正式存讀、鍵盤命名與remake同狀態未驗，主庫RE-first保持。
   **未知／不混入本輪**：主庫玩法RE閘門保持；job3與跨殖民地、remake人口配置、讀檔／存檔內容語意、typed名稱及旗色持久writer、五窗口完整物件、其他未驗CPU分支、typed種族特性、母星配置、COLONIES其他列表操作／星圖控制、完整開局與remake同狀態未驗。DPMI外部cb_smoke、兩舊探針PE格式、AH2Ch／RNG／人耳與Windows／macOS實機未驗。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以

@@ -2211,3 +2211,14 @@ python3 workplace/new-game-416-document-gate.py
 - 原PNG以view_image人工檢視，仍為空格、Auto Save與SAVE游標，沒有成功回饋。原418輸入與SAVE10／MOX保持、overlay無差異、無SAVE1.GAM；cgroup峰值1782833152bytes／OOM增量0。500份完整當次失敗與manifest保持，422限定請求／拒絕觀察CONFORMED。
 - 下一平台規格423依Microsoft《The MS-DOS Encyclopedia》Function3CH及原請求審查至READY，僅接MOO2保護模式CX0、普通檔與明示可寫overlay；尚無Go變更或新guest，不追C runtime內部。原稿／READY review分開保存，000-index與四份舊規格回鏈同次更新。
 - 七份自撰工具文件gate通過並推送，工具HEAD 68b43de401dc5c24509cb9123a87e767d1c6a9c8；主庫八份玩法／狀態來源保持，只改既有四份交接文件。一次文件查核的自動審查逾時，允許的唯一重試成功，沒有權限阻塞。唯一guest容器已由--rm移除，完整remake仍未完成。
+
+## 2026-10-05：423普通檔建立平台修正與424原版續行規格
+
+- 上輪是有效進度：原422 AH3C請求與拒絕已獨立驗證／推送。本輪從兩庫乾淨HEAD、spec／平台規格優先／文件分工與回鏈入口接續423 READY，沒有重新開已完成來源RE。
+- 實作：tool internal/machine/le_startup.go接MOO2保護模式AH3C／CX0；overlay_files.go新增可選CreateFileProvider，只在state建立／截斷普通檔，不複製或寫base，不改原OpenWrite。建立前確認handle容量，nil／provider錯誤／非法名稱與裝置名稱拒絕，錯誤附file會關閉。非零屬性、FD2與實模式仍未處理，CPU解碼與主庫玩法不變。
+- 命令：既有Go1.24.13 image、UID1000／network none／2GiB／2CPU／128pids／240s，go test -p2 ./internal/machine -run 'TestMOO2(ProtectedCreateFile|OverlayCreateFile)' -v，session43951 exit0；go test -p2 ./internal/machine ./internal/dos ./internal/dosfile與go build -p2 ./internal/... ./cmd/...，session95786 exit0。33子案例加AL80／00／FF均通過；實際檔案bytes、唯讀base、高位pointer、非輸出狀態、滿handle不呼叫provider與symlink／目錄／大小寫碰撞拒絕已驗。
+- 423限定平台工程CONFORMED；原422完整500份失敗、15份執行前SHA與原verifier保持，沒有新原guest。424依原422前六phase與423 source／工程結果審查READY，仍需私有觀察器／前置gates與唯一新原guest；主庫RE-first保持，正式保存／讀回及remake對拍未驗。
+- 423工程結果與四份source／三份輸出SHA、424原稿／READY review分開固定，000-index及422補缺回鏈同次更新。八份自撰工具檔案gate通過，工具HEAD a3c769002df27c152b789255139fb9de9a5039a6已推送；主庫只更新四份交接文件。
+- 原指令的AX3C80不是新子功能，依Microsoft Function3CH標準忽略AL；只驗平台契約，不追標準C runtime內部。工程測試不替代原版玩家保存驗收。
+
+收尾稽核：python3 workplace/423-main-audit.py，session82892 exit0；4430份目前索引與全部祖先合併5409份SHA保持，八份主庫玩法／狀態來源保持，root-owned基準2437檔／272目錄、零.md目錄及git diff --check通過。工具乾淨且已推送，三個Docker volume filter均空，沒有新image；精確兩庫HEAD／工作樹與下一步保存workplace/423-final-state.json。
