@@ -2242,3 +2242,14 @@ python3 workplace/new-game-416-document-gate.py
 - 工具八份自撰文件gate-v2通過並推送HEAD de5c689b315d86bd88d60285ed09c073d538c39c，public四份平台source保持，CPU／主庫玩法沒有新增變更。下一最小行動為上一層reader來源及唯一PNG檔名／容器內owned timeout的READY審查。
 
 收尾稽核：python3 workplace/424-main-audit.py，session58341 exit0；5067份目前索引與祖先合併6046份SHA保持，八份主庫來源、root-owned基準2437檔／272目錄、零.md目錄與git diff --check通過。工具乾淨且已推送；Docker專案容器清單空，沒有新增image。主庫只改四份既有文件；精確兩庫HEAD與清理狀態保存workplace/424-final-state.json。
+
+
+## 2026-10-05：425原SAVE頁上一層來源
+
+- 先完成424失敗／數值／檔案review並推送主庫bbcd490f30b1e46b9a0cb2667eb97bc8c5c83774及工具de5c689b315d86bd88d60285ed09c073d538c39c。該乾淨checkpoint保持；425沒有重跑guest或重開已驗53次保存交易。
+- 425只查原415真stack return1702D1对應的IDA802CC call。既有locked-v1 SHA6f6d59af49d0008c4109a5295b5f374bdc007e2d1ab28cb9de08779584de2780、UID1000／network none／2GiB／2CPU／128pids／180s，bash /out/new-game-425-ida-run.sh，session91096 wrapper0／idat1，非空JSON、EXE SHA、5365函式與UID1000核對通過。
+- python3 workplace/new-game-425-source-verify.py在既有Go1.24.13容器／60s／2GiB退出0。原MZ／LE／fixup、146新列／146EA與七列既有共用尾端、四case原表及原415真stack一致；原parent sub_8012F在802C9將原[EBP-0Ch]位址傳給子頁，802E6／802EB讀值決定是否返回loop。静態caller及指標／退出consumer已驗，SAVE後實際parent局部值與下一正常輸入未驗。
+- 新公開425來源規格同次掛000-index並由424回鏈；CONFORMED僅來源，424仍DRAFT。原425查詢plan／script／JSON／log／原退出碼／獨立來源review保持本機、source-result固定十份SHA。三份自撰工具文件gate通過並推送HEAD 9908ec3d61cd5377b327eb108f721730ba338dd2，沒有public Go、CPU或主庫玩法變更。
+- 下一最小行動：IDA對8012F的直接caller及call前後局部上下文／正常reader，另訂唯一PNG與owned timeout的觀察READY。未知不以換位址或加步數補洞。
+
+425收尾稽核：python3 workplace/425-main-audit.py，session63294 exit0；5079份目前索引合併祖先6058份SHA保持，八份主庫來源、root-owned基準2437檔／272目錄及零.md目錄通過。三個專案volume的Docker容器清單均空，沒有新增image；工具乾淨且已推送。精確兩庫HEAD、工作樹及下一動作保存workplace/425-final-state.json。

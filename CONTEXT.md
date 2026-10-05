@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-05）**：424原版已完成SAVE1.GAM檔案交易，53次寫入共208000bytes與實際檔案逐bytes一致，close0及callee真返回已驗。完整420／祖先、422前六phase與16份執行前SHA保持；315CLI及七份重生通過。正常玩家返回／讀回未驗：原同頁reader前提被既有bytes推翻，48事件PNG未留存，外層exit137未結束guest；唯一guest最後到250M，容器自行完成／移除，OOM0。424整體回DRAFT，下一步只查上一層reader來源並修正唯一PNG檔名與owned timeout。工具HEAD de5c689b315d86bd88d60285ed09c073d538c39c已推送，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。正式存讀、鍵盤命名及remake同狀態未驗，主庫RE-first保持。
+- **DOS 原版動態驗證器（2026-10-05）**：424原版已完成SAVE1.GAM檔案交易，53次寫入共208000bytes與實際檔案逐bytes一致，close0及callee真返回已驗。完整420／祖先、422前六phase與16份執行前SHA保持；315CLI及七份重生通過。正常玩家返回／讀回未驗：原同頁reader前提被既有bytes推翻，48事件PNG未留存，外層exit137未結束guest；唯一guest最後到250M，容器自行完成／移除，OOM0。424整體回DRAFT，425已核對原parent146列、七列共用尾端與原415真stack，caller的局部旗標消費已錨定；下一步只查parent上一層caller／reader並修正唯一PNG檔名與owned timeout。工具HEAD 9908ec3d61cd5377b327eb108f721730ba338dd2已推送，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。正式存讀、鍵盤命名及remake同狀態未驗，主庫RE-first保持。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為

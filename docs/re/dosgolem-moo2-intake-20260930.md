@@ -5755,3 +5755,14 @@ python3 workplace/new-game-416-document-gate.py
 公開[424規格結果](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/424-moo2-save-create-continue.md)整體回DRAFT，八份既有工具spec／索引及回鏈已推送 de5c689b315d86bd88d60285ed09c073d538c39c。私有入口workplace/dosgolem/workplace/new-game-424-verification-result.json、verify-v2.py／output、file-return-review.py／output、file-transaction-review.json、return-premise-review.json、png-retention-review.json、lifecycle-review.json、failed2-424-manifest.json及document-gate-v2.py。原資料／save／JSON／PNG不公開，主庫RE-first保持。
 
 下一最小行動：查既有7DA0D與上一層caller／reader來源，修正下一驗收條件；唯一PNG檔名與容器內owned timeout經READY審查後才跑新觀察。正常讀回／鍵盤命名／remake同狀態未驗。現行收據索引workplace/424-current-receipt-index.json，主庫audit／精確HEAD及清理狀態由424-main-audit-result.json與424-final-state.json記錄。
+
+
+## 2026-10-05：425原SAVE parent與共用尾端來源
+
+原輸入／SHA及位址基準沿424。單次IDA Pro9.4／locked-v1只查原415正常SAVE-entry真SS的return1702D1，定位IDA802CC CALL7E154、parent sub_8012F。146新列／146EA、四case table及七列重用413尾端經獨立原MZ／LE／fixup核對，指令fixup差異0，沒有新guest。
+
+已證實靜態：原802C9的LEA EAX,[EBP-0Ch]將parent局部位址傳給子頁；8013C初始化0，802E6讀word、802EB的JZ回801E1。原共用尾端7DA0C..7DA12保留LEAVE／五個POP及近RET。原子頁7E50C到7DA0D，不錯把另一函式邊界當成新的玩家consumer。強推論：SAVE經原指標寫1使parent退出loop；實際傳入指標、parent值與動態返回仍未知。正常上一層caller／第一reader未查，不能稱正常玩家返回完成。
+
+命令／結果：IDA session91096 wrapper0／idat1，非空JSON／固定EXE SHA／5365函式／UID1000通過；Go1.24.13容器python3 workplace/new-game-425-source-verify.py退出0。公開[425來源規格](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/425-moo2-save-parent-return-source.md)只限來源CONFORMED，000-index／424回鏈及三份自撰文件gate同次通過，工具HEAD 9908ec3d61cd5377b327eb108f721730ba338dd2已推送。
+
+本機入口workplace/dosgolem/workplace/new-game-425-source-result.json／source-verify.py／source-tests.txt、source-plan.json、moo2-425-ida-save-parent-source.py／json／log／stdout與ida-run.sh／output。原JSON／反組譯不公開；主庫僅四份既有文件，RE-first保持。下一窄查詢只取8012F直接caller及局部call前後／reader路由；425-current-receipt-index.json、425-main-audit-result.json及425-final-state.json為目前索引／清理交接入口。
