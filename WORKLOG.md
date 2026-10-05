@@ -2175,3 +2175,17 @@ python3 workplace/new-game-416-document-gate.py
 現況勘誤：核對正式finalize呼叫端、先進文明／Money規則、AI profile權重與index及四列追溯表後，移除HONEST-STATUS仍稱MISSING／錯誤PARTIAL的舊斷言。四列目前為CONFORMED／INTERNAL，原版全域PRNG與完整同狀態仍未證明；不變更歷史儀表板數字。檔案hash與核對範圍保存workplace/419-status-source-review.json，沒有改Go或新增runtime完成聲明。
 
 收尾稽核：python3 workplace/419-main-audit.py通過，2052份本輪索引與全部祖先合併3031份hash核對。工具已推送且工作樹乾淨、419 READY來源釘選與無Go／guest核對，五份主庫文件含HONEST-STATUS勘誤；root-owned基準2437檔／272目錄、零.md目錄與git diff --check通過。
+
+
+## 2026-10-05：419第一格press與420工具守衛修正
+
+- 命中GUI還原、規格閘門及文件分工路由。只處理私有原版工具與既有交接，主庫RE-first保持。
+- 419受控SAVE10日期輸入、六項普通讀寫／日期／旗標／路徑回歸通過；285CLI／六份重生與來源檢查通過。最初DTA全log單時間假設在改檔或guest之前被拒絕，原失敗保存後按兩群修正，不改原資料。
+- 命令：既有Go1.24.13 image、network none、UID/GID1000、3GiB／2CPU／128pids／GOMEMLIMIT1GiB、1200s外層與1150s owned state capture執行bash workplace/new-game-419-run.sh。唯一session1794 outer1／probe2；工具額外mask2Bh條件拒絕原mask1，未派送release／SAVE。
+- 已證實：238285408正常第一格press、238295561原selector真RET到20E1AC／ESP＋4／EAX1、九個只讀phase及完整417／祖先。selected仍FFFF、editor未啟用、保存入口未到。這是工具守衛錯誤，沒有新CPU缺陷證據。
+- 獨立python3 workplace/new-game-419-verify.py，session76204 exit0限定核對原press與拒絕。原PNG人工另檢視、436份完整失敗保存；cgroup峰值1498697728bytes／OOM增量0、原418檔／SAVE10／MOX保持、overlay無內容差異。原base／overlay日期歸屬為強推論，不把mtime當成寫檔證據。
+- 420修正以既有415成功mask1 release與當次419來源經READY審查後實作。五個反轉patch、唯一Step／原getter、零新裝置API／鍵盤、295CLI241拒絕／54正對照、六份重生通過。完整419九phase／失敗末態先凍結，才修正私有release守衛；原419資料不改。新唯一session64443 outer0／probe0，原guest正常完成。
+- 目前正式存讀／鍵盤命名／remake同狀態未驗。公開只更新自撰工具規格與四份主庫文件；沒有主庫Go或原CPU／平台修改。工具HEAD 9fef15c4974bab36a4cdbd0097ee0328c9c81830已推送；主庫精確HEAD與清理狀態保存workplace/420-final-state.json。
+- 命令：同容器界限執行bash workplace/new-game-420-run.sh；獨立python3 workplace/new-game-420-verify.py，session61489 exit0。26個只讀phase、四次正常裝置操作、原selected FFFF→0、reader 1／21及238505421真CALL到10160B／參數0通過；callee未執行。原名稱僅在記憶體生成，PNG仍顯示空格，不稱為保存成功。峰值1679069184bytes／OOM增量0，原輸入／副本與overlay內容保持。
+- 原419失敗不覆寫，420限定CONFORMED；417／418／419回鏈與索引更新。五份工具自撰文件檢查通過並推送，四份主庫文件完成當次核對；完整新收據索引、公開CPU兩檔既有差異與八份主庫來源雜湊保持。Docker相關容器清空、root-owned基準2437檔／272目錄與零.md目錄保持。下一步只做sub_1160B窄RE，不解除主庫玩法閘門。
+- 收尾命令python3 workplace/420-main-audit.py通過，本輪3383份索引及全部祖先合併4362份雜湊保持；主庫來源八份與419／420執行前輸入釘選通過。Docker兩個volume filter均為空。

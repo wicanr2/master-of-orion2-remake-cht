@@ -141,7 +141,7 @@
 - **棘輪(ratchet)** — `cmd/moo2/lang_gap_test.go` 的 `langGapCeiling`,只能往下調。
   ⚠ 它不是覆蓋率;覆蓋率要跑 `-lang en` 的畫廊逐張看。
 - **測試綠 ≠ 對齊原版** — 單元測試只證自製邏輯自洽。這是本專案的第一紀律(rulebook/65)。
-- **DOS 原版動態驗證器（2026-10-05）**：417已驗原存檔頁首次顯示及實際可見；418以915列原bytes、當次25項表與13個first-hit案例錨定第一格kind11、37-byte名稱record、原選格writer與SAVE ID21分派／CALL。保存callee用途為強推論，正式選格／命名／存讀及remake同狀態未驗。工具4cdc5c6cd801a3ed5a892a94a658fc05d7ca7560已推送，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。419私有原版輸入READY，下一步以第一格及SAVE兩次正常click到原10160B入口，捕捉實際名稱與狀態；新245M後段不回寫417的240M，尚無419 Go／guest，主庫RE-first保持。
+- **DOS 原版動態驗證器（2026-10-05）**：420保持完整417顯示、原419守衛失敗及所有祖先，修正私有mask1放開條件。唯一原guest與獨立驗證均exit0；26個只讀phase與四次正常裝置操作，原selected由FFFF變0、reader返回1／21、238505421真CALL到10160B／參數0已驗。callee尚未執行，畫面仍無保存成功回饋。工具HEAD 9fef15c4974bab36a4cdbd0097ee0328c9c81830已推送，見[研究紀錄](docs/re/dosgolem-moo2-intake-20260930.md)。正式存讀、鍵盤命名及remake同狀態未驗，主庫RE-first保持。
 - **三項百分比儀表板** — 2026-08-25 起，README 可列有日期且可重算的三個工程比例：
   remake 功能完成度、原版玩法對齊度、發行驗證完成度。三者不可合成單一「還原度」，也不可
   推論逐幀或逐位元一致；分母、部分完成權重與來源必須緊鄰數字公開。2026-08-29 快照為

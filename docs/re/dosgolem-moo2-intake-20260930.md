@@ -5659,3 +5659,33 @@ python3 workplace/new-game-416-document-gate.py
 | new-game-419-ready-review.json | 983a6065ddaa142dbe14b20d35ba00fda35eb2fad3bd839302b1145b6c8706d6 |
 
 工具HEAD 4cdc5c6cd801a3ed5a892a94a658fc05d7ca7560 已推送，主庫玩法與公開CPU／probe保持。完整2052份索引workplace/419-current-receipt-index.json保持較早417-continuation的2033份及所有祖先。原418輸入、SAVE10／MOX及畫面收據未改，固定日期不當作RNG seed。Docker相關volume filter為空，root-owned基準2437檔／272目錄及零.md目錄核對通過；精確HEAD保存workplace/419-final-state.json。
+
+
+## 2026-10-05：419原第一格press與工具放開守衛
+
+官方1.31 ORION2.EXE SHA-256 4e11be14217b4aafa1839f333bf5eba037f98b0c44e9e4752c96c464c260419f，位址空間dosgolem_high_le。原417完整八phase／末態、PNG日期及全部祖先保持。419先通過285CLI／六份逐bytes重生及六項私有日期回歸，再以單次session1794跑原版；outer1、實際probe2，不列為保存成功。
+
+238285407原16E1FD CALL、238285408真SS到2071AB／ESP−4／return16E202；正常400,54,1 press已送。238295560原204176 C3、238295561依真SS返回20E1AC／ESP＋4、實際EAX1。這些握手與第一名稱控件first-hit已證實，不等於原selected local已定案或editor已啟用。
+
+同一步原mask1、callback25／25 idle／pending0、target8:2136D1、buttons1保持。私有Input額外要求mask2Bh，與419 READY僅要求消費後idle／pending0的release契約不符，遂在放開前停止。原415已驗release-before也為mask1；沒有CPU拒絕證據。原selected仍FFFF、editor active0／focusFFFF，原reader與SAVE尚未到。
+
+獨立verifier session76204 exit0限定確認舊前置、原press／selector RET與守衛失敗。九個只讀phase、原名稱record／文字buffer／local raw bytes保存；只送一個新裝置輸入。cgroup峰值1498697728bytes、OOM增量0，418原輸入／SAVE10／MOX保持、overlay無新內容差異。PNG45262e3491d09fb7882b8538621729a68092b598b375b040888b0b0641da49d7人工可見原SAVE頁與第一空格游標，沒有成功回饋。
+
+原DTA有兩群時間：初始2筆AC38、SAVE頁20筆ACF5，date5D44均已證實。受控測試副本固定對應元資料，原檔不動，保留完整PNG／日期比對。base／overlay歸屬為依provider建立的強推論；修改時間不證明原guest已寫存檔內容。初次「全log只有單一時間」審查失敗發生在任何改檔或guest之前，另存收據後修正分類。
+
+436份完整419產物按failed1-419保存並由manifest釘選；原419不覆寫或重跑。私有入口new-game-419-generator.py、run.sh、verify.py、metadata-input-review／attribution-review與visual-review.json均本機忽略。公開[419](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/419-moo2-save-first-slot-submit.md)由420接替，原失敗不改。
+
+[420](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/420-moo2-save-release-guard-correction.md)修正已READY、實作與建置，295CLI含241拒絕／54正對照、五個可反轉patch及六份重生通過。窄wrapper只捕捉原額外守衛錯誤，完整九phase／失敗末態與PNG核對後才接受mask1正常release；只刪私有collector的已另存失敗快照，不動guest。唯一新原guest已完成，結果見下節。主庫玩法、公開CPU／probe與414平台保持；正式存讀、鍵盤命名與remake同狀態未驗。
+
+
+## 2026-10-05：420修正守衛後的原正常選格與SAVE
+
+沿用同一官方1.31 EXE、dosgolem_high_le位址空間、完整417畫面及436份原419失敗。READY來源、原稿與唯一guest前輸入SHA固定；修正只影響私有release守衛。唯一session64443 outer0／probe0，獨立verifier session61489 exit0，不重跑419、不改原CPU／RAM。
+
+238295561送原尚未派送的400,54,0 release，原reader在238311501依真SS回16E202／EAX1。238311517原16E23A MOV word[EBP+6Ah],DX，到238311518 selected由FFFF變0。下一reader CALL在238473198到2071AB，editor active1／focus1；正常430,373,1 press、238484120 selector真RET／EAX21後送430,373,0 release。238503075原reader真RET／EAX21，238505420原16E3F4 CALL，238505421依真SS到10160B、return16E3F9／ESP−4／EAX0即停止。writer與CALL已證實，保存用途仍強推論；callee一條指令也未執行。
+
+26個只讀phase與四次正常裝置操作、完整419九phase／失敗terminal、完整417及全部祖先通過。原第一個37-byte名稱record在記憶體生成Strader, Human, 1 colony；editor buffer仍是空格文案。實際PNG SHA-256 a6a210241532bd87f46b58fd33ecf13665b4dbe8f4bfa4aeedf78c0f5c2d836a已檢視，畫面仍顯示empty slot，游標位於SAVE，沒有保存成功回饋；不把記憶體名稱當作可見結果。名稱模板對其他狀態仍未知。cgroup峰值1679069184bytes、OOM增量0，418原輸入／SAVE10／MOX保持、overlay無新內容差異；固定日期不是亂數seed。
+
+公開[420](https://github.com/wicanr2/dosgolem/blob/codex/moo2-parity-20260930/docs/spec/420-moo2-save-release-guard-correction.md)限定正常原版選格／SAVE到callee入口CONFORMED；417／418／419與000-index同次回鏈。私有入口沿new-game-420-generator.py、run.sh、verify.py、ready-review／one-guest-ready／conformance-review／visual-review／resolution-backlinks.json及source419收據，原碼／JSON／PNG本機忽略。工具HEAD 9fef15c4974bab36a4cdbd0097ee0328c9c81830已推送。
+
+本輪完整索引保存workplace/420-current-receipt-index.json，審核入口workplace/420-main-audit.py及結果420-main-audit-result.json；精確HEAD與清理狀態保存workplace/420-final-state.json。下一步只追原sub_1160B玩家存檔資料流與首檔案請求，通過RE與READY後才續行。正式存讀、鍵盤命名與remake同狀態未驗，主庫RE-first不變。
