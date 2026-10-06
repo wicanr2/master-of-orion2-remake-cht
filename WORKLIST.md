@@ -76,7 +76,7 @@
   **425原SAVE parent來源**：單次窄IDA已定位原415真stack return1702D1對應IDA802CC CALL7E154。原sub_8012F完整146列／146EA、四case表與七列共用尾端獨立LE bytes通過；原[EBP-0Ch]位址傳給子頁，802E6／802EB消費局部值決定回圈。僅來源CONFORMED，沒有新guest，實際父層值／返回與下一輸入仍未知。工具HEAD 9908ec3d61cd5377b327eb108f721730ba338dd2已推送。
   **426原parent直接caller與場景分派**：兩次窄IDA、135列／108EA與44項原CS table獨立LE核對；原8012F唯一caller104A6，父層return1004AB，104AB／104B2回主分派10687／106A7，沒有直接1171AB reader。僅來源CONFORMED，主場景實際值／target與正常下一input仍未知。
   **427原parent返回觀察未通過**：唯一原250M／step_limit，parent entry／真SS1004AB已驗，parent返回及分派未到，整體DRAFT。53次buffer合成208000bytes等於SAVE1.GAM、close0及callee返回已驗；418獨立PNG保持。owned腳本938.771s退出0、OOM0、容器已移除；24份v2輸入SHA與1080份本次產物凍結。428窄來源129列／111EA核對通過，末態為圖像支援候選強推論；下一只追parent局部退出旗標及保存後玩家consumer，不深入helper或提高250M。正常輸入／存讀往返／remake同狀態未驗。
-  **下一步**：等待目前唯一原guest終態，核對原parent真SS RET／44項table與實際dispatch target、有序buffer／file及各phase唯一PNG；時間與容器收尾另驗。未知或逾時照存，不提高步數追成功、不重啟同次guest。正式正常input／存讀與remake同狀態仍未驗，主庫RE-first保持。
+  **下一步**：427唯一原guest已終態（session23415自然到250M，owned腳本938.771s退出0，OOM0，容器已移除），不再等待。53次buffer合成208000bytes等於SAVE1.GAM、close0及callee返回已驗；parent entry／真SS1004AB已驗，parent返回及分派未到，整體仍DRAFT。428已定位238B82屬sub_1489F4、238611屬sub_148605及各自direct caller，末態圖像支援為強推論。下一步只追parent局部退出旗標及保存後玩家consumer，不深入helper、不提高250M、不重啟同次guest。正式正常input／存讀與remake同狀態仍未驗，主庫RE-first保持。
   **未知／不混入本輪**：主庫玩法RE閘門保持；job3與跨殖民地、remake人口配置、讀檔／存檔內容語意、typed名稱及旗色持久writer、五窗口完整物件、其他未驗CPU分支、typed種族特性、母星配置、COLONIES其他列表操作／星圖控制、完整開局與remake同狀態未驗。DPMI外部cb_smoke、兩舊探針PE格式、AH2Ch／RNG／人耳與Windows／macOS實機未驗。
 
 > **2026-08-28 執行策略已改變：先補齊 RE 知識庫，再恢復規格與實作。** RE 階段以
